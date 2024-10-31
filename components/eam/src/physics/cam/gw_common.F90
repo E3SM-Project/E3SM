@@ -893,7 +893,7 @@ subroutine gw_oro_interface(state,    cam_in,   sgh,      pbuf,     dtime,     n
   znu=etamid(pver:1:-1),dz=dz(:ncol,pver:1:-1),pblh=pblh(:ncol),&
   cp=cpair,g=gravit,rd=rair,rv=rh2o,ep1=zvir,pi=pi,bnvbg=nm(:ncol,pver:1:-1),&
   dt=dtime,dx=dx,dy=dy,&
-  kpbl2d=kpbl2d_in,itimestep=dtime,gwd_opt=0,&
+  kpbl2d=kpbl2d_in,gwd_opt=0,&
   ids=1,ide=ncol,jds=0,jde=0,kds=1,kde=pver, &
   ims=1,ime=ncol,jms=0,jme=0,kms=1,kme=pver, &
   its=1,ite=ncol,jts=0,jte=0,kts=1,kte=pver, &
@@ -966,7 +966,9 @@ subroutine dxygrid(dx,dy,theta_in,dxy)
   endif
 
 end subroutine dxygrid
+
 !==========================================================================
+
 subroutine grid_size(state, grid_dx, grid_dy)
   ! Determine the size of the grid for each of the columns in state
 
@@ -1014,7 +1016,7 @@ subroutine gwdo_gsd(u3d,v3d,t3d,qv3d,p3d,p3di,pi3d,z,                           
                     dusfcg_fd,dvsfcg_fd,xland,br,                                &
                     var2d,oc12d,oa2d,ol2d,znu,znw,p_top,dz,pblh,                 &
                     cp,g,rd,rv,ep1,pi,bnvbg,                                     &
-                    dt,dx,dy,kpbl2d,itimestep,gwd_opt,                           &
+                    dt,dx,dy,kpbl2d,gwd_opt,                                     &
                     ids,ide, jds,jde, kds,kde,                                   &
                     ims,ime, jms,jme, kms,kme,                                   &
                     its,ite, jts,jte, kts,kte,                                   &
@@ -1072,9 +1074,9 @@ subroutine gwdo_gsd(u3d,v3d,t3d,qv3d,p3d,p3di,pi3d,z,                           
   real(r8), intent(in)   ::      itimestep
   real(r8), intent(in)   ::      cp,g,rd,rv,ep1,pi
   !input model grid length for the grid dx,dy
-  real(r8), intent(in)   ::     dx(:)
-  real(r8), intent(in)   ::     dy(:)
-  !input meterological inputs
+  real(r8), dimension(:),                   intent(in)  :: dx
+  real(r8), dimension(:),                   intent(in)  :: dy
+  !input atmospheric variables
   real(r8), dimension( ims:ime, kms:kme ),  intent(in)  :: qv3d
   real(r8), dimension( ims:ime, kms:kme ),  intent(in)  ::  p3d
   real(r8), dimension( ims:ime, kms:kme ),  intent(in)  :: pi3d
@@ -1103,9 +1105,9 @@ subroutine gwdo_gsd(u3d,v3d,t3d,qv3d,p3d,p3di,pi3d,z,                           
   real(r8), dimension( ims:ime,nvar_dirOA ),intent(in),   optional  :: oa2d
   !input model parameters
   real(r8),                                 intent(in),   optional  :: dt
-  real(r8),                                 intent(in),   optional  :: znu(:)
-  real(r8),                                 intent(in),   optional  :: znw(:)
   real(r8),                                 intent(in),   optional  :: p_top
+  real(r8), dimension(:),                   intent(in),   optional  :: znu
+  real(r8), dimension(:),                   intent(in),   optional  :: znw
   !input bnv from gw_drag
   real(r8), dimension( ims:ime,kms:kme ),   intent(in),   optional  ::  bnvbg
   !output of vertical profile for momentum terms
@@ -1205,53 +1207,53 @@ subroutine gwdo_gsd(u3d,v3d,t3d,qv3d,p3d,p3di,pi3d,z,                           
                  ,oa4=oa4,ol4=ol4                                               &
                  ,g=g,cp=cp,rd=rd,rv=rv,fv=ep1,pi=pi                            &
                  ,dxmeter=dx,dymeter=dy,deltim=dt                               &
-                 ,kpbl=kpbl2d(ims),kdt=itimestep,lat=j                          &
+                 ,kpbl=kpbl2d(ims)                                              &
                  ,ids=ids,ide=ide, jds=jds,jde=jde, kds=kds,kde=kde             &
                  ,ims=ims,ime=ime, jms=jms,jme=jme, kms=kms,kme=kme             &
                  ,its=its,ite=ite, jts=jts,jte=jte, kts=kts,kte=kte             &
                  ,gsd_gwd_ls=gwd_ls,gsd_gwd_bl=gwd_bl,gsd_gwd_ss=gwd_ss,gsd_gwd_fd=gwd_fd)
-                !set the total stress output to each terms for the 4 drag schemes
-                do i = its,ite
-                dusfcg_ls(i)=dusfc_ls(i)
-                dvsfcg_ls(i)=dvsfc_ls(i)
-                dusfcg_bl(i)=dusfc_bl(i)
-                dvsfcg_bl(i)=dvsfc_bl(i)
-                dusfcg_ss(i)=dusfc_ss(i)
-                dvsfcg_ss(i)=dvsfc_ss(i)
-                dusfcg_fd(i)=dusfc_fd(i)
-                dvsfcg_fd(i)=dvsfc_fd(i)
-                enddo
-                !set the 3D output tendencies to each terms for the 4 drag schemes
-                dtaux3d_ls=dtaux2d_ls
-                dtaux3d_bl=dtaux2d_bl
-                dtauy3d_ls=dtauy2d_ls
-                dtauy3d_bl=dtauy2d_bl
-                dtaux3d_ss=dtaux2d_ss
-                dtaux3d_fd=dtaux2d_fd
-                dtauy3d_ss=dtauy2d_ss
-                dtauy3d_fd=dtauy2d_fd
+                 !set the total stress output to each terms for the 4 drag schemes
+                 do i = its,ite
+                 dusfcg_ls(i)=dusfc_ls(i)
+                 dvsfcg_ls(i)=dvsfc_ls(i)
+                 dusfcg_bl(i)=dusfc_bl(i)
+                 dvsfcg_bl(i)=dvsfc_bl(i)
+                 dusfcg_ss(i)=dusfc_ss(i)
+                 dvsfcg_ss(i)=dvsfc_ss(i)
+                 dusfcg_fd(i)=dusfc_fd(i)
+                 dvsfcg_fd(i)=dvsfc_fd(i)
+                 enddo
+                 !set the 3D output tendencies to each terms for the 4 drag schemes
+                 dtaux3d_ls=dtaux2d_ls
+                 dtaux3d_bl=dtaux2d_bl
+                 dtauy3d_ls=dtauy2d_ls
+                 dtauy3d_bl=dtauy2d_bl
+                 dtaux3d_ss=dtaux2d_ss
+                 dtaux3d_fd=dtaux2d_fd
+                 dtauy3d_ss=dtauy2d_ss
+                 dtauy3d_fd=dtauy2d_fd
 
 end subroutine gwdo_gsd
 !
 !-------------------------------------------------------------------------------
 !
 !-------------------------------------------------------------------------------
-subroutine gwdo2d(dudt,dvdt,dthdt,ncleff,ncd,sncleff,                       &
-                    dtaux2d_ls,dtauy2d_ls,                                     &
-                    dtaux2d_bl,dtauy2d_bl,                                     &
-                    dtaux2d_ss,dtauy2d_ss,                                     &
-                    dtaux2d_fd,dtauy2d_fd,                                     &
-                    u1,v1,t1,q1,                                               &
-                    del,                                                       &
-                    prsi,prsl,prslk,zl,rcl,                                    &
-                    xland1,br1,hpbl,bnv_in,dz2,                                &
-                    kpblmax,dusfc_ls,dvsfc_ls,dusfc_bl,dvsfc_bl,               &
-                    dusfc_ss,dvsfc_ss,dusfc_fd,dvsfc_fd,var,oc1,oa4,ol4,&
-                    g,cp,rd,rv,fv,pi,dxmeter,dymeter,deltim,kpbl,kdt,lat,      &
-                    ids,ide, jds,jde, kds,kde,                                 &
-                    ims,ime, jms,jme, kms,kme,                                 &
-                    its,ite, jts,jte, kts,kte,                                 &
-                    gsd_gwd_ls,gsd_gwd_bl,gsd_gwd_ss,gsd_gwd_fd)
+subroutine gwdo2d(dudt,dvdt,dthdt,ncleff,ncd,sncleff,                        &
+                  dtaux2d_ls,dtauy2d_ls,                                     &
+                  dtaux2d_bl,dtauy2d_bl,                                     &
+                  dtaux2d_ss,dtauy2d_ss,                                     &
+                  dtaux2d_fd,dtauy2d_fd,                                     &
+                  u1,v1,t1,q1,                                               &
+                  del,                                                       &
+                  prsi,prsl,prslk,zl,rcl,                                    &
+                  xland1,br1,hpbl,bnv_in,dz2,                                &
+                  kpblmax,dusfc_ls,dvsfc_ls,dusfc_bl,dvsfc_bl,               &
+                  dusfc_ss,dvsfc_ss,dusfc_fd,dvsfc_fd,var,oc1,oa4,ol4,       &
+                  g,cp,rd,rv,fv,pi,dxmeter,dymeter,deltim,kpbl,              &
+                  ids,ide, jds,jde, kds,kde,                                 &
+                  ims,ime, jms,jme, kms,kme,                                 &
+                  its,ite, jts,jte, kts,kte,                                 &
+                  gsd_gwd_ls,gsd_gwd_bl,gsd_gwd_ss,gsd_gwd_fd)
   !  This code handles the time tendencies of u v due to the effect of mountain 
   !  induced gravity wave drag from sub-grid scale orography. It includes 4 parts:
   !  orographic gravity wave drag and flow-blocking drag (Xie et al.,2020),small-scale  
@@ -1276,6 +1278,7 @@ subroutine gwdo2d(dudt,dvdt,dthdt,ncleff,ncd,sncleff,                       &
   !        dudt (ims:ime,kms:kme)  non-lin tendency for u wind component
   !        dvdt (ims:ime,kms:kme)  non-lin tendency for v wind component
   !        u1(ims:ime,kms:kme) zonal wind / sqrt(rcl)  m/sec  at t0-dt
+  !        
   !        v1(ims:ime,kms:kme) meridional wind / sqrt(rcl) m/sec at t0-dt
   !        t1(ims:ime,kms:kme) temperature deg k at t0-dt
   !        q1(ims:ime,kms:kme) specific humidity at t0-dt
@@ -1291,49 +1294,78 @@ subroutine gwdo2d(dudt,dvdt,dthdt,ncleff,ncd,sncleff,                       &
   !-------------------------------------------------------------------------------
   implicit none
   !-------------------------------------------------------------------------------
-  integer              ::  lat,latd,lond,kpblmax,                             &
-                           ids,ide, jds,jde, kds,kde,                         &
-                           ims,ime, jms,jme, kms,kme,                         &
-                           its,ite, jts,jte, kts,kte
-  real(r8)                ::  kdt
-  real(r8)                ::  g,rd,rv,fv,cp,pi,deltim,rcl
-  real(r8),dimension(:)   ::  dxmeter
-  real(r8),dimension(:)   ::  dymeter
-  real(r8)                ::  dudt(ims:ime,kms:kme),dvdt(ims:ime,kms:kme),          &
-                              dthdt(ims:ime,kms:kme),&
-                           dtaux2d_ls(ims:ime,kms:kme),dtauy2d_ls(ims:ime,kms:kme), &
-                           dtaux2d_bl(ims:ime,kms:kme),dtauy2d_bl(ims:ime,kms:kme), &
-                           dtaux2d_ss(ims:ime,kms:kme),dtauy2d_ss(ims:ime,kms:kme), &
-                           dtaux2d_fd(ims:ime,kms:kme),dtauy2d_fd(ims:ime,kms:kme), &
-                           u1(ims:ime,kms:kme),v1(ims:ime,kms:kme),           &
-                           t1(ims:ime,kms:kme),q1(ims:ime,kms:kme),           &
-                           zl(ims:ime,kms:kme),prsl(its:ite,kts:kte),         &
-                           prslk(ims:ime,kms:kme)
-  real(r8),intent(in)                ::  prsi(its:ite,kts:kte+1),del(its:ite,kts:kte)
-  real(r8),intent(in),optional    ::  oa4(its:ite,nvar_dirOA)
-  real(r8),intent(in),optional    ::  ol4(its:ite,nvar_dirOL)
-  !variables for open/close process
-  logical, intent(in) :: gsd_gwd_ls,gsd_gwd_bl,gsd_gwd_ss,gsd_gwd_fd
+  !intput parameters
+  integer,  intent(in)         ::  ids,ide, jds,jde, kds,kde
+  integer,  intent(in)         ::  ims,ime, jms,jme, kms,kme
+  integer,  intent(in)         ::  its,ite, jts,jte, kts,kte
   !tunable parameter in oro_drag_nl, ncleff_ls,ncd_bl,sncleff_ss
-  real(r8), intent(in) :: ncleff,ncd,sncleff
+  real(r8), intent(in) :: ncleff
+  real(r8), intent(in) :: ncd
+  real(r8), intent(in) :: sncleff
+  !model timestep and other parameters
+  real(r8)  intent(in) ::  g,rd,rv,fv,cp,pi,deltim,rcl
+  !input model grid length
+  real(r8), dimension(:), intent(in)   ::  dxmeter
+  real(r8), dimension(:), intent(in)   ::  dymeter
+  !input topo variables 
+  real(r8), dimension( ims:ime,nvar_dirOA ), intent(in) ::  oa4
+  real(r8), dimension( ims:ime,nvar_dirOL ), intent(in) ::  ol4
+  real(r8), dimension( ims:ime )           , intent(in) ::  var
+  real(r8), dimension( ims:ime )           , intent(in) ::  oc1
+  !input atmospheric variables
+  real(r8), dimension( ims:ime,kms:kme ),    intent(in) ::  u1
+  real(r8), dimension( ims:ime,kms:kme ),    intent(in) ::  v1
+  real(r8), dimension( ims:ime,kms:kme ),    intent(in) ::  t1
+  real(r8), dimension( ims:ime,kms:kme ),    intent(in) ::  q1
+  real(r8), dimension( ims:ime,kms:kme ),    intent(in) ::  zl
+  real(r8), dimension( ims:ime,kms:kme ),    intent(in) ::  prsl
+  real(r8), dimension( ims:ime,kms:kme ),    intent(in) ::  prslk
+  real(r8), dimension( ims:ime,kms:kme+1),   intent(in) ::  prsi
+  real(r8), dimension( ims:ime,kms:kme ),    intent(in) ::  del
+  real(r8), dimension( ims:ime,kms:kme ),    intent(in) ::  bnv_in
+  !input pbl level index
+  integer,dimension( ims:ime ),              intent(in) ::  kpbl
+  integer,                                   intent(in) ::  kpblmax
+  !input for small-scale ogwd
+  real(r8), dimension( ims:ime ),            intent(in) :: br1
+  real(r8), dimension( ims:ime ),            intent(in) :: hpbl
+  real(r8), dimension( ims:ime ),            intent(in) :: xland1
+  real(r8), dimension( ims:ime, kms:kme ),   intent(in) :: dz2
+  !variables for open/close process
+  logical,                                   intent(in) ::  gsd_gwd_ls
+  logical,                                   intent(in) ::  gsd_gwd_bl
+  logical,                                   intent(in) ::  gsd_gwd_ss
+  logical,                                   intent(in) ::  gsd_gwd_fd
+  !input/output tendencies
+  real(r8), dimension( ims:ime,kms:kme ),    intent(inout) ::  dudt
+  real(r8), dimension( ims:ime,kms:kme ),    intent(inout) ::  dvdt
+  real(r8), dimension( ims:ime,kms:kme ),    intent(inout) ::  dthdt
+  real(r8), dimension( ims:ime,kms:kme ),    intent(inout) ::  dtaux2d_ls
+  real(r8), dimension( ims:ime,kms:kme ),    intent(inout) ::  dtauy2d_ls
+  real(r8), dimension( ims:ime,kms:kme ),    intent(inout) ::  dtaux2d_bl
+  real(r8), dimension( ims:ime,kms:kme ),    intent(inout) ::  dtauy2d_bl
+  real(r8), dimension( ims:ime,kms:kme ),    intent(inout) ::  dtaux2d_ss
+  real(r8), dimension( ims:ime,kms:kme ),    intent(inout) ::  dtauy2d_ss
+  real(r8), dimension( ims:ime,kms:kme ),    intent(inout) ::  dtaux2d_fd
+  real(r8), dimension( ims:ime,kms:kme ),    intent(inout) ::  dtauy2d_fd
+  !input/output total column stress
+  real(r8), dimension( ims:ime )        ,    intent(inout) ::  dusfc_ls
+  real(r8), dimension( ims:ime )        ,    intent(inout) ::  dvsfc_ls              
+  real(r8), dimension( ims:ime )        ,    intent(inout) ::  dusfc_bl
+  real(r8), dimension( ims:ime )        ,    intent(inout) ::  dvsfc_bl              
+  real(r8), dimension( ims:ime )        ,    intent(inout) ::  dusfc_ss
+  real(r8), dimension( ims:ime )        ,    intent(inout) ::  dvsfc_ss              
+  real(r8), dimension( ims:ime )        ,    intent(inout) ::  dusfc_fd
+  real(r8), dimension( ims:ime )        ,    intent(inout) ::  dvsfc_fd
   !
   ! added for small-scale orographic wave drag
   !
+  integer                                  :: kpbl2,kvar
   real(r8), dimension(its:ite,kts:kte)     :: utendwave,vtendwave,thx,thvx,za
-  real(r8), dimension(ims:ime), intent(in) :: br1,hpbl,xland1
   real(r8), dimension(its:ite)             :: govrth
-  real(r8), dimension(ims:ime,kms:kme), intent(in) :: dz2
   real(r8), dimension(its:ite,kts:kte+1)   :: zq
-  real(r8)                 :: tauwavex0,tauwavey0,XNBV,density,tvcon,hpbl2
-  integer              :: kpbl2,kvar
-  real(r8), parameter      :: varmax = 200._r8
-
-  integer              ::  kpbl(ims:ime)
-  real(r8)                 ::  var(ims:ime),oc1(ims:ime),                     &
-                           dusfc_ls(ims:ime),dvsfc_ls(ims:ime),               &
-                           dusfc_bl(ims:ime),dvsfc_bl(ims:ime),               &
-                           dusfc_ss(ims:ime),dvsfc_ss(ims:ime),               &
-                           dusfc_fd(ims:ime),dvsfc_fd(ims:ime)
+  real(r8)                                 :: tauwavex0,tauwavey0,XNBV,density,tvcon,hpbl2
+  real(r8), parameter                      :: varmax = 200._r8
   ! Variables for scale-awareness:
   ! Small-scale GWD + turbulent form drag
   real(r8), parameter   :: dxmin_ss = 1000._r8, dxmax_ss = 12000._r8  ! min,max range of tapering (m)
@@ -1345,8 +1377,9 @@ subroutine gwdo2d(dudt,dvdt,dthdt,ncleff,ncd,sncleff,                       &
   real(r8)              :: ss_taper, ls_taper  ! small- and large-scale tapering factors (-)
   !
   ! added Beljaars orographic form drag
-  real(r8), dimension(its:ite,kts:kte)     :: utendform,vtendform
-  real(r8)                 :: a1,a2,wsp
+  real(r8), dimension( its:ite,kts:kte )   :: utendform
+  real(r8), dimension( its:ite,kts:kte )   :: vtendform
+  real(r8)                                 :: a1,a2,wsp
   ! critical richardson number for wave breaking : ! larger drag with larger value
   real(r8),parameter       ::  ric     = 1._r8!original 0.25, but 1. seems better at drag profile
   real(r8),parameter       ::  ric_rig  = 0.25_r8
@@ -1363,59 +1396,82 @@ subroutine gwdo2d(dudt,dvdt,dthdt,ncleff,ncd,sncleff,                       &
   real(r8),parameter       ::  frc     = 1.0_r8
   real(r8),parameter       ::  ce      = 0.8_r8
   real(r8),parameter       ::  cg      = 0.5_r8
-  integer,parameter    ::  kpblmin = 2
+  integer,parameter        ::  kpblmin = 2
+  !number of direction for ogwd
+  integer,parameter        ::  mdir=2*nvar_dirOL
+  !  variables for flow-blocking drag
+  real(r8),parameter       ::  frmax  = 10._r8
+  real(r8),parameter       ::  olmin  = 1.0e-5_r8
+  real(r8),parameter       ::  odmin  = 0.1_r8
+  real(r8),parameter       ::  odmax  = 10._r8
+  real(r8),parameter       ::  erad   = 6371.315e+3_r8
   !
   !  local variables
   !
-  integer              ::  j,i,k,lcap,lcapp1,nwd,idir,                          &
-                           klcap,kp1,ikount,kk,nwd1!added nwd1
-  real(r8)                 ::  rcs,rclcs,csg,fdir,cleff,cs,rcsks,                 &
-                           wdir,ti,rdz,temp,tem2,dw2,shr2,bvf2,rdelks,        &
-                           wtkbj,tem,gfobnv,hd,fro,rim,temc,tem1,efact,       &
-                           temv,dtaux,dtauy,eng0,eng1,theta,rad,wdir1
-  real(r8),dimension(its:ite,kts:kte),intent(in), optional :: bnv_in
-  logical              ::  ldrag(its:ite),icrilv(its:ite),                    &
-                           flag(its:ite),kloop1(its:ite)
-  !                                                                       
-  real(r8)                 ::  taub(its:ite),taup(its:ite,kts:kte+1),             &
-                            xn(its:ite),yn(its:ite),                           &
-                            ubar(its:ite),vbar(its:ite),                       &
-                            fr(its:ite),ulow(its:ite),                         &
-                            rulow(its:ite),bnv(its:ite),                       &
-                            oa1(its:ite),ol(its:ite),                          &
-                            roll(its:ite),dtfac(its:ite),                      &
-                            brvf(its:ite),xlinv(its:ite),                      &
-                            delks(its:ite),delks1(its:ite),                    &
-                            bnv2(its:ite,kts:kte),usqj(its:ite,kts:kte),       &
-                            taud_ls(its:ite,kts:kte),taud_bl(its:ite,kts:kte), &
-                            ro(its:ite,kts:kte),                               &
-                            vtk(its:ite,kts:kte),vtj(its:ite,kts:kte),         &
-                            zlowtop(its:ite),velco(its:ite,kts:kte-1),         &
-                            coefm(its:ite)
-
-  integer              ::  kbl(its:ite),klowtop(its:ite)
-  integer,parameter    ::  mdir=2*nvar_dirOL
-  !  variables for flow-blocking drag
-  real(r8),parameter       :: frmax  = 10._r8
-  real(r8),parameter       :: olmin  = 1.0e-5_r8
-  real(r8),parameter       :: odmin  = 0.1_r8
-  real(r8),parameter       :: odmax  = 10._r8
-  real(r8),parameter       :: erad   = 6371.315e+3_r8
-  integer                  :: komax(its:ite)
-  integer                  :: kblk
-  real(r8)                 :: cd
-  real(r8)                 :: zblk,tautem
-  real(r8)                 :: pe,ke
-  real(r8)                 :: dely(its:ite),dxy4(its:ite,nvar_dirOL),&
-                              delx(its:ite),dxy4p(its:ite,nvar_dirOL)
-  real(r8)                 :: dxy(its:ite),dxyp(its:ite)
-  real(r8)                 ::  olp(its:ite),&
-                                od(its:ite)
-  real(r8)                 :: taufb(its:ite,kts:kte+1)
+  integer              ::  i,j,k,lcap,lcapp1,nwd,idir
+  integer              ::  klcap,kp1,ikount,kk,nwd1!added nwd1
+  real(r8)             ::  rcs,rclcs,csg,fdir,cleff,cs,rcsks
+  real(r8)             ::  wdir,ti,rdz,temp,tem2,dw2,shr2,bvf2,rdelks
+  real(r8)             ::  wtkbj,tem,gfobnv,hd,fro,rim,temc,tem1,efact
+  real(r8)             ::  temv,dtaux,dtauy,eng0,eng1,theta,rad,wdir1
+  !logical variables
+  logical,dimension( its:ite ) ::  ldrag
+  logical,dimension( its:ite ) ::  icrilv
+  logical,dimension( its:ite ) ::  flag
+  logical,dimension( its:ite ) ::  kloop1
+  !parameters for taking over the input
+  real(r8),dimension( its:ite+1 )       :: taup
+  real(r8),dimension( its:ite-1 )       :: velco
+  real(r8),dimension( its:ite )         :: taub
+  real(r8),dimension( its:ite )         :: xn
+  real(r8),dimension( its:ite )         :: yn
+  real(r8),dimension( its:ite )         :: ubar
+  real(r8),dimension( its:ite )         :: vbar
+  real(r8),dimension( its:ite )         :: fr
+  real(r8),dimension( its:ite )         :: ulow
+  real(r8),dimension( its:ite )         :: rulow
+  real(r8),dimension( its:ite )         :: bnv
+  real(r8),dimension( its:ite )         :: oa1
+  real(r8),dimension( its:ite )         :: ol
+  real(r8),dimension( its:ite )         :: roll
+  real(r8),dimension( its:ite )         :: dtfac
+  real(r8),dimension( its:ite )         :: brvf
+  real(r8),dimension( its:ite )         :: xlinv
+  real(r8),dimension( its:ite )         :: delks
+  real(r8),dimension( its:ite )         :: delks1
+  real(r8),dimension( its:ite,kts:kte ) :: bnv2
+  real(r8),dimension( its:ite,kts:kte ) :: usqj
+  real(r8),dimension( its:ite,kts:kte ) :: taud_ls
+  real(r8),dimension( its:ite,kts:kte ) :: taud_bl
+  real(r8),dimension( its:ite,kts:kte ) :: ro
+  real(r8),dimension( its:ite,kts:kte ) :: vtk
+  real(r8),dimension( its:ite,kts:kte ) :: vtj
+  real(r8),dimension( its:ite )         :: zlowtop
+  real(r8),dimension( its:ite )         :: coefm
+  !pbl related variables
+  integer ,dimension( its:ite )         :: kbl
+  integer ,dimension( its:ite )         :: klowtop
+  integer ,dimension( its:ite )         :: komax
+  !flow-blocking related variables
+  integer                               :: kblk
+  real(r8)                              :: cd
+  real(r8)                              :: zblk,tautem
+  real(r8)                              :: pe,ke
+  !grid related variables
+  real(r8),dimension( its:ite )           :: delx
+  real(r8),dimension( its:ite )           :: dely
+  real(r8),dimension( its:ite )           :: dxy
+  real(r8),dimension( its:ite )           :: dxyp
+  real(r8),dimension( its:ite,nvar_dirOL ):: dxy4
+  real(r8),dimension( its:ite,nvar_dirOL ):: dxy4p
+  !topo parameters
+  real(r8),dimension( its:ite )      :: olp
+  real(r8),dimension( its:ite )      :: od
+  real(r8),( its:ite,kts:kte+1 )     :: taufb
   !readdata for low-level determination of ogwd
-  real(r8) :: l1,l2,S!,shrrok1,shrrok0,gamma1
-  real(r8) :: zl_hint(its:ite)
-  logical  :: iint
+  real(r8), dimension( its:ite )     :: zl_hint
+  real(r8)                           :: l1,l2,S!,shrrok1,shrrok0,gamma1
+  logical                            :: iint
   !open/close low-level momentum adjustment according to scorer parameter
   logical  :: scorer_on=.false.
   !
@@ -1427,333 +1483,333 @@ subroutine gwdo2d(dudt,dvdt,dthdt,ncleff,ncd,sncleff,                       &
   lcap   = kte
   lcapp1 = lcap + 1
   fdir   = mdir / (2.0_r8*pi)
-!
-!--- calculate scale-aware tapering factors, currently set as no taper
-!
-   ls_taper=1._r8
-   ss_taper=1._r8
-!
-!--- calculate length of grid for flow-blocking drag
-!
-   delx=dxmeter
-   dely=dymeter  
-!
-!
-!-----initialize arrays
-   dtaux = 0.0_r8
-   dtauy = 0.0_r8
-   do i = its,ite
-     klowtop(i)    = 0
-     kbl(i)        = 0
-   enddo
-!
-   do i = its,ite
-     xn(i)         = 0.0_r8
-     yn(i)         = 0.0_r8
-     ubar (i)      = 0.0_r8
-     vbar (i)      = 0.0_r8
-     roll (i)      = 0.0_r8
-     taub (i)      = 0.0_r8
-     oa1(i)        = 0.0_r8
-     ol(i)         = 0.0_r8
-     fr(i)         = 0.0_r8
-     ulow (i)      = 0.0_r8
-     dtfac(i)      = 1.0_r8
-     ldrag(i)      = .false.
-     icrilv(i)     = .false.
-     flag(i)       = .true.
-     zl_hint(i)    = 0.0_r8
-   enddo
-!
-   do k = kts,kte
-     do i = its,ite
-       usqj(i,k) = 0.0_r8
-       bnv2(i,k) = 0.0_r8
-       vtj(i,k)  = 0.0_r8
-       vtk(i,k)  = 0.0_r8
-       taup(i,k) = 0.0_r8
-       taud_ls(i,k) = 0.0_r8
-       taud_bl(i,k) = 0.0_r8
-       dtaux2d_ls(i,k)= 0.0_r8
-       dtauy2d_ls(i,k)= 0.0_r8
-       dtaux2d_bl(i,k)= 0.0_r8
-       dtauy2d_bl(i,k)= 0.0_r8
-       dtaux2d_ss(i,k)= 0.0_r8
-       dtauy2d_ss(i,k)= 0.0_r8
-       dtaux2d_fd(i,k)= 0.0_r8
-       dtauy2d_fd(i,k)= 0.0_r8
-     enddo
-   enddo
-!
-   do i = its,ite
-     dusfc_ls(i) = 0.0_r8
-     dvsfc_ls(i) = 0.0_r8
-     dusfc_bl(i) = 0.0_r8
-     dvsfc_bl(i) = 0.0_r8
-     dusfc_ss(i) = 0.0_r8
-     dvsfc_ss(i) = 0.0_r8
-     dusfc_fd(i) = 0.0_r8
-     dvsfc_fd(i) = 0.0_r8
-   enddo
-!
-   do i = its,ite
-     taup(i,kte+1) = 0.0_r8
-     xlinv(i)     = 1.0_r8/xl
-   enddo
-!
-!  initialize array for flow-blocking drag
-!
-   taufb(its:ite,kts:kte+1) = 0.0_r8
-   komax(its:ite) = 0
-!
-   do k = kts,kte
-     do i = its,ite
-       vtj(i,k)  = t1(i,k)  * (1._r8+fv*q1(i,k))
-       vtk(i,k)  = vtj(i,k) / prslk(i,k)
-       ro(i,k)   = 1._r8/rd * prsl(i,k) / vtj(i,k) ! density kg/m**3
-     enddo
-   enddo
-!
-!  determine reference level: maximum of 2*var and pbl heights
-!
-   do i = its,ite
-     zlowtop(i) = 2._r8 * var(i)
-   enddo
-!
-   do i = its,ite
-     kloop1(i) = .true.
-   enddo
-!
-   do k = kts+1,kte
-     do i = its,ite
-         if(kloop1(i).and.zl(i,k)-zl(i,1).ge.zlowtop(i)) then
-         klowtop(i) = k+1
-         kloop1(i)  = .false.
-         endif
-     enddo
-   enddo
-!
-   do i = its,ite
-     kbl(i)   = max(kpbl(i), klowtop(i))
-     kbl(i)   = max(min(kbl(i),kpblmax),kpblmin)
-   enddo
-!
-!  determine the level of maximum orographic height
-!
-   komax(:) = kbl(:)
-!
-   do i = its,ite
-     delks(i)  = 1.0_r8 / (prsi(i,1) - prsi(i,kbl(i)))
-     delks1(i) = 1.0_r8 / (prsl(i,1) - prsl(i,kbl(i)))
-   enddo
-!
-!  compute low level averages within pbl
-!
-   do k = kts,kpblmax
-     do i = its,ite
-       if (k.lt.kbl(i)) then
-         rcsks   = rcs     * del(i,k) * delks(i)
-         rdelks  = del(i,k)  * delks(i)
-         ubar(i) = ubar(i) + rcsks  * u1(i,k)      ! pbl u  mean
-         vbar(i) = vbar(i) + rcsks  * v1(i,k)      ! pbl v  mean
-         roll(i) = roll(i) + rdelks * ro(i,k)      ! ro mean
-       endif
-     enddo
-   enddo
-!
-! For ls and bl only
-IF  (gsd_gwd_ls.or.gsd_gwd_bl) then
-!     figure out low-level horizontal wind direction 
-!     order into a counterclockwise index instead
-!
-   do i = its,ite
-        wdir  = atan2(vbar(i),ubar(i)) + pi!changed into y/x
-        wdir1 = wdir-pi
-        if (wdir1.ge.0._r8.and.wdir1.lt.pi) then
-        nwd  = MOD(nint(fdir*wdir1),mdir) + 1
-        else!(-pi,0)
-        nwd  = MOD(nint(fdir*(wdir1+2._r8*pi)),mdir) + 1
-        endif
-        !turn backwords because start is pi
-        !need turning
-        rad=4.0_r8*atan(1.0_r8)/180.0_r8
-        theta=(real(nwd,kind=r8)-1._r8)*(360._r8/real(mdir,kind=r8))
-        !
-        oa1(i)= oa4(i,1)*cos(theta*rad)+oa4(i,2)*sin(theta*rad)
-        !select OL
-        ol(i)  = ol4(i,MOD(nwd-1,int(mdir/2))+1)
-        !calculate dxygrid, not so slow
-        call dxygrid(dxmeter(i),dymeter(i),theta,dxy(i))
-        !
-        !----- compute orographic width along (ol) and perpendicular (olp)
-	!----- the direction of wind
-        !put wdir inside the (0,2*pi) section
-        !changing pi/2 either way is perpendicular
-                !wdir1=wdir-pi
-                if (wdir1.ge.0._r8.and.wdir1.lt.pi) then
-                nwd1  = MOD(nint(fdir*(wdir1+pi/2._r8)),mdir) + 1
-                olp(i)=ol4(i,MOD(nwd1-1,int(mdir/2))+1)
-                else!(-pi,0)
-                nwd1  = MOD(nint(fdir*(wdir1-pi/2._r8+2._r8*pi)),mdir) + 1
-                olp(i)=ol4(i,MOD(nwd1-1,int(mdir/2))+1)
-                endif
-                theta=(real(nwd1,kind=r8)-1._r8)*(360._r8/real(mdir,kind=r8))
-                call dxygrid(dxmeter(i),dymeter(i),theta,dxyp(i))
-                !
-                !
-!----- compute orographic direction (horizontal orographic aspect ratio)
-!
-     od(i) = olp(i)/max(ol(i),olmin)
-     od(i) = min(od(i),odmax)
-     od(i) = max(od(i),odmin)
-!
-!----- compute length of grid in the along(dxy) and cross(dxyp) wind directions
-!
-   enddo
-ENDIF
-!============================================
-! END INITIALIZATION; BEGIN GWD CALCULATIONS:
-!============================================
-IF (gsd_gwd_ls.or.gsd_gwd_bl.and.(ls_taper .GT. 1.E-02) ) THEN 
-!                                                                       
-!---  saving richardson number in usqj for migwdi                       
-!
-   do k = kts,kte-1
-     do i = its,ite
-       ti        = 2.0_r8 / (t1(i,k)+t1(i,k+1))
-       rdz       = 1._r8/(zl(i,k+1) - zl(i,k))
-       tem1      = u1(i,k) - u1(i,k+1)
-       tem2      = v1(i,k) - v1(i,k+1)
-       dw2       = rcl*(tem1*tem1 + tem2*tem2)
-       shr2      = max(dw2,dw2min) * rdz * rdz
-       bvf2      = g*(g/cp+rdz*(vtj(i,k+1)-vtj(i,k))) * ti
-       usqj(i,k) = max(bvf2/shr2,rimin)
-       bnv2(i,k) = max(bnv_in(i,k)**2,bnv2min )
-     enddo
-   enddo
-!
-!----compute the "low level" or 1/3 wind magnitude (m/s)                
-!                                                                       
-   do i = its,ite
-     ulow(i) = max(sqrt(ubar(i)*ubar(i) + vbar(i)*vbar(i)), 1.0_r8)
-     rulow(i) = 1._r8/ulow(i)
-   enddo
-!
-   do k = kts,kte-1
-     do i = its,ite
-       velco(i,k)  = (0.5_r8*rcs) * ((u1(i,k)+u1(i,k+1)) * ubar(i)                &
-                                   + (v1(i,k)+v1(i,k+1)) * vbar(i))
-       velco(i,k)  = velco(i,k) * rulow(i)
-       if ((velco(i,k).lt.veleps) .and. (velco(i,k).gt.0._r8)) then
-         velco(i,k) = veleps
-       endif
-     enddo
-   enddo
-!                                                                       
-!  no drag when critical level in the base layer                        
-!                                                                       
-   do i = its,ite
-     ldrag(i) = velco(i,1).le.0._r8
-   enddo
-!
-!  no drag when velco.lt.0                                               
-! 
-   do k = kpblmin,kpblmax
-     do i = its,ite
-       if (k .lt. kbl(i)) ldrag(i) = ldrag(i).or. velco(i,k).le.0._r8
-     enddo
-   enddo
-!                                                                       
-!  no drag when bnv2.lt.0                                               
-!                                                                       
-   do k = kts,kpblmax
-     do i = its,ite
-       if (k .lt. kbl(i)) ldrag(i) = ldrag(i).or. bnv2(i,k).lt.0._r8
-     enddo
-   enddo
-!                                                                       
-!-----the low level weighted average ri is stored in usqj(1,1; im)      
-!-----the low level weighted average n**2 is stored in bnv2(1,1; im)    
-!---- this is called bnvl2 in phys_gwd_alpert_sub not bnv2                      
-!---- rdelks (del(k)/delks) vert ave factor so we can * instead of /    
-!                                                                       
-   do i = its,ite
-     wtkbj     = (prsl(i,1)-prsl(i,2)) * delks1(i)
-     bnv2(i,1) = wtkbj * bnv2(i,1)
-     usqj(i,1) = wtkbj * usqj(i,1)
-   enddo
-!
-   do k = kpblmin,kpblmax
-     do i = its,ite
-       if (k .lt. kbl(i)) then
-         rdelks    = (prsl(i,k)-prsl(i,k+1)) * delks1(i)
-         bnv2(i,1) = bnv2(i,1) + bnv2(i,k) * rdelks
-         usqj(i,1) = usqj(i,1) + usqj(i,k) * rdelks
-       endif
-     enddo
-   enddo
-!                                                                       
-   do i = its,ite
-     ldrag(i) = ldrag(i) .or. bnv2(i,1).le.0.0_r8
-     ldrag(i) = ldrag(i) .or. ulow(i).eq.1.0_r8
-     ldrag(i) = ldrag(i) .or. var(i) .le. 0.0_r8
-   enddo
-!                                                                       
-!  set all ri low level values to the low level value          
-!                                                                       
-   do k = kpblmin,kpblmax
-     do i = its,ite
-       if (k .lt. kbl(i)) usqj(i,k) = usqj(i,1)
-     enddo
-   enddo
-!
-   do i = its,ite
-     if (.not.ldrag(i))   then
-       bnv(i) = sqrt( bnv2(i,1) )
-       fr(i) = bnv(i)  * rulow(i) * 2._r8 * var(i) * od(i)
-       fr(i) = min(fr(i),frmax)
-       xn(i)  = ubar(i) * rulow(i)
-       yn(i)  = vbar(i) * rulow(i)
-     endif
-   enddo
-!
-!  compute the base level stress and store it in taub
-!  calculate enhancement factor, number of mountains & aspect        
-!  ratio const. use simplified relationship between standard            
-!  deviation & critical hgt                                          
-!
-   do i = its,ite
-     if (.not. ldrag(i))   then
-       !maintain (oa+2) greater than or equal to 0
-       efact    = max(oa1(i)+2._r8,0._r8) ** (ce*fr(i)/frc)
-       efact    = min(max(efact,efmin),efmax)
-!!!!!!! cleff (effective grid length) is highly tunable parameter
-!!!!!!! the bigger (smaller) value produce weaker (stronger) wave drag
-       cleff    = sqrt(dxy(i)**2._r8 + dxyp(i)**2._r8)
-       !tune the times of drag
-       cleff    = (3._r8/ncleff) * max(dxmax_ls,cleff)
-       coefm(i) = (1._r8 + ol(i)) ** (oa1(i)+1._r8)
-       xlinv(i) = coefm(i) / cleff
-       tem      = fr(i) * fr(i) * 1.!oc1(i)
-       gfobnv   = gmax * tem / ((tem + cg)*bnv(i))
-       !
-       if (gsd_gwd_ls) then
-          taub(i)  = xlinv(i) * roll(i) * ulow(i) * ulow(i)                       &
-                   * ulow(i) * gfobnv * efact
-       else     ! We've gotten what we need for the blocking scheme
-          taub(i) = 0.0_r8
-       end if
-     else
-       taub(i) = 0.0_r8
-       xn(i)   = 0.0_r8
-       yn(i)   = 0.0_r8
-     endif
-   enddo
+  !
+  !--- calculate scale-aware tapering factors, currently set as no taper
+  !
+  ls_taper=1._r8
+  ss_taper=1._r8
+  !
+  !--- calculate length of grid for flow-blocking drag
+  !
+  delx=dxmeter
+  dely=dymeter  
+  !
+  !
+  !-----initialize arrays
+  dtaux = 0.0_r8
+  dtauy = 0.0_r8
+  do i = its,ite
+    klowtop(i)    = 0
+    kbl(i)        = 0
+  enddo
 
-ENDIF   ! (gsd_gwd_ls .eq. .true.).or.(gsd_gwd_bl .eq..true.)
-!=========================================================
-! add small-scale wavedrag for stable boundary layer
-!=========================================================
+  do i = its,ite
+    xn(i)         = 0.0_r8
+    yn(i)         = 0.0_r8
+    ubar (i)      = 0.0_r8
+    vbar (i)      = 0.0_r8
+    roll (i)      = 0.0_r8
+    taub (i)      = 0.0_r8
+    oa1(i)        = 0.0_r8
+    ol(i)         = 0.0_r8
+    fr(i)         = 0.0_r8
+    ulow (i)      = 0.0_r8
+    dtfac(i)      = 1.0_r8
+    ldrag(i)      = .false.
+    icrilv(i)     = .false.
+    flag(i)       = .true.
+    zl_hint(i)    = 0.0_r8
+  enddo
+   
+  do k = kts,kte
+    do i = its,ite
+      usqj(i,k) = 0.0_r8
+      bnv2(i,k) = 0.0_r8
+      vtj(i,k)  = 0.0_r8
+      vtk(i,k)  = 0.0_r8
+      taup(i,k) = 0.0_r8
+      taud_ls(i,k) = 0.0_r8
+      taud_bl(i,k) = 0.0_r8
+      dtaux2d_ls(i,k)= 0.0_r8
+      dtauy2d_ls(i,k)= 0.0_r8
+      dtaux2d_bl(i,k)= 0.0_r8
+      dtauy2d_bl(i,k)= 0.0_r8
+      dtaux2d_ss(i,k)= 0.0_r8
+      dtauy2d_ss(i,k)= 0.0_r8
+      dtaux2d_fd(i,k)= 0.0_r8
+      dtauy2d_fd(i,k)= 0.0_r8
+    enddo
+  enddo
+
+  do i = its,ite
+    dusfc_ls(i) = 0.0_r8
+    dvsfc_ls(i) = 0.0_r8
+    dusfc_bl(i) = 0.0_r8
+    dvsfc_bl(i) = 0.0_r8
+    dusfc_ss(i) = 0.0_r8
+    dvsfc_ss(i) = 0.0_r8
+    dusfc_fd(i) = 0.0_r8
+    dvsfc_fd(i) = 0.0_r8
+  enddo
+
+  do i = its,ite
+    taup(i,kte+1) = 0.0_r8
+    xlinv(i)     = 1.0_r8/xl
+  enddo
+  !
+  !  initialize array for flow-blocking drag
+  !
+  taufb(its:ite,kts:kte+1) = 0.0_r8
+  komax(its:ite) = 0
+
+  do k = kts,kte
+    do i = its,ite
+      vtj(i,k)  = t1(i,k)  * (1._r8+fv*q1(i,k))
+      vtk(i,k)  = vtj(i,k) / prslk(i,k)
+      ro(i,k)   = 1._r8/rd * prsl(i,k) / vtj(i,k) ! density kg/m**3
+    enddo
+  enddo
+  !
+  !  determine reference level: maximum of 2*var and pbl heights
+  !
+  do i = its,ite
+    zlowtop(i) = 2._r8 * var(i)
+  enddo
+
+  do i = its,ite
+    kloop1(i) = .true.
+  enddo
+
+  do k = kts+1,kte
+    do i = its,ite
+      if(kloop1(i).and.zl(i,k)-zl(i,1).ge.zlowtop(i)) then
+        klowtop(i) = k+1
+        kloop1(i)  = .false.
+      endif
+    enddo
+  enddo
+
+  do i = its,ite
+    kbl(i)   = max(kpbl(i), klowtop(i))
+    kbl(i)   = max(min(kbl(i),kpblmax),kpblmin)
+  enddo
+  !
+  !  determine the level of maximum orographic height
+  !
+  komax(:) = kbl(:)
+  ! 
+  do i = its,ite
+    delks(i)  = 1.0_r8 / (prsi(i,1) - prsi(i,kbl(i)))
+    delks1(i) = 1.0_r8 / (prsl(i,1) - prsl(i,kbl(i)))
+  enddo
+  !
+  !  compute low level averages within pbl
+  !
+  do k = kts,kpblmax
+    do i = its,ite
+      if (k.lt.kbl(i)) then
+        rcsks   = rcs     * del(i,k) * delks(i)
+        rdelks  = del(i,k)  * delks(i)
+        ubar(i) = ubar(i) + rcsks  * u1(i,k)      ! pbl u  mean
+        vbar(i) = vbar(i) + rcsks  * v1(i,k)      ! pbl v  mean
+        roll(i) = roll(i) + rdelks * ro(i,k)      ! ro mean
+      endif
+    enddo
+  enddo
+  !
+  ! For ls and bl only
+  IF (gsd_gwd_ls.or.gsd_gwd_bl) then
+  !     figure out low-level horizontal wind direction 
+  !     order into a counterclockwise index instead
+  !
+  do i = its,ite
+    wdir  = atan2(vbar(i),ubar(i)) + pi!changed into y/x
+    wdir1 = wdir-pi
+    if (wdir1.ge.0._r8.and.wdir1.lt.pi) then
+    nwd  = MOD(nint(fdir*wdir1),mdir) + 1
+    else!(-pi,0)
+    nwd  = MOD(nint(fdir*(wdir1+2._r8*pi)),mdir) + 1
+    endif
+    !turn backwords because start is pi
+    !need turning
+    rad    = 4.0_r8*atan(1.0_r8)/180.0_r8
+    theta  = (real(nwd,kind=r8)-1._r8)*(360._r8/real(mdir,kind=r8))
+    !select OA
+    oa1(i) = oa4(i,1)*cos(theta*rad)+oa4(i,2)*sin(theta*rad)
+    !select OL
+    ol(i)  = ol4(i,MOD(nwd-1,int(mdir/2))+1)
+    !calculate dxygrid, not so slow
+    call dxygrid(dxmeter(i),dymeter(i),theta,dxy(i))
+    !
+    !----- compute orographic width along (ol) and perpendicular (olp)
+    !----- the direction of wind
+    !put wdir inside the (0,2*pi) section
+    !changing pi/2 either way is perpendicular
+    !wdir1=wdir-pi
+      if (wdir1.ge.0._r8.and.wdir1.lt.pi) then
+      nwd1  = MOD(nint(fdir*(wdir1+pi/2._r8)),mdir) + 1
+      olp(i)=ol4(i,MOD(nwd1-1,int(mdir/2))+1)
+      else!(-pi,0)
+      nwd1  = MOD(nint(fdir*(wdir1-pi/2._r8+2._r8*pi)),mdir) + 1
+      olp(i)=ol4(i,MOD(nwd1-1,int(mdir/2))+1)
+      endif
+      theta=(real(nwd1,kind=r8)-1._r8)*(360._r8/real(mdir,kind=r8))
+      call dxygrid(dxmeter(i),dymeter(i),theta,dxyp(i))
+    !
+    !
+    !----- compute orographic direction (horizontal orographic aspect ratio)
+    !
+    od(i) = olp(i)/max(ol(i),olmin)
+    od(i) = min(od(i),odmax)
+    od(i) = max(od(i),odmin)
+    !
+    !----- compute length of grid in the along(dxy) and cross(dxyp) wind directions
+    !
+  enddo
+  ENDIF
+  !============================================
+  ! END INITIALIZATION; BEGIN GWD CALCULATIONS:
+  !============================================
+  IF (gsd_gwd_ls.or.gsd_gwd_bl.and.(ls_taper .GT. 1.E-02) ) THEN 
+  !                                                                       
+  !---  saving richardson number in usqj for migwdi                       
+  !
+  do k = kts,kte-1
+    do i = its,ite
+      ti        = 2.0_r8 / (t1(i,k)+t1(i,k+1))
+      rdz       = 1._r8/(zl(i,k+1) - zl(i,k))
+      tem1      = u1(i,k) - u1(i,k+1)
+      tem2      = v1(i,k) - v1(i,k+1)
+      dw2       = rcl*(tem1*tem1 + tem2*tem2)
+      shr2      = max(dw2,dw2min) * rdz * rdz
+      bvf2      = g*(g/cp+rdz*(vtj(i,k+1)-vtj(i,k))) * ti
+      usqj(i,k) = max(bvf2/shr2,rimin)
+      bnv2(i,k) = max(bnv_in(i,k)**2,bnv2min )
+    enddo
+  enddo
+  !
+  !----compute the "low level" or 1/3 wind magnitude (m/s)                
+  !                                                                       
+  do i = its,ite
+    ulow(i) = max(sqrt(ubar(i)*ubar(i) + vbar(i)*vbar(i)), 1.0_r8)
+    rulow(i) = 1._r8/ulow(i)
+  enddo
+
+  do k = kts,kte-1
+    do i = its,ite
+      velco(i,k)  = (0.5_r8*rcs) * ((u1(i,k)+u1(i,k+1)) * ubar(i)                &
+                                  + (v1(i,k)+v1(i,k+1)) * vbar(i))
+      velco(i,k)  = velco(i,k) * rulow(i)
+      if ((velco(i,k).lt.veleps) .and. (velco(i,k).gt.0._r8)) then
+        velco(i,k) = veleps
+      endif
+    enddo
+  enddo
+  !                                                                       
+  !  no drag when critical level in the base layer                        
+  !                                                                       
+  do i = its,ite
+    ldrag(i) = velco(i,1).le.0._r8
+  enddo
+  !
+  !  no drag when velco.lt.0                                               
+  ! 
+  do k = kpblmin,kpblmax
+    do i = its,ite
+      if (k .lt. kbl(i)) ldrag(i) = ldrag(i).or. velco(i,k).le.0._r8
+    enddo
+  enddo
+  !                                                                       
+  !  no drag when bnv2.lt.0                                               
+  !                                                                       
+  do k = kts,kpblmax
+    do i = its,ite
+      if (k .lt. kbl(i)) ldrag(i) = ldrag(i).or. bnv2(i,k).lt.0._r8
+    enddo
+  enddo
+  !                                                                       
+  !-----the low level weighted average ri is stored in usqj(1,1; im)      
+  !-----the low level weighted average n**2 is stored in bnv2(1,1; im)    
+  !---- this is called bnvl2 in phys_gwd_alpert_sub not bnv2                      
+  !---- rdelks (del(k)/delks) vert ave factor so we can * instead of /    
+  !                                                                       
+  do i = its,ite
+    wtkbj     = (prsl(i,1)-prsl(i,2)) * delks1(i)
+    bnv2(i,1) = wtkbj * bnv2(i,1)
+    usqj(i,1) = wtkbj * usqj(i,1)
+  enddo
+  
+  do k = kpblmin,kpblmax
+    do i = its,ite
+      if (k .lt. kbl(i)) then
+        rdelks    = (prsl(i,k)-prsl(i,k+1)) * delks1(i)
+        bnv2(i,1) = bnv2(i,1) + bnv2(i,k) * rdelks
+        usqj(i,1) = usqj(i,1) + usqj(i,k) * rdelks
+      endif
+    enddo
+  enddo
+                                                                       
+  do i = its,ite
+    ldrag(i) = ldrag(i) .or. bnv2(i,1).le.0.0_r8
+    ldrag(i) = ldrag(i) .or. ulow(i).eq.1.0_r8
+    ldrag(i) = ldrag(i) .or. var(i) .le. 0.0_r8
+  enddo
+  !                                                                       
+  !  set all ri low level values to the low level value          
+  !                                                                       
+  do k = kpblmin,kpblmax
+    do i = its,ite
+      if (k .lt. kbl(i)) usqj(i,k) = usqj(i,1)
+    enddo
+  enddo
+
+  do i = its,ite
+    if (.not.ldrag(i))   then
+      bnv(i) = sqrt( bnv2(i,1) )
+      fr(i) = bnv(i)  * rulow(i) * 2._r8 * var(i) * od(i)
+      fr(i) = min(fr(i),frmax)
+      xn(i)  = ubar(i) * rulow(i)
+      yn(i)  = vbar(i) * rulow(i)
+    endif
+  enddo
+  !
+  !  compute the base level stress and store it in taub
+  !  calculate enhancement factor, number of mountains & aspect        
+  !  ratio const. use simplified relationship between standard            
+  !  deviation & critical hgt                                          
+  !
+  do i = its,ite
+    if (.not. ldrag(i))   then
+      !maintain (oa+2) greater than or equal to 0
+      efact    = max(oa1(i)+2._r8,0._r8) ** (ce*fr(i)/frc)
+      efact    = min(max(efact,efmin),efmax)
+!!!!!! cleff (effective grid length) is highly tunable parameter
+!!!!!! the bigger (smaller) value produce weaker (stronger) wave drag
+      cleff    = sqrt(dxy(i)**2._r8 + dxyp(i)**2._r8)
+      !tune the times of drag
+      cleff    = (3._r8/ncleff) * max(dxmax_ls,cleff)
+      coefm(i) = (1._r8 + ol(i)) ** (oa1(i)+1._r8)
+      xlinv(i) = coefm(i) / cleff
+      tem      = fr(i) * fr(i) * 1.!oc1(i)
+      gfobnv   = gmax * tem / ((tem + cg)*bnv(i))
+      !
+      if (gsd_gwd_ls) then
+         taub(i)  = xlinv(i) * roll(i) * ulow(i) * ulow(i)                       &
+                  * ulow(i) * gfobnv * efact
+      else     ! We've gotten what we need for the blocking scheme
+         taub(i) = 0.0_r8
+      end if
+    else
+      taub(i) = 0.0_r8
+      xn(i)   = 0.0_r8
+      yn(i)   = 0.0_r8
+    endif
+  enddo
+
+  ENDIF   ! (gsd_gwd_ls .eq. .true.).or.(gsd_gwd_bl .eq..true.)
+  !=========================================================
+  ! add small-scale wavedrag for stable boundary layer
+  !=========================================================
   XNBV=0._r8
   tauwavex0=0._r8
   tauwavey0=0._r8
@@ -1761,108 +1817,107 @@ ENDIF   ! (gsd_gwd_ls .eq. .true.).or.(gsd_gwd_bl .eq..true.)
   utendwave=0._r8
   vtendwave=0._r8
   zq=0._r8
-!
+
   IF (gsd_gwd_ss.and.(ss_taper.GT.1.E-02)) THEN
-!
-! declaring potential temperature
-!
-    do k = kts,kte
-      do i = its,ite
-        thx(i,k) = t1(i,k)/prslk(i,k)
-      enddo
+  !
+  ! declaring potential temperature
+  !
+  do k = kts,kte
+    do i = its,ite
+      thx(i,k) = t1(i,k)/prslk(i,k)
     enddo
-!
-    do k = kts,kte
-      do i = its,ite
-        tvcon = (1._r8+fv*q1(i,k))
-        thvx(i,k) = thx(i,k)*tvcon
-      enddo
-    enddo
-!
-! Defining layer height
-!
-    do k = kts,kte
-      do i = its,ite
-        zq(i,k+1) = dz2(i,k)+zq(i,k)
-      enddo
-    enddo
-!
-    do k = kts,kte
-      do i = its,ite
-        za(i,k) = 0.5_r8*(zq(i,k)+zq(i,k+1))
-      enddo
-    enddo
+  enddo
 
-    do i=its,ite
-       hpbl2 = hpbl(i)+10._r8
-       kpbl2 = kpbl(i)
-       kvar = 1
-       do k=kts+1,MAX(kpbl(i),kts+1)
-          IF (za(i,k)>300._r8) then
-             kpbl2 = k
-             IF (k == kpbl(i)) then
-                 hpbl2 = hpbl(i)+10._r8
-             ELSE
-                hpbl2 = za(i,k)+10._r8
-             ENDIF
-             exit
-          ENDIF
-       enddo
+  do k = kts,kte
+    do i = its,ite
+      tvcon = (1._r8+fv*q1(i,k))
+      thvx(i,k) = thx(i,k)*tvcon
+    enddo
+  enddo
+  !
+  ! Defining layer height
+  !
+  do k = kts,kte
+    do i = its,ite
+      zq(i,k+1) = dz2(i,k)+zq(i,k)
+    enddo
+  enddo
 
-        
-        if(xland1(i).gt.0._r8 .and. 2._r8*var(i).le.hpbl(i))then
-          if(br1(i).gt.0._r8 .and. thvx(i,kpbl2)-thvx(i,kts) > 0._r8)then
-            cleff    = sqrt(dxy(i)**2_r8 + dxyp(i)**2_r8)
-            cleff    = (2.0_r8/sncleff) * max(dxmax_ss,cleff)
-            coefm(i) = (1._r8 + ol(i)) ** (oa1(i)+1._r8)
-            xlinv(i) = coefm(i) / cleff
-            govrth(i)=g/(0.5_r8*(thvx(i,kpbl2)+thvx(i,kts)))
-            XNBV=sqrt(govrth(i)*(thvx(i,kpbl2)-thvx(i,kts))/hpbl2)
-!
-            if(abs(XNBV/u1(i,kpbl2)).gt.xlinv(i))then
-              tauwavex0=0.5_r8*XNBV*xlinv(i)*(2._r8*MIN(var(i),varmax))**2_r8*ro(i,kvar)*u1(i,kvar)
-              tauwavex0=tauwavex0*ss_taper   ! "Scale-awareness"
-            else
-              tauwavex0=0._r8
-            endif
-!
-            if(abs(XNBV/v1(i,kpbl2)).gt.xlinv(i))then
-              tauwavey0=0.5_r8*XNBV*xlinv(i)*(2._r8*MIN(var(i),varmax))**2._r8*ro(i,kvar)*v1(i,kvar)
-              tauwavey0=tauwavey0*ss_taper   ! "Scale-awareness"
-            else
-              tauwavey0=0._r8
-            endif
-!
-            do k=kts,kpbl(i) !MIN(kpbl2+1,kte-1)
-              utendwave(i,k)=-1._r8*tauwavex0*2._r8*max((1._r8-za(i,k)/hpbl2),0._r8)/hpbl2
-              vtendwave(i,k)=-1._r8*tauwavey0*2._r8*max((1._r8-za(i,k)/hpbl2),0._r8)/hpbl2
-            enddo
-          endif
-       endif
-    enddo ! end i loop
+  do k = kts,kte
+    do i = its,ite
+      za(i,k) = 0.5_r8*(zq(i,k)+zq(i,k+1))
+    enddo
+  enddo
 
-    do k = kts,kte
-       do i = its,ite
-         dudt(i,k)  = dudt(i,k) + utendwave(i,k)
-         dvdt(i,k)  = dvdt(i,k) + vtendwave(i,k)
-         dtaux2d_ss(i,k) = utendwave(i,k)
-         dtauy2d_ss(i,k) = vtendwave(i,k)
-         dusfc_ss(i) = dusfc_ss(i) + utendwave(i,k) * del(i,k)
-         dvsfc_ss(i) = dvsfc_ss(i) + vtendwave(i,k) * del(i,k)
-       enddo
+  do i=its,ite
+    hpbl2 = hpbl(i)+10._r8
+    kpbl2 = kpbl(i)
+    kvar = 1
+    do k=kts+1,MAX(kpbl(i),kts+1)
+      IF (za(i,k)>300._r8) then
+        kpbl2 = k
+        IF (k == kpbl(i)) then
+          hpbl2 = hpbl(i)+10._r8
+        ELSE
+          hpbl2 = za(i,k)+10._r8
+        ENDIF
+        exit
+      ENDIF
     enddo
 
-ENDIF  ! end if gsd_gwd_ss == .true.
-!================================================================
-!add Beljaars et al. (2004, QJRMS, equ. 16) form drag:
-!================================================================
-IF (gsd_gwd_fd.and.(ss_taper.GT.1.E-02) ) THEN
+    if(xland1(i).gt.0._r8 .and. 2._r8*var(i).le.hpbl(i))then
+      if(br1(i).gt.0._r8 .and. thvx(i,kpbl2)-thvx(i,kts) > 0._r8)then
+        cleff    = sqrt(dxy(i)**2_r8 + dxyp(i)**2_r8)
+        cleff    = (2.0_r8/sncleff) * max(dxmax_ss,cleff)
+        coefm(i) = (1._r8 + ol(i)) ** (oa1(i)+1._r8)
+        xlinv(i) = coefm(i) / cleff
+        govrth(i)=g/(0.5_r8*(thvx(i,kpbl2)+thvx(i,kts)))
+        XNBV=sqrt(govrth(i)*(thvx(i,kpbl2)-thvx(i,kts))/hpbl2)
 
-   utendform=0._r8
-   vtendform=0._r8
-   zq=0._r8
+        if(abs(XNBV/u1(i,kpbl2)).gt.xlinv(i))then
+          tauwavex0=0.5_r8*XNBV*xlinv(i)*(2._r8*MIN(var(i),varmax))**2_r8*ro(i,kvar)*u1(i,kvar)
+          tauwavex0=tauwavex0*ss_taper   ! "Scale-awareness"
+        else
+          tauwavex0=0._r8
+        endif
 
-   IF (.not.gsd_gwd_ss.and.(ss_taper.GT.1.E-02) ) THEN
+        if(abs(XNBV/v1(i,kpbl2)).gt.xlinv(i))then
+          tauwavey0=0.5_r8*XNBV*xlinv(i)*(2._r8*MIN(var(i),varmax))**2._r8*ro(i,kvar)*v1(i,kvar)
+          tauwavey0=tauwavey0*ss_taper   ! "Scale-awareness"
+        else
+          tauwavey0=0._r8
+        endif
+
+        do k=kts,kpbl(i) !MIN(kpbl2+1,kte-1)
+          utendwave(i,k)=-1._r8*tauwavex0*2._r8*max((1._r8-za(i,k)/hpbl2),0._r8)/hpbl2
+          vtendwave(i,k)=-1._r8*tauwavey0*2._r8*max((1._r8-za(i,k)/hpbl2),0._r8)/hpbl2
+        enddo
+      endif
+    endif
+  enddo ! end i loop
+
+  do k = kts,kte
+    do i = its,ite
+      dudt(i,k)  = dudt(i,k) + utendwave(i,k)
+      dvdt(i,k)  = dvdt(i,k) + vtendwave(i,k)
+      dtaux2d_ss(i,k) = utendwave(i,k)
+      dtauy2d_ss(i,k) = vtendwave(i,k)
+      dusfc_ss(i) = dusfc_ss(i) + utendwave(i,k) * del(i,k)
+      dvsfc_ss(i) = dvsfc_ss(i) + vtendwave(i,k) * del(i,k)
+    enddo
+  enddo
+
+  ENDIF  ! end if gsd_gwd_ss == .true.
+  !================================================================
+  !add Beljaars et al. (2004, QJRMS, equ. 16) form drag:
+  !================================================================
+  IF (gsd_gwd_fd.and.(ss_taper.GT.1.E-02) ) THEN
+
+    utendform=0._r8
+    vtendform=0._r8
+    zq=0._r8
+
+    IF (.not.gsd_gwd_ss.and.(ss_taper.GT.1.E-02) ) THEN
       ! Defining layer height. This is already done above is small-scale GWD is used
       do k = kts,kte
         do i = its,ite
@@ -1875,158 +1930,156 @@ IF (gsd_gwd_fd.and.(ss_taper.GT.1.E-02) ) THEN
           za(i,k) = 0.5_r8*(zq(i,k)+zq(i,k+1))
         enddo
       enddo
-   ENDIF
+    ENDIF
 
-   DO i=its,ite
+    DO i=its,ite
       IF (xland1(i) .gt. 0..and.2._r8*var(i).gt.0) then
-          a1=0.00026615161_r8*var(i)**2_r8
-          a2=a1*0.005363_r8
-         DO k=kts,kte
-            wsp=SQRT(u1(i,k)**2_r8 + v1(i,k)**2_r8)
-            ! alpha*beta*Cmd*Ccorr*2.109 = 12.*1.*0.005*0.6*2.109 = 0.0759 
-            utendform(i,k)=-0.0759_r8*wsp*u1(i,k)* &
-                           EXP(-(za(i,k)/1500._r8)**1.5_r8)*a2*za(i,k)**(-1.2_r8)*ss_taper
-            vtendform(i,k)=-0.0759_r8*wsp*v1(i,k)* &
-                           EXP(-(za(i,k)/1500._r8)**1.5_r8)*a2*za(i,k)**(-1.2_r8)*ss_taper
-            !
+        a1=0.00026615161_r8*var(i)**2_r8
+        a2=a1*0.005363_r8
+        DO k=kts,kte
+          wsp=SQRT(u1(i,k)**2_r8 + v1(i,k)**2_r8)
+          ! alpha*beta*Cmd*Ccorr*2.109 = 12.*1.*0.005*0.6*2.109 = 0.0759 
+          utendform(i,k)=-0.0759_r8*wsp*u1(i,k)* &
+                         EXP(-(za(i,k)/1500._r8)**1.5_r8)*a2*za(i,k)**(-1.2_r8)*ss_taper
+          vtendform(i,k)=-0.0759_r8*wsp*v1(i,k)* &
+                         EXP(-(za(i,k)/1500._r8)**1.5_r8)*a2*za(i,k)**(-1.2_r8)*ss_taper
+          !
          ENDDO
       ENDIF
-   ENDDO
-   !
-   do k = kts,kte
+    ENDDO
+
+    do k = kts,kte
       do i = its,ite
-         dudt(i,k)  = dudt(i,k) + utendform(i,k)
-         dvdt(i,k)  = dvdt(i,k) + vtendform(i,k)
-	 !limit drag tendency 
-         !some tendency is likely to even overturn the wind,
-         !making wind reverse in 1 timestep and reverse again in next,
-         !this limitation may help to make model stable,
-         !and no more wind reversal due to drag,
-         !which is suppose to decelerate, not accelerate
-         utendform(i,k)  = sign(min(abs(utendform(i,k)),abs(u1(i,k))/kdt),utendform(i,k))
-         vtendform(i,k)  = sign(min(abs(vtendform(i,k)),abs(v1(i,k))/kdt),vtendform(i,k))
-         dtaux2d_fd(i,k) = utendform(i,k)
-         dtauy2d_fd(i,k) = vtendform(i,k)
-         dusfc_fd(i) = dusfc_fd(i) + utendform(i,k) * del(i,k)
-         dvsfc_fd(i) = dvsfc_fd(i) + vtendform(i,k) * del(i,k)
+        dudt(i,k)  = dudt(i,k) + utendform(i,k)
+        dvdt(i,k)  = dvdt(i,k) + vtendform(i,k)
+        !limit drag tendency 
+        !some tendency is likely to even overturn the wind,
+        !making wind reverse in 1 timestep and reverse again in next,
+        !this limitation may help to make model stable,
+        !and no more wind reversal due to drag,
+        !which is suppose to decelerate, not accelerate
+        utendform(i,k)  = sign(min(abs(utendform(i,k)),abs(u1(i,k))/deltim),utendform(i,k))
+        vtendform(i,k)  = sign(min(abs(vtendform(i,k)),abs(v1(i,k))/deltim),vtendform(i,k))
+        dtaux2d_fd(i,k) = utendform(i,k)
+        dtauy2d_fd(i,k) = vtendform(i,k)
+        dusfc_fd(i) = dusfc_fd(i) + utendform(i,k) * del(i,k)
+        dvsfc_fd(i) = dvsfc_fd(i) + vtendform(i,k) * del(i,k)
       enddo
    enddo
    ENDIF  ! end if gsd_gwd_fd == .true.
-!=======================================================
-! More for the large-scale gwd component
-!=======================================================
-IF (gsd_gwd_ls.and.(ls_taper.GT.1.E-02) ) THEN
-!                                                                       
-!   now compute vertical structure of the stress.
-!
-   do k = kts,kpblmax
-      do i = its,ite
-         if (k .le. kbl(i)) taup(i,k) = taub(i)
-      enddo
-   enddo
+  !=======================================================
+  ! More for the large-scale gwd component
+  !=======================================================
+  IF (gsd_gwd_ls.and.(ls_taper.GT.1.E-02) ) THEN
+  !                                                                       
+  !   now compute vertical structure of the stress.
+  !
+  do k = kts,kpblmax
+    do i = its,ite
+      if (k .le. kbl(i)) taup(i,k) = taub(i)
+    enddo
+  enddo
 
-   if (scorer_on) then
-   !
-   !determination of the interface height for scorer adjustment
-   !
-       do i=its,ite
-           iint=.false.
-           do k=kpblmin,kte-1
-               if (k.gt.kbl(i).and.usqj(i,k)-usqj(i,k-1).lt.0.and.(.not.iint)) then
-                   iint=.true.
-                   zl_hint(i)=zl(i,k+1)
-               endif
-           enddo
-       enddo
-   endif
-   !
-   do k = kpblmin, kte-1                   ! vertical level k loop!
-      kp1 = k + 1
-      do i = its,ite
-!
-!   unstablelayer if ri < ric
-!   unstable layer if upper air vel comp along surf vel <=0 (crit lay)
-!   at (u-c)=0. crit layer exists and bit vector should be set (.le.)
-!
-         if (k .ge. kbl(i)) then
-           !we modify the criteria for unstable layer
-           !that the lv is critical under 0.25
-           !while we keep wave breaking ric for
-           !other larger lv
-           icrilv(i) = icrilv(i) .or. ( usqj(i,k) .lt. ric_rig)&
-                                 .or. (velco(i,k) .le. 0.0_r8)
-           brvf(i)  = max(bnv2(i,k),bnv2min) ! brunt-vaisala frequency squared
-           brvf(i)  = sqrt(brvf(i))          ! brunt-vaisala frequency
-         endif
-      enddo
-!
-      do i = its,ite
-        if (k .ge. kbl(i) .and. (.not. ldrag(i)))   then
-          if (.not.icrilv(i) .and. taup(i,k) .gt. 0.0_r8 ) then
-            temv = 1.0_r8 / velco(i,k)
-            tem1 = coefm(i)/(dxy(i)/ncleff)*(ro(i,kp1)+ro(i,k))*brvf(i)*velco(i,k)*0.5_r8
-            hd   = sqrt(taup(i,k) / tem1)
-            fro  = brvf(i) * hd * temv
-
-            !
-            !  rim is the minimum-richardson number by shutts (1985)
-            !
-            tem2   = sqrt(usqj(i,k))
-            tem    = 1._r8 + tem2 * fro
-            rim    = usqj(i,k) * (1._r8-fro) / (tem * tem)
-
-            !
-            !  check stability to employ the 'saturation hypothesis'
-            !  of lindzen (1981) except at tropospheric downstream regions
-            !
-            if (rim .le. ric) then  ! saturation hypothesis!
-              if ((oa1(i) .le. 0._r8).or.(kp1 .ge. kpblmin )) then
-                temc = 2.0_r8 + 1.0_r8 / tem2
-                hd   = velco(i,k) * (2.0_r8*sqrt(temc)-temc) / brvf(i)
-                taup(i,kp1) = tem1 * hd * hd
-                !
-                !  taup is restricted to monotoncally decrease
-                !  to avoid unexpected high taup in calculation
-                !
-                taup(i,kp1)=min(tem1*hd*hd,taup(i,k))
-                !
-                !  add vertical decrease at low level below hint (Kim and Doyle 2005)
-                !  where Ri first decreases
-                !
-                if (scorer_on.and.k.gt.klowtop(i).and.zl(i,k).le.zl_hint(i).and.k.lt.kte-1) then
-                        l1=(9.81_r8*bnv2(i,kp1)/velco(i,kp1)**2)
-                        l2=(9.81_r8*bnv2(i,k)/velco(i,k)**2)
-                        taup(i,kp1)=min(taup(i,k),taup(i,k)*(l1/l2),tem1*hd*hd)
-                endif
-              endif
-            else                    ! no wavebreaking!
-              taup(i,kp1) = taup(i,k)
-            endif
-          endif
+  if (scorer_on) then
+  !
+  !determination of the interface height for scorer adjustment
+  !
+    do i=its,ite
+      iint=.false.
+      do k=kpblmin,kte-1
+        if (k.gt.kbl(i).and.usqj(i,k)-usqj(i,k-1).lt.0.and.(.not.iint)) then
+          iint=.true.
+          zl_hint(i)=zl(i,k+1)
         endif
       enddo
-   enddo
-!
+    enddo
+  endif
 
-   if(lcap.lt.kte) then
-      do klcap = lcapp1,kte
-         do i = its,ite
-           taup(i,klcap) = prsi(i,klcap) / prsi(i,lcap) * taup(i,lcap)
-         enddo
+  do k = kpblmin, kte-1                   ! vertical level k loop!
+    kp1 = k + 1
+    do i = its,ite
+  !
+  !   unstablelayer if ri < ric
+  !   unstable layer if upper air vel comp along surf vel <=0 (crit lay)
+  !   at (u-c)=0. crit layer exists and bit vector should be set (.le.)
+  !
+      if (k .ge. kbl(i)) then
+        !we modify the criteria for unstable layer
+        !that the lv is critical under 0.25
+        !while we keep wave breaking ric for
+        !other larger lv
+        icrilv(i) = icrilv(i) .or. ( usqj(i,k) .lt. ric_rig)&
+                              .or. (velco(i,k) .le. 0.0_r8)
+        brvf(i)  = max(bnv2(i,k),bnv2min) ! brunt-vaisala frequency squared
+        brvf(i)  = sqrt(brvf(i))          ! brunt-vaisala frequency
+      endif
+    enddo
+
+    do i = its,ite
+      if (k .ge. kbl(i) .and. (.not. ldrag(i)))   then
+        if (.not.icrilv(i) .and. taup(i,k) .gt. 0.0_r8 ) then
+          temv = 1.0_r8 / velco(i,k)
+          tem1 = coefm(i)/(dxy(i)/ncleff)*(ro(i,kp1)+ro(i,k))*brvf(i)*velco(i,k)*0.5_r8
+          hd   = sqrt(taup(i,k) / tem1)
+          fro  = brvf(i) * hd * temv
+          !
+          !  rim is the minimum-richardson number by shutts (1985)
+          !
+          tem2   = sqrt(usqj(i,k))
+          tem    = 1._r8 + tem2 * fro
+          rim    = usqj(i,k) * (1._r8-fro) / (tem * tem)
+
+          !
+          !  check stability to employ the 'saturation hypothesis'
+          !  of lindzen (1981) except at tropospheric downstream regions
+          !
+          if (rim .le. ric) then  ! saturation hypothesis!
+            if ((oa1(i) .le. 0._r8).or.(kp1 .ge. kpblmin )) then
+              temc = 2.0_r8 + 1.0_r8 / tem2
+              hd   = velco(i,k) * (2.0_r8*sqrt(temc)-temc) / brvf(i)
+              taup(i,kp1) = tem1 * hd * hd
+              !
+              !  taup is restricted to monotoncally decrease
+              !  to avoid unexpected high taup in calculation
+              !
+              taup(i,kp1)=min(tem1*hd*hd,taup(i,k))
+              !
+              !  add vertical decrease at low level below hint (Kim and Doyle 2005)
+              !  where Ri first decreases
+              !
+              if (scorer_on.and.k.gt.klowtop(i).and.zl(i,k).le.zl_hint(i).and.k.lt.kte-1) then
+                      l1=(9.81_r8*bnv2(i,kp1)/velco(i,kp1)**2)
+                      l2=(9.81_r8*bnv2(i,k)/velco(i,k)**2)
+                      taup(i,kp1)=min(taup(i,k),taup(i,k)*(l1/l2),tem1*hd*hd)
+              endif
+            endif
+          else                    ! no wavebreaking!
+            taup(i,kp1) = taup(i,k)
+          endif
+        endif
+      endif
+    enddo
+  enddo
+
+  if(lcap.lt.kte) then
+    do klcap = lcapp1,kte
+      do i = its,ite
+        taup(i,klcap) = prsi(i,klcap) / prsi(i,lcap) * taup(i,lcap)
       enddo
-   endif
+    enddo
+  endif
 
-ENDIF !END LARGE-SCALE TAU CALCULATION
-!===============================================================
-!COMPUTE BLOCKING COMPONENT 
-!===============================================================
-IF (gsd_gwd_bl.and.(ls_taper .GT. 1.E-02)) THEN
+  ENDIF !END LARGE-SCALE TAU CALCULATION
+  !===============================================================
+  !COMPUTE BLOCKING COMPONENT 
+  !===============================================================
+  IF (gsd_gwd_bl.and.(ls_taper .GT. 1.E-02)) THEN
 
-   do i = its,ite
-      if(.not.ldrag(i)) then
-!
-!------- determine the height of flow-blocking layer
-!
+  do i = its,ite
+    if(.not.ldrag(i)) then
+  !
+  !------- determine the height of flow-blocking layer
+  !
         kblk = 0
         pe = 0.0_r8
 
@@ -2037,9 +2090,9 @@ IF (gsd_gwd_bl.and.(ls_taper .GT. 1.E-02)) THEN
             !divided by g*ro is to turn del(pa) into height
             pe = pe + bnv2(i,k)*(zl(i,komax(i))-zl(i,k))*del(i,k)/g/ro(i,k)
             ke = 0.5_r8*((rcs*u1(i,k))**2._r8+(rcs*v1(i,k))**2._r8)
-!
-!---------- apply flow-blocking drag when pe >= ke 
-!
+  !
+  !---------- apply flow-blocking drag when pe >= ke 
+  !
             if(pe.ge.ke) then
               kblk = k
               kblk = min(kblk,kbl(i))
@@ -2047,10 +2100,11 @@ IF (gsd_gwd_bl.and.(ls_taper .GT. 1.E-02)) THEN
             endif
           endif
         enddo
+
         if(kblk.ne.0) then
-!
-!--------- compute flow-blocking stress
-!
+  !
+  !--------- compute flow-blocking stress
+  !
 
           !dxmax_ls is different than the usual one
           !because the taper is very different
@@ -2075,16 +2129,15 @@ IF (gsd_gwd_bl.and.(ls_taper .GT. 1.E-02)) THEN
           !
           !taup(i,:) = taup(i,:) + taufb(i,:)   ! Keep taup and taufb separate for now
         endif
-      endif
-   enddo
+    endif
+  enddo
 
-ENDIF   ! end blocking drag
+  ENDIF   ! end blocking drag
 !===========================================================
-IF (gsd_gwd_ls.OR.gsd_gwd_bl.and.(ls_taper .GT. 1.E-02)) THEN
-
-!                                                                       
-!  calculate - (g)*d(tau)/d(pressure) and deceleration terms dtaux, dtauy
-!
+  IF (gsd_gwd_ls.OR.gsd_gwd_bl.and.(ls_taper .GT. 1.E-02)) THEN
+  !                                                                       
+  !  calculate - (g)*d(tau)/d(pressure) and deceleration terms dtaux, dtauy
+  !
 
    do k = kts,kte
      do i = its,ite
@@ -2092,10 +2145,10 @@ IF (gsd_gwd_ls.OR.gsd_gwd_bl.and.(ls_taper .GT. 1.E-02)) THEN
        taud_bl(i,k) = 1._r8 * (taufb(i,k+1) - taufb(i,k)) * csg / del(i,k)
      enddo
    enddo
-!                                                                       
-!  limit de-acceleration (momentum deposition ) at top to 1/2 value 
-!  the idea is some stuff must go out the 'top'                     
-!                                                                       
+  !                                                                       
+  !  limit de-acceleration (momentum deposition ) at top to 1/2 value 
+  !  the idea is some stuff must go out the 'top'                     
+  !                                                                       
 
    do klcap = lcap,kte
      do i = its,ite
@@ -2103,12 +2156,12 @@ IF (gsd_gwd_ls.OR.gsd_gwd_bl.and.(ls_taper .GT. 1.E-02)) THEN
        taud_bl(i,klcap) = taud_bl(i,klcap) * factop
      enddo
    enddo
-
-!                                                                       
-!  if the gravity wave drag would force a critical line             
-!  in the lower ksmm1 layers during the next deltim timestep,     
-!  then only apply drag until that critical line is reached.        
-!                                                                       
+ 
+  !                                                                       
+  !  if the gravity wave drag would force a critical line             
+  !  in the lower ksmm1 layers during the next deltim timestep,     
+  !  then only apply drag until that critical line is reached.        
+  !                                                                       
    do k = kts,kpblmax-1
       do i = its,ite
          if (k .le. kbl(i)) then
@@ -2118,7 +2171,6 @@ IF (gsd_gwd_ls.OR.gsd_gwd_bl.and.(ls_taper .GT. 1.E-02)) THEN
          endif
       enddo
    enddo
-!
 
    do k = kts,kte
       do i = its,ite
@@ -2127,7 +2179,7 @@ IF (gsd_gwd_ls.OR.gsd_gwd_bl.and.(ls_taper .GT. 1.E-02)) THEN
          !1.dudt < |c-u|/dt, so u-c cannot change sign(u^n+1 = u^n + du/dt * dt)
          !2.dudt<tndmax, eliminate ridiculous large tendency
          if (k.ne.kte) then!velco does not have top level value
-         taud_ls(i,k)  = sign(min(abs(taud_ls(i,k)),umcfac*abs(velco(i,k))/kdt),taud_ls(i,k))
+         taud_ls(i,k)  = sign(min(abs(taud_ls(i,k)),umcfac*abs(velco(i,k))/deltim),taud_ls(i,k))
          endif
          taud_ls(i,k)  = sign(min(abs(taud_ls(i,k)),tndmax),taud_ls(i,k))
          taud_bl(i,k)  = taud_bl(i,k) * dtfac(i) * ls_taper
@@ -2144,23 +2196,24 @@ IF (gsd_gwd_ls.OR.gsd_gwd_bl.and.(ls_taper .GT. 1.E-02)) THEN
       enddo
    enddo
 
-ENDIF
+  ENDIF
 
-!  Finalize dusfc and dvsfc diagnoses
-do i = its,ite
-   dusfc_ls(i) = (-1._r8/g*rcs) * dusfc_ls(i)
-   dvsfc_ls(i) = (-1._r8/g*rcs) * dvsfc_ls(i)
-   dusfc_bl(i) = (-1._r8/g*rcs) * dusfc_bl(i)
-   dvsfc_bl(i) = (-1._r8/g*rcs) * dvsfc_bl(i)
-   dusfc_ss(i) = (-1._r8/g*rcs) * dusfc_ss(i)
-   dvsfc_ss(i) = (-1._r8/g*rcs) * dvsfc_ss(i)
-   dusfc_fd(i) = (-1._r8/g*rcs) * dusfc_fd(i)
-   dvsfc_fd(i) = (-1._r8/g*rcs) * dvsfc_fd(i)
-enddo
-!
-   return
+  !  Finalize dusfc and dvsfc diagnoses
+  do i = its,ite
+     dusfc_ls(i) = (-1._r8/g*rcs) * dusfc_ls(i)
+     dvsfc_ls(i) = (-1._r8/g*rcs) * dvsfc_ls(i)
+     dusfc_bl(i) = (-1._r8/g*rcs) * dusfc_bl(i)
+     dvsfc_bl(i) = (-1._r8/g*rcs) * dvsfc_bl(i)
+     dusfc_ss(i) = (-1._r8/g*rcs) * dusfc_ss(i)
+     dvsfc_ss(i) = (-1._r8/g*rcs) * dvsfc_ss(i)
+     dusfc_fd(i) = (-1._r8/g*rcs) * dusfc_fd(i)
+     dvsfc_fd(i) = (-1._r8/g*rcs) * dvsfc_fd(i)
+  enddo
+
+  return
 
 end subroutine gwdo2d
+
 !==========================================================================
 
 

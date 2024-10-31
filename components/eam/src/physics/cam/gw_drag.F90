@@ -24,21 +24,21 @@ module gw_drag
 !--------------------------------------------------------------------------
 
   use shr_kind_mod,  only: r8 => shr_kind_r8
-  use ppgrid,        only: pcols,pver,pverp,nvar_dirOA,nvar_dirOL,begchunk,endchunk
-  use hycoef,             only: hyai, hybi, hyam, hybm, etamid !get the znu,znw,p_top set to 0
+  use ppgrid,        only: pcols, pver, pverp, nvar_dirOA, nvar_dirOL, begchunk, endchunk
+  use hycoef,        only: hyai, hybi, hyam, hybm, etamid
   use constituents,  only: pcnst
   use physics_types, only: physics_state, physics_ptend, physics_ptend_init
   use spmd_utils,    only: masterproc
   use cam_history,   only: outfld, hist_fld_active
   use cam_logfile,   only: iulog
-  use cam_abortutils,    only: endrun
+  use cam_abortutils,only: endrun
 
   use ref_pres,      only: do_molec_diff, ntop_molec, nbot_molec
-  use physconst,     only: cpair,rh2o,zvir,pi,rearth,r_universal
-    !zvir is the ep1 in wrf,rearth is the radius of earth(m),r_universal is the gas constant
+  use physconst,     only: cpair, rh2o, zvir, pi, rearth, r_universal!zvir is the ep1 in wrf,rearth is the radius of earth(m),r_universal is the gas constant
 
   ! These are the actual switches for different gravity wave sources.
-  use phys_control,  only: use_gw_oro, use_gw_front,use_gw_convect,use_gw_energy_fix,use_od_ls,use_od_bl,use_od_ss,ncleff_ls,ncd_bl,sncleff_ss
+  ! The orographic control switches are also here
+  use phys_control,  only: use_gw_oro, use_gw_front, use_gw_convect, use_gw_energy_fix, use_od_ls, use_od_bl, use_od_ss, ncleff_ls, ncd_bl, sncleff_ss
 
 ! Typical module header
   implicit none
@@ -217,13 +217,13 @@ subroutine gw_init()
   use gw_oro,     only: gw_oro_init
   use gw_front,   only: gw_front_init
   use gw_convect, only: gw_convect_init
-  !!
-  use comsrf,              only:var,var30,oc,oadir,ol,initialize_comsrf2
-  use pio,                 only:file_desc_t
-  use startup_initialconds,only:topoGWD_file_get_id,setup_initialGWD,close_initial_fileGWD
-  use ncdio_atm,           only:infld
-  use cam_grid_support, only: cam_grid_check, cam_grid_get_decomp, cam_grid_id,cam_grid_get_dim_names
-  !!
+
+  use comsrf,              only: var, var30, oc, oadir, ol, initialize_comsrf2
+  use pio,                 only: file_desc_t
+  use startup_initialconds,only: topoGWD_file_get_id, setup_initialGWD, close_initial_fileGWD
+  use ncdio_atm,           only: infld
+  use cam_grid_support,    only: cam_grid_check, cam_grid_get_decomp, cam_grid_id,cam_grid_get_dim_names
+
   !---------------------------Local storage-------------------------------
 
   integer :: l, k
@@ -1035,9 +1035,9 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         ! (includes spectrum).
         ! both old and new gwd scheme will add the tendency to circulation
         !
-  if (use_gw_oro.or.    &
-      use_od_ls.or.&
-      use_od_bl.or.&
+  if (use_gw_oro.or.&
+      use_od_ls .or.&
+      use_od_bl .or.&
       use_od_ss) then
      if(.not. use_gw_energy_fix) then
         !original
@@ -1047,11 +1047,11 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
            vtgw(:,k) = vtgw(:,k) * cam_in%landfrac(:ncol)
            ptend%v(:ncol,k) = ptend%v(:ncol,k) + vtgw(:,k)
            ptend%s(:ncol,k) = ptend%s(:ncol,k) + ttgw(:,k) &
-             -(ptend%u(:ncol,k) * (u(:,k) + ptend%u(:ncol,k)*0.5_r8*dt) &
-             +ptend%v(:ncol,k) * (v(:,k) + ptend%v(:ncol,k)*0.5_r8*dt))
+                            -(ptend%u(:ncol,k) * (u(:,k) + ptend%u(:ncol,k)*0.5_r8*dt) &
+                             +ptend%v(:ncol,k) * (v(:,k) + ptend%v(:ncol,k)*0.5_r8*dt))
            ttgw(:,k) = ttgw(:,k) &
-             -(ptend%u(:ncol,k) * (u(:,k) + ptend%u(:ncol,k)*0.5_r8*dt) &
-             +ptend%v(:ncol,k) * (v(:,k) + ptend%v(:ncol,k)*0.5_r8*dt))
+                            -(ptend%u(:ncol,k) * (u(:,k) + ptend%u(:ncol,k)*0.5_r8*dt) &
+                             +ptend%v(:ncol,k) * (v(:,k) + ptend%v(:ncol,k)*0.5_r8*dt))
            ttgw(:,k) = ttgw(:,k) / cpairv(:ncol, k, lchnk)
         end do
     else
