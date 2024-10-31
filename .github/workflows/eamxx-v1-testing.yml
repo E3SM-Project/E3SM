@@ -60,6 +60,12 @@ jobs:
     #   - pull_request/pull_request_review: matching skip label is NOT found
     if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.jobs_list != 'cpu-gcc') }}
     steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          show-progress: false
+          submodules: recursive
       - name: Show action trigger
         uses: ./.github/actions/show-workflow-trigger
       - name: Check for skip labels
@@ -95,12 +101,6 @@ jobs:
           fi
           echo "flags=$cmp_gen_flag -b master" >> $GITHUB_ENV
           echo "folder_suffix=$dir_suffix" >> $GITHUB_ENV
-      - name: Check out the repository
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-          show-progress: false
-          submodules: recursive
       - name: Run test
         run: |
           ./cime/scripts/create_test ${{ matrix.test.full_name }} ${{ env.flags }} --wait

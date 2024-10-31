@@ -52,6 +52,12 @@ jobs:
     if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.jobs_list != 'gcc-openmp') }}
     name: gcc-openmp / ${{ matrix.build_type }}
     steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          show-progress: false
+          submodules: recursive
       - name: Show action trigger
         uses: ./.github/actions/show-workflow-trigger
       - name: Check for skip labels
@@ -59,12 +65,6 @@ jobs:
         uses: ./.github/actions/check-skip-labels
         with:
           skip_labels: 'AT: skip gcc,AT: skip openmp,AT: skip eamxx-sa,AT: skip eamxx-all'
-      - name: Check out the repository
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-          show-progress: false
-          submodules: recursive
       - name: Set test-all inputs based on event specs
         run: |
           echo "submit=false" >> $GITHUB_ENV

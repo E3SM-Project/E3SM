@@ -32,6 +32,12 @@ jobs:
   cpu-gcc:
     runs-on:  [self-hosted, gcc, ghci-snl-cpu]
     steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          show-progress: false
+          submodules: recursive
       - name: Show action trigger
         uses: ./.github/actions/show-workflow-trigger
       - name: Check for skip labels
@@ -39,12 +45,6 @@ jobs:
         uses: ./.github/actions/check-skip-labels
         with:
           skip_labels: 'AT: skip eamxx-all'
-      - name: Check out the repository
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-          show-progress: false
-          submodules: recursive
       - name: Run test
         run: |
           cd components/eamxx
