@@ -376,12 +376,17 @@ be lost if SCREAM_HACK_XML is not enabled.
 =======
       
       <!-- Soil erodibility-->
-      <soil_erodibility_file type="file" doc="File containing soil erodibility">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/dst_ne30pg2_c20241028.nc</soil_erodibility_file>
+      <soil_erodibility_file type="file" doc="File containing soil erodibility">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/dst_ne30pg2_c20241028.nc</soil_erodibility_file>
 
       <!-- Soil erodibility ne4 grid-->
+<<<<<<< HEAD
       <soil_erodibility_file hgrid="ne4np4.pg2" type="file" doc="File containing soil erodibility">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/dst_ne4pg2_c20241028.nc</soil_erodibility_file>
 >>>>>>> EAMxx:Adds soil erodibility file read and sent to online emission read
 
+=======
+      <soil_erodibility_file hgrid="ne4np4.pg2" type="file" doc="File containing soil erodibility">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/dst_ne4pg2_c20241028.nc</soil_erodibility_file>
+      
+>>>>>>> EAMxx:Fixes file path and specify vector components for dust flux
       <!-- Marine organics file -->
       <marine_organics_file type="file" doc="File containing marine organics emissions">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/monthly_macromolecules_0.1deg_bilinear_year01_merge_ne30pg2_c20241030.nc</marine_organics_file>
       <!-- Marine organics file ne4 grid -->

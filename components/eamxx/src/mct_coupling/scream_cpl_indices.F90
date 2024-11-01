@@ -125,12 +125,16 @@ module scream_cpl_indices
     import_cpl_indices(22) = mct_avect_indexra(x2a,'Fall_flxdst2')
     import_cpl_indices(23) = mct_avect_indexra(x2a,'Fall_flxdst3')
     import_cpl_indices(24) = mct_avect_indexra(x2a,'Fall_flxdst4')
-    
-
 
     ! Vector components
+    !(Faxx_taux and Faxx_tauy)
     import_vector_components(11) = 0
     import_vector_components(12) = 1
+    !(dust fluxes)
+    import_vector_components(21) = 0
+    import_vector_components(22) = 1
+    import_vector_components(23) = 2
+    import_vector_components(24) = 3
 
     ! Constant multiples
     import_constant_multiple(10) = -1
