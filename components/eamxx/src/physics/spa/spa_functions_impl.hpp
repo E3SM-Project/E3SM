@@ -162,7 +162,7 @@ template <typename S, typename D>
 std::shared_ptr<typename SPAFunctions<S,D>::IOPReader>
 SPAFunctions<S,D>::
 create_spa_data_reader (
-    iop_ptr_type& iop,
+    iop_data_ptr_type& iop_data_manager,
     const std::shared_ptr<AbstractRemapper>& horiz_remapper,
     const std::string& spa_data_file)
 {
@@ -171,7 +171,7 @@ create_spa_data_reader (
     io_fields.push_back(horiz_remapper->get_src_field(i));
   }
   const auto io_grid = horiz_remapper->get_src_grid();
-  return std::make_shared<IOPReader>(iop, spa_data_file, io_fields, io_grid);
+  return std::make_shared<IOPReader>(iop_data_manager, spa_data_file, io_fields, io_grid);
 }
 
 /*-----------------------------------------------------------------*/

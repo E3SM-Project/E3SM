@@ -180,24 +180,24 @@ init_time_stamps (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0,
 }
 
 void AtmosphereDriver::
-setup_iop ()
+setup_iop_data_manager ()
 {
   // At this point, must have comm, params, initialized timestamps created.
   check_ad_status(s_comm_set | s_params_set | s_ts_inited);
 
   // Check to make sure iop is not already initialized
-  EKAT_REQUIRE_MSG(not m_iop, "Error! setup_iop() is called, but IOP already set up.\n");
+  EKAT_REQUIRE_MSG(not m_iop_data_manager, "Error! setup_iop_data_manager() is called, but IOP already set up.\n");
 
   // This function should only be called if we are enabling IOP
   const bool enable_iop =
     m_atm_params.sublist("driver_options").get("enable_iop", false);
-  EKAT_REQUIRE_MSG(enable_iop, "Error! setup_iop() is called, but enable_iop=false "
+  EKAT_REQUIRE_MSG(enable_iop, "Error! setup_iop_data_manager() is called, but enable_iop=false "
                                "in driver_options parameters.\n");
 
   // Params must include iop_options sublist.
   const auto iop_sublist_exists = m_atm_params.isSublist("iop_options");
   EKAT_REQUIRE_MSG(iop_sublist_exists,
-                   "Error! setup_iop() is called, but no iop_options "
+                   "Error! setup_iop_data_manager() is called, but no iop_options "
                    "defined in parameters.\n");
 
   const auto iop_params = m_atm_params.sublist("iop_options");
@@ -206,15 +206,15 @@ setup_iop ()
   const auto hyam = phys_grid->get_geometry_data("hyam");
   const auto hybm = phys_grid->get_geometry_data("hybm");
 
-  m_iop = std::make_shared<IntensiveObservationPeriod>(m_atm_comm,
-                                                       iop_params,
-                                                       m_run_t0,
-                                                       nlevs,
-                                                       hyam,
-                                                       hybm);
+  m_iop_data_manager = std::make_shared<IOPDataManager>(m_atm_comm,
+                                                        iop_params,
+                                                        m_run_t0,
+                                                        nlevs,
+                                                        hyam,
+                                                        hybm);
 
   // Set IOP object in atm processes
-  m_atm_process_group->set_iop(m_iop);
+  m_atm_process_group->set_iop_data_manager(m_iop_data_manager);
 }
 
 void AtmosphereDriver::create_atm_processes()
@@ -295,7 +295,7 @@ void AtmosphereDriver::create_grids()
   const bool enable_iop =
     m_atm_params.sublist("driver_options").get("enable_iop", false);
   if (enable_iop) {
-    setup_iop ();
+    setup_iop_data_manager ();
   }
 
   // Set the grids in the processes. Do this by passing the grids manager.
@@ -1203,7 +1203,7 @@ void AtmosphereDriver::set_initial_conditions ()
     }
   }
 
-  if (m_iop) {
+  if (m_iop_data_manager) {
     // For runs with IOP, call to setup io grids and lat
     // lon information needed for reading from file
     // We use a single topo file for both GLL and PG2 runs. All
@@ -1213,13 +1213,13 @@ void AtmosphereDriver::set_initial_conditions ()
     for (const auto& it : m_field_mgrs) {
       const auto& grid_name = it.first;
       if (ic_fields_names[grid_name].size() > 0 or
-	  topography_eamxx_fields_names[grid_name].size() > 0) {
+	        topography_eamxx_fields_names[grid_name].size() > 0) {
         const auto& file_name = grid_name == "Physics GLL"
                                 ?
                                 ic_pl.get<std::string>("Filename")
                                 :
                                 ic_pl.get<std::string>("topography_filename");
-        m_iop->setup_io_info(file_name, it.second->get_grid());
+        m_iop_data_manager->setup_io_info(file_name, it.second->get_grid());
       }
     }
   }
@@ -1231,12 +1231,12 @@ void AtmosphereDriver::set_initial_conditions ()
     m_atm_logger->info("    [EAMxx] IC filename: " + file_name);
     for (const auto& it : m_field_mgrs) {
       const auto& grid_name = it.first;
-      if (not m_iop) {
+      if (not m_iop_data_manager) {
         read_fields_from_file (ic_fields_names[grid_name],it.second->get_grid(),file_name,m_current_ts);
       } else {
         // For IOP enabled, we load from file and copy data from the closest
         // lat/lon column to every other column
-        m_iop->read_fields_from_file_for_iop(file_name,
+        m_iop_data_manager->read_fields_from_file_for_iop(file_name,
                                              ic_fields_names[grid_name],
                                              m_current_ts,
                                              it.second);
@@ -1306,7 +1306,7 @@ void AtmosphereDriver::set_initial_conditions ()
     m_atm_logger->info("        filename: " + file_name);
     for (const auto& it : m_field_mgrs) {
       const auto& grid_name = it.first;
-      if (not m_iop) {
+      if (not m_iop_data_manager) {
         // Topography files always use "ncol_d" for the GLL grid value of ncol.
         // To ensure we read in the correct value, we must change the name for that dimension
         auto io_grid = it.second->get_grid();
@@ -1322,7 +1322,7 @@ void AtmosphereDriver::set_initial_conditions ()
       } else {
         // For IOP enabled, we load from file and copy data from the closest
         // lat/lon column to every other column
-        m_iop->read_fields_from_file_for_iop(file_name,
+        m_iop_data_manager->read_fields_from_file_for_iop(file_name,
                                              topography_file_fields_names[grid_name],
                                              topography_eamxx_fields_names[grid_name],
                                              m_current_ts,
@@ -1347,16 +1347,16 @@ void AtmosphereDriver::set_initial_conditions ()
     m_atm_params.sublist("provenance").set<std::string>("topography_file","NONE");
   }
 
-  if (m_iop) {
+  if (m_iop_data_manager) {
     // Load IOP data file data for initial time stamp
-    m_iop->read_iop_file_data(m_current_ts);
+    m_iop_data_manager->read_iop_file_data(m_current_ts);
 
     // Now that ICs are processed, set appropriate fields using IOP file data.
     // Since ICs are loaded on GLL grid, we set those fields only and dynamics
     // will take care of the rest (for PG2 case).
     if (m_field_mgrs.count("Physics GLL") > 0) {
       const auto& fm = m_field_mgrs.at("Physics GLL");
-      m_iop->set_fields_from_iop_data(fm);
+      m_iop_data_manager->set_fields_from_iop_data(fm);
     }
   }
 
@@ -1754,7 +1754,7 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
   }
 
   // Destroy iop
-  m_iop = nullptr;
+  m_iop_data_manager = nullptr;
 
   // Destroy the buffer manager
   m_memory_buffer = nullptr;

@@ -427,6 +427,9 @@ be lost if SCREAM_HACK_XML is not enabled.
       <ML_correction_unit_test type="logical">false</ML_correction_unit_test>
     </mlcorrection>
 
+    <!-- IOPForcing -->
+    <iop_forcing inherit="atm_proc_base" />
+
     <!-- For internal testing only -->
     <testOnly inherit="atm_proc_base">
       <my_param type="array(integer)">1,2</my_param>
@@ -556,6 +559,7 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <physics inherit="atm_proc_group">
       <atm_procs_list>mac_aero_mic,rrtmgp</atm_procs_list>
+      <atm_procs_list COMPSET=".*DP-EAMxx">iop_forcing,mac_aero_mic,rrtmgp</atm_procs_list>
     </physics>
   </atmosphere_processes_defaults>
 

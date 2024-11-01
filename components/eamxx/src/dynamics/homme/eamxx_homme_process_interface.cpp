@@ -426,11 +426,6 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   if (run_type==RunType::Initial) {
     initialize_homme_state ();
   } else {
-    if (m_iop) {
-      // We need to reload IOP data after restarting
-      m_iop->read_iop_file_data(timestamp());
-    }
-
     restart_homme_state ();
   }
 
@@ -667,10 +662,6 @@ void HommeDynamics::homme_post_process (const double dt) {
   get_internal_field("Qdp_dyn").get_header().get_alloc_properties().reset_subview_idx(tl.np1_qdp);
   if (not params.theta_hydrostatic_mode) {
     get_internal_field("w_int_dyn").get_header().get_alloc_properties().reset_subview_idx(tl.n0);
-  }
-
-  if (m_iop) {
-    apply_iop_forcing(dt);
   }
 
   if (fv_phys_active()) {

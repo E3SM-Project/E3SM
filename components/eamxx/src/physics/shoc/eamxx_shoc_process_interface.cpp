@@ -449,7 +449,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   const auto ncols = m_num_cols;
   view_1d cell_length("cell_length", ncols);
   if (m_grid->has_geometry_data("dx_short")) {
-    // We must be running with IntensiveObservationPeriod on, with a planar geometry
+    // In this case IOP is running with a planar geometry
     auto dx = m_grid->get_geometry_data("dx_short").get_view<const Real,Host>()();
     Kokkos::deep_copy(cell_length, dx*1000); // convert km -> m
   } else {
