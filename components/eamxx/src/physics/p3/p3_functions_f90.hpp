@@ -93,6 +93,8 @@ struct LookupIceData
   // Outputs
   Int  dumi, dumjj, dumii, dumzz;
   Real dum1, dum4, dum5, dum6;
+
+  PTD_RW_SCALARS_ONLY(8, dumi, dumjj, dumii, dumzz, dum1, dum4, dum5, dum6);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -105,6 +107,8 @@ struct LookupIceDataB
   // Outputs
   Int dumj;
   Real dum3;
+
+  PTD_RW_SCALARS_ONLY(2, dumj, dum3);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -117,6 +121,8 @@ struct AccessLookupTableData
 
   // Outputs
   Real proc;
+
+  PTD_RW_SCALARS_ONLY(1, proc);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -130,6 +136,8 @@ struct AccessLookupTableCollData
 
   // Outputs
   Real proc;
+
+  PTD_RW_SCALARS_ONLY(1, proc);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -147,6 +155,11 @@ struct BackToCellAverageData
 
   // This populates all fields with test data within [0,1].
   void randomize(std::mt19937_64& engine);
+
+  PTD_RW_SCALARS_ONLY(31, qc2qr_accret_tend, qr2qv_evap_tend, qc2qr_autoconv_tend, nc_accret_tend, nc_selfcollect_tend, nc2nr_autoconv_tend, nr_selfcollect_tend, nr_evap_tend, ncautr, qcnuc,
+                 nc_nuceat_tend, qi2qv_sublim_tend, nr_ice_shed_tend, qc2qi_hetero_freeze_tend, qr2qi_collect_tend, qc2qr_ice_shed_tend, qi2qr_melt_tend, qc2qi_collect_tend, qr2qi_immers_freeze_tend, ni2nr_melt_tend,
+                 nc_collect_tend, ncshdc, nc2ni_immers_freeze_tend, nr_collect_tend, ni_selfcollect_tend, qv2qi_vapdep_tend, nr2ni_immers_freeze_tend, ni_sublim_tend, qv2qi_nucleat_tend, ni_nucleat_tend,
+                 qc2qi_berg_tend);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -158,6 +171,8 @@ struct CloudWaterConservationData
 
   //output
   Real qc2qr_autoconv_tend, qc2qr_accret_tend, qc2qi_collect_tend, qc2qi_hetero_freeze_tend, qc2qr_ice_shed_tend, qc2qi_berg_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend;
+
+  PTD_RW_SCALARS_ONLY(8, qc2qr_autoconv_tend, qc2qr_accret_tend, qc2qi_collect_tend, qc2qi_hetero_freeze_tend, qc2qr_ice_shed_tend, qc2qi_berg_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend);
 };
 
 struct RainWaterConservationData
@@ -167,6 +182,8 @@ struct RainWaterConservationData
 
   //output
   Real qr2qv_evap_tend, qr2qi_collect_tend, qr2qi_immers_freeze_tend;
+
+  PTD_RW_SCALARS_ONLY(3, qr2qv_evap_tend, qr2qi_collect_tend, qr2qi_immers_freeze_tend);
 };
 
 struct IceWaterConservationData
@@ -176,6 +193,8 @@ struct IceWaterConservationData
 
   //output
   Real qi2qv_sublim_tend, qi2qr_melt_tend;
+
+  PTD_RW_SCALARS_ONLY(2, qi2qv_sublim_tend, qi2qr_melt_tend);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -187,6 +206,8 @@ struct CalcRimeDensityData
 
   // output
   Real vtrmi1, rho_qm_cloud;
+
+  PTD_RW_SCALARS_ONLY(2, vtrmi1, rho_qm_cloud);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -198,6 +219,8 @@ struct CldliqImmersionFreezingData
 
   // output
   Real qc2qi_hetero_freeze_tend, nc2ni_immers_freeze_tend;
+
+  PTD_RW_SCALARS_ONLY(2, qc2qi_hetero_freeze_tend, nc2ni_immers_freeze_tend);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -209,6 +232,8 @@ struct RainImmersionFreezingData
 
   // output
   Real qr2qi_immers_freeze_tend, nr2ni_immers_freeze_tend;
+
+  PTD_RW_SCALARS_ONLY(2, qr2qi_immers_freeze_tend, nr2ni_immers_freeze_tend);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -220,6 +245,8 @@ struct DropletSelfCollectionData
 
   // output
   Real nc_selfcollect_tend;
+
+  PTD_RW_SCALARS_ONLY(1, nc_selfcollect_tend);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -231,6 +258,8 @@ struct CloudRainAccretionData
 
   // output
   Real qc2qr_accret_tend, nc_accret_tend;
+
+  PTD_RW_SCALARS_ONLY(2, qc2qr_accret_tend, nc_accret_tend);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -238,15 +267,12 @@ struct CloudRainAccretionData
 struct CloudWaterAutoconversionData
 {
   // inputs
-  Real rho;
-  Real qc_incld;
-  Real nc_incld;
-  Real inv_qc_relvar;
+  Real rho, qc_incld, nc_incld, inv_qc_relvar;
 
   // output
-  Real qc2qr_autoconv_tend;
-  Real nc2nr_autoconv_tend;
-  Real ncautr;
+  Real qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr;
+
+  PTD_RW_SCALARS_ONLY(3, qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -258,6 +284,8 @@ struct RainSelfCollectionData
 
   //output
   Real nr_selfcollect_tend;
+
+  PTD_RW_SCALARS_ONLY(1, nr_selfcollect_tend);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -268,6 +296,8 @@ struct ImposeMaxTotalNiData{
 
   //input
   Real max_total_ni, inv_rho_local;
+
+  PTD_RW_SCALARS_ONLY(2, ni_local, inv_rho_local);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -279,6 +309,8 @@ struct IceMeltingData
 
   // output
   Real qi2qr_melt_tend,ni2nr_melt_tend;
+
+  PTD_RW_SCALARS_ONLY(2, qi2qr_melt_tend, ni2nr_melt_tend);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -299,6 +331,8 @@ struct GetCloudDsd2Data
 
   // Outputs
   Real nc_out, mu_c, nu, lamc, cdist, cdist1;
+
+  PTD_RW_SCALARS_ONLY(6, nc_out, mu_c, nu, lamc, cdist, cdist1)
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -310,6 +344,8 @@ struct GetRainDsd2Data
 
   // Outputs
   Real nr_out, lamr, mu_r, cdistr, logn0r;
+
+  PTD_RW_SCALARS_ONLY(5, nr_out, lamr, mu_r, cdistr, logn0r);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -440,6 +476,8 @@ struct CalcBulkRhoRimeData
 
   // Outputs
   Real rho_rime;
+
+  PTD_RW_SCALARS_ONLY(3, qi_rim, bi_rim, rho_rime);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -475,18 +513,7 @@ struct ComputeRainFallVelocityData
   // Outputs
   Real mu_r, lamr, V_qr, V_nr;
 
-  PTD_RW_SCALARS(5, nr_incld, mu_r, lamr, V_qr, V_nr);
-
-  void read(const ekat::FILEPtr& fid)
-  {
-    read_scalars(fid);
-  }
-
-  void write(const ekat::FILEPtr& fid) const
-  {
-    write_scalars(fid);
-  }
-
+  PTD_RW_SCALARS_ONLY(5, nr_incld, mu_r, lamr, V_qr, V_nr);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -498,6 +525,8 @@ struct GetTimeSpacePhysVarsData
 
   //Outs
   Real mu, dv, sc, dqsdt, dqsidt, ab, abi, kap, eii;
+
+  PTD_RW_SCALARS_ONLY(9, mu, dv, sc, dqsdt, dqsidt, ab, abi, kap, eii);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -512,6 +541,8 @@ struct P3UpdatePrognosticIceData
 
   // In/outs
   Real th_atm, qv, qi, ni, qm, bm, qc, nc, qr, nr;
+
+  PTD_RW_SCALARS_ONLY(10, th_atm, qv, qi, ni, qm, bm, qc, nc, qr, nr);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -524,6 +555,8 @@ struct EvapRainData
 
   //Outs
   Real qr2qv_evap_tend, nr_evap_tend;
+
+  PTD_RW_SCALARS_ONLY(2, qr2qv_evap_tend, nr_evap_tend);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -539,6 +572,8 @@ struct P3UpdatePrognosticLiqData
 
   // In/outs
   Real th_atm, qv, qc, nc, qr, nr;
+
+  PTD_RW_SCALARS_ONLY(6, th_atm, qv, qc, nc, qr, nr);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -554,6 +589,7 @@ struct IceDepositionSublimationData
   // This populates all input fields with test data within [0,1].
   void randomize(std::mt19937_64& engine);
 
+  PTD_RW_SCALARS_ONLY(4, qv2qi_vapdep_tend, qi2qv_sublim_tend, ni_sublim_tend, qc2qi_berg_tend);
 };
 
 struct IceCldliqCollectionData
@@ -565,6 +601,7 @@ struct IceCldliqCollectionData
   // Outputs
   Real qc2qi_collect_tend, nc_collect_tend, qc2qr_ice_shed_tend, ncshdc;
 
+  PTD_RW_SCALARS_ONLY(4, qc2qi_collect_tend, nc_collect_tend, qc2qr_ice_shed_tend, ncshdc);
 };
 
 struct IceRainCollectionData
@@ -576,6 +613,7 @@ struct IceRainCollectionData
   // Outputs
   Real qr2qi_collect_tend, nr_collect_tend;
 
+  PTD_RW_SCALARS_ONLY(2, qr2qi_collect_tend, nr_collect_tend);
 };
 
 struct IceSelfCollectionData
@@ -587,6 +625,7 @@ struct IceSelfCollectionData
   // Outputs
   Real ni_selfcollect_tend;
 
+  PTD_RW_SCALARS_ONLY(1, ni_selfcollect_tend);
 };
 
 struct IceRelaxationData
@@ -596,6 +635,8 @@ struct IceRelaxationData
 
   // Outputs
   Real epsi, epsi_tot;
+
+  PTD_RW_SCALARS_ONLY(2, epsi, epsi_tot);
 };
 
 struct CalcLiqRelaxationData
@@ -608,6 +649,8 @@ struct CalcLiqRelaxationData
 
   // This populates all input fields with test data within [0,1].
   void randomize(std::mt19937_64& engine);
+
+  PTD_RW_SCALARS_ONLY(2, epsr, epsc);
 };
 
 struct IceNucleationData
@@ -619,6 +662,8 @@ struct IceNucleationData
 
   // Outputs
   Real qv2qi_nucleat_tend, ni_nucleat_tend;
+
+  PTD_RW_SCALARS_ONLY(2, qv2qi_nucleat_tend, ni_nucleat_tend);
 };
 
 struct IceWetGrowthData
@@ -631,6 +676,8 @@ struct IceWetGrowthData
   bool log_wetgrowth;
 
   Real qr2qi_collect_tend, qc2qi_collect_tend, qc_growth_rate, nr_ice_shed_tend, qc2qr_ice_shed_tend;
+
+  PTD_RW_SCALARS_ONLY(6, log_wetgrowth, qr2qi_collect_tend, qc2qi_collect_tend, qc_growth_rate, nr_ice_shed_tend, qc2qr_ice_shed_tend);
 };
 
 struct LatentHeatData : public PhysicsTestData
@@ -675,6 +722,8 @@ struct IncloudMixingData
 
   // Outputs
   Real qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld, ni_incld, bm_incld;
+
+  PTD_RW_SCALARS_ONLY(8, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld, ni_incld, bm_incld);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -796,6 +845,8 @@ struct IceSupersatConservationData {
   Real qidep, qinuc;
 
   void randomize(std::mt19937_64& engine);
+
+  PTD_RW_SCALARS_ONLY(2, qidep, qinuc);
 };
 
 struct NcConservationData {
@@ -806,6 +857,8 @@ struct NcConservationData {
   Real nc_collect_tend, nc2ni_immers_freeze_tend, nc_accret_tend, nc2nr_autoconv_tend;
 
   void randomize(std::mt19937_64& engine);
+
+  PTD_RW_SCALARS_ONLY(4, nc_collect_tend, nc2ni_immers_freeze_tend, nc_accret_tend, nc2nr_autoconv_tend);
 };
 
 struct NrConservationData {
@@ -816,6 +869,8 @@ struct NrConservationData {
   Real nr_collect_tend, nr2ni_immers_freeze_tend, nr_selfcollect_tend, nr_evap_tend;
 
   void randomize(std::mt19937_64& engine);
+
+  PTD_RW_SCALARS_ONLY(4, nr_collect_tend, nr2ni_immers_freeze_tend, nr_selfcollect_tend, nr_evap_tend);
 };
 
 struct NiConservationData {
@@ -826,6 +881,8 @@ struct NiConservationData {
   Real ni2nr_melt_tend, ni_sublim_tend, ni_selfcollect_tend;
 
   void randomize(std::mt19937_64& engine);
+
+  PTD_RW_SCALARS_ONLY(3, ni2nr_melt_tend, ni_sublim_tend, ni_selfcollect_tend);
 };
 
 struct PreventLiqSupersaturationData {
@@ -837,6 +894,8 @@ struct PreventLiqSupersaturationData {
 
   // This populates all fields with test data within [0,1].
   void randomize(std::mt19937_64& engine);
+
+  PTD_RW_SCALARS_ONLY(2, qi2qv_sublim_tend, qr2qv_evap_tend);
 };
 
 // Glue functions to call fortran from from C++ with the Data struct
