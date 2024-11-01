@@ -28,9 +28,9 @@ void run_phys()
 
 void run_bfb()
 {
-  auto engine = setup_random_test();
+  auto engine = setup_random_test(23512);
 
-  CloudSedData csds_fortran[] = {
+  CloudSedData csds_baseline[] = {
     //         kts, kte, ktop, kbot, kdir,        dt,    inv_dt, do_predict_nc,     precip_liq_surf,
     CloudSedData(1,  72,   27,   72,   -1, 1.800E+03, 5.556E-04,         false,     0.0),
     CloudSedData(1,  72,   72,   27,    1, 1.800E+03, 5.556E-04,         false,     0.0),
@@ -39,26 +39,30 @@ void run_bfb()
     CloudSedData(1,  72,   27,   27,   -1, 1.800E+03, 5.556E-04,          true,     0.0),
   };
 
-  static constexpr Int num_runs = sizeof(csds_fortran) / sizeof(CloudSedData);
+  static constexpr Int num_runs = sizeof(csds_baseline) / sizeof(CloudSedData);
 
   // Set up random input data
-  for (auto& d : csds_fortran) {
+  for (auto& d : csds_baseline) {
     d.randomize(engine, { {d.qc_incld, {C::QSMALL/2, C::QSMALL*2}} });
   }
 
   // Create copies of data for use by cxx. Needs to happen before fortran calls so that
   // inout data is in original state
   CloudSedData csds_cxx[num_runs] = {
-    CloudSedData(csds_fortran[0]),
-    CloudSedData(csds_fortran[1]),
-    CloudSedData(csds_fortran[2]),
-    CloudSedData(csds_fortran[3]),
-    CloudSedData(csds_fortran[4]),
+    CloudSedData(csds_baseline[0]),
+    CloudSedData(csds_baseline[1]),
+    CloudSedData(csds_baseline[2]),
+    CloudSedData(csds_baseline[3]),
+    CloudSedData(csds_baseline[4]),
   };
 
-  // Get data from fortran
-  for (auto& d : csds_fortran) {
-    cloud_sedimentation(d);
+  // Read baseline data
+  std::string baseline_name = this->m_baseline_path + "/cloud_sedimentation.dat";
+  if (this->m_baseline_action == COMPARE) {
+    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
+    for (auto& d : csds_baseline) {
+      d.read(fid);
+    }
   }
 
   // Get data from cxx
@@ -69,21 +73,27 @@ void run_bfb()
                           d.qc, d.nc, d.nc_incld, d.mu_c, d.lamc, &d.precip_liq_surf, d.qc_tend, d.nc_tend);
   }
 
-  if (SCREAM_BFB_TESTING) {
+  if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
     for (Int i = 0; i < num_runs; ++i) {
       // Due to pack issues, we must restrict checks to the active k space
-      Int start = std::min(csds_fortran[i].kbot, csds_fortran[i].ktop) - 1; // 0-based indx
-      Int end   = std::max(csds_fortran[i].kbot, csds_fortran[i].ktop);     // 0-based indx
+      Int start = std::min(csds_baseline[i].kbot, csds_baseline[i].ktop) - 1; // 0-based indx
+      Int end   = std::max(csds_baseline[i].kbot, csds_baseline[i].ktop);     // 0-based indx
       for (Int k = start; k < end; ++k) {
-        REQUIRE(csds_fortran[i].qc[k]       == csds_cxx[i].qc[k]);
-        REQUIRE(csds_fortran[i].nc[k]       == csds_cxx[i].nc[k]);
-        REQUIRE(csds_fortran[i].nc_incld[k] == csds_cxx[i].nc_incld[k]);
-        REQUIRE(csds_fortran[i].mu_c[k]     == csds_cxx[i].mu_c[k]);
-        REQUIRE(csds_fortran[i].lamc[k]     == csds_cxx[i].lamc[k]);
-        REQUIRE(csds_fortran[i].qc_tend[k]  == csds_cxx[i].qc_tend[k]);
-        REQUIRE(csds_fortran[i].nc_tend[k]  == csds_cxx[i].nc_tend[k]);
+        REQUIRE(csds_baseline[i].qc[k]       == csds_cxx[i].qc[k]);
+        REQUIRE(csds_baseline[i].nc[k]       == csds_cxx[i].nc[k]);
+        REQUIRE(csds_baseline[i].nc_incld[k] == csds_cxx[i].nc_incld[k]);
+        REQUIRE(csds_baseline[i].mu_c[k]     == csds_cxx[i].mu_c[k]);
+        REQUIRE(csds_baseline[i].lamc[k]     == csds_cxx[i].lamc[k]);
+        REQUIRE(csds_baseline[i].qc_tend[k]  == csds_cxx[i].qc_tend[k]);
+        REQUIRE(csds_baseline[i].nc_tend[k]  == csds_cxx[i].nc_tend[k]);
       }
-      REQUIRE(csds_fortran[i].precip_liq_surf == csds_cxx[i].precip_liq_surf);
+      REQUIRE(csds_baseline[i].precip_liq_surf == csds_cxx[i].precip_liq_surf);
+    }
+  }
+  else if (this->m_baseline_action == GENERATE) {
+    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
+    for (Int i = 0; i < num_runs; ++i) {
+      csds_cxx[i].write(fid);
     }
   }
 }

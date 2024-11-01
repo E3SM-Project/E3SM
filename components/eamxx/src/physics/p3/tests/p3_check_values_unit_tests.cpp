@@ -24,9 +24,10 @@ struct UnitWrap::UnitTest<D>::TestCheckValues : public UnitWrap::UnitTest<D>::Ba
 
 void run_check_values_bfb()
 {
+  // This is not really a bfb test since no results are being checked.
   auto engine = setup_random_test();
 
-  CheckValuesData cvd_fortran[] = {
+  CheckValuesData cvd_cxx[] = {
     //          kts_, kte_, timestepcount_, source_ind_, force_abort_
     CheckValuesData(1,  72,              2,         100,       false),
     CheckValuesData(1,  72,              3,         100,       false),
@@ -34,24 +35,8 @@ void run_check_values_bfb()
     CheckValuesData(1,  72,              5,         100,       false),
   };
 
-  static constexpr Int num_runs = sizeof(cvd_fortran) / sizeof(CheckValuesData);
-
-  for (auto& d : cvd_fortran) {
+  for (auto& d : cvd_cxx) {
     d.randomize(engine, { {d.qv, {-4.056E-01, 1.153E+00}}, {d.temp, {1.000E+02, 5.000E+02}} });
-  }
-
-  // Create copies of data for use by cxx. Needs to happen before fortran calls so that
-  // inout data is in original state
-  CheckValuesData cvd_cxx[num_runs] = {
-    CheckValuesData(cvd_fortran[0]),
-    CheckValuesData(cvd_fortran[1]),
-    CheckValuesData(cvd_fortran[2]),
-    CheckValuesData(cvd_fortran[3]),
-  };
-
-  // Get data from fortran
-  for (auto& d : cvd_fortran) {
-    check_values(d);
   }
 
   // Get data from cxx

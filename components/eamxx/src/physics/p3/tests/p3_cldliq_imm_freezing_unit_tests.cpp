@@ -70,9 +70,13 @@ void run_bfb()
             host_data.data());
   Kokkos::deep_copy(device_data, host_data);
 
-  // Run the Fortran subroutine.
-  for (Int i = 0; i < max_pack_size; ++i) {
-    cldliq_immersion_freezing(cldliq_imm_freezing_data[i]);
+  // Read baseline data
+  std::string baseline_name = this->m_baseline_path + "/cldliq_imm_freezing.dat";
+  if (this->m_baseline_action == COMPARE) {
+    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
+    for (Int i = 0; i < max_pack_size; ++i) {
+      cldliq_imm_freezing_data[i].read(fid);
+    }
   }
 
   // Run the lookup from a kernel and copy results back to host
@@ -109,10 +113,16 @@ void run_bfb()
   Kokkos::deep_copy(host_data, device_data);
 
   // Validate results.
-  if (SCREAM_BFB_TESTING) {
+  if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
     for (Int s = 0; s < max_pack_size; ++s) {
       REQUIRE(cldliq_imm_freezing_data[s].qc2qi_hetero_freeze_tend == host_data[s].qc2qi_hetero_freeze_tend);
       REQUIRE(cldliq_imm_freezing_data[s].nc2ni_immers_freeze_tend == host_data[s].nc2ni_immers_freeze_tend);
+    }
+  }
+  else if (this->m_baseline_action == GENERATE) {
+    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
+    for (Int s = 0; s < max_pack_size; ++s) {
+      host_data(s).write(fid);
     }
   }
 }
