@@ -28,6 +28,8 @@ PhysicsTestData& PhysicsTestData::assignment_impl(const PhysicsTestData& rhs)
 
 void PhysicsTestData::read(const ekat::FILEPtr& fid)
 {
+  EKAT_REQUIRE_MSG(fid,
+                   "Tried to read from missing file. You may have forgotten to generate baselines for some BFB unit tests");
   m_reals.read(fid);
   m_ints.read(fid);
   m_bools.read(fid);

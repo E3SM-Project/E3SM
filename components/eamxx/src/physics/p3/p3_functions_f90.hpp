@@ -353,6 +353,8 @@ struct GenSedData : public CalcUpwindData
 
   PTD_DATA_COPY_CTOR(GenSedData, 10);
   PTD_ASSIGN_OP(GenSedData, 11, kts, kte, kdir, kbot, k_qxtop, num_arrays, dt_sub, Co_max, k_qxbot, dt_left, prt_accum);
+  PTD_RW();
+  PTD_RW_SCALARS(11, kts, kte, kdir, kbot, k_qxtop, num_arrays, dt_sub, Co_max, k_qxbot, dt_left, prt_accum);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
