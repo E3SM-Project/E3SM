@@ -457,6 +457,19 @@ _TESTS = {
         "inherit" : ("e3sm_gpuacc", "e3sm_gpuomp", "e3sm_gpucxx"),
     },
 
+    "e3sm_orodrag_developer" : {
+        "tests"   : (
+            "ERP.ne4pg2_oQU480.F2010.eam-orodrag",
+            "REP_Ln5.ne4pg2_oQU480.F2010.eam-orodrag",
+            "PET.ne4pg2_oQU480.F2010.eam-orodrag",
+            "PEM_Ln18.ne4pg2_oQU480.F2010.eam-orodrag",
+            "SMS_Ln5.ne30pg2_EC30to60E2r2.F2010.eam-orodrag",
+            "SMS_D_Ln5.ne4pg2_oQU480.F2010.eam-orodrag",
+            "SMS_Ln5.ne4pg2_oQU480.F2010.eam-orodrag",
+            "ERS.ne4pg2_oQU480.F2010.eam-orodrag"
+            )
+        },
+
     "eam_nl" : {
         "tests"    : (
             "SBN.ne4_oQU240.F2010.eam-thetadycore",

@@ -1156,11 +1156,6 @@ IF ( gwd_ls .or. gwd_bl ) then
         enddo
 ENDIF
 
-!write(iulog,*) "Jinbo Xie gwd_ls,gwd_bl,gwd_ss,gwd_fd",gwd_ls,gwd_bl,gwd_ss,gwd_fd
-!========Jinbo Xie================
-!=================================================================
-        ! Jinbo Xie1  changed all ,j out, turn 3d into 2d, for cam formation
-              !=================================================================
       call gwdo2d(dudt=rublten(ims,kms),dvdt=rvblten(ims,kms)                  &
              ,dthdt=rthblten(ims,kms)                                          &
               ,ncleff=ncleff_ls,ncd=ncd_bl,sncleff=sncleff_ss                  &
@@ -1442,6 +1437,8 @@ real(r8) :: taub_xjb(its:ite)
 real(r8) :: taufb_xjb(its:ite)
 real(r8) :: wdir1_xjb(its:ite)
 integer  :: kblk_xjb(its:ite)
+real(r8) :: bnv_xjb(its:ite)
+real(r8) :: od_xjb(its:ite)
 
 !Jinbo Xie
 real(r8)                 :: pe,ke
@@ -1460,21 +1457,13 @@ real(r8)                 :: pe,ke
 
 !=====Jinbo Xie=====
 integer :: wdir_add_xjb(mdir,its:ite)
-!real(r8):: ncleff  !!tunable parameter for gwd
-!real(r8):: ncd  !!tunable parameter for fbd
-!real(r8):: sncleff !!tunable parameter for sgwd
 real(r8), intent(in) :: ncleff,ncd,sncleff
 !=====Jinbo Xie=====
 
 
  !===================================
  !Jinbo Xie readdata
- !real(r8),allocatable :: need3(:,:)
- !real(r8) :: oc11(ims:ime)
- !real(r8) :: wind_xjb(kts:kte)
- !real(r8) :: shr2_xjb(its:ite,kts:kte)
  real(r8) :: l1,l2,S!,shrrok1,shrrok0,gamma1
- !
  logical  :: iint
  real(r8) :: zl_hint(its:ite)
  !open/close low-level momentum adjustment according to scorer parameter
@@ -1482,7 +1471,6 @@ real(r8), intent(in) :: ncleff,ncd,sncleff
  !===================================
 
 
-write(iulog,*) "Jinbo Xie gsd_gwd_ls,gsd_gwd_bl,gsd_gwd_ss,gsd_gwd_fd",gsd_gwd_ls,gsd_gwd_bl,gsd_gwd_ss,gsd_gwd_fd
 !ncleff    = 3._r8
 !ncd       = 3._r8!1._r8!1._r8!3._r8
 !sncleff   = 1.0_r8
@@ -1605,7 +1593,7 @@ taub_xjb(i)=0.0_r8
 taufb_xjb(i)=0.0_r8
 zblk_col(i)=0.0_r8
 wdir1_xjb(i)=0.0_r8
-kblk_xjb(i)=0.0_r8
+kblk_xjb(i)=0!.0_r8
    enddo
 
 !
@@ -1742,7 +1730,7 @@ ENDIF
 !
 ! END INITIALIZATION; BEGIN GWD CALCULATIONS:
 !
-IF ( ( gsd_gwd_ls .or. gsd_gwd_bl ).and.   &
+IF ( gsd_gwd_ls .or. gsd_gwd_bl .and.   &
                (ls_taper .GT. 1.E-02) ) THEN   !====
 
 !                                                                       
@@ -1844,6 +1832,9 @@ IF ( ( gsd_gwd_ls .or. gsd_gwd_bl ).and.   &
    do i = its,ite
      if (.not.ldrag(i))   then
        bnv(i) = sqrt( bnv2(i,1) )
+
+bnv_xjb(i)=bnv(i)
+od_xjb(i)=od(i)
        fr(i) = bnv(i)  * rulow(i) * 2._r8 * var(i) * od(i)
        fr(i) = min(fr(i),frmax)
        xn(i)  = ubar(i) * rulow(i)
@@ -1861,7 +1852,6 @@ IF ( ( gsd_gwd_ls .or. gsd_gwd_bl ).and.   &
    do i = its,ite
      if (.not. ldrag(i))   then
        efact    = max(oa1(i)+2._r8,0._r8) ** (ce*fr(i)/frc)
-       !efact    = (oa1(i)+2._r8) ** (ce*fr(i)/frc)
        efact    = min( max(efact,efmin), efmax )
 !!!!!!! cleff (effective grid length) is highly tunable parameter
 !!!!!!! the bigger (smaller) value produce weaker (stronger) wave drag
@@ -1879,6 +1869,8 @@ IF ( ( gsd_gwd_ls .or. gsd_gwd_bl ).and.   &
        if ( gsd_gwd_ls ) then
           taub(i)  = xlinv(i) * roll(i) * ulow(i) * ulow(i)                       &
                    * ulow(i) * gfobnv * efact
+
+           write(iulog,*) "Jinbo Xie taub(i),xlinv(i),roll(i),ulow(i),gfobnv,efact",taub(i),xlinv(i),roll(i),ulow(i),gfobnv,efact
        else     ! We've gotten what we need for the blocking scheme
           taub(i) = 0.0_r8
        end if
@@ -2238,7 +2230,7 @@ taufb_xjb(i)=taufb(i,kts)
            !taup(i,:) = taup(i,:) + taufb(i,:)   ! Keep taup and taufb separate for now
         endif
 !!Jinbo Xie
-!kblk_xjb(i)=kblk
+kblk_xjb(i)=kblk
 !!Jinbo Xie
       endif
    enddo
@@ -2325,7 +2317,7 @@ enddo
 
 
 !#Jinbo get base flux
-#if 0
+!#if 0
 do i = its,ite
 !dusfc_ss(i)=wdir1_xjb(i)
 !dvsfc_ss(i)=ol(i)
@@ -2340,24 +2332,25 @@ dtaux2d_ss(i,8)=kpbl(i)
 dtaux2d_ss(i,9)=zblk_col(i)
 dtaux2d_ss(i,10)=oa4(i,1)
 dtaux2d_ss(i,11)=oa4(i,2)
-dtaux2d_ss(i,12)=oa4(i,3)
+dtaux2d_ss(i,12)=od_xjb(i)!oa4(i,3)
 dtaux2d_ss(i,13)=taub_xjb(i)
 dtaux2d_ss(i,14)=taufb_xjb(i)
 dtaux2d_ss(i,15)=xn(i)
 dtaux2d_ss(i,16)=yn(i)
-dtaux2d_ss(i,17)=dtfac(i)
+dtaux2d_ss(i,17)=bnv_xjb(i)!dtfac(i)
 dtaux2d_ss(i,18)=ulow(i)
 dtaux2d_ss(i,19)=kblk_xjb(i)
 dtaux2d_ss(i,20)=br1(i)
 enddo
-#endif
+dtauy2d_ss=bnv2
+!#endif
 !stop
-#if 0
+!#if 0
 do i = its,ite
 dusfc_ss(i)=taub_xjb(i)
 dvsfc_ss(i)=taufb_xjb(i)
 enddo
-#endif
+!#endif
 
    return
    end subroutine gwdo2d
