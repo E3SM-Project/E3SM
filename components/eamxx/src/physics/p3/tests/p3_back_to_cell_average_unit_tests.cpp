@@ -28,7 +28,7 @@ void run_phys()
 
 void run_bfb()
 {
-  auto engine = setup_random_test();
+  auto engine = setup_random_test(314552);
 
   // Generate n test structs, each populated with random data (values within
   // [0,1]) by the default constructor.
@@ -47,6 +47,14 @@ void run_bfb()
   // Run the Fortran subroutine.
   for (Int i = 0; i < max_pack_size; ++i) {
     back_to_cell_average(back_to_cell_average_data[i]);
+  }
+  // Read baseline data
+  std::string baseline_name = this->m_baseline_path + "/back_to_cell_average.dat";
+  if (this->m_baseline_action == COMPARE) {
+    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
+    for (Int i = 0; i < max_pack_size; ++i) {
+      back_to_cell_average_data[i].read(fid);
+    }
   }
 
   // Run the lookup from a kernel and copy results back to host
@@ -138,7 +146,7 @@ void run_bfb()
   Kokkos::deep_copy(host_data, device_data);
 
   // Validate results.
-  if (SCREAM_BFB_TESTING) {
+  if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
     for (Int s = 0; s < max_pack_size; ++s) {
       REQUIRE(back_to_cell_average_data[s].qc2qr_accret_tend        == host_data[s].qc2qr_accret_tend);
       REQUIRE(back_to_cell_average_data[s].qr2qv_evap_tend          == host_data[s].qr2qv_evap_tend);
@@ -169,6 +177,12 @@ void run_bfb()
       REQUIRE(back_to_cell_average_data[s].qv2qi_nucleat_tend       == host_data[s].qv2qi_nucleat_tend);
       REQUIRE(back_to_cell_average_data[s].ni_nucleat_tend          == host_data[s].ni_nucleat_tend);
       REQUIRE(back_to_cell_average_data[s].qc2qi_berg_tend          == host_data[s].qc2qi_berg_tend);
+    }
+  }
+  else if (this->m_baseline_action == GENERATE) {
+    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
+    for (Int s = 0; s < max_pack_size; ++s) {
+      host_data(s).write(fid);
     }
   }
 }
