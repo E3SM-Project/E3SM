@@ -815,23 +815,6 @@ subroutine gw_oro_interface(state,    cam_in,   sgh,      pbuf,     dtime,     n
   integer  :: ncol
   integer  :: i
   integer  :: k
-  !local transfer variables
-  real(r8) :: dtaux3_ls_local(pcols,pver)
-  real(r8) :: dtauy3_ls_local(pcols,pver)
-  real(r8) :: dtaux3_bl_local(pcols,pver)
-  real(r8) :: dtauy3_bl_local(pcols,pver)
-  real(r8) :: dtaux3_ss_local(pcols,pver)
-  real(r8) :: dtauy3_ss_local(pcols,pver)
-  real(r8) :: dtaux3_fd_local(pcols,pver)
-  real(r8) :: dtauy3_fd_local(pcols,pver)
-  real(r8) :: dusfc_ls_local(pcols)
-  real(r8) :: dvsfc_ls_local(pcols)
-  real(r8) :: dusfc_bl_local(pcols)
-  real(r8) :: dvsfc_bl_local(pcols)
-  real(r8) :: dusfc_ss_local(pcols)
-  real(r8) :: dvsfc_ss_local(pcols)
-  real(r8) :: dusfc_fd_local(pcols)
-  real(r8) :: dvsfc_fd_local(pcols)
 
   ncol=state%ncol
   !convert heights above surface to heights above sea level
