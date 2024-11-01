@@ -4080,6 +4080,10 @@
 			 description="min(0,AccumulatedFrazilIceMass * reference salinity - accumulatedFrazilIceSalinity), non-zero indicates possible non-conservation"
 			 packages="frazilIce"
 		/>
+		<var name="frazilInternalMeltCounter" type="integer" dimensions="nVertLevels nCells Time" units="1"
+			 description="counts 1 if there is internal frazil melt"
+			 packages="frazilIce"
+		/>
 		<var name="frazilIceFreshwaterFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
 			description="Flux of frazil ice mass through the ocean surface. Negative is defined as mass leaving the ocean."
 			packages="frazilIce"
