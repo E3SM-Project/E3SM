@@ -8,6 +8,12 @@ on:
     paths:
       - components/eamxx/scripts/**
       - components/eamxx/cime_config/*.py
+      - .github/workflows/eamxx-scripts-tests.yml
+      - externals/ekat/**
+      - externals/scorpio/**
+      - externals/haero/**
+      - externals/YAKL/**
+      - components/eam/src/physics/rrtmgp/external/**
 
   # Manual run for debug purposes only
   workflow_dispatch:
