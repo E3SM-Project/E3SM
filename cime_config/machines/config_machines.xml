@@ -1987,7 +1987,8 @@ commented out until "*** No rule to make target '.../libadios2pio-nm-lib.a'" iss
       <env name="PERL5LIB">/nfs/gce/projects/climate/software/perl5/lib/perl5</env>
     </environment_variables>
     <environment_variables compiler="gnu" mpilib="mpich">
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/adios2/2.9.1/mpich-4.1.2/gcc-12.1.0; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="Blosc2_DIR">/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/c-blosc2/2.15.1/gcc-12.1.0</env>
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/adios2/2.10.1/mpich-4.1.2/gcc-12.1.0; else echo "$ADIOS2_ROOT"; fi}</env>
     </environment_variables>
   </machine>
 
@@ -2078,7 +2079,8 @@ commented out until "*** No rule to make target '.../libadios2pio-nm-lib.a'" iss
       <env name="PERL5LIB">/nfs/gce/projects/climate/software/perl5/lib/perl5</env>
     </environment_variables>
     <environment_variables compiler="gnu" mpilib="mpich">
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/adios2/2.9.1/mpich-4.0/gcc-11.1.0; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="Blosc2_DIR">/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/c-blosc2/2.15.1/gcc-11.1.0</env>
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/adios2/2.10.1/mpich-4.0/gcc-11.1.0; else echo "$ADIOS2_ROOT"; fi}</env>
     </environment_variables>
   </machine>
 
