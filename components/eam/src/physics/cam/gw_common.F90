@@ -782,7 +782,6 @@ subroutine gw_oro_interface(state,    cam_in,   sgh,      pbuf,     dtime,     n
   real(r8), intent(in) :: ncd_bl
   real(r8), intent(in) :: sncleff_ss
   !
-  !
   real(r8), intent(out), optional :: utgw(state%ncol,pver)
   real(r8), intent(out), optional :: vtgw(state%ncol,pver)
   real(r8), intent(out), optional :: ttgw(state%ncol,pver)
@@ -819,23 +818,6 @@ subroutine gw_oro_interface(state,    cam_in,   sgh,      pbuf,     dtime,     n
   integer  :: ncol
   integer  :: i
   integer  :: k
-  !local transfer variables
-  real(r8) :: dtaux3_ls_local(pcols,pver)
-  real(r8) :: dtauy3_ls_local(pcols,pver)
-  real(r8) :: dtaux3_bl_local(pcols,pver)
-  real(r8) :: dtauy3_bl_local(pcols,pver)
-  real(r8) :: dtaux3_ss_local(pcols,pver)
-  real(r8) :: dtauy3_ss_local(pcols,pver)
-  real(r8) :: dtaux3_fd_local(pcols,pver)
-  real(r8) :: dtauy3_fd_local(pcols,pver)
-  real(r8) :: dusfc_ls_local(pcols)
-  real(r8) :: dvsfc_ls_local(pcols)
-  real(r8) :: dusfc_bl_local(pcols)
-  real(r8) :: dvsfc_bl_local(pcols)
-  real(r8) :: dusfc_ss_local(pcols)
-  real(r8) :: dvsfc_ss_local(pcols)
-  real(r8) :: dusfc_fd_local(pcols)
-  real(r8) :: dvsfc_fd_local(pcols)
                 !
                 ncol=state%ncol
                 !convert heights above surface to heights above sea level
@@ -876,7 +858,6 @@ subroutine gw_oro_interface(state,    cam_in,   sgh,      pbuf,     dtime,     n
                 !get grid size for dx,dy
                 call grid_size(state,dx,dy)
                 !interface for orographic drag
-                !if (gwd_fd.eq.0) then
                 call gwdo_gsd(&
                 u3d=state%u(:ncol,pver:1:-1),v3d=state%v(:ncol,pver:1:-1),t3d=state%t(:ncol,pver:1:-1),&
                 qv3d=state%q(:ncol,pver:1:-1,1),p3d=state%pmid(:ncol,pver:1:-1),p3di=state%pint(:ncol,pver+1:1:-1),&
@@ -916,12 +897,12 @@ integer :: i
 logical :: found
 
 pblh_get_level_idx = -1
-found=.False.
+found=.false.
           
 do i = 1, pver
         if((pblheight >= height_array(i+1).and.pblheight <height_array(i)))then
                 pblh_get_level_idx =  pver+1-i           
-                found=.True.
+                found=.true.
                 return
         endif
 enddo
@@ -1167,13 +1148,15 @@ end subroutine dxygrid
 !
 !=======Jinbo Xie=================
 !no need when there is no large drag
-IF ( (gwd_ls .EQ. 1).and.(gwd_bl .EQ. 1)) then
+IF ( gwd_ls .or. gwd_bl ) then
 
         do i = its,ite
             oa4(i,:) = oa2d(i,:)
             ol4(i,:) = ol2d(i,:)
         enddo
 ENDIF
+
+!write(iulog,*) "Jinbo Xie gwd_ls,gwd_bl,gwd_ss,gwd_fd",gwd_ls,gwd_bl,gwd_ss,gwd_fd
 !========Jinbo Xie================
 !=================================================================
         ! Jinbo Xie1  changed all ,j out, turn 3d into 2d, for cam formation
@@ -1498,6 +1481,8 @@ real(r8), intent(in) :: ncleff,ncd,sncleff
  logical  :: scorer_on=.false.
  !===================================
 
+
+write(iulog,*) "Jinbo Xie gsd_gwd_ls,gsd_gwd_bl,gsd_gwd_ss,gsd_gwd_fd",gsd_gwd_ls,gsd_gwd_bl,gsd_gwd_ss,gsd_gwd_fd
 !ncleff    = 3._r8
 !ncd       = 3._r8!1._r8!1._r8!3._r8
 !sncleff   = 1.0_r8
@@ -1691,7 +1676,7 @@ kblk_xjb(i)=0.0_r8
 !
 !=======Jinbo Xie=======
 !For ls and bl only
-IF  ((gsd_gwd_ls .EQ. 1).or.(gsd_gwd_bl .EQ. 1)) then
+IF  ( gsd_gwd_ls .or. gsd_gwd_bl ) then
 !     figure out low-level horizontal wind direction 
 !====Jinbo Xie order into a counterclockwise index instead====
 !no more 1-8 index
@@ -1757,7 +1742,7 @@ ENDIF
 !
 ! END INITIALIZATION; BEGIN GWD CALCULATIONS:
 !
-IF ( ((gsd_gwd_ls .EQ. 1).or.(gsd_gwd_bl .EQ. 1)).and.   &
+IF ( ( gsd_gwd_ls .or. gsd_gwd_bl ).and.   &
                (ls_taper .GT. 1.E-02) ) THEN   !====
 
 !                                                                       
@@ -1876,6 +1861,7 @@ IF ( ((gsd_gwd_ls .EQ. 1).or.(gsd_gwd_bl .EQ. 1)).and.   &
    do i = its,ite
      if (.not. ldrag(i))   then
        efact    = max(oa1(i)+2._r8,0._r8) ** (ce*fr(i)/frc)
+       !efact    = (oa1(i)+2._r8) ** (ce*fr(i)/frc)
        efact    = min( max(efact,efmin), efmax )
 !!!!!!! cleff (effective grid length) is highly tunable parameter
 !!!!!!! the bigger (smaller) value produce weaker (stronger) wave drag
@@ -1890,7 +1876,7 @@ IF ( ((gsd_gwd_ls .EQ. 1).or.(gsd_gwd_bl .EQ. 1)).and.   &
        tem      = fr(i) * fr(i) * oc1(i)
        gfobnv   = gmax * tem / ((tem + cg)*bnv(i))
 
-       if ( gsd_gwd_ls .NE. 0 ) then
+       if ( gsd_gwd_ls ) then
           taub(i)  = xlinv(i) * roll(i) * ulow(i) * ulow(i)                       &
                    * ulow(i) * gfobnv * efact
        else     ! We've gotten what we need for the blocking scheme
@@ -1918,7 +1904,7 @@ ENDIF   ! (gsd_gwd_ls .EQ. 1).or.(gsd_gwd_bl .EQ. 1)
   vtendwave=0._r8
   zq=0._r8
 !
-  IF ( (gsd_gwd_ss .EQ. 1).and.(ss_taper.GT.1.E-02) ) THEN
+  IF ( gsd_gwd_ss .and. ss_taper.GT.1.E-02 ) THEN
 !
 ! declaring potential temperature
 !
@@ -2012,13 +1998,13 @@ ENDIF  ! end if gsd_gwd_ss == 1
 !================================================================
 !add Beljaars et al. (2004, QJRMS, equ. 16) form drag:
 !================================================================
-IF ( (gsd_gwd_fd .EQ. 1).and.(ss_taper.GT.1.E-02) ) THEN
+IF ( gsd_gwd_fd .and. ss_taper.GT.1.E-02 ) THEN
 
    utendform=0._r8
    vtendform=0._r8
    zq=0._r8
 
-   IF ( (gsd_gwd_ss .NE. 1).and.(ss_taper.GT.1.E-02) ) THEN
+   IF ( gsd_gwd_ss .and. ss_taper.GT.1.E-02 ) THEN
       ! Defining layer height. This is already done above is small-scale GWD is used
       do k = kts,kte
         do i = its,ite
@@ -2061,8 +2047,8 @@ IF ( (gsd_gwd_fd .EQ. 1).and.(ss_taper.GT.1.E-02) ) THEN
          !!and no more wind reversal due to drag
          !!which is suppose to decelerate
          !!not accelerate
-         utendform(i,k)  = sign(min(abs(utendform(i,k)),abs(u1(i,k))/kdt),utendform(i,k))
-         vtendform(i,k)  = sign(min(abs(vtendform(i,k)),abs(v1(i,k))/kdt),vtendform(i,k))
+         utendform(i,k)  = sign(min(abs(utendform(i,k)),abs(u1(i,k))/deltim),utendform(i,k))
+         vtendform(i,k)  = sign(min(abs(vtendform(i,k)),abs(v1(i,k))/deltim),vtendform(i,k))
          !!
          dtaux2d_fd(i,k) = utendform(i,k)
          dtauy2d_fd(i,k) = vtendform(i,k)
@@ -2070,10 +2056,14 @@ IF ( (gsd_gwd_fd .EQ. 1).and.(ss_taper.GT.1.E-02) ) THEN
          dvsfc_fd(i) = dvsfc_fd(i) + vtendform(i,k) * del(i,k)
       enddo
    enddo
+
+
+  write(iulog,*)"Jinbo Xie minval(utendform),maxval(utendform),minval(del),maxval(del),minval(u1),maxval(u1),minval(var),maxval(var)",minval(utendform),maxval(utendform),minval(del),maxval(del),minval(u1),maxval(u1),minval(var),maxval(var)
+
    ENDIF  ! end if gsd_gwd_fd == 1
 !=======================================================
 ! More for the large-scale gwd component
-IF ( (gsd_gwd_ls .EQ. 1).and.(ls_taper.GT.1.E-02) ) THEN
+IF ( gsd_gwd_ls .and. ls_taper.GT.1.E-02 ) THEN
 !                                                                       
 !   now compute vertical structure of the stress.
 !
@@ -2184,7 +2174,7 @@ ENDIF !END LARGE-SCALE TAU CALCULATION
 !===============================================================
 !COMPUTE BLOCKING COMPONENT 
 !===============================================================
-IF ( (gsd_gwd_bl .EQ. 1) .and. (ls_taper .GT. 1.E-02) ) THEN
+IF ( gsd_gwd_bl .and. ls_taper .GT. 1.E-02 ) THEN
 
    do i = its,ite
       if(.not.ldrag(i)) then
@@ -2255,7 +2245,7 @@ taufb_xjb(i)=taufb(i,kts)
 
 ENDIF   ! end blocking drag
 !===========================================================
-IF ( (gsd_gwd_ls .EQ. 1 .OR. gsd_gwd_bl .EQ. 1) .and. (ls_taper .GT. 1.E-02) ) THEN
+IF ( gsd_gwd_ls .OR. gsd_gwd_bl .and. ls_taper .GT. 1.E-02 ) THEN
 
 !                                                                       
 !  calculate - (g)*d(tau)/d(pressure) and deceleration terms dtaux, dtauy
@@ -2293,14 +2283,15 @@ IF ( (gsd_gwd_ls .EQ. 1 .OR. gsd_gwd_bl .EQ. 1) .and. (ls_taper .GT. 1.E-02) ) T
       enddo
    enddo
 !
-
    do k = kts,kte
       do i = its,ite
          taud_ls(i,k)  = taud_ls(i,k) * dtfac(i) * ls_taper
          !!Jinbo Xie apply limiter for ogwd
          !1.dudt < |c-u|/dt, so u-c cannot change sign(u^n+1 = u^n + du/dt * dt)
          !2.dudt<tndmax, eliminate ridiculous large tendency
-         taud_ls(i,k)  = sign(min(abs(taud_ls(i,k)),umcfac*abs(velco(i,k))/kdt),taud_ls(i,k))
+         if (k.ne.kte) then!velco does not have top level value
+         taud_ls(i,k)  = sign(min(abs(taud_ls(i,k)),umcfac*abs(velco(i,k))/deltim),taud_ls(i,k))
+         endif
          taud_ls(i,k)  = sign(min(abs(taud_ls(i,k)),tndmax),taud_ls(i,k))
          !!Jinbo Xie
          taud_bl(i,k)  = taud_bl(i,k) * dtfac(i) * ls_taper

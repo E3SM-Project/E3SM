@@ -1214,7 +1214,7 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
 #endif
     use time_manager,   only: get_nstep
     use check_energy,   only: ieflx_gmean, check_ieflx_fix 
-    use phys_control,   only: ieflx_opt
+    use phys_control,   only: ieflx_opt, use_od_ls, use_od_bl
     !!=====Jinbo Xie=====
     use comsrf,              only:var,var30,oc,oadir,ol
     !!=====Jinbo Xie=====
@@ -1312,14 +1312,14 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
        call t_stopf('diag_surf')
 !Jinbo Xie
 !===Jinbo Xie===
-!if (gw_drag_scheme == 3) then
+if ( use_od_ls.or.use_od_bl) then
         phys_state(c)%var(:)=var(:,c)
         phys_state(c)%var30(:)=var30(:,c)
         phys_state(c)%oc(:)=oc(:,c)
         phys_state(c)%oadir(:,:)=oadir(:,:,c)
         phys_state(c)%ol(:,:)=ol(:,:,c)
         !phys_state(c)%dxydir(:,:)=dxydir(:,:,c)
-!endif
+endif
 !===Jinbo Xie===
        call tphysac(ztodt, cam_in(c),  &
             sgh(1,c), sgh30(1,c), cam_out(c),                              &
