@@ -33,15 +33,15 @@ int main (int argc, char** argv) {
     auto logger = std::make_shared<logger_t>("",LogLevel::info,comm);
 
     // Get filenames from command line
-    if (argc != 3) {
+    if (argc < 3) {
       std::string msg = "Missing required inputs. Usage:\n";
       msg += argv[0];
       msg += " inputfile baseline\n";
       logger->error(msg);
       return 1;
     }
-    std::string inputfile(argv[argc-2]);
-    std::string baseline(argv[argc-1]);
+    std::string inputfile(argv[1]);
+    std::string baseline(argv[2]);
 
     // Initialize yakl
     yakl::init();

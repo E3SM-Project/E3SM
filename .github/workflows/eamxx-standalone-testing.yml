@@ -11,8 +11,6 @@ on:
       - components/eam/src/physics/p3/scream/**
       - components/eam/src/physics/cam/**
       - .github/workflows/eamxx-standalone-testing.yml
-  pull_request_review:
-    types: [submitted]
 
   # Manual run is used to bless
   workflow_dispatch:
@@ -23,6 +21,7 @@ on:
         type: choice
         options:
           - gcc-openmp
+          - gcc-cuda
       bless:
         description: 'Generate baselines'
         required: true
@@ -33,13 +32,10 @@ on:
     - cron: '0 7 * * *'  # Runs at 7 AM UTC, which is midnight MT during Standard Time
 
 concurrency:
-  # Two runs are in the same group if:
-  #  - they have the same trigger
-  #  - if trigger=pull_request/pull_request_review, the PR number must match
-  #  - if trigger=workflow_dispatch/schedule: no concurrency
-  group: ${{ github.workflow }}-${{ github.event_name }}-${{
-             (github.event_name == 'pull_request' || github.event_name == 'pull_request_review') && github.event.pull_request.number || github.run_id
-           }}
+  # Two runs are in the same group if they are testing the same git ref
+  #  - if trigger=pull_request, the ref is refs/pull/<PR_NUMBER>/merge
+  #  - for other triggers, the ref is the branch tested
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -86,30 +82,46 @@ jobs:
           generate: ${{ env.generate }}
           submit: ${{ env.submit }}
           cmake-configs: Kokkos_ENABLE_OPENMP=ON
-  # cuda:
-  #   # Disable until the CUDA container is up and running. When CUDA container is availabe, remove
-  #   # this line and uncomment the next if
-  #   if: false
-  #   # Runs always for pull_request. For workflow_dispatch, user must request this machine
-  #   # if: ${{ github.event_name == 'pull_request' || contains(github.event.inputs.jobs_to_run, 'openmp-gcc') }}
-  #   runs-on:  [self-hosted, cuda]
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       build_type: [sp, dbg, fpe, opt]
-  #   name: cuda-${{ matrix.build_type }}
-  #   steps:
-  #     - name: Show action trigger
-  #       uses: ./.github/actions/print-workflow-trigger
-  #     - name: Check out the repository
-  #       uses: actions/checkout@v4
-  #       with:
-  #         persist-credentials: false
-  #         show-progress: false
-  #         submodules: recursive
-  #     - name: Run tests
-  #       uses: ./.github/actions/test-all-scream
-  #       with:
-  #         build_type: ${{ matrix.build_type }}
-  #         machine: ghci-snl-cuda
-  #         run_type: at-run
+  gcc-cuda:
+    runs-on:  [self-hosted, ghci-snl-cuda, cuda, gcc]
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [sp, dbg, opt]
+    if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.jobs_list != 'gcc-cuda') }}
+    name: gcc-cuda / ${{ matrix.build_type }}
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          show-progress: false
+          submodules: recursive
+      - name: Show action trigger
+        uses: ./.github/actions/show-workflow-trigger
+      - name: Check for skip labels
+        if: ${{ github.event_name == 'pull_request' || github.event_name == 'pull_request_review' }}
+        uses: ./.github/actions/check-skip-labels
+        with:
+          skip_labels: 'AT: skip gcc,AT: skip cuda,AT: skip eamxx-sa,AT: skip eamxx-all'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          pr_number: ${{ github.event.pull_request.number }}
+      - name: Set test-all inputs based on event specs
+        run: |
+          echo "submit=false" >> $GITHUB_ENV
+          echo "generate=false" >> $GITHUB_ENV
+          if [ "${{ github.event_name }}" == "schedule" ]; then
+            echo "submit=true" >> $GITHUB_ENV
+          elif [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            if [ "${{ inputs.bless }}" == "true" ]; then
+              echo "generate=true" >> $GITHUB_ENV
+            fi
+          fi
+      - name: Run tests
+        uses: ./.github/actions/test-all-scream
+        with:
+          build_type: ${{ matrix.build_type }}
+          machine: ghci-snl-cuda
+          generate: ${{ env.generate }}
+          submit: ${{ env.submit }}
+          cmake-configs: Kokkos_ARCH_VOLTA70=ON;CMAKE_CUDA_ARCHITECTURES=70
