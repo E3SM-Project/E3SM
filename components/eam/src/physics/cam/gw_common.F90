@@ -1071,7 +1071,6 @@ subroutine gwdo_gsd(u3d,v3d,t3d,qv3d,p3d,p3di,pi3d,z,                           
   integer,  intent(in)   ::      ims, ime, jms, jme, kms, kme
   integer,  intent(in)   ::      its, ite, jts, jte, kts, kte
   integer,  intent(in)   ::      gwd_opt
-  real(r8), intent(in)   ::      itimestep
   real(r8), intent(in)   ::      cp,g,rd,rv,ep1,pi
   !input model grid length for the grid dx,dy
   real(r8), dimension(:),                   intent(in)  :: dx
@@ -1123,13 +1122,13 @@ subroutine gwdo_gsd(u3d,v3d,t3d,qv3d,p3d,p3di,pi3d,z,                           
   real(r8), dimension( ims:ime,kms:kme ),  intent(inout), optional  ::   dtauy3d_ss
   real(r8), dimension( ims:ime,kms:kme ),  intent(inout), optional  ::   dtaux3d_fd
   real(r8), dimension( ims:ime,kms:kme ),  intent(inout), optional  ::   dtauy3d_fd
-  real(r8), dimension( ims:ime ),          intent(inout), optional  ::   dusfcg_ls,
-  real(r8), dimension( ims:ime ),          intent(inout), optional  ::   dvsfcg_ls,
-  real(r8), dimension( ims:ime ),          intent(inout), optional  ::   dusfcg_bl,
-  real(r8), dimension( ims:ime ),          intent(inout), optional  ::   dvsfcg_bl,    
-  real(r8), dimension( ims:ime ),          intent(inout), optional  ::   dusfcg_ss,
-  real(r8), dimension( ims:ime ),          intent(inout), optional  ::   dvsfcg_ss,
-  real(r8), dimension( ims:ime ),          intent(inout), optional  ::   dusfcg_fd,
+  real(r8), dimension( ims:ime ),          intent(inout), optional  ::   dusfcg_ls
+  real(r8), dimension( ims:ime ),          intent(inout), optional  ::   dvsfcg_ls
+  real(r8), dimension( ims:ime ),          intent(inout), optional  ::   dusfcg_bl
+  real(r8), dimension( ims:ime ),          intent(inout), optional  ::   dvsfcg_bl    
+  real(r8), dimension( ims:ime ),          intent(inout), optional  ::   dusfcg_ss
+  real(r8), dimension( ims:ime ),          intent(inout), optional  ::   dvsfcg_ss
+  real(r8), dimension( ims:ime ),          intent(inout), optional  ::   dusfcg_fd
   real(r8), dimension( ims:ime ),          intent(inout), optional  ::   dvsfcg_fd
   !local drag terms
   real(r8), dimension( ims:ime, kms:kme )  ::  dtaux2d_ls
@@ -1149,7 +1148,7 @@ subroutine gwdo_gsd(u3d,v3d,t3d,qv3d,p3d,p3di,pi3d,z,                           
   real(r8), dimension( ims:ime ) ::  dusfc_fd
   real(r8), dimension( ims:ime ) ::  dvsfc_fd
   !local variables
-  real(r8),   dimension( its:ite, kts:kte )     ::  delprsi, 
+  real(r8),   dimension( its:ite, kts:kte )     ::  delprsi
   real(r8),   dimension( its:ite, kts:kte )     ::  pdh
   real(r8),   dimension( its:ite, kts:kte+1 )   ::  pdhi
   real(r8),   dimension( its:ite, nvar_dirOA )  ::  oa4
@@ -1303,7 +1302,7 @@ subroutine gwdo2d(dudt,dvdt,dthdt,ncleff,ncd,sncleff,                        &
   real(r8), intent(in) :: ncd
   real(r8), intent(in) :: sncleff
   !model timestep and other parameters
-  real(r8)  intent(in) ::  g,rd,rv,fv,cp,pi,deltim,rcl
+  real(r8), intent(in) ::  g,rd,rv,fv,cp,pi,deltim,rcl
   !input model grid length
   real(r8), dimension(:), intent(in)   ::  dxmeter
   real(r8), dimension(:), intent(in)   ::  dymeter
@@ -1408,55 +1407,55 @@ subroutine gwdo2d(dudt,dvdt,dthdt,ncleff,ncd,sncleff,                        &
   !
   !  local variables
   !
-  integer              ::  i,j,k,lcap,lcapp1,nwd,idir
-  integer              ::  klcap,kp1,ikount,kk,nwd1!added nwd1
-  real(r8)             ::  rcs,rclcs,csg,fdir,cleff,cs,rcsks
-  real(r8)             ::  wdir,ti,rdz,temp,tem2,dw2,shr2,bvf2,rdelks
-  real(r8)             ::  wtkbj,tem,gfobnv,hd,fro,rim,temc,tem1,efact
-  real(r8)             ::  temv,dtaux,dtauy,eng0,eng1,theta,rad,wdir1
+  integer                  ::  i,j,k,lcap,lcapp1,nwd,idir
+  integer                  ::  klcap,kp1,ikount,kk,nwd1!added nwd1
+  real(r8)                 ::  rcs,rclcs,csg,fdir,cleff,cs,rcsks
+  real(r8)                 ::  wdir,ti,rdz,temp,tem2,dw2,shr2,bvf2,rdelks
+  real(r8)                 ::  wtkbj,tem,gfobnv,hd,fro,rim,temc,tem1,efact
+  real(r8)                 ::  temv,dtaux,dtauy,eng0,eng1,theta,rad,wdir1
   !logical variables
-  logical,dimension( its:ite ) ::  ldrag
-  logical,dimension( its:ite ) ::  icrilv
-  logical,dimension( its:ite ) ::  flag
-  logical,dimension( its:ite ) ::  kloop1
+  logical,dimension( its:ite )            ::  ldrag
+  logical,dimension( its:ite )            ::  icrilv
+  logical,dimension( its:ite )            ::  flag
+  logical,dimension( its:ite )            ::  kloop1
   !parameters for taking over the input
-  real(r8),dimension( its:ite+1 )       :: taup
-  real(r8),dimension( its:ite-1 )       :: velco
-  real(r8),dimension( its:ite )         :: taub
-  real(r8),dimension( its:ite )         :: xn
-  real(r8),dimension( its:ite )         :: yn
-  real(r8),dimension( its:ite )         :: ubar
-  real(r8),dimension( its:ite )         :: vbar
-  real(r8),dimension( its:ite )         :: fr
-  real(r8),dimension( its:ite )         :: ulow
-  real(r8),dimension( its:ite )         :: rulow
-  real(r8),dimension( its:ite )         :: bnv
-  real(r8),dimension( its:ite )         :: oa1
-  real(r8),dimension( its:ite )         :: ol
-  real(r8),dimension( its:ite )         :: roll
-  real(r8),dimension( its:ite )         :: dtfac
-  real(r8),dimension( its:ite )         :: brvf
-  real(r8),dimension( its:ite )         :: xlinv
-  real(r8),dimension( its:ite )         :: delks
-  real(r8),dimension( its:ite )         :: delks1
-  real(r8),dimension( its:ite,kts:kte ) :: bnv2
-  real(r8),dimension( its:ite,kts:kte ) :: usqj
-  real(r8),dimension( its:ite,kts:kte ) :: taud_ls
-  real(r8),dimension( its:ite,kts:kte ) :: taud_bl
-  real(r8),dimension( its:ite,kts:kte ) :: ro
-  real(r8),dimension( its:ite,kts:kte ) :: vtk
-  real(r8),dimension( its:ite,kts:kte ) :: vtj
-  real(r8),dimension( its:ite )         :: zlowtop
-  real(r8),dimension( its:ite )         :: coefm
+  real(r8),dimension( its:ite )           :: taub
+  real(r8),dimension( its:ite )           :: xn
+  real(r8),dimension( its:ite )           :: yn
+  real(r8),dimension( its:ite )           :: ubar
+  real(r8),dimension( its:ite )           :: vbar
+  real(r8),dimension( its:ite )           :: fr
+  real(r8),dimension( its:ite )           :: ulow
+  real(r8),dimension( its:ite )           :: rulow
+  real(r8),dimension( its:ite )           :: bnv
+  real(r8),dimension( its:ite )           :: oa1
+  real(r8),dimension( its:ite )           :: ol
+  real(r8),dimension( its:ite )           :: roll
+  real(r8),dimension( its:ite )           :: dtfac
+  real(r8),dimension( its:ite )           :: brvf
+  real(r8),dimension( its:ite )           :: xlinv
+  real(r8),dimension( its:ite )           :: delks
+  real(r8),dimension( its:ite )           :: delks1
+  real(r8),dimension( its:ite,kts:kte )   :: bnv2
+  real(r8),dimension( its:ite,kts:kte )   :: usqj
+  real(r8),dimension( its:ite,kts:kte )   :: taud_ls
+  real(r8),dimension( its:ite,kts:kte )   :: taud_bl
+  real(r8),dimension( its:ite,kts:kte )   :: ro
+  real(r8),dimension( its:ite,kts:kte )   :: vtk
+  real(r8),dimension( its:ite,kts:kte )   :: vtj
+  real(r8),dimension( its:ite )           :: zlowtop
+  real(r8),dimension( its:ite )           :: coefm
+  real(r8),dimension( its:ite,kts:kte+1 ) :: taup
+  real(r8),dimension( its:ite,kts:kte-1 ) :: velco
   !pbl related variables
-  integer ,dimension( its:ite )         :: kbl
-  integer ,dimension( its:ite )         :: klowtop
-  integer ,dimension( its:ite )         :: komax
+  integer ,dimension( its:ite )           :: kbl
+  integer ,dimension( its:ite )           :: klowtop
+  integer ,dimension( its:ite )           :: komax
   !flow-blocking related variables
-  integer                               :: kblk
-  real(r8)                              :: cd
-  real(r8)                              :: zblk,tautem
-  real(r8)                              :: pe,ke
+  integer                                 :: kblk
+  real(r8)                                :: cd
+  real(r8)                                :: zblk,tautem
+  real(r8)                                :: pe,ke
   !grid related variables
   real(r8),dimension( its:ite )           :: delx
   real(r8),dimension( its:ite )           :: dely
@@ -1465,13 +1464,13 @@ subroutine gwdo2d(dudt,dvdt,dthdt,ncleff,ncd,sncleff,                        &
   real(r8),dimension( its:ite,nvar_dirOL ):: dxy4
   real(r8),dimension( its:ite,nvar_dirOL ):: dxy4p
   !topo parameters
-  real(r8),dimension( its:ite )      :: olp
-  real(r8),dimension( its:ite )      :: od
-  real(r8),( its:ite,kts:kte+1 )     :: taufb
+  real(r8),dimension( its:ite )           :: olp
+  real(r8),dimension( its:ite )           :: od
+  real(r8),dimension( its:ite,kts:kte+1 ) :: taufb
   !readdata for low-level determination of ogwd
-  real(r8), dimension( its:ite )     :: zl_hint
-  real(r8)                           :: l1,l2,S!,shrrok1,shrrok0,gamma1
-  logical                            :: iint
+  real(r8), dimension( its:ite )          :: zl_hint
+  real(r8)                                :: l1,l2,S
+  logical                                 :: iint
   !open/close low-level momentum adjustment according to scorer parameter
   logical  :: scorer_on=.false.
   !
