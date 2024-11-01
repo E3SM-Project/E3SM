@@ -176,8 +176,6 @@ void ice_cldliq_wet_growth_c(Real rho, Real temp, Real pres, Real rhofaci, Real 
                              Real qi_incld, Real ni_incld, Real qr_incld, bool* log_wetgrowth,
                              Real* qr2qi_collect_tend, Real* qc2qi_collect_tend, Real* qc_growth_rate, Real* nr_ice_shed_tend, Real* qc2qr_ice_shed_tend);
 
-void get_latent_heat_c(Int its, Int ite, Int kts, Int kte, Real* s, Real* v, Real* f);
-
 Real subgrid_variance_scaling_c(Real relvar, Real expon);
 
 void check_values_c(Real* qv, Real* temp, Int kts, Int kte, Int timestepcount,
@@ -345,20 +343,6 @@ void cldliq_immersion_freezing(CldliqImmersionFreezingData& d)
   p3_init();
   cldliq_immersion_freezing_c(d.T_atm, d.lamc, d.mu_c, d.cdist1, d.qc_incld, d.inv_qc_relvar,
                               &d.qc2qi_hetero_freeze_tend, &d.nc2ni_immers_freeze_tend);
-}
-
-LatentHeatData::LatentHeatData(Int kts_, Int kte_, Int its_, Int ite_) :
-  PhysicsTestData( { {(ite_ - its_) + 1, (kte_ - kts_) + 1} },
-                   { {&v, &s, &f} }),
-  its(its_), ite(ite_), kts(kts_), kte(kte_)
-{}
-
-void get_latent_heat(LatentHeatData& d)
-{
-  p3_init();
-  d.transpose<ekat::TransposeDirection::c2f>();
-  get_latent_heat_c(d.its, d.ite, d.kts, d.kte, d.v, d.s, d.f);
-  d.transpose<ekat::TransposeDirection::f2c>();
 }
 
 void droplet_self_collection(DropletSelfCollectionData& d)

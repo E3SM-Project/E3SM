@@ -173,9 +173,13 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip : public UnitWrap::UnitTest<D>:
     std::copy(&espd[0], &espd[0] + max_pack_size, espd_host.data());
     Kokkos::deep_copy(espd_device, espd_host);
 
-    // Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
-      evaporate_rain(espd[i]);
+    // Read baseline data
+    std::string baseline_name = this->m_baseline_path + "/evaporate_rain.dat";
+    if (this->m_baseline_action == COMPARE) {
+      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
+      for (Int i = 0; i < max_pack_size; ++i) {
+        espd[i].read(fid);
+      }
     }
 
     // Run the lookup from a kernel and copy results back to host
@@ -241,10 +245,16 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip : public UnitWrap::UnitTest<D>:
     Kokkos::deep_copy(espd_host, espd_device);
 
     // Validate results
-    if (SCREAM_BFB_TESTING) {
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int s = 0; s < max_pack_size; ++s) {
         REQUIRE(espd[s].qr2qv_evap_tend == espd_host(s).qr2qv_evap_tend);
         REQUIRE(espd[s].nr_evap_tend == espd_host(s).nr_evap_tend);
+      }
+    }
+    else if (this->m_baseline_action == GENERATE) {
+      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
+      for (Int s = 0; s < max_pack_size; ++s) {
+        espd_host(s).write(fid);
       }
     }
   } // end run_bfb

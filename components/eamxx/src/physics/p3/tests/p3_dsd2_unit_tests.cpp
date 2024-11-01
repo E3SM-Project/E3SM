@@ -60,9 +60,13 @@ struct UnitWrap::UnitTest<D>::TestDsd2 : public UnitWrap::UnitTest<D>::Base {
     std::copy(&gcdd[0], &gcdd[0] + max_pack_size, gcdd_host.data());
     Kokkos::deep_copy(gcdd_device, gcdd_host);
 
-    // Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
-      get_cloud_dsd2(gcdd[i]);
+    // Read baseline data
+    std::string baseline_name = this->m_baseline_path + "/get_cloud_dsd2.dat";
+    if (this->m_baseline_action == COMPARE) {
+      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
+      for (Int i = 0; i < max_pack_size; ++i) {
+        gcdd[i].read(fid);
+      }
     }
 
     // Run the lookup from a kernel and copy results back to host
@@ -95,7 +99,7 @@ struct UnitWrap::UnitTest<D>::TestDsd2 : public UnitWrap::UnitTest<D>::Base {
     Kokkos::deep_copy(gcdd_host, gcdd_device);
 
     // Validate results
-    if (SCREAM_BFB_TESTING) {
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int s = 0; s < max_pack_size; ++s) {
         REQUIRE(gcdd[s].nc_out == gcdd_host(s).nc_out);
         REQUIRE(gcdd[s].mu_c   == gcdd_host(s).mu_c);
@@ -103,6 +107,12 @@ struct UnitWrap::UnitTest<D>::TestDsd2 : public UnitWrap::UnitTest<D>::Base {
         REQUIRE(gcdd[s].lamc   == gcdd_host(s).lamc);
         REQUIRE(gcdd[s].cdist  == gcdd_host(s).cdist);
         REQUIRE(gcdd[s].cdist1 == gcdd_host(s).cdist1);
+      }
+    }
+    else if (this->m_baseline_action == GENERATE) {
+      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
+      for (Int s = 0; s < max_pack_size; ++s) {
+        gcdd_host(s).write(fid);
       }
     }
   }
@@ -144,9 +154,13 @@ struct UnitWrap::UnitTest<D>::TestDsd2 : public UnitWrap::UnitTest<D>::Base {
     std::copy(&grdd[0], &grdd[0] + max_pack_size, grdd_host.data());
     Kokkos::deep_copy(grdd_device, grdd_host);
 
-    // Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
-      get_rain_dsd2(grdd[i]);
+    // Read baseline data
+    std::string baseline_name = this->m_baseline_path + "/get_rain_dsd2.dat";
+    if (this->m_baseline_action == COMPARE) {
+      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
+      for (Int i = 0; i < max_pack_size; ++i) {
+        grdd[i].read(fid);
+      }
     }
 
     // Run the lookup from a kernel and copy results back to host
@@ -179,13 +193,19 @@ struct UnitWrap::UnitTest<D>::TestDsd2 : public UnitWrap::UnitTest<D>::Base {
     Kokkos::deep_copy(grdd_host, grdd_device);
 
     // Validate results
-    if (SCREAM_BFB_TESTING) {
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int s = 0; s < max_pack_size; ++s) {
         REQUIRE(grdd[s].nr_out == grdd_host(s).nr_out);
         REQUIRE(grdd[s].mu_r   == grdd_host(s).mu_r);
         REQUIRE(grdd[s].lamr   == grdd_host(s).lamr);
         REQUIRE(grdd[s].cdistr == grdd_host(s).cdistr);
         REQUIRE(grdd[s].logn0r == grdd_host(s).logn0r);
+      }
+    }
+    else if (this->m_baseline_action == GENERATE) {
+      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
+      for (Int s = 0; s < max_pack_size; ++s) {
+        grdd_host(s).write(fid);
       }
     }
   }
