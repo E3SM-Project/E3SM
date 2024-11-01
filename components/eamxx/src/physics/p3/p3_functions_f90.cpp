@@ -701,7 +701,7 @@ void compute_rain_fall_velocity(ComputeRainFallVelocityData& d)
 
 P3MainPart1Data::P3MainPart1Data(
   Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
-  bool do_predict_nc_, bool do_prescribed_CCN_, Real dt_) :
+  bool do_predict_nc_, bool do_prescribed_CCN_, Real dt_, bool, bool) :
   PhysicsTestData( { {(kte_ - kts_) + 1} }, { {
     &pres, &dpres, &dz, &nc_nuceat_tend, &inv_exner, &exner, &inv_cld_frac_l, &inv_cld_frac_i, &inv_cld_frac_r, &latent_heat_vapor, &latent_heat_sublim, &latent_heat_fusion, &nccn_prescribed,
     &T_atm, &rho, &inv_rho, &qv_sat_l, &qv_sat_i, &qv_supersat_i, &rhofacr, &rhofaci,
@@ -730,7 +730,7 @@ void p3_main_part1(P3MainPart1Data& d)
 
 P3MainPart2Data::P3MainPart2Data(
   Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
-  bool do_predict_nc_, bool do_prescribed_CCN_, Real dt_) :
+  bool do_predict_nc_, bool do_prescribed_CCN_, Real dt_, Real, bool) :
   PhysicsTestData( { {(kte_ - kts_) + 1} }, { {
     &pres, &dpres, &dz, &nc_nuceat_tend, &inv_exner, &exner, &inv_cld_frac_l, &inv_cld_frac_i, &inv_cld_frac_r, &ni_activated, &inv_qc_relvar, &cld_frac_i, &cld_frac_l, &cld_frac_r, &qv_prev, &t_prev,
     &T_atm, &rho, &inv_rho, &qv_sat_l, &qv_sat_i, &qv_supersat_i, &rhofacr, &rhofaci, &acn,
@@ -785,7 +785,7 @@ void p3_main_part3(P3MainPart3Data& d)
 ///////////////////////////////////////////////////////////////////////////////
 
 P3MainData::P3MainData(
-  Int its_, Int ite_, Int kts_, Int kte_, Int it_, Real dt_, bool do_predict_nc_, bool do_prescribed_CCN_) :
+  Int its_, Int ite_, Int kts_, Int kte_, Int it_, Real dt_, bool do_predict_nc_, bool do_prescribed_CCN_, Real) :
   PhysicsTestData( { {(ite_ - its_) + 1, (kte_ - kts_) + 1}, {(ite_ - its_) + 1, (kte_ - kts_) + 2} }, { {
     &pres, &dz, &nc_nuceat_tend, &nccn_prescribed, &ni_activated, &dpres, &inv_exner, &cld_frac_i, &cld_frac_l, &cld_frac_r,
     &inv_qc_relvar, &qc, &nc, &qr, &nr, &qi, &qm, &ni, &bm, &qv, &th_atm, &qv_prev, &t_prev,

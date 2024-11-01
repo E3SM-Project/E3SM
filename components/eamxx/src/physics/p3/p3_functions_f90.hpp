@@ -733,9 +733,9 @@ struct P3MainPart1Data : public PhysicsTestData
   bool is_nucleat_possible, is_hydromet_present;
 
   P3MainPart1Data(Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
-                  bool do_predict_nc_, bool do_prescribed_CCN_, Real dt_);
+                  bool do_predict_nc_, bool do_prescribed_CCN_, Real dt_, bool=false, bool=false);
 
-  PTD_STD_DEF(P3MainPart1Data, 8, kts, kte, kbot, ktop, kdir, do_predict_nc, do_prescribed_CCN, dt);
+  PTD_STD_DEF(P3MainPart1Data, 10, kts, kte, kbot, ktop, kdir, do_predict_nc, do_prescribed_CCN, dt, is_nucleat_possible, is_hydromet_present);
 
   Int nk() const { return (kte - kts) + 1; }
 };
@@ -762,10 +762,9 @@ struct P3MainPart2Data : public PhysicsTestData
   bool is_hydromet_present;
 
   P3MainPart2Data(Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
-                  bool do_predict_nc_, bool do_prescribed_CCN, Real dt_);
+                  bool do_predict_nc_, bool do_prescribed_CCN, Real dt_, Real=0., bool=false);
 
-  PTD_DATA_COPY_CTOR(P3MainPart2Data, 8);
-  PTD_ASSIGN_OP(P3MainPart2Data, 10, kts, kte, kbot, ktop, kdir, do_predict_nc, do_prescribed_CCN, dt, inv_dt, is_hydromet_present);
+  PTD_STD_DEF(P3MainPart2Data, 10, kts, kte, kbot, ktop, kdir, do_predict_nc, do_prescribed_CCN, dt, inv_dt, is_hydromet_present);
 
   Int nk() const { return (kte - kts) + 1; }
 };
@@ -817,9 +816,9 @@ struct P3MainData : public PhysicsTestData
        *precip_liq_flux, *precip_ice_flux, *precip_liq_surf, *precip_ice_surf;
   Real elapsed_s;
 
-  P3MainData(Int its_, Int ite_, Int kts_, Int kte_, Int it_, Real dt_, bool do_predict_nc_, bool do_prescribed_CCN_);
+  P3MainData(Int its_, Int ite_, Int kts_, Int kte_, Int it_, Real dt_, bool do_predict_nc_, bool do_prescribed_CCN_, Real=0.);
 
-  PTD_STD_DEF(P3MainData, 8, its, ite, kts, kte, it, dt, do_predict_nc, do_prescribed_CCN);
+  PTD_STD_DEF(P3MainData, 9, its, ite, kts, kte, it, dt, do_predict_nc, do_prescribed_CCN, elapsed_s);
 };
 
 struct IceSupersatConservationData {

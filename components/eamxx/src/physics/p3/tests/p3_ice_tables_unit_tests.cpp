@@ -199,14 +199,6 @@ struct UnitWrap::UnitTest<D>::TestTableIce : public UnitWrap::UnitTest<D>::Base 
       {lid[15], lidb[15], access_table_index}
     };
 
-    // Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
-      find_lookuptable_indices_1a(lid[i]);
-      find_lookuptable_indices_1b(lidb[i]);
-      access_lookup_table(altd[i]);
-      access_lookup_table_coll(altcd[i]);
-    }
-
     // Sync to device
     KTH::view_1d<LookupIceData> lid_host("lid_host", max_pack_size);
     KTH::view_1d<LookupIceDataB> lidb_host("lidb_host", max_pack_size);
@@ -216,6 +208,18 @@ struct UnitWrap::UnitTest<D>::TestTableIce : public UnitWrap::UnitTest<D>::Base 
     std::copy(&lidb[0], &lidb[0] + max_pack_size, lidb_host.data());
     Kokkos::deep_copy(lid_device, lid_host);
     Kokkos::deep_copy(lidb_device, lidb_host);
+
+    // Read baseline data
+    std::string baseline_name = this->m_baseline_path + "/p3_ice_tables_all.dat";
+    if (this->m_baseline_action == COMPARE) {
+      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
+      for (Int i = 0; i < max_pack_size; ++i) {
+        lid[i].read(fid);
+        lidb[i].read(fid);
+        altd[i].read(fid);
+        altcd[i].read(fid);
+      }
+    }
 
     // Run the lookup from a kernel and copy results back to host
     view_2d<Int>  int_results("int results", 5, max_pack_size);
@@ -270,15 +274,14 @@ struct UnitWrap::UnitTest<D>::TestTableIce : public UnitWrap::UnitTest<D>::Base 
     Kokkos::deep_copy(real_results_mirror, real_results);
 
     // Validate results
-    if (SCREAM_BFB_TESTING) {
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for(int s = 0; s < max_pack_size; ++s) {
-        // +1 for O vs 1-based indexing
-        REQUIRE(int_results_mirror(0, s)+1 == lid[s].dumi);
-        REQUIRE(int_results_mirror(1, s)+1 == lid[s].dumjj);
-        REQUIRE(int_results_mirror(2, s)+1 == lid[s].dumii);
-        REQUIRE(int_results_mirror(3, s)+1 == lid[s].dumzz);
+        REQUIRE(int_results_mirror(0, s) == lid[s].dumi);
+        REQUIRE(int_results_mirror(1, s) == lid[s].dumjj);
+        REQUIRE(int_results_mirror(2, s) == lid[s].dumii);
+        REQUIRE(int_results_mirror(3, s) == lid[s].dumzz);
 
-        REQUIRE(int_results_mirror(4, s)+1 == lidb[s].dumj);
+        REQUIRE(int_results_mirror(4, s) == lidb[s].dumj);
 
         REQUIRE(real_results_mirror(0, s) == lid[s].dum1);
         REQUIRE(real_results_mirror(1, s) == lid[s].dum4);
@@ -290,6 +293,33 @@ struct UnitWrap::UnitTest<D>::TestTableIce : public UnitWrap::UnitTest<D>::Base 
         REQUIRE(real_results_mirror(5, s) == altd[s].proc);
 
         REQUIRE(real_results_mirror(6, s) == altcd[s].proc);
+      }
+    }
+    else if (this->m_baseline_action == GENERATE) {
+      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
+      for (Int s = 0; s < max_pack_size; ++s) {
+        lid[s].dumi = int_results_mirror(0, s);
+        lid[s].dumjj = int_results_mirror(1, s);
+        lid[s].dumii = int_results_mirror(2, s);
+        lid[s].dumzz = int_results_mirror(3, s);
+
+        lidb[s].dumj = int_results_mirror(4, s);
+
+        lid[s].dum1 = real_results_mirror(0, s);
+        lid[s].dum4 = real_results_mirror(1, s);
+        lid[s].dum5 = real_results_mirror(2, s);
+        lid[s].dum6 = real_results_mirror(3, s);
+
+        lidb[s].dum3 = real_results_mirror(4, s);
+
+        altd[s].proc = real_results_mirror(5, s);
+
+        altcd[s].proc = real_results_mirror(6, s);
+
+        lid[s].write(fid);
+        lidb[s].write(fid);
+        altd[s].write(fid);
+        altcd[s].write(fid);
       }
     }
   }

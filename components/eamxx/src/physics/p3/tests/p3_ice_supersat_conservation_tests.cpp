@@ -21,15 +21,15 @@ struct UnitWrap::UnitTest<D>::TestIceSupersatConservation : public UnitWrap::Uni
     constexpr Scalar latvap       = C::LatVap;
     constexpr Scalar latice       = C::LatIce;
 
-    auto engine = setup_random_test();
+    auto engine = setup_random_test(124151);
 
-    IceSupersatConservationData f90_data[max_pack_size];
+    IceSupersatConservationData baseline_data[max_pack_size];
 
     // Generate random input data
-    // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
-    for (auto& d : f90_data) {
+    // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
+    for (auto& d : baseline_data) {
       d.randomize(engine);
-      d.dt = f90_data[0].dt; // hold this fixed, it is not packed data
+      d.dt = baseline_data[0].dt; // hold this fixed, it is not packed data
 
       // C++ impl uses constants for latent_heat values. Manually set here
       // so F90 can match
@@ -40,12 +40,16 @@ struct UnitWrap::UnitTest<D>::TestIceSupersatConservation : public UnitWrap::Uni
     // inout data is in original state
     view_1d<IceSupersatConservationData> cxx_device("cxx_device", max_pack_size);
     const auto cxx_host = Kokkos::create_mirror_view(cxx_device);
-    std::copy(&f90_data[0], &f90_data[0] + max_pack_size, cxx_host.data());
+    std::copy(&baseline_data[0], &baseline_data[0] + max_pack_size, cxx_host.data());
     Kokkos::deep_copy(cxx_device, cxx_host);
 
-    // Get data from fortran
-    for (auto& d : f90_data) {
-      ice_supersat_conservation(d);
+    // Read baseline data
+    std::string baseline_name = this->m_baseline_path + "/ice_supersat_conservation.dat";
+    if (this->m_baseline_action == COMPARE) {
+      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
+      for (Int i = 0; i < max_pack_size; ++i) {
+        baseline_data[i].read(fid);
+      }
     }
 
     // Get data from cxx. Run ice_supersat_conservation from a kernel and copy results back to host
@@ -72,18 +76,23 @@ struct UnitWrap::UnitTest<D>::TestIceSupersatConservation : public UnitWrap::Uni
         cxx_device(vs).qidep = qidep[s];
         cxx_device(vs).qinuc = qinuc[s];
       }
-
     });
 
     Kokkos::deep_copy(cxx_host, cxx_device);
 
     // Verify BFB results
-    if (SCREAM_BFB_TESTING) {
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        IceSupersatConservationData& d_f90 = f90_data[i];
+        IceSupersatConservationData& d_f90 = baseline_data[i];
         IceSupersatConservationData& d_cxx = cxx_host[i];
         REQUIRE(d_f90.qidep == d_cxx.qidep);
         REQUIRE(d_f90.qinuc == d_cxx.qinuc);
+      }
+    }
+    else if (this->m_baseline_action == GENERATE) {
+      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
+      for (Int s = 0; s < max_pack_size; ++s) {
+        cxx_host(s).write(fid);
       }
     }
   } // run_bfb
