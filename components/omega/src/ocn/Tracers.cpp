@@ -529,7 +529,6 @@ I4 Tracers::getTimeIndex(I4 &TimeIndex, const I4 TimeLevel) {
       TimeLevelAdj = TimeLevel - 1;
    }
 
-
    // Check if time level is valid
    if (TimeLevelAdj > 0 || (TimeLevelAdj + NTimeLevels) <= 0) {
       LOG_ERROR("Tracers: Time level {} is out of range for NTimeLevels {}",
