@@ -49,10 +49,14 @@ struct UnitWrap::UnitTest<D>::TestIceRelaxationTimescale : public UnitWrap::Unit
       {1.352E+01, 3.210E+03, 1.069E+00, 0.123E+00, 3.456E+00, 1.221E-02, 9.952E-07, 6.596E-05, 4.532E-01, 1.734E+04}
     };
 
-    // Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
-      ice_relaxation_timescale(self[i]);
-     }
+    // Read baseline data
+    std::string baseline_name = this->m_baseline_path + "/ice_relaxation_timescale.dat";
+    if (this->m_baseline_action == COMPARE) {
+      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
+      for (Int i = 0; i < max_pack_size; ++i) {
+        self[i].read(fid);
+      }
+    }
 
     // Sync to device
     KTH::view_1d<IceRelaxationData> self_host("self_host", max_pack_size);
@@ -93,10 +97,16 @@ struct UnitWrap::UnitTest<D>::TestIceRelaxationTimescale : public UnitWrap::Unit
 
     Kokkos::deep_copy(self_host, self_device);
 
-    if (SCREAM_BFB_TESTING) {
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int s = 0; s < max_pack_size; ++s) {
         REQUIRE(self[s].epsi     == self_host(s).epsi);
         REQUIRE(self[s].epsi_tot == self_host(s).epsi_tot);
+      }
+    }
+    else if (this->m_baseline_action == GENERATE) {
+      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
+      for (Int s = 0; s < max_pack_size; ++s) {
+        self_host(s).write(fid);
       }
     }
   }

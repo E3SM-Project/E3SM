@@ -57,9 +57,13 @@ void ice_melting_bfb() {
   std::copy(&IceMelt[0], &IceMelt[0] + max_pack_size, IceMelt_host.data());
   Kokkos::deep_copy(IceMelt_device, IceMelt_host);
 
-  // Get data from fortran
-  for (Int i = 0; i < max_pack_size; ++i) {
-    ice_melting(IceMelt[i]);
+  // Read baseline data
+  std::string baseline_name = this->m_baseline_path + "/ice_melting.dat";
+  if (this->m_baseline_action == COMPARE) {
+    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
+    for (Int i = 0; i < max_pack_size; ++i) {
+      IceMelt[i].read(fid);
+    }
   }
 
   // Run the lookup from a kernel and copy results back to host
@@ -99,12 +103,19 @@ void ice_melting_bfb() {
   Kokkos::deep_copy(IceMelt_host, IceMelt_device);
 
   // Validate results
-  if (SCREAM_BFB_TESTING) {
+  if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
     for (Int s = 0; s < max_pack_size; ++s) {
       REQUIRE(IceMelt[s].qi2qr_melt_tend == IceMelt_host(s).qi2qr_melt_tend);
       REQUIRE(IceMelt[s].ni2nr_melt_tend == IceMelt_host(s).ni2nr_melt_tend);
     }
   }
+  else if (this->m_baseline_action == GENERATE) {
+    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
+    for (Int s = 0; s < max_pack_size; ++s) {
+      IceMelt_host(s).write(fid);
+    }
+  }
+
 }
 
 }; // UnitWrap

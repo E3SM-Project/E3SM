@@ -63,9 +63,13 @@ struct UnitWrap::UnitTest<D>::TestIceCollection : public UnitWrap::UnitTest<D>::
     std::copy(&cldliq[0], &cldliq[0] + max_pack_size, cldliq_host.data());
     Kokkos::deep_copy(cldliq_device, cldliq_host);
 
-    // Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
-      ice_cldliq_collection(cldliq[i]);
+    // Read baseline data
+    std::string baseline_name = this->m_baseline_path + "/ice_cldliq_collection.dat";
+    if (this->m_baseline_action == COMPARE) {
+      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
+      for (Int i = 0; i < max_pack_size; ++i) {
+        cldliq[i].read(fid);
+      }
     }
 
     // Run the lookup from a kernel and copy results back to host
@@ -109,12 +113,18 @@ struct UnitWrap::UnitTest<D>::TestIceCollection : public UnitWrap::UnitTest<D>::
     Kokkos::deep_copy(cldliq_host, cldliq_device);
 
     // Validate results
-    if (SCREAM_BFB_TESTING) {
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int s = 0; s < max_pack_size; ++s) {
         REQUIRE(cldliq[s].qc2qi_collect_tend   == cldliq_host(s).qc2qi_collect_tend);
         REQUIRE(cldliq[s].nc_collect_tend      == cldliq_host(s).nc_collect_tend);
         REQUIRE(cldliq[s].qc2qr_ice_shed_tend  == cldliq_host(s).qc2qr_ice_shed_tend);
         REQUIRE(cldliq[s].ncshdc               == cldliq_host(s).ncshdc);
+      }
+    }
+    else if (this->m_baseline_action == GENERATE) {
+      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
+      for (Int s = 0; s < max_pack_size; ++s) {
+        cldliq_host(s).write(fid);
       }
     }
   }
@@ -157,9 +167,13 @@ struct UnitWrap::UnitTest<D>::TestIceCollection : public UnitWrap::UnitTest<D>::
     std::copy(&rain[0], &rain[0] + max_pack_size, rain_host.data());
     Kokkos::deep_copy(rain_device, rain_host);
 
-    // Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
-      ice_rain_collection(rain[i]);
+    // Read baseline data
+    std::string baseline_name = this->m_baseline_path + "/ice_rain_collection.dat";
+    if (this->m_baseline_action == COMPARE) {
+      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
+      for (Int i = 0; i < max_pack_size; ++i) {
+        rain[i].read(fid);
+      }
     }
 
     // Run the lookup from a kernel and copy results back to host
@@ -198,10 +212,16 @@ struct UnitWrap::UnitTest<D>::TestIceCollection : public UnitWrap::UnitTest<D>::
     Kokkos::deep_copy(rain_host, rain_device);
 
     // Validate results
-    if (SCREAM_BFB_TESTING) {
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int s = 0; s < max_pack_size; ++s) {
         REQUIRE(rain[s].qr2qi_collect_tend == rain_host(s).qr2qi_collect_tend);
         REQUIRE(rain[s].nr_collect_tend    == rain_host(s).nr_collect_tend);
+      }
+    }
+    else if (this->m_baseline_action == GENERATE) {
+      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
+      for (Int s = 0; s < max_pack_size; ++s) {
+        rain_host(s).write(fid);
       }
     }
   }
@@ -244,9 +264,13 @@ struct UnitWrap::UnitTest<D>::TestIceCollection : public UnitWrap::UnitTest<D>::
     std::copy(&self[0], &self[0] + max_pack_size, self_host.data());
     Kokkos::deep_copy(self_device, self_host);
 
-    // Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
-      ice_self_collection(self[i]);
+    // Read baseline data
+    std::string baseline_name = this->m_baseline_path + "/ice_self_collection.dat";
+    if (this->m_baseline_action == COMPARE) {
+      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
+      for (Int i = 0; i < max_pack_size; ++i) {
+        self[i].read(fid);
+      }
     }
 
     // Run the lookup from a kernel and copy results back to host
@@ -276,9 +300,15 @@ struct UnitWrap::UnitTest<D>::TestIceCollection : public UnitWrap::UnitTest<D>::
 
     Kokkos::deep_copy(self_host, self_device);
 
-    if (SCREAM_BFB_TESTING) {
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int s = 0; s < max_pack_size; ++s) {
         REQUIRE(self[s].ni_selfcollect_tend == self_host(s).ni_selfcollect_tend);
+      }
+    }
+    else if (this->m_baseline_action == GENERATE) {
+      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
+      for (Int s = 0; s < max_pack_size; ++s) {
+        self_host(s).write(fid);
       }
     }
   }

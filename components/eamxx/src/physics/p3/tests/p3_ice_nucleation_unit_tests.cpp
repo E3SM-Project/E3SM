@@ -54,10 +54,15 @@ struct UnitWrap::UnitTest<D>::TestIceNucleation : public UnitWrap::UnitTest<D>::
 	  {2.702E+02, 1.069E+00, 0.323E+03, 2.221E+01, 9.952E-01, inv_dt, do_predict_nc, do_prescribed_CCN }
 	};
 
-	// Run the fortran code
-	for (Int i = 0; i < max_pack_size; ++i) {
-	  ice_nucleation(self[i]);
-	}
+        std::string root_name = "ice_nucleation";
+        std::string file_name = root_name + (do_predict_nc ? "1" : "0") + (do_prescribed_CCN ? "1" : "0");
+        std::string baseline_name = this->m_baseline_path + "/" + file_name + ".dat";
+        if (this->m_baseline_action == COMPARE) {
+          auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
+          for (Int i = 0; i < max_pack_size; ++i) {
+            self[i].read(fid);
+          }
+        }
 
 	// Sync to device
 	KTH::view_1d<IceNucleationData> self_host("self_host", max_pack_size);
@@ -94,10 +99,16 @@ struct UnitWrap::UnitTest<D>::TestIceNucleation : public UnitWrap::UnitTest<D>::
 
 	Kokkos::deep_copy(self_host, self_device);
 
-        if (SCREAM_BFB_TESTING) {
+        if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
           for (Int s = 0; s < max_pack_size; ++s) {
             REQUIRE(self[s].qv2qi_nucleat_tend == self_host(s).qv2qi_nucleat_tend);
             REQUIRE(self[s].ni_nucleat_tend    == self_host(s).ni_nucleat_tend);
+          }
+        }
+        else if (this->m_baseline_action == GENERATE) {
+          auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
+          for (Int s = 0; s < max_pack_size; ++s) {
+            self_host(s).write(fid);
           }
         }
       } //end for do_predict_nc
