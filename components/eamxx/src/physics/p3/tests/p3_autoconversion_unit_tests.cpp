@@ -59,12 +59,16 @@ void cloud_water_autoconversion_unit_bfb_tests() {
   std::copy(&cwadc[0], &cwadc[0] + max_pack_size, cwadc_host.data());
   Kokkos::deep_copy(cwadc_device, cwadc_host);
 
-  // Get data from fortran
-  for (Int i = 0; i < max_pack_size; ++i) {
-    cloud_water_autoconversion(cwadc[i]);
+  // Read baseline data
+  std::string baseline_name = this->m_baseline_path + "/cloud_water_autoconversion.dat";
+  if (this->m_baseline_action == COMPARE) {
+    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
+    for (Int i = 0; i < max_pack_size; ++i) {
+      cwadc[i].read(fid);
+    }
   }
 
-    // Run the lookup from a kernel and copy results back to host
+  // Run the lookup from a kernel and copy results back to host
   Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
     const Int offset = i * Spack::n;
 
@@ -101,7 +105,7 @@ void cloud_water_autoconversion_unit_bfb_tests() {
   Kokkos::deep_copy(cwadc_host, cwadc_device);
 
   // Validate results
-  if (SCREAM_BFB_TESTING) {
+  if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
     for (Int s = 0; s < max_pack_size; ++s) {
       REQUIRE(cwadc[s].rho                  == cwadc_host(s).rho);
       REQUIRE(cwadc[s].qc_incld             == cwadc_host(s).qc_incld);
@@ -110,6 +114,12 @@ void cloud_water_autoconversion_unit_bfb_tests() {
       REQUIRE(cwadc[s].qc2qr_autoconv_tend  == cwadc_host(s).qc2qr_autoconv_tend);
       REQUIRE(cwadc[s].nc2nr_autoconv_tend  == cwadc_host(s).nc2nr_autoconv_tend);
       REQUIRE(cwadc[s].ncautr               == cwadc_host(s).ncautr);
+    }
+  }
+  else if (this->m_baseline_action == GENERATE) {
+    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
+    for (Int s = 0; s < max_pack_size; ++s) {
+      cwadc_host(s).write(fid);
     }
   }
 }
