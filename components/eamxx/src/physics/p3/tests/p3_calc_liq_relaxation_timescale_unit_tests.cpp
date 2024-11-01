@@ -29,7 +29,7 @@ struct UnitWrap::UnitTest<D>::TestCalcLiqRelaxationTimescale : public UnitWrap::
 
   void run_bfb()
   {
-    auto engine = setup_random_test();
+    auto engine = setup_random_test(12354);
 
     // Read in tables
     view_2d_table vn_table_vals, vm_table_vals, revap_table_vals;
@@ -54,9 +54,13 @@ struct UnitWrap::UnitTest<D>::TestCalcLiqRelaxationTimescale : public UnitWrap::
       self[i].f2r = C::f2r;
     }
 
-    // Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
-      calc_liq_relaxation_timescale(self[i]);
+  // Read baseline data
+    std::string baseline_name = this->m_baseline_path + "/calc_liq_relaxation_timescale.dat";
+    if (this->m_baseline_action == COMPARE) {
+      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
+      for (Int i = 0; i < max_pack_size; ++i) {
+        self[i].read(fid);
+      }
     }
 
     // Sync to device
@@ -97,10 +101,16 @@ struct UnitWrap::UnitTest<D>::TestCalcLiqRelaxationTimescale : public UnitWrap::
 
     Kokkos::deep_copy(self_host, self_device);
 
-    if (SCREAM_BFB_TESTING) {
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int s = 0; s < max_pack_size; ++s) {
         REQUIRE(self[s].epsr == self_host(s).epsr);
         REQUIRE(self[s].epsc == self_host(s).epsc);
+      }
+    }
+    else {
+      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
+      for (Int s = 0; s < max_pack_size; ++s) {
+        self_host(s).write(fid);
       }
     }
   }
