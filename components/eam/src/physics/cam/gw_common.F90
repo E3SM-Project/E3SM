@@ -812,6 +812,7 @@ subroutine gw_oro_interface(state,    cam_in,   sgh,      pbuf,     dtime,     n
   !pblh input
   integer  :: pblh_idx     = 0
   integer  :: kpbl2d_in(pcols)
+  integer  :: kpbl2d_reverse_in(pcols)
   real(r8), pointer :: pblh(:)
   real(r8) :: dx(pcols),dy(pcols)
   !needed index
@@ -824,6 +825,7 @@ subroutine gw_oro_interface(state,    cam_in,   sgh,      pbuf,     dtime,     n
                 !obtain z,dz,dx,dy
                 !ztop and zbot are already reversed, start from bottom to top
                 kpbl2d_in=0_r8
+                kpbl2d_reverse_in=0_r8
                 !
                 ztop=0._r8
                 zbot=0._r8
@@ -848,9 +850,11 @@ subroutine gw_oro_interface(state,    cam_in,   sgh,      pbuf,     dtime,     n
                 dtauy3_fd=0.0_r8
                 !
                 do k=1,pverp
-                ! assign values for level top & level bottom
-                ztop(1:ncol,k)=state%zi(1:ncol,pverp-k)
-                zbot(1:ncol,k)=state%zi(1:ncol,pverp-k+1)
+                        do i=1,ncol
+                                ! assign values for level top & level bottom
+                                ztop(i,k)=state%zi(i,k)!pverp-k)
+                                zbot(i,k)=state%zi(i,k+1)!pverp-k+1)
+                        enddo
                 end do
                 !transform adding the pressure
                 !transfer from surface to sea level
@@ -863,14 +867,15 @@ subroutine gw_oro_interface(state,    cam_in,   sgh,      pbuf,     dtime,     n
                         end do
                 end do
                 !reverse to keep good format in scheme
-                ztop=ztop(:,pver:1:-1)
-                zbot=zbot(:,pver:1:-1)
-                dz=dz(:,pver:1:-1)
+                !ztop=ztop(:,pver:1:-1)
+                !zbot=zbot(:,pver:1:-1)
+                !dz=dz(:,pver:1:-1)
                 !get the layer index of pblh in layer for input in drag scheme
                 pblh_idx = pbuf_get_index('pblh')
                 call pbuf_get_field(pbuf, pblh_idx, pblh)
                 do i=1,pcols
                 kpbl2d_in(i)=pblh_get_level_idx(zbot(i,:)-(state%phis(i)/gravit),pblh(i))
+                kpbl2d_reverse_in(i)=pverp-kpbl2d_in(i)!!pverp-k
                 end do
                 !
                 !get grid size for dx,dy
@@ -896,7 +901,7 @@ subroutine gw_oro_interface(state,    cam_in,   sgh,      pbuf,     dtime,     n
                 znu=etamid(pver:1:-1),dz=dz(:ncol,pver:1:-1),pblh=pblh(:ncol),&
                 cp=cpair,g=gravit,rd=rair,rv=rh2o,ep1=zvir,pi=pi,bnvbg=nm(:ncol,pver:1:-1),&
                 dt=dtime,dx=dx,dy=dy,&
-                kpbl2d=kpbl2d_in,itimestep=dtime,gwd_opt=0,&
+                kpbl2d=kpbl2d_reverse_in,itimestep=dtime,gwd_opt=0,&
                 ids=1,ide=ncol,jds=0,jde=0,kds=1,kde=pver, &
                 ims=1,ime=ncol,jms=0,jme=0,kms=1,kme=pver, &
                 its=1,ite=ncol,jts=0,jte=0,kts=1,kte=pver, &
@@ -911,15 +916,15 @@ real(r8),intent(in) :: pblheight
 integer :: pblh_get_level_idx
        
 !local 
-integer :: i
+integer :: k
 logical :: found
 
 pblh_get_level_idx = -1
 found=.false.
           
-do i = 1, pver
-        if((pblheight >= height_array(i+1).and.pblheight <height_array(i)))then
-                pblh_get_level_idx =  pver+1-i           
+do k = 1, pver
+        if((pblheight >= height_array(k+1).and.pblheight <height_array(k)))then
+                pblh_get_level_idx =  k+1
                 found=.true.
                 return
         endif
