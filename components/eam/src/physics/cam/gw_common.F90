@@ -825,9 +825,27 @@ subroutine gw_oro_interface(state,    cam_in,   sgh,      pbuf,     dtime,     n
                 !ztop and zbot are already reversed, start from bottom to top
                 kpbl2d_in=0_r8
                 !
-                ztop(1:ncol,1:pver)=0._r8
-                zbot(1:ncol,1:pver)=0._r8
-                zmid(1:ncol,1:pver)=0._r8
+                ztop=0._r8
+                zbot=0._r8
+                zmid=0._r8
+                !
+                dusfc_ls=0._r8
+                dvsfc_ls=0._r8
+                dusfc_bl=0._r8
+                dvsfc_bl=0._r8
+                dusfc_ss=0._r8
+                dvsfc_ss=0._r8
+                dusfc_fd=0._r8
+                dvsfc_fd=0._r8
+                !
+                dtaux3_ls=0.0_r8
+                dtaux3_bl=0.0_r8
+                dtauy3_ls=0.0_r8
+                dtauy3_bl=0.0_r8
+                dtaux3_ss=0.0_r8
+                dtaux3_fd=0.0_r8
+                dtauy3_ss=0.0_r8
+                dtauy3_fd=0.0_r8
                 !
                 do k=1,pverp-1
                 ! assign values for level top/bottom
@@ -1149,7 +1167,6 @@ end subroutine dxygrid
 !=======Jinbo Xie=================
 !no need when there is no large drag
 IF ( gwd_ls .or. gwd_bl ) then
-
         do i = its,ite
             oa4(i,:) = oa2d(i,:)
             ol4(i,:) = ol2d(i,:)
@@ -1188,26 +1205,27 @@ ENDIF
               ,its=its,ite=ite, jts=jts,jte=jte, kts=kts,kte=kte               &
               ,gsd_gwd_ls=gwd_ls,gsd_gwd_bl=gwd_bl,gsd_gwd_ss=gwd_ss,gsd_gwd_fd=gwd_fd)
                 !=============Jinbo Xie==============
-		do i = its,ite
-                dusfcg_ls(i)=dusfc_ls(i)
-                dvsfcg_ls(i)=dvsfc_ls(i)
-                dusfcg_bl(i)=dusfc_bl(i)
-                dvsfcg_bl(i)=dvsfc_bl(i)
-                dusfcg_ss(i)=dusfc_ss(i)
-                dvsfcg_ss(i)=dvsfc_ss(i)
-                dusfcg_fd(i)=dusfc_fd(i)
-                dvsfcg_fd(i)=dvsfc_fd(i)
-                enddo
-                !!
-                dtaux3d_ls=dtaux2d_ls
-                dtaux3d_bl=dtaux2d_bl
-                dtauy3d_ls=dtauy2d_ls
-                dtauy3d_bl=dtauy2d_bl
-                dtaux3d_ss=dtaux2d_ss
-                dtaux3d_fd=dtaux2d_fd
-                dtauy3d_ss=dtauy2d_ss
-                dtauy3d_fd=dtauy2d_fd
-                !
+                 !set the total stress output to each terms for the 4 drag schemes
+                 do i = its,ite
+                 dusfcg_ls(i)=dusfc_ls(i)
+                 dvsfcg_ls(i)=dvsfc_ls(i)
+                 dusfcg_bl(i)=dusfc_bl(i)
+                 dvsfcg_bl(i)=dvsfc_bl(i)
+                 dusfcg_ss(i)=dusfc_ss(i)
+                 dvsfcg_ss(i)=dvsfc_ss(i)
+                 dusfcg_fd(i)=dusfc_fd(i)
+                 dvsfcg_fd(i)=dvsfc_fd(i)
+                 enddo
+                 !set the 3D output tendencies to each terms for the 4 drag schemes
+                 dtaux3d_ls=dtaux2d_ls
+                 dtaux3d_bl=dtaux2d_bl
+                 dtauy3d_ls=dtauy2d_ls
+                 dtauy3d_bl=dtauy2d_bl
+                 dtaux3d_ss=dtaux2d_ss
+                 dtaux3d_fd=dtaux2d_fd
+                 dtauy3d_ss=dtauy2d_ss
+                 dtauy3d_fd=dtauy2d_fd
+
    end subroutine gwdo_gsd
 !
 !-------------------------------------------------------------------------------
@@ -1891,7 +1909,6 @@ ENDIF   ! (gsd_gwd_ls .EQ. 1).or.(gsd_gwd_bl .EQ. 1)
   XNBV=0._r8
   tauwavex0=0._r8
   tauwavey0=0._r8
-  density=1.2_r8
   utendwave=0._r8
   vtendwave=0._r8
   zq=0._r8
@@ -1996,7 +2013,7 @@ IF ( gsd_gwd_fd .and. ss_taper.GT.1.E-02 ) THEN
    vtendform=0._r8
    zq=0._r8
 
-   IF ( gsd_gwd_ss .and. ss_taper.GT.1.E-02 ) THEN
+   IF ( .not.gsd_gwd_ss .and. ss_taper.GT.1.E-02 ) THEN
       ! Defining layer height. This is already done above is small-scale GWD is used
       do k = kts,kte
         do i = its,ite
@@ -2016,6 +2033,7 @@ IF ( gsd_gwd_fd .and. ss_taper.GT.1.E-02 ) THEN
           a1=0.00026615161_r8*var(i)**2_r8
           a2=a1*0.005363_r8
          DO k=kts,kte
+         
             wsp=SQRT(u1(i,k)**2_r8 + v1(i,k)**2_r8)
             ! alpha*beta*Cmd*Ccorr*2.109 = 12.*1.*0.005*0.6*2.109 = 0.0759 
             utendform(i,k)=-0.0759_r8*wsp*u1(i,k)* &
@@ -2023,6 +2041,7 @@ IF ( gsd_gwd_fd .and. ss_taper.GT.1.E-02 ) THEN
             vtendform(i,k)=-0.0759_r8*wsp*v1(i,k)* &
                            EXP(-(za(i,k)/1500._r8)**1.5_r8)*a2*za(i,k)**(-1.2_r8)*ss_taper
             !!
+            !write(iulog,*) "Jinbo Xie in fd i,k,za(i,k),wsp,a2",i,k,za(i,k),wsp,a2
          ENDDO
       ENDIF
    ENDDO
@@ -2317,7 +2336,7 @@ enddo
 
 
 !#Jinbo get base flux
-!#if 0
+#if 0
 do i = its,ite
 !dusfc_ss(i)=wdir1_xjb(i)
 !dvsfc_ss(i)=ol(i)
@@ -2343,14 +2362,14 @@ dtaux2d_ss(i,19)=kblk_xjb(i)
 dtaux2d_ss(i,20)=br1(i)
 enddo
 dtauy2d_ss=bnv2
-!#endif
+#endif
 !stop
-!#if 0
+#if 0
 do i = its,ite
 dusfc_ss(i)=taub_xjb(i)
 dvsfc_ss(i)=taufb_xjb(i)
 enddo
-!#endif
+#endif
 
    return
    end subroutine gwdo2d
