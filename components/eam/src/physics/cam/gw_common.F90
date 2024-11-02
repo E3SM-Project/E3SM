@@ -1892,8 +1892,6 @@ od_xjb(i)=od(i)
        if ( gsd_gwd_ls ) then
           taub(i)  = xlinv(i) * roll(i) * ulow(i) * ulow(i)                       &
                    * ulow(i) * gfobnv * efact
-
-           write(iulog,*) "Jinbo Xie taub(i),xlinv(i),roll(i),ulow(i),gfobnv,efact",taub(i),xlinv(i),roll(i),ulow(i),gfobnv,efact
        else     ! We've gotten what we need for the blocking scheme
           taub(i) = 0.0_r8
        end if
@@ -2046,7 +2044,6 @@ IF ( gsd_gwd_fd .and. ss_taper.GT.1.E-02 ) THEN
             vtendform(i,k)=-0.0759_r8*wsp*v1(i,k)* &
                            EXP(-(za(i,k)/1500._r8)**1.5_r8)*a2*za(i,k)**(-1.2_r8)*ss_taper
             !!
-            !write(iulog,*) "Jinbo Xie in fd i,k,za(i,k),wsp,a2",i,k,za(i,k),wsp,a2
          ENDDO
       ENDIF
    ENDDO
@@ -2072,9 +2069,6 @@ IF ( gsd_gwd_fd .and. ss_taper.GT.1.E-02 ) THEN
          dvsfc_fd(i) = dvsfc_fd(i) + vtendform(i,k) * del(i,k)
       enddo
    enddo
-
-
-  write(iulog,*)"Jinbo Xie minval(utendform),maxval(utendform),minval(del),maxval(del),minval(u1),maxval(u1),minval(var),maxval(var)",minval(utendform),maxval(utendform),minval(del),maxval(del),minval(u1),maxval(u1),minval(var),maxval(var)
 
    ENDIF  ! end if gsd_gwd_fd == 1
 !=======================================================
