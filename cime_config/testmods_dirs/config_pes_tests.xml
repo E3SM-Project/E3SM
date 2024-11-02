@@ -262,17 +262,17 @@
     </mach>
     <mach name="anvil">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SWAV.+" pesize="any">
-        <comment>tests+anvil: --compset WCYCL1850 --res northamericax4v1pg2_WC14to60E2r3 on 64 nodes pure-MPI, 2.133 sypd </comment>
+        <comment>tests+anvil: --compset WCYCL1850 --res northamericax4v1pg2_WC14to60E2r3 on 69 nodes pure-MPI, 2.046 sypd </comment>
         <ntasks>
-          <ntasks_atm>1800</ntasks_atm>
-          <ntasks_lnd>1800</ntasks_lnd>
-          <ntasks_rof>1800</ntasks_rof>
-          <ntasks_ice>1800</ntasks_ice>
+          <ntasks_atm>1980</ntasks_atm>
+          <ntasks_lnd>1980</ntasks_lnd>
+          <ntasks_rof>1980</ntasks_rof>
+          <ntasks_ice>1944</ntasks_ice>
           <ntasks_ocn>504</ntasks_ocn>
-          <ntasks_cpl>1800</ntasks_cpl>
+          <ntasks_cpl>1980</ntasks_cpl>
         </ntasks>
         <rootpe>
-          <rootpe_ocn>1800</rootpe_ocn>
+          <rootpe_ocn>1980</rootpe_ocn>
         </rootpe>
       </pes>
     </mach>
