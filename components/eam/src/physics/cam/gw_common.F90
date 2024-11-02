@@ -822,9 +822,25 @@ subroutine gw_oro_interface(state,    cam_in,   sgh,      pbuf,     dtime,     n
   !ztop and zbot are already reversed, start from bottom to top
 
   kpbl2d_in=0_r8
-  ztop(1:ncol,1:pver)=0._r8
-  zbot(1:ncol,1:pver)=0._r8
-  zmid(1:ncol,1:pver)=0._r8
+  ztop=0._r8
+  zbot=0._r8
+  zmid=0._r8
+  dusfc_ls=0._r8
+  dvsfc_ls=0._r8
+  dusfc_bl=0._r8
+  dvsfc_bl=0._r8
+  dusfc_ss=0._r8
+  dvsfc_ss=0._r8
+  dusfc_fd=0._r8
+  dvsfc_fd=0._r8
+  dtaux3_ls=0._r8
+  dtaux3_bl=0._r8
+  dtauy3_ls=0._r8
+  dtauy3_bl=0._r8
+  dtaux3_ss=0._r8
+  dtaux3_fd=0._r8
+  dtauy3_ss=0._r8
+  dtauy3_fd=0._r8
 
   do k=1,pverp-1
   ! assign values for level top/bottom
