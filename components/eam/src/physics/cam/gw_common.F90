@@ -847,8 +847,8 @@ subroutine gw_oro_interface(state,    cam_in,   sgh,      pbuf,     dtime,     n
                 dtauy3_ss=0.0_r8
                 dtauy3_fd=0.0_r8
                 !
-                do k=1,pverp-1
-                ! assign values for level top/bottom
+                do k=1,pverp
+                ! assign values for level top & level bottom
                 ztop(1:ncol,k)=state%zi(1:ncol,pverp-k)
                 zbot(1:ncol,k)=state%zi(1:ncol,pverp-k+1)
                 end do
@@ -859,13 +859,13 @@ subroutine gw_oro_interface(state,    cam_in,   sgh,      pbuf,     dtime,     n
                         ztop(i,k)=ztop(i,k)+state%phis(i)/gravit
                         zbot(i,k)=zbot(i,k)+state%phis(i)/gravit
                         zmid(i,k)=state%zm(i,k)+state%phis(i)/gravit
-                        !dz is from bottom to top already for gw_drag
                         dz(i,k)=ztop(i,k)-zbot(i,k)
                         end do
                 end do
                 !reverse to keep good format in scheme
                 ztop=ztop(:,pver:1:-1)
                 zbot=zbot(:,pver:1:-1)
+                dz=dz(:,pver:1:-1)
                 !get the layer index of pblh in layer for input in drag scheme
                 pblh_idx = pbuf_get_index('pblh')
                 call pbuf_get_field(pbuf, pblh_idx, pblh)
