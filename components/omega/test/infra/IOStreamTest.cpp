@@ -89,7 +89,7 @@ int initIOStreamTest(std::shared_ptr<Clock> &ModelClock // Model clock
 
    // Create the model clock and time step
    // Get Calendar from time management config group
-   Config TimeMgmtConfig("TimeManagement");
+   Config TimeMgmtConfig("TimeIntegration");
    Err = OmegaConfig->get(TimeMgmtConfig);
    if (Err != 0) {
       LOG_CRITICAL("ocnInit: TimeManagement group not found in Config");

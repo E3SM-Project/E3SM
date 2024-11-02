@@ -8,6 +8,7 @@
 #include "OceanState.h"
 #include "OmegaKokkos.h"
 #include "TimeMgr.h"
+#include "TimeStepper.h"
 
 #include "mpi.h"
 
@@ -22,17 +23,19 @@ int main(int argc, char **argv) {
    MPI_Init(&argc, &argv); // initialize MPI
    Kokkos::initialize();   // initialize Kokkos
 
-   // Time management objects
-   OMEGA::TimeInstant CurrTime;
-   OMEGA::Alarm EndAlarm;
-
-   ErrCurr = OMEGA::ocnInit(MPI_COMM_WORLD, CurrTime, EndAlarm);
+   ErrCurr = OMEGA::ocnInit(MPI_COMM_WORLD);
    if (ErrCurr != 0)
       LOG_ERROR("Error initializing OMEGA");
 
-   while (ErrCurr == 0 && !(EndAlarm.isRinging())) {
+   // Get time information
+   OMEGA::TimeStepper *DefStepper = OMEGA::TimeStepper::getDefault();
+   OMEGA::Alarm *EndAlarm         = DefStepper->getEndAlarm();
+   OMEGA::Clock *ModelClock       = DefStepper->getClock();
+   OMEGA::TimeInstant CurrTime    = ModelClock->getCurrentTime();
 
-      ErrCurr = OMEGA::ocnRun(CurrTime, EndAlarm);
+   while (ErrCurr == 0 && !(EndAlarm->isRinging())) {
+
+      ErrCurr = OMEGA::ocnRun(CurrTime);
 
       if (ErrCurr != 0)
          LOG_ERROR("Error advancing Omega run interval");
