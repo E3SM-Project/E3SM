@@ -290,7 +290,7 @@ load_vertical_coordinates (const nonconstgrid_ptr_type& grid, const std::string&
   auto hybi_v  = hybi.get_view<const Real*,Host>();
   auto ilev_v  = ilev.get_view<Real*,Host>();
   auto num_lev = grid->get_num_vertical_levels();
-  for (int ii=0;ii<grid->num_lev;ii++) {
+  for (int ii=0;ii<num_lev;ii++) {
     lev_v(ii)  = 0.01*ps0*(hyam_v(ii)+hybm_v(ii));
     ilev_v(ii) = 0.01*ps0*(hyai_v(ii)+hybi_v(ii));
   }
