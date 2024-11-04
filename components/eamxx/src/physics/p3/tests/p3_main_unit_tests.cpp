@@ -106,7 +106,7 @@ void run_bfb_p3_main_part1()
 
   // Get data from cxx
   for (auto& d : isds_cxx) {
-    p3_main_part1_f(d.kts, d.kte, d.ktop, d.kbot, d.kdir, d.do_predict_nc, d.do_prescribed_CCN, d.dt,
+    p3_main_part1_host(d.kts, d.kte, d.ktop, d.kbot, d.kdir, d.do_predict_nc, d.do_prescribed_CCN, d.dt,
                     d.pres, d.dpres, d.dz, d.nc_nuceat_tend, d.nccn_prescribed, d.inv_exner, d.exner, d.inv_cld_frac_l, d.inv_cld_frac_i,
                     d.inv_cld_frac_r,
                     d.T_atm, d.rho, d.inv_rho, d.qv_sat_l, d.qv_sat_i, d.qv_supersat_i, d.rhofacr, d.rhofaci,
@@ -218,7 +218,7 @@ void run_bfb_p3_main_part2()
 
   // Get data from cxx
   for (auto& d : isds_cxx) {
-    p3_main_part2_f(
+    p3_main_part2_host(
       d.kts, d.kte, d.kbot, d.ktop, d.kdir, d.do_predict_nc, d.do_prescribed_CCN, d.dt, d.inv_dt,
       d.pres, d.dpres, d.dz, d.nc_nuceat_tend, d.inv_exner, d.exner, d.inv_cld_frac_l, d.inv_cld_frac_i,
       d.inv_cld_frac_r, d.ni_activated, d.inv_qc_relvar, d.cld_frac_i, d.cld_frac_l, d.cld_frac_r, d.qv_prev, d.t_prev,
@@ -345,7 +345,7 @@ void run_bfb_p3_main_part3()
 
   // Get data from cxx
   for (auto& d : isds_cxx) {
-    p3_main_part3_f(
+    p3_main_part3_host(
       d.kts, d.kte, d.kbot, d.ktop, d.kdir,
       d.inv_exner, d.cld_frac_l, d.cld_frac_r, d.cld_frac_i,
       d.rho, d.inv_rho, d.rhofaci, d.qv, d.th_atm, d.qc, d.nc, d.qr, d.nr, d.qi, d.ni, d.qm, d.bm,
@@ -458,7 +458,7 @@ void run_bfb_p3_main()
   // Get data from cxx
   for (auto& d : isds_cxx) {
     d.template transpose<ekat::TransposeDirection::c2f>();
-    p3_main_f(
+    p3_main_host(
       d.qc, d.nc, d.qr, d.nr, d.th_atm, d.qv, d.dt, d.qi, d.qm, d.ni,
       d.bm, d.pres, d.dz, d.nc_nuceat_tend, d.nccn_prescribed, d.ni_activated, d.inv_qc_relvar, d.it, d.precip_liq_surf,
       d.precip_ice_surf, d.its, d.ite, d.kts, d.kte, d.diag_eff_radius_qc, d.diag_eff_radius_qi, d.diag_eff_radius_qr,

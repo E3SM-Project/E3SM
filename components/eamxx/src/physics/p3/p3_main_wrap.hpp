@@ -11,12 +11,11 @@ namespace p3 {
 struct FortranData;
 
 // Returns number of microseconds of p3_main execution
-Int p3_main_wrap(const FortranData& d, bool use_fortran=false);
+Int p3_main_wrap(const FortranData& d);
 
 int test_p3_init();
 
-int test_p3_ic(bool use_fortran);
-
+int test_p3_ic();
 
 }  // namespace p3
 }  // namespace scream

@@ -170,7 +170,7 @@ void run_bfb_ice_sed()
 
   // Get data from cxx
   for (auto& d : isds_cxx) {
-    ice_sedimentation_f(d.kts, d.kte, d.ktop, d.kbot, d.kdir,
+    ice_sedimentation_host(d.kts, d.kte, d.ktop, d.kbot, d.kdir,
                         d.rho, d.inv_rho, d.rhofaci, d.cld_frac_i, d.inv_dz,
                         d.dt, d.inv_dt,
                         d.qi, d.qi_incld, d.ni, d.qm, d.qm_incld, d.bm, d.bm_incld,
@@ -253,7 +253,7 @@ void run_bfb_homogeneous_freezing()
 
   // Get data from cxx
   for (auto& d : hfds_cxx) {
-    homogeneous_freezing_f(d.kts, d.kte, d.ktop, d.kbot, d.kdir,
+    homogeneous_freezing_host(d.kts, d.kte, d.ktop, d.kbot, d.kdir,
                            d.T_atm, d.inv_exner,
                            d.qc, d.nc, d.qr, d.nr, d.qi, d.ni, d.qm, d.bm, d.th_atm);
   }

@@ -250,7 +250,7 @@ void run_bfb()
   for (auto& d : cuds_cxx) {
     Real** fluxes, **vs, **qnx;
     d.convert_to_ptr_arr(tmp1, fluxes, vs, qnx);
-    calc_first_order_upwind_step_f(
+    calc_first_order_upwind_step_host(
       d.kts, d.kte, d.kdir, d.kbot, d.k_qxtop, d.dt_sub,
       d.rho, d.inv_rho, d.inv_dz,
       d.num_arrays, fluxes, vs, qnx);
@@ -335,7 +335,7 @@ void run_bfb()
   for (auto& d : gsds_cxx) {
     Real** fluxes, **vs, **qnx;
     d.convert_to_ptr_arr(tmp1, fluxes, vs, qnx);
-    generalized_sedimentation_f(d.kts, d.kte, d.kdir, d.k_qxtop,
+    generalized_sedimentation_host(d.kts, d.kte, d.kdir, d.k_qxtop,
                                 &d.k_qxbot, d.kbot, d.Co_max,
                                 &d.dt_left, &d.prt_accum, d.inv_dz, d.inv_rho, d.rho,
                                 d.num_arrays, fluxes, vs, qnx);

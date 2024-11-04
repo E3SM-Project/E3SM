@@ -67,7 +67,7 @@ void run_bfb()
 
   // Get data from cxx
   for (auto& d : csds_cxx) {
-    cloud_sedimentation_f(d.kts, d.kte, d.ktop, d.kbot, d.kdir,
+    cloud_sedimentation_host(d.kts, d.kte, d.ktop, d.kbot, d.kdir,
                           d.qc_incld, d.rho, d.inv_rho, d.cld_frac_l, d.acn, d.inv_dz,
                           d.dt, d.inv_dt, d.do_predict_nc,
                           d.qc, d.nc, d.nc_incld, d.mu_c, d.lamc, &d.precip_liq_surf, d.qc_tend, d.nc_tend);

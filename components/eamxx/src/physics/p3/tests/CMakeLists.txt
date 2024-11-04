@@ -57,17 +57,17 @@ endif()
 
 CreateUnitTest(p3_tests "${P3_TESTS_SRCS}"
   LIBS p3
-  EXE_ARGS "--flags='${BASELINE_FILE_ARG}'"
+  EXE_ARGS "--flags=\\'${BASELINE_FILE_ARG}\\'"
   THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
   LABELS "p3;physics")
 
 # Make sure that a diff in the two implementation triggers a failed test (in debug only)
+# No need to run lots of different thread counts.
 if (SCREAM_ENABLE_BASELINE_TESTS)
   CreateUnitTest (p3_tests_fail p3_rain_sed_unit_tests.cpp
     LIBS p3
-    EXE_ARGS "--flags='${BASELINE_FILE_ARG}'"
+    EXE_ARGS "--flags=\\'${BASELINE_FILE_ARG}\\'"
     COMPILER_CXX_DEFS SCREAM_FORCE_RUN_DIFF
-    THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
     LABELS "p3;physics;fail"
     ${FORCE_RUN_DIFF_FAILS})
 endif()
@@ -75,16 +75,16 @@ endif()
 if (NOT SCREAM_P3_SMALL_KERNELS)
   CreateUnitTest(p3_sk_tests "${P3_TESTS_SRCS}"
     LIBS p3_sk
-    EXE_ARGS "--flags='${BASELINE_FILE_ARG}'"
+    EXE_ARGS "--flags=\\'${BASELINE_FILE_ARG}\\'"
     THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
     LABELS "p3_sk;physics")
 
   # Make sure that a diff in the two implementation triggers a failed test (in debug only)
+  # No need to run lots of different thread counts.
   CreateUnitTest (p3_sk_tests_fail p3_rain_sed_unit_tests.cpp
     LIBS p3_sk
-    EXE_ARGS "--flags='${BASELINE_FILE_ARG}'"
+    EXE_ARGS "--flags=\\'${BASELINE_FILE_ARG}\\'"
     COMPILER_CXX_DEFS SCREAM_FORCE_RUN_DIFF
-    THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
     LABELS "p3_sk;physics;fail"
     ${FORCE_RUN_DIFF_FAILS})
 endif()

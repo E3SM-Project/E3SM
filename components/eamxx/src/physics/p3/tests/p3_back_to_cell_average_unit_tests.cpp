@@ -44,10 +44,6 @@ void run_bfb()
             host_data.data());
   Kokkos::deep_copy(device_data, host_data);
 
-  // Run the Fortran subroutine.
-  for (Int i = 0; i < max_pack_size; ++i) {
-    back_to_cell_average(back_to_cell_average_data[i]);
-  }
   // Read baseline data
   std::string baseline_name = this->m_baseline_path + "/back_to_cell_average.dat";
   if (this->m_baseline_action == COMPARE) {

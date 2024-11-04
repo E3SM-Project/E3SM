@@ -41,7 +41,7 @@ void run_check_values_bfb()
 
   // Get data from cxx
   for (auto& d : cvd_cxx) {
-    check_values_f(d.qv, d.temp, d.kts, d.kte, d.timestepcount, d.force_abort, d.source_ind, d.col_loc);
+    check_values_host(d.qv, d.temp, d.kts, d.kte, d.timestepcount, d.force_abort, d.source_ind, d.col_loc);
   }
 }
 

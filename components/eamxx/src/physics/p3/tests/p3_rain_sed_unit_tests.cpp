@@ -188,7 +188,7 @@ void run_bfb_rain_sed()
 #if defined(SCREAM_FORCE_RUN_DIFF)
     inv_dt *= 2;
 #endif
-    rain_sedimentation_f(d.kts, d.kte, d.ktop, d.kbot, d.kdir,
+    rain_sedimentation_host(d.kts, d.kte, d.ktop, d.kbot, d.kdir,
                          d.qr_incld, d.rho, d.inv_rho, d.rhofacr, d.cld_frac_r, d.inv_dz,
                          d.dt, inv_dt,
                          d.qr, d.nr, d.nr_incld, d.mu_r, d.lamr, &d.precip_liq_surf, d.precip_liq_flux,
