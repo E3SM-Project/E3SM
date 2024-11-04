@@ -55,9 +55,9 @@ jobs:
             short_name: SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.scream-mam4xx-all_mam4xx_procs
       fail-fast: false
     name: cpu-gcc / ${{ matrix.test.short_name }}
-    if: ${{ !(github.event_name == 'workflow_dispatch' &&
-              github.event.inputs.jobs_list != 'cpu-gcc' &&
-              github.event.inputs.jobs_list != 'all') }}
+    if: ${{ github.event_name != 'workflow_dispatch' ||
+            github.event.inputs.job_to_run == 'cpu-gcc' ||
+            github.event.inputs.job_to_run == 'all' }}
     steps:
       - name: Check out the repository
         uses: actions/checkout@v4

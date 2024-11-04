@@ -51,9 +51,9 @@ jobs:
       fail-fast: false
       matrix:
         build_type: [sp, dbg, fpe, opt]
-    if: ${{ !(github.event_name == 'workflow_dispatch' &&
-              github.event.inputs.jobs_list != 'gcc-openmp' &&
-              github.event.inputs.jobs_list != 'all') }}
+    if: ${{ github.event_name != 'workflow_dispatch' ||
+            github.event.inputs.job_to_run == 'gcc-openmp' ||
+            github.event.inputs.job_to_run == 'all' }}
     name: gcc-openmp / ${{ matrix.build_type }}
     steps:
       - name: Check out the repository
@@ -96,9 +96,9 @@ jobs:
       fail-fast: false
       matrix:
         build_type: [sp, dbg, opt]
-    if: ${{ !(github.event_name == 'workflow_dispatch' &&
-              github.event.inputs.jobs_list != 'gcc-cuda' &&
-              github.event.inputs.jobs_list != 'all') }}
+    if: ${{ github.event_name != 'workflow_dispatch' ||
+            github.event.inputs.job_to_run == 'gcc-cuda' ||
+            github.event.inputs.job_to_run == 'all' }}
     name: gcc-cuda / ${{ matrix.build_type }}
     steps:
       - name: Check out the repository
