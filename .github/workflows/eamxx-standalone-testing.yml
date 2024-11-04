@@ -20,13 +20,14 @@ on:
   # Manual run is used to bless
   workflow_dispatch:
     inputs:
-      jobs_list:
+      job_to_run:
         description: 'Job to run'
         required: true
         type: choice
         options:
           - gcc-openmp
           - gcc-cuda
+          - all
       bless:
         description: 'Generate baselines'
         required: true
@@ -50,7 +51,9 @@ jobs:
       fail-fast: false
       matrix:
         build_type: [sp, dbg, fpe, opt]
-    if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.jobs_list != 'gcc-openmp') }}
+    if: ${{ !(github.event_name == 'workflow_dispatch' &&
+              github.event.inputs.jobs_list != 'gcc-openmp' &&
+              github.event.inputs.jobs_list != 'all') }}
     name: gcc-openmp / ${{ matrix.build_type }}
     steps:
       - name: Check out the repository
@@ -93,7 +96,9 @@ jobs:
       fail-fast: false
       matrix:
         build_type: [sp, dbg, opt]
-    if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.jobs_list != 'gcc-cuda') }}
+    if: ${{ !(github.event_name == 'workflow_dispatch' &&
+              github.event.inputs.jobs_list != 'gcc-cuda' &&
+              github.event.inputs.jobs_list != 'all') }}
     name: gcc-cuda / ${{ matrix.build_type }}
     steps:
       - name: Check out the repository
