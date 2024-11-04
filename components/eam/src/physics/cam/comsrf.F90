@@ -155,16 +155,16 @@ CONTAINS
     integer k,c      ! level, constituent indices
 
     if(.not. (adiabatic .or. ideal_phys)) then
-        allocate (var(pcols,begchunk:endchunk))
-        allocate (var30(pcols,begchunk:endchunk))
-        allocate (oc(pcols,begchunk:endchunk))
-        allocate (oadir(pcols,nvar_dirOA,begchunk:endchunk))
-        allocate (ol(pcols,nvar_dirOL,begchunk:endchunk))
-        var(:,:)=nan
-        var30(:,:)=nan
-        oc    (:,:) = nan
+        allocate (var   (pcols,begchunk:endchunk))
+        allocate (var30 (pcols,begchunk:endchunk))
+        allocate (oc    (pcols,begchunk:endchunk))
+        allocate (oadir (pcols,nvar_dirOA,begchunk:endchunk))
+        allocate (ol    (pcols,nvar_dirOL,begchunk:endchunk))
+        var   (:,:)   = nan
+        var30 (:,:)   = nan
+        oc    (:,:)   = nan
         oadir (:,:,:) = nan
-        ol  (:,:,:) = nan
+        ol    (:,:,:) = nan
     end if
   end subroutine initialize_comsrf2
 

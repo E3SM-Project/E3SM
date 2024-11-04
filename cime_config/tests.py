@@ -176,7 +176,7 @@ _TESTS = {
             )
         },
 
-        "e3sm_p3_developer" : {
+    "e3sm_p3_developer" : {
         "tests"   : (
             "ERP.ne4pg2_oQU480.F2010.eam-p3",
             "REP_Ln5.ne4pg2_oQU480.F2010.eam-p3",
@@ -186,6 +186,19 @@ _TESTS = {
             "SMS_D_Ln5.ne4pg2_oQU480.F2010.eam-p3",
             "SMS_Ln5.ne4pg2_oQU480.F2010.eam-p3",
             "ERS.ne4pg2_oQU480.F2010.eam-p3"
+            )
+        },
+	
+	"e3sm_orodrag_developer" : {
+        "tests"   : (
+            "ERP.ne4pg2_oQU480.F2010.eam-orodrag",
+            "REP_Ln5.ne4pg2_oQU480.F2010.eam-orodrag",
+            "PET.ne4pg2_oQU480.F2010.eam-orodrag",
+            "PEM_Ln18.ne4pg2_oQU480.F2010.eam-orodrag",
+            "SMS_Ln5.ne30pg2_EC30to60E2r2.F2010.eam-orodrag",
+            "SMS_D_Ln5.ne4pg2_oQU480.F2010.eam-orodrag",
+            "SMS_Ln5.ne4pg2_oQU480.F2010.eam-orodrag",
+            "ERS.ne4pg2_oQU480.F2010.eam-orodrag"
             )
         },
 
