@@ -70,20 +70,9 @@ void MAMMicrophysics::set_grids(
   const FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(true);
   const FieldLayout scalar3d_int = grid_->get_3d_scalar_layout(false);
 
-<<<<<<< HEAD
   using namespace ekat::units;
   constexpr auto q_unit = kg / kg;  // units of mass mixing ratios of tracers
   constexpr auto n_unit = 1 / kg;   // units of number mixing ratios of tracers
-=======
-  config_.amicphys.nucleation = {};
-  //config_.amicphys.nucleation.dens_so4a_host = 1770.0;
-  // config_.amicphys.nucleation.mw_so4a_host = 115.0;
-  // config_.amicphys.nucleation.newnuc_method_user_choice = 2;
-  // config_.amicphys.nucleation.pbl_nuc_wang2008_user_choice = 1;
-  // config_.amicphys.nucleation.adjust_factor_pbl_ratenucl = 1.0;
-  // config_.amicphys.nucleation.accom_coef_h2so4 = 1.0;
-  config_.amicphys.nucleation.newnuc_adjust_factor_dnaitdt = 1.0;
->>>>>>> comment out error-inducing code in mam4_amicphys.cpp and small reorg change in online_emission.hpp
 
   // --------------------------------------------------------------------------
   // These variables are "Required" or pure inputs for the process
@@ -611,7 +600,6 @@ void MAMMicrophysics::run_impl(const double dt) {
   // allocation perspective
   auto o3_col_dens = buffer_.scratch[8];
 
-<<<<<<< HEAD
   /* Gather time and state information for interpolation */
   const auto ts = timestamp() + dt;
 
@@ -629,107 +617,6 @@ void MAMMicrophysics::run_impl(const double dt) {
       dry_atm_.p_mid, dry_atm_.z_iface,  // in
       cnst_offline_);                    // out
   Kokkos::fence();
-=======
-  const_view_1d &col_latitudes = col_latitudes_;
-  mam_coupling::DryAtmosphere &dry_atm =  dry_atm_;
-  mam_coupling::AerosolState  &dry_aero = dry_aero_;
-  mam4::mo_photo::PhotoTableData &photo_table = photo_table_;
-  const int nlev = nlev_;
-  const Config &config = config_;
-  // FIXME: read relevant linoz climatology data from file(s) based on time
-
-  // FIXME: read relevant chlorine loading data from file based on time
-
-  // loop over atmosphere columns and compute aerosol microphyscs
-  auto some_step = step_;
-
-  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const ThreadTeam& team) {
-    const int icol = team.league_rank(); // column index
-
-    Real col_lat = col_latitudes(icol); // column latitude (degrees?)
-
-    // fetch column-specific atmosphere state data
-    auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
-    auto z_iface = ekat::subview(dry_atm.z_iface, icol);
-    Real phis = dry_atm.phis(icol);
-
-    // set surface state data
-    haero::Surface sfc{};
-
-    // fetch column-specific subviews into aerosol prognostics
-    mam4::Prognostics progs = mam_coupling::interstitial_aerosols_for_column(dry_aero, icol);
-
-    // set up diagnostics
-    mam4::Diagnostics diags(nlev);
-
-    // calculate o3 column densities (first component of col_dens in Fortran code)
-    auto o3_col_dens_i = ekat::subview(o3_col_dens, icol);
-    impl::compute_o3_column_density(team, atm, progs, o3_col_dens_i);
-
-    // set up photolysis work arrays for this column.
-    mam4::mo_photo::PhotoTableWorkArrays photo_work_arrays;
-    // FIXME: set views here
-
-    // ... look up photolysis rates from our table
-    // NOTE: the table interpolation operates on an entire column of data, so we
-    // NOTE: must do it before dispatching to individual vertical levels
-    Real zenith_angle = 0.0; // FIXME: need to get this from EAMxx [radians]
-    Real surf_albedo = 0.0; // FIXME: surface albedo
-    Real esfact = 0.0; // FIXME: earth-sun distance factor
-    mam4::ColumnView lwc; // FIXME: liquid water cloud content: where do we get this?
-    //mam4::mo_photo::table_photo(photo_rates, atm.pressure, atm.hydrostatic_dp,
-    //  atm.temperature, o3_col_dens_i, zenith_angle, surf_albedo, lwc,
-    //  atm.cloud_fraction, esfact, photo_table, photo_work_arrays);
-
-    // compute external forcings at time t(n+1) [molecules/cm^3/s]
-    constexpr int extcnt = mam4::gas_chemistry::extcnt;
-    view_2d extfrc; // FIXME: where to allocate? (nlev, extcnt)
-    mam4::mo_setext::Forcing forcings[extcnt]; // FIXME: forcings seem to require file data
-    mam4::mo_setext::extfrc_set(forcings, extfrc);
-
-    // compute aerosol microphysics on each vertical level within this column
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev), [&](const int k) {
-
-      constexpr int num_modes = mam4::AeroConfig::num_modes();
-      constexpr int gas_pcnst = mam_coupling::gas_pcnst();
-      constexpr int nqtendbb = mam_coupling::nqtendbb();
-
-      // extract atm state variables (input)
-      Real temp    = atm.temperature(k);
-      Real pmid    = atm.pressure(k);
-      Real pdel    = atm.hydrostatic_dp(k);
-      Real zm      = atm.height(k);
-      Real zi      = z_iface(k);
-      Real pblh    = atm.planetary_boundary_layer_height;
-      Real qv      = atm.vapor_mixing_ratio(k);
-      Real cldfrac = atm.cloud_fraction(k);
-
-      // extract aerosol state variables into "working arrays" (mass mixing ratios)
-      // (in EAM, this is done in the gas_phase_chemdr subroutine defined within
-      //  mozart/mo_gas_phase_chemdr.F90)
-      Real q[gas_pcnst] = {};
-      Real qqcw[gas_pcnst] = {};
-      mam_coupling::transfer_prognostics_to_work_arrays(progs, k, q, qqcw);
-
-      // convert mass mixing ratios to volume mixing ratios (VMR), equivalent
-      // to tracer mixing ratios (TMR))
-      Real vmr[gas_pcnst], vmrcw[gas_pcnst];
-      mam_coupling::convert_work_arrays_to_vmr(q, qqcw, vmr, vmrcw);
-
-      // aerosol/gas species tendencies (output)
-      Real vmr_tendbb[gas_pcnst][nqtendbb] = {};
-      Real vmrcw_tendbb[gas_pcnst][nqtendbb] = {};
-
-      // create work array copies to retain "pre-chemistry" values
-      Real vmr_pregaschem[gas_pcnst] = {};
-      Real vmr_precldchem[gas_pcnst] = {};
-      Real vmrcw_precldchem[gas_pcnst] = {};
-      for (int i = 0; i < gas_pcnst; ++i) {
-        vmr_pregaschem[i] = vmr[i];
-        vmr_precldchem[i] = vmr[i];
-        vmrcw_precldchem[i] = vmrcw[i];
-      }
->>>>>>> EAMxx: MAM4xx submodule pointing to main that include GPU fixes
 
   scream::mam_coupling::advance_tracer_data(
       LinozDataReader_,                  // in
