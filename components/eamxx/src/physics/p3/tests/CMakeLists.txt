@@ -62,13 +62,15 @@ CreateUnitTest(p3_tests "${P3_TESTS_SRCS}"
   LABELS "p3;physics")
 
 # Make sure that a diff in the two implementation triggers a failed test (in debug only)
-CreateUnitTest (p3_tests_fail p3_rain_sed_unit_tests.cpp
-  LIBS p3
-  EXE_ARGS "--flags='${BASELINE_FILE_ARG}'"
-  COMPILER_CXX_DEFS SCREAM_FORCE_RUN_DIFF
-  THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
-  LABELS "p3;physics;fail"
-  ${FORCE_RUN_DIFF_FAILS})
+if (SCREAM_ENABLE_BASELINE_TESTS)
+  CreateUnitTest (p3_tests_fail p3_rain_sed_unit_tests.cpp
+    LIBS p3
+    EXE_ARGS "--flags='${BASELINE_FILE_ARG}'"
+    COMPILER_CXX_DEFS SCREAM_FORCE_RUN_DIFF
+    THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
+    LABELS "p3;physics;fail"
+    ${FORCE_RUN_DIFF_FAILS})
+endif()
 
 if (NOT SCREAM_P3_SMALL_KERNELS)
   CreateUnitTest(p3_sk_tests "${P3_TESTS_SRCS}"
@@ -87,24 +89,24 @@ if (NOT SCREAM_P3_SMALL_KERNELS)
     ${FORCE_RUN_DIFF_FAILS})
 endif()
 
-CreateUnitTestExec(p3_run_and_cmp "p3_run_and_cmp.cpp"
+CreateUnitTest(p3_run_and_cmp "p3_run_and_cmp.cpp"
   LIBS p3
-  EXCLUDE_MAIN_CPP)
-
-CreateUnitTestFromExec(p3_run_and_cmp_cxx p3_run_and_cmp
+  EXCLUDE_MAIN_CPP
   THREADS ${SCREAM_TEST_MAX_THREADS}
   EXE_ARGS "${BASELINE_FILE_ARG}"
   LABELS "p3;physics")
 
 # Make sure that a diff from baselines triggers a failed test (in debug only)
-CreateUnitTest(p3_run_and_cmp_cxx_fail "p3_run_and_cmp.cpp"
-  LIBS p3
-  COMPILER_CXX_DEFS SCREAM_FORCE_RUN_DIFF
-  THREADS ${SCREAM_TEST_MAX_THREADS}
-  EXE_ARGS "${BASELINE_FILE_ARG}"
-  LABELS "p3;physics;fail"
-  EXCLUDE_MAIN_CPP
-  ${FORCE_RUN_DIFF_FAILS})
+if (SCREAM_ENABLE_BASELINE_TESTS)
+  CreateUnitTest(p3_run_and_cmp_fail "p3_run_and_cmp.cpp"
+    LIBS p3
+    COMPILER_CXX_DEFS SCREAM_FORCE_RUN_DIFF
+    THREADS ${SCREAM_TEST_MAX_THREADS}
+    EXE_ARGS "${BASELINE_FILE_ARG}"
+    LABELS "p3;physics;fail"
+    EXCLUDE_MAIN_CPP
+    ${FORCE_RUN_DIFF_FAILS})
+endif()
 
 # Note: the baseline_gen label label is really only used if SCREAM_ONLY_GENERATE_BASELINES=ON, but no harm adding it
 if (SCREAM_TEST_MAX_THREADS GREATER 1)
@@ -112,4 +114,4 @@ if (SCREAM_TEST_MAX_THREADS GREATER 1)
   set (TEST_SUFFIX _omp${SCREAM_TEST_MAX_THREADS})
 endif()
 
-set_tests_properties (p3_run_and_cmp_cxx${TEST_SUFFIX} PROPERTIES LABELS "baseline_gen;cxx baseline_cmp")
+set_tests_properties (p3_run_and_cmp${TEST_SUFFIX} PROPERTIES LABELS "baseline_gen;cxx baseline_cmp")
