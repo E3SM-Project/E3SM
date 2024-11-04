@@ -10,8 +10,8 @@ namespace scream {
 namespace p3 {
 
 // Data format we can use to communicate with Fortran version.
-struct FortranData {
-  typedef std::shared_ptr<FortranData> Ptr;
+struct P3Data {
+  typedef std::shared_ptr<P3Data> Ptr;
 
   using KT     = KokkosTypes<HostDevice>;
   using Scalar = Real;
@@ -36,29 +36,29 @@ struct FortranData {
   Array3 p3_tend_out;
   Array2 liq_ice_exchange,vap_liq_exchange,vap_ice_exchange;
 
-  FortranData(Int ncol, Int nlev);
+  P3Data(Int ncol, Int nlev);
 };
 
-// Iterate over a FortranData's arrays. For examples, see Baseline::write, read.
-struct FortranDataIterator {
+// Iterate over a P3Data's arrays. For examples, see Baseline::write, read.
+struct P3DataIterator {
   struct RawArray {
     std::string name;
     Int dim;
     Int extent[3];
-    FortranData::Scalar* data;
-    FortranData::Array1::size_type size;
+    P3Data::Scalar* data;
+    P3Data::Array1::size_type size;
   };
 
-  explicit FortranDataIterator(const FortranData::Ptr& d);
+  explicit P3DataIterator(const P3Data::Ptr& d);
 
   Int nfield () const { return fields_.size(); }
   const RawArray& getfield(Int i) const;
 
 private:
-  FortranData::Ptr d_;
+  P3Data::Ptr d_;
   std::vector<RawArray> fields_;
 
-  void init(const FortranData::Ptr& d);
+  void init(const P3Data::Ptr& d);
 };
 
 void p3_init(const bool write_tables = false,
@@ -68,9 +68,9 @@ void p3_init(const bool write_tables = false,
 // to the exact implementation or arithmetic in P3. For now, these checks are
 // here to establish that the initial regression-testing code gives results that
 // match the python f2py tester, without needing a data file.
-Int check_against_python(const FortranData& d);
+Int check_against_python(const P3Data& d);
 
-int test_FortranData();
+int test_P3Data();
 
 }  // namespace p3
 }  // namespace scream

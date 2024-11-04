@@ -15,7 +15,7 @@ namespace p3 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct P3InitAFortranData
+struct P3InitAP3Data
 {
   // Must use Host as device, f90 code might not be able to use Device memory
   using P3F = Functions<Real, HostDevice>;
@@ -28,9 +28,9 @@ struct P3InitAFortranData
   view_ice_table ice_table_vals;
   view_collect_table collect_table_vals;
 
-  P3InitAFortranData() :
-    ice_table_vals("P3InitAFortranData::ice_table_vals"),
-    collect_table_vals("P3InitAFortranData::collect_table_vals")
+  P3InitAP3Data() :
+    ice_table_vals("P3InitAP3Data::ice_table_vals"),
+    collect_table_vals("P3InitAP3Data::collect_table_vals")
   {}
 };
 
@@ -882,7 +882,7 @@ struct PreventLiqSupersaturationData {
   PTD_RW_SCALARS_ONLY(2, qi2qv_sublim_tend, qr2qv_evap_tend);
 };
 
-void p3_init_a(P3InitAFortranData& d);
+void p3_init_a(P3InitAP3Data& d);
 
 /**
  * Convenience functions for calling p3 routines from the host with scalar data.

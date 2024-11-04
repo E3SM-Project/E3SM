@@ -35,10 +35,10 @@ using namespace scream::p3;
   * large discrepancies.
   */
  Int compare (const double& tol,
-             const FortranData::Ptr& ref, const FortranData::Ptr& d) {
+             const P3Data::Ptr& ref, const P3Data::Ptr& d) {
 
   Int nerr = 0;
-  FortranDataIterator refi(ref), di(d);
+  P3DataIterator refi(ref), di(d);
   EKAT_ASSERT(refi.nfield() == di.nfield());
   for (Int i = 0, n = refi.nfield(); i < n; ++i) {
     const auto& fr = refi.getfield(i);
@@ -170,7 +170,7 @@ private:
     bool do_predict_nc, do_prescribed_CCN;
   };
 
-  static void set_params (const ParamSet& ps, FortranData& d) {
+  static void set_params (const ParamSet& ps, P3Data& d) {
     // Items not set by factory
     d.dt                = ps.dt;
     d.it                = ps.nsteps;
@@ -180,8 +180,8 @@ private:
 
   std::vector<ParamSet> params_;
 
-  static void write (const ekat::FILEPtr& fid, const FortranData::Ptr& d) {
-    FortranDataIterator fdi(d);
+  static void write (const ekat::FILEPtr& fid, const P3Data::Ptr& d) {
+    P3DataIterator fdi(d);
     for (Int i = 0, n = fdi.nfield(); i < n; ++i) {
       const auto& f = fdi.getfield(i);
       ekat::write(&f.dim, 1, fid);
@@ -190,8 +190,8 @@ private:
     }
   }
 
-  static void read (const ekat::FILEPtr& fid, const FortranData::Ptr& d) {
-    FortranDataIterator fdi(d);
+  static void read (const ekat::FILEPtr& fid, const P3Data::Ptr& d) {
+    P3DataIterator fdi(d);
     for (Int i = 0, n = fdi.nfield(); i < n; ++i) {
       const auto& f = fdi.getfield(i);
       int dim, ds[3];

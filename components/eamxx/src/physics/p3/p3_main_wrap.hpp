@@ -8,10 +8,10 @@
 namespace scream {
 namespace p3 {
 
-struct FortranData;
+struct P3Data;
 
 // Returns number of microseconds of p3_main execution
-Int p3_main_wrap(const FortranData& d);
+Int p3_main_wrap(const P3Data& d);
 
 int test_p3_init();
 

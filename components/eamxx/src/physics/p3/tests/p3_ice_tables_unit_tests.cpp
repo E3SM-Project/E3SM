@@ -32,7 +32,7 @@ struct UnitWrap::UnitTest<D>::TestTableIce : public UnitWrap::UnitTest<D>::Base 
     Functions::init_kokkos_ice_lookup_tables(ice_table_vals, collect_table_vals);
 
     // Get data from fortran
-    P3InitAFortranData d;
+    P3InitAP3Data d;
     p3_init_a(d);
 
     // Copy device data to host

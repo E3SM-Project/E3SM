@@ -16,7 +16,7 @@ extern "C" {
 namespace scream {
 namespace p3 {
 
-FortranData::FortranData (Int ncol_, Int nlev_)
+P3Data::P3Data (Int ncol_, Int nlev_)
   : ncol(ncol_), nlev(nlev_)
 {
   do_predict_nc = true;
@@ -62,11 +62,11 @@ FortranData::FortranData (Int ncol_, Int nlev_)
   vap_ice_exchange   = Array2("sum of vap-ice phase change tendenices", ncol, nlev);
 }
 
-FortranDataIterator::FortranDataIterator (const FortranData::Ptr& d) {
+P3DataIterator::P3DataIterator (const P3Data::Ptr& d) {
   init(d);
 }
 
-void FortranDataIterator::init (const FortranData::Ptr& dp) {
+void P3DataIterator::init (const P3Data::Ptr& dp) {
   d_ = dp;
 #define fdipb(name)                                                     \
   fields_.push_back({#name,                                             \
@@ -87,8 +87,8 @@ void FortranDataIterator::init (const FortranData::Ptr& dp) {
 #undef fdipb
 }
 
-const FortranDataIterator::RawArray&
-FortranDataIterator::getfield (Int i) const {
+const P3DataIterator::RawArray&
+P3DataIterator::getfield (Int i) const {
   EKAT_ASSERT(i >= 0 || i < nfield());
   return fields_[i];
 }
@@ -112,8 +112,8 @@ void p3_init (const bool write_tables, const bool masterproc) {
   }
 }
 
-int test_FortranData () {
-  FortranData d(11, 72);
+int test_P3Data () {
+  P3Data d(11, 72);
   return 0;
 }
 

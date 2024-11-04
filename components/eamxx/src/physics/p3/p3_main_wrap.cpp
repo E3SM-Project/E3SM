@@ -12,7 +12,7 @@ using scream::Int;
 namespace scream {
 namespace p3 {
 
-Int p3_main_wrap(const FortranData& d) {
+Int p3_main_wrap(const P3Data& d) {
   EKAT_REQUIRE_MSG(d.dt > 0, "invalid dt");
   return p3_main_host(d.qc.data(), d.nc.data(), d.qr.data(), d.nr.data(), d.th_atm.data(),
                       d.qv.data(), d.dt, d.qi.data(), d.qm.data(), d.ni.data(),
