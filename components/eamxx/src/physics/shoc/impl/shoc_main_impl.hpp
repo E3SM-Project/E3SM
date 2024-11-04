@@ -61,7 +61,7 @@ Int Functions<S,D>::shoc_init(
   return host_view(0);
 }
 
-#ifndef SCREAM_SMALL_KERNELS
+#ifndef SCREAM_SHOC_SMALL_KERNELS
 template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>::shoc_main_internal(
@@ -72,6 +72,19 @@ void Functions<S,D>::shoc_main_internal(
   const Int&                   nadv,         // Number of times to loop SHOC
   const Int&                   num_qtracers, // Number of tracers
   const Scalar&                dtime,        // SHOC timestep [s]
+  // Runtime Parameters
+  const Scalar&                lambda_low,
+  const Scalar&                lambda_high,
+  const Scalar&                lambda_slope,
+  const Scalar&                lambda_thresh,
+  const Scalar&                thl2tune,
+  const Scalar&                qw2tune,
+  const Scalar&                qwthl2tune,
+  const Scalar&                w2tune,
+  const Scalar&                length_fac,
+  const Scalar&                c_diag_3rd_mom,
+  const Scalar&                Ckh,
+  const Scalar&                Ckm,
   // Input Variables
   const Scalar&                dx,
   const Scalar&                dy,
@@ -105,7 +118,10 @@ void Functions<S,D>::shoc_main_internal(
   const uview_1d<Spack>&       shoc_ql,
   // Output Variables
   Scalar&                      pblh,
+  Scalar&                      ustar,
+  Scalar&                      obklen,
   const uview_1d<Spack>&       shoc_ql2,
+  const uview_1d<Spack>&       tkh,
   // Diagnostic Output Variables
   const uview_1d<Spack>&       shoc_mix,
   const uview_1d<Spack>&       w_sec,
@@ -124,15 +140,15 @@ void Functions<S,D>::shoc_main_internal(
 {
 
   // Define temporary variables
-  uview_1d<Spack> rho_zt, shoc_qv, dz_zt, dz_zi, tkh;
+  uview_1d<Spack> rho_zt, shoc_qv, shoc_tabs, dz_zt, dz_zi;
   workspace.template take_many_and_reset<5>(
-    {"rho_zt", "shoc_qv", "dz_zt", "dz_zi", "tkh"},
-    {&rho_zt, &shoc_qv, &dz_zt, &dz_zi, &tkh});
+    {"rho_zt", "shoc_qv", "shoc_tabs", "dz_zt", "dz_zi"},
+    {&rho_zt, &shoc_qv, &shoc_tabs, &dz_zt, &dz_zi});
 
   // Local scalars
-  Scalar se_b{0},   ke_b{0}, wv_b{0},   wl_b{0},
-         se_a{0},   ke_a{0}, wv_a{0},   wl_a{0},
-         ustar{0},  kbfs{0}, obklen{0}, ustar2{0}, wstar{0};
+  Scalar se_b{0},   ke_b{0},   wv_b{0}, wl_b{0},
+         se_a{0},   ke_a{0},   wv_a{0}, wl_a{0},
+         kbfs{0},   ustar2{0}, wstar{0};
 
   // Scalarize some views for single entry access
   const auto s_thetal  = ekat::scalarize(thetal);
@@ -167,6 +183,11 @@ void Functions<S,D>::shoc_main_internal(
     compute_shoc_vapor(team,nlev,qw,shoc_ql, // Input
                        shoc_qv);             // Output
 
+    // Update SHOC temperature
+    compute_shoc_temperature(team,nlev,thetal,  // Input
+                             shoc_ql,inv_exner, // Input
+                             shoc_tabs);        // Output
+
     team.team_barrier();
     shoc_diag_obklen(uw_sfc,vw_sfc,     // Input
                      wthl_sfc, wqw_sfc, // Input
@@ -184,20 +205,25 @@ void Functions<S,D>::shoc_main_internal(
             pblh);                    // Output
 
     // Update the turbulent length scale
-    shoc_length(team,nlev,nlevi,dx,dy, // Input
+    shoc_length(team,nlev,nlevi,       // Input
+                length_fac,            // Runtime Options
+                dx,dy,                 // Input
                 zt_grid,zi_grid,dz_zt, // Input
                 tke,thv,               // Input
                 workspace,             // Workspace
                 brunt,shoc_mix);       // Output
 
     // Advance the SGS TKE equation
-    shoc_tke(team,nlev,nlevi,dtime,wthv_sec,    // Input
-             shoc_mix,dz_zi,dz_zt,pres,u_wind,  // Input
-             v_wind,brunt,obklen,zt_grid,       // Input
-             zi_grid,pblh,                      // Input
-             workspace,                         // Workspace
-             tke,tk,tkh,                        // Input/Output
-             isotropy);                         // Output
+    shoc_tke(team,nlev,nlevi,dtime,              // Input
+	     lambda_low,lambda_high,lambda_slope, // Runtime options
+	     lambda_thresh,Ckh,Ckm,              // Runtime options
+	     wthv_sec,                           // Input
+             shoc_mix,dz_zi,dz_zt,pres,shoc_tabs,// Input
+             u_wind,v_wind,brunt,zt_grid,        // Input
+             zi_grid,pblh,                       // Input
+             workspace,                          // Workspace
+             tke,tk,tkh,                         // Input/Output
+             isotropy);                          // Output
 
     // Update SHOC prognostic variables here
     // via implicit diffusion solver
@@ -209,7 +235,9 @@ void Functions<S,D>::shoc_main_internal(
                                 thetal,qw,qtracers,tke,u_wind,v_wind);   // Input/Output
 
     // Diagnose the second order moments
-    diag_second_shoc_moments(team,nlev,nlevi,thetal,qw,u_wind,v_wind,   // Input
+    diag_second_shoc_moments(team,nlev,nlevi,
+                             thl2tune, qw2tune, qwthl2tune, w2tune,     // Runtime options
+                             thetal,qw,u_wind,v_wind,                   // Input
                              tke,isotropy,tkh,tk,dz_zi,zt_grid,zi_grid, // Input
                              shoc_mix,wthl_sfc,wqw_sfc,uw_sfc,vw_sfc,   // Input
                              ustar2,wstar,                              // Input/Output
@@ -219,7 +247,9 @@ void Functions<S,D>::shoc_main_internal(
 
     // Diagnose the third moment of vertical velocity,
     //  needed for the PDF closure
-    diag_third_shoc_moments(team,nlev,nlevi,w_sec,thl_sec,wthl_sec, // Input
+    diag_third_shoc_moments(team,nlev,nlevi,
+                            c_diag_3rd_mom,                         // Runtime options
+                            w_sec,thl_sec,wthl_sec,                 // Input
                             isotropy,brunt,thetal,tke,dz_zt,dz_zi,  // Input
                             zt_grid,zi_grid,                        // Input
                             workspace,                              // Workspace
@@ -285,7 +315,7 @@ void Functions<S,D>::shoc_main_internal(
 
   // Release temporary variables from the workspace
   workspace.template release_many_contiguous<5>(
-    {&rho_zt, &shoc_qv, &dz_zt, &dz_zi, &tkh});
+    {&rho_zt, &shoc_qv, &shoc_tabs, &dz_zt, &dz_zi});
 }
 #else
 template<typename S, typename D>
@@ -297,6 +327,19 @@ void Functions<S,D>::shoc_main_internal(
   const Int&                   nadv,         // Number of times to loop SHOC
   const Int&                   num_qtracers, // Number of tracers
   const Scalar&                dtime,        // SHOC timestep [s]
+  // Runtime Parameters
+  const Scalar&                lambda_low,
+  const Scalar&                lambda_high,
+  const Scalar&                lambda_slope,
+  const Scalar&                lambda_thresh,
+  const Scalar&                thl2tune,
+  const Scalar&                qw2tune,
+  const Scalar&                qwthl2tune,
+  const Scalar&                w2tune,
+  const Scalar&                length_fac,
+  const Scalar&                c_diag_3rd_mom,
+  const Scalar&                Ckh,
+  const Scalar&                Ckm,
   // Input Variables
   const view_1d<const Scalar>& dx,
   const view_1d<const Scalar>& dy,
@@ -330,7 +373,10 @@ void Functions<S,D>::shoc_main_internal(
   const view_2d<Spack>&       shoc_ql,
   // Output Variables
   const view_1d<Scalar>&      pblh,
+  const view_1d<Scalar>&      ustar,
+  const view_1d<Scalar>&      obklen,
   const view_2d<Spack>&       shoc_ql2,
+  const view_2d<Spack>&       tkh,
   // Diagnostic Output Variables
   const view_2d<Spack>&       shoc_mix,
   const view_2d<Spack>&       w_sec,
@@ -355,16 +401,14 @@ void Functions<S,D>::shoc_main_internal(
   const view_1d<Scalar>& ke_a,
   const view_1d<Scalar>& wv_a,
   const view_1d<Scalar>& wl_a,
-  const view_1d<Scalar>& ustar,
   const view_1d<Scalar>& kbfs,
-  const view_1d<Scalar>& obklen,
   const view_1d<Scalar>& ustar2,
   const view_1d<Scalar>& wstar,
   const view_2d<Spack>& rho_zt,
   const view_2d<Spack>& shoc_qv,
+  const view_2d<Spack>& shoc_tabs,
   const view_2d<Spack>& dz_zt,
-  const view_2d<Spack>& dz_zi,
-  const view_2d<Spack>& tkh)
+  const view_2d<Spack>& dz_zi)
 {
   // Scalarize some views for single entry access
   const auto s_thetal  = ekat::scalarize(thetal);
@@ -399,6 +443,11 @@ void Functions<S,D>::shoc_main_internal(
     compute_shoc_vapor_disp(shcol,nlev,qw,shoc_ql, // Input
                             shoc_qv);             // Output
 
+    // Update SHOC temperature
+    compute_shoc_temperature_disp(shcol,nlev,thetal,  // Input
+                                  shoc_ql,inv_exner, // Input
+                                  shoc_tabs);        // Output
+
     shoc_diag_obklen_disp(shcol, nlev,
                           uw_sfc,vw_sfc,     // Input
                           wthl_sfc, wqw_sfc, // Input
@@ -416,20 +465,25 @@ void Functions<S,D>::shoc_main_internal(
                  pblh);                    // Output
 
     // Update the turbulent length scale
-    shoc_length_disp(shcol,nlev,nlevi,dx,dy, // Input
+    shoc_length_disp(shcol,nlev,nlevi,      // Input
+                     length_fac,            // Runtime Options
+                     dx,dy,                 // Input
                      zt_grid,zi_grid,dz_zt, // Input
                      tke,thv,               // Input
                      workspace_mgr,         // Workspace mgr
                      brunt,shoc_mix);       // Output
 
     // Advance the SGS TKE equation
-    shoc_tke_disp(shcol,nlev,nlevi,dtime,wthv_sec,   // Input
-                  shoc_mix,dz_zi,dz_zt,pres,u_wind,  // Input
-                  v_wind,brunt,obklen,zt_grid,       // Input
-                  zi_grid,pblh,                      // Input
-                  workspace_mgr,                     // Workspace mgr
-                  tke,tk,tkh,                        // Input/Output
-                  isotropy);                         // Output
+    shoc_tke_disp(shcol,nlev,nlevi,dtime,             // Input
+	          lambda_low,lambda_high,lambda_slope, // Runtime options
+		  lambda_thresh,Ckh,Ckm,              // Runtime options
+                  wthv_sec,                           // Input
+                  shoc_mix,dz_zi,dz_zt,pres,shoc_tabs,// Input
+                  u_wind,v_wind,brunt,zt_grid,        // Input
+                  zi_grid,pblh,                       // Input
+                  workspace_mgr,                      // Workspace mgr
+                  tke,tk,tkh,                         // Input/Output
+                  isotropy);                          // Output
 
     // Update SHOC prognostic variables here
     // via implicit diffusion solver
@@ -440,7 +494,9 @@ void Functions<S,D>::shoc_main_internal(
                                      thetal,qw,qtracers,tke,u_wind,v_wind);      // Input/Output
 
     // Diagnose the second order moments
-    diag_second_shoc_moments_disp(shcol,nlev,nlevi,thetal,qw,u_wind,v_wind,  // Input
+    diag_second_shoc_moments_disp(shcol,nlev,nlevi,
+                                  thl2tune, qw2tune, qwthl2tune, w2tune,     // Runtime options
+                                  thetal,qw,u_wind,v_wind,                   // Input
                                   tke,isotropy,tkh,tk,dz_zi,zt_grid,zi_grid, // Input
                                   shoc_mix,wthl_sfc,wqw_sfc,uw_sfc,vw_sfc,   // Input
                                   ustar2,wstar,                              // Input/Output
@@ -450,7 +506,9 @@ void Functions<S,D>::shoc_main_internal(
 
     // Diagnose the third moment of vertical velocity,
     //  needed for the PDF closure
-    diag_third_shoc_moments_disp(shcol,nlev,nlevi,w_sec,thl_sec,wthl_sec, // Input
+    diag_third_shoc_moments_disp(shcol,nlev,nlevi,
+                                 c_diag_3rd_mom,                         // Runtime options
+                                 w_sec,thl_sec,wthl_sec,                 // Input
                                  isotropy,brunt,thetal,tke,dz_zt,dz_zi,  // Input
                                  zt_grid,zi_grid,                        // Input
                                  workspace_mgr,                          // Workspace mgr
@@ -523,11 +581,12 @@ Int Functions<S,D>::shoc_main(
   const Int&               num_qtracers,        // Number of tracers
   const Scalar&            dtime,               // SHOC timestep [s]
   WorkspaceMgr&            workspace_mgr,       // WorkspaceManager for local variables
+  const SHOCRuntime&       shoc_runtime,        // Runtime Options
   const SHOCInput&         shoc_input,          // Input
   const SHOCInputOutput&   shoc_input_output,   // Input/Output
   const SHOCOutput&        shoc_output,         // Output
   const SHOCHistoryOutput& shoc_history_output  // Output (diagnostic)
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_SHOC_SMALL_KERNELS
   , const SHOCTemporaries& shoc_temporaries     // Temporaries for small kernels
 #endif
                               )
@@ -535,7 +594,21 @@ Int Functions<S,D>::shoc_main(
   // Start timer
   auto start = std::chrono::steady_clock::now();
 
-#ifndef SCREAM_SMALL_KERNELS
+  // Runtime options
+  const Scalar lambda_low    = shoc_runtime.lambda_low;    
+  const Scalar lambda_high   = shoc_runtime.lambda_high;   
+  const Scalar lambda_slope  = shoc_runtime.lambda_slope;  
+  const Scalar lambda_thresh = shoc_runtime.lambda_thresh; 
+  const Scalar thl2tune      = shoc_runtime.thl2tune;
+  const Scalar qw2tune       = shoc_runtime.qw2tune;
+  const Scalar qwthl2tune    = shoc_runtime.qwthl2tune;
+  const Scalar w2tune        = shoc_runtime.w2tune;
+  const Scalar length_fac    = shoc_runtime.length_fac;
+  const Scalar c_diag_3rd_mom = shoc_runtime.c_diag_3rd_mom;
+  const Scalar Ckh           = shoc_runtime.Ckh;
+  const Scalar Ckm           = shoc_runtime.Ckm;
+
+#ifndef SCREAM_SHOC_SMALL_KERNELS
   using ExeSpace = typename KT::ExeSpace;
 
   // SHOC main loop
@@ -554,6 +627,8 @@ Int Functions<S,D>::shoc_main(
     const Scalar vw_sfc_s{shoc_input.vw_sfc(i)};
     const Scalar phis_s{shoc_input.phis(i)};
     Scalar pblh_s{0};
+    Scalar ustar_s{0};
+    Scalar obklen_s{0};
 
     const auto zt_grid_s      = ekat::subview(shoc_input.zt_grid, i);
     const auto zi_grid_s      = ekat::subview(shoc_input.zi_grid, i);
@@ -573,6 +648,7 @@ Int Functions<S,D>::shoc_main(
     const auto shoc_cldfrac_s = ekat::subview(shoc_input_output.shoc_cldfrac, i);
     const auto shoc_ql_s      = ekat::subview(shoc_input_output.shoc_ql, i);
     const auto shoc_ql2_s     = ekat::subview(shoc_output.shoc_ql2, i);
+    const auto tkh_s          = ekat::subview(shoc_output.tkh, i);
     const auto shoc_mix_s     = ekat::subview(shoc_history_output.shoc_mix, i);
     const auto w_sec_s        = ekat::subview(shoc_history_output.w_sec, i);
     const auto thl_sec_s      = ekat::subview(shoc_history_output.thl_sec, i);
@@ -593,6 +669,9 @@ Int Functions<S,D>::shoc_main(
     const auto qtracers_s = Kokkos::subview(shoc_input_output.qtracers, i, Kokkos::ALL(), Kokkos::ALL());
 
     shoc_main_internal(team, nlev, nlevi, npbl, nadv, num_qtracers, dtime,
+	               lambda_low, lambda_high, lambda_slope, lambda_thresh,  // Runtime options
+                       thl2tune, qw2tune, qwthl2tune, w2tune, length_fac,     // Runtime options
+                       c_diag_3rd_mom, Ckh, Ckm,                              // Runtime options
                        dx_s, dy_s, zt_grid_s, zi_grid_s,                      // Input
                        pres_s, presi_s, pdel_s, thv_s, w_field_s,             // Input
                        wthl_sfc_s, wqw_sfc_s, uw_sfc_s, vw_sfc_s,             // Input
@@ -601,12 +680,14 @@ Int Functions<S,D>::shoc_main(
                        host_dse_s, tke_s, thetal_s, qw_s, u_wind_s, v_wind_s, // Input/Output
                        wthv_sec_s, qtracers_s, tk_s, shoc_cldfrac_s,          // Input/Output
                        shoc_ql_s,                                             // Input/Output
-                       pblh_s, shoc_ql2_s,                                    // Output
+                       pblh_s, ustar_s, obklen_s, shoc_ql2_s, tkh_s,          // Output
                        shoc_mix_s, w_sec_s, thl_sec_s, qw_sec_s, qwthl_sec_s, // Diagnostic Output Variables
                        wthl_sec_s, wqw_sec_s, wtke_sec_s, uw_sec_s, vw_sec_s, // Diagnostic Output Variables
                        w3_s, wqls_sec_s, brunt_s, isotropy_s);                // Diagnostic Output Variables
 
     shoc_output.pblh(i) = pblh_s;
+    shoc_output.ustar(i) = ustar_s;
+    shoc_output.obklen(i) = obklen_s;
   });
   Kokkos::fence();
 #else
@@ -614,6 +695,9 @@ Int Functions<S,D>::shoc_main(
   const auto v_wind_s   = Kokkos::subview(shoc_input_output.horiz_wind, Kokkos::ALL(), 1, Kokkos::ALL());
 
   shoc_main_internal(shcol, nlev, nlevi, npbl, nadv, num_qtracers, dtime,
+    lambda_low, lambda_high, lambda_slope, lambda_thresh,  // Runtime options
+    thl2tune, qw2tune, qwthl2tune, w2tune, length_fac,     // Runtime options
+    c_diag_3rd_mom, Ckh, Ckm,                              // Runtime options
     shoc_input.dx, shoc_input.dy, shoc_input.zt_grid, shoc_input.zi_grid, // Input
     shoc_input.pres, shoc_input.presi, shoc_input.pdel, shoc_input.thv, shoc_input.w_field, // Input
     shoc_input.wthl_sfc, shoc_input.wqw_sfc, shoc_input.uw_sfc, shoc_input.vw_sfc, // Input
@@ -622,16 +706,16 @@ Int Functions<S,D>::shoc_main(
     shoc_input_output.host_dse, shoc_input_output.tke, shoc_input_output.thetal, shoc_input_output.qw, u_wind_s, v_wind_s, // Input/Output
     shoc_input_output.wthv_sec, shoc_input_output.qtracers, shoc_input_output.tk, shoc_input_output.shoc_cldfrac, // Input/Output
     shoc_input_output.shoc_ql, // Input/Output
-    shoc_output.pblh, shoc_output.shoc_ql2, // Output
+    shoc_output.pblh, shoc_output.ustar, shoc_output.obklen, shoc_output.shoc_ql2, shoc_output.tkh, // Output
     shoc_history_output.shoc_mix, shoc_history_output.w_sec, shoc_history_output.thl_sec, shoc_history_output.qw_sec, shoc_history_output.qwthl_sec, // Diagnostic Output Variables
     shoc_history_output.wthl_sec, shoc_history_output.wqw_sec, shoc_history_output.wtke_sec, shoc_history_output.uw_sec, shoc_history_output.vw_sec, // Diagnostic Output Variables
     shoc_history_output.w3, shoc_history_output.wqls_sec, shoc_history_output.brunt, shoc_history_output.isotropy, // Diagnostic Output Variables
     // Temporaries
     shoc_temporaries.se_b, shoc_temporaries.ke_b, shoc_temporaries.wv_b, shoc_temporaries.wl_b,
     shoc_temporaries.se_a, shoc_temporaries.ke_a, shoc_temporaries.wv_a, shoc_temporaries.wl_a,
-    shoc_temporaries.ustar, shoc_temporaries.kbfs, shoc_temporaries.obklen, shoc_temporaries.ustar2,
-    shoc_temporaries.wstar, shoc_temporaries.rho_zt, shoc_temporaries.shoc_qv, shoc_temporaries.dz_zt,
-    shoc_temporaries.dz_zi, shoc_temporaries.tkh);
+    shoc_temporaries.kbfs, shoc_temporaries.ustar2,
+    shoc_temporaries.wstar, shoc_temporaries.rho_zt, shoc_temporaries.shoc_qv,
+    shoc_temporaries.tabs, shoc_temporaries.dz_zt, shoc_temporaries.dz_zi);
 #endif
 
   auto finish = std::chrono::steady_clock::now();

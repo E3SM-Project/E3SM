@@ -38,6 +38,7 @@ module PhenologyMod
   use CNNitrogenFluxType  , only : nitrogenflux_type
   use PhosphorusStateType , only : phosphorusstate_type
   use PhosphorusFluxType  , only : phosphorusflux_type
+  use SolarAbsorbedType   , only : solarabs_type
   !!!Added for gpu timing info
   use timeinfoMod
 
@@ -162,7 +163,7 @@ contains
      allocate(PhenolParamsInst%lwtop           )
     !
     ! read in parameters
-    !   
+    !
     tString='crit_dayl'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
@@ -174,7 +175,7 @@ contains
     else
        tString='crit_dayl_stress'
        call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
-       if ( .not. readv ) then 
+       if ( .not. readv ) then
           PhenolParamsInst%crit_dayl_stress = secspqtrday
        else
           PhenolParamsInst%crit_dayl_stress = tempr
@@ -237,7 +238,7 @@ contains
     tString='lwtop_ann'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    PhenolParamsInst%lwtop=tempr   
+    PhenolParamsInst%lwtop=tempr
 
      !!!!========== Update to device ========= !!!
      !$acc update device(PhenolParamsInst%crit_dayl, &
@@ -260,7 +261,7 @@ contains
   subroutine Phenology (num_soilc, filter_soilc, num_soilp, filter_soilp, &
        num_pcropp, filter_pcropp, num_ppercropp, filter_ppercropp, doalb, atm2lnd_vars, &
        crop_vars, canopystate_vars, soilstate_vars, &
-       cnstate_vars)
+       cnstate_vars, solarabs_vars)
     !
     ! !DESCRIPTION:
     ! Dynamic phenology routine for coupled carbon-nitrogen code (CN)
@@ -282,6 +283,7 @@ contains
     type(canopystate_type)   , intent(in)    :: canopystate_vars
     type(soilstate_type)     , intent(in)    :: soilstate_vars
     type(cnstate_type)       , intent(inout) :: cnstate_vars
+    type(solarabs_type)      , intent(in)    :: solarabs_vars
     !-----------------------------------------------------------------------
 
     ! each of the following phenology type routines includes a filter
@@ -301,7 +303,7 @@ contains
 
    if (num_pcropp > 0 ) then
        call CropPlantDate(num_soilp, filter_soilp, num_pcropp, filter_pcropp,&
-            cnstate_vars, crop_vars)
+            cnstate_vars, crop_vars, solarabs_vars)
    end if
 
     if (doalb .and. num_pcropp > 0 ) then
@@ -352,7 +354,7 @@ contains
     ! initialized, and after ecophyscon file is read in.
     !
     ! !USES:
-    use clm_time_manager, only: get_step_size
+    use elm_time_manager, only: get_step_size
     use elm_varpar      , only: crop_prog
     use elm_varcon      , only: secspday
     !
@@ -376,6 +378,7 @@ contains
     ! average 2m temp.
     ! crit_onset_gdd = 150.0 ! c3 grass value
     ! crit_onset_gdd = 1000.0   ! c4 grass value
+    crit_onset_fdd=PhenolParamsInst%crit_onset_fdd
     crit_onset_swi=PhenolParamsInst%crit_onset_swi
     soilpsi_on=PhenolParamsInst%soilpsi_on
 
@@ -598,7 +601,7 @@ contains
          prev_dayl                           =>    grc_pp%prev_dayl                                         , & ! Input:  [real(r8)  (:)   ]  daylength from previous time step (s)
 
          season_decid                        =>    veg_vp%season_decid                               , & ! Input:  [real(r8)  (:)   ]  binary flag for seasonal-deciduous leaf habit (0 or 1)
-         woody                               =>    veg_vp%woody                                      , & ! Input:  [real(r8)  (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
+         woody                               =>    veg_vp%woody                                      , & ! Input:  [real(r8)  (:)   ]  woody lifeform flag (0 = non-woody, 1 = tree, 2 = shrub)
 
          t_soisno                            =>    col_es%t_soisno                         , & ! Input:  [real(r8)  (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)
 
@@ -768,7 +771,7 @@ contains
                   frootn_xfer_to_frootn(p) = 0.0_r8
                   leafp_xfer_to_leafp(p)   = 0.0_r8
                   frootp_xfer_to_frootp(p) = 0.0_r8
-                  if (woody(ivt(p)) == 1.0_r8) then
+                  if (woody(ivt(p)) >= 1.0_r8) then
                      livestemc_xfer_to_livestemc(p)   = 0.0_r8
                      deadstemc_xfer_to_deadstemc(p)   = 0.0_r8
                      livecrootc_xfer_to_livecrootc(p) = 0.0_r8
@@ -789,7 +792,7 @@ contains
                   frootc_xfer(p) = 0.0_r8
                   frootn_xfer(p) = 0.0_r8
                   frootp_xfer(p) = 0.0_r8
-                  if (woody(ivt(p)) == 1.0_r8) then
+                  if (woody(ivt(p)) >= 1.0_r8) then
                      livestemc_xfer(p) = 0.0_r8
                      livestemn_xfer(p) = 0.0_r8
                      livestemp_xfer(p) = 0.0_r8
@@ -852,7 +855,7 @@ contains
                   ! set carbon fluxes for shifting storage pools to transfer pools
                   leafc_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * leafc_storage(p)/dt
                   frootc_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * frootc_storage(p)/dt
-                  if (woody(ivt(p)) == 1.0_r8) then
+                  if (woody(ivt(p)) >= 1.0_r8) then
                      livestemc_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * livestemc_storage(p)/dt
                      deadstemc_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * deadstemc_storage(p)/dt
                      livecrootc_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * livecrootc_storage(p)/dt
@@ -863,7 +866,7 @@ contains
                   ! set nitrogen fluxes for shifting storage pools to transfer pools
                   leafn_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * leafn_storage(p)/dt
                   frootn_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * frootn_storage(p)/dt
-                  if (woody(ivt(p)) == 1.0_r8) then
+                  if (woody(ivt(p)) >= 1.0_r8) then
                      livestemn_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * livestemn_storage(p)/dt
                      deadstemn_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * deadstemn_storage(p)/dt
                      livecrootn_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * livecrootn_storage(p)/dt
@@ -873,7 +876,7 @@ contains
                   ! set phosphorus fluxes for shifting storage pools to transfer pools
                   leafp_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * leafp_storage(p)/dt
                   frootp_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * frootp_storage(p)/dt
-                  if (woody(ivt(p)) == 1.0_r8) then
+                  if (woody(ivt(p)) >= 1.0_r8) then
                      livestemp_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * livestemp_storage(p)/dt
                      deadstemp_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * deadstemp_storage(p)/dt
                      livecrootp_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * livecrootp_storage(p)/dt
@@ -943,7 +946,7 @@ contains
 
          leaf_long                           =>    veg_vp%leaf_long                                  , & ! Input:  [real(r8)  (:)   ]  leaf longevity (yrs)
          froot_long                          =>    veg_vp%froot_long                                 , & ! Input:  [real(r8)  (:)   ]  fine root longevity (yrs)
-         woody                               =>    veg_vp%woody                                      , & ! Input:  [real(r8)  (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
+         woody                               =>    veg_vp%woody                                      , & ! Input:  [real(r8)  (:)   ]  woody lifeform flag (0 = non-woody, 1 = tree, 2 = shrub)
          stress_decid                        =>    veg_vp%stress_decid                               , & ! Input:  [real(r8)  (:)   ]  binary flag for stress-deciduous leaf habit (0 or 1)
 
          soilpsi                             =>    soilstate_vars%soilpsi_col                            , & ! Input:  [real(r8)  (:,:) ]  soil water potential in each soil layer (MPa)
@@ -1113,7 +1116,7 @@ contains
                   frootn_xfer_to_frootn(p) = 0._r8
                   leafp_xfer_to_leafp(p)   = 0._r8
                   frootp_xfer_to_frootp(p) = 0._r8
-                  if (woody(ivt(p)) == 1.0_r8) then
+                  if (woody(ivt(p)) >= 1.0_r8) then
                      livestemc_xfer_to_livestemc(p)   = 0._r8
                      deadstemc_xfer_to_deadstemc(p)   = 0._r8
                      livecrootc_xfer_to_livecrootc(p) = 0._r8
@@ -1134,7 +1137,7 @@ contains
                   frootc_xfer(p) = 0._r8
                   frootn_xfer(p) = 0._r8
                   frootp_xfer(p) = 0._r8
-                  if (woody(ivt(p)) == 1.0_r8) then
+                  if (woody(ivt(p)) >= 1.0_r8) then
                      livestemc_xfer(p) = 0._r8
                      livestemn_xfer(p) = 0._r8
                      livestemp_xfer(p) = 0._r8
@@ -1226,7 +1229,7 @@ contains
                   ! set carbon fluxes for shifting storage pools to transfer pools
                   leafc_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * leafc_storage(p)/dt
                   frootc_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * frootc_storage(p)/dt
-                  if (woody(ivt(p)) == 1.0_r8) then
+                  if (woody(ivt(p)) >= 1.0_r8) then
                      livestemc_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * livestemc_storage(p)/dt
                      deadstemc_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * deadstemc_storage(p)/dt
                      livecrootc_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * livecrootc_storage(p)/dt
@@ -1237,7 +1240,7 @@ contains
                   ! set nitrogen fluxes for shifting storage pools to transfer pools
                   leafn_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * leafn_storage(p)/dt
                   frootn_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * frootn_storage(p)/dt
-                  if (woody(ivt(p)) == 1.0_r8) then
+                  if (woody(ivt(p)) >= 1.0_r8) then
                      livestemn_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * livestemn_storage(p)/dt
                      deadstemn_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * deadstemn_storage(p)/dt
                      livecrootn_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * livecrootn_storage(p)/dt
@@ -1247,7 +1250,7 @@ contains
                   ! set phosphorus fluxes for shifting storage pools to transfer pools
                   leafp_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * leafp_storage(p)/dt
                   frootp_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * frootp_storage(p)/dt
-                  if (woody(ivt(p)) == 1.0_r8) then
+                  if (woody(ivt(p)) >= 1.0_r8) then
                      livestemp_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * livestemp_storage(p)/dt
                      deadstemp_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * deadstemp_storage(p)/dt
                      livecrootp_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * livecrootp_storage(p)/dt
@@ -1349,7 +1352,7 @@ contains
 
                leafc_storage_to_xfer(p)  = leafc_storage(p) * bgtr(p)
                frootc_storage_to_xfer(p) = frootc_storage(p) * bgtr(p)
-               if (woody(ivt(p)) == 1.0_r8) then
+               if (woody(ivt(p)) >= 1.0_r8) then
                   livestemc_storage_to_xfer(p)  = livestemc_storage(p) * bgtr(p)
                   deadstemc_storage_to_xfer(p)  = deadstemc_storage(p) * bgtr(p)
                   livecrootc_storage_to_xfer(p) = livecrootc_storage(p) * bgtr(p)
@@ -1360,7 +1363,7 @@ contains
                ! set nitrogen fluxes for shifting storage pools to transfer pools
                leafn_storage_to_xfer(p)  = leafn_storage(p) * bgtr(p)
                frootn_storage_to_xfer(p) = frootn_storage(p) * bgtr(p)
-               if (woody(ivt(p)) == 1.0_r8) then
+               if (woody(ivt(p)) >= 1.0_r8) then
                   livestemn_storage_to_xfer(p)  = livestemn_storage(p) * bgtr(p)
                   deadstemn_storage_to_xfer(p)  = deadstemn_storage(p) * bgtr(p)
                   livecrootn_storage_to_xfer(p) = livecrootn_storage(p) * bgtr(p)
@@ -1371,7 +1374,7 @@ contains
                ! set phosphorus fluxes for shifting storage pools to transfer pools
                leafp_storage_to_xfer(p)  = leafp_storage(p) * bgtr(p)
                frootp_storage_to_xfer(p) = frootp_storage(p) * bgtr(p)
-               if (woody(ivt(p)) == 1.0_r8) then
+               if (woody(ivt(p)) >= 1.0_r8) then
                   livestemp_storage_to_xfer(p)  = livestemp_storage(p) * bgtr(p)
                   deadstemp_storage_to_xfer(p)  = deadstemp_storage(p) * bgtr(p)
                   livecrootp_storage_to_xfer(p) = livecrootp_storage(p) * bgtr(p)
@@ -1402,6 +1405,7 @@ contains
     use pftvarcon        , only : lfemerg, grnfill, mxmat, minplanttemp, planttemp
     use elm_varcon       , only : spval, secspday
     use CropType         , only : tcvp, tcvt, cst
+    use elm_varctl       , only : fan_to_bgc_crop
     !
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_pcropp       ! number of prog crop patches in filter
@@ -1441,8 +1445,7 @@ contains
          froot_long         =>    veg_vp%froot_long                            , & ! Input:  [real(r8) (:) ]  fine root longevity (yrs)
 
          leafcn             =>    veg_vp%leafcn                                , & ! Input:  [real(r8) (:) ]  leaf C:N (gC/gN)
-         fertnitro          =>    veg_vp%fertnitro                             , & ! Input:  [real(r8) (:) ]  max fertilizer to be applied in total (kgN/m2)
-
+         manunitro          =>    veg_vp%manunitro             , & ! Input: max manure to apply (kgN/m2)
          t_ref2m_min        =>    veg_es%t_ref2m_min           , & ! Input:  [real(r8) (:) ]  daily minimum of average 2 m height surface air temperature (K)
          t10                =>    veg_es%t_a10                 , & ! Input:  [real(r8) (:) ]  10-day running mean of the 2 m temperature (K)
          a5tmin             =>    veg_es%t_a5min               , & ! Input:  [real(r8) (:) ]  5-day running mean of min 2-m temperature
@@ -1450,6 +1453,8 @@ contains
          gdd020             =>    veg_es%gdd020                , & ! Input:  [real(r8) (:) ]  20 yr mean of gdd0
          gdd820             =>    veg_es%gdd820                , & ! Input:  [real(r8) (:) ]  20 yr mean of gdd8
          gdd1020            =>    veg_es%gdd1020               , & ! Input:  [real(r8) (:) ]  20 yr mean of gdd10
+         fertnitro          =>    crop_vars%fertnitro_patch    , & ! Input:  [real(r8) (:) ]  max N fertilizer to be applied in total (kgN/m2)
+         fertphosp          =>    crop_vars%fertphosp_patch    , & ! Input:  [real(r8) (:) ]  max P fertilizer to be applied in total (kgP/m2)
          hui                =>    crop_vars%gddplant_patch                     , & ! Input:  [real(r8) (:) ]  gdd since planting (gddplant)
          leafout            =>    crop_vars%gddtsoi_patch                      , & ! Input:  [real(r8) (:) ]  gdd from top soil layer temperature
 
@@ -1487,7 +1492,9 @@ contains
          leafcp             =>    veg_vp%leafcp                                , & ! Input:  [real(r8) (:) ]  leaf C:P (gC/gP)
          leafp_xfer         =>    veg_ps%leafp_xfer        , & ! Output: [real(r8) (:) ]  (gP/m2)   leaf P transfer
          crop_seedp_to_leaf =>    veg_pf%crop_seedp_to_leaf , & ! Output: [real(r8) (:) ]  (gP/m2/s) seed source to PFT-level
-         fert               =>    veg_nf%fert                  , & ! Output: [real(r8) (:) ]  (gN/m2/s) fertilizer applied each timestep
+         synthfert          =>    veg_nf%synthfert          , & ! Output: [real(r8) (:) ]  (gN/m2/s) fertilizer applied each timestep
+         manure             =>    veg_nf%manure             , & ! Output: [real(r8) (:) ]  (gN/m2/s) manure applied each timestep
+         fert_p             =>    veg_pf%fert_p             , & ! Output: [real(r8) (:) ]  (gP/m2/s) P fertilizer applied each timestep
          cvt                =>    crop_vars%cvt_patch                     , & ! Output:  [real(r8) ):)]  exp weighted moving average average CV precip
          cvp                =>    crop_vars%cvp_patch                     , & ! Output:  [real(r8) ):)]  exp weighted moving average average CV temp
          xt_bar             =>    crop_vars%xt_bar_patch                  , & ! Output:  [real(r8) ):)]  exp weighted moving average average monthly temp
@@ -1861,7 +1868,14 @@ contains
                   onset_flag(p)    = 1._r8
                   onset_counter(p) = dt
                   fert_counter(p)  = ndays_on * secspday
-                  fert(p) = fertnitro(ivt(p)) * 1000._r8 / fert_counter(p)
+                  fert_p(p) = fertphosp(p)  / fert_counter(p)
+                  synthfert(p) = fertnitro(p)  / fert_counter(p)
+                  if (.not. fan_to_bgc_crop) then
+                     manure(p) = (manunitro(ivt(p)) * 1000._r8) / fert_counter(p)
+                  else
+                     ! CLM default manure not used; FAN determines the application.
+                     manure(p) = 0.0_r8
+                  end if
                else
                   ! this ensures no re-entry to onset of phase2
                   ! b/c onset_counter(p) = onset_counter(p) - dt
@@ -1908,7 +1922,9 @@ contains
             ! assumes that onset of phase 2 took one time step only
 
             if (fert_counter(p) <= 0._r8) then
-               fert(p) = 0._r8
+               synthfert(p) = 0._r8
+               manure(p) = 0._r8
+               fert_p(p) = 0._r8
             else ! continue same fert application every timestep
                fert_counter(p) = fert_counter(p) - dt
             end if
@@ -1938,10 +1954,11 @@ contains
     ! Code based on ORCHIDEE-MICT-BIOENERGY model (Li et al., 2018)
     ! !USES:
     use shr_const_mod    , only : SHR_CONST_TKFRZ
-    use clm_time_manager , only : get_curr_calday, get_days_per_year
+    use elm_time_manager , only : get_curr_calday, get_days_per_year
     use pftvarcon        , only : gddmin, hybgdd
     use pftvarcon        , only : minplanttemp, planttemp, senestemp, min_days_senes
     use elm_varcon       , only : spval, secspday
+    use elm_varctl       , only : fan_to_bgc_crop
     !
     ! !ARGUMENTS:
     integer              , intent(in)    :: num_ppercropp       ! number of prog perennial crop patches in filter
@@ -1971,10 +1988,11 @@ contains
          froot_long         =>    veg_vp%froot_long                   , & ! Input:  [real(r8) (:) ]  fine root longevity (yrs)
          leafcn             =>    veg_vp%leafcn                       , & ! Input:  [real(r8) (:) ]  leaf C:N (gC/gN)
          leafcp             =>    veg_vp%leafcp                       , & ! Input:  [real(r8) (:) ]  leaf C:P (gC/gP)
-         fertnitro          =>    veg_vp%fertnitro                    , & ! Input:  [real(r8) (:) ]  max fertilizer to be applied in total (kgN/m2)
-
+         manunitro          =>    veg_vp%manunitro                    , & ! Input: max manure to apply (kgN/m2)
          t10                =>    veg_es%t_a10                        , & ! Input:  [real(r8) (:) ]  10-day running mean of the 2 m temperature (K)
          a10tmin            =>    veg_es%t_a10min                     , & ! Input:  [real(r8) (:) ]  10-day running mean of min 2-m temperature
+         fertnitro          =>    crop_vars%fertnitro_patch           , & ! Input:  [real(r8) (:) ]  max fertilizer to be applied in total (kgN/m2)
+         fertphosp          =>    crop_vars%fertphosp_patch           , & ! Input:  [real(r8) (:) ]  max P fertilizer to be applied in total (kgP/m2)
 
          harvdate           =>    crop_vars%harvdate_patch            , & ! Output: [integer  (:) ]  harvest date
          harvday            =>    crop_vars%harvday_patch             , & ! Ouptut: [real(r8) ):) ]  harvest day
@@ -1998,7 +2016,9 @@ contains
 
          crop_seedc_to_leaf =>    veg_cf%crop_seedc_to_leaf           , & ! Output: [real(r8) (:) ]  (gC/m2/s) seed source to PFT-level
 
-         fert               =>    veg_nf%fert                         , & ! Output: [real(r8) (:) ]  (gN/m2/s) fertilizer applied each timestep
+         synthfert          =>    veg_nf%synthfert                    , & ! Output: [real(r8) (:) ]  (gN/m2/s) fertilizer applied each timestep
+         manure             =>    veg_nf%manure                       , & ! Output: [real(r8) (:) ]  (gN/m2/s) manure applied each timestep
+         fert_p             =>    veg_pf%fert_p                       , & ! Output:  [real(r8) (:) ] (gP/m2/s) phosphorus fertilizer applied each timestep
          fert_counter       =>    veg_nf%fert_counter                 , & ! Output: [real(r8) (:) ]  >0 fertilize; <=0 not (seconds)
 
          leafn_xfer         =>    veg_ns%leafn_xfer                   , & ! Output: [real(r8) (:) ]  (gN/m2)   leaf N transfer
@@ -2068,7 +2088,9 @@ contains
 
                ! fertilizer counter
                if (fert_counter(p) <= 0._r8) then
-                  fert(p) = 0._r8
+                  synthfert(p) = 0._r8
+                  manure(p) = 0._r8
+                  fert_p(p) = 0._r8
                else ! continue same fert application every timestep
                   fert_counter(p) = fert_counter(p) - dt
                end if
@@ -2119,7 +2141,15 @@ contains
                   onset_gdd(p) = 0.0_r8
                   onset_counter(p) = min_days_senes(ivt(p)) * secspday
                   fert_counter(p)  = ndays_on * secspday
-                  fert(p) = fertnitro(ivt(p)) * 1000._r8 / fert_counter(p)
+                  fert_p(p) = fertphosp(p)  / fert_counter(p)
+                  synthfert(p) = fertnitro(p)  / fert_counter(p)
+                  if (.not. fan_to_bgc_crop) then
+                     manure(p) = (manunitro(ivt(p)) * 1000._r8) / fert_counter(p)
+                  else
+                     ! ELM default manure not used; FAN determines the
+                     ! application.
+                     manure(p) = 0.0_r8
+                  end if
                 end if
             end if    ! offset flag
          else     ! crop not live
@@ -2147,10 +2177,11 @@ contains
     ! initialized, and after ecophyscon file is read in.
     !
     ! !USES:
-    use pftvarcon       , only: npcropmin, npcropmax, nppercropmin, nppercropmax, mnNHplantdate
+    use elm_varpar      , only : mxpft
+    use pftvarcon       , only: iscft, mnNHplantdate
     use pftvarcon       , only: mnSHplantdate, mxNHplantdate
     use pftvarcon       , only: mxSHplantdate
-    use clm_time_manager, only: get_calday
+    use elm_time_manager, only: get_calday
     !
     ! !ARGUMENTS:
     implicit none
@@ -2173,22 +2204,17 @@ contains
     ! Convert planting dates into julian day
     minplantjday(:,:) = huge(1)
     maxplantjday(:,:) = huge(1)
-    do n = npcropmin, npcropmax
+    do n = 0, mxpft
+      if (iscft(n)) then
         minplantjday(n,inNH) = int( get_calday( mnNHplantdate(n), 0 ) )
         maxplantjday(n,inNH) = int( get_calday( mxNHplantdate(n), 0 ) )
+      end if
     end do
-    do n = npcropmin, npcropmax
+    do n = 0, mxpft
+      if (iscft(n)) then
         minplantjday(n,inSH) = int( get_calday( mnSHplantdate(n), 0 ) )
         maxplantjday(n,inSH) = int( get_calday( mxSHplantdate(n), 0 ) )
-    end do
-
-    do n = nppercropmin, nppercropmax
-       minplantjday(n,inNH) = int( get_calday( mnNHplantdate(n), 0 ) )
-       maxplantjday(n,inNH) = int( get_calday( mxNHplantdate(n), 0 ) )
-    end do
-    do n = nppercropmin, nppercropmax
-       minplantjday(n,inSH) = int( get_calday( mnSHplantdate(n), 0 ) )
-       maxplantjday(n,inSH) = int( get_calday( mxSHplantdate(n), 0 ) )
+      end if
     end do
 
     ! Figure out what hemisphere each PFT is in
@@ -2361,7 +2387,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine CropPlantDate (num_soilp, filter_soilp, num_pcropp, filter_pcropp, &
-        cnstate_vars, crop_vars)
+        cnstate_vars, crop_vars, solarabs_vars)
     !
     ! !DESCRIPTION:
     ! For determining the plant month for crops, plant day is established in
@@ -2382,7 +2408,7 @@ contains
     integer                , intent(in)    :: filter_pcropp(:)! filter for prognostic crop patches
     type(cnstate_type)     , intent(inout) :: cnstate_vars
     type(crop_type)        , intent(inout) :: crop_vars
-
+    type(solarabs_type)    , intent(in)    :: solarabs_vars
     !
     ! !LOCAL VARIABLES:
     integer :: p,c,m,t,n,h          ! indices
@@ -2395,7 +2421,7 @@ contains
     real(r8), parameter :: alpha = 0.05_r8  ! coefficient representing degree of weighting decrease
     real(r8), parameter :: mon = 12._r8     ! used for some calculations (number of days in month)
     real(r8) :: mu_p, mu_t, sigmasum_t, sigmasum_p, sigma_t, sigma_p
-    real(r8) :: es, ETout
+    real(r8) :: ETout, netrad
     integer, dimension(12) :: ndaypm= &
          (/31,28,31,30,31,30,31,31,30,31,30,31/) !days per month
     real(r8) :: dt
@@ -2410,7 +2436,8 @@ contains
          forc_wind      => top_as%windbot                   , & ! Input: [real(r8) (:) ]  atmospheric wind speed (m/s)
          forc_pbot      => top_as%pbot                      , & ! Input: [real(r8) (:) ]  downscaled surface pressure (Pa)
          eflx_soil_grnd => veg_ef%eflx_soil_grnd            , & ! Input: [real(r8) (:) ]  soil heat flux (W/m**2) [+ = into soil]
-         netrad         => veg_ef%netrad                    , & ! Input: [real(r8) (:) ]  net radiation (positive downward) (W/m**2)
+         eflx_lwrad_net => veg_ef%eflx_lwrad_net            , & ! Input: [real(r8) (:) ]  net infrared (longwave) rad (W/m**2) [+ = to atm]
+         fsa            => solarabs_vars%fsa_patch           , & ! Input: [real(r8) (:) ]  solar radiation absorbed (total) (W/m**2)
          nyrs_crop_active => crop_vars%nyrs_crop_active_patch,   & ! InOut:  [integer (:)  ]  number of years this crop patch has been active
          cvt            => crop_vars%cvt_patch              , & ! Output: [real(r8) (:) ]  coefficient of variance temperature
          cvp            => crop_vars%cvp_patch              , & ! Output: [real(r8) (:) ]     "     "    "    "    precipitation
@@ -2524,11 +2551,21 @@ contains
          xt(p,kmo) = xt(p,kmo) + t_ref2m(p) * fracday/ndaypm(kmo) ! monthly average temperature
          xp(p,kmo) = xp(p,kmo) + (forc_rain(t)+forc_snow(t))*dt   ! monthly average precipitation
          ! calculate the potential evapotranspiration
-         call calculate_eto(t_ref2m(p), netrad(p), eflx_soil_grnd(p), forc_pbot(t), forc_rh(t), forc_wind(t), es, dt, ETout)
+         netrad = fsa(p) + eflx_lwrad_net(p) ! moved this here because it is calculated too late
+         call calculate_eto(t_ref2m(p), netrad, eflx_soil_grnd(p), forc_pbot(t), forc_rh(t), forc_wind(t), dt, ETout)
          ! monthly ETo
          ETo(p,kmo) = ETo(p,kmo) + ETout
+
          ! calculate the P:PET for each month
-         p2ETo(p,kmo) = xp(p,kmo)/ETo(p,kmo)
+         if ( abs(ETo(p,kmo)) > 0._r8) then
+            p2ETo(p,kmo) = xp(p,kmo)/ETo(p,kmo)
+         else ! P:PET is undefined.
+            ! Setting to a fill value ( 'spval' ) would
+            ! require nested if statements due to
+            ! the weighting of previous years (i.e., p2ETo and prev_p2ETo_bar )
+            ! So, set to zero for simplicity.
+            p2ETo(p,kmo) = 0._r8
+         end if
 
          if (nyrs_crop_active(p) == 0) then ! for the first year, use last years values
             prev_xt_bar(p,kmo) = xt(p,kmo)
@@ -2561,6 +2598,7 @@ contains
     ! add flux for phosphorus - X.YANG
     ! !USES:
     use pftvarcon            , only : percrop
+    use elm_varctl           , only : use_crop
     !
     ! !ARGUMENTS:
       !$acc routine seq
@@ -2579,7 +2617,7 @@ contains
     associate(                                                                                             &
          ivt                                 =>    veg_pp%itype                                             , & ! Input:  [integer   (:) ]  pft vegetation type
 
-         woody                               =>    veg_vp%woody                                      , & ! Input:  [real(r8)  (:) ]  binary flag for woody lifeform (1=woody, 0=not woody)
+         woody                               =>    veg_vp%woody                                      , & ! Input:  [real(r8)  (:) ]  woody lifeform flag (0 = non-woody, 1 = tree, 2 = shrub)
 
          onset_flag                          =>    cnstate_vars%onset_flag_patch                           , & ! Input:  [real(r8)  (:) ]  onset flag
          onset_counter                       =>    cnstate_vars%onset_counter_patch                        , & ! Input:  [real(r8)  (:) ]  onset days counter
@@ -2641,7 +2679,7 @@ contains
             ! The transfer rate is a linearly decreasing function of time,
             ! going to zero on the last timestep of the onset period
 
-            if (onset_counter(p) == dt .or. percrop(ivt(p)) == 1.0_r8) then
+            if (onset_counter(p) == dt .or. (use_crop .and. percrop(ivt(p)) == 1.0_r8) ) then
                t1 = 1.0_r8 / dt
             else
                t1 = 2.0_r8 / (onset_counter(p))
@@ -2652,7 +2690,7 @@ contains
             frootn_xfer_to_frootn(p) = t1 * frootn_xfer(p)
             leafp_xfer_to_leafp(p)   = t1 * leafp_xfer(p)
             frootp_xfer_to_frootp(p) = t1 * frootp_xfer(p)
-            if (woody(ivt(p)) == 1.0_r8) then
+            if (woody(ivt(p)) >= 1.0_r8) then
                livestemc_xfer_to_livestemc(p)   = t1 * livestemc_xfer(p)
                deadstemc_xfer_to_deadstemc(p)   = t1 * deadstemc_xfer(p)
                livecrootc_xfer_to_livecrootc(p) = t1 * livecrootc_xfer(p)
@@ -2681,7 +2719,7 @@ contains
             frootn_xfer_to_frootn(p) = frootn_xfer(p) / dt
             leafp_xfer_to_leafp(p)   = leafp_xfer(p) / dt
             frootp_xfer_to_frootp(p) = frootp_xfer(p) / dt
-            if (woody(ivt(p)) == 1.0_r8) then
+            if (woody(ivt(p)) >= 1.0_r8) then
                livestemc_xfer_to_livestemc(p)   = livestemc_xfer(p) / dt
                deadstemc_xfer_to_deadstemc(p)   = deadstemc_xfer(p) / dt
                livecrootc_xfer_to_livecrootc(p) = livecrootc_xfer(p) / dt
@@ -2923,7 +2961,7 @@ contains
     !
     ! !USES:
       !$acc routine seq
-    use pftvarcon , only : npcropmin
+    use pftvarcon , only : iscft
     !
     ! !ARGUMENTS:
     integer                 , intent(in)    :: num_soilp       ! number of soil patches in filter
@@ -3020,7 +3058,7 @@ contains
 
             if (offset_counter(p) == dt) then
                t1 = 1.0_r8 / dt
-               if (ivt(p) >= npcropmin) then
+               if (iscft(ivt(p))) then
                ! this assumes that offset_counter == dt for crops
                ! if this were ever changed, we'd need to add code to the "else"
                   leafc_to_litter(p) = (1.0_r8 - presharv(ivt(p))) * ((t1 * leafc(p)) + cpool_to_leafc(p))
@@ -3037,7 +3075,7 @@ contains
             end if
 
             if ( nu_com .eq. 'RD') then
-               if (ivt(p) >= npcropmin) then
+               if (iscft(ivt(p))) then
                   if (offset_counter(p) == dt) then
                       t1 = 1.0_r8 / dt
 
@@ -3071,7 +3109,7 @@ contains
             else
                if (offset_counter(p) == dt) then
                   t1 = 1.0_r8 / dt
-                  if (ivt(p) >= npcropmin) then
+                  if (iscft(ivt(p))) then
                      ! this assumes that offset_counter == dt for crops
                      ! if this were ever changed, we'd need to add code to the "else"
                      leafn_to_litter(p) = (1.0_r8 - presharv(ivt(p))) * ((t1 * leafn(p)) + npool_to_leafn(p))
@@ -3239,7 +3277,7 @@ contains
     associate(                                                                             &
          ivt                      =>    veg_pp%itype                                        , & ! Input:  [integer  (:) ]  pft vegetation type
 
-         woody                    =>    veg_vp%woody                                 , & ! Input:  [real(r8) (:) ]  binary flag for woody lifeform (1=woody, 0=not woody)
+         woody                    =>    veg_vp%woody                                 , & ! Input:  [real(r8) (:) ]  woody lifeform flag (0 = non-woody, 1 = tree, 2 = shrub)
          livewdcn                 =>    veg_vp%livewdcn                              , & ! Input:  [real(r8) (:) ]  live wood (phloem and ray parenchyma) C:N (gC/gN)
          deadwdcn                 =>    veg_vp%deadwdcn                              , & ! Input:  [real(r8) (:) ]  dead wood (xylem and heartwood) C:N (gC/gN)
 
@@ -3273,7 +3311,7 @@ contains
          p = filter_soilp(fp)
 
          ! only calculate these fluxes for woody types
-         if (woody(ivt(p)) > 0._r8) then
+         if (woody(ivt(p)) >= 1.0_r8) then
             if ( nu_com .eq. 'RD') then
                ! live stem to dead stem turnover
 
@@ -3345,7 +3383,7 @@ contains
     ! !USES:
       !$acc routine seq
     use elm_varpar , only : max_patch_per_col, nlevdecomp
-    use pftvarcon  , only : npcropmin
+    use pftvarcon  , only : iscft
     !
     ! !ARGUMENTS:
     integer                 , intent(in)    :: num_soilp       ! number of soil columns in filter
@@ -3455,7 +3493,7 @@ contains
                      ! new ones for now (slevis)
                      ! The food is now directed to the product pools (BDrewniak)
 
-                     if (ivt(p) >= npcropmin) then ! add livestemc to litter
+                     if (iscft(ivt(p))) then ! add livestemc to litter
                         ! stem litter carbon fluxes
                         phenology_c_to_litr_met_c(c,j) = phenology_c_to_litr_met_c(c,j) &
                              + livestemc_to_litter(p) * lf_flab(ivt(p)) * wt_col * leaf_prof(p,j)

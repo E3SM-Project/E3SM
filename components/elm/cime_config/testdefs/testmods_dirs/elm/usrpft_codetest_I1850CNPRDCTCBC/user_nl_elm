@@ -1,0 +1,10 @@
+fsurdat = '$DIN_LOC_ROOT/lnd/clm2/surfdata_map/surfdata_42_FLUXNETSITES_simyr1850_c170912.nc'
+! paramfile = '$DIN_LOC_ROOT/lnd/clm2/paramdata/clm_params_c211124.nc'
+!
+! When 'user-pft' codes ready, comment out the above line while let the following in.
+!
+! below is user-pft file example, by editing default one as following
+! woody=1 for tree, or =2 for shrub, and defined other pft flags:
+! climatezone(0-4), nonvascular(0/1), graminoid(0/1), generic_crop(0/1), nfixer(0/1), needleleaf(0/1)
+! for not going by default, changing one PFT name by appending '_unexpected'.
+ paramfile = '$DIN_LOC_ROOT/lnd/clm2/paramdata/clm_params_c211124vpft.nc'

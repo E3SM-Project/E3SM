@@ -19,8 +19,8 @@ subroutine read_initial(ncid)
     !-----------------------------------------------------------------------
     use shr_kind_mod,   only: r8 => shr_kind_r8
     use pmgrid,         only: plat, plon
-    use cam_abortutils,     only: endrun
-    use scamMod,        only: single_column   
+    use cam_abortutils, only: endrun
+    use iop_data_mod,   only: single_column   
     use cam_logfile,    only: iulog
     use pio, only : pio_inq_dimlen, pio_inq_varid,  pio_inq_dimid, &
          var_desc_t, pio_internal_error, pio_noerr, pio_bcast_error, &

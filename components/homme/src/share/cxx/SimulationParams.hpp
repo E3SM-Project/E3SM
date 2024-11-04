@@ -23,7 +23,8 @@ struct SimulationParams
   void print(std::ostream& out = std::cout);
 
   TimeStepType  time_step_type;
-  MoistDry      moisture;
+  bool          use_moisture;
+  MoistDry moisture; //todo-repo-unification
   RemapAlg      remap_alg;
   TestCase      test_case;
   ForcingAlg    ftype = ForcingAlg::FORCING_OFF;
@@ -65,6 +66,10 @@ struct SimulationParams
   double    dp3d_thresh;
   double    vtheta_thresh;
 
+  // Optionally run diagnostics and output information. Default is 0, none. Set
+  // to >0 for diagnostics.
+  int       internal_diagnostics_level = 0;
+
   // Use this member to check whether the struct has been initialized
   bool      params_set = false;
 };
@@ -73,7 +78,7 @@ inline void SimulationParams::print (std::ostream& out) {
 
   out << "\n************** CXX SimulationParams **********************\n\n";
   out << "   time_step_type: " << etoi(time_step_type) << "\n";
-  out << "   moisture: " << (moisture==MoistDry::DRY ? "dry" : "moist") << "\n";
+  out << "   use_moisture: " << (use_moisture ? "moist" : "dry") << "\n";
   out << "   remap_alg: " << etoi(remap_alg) << "\n";
   out << "   test case: " << etoi(test_case) << "\n";
   out << "   ftype: " << etoi(ftype) << "\n";
@@ -108,6 +113,7 @@ inline void SimulationParams::print (std::ostream& out) {
   out << "   laplacian_rigid_factor: " << laplacian_rigid_factor << "\n";
   out << "   dp3d_thresh: " << dp3d_thresh << "\n";
   out << "   vtheta_thresh: " << vtheta_thresh << "\n";
+  out << "   internal_diagnostics_level: " << internal_diagnostics_level << "\n";
   out << "\n**********************************************************\n";
 }
 

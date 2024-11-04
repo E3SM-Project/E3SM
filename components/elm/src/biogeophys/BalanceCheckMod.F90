@@ -9,7 +9,7 @@ module BalanceCheckMod
   use shr_log_mod        , only : errMsg => shr_log_errMsg
   use decompMod          , only : bounds_type
   use abortutils         , only : endrun
-  use elm_varctl         , only : iulog, use_var_soil_thick, use_extrasnowlayers
+  use elm_varctl         , only : iulog, use_var_soil_thick, use_firn_percolation_and_compaction
   use elm_varcon         , only : namep, namec
   use GetGlobalValuesMod , only : GetGlobalIndex
   use atm2lndType        , only : atm2lnd_type
@@ -445,7 +445,7 @@ contains
                      + qflx_snwcp_ice(c) + qflx_snwcp_liq(c) + qflx_sl_top_soil(c)
 
                 if (lun_pp%itype(l) == istdlak) then 
-                   if (.not. use_extrasnowlayers) then
+                   if (.not. use_firn_percolation_and_compaction) then
                       if ( do_capsnow(c)) then
                          snow_sources(c) = qflx_snow_grnd_col(c) &
                               + frac_sno_eff(c) * (qflx_dew_snow(c) + qflx_dew_grnd(c) ) 
@@ -473,7 +473,7 @@ contains
                 endif
 
                 if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop .or. lun_pp%itype(l) == istwet ) then
-                   if (.not. use_extrasnowlayers) then
+                   if (.not. use_firn_percolation_and_compaction) then
                       if (do_capsnow(c)) then
                          snow_sources(c) = frac_sno_eff(c) * (qflx_dew_snow(c) + qflx_dew_grnd(c) ) &
                               + qflx_h2osfc_to_ice(c) + qflx_prec_grnd(c)

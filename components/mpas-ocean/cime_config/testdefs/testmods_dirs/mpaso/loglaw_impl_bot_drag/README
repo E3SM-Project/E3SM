@@ -1,0 +1,4 @@
+This testdef is used to test a stealth feature in mpaso introduced by
+PR #5734. It simplies changes one mpaso namelist variable, 
+    config_implicit_bottom_drag_type
+from its default value of 'constant' to 'loglaw'.

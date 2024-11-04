@@ -556,7 +556,7 @@
   <entry id="BATCH_SYSTEM">
      <type>char</type>
      <default_value>none</default_value>
-     <valid_values>miller_slurm,nersc_slurm,lc_slurm,moab,pbs,lsf,slurm,cobalt,cobalt_theta,slurm_single_node,none</valid_values>
+     <valid_values>miller_slurm,nersc_slurm,lc_slurm,moab,pbs,pbspro,lsf,slurm,cobalt,cobalt_theta,slurm_single_node,none</valid_values>
      <group>config_batch</group>
      <file>env_batch.xml</file>
      <desc>The batch system type to use for this machine.</desc>
@@ -717,7 +717,7 @@
       If TRUE, the component libraries are always built with OpenMP capability.</desc>
   </entry>
 
-  <entry id="SMP_PRESENT">
+  <entry id="BUILD_THREADED">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
@@ -751,15 +751,6 @@
     variable to TRUE will involve the inclusion of C++ code in the
     MALI executable. This is currently only supported for certain
     machines.</desc>
-  </entry>
-
-  <entry id="USE_MOAB">
-    <type>logical</type>
-    <valid_values>TRUE,FALSE</valid_values>
-    <default_value>FALSE</default_value>
-    <group>build_def</group>
-    <file>env_build.xml</file>
-    <desc>TRUE implies linking to the MOAB library</desc>
   </entry>
 
   <entry id="USE_TRILINOS">
@@ -1094,8 +1085,8 @@
 
   <entry id="GLC_GRID">
     <type>char</type>
-    <valid_values>gland20,gland10,gland5,gland5UM,gland4,mpas.aisgis20km,mpas.gis20km,mpas.ais20km,mpas.gis1to10km,null</valid_values>
-    <default_value>gland5UM</default_value>
+    <valid_values>mpas.aisgis20km,mpas.ais20km,mpas.ais8to30km,mpas.ais4to20km,mpas.gis20km,mpas.gis1to10km,mpas.gis1to10kmR2,null</valid_values>
+    <default_value>mpas.gis20km</default_value>
     <group>build_grid</group>
     <file>env_build.xml</file>
     <desc>glacier (glc) grid - DO NOT EDIT (for experts only)</desc>
@@ -1376,6 +1367,22 @@
     <desc>atm2ocn flux mapping file decomp type</desc>
   </entry>
 
+  <entry id="ATM2OCN_FMAPNAME_NONLINEAR">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>atm2ocn flux mapping file</desc>
+  </entry>
+
+  <entry id="ATM2ICE_FMAPNAME_NONLINEAR">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>atm2ice flux mapping file</desc>
+  </entry>
+
   <entry id="ATM2OCN_SMAPNAME">
     <type>char</type>
     <default_value>idmap</default_value>
@@ -1427,6 +1434,14 @@
     <desc>atm2lnd flux mapping file decomp type</desc>
   </entry>
 
+  <entry id="ATM2LND_FMAPNAME_NONLINEAR">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>atm2lnd flux mapping file</desc>
+  </entry>
+
   <entry id="ATM2LND_SMAPNAME">
     <type>char</type>
     <default_value>idmap</default_value>
@@ -1459,6 +1474,14 @@
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>atm2rof flux mapping file decomp type</desc>
+  </entry>
+
+  <entry id="ATM2ROF_FMAPNAME_NONLINEAR">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>atm2rof flux mapping file</desc>
   </entry>
 
   <entry id="ATM2ROF_SMAPNAME">
@@ -1512,6 +1535,14 @@
     <desc>ocn2atm flux mapping file decomp type</desc>
   </entry>
 
+  <entry id="OCN2ATM_FMAPNAME_NONLINEAR">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>ocn2atm flux mapping file</desc>
+  </entry>
+
   <entry id="OCN2ATM_SMAPNAME">
     <type>char</type>
     <default_value>idmap</default_value>
@@ -1527,6 +1558,14 @@
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>ocn2atm state mapping file decomp type</desc>
+  </entry>
+
+  <entry id="OCN2ATM_SMAPNAME_NONLINEAR">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>ocn2atm state mapping file</desc>
   </entry>
 
   <entry id="LND2ATM_FMAPNAME">
@@ -1546,6 +1585,14 @@
     <desc>lnd2atm flux mapping file decomp type</desc>
   </entry>
 
+  <entry id="LND2ATM_FMAPNAME_NONLINEAR">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>lnd2atm flux mapping file</desc>
+  </entry>
+
   <entry id="LND2ATM_SMAPNAME">
     <type>char</type>
     <default_value>idmap</default_value>
@@ -1561,6 +1608,14 @@
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>lnd2atm state mapping file decomp type</desc>
+  </entry>
+
+  <entry id="LND2ATM_SMAPNAME_NONLINEAR">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>lnd2atm state mapping file</desc>
   </entry>
 
   <entry id="LND2GLC_FMAPNAME">
@@ -2573,7 +2628,7 @@
 
   <entry id="PIO_TYPENAME">
     <type>char</type>
-    <valid_values>netcdf,pnetcdf,netcdf4p,netcdf4c,adios,default</valid_values>
+    <valid_values>netcdf,pnetcdf,netcdf4p,netcdf4c,adios,hdf5,default</valid_values>
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio io type</desc>
@@ -2600,16 +2655,16 @@
     https://www.unidata.ucar.edu/software/netcdf/docs/data_type.html
     </desc>
     <values>
-      <value compclass="ATM">64bit_offset</value>
-      <value compclass="CPL">64bit_offset</value>
-      <value compclass="OCN">64bit_offset</value>
-      <value compclass="WAV">64bit_offset</value>
-      <value compclass="GLC">64bit_offset</value>
-      <value compclass="ICE">64bit_offset</value>
-      <value compclass="ROF">64bit_offset</value>
-      <value compclass="LND">64bit_offset</value>
-      <value compclass="ESP">64bit_offset</value>
-      <value compclass="IAC">64bit_offset</value>
+      <value compclass="ATM">64bit_data</value>
+      <value compclass="CPL">64bit_data</value>
+      <value compclass="OCN">64bit_data</value>
+      <value compclass="WAV">64bit_data</value>
+      <value compclass="GLC">64bit_data</value>
+      <value compclass="ICE">64bit_data</value>
+      <value compclass="ROF">64bit_data</value>
+      <value compclass="LND">64bit_data</value>
+      <value compclass="ESP">64bit_data</value>
+      <value compclass="IAC">64bit_data</value>
     </values>
   </entry>
 
@@ -2637,10 +2692,10 @@
 
   <entry id="PIO_REARRANGER">
     <type>integer</type>
-    <valid_values>1,2</valid_values>
+    <valid_values>1,2,3</valid_values>
     <group>run_pio</group>
     <file>env_run.xml</file>
-    <desc>pio rearranger choice box=1, subset=2 </desc>
+    <desc>pio rearranger choice box=1, subset=2, any=3 </desc>
     <values>
       <value compclass="ATM">$PIO_VERSION</value>
       <value compclass="CPL">$PIO_VERSION</value>

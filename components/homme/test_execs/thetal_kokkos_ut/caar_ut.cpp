@@ -30,7 +30,8 @@ void init_geo_views_f90 (Real*& d_ptr,Real*& dinv_ptr,
 void run_caar_f90 (const int& nm1, const int& n0, const int& np1,
                    const Real& dt, const Real& eta_ave_w,
                    const Real& scale1, const Real& scale2, const Real& scale3,
-                   const bool& hydrostatic, const bool& adv_conservative, const int& rsplit,
+                   const bool& hydrostatic, const bool& adv_conservative,
+                   const int& rsplit, const int& pgrad,
                    Real*& dp_ptr, Real*& vtheta_dp_ptr, Real*& w_i_ptr,
                    Real*& phi_i_ptr, Real*& v_ptr,
                    Real*& vn0_ptr, Real*& etadot_dpdn_ptr, Real*& omega_p_ptr);
@@ -232,207 +233,213 @@ TEST_CASE("caar", "caar_testing") {
           if (comm.root()) {
             std::cout << "   -> rsplit = " << rsplit << "\n";
           }
-          // Set the parameters
-          params.theta_hydrostatic_mode = hydrostatic;
-          params.theta_adv_form = adv_form;
-          params.rsplit = rsplit;
+          for (const int pgrad : {1,0}) {
+            if (comm.root()) {
+              std::cout << "    -> pgrad_correction = " << pgrad << "\n";
+            }
+            // Set the parameters
+            params.theta_hydrostatic_mode = hydrostatic;
+            params.theta_adv_form = adv_form;
+            params.rsplit = rsplit;
+            params.pgrad_correction = (pgrad != 0);
 
-          // Generate RK stage data
-          Real dt = RPDF(1.0,10.0)(engine);
-          Real eta_ave_w = RPDF(0.1,1.0)(engine);
-          Real scale1 = RPDF(1.0,2.0)(engine);
-          Real scale2 = RPDF(1.0,2.0)(engine);
-          Real scale3 = RPDF(1.0,2.0)(engine);
+            // Generate RK stage data
+            Real dt = RPDF(1.0,10.0)(engine);
+            Real eta_ave_w = RPDF(0.1,1.0)(engine);
+            Real scale1 = RPDF(1.0,2.0)(engine);
+            Real scale2 = RPDF(1.0,2.0)(engine);
+            Real scale3 = RPDF(1.0,2.0)(engine);
 
-          int  np1 = IPDF(0,2)(engine);
+            int  np1 = IPDF(0,2)(engine);
 
-          // Sync scalars across ranks (only np1 is *really* necessary, but might as well...)
-          auto mpi_comm = Context::singleton().get<Comm>().mpi_comm();
-          MPI_Bcast(&dt,1,MPI_DOUBLE,0,mpi_comm);
-          MPI_Bcast(&scale1,1,MPI_DOUBLE,0,mpi_comm);
-          MPI_Bcast(&scale2,1,MPI_DOUBLE,0,mpi_comm);
-          MPI_Bcast(&scale3,1,MPI_DOUBLE,0,mpi_comm);
-          MPI_Bcast(&eta_ave_w,1,MPI_DOUBLE,0,mpi_comm);
-          MPI_Bcast(&np1,1,MPI_INT,0,mpi_comm);
+            // Sync scalars across ranks (only np1 is *really* necessary, but might as well...)
+            auto mpi_comm = Context::singleton().get<Comm>().mpi_comm();
+            MPI_Bcast(&dt,1,MPI_DOUBLE,0,mpi_comm);
+            MPI_Bcast(&scale1,1,MPI_DOUBLE,0,mpi_comm);
+            MPI_Bcast(&scale2,1,MPI_DOUBLE,0,mpi_comm);
+            MPI_Bcast(&scale3,1,MPI_DOUBLE,0,mpi_comm);
+            MPI_Bcast(&eta_ave_w,1,MPI_DOUBLE,0,mpi_comm);
+            MPI_Bcast(&np1,1,MPI_INT,0,mpi_comm);
 
-          const int  n0  = (np1+1)%3;
-          const int  nm1 = (np1+2)%3;
+            const int  n0  = (np1+1)%3;
+            const int  nm1 = (np1+2)%3;
 
-          RKStageData data (nm1, n0, np1, 0, dt, eta_ave_w, scale1, scale2, scale3);
+            RKStageData data (nm1, n0, np1, 0, dt, eta_ave_w, scale1, scale2, scale3);
 
-          // Randomize state/derived
-          elems.m_state.randomize(seed,max_pressure,hvcoord.ps0,hvcoord.hybrid_ai0,geo.m_phis);
-          elems.m_derived.randomize(seed,dp3d_min(elems.m_state.m_dp3d));
+            // Randomize state/derived
+            elems.m_state.randomize(seed,max_pressure,hvcoord.ps0,hvcoord.hybrid_ai0,geo.m_phis);
+            elems.m_derived.randomize(seed,dp3d_min(elems.m_state.m_dp3d));
 
-          // Copy initial values to f90
-          sync_to_host(elems.m_state.m_dp3d, dp3d_f90);
-          sync_to_host(elems.m_state.m_vtheta_dp, vtheta_dp_f90);
-          sync_to_host(elems.m_state.m_w_i, w_i_f90);
-          sync_to_host(elems.m_state.m_phinh_i, phinh_i_f90);
-          sync_to_host(elems.m_state.m_v, v_f90);
+            // Copy initial values to f90
+            sync_to_host(elems.m_state.m_dp3d, dp3d_f90);
+            sync_to_host(elems.m_state.m_vtheta_dp, vtheta_dp_f90);
+            sync_to_host(elems.m_state.m_w_i, w_i_f90);
+            sync_to_host(elems.m_state.m_phinh_i, phinh_i_f90);
+            sync_to_host(elems.m_state.m_v, v_f90);
 
-          sync_to_host<2>(elems.m_derived.m_vn0, vn0_f90);
-          sync_to_host(elems.m_derived.m_eta_dot_dpdn, eta_dot_dpdn_f90);
-          sync_to_host(elems.m_derived.m_omega_p, omega_p_f90);
+            sync_to_host<2>(elems.m_derived.m_vn0, vn0_f90);
+            sync_to_host(elems.m_derived.m_eta_dot_dpdn, eta_dot_dpdn_f90);
+            sync_to_host(elems.m_derived.m_omega_p, omega_p_f90);
 
-          // Create the Caar functor
-          CaarFunctorImpl caar(elems,tracers,ref_FE,hvcoord,sphop,params);
-          FunctorsBuffersManager fbm;
-          fbm.request_size( caar.requested_buffer_size() );
-          fbm.request_size(limiter.requested_buffer_size());
-          fbm.allocate();
-          caar.init_buffers(fbm);
-          limiter.init_buffers(fbm);
-          caar.init_boundary_exchanges(c.get_ptr<MpiBuffersManager>());
+            // Create the Caar functor
+            CaarFunctorImpl caar(elems,tracers,ref_FE,hvcoord,sphop,params);
+            FunctorsBuffersManager fbm;
+            fbm.request_size( caar.requested_buffer_size() );
+            fbm.request_size(limiter.requested_buffer_size());
+            fbm.allocate();
+            caar.init_buffers(fbm);
+            limiter.init_buffers(fbm);
+            caar.init_boundary_exchanges(c.get_ptr<MpiBuffersManager>());
 
-          // Run cxx
-          caar.run(data);
+            // Run cxx
+            caar.run(data);
 
-          auto dp3d_ptr = dp3d_f90.data();
-          auto vtheta_dp_ptr = vtheta_dp_f90.data();
-          auto w_i_ptr = w_i_f90.data();
-          auto phinh_i_ptr = phinh_i_f90.data();
-          auto v_ptr = v_f90.data();
-          auto vn0_ptr = vn0_f90.data();
-          auto eta_dot_dpdn_ptr = eta_dot_dpdn_f90.data();
-          auto omega_p_ptr = omega_p_f90.data();
-          run_caar_f90 (nm1+1, n0+1, np1+1, dt, eta_ave_w, scale1, scale2, scale3,
-                        hydrostatic, adv_form==AdvectionForm::Conservative, rsplit,
-                        dp3d_ptr, vtheta_dp_ptr, w_i_ptr,
-                        phinh_i_ptr, v_ptr,
-                        vn0_ptr, eta_dot_dpdn_ptr, omega_p_ptr);
+            auto dp3d_ptr = dp3d_f90.data();
+            auto vtheta_dp_ptr = vtheta_dp_f90.data();
+            auto w_i_ptr = w_i_f90.data();
+            auto phinh_i_ptr = phinh_i_f90.data();
+            auto v_ptr = v_f90.data();
+            auto vn0_ptr = vn0_f90.data();
+            auto eta_dot_dpdn_ptr = eta_dot_dpdn_f90.data();
+            auto omega_p_ptr = omega_p_f90.data();
+            run_caar_f90 (nm1+1, n0+1, np1+1, dt, eta_ave_w, scale1, scale2, scale3,
+                          hydrostatic, adv_form==AdvectionForm::Conservative, rsplit,
+                          pgrad, dp3d_ptr, vtheta_dp_ptr, w_i_ptr,
+                          phinh_i_ptr, v_ptr,
+                          vn0_ptr, eta_dot_dpdn_ptr, omega_p_ptr);
 
-          // Compare answers
-          auto h_dp3d      = Kokkos::create_mirror_view(elems.m_state.m_dp3d);
-          auto h_vtheta_dp = Kokkos::create_mirror_view(elems.m_state.m_vtheta_dp);
-          auto h_w_i       = Kokkos::create_mirror_view(elems.m_state.m_w_i);
-          auto h_phinh_i   = Kokkos::create_mirror_view(elems.m_state.m_phinh_i);
-          auto h_v         = Kokkos::create_mirror_view(elems.m_state.m_v);
+            // Compare answers
+            auto h_dp3d      = Kokkos::create_mirror_view(elems.m_state.m_dp3d);
+            auto h_vtheta_dp = Kokkos::create_mirror_view(elems.m_state.m_vtheta_dp);
+            auto h_w_i       = Kokkos::create_mirror_view(elems.m_state.m_w_i);
+            auto h_phinh_i   = Kokkos::create_mirror_view(elems.m_state.m_phinh_i);
+            auto h_v         = Kokkos::create_mirror_view(elems.m_state.m_v);
 
-          auto h_vn0          = Kokkos::create_mirror_view(elems.m_derived.m_vn0);
-          auto h_eta_dot_dpdn = Kokkos::create_mirror_view(elems.m_derived.m_eta_dot_dpdn);
-          auto h_omega_p      = Kokkos::create_mirror_view(elems.m_derived.m_omega_p);
+            auto h_vn0          = Kokkos::create_mirror_view(elems.m_derived.m_vn0);
+            auto h_eta_dot_dpdn = Kokkos::create_mirror_view(elems.m_derived.m_eta_dot_dpdn);
+            auto h_omega_p      = Kokkos::create_mirror_view(elems.m_derived.m_omega_p);
 
-          Kokkos::deep_copy(h_dp3d     , elems.m_state.m_dp3d);
-          Kokkos::deep_copy(h_vtheta_dp, elems.m_state.m_vtheta_dp);
-          Kokkos::deep_copy(h_w_i      , elems.m_state.m_w_i);
-          Kokkos::deep_copy(h_phinh_i  , elems.m_state.m_phinh_i);
-          Kokkos::deep_copy(h_v        , elems.m_state.m_v);
+            Kokkos::deep_copy(h_dp3d     , elems.m_state.m_dp3d);
+            Kokkos::deep_copy(h_vtheta_dp, elems.m_state.m_vtheta_dp);
+            Kokkos::deep_copy(h_w_i      , elems.m_state.m_w_i);
+            Kokkos::deep_copy(h_phinh_i  , elems.m_state.m_phinh_i);
+            Kokkos::deep_copy(h_v        , elems.m_state.m_v);
 
-          Kokkos::deep_copy(h_vn0         , elems.m_derived.m_vn0);
-          Kokkos::deep_copy(h_eta_dot_dpdn, elems.m_derived.m_eta_dot_dpdn);
-          Kokkos::deep_copy(h_omega_p     , elems.m_derived.m_omega_p);
+            Kokkos::deep_copy(h_vn0         , elems.m_derived.m_vn0);
+            Kokkos::deep_copy(h_eta_dot_dpdn, elems.m_derived.m_eta_dot_dpdn);
+            Kokkos::deep_copy(h_omega_p     , elems.m_derived.m_omega_p);
 
-          for (int ie=0; ie<num_elems; ++ie) {
-            auto dp3d_cxx      = viewAsReal(Homme::subview(h_dp3d,ie,np1));
-            auto vtheta_dp_cxx = viewAsReal(Homme::subview(h_vtheta_dp,ie,np1));
-            auto w_i_cxx       = viewAsReal(Homme::subview(h_w_i,ie,np1));
-            auto phinh_i_cxx   = viewAsReal(Homme::subview(h_phinh_i,ie,np1));
-            auto v_cxx         = viewAsReal(Homme::subview(h_v,ie,np1));
+            for (int ie=0; ie<num_elems; ++ie) {
+              auto dp3d_cxx      = viewAsReal(Homme::subview(h_dp3d,ie,np1));
+              auto vtheta_dp_cxx = viewAsReal(Homme::subview(h_vtheta_dp,ie,np1));
+              auto w_i_cxx       = viewAsReal(Homme::subview(h_w_i,ie,np1));
+              auto phinh_i_cxx   = viewAsReal(Homme::subview(h_phinh_i,ie,np1));
+              auto v_cxx         = viewAsReal(Homme::subview(h_v,ie,np1));
 
-            auto vn0_cxx          = viewAsReal(Homme::subview(h_vn0,ie));
-            auto eta_dot_dpdn_cxx = viewAsReal(Homme::subview(h_eta_dot_dpdn,ie));
-            auto omega_p_cxx      = viewAsReal(Homme::subview(h_omega_p,ie));
+              auto vn0_cxx          = viewAsReal(Homme::subview(h_vn0,ie));
+              auto eta_dot_dpdn_cxx = viewAsReal(Homme::subview(h_eta_dot_dpdn,ie));
+              auto omega_p_cxx      = viewAsReal(Homme::subview(h_omega_p,ie));
 
-            for (int igp=0; igp<NP; ++igp) {
-              for (int jgp=0; jgp<NP; ++jgp) {
-                for (int k=0; k<NUM_PHYSICAL_LEV; ++k) {
-                  // dp3d
-                  if(dp3d_cxx(igp,jgp,k)!=dp3d_f90(ie,np1,k,igp,jgp)) {
-                    printf("rank,ie,k,igp,jgp: %d, %d, %d, %d, %d\n",rank,ie,k,igp,jgp);
-                    printf("dp3d cxx: %3.40f\n",dp3d_cxx(igp,jgp,k));
-                    printf("dp3d f90: %3.40f\n",dp3d_f90(ie,np1,k,igp,jgp));
+              for (int igp=0; igp<NP; ++igp) {
+                for (int jgp=0; jgp<NP; ++jgp) {
+                  for (int k=0; k<NUM_PHYSICAL_LEV; ++k) {
+                    // dp3d
+                    if(dp3d_cxx(igp,jgp,k)!=dp3d_f90(ie,np1,k,igp,jgp)) {
+                      printf("rank,ie,k,igp,jgp: %d, %d, %d, %d, %d\n",rank,ie,k,igp,jgp);
+                      printf("dp3d cxx: %3.40f\n",dp3d_cxx(igp,jgp,k));
+                      printf("dp3d f90: %3.40f\n",dp3d_f90(ie,np1,k,igp,jgp));
+                    }
+                    REQUIRE(dp3d_cxx(igp,jgp,k)==dp3d_f90(ie,np1,k,igp,jgp));
+
+                    // vtheta_dp
+                    if(vtheta_dp_cxx(igp,jgp,k)!=vtheta_dp_f90(ie,np1,k,igp,jgp)) {
+                      printf("rank,ie,k,igp,jgp: %d, %d, %d, %d, %d\n",rank,ie,k,igp,jgp);
+                      printf("vtheta_dp cxx: %3.40f\n",vtheta_dp_cxx(igp,jgp,k));
+                      printf("vtheta_dp f90: %3.40f\n",vtheta_dp_f90(ie,np1,k,igp,jgp));
+                    }
+                    REQUIRE(vtheta_dp_cxx(igp,jgp,k)==vtheta_dp_f90(ie,np1,k,igp,jgp));
+
+                    // w_i
+                    if(w_i_cxx(igp,jgp,k)!=w_i_f90(ie,np1,k,igp,jgp)) {
+                      printf("rank,ie,k,igp,jgp: %d, %d, %d, %d, %d\n",rank,ie,k,igp,jgp);
+                      printf("w_i cxx: %3.40f\n",w_i_cxx(igp,jgp,k));
+                      printf("w_i f90: %3.40f\n",w_i_f90(ie,np1,k,igp,jgp));
+                    }
+                    REQUIRE(w_i_cxx(igp,jgp,k)==w_i_f90(ie,np1,k,igp,jgp));
+
+                    // phinh_i
+                    if(phinh_i_cxx(igp,jgp,k)!=phinh_i_f90(ie,np1,k,igp,jgp)) {
+                      printf("rank,ie,k,igp,jgp: %d, %d, %d, %d, %d\n",rank,ie,k,igp,jgp);
+                      printf("phinh_i cxx: %3.40f\n",phinh_i_cxx(igp,jgp,k));
+                      printf("phinh_i f90: %3.40f\n",phinh_i_f90(ie,np1,k,igp,jgp));
+                    }
+                    REQUIRE(phinh_i_cxx(igp,jgp,k)==phinh_i_f90(ie,np1,k,igp,jgp));
+
+                    // u
+                    if(v_cxx(0,igp,jgp,k)!=v_f90(ie,np1,k,0,igp,jgp)) {
+                      printf("rank,ie,k,igp,jgp: %d, %d, %d, %d, %d\n",rank,ie,k,igp,jgp);
+                      printf("u cxx: %3.40f\n",v_cxx(0,igp,jgp,k));
+                      printf("u f90: %3.40f\n",v_f90(ie,np1,k,0,igp,jgp));
+                    }
+                    REQUIRE(v_cxx(0,igp,jgp,k)==v_f90(ie,np1,k,0,igp,jgp));
+
+                    // v
+                    if(v_cxx(1,igp,jgp,k)!=v_f90(ie,np1,k,1,igp,jgp)) {
+                      printf("rank,ie,k,igp,jgp: %d, %d, %d, %d, %d\n",rank,ie,k,igp,jgp);
+                      printf("v cxx: %3.40f\n",v_cxx(1,igp,jgp,k));
+                      printf("v f90: %3.40f\n",v_f90(ie,np1,k,1,igp,jgp));
+                    }
+                    REQUIRE(v_cxx(1,igp,jgp,k)==v_f90(ie,np1,k,1,igp,jgp));
+
+                    // un0
+                    if(vn0_cxx(0,igp,jgp,k)!=vn0_f90(ie,k,0,igp,jgp)) {
+                      printf("rank,ie,k,igp,jgp: %d, %d, %d, %d, %d\n",rank,ie,k,igp,jgp);
+                      printf("un0 cxx: %3.40f\n",vn0_cxx(0,igp,jgp,k));
+                      printf("un0 f90: %3.40f\n",vn0_f90(ie,k,0,igp,jgp));
+                    }
+                    REQUIRE(vn0_cxx(0,igp,jgp,k)==vn0_f90(ie,k,0,igp,jgp));
+
+                    // vn0
+                    if(vn0_cxx(1,igp,jgp,k)!=vn0_f90(ie,k,1,igp,jgp)) {
+                      printf("rank,ie,k,igp,jgp: %d, %d, %d, %d, %d\n",rank,ie,k,igp,jgp);
+                      printf("vn0 cxx: %3.40f\n",vn0_cxx(1,igp,jgp,k));
+                      printf("vn0 f90: %3.40f\n",vn0_f90(ie,k,1,igp,jgp));
+                    }
+                    REQUIRE(vn0_cxx(1,igp,jgp,k)==vn0_f90(ie,k,1,igp,jgp));
+
+                    // eta_dot_dpdn
+                    if(eta_dot_dpdn_cxx(igp,jgp,k)!=eta_dot_dpdn_f90(ie,k,igp,jgp)) {
+                      printf("rank,ie,k,igp,jgp: %d, %d, %d, %d, %d\n",rank,ie,k,igp,jgp);
+                      printf("eta_dot_dpdn cxx: %3.40f\n",eta_dot_dpdn_cxx(igp,jgp,k));
+                      printf("eta_dot_dpdn f90: %3.40f\n",eta_dot_dpdn_f90(ie,k,igp,jgp));
+                    }
+                    REQUIRE(eta_dot_dpdn_cxx(igp,jgp,k)==eta_dot_dpdn_f90(ie,k,igp,jgp));
+
+                    // omega_p
+                    if(omega_p_cxx(igp,jgp,k)!=omega_p_f90(ie,k,igp,jgp)) {
+                      printf("rank,ie,k,igp,jgp: %d, %d, %d, %d, %d\n",rank,ie,k,igp,jgp);
+                      printf("omega_p cxx: %3.40f\n",omega_p_cxx(igp,jgp,k));
+                      printf("omega_p f90: %3.40f\n",omega_p_f90(ie,k,igp,jgp));
+                    }
+                    REQUIRE(omega_p_cxx(igp,jgp,k)==omega_p_f90(ie,k,igp,jgp));
                   }
-                  REQUIRE(dp3d_cxx(igp,jgp,k)==dp3d_f90(ie,np1,k,igp,jgp));
 
-                  // vtheta_dp
-                  if(vtheta_dp_cxx(igp,jgp,k)!=vtheta_dp_f90(ie,np1,k,igp,jgp)) {
-                    printf("rank,ie,k,igp,jgp: %d, %d, %d, %d, %d\n",rank,ie,k,igp,jgp);
-                    printf("vtheta_dp cxx: %3.40f\n",vtheta_dp_cxx(igp,jgp,k));
-                    printf("vtheta_dp f90: %3.40f\n",vtheta_dp_f90(ie,np1,k,igp,jgp));
-                  }
-                  REQUIRE(vtheta_dp_cxx(igp,jgp,k)==vtheta_dp_f90(ie,np1,k,igp,jgp));
-
-                  // w_i
+                  // Check last interface for w_i and phinh_i
+                  int k = NUM_PHYSICAL_LEV;
                   if(w_i_cxx(igp,jgp,k)!=w_i_f90(ie,np1,k,igp,jgp)) {
                     printf("rank,ie,k,igp,jgp: %d, %d, %d, %d, %d\n",rank,ie,k,igp,jgp);
                     printf("w_i cxx: %3.40f\n",w_i_cxx(igp,jgp,k));
                     printf("w_i f90: %3.40f\n",w_i_f90(ie,np1,k,igp,jgp));
                   }
                   REQUIRE(w_i_cxx(igp,jgp,k)==w_i_f90(ie,np1,k,igp,jgp));
-
-                  // phinh_i
                   if(phinh_i_cxx(igp,jgp,k)!=phinh_i_f90(ie,np1,k,igp,jgp)) {
                     printf("rank,ie,k,igp,jgp: %d, %d, %d, %d, %d\n",rank,ie,k,igp,jgp);
                     printf("phinh_i cxx: %3.40f\n",phinh_i_cxx(igp,jgp,k));
                     printf("phinh_i f90: %3.40f\n",phinh_i_f90(ie,np1,k,igp,jgp));
                   }
                   REQUIRE(phinh_i_cxx(igp,jgp,k)==phinh_i_f90(ie,np1,k,igp,jgp));
-
-                  // u
-                  if(v_cxx(0,igp,jgp,k)!=v_f90(ie,np1,k,0,igp,jgp)) {
-                    printf("rank,ie,k,igp,jgp: %d, %d, %d, %d, %d\n",rank,ie,k,igp,jgp);
-                    printf("u cxx: %3.40f\n",v_cxx(0,igp,jgp,k));
-                    printf("u f90: %3.40f\n",v_f90(ie,np1,k,0,igp,jgp));
-                  }
-                  REQUIRE(v_cxx(0,igp,jgp,k)==v_f90(ie,np1,k,0,igp,jgp));
-
-                  // v
-                  if(v_cxx(1,igp,jgp,k)!=v_f90(ie,np1,k,1,igp,jgp)) {
-                    printf("rank,ie,k,igp,jgp: %d, %d, %d, %d, %d\n",rank,ie,k,igp,jgp);
-                    printf("v cxx: %3.40f\n",v_cxx(1,igp,jgp,k));
-                    printf("v f90: %3.40f\n",v_f90(ie,np1,k,1,igp,jgp));
-                  }
-                  REQUIRE(v_cxx(1,igp,jgp,k)==v_f90(ie,np1,k,1,igp,jgp));
-
-                  // un0
-                  if(vn0_cxx(0,igp,jgp,k)!=vn0_f90(ie,k,0,igp,jgp)) {
-                    printf("rank,ie,k,igp,jgp: %d, %d, %d, %d, %d\n",rank,ie,k,igp,jgp);
-                    printf("un0 cxx: %3.40f\n",vn0_cxx(0,igp,jgp,k));
-                    printf("un0 f90: %3.40f\n",vn0_f90(ie,k,0,igp,jgp));
-                  }
-                  REQUIRE(vn0_cxx(0,igp,jgp,k)==vn0_f90(ie,k,0,igp,jgp));
-
-                  // vn0
-                  if(vn0_cxx(1,igp,jgp,k)!=vn0_f90(ie,k,1,igp,jgp)) {
-                    printf("rank,ie,k,igp,jgp: %d, %d, %d, %d, %d\n",rank,ie,k,igp,jgp);
-                    printf("vn0 cxx: %3.40f\n",vn0_cxx(1,igp,jgp,k));
-                    printf("vn0 f90: %3.40f\n",vn0_f90(ie,k,1,igp,jgp));
-                  }
-                  REQUIRE(vn0_cxx(1,igp,jgp,k)==vn0_f90(ie,k,1,igp,jgp));
-
-                  // eta_dot_dpdn
-                  if(eta_dot_dpdn_cxx(igp,jgp,k)!=eta_dot_dpdn_f90(ie,k,igp,jgp)) {
-                    printf("rank,ie,k,igp,jgp: %d, %d, %d, %d, %d\n",rank,ie,k,igp,jgp);
-                    printf("eta_dot_dpdn cxx: %3.40f\n",eta_dot_dpdn_cxx(igp,jgp,k));
-                    printf("eta_dot_dpdn f90: %3.40f\n",eta_dot_dpdn_f90(ie,k,igp,jgp));
-                  }
-                  REQUIRE(eta_dot_dpdn_cxx(igp,jgp,k)==eta_dot_dpdn_f90(ie,k,igp,jgp));
-
-                  // omega_p
-                  if(omega_p_cxx(igp,jgp,k)!=omega_p_f90(ie,k,igp,jgp)) {
-                    printf("rank,ie,k,igp,jgp: %d, %d, %d, %d, %d\n",rank,ie,k,igp,jgp);
-                    printf("omega_p cxx: %3.40f\n",omega_p_cxx(igp,jgp,k));
-                    printf("omega_p f90: %3.40f\n",omega_p_f90(ie,k,igp,jgp));
-                  }
-                  REQUIRE(omega_p_cxx(igp,jgp,k)==omega_p_f90(ie,k,igp,jgp));
-                }
-
-                // Check last interface for w_i and phinh_i
-                int k = NUM_PHYSICAL_LEV;
-                if(w_i_cxx(igp,jgp,k)!=w_i_f90(ie,np1,k,igp,jgp)) {
-                  printf("rank,ie,k,igp,jgp: %d, %d, %d, %d, %d\n",rank,ie,k,igp,jgp);
-                  printf("w_i cxx: %3.40f\n",w_i_cxx(igp,jgp,k));
-                  printf("w_i f90: %3.40f\n",w_i_f90(ie,np1,k,igp,jgp));
-                }
-                REQUIRE(w_i_cxx(igp,jgp,k)==w_i_f90(ie,np1,k,igp,jgp));
-                if(phinh_i_cxx(igp,jgp,k)!=phinh_i_f90(ie,np1,k,igp,jgp)) {
-                  printf("rank,ie,k,igp,jgp: %d, %d, %d, %d, %d\n",rank,ie,k,igp,jgp);
-                  printf("phinh_i cxx: %3.40f\n",phinh_i_cxx(igp,jgp,k));
-                  printf("phinh_i f90: %3.40f\n",phinh_i_f90(ie,np1,k,igp,jgp));
-                }
-                REQUIRE(phinh_i_cxx(igp,jgp,k)==phinh_i_f90(ie,np1,k,igp,jgp));
-            }}
+                }}
+            }
           }
         }
       }

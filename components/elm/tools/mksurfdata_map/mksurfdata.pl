@@ -344,7 +344,7 @@ sub trim($)
        $opts{'soil_override'} = 1;
    }
    # Check if pft set
-   if ( defined($opts{'crop'}) ) { $numpft = 24; }   # First set numpft if crop is on
+   if ( defined($opts{'crop'}) ) { $numpft = 50; }   # First set numpft if crop is on
    if ( defined($opts{'pft_frc'}) || defined($opts{'pft_idx'}) ) {
        &check_pft( );
        $opts{'pft_override'} = 1;
@@ -421,8 +421,8 @@ EOF
       my $mkopts = "-csmdata $CSMDATA -silent -justvalue -namelist elmexp $usrnam";
       foreach my $typ ( "lak", "veg", "voc", "top", "tex", "col","ord", 
                         "fmx", "lai", "urb", "org", "glc", "utp", "wet",
-		        "gdp", "peat","abm", "topostats" , "vic", "ch4", 
-                        "pho", "grvl", "slp10", "ero") {
+		        "gdp", "peat","abm", "topostats" , "vic", "ch4",
+                        "pho", "grvl", "slp10", "ero", "fert", "toprad") {
          my $lmask = `$scrdir/../../bld/queryDefaultNamelist.pl $mopts -silent -options type=$typ,mergeGIS=$merge_gis,hirespft=$hirespft -var lmask`;
          $lmask = trim($lmask);
          my $hgrid = `$scrdir/../../bld/queryDefaultNamelist.pl $mopts -options type=$typ,hirespft=$hirespft -var hgrid`;
@@ -538,6 +538,8 @@ EOF
  map_fgrvl         = '$map{'grvl'}'
  map_fslp10        = '$map{'slp10'}'
  map_fero          = '$map{'ero'}'
+ map_ffert         = '$map{'fert'}'
+ map_ftoprad       = '$map{'toprad'}'
  mksrf_fsoitex     = '$datfil{'tex'}'
  mksrf_forganic    = '$datfil{'org'}'
  mksrf_flakwat     = '$datfil{'lak'}'
@@ -561,6 +563,8 @@ EOF
  mksrf_fgrvl       = '$datfil{'grvl'}'
  mksrf_fslp10      = '$datfil{'slp10'}'
  mksrf_fero        = '$datfil{'ero'}'
+ mksrf_ffert       = '$datfil{'fert'}'
+ mksrf_ftoprad     = '$datfil{'toprad'}'
 EOF
             my $urbdesc = "urb3den";
             my $rcp_option= "";
@@ -596,7 +600,7 @@ EOF
             my $crpdes  = "";
             if ( $mkcrop ne "" ) { 
                $options = "-options $mkcrop";
-               $crpdes  = "mp24_";
+               $crpdes  = "mp50_";
             }
             my $landuse_timeseries_text_file;
 	    if ( $sim_year ne $sim_yr0 ) {

@@ -1,14 +1,15 @@
 #ifndef SCREAM_EXPORTER_HPP
 #define SCREAM_EXPORTER_HPP
 
+#include "surface_coupling_utils.hpp"
+
 #include "share/atm_process/atmosphere_process.hpp"
-#include "ekat/ekat_parameter_list.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
+#include "share/util/eamxx_time_interpolation.hpp"
 #include "share/atm_process/ATMBufferManager.hpp"
 #include "share/atm_process/SCDataManager.hpp"
 
-#include "surface_coupling_utils.hpp"
-
+#include <ekat/ekat_parameter_list.hpp>
 #include <string>
 
 namespace scream
@@ -20,6 +21,14 @@ namespace scream
  * The AD should store exactly ONE instance of this class stored
  * in its list of subcomponents (the AD should make sure of this).
 */
+
+// enum to track how exported fields will be set.
+enum ExportType {
+  FROM_MODEL =  0,  // Variable will be derived from atmosphere model state
+  FROM_FILE  =  1,  // Variable will be set given data from a file
+  CONSTANT   =  2   // Set variable to a constant value
+};
+
 
 class SurfaceCouplingExporter : public AtmosphereProcess
 {
@@ -69,11 +78,14 @@ public:
   // If calling in initialize_impl(), set
   // called_during_initialization=true to avoid exporting fields
   // which do not have valid entries.
-  void do_export(const double dt, const bool called_during_initialization=false);
+  void do_export(const double dt, const bool called_during_initialization=false);             // Main export routine
+  void compute_eamxx_exports(const double dt, const bool called_during_initialization=false); // Export vars are derived from eamxx state
+  void set_constant_exports();                                                                // Export vars are set to a constant
+  void set_from_file_exports(const int dt);                                                   // Export vars are set by interpolation of data from files
+  void do_export_to_cpl(const bool called_during_initialization=false);                       // Finish export by copying data to cpl structures.
 
   // Take and store data from SCDataManager
   void setup_surface_coupling_data(const SCDataManager &sc_data_manager);
-
 protected:
 
   // The three main overrides for the subcomponent
@@ -111,8 +123,17 @@ protected:
   // Number of fields in cpl data
   Int m_num_cpl_exports;
 
-  // Number of exports from SCREAM
-  Int m_num_scream_exports;
+  // Number of exports from EAMxx and how they will be handled
+  int                               m_num_scream_exports;
+  view_1d<DefaultDevice,ExportType> m_export_source;
+  view_1d<HostDevice,ExportType>    m_export_source_h;
+  std::map<std::string,Real>        m_export_constants;
+  int                               m_num_from_model_exports=0;
+  int                               m_num_const_exports=0;
+  // For exporting from file
+  int                               m_num_from_file_exports=0;
+  util::TimeInterpolation           m_time_interp;
+  std::vector<std::string>          m_export_from_file_field_names;
 
   // Views storing a 2d array with dims (num_cols,num_fields) for cpl export data.
   // The field idx strides faster, since that's what mct does (so we can "view" the
@@ -120,8 +141,16 @@ protected:
   view_2d <DefaultDevice, Real> m_cpl_exports_view_d;
   uview_2d<HostDevice,    Real> m_cpl_exports_view_h;
 
+#ifdef HAVE_MOAB
+  // Views storing a 2d array with dims (num_fields, num_cols) for moab cpl export data.
+  // The field cols strides faster, since that's what moab does (so we can "view" the
+  // pointer to the whole a2x_am(:,:) array from Fortran)
+  view_2d <DefaultDevice, Real> m_moab_cpl_exports_view_d;
+  uview_2d<HostDevice,    Real> m_moab_cpl_exports_view_h;
+#endif
   // Array storing the field names for exports
-  name_t* m_export_field_names;
+  name_t*                   m_export_field_names;
+  std::vector<std::string>  m_export_field_names_vector;
 
   // Views storing information for each export
   uview_1d<HostDevice, int>  m_cpl_indices_view;

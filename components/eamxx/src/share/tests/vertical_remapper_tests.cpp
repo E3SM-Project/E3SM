@@ -15,32 +15,6 @@ cmvc (const ViewT& v) {
   return vh;
 }
 
-class VerticalRemapperTester : public VerticalRemapper {
-public:
-  VerticalRemapperTester (const grid_ptr_type& src_grid,
-                          const std::string&   map_file,
-                          const Field&         lev_prof,
-                          const Field&         ilev_prof,
-                          const Real           mask_val)
-   : VerticalRemapper(src_grid, map_file, lev_prof, ilev_prof, mask_val)
-  {
-    // Nothing to do
-  }
-};
-
-template<typename ViewT>
-bool contains (const ViewT& v, const typename ViewT::traits::value_type& entry) {
-  const auto vh = cmvc (v);
-  const auto beg = vh.data();
-  const auto end = vh.data() + vh.size();
-  for (auto it=beg; it!=end; ++it) {
-    if (*it == entry) {
-      return true;
-    }
-  }
-  return false;
-}
-
 void print (const std::string& msg, const ekat::Comm& comm) {
   if (comm.am_i_root()) {
     printf("%s",msg.c_str());
@@ -51,10 +25,12 @@ void print (const std::string& msg, const ekat::Comm& comm) {
 std::shared_ptr<AbstractGrid>
 build_src_grid(const ekat::Comm& comm, const int nldofs_src, const int nlevs_src) 
 {
+  using gid_type = AbstractGrid::gid_type;
+
   auto src_grid = std::make_shared<PointGrid>("src",nldofs_src,nlevs_src,comm);
 
   auto src_dofs = src_grid->get_dofs_gids();
-  auto src_dofs_h = src_dofs.get_view<gid_t*,Host>();
+  auto src_dofs_h = src_dofs.get_view<gid_type*,Host>();
   std::iota(src_dofs_h.data(),src_dofs_h.data()+nldofs_src,nldofs_src*comm.rank());
   src_dofs.sync_to_dev();
 
@@ -65,13 +41,13 @@ build_src_grid(const ekat::Comm& comm, const int nldofs_src, const int nlevs_src
 Field
 create_field(const std::string& name, const std::shared_ptr<const AbstractGrid>& grid, const bool twod, const bool vec, const bool mid = false, const int ps = 1)
 {
+  using namespace ShortFieldTagsNames;
   constexpr int vec_dim = 3;
-  constexpr auto CMP = FieldTag::Component;
   constexpr auto units = ekat::units::Units::nondimensional();
   auto fl = twod
-          ? (vec ? grid->get_2d_vector_layout (CMP,vec_dim)
+          ? (vec ? grid->get_2d_vector_layout (vec_dim)
                  : grid->get_2d_scalar_layout ())
-          : (vec ? grid->get_3d_vector_layout (mid,CMP,vec_dim)
+          : (vec ? grid->get_3d_vector_layout (mid,vec_dim)
                  : grid->get_3d_scalar_layout (mid));
   FieldIdentifier fid(name,fl,units,grid->name());
   Field f(fid);
@@ -94,23 +70,18 @@ Real data_func(const int col, const int vec, const Real pres) {
 // Helper function to create a remap file
 void create_remap_file(const std::string& filename, const int nlevs, const std::vector<std::int64_t>& dofs_p, const std::vector<Real>& p_tgt) 
 {
-
   scorpio::register_file(filename, scorpio::FileMode::Write);
+  scorpio::define_dim(filename,"lev",nlevs);
+  scorpio::define_var(filename,"p_levs",{"lev"},"real");
+  scorpio::enddef(filename);
 
-  scorpio::register_dimension(filename,"nlevs","nlevs",nlevs, false);
+  scorpio::write_var(filename,"p_levs",p_tgt.data());
 
-  scorpio::register_variable(filename,"p_levs","p_levs","none",{"nlevs"},"real","real","Real-nlevs");
-
-  scorpio::set_dof(filename,"p_levs",dofs_p.size(),dofs_p.data()); 
-  
-  scorpio::eam_pio_enddef(filename);
-
-  scorpio::grid_write_data_array(filename,"p_levs",p_tgt.data(),nlevs);
-
-  scorpio::eam_pio_closefile(filename);
+  scorpio::release_file(filename);
 }
 
 TEST_CASE ("vertical_remap") {
+  using gid_type = AbstractGrid::gid_type;
 
   // -------------------------------------- //
   //           Init MPI and PIO             //
@@ -118,8 +89,7 @@ TEST_CASE ("vertical_remap") {
 
   ekat::Comm comm(MPI_COMM_WORLD);
 
-  MPI_Fint fcomm = MPI_Comm_c2f(comm.mpi_comm());
-  scorpio::eam_init_pio_subsystem(fcomm);
+  scorpio::init_subsystem(comm);
 
   // -------------------------------------- //
   //           Set grid/map sizes           //
@@ -184,7 +154,7 @@ TEST_CASE ("vertical_remap") {
   }
   pmid_src.sync_to_dev();
   pint_src.sync_to_dev();
-  auto remap = std::make_shared<VerticalRemapperTester>(src_grid,filename,pmid_src,pint_src,mask_val);
+  auto remap = std::make_shared<VerticalRemapper>(src_grid,filename,pmid_src,pint_src,mask_val);
   print (" -> creating grid and remapper ... done!\n",comm);
 
   // -------------------------------------- //
@@ -257,10 +227,10 @@ TEST_CASE ("vertical_remap") {
   // values was, even if that data was off rank.
   auto pmid_v = pmid_src.get_view<Real**,Host>();
   auto pint_v = pint_src.get_view<Real**,Host>();
-  auto src_gids    = remap->get_src_grid()->get_dofs_gids().get_view<const gid_t*,Host>();
+  auto src_gids    = remap->get_src_grid()->get_dofs_gids().get_view<const gid_type*,Host>();
   for (const auto& f : src_f) {
     const auto& l = f.get_header().get_identifier().get_layout();
-    switch (get_layout_type(l.tags())) {
+    switch (l.type()) {
       case LayoutType::Scalar2D:
       {
         const auto v_src = f.get_view<Real*,Host>();
@@ -317,7 +287,7 @@ TEST_CASE ("vertical_remap") {
     // -------------------------------------- //
 
     print (" -> check tgt fields ...\n",comm);
-    const auto tgt_gids = tgt_grid->get_dofs_gids().get_view<const gid_t*,Host>();
+    const auto tgt_gids = tgt_grid->get_dofs_gids().get_view<const gid_type*,Host>();
     const int ntgt_gids = tgt_gids.size();
     for (size_t ifield=0; ifield<tgt_f.size(); ++ifield) {
       const auto& f     = tgt_f[ifield];
@@ -325,13 +295,13 @@ TEST_CASE ("vertical_remap") {
       const auto& lsrc  = fsrc.get_header().get_identifier().get_layout();
       const auto p_v    = lsrc.has_tag(LEV) ? pmid_v : pint_v;
       const int nlevs_p = lsrc.has_tag(LEV) ? nlevs_src : nlevs_src+1;
-      const auto ls     = to_string(lsrc);
+      const auto ls     = lsrc.to_string();
       std::string dots (25-ls.size(),'.');
-      print ("   -> Checking field with source layout " + to_string(lsrc) +" " + dots + "\n",comm);
+      print ("   -> Checking field with source layout " + ls +" " + dots + "\n",comm);
 
       f.sync_to_host();
 
-      switch (get_layout_type(lsrc.tags())) {
+      switch (lsrc.type()) {
         case LayoutType::Scalar2D:
         {
           // This is a flat array w/ no LEV tag so the interpolated value for source and target should match.
@@ -380,13 +350,13 @@ TEST_CASE ("vertical_remap") {
           EKAT_ERROR_MSG ("Unexpected layout.\n");
       }
 
-      print ("   -> Checking field with source layout " + to_string(lsrc) + " " + dots + " OK!\n",comm);
+      print ("   -> Checking field with source layout " + ls + " " + dots + " OK!\n",comm);
     }
     print ("check tgt fields ... done!\n",comm);
   }
 
   // Clean up scorpio stuff
-  scorpio::eam_pio_finalize();
+  scorpio::finalize_subsystem();
 }
 
 } // namespace scream

@@ -2080,8 +2080,12 @@ endif
     m=0
     gid = GlobalID
     do n=1,desc%actual_neigh_edges+1
-       pid = desc%globalID(desc%loc2buf((m+1)))
-       if (m==desc%actual_neigh_edges .OR. pid < gid) then
+       if (m == desc%actual_neigh_edges) then
+          pid = -1
+       else
+          pid = desc%globalID(desc%loc2buf((m+1)))
+       end if
+       if (pid < gid) then
           gid = -1
           v(:nc,:nc,:vlyr,n) = u(:,:,:)
        else

@@ -7,7 +7,7 @@ Module HydrologyNoDrainageMod
   use shr_kind_mod      , only : r8 => shr_kind_r8
   use shr_log_mod       , only : errMsg => shr_log_errMsg
   use decompMod         , only : bounds_type
-  use elm_varctl        , only : iulog, use_vichydro, use_extrasnowlayers
+  use elm_varctl        , only : iulog, use_vichydro, use_extrasnowlayers, use_firn_percolation_and_compaction
   use elm_varcon        , only : e_ice, denh2o, denice, rpi, spval
   use atm2lndType       , only : atm2lnd_type
   use lnd2atmType       , only : lnd2atm_type
@@ -67,7 +67,7 @@ contains
     use landunit_varcon      , only : istice, istwet, istsoil, istice_mec, istcrop, istdlak
     use column_varcon        , only : icol_roof, icol_road_imperv, icol_road_perv, icol_sunwall
     use column_varcon        , only : icol_shadewall
-    use elm_varctl           , only : use_cn, use_betr, use_fates, use_pflotran, pf_hmode
+    use elm_varctl           , only : use_cn, use_betr, use_fates, use_pflotran, pf_hmode, use_fan
     use elm_varpar           , only : nlevgrnd, nlevsno, nlevsoi, nlevurb
     use SnowHydrologyMod     , only : SnowCompaction, CombineSnowLayers, DivideSnowLayers, DivideExtraSnowLayers, SnowCapping
     use SnowHydrologyMod     , only : SnowWater, BuildSnowFilter 
@@ -110,6 +110,7 @@ contains
     real(r8) :: rwat(bounds%begc:bounds%endc) ! soil water wgted by depth to maximum depth of 0.5 m
     real(r8) :: swat(bounds%begc:bounds%endc) ! same as rwat but at saturation
     real(r8) :: rz(bounds%begc:bounds%endc)   ! thickness of soil layers contributing to rwat (m)
+    real(r8) :: h2osoi_liq_saved(bounds%begc:bounds%endc) ! h2osoi_liq_col in topmost layer before calling SoilWater
     real(r8) :: tsw                           ! volumetric soil water to 0.5 m
     real(r8) :: stsw                          ! volumetric soil water to 0.5 m at saturation
     real(r8) :: fracl                         ! fraction of soil layer contributing to 10cm total soil water
@@ -224,6 +225,11 @@ contains
       call Compute_EffecRootFrac_And_VertTranSink(bounds, num_hydrologyc, &
            filter_hydrologyc, soilstate_vars, canopystate_vars, energyflux_vars)
 
+      if ( use_fan ) then 
+         ! save the h2osoi_liq in top layer before evaluating the soilwater movement
+         call store_tsl_moisture(filter_hydrologyc, num_hydrologyc) 
+      end if
+ 
 #ifndef _OPENACC
       ! If FATES plant hydraulics is turned on, over-ride default transpiration sink calculation
       if( use_fates ) call alm_fates%ComputeRootSoilFlux(bounds, num_hydrologyc, filter_hydrologyc, &
@@ -246,6 +252,11 @@ contains
       end if
       !------------------------------------------------------------------------------------
 
+      if ( use_fan ) then 
+         ! use the saved value to calculate the tendency
+         call eval_tsl_moist_tend(filter_hydrologyc, num_hydrologyc)
+      end if
+ 
 #ifndef _OPENACC
        if (use_betr) then
           call ep_betr%BeTRSetBiophysForcing(bounds, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=col_ws, &
@@ -289,7 +300,7 @@ contains
       endif           
 #endif
       
-      if (use_extrasnowlayers) then
+      if (use_firn_percolation_and_compaction) then
          call SnowCapping(bounds, num_nolakec, filter_nolakec, num_snowc, filter_snowc, &
                           aerosol_vars)
       end if
@@ -571,6 +582,47 @@ contains
 
     end associate
 
+contains
+
+    ! Subroutines for storing the time derivative of top most soil layer
+    ! moisture. This is used for diagnosing the downwards moisture flux within FAN.
+
+    subroutine store_tsl_moisture(filter, num_fc)
+      ! Store the soil water within topmost layer before evaluating soil
+      ! moisture
+      ! transport.
+      integer, intent(in) :: filter(:)
+      integer, intent(in) :: num_fc
+
+      integer :: fc, c
+
+      do fc = 1, num_fc
+         c = filter(fc)
+         h2osoi_liq_saved(c) = col_ws%h2osoi_liq(c,1)
+      end do
+
+    end subroutine store_tsl_moisture
+
+    subroutine eval_tsl_moist_tend(filter, num_fc)
+      ! Evaluate the time derivative of soil liquid water due to percolation as
+      ! required in FAN.
+      integer, intent(in) :: filter(:)
+      integer, intent(in) :: num_fc
+
+      integer :: fc, c
+
+      associate(h2osoi_tend_tsl => col_ws%h2osoi_tend_tsl_col, &
+           h2osoi_liq => col_ws%h2osoi_liq)
+
+      do fc = 1, num_fc
+         c = filter(fc)
+         h2osoi_tend_tsl(c) = (h2osoi_liq(c,1) - h2osoi_liq_saved(c)) / dtime
+      end do
+
+      end associate
+
+    end subroutine eval_tsl_moist_tend
+ 
   end subroutine HydrologyNoDrainage
 
 end Module HydrologyNoDrainageMod

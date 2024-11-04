@@ -86,7 +86,7 @@ contains
     !
     ! !USES:
     use shr_const_mod, only: SHR_CONST_CDAY
-    use clm_time_manager, only : get_step_size
+    use elm_time_manager, only : get_step_size
     use decompMod, only : get_proc_bounds, get_proc_global
     !
     ! !ARGUMENTS:

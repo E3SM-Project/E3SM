@@ -187,6 +187,8 @@
 			<var name="boundaryLayerDepth"/>
 			<var name="columnIntegratedSpeed"/>
 			<var name="landIceFreshwaterFlux"/>
+			<var name="landIceFreshwaterFluxTotal"/>
+			<var name="frazilIceFreshwaterFlux"/>
 			<var name="landIceHeatFlux"/>
 			<var name="heatFluxToLandIce"/>
 			<var name="landIceFrictionVelocity"/>

@@ -3,7 +3,7 @@
  qoi_chkpt = 'RAD', 'PACEND','DYNEND','DEEPCU', 'STCLD',
 
  qoi_name = 'CAPE','dCAPE'
- qoi_nver =  1,     72,
+ qoi_nver =  1,     -1,
 
  l_output_state = .true.
  l_output_incrm = .false.

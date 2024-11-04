@@ -4,28 +4,31 @@
 Used by buildnml. See buildnml for documetation.
 """
 
-import os, sys, re
+import os, sys, re, pwd, grp, stat, getpass
 from collections import OrderedDict
 
 import xml.etree.ElementTree as ET
-
-_CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","cime")
-sys.path.append(os.path.join(_CIMEROOT, "CIME", "Tools"))
+import xml.dom.minidom as md
 
 # Add path to scream libs
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
 
-# Cime imports
-from standard_script_setup import * # pylint: disable=wildcard-import
-from CIME.utils import expect, safe_copy, SharedArea, run_cmd_no_fail
-
 # SCREAM imports
 from eamxx_buildnml_impl import get_valid_selectors, get_child, refine_type, \
-        resolve_all_inheritances, gen_atm_proc_group, check_all_values
+        resolve_all_inheritances, gen_atm_proc_group, check_all_values, find_node
+from atm_manip import apply_atm_procs_list_changes_from_buffer, apply_non_atm_procs_list_changes_from_buffer
 
-from utils import ensure_yaml
+from utils import ensure_yaml # pylint: disable=no-name-in-module
 ensure_yaml()
 import yaml
+from yaml_utils import Bools,Ints,Floats,Strings,array_representer,array_constructor
+
+_CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","cime")
+sys.path.append(os.path.join(_CIMEROOT, "CIME", "Tools"))
+
+# Cime imports
+from standard_script_setup import * # pylint: disable=wildcard-import
+from CIME.utils import expect, safe_copy, SharedArea
 
 logger = logging.getLogger(__name__) # pylint: disable=undefined-variable
 
@@ -41,7 +44,7 @@ CIME_VAR_RE = re.compile(r'[$][{](\w+)[}]')
 #    Examples:
 #      - constraints="ge 0; lt 4" means the value V must satisfy V>=0 && V<4.
 #      - constraints="mod 2 eq 0" means the value V must be a multiple of 2.
-METADATA_ATTRIBS = ("type", "valid_values", "locked", "constraints", "inherit")
+METADATA_ATTRIBS = ("type", "valid_values", "locked", "constraints", "inherit", "doc", "append")
 
 ###############################################################################
 def do_cime_vars(entry, case, refine=False, extra=None):
@@ -102,12 +105,115 @@ def do_cime_vars(entry, case, refine=False, extra=None):
     return entry
 
 ###############################################################################
+def perform_consistency_checks(case, xml):
+###############################################################################
+    """
+    There may be separate parts of the xml that must satisfy some consistency
+    Here, we run any such check, so we can catch errors before submit time
+
+    >>> from eamxx_buildnml_impl import MockCase
+    >>> xml_str = '''
+    ... <params>
+    ...   <rrtmgp>
+    ...     <rad_frequency type="integer">3</rad_frequency>
+    ...   </rrtmgp>
+    ... </params>
+    ... '''
+    >>> import xml.etree.ElementTree as ET
+    >>> xml = ET.fromstring(xml_str)
+    >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':24, 'REST_OPTION':'nsteps'})
+    >>> perform_consistency_checks(case,xml)
+    >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':2, 'REST_OPTION':'nsteps'})
+    >>> perform_consistency_checks(case,xml)
+    Traceback (most recent call last):
+    CIME.utils.CIMEError: ERROR: rrtmgp::rad_frequency (3 steps) incompatible with restart frequency (2 steps).
+     Please, ensure restart happens on a step when rad is ON
+    >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':10800, 'REST_OPTION':'nseconds'})
+    >>> perform_consistency_checks(case,xml)
+    >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':7200, 'REST_OPTION':'nseconds'})
+    >>> perform_consistency_checks(case,xml)
+    Traceback (most recent call last):
+    CIME.utils.CIMEError: ERROR: rrtmgp::rad_frequency incompatible with restart frequency.
+     Please, ensure restart happens on a step when rad is ON
+      rest_tstep: 7200
+      rad_testep: 10800.0
+    >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':180, 'REST_OPTION':'nminutes'})
+    >>> perform_consistency_checks(case,xml)
+    >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':120, 'REST_OPTION':'nminutes'})
+    >>> perform_consistency_checks(case,xml)
+    Traceback (most recent call last):
+    CIME.utils.CIMEError: ERROR: rrtmgp::rad_frequency incompatible with restart frequency.
+     Please, ensure restart happens on a step when rad is ON
+      rest_tstep: 7200
+      rad_testep: 10800.0
+    >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':6, 'REST_OPTION':'nhours'})
+    >>> perform_consistency_checks(case,xml)
+    >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':8, 'REST_OPTION':'nhours'})
+    >>> perform_consistency_checks(case,xml)
+    Traceback (most recent call last):
+    CIME.utils.CIMEError: ERROR: rrtmgp::rad_frequency incompatible with restart frequency.
+     Please, ensure restart happens on a step when rad is ON
+      rest_tstep: 28800
+      rad_testep: 10800.0
+    >>> case = MockCase({'ATM_NCPL':'12', 'REST_N':2, 'REST_OPTION':'ndays'})
+    >>> perform_consistency_checks(case,xml)
+    >>> case = MockCase({'ATM_NCPL':'10', 'REST_N':2, 'REST_OPTION':'ndays'})
+    >>> perform_consistency_checks(case,xml)
+    Traceback (most recent call last):
+    CIME.utils.CIMEError: ERROR: rrtmgp::rad_frequency incompatible with restart frequency.
+     Please, ensure restart happens on a step when rad is ON
+     For daily (or less frequent) restart, rad_frequency must divide ATM_NCPL
+    """
+
+    # RRTMGP can be supercycled. Restarts cannot fall in the middle
+    # of a rad superstep
+    rrtmgp = find_node(xml,"rrtmgp")
+    rest_opt = case.get_value("REST_OPTION")
+    if rrtmgp is not None and rest_opt is not None and rest_opt not in ["never","none"]:
+        rest_n = int(case.get_value("REST_N"))
+        rad_freq = int(find_node(rrtmgp,"rad_frequency").text)
+        atm_ncpl = int(case.get_value("ATM_NCPL"))
+        atm_tstep = 86400 / atm_ncpl
+        rad_tstep = atm_tstep * rad_freq
+
+
+        if rad_freq==1:
+            pass
+        elif rest_opt in ["nsteps", "nstep"]:
+            expect (rest_n % rad_freq == 0,
+                    f"rrtmgp::rad_frequency ({rad_freq} steps) incompatible with "
+                    f"restart frequency ({rest_n} steps).\n"
+                    " Please, ensure restart happens on a step when rad is ON")
+        elif rest_opt in ["nseconds", "nsecond", "nminutes", "nminute", "nhours", "nhour"]:
+            if rest_opt in ["nseconds", "nsecond"]:
+                factor = 1
+            elif rest_opt in ["nminutes", "nminute"]:
+                factor = 60
+            else:
+                factor = 3600
+
+            rest_tstep = factor*rest_n
+            expect (rest_tstep % rad_tstep == 0,
+                    "rrtmgp::rad_frequency incompatible with restart frequency.\n"
+                    " Please, ensure restart happens on a step when rad is ON\n"
+                    f"  rest_tstep: {rest_tstep}\n"
+                    f"  rad_testep: {rad_tstep}")
+
+        else:
+            # for "very infrequent" restarts, we request rad_freq to divide atm_ncpl
+            expect (atm_ncpl % rad_freq ==0,
+                    "rrtmgp::rad_frequency incompatible with restart frequency.\n"
+                    " Please, ensure restart happens on a step when rad is ON\n"
+                    " For daily (or less frequent) restart, rad_frequency must divide ATM_NCPL")
+
+###############################################################################
 def ordered_dump(data, item, Dumper=yaml.SafeDumper, **kwds):
 ###############################################################################
     """
     Copied from: https://stackoverflow.com/a/21912744
     Added ability to pass filename
     """
+
     class OrderedDumper(Dumper):
         pass
     def _dict_representer(dumper, data):
@@ -115,6 +221,12 @@ def ordered_dump(data, item, Dumper=yaml.SafeDumper, **kwds):
             yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
             data.items())
     OrderedDumper.add_representer(OrderedDict, _dict_representer)
+
+    # These allow to dump arrays with a tag specifying the type
+    OrderedDumper.add_representer(Bools,    array_representer)
+    OrderedDumper.add_representer(Ints,     array_representer)
+    OrderedDumper.add_representer(Floats,   array_representer)
+    OrderedDumper.add_representer(Strings,  array_representer)
 
     if isinstance(item, str) and item.endswith(".yaml"):
         # Item is a filepath
@@ -233,27 +345,50 @@ def evaluate_selectors(element, case, ez_selectors):
     CIME.utils.CIMEError: ERROR: child 'var1' element without selectors occurred after other parameter elements for this parameter
     """
 
-    child_values = {} # elem_name -> evaluated XML element
+    selected_child = {} # elem_name -> evaluated XML element
     children_to_remove = []
+    child_base_value = {} # map elme name to values to be appended to if append=="base"
+    child_type  = {} # map elme name to its type (since only first entry may have type specified)
     for child in element:
-        child_name = child.tag
-        child_val = child.text
-
         # Note: in our system, an XML element is either a "node" (has children)
         # or a "leaf" (has a value).
         has_children = len(child) > 0
         if has_children:
             evaluate_selectors(child, case, ez_selectors)
         else:
+            child_name = child.tag
+            child.text = None if child.text is None else child.text.strip(' \n')
+            child_val = child.text
             selectors = child.attrib
+
+            if child_name not in child_type:
+                child_type[child_name] = selectors["type"] if "type" in selectors.keys() else "unset"
+
+            is_array = child_type[child_name].startswith("array")
+            expect (is_array or "append" not in selectors.keys(),
+                    "The 'append' metadata attribute is only supported for entries of array type\n"
+                    f" param name: {child_name}\n"
+                    f" param type: {child_type[child_name]}")
+
+            append = selectors["append"] if "append" in selectors.keys() else "no"
+            expect (append in ["no","base","last"],
+                    "Unrecognized value for 'append' attribute\n" +
+                    f"  param name  : {child_name}\n" +
+                    f"  append value: {append}\n" +
+                     "  valid values: base, last\n")
             if selectors:
                 all_match = True
-                is_first = False
+                had_case_selectors = False
                 for k, v in selectors.items():
                     # Metadata attributes are used only when it's time to generate the input files
                     if k in METADATA_ATTRIBS:
+                        if k=="type" and child_name in selected_child.keys():
+                            if "type" in selected_child[child_name].attrib:
+                                expect (v==selected_child[child_name].attrib["type"],
+                                        f"The 'type' attribute of {child_name} is not consistent across different selectors")
                         continue
 
+                    had_case_selectors = True
                     val_re = re.compile(v)
 
                     if k in ez_selectors:
@@ -279,41 +414,70 @@ def evaluate_selectors(element, case, ez_selectors):
                         expect(val is not None,
                                "Bad selector '{0}' for child '{1}'. '{0}' is not a valid case value or easy selector".format(k, child_name))
 
-
                     if val is None or val_re.match(val) is None:
                         all_match = False
+                        children_to_remove.append(child)
                         break
 
                 if all_match:
-                    if child_name in child_values:
-                        orig_child = child_values[child_name]
-                        orig_child.text = do_cime_vars(child_val, case)
+                    if child_name in selected_child.keys():
+                        orig_child = selected_child[child_name]
+                        if append=="base":
+                            orig_child.text = child_base_value[child_name] + "," + child.text
+                        elif append=="last":
+                            orig_child.text = orig_child.text + "," + child.text
+                        else:
+                            orig_child.text = child.text
+                        children_to_remove.append(child)
 
                     else:
-                        is_first = True
-                        child_values[child_name] = child
-                        child.text = do_cime_vars(child_val, case)
+                        # If all selectors were the METADATA_ATTRIB ones, then this is the "base" value
+                        if not had_case_selectors:
+                            child_base_value[child_name] = child.text
+                        selected_child[child_name] = child
                         # Make a copy of selectors.keys(), since selectors=child.attrib,
                         # and we might delete an entry, causing the error
                         #    RuntimeError: dictionary changed size during iteration
-                        for k in list(selectors.keys()):
-                            if k not in METADATA_ATTRIBS:
-                                del child.attrib[k]
-
-                if not is_first:
-                    children_to_remove.append(child)
 
             else:
-                expect(child_name not in child_values,
+                expect(child_name not in selected_child,
                        "child '{}' element without selectors occurred after other parameter elements for this parameter".format(child_name))
-                child_values[child_name] = child
+                child_base_value[child_name] = child.text
+                selected_child[child_name] = child
                 child.text = do_cime_vars(child_val, case)
 
     for child_to_remove in children_to_remove:
         element.remove(child_to_remove)
 
 ###############################################################################
-def _create_raw_xml_file_impl(case, xml):
+def expand_cime_vars(element, case):
+###############################################################################
+    """
+    Expand all CIME variables inside an XML node text
+    """
+
+    for child in element:
+        # Note: in our system, an XML element is either a "node" (has children)
+        # or a "leaf" (has a value).
+        has_children = len(child) > 0
+        if has_children:
+            expand_cime_vars(child, case)
+        else:
+            child.text = do_cime_vars(child.text, case)
+
+###############################################################################
+def write_pretty_xml(filepath, xml):
+###############################################################################
+    with open(filepath, "w") as fd:
+        # dom has better pretty printing than ET in older python versions < 3.9
+        dom = md.parseString(ET.tostring(xml, encoding="unicode"))
+        pretty_xml = dom.toprettyxml(indent="  ")
+        pretty_xml = os.linesep.join([s for s in pretty_xml.splitlines()
+                                      if s.strip()])
+        fd.write(pretty_xml)
+
+###############################################################################
+def _create_raw_xml_file_impl(case, xml, filepath=None):
 ###############################################################################
     """
     On input, xml contains the parsed content of namelist_defaults_scream.xml.
@@ -327,7 +491,7 @@ def _create_raw_xml_file_impl(case, xml):
     ...     <selectors/>
     ...     <generated_files/>
     ...     <atmosphere_processes_defaults>
-    ...         <atm_procs_list>(P1,P2)</atm_procs_list>
+    ...         <atm_procs_list type="array(string)">P1,P2</atm_procs_list>
     ...         <atm_proc_base>
     ...             <prop1>zero</prop1>
     ...         </atm_proc_base>
@@ -350,7 +514,7 @@ def _create_raw_xml_file_impl(case, xml):
     >>> import pprint
     >>> pp = pprint.PrettyPrinter(indent=4)
     >>> pp.pprint(d)
-    OrderedDict([   ('atm_procs_list', '(P1,P2)'),
+    OrderedDict([   ('atm_procs_list', 'P1,P2'),
                     ('prop2', 'one'),
                     ('prop1', 'zero'),
                     ('P1', OrderedDict([('prop1', 'two')])),
@@ -364,7 +528,7 @@ def _create_raw_xml_file_impl(case, xml):
     ...     </selectors>
     ...     <generated_files/>
     ...     <atmosphere_processes_defaults>
-    ...         <atm_procs_list>(P1,P2)</atm_procs_list>
+    ...         <atm_procs_list type="array(string)">P1,P2</atm_procs_list>
     ...         <atm_proc_base>
     ...             <prop1>zero</prop1>
     ...         </atm_proc_base>
@@ -388,7 +552,7 @@ def _create_raw_xml_file_impl(case, xml):
     >>> import pprint
     >>> pp = pprint.PrettyPrinter(indent=4)
     >>> pp.pprint(d)
-    OrderedDict([   ('atm_procs_list', '(P1,P2)'),
+    OrderedDict([   ('atm_procs_list', 'P1,P2'),
                     ('prop2', 'one'),
                     ('prop1', 'zero'),
                     ('P1', OrderedDict([('prop1', 'two_selected')])),
@@ -402,7 +566,7 @@ def _create_raw_xml_file_impl(case, xml):
     ...     </selectors>
     ...     <generated_files/>
     ...     <atmosphere_processes_defaults>
-    ...       <atm_procs_list locked="true">(P1,P2)</atm_procs_list>
+    ...       <atm_procs_list type="array(string)">P1,P2</atm_procs_list>
     ...       <atm_proc_base>
     ...         <number_of_subcycles constraints='gt 0'>1</number_of_subcycles>
     ...         <enable_precondition_checks type='logical'>true</enable_precondition_checks>
@@ -432,7 +596,7 @@ def _create_raw_xml_file_impl(case, xml):
     >>> import pprint
     >>> pp = pprint.PrettyPrinter(indent=4)
     >>> pp.pprint(d)
-    OrderedDict([   ('atm_procs_list', '(P1,P2)'),
+    OrderedDict([   ('atm_procs_list', 'P1,P2'),
                     ('prop2', 'one'),
                     ('number_of_subcycles', 1),
                     ('enable_precondition_checks', True),
@@ -457,20 +621,43 @@ def _create_raw_xml_file_impl(case, xml):
     get_child(xml,"generated_files",remove=True)
     selectors = get_valid_selectors(xml)
 
-    # 1. Resolve all inheritances, and evaluate all selectors
-    evaluate_selectors(xml, case, selectors)
-    resolve_all_inheritances(xml)
+    # 1. Evaluate all selectors
+    try:
+        evaluate_selectors(xml, case, selectors)
 
-    # 2. Grab the atmosphere_processes macro list, with all the defaults
-    atm_procs_defaults = get_child(xml,"atmosphere_processes_defaults",remove=True)
+        # 2. Apply all changes in the SCREAM_ATMCHANGE_BUFFER that may alter
+        #    which atm processes are used
+        apply_atm_procs_list_changes_from_buffer (case,xml)
 
-    # 3. Get atm procs list
-    atm_procs_list = get_child(atm_procs_defaults,"atm_procs_list",remove=True)
+        # 3. Resolve all inheritances
+        resolve_all_inheritances(xml)
 
-    # 4. Form the nested list of atm procs needed, append to atmosphere_driver section
-    atm_procs = gen_atm_proc_group (atm_procs_list.text, atm_procs_defaults)
-    atm_procs.tag = "atmosphere_processes"
-    xml.append(atm_procs)
+        # 4. Expand any CIME var that appears inside XML nodes text
+        expand_cime_vars(xml,case)
+
+        # 5. Grab the atmosphere_processes macro list, with all the defaults
+        atm_procs_defaults = get_child(xml,"atmosphere_processes_defaults",remove=True)
+
+        # 6. Get atm procs list
+        atm_procs_list = get_child(atm_procs_defaults,"atm_procs_list",remove=True)
+
+        # 7. Form the nested list of atm procs needed, append to atmosphere_driver section
+        atm_procs = gen_atm_proc_group(atm_procs_list.text, atm_procs_defaults)
+        atm_procs.tag = "atmosphere_processes"
+        xml.append(atm_procs)
+
+        # 8. Apply all changes in the SCREAM_ATMCHANGE_BUFFER that do not alter
+        #    which atm processes are used
+        apply_non_atm_procs_list_changes_from_buffer (case,xml)
+    except BaseException as e:
+        if filepath is not None:
+            dbg_xml_path = filepath.replace(".xml", ".dbg.xml")
+            write_pretty_xml(dbg_xml_path, xml)
+            print(f"Error during XML creation, writing {dbg_xml_path}")
+
+        raise e
+
+    perform_consistency_checks (case, xml)
 
     return xml
 
@@ -478,34 +665,32 @@ def _create_raw_xml_file_impl(case, xml):
 def create_raw_xml_file(case, caseroot):
 ###############################################################################
     """
-    Create the raw $case/namelist_scream.xml file. This file is intended to be
-    modified by users via the atmchange script if they want
+    Create the $case/namelist_scream.xml file. This file is intended to be
+    modified by users via the atmchange script if they want,
     to make tweaks to input files (yaml and/or nml).
+    Note: users calls to atmchange do two things: 1) they add the change
+          to the SCREAM_ATMCHANGE_BUFFER case variable, and 2) they
+          call this function, which regenerates the scream xml file from
+          the defaults, applyin all buffered changes.
     """
-    src = os.path.join(case.get_value("SRCROOT"), "components/eamxx/cime_config/namelist_defaults_scream.xml")
-
     raw_xml_file = os.path.join(caseroot, "namelist_scream.xml")
-    with open(src, "r") as fd:
-        defaults = ET.parse(fd)
-        raw_xml = _create_raw_xml_file_impl(case, defaults.getroot())
-
     if os.path.exists(raw_xml_file) and case.get_value("SCREAM_HACK_XML"):
         print("{} already exists and SCREAM_HACK_XML is on, will not overwrite. Remove to regenerate".format(raw_xml_file))
 
     else:
-        if os.path.exists(raw_xml_file):
-            print("Regenerating {}. Manual edits will be lost.".format(raw_xml_file))
+        print("Regenerating {}. Manual edits will be lost.".format(raw_xml_file))
+
+        src = os.path.join(case.get_value("SRCROOT"), "components/eamxx/cime_config/namelist_defaults_scream.xml")
+
+        # Some atmchanges will require structural changes to the XML file and must
+        # be processed early by treating them as if they were made to the defaults file.
+        with open(src, "r") as fd:
+            defaults = ET.parse(fd).getroot()
+            raw_xml = _create_raw_xml_file_impl(case, defaults, filepath=raw_xml_file)
 
         check_all_values(raw_xml)
 
-        with open(raw_xml_file, "w") as fd:
-            ET.ElementTree(raw_xml).write(fd, method='xml', encoding="unicode")
-
-        # Now that we have our namelist_scream.xml file, we can apply buffered
-        # atmchange requests.
-        atmchg_buffer = case.get_value("SCREAM_ATMCHANGE_BUFFER")
-        if atmchg_buffer:
-            run_cmd_no_fail("{}/atmchange {} --no-buffer".format(caseroot, atmchg_buffer))
+        write_pretty_xml(raw_xml_file, raw_xml)
 
 ###############################################################################
 def convert_to_dict(element):
@@ -516,8 +701,8 @@ def convert_to_dict(element):
     ... <my_root>
     ...   <my__int>1</my__int>
     ...   <my__list>
-    ...     <my_ints>2,3</my_ints>
-    ...     <my_strings>two,three</my_strings>
+    ...     <my_ints type="array(integer)">2,3</my_ints>
+    ...     <my_strings type="array(string)">two,three</my_strings>
     ...   </my__list>
     ... </my_root>
     ... '''
@@ -535,14 +720,14 @@ def convert_to_dict(element):
     result = OrderedDict()
     for child in element:
         child_name = child.tag.replace("__", " ")
-        child_val = child.text
 
         has_children = len(child) > 0
-        if not has_children:
+        if has_children:
+            result[child_name] = convert_to_dict(child)
+        else:
+            child_val = child.text
             force_type = None if "type" not in child.attrib.keys() else child.attrib["type"]
             result[child_name] = refine_type(child_val,force_type=force_type)
-        else:
-            result[child_name] = convert_to_dict(child)
 
     return result
 
@@ -706,6 +891,11 @@ def get_file_parameters(caseroot):
 
     result = []
     for item in raw_xml.findall('.//*[@type="file"]'):
+        # Certain configurations may not need a file (e.g., a remap
+        # file for SPA may not be needed if the model resolution
+        # matches the data file resolution
+        if item.text is None or item.text=="":
+            continue
         result.append(item.text.strip())
 
     for item in raw_xml.findall('.//*[@type="array(file)"]'):
@@ -715,7 +905,7 @@ def get_file_parameters(caseroot):
     return list(OrderedDict.fromkeys(result))
 
 ###############################################################################
-def create_input_data_list_file(caseroot):
+def create_input_data_list_file(case,caseroot):
 ###############################################################################
     """
     Create the scream.input_data_list file for this case. This will tell CIME
@@ -723,17 +913,82 @@ def create_input_data_list_file(caseroot):
     """
     files_to_download = get_file_parameters(caseroot)
 
+    # Add array parsing knowledge to yaml loader
+    loader = yaml.SafeLoader
+    loader.add_constructor("!bools",array_constructor)
+    loader.add_constructor("!ints",array_constructor)
+    loader.add_constructor("!floats",array_constructor)
+    loader.add_constructor("!strings",array_constructor)
+
+    # Grab all the output yaml files, open them, and check if horiz_remap_file or vertical_remap_file is used
+    rundir   = case.get_value("RUNDIR")
+    eamxx_xml_file = os.path.join(caseroot, "namelist_scream.xml")
+    with open(eamxx_xml_file, "r") as fd:
+        eamxx_xml = ET.parse(fd).getroot()
+
+        scorpio = get_child(eamxx_xml,'Scorpio')
+        out_files_xml = get_child(scorpio,"output_yaml_files",must_exist=False)
+        #  out_files = out_files_xml.text.split(",") if (out_files_xml is not None and out_files_xml.text is not None) else []
+        #  for fn in out_files:
+        if (out_files_xml is not None and out_files_xml.text is not None):
+            for fn in out_files_xml.text.split(","):
+                # Get full name
+                src_yaml = os.path.expanduser(os.path.join(fn.strip()))
+                dst_yaml = os.path.expanduser(os.path.join(rundir,'data',os.path.basename(src_yaml)))
+
+                # Load file, and look for the remap file entries
+                content = yaml.load(open(dst_yaml,"r"),Loader=loader)
+                if 'horiz_remap_file' in content.keys():
+                    files_to_download += [content['horiz_remap_file']]
+                if 'vertical_remap_file' in content.keys():
+                    files_to_download += [content['vertical_remap_file']]
+
     input_data_list_file = "{}/Buildconf/scream.input_data_list".format(caseroot)
     if os.path.exists(input_data_list_file):
         os.remove(input_data_list_file)
 
+    din_loc_root = case.get_value("DIN_LOC_ROOT")
     with open(input_data_list_file, "w") as fd:
-        for idx, file_path in enumerate(files_to_download):
-            fd.write("scream_dl_input_{} = {}\n".format(idx, file_path))
+        for idx, file_path in enumerate(list(set(files_to_download))):
+            # Only add files whose full path starts with the CIME's input data location
+            if file_path.startswith(din_loc_root):
+                fd.write("scream_dl_input_{} = {}\n".format(idx, file_path))
+                if os.path.exists(file_path):
+                    if os.path.isdir(file_path):
+                        raise IsADirectoryError(f"Input file '{file_path}' is a directory, not a regular file.")
+                    if not os.path.isfile(file_path):
+                        raise OSError(f"Input file '{file_path}' exists but is not a regular file.")
+                    if not os.access(file_path,os.R_OK):
+                        try:
+                            file_stat = os.stat(file_path)
+
+                            # Get owner and group names
+                            owner = pwd.getpwuid(file_stat.st_uid).pw_name
+                            group = grp.getgrgid(file_stat.st_gid).gr_name
+
+                            # Get file permissions
+                            permissions = stat.filemode(file_stat.st_mode)
+
+                        except Exception as e:
+                            raise RuntimeError(f"Error retrieving file info for '{file_path}': {e}") from e
+
+                        curr_user = getpass.getuser()
+                        user_info = pwd.getpwnam(curr_user)
+                        group_ids = os.getgrouplist(curr_user, user_info.pw_gid)
+                        curr_groups = [grp.getgrgid(gid).gr_name for gid in group_ids]
+
+                        raise PermissionError ("Input file exists but it is not readable for current user\n"
+                            f" - file name: {file_path}\n"
+                            f" - file owner: {owner}\n"
+                            f" - file group: {group}\n"
+                            f" - permissions: {permissions}\n"
+                            f" - current user: {curr_user}\n"
+                            f" - current user groups: {curr_groups}\n")
 
 ###############################################################################
-def do_cime_vars_on_yaml_output_files(case,caseroot):
+def do_cime_vars_on_yaml_output_files(case, caseroot):
 ###############################################################################
+
     rundir   = case.get_value("RUNDIR")
     eamxx_xml_file = os.path.join(caseroot, "namelist_scream.xml")
 
@@ -744,11 +999,18 @@ def do_cime_vars_on_yaml_output_files(case,caseroot):
     out_files_xml = get_child(scorpio,"output_yaml_files",must_exist=False)
     out_files = out_files_xml.text.split(",") if (out_files_xml is not None and out_files_xml.text is not None) else []
 
+    # Add array parsing knowledge to yaml loader
+    loader = yaml.SafeLoader
+    loader.add_constructor("!bools",array_constructor)
+    loader.add_constructor("!ints",array_constructor)
+    loader.add_constructor("!floats",array_constructor)
+    loader.add_constructor("!strings",array_constructor)
+
     # We will also change the 'output_yaml_files' entry in scream_input.yaml,
     # to point to the copied files in $rundir/data
     output_yaml_files = []
     scream_input_file = os.path.join(rundir,'data','scream_input.yaml')
-    scream_input = yaml.safe_load(open(scream_input_file,"r"))
+    scream_input = yaml.load(open(scream_input_file,"r"),Loader=loader)
 
     # Determine the physics grid type for use in CIME-var substitution.
     pgt = 'GLL'
@@ -768,7 +1030,7 @@ def do_cime_vars_on_yaml_output_files(case,caseroot):
             safe_copy(src_yaml,dst_yaml)
 
         # Now load dst file, and process any CIME var present (if any)
-        content = yaml.safe_load(open(dst_yaml,"r"))
+        content = yaml.load(open(dst_yaml,"r"),Loader=loader)
         do_cime_vars(content,case,refine=True,
                      extra={'PHYSICS_GRID_TYPE': pgt})
 
@@ -776,14 +1038,32 @@ def do_cime_vars_on_yaml_output_files(case,caseroot):
         # produces an output at t=0, which is not present in the restarted run, and
         # which also causes different timestamp in the file name.
         # Hence, change default output settings to perform a single AVERAGE step at the end of the run
-        if case.get_value("TESTCASE") in ["ERP", "ERS"]:
-            test_env = case.get_env('test')
-            stop_n = test_env.get_value("STOP_N")
-            stop_opt = test_env.get_value("STOP_OPTION")
-            content['output_control']['Frequency'] = stop_n
-            content['output_control']['frequency_units'] = stop_opt
-            content['Averaging Type'] = 'AVERAGE'
-            print ("WARNING: ERS/ERP tests hard code output to consist of a single AVERAGE output step at the end of the run.")
+        if case.get_value("TESTCASE") in ["ERP", "ERS"] and content['Averaging Type'].upper()=="INSTANT":
+            hist_n = int(case.get_value("HIST_N",resolved=True))
+            hist_opt = case.get_value("HIST_OPTION",resolved=True)
+            content['output_control']['Frequency'] = hist_n
+            content['output_control']['frequency_units'] = hist_opt
+            content['output_control']['skip_t0_output'] = True
+            print ("ERS/ERP test with INSTANT output detected. Adjusting output control specs:\n")
+            print ("  - setting skip_t0_output=true\n")
+            print ("  - setting freq and freq_units to HIST_N and HIST_OPTION respectively\n")
+
+        # If frequency_units is not nsteps, verify that we don't request
+        # a frequency faster than the model timestep
+        if content['output_control']['frequency_units'] in ['nsecs','nmins','nhours']:
+            freq  = content['output_control']['Frequency']
+            units = content['output_control']['frequency_units']
+            dt_out = 1 if units=="nsecs" else 60 if units=="nmins" else 3600
+            dt_out = dt_out*int(freq)
+
+            dt_atm = 86400 / case.get_value("ATM_NCPL")
+            expect (dt_atm<=dt_out,
+                   "Cannot have output frequency faster than atm timestep.\n"
+                   f"   yaml file: {fn.strip()}\n"
+                   f"   Frequency: {freq}\n"
+                   f"   frequency_units: {units}\n"
+                   f"   ATM_NCPL: {case.get_value('ATM_NCPL')}\n"
+                   f" This yields dt_atm={dt_atm} > dt_output={dt_out}. Please, adjust 'Frequency' and/or 'frequency_units'\n")
 
         ordered_dump(content, open(dst_yaml, "w"))
 
@@ -791,7 +1071,6 @@ def do_cime_vars_on_yaml_output_files(case,caseroot):
 
     # Now update the output yaml files entry, and dump the new content
     # of the scream input to YAML file
-    print ("out list: {}".format(",".join(output_yaml_files)))
     scream_input["Scorpio"]["output_yaml_files"] = refine_type(",".join(output_yaml_files),"array(string)")
     with open(scream_input_file, "w") as fd:
         fd.write(

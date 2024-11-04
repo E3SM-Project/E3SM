@@ -47,6 +47,8 @@ module gllfvremap_util_mod
 
   type (PhysgridData_t), private :: pg_data
 
+  logical :: is_sphere
+
   public :: &
        ! Test gllfvremap's main API.
        gfr_check_api, &
@@ -58,6 +60,22 @@ module gllfvremap_util_mod
        gfr_pgn_to_smoothed_topo
 
 contains
+  
+  function sphere2cart(sphere) result(cart)
+    use coordinate_systems_mod, only: spherical_polar_t, cartesian3D_t, change_coordinates
+
+    type (spherical_polar_t), intent(in) :: sphere
+    type (cartesian3D_t) :: cart
+
+    if (is_sphere) then
+       cart = change_coordinates(sphere)
+    else
+       ! See conventions established in planar_mod::coordinates_atomic.
+       cart%x = sphere%lon
+       cart%y = sphere%lat
+       cart%z = 0
+    end if
+  end function sphere2cart
   
   subroutine init(nphys)
     ! Init pg_data.
@@ -102,8 +120,8 @@ contains
     ! function on the sphere.
 
     use dimensions_mod, only: nlev, qsize
-    use physical_constants, only: g, dd_pi
-    use coordinate_systems_mod, only: cartesian3D_t, change_coordinates
+    use physical_constants, only: g, dd_pi, Lx, Ly
+    use coordinate_systems_mod, only: cartesian3D_t
     use hybvcoord_mod, only: hvcoord_t
     use element_ops, only: get_field
 
@@ -113,35 +131,57 @@ contains
 
     type (State_t) :: s1
     type (cartesian3D_t) :: p
-    real(kind=real_kind) :: wr(np,np,nlev,2)
+    real(kind=real_kind) :: wr(np,np,nlev,2), fx, fy
     integer :: i, j, k, q, tl
+
+    if (.not. is_sphere) then
+       fx = 2*dd_pi/Lx
+       fy = 2*dd_pi/Ly
+    end if
 
     elem%state%Q(:,:,:,1) = zero ! moisture tracer is 0
     do j = 1,np
        do i = 1,np
-          p = change_coordinates(elem%spherep(i,j))
-          do k = 1,nlev
-             do q = 2,qsize
-                elem%state%Q(i,j,k,q) = one + &
-                     half*sin((half + modulo(q,2))*p%x)* &
-                     sin((half + modulo(q,3))*1.5d0*p%y)* &
-                     sin((-2.3d0 + modulo(q,5))*p%z)
+          p = sphere2cart(elem%spherep(i,j))
+          if (is_sphere) then
+             do k = 1,nlev
+                do q = 2,qsize
+                   elem%state%Q(i,j,k,q) = one + &
+                        half*sin((half + modulo(q,2))*p%x)* &
+                        sin((half + modulo(q,3))*1.5d0*p%y)* &
+                        sin((-2.3d0 + modulo(q,5))*(0.7d0 + p%z))
+                end do
              end do
-          end do
-          s1%ps(i,j) = 1.0d3*(one + 0.05d0*sin(two*p%x+half)*sin(p%y+1.5d0)*sin(3*p%z+2.5d0))
-          s1%phis(i,j) = one + half*sin(p%x-half)*sin(half*p%y+2.5d0)*sin(2*p%z-2.5d0)
-          do k = 1,nlev
-             ! u, v have to be set carefully because they are
-             ! converted to contravariant velocity. Thus, at the
-             ! poles, we need u, v to make sense to measure OOA
-             ! correctly.
-             wr(i,j,k,1) = sin(p%x)*sin(1.5*p%y)*cos(1.7*p%z)
-             wr(i,j,k,2) = sin(half*p%x)*sin(1.5*p%y)*cos(half*dd_pi*p%z)
-             elem%derived%omega_p(i,j,k) = wr(i,j,k,1)
-          end do
-          do k = 1,nlev
-             s1%T(i,j,k) = one + half*sin(p%x+1.5d0)*sin(1.5d0*p%y+half)*sin(two*p%z-half)
-          end do
+             s1%ps(i,j) = 1.0d3*(one + 0.05d0*sin(two*p%x+half)*sin(p%y+1.5d0)*sin(3*p%z+2.5d0))
+             s1%phis(i,j) = one + half*sin(p%x-half)*sin(half*p%y+2.5d0)*sin(2*p%z-2.5d0)
+             do k = 1,nlev
+                ! u, v have to be set carefully because they are converted to
+                ! contravariant velocity. Thus, at the poles, we need u, v to make
+                ! sense to measure OOA correctly.
+                wr(i,j,k,1) = sin(p%x)*sin(1.5*p%y)*cos(1.7*p%z)
+                wr(i,j,k,2) = sin(half*p%x)*sin(1.5*p%y)*cos(half*dd_pi*p%z)
+                elem%derived%omega_p(i,j,k) = wr(i,j,k,1)
+             end do
+             do k = 1,nlev
+                s1%T(i,j,k) = one + half*sin(p%x+1.5d0)*sin(1.5d0*p%y+half)*sin(two*p%z-half)
+             end do
+          else
+             do k = 1,nlev
+                do q = 2,qsize
+                   elem%state%Q(i,j,k,q) = one + half*sin(fx*p%x)*sin(fy*p%y)
+                end do
+             end do
+             s1%ps(i,j) = 1.0d3*(one + 0.05d0*sin(two*fx*p%x+half)*sin(fy*p%y+1.5d0))
+             s1%phis(i,j) = one + half*sin(fx*p%x-half)*sin(fy*p%y+2.5d0)
+             do k = 1,nlev
+                wr(i,j,k,1) = sin(fx*p%x)*sin(2*fy*fy*p%y)
+                wr(i,j,k,2) = sin(fx*p%x)*sin(2*fy*p%y)
+                elem%derived%omega_p(i,j,k) = wr(i,j,k,1)
+             end do
+             do k = 1,nlev
+                s1%T(i,j,k) = one + half*sin(fx*p%x+1.5d0)*sin(fy*p%y+half)
+             end do
+          end if
        end do
     end do
     s1%u = wr(:,:,:,1)
@@ -168,6 +208,21 @@ contains
     end do
   end subroutine set_gll_state
 
+  function make_tendency(p) result(t)
+    use coordinate_systems_mod, only: cartesian3D_t
+    use physical_constants, only: dd_pi, Lx, Ly
+
+    type (cartesian3D_t), intent(in) :: p
+    real(kind=real_kind) :: t, r
+
+    if (is_sphere) then
+       r = sqrt(p%x*p%x + p%y*p%y + p%z*p%z)
+       t = 0.25_real_kind*sin(3.2*p%x)*sin(4.2*p%y)*sin(0.7 + 2.3*p%z)
+    else
+       t = 0.25_real_kind*sin(2*dd_pi*p%x/Lx)*sin(2*dd_pi*p%y/Ly)
+    end if
+  end function make_tendency
+
   function run(hybrid, hvcoord, elem, nets, nete, nphys, tendency) result(nerr)
     ! Run 3 convergence and property-preservation whole-mesh
     ! tests. See below for descriptions of the three tests.
@@ -175,7 +230,7 @@ contains
     use kinds, only: iulog
     use hybvcoord_mod, only: hvcoord_t
     use dimensions_mod, only: nlev, qsize
-    use coordinate_systems_mod, only: cartesian3D_t, change_coordinates
+    use coordinate_systems_mod, only: cartesian3D_t
     use element_ops, only: get_temperature, get_field
     use prim_driver_base, only: applyCAMforcing_tracers
     use prim_advance_mod, only: applyCAMforcing_dynamics
@@ -238,7 +293,7 @@ contains
              do i = 1,nf
                 col = nf*(j-1) + i
                 call gfr_f_get_cartesian3d(ie, i, j, p)
-                f = 0.25_real_kind*sin(3.2*p%x)*sin(4.2*p%y)*sin(2.3*p%z)
+                f = make_tendency(p)
                 pg_data%uv(col,:,:,ie) = f/dt
                 pg_data%T(col,:,ie) = f/dt
                 ! no moisture adjustment => no dp3d adjustment
@@ -285,8 +340,8 @@ contains
           if (tendency .and. q > 1) then
              do j = 1,np
                 do i = 1,np
-                   p = change_coordinates(elem(ie)%spherep(i,j))
-                   tend(i,j,:) = 0.25_real_kind*sin(3.2*p%x)*sin(4.2*p%y)*sin(2.3*p%z)
+                   p = sphere2cart(elem(ie)%spherep(i,j))
+                   tend(i,j,:) = make_tendency(p)
                 end do
              end do
           end if
@@ -525,7 +580,7 @@ contains
 
     use kinds, only: iulog
     use hybvcoord_mod, only: hvcoord_t
-    use control_mod, only: ftype
+    use control_mod, only: ftype, geometry
     use gllfvremap_mod
 
     type (hybrid_t), intent(in) :: hybrid
@@ -535,6 +590,8 @@ contains
 
     integer :: nphys, ftype_in, ftype_idx, boost_idx, nerr
     logical :: boost_pg1
+
+    is_sphere = trim(geometry) /= 'plane'
 
     ftype_in = ftype
 

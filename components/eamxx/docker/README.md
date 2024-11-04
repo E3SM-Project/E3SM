@@ -5,9 +5,10 @@ SCREAM Docker is built on top of CIME's Docker image. Make sure CIME image is bu
 
 ## Building the container
 
+From the top level of the SCREAM repository, run the following commands:
 ```bash
-docker build -t cime:latest --target base ../../../cime/docker/
-docker build -t scream:latest .
+docker build -t cime:latest --target base cime/docker/
+docker build --file components/eamxx/docker/Dockerfile -t scream:latest .
 ```
 
 ## Running the container

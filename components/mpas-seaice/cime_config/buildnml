@@ -36,6 +36,7 @@ def buildnml(case, caseroot, compname):
     surface_mode     = case.get_value("MPASSI_SURFACE_MODE")
     iceberg_mode     = case.get_value("MPASSI_ICEBERG_MODE")
     prognostic_mode  = case.get_value("MPASSI_PROGNOSTIC_MODE")
+    column_mode      = case.get_value("MPASSI_COLUMN_MODE")
     ice_pio_typename = case.get_value("ICE_PIO_TYPENAME")
     ninst_ice        = case.get_value("NINST_ICE")
     ntasks_ice       = case.get_value("NTASKS_PER_INST_ICE")
@@ -71,10 +72,11 @@ def buildnml(case, caseroot, compname):
     decomp_prefix = ''
     data_iceberg_file = ''
     points_file = ''
+    dust_iron_file = ''
 
     if ice_grid == 'oEC60to30v3':
-        decomp_date = '161222'
-        decomp_prefix = 'mpas-cice.graph.info.'
+        decomp_date = '230424'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
         grid_date = '161222'
         grid_prefix = 'seaice.EC60to30v3'
         if ice_ic_mode == 'spunup':
@@ -106,8 +108,8 @@ def buildnml(case, caseroot, compname):
             logger.warning("         But no file available for this grid.")
 
     elif ice_grid == 'oQU120':
-        decomp_date = '151209'
-        decomp_prefix = 'mpas-cice.graph.info.'
+        decomp_date = '230424'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
         grid_date = '151209'
         grid_prefix = 'seaice.oQU120km'
         if ice_ic_mode == 'spunup':
@@ -115,8 +117,8 @@ def buildnml(case, caseroot, compname):
             logger.warning("         But no file available for this grid.")
 
     elif ice_grid == 'oQU240':
-        decomp_date = '151209'
-        decomp_prefix = 'mpas-cice.graph.info.'
+        decomp_date = '230422'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
         grid_date = '151209'
         grid_prefix = 'seaice.oQU240km'
         if ice_ic_mode == 'spunup':
@@ -124,17 +126,18 @@ def buildnml(case, caseroot, compname):
             logger.warning("         But no file available for this grid.")
 
     elif ice_grid == 'oQU240wLI':
-        decomp_date = '160929'
-        decomp_prefix = 'mpas-cice.graph.info.'
+        decomp_date = '230422'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
         grid_date = '160929'
         grid_prefix = 'cice.QU240wLI'
+        data_iceberg_file = 'Iceberg_Climatology_Merino.oQU240wLI.20240404.nc'
         if ice_ic_mode == 'spunup':
             logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
             logger.warning("         But no file available for this grid.")
 
     elif ice_grid == 'oQU480':
-        decomp_date = '180705'
-        decomp_prefix = 'mpas-seaice.graph.legacy.'
+        decomp_date = '230422'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
         grid_date = '180705'
         grid_prefix = 'seaice.oQU480'
         if ice_ic_mode == 'spunup':
@@ -161,8 +164,8 @@ def buildnml(case, caseroot, compname):
             logger.warning("         But no file available for this grid.")
 
     elif ice_grid == 'oRRS18to6v3':
-        decomp_date = '180214'
-        decomp_prefix = 'mpas-seaice.v2.'
+        decomp_date = '230424'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
         grid_date = '170111'
         grid_prefix = 'seaice.RRS18to6v3'
         if ice_ic_mode == 'spunup':
@@ -206,8 +209,8 @@ def buildnml(case, caseroot, compname):
             grid_prefix = 'mpassi.ARRM10to60E2r1.rstFrom1monthG-chrys'
 
     elif ice_grid == 'EC30to60E2r2':
-        decomp_date = '200908'
-        decomp_prefix = 'mpas-seaice.graph.info.'
+        decomp_date = '230313'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
         grid_date = '210210'
         grid_prefix = 'seaice.EC30to60E2r2'
         if ice_ic_mode == 'spunup':
@@ -215,8 +218,8 @@ def buildnml(case, caseroot, compname):
             grid_prefix = 'mpassi.EC30to60E2r2.rstFromG-anvil'
 
     elif ice_grid == 'WC14to60E2r3':
-        decomp_date = '200714'
-        decomp_prefix = 'mpas-seaice.graph.info.'
+        decomp_date = '230313'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
         grid_date = '210210'
         grid_prefix = 'seaice.WC14to60E2r3'
         if ice_ic_mode == 'spunup':
@@ -233,8 +236,8 @@ def buildnml(case, caseroot, compname):
             grid_prefix = 'mpassi.WCAtl12to45E2r4.rstFromG-anvil'
 
     elif ice_grid == 'SOwISC12to60E2r4':
-        decomp_date = '210107'
-        decomp_prefix = 'mpas-seaice.graph.info.'
+        decomp_date = '230314'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
         grid_date = '210107'
         grid_prefix = 'seaice.SOwISC12to60E2r4'
         data_iceberg_file += 'Iceberg_Interannual_Merino_SOwISC12to60E2r4.nc'
@@ -242,15 +245,100 @@ def buildnml(case, caseroot, compname):
             grid_date = '210203'
             grid_prefix = 'mpassi.SOwISC12to60E2r4.rstFromG-anvil'
 
+    elif ice_grid == 'FRISwISC08to60E3r1':
+        decomp_date = '20230913'  # changed to date of partiotions in ../files_for_e3sm/assembled_files/inputdata/ocn/mpas-seaice/FRISwISC08to60E3r1/partitions
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
+        grid_date = '20230913'  # changed to same as decomp_date
+        grid_prefix = 'mpassi.FRISwISC08to60E3r1'  # name from ../files_for_e3sm/assembled_files/inputdata/ice/mpas-seaice/FRISwISC08to60E3r1/mpassi.FRISwISC08to60E3r1.20230913.nc
+        data_iceberg_file += 'Iceberg_Climatology_Merino.FRISwISC08to60E3r1.20230913.nc'
+        if ice_ic_mode == 'spunup':
+            grid_date = '20230913'  # changed to same as decomp_date, but the spun up file does not yet exist
+            grid_prefix = 'mpassi.FRISwISC08to60E3r1.rstFromG-anvil'  #the spun up file does not yet exist
+
+    elif ice_grid == 'FRISwISC04to60E3r1':
+        decomp_date = '20230913'  # changed to date of partiotions in ../files_for_e3sm/assembled_files/inputdata/ocn/mpas-seaice/FRISwISC04to60E3r1/partitions
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
+        grid_date = '20230913'  # changed to same as decomp_date
+        grid_prefix = 'mpassi.FRISwISC04to60E3r1'  # name from ../files_for_e3sm/assembled_files/inputdata/ice/mpas-seaice/FRISwISC04to60E3r1/mpassi.FRISwISC04to60E3r1.20230913.nc
+        data_iceberg_file += 'Iceberg_Climatology_Merino.FRISwISC04to60E3r1.20230913.nc'
+        if ice_ic_mode == 'spunup':
+            grid_date = '20230913'  # changed to same as decomp_date, but the spun up file does not yet exist
+            grid_prefix = 'mpassi.FRISwISC04to60E3r1.rstFromG-anvil'  #the spun up file does not yet exist
+
+    elif ice_grid == 'FRISwISC02to60E3r1':
+        decomp_date = '20230914'  # changed to date of partiotions in ../files_for_e3sm/assembled_files/inputdata/ocn/mpas-seaice/FRISwISC02to60E3r1/partitions
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
+        grid_date = '20230914'  # changed to same as decomp_date
+        grid_prefix = 'mpassi.FRISwISC02to60E3r1'  # name from ../files_for_e3sm/assembled_files/inputdata/ice/mpas-seaice/FRISwISC02to60E3r1/mpassi.FRISwISC02to60E3r1.20230914.nc
+        data_iceberg_file += 'Iceberg_Climatology_Merino.FRISwISC02to60E3r1.20230914.nc'
+        if ice_ic_mode == 'spunup':
+            grid_date = '20230914'  # changed to same as decomp_date, but the spun up file does not yet exist
+            grid_prefix = 'mpassi.FRISwISC02to60E3r1.rstFromG-anvil'  #the spun up file does not yet exist
+
+    elif ice_grid == 'FRISwISC01to60E3r1':
+        decomp_date = '20230915'  # changed to date of partiotions in ../files_for_e3sm/assembled_files/inputdata/ocn/mpas-seaice/FRISwISC01to60E3r1/partitions
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
+        grid_date = '20230915'  # changed to same as decomp_date
+        grid_prefix = 'mpassi.FRISwISC01to60E3r1'  # name from ../files_for_e3sm/assembled_files/inputdata/ice/mpas-seaice/FRISwISC01to60E3r1/mpassi.FRISwISC01to60E3r1.20230915.nc
+        data_iceberg_file += 'Iceberg_Climatology_Merino.FRISwISC01to60E3r1.20230915.nc'
+        if ice_ic_mode == 'spunup':
+            grid_date = '20230915'  # changed to same as decomp_date, but the spun up file does not yet exist
+            grid_prefix = 'mpassi.FRISwISC01to60E3r1.rstFromG-anvil'  #the spun up file does not yet exist
+
     elif ice_grid == 'ECwISC30to60E2r1':
         grid_date = '210413'
         grid_prefix = 'seaice.ECwISC30to60E2r1'
-        decomp_date = '200916'
-        decomp_prefix = 'mpas-seaice.graph.info.'
+        decomp_date = '230314'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
         data_iceberg_file += 'Iceberg_Interannual_Merino_ECwISC30to60E2r1.nc'
         if ice_ic_mode == 'spunup':
             grid_date = '210414'
             grid_prefix = 'mpassi.ECwISC30to60E2r1.rstFromG-anvil'
+
+    elif ice_grid == 'IcoswISC30E3r5':
+        grid_date = '20231120'
+        grid_prefix = 'mpassi.IcoswISC30E3r5'
+        decomp_date = '20231120'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
+        data_iceberg_file = 'Iceberg_Climatology_Merino.IcoswISC30E3r5.20231120.nc'
+        dust_iron_file = 'ecoForcingSurfaceMonthly+WetDryDustSolFrac.IcoswISC30E3r5.20240511.nc'
+        if ice_ic_mode == 'spunup':
+            if iceberg_mode == 'data':
+                grid_date = '20240207'
+                grid_prefix = 'mpassi.IcoswISC30E3r5.rstFromG-DIB-chrysalis'
+            else:
+                grid_date = '20231121'
+                grid_prefix = 'mpassi.IcoswISC30E3r5.rstFromG-chrysalis'
+
+    elif ice_grid == 'IcosXISC30E3r7':
+        grid_date = '20240314'
+        grid_prefix = 'mpassi.IcosXISC30E3r7'
+        decomp_date = '20240314'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
+        data_iceberg_file = 'Iceberg_Climatology_Merino.IcosXISC30E3r7.20240314.nc'
+        if ice_ic_mode == 'spunup':
+            grid_date = '20240314'
+            grid_prefix = 'mpassi.IcosXISC30E3r7.rstFromPiControlSpinup-chrysalis'
+
+    elif ice_grid == 'RRSwISC6to18E3r5':
+        decomp_date = '20240404'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
+        grid_date = '20240327'
+        grid_prefix = 'mpassi.RRSwISC6to18E3r5'
+        data_iceberg_file = 'Iceberg_Climatology_Merino.RRSwISC6to18E3r5.20240327.nc'
+        if ice_ic_mode == 'spunup':
+            logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
+            logger.warning("         But no file available for this grid.")
+
+    elif ice_grid == 'SOwISC12to30E3r3':
+        grid_date = '20240829'
+        grid_prefix = 'mpassi.SOwISC12to30E3r3'
+        decomp_date = '20240829'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
+        data_iceberg_file = 'Iceberg_Climatology_Merino.SOwISC12to30E3r3.20240829.nc'
+        if ice_ic_mode == 'spunup':
+            grid_date = '20240829'
+            grid_prefix = 'mpassi.SOwISC12to30E3r3.rstFromG-chrysalis'
 
     elif ice_grid == 'ICOS10':
         grid_date = '211015'
@@ -281,6 +369,8 @@ def buildnml(case, caseroot, compname):
             input_list.write("points = {}/ice/mpas-seaice/{}/{}\n".format(din_loc_root, ice_mask, points_file))
         if iceberg_mode == 'data':
             input_list.write("data_iceberg = {}/ice/mpas-seaice/{}/{}\n".format(din_loc_root, ice_mask, data_iceberg_file))
+        if dust_iron_file != '':
+            input_list.write("dust_iron = {}/ocn/mpas-o/{}/{}\n".format(din_loc_root, ice_mask, dust_iron_file))
 
     #--------------------------------------------------------------------
     # Invoke mpas build-namelist - output will go in $CASEBUILD/mpassiconf
@@ -356,6 +446,7 @@ def buildnml(case, caseroot, compname):
         sysmod += " -surface_mode '{}'".format(surface_mode)
         sysmod += " -iceberg_mode '{}'".format(iceberg_mode)
         sysmod += " -prognostic_mode '{}'".format(prognostic_mode)
+        sysmod += " -column_mode '{}'".format(column_mode)
         sysmod += " -ntasks_ice '{}'".format(ntasks_ice)
         sysmod += " -ninst_ice '{}'".format(ninst_ice)
 
@@ -384,7 +475,8 @@ def buildnml(case, caseroot, compname):
             lines.append('<streams>')
             lines.append('<immutable_stream name="mesh"')
             lines.append('                  type="none"')
-            if ice_grid.startswith("oRRS1"):
+            if ice_grid.startswith("oRRS1") or ice_grid.startswith("FRIS") \
+                    or ice_grid.startswith("RRSwISC6"):
                 lines.append('                  io_type="pnetcdf,cdf5"')
             else:
                 lines.append('                  io_type="{}"'.format(ice_pio_typename))
@@ -393,7 +485,8 @@ def buildnml(case, caseroot, compname):
             lines.append('')
             lines.append('<immutable_stream name="input"')
             lines.append('                  type="input"')
-            if ice_grid.startswith("oRRS1"):
+            if ice_grid.startswith("oRRS1") or ice_grid.startswith("FRIS") \
+                    or ice_grid.startswith("RRSwISC6"):
                 lines.append('                  io_type="pnetcdf,cdf5"')
             else:
                 lines.append('                  io_type="{}"'.format(ice_pio_typename))
@@ -415,7 +508,8 @@ def buildnml(case, caseroot, compname):
             lines.append('')
             lines.append('<immutable_stream name="restart"')
             lines.append('                  type="input;output"')
-            if ice_grid.startswith("oRRS1"):
+            if ice_grid.startswith("oRRS1") or ice_grid.startswith("FRIS") \
+                    or ice_grid.startswith("RRSwISC6"):
                 lines.append('                  io_type="pnetcdf,cdf5"')
             else:
                 lines.append('                  io_type="{}"'.format(ice_pio_typename))
@@ -431,8 +525,9 @@ def buildnml(case, caseroot, compname):
             if ice_ic_mode == 'spunup':
                 lines.append('<immutable_stream name="restart_ic"')
                 lines.append('                  type="input"')
-                if ice_grid.startswith("oRRS1"):
-                    lines.append('                  io_type="pnetcdf,cdf5"')
+                if ice_grid.startswith("oRRS1") or ice_grid.startswith("FRIS") \
+                        or ice_grid.startswith("RRSwISC6"):
+                        lines.append('                  io_type="pnetcdf,cdf5"')
                 else:
                     lines.append('                  io_type="{}"'.format(ice_pio_typename))
 
@@ -521,10 +616,19 @@ def buildnml(case, caseroot, compname):
             lines.append('<immutable_stream name="ISPOLDailyWOAForcing"')
             lines.append('                  type="input"')
             lines.append('                  io_type="{}"'.format(ice_pio_typename))
-            lines.append('                  filename_template="{}/ice/mpas-cice/general/ISPOLDailyWOAForcing_10132022.nc"')
+            lines.append('                  filename_template="{}/ice/mpas-cice/general/ISPOLDailyWOAForcing_10132022.nc"'.format(din_loc_root))
             lines.append('                  filename_interval="none"')
             lines.append('                  input_interval="none" />')
             lines.append('')
+            if dust_iron_file != '':
+                lines.append('<immutable_stream name="DustIronMonthlyForcing"')
+                lines.append('                  type="input"')
+                lines.append('                  io_type="{}"'.format(ice_pio_typename))
+                lines.append('                  filename_template="{}/ocn/mpas-o/{}/{}"'.format(din_loc_root, ice_mask, dust_iron_file))
+                lines.append('                  filename_interval="none"')
+                lines.append('                  input_interval="none" />')
+                lines.append('')
+
             lines.append('<immutable_stream name="abort_contents"')
             lines.append('                  type="none"')
             lines.append('                  filename_template="abort_variables.nc" />')
@@ -558,6 +662,7 @@ def buildnml(case, caseroot, compname):
             if iceberg_mode == 'data':
                 lines.append('<stream name="dataIcebergForcing"')
                 lines.append('                  type="input"')
+                lines.append('                  io_type="{}"'.format(ice_pio_typename))
                 lines.append('                  filename_template="{}/ice/mpas-seaice/{}/{}"'.format(din_loc_root, ice_mask, data_iceberg_file))
                 lines.append('                  filename_interval="none"')
                 lines.append('                  input_interval="none" >')
@@ -666,6 +771,15 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="netCarbonFlux"/>')
             lines.append('    <var name="absoluteCarbonError"/>')
             lines.append('    <var name="relativeCarbonError"/>')
+            lines.append('    <var name="initialBlackCarbon"/>')
+            lines.append('    <var name="finalBlackCarbon"/>')
+            lines.append('    <var name="blackCarbonChange"/>')
+            lines.append('    <var name="blackCarbonChangeFlux"/>')
+            lines.append('    <var name="blackCarbonConsAtmBlackCarbonFlux"/>')
+            lines.append('    <var name="blackCarbonConsOceanBlackCarbonFlux"/>')
+            lines.append('    <var name="netBlackCarbonFlux"/>')
+            lines.append('    <var name="absoluteBlackCarbonError"/>')
+            lines.append('    <var name="relativeBlackCarbonError"/>')
             lines.append('</stream>')
             lines.append('')
             lines.append('<immutable_stream name="conservationCheckRestart"')
@@ -789,12 +903,6 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="iceVolumeTendencyTransport"/>')
             lines.append('    <var name="iceAreaTendencyThermodynamics"/>')
             lines.append('    <var name="iceAreaTendencyTransport"/>')
-            lines.append('    <var name="iceAgeTendencyThermodynamics"/>')
-            lines.append('    <var name="iceAgeTendencyTransport"/>')
-            lines.append('    <var name="iceAgeCell"/>')
-            lines.append('    <var name="firstYearIceAreaCell"/>')
-            lines.append('    <var name="levelIceAreaCell"/>')
-            lines.append('    <var name="levelIceVolumeCell"/>')
             lines.append('    <var name="ridgedIceAreaAverage"/>')
             lines.append('    <var name="ridgedIceVolumeAverage"/>')
             lines.append('    <var name="bulkSalinity"/>')
@@ -826,22 +934,41 @@ def buildnml(case, caseroot, compname):
                 lines.append('    <var name="bergLatentHeatFlux"/>')
 
             if ice_bgc == 'ice_bgc':
-                lines.append('    <var name="totalVerticalBiologyIce"/>')
                 lines.append('    <var name="totalChlorophyll"/>')
                 lines.append('    <var name="primaryProduction"/>')
                 lines.append('    <var name="bioShortwaveFlux"/>')
                 lines.append('    <var name="netBrineHeight"/>')
                 lines.append('    <var name="newlyFormedIce"/>')
                 lines.append('    <var name="snowThicknessChange"/>')
-                lines.append('    <var name="verticalAlgaeIceCell"/>')
+                lines.append('    <var name="totalVerticalDiatomIce"/>')
+                lines.append('    <var name="totalVerticalSmallPlanktonIce"/>')
+                lines.append('    <var name="totalVerticalAlgaeCarbonIce"/>')
+                lines.append('    <var name="totalVerticalNitrateIce"/>')
+                lines.append('    <var name="totalVerticalAmmoniumIce"/>')
+                lines.append('    <var name="totalVerticalSilicateIce"/>')
+                lines.append('    <var name="totalVerticalProteinsIce"/>')
+                lines.append('    <var name="totalVerticalDOCLabileIce"/>')
+                lines.append('    <var name="totalVerticalHumicsIce"/>')
+                lines.append('    <var name="totalVerticalDissolvedIronIce"/>')
+                lines.append('    <var name="totalVerticalParticulateIronIce"/>')
+                lines.append('    <var name="totalVerticalBCIce"/>')
+                lines.append('    <var name="totalVerticalBCSnow"/>')
+                lines.append('    <var name="totalVerticalDustIce"/>')
+                lines.append('    <var name="totalVerticalDustSnow"/>')
+                lines.append('    <var name="totalVerticalDissolvedIronSnow"/>')
+                lines.append('    <var name="verticalAlgaeTotalCarbonIceCell"/>')
+                lines.append('    <var name="verticalDOCLabileIceCell"/>')
+                lines.append('    <var name="verticalDONIceCell"/>')
+                lines.append('    <var name="verticalDICIceCell"/>')
                 lines.append('    <var name="verticalNitrateIceCell"/>')
                 lines.append('    <var name="verticalSilicateIceCell"/>')
                 lines.append('    <var name="verticalAmmoniumIceCell"/>')
-                lines.append('    <var name="verticalDMSIceCell"/>')
-                lines.append('    <var name="verticalDMSPdIceCell"/>')
-                lines.append('    <var name="verticalNonreactiveIceCell"/>')
                 lines.append('    <var name="verticalHumicsIceCell"/>')
                 lines.append('    <var name="verticalDissolvedIronIceCell"/>')
+                lines.append('    <var name="verticalBCTotalIceCell"/>')
+                lines.append('    <var name="verticalDustTotalIceCell"/>')
+                lines.append('    <var name="verticalBCTotalSnowCell"/>')
+                lines.append('    <var name="verticalDustTotalSnowCell"/>')
                 lines.append('    <var name="iceEnthalpyCell"/>')
                 lines.append('    <var name="iceSalinityCell"/>')
                 lines.append('    <var name="oceanBioFluxes"/>')
@@ -889,7 +1016,6 @@ def buildnml(case, caseroot, compname):
                 lines.append('    <var name="totalVerticalBiologyIce"/>')
                 lines.append('    <var name="brineFractionCell"/>')
                 lines.append('    <var name="netBrineHeight"/>')
-                lines.append('    <var name="firstYearIceAreaCell"/>')
                 lines.append('    <var name="levelIceAreaCell"/>')
                 lines.append('    <var name="pondAreaCell"/>')
                 lines.append('    <var name="surfaceIceMelt"/>')
@@ -902,15 +1028,35 @@ def buildnml(case, caseroot, compname):
                 lines.append('    <var name="snowAlbedoCell"/>')
                 lines.append('    <var name="bareIceAlbedoCell"/>')
                 lines.append('    <var name="pondAlbedoCell"/>')
-                lines.append('    <var name="verticalAlgaeIceCell"/>')
+                lines.append('    <var name="totalVerticalDiatomIce"/>')
+                lines.append('    <var name="totalVerticalSmallPlanktonIce"/>')
+                lines.append('    <var name="totalVerticalAlgaeCarbonIce"/>')
+                lines.append('    <var name="totalVerticalNitrateIce"/>')
+                lines.append('    <var name="totalVerticalAmmoniumIce"/>')
+                lines.append('    <var name="totalVerticalSilicateIce"/>')
+                lines.append('    <var name="totalVerticalProteinsIce"/>')
+                lines.append('    <var name="totalVerticalDOCLabileIce"/>')
+                lines.append('    <var name="totalVerticalHumicsIce"/>')
+                lines.append('    <var name="totalVerticalDissolvedIronIce"/>')
+                lines.append('    <var name="totalVerticalParticulateIronIce"/>')
+                lines.append('    <var name="totalVerticalBCIce"/>')
+                lines.append('    <var name="totalVerticalBCSnow"/>')
+                lines.append('    <var name="totalVerticalDustIce"/>')
+                lines.append('    <var name="totalVerticalDustSnow"/>')
+                lines.append('    <var name="totalVerticalDissolvedIronSnow"/>')
+                lines.append('    <var name="verticalAlgaeTotalCarbonIceCell"/>')
+                lines.append('    <var name="verticalDOCLabileIceCell"/>')
+                lines.append('    <var name="verticalDONIceCell"/>')
+                lines.append('    <var name="verticalDICIceCell"/>')
                 lines.append('    <var name="verticalNitrateIceCell"/>')
                 lines.append('    <var name="verticalSilicateIceCell"/>')
                 lines.append('    <var name="verticalAmmoniumIceCell"/>')
-                lines.append('    <var name="verticalDMSIceCell"/>')
-                lines.append('    <var name="verticalDMSPdIceCell"/>')
-                lines.append('    <var name="verticalNonreactiveIceCell"/>')
                 lines.append('    <var name="verticalHumicsIceCell"/>')
                 lines.append('    <var name="verticalDissolvedIronIceCell"/>')
+                lines.append('    <var name="verticalBCTotalIceCell"/>')
+                lines.append('    <var name="verticalDustTotalIceCell"/>')
+                lines.append('    <var name="verticalBCTotalSnowCell"/>')
+                lines.append('    <var name="verticalDustTotalSnowCell"/>')
                 lines.append('    <var name="iceEnthalpyCell"/>')
                 lines.append('    <var name="iceSalinityCell"/>')
                 lines.append('    <var name="oceanBioFluxes"/>')

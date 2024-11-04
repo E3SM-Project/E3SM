@@ -82,8 +82,11 @@ struct UnitWrap::UnitTest<D>::TestClipThirdMoms {
       REQUIRE(w3_large == true);
     }
 
-    // Call the fortran implementation
-    clipping_diag_third_shoc_moments(SDS);
+    // Call the C++ implementation.
+    SDS.transpose<ekat::TransposeDirection::c2f>();
+    // expects data in fortran layout
+    clipping_diag_third_shoc_moments_f(SDS.nlevi,SDS.shcol,SDS.w_sec_zi,SDS.w3);
+    SDS.transpose<ekat::TransposeDirection::f2c>();
 
     // Check the result
     // For large values of w3, verify that the result has been reduced

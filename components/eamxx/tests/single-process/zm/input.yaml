@@ -1,0 +1,21 @@
+%YAML 1.1
+---
+driver_options:
+  atmosphere_dag_verbosity_level: 5
+
+time_stepping:
+  time_step: ${ATM_TIME_STEP}
+  run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
+  number_of_steps: ${NUM_STEPS}
+
+atmosphere_processes:
+  atm_procs_list: [zm]
+
+grids_manager:
+  Type: Mesh Free
+  grids_names: [Physics]
+  Physics:
+    type: point_grid
+    number_of_global_columns:   32
+    number_of_vertical_levels:  128
+...

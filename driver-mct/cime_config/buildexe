@@ -36,9 +36,6 @@ def _main_func():
         gmake_opts = get_standard_makefile_args(case)
         blddir = os.path.join(case.get_value("EXEROOT"),"cpl","obj")
 
-    if ocn_model == 'mom' or atm_model == "ufsatm":
-        gmake_opts += "USE_FMS=TRUE"
-
     expect((num_esp is None) or (int(num_esp) == 1), "ESP component restricted to one instance")
 
     with open(os.path.join(blddir,'Filepath'), 'w') as out:

@@ -3,15 +3,7 @@
 # save benchmark timing info for provenance
 ./xmlchange SAVE_TIMING=TRUE
 
-# on KNLs, run hyper-threaded with 64x2
-if [ `./xmlquery --value MACH` == theta ]||[ `./xmlquery --value MACH` == cori-knl ]; then
-  echo yes;
-  ./xmlchange MAX_MPITASKS_PER_NODE=64
-  ./xmlchange MAX_TASKS_PER_NODE=128
-  ./xmlchange NTHRDS=2
-else
-  ./xmlchange NTHRDS=1
-fi
+./xmlchange NTHRDS=1
 
 #avoid errors on over-decomposing DATM's T62 grid beyond 9600 tasks
 if [ `./xmlquery --value NTASKS_ATM` -gt 9600 ]; then ./xmlchange NTASKS_ATM=9600; fi

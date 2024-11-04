@@ -23,6 +23,7 @@ module conv_water
 
   use perf_mod
   use cam_logfile,   only: iulog
+  use zm_conv,      only: zm_microp
 
   implicit none
   private
@@ -33,7 +34,7 @@ module conv_water
 ! pbuf indices
 
   integer :: icwmrsh_idx, icwmrdp_idx, fice_idx, sh_frac_idx, dp_frac_idx, &
-             ast_idx, sh_cldliq1_idx, sh_cldice1_idx, rei_idx
+             ast_idx, sh_cldliq1_idx, sh_cldice1_idx, rei_idx,icimrdp_idx   
 
   integer :: ixcldice, ixcldliq
 
@@ -79,17 +80,22 @@ module conv_water
 
    
    use physics_buffer, only : pbuf_get_index
-   use cam_history,    only :  addfld
+   use cam_history,    only : addfld
+   use phys_control,   only : phys_getopts
 
    use constituents,  only: cnst_get_ind
 
    implicit none
+   logical :: use_MMF
 
+   call phys_getopts(use_MMF_out = use_MMF)
    call cnst_get_ind('CLDICE', ixcldice)
    call cnst_get_ind('CLDLIQ', ixcldliq)
  
    icwmrsh_idx  = pbuf_get_index('ICWMRSH')
    icwmrdp_idx  = pbuf_get_index('ICWMRDP')
+   icimrdp_idx  = -1
+   if (.not. use_MMF) icimrdp_idx  = pbuf_get_index('ICIMRDP')
    fice_idx     = pbuf_get_index('FICE')
    sh_frac_idx  = pbuf_get_index('SH_FRAC')
    dp_frac_idx  = pbuf_get_index('DP_FRAC')
@@ -127,6 +133,7 @@ module conv_water
    use physics_types,   only: physics_state
    use cam_history,     only: outfld
    use phys_control,    only: phys_getopts
+   use shr_infnan_mod,  only: shr_infnan_isnan
    
    implicit none
 
@@ -156,6 +163,7 @@ module conv_water
    real(r8), pointer, dimension(:,:) ::  rei      ! Ice effective drop size (microns)
 
    real(r8), pointer, dimension(:,:) ::  dp_icwmr ! Deep conv. cloud water
+   real(r8), pointer, dimension(:,:) ::  dp_icimr ! Deep conv. cloud ice     
    real(r8), pointer, dimension(:,:) ::  sh_icwmr ! Shallow conv. cloud water
    real(r8), pointer, dimension(:,:) ::  fice     ! Ice partitioning ratio
    real(r8), pointer, dimension(:,:) ::  sh_cldliq ! shallow convection gbx liq cld mixing ratio for COSP
@@ -177,6 +185,10 @@ module conv_water
    real(r8) :: kabs, kabsi, kabsl, alpha, dp0, sh0, ic_limit, frac_limit  
    real(r8) :: wrk1         
 
+   real(r8) :: sh_iclmr                           ! Shallow convection in-cloud liquid water 
+   real(r8) :: sh_icimr                           ! Shallow convection in-cloud ice water
+   real(r8) :: dp_iclmr                           ! Deep convection in-cloud liquid water 
+
    integer :: lchnk
    integer :: ncol
 
@@ -197,7 +209,9 @@ module conv_water
 
    call pbuf_get_field(pbuf, icwmrsh_idx, sh_icwmr )
    call pbuf_get_field(pbuf, icwmrdp_idx, dp_icwmr )
+   if (icimrdp_idx .gt. 0) call pbuf_get_field(pbuf, icimrdp_idx, dp_icimr )
    call pbuf_get_field(pbuf, fice_idx,    fice )
+
 
  ! Get convective in-cloud fraction    
 
@@ -237,14 +251,24 @@ module conv_water
 
             cu0_frac = 0._r8
             cu_icwmr = 0._r8
-         
+            conv_ice(i,k) = 0._r8
+            conv_liq(i,k) = 0._r8
+
             ls_frac = ast(i,k)
             if( ls_frac < frac_limit ) then
                 ls_frac  = 0._r8
                 ls_icwmr = 0._r8
+                tot_ice(i,k)  = 0._r8
+                tot_liq(i,k)  = 0._r8
+                totg_ice(i,k) = 0._r8
+                totg_liq(i,k) = 0._r8
             else
                 ls_icwmr = ( state%q(i,k,ixcldliq) + state%q(i,k,ixcldice) )/max(frac_limit,ls_frac) ! Convert to IC value.
-            end if
+                tot_ice(i,k)  = state%q(i,k,ixcldice)/max(frac_limit,ls_frac)
+                tot_liq(i,k)  = state%q(i,k,ixcldliq)/max(frac_limit,ls_frac)
+                totg_ice(i,k) = state%q(i,k,ixcldice)
+                totg_liq(i,k) = state%q(i,k,ixcldliq)
+            endif
 
             tot0_frac = ls_frac
             tot_icwmr = ls_icwmr
@@ -260,7 +284,20 @@ module conv_water
             endif
             kabs  = kabsl * ( 1._r8 - wrk1 ) + kabsi * wrk1
             alpha = -1.66_r8*kabs*state%pdel(i,k)/gravit*1000.0_r8
-
+           if (zm_microp) then
+             sh_iclmr = sh_icwmr(i,k)*(1-wrk1)
+             sh_icimr = sh_icwmr(i,k)*wrk1
+             dp_iclmr = dp_icwmr(i,k)- dp_icimr(i,k)
+        
+             conv_ice(i,k) = ( sh0_frac * sh_icimr + dp0_frac*dp_icimr(i,k))/max(frac_limit,cu0_frac)
+             conv_liq(i,k) = ( sh0_frac * sh_iclmr + dp0_frac*dp_iclmr)/max(frac_limit,cu0_frac)
+             ls_frac   = ast(i,k)
+             tot0_frac = (ls_frac + cu0_frac)
+             tot_ice(i,k) = (state%q(i,k,ixcldice) + cu0_frac*conv_ice(i,k))/max(frac_limit,tot0_frac)
+             tot_liq(i,k) = (state%q(i,k,ixcldliq) + cu0_frac*conv_liq(i,k))/max(frac_limit,tot0_frac)
+             totg_ice(i,k) = tot0_frac * tot_ice(i,k)
+             totg_liq(i,k) = tot0_frac * tot_liq(i,k)
+           else        
           ! Selecting cumulus in-cloud water.            
 
             select case (conv_water_mode) ! Type of average
@@ -291,9 +328,10 @@ module conv_water
             case default ! Area weighted 'arithmetic in emissivity' average.
 !               call endrun ('CONV_WATER_4_RAD: Unknown option for conv_water_in_rad - exiting')
             end select
-
+          end if  !zm_microp
       end if
-      
+
+     if (.not.zm_microp) then     
       !BSINGH - Logic by Phil R. to account for insignificant condensate in large scale clouds
       if (ls_icwmr < 100._r8*ic_limit .and. pergro_mods) then ! if there is virtually  no stratiform condensate
          if (state%t(i,k) < 243._r8) then           ! if very cold assume convective condensate is ice
@@ -318,7 +356,8 @@ module conv_water
 
       totg_ice(i,k) = tot0_frac * tot_icwmr * wrk1
       totg_liq(i,k) = tot0_frac * tot_icwmr * (1._r8-wrk1)
-
+    
+     endif
    end do
    end do
 
@@ -326,8 +365,17 @@ module conv_water
    call pbuf_get_field(pbuf, sh_cldliq1_idx, sh_cldliq  )
    call pbuf_get_field(pbuf, sh_cldice1_idx, sh_cldice  )
 
-   sh_cldliq(:ncol,:pver)=sh_icwmr(:ncol,:pver)*(1-fice(:ncol,:pver))*sh_frac(:ncol,:pver)
-   sh_cldice(:ncol,:pver)=sh_icwmr(:ncol,:pver)*fice(:ncol,:pver)*sh_frac(:ncol,:pver)
+   do k = 1, pver
+      do i = 1, ncol
+         if (shr_infnan_isnan( fice(i,k) )) then
+            sh_cldliq(i,k) = 0._r8
+            sh_cldice(i,k) = 0._r8
+         else
+            sh_cldliq(i,k)=sh_icwmr(i,k)*(1-fice(i,k))*sh_frac(i,k)
+            sh_cldice(i,k)=sh_icwmr(i,k)*   fice(i,k) *sh_frac(i,k)
+         endif
+      end do
+   end do
 
   ! Output convective IC WMRs
    

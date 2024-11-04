@@ -13,6 +13,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <random>
+#include <iostream>
 
 using namespace Homme;
 

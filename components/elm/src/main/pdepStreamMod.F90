@@ -49,7 +49,7 @@ contains
    !
    ! Uses:
    use elm_varctl       , only : inst_name
-   use clm_time_manager , only : get_calendar
+   use elm_time_manager , only : get_calendar
    use ncdio_pio        , only : pio_subsystem
    use shr_pio_mod      , only : shr_pio_getiotype
    use shr_nl_mod       , only : shr_nl_find_group_name
@@ -151,7 +151,7 @@ contains
  subroutine pdep_interp(bounds, atm2lnd_vars)
 
    !-----------------------------------------------------------------------
-   use clm_time_manager, only : get_curr_date, get_days_per_year
+   use elm_time_manager, only : get_curr_date, get_days_per_year
    use elm_varcon      , only : secspday
    use atm2lndType     , only : atm2lnd_type
    !

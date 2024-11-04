@@ -1,5 +1,6 @@
 #include "share/scream_types.hpp"
 #include "share/scream_session.hpp"
+#include "share/util/scream_utils.hpp"
 
 #include "p3_main_wrap.hpp"
 #include "p3_functions_f90.hpp"
@@ -29,56 +30,6 @@ using namespace scream::p3;
  */
 
 
-/* Given a column of data for variable "label" from the reference run
- * (probably master) and from your new exploratory run, loop over all
- * heights and confirm whether or not the relative difference between
- * runs is within tolerance "tol". If not, print debug info. Here, "a"
- * is the value from the reference run and "b" is from the new run.
- */
-template <typename Scalar>
-static Int compare (const std::string& label, const Scalar* a,
-                    const Scalar* b, const Int& n, const Real& tol) {
-
-  Int nerr1 = 0;
-  Int nerr2 = 0;
-  Real den = 0;
-  for (Int i = 0; i < n; ++i)
-    den = std::max(den, std::abs(a[i]));
-  Real worst = 0;
-  for (Int i = 0; i < n; ++i) {
-    if (std::isnan(a[i]) || std::isinf(a[i]) ||
-        std::isnan(b[i]) || std::isinf(b[i])) {
-      ++nerr1;
-      continue;
-    }
-
-    // The code below is to force a result difference. This is used by the
-    // scream/scripts internal testing to verify that various DIFFs are detected.
-#if defined(SCREAM_FORCE_RUN_DIFF)
-    const Real num = std::abs(a[i]*Real(1.2) - b[i]);
-#else
-    const Real num = std::abs(a[i] - b[i]);
-#endif
-    if (num > tol*den) {
-      ++nerr2;
-      worst = std::max(worst, num);
-    }
-  }
-
-  if (nerr1) {
-    std::cout << label << " has " << nerr1 << " infs + nans.\n";
-
-  }
-
-  if (nerr2) {
-    std::cout << label << " > tol " << nerr2 << " times. Max rel diff= " << (worst/den)
-             << " normalized by ref impl val=" << den << ".\n";
-
-  }
-
-  return nerr1 + nerr2;
-}
-
  /* When called with the below 3 args, compare loops over all variables
   * and calls the above version of "compare" to check for and report
   * large discrepancies.
@@ -93,7 +44,7 @@ static Int compare (const std::string& label, const Scalar* a,
     const auto& fr = refi.getfield(i);
     const auto& fd = di.getfield(i);
     EKAT_ASSERT(fr.size == fd.size);
-    nerr += compare(fr.name, fr.data, fd.data, fr.size, tol);
+    nerr += scream::compare(fr.name, fr.data, fd.data, fr.size, tol);
   }
   return nerr;
 }
@@ -247,6 +198,13 @@ private:
                         << i << " to have extent " << f.extent[i] << " but got "
                         << ds[i]);
       ekat::read(f.data, f.size, fid);
+    // The code below is to force a result difference. This is used by the
+    // scream/scripts internal testing to verify that various DIFFs are detected.
+#if defined(SCREAM_FORCE_RUN_DIFF)
+      for (decltype(f.size) i = 0; i < f.size; ++i) {
+        f.data[i] *= Real(1.2);
+      }
+#endif
     }
   }
 };

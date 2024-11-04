@@ -51,11 +51,16 @@ public:
   // Getting the diagnostic output
   Field get_diagnostic () const;
 
-  void set_computed_field (const Field& f) final;
-  void set_computed_group (const FieldGroup& group) final;
+  // Allows the diagnostic to save some start-of-step quantity (e.g., in case
+  // we need to compute tendencies, or accumulated stuff)
+  virtual void init_timestep (const util::TimeStamp& /* start_of_step */) {}
 
   void compute_diagnostic (const double dt = 0);
 protected:
+
+  void set_required_field_impl (const Field& f) final;
+  void set_computed_field_impl (const Field& f) final;
+  void set_computed_group_impl (const FieldGroup& group) final;
 
   virtual void compute_diagnostic_impl () = 0;
 

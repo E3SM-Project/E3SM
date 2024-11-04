@@ -17,19 +17,52 @@
 
 namespace {
 
-TEST_CASE("field_layout") {
+TEST_CASE("field_layout", "") {
   using namespace scream;
   using namespace ShortFieldTagsNames;
 
-  FieldLayout l({EL,GP,GP});
+  using TVec = std::vector<FieldTag>;
+  using IVec = std::vector<int>;
 
-  // Should not be able to set a dimensions vector of wrong rank
-  REQUIRE_THROWS(l.set_dimensions({1,2}));
+  FieldLayout fl1 ({COL},{1});
+  FieldLayout fl2 ({COL,CMP},{1,1});
+  FieldLayout fl3 ({COL,CMP,CMP},{1,3,4});
+  FieldLayout fl4 ({COL,LEV},{1,1});
+  FieldLayout fl5 ({COL,CMP,LEV},{1,1,1});
+  FieldLayout fl6 ({COL,CMP,CMP,ILEV},{1,5,6,1});
 
-  l.set_dimensions({1,2,3});
+  REQUIRE (fl1.type()==LayoutType::Scalar2D);
+  REQUIRE (fl2.type()==LayoutType::Vector2D);
+  REQUIRE (fl3.type()==LayoutType::Tensor2D);
+  REQUIRE (fl4.type()==LayoutType::Scalar3D);
+  REQUIRE (fl5.type()==LayoutType::Vector3D);
+  REQUIRE (fl6.type()==LayoutType::Tensor3D);
 
-  // Should not be able to reset the dimensions once they are set
-  REQUIRE_THROWS(l.set_dimensions({1,2,3}));
+  REQUIRE (not fl1.is_vector_layout());
+  REQUIRE (    fl2.is_vector_layout());
+  REQUIRE (not fl3.is_vector_layout());
+  REQUIRE (not fl4.is_vector_layout());
+  REQUIRE (    fl5.is_vector_layout());
+  REQUIRE (not fl6.is_vector_layout());
+
+  REQUIRE (not fl1.is_tensor_layout());
+  REQUIRE (not fl2.is_tensor_layout());
+  REQUIRE (    fl3.is_tensor_layout());
+  REQUIRE (not fl4.is_tensor_layout());
+  REQUIRE (not fl5.is_tensor_layout());
+  REQUIRE (    fl6.is_tensor_layout());
+
+  REQUIRE (fl2.get_vector_tag()==CMP);
+  REQUIRE (fl5.get_vector_tag()==CMP);
+  REQUIRE (fl2.get_vector_component_idx()==1);
+  REQUIRE (fl5.get_vector_component_idx()==1);
+  REQUIRE (fl2.get_vector_dim()==1);
+  REQUIRE (fl5.get_vector_dim()==1);
+
+  REQUIRE (fl3.get_tensor_tags()==TVec{CMP,CMP});
+  REQUIRE (fl6.get_tensor_components_ids()==IVec{1,2});
+  REQUIRE (fl3.get_tensor_dims()==IVec{3,4});
+  REQUIRE (fl6.get_tensor_dims()==IVec{5,6});
 }
 
 TEST_CASE("field_identifier", "") {
@@ -69,7 +102,7 @@ TEST_CASE("field_tracking", "") {
   FieldTracking track;
   util::TimeStamp time1(2021,10,12,17,8,10);
   util::TimeStamp time2(2021,10,12,17,8,20);
-  REQUIRE_NOTHROW (track.update_time_stamp(time2));
+  track.update_time_stamp(time2);
 
   // Cannot rewind time (yet)
   REQUIRE_THROWS  (track.update_time_stamp(time1));
@@ -114,7 +147,7 @@ TEST_CASE("field", "") {
     // Should not be able to reshape to this data type...
     REQUIRE_THROWS(f1.get_view<P16**>());
     // But this should work
-    REQUIRE_NOTHROW(f1.get_view<P8**>());
+    f1.get_view<P8**>();
 
     // Using packs (of allowable size) of different pack sizes
     // should lead to views with different extents.
@@ -133,6 +166,9 @@ TEST_CASE("field", "") {
 
     // Trying to reshape into something that the allocation cannot accommodate should throw
     REQUIRE_THROWS (f1.get_view<P16***>());
+
+    // Can't get non-const data type view from a read-only field
+    REQUIRE_THROWS (f1.get_const().get_view<Real**>());
   }
 
   SECTION ("equivalent") {
@@ -162,6 +198,26 @@ TEST_CASE("field", "") {
     REQUIRE(views_are_equal(f1,f2));
   }
 
+  SECTION ("construct_from_view") {
+    // Crate f1 with some padding, to stress test the feature
+    Field f1 (fid);
+    auto& fap1 = f1.get_header().get_alloc_properties();
+    fap1.request_allocation(16);
+    f1.allocate_view();
+    f1.deep_copy(1.0);
+
+    // Get f1 view, and wrap it in another field
+    auto view = f1.get_view<Real**>();
+    Field f2 (fid,view);
+
+    // Check the two are the same
+    REQUIRE (views_are_equal(f1,f2));
+
+    // Modify one field, and check again
+    randomize(f2,engine,pdf);
+    REQUIRE (views_are_equal(f1,f2));
+  }
+
   SECTION ("clone") {
     Field f1 (fid);
     auto& fap1 = f1.get_header().get_alloc_properties();
@@ -184,6 +240,26 @@ TEST_CASE("field", "") {
     REQUIRE (field_min<Real>(f1)==3.0);
   }
 
+  SECTION ("alias") {
+    Field f1 (fid);
+    f1.allocate_view();
+
+    Field f2 = f1.alias("the_alias");
+
+    REQUIRE(f2.is_allocated());
+    REQUIRE(&f1.get_header().get_tracking()==&f2.get_header().get_tracking());
+    REQUIRE(&f1.get_header().get_alloc_properties()==&f2.get_header().get_alloc_properties());
+    REQUIRE(f1.get_header().get_identifier().get_layout()==f2.get_header().get_identifier().get_layout());
+    REQUIRE(f1.get_internal_view_data<Real>()==f2.get_internal_view_data<Real>());
+
+    // Identifiers are separate objects though
+    REQUIRE(&f1.get_header().get_identifier()!=&f2.get_header().get_identifier());
+
+    // Check extra data is also shared
+    f1.get_header().set_extra_data("foo",1);
+    REQUIRE (f2.get_header().has_extra_data("foo"));
+  }
+
   SECTION ("deep_copy") {
     std::vector<FieldTag> t1 = {COL,CMP,LEV};
     std::vector<int> d1 = {3,2,24};
@@ -197,109 +273,6 @@ TEST_CASE("field", "") {
     auto v = reinterpret_cast<Real*>(f1.get_internal_view_data<Real,Host>());
     for (int i=0; i<fid1.get_layout().size(); ++i) {
       REQUIRE (v[i]==1.0);
-    }
-  }
-
-  // Subfields
-  SECTION ("subfield") {
-    std::vector<FieldTag> t1 = {COL,CMP,CMP,LEV};
-    std::vector<int> d1 = {3,10,2,24};
-
-    FieldIdentifier fid1("4d",{t1,d1},m/s,"some_grid");
-
-    Field f1(fid1);
-    f1.allocate_view();
-    randomize(f1,engine,pdf);
-
-    const int idim = 1;
-    const int ivar = 2;
-
-    auto f2 = f1.subfield(idim,ivar);
-
-    // Wrong rank for the subfield f2
-    REQUIRE_THROWS(f2.get_view<Real****>());
-
-    auto v4d_h = f1.get_view<Real****,Host>();
-    auto v3d_h = f2.get_view<Real***,Host>();
-    for (int i=0; i<d1[0]; ++i)
-      for (int j=0; j<d1[2]; ++j)
-        for (int k=0; k<d1[3]; ++k) {
-          REQUIRE (v4d_h(i,ivar,j,k)==v3d_h(i,j,k));
-        }
-  }
-
-  // Dynamic Subfields
-  SECTION ("dynamic_subfield") {
-    const int vec_dim = 10;
-    std::vector<FieldTag> t1 = {COL,CMP,CMP,LEV};
-    std::vector<int> d1 = {3,vec_dim,2,24};
-
-    FieldIdentifier fid1("4d",{t1,d1},m/s,"some_grid");
-
-    Field f1(fid1);
-    f1.allocate_view();
-    randomize(f1,engine,pdf);
-
-    const int idim = 1;
-    const int ivar = 0;
-
-    auto f2 = f1.subfield(idim,ivar,/* dynamic = */ true);
-
-    // Cannot reset subview idx of non-subfield fields
-    REQUIRE_THROWS(f1.get_header().get_alloc_properties().reset_subview_idx(0));
-
-    // subview idx out of bounds
-    auto& f2_ap = f2.get_header().get_alloc_properties();
-    REQUIRE_THROWS(f2_ap.reset_subview_idx(-1));
-    REQUIRE_THROWS(f2_ap.reset_subview_idx(vec_dim));
-
-    // Fill f1 with random numbers, and verify corresponding subviews get same values
-    randomize(f1,engine,pdf);
-
-    for (int ivar_dyn=0; ivar_dyn<vec_dim; ++ivar_dyn) {
-      // Reset slice idx
-      f2_ap.reset_subview_idx(ivar_dyn);
-      REQUIRE(f2_ap.get_subview_info().slice_idx==ivar_dyn);
-
-      auto v4d_h = f1.get_view<Real****,Host>();
-      auto v3d_h = f2.get_view<Real***,Host>();
-      for (int i=0; i<d1[0]; ++i)
-        for (int j=0; j<d1[2]; ++j)
-          for (int k=0; k<d1[3]; ++k) {
-            REQUIRE (v4d_h(i,ivar_dyn,j,k)==v3d_h(i,j,k));
-          }
-    }
-  }
-
-  SECTION ("vector_component") {
-    std::vector<FieldTag> tags_2 = {COL,CMP,LEV};
-    std::vector<int> dims_2 = {3,2,24};
-
-    FieldIdentifier fid_2("vec_3d",{tags_2,dims_2},m/s,"some_grid");
-
-    Field f_vec(fid_2);
-    f_vec.allocate_view();
-
-    auto f0 = f_vec.get_component(0);
-    auto f1 = f_vec.get_component(1);
-
-    // No 3rd component
-    REQUIRE_THROWS(f_vec.get_component(2));
-
-    // f0 is scalar, no vector dimension
-    REQUIRE_THROWS(f0.get_component(0));
-
-    f0.deep_copy(1.0);
-    f1.deep_copy(2.0);
-
-    f_vec.sync_to_host();
-
-    auto v = f_vec.get_view<Real***,Host>();
-    for (int col=0; col<3; ++col) {
-      for (int lev=0; lev<24; ++lev) {
-        REQUIRE (v(col,0,lev)==1.0);
-        REQUIRE (v(col,1,lev)==2.0);
-      }
     }
   }
 
@@ -328,6 +301,39 @@ TEST_CASE("field", "") {
       for (int j=0; j<dims[1]; ++j) {
         REQUIRE (v2dh(i,j) == v2d_hm(i,j) );
       }
+    }
+  }
+
+  SECTION ("rank0_field") {
+    // Create 0d field
+    FieldIdentifier fid0("f_0d", FieldLayout({},{}), Units::nondimensional(), "dummy_grid");
+    Field f0(fid0);
+    f0.allocate_view();
+
+    // Create 1d field
+    FieldIdentifier fid1("f_1d", FieldLayout({COL}, {5}), Units::nondimensional(), "dummy_grid");
+    Field f1(fid1);
+    f1.allocate_view();
+
+    // Randomize 1d field
+    randomize(f1,engine,pdf);
+
+    auto v0 = f0.get_view<Real, Host>();
+    auto v1 = f1.get_view<Real*, Host>();
+
+    // Deep copy subfield of 1d field -> 0d field and check result
+    for (size_t i=0; i<v1.extent(0); ++i) {
+      f0.deep_copy<Host>(f1.subfield(0, i));
+      REQUIRE(v0() == v1(i));
+    }
+
+    // Randomize 0d field
+    randomize(f0,engine,pdf);
+
+    // Deep copy 0d field -> subfield of 1d field and check result
+    for (size_t i=0; i<v1.extent(0); ++i) {
+      f1.subfield(0, i).deep_copy<Host>(f0);
+      REQUIRE(v1(i) == v0());
     }
   }
 }
@@ -578,9 +584,9 @@ TEST_CASE("tracers_bundle", "") {
   int idx_v, idx_c, idx_r;
 
   // The idx must be stored
-  REQUIRE_NOTHROW (idx_v = group.m_info->m_subview_idx.at("qv"));
-  REQUIRE_NOTHROW (idx_c = group.m_info->m_subview_idx.at("qc"));
-  REQUIRE_NOTHROW (idx_r = group.m_info->m_subview_idx.at("qr"));
+  idx_v = group.m_info->m_subview_idx.at("qv");
+  idx_c = group.m_info->m_subview_idx.at("qc");
+  idx_r = group.m_info->m_subview_idx.at("qr");
 
   // All idx must be in [0,2] and must be different
   REQUIRE ((idx_v>=0 && idx_v<3 &&
@@ -793,7 +799,91 @@ TEST_CASE ("update") {
     f3.update(f_real,2,0);
     REQUIRE (views_are_equal(f3,f2));
   }
+
+  SECTION ("scale") {
+    Field f1 = f_real.clone();
+    Field f2 = f_real.clone();
+
+    // x=2, x*y = 2*y
+    f1.deep_copy(2.0);
+    f1.scale(f2);
+    f2.scale(2.0);
+    REQUIRE (views_are_equal(f1, f2));
+  }
 }
 
+
+TEST_CASE ("sync_subfields") {
+  // This test is for previously incorrect behavior, where syncing a subfield
+  // to host/device would deep copy the entire data view (including all entries of
+  // the parent view). Here, if memory space is not shared between host and device,
+  // syncing a subfield to host/device will not sync the data of the other subfields.
+
+  using namespace scream;
+  using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
+  using FID = FieldIdentifier;
+  using FL  = FieldLayout;
+
+  constexpr int ncols = 10;
+  constexpr int ndims = 4;
+  constexpr int nlevs = 8;
+
+  // Create field with (col, cmp, lev)
+  FID fid ("V",FL({COL,CMP,LEV},{ncols,ndims,nlevs}),Units::nondimensional(),"the_grid",DataType::IntType);
+  Field f (fid);
+  f.allocate_view();
+
+  // Store whether mem space for host and device are the same for testing subfield values
+  const bool shared_mem_space = f.host_and_device_share_memory_space();
+
+  // Deep copy all values to ndims on device and host
+  f.deep_copy(ndims);
+  f.sync_to_host();
+
+  // Set subfield values to their index on device
+  for (int c=0; c<ndims; ++c) {
+    f.get_component(c).deep_copy(c);
+  }
+
+  // Sync only component 0 to host
+  f.get_component(0).sync_to_host();
+
+  // For components 1,...,ndims-1, if device and host do not share a
+  // memory space, host values should be equal to ndims, else host
+  // values should be equal to component index
+  for (int c=1; c<ndims; ++c) {
+    auto host_subview = f.get_component(c).get_view<int**, Host>();
+    for (int idx=0; idx<ncols*nlevs; ++idx) {
+      const int icol = idx/nlevs; const int ilev = idx%nlevs;
+      if (shared_mem_space) REQUIRE(host_subview(icol, ilev) == c);
+      else                  REQUIRE(host_subview(icol, ilev) == ndims);
+    }
+  }
+
+  // Deep copy all values to ndims on device and host
+  f.deep_copy(ndims);
+  f.sync_to_host();
+
+  // Set subfield values to their index on host
+  for (int c=0; c<ndims; ++c) {
+    f.get_component(c).deep_copy<int, Host>(c);
+  }
+
+  // Sync only component 0 to device
+  f.get_component(0).sync_to_dev();
+
+  // For components 1,...,ndims-1, if device and host do not share a
+  // memory space, device values should be equal to ndims, else device
+  // values should be equal to component index
+  for (int c=1; c<ndims; ++c) {
+    auto device_subview = f.get_component(c).get_view<int**, Device>();
+    Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0,0}, {ncols,nlevs}),
+                         KOKKOS_LAMBDA (const int icol, const int ilev) {
+      if (shared_mem_space) EKAT_KERNEL_ASSERT(device_subview(icol, ilev) == c);
+      else                  EKAT_KERNEL_ASSERT(device_subview(icol, ilev) == ndims);
+    });
+  }
+}
 
 } // anonymous namespace

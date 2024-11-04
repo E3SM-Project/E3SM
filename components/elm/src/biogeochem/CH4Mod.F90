@@ -16,7 +16,7 @@ module CH4Mod
   use elm_varcon         , only : denh2o, denice, tfrz, grav, spval, rgas, grlnd
   use elm_varcon         , only : catomw, s_con, d_con_w, d_con_g, c_h_inv, kh_theta, kh_tbase
   use landunit_varcon    , only : istdlak
-  use clm_time_manager   , only : get_step_size, get_nstep
+  use elm_time_manager   , only : get_step_size, get_nstep
   use elm_varctl         , only : iulog, use_cn, use_lch4, use_fates
   use abortutils         , only : endrun
   use decompMod          , only : bounds_type
@@ -223,7 +223,7 @@ contains
     ! Allocate module variables and data structures
     !
     ! !USES:
-    use shr_infnan_mod, only: spval => shr_infnan_nan, assignment(=)
+    use shr_infnan_mod, only: nan  => shr_infnan_nan, assignment(=)
     use elm_varpar    , only: nlevgrnd
     !
     ! !ARGUMENTS:
@@ -2426,7 +2426,7 @@ contains
     ! !USES:
       !$acc routine seq
     use elm_varcon       , only : rpi
-    use pftvarcon        , only : nc3_arctic_grass, crop, nc3_nonarctic_grass, nc4_grass, noveg
+    use pftvarcon        , only : graminoid, crop, noveg
     use CH4varcon        , only : transpirationloss, usefrootc, use_aereoxid_prog
     !
     ! !ARGUMENTS:
@@ -2563,8 +2563,7 @@ contains
                   is_vegetated = .false.
                end if
 
-               if (veg_pp%itype(p) == nc3_arctic_grass .or. crop(veg_pp%itype(p)) == 1 .or. &
-                    veg_pp%itype(p) == nc3_nonarctic_grass .or. veg_pp%itype(p) == nc4_grass) then
+               if (graminoid(veg_pp%itype(p)) == 1 .or. crop(veg_pp%itype(p)) == 1) then
                   poros_tiller = 0.3_r8  ! Colmer 2003
                else
                   poros_tiller = 0.3_r8 * CH4ParamsInst%nongrassporosratio
@@ -3028,7 +3027,7 @@ contains
     real(r8), pointer :: co2_decomp_depth (:,:)
     real(r8), pointer :: conc_o2          (:,:)
     real(r8), pointer :: conc_ch4         (:,:)
-
+    real(r8), parameter :: smallparameter = tiny(1._r8)
     integer  :: nstep                       ! time step number
     character(len=32) :: subname='ch4_tran' ! subroutine name
     !-----------------------------------------------------------------------
@@ -3117,14 +3116,14 @@ contains
             c = filter_methc (fc)
 
             o2demand = o2_decomp_depth(c,j) + o2_oxid_depth(c,j) ! o2_decomp_depth includes autotrophic root respiration
-            if (o2demand > 0._r8) then
+            if (o2demand > smallparameter) then
                o2stress(c,j) = min((conc_o2(c,j) / dtime + o2_aere_depth(c,j)) / o2demand, 1._r8)
             else
                o2stress(c,j) = 1._r8
             end if
 
             ch4demand = ch4_oxid_depth(c,j) + ch4_aere_depth(c,j) + ch4_ebul_depth(c,j)
-            if (ch4demand > 0._r8) then
+            if (ch4demand > smallparameter) then
                ch4stress(c,j) = min((conc_ch4(c,j) / dtime + ch4_prod_depth(c,j)) / ch4demand, 1._r8)
             else
                ch4stress(c,j) = 1._r8

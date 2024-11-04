@@ -6,7 +6,6 @@ module horizontal_interpolate
   use shr_kind_mod,   only: r8 => shr_kind_r8
   use shr_const_mod,  only: SHR_CONST_PI
   use cam_abortutils,     only: endrun
-  use scamMod,        only: single_column
   use cam_logfile,    only: iulog
   implicit none
   private

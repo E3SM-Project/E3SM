@@ -14,7 +14,7 @@ RUN mamba install --yes -c conda-forge \
             rm -rf /opt/conda/pkgs/*
 
 # Install dependencies
-COPY requirements.txt /tmp/requirements.txt
+COPY components/eamxx/docker/requirements.txt /tmp/requirements.txt
 RUN pip install -r /tmp/requirements.txt
 
 # install gcloud
@@ -29,3 +29,5 @@ RUN gcloud config set project vcm-ml
 ENV OMPI_ALLOW_RUN_AS_ROOT=1
 ENV OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
 ENV IS_DOCKER=TRUE
+
+COPY / /src/E3SM

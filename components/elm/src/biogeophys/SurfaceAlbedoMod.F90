@@ -754,13 +754,16 @@ contains
        ws(p) = esai(p) / max( elai(p)+esai(p), mpe )
     end do
 
-    do ib = 1, numrad
-       do fp = 1,num_vegsol
-          p = filter_vegsol(fp)
-          rho(p,ib) = max( rhol(veg_pp%itype(p),ib)*wl(p) + rhos(veg_pp%itype(p),ib)*ws(p), mpe )
-          tau(p,ib) = max( taul(veg_pp%itype(p),ib)*wl(p) + taus(veg_pp%itype(p),ib)*ws(p), mpe )
+    ! rho and tau are not needed if fates is on 
+    if (.not. use_fates) then
+       do ib = 1, numrad
+          do fp = 1,num_vegsol
+             p = filter_vegsol(fp)
+             rho(p,ib) = max( rhol(veg_pp%itype(p),ib)*wl(p) + rhos(veg_pp%itype(p),ib)*ws(p), mpe )
+             tau(p,ib) = max( taul(veg_pp%itype(p),ib)*wl(p) + taus(veg_pp%itype(p),ib)*ws(p), mpe )
+          end do
        end do
-    end do
+    end if
 
     ! Diagnose number of canopy layers for radiative transfer, in increments of dincmax.
     ! Add to number of layers so long as cumulative leaf+stem area does not exceed total

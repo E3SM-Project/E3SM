@@ -56,6 +56,9 @@ public:
     register_field(create_src_fid(tgt),tgt);
   }
 
+  virtual void register_field_from_src (const field_type& src);
+  virtual void register_field_from_tgt (const field_type& tgt);
+
   // Call this to indicate that field registration is complete.
   void registration_ends ();
 
@@ -77,7 +80,7 @@ public:
   // during field registration).
   const identifier_type& get_src_field_id (const int ifield) const {
     EKAT_REQUIRE_MSG(ifield>=0 && ifield<m_num_registered_fields,
-                       "Error! Field index out of bounds.\n");
+        "Error! Field index out of bounds.\n");
     return do_get_src_field_id(ifield);
   }
 
@@ -85,25 +88,25 @@ public:
   // during field registration).
   const identifier_type& get_tgt_field_id (const int ifield) const {
     EKAT_REQUIRE_MSG(ifield>=0 && ifield<m_num_registered_fields,
-                       "Error! Field index out of bounds.\n");
+        "Error! Field index out of bounds.\n");
     return do_get_tgt_field_id(ifield);
   }
 
   // Returns the source field for the given field index.
   const field_type& get_src_field (const int ifield) const {
     EKAT_REQUIRE_MSG(m_state==RepoState::Closed,
-                       "Error! Cannot call 'get_src_field' until registration has ended.\n");
+        "Error! Cannot call 'get_src_field' until registration has ended.\n");
     EKAT_REQUIRE_MSG(ifield>=0 && ifield<m_num_registered_fields,
-                       "Error! Field index out of bounds.\n");
+        "Error! Field index out of bounds.\n");
     return do_get_src_field(ifield);
   }
 
   // Returns the target field for the given field index.
   const field_type& get_tgt_field (const int ifield) const {
     EKAT_REQUIRE_MSG(m_state==RepoState::Closed,
-                       "Error! Cannot call 'get_tgt_field' until registration has ended.\n");
+        "Error! Cannot call 'get_tgt_field' until registration has ended.\n");
     EKAT_REQUIRE_MSG(ifield>=0 && ifield<m_num_registered_fields,
-                       "Error! Field index out of bounds.\n");
+        "Error! Field index out of bounds.\n");
     return do_get_tgt_field(ifield);
   }
 
@@ -111,11 +114,6 @@ public:
   virtual FieldLayout create_tgt_layout (const FieldLayout& src_layout) const = 0;
 
   FieldIdentifier create_src_fid (const FieldIdentifier& tgt_fid) const {
-    EKAT_REQUIRE_MSG (tgt_fid.get_grid_name()==m_tgt_grid->name(),
-        "Error! Input FieldIdentifier has the wrong grid name:\n"
-        "   - input tgt fid grid name: " + tgt_fid.get_grid_name() + "\n"
-        "   - remapper tgt grid name:  " + m_tgt_grid->name() + "\n");
-
     const auto& name = tgt_fid.name();
     const auto& layout = create_src_layout(tgt_fid.get_layout());
     const auto& units = tgt_fid.get_units();
@@ -124,11 +122,6 @@ public:
   }
 
   FieldIdentifier create_tgt_fid (const FieldIdentifier& src_fid) const {
-    EKAT_REQUIRE_MSG (src_fid.get_grid_name()==m_src_grid->name(),
-        "Error! Input FieldIdentifier has the wrong grid name:\n"
-        "   - input src fid grid name: " + src_fid.get_grid_name() + "\n"
-        "   - remapper src grid name:  " + m_src_grid->name() + "\n");
-
     const auto& name = src_fid.name();
     const auto& layout = create_tgt_layout(src_fid.get_layout());
     const auto& units = src_fid.get_units();
@@ -170,8 +163,15 @@ public:
 
   virtual bool compatible_layouts (const layout_type& src,
                                    const layout_type& tgt) const {
-    // By default, the only compatible layouts are identical
-    return src==tgt;
+    // By default, the only compatible layouts are congruent
+    return src.congruent(tgt);
+  }
+
+  virtual bool is_valid_src_layout (const layout_type& layout) const {
+    return m_src_grid->is_valid_layout(layout);
+  }
+  virtual bool is_valid_tgt_layout (const layout_type& layout) const {
+    return m_tgt_grid->is_valid_layout(layout);
   }
 
 protected:

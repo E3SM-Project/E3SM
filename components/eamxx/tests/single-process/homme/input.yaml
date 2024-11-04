@@ -1,0 +1,30 @@
+%YAML 1.1
+---
+driver_options:
+  atmosphere_dag_verbosity_level: 5
+
+time_stepping:
+  time_step: ${ATM_TIME_STEP}
+  run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
+  number_of_steps: ${NUM_STEPS}
+
+initial_conditions:
+  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
+  topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
+
+atmosphere_processes:
+  atm_procs_list: [Dynamics]
+  Dynamics:
+    Type: Homme
+    Moisture: moist
+
+grids_manager:
+  Type: Homme
+  physics_grid_type: GLL
+  dynamics_namelist_file_name: namelist.nl
+  vertical_coordinate_filename: IC_FILE
+
+# The parameters for I/O control
+Scorpio:
+  output_yaml_files: ["output.yaml"]
+...

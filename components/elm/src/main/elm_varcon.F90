@@ -42,7 +42,6 @@ module elm_varcon
 
   real(r8), parameter :: n_melt=0.7                         ! fsca shape parameter
   real(r8), parameter :: e_ice=6.0                          ! soil ice impedance factor
-  real(r8), parameter :: pc = 0.4                           ! threshold probability
   real(r8), parameter :: mu = 0.13889                       ! connectivity exponent 
   real(r8) :: grav   = SHR_CONST_G                          ! gravity constant [m/s2]
   real(r8) :: sb     = SHR_CONST_STEBOL                     ! stefan-boltzmann constant  [W/m2/K4]
@@ -68,6 +67,7 @@ module elm_varcon
   real(r8) :: oneatm = 1.01325e5_r8                         ! one standard atmospheric pressure [Pa]
 
   real(r8) :: bdsno = 250._r8                               ! bulk density snow (kg/m**3)
+  real(r8) :: bdfirn = 730._r8                              ! bulk density of deep firn (kg/m**3)
   real(r8) :: alpha_aero = 1.0_r8                           ! constant for aerodynamic parameter weighting
   real(r8) :: tlsai_crit = 2.0_r8                           ! critical value of elai+esai for which aerodynamic parameters are maximum
   real(r8) :: watmin = 0.01_r8                              ! minimum soil moisture (mm)
@@ -249,7 +249,7 @@ contains
     allocate( dzsoifl(1:nlevsoifl            ))
 
     if (use_extrasnowlayers) then
-       h2osno_max = 10000._r8
+        h2osno_max = 30000._r8
     end if
 
   end subroutine elm_varcon_init

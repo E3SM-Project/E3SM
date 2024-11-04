@@ -19,11 +19,6 @@ subroutine dynpkg (adv_state, t2      ,fu      ,fv      ,etamid  ,          &
    use comspe
    use scanslt,      only: scanslt_run, plond, platd, advection_state
    use scan2,        only: scan2run
-   use scamMod,      only: single_column,scm_crm_mode,switch,wfldh
-#if ( defined BFB_CAM_SCAM_IOP )
-   use iop, only: t2sav
-   use rgrid, only: nlon
-#endif
    use perf_mod
 !-----------------------------------------------------------------------
    implicit none
@@ -76,29 +71,6 @@ subroutine dynpkg (adv_state, t2      ,fu      ,fv      ,etamid  ,          &
    integer c
 
    call settau(ztodt/2)
-   if(single_column.and.scm_crm_mode) return
-!----------------------------------------------------------
-! SCANDYN Dynamics scan
-!----------------------------------------------------------
-!
-#if ( defined BFB_CAM_SCAM_IOP )
-do c=beglat,endlat
-   t2sav(:nlon(c),:,c)= t2(:nlon(c),:,c)
-enddo
-#endif
-
-if ( single_column ) then
-   etadot(1,:,1)=wfldh(:)
-else
-   call t_startf('scandyn')
-   call scandyn(ztodt   ,etadot  ,etamid  ,grlps1  ,grt1    ,  &
-                grz1    ,grd1    ,grfu1   ,grfv1   ,grut1   ,  &
-                grvt1   ,grrh1   ,grlps2  ,grt2    ,grz2    ,  &
-                grd2    ,grfu2   ,grfv2   ,grut2   ,grvt2   ,  &
-                grrh2   ,vcour   ,vmax2d,  vmax2dt ,detam   ,  &
-                cwava   ,flx_net ,t2      ,fu      ,fv      )
-   call t_stopf('scandyn')
-endif
 !
 !----------------------------------------------------------
 ! SLT scan from south to north
@@ -107,10 +79,6 @@ endif
    call t_startf('sltrun')
    call scanslt_run(adv_state, ztodt   ,etadot  , detam, etamid, cwava  )
    call t_stopf('sltrun')
-
-   if ( single_column ) then
-   call scan2run (ztodt,   cwava,   etamid ,t2      ,fu      ,fv    )
-   else
 !
 !----------------------------------------------------------
 ! Accumulate spectral coefficients

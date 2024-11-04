@@ -4,7 +4,7 @@
 
 <config_definition>
 
-<entry id="comp_intf" valid_values="MCT,ESMF" value="MCT">
+<entry id="comp_intf" valid_values="MCT,ESMF,MOAB" value="MOAB">
 CICE build directory; contains .o and .mod files.
 </entry>
 

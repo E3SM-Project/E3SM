@@ -17,6 +17,7 @@ module PhosphorusDynamicsMod
   use elm_varpar          , only : nlevdecomp
   use elm_varctl          , only : use_vertsoilc
 
+  use subgridAveMod       , only : p2c
   use CNStateType         , only : cnstate_type
   use CropType            , only : crop_type
   use ColumnType          , only : col_pp
@@ -42,6 +43,7 @@ module PhosphorusDynamicsMod
   public :: PhosphorusBiochemMin
   public :: PhosphorusLeaching
   public :: PhosphorusBiochemMin_balance
+  public :: PhosphorusFert
 
   !-----------------------------------------------------------------------
 
@@ -603,8 +605,8 @@ contains
          km_ptase             => veg_vp%km_ptase                      , &
          alpha_ptase          => veg_vp%alpha_ptase                   , &
          decomp_ppools_vr_col => col_ps%decomp_ppools_vr, &
+         lamda_ptase          => veg_vp%lamda_ptase, &
          ! critical value of nitrogen cost of phosphatase activity induced phosphorus uptake
-         lamda_ptase          => veg_vp%lamda_ptase                   ,  &
          cn_scalar             => cnstate_vars%cn_scalar               , &
          cp_scalar             => cnstate_vars%cp_scalar               , &
          is_soil               => decomp_cascade_con%is_soil)
@@ -637,28 +639,31 @@ contains
 
         if(use_fates) then
            do j = 1,nlevdecomp
+
               do p = 1, alm_fates%fates(ci)%bc_out(s)%num_plant_comps
 
-                 lamda_up = alm_fates%fates(ci)%bc_out(s)%cp_scalar(p)/ &
-                      max(alm_fates%fates(ci)%bc_out(s)%cn_scalar(p),1e-20_r8)
-                 lamda_up = min(max(lamda_up,0.0_r8), 150.0_r8)
-
-                 fr_frac = alm_fates%fates(ci)%bc_out(s)%veg_rootc(p,j) / &
-                      sum(alm_fates%fates(ci)%bc_out(s)%veg_rootc(p,:))
-
                  pft = alm_fates%fates(ci)%bc_out(s)%ft_index(p)
-                 ptase_tmp = alm_fates%fates(ci)%bc_pconst%eca_vmax_ptase(pft) *  &
-                      fr_frac * max(lamda_up - lamda_ptase, 0.0_r8) / &
-                      ( alm_fates%fates(ci)%bc_pconst%eca_km_ptase(pft) + &
-                      max(lamda_up - alm_fates%fates(ci)%bc_pconst%eca_lambda_ptase(pft), 0.0_r8))
+                 
+                 fr_frac = alm_fates%fates(ci)%bc_out(s)%veg_rootc(p,j) / &
+                      sum(alm_fates%fates(ci)%bc_out(s)%veg_rootc(:,:))
 
-                 biochem_pmin_to_plant_vr_patch(p,j) = ptase_tmp * alm_fates%fates(ci)%bc_pconst%eca_alpha_ptase(pft)
-                 biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) + ptase_tmp*(1._r8 - alm_fates%fates(ci)%bc_pconst%eca_alpha_ptase(pft))
+                 ! lamda is not used currently with fates, fates also does not
+                 ! scale by the cn_ and cp_scalars
+                 ! Also, we do not currently allow phosphatase released P
+                 ! to go directly to the plants in FATES. This implies as an alpha of 0.
+                 ! lamda_ptase = alm_fates%fates(ci)%bc_pconst%eca_lambda_ptase(pft)
+
+                 ptase_tmp = alm_fates%fates(ci)%bc_pconst%eca_vmax_ptase(pft) *  &
+                      fr_frac/dzsoi_decomp(j) / ( alm_fates%fates(ci)%bc_pconst%eca_km_ptase(pft) + 1._r8)
+
+                 biochem_pmin_to_plant_vr_patch(p,j) = 0._r8
+                 biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) + ptase_tmp !*(1._r8 - alm_fates%fates(ci)%bc_pconst%eca_alpha_ptase(pft))
                  biochem_pmin_to_ecosysp_vr_col_pot(c,j) = biochem_pmin_to_ecosysp_vr_col_pot(c,j) + ptase_tmp
 
               end do
            end  do
         else
+
            do j = 1,nlevdecomp
               do p = col_pp%pfti(c), col_pp%pftf(c)
                  if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
@@ -809,5 +814,36 @@ contains
    end associate
 
   end subroutine PhosphorusBiochemMin_balance
+
+  !-----------------------------------------------------------------------
+  subroutine PhosphorusFert(bounds, num_soilc, filter_soilc)
+    !
+    ! !DESCRIPTION:
+    ! On the radiation time step, update the phosphorus fertilizer for crops
+    ! All fertilizer goes into the soil mineral P pool.
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    type(bounds_type)       , intent(in)    :: bounds
+    integer                 , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                 , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    !
+    ! !LOCAL VARIABLES:
+    integer :: c,fc                 ! indices
+    !-----------------------------------------------------------------------
+
+    associate(&
+         fert_p          =>    veg_pf%fert_p          , & ! Input:  [real(r8) (:)] phosphorus fertilizer rate (gN/m2/s) 
+         fert_p_to_sminp =>    col_pf%fert_p_to_sminp   & ! Output: [real(r8) (:)]
+         )
+
+      call p2c(bounds, num_soilc, filter_soilc, &
+           fert_p(bounds%begp:bounds%endp), &
+           fert_p_to_sminp(bounds%begc:bounds%endc))
+
+    end associate
+
+  end subroutine PhosphorusFert
 
 end module PhosphorusDynamicsMod

@@ -56,7 +56,7 @@ contains
     ! Downscaling is done over topounits if the number of topounits > 1.
     !
     ! !USES:
-    use clm_time_manager, only : get_nstep
+    use elm_time_manager, only : get_nstep
     use elm_varcon      , only : rair, cpair, grav, lapse_glcmec
     use elm_varcon      , only : glcmec_rain_snow_threshold, o2_molar_const
     use shr_const_mod   , only : SHR_CONST_TKFRZ
@@ -423,7 +423,7 @@ contains
     ! Downscaling is done over topounits.
     !
     ! !USES:
-    use clm_time_manager, only : get_nstep
+    use elm_time_manager, only : get_nstep
     use elm_varcon      , only : rair, cpair, grav, lapse_glcmec
     use elm_varcon      , only : glcmec_rain_snow_threshold
     use landunit_varcon , only : istice_mec 
@@ -527,7 +527,7 @@ contains
     ! Must be done AFTER temperature downscaling
     
     ! !USES:
-    use clm_time_manager, only : get_nstep
+    use elm_time_manager, only : get_nstep
     use domainMod       , only : ldomain
     use landunit_varcon , only : istice_mec
     use elm_varcon      , only : lapse_glcmec

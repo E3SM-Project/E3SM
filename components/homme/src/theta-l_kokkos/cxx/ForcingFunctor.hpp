@@ -99,8 +99,7 @@ public:
     m_hydrostatic = p.theta_hydrostatic_mode;
     m_qsize = p.qsize;
 
-    // TODO: this may change, depending on the simulation params
-    m_adjust_ps = true;
+    m_adjust_ps = (p.dt_remap_factor == 0);
 
     m_eos.init(m_hydrostatic,m_hvcoord);
     m_elem_ops.init(m_hvcoord);
@@ -153,11 +152,12 @@ public:
     constexpr int int_size = NP*NP*NUM_LEV_P*VECTOR_SIZE;
 
     // 3 persistent midlayers, 2 non-persistent midlayer, and 1 non-persistent interface
-    return mid_size*(nelems*4+nslots) + (m_hydrostatic ? int_size*nslots : 0);
+    return mid_size*(nelems*4+nslots) + int_size*nslots;
   }
 
   void init_buffers (const FunctorsBuffersManager& fbm) {
-    const int num_slots = m_tu_tracers.get_num_ws_slots();
+    const int num_slots = std::max(m_tu_tracers_pre.get_num_ws_slots(),
+                                   m_tu_tracers.get_num_ws_slots());
 
     constexpr int mid_size = NP*NP*NUM_LEV;
 
@@ -236,7 +236,7 @@ public:
     });
   }
 
-  void tracers_forcing (const Real dt, const int np1, const int np1_qdp, const bool adjustment, const MoistDry moisture) {
+  void tracers_forcing (const Real dt, const int np1, const int np1_qdp, const bool adjustment, const bool use_moisture) {
     // The Functor needs to be fully setup to use this function
     assert (is_setup);
 
@@ -245,13 +245,15 @@ public:
     m_np1_qdp = np1_qdp;
     m_adjustment = adjustment;
 
-    m_moist = (moisture==MoistDry::MOIST);
+    m_moist = use_moisture;
 
     Kokkos::parallel_for("temperature, NH perturb press, FQps",m_policy_tracers_pre,*this);
     Kokkos::fence();
 
-    Kokkos::parallel_for("apply tracers forcing", m_policy_tracers,*this);
-    Kokkos::fence();
+    if (m_qsize > 0) {
+      Kokkos::parallel_for("apply tracers forcing", m_policy_tracers,*this);
+      Kokkos::fence();
+    }
 
     Kokkos::parallel_for("update temperature, pressure and phi", m_policy_tracers_post,*this);
     Kokkos::fence();
@@ -333,7 +335,12 @@ public:
       // Compute Rstar
       auto Rstar = Homme::subview(m_Rstar,kv.team_idx,igp,jgp);
       m_elem_ops.get_R_star (kv, m_moist,
-                             Homme::subview(m_tracers.Q,kv.ie,0,igp,jgp),
+                             (m_moist ?
+                              Homme::subview(m_tracers.Q,kv.ie,0,igp,jgp) :
+                              // If not moist, qsize might be 0, so we can't use
+                              // Q. Use Rstar as an unused argument in its
+                              // place.
+                              Rstar),
                              Rstar);
 
       // Compute temperature
@@ -362,7 +369,7 @@ public:
           });
           if (!m_adjust_ps) {
             Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
-                                 [&](const int ilev) {
+                                [&](const int ilev) {
               dp_adj(ilev) = dp(ilev) + dp(ilev)*(fq(ilev)-q(ilev));
             });
           }
@@ -378,7 +385,7 @@ public:
           });
           if (!m_adjust_ps) {
             Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
-                                 [&](const int& ilev) {
+                                [&](const int& ilev) {
               dp_adj(ilev) = dp(ilev) + compute_fqdt_pack(ilev,fq,qdp);
             });
           }
@@ -437,7 +444,9 @@ public:
       // Compute Rstar
       auto Rstar = Homme::subview(m_Rstar,kv.team_idx,igp,jgp);
       m_elem_ops.get_R_star (kv, m_moist,
-                             Homme::subview(m_tracers.Q,kv.ie,0,igp,jgp),
+                             (m_moist ?
+                              Homme::subview(m_tracers.Q,kv.ie,0,igp,jgp) :
+                              Rstar),
                              Rstar);
 
       auto tn1    = Homme::subview(m_tn1,kv.ie,igp,jgp);
@@ -462,14 +471,14 @@ public:
         } else {
           // Compute hydrostatic p from dp. Store in exner, then add to pnh
           auto p_i = Homme::subview(m_pi_i,kv.team_idx,igp,jgp);
-          m_elem_ops.compute_hydrostatic_p(kv,dp,p_i,exner);
+          m_elem_ops.compute_hydrostatic_p(kv,dp_adj,p_i,exner);
           Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
-                               [&](const int ilev) {
+                              [&](const int ilev) {
             pnh(ilev) += exner(ilev);
             dp(ilev) = dp_adj(ilev);
           });
         }
-        
+
         Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                              [&](const int ilev) {
           using namespace PhysicalConstants;

@@ -38,9 +38,10 @@ module controlMod
   use CanopyHydrologyMod      , only: CanopyHydrology_readnl
   use SurfaceAlbedoType        , only: albice, lake_melt_icealb
   use UrbanParamsType         , only: urban_hac, urban_traffic
-  use FrictionVelocityMod     , only: implicit_stress, atm_gustiness
+  use FrictionVelocityMod     , only: implicit_stress, atm_gustiness, force_land_gustiness
   use elm_varcon              , only: h2osno_max
-  use elm_varctl              , only: use_dynroot
+  use elm_varctl              , only: use_dynroot, use_fan, fan_mode, fan_to_bgc_veg
+  use FanMod                  , only: nh4_ads_coef
   use AllocationMod         , only: nu_com_phosphatase,nu_com_nfix
   use elm_varctl              , only: nu_com, use_var_soil_thick
   use elm_varctl              , only: use_lake_wat_storage
@@ -54,6 +55,7 @@ module controlMod
   use elm_varctl              , only: const_climate_hist
   use elm_varctl              , only: use_top_solar_rad
   use elm_varctl              , only: snow_shape, snicar_atm_type, use_dust_snow_internal_mixing
+  use EcosystemBalanceCheckMod, only: bgc_balance_check_tolerance => balance_check_tolerance
 
   !
   ! !PUBLIC TYPES:
@@ -115,7 +117,7 @@ contains
     ! Initialize CLM run control information
     
     ! !USES:
-    use clm_time_manager          , only : set_timemgr_init, get_timemgr_defaults
+    use elm_time_manager          , only : set_timemgr_init, get_timemgr_defaults
     use fileutils                 , only : getavu, relavu
     use shr_string_mod            , only : shr_string_getParentDir
     use elm_interface_pflotranMod , only : elm_pf_readnl
@@ -180,6 +182,10 @@ contains
     namelist /elm_inparm/ &
          NFIX_PTASE_plant
 
+    ! BGC balance check
+    namelist /elm_inparm/ &
+         bgc_balance_check_tolerance
+
     ! For experimental manipulations
     namelist /elm_inparm/ &
          startdate_add_temperature
@@ -225,7 +231,8 @@ contains
     namelist /elm_inparm/  &
          clump_pproc, wrtdia, &
          create_crop_landunit, nsegspc, co2_ppmv, override_nsrest, &
-         albice, more_vertlayers, subgridflag, irrigate, tw_irr, extra_gw_irr, firrig_data, all_active
+         albice, more_vertlayers, subgridflag, irrigate, tw_irr, extra_gw_irr, firrig_data, all_active, &
+         mpi_sync_nstep_freq
     ! Urban options
 
     namelist /elm_inparm/  &
@@ -233,7 +240,7 @@ contains
 
     ! Stress options
     namelist /elm_inparm/ &
-         implicit_stress, atm_gustiness
+         implicit_stress, atm_gustiness, force_land_gustiness
 
     ! vertical soil mixing variables
     namelist /elm_inparm/  &
@@ -248,7 +255,7 @@ contains
     namelist /elm_inparm / use_c13, use_c14
 
     namelist /elm_inparm/ fates_paramfile, use_fates,      &
-          fates_spitfire_mode, use_fates_logging,        &
+          fates_spitfire_mode, fates_harvest_mode,        &
           use_fates_planthydro, use_fates_ed_st3,       &
           use_fates_cohort_age_tracking,                &
           use_fates_ed_prescribed_phys,                 &
@@ -257,8 +264,15 @@ contains
           use_fates_fixed_biogeog,                      &
           use_fates_nocomp,                             &
           use_fates_sp,                                 &
+          use_fates_luh,                                &
+          use_fates_lupft,                              &
+          use_fates_potentialveg,                       &
+          fluh_timeseries,                              &
+          flandusepftdat,                               &
           fates_parteh_mode,                            &
-          use_fates_tree_damage
+          fates_seeddisp_cadence,                       &
+          use_fates_tree_damage,                        &
+          fates_history_dimlevel
 
     namelist /elm_inparm / use_betr
 
@@ -275,7 +289,8 @@ contains
     namelist /elm_inparm/ &
          use_nofire, use_lch4, use_vertsoilc, use_extralakelayers, &
          use_vichydro, use_century_decomp, use_cn, use_crop, use_snicar_frc, &
-         use_snicar_ad, use_extrasnowlayers, use_vancouver, use_mexicocity, use_noio
+         use_snicar_ad, use_firn_percolation_and_compaction, use_extrasnowlayers,&
+         use_T_rho_dependent_snowthk, use_vancouver, use_mexicocity, use_noio
 
     ! cpl_bypass variables
     namelist /elm_inparm/ metdata_type, metdata_bypass, metdata_biases, &
@@ -315,10 +330,16 @@ contains
 
     namelist /elm_mosart/ &
          lnd_rof_coupling_nstep
-		 
+
     namelist /elm_inparm/ &
          snow_shape, snicar_atm_type, use_dust_snow_internal_mixing 
     
+    namelist /elm_inparm/ & 
+         use_modified_infil
+
+    namelist /elm_inparm/ &
+         use_fan, fan_mode, fan_to_bgc_veg, nh4_ads_coef
+
     ! ----------------------------------------------------------------------
     ! Default values
     ! ----------------------------------------------------------------------
@@ -486,6 +507,17 @@ contains
             errMsg(__FILE__, __LINE__))
        end if
 
+       if (.not. use_fan) then
+          if (fan_mode /= 'none') then
+             call endrun(msg=' ERROR: fan mode requires FAN model active.'//&
+               errMsg(__FILE__, __LINE__))
+          end if
+          if (fan_to_bgc_veg) then
+             call endrun(msg=' ERROR: fan_to_bgc_veg requires FAN model active.'//&
+               errMsg(__FILE__, __LINE__))
+          end if
+       end if
+
        if (use_lch4 .and. use_vertsoilc) then 
           anoxia = .true.
        else
@@ -646,6 +678,17 @@ contains
        endif
     endif
 
+    ! Fan settings
+    if (fan_mode /= 'none'           .and. &
+        fan_mode /= 'fan_offline'    .and. &
+        fan_mode /= 'fan_soil'       .and. &
+        fan_mode /= 'fan_atm'        .and. &
+        fan_mode /= 'fan_full' ) then
+       write(iulog,*)'fan_mode = ',trim(fan_mode), ' is not supported'
+       call endrun(msg=' ERROR:: choices are none fan_offline, fan_soil, fan_atm, or fan_full ' // &
+            errMsg(__FILE__, __LINE__))
+    endif
+
     if (masterproc) then
        write(iulog,*) 'Successfully initialized run control settings'
        write(iulog,*)
@@ -688,6 +731,8 @@ contains
     call mpi_bcast (use_vertsoilc, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_extralakelayers, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_extrasnowlayers, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_firn_percolation_and_compaction, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_T_rho_dependent_snowthk, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_vichydro, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_century_decomp, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_cn, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -699,6 +744,10 @@ contains
     call mpi_bcast (use_vancouver, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_mexicocity, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_noio, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_fan, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (fan_mode, len(fan_mode), MPI_CHARACTER, 0, mpicom, ier)
+    call mpi_bcast (fan_to_bgc_veg, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (nh4_ads_coef, 1, MPI_REAL8, 0, mpicom, ier)
 
     ! initial file variables
     call mpi_bcast (nrevsn, len(nrevsn), MPI_CHARACTER, 0, mpicom, ier)
@@ -752,6 +801,7 @@ contains
     call mpi_bcast (forest_fert_exp, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (ECA_Pconst_RGspin, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (NFIX_PTASE_plant, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (bgc_balance_check_tolerance, 1, MPI_REAL8, 0, mpicom, ier)
     call mpi_bcast (use_pheno_flux_limiter, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (startdate_add_temperature, 1, MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (startdate_add_co2, 1, MPI_CHARACTER, 0, mpicom, ier)
@@ -764,21 +814,28 @@ contains
 
 
     call mpi_bcast (fates_spitfire_mode, 1, MPI_INTEGER, 0, mpicom, ier)
+    call mpi_bcast (fates_harvest_mode, len(fates_harvest_mode), MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (fates_paramfile, len(fates_paramfile) , MPI_CHARACTER, 0, mpicom, ier)
-    call mpi_bcast (use_fates_logging, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (fluh_timeseries, len(fluh_timeseries) , MPI_CHARACTER, 0, mpicom, ier)
+    call mpi_bcast (flandusepftdat, len(flandusepftdat) , MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (use_fates_planthydro, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_fates_cohort_age_tracking, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_fates_ed_st3, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_fates_fixed_biogeog, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_fates_nocomp, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_fates_sp, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_fates_luh, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_fates_lupft, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_fates_potentialveg, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_fates_ed_prescribed_phys,  1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_fates_inventory_init, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (fates_inventory_ctrl_filename, len(fates_inventory_ctrl_filename), &
           MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (fates_parteh_mode, 1, MPI_INTEGER, 0, mpicom, ier)
+    call mpi_bcast (fates_seeddisp_cadence, 1, MPI_INTEGER, 0, mpicom, ier)
     call mpi_bcast (use_fates_tree_damage, 1, MPI_LOGICAL, 0, mpicom, ier)
-
+    call mpi_bcast (fates_history_dimlevel, 2, MPI_INTEGER, 0, mpicom, ier)
+    
     call mpi_bcast (use_betr, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     call mpi_bcast (use_lai_streams, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -826,6 +883,7 @@ contains
     call mpi_bcast (urban_traffic , 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (implicit_stress, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (atm_gustiness, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (force_land_gustiness, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (nsegspc, 1, MPI_INTEGER, 0, mpicom, ier)
     call mpi_bcast (subgridflag , 1, MPI_INTEGER, 0, mpicom, ier)
     call mpi_bcast (wrtdia, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -938,6 +996,11 @@ contains
     call mpi_bcast (snicar_atm_type, len(snicar_atm_type), MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (use_dust_snow_internal_mixing, 1, MPI_LOGICAL, 0, mpicom, ier)
 	
+    call mpi_bcast (mpi_sync_nstep_freq, 1, MPI_INTEGER, 0, mpicom, ier)
+    
+    ! use modified infiltration scheme in surface water storage
+    call mpi_bcast (use_modified_infil, 1, MPI_LOGICAL, 0, mpicom, ier)
+
   end subroutine control_spmd
 
   !------------------------------------------------------------------------
@@ -974,6 +1037,8 @@ contains
     write(iulog,*) '    use_lake_wat_storage = ', use_lake_wat_storage
     write(iulog,*) '    use_extralakelayers = ', use_extralakelayers
     write(iulog,*) '    use_extrasnowlayers = ', use_extrasnowlayers
+    write(iulog,*) '    use_firn_percolation_and_compaction = ', use_firn_percolation_and_compaction
+    write(iulog,*) '    use_T_rho_dependent_snowthk = ', use_T_rho_dependent_snowthk
     write(iulog,*) '    use_vichydro = ', use_vichydro
     write(iulog,*) '    use_century_decomp = ', use_century_decomp
     write(iulog,*) '    use_cn = ', use_cn
@@ -1132,6 +1197,7 @@ contains
     write(iulog,*) '   urban traffic flux   = ', urban_traffic
     write(iulog,*) '   implicit_stress   = ', implicit_stress
     write(iulog,*) '   atm_gustiness   = ', atm_gustiness
+    write(iulog,*) '   force_land_gustiness   = ', force_land_gustiness
     write(iulog,*) '   more vertical layers = ', more_vertlayers
     
     write(iulog,*) '   Sub-grid topographic effects on solar radiation   = ', use_top_solar_rad  ! TOP solar radiation parameterization
@@ -1168,8 +1234,10 @@ contains
     write(iulog, *) '    use_fates = ', use_fates
     if (use_fates) then
        write(iulog, *) '    fates_spitfire_mode = ', fates_spitfire_mode
-       write(iulog, *) '    use_fates_logging = ', use_fates_logging
+       write(iulog, *) '    fates_harvest_mode = ', fates_harvest_mode
        write(iulog, *) '    fates_paramfile = ', fates_paramfile
+       write(iulog, *) '    fluh_timeseries = ', trim(fluh_timeseries)
+       write(iulog, *) '    flandusepftdat = ', trim(flandusepftdat)
        write(iulog, *) '    use_fates_planthydro = ', use_fates_planthydro
        write(iulog, *) '    use_fates_tree_damage = ', use_fates_tree_damage
        write(iulog, *) '    use_fates_cohort_age_tracking = ',use_fates_cohort_age_tracking
@@ -1180,7 +1248,12 @@ contains
        write(iulog, *) '    use_fates_fixed_biogeog = ', use_fates_fixed_biogeog
        write(iulog, *) '    use_fates_nocomp = ', use_fates_nocomp
        write(iulog, *) '    use_fates_sp = ', use_fates_sp
+       write(iulog, *) '    use_fates_luh = ', use_fates_luh
+       write(iulog, *) '    use_fates_lupft = ', use_fates_lupft
+       write(iulog, *) '    use_fates_potentialveg = ', use_fates_potentialveg
        write(iulog, *) '    fates_inventory_ctrl_filename = ',fates_inventory_ctrl_filename
+       write(iulog, *) '    fates_seeddisp_cadence = ', fates_seeddisp_cadence
+       write(iulog, *) '    fates_seeddisp_cadence: 0, 1, 2, 3 => off, daily, monthly, or yearly dispersal'
     end if
 
     ! VSFM
@@ -1195,6 +1268,18 @@ contains
     ! land river two way coupling
     write(iulog,*) '    use_lnd_rof_two_way    = ', use_lnd_rof_two_way
     write(iulog,*) '    lnd_rof_coupling_nstep = ', lnd_rof_coupling_nstep
+    write(iulog,*) '    mpi_sync_nstep_freq    = ', mpi_sync_nstep_freq
+    
+    write(iulog,*) '    use_modified_infil = ', use_modified_infil
+    
+
+   ! FAN
+    write(iulog,*) '    use_fan                = ', use_fan
+    if (use_fan) then
+       write(iulog,*) ' fan_mode = ', fan_mode
+       write(iulog,*) ' nh4_ads_coef = ', nh4_ads_coef
+       write(iulog,*) ' fan_to_bgc_veg = ', fan_to_bgc_veg
+    end if
 
   end subroutine control_print
 

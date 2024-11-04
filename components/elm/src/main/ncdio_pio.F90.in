@@ -1070,7 +1070,7 @@ contains
        dim1name, dim2name, dim3name, dim4name, dim5name, &
        long_name, standard_name, units, cell_method, missing_value, fill_value, &
        imissing_value, ifill_value, switchdim, comment, &
-       flag_meanings, flag_values, nvalid_range )
+       flag_meanings, flag_values, nvalid_range, varid )
     !
     ! !DESCRIPTION:
     !  Define a netcdf variable
@@ -1097,12 +1097,13 @@ contains
     logical            , intent(in), optional :: switchdim      ! true=> permute dim1 and dim2 for output
     integer            , intent(in), optional :: flag_values(:)  ! attribute for int
     integer            , intent(in), optional :: nvalid_range(2)  ! attribute for int
+    integer            , intent(out), optional :: varid           ! returned var id
     !
     ! !LOCAL VARIABLES:
     integer :: n              ! indices
     integer :: ndims          ! dimension counter
     integer :: dimid(5)       ! dimension ids
-    integer :: varid          ! variable id
+    integer :: varid_tmp      ! variable id (temporary)
     integer :: itmp           ! temporary
     character(len=256) :: str ! temporary
     character(len=*),parameter :: subname='ncd_defvar_bygrid' ! subroutine name
@@ -1135,12 +1136,16 @@ contains
        end do
     end if
 
-    call ncd_defvar_bynf(ncid,varname,xtype,ndims,dimid,varid, &
+    call ncd_defvar_bynf(ncid,varname,xtype,ndims,dimid,varid_tmp, &
          long_name=long_name, standard_name=standard_name,units=units, cell_method=cell_method, &
          missing_value=missing_value, fill_value=fill_value, &
          imissing_value=imissing_value, ifill_value=ifill_value, &
          comment=comment, flag_meanings=flag_meanings, &
          flag_values=flag_values, nvalid_range=nvalid_range )
+
+    if (present(varid)) then
+       varid = varid_tmp
+    end if
 
   end subroutine ncd_defvar_bygrid
 

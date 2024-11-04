@@ -1,0 +1,37 @@
+# This script generates a (single) yaml file for EAMxx output.
+# The output will be INSTANT, with only some diags fields as ouput
+
+CASEROOT=$(./xmlquery --value CASEROOT)
+CASE=$(./xmlquery --value CASE)
+
+# Scripts location
+YAML_EDIT_SCRIPT=$CIMEROOT/../components/eamxx/scripts/edit-output-stream
+ATMCHANGE=$CIMEROOT/../components/eamxx/scripts/atmchange
+YAML_FILE=$CASEROOT/eamxx_diags_output.yaml
+
+# Figure out the suffix for the physics grid
+ATM_GRID=$(./xmlquery --value ATM_GRID)
+if [[ $ATM_GRID == *"pg2"* ]]; then
+  PGTYPE="PG2"
+else
+  PGTYPE="GLL"
+fi
+
+# List of output fields
+FIELDS='Exner LiqWaterPath dz geopotential_int PotentialTemperature'
+FIELDS+=' precip_liq_surf_mass_flux wind_speed ShortwaveCloudForcing'
+FIELDS+=' T_mid_at_model_bot T_mid_at_900hPa'
+FIELDS+=' horiz_winds_at_100m_above_surface horiz_winds_at_100m_above_sealevel'
+
+# Generate the file
+$YAML_EDIT_SCRIPT -g \
+ -f $YAML_FILE                    \
+ --avg-type INSTANT               \
+ --freq HIST_N                    \
+ --freq-units HIST_OPTION         \
+ --prefix ${CASE}.scream.diags.h  \
+ --grid "Physics ${PGTYPE}"       \
+ --fields ${FIELDS}
+
+# Add this output yaml file to the list of eamxx output streams
+$ATMCHANGE output_yaml_files+=$YAML_FILE -b

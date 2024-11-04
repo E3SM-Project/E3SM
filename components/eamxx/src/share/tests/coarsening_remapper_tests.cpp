@@ -3,28 +3,27 @@
 #include "share/grid/remap/coarsening_remapper.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/io/scream_scorpio_interface.hpp"
+#include "share/util/scream_setup_random_test.hpp"
+#include "share/field/field_utils.hpp"
 
 namespace scream {
 
-template<typename ViewT>
-typename ViewT::HostMirror
-cmvc (const ViewT& v) {
-  auto vh = Kokkos::create_mirror_view(v);
-  Kokkos::deep_copy(vh,v);
-  return vh;
-}
-
 class CoarseningRemapperTester : public CoarseningRemapper {
 public:
+  using gid_type = AbstractGrid::gid_type;
+
   CoarseningRemapperTester (const grid_ptr_type& src_grid,
                             const std::string& map_file)
    : CoarseningRemapper(src_grid,map_file)
   {
     // Nothing to do
   }
-  std::vector<gid_t>
-  test_triplet_gids (const std::string& map_file) const {
-    return CoarseningRemapper::get_my_triplets_gids (map_file,m_src_grid);
+
+  // Note: we use this instead of get_tgt_grid, b/c the nonconst grid
+  //       will give use a not read-only gids field, so we can pass
+  //       pointers to MPI_Bcast (which needs pointer to nonconst)
+  std::shared_ptr<AbstractGrid> get_coarse_grid () const {
+    return m_coarse_grid;
   }
 
   view_1d<int> get_row_offsets () const {
@@ -38,131 +37,235 @@ public:
   }
 
   grid_ptr_type get_ov_tgt_grid () const {
-    return m_ov_tgt_grid;
+    return m_ov_coarse_grid;
   }
 
   view_2d<int>::HostMirror get_send_f_pid_offsets () const {
-    return cmvc(m_send_f_pid_offsets);
+    return cmvdc(m_send_f_pid_offsets);
   }
   view_2d<int>::HostMirror get_recv_f_pid_offsets () const {
-    return cmvc(m_recv_f_pid_offsets);
+    return cmvdc(m_recv_f_pid_offsets);
   }
 
   view_1d<int>::HostMirror get_recv_lids_beg () const {
-    return cmvc(m_recv_lids_beg);
+    return cmvdc(m_recv_lids_beg);
   }
   view_1d<int>::HostMirror get_recv_lids_end () const {
-    return cmvc(m_recv_lids_end);
+    return cmvdc(m_recv_lids_end);
   }
 
   view_2d<int>::HostMirror get_send_lids_pids () const {
-    return cmvc(m_send_lids_pids );
+    return cmvdc(m_send_lids_pids );
   }
   view_2d<int>::HostMirror get_recv_lids_pidpos () const {
-    return cmvc(m_recv_lids_pidpos);
+    return cmvdc(m_recv_lids_pidpos);
   }
 
   view_1d<int>::HostMirror get_send_pid_lids_start () const {
-    return cmvc(m_send_pid_lids_start);
-  }
-
-  int gid2lid (const gid_t gid, const grid_ptr_type& grid) const {
-    return CoarseningRemapper::gid2lid(gid,grid);
+    return cmvdc(m_send_pid_lids_start);
   }
 };
 
-template<typename ViewT>
-bool view_contains (const ViewT& v, const typename ViewT::traits::value_type& entry) {
-  const auto vh = cmvc (v);
-  const auto beg = vh.data();
-  const auto end = vh.data() + vh.size();
-  for (auto it=beg; it!=end; ++it) {
-    if (*it == entry) {
-      return true;
-    }
-  }
-  return false;
-}
-
-void print (const std::string& msg, const ekat::Comm& comm) {
+void root_print (const std::string& msg, const ekat::Comm& comm) {
   if (comm.am_i_root()) {
     printf("%s",msg.c_str());
   }
 }
 
-// Helper function to create a grid given the number of dof's and a comm group.
+// Create a source grid given number of global dofs.
+// Dofs are scattered around randomly
+template<typename Engine>
 std::shared_ptr<AbstractGrid>
-build_src_grid(const ekat::Comm& comm, const int nldofs_src) 
+build_src_grid(const ekat::Comm& comm, const int ngdofs, Engine& engine) 
 {
-  auto src_grid = std::make_shared<PointGrid>("src",nldofs_src,20,comm);
+  using gid_type = AbstractGrid::gid_type;
+  const int nlevs = 20;
+
+  std::vector<gid_type> all_dofs (ngdofs);
+  if (comm.am_i_root()) {
+    std::iota(all_dofs.data(),all_dofs.data()+all_dofs.size(),0);
+    std::shuffle(all_dofs.data(),all_dofs.data()+ngdofs,engine);
+  }
+  comm.broadcast(all_dofs.data(),ngdofs,comm.root_rank());
+
+  int nldofs = ngdofs / comm.size();
+  int remainder = ngdofs % comm.size();
+  int offset = nldofs * comm.rank() + std::min(comm.rank(),remainder);
+  if (comm.rank()<remainder) {
+    ++nldofs;
+  }
+  auto src_grid = std::make_shared<PointGrid>("src",nldofs,nlevs,comm);
 
   auto src_dofs = src_grid->get_dofs_gids();
-  auto src_dofs_h = src_dofs.get_view<gid_t*,Host>();
-  std::iota(src_dofs_h.data(),src_dofs_h.data()+nldofs_src,nldofs_src*comm.rank());
+  auto src_dofs_h = src_dofs.get_view<gid_type*,Host>();
+  std::copy_n(all_dofs.data()+offset,nldofs,src_dofs_h.data());
   src_dofs.sync_to_dev();
 
   return src_grid;
 }
 
-// Helper function to create fields
-Field
-create_field(const std::string& name, const std::shared_ptr<const AbstractGrid>& grid, const bool twod, const bool vec, const bool mid = false, const int ps = 1, const bool add_mask = false)
+constexpr int vec_dim = 2;
+constexpr int tens_dim1 = 3;
+constexpr int tens_dim2 = 4;
+Field create_field (const std::string& name, const LayoutType lt, const AbstractGrid& grid, const bool midpoints)
 {
-  constexpr int vec_dim = 3;
-  constexpr auto CMP = FieldTag::Component;
-  constexpr auto units = ekat::units::Units::nondimensional();
-  auto fl = twod
-          ? (vec ? grid->get_2d_vector_layout (CMP,vec_dim)
-                 : grid->get_2d_scalar_layout ())
-          : (vec ? grid->get_3d_vector_layout (mid,CMP,vec_dim)
-                 : grid->get_3d_scalar_layout (mid));
-  FieldIdentifier fid(name,fl,units,grid->name());
-  Field f(fid);
-  f.get_header().get_alloc_properties().request_allocation(ps);
-  f.allocate_view();
-
-  if (add_mask) {
-    // Add a mask to the field
-    FieldIdentifier fid_mask(name+"_mask",fl,units,grid->name());
-    Field f_mask(fid_mask);
-    f_mask.get_header().get_alloc_properties().request_allocation(ps);
-    f_mask.allocate_view();
-    f.get_header().set_extra_data("mask_data",f_mask);
+  const auto u = ekat::units::Units::nondimensional();
+  const auto& gn = grid.name();
+  Field f;
+  switch (lt) {
+    case LayoutType::Scalar2D:
+      f = Field(FieldIdentifier(name,grid.get_2d_scalar_layout(),u,gn));  break;
+    case LayoutType::Vector2D:
+      f = Field(FieldIdentifier(name,grid.get_2d_vector_layout(vec_dim),u,gn));  break;
+    case LayoutType::Tensor2D:
+      f = Field(FieldIdentifier(name,grid.get_2d_tensor_layout({tens_dim1,tens_dim2}),u,gn));  break;
+    case LayoutType::Scalar3D:
+      f = Field(FieldIdentifier(name,grid.get_3d_scalar_layout(midpoints),u,gn));
+      f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
+      break;
+    case LayoutType::Vector3D:
+      f = Field(FieldIdentifier(name,grid.get_3d_vector_layout(midpoints,vec_dim),u,gn));
+      f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
+      break;
+    case LayoutType::Tensor3D:
+      f = Field(FieldIdentifier(name,grid.get_3d_tensor_layout(midpoints,{tens_dim1,tens_dim2}),u,gn));
+      f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
+      break;
+    default:
+      EKAT_ERROR_MSG ("Invalid layout type for this unit test.\n");
   }
+  f.allocate_view();
 
   return f;
 }
 
+template<typename Engine>
+Field create_field (const std::string& name, const LayoutType lt, const AbstractGrid& grid, const bool midpoints, Engine& engine) {
+  auto f = create_field(name,lt,grid,midpoints);
+
+  // Use discrete_distribution to get an integer, then use that as exponent for 2^-n.
+  // This guarantees numbers that are exactly represented as FP numbers, which ensures
+  // the test will produce the expected answer, regardless of how math ops are performed.
+  using IPDF = std::discrete_distribution<int>;
+  IPDF ipdf ({1,1,1,1,1,1,1,1,1,1});
+  auto pdf = [&](Engine& e) {
+    return Real(std::pow(2,ipdf(e)));
+  };
+  randomize(f,engine,pdf);
+
+  return f;
+}
+
+template<typename T>
+Field all_gather_field_impl (const Field& f, const ekat::Comm& comm) {
+  constexpr auto COL = ShortFieldTagsNames::COL;
+  const auto& fid = f.get_header().get_identifier();
+  const auto& fl  = fid.get_layout();
+  int col_size = fl.clone().strip_dim(COL).size();
+  auto tags = fl.tags();
+  auto dims = fl.dims();
+  int my_cols = dims[0];;
+  comm.all_reduce(&my_cols, &dims.front(), 1, MPI_SUM );
+  FieldLayout gfl(tags,dims);
+  FieldIdentifier gfid("g" + f.name(),gfl,fid.get_units(),fid.get_grid_name(),fid.data_type());
+  Field gf(gfid);
+  gf.allocate_view();
+  std::vector<T> data_vec(col_size);
+  f.sync_to_host();
+  for (int pid=0,offset=0; pid<comm.size(); ++pid) {
+    T* data;
+    int ncols = fl.dims()[0];
+    comm.broadcast(&ncols,1,pid);
+    for (int icol=0; icol<ncols; ++icol,offset+=col_size) {
+      switch (fl.rank()) {
+        case 1:
+          if (pid==comm.rank()) {
+            data = ekat::subview(f.get_view<T*,Host>(),icol).data();
+          } else {
+            data = data_vec.data();
+          }
+          break;
+        case 2:
+          if (pid==comm.rank()) {
+            data = ekat::subview(f.get_view<T**,Host>(),icol).data();
+          } else {
+            data = data_vec.data();
+          }
+          break;
+        case 3:
+          if (pid==comm.rank()) {
+            data = ekat::subview(f.get_view<T***,Host>(),icol).data();
+          } else {
+            data = data_vec.data();
+          }
+          break;
+        case 4:
+          if (pid==comm.rank()) {
+            data = ekat::subview(f.get_view<T****,Host>(),icol).data();
+          } else {
+            data = data_vec.data();
+          }
+          break;
+        default:
+          EKAT_ERROR_MSG (
+              "Unexpected rank in RefiningRemapperRMA unit test.\n"
+              "  - field name: " + f.name() + "\n");
+      }
+      comm.broadcast(data,col_size,pid);
+      auto gdata = gf.get_internal_view_data<T,Host>()+offset;
+      std::copy(data,data+col_size,gdata);
+    }
+  }
+  return gf;
+}
+
+Field all_gather_field (const Field& f, const ekat::Comm& comm) {
+  const auto dt = f.data_type();
+  if (dt==DataType::RealType) {
+    return all_gather_field_impl<Real>(f,comm);
+  } else {
+    return all_gather_field_impl<int>(f,comm);
+  }
+}
+
 // Helper function to create a remap file
-void create_remap_file(const std::string& filename, std::vector<std::int64_t>& dofs,
-                       const int na, const int nb, const int ns,
-                       const std::vector<Real>& col, const std::vector<Real>& row, const std::vector<Real>& S) 
+void create_remap_file(const std::string& filename, const int ngdofs_tgt)
 {
+  const int ngdofs_src = ngdofs_tgt + 1;
+  const int nnz = 2*ngdofs_tgt;
 
   scorpio::register_file(filename, scorpio::FileMode::Write);
 
-  scorpio::register_dimension(filename,"n_a", "n_a", na, true);
-  scorpio::register_dimension(filename,"n_b", "n_b", nb, true);
-  scorpio::register_dimension(filename,"n_s", "n_s", ns, true);
+  scorpio::define_dim(filename,"n_a", ngdofs_src);
+  scorpio::define_dim(filename,"n_b", ngdofs_tgt);
+  scorpio::define_dim(filename,"n_s", nnz);
 
-  scorpio::register_variable(filename,"col","col","none",{"n_s"},"real","int","int-nnz");
-  scorpio::register_variable(filename,"row","row","none",{"n_s"},"real","int","int-nnz");
-  scorpio::register_variable(filename,"S","S","none",{"n_s"},"real","real","Real-nnz");
+  scorpio::define_var(filename,"col",{"n_s"},"int");
+  scorpio::define_var(filename,"row",{"n_s"},"int");
+  scorpio::define_var(filename,"S"  ,{"n_s"},"double");
 
-  scorpio::set_dof(filename,"col",dofs.size(),dofs.data());
-  scorpio::set_dof(filename,"row",dofs.size(),dofs.data());
-  scorpio::set_dof(filename,"S",  dofs.size(),dofs.data());
-  
-  scorpio::eam_pio_enddef(filename);
+  scorpio::enddef(filename);
 
-  scorpio::grid_write_data_array(filename,"row",row.data(),ns);
-  scorpio::grid_write_data_array(filename,"col",col.data(),ns);
-  scorpio::grid_write_data_array(filename,"S",    S.data(),ns);
+  std::vector<int> col(nnz), row(nnz);
+  std::vector<double> S(nnz,0.5);
+  for (int i=0; i<ngdofs_tgt; ++i) {
+    row[2*i] = i;
+    row[2*i+1] = i;
+    col[2*i] = i;
+    col[2*i+1] = i+1;
+  }
 
-  scorpio::eam_pio_closefile(filename);
+  scorpio::write_var(filename,"row",row.data());
+  scorpio::write_var(filename,"col",col.data());
+  scorpio::write_var(filename,"S",    S.data());
+
+  scorpio::release_file(filename);
 }
 
-TEST_CASE("coarsening_remap_nnz>nsrc") {
+TEST_CASE("coarsening_remap")
+{
+  auto& catch_capture = Catch::getResultCapture();
+
   // This is a simple test to just make sure the coarsening remapper works
   // when the map itself has more remap triplets than the size of the 
   // source and target grid.  This is typical in monotone remappers from
@@ -174,511 +277,229 @@ TEST_CASE("coarsening_remap_nnz>nsrc") {
 
   ekat::Comm comm(MPI_COMM_WORLD);
 
-  MPI_Fint fcomm = MPI_Comm_c2f(comm.mpi_comm());
-  scorpio::eam_init_pio_subsystem(fcomm);
+  root_print ("\n +---------------------------------+\n",comm);
+  root_print (" |   Testing coarsening remapper   |\n",comm);
+  root_print (" +---------------------------------+\n\n",comm);
 
-  // -------------------------------------- //
-  //           Set grid/map sizes           //
-  // -------------------------------------- //
-
-  const int nldofs_src = 4;
-  const int nldofs_tgt = 2;
-  const int ngdofs_src = nldofs_src*comm.size();
-  const int ngdofs_tgt = nldofs_tgt*comm.size();
-  const int nnz_local  = nldofs_src*nldofs_tgt;
-  const int nnz        = nnz_local*comm.size();
+  scorpio::init_subsystem(comm);
+  auto engine = setup_random_test (&comm);
 
   // -------------------------------------- //
   //           Create a map file            //
   // -------------------------------------- //
 
-  print (" -> creating map file ...\n",comm);
+  std::string filename = "cr_tests_map." + std::to_string(comm.size()) + ".nc";
 
-  std::string filename = "coarsening_map_file_lrg_np" + std::to_string(comm.size()) + ".nc";
-  std::vector<std::int64_t> dofs (nnz_local);
-  std::iota(dofs.begin(),dofs.end(),comm.rank()*nnz_local);
-
-  // Create triplets: tgt entry K is the avg of src entries K and K+ngdofs_tgt
-  // NOTE: add 1 to row/col indices, since e3sm map files indices are 1-based
-  std::vector<Real> col,row,S;
-  const Real wgt = 1.0/nldofs_src;
-  for (int i=0; i<nldofs_tgt; ++i) {
-    for (int j=0; j<nldofs_src; j++) {
-      row.push_back(1+i+nldofs_tgt*comm.rank());
-      col.push_back(1+j+nldofs_src*comm.rank());
-      S.push_back(wgt);
-    }
-  }
-
-  create_remap_file(filename, dofs, ngdofs_src, ngdofs_tgt, nnz, col, row, S);
-  print (" -> creating map file ... done!\n",comm);
+  const int nldofs_tgt = 2;
+  const int ngdofs_tgt = nldofs_tgt*comm.size();
+  create_remap_file(filename, ngdofs_tgt);
 
   // -------------------------------------- //
   //      Build src grid and remapper       //
   // -------------------------------------- //
 
-  print (" -> creating grid ...\n",comm);
-  auto src_grid = build_src_grid(comm, nldofs_src);
-  print (" -> creating grid ... done\n",comm);
-
-  print (" -> creating remapper ...\n",comm);
+  const int ngdofs_src = ngdofs_tgt+1;
+  auto src_grid = build_src_grid(comm, ngdofs_src, engine);
   auto remap = std::make_shared<CoarseningRemapperTester>(src_grid,filename);
-  print (" -> creating remapper ... done!\n",comm);
 
   // -------------------------------------- //
   //      Create src/tgt grid fields        //
   // -------------------------------------- //
 
-  print (" -> creating fields ...\n",comm);
   // The other test checks remapping for fields of multiple dimensions.
   // Here we will simplify and just remap a simple 2D horizontal field.
-  auto tgt_grid = remap->get_tgt_grid();
+  auto tgt_grid = remap->get_coarse_grid();
 
-  auto src_s2d   = create_field("s2d",  src_grid,true,false,false,1,true);
-  auto tgt_s2d   = create_field("s2d",  tgt_grid,true,false);
+  auto src_s2d   = create_field("s2d",  LayoutType::Scalar2D, *src_grid, false, engine);
+  auto src_v2d   = create_field("v2d",  LayoutType::Vector2D, *src_grid, false, engine);
+  auto src_t2d   = create_field("t2d",  LayoutType::Tensor2D, *src_grid, false, engine);
+  auto src_s3d_m = create_field("s3d_m",LayoutType::Scalar3D, *src_grid, true,  engine);
+  auto src_s3d_i = create_field("s3d_i",LayoutType::Scalar3D, *src_grid, false, engine);
+  auto src_v3d_m = create_field("v3d_m",LayoutType::Vector3D, *src_grid, true,  engine);
+  auto src_v3d_i = create_field("v3d_i",LayoutType::Vector3D, *src_grid, false, engine);
+  auto src_t3d_m = create_field("t3d_m",LayoutType::Tensor3D, *src_grid, true,  engine);
+  auto src_t3d_i = create_field("t3d_i",LayoutType::Tensor3D, *src_grid, false, engine);
 
-  std::vector<Field> src_f = {src_s2d};
-  std::vector<Field> tgt_f = {tgt_s2d};
+  auto tgt_s2d   = create_field("s2d",  LayoutType::Scalar2D, *tgt_grid, false);
+  auto tgt_v2d   = create_field("v2d",  LayoutType::Vector2D, *tgt_grid, false);
+  auto tgt_t2d   = create_field("t2d",  LayoutType::Tensor2D, *tgt_grid, false);
+  auto tgt_s3d_m = create_field("s3d_m",LayoutType::Scalar3D, *tgt_grid, true );
+  auto tgt_s3d_i = create_field("s3d_i",LayoutType::Scalar3D, *tgt_grid, false);
+  auto tgt_v3d_m = create_field("v3d_m",LayoutType::Vector3D, *tgt_grid, true );
+  auto tgt_v3d_i = create_field("v3d_i",LayoutType::Vector3D, *tgt_grid, false);
+  auto tgt_t3d_m = create_field("t3d_m",LayoutType::Tensor3D, *tgt_grid, true );
+  auto tgt_t3d_i = create_field("t3d_i",LayoutType::Tensor3D, *tgt_grid, false);
+
+  std::vector<Field> src_f = {src_s2d,src_v2d,src_t2d,src_s3d_m,src_s3d_i,src_v3d_m,src_v3d_i,src_t3d_m,src_t3d_i};
+  std::vector<Field> tgt_f = {tgt_s2d,tgt_v2d,tgt_t2d,tgt_s3d_m,tgt_s3d_i,tgt_v3d_m,tgt_v3d_i,tgt_t3d_m,tgt_t3d_i};
 
   // -------------------------------------- //
   //     Register fields in the remapper    //
   // -------------------------------------- //
 
-  print (" -> registering fields ...\n",comm);
   remap->registration_begins();
-  remap->register_field(src_s2d,  tgt_s2d);
-  remap->registration_ends();
-  print (" -> registering fields ... done!\n",comm);
-
-  // -------------------------------------- //
-  //       Generate data for src fields     //
-  // -------------------------------------- //
-
-  print (" -> generate src fields data ...\n",comm);
-  // Generate data in a deterministic way, so that when we check results,
-  // we know a priori what the input data that generated the tgt field's
-  // values was, even if that data was off rank.
-  auto src_gids = remap->get_src_grid()->get_dofs_gids().get_view<const gid_t*,Host>();
-  for (const auto& f : src_f) {
-    const auto& l = f.get_header().get_identifier().get_layout();
-    switch (get_layout_type(l.tags())) {
-      case LayoutType::Scalar2D:
-      {
-        const auto v_src = f.get_view<Real*,Host>();
-        for (int i=0; i<nldofs_src; ++i) {
-          v_src(i) = src_gids(i);
-        }
-      } break;
-      default:
-        EKAT_ERROR_MSG ("Unexpected layout.\n");
-    }
-    f.sync_to_dev();
+  for (size_t i=0; i<tgt_f.size(); ++i) {
+    remap->register_field(src_f[i],tgt_f[i]);
   }
-  print (" -> generate src fields data ... done!\n",comm);
-
+  remap->registration_ends();
 
   // -------------------------------------- //
   //          Check remapped fields         //
   // -------------------------------------- //
-  const auto tgt_gids = tgt_grid->get_dofs_gids().get_view<const gid_t*,Host>();
-  for (int irun=0; irun<5; ++irun) {
-    print (" -> run remap ...\n",comm);
-    remap->remap(true);
-    print (" -> run remap ... done!\n",comm);
 
-    print (" -> check tgt fields ...\n",comm);
-    // Recall, tgt gid K should be the avg of local src_gids
-    const int ntgt_gids = tgt_gids.size();
-    for (size_t ifield=0; ifield<tgt_f.size(); ++ifield) {
-      const auto& f = tgt_f[ifield];
-      const auto& l = f.get_header().get_identifier().get_layout();
-      const auto ls = to_string(l);
-      std::string dots (25-ls.size(),'.');
-      print ("   -> Checking field with layout " + to_string(l) + " " + dots + "\n",comm);
+  Real w = 0.5;
+  auto gids_tgt = all_gather_field(tgt_grid->get_dofs_gids(),comm);
+  auto gids_src = all_gather_field(src_grid->get_dofs_gids(),comm);
+  auto gids_src_v = gids_src.get_view<const AbstractGrid::gid_type*,Host>();
+  auto gids_tgt_v = gids_tgt.get_view<const AbstractGrid::gid_type*,Host>();
 
-      f.sync_to_host();
-
-      switch (get_layout_type(l.tags())) {
-        case LayoutType::Scalar2D:
-        {
-          const auto v_tgt = f.get_view<const Real*,Host>();
-          for (int i=0; i<ntgt_gids; ++i) {
-            Real cmp = 0;
-            for (size_t j=0; j<src_gids.size(); j++) {
-              cmp += src_gids(j);
-            }
-            REQUIRE ( v_tgt(i)== cmp/src_gids.size() );
-          }
-        } break;
-        default:
-          EKAT_ERROR_MSG ("Unexpected layout.\n");
-      }
-    }
-  }
-
-  // Clean up scorpio stuff
-  scorpio::eam_pio_finalize();
-
-}
-
-TEST_CASE ("coarsening_remap") {
-  using gid_t = AbstractGrid::gid_type;
-
-  // -------------------------------------- //
-  //           Init MPI and PIO             //
-  // -------------------------------------- //
-
-  ekat::Comm comm(MPI_COMM_WORLD);
-
-  MPI_Fint fcomm = MPI_Comm_c2f(comm.mpi_comm());
-  scorpio::eam_init_pio_subsystem(fcomm);
-
-  // -------------------------------------- //
-  //           Set grid/map sizes           //
-  // -------------------------------------- //
-
-  const int nldofs_src = 10;
-  const int nldofs_tgt =  5;
-  const int ngdofs_src = nldofs_src*comm.size();
-  const int ngdofs_tgt = nldofs_tgt*comm.size();
-  const int nnz_local  = nldofs_src;
-  const int nnz        = nnz_local*comm.size();
-
-  // -------------------------------------- //
-  //           Create a map file            //
-  // -------------------------------------- //
-
-  print (" -> creating map file ...\n",comm);
-
-  std::string filename = "coarsening_map_file_np" + std::to_string(comm.size()) + ".nc";
-  std::vector<std::int64_t> dofs (nnz_local);
-  std::iota(dofs.begin(),dofs.end(),comm.rank()*nnz_local);
-
-  // Create triplets: tgt entry K is the avg of src entries K and K+ngdofs_tgt
-  // NOTE: add 1 to row/col indices, since e3sm map files indices are 1-based
-  std::vector<Real> col,row,S;
-  for (int i=0; i<nldofs_tgt; ++i) {
-    row.push_back(1+i+nldofs_tgt*comm.rank());
-    col.push_back(1+i+nldofs_tgt*comm.rank());
-    S.push_back(0.25);
-
-    row.push_back(1+i+nldofs_tgt*comm.rank());
-    col.push_back(1+i+nldofs_tgt*comm.rank() + ngdofs_tgt);
-    S.push_back(0.75);
-  }
-
-  create_remap_file(filename, dofs, ngdofs_src, ngdofs_tgt, nnz, col, row, S);
-  print (" -> creating map file ... done!\n",comm);
-
-  // -------------------------------------- //
-  //      Build src grid and remapper       //
-  // -------------------------------------- //
-
-  print (" -> creating grid and remapper ...\n",comm);
-
-  auto src_grid = build_src_grid(comm, nldofs_src);
-
-  auto remap = std::make_shared<CoarseningRemapperTester>(src_grid,filename);
-  print (" -> creating grid and remapper ... done!\n",comm);
-
-  // -------------------------------------- //
-  //      Create src/tgt grid fields        //
-  // -------------------------------------- //
-
-  print (" -> creating fields ...\n",comm);
-  constexpr int vec_dim = 3;
-
-  auto tgt_grid = remap->get_tgt_grid();
-  // Check that the target grid made by the remapper has the correct number of columns,
-  // and has the same number of levels as the source grid.
-  REQUIRE(tgt_grid->get_num_vertical_levels()==src_grid->get_num_vertical_levels());
-  REQUIRE(tgt_grid->get_num_global_dofs()==ngdofs_tgt);
-
-  auto src_s2d   = create_field("s2d",  src_grid,true,false);
-  auto src_v2d   = create_field("v2d",  src_grid,true,true);
-  auto src_s3d_m = create_field("s3d_m",src_grid,false,false,true, 1);
-  auto src_s3d_i = create_field("s3d_i",src_grid,false,false,false,SCREAM_PACK_SIZE);
-  auto src_v3d_m = create_field("v3d_m",src_grid,false,true ,true, 1);
-  auto src_v3d_i = create_field("v3d_i",src_grid,false,true ,false,SCREAM_PACK_SIZE);
-
-  auto tgt_s2d   = create_field("s2d",  tgt_grid,true,false);
-  auto tgt_v2d   = create_field("v2d",  tgt_grid,true,true);
-  auto tgt_s3d_m = create_field("s3d_m",tgt_grid,false,false,true, 1);
-  auto tgt_s3d_i = create_field("s3d_i",tgt_grid,false,false,false,SCREAM_PACK_SIZE);
-  auto tgt_v3d_m = create_field("v3d_m",tgt_grid,false,true ,true, 1);
-  auto tgt_v3d_i = create_field("v3d_i",tgt_grid,false,true ,false,SCREAM_PACK_SIZE);
-
-  std::vector<Field> src_f = {src_s2d,src_v2d,src_s3d_m,src_s3d_i,src_v3d_m,src_v3d_i};
-  std::vector<Field> tgt_f = {tgt_s2d,tgt_v2d,tgt_s3d_m,tgt_s3d_i,tgt_v3d_m,tgt_v3d_i};
-
-  const int nfields = src_f.size();
-
-  std::vector<int> field_col_size (src_f.size());
-  std::vector<int> field_col_offset (src_f.size()+1,0);
-  for (int i=0; i<nfields; ++i) {
-    const auto& f  = src_f[i];  // Doesn't matter if src or tgt
-    const auto& fl = f.get_header().get_identifier().get_layout();
-    field_col_size[i] = fl.size() / fl.dim(0);
-    field_col_offset[i+1] = field_col_offset[i]+field_col_size[i];
-  }
-
-  print (" -> creating fields ... done!\n",comm);
-
-  // -------------------------------------- //
-  //     Register fields in the remapper    //
-  // -------------------------------------- //
-
-  print (" -> registering fields ...\n",comm);
-  remap->registration_begins();
-  remap->register_field(src_s2d,  tgt_s2d);
-  remap->register_field(src_v2d,  tgt_v2d);
-  remap->register_field(src_s3d_m,tgt_s3d_m);
-  remap->register_field(src_s3d_i,tgt_s3d_i);
-  remap->register_field(src_v3d_m,tgt_v3d_m);
-  remap->register_field(src_v3d_i,tgt_v3d_i);
-  remap->registration_ends();
-  print (" -> registering fields ... done!\n",comm);
-
-  // -------------------------------------- //
-  //        Check remapper internals        //
-  // -------------------------------------- //
-
-  print (" -> Checking remapper internal state ...\n",comm);
-
-  // Check tgt grid
-  REQUIRE (tgt_grid->get_num_global_dofs()==ngdofs_tgt);
-
-  // Check which triplets are read from map file
-  auto src_dofs_h = src_grid->get_dofs_gids().get_view<const gid_t*,Host>();
-  auto my_triplets = remap->test_triplet_gids (filename);
-  const int num_triplets = my_triplets.size();
-  REQUIRE (num_triplets==nnz_local);
-  for (int i=0; i<nnz_local; ++i) {
-    const auto src_gid = src_dofs_h(i);
-    const auto tgt_gid = src_gid % ngdofs_tgt;
-
-    REQUIRE (ekat::contains(my_triplets, 2*tgt_gid + src_gid/ngdofs_tgt));
-  }
-
-  // Check overlapped tgt grid
-  // NOTE: you need to treat the case of 1 rank separately, since in that case
-  //       there are 2 local src dofs impacting the same tgt dof, while with 2+
-  //       ranks every local src dof impacts a different tgt dof.
-  auto ov_tgt_grid = remap->get_ov_tgt_grid ();
-  const int num_loc_ov_tgt_gids = ov_tgt_grid->get_num_local_dofs();
-  const int expected_num_loc_ov_tgt_gids = ngdofs_tgt>=nldofs_src ? nldofs_src : ngdofs_tgt;
-  REQUIRE (num_loc_ov_tgt_gids==expected_num_loc_ov_tgt_gids);
-  const auto ov_gids = ov_tgt_grid->get_dofs_gids().get_view<const gid_t*,Host>();
-  for (int i=0; i<num_loc_ov_tgt_gids; ++i) {
-    if (comm.size()==1) {
-      REQUIRE(ov_gids[i]==i);
-    } else {
-      const auto src_gid = src_dofs_h[i];
-      REQUIRE (view_contains(ov_gids, src_gid % ngdofs_tgt));
-    }
-  }
-
-  // Check sparse matrix
-  auto row_offsets_h = cmvc(remap->get_row_offsets());
-  auto col_lids_h    = cmvc(remap->get_col_lids());
-  auto weights_h = cmvc(remap->get_weights());
-  auto ov_tgt_gids = ov_tgt_grid->get_dofs_gids().get_view<const gid_t*,Host>();
-  auto src_gids    = remap->get_src_grid()->get_dofs_gids().get_view<const gid_t*,Host>();
-
-  REQUIRE (col_lids_h.extent_int(0)==nldofs_src);
-  REQUIRE (row_offsets_h.extent_int(0)==(num_loc_ov_tgt_gids+1));
-  for (int i=0; i<num_loc_ov_tgt_gids; ++i) {
-    if (comm.size()==1) {
-      REQUIRE (row_offsets_h(i)==(2*i));
-    } else {
-      REQUIRE (row_offsets_h(i)==i);
-    }
-  }
-  REQUIRE (row_offsets_h(num_loc_ov_tgt_gids)==nldofs_src);
-
-  for (int irow=0; irow<num_loc_ov_tgt_gids; ++irow) {
-    const auto row_gid = ov_tgt_gids(irow);
-    for (int innz=row_offsets_h(irow); innz<row_offsets_h(irow+1); ++innz) {
-      const auto col_lid = col_lids_h(innz);
-      const auto col_gid = src_gids(col_lid);
-      if (row_gid==col_gid) {
-        REQUIRE (weights_h(innz)==0.25);
-      } else {
-        REQUIRE (weights_h(innz)==0.75);
-      }
-    }
-  }
-
-  // Check internal MPI structures
-  const int num_loc_tgt_gids = tgt_grid->get_num_local_dofs();
-  const auto tgt_gids = tgt_grid->get_dofs_gids().get_view<const gid_t*,Host>();
-  const auto recv_lids_beg = remap->get_recv_lids_beg();
-  const auto recv_lids_end = remap->get_recv_lids_end();
-  const auto recv_lids_pidpos = remap->get_recv_lids_pidpos();
-  // Rank 0 sends everything to itself
-  for (int i=0; i<num_loc_tgt_gids; ++i) {
-    if (comm.size()==1) {
-      // Each tgt dof has one ov_tgt contribution,
-      // since the matvec is fully local
-      REQUIRE (recv_lids_beg(i)==i);
-      REQUIRE (recv_lids_end(i)==(i+1));
-
-      REQUIRE (recv_lids_pidpos(i,0)==comm.rank());
-      REQUIRE (recv_lids_pidpos(i,1)==i);
-    } else {
-      // Each tgt dof has two ov_tgt contributions,
-      // since the mat vec happens on two different PIDs.
-      REQUIRE (recv_lids_beg(i)==2*i);
-      REQUIRE (recv_lids_end(i)==(2*i+2));
-      // Figure out where the contributions come from
-      const auto src1 = tgt_gids(i);
-      const auto src2 = src1 + ngdofs_tgt;
-      const auto pid1 = src1 / nldofs_src;
-      const auto pid2 = src2 / nldofs_src;
-      REQUIRE (recv_lids_pidpos(2*i,0)==pid1);
-      REQUIRE (recv_lids_pidpos(2*i+1,0)==pid2);
-    }
-  }
-  print (" -> Checking remapper internal state ... OK!\n",comm);
-
-  // -------------------------------------- //
-  //       Generate data for src fields     //
-  // -------------------------------------- //
-
-  print (" -> generate src fields data ...\n",comm);
-  // Generate data in a deterministic way, so that when we check results,
-  // we know a priori what the input data that generated the tgt field's
-  // values was, even if that data was off rank.
-  for (const auto& f : src_f) {
-    const auto& l = f.get_header().get_identifier().get_layout();
-    switch (get_layout_type(l.tags())) {
-      case LayoutType::Scalar2D:
-      {
-        const auto v_src = f.get_view<Real*,Host>();
-        for (int i=0; i<nldofs_src; ++i) {
-          v_src(i) = src_gids(i);
-        }
-      } break;
-      case LayoutType::Vector2D:
-      {
-        const auto v_src = f.get_view<Real**,Host>();
-        for (int i=0; i<nldofs_src; ++i) {
-          for (int j=0; j<vec_dim; ++j) {
-            v_src(i,j) = src_gids(i)*vec_dim + j;
-        }}
-      } break;
-      case LayoutType::Scalar3D:
-      {
-        const int nlevs = l.dims().back();
-        const auto v_src = f.get_view<Real**,Host>();
-        for (int i=0; i<nldofs_src; ++i) {
-          for (int j=0; j<nlevs; ++j) {
-            v_src(i,j) = src_gids(i)*nlevs + j;
-        }}
-      } break;
-      case LayoutType::Vector3D:
-      {
-        const int nlevs = l.dims().back();
-        const auto v_src = f.get_view<Real***,Host>();
-        for (int i=0; i<nldofs_src; ++i) {
-          for (int j=0; j<vec_dim; ++j) {
-            for (int k=0; k<nlevs; ++k) {
-              v_src(i,j,k) = src_gids(i)*vec_dim*nlevs + j*nlevs + k;
-        }}}
-      } break;
-      default:
-        EKAT_ERROR_MSG ("Unexpected layout.\n");
-    }
-    f.sync_to_dev();
-  }
-  print (" -> generate src fields data ... done!\n",comm);
-
-  auto combine = [] (const Real lhs, const Real rhs) -> Real {
-    return 0.25*lhs + 0.75*rhs;
+  auto gid2lid = [&](const int gid, const auto gids_v) {
+    auto data = gids_v.data();
+    auto it = std::find(data,data+gids_v.size(),gid);
+    return std::distance(data,it);
   };
-
-  // No bwd remap
-  REQUIRE_THROWS(remap->remap(false));
-
   for (int irun=0; irun<5; ++irun) {
-    print (" -> run remap ...\n",comm);
+    root_print (" -> Run " + std::to_string(irun) + "\n",comm);
     remap->remap(true);
-    print (" -> run remap ... done!\n",comm);
 
-    // -------------------------------------- //
-    //          Check remapped fields         //
-    // -------------------------------------- //
-
-    print (" -> check tgt fields ...\n",comm);
-    // Recall, tgt gid K should be the avg of src gids K and K+ngdofs_tgt
-    const int ntgt_gids = tgt_gids.size();
+    // Recall, tgt gid K should be the avg of local src_gids
     for (size_t ifield=0; ifield<tgt_f.size(); ++ifield) {
-      const auto& f = tgt_f[ifield];
-      const auto& l = f.get_header().get_identifier().get_layout();
-      const auto ls = to_string(l);
-      std::string dots (25-ls.size(),'.');
-      print ("   -> Checking field with layout " + to_string(l) + " " + dots + "\n",comm);
+      auto gsrc = all_gather_field(src_f[ifield],comm);
+      auto gtgt = all_gather_field(tgt_f[ifield],comm);
 
-      f.sync_to_host();
-
-      switch (get_layout_type(l.tags())) {
+      const auto& l = gsrc.get_header().get_identifier().get_layout();
+      const auto ls = l.to_string();
+      std::string dots (30-ls.size(),'.');
+      auto msg = "   -> Checking field with layout " + ls + " " + dots;
+      root_print (msg + "\n",comm);
+      bool ok = true;
+      switch (l.type()) {
         case LayoutType::Scalar2D:
         {
-          const auto v_tgt = f.get_view<const Real*,Host>();
-          for (int i=0; i<ntgt_gids; ++i) {
-            const auto gid = tgt_gids(i);
-            const auto term1 = gid;
-            const auto term2 = gid+ngdofs_tgt;
-            REQUIRE ( v_tgt(i)== combine(term1,term2) );
+          const auto v_src = gsrc.get_view<const Real*,Host>();
+          const auto v_tgt = gtgt.get_view<const Real*,Host>();
+          for (int idof=0; idof<ngdofs_tgt; ++idof) {
+            Real expected = 0;
+            auto gdof = gids_tgt_v(idof);
+            for (int j=0; j<2; ++j) {
+              auto src_gcol = gdof + j;
+              auto src_lcol = gid2lid(src_gcol,gids_src_v);
+              expected += w*v_src(src_lcol);
+            }
+            CHECK ( v_tgt(idof)== expected );
+            ok &= catch_capture.lastAssertionPassed();
           }
         } break;
         case LayoutType::Vector2D:
         {
-          const auto v_tgt = f.get_view<const Real**,Host>();
-          for (int i=0; i<ntgt_gids; ++i) {
-            const auto gid = tgt_gids(i);
-            for (int j=0; j<vec_dim; ++j) {
-              const auto term1 = gid*vec_dim+j;
-              const auto term2 = (gid+ngdofs_tgt)*vec_dim+j;
-              REQUIRE ( v_tgt(i,j)== combine(term1,term2) );
-          }}
+          const auto v_src = gsrc.get_view<const Real**,Host>();
+          const auto v_tgt = gtgt.get_view<const Real**,Host>();
+          for (int idof=0; idof<ngdofs_tgt; ++idof) {
+            for (int icmp=0; icmp<vec_dim; ++icmp) {
+              Real expected = 0;
+              auto gdof = gids_tgt_v(idof);
+              for (int j=0; j<2; ++j) {
+                auto src_gcol = gdof + j;
+                auto src_lcol = gid2lid(src_gcol,gids_src_v);
+                expected += w*v_src(src_lcol,icmp);
+              }
+              CHECK ( v_tgt(idof,icmp)== expected );
+              ok &= catch_capture.lastAssertionPassed();
+            }
+          }
+        } break;
+        case LayoutType::Tensor2D:
+        {
+          const auto v_src = gsrc.get_view<const Real***,Host>();
+          const auto v_tgt = gtgt.get_view<const Real***,Host>();
+          for (int idof=0; idof<ngdofs_tgt; ++idof) {
+            for (int icmp=0; icmp<vec_dim; ++icmp) {
+              for (int jcmp=0; jcmp<vec_dim; ++jcmp) {
+                Real expected = 0;
+                auto gdof = gids_tgt_v(idof);
+                for (int j=0; j<2; ++j) {
+                  auto src_gcol = gdof + j;
+                  auto src_lcol = gid2lid(src_gcol,gids_src_v);
+                  expected += w*v_src(src_lcol,icmp,jcmp);
+                }
+                CHECK ( v_tgt(idof,icmp,jcmp)== expected );
+                ok &= catch_capture.lastAssertionPassed();
+              }
+            }
+          }
         } break;
         case LayoutType::Scalar3D:
         {
-          const int nlevs = l.dims().back();
-          const auto v_tgt = f.get_view<const Real**,Host>();
-          for (int i=0; i<ntgt_gids; ++i) {
-            const auto gid = tgt_gids(i);
-            for (int j=0; j<nlevs; ++j) {
-              const auto term1 = gid*nlevs+j;
-              const auto term2 = (gid+ngdofs_tgt)*nlevs+j;
-              REQUIRE ( v_tgt(i,j)== combine(term1,term2) );
-          }}
+          const auto v_src = gsrc.get_view<const Real**,Host>();
+          const auto v_tgt = gtgt.get_view<const Real**,Host>();
+          auto f_nlevs = gsrc.get_header().get_identifier().get_layout().dims().back();
+          for (int idof=0; idof<ngdofs_tgt; ++idof) {
+            for (int ilev=0; ilev<f_nlevs; ++ilev) {
+              Real expected = 0;
+              auto gdof = gids_tgt_v(idof);
+              for (int j=0; j<2; ++j) {
+                auto src_gcol = gdof + j;
+                auto src_lcol = gid2lid(src_gcol,gids_src_v);
+                expected += w*v_src(src_lcol,ilev);
+              }
+              CHECK ( v_tgt(idof,ilev)== expected );
+              ok &= catch_capture.lastAssertionPassed();
+            }
+          }
         } break;
         case LayoutType::Vector3D:
         {
-          const int nlevs = l.dims().back();
-          const auto v_tgt = f.get_view<const Real***,Host>();
-          for (int i=0; i<ntgt_gids; ++i) {
-            const auto gid = tgt_gids(i);
-            for (int j=0; j<vec_dim; ++j) {
-              for (int k=0; k<nlevs; ++k) {
-                const auto term1 = gid*vec_dim*nlevs+j*nlevs+k;
-                const auto term2 = (gid+ngdofs_tgt)*vec_dim*nlevs+j*nlevs+k;
-                REQUIRE ( v_tgt(i,j,k)== combine(term1,term2) );
-          }}}
+          const auto v_src = gsrc.get_view<const Real***,Host>();
+          const auto v_tgt = gtgt.get_view<const Real***,Host>();
+          auto f_nlevs = gsrc.get_header().get_identifier().get_layout().dims().back();
+          for (int idof=0; idof<ngdofs_tgt; ++idof) {
+            for (int icmp=0; icmp<vec_dim; ++icmp) {
+              for (int ilev=0; ilev<f_nlevs; ++ilev) {
+                Real expected = 0;
+                auto gdof = gids_tgt_v(idof);
+                for (int j=0; j<2; ++j) {
+                  auto src_gcol = gdof + j;
+                  auto src_lcol = gid2lid(src_gcol,gids_src_v);
+                  expected += w*v_src(src_lcol,icmp,ilev);
+                }
+                CHECK ( v_tgt(idof,icmp,ilev)== expected );
+                ok &= catch_capture.lastAssertionPassed();
+              }
+            }
+          }
+        } break;
+        case LayoutType::Tensor3D:
+        {
+          const auto v_src = gsrc.get_view<const Real****,Host>();
+          const auto v_tgt = gtgt.get_view<const Real****,Host>();
+          auto f_nlevs = gsrc.get_header().get_identifier().get_layout().dims().back();
+          for (int idof=0; idof<ngdofs_tgt; ++idof) {
+            for (int icmp=0; icmp<tens_dim1; ++icmp) {
+              for (int jcmp=0; jcmp<tens_dim2; ++jcmp) {
+                for (int ilev=0; ilev<f_nlevs; ++ilev) {
+                  Real expected = 0;
+                  auto gdof = gids_tgt_v(idof);
+                  for (int j=0; j<2; ++j) {
+                    auto src_gcol = gdof + j;
+                    auto src_lcol = gid2lid(src_gcol,gids_src_v);
+                    expected += w*v_src(src_lcol,icmp,jcmp,ilev);
+                  }
+                  CHECK ( v_tgt(idof,icmp,jcmp,ilev)== expected );
+                  ok &= catch_capture.lastAssertionPassed();
+                }
+              }
+            }
+          }
         } break;
         default:
           EKAT_ERROR_MSG ("Unexpected layout.\n");
       }
-
-      print ("   -> Checking field with layout " + to_string(l) + " " + dots + " OK!\n",comm);
+      root_print (msg + (ok ? "PASS" : "FAIL") + "\n",comm);
     }
-    print ("check tgt fields ... done!\n",comm);
   }
 
   // Clean up scorpio stuff
-  scorpio::eam_pio_finalize();
+  scorpio::finalize_subsystem();
 }
 
 } // namespace scream

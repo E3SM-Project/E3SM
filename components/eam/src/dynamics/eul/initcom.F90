@@ -31,7 +31,6 @@ subroutine initcom
    use physconst,       only: rair, rearth, ra
    use time_manager,    only: get_step_size
    use cam_abortutils,      only: endrun
-   use scamMod,         only: scmlat,scmlon,single_column
    use cam_control_mod, only: nsrest
    use hycoef,          only: hypd, hypm
    use eul_control_mod, only: ifax, trig,eul_nsplit
@@ -82,14 +81,12 @@ subroutine initcom
 !   call hdinti  (rearth  ,dtime   )
    call hdinti  (rearth  ,zdt   )
 
-   if ( .not. single_column ) then
 !
 ! NMAX dependent arrays
 !
-      if (pmmax.gt.plon/2) then
-         call endrun ('INITCOM:mmax=ptrm+1 .gt. plon/2')
-      end if
-   endif
+   if (pmmax.gt.plon/2) then
+      call endrun ('INITCOM:mmax=ptrm+1 .gt. plon/2')
+   end if
 
    zra2 = ra*ra
    do j=2,pnmax
@@ -104,25 +101,23 @@ subroutine initcom
    do j=1,pmmax
       xm(j) = j-1
    end do
-   if ( .not. single_column ) then
 !
 ! Gaussian latitude dependent arrays
 !
-      call gauaw(zsi     ,zw      ,plat    )
-      do irow=1,plat/2
-         slat(irow) = zsi(irow)
-         w(irow)              = zw(irow)
-         w(plat - irow + 1)   = zw(irow)
-         cs(irow)  = 1._r8 - zsi(irow)*zsi(irow)
-         xlat = asin(slat(irow))
-         clat(irow) = -xlat
-         clat(plat - irow + 1) = xlat
-      end do
-      
-      do lat=1,plat
-         latdeg(lat) = clat(lat)*45._r8/atan(1._r8)
-      end do
-   endif
+   call gauaw(zsi     ,zw      ,plat    )
+   do irow=1,plat/2
+      slat(irow) = zsi(irow)
+      w(irow)              = zw(irow)
+      w(plat - irow + 1)   = zw(irow)
+      cs(irow)  = 1._r8 - zsi(irow)*zsi(irow)
+      xlat = asin(slat(irow))
+      clat(irow) = -xlat
+      clat(plat - irow + 1) = xlat
+   end do
+
+   do lat=1,plat
+      latdeg(lat) = clat(lat)*45._r8/atan(1._r8)
+   end do
 !
 ! Integration matrices of hydrostatic equation(href) and conversion
 ! term(a).  href computed as in ccm0 but isothermal bottom ecref
@@ -214,124 +209,95 @@ subroutine initcom
       end if
       if (nlon(j).lt.plon) fullgrid = .false.
    end do
-
-   if ( single_column ) then
-      do j=1,plat
-         slat(j) = 1.0_r8 * sin(4.0_r8*atan(1.0_r8)*scmlat/180._r8)
-         w(j)   = 2.0_r8/plat
-         cs(j)  = 10._r8 - slat(j)*slat(j)
-!         itmp = 2*pspt - 1
-!         call phcs  (zalp    ,zdalp   ,itmp    ,zslat    )
-!         call reordp(j       ,itmp    ,zalp    ,zdalp   )
-      end do
-
-!
-! Latitude array (list of latitudes in radians)
-!
-      xlat = asin(slat(1))
-      clat(1) = xlat
-      
-      clat(1)=scmlat*atan(1._r8)/45._r8
-      latdeg(1) = clat(1)*45._r8/atan(1._r8)
-      clon(1,1)   = 4.0_r8*atan(1._r8)*mod((scmlon+360._r8),360._r8)/180._r8
-      londeg(1,1) = mod((scmlon+360._r8),360._r8)
-!
-! SCAM not yet able to handle reduced grid.
-!
-      if (.not. fullgrid) then
-         call endrun ('INITCOM: SCAM not yet configured to handle reduced grid')
-      end if
-   else
 !
 ! Compute constants related to Legendre transforms
 ! Compute and reorder ALP and DALP
 !
-      allocate( alp  (pspt,plat/2) )
-      allocate( dalp (pspt,plat/2) )
-      do j=1,plat/2
-         zslat = slat(j)
-         itmp = 2*pspt - 1
-         call phcs  (zalp    ,zdalp   ,itmp    ,zslat    )
-         call reordp(j       ,itmp    ,zalp    ,zdalp   )
-      end do
+   allocate( alp  (pspt,plat/2) )
+   allocate( dalp (pspt,plat/2) )
+   do j=1,plat/2
+      zslat = slat(j)
+      itmp = 2*pspt - 1
+      call phcs  (zalp    ,zdalp   ,itmp    ,zslat    )
+      call reordp(j       ,itmp    ,zalp    ,zdalp   )
+   end do
 !
 ! Copy and save local ALP and DALP
 !
-      allocate( lalp  (lpspt,plat/2) )
-      allocate( ldalp (lpspt,plat/2) )
-      do j=1,plat/2
-         do lm=1,numm(iam)
-            m = locm(lm,iam)
-            mr = nstart(m)
-            lmr = lnstart(lm)
-            do n=1,nlen(m)
-               lalp(lmr+n,j) = alp(mr+n,j)
-               ldalp(lmr+n,j) = dalp(mr+n,j)
-            end do
+   allocate( lalp  (lpspt,plat/2) )
+   allocate( ldalp (lpspt,plat/2) )
+   do j=1,plat/2
+      do lm=1,numm(iam)
+         m = locm(lm,iam)
+         mr = nstart(m)
+         lmr = lnstart(lm)
+         do n=1,nlen(m)
+            lalp(lmr+n,j) = alp(mr+n,j)
+            ldalp(lmr+n,j) = dalp(mr+n,j)
          end do
       end do
+   end do
 !
 ! Mirror latitudes south of south pole
 !
-      lat = 1
-      do j=j1-2,1,-1
-         nlonex(j) = nlon(lat)
-         lat = lat + 1
-      end do
-      nlonex(j1-1) = nlon(1)     ! south pole
+   lat = 1
+   do j=j1-2,1,-1
+      nlonex(j) = nlon(lat)
+      lat = lat + 1
+   end do
+   nlonex(j1-1) = nlon(1)     ! south pole
 !
 ! Real latitudes
 !
-      j = j1
-      do lat=1,plat
-         nlonex(j) = nlon(lat)
-         j = j + 1
-      end do
-      nlonex(j1+plat) = nlon(plat)  ! north pole
+   j = j1
+   do lat=1,plat
+      nlonex(j) = nlon(lat)
+      j = j + 1
+   end do
+   nlonex(j1+plat) = nlon(plat)  ! north pole
 !
 ! Mirror latitudes north of north pole
 !
-      lat = plat
-      do j=j1+plat+1,platd
-         nlonex(j) = nlon(lat)
-         lat = lat - 1
-      end do
+   lat = plat
+   do j=j1+plat+1,platd
+      nlonex(j) = nlon(lat)
+      lat = lat - 1
+   end do
 !
 ! Longitude array
 !
-      pi = 4.0_r8*atan(1.0_r8)
-      do lat=1,plat
-         do i=1,nlon(lat)
-            londeg(i,lat) = (i-1)*360._r8/nlon(lat)
-            clon(i,lat)   = (i-1)*2.0_r8*pi/nlon(lat)
-         end do
+   pi = 4.0_r8*atan(1.0_r8)
+   do lat=1,plat
+      do i=1,nlon(lat)
+         londeg(i,lat) = (i-1)*360._r8/nlon(lat)
+         clon(i,lat)   = (i-1)*2.0_r8*pi/nlon(lat)
       end do
+   end do
 
-      do j=1,plat/2
-         nmmax(j) = wnummax(j) + 1
+   do j=1,plat/2
+      nmmax(j) = wnummax(j) + 1
+   end do
+   do m=1,pmmax
+      do irow=1,plat/2
+         if (nmmax(irow) .ge. m) then
+            beglatpair(m) = irow
+            goto 10
+         end if
       end do
-      do m=1,pmmax
-         do irow=1,plat/2
-            if (nmmax(irow) .ge. m) then
-               beglatpair(m) = irow
-               goto 10
-            end if
-         end do
-         call endrun ('INITCOM: Should not ever get here')
+      call endrun ('INITCOM: Should not ever get here')
 10       continue
-      end do
+   end do
 !
 ! Set up trigonometric tables for fft
 !
-      do j=1,plat
-         call set99(trig(1,j),ifax(1,j),nlon(j))
-      end do
+   do j=1,plat
+      call set99(trig(1,j),ifax(1,j),nlon(j))
+   end do
 !
 ! Set flag indicating dynamics grid is now defined.
 ! NOTE: this ASSUMES initcom is called after spmdinit.  The setting of nlon done here completes
 ! the definition of the dynamics grid.
 !
-   endif
 
    return
 

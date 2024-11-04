@@ -14,7 +14,7 @@
     TIME_ATM[%phys]_LND[%phys]_ICE[%phys]_OCN[%phys]_ROF[%phys]_GLC[%phys]_WAV[%phys][_ESP%phys][_BGC%phys]
     Where for the EAM specific compsets below the following is supported
     TIME = Time period (e.g. 2000, HIST, RCP8...)
-    ATM  = [EAM, SATM, SCREAM]
+    ATM  = [EAM, EAMXX, SATM, SCREAM]
     LND  = [ELM,  SLND]
     ICE  = [MPASSI, CICE, DICE, SICE]
     OCN  = [MPASO, DOCN, SOCN]
@@ -41,39 +41,113 @@
 
 <compset>
   <alias>WCYCL1850</alias>
-  <lname>1850SOI_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+  <lname>1850SOI_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <compset>
   <alias>WCYCL1850_chemUCI-Linozv3</alias>
-  <lname>1850SOI_EAM%CHEMUCI-LINOZV3_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+  <lname>1850SOI_EAM%CHEMUCI-LINOZV3_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>WCYCL1850_chemUCI-Linozv3-mam5</alias>
+  <lname>1850SOI_EAM%CHEMUCI-LINOZV3-MAM5_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <compset>
   <alias>WCYCL1850-1pctCO2</alias>
-  <lname>1850SOI_EAM%CMIP6-1pctCO2_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+  <lname>1850SOI_EAM%CMIP6-1pctCO2_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <compset>
   <alias>WCYCL1850-4xCO2</alias>
-  <lname>1850SOI_EAM%CMIP6-4xCO2_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+  <lname>1850SOI_EAM%CMIP6-4xCO2_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <!-- WCYCL1850NS uses no spun-up ICs for mpaso and mpassi. It is only being used for nigthly tests on small grids such as ne11_oQU480-->
 <compset>
   <alias>WCYCL1850NS</alias>
-  <lname>1850_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+  <lname>1850_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<!-- Same as WCYCL1850NS but for 2010 (to avoid needing transient files). Mainly for testing. -->
+<compset>
+  <alias>WCYCL2010NS</alias>
+  <lname>2010_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <compset>
   <alias>WCYCL1950</alias>
-  <lname>1950SOI_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+  <lname>1950SOI_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <compset>
   <alias>WCYCL20TR</alias>
-  <lname>20TRSOI_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+  <lname>20TRSOI_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
+
+<!-- Compsets for historical single forcing experiments, two aliases each with WCYCL20TR or hist as prefix -->
+
+<compset>
+  <alias>WCYCL20TR-GHG</alias>
+  <lname>20TRSOI_EAM%CMIP6-GHG_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>WCYCL20TR-aer</alias>
+  <lname>20TRSOI_EAM%CMIP6-AER_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>WCYCL20TR-xGHG-xaer</alias>
+  <lname>20TRSOI_EAM%CMIP6-xGHG-xAER_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>WCYCL20TR-nat</alias>
+  <lname>20TRSOI_EAM%CMIP6-NAT_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>WCYCL20TR-ozone</alias>
+  <lname>20TRSOI_EAM%CMIP6-OZONE_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>WCYCL20TR-lulc</alias>
+  <lname>20TRSOI_EAM%CMIP6-LULC_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>WCYCL20TR-volc</alias>
+  <lname>20TRSOI_EAM%CMIP6-VOLC_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>WCYCL20TR-xaer</alias>
+  <lname>20TRSOI_EAM%CMIP6-xAER_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<!-- ************************************************ -->
+<!--               MMF coupled compsets               -->
+<!-- ************************************************ -->
+<compset>
+  <alias>WCYCL1950-MMF1</alias>
+  <lname>1950SOI_EAM%MMF1_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>WCYCL20TR-MMF1</alias>
+  <lname>20TRSOI_EAM%MMF1_ELM%SP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<!-- separate compset for testing (NS = no spinup) -->
+<compset>
+  <alias>WCYCL20TRNS-MMF1</alias>
+  <lname>20TR_EAM%MMF1_ELM%SP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+<!-- ************************************************** -->
+<!-- ************************************************** -->
 
 <compset>
   <alias>WCYCL20TR_chemUCI-Linozv3</alias>
@@ -81,13 +155,23 @@
 </compset>
 
 <compset>
+  <alias>WCYCL20TR_chemUCI-Linozv3-mam5</alias>
+  <lname>20TRSOI_EAM%CHEMUCI-LINOZV3-MAM5_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
   <alias>WCYCLSSP585</alias>
-  <lname>SSP585SOI_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+  <lname>SSP585SOI_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <compset>
   <alias>WCYCLSSP370</alias>
-  <lname>SSP370SOI_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+  <lname>SSP370SOI_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>WCYCLSSP245</alias>
+  <lname>SSP245SOI_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <!-- E3SM v1 science compsets -->
@@ -299,32 +383,52 @@
 
 <compset>
   <alias>CRYO1850</alias>
-  <lname>1850SOI_EAM%CMIP6_ELM%SPBC_MPASSI%DIB_MPASO%IBISMF_MOSART_SGLC_SWAV</lname>
+  <lname>1850SOI_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI%DIB_MPASO%IBPISMF_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <compset>
   <alias>CRYO1850-4xCO2</alias>
-  <lname>1850SOI_EAM%CMIP6-4xCO2_ELM%SPBC_MPASSI%DIB_MPASO%IBISMF_MOSART_SGLC_SWAV</lname>
+  <lname>1850SOI_EAM%CMIP6-4xCO2_ELM%CNPRDCTCBCTOP_MPASSI%DIB_MPASO%IBPISMF_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>CRYO1850-1pctCO2</alias>
+  <lname>1850SOI_EAM%CMIP6-1pctCO2_ELM%CNPRDCTCBCTOP_MPASSI%DIB_MPASO%IBPISMF_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <compset>
   <alias>CRYO1950</alias>
-  <lname>1950SOI_EAM%CMIP6_ELM%SPBC_MPASSI%DIB_MPASO%IBISMF_MOSART_SGLC_SWAV</lname>
+  <lname>1950SOI_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI%DIB_MPASO%IBPISMF_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>CRYO1850-DISMF</alias>
+  <lname>1850SOI_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI%DIB_MPASO%IBDISMF_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>CRYO1950-DISMF</alias>
+  <lname>1950SOI_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI%DIB_MPASO%IBDISMF_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <compset>
   <alias>CRYO20TR</alias>
-  <lname>20TRSOI_EAM%CMIP6_ELM%SPBC_MPASSI%DIB_MPASO%IBISMF_MOSART_SGLC_SWAV</lname>
+  <lname>20TRSOI_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI%DIB_MPASO%IBPISMF_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>CRYOSSP245</alias>
+  <lname>SSP245SOI_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI%DIB_MPASO%IBPISMF_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <compset>
   <alias>CRYOSSP585</alias>
-  <lname>SSP585SOI_EAM%CMIP6_ELM%SPBC_MPASSI%DIB_MPASO%IBISMF_MOSART_SGLC_SWAV</lname>
+  <lname>SSP585SOI_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI%DIB_MPASO%IBPISMF_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <compset>
   <alias>CRYOSSP370</alias>
-  <lname>SSP370SOI_EAM%CMIP6_ELM%SPBC_MPASSI%DIB_MPASO%IBISMF_MOSART_SGLC_SWAV</lname>
+  <lname>SSP370SOI_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI%DIB_MPASO%IBPISMF_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <compset>
@@ -352,13 +456,26 @@
 
 <compset>
   <alias>BGWCYCL1850</alias>
-  <lname>1850_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_MALI%STATIC_SWAV</lname>
+  <lname>1850_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_MALI_SWAV</lname>
 </compset>
+
+<!-- EAMXX fully coupled compset -->
+
+<compset>
+  <alias>WCYCLXX2010</alias>
+  <lname>2010_EAMXX_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
 
 <!-- OCN + CICE + GLC Only Compsets -->
 <compset>
-  <alias>MPAS_LISIO_TEST</alias>
-  <lname>2000_DATM%NYF_SLND_MPASSI_MPASO_DROF%NYF_MALI%SIA_SWAV</lname>
+  <alias>MPAS_LISIO_JRA1p5</alias>
+  <lname>2000_DATM%JRA-1p5_SLND_MPASSI_MPASO%DATMFORCED_DROF%JRA-1p5_MALI%SIA_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>MPAS_FOLISIO_JRA1p5</alias>
+  <lname>2000_DATM%JRA-1p5_SLND_MPASSI_MPASO%DATMFORCED_DROF%JRA-1p5_MALI_SWAV</lname>
 </compset>
 
 <!-- Slab ocean cases -->
@@ -394,6 +511,7 @@
       <value  compset="20TR_EAM">1850-01-01</value>
       <value  compset="SSP585.*_EAM">2015-01-01</value>
       <value  compset="SSP370.*_EAM">2015-01-01</value>
+      <value  compset="SSP245.*_EAM">2015-01-01</value>
     </values>
   </entry>
 

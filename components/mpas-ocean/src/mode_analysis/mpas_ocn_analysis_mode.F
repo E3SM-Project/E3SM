@@ -277,6 +277,7 @@ module ocn_analysis_mode
       type (mpas_pool_type), pointer :: tracersPool
       type (mpas_pool_type), pointer :: forcingPool
       type (mpas_pool_type), pointer :: meshPool
+      type (mpas_pool_type), pointer :: verticalMeshPool
       type (mpas_pool_type), pointer :: scratchPool
 
       type (MPAS_timeInterval_type) :: timeStep
@@ -315,6 +316,7 @@ module ocn_analysis_mode
          call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
          call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
          call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block_ptr % structs, 'verticalMesh', verticalMeshPool)
          call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
 
          call mpas_pool_get_array(forcingPool, 'seaIcePressure', seaIcePressure)
@@ -348,7 +350,7 @@ module ocn_analysis_mode
             !$acc enter data copyin(landIceDraft)
          endif
 #endif
-         call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, scratchPool, tracersPool, 1)
+         call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, verticalMeshPool, scratchPool, tracersPool, 1)
 #ifdef MPAS_OPENACC
          !$acc update host(layerThickEdgeFlux, layerThickEdgeMean)
          !$acc update host(relativeVorticity, circulation)

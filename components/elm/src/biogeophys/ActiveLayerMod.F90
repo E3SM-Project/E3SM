@@ -45,7 +45,7 @@ contains
     ! !USES:
     use shr_const_mod    , only : SHR_CONST_TKFRZ
     use elm_varpar       , only : nlevgrnd
-    use clm_time_manager , only : get_curr_date, get_step_size
+    use elm_time_manager , only : get_curr_date, get_step_size
     use elm_varctl       , only : iulog
     use elm_varcon       , only : zsoi
     !

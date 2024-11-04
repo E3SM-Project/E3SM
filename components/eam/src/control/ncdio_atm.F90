@@ -18,7 +18,7 @@ module ncdio_atm
   use shr_scam_mod,   only: shr_scam_getCloseLatLon  ! Standardized system subroutines
   use spmd_utils,     only: masterproc
   use cam_abortutils, only: endrun
-  use scamMod,        only: scmlat,scmlon,single_column,scm_multcols
+  use iop_data_mod,   only: scmlat,scmlon,single_column,scm_multcols
   use cam_logfile,    only: iulog
   !
   ! !PUBLIC TYPES:

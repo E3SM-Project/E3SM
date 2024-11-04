@@ -22,7 +22,7 @@ struct CudaWrap
   using Scalar = ScalarT;
   using RangePolicy = typename ekat::KokkosTypes<DeviceT>::RangePolicy;
 
-  static Scalar cxx_pow(Scalar base, Scalar exp)
+  static Scalar pow(Scalar base, Scalar exp)
   {
     Scalar result;
     RangePolicy policy(0,1);
@@ -43,106 +43,106 @@ static Scalar wrap_name(Scalar input) {                                       \
   return result;                                                              \
 }
 
-  cuda_wrap_single_arg(cxx_gamma, std::tgamma)
-  cuda_wrap_single_arg(cxx_sqrt, std::sqrt)
-  cuda_wrap_single_arg(cxx_cbrt, std::cbrt)
-  cuda_wrap_single_arg(cxx_log, std::log)
-  cuda_wrap_single_arg(cxx_log10, std::log10)
-  cuda_wrap_single_arg(cxx_exp, std::exp)
-  cuda_wrap_single_arg(cxx_expm1, std::expm1)
-  cuda_wrap_single_arg(cxx_tanh, std::tanh)
-  cuda_wrap_single_arg(cxx_erf, std::erf)
+  cuda_wrap_single_arg(gamma, std::tgamma)
+  cuda_wrap_single_arg(sqrt, std::sqrt)
+  cuda_wrap_single_arg(cbrt, std::cbrt)
+  cuda_wrap_single_arg(log, std::log)
+  cuda_wrap_single_arg(log10, std::log10)
+  cuda_wrap_single_arg(exp, std::exp)
+  cuda_wrap_single_arg(expm1, std::expm1)
+  cuda_wrap_single_arg(tanh, std::tanh)
+  cuda_wrap_single_arg(erf, std::erf)
 
 #undef cuda_wrap_single_arg
 };
 
 extern "C" {
 
-Real cxx_pow(Real base, Real exp)
+Real scream_pow(Real base, Real exp)
 {
 #ifdef EAMXX_ENABLE_GPU
-  return CudaWrap<Real, DefaultDevice>::cxx_pow(base, exp);
+  return CudaWrap<Real, DefaultDevice>::pow(base, exp);
 #else
   return std::pow(base, exp);
 #endif
 }
 
-Real cxx_gamma(Real input)
+Real scream_gamma(Real input)
 {
 #ifdef EAMXX_ENABLE_GPU
-  return CudaWrap<Real, DefaultDevice>::cxx_gamma(input);
+  return CudaWrap<Real, DefaultDevice>::gamma(input);
 #else
   return std::tgamma(input);
 #endif
 }
 
-Real cxx_cbrt(Real input)
+Real scream_cbrt(Real input)
 {
 #ifdef EAMXX_ENABLE_GPU
-  return CudaWrap<Real, DefaultDevice>::cxx_cbrt(input);
+  return CudaWrap<Real, DefaultDevice>::cbrt(input);
 #else
   return std::cbrt(input);
 #endif
 }
 
-Real cxx_sqrt(Real input)
+Real scream_sqrt(Real input)
 {
 #ifdef EAMXX_ENABLE_GPU
-  return CudaWrap<Real, DefaultDevice>::cxx_sqrt(input);
+  return CudaWrap<Real, DefaultDevice>::sqrt(input);
 #else
   return std::sqrt(input);
 #endif
 }
 
-Real cxx_log(Real input)
+Real scream_log(Real input)
 {
 #ifdef EAMXX_ENABLE_GPU
-  return CudaWrap<Real, DefaultDevice>::cxx_log(input);
+  return CudaWrap<Real, DefaultDevice>::log(input);
 #else
   return std::log(input);
 #endif
 }
 
-Real cxx_log10(Real input)
+Real scream_log10(Real input)
 {
 #ifdef EAMXX_ENABLE_GPU
-  return CudaWrap<Real, DefaultDevice>::cxx_log10(input);
+  return CudaWrap<Real, DefaultDevice>::log10(input);
 #else
   return std::log10(input);
 #endif
 }
 
-Real cxx_exp(Real input)
+Real scream_exp(Real input)
 {
 #ifdef EAMXX_ENABLE_GPU
-  return CudaWrap<Real, DefaultDevice>::cxx_exp(input);
+  return CudaWrap<Real, DefaultDevice>::exp(input);
 #else
   return std::exp(input);
 #endif
 }
 
-Real cxx_expm1(Real input)
+Real scream_expm1(Real input)
 {
 #ifdef EAMXX_ENABLE_GPU
-  return CudaWrap<Real, DefaultDevice>::cxx_expm1(input);
+  return CudaWrap<Real, DefaultDevice>::expm1(input);
 #else
   return std::expm1(input);
 #endif
 }
   
-Real cxx_tanh(Real input)
+Real scream_tanh(Real input)
 {
 #ifdef EAMXX_ENABLE_GPU
-  return CudaWrap<Real, DefaultDevice>::cxx_tanh(input);
+  return CudaWrap<Real, DefaultDevice>::tanh(input);
 #else
   return std::tanh(input);
 #endif
 }
 
-Real cxx_erf(Real input)
+Real scream_erf(Real input)
 {
 #ifdef EAMXX_ENABLE_GPU
-  return CudaWrap<Real, DefaultDevice>::cxx_erf(input);
+  return CudaWrap<Real, DefaultDevice>::erf(input);
 #else
   return std::erf(input);
 #endif

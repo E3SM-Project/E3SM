@@ -18,18 +18,21 @@
 
 <!-- advection -->
 <config_thickness_advection>'fo'</config_thickness_advection>
-<config_tracer_advection>'none'</config_tracer_advection>
+<config_tracer_advection>'fo'</config_tracer_advection>
+<config_horiz_tracer_adv_order>3</config_horiz_tracer_adv_order>
+<config_advection_coef_3rd_order>0.25</config_advection_coef_3rd_order>
 <config_restore_thickness_after_advection>.false.</config_restore_thickness_after_advection>
 <config_zero_sfcMassBalApplied_over_bare_land>.true.</config_zero_sfcMassBalApplied_over_bare_land>
 
 <!-- solidearth -->
 <config_uplift_method>'none'</config_uplift_method>
-<config_slm_coupling_interval>'0002-00-00_00:00:00'</config_slm_coupling_interval>
+<config_slm_coupling_interval>2</config_slm_coupling_interval>
 <config_MALI_to_SLM_weights_file>'mpas_to_grid.nc'</config_MALI_to_SLM_weights_file>
 <config_SLM_to_MALI_weights_file>'grid_to_mpas.nc'</config_SLM_to_MALI_weights_file>
 
 <!-- calving -->
 <config_calving>'none'</config_calving>
+<config_apply_calving_mask>.false.</config_apply_calving_mask>
 <config_use_Albany_flowA_eqn_for_vM>.false.</config_use_Albany_flowA_eqn_for_vM>
 <config_calving_topography>-500.0</config_calving_topography>
 <config_calving_thickness>300.0</config_calving_thickness>
@@ -40,8 +43,9 @@
 <config_data_calving>.false.</config_data_calving>
 <config_calving_timescale>0.0</config_calving_timescale>
 <config_restore_calving_front>.true.</config_restore_calving_front>
-<config_remove_icebergs>.false.</config_remove_icebergs>
-<config_remove_small_islands>.false.</config_remove_small_islands>
+<config_restore_calving_front_prevent_retreat>.true.</config_restore_calving_front_prevent_retreat>
+<config_remove_icebergs>.true.</config_remove_icebergs>
+<config_remove_small_islands>.true.</config_remove_small_islands>
 <config_calving_speed_limit>100.0</config_calving_speed_limit>
 <config_grounded_von_Mises_threshold_stress>1.0e6</config_grounded_von_Mises_threshold_stress>
 <config_floating_von_Mises_threshold_stress>1.0e6</config_floating_von_Mises_threshold_stress>
@@ -60,9 +64,10 @@
 <config_ismip6_retreat_k>-170.0</config_ismip6_retreat_k>
 <config_calving_error_threshold>0.1</config_calving_error_threshold>
 <config_distribute_unablatedVolumeDynCell>.false.</config_distribute_unablatedVolumeDynCell>
+<config_update_velocity_before_calving>.false.</config_update_velocity_before_calving>
 
 <!-- thermal_solver -->
-<config_thermal_solver>'none'</config_thermal_solver>
+<config_thermal_solver>'temperature'</config_thermal_solver>
 <config_thermal_calculate_bmb>.true.</config_thermal_calculate_bmb>
 <config_temperature_init>'file'</config_temperature_init>
 <config_thermal_thickness>0.0</config_thermal_thickness>
@@ -94,6 +99,7 @@
 <config_temperature_profile_variability_phase>0.0</config_temperature_profile_variability_phase>
 <config_temperature_profile_GL_depth_fraction>0.25</config_temperature_profile_GL_depth_fraction>
 <config_front_mass_bal_grounded>'none'</config_front_mass_bal_grounded>
+<config_use_3d_thermal_forcing_for_face_melt>.false.</config_use_3d_thermal_forcing_for_face_melt>
 <config_beta_ocean_thermal_forcing>1.18</config_beta_ocean_thermal_forcing>
 <config_add_ocean_thermal_forcing>0.0</config_add_ocean_thermal_forcing>
 <config_alpha_subglacial_discharge>0.39</config_alpha_subglacial_discharge>
@@ -112,20 +118,24 @@
 <!-- time_integration -->
 <config_dt>'0000-00-01_00:00:00'</config_dt>
 <config_time_integration>'forward_euler'</config_time_integration>
+<config_rk_order>2</config_rk_order>
+<config_rk3_stages>3</config_rk3_stages>
 <config_adaptive_timestep>.false.</config_adaptive_timestep>
 <config_min_adaptive_timestep>3600.0</config_min_adaptive_timestep>
 <config_max_adaptive_timestep>3.15e9</config_max_adaptive_timestep>
 <config_adaptive_timestep_CFL_fraction>0.25</config_adaptive_timestep_CFL_fraction>
 <config_adaptive_timestep_calvingCFL_fraction>1.0</config_adaptive_timestep_calvingCFL_fraction>
+<config_adaptive_timestep_faceMeltingCFL_fraction>1.0</config_adaptive_timestep_faceMeltingCFL_fraction>
 <config_adaptive_timestep_include_DCFL>.false.</config_adaptive_timestep_include_DCFL>
 <config_adaptive_timestep_include_calving>.true.</config_adaptive_timestep_include_calving>
+<config_adaptive_timestep_include_face_melting>.true.</config_adaptive_timestep_include_face_melting>
 <config_adaptive_timestep_force_interval>'1000-00-00_00:00:00'</config_adaptive_timestep_force_interval>
 
 <!-- time_management -->
 <config_do_restart>.false.</config_do_restart>
 <config_restart_timestamp_name>'rpointer.glc'</config_restart_timestamp_name>
-<config_start_time>'0000-01-01_00:00:00'</config_start_time>
-<config_stop_time>'0000-01-01_00:00:00'</config_stop_time>
+<config_start_time>'0001-01-01_00:00:00'</config_start_time>
+<config_stop_time>'0001-01-01_00:00:00'</config_stop_time>
 <config_run_duration>'none'</config_run_duration>
 <config_calendar_type CALENDAR="NO_LEAP">'noleap'</config_calendar_type>
 <config_calendar_type>'gregorian'</config_calendar_type>
@@ -140,6 +150,7 @@
 <config_year_digits>4</config_year_digits>
 <config_output_external_velocity_solver_data>.false.</config_output_external_velocity_solver_data>
 <config_write_albany_ascii_mesh>.false.</config_write_albany_ascii_mesh>
+<config_create_all_logs_in_e3sm>.false.</config_create_all_logs_in_e3sm>
 
 <!-- decomposition -->
 <config_num_halos>3</config_num_halos>
@@ -154,6 +165,7 @@
 <config_print_thermal_info>.false.</config_print_thermal_info>
 <config_always_compute_fem_grid>.true.</config_always_compute_fem_grid>
 <config_print_velocity_cleanup_details>.false.</config_print_velocity_cleanup_details>
+<config_check_tracer_monotonicity>.false.</config_check_tracer_monotonicity>
 
 <!-- subglacial_hydro -->
 <config_SGH>.false.</config_SGH>
@@ -173,6 +185,7 @@
 <config_SGH_bed_roughness_max>0.1</config_SGH_bed_roughness_max>
 <config_SGH_creep_coefficient>0.04</config_SGH_creep_coefficient>
 <config_SGH_englacial_porosity>0.01</config_SGH_englacial_porosity>
+<config_SGH_use_iceThicknessHydro>.true.</config_SGH_use_iceThicknessHydro>
 <config_SGH_chnl_active>.false.</config_SGH_chnl_active>
 <config_SGH_chnl_include_DCFL>.false.</config_SGH_chnl_include_DCFL>
 <config_SGH_chnl_alpha>1.25</config_SGH_chnl_alpha>
@@ -183,6 +196,7 @@
 <config_SGH_include_pressure_melt>.true.</config_SGH_include_pressure_melt>
 <config_SGH_shmip_forcing>'none'</config_SGH_shmip_forcing>
 <config_SGH_basal_melt>'file'</config_SGH_basal_melt>
+<config_SGH_iter_smooth_waterPressureSlopeNormal>1</config_SGH_iter_smooth_waterPressureSlopeNormal>
 
 <!-- AM_globalStats -->
 <config_AM_globalStats_enable>.true.</config_AM_globalStats_enable>

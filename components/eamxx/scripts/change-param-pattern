@@ -35,4 +35,4 @@ for bad_name_under in bad_name_unders:
     run_cmd_no_fail(f"sed -i -e 's/{bad_name_ws}/{good_name}/g'    $(git grep -l '{bad_name_ws}')")
     run_cmd_no_fail(f"git commit -a -m '{bad_name_ws} -> {good_name}'")
     print("  Testing")
-    run_cmd_no_fail("./create_test ERS_D_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1 --compiler=gnu9", from_dir="../../cime/scripts")
+    run_cmd_no_fail("./create_test ERS_D_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1", from_dir="../../cime/scripts")

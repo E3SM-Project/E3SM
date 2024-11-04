@@ -1,0 +1,35 @@
+%YAML 1.1
+---
+driver_options:
+  atmosphere_dag_verbosity_level: 5
+
+time_stepping:
+  time_step: ${ATM_TIME_STEP}
+  run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
+  number_of_steps: ${NUM_STEPS}
+
+atmosphere_processes:
+  atm_procs_list: [p3]
+  p3:
+    max_total_ni: 740.0e3
+    compute_tendencies: [T_mid,qc]
+    do_prescribed_ccn: false
+
+grids_manager:
+  Type: Mesh Free
+  grids_names: [Physics]
+  Physics:
+    type: point_grid
+    number_of_global_columns:   218
+    number_of_vertical_levels:  72
+
+initial_conditions:
+  # The name of the file containing the initial conditions for this test.
+  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
+  precip_liq_surf_mass: 0.0
+  precip_ice_surf_mass: 0.0
+
+# The parameters for I/O control
+Scorpio:
+  output_yaml_files: ["output.yaml"]
+...

@@ -109,7 +109,7 @@ module micro_p3_utils
     piov6 = pi*sxth
 
     ! maximum total ice concentration (sum of all categories)
-     max_total_ni = 500.e+3_rtype  !(m)
+     max_total_ni = 740.e+3_rtype  !(m)
 
     ! droplet concentration (m-3)
     nccnst = 200.e+6_rtype

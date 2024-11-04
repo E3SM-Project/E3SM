@@ -217,7 +217,7 @@ contains
   subroutine compute_higher_order_weights(bounds)
     !
     ! !DESCRIPTION:
-    ! Assuming veg_pp%wtcol, col_pp%wtlunit and lun_pp%wttopounit have already been computed, compute
+    ! Assuming veg_pp%wtcol, col_pp%wtlunit, lun_pp%wttopounit and top_pp%wtgcell have already been computed, compute
     ! the "higher-order" weights: 
     ! veg_pp%wtlunit, veg_pp%wttopounit, veg_pp%wtgcell,
     ! col_pp%wttopounit, col_pp%wtgcell, and

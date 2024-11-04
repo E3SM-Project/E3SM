@@ -3,7 +3,7 @@ subroutine scam_use_iop_srf( cam_in )
     use ppgrid,           only: begchunk, endchunk
     use camsrfexch,       only: cam_in_t    
     use physconst,   only: stebol, latvap
-    use scamMod
+    use iop_data_mod
 
     implicit none
     save

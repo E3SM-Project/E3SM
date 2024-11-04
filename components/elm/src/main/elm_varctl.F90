@@ -221,22 +221,42 @@ module elm_varctl
 
   logical, public            :: use_fates = .false.                     ! true => use  ED
   integer, public            :: fates_spitfire_mode = 0                 ! 0 for no fire; 1 for constant ignitions
+  character(len=13), public  :: fates_harvest_mode = ''                 ! five different harvest modes; see namelist_definitions
   logical, public            :: use_fates_fixed_biogeog = .false.       ! true => use fixed biogeography mode
-  logical, public            :: use_fates_logging = .false.             ! true => turn on logging module
   logical, public            :: use_fates_planthydro = .false.          ! true => turn on fates hydro
   logical, public            :: use_fates_cohort_age_tracking = .false. ! true => turn on cohort age tracking
   logical, public            :: use_fates_tree_damage = .false.         ! true => turn on tree damage module
   logical, public            :: use_fates_ed_st3   = .false.            ! true => static stand structure
   logical, public            :: use_fates_ed_prescribed_phys = .false.  ! true => prescribed physiology
   logical, public            :: use_fates_inventory_init = .false.      ! true => initialize fates from inventory
-  logical, public            :: use_fates_nocomp = .false.              ! true => use no comopetition mode
-  logical, public            :: use_fates_sp = .false.                  ! true => use FATES satellite phenology mode
+  logical, public            :: use_fates_nocomp = .false.              ! true => no competition mode
+  logical, public            :: use_fates_sp = .false.                  ! true => FATES satellite phenology mode
+  logical, public            :: use_fates_luh = .false.                 ! true => FATES land use transitions mode
+  logical, public            :: use_fates_lupft = .false.               ! true => FATES land use x pft mode
+  logical, public            :: use_fates_potentialveg = .false.        ! true => FATES potential veg only
+  character(len=256), public :: fluh_timeseries = ''                    ! filename for land use harmonization data
+  character(len=256), public :: flandusepftdat = ''                     ! filename for fates landuse x pft data
   character(len=256), public :: fates_inventory_ctrl_filename = ''      ! filename for inventory control
   integer, public            :: fates_parteh_mode = -9                  ! 1 => carbon only
                                                                         ! 2 => C+N+P (not enabled yet)
                                                                         ! no others enabled
+  integer, public            :: fates_seeddisp_cadence = iundef         ! 0 => no seed dispersal across gridcells
+                                                                        ! 1, 2, 3  => daily, monthly, or yearly seed dispersal
 
+  ! FATES history dimension level
+  ! fates can produce history at either the daily timescale (dynamics)
+  ! and the model step timescale. It can also generate output on the extra dimension
+  ! Performing this output can be expensive, so we allow different history dimension
+  ! levels.
+  ! The first index is output at the model timescale
+  ! The second index is output at the dynamics (daily) timescale      
+  ! 0 - no output
+  ! 1 - include only column level means (3D)
+  ! 2 - include output that includes the 4th dimension
 
+  integer, dimension(2), public   :: fates_history_dimlevel = (/2,2/)
+
+  
   !----------------------------------------------------------
   !  BeTR switches
   !----------------------------------------------------------
@@ -355,15 +375,26 @@ module elm_varctl
   logical, public :: use_snicar_frc      = .false.
   logical, public :: use_snicar_ad       = .false.
   logical, public :: use_extrasnowlayers = .false.
+  logical, public :: use_firn_percolation_and_compaction  = .false.
   logical, public :: use_vancouver       = .false.
   logical, public :: use_mexicocity      = .false.
   logical, public :: use_noio            = .false.
   logical, public :: use_var_soil_thick  = .false.
+  logical, public :: use_T_rho_dependent_snowthk     = .false.
   logical, public :: use_atm_downscaling_to_topunit  = .false.
   character(len = SHR_KIND_CS), public :: precip_downscaling_method  = 'ERMM' ! Precip downscaling method values can be ERMM or FNM
   logical, public :: use_lake_wat_storage = .false.
   logical, public :: use_top_solar_rad   = .false.  ! TOP : sub-grid topographic effect on surface solar radiation
 
+  !----------------------------------------------------------
+  ! Fan controls (use_fan)
+  !----------------------------------------------------------
+  logical, public :: use_fan             = .false.
+  character(len=32), public :: fan_mode  = 'none'
+  logical, public :: fan_nh3_to_atm      = .false.
+  logical, public :: fan_to_bgc_crop     = .false.
+  logical, public :: fan_to_bgc_veg      = .false.
+ 
 
   !----------------------------------------------------------
   ! VSFM switches
@@ -522,6 +553,15 @@ module elm_varctl
    character(len=256), public :: snicar_atm_type = 'default'
    logical, public :: use_dust_snow_internal_mixing = .false.
 
+   !----------------------------------------------------------
+   ! MPI syncing
+   !----------------------------------------------------------
+   integer, public :: mpi_sync_nstep_freq = 0
+   
+   !----------------------------------------------------------
+   ! Modified infiltration scheme in surface water storage
+   !----------------------------------------------------------
+   logical, public :: use_modified_infil = .false.
 
 contains
 

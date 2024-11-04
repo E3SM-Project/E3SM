@@ -155,7 +155,7 @@ module ocn_time_integration_si
       SIvec_zh1_field,SIvec_wh0_field,SIvec_rh1_field   
                          ! field pointer for halo update
 
-   integer :: ssh_sal_on
+   real(kind=RKIND) :: pgf_sal_on
 
 #ifdef USE_GPU_AWARE_MPI
    ! SI - halo exch related variables ----------------------------------
@@ -715,7 +715,7 @@ module ocn_time_integration_si
       endif
 
       if (config_use_tidal_potential_forcing) then
-         !$acc enter data copyin(ssh_sal)
+         !$acc enter data copyin(pgf_sal)
          !$acc enter data create(sshSubcycleCurWithTides,tidalPotentialEta)
       endif
 #endif
@@ -1160,7 +1160,7 @@ module ocn_time_integration_si
  
                !$acc parallel loop gang  &
                !$acc    present(sshSubcycleCurWithTides,sshSubcycleCur, &
-               !$acc       tidalPotentialEta,ssh_sal,sshSubcycleCur)
+               !$acc       tidalPotentialEta,pgf_sal,sshSubcycleCur)
 #else
                !$omp parallel
                !$omp do schedule(runtime)
@@ -1169,8 +1169,8 @@ module ocn_time_integration_si
                   sshSubcycleCurWithTides(iCell) = &
                            sshSubcycleCur(iCell) - &
                         tidalPotentialEta(iCell) - &
-                     ssh_sal_on * ssh_sal(iCell) - &
-                     (1 - ssh_sal_on) * self_attraction_and_loading_beta* &
+                     pgf_sal_on * pgf_sal(iCell) - &
+                     (1.0_RKIND - pgf_sal_on) * self_attraction_and_loading_beta* &
                            sshSubcycleCur(iCell)
                end do
 #ifndef MPAS_OPENACC
@@ -2365,7 +2365,7 @@ module ocn_time_integration_si
             ! layerThickEdgeFlux, density, pressure, and SSH
             ! in this diagnostics solve.
             call ocn_diagnostic_solve(dt, statePool, forcingPool, &
-                                      meshPool, scratchPool, &
+                                      meshPool, verticalMeshPool, scratchPool, &
                                       tracersPool, 2, full=.false.)
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2587,7 +2587,7 @@ module ocn_time_integration_si
 
                            ! Reset tracer2 to 2 in top n layers
                            ! in zonal bands, and 1 outside
-                           lat = latCell(iCell)*180./3.1415
+                           lat = latCell(iCell)*180.0_RKIND/pi
                            if (     lat>-60.0.and.lat<-55.0 &
                                 .or.lat>-40.0.and.lat<-35.0 &
                                 .or.lat>- 2.5.and.lat<  2.5 &
@@ -2604,7 +2604,7 @@ module ocn_time_integration_si
 
                            ! Reset tracer3 to 2 in top n layers
                            ! in zonal bands, and 1 outside
-                           lat = latCell(iCell)*180./3.1415
+                           lat = latCell(iCell)*180.0_RKIND/pi
                            if (     lat>-55.0.and.lat<-50.0 &
                                 .or.lat>-35.0.and.lat<-30.0 &
                                 .or.lat>-15.0.and.lat<-10.0 &
@@ -2801,7 +2801,7 @@ module ocn_time_integration_si
 
 #ifdef MPAS_OPENACC
       if (config_use_tidal_potential_forcing) then
-         !$acc exit data delete(ssh_sal,tidalPotentialEta)
+         !$acc exit data delete(pgf_sal,tidalPotentialEta)
          !$acc exit data copyout(sshSubcycleCurWithTides)
       endif
 #endif
@@ -2836,10 +2836,11 @@ module ocn_time_integration_si
          !$acc enter data copyin(landIceDraft)
       endif
 #endif
-      call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, &
+      call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, verticalMeshPool, &
                                 scratchPool, tracersPool, 2)
 
       call mpas_dmpar_field_halo_exch(domain, 'surfaceFrictionVelocity')
+      call mpas_dmpar_field_halo_exch(domain, 'tangentialVelocity')
 
 #ifdef MPAS_OPENACC
       !$acc update host(layerThickEdgeFlux, layerThickEdgeMean)
@@ -3021,7 +3022,7 @@ module ocn_time_integration_si
 #endif
       end if
 
-      call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, &
+      call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, verticalMeshPool, &
                                 scratchPool, tracersPool, 2)
 
       ! Update the effective desnity in land ice if we're coupling to
@@ -3500,10 +3501,10 @@ module ocn_time_integration_si
       !--------------------------------------------------------------------
 
       if (config_use_self_attraction_loading) then
-         ! set ssh_sal_on to 1
-         ssh_sal_on = 1
+         ! set pgf_sal_on to 1
+         pgf_sal_on = 1.0_RKIND
       else
-         ssh_sal_on = 0
+         pgf_sal_on = 0.0_RKIND
       endif
 
       self_attraction_and_loading_beta = config_self_attraction_and_loading_beta

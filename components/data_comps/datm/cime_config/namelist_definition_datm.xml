@@ -36,6 +36,9 @@
     CLMCRUNCEP		= Run with the CLM CRU NCEP V4 ( default ) forcing valid from 1900 to 2010 (force CLM)
     CLMCRUNCEPv7 	= Run with the CLM CRU NCEP V7 forcing valid from 1900 to 2010 (force CLM)
     CLMGSWP3v1		= Run with the CLM GSWP3 V1 forcing (force CLM)
+    ELMERA5             = Run with the ELM fifth generation ECMWF reanalysis from 1979 to present
+    ERA56HR             = Run with the ELM fifth generation ECMWF reanalysis from 1979 to present
+    ELMGSWP3w5e5        = Run with the ELM GSWP3-w5e5 forcing (force ELM)
     CLMMOSARTTEST   	= Run with the CLM NLDAS data (force CLM) for testing MOSART
     CLMNLDAS2		= Run with the CLM NLDAS2 regional forcing valid from 1980 to 2018 (force CLM)
     CLM1PT		= Run with supplied single point data (force CLM)
@@ -48,6 +51,8 @@
     CORE_RYF9091_JRA = JRA55 repeat year forcing, v1.3, 1990-1991 (for forcing POP and CICE)
     CORE_RYF0304_JRA = JRA55 repeat year forcing, v1.3, 2003-2004 (for forcing POP and CICE)
     CPLHIST     	= Streams for lnd or ocn/ice forcing used for spinup
+    E3SMWCv2            = Streams from E3SM water cycle V2 simulation used for lnd spinup
+    CPLWCH           = Streams from E3SM water cycle V2 historical simulation used for lnd historical transient simulation 
     presaero		= Prescribed aerosol forcing
     topo		= Surface topography
     co2tseries		= Time series of prescribed CO2 forcing
@@ -83,6 +88,16 @@
     CPLHISTForcing.nonSolarFlux
     CPLHISTForcing.State3hr
     CPLHISTForcing.State1hr
+ 
+    E3SMWCv2Forcing.Solar
+    E3SMWCv2Forcing.nonSolarFlux
+    E3SMWCv2Forcing.State3hr
+    E3SMWCv2Forcing.State1hr
+
+    CPLWCHForcing.Solar
+    CPLWCHForcing.nonSolarFlux
+    CPLWCHForcing.State3hr
+    CPLWCHForcing.State1hr
 
     CLM_QIAN.Solar
     CLM_QIAN.Precip
@@ -103,6 +118,31 @@
     CLMGSWP3v1.Solar
     CLMGSWP3v1.Precip
     CLMGSWP3v1.TPQW
+    
+    ELMERA5.msdrswrf # mean surface direct shortwave radiation flux
+    ELMERA5.msdfswrf # mean surface diffuse shortwave radiation flux
+    ELMERA5.mcpr # mean convective precipitation rate
+    ELMERA5.mlspr # mean large-scale precipitation rate
+    ELMERA5.t2m # temperature at 2 m
+    ELMERA5.sp # surface pressure
+    ELMERA5.d2m # dew point temperature at 2 m
+    ELMERA5.w10 # wind speed at 10 m
+    ELMERA5.msdwlwrf # mean surface downward longwave radiation flux
+
+    ERA56HR.msdrswrf # mean surface direct shortwave radiation flux
+    ERA56HR.msdfswrf # mean surface diffuse shortwave radiation flux
+    ERA56HR.mcpr # mean convective precipitation rate
+    ERA56HR.mlspr # mean large-scale precipitation rate
+    ERA56HR.t2m # temperature at 2 m
+    ERA56HR.sp # surface pressure
+    ERA56HR.d2m # dew point temperature at 2 m
+    ERA56HR.w10 # wind speed at 10 m
+    ERA56HR.msdwlwrf # mean surface downward longwave radiation flux
+   
+    ELMGSWP3w5e5.Solar
+    ELMGSWP3w5e5.Precip
+    ELMGSWP3w5e5.TPQW
+
 
     CLMMOSARTTEST
 
@@ -166,9 +206,14 @@
     presaero.SSP5-3.4
     presaero.SSP5-8.5
     presaero.cplhist
+    presaero.e3smwcv2
+    presaero.cplwch
 
     topo.observed
     topo.cplhist
+
+    topo.e3smwcv2
+    topo.cplwch
 
       **********IMPORTANT NOTE: *************
       In the value matches below, regular expressions are used ****
@@ -202,6 +247,9 @@
       <value datm_mode="CLMCRUNCEP$">CLMCRUNCEP.Solar,CLMCRUNCEP.Precip,CLMCRUNCEP.TPQW</value>
       <value datm_mode="CLMCRUNCEPv7">CLMCRUNCEPv7.Solar,CLMCRUNCEPv7.Precip,CLMCRUNCEPv7.TPQW</value>
       <value datm_mode="CLMGSWP3v1">CLMGSWP3v1.Solar,CLMGSWP3v1.Precip,CLMGSWP3v1.TPQW</value>
+      <value datm_mode="ELMERA5">ELMERA5.msdrswrf,ELMERA5.msdfswrf,ELMERA5.mcpr,ELMERA5.mlspr,ELMERA5.t2m,ELMERA5.sp,ELMERA5.d2m,ELMERA5.w10,ELMERA5.msdwlwrf</value>
+      <value datm_mode="ERA56HR">ERA56HR.msdrswrf,ERA56HR.msdfswrf,ERA56HR.mcpr,ERA56HR.mlspr,ERA56HR.t2m,ERA56HR.sp,ERA56HR.d2m,ERA56HR.w10,ERA56HR.msdwlwrf</value>
+      <value datm_mode="ELMGSWP3w5e5">ELMGSWP3w5e5.Solar,ELMGSWP3w5e5.Precip,ELMGSWP3w5e5.TPQW</value>
       <value datm_mode="CLMMOSARTTEST">CLMMOSARTTEST</value>
       <value datm_mode="CLMNLDAS2">CLMNLDAS2.Solar,CLMNLDAS2.Precip,CLMNLDAS2.TPQW</value>
       <value datm_mode="CORE2_NYF" >CORE2_NYF.GISS,CORE2_NYF.GXGXS,CORE2_NYF.NCEP</value>
@@ -216,7 +264,9 @@
       <value datm_mode="CPLHIST">CPLHISTForcing.Solar,CPLHISTForcing.nonSolarFlux,CPLHISTForcing.State3hr,CPLHISTForcing.State1hr</value>
       <value datm_mode="CFSv2">CFSv2.UV</value>
       <value datm_mode="CFSR">CFSR.UV</value>
-    </values>
+      <value datm_mode="E3SMWCv2">E3SMWCv2Forcing.Solar,E3SMWCv2Forcing.nonSolarFlux,E3SMWCv2Forcing.State3hr,E3SMWCv2Forcing.State1hr</value>
+      <value datm_mode="CPLWCH">CPLWCHForcing.Solar,CPLWCHForcing.nonSolarFlux,CPLWCHForcing.State3hr,CPLWCHForcing.State1hr</value>
+    </values>   
   </entry>
 
   <entry id="strm_domdir">
@@ -230,10 +280,15 @@
       <value stream="CLM1PT.CLM_USRDAT">$ATM_DOMAIN_PATH</value>
       <value stream="CLM1PT.ELM_USRDAT">$ATM_DOMAIN_PATH</value>
       <value stream="CPLHISTForcing">null</value>
+      <value stream="E3SMWCv2">null</value>
+      <value stream="CPLWCH">null</value>
       <value stream="CLM_QIAN">$DIN_LOC_ROOT/atm/datm7</value>
       <value stream="CLMCRUNCEPv7">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.v7.c160715</value>
       <value stream="CLMCRUNCEP">$DIN_LOC_ROOT/share/domains/domain.clm</value>
       <value stream="CLMGSWP3v1">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516</value>
+      <value stream="ELMERA5">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.ERA.0.25d.v5.c180614</value>
+      <value stream="ERA56HR">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.ERA.6HRLY.0.25d.v5.c180614</value>
+      <value stream="ELMGSWP3w5e5">$DIN_LOC_ROOT/share/domains</value>
       <value stream="CLMCRUNCEP\.">$DIN_LOC_ROOT/share/domains/domain.clm</value>
       <value stream="CLMCRUNCEP_V5">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V5.c140715</value>
       <value stream="CLMGSWP3">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516</value>
@@ -270,6 +325,8 @@
       <value stream="BC.CRUNCEP.CMAP.Precip">$DIN_LOC_ROOT/atm/datm7/bias_correction/precip/cmap/cruncep</value>
       <value stream="Anomaly">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</value>
       <value stream="presaero.cplhist">null</value>
+      <value stream="presaero.e3smwcv2">null</value>
+      <value stream="presaero.cplwch">null</value>
       <value stream="presaero.clim_1850">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero </value>
       <value stream="presaero.clim_2000">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero </value>
       <value stream="presaero.clim_2010">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero </value>
@@ -280,6 +337,8 @@
       <value stream="topo.cplhist">null</value>
       <value stream="CFSv2.UV">$DIN_LOC_ROOT/wav/cfsv2</value>
       <value stream="CFSR.UV">$DIN_LOC_ROOT/wav/cfsr</value>
+      <value stream="topo.e3smwcv2">null</value>
+      <value stream="topo.cplwch">null</value>
     </values>
   </entry>
 
@@ -296,12 +355,17 @@
       <value stream="CLM1PT.CLM_USRDAT">$ATM_DOMAIN_FILE</value>
       <value stream="CLM1PT.ELM_USRDAT">$ATM_DOMAIN_FILE</value>
       <value stream="CPLHISTForcing">null</value>
+      <value stream="E3SMWCv2">null</value>
+      <value stream="CPLWCH">null</value>
       <value stream="CLM_QIAN\.">domain.T62.050609.nc</value>
       <value stream="CLM_QIAN_WISO">domain.T62.050609.nc</value>
       <value stream="CLMCRUNCEPv7">domain.lnd.360x720_cruncep.130305.nc</value>
       <value stream="CLMCRUNCEP">domain.lnd.360x720.130305.nc</value>
       <value stream="CLMGSWP3v1">domain.lnd.360x720_gswp3.0v1.c170606.nc</value>
       <value stream="CLMGSWP3">domain.lnd.360x720_gswp3.0v1.c170606.nc</value>
+      <value stream="ELMERA5">domain.lnd.era5_721x1440_rdrlat_EC30to60E2r2.221115.nc</value>
+      <value stream="ERA56HR">domain.lnd.era5_721x1440_rdrlat_EC30to60E2r2.221115.nc</value>
+      <value stream="ELMGSWP3w5e5">domain.lnd.360x720_gswp3.0v1.c170606.nc</value>
       <value stream="CLMMOSARTTEST">domain.lnd.nldas2_0224x0464_c110415.nc</value>
       <value stream="CLMNLDAS2">domain.lnd.0.125nldas2_0.125nldas2.190410.nc</value>
       <value stream="CORE2_NYF.GISS">nyf.giss.T62.051007.nc</value>
@@ -355,7 +419,9 @@
       <value stream="BC.CRUNCEP.GPCP.Precip">cruncep.bc.domain.0.9x1.25.nc</value>
       <value stream="BC.CRUNCEP.CMAP.Precip">cruncep.bc.domain.c100429.nc</value>
       <value stream="Anomaly.Forcing">domain.permafrostRCN_P2.c2013.nc</value>
-      <value stream="presaero.cplhist">null</value>
+      <value stream="presaero.cplhist">null</value> 
+      <value stream="presaero.e3smwcv2">null</value>
+      <value stream="presaero.cplwch">null</value>
       <value stream="presaero atm_grid=CLM_USRDAT">aerosoldep_monthly_1849-2006_${CLM_USRDAT_NAME}.nc</value>
       <value stream="presaero.SSP1-1.9" atm_grid="CLM_USRDAT">aerosoldep_SSP1-1.9_monthly_1849-2101_${CLM_USRDAT_NAME}.nc</value>
       <value stream="presaero.SSP1-2.6" atm_grid="CLM_USRDAT">aerosoldep_SSP1-2.6_monthly_1849-2101_${CLM_USRDAT_NAME}.nc</value>
@@ -390,6 +456,8 @@
       <value stream="topo.cplhist">null</value>
       <value stream="CFSv2.UV">domain.ocn.CFSv2_CFSv2.200616.nc</value>
       <value stream="CFSR.UV">domain.ocn.CFSR_CFSR.210415.nc</value>
+      <value stream="topo.e3smwcv2">null</value>
+      <value stream="topo.cplwch">null</value>
     </values>
   </entry>
 
@@ -407,6 +475,20 @@
         mask    mask
       </value>
       <value stream="CPLHISTForcing|presaero.cplhist|topo.cplhist">
+        time         time
+        doma_lon     lon
+        doma_lat     lat
+        doma_aream   area
+        doma_mask    mask
+      </value>
+      <value stream="E3SMWCv2Forcing|presaero.e3smwcv2|topo.e3smwcv2">
+        time         time
+        doma_lon     lon
+        doma_lat     lat
+        doma_aream   area
+        doma_mask    mask
+      </value>
+      <value stream="CPLWCHForcing|presaero.cplwch|topo.cplwch">
         time         time
         doma_lon     lon
         doma_lat     lat
@@ -457,6 +539,14 @@
       <value stream="CLM1PT.CLM_USRDAT">$DIN_LOC_ROOT_CLMFORC/$CLM_USRDAT_NAME/CLM1PT_data</value>
       <value stream="CLM1PT.ELM_USRDAT">$DIN_LOC_ROOT_CLMFORC/$ELM_USRDAT_NAME/CLM1PT_data</value>
       <value stream="CPLHISTForcing">$DATM_CPLHIST_DIR</value>
+      <value stream="E3SMWCv2Forcing.Solar">$DIN_LOC_ROOT_CLMFORC/v2.LR.piControl_land/3hrly_drivers</value>
+      <value stream="E3SMWCv2Forcing.nonSolarFlux">$DIN_LOC_ROOT_CLMFORC/v2.LR.piControl_land/3hrly_drivers</value>
+      <value stream="E3SMWCv2Forcing.State3hr">$DIN_LOC_ROOT_CLMFORC/v2.LR.piControl_land/3hrly_drivers</value>
+      <value stream="E3SMWCv2Forcing.State1hr">$DIN_LOC_ROOT_CLMFORC/v2.LR.piControl_land/3hrly_drivers</value>
+      <value stream="CPLWCHForcing.Solar">$DIN_LOC_ROOT_CLMFORC/v2.LR.historical_land/3hrly_drivers</value>
+      <value stream="CPLWCHForcing.nonSolarFlux">$DIN_LOC_ROOT_CLMFORC/v2.LR.historical_land/3hrly_drivers</value>
+      <value stream="CPLWCHForcing.State3hr">$DIN_LOC_ROOT_CLMFORC/v2.LR.historical_land/3hrly_drivers</value>
+      <value stream="CPLWCHForcing.State1hr">$DIN_LOC_ROOT_CLMFORC/v2.LR.historical_land/3hrly_drivers</value>
       <value stream="CLM_QIAN.Solar">$DIN_LOC_ROOT/atm/datm7/atm_forcing.datm7.Qian.T62.c080727/Solar6Hrly</value>
       <value stream="CLM_QIAN.Precip">$DIN_LOC_ROOT/atm/datm7/atm_forcing.datm7.Qian.T62.c080727/Precip6Hrly</value>
       <value stream="CLM_QIAN.TPQW">$DIN_LOC_ROOT/atm/datm7/atm_forcing.datm7.Qian.T62.c080727/TmpPrsHumWnd3Hrly</value>
@@ -472,12 +562,33 @@
       <value stream="CLMGSWP3v1.Solar">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/Solar</value>
       <value stream="CLMGSWP3v1.Precip">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/Precip</value>
       <value stream="CLMGSWP3v1.TPQW">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/TPHWL</value>
+      <value stream="ELMGSWP3w5e5.Solar">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3-w5e5.c211106/Solar6Hrly</value>
+      <value stream="ELMGSWP3w5e5.Precip">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3-w5e5.c211106/Precip6Hrly</value>
+      <value stream="ELMGSWP3w5e5.TPQW">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3-w5e5.c211106/TPHWL6Hrly</value> 
       <value stream="CLMCRUNCEP_V5.Solar">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V5.c140715/Solar6Hrly</value>
       <value stream="CLMCRUNCEP_V5.Precip">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V5.c140715/Precip6Hrly</value>
       <value stream="CLMCRUNCEP_V5.TPQW">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V5.c140715/TPHWL6Hrly</value>
       <value stream="CLMGSWP3.Solar">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/Solar3Hrly</value>
       <value stream="CLMGSWP3.Precip">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/Precip3Hrly</value>
       <value stream="CLMGSWP3.TPQW">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/TPHWL3Hrly</value>
+      <value stream="ELMERA5.msdfswrf">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.ERA.0.25d.v5.c180614/swdn</value>
+      <value stream="ELMERA5.msdrswrf">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.ERA.0.25d.v5.c180614/swdn</value>
+      <value stream="ELMERA5.mcpr">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.ERA.0.25d.v5.c180614/prec</value>
+      <value stream="ELMERA5.mlspr">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.ERA.0.25d.v5.c180614/prec</value>
+      <value stream="ELMERA5.t2m">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.ERA.0.25d.v5.c180614/tbot</value>
+      <value stream="ELMERA5.sp">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.ERA.0.25d.v5.c180614/pbot</value>
+      <value stream="ELMERA5.d2m">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.ERA.0.25d.v5.c180614/tdew</value>
+      <value stream="ELMERA5.w10">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.ERA.0.25d.v5.c180614/wind</value>
+      <value stream="ELMERA5.msdwlwrf">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.ERA.0.25d.v5.c180614/lwdn</value>
+      <value stream="ERA56HR.msdfswrf">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.ERA.6HRLY.0.25d.v5.c180614/swdn</value>
+      <value stream="ERA56HR.msdrswrf">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.ERA.6HRLY.0.25d.v5.c180614/swdn</value>
+      <value stream="ERA56HR.mcpr">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.ERA.6HRLY.0.25d.v5.c180614/prec</value>
+      <value stream="ERA56HR.mlspr">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.ERA.6HRLY.0.25d.v5.c180614/prec</value>
+      <value stream="ERA56HR.t2m">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.ERA.6HRLY.0.25d.v5.c180614/tbot</value>
+      <value stream="ERA56HR.sp">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.ERA.6HRLY.0.25d.v5.c180614/pbot</value>
+      <value stream="ERA56HR.d2m">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.ERA.6HRLY.0.25d.v5.c180614/tdew</value>
+      <value stream="ERA56HR.w10">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.ERA.6HRLY.0.25d.v5.c180614/wind</value>
+      <value stream="ERA56HR.msdwlwrf">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.ERA.6HRLY.0.25d.v5.c180614/lwdn</value>
       <value stream="CLMMOSARTTEST">$DIN_LOC_ROOT/atm/datm7/NLDAS</value>
       <value stream="CLMNLDAS2.Solar">$DIN_LOC_ROOT/atm/datm7/atm_forcing.datm7.NLDAS2.0.125d.v1/Solar</value>
       <value stream="CLMNLDAS2.Precip">$DIN_LOC_ROOT/atm/datm7/atm_forcing.datm7.NLDAS2.0.125d.v1/Precip</value>
@@ -494,12 +605,16 @@
       <value stream="BC.CRUNCEP.CMAP.Precip">$DIN_LOC_ROOT/atm/datm7/bias_correction/precip/cmap/cruncep</value>
       <value stream="Anomaly">$DIN_LOC_ROOT/atm/datm7/anomaly_forcing</value>
       <value stream="presaero.cplhist">$DATM_CPLHIST_DIR</value>
+      <value stream="presaero.e3smwcv2">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
+      <value stream="presaero.cplwch">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
       <value stream="presaero.SSP5-3.4">null</value>
       <value stream="presaero">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
       <value stream="topo.observed">$DIN_LOC_ROOT/atm/datm7/topo_forcing</value>
       <value stream="topo.cplhist">$DATM_CPLHIST_DIR</value>
       <value stream="CFSv2.UV">$DIN_LOC_ROOT/wav/cfsv2</value>
       <value stream="CFSR.UV">$DIN_LOC_ROOT/wav/cfsr</value>
+      <value stream="topo.e3smwcv2">$DIN_LOC_ROOT_CLMFORC/v2.LR.piControl_land/3hrly_drivers</value>
+      <value stream="topo.cplwch">$DIN_LOC_ROOT_CLMFORC/v2.LR.historical_land/3hrly_drivers</value>
     </values>
   </entry>
 
@@ -532,12 +647,24 @@
       </value>
       <value  stream="CLM1PT.CLM_USRDAT">%ym.nc</value>
       <value  stream="CLM1PT.ELM_USRDAT">%ym.nc</value>
-      <value  stream="CPLHISTForcing.Solar">$DATM_CPLHIST_CASE.cpl.ha2x1hi.%ym.nc</value>
+      <value  stream="CPLHISTForcing.Solar">$DATM_CPLHIST_CASE.cpl.ha2x3h.%ym.nc</value>
       <value  stream="CPLHISTForcing.nonSolarFlux">$DATM_CPLHIST_CASE.cpl.ha2x3h.%ym.nc</value>
       <value  stream="CPLHISTForcing.State3hr">$DATM_CPLHIST_CASE.cpl.ha2x3h.%ym.nc</value>
-      <value  stream="CPLHISTForcing.State1hr">$DATM_CPLHIST_CASE.cpl.ha2x1h.%ym.nc</value>
+      <value  stream="CPLHISTForcing.State1hr">$DATM_CPLHIST_CASE.cpl.ha2x3h.%ym.nc</value>
       <value  stream="presaero.cplhist">$DATM_CPLHIST_CASE.cpl.ha2x1d.%ym.nc</value>
       <value  stream="topo.cplhist">$DATM_CPLHIST_CASE.cpl.ha2x3h.%ym.nc</value>
+      <value  stream="E3SMWCv2Forcing.Solar">v2.LR.piControl_land.cpl.ha2x3h.%ym.nc</value>
+      <value  stream="E3SMWCv2Forcing.nonSolarFlux">v2.LR.piControl_land.cpl.ha2x3h.%ym.nc</value>
+      <value  stream="E3SMWCv2Forcing.State3hr">v2.LR.piControl_land.cpl.ha2x3h.%ym.nc</value>
+      <value  stream="E3SMWCv2Forcing.State1hr">v2.LR.piControl_land.cpl.ha2x3h.%ym.nc</value>
+      <value  stream="presaero.e3smwcv2">aerosoldep_monthly_1850_mean_1.9x2.5_c090421.nc</value>
+      <value  stream="topo.e3smwcv2">v2.LR.piControl_land.cpl.ha2x3h.0476-01.nc</value>
+      <value  stream="CPLWCHForcing.Solar">v2.LR.historical_0101_land.cpl.ha2x3h.%ym.nc</value>
+      <value  stream="CPLWCHForcing.nonSolarFlux">v2.LR.historical_0101_land.cpl.ha2x3h.%ym.nc</value>
+      <value  stream="CPLWCHForcing.State3hr">v2.LR.historical_0101_land.cpl.ha2x3h.%ym.nc</value>
+      <value  stream="CPLWCHForcing.State1hr">v2.LR.historical_0101_land.cpl.ha2x3h.%ym.nc</value>
+      <value  stream="presaero.cplwch">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
+      <value  stream="topo.cplwch">v2.LR.historical_0101_land.cpl.ha2x3h.1850-01.nc</value>
       <value  stream="CLM_QIAN.Solar">clmforc.Qian.c2006.T62.Solr.%ym.nc</value>
       <value  stream="CLM_QIAN.Precip">clmforc.Qian.c2006.T62.Prec.%ym.nc</value>
       <value  stream="CLM_QIAN.TPQW">clmforc.Qian.c2006.T62.TPQW.%ym.nc</value>
@@ -553,6 +680,27 @@
       <value  stream="CLMGSWP3v1.Solar">clmforc.GSWP3.c2011.0.5x0.5.Solr.%ym.nc</value>
       <value  stream="CLMGSWP3v1.Precip">clmforc.GSWP3.c2011.0.5x0.5.Prec.%ym.nc</value>
       <value  stream="CLMGSWP3v1.TPQW">clmforc.GSWP3.c2011.0.5x0.5.TPQWL.%ym.nc</value>
+      <value  stream="ELMERA5.msdrswrf">elmforc.ERA5.c2018.0.25d.msdrswrf.%ym.nc</value>
+      <value  stream="ELMERA5.msdfswrf">elmforc.ERA5.c2018.0.25d.msdfswrf.%ym.nc</value>
+      <value  stream="ELMERA5.mcpr">elmforc.ERA5.c2018.0.25d.mcpr.%ym.nc</value>
+      <value  stream="ELMERA5.mlspr">elmforc.ERA5.c2018.0.25d.mlspr.%ym.nc</value>
+      <value  stream="ELMERA5.t2m">elmforc.ERA5.c2018.0.25d.t2m.%ym.nc</value>
+      <value  stream="ELMERA5.sp">elmforc.ERA5.c2018.0.25d.sp.%ym.nc</value>
+      <value  stream="ELMERA5.d2m">elmforc.ERA5.c2018.0.25d.d2m.%ym.nc</value>
+      <value  stream="ELMERA5.w10">elmforc.ERA5.c2018.0.25d.w10.%ym.nc</value>
+      <value  stream="ELMERA5.msdwlwrf">elmforc.ERA5.c2018.0.25d.msdwlwrf.%ym.nc</value>
+      <value  stream="ERA56HR.msdrswrf">elmforc.ERA5.c2018.0.25d.msdrswrf.%ym.nc</value>
+      <value  stream="ERA56HR.msdfswrf">elmforc.ERA5.c2018.0.25d.msdfswrf.%ym.nc</value>
+      <value  stream="ERA56HR.mcpr">elmforc.ERA5.c2018.0.25d.mcpr.%ym.nc</value>
+      <value  stream="ERA56HR.mlspr">elmforc.ERA5.c2018.0.25d.mlspr.%ym.nc</value>
+      <value  stream="ERA56HR.t2m">elmforc.ERA5.c2018.0.25d.t2m.%ym.nc</value>
+      <value  stream="ERA56HR.sp">elmforc.ERA5.c2018.0.25d.sp.%ym.nc</value>
+      <value  stream="ERA56HR.d2m">elmforc.ERA5.c2018.0.25d.d2m.%ym.nc</value>
+      <value  stream="ERA56HR.w10">elmforc.ERA5.c2018.0.25d.w10.%ym.nc</value>
+      <value  stream="ERA56HR.msdwlwrf">elmforc.ERA5.c2018.0.25d.msdwlwrf.%ym.nc</value>
+      <value  stream="ELMGSWP3w5e5.Solar">gswp_w5e5.Solr.%ym.nc</value>
+      <value  stream="ELMGSWP3w5e5.Precip">gswp_w5e5.Prec.%ym.nc</value>
+      <value  stream="ELMGSWP3w5e5.TPQW">gswp_w5e5.TPQWL.%ym.nc</value>
       <value  stream="CLMMOSARTTEST">clmforc.nldas.%ym.nc</value>
       <value  stream="CLMNLDAS2.Solar">ctsmforc.NLDAS2.0.125d.v1.Solr.%ym.nc</value>
       <value  stream="CLMNLDAS2.Precip">ctsmforc.NLDAS2.0.125d.v1.Prec.%ym.nc</value>
@@ -1435,10 +1583,10 @@
         FLDS     lwdn
       </value>
       <value stream="CPLHISTForcing.Solar">
-        a2x1hi_Faxa_swndr swndr
-        a2x1hi_Faxa_swvdr swvdr
-        a2x1hi_Faxa_swndf swndf
-        a2x1hi_Faxa_swvdf swvdf
+        a2x3h_Faxa_swndr swndr
+        a2x3h_Faxa_swvdr swvdr
+        a2x3h_Faxa_swndf swndf
+        a2x3h_Faxa_swvdf swvdf
       </value>
       <value stream="CPLHISTForcing.nonSolarFlux">
         a2x3h_Faxa_rainc rainc
@@ -1459,8 +1607,64 @@
 	a2x3h_Sa_co2prog co2prog
       </value>
       <value stream="CPLHISTForcing.State1hr">
-        a2x1h_Sa_u  u
-        a2x1h_Sa_v  v
+        a2x3h_Sa_u  u
+        a2x3h_Sa_v  v
+      </value>
+      <value stream="E3SMWCv2Forcing.Solar">
+        a2x3h_Faxa_swndr swndr
+        a2x3h_Faxa_swvdr swvdr
+        a2x3h_Faxa_swndf swndf
+        a2x3h_Faxa_swvdf swvdf
+      </value>
+      <value stream="E3SMWCv2Forcing.nonSolarFlux">
+        a2x3h_Faxa_rainc rainc
+        a2x3h_Faxa_rainl rainl
+        a2x3h_Faxa_snowc snowc
+        a2x3h_Faxa_snowl snowl
+        a2x3h_Faxa_lwdn  lwdn
+      </value>
+      <value stream="E3SMWCv2Forcing.State3hr">
+        a2x3h_Sa_z       z
+        a2x3h_Sa_tbot    tbot
+        a2x3h_Sa_ptem    ptem
+        a2x3h_Sa_shum    shum
+        a2x3h_Sa_pbot    pbot
+        a2x3h_Sa_dens    dens
+        a2x3h_Sa_pslv    pslv
+        a2x3h_Sa_co2diag co2diag
+        a2x3h_Sa_co2prog co2prog
+      </value>
+      <value stream="E3SMWCv2Forcing.State1hr">
+        a2x3h_Sa_u  u
+        a2x3h_Sa_v  v
+      </value>
+      <value stream="CPLWCHForcing.Solar">
+        a2x3h_Faxa_swndr swndr
+        a2x3h_Faxa_swvdr swvdr
+        a2x3h_Faxa_swndf swndf
+        a2x3h_Faxa_swvdf swvdf
+      </value>
+      <value stream="CPLWCHForcing.nonSolarFlux">
+        a2x3h_Faxa_rainc rainc
+        a2x3h_Faxa_rainl rainl
+        a2x3h_Faxa_snowc snowc
+        a2x3h_Faxa_snowl snowl
+        a2x3h_Faxa_lwdn  lwdn
+      </value>
+      <value stream="CPLWCHForcing.State3hr">
+        a2x3h_Sa_z       z
+        a2x3h_Sa_tbot    tbot
+        a2x3h_Sa_ptem    ptem
+        a2x3h_Sa_shum    shum
+        a2x3h_Sa_pbot    pbot
+        a2x3h_Sa_dens    dens
+        a2x3h_Sa_pslv    pslv
+        a2x3h_Sa_co2diag co2diag
+        a2x3h_Sa_co2prog co2prog
+      </value>
+      <value stream="CPLWCHForcing.State1hr">
+        a2x3h_Sa_u  u
+        a2x3h_Sa_v  v
       </value>
       <value  stream="CLM_QIAN.Solar">
         FSDS swdn
@@ -1517,6 +1721,73 @@
         PRECTmms precn
       </value>
       <value  stream="CLMGSWP3v1.TPQW">
+        TBOT     tbot
+        WIND     wind
+        QBOT     shum
+        PSRF     pbot
+        FLDS     lwdn
+      </value>
+      <value  stream="ELMERA5.msdrswrf">
+        msdrswrf    swdndr
+      </value>
+      <value  stream="ELMERA5.msdfswrf">
+        msdfswrf    swdndf
+      </value>
+      <value  stream="ELMERA5.mcpr">
+        mcpr    precc
+      </value>
+      <value  stream="ELMERA5.mlspr">
+        mlspr    precl
+      </value>
+      <value  stream="ELMERA5.t2m">
+        t2m    tbot
+      </value>
+      <value  stream="ELMERA5.sp">
+        sp    pbot
+      </value>
+      <value  stream="ELMERA5.d2m">
+        d2m    tdew
+      </value>
+      <value  stream="ELMERA5.w10">
+        w10    wind
+      </value>
+      <value  stream="ELMERA5.msdwlwrf">
+        msdwlwrf    lwdn
+      </value>
+      <value  stream="ERA56HR.msdrswrf">
+        msdrswrf    swdndr
+      </value>
+      <value  stream="ERA56HR.msdfswrf">
+        msdfswrf    swdndf
+      </value>
+      <value  stream="ERA56HR.mcpr">
+        mcpr    precc
+      </value>
+      <value  stream="ERA56HR.mlspr">
+        mlspr    precl
+      </value>
+      <value  stream="ERA56HR.t2m">
+        t2m    tbot
+      </value>
+      <value  stream="ERA56HR.sp">
+        sp    pbot
+      </value>
+      <value  stream="ERA56HR.d2m">
+        d2m    tdew
+      </value>
+      <value  stream="ERA56HR.w10">
+        w10    wind
+      </value>
+      <value  stream="ERA56HR.msdwlwrf">
+        msdwlwrf    lwdn
+      </value>
+      <value  stream="ELMGSWP3w5e5.Solar">
+        FSDS swdn
+      </value>
+      <value  stream="ELMGSWP3w5e5.Precip">
+        PRECTmms precn
+      </value>
+      <value  stream="ELMGSWP3w5e5.TPQW">
         TBOT     tbot
         WIND     wind
         QBOT     shum
@@ -1765,6 +2036,12 @@
       <value stream="topo.cplhist">
         a2x3h_Sa_topo  topo
       </value>
+      <value stream="topo.e3smwcv2">
+        a2x3h_Sa_topo  topo
+      </value>
+      <value stream="topo.cplwch">
+        a2x3h_Sa_topo  topo
+      </value>
       <value stream="topo.observed">
         TOPO topo
       </value>
@@ -1790,16 +2067,21 @@
       <value>-999</value>
       <value stream="CLM1PT">$DATM_CLMNCEP_YR_ALIGN</value>
       <value stream="CPLHISTForcing">$DATM_CPLHIST_YR_ALIGN</value>
+      <value stream="E3SMWCv2Forcing">$DATM_E3SMWCv2_YR_ALIGN</value>
+      <value stream="CPLWCHForcing">$DATM_CPLWCH_YR_ALIGN</value>
       <value stream="CLM_QIAN">$DATM_CLMNCEP_YR_ALIGN</value>
       <value stream="CLMCRUNCEP">$DATM_CLMNCEP_YR_ALIGN</value>
       <value stream="CLMGSWP3">$DATM_CLMNCEP_YR_ALIGN</value>
+      <value stream="ELMERA5">$DATM_CLMNCEP_YR_ALIGN</value>
+      <value stream="ERA56HR">$DATM_CLMNCEP_YR_ALIGN</value>
+      <value stream="ELMGSWP3w5e5">$DATM_CLMNCEP_YR_ALIGN</value>
       <value stream="CLMMOSARTTEST">$DATM_CLMNCEP_YR_ALIGN</value>
       <value stream="CLMNLDAS2">$DATM_CLMNCEP_YR_ALIGN</value>
       <value stream="CORE2_NYF">1</value>
       <value stream="CORE2_IAF.CORE2.ArcFactor">1</value>
       <value stream="CORE2_IAF">1</value>
-      <value stream="CORE_IAF_JRA.*">1</value>
-      <value stream="IAF_JRA_1p5.*">1</value>
+      <value stream="CORE_IAF_JRA.*">$DATM_CLMNCEP_YR_ALIGN</value>
+      <value stream="IAF_JRA_1p5.*">$DATM_CLMNCEP_YR_ALIGN</value>
       <value stream="CORE_RYF*">1</value>
       <value stream="co2tseries.20tr">1850</value>
       <!-- ncycles*(year_end-year_start+1)-(year_end-co2_year_start) -->
@@ -1811,7 +2093,8 @@
       <value stream="BC.CRUNCEP.CMAP.Precip">1979</value>
       <value stream="Anomaly.Forcing">2006</value>
       <value stream="presaero.cplhist">$DATM_CPLHIST_YR_ALIGN</value>
-
+      <value stream="presaero.e3smwcv2">1</value>
+      <value stream="presaero.cplwch">1</value>
       <value stream="presaero.clim" cime_model="e3sm">1</value>
       <value stream="presaero.clim_1850" cime_model="cesm">1</value>
       <value stream="presaero.clim_2000" cime_model="cesm">1</value>
@@ -1823,6 +2106,8 @@
       <value stream="topo.cplhist">$DATM_CPLHIST_YR_ALIGN</value>
       <value stream="CFSv2.UV">1</value>
       <value stream="CFSR.UV">1</value>
+      <value stream="topo.e3smwcv2">$DATM_E3SMWCv2_YR_ALIGN</value>
+      <value stream="topo.cplwch">$DATM_CPLWCH_YR_ALIGN</value>
     </values>
   </entry>
 
@@ -1839,10 +2124,15 @@
       <value stream="CLM1PT.CLM_USRDAT">$DATM_CLMNCEP_YR_START</value>
       <value stream="CLM1PT.ELM_USRDAT">$DATM_CLMNCEP_YR_START</value>
       <value stream="CPLHISTForcing">$DATM_CPLHIST_YR_START</value>
+      <value stream="E3SMWCv2Forcing">$DATM_E3SMWCv2_YR_START</value>
+      <value stream="CPLWCHForcing">$DATM_CPLWCH_YR_START</value>
       <value stream="CLM_QIAN_WISO">2000</value>
       <value stream="CLM_QIAN">$DATM_CLMNCEP_YR_START</value>
       <value stream="CLMCRUNCEP">$DATM_CLMNCEP_YR_START</value>
       <value stream="CLMGSWP3">$DATM_CLMNCEP_YR_START</value>
+      <value stream="ELMERA5">$DATM_CLMNCEP_YR_START</value>
+      <value stream="ERA56HR">$DATM_CLMNCEP_YR_START</value>
+      <value stream="ELMGSWP3w5e5">$DATM_CLMNCEP_YR_START</value>
       <value stream="CLMMOSARTTEST">$DATM_CLMNCEP_YR_START</value>
       <value stream="CLMNLDAS2">$DATM_CLMNCEP_YR_START</value>
       <value stream="CORE2_NYF">1</value>
@@ -1879,6 +2169,8 @@
       <value stream="BC.CRUNCEP">1979</value>
       <value stream="Anomaly.Forcing">2006</value>
       <value stream="presaero.cplhist">$DATM_CPLHIST_YR_START</value>
+      <value stream="presaero.e3smwcv2">1850</value>
+      <value stream="presaero.cplwch">1850</value>
 
       <value stream="presaero.clim" cime_model="e3sm">1</value>
       <value stream="presaero.clim_1850" cime_model="cesm">1850</value>
@@ -1894,6 +2186,8 @@
       <value stream="topo.cplhist">$DATM_CPLHIST_YR_START</value>
       <value stream="CFSv2.UV">1</value>
       <value stream="CFSR.UV">1</value>
+      <value stream="topo.e3smwcv2">$DATM_E3SMWCv2_YR_START</value>
+      <value stream="topo.cplwch">$DATM_CPLWCH_YR_START</value>
     </values									>
   </entry>
 
@@ -1910,10 +2204,15 @@
       <value stream="CLM1PT.CLM_USRDAT">$DATM_CLMNCEP_YR_END</value>
       <value stream="CLM1PT.ELM_USRDAT">$DATM_CLMNCEP_YR_END</value>
       <value stream="CPLHISTForcing">$DATM_CPLHIST_YR_END</value>
+      <value stream="E3SMWCv2Forcing">$DATM_E3SMWCv2_YR_END</value>
+      <value stream="CPLWCHForcing">$DATM_CPLWCH_YR_END</value>
       <value stream="CLM_QIAN_WISO">2004  </value>
       <value stream="CLM_QIAN">$DATM_CLMNCEP_YR_END  </value>
       <value stream="CLMCRUNCEP">$DATM_CLMNCEP_YR_END  </value>
       <value stream="CLMGSWP3">$DATM_CLMNCEP_YR_END  </value>
+      <value stream="ELMERA5">$DATM_CLMNCEP_YR_END  </value>
+      <value stream="ERA56HR">$DATM_CLMNCEP_YR_END  </value>
+      <value stream="ELMGSWP3w5e5">$DATM_CLMNCEP_YR_END  </value>
       <value stream="CLMMOSARTTEST">$DATM_CLMNCEP_YR_END  </value>
       <value stream="CLMNLDAS2">$DATM_CLMNCEP_YR_END  </value>
       <value stream="CORE2_NYF">1</value>
@@ -1953,7 +2252,8 @@
       <value stream="BC.CRUNCEP.CMAP.Precip">2010</value>
       <value stream="Anomaly.Forcing">2300</value>
       <value stream="presaero.cplhist">$DATM_CPLHIST_YR_END</value>
-
+      <value stream="presaero.e3smwcv2">1850</value>
+      <value stream="presaero.cplwch">2014</value>
       <value stream="presaero.clim" cime_model="e3sm">1</value>
       <value stream="presaero.trans_1850-2000" cime_model="e3sm">2006</value>
       <value stream="presaero.clim_1850" cime_model="cesm">1850</value>
@@ -1969,6 +2269,8 @@
       <value stream="topo.cplhist">$DATM_CPLHIST_YR_END</value>
       <value stream="CFSv2.UV">1</value>
       <value stream="CFSR.UV">1</value>
+      <value stream="topo.e3smwcv2">$DATM_E3SMWCv2_YR_START</value>
+      <value stream="topo.cplwch">$DATM_CPLWCH_YR_START</value>
     </values>
   </entry>
 
@@ -1988,6 +2290,28 @@
       <value stream="CPLHISTForcing.State1hr">900</value>
       <value stream="presaero.cplhist">0</value>
       <value stream="topo.cplhist">0</value>
+     <value stream="ELMERA5.msdrswrf">-3600</value>
+      <value stream="ELMERA5.msdfswrf">-3600</value>
+      <value stream="ELMERA5.mcpr">-60</value>
+      <value stream="ELMERA5.mlspr">-60</value>
+      <value stream="ELMERA5.msdwlwrf">-60</value>
+      <value stream="ERA56HR.msdrswrf">-21600</value>
+      <value stream="ERA56HR.msdfswrf">-21600</value>
+      <value stream="ERA56HR.mcpr">-60</value>
+      <value stream="ERA56HR.mlspr">-60</value>
+      <value stream="ERA56HR.msdwlwrf">-60</value>
+      <value stream="E3SMWCv2Forcing.Solar">2700</value>
+      <value stream="E3SMWCv2Forcing.nonSolarFlux">900</value>
+      <value stream="E3SMWCv2Forcing.State3hr">900</value>
+      <value stream="E3SMWCv2Forcing.State1hr">900</value>
+      <value stream="presaero.e3smwcv2">0</value>
+      <value stream="topo.e3smwcv2">0</value>
+      <value stream="CPLWCHForcing.Solar">2700</value>
+      <value stream="CPLWCHForcing.nonSolarFlux">900</value>
+      <value stream="CPLWCHForcing.State3hr">900</value>
+      <value stream="CPLWCHForcing.State1hr">900</value>
+      <value stream="presaero.cplwch">0</value>
+      <value stream="topo.cplwch">0</value>
     </values>
   </entry>
 
@@ -2054,6 +2378,9 @@
     <values>
       <value>NULL</value>
       <value datm_mode="CLM">CLMNCEP</value>
+      <value datm_mode="ELMERA5">CLMNCEP</value>
+      <value datm_mode="ERA56HR">CLMNCEP</value>
+      <value datm_mode="ELM">CLMNCEP</value>
       <value datm_mode="CORE2_NYF">CORE2_NYF</value>
       <value datm_mode="CORE2_IAF">CORE2_IAF</value>
       <value datm_mode="CORE_IAF_JRA.*">CORE_IAF_JRA</value>
@@ -2062,6 +2389,8 @@
       <value datm_mode="CPLHIST">COPYALL</value>
       <value datm_mode="CFSv2">COPYALL</value>
       <value datm_mode="CFSR">COPYALL</value>
+      <value datm_mode="E3SMWCv2">COPYALL</value>
+      <value datm_mode="CPLWCH">COPYALL</value>
     </values>
   </entry>
 
@@ -2093,7 +2422,9 @@
       valid values:  'copy','spval','nn','nnoni','nnonj'
     </desc>
     <values>
-      <value>nn</value>
+	<value>nn</value>
+	<value stream="ELMERA5">copy</value>
+	<value stream="ERA56HR">copy</value>
     </values>
   </entry>
 
@@ -2175,6 +2506,7 @@
       <value datm_mode="CLM1PT">nn</value>
       <value stream="CLMCRUNCEP" atm_grid="hcru">copy</value>
       <value stream="CLMGSWP3" atm_grid="hcru">copy</value>
+      <value stream="ELMGSWP3w5e5" atm_grid="hcru">copy</value>
       <value stream="CLMNLDAS2" atm_grid="0.125nldas2">copy</value>
       <value stream="co2tseries">nn</value>
     </values>
@@ -2238,6 +2570,18 @@
       <value stream="CPLHISTForcing.State1hr">linear</value>
       <value stream="presaero.cplhist">nearest</value>
       <value stream="topo.cplhist">nearest</value>
+      <value stream="E3SMWCv2Forcing.Solar">nearest</value>
+      <value stream="E3SMWCv2Forcing.nonSolarFlux">nearest</value>
+      <value stream="E3SMWCv2Forcing.State3hr">linear</value>
+      <value stream="E3SMWCv2Forcing.State1hr">linear</value>
+      <value stream="presaero.e3smwcv2">nearest</value>
+      <value stream="topo.e3smwcv2">nearest</value>
+      <value stream="CPLWCHForcing.Solar">nearest</value>
+      <value stream="CPLWCHForcing.nonSolarFlux">nearest</value>
+      <value stream="CPLWCHForcing.State3hr">linear</value>
+      <value stream="CPLWCHForcing.State1hr">linear</value>
+      <value stream="presaero.cplwch">nearest</value>
+      <value stream="topo.cplwch">nearest</value> 
       <value stream="CLM_QIAN.Solar">coszen</value>
       <value stream="CLM_QIAN.Precip">nearest</value>
       <value stream="CLM_QIAN_WISO.Solar">coszen</value>
@@ -2248,6 +2592,18 @@
       <value stream="CLMCRUNCEPv7.Precip">nearest</value>
       <value stream="CLMGSWP3v1.Solar">coszen</value>
       <value stream="CLMGSWP3v1.Precip">nearest</value>
+      <value stream="ELMERA5.msdrswrf">coszen</value>
+      <value stream="ELMERA5.msdfswrf">coszen</value>
+      <value stream="ELMERA5.mcpr">upper</value>
+      <value stream="ELMERA5.mlspr">linear</value>
+      <value stream="ELMERA5.msdwlwrf">linear</value>
+      <value stream="ERA56HR.msdrswrf">coszen</value>
+      <value stream="ERA56HR.msdfswrf">coszen</value>
+      <value stream="ERA56HR.mcpr">upper</value>
+      <value stream="ERA56HR.mlspr">linear</value>
+      <value stream="ERA56HR.msdwlwrf">linear</value>
+      <value stream="ELMGSWP3w5e5.Solar">coszen</value>
+      <value stream="ELMGSWP3w5e5.Precip">nearest</value>
       <value stream="CLMNLDAS2.Solar">coszen</value>
       <value stream="CLMNLDAS2.Precip">nearest</value>
       <value stream="BC.CRUNCEP.GPCP.Precip">nearest</value>
@@ -2340,6 +2696,37 @@
       <value stream="CPLHISTForcing.State1hr">3.0</value>
       <value stream="presaero.cplhist">3.0</value>
       <value stream="topo.cplhist">3.0</value>
+      <value stream="ELMERA5.msdrswrf">2.5</value>
+      <value stream="ELMERA5.msdfswrf">2.5</value>
+      <value stream="ELMERA5.mcpr">2.5</value>
+      <value stream="ELMERA5.mlspr">2.5</value>
+      <value stream="ELMERA5.t2m">2.5</value>
+      <value stream="ELMERA5.sp">2.5</value>
+      <value stream="ELMERA5.d2m">2.5</value>
+      <value stream="ELMERA5.w10">2.5</value>
+      <value stream="ELMERA5.msdwlwrf">2.5</value>
+      <value stream="ERA56HR.msdrswrf">2.5</value>
+      <value stream="ERA56HR.msdfswrf">2.5</value>
+      <value stream="ERA56HR.mcpr">2.5</value>
+      <value stream="ERA56HR.mlspr">2.5</value>
+      <value stream="ERA56HR.t2m">2.5</value>
+      <value stream="ERA56HR.sp">2.5</value>
+      <value stream="ERA56HR.d2m">2.5</value>
+      <value stream="ERA56HR.w10">2.5</value>
+      <value stream="ERA56HR.msdwlwrf">2.5</value>
+
+      <value stream="E3SMWCv2Forcing.Solar">3.0</value>
+      <value stream="E3SMWCv2Forcing.nonSolarFlux">3.0</value>
+      <value stream="E3SMWCv2Forcing.State3hr">3.0</value>
+      <value stream="E3SMWCv2Forcing.State1hr">3.0</value>
+      <value stream="presaero.e3smwcv2">3.0</value>
+      <value stream="topo.e3smwcv2">3.0</value>
+      <value stream="CPLWCHForcing.Solar">3.0</value>
+      <value stream="CPLWCHForcing.nonSolarFlux">3.0</value>
+      <value stream="CPLWCHForcing.State3hr">3.0</value>
+      <value stream="CPLWCHForcing.State1hr">3.0</value>
+      <value stream="presaero.cplwch">3.0</value>
+      <value stream="topo.cplwch">3.0</value>
     </values>
   </entry>
 
@@ -2493,9 +2880,10 @@
     <values>
       <value>1</value>
       <value datm_mode="CPLHISTForcing">-1</value>
+      <value datm_mode="E3SMWCv2Forcing">-1</value>
+      <value datm_mode="CPLWCHForcing">-1</value>
     </values>
   </entry>
-
   <entry id="restfilm">
     <type>char</type>
     <category>datm</category>

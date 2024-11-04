@@ -12,6 +12,7 @@
 #include "mct_coupling/ScreamContext.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/scream_session.hpp"
+#include "share/scream_config.hpp"
 #include "share/scream_types.hpp"
 
 #include "ekat/ekat_parse_yaml_file.hpp"
@@ -19,6 +20,10 @@
 #include "ekat/mpi/ekat_comm.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_assert.hpp"
+
+#if defined(SCREAM_SYSTEM_WORKAROUND) && (SCREAM_SYSTEM_WORKAROUND == 1)
+#include <hip/hip_runtime.h>
+#endif
 
 // Anonymous namespace, for some utility functions
 namespace {
@@ -49,7 +54,27 @@ void fpe_guard_wrapper (const Lambda& f) {
   ekat::enable_fpes(get_default_fpes());
 
   // Execute wrapped function
-  f();
+  try {
+    f();
+  } catch (std::exception &e) {
+    // Print exception msg, then call MPI_Abort
+    fprintf(stderr, "%s\n", e.what());
+
+    // Get raw comm before cleaning up singleton
+    auto& c = ScreamContext::singleton();
+    auto raw_comm = c.get<ekat::Comm>().mpi_comm();
+    c.clean_up();
+
+    MPI_Abort (raw_comm,1);
+  } catch (...) {
+
+    // Get raw comm before cleaning up singleton
+    auto& c = ScreamContext::singleton();
+    auto raw_comm = c.get<ekat::Comm>().mpi_comm();
+    c.clean_up();
+
+    MPI_Abort (raw_comm,1);
+  }
 
   // Restore the FPE flag as it was when control was handed to us.
   ekat::disable_all_fpes();
@@ -79,7 +104,8 @@ void scream_create_atm_instance (const MPI_Fint f_comm, const int atm_id,
                                  const int run_start_ymd,
                                  const int run_start_tod,
                                  const int case_start_ymd,
-                                 const int case_start_tod)
+                                 const int case_start_tod,
+                                 const char* calendar_name)
 {
   using namespace scream;
   using namespace scream::control;
@@ -95,6 +121,17 @@ void scream_create_atm_instance (const MPI_Fint f_comm, const int atm_id,
 
     // Initialize the scream session.
     scream::initialize_scream_session(atm_comm.am_i_root());
+
+    std::string cal = calendar_name;
+    if (cal=="NO_LEAP") {
+      scream::set_use_leap_year (false);
+    } else if (cal=="GREGORIAN") {
+      scream::set_use_leap_year (true);
+    } else {
+      EKAT_ERROR_MSG ("Error! Invalid/unsupported calendar name.\n"
+          "   - input name : " + cal + "\n"
+          "   - valid names: NO_LEAP, GREGORIAN\n");
+    }
 
     // Create a parameter list for inputs
     ekat::ParameterList scream_params("Scream Parameters");
@@ -141,11 +178,19 @@ void scream_create_atm_instance (const MPI_Fint f_comm, const int atm_id,
 }
 
 void scream_setup_surface_coupling (const char*& import_field_names, int*& import_cpl_indices,
-                                    double*& x2a_ptr, int*& import_vector_components,
+                                    double*& x2a_ptr,
+#ifdef HAVE_MOAB
+                                    double*& x2a_moab_ptr,
+#endif
+                                    int*& import_vector_components,
                                     double*& import_constant_multiple, bool*& do_import_during_init,
                                     const int& num_cpl_imports, const int& num_scream_imports, const int& import_field_size,
                                     char*& export_field_names, int*& export_cpl_indices,
-                                    double*& a2x_ptr, int*& export_vector_components,
+                                    double*& a2x_ptr,
+#ifdef HAVE_MOAB
+                                    double*& a2x_moab_ptr,
+#endif
+                                    int*& export_vector_components,
                                     double*& export_constant_multiple, bool*& do_export_during_init,
                                     const int& num_cpl_exports, const int& num_scream_exports, const int& export_field_size)
 {
@@ -173,19 +218,30 @@ void scream_setup_surface_coupling (const char*& import_field_names, int*& impor
 
     ad.setup_surface_coupling_data_manager(scream::SurfaceCouplingTransferType::Import,
                                            num_cpl_imports, num_scream_imports, import_field_size, x2a_ptr,
+#ifdef HAVE_MOAB
+                                           x2a_moab_ptr,
+#endif
                                            names_in[0], import_cpl_indices, import_vector_components,
                                            import_constant_multiple, do_import_during_init);
     ad.setup_surface_coupling_data_manager(scream::SurfaceCouplingTransferType::Export,
                                            num_cpl_exports, num_scream_exports, export_field_size, a2x_ptr,
+#ifdef HAVE_MOAB
+                                           a2x_moab_ptr,
+#endif
                                            names_out[0], export_cpl_indices, export_vector_components,
                                            export_constant_multiple, do_export_during_init);
   });
 }
 
-void scream_init_atm (const int run_start_ymd,
-                      const int run_start_tod,
-                      const int case_start_ymd,
-                      const int case_start_tod)
+#if defined(SCREAM_SYSTEM_WORKAROUND) && (SCREAM_SYSTEM_WORKAROUND == 1)
+void scream_init_hip_atm () {
+    hipInit(0);
+}
+#endif
+
+void scream_init_atm (const char* caseid,
+                      const char* hostname,
+                      const char* username)
 {
   using namespace scream;
   using namespace scream::control;
@@ -194,9 +250,15 @@ void scream_init_atm (const int run_start_ymd,
     // Get the ad, then complete initialization
     auto& ad = get_ad_nonconst();
 
+    // Set provenance info in the driver (will be added to the output files)
+    ad.set_provenance_data (caseid,hostname,username);
+
     // Init all fields, atm processes, and output streams
     ad.initialize_fields ();
     ad.initialize_atm_procs ();
+    // Do this before init-ing the output managers,
+    // so the fields are valid if outputing at t=0
+    ad.reset_accumulated_fields();
     ad.initialize_output_managers ();
   });
 }
@@ -218,7 +280,11 @@ void scream_finalize (/* args ? */) {
     ad.finalize();
 
     // Clean up the context
-    scream::ScreamContext::singleton().clean_up();
+    // Note: doing the cleanup here via
+    //   scream::ScreamContext::singleton().clean_up();
+    // causes an ICE with C++17 on Summit/Ascent.
+    // Wrapping it in a function seems to work though
+    scream::cleanup_singleton();
 
     // Finalize scream session
     scream::finalize_scream_session();
@@ -256,15 +322,15 @@ int scream_get_num_global_cols () {
 // Return the global ids of all physics column
 void scream_get_local_cols_gids (void* const ptr) {
   using namespace scream;
-  using gid_t = AbstractGrid::gid_type;
+  using gid_type = AbstractGrid::gid_type;
   fpe_guard_wrapper([&]() {
-    auto gids_f = reinterpret_cast<int* const>(ptr);
+    auto gids_f = reinterpret_cast<int*>(ptr);
     const auto& ad = get_ad();
     const auto& phys_grid = ad.get_grids_manager()->get_grid("Physics");
 
     auto gids = phys_grid->get_dofs_gids();
     gids.sync_to_host();
-    auto gids_h = gids.get_view<const gid_t*,Host>();
+    auto gids_h = gids.get_view<const gid_type*,Host>();
 
     for (int i=0; i<gids_h.extent_int(0); ++i) {
       gids_f[i] = gids_h(i);

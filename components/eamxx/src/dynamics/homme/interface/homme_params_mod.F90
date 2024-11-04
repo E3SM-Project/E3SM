@@ -106,6 +106,7 @@ contains
         param_value = dims(3)
       case default
         call abortmp ("[get_homme_int_param_f90] Error! Unrecognized parameter name.")
+        param_value = 0
     end select 
 
   end function get_homme_int_param_f90
@@ -143,6 +144,7 @@ contains
         param_value = tstep
       case default
         call abortmp ("[get_homme_real_param_f90] Error! Unrecognized parameter name.")
+        param_value = 0
     end select 
 
   end function get_homme_real_param_f90
@@ -171,6 +173,7 @@ contains
         endif
       case default
         call abortmp ("[get_homme_bool_param_f90] Error! Unrecognized parameter name.")
+        param_value = .false.
     end select 
 
   end function get_homme_bool_param_f90

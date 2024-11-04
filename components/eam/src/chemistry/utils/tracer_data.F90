@@ -5,6 +5,12 @@ module tracer_data
 ! Created by: Francis Vitt -- 2 May 2006
 ! Modified by : Jim Edwards -- 10 March 2009
 ! Modified by : Cheryl Craig and Chih-Chieh (Jack) Chen  -- February 2010
+! Modified by : Jinbo Xie --March 2023
+!               Added a new option in interpolate_trcdata to work on linoz
+!               inputdata. A new UCI interpolation that better conserves
+!               mass in implemented and added a new function. It is called
+!               when linoz data are used in interpolate_trcdata.
+!
 !----------------------------------------------------------------------- 
 
   use perf_mod,     only : t_startf, t_stopf
@@ -43,9 +49,11 @@ module tracer_data
   public :: read_trc_restart
   public :: init_trc_restart
   public :: incr_filename
-
-
-  ! !PUBLIC MEMBERS
+  !added public for linoz new function diagnostic
+  public :: read_next_trcdata
+  public :: interpolate_trcdata
+  public :: get_model_time
+  !!PUBLIC MEMBERS
 
   type input3d
      real(r8), dimension(:,:,:), pointer :: data => null()
@@ -127,6 +135,8 @@ module tracer_data
      logical :: initialized = .false.
      logical :: top_bndry = .false.
      logical :: stepTime = .false.  ! Do not interpolate in time, but use stepwise times
+     logical :: linoz_v3 = .false.  !set for linoz_v3 interpolation only
+     logical :: linoz_v2 = .false.  !set for linoz_v2 interpolation only
   endtype trfile
 
   integer, public, parameter :: MAXTRCRS = 100
@@ -346,6 +356,8 @@ contains
        call get_dimension( file%curr_fileid, 'altitude',     file%nlev, dimid=old_dimid, data=file%levs  )
     else
        call get_dimension( file%curr_fileid, 'lev', file%nlev, dimid=old_dimid, data=file%levs  )
+       !!added for Linoz_v3
+       call get_dimension( file%curr_fileid, 'ilev', file%nilev, data=file%ilevs  )
        if (old_dimid>0) then
           file%levs =  file%levs*100._r8 ! mbar->pascals
        endif
@@ -420,11 +432,18 @@ contains
 
     flds_loop: do f = 1,mxnflds
 
+       ! initialize the coordinate values to -1,
+       ! to defend against fields that do not have certain dimension, e.g., zonal average surface fields
+       ! and check against it when assigning value to cnt3 for that dimension
+
+       do did = 1,4
+          flds(f)%coords(did) = -1
+       end do
+
        ! get netcdf variable id for the field
        ierr = pio_inq_varid( file%curr_fileid, flds(f)%srcnam, flds(f)%var_id )
 
        ! determine if the field has a vertical dimension
-
        if (lev_dimid>0) then
           ierr = pio_inquire_variable(  file%curr_fileid, flds(f)%var_id, ndims=nvardims )
           ierr = pio_inquire_variable(  file%curr_fileid, flds(f)%var_id, dimids=vardimids(:nvardims) )
@@ -641,7 +660,7 @@ contains
           call t_startf('read_next_trcdata')
           call read_next_trcdata(state, flds, file )
           call t_stopf('read_next_trcdata')
-          if(masterproc) write(iulog,*) 'READ_NEXT_TRCDATA ', flds%fldnam
+          if(masterproc) write(iulog,*) 'READ_NEXT_TRCDATA ', flds%fldnam,data_time
        end if
 
     endif
@@ -1110,7 +1129,7 @@ contains
     use physics_types,only : physics_state
     use ppgrid,           only: pcols, pver, pverp,begchunk,endchunk
     use physconst,        only: rair
-    use scamMod
+    use iop_data_mod
     use rad_constituents, only: rad_cnst_get_info, rad_cnst_get_aer_props, &
                             rad_cnst_get_mode_props, rad_cnst_get_mode_num
     
@@ -1255,16 +1274,42 @@ contains
 
        do f = 1,nflds
           if ( file%zonal_ave ) then
-             cnt3(flds(f)%coords(ZA_LATDIM)) = file%nlat
+                ! Defend against zonal mean surface fields that do not set the value via dimension match
+                if (flds(f)%coords(ZA_LATDIM) .gt. 0) cnt3(flds(f)%coords(ZA_LATDIM)) = file%nlat
              if (flds(f)%srf_fld) then
-                cnt3(flds(f)%coords(ZA_LEVDIM)) = 1
+                ! Defend against zonal mean surface fields that do not set the value via dimension match
+                if (flds(f)%coords(ZA_LEVDIM) .gt. 0) cnt3(flds(f)%coords(ZA_LEVDIM)) = 1
              else
                 cnt3(flds(f)%coords(ZA_LEVDIM)) = file%nlev
              endif
              cnt3(flds(f)%coords(ZA_TIMDIM)) = 1
              strt3(flds(f)%coords(ZA_TIMDIM)) = recnos(i)
-             call read_za_trc( fids(i), flds(f)%var_id, flds(f)%input(i)%data, strt3, cnt3, file, &
-                  (/ flds(f)%order(ZA_LATDIM),flds(f)%order(ZA_LEVDIM) /) )
+             !!
+             if (file%linoz_v3 .or. file%linoz_v2) then
+                     !!check if these are the surface variables
+                     !!no need to do interpolate since only used
+                     !!in preprocessing,
+                     !!clim +57 is the correspondent srf variable
+                     if (index(flds(f)%fldnam,"_clim")  .gt.0.and.&
+                         index(flds(f)%fldnam,"P_clim") .le.0.and.&
+                         index(flds(f)%fldnam,"L_clim") .le.0.and.&
+                         index(flds(f)%fldnam,"_srf")   .le.0)then
+                             call read_za_trc_linoz( fids(i), flds(f)%var_id, flds(f)%input(i)%data, strt3, cnt3, file, &
+                                                                (/ flds(f)%order(ZA_LATDIM),flds(f)%order(ZA_LEVDIM)/), &
+                                                                vid_srf=flds(f+57)%var_id )
+                     elseif (index(flds(f)%fldnam,"_srf").gt.0) then
+                             if (index(flds(f)%fldnam,"ch4_avg_srf").gt.0) then
+                                      cnt3(1)=1!set 1st dim since no ZA_LATDIM
+                             endif
+                             call read_zasrf_trc_linoz(fids(i), flds(f)%var_id, flds(f)%input(i)%data, strt3, cnt3, file)
+                     else
+                             call read_za_trc_linoz( fids(i), flds(f)%var_id, flds(f)%input(i)%data, strt3, cnt3, file, &
+                                                                (/ flds(f)%order(ZA_LATDIM),flds(f)%order(ZA_LEVDIM) /) )
+                     endif
+             else
+                             call read_za_trc( fids(i), flds(f)%var_id, flds(f)%input(i)%data, strt3, cnt3, file, &
+                                                          (/ flds(f)%order(ZA_LATDIM),flds(f)%order(ZA_LEVDIM) /) )
+             endif
           else if ( flds(f)%srf_fld ) then
              cnt3( flds(f)%coords(LONDIM)) = file%nlon
              cnt3( flds(f)%coords(LATDIM)) = file%nlat
@@ -1485,6 +1530,7 @@ contains
      end if
 
 
+
     ierr = pio_get_var( fid, vid, strt, cnt, wrk2d )
     if(associated(wrk2d_in)) then
        wrk2d_in = reshape( wrk2d(:,:),(/file%nlon,file%nlat/), order=order )
@@ -1583,6 +1629,8 @@ contains
        wrk2d_in => wrk2d
     end if
 
+
+
     do c=begchunk,endchunk
        ncols = get_ncols_p(c)
        call get_rlat_all_p(c, pcols, to_lats)
@@ -1602,6 +1650,180 @@ contains
     end if
 !    if(dycore_is('LR')) call polar_average(loc_arr)
   end subroutine read_za_trc
+!------------------------------------------------------------------------
+  subroutine read_za_trc_linoz( fid, vid, loc_arr, strt, cnt, file, order ,vid_srf)
+    use interpolate_data, only : lininterp_init, lininterp, interp_type, lininterp_finish
+    use phys_grid,        only : pcols, begchunk, endchunk, get_ncols_p, get_rlat_all_p, get_rlon_all_p 
+    use mo_constants,     only : pi
+    use dycore,           only : dycore_is              
+    use polar_avg,        only : polar_average
+
+    implicit none
+    type(file_desc_t), intent(in) :: fid
+    type(var_desc_t),  intent(in) :: vid
+    integer,           intent(in) :: strt(:), cnt(:)
+    integer,           intent(in) :: order(2)
+    real(r8),          intent(out):: loc_arr(:,:,:)
+    type (trfile),     intent(in) :: file
+    !!
+    type(var_desc_t),  intent(in), optional :: vid_srf
+    integer :: cnt_srf(2)
+    integer :: strt_srf(2)
+    !!
+    type(interp_type) :: lat_wgts
+    real(r8) :: to_lats(pcols), to_lons(pcols), wrk(pcols)
+    real(r8), allocatable, target :: wrk2d(:,:)
+    real(r8), allocatable, target :: wrksrf(:)
+    real(r8), pointer :: wrk2d_in(:,:)
+    integer :: c, k, ierr, ncols
+
+     nullify(wrk2d_in)
+     allocate( wrk2d(cnt(1),cnt(2)), stat=ierr )
+     if( ierr /= 0 ) then
+        write(iulog,*) 'read_2d_trc: wrk2d allocation error = ',ierr
+        call endrun
+     end if
+
+     if(order(1)/=1 .or. order(2)/=2 .or. cnt(1)/=file%nlat .or. cnt(2)/=file%nlev) then
+        allocate( wrk2d_in(file%nlat, file%nlev), stat=ierr )
+        if( ierr /= 0 ) then
+           write(iulog,*) 'read_2d_trc: wrk2d_in allocation error = ',ierr
+           call endrun
+        end if
+     end if
+    !!
+    ierr = pio_get_var( fid, vid, strt, cnt, wrk2d )
+    !!
+    if (file%linoz_v3) then
+            !!since io reads in global data for every thread
+            !!and interpolate to local chunk, we can do surface,
+            !!polar, and surface padding preprocessfor every variable 
+            !!before interpolation
+            !!it is put here rather than the data formation process
+            !!to prevent forget when producing forcing data
+                !read in order of 0.1hPa~985hPa, pad top with 2nd layer
+                wrk2d(:,1)=wrk2d(:,2)
+                !both N/S poles need to pad by nearest data
+                wrk2d(1,:)=wrk2d(2,:)
+                wrk2d(file%nlat,:)=wrk2d(file%nlat-1,:)
+                !!read in srf data to pad surface
+                !!they are inputs from CMIP forcing and other references
+                cnt_srf(1)=cnt(1)
+                cnt_srf(2)=cnt(3)
+                strt_srf(1)=strt(1)
+                strt_srf(2)=strt(3)
+                !!check if vid_srf is present to determine clim variables
+                if (present(vid_srf)) then
+                !!padding for clim terms
+                allocate(wrksrf(cnt(1)), stat=ierr )
+                ierr = pio_get_var( fid, vid_srf, strt_srf, cnt_srf, wrksrf )
+                !!surface padding
+                wrk2d(:,file%nlev)=wrksrf
+                deallocate(wrksrf)
+                endif
+                !!
+    endif
+    !!
+    if(associated(wrk2d_in)) then
+       wrk2d_in = reshape( wrk2d(:,:),(/file%nlat,file%nlev/), order=order )
+       deallocate(wrk2d)
+    else
+       wrk2d_in => wrk2d
+    end if
+
+    do c=begchunk,endchunk
+       ncols = get_ncols_p(c)
+       call get_rlat_all_p(c, pcols, to_lats)
+       call lininterp_init(file%lats, file%nlat, to_lats, ncols, 1, lat_wgts)
+       do k=1,file%nlev
+          call lininterp(wrk2d_in(:,k), file%nlat, wrk(1:ncols), ncols, lat_wgts)
+          loc_arr(1:ncols,k,c-begchunk+1) = wrk(1:ncols)
+       end do
+       call lininterp_finish(lat_wgts)
+    end do
+
+    if(allocated(wrk2d)) then
+       deallocate(wrk2d)
+    else
+       deallocate(wrk2d_in)
+    end if
+    !!
+    if(allocated(wrksrf)) then
+       deallocate(wrksrf)
+    end if
+!    if(dycore_is('LR')) call polar_average(loc_arr)
+  end subroutine read_za_trc_linoz
+
+!------------------------------------------------------------------------
+  subroutine read_zasrf_trc_linoz( fid, vid, loc_arr, strt, cnt, file)
+    use interpolate_data, only : lininterp_init, lininterp, interp_type, lininterp_finish
+    use phys_grid,        only : pcols, begchunk, endchunk, get_ncols_p, get_rlat_all_p, get_rlon_all_p
+    !!
+    implicit none
+    type(file_desc_t), intent(in) :: fid
+    type(var_desc_t),  intent(in) :: vid
+    integer,           intent(in) :: strt(:), cnt(:)
+    real(r8),          intent(out):: loc_arr(:,:,:)
+    type (trfile),     intent(in) :: file
+    !!
+    real(r8), allocatable, target :: wrk(:)
+    real(r8), pointer :: wrk_in(:)
+    real(r8) :: wrk_out(pcols)
+    type(interp_type) :: lat_wgts
+    real(r8) :: to_lats(pcols), to_lons(pcols)
+    integer :: c, k, ierr, ncols
+    integer :: cnt_srf(2)
+    integer :: strt_srf(2)
+    !!
+    nullify(wrk_in)
+    allocate( wrk(cnt(1)), stat=ierr )
+    if( ierr /= 0 ) then
+       write(iulog,*) 'read_zasrf_trc_linoz: wrk allocation error = ',ierr
+       call endrun
+    end if
+    !!
+    cnt_srf(1)=cnt(1)
+    cnt_srf(2)=cnt(3)
+    strt_srf(1)=strt(1)
+    strt_srf(2)=strt(3)
+    !!
+    !for surface variable with the dimension of (time,lat) or (time,1)
+    !for (time) it is also set like (time,1)
+        ierr = pio_get_var( fid, vid, strt_srf, cnt_srf, wrk )
+        !!
+        if(associated(wrk_in)) then
+                wrk_in = reshape( wrk(:),(/file%nlat/))
+                deallocate(wrk)
+        else
+                wrk_in => wrk
+        end if
+        !!
+        do c=begchunk,endchunk
+           ncols = get_ncols_p(c)
+           call get_rlat_all_p(c, pcols, to_lats)
+           call lininterp_init(file%lats, file%nlat, to_lats, ncols, 1, lat_wgts)
+           !!
+           if (cnt(1).eq.1) then!!for single timeseries
+                do k=1,1
+                loc_arr(1:ncols,k,c-begchunk+1) = wrk_in(1)
+                end do
+           else
+                do k=1,1
+                call lininterp(wrk_in(:), file%nlat, wrk_out(1:ncols), ncols, lat_wgts)
+                loc_arr(1:ncols,k,c-begchunk+1) = wrk_out(1:ncols)
+                end do
+           end if
+           !!
+           call lininterp_finish(lat_wgts)
+        end do
+    !!
+    if(allocated(wrk)) then
+       deallocate(wrk)
+    else
+       deallocate(wrk_in)
+    end if
+    !!
+    end subroutine read_zasrf_trc_linoz
 
 !------------------------------------------------------------------------
 
@@ -1731,6 +1953,8 @@ contains
     real(r8) :: ps(pcols)
     real(r8) :: datain(pcols,file%nlev)
     real(r8) :: pin(pcols,file%nlev)
+    real(r8) :: pint(pcols,file%nilev)
+
     real(r8)            :: model_z(pverp)
     real(r8), parameter :: m2km  = 1.e-3_r8
     real(r8), pointer :: data_out3d(:,:,:)
@@ -1851,6 +2075,12 @@ contains
                    do k = 1,file%nlev
                       pin(:,k) = file%levs(k)
                    enddo
+                   !!Currently designed for linoz_v2/v3 use
+                   if (file%linoz_v3 .or. file%linoz_v2) then
+                      do k = 1,file%nilev
+                         pint(:,k) = file%ilevs(k)
+                      enddo
+                   endif
                 endif
              endif
 
@@ -1876,6 +2106,19 @@ contains
                    call vert_interp_mixrat(ncol,file%nlev,pver,state(c)%pint, &
                         datain, data_out(:,:), &
                         file%p0,ps,file%hyai,file%hybi)
+                else if(file%linoz_v3 .or. file%linoz_v2) then
+                !!uci chemistry for linoz that better conserves mass
+                !!uci interpolation for 55 out of 57 variables in linoz_v3
+                !!excluding t_clim, o3col_clim
+                !!for linoz_v2 it is simiar with less variables
+                   if (flds(f)%fldnam.ne.'t_clim          ' &
+                  .and.flds(f)%fldnam.ne.'o3col_clim      ') then
+                   !!file ilevs is in hPa, while model level in Pa, so times 100
+                   call vert_interp_uci(ncol, file%nlev, 100*file%ilevs, state(c)%pint, datain, data_out(:,:) )
+                   else
+                   call vert_interp(ncol, file%nlev, pin, state(c)%pmid, datain, data_out(:,:) )
+                   endif
+                !!
                 else
                    call vert_interp(ncol, file%nlev, pin, state(c)%pmid, datain, data_out(:,:) )
                 endif
@@ -2374,7 +2617,6 @@ contains
     real(r8), intent(in)  :: pmid(pcols,pver)          ! level pressures 
     real(r8), intent(in)  :: datain(pcols,levsiz)
     real(r8), intent(out) :: dataout(pcols,pver)     
-
     !
     ! local storage
     !
@@ -2431,7 +2673,85 @@ contains
 
 
   end subroutine vert_interp
-
+!------------------------------------------------------------------------------
+  SUBROUTINE vert_interp_uci(ncol,levsiz,pin,pint,datain,dataout)
+!-------------------------------------------------------------------------- 
+    ! 
+    ! Interpolate data from current time-interpolated values to model levels
+    !--------------------------------------------------------------------------
+    implicit none
+    ! Arguments
+    !
+    integer,  intent(in)  :: ncol
+    integer,  intent(in)  :: levsiz
+    real(r8), intent(in)  :: pin(levsiz+1) !inputdata interface level pressure
+    real(r8), intent(in)  :: pint(pcols,pver+1) !model interface level pressures
+    real(r8), intent(in)  :: datain(pcols,levsiz)
+    real(r8), intent(out) :: dataout(pcols,pver)
+    !
+    ! local storage
+    !
+    integer ::  i,k                   ! longitude index
+    ! Initialize index array
+    !
+    do k=1,pver
+        do i=1,ncol
+        call vert_interp_uci_single(pint(i,k+1),pint(i,k),dataout(i,k),pin,datain(i,:),levsiz)
+        enddo
+    enddo
+    !
+       END SUBROUTINE vert_interp_uci
+!------------------------------------------------------------------------------
+       SUBROUTINE vert_interp_uci_single(P1,P2,F0,P,F,NL)
+!-----------------------------------------------------------------------
+!---Ths function is the vertical interpolation used for 
+!---vertical interpolation of linoz tracers in E3SM.
+!---For a model level P bounded by pressure P1 > P2 (decreasing up) 
+!---    integrates (p-avg) the value F0 from F on the grid P
+!---    assumes model pressure increases from top to bottom.
+!---NOTE reverse order in P's
+!---Assume that the quantity is constant over range halfway to layer above/below
+!---    and calculate box edges from model top to model bottom
+!
+!---For a model level between pressure range P1 > P2 (decreasing up)
+!---calculate the SOM Z-moments of the loss freq at std z* (log-p) intervals
+!--------  the pressure levels BETWEEN z* values are:
+!                         P(i) < P(i+1) bounds z*(i)
+!-------- The MOMENTS for a square-wave or 'bar': F(x)=F0  b<=x<=c, =0.0 else
+!-----     S0 =   f0 (x)                      [from x=b to x=c]
+!-----------------------------------------------------------------------
+      implicit none
+      integer,  intent(in) ::   NL
+      real(r8), intent(in) ::   P1,P2,P(NL+1),F(NL)
+      real(r8), intent(out)::   F0
+      integer  I
+      real(r8)   XB,XC,PC,PB,SGNF0,PF1,PF2
+!-----------------------------------------------------------------------
+      F0 = 0._r8
+      !
+      do I = 1,NL
+        PF1=P(I)
+        PF2=P(I+1)
+        !
+        PC   = min(P1,PF2)
+        PB   = max(P2,PF1)
+        !
+        if (PC .gt. PB)  then
+!--- have condition:  P1 .ge. PC .gt. PB .ge. P2 
+!---      and          0 .le. XB .lt. XC .le. 1
+          XC = (PC-P2)/(P1-P2)
+          XB = (PB-P2)/(P1-P2)
+!-------- assume that the quantity, F, is constant over interval [XLO,XUP],
+!--------   F0: (c-b),   
+!-------- calculate its contribution to the moments in the interval [0,1]
+          F0 = F0 +F(I) *(XC -XB)
+        endif
+      enddo
+!---limiter on Z-moments: force monotonicity (tables can be + or -)
+      SGNF0 = sign(1._r8, F0)
+      F0 = abs(F0)
+      F0 = SGNF0 * F0
+      END SUBROUTINE vert_interp_uci_single
 !------------------------------------------------------------------------------
   subroutine vert_interp_ub( ncol, nlevs, plevs,  datain, dataout )
     use ref_pres, only : ptop_ref

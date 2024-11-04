@@ -6,12 +6,24 @@ module seq_flux_mct
   use shr_orb_mod,       only: shr_orb_params, shr_orb_cosz, shr_orb_decl
   use shr_mct_mod,       only: shr_mct_queryConfigFile, shr_mct_sMatReaddnc
 
+  use seq_comm_mct,     only : mboxid ! iMOAB app id for ocn on cpl pes
+  use seq_comm_mct,     only : mbofxid ! iMOAB id for mpas ocean migrated mesh to coupler pes, just for xao flux calculations
+  use seq_comm_mct,     only : mbaxid ! iMOAB app id for atm phys grid on cpl pes
+
+  use prep_aoflux_mod,   only: prep_aoflux_get_xao_omct, prep_aoflux_get_xao_amct
+
+  use iMOAB, only :  iMOAB_SetDoubleTagStorageWithGid, iMOAB_WriteMesh, iMOAB_SetDoubleTagStorage, iMOAB_GetDoubleTagStorage
+  use iMOAB, only : iMOAB_GetMeshInfo
+  use seq_comm_mct, only :  num_moab_exports ! for debugging
+
   use mct_mod
   use seq_flds_mod
   use seq_comm_mct
   use seq_infodata_mod
 
   use component_type_mod
+  
+  use iso_c_binding
 
   implicit none
   private
@@ -28,6 +40,8 @@ module seq_flux_mct
   public seq_flux_ocnalb_mct
 
   public seq_flux_atmocn_mct
+  public seq_flux_atmocn_moab
+  
   public seq_flux_atmocnexch_mct
 
   !--------------------------------------------------------------------------
@@ -45,6 +59,9 @@ module seq_flux_mct
   real(r8), allocatable ::  zbot (:)  ! atm level height
   real(r8), allocatable ::  ubot (:)  ! atm velocity, zonal
   real(r8), allocatable ::  vbot (:)  ! atm velocity, meridional
+  real(r8), allocatable ::  wsresp(:) ! atm response to surface stress
+  real(r8), allocatable ::  tau_est(:)! estimation of tau in equilibrium with wind
+  real(r8), allocatable ::  ugust_atm(:)  ! atm gustiness
   real(r8), allocatable ::  thbot(:)  ! atm potential T
   real(r8), allocatable ::  shum (:)  ! atm specific humidity
   real(r8), allocatable ::  shum_16O (:)  ! atm H2O tracer
@@ -113,11 +130,19 @@ module seq_flux_mct
   real(r8)  :: seq_flux_mct_albdir = -1.0_r8  ! albedo, direct
   real(r8)  :: seq_flux_atmocn_minwind ! minimum wind temperature for atmocn flux routines
 
+  ! moab 
+  real(r8),  allocatable :: tagValues(:) ! used for copying tag values from frac to frad
+  real(r8),  allocatable :: tagValues2(:) ! used for copying tag values for albedos
+  integer ,    allocatable :: GlobalIds(:) ! used for setting values associated with ids
+  
   ! Coupler field indices
 
   integer :: index_a2x_Sa_z
   integer :: index_a2x_Sa_u
   integer :: index_a2x_Sa_v
+  integer :: index_a2x_Sa_wsresp
+  integer :: index_a2x_Sa_tau_est
+  integer :: index_a2x_Sa_ugust
   integer :: index_a2x_Sa_tbot
   integer :: index_a2x_Sa_ptem
   integer :: index_a2x_Sa_shum
@@ -235,6 +260,19 @@ contains
     allocate( vbot(nloc))
     if(ier/=0) call mct_die(subName,'allocate vbot',ier)
     vbot = 0.0_r8
+    if (atm_flux_method == 'implicit_stress') then
+       allocate(wsresp(nloc))
+       if(ier/=0) call mct_die(subName,'allocate wsresp',ier)
+       wsresp = 0.0_r8
+       allocate(tau_est(nloc))
+       if(ier/=0) call mct_die(subName,'allocate tau_est',ier)
+       tau_est = 0.0_r8
+    end if
+    if (atm_gustiness) then
+       allocate(ugust_atm(nloc))
+       if(ier/=0) call mct_die(subName,'allocate ugust_atm',ier)
+       ugust_atm = 0.0_r8
+    end if
     allocate(thbot(nloc),stat=ier)
     if(ier/=0) call mct_die(subName,'allocate thbot',ier)
     thbot = 0.0_r8
@@ -659,8 +697,18 @@ contains
     if(ier/=0) call mct_die(subName,'allocate zbot',ier)
     allocate( ubot(nloc_a2o),stat=ier)
     if(ier/=0) call mct_die(subName,'allocate ubot',ier)
-    allocate( vbot(nloc_a2o))
+    allocate( vbot(nloc_a2o),stat=ier)
     if(ier/=0) call mct_die(subName,'allocate vbot',ier)
+    if (atm_flux_method == 'implicit_stress') then
+       allocate( wsresp(nloc_a2o),stat=ier)
+       if(ier/=0) call mct_die(subName,'allocate wsresp',ier)
+       allocate( tau_est(nloc_a2o),stat=ier)
+       if(ier/=0) call mct_die(subName,'allocate tau_est',ier)
+    end if
+    if (atm_gustiness) then
+       allocate( ugust_atm(nloc_a2o),stat=ier)
+       if(ier/=0) call mct_die(subName,'allocate ugust_atm',ier)
+    end if
     allocate(thbot(nloc_a2o),stat=ier)
     if(ier/=0) call mct_die(subName,'allocate thbot',ier)
     allocate(shum(nloc_a2o),stat=ier)
@@ -754,6 +802,7 @@ contains
     ! Local variables
     !
     type(mct_gGrid), pointer :: dom_o
+    type(mct_gsMap)        , pointer       :: gsMap               ! model global seg map 
     logical             :: flux_albav           ! flux avg option
     integer(in)         :: n                  ! indices
     real(r8)            :: rlat                 ! gridcell latitude in radians
@@ -777,8 +826,23 @@ contains
     integer(in)         :: kx,kr                ! fractions indices
     integer(in)         :: klat,klon       ! field indices
     logical             :: update_alb           ! was albedo updated
+
+    integer(IN), pointer :: idata(:)   ! temporary for getting global ids from gsmap
+
+
+    integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
+    character(CXX) ::tagname
+    integer :: ent_type, ierr, kgg
+    integer , save  :: arrSize ! local size for moab tag arrays (number of cells locally)
+
+    integer mpicom   ! just to get the global ids from gsmap
+    integer my_task  ! again, just for global ids
     logical,save        :: first_call = .true.
-    !
+    integer, save       :: lSize
+    
+#ifdef MOABDEBUG
+    character*100 outfile, wopts, lnum
+#endif
     character(*),parameter :: subName =   '(seq_flux_ocnalb_mct) '
     !
     !-----------------------------------------------------------------------
@@ -819,8 +883,36 @@ contains
           lats(n) = dom_o%data%rAttr(klat,n)
           lons(n) = dom_o%data%rAttr(klon,n)
        enddo
+      
+       if (mboxid .ge. 0) then
+          ! allocate a local small array to copy a tag from another 
+          ierr  = iMOAB_GetMeshInfo ( mboxid, nvert, nvise, nbl, nsurf, nvisBC );
+          arrSize = nvise(1) * 2 !  we have ifrac and ofrac to copy to ifrad, ofrad
+          allocate(tagValues(arrSize) )
+       endif
+
+       if (mbofxid .ge. 0) then
+          lSize = mct_aVect_lSize(xao_o)
+          allocate(tagValues2(lSize) )
+          allocate(GlobalIds(lSize) )
+          ! use gsmap instead of domain; for data models, it seems to be not initialized
+          ! same problem during data ocean init
+          gsmap => component_get_gsmap_cx( ocn )
+          ! get list of global IDs for Dofs
+          call seq_comm_setptrs(CPLID, mpicom=mpicom)
+          ! Determine communicator task
+          call mpi_comm_rank(mpicom, my_task, ierr)
+          call mct_gsMap_orderedPoints(gsMap, my_task, idata)
+          do n = 1, lSize
+             GlobalIds (n) = idata (n)
+          enddo
+          !kgg = mct_aVect_indexIA(dom_o%data ,"GlobGridNum" ,perrWith=subName)
+          !GlobalIds = dom_o%data%iAttr(kgg,:)
+       endif
+
        first_call = .false.
     endif
+    ent_type = 1 ! cells for mpas ocean
 
     if (flux_albav) then
 
@@ -906,16 +998,96 @@ contains
           update_alb = .true.
        endif    ! nextsw_cday
     end if   ! flux_albav
-    !--- update current ifrad/ofrad values if albedo was updated
 
+! update MOAB versions
+    if (mbofxid > 0 ) then
+       tagname = 'So_avsdr'//C_NULL_CHAR
+       tagValues2 = xao_o%rAttr(index_xao_So_avsdr,:)
+       ierr = iMOAB_SetDoubleTagStorageWithGid ( mbofxid, tagname, lSize , ent_type, tagValues2, GlobalIds )
+       if (ierr .ne. 0) then
+          write(logunit,*) subname,' error in setting avsdr on ocnf moab instance  '
+          call shr_sys_abort(subname//' ERROR in setting avsdr on ocnf moab instance ')
+       endif
+
+       tagname = 'So_anidr'//C_NULL_CHAR
+       tagValues2 = xao_o%rAttr(index_xao_So_anidr,:)
+       ierr = iMOAB_SetDoubleTagStorageWithGid ( mbofxid, tagname, lSize , ent_type, tagValues2, GlobalIds )
+       if (ierr .ne. 0) then
+          write(logunit,*) subname,' error in setting anidr on ocnf moab instance  '
+          call shr_sys_abort(subname//' ERROR in setting anidr on ocnf moab instance ')
+       endif
+
+       tagname = 'So_avsdf'//C_NULL_CHAR
+       tagValues2 = xao_o%rAttr(index_xao_So_avsdf,:)
+       ierr = iMOAB_SetDoubleTagStorageWithGid ( mbofxid, tagname, lSize , ent_type, tagValues2, GlobalIds )
+       if (ierr .ne. 0) then
+          write(logunit,*) subname,' error in setting avsdf on ocnf moab instance  '
+          call shr_sys_abort(subname//' ERROR in setting avsdf on ocnf moab instance ')
+       endif
+
+       tagname = 'So_anidf'//C_NULL_CHAR
+       tagValues2 = xao_o%rAttr(index_xao_So_anidf,:)
+       ierr = iMOAB_SetDoubleTagStorageWithGid ( mbofxid, tagname, lSize , ent_type, tagValues2, GlobalIds )
+       if (ierr .ne. 0) then
+          write(logunit,*) subname,' error in setting anidf on ocnf moab instance  '
+          call shr_sys_abort(subname//' ERROR in setting anidf on ocnf moab instance ')
+       endif
+    endif
+
+    !--- update current ifrad/ofrad values if albedo was updated
     if (update_alb) then
        kx = mct_aVect_indexRA(fractions_o,"ifrac")
        kr = mct_aVect_indexRA(fractions_o,"ifrad")
        fractions_o%rAttr(kr,:) = fractions_o%rAttr(kx,:)
+
        kx = mct_aVect_indexRA(fractions_o,"ofrac")
        kr = mct_aVect_indexRA(fractions_o,"ofrad")
        fractions_o%rAttr(kr,:) = fractions_o%rAttr(kx,:)
+
+       ! copy here fractions ifrad and ofrad to moab tags
+       if (mboxid > 0 ) then
+         tagname = 'ifrac:ofrac'//C_NULL_CHAR
+         ent_type = 1 ! cells for ocean mesh
+         ierr = iMOAB_GetDoubleTagStorage( mboxid, tagname,  arrSize, ent_type, tagValues)
+         if (ierr .ne. 0) then
+           write(logunit,*) subname,' error in getting ifrac, ofrac  '
+           call shr_sys_abort(subname//' ERROR in getting ifrac, ofrac')
+         endif
+         tagname = 'ifrad:ofrad'//C_NULL_CHAR
+         ierr = iMOAB_SetDoubleTagStorage( mboxid, tagname,  arrSize, ent_type, tagValues)
+         if (ierr .ne. 0) then
+           write(logunit,*) subname,' error in setting ifrad, ofrad  '
+           call shr_sys_abort(subname//' ERROR in setting ifrad, ofrad ')
+         endif
+       endif
+
     endif
+#ifdef MOABDEBUG
+    if (mbofxid > 0) then
+        ! debug out file
+       write(lnum,"(I0.2)")num_moab_exports
+       outfile = 'OcnCpl2Albedo_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+       wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+       ierr = iMOAB_WriteMesh(mbofxid, outfile, wopts)
+       if (ierr .ne. 0) then
+          write(logunit,*) subname,' error in writing second ocean inst (for flux comp) '
+          call shr_sys_abort(subname//' ERROR in writing second ocean inst (for flux comp)  ')
+       endif
+    endif
+    if (mboxid > 0) then
+       ! debug out file
+       write(lnum,"(I0.2)")num_moab_exports
+       outfile = 'OcnCplAlbedo_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+       wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+       ierr = iMOAB_WriteMesh(mboxid, outfile, wopts)
+ 
+       if (ierr .ne. 0) then
+          write(logunit,*) subname,' error in writing ocean inst (for flux comp) '
+          call shr_sys_abort(subname//' ERROR in writing ocean inst (for flux comp)  ')
+       endif
+   endif
+#endif
+
 
   end subroutine seq_flux_ocnalb_mct
 
@@ -1022,6 +1194,13 @@ contains
           zbot(n) =  55.0_r8 ! atm height of bottom layer ~ m
           ubot(n) =   0.0_r8 ! atm velocity, zonal        ~ m/s
           vbot(n) =   2.0_r8 ! atm velocity, meridional   ~ m/s
+          if (atm_flux_method == 'implicit_stress') then
+             wsresp(n) = 0.0_r8 ! response of wind to surface stress ~ m/s/Pa
+             tau_est(n) = 0.0_r8 ! estimation of stress in equilibrium with ubot/vbot ~ Pa
+          end if
+          if (atm_gustiness) then
+             ugust_atm(n) = 0.0_r8 ! gustiness                ~ m/s
+          end if
           thbot(n)= 301.0_r8 ! atm potential temperature  ~ Kelvin
           shum(n) = 1.e-2_r8 ! atm specific humidity      ~ kg/kg
           shum_16O(n) = 1.e-2_r8 ! H216O specific humidity    ~ kg/kg
@@ -1058,6 +1237,13 @@ contains
           zbot(n) = a2x_e%rAttr(index_a2x_Sa_z   ,ia)
           ubot(n) = a2x_e%rAttr(index_a2x_Sa_u   ,ia)
           vbot(n) = a2x_e%rAttr(index_a2x_Sa_v   ,ia)
+          if (atm_flux_method == 'implicit_stress') then
+             wsresp(n) = a2x_e%rAttr(index_a2x_Sa_wsresp,ia)
+             tau_est(n) = a2x_e%rAttr(index_a2x_Sa_tau_est,ia)
+          end if
+          if (atm_gustiness) then
+             ugust_atm(n) = a2x_e%rAttr(index_a2x_Sa_ugust,ia)
+          end if
           thbot(n)= a2x_e%rAttr(index_a2x_Sa_ptem,ia)
           shum(n) = a2x_e%rAttr(index_a2x_Sa_shum,ia)
           shum_16O(n) = a2x_e%rAttr(index_a2x_Sa_shum_16O,ia)
@@ -1096,14 +1282,15 @@ contains
             tbulk, tskin, tskin_day, tskin_night, &
             cskin, cskin_night, tod, dt,          &
             duu10n,ustar, re  , ssq , missval = 0.0_r8, &
-            cold_start=cold_start)
+            cold_start=cold_start, wsresp=wsresp, tau_est=tau_est)
     else if (ocn_surface_flux_scheme.eq.2) then
        call shr_flux_atmOcn_UA(nloc_a2o , zbot , ubot, vbot, thbot, &
             shum , shum_16O , shum_HDO, shum_18O, dens , tbot, pslv, &
             uocn, vocn , tocn , emask, sen , lat , lwup , &
             roce_16O, roce_HDO, roce_18O,    &
             evap , evap_16O, evap_HDO, evap_18O, taux, tauy, tref, qref , &
-            duu10n,ustar, re  , ssq , missval = 0.0_r8 )
+            duu10n,ustar, re  , ssq , missval = 0.0_r8, &
+            wsresp=wsresp, tau_est=tau_est)
     else
 
        call shr_flux_atmocn (nloc_a2o , zbot , ubot, vbot, thbot, &
@@ -1113,7 +1300,8 @@ contains
             roce_16O, roce_HDO, roce_18O,    &
             evap , evap_16O, evap_HDO, evap_18O, taux, tauy, tref, qref , &
             ocn_surface_flux_scheme, &
-            duu10n,ustar, re  , ssq , missval = 0.0_r8 )
+            duu10n,ustar, re  , ssq , missval = 0.0_r8, &
+            wsresp=wsresp, tau_est=tau_est, ugust=ugust)
     endif
 
     !--- create temporary aVects on exchange, atm, or ocn decomp as needed
@@ -1303,6 +1491,17 @@ contains
          flux_convergence=flux_convergence, &
          flux_max_iteration=flux_max_iteration)
 
+       ! If flux_max_iteration is not set, choose a value based on
+       ! atm_flux_method.
+       if (flux_max_iteration == -1) then
+          select case(atm_flux_method)
+          case('implicit_stress')
+             flux_max_iteration = 30
+          case default
+             flux_max_iteration = 2
+          end select
+       end if
+
        if (.not.read_restart) cold_start = .true.
        index_xao_So_tref   = mct_aVect_indexRA(xao,'So_tref')
        index_xao_So_qref   = mct_aVect_indexRA(xao,'So_qref')
@@ -1346,6 +1545,13 @@ contains
        index_a2x_Sa_z      = mct_aVect_indexRA(a2x,'Sa_z')
        index_a2x_Sa_u      = mct_aVect_indexRA(a2x,'Sa_u')
        index_a2x_Sa_v      = mct_aVect_indexRA(a2x,'Sa_v')
+       if (atm_flux_method == 'implicit_stress') then
+          index_a2x_Sa_wsresp = mct_aVect_indexRA(a2x,'Sa_wsresp')
+          index_a2x_Sa_tau_est = mct_aVect_indexRA(a2x,'Sa_tau_est')
+       end if
+       if (atm_gustiness) then
+          index_a2x_Sa_ugust = mct_aVect_indexRA(a2x,'Sa_ugust')
+       end if
        index_a2x_Sa_tbot   = mct_aVect_indexRA(a2x,'Sa_tbot')
        index_a2x_Sa_pslv   = mct_aVect_indexRA(a2x,'Sa_pslv')
        index_a2x_Sa_ptem   = mct_aVect_indexRA(a2x,'Sa_ptem')
@@ -1399,6 +1605,13 @@ contains
           zbot(n) =  55.0_r8 ! atm height of bottom layer ~ m
           ubot(n) =   0.0_r8 ! atm velocity, zonal        ~ m/s
           vbot(n) =   2.0_r8 ! atm velocity, meridional   ~ m/s
+          if (atm_flux_method == 'implicit_stress') then
+             wsresp(n) = 0.0_r8 ! response of wind to surface stress ~ m/s/Pa
+             tau_est(n) = 0.0_r8 ! stress consistent w/ u/v  ~ Pa
+          end if
+          if (atm_gustiness) then
+             ugust_atm(n) = 0.0_r8 ! gustiness                ~ m/s
+          end if
           thbot(n)= 301.0_r8 ! atm potential temperature  ~ Kelvin
           shum(n) = 1.e-2_r8 ! atm specific humidity      ~ kg/kg
           !wiso note: shum_* should be multiplied by Rstd_* here?
@@ -1446,6 +1659,13 @@ contains
              zbot(n) = a2x%rAttr(index_a2x_Sa_z   ,n)
              ubot(n) = a2x%rAttr(index_a2x_Sa_u   ,n)
              vbot(n) = a2x%rAttr(index_a2x_Sa_v   ,n)
+             if (atm_flux_method == 'implicit_stress') then
+                wsresp(n) = a2x%rAttr(index_a2x_Sa_wsresp,n)
+                tau_est(n) = a2x%rAttr(index_a2x_Sa_tau_est,n)
+             end if
+             if (atm_gustiness) then
+                ugust_atm(n) = a2x%rAttr(index_a2x_Sa_ugust,n)
+             end if
              thbot(n)= a2x%rAttr(index_a2x_Sa_ptem,n)
              shum(n) = a2x%rAttr(index_a2x_Sa_shum,n)
              if ( index_a2x_Sa_shum_16O /= 0 ) shum_16O(n) = a2x%rAttr(index_a2x_Sa_shum_16O,n)
@@ -1524,14 +1744,14 @@ contains
                                 !missval should not be needed if flux calc
                                 !consistent with mrgx2a fraction
                                 !duu10n,ustar, re  , ssq, missval = 0.0_r8 )
-            cold_start=cold_start)
+            cold_start=cold_start, wsresp=wsresp, tau_est=tau_est)
     else if (ocn_surface_flux_scheme.eq.2) then
        call shr_flux_atmOcn_UA(nloc , zbot , ubot, vbot, thbot, &
             shum , shum_16O , shum_HDO, shum_18O, dens , tbot, pslv, &
             uocn, vocn , tocn , emask, sen , lat , lwup , &
             roce_16O, roce_HDO, roce_18O,    &
             evap , evap_16O, evap_HDO, evap_18O, taux , tauy, tref, qref , &
-            duu10n,ustar, re  , ssq)
+            duu10n,ustar, re  , ssq, wsresp=wsresp, tau_est=tau_est)
     else
        call shr_flux_atmocn (nloc , zbot , ubot, vbot, thbot, &
             shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
@@ -1540,7 +1760,8 @@ contains
             roce_16O, roce_HDO, roce_18O,    &
             evap , evap_16O, evap_HDO, evap_18O, taux , tauy, tref, qref , &
             ocn_surface_flux_scheme, &
-            duu10n,ustar, re  , ssq)
+            duu10n,ustar, re  , ssq, &
+            wsresp=wsresp, tau_est=tau_est, ugust=ugust_atm)
        !missval should not be needed if flux calc
        !consistent with mrgx2a fraction
        !duu10n,ustar, re  , ssq, missval = 0.0_r8 )
@@ -1587,8 +1808,84 @@ contains
        end if
     enddo
 
+    ! transpose xao to xao_omct, to 
   end subroutine seq_flux_atmocn_mct
 
+  subroutine seq_flux_atmocn_moab(comp, xao)
+     type(component_type), intent(inout) :: comp
+     type(mct_aVect)       , intent(inout)      :: xao
+
+     real(r8) , pointer :: local_xao_mct(:,:) ! atm-ocn fluxes, transpose, mct local sizes
+     integer  appId ! moab app id
+     integer i,j
+     integer nloc, listSize
+
+     ! moab
+     integer                  :: tagtype, numco,  tagindex, ent_type, ierr, arrSize
+     character(CXX)           :: tagname
+     character*100 outfile, wopts, lnum
+
+     character(*),parameter   :: subName =   '(seq_flux_atmocn_moab) '
+
+     if (comp%oneletterid == 'a' ) then
+        appId = mbaxid ! atm on coupler
+        local_xao_mct => prep_aoflux_get_xao_amct()
+     else if (comp%oneletterid == 'o') then
+        appId = mbofxid  ! atm phys
+        local_xao_mct => prep_aoflux_get_xao_omct()
+     else
+        call mct_die(subName,'call for either ocean or atm',1)
+     endif
+     ! transpose into moab double array, then set with global id 
+     nloc = mct_avect_lsize(xao)
+     listSize = mct_aVect_nRAttr(xao)
+
+     do j = 1, listSize
+       local_xao_mct(:, j) = xao%rAttr(j, :)
+     enddo
+
+     tagname = trim(seq_flds_xao_fields)//C_NULL_CHAR
+     arrSize = nloc * listSize
+     ent_type = 1 ! cells
+     ! global ids are retrieved by albedo first call; it is a local module variable 
+     ierr = iMOAB_SetDoubleTagStorageWithGid ( appId, tagname, arrSize , ent_type, local_xao_mct, GlobalIds )
+     if (ierr .ne. 0) then
+       write(logunit,*) subname,' error in setting atm-ocn fluxes  '
+       call shr_sys_abort(subname//' ERROR in setting atm-ocn fluxes')
+     endif
+
+#ifdef MOABDEBUG
+        ! debug out file
+      write(lnum,"(I0.2)")num_moab_exports
+      outfile = comp%oneletterid//'_flux_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+      wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+      ierr = iMOAB_WriteMesh(appId, outfile, wopts)
+ 
+      if (ierr .ne. 0) then
+         write(logunit,*) subname,' error in writing mesh '
+         call shr_sys_abort(subname//' ERROR in writing mesh ')
+      endif
+
+      if (comp%oneletterid == 'o') then ! for debugging, set the mct ocn grid values, to see if they are the same
+        appId = mbox2id  ! ocn on mct point cloud
+        ent_type = 0! vertices, it is point cloud
+        ierr = iMOAB_SetDoubleTagStorage( appId, tagname, arrSize , ent_type, local_xao_mct)
+        if (ierr .ne. 0) then
+         write(logunit,*) subname,' error in setting local_xao_mct fluxes on mct grid for debugging  '
+         call shr_sys_abort(subname//' ERROR in setting local_xao_mct fluxes on mct grid for debugging')
+        endif
+        outfile = 'o_flux_mct_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+        ierr = iMOAB_WriteMesh(appId, outfile, wopts)
+ 
+        if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in writing mesh '
+            call shr_sys_abort(subname//' ERROR in writing mesh ')
+        endif
+     endif
+#endif
+     
+
+  end subroutine seq_flux_atmocn_moab
   !===============================================================================
 
 end module seq_flux_mct

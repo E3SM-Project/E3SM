@@ -1,4 +1,5 @@
 #include "share/util/scream_utils.hpp"
+#include <glob.h>
 
 #if defined(SCREAM_ENABLE_STATM)
 #include <stdio.h>
@@ -41,6 +42,35 @@ long long get_mem_usage (const MemoryUnits u) {
   }
 
   return mem;
+}
+
+std::vector<std::string> filename_glob(const std::vector<std::string>& patterns) {
+  std::vector<std::string> all_files;
+  for (const auto& pattern : patterns) {
+      auto files = globloc(pattern);
+      all_files.insert(all_files.end(), files.begin(), files.end());
+  }
+  return all_files;
+}
+
+std::vector<std::string> globloc(const std::string& pattern) {
+  // glob struct resides on the stack
+  glob_t glob_result;
+  memset(&glob_result, 0, sizeof(glob_result));
+
+  int return_value = ::glob(pattern.c_str(), GLOB_TILDE, NULL, &glob_result);
+  if (return_value != 0) {
+    globfree(&glob_result);
+    EKAT_REQUIRE_MSG(return_value == 0, "glob() failed with return value " + std::to_string(return_value));
+  }
+
+  std::vector<std::string> filenames;
+  for (size_t i = 0; i < glob_result.gl_pathc; ++i) {
+      filenames.push_back(std::string(glob_result.gl_pathv[i]));
+  }
+
+  globfree(&glob_result);
+  return filenames;
 }
 
 } // namespace scream

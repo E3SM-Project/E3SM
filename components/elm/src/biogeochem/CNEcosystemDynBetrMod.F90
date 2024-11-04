@@ -67,7 +67,7 @@ module CNEcosystemDynBetrMod
          canopystate_vars, soilstate_vars, temperature_vars, crop_vars,  &
          photosyns_vars, soilhydrology_vars, energyflux_vars, &
          PlantMicKinetics_vars,                                          &
-         phosphorusflux_vars, phosphorusstate_vars)
+         phosphorusflux_vars, phosphorusstate_vars, frictionvel_vars)
 
     ! Description:
     ! Update vegetation related state variables and
@@ -104,7 +104,7 @@ module CNEcosystemDynBetrMod
     use PhosphorusDynamicsMod              , only : PhosphorusBiochemMin_balance,PhosphorusDeposition,PhosphorusWeathering
     use VerticalProfileMod      , only : decomp_vertprofiles
     use RootDynamicsMod              , only : RootDynamics
-    use clm_time_manager , only : get_step_size 
+    use elm_time_manager , only : get_step_size 
     implicit none
 
 
@@ -140,6 +140,7 @@ module CNEcosystemDynBetrMod
     type(PlantMicKinetics_type)      , intent(inout) :: PlantMicKinetics_vars
     type(phosphorusflux_type)        , intent(inout) :: phosphorusflux_vars
     type(phosphorusstate_type)       , intent(inout) :: phosphorusstate_vars
+    type(frictionvel_type)           , intent(in)    :: frictionvel_vars
     
     real(r8) :: dt 
     integer :: c13= 0, c14=1
@@ -178,12 +179,13 @@ module CNEcosystemDynBetrMod
 
        call t_startf('CNDeposition')
        call NitrogenDeposition(bounds, &
-            atm2lnd_vars, dt )
+            atm2lnd_vars, frictionvel_vars,  &
+            soilstate_vars, filter_soilc, num_soilc,dt )
        call t_stopf('CNDeposition')
 
        call t_startf('MaintenanceResp')
        if (crop_prog) then
-          call NitrogenFert(bounds, num_soilc,filter_soilc )
+          call NitrogenFert(bounds, num_soilc,filter_soilc, num_pcropp, filter_pcropp )
 
        end if
        call MaintenanceResp(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
@@ -296,7 +298,7 @@ module CNEcosystemDynBetrMod
 
           call RootDynamics(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
                canopystate_vars, cnstate_vars, &
-               crop_vars, energyflux_vars, soilstate_vars)
+               crop_vars, energyflux_vars, soilstate_vars, dt)
           call t_stopf('RootDynamics')
        end if
 
@@ -570,7 +572,7 @@ module CNEcosystemDynBetrMod
     !
     ! DESCRIPTION
     ! calculate gpp downregulation factor
-    use clm_time_manager         , only : get_step_size
+    use elm_time_manager         , only : get_step_size
     use ColumnType               , only : column_physical_properties
     use VegetationType           , only : vegetation_physical_properties
     use pftvarcon                , only : noveg

@@ -95,8 +95,8 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
 !   use shr_orb_mod,      only: shr_orb_params
    use camsrfexch,       only: hub2atm_alloc, atm2hub_alloc
    use cam_history,      only: intht, init_masterlinkedlist
-   use history_scam,     only: scm_intht
-   use scamMod,          only: single_column
+   use history_iop,      only: iop_intht
+   use iop_data_mod,     only: single_column
    use cam_pio_utils,    only: init_pio_subsystem
    use cam_instance,     only: inst_suffix
    use conditional_diag, only: cnd_diag_info, cnd_diag_alloc
@@ -202,7 +202,7 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
 
    call stepon_init( dyn_in, dyn_out ) ! dyn_out necessary?
 
-   if (single_column) call scm_intht()
+   if (single_column) call iop_intht()
    call intht()
 
 end subroutine cam_init
@@ -225,7 +225,7 @@ subroutine cam_run1(cam_in, cam_out)
    use mpishorthand,     only: mpicom
 #endif
    use time_manager,     only: get_nstep
-   use scamMod,          only: single_column
+   use iop_data_mod,     only: single_column
 
    type(cam_in_t)  :: cam_in(begchunk:endchunk)
    type(cam_out_t) :: cam_out(begchunk:endchunk)
@@ -262,7 +262,7 @@ subroutine cam_run1(cam_in, cam_out)
    !
    call t_barrierf ('sync_phys_run1', mpicom)
    call t_startf ('phys_run1')
-#if defined(MMF_SAMXX)
+#if defined(MMF_SAMXX) || defined(MMF_PAM)
    call phys_run1(phys_state, dtime, phys_tend, pbuf2d,  cam_in, cam_out)
 #else
    call phys_run1(phys_state, dtime, phys_tend, pbuf2d,  cam_in, cam_out, phys_diag)
@@ -301,7 +301,7 @@ subroutine cam_run2( cam_out, cam_in )
    !
    call t_barrierf ('sync_phys_run2', mpicom)
    call t_startf ('phys_run2')
-#if defined(MMF_SAMXX)
+#if defined(MMF_SAMXX) || defined(MMF_PAM)
    call phys_run2(phys_state, dtime, phys_tend, pbuf2d,  cam_out, cam_in)
 #else
    call phys_run2(phys_state, dtime, phys_tend, pbuf2d,  cam_out, cam_in, phys_diag)
@@ -484,7 +484,7 @@ subroutine cam_final( cam_out, cam_in )
 #endif
 
    call t_startf ('phys_final')
-#if defined(MMF_SAMXX)
+#if defined(MMF_SAMXX) || defined(MMF_PAM)
    call phys_final( phys_state, phys_tend , pbuf2d )
 #else
    call phys_final( phys_state, phys_tend , pbuf2d, phys_diag )

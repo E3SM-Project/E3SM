@@ -274,7 +274,7 @@ contains
 
         landIceFraction(:) = 0.0_RKIND
         landIceSurfaceTemperature(:) = -25.0_RKIND !doesn't matter because ice is insulating
-        modifyLandIcePressureMask(:) = 0
+        sshAdjustmentMask(:) = 0
         landIceMask(:) = 0
 
 
@@ -301,7 +301,7 @@ contains
           end if
 
           if(ssh(iCell) < 0.0_RKIND) then
-            modifyLandIcePressureMask(iCell) = 1
+            sshAdjustmentMask(iCell) = 1
           end if
 
           if(.not. associated(activeTracers)) then

@@ -39,7 +39,7 @@ struct SHOCGridData : public PhysicsTestData {
 };
 */
 
-// Convenience macros for up to 11 arguments, beyond that, you're on your own :)
+// Convenience macros for up to 20 arguments, beyond that, you're on your own :)
 
 #define PTD_ONES0
 #define PTD_ONES1 1
@@ -53,6 +53,15 @@ struct SHOCGridData : public PhysicsTestData {
 #define PTD_ONES9 PTD_ONES8, 1
 #define PTD_ONES10 PTD_ONES9, 1
 #define PTD_ONES11 PTD_ONES10, 1
+#define PTD_ONES12 PTD_ONES11, 1
+#define PTD_ONES13 PTD_ONES12, 1
+#define PTD_ONES14 PTD_ONES13, 1
+#define PTD_ONES15 PTD_ONES14, 1
+#define PTD_ONES16 PTD_ONES15, 1
+#define PTD_ONES17 PTD_ONES16, 1
+#define PTD_ONES18 PTD_ONES17, 1
+#define PTD_ONES19 PTD_ONES18, 1
+#define PTD_ONES20 PTD_ONES19, 1
 
 #define PTD_ONES(a) PTD_ONES##a
 
@@ -70,7 +79,16 @@ struct SHOCGridData : public PhysicsTestData {
 #define  PTD_ASS8(a, b, c, d, e, f, g, h          )  PTD_ASS7(a, b, c, d, e, f, g)          ; h = rhs.h
 #define  PTD_ASS9(a, b, c, d, e, f, g, h, i       )  PTD_ASS8(a, b, c, d, e, f, g, h)       ; i = rhs.i
 #define PTD_ASS10(a, b, c, d, e, f, g, h, i, j    )  PTD_ASS9(a, b, c, d, e, f, g, h, i)    ; j = rhs.j
-#define PTD_ASS11(a, b, c, d, e, f, g, h, i, j, k ) PTD_ASS10(a, b, c, d, e, f, g, h, i, j) ; k = rhs.k
+#define PTD_ASS11(a, b, c, d, e, f, g, h, i, j, k                            ) PTD_ASS10(a, b, c, d, e, f, g, h, i, j)                            ; k = rhs.k
+#define PTD_ASS12(a, b, c, d, e, f, g, h, i, j, k, l                         ) PTD_ASS11(a, b, c, d, e, f, g, h, i, j, k)                         ; l = rhs.l
+#define PTD_ASS13(a, b, c, d, e, f, g, h, i, j, k, l, m                      ) PTD_ASS12(a, b, c, d, e, f, g, h, i, j, k, l)                      ; m = rhs.m
+#define PTD_ASS14(a, b, c, d, e, f, g, h, i, j, k, l, m, n                   ) PTD_ASS13(a, b, c, d, e, f, g, h, i, j, k, l, m)                   ; n = rhs.n
+#define PTD_ASS15(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o                ) PTD_ASS14(a, b, c, d, e, f, g, h, i, j, k, l, m, n)                ; o = rhs.o
+#define PTD_ASS16(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p             ) PTD_ASS15(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o)             ; p = rhs.p
+#define PTD_ASS17(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q          ) PTD_ASS16(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p)          ; q = rhs.q
+#define PTD_ASS18(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r       ) PTD_ASS17(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q)       ; r = rhs.r
+#define PTD_ASS19(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s    ) PTD_ASS18(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r)    ; s = rhs.s
+#define PTD_ASS20(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t ) PTD_ASS19(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s) ; t = rhs.t
 
 #define PTD_ASSIGN_OP(name, num_scalars, ...)                                  \
   name& operator=(const name& rhs) { PTD_ASS##num_scalars(__VA_ARGS__); assignment_impl(rhs); return *this; }

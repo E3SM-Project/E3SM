@@ -1,11 +1,13 @@
 #include "diagnostics/exner.hpp"
+#include "share/util/scream_common_physics_functions.hpp"
 
 namespace scream
 {
 
 // =========================================================================================
-ExnerDiagnostic::ExnerDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
-  : AtmosphereDiagnostic(comm,params)
+ExnerDiagnostic::
+ExnerDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
+ : AtmosphereDiagnostic(comm,params)
 {
   // Nothing to do here
 }
@@ -24,21 +26,22 @@ void ExnerDiagnostic::set_grids(const std::shared_ptr<const GridsManager> grids_
   m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
 
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols,m_num_levs} };
-  constexpr int ps = Pack::n;
 
   // The fields required for this diagnostic to be computed
-  add_field<Required>("p_mid",          scalar3d_layout_mid, Pa, grid_name, ps);
+  add_field<Required>("p_mid", scalar3d_layout_mid, Pa, grid_name, SCREAM_PACK_SIZE);
 
   // Construct and allocate the diagnostic field
   FieldIdentifier fid (name(), scalar3d_layout_mid, nondim, grid_name);
   m_diagnostic_output = Field(fid);
   auto& C_ap = m_diagnostic_output.get_header().get_alloc_properties();
-  C_ap.request_allocation(ps);
+  C_ap.request_allocation(SCREAM_PACK_SIZE);
   m_diagnostic_output.allocate_view();
 }
 // =========================================================================================
 void ExnerDiagnostic::compute_diagnostic_impl()
 {
+  using Pack = ekat::Pack<Real,SCREAM_PACK_SIZE>;
+  using PF = PhysicsFunctions<DefaultDevice>;
 
   const auto npacks  = ekat::npack<Pack>(m_num_levs);
   const auto& exner = m_diagnostic_output.get_view<Pack**>();
@@ -52,9 +55,6 @@ void ExnerDiagnostic::compute_diagnostic_impl()
       exner(icol,jpack) = PF::exner_function(p_mid(icol,jpack));
   });
   Kokkos::fence();
-
-  const auto ts = get_field_in("p_mid").get_header().get_tracking().get_time_stamp();
-  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
 }
 // =========================================================================================
 } //namespace scream

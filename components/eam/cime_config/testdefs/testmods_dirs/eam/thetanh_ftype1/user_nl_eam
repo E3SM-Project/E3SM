@@ -1,5 +1,5 @@
 se_ftype=1
-cubed_sphere_map=0
+cubed_sphere_map=2
 theta_hydrostatic_mode=.false.
 tstep_type=7
 se_nsplit=10

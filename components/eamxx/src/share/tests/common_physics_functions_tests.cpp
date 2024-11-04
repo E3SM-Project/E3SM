@@ -4,6 +4,7 @@
 
 #include "share/util/scream_setup_random_test.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
+#include "share/util/scream_utils.hpp"
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
@@ -55,14 +56,6 @@ struct ChecksHelpers<ekat::Pack<T,N>,NumLevels> {
     return (abs(computed-expected)/abs(expected) < tol).all();
   }
 };
-
-// Helper function. Create Mirror View and Deep-Copy (CMVDC)
-template<typename ViewT>
-auto cmvdc (const ViewT& v_d) -> typename ViewT::HostMirror {
-  auto v_h = Kokkos::create_mirror_view(v_d);
-  Kokkos::deep_copy(v_h,v_d);
-  return v_h;
-}
 
 template<typename DeviceT>
 void run_scalar_valued_fns(std::mt19937_64& engine)
@@ -472,26 +465,26 @@ void run(std::mt19937_64& engine)
   Kokkos::fence();
 
   // Deep copy to host, and check the properties of the full view output
-  auto temperature_host     = cmvdc(temperature);
-  auto theta_host           = cmvdc(theta);
-  auto pressure_host        = cmvdc(pressure);
-  auto qv_host              = cmvdc(qv);
+  auto temperature_host     = scream::cmvdc(temperature);
+  auto theta_host           = scream::cmvdc(theta);
+  auto pressure_host        = scream::cmvdc(pressure);
+  auto qv_host              = scream::cmvdc(qv);
 
-  auto density_host         = cmvdc(density);
-  auto exner_host           = cmvdc(exner);
-  auto T_from_Theta_host    = cmvdc(T_from_Theta);
-  auto Tv_host              = cmvdc(Tv);
-  auto T_from_Tv_host       = cmvdc(T_from_Tv);
-  auto dse_host             = cmvdc(dse);
-  auto T_from_dse_host      = cmvdc(T_from_dse);
-  auto z_int_host           = cmvdc(z_int);
-  auto dz_host              = cmvdc(dz);
-  auto vmr_host             = cmvdc(vmr);
-  auto mmr_host             = cmvdc(mmr);
-  auto mmr_for_testing_host = cmvdc(mmr_for_testing);
-  auto wetmmr_host          = cmvdc(wetmmr);
-  auto drymmr_host          = cmvdc(drymmr);
-  auto wetmmr_for_testing_host = cmvdc(wetmmr_for_testing);
+  auto density_host         = scream::cmvdc(density);
+  auto exner_host           = scream::cmvdc(exner);
+  auto T_from_Theta_host    = scream::cmvdc(T_from_Theta);
+  auto Tv_host              = scream::cmvdc(Tv);
+  auto T_from_Tv_host       = scream::cmvdc(T_from_Tv);
+  auto dse_host             = scream::cmvdc(dse);
+  auto T_from_dse_host      = scream::cmvdc(T_from_dse);
+  auto z_int_host           = scream::cmvdc(z_int);
+  auto dz_host              = scream::cmvdc(dz);
+  auto vmr_host             = scream::cmvdc(vmr);
+  auto mmr_host             = scream::cmvdc(mmr);
+  auto mmr_for_testing_host = scream::cmvdc(mmr_for_testing);
+  auto wetmmr_host          = scream::cmvdc(wetmmr);
+  auto drymmr_host          = scream::cmvdc(drymmr);
+  auto wetmmr_for_testing_host = scream::cmvdc(wetmmr_for_testing);
 
   for (int k=0; k<num_mid_packs; ++k) {
 

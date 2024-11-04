@@ -1,0 +1,26 @@
+Testing FATES cross grid seed dispersal is activated by enabling the
+namelist switch option fates_seeddisp_cadence as well as providing reasonable
+values to the fates parameter file for the following variables:
+
+fates_seed_dispersal_fraction
+fates_seed_dispersal_max_dist
+fates_seed_dispersal_pdf_scale
+fates_seed_dispersal_pdf_shape
+
+Given that the default fates parameter file has the above variables as unset,
+a custom fates parameter file must be supplied to appropriately test this mode.
+This testmod itself addresses CTSM issue 2151: https://github.com/ESCOMP/CTSM/issues/2151
+Note that to avoid exceeding the filename string length maximu, the parameter
+file generated on the fly is placed in the $SRCROOT/src/fates/parameter_files
+directory.  This may still run into problems is the $SRCROOT string is too long.
+
+The max_dist value will impact the size of the 'neighborhood' of gridcells
+that fates will attempt to distribute seeds to.  To limit the neighborhood to
+something tractable for a regression test, the user_nl_clm file points to a
+specific fates parameter file that was generated to work with a 5x5_amazon
+resolution.
+
+The main downside of this method is that this file will require a custom update
+for every fates parameter file API update.  Addressing CTSM issue #2126 will alleviate
+this issue as it will provide the capability to build the fates parameter file on
+the fly which with the appropriate values for this test.

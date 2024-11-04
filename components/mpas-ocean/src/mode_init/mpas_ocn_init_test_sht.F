@@ -89,7 +89,7 @@ contains
       integer, pointer :: nCellsSolve
       real (kind=RKIND), dimension(:), pointer :: lonCell, latCell
       real (kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell
-      real (kind=RKIND), dimension(:), pointer :: ssh, ssh_sal, ssh_sal_grad
+      real (kind=RKIND), dimension(:), pointer :: ssh, surfacePressure, pgf_sal, pgf_sal_grad
       real (kind=RKIND), dimension(:), pointer :: areaCell, dcEdge
       real (kind=RKIND), pointer :: config_test_sht_cosine_bell_lat_center, &
                                     config_test_sht_cosine_bell_lon_center, &
@@ -188,9 +188,11 @@ contains
         call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
 
         call mpas_pool_get_array(statePool, 'ssh', ssh)
-        call mpas_pool_get_array(diagnosticsPool, 'ssh_sal', ssh_sal)
-        call mpas_pool_get_array(diagnosticsPool, 'ssh_sal_grad', ssh_sal_grad)
+        call mpas_pool_get_array(diagnosticsPool, 'surfacePressure', surfacePressure)
+        call mpas_pool_get_array(diagnosticsPool, 'pgf_sal', pgf_sal)
+        call mpas_pool_get_array(diagnosticsPool, 'pgf_sal_grad', pgf_sal_grad)
 
+        surfacePressure(:) = 0.0_RKIND
         
         ! Setup function to approximate
         if (config_test_sht_function_option == 1) then
@@ -283,22 +285,23 @@ contains
         call ocn_vel_self_attraction_loading_init(domain,err)
         do i = 1,config_test_sht_n_iterations
           call mpas_log_write('Iteration = $i',intArgs=(/i/))
-          call ocn_compute_self_attraction_loading(domain, forcingPool, domain % dminfo, ssh, err)
+          call ocn_compute_self_attraction_loading(domain, forcingPool, domain % dminfo, &
+                                                   ssh, surfacePressure, err)
         enddo
 
         ! Compute gradient
         do iEdge = 1,nEdgesArray(1)
           cell1 = cellsOnEdge(1,iEdge)
           cell2 = cellsOnEdge(2,iEdge)
-          ssh_sal_grad(iEdge) = (ssh_sal(cell2) - ssh_sal(cell1))/dcEdge(iEdge) 
+          pgf_sal_grad(iEdge) = (pgf_sal(cell2) - pgf_sal(cell1))/dcEdge(iEdge) 
         enddo
 
         ! Compute RMS Error
         error_local_area = 0.0_RKIND
         error_local = 0.0_RKIND
         do iCell = 1,nCellsSolve
-          error_local_area = error_local_area + areaCell(iCell)*(ssh(iCell)-ssh_sal(iCell))**2
-          error_local = error_local + (ssh(iCell)-ssh_sal(iCell))**2
+          error_local_area = error_local_area + areaCell(iCell)*(ssh(iCell)-pgf_sal(iCell))**2
+          error_local = error_local + (ssh(iCell)-pgf_sal(iCell))**2
         enddo 
         call mpas_dmpar_sum_real(domain % dminfo,error_local_area,error_global_area)
         call mpas_dmpar_sum_real(domain % dminfo,error_local,error_global)

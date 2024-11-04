@@ -203,7 +203,8 @@ contains
        call seq_domain_check_fracmask(lnddom_l%data)
        call mct_gGrid_init(oGGrid=lnddom_a, iGGrid=lnddom_l, lsize=atmsize)
        call mct_aVect_zero(lnddom_a%data)
-       call seq_map_map(mapper_l2a, lnddom_l%data, lnddom_a%data, norm=.false.)
+       call seq_map_map(mapper_l2a, lnddom_l%data, lnddom_a%data, norm=.false., &
+            omit_nonlinear=.true.)
        allocate(maskl(atmsize),stat=rcode)
        if(rcode /= 0) call shr_sys_abort(subname//' allocate maskl')
        allocate(fracl(atmsize),stat=rcode)
@@ -227,7 +228,8 @@ contains
        call seq_domain_check_fracmask(ocndom_o%data)
        call mct_gGrid_init(oGGrid=ocndom_a, iGGrid=ocndom_o, lsize=atmsize)
        call mct_aVect_zero(ocndom_a%data)
-       call seq_map_map(mapper_o2a, ocndom_o%data, ocndom_a%data, norm=.false.)
+       call seq_map_map(mapper_o2a, ocndom_o%data, ocndom_a%data, norm=.false., &
+            omit_nonlinear=.true.)
        allocate(masko(atmsize),stat=rcode)
        if(rcode /= 0) call shr_sys_abort(subname//' allocate masko')
        allocate(fraco(atmsize),stat=rcode)
@@ -256,7 +258,8 @@ contains
        call seq_domain_check_fracmask(icedom_i%data)
        call mct_gGrid_init(oGGrid=icedom_a, iGGrid=icedom_i, lsize=atmsize)
        call mct_aVect_zero(icedom_a%data)
-       call seq_map_map(mapper_i2a, icedom_i%data, icedom_a%data, norm=.false.)
+       call seq_map_map(mapper_i2a, icedom_i%data, icedom_a%data, norm=.false., &
+            omit_nonlinear=.true.)
        allocate(maski(atmsize),stat=rcode)
        if(rcode /= 0) call shr_sys_abort(subname//' allocate maski')
        allocate(fraci(atmsize),stat=rcode)
@@ -294,7 +297,8 @@ contains
        if (samegrid_lg) then
           call mct_gGrid_init(oGGrid=lnddom_g, iGGrid=lnddom_l, lsize=glcsize)
           call mct_aVect_zero(lnddom_g%data)
-          call seq_map_map(mapper_l2g, lnddom_l%data, lnddom_g%data, norm=.false.)
+          call seq_map_map(mapper_l2g, lnddom_l%data, lnddom_g%data, norm=.false., &
+               omit_nonlinear=.true.)
           if (iamroot) write(logunit,F00) ' --- checking glc/lnd domains ---'
           npts = glcsize
           allocate(mask(npts),stat=rcode)
@@ -329,7 +333,8 @@ contains
        endif
        call mct_gGrid_init(oGGrid=icedom_o, iGGrid=icedom_i, lsize=ocnsize)
        call mct_aVect_zero(icedom_o%data)
-       call seq_map_map(mapper_i2o, icedom_i%data, icedom_o%data, norm=.false.)
+       call seq_map_map(mapper_i2o, icedom_i%data, icedom_o%data, norm=.false., &
+            omit_nonlinear=.true.)
     end if
 
     if (rof_present .and. ocnrof_prognostic .and. samegrid_ro) then

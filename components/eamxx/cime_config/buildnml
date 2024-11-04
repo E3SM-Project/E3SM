@@ -26,7 +26,7 @@ import os, sys
 
 from CIME.case import Case
 from CIME.utils import expect, safe_copy, SharedArea, run_cmd_no_fail
-from CIME.buildlib import parse_input
+from CIME.buildnml import parse_input
 
 from eamxx_buildnml import create_raw_xml_file, create_input_files, create_input_data_list_file, \
     do_cime_vars_on_yaml_output_files
@@ -66,14 +66,14 @@ def buildnml(case, caseroot, compname):
     create_raw_xml_file(case, caseroot)
     create_input_files(caseroot, screamroot, rundir)
 
+    # For all YAML files listed in the XML for model output, expand CIME vars (if any)
+    do_cime_vars_on_yaml_output_files(case,caseroot)
+
     #
     # Create input data list. This is the list of files that CIME needs
     # to ensure are present on the machine (possibly downloading them)
     #
-    create_input_data_list_file(caseroot)
-
-    # For all YAML files listed in the XML for model output, expand CIME vars (if any)
-    do_cime_vars_on_yaml_output_files(case,caseroot)
+    create_input_data_list_file(case,caseroot)
 
 ###############################################################################
 def _main_func():

@@ -17,12 +17,18 @@ module mpaso_cpl_indices
   integer :: index_o2x_So_dhdx
   integer :: index_o2x_So_dhdy
   integer :: index_o2x_Fioo_q
+  integer :: index_o2x_Foxo_q_li
   integer :: index_o2x_Fioo_frazil
+  integer :: index_o2x_Foxo_frazil_li
   integer :: index_o2x_Faoo_h2otemp
   integer :: index_o2x_Faoo_fco2_ocn
   integer :: index_o2x_Faoo_fdms_ocn
   integer :: index_o2x_So_ssh
-
+  integer :: index_o2x_Foxo_ismw
+  integer :: index_o2x_Foxo_rrofl
+  integer :: index_o2x_Foxo_rrofi
+  integer :: index_o2x_Foxo_ismh
+  integer :: index_o2x_Foxo_rrofih
 
   ! ocn -> drv for calculation of ocean-ice sheet interactions
 
@@ -65,7 +71,7 @@ module mpaso_cpl_indices
   integer :: index_x2o_Si_ifrac        ! fractional ice wrt ocean
   integer :: index_x2o_Si_bpress       ! ice basal pressure
   integer :: index_x2o_So_duu10n       ! 10m wind speed squared           (m^2/s^2)
-  integer :: index_x2o_Sa_pbot         ! atm bottom pressure              (Pa)
+  integer :: index_x2o_Sa_pslv         ! atmospheric sea level pressure   (Pa)
   integer :: index_x2o_Sa_co2prog      ! bottom atm level prognostic CO2
   integer :: index_x2o_Sa_co2diag      ! bottom atm level diagnostic CO2
   integer :: index_x2o_Foxx_taux       ! zonal wind stress (taux)         (W/m2   )
@@ -182,11 +188,20 @@ contains
     index_o2x_So_dhdx       = mct_avect_indexra(o2x,'So_dhdx')
     index_o2x_So_dhdy       = mct_avect_indexra(o2x,'So_dhdy')
     index_o2x_Fioo_q        = mct_avect_indexra(o2x,'Fioo_q',perrWith='quiet')
+    index_o2x_Foxo_q_li     = mct_avect_indexra(o2x,'Foxo_q_li',perrWith='quiet')
     index_o2x_Fioo_frazil   = mct_avect_indexra(o2x,'Fioo_frazil',perrWith='quiet')
+    index_o2x_Foxo_frazil_li= mct_avect_indexra(o2x,'Foxo_frazil_li',perrWith='quiet')
     index_o2x_Faoo_h2otemp  = mct_avect_indexra(o2x,'Faoo_h2otemp',perrWith='quiet')
     index_o2x_Faoo_fco2_ocn = mct_avect_indexra(o2x,'Faoo_fco2_ocn',perrWith='quiet')
     index_o2x_Faoo_fdms_ocn = mct_avect_indexra(o2x,'Faoo_fdms_ocn',perrWith='quiet')
     index_o2x_So_ssh        = mct_avect_indexra(o2x,'So_ssh')
+
+    index_o2x_Foxo_ismw     = mct_avect_indexra(o2x,'Foxo_ismw',perrWith='quiet')
+    index_o2x_Foxo_rrofl    = mct_avect_indexra(o2x,'Foxo_rrofl',perrWith='quiet')
+    index_o2x_Foxo_rrofi    = mct_avect_indexra(o2x,'Foxo_rrofi',perrWith='quiet')
+
+    index_o2x_Foxo_ismh     = mct_avect_indexra(o2x,'Foxo_ismh',perrWith='quiet')
+    index_o2x_Foxo_rrofih   = mct_avect_indexra(o2x,'Foxo_rrofih',perrWith='quiet')
 
     index_o2x_So_blt        = mct_avect_indexra(o2x,'So_blt')
     index_o2x_So_bls        = mct_avect_indexra(o2x,'So_bls')
@@ -221,7 +236,7 @@ contains
 
     index_x2o_Si_ifrac      = mct_avect_indexra(x2o,'Si_ifrac')
     index_x2o_Si_bpress     = mct_avect_indexra(x2o,'Si_bpress')
-    index_x2o_Sa_pbot       = mct_avect_indexra(x2o,'Sa_pbot')
+    index_x2o_Sa_pslv       = mct_avect_indexra(x2o,'Sa_pslv')
     index_x2o_So_duu10n     = mct_avect_indexra(x2o,'So_duu10n')
     index_x2o_Foxx_tauy     = mct_avect_indexra(x2o,'Foxx_tauy')
     index_x2o_Foxx_taux     = mct_avect_indexra(x2o,'Foxx_taux')

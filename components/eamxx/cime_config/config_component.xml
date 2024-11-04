@@ -13,7 +13,7 @@
     <desc>Name of atmospheric component</desc>
   </entry>
 
-  <entry id="ATM_DYN_TARGET">
+  <entry id="CAM_TARGET">
     <type>char</type>
     <valid_values>theta-l_kokkos</valid_values>
     <default_value>theta-l_kokkos</default_value>
@@ -29,6 +29,8 @@
     <values match='last'>
       <value compset="_SCREAM">SCREAM_NP 4 SCREAM_NUM_VERTICAL_LEV 72 SCREAM_NUM_TRACERS 10</value>
       <value compset="_SCREAM" grid="ne256.*|ne512.*|ne1024.*">SCREAM_NP 4 SCREAM_NUM_VERTICAL_LEV 128 SCREAM_NUM_TRACERS 10</value>
+      <value compset="_EAMXX">SCREAM_NP 4 SCREAM_NUM_VERTICAL_LEV 72 SCREAM_NUM_TRACERS 10</value>
+      <value compset="_EAMXX" grid="ne256.*|ne512.*|ne1024.*">SCREAM_NP 4 SCREAM_NUM_VERTICAL_LEV 128 SCREAM_NUM_TRACERS 10</value>
     </values>
     <group>build_component_scream</group>
     <file>env_build.xml</file>
@@ -58,6 +60,18 @@
     </desc>
   </entry>
 
+  <!-- RCE uses this for setting orbital parameters -->
+  <entry id="SCREAM_USER_MODS">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value></default_value>
+    <values match="last">
+    <value compset="EAM%RCE">$SRCROOT/components/eamxx/cime_config/usermods_dirs/rcemip</value>
+    </values>
+    <group>run_component_cam</group>
+    <file>env_case.xml</file>
+    <desc>User mods to apply to specific compset matches. </desc>
+  </entry>
 
   <description>
     <desc compset="_SCREAM">scream default</desc>

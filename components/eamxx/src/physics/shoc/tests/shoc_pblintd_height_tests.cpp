@@ -85,8 +85,11 @@ struct UnitWrap::UnitTest<D>::TestPblintdHeight {
       REQUIRE(SDS.ustar[s+1] > SDS.ustar[s]);
     }
 
-    // Call the fortran implementation
-    pblintd_height(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+    pblintd_height_f(SDS.shcol, SDS.nlev, SDS.npbl, SDS.z, SDS.u, SDS.v, SDS.ustar,
+                     SDS.thv, SDS.thv_ref, SDS.pblh, SDS.rino, SDS.check);
+    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
 
     // Check the result
     for(Int s = 0; s < shcol; ++s) {
@@ -119,8 +122,11 @@ struct UnitWrap::UnitTest<D>::TestPblintdHeight {
       SDS.thv[offset] = SDS.thv[offset-1] + 2;
     }
 
-    // Call the fortran implementation
-    pblintd_height(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+    pblintd_height_f(SDS.shcol, SDS.nlev, SDS.npbl, SDS.z, SDS.u, SDS.v, SDS.ustar,
+                     SDS.thv, SDS.thv_ref, SDS.pblh, SDS.rino, SDS.check);
+    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
 
     // Check the result
     for(Int s = 0; s < shcol; ++s) {
@@ -158,8 +164,11 @@ struct UnitWrap::UnitTest<D>::TestPblintdHeight {
       }
     }
 
-    // Call the fortran implementation
-    pblintd_height(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+    pblintd_height_f(SDS.shcol, SDS.nlev, SDS.npbl, SDS.z, SDS.u, SDS.v, SDS.ustar,
+                     SDS.thv, SDS.thv_ref, SDS.pblh, SDS.rino, SDS.check);
+    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
 
     // Check that PBLH is zero (not modified) everywhere
     for(Int s = 0; s < shcol; ++s) {

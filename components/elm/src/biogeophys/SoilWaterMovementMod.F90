@@ -275,7 +275,7 @@ contains
     use elm_varcon           , only : wimp,grav,hfus,tfrz
     use elm_varcon           , only : e_ice,denh2o, denice
     use elm_varpar           , only : nlevsoi, max_patch_per_col, nlevgrnd
-    use clm_time_manager     , only : get_step_size
+    use elm_time_manager     , only : get_step_size
     use column_varcon        , only : icol_roof, icol_road_imperv
     use TridiagonalMod       , only : Tridiagonal
     use SoilStateType        , only : soilstate_type
@@ -859,7 +859,7 @@ contains
      use decompMod                 , only : bounds_type
      use elm_varcon                , only : denh2o
      use elm_varpar                , only : nlevsoi, max_patch_per_col, nlevgrnd
-      use clm_time_manager          , only : get_step_size
+      use elm_time_manager          , only : get_step_size
      use SoilStateType             , only : soilstate_type
      use SoilHydrologyType         , only : soilhydrology_type
      use TemperatureType           , only : temperature_type

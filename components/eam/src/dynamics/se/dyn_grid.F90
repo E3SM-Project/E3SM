@@ -1,28 +1,28 @@
 module dyn_grid
-  !------------------------------------------------------------------------------------------------- 
-  ! 
+  !-------------------------------------------------------------------------------------------------
+  !
   ! Purpose: Definition of dynamics computational grid.
-  ! 
-  !          The grid used by the SE dynamics is called the GLL grid, which is 
-  !          made up up of elements that correspond to "blocks". The columns 
+  !
+  !          The grid used by the SE dynamics is called the GLL grid, which is
+  !          made up up of elements that correspond to "blocks". The columns
   !          within each element are located at the Gauss-Lobatto-Legendre (GLL)
   !          quadrature points. The GLL nodes can be used as the physics columns
   !          as well, but this can lead to grid imprinting. The physics can also
-  !          be done on a quasi-equal area FV grid when fv_nphys>0, which will 
+  !          be done on a quasi-equal area FV grid when fv_nphys>0, which will
   !          define fv_nphys^2 cells per element.
-  ! 
+  !
   ! Method: Variables are private; interface routines used to extract
   !         information for use in user code. Global column index range
-  !         defined using full (unreduced) grid. 
-  ! 
+  !         defined using full (unreduced) grid.
+  !
   ! Entry points:
-  !      get_block_bounds_d       get first and last indices in global 
+  !      get_block_bounds_d       get first and last indices in global
   !                               block ordering
   !      get_block_gcol_d         get column indices for given block
   !      get_block_gcol_cnt_d     get number of columns in given block
   !      get_block_lvl_cnt_d      get number of vertical levels in column
   !      get_block_levels_d       get vertical levels in column
-  !      get_gcol_block_d         get global block indices and local columns 
+  !      get_gcol_block_d         get global block indices and local columns
   !                               index for given global column index
   !      get_gcol_block_cnt_d     get number of blocks containing data
   !                               from a given global column index
@@ -31,14 +31,14 @@ module dyn_grid
   !                               information
   !      get_horiz_grid_dim_d     get horizontal dimensions of dynamics grid
   !      dyn_grid_get_pref        get reference pressures for the dynamics grid
-  !      dyn_grid_get_elem_coords get coordinates of a specified block element 
+  !      dyn_grid_get_elem_coords get coordinates of a specified block element
   !                               of the dynamics grid
   !      dyn_grid_find_gcols      finds nearest column for given lat/lon
-  !      dyn_grid_get_colndx      get element block/column and MPI process indices 
+  !      dyn_grid_get_colndx      get element block/column and MPI process indices
   !                               corresponding to a specified global column index
   !
   ! Author: Jim Edwards and Patrick Worley
-  ! 
+  !
   !-------------------------------------------------------------------------------------------------
   use element_mod,             only: element_t
   use cam_logfile,             only: iulog
@@ -49,7 +49,7 @@ module dyn_grid
   use dimensions_mod,          only: nelem, nelemd, nelemdmax, ne, np, npsq
   use spmd_utils,              only: iam, mpi_integer, mpi_real8, mpicom, npes, masterproc
   use parallel_mod,            only: par
-  use scamMod,                 only: single_column, scm_multcols
+  use iop_data_mod,            only: single_column, scm_multcols
 
   implicit none
   private
@@ -60,7 +60,7 @@ module dyn_grid
   integer, parameter, public :: physgrid_d = 102
 
   ! FV physics grid resolution (physics on GLL grid if NPG=0)
-  integer, parameter, public :: fv_nphys = NPG  
+  integer, parameter, public :: fv_nphys = NPG
 
   integer                    :: ngcols_d = 0          ! number of dynamics columns
   logical                    :: gblocks_need_initialized = .true.
@@ -101,6 +101,7 @@ module dyn_grid
   real(r8),      allocatable :: pelon_deg(:)        ! pe-local longitudes (degrees)
   real(r8),          pointer :: pearea(:) => null() ! pe-local areas
   integer(iMap),     pointer :: pemap(:)  => null() ! pe-local map for PIO decomp
+  real(r8),          pointer :: pearea_scm(:) => null() ! special case: area for SCM (only 1 value)
 
 !===================================================================================================
 contains
@@ -113,9 +114,9 @@ contains
   !=================================================================================================
   !
   subroutine get_block_bounds_d(block_first,block_last)
-    !---------------------------------------------------------------------------                   
+    !---------------------------------------------------------------------------
     ! Purpose: Return first and last indices used in global block ordering
-    ! 
+    !
     ! Author: Jim Edwards
     !------------------------------Arguments------------------------------------
     integer, intent(out) :: block_first  ! first (global) index used for blocks
@@ -129,9 +130,9 @@ contains
   !=================================================================================================
   !
   subroutine get_block_gcol_d(blockid,size,cdex)
-    !---------------------------------------------------------------------------                 
+    !---------------------------------------------------------------------------
     ! Purpose: Return list of dynamics column indices in given block
-    ! 
+    !
     ! Author: Jim Edwards
     !---------------------------------------------------------------------------
     implicit none
@@ -160,9 +161,9 @@ contains
   !=================================================================================================
   !
   integer function get_block_gcol_cnt_d(blockid)
-    !---------------------------------------------------------------------------                   
+    !---------------------------------------------------------------------------
     ! Purpose: Return number of dynamics columns in indicated block
-    ! 
+    !
     ! Author: Jim Edwards
     !------------------------------Arguments------------------------------------
     integer, intent(in) :: blockid
@@ -243,11 +244,11 @@ contains
     use kinds,          only: int_kind
     use cam_abortutils, only: endrun
     !---------------------------------------------------------------------------
-    ! Purpose: Return global block index and local column index for 
+    ! Purpose: Return global block index and local column index for
     !          global column index. Element array is naturally ordered.
-    ! 
+    !
     ! Author: Jim Edwards
-    ! Modified: replaced linear search with best guess and binary search   
+    ! Modified: replaced linear search with best guess and binary search
     !           (Pat Worley, 7/2/09)
     !---------------------------------------------------------------------------
     implicit none
@@ -378,7 +379,7 @@ contains
     !---------------------------------------------------------------------------
     ! Purpose: Return number of blocks contain data for the vertical column
     !          with the given global column index
-    ! 
+    !
     ! Author: Patrick Worley
     !---------------------------------------------------------------------------
     implicit none
@@ -392,9 +393,9 @@ contains
   !=================================================================================================
   !
   integer function get_block_owner_d(blockid)
-    !---------------------------------------------------------------------------                          
+    !---------------------------------------------------------------------------
     ! Purpose: Return id of processor that "owns" the indicated block
-    ! 
+    !
     ! Author: Jim Edwards
     !---------------------------------------------------------------------------
     implicit none
@@ -402,7 +403,7 @@ contains
     integer, intent(in) :: blockid  ! global block id
     !---------------------------------------------------------------------------
     if (gblocks_need_initialized) call gblocks_init()
-    
+
     if (gblocks(blockid)%Owner>-1) then
       get_block_owner_d=gblocks(blockid)%Owner
     else
@@ -419,7 +420,7 @@ contains
     ! Purpose: Returns declared horizontal dimensions of computational grid.
     !          For non-lon/lat grids, declare grid to be one-dimensional,
     !          i.e., (ngcols_d x 1)
-    ! 
+    !
     ! Author: Patrick Worley
     !------------------------------Arguments------------------------------------
     integer, intent(out)           :: hdim1_d  ! first horizontal dimension
@@ -430,7 +431,7 @@ contains
     else
       hdim1_d = ngcols_d
     end if ! fv_nphys > 0
-    
+
     if (present(hdim2_d)) hdim2_d = 1
 
     return
@@ -441,7 +442,7 @@ contains
   subroutine set_horiz_grid_cnt_d(NumUniqueCols)
     !---------------------------------------------------------------------------
     ! Purpose: Set number of columns in the dynamics computational grid
-    ! 
+    !
     ! Author: Jim Edwards
     !---------------------------------------------------------------------------
     use dimensions_mod, only: nelem, nelemd, np, npsq
@@ -454,7 +455,7 @@ contains
     integer                :: ie, i, j, ii
     logical, save          :: local_coords_initialized = .false.
     real(r8)               :: areaw(np, np)
-    type(index_t), pointer :: idx     
+    type(index_t), pointer :: idx
     !---------------------------------------------------------------------------
     if (.not. local_coords_initialized) then
       ngcols_d = NumUniqueCols
@@ -463,12 +464,12 @@ contains
         call endrun('set_horiz_grid_cnt_d: fdofp_local already defined')
       end if
       allocate(fdofp_local(npsq, nelemd))
-      fdofp_local =0 
+      fdofp_local =0
       do ie = 1, nelemd
         idx => elem(ie)%idxP
         do ii = 1, idx%NumUniquePts
           i = idx%ia(ii)
-          j = idx%ja(ii)          
+          j = idx%ja(ii)
           fdofp_local((np*(j-1))+i,ie) = (idx%UniquePtoffset+ii-1)
         end do
       end do
@@ -480,7 +481,7 @@ contains
       ! Now, fill in the appropriate values
       ii = 1
       do ie = 1, nelemd
-        areaw = 1.0_r8 / elem(ie)%rspheremp(:,:)         
+        areaw = 1.0_r8 / elem(ie)%rspheremp(:,:)
         pearea(ii:ii+npsq-1) = reshape(areaw, (/ np*np /))
         pemap(ii:ii+npsq-1) = fdofp_local(:,ie)
         do j = 1, np
@@ -503,14 +504,14 @@ contains
   !
   subroutine get_horiz_grid_d(nxy,clat_d_out,clon_d_out,area_d_out, &
                               wght_d_out,lat_d_out,lon_d_out,cost_d_out)
-    !--------------------------------------------------------------------------- 
+    !---------------------------------------------------------------------------
     ! Purpose: Return latitude and longitude (in radians), column surface
     !          area (in radians squared) and surface integration weights
     !          for global column indices that will be passed to/from
-    !          physics. Optionally also return estimated physics 
-    !          computational cost per global column for use in load 
+    !          physics. Optionally also return estimated physics
+    !          computational cost per global column for use in load
     !          balancing.
-    ! 
+    !
     ! Author: Jim Edwards
     !------------------------------Arguments------------------------------------
     integer,  intent(in )                   :: nxy           ! array sizes
@@ -572,7 +573,7 @@ contains
     end if
 
     if ( present(clat_d_out) .or. present(clon_d_out) ) then
-      
+
       allocate( lat_d_rad_temp(nxy) )
       allocate( lon_d_rad_temp(nxy) )
       allocate( lat_d_deg_temp(nxy) )
@@ -618,7 +619,7 @@ contains
     integer(iMap),       pointer :: grid_map_d(:,:)
     integer(iMap),       pointer :: grid_map_p(:,:)
     integer                      :: ie, i, j, k, mapind ! Loop variables
-    real(r8)                     :: area_scm(1), lat, lon
+    real(r8)                     :: lat, lon
     integer                      :: ncols_p_lcl         ! local column count
     integer                      :: ncols_p_gbl         ! global column count
     integer(iMap),       pointer :: physgrid_map(:)
@@ -628,7 +629,7 @@ contains
     !---------------------------------------------------------------------------
     ! Create grid for data on HOMME GLL nodes
     !---------------------------------------------------------------------------
-    ! When the FV physs grid is used the GLL grid output 
+    ! When the FV physs grid is used the GLL grid output
     ! variables will use coordinates with the '_d' suffix.
     gridname = 'GLL'
     if (fv_nphys > 0) then
@@ -670,12 +671,11 @@ contains
       call cam_grid_attribute_register(trim(gridname), trim(areaname),   &
                                 'gll grid areas', trim(ncolname), pearea, pemap)
     else
-      ! if single column model, then this attribute has to be handled 
-      ! by assigning just the SCM point. Else, the model will bomb out
-      ! when writing the header information to history output
-      area_scm(1) = 1.0_r8 / elem(1)%rspheremp(1,1)
-      call cam_grid_attribute_register(trim(gridname), trim(areaname),   &
-                                    'gll grid areas', trim(ncolname), area_scm)
+      ! If single column model, set pearea_scm(1) to be the area as 1 value to simplify
+      allocate(pearea_scm(1))
+      pearea_scm(1) = 1.0_r8 / elem(1)%rspheremp(1,1)
+      call cam_grid_attribute_register(trim(gridname), trim(areaname), &
+                                'gll grid areas', trim(ncolname), pearea_scm)
     end if ! .not. single_column
 
     call cam_grid_attribute_register(trim(gridname), 'np', '', np)
@@ -687,15 +687,19 @@ contains
     deallocate(pelon_deg)
 
     ! These can be nullified since the grid object has the reference
-    nullify(grid_map_d) 
+    nullify(grid_map_d)
     nullify(pearea)
     nullify(pemap)
+    if (.not.single_column .or. scm_multcols) then
+    else
+       nullify(pearea_scm)
+    endif
 
     !---------------------------------------------------------------------------
     ! Create grid object for physics grid on the dynamics decomposition
     !---------------------------------------------------------------------------
-    ! Following CAM6-SE the 'physgrid_d' grid is created and used to load the 
-    ! PHIS field (i.e. surface topo) on the FV physics grid and then 
+    ! Following CAM6-SE the 'physgrid_d' grid is created and used to load the
+    ! PHIS field (i.e. surface topo) on the FV physics grid and then
     ! interpolated to the GLL grid. This ensures consistent treatment of SGH.
     if (fv_nphys>0) then
 
@@ -822,13 +826,13 @@ contains
       end do
     end if
 
-    do ie = 1,nelemdmax        
+    do ie = 1,nelemdmax
       if (ie<=nelemd) then
         rdispls(iam+1)=elem(ie)%idxP%UniquePtOffset-1
         gid(iam+1)=elem(ie)%GlobalID
         lid(iam+1)=ie
         recvcounts(iam+1)=elem(ie)%idxP%NumUniquePts
-      else     
+      else
         rdispls(iam+1) = 0
         recvcounts(iam+1) = 0
         gid(iam+1)=0
@@ -882,7 +886,7 @@ contains
     end if
 
     if (fv_nphys > 0) then
-      
+
       ncol_fv_gbl = fv_nphys*fv_nphys*nelem
       ncol_fv_lcl = fv_nphys*fv_nphys*nelemd
       allocate(rbuf(ncol_fv_gbl))
@@ -948,14 +952,14 @@ contains
       deallocate(col_id_global)
 
     else ! physics is on GLL grid
-    
+
       allocate(rbuf(ngcols_d))
-      do ie = 1, nelemdmax        
+      do ie = 1, nelemdmax
         if(ie <= nelemd) then
           displace(iam+1) = elem(ie)%idxp%UniquePtOffset-1
           recvcnts(iam+1) = elem(ie)%idxP%NumUniquePts
           eb = displace(iam+1) + elem(ie)%idxp%NumUniquePts
-          areaw = 1.0_r8 / elem(ie)%rspheremp(:,:)         
+          areaw = 1.0_r8 / elem(ie)%rspheremp(:,:)
           call UniquePoints(elem(ie)%idxP, areaw, area_d(displace(iam+1)+1:eb))
         else
           displace(iam+1) = 0
@@ -1065,7 +1069,7 @@ contains
       ! Gather global latitudes
       call mpi_allgatherv( lat_rad_local(:), recvcnts(iam+1), mpi_real8, rbuf, &
                            recvcnts(:), displace(:), mpi_real8, mpicom, ierr)
-      
+
       ! sort latitude according to global element ID
       do icol = 1,ncol_fv_gbl
         clat( col_id_global(icol) ) = rbuf(icol)
@@ -1074,7 +1078,7 @@ contains
       ! Gather global longitudes
       call mpi_allgatherv( lon_rad_local(:), recvcnts(iam+1), mpi_real8, rbuf, &
                            recvcnts(:), displace(:), mpi_real8, mpicom, ierr)
-      
+
       ! sort longitude according to global element ID
       do icol = 1,ncol_fv_gbl
         clon( col_id_global(icol) ) = rbuf(icol)
@@ -1107,14 +1111,14 @@ contains
           ! Gather latitude
           call mpi_allgatherv( corner_lat_rad_local(:,c), recvcnts(iam+1), mpi_real8, rbuf, &
                                recvcnts(:), displace(:), mpi_real8, mpicom, ierr)
-          ! sort latitude 
+          ! sort latitude
           do icol = 1,ncol_fv_gbl
             corner_lat_out( col_id_global(icol), c) = rbuf(icol) * rad2deg
           end do
           ! Gather longitude
           call mpi_allgatherv( corner_lon_rad_local(:,c), recvcnts(iam+1), mpi_real8, rbuf, &
                                recvcnts(:), displace(:), mpi_real8, mpicom, ierr)
-          ! sort longitude 
+          ! sort longitude
           do icol = 1,ncol_fv_gbl
             corner_lon_out( col_id_global(icol), c) = rbuf(icol) * rad2deg
           end do
@@ -1179,7 +1183,7 @@ contains
         call mpi_allgatherv(rbuf, recvcnts(iam+1), mpi_real8, clat,            &
                recvcnts(:), displace(:), mpi_real8, mpicom, ierr)
         if (present(lat_out)) then
-          rbuf(1:recvcnts(iam+1)) = lat_out(sb:eb) 
+          rbuf(1:recvcnts(iam+1)) = lat_out(sb:eb)
           call mpi_allgatherv(rbuf, recvcnts(iam+1), mpi_real8, lat_out,       &
                recvcnts(:), displace(:), mpi_real8, mpicom, ierr)
         end if
@@ -1188,12 +1192,12 @@ contains
         call mpi_allgatherv(rbuf, recvcnts(iam+1), mpi_real8, clon,            &
                recvcnts(:), displace(:), mpi_real8, mpicom, ierr)
         if (present(lon_out)) then
-          rbuf(1:recvcnts(iam+1)) = lon_out(sb:eb) 
+          rbuf(1:recvcnts(iam+1)) = lon_out(sb:eb)
           call mpi_allgatherv(rbuf, recvcnts(iam+1), mpi_real8, lon_out,       &
                recvcnts(:), displace(:), mpi_real8, mpicom, ierr)
         end if
       end do
-      
+
       deallocate(rbuf)
 
     end if ! fv_nphys > 0
@@ -1275,7 +1279,7 @@ contains
         ival = fv_nphys*fv_nphys*nelem
       else
         ival = ngcols_d
-      end if 
+      end if
     else if(name.eq.'plev') then
       ival = plev
     else if(name.eq.'plevp') then
@@ -1318,10 +1322,10 @@ contains
   !
   !=================================================================================================
   !
-  subroutine dyn_grid_find_gcols( lat, lon, nclosest, owners, col, lbk, rlat, rlon, idyn_dists ) 
+  subroutine dyn_grid_find_gcols( lat, lon, nclosest, owners, col, lbk, rlat, rlon, idyn_dists )
     !---------------------------------------------------------------------------
-    ! This returns the lat/lon information (and corresponding MPI task 
-    ! numbers (owners))  of the global model grid columns nearest to the 
+    ! This returns the lat/lon information (and corresponding MPI task
+    ! numbers (owners))  of the global model grid columns nearest to the
     ! input satellite coordinate (lat,lon)
     !---------------------------------------------------------------------------
     use shr_const_mod,  only: SHR_CONST_REARTH
@@ -1415,7 +1419,7 @@ contains
   !
   !=================================================================================================
   !
-  subroutine dyn_grid_get_colndx( igcol, nclosest, owners, col, lbk ) 
+  subroutine dyn_grid_get_colndx( igcol, nclosest, owners, col, lbk )
     !------------------------------Arguments------------------------------------
     integer, intent(in)  :: nclosest
     integer, intent(in)  :: igcol(nclosest)
@@ -1437,7 +1441,7 @@ contains
 
        call  get_gcol_block_d( igcol(i), 1, blockid, bcid, lclblockid )
        owners(i) = get_block_owner_d(blockid(1))
-       
+
        if (owners(i)==iam) then
           lbk(i) = lclblockid(1)
           ii = igcol(i)-elem(lbk(i))%idxp%UniquePtoffset+1
@@ -1448,7 +1452,7 @@ contains
           lbk(i) = -1
           col(i) = -1
        endif
-       
+
     end do
 
   end subroutine dyn_grid_get_colndx

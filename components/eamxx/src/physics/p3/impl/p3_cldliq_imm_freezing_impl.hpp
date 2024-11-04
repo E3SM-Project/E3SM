@@ -20,20 +20,21 @@ void Functions<S,D>
   const Spack& mu_c, const Spack& cdist1,
   const Spack& qc_incld, const Spack& inv_qc_relvar,
   Spack& qc2qi_hetero_freeze_tend, Spack& nc2ni_immers_freeze_tend,
+  const physics::P3_Constants<S> & p3constants,
   const Smask& context)
 {
   constexpr Scalar qsmall   = C::QSMALL;
-  constexpr Scalar AIMM     = C::AIMM;
   constexpr Scalar T_rainfrz = C::T_rainfrz;
   constexpr Scalar T_zerodegc = C::T_zerodegc;
   constexpr Scalar CONS5    = C::CONS5;
   constexpr Scalar CONS6    = C::CONS6;
+  const Scalar p3_a_imm = p3constants.p3_a_imm;
 
   const auto qc_not_small_and_t_freezing = (qc_incld >= qsmall) &&
                                            (T_atm <= T_rainfrz) && context;
   if (qc_not_small_and_t_freezing.any()) {
     Spack expAimmDt, inv_lamc3;
-    expAimmDt.set(qc_not_small_and_t_freezing, exp(AIMM * (T_zerodegc-T_atm)));
+    expAimmDt.set(qc_not_small_and_t_freezing, exp(p3_a_imm * (T_zerodegc-T_atm)));
     inv_lamc3.set(qc_not_small_and_t_freezing, cube(1/lamc));
 
     Spack sgs_var_coef;

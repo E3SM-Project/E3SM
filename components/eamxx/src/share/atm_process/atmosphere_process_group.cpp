@@ -14,12 +14,9 @@ AtmosphereProcessGroup::
 AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereProcess(comm, params)
 {
-
-  // Get the string representation of the group
-  auto group_list_str = m_params.get<std::string>("atm_procs_list");
-  auto group_plist = ekat::parse_nested_list(group_list_str);
-
-  m_group_size = group_plist.get<int>("Num Entries");
+  // Get the list of procs in the group
+  auto group_list = m_params.get<std::vector<std::string>>("atm_procs_list");
+  m_group_size = group_list.size();
   EKAT_REQUIRE_MSG (m_group_size>0, "Error! Invalid group size.\n");
 
   if (m_group_size>1) {
@@ -39,12 +36,16 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
   // Create the individual atmosphere processes
   m_group_name = params.name();
 
+  // Temp to store which atm proc needs each restart extra data. We'll use it to ensure
+  // only one atm proc request a particular extra data key
+  strmap_t<std::string> ed2proc;
+
   auto& apf = AtmosphereProcessFactory::instance();
   // Ensure the "Group" atm proc is registered in the factory,
   // so we can recursively create groups. Groups are an impl detail,
   // so we don't expect users to register the APG in the factory.
   apf.register_product("group",&create_atmosphere_process<AtmosphereProcessGroup>);
-  for (int i=0; i<m_group_size; ++i) {
+  for (const auto& ap_name : group_list) {
     // The comm to be passed to the processes construction is
     //  - the same as the comm of this APG, if num_entries=1 or sched_type=Sequential
     //  - a sub-comm of this APG's comm otherwise
@@ -62,54 +63,21 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
       //  - this class is then responsible of 'combining' the results togehter,
       //    including remapping input/output fields to/from the sub-comm
       //    distribution.
-      ekat::error::runtime_abort("Error! Parallel schedule type not yet implemented.\n");
-    }
-
-    // Check if the i-th entry is a "named" atm proc or a group defined on the fly.
-    // In the first case, the i-th entry of the string list is just a string,
-    // like "my_atm_proc", while in the latter it is of the form "(a, b, ...)"
-    const auto& type_i = group_plist.get<std::string>(ekat::strint("Type",i));
-    std::string ap_name, ap_type;
-    if (type_i=="Value") {
-      // This is a "named" atm proc.
-      ap_name = group_plist.get<std::string>(ekat::strint("Entry",i));
-    } else {
-      // This is a group defined "on the fly". Get its string representation
-      ap_name = group_plist.sublist(ekat::strint("Entry",i)).get<std::string>("String");
-      // Due to XML limitations, in CIME runs we need to create a name for atm proc groups
-      // that are defined via nested list string, and we do it by replacing ',' with '_',
-      // '(' with 'group.', and ')' with '.'
-      auto pos = ap_name.find(",");
-      while (pos!=std::string::npos) {
-        ap_name[pos] = '_';
-        pos = ap_name.find(",");
-      }
-      pos = ap_name.find("(");
-      while (pos!=std::string::npos) {
-        ap_name[pos] = '.';
-        ap_name.insert(pos,"group");
-        pos = ap_name.find("(");
-      }
-      pos = ap_name.find(")");
-      while (pos!=std::string::npos) {
-        ap_name[pos] = '.';
-        pos = ap_name.find(")");
-      }
-      ap_type = "Group";
+      EKAT_ERROR_MSG("Error! Parallel schedule type not yet implemented.\n");
     }
 
     // Get the params of this atm proc
     auto& params_i = m_params.sublist(ap_name);
 
     // Get type (defaults to name)
-    ap_type = type_i=="List" ? "Group"
-                             : params_i.get<std::string>("Type",ap_name);
+    const auto& ap_type = params_i.get<std::string>("Type",ap_name);
 
     // Set logger in this ap params
     params_i.set("Logger",this->m_atm_logger);
 
     // Create the atm proc
-    m_atm_processes.emplace_back(apf.create(ap_type,proc_comm,params_i));
+    auto ap = apf.create(ap_type,proc_comm,params_i);
+    m_atm_processes.push_back(ap);
 
     // NOTE: the shared_ptr of the new atmosphere process *MUST* have been created correctly.
     //       Namely, the creation process must have set up enable_shared_from_this's status correctly.
@@ -118,7 +86,7 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
     //       in the AtmosphereProcessFactory, he/she may have forgot to set the self pointer in the process.
     //       To make sure this is not the case, we check that the weak_ptr in the newly created
     //       atmosphere process (which comes through inheritance from enable_shared_from_this) is valid.
-    EKAT_REQUIRE_MSG(!m_atm_processes.back()->weak_from_this().expired(),
+    EKAT_REQUIRE_MSG(!ap->weak_from_this().expired(),
         "Error! The newly created std::shared_ptr<AtmosphereProcess> did not correctly setup\n"
         "       the 'enable_shared_from_this' interface.\n"
         "       Did you by chance register your own creator function in the AtmosphereProccessFactory class?\n"
@@ -128,17 +96,54 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
     // Store a copy of all the restart extra data of the atm proc.
     // NOTE: any uses std::shared_ptr internally, so if the atm proc updates
     //       the extra data, it will be updated in this class too.
-    for (const auto& it : m_atm_processes.back()->get_restart_extra_data()) {
+    for (const auto& it : ap->get_restart_extra_data()) {
       // We don't want to risk having two processes overwriting restart data, in case
       // of a "common name" var (e.g., "num_steps"). Each process should try its best
       // to provide names that are likely to be unique. Even if two procs *actyally need*
       // the same var, we can write it twice to file.
-      EKAT_REQUIRE_MSG (m_restart_extra_data.find(it.first)==m_restart_extra_data.end(),
-          "Error! Cannot add restart extra data, since it was already added by another process.\n"
-          "  - extra data name: " + it.first + "\n");
-      m_restart_extra_data.emplace(it);
+      EKAT_REQUIRE_MSG (m_restart_extra_data.count(it.first)==0,
+          "Error! Two atmosphere processes use the same restart extra data key.\n"
+          " - Extra data key : " + it.first + "\n"
+          " - First atm proc : " + ed2proc[it.first] + "\n"
+          " - Second atm proc: " + ap->name() + "\n");
+      m_restart_extra_data[it.first] = it.second;
+      ed2proc[it.first] = ap->name();
     }
   }
+}
+
+std::shared_ptr<AtmosphereProcessGroup::atm_proc_type>
+AtmosphereProcessGroup::get_process_nonconst (const std::string& name) const {
+  EKAT_REQUIRE_MSG(has_process(name), "Error! Process "+name+" requested from group "+this->name()+
+                                      " but is not constained in this group.\n");
+
+  std::shared_ptr<atm_proc_type> return_process;
+  for (auto& process: m_atm_processes) {
+    if (process->type() == AtmosphereProcessType::Group) {
+      const auto* group = dynamic_cast<const AtmosphereProcessGroup*>(process.get());
+      return group->get_process_nonconst(name);
+    } else if (process->name() == name) {
+        return_process = process;
+        break;
+    }
+  }
+  return return_process;
+}
+
+bool AtmosphereProcessGroup::has_process(const std::string& name) const {
+  for (auto& process: m_atm_processes) {
+    if (process->type() == AtmosphereProcessType::Group) {
+      const auto* group = dynamic_cast<const AtmosphereProcessGroup*>(process.get());
+      if (group->has_process(name)) {
+        return true;
+      }
+    } else {
+      if (process->name() == name) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager> grids_manager) {
@@ -280,7 +285,7 @@ setup_column_conservation_checks (const std::shared_ptr<MassAndEnergyColumnConse
                      "for non-physics process \"" + atm_proc->name() + "\". "
                      "This check is column local and therefore can only be run "
                      "on physics processes.\n");
- 
+
     // Query the computed fields for this atm process and see if either the mass or energy computation
     // might be changed after the process has run. If no field used in the mass or energy calculate
     // is updated by this process, there is no need to run the check.
@@ -335,6 +340,25 @@ void AtmosphereProcessGroup::add_postcondition_nan_checks () const {
           auto nan_check = std::make_shared<FieldNaNCheck>(*f.second,grid);
           proc->add_postcondition_check(nan_check, CheckFailHandling::Fatal);
         }
+      }
+    }
+  }
+}
+
+void AtmosphereProcessGroup::add_additional_data_fields_to_property_checks (const Field& data_field) {
+  for (auto proc : m_atm_processes) {
+    auto group = std::dynamic_pointer_cast<AtmosphereProcessGroup>(proc);
+    if (group) {
+      group->add_additional_data_fields_to_property_checks(data_field);
+    } else {
+      for (auto& prop_check : proc->get_precondition_checks()) {
+        prop_check.second->set_additional_data_field(data_field);
+      }
+      for (auto& prop_check : proc->get_postcondition_checks()) {
+        prop_check.second->set_additional_data_field(data_field);
+      }
+      if (proc->has_column_conservation_check()) {
+        proc->get_column_conservation_check().second->set_additional_data_field(data_field);
       }
     }
   }

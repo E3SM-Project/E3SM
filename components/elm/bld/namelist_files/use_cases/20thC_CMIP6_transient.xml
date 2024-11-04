@@ -9,7 +9,7 @@
 
 <sim_year>1850</sim_year>
 
-<sim_year_range>1850-2000</sim_year_range>
+<sim_year_range>1850-2015</sim_year_range>
 
 <clm_start_type>arb_ic</clm_start_type>
 
@@ -18,7 +18,7 @@
 
 
 <stream_year_first_ndep phys="elm" use_cn=".true."   >1850</stream_year_first_ndep>
-<stream_year_last_ndep  phys="elm" use_cn=".true."   >2005</stream_year_last_ndep>
+<stream_year_last_ndep  phys="elm" use_cn=".true."   >2101</stream_year_last_ndep>
 <model_year_align_ndep  phys="elm" use_cn=".true."   >1850</model_year_align_ndep>
 
 
@@ -27,7 +27,7 @@
 <model_year_align_pdep  phys="elm" use_cn=".true."   >2000</model_year_align_pdep>
 
 <stream_year_first_popdens phys="elm" use_cn=".true."   >1850</stream_year_first_popdens>
-<stream_year_last_popdens  phys="elm" use_cn=".true."   >2010</stream_year_last_popdens>
+<stream_year_last_popdens  phys="elm" use_cn=".true."   >2100</stream_year_last_popdens>
 <model_year_align_popdens  phys="elm" use_cn=".true."   >1850</model_year_align_popdens>
 
 
@@ -37,11 +37,18 @@
 <flanduse_timeseries hgrid="ne30np4">lnd/clm2/surfdata_map/landuse.timeseries_ne30np4_hist_simyr1850_2015_c20171018.nc</flanduse_timeseries>
 <finidat hgrid="ne30np4" mask="oEC60to30v3">lnd/clm2/initdata_map/20180316.DECKv1b_A1.ne30_oEC.edison.clm2.r.1980-01-01-00000.8575c3f_c20190904.nc</finidat>
 
+<flanduse_timeseries hgrid="r05">lnd/clm2/surfdata_map/landuse.timeseries_0.5x0.5_hist_simyr1850-2015_c240308.nc</flanduse_timeseries>
+<flanduse_timeseries hgrid="r025" use_crop=".false." >lnd/clm2/surfdata_map/landuse.timeseries_0.25x0.25_hist_simyr1850-2015_c240125.nc</flanduse_timeseries>
+
 <flanduse_timeseries hgrid="ne120np4">lnd/clm2/surfdata_map/landuse.timeseries_ne120np4_historical_simyr1850-2015_c190904.nc</flanduse_timeseries>
 
 <fsurdat hgrid="r0125">lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr1850_c190730.nc</fsurdat>
 
-<fsurdat hgrid="r05">lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c190418.nc</fsurdat>
+<fsurdat hgrid="r05">lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c200609_with_TOP.nc</fsurdat>
+
+<!-- Hack to override files for ne1024 for SCREAM, even though the sim years do not match up -->
+<fsurdat hgrid="ne1024np4.pg2">lnd/clm2/surfdata_map/surfdata_ne1024pg2_simyr2010_c211021.nc</fsurdat>
+<flanduse_timeseries hgrid="ne1024np4.pg2">lnd/clm2/surfdata_map/landuse.timeseries_ne1024pg2_historical_simyr1990-2014_c240109.nc</flanduse_timeseries>
 
 <check_finidat_year_consistency>.false.</check_finidat_year_consistency>
 <check_dynpft_consistency>.false.</check_dynpft_consistency>

@@ -16,8 +16,20 @@ module homme_grid_mod
   public :: get_num_local_columns_f90, get_num_global_columns_f90
   public :: get_num_local_elems_f90, get_num_global_elems_f90
   public :: get_np_f90, get_nlev_f90
+  public :: is_planar_geometry_f90
 
 contains
+
+  function is_planar_geometry_f90 () result(planar) bind(c)
+    use control_mod, only: geometry
+    logical (kind=c_bool) :: planar
+
+    if (geometry == "plane") then
+      planar = .true.
+    else
+      planar = .false.
+    endif
+  end function is_planar_geometry_f90
 
   subroutine check_grids_inited (expected)
     use parallel_mod,      only: abortmp
@@ -93,18 +105,18 @@ contains
   ! Note: dg_grid=.true. is to request dofs for a Discontinuous Galerkin grid,
   !       that is, corresponding edge dofs on bordering elems have different gids.
   !       If dg_grid=.false., the shared dofs have the same gid.
-  subroutine get_dyn_grid_data_f90 (dg_gids_ptr, cg_gids_ptr, elgpgp_ptr, lat_ptr, lon_ptr) bind(c)
+  subroutine get_dyn_grid_data_f90 (dg_gids_ptr, cg_gids_ptr, elgpgp_ptr, elgid_ptr, lat_ptr, lon_ptr) bind(c)
     use dimensions_mod,    only: nelemd, np
     use dyn_grid_mod,      only: get_my_dyn_data
     !
     ! Input(s)
     !
-    type (c_ptr), intent(in) :: dg_gids_ptr, cg_gids_ptr, elgpgp_ptr, lat_ptr, lon_ptr
+    type (c_ptr), intent(in) :: dg_gids_ptr, cg_gids_ptr, elgpgp_ptr, elgid_ptr, lat_ptr, lon_ptr
     !
     ! Local(s)
     !
     real(kind=c_double), pointer :: lat (:,:,:), lon(:,:,:)
-    integer(kind=c_int), pointer :: cg_gids (:), dg_gids(:), elgpgp(:,:)
+    integer(kind=c_int), pointer :: cg_gids (:), dg_gids(:), elgpgp(:,:), elgid(:)
 
     ! Sanity check
     call check_grids_inited(.true.)
@@ -112,10 +124,11 @@ contains
     call c_f_pointer (dg_gids_ptr, dg_gids, [nelemd*np*np])
     call c_f_pointer (cg_gids_ptr, cg_gids, [nelemd*np*np])
     call c_f_pointer (elgpgp_ptr,  elgpgp,  [3,nelemd*np*np])
+    call c_f_pointer (elgid_ptr,   elgid,   [nelemd])
     call c_f_pointer (lat_ptr,     lat,     [np,np,nelemd])
     call c_f_pointer (lon_ptr,     lon,     [np,np,nelemd])
 
-    call get_my_dyn_data (dg_gids, cg_gids, elgpgp, lat, lon)
+    call get_my_dyn_data (dg_gids, cg_gids, elgpgp, elgid, lat, lon)
   end subroutine get_dyn_grid_data_f90
 
   subroutine get_phys_grid_data_f90 (pg_type, gids_ptr, lat_ptr, lon_ptr, area_ptr) bind(c)
@@ -226,5 +239,20 @@ contains
 
     nlev_out = nlev
   end function get_nlev_f90
+
+  function get_dx_short_f90 (elem_idx) result (dx_short_out) bind(c)
+    use homme_context_mod, only: elem
+    !
+    ! Input(s)
+    !
+    integer (kind=c_int), intent(in), value :: elem_idx
+    !
+    ! Local(s)
+    !
+    real (kind=c_double) :: dx_short_out
+
+    ! elem_idx is 0-based, convert to 1-based
+    dx_short_out = elem(elem_idx+1)%dx_short
+  end function get_dx_short_f90
 
 end module homme_grid_mod

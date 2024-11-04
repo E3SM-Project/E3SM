@@ -73,6 +73,7 @@ module seq_io_mod
      module procedure seq_io_read_r8
      module procedure seq_io_read_r81d
      module procedure seq_io_read_char
+     module procedure seq_io_read_moab_tags
   end interface seq_io_read
   interface seq_io_write
      module procedure seq_io_write_av
@@ -84,6 +85,7 @@ module seq_io_mod
      module procedure seq_io_write_r81d
      module procedure seq_io_write_char
      module procedure seq_io_write_time
+     module procedure seq_io_write_moab_tags
   end interface seq_io_write
 
   !-------------------------------------------------------------------------------
@@ -132,7 +134,7 @@ contains
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
-  subroutine seq_io_wopen(filename,clobber,file_ind, model_doi_url)
+  subroutine seq_io_wopen(filename,clobber,file_ind, model_doi_url, set_fill, bfbflag)
 
     ! !INPUT/OUTPUT PARAMETERS:
     implicit none
@@ -140,17 +142,19 @@ contains
     logical,optional,intent(in):: clobber
     integer,optional,intent(in):: file_ind
     character(CL), optional, intent(in)  :: model_doi_url
-
+    logical, optional, intent(in) :: set_fill
+    logical, optional, intent(in) :: bfbflag !for priting bfbflag value in the history files
     !EOP
-
+    integer :: lset_fill = PIO_NOFILL, old_set_fill
     logical :: exists
     logical :: lclobber
     integer :: iam,mpicom
     integer :: rcode
     integer :: nmode
     integer :: lfile_ind
-    character(CL)  :: lversion
-    character(CL)  :: lmodel_doi_url
+    character(CL) :: lbfbflag
+    character(CL) :: lversion
+    character(CL) :: lmodel_doi_url
     character(*),parameter :: subName = '(seq_io_wopen) '
 
     !-------------------------------------------------------------------------------
@@ -158,7 +162,11 @@ contains
     !-------------------------------------------------------------------------------
 
     lversion=trim(version0)
-
+#ifdef PIO2
+    if(present(set_fill)) then
+       if(set_fill) lset_fill = PIO_FILL
+    endif
+#endif
     lclobber = .false.
     if (present(clobber)) lclobber=clobber
 
@@ -168,7 +176,13 @@ contains
     lfile_ind = 0
     if (present(file_ind)) lfile_ind=file_ind
 
-    call seq_comm_setptrs(CPLID, iam=iam, mpicom=mpicom) 
+    lbfbflag = 'unset' ! default value for bfbflag
+    if(present(bfbflag)) then
+       if(bfbflag) lbfbflag = 'TRUE'
+       if(.not. bfbflag) lbfbflag = 'FALSE'
+    endif
+
+    call seq_comm_setptrs(CPLID, iam=iam, mpicom=mpicom)
 
     if (.not. pio_file_is_open(cpl_io_file(lfile_ind))) then
        ! filename not open
@@ -186,8 +200,12 @@ contains
 
              rcode = pio_createfile(cpl_io_subsystem, cpl_io_file(lfile_ind), cpl_pio_iotype, trim(filename), nmode)
              if(iam==0) write(logunit,*) subname,' create file ',trim(filename)
+#ifdef PIO2
+             rcode = pio_set_fill(cpl_io_file(lfile_ind), lset_fill, old_set_fill)
+#endif
              rcode = pio_put_att(cpl_io_file(lfile_ind),pio_global,"file_version",version)
              rcode = pio_put_att(cpl_io_file(lfile_ind),pio_global,"model_doi_url",lmodel_doi_url)
+             rcode = pio_put_att(cpl_io_file(lfile_ind),pio_global,"BFBFLAG",trim(lbfbflag))
           else
 
              rcode = pio_openfile(cpl_io_subsystem, cpl_io_file(lfile_ind), cpl_pio_iotype, trim(filename), pio_write)
@@ -213,6 +231,7 @@ contains
           if(iam==0) write(logunit,*) subname,' create file ',trim(filename)
           rcode = pio_put_att(cpl_io_file(lfile_ind),pio_global,"file_version",version)
           rcode = pio_put_att(cpl_io_file(lfile_ind),pio_global,"model_doi_url",lmodel_doi_url)
+          rcode = pio_put_att(cpl_io_file(lfile_ind),pio_global,"BFBFLAG",trim(lbfbflag))
        endif
     elseif (trim(wfilename) /= trim(filename)) then
        ! filename is open, better match open filename
@@ -376,7 +395,7 @@ contains
   ! !INTERFACE: ------------------------------------------------------------------
 
   subroutine seq_io_write_av(filename,gsmap,AV,dname,whead,wdata,nx,ny,nt,fillval,pre,tavg,&
-       use_float, file_ind, scolumn)
+       use_float, file_ind, mask, scolumn)
 
     ! !INPUT/OUTPUT PARAMETERS:
     implicit none
@@ -395,7 +414,7 @@ contains
     logical,optional,intent(in) :: use_float ! write output as float rather than double
     integer,optional,intent(in) :: file_ind
     logical,optional,intent(in) :: scolumn ! single column model flag
-
+    real(r8),optional,intent(in) :: mask(:)
     !EOP
 
     integer(in) :: rcode
@@ -425,6 +444,7 @@ contains
     logical :: lcolumn
 
     real(r8), allocatable :: tmpdata(:)
+    real(r4), allocatable :: tmpr4data(:)
 
     !-------------------------------------------------------------------------------
     !
@@ -479,7 +499,7 @@ contains
     if (present(ny)) then
        if (ny /= 0) lny = ny
     endif
-    if (lnx*lny /= ng .and. .not. lcolumn) then 
+    if (lnx*lny /= ng .and. .not. lcolumn) then
        if(iam==0) write(logunit,*) subname,' ERROR: grid2d size not consistent ',ng,lnx,lny,trim(dname)
        call shr_sys_abort(subname//'ERROR: grid2d size not consistent ')
     endif
@@ -528,10 +548,16 @@ contains
 
     if (lwdata) then
        call mct_gsmap_OrderedPoints(gsmap, iam, Dof)
-       call pio_initdecomp(cpl_io_subsystem, pio_double, (/lnx,lny/), dof, iodesc)
        ns = size(dof)
+       if(luse_float) then
+          allocate(tmpr4data(ns))
+          call pio_initdecomp(cpl_io_subsystem, pio_real, (/lnx,lny/), dof, iodesc)
+       else
+          allocate(tmpdata(ns))
+          call pio_initdecomp(cpl_io_subsystem, pio_double, (/lnx,lny/), dof, iodesc)
+       endif
        deallocate(dof)
-       allocate(tmpdata(ns))
+
        do k = 1,nf
           call mct_aVect_getRList(mstring,k,AV)
           itemc = mct_string_toChar(mstring)
@@ -541,12 +567,34 @@ contains
              name1 = trim(lpre)//'_'//trim(itemc)
              rcode = pio_inq_varid(cpl_io_file(lfile_ind),trim(name1),varid)
              call pio_setframe(cpl_io_file(lfile_ind),varid,frame)
-             tmpdata = av%rattr(k,:)
-             call pio_write_darray(cpl_io_file(lfile_ind), varid, iodesc, tmpdata, rcode, fillval=lfillvalue)
+             if(luse_float) then
+                if(present(mask)) then
+                   where(mask .ne. 0)
+                      tmpr4data = real(av%rattr(k,:), kind=r4)
+                   elsewhere
+                      tmpr4data = real(lfillvalue, kind=r4)
+                   end where
+                else
+                   tmpr4data = real(av%rattr(k,:), kind=r4)
+                endif
+                call pio_write_darray(cpl_io_file(lfile_ind), varid, iodesc, tmpr4data, rcode, fillval=real(lfillvalue, kind=r4))
+             else
+                if(present(mask)) then
+                   where(mask .ne. 0)
+                      tmpdata = av%rattr(k,:)
+                   elsewhere
+                      tmpdata = lfillvalue
+                   end where
+                else
+                   tmpdata = av%rattr(k,:)
+                endif
+                call pio_write_darray(cpl_io_file(lfile_ind), varid, iodesc, tmpdata, rcode, fillval=lfillvalue)
+             endif
              !-------tcraig
           endif
        enddo
-       deallocate(tmpdata)
+       if(allocated(tmpdata)) deallocate(tmpdata)
+       if(allocated(tmpr4data)) deallocate(tmpr4data)
        call pio_freedecomp(cpl_io_file(lfile_ind), iodesc)
 
     end if
@@ -633,7 +681,7 @@ contains
 
     lwhead = .true.
     lwdata = .true.
-    lcolumn = .false. 
+    lcolumn = .false.
     if (present(whead)) lwhead = whead
     if (present(wdata)) lwdata = wdata
     if (present(scolumn)) lcolumn = scolumn
@@ -674,7 +722,7 @@ contains
     if (present(ny)) then
        if (ny /= 0) lny = ny
     endif
-    if (lnx*lny /= ng .and. .not. lcolumn) then 
+    if (lnx*lny /= ng .and. .not. lcolumn) then
        if(iam==0) write(logunit,*) subname,' ERROR: grid2d size not consistent ',ng,lnx,lny,trim(dname)
        call shr_sys_abort(subname//' ERROR: grid2d size not consistent ')
     endif
@@ -756,7 +804,7 @@ contains
           call mct_aVect_getRList(mstring,k,AVS(1))
           itemc = mct_string_toChar(mstring)
           call mct_string_clean(mstring)
-          !-------tcraig, this is a temporary mod to NOT write hgt
+          !------- this is a temporary mod to NOT write hgt
           if (trim(itemc) /= "hgt") then
              name1 = trim(lpre)//'_'//trim(itemc)
              rcode = pio_inq_varid(cpl_io_file(lfile_ind),trim(name1),varid)
@@ -767,13 +815,10 @@ contains
                 n = n + ns
              enddo
              call pio_write_darray(cpl_io_file(lfile_ind), varid, iodesc, data, rcode, fillval=lfillvalue)
-             call pio_setdebuglevel(0)
-             !-------tcraig
           endif
        enddo
-
-       deallocate(data)
        call pio_freedecomp(cpl_io_file(lfile_ind), iodesc)
+       deallocate(data)
 
     end if
   end subroutine seq_io_write_avs
@@ -792,7 +837,7 @@ contains
   ! !INTERFACE: ------------------------------------------------------------------
 
   subroutine seq_io_write_avscomp(filename, comp, flow, dname, &
-       whead, wdata, nx, ny, nt, fillval, pre, tavg, use_float, file_ind, scolumn)
+       whead, wdata, nx, ny, nt, fillval, pre, tavg, use_float, file_ind, scolumn, mask)
 
     ! !INPUT/OUTPUT PARAMETERS:
     implicit none
@@ -810,8 +855,8 @@ contains
     logical          ,optional,intent(in) :: tavg      ! is this a tavg
     logical          ,optional,intent(in) :: use_float ! write output as float rather than double
     integer          ,optional,intent(in) :: file_ind
-    logical          ,optional,intent(in) :: scolumn    ! single column model flag 
-
+    logical          ,optional,intent(in) :: scolumn    ! single column model flag
+    real(r8)         ,optional,intent(in) :: mask(:)
     !EOP
 
     type(mct_gsMap), pointer :: gsmap     ! global seg map on coupler processes
@@ -862,7 +907,7 @@ contains
 
     lwhead = .true.
     lwdata = .true.
-    lcolumn = .false. 
+    lcolumn = .false.
     if (present(whead)) lwhead = whead
     if (present(wdata)) lwdata = wdata
     if (present(scolumn)) lcolumn = scolumn
@@ -1001,18 +1046,28 @@ contains
              do k1 = 1,ni
                 if (trim(flow) == 'x2c') avcomp => component_get_x2c_cx(comp(k1))
                 if (trim(flow) == 'c2x') avcomp => component_get_c2x_cx(comp(k1))
-                do k2 = 1,ns
-                   n = n + 1
-                   data(n) = avcomp%rAttr(k,k2)
-                enddo
+                if (present(mask)) then
+                   do k2=1,ns
+                      n = n + 1
+                      if(mask(k2) /= 0) then
+                         data(n) = avcomp%rattr(k,k2)
+                      else
+                         data(n) = lfillvalue
+                      end if
+                   end do
+                else
+                  do k2 = 1,ns
+                      n = n + 1
+                      data(n) = avcomp%rAttr(k,k2)
+                   enddo
+                endif
              enddo
              call pio_write_darray(cpl_io_file(lfile_ind), varid, iodesc, data, rcode, fillval=lfillvalue)
-             !-------tcraig
           endif
        enddo
 
-       deallocate(data)
        call pio_freedecomp(cpl_io_file(lfile_ind), iodesc)
+       deallocate(data)
 
     end if
   end subroutine seq_io_write_avscomp
@@ -1438,12 +1493,12 @@ contains
     integer(in) :: dimid2(2)
     type(var_desc_t) :: varid
     logical :: lwhead, lwdata
-    integer :: start(4),count(4)
+    integer :: start(2),count(2)
     character(len=shr_cal_calMaxLen) :: lcalendar
     real(r8) :: time_val_1d(1)
     integer :: lfile_ind
     character(*),parameter :: subName = '(seq_io_write_time) '
-
+    integer :: ndims
     !-------------------------------------------------------------------------------
     !
     !-------------------------------------------------------------------------------
@@ -1484,29 +1539,216 @@ contains
     endif
 
     if (lwdata) then
-       start = 1
-       count = 1
-       if (present(nt)) then
-          start(1) = nt
-       endif
-       time_val_1d(1) = time_val
        rcode = pio_inq_varid(cpl_io_file(lfile_ind),'time',varid)
-       rcode = pio_put_var(cpl_io_file(lfile_ind),varid,start,count,time_val_1d)
+       if (present(nt)) then
+          rcode = pio_put_var(cpl_io_file(lfile_ind),varid,(/nt/),time_val)
+       else
+          rcode = pio_put_var(cpl_io_file(lfile_ind),varid,time_val)
+       endif
        if (present(tbnds)) then
           rcode = pio_inq_varid(cpl_io_file(lfile_ind),'time_bnds',varid)
           start = 1
-          count = 1
+          count = 0
+          ndims = 1
           if (present(nt)) then
              start(2) = nt
+             ndims = 2
           endif
           count(1) = 2
-          rcode = pio_put_var(cpl_io_file(lfile_ind),varid,start,count,tbnds)
+          count(2) = 1
+          rcode = pio_put_var(cpl_io_file(lfile_ind),varid,start(1:ndims),count(1:ndims),tbnds)
        endif
 
        !      write(logunit,*) subname,' wrote time ',lwhead,lwdata
     endif
 
   end subroutine seq_io_write_time
+
+  subroutine seq_io_write_moab_tags(filename, mbxid, dname, tag_list, whead,wdata, matrix, nx, file_ind )
+
+    use shr_kind_mod,     only: CX => shr_kind_CX, CXX => shr_kind_CXX
+
+    use iMOAB,            only: iMOAB_GetGlobalInfo, iMOAB_GetMeshInfo, iMOAB_GetDoubleTagStorage, &
+        iMOAB_GetIntTagStorage
+
+    use m_MergeSorts,     only: IndexSet, IndexSort
+
+     ! !INPUT/OUTPUT PARAMETERS:
+    implicit none
+    character(len=*),intent(in) :: filename      ! file
+    integer(in), intent(in)     :: mbxid         ! imoab app id, on coupler 
+    character(len=*),intent(in) :: dname         ! name of data (prefix) 
+    character(len=*),intent(in) :: tag_list      ! fields, separated by colon
+    logical,optional,intent(in) :: whead         ! write header
+    logical,optional,intent(in) :: wdata         ! write data
+    real(r8), dimension(:,:), pointer, optional :: matrix  ! this may or may not be passed
+    integer, optional,intent(in):: nx
+    integer,optional,intent(in) :: file_ind
+
+    logical :: lwhead, lwdata
+    !integer :: start(2),count(2)
+    character(*),parameter :: subName = '(seq_io_write_moab_tags) '
+    integer :: ndims, lfile_ind, iam, rcode
+    integer(in)              :: ns, ng, lnx, lny, ix
+    integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
+
+    type(var_desc_t) :: varid
+    type(io_desc_t)  :: iodesc
+    character(CL)    :: name1       ! var name
+    character(CL)    :: cunit       ! var units
+    character(CL)    :: lname       ! long name
+    character(CL)    :: sname       ! standard name
+
+    character(CL)  :: lpre
+
+    type(mct_list) :: temp_list
+    integer :: size_list, index_list
+    type(mct_string)    :: mctOStr  !
+    character(CXX) ::tagname, field
+
+    integer(in)        :: dimid2(2)
+    integer(in)              :: dummy, ent_type, ierr
+    real(r8)                 :: lfillvalue ! or just use fillvalue ?
+    integer, allocatable         :: indx(:) !  this will be ordered
+    integer, allocatable         :: Dof(:)  ! will be filled with global ids from cells
+    integer, allocatable         :: Dof_reorder(:)  !
+    real(r8), allocatable        :: data1(:), data_reorder(:)
+
+    !-------------------------------------------------------------------------------
+    !
+    !-------------------------------------------------------------------------------
+
+    lwhead = .true.
+    lwdata = .true.
+    lfillvalue = fillvalue 
+    if (present(whead)) lwhead = whead
+    if (present(wdata)) lwdata = wdata
+
+    if (.not.lwhead .and. .not.lwdata) then
+       ! should we write a warning?
+       return
+    endif
+    ent_type = 1 ! cells type
+
+    lfile_ind = 0
+    if (present(file_ind)) lfile_ind=file_ind
+
+    call seq_comm_setptrs(CPLID,iam=iam)
+
+    call mct_list_init(temp_list ,trim(tag_list))
+    size_list=mct_list_nitem (temp_list)  ! role of nf, number fields
+    ent_type = 1 ! cell for atm, atm_pg_active
+
+    if (size_list < 1) then
+       write(logunit,*) subname,' ERROR: size_list = ',size_list,trim(dname)
+       call shr_sys_abort(subname//'size_list error')
+    endif
+
+    lpre = trim(dname)
+    ! find out the number of global cells, needed for defining the variables length
+    ierr = iMOAB_GetGlobalInfo( mbxid, dummy, ng)
+    lnx = ng
+    ! it is needed to overwrite that for land, ng is too small
+    !  ( for ne4pg2 it is 201 instead of 384)
+    if (present(nx)) lnx = nx 
+    lny = 1 ! do we need 2 var, or just 1 
+    ierr = iMOAB_GetMeshInfo ( mbxid, nvert, nvise, nbl, nsurf, nvisBC )
+    ns = nvise(1) ! local cells 
+
+    if (lwhead) then
+       rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_nx',lnx,dimid2(1))
+       rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_ny',lny,dimid2(2))
+       do index_list = 1, size_list
+          call mct_list_get(mctOStr,index_list,temp_list)
+          field = mct_string_toChar(mctOStr)
+          !-------tcraig, this is a temporary mod to NOT write hgt
+          if (trim(field) /= "hgt") then
+             name1 = trim(lpre)//'_'//trim(field)
+             call seq_flds_lookup(field,longname=lname,stdname=sname,units=cunit)
+            !  if (luse_float) then
+            !     rcode = pio_def_var(cpl_io_file(lfile_ind),trim(name1),PIO_REAL,dimid1,varid)
+            !     rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"_FillValue",real(lfillvalue,r4))
+            !  else
+             rcode = pio_def_var(cpl_io_file(lfile_ind),trim(name1),PIO_DOUBLE,dimid2,varid)
+             rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"_FillValue",lfillvalue)
+             !end if
+             rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"units",trim(cunit))
+             rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"long_name",trim(lname))
+             rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"standard_name",trim(sname))
+             rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"internal_dname",trim(dname))
+             !-------tcraig
+          endif
+       enddo
+       if (lwdata) call seq_io_enddef(filename, file_ind=lfile_ind)
+    end if
+
+    if (lwdata) then
+       allocate(data1(ns))
+       allocate(data_reorder(ns))
+       allocate(dof(ns))
+       allocate(dof_reorder(ns))
+       allocate(indx(ns))
+
+       ! note: size of dof is ns
+       if (ns > 0) then
+          tagname = 'GLOBAL_ID'//C_NULL_CHAR
+          ierr = iMOAB_GetIntTagStorage ( mbxid, tagname, ns , ent_type, dof)
+          if (ierr .ne. 0) then
+            write(logunit,*) subname,' ERROR: cannot get dofs '
+            call shr_sys_abort(subname//'cannot get dofs ')
+          endif
+
+          call IndexSet(ns, indx)
+          call IndexSort(ns, indx, dof, descend=.false.)
+          !      after sort, dof( indx(i)) < dof( indx(i+1) )
+          do ix=1,ns
+             dof_reorder(ix) = dof(indx(ix)) ! 
+          enddo
+          ! so we know that dof_reorder(ix) < dof_reorder(ix+1)
+       endif
+       call pio_initdecomp(cpl_io_subsystem, pio_double, (/lnx,lny/), dof_reorder, iodesc)
+
+       deallocate(dof)
+       deallocate(dof_reorder) 
+       do index_list = 1, size_list
+          call mct_list_get(mctOStr,index_list,temp_list)
+          field = mct_string_toChar(mctOStr)
+          !-------tcraig, this is a temporary mod to NOT write hgt
+          if (trim(field) /= "hgt") then
+             name1 = trim(lpre)//'_'//trim(field)
+             rcode = pio_inq_varid(cpl_io_file(lfile_ind),trim(name1),varid)
+             !call pio_setframe(cpl_io_file(lfile_ind),varid,frame)
+             if (present(matrix)) then
+               do ix = 1, ns
+                 data1(ix) = matrix(ix, index_list) ! 
+               enddo
+             else
+               tagname = trim(field)//C_NULL_CHAR
+               if (ns > 0 ) then
+                  ierr = iMOAB_GetDoubleTagStorage (mbxid, tagname, ns , ent_type, data1)
+                  if (ierr .ne. 0) then
+                     write(logunit,*) subname,' ERROR: cannot get tag data ', trim(tagname)
+                     call shr_sys_abort(subname//'cannot get tag data ')
+                  endif
+               endif
+             endif
+             do ix=1,ns
+                data_reorder(ix) = data1(indx(ix)) ! 
+             enddo
+             
+             call pio_write_darray(cpl_io_file(lfile_ind), varid, iodesc, data_reorder, rcode, fillval=lfillvalue)
+          endif
+       enddo
+
+       call pio_freedecomp(cpl_io_file(lfile_ind), iodesc)
+       deallocate(data1)
+       deallocate(data_reorder)
+       deallocate(indx)
+
+    end if
+
+
+  end subroutine seq_io_write_moab_tags
 
   !===============================================================================
   !BOP ===========================================================================
@@ -1701,7 +1943,7 @@ contains
     call shr_mpi_bcast(exists,mpicom,'seq_io_read_avs exists')
     if (exists) then
        rcode = pio_openfile(cpl_io_subsystem, pioid, cpl_pio_iotype, trim(filename),pio_nowrite)
-       if(iam==0) write(logunit,*) subname,' open file ',trim(filename)
+       if(iam==0) write(logunit,*) subname,' open file ',trim(filename),' for ',trim(dname)
        call pio_seterrorhandling(pioid,PIO_BCAST_ERROR)
        rcode = pio_get_att(pioid,pio_global,"file_version",lversion)
        call pio_seterrorhandling(pioid,PIO_INTERNAL_ERROR)
@@ -1803,7 +2045,7 @@ contains
   !===============================================================================
   !BOP ===========================================================================
   !
-  ! !IROUTINE: seq_io_read_avs - read AV from netcdf file
+  ! !IROUTINE: seq_io_read_avscomp - read AV from netcdf file
   !
   ! !DESCRIPTION:
   !    Read AV from netcdf file
@@ -1846,7 +2088,7 @@ contains
     character(CL)            :: lversion
     character(CL)            :: name1
     character(CL)            :: lpre
-    character(*),parameter   :: subName = '(seq_io_read_avs) '
+    character(*),parameter   :: subName = '(seq_io_read_avscomp) '
     !-------------------------------------------------------------------------------
     !
     !-------------------------------------------------------------------------------
@@ -1871,10 +2113,10 @@ contains
     ng = mct_gsmap_gsize(gsmap)
 
     if (iam==0) inquire(file=trim(filename),exist=exists)
-    call shr_mpi_bcast(exists,mpicom,'seq_io_read_avs exists')
+    call shr_mpi_bcast(exists,mpicom,'seq_io_read_avscomp exists')
     if (exists) then
        rcode = pio_openfile(cpl_io_subsystem, pioid, cpl_pio_iotype, trim(filename),pio_nowrite)
-       if(iam==0) write(logunit,*) subname,' open file ',trim(filename)
+       if(iam==0) write(logunit,*) subname,' open file ',trim(filename),' for ',trim(dname)
        call pio_seterrorhandling(pioid,PIO_BCAST_ERROR)
        rcode = pio_get_att(pioid,pio_global,"file_version",lversion)
        call pio_seterrorhandling(pioid,PIO_INTERNAL_ERROR)
@@ -2247,6 +2489,235 @@ contains
     call pio_closefile(pioid)
 
   end subroutine seq_io_read_char
+
+  subroutine seq_io_read_moab_tags(filename, mbxid, dname, tag_list, matrix, nx)
+
+    use shr_kind_mod,     only: CX => shr_kind_CX, CXX => shr_kind_CXX
+    use iMOAB,            only: iMOAB_GetGlobalInfo, iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorage, &
+        iMOAB_GetIntTagStorage
+    use m_MergeSorts,     only: IndexSet, IndexSort
+     ! !INPUT/OUTPUT PARAMETERS:
+    implicit none
+    character(len=*),intent(in) :: filename      ! file
+    integer(in), intent(in)     :: mbxid         ! imoab app id, on coupler 
+    character(len=*),intent(in) :: dname         ! name of data (prefix) 
+    character(len=*),intent(in) :: tag_list      ! fields, separated by colon
+    real(r8), dimension(:,:), pointer, optional :: matrix  ! this may or may not be passed
+    integer, optional,intent(in):: nx
+
+    integer(in)              :: ns, ng, ix
+    integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
+
+    integer(in) :: rcode
+    integer(in) :: iam,mpicom
+    integer(in) :: k,n,n1,n2,ndims
+    type(file_desc_t) :: pioid
+    integer(in) :: dimid(4)
+    type(var_desc_t) :: varid
+    integer(in) :: lnx,lny,lni
+    type(mct_string) :: mstring     ! mct char type
+    character(CL)    :: itemc       ! string converted to char
+    logical :: exists
+    type(io_desc_t) :: iodesc
+
+    integer, allocatable         :: indx(:) !  this will be ordered
+    integer, allocatable         :: Dof(:)  ! will be filled with global ids from cells
+    integer, allocatable         :: Dof_reorder(:)  !
+    real(r8), allocatable        :: data1(:), data_reorder(:)
+
+    character(CL)  :: lversion
+    character(CL)  :: name1
+    character(CL)  :: lpre
+
+    type(mct_list) :: temp_list
+    integer :: size_list, index_list
+    type(mct_string)    :: mctOStr  !
+    character(CXX) ::tagname, field
+
+    integer(in)              :: dummy, ent_type, ierr
+    character(*),parameter :: subName = '(seq_io_read_moab_tags) '
+
+    
+    lpre = trim(dname)
+
+    call seq_comm_setptrs(CPLID,iam=iam,mpicom=mpicom)
+
+    call mct_list_init(temp_list ,trim(tag_list))
+    size_list=mct_list_nitem (temp_list)  ! role of nf, number fields
+    ent_type = 1 ! cell for atm, atm_pg_active
+
+    if (size_list < 1) then
+       write(logunit,*) subname,' ERROR: size_list = ',size_list,trim(dname)
+       call shr_sys_abort(subname//'size_list error')
+    endif
+
+
+    !call mct_gsmap_OrderedPoints(gsmap, iam, Dof)
+
+    if (iam==0) inquire(file=trim(filename),exist=exists)
+    call shr_mpi_bcast(exists,mpicom,'seq_io_read_avs exists')
+    if (exists) then
+       rcode = pio_openfile(cpl_io_subsystem, pioid, cpl_pio_iotype, trim(filename),pio_nowrite)
+       if(iam==0) write(logunit,*) subname,' open file ',trim(filename),' for ',trim(dname)
+       call pio_seterrorhandling(pioid,PIO_BCAST_ERROR)
+       rcode = pio_get_att(pioid,pio_global,"file_version",lversion)
+       call pio_seterrorhandling(pioid,PIO_INTERNAL_ERROR)
+    else
+       if(iam==0) write(logunit,*) subname,' ERROR: file invalid ',trim(filename),' ',trim(dname)
+       call shr_sys_abort(subname//'ERROR: file invalid '//trim(filename)//' '//trim(dname))
+    endif
+
+        ! find out the number of global cells, needed for defining the variables length
+    ierr = iMOAB_GetGlobalInfo( mbxid, dummy, ng)
+    lnx = ng
+    ! it is needed to overwrite that for land, ng is too small
+    !  ( for ne4pg2 it is 201 instead of 384)
+    if (present(nx)) then
+#ifdef MOABCOMP
+       if (iam==0) write(logunit,*) subname, ' nx present: ', nx  
+#endif
+       lnx = nx 
+    endif
+    lny = 1 ! do we need 2 var, or just 1 
+    ierr = iMOAB_GetMeshInfo ( mbxid, nvert, nvise, nbl, nsurf, nvisBC )
+    ns = nvise(1) ! local cells 
+    allocate(data1(ns))
+    allocate(data_reorder(ns))
+    allocate(dof(ns))
+    allocate(dof_reorder(ns))
+#ifdef MOABCOMP
+    if (iam==0) write(logunit,*) subname, ' ns, lnx ', ns, lnx, ' dname ', trim(dname)  
+#endif
+
+   ! note: size of dof is ns
+    tagname = 'GLOBAL_ID'//C_NULL_CHAR
+    if (ns > 0 ) then 
+       ierr = iMOAB_GetIntTagStorage ( mbxid, tagname, ns , ent_type, dof)
+       if (ierr .ne. 0) then
+          write(logunit,*) subname,' ERROR: cannot get dofs '
+          call shr_sys_abort(subname//'cannot get dofs ')
+       endif
+    endif
+#ifdef MOABCOMP
+   if (iam==0) write(logunit,*) subname, ' dofs on iam=0: ', dof  
+#endif
+   allocate(indx(ns))
+   call IndexSet(ns, indx)
+   call IndexSort(ns, indx, dof, descend=.false.)
+   !      after sort, dof( indx(i)) < dof( indx(i+1) )
+   do ix=1,ns
+      dof_reorder(ix) = dof(indx(ix)) ! 
+   enddo
+#ifdef MOABCOMP
+   if (iam==0) write(logunit,*) subname, ' dof_reorder on iam=0: ', dof_reorder
+#endif
+   deallocate(dof)
+
+   do index_list = 1, size_list
+       call mct_list_get(mctOStr,index_list,temp_list)
+       field = mct_string_toChar(mctOStr)
+       name1 = trim(lpre)//'_'//trim(field)
+      
+       call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
+       rcode = pio_inq_varid(pioid,trim(name1),varid)
+       if (rcode == pio_noerr) then
+          if (index_list==1) then
+             rcode = pio_inq_varndims(pioid, varid, ndims)
+             rcode = pio_inq_vardimid(pioid, varid, dimid(1:ndims))
+             rcode = pio_inq_dimlen(pioid, dimid(1), lnx)
+             if (ndims>=2) then
+                rcode = pio_inq_dimlen(pioid, dimid(2), lny)
+             else
+                lny = 1
+             end if
+!             if (lnx*lny /= ng) then
+!                write(logunit,*) subname,' ERROR: dimensions do not match',&
+!                     lnx,lny, ng
+!                call shr_sys_abort(subname//'ERROR: dimensions do not match')
+!             end if
+             
+             call pio_initdecomp(cpl_io_subsystem, pio_double, (/lnx,lny/), dof_reorder, iodesc)
+
+             deallocate(dof_reorder)
+          end if
+
+          call pio_read_darray(pioid,varid,iodesc, data1, rcode)
+          do ix=1,ns
+             data_reorder(indx(ix)) = data1(ix) ! or is it data_reorder(ix) = data1(indx(ix)) ? 
+          enddo
+#ifdef MOABCOMP
+          if (iam==0 .and. index_list==1) then
+             write(logunit,*) subname, 'data1   ',  data1
+             write(logunit,*) subname, 'data_reorder   ',  data_reorder
+          endif
+#endif
+          if (present(matrix)) then
+            !matrix(:, index_list)  = data_reorder(:) ! 
+            do ix = 1,ns
+               matrix(ix, index_list)  = data_reorder(ix) !
+            enddo
+          else
+            tagname = trim(field)//C_NULL_CHAR
+            if (ns > 0) then
+               ierr = iMOAB_SetDoubleTagStorage (mbxid, tagname, ns , ent_type, data_reorder)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' ERROR: cannot set tag data ', trim(tagname)
+                  call shr_sys_abort(subname//'cannot set tag data ')
+               endif
+            endif
+          endif
+         !  n = 0
+         !  do n1 = 1,ni
+         !     do n2 = 1,ns
+         !        n = n + 1
+         !        avs(:n1)%rAttr(k,n2) = data(n)
+         !     enddo
+         !  enddo
+       else
+          write(logunit,*)subname, ' warning: field ',trim(field), ' name1:', trim(name1),  ' is not on restart file'
+          write(logunit,*)'for backwards compatibility will set it to 0'
+         !  do n1 = 1,ni
+         !     avs(n1)%rattr(k,:) = 0.0_r8
+         !  enddo
+         data_reorder = 0.
+         if (present(matrix)) then
+            ! matrix(:, index_list)  = data_reorder(:) ! 
+            do ix = 1,ns
+               matrix(ix, index_list)  = data_reorder(ix) !
+            enddo
+         else
+            tagname = trim(field)//C_NULL_CHAR
+            if ( ns > 0 ) then
+               ierr = iMOAB_SetDoubleTagStorage (mbxid, tagname, ns , ent_type, data_reorder)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' ERROR: cannot set tag data ', trim(tagname)
+                  call shr_sys_abort(subname//'cannot set tag data ')
+               endif
+            endif
+         endif
+
+       end if
+       call pio_seterrorhandling(pioid,PIO_INTERNAL_ERROR)
+    enddo
+
+    deallocate(data1)
+    deallocate(data_reorder)
+
+   !  !--- zero out fill value, this is somewhat arbitrary
+   !  do n1 = 1,ni
+   !     do n2 = 1,ns
+   !        do k = 1,nf
+   !           if (AVS(n1)%rAttr(k,n2) == fillvalue) then
+   !              AVS(n1)%rAttr(k,n2) = 0.0_r8
+   !           endif
+   !        enddo
+   !     enddo
+   !  enddo
+
+    call pio_freedecomp(pioid, iodesc)
+    call pio_closefile(pioid)
+
+  end subroutine seq_io_read_moab_tags
 
   !===============================================================================
   !===============================================================================

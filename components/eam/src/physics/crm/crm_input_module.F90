@@ -33,10 +33,10 @@ module crm_input_module
       real(crm_rknd), allocatable :: tau00  (:)          ! large-scale surface stress (N/m2)
       real(crm_rknd), allocatable :: wndls  (:)          ! large-scale surface wind (m/s)
       real(crm_rknd), allocatable :: bflxls (:)          ! large-scale surface buoyancy flux (K m/s)
-      real(crm_rknd), allocatable :: fluxu00(:)          ! surface momenent fluxes [N/m2]
-      real(crm_rknd), allocatable :: fluxv00(:)          ! surface momenent fluxes [N/m2]
-      real(crm_rknd), allocatable :: fluxt00(:)          ! surface sensible heat fluxes [K Kg/ (m2 s)]
-      real(crm_rknd), allocatable :: fluxq00(:)          ! surface latent heat fluxes [ kg/(m2 s)]
+      real(crm_rknd), allocatable :: fluxu00(:)          ! surface momenent fluxes      [N/m2]
+      real(crm_rknd), allocatable :: fluxv00(:)          ! surface momenent fluxes      [N/m2]
+      real(crm_rknd), allocatable :: fluxt00(:)          ! surface sensible heat fluxes [W/m2]
+      real(crm_rknd), allocatable :: fluxq00(:)          ! surface latent heat fluxes   [W/m2]
 
       real(crm_rknd), allocatable :: ul_esmt(:,:)        ! input u for ESMT
       real(crm_rknd), allocatable :: vl_esmt(:,:)        ! input v for ESMT
@@ -46,9 +46,9 @@ module crm_input_module
       real(crm_rknd), allocatable :: u_vt(:,:)           ! CRM input of variance used for forcing tendency
 
       ! inputs for P3
-      real(crm_rknd), allocatable :: nccn(:,:)           ! CCN number concentration           [kg-1]
-      real(crm_rknd), allocatable :: nc_nuceat_tend(:,:) ! activated CCN number tendency      [kg-1 s-1]
-      real(crm_rknd), allocatable :: ni_activated(:,:)   ! activated ice nuclei concentration [kg-1]
+      real(crm_rknd), allocatable :: nccn_prescribed(:,:)! CCN number concentration           [#/kg]
+      real(crm_rknd), allocatable :: nc_nuceat_tend(:,:) ! activated CCN number tendency      [#/kg/s]
+      real(crm_rknd), allocatable :: ni_activated(:,:)   ! activated ice nuclei concentration [#/kg]
 
    end type crm_input_type
    !------------------------------------------------------------------------------------------------
@@ -116,10 +116,10 @@ contains
       call prefetch(input%u_vt)
 
       if (trim(MMF_microphysics_scheme).eq.'p3') then
-         if (.not. allocated(input%nccn          ))  allocate(input%nccn(ncrms,nlev))
-         if (.not. allocated(input%nc_nuceat_tend))  allocate(input%nc_nuceat_tend(ncrms,nlev))
-         if (.not. allocated(input%ni_activated  ))  allocate(input%ni_activated(ncrms,nlev))
-         call prefetch(input%nccn)
+         if (.not. allocated(input%nccn_prescribed))  allocate(input%nccn_prescribed(ncrms,nlev))
+         if (.not. allocated(input%nc_nuceat_tend ))  allocate(input%nc_nuceat_tend(ncrms,nlev))
+         if (.not. allocated(input%ni_activated   ))  allocate(input%ni_activated(ncrms,nlev))
+         call prefetch(input%nccn_prescribed)
          call prefetch(input%nc_nuceat_tend)
          call prefetch(input%ni_activated)
       end if
@@ -156,9 +156,9 @@ contains
       input%u_vt = 0
 
       if (trim(MMF_microphysics_scheme).eq.'p3') then
-         input%nccn           = 0
-         input%nc_nuceat_tend = 0
-         input%ni_activated   = 0
+         input%nccn_prescribed = 0
+         input%nc_nuceat_tend  = 0
+         input%ni_activated    = 0
       end if
 
    end subroutine crm_input_initialize
@@ -197,9 +197,9 @@ contains
       if (allocated(input%q_vt)) deallocate(input%q_vt)
       if (allocated(input%u_vt)) deallocate(input%u_vt)
 
-      if (allocated(input%nccn          ))  deallocate(input%nccn)
-      if (allocated(input%nc_nuceat_tend))  deallocate(input%nc_nuceat_tend)
-      if (allocated(input%ni_activated  ))  deallocate(input%ni_activated)
+      if (allocated(input%nccn_prescribed))  deallocate(input%nccn_prescribed)
+      if (allocated(input%nc_nuceat_tend ))  deallocate(input%nc_nuceat_tend)
+      if (allocated(input%ni_activated   ))  deallocate(input%ni_activated)
 
    end subroutine crm_input_finalize 
 

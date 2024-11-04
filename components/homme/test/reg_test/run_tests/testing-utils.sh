@@ -486,7 +486,10 @@ createAllRunScriptsGeneric() {
     if [ -n "${OMP_NUM_TESTS}" -a "${RUN_OPENMP}" = ON ]; then
       echo "export OMP_NUM_THREADS=${OMP_NUMBER_THREADS}" >> $thisRunScript
       if [ "${MPI_EXEC}" = "srun" ] ; then
-         echo "export SLURM_CPUS_PER_TASK=${OMP_NUMBER_THREADS}" >> $thisRunScript
+          # set enviroment variable (srun's -c argument)
+          # system dependent. done this way since we dont have logic to add -c argument
+          echo "export SLURM_CPUS_PER_TASK=${OMP_NUMBER_THREADS}" >> $thisRunScript
+          echo "export SRUN_CPUS_PER_TASK=${OMP_NUMBER_THREADS}" >> $thisRunScript
       fi
       echo "export OMP_STACKSIZE=128M" >> $thisRunScript
       echo "" >> $thisRunScript # new line
@@ -644,8 +647,9 @@ execLine() {
   NUM_MPI_PROCS=$3
   OPT="> $4.out 2> $4.err"
 
-
-  if [ -n "${MPI_EXEC}" ]; then
+  if [ -n "${MPI_RUN_SCRIPT}" ]; then
+    echo "${MPI_RUN_SCRIPT} ${NUM_MPI_PROCS} $EXEC $OPT" >> $RUN_SCRIPT
+  elif [ -n "${MPI_EXEC}" ]; then
     # mpirun.lsf is a special case
     if [ "${MPI_EXEC}" = "mpirun.lsf" ] ; then
       echo "mpirun.lsf -pam \"-n ${NUM_MPI_PROCS}\" ${MPI_OPTIONS} $EXEC $OPT" >> $RUN_SCRIPT
@@ -676,7 +680,9 @@ serExecLine() {
   RUN_SCRIPT=$1
   EXEC=$2
 
-  if [ -n "${MPI_EXEC}" ]; then
+  if [ -n "${MPI_RUN_SCRIPT}" ]; then
+    echo "${MPI_RUN_SCRIPT} 1 $EXEC" >> $RUN_SCRIPT
+  elif [ -n "${MPI_EXEC}" ]; then
     # mpirun.lsf is a special case
     if [ "${MPI_EXEC}" = "mpirun.lsf" ] ; then
       echo "$EXEC" >> $RUN_SCRIPT

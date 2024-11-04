@@ -60,7 +60,7 @@ end subroutine gw_convect_init
 
 subroutine gw_beres_src(ncol, ngwv, lat, u, v, netdt, &
      zm, src_level, tend_level, tau, ubm, ubi, xv, yv, c, &
-     hdepth, maxq0, CF)
+     hdepth, maxq0, CF, hdepth_scaling_factor)
 !-----------------------------------------------------------------------
 ! Driver for multiple gravity wave drag parameterization.
 !
@@ -91,6 +91,9 @@ subroutine gw_beres_src(ncol, ngwv, lat, u, v, netdt, &
 
   ! Heating conversion factor
   real(r8), intent(in) :: CF
+
+  ! Scaling factor for the heating depth
+  real(r8), intent(in) :: hdepth_scaling_factor
 
   ! Indices of top gravity wave source level and lowest level where wind
   ! tendencies are allowed.
@@ -213,6 +216,9 @@ subroutine gw_beres_src(ncol, ngwv, lat, u, v, netdt, &
   hdepth = [ ( (zm(i,maxi(i))-zm(i,mini(i)))/1000._r8, i = 1, ncol ) ]
   ! Confine depth to table range.
   hdepth = min(hdepth, real(maxh, r8))
+
+  ! apply tunable scaling factor for the heating depth
+  hdepth = hdepth * hdepth_scaling_factor
 
   ! Maximum heating rate.
   do k = minval(maxi), maxval(mini)

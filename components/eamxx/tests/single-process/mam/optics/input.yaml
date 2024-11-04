@@ -1,0 +1,47 @@
+%YAML 1.1
+---
+driver_options:
+  atmosphere_dag_verbosity_level: 5
+
+time_stepping:
+  time_step: ${ATM_TIME_STEP}
+  run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
+  number_of_steps: ${NUM_STEPS}
+
+atmosphere_processes:
+  atm_procs_list: [mam4_optics]
+  mam4_optics:
+    mam4_mode1_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/mam4_mode1_rrtmg_aeronetdust_c20240206.nc
+    mam4_mode2_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/mam4_mode2_rrtmg_c20240206.nc
+    mam4_mode3_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/mam4_mode3_rrtmg_aeronetdust_c20240206.nc
+    mam4_mode4_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/mam4_mode4_rrtmg_c20240206.nc
+    mam4_water_refindex_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/water_refindex_rrtmg_c20240206.nc
+    mam4_soa_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/ocphi_rrtmg_c20240206.nc
+    mam4_dust_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/dust_aeronet_rrtmg_c20240206.nc
+    mam4_nacl_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/ssam_rrtmg_c20240206.nc
+    mam4_so4_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/sulfate_rrtmg_c20240206.nc
+    mam4_pom_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/ocpho_rrtmg_c20240206.nc
+    mam4_bc_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/bcpho_rrtmg_c20240206.nc
+    mam4_mom_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/poly_rrtmg_c20240206.nc
+
+grids_manager:
+  Type: Mesh Free
+  geo_data_source: IC_FILE
+  grids_names: [Physics GLL]
+  Physics GLL:
+    type: point_grid
+    aliases: [Physics]
+    number_of_global_columns:   218
+    number_of_vertical_levels:  72
+
+initial_conditions:
+  # The name of the file containing the initial conditions for this test.
+  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_MAM4xx_72lev}
+  topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
+  pbl_height : 1.0
+  phis : 1.0
+
+# The parameters for I/O control
+Scorpio:
+  output_yaml_files: ["output.yaml"]
+...

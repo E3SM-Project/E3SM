@@ -314,12 +314,14 @@ else {
     add_default($nl, 'inundflag');
     add_default($nl, 'sediflag');
     add_default($nl, 'heatflag');
+    add_default($nl, 'do_budget');
     add_default($nl, 'data_bgc_fluxes_to_ocean_flag');
     add_default($nl, 'rstraflag');
     add_default($nl, 'rinittemp');
     add_default($nl, 'ngeom');						 
     add_default($nl, 'nlayers');						 
     add_default($nl, 'frivinp_rtm' , 'rof_grid'=>$ROF_GRID );
+    add_default($nl, 'frivinp_mesh' , 'rof_grid'=>$ROF_GRID );
     add_default($nl, 'ice_runoff'  , 'lnd_grid'=>$LND_GRID );
     add_default($nl, 'rtmhist_mfilt');
     add_default($nl, 'rtmhist_nhtfrq');

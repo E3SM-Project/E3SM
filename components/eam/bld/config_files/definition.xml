@@ -23,8 +23,8 @@ are specified as a comma separated list with no embedded white space.
 <entry id="ccsm_seq" valid_values="0,1" value="0">
 Switch specifies whether CAM is being built by the CCSM sequential scripts.  0 => no, 1 => yes.
 </entry>
-<entry id="comp_intf" valid_values="mct,esmf" value="mct">
-Component interfaces: mct or esmf.  Default: mct.
+<entry id="comp_intf" valid_values="mct,esmf,moab" value="mct">
+Component interfaces: mct, esmf, or moab.  Default: mct.
 </entry>
 <entry id="dyn" valid_values="eul,sld,fv,homme,se" value="">
 Dynamics package: eul, sld, fv, or se.
@@ -78,9 +78,10 @@ PBL package: uw (University of Washington), hb (Holtslag and Boville), hbr
 Radiative transfer calculation: 
 rrtmg (RRTMG; http://rtweb.aer.com/rrtm_frame.html), rrtmgp (RRTMGP; https://github.com/earth-system-radiation/rte-rrtmgp).
 </entry>
-<entry id="chem" valid_values="waccm_mozart,waccm_mozart_mam3,waccm_mozart_sulfur,waccm_ghg,trop_mozart,trop_mozart_mam3,trop_mozart_soa,trop_strat_soa,trop_strat_mam3,trop_strat_mam7,super_fast_llnl,super_fast_llnl_mam3,trop_ghg,trop_bam,trop_mam3,trop_mam4,trop_mam4_resus,trop_mam4_resus_soag,trop_mam4_resus_mom,trop_mam4_mom,trop_mam7,linoz_mam3,linoz_mam4_resus,linoz_mam4_resus_soag,linoz_mam4_resus_mom,linoz_mam4_resus_mom_soag,superfast_mam4_resus_mom_soag,spa,none"
+<entry id="chem" valid_values="waccm_mozart,waccm_mozart_mam3,waccm_mozart_sulfur,waccm_ghg,trop_mozart,trop_mozart_mam3,trop_mozart_soa,trop_strat_soa,trop_strat_mam3,trop_strat_mam4_resus_mom_soag,trop_strat_mam7,super_fast_llnl,super_fast_llnl_mam3,trop_ghg,trop_bam,trop_mam3,trop_mam4,trop_mam4_resus,trop_mam4_resus_soag,trop_mam4_resus_mom,trop_mam4_mom,trop_mam7,linoz_mam3,linoz_mam4_resus,linoz_mam4_resus_soag,linoz_mam4_resus_mom,linoz_mam4_resus_mom_soag,superfast_mam4_resus_mom_soag,chemuci_linozv3_mam5_vbs,spa,none"
+
  value="">
-Chemistry package: waccm_mozart, waccm_mozart_mam3, waccm_mozart_sulfur, waccm_ghg, trop_mozart, trop_mozart_mam3, trop_mozart_soa, trop_strat_soa, trop_strat_mam3, trop_strat_mam7, super_fast_llnl, super_fast_llnl_mam3, trop_ghg, trop_bam, trop_mam3, trop_mam4, trop_mam4_resus, trop_mam4_resus_soag, trop_mam4_resus_mom, trop_mam4_mom, trop_mam7, linoz_mam3, linoz_mam4_resus, linoz_mam4_resus_soag, linoz_mam4_resus_mom, linoz_mam4_resus_mom_soag, superfast_mam4_resus_mom_soag, or none.
+Chemistry package: waccm_mozart, waccm_mozart_mam3, waccm_mozart_sulfur, waccm_ghg, trop_mozart, trop_mozart_mam3, trop_mozart_soa, trop_strat_soa, trop_strat_mam3, trop_strat_mam7, super_fast_llnl, super_fast_llnl_mam3, trop_ghg, trop_bam, trop_mam3, trop_mam4, trop_mam4_resus, trop_mam4_resus_soag, trop_mam4_resus_mom, trop_mam4_mom, trop_mam7, linoz_mam3, linoz_mam4_resus, linoz_mam4_resus_soag, linoz_mam4_resus_mom, linoz_mam4_resus_mom_soag, superfast_mam4_resus_mom_soag, chemuci_linozv3_mam5_vbs, spa, or none.
 </entry>
 <entry id="vbs" valid_values="0,1" value="0">
 Option to turn on vbs soa processes in the modal aerosol model: 0 => no, 1 => yes
@@ -344,14 +345,14 @@ Switch to enable explicit scalar momentum transport for 2D CRM in E3SM-MMF: 0=of
 <entry id="use_ECPP" valid_values="0,1" value="0">
 Switch to enable or disable ECPP in CAM: 0=off, 1=on.
 </entry>
-<entry id="use_crm_cldfrac" valid_values="0,1" value="0">
-Switch to enable or disable fractional cloudiness in m2005 microphysics in CRM: 0=off, 1=on.
-</entry>
-<entry id="MMF_microphysics_scheme" valid_values="sam1mom,m2005" value="sam1mom">
+<entry id="MMF_microphysics_scheme" valid_values="sam1mom,p3" value="sam1mom">
 MMF CRM cloud microphysics scheme
 </entry>
-<entry id="crm" valid_values="sam,samomp,samxx" value="sam">
+<entry id="crm" valid_values="sam,samomp,samxx,pam" value="sam">
 MMF CRM model
+</entry>
+<entry id="pam_dycor" valid_values="awfl,spam" value="spam">
+MMF PAM dycor option
 </entry>
 <entry id="crm_adv" valid_values="MPDATA,UM5" value="MPDATA">
 MMF CRM advection scheme

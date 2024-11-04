@@ -57,7 +57,7 @@ rc=$?
 if [ $rc -ne 0 ]; then
     print_bldlog "e3sm"
     print_bldlog "csm_share"
-    print_bldlog "pio"
+    print_bldlog "spio"
     print_bldlog "mct"
     print_bldlog "gptl"
     exit $rc

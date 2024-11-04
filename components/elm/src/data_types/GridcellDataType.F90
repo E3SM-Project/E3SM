@@ -443,7 +443,7 @@ contains
     !-----------------------------------------------------------------------
     call restartvar(ncid=ncid, flag=flag, varname='TWS_MONTH_BEGIN', xtype=ncd_double,  &
          dim1name='gridcell', &
-         long_name='surface watertotal water storage at the beginning of a month', units='mm', &
+         long_name='total water storage at the beginning of a month', units='mm', &
           interpinic_flag='interp', readvar=readvar, data=this%tws_month_beg)
   
   end subroutine grc_ws_restart
@@ -603,12 +603,12 @@ contains
     end if
     
     this%tcs_month_beg(begg:endg) = spval
-    call hist_addfld1d (fname='TCS_MONTH_BEGIN',  units='mm',  &
+    call hist_addfld1d (fname='TCS_MONTH_BEGIN',  units='gC/m^2',  &
          avgflag='I', long_name='total carbon storage at the beginning of a month', &
          ptr_lnd=this%tcs_month_beg)
 
     this%tcs_month_end(begg:endg) = spval
-    call hist_addfld1d (fname='TCS_MONTH_END',  units='mm',  &
+    call hist_addfld1d (fname='TCS_MONTH_END',  units='gC/m^2',  &
          avgflag='I', long_name='total carbon storage at the end of a month', &
          ptr_lnd=this%tcs_month_end)
 
@@ -644,9 +644,13 @@ contains
     !-----------------------------------------------------------------------
     call restartvar(ncid=ncid, flag=flag, varname='TCS_MONTH_BEGIN', xtype=ncd_double,  &
          dim1name='gridcell', &
-         long_name='surface watertotal carbon storage at the beginning of a month', units='mm', &
+         long_name='total carbon storage at the beginning of a month', units='gC/m^2', &
           interpinic_flag='interp', readvar=readvar, data=this%tcs_month_beg)
 
+    call restartvar(ncid=ncid, flag=flag, varname='TCS_MONTH_END', xtype=ncd_double,  &
+         dim1name='gridcell', &
+         long_name='total carbon storage at the end of a month', units='gC/m^2', &
+          interpinic_flag='interp', readvar=readvar, data=this%tcs_month_end)
   end subroutine grc_cs_restart
 
   !------------------------------------------------------------------------

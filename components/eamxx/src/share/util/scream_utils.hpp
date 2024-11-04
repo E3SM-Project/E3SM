@@ -11,6 +11,7 @@
 #include <list>
 #include <algorithm>
 #include <map>
+#include <iostream>
 
 namespace scream {
 
@@ -23,6 +24,15 @@ enum MemoryUnits {
   MiB,
   GiB
 };
+
+template<typename VT>
+typename VT::HostMirror
+cmvdc (const VT& v)
+{
+  auto vh = Kokkos::create_mirror_view(v);
+  Kokkos::deep_copy(vh,v);
+  return vh;
+}
 
 // Gets current memory (RAM) usage by current process.
 long long get_mem_usage (const MemoryUnits u);
@@ -283,6 +293,79 @@ std::list<T> contiguous_superset (const std::list<std::list<T>>& groups)
     out.splice(out.end(),l);
   }
   return out;
+}
+
+/* Given a column of data for variable "label" from the reference run
+ * (probably master) and from your new exploratory run, loop over all
+ * heights and confirm whether or not the relative difference between
+ * runs is within tolerance "tol". If not, print debug info. Here, "a"
+ * is the value from the reference run and "b" is from the new run.
+ * This is used by the run_and_cmp tests.
+ */
+template <typename Scalar, typename Toltype>
+Int compare (const std::string& label, const Scalar* a,
+             const Scalar* b, const Int& n, const Toltype& tol) {
+
+  Int nerr1 = 0;
+  Int nerr2 = 0;
+  Scalar den = 0;
+  for (Int i = 0; i < n; ++i)
+    den = std::max(den, std::abs(a[i]));
+  Scalar worst = 0;
+  for (Int i = 0; i < n; ++i) {
+    if (std::isnan(a[i]) || std::isinf(a[i]) ||
+        std::isnan(b[i]) || std::isinf(b[i])) {
+      ++nerr1;
+      continue;
+    }
+
+    const auto num = std::abs(a[i] - b[i]);
+    if (num > tol*den) {
+      ++nerr2;
+      worst = std::max(worst, num);
+    }
+  }
+
+  if (nerr1) {
+    std::cout << label << " has " << nerr1 << " infs + nans.\n";
+
+  }
+
+  if (nerr2) {
+    std::cout << label << " > tol " << nerr2 << " times. Max rel diff= " << (worst/den)
+             << " normalized by ref impl val=" << den << ".\n";
+
+  }
+
+  return nerr1 + nerr2;
+}
+
+inline void
+check_mpi_call (int err, const std::string& context) {
+  EKAT_REQUIRE_MSG (err==MPI_SUCCESS,
+      "Error! MPI operation encountered an error.\n"
+      "  - err code: " + std::to_string(err) + "\n"
+      "  - context: " + context + "\n");
+}
+
+// Find the full filename list from patterns
+std::vector<std::string> filename_glob(const std::vector<std::string>& patterns);
+
+// Use globloc for each filename pattern
+std::vector<std::string> globloc(const std::string& pattern);
+
+constexpr int eamxx_swbands() {
+  // This function returns the total number of SW bands in RRTMGP,
+  return 14;
+}
+
+constexpr int eamxx_vis_swband_idx() {
+  // This function returns the index of the visible SW band in RRTMGP,
+  // which currently (as of 2024-04-23) is supposed to be 10.
+  // This index is used in the AODVis diagnostic, and should ideally
+  // be shared across interested processes for further diagnostics.
+  // This index (10) corresponds to the band that has wavelength 550 nm.
+  return 10;
 }
 
 } // namespace scream

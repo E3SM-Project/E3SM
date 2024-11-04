@@ -56,7 +56,8 @@ module li_subglacial_hydro
    ! Private module variables
    !
    !--------------------------------------------------------------------
-
+   ! Minimum gradMagPhiBaseEdge and gradMagPhiEdge allowed before all dependent variables are zeroed out
+   real(kind=RKIND), parameter :: SMALL_GRADPHI = 1.0e-6_RKIND
 
 !***********************************************************************
    contains
@@ -105,9 +106,11 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: waterPressure
       real (kind=RKIND), dimension(:), pointer :: thickness
       real (kind=RKIND), dimension(:), pointer :: bedTopography
+      real (kind=RKIND), dimension(:), pointer :: iceThicknessHydro
       integer, dimension(:), pointer :: cellMask
       real (kind=RKIND), pointer :: tillMax
       real (kind=RKIND), pointer :: rhoi, rhoo
+      logical, pointer :: config_do_restart
       real (kind=RKIND), pointer :: config_sea_level
       integer, pointer :: config_num_halos
       integer :: err_tmp
@@ -138,6 +141,7 @@ module li_subglacial_hydro
          err = ior(err, 1)
       endif
 
+      call mpas_pool_get_config(liConfigs, 'config_do_restart', config_do_restart)
       call mpas_pool_get_config(liConfigs, 'config_SGH_till_max', tillMax)
       call mpas_pool_get_config(liConfigs, 'config_ice_density', rhoi)
       call mpas_pool_get_config(liConfigs, 'config_ocean_density', rhoo)
@@ -152,9 +156,16 @@ module li_subglacial_hydro
 
          call mpas_pool_get_array(hydroPool, 'deltatSGH', deltatSGH)
 
-         ! Until init is done properly, make this tiny.  It will be updated at the end of the first subcycle.
-         ! TODO: Set time step appropriately on first subcycle of init
-         deltatSGH = 1.0e-4_RKIND ! in seconds
+         if (.not. config_do_restart) then
+            ! On cold start, set initial timestep to a small value.
+            ! On a restart we will use the value from the last subcycle of the previous
+            ! master timestep to make restarts BFB.
+            ! Note the value here is only used for the first update of thetill model;
+            ! the sheet and channel models calculate the adaptive timestep, but that is not
+            ! available for the till model as the code is currently organized.
+            ! TODO: Move till update until after adaptive timestep has been set
+            deltatSGH = 1.0e-4_RKIND ! in seconds
+         endif
 
          ! Mask needs to be initialized for pressure calcs to be correct
          call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
@@ -170,10 +181,28 @@ module li_subglacial_hydro
          tillWaterThickness = max(0.0_RKIND, tillWaterThickness)
          tillWaterThickness = min(tillMax, tillWaterThickness)
 
-         call mpas_pool_get_array(hydroPool, 'waterPressure', waterPressure)
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+         call mpas_pool_get_array(hydroPool, 'iceThicknessHydro', iceThicknessHydro) 
+         call calc_iceThicknessHydro(block, err_tmp) !adjust ice thickness along boundaries
+         err = ior(err,err_tmp)
+         block => block % next
+      end do
+
+      !update halo for iceThicknessHydro
+      call mpas_timer_start("halo updates")
+      call mpas_dmpar_field_halo_exch(domain, 'iceThicknessHydro')
+      call mpas_timer_stop("halo updates")
+      
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+
+         call mpas_pool_get_array(hydroPool, 'waterPressure', waterPressure)
+         call mpas_pool_get_array(hydroPool, 'iceThicknessHydro', iceThicknessHydro) 
+         
          waterPressure = max(0.0_RKIND, waterPressure)
-         waterPressure = min(waterPressure, rhoi * gravity * thickness)
+         waterPressure = min(waterPressure, rhoi * gravity * iceThicknessHydro)
          ! set pressure correctly under floating ice and open ocean
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
          call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
@@ -186,9 +215,18 @@ module li_subglacial_hydro
          call calc_pressure_diag_vars(block, err_tmp)
          err = ior(err, err_tmp)
 
+         !smooth water pressure for calculation of waterPressureSlopeNormal
+         call calc_waterPressureSmooth(block, err_tmp) 
+         err = ior(err,err_tmp)
+
          block => block % next
       end do
 
+      !updates halos for waterPressureSmooth
+      call mpas_timer_start("halo updates")
+      call mpas_dmpar_field_halo_exch(domain, 'waterPressureSmooth')
+      call mpas_timer_stop("halo updates")
+     
       ! === error check
       if (err > 0) then
           call mpas_log_write("An error has occurred in li_SGH_init.", MPAS_LOG_ERR)
@@ -259,6 +297,7 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: waterThicknessTendency
       real (kind=RKIND), dimension(:), pointer :: divergenceChannel
       real (kind=RKIND), dimension(:), pointer :: channelAreaChangeCell
+      real (kind=RKIND), dimension(:), pointer :: channelMeltInputCell
       real (kind=RKIND), dimension(:), pointer :: dvEdge
       real (kind=RKIND), dimension(:), pointer :: areaCell
       real (kind=RKIND), dimension(:), pointer :: waterVelocity
@@ -280,8 +319,6 @@ module li_subglacial_hydro
       real (kind=RKIND) :: timeLeft ! subcycling time remaining until master dt is reached
       integer :: numSubCycles ! number of subcycles
       integer :: err_tmp
-
-
 
       err = 0
       err_tmp = 0
@@ -314,12 +351,20 @@ module li_subglacial_hydro
          call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA)
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
 
+         call calc_iceThicknessHydro(block, err_tmp)
+         err = ior(err, err_tmp)
+
          call li_calculate_flowParamA(meshPool, temperature, thickness, flowParamA, err_tmp)
          err = ior(err, err_tmp)
 
          block => block % next
       end do
 
+      !update halo for iceThicknessHydro
+      call mpas_timer_start("halo updates")
+      call mpas_dmpar_field_halo_exch(domain, 'iceThicknessHydro')
+      call mpas_timer_stop("halo updates")
+      
       ! initialize while loop
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)  ! can get from any block
       call mpas_pool_get_array(meshPool, 'deltat', masterDeltat)
@@ -464,6 +509,8 @@ module li_subglacial_hydro
          call mpas_timer_start("halo updates")
          call mpas_dmpar_field_halo_exch(domain, 'channelChangeRate')
          call mpas_dmpar_field_halo_exch(domain, 'channelDischarge')
+         call mpas_dmpar_field_halo_exch(domain, 'channelMelt')
+         call mpas_dmpar_field_halo_exch(domain, 'channelPressureFreeze')
          call mpas_timer_stop("halo updates")
       endif
 
@@ -534,23 +581,22 @@ module li_subglacial_hydro
          call mpas_timer_start("halo updates")
          call mpas_dmpar_field_halo_exch(domain, 'divergenceChannel')
          call mpas_dmpar_field_halo_exch(domain, 'channelAreaChangeCell')
+         call mpas_dmpar_field_halo_exch(domain, 'channelMeltInputCell')
          call mpas_dmpar_field_halo_exch(domain, 'channelArea')
          call mpas_timer_stop("halo updates")
       endif
 
-
       ! =============
-      ! Calculate pressure field
+      ! Calculate total grounding line discharges
       ! =============
       block => domain % blocklist
       do while (associated(block))
 
-         call calc_pressure(block, err_tmp)
+         call calc_gl_totals(block, err_tmp)
          err = ior(err, err_tmp)
 
          block => block % next
       end do
-
 
       ! =============
       ! Update water layer thickness
@@ -570,12 +616,16 @@ module li_subglacial_hydro
          call mpas_pool_get_array(hydroPool, 'divergence', divergence)
          call mpas_pool_get_array(hydroPool, 'divergenceChannel', divergenceChannel)
          call mpas_pool_get_array(hydroPool, 'channelAreaChangeCell', channelAreaChangeCell)
+         call mpas_pool_get_array(hydroPool, 'channelMeltInputCell', channelMeltInputCell)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
          waterThicknessOld = waterThickness
-         waterThickness = waterThicknessOld + deltatSGH * ( (basalMeltInput + externalWaterInput) / rho_water - divergence  &
+         waterThickness = waterThicknessOld + deltatSGH * ( &
+             (basalMeltInput + externalWaterInput) / rho_water &
+             + channelMeltInputCell &
+             - divergence  &
              - divergenceChannel - channelAreaChangeCell  &
-             - (Wtill - WtillOld) / deltatSGH)
+             - (Wtill - WtillOld) / deltatSGH )
          waterThickness = waterThickness * li_mask_is_grounded_ice_int(cellMask)  ! zero in non-grounded locations
          waterThickness = max(0.0_RKIND, waterThickness)
          divergence = divergence * li_mask_is_grounded_ice_int(cellMask)  ! zero in non-grounded locations for more convenient viz
@@ -583,6 +633,41 @@ module li_subglacial_hydro
 
          block => block % next
       end do
+
+      ! =============
+      ! Calculate pressure field
+      ! =============
+      ! Note: In Bueler and van Pelt, pressure is updated before waterThickness
+      ! (step vii on page 1625).  It does not matter which order they are calculated
+      ! because the update calculations are formulated on intermediate variables
+      ! such that neither depend directly on the other in the actual update.
+      ! However, calc_pressure also calculates the full hydropotential (including
+      ! the water thickness elevation head) which *is* a direct function of water thickness,
+      ! making the ordering of that calculation important.
+      ! Because the pressure variables calculated here are meant to be used on the
+      ! following timestep (forward Euler), the full hydropotential should be using
+      ! the updated waterThickness, not the old one.  To achieve that, calc_pressure
+      ! is called here, after waterThickness has been updated.
+      ! Note that the full hydropotential is only used by the channel model, so this
+      ! ordering choice is only needed to support channels.  Without it, runs with
+      ! channels would use an out of date waterThickness in the hydropotential and
+      ! do not restart correctly due to the order of operations mismatch.
+      block => domain % blocklist
+      do while (associated(block))
+
+         call calc_pressure(block, err_tmp)
+         err = ior(err, err_tmp)
+        
+         call calc_waterPressureSmooth(block, err_tmp) !compute smoothed version of waterPressure
+         err = ior(err,err_tmp)
+
+         block => block % next
+      end do
+
+      !updates halos for waterPressure
+      call mpas_timer_start("halo updates")
+      call mpas_dmpar_field_halo_exch(domain, 'waterPressureSmooth')
+      call mpas_timer_stop("halo updates")
 
 
       ! =============
@@ -714,6 +799,7 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: hydropotentialBase
       real (kind=RKIND), dimension(:), pointer :: hydropotential
       real (kind=RKIND), dimension(:), pointer :: hydropotentialBaseVertex
+      real (kind=RKIND), dimension(:), pointer :: hydropotentialVertex
       real (kind=RKIND), dimension(:), pointer :: waterPressure
       real (kind=RKIND), dimension(:), pointer :: waterThicknessEdge
       real (kind=RKIND), dimension(:), pointer :: waterThicknessEdgeUpwind
@@ -722,6 +808,8 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: hydropotentialSlopeNormal
       real (kind=RKIND), dimension(:), pointer :: waterPressureSlopeNormal
       real (kind=RKIND), dimension(:), pointer :: hydropotentialBaseSlopeTangent
+      real (kind=RKIND), dimension(:), pointer :: hydropotentialSlopeTangent
+      real (kind=RKIND), dimension(:), pointer :: gradMagPhiBaseEdge
       real (kind=RKIND), dimension(:), pointer :: gradMagPhiEdge
       real (kind=RKIND), dimension(:), pointer :: effectiveConducEdge
       real (kind=RKIND), dimension(:), pointer :: diffusivity
@@ -731,12 +819,14 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: waterFlux
       real (kind=RKIND), dimension(:), pointer :: waterFluxAdvec
       real (kind=RKIND), dimension(:), pointer :: waterFluxDiffu
-      integer, dimension(:), pointer :: waterFluxMask
+      real (kind=RKIND), dimension(:), pointer :: waterPressureSmooth
       integer, dimension(:), pointer :: hydroMarineMarginMask
+      integer, dimension(:), pointer :: waterFluxMask
       integer, dimension(:,:), pointer :: edgeSignOnCell
       integer, dimension(:), pointer :: cellMask
       integer, dimension(:), pointer :: edgeMask
       integer, dimension(:,:), pointer :: cellsOnEdge
+      integer, dimension(:,:), pointer :: edgesOnCell
       integer, dimension(:,:), pointer :: verticesOnEdge
       integer, dimension(:,:), pointer :: baryCellsOnVertex
       real (kind=RKIND), dimension(:,:), pointer :: baryWeightsOnVertex
@@ -752,13 +842,14 @@ module li_subglacial_hydro
       integer, pointer :: nCells
       integer, pointer :: nVertices
       integer :: iEdge, cell1, cell2
+      integer :: i, j, iVertex, iCell
       real (kind=RKIND) :: velSign
       integer :: numGroundedCells
+      real(kind=RKIND), parameter :: SMALL_CONDUC = 1.0e-30_RKIND
       integer :: err_tmp
-
+      
       err = 0
       err_tmp = 0
-
 
       ! Get pools things
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
@@ -777,7 +868,7 @@ module li_subglacial_hydro
       call mpas_pool_get_config(liConfigs, 'config_SGH_tangent_slope_calculation', config_SGH_tangent_slope_calculation)
       call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
       call mpas_pool_get_config(liConfigs, 'config_ocean_density', rhoo)
-
+      
       call mpas_pool_get_array(hydroPool, 'waterThickness', waterThickness)
       call mpas_pool_get_array(hydroPool, 'waterPressure', waterPressure)
       call mpas_pool_get_array(hydroPool, 'hydropotentialBase', hydropotentialBase)
@@ -792,8 +883,11 @@ module li_subglacial_hydro
       call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
       call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
       call mpas_pool_get_array(hydroPool, 'hydropotentialBaseSlopeTangent', hydropotentialBaseSlopeTangent)
+      call mpas_pool_get_array(hydroPool, 'hydropotentialSlopeTangent', hydropotentialSlopeTangent)
+      call mpas_pool_get_array(hydroPool, 'gradMagPhiBaseEdge', gradMagPhiBaseEdge)
       call mpas_pool_get_array(hydroPool, 'gradMagPhiEdge', gradMagPhiEdge)
       call mpas_pool_get_array(hydroPool, 'effectiveConducEdge', effectiveConducEdge)
       call mpas_pool_get_array(hydroPool, 'diffusivity', diffusivity)
@@ -804,8 +898,8 @@ module li_subglacial_hydro
       call mpas_pool_get_array(hydroPool, 'waterFluxMask', waterFluxMask)
       call mpas_pool_get_array(hydroPool, 'hydroMarineMarginMask', hydroMarineMarginMask)
       call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
-
-
+      call mpas_pool_get_array(hydroPool, 'waterPressureSmooth', waterPressureSmooth) 
+      
       do iEdge = 1, nEdges
          cell1 = cellsOnEdge(1, iEdge)
          cell2 = cellsOnEdge(2, iEdge)
@@ -822,15 +916,33 @@ module li_subglacial_hydro
 
          hydropotentialBaseSlopeNormal(iEdge) = (hydropotentialBase(cell2) - hydropotentialBase(cell1)) / dcEdge(iEdge)
          hydropotentialSlopeNormal(iEdge) = (hydropotential(cell2) - hydropotential(cell1)) / dcEdge(iEdge)
-         waterPressureSlopeNormal(iEdge) = (waterPressure(cell2) - waterPressure(cell1)) / dcEdge(iEdge)
+
+         waterPressureSlopeNormal(iEdge) = (waterPressureSmooth(cell2) - waterPressureSmooth(cell1)) / dcEdge(iEdge)
+      end do
+
+      ! At boundaries of hydro domain, disallow inflow.  Allow outflow if hydropotential gradient requires it.
+      do iEdge = 1, nEdges
+         if ( (li_mask_is_margin(edgeMask(iEdge)) .and. li_mask_is_grounded_ice(edgeMask(iEdge))) .or. &
+             (hydroMarineMarginMask(iEdge)==1)) then
+            cell1 = cellsOnEdge(1, iEdge)
+            cell2 = cellsOnEdge(2, iEdge)
+            if (li_mask_is_grounded_ice(cellMask(cell1))) then ! cell2 is the cell outside the hydro domain
+               hydropotentialBaseSlopeNormal(iEdge) = min(0.0_RKIND, hydropotentialBaseSlopeNormal(iEdge))
+               hydropotentialSlopeNormal(iEdge) = min(0.0_RKIND, hydropotentialSlopeNormal(iEdge))
+            else ! cell1 is the cell outside the hydro domain
+               hydropotentialBaseSlopeNormal(iEdge) = max(0.0_RKIND, hydropotentialBaseSlopeNormal(iEdge))
+               hydropotentialSlopeNormal(iEdge) = max(0.0_RKIND, hydropotentialSlopeNormal(iEdge))
+            endif ! which cell is icefree
+         endif ! if edge of grounded ice
       end do
 
       ! At terrestrial margin, ignore the downslope bed topography gradient.  Including it can lead to unrealistically large
       ! hydropotential gradients and unstable channel growth.
       ! We also want to do this at marine margins because otherwise the offshore topography can create a barrier to flow,
       ! but that is unrealistic.
-      ! So for all boundaries of the hydro system, the hydropotential at the margin should be determined by the geometry
-      ! at the edge of the cell in a 1-sided sense
+      ! So for all boundaries of the hydro system where outflow is occuring,
+      ! the hydropotential at the margin should be determined by the geometry
+      ! at the edge of the cell in a 1-sided sense.
       do iEdge = 1, nEdges
          if ( (li_mask_is_margin(edgeMask(iEdge)) .and. li_mask_is_grounded_ice(edgeMask(iEdge))) .or. &
              (hydroMarineMarginMask(iEdge)==1)) then
@@ -854,40 +966,22 @@ module li_subglacial_hydro
          endif ! if edge of grounded ice
       end do
 
-      ! Disallow flow from ocean to glacier, or land to glacier,
-      ! which can occur under some circumstances
-      ! For ocean this is invalid because ocean water has a different density!
-      ! For land this would only happen if there is a supply of water, which is not currently handled.
-      ! Do this by simply zeroing the hydropotential gradient in those cases.
-      ! (Do this step only after the other hydropotential special cases are treated above.)
+      ! zero gradients at edges that are marked as no flux. These should be applied at boundaries of the mesh.
       do iEdge = 1, nEdges
-         ! Find edges along GL or margin to check for 'backwards' flow
-         if ((hydroMarineMarginMask(iEdge)==1) .or. &
-             li_mask_is_margin(edgeMask(iEdge)) ) then
-            ! Now check if flow is backwards
-            cell1 = cellsOnEdge(1, iEdge)
-            cell2 = cellsOnEdge(2, iEdge)
-            if (hydropotentialBaseSlopeNormal(iEdge) > 0.0_RKIND) then
-               ! flow is from cell2 to cell1
-               if (.not. li_mask_is_grounded_ice(cellMask(cell2))) then
-                  hydropotentialBaseSlopeNormal(iEdge) = 0.0_RKIND
-                  hydropotentialSlopeNormal(iEdge) = 0.0_RKIND
-               endif
-            elseif (hydropotentialBaseSlopeNormal(iEdge) < 0.0_RKIND) then
-               ! flow is from cell1 to cell2
-               if (.not. li_mask_is_grounded_ice(cellMask(cell1))) then
-                  hydropotentialBaseSlopeNormal(iEdge) = 0.0_RKIND
-                  hydropotentialSlopeNormal(iEdge) = 0.0_RKIND
-               endif
-            endif
-         endif ! GL edge or grounded margin
+         if (waterFluxMask(iEdge) == 2) then
+            hydropotentialBaseSlopeNormal(iEdge) = 0.0_RKIND
+            hydropotentialSlopeNormal(iEdge) = 0.0_RKIND
+            waterPressureSlopeNormal(iEdge) = 0.0_RKIND
+         endif
       end do
 
-
-      ! Calculate tangent slope of hydropotentialBase - three possible methods to consider
+      ! Calculate tangent slope of hydropotential and hydropotentialBase - three possible methods to consider
 
       ! Calculate hydropotentialBaseVertex if needed
       call mpas_pool_get_array(hydroPool, 'hydropotentialBaseVertex', hydropotentialBaseVertex)
+         ! < this array could be protected by logic if desired
+      ! calculate hydropotentialVertex if needed
+      call mpas_pool_get_array(hydroPool, 'hydropotentialVertex', hydropotentialVertex)
          ! < this array could be protected by logic if desired
       select case (trim(config_SGH_tangent_slope_calculation))
       case ('from_vertex_barycentric')
@@ -896,51 +990,99 @@ module li_subglacial_hydro
          call mpas_cells_to_points_using_baryweights(meshPool, baryCellsOnVertex(:, 1:nVertices), &
               baryWeightsOnVertex(:, 1:nVertices), hydropotentialBase, hydropotentialBaseVertex(1:nVertices), err_tmp)
               err = ior(err, err_tmp)
+         call mpas_cells_to_points_using_baryweights(meshPool, baryCellsOnVertex(:, 1:nVertices), &
+              baryWeightsOnVertex(:, 1:nVertices), hydropotential, hydropotentialVertex(1:nVertices), err_tmp)
       case ('from_vertex_barycentric_kiteareas')
          call li_cells_to_vertices_1dfield_using_kiteAreas(meshPool, hydropotentialBase, hydropotentialBaseVertex)
+         call li_cells_to_vertices_1dfield_using_kiteAreas(meshPool, hydropotential, hydropotentialVertex)
       end select
 
       ! Now perform tangent slope calculation based on method chosen
+      ! For the two vertex based methods, edges with vertices on the boundary of the mesh will have invalid values
+      ! For the normal slope method, any edges on cells that are at the edge of the mesh will have
+      ! contaminated values.
+      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(meshPool, 'verticesOnEdge', verticesOnEdge)
       select case (trim(config_SGH_tangent_slope_calculation))
       case ('from_vertex_barycentric', 'from_vertex_barycentric_kiteareas')
-         call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
-         call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
-         call mpas_pool_get_array(meshPool, 'verticesOnEdge', verticesOnEdge)
          do iEdge = 1, nEdges
             ! Only calculate slope for edges that have ice on at least one side.
             if ( li_mask_is_ice(edgeMask(iEdge)) ) then
                hydropotentialBaseSlopeTangent(iEdge) = ( hydropotentialBaseVertex(verticesOnEdge(1,iEdge)) -  &
                      hydropotentialBaseVertex(verticesOnEdge(2,iEdge)) ) / dvEdge(iEdge)
+               hydropotentialSlopeTangent(iEdge) = ( hydropotentialVertex(verticesOnEdge(1,iEdge)) -  &
+                     hydropotentialVertex(verticesOnEdge(2,iEdge)) ) / dvEdge(iEdge)
             else
                hydropotentialBaseSlopeTangent(iEdge) = 0.0_RKIND
+               hydropotentialSlopeTangent(iEdge) = 0.0_RKIND
             endif
+            ! zero tangent slope at waterFluxMask==2
+            if (waterFluxMask(iEdge) == 2) then
+                hydropotentialBaseSlopeTangent(iEdge) = 0.0_RKIND
+                hydropotentialSlopeTangent(iEdge) = 0.0_RKIND
+             endif
          end do  ! edges
       case ('from_normal_slope')
+         ! Do first with hydropotentialBase
          call mpas_tangential_vector_1d(hydropotentialBaseSlopeNormal, meshPool, &
-                  includeHalo=.false., tangentialVector=hydropotentialBaseSlopeTangent)
+         includeHalo=.false., tangentialVector=hydropotentialBaseSlopeTangent)
+         ! Repeat for full hydropotential
+         call mpas_tangential_vector_1d(hydropotentialSlopeNormal, meshPool, &
+         includeHalo=.false., tangentialVector=hydropotentialSlopeTangent)
+         ! ensure that edges that don't have ice on at least one side have tangent slope set to zero
+         do iEdge = 1, nEdges
+            if ( .not. li_mask_is_ice(edgeMask(iEdge)) ) then
+               hydropotentialBaseSlopeTangent(iEdge) = 0.0_RKIND
+               hydropotentialSlopeTangent(iEdge) = 0.0_RKIND
+            endif
+            if (waterFluxMask(iEdge) == 2) then
+               hydropotentialBaseSlopeTangent(iEdge) = 0.0_RKIND
+               hydropotentialSlopeTangent(iEdge) = 0.0_RKIND
+            endif
+
+         end do  ! edges
       case default
          call mpas_log_write('Invalid value for config_SGH_tangent_slope_calculation.', MPAS_LOG_ERR)
          err = 1
       end select
 
       ! calculate magnitude of gradient of Phi
-      gradMagPhiEdge = sqrt(hydropotentialBaseSlopeNormal**2 + hydropotentialBaseSlopeTangent**2)
+      gradMagPhiEdge = sqrt(hydropotentialSlopeNormal**2 + hydropotentialSlopeTangent**2)
+
+      ! calculate magnitude of gradient of hydropotentialBase
+      gradMagPhiBaseEdge = sqrt(hydropotentialBaseSlopeNormal**2 +&
+      hydropotentialBaseSlopeTangent**2)
 
       ! calculate effective conductivity on edges
       if (conduc_coeff_drowned > 0.0_RKIND) then
          ! Use a thickness weighted conductivity coeff. when water thickness exceeds bump height
          do iEdge = 1, nEdges
-            conduc_coeff_wtd = (conduc_coeff * min(waterThicknessEdge(iEdge), bedRoughMax) + &
-                             conduc_coeff_drowned * max(waterThicknessEdge(iEdge) - bedRoughMax, 0.0_RKIND)) / &
-                             (waterThicknessEdge(iEdge) + 1.0e-16_RKIND)  ! Regularization only applies where value doesn't matter
-            effectiveConducEdge(iEdge) = conduc_coeff_wtd * waterThicknessEdge(iEdge)**(alpha-1.0_RKIND) * &
-               (gradMagPhiEdge(iEdge)+1.0e-30_RKIND)**(beta - 2.0_RKIND)   ! small value used for regularization
+            if (gradMagPhiBaseEdge(iEdge) < SMALL_GRADPHI) then
+               effectiveConducEdge(iEdge) = 0.0_RKIND
+            else
+               conduc_coeff_wtd = (conduc_coeff * min(waterThicknessEdge(iEdge), bedRoughMax) + &
+                  conduc_coeff_drowned * max(waterThicknessEdge(iEdge) - bedRoughMax, 0.0_RKIND)) / &
+                  (waterThicknessEdge(iEdge) + 1.0e-16_RKIND)  ! Regularization only applies where value doesn't matter
+
+               effectiveConducEdge(iEdge) = conduc_coeff_wtd * waterThicknessEdge(iEdge)**(alpha-1.0_RKIND) * &
+                  gradMagPhiBaseEdge(iEdge)**(beta - 2.0_RKIND)
+            endif
          end do
       else
-         ! Just use a single conductivity coeff.
-         effectiveConducEdge(:) = conduc_coeff * waterThicknessEdge(:)**(alpha-1.0_RKIND) *&
-            (gradMagPhiEdge(:)+1.0e-30_RKIND)**(beta - 2.0_RKIND)   ! small value used for regularization
+         do iEdge = 1, nEdges
+            ! Just use a single conductivity coeff.
+            if (gradMagPhiBaseEdge(iEdge) < SMALL_GRADPHI) then
+               effectiveConducEdge(iEdge) = 0.0_RKIND
+            else
+               effectiveConducEdge(iEdge) = conduc_coeff * waterThicknessEdge(iEdge)**(alpha-1.0_RKIND) *&
+                  gradMagPhiBaseEdge(iEdge)**(beta - 2.0_RKIND)
+            endif
+         enddo
       endif
+
+      where (effectiveConducEdge < SMALL_CONDUC)
+              effectiveConducEdge = 0.0_RKIND
+      end where
 
       ! calculate diffusivity on edges
       diffusivity(:) = rho_water * gravity * effectiveConducEdge(:) * waterThicknessEdge(:)
@@ -957,13 +1099,19 @@ module li_subglacial_hydro
          waterFluxAdvec(iEdge) = waterVelocity(iEdge) * waterThicknessEdgeUpwind(iEdge)
 
          ! diffusive flux
-         ! Note: At the GL, the water thickness for one cell will be 0, meaning a large gradient.  However, the
-         ! diffusivity uses a one sided water thickness.  It's unclear what really happens to lakes at the GL/margin.
-         waterFluxDiffu(iEdge) = -1.0_RKIND * diffusivity(iEdge) * (waterThickness(cell2) - waterThickness(cell1)) &
+         ! Note: Water thickness at the GL is undefined.  I don't think we want to assume it's 0, and
+         ! we also don't want to assume it's the ocean water column height, because that would imply
+         ! a diffusive flux inward, which is undesirable. So disabling diffusion at the GL.
+         if (hydroMarineMarginMask(iEdge) == 1) then
+            diffusivity(iEdge) = 0.0_RKIND
+            waterFluxDiffu(iEdge) = 0.0_RKIND
+         else
+            waterFluxDiffu(iEdge) = -1.0_RKIND * diffusivity(iEdge) * (waterThickness(cell2) - waterThickness(cell1)) &
                / dcEdge(iEdge)
-         !endif
+         endif
       end do
       where (waterFluxMask == 2)
+         diffusivity = 0.0_RKIND
          waterFluxAdvec = 0.0_RKIND
          waterFluxDiffu = 0.0_RKIND
          waterVelocity = 0.0_RKIND
@@ -1098,31 +1246,43 @@ module li_subglacial_hydro
          call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
          call mpas_pool_get_array(meshPool, 'indexToEdgeID', indexToEdgeID)
 
-         ! Calculate advective CFL-limited time step
-         dtSGHadvecBlock = 0.5_RKIND * minval(dcEdge(1:nEdgesSolve) / (abs(waterVelocity(1:nEdgesSolve)) &
-            + 1.0e-12_RKIND))  ! regularize
+         dtSGHadvecBlock = bigNumber
+         dtSGHdiffuBlock = bigNumber
+         dtSGHpressureBlock = bigNumber
+         dtSGHadvecChanBlock = bigNumber
+         dtSGHdiffuChanBlock = bigNumber
+
+         do iEdge = 1, nEdgesSolve
+            ! Calculate advective CFL-limited time step
+            if (abs(waterVelocity(iEdge)) > 0.0) then
+               dtSGHadvecBlock = min(dtSGHadvecBlock, 0.5_RKIND * dcEdge(iEdge) / abs(waterVelocity(iEdge)))
+            endif
+
+            if (diffusivity(iEdge) > 0.0) then
+               ! Calculate diffusive CFL-limited time step
+               dtSGHdiffuBlock = min(dtSGHdiffuBlock, 0.25_RKIND * dcEdge(iEdge)**2 / diffusivity(iEdge))
+               ! Calculate pressure limited time step
+               dtSGHpressureBlock = min(dtSGHpressureBlock, 1.0_RKIND * porosity * dcEdge(iEdge)**2 &
+                      / (2.0_RKIND * diffusivity(iEdge)))
+            endif
+
+            if (config_SGH_chnl_active) then
+               if (abs(channelVelocity(iEdge)) > 0.0) then
+                  ! Calculate channel advection limited time step
+                  dtSGHadvecChanBlock = min(dtSGHadvecChanBlock, 0.5_RKIND * dcEdge(iEdge) / (abs(channelVelocity(iEdge))))
+               endif
+               ! Calculate channel diffusion limited time step
+               if (channelDiffusivity(iEdge) > 0.0) then
+                  dtSGHdiffuChanBlock = min(dtSGHdiffuChanBlock, 0.25_RKIND * dcEdge(iEdge)**2 / channelDiffusivity(iEdge))
+               endif
+            endif
+         enddo
+
          dtSGHadvecProc = min(dtSGHadvecProc, dtSGHadvecBlock)
-
-         ! Calculate diffusive CFL-limited time step
-         dtSGHdiffuBlock = 0.25_RKIND * minval(dcEdge(1:nEdgesSolve)**2 / (diffusivity(1:nEdgesSolve) + 1.0e-12_RKIND))
          dtSGHdiffuProc = min(dtSGHdiffuProc, dtSGHdiffuBlock)
-
-         ! Calculate pressure limited time step
-         dtSGHpressureBlock = 1.0_RKIND * minval(porosity * dcEdge(1:nEdgesSolve)**2 &
-                   / (2.0_RKIND * diffusivity(1:nEdgesSolve) + 1.0e-12_RKIND))
          dtSGHpressureProc = min(dtSGHpressureProc, dtSGHpressureBlock)
-
-         if (config_SGH_chnl_active) then
-            ! Calculate channel advection limited time step
-            dtSGHadvecChanBlock = 0.5_RKIND * minval(dcEdge(1:nEdgesSolve) / (abs(channelVelocity(1:nEdgesSolve)) &
-               + 1.0e-12_RKIND))
-            ! regularize
-            dtSGHadvecChanProc = min(dtSGHadvecChanProc, dtSGHadvecChanBlock)
-            ! Calculate channel diffusion limited time step
-            dtSGHdiffuChanBlock = 0.25_RKIND * minval(dcEdge(1:nEdgesSolve)**2 / (channelDiffusivity(1:nEdgesSolve) + &
-               1.0e-12_RKIND))
-            dtSGHdiffuChanProc = min(dtSGHdiffuChanProc, dtSGHdiffuChanBlock)
-         endif
+         dtSGHadvecChanProc = min(dtSGHadvecChanProc, dtSGHadvecChanBlock)
+         dtSGHdiffuChanProc = min(dtSGHdiffuChanProc, dtSGHdiffuChanBlock)
 
          ! Master deltat is needed below, so grab it in this block loop
          call mpas_pool_get_array(meshPool, 'deltat', deltat)
@@ -1370,6 +1530,7 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: divergenceChannel
       real (kind=RKIND), dimension(:), pointer :: channelAreaChangeCell
       real (kind=RKIND), dimension(:), pointer :: bedTopography
+      real (kind=RKIND), dimension(:), pointer :: iceThicknessHydro      
       integer, dimension(:), pointer :: hydroMarineMarginMask
       integer, dimension(:), pointer :: cellMask
       integer, dimension(:), pointer :: nEdgesOnCell
@@ -1436,6 +1597,7 @@ module li_subglacial_hydro
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+      call mpas_pool_get_array(hydroPool, 'iceThicknessHydro', iceThicknessHydro)
 
       openingRate(:) = bedRough * basalSpeed(:) * (bedRoughMax - waterThickness(:))
       !openingRate(:) = bedRough * basalSpeed(:) * (bedRoughMax - waterThickness(:)) + &
@@ -1456,7 +1618,7 @@ module li_subglacial_hydro
       case ('cavity')
 
          where (li_mask_is_floating_ice(cellMask))
-            waterPressure = rhoi * gravity * thickness
+            waterPressure = rhoi * gravity * iceThicknessHydro
          elsewhere (.not. li_mask_is_ice(cellMask))
             waterPressure = 0.0_RKIND
          elsewhere
@@ -1466,11 +1628,11 @@ module li_subglacial_hydro
 
       case ('overburden')
          where (li_mask_is_floating_ice(cellMask))
-            waterPressure = rhoi * gravity * thickness
+            waterPressure = rhoi * gravity * iceThicknessHydro
          elsewhere (.not. li_mask_is_ice(cellMask))
             waterPressure = 0.0_RKIND
          elsewhere
-            waterPressure = rhoi * gravity * thickness
+            waterPressure = rhoi * gravity * iceThicknessHydro
          end where
 
       case default
@@ -1479,8 +1641,8 @@ module li_subglacial_hydro
       end select
 
       waterPressure = max(0.0_RKIND, waterPressure)
-      waterPressure = min(waterPressure, rhoi * gravity * thickness)
-
+      waterPressure = min(waterPressure, rhoi * gravity * iceThicknessHydro)
+      
       do iCell = 1, nCells
         if ( li_mask_is_floating_ice(cellMask(iCell)) .or. &
              ((.not. li_mask_is_ice(cellMask(iCell))) .and. (bedTopography(iCell) < config_sea_level) ) ) then
@@ -1528,7 +1690,6 @@ module li_subglacial_hydro
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
-
       !-----------------------------------------------------------------
       ! input/output variables
       !-----------------------------------------------------------------
@@ -1546,13 +1707,13 @@ module li_subglacial_hydro
       type (mpas_pool_type), pointer :: geometryPool
       type (mpas_pool_type), pointer :: hydroPool
       real (kind=RKIND), pointer :: rhoi, rhoo
-      real (kind=RKIND), dimension(:), pointer :: thickness
       real (kind=RKIND), dimension(:), pointer :: waterPressure
       real (kind=RKIND), dimension(:), pointer :: bedTopography
       real (kind=RKIND), dimension(:), pointer :: hydropotentialBase
       real (kind=RKIND), dimension(:), pointer :: waterThickness
       real (kind=RKIND), dimension(:), pointer :: hydropotential
       real (kind=RKIND), dimension(:), pointer :: effectivePressure
+      real (kind=RKIND), dimension(:), pointer :: iceThicknessHydro
       integer, dimension(:), pointer :: cellMask
       real (kind=RKIND), pointer :: config_sea_level
 
@@ -1567,20 +1728,20 @@ module li_subglacial_hydro
       call mpas_pool_get_config(liConfigs, 'config_ocean_density', rhoo)
 
       call mpas_pool_get_array(hydroPool, 'effectivePressure', effectivePressure)
-      call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(hydroPool, 'waterPressure', waterPressure)
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
       call mpas_pool_get_array(hydroPool, 'hydropotentialBase', hydropotentialBase)
       call mpas_pool_get_array(hydroPool, 'waterThickness', waterThickness)
       call mpas_pool_get_array(hydroPool, 'hydropotential', hydropotential)
+      call mpas_pool_get_array(hydroPool, 'iceThicknessHydro', iceThicknessHydro)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
-      effectivePressure = rhoi * gravity * thickness - waterPressure
+      effectivePressure = rhoi * gravity * iceThicknessHydro - waterPressure
          ! < this should evalute to 0 for floating ice if Pw set correctly there.
       where (.not. li_mask_is_grounded_ice(cellmask))
          effectivePressure = 0.0_RKIND  ! zero effective pressure where no ice to avoid confusion
       end where
-
+      
       hydropotentialBase = rho_water * gravity * bedTopography + waterPressure
       ! This is still correct under ice shelves/open ocean because waterPressure has been set appropriately there already.
       ! Note this leads to a nonuniform hydropotential at sea level that is a function of the ocean depth.
@@ -1626,7 +1787,6 @@ module li_subglacial_hydro
       ! local variables
       !-----------------------------------------------------------------
       ! Pools pointers
-!!      type (mpas_pool_type), pointer :: geometryPool
       type (mpas_pool_type), pointer :: hydroPool
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: velocityPool
@@ -1638,7 +1798,6 @@ module li_subglacial_hydro
       real (kind=RKIND), pointer :: rhoi
       real (kind=RKIND), pointer :: config_SGH_incipient_channel_width
       logical, pointer :: config_SGH_include_pressure_melt
-
       real (kind=RKIND), dimension(:), pointer :: channelArea
       real (kind=RKIND), dimension(:), pointer :: channelMelt
       real (kind=RKIND), dimension(:), pointer :: channelPressureFreeze
@@ -1646,7 +1805,7 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: channelVelocity
       real (kind=RKIND), dimension(:), pointer :: gradMagPhiEdge
       real (kind=RKIND), dimension(:), pointer :: waterFlux
-      real (kind=RKIND), dimension(:), pointer :: hydropotentialBaseSlopeNormal
+      real (kind=RKIND), dimension(:), pointer :: hydropotentialSlopeNormal
       real (kind=RKIND), dimension(:), pointer :: waterPressureSlopeNormal
       real (kind=RKIND), dimension(:), pointer :: channelOpeningRate
       real (kind=RKIND), dimension(:), pointer :: channelClosingRate
@@ -1661,20 +1820,16 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:,:), pointer :: flowParamA
       integer, dimension(:,:), pointer :: cellsOnEdge
       integer, pointer :: nVertLevels
-
       integer, pointer :: nEdgesSolve
       integer :: iEdge, cell1, cell2
-
 
       err = 0
 
       ! Get pools things
       call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
-!      call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
       call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
       call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
-
       call mpas_pool_get_config(liConfigs, 'config_ice_density', rhoi)
       call mpas_pool_get_config(liConfigs, 'config_SGH_chnl_conduc_coeff', Kc)
       call mpas_pool_get_config(liConfigs, 'config_SGH_chnl_alpha', alpha_c)
@@ -1682,17 +1837,15 @@ module li_subglacial_hydro
       call mpas_pool_get_config(liConfigs, 'config_SGH_chnl_creep_coefficient', creep_coeff)
       call mpas_pool_get_config(liConfigs, 'config_SGH_incipient_channel_width', config_SGH_incipient_channel_width)
       call mpas_pool_get_config(liConfigs, 'config_SGH_include_pressure_melt', config_SGH_include_pressure_melt)
-
-      call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
-
+      call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
       call mpas_pool_get_array(hydroPool, 'channelArea', channelArea)
       call mpas_pool_get_array(hydroPool, 'channelMelt', channelMelt)
       call mpas_pool_get_array(hydroPool, 'channelPressureFreeze', channelPressureFreeze)
       call mpas_pool_get_array(hydroPool, 'channelDischarge', channelDischarge)
       call mpas_pool_get_array(hydroPool, 'channelVelocity', channelVelocity)
       call mpas_pool_get_array(hydroPool, 'gradMagPhiEdge', gradMagPhiEdge)
-      call mpas_pool_get_array(hydroPool, 'hydropotentialBaseSlopeNormal', hydropotentialBaseSlopeNormal)
+      call mpas_pool_get_array(hydroPool, 'hydropotentialSlopeNormal', hydropotentialSlopeNormal)
       call mpas_pool_get_array(hydroPool, 'waterPressureSlopeNormal', waterPressureSlopeNormal)
       call mpas_pool_get_array(hydroPool, 'waterFlux', waterFlux)
       call mpas_pool_get_array(hydroPool, 'channelOpeningRate', channelOpeningRate)
@@ -1707,14 +1860,13 @@ module li_subglacial_hydro
       call mpas_pool_get_array(hydroPool, 'hydroMarineMarginMask', hydroMarineMarginMask)
       call mpas_pool_get_array(hydroPool, 'channelDiffusivity', channelDiffusivity)
       call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
-
       ! Calculate terms needed for opening (melt) rate
 
-      where(gradMagPhiEdge < 0.01_RKIND)
+      where(gradMagPhiEdge < SMALL_GRADPHI)
          channelDischarge(:) = 0.0_RKIND
       elsewhere
          channelDischarge = -1.0_RKIND * Kc * channelArea**alpha_c * gradMagPhiEdge**(beta_c - 2.0_RKIND) * &
-            hydropotentialBaseSlopeNormal
+            hydropotentialSlopeNormal
       end where
 
       where (waterFluxMask == 2)
@@ -1739,15 +1891,15 @@ module li_subglacial_hydro
       channelVelocity = channelDischarge / (channelArea + 1.0e-12_RKIND)
 
       ! diffusivity used only to limit channel dt right now
-      where(gradMagPhiEdge < 0.01_RKIND)
+      where(gradMagPhiEdge < SMALL_GRADPHI)
          channelDiffusivity = 0.0_RKIND
       elsewhere
          channelDiffusivity = abs(rho_water * gravity * channelArea *  &
             Kc * channelArea**(alpha_c - 1.0_RKIND) * gradMagPhiEdge**(beta_c - 2.0_RKIND))
       end where
 
-      channelMelt = (abs(channelDischarge * hydropotentialBaseSlopeNormal) &  ! channel dissipation
-                  +  abs(waterFlux * hydropotentialBaseSlopeNormal * config_SGH_incipient_channel_width) & !some sheet dissipation
+      channelMelt = (abs(channelDischarge * hydropotentialSlopeNormal) &  ! channel dissipation
+                  +  abs(waterFlux * hydropotentialSlopeNormal * config_SGH_incipient_channel_width) & !some sheet dissipation
                   ) / latent_heat_ice
       channelPressureFreeze = -1.0_RKIND * iceMeltingPointPressureDependence * cp_freshwater * rho_water * &
          (channelDischarge + waterFlux * config_SGH_incipient_channel_width) &
@@ -1775,6 +1927,7 @@ module li_subglacial_hydro
          channelOpeningRate = 0.0_RKIND
          channelClosingRate = 0.0_RKIND
       end where
+
       channelChangeRate = channelOpeningRate - channelClosingRate
 
    !--------------------------------------------------------------------
@@ -1816,9 +1969,11 @@ module li_subglacial_hydro
       type (mpas_pool_type), pointer :: meshPool
       real (kind=RKIND), dimension(:), pointer :: channelArea
       real (kind=RKIND), dimension(:), pointer :: channelDischarge
+      real (kind=RKIND), dimension(:), pointer :: channelMelt, channelPressureFreeze
       real (kind=RKIND), dimension(:), pointer :: channelChangeRate
       real (kind=RKIND), dimension(:), pointer :: divergenceChannel
       real (kind=RKIND), dimension(:), pointer :: channelAreaChangeCell
+      real (kind=RKIND), dimension(:), pointer :: channelMeltInputCell
       real (kind=RKIND), pointer :: deltatSGH
       integer, dimension(:), pointer :: nEdgesOnCell
       integer, dimension(:,:), pointer :: edgesOnCell
@@ -1834,9 +1989,12 @@ module li_subglacial_hydro
       call mpas_pool_get_array(hydroPool, 'deltatSGH', deltatSGH)
       call mpas_pool_get_array(hydroPool, 'channelArea', channelArea)
       call mpas_pool_get_array(hydroPool, 'channelDischarge', channelDischarge)
+      call mpas_pool_get_array(hydroPool, 'channelMelt', channelMelt)
+      call mpas_pool_get_array(hydroPool, 'channelPressureFreeze', channelPressureFreeze)
       call mpas_pool_get_array(hydroPool, 'channelChangeRate', channelChangeRate)
       call mpas_pool_get_array(hydroPool, 'divergenceChannel', divergenceChannel)
       call mpas_pool_get_array(hydroPool, 'channelAreaChangeCell', channelAreaChangeCell)
+      call mpas_pool_get_array(hydroPool, 'channelMeltInputCell', channelMeltInputCell)
       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
@@ -1848,6 +2006,7 @@ module li_subglacial_hydro
       ! Calculate flux divergence on cells and channel area change on cells
       divergenceChannel(:) = 0.0_RKIND  ! zero div before accumulating
       channelAreaChangeCell(:) = 0.0_RKIND  ! zero before accumulating
+      channelMeltInputCell(:) = 0.0_RKIND  ! zero before accumulating
       ! loop over locally owned cells
       do iCell = 1, nCellsSolve
          ! TODO: could limit to grounded cells only
@@ -1856,12 +2015,15 @@ module li_subglacial_hydro
             iEdge = edgesOnCell(iEdgeOnCell, iCell)
             ! add on advective & diffusive fluxes
             divergenceChannel(iCell) = divergenceChannel(iCell) - channelDischarge(iEdge) * edgeSignOnCell(iEdgeOnCell, iCell)
-            channelAreaChangeCell(iCell) = channelChangeRate(iEdge) * dcEdge(iEdge) * 0.5_RKIND
+            channelAreaChangeCell(iCell) = channelChangeRate(iEdge) * dcEdge(iEdge) * 0.5_RKIND + channelAreaChangeCell(iCell)
                ! < only half of channel is in this cell
+            channelMeltInputCell(iCell) = 0.5_RKIND * (channelMelt(iEdge) - channelPressureFreeze(iEdge)) * dcEdge(iEdge) / rho_water + channelMeltInputCell(iCell)
          end do ! edges
+
       end do ! cells
       divergenceChannel(1:nCellsSolve) = divergenceChannel(1:nCellsSolve) / areaCell(1:nCellsSolve)
       channelAreaChangeCell(1:nCellsSolve) = channelAreaChangeCell(1:nCellsSolve) / areaCell(1:nCellsSolve)
+      channelMeltInputCell(1:nCellsSolve) = channelMeltInputCell(1:nCellsSolve) / areaCell(1:nCellsSolve)
 
       ! Now update channel area
       channelArea = channelChangeRate * deltatSGH + channelArea
@@ -2047,9 +2209,9 @@ module li_subglacial_hydro
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: hydroPool
       type (mpas_pool_type), pointer :: geometryPool
-      real (kind=RKIND), dimension(:), pointer :: thickness
       real (kind=RKIND), dimension(:), pointer :: bedTopography
       real (kind=RKIND), dimension(:), pointer :: effectivePressure
+      real (kind=RKIND), dimension(:), pointer :: thickness
       real (kind=RKIND), pointer :: rhoi, rhoo
 
       ! Calculate N assuming perfect ocean connection
@@ -2061,9 +2223,10 @@ module li_subglacial_hydro
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
          call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
-         call mpas_pool_get_array(geometryPool, 'thickness', thickness)
          call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
          call mpas_pool_get_array(hydroPool, 'effectivePressure', effectivePressure)
+         call mpas_pool_get_array(hydroPool, 'thickness', thickness)
+         
          effectivePressure = rhoi * gravity * thickness - rhoi * gravity * max(0.0_RKIND,  -1.0_RKIND * rhoo/rhoi * bedTopography)
          effectivePressure = max(effectivePressure, 0.0_RKIND) ! This is just to zero out N in the open ocean to avoid confusion
 
@@ -2082,7 +2245,8 @@ module li_subglacial_hydro
 !> \author  Matt Hoffman
 !> \date    24 October 2022
 !> \details
-!>  This routine calculates a mask of the boundaries of the active hydrology domain
+!>  This routine calculates a mask of the boundaries of the active hydrology domain.
+!>  If there is no waterFluxMask set around domain boundaries, then calc_hydro_mask creates one.
 !-----------------------------------------------------------------------
    subroutine calc_hydro_mask(domain)
 
@@ -2108,11 +2272,15 @@ module li_subglacial_hydro
       type (mpas_pool_type), pointer :: meshPool
       real (kind=RKIND), dimension(:), pointer :: bedTopography
       integer, dimension(:), pointer :: hydroMarineMarginMask
+      integer, dimension(:), pointer :: hydroTerrestrialMarginMask
       integer, dimension(:,:), pointer :: cellsOnEdge
       integer, dimension(:), pointer :: cellMask
+      integer, dimension(:), pointer :: waterFluxMask
       integer, pointer :: nEdgesSolve
+      integer, pointer :: nCells
       integer :: cell1, cell2, iEdge
       real (kind=RKIND), pointer :: config_sea_level
+      integer :: wfmWarning
 
       call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
 
@@ -2124,33 +2292,400 @@ module li_subglacial_hydro
          call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
          call mpas_pool_get_array(hydroPool, 'hydroMarineMarginMask', hydroMarineMarginMask)
+         call mpas_pool_get_array(hydroPool, 'hydroTerrestrialMarginMask', hydroTerrestrialMarginMask)
+         call mpas_pool_get_array(hydroPool, 'waterFluxMask', waterFluxMask)
          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
          call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
+         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
          hydroMarineMarginMask(:) = 0
+         hydroTerrestrialMarginMask(:) = 0
+         wfmWarning = 0
+
          do iEdge = 1, nEdgesSolve
             cell1 = cellsOnEdge(1, iEdge)
             cell2 = cellsOnEdge(2, iEdge)
-            ! We are looking for edges with 1 edge grounded ice and the other edge floating ice or open ocean
+
+            !ensure no-flow conditions on edges of domain if not set up
+            !in input file
+            if ( ((cell1 == nCells + 1) .or. (cell2 == nCells +1 )) &
+               .and. (waterFluxMask(iEdge) .ne. 2)) then
+                 waterFluxMask(iEdge) = 2
+                 wfmWarning = 1
+            endif
+
+            ! hydroMarineMarginMask: We are looking for edges with 1 edge grounded ice and the other edge floating ice or open ocean
+            ! Exclude no-flow boundaries
             if ( (li_mask_is_grounded_ice(cellMask(cell1))) .and. &
                  (li_mask_is_floating_ice(cellMask(cell2)) .or. &
-                 ((bedTopography(cell2) < config_sea_level) .and. (.not. li_mask_is_ice(cellMask(cell2)))) ) ) then
+                 ((bedTopography(cell2) < config_sea_level) .and. (.not. li_mask_is_ice(cellMask(cell2)))) ) &
+                  .and. (waterFluxMask(iEdge) .ne. 2) ) then
                hydroMarineMarginMask(iEdge) = 1
             elseif ( (li_mask_is_grounded_ice(cellMask(cell2))) .and. &
                      (li_mask_is_floating_ice(cellMask(cell1)) .or. &
-                     ((bedTopography(cell1) < config_sea_level) .and. (.not. li_mask_is_ice(cellMask(cell1)))) ) ) then
+                     ((bedTopography(cell1) < config_sea_level) .and. (.not. li_mask_is_ice(cellMask(cell1)))) ) &
+                     .and. (waterFluxMask(iEdge) .ne. 2) ) then
                hydroMarineMarginMask(iEdge) = 1
+            endif
+
+            ! hydroTerrestrialMarginMask: Look for edges with 1 cell on grounding ice and the other cell on land without ice
+            ! Exclude no-flow boundaries
+            if ((li_mask_is_grounded_ice(cellMask(cell1))) .and. ( .not. li_mask_is_ice(cellMask(cell2))) &
+               .and. (bedTopography(cell2) >= config_sea_level) &
+               .and. (waterFluxMask(iEdge) .ne. 2) ) then
+               hydroTerrestrialMarginMask(iEdge) = 1
+            elseif ((li_mask_is_grounded_ice(cellMask(cell2))) .and. ( .not. li_mask_is_ice(cellMask(cell1))) &
+               .and. (bedTopography(cell1) >= config_sea_level) &
+               .and. (waterFluxMask(iEdge) .ne. 2) ) then
+               hydroTerrestrialMarginMask(iEdge) = 1
             endif
          enddo
 
          block => block % next
       end do
 
+      if (wfmWarning == 1) then
+         call mpas_log_write('Changing waterFluxMask to enforce no-flow conditions at domain boundaries', MPAS_LOG_WARN)
+      endif
       call mpas_timer_start("halo updates")
       call mpas_dmpar_field_halo_exch(domain, 'hydroMarineMarginMask')
+      call mpas_dmpar_field_halo_exch(domain, 'hydroTerrestrialMarginMask')
+      call mpas_dmpar_field_halo_exch(domain, 'waterFluxMask')
       call mpas_timer_stop("halo updates")
 
    !--------------------------------------------------------------------
    end subroutine calc_hydro_mask
+   
+
+!***********************************************************************
+!
+!  routine calc_iceThicknessHydro
+!
+!> \brief   Calculate version of ice thickness used by hydrology model
+!> \author  Alex Hager
+!> \date    7 June 2023
+!> \details
+!> This routine calculates a modified ice thickness that is altered to 
+!> avoid local minima in hydropotential
+!-----------------------------------------------------------------------
+   subroutine calc_iceThicknessHydro(block, err)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (block_type), intent(inout) :: block    !< Input/Output: block object
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      ! Pools pointers
+      type (mpas_pool_type), pointer :: geometryPool
+      type (mpas_pool_type), pointer :: hydroPool
+      type (mpas_pool_type), pointer :: meshPool
+      real (kind=RKIND), dimension(:), pointer :: thickness
+      real (kind=RKIND), dimension(:), pointer :: bedTopography
+      real (kind=RKIND), dimension(:), pointer :: iceThicknessHydro
+      real (kind=RKIND), dimension(:), pointer :: upperSurface
+      integer, dimension(:,:), pointer :: cellsOnCell
+      integer, dimension(:), pointer :: cellMask
+      real (kind=RKIND), dimension(:), pointer :: areaCell
+      integer, pointer :: nCells
+      integer, dimension(:), pointer :: nEdgesOnCell
+      integer :: iCell
+      integer :: jCell
+      integer :: iNeighbor
+      real (kind=RKIND) :: maxNeighborHeight
+      real (kind=RKIND) :: minNeighborHeight
+      real (kind=RKIND) :: meanNeighborHeight
+      real (kind=RKIND) :: totalNeighborHeight
+      real (kind=RKIND) :: totalArea
+      real (kind=RKIND), parameter :: bigValue = 1.0e6_RKIND
+      real (kind=RKIND), parameter :: bigNegativeValue = -1.0e6_RKIND
+      logical, pointer :: config_SGH_use_iceThicknessHydro
+      err = 0
+
+      ! Get pools things
+      call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
+      call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+      call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+
+      call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+      call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+      call mpas_pool_get_array(hydroPool, 'iceThicknessHydro', iceThicknessHydro)
+      call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
+      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
+      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+      call mpas_pool_get_config(liConfigs, 'config_SGH_use_iceThicknessHydro', config_SGH_use_iceThicknessHydro)
+
+      iceThicknessHydro = thickness 
+
+      !iceThicknessHydro is equivalent to thickness if
+      !config_SGH_use_iceThicknessHydro is false. Default is to alter
+      !ice thickness
+
+      if (config_SGH_use_iceThicknessHydro) then
+         do iCell = 1, nCells
+
+            if (li_mask_is_grounded_ice(cellMask(iCell))) then !identify grounded ice
+               
+                  maxNeighborHeight = bigNegativeValue !initialize
+                  minNeighborHeight = bigValue
+                  
+                  totalNeighborHeight = 0.0_RKIND
+                  totalArea = 0.0_RKIND
+
+                  do jCell = 1, nEdgesOnCell(iCell)
+                  
+                     iNeighbor = cellsOnCell(jCell,iCell)
+
+                     !Only include neighbor cell in averaging if it contains grounded ice
+                     if ((li_mask_is_grounded_ice(cellMask(iNeighbor)))) then
+
+                         minNeighborHeight = min(minNeighborHeight, upperSurface(iNeighbor))
+
+                         maxNeighborHeight = max(maxNeighborHeight, upperSurface(iNeighbor))
+
+                         totalNeighborHeight = totalNeighborHeight + upperSurface(iNeighbor)*areaCell(iNeighbor)
+
+                         totalArea = totalArea + areaCell(iNeighbor)
+                         
+                     endif
+                  end do
+                  
+                  if ((totalNeighborHeight == 0.0_RKIND) .or. (totalArea == 0.0_RKIND)) then
+                     meanNeighborHeight = upperSurface(iCell) !no smoothing in single-cell islands
+                  else
+                     meanNeighborHeight = totalNeighborHeight / totalArea !area-weighted average height
+                  endif
+
+                  !only adjust surface elevation if cell is local minimum or
+                  !maximum
+                  if ((upperSurface(iCell) < minNeighborHeight) &
+                          .and. (minNeighborHeight < bigValue)) then
+
+                     iceThicknessHydro(iCell) = meanNeighborHeight - bedTopography(iCell)
+
+                  elseif ((upperSurface(iCell) > maxNeighborHeight) &
+                          .and. (maxNeighborHeight > bigNegativeValue)) then
+
+                     iceThicknessHydro(iCell) = meanNeighborHeight - bedTopography(iCell)
+
+                  endif
+
+                  !avoid negatives, default to original thickness
+                  if (iceThicknessHydro(iCell) < 0.0_RKIND) then
+                     iceThicknessHydro(iCell) = thickness(iCell)
+                  endif
+            endif
+         enddo
+      endif
+
+   end subroutine calc_iceThicknessHydro
+
+!***********************************************************************
+!
+!  routine calc_gl_total
+!
+!> \brief   Calculate total grounding line discharge on
+!           adjacent ocean cell
+!> \author  Alex Hager
+!> \date    27 March 2024
+!> \details Find the total amount of freshwater entering the first ocean cell from the grounding line.
+!-----------------------------------------------------------------------
+   subroutine calc_gl_totals(block, err)
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (block_type), intent(inout) :: block    !< Input/Output: block object
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), pointer :: hydroPool
+      type (mpas_pool_type), pointer :: geometryPool
+      type (mpas_pool_type), pointer :: meshPool
+
+      real (kind=RKIND), dimension(:), pointer :: distGroundingLineDischargeCell
+      real (kind=RKIND), dimension(:), pointer :: chnlGroundingLineDischargeCell
+      real (kind=RKIND), dimension(:), pointer :: totalGroundingLineDischargeCell
+      real (kind=RKIND), dimension(:), pointer :: channelDischarge
+      real (kind=RKIND), dimension(:), pointer :: waterFlux
+      real (kind=RKIND), dimension(:), pointer :: dvEdge
+      integer iEdge, cell1, cell2
+      integer, pointer :: nEdgesSolve
+      integer, dimension(:,:), pointer :: cellsOnEdge
+      integer, dimension(:), pointer :: hydroMarineMarginMask
+      integer, dimension(:), pointer :: cellMask
+      real (kind=RKIND) :: distGroundingLineDischargeEdge
+      real (kind=RKIND) :: chnlGroundingLineDischargeEdge
+      real (kind=RKIND) :: totalGroundingLineDischargeEdge
+
+      call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
+      call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+      call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+
+      call mpas_pool_get_array(hydroPool, 'distGroundingLineDischargeCell', distGroundingLineDischargeCell)
+      call mpas_pool_get_array(hydroPool, 'chnlGroundingLineDischargeCell', chnlGroundingLineDischargeCell)
+      call mpas_pool_get_array(hydroPool, 'totalGroundingLineDischargeCell', totalGroundingLineDischargeCell)
+      call mpas_pool_get_array(hydroPool, 'channelDischarge', channelDischarge)
+      call mpas_pool_get_array(hydroPool, 'waterFlux', waterFlux)
+      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+      call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(hydroPool, 'hydroMarineMarginMask', hydroMarineMarginMask)
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+
+      distGroundingLineDischargeCell(:) = 0.0_RKIND
+      chnlGroundingLineDischargeCell(:) = 0.0_RKIND
+      totalGroundingLineDischargeCell(:) = 0.0_RKIND
+
+      do iEdge = 1, nEdgesSolve
+
+         if (hydroMarineMarginMask(iEdge) == 1) then
+
+            cell1 = cellsOnEdge(1, iEdge)
+            cell2 = cellsOnEdge(2, iEdge)
+
+            !calculate totals at each grounding line edge
+            distGroundingLineDischargeEdge = abs(waterFlux(iEdge) * dvEdge(iEdge))
+            chnlGroundingLineDischargeEdge = abs(channelDischarge(iEdge))
+            totalGroundingLineDischargeEdge = distGroundingLineDischargeEdge + chnlGroundingLineDischargeEdge
+
+            !Assign sum of edge totals to adjacent ungrounded cell
+            if (li_mask_is_grounded_ice(cellMask(cell1))) then
+               distGroundingLineDischargeCell(cell2) = distGroundingLineDischargeCell(cell2) + distGroundingLineDischargeEdge
+               chnlGroundingLineDischargeCell(cell2) = chnlGroundingLineDischargeCell(cell2) + chnlGroundingLineDischargeEdge
+               totalGroundingLineDischargeCell(cell2) = totalGroundingLineDischargeCell(cell2) + totalGroundingLineDischargeEdge
+            elseif (li_mask_is_grounded_ice(cellMask(cell2))) then
+               distGroundingLineDischargeCell(cell1) = distGroundingLineDischargeCell(cell1) + distGroundingLineDischargeEdge
+               chnlGroundingLineDischargeCell(cell1) = chnlGroundingLineDischargeCell(cell1) + chnlGroundingLineDischargeEdge
+               totalGroundingLineDischargeCell(cell1) = totalGroundingLineDischargeCell(cell1) + totalGroundingLineDischargeEdge
+            endif
+         endif
+      enddo
+   end subroutine calc_gl_totals
+
+!***********************************************************************
+!
+!  routine calc_waterPressureSmooth
+!
+!> \brief   Calculate smoothed version of waterPressure used for calculation
+!>          of waterPressureSlopeNormal
+!> \author  Alex Hager
+!> \date    29 February 2024
+!> \details Creates a smoothed version of waterPressure, called waterPressureSmooth,
+!>          that is used for calculation of waterPressureSlopeNormal.
+!>          This is necessary to increase stability with channelPressureFreeze
+!>          with spatially variable bedTopography and upperSurface. waterPressureSmooth 
+!>          an area-weighted average of the current cells and its neighbors. Possible to
+!>          perform multiple iterations of smoothing by adjusting
+!>          config_SGH_iter_smooth_waterPressureSlopeNormal
+!-----------------------------------------------------------------------
+   subroutine calc_waterPressureSmooth(block,err)
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (block_type), intent(inout) :: block    !< Input/Output: block object
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+
+      type (mpas_pool_type), pointer :: meshPool
+      type (mpas_pool_type), pointer :: geometryPool
+      type (mpas_pool_type), pointer :: hydroPool
+      real (kind=RKIND), dimension(:), pointer :: bedTopography
+      real (kind=RKIND), dimension(:), pointer :: waterPressure
+      real (kind=RKIND), dimension(:), pointer :: waterPressureSmooth
+      real (kind=RKIND), dimension(:), pointer :: areaCell
+      real (kind=RKIND), dimension(:), allocatable :: pressureField
+      real(kind=RKIND) :: totalPressure
+      real(kind=RKIND) :: totalArea
+      integer, dimension(:), pointer :: cellMask
+      integer, dimension(:,:), pointer :: cellsOnCell
+      integer, dimension(:), pointer :: nEdgesOnCell
+      integer, pointer :: nTimesSmooth
+      integer, pointer :: nCells
+      integer :: iCell, jEdge
+      integer :: iNeighbor 
+      integer :: iter
+
+      err = 0
+
+      ! Get pools things
+      call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+      call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
+      call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_config(liConfigs, 'config_SGH_iter_smooth_waterPressureSlopeNormal', nTimesSmooth)
+      call mpas_pool_get_array(hydroPool, 'waterPressure', waterPressure)
+      call mpas_pool_get_array(hydroPool, 'waterPressureSmooth', waterPressureSmooth)
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+      call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
+      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+      allocate(pressureField(nCells+1))
+
+      waterPressureSmooth = waterPressure
+      pressureField = waterPressure
+
+      do iter = 1, nTimesSmooth !May need to iterate to smooth properly
+
+         do iCell = 1, nCells
+            if (li_mask_is_grounded_ice(cellMask(iCell))) then !smooth over all grounded cells
+
+               totalPressure = pressureField(iCell)*areaCell(iCell) 
+               totalArea = areaCell(iCell)
+          
+               do jEdge = 1, nEdgesOnCell(iCell)
+                  iNeighbor = cellsOnCell(jEdge,iCell)
+
+                  if ((li_mask_is_grounded_ice(cellMask(iNeighbor)))) then !only include GROUNDED neighboring cells in smoothing 
+
+                     totalPressure = totalPressure + pressureField(iNeighbor)*areaCell(iNeighbor)
+
+                     totalArea = totalArea + areaCell(iNeighbor)
+                  endif
+               end do
+          
+               waterPressureSmooth(iCell) = totalPressure / totalArea !area-weighted average pressure
+            endif
+         end do
+         pressureField = waterPressureSmooth
+      end do
+      
+      deallocate(pressureField)
+   end subroutine calc_waterPressureSmooth
 
 end module li_subglacial_hydro

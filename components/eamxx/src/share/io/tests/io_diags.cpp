@@ -26,15 +26,6 @@
 
 namespace scream {
 
-void multiply (const Field& f, const double v) {
-  auto data = f.get_internal_view_data<Real,Host>();
-  auto nscalars = f.get_header().get_alloc_properties().get_num_scalars();
-  for (int i=0; i<nscalars; ++i) {
-    data[i] *= v;
-  }
-  f.sync_to_dev();
-}
-
 class MyDiag : public AtmosphereDiagnostic
 {
 public:
@@ -44,9 +35,9 @@ public:
     //Do nothing
   }
 
-  std::string name() const { return "MyDiag"; }
+  std::string name() const override { return "MyDiag"; }
 
-  void set_grids (const std::shared_ptr<const GridsManager> gm) {
+  void set_grids (const std::shared_ptr<const GridsManager> gm) override {
     using namespace ekat::units;
     using namespace ShortFieldTagsNames;
     using FL = FieldLayout;
@@ -69,34 +60,49 @@ public:
     FieldIdentifier fid (name(), lt, units, grid_name);
     m_diagnostic_output = Field(fid);
     m_diagnostic_output.allocate_view();
+    m_one = m_diagnostic_output.clone("one");
+    m_one.deep_copy(1.0);
+  }
+
+  void init_timestep (const util::TimeStamp& start_of_step) override {
+    m_t_beg = start_of_step;
   }
 
 protected:
 
-  void compute_diagnostic_impl () {
+  void compute_diagnostic_impl () override {
     const auto& f_in  = get_field_in(m_f_in);
 
-    m_diagnostic_output.deep_copy<Host>(f_in);
-    multiply(m_diagnostic_output,2.0);
-    m_diagnostic_output.sync_to_dev();
+    const auto& t = f_in.get_header().get_tracking().get_time_stamp();
+    const double dt = t - m_t_beg;
+
+    m_diagnostic_output.deep_copy(f_in);
+    m_diagnostic_output.update(m_one,dt,2.0);
   }
 
-  void initialize_impl (const RunType /* run_type */ ) {
+  void initialize_impl (const RunType /* run_type */ ) override {
     m_diagnostic_output.get_header().get_tracking().update_time_stamp(timestamp());
   }
 
   // Clean up
-  void finalize_impl ( /* inputs */ ) {}
+  void finalize_impl ( /* inputs */ ) override {}
 
   // Internal variables
   int m_num_cols, m_num_levs;
 
   std::string m_f_in;
+
+  util::TimeStamp m_t_beg;
+  Field m_one;
 };
 
 util::TimeStamp get_t0 () {
   return util::TimeStamp({2023,2,17},{0,0,0});
 }
+
+constexpr double get_dt () {
+  return 10;
+};
 
 std::shared_ptr<const GridsManager>
 get_gm (const ekat::Comm& comm)
@@ -104,10 +110,7 @@ get_gm (const ekat::Comm& comm)
   const int nlcols = 3;
   const int nlevs = 4;
   const int ngcols = nlcols*comm.size();
-  ekat::ParameterList gm_params;
-  gm_params.set("number_of_global_columns",ngcols);
-  gm_params.set("number_of_vertical_levels",nlevs);
-  auto gm = create_mesh_free_grids_manager(comm,gm_params);
+  auto gm = create_mesh_free_grids_manager(comm,0,0,nlevs,ngcols);
   gm->build_grids();
   return gm;
 }
@@ -139,8 +142,6 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
   const int nlevs  = grid->get_num_vertical_levels();
 
   auto fm = std::make_shared<FieldManager>(grid);
-  fm->registration_begins();
-  fm->registration_ends();
   
   const auto units = ekat::units::Units::nondimensional();
   FL fl ({COL,LEV}, {nlcols,nlevs});
@@ -172,6 +173,7 @@ void write (const int seed, const ekat::Comm& comm)
 
   // Time advance parameters
   auto t0 = get_t0();
+  auto dt = get_dt();
 
   // Create some fields
   auto fm = get_fm(grid,t0,seed);
@@ -191,7 +193,6 @@ void write (const int seed, const ekat::Comm& comm)
   auto& ctrl_pl = om_pl.sublist("output_control");
   ctrl_pl.set("frequency_units",std::string("nsteps"));
   ctrl_pl.set("Frequency",1);
-  ctrl_pl.set("MPI Ranks in Filename",true);
   ctrl_pl.set("save_grid_data",false);
 
   // Create Output manager
@@ -199,7 +200,15 @@ void write (const int seed, const ekat::Comm& comm)
   om.setup(comm,om_pl,fm,gm,t0,t0,false);
 
   // Run output manager
-  om.run (t0);
+  for (auto it : *fm) {
+    auto& f = *it.second;
+    Field one = f.clone("one");
+    one.deep_copy(1.0);
+    f.get_header().get_tracking().update_time_stamp(t0+dt);
+    f.update(one,1.0,1.0);
+  }
+  om.init_timestep(t0,dt);
+  om.run (t0+dt);
 
   // Close file and cleanup
   om.finalize();
@@ -217,6 +226,7 @@ void read (const int seed, const ekat::Comm& comm)
   // Get initial fields
   auto fm0 = get_fm(grid,t0,seed);
   auto fm  = get_fm(grid,t0,seed,true);
+
   std::vector<std::string> fnames;
   std::string f_name;
   for (auto it : *fm) {
@@ -226,6 +236,10 @@ void read (const int seed, const ekat::Comm& comm)
       f_name = fn;
     }
   }
+
+  auto f0 = fm0->get_field(f_name).clone();
+  auto f  = fm->get_field(f_name);
+
   // Sanity check
   REQUIRE (f_name!="");
 
@@ -239,24 +253,32 @@ void read (const int seed, const ekat::Comm& comm)
     + ".nc";
   reader_pl.set("Filename",filename);
   reader_pl.set("Field Names",fnames);
-  AtmosphereInput reader(reader_pl,fm,gm);
+  AtmosphereInput reader(reader_pl,fm);
 
-  reader.read_variables();
+  Field one = f0.clone("one");
+  one.deep_copy(1.0);
+  for (int i=0; i<2; ++i) {
+    reader.read_variables(i);
 
-  // Check regular field is correct
-  auto f0 = fm0->get_field(f_name).clone();
-  auto f  = fm->get_field(f_name);
-  REQUIRE (views_are_equal(f,f0));
+    // Check regular field is correct
+    REQUIRE (views_are_equal(f,f0));
 
-  // Check diag field is correct
-  multiply (f0,2.0);
-  auto d = fm->get_field("MyDiag");
-  REQUIRE (views_are_equal(d,f0));
+    // Check diag field is correct
+    const auto t = t0+i*get_dt();
+    const double dt = t-t0;
+    auto d = fm->get_field("MyDiag");
+    auto d0 = f0.clone();
+    d0.update(one,dt,2.0);
+    REQUIRE (views_are_equal(d,d0));
+
+    // Update f0
+    f0.update(one,1.0,1.0);
+  }
 }
 
 TEST_CASE ("io_diags") {
   ekat::Comm comm(MPI_COMM_WORLD);
-  scorpio::eam_init_pio_subsystem(comm);
+  scorpio::init_subsystem(comm);
 
   // Make MyDiag available via diag factory
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();
@@ -278,7 +300,7 @@ TEST_CASE ("io_diags") {
   write(seed,comm);
   read(seed,comm);
   print(" PASS\n");
-  scorpio::eam_pio_finalize();
+  scorpio::finalize_subsystem();
 }
 
 } // anonymous namespace

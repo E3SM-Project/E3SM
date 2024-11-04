@@ -927,6 +927,8 @@ contains
 
     ! Reconstruct eta_dot_dpdn over the time interval.
 #ifdef SL_ADVECTION_TRAJ_OLD
+    p1r(:,:,1) = zero
+    p1r(:,:,nlevp) = zero
     eta_dot_dpdn(:,:,:,1) = (p1r - pref)/dt
 #endif
     ! Boundary points are always 0.
@@ -935,9 +937,9 @@ contains
 
     dp_neg_min = reconstruct_and_limit_dp(elem%state%dp3d(:,:,:,tl%np1), &
          dt, dp_tol, eta_dot_dpdn(:,:,:,1), dprecon)
-#ifndef NDEBUG
+#if 0
     if (dp_neg_min < dp_tol) then
-       write(iulog, '(a,i7,i7,es11.4)') &
+       write(iulog, '(a,i7,i7,es13.4)') &
             'sl_advection: reconstruct_and_limit_dp (rank,ie) returned', &
             hybrid%par%rank, ie, dp_neg_min
     end if

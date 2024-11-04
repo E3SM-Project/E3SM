@@ -3,6 +3,19 @@
 namespace slmm {
 
 template <typename MT>
+void Advecter<MT>::fill_nearest_points_if_needed () {
+  if (geometry_ == Geometry::Type::plane) {
+    // Shift local coords again after halo expansion. make_continuous is
+    // idempotent, so there is no harm in calling it twice even when not needed.
+    for (Int ie = 0; ie < local_mesh_h_.extent_int(0); ++ie)
+      make_continuous(plane_, local_mesh_h_(ie));
+  }
+  if (nearest_point_permitted_lev_bdy_ >= 0)
+    for (Int ie = 0; ie < local_mesh_h_.extent_int(0); ++ie)
+      nearest_point::fill_perim(local_mesh_h_(ie));
+}
+
+template <typename MT>
 void Advecter<MT>
 ::init_meta_data (const Int nelem_global, const Int* lid2facenum) {
   const auto nelemd = local_mesh_h_.extent_int(0);
@@ -10,9 +23,7 @@ void Advecter<MT>
   lid2facenum_h_ = ko::create_mirror_view(lid2facenum_);
   std::copy(lid2facenum, lid2facenum + nelemd, lid2facenum_h_.data());
   ko::deep_copy(lid2facenum_, lid2facenum_h_);
-  s2r_.init(geometry_, cubed_sphere_map_,
-            geometry_ == Geometry::Type::sphere ? 1 : std::max(plane.Lx, plane.Ly),
-            nelem_global, lid2facenum_);
+  s2r_.init(geometry_, cubed_sphere_map_, nelem_global, lid2facenum_, plane_);
 }
 
 template <typename MT>
@@ -21,9 +32,8 @@ void Advecter<MT>::check_ref2sphere (const Int ie, const Real* p_homme) {
   Real ref_coord[2];
   siqk::sqr::Info info;
   SphereToRef<typename MT::HES> s2r;
-  const Real length_scale = m.is_sphere() ? 1 : std::max(plane.Lx, plane.Ly);
-  s2r.init(geometry_, cubed_sphere_map_, length_scale,
-           s2r_.nelem_global(), lid2facenum_h_);
+  s2r.init(geometry_, cubed_sphere_map_, s2r_.nelem_global(), lid2facenum_h_,
+           plane_);
   const Real tol = s2r_.tol();
   s2r.calc_sphere_to_ref(ie, m, p_homme, ref_coord[0], ref_coord[1], &info);
   const slmm::Basis basis(4, 0);

@@ -9,6 +9,7 @@
 #include "share/field/field.hpp"
 #include "share/field/field_manager.hpp"
 
+#include "share/util/scream_universal_constants.hpp"
 #include "share/util/scream_setup_random_test.hpp"
 #include "share/util/scream_time_stamp.hpp"
 #include "share/scream_types.hpp"
@@ -32,6 +33,7 @@ void add (const Field& f, const double v) {
   for (int i=0; i<nscalars; ++i) {
     data[i] += v;
   }
+  f.sync_to_dev();
 }
 
 int get_dt (const std::string& freq_units) {
@@ -61,13 +63,11 @@ util::TimeStamp get_t0 () {
 std::shared_ptr<const GridsManager>
 get_gm (const ekat::Comm& comm)
 {
-  const int nlcols = 3;
+  // For 2+ ranks tests, this will check IO works correctly
+  // even if one rank owns 0 dofs
+  const int ngcols = std::max(comm.size()-1,1);
   const int nlevs = 4;
-  const int ngcols = nlcols*comm.size();
-  ekat::ParameterList gm_params;
-  gm_params.set("number_of_global_columns",ngcols);
-  gm_params.set("number_of_vertical_levels",nlevs);
-  auto gm = create_mesh_free_grids_manager(comm,gm_params);
+  auto gm = create_mesh_free_grids_manager(comm,0,0,nlevs,ngcols);
   gm->build_grids();
   return gm;
 }
@@ -105,17 +105,20 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
   };
 
   auto fm = std::make_shared<FieldManager>(grid);
-  fm->registration_begins();
-  fm->registration_ends();
   
   const auto units = ekat::units::Units::nondimensional();
+  int count=0;
+  using stratts_t = std::map<std::string,std::string>;
   for (const auto& fl : layouts) {
-    FID fid("f_"+std::to_string(fl.size()),fl,units,grid->name());
+    FID fid("f_"+std::to_string(count),fl,units,grid->name());
     Field f(fid);
     f.allocate_view();
+    auto& str_atts = f.get_header().get_extra_data<stratts_t>("io: string attributes");
+    str_atts["test"] = f.name();
     randomize (f,engine,my_pdf);
     f.get_header().get_tracking().update_time_stamp(t0);
     fm->add_field(f);
+    ++count;
   }
 
   return fm;
@@ -149,23 +152,28 @@ void write (const std::string& avg_type, const std::string& freq_units,
   auto& ctrl_pl = om_pl.sublist("output_control");
   ctrl_pl.set("frequency_units",freq_units);
   ctrl_pl.set("Frequency",freq);
-  ctrl_pl.set("MPI Ranks in Filename",true);
   ctrl_pl.set("save_grid_data",false);
 
   // Create Output manager
   OutputManager om;
+
+  // Attempt to use invalid fp precision string
+  om_pl.set("Floating Point Precision",std::string("triple"));
+  REQUIRE_THROWS (om.setup(comm,om_pl,fm,gm,t0,t0,false));
+  om_pl.set("Floating Point Precision",std::string("single"));
   om.setup(comm,om_pl,fm,gm,t0,t0,false);
 
   // Time loop: ensure we always hit 3 output steps
   const int nsteps = num_output_steps*freq;
   auto t = t0;
   for (int n=0; n<nsteps; ++n) {
+    om.init_timestep(t,dt);
     // Update time
     t += dt;
 
     // Add 1 to all fields entries
-    for (const auto& n : fnames) {
-      auto f = fm->get_field(n);
+    for (const auto& name : fnames) {
+      auto f = fm->get_field(name);
       add(f,1.0);
     }
 
@@ -212,7 +220,7 @@ void read (const std::string& avg_type, const std::string& freq_units,
     + ".nc";
   reader_pl.set("Filename",filename);
   reader_pl.set("Field Names",fnames);
-  AtmosphereInput reader(reader_pl,fm,gm);
+  AtmosphereInput reader(reader_pl,fm);
 
   // We added 1.0 to the input fields for each timestep
   // Hence, at output step N, we should get
@@ -223,6 +231,7 @@ void read (const std::string& avg_type, const std::string& freq_units,
   // The last one comes from
   //   (a+1 + a+2 +..+a+freq)/freq =
   //   a + sum(i)/freq = a + (freq(freq+1)/2)/freq
+  //   = a + (freq+1)/2
   double delta = (freq+1)/2.0;
 
   for (int n=0; n<num_writes; ++n) {
@@ -247,6 +256,15 @@ void read (const std::string& avg_type, const std::string& freq_units,
       }
     }
   }
+
+  // Check that the expected metadata was appropriately set for each variable
+  for (const auto& fn: fnames) {
+    auto att_fill = scorpio::get_attribute<float>(filename,fn,"_FillValue");
+    REQUIRE(att_fill==constants::DefaultFillValue<float>().value);
+
+    auto att_str = scorpio::get_attribute<std::string>(filename,fn,"test");
+    REQUIRE (att_str==fn);
+  }
 }
 
 TEST_CASE ("io_basic") {
@@ -265,7 +283,7 @@ TEST_CASE ("io_basic") {
   };
 
   ekat::Comm comm(MPI_COMM_WORLD);
-  scorpio::eam_init_pio_subsystem(comm);
+  scorpio::init_subsystem(comm);
 
   auto seed = get_random_test_seed(&comm);
 
@@ -285,11 +303,11 @@ TEST_CASE ("io_basic") {
     for (const auto& avg : avg_type) {
       print("   -> Averaging type: " + avg + " ", 40);
       write(avg,units,freq,seed,comm);
-      read(avg,units,freq,seed,comm);
+      read (avg,units,freq,seed,comm);
       print(" PASS\n");
     }
   }
-  scorpio::eam_pio_finalize();
+  scorpio::finalize_subsystem();
 }
 
 } // anonymous namespace

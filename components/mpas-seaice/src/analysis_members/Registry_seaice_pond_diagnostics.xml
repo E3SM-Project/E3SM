@@ -24,25 +24,25 @@
 		<package name="pondDiagnosticsAMPKG" description="This package includes variables required for the pondDiagnostics analysis member."/>
 	</packages>
 	<var_struct name="pondDiagnosticsAM" time_levs="1" packages="pondDiagnosticsAMPKG">
-		<var name="meltPondArea" type="real" dimensions="nCells Time" units="UNITS HERE"
-			description="DESCRIPTION HERE"
+		<var name="meltPondArea" type="real" dimensions="nCells Time" units="1"
+                        description="Fraction of sea ice area covered in ponds"
 		/>
-		<var name="meltPondAreaFinalArea" type="real" dimensions="nCells Time" units="UNITS HERE"
-			description="DESCRIPTION HERE"
+		<var name="meltPondAreaFinalArea" type="real" dimensions="nCells Time" units="1"
+			description="Fraction of grid cell covered in ponds at end of timestep"
 		/>
-		<var name="meltPondDepth" type="real" dimensions="nCells Time" units="UNITS HERE"
-			description="DESCRIPTION HERE"
+		<var name="meltPondDepth" type="real" dimensions="nCells Time" units="m"
+			description="Average depth of ponds over sea ice"
 		/>
-		<var name="meltPondDepthFinalArea" type="real" dimensions="nCells Time" units="UNITS HERE"
-			description="DESCRIPTION HERE"
+		<var name="meltPondDepthFinalArea" type="real" dimensions="nCells Time" units="m"
+			description="Cell-average depth of ponds at end of timestep"
 		/>
-		<var name="meltPondLidThickness" type="real" dimensions="nCells Time" units="UNITS HERE"
-			description="DESCRIPTION HERE"
+		<var name="meltPondLidThickness" type="real" dimensions="nCells Time" units="m"
+			description="Average pond refrozen lid thickness over sea ice"
 		/>
-		<var name="meltPondLidThicknessFinalArea" type="real" dimensions="nCells Time" units="UNITS HERE"
-			description="DESCRIPTION HERE"
+		<var name="meltPondLidThicknessFinalArea" type="real" dimensions="nCells Time" units="m"
+			description="Cell-average pond refrozen lid thickness at end of timestep"
 		/>
-		<var name="meltPondDepthCategory" type="real" dimensions="nCategories nCells Time" units="UNITS HERE"
-			description="DESCRIPTION HERE"
+		<var name="meltPondDepthCategory" type="real" dimensions="nCategories nCells Time" units="m"
+			description="Pond depth for each thickness category of sea ice"
 		/>
 	</var_struct>

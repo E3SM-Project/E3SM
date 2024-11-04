@@ -44,6 +44,8 @@ program mksurfdat
     use mkCH4inversionMod  , only : mkCH4inversion
     use mksoilphosphorusMod, only : mksoilphosphorus
     use mkSedMod           , only : mkgrvl, mkslp10, mkEROparams
+    use mkFertMod          , only : mkfert
+    use mktopradMod        , only : mktoprad
 !
 ! !ARGUMENTS:
     implicit none
@@ -150,6 +152,12 @@ program mksurfdat
     real(r8), allocatable  :: ero_c3(:)          ! ELM-Erosion c3 parameter (unitless) 
     real(r8), allocatable  :: tillage(:)         ! conserved tillage fraction (fraction)
     real(r8), allocatable  :: litho(:)           ! lithology erodiblity index (unitless)
+    real(r8), allocatable  :: nfert(:,:)         ! crop nitrogen fertilizer (g/m^2)
+    real(r8), allocatable  :: pfert(:,:)         ! crop phosphorus fertilizer (g/m^2)
+    real(r8), allocatable  :: sinsl_sinas(:)     ! sin(slope)*sin(aspect) / cos(slope)
+    real(r8), allocatable  :: sinsl_cosas(:)     ! sin(slope)*cos(aspect) / cos(slope)
+    real(r8), allocatable  :: sky_view(:)        ! mean of (sky view factor / cos(slope))
+    real(r8), allocatable  :: terrain_config(:)  ! mean of (terrain configuration factor / cos(slope))
 
 
     type(domain_type) :: ldomain
@@ -184,6 +192,8 @@ program mksurfdat
          mksrf_fgrvl,              &
          mksrf_fslp10,             &
          mksrf_fero,               &
+         mksrf_ffert,              &
+         mksrf_ftoprad,            &
          nglcec,                   &
          numpft,                   &
          soil_color,               &
@@ -219,7 +229,9 @@ program mksurfdat
          map_fphosphorus,          &
          map_fgrvl,                &
          map_fslp10,               &
+         map_ffert,                &
          map_fero,                 &
+         map_ftoprad,              &
          outnc_large_files,        &
          outnc_double,             &
          outnc_dims,               &
@@ -260,7 +272,9 @@ program mksurfdat
     !    mksrf_fphosphorus Soil phosphorus dataset
     !    mksrf_fgrvl ---- Soil gravel content dataset
     !    mksrf_fslp10 --- Slope percentile dataset
-    !    mksrf_fero ----- ELM-Erosion parameters dataset 
+    !    mksrf_fero ----- ELM-Erosion parameters dataset
+    !    mksrf_ffert ---- Crop Fertilizer dataset
+    !    mksrf_ftoprad --- TOP parameters dataset for solar radiation parameterization
     ! ======================================
     ! Must specify mapping file for the different datafiles above
     ! ======================================
@@ -289,6 +303,8 @@ program mksurfdat
     !    map_fgrvl ------- Mapping for mksrf_fgrvl
     !    map_fslp10 ------ Mapping for mksrf_fslp10
     !    map_fero -------- Mapping for mksrf_fero
+    !    map_ffert ------- Mapping for mksrf_ffert
+    !    map_ftoprad_______ Mapping for mksrf_ftoprad
     ! ======================================
     ! Optionally specify setting for:
     ! ======================================
@@ -456,7 +472,13 @@ program mksurfdat
                ero_c2(ns_o)                       , &
                ero_c3(ns_o)                       , &
                tillage(ns_o)                      , &
-               litho(ns_o)                        )
+               litho(ns_o)                        , &
+               nfert(ns_o,0:numpft)               , &
+               pfert(ns_o,0:numpft)               , &
+               sinsl_sinas(ns_o)                  , &
+               sinsl_cosas(ns_o)                  , &
+               sky_view(ns_o)                     , &
+               terrain_config(ns_o)               )
 
     landfrac_pft(:)       = spval 
     pctlnd_pft(:)         = spval
@@ -501,6 +523,12 @@ program mksurfdat
     ero_c3(:)             = spval 
     tillage(:)            = spval
     litho(:)              = spval
+    nfert(:,:)            = 0._r8
+    pfert(:,:)            = 0._r8
+    sinsl_sinas(:)        = spval
+    sinsl_cosas(:)        = spval
+    sky_view(:)           = spval
+    terrain_config(:)     = spval
 
     ! ----------------------------------------------------------------------
     ! Open diagnostic output log file
@@ -544,6 +572,7 @@ program mksurfdat
     write(ndiag,*) 'VIC parameters from:         ',trim(mksrf_fvic)
     write(ndiag,*) 'CH4 parameters from:         ',trim(mksrf_fch4)
     write(ndiag,*) 'Soil phosphorus from:        ',trim(mksrf_fphosphorus)
+    write(ndiag,*) 'Fertilizer from:             ',trim(mksrf_ffert)
     write(ndiag,*)' mapping for pft              ',trim(map_fpft)
     write(ndiag,*)' mapping for lake water       ',trim(map_flakwat)
     write(ndiag,*)' mapping for wetland          ',trim(map_fwetlnd)
@@ -569,6 +598,8 @@ program mksurfdat
     write(ndiag,*)' mapping for soil gravel      ',trim(map_fgrvl)
     write(ndiag,*)' mapping for slope percentile ',trim(map_fslp10)
     write(ndiag,*)' mapping for erosion params   ',trim(map_fero)
+    write(ndiag,*)' mapping for fertilizer       ',trim(map_ffert)
+    write(ndiag,*)' mapping for TOP params       ',trim(map_ftoprad)
 
     if (mksrf_fdynuse /= ' ') then
        write(6,*)'mksrf_fdynuse = ',trim(mksrf_fdynuse)
@@ -751,6 +782,17 @@ program mksurfdat
          ero_c1_o=ero_c1, ero_c2_o=ero_c2, ero_c3_o=ero_c3, tillage_o=tillage, &
          litho_o=litho)
 
+    if(num_cft > 0) then
+       call mkfert(ldomain, mapfname=map_ffert, datfname=mksrf_ffert, ndiag=ndiag, &
+            nfert_o=nfert, pfert_o=pfert)
+    end if
+
+    call mktoprad(ldomain, mapfname=map_ftoprad, datfname=mksrf_ftoprad, varname = 'SINSL_SINAS', ndiag=ndiag, top_o=sinsl_sinas, nodata=0.0_r8)
+    call mktoprad(ldomain, mapfname=map_ftoprad, datfname=mksrf_ftoprad, varname = 'SINSL_COSAS', ndiag=ndiag, top_o=sinsl_cosas, nodata=0.0_r8)
+    call mktoprad(ldomain, mapfname=map_ftoprad, datfname=mksrf_ftoprad, varname = 'SKY_VIEW', ndiag=ndiag, top_o=sky_view, nodata=1.0_r8)
+    call mktoprad(ldomain, mapfname=map_ftoprad, datfname=mksrf_ftoprad, varname = 'TERRAIN_CONFIG', ndiag=ndiag, top_o=terrain_config, nodata=0.0_r8)
+
+
     do n = 1,ns_o
 
        ! Assume wetland and/or lake when dataset landmask implies ocean 
@@ -778,6 +820,12 @@ program mksurfdat
           ero_c3(n)        = 0._r8
           tillage(n)       = 0._r8
           litho(n)         = 0._r8
+          nfert(n,:)       = 0._r8
+          pfert(n,:)       = 0._r8
+          sinsl_sinas(n)   = 0._r8
+          sinsl_cosas(n)   = 0._r8
+          sky_view(n)      = 1._r8
+          terrain_config(n)= 0._r8
        else
           pftdata_mask(n) = 1
        end if
@@ -977,6 +1025,12 @@ program mksurfdat
     if (num_cft > 0) then
        call check_ret(nf_inq_varid(ncid, 'PCT_CFT', varid), subname)
        call check_ret(nf_put_var_double(ncid, varid, pctcft), subname)
+
+       call check_ret(nf_inq_varid(ncid, 'NFERT', varid), subname)
+       call check_ret(nf_put_var_double(ncid, varid, nfert),subname)
+
+       call check_ret(nf_inq_varid(ncid, 'PFERT', varid), subname)
+       call check_ret(nf_put_var_double(ncid, varid, pfert),subname)
     end if
 
     call check_ret(nf_inq_varid(ncid, 'FMAX', varid), subname)
@@ -1078,6 +1132,18 @@ program mksurfdat
     call check_ret(nf_inq_varid(ncid, 'Litho', varid), subname)
     call check_ret(nf_put_var_double(ncid, varid, litho), subname)
 
+    call check_ret(nf_inq_varid(ncid, 'SINSL_SINAS', varid), subname)
+    call check_ret(nf_put_var_double(ncid, varid, sinsl_sinas), subname)
+
+    call check_ret(nf_inq_varid(ncid, 'SINSL_COSAS', varid), subname)
+    call check_ret(nf_put_var_double(ncid, varid, sinsl_cosas), subname)
+
+    call check_ret(nf_inq_varid(ncid, 'SKY_VIEW', varid), subname)
+    call check_ret(nf_put_var_double(ncid, varid, sky_view), subname)
+
+    call check_ret(nf_inq_varid(ncid, 'TERRAIN_CONFIG', varid), subname)
+    call check_ret(nf_put_var_double(ncid, varid, terrain_config), subname)
+
     ! Deallocate arrays NOT needed for dynamic-pft section of code
 
     deallocate ( organic )
@@ -1097,7 +1163,8 @@ program mksurfdat
     deallocate ( apatiteP, labileP, occludedP, secondaryP )
     deallocate ( grvl, slp10 )
     deallocate ( ero_c1, ero_c2, ero_c3, tillage, litho )
-
+    deallocate ( nfert, pfert )
+    deallocate ( sinsl_sinas, sinsl_cosas, sky_view, terrain_config )
     ! Synchronize the disk copy of a netCDF dataset with in-memory buffers
 
     call check_ret(nf_sync(ncid), subname)

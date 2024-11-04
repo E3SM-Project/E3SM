@@ -1,0 +1,2 @@
+$CIMEROOT/../components/eamxx/scripts/atmchange -b spa_data_file='${DIN_LOC_ROOT}'/atm/scream/init/spa_file_unified_and_complete_ne4pg2_20231222.nc
+$CIMEROOT/../components/eamxx/scripts/atmchange -b spa_remap_file='${DIN_LOC_ROOT}'/atm/scream/maps/map_ne4pg2_to_ne30pg2_20231201.nc

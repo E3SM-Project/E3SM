@@ -66,6 +66,10 @@ FieldLayout PhysicsDynamicsRemapper::
 create_src_layout (const FieldLayout& tgt_layout) const {
   using namespace ShortFieldTagsNames;
 
+  EKAT_REQUIRE_MSG (is_valid_tgt_layout(tgt_layout),
+      "[PhysicsDynamicsRemapper] Error! Input target layout is not valid for this remapper.\n"
+      " - input layout: " + tgt_layout.to_string());
+
   auto tags = tgt_layout.tags();
   auto dims = tgt_layout.dims();
 
@@ -96,6 +100,10 @@ FieldLayout PhysicsDynamicsRemapper::
 create_tgt_layout (const FieldLayout& src_layout) const {
   using namespace ShortFieldTagsNames;
 
+  EKAT_REQUIRE_MSG (is_valid_src_layout(src_layout),
+      "[PhysicsDynamicsRemapper] Error! Input source layout is not valid for this remapper.\n"
+      " - input layout: " + src_layout.to_string());
+
   auto tags = src_layout.tags();
   auto dims = src_layout.dims();
 
@@ -104,7 +112,7 @@ create_tgt_layout (const FieldLayout& src_layout) const {
   dims[0] = this->m_tgt_grid->get_num_local_dofs() / (HOMMEXX_NP*HOMMEXX_NP);
 
   // For position of GP and NP, it's easier to switch between 2d and 3d
-  auto lt = get_layout_type(src_layout.tags());
+  auto lt = src_layout.type();
   switch (lt) {
     case LayoutType::Scalar2D:
     case LayoutType::Vector2D:
@@ -252,7 +260,7 @@ initialize_device_variables()
 
     const auto& pl = ph.get_identifier().get_layout();
 
-    auto lt = get_layout_type(pl.tags());
+    auto lt = pl.type();
     h_layout(i) = etoi(lt);
 
     const bool is_field_3d = lt==LayoutType::Scalar3D || lt==LayoutType::Vector3D;
@@ -405,7 +413,7 @@ do_remap_fwd()
 
   using TeamPolicy = typename KT::TeamTagPolicy<RemapFwdTag>;
 
-  const auto concurrency = KT::ExeSpace::concurrency();
+  const auto concurrency = KT::ExeSpace().concurrency();
 #ifdef KOKKOS_ENABLE_CUDA
 #ifdef KOKKOS_ENABLE_DEBUG
   const int team_size = std::min(256, std::min(128*m_num_phys_cols,32*(concurrency/this->m_num_fields+31)/32));
@@ -442,7 +450,7 @@ do_remap_bwd()
 
   using TeamPolicy = typename KT::TeamTagPolicy<RemapBwdTag>;
 
-  const auto concurrency = KT::ExeSpace::concurrency();
+  const auto concurrency = KT::ExeSpace().concurrency();
 #ifdef KOKKOS_ENABLE_CUDA
   const int num_levs  = m_phys_grid->get_num_vertical_levels();
   const int team_size = std::min(128,32*(int)ceil(((Real)num_levs)/32));
@@ -470,7 +478,7 @@ setup_boundary_exchange () {
   int num_3d_int = 0;
   for (int i=0; i<this->m_num_fields; ++i) {
     const auto& layout = m_dyn_fields[i].get_header().get_identifier().get_layout();
-    const auto lt = get_layout_type(layout.tags());
+    const auto lt = layout.type();
     switch (lt) {
       case LayoutType::Scalar2D:
         ++num_2d;
@@ -520,7 +528,7 @@ setup_boundary_exchange () {
   for (int i=0; i<this->m_num_fields; ++i) {
     const auto& layout = m_dyn_fields[i].get_header().get_identifier().get_layout();
     const auto& dims = layout.dims();
-    const auto lt = get_layout_type(layout.tags());
+    const auto lt = layout.type();
     switch (lt) {
       case LayoutType::Scalar2D:
         m_be->register_field(getHommeView<Real*[NP][NP]>(m_dyn_fields[i]));
@@ -735,9 +743,9 @@ create_p2d_map () {
   auto se_dyn = std::dynamic_pointer_cast<const SEGrid>(m_dyn_grid);
   EKAT_REQUIRE_MSG(se_dyn, "Error! Something went wrong casting dyn grid to a SEGrid.\n");
 
-  using gid_t = AbstractGrid::gid_type;
-  auto dyn_gids  = se_dyn->get_cg_dofs_gids().get_view<const gid_t*>();
-  auto phys_gids = m_phys_grid->get_dofs_gids().get_view<const gid_t*>();
+  using gid_type = AbstractGrid::gid_type;
+  auto dyn_gids  = se_dyn->get_cg_dofs_gids().get_view<const gid_type*>();
+  auto phys_gids = m_phys_grid->get_dofs_gids().get_view<const gid_type*>();
 
   auto policy = KokkosTypes<DefaultDevice>::RangePolicy(0,num_phys_dofs);
   m_p2d = decltype(m_p2d) ("",num_phys_dofs);

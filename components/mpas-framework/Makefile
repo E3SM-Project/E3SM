@@ -396,11 +396,11 @@ gnu-cray:
 	"FFLAGS_OPT = -O3 -m64 -ffree-line-length-none -fconvert=big-endian -ffree-form -ffpe-summary=none $${EXTRA_FFLAGS}" \
 	"CFLAGS_OPT = -O3 -m64" \
 	"CXXFLAGS_OPT = -O3 -m64" \
-	"LDFLAGS_OPT = -O3 -m64" \
+	"LDFLAGS_OPT = -O3 -m64 $(GNU_CRAY_LDFLAGS)" \
 	"FFLAGS_DEBUG = -g -m64 -ffree-line-length-none -fconvert=big-endian -ffree-form -fbounds-check -fbacktrace -ffpe-trap=invalid,zero,overflow -ffpe-summary=none $${EXTRA_FFLAGS}" \
 	"CFLAGS_DEBUG = -g -m64" \
 	"CXXFLAGS_DEBUG = -g -m64" \
-	"LDFLAGS_DEBUG = -g -m64" \
+	"LDFLAGS_DEBUG = -g -m64 $(GNU_CRAY_LDFLAGS)" \
 	"FFLAGS_OMP = -fopenmp" \
 	"CFLAGS_OMP = -fopenmp" \
 	"BUILD_TARGET = $(@)" \
@@ -462,8 +462,8 @@ cray-cray:
 	"CFLAGS_DEBUG = -O0 -g" \
 	"CXXFLAGS_DEBUG = -O0 -g" \
 	"LDFLAGS_DEBUG = -O0 -g -Ktrap=divz,fp,inv,ovf" \
-	"FFLAGS_OMP = -h omp" \
-	"CFLAGS_OMP = -h omp" \
+	"FFLAGS_OMP = -homp -fopenmp" \
+	"CFLAGS_OMP = -homp -fopenmp" \
 	"PICFLAG = -f pic" \
 	"BUILD_TARGET = $(@)" \
 	"CORE = $(CORE)" \
@@ -513,6 +513,18 @@ LIBS =
 #
 ifeq "$(USE_PIO2)" "true"
 	override CPPFLAGS += -DUSE_PIO2
+endif
+
+#
+# If user has indicated ADIOS isn't supported, define HAVE_ADIOS pre-processor macro
+#
+# Default is that we have ADIOS if a user hasn't said anything
+ifeq "$(HAVE_ADIOS)" ""
+	override CPPFLAGS += -DHAVE_ADIOS
+endif
+
+ifeq "$(HAVE_ADIOS)" "true"
+	override CPPFLAGS += -DHAVE_ADIOS
 endif
 
 #
@@ -616,6 +628,13 @@ endif
 
 ifeq "$(USE_SHTNS)" "true"
 	override CPPFLAGS += -DUSE_SHTNS
+endif
+
+ifneq "$(MOAB_PATH)" ""
+       CPPINCLUDES +=  -DHAVE_MOAB -I$(MOAB_PATH)/include
+       FCINCLUDES += -DHAVE_MOAB -I$(MOAB_PATH)/include
+       include $(MOAB_PATH)/lib/moab.make
+       LIBS +=  ${MOAB_LIBS_LINK} -lstdc++
 endif
 
 RM = rm -f
@@ -763,6 +782,12 @@ ifeq "$(USE_PIO2)" "true"
 else # USE_PIO2 IF
 	PIO_MESSAGE="Using the PIO 1.x library."
 endif # USE_PIO2 IF
+
+ifneq "$(MOAB_PATH)" ""
+       MOAB_MESSAGE="Using MOAB library"
+else # 
+       MOAB_MESSAGE="Not using MOAB library"
+endif 
 
 ifdef TIMER_LIB
 ifeq "$(TIMER_LIB)" "tau"
@@ -1087,6 +1112,9 @@ endif
 ifeq "$(USE_GPUAWARE)" "true"
    @echo $(GPUAWARE_MESSAGE)
 endif
+ifeq "$(USE_MOAB)" "true"
+	@echo $(MOAB_MESSAGE)
+endif
 	@echo "*******************************************************************************"
 clean:
 	cd $(FWPATH); $(MAKE) clean RM="$(RM)" CORE="$(CORE)"
@@ -1159,6 +1187,7 @@ errmsg:
 	@echo "    SHAREDLIB=true - generate position-independent code suitable for use in a shared library. Default is false."
 	@echo "    USE_LAPACK=true - builds and links with LAPACK / BLAS libraries.  Default is to not use LAPACK."
 	@echo "    USE_SHTNS=true - builds and links with SHTNS/FFTW.  Default is false."
+	@echo "    HAVE_ADIOS=false   - PIO2 library does not include ADIOS support.  Default is true."
 	@echo ""
 	@echo "Ensure that NETCDF, PNETCDF, PIO, LAPACK (if USE_LAPACK=true), and PAPI (if USE_PAPI=true) are environment variables"
 	@echo "that point to the absolute paths for the libraries."
@@ -1166,4 +1195,3 @@ errmsg:
 ifdef CORE
 	exit 1
 endif
-

@@ -69,6 +69,7 @@ module DUSTMod
      real(r8), pointer, private :: vlc_trb_2_patch           (:)    ! turbulent deposition velocity 2(m/s)
      real(r8), pointer, private :: vlc_trb_3_patch           (:)    ! turbulent deposition velocity 3(m/s)
      real(r8), pointer, private :: vlc_trb_4_patch           (:)    ! turbulent deposition velocity 4(m/s)
+     real(r8), pointer, private :: lnd_frc_mbl_patch         (:)    ! land fraction for dust mobilization (-)
      real(r8), pointer, private :: mbl_bsn_fct_col           (:)    ! basin factor
 
    contains
@@ -121,7 +122,8 @@ contains
     allocate(this%vlc_trb_2_patch           (begp:endp))        ; this%vlc_trb_2_patch           (:)   = nan 
     allocate(this%vlc_trb_3_patch           (begp:endp))        ; this%vlc_trb_3_patch           (:)   = nan 
     allocate(this%vlc_trb_4_patch           (begp:endp))        ; this%vlc_trb_4_patch           (:)   = nan 
-    allocate(this%mbl_bsn_fct_col           (begc:endc))        ; this%mbl_bsn_fct_col     (:)   = nan
+    allocate(this%lnd_frc_mbl_patch         (begp:endp))        ; this%lnd_frc_mbl_patch         (:)   = spval
+    allocate(this%mbl_bsn_fct_col           (begc:endc))        ; this%mbl_bsn_fct_col           (:)   = nan
 
   end subroutine InitAllocate
 
@@ -166,6 +168,11 @@ contains
     call hist_addfld1d (fname='DPVLTRB4', units='m/s',  &
          avgflag='A', long_name='turbulent deposition velocity 4', &
          ptr_patch=this%vlc_trb_4_patch, default='inactive')
+
+    this%lnd_frc_mbl_patch(begp:endp) = spval
+    call hist_addfld1d (fname='LND_FRC_DUST_MBL', units='-',  &
+         avgflag='A', long_name='bare soil fraction for land fraction for dust mobilization', &
+         ptr_patch=this%lnd_frc_mbl_patch, default='inactive')
 
   end subroutine InitHistory
 
@@ -239,7 +246,6 @@ contains
     real(r8) :: Cd        ! [dimless] The dust emission coefficient, which depends on 
                           ! the soil's standardized threshold friction speed -YF
     real(r8) :: wnd_frc_slt
-    real(r8) :: lnd_frc_mbl(bounds%begp:bounds%endp)
     real(r8) :: bd
     real(r8) :: gwc_sfc
     real(r8) :: ttlai(bounds%begp:bounds%endp)
@@ -287,6 +293,7 @@ contains
          u10                 => frictionvel_vars%u10_patch           , & ! Input:  [real(r8) (:)   ]  10-m wind (m/s) (created for dust model)
 
          mbl_bsn_fct         => dust_vars%mbl_bsn_fct_col            , & ! Input:  [real(r8) (:)   ]  basin factor
+         lnd_frc_mbl         => dust_vars%lnd_frc_mbl_patch          , & ! Output: [real(r8) (:)   ]  land fraction for dust mobilization
          flx_mss_vrt_dst     => dust_vars%flx_mss_vrt_dst_patch      , & ! Output: [real(r8) (:,:) ]  surface dust emission (kg/m**2/s)
          flx_mss_vrt_dst_tot => dust_vars%flx_mss_vrt_dst_tot_patch    & ! Output: [real(r8) (:)   ]  total dust flux back to atmosphere (pft)
          )

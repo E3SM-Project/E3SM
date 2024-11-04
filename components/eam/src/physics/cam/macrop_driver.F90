@@ -23,6 +23,7 @@ module macrop_driver
   use perf_mod,          only: t_startf, t_stopf
   use cam_logfile,       only: iulog
   use cam_abortutils,    only: endrun
+  use zm_conv,       only: zm_microp
 
   implicit none
   private
@@ -85,7 +86,13 @@ module macrop_driver
     fice_idx,     &  
     cmeliq_idx,   &  
     shfrc_idx,    &
-    naai_idx 
+    naai_idx,     &
+    dlfzm_idx,    & ! index of ZM detrainment of convective cloud water mixing ratio.
+    difzm_idx,    & ! index of ZM detrainment of convective cloud ice mixing ratio.
+    dsfzm_idx,    & ! index of ZM detrainment of convective snow mixing ratio.
+    dnlfzm_idx,   & ! index of ZM detrainment of convective cloud water num concen.
+    dnifzm_idx,   & ! index of ZM detrainment of convective cloud ice num concen.
+    dnsfzm_idx      ! index of ZM detrainment of convective snow num concen.
 
   logical :: liqcf_fix
 
@@ -204,6 +211,7 @@ end subroutine macrop_driver_readnl
                                                  ! liquid budgets.
     integer              :: history_budget_histfile_num ! output history file number for budget fields
     integer :: istat
+    integer :: err
     character(len=*), parameter :: subname = 'macrop_driver_init'
     !-----------------------------------------------------------------------
 
@@ -320,6 +328,13 @@ end subroutine macrop_driver_readnl
     CC_nl_idx   = pbuf_get_index('CC_nl')
     CC_ni_idx   = pbuf_get_index('CC_ni')
     CC_qlst_idx = pbuf_get_index('CC_qlst')
+
+    dlfzm_idx = pbuf_get_index('DLFZM')
+    difzm_idx = pbuf_get_index('DIFZM')
+    dsfzm_idx = pbuf_get_index('DSFZM', err)
+    dnlfzm_idx = pbuf_get_index('DNLFZM', err)
+    dnifzm_idx = pbuf_get_index('DNIFZM', err)
+    dnsfzm_idx = pbuf_get_index('DNSFZM', err)
 
     if (micro_do_icesupersat) then 
        naai_idx      = pbuf_get_index('NAAI')
@@ -457,6 +472,14 @@ end subroutine macrop_driver_readnl
   real(r8), pointer, dimension(:,:) :: fice_ql      ! Cloud ice/water partitioning ratio.
 
   real(r8), pointer, dimension(:,:) :: naai         ! Number concentration of activated ice nuclei
+
+  ! ZM microphysics
+  real(r8), pointer :: dlfzm(:,:)  ! ZM detrainment of convective cloud water mixing ratio.
+  real(r8), pointer :: difzm(:,:)  ! ZM detrainment of convective cloud ice mixing ratio.
+  real(r8), pointer :: dsfzm(:,:)  ! ZM detrainment of convective snow mixing ratio.
+  real(r8), pointer :: dnlfzm(:,:) ! ZM detrainment of convective cloud water num concen.
+  real(r8), pointer :: dnifzm(:,:) ! ZM detrainment of convective cloud ice num concen.
+  real(r8), pointer :: dnsfzm(:,:) ! ZM detrainment of convective snow num concen.  
  
   real(r8) :: latsub
 
@@ -654,6 +677,15 @@ end subroutine macrop_driver_readnl
      ! This is the key procesure generating upper-level cirrus clouds.
      ! The unit of dlf : [ kg/kg/s ]
 
+   if (zm_microp) then
+      call pbuf_get_field(pbuf, dlfzm_idx, dlfzm)
+      call pbuf_get_field(pbuf, difzm_idx, difzm)
+      call pbuf_get_field(pbuf, dsfzm_idx, dsfzm)
+      call pbuf_get_field(pbuf, dnlfzm_idx, dnlfzm)
+      call pbuf_get_field(pbuf, dnifzm_idx, dnifzm)
+      call pbuf_get_field(pbuf, dnsfzm_idx, dnsfzm)
+   end if
+
    det_s(:)   = 0._r8
    det_ice(:) = 0._r8
 
@@ -680,20 +712,36 @@ end subroutine macrop_driver_readnl
      ! If detrainment was done elsewhere, still update the variables used for output
      ! assuming that the temperature split between liquid and ice is the same as assumed
      ! here.
+
      if (do_detrain) then
-      ptend_loc%q(i,k,ixcldliq) = dlf(i,k) * ( 1._r8 - dum1 )
-      ptend_loc%q(i,k,ixcldice) = dlf(i,k) * dum1
-    ! dum2                      = dlf(i,k) * ( 1._r8 - dum1 )
-      ptend_loc%q(i,k,ixnumliq) = 3._r8 * ( max(0._r8, ( dlf(i,k) - dlf2(i,k) )) * ( 1._r8 - dum1 ) ) / &
-           (4._r8*3.14_r8* 8.e-6_r8**3*997._r8) + & ! Deep    Convection
-           3._r8 * (                         dlf2(i,k)    * ( 1._r8 - dum1 ) ) / &
-           (4._r8*3.14_r8*10.e-6_r8**3*997._r8)     ! Shallow Convection 
-    ! dum2                      = dlf(i,k) * dum1
-      ptend_loc%q(i,k,ixnumice) = 3._r8 * ( max(0._r8, ( dlf(i,k) - dlf2(i,k) )) *  dum1 ) / &
-           (4._r8*3.14_r8*25.e-6_r8**3*500._r8) + & ! Deep    Convection
-           3._r8 * (                         dlf2(i,k)    *  dum1 ) / &
-           (4._r8*3.14_r8*50.e-6_r8**3*500._r8)     ! Shallow Convection
-      ptend_loc%s(i,k)          = dlf(i,k) * dum1 * latice
+       if (zm_microp) then
+          ptend_loc%q(i,k,ixcldliq) = dlfzm(i,k) + dlf2(i,k) * ( 1._r8 - dum1 )
+          ptend_loc%q(i,k,ixcldice) = difzm(i,k) + dsfzm(i,k) +  dlf2(i,k) * dum1
+          ! The mass of a cloud droplet(ice particle) is calculated using mass=volume * density = [(4/3) * pi * r^3 ]* density.
+          ! The density of droplet and ice particle in shallow convection is assumed to be 997. kg/m3, and 500. kg/m3, respectively.
+          ! The radius of droplet and ice particle in shallow convection is assumed to be 10 microns (10.e-6 m), and 
+          ! 50. microns( 50.e-6 m), respectively.      
+          ptend_loc%q(i,k,ixnumliq) = dnlfzm(i,k) + 3._r8 * ( dlf2(i,k) * ( 1._r8 - dum1 ) )   &
+                                                   / (4._r8*3.14_r8*10.e-6_r8**3._r8*997._r8)      ! Shallow Convection
+          ptend_loc%q(i,k,ixnumice) = dnifzm(i,k) + dnsfzm(i,k)  + 3._r8 * ( dlf2(i,k) * dum1 )  &
+                                                   / (4._r8*3.14_r8*50.e-6_r8**3._r8*500._r8)      ! Shallow Convection
+          ptend_loc%s(i,k)          = dlf2(i,k) * dum1 * latice
+       else 
+
+          ptend_loc%q(i,k,ixcldliq) = dlf(i,k) * ( 1._r8 - dum1 )
+          ptend_loc%q(i,k,ixcldice) = dlf(i,k) * dum1
+          ! dum2                      = dlf(i,k) * ( 1._r8 - dum1 )
+          ptend_loc%q(i,k,ixnumliq) = 3._r8 * ( max(0._r8, ( dlf(i,k) - dlf2(i,k) )) * ( 1._r8 - dum1 ) ) / &
+               (4._r8*3.14_r8* 8.e-6_r8**3._r8*997._r8) + & ! Deep    Convection
+               3._r8 * (                         dlf2(i,k)    * ( 1._r8 - dum1 ) ) / &
+               (4._r8*3.14_r8*10.e-6_r8**3._r8*997._r8)     ! Shallow Convection 
+          ! dum2                      = dlf(i,k) * dum1
+          ptend_loc%q(i,k,ixnumice) = 3._r8 * ( max(0._r8, ( dlf(i,k) - dlf2(i,k) )) *  dum1 ) / &
+               (4._r8*3.14_r8*25.e-6_r8**3._r8*500._r8) + & ! Deep    Convection
+               3._r8 * (                         dlf2(i,k)    *  dum1 ) / &
+               (4._r8*3.14_r8*50.e-6_r8**3._r8*500._r8)     ! Shallow Convection
+          ptend_loc%s(i,k)          = dlf(i,k) * dum1 * latice
+       end if ! zm_microp
      else 
         ptend_loc%q(i,k,ixcldliq) = 0._r8
         ptend_loc%q(i,k,ixcldice) = 0._r8
@@ -701,7 +749,7 @@ end subroutine macrop_driver_readnl
         ptend_loc%q(i,k,ixnumice) = 0._r8
         ptend_loc%s(i,k)          = 0._r8
      end if
-    
+   
 
     ! Only rliq is saved from deep convection, which is the reserved liquid.  We need to keep
     !   track of the integrals of ice and static energy that is effected from conversion to ice
@@ -730,11 +778,17 @@ end subroutine macrop_driver_readnl
           dpdlft  (i,k)             = 0._r8
           shdlft  (i,k)             = 0._r8
        else
-          dpdlfliq(i,k) = ( dlf(i,k) - dlf2(i,k) ) * ( 1._r8 - dum1 )
-          dpdlfice(i,k) = ( dlf(i,k) - dlf2(i,k) ) * ( dum1 )
+          if (zm_microp) then
+             dpdlfliq(i,k) =  dlfzm(i,k)
+             dpdlfice(i,k) =  difzm(i,k) + dsfzm(i,k)
+             dpdlft  (i,k) = 0._r8
+          else
+             dpdlft  (i,k) = ( dlf(i,k) - dlf2(i,k) ) * dum1 * latice/cpair
+             dpdlfliq(i,k) = ( dlf(i,k) - dlf2(i,k) ) * ( 1._r8 - dum1 )
+             dpdlfice(i,k) = ( dlf(i,k) - dlf2(i,k) ) * ( dum1 )
+          end if
           shdlfliq(i,k) = dlf2(i,k) * ( 1._r8 - dum1 )
           shdlfice(i,k) = dlf2(i,k) * ( dum1 )
-          dpdlft  (i,k) = ( dlf(i,k) - dlf2(i,k) ) * dum1 * latice/cpair
           shdlft  (i,k) = dlf2(i,k) * dum1 * latice/cpair
       endif
    end do
@@ -1163,7 +1217,7 @@ elemental subroutine ice_macro_tend(naai,t,p,qv,qi,ni,xxls,deltat,stend,qvtend,q
      ! if ice exists (more than 1 L-1) and there is condensation, do not add to number (= growth), else, add 10um ice
 
      if (ni.lt.1.e3_r8.and.(qi+qitend*deltat).gt.1e-18_r8) then
-        nitend = nitend + 3._r8 * qitend/(4._r8*3.14_r8* 10.e-6_r8**3*997._r8)
+        nitend = nitend + 3._r8 * qitend/(4._r8*3.14_r8* 10.e-6_r8**3._r8*997._r8)
      endif
 
   endif

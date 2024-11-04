@@ -1,0 +1,76 @@
+site_name: E3SM
+
+nav:
+  - Home: 'index.md'
+  - E3SM Basics:
+    - 'index.md'
+    - Installation: 'installation.md'
+    - User Guide: 'user-guide/index.md'
+    - Development:
+      - Introduction: 'dev-guide/index.md'
+      - Adding Support for New Grids: 'dev-guide/adding-grid-support/index.md'
+  - Components: '*include ./components/*/mkdocs.yml'
+  - Tools:      '*include ./tools/*/mkdocs.yml'
+  - More Information:
+    - 'E3SM-Project' : 'http://docs.e3sm.org'
+    - 'e3sm.org' : 'http://e3sm.org'
+
+repo_name: E3SM-Project/E3SM
+repo_url: https://github.com/E3SM-Project/E3SM
+
+theme:
+  name: material
+  palette:
+  - media: "(prefers-color-scheme: light)"
+    scheme: default
+    toggle:
+      icon: material/weather-sunny
+      name: Switch to dark mode
+  - media: "(prefers-color-scheme: dark)"
+    scheme: slate
+    toggle:
+      icon: material/weather-night
+      name: Switch to light mode
+  icon:
+    admonition:
+      note: octicons/tag-16
+  features:
+    - navigation.indexes
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.sections
+    - navigation.path
+    - navigation.tracking
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.select
+    - content.code.copy
+    - content.action.view
+    - content.tooltips
+
+
+markdown_extensions:
+  - admonition
+  - footnotes
+  - pymdownx.details
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.arithmatex:
+      generic: true
+  - md_in_html
+  - tables
+
+plugins:
+  - monorepo
+  - search
+  - bibtex:
+      bib_dir: docs/refs
+
+extra_javascript:
+  - javascript/mathjax.js
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js

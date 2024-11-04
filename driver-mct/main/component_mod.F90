@@ -488,7 +488,8 @@ contains
           km = mct_aVect_indexRa(dom_s%data, "aream" )
           dom_s%data%rAttr(km,:) = dom_s%data%rAttr(ka,:)
 
-          call seq_map_map(mapper_Fa2o, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream')
+          call seq_map_map(mapper_Fa2o, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream', &
+               omit_nonlinear=.true.)
        else
           gsmap_s => component_get_gsmap_cx(ocn(1)) ! gsmap_ox
           gsmap_d => component_get_gsmap_cx(atm(1)) ! gsmap_ax
@@ -509,7 +510,8 @@ contains
        dom_s  => component_get_dom_cx(ocn(1))   !dom_ox
        dom_d  => component_get_dom_cx(ice(1))   !dom_ix
 
-       call seq_map_map(mapper_SFo2i, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream')
+       call seq_map_map(mapper_SFo2i, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream', &
+            omit_nonlinear=.true.)
     endif
 
     if (rof_c2_ocn) then
@@ -537,7 +539,8 @@ contains
           dom_s  => component_get_dom_cx(atm(1))   !dom_ax
           dom_d  => component_get_dom_cx(lnd(1))   !dom_lx
 
-          call seq_map_map(mapper_Sa2l, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream')
+          call seq_map_map(mapper_Sa2l, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream', &
+               omit_nonlinear=.true.)
        else
           gsmap_d => component_get_gsmap_cx(lnd(1)) ! gsmap_lx
           dom_d   => component_get_dom_cx(lnd(1))   ! dom_lx
@@ -556,7 +559,8 @@ contains
           dom_s  => component_get_dom_cx(lnd(1))   !dom_lx
           dom_d  => component_get_dom_cx(glc(1))   !dom_gx
 
-          call seq_map_map(mapper_Sl2g, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream')
+          call seq_map_map(mapper_Sl2g, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream', &
+               omit_nonlinear=.true.)
        else
           gsmap_d => component_get_gsmap_cx(glc(1)) ! gsmap_gx
           dom_d   => component_get_dom_cx(glc(1))   ! dom_gx
@@ -604,7 +608,8 @@ contains
           else
              mpi_tag = comp(eci)%cplcompid*10000+eci*10+5
           end if
-          call seq_map_map(comp(eci)%mapper_Cx2c, comp(eci)%dom_cx%data, comp(eci)%dom_cc%data, msgtag=mpi_tag)
+          call seq_map_map(comp(eci)%mapper_Cx2c, comp(eci)%dom_cx%data, comp(eci)%dom_cc%data, msgtag=mpi_tag, &
+               omit_nonlinear=.true.)
 
           ! For only component pes
           if (comp(eci)%iamin_compid) then
@@ -627,7 +632,8 @@ contains
           else
               mpi_tag = comp(eci)%cplcompid*10000+eci*10+7
           end if
-          call seq_map_map(comp(eci)%mapper_cc2x, comp(eci)%c2x_cc, comp(eci)%c2x_cx, msgtag=mpi_tag)
+          call seq_map_map(comp(eci)%mapper_cc2x, comp(eci)%c2x_cc, comp(eci)%c2x_cx, msgtag=mpi_tag, &
+               omit_nonlinear=.true.)
 
        endif
     enddo

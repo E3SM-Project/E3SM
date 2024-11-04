@@ -5,6 +5,7 @@
 
 #include "ekat/util/ekat_string_utils.hpp"
 #include "ekat/ekat_scalar_traits.hpp"
+#include "ekat/logging/ekat_logger.hpp"
 
 #include <vector>
 
@@ -12,7 +13,7 @@ namespace scream {
 namespace physics {
 
 /*
- * Mathematical constants used by p3.
+ * Mathematical constants used by atmosphere processes.
  *
  * Note that a potential optimization could be to change the type of
  * Scalar constants that have integer values to int.
@@ -52,7 +53,6 @@ struct Constants
   static constexpr Scalar SXTH          = 1.0/6.0;
   static constexpr Scalar PIOV3         = Pi*THIRD;
   static constexpr Scalar PIOV6         = Pi*SXTH;
-  static constexpr Scalar AIMM          = 0.65;
   static constexpr Scalar BIMM          = 2.0;
   static constexpr Scalar CONS1         = PIOV6*RHOW;
   static constexpr Scalar CONS2         = 4.*PIOV3*RHOW;
@@ -76,13 +76,8 @@ struct Constants
   static constexpr Scalar INV_CP        = 1.0/CP;
   //  static constexpr Scalar Tol           = ekat::is_single_precision<Real>::value ? 2e-5 : 1e-14;
   static constexpr Scalar macheps = std::numeric_limits<Real>::epsilon();
-  static constexpr Scalar mu_r_const    = 1.0;
   static constexpr Scalar dt_left_tol   = 1.e-4;
   static constexpr Scalar bcn           = 2.;
-  static constexpr Scalar rho_rimeMin   = 50.;
-  static constexpr Scalar rho_rimeMax   = 900.;
-  static constexpr Scalar eci           = 0.5;
-  static constexpr Scalar eri           = 1.0;
   static constexpr Scalar dropmass      = 5.2e-7;
   static constexpr Scalar NCCNST        = 200.0e+6;
   static constexpr Scalar incloud_limit = 5.1e-3;
@@ -94,18 +89,22 @@ struct Constants
   static constexpr Scalar MWWV          = MWH2O;
   static constexpr Scalar RWV           = Rgas / MWWV;
   static constexpr Scalar ZVIR          = (RWV / Rair) - 1.0;
-  static constexpr Scalar max_total_ni  = 500.e+3;  // maximum total ice concentration (sum of all categories) (m)
   static constexpr Scalar f1r           = 0.78;
   static constexpr Scalar f2r           = 0.32;
   static constexpr Scalar nmltratio     = 1.0; // ratio of rain number produced to ice number loss from melting
   static constexpr Scalar basetemp      = 300.0;
   static constexpr Scalar r_earth       = 6.376e6; // Radius of the earth in m
   static constexpr Scalar stebol        = 5.67e-8; // Stefan-Boltzmann's constant (W/m^2/K^4)
+  static constexpr Scalar omega         = 7.292e-5; // Earth's rotation (rad/sec)
 
   // Table dimension constants
   static constexpr int VTABLE_DIM0    = 300;
   static constexpr int VTABLE_DIM1    = 10;
   static constexpr int MU_R_TABLE_DIM = 150;
+
+  // Turbulent Mountain Stress constants
+  static constexpr Scalar orocnst = 1;     // Converts from standard deviation to height [ no unit ]
+  static constexpr Scalar z0fac   = 0.075; // Factor determining z_0 from orographic standard deviation [ no unit ]
 
   // switch for warm-rain parameterization
   // = 1 Seifert and Beheng 2001
@@ -117,11 +116,126 @@ struct Constants
   static Scalar get_gas_mol_weight(ci_string gas_name);
 
   // For use in converting area to length for a column cell
-  // World Geodetic System 1984 (WGS84) 
-  static constexpr Scalar earth_ellipsoid1 = 111132.92; // first coefficient, meters per degree longitude at equator 
-  static constexpr Scalar earth_ellipsoid2 = 559.82;    // second expansion coefficient for WGS84 ellipsoid 
-  static constexpr Scalar earth_ellipsoid3 = 1.175;     // third expansion coefficient for WGS84 ellipsoid 
+  // World Geodetic System 1984 (WGS84)
+  static constexpr Scalar earth_ellipsoid1 = 111132.92; // first coefficient, meters per degree longitude at equator
+  static constexpr Scalar earth_ellipsoid2 = 559.82;    // second expansion coefficient for WGS84 ellipsoid
+  static constexpr Scalar earth_ellipsoid3 = 1.175;     // third expansion coefficient for WGS84 ellipsoid
 };
+
+template <typename Scalar>
+struct P3_Constants
+{
+  public:
+  Scalar p3_autoconversion_prefactor = 1350.0;
+  Scalar p3_mu_r_constant             = 1.0;
+  Scalar p3_spa_to_nc                 = 1.0;
+  Scalar p3_k_accretion               = 67.0;
+  Scalar p3_eci                       = 0.5;
+  Scalar p3_eri                       = 1.0;
+  Scalar p3_rho_rime_min              = 50.0;
+  Scalar p3_rho_rime_max              = 900.0;
+  Scalar p3_a_imm                     = 0.65;
+  Scalar p3_dep_nucleation_exponent   = 0.304;
+  Scalar p3_ice_sed_knob              = 1.0;
+  Scalar p3_d_breakup_cutoff          = 0.00028;
+
+  void set_p3_from_namelist(ekat::ParameterList &params){
+
+    std::string nname = "p3_autoconversion_prefactor";
+    if(params.isParameter(nname))
+       p3_autoconversion_prefactor = params.get<double>(nname);
+
+    nname = "p3_mu_r_constant";
+    if(params.isParameter(nname))
+       p3_mu_r_constant = params.get<double>(nname);
+
+    nname = "p3_spa_to_nc";
+    if(params.isParameter(nname))
+       p3_spa_to_nc = params.get<double>(nname);
+
+    nname = "p3_k_accretion";
+    if(params.isParameter(nname))
+       p3_k_accretion = params.get<double>(nname);
+
+    nname = "p3_eci";
+    if(params.isParameter(nname))
+       p3_eci = params.get<double>(nname);
+
+    nname = "p3_eri";
+    if(params.isParameter(nname))
+       p3_eri = params.get<double>(nname);
+
+    nname = "p3_rho_rime_min";
+    if(params.isParameter(nname))
+       p3_rho_rime_min = params.get<double>(nname);
+
+    nname = "p3_rho_rime_max";
+    if(params.isParameter(nname))
+       p3_rho_rime_max = params.get<double>(nname);
+
+    nname = "p3_a_imm";
+    if(params.isParameter(nname))
+       p3_a_imm = params.get<double>(nname);
+
+    nname = "p3_dep_nucleation_exponent";
+    if(params.isParameter(nname))
+       p3_dep_nucleation_exponent = params.get<double>(nname);
+
+    nname = "p3_ice_sed_knob";
+    if(params.isParameter(nname))
+       p3_ice_sed_knob = params.get<double>(nname);
+
+    nname = "p3_d_breakup_cutoff";
+    if(params.isParameter(nname))
+       p3_d_breakup_cutoff = params.get<double>(nname);
+
+  };
+
+  void print_p3constants(std::shared_ptr<ekat::logger::LoggerBase> logger){
+      logger->info("P3 Constants:");
+
+      std::string nname = "p3_autoconversion_prefactor";
+      logger->info(std::string("P3   ") + nname + std::string(" = ") + std::to_string(p3_autoconversion_prefactor));
+
+      nname = "p3_mu_r_constant";
+      logger->info(std::string("P3   ") + nname + std::string(" = ") + std::to_string(p3_mu_r_constant));
+
+      nname = "p3_spa_to_nc";
+      logger->info(std::string("P3   ") + nname + std::string(" = ") + std::to_string(p3_spa_to_nc));
+
+      nname = "p3_k_accretion";
+      logger->info(std::string("P3   ") + nname + std::string(" = ") + std::to_string(p3_k_accretion));
+
+      nname = "p3_eci";
+      logger->info(std::string("P3   ") + nname + std::string(" = ") + std::to_string(p3_eci));
+
+      nname = "p3_eri";
+      logger->info(std::string("P3   ") + nname + std::string(" = ") + std::to_string(p3_eri));
+
+      nname = "p3_rho_rime_min";
+      logger->info(std::string("P3   ") + nname + std::string(" = ") + std::to_string(p3_rho_rime_min));
+
+      nname = "p3_rho_rime_max";
+      logger->info(std::string("P3   ") + nname + std::string(" = ") + std::to_string(p3_rho_rime_max));
+
+      nname = "p3_a_imm";
+      logger->info(std::string("P3   ") + nname + std::string(" = ") + std::to_string(p3_a_imm));
+
+      nname = "p3_dep_nucleation_exponent";
+      logger->info(std::string("P3   ") + nname + std::string(" = ") + std::to_string(p3_dep_nucleation_exponent));
+
+      nname = "p3_ice_sed_knob";
+      logger->info(std::string("P3   ") + nname + std::string(" = ") + std::to_string(p3_ice_sed_knob));
+
+      nname = "p3_d_breakup_cutoff";
+      logger->info(std::string("P3   ") + nname + std::string(" = ") + std::to_string(p3_d_breakup_cutoff));
+
+      logger->info(" ");
+  };
+
+  //one can implement a check here too, for acceptable ranges
+
+}; // P3_Constants
 
 // Gases
 // Define the molecular weight for each gas, which can then be

@@ -45,6 +45,7 @@ AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
     using logger_impl_t = Logger<LogNoFile,LogAllRanks>;
     auto log_level = m_params.get<std::string>("log_level","trace");
     m_atm_logger = std::make_shared<logger_impl_t>("",str2LogLevel(log_level),m_comm);
+    m_atm_logger->set_no_format();
   }
 
   if (m_params.isParameter("number_of_subcycles")) {
@@ -61,6 +62,8 @@ AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
   // Info for mass and energy conservation checks
   m_column_conservation_check_data.has_check =
       m_params.get<bool>("enable_column_conservation_checks", false);
+
+  m_internal_diagnostics_level = m_params.get<int>("internal_diagnostics_level", 0);
 }
 
 void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type) {
@@ -70,12 +73,21 @@ void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type)
   set_fields_and_groups_pointers();
   m_time_stamp = t0;
   initialize_impl(run_type);
+
+  // Create all start-of-step fields needed for tendencies calculation
+  for (const auto& it : m_proc_tendencies) {
+    const auto& tname = it.first;
+    const auto& fname = m_tend_to_field.at(tname);
+    m_start_of_step_fields[fname] = get_field_out(fname).clone();
+  }
+
   if (this->type()!=AtmosphereProcessType::Group) {
     stop_timer (m_timer_prefix + this->name() + "::init");
   }
 }
 
 void AtmosphereProcess::run (const double dt) {
+  m_atm_logger->debug("[EAMxx::" + this->name() + "] run...");
   start_timer (m_timer_prefix + this->name() + "::run");
   if (m_params.get("enable_precondition_checks", true)) {
     // Run 'pre-condition' property checks stored in this AP
@@ -97,8 +109,16 @@ void AtmosphereProcess::run (const double dt) {
       compute_column_conservation_checks_data(dt_sub);
     }
 
+    if (m_internal_diagnostics_level > 0)
+      print_global_state_hash(name() + "-pre-sc-" + std::to_string(m_subcycle_iter),
+                              true, false, false);
+
     // Run derived class implementation
     run_impl(dt_sub);
+
+    if (m_internal_diagnostics_level > 0)
+      print_global_state_hash(name() + "-pst-sc-" + std::to_string(m_subcycle_iter),
+                              true, true, true);
 
     if (has_column_conservation_check()) {
       // Run the column local mass and energy conservation checks
@@ -128,8 +148,8 @@ void AtmosphereProcess::finalize (/* what inputs? */) {
 
 void AtmosphereProcess::setup_tendencies_requests () {
   using vos_t = std::vector<std::string>;
-  auto tend_vec = m_params.get<vos_t>("compute_tendencies",{"NONE"});
-  if (tend_vec == vos_t{"NONE"}) {
+  auto tend_vec = m_params.get<vos_t>("compute_tendencies",{});
+  if (tend_vec.size()==0) {
     return;
   }
 
@@ -192,6 +212,7 @@ void AtmosphereProcess::setup_tendencies_requests () {
   // field with the requested name. If more than one is found (must be
   // that we have same field on multiple grids), error out.
   using namespace ekat::units;
+  using strlist_t = std::list<std::string>;
   for (const auto& tn : tend_list) {
     std::string grid_found = "";
     auto tokens = field_grid(tn);
@@ -221,7 +242,7 @@ void AtmosphereProcess::setup_tendencies_requests () {
 
         // Create tend FID and request field
         FieldIdentifier t_fid(tname,layout,units,gname,dtype);
-        add_field<Computed>(t_fid,"ACCUMULATED");
+        add_field<Computed>(t_fid,strlist_t{"ACCUMULATED","DIVIDE_BY_DT"});
         grid_found = gname;
       }
     }
@@ -344,6 +365,7 @@ void AtmosphereProcess::set_computed_group (const FieldGroup& group) {
 void AtmosphereProcess::run_property_check (const prop_check_ptr&       property_check,
                                             const CheckFailHandling     check_fail_handling,
                                             const PropertyCheckCategory property_check_category) const {
+  m_atm_logger->trace("[" + this->name() + "] run_property_check '" + property_check->name() + "'...");
   auto res_and_msg = property_check->check();
 
   // string for output
@@ -360,7 +382,8 @@ void AtmosphereProcess::run_property_check (const prop_check_ptr&       property
       "WARNING: Failed and repaired " + pre_post_str + " property check.\n"
       "  - Atmosphere process name: " + name() + "\n"
       "  - Property check name: " + property_check->name() + "\n"
-      "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n");
+      "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n"
+      "  - Message: " + res_and_msg.msg + "\n");
   } else {
     // Ugh, the test failed badly, with no chance to repair it.
     if (check_fail_handling==CheckFailHandling::Warning) {
@@ -435,54 +458,69 @@ void AtmosphereProcess::run_property_check (const prop_check_ptr&       property
 }
 
 void AtmosphereProcess::run_precondition_checks () const {
+  m_atm_logger->debug("[" + this->name() + "] run_precondition_checks...");
+  start_timer(m_timer_prefix + this->name() + "::run-precondition-checks");
   // Run all pre-condition property checks
   for (const auto& it : m_precondition_checks) {
     run_property_check(it.second, it.first,
                        PropertyCheckCategory::Precondition);
   }
+  stop_timer(m_timer_prefix + this->name() + "::run-precondition-checks");
+  m_atm_logger->debug("[" + this->name() + "] run_precondition_checks...done!");
 }
 
 void AtmosphereProcess::run_postcondition_checks () const {
+  m_atm_logger->debug("[" + this->name() + "] run_postcondition_checks...");
+  start_timer(m_timer_prefix + this->name() + "::run-postcondition-checks");
   // Run all post-condition property checks
   for (const auto& it : m_postcondition_checks) {
     run_property_check(it.second, it.first,
                        PropertyCheckCategory::Postcondition);
   }
+  stop_timer(m_timer_prefix + this->name() + "::run-postcondition-checks");
+  m_atm_logger->debug("[" + this->name() + "] run_postcondition_checks...done!");
 }
 
 void AtmosphereProcess::run_column_conservation_check () const {
+  m_atm_logger->debug("[" + this->name() + "] run_column_conservation_check...");
+  start_timer(m_timer_prefix + this->name() + "::run-column-conservation-checks");
   // Conservation check is run as a postcondition check
   run_property_check(m_column_conservation_check.second,
                      m_column_conservation_check.first,
                      PropertyCheckCategory::Postcondition);
+  stop_timer(m_timer_prefix + this->name() + "::run-column-conservation-checks");
+  m_atm_logger->debug("[" + this->name() + "] run_column-conservation_checks...done!");
 }
 
 void AtmosphereProcess::init_step_tendencies () {
   if (m_compute_proc_tendencies) {
     start_timer(m_timer_prefix + this->name() + "::compute_tendencies");
-    for (auto& it : m_proc_tendencies) {
-      const auto& tname = it.first;
-      const auto& fname = m_tend_to_field.at(tname);
+    for (auto& it : m_start_of_step_fields) {
+      const auto& fname = it.first;
       const auto& f     = get_field_out(fname);
-
-      auto& tend = it.second;
-      tend.deep_copy(f);
+            auto& f_beg = it.second;
+      f_beg.deep_copy(f);
     }
     stop_timer(m_timer_prefix + this->name() + "::compute_tendencies");
   }
 }
 
 void AtmosphereProcess::compute_step_tendencies (const double dt) {
+  using namespace ShortFieldTagsNames;
   if (m_compute_proc_tendencies) {
+    m_atm_logger->debug("[" + this->name() + "] computing tendencies...");
     start_timer(m_timer_prefix + this->name() + "::compute_tendencies");
     for (auto it : m_proc_tendencies) {
+      // Note: f_beg is nonconst, so we can store step tendency in it
       const auto& tname = it.first;
       const auto& fname = m_tend_to_field.at(tname);
       const auto& f     = get_field_out(fname);
+            auto& f_beg = m_start_of_step_fields.at(fname);
+            auto& tend  = it.second;
 
-      auto& tend      = it.second;
-
-      tend.update(f,1/dt,-1/dt);
+      // Compute tend from this atm proc step, then sum into overall atm timestep tendency
+      f_beg.update(f,1,-1);
+      tend.update(f_beg,1,1);
     }
     stop_timer(m_timer_prefix + this->name() + "::compute_tendencies");
   }
@@ -1028,7 +1066,7 @@ get_internal_field_impl(const std::string& field_name) const {
 void AtmosphereProcess
 ::remove_field (const std::string& field_name, const std::string& grid_name) {
   typedef std::list<Field>::iterator It;
-  const auto rmf = [&] (std::list<Field>& fields, str_map<str_map<Field*>>& ptrs) {
+  const auto rmf = [&] (std::list<Field>& fields, strmap_t<strmap_t<Field*>>& ptrs) {
     std::vector<It> rm_its;
     for (It it = fields.begin(); it != fields.end(); ++it) {
       const auto& fid = it->get_header().get_identifier();
@@ -1047,7 +1085,7 @@ void AtmosphereProcess
 void AtmosphereProcess
 ::remove_group (const std::string& group_name, const std::string& grid_name) {
   typedef std::list<FieldGroup>::iterator It;
-  const auto rmg = [&] (std::list<FieldGroup>& fields, str_map<str_map<FieldGroup*>>& ptrs) {
+  const auto rmg = [&] (std::list<FieldGroup>& fields, strmap_t<strmap_t<FieldGroup*>>& ptrs) {
     std::vector<It> rm_its;
     for (It it = fields.begin(); it != fields.end(); ++it) {
       if (it->m_info->m_group_name == group_name and it->grid_name() == grid_name) {

@@ -1,0 +1,2 @@
+flanduse_timeseries = '$DIN_LOC_ROOT/lnd/clm2/surfdata_map/landuse.timeseries_4x5_hist_simyr1850-2015_200311.nc'
+fates_harvest_mode = 'landuse_timeseries'

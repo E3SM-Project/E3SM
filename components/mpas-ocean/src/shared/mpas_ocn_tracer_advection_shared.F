@@ -24,10 +24,12 @@ module ocn_tracer_advection_shared
    use mpas_derived_types
    use mpas_hash
    use mpas_sort
+   use mpas_constants
    use mpas_geometry_utils
    use mpas_log
 
    use ocn_config
+   use ocn_constants
    use ocn_mesh
 
    implicit none
@@ -370,7 +372,6 @@ module ocn_tracer_advection_shared
          xec, yec, zec,    &! arc bisection coords
          thetae_tmp,       &! angle
          xv1, xv2, yv1, yv2, zv1, zv2, &! vertex cart coords
-         pii,              &! pi math constant
          length_scale,     &! length scale
          cos2t, costsint, sin2t  ! trig function temps
 
@@ -413,7 +414,6 @@ module ocn_tracer_advection_shared
 
       ! Initialize derivTwo and pi
 
-      pii = 2.*asin(1.0)
       derivTwo(:,:,:) = 0.0_RKIND
 
       do iCell = 1, nCellsAll
@@ -461,9 +461,9 @@ module ocn_tracer_advection_shared
             end do
 
             if ( zc(1) == 1.0_RKIND) then
-               theta_abs(iCell) = pii/2.0_RKIND
+               theta_abs(iCell) = pi/2.0_RKIND
             else
-               theta_abs(iCell) = pii/2.0_RKIND &
+               theta_abs(iCell) = pi/2.0_RKIND &
                         - mpas_sphere_angle( xc(1), yc(1), zc(1), &
                                              xc(2), yc(2), zc(2), &
                                    0.0_RKIND, 0.0_RKIND, 1.0_RKIND) 
@@ -509,7 +509,7 @@ module ocn_tracer_advection_shared
                angle_2d(i) = angleEdge(edgesOnCell(i,iCell))
                iEdge = edgesOnCell(i,iCell)
                if ( iCell .ne. cellsOnEdge(1,iEdge)) &
-                  angle_2d(i) = angle_2d(i) - pii
+                  angle_2d(i) = angle_2d(i) - pi
 
                xp(i) = dcEdge(edgesOnCell(i,iCell)) * cos(angle_2d(i))
                yp(i) = dcEdge(edgesOnCell(i,iCell)) * sin(angle_2d(i))

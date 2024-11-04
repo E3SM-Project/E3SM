@@ -156,6 +156,12 @@ OPTIONS
      -crop                    Toggle for prognostic crop model. (default is off)
                               (can ONLY be turned on when BGC type is CN or BGC)
                               This turns on the namelist variable: use_crop
+     -hydrstrss               Toggle for plant hydraulic stress model. (default is off)
+                              This turns on the namelist variable: use_hydrstress
+     -topounit                Toggle for downscaling of atmosphric forcing from grid to topounit(default is off)
+                              This turns on the namelist variable: use_atm_downscaling_to_topunit
+     tw_irr_on               Toggle for irrigation will be two-way coupled with MOSART. (default is off)
+                              This turns on the namelist variable: tw_irr
      -csmdata "dir"           Root directory of CESM input data.
                               Can also be set by using the CSMDATA environment variable.
      -drydep                  Produce a drydep_inparm namelist that will go into the
@@ -237,6 +243,9 @@ OPTIONS
      -vichydro                Toggle to turn on VIC hydrologic parameterizations (default is off)
                               This turns on the namelist variable: use_vichydro
      -betr_mode               Turn on betr model for tracer transport in soil. [on|off] default is off.
+     -solar_rad_scheme "value"  Type of solar radiation scheme
+                                pp = Plane-Parallel
+                                top = Subgrid topographic parameterization
 
 
 Note: The precedence for setting the values of namelist variables is (highest to lowest):
@@ -289,6 +298,7 @@ sub process_commandline {
                note                  => undef,
                drydep                => 0,
                megan                 => 0,
+               fan                   => "default",
                irrig                 => "default",
                res                   => "default",
                silent                => 0,
@@ -296,6 +306,9 @@ sub process_commandline {
                test                  => 0,
                bgc                   => "default",
                crop                  => 0,
+               hydrstress            => 0,
+               topounit              => 0,
+               tw_irr_on             => 0,
                dynamic_vegetation    => 0,
                envxml_dir            => ".",
                vichydro              => 0,
@@ -305,6 +318,7 @@ sub process_commandline {
                nutrient              => "default",
                nutrient_comp_pathway => "default",
                soil_decomp           => "default",
+               solar_rad_scheme      => "default",
              );
 
   GetOptions(
@@ -346,6 +360,9 @@ sub process_commandline {
              "use_case=s"                => \$opts{'use_case'},
              "bgc=s"                     => \$opts{'bgc'},
              "crop"                      => \$opts{'crop'},
+             "hydrstress"                => \$opts{'hydrstress'},
+             "topounit"                  => \$opts{'topounit'},
+             "tw_irr_on"                 => \$opts{'tw_irr_on'},
              "dynamic_vegetation"        => \$opts{'dynamic_vegetation'},
              "vichydro"                  => \$opts{'vichydro'},
              "maxpft=i"                  => \$opts{'maxpft'},
@@ -356,6 +373,8 @@ sub process_commandline {
              "nutrient=s"                => \$opts{'nutrient'},
              "nutrient_comp_pathway=s"   => \$opts{'nutrient_comp_pathway'},
              "soil_decomp=s"             => \$opts{'soil_decomp'},
+             "solar_rad_scheme=s"        => \$opts{'solar_rad_scheme'},
+             "fan=s"                     => \$opts{'fan'},
             )  or usage();
 
   # Give usage message.
@@ -537,7 +556,8 @@ sub read_namelist_defaults {
   my @nl_defaults_files = ( "$nl_flags->{'cfgdir'}/namelist_files/namelist_defaults_overall.xml",
                             "$nl_flags->{'cfgdir'}/namelist_files/namelist_defaults.xml",
                             "$drvblddir/namelist_files/namelist_defaults_drv.xml",
-                            "$nl_flags->{'cfgdir'}/namelist_files/namelist_defaults_drydep.xml" );
+                            "$nl_flags->{'cfgdir'}/namelist_files/namelist_defaults_drydep.xml",
+                            "$nl_flags->{'cfgdir'}/namelist_files/namelist_defaults_fan.xml"  );
 
   # Add the location of the use case defaults files to the options hash
   $opts->{'use_case_dir'} = "$nl_flags->{'cfgdir'}/namelist_files/use_cases";
@@ -668,6 +688,9 @@ sub process_namelist_commandline_options {
   setup_cmdl_nutrient($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
   setup_cmdl_nutrient_comp($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
   setup_cmdl_crop($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
+  setup_cmdl_hydrstress($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
+  setup_cmdl_topounit($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
+  setup_cmdl_tw_irr_on($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
   setup_cmdl_maxpft($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
   setup_cmdl_glc_nec($opts, $nl_flags, $definition, $defaults, $nl);
   setup_cmdl_irrigation($opts, $nl_flags, $definition, $defaults, $nl, $physv);
@@ -679,6 +702,7 @@ sub process_namelist_commandline_options {
   setup_cmdl_bgc_spinup($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
   setup_cmdl_vichydro($opts, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_cmdl_betr_mode($opts, $nl_flags, $definition, $defaults, $nl, $physv);
+  setup_cmdl_solar_rad_scheme($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
 }
 
 #-------------------------------------------------------------------------------
@@ -784,11 +808,29 @@ sub setup_cmdl_fates_mode {
 
       # The following variables may be set by the user and are compatible with use_fates
       # no need to set defaults, covered in a different routine
-      my @list  = (  "fates_spitfire_mode", "use_vertsoilc", "use_century_decomp",
-                     "use_fates_planthydro", "use_fates_ed_st3", "use_fates_ed_prescribed_phys",
-		     "use_fates_inventory_init", "use_fates_fixed_biogeog", "use_fates_nocomp","use_fates_sp",
-                     "fates_inventory_ctrl_filename","use_fates_logging", "use_fates_tree_damage",
-		     "use_fates_parteh_mode","use_fates_cohort_age_tracking","use_snicar_ad");
+      my @list  = (  "flandusepftdat",
+                     "fluh_timeseries",
+                     "fates_harvest_mode",
+                     "fates_history_dimlevel",
+                     "fates_inventory_ctrl_filename",
+                     "fates_parteh_mode",
+                     "fates_seeddisp_cadence",
+                     "fates_spitfire_mode",
+                     "use_fates_cohort_age_tracking",
+                     "use_fates_ed_st3",
+                     "use_fates_ed_prescribed_phys",
+                     "use_fates_fixed_biogeog",
+                     "use_fates_inventory_init",
+                     "use_fates_luh",
+                     "use_fates_lupft",
+                     "use_fates_nocomp",
+                     "use_fates_planthydro",
+                     "use_fates_potentialveg",
+                     "use_fates_sp",
+                     "use_fates_tree_damage",
+                     "use_century_decomp",
+                     "use_snicar_ad",
+                     "use_vertsoilc");
       foreach my $var ( @list ) {
 	  if ( defined($nl->get_value($var))  ) {
 	      $nl_flags->{$var} = $nl->get_value($var);
@@ -816,6 +858,10 @@ sub setup_cmdl_fates_mode {
        if ( defined($nl->get_value($var)) ) {
            fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
+       $var = "fates_harvest_mode";
+       if ( defined($nl->get_value($var)) ) {
+           fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
+       }
        $var = "use_fates_cohort_age_tracking";
        if ( defined($nl->get_value($var)) ) {
            fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
@@ -823,10 +869,6 @@ sub setup_cmdl_fates_mode {
 	   $var = "use_fates_fixed_biogeog";
        if ( defined($nl->get_value($var)) ) {
            fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
-       }
-       $var = "use_fates_logging";
-       if ( defined($nl->get_value($var)) ) {
-	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
        $var = "fates_parteh_mode";
        if ( defined($nl->get_value($var)) ) {
@@ -848,7 +890,23 @@ sub setup_cmdl_fates_mode {
        if ( defined($nl->get_value($var)) ) {
 	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
+       $var = "use_fates_luh";
+       if ( defined($nl->get_value($var)) ) {
+	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
+       }
+       $var = "use_fates_lupft";
+       if ( defined($nl->get_value($var)) ) {
+	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
+       }
+       $var = "use_fates_potentialveg";
+       if ( defined($nl->get_value($var)) ) {
+	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
+       }
        $var = "fates_inventory_ctrl_filename";
+       if ( defined($nl->get_value($var)) ) {
+	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
+       }
+       $var = "fates_seeddisp_cadence";
        if ( defined($nl->get_value($var)) ) {
 	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
@@ -1085,6 +1143,50 @@ sub setup_cmdl_methane {
         }
     }
   }
+}
+
+#-------------------------------------------------------------------------------
+
+sub setup_cmdl_solar_rad_scheme {
+
+  my ($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv) = @_;
+
+  my $var = "solar_rad_scheme";
+  my $val;
+
+  # If "-solar_rad_scheme pp" or "-solar_rad_scheme" is unspecified, then
+  # we will set "use_top_solar_rad = .false."
+  if ( $opts->{$var} eq "pp" || $opts->{$var} eq "default" ) {
+    $val = ".false.";
+  } else {
+    # For "-solar_rad_scheme top", set "use_top_solar_rad = .true."
+    if ( $opts->{$var} eq "top" ) {
+      $val = ".true.";
+    } else {
+      fatal_error("The -solar_rad_scheme $opts->{'solar_rad_scheme'} is unknown");
+    }
+  }
+
+  my $var='use_top_solar_rad';
+  # Check if the value of use_top_solar_rad based on above alogrithm does not match the
+  # value of use_top_solar_rad in user_nl_elm
+  if (defined($nl->get_value($var)) && $nl->get_value($var) ne $val) {
+
+    # If "-solar_rad_scheme <pp|top>" was not specified, then simply use the value
+    # that was specified in the "user_nl_elm".
+    if ($opts->{'solar_rad_scheme'} eq "default") {
+      $val = $nl->get_value($var);
+    } else {
+      # Otherwise report an error
+      my $namelist_value = $nl->get_value('use_top_solar_rad');
+      fatal_error("$var = $namelist_value, which is inconsistent with the commandline setting of -solar_rad_scheme $opts->{'solar_rad_scheme'}");
+    }
+  }
+
+  # Lastly, define the value of use_top_solar_rad
+  my $group = $definition->get_group_name($var);
+  $nl->set_variable_value($group, $var, $val);
+
 }
 
 #-------------------------------------------------------------------------------
@@ -1351,7 +1453,89 @@ sub setup_cmdl_crop {
 }
 
 #-------------------------------------------------------------------------------
+sub setup_cmdl_hydrstress {
+  my ($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv) = @_;
 
+  $nl_flags->{'use_hydrstress'} = ".false.";
+  my $val;
+  my $var = "hydrstress";
+  $val = $opts->{$var};
+  $nl_flags->{'hydrstress'} = $val;
+  if ( $nl_flags->{'hydrstress'} eq 1 ) {
+    $nl_flags->{'use_hydrstress'} = ".true.";
+  }
+  if ( defined($nl->get_value("use_hydrstress")) && ($nl_flags->{'use_hydrstress'} ne $nl->get_value("use_hydrstress")) ) {
+    fatal_error("Namelist item use_hydrstress contradicts the command-line option -hydrstress, use the command line option");
+  }
+
+  $var = "use_hydrstress";
+  $val = ".false.";
+  if ($nl_flags->{'hydrstress'} eq 1) {
+    $val = ".true.";
+  }
+  my $group = $definition->get_group_name($var);
+  $nl->set_variable_value($group, $var, $val);
+  if (  ! $definition->is_valid_value( $var, $val ) ) {
+    my @valid_values   = $definition->get_valid_values( $var );
+    fatal_error("$var has a value ($val) that is NOT valid. Valid values are: @valid_values\n");
+  }
+}
+#-------------------------------------------------------------------------------
+sub setup_cmdl_topounit {
+  my ($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv) = @_;
+  $nl_flags->{'use_atm_downscaling_to_topunit'} = ".false.";
+  my $val;
+  my $var = "topounit";
+  $val = $opts->{$var};
+  $nl_flags->{'topounit'} = $val;
+  if ( $nl_flags->{'topounit'} eq 1 ) {
+    $nl_flags->{'use_atm_downscaling_to_topunit'} = ".true.";
+  }
+  if ( defined($nl->get_value("use_atm_downscaling_to_topunit")) && ($nl_flags->{'use_atm_downscaling_to_topunit'} ne $nl->get_value("use_atm_downscaling_to_topunit")) ) {
+    fatal_error("Namelist item use_atm_downscaling_to_topunit contradicts the command-line option -topounit, use the command line option");
+  }
+
+  $var = "use_atm_downscaling_to_topunit";
+  $val = ".false.";
+  if ($nl_flags->{'topounit'} eq 1) {
+    $val = ".true.";
+  }
+  my $group = $definition->get_group_name($var);
+  $nl->set_variable_value($group, $var, $val);
+  if (  ! $definition->is_valid_value( $var, $val ) ) {
+    my @valid_values   = $definition->get_valid_values( $var );
+    fatal_error("$var has a value ($val) that is NOT valid. Valid values are: @valid_values\n");
+  }
+}
+#------------------------------------------------------------------------------------------
+sub setup_cmdl_tw_irr_on {
+  my ($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv) = @_;
+  $nl_flags->{'tw_irr'} = ".false.";
+  my $val;
+  my $var = "tw_irr_on";
+  $val = $opts->{$var}; 
+  $nl_flags->{'tw_irr_on'} = $val;
+  if ( $nl_flags->{'tw_irr_on'} eq 1 ) {
+    $nl_flags->{'tw_irr'} = ".true.";
+  }
+  if ( defined($nl->get_value("tw_irr")) && ($nl_flags->{'tw_irr'} ne $nl->get_value("tw_irr")) ) {
+    fatal_error("Namelist item tw_irr contradicts the command-line option -tw_irr, use the command line option");
+  }
+
+  $var = "tw_irr";
+  $val = ".false.";
+  if ($nl_flags->{'tw_irr_on'} eq 1) {
+    $val = ".true.";
+  }
+  my $group = $definition->get_group_name($var);
+  $nl->set_variable_value($group, $var, $val);
+  if (  ! $definition->is_valid_value( $var, $val ) ) {
+    my @valid_values   = $definition->get_valid_values( $var );
+    fatal_error("$var has a value ($val) that is NOT valid. Valid values are: @valid_values\n");
+  }
+}
+
+#-------------------------------------------------------------------------------------------
 sub setup_cmdl_maxpft {
   my ($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv) = @_;
 
@@ -1368,13 +1552,19 @@ sub setup_cmdl_maxpft {
   $nl_flags->{'maxpft'} = $val;
 
   if ( ($nl_flags->{'bgc_mode'} ne "sp") && ($nl_flags->{'maxpft'} != $maxpatchpft{$nl_flags->{'use_crop'}}) ) {
-    fatal_error("** For CN or BGC mode you MUST set max patch PFT's to $maxpatchpft{$nl_flags->{'use_crop'}}\n" .
-    "**\n" .
-    "** When the crop model is on then it must be set to $maxpatchpft{'crop'} otherwise to $maxpatchpft{'nocrop'}\n" .
-    "** Set the bgc mode, crop and maxpft by the following means from highest to lowest precedence:\n" .
-    "** * by the command-line options -bgc, -crop and -maxpft\n" .
-    "** * by a default configuration file, specified by -defaults\n" .
-    "**\n");
+    if ($opts->{$var} eq "default") {
+      fatal_error("** For CN or BGC mode you MUST set max patch PFT $val to $maxpatchpft{$nl_flags->{'use_crop'}}\n" .
+      "**\n" .
+      "** When the crop model is on then it must be set to $maxpatchpft{'crop'} otherwise to $maxpatchpft{'nocrop'}\n" .
+      "** Set the bgc mode, crop and maxpft by the following means from highest to lowest precedence:\n" .
+      "** * by the command-line options -bgc, -crop and -maxpft\n" .
+      "** * by a default configuration file, specified by -defaults\n" .
+      "**\n");
+    } else {
+         message("running with maxpft NOT equal to $maxpatchpft{$nl_flags->{'use_crop'}} is " .
+              "NOT validated / scientifically supported.\n");
+      	
+      }
   }
   if ( $nl_flags->{'maxpft'} > $maxpatchpft{$nl_flags->{'use_crop'}} ) {
     fatal_error("** Max patch PFT's can NOT exceed $maxpatchpft{$nl_flags->{'use_crop'}}\n" .
@@ -1854,6 +2044,7 @@ sub process_namelist_inline_logic {
   setup_logic_fates($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_logic_bgc_spinup($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_logic_supplemental_nitrogen($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
+  setup_logic_fan($opts, $nl_flags, $definition, $defaults, $nl, $physv);
 
   #########################################
   # namelist group: clm_humanindex_inparm #
@@ -2255,7 +2446,7 @@ sub setup_logic_create_crop_landunit {
   my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
 
   add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'create_crop_landunit', 
-     'use_crop'=>$nl_flags->{'use_crop'}, 'hgrid'=>$nl_flags->{'res'}, 'use_cn'=>$nl_flags->{'use_cn'});
+     'use_crop'=>$nl_flags->{'use_crop'}, 'hgrid'=>$nl_flags->{'res'}, 'use_cn'=>$nl_flags->{'use_cn'}, 'use_top_solar_rad'=>$nl->get_value('use_top_solar_rad'));
 }
 
 #-------------------------------------------------------------------------------
@@ -2335,6 +2526,7 @@ sub setup_logic_demand {
   $settings{'use_snicar_ad'}       = $nl_flags->{'use_snicar_ad'};
   $settings{'use_century_decomp'}  = $nl_flags->{'use_century_decomp'};
   $settings{'use_crop'}            = $nl_flags->{'use_crop'};
+  $settings{'use_modified_infil'}  = $nl_flags->{'use_modified_infil'};
   
   my $demand = $nl->get_value('clm_demand');
   if (defined($demand)) {
@@ -2589,11 +2781,11 @@ sub setup_logic_do_transient_crops {
   if (string_is_undef_or_empty($nl->get_value('flanduse_timeseries'))) {
     $cannot_be_true = "$var can only be set to true when running a transient case (flanduse_timeseries non-blank)";
   }
-
-  elsif (!value_is_true($nl->get_value("irrigate"))) {
+  
+   elsif (!value_is_true($nl->get_value("irrigate"))) {
     $cannot_be_true = "$var should be set to true when running with irrigate = true";
   }
-
+  
   elsif (value_is_true($nl->get_value('use_fates'))) {
     # In principle, use_fates should be compatible with
     # do_transient_crops. However, this hasn't been tested, so to be safe,
@@ -2651,8 +2843,8 @@ sub setup_logic_do_harvest {
   if (string_is_undef_or_empty($nl->get_value('flanduse_timeseries'))) {
     $cannot_be_true = "$var can only be set to true when running a transient case (flanduse_timeseries non-blank)";
   }
-  elsif (!( value_is_true($nl->get_value('use_cn')) || value_is_true($nl->get_value('use_fates')) )) {
-    $cannot_be_true = "$var can only be set to true when running with CN (use_cn == true) or when using FATES (use_fates == true)";
+  elsif (!( value_is_true($nl->get_value('use_cn')))) {
+    $cannot_be_true = "$var can only be set to true when running with CN (use_cn == true)";
   }
 
   if ($cannot_be_true) {
@@ -2940,6 +3132,65 @@ sub setup_logic_phosphorus_deposition {
 
 #-------------------------------------------------------------------------------
 
+sub setup_logic_fan {
+  my ($opts, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
+
+  # Flags to control FAN (Flow of Agricultural Nitrogen) nitrogen deposition (manure and fertilizer)
+  #
+      if ( $nl_flags->{'bgc_mode'} =~/cn|bgc/ ) { 
+	  my $var = "use_fan";
+	  my $val = $nl->get_value($var);
+          if( $val eq ".true." ) {
+             add_default($opts, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fan',
+                         'use_cn'=>$nl_flags->{'use_cn'} );
+             $nl_flags->{'use_fan'} = $nl->get_value('use_fan');
+             add_default($opts, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fan_nh3_to_atm',
+                          'fan_mode'=>$opts->{'fan'});
+             $nl_flags->{'fan_nh3_to_atm'} = $nl->get_value('fan_nh3_to_atm');
+            }
+     
+          if ( value_is_true( $nl_flags->{'use_fates'} ) && value_is_true( $nl_flags->{'use_fan'} ) ) {
+             fatal_error("Cannot turn use_fan on when use_fates is on\n" );
+          }
+          if (!value_is_true($nl_flags->{'use_crop'}) && value_is_true( $nl_flags->{'use_fan'} )) {
+            fatal_error('Cannot use_fan if use_crop is false');
+          }   #
+
+	  my $var = "use_fan";
+	  my $val = $nl->get_value($var);
+          if( $val eq ".true." ) {
+             add_default($opts, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, "fanmapalgo", 'phys'=>$nl_flags->{'phys'},
+                      'use_cn'=>$nl_flags->{'use_cn'}, 'hgrid'=>$nl_flags->{'res'} );
+             add_default($opts, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, "stream_year_first_fan", 'phys'=>$nl_flags->{'phys'},
+                      'use_cn'=>$nl_flags->{'use_cn'}, 'sim_year'=>$nl_flags->{'sim_year'}, 'sim_year_range'=>$nl_flags->{'sim_year_range'});
+             add_default($opts, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, "stream_year_last_fan", 'phys'=>$nl_flags->{'phys'},
+                      'use_cn'=>$nl_flags->{'use_cn'}, 'sim_year'=>$nl_flags->{'sim_year'},'sim_year_range'=>$nl_flags->{'sim_year_range'});
+    # Set align year, if first and last years are different
+             if ( $nl->get_value("stream_year_first_fan") != $nl->get_value("stream_year_last_fan") ) {
+                add_default($opts, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, "model_year_align_fan", 'sim_year'=>$nl_flags->{'sim_year'},
+                       'sim_year_range'=>$nl_flags->{'sim_year_range'});
+              }
+                add_default($opts, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, "stream_fldfilename_fan", 'phys'=>$nl_flags->{'phys'},
+                       'use_cn'=>$nl_flags->{'use_cn'}, 'rcp'=>$nl_flags->{'rcp'}, 'hgrid'=>"1.9x2.5" );
+          } else {      
+           # If bgc is NOT CN/CNDV then make sure none of the ndep settings are set!
+             if ( defined($nl->get_value('stream_year_first_fan')) ||
+               defined($nl->get_value('stream_year_last_fan'))  ||
+               defined($nl->get_value('model_year_align_fan'))  ||
+               defined($nl->get_value('stream_fldfilename_fan'))
+             ) {
+                 fatal_error("When bgc is NOT CN, FATES or CNDV none of: stream_year_first_ndep," .
+                             "stream_year_last_ndep, model_year_align_ndep, nor stream_fldfilename_ndep" .
+                             " can be set! $nl_flags->{'bgc_mode'} \n");
+             }  
+          }
+
+      }
+ }    
+
+ 
+#-------------------------------------------------------------------------------
+ 
 sub setup_logic_popd_streams {
   # population density streams require elm and CN/BGC
   my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
@@ -3160,21 +3411,162 @@ sub setup_logic_fates {
     my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
 
   if ( value_is_true( $nl_flags->{'use_fates'})  ) {
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_spitfire_mode',          'use_fates'=>$nl_flags->{'use_fates'} );
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_fixed_biogeog',      'use_fates'=>$nl_flags->{'use_fates'} );
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_logging',            'use_fates'=>$nl_flags->{'use_fates'});
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_planthydro',         'use_fates'=>$nl_flags->{'use_fates'});
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_parteh_mode',            'use_fates'=>$nl_flags->{'use_fates'});
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_ed_st3',             'use_fates'=>$nl_flags->{'use_fates'});
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_ed_prescribed_phys', 'use_fates'=>$nl_flags->{'use_fates'});
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_inventory_init',     'use_fates'=>$nl_flags->{'use_fates'});
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_inventory_ctrl_filename','use_fates'=>$nl_flags->{'use_fates'});
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_cohort_age_tracking','use_fates'=>$nl_flags->{'use_fates'});
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_sp',                 'use_fates'=>$nl_flags->{'use_fates'});
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_nocomp',             'use_fates'=>$nl_flags->{'use_fates'});
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_tree_damage',        'use_fates'=>$nl_flags->{'use_fates'});
+
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_paramfile', 'phys'=>$nl_flags->{'phys'});
 
+    # add other fates modes whose defaults don't depend on other modes
+    my @list  = (  "fates_harvest_mode",
+                   "fates_history_dimlevel",
+                   "fates_inventory_ctrl_filename",
+                   "fates_parteh_mode",
+                   "fates_seeddisp_cadence",
+                   "fates_spitfire_mode",
+                   "use_fates_cohort_age_tracking",
+                   "use_fates_ed_st3",
+                   "use_fates_ed_prescribed_phys",
+                   "use_fates_inventory_init",
+                   "use_fates_lupft",
+                   "use_fates_planthydro",
+                   "use_fates_potentialveg",
+                   "use_fates_sp",
+                   "use_fates_tree_damage");
+
+    foreach my $var (@list) {
+       add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, $var,'use_fates'=>$nl_flags->{'use_fates'});
+    }
+
+    # Add defaults for fates modes that depend on previously set fates modes.  See namelist defaults file for list.
+    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_luh', 'use_fates'=>$nl_flags->{'use_fates'},
+                                                                                      'use_fates_lupft'=>$nl->get_value('use_fates_lupft'),
+                                                                                      'use_fates_potentialveg'=>$nl->get_value('use_fates_potentialveg'),
+                                                                                      'fates_harvest_mode'=>remove_leading_and_trailing_quotes($nl->get_value('fates_harvest_mode')) );
+    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_nocomp', 'use_fates'=>$nl_flags->{'use_fates'},
+	                                                                              'use_fates_lupft'=>$nl->get_value('use_fates_lupft'),
+	                                                                              'use_fates_sp'=>$nl->get_value('use_fates_sp') );
+    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_fixed_biogeog', 'use_fates'=>$nl_flags->{'use_fates'},
+                                                                                      'use_fates_lupft'=>$nl->get_value('use_fates_lupft'),
+	                                                                              'use_fates_sp'=>$nl->get_value('use_fates_sp') );
+
+    # For FATES SP mode make sure no-competion, and fixed-biogeography are also set
+    # And also check for other settings that can't be trigged on as well
+    my $var = "use_fates_sp";
+    if ( defined($nl->get_value($var))  ) {
+       if ( &value_is_true($nl->get_value($var)) ) {
+          my @list = ( "use_fates_nocomp", "use_fates_fixed_biogeog" );
+          foreach my $var ( @list ) {
+             if ( ! &value_is_true($nl->get_value($var)) ) {
+               fatal_error("$var is required when FATES SP is on (use_fates_sp)" );
+             }
+          }
+          # spit-fire can't be on with FATES SP mode is active
+          if ( $nl->get_value('fates_spitfire_mode') > 0 ) {
+                fatal_error('fates_spitfire_mode can NOT be set to greater than 0 when use_fates_sp is true');
+          }
+          # hydro isn't currently supported to work when FATES SP mode is active
+          if (&value_is_true( $nl->get_value('use_fates_planthydro') )) {
+                fatal_error('fates sp mode is currently not supported to work with fates hydro');
+          }
+          # FATES landuse can not be active with fates sp mode is active
+          if ( &value_is_true($nl->get_value('use_fates_luh')) ) {
+            fatal_error("use_fates_luh is can NOT be true when use_fates_sp is true" );
+          }
+       }
+    }
+    # make sure that fates landuse x pft mode has the necessary run mode configurations
+    # and add the necessary landuse x pft static mapping data default if not defined
+    my $var = "use_fates_lupft";
+    if ( defined($nl->get_value($var))  ) {
+       if ( &value_is_true($nl->get_value($var)) ) {
+          my @list = ( "use_fates_luh", "use_fates_nocomp", "use_fates_fixed_biogeog" );
+          foreach my $var ( @list ) {
+             if ( ! &value_is_true($nl->get_value($var)) ) {
+               fatal_error("$var is required when use_fates_lupft is true" );
+             }
+          }
+       }
+    }
+    # check that fates landuse change mode has the necessary luh2 landuse timeseries data
+    # and add the default if not defined
+    my $var = "use_fates_luh";
+    if ( defined($nl->get_value($var))  ) {
+       if ( &value_is_true($nl->get_value($var)) ) {
+          $var = "use_fates_potentialveg";
+          if ( defined($nl->get_value($var))  ) {
+             if ( ! &value_is_true($nl->get_value($var)) ) {
+                $var = "fluh_timeseries";
+                add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, $var,
+                            'use_fates'=>$nl_flags->{'use_fates'}, 'hgrid'=>$nl_flags->{'res'},
+                            'sim_year_range'=>$nl_flags->{'sim_year_range'} );
+                my $fname = remove_leading_and_trailing_quotes( $nl->get_value($var) );
+                if ( ! defined($nl->get_value($var))  ) {
+                   fatal_error("$var is required when use_fates_luh is set" );
+                } elsif ( ! -f "$fname" ) {
+                   fatal_error("$var does NOT point to a valid filename" );
+                }
+             }
+          } 
+          $var = "use_fates_fixed_biogeog";
+          if ( defined($nl->get_value($var))  ) {
+             if ( &value_is_true($nl->get_value($var)) ) {
+                $var = "flandusepftdat";
+                add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, $var, 'use_fates'=>$nl_flags->{'use_fates'},
+                            'phys'=>$nl_flags->{'phys'}, 'hgrid'=>$nl_flags->{'res'}, nofail=>1 );
+                my $fname = remove_leading_and_trailing_quotes( $nl->get_value($var) );
+                if ( ! defined($nl->get_value($var))  ) {
+                  fatal_error("$var is required when use_fates_luh and use_fates_fixed_biogeog is set" );
+                } elsif ( ! -f "$fname" ) {
+                  fatal_error("$var does NOT point to a valid filename" );
+                }
+             }
+          }
+       }
+    }
+
+    # check that fates landuse is on and harvest mode is off when potential veg switch is true
+    my $var = "use_fates_potentialveg";
+    if ( defined($nl->get_value($var))  ) {
+       if ( &value_is_true($nl->get_value($var)) ) {
+          if ( ! &value_is_true($nl->get_value('use_fates_luh')) ) {
+            fatal_error("use_fates_luh must be true when $var is true" );
+          }
+          my $var = remove_leading_and_trailing_quotes($nl->get_value('fates_harvest_mode'));
+          if ( $var ne 'no_harvest') {
+             fatal_error("fates_harvest_mode set to $var.  It must set to no_harvest when use_fates_potential_veg is true." );
+          }
+          # it is ok for fluh_timeseries to be defined as long as the string is empty
+          my $var = "fluh_timeseries";
+          if ( defined($nl->get_value($var))  ) {
+             if (! string_is_undef_or_empty($nl->get_value($var))) {
+                fatal_error("fluh_timeseries can not be set when use_fates_potentialveg is true" );
+             }
+          }
+       }
+    }
+
+    # Check fates_harvest_mode compatibility
+    my $var = "fates_harvest_mode";
+    if ( defined($nl->get_value($var))  ) {
+       # using fates_harvest mode with raw luh2 harvest data
+       my $mode = remove_leading_and_trailing_quotes($nl->get_value($var));
+       if ( $mode eq "luhdata_area" || $mode  eq "luhdata_mass" ) {
+          # Make sure that use_fates_luh is true when using raw fates luh2 harvest data
+          if ( ! &value_is_true($nl->get_value('use_fates_luh')) ) {
+            fatal_error("use_fates_luh is required to be true when $var is luhdata_mass or luhdata_area" );
+          }
+       } elsif ( $mode  eq 'landuse_timeseries' ) {
+          # Check to make sure that the user set the flanduse_timeseries file
+          # Since the flanduse_timeseries logic checking is upstream of the fates logic,
+          # don't add the default here.  The onus is on the user to match the correct timeseries
+          # data to the correct surface dataset resolution
+          my $var = "flanduse_timeseries";
+          my $fname = remove_leading_and_trailing_quotes( $nl->get_value($var) );
+          if ( ! defined($nl->get_value($var))  ) {
+            fatal_error("$var is required when fates_harvest_mode is landuse_timeseries" );
+          } elsif ( ! -f "$fname" ) {
+            fatal_error("$var does NOT point to a valid filename" );
+          }
+       }
+    }
   }
 }
 
@@ -3212,6 +3604,9 @@ sub write_output_files {
     }
     {
       push @groups, "elm_humanindex_inparm";
+      if ( $nl_flags->{'use_fan'} eq ".true." ) {
+        push @groups, "fan_nml";
+      }
     }
   }
 
@@ -3223,6 +3618,9 @@ sub write_output_files {
   # Drydep or MEGAN namelist
   if ($opts->{'drydep'} || $opts->{'megan'} ) {
     @groups = qw(drydep_inparm megan_emis_nl);
+    if ( $nl_flags->{'use_fan'} eq ".true." ) {
+      push @groups, "fan_inparm";
+    }
     $outfile = "$opts->{'dir'}/drv_flds_in";
     $nl->write($outfile, 'groups'=>\@groups, 'note'=>"$note" );
     verbose_message("Writing @groups namelists to $outfile");
@@ -3336,9 +3734,6 @@ sub add_default {
       } else {
         if ($is_input_pathname eq 'abs') {
           $val = set_abs_filepath($val, $inputdata_rootdir);
-          if ( $test_files and ($val !~ /null/) and (! -f "$val") ) {
-            fatal_error("file not found: $var = $val");
-          }
         }
       }
     }

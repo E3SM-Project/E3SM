@@ -268,7 +268,7 @@ contains
     integer :: i
 
     integer, parameter :: tbl_max_idx = 15  ! 2**N - 1
-    integer, parameter :: gen_hash_key_offset = z'000053db'
+    integer, parameter :: gen_hash_key_offset = int(z'000053db')
     integer, dimension(0:tbl_max_idx) :: tbl_gen_hash_key =  (/61,59,53,47,43,41,37,31,29,23,17,13,11,7,3,1/)
 
     hash = gen_hash_key_offset

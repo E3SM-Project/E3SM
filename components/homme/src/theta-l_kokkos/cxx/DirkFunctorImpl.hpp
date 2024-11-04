@@ -382,8 +382,8 @@ struct DirkFunctorImpl {
       kv.team_barrier();
 
       if (it >= maxiter) {
-        printf("[DIRK] WARNING! Newton reached max iteration count,"
-               " with deltaerr = %3.17f\n", deltaerr);
+        Kokkos::printf("[DIRK] WARNING! Newton reached max iteration count,"
+                       " with deltaerr = %3.17f\n", deltaerr);
         nerr = 1;
       }
 

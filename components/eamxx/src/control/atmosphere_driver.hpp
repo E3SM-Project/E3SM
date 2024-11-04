@@ -2,6 +2,7 @@
 #define SCREAM_ATMOSPHERE_DRIVER_HPP
 
 #include "control/surface_coupling_utils.hpp"
+#include "share/iop/intensive_observation_period.hpp"
 #include "share/field/field_manager.hpp"
 #include "share/grid/grids_manager.hpp"
 #include "share/util/scream_time_stamp.hpp"
@@ -48,8 +49,10 @@ public:
   AtmosphereDriver (const ekat::Comm& atm_comm,
                     const ekat::ParameterList& params);
 
-  // The default dtor is fine.
-  ~AtmosphereDriver () = default;
+  // Must call finalize, so that, if AD is destroyed as part of uncaught
+  // exception stack unwinding, we will still perform some cleanup ops,
+  // among which, for instance, closing any open output file.
+  ~AtmosphereDriver ();
 
   // ---- Begin initialization methods ---- //
 
@@ -68,6 +71,9 @@ public:
   // Set AD params
   void init_scorpio (const int atm_id = 0);
 
+  // Setup IntensiveObservationPeriod
+  void setup_iop ();
+
   // Create atm processes, without initializing them
   void create_atm_processes ();
 
@@ -81,6 +87,9 @@ public:
   void setup_surface_coupling_data_manager(SurfaceCouplingTransferType transfer_type,
                                            const int num_cpl_fields, const int num_scream_fields,
                                            const int field_size, Real* data_ptr,
+#ifdef HAVE_MOAB
+                                           Real* data_ptr_moab,
+#endif
                                            char* names_ptr, int* cpl_indices_ptr, int* vec_comps_ptr,
                                            Real* constant_multiple_ptr, bool* do_transfer_during_init_ptr);
 
@@ -89,11 +98,23 @@ public:
   void setup_surface_coupling_processes() const;
 
   // Zero out precipitation flux
-  void reset_accummulated_fields();
+  void reset_accumulated_fields();
 
   // Create and add mass and energy conservation checks
   // and pass to m_atm_process_group.
   void setup_column_conservation_checks ();
+
+  // If TMS process exists, creates link to SHOC for applying
+  // tms' surface drag coefficient.
+  void setup_shoc_tms_links();
+
+  // Add column data to all pre/postcondition property checks
+  // for use in output.
+  void add_additional_column_data_to_property_checks ();
+
+  void set_provenance_data (std::string caseid = "",
+                            std::string hostname = "",
+                            std::string username = "");
 
   // Load initial conditions for atm inputs
   void initialize_fields ();
@@ -130,10 +151,10 @@ public:
   // Note: dt is assumed to be in seconds
   void run (const int dt);
 
-  // Clean up the driver (includes cleaning up the parameterizations and the fm's);
-  void finalize ( /* inputs */ );
+  // Clean up the driver (finalizes and cleans up all internals)
+  // NOTE: if already finalized, this is a no-op
+  void finalize ();
 
-  field_mgr_ptr get_ref_grid_field_mgr () const;
   field_mgr_ptr get_field_mgr (const std::string& grid_name) const;
 
   // Get atmosphere time stamp
@@ -164,13 +185,13 @@ protected:
   // different naming conventions for phis.
   void read_fields_from_file (const std::vector<std::string>& field_names_nc,
                               const std::vector<std::string>& field_names_eamxx,
-                              const std::string& grid_name,
+                              const std::shared_ptr<const AbstractGrid>& grid,
                               const std::string& file_name,
                               const util::TimeStamp& t0);
   // Read fields from a file when the names of the fields in
   // EAMxx match with the .nc file.
   void read_fields_from_file (const std::vector<std::string>& field_names,
-                              const std::string& grid_name,
+                              const std::shared_ptr<const AbstractGrid>& grid,
                               const std::string& file_name,
                               const util::TimeStamp& t0);
   void register_groups ();
@@ -188,6 +209,8 @@ protected:
   std::shared_ptr<ATMBufferManager>         m_memory_buffer;
   std::shared_ptr<SCDataManager>            m_surface_coupling_import_data_manager;
   std::shared_ptr<SCDataManager>            m_surface_coupling_export_data_manager;
+
+  std::shared_ptr<IntensiveObservationPeriod> m_iop;
 
   // This is the time stamp at the beginning of the time step.
   util::TimeStamp                           m_current_ts;

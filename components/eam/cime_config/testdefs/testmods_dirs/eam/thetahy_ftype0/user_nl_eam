@@ -1,4 +1,4 @@
 se_ftype=0
-cubed_sphere_map=0
+cubed_sphere_map=2
 theta_hydrostatic_mode=.true.
 

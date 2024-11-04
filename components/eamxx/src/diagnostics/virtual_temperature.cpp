@@ -3,21 +3,17 @@
 namespace scream
 {
 
-// =========================================================================================
-VirtualTemperatureDiagnostic::VirtualTemperatureDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
-  : AtmosphereDiagnostic(comm,params)
+VirtualTemperatureDiagnostic::
+VirtualTemperatureDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
+ : AtmosphereDiagnostic(comm,params)
 {
   // Nothing to do here
 }
 
-// =========================================================================================
 void VirtualTemperatureDiagnostic::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
-
-  auto Q = kg/kg;
-  Q.set_string("kg/kg");
 
   auto grid  = grids_manager->get_grid("Physics");
   const auto& grid_name = grid->name();
@@ -28,8 +24,8 @@ void VirtualTemperatureDiagnostic::set_grids(const std::shared_ptr<const GridsMa
   constexpr int ps = Pack::n;
 
   // The fields required for this diagnostic to be computed
-  add_field<Required>("T_mid",       scalar3d_layout_mid, K,  grid_name, ps);
-  add_field<Required>("qv",          scalar3d_layout_mid, Q,  grid_name, "tracers", ps);
+  add_field<Required>("T_mid",       scalar3d_layout_mid, K,     grid_name, ps);
+  add_field<Required>("qv",          scalar3d_layout_mid, kg/kg, grid_name, ps);
 
   // Construct and allocate the diagnostic field
   FieldIdentifier fid (name(), scalar3d_layout_mid, K, grid_name);
@@ -38,10 +34,9 @@ void VirtualTemperatureDiagnostic::set_grids(const std::shared_ptr<const GridsMa
   C_ap.request_allocation(ps);
   m_diagnostic_output.allocate_view();
 }
-// =========================================================================================
+
 void VirtualTemperatureDiagnostic::compute_diagnostic_impl()
 {
-
   const auto npacks  = ekat::npack<Pack>(m_num_levs);
   const auto& virtualT = m_diagnostic_output.get_view<Pack**>();
   const auto& T_mid    = get_field_in("T_mid").get_view<const Pack**>();
@@ -55,9 +50,6 @@ void VirtualTemperatureDiagnostic::compute_diagnostic_impl()
       virtualT(icol,jpack) = PF::calculate_virtual_temperature(T_mid(icol,jpack),qv_mid(icol,jpack));
   });
   Kokkos::fence();
-
-  const auto ts = get_field_in("qv").get_header().get_tracking().get_time_stamp();
-  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
 }
-// =========================================================================================
+
 } //namespace scream

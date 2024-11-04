@@ -168,6 +168,8 @@ MACRO(PREQX_KOKKOS_SETUP)
     ${SRC_SHARE_DIR}/cxx/EulerStepFunctor.cpp
     ${SRC_SHARE_DIR}/cxx/ExecSpaceDefs.cpp
     ${SRC_SHARE_DIR}/cxx/FunctorsBuffersManager.cpp
+    ${SRC_SHARE_DIR}/cxx/GllFvRemap.cpp
+    ${SRC_SHARE_DIR}/cxx/GllFvRemapImpl.cpp
     ${SRC_SHARE_DIR}/cxx/Hommexx_Session.cpp
     ${SRC_SHARE_DIR}/cxx/HybridVCoord.cpp
     ${SRC_SHARE_DIR}/cxx/HyperviscosityFunctor.cpp
@@ -184,6 +186,8 @@ MACRO(PREQX_KOKKOS_SETUP)
     ${SRC_SHARE_DIR}/cxx/prim_step.cpp
     ${SRC_SHARE_DIR}/cxx/vertical_remap.cpp
     ${SRC_SHARE_DIR}/cxx/utilities/BfbUtils.cpp
+    ${SRC_SHARE_DIR}/cxx/utilities/InternalDiagnostics.cpp
+    ${SRC_SHARE_DIR}/cxx/utilities/Hash.cpp
   )
 
   IF (HOMME_USE_TRILINOS)

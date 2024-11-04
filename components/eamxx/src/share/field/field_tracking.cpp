@@ -31,6 +31,12 @@ void FieldTracking::update_time_stamp (const TimeStamp& ts) {
   }
 }
 
+void FieldTracking::invalidate_time_stamp ()
+{
+  // Reset the time stamp to an invalid time stamp
+  m_time_stamp = util::TimeStamp();
+}
+
 void FieldTracking::set_accum_start_time (const TimeStamp& t_start) {
   EKAT_REQUIRE_MSG (not m_time_stamp.is_valid() || m_time_stamp<=t_start,
       "Error! Accumulation start time is older than current timestamp of the field.\n");

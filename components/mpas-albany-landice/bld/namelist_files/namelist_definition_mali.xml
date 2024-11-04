@@ -139,7 +139,7 @@ Default: Defined in namelist_defaults.xml
 	category="advection" group="advection">
 Selection of the method for advecting thickness ('fo' = first-order upwinding).
 
-Valid values: 'fo', 'none'
+Valid values: 'fo', 'fct', 'none'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -147,7 +147,23 @@ Default: Defined in namelist_defaults.xml
 	category="advection" group="advection">
 Selection of the method for advecting tracers.
 
-Valid values: 'fo', 'none'
+Valid values: 'fo', 'fct', 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_horiz_tracer_adv_order" type="integer"
+	category="advection" group="advection">
+Order of polynomial used for tracer reconstruction at cell edges
+
+Valid values: 2, 3 and 4
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_advection_coef_3rd_order" type="real"
+	category="advection" group="advection">
+Reconstruction of 3rd-order reconstruction to blend with 4th-order reconstuction. Equivalent to beta in Skamarock and Gassmann (2011) eq. 7. 0 is fully 4th order, 1 is fully 3rd order.
+
+Valid values: any real between 0 and 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -178,11 +194,11 @@ Valid values: 'none', 'data', 'sealevelmodel'
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_slm_coupling_interval" type="char*1024"
+<entry id="config_slm_coupling_interval" type="integer"
 	category="solidearth" group="solidearth">
-Time interval at which the sea-level model is called by MALI. The interval has to be an even multiple of the option 'config_adaptive_timestep_force_interval
+Time interval at which the sea-level model is called by MALI. Only integer years are currently supported. The user must set 'dt1' in namelist.sealevel to match this value.  Note that the user needs to set config_adaptive_timestep_force_interval to divide evenly into config_slm_coupling_interval.  Also, restart file output_interval needs to be a multiple of config_slm_coupling_interval.
 
-Valid values: Any time interval of the format 'YYYY-MM-DD_HH:MM:SS'
+Valid values: Any positive integer
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -209,7 +225,15 @@ Default: Defined in namelist_defaults.xml
 	category="calving" group="calving">
 Selection of the method for calving ice (as defined below). 'von_Mises_stress' and 'eigencalving' options can be used in combination with damage threshold calving (see descrption of config_damage_calving_method for details).
 
-Valid values: 'none', 'floating', 'topographic_threshold', 'thickness_threshold', 'mask', 'eigencalving', 'specified_calving_velocity', 'von_Mises_stress', 'damagecalving', 'ismip6_retreat'
+Valid values: 'none', 'floating', 'topographic_threshold', 'thickness_threshold', 'eigencalving', 'specified_calving_velocity', 'von_Mises_stress', 'damagecalving', 'ismip6_retreat'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_apply_calving_mask" type="logical"
+	category="calving" group="calving">
+Whether the field 'calvingMask' gets used to force calving.  This is independent of choice of 'config_calving'; the application of 'calvingMask' can be applied in conjunction with a physical calving law or with no calving law enabled.  The calving mask gets applied after a physical calving law, if one is selected.
+
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -217,7 +241,7 @@ Default: Defined in namelist_defaults.xml
 	category="calving" group="calving">
 Not yet supported. Determine whether to use MPAS or Albany calculation for flowParamA used in von Mises stress calving
 
-Valid values: '.true.', '.false.'
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -287,7 +311,15 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_restore_calving_front" type="logical"
 	category="calving" group="calving">
-If true, then restore the calving front to its initial position.  If ice grows beyond the initial extent, it is removed.  If ice shrinks to an extent behind the initial extent, those locations are filled with thin ice (defined as 1/10th the value of config_dynamic_thickness).  Note that this violates conservation of mass and energy.
+If true, then restore the calving front to its initial position.  If ice grows beyond the initial extent, it is removed.  If ice shrinks to an extent behind the initial extent, behavior is determined by config_restore_calving_front_prevent_retreat.  If that option is true, then those locations are filled with thin ice (defined as 1/10th the value of config_dynamic_thickness).  Note that this violates conservation of mass and energy.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_restore_calving_front_prevent_retreat" type="logical"
+	category="calving" group="calving">
+If true, then the config_restore_calving_front option will fill locations where ice shelves have retreated with a thin layer of ice.  This option should be used in E3SM when the ice shelf extent seen by the E3SM coupler cannot change.  If false, the config_restore_calving_front option will do nothing when ice shelves retreat.  For either value of this option, the config_restore_calving_front option will prevent ice-shelf advance.  True is likely the desired value for standalone runs where no advance is desired.  Default value is true for backwards compatibility.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -448,6 +480,14 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_distribute_unablatedVolumeDynCell" type="logical"
 	category="calving" group="calving">
 If true, then distribute unablatedVolumeDynCell among dynamic neighbors when converting ablation velocity to ablation thickness. This should only be used as a clean-up measure, while limiting the timestep based on ablation velocity should be used as the primary method of getting accurate ablation thickness from ablation velocity.  If you choose to set config_adaptive_timestep_calvingCFL_fraction much larger than 1.0 (which is not recommended), setting this option to true usually results in more accurate calving behavior. 
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_update_velocity_before_calving" type="logical"
+	category="calving" group="calving">
+If true, add an additional velocity solve between advection and calving. If false, use velocity field from beginning of time step to calculate calving rate. For certain calving laws, like damage threshold calving, it is not necessary to update the velocity before calving, while for von Mises stress and eigencalving, it is more accurate to have an updated velocity state before solving for calvingThickness.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -699,6 +739,14 @@ Valid values: 'none', 'uniform', 'ismip6'
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_3d_thermal_forcing_for_face_melt" type="logical"
+	category="iceshelf_melt" group="iceshelf_melt">
+If true, use ismip6shelfMelt_3dThermalForcing and associated variables to calculate ocean-bottom thermal forcing for use with the config_front_mass_bal_grounded = 'ismip6' melt paramterization.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_beta_ocean_thermal_forcing" type="real"
 	category="iceshelf_melt" group="iceshelf_melt">
 Exponent of the ocean thermal forcing in ISMIP6 grounded ice front melting parameterization
@@ -811,9 +859,25 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_time_integration" type="char*1024"
 	category="time_integration" group="time_integration">
-Time integration method (currently, only forward Euler is supported).
+Time integration method.
 
-Valid values: 'forward_euler'
+Valid values: 'forward_euler' or 'runge_kutta'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_rk_order" type="integer"
+	category="time_integration" group="time_integration">
+Order of Runge-Kutta time integration to use. A value of 1 would be equivalent to forward euler, but will cause an error to avoid unnecessary redundancy. Values of 2 and 3 indicate strong-stability preserving RK2 and RK3. There is currently no support for classical RK2 or RK4 methods.
+
+Valid values: 2 or 3
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_rk3_stages" type="integer"
+	category="time_integration" group="time_integration">
+Number of stages for strong stability preserving RK3 time integration. If set to 3, this involves 3 velocity solves and a maximum CFL fraction of 1. If set to 4, this involves 4 velocity solves, but the maximum CFL fraction is 2.
+
+Valid values: 3 or 4
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -857,6 +921,14 @@ Valid values: Any positive real value.  Note that values greater than 1.0 are al
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_adaptive_timestep_faceMeltingCFL_fraction" type="real"
+	category="time_integration" group="time_integration">
+A multiplier on the minimum allowable time step calculated from the face-melting CFL condition. This should be conservative given the calving CFL calculation is lagged
+
+Valid values: Any positive real value.  Note that values greater than 1.0 are allowed and may be desired.  This is because the face-melting CFL is an approximate calculation.  A value between 0.75 and 1.0, possibly as large as 1.25, was found to maintain converged accuracy for the analogous calving CFL fraction, so it is recommended to use values in this range. If values much greater than 1.0 are used, it is recommended to set config_distribute_unablatedVolumeDynCell to true.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_adaptive_timestep_include_DCFL" type="logical"
 	category="time_integration" group="time_integration">
 Option of whether to include the diffusive CFL condition in the determination of the maximum allowable timestep. The diffusive CFL condition at any location is estimated based on the local ice flux and surface slope.
@@ -868,6 +940,14 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_adaptive_timestep_include_calving" type="logical"
 	category="time_integration" group="time_integration">
 Option of whether to include the calving CFL condition in the determination of the maximum allowable timestep. This only is applied if config_calving is set to a method that uses a calvingVelocity.  Note that this is an approximate CFL condition and is lagged a timestep.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_adaptive_timestep_include_face_melting" type="logical"
+	category="time_integration" group="time_integration">
+Option of whether to include the face-melting CFL condition in the determination of the maximum allowable timestep. This only is applied if config_front_mass_bal_grounded is not set to 'none'.  Note that this is an approximate CFL condition and is lagged a timestep.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -1007,6 +1087,14 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_create_all_logs_in_e3sm" type="logical"
+	category="io" group="io">
+Logical flag determining if log files will be created for each processor in an E3SM configuration.  If .true., the model initializes and writes to one files per processor.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- decomposition -->
 
@@ -1093,6 +1181,14 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_check_tracer_monotonicity" type="logical"
+	category="debug" group="debug">
+Check tracer monotonicity at the end of the monotonic advection routine and write warnings to log file if not monotonic.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- subglacial_hydro -->
 
@@ -1130,7 +1226,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_SGH_tangent_slope_calculation" type="char*1024"
 	category="subglacial_hydro" group="subglacial_hydro">
-Selection of the method for calculating the tangent component of slope at edges. 'from_vertex_barycentric' interpolates scalar values from cell centers to vertices using the barycentric interpolation routine in operators (mpas_cells_to_points_using_baryweights) and then calculates the slope between vertices.  It works for obtuse triangles, but will not work correctly across the edges of periodic meshes. 'from_vertex_barycentric_kiteareas' interpolates scalar values from cell centers to vertices using barycentric interpolation based on kiterea values and then calculates the slope between vertices.  It will work across the edges of periodic meshes, but will not work correctly for obtuse triangles. 'from_normal_slope' uses the vector operator mpas_tangential_vector_1d to calculate the tangent slopes from the normal slopes on the edges of the adjacent cells.  It will work for any mesh configuration, but is the least accurate method.
+Selection of the method for calculating the tangent component of slope at edges. 'from_vertex_barycentric' interpolates scalar values from cell centers to vertices using the barycentric interpolation routine in operators (mpas_cells_to_points_using_baryweights) and then calculates the slope between vertices.  It works for obtuse triangles, but will not work correctly across the edges of periodic meshes. 'from_vertex_barycentric_kiteareas' interpolates scalar values from cell centers to vertices using barycentric interpolation based on kiterea values and then calculates the slope between vertices.  It will work across the edges of periodic meshes, but will not work correctly for obtuse triangles. 'from_normal_slope' uses the vector operator mpas_tangential_vector_1d to calculate the tangent slopes from the normal slopes on the edges of the adjacent cells.  It will work for any mesh configuration. 'from_normal_slope' uses a larger stencil, so may therefore produce a smoother 'gradMagPhiEdge' field. Detailed testing yielded nearly identical results between 'from_normal_slope' and 'from_vertex_barycentric' methods, but 'from_normal_slope' seemed to produce slightly more stable results at the grounding line.
 
 Valid values: 'from_vertex_barycentric', 'from_vertex_barycentric_kiteareas', 'from_normal_slope'
 Default: Defined in namelist_defaults.xml
@@ -1232,6 +1328,14 @@ Valid values: positive real number
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_SGH_use_iceThicknessHydro" type="logical"
+	category="subglacial_hydro" group="subglacial_hydro">
+Option to use an altered ice thickness field called iceThicknessHydro that replaces local maxima/minima in upperSurface with a mean of the cells neighbors. This option has no significant effect on the behavior of the model but makes it more stable.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_SGH_chnl_active" type="logical"
 	category="subglacial_hydro" group="subglacial_hydro">
 activate channels in subglacial hydrology model
@@ -1309,6 +1413,14 @@ Default: Defined in namelist_defaults.xml
 source for the basalMeltInput term.  'file' takes whatever field was input and performs no calculation.  'thermal' uses the groundedBasalMassBal field calculated by the thermal model.  'basal_heat' calculates a melt rate assuming the entirety of the basal heat flux (basalFrictionFlux+basalHeatFlux) goes to melting ice at the bed.  This is calculated in the SGH module and is independent of any calculations in the thermal model.
 
 Valid values: 'file', 'thermal', 'basal_heat'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_SGH_iter_smooth_waterPressureSlopeNormal" type="integer"
+	category="subglacial_hydro" group="subglacial_hydro">
+number of iterations to smooth waterPressure over when calculating waterPressureSlopeNormal. Used only to keep channelPressureFreeze stable and will not affect other aspects of the model that rely on waterPressure.
+
+Valid values: positive integer or zero
 Default: Defined in namelist_defaults.xml
 </entry>
 

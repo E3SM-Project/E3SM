@@ -35,8 +35,10 @@ def buildnml(case, caseroot, compname):
     ocn_forcing       = case.get_value("MPASO_FORCING")
     ocn_iceberg       = case.get_value("MPASO_ICEBERG")
     ocn_ismf          = case.get_value("MPASO_ISMF")
+    ocn_sgr           = case.get_value("MPASO_SGR")
     ocn_bgc           = case.get_value("MPASO_BGC")
     ocn_wave          = case.get_value("MPASO_WAVE")
+    ocn_tidal_mixing  = case.get_value("MPASO_TIDAL_MIXING")
     ocn_co2_type      = case.get_value("OCN_CO2_TYPE")
     atm_co2_const_val = case.get_value("CCSM_CO2_PPMV")
     ice_bgc           = case.get_value("MPASI_BGC")
@@ -71,12 +73,15 @@ def buildnml(case, caseroot, compname):
     ic_date = ''
     ic_prefix = ''
     restoring_file = ''
+    data_ismf_file = ''
     analysis_mask_file = ''
     eco_forcing_file = ''
+    u_tidal_rms_file = ''
+    data_sgr_file = ''
 
     if ocn_grid == 'oEC60to30v3':
-        decomp_date = '161222'
-        decomp_prefix = 'mpas-o.graph.info.'
+        decomp_date = '230424'
+        decomp_prefix = 'partitions/mpas-o.graph.info.'
         restoring_file = 'sss.monthlyClimatology.PHC2_salx_040803.oEC60to30v3.nc'
         analysis_mask_file = 'oEC60to30v3_Atlantic_region_and_southern_transect.nc'
         ic_date = '170905'
@@ -108,8 +113,8 @@ def buildnml(case, caseroot, compname):
             logger.warning("         But no file available for this grid.")
 
     elif ocn_grid == 'oQU480':
-        decomp_date = '151209'
-        decomp_prefix = 'mpas-o.graph.info.'
+        decomp_date = '230422'
+        decomp_prefix = 'partitions/mpas-o.graph.info.'
         ic_date = '151209'
         ic_prefix = 'ocean.QU.480km'
         if ocn_ic_mode == 'spunup':
@@ -117,8 +122,8 @@ def buildnml(case, caseroot, compname):
             logger.warning("         But no file available for this grid.")
 
     elif ocn_grid == 'oQU240':
-        decomp_date = '151209'
-        decomp_prefix = 'mpas-o.graph.info.'
+        decomp_date = '230422'
+        decomp_prefix = 'partitions/mpas-o.graph.info.'
         ic_date = '151209'
         ic_prefix = 'ocean.QU.240km'
         if ocn_ic_mode == 'spunup':
@@ -126,17 +131,23 @@ def buildnml(case, caseroot, compname):
             logger.warning("         But no file available for this grid.")
 
     elif ocn_grid == 'oQU240wLI':
-        decomp_date = '160929'
-        decomp_prefix = 'mpas-o.graph.info.'
+        decomp_date = '230422'
+        decomp_prefix = 'partitions/mpas-o.graph.info.'
         ic_date = '230220'
         ic_prefix = 'ocean.QU.240wLI'
         if ocn_ic_mode == 'spunup':
             logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
             logger.warning("         But no file available for this grid.")
+        if ocn_ismf == 'data':
+            data_ismf_file = 'prescribed_ismf_paolo2023.oQU240wLI.20240404.nc'
+        if ocn_tidal_mixing == 'true':
+            u_tidal_rms_file = 'velocityTidalRMS_CATS2008.oQU240wLI.20240221.nc'
+        if ocn_sgr == 'data':
+            data_sgr_file = 'DSGR.massFlux.MALI.out2055.oQU240wLI.20240328.nc'
 
     elif ocn_grid == 'oQU120':
-        decomp_date = '160318'
-        decomp_prefix = 'mpas-o.graph.info.'
+        decomp_date = '230424'
+        decomp_prefix = 'partitions/mpas-o.graph.info.'
         ic_date = '160318'
         ic_prefix = 'ocean.QU.120km'
         if ocn_ic_mode == 'spunup':
@@ -166,8 +177,8 @@ def buildnml(case, caseroot, compname):
             logger.warning("         But no file available for this grid.")
 
     elif ocn_grid == 'oRRS18to6v3':
-        decomp_date = '170111'
-        decomp_prefix = 'mpas-o.graph.info.'
+        decomp_date = '230424'
+        decomp_prefix = 'partitions/mpas-o.graph.info.'
         restoring_file = 'sss.monthlyClimatology.PHC2_salx_040803.oRRS18to6v3.nc'
         analysis_mask_file = 'oRRS18to6v3_mocBasinsAndTransects20210623.nc'
         ic_date = '171116'
@@ -266,6 +277,72 @@ def buildnml(case, caseroot, compname):
         if ocn_ic_mode == 'spunup':
             ic_date = '230220'
             ic_prefix = 'mpaso.SOwISC12to60E2r4.rstFromG-anvil'
+        if ocn_ismf == 'data':
+            data_ismf_file = 'prescribed_ismf_adusumilli2020.SOwISC12to60E2r4.230516.nc'
+        if ocn_tidal_mixing == 'true':
+            u_tidal_rms_file = 'velocityTidalRMS_CATS2008.SOwISC12to60E2r4.20210114.nc'
+        if ocn_sgr == 'data':
+            data_sgr_file = 'DSGR.massFlux.MALI.out2055.SOwISC12to60E2r4.20240328.nc'
+
+    elif ocn_grid == 'FRISwISC08to60E3r1':
+        decomp_date = '20230913'  # changed to date of partiotions in ../files_for_e3sm/assembled_files/inputdata/ocn/mpas-o/FRISwISC08to60E3r1/partitions
+        decomp_prefix = 'partitions/mpas-o.graph.info.'
+        restoring_file = 'sss.PHC2_monthlyClimatology.FRISwISC08to60E3r1.20230913.nc'
+        analysis_mask_file = 'FRISwISC08to60E3r1_mocBasinsAndTransects20210623.nc'
+        ic_date = '20230913'
+        ic_prefix = 'mpaso.FRISwISC08to60E3r1'  # from ../files_for_e3sm/assembled_files/inputdata/ocn/mpas-o/FRISwISC08to60E3r1/mpaso.FRISwISC08to60E3r1.20230913.nc
+        if ocn_ic_mode == 'spunup':
+            ic_date = '20230913'  # changed to same as decomp_date, but the spun up file does not yet exist
+            ic_prefix = 'mpaso.FRISwISC08to60E3r1.rstFromG-anvil'   # the spun up file does not yet exist
+        if ocn_ismf == 'data':
+            data_ismf_file = 'prescribed_ismf_adusumilli2020.FRISwISC08to60E3r1.20230913.nc'
+        if ocn_tidal_mixing == 'true':
+            u_tidal_rms_file = 'velocityTidalRMS_CATS2008.FRISwISC08to60E3r1.20230913.nc'
+
+    elif ocn_grid == 'FRISwISC04to60E3r1':
+        decomp_date = '20230913'  # changed to date of partiotions in ../files_for_e3sm/assembled_files/inputdata/ocn/mpas-o/FRISwISC04to60E3r1/partitions
+        decomp_prefix = 'partitions/mpas-o.graph.info.'
+        restoring_file = 'sss.PHC2_monthlyClimatology.FRISwISC04to60E3r1.20230913.nc'
+        analysis_mask_file = 'FRISwISC04to60E3r1_mocBasinsAndTransects20210623.nc'
+        ic_date = '20230913'
+        ic_prefix = 'mpaso.FRISwISC04to60E3r1'  # from ../files_for_e3sm/assembled_files/inputdata/ocn/mpas-o/FRISwISC04to60E3r1/mpaso.FRISwISC04to60E3r1.20230913.nc
+        if ocn_ic_mode == 'spunup':
+            ic_date = '20230913'  # changed to same as decomp_date, but the spun up file does not yet exist
+            ic_prefix = 'mpaso.FRISwISC04to60E3r1.rstFromG-anvil'   # the spun up file does not yet exist
+        if ocn_ismf == 'data':
+            data_ismf_file = 'prescribed_ismf_adusumilli2020.FRISwISC04to60E3r1.20230913.nc'
+        if ocn_tidal_mixing == 'true':
+            u_tidal_rms_file = 'velocityTidalRMS_CATS2008.FRISwISC04to60E3r1.20230913.nc'
+
+    elif ocn_grid == 'FRISwISC02to60E3r1':
+        decomp_date = '20230914'  # changed to date of partiotions in ../files_for_e3sm/assembled_files/inputdata/ocn/mpas-o/FRISwISC02to60E3r1/partitions
+        decomp_prefix = 'partitions/mpas-o.graph.info.'
+        restoring_file = 'sss.PHC2_monthlyClimatology.FRISwISC02to60E3r1.20230914.nc'
+        analysis_mask_file = 'FRISwISC02to60E3r1_mocBasinsAndTransects20210623.nc'
+        ic_date = '20230914'
+        ic_prefix = 'mpaso.FRISwISC02to60E3r1'  # from ../files_for_e3sm/assembled_files/inputdata/ocn/mpas-o/FRISwISC02to60E3r1/mpaso.FRISwISC02to60E3r1.20230914.nc
+        if ocn_ic_mode == 'spunup':
+            ic_date = '20230914'  # changed to same as decomp_date, but the spun up file does not yet exist
+            ic_prefix = 'mpaso.FRISwISC02to60E3r1.rstFromG-anvil'   # the spun up file does not yet exist
+        if ocn_ismf == 'data':
+            data_ismf_file = 'prescribed_ismf_adusumilli2020.FRISwISC02to60E3r1.20230914.nc'
+        if ocn_tidal_mixing == 'true':
+            u_tidal_rms_file = 'velocityTidalRMS_CATS2008.FRISwISC02to60E3r1.20230914.nc'
+
+    elif ocn_grid == 'FRISwISC01to60E3r1':
+        decomp_date = '20230915'  # changed to date of partiotions in ../files_for_e3sm/assembled_files/inputdata/ocn/mpas-o/FRISwISC01to60E3r1/partitions
+        decomp_prefix = 'partitions/mpas-o.graph.info.'
+        restoring_file = 'sss.PHC2_monthlyClimatology.FRISwISC01to60E3r1.20230915.nc'
+        analysis_mask_file = 'FRISwISC01to60E3r1_mocBasinsAndTransects20210623.nc'
+        ic_date = '20230915'
+        ic_prefix = 'mpaso.FRISwISC01to60E3r1'  # from ../files_for_e3sm/assembled_files/inputdata/ocn/mpas-o/FRISwISC01to60E3r1/mpaso.FRISwISC01to60E3r1.20230915.nc
+        if ocn_ic_mode == 'spunup':
+            ic_date = '20230915'  # changed to same as decomp_date, but the spun up file does not yet exist
+            ic_prefix = 'mpaso.FRISwISC01to60E3r1.rstFromG-anvil'   # the spun up file does not yet exist
+        if ocn_ismf == 'data':
+            data_ismf_file = 'prescribed_ismf_adusumilli2020.FRISwISC01to60E3r1.20230915.nc'
+        if ocn_tidal_mixing == 'true':
+            u_tidal_rms_file = 'velocityTidalRMS_CATS2008.FRISwISC01to60E3r1.20230915.nc'
 
     elif ocn_grid == 'ECwISC30to60E2r1':
         decomp_date = '200915'
@@ -277,7 +354,70 @@ def buildnml(case, caseroot, compname):
         if ocn_ic_mode == 'spunup':
             ic_date = '230220'
             ic_prefix = 'mpaso.ECwISC30to60E2r1.rstFromG-anvil'
+        if ocn_ismf == 'data':
+            data_ismf_file = 'prescribed_ismf_adusumilli2020.ECwISC30to60E2r1.230429.nc'
+        if ocn_tidal_mixing == 'true':
+            u_tidal_rms_file = 'velocityTidalRMS_CATS2008.ECwISC30to60E2r1.20240221.nc'
+        if ocn_sgr == 'data':
+            data_sgr_file = 'DSGR.massFlux.MALI.out2055.ECwISC30to60E2r1.20240328.nc'
 
+    elif ocn_grid == 'IcoswISC30E3r5':
+        decomp_date = '20231120'
+        decomp_prefix = 'partitions/mpas-o.graph.info.'
+        restoring_file = 'sss.PHC2_monthlyClimatology.IcoswISC30E3r5.20231120.nc'
+        analysis_mask_file = 'IcoswISC30E3r5_mocBasinsAndTransects20210623.nc'
+        ic_date = '20231120'
+        ic_prefix = 'mpaso.IcoswISC30E3r5'
+        if ocn_ic_mode == 'spunup':
+            ic_date = '20231121'
+            ic_prefix = 'mpaso.IcoswISC30E3r5.rstFromG-chrysalis'
+        if ocn_bgc in ['eco_only', 'eco_and_dms', 'eco_and_macromolecules', 'eco_and_dms_and_macromolecules']:
+            ic_date = '20231215'
+            ic_prefix = 'mpaso.IcoswISC30E3r5.20231120+MARBL_ICfromOMIP_64levels'
+            eco_forcing_file = 'ecoForcingSurfaceMonthly.IcoswISC30E3r5.20231215.nc'
+        if ocn_ismf == 'data':
+            data_ismf_file = 'prescribed_ismf_paolo2023.IcoswISC30E3r5.20240227.nc'
+        if ocn_tidal_mixing == 'true':
+            u_tidal_rms_file = 'velocityTidalRMS_CATS2008.IcoswISC30E3r5.20231120.nc'
+        if ocn_sgr == 'data':
+            data_sgr_file = 'DSGR.massFlux.MALI.out2055.IcoswISC30E3r5.20240328.nc'
+
+    elif ocn_grid == 'IcosXISC30E3r7':
+        decomp_date = '20240314'
+        decomp_prefix = 'partitions/mpas-o.graph.info.'
+        restoring_file = 'sss.PHC2_monthlyClimatology.IcosXISC30E3r7.20240314.nc'
+        analysis_mask_file = 'IcosXISC30E3r7_mocBasinsAndTransects20210623.nc'
+        ic_date = '20240314'
+        ic_prefix = 'mpaso.IcosXISC30E3r7'
+        if ocn_ic_mode == 'spunup':
+            ic_date = '20240314'
+            ic_prefix = 'mpaso.IcosXISC30E3r7.rstFromPiControlSpinup-chrysalis'
+
+    elif ocn_grid == 'RRSwISC6to18E3r5':
+        decomp_date = '20240404'
+        decomp_prefix = 'partitions/mpas-o.graph.info.'
+        restoring_file = 'sss.PHC2_monthlyClimatology.RRSwISC6to18E3r5.20240327.nc'
+        analysis_mask_file = 'RRSwISC6to18E3r5_mocBasinsAndTransects20210623.nc'
+        ic_date = '20240327'
+        ic_prefix = 'mpaso.RRSwISC6to18E3r5'
+        if ocn_ic_mode == 'spunup':
+            logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
+            logger.warning("         But no file available for this grid.")
+        if ocn_ismf == 'data':
+            data_ismf_file = 'prescribed_ismf_paolo2023.RRSwISC6to18E3r5.20240327.nc'
+
+    elif ocn_grid == 'SOwISC12to30E3r3':
+        decomp_date = '20240829'
+        decomp_prefix = 'partitions/mpas-o.graph.info.'
+        restoring_file = 'sss.PHC2_monthlyClimatology.SOwISC12to30E3r3.20240829.nc'
+        analysis_mask_file = 'SOwISC12to30E3r3_mocBasinsAndTransects20210623.nc'
+        ic_date = '20240829'
+        ic_prefix = 'mpaso.SOwISC12to30E3r3'
+        if ocn_ic_mode == 'spunup':
+            ic_date = '20240829'
+            ic_prefix = 'mpaso.SOwISC12to30E3r3.rstFromG-chrysalis'
+        if ocn_ismf == 'data':
+            data_ismf_file = 'prescribed_ismf_paolo2023.SOwISC12to30E3r3.20240829.nc'
 
 
     #--------------------------------------------------------------------
@@ -312,6 +452,15 @@ def buildnml(case, caseroot, compname):
 
         if eco_forcing_file != '':
             input_list.write("eco_forcing = {}/ocn/mpas-o/{}/{}\n".format(din_loc_root, ocn_mask, eco_forcing_file))
+
+        if data_ismf_file != '':
+            input_list.write("data_ismf = {}/ocn/mpas-o/{}/{}\n".format(din_loc_root, ocn_mask, data_ismf_file))
+
+        if u_tidal_rms_file != '':
+            input_list.write("u_tidal_rms = {}/ocn/mpas-o/{}/{}\n".format(din_loc_root, ocn_mask, u_tidal_rms_file))
+
+        if data_sgr_file != '':
+            input_list.write("subglacial_runoff = {}/ocn/mpas-o/{}/{}\n".format(din_loc_root, ocn_mask, data_sgr_file))
 
     #--------------------------------------------------------------------
     # Invoke mpas build-namelist - output will go in $CASEBUILD/mpasoconf
@@ -372,8 +521,10 @@ def buildnml(case, caseroot, compname):
         sysmod += " -ocn_forcing '{}'".format(ocn_forcing)
         sysmod += " -ocn_iceberg '{}'".format(ocn_iceberg)
         sysmod += " -ocn_ismf '{}'".format(ocn_ismf)
+        sysmod += " -ocn_sgr '{}'".format(ocn_sgr)
         sysmod += " -ocn_bgc '{}'".format(ocn_bgc)
         sysmod += " -ocn_wave '{}'".format(ocn_wave)
+        sysmod += " -ocn_tidal_mixing '{}'".format(ocn_tidal_mixing)
         sysmod += " -ocn_co2_type '{}'".format(ocn_co2_type)
         sysmod += " -atm_co2_const_val '{}'".format(atm_co2_const_val)
         sysmod += " -ice_bgc '{}'".format(ice_bgc)
@@ -403,7 +554,8 @@ def buildnml(case, caseroot, compname):
             lines.append('')
             lines.append('<immutable_stream name="mesh"')
             lines.append('                  type="none"')
-            if ocn_grid.startswith("oRRS1"):
+            if ocn_grid.startswith("oRRS1") or ocn_grid.startswith("FRIS") \
+                    or ocn_grid.startswith("RRSwISC6"):
                 lines.append('                  io_type="pnetcdf,cdf5"')
             else:
                 lines.append('                  io_type="{}"'.format(ocn_pio_typename))
@@ -412,7 +564,8 @@ def buildnml(case, caseroot, compname):
             lines.append('/>')
             lines.append('<immutable_stream name="input"')
             lines.append('                  type="input"')
-            if ocn_grid.startswith("oRRS1"):
+            if ocn_grid.startswith("oRRS1") or ocn_grid.startswith("FRIS") \
+                    or ocn_grid.startswith("RRSwISC6"):
                 lines.append('                  io_type="pnetcdf,cdf5"')
             else:
                 lines.append('                  io_type="{}"'.format(ocn_pio_typename))
@@ -433,7 +586,8 @@ def buildnml(case, caseroot, compname):
             lines.append('-->')
             lines.append('<immutable_stream name="restart"')
             lines.append('                  type="input;output"')
-            if ocn_grid.startswith("oRRS1"):
+            if ocn_grid.startswith("oRRS1") or ocn_grid.startswith("FRIS") \
+                    or ocn_grid.startswith("RRSwISC6"):
                 lines.append('                  io_type="pnetcdf,cdf5"')
             else:
                 lines.append('                  io_type="{}"'.format(ocn_pio_typename))
@@ -452,7 +606,8 @@ def buildnml(case, caseroot, compname):
             lines.append('')
             lines.append('<stream name="output"')
             lines.append('        type="output"')
-            if ocn_grid.startswith("oRRS1"):
+            if ocn_grid.startswith("oRRS1") or ocn_grid.startswith("FRIS") \
+                    or ocn_grid.startswith("RRSwISC6"):
                 lines.append('        io_type="pnetcdf,cdf5"')
             else:
                 lines.append('        io_type="{}"'.format(ocn_pio_typename))
@@ -511,6 +666,8 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="maxLevelEdgeBot"/>')
             lines.append('    <var name="columnIntegratedSpeed"/>')
             lines.append('    <var name="landIceFreshwaterFlux"/>')
+            lines.append('    <var name="landIceFreshwaterFluxTotal"/>')
+            lines.append('    <var name="frazilIceFreshwaterFlux"/>')
             lines.append('    <var name="landIceHeatFlux"/>')
             lines.append('    <var name="heatFluxToLandIce"/>')
             if ocn_bgc in ['eco_only', 'eco_and_dms', 'eco_and_macromolecules', 'eco_and_dms_and_macromolecules']:
@@ -557,6 +714,31 @@ def buildnml(case, caseroot, compname):
                 lines.append('')
                 lines.append('       <var name="xtime"/>')
                 lines.append('       <var name="surfaceSalinityMonthlyClimatologyValue"/>')
+                lines.append('</stream>')
+                lines.append('')
+
+            if u_tidal_rms_file != '':
+                lines.append('<stream name="tidal_velocity_rms_parameterized"')
+                lines.append('       type="input"')
+                lines.append('       io_type="{}"'.format(ocn_pio_typename))
+                lines.append('       filename_template="{}/ocn/mpas-o/{}/{}"'.format(din_loc_root, ocn_mask, u_tidal_rms_file))
+                lines.append('       input_interval="initial_only" ')
+                lines.append('       packages="landIceFluxesPKG">')
+                lines.append('')
+                lines.append('       <var name="velocityTidalRMS"/>')
+                lines.append('</stream>')
+                lines.append('')
+
+            if data_sgr_file != '':
+                lines.append('<stream name="prescribed_subglacial_runoff"')
+                lines.append('       type="input"')
+                lines.append('       io_type="{}"'.format(ocn_pio_typename))
+                lines.append(
+                    '       filename_template="{}/ocn/mpas-o/{}/{}"'.format(din_loc_root, ocn_mask, data_sgr_file))
+                lines.append('       input_interval="initial_only" ')
+                lines.append('       packages="landIceFluxesPKG">')
+                lines.append('')
+                lines.append('       <var name="subglacialRunoffFlux"/>')
                 lines.append('</stream>')
                 lines.append('')
 
@@ -736,7 +918,8 @@ def buildnml(case, caseroot, compname):
             lines.append('<stream name="eddyProductVariablesOutput"')
             lines.append('        type="output"')
             lines.append('        precision="single"')
-            if ocn_grid.startswith("oRRS1"):
+            if ocn_grid.startswith("oRRS1") or ocn_grid.startswith("FRIS") \
+                    or ocn_grid.startswith("RRSwISC6"):
                 lines.append('        io_type="pnetcdf,cdf5"')
             else:
                 lines.append('        io_type="{}"'.format(ocn_pio_typename))
@@ -756,6 +939,9 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="velocityZonalTimesTemperature"/>')
             lines.append('    <var name="velocityMeridionalTimesTemperature"/>')
             lines.append('    <var name="normalVelocityTimesTemperature"/>')
+            lines.append('    <var name="velocityZonalTimesSalinity"/>')
+            lines.append('    <var name="velocityMeridionalTimesSalinity"/>')
+            lines.append('    <var name="normalVelocityTimesSalinity"/>')
             lines.append('</stream>')
             lines.append('')
             lines.append('<stream name="highFrequencyOutput"')
@@ -766,7 +952,7 @@ def buildnml(case, caseroot, compname):
             lines.append('        filename_interval="00-01-00_00:00:00"')
             lines.append('        reference_time="01-01-01_00:00:00"')
             lines.append('        output_interval="00-00-05_00:00:00"')
-            lines.append('        clobber_mode="truncate"')
+            lines.append('        clobber_mode="append"')
             lines.append('        packages="highFrequencyOutputAMPKG">')
             lines.append('')
             lines.append('    <var name="xtime"/>')
@@ -776,6 +962,7 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var_array name="activeTracersAtBottom"/>')
             lines.append('    <var name="kineticEnergyAtSurface"/>')
             lines.append('    <var name="kineticEnergyAt250m"/>')
+            lines.append('    <var name="relativeVorticityAtSurface"/>')
             lines.append('    <var name="relativeVorticityAt250m"/>')
             lines.append('    <var name="ssh"/>')
             lines.append('    <var name="pressureAdjustedSSH"/>')
@@ -784,7 +971,7 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="tThreshMLD"/>')
             lines.append('    <var name="columnIntegratedSpeed"/>')
             lines.append('    <var name="barotropicSpeed"/>')
-            lines.append('    <var name="landIceFreshwaterFlux"/>')
+            lines.append('    <var name="landIceFreshwaterFluxTotal"/>')
             lines.append('    <var name="pressureAdjustedSSH"/>')
             lines.append('    <var name="atmosphericPressure"/>')
             if ocn_bgc in ['eco_only', 'eco_and_dms', 'eco_and_macromolecules', 'eco_and_dms_and_macromolecules']:
@@ -983,7 +1170,7 @@ def buildnml(case, caseroot, compname):
             lines.append('        filename_template="{}.mpaso{}.hist.am.conservationCheck.$Y-$M-$D.nc"'.format(casename, inst_string))
             lines.append('        filename_interval="00-01-00_00:00:00"')
             lines.append('        reference_time="01-01-01_00:00:00"')
-            lines.append('        output_interval="00-01-00_00:00:00"')
+            lines.append('        output_interval="00-00-01_00:00:00"')
             lines.append('        clobber_mode="append"')
             lines.append('        packages="conservationCheckAMPKG">')
             lines.append('')
@@ -1023,12 +1210,14 @@ def buildnml(case, caseroot, compname):
             lines.append('<var name="accumulatedEvapTemperatureFlux"/>')
             lines.append('<var name="accumulatedSeaIceTemperatureFlux"/>')
             lines.append('<var name="accumulatedRiverRunoffTemperatureFlux"/>')
+            lines.append('<var name="accumulatedSubglacialRunoffTemperatureFlux"/>')
             lines.append('<var name="accumulatedIcebergTemperatureFlux"/>')
             lines.append('<var name="accumulatedRainFlux"/>')
             lines.append('<var name="accumulatedSnowFlux"/>')
             lines.append('<var name="accumulatedEvaporationFlux"/>')
             lines.append('<var name="accumulatedSeaIceFlux"/>')
             lines.append('<var name="accumulatedRiverRunoffFlux"/>')
+            lines.append('<var name="accumulatedSubglacialRunoffFlux"/>')
             lines.append('<var name="accumulatedIceRunoffFlux"/>')
             lines.append('<var name="accumulatedRemovedRiverRunoffFlux"/>')
             lines.append('<var name="accumulatedRemovedIceRunoffFlux"/>')
@@ -1037,6 +1226,7 @@ def buildnml(case, caseroot, compname):
             lines.append('<var name="accumulatedLandIceFlux"/>')
             lines.append('<var name="accumulatedLandIceFrazilFlux"/>')
             lines.append('<var name="accumulatedSeaIceSalinityFlux"/>')
+            lines.append('<var name="accumulatedSubglacialRunoffSalinityFlux"/>')
             lines.append('<var name="initialCarbon"/>')
             lines.append('<var name="finalCarbon"/>')
             lines.append('<var name="carbonChange"/>')
@@ -1113,7 +1303,8 @@ def buildnml(case, caseroot, compname):
             lines.append('<stream name="timeSeriesStatsMonthlyOutput"')
             lines.append('        type="output"')
             lines.append('        precision="single"')
-            if ocn_grid.startswith("oRRS1"):
+            if ocn_grid.startswith("oRRS1") or ocn_grid.startswith("FRIS") \
+                    or ocn_grid.startswith("RRSwISC6"):
                 lines.append('        io_type="pnetcdf,cdf5"')
             else:
                 lines.append('        io_type="{}"'.format(ocn_pio_typename))
@@ -1156,24 +1347,18 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="dThreshMLD"/>')
             lines.append('    <var name="normalVelocity"/>')
             lines.append('    <var name="vertVelocityTop"/>')
-            lines.append('    <var name="zMid"/>')
             lines.append('    <var name="atmosphericPressure"/>')
             lines.append('    <var name="normalMLEvelocity"/>')
             lines.append('    <var name="vertMLEBolusVelocityTop"/>')
-            if not ocn_grid.startswith("oRRS1"):
+            if not (ocn_grid.startswith("oRRS1") or ocn_grid.startswith("RRSwISC6")):
                 lines.append('    <var name="normalGMBolusVelocity"/>')
                 lines.append('    <var name="vertGMBolusVelocityTop"/>')
-                lines.append('    <var name="GMBolusVelocityZonal"/>')
-                lines.append('    <var name="GMBolusVelocityMeridional"/>')
                 lines.append('    <var name="cGMphaseSpeed"/>')
-                lines.append('    <var name="velocityZonalTimesTemperature_GM"/>')
-                lines.append('    <var name="velocityMeridionalTimesTemperature_GM"/>')
-                lines.append('    <var name="normalGMBolusVelocityTimesTemperature"/>')
-                lines.append('    <var name="normalGMBolusVelocitySquared"/>')
-                lines.append('    <var name="gmKappaScaling"/>')
-                lines.append('    <var name="gmBolusKappa"/>')
                 lines.append('    <var name="mocStreamvalLatAndDepthGM"/>')
                 lines.append('    <var name="mocStreamvalLatAndDepthRegionGM"/>')
+
+            if ocn_grid.startswith("FRIS"):
+                lines.append('    <var name="gmHorizontalTaper"/>')
 
             lines.append('    <var name="mocStreamvalLatAndDepthMLE"/>')
             lines.append('    <var name="mocStreamvalLatAndDepthRegionMLE"/>')
@@ -1190,10 +1375,10 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="seaIceSalinityFlux"/>')
             lines.append('    <var name="seaIceFreshWaterFlux"/>')
             lines.append('    <var name="riverRunoffFlux"/>')
+            lines.append('    <var name="subglacialRunoffFlux"/>')
             lines.append('    <var name="iceRunoffFlux"/>')
             lines.append('    <var name="rainFlux"/>')
             lines.append('    <var name="snowFlux"/>')
-            lines.append('    <var name="vertNonLocalFlux"/>')
             lines.append('    <var name="bottomLayerShortwaveTemperatureFlux"/>')
             lines.append('    <var_array name="activeTracersTend"/>')
             lines.append('    <var name="salinitySurfaceRestoringTendency"/>')
@@ -1212,13 +1397,15 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="CFLNumberGlobal"/>')
             lines.append('    <var name="vertDiffTopOfCell"/>')
             lines.append('    <var name="vertViscTopOfCell"/>')
-            lines.append('    <var name="bulkRichardsonNumber"/>')
             lines.append('    <var name="boundaryLayerDepth"/>')
             lines.append('    <var name="columnIntegratedSpeed"/>')
             lines.append('    <var name="landIceFreshwaterFlux"/>')
+            lines.append('    <var name="landIceFreshwaterFluxTotal"/>')
+            lines.append('    <var name="frazilIceFreshwaterFlux"/>')
             lines.append('    <var name="landIceHeatFlux"/>')
             lines.append('    <var name="heatFluxToLandIce"/>')
             lines.append('    <var name="landIceFrictionVelocity"/>')
+            lines.append('    <var name="velocityTidalRMS"/>')
             lines.append('    <var_array name="landIceBoundaryLayerTracers"/>')
             lines.append('    <var_array name="landIceInterfaceTracers"/>')
             lines.append('    <var name="mocStreamvalLatAndDepth"/>')
@@ -1226,7 +1413,6 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="binBoundaryMocStreamfunction"/>')
             lines.append('    <var name="surfaceBuoyancyForcing"/>')
             lines.append('    <var name="tendLayerThickness"/>')
-            lines.append('    <var name="boundaryLayerDepthSmooth"/>')
             lines.append('    <var name="pressureAdjustedSSH"/>')
             lines.append('    <var name="SSHSquared"/>')
             lines.append('    <var name="velocityZonalSquared"/>')
@@ -1235,6 +1421,9 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="velocityZonalTimesTemperature"/>')
             lines.append('    <var name="velocityMeridionalTimesTemperature"/>')
             lines.append('    <var name="normalVelocityTimesTemperature"/>')
+            lines.append('    <var name="velocityZonalTimesSalinity"/>')
+            lines.append('    <var name="velocityMeridionalTimesSalinity"/>')
+            lines.append('    <var name="normalVelocityTimesSalinity"/>')
             lines.append('    <var name="oceanHeatContentSfcToBot"/>')
             lines.append('    <var name="oceanHeatContentSfcTo700m"/>')
             lines.append('    <var name="oceanHeatContent700mTo2000m"/>')
@@ -1252,6 +1441,7 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var_array name="activeTracerVerticalAdvectionTopFlux"/>')
             lines.append('    <var_array name="activeTracerHorizontalAdvectionEdgeFlux"/>')
             lines.append('    <var_array name="totalFreshWaterTemperatureFlux"/>')
+            lines.append('    <var name="velocityTidalRMS"/>')
             if ocn_iceberg == 'true':
                 lines.append('    <var name="icebergHeatFlux"/>')
                 lines.append('    <var name="icebergFreshWaterFlux"/>')
@@ -1349,7 +1539,8 @@ def buildnml(case, caseroot, compname):
             lines.append('<stream name="timeSeriesStatsMonthlyMaxOutput"')
             lines.append('        type="output"')
             lines.append('        precision="single"')
-            if ocn_grid.startswith("oRRS1"):
+            if ocn_grid.startswith("oRRS1") or ocn_grid.startswith("FRIS") \
+                    or ocn_grid.startswith("RRSwISC6"):
                 lines.append('        io_type="pnetcdf,cdf5"')
             else:
                 lines.append('        io_type="{}"'.format(ocn_pio_typename))
@@ -1387,11 +1578,14 @@ def buildnml(case, caseroot, compname):
                 lines.append('    <var name="icebergFreshWaterFlux"/>')
 
             lines.append('    <var name="riverRunoffFlux"/>')
+            lines.append('    <var name="subglacialRunoffFlux"/>')
             lines.append('    <var name="iceRunoffFlux"/>')
             lines.append('    <var name="rainFlux"/>')
             lines.append('    <var name="snowFlux"/>')
             lines.append('    <var name="boundaryLayerDepth"/>')
             lines.append('    <var name="landIceFreshwaterFlux"/>')
+            lines.append('    <var name="landIceFreshwaterFluxTotal"/>')
+            lines.append('    <var name="frazilIceFreshwaterFlux"/>')
             lines.append('    <var name="landIceHeatFlux"/>')
             lines.append('    <var name="heatFluxToLandIce"/>')
             lines.append('    <var name="surfaceBuoyancyForcing"/>')
@@ -1411,7 +1605,8 @@ def buildnml(case, caseroot, compname):
             lines.append('<stream name="timeSeriesStatsMonthlyMinOutput"')
             lines.append('        type="output"')
             lines.append('        precision="single"')
-            if ocn_grid.startswith("oRRS1"):
+            if ocn_grid.startswith("oRRS1") or ocn_grid.startswith("FRIS") \
+                    or ocn_grid.startswith("RRSwISC6"):
                 lines.append('        io_type="pnetcdf,cdf5"')
             else:
                 lines.append('        io_type="{}"'.format(ocn_pio_typename))
@@ -1449,11 +1644,14 @@ def buildnml(case, caseroot, compname):
                 lines.append('    <var name="icebergFreshWaterFlux"/>')
 
             lines.append('    <var name="riverRunoffFlux"/>')
+            lines.append('    <var name="subglacialRunoffFlux"/>')
             lines.append('    <var name="iceRunoffFlux"/>')
             lines.append('    <var name="rainFlux"/>')
             lines.append('    <var name="snowFlux"/>')
             lines.append('    <var name="boundaryLayerDepth"/>')
             lines.append('    <var name="landIceFreshwaterFlux"/>')
+            lines.append('    <var name="landIceFreshwaterFluxTotal"/>')
+            lines.append('    <var name="frazilIceFreshwaterFlux"/>')
             lines.append('    <var name="landIceHeatFlux"/>')
             lines.append('    <var name="heatFluxToLandIce"/>')
             lines.append('    <var name="surfaceBuoyancyForcing"/>')
@@ -1514,7 +1712,8 @@ def buildnml(case, caseroot, compname):
             lines.append('')
             lines.append('<stream name="timeSeriesStatsMonthlyRestart"')
             lines.append('        type="input;output"')
-            if ocn_grid.startswith("oRRS1"):
+            if ocn_grid.startswith("oRRS1") or ocn_grid.startswith("FRIS") \
+                    or ocn_grid.startswith("RRSwISC6"):
                 lines.append('        io_type="pnetcdf,cdf5"')
             else:
                 lines.append('        io_type="{}"'.format(ocn_pio_typename))
@@ -1530,7 +1729,8 @@ def buildnml(case, caseroot, compname):
             lines.append('')
             lines.append('<stream name="timeSeriesStatsMonthlyMaxRestart"')
             lines.append('        type="input;output"')
-            if ocn_grid.startswith("oRRS1"):
+            if ocn_grid.startswith("oRRS1") or ocn_grid.startswith("FRIS") \
+                    or ocn_grid.startswith("RRSwISC6"):
                 lines.append('        io_type="pnetcdf,cdf5"')
             else:
                 lines.append('        io_type="{}"'.format(ocn_pio_typename))
@@ -1546,7 +1746,8 @@ def buildnml(case, caseroot, compname):
             lines.append('')
             lines.append('<stream name="timeSeriesStatsMonthlyMinRestart"')
             lines.append('        type="input;output"')
-            if ocn_grid.startswith("oRRS1"):
+            if ocn_grid.startswith("oRRS1") or ocn_grid.startswith("FRIS") \
+                    or ocn_grid.startswith("RRSwISC6"):
                 lines.append('        io_type="pnetcdf,cdf5"')
             else:
                 lines.append('        io_type="{}"'.format(ocn_pio_typename))
@@ -1608,6 +1809,18 @@ def buildnml(case, caseroot, compname):
                 lines.append('</stream>')
                 lines.append('')
 
+            if data_ismf_file != '':
+                lines.append('<stream name="data_land_ice_fluxes"')
+                lines.append('        type="input"')
+                lines.append('        io_type="{}"'.format(ocn_pio_typename))
+                lines.append('        filename_template="{}/ocn/mpas-o/{}/{}"'.format(din_loc_root, ocn_mask, data_ismf_file))
+                lines.append('        input_interval="initial_only"')
+                lines.append('        packages="dataLandIceFluxesPKG">')
+                lines.append('    <var name="dataLandIceFreshwaterFlux"/>')
+                lines.append('    <var name="dataLandIceHeatFlux"/>')
+                lines.append('</stream>')
+                lines.append('')
+
             lines.append('<!--')
             lines.append('All streams below this line are auxiliary streams. They are provided as')
             lines.append('groupings of fields that one might be interested in. You can either enable the')
@@ -1646,6 +1859,7 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="seaIceSalinityFlux"/>')
             lines.append('    <var name="seaIceFreshWaterFlux"/>')
             lines.append('    <var name="riverRunoffFlux"/>')
+            lines.append('    <var name="subglacialRunoffFlux"/>')
             lines.append('    <var name="iceRunoffFlux"/>')
             lines.append('    <var name="rainFlux"/>')
             lines.append('    <var name="snowFlux"/>')

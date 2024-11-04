@@ -21,6 +21,7 @@ set_target_properties(physics_share PROPERTIES
   Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules
 )
 target_include_directories(physics_share PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_BINARY_DIR}/modules
 )
 target_link_libraries(physics_share scream_share)
@@ -28,3 +29,6 @@ target_link_libraries(physics_share scream_share)
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)
 endif()
+
+# Add this library to eamxx_physics
+target_link_libraries(eamxx_physics INTERFACE physics_share)

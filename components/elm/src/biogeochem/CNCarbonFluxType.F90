@@ -10,7 +10,7 @@ module CNCarbonFluxType
   use landunit_varcon        , only : istsoil, istcrop, istdlak 
   use elm_varctl             , only : use_c13, use_fates 
   use CH4varcon              , only : allowlakeprod
-  use pftvarcon              , only : npcropmin
+  use pftvarcon              , only : iscft
   use CNDecompCascadeConType , only : decomp_cascade_con
   use VegetationType         , only : veg_pp
   use ColumnType             , only : col_pp                
@@ -1113,7 +1113,7 @@ contains
     !
     ! !USES:
     use shr_infnan_mod   , only : isnan => shr_infnan_isnan, nan => shr_infnan_nan, assignment(=)
-    use clm_time_manager , only : is_restart
+    use elm_time_manager , only : is_restart
     use elm_varcon       , only : c13ratio, c14ratio
     use elm_varctl       , only : use_lch4, use_betr
     use restUtilMod
@@ -1584,7 +1584,7 @@ contains
     !
     ! !USES:
     use elm_varctl       , only : iulog
-    use clm_time_manager , only : get_step_size
+    use elm_time_manager , only : get_step_size
     use elm_varcon       , only : secspday
     use elm_varpar       , only : nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
     use subgridAveMod    , only : p2c
@@ -1675,7 +1675,7 @@ contains
             this%cpool_livecroot_storage_gr_patch(p) + &
             this%cpool_deadcroot_storage_gr_patch(p)
 
-       if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
+       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
           this%mr_patch(p) = &
                this%mr_patch(p) + &
                this%grain_mr_patch(p)
@@ -1700,7 +1700,7 @@ contains
             this%storage_gr_patch(p)
 
        ! autotrophic respiration (AR)
-       if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
+       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
           this%ar_patch(p) = &
                this%mr_patch(p) + &
                this%gr_patch(p) + &
@@ -1812,7 +1812,7 @@ contains
        this%wood_harvestc_patch(p) = &
             this%hrv_deadstemc_to_prod10c_patch(p) + &
             this%hrv_deadstemc_to_prod100c_patch(p)
-       if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
+       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
           this%wood_harvestc_patch(p) = &
                this%wood_harvestc_patch(p) + &
                this%hrv_cropc_to_prod1c_patch(p)
@@ -1842,7 +1842,7 @@ contains
             this%m_gresp_xfer_to_fire_patch(p)           + &
             this%m_cpool_to_fire_patch(p)
 
-       if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
+       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
 
           this%litfall_patch(p) =                  &
                this%litfall_patch(p)             + &
@@ -1878,7 +1878,7 @@ contains
             this%hrv_leafc_to_litter_patch(p)    + &
             this%leafc_to_litter_patch(p)
 
-       if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
+       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
           this%leafc_loss_patch(p) = &
                this%leafc_loss_patch(p) + &
                this%hrv_leafc_to_prod1c_patch(p)
@@ -1920,7 +1920,7 @@ contains
             this%hrv_deadcrootc_storage_to_litter_patch(p) + &
             this%hrv_deadcrootc_xfer_to_litter_patch(p)   
        ! putting the harvested crop stem and grain in the wood loss bdrewniak
-       if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
+       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
           this%woodc_loss_patch(p) = &
                this%woodc_loss_patch(p) + &
                this%hrv_grainc_to_prod1c_patch(p) + &
@@ -2338,7 +2338,7 @@ subroutine CSummary_interface(this, bounds, num_soilc, filter_soilc)
    use shr_sys_mod, only: shr_sys_flush
    use elm_varpar , only: nlevdecomp_full,ndecomp_pools,ndecomp_cascade_transitions
    use elm_varpar , only: i_met_lit, i_cel_lit, i_lig_lit, i_cwd
-   use clm_time_manager    , only : get_step_size
+   use elm_time_manager    , only : get_step_size
 !
 ! !ARGUMENTS:
    implicit none
@@ -2592,7 +2592,7 @@ end subroutine CSummary_interface
             this%cpool_to_deadstemc_patch(p)              + &
             this%deadstemc_xfer_to_deadstemc_patch(p)
 
-       if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
+       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
           this%agnpp_patch(p) =                    &
                this%agnpp_patch(p)               + &
                this%cpool_to_grainc_patch(p)     + &

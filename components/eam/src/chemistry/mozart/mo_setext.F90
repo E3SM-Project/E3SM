@@ -21,10 +21,18 @@ contains
 
     use mo_chem_utls, only : get_extfrc_ndx
     use ppgrid,       only : pver
-    use cam_history,  only : addfld
+    use cam_history,  only : addfld, add_default
     use spmd_utils,   only : masterproc
+    use phys_control, only : phys_getopts
 
     implicit none
+! chem diags
+    logical  :: history_gaschmbudget_2D
+    logical  :: history_chemdyg_summary
+    !-----------------------------------------------------------------------
+
+    call phys_getopts( history_gaschmbudget_2D_out = history_gaschmbudget_2D, &
+                       history_chemdyg_summary_out = history_chemdyg_summary   )
 
     co_ndx    = get_extfrc_ndx( 'CO' )
     no_ndx    = get_extfrc_ndx( 'NO' )
@@ -64,6 +72,12 @@ contains
        call addfld( 'P_IONS', (/ 'lev' /), 'I', '/s', 'total ion production' )
     endif
 
+    if (history_gaschmbudget_2D .or. history_chemdyg_summary) then
+       call addfld( 'NO_TDLgt', (/ 'lev' /), 'A',  'kg N/m2/s', &
+                       'external forcing for NO lightning emission' )
+       call add_default( 'NO_TDLgt', 1, ' ' )
+    endif
+
   end subroutine setext_inti
 
   subroutine setext( extfrc, zint_abs, zint_rel, cldtop, &
@@ -93,6 +107,8 @@ contains
     use mo_aurora,      only : aurora
     use mo_solarproton, only : spe_prod 
     use physics_buffer, only : physics_buffer_desc
+    use phys_control, only : phys_getopts
+    use mo_constants, only : avogadro
 
     implicit none
 
@@ -131,9 +147,18 @@ contains
     real(r8)    :: spe_nox(ncol,pver)        ! Solar Proton Event NO production
     real(r8)    :: spe_hox(ncol,pver)        ! Solar Proton Event HOx production
 
+! chem diags
+    logical     :: history_gaschmbudget_2D
+    logical     :: history_chemdyg_summary
+    real(r8)    :: no_tdlgt(ncol,pver)
+
+    call phys_getopts( history_gaschmbudget_2D_out = history_gaschmbudget_2D, &
+                       history_chemdyg_summary_out = history_chemdyg_summary   )
+
     extfrc(:,:,:) = 0._r8
 
     no_lgt(:,:) = 0._r8
+    no_tdlgt(:,:) = 0._r8
 
     !--------------------------------------------------------
     !     ... set frcing from datasets
@@ -144,7 +169,7 @@ contains
     !     ... set nox production from lighting
     !         note: from ground to cloud top production is c shaped
     !--------------------------------------------------------
-    if ( no_ndx > 0 ) then
+    if ( no_ndx > 0 ) then 
        do i = 1,ncol
           cldind = nint( cldtop(i) )
           if( cldind < pver .and. cldind > 0  ) then
@@ -165,6 +190,15 @@ contains
     endif
 
     call outfld( 'NO_Lightning', no_lgt(:ncol,:), ncol, lchnk )
+
+    if (history_gaschmbudget_2D .or. history_chemdyg_summary) then
+       do k = 1, pver
+          !kgn per m2 per second
+          no_tdlgt(:ncol,k) = prod_no(:ncol,k,lchnk)*(zint_rel(:ncol,k)-zint_rel(:ncol,k+1)) * 1.e6_r8 * 14.00674_r8 / avogadro 
+       end do
+
+       call outfld('NO_TDLgt', no_tdlgt(:ncol,:), ncol, lchnk )
+    endif
 
     call airpl_set( lchnk, ncol, no_ndx, co_ndx, xno_ndx, cldtop, zint_abs, extfrc)
 

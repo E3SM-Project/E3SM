@@ -1,0 +1,33 @@
+%YAML 1.1
+---
+filename_prefix: rrtmgp_standalone_output${SUFFIX}
+Averaging Type: Instant
+Max Snapshots Per File: 1
+Field Names:
+  - T_mid
+  - LW_flux_up
+  - LW_flux_dn
+  - SW_flux_up
+  - SW_flux_dn
+  - SW_flux_dn_dir
+  - sfc_alb_dir_nir
+  - sfc_alb_dir_vis
+  - sfc_alb_dif_nir
+  - sfc_alb_dif_vis
+  - sfc_flux_lw_dn
+  - sfc_flux_sw_net
+  - rad_heating_pdel
+  # AeroCom in RRTMGP
+  - cdnc_at_cldtop
+  - cldfrac_tot_at_cldtop
+  - cldfrac_liq_at_cldtop
+  - cldfrac_ice_at_cldtop
+  - p_mid_at_cldtop
+  - T_mid_at_cldtop
+  - eff_radius_qc_at_cldtop
+  - eff_radius_qi_at_cldtop
+ 
+output_control:
+  Frequency: ${NUM_STEPS}
+  frequency_units: nsteps
+...

@@ -32,6 +32,9 @@ module datm_comp_mod
   use datm_shr_mod   , only: iradsw         ! namelist input
   use datm_shr_mod   , only: nullstr
 
+#ifdef HAVE_MOAB
+  use iso_c_binding
+#endif
   ! !PUBLIC TYPES:
 
   implicit none
@@ -212,6 +215,13 @@ CONTAINS
        scmMode, scmlat, scmlon, &
        orbEccen, orbMvelpp, orbLambm0, orbObliqr, phase, nextsw_cday)
 
+#ifdef HAVE_MOAB
+    use iMOAB, only: iMOAB_DefineTagStorage, iMOAB_GetDoubleTagStorage, &
+                     iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage, &
+                     iMOAB_ResolveSharedEntities, iMOAB_CreateVertices, &
+                     iMOAB_GetMeshInfo, iMOAB_UpdateMeshInfo, iMOAB_WriteMesh
+    use seq_comm_mct, only : mphaid !            iMOAB app id for phys atm; comp atm is 5, phys 5+200
+#endif
     ! !DESCRIPTION: initialize data atm model
     implicit none
 
@@ -257,6 +267,19 @@ CONTAINS
     integer(IN)   :: stepno      ! step number
     character(CL) :: calendar    ! calendar type
     character(CL) :: flds_strm
+
+#ifdef HAVE_MOAB
+    character*400  tagname
+    real(R8) latv, lonv
+    integer iv, tagindex, ilat, ilon, ierr  !, arrsize, nfields
+    real(R8), allocatable, target :: data(:)
+    integer(IN), pointer :: idata(:)   ! temporary
+    real(r8), dimension(:), allocatable :: moab_vert_coords  ! temporary
+    !real(R8), allocatable, target :: vtags_zero(:, :)
+#ifdef MOABDEBUG
+    character*100 outfile, wopts
+#endif
+#endif
 
     !--- formats ---
     character(*), parameter :: F00   = "('(datm_comp_init) ',8a)"
@@ -347,6 +370,110 @@ CONTAINS
        call shr_dmodel_rearrGGrid(SDATM%grid, ggrid, gsmap, rearr, mpicom)
        call t_stopf('datm_initmctdom')
 
+#ifdef HAVE_MOAB
+       ilat = mct_aVect_indexRA(ggrid%data,'lat')
+       ilon = mct_aVect_indexRA(ggrid%data,'lon')
+       allocate(moab_vert_coords(lsize*3))
+       do iv = 1, lsize
+          lonv = ggrid%data%rAttr(ilon, iv) * SHR_CONST_PI/180.
+          latv = ggrid%data%rAttr(ilat, iv) * SHR_CONST_PI/180.
+          moab_vert_coords(3*iv-2)=COS(latv)*COS(lonv)
+          moab_vert_coords(3*iv-1)=COS(latv)*SIN(lonv)
+          moab_vert_coords(3*iv  )=SIN(latv)
+       enddo
+    
+       ! create the vertices with coordinates from MCT domain
+       ierr = iMOAB_CreateVertices(mphaid, lsize*3, 3, moab_vert_coords)
+       if (ierr .ne. 0)  &
+          call shr_sys_abort('Error: fail to create MOAB vertices in land model')
+    
+       tagname='GLOBAL_ID'//C_NULL_CHAR
+       ierr = iMOAB_DefineTagStorage(mphaid, tagname, &
+                                     0, & ! dense, integer
+                                     1, & ! number of components
+                                     tagindex )
+       if (ierr .ne. 0)  &
+          call shr_sys_abort('Error: fail to retrieve GLOBAL_ID tag ')
+    
+       ! get list of global IDs for Dofs
+       call mct_gsMap_orderedPoints(gsMap, my_task, idata)
+    
+       ierr = iMOAB_SetIntTagStorage ( mphaid, tagname, lsize, &
+                                        0, & ! vertex type
+                                        idata)
+       if (ierr .ne. 0)  &
+          call shr_sys_abort('Error: fail to set GLOBAL_ID tag ')
+    
+       ierr = iMOAB_ResolveSharedEntities( mphaid, lsize, idata );
+       if (ierr .ne. 0)  &
+          call shr_sys_abort('Error: fail to resolve shared entities')
+    
+       deallocate(moab_vert_coords)
+       deallocate(idata)
+    
+       ierr = iMOAB_UpdateMeshInfo( mphaid )
+       if (ierr .ne. 0)  &
+          call shr_sys_abort('Error: fail to update mesh info ')
+    
+       allocate(data(lsize))
+       ierr = iMOAB_DefineTagStorage( mphaid, "area:aream:frac:mask"//C_NULL_CHAR, &
+                                         1, & ! dense, double
+                                         1, & ! number of components
+                                         tagindex )
+       if (ierr > 0 )  &
+          call shr_sys_abort('Error: fail to create tag: area:aream:frac:mask' )
+    
+       data(:) = ggrid%data%rAttr(mct_aVect_indexRA(ggrid%data,'area'),:)
+       tagname='area'//C_NULL_CHAR
+       ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, lsize, &
+                                          0, & ! set data on vertices
+                                          data)
+       if (ierr > 0 )  &
+          call shr_sys_abort('Error: fail to get area tag ')
+    
+       ! set the same data for aream (model area) as area
+       ! data(:) = ggrid%data%rAttr(mct_aVect_indexRA(ggrid%data,'aream'),:)
+       tagname='aream'//C_NULL_CHAR
+       ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, lsize, &
+                                          0, & ! set data on vertices
+                                          data)
+       if (ierr > 0 )  &
+          call shr_sys_abort('Error: fail to set aream tag ')
+
+       data(:) = ggrid%data%rAttr(mct_aVect_indexRA(ggrid%data,'mask'),:)
+       tagname='mask'//C_NULL_CHAR
+       ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, lsize, &
+                                          0, & ! set data on vertices
+                                          data)
+       if (ierr > 0 )  &
+          call shr_sys_abort('Error: fail to set mask tag ')
+    
+       data(:) = ggrid%data%rAttr(mct_aVect_indexRA(ggrid%data,'frac'),:)
+       tagname='frac'//C_NULL_CHAR
+       ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, lsize, &
+                                          0, & ! set data on vertices
+                                          data)
+       if (ierr > 0 )  &
+          call shr_sys_abort('Error: fail to set frac tag ')
+    
+       deallocate(data)
+    
+       ! define tags
+       ierr = iMOAB_DefineTagStorage( mphaid, trim(seq_flds_x2a_fields)//C_NULL_CHAR, &
+                                         1, & ! dense, double
+                                         1, & ! number of components
+                                         tagindex )
+       if (ierr > 0 )  &
+          call shr_sys_abort('Error: fail to create seq_flds_x2a_fields tags ')
+    
+       ierr = iMOAB_DefineTagStorage( mphaid, trim(seq_flds_a2x_fields)//C_NULL_CHAR, &
+                                         1, & ! dense, double
+                                         1, & ! number of components
+                                         tagindex )
+       if (ierr > 0 )  &
+          call shr_sys_abort('Error: fail to create seq_flds_a2x_fields tags ')
+    
+#endif
        !----------------------------------------------------------------------------
        ! Initialize MCT attribute vectors
        !----------------------------------------------------------------------------
@@ -479,6 +606,24 @@ CONTAINS
        yc(:) = ggrid%data%rAttr(klat,:)
 
        call t_stopf('datm_initmctavs')
+#ifdef HAVE_MOAB
+       ierr = iMOAB_DefineTagStorage( mphaid, trim(flds_strm)//C_NULL_CHAR, &
+                                         1, & ! dense, double
+                                         1, & ! number of components
+                                         tagindex )
+       if (ierr > 0 )  &
+          call shr_sys_abort('Error: fail to create flds_strm tags ')
+#ifdef MOABDEBUG
+          !      debug test
+       outfile = 'AtmDataMesh.h5m'//C_NULL_CHAR
+       wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+          !      write out the mesh file to disk
+       ierr = iMOAB_WriteMesh(mphaid, trim(outfile), trim(wopts))
+       if (ierr .ne. 0) then
+          call shr_sys_abort(subname//' ERROR in writing data mesh atm ')
+       endif
+#endif
+#endif
 
        !----------------------------------------------------------------------------
        ! Read restart
@@ -580,7 +725,14 @@ CONTAINS
        nextsw_cday, case_name)
 
     ! !DESCRIPTION: run method for datm model
-
+#ifdef HAVE_MOAB
+    use seq_flds_mod    , only: seq_flds_a2x_fields ! this should not be an argument in datm_comp_init
+    use seq_comm_mct, only : mphaid ! 
+    use seq_flds_mod, only: moab_set_tag_from_av
+#ifdef MOABDEBUG   
+    use iMOAB, only: iMOAB_WriteMesh
+#endif
+#endif
     implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
@@ -627,7 +779,18 @@ CONTAINS
     !--- temporaries
     real(R8)      :: uprime,vprime,swndr,swndf,swvdr,swvdf,ratio_rvrf
     real(R8)      :: tbot,pbot,rtmp,vp,ea,e,qsat,frac
+#ifdef HAVE_MOAB
+    real(R8), allocatable, target :: datam(:)
+    type(mct_list) :: temp_list
+    integer :: size_list, index_list
+    type(mct_string)    :: mctOStr  !
+    character*400  tagname, mct_field
+#ifdef MOABDEBUG
+    integer  :: cur_datm_stepno, ierr
+    character*100 outfile, wopts, lnum
+#endif
 
+#endif
     character(*), parameter :: F00   = "('(datm_comp_run) ',8a)"
     character(*), parameter :: F04   = "('(datm_comp_run) ',2a,2i8,'s')"
     character(*), parameter :: subName = "(datm_comp_run) "
@@ -675,6 +838,8 @@ CONTAINS
        allocate(count_av(SDATM%nstreams))
        allocate(count_st(SDATM%nstreams))
     end if
+
+
     do n = 1,SDATM%nstreams
        if (firstcall) then
           call shr_dmodel_translate_list(SDATM%avs(n),a2x,&
@@ -685,6 +850,7 @@ CONTAINS
                ilist_av(n),olist_av(n),rearr)
        end if
     enddo
+
     do n = 1,SDATM%nstreams
        if (firstcall) then
           call shr_dmodel_translate_list(SDATM%avs(n),avstrm,&
@@ -696,7 +862,6 @@ CONTAINS
        end if
     enddo
     call t_stopf('datm_scatter')
-
     !-------------------------------------------------
     ! Determine data model behavior based on the mode
     !-------------------------------------------------
@@ -1110,7 +1275,6 @@ CONTAINS
     !----------------------------------------------------------
     ! bias correction / anomaly forcing ( end block )
     !----------------------------------------------------------
-
     !--------------------
     ! Write restart
     !--------------------
@@ -1144,6 +1308,33 @@ CONTAINS
     ! Log output for model date
     ! Reset shr logging to original values
     !----------------------------------------------------------------------------
+
+#ifdef HAVE_MOAB
+    lsize = mct_avect_lsize(a2x) ! is it the same as mct_avect_lsize(avstrm) ?
+    allocate(datam(lsize)) ! 
+    call mct_list_init(temp_list ,seq_flds_a2x_fields)
+    size_list=mct_list_nitem (temp_list)
+    do index_list = 1, size_list
+      call mct_list_get(mctOStr,index_list,temp_list)
+      mct_field = mct_string_toChar(mctOStr)
+      tagname= trim(mct_field)//C_NULL_CHAR
+      call moab_set_tag_from_av(tagname, a2x, index_list, mphaid, datam, lsize) ! loop over all a2x fields, not just a few
+    enddo
+    call mct_list_clean(temp_list)
+    deallocate(datam) ! maybe we should keep it around, deallocate at the final only?
+
+#ifdef MOABDEBUG
+    call seq_timemgr_EClockGetData( EClock, stepno=cur_datm_stepno )
+    write(lnum,"(I0.2)")cur_datm_stepno
+    outfile = 'datm_comp_run_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+    wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+    ierr = iMOAB_WriteMesh(mphaid, outfile, wopts)
+    if (ierr > 0 )  then
+       write(logunit,*) 'Failed to write data atm component state '
+    endif
+#endif
+
+#endif
 
     call t_startf('datm_run2')
     if (my_task == master_task) then

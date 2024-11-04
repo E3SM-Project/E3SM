@@ -58,8 +58,8 @@
          tr_pond_cesm, & ! if .true., use cesm pond tracer
          tr_pond_lvl , & ! if .true., use level-ice pond tracer
          tr_pond_topo, & ! if .true., use explicit topography-based ponds
-         tr_snow     , & ! if .true., use snow tracers (ice, liquid water mass)
-         tr_rsnw     , & ! if .true., use dynamic snow grain radius tracer
+         tr_snow     , & ! if .true., use snow density tracer (rhos_cmp)
+         tr_rsnw     , & ! if .true., use dynamic snow grain radius, mass, liquid tracers
          tr_aero     , & ! if .true., use aerosol tracers
          tr_brine        ! if .true., brine height differs from ice thickness
 

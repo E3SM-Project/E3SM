@@ -16,6 +16,7 @@ distributed with this code, or at http://mpas-dev.github.io/license.html
 #include <fstream>
 #include <sstream>
 #include <limits>
+#include <cassert>
 #include "Interface_velocity_solver.hpp"
 
 // ===================================================
@@ -469,16 +470,14 @@ void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cel
   //we define the vector of global triangles Ids and compute the stride between the largest and the smallest Id globally
   //This will be needed by the velocity solver to create the 3D FE mesh.
   indexToTriangleID.resize(nTriangles);
-  int maxTriangleID=std::numeric_limits<int>::min(), minTriangleID=std::numeric_limits<int>::max(), maxGlobalTriangleID, minGlobalTriangleID;
+  int maxTriangleID=std::numeric_limits<int>::min(), maxGlobalTriangleID;
   for (int index(0); index < nTriangles; index++) {
     indexToTriangleID[index] = fVertexToTriangleID[triangleToFVertex[index]];
     maxTriangleID = (indexToTriangleID[index] > maxTriangleID) ? indexToTriangleID[index] : maxTriangleID;
-    minTriangleID = (indexToTriangleID[index] < minTriangleID) ? indexToTriangleID[index] : minTriangleID;
   }
 
   MPI_Allreduce(&maxTriangleID, &maxGlobalTriangleID, 1, MPI_INT, MPI_MAX, comm);
-  MPI_Allreduce(&minTriangleID, &minGlobalTriangleID, 1, MPI_INT, MPI_MIN, comm);
-  globalTriangleStride = maxGlobalTriangleID - minGlobalTriangleID +1;
+  globalTriangleStride = maxGlobalTriangleID;
 
   // Second, we compute the FE edges belonging to the FE triangles owned by this processor.
   // We first compute boundary edges, and then all the other edges.
@@ -569,16 +568,16 @@ void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cel
   indexToEdgeID.resize(nEdges);
   iceMarginEdgesLIds.clear();
   iceMarginEdgesLIds.reserve(numBoundaryEdges);
-  int maxEdgeID=std::numeric_limits<int>::min(), minEdgeID=std::numeric_limits<int>::max(), maxGlobalEdgeID, minGlobalEdgeID;
+  int maxEdgeID=std::numeric_limits<int>::min(), maxGlobalEdgeID;
   for (int index = 0; index < nEdges; index++) {
     int fEdge = edgeToFEdge[index];
     indexToEdgeID[index] = fEdgeToEdgeID[fEdge];
     maxEdgeID = (indexToEdgeID[index] > maxEdgeID) ? indexToEdgeID[index] : maxEdgeID;
-    minEdgeID = (indexToEdgeID[index] < minEdgeID) ? indexToEdgeID[index] : minEdgeID;
 
     if(index<numBoundaryEdges){
       int fCell0 = cellsOnEdge_F[2 * fEdge] - 1;
       int fCell1 = cellsOnEdge_F[2 * fEdge + 1] - 1;
+      assert((fCell0<nCells_F) && (fCell1<nCells_F));
       bool isCell0OnMargin = !(cellsMask_F[fCell0] & dynamic_ice_bit_value) &&
           (dirichletCellsMask_F[(nLayers+1)*fCell0] == 0);
       bool isCell1OnMargin = !(cellsMask_F[fCell1] & dynamic_ice_bit_value) &&
@@ -589,8 +588,7 @@ void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cel
   }
 
   MPI_Allreduce(&maxEdgeID, &maxGlobalEdgeID, 1, MPI_INT, MPI_MAX, comm);
-  MPI_Allreduce(&minEdgeID, &minGlobalEdgeID, 1, MPI_INT, MPI_MIN, comm);
-  globalEdgeStride = maxGlobalEdgeID - minGlobalEdgeID + 1;
+  globalEdgeStride = maxGlobalEdgeID;
 
   // Third, we compute the FE vertices belonging to the FE triangles owned by this processor.
   // We need to make sure that an FE vertex is owned by a proc that owns a FE triangle that contain that vertex
@@ -600,7 +598,6 @@ void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cel
   vertexToFCell.reserve(nCells_F);
 
   fCellToVertex.assign(nCells_F, NotAnId);
-  std::vector<int> fCellToVertexID(nCells_F, NotAnId);
 
   vertexProcIDs.clear();
 
@@ -645,21 +642,16 @@ void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cel
   }
   nVertices = vertexToFCell.size();
 
-  for (int fcell = 0; fcell < nCells_F; fcell++)
-    fCellToVertexID[fcell] = indexToCellID_F[fcell];
-
-  int maxVertexID=std::numeric_limits<int>::min(), minVertexID=std::numeric_limits<int>::max(), maxGlobalVertexID, minGlobalVertexID;
+  int maxVertexID=std::numeric_limits<int>::min(), maxGlobalVertexID;
   indexToVertexID.resize(nVertices);
   for (int index = 0; index < nVertices; index++) {
     int fCell = vertexToFCell[index];
-    indexToVertexID[index] = fCellToVertexID[fCell];
+    indexToVertexID[index] = indexToCellID_F[fCell];
     maxVertexID = (indexToVertexID[index] > maxVertexID) ? indexToVertexID[index] : maxVertexID;
-    minVertexID = (indexToVertexID[index] < minVertexID) ? indexToVertexID[index] : minVertexID;
   }
 
   MPI_Allreduce(&maxVertexID, &maxGlobalVertexID, 1, MPI_INT, MPI_MAX, comm);
-  MPI_Allreduce(&minVertexID, &minGlobalVertexID, 1, MPI_INT, MPI_MIN, comm);
-  globalVertexStride = maxGlobalVertexID - minGlobalVertexID + 1;
+  globalVertexStride = maxGlobalVertexID;
 
 
   int vertexColumnShift = (Ordering == 1) ? 1 : globalVertexStride;
@@ -681,6 +673,7 @@ void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cel
     bool isBoundary;
     do {
       int fVertex = verticesOnCell_F[maxNEdgesOnCell_F * fCell + j++] - 1;
+      assert(fVertex<nVertices_F);
       isBoundary = !(verticesMask_F[fVertex] & dynamic_ice_bit_value);
     } while ((j < nEdg) && (!isBoundary));
     isVertexBoundary[index] = isBoundary;
@@ -702,6 +695,7 @@ void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cel
 
     for (int j = 0; j < 3; j++) {
       int iCell = cellsOnVertex_F[3 * iTria + j] - 1;
+      assert(iCell<nCells_F);
       verticesOnTria[3 * index + j] = fCellToVertex[iCell];
       x[j] = xCell_F[iCell];
       y[j] = yCell_F[iCell];
@@ -716,6 +710,7 @@ void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cel
     int fEdge = edgeToFEdge[index];
     int fCell1 = cellsOnEdge_F[2 * fEdge] - 1;
     int fCell2 = cellsOnEdge_F[2 * fEdge + 1] - 1;
+    assert((fCell1<nCells_F) && (fCell2<nCells_F));
     verticesOnEdge[2 * index] = fCellToVertex[fCell1];
     verticesOnEdge[2 * index + 1] = fCellToVertex[fCell2];
   }
@@ -875,6 +870,10 @@ void get_prism_velocity_on_FEdges(double * uNormal,
     int iCell0 = cellsOnEdge_F[2 * iEdge] - 1;
     int iCell1 = cellsOnEdge_F[2 * iEdge + 1] - 1;
 
+    //skip computing velocity on edge if its neighboring cells are not valid
+    if((iCell0 >= nCells_F) || (iCell1 >= nCells_F))
+      continue; 
+
     //computing normal to the cell edge (dual of triangular edge)
     double nx = xCell_F[iCell1] - xCell_F[iCell0];
     double ny = yCell_F[iCell1] - yCell_F[iCell0];
@@ -886,67 +885,75 @@ void get_prism_velocity_on_FEdges(double * uNormal,
     ID fVertex0 = verticesOnEdge_F[2 * iEdge] - 1;
     ID fVertex1 = verticesOnEdge_F[2 * iEdge + 1] - 1;
 
+    if((fVertex0 >= nVertices_F) || (fVertex1 >= nVertices_F))
+      continue;
 
     int iTria0 = fVertexToTriangleID[fVertex0];
     int iTria1 = fVertexToTriangleID[fVertex1];
-    if((iTria0 == NotAnId) && (iTria1 == NotAnId)) continue;
+    if((iTria0 == NotAnId) && (iTria1 == NotAnId)) 
+      continue;
 
     double t0[2*3], t1[2*3]; //t0[0] contains the x-coords of vertices of triangle 0 and t0[1] its y-coords.
-    for (int j = 0; j < 3; j++) {
-      int iCell = cellsOnVertex_F[3 * fVertex0 + j] - 1;
-      t0[0 + 2 * j] = xCell_F[iCell];
-      t0[1 + 2 * j] = yCell_F[iCell];
-      iCell = cellsOnVertex_F[3 * fVertex1 + j] - 1;
-      t1[0 + 2 * j] = xCell_F[iCell];
-      t1[1 + 2 * j] = yCell_F[iCell];
+    if(iTria0 != NotAnId) {
+      for (int j = 0; j < 3; j++) {
+        int iCell = cellsOnVertex_F[3 * fVertex0 + j] - 1;
+        assert(iCell < nCells_F);
+        t0[0 + 2 * j] = xCell_F[iCell];
+        t0[1 + 2 * j] = yCell_F[iCell];
+      }
+    }
+    if(iTria1 != NotAnId) {
+      for (int j = 0; j < 3; j++) {
+        int iCell = cellsOnVertex_F[3 * fVertex1 + j] - 1;
+        assert(iCell < nCells_F);
+        t1[0 + 2 * j] = xCell_F[iCell];
+        t1[1 + 2 * j] = yCell_F[iCell];
+      }
     }
 
     //getting triangle circumcenters (vertices of MPAS cells).
     double bcoords[3];
 
-   ID iCells[3]; //iCells[k] is the array of cells indexes of triangle k on iEdge
+    ID iCells[3]; //iCells[k] is the array of cells indexes of triangle k on iEdge
 
-   //computing midpoint of fortran edge
-   double e_mid[2];
-   e_mid[0] =  0.5*(xVertex_F[fVertex0] + xVertex_F[fVertex1]);
-   e_mid[1] =  0.5*(yVertex_F[fVertex0] + yVertex_F[fVertex1]);
+    //computing midpoint of fortran edge
+    double e_mid[2];
+    e_mid[0] =  0.5*(xVertex_F[fVertex0] + xVertex_F[fVertex1]);
+    e_mid[1] =  0.5*(yVertex_F[fVertex0] + yVertex_F[fVertex1]);
 
-   if((verticesMask_F[fVertex0] & dynamic_ice_bit_value) && belongToTria(e_mid, t0, bcoords)) {
-      // triangle1 is in the mesh  AND midpoint is in triangle1
-      for (int j = 0; j < 3; j++)
-        iCells[j] = cellsOnVertex_F[3 * fVertex0 + j] - 1;
-      }
-   else if((verticesMask_F[fVertex1] & dynamic_ice_bit_value) && belongToTria(e_mid, t1, bcoords)) {
+    if((iTria0 != NotAnId) && belongToTria(e_mid, t0, bcoords)) {
+        // triangle1 is in the mesh  AND midpoint is in triangle1
+        for (int j = 0; j < 3; j++)
+          iCells[j] = cellsOnVertex_F[3 * fVertex0 + j] - 1;
+    } else if((iTria1 != NotAnId) && belongToTria(e_mid, t1, bcoords)) {
       //triangle2 is in the mesh  AND midpoint is in triangle2
       for (int j = 0; j < 3; j++)
         iCells[j] = cellsOnVertex_F[3 * fVertex1 + j] - 1;
-      }
-   else if((iTria0 == NotAnId) || (iTria1 == NotAnId)) { //is on Boundary
+    } else if((iTria0 == NotAnId) || (iTria1 == NotAnId)) { //is on Boundary
       //edge is on boundary and wasn't found by previous two cases
       //For boundary edges one of the two triangles sharing the edge won't be part of the velocity solver's mesh and the dynamic_ice_bit_value will be 0.
 
       //Compute iCells containing the vertices of the triangle that is part of the mesh and bcoords the corresponding barycentric coordinates
-      if(verticesMask_F[fVertex0] & dynamic_ice_bit_value) { belongToTria(e_mid, t0, bcoords);
+      if(iTria0 != NotAnId) { 
+        belongToTria(e_mid, t0, bcoords);
         for (int j = 0; j < 3; j++)
           iCells[j] = cellsOnVertex_F[3 * fVertex0 + j] - 1;
-        }
-      else {
+      } else { // iTria1 != NotAnId
         belongToTria(e_mid, t1, bcoords);
         for (int j = 0; j < 3; j++)
           iCells[j] = cellsOnVertex_F[3 * fVertex1 + j] - 1;
-        }
+      }
 
       //We modify the barycentric coordinates so that they will be all non-negative (corresponding to a point on the triangle edge).
       double sum(0);
       for(int j=0; j<3; j++) {
         bcoords[j] = std::max(0.,bcoords[j]);
         sum += bcoords[j];
-        }
+      }
       //Scale the coordinates so that they sum to 1.
       for(int j=0; j<3; j++)
         bcoords[j] /= sum;
-      }
-   else { //error, edge midpont does not belong to either triangle
+    } else { //error, edge midpont does not belong to either triangle
       std::cout << "Error, edge midpont does not belong to either triangle" << std::endl;
 
       for (int j = 0; j < 3; j++)
@@ -956,7 +963,7 @@ void get_prism_velocity_on_FEdges(double * uNormal,
         std::cout << "("<<t1[0 + 2 * j]<<","<<t1[1 + 2 * j]<<") ";
       std::cout <<"\n midpoint: ("<<e_mid[0]<<","<<e_mid[1]<<")"<<std::endl;
       exit(1);
-   }
+    }
 
     for (int il = 0; il < nLayers+1; il++) { //loop over layers
       int ilReversed = nLayers - il;
@@ -1198,8 +1205,17 @@ void importFields(std::vector<std::pair<int, int> >& marineBdyExtensionMap,  dou
         int neighbor_cell = -1;
         for (int j = 0; j < nEdg; j++) {
           int fEdge = edgesOnCell_F[maxNEdgesOnCell_F * fCell + j] - 1;
+          //skip if edge is not valid
+          if(fEdge >= nEdges_F)
+            continue;
+
           int c0 = cellsOnEdge_F[2 * fEdge] - 1;
           int c1 = cellsOnEdge_F[2 * fEdge + 1] - 1;
+
+          //skip if either of neighboring cells is zero
+          if((c0 >= nCells_F) || (c1 >= nCells_F))
+            continue;
+            
           int c = (fCellToVertex[c0] == iV) ? c1 : c0;
           if((cellsMask_F[c] & dynamic_ice_bit_value)) {
             double elev = thickness_F[c] + lowerSurface_F[c]; // - 1e-8*std::sqrt(pow(xCell_F[c0],2)+std::pow(yCell_F[c0],2));
@@ -1600,7 +1616,7 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
     MPI_Comm_rank(comm, &me);
     for(int i=0; i<nEdg; ++i) {
       int fVertex = verticesOnCell_F[maxNEdgesOnCell_F * fCell + i]-1;
-      if (verticesMask_F[fVertex] & dynamic_ice_bit_value) {
+      if ((fVertex < nVertices_F) && (verticesMask_F[fVertex] & dynamic_ice_bit_value)) {
         int proc = trianglesProcIds[fVertex];
         if(proc != me)
           procIds.push_back(reduced_ranks[proc]);

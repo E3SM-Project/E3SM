@@ -280,7 +280,7 @@ contains
     !  written by C. Koven
     !
     ! !USES:
-     use clm_time_manager , only : get_step_size
+     use elm_time_manager , only : get_step_size
     !
     ! !ARGUMENTS:
     type(bounds_type)    , intent(in)    :: bounds

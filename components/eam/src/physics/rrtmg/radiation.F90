@@ -23,8 +23,7 @@ use time_manager,    only: get_nstep, is_first_restart_step
 use cam_abortutils,      only: endrun
 use error_messages,  only: handle_err
 use cam_control_mod, only: lambm0, obliqr, mvelpp, eccen
-use scamMod,         only: scm_crm_mode, single_column,have_cld,cldobs,&
-                           have_clwp,clwpobs,have_tg,tground
+use iop_data_mod,    only: single_column
 use perf_mod,        only: t_startf, t_stopf
 use cam_logfile,     only: iulog
 
@@ -682,15 +681,6 @@ end function radiation_nextsw_cday
        end if
     end do
 
-
-    if (single_column .and. scm_crm_mode) then
-       call add_default ('FUS     ', 1, ' ')
-       call add_default ('FUSC    ', 1, ' ')
-       call add_default ('FDS     ', 1, ' ')
-       call add_default ('FDSC    ', 1, ' ')
-    endif
-
-
     ! Longwave radiation
 
     do icall = 0, N_DIAG
@@ -752,13 +742,6 @@ end function radiation_nextsw_cday
 
     call addfld('EMIS', (/ 'lev' /), 'A', '1', 'Cloud longwave emissivity', &
                 sampling_seq='rad_lwsw', flag_xyfill=.true.)
-
-    if (single_column.and.scm_crm_mode) then
-       call add_default ('FUL     ', 1, ' ')
-       call add_default ('FULC    ', 1, ' ')
-       call add_default ('FDL     ', 1, ' ')
-       call add_default ('FDLC    ', 1, ' ')
-    endif
 
     ! HIRS/MSU diagnostic brightness temperatures
     if (dohirs) then
@@ -1113,13 +1096,6 @@ end function radiation_nextsw_cday
     if (do_aerocom_ind3) then
       cld_tau_idx = pbuf_get_index('cld_tau')
     end if
-   
-!  For CRM, make cloud equal to input observations:
-    if (single_column.and.scm_crm_mode.and.have_cld) then
-       do k = 1,pver
-          cld(:ncol,k)= cldobs(k)
-       enddo
-    endif
 
     if (cldfsnow_idx > 0) then
       call outfld('CLDFSNOW',cldfsnow,pcols,lchnk)
@@ -1154,14 +1130,6 @@ end function radiation_nextsw_cday
 
        ! construct an RRTMG state object
        r_state => rrtmg_state_create( state, cam_in )
-
-       ! For CRM, make cloud liquid water path equal to input observations
-       if(single_column.and.scm_crm_mode.and.have_clwp)then
-          call endrun('cloud water path must be passed through radiation interface')
-          !do k=1,pver
-          !   cliqwp(:ncol,k) = clwpobs(k)
-          !end do
-       endif
 
        call t_stopf ('radiation_tend_init')
 
@@ -1447,14 +1415,6 @@ end function radiation_nextsw_cday
 
        if (dolw) then
           call t_startf ('rad_lw')
-          !
-          ! Convert upward longwave flux units to CGS
-          !
-          do i=1,ncol
-             lwupcgs(i) = cam_in%lwup(i)*1000._r8
-             if(single_column.and.scm_crm_mode.and.have_tg) &
-                  lwupcgs(i) = 1000*stebol*tground(1)**4
-          end do
 
           call rad_cnst_get_call_list(active_calls)
 

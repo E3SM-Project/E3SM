@@ -52,6 +52,18 @@ struct PhysicsFunctions
   static ScalarT calculate_density(const ScalarT& pseudo_density, const ScalarT& dz);
 
   //-----------------------------------------------------------------------------------------------//
+  // Determines the vertical wind velocity given the vertical pressure velocity
+  //   w = - omega / ( density * g )
+  // where,
+  //   rho            is the vertical wind velocity, [m/s]
+  //   omega          is the vertical pressure velocity , [Pa/s]
+  //   g              is the gravitational constant, [m/s2] - defined in physics_constants.hpp
+  //-----------------------------------------------------------------------------------------------//
+  template <typename ScalarT>
+  KOKKOS_INLINE_FUNCTION
+  static ScalarT calculate_vertical_velocity(const ScalarT& omega, const ScalarT& density);
+
+  //-----------------------------------------------------------------------------------------------//
   // Applies Exners Function which follows:
   //   Exner = (P/P0)^(Rd/Cp),
   // where,
@@ -83,6 +95,19 @@ struct PhysicsFunctions
   static ScalarT calculate_theta_from_T(const ScalarT& temperature, const ScalarT& pressure);
 
   //-----------------------------------------------------------------------------------------------//
+  // Converts potential temperature to liquid potental temperature:
+  //   theta_l = theta - (theta / temperature) * (LatVap/Cpair) * qc,
+  // where
+  //   theta  is the potential temperature, [K]
+  //   temperature  is the temperature, [K]
+  //   qc is the cloud liquid mixing ratio, [kg/kg]
+  //   and the others are constants 
+  //-----------------------------------------------------------------------------------------------//
+  template<typename ScalarT>
+  KOKKOS_INLINE_FUNCTION
+  static ScalarT calculate_thetal_from_theta(const ScalarT& theta, const ScalarT& temperature, const ScalarT& qc);
+
+  //-----------------------------------------------------------------------------------------------//
   // Converts potential temperature to temperature using Exners function:
   //   temperature = theta*exner(pressure),
   // where
@@ -109,7 +134,7 @@ struct PhysicsFunctions
 
   //-----------------------------------------------------------------------------------------------//
   // Compute virtual temperature
-  //   T_virtual = temperature * (qv+ep_2)/(qv+1)
+  //   T_virtual = temperature * (1+(-1+1/ep_2)*qv)
   // where
   //   ep_2        is ratio of molecular mass of water to the molecular mass of dry air
   //   temperature is the atmospheric temperature.  Units in [K].
@@ -179,6 +204,37 @@ struct PhysicsFunctions
   template<typename ScalarT>
   KOKKOS_INLINE_FUNCTION
   static ScalarT calculate_wetmmr_from_drymmr(const ScalarT& drymmr, const ScalarT& qv_dry);
+
+  //-----------------------------------------------------------------------------------------------//
+  // Computes drymmr (mass of a constituent divided by mass of dry air)
+  // for any wetmmr constituent (mass of a constituent divided by mass of wet air;
+  // commonly known as mixing ratio) using dry and wet pseudodensities
+  //   drymmr = wetmmr * pdel / pdeldry
+  // where
+  //   wetmmr             is the wet mass mixing ratio of a species
+  //   pseudo_density     is wet pseudodensity (pdel)
+  //   pseudo_density_dry is dry pseudodensity (pdeldry)
+  //-----------------------------------------------------------------------------------------------//
+
+  template<typename ScalarT>
+  KOKKOS_INLINE_FUNCTION
+  static ScalarT calculate_drymmr_from_wetmmr_dp_based(const ScalarT& wetmmr,
+                                                       const ScalarT& pseudo_density, const ScalarT& pseudo_density_dry);
+
+  //-----------------------------------------------------------------------------------------------//
+  // Computes wetmmr (mass of a constituent divided by mass of wet air)
+  // for any drymmr constituent (mass of a constituent divided by mass of dry air;
+  // commonly known as mixing ratio) using dry and wet pseudodensities
+  //   wetmmr = drymmr * pdeldry / pdelwet
+  // where
+  //   drymmr             is the dry mass mixing ratio of a species
+  //   pseudo_density     is wet pseudodensity (pdel)
+  //   pseudo_density_dry is dry pseudodensity (pdeldry)
+  //-----------------------------------------------------------------------------------------------//
+  template<typename ScalarT>
+  KOKKOS_INLINE_FUNCTION
+  static ScalarT calculate_wetmmr_from_drymmr_dp_based(const ScalarT& drymmr,
+                                                       const ScalarT& pseudo_density, const ScalarT& pseudo_density_dry);
 
   //-----------------------------------------------------------------------------------------------//
   // Determines the vertical layer thickness using the equation of state:
@@ -329,6 +385,13 @@ struct PhysicsFunctions
                                  const InputProviderZ& dz,
                                  const view_1d<ScalarT>& density);
 
+  template<typename ScalarT, typename InputProviderOmega, typename InputProviderRho>
+  KOKKOS_INLINE_FUNCTION
+  static void calculate_vertical_velocity (const MemberType& team,
+                                           const InputProviderOmega& omega,
+                                           const InputProviderRho& rho,
+                                           const view_1d<ScalarT>& w);
+
   template<typename ScalarT, typename InputProviderP>
   KOKKOS_INLINE_FUNCTION
   static void exner_function (const MemberType& team,
@@ -342,6 +405,13 @@ struct PhysicsFunctions
                                       const InputProviderP& pressure,
                                       const view_1d<ScalarT>& theta);
 
+  template<typename ScalarT, typename InputProviderTheta, typename InputProviderT, typename InputProviderQ>
+  KOKKOS_INLINE_FUNCTION
+  static void calculate_thetal_from_theta(const MemberType& team,
+                                      const InputProviderTheta& theta,
+                                      const InputProviderT& temperature,
+                                      const InputProviderQ& qc,
+                                      const view_1d<ScalarT>& thetal);  
   template<typename ScalarT, typename InputProviderT, typename InputProviderP>
   KOKKOS_INLINE_FUNCTION
   static void calculate_T_from_theta (const MemberType& team,
@@ -392,6 +462,22 @@ struct PhysicsFunctions
   static void calculate_drymmr_from_wetmmr (const MemberType& team,
                              const InputProviderX& wetmmr,
                              const InputProviderQ& qv_wet,
+                             const view_1d<ScalarT>& drymmr);
+
+  template<typename ScalarT, typename InputProviderX, typename InputProviderPD>
+  KOKKOS_INLINE_FUNCTION
+  static void calculate_wetmmr_from_drymmr_dp_based (const MemberType& team,
+                             const InputProviderX& drymmr,
+                             const InputProviderPD& pseudo_density,
+                             const InputProviderPD& pseudo_density_dry,
+                             const view_1d<ScalarT>& wetmmr);
+
+  template<typename ScalarT, typename InputProviderX, typename InputProviderPD>
+  KOKKOS_INLINE_FUNCTION
+  static void calculate_drymmr_from_wetmmr_dp_based (const MemberType& team,
+                             const InputProviderX& wetmmr,
+                             const InputProviderPD& pseudo_density,
+                             const InputProviderPD& pseudo_density_dry,
                              const view_1d<ScalarT>& drymmr);
 
   template<typename ScalarT,

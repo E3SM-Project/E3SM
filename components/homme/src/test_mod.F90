@@ -24,7 +24,7 @@ use dcmip12_wrapper,      only: dcmip2012_test1_1, dcmip2012_test1_2, dcmip2012_
                                 dcmip2012_test4_init, mtest_init, dcmip2012_test1_1_conv
 use dcmip16_wrapper,      only: dcmip2016_test1, dcmip2016_test2, dcmip2016_test3, &
                                 dcmip2016_test1_forcing, dcmip2016_test2_forcing, dcmip2016_test3_forcing, &
-                                dcmip2016_test1_pg, dcmip2016_test1_pg_forcing, dcmip2016_init
+                                dcmip2016_pg_init, dcmip2016_test1_pg, dcmip2016_test1_pg_forcing, dcmip2016_init
 use held_suarez_mod,      only: hs0_init_state
 
 use dry_planar_tests,     only: planar_hydro_gravity_wave_init, planar_nonhydro_gravity_wave_init
@@ -76,8 +76,8 @@ subroutine set_test_initial_conditions(elem, deriv, hybrid, hvcoord, tl, nets, n
     case('dcmip2012_test2_2'); test_with_forcing = .true. ;
     case('dcmip2012_test3');
     case('dcmip2012_test4');
-    case('dcmip2016_test1');    call dcmip2016_init();  test_with_forcing = .true. ;
-    case('dcmip2016_test1_pg1', 'dcmip2016_test1_pg2', 'dcmip2016_test1_pg3', 'dcmip2016_test1_pg4')
+    case('dcmip2016_test1', &
+         'dcmip2016_test1_pg1', 'dcmip2016_test1_pg2', 'dcmip2016_test1_pg3', 'dcmip2016_test1_pg4')
        call dcmip2016_init();  test_with_forcing = .true. ;
     case('dcmip2016_test2');    call dcmip2016_init();  test_with_forcing = .true. ;
     case('dcmip2016_test3');    call dcmip2016_init();  test_with_forcing = .true. ;
@@ -91,7 +91,7 @@ subroutine set_test_initial_conditions(elem, deriv, hybrid, hvcoord, tl, nets, n
     case('planar_hydro_mtn_wave');
     case('planar_nonhydro_mtn_wave');
     case('planar_schar_mtn_wave');
-    case('planar_rising_bubble');
+    case('planar_rising_bubble', 'planar_rising_bubble_pg2')
            if (bubble_moist) then 
               call dcmip2016_init();
               test_with_forcing = .true. ;
@@ -146,6 +146,9 @@ subroutine set_test_initial_conditions(elem, deriv, hybrid, hvcoord, tl, nets, n
       case('planar_nonhydro_mtn_wave');             call planar_nonhydro_mountain_wave_init(elem,hybrid,hvcoord,nets,nete)
       case('planar_schar_mtn_wave');                call planar_schar_mountain_wave_init(elem,hybrid,hvcoord,nets,nete)
       case('planar_rising_bubble');                 call planar_rising_bubble_init(elem,hybrid,hvcoord,nets,nete)
+      case('planar_rising_bubble_pg2')
+         call dcmip2016_pg_init(elem,hybrid,hvcoord,nets,nete,2)
+         call planar_rising_bubble_init(elem,hybrid,hvcoord,nets,nete)
       case('planar_density_current');               call planar_density_current_init(elem,hybrid,hvcoord,nets,nete)
       case('planar_baroclinic_instab');             call planar_baroclinic_instab_init(elem,hybrid,hvcoord,nets,nete)
       case('planar_moist_rising_bubble');           call planar_moist_rising_bubble_init(elem,hybrid,hvcoord,nets,nete)
@@ -251,6 +254,8 @@ subroutine compute_test_forcing(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete,tl)
 
     case('planar_rising_bubble');  
             if (bubble_moist) call dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
+    case('planar_rising_bubble_pg2');  
+            if (bubble_moist) call dcmip2016_test1_pg_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
     case('held_suarez0');
        do ie=nets,nete

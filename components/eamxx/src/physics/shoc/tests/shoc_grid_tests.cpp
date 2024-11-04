@@ -79,8 +79,10 @@ struct UnitWrap::UnitTest<D>::TestShocGrid {
       }
     }
 
-    // Call the fortran implementation
-    shoc_grid(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+    shoc_grid_f(SDS.shcol, SDS.nlev, SDS.nlevi, SDS.zt_grid, SDS.zi_grid, SDS.pdel, SDS.dz_zt, SDS.dz_zi, SDS.rho_zt);
+    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
 
     // First check that dz is correct
     for(Int s = 0; s < shcol; ++s) {

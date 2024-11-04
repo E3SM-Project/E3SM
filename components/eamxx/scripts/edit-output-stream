@@ -1,0 +1,149 @@
+#!/usr/bin/env python3
+
+"""
+Edit (or create) an output stream yaml file
+"""
+
+import argparse, sys, pathlib
+
+from edit_output_stream import edit_output_stream_impl
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n{0} <param>=<val> [<param>=<val>] ...
+OR
+{0} --help
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Generate empty file (with invalid options)'\033[0m
+    > {0} -g -f my_output.yaml
+
+    \033[1;32m# Generate empty file (with invalid options), overwrite if existing'\033[0m
+    > {0} -g -O -f my_output.yaml
+
+    \033[1;32m# Change avg type to Instant, output frequency to 1 day\033[0m
+    > {0} -f my_output.yaml --avg-type instant --freq 1 --freq-units ndays
+
+    \033[1;32m# Set horiz remaping\033[0m
+    > {0} -f my_output.yaml --horiz-map-file /path/to/map.nc
+""".format(pathlib.Path(args[0]).name),
+        description=description,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    parser.add_argument(
+        "-f","--filename",
+        required=True,
+        type=str,
+        help="The name of the yaml file to be configured",
+    )
+
+    parser.add_argument(
+        "--prefix",
+        type=str,
+        help="The prefix of the output files",
+    )
+
+    parser.add_argument(
+        "-g", "--generate",
+        default=False,
+        dest="generate",
+        action="store_true",
+        help="Generate a new file",
+    )
+    parser.add_argument(
+        "-O", "--overwrite",
+        default=False,
+        action="store_true",
+        help="When generating a new file, overwrite existing file (if any)",
+    )
+
+    parser.add_argument(
+        "-r","--reset",
+        default=None,
+        nargs="+",
+        type=str,
+        help="List of options to remove (or reset to default values) BEFORE doing any other edit"
+    )
+
+    parser.add_argument(
+        "--avg-type",
+        default=None,
+        type=str.lower,
+        help="Set the averaging type",
+        choices=['instant','average','max','min'],
+    )
+
+    parser.add_argument(
+        "--skip-t0-output",
+        action="store_true",
+        help="Skip t=case_t0 output (only relevant for INSTANT avg)"
+    )
+
+    parser.add_argument(
+        "--freq-units",
+        default=None,
+        type=str.lower,
+        help="Set the output frequency units",
+    )
+
+    parser.add_argument(
+        "--freq",
+        type=str.lower,
+        default=None,
+        help="Set the output frequency",
+    )
+
+    parser.add_argument(
+        "--grid",
+        default=None,
+        type=str,
+        help="Specify grid for which --fields/--io-grid options apply to",
+    )
+
+    parser.add_argument(
+        "--fields",
+        default=[],
+        nargs="+",
+        help="Fields to add to output",
+    )
+
+    parser.add_argument(
+        "--io-grid",
+        default=None,
+        type=str,
+        help="Name of grid onto which to remap fields before outputing them",
+    )
+
+    parser.add_argument(
+        "--horiz-remap-file",
+        default=None,
+        help="Map file to use for horizontal remap",
+    )
+
+    parser.add_argument(
+        "--vertical-remap-file",
+        default=None,
+        help="Map file to use for horizontal remap",
+    )
+
+    return parser.parse_args(args[1:])
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    if "--test" in sys.argv:
+        from doctest import testmod
+        import edit_output_stream
+        testmod()
+        testmod(m=edit_output_stream)
+    else:
+        edit_output_stream_impl(**vars(parse_command_line(sys.argv, description)))
+        sys.exit(0)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

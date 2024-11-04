@@ -1,0 +1,15 @@
+#!/bin/bash
+# override mach-specific PE-defaults
+if [ `./xmlquery --value MACH` == chrysalis ]; then
+  ./xmlchange MAX_TASKS_PER_NODE=64
+  ./xmlchange MAX_MPITASKS_PER_NODE=64
+fi
+
+# Run on 8 full nodes at 1 MPI per node and max threads
+ppn=`./xmlquery --value MAX_MPITASKS_PER_NODE`
+./xmlchange MAX_MPITASKS_PER_NODE=1
+./xmlchange NTASKS=8
+./xmlchange NTHRDS=$ppn
+./xmlchange ROOTPE=0
+./xmlchange PSTRID=1
+

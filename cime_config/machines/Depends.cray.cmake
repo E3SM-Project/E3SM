@@ -8,7 +8,6 @@ set(O0MODELSRC
 
 if (NOT DEBUG)
   foreach(ITEM IN LISTS O0MODELSRC)
-    e3sm_remove_flags("${ITEM}" "-O1")
     e3sm_add_flags("${ITEM}" "-O0 -vector0")
   endforeach()
 

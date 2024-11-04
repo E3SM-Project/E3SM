@@ -78,7 +78,6 @@ module li_iceshelf_melt
 !-----------------------------------------------------------------------
 
    subroutine li_face_melt_grounded_ice(domain, err)
-
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
@@ -203,7 +202,7 @@ module li_iceshelf_melt
 !-----------------------------------------------------------------------
 
    subroutine li_basal_melt_floating_ice(domain, err)
-
+      use li_calving, only: li_flood_fill
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
@@ -230,8 +229,12 @@ module li_iceshelf_melt
       type (mpas_pool_type), pointer :: velocityPool   ! needed for mask subroutine
       type (mpas_pool_type), pointer :: scratchPool
 
+      type (field1dInteger), pointer :: seedMaskField
+      type (field1dInteger), pointer :: growMaskField
+      integer, dimension(:), pointer :: seedMask, growMask !masks to pass to flood-fill routine
+
       integer, pointer :: &
-           nCellsSolve                 ! number of locally owned cells
+           nCellsSolve, nCells         ! number of locally owned cells & total cells on this proc
 
       logical, pointer :: &
            config_print_thermal_info   ! if true, print debug info
@@ -499,7 +502,42 @@ module li_iceshelf_melt
 
             block => block % next
          enddo   ! associated(block)
+
       endif
+
+      ! Allocate scratch fields for flood-fill
+      ! Note: This only supports one block per processor
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
+      call mpas_pool_get_field(scratchPool, 'seedMask', seedMaskField)
+      call mpas_allocate_scratch_field(seedMaskField, single_block_in = .true.)
+      seedMask => seedMaskField % array
+      seedMask(:) = 0
+      call mpas_pool_get_field(scratchPool, 'growMask', growMaskField)
+      call mpas_allocate_scratch_field(growMaskField, single_block_in = .true.)
+      growMask => growMaskField % array
+      growMask(:) = 0
+
+      ! Prevent sub-shelf melt in subglacial lakes
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+      call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
+      call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+      do iCell = 1, nCells
+         if ( (.not. li_mask_is_ice(cellMask(iCell))) .and. (bedTopography(iCell) < config_sea_level) ) then
+              seedMask(iCell) = 1
+         else if ( li_mask_is_floating_ice(cellMask(iCell)) ) then
+              growMask(iCell) = 1
+         end if
+      end do
+      call li_flood_fill(seedMask, growMask, domain)
+
+      floatingBasalMassBal(:) = floatingBasalMassBal(:) * seedMask(:)
+
+      ! deallocate scratch fields used for flood fill
+      call mpas_deallocate_scratch_field(seedMaskField, single_block_in=.true.)
+      call mpas_deallocate_scratch_field(growMaskField, single_block_in=.true.)
 
       if (trim(config_front_mass_bal_grounded) .ne. 'none') then
          block => domain % blocklist
@@ -1336,16 +1374,21 @@ module li_iceshelf_melt
       !-----------------------------------------------------------------
       integer :: iCell, iNeighbor, iEdge, nEmptyNeighbors
       real (kind=RKIND), pointer :: rhoi
-      integer, pointer :: nCells, nCellsSolve
+      integer, pointer :: nCells, nISMIP6OceanLayers
       integer, dimension(:,:), pointer :: cellsOnCell, edgesOnCell
       real (kind=RKIND) :: waterDepth
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: geometryPool, meshPool, velocityPool
       real (kind=RKIND), pointer :: seaLevel
+      real (kind=RKIND), pointer :: faceMeltingCFLdt
+      real (kind=RKIND), pointer :: dtFaceMeltingCFLratio
       real (kind=RKIND), dimension(:), pointer :: thickness, faceMeltingThickness
       real (kind=RKIND), dimension(:), pointer :: bedTopography
       real (kind=RKIND), dimension(:), pointer :: lowerSurface
       real (kind=RKIND), dimension(:), pointer :: TFocean, ismip6Runoff
+      real (kind=RKIND), dimension(:,:), pointer :: ismip6shelfMelt_3dThermalForcing
+      real (kind=RKIND), dimension(:), pointer :: ismip6shelfMelt_deltaT
+      real (kind=RKIND), dimension(:), pointer :: zOcean
       real (kind=RKIND), dimension(:), pointer :: areaCell
       integer, dimension(:), pointer :: cellMask, edgeMask, nEdgesOnCell
       real (kind=RKIND), pointer :: aSubglacial ! param A
@@ -1355,13 +1398,14 @@ module li_iceshelf_melt
       real (kind=RKIND), pointer :: addTFocean ! adjust ocean thermal forcing
       real (kind=RKIND), pointer :: config_uniform_face_melt_rate
       character(len=StrKIND), pointer :: config_front_mass_bal_grounded
+      logical, pointer :: config_use_3d_thermal_forcing_for_face_melt
       real (kind=RKIND), parameter :: secPerDay = 86400.0_RKIND
       real (kind=RKIND), parameter :: rhow = 1000.0_RKIND ! subglacial runoff density
       real (kind=RKIND), dimension(:), pointer :: faceMeltSpeed
       real (kind=RKIND), dimension(:), allocatable :: faceMeltSpeedVertAvg !vertically averaged faceMeltSpeed
                                                                 !to pass to  li_apply_front_ablation_velocity,
                                                                 !because faceMeltSpeed is only below water-line
-      integer :: err_tmp
+      integer :: err_tmp, kk
 
       err = 0
       call mpas_log_write('Starting face melt routine')
@@ -1378,16 +1422,14 @@ module li_iceshelf_melt
       call mpas_pool_get_config(liConfigs, 'config_add_ocean_thermal_forcing', addTFocean)
       call mpas_pool_get_config(liConfigs, 'config_uniform_face_melt_rate', config_uniform_face_melt_rate)
       call mpas_pool_get_config(liConfigs, 'config_front_mass_bal_grounded', config_front_mass_bal_grounded)
+      call mpas_pool_get_config(liConfigs, 'config_use_3d_thermal_forcing_for_face_melt', config_use_3d_thermal_forcing_for_face_melt)
 
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
-         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-
-         ! Get ISMIP6 forcing fields
          call mpas_pool_get_array(geometryPool, 'ismip6_2dThermalForcing', TFocean)
          call mpas_pool_get_array(geometryPool, 'ismip6Runoff', ismip6Runoff)
 
@@ -1403,13 +1445,44 @@ module li_iceshelf_melt
          call mpas_pool_get_array(geometryPool, 'faceMeltingThickness', faceMeltingThickness)
          call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
          call mpas_pool_get_array(geometryPool, 'faceMeltSpeed', faceMeltSpeed)
+         call mpas_pool_get_array(geometryPool, 'faceMeltingCFLdt', faceMeltingCFLdt)
+         call mpas_pool_get_array(geometryPool, 'dtFaceMeltingCFLratio', dtFaceMeltingCFLratio)
+
+         if ( config_use_3d_thermal_forcing_for_face_melt ) then
+            call mpas_pool_get_dimension(meshPool, 'nISMIP6OceanLayers', nISMIP6OceanLayers)
+            call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_3dThermalForcing', ismip6shelfMelt_3dThermalForcing)
+            call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zOcean', zOcean)
+            call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_deltaT', ismip6shelfMelt_deltaT)
+
+            ! Calculate thermal forcing based on bedTopography
+            TFocean(:) = 0.0_RKIND
+            do iCell = 1, nCells
+               if (bedTopography(iCell) < 0.0_RKIND) then
+                     kk = 1
+                     ! Find deepest zOcean above ocean floor
+                     do while ( (zOcean(kk) >= bedTopography(iCell)) .and. (kk < nISMIP6OceanLayers) )
+                        kk = kk + 1
+                     enddo
+                     ! If bed is shallower than first layer, use TF from the first layer.
+                     ! If bed is deeper than the bottomg ocean layer, use TF from the bottom layer.
+                     if ( (kk == 1) .or. ( (kk == nISMIP6OceanLayers) .and. (zOcean(kk) >= bedTopography(iCell)) ) ) then
+                        TFocean(iCell) = ismip6shelfMelt_3dThermalForcing(kk, iCell) + ismip6shelfMelt_deltaT(iCell)
+                     ! For all other bed depths, interpolate linearly between layers above and below bed depth.
+                     else
+                        TFocean(iCell) = ( (zOcean(kk-1) - bedTopography(iCell)) * ismip6shelfMelt_3dThermalForcing(kk, iCell) + &
+                                           (bedTopography(iCell) - zOcean(kk)) * ismip6shelfMelt_3dThermalForcing(kk-1, iCell) ) / &
+                                           (zOcean(kk-1) - zOcean(kk)) + ismip6shelfMelt_deltaT(iCell)
+                     endif
+               endif
+            end do
+         endif
 
          faceMeltSpeed(:) = 0.0_RKIND
          allocate(faceMeltSpeedVertAvg(nCells+1))
          faceMeltSpeedVertAvg(:) = 0.0_RKIND
 
        ! Calculate face melting for each cell
-         do iCell = 1, nCellsSolve
+         do iCell = 1, nCells
 
             if ( bedTopography(iCell) < 0.0_RKIND ) then
                 waterDepth = seaLevel - bedTopography(iCell)
@@ -1436,7 +1509,8 @@ module li_iceshelf_melt
          ! Distribute melt among neighbors
          call li_apply_front_ablation_velocity(meshPool, geometryPool, velocityPool, &
                                             faceMeltingThickness, faceMeltSpeedVertAvg, applyToGrounded, &
-                                            applyToFloating, applyToGroundingLine, domain, err=err_tmp)
+                                            applyToFloating, applyToGroundingLine, domain, & 
+                                            maxDt=faceMeltingCFLdt, CFLratio=dtFaceMeltingCFLratio, err=err_tmp)
          err = ior(err, err_tmp)
 
 

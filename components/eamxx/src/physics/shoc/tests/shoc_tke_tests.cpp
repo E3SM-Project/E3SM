@@ -57,8 +57,8 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
     Real u_wind[nlev] = {2, 1, 0, -1, -2};
     // Define meridional wind on nlev grid [m/s]
     Real v_wind[nlev] = {1, 2, 3, 4, 5};
-    // Define Obukov length [m]
-    Real obklen = -1;
+    // Define surface temperature [K] (value irrelevant, just make sure it's physical)
+    Real tabs[nlev] ={300, 300, 300, 300, 300};
     // Define thickness on the interface grid [m]
     Real dz_zi[nlevi] = {0, 100, 100, 100, 100, 50};
     // Define thickness on the thermo grid [m]
@@ -94,7 +94,6 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
     // Fill in test data on zt_grid.
     for(Int s = 0; s < shcol; ++s) {
       SDS.pblh[s] = pblh;
-      SDS.obklen[s] = obklen;
       for(Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
 
@@ -108,6 +107,7 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
         SDS.tke[offset] = tke_init[n];
         SDS.tkh[offset] = tkh[n];
         SDS.tk[offset] = tk[n];
+        SDS.tabs[offset] = tabs[n];
       }
 
       // Fill in test data on zi_grid.
@@ -153,8 +153,12 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
       }
     }
 
-    // Call the fortran implementation
-    shoc_tke(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+    shoc_tke_f(SDS.shcol, SDS.nlev, SDS.nlevi, SDS.dtime, SDS.wthv_sec, SDS.shoc_mix, SDS.dz_zi, SDS.dz_zt,
+               SDS.pres, SDS.tabs, SDS.u_wind, SDS.v_wind, SDS.brunt, SDS.zt_grid, SDS.zi_grid, SDS.pblh,
+               SDS.tke, SDS.tk, SDS.tkh, SDS.isotropy);
+    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
 
     // Check test
     // Make sure that TKE has increased everwhere relative
@@ -226,8 +230,12 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
       }
     }
 
-    // Call the fortran implementation
-    shoc_tke(SDS);
+    // Call the C++ implementation
+    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+    shoc_tke_f(SDS.shcol, SDS.nlev, SDS.nlevi, SDS.dtime, SDS.wthv_sec, SDS.shoc_mix, SDS.dz_zi, SDS.dz_zt,
+               SDS.pres, SDS.tabs, SDS.u_wind, SDS.v_wind, SDS.brunt, SDS.zt_grid, SDS.zi_grid, SDS.pblh,
+               SDS.tke, SDS.tk, SDS.tkh, SDS.isotropy);
+    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
 
     // Check the result
 
@@ -244,7 +252,6 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
         REQUIRE(SDS.isotropy[offset] <= maxiso);
       }
     }
-
   }
 
   static void run_bfb()
@@ -285,7 +292,7 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
     for (auto& d : cxx_data) {
       d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
       shoc_tke_f(d.shcol, d.nlev, d.nlevi, d.dtime, d.wthv_sec, d.shoc_mix, d.dz_zi, d.dz_zt,
-                 d.pres, d.u_wind, d.v_wind, d.brunt, d.obklen, d.zt_grid, d.zi_grid, d.pblh,
+                 d.pres, d.tabs, d.u_wind, d.v_wind, d.brunt, d.zt_grid, d.zi_grid, d.pblh,
                  d.tke, d.tk, d.tkh, d.isotropy);
       d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
     }

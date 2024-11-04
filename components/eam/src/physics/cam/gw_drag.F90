@@ -28,7 +28,7 @@ module gw_drag
   use constituents,  only: pcnst
   use physics_types, only: physics_state, physics_ptend, physics_ptend_init
   use spmd_utils,    only: masterproc
-  use cam_history,   only: outfld
+  use cam_history,   only: outfld, hist_fld_active
   use cam_logfile,   only: iulog
   use cam_abortutils,    only: endrun
 
@@ -88,6 +88,9 @@ module gw_drag
   ! Convective heating rate conversion factor, default is 20.0_r8
   real(r8) :: gw_convect_hcf = 20.0_r8
 
+  ! Scaling factor for the heating depth
+  real(r8) :: hdepth_scaling_factor = 1
+
   ! Whether or not to enforce an upper boundary condition of tau = 0.
   ! (Like many variables, this is only here to hold the value between
   ! the readnl phase and the init phase of the CAM physics; only gw_common
@@ -137,7 +140,8 @@ subroutine gw_drag_readnl(nlfile)
   real(r8) :: gw_dc = unset_r8
 
   namelist /gw_drag_nl/ pgwv, gw_dc, tau_0_ubc, effgw_beres, effgw_cm, &
-      effgw_oro, fcrit2, frontgfc, gw_drag_file, taubgnd, gw_convect_hcf
+      effgw_oro, fcrit2, frontgfc, gw_drag_file, taubgnd, gw_convect_hcf, &
+      hdepth_scaling_factor
   !----------------------------------------------------------------------
 
   if (masterproc) then
@@ -167,6 +171,7 @@ subroutine gw_drag_readnl(nlfile)
   call mpibcast(taubgnd,     1, mpir8,  0, mpicom)
   call mpibcast(gw_drag_file, len(gw_drag_file), mpichar, 0, mpicom)
   call mpibcast(gw_convect_hcf, 1, mpir8,  0, mpicom)
+  call mpibcast(hdepth_scaling_factor, 1, mpir8,  0, mpicom)
 #endif
 
   dc = gw_dc
@@ -760,7 +765,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         ! Determine wave sources for Beres04 scheme
         call gw_beres_src(ncol, pgwv, state1%lat(:ncol), u, v, ttend_dp, &
              zm, src_level, tend_level, tau, ubm, ubi, xv, yv, c, &
-             hdepth, maxq0, gw_convect_hcf)
+             hdepth, maxq0, gw_convect_hcf, hdepth_scaling_factor)
 
         do_latitude_taper = .false.
 
@@ -796,7 +801,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
              pint, dpm, u, v, ptend%u, ptend%v, ptend%s, utgw, vtgw, ttgw)
 
         call gw_spec_outflds(beres_pf, lchnk, ncol, pgwv, c, u, v, &
-             xv, yv, gwut, dttdf, dttke, tau(:,:,1:), utgw, vtgw, taucd)
+             xv, yv, gwut, dttdf, dttke, tau(:,:,1:), utgw, vtgw, taucd, state)
 
         ! Note: This is probably redundant, because ZMDT is already being
         ! output...
@@ -859,7 +864,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
              pint, dpm, u, v, ptend%u, ptend%v, ptend%s, utgw, vtgw, ttgw)
 
         call gw_spec_outflds(cm_pf, lchnk, ncol, pgwv, c, u, v, &
-             xv, yv, gwut, dttdf, dttke, tau(:,:,1:), utgw, vtgw, taucd)
+             xv, yv, gwut, dttdf, dttke, tau(:,:,1:), utgw, vtgw, taucd, state)
 
         call outfld ('FRONTGF', frontgf, pcols, lchnk)
         call outfld ('FRONTGFA', frontga, pcols, lchnk)
@@ -1051,6 +1056,12 @@ subroutine gw_spec_addflds(prefix, scheme, history_waccm)
      call addfld (trim(dumc1x),(/ 'lev' /), 'A','Pa',dumc2)
      call addfld (trim(dumc1y),(/ 'lev' /), 'A','Pa',dumc2)
 
+     ! add zonal source spectra on specific pressure levels
+     call addfld (trim(dumc1x)//'_100mb',horiz_only, 'A','Pa',dumc2//" at 100 mbar pressure surface")
+     call addfld (trim(dumc1x)//'_50mb' ,horiz_only, 'A','Pa',dumc2//" at 50 mbar pressure surface")
+     call addfld (trim(dumc1x)//'_30mb' ,horiz_only, 'A','Pa',dumc2//" at 30 mbar pressure surface")
+     call addfld (trim(dumc1x)//'_10mb' ,horiz_only, 'A','Pa',dumc2//" at 10 mbar pressure surface")
+
   end do
 
   if (history_waccm) then
@@ -1076,9 +1087,10 @@ end subroutine gw_spec_addflds
 
 ! Outputs for spectral waves.
 subroutine gw_spec_outflds(prefix, lchnk, ncol, ngwv, c, u, v, xv, yv, &
-     gwut, dttdf, dttke, tau, utgw, vtgw, taucd)
+     gwut, dttdf, dttke, tau, utgw, vtgw, taucd, state)
 
   use gw_common, only: west, east, south, north
+  use interpolate_data, only: vertinterp
 
   ! One-character prefix prepended to output fields.
   character(len=1), intent(in) :: prefix
@@ -1107,6 +1119,7 @@ subroutine gw_spec_outflds(prefix, lchnk, ncol, ngwv, c, u, v, xv, yv, &
   real(r8), intent(in) :: vtgw(ncol,pver)
   ! Reynolds stress for waves propagating in each cardinal direction.
   real(r8), intent(in) :: taucd(ncol,0:pver,4)
+  type(physics_state), intent(in) :: state      ! physics state structure
 
   ! Indices
   integer :: i, k, l
@@ -1127,8 +1140,9 @@ subroutine gw_spec_outflds(prefix, lchnk, ncol, ngwv, c, u, v, xv, yv, &
   real(r8) :: tauy(ncol,-ngwv:ngwv,pver)
 
   ! Temporaries for output
-  real(r8) :: dummyx(ncol,pver)
-  real(r8) :: dummyy(ncol,pver)
+  real(r8) :: dummyx(pcols,pver)
+  real(r8) :: dummyy(pcols,pver)
+  real(r8) :: dummmy_p_surf(pcols) ! data interpolated to a pressure surface
   ! Variable names
   character(len=10) :: dumc1x, dumc1y
 
@@ -1194,14 +1208,31 @@ subroutine gw_spec_outflds(prefix, lchnk, ncol, ngwv, c, u, v, xv, yv, &
 
   do l=-ngwv,ngwv
 
-     dummyx = taux(:,l,:)
-     dummyy = tauy(:,l,:)
+     dummyx(1:ncol,1:pver) = taux(1:ncol,l,1:pver)
+     dummyy(1:ncol,1:pver) = tauy(1:ncol,l,1:pver)
 
      dumc1x = tau_fld_name(l, prefix, x_not_y=.true.)
      dumc1y = tau_fld_name(l, prefix, x_not_y=.false.)
 
      call outfld(dumc1x,dummyx,ncol,lchnk)
      call outfld(dumc1y,dummyy,ncol,lchnk)
+
+     if (hist_fld_active(trim(dumc1x)//'_100mb')) then
+        call vertinterp(ncol, pcols, pver, state%pmid, 10000._r8, dummyx, dummmy_p_surf)
+        call outfld(trim(dumc1x)//'_100mb', dummmy_p_surf, pcols, lchnk)
+     end if
+     if (hist_fld_active(trim(dumc1x)//'_50mb')) then
+        call vertinterp(ncol, pcols, pver, state%pmid, 5000._r8, dummyx, dummmy_p_surf)
+        call outfld(trim(dumc1x)//'_50mb', dummmy_p_surf, pcols, lchnk)
+     end if
+     if (hist_fld_active(trim(dumc1x)//'_30mb')) then
+        call vertinterp(ncol, pcols, pver, state%pmid, 3000._r8, dummyx, dummmy_p_surf)
+        call outfld(trim(dumc1x)//'_30mb', dummmy_p_surf, pcols, lchnk)
+     end if
+     if (hist_fld_active(trim(dumc1x)//'_10mb')) then
+        call vertinterp(ncol, pcols, pver, state%pmid, 1000._r8, dummyx, dummmy_p_surf)
+        call outfld(trim(dumc1x)//'_10mb', dummmy_p_surf, pcols, lchnk)
+     end if
 
   enddo
 

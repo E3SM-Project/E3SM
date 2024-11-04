@@ -21,4 +21,21 @@ std::string scream_config_string() {
   return config;
 }
 
+bool& use_leap_year_impl () {
+#ifdef SCREAM_HAS_LEAP_YEAR
+  static bool use_leap = true;
+#else
+  static bool use_leap = false;
+#endif
+  return use_leap;
+}
+
+bool use_leap_year () {
+  return use_leap_year_impl ();
+}
+
+void set_use_leap_year (const bool use_leap) {
+  use_leap_year_impl () = use_leap;
+}
+
 } // namespace scream

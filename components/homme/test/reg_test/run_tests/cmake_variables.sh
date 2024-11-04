@@ -34,6 +34,11 @@ MPI_EXEC=@USE_MPIEXEC@
 # User defined MPI options
 MPI_OPTIONS="@USE_MPI_OPTIONS@"
 
+# User defined MPI run line. This is a script that is given 'n', the number of
+# processes, as its first argument and an arbitrary number of additional
+# arguments that make up the run command. The run script must be executable.
+MPI_RUN_SCRIPT=@USE_MPI_RUN_SCRIPT@
+
 # User provided header for submission
 HOMME_Submission_Header=@HOMME_SUBMISSION_HEADER@
 

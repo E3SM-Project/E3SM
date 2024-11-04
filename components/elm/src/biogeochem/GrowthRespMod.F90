@@ -7,7 +7,7 @@ module GrowthRespMod
   !
   ! !USES:
   use shr_kind_mod     , only : r8 => shr_kind_r8
-  use pftvarcon        , only : grperc, grpnow, npcropmin
+  use pftvarcon        , only : grperc, grpnow, iscft
   use VegetationPropertiesType   , only : veg_vp
   use VegetationType        , only : veg_pp
   use VegetationDataType    , only : veg_cf
@@ -51,7 +51,7 @@ contains
     associate(                                                                      &
          ivt                           =>    veg_pp%itype                         , & ! Input:  [integer (:)]  pft vegetation type
 
-         woody                         =>    veg_vp%woody                         , & ! Input:  [real(r8) (:)]  binary flag for woody lifeform (1=woody, 0=not woody)
+         woody                         =>    veg_vp%woody                         , & ! Input:  [real(r8) (:)]  woody lifeform flag (0 = non-woody, 1 = tree, 2 = shrub)
 
          cpool_to_leafc                =>    veg_cf%cpool_to_leafc                , & ! Input:  [real(r8) (:)]
          cpool_to_leafc_storage        =>    veg_cf%cpool_to_leafc_storage        , & ! Input:  [real(r8) (:)]
@@ -98,11 +98,11 @@ contains
          )
 
       ! Loop through patches
-      ! start pft loop 
+      ! start pft loop
       do fp = 1,num_soilp
 
         p = filter_soilp(fp)
-         if (ivt(p) >= npcropmin) then ! skip 2 generic crops
+         if (iscft(ivt(p))) then ! skip 2 generic crops
 
             cpool_livestem_gr(p)          = cpool_to_livestemc(p) * grperc(ivt(p))
 
@@ -133,7 +133,7 @@ contains
          transfer_froot_gr(p)      = frootc_xfer_to_frootc(p) * grperc(ivt(p)) * &
               (1._r8 - grpnow(ivt(p)))
 
-         if (woody(ivt(p)) == 1._r8) then
+         if (woody(ivt(p)) >= 1.0_r8) then
             cpool_livestem_gr(p)          = cpool_to_livestemc(p) * grperc(ivt(p))
             cpool_livestem_storage_gr(p)  = cpool_to_livestemc_storage(p) * &
                  grperc(ivt(p)) * grpnow(ivt(p))

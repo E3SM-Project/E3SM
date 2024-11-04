@@ -9,11 +9,6 @@ function(build_eamxx)
 
     include(${CMAKE_SOURCE_DIR}/cmake/common_setup.cmake)
 
-    # Transfer CIME-set flags into Cmake-style
-    set (CMAKE_C_FLAGS ${CFLAGS})
-    set (CMAKE_CXX_FLAGS ${CXXFLAGS})
-    set (CMAKE_Fortran_FLAGS ${FFLAGS})
-
     # SCREAM manages its own kokkos settings. We can think about
     # removing this once the cime cmake_macros aren't using obsolete
     # Kokkos settings like KOKKOS_OPTIONS.
@@ -38,6 +33,12 @@ function(build_eamxx)
     else()
       include(${SCREAM_MACH_FILE_ROOT}/${MACH}.cmake)
     endif()
+
+    # The machine files may enable kokkos stuff we don't want
+    if (NOT compile_threaded)
+      set(Kokkos_ENABLE_OPENMP FALSE)
+    endif()
+
     add_subdirectory("eamxx")
   endif()
 

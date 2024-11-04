@@ -16,7 +16,7 @@ module radiation
    use ppgrid,           only: pcols, pver, pverp, begchunk, endchunk
    use cam_abortutils,   only: endrun
    use cam_history_support, only: add_hist_coord
-   use scamMod,          only: scm_crm_mode, single_column
+   use iop_data_mod,     only: single_column
    use rad_constituents, only: N_DIAG
    use radconstants,     only: nswbands, nlwbands, &
       get_band_index_sw, get_band_index_lw, test_get_band_index, &
@@ -737,13 +737,6 @@ contains
                   'Cosine of solar zenith angle', &
                   sampling_seq='rad_lwsw', flag_xyfill=.true.)
 
-      if (single_column .and. scm_crm_mode) then
-         call add_default ('FUS     ', 1, ' ')
-         call add_default ('FUSC    ', 1, ' ')
-         call add_default ('FDS     ', 1, ' ')
-         call add_default ('FDSC    ', 1, ' ')
-      end if
-
       ! Longwave radiation
       do icall = 0,N_DIAG
          if (active_calls(icall)) then
@@ -773,6 +766,18 @@ contains
                         sampling_seq='rad_lwsw', flag_xyfill=.true.)
             call addfld('FLNTC'//diag(icall),   horiz_only, 'A', 'W/m2', &
                         'Clearsky net longwave flux at top of model',    &
+                        sampling_seq='rad_lwsw', flag_xyfill=.true.)
+            call addfld('FLUTOA'//diag(icall), horiz_only,  'A', 'W/m2', &
+                        'Upwelling longwave flux at top of atmosphere', &
+                        sampling_seq='rad_lwsw', flag_xyfill=.true.)
+            call addfld('FLNTOA'//diag(icall), horiz_only,  'A',  'W/m2', &
+                        'Net longwave flux at top of atmosphere', &
+                        sampling_seq='rad_lwsw', flag_xyfill=.true.)
+            call addfld('FLUTOAC'//diag(icall), horiz_only, 'A',  'W/m2', &
+                        'Clearsky upwelling longwave flux at top of atmosphere', &
+                        sampling_seq='rad_lwsw', flag_xyfill=.true.)
+            call addfld('FLNTOAC'//diag(icall), horiz_only, 'A',  'W/m2', &
+                        'Clearsky net longwave flux at top of atmosphere', &
                         sampling_seq='rad_lwsw', flag_xyfill=.true.)
             call addfld('LWCF'//diag(icall),    horiz_only, 'A', 'W/m2', &
                         'Longwave cloud forcing',                        &
@@ -821,14 +826,6 @@ contains
       end do
 
       call addfld('EMIS', (/ 'lev' /), 'A', '1', 'Cloud longwave (10.5 micron) emissivity')
-
-      ! Add default fields for single column mode
-      if (single_column.and.scm_crm_mode) then
-         call add_default ('FUL     ', 1, ' ')
-         call add_default ('FULC    ', 1, ' ')
-         call add_default ('FDL     ', 1, ' ')
-         call add_default ('FDLC    ', 1, ' ')
-      endif
 
       ! HIRS/MSU diagnostic brightness temperatures
       if (dohirs) then
@@ -2390,6 +2387,7 @@ contains
       ! Working arrays
       real(r8), dimension(pcols,pver+1) :: flux_up, flux_dn, flux_net
       integer :: ncol
+      integer :: ktop_rad = 1
 
       ncol = state%ncol
 
@@ -2426,6 +2424,12 @@ contains
       call outfld('FLNSC'//diag(icall), -flux_clr%flux_net(1:ncol,kbot+1), ncol, state%lchnk)
       call outfld('FLUTC'//diag(icall), flux_clr%flux_up(1:ncol,ktop), ncol, state%lchnk)
       call outfld('FLDSC'//diag(icall), flux_clr%flux_dn(1:ncol,kbot+1), ncol, state%lchnk)
+
+      ! TOA fluxes (above model top, use index to rad top)
+      call outfld('FLUTOA'//diag(icall), flux_all%flux_up(1:ncol,ktop_rad), ncol, state%lchnk)
+      call outfld('FLNTOA'//diag(icall), flux_all%flux_net(1:ncol,ktop_rad), ncol, state%lchnk)
+      call outfld('FLUTOAC'//diag(icall), flux_clr%flux_up(1:ncol,ktop_rad), ncol, state%lchnk)
+      call outfld('FLNTOAC'//diag(icall), flux_clr%flux_net(1:ncol,ktop_rad), ncol, state%lchnk)
 
       ! Calculate and output the cloud radiative effect (LWCF in history)
       cloud_radiative_effect(1:ncol) = flux_all%flux_net(1:ncol,ktop) - flux_clr%flux_net(1:ncol,ktop)

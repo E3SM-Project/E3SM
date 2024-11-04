@@ -12,6 +12,7 @@ void Functions<S,D>
 ::compute_shoc_mix_shoc_length(
   const MemberType&            team,
   const Int&                   nlev,
+  const Scalar&                length_fac,
   const uview_1d<const Spack>& tke,
   const uview_1d<const Spack>& brunt,
   const uview_1d<const Spack>& zt_grid,
@@ -20,7 +21,6 @@ void Functions<S,D>
 {
   const Int nlev_pack = ekat::npack<Spack>(nlev);
   const auto maxlen = scream::shoc::Constants<Scalar>::maxlen;
-  const auto length_fac = scream::shoc::Constants<Scalar>::length_fac;
   const auto vk = C::Karman;
   
   // Eddy turnover timescale

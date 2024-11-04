@@ -3,8 +3,8 @@ set(P3_SRCS
   p3_ic_cases.cpp
   p3_iso_c.f90
   ${SCREAM_BASE_DIR}/../eam/src/physics/p3/scream/micro_p3.F90
-  atmosphere_microphysics.cpp
-  atmosphere_microphysics_run.cpp
+  eamxx_p3_process_interface.cpp
+  eamxx_p3_run.cpp
 )
 
 if (NOT SCREAM_LIB_ONLY)
@@ -45,7 +45,6 @@ if (NOT EAMXX_ENABLE_GPU OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE OR Kokkos
     eti/p3_ice_relaxation_timescale.cpp
     eti/p3_ice_nucleation.cpp
     eti/p3_ice_cldliq_wet_growth.cpp
-    eti/p3_get_latent_heat.cpp
     eti/p3_check_values.cpp
     eti/p3_incloud_mixingratios.cpp
     eti/p3_subgrid_variance_scaling.cpp
@@ -61,18 +60,45 @@ if (NOT EAMXX_ENABLE_GPU OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE OR Kokkos
   ) # P3 ETI SRCS
 endif()
 
-add_library(p3 ${P3_SRCS})
-set_target_properties(p3 PROPERTIES
-  Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules
-)
-target_include_directories(p3 PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR}/../share
-  ${CMAKE_CURRENT_BINARY_DIR}/modules
-  ${CMAKE_CURRENT_SOURCE_DIR}
-  ${CMAKE_CURRENT_SOURCE_DIR}/impl
-  ${SCREAM_BASE_DIR}/../eam/src/physics/cam
-)
-target_link_libraries(p3 physics_share scream_share)
+# List of dispatch source files if monolithic kernels are off
+set(P3_SK_SRCS
+    disp/p3_check_values_impl_disp.cpp
+    disp/p3_ice_sed_impl_disp.cpp
+    disp/p3_main_impl_part1_disp.cpp
+    disp/p3_main_impl_part3_disp.cpp
+    disp/p3_cloud_sed_impl_disp.cpp
+    disp/p3_main_impl_disp.cpp
+    disp/p3_main_impl_part2_disp.cpp
+    disp/p3_rain_sed_impl_disp.cpp
+    )
+
+set(P3_LIBS "p3")
+if (SCREAM_P3_SMALL_KERNELS)
+  add_library(p3 ${P3_SRCS} ${P3_SK_SRCS})
+else()
+  add_library(p3 ${P3_SRCS})
+  if (NOT SCREAM_LIBS_ONLY AND NOT SCREAM_ONLY_GENERATE_BASELINES)
+    add_library(p3_sk ${P3_SRCS} ${P3_SK_SRCS})
+    # Always build p3_sk with SCREAM_P3_SMALL_KERNELS on
+    target_compile_definitions(p3_sk PUBLIC "SCREAM_P3_SMALL_KERNELS")
+    list(APPEND P3_LIBS "p3_sk")
+  endif()
+endif()
+
+target_compile_definitions(p3 PUBLIC EAMXX_HAS_P3)
+
+foreach (P3_LIB IN LISTS P3_LIBS)
+  set_target_properties(${P3_LIB} PROPERTIES
+    Fortran_MODULE_DIRECTORY ${P3_LIB}/modules
+  )
+  target_include_directories(${P3_LIB} PUBLIC
+    ${CMAKE_CURRENT_BINARY_DIR}/${P3_LIB}/modules
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/impl
+    ${SCREAM_BASE_DIR}/../eam/src/physics/cam
+  )
+  target_link_libraries(${P3_LIB} physics_share scream_share)
+endforeach()
 
 # Ensure tables are present in the data dir
 if (SCREAM_DOUBLE_PRECISION)
@@ -105,3 +131,6 @@ endif()
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)
 endif()
+
+# Add this library to eamxx_physics
+target_link_libraries(eamxx_physics INTERFACE p3)

@@ -7,7 +7,7 @@ module EcosystemDynMod
   use dynSubgridControlMod, only : get_do_harvest
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use shr_sys_mod         , only : shr_sys_flush
-  use elm_varctl          , only : use_c13, use_c14, use_fates, use_dynroot
+  use elm_varctl          , only : use_c13, use_c14, use_fates, use_dynroot, use_fan
   use decompMod           , only : bounds_type
   use perf_mod            , only : t_startf, t_stopf
   use spmdMod             , only : masterproc
@@ -41,6 +41,9 @@ module EcosystemDynMod
   use AllocationMod      , only : nu_com_nfix, nu_com_phosphatase
   use elm_varctl         , only : nu_com, use_pheno_flux_limiter
   use PhenologyFLuxLimitMod , only : phenology_flux_limiter, InitPhenoFluxLimiter
+  ! for FAN
+  use SolarAbsorbedType    , only : solarabs_type
+
 
   use timeinfoMod
   use perfMod_GPU
@@ -83,6 +86,7 @@ contains
     use PhenologyMod , only : PhenologyInit
     use FireMod      , only : FireInit
     use C14DecayMod  , only : C14_init_BombSpike
+    use FanUpdateMod , only : fanInit
     !
     ! !ARGUMENTS:
     implicit none
@@ -104,6 +108,10 @@ contains
     if(use_pheno_flux_limiter)then
         call InitPhenoFluxLimiter()
     endif
+
+    if(use_fan)then
+      call fanInit()
+    end if
 
   end subroutine EcosystemDynInit
 
@@ -272,9 +280,11 @@ contains
   subroutine EcosystemDynNoLeaching1(bounds,                          &
        num_soilc, filter_soilc,                                         &
        num_soilp, filter_soilp,                                         &
+       num_pcropp, filter_pcropp,                                       &
        cnstate_vars,  atm2lnd_vars,           &
        canopystate_vars, soilstate_vars, crop_vars,   &
-       ch4_vars, photosyns_vars     )
+       ch4_vars, photosyns_vars,   &
+       frictionvel_vars     )
     !-------------------------------------------------------------------
     ! bgc interface
     ! Phase-1 of EcosystemDynNoLeaching
@@ -289,13 +299,14 @@ contains
     !
     ! !USES:
     use NitrogenDynamicsMod         , only: NitrogenDeposition,NitrogenFixation, NitrogenFert, CNSoyfix
-    use PhosphorusDynamicsMod       , only: PhosphorusDeposition
+    use PhosphorusDynamicsMod       , only: PhosphorusDeposition, PhosphorusFert
     use MaintenanceRespMod          , only: MaintenanceResp
     use DecompCascadeBGCMod   , only: decomp_rate_constants_bgc
     use DecompCascadeCNMod    , only: decomp_rate_constants_cn
     use CropType              , only: crop_type
     use elm_varpar            , only: crop_prog
     use AllocationMod         , only: Allocation1_PlantNPDemand ! Phase-1 of CNAllocation
+    use AllocationMod         , only: EvaluateSupplStatus
     use NitrogenDynamicsMod   , only: NitrogenLeaching
     use PhosphorusDynamicsMod       , only: PhosphorusLeaching
     use NitrogenDynamicsMod         , only: NitrogenFixation_balance
@@ -309,6 +320,8 @@ contains
     integer                  , intent(in)    :: filter_soilc(:)   ! filter for soil columns
     integer                  , intent(in)    :: num_soilp         ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:)   ! filter for soil patches
+    integer                  , intent(in)    :: num_pcropp        ! number of prog. crop patches in filter
+    integer                  , intent(in)    :: filter_pcropp(:)  ! filter for prognostic crop patches
     type(cnstate_type)       , intent(inout) :: cnstate_vars
     type(atm2lnd_type)       , intent(in)    :: atm2lnd_vars
     type(canopystate_type)   , intent(in)    :: canopystate_vars
@@ -316,6 +329,7 @@ contains
     type(crop_type)          , intent(in)    :: crop_vars
     type(ch4_type)           , intent(in)    :: ch4_vars
     type(photosyns_type)     , intent(in)    :: photosyns_vars
+    type(frictionvel_type)   , intent(in)    :: frictionvel_vars
 
     character(len=64) :: event
     real(r8) :: dt, dayspyr
@@ -362,13 +376,14 @@ contains
     event = 'CNDeposition'
     call t_start_lnd(event)
     call NitrogenDeposition(bounds, &
-         atm2lnd_vars, dt )
+         atm2lnd_vars, frictionvel_vars,  &
+         soilstate_vars, filter_soilc, num_soilc, dt )
     call t_stop_lnd(event)
 
     event = 'CNFixation'
     if ( (.not. nu_com_nfix) .or. use_fates) then
       call t_start_lnd(event)
-       call NitrogenFixation( num_soilc, filter_soilc, dayspyr)
+       call NitrogenFixation( bounds, num_soilc, filter_soilc, dayspyr)
        call t_stop_lnd(event)
     else
        ! nu_com_nfix is true
@@ -382,7 +397,8 @@ contains
        event = 'MaintenanceResp'
        call t_start_lnd(event)
        if (crop_prog) then
-          call NitrogenFert(bounds, num_soilc,filter_soilc )
+          call NitrogenFert(bounds, num_soilc,filter_soilc, num_pcropp, filter_pcropp )
+          call PhosphorusFert(bounds, num_soilc, filter_soilc )
 
           call CNSoyfix(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
                          crop_vars, cnstate_vars )
@@ -445,6 +461,13 @@ contains
           soilstate_vars, canopystate_vars, cnstate_vars)
 
     !-------------------------------------------------------------------------------------------------
+    ! This subroutine evaluates the current state of N and P supplementation
+    ! and cross-refs with active modules, to decide on which processes should
+    ! be activated.
+    !-------------------------------------------------------------------------------------------------
+    call EvaluateSupplStatus()
+    
+    !-------------------------------------------------------------------------------------------------
     ! Allocation1 is always called (w/ or w/o use_elm_interface)
     ! pflotran: call 'Allocation1' to obtain potential N demand for support initial GPP
     if(.not.use_fates)then
@@ -470,7 +493,7 @@ contains
        atm2lnd_vars,               &
        canopystate_vars, soilstate_vars,  crop_vars, ch4_vars, &
        photosyns_vars, soilhydrology_vars, energyflux_vars,          &
-       sedflux_vars)
+       sedflux_vars, solarabs_vars)
     !-------------------------------------------------------------------
     ! bgc interface
     ! Phase-2 of EcosystemDynNoLeaching
@@ -528,6 +551,7 @@ contains
     type(photosyns_type)     , intent(in)    :: photosyns_vars
     type(soilhydrology_type) , intent(in)    :: soilhydrology_vars
     type(energyflux_type)    , intent(in)    :: energyflux_vars
+    type(solarabs_type)      , intent(in)    :: solarabs_vars
 !
     type(sedflux_type)       , intent(in)    :: sedflux_vars
     character(len=64) :: event
@@ -584,7 +608,7 @@ contains
         call Phenology(num_soilc, filter_soilc, num_soilp, filter_soilp, &
              num_pcropp, filter_pcropp, num_ppercropp, filter_ppercropp, doalb, atm2lnd_vars, &
              crop_vars, canopystate_vars, soilstate_vars, &
-             cnstate_vars )
+             cnstate_vars, solarabs_vars)
         call t_stop_lnd(event)
 
         !--------------------------------------------
@@ -615,7 +639,7 @@ contains
 
             call RootDynamics(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
                   canopystate_vars,   &
-                  cnstate_vars, crop_vars, energyflux_vars, soilstate_vars)
+                  cnstate_vars, crop_vars, energyflux_vars, soilstate_vars, dt)
             call t_stop_lnd(event)
         end if
 

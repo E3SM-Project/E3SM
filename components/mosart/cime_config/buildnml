@@ -37,8 +37,10 @@ def buildnml(case, caseroot, compname):
     run_refdate          = case.get_value("RUN_REFDATE")
     run_reftod           = case.get_value("RUN_REFTOD")
     scriptsroot          = case.get_value("SCRIPTSROOT")
-
+    
     rofconf_dir = os.path.join(casebuild, "mosartconf")
+    
+    compset = case.get_value("COMPSET") 
 
     if not os.path.isdir(rofconf_dir): os.mkdir(rofconf_dir)
 
@@ -46,8 +48,8 @@ def buildnml(case, caseroot, compname):
     # Verify rof grid is supported
     #--------------------------------------------------------------------
 
-    rof_grid_supported = ("null", "r2", "r05", "r0125", "r01", "NLDAS", "ELM_USRDAT")
-    expect(rof_grid in rof_grid_supported, "ROF_GRID '{}' is not supported in mosart. Choose from: null, r2, r05, r0125, r01, NLDAS, ELM_USRDAT".format(rof_grid))
+    rof_grid_supported = ("null", "r2", "r05", "r025", "r0125", "r01", "NLDAS", "ELM_USRDAT")
+    expect(rof_grid in rof_grid_supported, "ROF_GRID '{}' is not supported in mosart. Choose from: null, r2, r05, r025, r0125, r01, NLDAS, ELM_USRDAT".format(rof_grid))
 
     #--------------------------------------------------------------------
     # Invoke mosart build-namelist - output will go in $CASEBUILD/mosartconf
@@ -98,6 +100,18 @@ def buildnml(case, caseroot, compname):
             if run_type == "hybrid": infile_text += "finidat_rtm = '{}'\n".format(fncheck)
             if run_type == "branch": infile_text += "nrevsn_rtm  = '{}'\n".format(fncheck)
 
+        
+        print("MOSART::buildnml compset ", compset)
+        print("WFM" in compset) 
+        if "WFM" in compset: 
+            print("Turning on v2_lnd_flags") 
+            v2_lnd_flags = True 
+            infile_text += " wrmflag = .true. \n"
+            infile_text += " inundflag = .true. \n"
+            infile_text += " opt_elevprof = 1 \n"
+            infile_text += " damconstructionflag = 1 \n"
+
+        print("MOSART::buildnml final infile_text is:",infile_text)     
         create_namelist_infile(case,
                                "{}/user_nl_mosart{}".format(caseroot, inst_string),
                                "{}/cesm_namelist".format(rofconf_dir),

@@ -34,7 +34,7 @@ module physpkg
   use phys_control,     only: phys_do_flux_avg, phys_getopts, waccmx_is
   use zm_conv,          only: do_zmconv_dcape_ull => trigdcape_ull, &
                               do_zmconv_dcape_only => trig_dcape_only
-  use scamMod,          only: single_column, scm_crm_mode
+  use iop_data_mod,     only: single_column
   use flux_avg,         only: flux_avg_init
   use infnan,           only: posinf, assignment(=)
 #ifdef SPMD
@@ -52,6 +52,10 @@ module physpkg
   use mo_tracname,  only : solsym
   use mo_chm_diags, only : aer_species
   use mo_gas_phase_chemdr, only : gas_ac_name, gas_ac_name_2D
+
+  use check_energy,    only: nstep_ignore_diagn1, nstep_ignore_diagn2, &
+                             check_energy_gmean, check_energy_gmean_additional_diagn, &
+                             print_additional_diagn
 
   implicit none
   private
@@ -109,6 +113,7 @@ module physpkg
   logical :: history_gaschmbudget ! output gas chemistry tracer concentrations and tendencies
   logical :: history_gaschmbudget_2D ! output 2D gas chemistry tracer concentrations and tendencies
   logical :: history_gaschmbudget_2D_levels ! output 2D gas chemistry tracer concentrations and tendencies within certain layers
+  logical :: history_chemdyg_summary
 
   !======================================================================= 
 contains
@@ -195,7 +200,8 @@ subroutine phys_register
                       pergro_mods_out          = pergro_mods, &
                       history_gaschmbudget_out = history_gaschmbudget, &
                    history_gaschmbudget_2D_out = history_gaschmbudget_2D, &
-            history_gaschmbudget_2D_levels_out = history_gaschmbudget_2D_levels)
+            history_gaschmbudget_2D_levels_out = history_gaschmbudget_2D_levels, &
+                   history_chemdyg_summary_out = history_chemdyg_summary )
 
     ! Initialize dyn_time_lvls
     call pbuf_init_time()
@@ -287,17 +293,18 @@ subroutine phys_register
 
        ! NB: has to be after chem_register to use tracer names
        ! Fields for gas chemistry tracers
-       if (history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels) then
+       if (history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels &
+            .or. history_chemdyg_summary) then
          call chm_diags_inti_ac() ! to get aer_species
          do m = 1,gas_pcnst
             if (.not. any( aer_species == m )) then
               spc_name = trim(solsym(m))
-              if (history_gaschmbudget .or. history_gaschmbudget_2D_levels) then
+              if (history_gaschmbudget .or. history_gaschmbudget_2D_levels .or. history_chemdyg_summary) then
                 gas_ac_name(m) = 'ac_'//spc_name
                 call pbuf_add_field(gas_ac_name(m), 'global', dtype_r8, (/pcols,pver/), gas_ac_idx)
               end if
 
-              if (history_gaschmbudget_2D) then
+              if (history_gaschmbudget_2D .or. history_chemdyg_summary) then
                 gas_ac_name_2D(m) = 'ac_2D_'//spc_name
                 call pbuf_add_field(gas_ac_name_2D(m), 'global', dtype_r8, (/pcols/), gas_ac_idx)
               end if
@@ -519,10 +526,6 @@ subroutine phys_inidat( cam_out, pbuf2d )
     end do
     deallocate(tptr)
 
-    do lchnk=begchunk,endchunk
-       cam_out(lchnk)%tbot(:) = posinf
-    end do
-
     !
     ! 3-D fields
     !
@@ -718,7 +721,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
     use physics_buffer,     only: physics_buffer_desc, pbuf_initialize, pbuf_get_index
     use physics_buffer,     only: pbuf_get_chunk
-    use time_manager,       only: is_first_step
+    use time_manager,       only: get_nstep, is_first_step, is_first_restart_step
     use physconst,          only: rair, cpair, gravit, stebol, tmelt, &
                                   latvap, latice, rh2o, rhoh2o, pstd, zvir, &
                                   karman, rhodair, physconst_init 
@@ -781,6 +784,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     use output_aerocom_aie, only: output_aerocom_aie_init, do_aerocom_ind3
     use misc_diagnostics,   only: dcape_diags_init
     use conditional_diag_output_utils, only: cnd_diag_output_init
+    use phys_grid_ctem,     only: phys_grid_ctem_init
 
     ! Input/output arguments
     type(physics_state), pointer       :: phys_state(:)
@@ -825,7 +829,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     ! the physics decomposition
     call diag_init()
 
-    call check_energy_init()
+    call check_energy_init(phys_state)
 
     call tracers_init()
 
@@ -1006,9 +1010,18 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     !--------------------------------
     if(Nudge_Model) call nudging_init
 
+    ! Initialize Transformed Eularian Mean (TEM) diagnostics
+    call phys_grid_ctem_init()
+
     
    !BSINGH -  addfld and adddefault calls for perturb growth testing    
     if(pergro_test_active)call add_fld_default_calls()
+
+    if(is_first_step().or.is_first_restart_step())then
+      nstep_ignore_diagn1 = get_nstep()
+      nstep_ignore_diagn2 = nstep_ignore_diagn1 + 1
+    endif
+
 
 end subroutine phys_init
 
@@ -1025,7 +1038,6 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out, phy
     !-----------------------------------------------------------------------
     use time_manager,   only: get_nstep
     use cam_diagnostics,only: diag_allocate, diag_physvar_ic
-    use check_energy,   only: check_energy_gmean
 
     use physics_buffer,         only: physics_buffer_desc, pbuf_get_chunk, pbuf_allocate
 #if (defined E3SM_SCM_REPLAY )
@@ -1070,8 +1082,14 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out, phy
     real(r8)    :: chunk_cost                    ! measured cost per chunk
     type(physics_buffer_desc), pointer :: phys_buffer_chunk(:)
 
+    logical     :: print_additional_diagn_local
+
     call t_startf ('physpkg_st1')
     nstep = get_nstep()
+
+    print_additional_diagn_local = .true.
+    if(nstep == nstep_ignore_diagn1 .or. nstep == nstep_ignore_diagn2) print_additional_diagn_local = .false.
+    if(.not. print_additional_diagn) print_additional_diagn_local = .false.
 
 #if ( defined OFFLINE_DYN )
     !
@@ -1165,13 +1183,17 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out, phy
        !call t_adj_detailf(-1)
        call t_stopf ('bc_physics')
 
-       ! Don't call the rest in CRM mode
-       if(single_column.and.scm_crm_mode) return
-
 #ifdef TRACER_CHECK
        call gmean_mass ('between DRY', phys_state)
 #endif
-    end if
+
+       if( print_additional_diagn_local ) then
+          call t_startf ('chk_en_gmean_additional')
+          call check_energy_gmean_additional_diagn(phys_state, pbuf2d, ztodt, nstep)
+          call t_stopf ('chk_en_gmean_additional')
+       endif
+
+    end if !not adiabatic or ideal
 
 end subroutine phys_run1
 
@@ -1348,8 +1370,6 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
     ! If exit condition just return
     !
 
-    if(single_column.and.scm_crm_mode) return
-
     if ( adiabatic .or. ideal_phys ) return
     !-----------------------------------------------------------------------
     ! Tendency physics after coupler 
@@ -1475,6 +1495,7 @@ subroutine phys_final( phys_state, phys_tend, pbuf2d, phys_diag )
     use chemistry, only : chem_final
     use wv_saturation, only : wv_sat_final
     use radiation, only: radiation_final
+    use phys_grid_ctem, only : phys_grid_ctem_final
     !----------------------------------------------------------------------- 
     ! 
     ! Purpose: 
@@ -1510,6 +1531,10 @@ subroutine phys_final( phys_state, phys_tend, pbuf2d, phys_diag )
     call t_startf ('print_cost_p')
     call print_cost_p
     call t_stopf ('print_cost_p')
+
+    call t_startf ('phys_grid_ctem_final')
+    call phys_grid_ctem_final()
+    call t_stopf ('phys_grid_ctem_final')
 
 end subroutine phys_final
 
@@ -1547,7 +1572,7 @@ subroutine tphysac (ztodt,   cam_in,  &
     use ionosphere,         only: ionos_intr ! WACCM-X ionosphere
     use tracers,            only: tracers_timestep_tend
     use aoa_tracers,        only: aoa_tracers_timestep_tend
-    use physconst,          only: rhoh2o, latvap,latice, rga
+    use physconst,          only: rhoh2o, latvap,latice, rga, gravit
     use aero_model,         only: aero_model_drydep
     use check_energy,       only: check_energy_chng, check_water, & 
                                   check_prect, check_qflx , &
@@ -1645,6 +1670,8 @@ subroutine tphysac (ztodt,   cam_in,  &
     logical :: l_gw_drag
     logical :: l_ac_energy_chk
 
+    real(r8) :: cc,mm,qq,pp,adjust
+
     ! Numerical schemes for process coupling
     integer :: cflx_cpl_opt  ! When to apply surface tracer fluxes  (not including water vapor).
                              ! The default for aerosols is to do this 
@@ -1726,21 +1753,30 @@ end if ! l_tracer_aero
     nstep = get_nstep()
     call check_tracers_init(state, tracerint)
 
+    if(print_additional_diagn) then
+       !save TE before physstep
+       call check_energy_chng(state, tend, "assign_te_before_physstep", nstep, ztodt, zero, zero, zero, zero)
+       call additional_diagn_before_step_part1(state, cam_in)
+    endif
+
 !!== KZ_WCON
 
+    !just output
     call check_qflx(state, tend, "PHYAC01", nstep, ztodt, cam_in%cflx(:,1))
 
     if(.not.use_qqflx_fixer) then 
-
        ! Check if latent heat flux exceeds the total moisture content of the
        ! lowest model layer, thereby creating negative moisture.
-
        call qneg4('TPHYSAC '       ,lchnk               ,ncol  ,ztodt ,               &
             state%q(1,pver,1),state%rpdel(1,pver) ,cam_in%shf ,         &
             cam_in%lhf , cam_in%cflx )
-
     end if 
 
+    if(print_additional_diagn) then
+       call additional_diagn_before_step_part2(state, cam_in)
+    endif
+
+    !just output
     call check_qflx(state, tend, "PHYAC02", nstep, ztodt, cam_in%cflx(:,1))
 
 !!== KZ_WCON
@@ -2019,6 +2055,101 @@ end if ! l_ac_energy_chk
 
 end subroutine tphysac
 
+
+
+subroutine additional_diagn_before_step_part1(state, cam_in)
+
+    type(physics_state), intent(inout) :: state
+    type(cam_in_t), intent(in)         :: cam_in
+
+    integer ncol                               ! number of atmospheric columns
+
+    ncol  = state%ncol
+
+    !this assumes a very recent call to check_energy
+    state%te_before_physstep(:ncol)=state%te_cur(:ncol)
+    !save water mass here
+    state%tw_before(:ncol) = state%tw_cur(:ncol)
+
+    !save values as received from the coupler, before limiters on cflx
+    state%cflx_raw(:ncol)  = cam_in%cflx(:ncol,1)
+    state%shf_raw(:ncol) = cam_in%shf(:ncol)
+
+end subroutine additional_diagn_before_step_part1
+
+
+
+subroutine additional_diagn_before_step_part2(state, cam_in)
+
+    type(physics_state), intent(inout) :: state
+    type(cam_in_t), intent(in)         :: cam_in
+
+    integer ncol                               ! number of atmospheric columns
+
+    ncol  = state%ncol
+
+    !save diffs after limiters on cflx
+    state%cflx_diff(:ncol) = state%cflx_raw(:ncol) - cam_in%cflx(:ncol,1)
+    state%shf_diff(:ncol)  = state%shf_raw(:ncol)  - cam_in%shf(:ncol)
+
+end subroutine additional_diagn_before_step_part2
+
+
+
+subroutine additional_diagn_after_step(state, cam_in, cam_out, fsns, fsnt, flns, flnt, ztodt)
+
+    type(physics_state), intent(inout) :: state
+    type(cam_in_t), intent(in)         :: cam_in
+    type(cam_out_t), intent(in)        :: cam_out
+
+    real(r8), intent(in) :: fsns(pcols)                   ! Surface solar absorbed flux
+    real(r8), intent(in) :: fsnt(pcols)                   ! Net column abs solar flux at model top
+    real(r8), intent(in) :: flns(pcols)                   ! Srf longwave cooling (up-down) flux
+    real(r8), intent(in) :: flnt(pcols)                   ! Net outgoing lw flux at model top
+
+    real(r8), intent(in) :: ztodt 
+
+    integer ncol                               ! number of atmospheric columns
+
+    ncol  = state%ncol
+
+    !if including effects from qneg4
+    !state%deltaw_flux(:ncol) = state%cflx_raw(:ncol)
+    !if excluding qneg4 from diagnostics
+    state%deltaw_flux(:ncol) = cam_in%cflx(:ncol,1)
+
+    state%deltaw_flux(:ncol) = state%deltaw_flux(:ncol) - &
+    1000.0*(cam_out%precc(:ncol)+cam_out%precl(:ncol))
+
+    state%deltaw_flux(:ncol) = state%deltaw_flux(:ncol) * ztodt
+    state%deltaw_step(:ncol) = state%tw_cur(:ncol) - state%tw_before(:ncol)
+
+    !!!! compute net energy budget here
+    !!!! expected TE2 - TE1 = restom - ressurf
+    !    for TE2-TE1 we will use te_cur - te_before_physstep
+    !    for restom - ressurf we will use fluxes to/from atm following AMWG energy scripts
+
+    state%delta_te(1:ncol)=state%te_cur(1:ncol)-state%te_before_physstep(:ncol)
+
+    !if including effects from qneg4
+    !state%rr(1:ncol) = state%shf_raw(1:ncol)
+    !if excluding qneg4 from diagnostisc -- do it consistently with cflx_raw
+    state%rr(1:ncol) = cam_in%shf(1:ncol)
+
+    state%rr(1:ncol) = state%rr(1:ncol)                    &
+      + ( fsnt(1:ncol) - flnt(1:ncol) )                    &
+      - ( fsns(1:ncol) - flns(1:ncol)                      &
+      -        (latvap+latice)*cam_in%cflx(:ncol,1)        &
+      + 1000.0* latice        *( cam_out%precc(1:ncol)+cam_out%precl(1:ncol) - cam_out%precsc(1:ncol) - cam_out%precsl(1:ncol) ) )
+
+    ! deltaw_flux and deltaw_step are in kg/m2
+    ! delta_te is in J/m2
+    ! rr is in J/m2/sec = W/m2
+
+end subroutine additional_diagn_after_step
+
+
+
 subroutine tphysbc (ztodt,               &
        fsns,    fsnt,    flns,    flnt,    state,   &
        tend,    pbuf,    diag,    fsds,             &
@@ -2173,6 +2304,7 @@ subroutine tphysbc (ztodt,               &
     real(r8),pointer :: snow_dp(:)                ! snow from ZM convection
     real(r8),pointer :: prec_sh(:)                ! total precipitation from Hack convection
     real(r8),pointer :: snow_sh(:)                ! snow from Hack convection
+    real(r8) :: totice_dp(pcols)                  ! total frozen precip from ZM convection
 
     ! stratiform precipitation variables
     real(r8),pointer :: prec_str(:)    ! sfc flux of precip from stratiform (m/s)
@@ -2196,6 +2328,7 @@ subroutine tphysbc (ztodt,               &
     real(r8) :: zero(pcols)                    ! array of zeros
     real(r8) :: zero_sc(pcols*psubcols)        ! array of zeros
     real(r8) :: rliq(pcols)                    ! vertical integral of liquid not yet in q(ixcldliq)
+    real(r8) :: rice(pcols)                    ! vertical integral of ice not yet in q(ixcldice)
     real(r8) :: rliq2(pcols)                   ! vertical integral of liquid from shallow scheme
     real(r8) :: det_s  (pcols)                 ! vertical integral of detrained static energy from ice
     real(r8) :: det_ice(pcols)                 ! vertical integral of detrained ice
@@ -2254,7 +2387,6 @@ subroutine tphysbc (ztodt,               &
                              ! after tphysac:clubb_surface and before aerosol dry removal.
                              ! For chemical gases, different versions of EAM 
                              ! might use different process ordering.
-
     !-----------------------------------------------------------------------
     call cnd_diag_checkpoint( diag, 'DYNEND', state, pbuf, cam_in, cam_out )
     !-----------------------------------------------------------------------
@@ -2279,6 +2411,8 @@ subroutine tphysbc (ztodt,               &
     zero = 0._r8
     zero_tracers(:,:) = 0._r8
     zero_sc(:) = 0._r8
+    flx_cnd(:) = 0._r8
+    flx_heat(:) = 0._r8
 
     lchnk = state%lchnk
     ncol  = state%ncol
@@ -2519,7 +2653,7 @@ end if
     call convect_deep_tend(  &
          cmfmc,      cmfcme,             &
          dlf,        pflx,    zdu,       &
-         rliq,    &
+         rliq,       rice, &
          ztodt,   &
          state,   ptend, cam_in%landfrac, pbuf, mu, eu, du, md, ed, dp,   &
          dsubcld, jt, maxg, ideep, lengath) 
@@ -2545,7 +2679,8 @@ end if
 
     ! Check energy integrals, including "reserved liquid"
     flx_cnd(:ncol) = prec_dp(:ncol) + rliq(:ncol)
-    call check_energy_chng(state, tend, "convect_deep", nstep, ztodt, zero, flx_cnd, snow_dp, zero)
+    totice_dp(:ncol) = snow_dp(:ncol) + rice(:ncol)
+    call check_energy_chng(state, tend, "convect_deep", nstep, ztodt, zero, flx_cnd, totice_dp, zero)
 
     call cnd_diag_checkpoint( diag, 'DEEPCU', state, pbuf, cam_in, cam_out )
 
@@ -2737,8 +2872,8 @@ end if
                 call check_energy_chng(state, tend, "clubb_tend", nstep, ztodt, &
                      cam_in%cflx(:,1)/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
                      det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
-		     
-	
+
+
  
           endif
 
@@ -2870,7 +3005,7 @@ end if
          call aero_model_wetdep( ztodt, dlf, dlf2, cmfmc2, state,  & ! inputs
                 sh_e_ed_ratio, mu, md, du, eu, ed, dp, dsubcld,    &
                 jt, maxg, ideep, lengath, species_class,           &
-                cam_out, pbuf, ptend )                               ! outputs
+                cam_out, pbuf, ptend)                      ! outputs
          call physics_update(state, ptend, ztodt, tend)
 
          ! deep convective aerosol transport
@@ -2972,6 +3107,10 @@ end if ! l_rad
 
     call check_tracers_fini(tracerint)
 
+    if(print_additional_diagn) then
+       call additional_diagn_after_step(state, cam_in, cam_out, fsns, fsnt, flns, flnt, ztodt)
+    endif
+
     call cnd_diag_checkpoint( diag, 'PBCEND', state, pbuf, cam_in, cam_out )
 
 end subroutine tphysbc
@@ -3013,6 +3152,7 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   use nudging,             only: Nudge_Model,nudging_timestep_init
 
   use seasalt_model,       only: advance_ocean_data, has_mam_mom
+  use phys_grid_ctem,      only: phys_grid_ctem_diags
 
   implicit none
 
@@ -3091,6 +3231,9 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   !----------------------------------
   if(Nudge_Model) call nudging_timestep_init(phys_state)
 
+  ! Update Transformed Eularian Mean (TEM) diagnostics
+  call phys_grid_ctem_diags(phys_state)
+
 end subroutine phys_timestep_init
 
 
@@ -3101,14 +3244,14 @@ subroutine add_fld_default_calls()
   implicit none
 
   !Add all existing ptend names for the addfld calls
-  character(len=20), parameter :: vlist(27) = (/     'topphysbc           '                       ,&
+  character(len=20), parameter :: vlist(28) = (/     'topphysbc           '                       ,&
        'chkenergyfix        ','dadadj              ','zm_convr            ','zm_conv_evap        ',&
        'momtran             ','zm_conv_tend        ','UWSHCU              ','convect_shallow     ',&
        'pcwdetrain_mac      ','macro_park          ','macrop              ','micro_mg            ',&
        'cldwat_mic          ','aero_model_wetdep_ma','convtran2           ','cam_radheat         ',&
        'chemistry           ','vdiff               ','rayleigh_friction   ','aero_model_drydep_ma',&
        'Grav_wave_drag      ','convect_shallow_off ','clubb_ice1          ','clubb_det           ',&
-       'clubb_ice4          ','clubb_srf           ' /)
+       'clubb_ice4          ','clubb_srf           ','micro_p3            ' /)
 
 
 

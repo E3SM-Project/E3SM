@@ -7,7 +7,7 @@ module radlw
 !-----------------------------------------------------------------------
 use shr_kind_mod,      only: r8 => shr_kind_r8
 use ppgrid,            only: pcols, pver, pverp
-use scamMod,           only: single_column, scm_crm_mode
+use iop_data_mod,      only: single_column
 use parrrtm,           only: nbndlw, ngptlw
 use rrtmg_lw_init,     only: rrtmg_lw_ini
 use rrtmg_lw_rad,      only: rrtmg_lw
@@ -257,13 +257,6 @@ subroutine rad_rrtmg_lw(lchnk   ,ncol      ,rrtmg_levs,r_state,       &
    fdl (:ncol,pverp-rrtmg_levs+1:pverp)= dflx(:ncol,rrtmg_levs:1:-1)
    fsul(:ncol,pverp-rrtmg_levs+1:pverp)=uflxc(:ncol,rrtmg_levs:1:-1)
    fsdl(:ncol,pverp-rrtmg_levs+1:pverp)=dflxc(:ncol,rrtmg_levs:1:-1)
-
-   if (single_column.and.scm_crm_mode) then
-      call outfld('FUL     ',ful,pcols,lchnk)
-      call outfld('FDL     ',fdl,pcols,lchnk)
-      call outfld('FULC    ',fsul,pcols,lchnk)
-      call outfld('FDLC    ',fsdl,pcols,lchnk)
-   endif
    
    fnl(:ncol,:) = ful(:ncol,:) - fdl(:ncol,:)
    ! mji/ cam excluded this?

@@ -1,0 +1,30 @@
+%YAML 1.1
+---
+driver_options:
+  atmosphere_dag_verbosity_level: 5
+
+time_stepping:
+  time_step: ${ATM_TIME_STEP}
+  run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
+  number_of_steps: ${NUM_STEPS}
+
+atmosphere_processes:
+  atm_procs_list: [MLCorrection]
+  MLCorrection:
+    ML_model_path_tq: NONE
+    ML_model_path_uv: NONE
+    ML_model_path_sfc_fluxes: NONE
+    ML_output_fields: ["qv","T_mid"]
+    ML_correction_unit_test: True
+grids_manager:
+  Type: Mesh Free
+  grids_names: [Physics]
+  Physics:
+    aliases: [Point Grid]
+    type: point_grid
+    number_of_global_columns:   3
+    number_of_vertical_levels:  128
+
+initial_conditions:
+  qi: 0.0
+...

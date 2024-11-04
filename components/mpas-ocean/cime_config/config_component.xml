@@ -26,6 +26,32 @@
         <desc>Option to describe the MPASO surface forcing</desc>
   </entry>
 
+  <entry id="MPASO_TIDAL_MIXING">
+        <type>char</type>
+        <valid_values>false,true</valid_values>
+        <default_value>false</default_value>
+        <values>
+           <value compset="MPASO_">false</value>
+           <value compset="_MPASO%.*TMIX">true</value>
+        </values>
+        <group>case_comp</group>
+        <file>env_case.xml</file>
+        <desc>Option to describe the MPASO prescribed tidal mixing</desc>
+  </entry>
+
+  <entry id="MPASO_SGR">
+        <type>char</type>
+        <valid_values>none,data</valid_values>
+        <default_value>none</default_value>
+        <values>
+           <value compset="MPASO_">none</value>
+           <value compset="_MPASO%.*DSGR">data</value>
+        </values>
+        <group>case_comp</group>
+        <file>env_case.xml</file>
+        <desc>Option to describe how MPASO will handle subglacial runoff fluxes</desc>
+  </entry>
+
   <entry id="MPASO_ICEBERG">
         <type>char</type>
         <valid_values>false,true</valid_values>
@@ -41,12 +67,13 @@
 
   <entry id="MPASO_ISMF">
         <type>char</type>
-        <valid_values>none,internal,coupled</valid_values>
+        <valid_values>none,data,internal,coupled</valid_values>
         <default_value>none</default_value>
         <values>
            <value compset="MPASO_">none</value>
-           <value compset="_MPASO%.*ISMF.*_SGLC">internal</value>
-           <value compset="_MPASO%.*ISMF.*_MALI">coupled</value>
+           <value compset="_MPASO%.*DISMF">data</value>
+           <value compset="_MPASO%.*PISMF.*_SGLC">internal</value>
+           <value compset="_MPASO%.*PISMF.*_MALI">coupled</value>
         </values>
         <group>case_comp</group>
         <file>env_case.xml</file>
@@ -134,7 +161,22 @@
         <group>case_comp</group>
         <file>env_case.xml</file>
         <desc>Option to describe the MPASO wave coupling</desc>
-  </entry>
+ </entry>
+
+  <entry id="MPASO_USE_PETSC">
+        <type>logical</type>
+        <valid_values>FALSE,TRUE</valid_values>
+        <default_value>FALSE</default_value>
+        <values>
+           <value compset="MPASO%[^_]*NONHYDRO">TRUE</value>
+        </values>
+        <group>build_component_mpaso</group>
+        <file>env_build.xml</file>
+        <desc>TRUE implies MPASO is built with support for the PETSc
+         library. Linking to PETSc must occur when building the E3SM
+         executable. This occurs if this variable is set to TRUE. Note
+         that is only available on a limited set of machines/compilers.</desc>
+ </entry>
 
   <description>
     <desc compset="_MPASO">mpas ocean default:</desc>

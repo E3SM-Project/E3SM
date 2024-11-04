@@ -133,11 +133,14 @@ void ComposeTransportImpl::init_boundary_exchanges () {
   assert(m_data.qsize > 0); // after reset() called
 
   auto bm_exchange = Context::singleton().get<MpiBuffersManagerMap>()[MPI_EXCHANGE];
+  const auto& sp = Context::singleton().get<SimulationParams>();
 
   // For qdp DSS at end of transport step.
   for (int i = 0; i < Q_NUM_TIME_LEVELS; ++i) {
     m_qdp_dss_be[i] = std::make_shared<BoundaryExchange>();
     auto be = m_qdp_dss_be[i];
+    be->set_label(std::string("ComposeTransport-qdp-DSS-" + std::to_string(i)));
+    be->set_diagnostics_level(sp.internal_diagnostics_level);
     be->set_buffers_manager(bm_exchange);
     be->set_num_fields(0, 0, m_data.qsize + 1);
     be->register_field(m_tracers.qdp, i, m_data.qsize, 0);
@@ -148,6 +151,8 @@ void ComposeTransportImpl::init_boundary_exchanges () {
   for (int i = 0; i < 2; ++i) {
     m_v_dss_be[i] = std::make_shared<BoundaryExchange>();
     auto be = m_v_dss_be[i];
+    be->set_label(std::string("ComposeTransport-v-DSS-" + std::to_string(i)));
+    be->set_diagnostics_level(sp.internal_diagnostics_level);
     be->set_buffers_manager(bm_exchange);
     be->set_num_fields(0, 0, 2 + (i ? 1 : 0));
     be->register_field(m_derived.m_vstar, 2, 0);
@@ -160,6 +165,8 @@ void ComposeTransportImpl::init_boundary_exchanges () {
     for (int i = 0; i < 2; ++i) {
       m_hv_dss_be[i] = std::make_shared<BoundaryExchange>();
       auto be = m_hv_dss_be[i];
+      be->set_label(std::string("ComposeTransport-q-HV-" + std::to_string(i)));
+      be->set_diagnostics_level(sp.internal_diagnostics_level);
       be->set_buffers_manager(bm_exchange);
       be->set_num_fields(0, 0, m_data.hv_q);
       if (i == 0) 

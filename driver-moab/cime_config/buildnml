@@ -40,6 +40,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
     config['CPL_ALBAV'] = case.get_value('CPL_ALBAV')
     config['CPL_EPBAL'] = case.get_value('CPL_EPBAL')
     config['FLDS_WISO'] = case.get_value('FLDS_WISO')
+    config['FLDS_POLAR'] = case.get_value('FLDS_POLAR')
     config['BUDGETS'] = case.get_value('BUDGETS')
     config['MACH'] = case.get_value('MACH')
     config['MPILIB'] = case.get_value('MPILIB')
@@ -51,6 +52,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
     config['bfbflag'] = 'on' if case.get_value('BFBFLAG') else 'off'
     config['continue_run'] = '.true.' if case.get_value('CONTINUE_RUN') else '.false.'
     config['atm_grid'] = case.get_value('ATM_GRID')
+    config['lnd_grid'] = case.get_value('LND_GRID')
     config['compocn'] = case.get_value('COMP_OCN')
 
     docn_mode = case.get_value("DOCN_MODE")
@@ -170,6 +172,19 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
 
         nmlgen.set_value('esp_cpl_dt', value=esp_time)
     # End if pause is active
+
+    # Sanity checks on mem-prof options
+    info_mprof = case.get_value('INFO_MPROF')
+    info_taskmap_model = case.get_value('INFO_TASKMAP_MODEL')
+    expect(not (info_mprof > 2 and info_taskmap_model < 1),
+           "Node-level memory profiling (INFO_MPROF={:d}) expects positive INFO_TASKMAP_MODEL, given {:d}".\
+           format(info_mprof, info_taskmap_model))
+
+    info_mprof_dt = case.get_value('INFO_MPROF_DT')
+    expect(info_mprof_dt >= 0 and 
+           info_mprof_dt <= 86400,
+           "Expected INFO_MPROF_DT between 0 and 86400 secs; given {:d}".format(info_mprof_dt))
+    # end mprof checks
 
     #--------------------------------
     # (1) Write output namelist file drv_in and  input dataset list.
@@ -369,7 +384,7 @@ def buildnml(case, caseroot, component):
     expect (os.path.isdir(user_xml_dir),
             "user_xml_dir {} does not exist ".format(user_xml_dir))
 
-    files = Files(comp_interface="mct")
+    files = Files(comp_interface="moab")
     definition_file = [files.get_value("NAMELIST_DEFINITION_FILE", {"component": "drv"})]
 
     user_definition = os.path.join(user_xml_dir, "namelist_definition_drv.xml")
@@ -381,11 +396,15 @@ def buildnml(case, caseroot, component):
 
     # create cplconf/namelist
     infile_text = ""
-    if case.get_value('COMP_ATM') == 'cam':
-        # cam is actually changing the driver namelist settings
+    if case.get_value('COMP_ATM') in ['cam','eam']:
+        # cam/eam is actually changing the driver namelist settings
         cam_config_opts = case.get_value("CAM_CONFIG_OPTS")
         if "aquaplanet" in cam_config_opts:
             infile_text = "aqua_planet = .true. \n aqua_planet_sst = 1"
+
+    # add dust_emis_scheme
+    dust_emis_scheme = case.get_value('dust_emis_scheme')
+    infile_text += " dust_emis_scheme = {}".format(dust_emis_scheme)
 
     user_nl_file = os.path.join(caseroot, "user_nl_cpl")
     namelist_infile = os.path.join(confdir, "namelist_infile")

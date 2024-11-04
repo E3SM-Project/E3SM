@@ -25,7 +25,7 @@ module CropMod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine calculate_eto(T, rn, g, p, rh, u, es, dt, eto)
+  subroutine calculate_eto(T, rn, g, p, rh, u, dt, eto)
 
     ! !DESCRIPTION
     ! calculates the reference evapotranspiration for precipication seasonality
@@ -47,7 +47,6 @@ contains
     real(r8), intent(in)  :: p        ! surface atmospheric pressure (pa)
     real(r8), intent(in)  :: rh       ! relative humidity
     real(r8), intent(in)  :: u        ! wind speed (m/s)
-    real(r8), intent(in)  :: es       ! saturated vapor pressure (Pa)
     real(r8), intent(in)  :: dt       ! seconds in timestep
     real(r8), intent(inout) :: eto    ! reference evapotranspiration (mm)
 
@@ -87,7 +86,7 @@ contains
     ! calculate the potential evapotranspiration
     eto = (c1 * delta * (rn_c - g_c) + gamma1 * (c2/(t_c + c5)) * u * (es_c - ea)) / &
           (delta + gamma1 * (1 + c3 * u))
-
+    eto = max(eto,0._r8)
   end subroutine calculate_eto
 
   !-----------------------------------------------------------------------

@@ -69,12 +69,86 @@
       <support_level>Experimental, under development</support_level>
   </compset>
 
+  <compset>
+      <alias>F20TR-SCREAMv1</alias> <!-- SCREAMv1 AMIP -->
+      <lname>20TR_SCREAM_ELM%SPBC_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+      <alias>FIOP-SCREAMv1-DP</alias> <!-- DP-EAMxx General compset; to be interfaced with official scripts forced from IOPs for all cases other than RCE. -->
+      <lname>2010_SCREAM_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP%DP-EAMxx%IOP</lname>
+      <support_level>Experimental, under development</support_level>
+  </compset>
+
+  <compset>
+      <alias>FRCE-SCREAMv1-DP</alias> <!-- RCE compset for DP-EAMxx -->
+      <lname>2000_SCREAM%RCE_SLND_SICE_DOCN%AQPCONST_SROF_SGLC_SWAV_SIAC_SESP%DP-EAMxx</lname>
+      <support_level>Experimental, under development</support_level>
+  </compset>
+
   <entries>
 
     <entry id="RUN_STARTDATE">
       <values>
         <value  compset=".*DYAMOND-1">2016-08-01</value>
         <value  compset=".*DYAMOND-2">2020-01-20</value>
+        <value  compset=".*RCE">2000-01-01</value>
+      </values>
+    </entry>
+
+    <!-- DP-EAMxx specific xml vars, set some universal DP-EAMxx defaults for all test cases -->
+    <entry id="ATM_NCPL">
+      <values>
+        <value  compset=".*DP-EAMxx">864</value>
+      </values>
+    </entry>
+
+    <entry id="PTS_MULTCOLS_MODE">
+      <values>
+        <value  compset=".*DP-EAMxx">TRUE</value>
+      </values>
+    </entry>
+
+    <entry id="PTS_MODE">
+      <values>
+        <value  compset=".*DP-EAMxx">TRUE</value>
+      </values>
+    </entry>
+
+    <entry id="PTS_NX">
+      <values>
+        <value  compset=".*DP-EAMxx">100</value>
+      </values>
+    </entry>
+
+    <entry id="PTS_NY">
+      <values>
+        <value  compset=".*DP-EAMxx">1</value>
+      </values>
+    </entry>
+
+    <entry id="ICE_NX">
+      <values>
+        <value  compset=".*DP-EAMxx">100</value>
+      </values>
+    </entry>
+
+    <entry id="ICE_NY">
+      <values>
+        <value  compset=".*DP-EAMxx">1</value>
+      </values>
+    </entry>
+
+    <!-- Set some case specific DP-EAMxx defaults for testing -->
+    <entry id="PTS_LAT">
+      <values>
+        <value  compset=".*RCE">0.0</value>
+      </values>
+    </entry>
+
+    <entry id="PTS_LON">
+      <values>
+        <value  compset=".*RCE">0.0</value>
       </values>
     </entry>
 

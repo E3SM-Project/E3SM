@@ -1,0 +1,9 @@
+The testmods in this folder contain different configuration
+of output to request to eamxx. All the presets create a single
+output file, all with a different name, which means one can
+use 2+ presets at the same time.
+
+
+Each preset does basically two things:
+ 1. create a yaml file in the case folder
+ 2. add the yaml file to the yaml_output_files xml setting of eamxx

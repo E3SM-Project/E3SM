@@ -49,6 +49,7 @@ FortranData::FortranData (Int ncol_, Int nlev_)
   precip_ice_surf    = Array1("precipitation rate, solid   m/s", ncol);
   diag_eff_radius_qc = Array2("effective radius, cloud, m", ncol, nlev);
   diag_eff_radius_qi = Array2("effective radius, ice, m", ncol, nlev);
+  diag_eff_radius_qr = Array2("effective radius, rain, m", ncol, nlev);
   rho_qi             = Array2("bulk density of ice, kg/m", ncol, nlev);
   qv2qi_depos_tend   = Array2("qitend due to deposition/sublimation ", ncol, nlev);
   precip_liq_flux    = Array2("grid-box average rain flux (kg m^-2 s^-1), pverp", ncol, nlev+1);
@@ -77,7 +78,7 @@ void FortranDataIterator::init (const FortranData::Ptr& dp) {
   fdipb(dz); fdipb(nc_nuceat_tend); fdipb(nccn_prescribed); fdipb(ni_activated); fdipb(inv_qc_relvar); fdipb(qc);
   fdipb(nc); fdipb(qr); fdipb(nr); fdipb(qi); fdipb(ni);
   fdipb(qm); fdipb(bm); fdipb(precip_liq_surf); fdipb(precip_ice_surf);
-  fdipb(diag_eff_radius_qc); fdipb(diag_eff_radius_qi); fdipb(rho_qi);
+  fdipb(diag_eff_radius_qc); fdipb(diag_eff_radius_qi); fdipb(diag_eff_radius_qr); fdipb(rho_qi);
   fdipb(dpres); fdipb(inv_exner); fdipb(qv2qi_depos_tend); 
   fdipb(precip_liq_flux); fdipb(precip_ice_flux);
   fdipb(cld_frac_r); fdipb(cld_frac_l); fdipb(cld_frac_i);

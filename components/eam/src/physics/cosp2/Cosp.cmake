@@ -5,7 +5,7 @@ set(COSP_SOURCES
    eam/src/physics/cosp2/cosp_kinds.F90
    eam/src/physics/cosp2/external/src/cosp_constants.F90
    eam/src/physics/cosp2/external/src/simulator/cosp_cloudsat_interface.F90
-   eam/src/physics/cosp2/external/src/cosp_config.F90
+   eam/src/physics/cosp2/local/cosp_config.F90
    eam/src/physics/cosp2/local/cosp.F90
    eam/src/physics/cosp2/external/src/cosp_stats.F90
    eam/src/physics/cosp2/external/src/simulator/quickbeam/quickbeam.F90
@@ -19,7 +19,7 @@ set(COSP_SOURCES
    eam/src/physics/cosp2/external/src/simulator/cosp_misr_interface.F90
    eam/src/physics/cosp2/external/src/simulator/MISR_simulator/MISR_simulator.F90
    eam/src/physics/cosp2/external/src/simulator/cosp_modis_interface.F90
-   eam/src/physics/cosp2/external/src/simulator/MODIS_simulator/modis_simulator.F90
+   eam/src/physics/cosp2/local/modis_simulator.F90
    eam/src/physics/cosp2/external/src/simulator/cosp_rttov_interfaceSTUB.F90
    eam/src/physics/cosp2/external/src/simulator/rttov/cosp_rttovSTUB.F90
    eam/src/physics/cosp2/external/src/simulator/cosp_parasol_interface.F90

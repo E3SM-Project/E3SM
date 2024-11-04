@@ -56,8 +56,9 @@ module ocn_vel_hadv_coriolis
                            ! use disabled since default is on
 
    logical :: &
-      usePlanetVorticity   ! multiplicative mask for including
-                           ! planetary vorticity term
+      usePlanetVorticity,   &! mask for including planetary vorticity term
+      useRelVorticity,      &! mask for including relative vorticity term
+      useGradKineticEnergy   ! mask for including grad kinetic energy term
 
 !***********************************************************************
 
@@ -117,7 +118,7 @@ contains
 
       real (kind=RKIND) :: &
          avgVorticity, &! vorticity averaged across edge
-         invLength,    &! temp variable for 1/dcedge
+         invLength,    &! temp variable for 1/dcEdge
          edgeWeight     ! weight for summing over edges
 
       real (kind=RKIND), dimension(:,:), allocatable :: &
@@ -144,7 +145,7 @@ contains
 #ifndef MPAS_OPENACC
       !$omp parallel
 #endif
-      if (usePlanetVorticity) then
+      if (usePlanetVorticity.and.useRelVorticity) then
 #ifdef MPAS_OPENACC
          !$acc parallel loop &
          !$acc    present(tmpVorticity, normRelVortEdge, &
@@ -163,7 +164,7 @@ contains
 #ifndef MPAS_OPENACC
          !$omp end do
 #endif
-      else
+      elseif (useRelVorticity.and.(.not.usePlanetVorticity)) then
 #ifdef MPAS_OPENACC
          !$acc parallel loop &
          !$acc    present(tmpVorticity, normRelVortEdge) &
@@ -175,6 +176,23 @@ contains
          do iEdge = 1, nEdgesAll
          do k=1,nVertLevels
             tmpVorticity(k,iEdge) = normRelVortEdge(k,iEdge)
+         end do
+         end do
+#ifndef MPAS_OPENACC
+         !$omp end do
+#endif
+      elseif (usePlanetVorticity.and.(.not.useRelVorticity)) then
+#ifdef MPAS_OPENACC
+         !$acc parallel loop &
+         !$acc    present(tmpVorticity, normPlanetVortEdge) &
+         !$acc    private(k)
+#else
+         !$omp do schedule(runtime) &
+         !$omp    private(k)
+#endif
+         do iEdge = 1, nEdgesAll
+         do k=1,nVertLevels
+            tmpVorticity(k,iEdge) = normPlanetVortEdge(k,iEdge)
          end do
          end do
 #ifndef MPAS_OPENACC
@@ -223,32 +241,62 @@ contains
       !$omp end do
 #endif
 
+      if (useGradKineticEnergy) then
 #ifdef MPAS_OPENACC
-      !$acc parallel loop &
-      !$acc    present(cellsOnEdge, minLevelEdgeBot, maxLevelEdgeTop, edgeMask, &
-      !$acc            dcEdge, tend, qArr, kineticEnergyCell) &
-      !$acc    private(cell1, cell2, invLength, k, kmin, kmax)
+         !$acc parallel loop &
+         !$acc    present(cellsOnEdge, minLevelEdgeBot, maxLevelEdgeTop, edgeMask, &
+         !$acc            dcEdge, tend, qArr, kineticEnergyCell) &
+         !$acc    private(cell1, cell2, invLength, k, kmin, kmax)
 #else
-      !$omp do schedule(runtime) &
-      !$omp    private(cell1, cell2, invLength, k, kmin, kmax)
+         !$omp do schedule(runtime) &
+         !$omp    private(cell1, cell2, invLength, k, kmin, kmax)
 #endif
-      do iEdge = 1, nEdgesOwned
-         kmin = minLevelEdgeBot(iEdge)
-         kmax = maxLevelEdgeTop(iEdge)
+         do iEdge = 1, nEdgesOwned
+            kmin = minLevelEdgeBot(iEdge)
+            kmax = maxLevelEdgeTop(iEdge)
 
-         cell1 = cellsOnEdge(1,iEdge)
-         cell2 = cellsOnEdge(2,iEdge)
-         invLength = 1.0_RKIND / dcEdge(iEdge)
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+            invLength = 1.0_RKIND / dcEdge(iEdge)
 
-         do k = kmin, kmax
-            tend(k,iEdge) = tend(k,iEdge) + &
-                        edgeMask(k,iEdge)* (qArr(k,iEdge) - &
-                           (kineticEnergyCell(k,cell2) &
-                          - kineticEnergyCell(k,cell1))*invLength)
+            do k = kmin, kmax
+               tend(k,iEdge) = tend(k,iEdge) + &
+                           edgeMask(k,iEdge)* (qArr(k,iEdge) - &
+                              (kineticEnergyCell(k,cell2) &
+                             - kineticEnergyCell(k,cell1))*invLength)
+            end do
          end do
-      end do
 #ifndef MPAS_OPENACC
-      !$omp end do
+         !$omp end do
+#endif
+
+      else ! .not.useGradKineticEnergy
+#ifdef MPAS_OPENACC
+         !$acc parallel loop &
+         !$acc    present(cellsOnEdge, minLevelEdgeBot, maxLevelEdgeTop, edgeMask, &
+         !$acc            dcEdge, tend, qArr) &
+         !$acc    private(cell1, cell2, k, kmin, kmax)
+#else
+         !$omp do schedule(runtime) &
+         !$omp    private(cell1, cell2, k, kmin, kmax)
+#endif
+         do iEdge = 1, nEdgesOwned
+            kmin = minLevelEdgeBot(iEdge)
+            kmax = maxLevelEdgeTop(iEdge)
+
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+
+            do k = kmin, kmax
+               tend(k,iEdge) = tend(k,iEdge) + &
+                           edgeMask(k,iEdge)* qArr(k,iEdge)
+            end do
+         end do
+#ifndef MPAS_OPENACC
+         !$omp end do
+#endif
+      endif
+#ifndef MPAS_OPENACC
       !$omp end parallel
 #endif
 
@@ -295,11 +343,25 @@ contains
 
       !*** Reset module variables based in input configuration
 
-      if ( config_disable_vel_coriolis ) hadvCoriolisDisabled = .true.
+      if ( config_disable_vel_hadv ) then
+          useRelVorticity = .false.
+          useGradKineticEnergy = .false.
+      else
+          useRelVorticity = .true.
+          useGradKineticEnergy = .true.
+      endif
 
       select case (trim(config_time_integrator))
       case ('RK4','rk4')
          ! For RK4, coriolis tendency term includes f: (eta+f)/h.
+         usePlanetVorticity = .true.
+
+      case ('LTS','lts')
+         ! For LTS, coriolis tendency term includes f: (eta+f)/h.
+         usePlanetVorticity = .true.
+      
+      case ('FB_LTS','fb_lts')
+         ! For FB_LTS, coriolis tendency term includes f: (eta+f)/h.
          usePlanetVorticity = .true.
 
       case ('split_explicit')
@@ -320,7 +382,23 @@ contains
          ! tendencies.
          usePlanetVorticity = .false.
 
+      case ('split_explicit_ab2')
+         ! For split explicit AB2, Coriolis tendency uses eta/h because
+         ! the Coriolis term is added separately to the momentum
+         ! tendencies.
+         usePlanetVorticity = .false.
+
       end select
+
+      ! override usePlanetVorticity to false if coriolis term is disabled.
+      if ( config_disable_vel_coriolis ) then
+         usePlanetVorticity = .false.
+      endif
+
+      ! If all three terms are off, then disable the whole subroutine upon entry
+      if ( (.not.useRelVorticity).and.(.not.useGradKineticEnergy).and.(.not.usePlanetVorticity) ) then
+          hadvCoriolisDisabled = .true.
+      endif
 
    !--------------------------------------------------------------------
 

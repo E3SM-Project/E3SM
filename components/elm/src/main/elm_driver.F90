@@ -12,11 +12,12 @@ module elm_driver
   use shr_sys_mod            , only : shr_sys_flush
   use shr_log_mod            , only : errMsg => shr_log_errMsg
   use elm_varpar             , only : nlevtrc_soil, nlevsoi
-  use elm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_fates, use_betr, use_extrasnowlayers
+  use elm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_fates, use_betr, use_firn_percolation_and_compaction
   use elm_varctl             , only : use_cn, use_lch4, use_voc, use_noio, use_c13, use_c14
-  use elm_varctl             , only : use_erosion, use_fates_sp
-  use clm_time_manager       , only : get_step_size, get_curr_date, get_ref_date, get_nstep, is_beg_curr_day, get_curr_time_string
-  use clm_time_manager       , only : get_curr_calday, get_days_per_year
+  use elm_varctl             , only : use_erosion, use_fates_sp, use_fan
+  use elm_varctl             , only : mpi_sync_nstep_freq
+  use elm_time_manager       , only : get_step_size, get_curr_date, get_ref_date, get_nstep, is_beg_curr_day, get_curr_time_string
+  use elm_time_manager       , only : get_curr_calday, get_days_per_year
   use elm_varpar             , only : nlevsno, nlevgrnd, crop_prog
   use spmdMod                , only : masterproc, mpicom
   use decompMod              , only : get_proc_clumps, get_clump_bounds, get_proc_bounds, bounds_type
@@ -151,6 +152,7 @@ module elm_driver
   use VegetationDataType     , only : veg_cs, c13_veg_cs, c14_veg_cs
   use VegetationDataType     , only : veg_ns, veg_nf
   use VegetationDataType     , only : veg_ps, veg_pf
+  use FanStreamMod           , only : fanstream_interp
 
   !----------------------------------------------------------------------------
   ! bgc interface & pflotran:
@@ -161,7 +163,7 @@ module elm_driver
   use elm_varctl             , only : use_elm_bgc
   use elm_interface_funcsMod , only : elm_bgc_run, update_bgc_data_elm2elm
   ! (2) pflotran
-  use clm_time_manager            , only : nsstep, nestep
+  use elm_time_manager            , only : nsstep, nestep
   use elm_varctl                  , only : use_pflotran, pf_cmode, pf_hmode, pf_tmode
   use elm_interface_funcsMod      , only : update_bgc_data_pf2elm, update_th_data_pf2elm
   use elm_interface_pflotranMod   , only : elm_pf_run, elm_pf_write_restart
@@ -200,8 +202,10 @@ contains
     ! the calling tree is given in the description of this module.
     !
     ! !USES:
-     use elm_varctl           , only : fates_spitfire_mode
-     use FATESFireFactoryMod  , only : scalar_lightning
+     use elm_varctl            , only : fates_spitfire_mode
+     use elm_varctl            , only : fates_seeddisp_cadence
+     use FATESFireFactoryMod   , only : scalar_lightning
+     use FatesInterfaceTypesMod, only : fates_dispersal_cadence_none
      
     ! !ARGUMENTS:
     implicit none
@@ -250,6 +254,15 @@ contains
     call get_curr_date(year_curr,mon_curr, day_curr,secs_curr)
     dayspyr_mod = get_days_per_year()
     jday_mod = get_curr_calday()
+
+    if (mpi_sync_nstep_freq > 0) then
+       if (mod(nstep_mod,mpi_sync_nstep_freq) == 0) then
+          call MPI_Barrier(mpicom, ier)
+          if (masterproc) then
+             write(iulog,*)'                       A MPI_Barrier is added in this timestep.'
+          end if
+       end if
+    end if
 
     if (do_budgets) then
        call WaterBudget_Reset()
@@ -642,6 +655,10 @@ contains
 
 #endif
 
+    if (use_fan) then
+       call fanstream_interp(bounds_proc, atm2lnd_vars)
+    end if
+
     ! ============================================================================
     ! Initialize variables from previous time step, downscale atm forcings, and
     ! Determine canopy interception and precipitation onto ground surface.
@@ -999,7 +1016,7 @@ contains
                  canopystate_vars, soilstate_vars, temperature_vars, crop_vars, &
                  photosyns_vars, soilhydrology_vars, energyflux_vars,&
                  PlantMicKinetics_vars,                                         &
-                 phosphorusflux_vars, phosphorusstate_vars)
+                 phosphorusflux_vars, phosphorusstate_vars, frictionvel_vars)
 
            call AnnualUpdate(bounds_clump,            &
                   filter(nc)%num_soilc, filter(nc)%soilc, &
@@ -1025,10 +1042,11 @@ contains
              call EcosystemDynNoLeaching1(bounds_clump,         &
                        filter(nc)%num_soilc, filter(nc)%soilc,  &
                        filter(nc)%num_soilp, filter(nc)%soilp,  &
+                       filter(nc)%num_pcropp, filter(nc)%pcropp, &
                        cnstate_vars,            &
                        atm2lnd_vars,            &
                        canopystate_vars, soilstate_vars, crop_vars,   &
-                       ch4_vars, photosyns_vars )
+                       ch4_vars, photosyns_vars, frictionvel_vars )
 
              !--------------------------------------------------------------------------------
              if (use_elm_interface) then
@@ -1106,7 +1124,7 @@ contains
                    cnstate_vars,  atm2lnd_vars,          &
                    canopystate_vars, soilstate_vars, crop_vars, ch4_vars, &
                    photosyns_vars, soilhydrology_vars, energyflux_vars,   &
-                   sedflux_vars)
+                   sedflux_vars, solarabs_vars)
 
              !===========================================================================================
              ! clm_interface: 'EcosystemDynNoLeaching' is divided into 2 subroutines (1 & 2): END
@@ -1276,8 +1294,8 @@ contains
            call alm_fates%wrap_update_hifrq_hist(bounds_clump)
            if ( is_beg_curr_day() ) then ! run ED at the start of each day
                call alm_fates%dynamics_driv( bounds_clump, top_as,          &
-                    top_af, atm2lnd_vars, soilstate_vars, temperature_vars, &
-                    canopystate_vars, frictionvel_vars)
+                    top_af, atm2lnd_vars, soilstate_vars, &
+                    canopystate_vars, frictionvel_vars, soil_water_retention_curve)
            end if
        end if
 
@@ -1377,6 +1395,11 @@ contains
     end do
     !$OMP END PARALLEL DO
 
+    ! Pass fates seed dispersal information to all nodes
+    if (use_fates) then
+       if (fates_seeddisp_cadence /= fates_dispersal_cadence_none) call alm_fates%WrapGlobalSeedDispersal()
+    end if
+    
     ! ============================================================================
     ! Determine gridcell averaged properties to send to atm
     ! ============================================================================
@@ -1599,7 +1622,7 @@ contains
          ! Save snow mass at previous time step
          h2osno_old(c) = h2osno(c)
 
-         if (.not. use_extrasnowlayers) then
+         if (.not. use_firn_percolation_and_compaction) then
             ! Decide whether to cap snow
             if (h2osno(c) > h2osno_max) then
                do_capsnow(c) = .true.
@@ -1767,7 +1790,7 @@ contains
          qflx_snow_grnd_patch(bounds%begp:bounds%endp), &
          qflx_snow_grnd_col  (bounds%begc:bounds%endc))
 
-    if (.not. use_extrasnowlayers) then
+    if (.not. use_firn_percolation_and_compaction) then
        call p2c (bounds, num_allc, filter_allc, &
             veg_wf%qflx_snwcp_liq(bounds%begp:bounds%endp), &
             col_wf%qflx_snwcp_liq(bounds%begc:bounds%endc))

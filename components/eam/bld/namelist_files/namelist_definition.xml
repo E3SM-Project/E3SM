@@ -467,6 +467,32 @@ conservation checks.
 Default: FALSE
 </entry>
 
+<entry id="print_additional_diagn" type="logical"  category="diagnostics"
+       group="cam_inparm" valid_values="" >
+Turn on additional verbose output  for integrated conservation checks.
+Default: FALSE
+</entry>
+
+<!-- Transformed Eulerian Mean (TEM) budget outputs -->
+
+<entry id="phys_grid_ctem_zm_nbas" type="integer"  category="diagnostics"
+       group="phys_grid_ctem_opts" valid_values="" >
+Number of zonal mean basis functions (number of m=0 spherical harmonics) used in
+Transformed Eulerian Mean (TEM) diagnostics
+</entry>
+
+<entry id="phys_grid_ctem_za_nlat" type="integer"  category="diagnostics"
+       group="phys_grid_ctem_opts" valid_values="" >
+Number of latitude grid points for zonal average TEM diagnostics history fields
+</entry>
+
+<entry id="phys_grid_ctem_nfreq" type="integer"  category="diagnostics"
+       group="phys_grid_ctem_opts" valid_values="" >
+  Frequency of TEM diagnostic calculations.
+  If &gt; 0, frequency is specified as number of timesteps.
+  If &lt; 0, frequency is specified as number of hours.
+</entry>
+
 <!-- Dry Convective Adjustment -->
 
 <entry id="nlvdry" type="integer"  category="dry_conv_adj"
@@ -1076,6 +1102,12 @@ Default: set by build-namelist.
        group="gw_drag_nl" valid_values="" >
 Heating rate conversion factor associated with convective gravity waves
 Default: 20.0
+</entry>
+
+<entry id="hdepth_scaling_factor" type="real" category="gw_drag"
+       group="gw_drag_nl" valid_values="" >
+Scaling factor for the heating depth
+Default: 1.0
 </entry>
 
 <entry id="effgw_beres" type="real" category="gw_drag"
@@ -2502,6 +2534,12 @@ Minimum droplet number conc (#/m3) imposed when micro_mincdnc > 0.
 Default: -999.
 </entry>
 
+<entry id="p3_mincdnc" type="real" category="microphys"
+       group="micro_nl" valid_values="" >
+Minimum droplet number conc (#/m3) imposed when p3_mincdnc > 0.
+Default: -999.
+</entry>
+
 <entry id="micro_mg_version" type="integer" category="microphys"
        group="micro_mg_nl" valid_values="" >
 Version number for MG microphysics
@@ -2916,6 +2954,68 @@ Tpert scale factor in ZM deep convection scheme.
 Default: 0.D0
 </entry>
 
+<entry id="zmconv_microp" type="logical" category="conv"
+       group="zmconv_nl" valid_values="" >
+Microphysics option in ZM deep convection scheme.
+Default: set by build-namelist
+</entry>
+
+<entry id="zmconv_clos_dyn_adj" type="logical" category="conv"
+       group="zmconv_nl" valid_values="" >
+Apply dynamics adjustment to CAPE closure
+Default: set by build-namelist
+</entry>
+
+<entry id="zmconv_tpert_fix" type="logical" category="conv"
+       group="zmconv_nl" valid_values="" >
+logical switch for tpert impacts in ZM deep convection scheme
+Default: set by build-namelist
+</entry>
+
+
+<entry id="zmconv_auto_fac" type="real" category="conv"
+       group="zmconv_nl" valid_values="" >    
+cloud droplet-rain autoconversion enhancement factor in convective microphysics scheme.
+Default: set by build-namelist  
+</entry>
+
+<entry id="zmconv_accr_fac" type="real" category="conv"
+       group="zmconv_nl" valid_values="" >    
+cloud droplet-rain accretion enhancement factor in convective microphysics scheme.      
+Default: set by build-namelist  
+</entry>
+
+<entry id="zmconv_micro_dcs" type="real" category="conv"
+       group="zmconv_nl" valid_values="" >    
+Autoconversion size threshold for cloud ice to snow (m)     
+Default: set by build-namelist 
+</entry>
+
+<!-- MCSP -->
+<entry id="zmconv_MCSP_heat_coeff" type="real" category="conv"
+       group="zmconv_nl" valid_values="" >
+Multiscale Coherent System Parameterization (MCSP), heating coefficient
+Default: set by build-namelist
+</entry>
+
+<entry id="zmconv_MCSP_moisture_coeff" type="real" category="conv"
+       group="zmconv_nl" valid_values="" >
+Multiscale Coherent System Parameterization (MCSP), moisture coefficient
+Default: set by build-namelist
+</entry>
+
+<entry id="zmconv_MCSP_uwind_coeff" type="real" category="conv"
+       group="zmconv_nl" valid_values="" >
+Multiscale Coherent System Parameterization (MCSP), zonal wind coefficient
+Default: set by build-namelist
+</entry>
+
+<entry id="zmconv_MCSP_vwind_coeff" type="real" category="conv"
+       group="zmconv_nl" valid_values="" >
+Multiscale Coherent System Parameterization (MCSP), meridional wind coefficient
+Default: set by build-namelist
+</entry>
+
 
 <!-- Cloud sedimentation -->
 
@@ -3323,27 +3423,15 @@ Coefficient for eddy diffusivity of momentum.
 Default: set by build-namelist
 </entry>
 
-<entry id="shoc_Ckh_s_min" type="real" category="pblrad"
+<entry id="shoc_Ckh_s" type="real" category="pblrad"
        group="shocpbl_diff_nl" valid_values="" >
-Minimum allowable value for coefficient for eddy diffusivity for heat for stable boundary layers.
+Coefficient for eddy diffusivity for heat for stable boundary layers.
 Default: set by build-namelist
 </entry>
 
-<entry id="shoc_Ckh_s_max" type="real" category="pblrad"
+<entry id="shoc_Ckm_s" type="real" category="pblrad"
        group="shocpbl_diff_nl" valid_values="" >
-Maximum allowable value for coefficient for eddy diffusivity for heat for stable boundary layers.
-Default: set by build-namelist
-</entry>
-
-<entry id="shoc_Ckm_s_min" type="real" category="pblrad"
-       group="shocpbl_diff_nl" valid_values="" >
-Minimum allowable value for coefficient for eddy diffusivity for momentum for stable boundary layers.
-Default: set by build-namelist
-</entry>
-
-<entry id="shoc_Ckm_s_max" type="real" category="pblrad"
-       group="shocpbl_diff_nl" valid_values="" >
-Maximum allowable value for coefficient for eddy diffusivity for momentum for stable boundary layers.
+Coefficient for eddy diffusivity for momentum for stable boundary layers.
 Default: set by build-namelist
 </entry>
 
@@ -3898,7 +3986,9 @@ Default: held-suarez
 					 linoz_mam4_resus_soag,linoz_mam4_resus_mom,
 					 linoz_mam4_resus_mom_soag,
                                          super_fast_llnl,super_fast_llnl_mam3,
-					 superfast_mam4_resus_mom_soag,none " >
+					 superfast_mam4_resus_mom_soag,
+					 chemuci_linozv3_mam5_vbs,
+                                         none " >
 Name of the CAM chemistry package.  N.B. this variable may not be set by
 the user.  It is set by build-namelist via information in the configure
 cache file to be consistent with how CAM was built.
@@ -3988,19 +4078,6 @@ Default: 'HB'
        group="phys_ctl_nl" valid_values="" >
 If .true., a linearization of the response of the pbl scheme to surface stresses
 is sent to the coupler every time step, using the fields 'wsresp' and 'tau_est'.
-</entry>
-
-<entry id="export_gustiness" type="logical" category="pbl"
-       group="phys_ctl_nl" valid_values="" >
-If .true., a gustiness value will be exported to the coupler, which allows
-surface components to distinguish between the effect of mean wind and gustiness
-when calculating fluxes (and in particular surface drag).
-
-If .false., no extra value is exported, and gustiness is instead applied by the
-atmosphere by scaling up the exported wind fields (ubot and vbot). This is
-simpler and requires slightly less coupling overhead, but produces numerical
-artifacts (oscillations) in surface stresses, particularly when the gustiness is
-large compared with the mean wind.
 </entry>
 
 
@@ -4098,6 +4175,12 @@ Switch for diagnostic output of the aerosol optics
 Default: .false.
 </entry>
 
+<entry id="is_output_interactive_volc" type="logical"  category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Switch for diagnostic output of the aerosol optics
+Default: .false.
+</entry>
+
 <entry id="history_eddy" type="logical"  category="diagnostics"
        group="phys_ctl_nl" valid_values="" >
 Switch for diagnostic output of eddy variables
@@ -4126,6 +4209,12 @@ Default: .false.
        group="phys_ctl_nl" valid_values="" >
 Switch for gas chemistry tracers 2D budget diagnostic output
 Default: .false.
+</entry>
+
+<entry id="history_gaschmbudget_num" type="integer"  category="diagnostics"
+       group="phys_ctl_nl" valid_values="1,2,3,4,5,6,7,8,9,10,11,12,13,14,15" >
+History tape number instantaneous gas chemistry budget output is written to.
+Default: 2
 </entry>
 
 <entry id="history_gaschmbudget_2D_levels" type="logical"  category="diagnostics"
@@ -4182,6 +4271,54 @@ End layer of L4 for gas chemistry tracers 2D budget diagnostic output
 Default: 72
 </entry>
 
+<entry id="UCIgaschmbudget_2D_L1_s" type="integer" category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Start layer of L1 for gas chemistry tracers 2D budget diagnostic output
+Default: 1
+</entry>
+
+<entry id="UCIgaschmbudget_2D_L1_e" type="integer" category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+End layer of L1 for gas chemistry tracers 2D budget diagnostic output
+Default: 26
+</entry>
+
+<entry id="UCIgaschmbudget_2D_L2_s" type="integer" category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Start layer of L2 for gas chemistry tracers 2D budget diagnostic output
+Default: 27
+</entry>
+
+<entry id="UCIgaschmbudget_2D_L2_e" type="integer" category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+End layer of L2 for gas chemistry tracers 2D budget diagnostic output
+Default: 38
+</entry>
+
+<entry id="UCIgaschmbudget_2D_L3_s" type="integer" category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Start layer of L3 for gas chemistry tracers 2D budget diagnostic output
+Default: 39
+</entry>
+
+<entry id="UCIgaschmbudget_2D_L3_e" type="integer" category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+End layer of L3 for gas chemistry tracers 2D budget diagnostic output
+Default: 58
+</entry>
+
+<entry id="UCIgaschmbudget_2D_L4_s" type="integer" category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Start layer of L4 for gas chemistry tracers 2D budget diagnostic output
+Default: 59
+</entry>
+
+<entry id="UCIgaschmbudget_2D_L4_e" type="integer" category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+End layer of L4 for gas chemistry tracers 2D budget diagnostic output
+Default: 72
+</entry>
+
 <entry id="history_UCIgaschmbudget_2D" type="logical"  category="diagnostics"
        group="phys_ctl_nl" valid_values="" >
 Switch for gas chemistry tracers 2D budget diagnostic output
@@ -4191,6 +4328,12 @@ Default: .false.
 <entry id="history_UCIgaschmbudget_2D_levels" type="logical"  category="diagnostics"
        group="phys_ctl_nl" valid_values="" >
 Switch for gas chemistry tracers 2D budget diagnostic output within certain levels
+Default: .false.
+</entry>
+
+<entry id="history_chemdyg_summary" type="logical"  category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Switch for gas chemistry tracers in the ChemDyg package
 Default: .false.
 </entry>
 
@@ -4508,29 +4651,16 @@ Full pathname of IOP dataset.
 Default: set by build-namelist.
 </entry>
 
-<entry id="scm_crm_mode" type="logical" category="scam"
-       group="cam_inparm" valid_values="">
-Column radiation mode.
-Default: FALSE
-</entry>
-
-<entry id="scm_diurnal_avg" type="logical" category="scam"
-       group="cam_inparm" valid_values="">
-If using diurnal averaging or not.
-Default: FALSE
-</entry>
-
 <entry id="scm_iop_srf_prop" type="logical" category="scam"
        group="cam_inparm" valid_values="">
 Use the specified surface properties.
 Default: FALSE
 </entry>
 
-<entry id="scm_clubb_iop_name" type="char*200" category="scam"
+<entry id="iop_nudge_tscale" type="real" category="scam"
        group="cam_inparm" valid_values="">
-IOP name for CLUBB running in single column mode
-Default: ""
-</entry>
+Time scale to nudge to IOP forcing file.
+Default: 10800 (s)
 
 <entry id="dp_crm" type="logical" category="scam"
        group="cam_inparm" valid_values="">
@@ -4541,6 +4671,12 @@ Default: FALSE
 <entry id="iop_dosubsidence" type="logical" category="scam"
        group="cam_inparm" valid_values="">
 Compute LS vertical transport using omega prescribed from IOP file.
+Default: FALSE
+</entry>
+
+<entry id="iop_coriolis" type="logical" category="scam"
+       group="cam_inparm" valid_values="">
+Use geostropic winds specified in IOP file to apply coriolis force.
 Default: FALSE
 </entry>
 
@@ -4590,7 +4726,9 @@ Default: FALSE
 
 <entry id="precip_off" type="logical" category="scm"
        group="cam_inparm" valid_values="">
-Turn off microphysics computation.
+Turn off microphysics computation for MG2.  For P3 this disables the generation of
+liquid precipitation via autoconversion only, to be used for idealized simulations of
+warm phase boundary layer clouds.
 Default: FALSE
 </entry>                                                                        |
                                                                                 |
@@ -4671,7 +4809,7 @@ Default: false
 </entry>
 
 <entry id="MMF_microphysics_scheme" type="char*16" category="conv"
-       group="phys_ctl_nl" valid_values="m2005, sam1mom" >
+       group="phys_ctl_nl" valid_values="p3, sam1mom" >
 Type of E3SM-MMF microphysics scheme employed.
 Default: sam1mom
 </entry>
@@ -4846,6 +4984,13 @@ Default: set by build-namelist.
 In-cloud scav for cloud-borne aerosol tuning factor
 Default: set by build-namelist.
 </entry>
+
+<entry id="modal_strat_sulfate_aod_treatment" type="logical"  category="cam_chem"
+       group="phys_ctl_nl" valid_values="" >
+Flag for H2SO4 specific stratospheric wateruptake treatment
+Default: .false.
+</entry>
+
 <!-- Flags for implementing code modifications under polar project -->
 <entry id="sscav_tuning" type="logical"  category="cam_chem"
        group="aerosol_nl" valid_values="" >
@@ -4856,6 +5001,12 @@ Default: .false.
 <entry id="seasalt_emis_scale" type="real" category="cam_chem"
        group="aerosol_nl" valid_values="" >
 Seasalt aerosol emission tuning factor
+Default: set by build-namelist.
+</entry>
+
+<entry id="dms_emis_scale" type="real" category="cam_chem"
+       group="chem_inparm" valid_values="" >
+DMS emission tuning factor
 Default: set by build-namelist.
 </entry>
 
@@ -4987,6 +5138,17 @@ Format: YYYY
 Default: 0
 </entry>
 
+<entry id="ext_frc_volc_cycle_yr" type="integer" category="cam_chem"
+       group="chem_inparm" valid_values="" >
+The  cycle year of the volcanic SO2 forcing (3D emissions) data.
+Use this in place of ext_frc_cycle_yr if non-default, to allow different 
+speciciations volcanic emission and aerosols/precursors, which may be 
+invoked for single forcing simulation design.
+if <varname>ext_frc_volc_type</varname>  is 'CYCLICAL'.
+Format: YYYY
+Default: -1
+</entry>
+
 <entry id="ext_frc_fixed_ymd" type="integer" category="cam_chem"
        group="chem_inparm" valid_values="" >
 Default: current model date
@@ -5036,6 +5198,13 @@ Default: set by build-namelist.
 Type of time interpolation for fixed lower boundary data.
 Can be set to 'CYCLICAL', 'SERIAL', 'INTERP_MISSING_MONTHS', or 'FIXED'.
 Default: 'CYCLICAL'
+</entry>
+
+<entry id="ext_frc_volc_type" type="char*32" category="cam_chem"
+       group="chem_inparm" valid_values="NULL,CYCLICAL,SERIAL,INTERP_MISSING_MONTHS,FIXED" >
+Type of time interpolation for fixed lower boundary data. See also ext_frc_volc_cycle_yr.
+Can be set to 'NULL','CYCLICAL', 'SERIAL', 'INTERP_MISSING_MONTHS', or 'FIXED'.
+Default: 'NULL'
 </entry>
 
 <entry id="flbc_cycle_yr" type="integer" category="cam_chem"
@@ -5391,6 +5560,25 @@ fmoa=2 for Gantt et al. (2011, ACP) parameterization; fmoa=3 for
 simple parameterization based on Quinn et al., 2014; fmoa=4 for
 Rinaldi et al. (JGR, 2013).
 Default:1
+</entry>
+
+<entry id="prescribed_macv2_datapath" type="char*256" input_pathname="abs" category="cam_chem"
+       group="prescribed_macv2_nl" valid_values="" >
+Full pathname of the directory that contains the files specified in
+<varname>prescribed_macv2_filelist</varname>.
+Default: set by build-namelist.
+</entry>
+
+<entry id="prescribed_macv2_file" type="char*256" input_pathname="rel:prescribed_macv2_datapath" category="cam_chem"
+       group="prescribed_macv2_nl" valid_values="" >
+Filename of dataset for prescribed macv2 anthropogenic aerosol forcing.
+Default: set by build-namelist.
+</entry>
+
+<entry id="do_macv2sp" type="logical"  category="cam_chem"
+       group="prescribed_macv2_nl" valid_values="">
+If set to .true., use MACv2-SP scheme for anthropogenic aerosol effects.
+Default: .false.
 </entry>
 
 <entry id="prescribed_ghg_datapath" type="char*256" input_pathname="abs" category="cam_chem"
@@ -6334,7 +6522,7 @@ pressure gradient discretization error.
 Default: 0
 </entry>
 <entry id="hv_ref_profiles" type="integer" category="se"
-       group="ctl_nl" valid_values="0,1,2" >
+       group="ctl_nl" valid_values="0,1,2,6" >
 Modifications to hyperviscosity to minimize dissipation of
 background reference states.
 Default: 0

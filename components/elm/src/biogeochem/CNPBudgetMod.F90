@@ -367,7 +367,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine Reset(mode, budg_fluxL, budg_fluxG, budg_fluxN, budg_stateL, budg_stateG)
     !
-    use clm_time_manager, only : get_curr_date, get_prev_date
+    use elm_time_manager, only : get_curr_date, get_prev_date
     !
     implicit none
     !
@@ -376,7 +376,7 @@ contains
     !
     integer :: year, mon, day, sec
     integer :: ip
-    character(*),parameter :: subName = '(WaterBudget_Reset) '
+    character(*),parameter :: subName = '(Reset) '
 
     if (.not.present(mode)) then
        call get_curr_date(year, mon, day, sec)
@@ -470,7 +470,7 @@ contains
     type(file_desc_t), intent(inout) :: ncid   ! netcdf id
     character(len=*) , intent(in)    :: flag   ! 'read' or 'write'
     !
-    character(len=*),parameter :: subname = 'WaterBudget_Restart'
+    character(len=*),parameter :: subname = 'CNPBudget_Restart'
 
     select case (trim(flag))
     case ('define')
@@ -514,7 +514,7 @@ contains
 !-----------------------------------------------------------------------
   subroutine Accum(s_size, budg_fluxN, budg_fluxL, budg_stateL, budg_stateG)
     !
-    use clm_time_manager, only : get_curr_date, get_prev_date, get_nstep
+    use elm_time_manager, only : get_curr_date, get_prev_date, get_nstep
     !
     implicit none
     !
@@ -546,9 +546,11 @@ contains
           if (sec_prev == 0 .and. day_prev == 1 .and. month_prev == 1) update_state_beg = .true.
           if (sec_curr == 0 .and. day_curr == 1 .and. month_curr == 1) update_state_end = .true.
        case (p_inf)
-          if (get_nstep() == 1) update_state_beg = .true.
           update_state_end = .true.
        end select
+
+       ! If this is the first time step, update the states for all budget types
+       if (get_nstep() == 1) update_state_beg = .true.
 
        if (update_state_beg) then
           do is = 1, s_size/2 - 1
@@ -718,8 +720,8 @@ contains
     budg_fluxGtmp = 0._r8
     budg_stateGtmp = 0._r8
 
-    call shr_mpi_sum(budg_fluxL, budg_fluxGtmp, mpicom, subName)
-    call shr_mpi_sum(budg_stateL, budg_stateGtmp, mpicom, subName)
+    call shr_mpi_sum(budg_fluxL, budg_fluxGtmp, mpicom, subName, all=.true.)
+    call shr_mpi_sum(budg_stateL, budg_stateGtmp, mpicom, subName, all=.true.)
 
 
     budg_fluxG  = budg_fluxG + budg_fluxGtmp
@@ -759,7 +761,7 @@ contains
        budg_print_inst,  budg_print_daily,  budg_print_month,  &
        budg_print_ann,  budg_print_ltann,  budg_print_ltend)
     !
-    use clm_time_manager, only : get_curr_date, get_prev_date, get_nstep, get_step_size
+    use elm_time_manager, only : get_curr_date, get_prev_date, get_nstep, get_step_size
     use shr_const_mod   , only : shr_const_pi
     !
     implicit none
@@ -847,7 +849,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine CarbonBudget_Message(ip, cdate, sec, f_size, s_size, budg_stateG, budg_fluxG, budg_fluxGpr, unit_conversion)
     !
-    use clm_time_manager, only : get_curr_date, get_prev_date, get_nstep, get_step_size
+    use elm_time_manager, only : get_curr_date, get_prev_date, get_nstep, get_step_size
     use shr_const_mod   , only : shr_const_pi
     !
     implicit none
@@ -862,7 +864,7 @@ contains
     real(r8) :: time_integrated_flux, state_net_change
     real(r8) :: relative_error
     real(r8), parameter :: error_tol = 0.01_r8
-    real(r8), parameter :: relative_error_tol = 1.e-10_r8 ! [%]
+    real(r8), parameter :: relative_error_tol = 1.5e-10_r8 ! [%]
 
     write(iulog,*   )''
     write(iulog,*   )'NET CARBON FLUXES : period ',trim(pname(ip)),': date = ',cdate,sec
@@ -946,7 +948,8 @@ contains
 
     call ncd_defvar(varname=trim(name)//'_budg_fluxG', xtype=ncd_double, &
          dim1name=trim(name)//'_budg_flux', &
-         long_name=trim(name)//'_budg_fluxG', units='mm', ncid=ncid)
+         long_name=trim(name)//'_budg_fluxG', &
+         units='g'//trim(name)//'/m2/s', ncid=ncid)
 
     call ncd_defvar(varname=trim(name)//'_budg_fluxN', xtype=ncd_double, &
          dim1name=trim(name)//'_budg_flux', &
@@ -954,7 +957,8 @@ contains
 
     call ncd_defvar(varname=trim(name)//'_budg_stateG', xtype=ncd_double, &
          dim1name=trim(name)//'_budg_state', &
-         long_name=trim(name)//'_budg_stateG', units='-', ncid=ncid)
+         long_name=trim(name)//'_budg_stateG', &
+         units='g'//trim(name)//'/m2', ncid=ncid)
 
   end subroutine Restart_Define
 
@@ -987,8 +991,11 @@ contains
     integer  :: f, s, p, count
     character(*),parameter :: subName = '(Restart_Write) '
 
-    call shr_mpi_sum(budg_fluxL, budg_fluxGtmp, mpicom, subName)
-    call shr_mpi_sum(budg_stateL, budg_stateGtmp, mpicom, subName)
+    budg_fluxGtmp = 0._r8
+    budg_stateGtmp = 0._r8
+
+    call shr_mpi_sum(budg_fluxL, budg_fluxGtmp, mpicom, subName, all=.true.)
+    call shr_mpi_sum(budg_stateL, budg_stateGtmp, mpicom, subName, all=.true.)
 
     ! Copy data from 2D into 1D array
     count = 0
@@ -1117,7 +1124,7 @@ contains
     use elm_varcon       , only : spval
     use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall
     use column_varcon    , only : icol_road_perv, icol_road_imperv
-    use clm_time_manager , only : get_curr_date, get_prev_date, get_nstep
+    use elm_time_manager , only : get_curr_date, get_prev_date, get_nstep
     use GridcellDataType , only : gridcell_carbon_state
     use ColumnDataType   , only : column_carbon_state
     !
@@ -1129,34 +1136,21 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: year_prev, month_prev, day_prev, sec_prev
-    integer :: year_curr, month_curr, day_curr, sec_curr
     !-----------------------------------------------------------------------
 
-    associate(                                                       &
+    associate(                                          &
          begcb             =>    col_cs%begcb         , & ! Input : [real(r8) (:)   ]  carbon mass begining of the time step
-         endcb             =>    col_cs%endcb         , & ! Input : [real(r8) (:)   ]  carbon mass begining of the time step
          tcs_month_beg_grc =>    grc_cs%tcs_month_beg   & ! Output: [real(r8) (:)   ]  grid-level carbon mass at the begining of a month
          )
 
       ! Get current and previous dates to determine if a new month started
-      call get_prev_date(year_curr, month_curr, day_curr, sec_curr);
       call get_prev_date(year_prev, month_prev, day_prev, sec_prev)
 
       ! If at the beginning of a simulation, save grid-level TCS based on
       ! 'begcb' from the current time step
-      if ( day_curr == 1 .and. sec_curr == 0 .and. get_nstep() <= 1 ) then
+      if ( day_prev == 1 .and. sec_prev == 0 .and. get_nstep() <= 1 ) then
          call c2g( bounds, &
               begcb(bounds%begc:bounds%endc), &
-              tcs_month_beg_grc(bounds%begg:bounds%endg), &
-              c2l_scale_type= 'unity', l2g_scale_type='unity' )
-      endif
-
-      ! If multiple steps into a simulation and the last time step was the
-      ! end of a month, save grid-level TCS based on 'endcb' from the last
-      ! time step
-      if (get_nstep() > 1 .and. day_prev == 1 .and. sec_prev == 0) then
-         call c2g( bounds, &
-              endcb(bounds%begc:bounds%endc), &
               tcs_month_beg_grc(bounds%begg:bounds%endg), &
               c2l_scale_type= 'unity', l2g_scale_type='unity' )
       endif
@@ -1177,7 +1171,7 @@ contains
     use elm_varcon       , only : spval
     use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall
     use column_varcon    , only : icol_road_perv, icol_road_imperv
-    use clm_time_manager , only : get_curr_date, get_prev_date, get_nstep
+    use elm_time_manager , only : get_curr_date, get_prev_date, get_nstep
     use GridcellDataType , only : gridcell_carbon_state
     use ColumnDataType   , only : column_carbon_state
     !
@@ -1188,37 +1182,27 @@ contains
     type(gridcell_carbon_state), intent(inout) :: grc_cs
     !
     ! !LOCAL VARIABLES:
-    integer :: year_prev, month_prev, day_prev, sec_prev
-    integer :: year_curr, month_curr, day_curr, sec_curr
+    integer :: year, month, day, sec
     !-----------------------------------------------------------------------
 
-    associate(                                                       &
-         begcb             =>    col_cs%begcb         , & ! Input : [real(r8) (:)   ]  carbon mass begining of the time step
+    associate(                                          &
          endcb             =>    col_cs%endcb         , & ! Input : [real(r8) (:)   ]  carbon mass begining of the time step
-         tcs_month_end_grc =>    grc_cs%tcs_month_beg   & ! Output: [real(r8) (:)   ]  grid-level carbon mass at the begining of a month
+         tcs_month_end_grc =>    grc_cs%tcs_month_end   & ! Output: [real(r8) (:)   ]  grid-level carbon mass at the ending of a month
          )
 
-      ! Get current and previous dates to determine if a new month started
-      call get_prev_date(year_curr, month_curr, day_curr, sec_curr);
-      call get_prev_date(year_prev, month_prev, day_prev, sec_prev)
-
-      ! If at the beginning of a simulation, save grid-level TCS based on
-      ! 'begcb' from the current time step
-      if ( day_curr == 1 .and. sec_curr == 0 .and. get_nstep() <= 1 ) then
-         call c2g( bounds, &
-              begcb(bounds%begc:bounds%endc), &
-              tcs_month_end_grc(bounds%begg:bounds%endg), &
-              c2l_scale_type= 'unity', l2g_scale_type='unity' )
-      endif
+      ! Get current dates to determine if a new month started
+      call get_curr_date(year, month, day, sec);
 
       ! If multiple steps into a simulation and the last time step was the
       ! end of a month, save grid-level TCS based on 'endcb' from the last
       ! time step
-      if (get_nstep() > 1 .and. day_prev == 1 .and. sec_prev == 0) then
+      if (get_nstep() > 1 .and. day == 1 .and. sec == 0) then
          call c2g( bounds, &
               endcb(bounds%begc:bounds%endc), &
               tcs_month_end_grc(bounds%begg:bounds%endg), &
               c2l_scale_type= 'unity', l2g_scale_type='unity' )
+      else
+         tcs_month_end_grc(bounds%begg:bounds%endg) = spval
       endif
 
     end associate

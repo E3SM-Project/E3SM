@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyscream"
+version = "0.0.2"
+dependencies = ["numpy", "mpi4py"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["pyscream", "libpyscream"]
+exclude = ["build_src", "tests"]
+namespaces = true
+
+[tool.setuptools.package-data]
+"libpyscream" = ["*.so*"]

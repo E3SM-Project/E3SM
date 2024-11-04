@@ -11,13 +11,13 @@ module VegetationDataType
   use shr_log_mod     , only : errMsg => shr_log_errMsg
   use spmdMod         , only : masterproc
   use abortutils      , only : endrun
-  use clm_time_manager, only : is_restart, get_nstep
+  use elm_time_manager, only : is_restart, get_nstep, is_first_restart_step 
   use elm_varpar      , only : nlevsno, nlevgrnd, nlevlak, nlevurb, nlevcan, crop_prog
   use elm_varpar      , only : nlevdecomp, nlevdecomp_full
   use elm_varcon      , only : spval, ispval, sb
   use elm_varcon      , only : c13ratio, c14ratio
   use landunit_varcon , only : istsoil, istcrop
-  use pftvarcon       , only : npcropmin, noveg, nstor
+  use pftvarcon       , only : iscft, noveg, nstor
   use elm_varctl      , only : iulog, use_cn, spinup_state, spinup_mortality_factor, use_fates
   use elm_varctl      , only : nu_com, use_crop, use_c13
   use elm_varctl      , only : use_lch4, use_betr
@@ -36,6 +36,8 @@ module VegetationDataType
   use ColumnDataType            , only : column_carbon_state, column_carbon_flux
   use ColumnDataType            , only : column_nitrogen_state, column_nitrogen_flux
   use ColumnDataType            , only : column_phosphorus_state, column_phosphorus_flux
+  use timeInfoMod , only : nstep_mod 
+  use dynSubgridControlMod, only : get_do_harvest 
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -800,7 +802,9 @@ module VegetationDataType
     real(r8), pointer :: deadstemn_storage_to_xfer           (:)   => null()  ! dead stem N shift storage to transfer (gN/m2/s)
     real(r8), pointer :: livecrootn_storage_to_xfer          (:)   => null()  ! live coarse root N shift storage to transfer (gN/m2/s)
     real(r8), pointer :: deadcrootn_storage_to_xfer          (:)   => null()  ! dead coarse root N shift storage to transfer (gN/m2/s)
-    real(r8), pointer :: fert                                (:)   => null()  ! applied fertilizer (gN/m2/s)
+    real(r8), pointer :: synthfert                           (:)   => null()  ! applied fertilizer (gN/m2/s)
+    real(r8), pointer :: manure                              (:)   => null()  ! applied manure (gN/m2/s)
+    real(r8), pointer :: nfertilization                      (:)   => null()  ! patch applied total (synth. + manure) fertilizer (gN/m2/s)
     real(r8), pointer :: fert_counter                        (:)   => null()  ! >0 fertilize; <=0 not
     real(r8), pointer :: soyfixn                             (:)   => null()  ! soybean fixed N (gN/m2/s)
     ! turnover of livewood to deadwood, with retranslocation
@@ -1400,7 +1404,7 @@ module VegetationDataType
     !
     ! !USES
     use accumulMod       , only : init_accum_field
-    use clm_time_manager , only : get_step_size
+    use elm_time_manager , only : get_step_size
     use shr_const_mod    , only : SHR_CONST_CDAY, SHR_CONST_TKFRZ
     !
     ! !ARGUMENTS:
@@ -1476,7 +1480,7 @@ module VegetationDataType
     !
     ! !USES
     use accumulMod       , only : extract_accum_field
-    use clm_time_manager , only : get_nstep
+    use elm_time_manager , only : get_nstep
     use elm_varctl       , only : nsrest, nsrStartup
     use abortutils       , only : endrun
     !
@@ -1561,7 +1565,7 @@ module VegetationDataType
     !
     ! USES
     use shr_const_mod    , only : SHR_CONST_CDAY, SHR_CONST_TKFRZ
-    use clm_time_manager , only : get_step_size, get_nstep, is_end_curr_day, get_curr_date
+    use elm_time_manager , only : get_step_size, get_nstep, is_end_curr_day, get_curr_date
     use accumulMod       , only : update_accum_field, extract_accum_field, accumResetVal
     !
     ! !ARGUMENTS:
@@ -2443,7 +2447,7 @@ module VegetationDataType
                 if (veg_vp%evergreen(veg_pp%itype(p)) == 1._r8) then
                    this%leafc(p)         = 1._r8 * ratio
                    this%leafc_storage(p) = 0._r8
-                else if (veg_pp%itype(p) >= npcropmin) then ! prognostic crop types
+                else if (iscft(veg_pp%itype(p))) then ! prognostic crop types
                    this%leafc(p) = 0._r8
                    this%leafc_storage(p) = 0._r8
                 else
@@ -2461,7 +2465,7 @@ module VegetationDataType
              this%livestemc_storage(p) = 0._r8
              this%livestemc_xfer(p)    = 0._r8
 
-             if (veg_vp%woody(veg_pp%itype(p)) == 1._r8) then
+             if (veg_vp%woody(veg_pp%itype(p)) >= 1.0_r8) then
                 this%deadstemc(p) = 0.1_r8 * ratio
              else
                 this%deadstemc(p) = 0._r8
@@ -3568,7 +3572,7 @@ module VegetationDataType
             this%gresp_storage(p)      + &
             this%gresp_xfer(p)
 
-       if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
+       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
           this%storvegc(p) =            &
                this%storvegc(p)       + &
                this%grainc_storage(p) + &
@@ -3589,7 +3593,7 @@ module VegetationDataType
             this%totvegc(p) + &
             this%xsmrpool(p) + &
             this%ctrunc(p)
-
+       
        ! (WOODC) - wood C
        this%woodc(p) = &
             this%deadstemc(p)    + &
@@ -3933,7 +3937,7 @@ module VegetationDataType
           ! tree types need to be initialized with some stem mass so that
           ! roughness length is not zero in canopy flux calculation
 
-          if (veg_vp%woody(veg_pp%itype(p)) == 1._r8) then
+          if (veg_vp%woody(veg_pp%itype(p)) >= 1.0_r8) then
              this%deadstemn(p) = veg_cs%deadstemc(p) / veg_vp%deadwdcn(veg_pp%itype(p))
           else
              this%deadstemn(p) = 0._r8
@@ -4107,6 +4111,10 @@ module VegetationDataType
        call restartvar(ncid=ncid, flag=flag,  varname='grainn_xfer', xtype=ncd_double,  &
             dim1name='pft',    long_name='grain N transfer', units='gN/m2', &
             interpinic_flag='interp', readvar=readvar, data=this%grainn_xfer)
+
+       call restartvar(ncid=ncid, flag=flag, varname='cropseedn_deficit', xtype=ncd_double,  &
+            dim1name='pft', long_name='pool for seeding new crop growth', units='gN/m2', &
+            interpinic_flag='interp', readvar=readvar, data=this%cropseedn_deficit)
     end if
 
     call restartvar(ncid=ncid, flag=flag,  varname='npimbalance_patch', xtype=ncd_double,  &
@@ -4241,7 +4249,7 @@ module VegetationDataType
            this%npool(p)              + &
            this%retransn(p)
 
-      if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
+      if ( crop_prog .and. iscft(veg_pp%itype(p)))then
          this%dispvegn(p) = &
               this%dispvegn(p) + &
               this%grainn(p)
@@ -4613,7 +4621,7 @@ module VegetationDataType
           ! tree types need to be initialized with some stem mass so that
           ! roughness length is not zero in canopy flux calculation
 
-          if (veg_vp%woody(veg_pp%itype(p)) == 1._r8) then
+          if (veg_vp%woody(veg_pp%itype(p)) >= 1.0_r8) then
              this%deadstemp(p) = veg_cs%deadstemc(p) / veg_vp%deadwdcp(veg_pp%itype(p))
           else
              this%deadstemp(p) = 0._r8
@@ -4787,6 +4795,10 @@ module VegetationDataType
        call restartvar(ncid=ncid, flag=flag,  varname='grainp_xfer', xtype=ncd_double,  &
             dim1name='pft',    long_name='grain P transfer', units='gP/m2', &
             interpinic_flag='interp', readvar=readvar, data=this%grainp_xfer)
+
+       call restartvar(ncid=ncid, flag=flag, varname='cropseedp_deficit', xtype=ncd_double,  &
+            dim1name='pft', long_name='pool for seeding new crop growth', units='gP/m2', &
+            interpinic_flag='interp', readvar=readvar, data=this%cropseedp_deficit)
     end if
 
     !--------------------------------
@@ -4985,7 +4997,7 @@ module VegetationDataType
            this%ppool(p)              + &
            this%retransp(p)
 
-      if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
+      if ( crop_prog .and. iscft(veg_pp%itype(p)))then
          this%dispvegp(p) = &
               this%dispvegp(p) + &
               this%grainp(p)
@@ -5482,20 +5494,20 @@ module VegetationDataType
          avgflag='A', long_name='excess rainfall due to snow capping', &
          ptr_patch=this%qflx_snwcp_liq, c2l_scale_type='urbanf', default='inactive')
 
-    if (use_cn) then
+    !if (use_cn) then
        this%qflx_rain_grnd(begp:endp) = spval
        call hist_addfld1d (fname='QFLX_RAIN_GRND', units='mm H2O/s', &
             avgflag='A', long_name='rain on ground after interception', &
             ptr_patch=this%qflx_rain_grnd, default='inactive', c2l_scale_type='urbanf')
 
-    end if
+    !end if
 
-    if (use_cn) then
+    !if (use_cn) then
        this%qflx_snow_grnd(begp:endp) = spval
        call hist_addfld1d (fname='QFLX_SNOW_GRND', units='mm H2O/s', &
             avgflag='A', long_name='snow on ground after interception', &
             ptr_patch=this%qflx_snow_grnd, default='inactive', c2l_scale_type='urbanf')
-    end if
+    !end if
 
     if (use_cn) then
        this%qflx_evap_grnd(begp:endp) = spval
@@ -5525,12 +5537,12 @@ module VegetationDataType
             ptr_patch=this%qflx_dew_grnd, default='inactive', c2l_scale_type='urbanf')
     end if
 
-    if (use_cn) then
+    !if (use_cn) then
        this%qflx_sub_snow(begp:endp) = spval
        call hist_addfld1d (fname='QFLX_SUB_SNOW', units='mm H2O/s', &
             avgflag='A', long_name='sublimation rate from snow pack', &
             ptr_patch=this%qflx_sub_snow, default='inactive', c2l_scale_type='urbanf')
-    end if
+    !end if
 
     if (use_cn) then
        this%qflx_dew_snow(begp:endp) = spval
@@ -8177,7 +8189,7 @@ module VegetationDataType
             this%cpool_livecroot_storage_gr(p) + &
             this%cpool_deadcroot_storage_gr(p)
 
-       if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
+       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
           this%mr(p) = &
                this%mr(p) + &
                this%grain_mr(p)
@@ -8202,7 +8214,7 @@ module VegetationDataType
             this%storage_gr(p)
 
        ! autotrophic respiration (AR)
-       if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
+       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
           this%ar(p) = &
                this%mr(p) + &
                this%gr(p) + &
@@ -8281,28 +8293,30 @@ module VegetationDataType
             this%m_deadcrootc_storage_to_litter_fire(p) + &
             this%m_deadcrootc_xfer_to_litter_fire(p)    + &
             this%m_gresp_storage_to_litter_fire(p)      + &
-            this%m_gresp_xfer_to_litter_fire(p)         + &
-            this%hrv_leafc_to_litter(p)                 + &
-            this%hrv_leafc_storage_to_litter(p)         + &
-            this%hrv_leafc_xfer_to_litter(p)            + &
-            this%hrv_frootc_to_litter(p)                + &
-            this%hrv_frootc_storage_to_litter(p)        + &
-            this%hrv_frootc_xfer_to_litter(p)           + &
-            this%hrv_livestemc_to_litter(p)             + &
-            this%hrv_livestemc_storage_to_litter(p)     + &
-            this%hrv_livestemc_xfer_to_litter(p)        + &
-            this%hrv_deadstemc_storage_to_litter(p)     + &
-            this%hrv_deadstemc_xfer_to_litter(p)        + &
-            this%hrv_livecrootc_to_litter(p)            + &
-            this%hrv_livecrootc_storage_to_litter(p)    + &
-            this%hrv_livecrootc_xfer_to_litter(p)       + &
-            this%hrv_deadcrootc_to_litter(p)            + &
-            this%hrv_deadcrootc_storage_to_litter(p)    + &
-            this%hrv_deadcrootc_xfer_to_litter(p)       + &
-            this%hrv_gresp_storage_to_litter(p)         + &
-            this%hrv_gresp_xfer_to_litter(p)            + &
-            this%hrv_cpool_to_litter(p)
-
+            this%m_gresp_xfer_to_litter_fire(p)        
+            
+            this%litfall(p) = this%litfall(p) + &
+              this%hrv_leafc_to_litter(p)                 + &
+              this%hrv_leafc_storage_to_litter(p)         + &
+              this%hrv_leafc_xfer_to_litter(p)            + &
+              this%hrv_frootc_to_litter(p)                + &
+              this%hrv_frootc_storage_to_litter(p)        + &
+              this%hrv_frootc_xfer_to_litter(p)           + &
+              this%hrv_livestemc_to_litter(p)             + &
+              this%hrv_livestemc_storage_to_litter(p)     + &
+              this%hrv_livestemc_xfer_to_litter(p)        + &
+              this%hrv_deadstemc_storage_to_litter(p)     + &
+              this%hrv_deadstemc_xfer_to_litter(p)        + &
+              this%hrv_livecrootc_to_litter(p)            + &
+              this%hrv_livecrootc_storage_to_litter(p)    + &
+              this%hrv_livecrootc_xfer_to_litter(p)       + &
+              this%hrv_deadcrootc_to_litter(p)            + &
+              this%hrv_deadcrootc_storage_to_litter(p)    + &
+              this%hrv_deadcrootc_xfer_to_litter(p)       + &
+              this%hrv_gresp_storage_to_litter(p)         + &
+              this%hrv_gresp_xfer_to_litter(p)            + &
+              this%hrv_cpool_to_litter(p)
+       
        ! patch-level fire losses (VEGFIRE)
        this%vegfire(p) = 0._r8
 
@@ -8310,7 +8324,7 @@ module VegetationDataType
        this%wood_harvestc(p) = &
             this%hrv_deadstemc_to_prod10c(p) + &
             this%hrv_deadstemc_to_prod100c(p)
-       if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
+       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
           this%wood_harvestc(p) = &
                this%wood_harvestc(p) + &
                this%hrv_cropc_to_prod1c(p)
@@ -8340,7 +8354,7 @@ module VegetationDataType
             this%m_gresp_xfer_to_fire(p)           + &
             this%m_cpool_to_fire(p)
 
-       if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
+       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
           this%litfall(p) =                  &
                this%litfall(p)             + &
                this%livestemc_to_litter(p) + &
@@ -8359,9 +8373,11 @@ module VegetationDataType
             this%m_frootc_to_litter(p)       + &
             this%m_frootc_to_fire(p)         + &
             this%m_frootc_to_litter_fire(p)  + &
-            this%hrv_frootc_to_litter(p)     + &
             this%frootc_to_litter(p)
-
+      ! if(use_crop) then 
+           this%frootc_loss(p) =  this%frootc_loss(p) + &
+                 this%hrv_frootc_to_litter(p)     
+      ! endif 
        ! (LEAFC_ALLOC) - leaf C allocation
        this%leafc_alloc(p) = &
             this%leafc_xfer_to_leafc(p)    + &
@@ -8372,10 +8388,12 @@ module VegetationDataType
             this%m_leafc_to_litter(p)      + &
             this%m_leafc_to_fire(p)        + &
             this%m_leafc_to_litter_fire(p) + &
-            this%hrv_leafc_to_litter(p)    + &
             this%leafc_to_litter(p)
+       
+       this%leafc_loss(p) =  this%leafc_loss(p) + &
+            this%hrv_leafc_to_litter(p)  
 
-       if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
+       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
           this%leafc_loss(p) = &
                this%leafc_loss(p) + &
                this%hrv_leafc_to_prod1c(p)
@@ -8402,7 +8420,9 @@ module VegetationDataType
             this%m_livestemc_to_fire(p)              + &
             this%m_deadstemc_to_fire(p)              + &
             this%m_livecrootc_to_fire(p)             + &
-            this%m_deadcrootc_to_fire(p)             + &
+            this%m_deadcrootc_to_fire(p)             
+           
+        this%woodc_loss(p) = this%woodc_loss(p) + &
             this%hrv_livestemc_to_litter(p)          + &
             this%hrv_livestemc_storage_to_litter(p)  + &
             this%hrv_livestemc_xfer_to_litter(p)     + &
@@ -8417,7 +8437,7 @@ module VegetationDataType
             this%hrv_deadcrootc_storage_to_litter(p) + &
             this%hrv_deadcrootc_xfer_to_litter(p)
        ! putting the harvested crop stem and grain in the wood loss bdrewniak
-       if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
+       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
           this%woodc_loss(p) = &
                this%woodc_loss(p) + &
                this%hrv_grainc_to_prod1c(p) + &
@@ -8542,7 +8562,7 @@ module VegetationDataType
             this%cpool_to_deadstemc(p)              + &
             this%deadstemc_xfer_to_deadstemc(p)
 
-       if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
+       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
           this%agnpp(p) =                    &
                this%agnpp(p)               + &
                this%cpool_to_grainc(p)     + &
@@ -8591,101 +8611,6 @@ module VegetationDataType
        do fi = 1,num_patch
           i = filter_patch(fi)
 
-          this%m_leafc_to_litter(i)                   = value_patch
-          this%m_frootc_to_litter(i)                  = value_patch
-          this%m_leafc_storage_to_litter(i)           = value_patch
-          this%m_frootc_storage_to_litter(i)          = value_patch
-          this%m_livestemc_storage_to_litter(i)       = value_patch
-          this%m_deadstemc_storage_to_litter(i)       = value_patch
-          this%m_livecrootc_storage_to_litter(i)      = value_patch
-          this%m_deadcrootc_storage_to_litter(i)      = value_patch
-          this%m_leafc_xfer_to_litter(i)              = value_patch
-          this%m_frootc_xfer_to_litter(i)             = value_patch
-          this%m_livestemc_xfer_to_litter(i)          = value_patch
-          this%m_deadstemc_xfer_to_litter(i)          = value_patch
-          this%m_livecrootc_xfer_to_litter(i)         = value_patch
-          this%m_deadcrootc_xfer_to_litter(i)         = value_patch
-          this%m_livestemc_to_litter(i)               = value_patch
-          this%m_deadstemc_to_litter(i)               = value_patch
-          this%m_livecrootc_to_litter(i)              = value_patch
-          this%m_deadcrootc_to_litter(i)              = value_patch
-          this%m_gresp_storage_to_litter(i)           = value_patch
-          this%m_gresp_xfer_to_litter(i)              = value_patch
-          this%m_cpool_to_litter(i)                   = value_patch
-          this%hrv_leafc_to_litter(i)                 = value_patch
-          this%hrv_leafc_storage_to_litter(i)         = value_patch
-          this%hrv_leafc_xfer_to_litter(i)            = value_patch
-          this%hrv_frootc_to_litter(i)                = value_patch
-          this%hrv_frootc_storage_to_litter(i)        = value_patch
-          this%hrv_frootc_xfer_to_litter(i)           = value_patch
-          this%hrv_livestemc_to_litter(i)             = value_patch
-          this%hrv_livestemc_storage_to_litter(i)     = value_patch
-          this%hrv_livestemc_xfer_to_litter(i)        = value_patch
-          this%hrv_deadstemc_to_prod10c(i)            = value_patch
-          this%hrv_deadstemc_to_prod100c(i)           = value_patch
-          this%hrv_leafc_to_prod1c(i)                 = value_patch
-          this%hrv_livestemc_to_prod1c(i)             = value_patch
-          this%hrv_grainc_to_prod1c(i)                = value_patch
-          this%hrv_cropc_to_prod1c(i)                 = value_patch
-          this%hrv_deadstemc_storage_to_litter(i)     = value_patch
-          this%hrv_deadstemc_xfer_to_litter(i)        = value_patch
-          this%hrv_livecrootc_to_litter(i)            = value_patch
-          this%hrv_livecrootc_storage_to_litter(i)    = value_patch
-          this%hrv_livecrootc_xfer_to_litter(i)       = value_patch
-          this%hrv_deadcrootc_to_litter(i)            = value_patch
-          this%hrv_deadcrootc_storage_to_litter(i)    = value_patch
-          this%hrv_deadcrootc_xfer_to_litter(i)       = value_patch
-          this%hrv_gresp_storage_to_litter(i)         = value_patch
-          this%hrv_gresp_xfer_to_litter(i)            = value_patch
-          this%hrv_xsmrpool_to_atm(i)                 = value_patch
-          this%hrv_cpool_to_litter(i)                 = value_patch
-
-          this%m_leafc_to_fire(i)                     = value_patch
-          this%m_leafc_storage_to_fire(i)             = value_patch
-          this%m_leafc_xfer_to_fire(i)                = value_patch
-          this%m_livestemc_to_fire(i)                 = value_patch
-          this%m_livestemc_storage_to_fire(i)         = value_patch
-          this%m_livestemc_xfer_to_fire(i)            = value_patch
-          this%m_deadstemc_to_fire(i)                 = value_patch
-          this%m_deadstemc_storage_to_fire(i)         = value_patch
-          this%m_deadstemc_xfer_to_fire(i)            = value_patch
-          this%m_frootc_to_fire(i)                    = value_patch
-          this%m_frootc_storage_to_fire(i)            = value_patch
-          this%m_frootc_xfer_to_fire(i)               = value_patch
-          this%m_livecrootc_to_fire(i)                = value_patch
-          this%m_livecrootc_storage_to_fire(i)        = value_patch
-          this%m_livecrootc_xfer_to_fire(i)           = value_patch
-          this%m_deadcrootc_to_fire(i)                = value_patch
-          this%m_deadcrootc_storage_to_fire(i)        = value_patch
-          this%m_deadcrootc_xfer_to_fire(i)           = value_patch
-          this%m_gresp_storage_to_fire(i)             = value_patch
-          this%m_gresp_xfer_to_fire(i)                = value_patch
-          this%m_cpool_to_fire(i)                     = value_patch
-
-          this%m_leafc_to_litter_fire(i)              = value_patch
-          this%m_leafc_storage_to_litter_fire(i)      = value_patch
-          this%m_leafc_xfer_to_litter_fire(i)         = value_patch
-          this%m_livestemc_to_litter_fire(i)          = value_patch
-          this%m_livestemc_storage_to_litter_fire(i)  = value_patch
-          this%m_livestemc_xfer_to_litter_fire(i)     = value_patch
-          this%m_livestemc_to_deadstemc_fire(i)       = value_patch
-          this%m_deadstemc_to_litter_fire(i)          = value_patch
-          this%m_deadstemc_storage_to_litter_fire(i)  = value_patch
-          this%m_deadstemc_xfer_to_litter_fire(i)     = value_patch
-          this%m_frootc_to_litter_fire(i)             = value_patch
-          this%m_frootc_storage_to_litter_fire(i)     = value_patch
-          this%m_frootc_xfer_to_litter_fire(i)        = value_patch
-          this%m_livecrootc_to_litter_fire(i)         = value_patch
-          this%m_livecrootc_storage_to_litter_fire(i) = value_patch
-          this%m_livecrootc_xfer_to_litter_fire(i)    = value_patch
-          this%m_livecrootc_to_deadcrootc_fire(i)     = value_patch
-          this%m_deadcrootc_to_litter_fire(i)         = value_patch
-          this%m_deadcrootc_storage_to_litter_fire(i) = value_patch
-          this%m_deadcrootc_xfer_to_litter_fire(i)    = value_patch
-          this%m_gresp_storage_to_litter_fire(i)      = value_patch
-          this%m_gresp_xfer_to_litter_fire(i)         = value_patch
-          this%m_cpool_to_litter_fire(i)              = value_patch
-
           this%leafc_xfer_to_leafc(i)                 = value_patch
           this%frootc_xfer_to_frootc(i)               = value_patch
           this%livestemc_xfer_to_livestemc(i)         = value_patch
@@ -8726,12 +8651,7 @@ module VegetationDataType
           this%cpool_to_deadcrootc(i)                 = value_patch
           this%cpool_to_deadcrootc_storage(i)         = value_patch
           this%cpool_to_gresp_storage(i)              = value_patch
-          this%cpool_leaf_gr(i)                       = value_patch
-          this%cpool_leaf_storage_gr(i)               = value_patch
-          this%transfer_leaf_gr(i)                    = value_patch
-          this%cpool_froot_gr(i)                      = value_patch
-          this%cpool_froot_storage_gr(i)              = value_patch
-          this%transfer_froot_gr(i)                   = value_patch
+          
           this%cpool_livestem_gr(i)                   = value_patch
           this%cpool_livestem_storage_gr(i)           = value_patch
           this%transfer_livestem_gr(i)                = value_patch
@@ -8744,6 +8664,7 @@ module VegetationDataType
           this%cpool_deadcroot_gr(i)                  = value_patch
           this%cpool_deadcroot_storage_gr(i)          = value_patch
           this%transfer_deadcroot_gr(i)               = value_patch
+          
           this%leafc_storage_to_xfer(i)               = value_patch
           this%frootc_storage_to_xfer(i)              = value_patch
           this%livestemc_storage_to_xfer(i)           = value_patch
@@ -8765,7 +8686,7 @@ module VegetationDataType
           this%npp(i)                                 = value_patch
           this%agnpp(i)                               = value_patch
           this%bgnpp(i)                               = value_patch
-          this%agwdnpp(i)                               = value_patch
+          this%agwdnpp(i)                             = value_patch
           this%litfall(i)                             = value_patch
           this%vegfire(i)                             = value_patch
           this%wood_harvestc(i)                       = value_patch
@@ -8799,6 +8720,36 @@ module VegetationDataType
        end do
     end if
 
+    do fi = 1,num_patch
+       i = filter_patch(fi)
+       this%hrv_leafc_to_litter(i)                 = value_patch
+       this%hrv_leafc_storage_to_litter(i)         = value_patch
+       this%hrv_leafc_xfer_to_litter(i)            = value_patch
+       this%hrv_frootc_to_litter(i)                = value_patch
+       this%hrv_frootc_storage_to_litter(i)        = value_patch
+       this%hrv_frootc_xfer_to_litter(i)           = value_patch
+       this%hrv_livestemc_to_litter(i)             = value_patch
+       this%hrv_livestemc_storage_to_litter(i)     = value_patch
+       this%hrv_livestemc_xfer_to_litter(i)        = value_patch
+       this%hrv_deadstemc_to_prod10c(i)            = value_patch
+       this%hrv_deadstemc_to_prod100c(i)           = value_patch
+       this%hrv_leafc_to_prod1c(i)                 = value_patch
+       this%hrv_livestemc_to_prod1c(i)             = value_patch
+       this%hrv_grainc_to_prod1c(i)                = value_patch
+       this%hrv_cropc_to_prod1c(i)                 = value_patch
+       this%hrv_deadstemc_storage_to_litter(i)     = value_patch
+       this%hrv_deadstemc_xfer_to_litter(i)        = value_patch
+       this%hrv_livecrootc_to_litter(i)            = value_patch
+       this%hrv_livecrootc_storage_to_litter(i)    = value_patch
+       this%hrv_livecrootc_xfer_to_litter(i)       = value_patch
+       this%hrv_deadcrootc_to_litter(i)            = value_patch
+       this%hrv_deadcrootc_storage_to_litter(i)    = value_patch
+       this%hrv_deadcrootc_xfer_to_litter(i)       = value_patch
+       this%hrv_gresp_storage_to_litter(i)         = value_patch
+       this%hrv_gresp_xfer_to_litter(i)            = value_patch
+       this%hrv_xsmrpool_to_atm(i)                 = value_patch
+       this%hrv_cpool_to_litter(i)                 = value_patch
+    end do 
   end subroutine veg_cf_setvalues
 
   !------------------------------------------------------------------------
@@ -8959,7 +8910,9 @@ module VegetationDataType
     allocate(this%grainn_to_food                      (begp:endp)) ; this%grainn_to_food                      (:) = spval
     allocate(this%grainn_xfer_to_grainn               (begp:endp)) ; this%grainn_xfer_to_grainn               (:) = spval
     allocate(this%grainn_storage_to_xfer              (begp:endp)) ; this%grainn_storage_to_xfer              (:) = spval
-    allocate(this%fert                                (begp:endp)) ; this%fert                                (:) = spval
+    allocate(this%synthfert                           (begp:endp)) ; this%synthfert                           (:) = spval
+    allocate(this%manure                              (begp:endp)) ; this%manure                              (:) = spval
+    allocate(this%nfertilization                      (begp:endp)) ; this%nfertilization                      (:) = spval
     allocate(this%fert_counter                        (begp:endp)) ; this%fert_counter                        (:) = spval
     allocate(this%soyfixn                             (begp:endp)) ; this%soyfixn                             (:) = spval
     allocate(this%nfix_to_plantn                      (begp:endp)) ; this%nfix_to_plantn                      (:) = spval
@@ -9391,22 +9344,26 @@ module VegetationDataType
          ptr_patch=this%fire_nloss)
 
     if (crop_prog) then
-       this%fert(begp:endp) = spval
-       call hist_addfld1d (fname='FERT', units='gN/m^2/s', &
-            avgflag='A', long_name='fertilizer added', &
-            ptr_patch=this%fert)
+       this%synthfert(begp:endp) = spval
+       call hist_addfld1d (fname='NSYNTHFERT', units='gN/m^2/s', &
+            avgflag='A', long_name='Synthetic fertilizer N added', &
+            ptr_patch=this%synthfert)
 
-    end if
+       this%manure(begp:endp) = spval
+       call hist_addfld1d (fname='NMANURE', units='gN/m^2/s', &
+            avgflag='A', long_name='Manure added according to the ELM default', &
+            ptr_patch=this%manure)
 
-    if (crop_prog) then
+       this%nfertilization(begp:endp) = spval
+       call hist_addfld1d (fname='NFERTILIZATION', units='gN/m^2/s', &
+            avgflag='A', long_name='Total fertilizer N added', &
+            ptr_patch=this%nfertilization)
+
        this%soyfixn(begp:endp) = spval
        call hist_addfld1d (fname='SOYFIXN', units='gN/m^2/s', &
             avgflag='A', long_name='soybean fixation', &
             ptr_patch=this%soyfixn)
 
-    end if
-
-    if (crop_prog) then
        this%fert_counter(begp:endp) = spval
        call hist_addfld1d (fname='FERT_COUNTER', units='seconds', &
             avgflag='A', long_name='time left to fertilize', &
@@ -9512,7 +9469,9 @@ module VegetationDataType
 
        if ( crop_prog )then
           this%fert_counter(p)  = spval
-          this%fert(p)          = 0._r8
+          this%synthfert(p)     = 0._r8 
+          this%manure(p)        = 0._r8
+          this%nfertilization(p) = 0._r8
           this%soyfixn(p)       = 0._r8
        end if
 
@@ -9552,10 +9511,20 @@ module VegetationDataType
             long_name='', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%fert_counter)
 
-       call restartvar(ncid=ncid, flag=flag, varname='fert', xtype=ncd_double,  &
+       call restartvar(ncid=ncid, flag=flag, varname='synthfert', xtype=ncd_double,  &
             dim1name='pft', &
             long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%fert)
+            interpinic_flag='interp', readvar=readvar, data=this%synthfert)
+
+       call restartvar(ncid=ncid, flag=flag, varname='manure', xtype=ncd_double,  &
+             dim1name='pft', &
+             long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%manure)
+
+       call restartvar(ncid=ncid, flag=flag, varname='nfertilization', xtype=ncd_double,  &
+             dim1name='pft', &
+             long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%nfertilization)
 
        call restartvar(ncid=ncid, flag=flag,  varname='grainn_xfer_to_grainn', xtype=ncd_double,  &
             dim1name='pft', &
@@ -9624,26 +9593,6 @@ module VegetationDataType
     do fi = 1,num_patch
        i=filter_patch(fi)
 
-       this%m_leafn_to_litter(i)                   = value_patch
-       this%m_frootn_to_litter(i)                  = value_patch
-       this%m_leafn_storage_to_litter(i)           = value_patch
-       this%m_frootn_storage_to_litter(i)          = value_patch
-       this%m_livestemn_storage_to_litter(i)       = value_patch
-       this%m_deadstemn_storage_to_litter(i)       = value_patch
-       this%m_livecrootn_storage_to_litter(i)      = value_patch
-       this%m_deadcrootn_storage_to_litter(i)      = value_patch
-       this%m_leafn_xfer_to_litter(i)              = value_patch
-       this%m_frootn_xfer_to_litter(i)             = value_patch
-       this%m_livestemn_xfer_to_litter(i)          = value_patch
-       this%m_deadstemn_xfer_to_litter(i)          = value_patch
-       this%m_livecrootn_xfer_to_litter(i)         = value_patch
-       this%m_deadcrootn_xfer_to_litter(i)         = value_patch
-       this%m_livestemn_to_litter(i)               = value_patch
-       this%m_deadstemn_to_litter(i)               = value_patch
-       this%m_livecrootn_to_litter(i)              = value_patch
-       this%m_deadcrootn_to_litter(i)              = value_patch
-       this%m_retransn_to_litter(i)                = value_patch
-       this%m_npool_to_litter(i)                   = value_patch
        this%hrv_leafn_to_litter(i)                 = value_patch
        this%hrv_frootn_to_litter(i)                = value_patch
        this%hrv_leafn_storage_to_litter(i)         = value_patch
@@ -9671,49 +9620,6 @@ module VegetationDataType
        this%hrv_retransn_to_litter(i)              = value_patch
        this%hrv_npool_to_litter(i)                 = value_patch
 
-       this%m_leafn_to_fire(i)                     = value_patch
-       this%m_leafn_storage_to_fire(i)             = value_patch
-       this%m_leafn_xfer_to_fire(i)                = value_patch
-       this%m_livestemn_to_fire(i)                 = value_patch
-       this%m_livestemn_storage_to_fire(i)         = value_patch
-       this%m_livestemn_xfer_to_fire(i)            = value_patch
-       this%m_deadstemn_to_fire(i)                 = value_patch
-       this%m_deadstemn_storage_to_fire(i)         = value_patch
-       this%m_deadstemn_xfer_to_fire(i)            = value_patch
-       this%m_frootn_to_fire(i)                    = value_patch
-       this%m_frootn_storage_to_fire(i)            = value_patch
-       this%m_frootn_xfer_to_fire(i)               = value_patch
-       this%m_livecrootn_to_fire(i)                = value_patch
-       this%m_livecrootn_storage_to_fire(i)        = value_patch
-       this%m_livecrootn_xfer_to_fire(i)           = value_patch
-       this%m_deadcrootn_to_fire(i)                = value_patch
-       this%m_deadcrootn_storage_to_fire(i)        = value_patch
-       this%m_deadcrootn_xfer_to_fire(i)           = value_patch
-       this%m_retransn_to_fire(i)                  = value_patch
-       this%m_npool_to_fire(i)                     = value_patch
-
-       this%m_leafn_to_litter_fire(i)              = value_patch
-       this%m_leafn_storage_to_litter_fire(i)      = value_patch
-       this%m_leafn_xfer_to_litter_fire(i)         = value_patch
-       this%m_livestemn_to_litter_fire(i)          = value_patch
-       this%m_livestemn_storage_to_litter_fire(i)  = value_patch
-       this%m_livestemn_xfer_to_litter_fire(i)     = value_patch
-       this%m_livestemn_to_deadstemn_fire(i)       = value_patch
-       this%m_deadstemn_to_litter_fire(i)          = value_patch
-       this%m_deadstemn_storage_to_litter_fire(i)  = value_patch
-       this%m_deadstemn_xfer_to_litter_fire(i)     = value_patch
-       this%m_frootn_to_litter_fire(i)             = value_patch
-       this%m_frootn_storage_to_litter_fire(i)     = value_patch
-       this%m_frootn_xfer_to_litter_fire(i)        = value_patch
-       this%m_livecrootn_to_litter_fire(i)         = value_patch
-       this%m_livecrootn_storage_to_litter_fire(i) = value_patch
-       this%m_livecrootn_xfer_to_litter_fire(i)    = value_patch
-       this%m_livecrootn_to_deadcrootn_fire(i)     = value_patch
-       this%m_deadcrootn_to_litter_fire(i)         = value_patch
-       this%m_deadcrootn_storage_to_litter_fire(i) = value_patch
-       this%m_deadcrootn_xfer_to_litter_fire(i)    = value_patch
-       this%m_retransn_to_litter_fire(i)           = value_patch
-       this%m_npool_to_litter_fire(i)              = value_patch
 
        this%leafn_xfer_to_leafn(i)                 = value_patch
        this%frootn_xfer_to_frootn(i)               = value_patch
@@ -9814,7 +9720,7 @@ module VegetationDataType
        this%wood_harvestn(p) = &
             this%hrv_deadstemn_to_prod10n(p) + &
             this%hrv_deadstemn_to_prod100n(p)
-       if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
+       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
             this%wood_harvestn(p) = &
             this%wood_harvestn(p) + &
             this%hrv_cropn_to_prod1n(p)
@@ -10091,7 +9997,7 @@ module VegetationDataType
     allocate(this%grainp_to_food                      (begp:endp)) ; this%grainp_to_food                      (:) = spval
     allocate(this%grainp_xfer_to_grainp               (begp:endp)) ; this%grainp_xfer_to_grainp               (:) = spval
     allocate(this%grainp_storage_to_xfer              (begp:endp)) ; this%grainp_storage_to_xfer              (:) = spval
-    allocate(this%fert_p                              (begp:endp)) ; this%fert_p                              (:) = spval
+    allocate(this%fert_p                              (begp:endp)) ; this%fert_p                              (:) = 0.d0
     allocate(this%fert_p_counter                      (begp:endp)) ; this%fert_p_counter                      (:) = spval
     allocate(this%crop_seedp_to_leaf                  (begp:endp)) ; this%crop_seedp_to_leaf                  (:) = spval
     allocate(this%dwt_seedp_to_leaf                   (begp:endp)) ; this%dwt_seedp_to_leaf                   (:) = spval
@@ -10752,26 +10658,6 @@ module VegetationDataType
     do fi = 1,num_patch
        i=filter_patch(fi)
 
-       this%m_leafp_to_litter(i)                   = value_patch
-       this%m_frootp_to_litter(i)                  = value_patch
-       this%m_leafp_storage_to_litter(i)           = value_patch
-       this%m_frootp_storage_to_litter(i)          = value_patch
-       this%m_livestemp_storage_to_litter(i)       = value_patch
-       this%m_deadstemp_storage_to_litter(i)       = value_patch
-       this%m_livecrootp_storage_to_litter(i)      = value_patch
-       this%m_deadcrootp_storage_to_litter(i)      = value_patch
-       this%m_leafp_xfer_to_litter(i)              = value_patch
-       this%m_frootp_xfer_to_litter(i)             = value_patch
-       this%m_livestemp_xfer_to_litter(i)          = value_patch
-       this%m_deadstemp_xfer_to_litter(i)          = value_patch
-       this%m_livecrootp_xfer_to_litter(i)         = value_patch
-       this%m_deadcrootp_xfer_to_litter(i)         = value_patch
-       this%m_livestemp_to_litter(i)               = value_patch
-       this%m_deadstemp_to_litter(i)               = value_patch
-       this%m_livecrootp_to_litter(i)              = value_patch
-       this%m_deadcrootp_to_litter(i)              = value_patch
-       this%m_retransp_to_litter(i)                = value_patch
-       this%m_ppool_to_litter(i)                   = value_patch
        this%hrv_leafp_to_litter(i)                 = value_patch
        this%hrv_frootp_to_litter(i)                = value_patch
        this%hrv_leafp_storage_to_litter(i)         = value_patch
@@ -10797,50 +10683,6 @@ module VegetationDataType
        this%hrv_deadcrootp_to_litter(i)            = value_patch
        this%hrv_retransp_to_litter(i)              = value_patch
        this%hrv_ppool_to_litter(i)                 = value_patch
-
-       this%m_leafp_to_fire(i)                     = value_patch
-       this%m_leafp_storage_to_fire(i)             = value_patch
-       this%m_leafp_xfer_to_fire(i)                = value_patch
-       this%m_livestemp_to_fire(i)                 = value_patch
-       this%m_livestemp_storage_to_fire(i)         = value_patch
-       this%m_livestemp_xfer_to_fire(i)            = value_patch
-       this%m_deadstemp_to_fire(i)                 = value_patch
-       this%m_deadstemp_storage_to_fire(i)         = value_patch
-       this%m_deadstemp_xfer_to_fire(i)            = value_patch
-       this%m_frootp_to_fire(i)                    = value_patch
-       this%m_frootp_storage_to_fire(i)            = value_patch
-       this%m_frootp_xfer_to_fire(i)               = value_patch
-       this%m_livecrootp_to_fire(i)                = value_patch
-       this%m_livecrootp_storage_to_fire(i)        = value_patch
-       this%m_livecrootp_xfer_to_fire(i)           = value_patch
-       this%m_deadcrootp_to_fire(i)                = value_patch
-       this%m_deadcrootp_storage_to_fire(i)        = value_patch
-       this%m_deadcrootp_xfer_to_fire(i)           = value_patch
-       this%m_retransp_to_fire(i)                  = value_patch
-       this%m_ppool_to_fire(i)                     = value_patch
-
-       this%m_leafp_to_litter_fire(i)              = value_patch
-       this%m_leafp_storage_to_litter_fire(i)      = value_patch
-       this%m_leafp_xfer_to_litter_fire(i)         = value_patch
-       this%m_livestemp_to_litter_fire(i)          = value_patch
-       this%m_livestemp_storage_to_litter_fire(i)  = value_patch
-       this%m_livestemp_xfer_to_litter_fire(i)     = value_patch
-       this%m_livestemp_to_deadstemp_fire(i)       = value_patch
-       this%m_deadstemp_to_litter_fire(i)          = value_patch
-       this%m_deadstemp_storage_to_litter_fire(i)  = value_patch
-       this%m_deadstemp_xfer_to_litter_fire(i)     = value_patch
-       this%m_frootp_to_litter_fire(i)             = value_patch
-       this%m_frootp_storage_to_litter_fire(i)     = value_patch
-       this%m_frootp_xfer_to_litter_fire(i)        = value_patch
-       this%m_livecrootp_to_litter_fire(i)         = value_patch
-       this%m_livecrootp_storage_to_litter_fire(i) = value_patch
-       this%m_livecrootp_xfer_to_litter_fire(i)    = value_patch
-       this%m_livecrootp_to_deadcrootp_fire(i)     = value_patch
-       this%m_deadcrootp_to_litter_fire(i)         = value_patch
-       this%m_deadcrootp_storage_to_litter_fire(i) = value_patch
-       this%m_deadcrootp_xfer_to_litter_fire(i)    = value_patch
-       this%m_retransp_to_litter_fire(i)           = value_patch
-       this%m_ppool_to_litter_fire(i)              = value_patch
 
        this%leafp_xfer_to_leafp(i)                 = value_patch
        this%frootp_xfer_to_frootp(i)               = value_patch
@@ -10934,7 +10776,7 @@ module VegetationDataType
        this%wood_harvestp(p) = &
             this%hrv_deadstemp_to_prod10p(p) + &
             this%hrv_deadstemp_to_prod100p(p)
-       if ( crop_prog .and. veg_pp%itype(p) >= npcropmin )then
+       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
             this%wood_harvestp(p) = &
             this%wood_harvestp(p) + &
             this%hrv_cropp_to_prod1p(p)

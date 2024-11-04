@@ -3,6 +3,7 @@
 
 #include "p3_functions.hpp" // for ETI only but harmless for GPU
 #include "p3_subgrid_variance_scaling_impl.hpp"
+#include "physics/share/physics_constants.hpp"
 
 namespace scream {
 namespace p3 {
@@ -13,18 +14,25 @@ void Functions<S,D>
 ::cloud_water_autoconversion(
   const Spack& rho, const Spack& qc_incld, const Spack& nc_incld,
   const Spack& inv_qc_relvar, Spack& qc2qr_autoconv_tend, Spack& nc2nr_autoconv_tend, Spack& ncautr,
+  const physics::P3_Constants<S> & p3constants,
   const Smask& context)
 {
+
   // Khroutdinov and Kogan (2000)
   const auto qc_not_small = qc_incld >= 1e-8 && context;
   constexpr Scalar CONS3 = C::CONS3;
+
+  const Scalar p3_autoconversion_prefactor = p3constants.p3_autoconversion_prefactor;
+
+//printf("  hey inside  AAAAAAAAAAAAAAAA %13.6f \n", p3_autoconversion_factor);
+
   if(qc_not_small.any()){
     Spack sgs_var_coef;
     // sgs_var_coef = subgrid_variance_scaling(inv_qc_relvar, sp(2.47) );
     sgs_var_coef = 1;
 
     qc2qr_autoconv_tend.set(qc_not_small,
-              sgs_var_coef*1350*pow(qc_incld,sp(2.47))*pow(nc_incld*sp(1.e-6)*rho,sp(-1.79)));
+              sgs_var_coef*p3_autoconversion_prefactor*pow(qc_incld,sp(2.47))*pow(nc_incld*sp(1.e-6)*rho,sp(-1.79)));
     // note: ncautr is change in Nr; nc2nr_autoconv_tend is change in Nc
     ncautr.set(qc_not_small, qc2qr_autoconv_tend*CONS3);
     nc2nr_autoconv_tend.set(qc_not_small, qc2qr_autoconv_tend*nc_incld/qc_incld);

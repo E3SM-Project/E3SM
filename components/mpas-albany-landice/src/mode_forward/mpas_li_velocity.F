@@ -642,7 +642,8 @@ contains
          ! --- (Removed ice is added to calving flux)
          ! --- (TODO: make this a namelist option?)
          ! ---
-         call remove_fast_ice(meshPool, uReconstructX, uReconstructY, normalVelocity, geometryPool)
+         call limit_fast_ice(meshPool, uReconstructX, uReconstructY, normalVelocity, geometryPool, err_tmp)
+         err = ior(err, err_tmp)
 
          ! ---
          ! --- Calculate diagnostic speed arrays
@@ -1005,17 +1006,17 @@ contains
 
 !***********************************************************************
 !
-!  routine remove_fast_ice
+!  routine limit_fast_ice
 !
-!> \brief  Removes ice with a fast surface speed, presumably an iceberg
-!> \author Matt Hoffman
-!> \date   March 2018
+!> \brief  Limits maximum ice velocity
+!> \author Matt Hoffman, Trevor Hillebrand
+!> \date   March 2018, updated Jan 2023
 !> \details
-!>  Inspired by BISICLES/Dan Martin.  Could/should make an option to disable.
+!>  Inspired by BISICLES/Dan Martin and Penn State Ice Sheet model.  Could/should make an option to disable.
 !
 !-----------------------------------------------------------------------
 
-   subroutine remove_fast_ice(meshPool, uReconstructX, uReconstructY, normalVelocity, geometryPool)
+   subroutine limit_fast_ice(meshPool, uReconstructX, uReconstructY, normalVelocity, geometryPool, err)
 
       use li_mask
 
@@ -1035,58 +1036,104 @@ contains
       !-----------------------------------------------------------------
       ! output variables
       !-----------------------------------------------------------------
+      integer, intent(out) :: err
 
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
       real(kind=RKIND), pointer :: config_unrealistic_velocity
-      integer, pointer :: nCells
-      integer, dimension(:), pointer :: nEdgesOnCell
-      integer, dimension(:,:), pointer :: edgesOnCell
-      real(kind=RKIND), dimension(:), pointer :: thickness, calvingThickness
-      real(kind=RKIND), dimension(:), pointer :: upperSurface, lowerSurface
-      integer, dimension(:), pointer :: cellMask
-      integer :: iCell, iEdgeOnCell, iEdge
+      integer, pointer :: nCells, nEdges, nVertInterfaces
+      integer, dimension(:,:), pointer :: cellsOnEdge
+      integer :: iCell, iEdge, cell1, cell2, iInt
       integer :: cellCount
+      real(kind=RKIND), dimension(:), allocatable :: scaling_factor
+      real(kind=RKIND) :: maxVeloHere
+      real(kind=RKIND), dimension(:), allocatable :: v1, v2
+
+      err = 0
 
       call mpas_pool_get_config(liConfigs, 'config_unrealistic_velocity', config_unrealistic_velocity)
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
-      call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
-      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
-      call mpas_pool_get_array(geometryPool, 'thickness', thickness)
-      call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
-      call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
-      call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface)
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(meshPool, 'nVertInterfaces', nVertInterfaces)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
 
+      allocate(scaling_factor(nCells + 1))
+      scaling_factor(:) = 1.0_RKIND
+
+      allocate(v1(nVertInterfaces))
+      allocate(v2(nVertInterfaces))
+
+      ! Make sure we aren't going to divide by zero
+      if (config_unrealistic_velocity <= 0.0_RKIND) then
+         call mpas_log_write("Invalid value of $r set for config_unrealistic_velocity", MPAS_LOG_ERR, &
+            realArgs=(/config_unrealistic_velocity/))
+         err = 1
+      endif
 
       cellCount = 0
       do iCell = 1, nCells
-         if ((li_mask_is_ice(cellMask(iCell))) .and. &
-            (sqrt(uReconstructX(1,iCell)**2 + uReconstructY(1,iCell)**2) > config_unrealistic_velocity)) then
-         ! "fast" ice that is removed is added to the calving flux
-            calvingThickness(iCell) = calvingThickness(iCell) + thickness(iCell)
-            thickness(iCell) = 0.0_RKIND
-            uReconstructX(:,iCell) = 0.0_RKIND
-            uReconstructY(:,iCell) = 0.0_RKIND
-            do iEdgeOnCell = 1, nEdgesOnCell(iCell)
-               iEdge = edgesOnCell(iEdgeOnCell,iCell)
-               normalVelocity(:,iEdge) = 0.0_RKIND
-            enddo
-            upperSurface(iCell) = 0.0_RKIND
-            lowerSurface(iCell) = 0.0_RKIND
-            ! TODO Should also zero temperature/tracers
+         maxVeloHere = maxval(sqrt(uReconstructX(:,iCell)**2 + uReconstructY(:,iCell)**2))
+         if (maxVeloHere > config_unrealistic_velocity) then
+            scaling_factor(iCell) = config_unrealistic_velocity / maxVeloHere
             cellCount = cellCount + 1
          endif
       end do
 
+      ! normalVelocity is the average of the velocity at the two neighboring
+      ! cell centers, due to the Voronoi definition of edges being halfway between
+      ! neighoring cell centers.
+      ! Note that technically is true only for the component of velocity that is normal to the edge.
+      ! Rather than recalculate that velocity component, make the assumption that the
+      ! scaling applied here is independent of direction (which is fair given the
+      ! arbitrary nature of the max operation).
+      ! Thus, we can make use of the following relations,
+      ! with n being the normal velocity, v1 and v2 being the velocity
+      ! at the two neighboring cell centers, and s1 and s2 being the scaling
+      ! factor at the two cells, assumed constant with depth.
+      ! Original normal velocity: n = 0.5 * (v1 + v2)
+      ! New normal velocity: n' = 0.5 * (s1*v1 + s1*v2)
+      ! We don't want to recalculate the new n from the scaled neighboring
+      ! velocities, so instead we calculate a scaling factor for the edge velocity:
+      ! n'/n = 0.5*(s1*v1 + s2*v2) / (0.5*(v1 + v2))
+      ! thus:
+      ! n' = n * (s1*v1 + s2*v2) / (v1 + v2)
+      ! (Note that one of s1 or s2 may be 1.0)
+      ! As applied below, v1 and v2 vary with depth, but s1 and s2 do not.
+      do iEdge = 1, nEdges
+         cell1 = cellsOnEdge(1, iEdge)
+         cell2 = cellsOnEdge(2, iEdge)
+         if ((scaling_factor(cell1) < 1.0_RKIND) .or. &
+             (scaling_factor(cell2) < 1.0_RKIND)) then
+            v1(:) = sqrt(uReconstructX(:,cell1)**2 + uReconstructY(:,cell1)**2)
+            v2(:) = sqrt(uReconstructX(:,cell2)**2 + uReconstructY(:,cell2)**2)
+            do iInt = 1, nVertInterfaces
+               if (v1(iInt) + v2(iInt) > 0.0_RKIND) then  ! make sure we don't divide by zero
+                  normalVelocity(iInt,iEdge) = normalVelocity(iInt,iEdge) * &
+                     (scaling_factor(cell1) * v1(iInt) + scaling_factor(cell2) * v2(iInt)) / (v1(iInt) + v2(iInt))
+               endif
+            enddo
+         endif
+      enddo
+
+      ! Now actually scale the cell center velocities after we finished using those
+      ! fields in their unaltered state for the edge velocity adjustment
+      do iInt = 1, nVertInterfaces
+         uReconstructX(iInt,:) = uReconstructX(iInt,:) * scaling_factor(:)
+         uReconstructY(iInt,:) = uReconstructY(iInt,:) * scaling_factor(:)
+      end do
+
       if (cellCount > 0) then
-         call mpas_log_write("Removed $i cells due to speeds greater than $r m/s.", &
+         call mpas_log_write("Limited velocity in $i cells to $r m/s.", &
             intArgs=(/cellCount/), realArgs=(/config_unrealistic_velocity/))
       endif
 
+      deallocate(scaling_factor)
+      deallocate(v1)
+      deallocate(v2)
+
    !--------------------------------------------------------------------
-   end subroutine remove_fast_ice
+   end subroutine limit_fast_ice
 
 !***********************************************************************
 

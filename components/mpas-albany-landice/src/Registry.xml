@@ -42,7 +42,7 @@
 		<dim name="nISMIP6OceanLayers" units="unitless"
 		     description="The number of layers in the ISMIP6 ocean temperature dataset."
 		/>
-		<dim name="maxTracersAdvect" definition="2" units="unitless"
+		<dim name="maxTracersAdvect" definition="4" units="unitless"
 		     description="The maximum number of tracers to be advected."
 		/>
 		<dim name="nRegions" definition="1" units="unitless"
@@ -110,12 +110,20 @@
 	<nml_record name="advection" in_defaults="true">
 		<nml_option name="config_thickness_advection" type="character" default_value="fo" units="unitless"
 		            description="Selection of the method for advecting thickness ('fo' = first-order upwinding)."
-		            possible_values="'fo', 'none'"
+		            possible_values="'fo', 'fct', 'none'"
 		/>
 		<nml_option name="config_tracer_advection" type="character" default_value="none" units="unitless"
 		            description="Selection of the method for advecting tracers."
-		            possible_values="'fo', 'none'"
-                />
+		            possible_values="'fo', 'fct', 'none'"
+		/>
+		<nml_option name="config_horiz_tracer_adv_order" type="integer" default_value="3" units="unitless"
+			    description="Order of polynomial used for tracer reconstruction at cell edges"
+			    possible_values="2, 3 and 4"
+		/>
+		<nml_option name="config_advection_coef_3rd_order" type="real" default_value="0.25" units="unitless"
+					description="Reconstruction of 3rd-order reconstruction to blend with 4th-order reconstuction. Equivalent to beta in Skamarock and Gassmann (2011) eq. 7. 0 is fully 4th order, 1 is fully 3rd order."
+					possible_values="any real between 0 and 1"
+		/>
 		<nml_option name="config_restore_thickness_after_advection" type="logical" default_value=".false." units="unitless"
 			    description="If true, reset thickness to values at previous timestep after advection occurs. This is used for spinning up tracer fields such as damage.  When this is true, geometry changes from surface and basal mass balance (grounded or floating) and facemelting are not retained, but changes from calving are."
 			    possible_values=".true. or .false."
@@ -137,9 +145,9 @@
 		            description="Selection of the method for bedrock uplift calculation."
 		            possible_values="'none', 'data', 'sealevelmodel'"
         />
-        <nml_option name="config_slm_coupling_interval" type="character" default_value="0002-00-00_00:00:00" units="time"
-            description="Time interval at which the sea-level model is called by MALI. The interval has to be an even multiple of the option 'config_adaptive_timestep_force_interval"
-            possible_values="Any time interval of the format 'YYYY-MM-DD_HH:MM:SS'"
+        <nml_option name="config_slm_coupling_interval" type="integer" default_value="2" units="years"
+            description="Time interval at which the sea-level model is called by MALI. Only integer years are currently supported. The user must set 'dt1' in namelist.sealevel to match this value.  Note that the user needs to set config_adaptive_timestep_force_interval to divide evenly into config_slm_coupling_interval.  Also, restart file output_interval needs to be a multiple of config_slm_coupling_interval."
+            possible_values="Any positive integer"
 		/>
         <nml_option name="config_MALI_to_SLM_weights_file" type="character" default_value="mpas_to_grid.nc" units="unitless"
             description="File containing the interpolation weights for regridding from MPAS mesh to the Gaussian grid used by the Sea Level Model."
@@ -154,11 +162,15 @@
 	<nml_record name="calving" in_defaults="true">
 		<nml_option name="config_calving" type="character" default_value="none" units="unitless"
 		            description="Selection of the method for calving ice (as defined below). 'von_Mises_stress' and 'eigencalving' options can be used in combination with damage threshold calving (see descrption of config_damage_calving_method for details)."
-		            possible_values="'none', 'floating', 'topographic_threshold', 'thickness_threshold', 'mask', 'eigencalving', 'specified_calving_velocity', 'von_Mises_stress', 'damagecalving', 'ismip6_retreat'"
+		            possible_values="'none', 'floating', 'topographic_threshold', 'thickness_threshold', 'eigencalving', 'specified_calving_velocity', 'von_Mises_stress', 'damagecalving', 'ismip6_retreat'"
+		/>
+                <nml_option name="config_apply_calving_mask" type="logical" default_value=".false." units="unitless"
+			    description="Whether the field 'calvingMask' gets used to force calving.  This is independent of choice of 'config_calving'; the application of 'calvingMask' can be applied in conjunction with a physical calving law or with no calving law enabled.  The calving mask gets applied after a physical calving law, if one is selected."
+			    possible_values=".true. or .false."
 		/>
                 <nml_option name="config_use_Albany_flowA_eqn_for_vM" type="logical" default_value=".false." units="unitless"
 			    description="Not yet supported. Determine whether to use MPAS or Albany calculation for flowParamA used in von Mises stress calving"
-			    possible_values="'.true.', '.false.'"
+			    possible_values=".true. or .false."
 		/>
 		<nml_option name="config_calving_topography" type="real" default_value="-500.0" units="m"
 		            description="Defines the topographic height below which ice calves (for topographic_threshold option)."
@@ -193,7 +205,11 @@
 		            possible_values="Any non-negative real value"
 		/>
 		<nml_option name="config_restore_calving_front" type="logical" default_value=".false." units="unitless"
-                        description="If true, then restore the calving front to its initial position.  If ice grows beyond the initial extent, it is removed.  If ice shrinks to an extent behind the initial extent, those locations are filled with thin ice (defined as 1/10th the value of config_dynamic_thickness).  Note that this violates conservation of mass and energy."
+                        description="If true, then restore the calving front to its initial position.  If ice grows beyond the initial extent, it is removed.  If ice shrinks to an extent behind the initial extent, behavior is determined by config_restore_calving_front_prevent_retreat.  If that option is true, then those locations are filled with thin ice (defined as 1/10th the value of config_dynamic_thickness).  Note that this violates conservation of mass and energy."
+		            possible_values=".true. or .false."
+                />
+		<nml_option name="config_restore_calving_front_prevent_retreat" type="logical" default_value=".true." units="unitless"
+                        description="If true, then the config_restore_calving_front option will fill locations where ice shelves have retreated with a thin layer of ice.  This option should be used in E3SM when the ice shelf extent seen by the E3SM coupler cannot change.  If false, the config_restore_calving_front option will do nothing when ice shelves retreat.  For either value of this option, the config_restore_calving_front option will prevent ice-shelf advance.  True is likely the desired value for standalone runs where no advance is desired.  Default value is true for backwards compatibility."
 		            possible_values=".true. or .false."
                 />
                 <nml_option name="config_remove_icebergs" type="logical" default_value=".false." units="unitless"
@@ -218,11 +234,11 @@
                 />
                 <nml_option name="config_grounded_von_Mises_threshold_stress_source" type="character" default_value="scalar" units="unitless"
                             description="Source of von MIses threshold stress value for calving from grounded ice."
-                            possible_values="'data' (read from input file), 'scalar' (specified by config_grounded_von_Mises_threshold_stress)" 
+                            possible_values="'data' (read from input file), 'scalar' (specified by config_grounded_von_Mises_threshold_stress)"
                 />
                 <nml_option name="config_floating_von_Mises_threshold_stress_source" type="character" default_value="scalar" units="unitless"
                             description="Source of von MIses threshold stress value for calving from floating ice."
-                            possible_values="'data' (read from input file), 'scalar' (specified by config_floating_von_Mises_threshold_stress)" 
+                            possible_values="'data' (read from input file), 'scalar' (specified by config_floating_von_Mises_threshold_stress)"
                 />
 		<nml_option name="config_finalize_damage_after_advection" type="logical" default_value=".true." units="unitless"
                         description="If true, then the 'li_finalize_damage_after_advection' subroutine is applied, doing the following: 1) set the value of damage at the grounding line based on the choice of 'config_damage_gl_setting', 2) reset the value of damage to its initial value (to avoid healing), based on choice of 'config_preserve_damage', 3) couple the updated damage value to the rheology if 'config_damage_rheology_coupling' is true."
@@ -275,6 +291,10 @@
                 <nml_option name="config_distribute_unablatedVolumeDynCell" type="logical" default_value=".false." units="unitless"
                         description="If true, then distribute unablatedVolumeDynCell among dynamic neighbors when converting ablation velocity to ablation thickness. This should only be used as a clean-up measure, while limiting the timestep based on ablation velocity should be used as the primary method of getting accurate ablation thickness from ablation velocity.  If you choose to set config_adaptive_timestep_calvingCFL_fraction much larger than 1.0 (which is not recommended), setting this option to true usually results in more accurate calving behavior. "
                         possible_values=".true. or .false."
+                />
+                <nml_option name="config_update_velocity_before_calving" type="logical" default_value=".false." units="unitless"
+                            description="If true, add an additional velocity solve between advection and calving. If false, use velocity field from beginning of time step to calculate calving rate. For certain calving laws, like damage threshold calving, it is not necessary to update the velocity before calving, while for von Mises stress and eigencalving, it is more accurate to have an updated velocity state before solving for calvingThickness."
+                            possible_values=".true. or .false."
                 />
 	</nml_record>
 
@@ -405,6 +425,10 @@
                             description="Selection of the method for computing the frontal mass balance of submarine grounded ice.  'none' sets the front mass balance field to 0 everywhere. 'uniform' sets faceMeltSpeed to the value given by config_uniform_face_melt_rate. 'ismip6' uses the parameterization provided by ISMIP6 and requires an ocean thermal forcing field and subglacial hydrology."
                             possible_values="'none', 'uniform', 'ismip6'"
                 />
+                <nml_option name="config_use_3d_thermal_forcing_for_face_melt" type="logical" default_value=".false." units="unitless"
+                            description="If true, use ismip6shelfMelt_3dThermalForcing and associated variables to calculate ocean-bottom thermal forcing for use with the config_front_mass_bal_grounded = 'ismip6' melt paramterization."
+                            possible_values=".true. or .false."
+                />
                 <nml_option name="config_beta_ocean_thermal_forcing" type="real" default_value="1.18" units="unitless"
 			    description="Exponent of the ocean thermal forcing in ISMIP6 grounded ice front melting parameterization"
                             possible_values="any real value"
@@ -465,8 +489,16 @@
 		            possible_values="Any time interval of the format 'YYYY-MM-DD_HH:MM:SS', but limited by CFL condition."
 		/>
 		<nml_option name="config_time_integration" type="character" default_value="forward_euler" units="unitless"
-		            description="Time integration method (currently, only forward Euler is supported)."
-		            possible_values="'forward_euler'"
+		            description="Time integration method."
+		            possible_values="'forward_euler' or 'runge_kutta'"
+		/>
+                <nml_option name="config_rk_order" type="integer" default_value="2" units="unitless"
+                            description="Order of Runge-Kutta time integration to use. A value of 1 would be equivalent to forward euler, but will cause an error to avoid unnecessary redundancy. Values of 2 and 3 indicate strong-stability preserving RK2 and RK3. There is currently no support for classical RK2 or RK4 methods."
+                            possible_values="2 or 3"
+                />
+		<nml_option name="config_rk3_stages" type="integer" default_value="3" units="stages"
+                        description="Number of stages for strong stability preserving RK3 time integration. If set to 3, this involves 3 velocity solves and a maximum CFL fraction of 1. If set to 4, this involves 4 velocity solves, but the maximum CFL fraction is 2."
+                        possible_values="3 or 4"
 		/>
 		<nml_option name="config_adaptive_timestep" type="logical" default_value=".false." units="unitless"
 			description="Determines if the time step should be adjusted based on the CFL condition or should be steady in time. If true, the config_dt_* options are ignored."
@@ -488,6 +520,11 @@
 			description="A multiplier on the minimum allowable time step calculated from the calving CFL condition. This should be conservative given the calving CFL calculation is lagged"
 			possible_values="Any positive real value.  Note that values greater than 1.0 are allowed and may be desired.  This is because the calving CFL is an approximate calculation.  A value between 0.75 and 1.0, possibly as large as 1.25, was found to maintain converged accuracy for many configurations explored, so it is recommended to use values in this range.  However, much larger values (up to 2 or 3) provide acceptable accuracy for some configurations (but it is not clear what conditions allow it).  If values much greater than 1.0 are used, it is recommended to set config_distribute_unablatedVolumeDynCell to true."
 		/>
+                <nml_option name="config_adaptive_timestep_faceMeltingCFL_fraction" type="real" default_value="1.0" units="none"
+                        description="A multiplier on the minimum allowable time step calculated from the face-melting CFL condition. This should be conservative given the calving CFL calculation is lagged"
+                        possible_values="Any positive real value.  Note that values greater than 1.0 are allowed and may be desired.  This is because the face-melting CFL is an approximate calculation.  A value between 0.75 and 1.0, possibly as large as 1.25, was found to maintain converged accuracy for the analogous calving CFL fraction, so it is recommended to use values in this range. If values much greater than 1.0 are used, it is recommended to set config_distribute_unablatedVolumeDynCell to true."
+                />
+
 		<nml_option name="config_adaptive_timestep_include_DCFL" type="logical" default_value=".false." units="none"
 			description="Option of whether to include the diffusive CFL condition in the determination of the maximum allowable timestep. The diffusive CFL condition at any location is estimated based on the local ice flux and surface slope."
 			possible_values=".true. or .false."
@@ -496,6 +533,10 @@
 			description="Option of whether to include the calving CFL condition in the determination of the maximum allowable timestep. This only is applied if config_calving is set to a method that uses a calvingVelocity.  Note that this is an approximate CFL condition and is lagged a timestep."
 			possible_values=".true. or .false."
 		/>
+                <nml_option name="config_adaptive_timestep_include_face_melting" type="logical" default_value=".true." units="none"
+                        description="Option of whether to include the face-melting CFL condition in the determination of the maximum allowable timestep. This only is applied if config_front_mass_bal_grounded is not set to 'none'.  Note that this is an approximate CFL condition and is lagged a timestep."
+                        possible_values=".true. or .false."
+                />
 		<nml_option name="config_adaptive_timestep_force_interval" type="character" default_value="1000-00-00_00:00:00" units="unitless"
 		            description="If adaptive timestep is enabled, the model will ensure a timestep ends at multiples of this interval.  This is useful for ensuring that model output is written at a specific desired interval (rather than the closest time after) or when running coupled to an earth system model that expects a certain interval."
 		            possible_values="Any time interval of the format 'YYYY-MM-DD_HH:MM:SS'. (items in the format string may be dropped from the left if not needed, and the components on either side of the underscore may be replaced with a single integer representing the rightmost unit)"
@@ -512,11 +553,11 @@
 		description="Path to the filename for restart timestamps to be read and written from."
 		possible_values="Path to a file."
 		/>
-		<nml_option name="config_start_time" type="character" default_value="0000-01-01_00:00:00" units="unitless"
+		<nml_option name="config_start_time" type="character" default_value="0001-01-01_00:00:00" units="unitless"
 		            description="Timestamp describing the initial time of the simulation.  If it is set to 'file', the initial time is read from the filename specified by config_restart_timestamp_name (defaults to 'restart_timestamp')."
 		            possible_values="'YYYY-MM-DD_HH:MM:SS' (items in the format string may be dropped from the left if not needed, and the components on either side of the underscore may be replaced with a single integer representing the rightmost unit)"
 		/>
-		<nml_option name="config_stop_time" type="character" default_value="0000-01-01_00:00:00" units="unitless"
+		<nml_option name="config_stop_time" type="character" default_value="0001-01-01_00:00:00" units="unitless"
 		            description="Timestamp describing the final time of the simulation. If it is set to 'none' the final time is determined from config_start_time and config_run_duration.  If config_run_duration is also specified, it takes precedence over config_stop_time.  Set config_stop_time to be equal to config_start_time (and config_run_duration to 'none') to perform a diagnostic solve only."
 		            possible_values="'YYYY-MM-DD_HH:MM:SS' or 'none' (items in the format string may be dropped from the left if not needed, and the components on either side of the underscore may be replaced with a single integer representing the rightmost unit)"
 		/>
@@ -568,6 +609,10 @@
 		            description="Logical flag determining if ascii mesh files will be created.  These files are written in a format that can be used by the standalone Albany velocity solver for optimization.  If .true., the model initializes, writes the mesh files, and then terminates."
 		            possible_values=".true. or .false."
                 />
+                <nml_option name="config_create_all_logs_in_e3sm" type="logical" default_value=".false." units="unitless"
+		            description="Logical flag determining if log files will be created for each processor in an E3SM configuration.  If .true., the model initializes and writes to one files per processor."
+		            possible_values=".true. or .false."
+                />
 
 	</nml_record>
 
@@ -616,6 +661,10 @@
 		<nml_option name="config_print_velocity_cleanup_details" type="logical" default_value=".false." units="unitless"
 		            description="After velocity is calculated there are a few checks for appropriate values in certain geometric configurations.  Setting this option to .true. will cause detailed information about those adjustments to be printed."
 		            possible_values=".true. or .false."
+		/>
+		<nml_option name="config_check_tracer_monotonicity" type="logical" default_value=".false."
+                            description="Check tracer monotonicity at the end of the monotonic advection routine and write warnings to log file if not monotonic."
+                            possible_values=".true. or .false."
 		/>
 	</nml_record>
 
@@ -720,6 +769,7 @@
                         <var name="uReconstructX" packages="higherOrderVelocity"/>
 			<var name="uReconstructY" packages="higherOrderVelocity"/>
                         <var name="basalFrictionFlux"/>
+                        <var name="passiveTracer2d"/>
 			<var name="damage"/>
 			<var name="calvingVelocityData"/>
 			<var name="basalMeltInput" packages="hydro"/>
@@ -796,6 +846,7 @@
 			<var name="sfcMassBal"/>
                         <var name="floatingBasalMassBal"/>
                         <var name="regionCellMasks"/>
+                        <var name="regionEdgeMasks"/>
                         <!-- If restart file sizes become too large, eigencalvingParameter,
                              groundedVonMisesThresholdStress, and floatingVonMisesThresholdStress
                              could be moved to packages. -->
@@ -823,12 +874,14 @@
                         <var name="groundedBasalMassBal" packages="hydro"/>  <!-- This is only needed if config_SGH_basal_melt='thermal', but adding it always-->
 			<var name="basalMeltInput" packages="hydro"/>  <!-- This is NOT needed if config_SGH_basal_melt='thermal', but adding it always-->
                         <var name="externalWaterInput" packages="hydro"/>
-                        <!-- SGH state variables: -->
+                        <!-- SGH variables: -->
+                        <var name="deltatSGH" packages="hydro"/>
 			<var name="waterThickness" packages="hydro"/>
 			<var name="tillWaterThickness" packages="hydro"/>
 			<var name="waterPressure" packages="hydro"/>
                         <var name="channelArea" packages="hydro"/>  <!-- this is only needed if running with channels - could be package-controlled -->
 			<var name="waterFluxMask" packages="hydro"/>
+                        <var name="passiveTracer2d"/>
 			<var name="damage"/>
 			<var name="calvingVelocityData"/>
 			<var name="damageMax"/>
@@ -888,6 +941,7 @@
                                 input_interval="initial_only"
                                 runtime_format="single_file">
                         <var name="regionCellMasks"/>
+                        <var name="regionEdgeMasks"/>
                         <!--var name="nCellsInRegion"/>
                         <var name="regionVertexMasks"/>
                         <var name="nVerticesInRegion"/>
@@ -1018,10 +1072,10 @@ is the value of that variable from the *previous* time level!
 		     description="Reconstruction weights associated with each of the edgesOnEdge."
 		/>
 		<var name="dvEdge" type="real" dimensions="nEdges" units="m"
-		     description="Length of each edge, computed as the distance between verticesOnEdge."
+		     description="The distance (great circle distance for spherical meshes, Euclidean distance for planar meshes) between the two vertices (defined by verticesOnEdge) located at the endpoints of a given edge. It is the length of the edge on the primal mesh."
 		/>
 		<var name="dcEdge" type="real" dimensions="nEdges" units="m"
-		     description="Length of each edge, computed as the distance between cellsOnEdge."
+		     description="The distance (great circle distance for spherical meshes, Euclidean distance for planar meshes) between the centers of the two cells (defined by cellsOnEdge) neighboring a given edge. It is the length of the edge on the dual mesh."
 		/>
 		<var name="angleEdge" type="real" dimensions="nEdges" units="radians"
 		     description="Angle the edge normal makes with local eastward direction."
@@ -1078,10 +1132,10 @@ is the value of that variable from the *previous* time level!
                 />
 		<!-- Variables only needed by SIA solver -->
 		<var name="baryCellsOnVertex" type="integer" dimensions="R3 nVertices" units="unitless"
-			 description="Cell center indices to use for interpolating from cell centers to vertex locations.  Note these are local indices!" packages="SIAvelocity"
+			 description="Cell center indices to use for interpolating from cell centers to vertex locations.  Note these are local indices!" packages="SIAvelocity;hydro"
 		/>
 		<var name="baryWeightsOnVertex" type="real" dimensions="R3 nVertices" units="unitless"
-			 description="Weights to interpolate from cell centers to vertex locations.  Each weight is used with the corresponding cell center index indentified by baryCellsOnVertex." packages="SIAvelocity"
+			 description="Weights to interpolate from cell centers to vertex locations.  Each weight is used with the corresponding cell center index indentified by baryCellsOnVertex." packages="SIAvelocity;hydro"
 		/>
 		<!-- Variables only needed by HO solver -->
 		<var name="wachspressWeightVertex" type="real" dimensions="maxEdges nCells" units="unitless"
@@ -1101,7 +1155,7 @@ is the value of that variable from the *previous* time level!
 		     description="The maximum allowable time step based on the diffusive CFL condition.  Value on a given time is the value appropriate for  between the previous time level and the current time level."
                 />
 		<var name="processLimitingTimestep" type="integer" time_levs="1" dimensions="Time" units="none" default_value="0"
-		     description="A code for which process limits the timestep length through the CFL condition. 1=advective CFL, 2=diffusive CFL, 3=calving CFL.  Value of 0 indicates adaptive timestepper not used."
+		     description="A code for which process limits the timestep length through the CFL condition. 1=advective CFL, 2=diffusive CFL, 3=calving CFL, 4=face-melting.  Value of 0 indicates adaptive timestepper not used."
                 />
                 <var name="simulationStartTime" type="text" dimensions="" units="unitless" default_value="'no_date_available'"
                      description="start time of first simulation, with format 'YYYY-MM-DD_HH:MM:SS'"
@@ -1186,14 +1240,20 @@ is the value of that variable from the *previous* time level!
                 <var name="floatingBasalMassBalApplied" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
                      description="Applied basal mass balance on floating regions"
                 />
-                <var name="calvingMask" type="integer" dimensions="nCells Time" units="m" time_levs="1"
+                <var name="calvingMask" type="integer" dimensions="nCells Time" units="" time_levs="1"
                         description="mask of grid cells that should be calved.  0=no calving, 1=should be calved"
+                />
+                <var name="openOceanMask" type="integer" dimensions="nCells Time" units="" time_levs="1"
+                        description="mask of open ocean cells, including floating non-dynamic cells.  Used to eliminate holes in ice shelf from calving"
                 />
                 <var name="calvingFrontMask" type="integer" dimensions="nCells Time" units="none" time_levs="1"
                         description="mask of the calving front position on cells"
                 />
                 <var name="calvingThickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
                         description="thickness of ice that calves on a given timestep (less than or equal to ice thickness)"
+                />
+                <var name="calvingThicknessFromThreshold" type="real" dimensions="nCells Time" units="m" time_levs="1"
+                        description="thickness of ice that calves on a given timestep for only processes that generate calving based on a threshold.  This includes mask calving, damage calving, iceberg and small island detection, and velocity speed limit."
                 />
                 <var name="calvingCFLdt" type="real" dimensions="Time" units="s" time_levs="1" default_value="1.0e16"
                         description="approximation of maximum allowable timestep based on calvingVelocity"
@@ -1245,6 +1305,9 @@ is the value of that variable from the *previous* time level!
                 />
                 <var name="calvingVelocityData" type="real" dimensions="nCells Time" units="m s^{-1}" time_levs="1"
                      description="rate of calving front retreat due to calving, represented as a velocity normal to the calving front (in the x-y plane), given by the input netCDF file."
+                />
+                <var name="passiveTracer2d" type="real" dimensions="nCells Time" units="none" time_levs="1"
+                     description="passive tracer used to verify advection routines"
                 />
                 <var name="damage" type="real" dimensions="nCells Time" units="none" time_levs="1"
                      description="Damage is parameterized as the local ice thickness divided by the fracture depth, such that unfractured ice has damage=0 and ice fractured through its full thickness has damage=1"
@@ -1317,7 +1380,7 @@ is the value of that variable from the *previous* time level!
                      description="thermal forcing at ice shelf draft used for ISMIP6 ice-shelf melting method, calculated by param."
                 />
                 <var name="ismip6shelfMelt_3dThermalForcing" type="real" dimensions="nISMIP6OceanLayers nCells Time" units="deg. C"
-                     default_value="2.0" packages="ismip6ShelfMelt"
+                     default_value="0.0" packages="ismip6ShelfMelt"
                      description="thermal forcing for ISMIP6 ice-shelf melting method, input to model"
                 />
                 <var name="ismip6shelfMelt_zOcean" type="real" dimensions="nISMIP6OceanLayers" units="m" packages="ismip6ShelfMelt"
@@ -1336,12 +1399,18 @@ is the value of that variable from the *previous* time level!
                 <var name="ismip6Runoff" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}" packages="ismip6GroundedFaceMelt" default_value="0.0"
                      description="Runoff forcing for ISMIP6 grounded ice melting method, input to model"
                 />
-		<var name="ismip6_2dThermalForcing" type="real" dimensions="nCells Time" units="deg. C" packages="ismip6GroundedFaceMelt" default_value="2.0"
+		<var name="ismip6_2dThermalForcing" type="real" dimensions="nCells Time" units="deg. C" packages="ismip6GroundedFaceMelt" default_value="0.0"
 	 	     description="thermal forcing for ISMIP6 grounded marine melt method, input to model"
 		/>
 		<var name="faceMeltingThickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
                      description="Equivalent plan-view averaged thickness of ice that melts on a given timestep from front ablation (less than or equal to ice thickness)"
 		/>
+                <var name="faceMeltingCFLdt" type="real" dimensions="Time" units="s" time_levs="1" default_value="1.0e16"
+                        description="approximation of maximum allowable timestep based on faceMeltSpeed"
+                />
+                <var name="dtFaceMeltingCFLratio" type="real" dimensions="Time" units="none" time_levs="1" default_value="0.0"
+                        description="ratio of timestep being used to the maximum timestep calculated for the face-melting CFL condition.  This metric can be used to assess the accuracy of the face-melting CFL calculation being lagged by a timestep."
+                />
                <var name="unmeltedVolume" type="real" dimensions="nCells Time" units="m^3" time_levs="1"
                      description="volume of ice that was left unmelted from required facemelt flux due to only applying flux over immediate neighbors (diagnostic field to assess if this limitation is a problem)"
 	        />
@@ -1349,7 +1418,7 @@ is the value of that variable from the *previous* time level!
 		     description="thermal forcing for ISMIP6 retreat paramterization, from previous input time."
 	        />
                 <var name="ismip6RunoffPrevious" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}" packages="ismip6GroundedFaceMelt" default_value="0.0"
-                     description="Runoff forcing for ISMIP6 grounded ice melting method, from previous input time" 
+                     description="Runoff forcing for ISMIP6 grounded ice melting method, from previous input time"
 	     />
       	     <var name="ismip6_2dThermalForcingCurrent" type="real" dimensions="nCells Time" units="deg. C" packages="ismip6GroundedFaceMelt" default_value="0.0"
                      description="thermal forcing for ISMIP6 retreat parameterization, at current input time."
@@ -1383,6 +1452,9 @@ is the value of that variable from the *previous* time level!
                 <var name="layerNormalVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
                      description="horizonal velocity, normal component to an edge, layer midpoint"
                 />
+		<var name="layerThicknessEdgeFlux" type="real" dimensions="nVertLevels nEdges Time" units="m^2 s^{-1}"
+                     description="layer-normal thickness flux on edges"
+		/>
                 <var name="normalVelocityInitial" type="real" dimensions="nVertInterfaces nEdges Time" units="m s^{-1}"
                      description="horizonal velocity, normal component to an edge, computed at initialization"
                 />
@@ -1668,6 +1740,9 @@ is the value of that variable from the *previous* time level!
         <var_struct name="regions" time_levs="1">
 	  <var name="regionCellMasks" type="integer" dimensions="nRegions nCells" units="unitless" default_value="1"
 	       description="masks set to 1 in cells that fall within a given region and 0 otherwise"
+	       />
+	  <var name="regionEdgeMasks" type="integer" dimensions="nRegions nEdges" units="unitless" default_value="1"
+	       description="masks set to 1 in edges that fall within a given region and 0 otherwise"
 	       />
 	  <!--var name="nCellsInRegion" type="integer" dimensions="nRegions" units="unitless"
 	       description="number of cells that fall within a given region"

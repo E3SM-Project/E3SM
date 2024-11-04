@@ -33,9 +33,6 @@ module micro_p3_utils
     ! maximum total ice concentration (sum of all categories)
     real(rtype), public, parameter :: max_total_ni = 500.e+3_rtype  ! (m)
 
-    ! droplet concentration (m-3)
-    real(rtype), public, parameter :: nccnst = 200.e+6_rtype
-
     ! parameters for Seifert and Beheng (2001) autoconversion/accretion
     real(rtype), public, parameter :: kc     = 9.44e+9_rtype
     real(rtype), public, parameter :: kr     = 5.78e+3_rtype

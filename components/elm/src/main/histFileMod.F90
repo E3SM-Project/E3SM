@@ -21,19 +21,20 @@ module histFileMod
   use ColumnType     , only : col_pp                
   use VegetationType , only : veg_pp                
   use ncdio_pio 
-  use EDTypesMod        , only : nclmax_fates     => nclmax
-  use EDTypesMod        , only : nlevleaf_fates   => nlevleaf
+  use EDParamsMod            , only : nclmax_fates     => nclmax
+  use EDParamsMod            , only : nlevleaf_fates   => nlevleaf
   use FatesInterfaceTypesMod , only : nlevsclass_fates => nlevsclass
   use FatesInterfaceTypesMod , only : nlevage_fates    => nlevage
   use FatesInterfaceTypesMod , only : nlevheight_fates => nlevheight
   use FatesInterfaceTypesMod , only : nlevdamage_fates => nlevdamage
   use FatesInterfaceTypesMod , only : nlevcoage
-  use EDTypesMod        , only : nfsc_fates       => nfsc
-  use FatesLitterMod    , only : ncwd_fates       => ncwd
+  use FatesLitterMod         , only : nfsc_fates       => nfsc
+  use FatesConstantsMod      , only : n_landuse_cats
+  use FatesLitterMod         , only : ncwd_fates       => ncwd
   use FatesInterfaceTypesMod , only : numpft_fates     => numpft
   use PRTGenericMod          , only : nelements_fates  => num_elements
-  use TopounitType      , only : top_pp
-  use topounit_varcon   , only: max_topounits, has_topounit
+  use TopounitType           , only : top_pp
+  use topounit_varcon        , only: max_topounits, has_topounit
 
   !
   implicit none
@@ -147,7 +148,7 @@ module histFileMod
   private :: hist_set_snow_field_2d    ! Set values in history field dimensioned by levsno
   private :: list_index                ! Find index of field in exclude list
   private :: set_hist_filename         ! Determine history dataset filenames
-  private :: getname                   ! Retrieve name portion of input "inname"
+  public  :: getname                   ! Retrieve name portion of input "inname" (PUBLIC for FATES)
   private :: getflag                   ! Retrieve flag
   private :: pointer_index             ! Track data pointer indices
   private :: max_nFields               ! The max number of fields on any tape
@@ -441,7 +442,7 @@ contains
     ! appropriate variables and calling appropriate routines
     !
     ! !USES:
-    use clm_time_manager, only: get_prev_time
+    use elm_time_manager, only: get_prev_time
     use elm_varcon      , only: secspday
     !
     ! !ARGUMENTS:
@@ -1937,6 +1938,7 @@ contains
        call ncd_defdim(lnfid, 'fates_levscpf', nlevsclass_fates*numpft_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levcapf',  nlevcoage*numpft_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levcan', nclmax_fates, dimid)
+       call ncd_defdim(lnfid, 'fates_levleaf', nlevleaf_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levcnlf', nlevleaf_fates * nclmax_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levcnlfpf', nlevleaf_fates * nclmax_fates * numpft_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levcdsc', nlevdamage_fates * nlevsclass_fates, dimid)
@@ -1950,6 +1952,8 @@ contains
        call ncd_defdim(lnfid, 'fates_levelcwd', nelements_fates * ncwd_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levelage', nelements_fates * nlevage_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levagefuel', nlevage_fates * nfsc_fates, dimid)
+       call ncd_defdim(lnfid, 'fates_levlanduse', n_landuse_cats, dimid)
+       call ncd_defdim(lnfid, 'fates_levlulu', n_landuse_cats * n_landuse_cats, dimid)
     end if
 
     if ( .not. lhistrest )then
@@ -2342,8 +2346,8 @@ contains
     use elm_varcon      , only : zsoi, zlak, secspday
     use elm_varpar      , only : nlevsoi
     use domainMod       , only : ldomain, lon1d, lat1d
-    use clm_time_manager, only : get_nstep, get_curr_date, get_curr_time
-    use clm_time_manager, only : get_ref_date, get_calendar, NO_LEAP_C, GREGORIAN_C
+    use elm_time_manager, only : get_nstep, get_curr_date, get_curr_time
+    use elm_time_manager, only : get_ref_date, get_calendar, NO_LEAP_C, GREGORIAN_C
     use FatesInterfaceTypesMod, only : fates_hdim_levsclass
     use FatesInterfaceTypesMod, only : fates_hdim_pfmap_levscpf
     use FatesInterfaceTypesMod, only : fates_hdim_scmap_levscpf
@@ -2352,6 +2356,7 @@ contains
     use FatesInterfaceTypesMod, only : fates_hdim_camap_levcapf
     use FatesInterfaceTypesMod, only : fates_hdim_levage
     use FatesInterfaceTypesMod, only : fates_hdim_levpft
+    use FatesInterfaceTypesMod, only : fates_hdim_levlanduse
     use FatesInterfaceTypesMod, only : fates_hdim_scmap_levscag
     use FatesInterfaceTypesMod, only : fates_hdim_agmap_levscag
     use FatesInterfaceTypesMod, only : fates_hdim_levfuel
@@ -2462,14 +2467,16 @@ contains
                    long_name='FATES patch age (yr)', ncid=nfid(t))
              call ncd_defvar(varname='fates_levpft',xtype=ncd_int, dim1name='fates_levpft', &
                    long_name='FATES pft number', ncid=nfid(t))
+             call ncd_defvar(varname='fates_levlanduse',xtype=ncd_int, dim1name='fates_levlanduse', &
+                   long_name='FATES land use label', ncid=nfid(t))
              call ncd_defvar(varname='fates_levfuel',xtype=ncd_int, dim1name='fates_levfuel', &
                    long_name='FATES fuel index', ncid=nfid(t))
              call ncd_defvar(varname='fates_levcwdsc',xtype=ncd_int, dim1name='fates_levcwdsc', &
                    long_name='FATES cwd size class', ncid=nfid(t))
              call ncd_defvar(varname='fates_levcan',xtype=ncd_int, dim1name='fates_levcan', &
                    long_name='FATES canopy level', ncid=nfid(t))
-             call ncd_defvar(varname='fates_levleaf',xtype=ncd_int, dim1name='fates_levleaf', &
-                   long_name='FATES leaf+stem level', units='VAI', ncid=nfid(t))
+             call ncd_defvar(varname='fates_levleaf', xtype=tape(t)%ncprec, dim1name='fates_levleaf', &
+                  long_name='FATES integrated leaf+stem area index lower bound', units='m2/m2', ncid=nfid(t))
              call ncd_defvar(varname='fates_canmap_levcnlf',xtype=ncd_int, dim1name='fates_levcnlf', &
                    long_name='FATES canopy level of combined canopy-leaf dimension', ncid=nfid(t))
              call ncd_defvar(varname='fates_lfmap_levcnlf',xtype=ncd_int, dim1name='fates_levcnlf', &
@@ -2547,6 +2554,7 @@ contains
              call ncd_io(varname='fates_scmap_levscpf',data=fates_hdim_scmap_levscpf, ncid=nfid(t), flag='write')
              call ncd_io(varname='fates_levage',data=fates_hdim_levage, ncid=nfid(t), flag='write')
              call ncd_io(varname='fates_levpft',data=fates_hdim_levpft, ncid=nfid(t), flag='write')
+             call ncd_io(varname='fates_levlanduse',data=fates_hdim_levlanduse, ncid=nfid(t), flag='write')
              call ncd_io(varname='fates_levfuel',data=fates_hdim_levfuel, ncid=nfid(t), flag='write')
              call ncd_io(varname='fates_levcwdsc',data=fates_hdim_levcwdsc, ncid=nfid(t), flag='write')
              call ncd_io(varname='fates_levcan',data=fates_hdim_levcan, ncid=nfid(t), flag='write')
@@ -3330,7 +3338,7 @@ contains
     !   date = yyyy/mm+1/01 with mscur = 0.
     !
     ! !USES:
-    use clm_time_manager, only : get_nstep, get_curr_date, get_curr_time, get_prev_date
+    use elm_time_manager, only : get_nstep, get_curr_date, get_curr_time, get_prev_date
     use elm_varcon      , only : secspday
     use perf_mod        , only : t_startf, t_stopf
     use elm_varpar      , only : nlevgrnd
@@ -3538,7 +3546,7 @@ contains
     use fileutils       , only : getfil
     use domainMod       , only : ldomain
     use elm_varpar      , only : nlevgrnd, nlevlak, numrad, nlevdecomp_full, nmonth
-    use clm_time_manager, only : is_restart
+    use elm_time_manager, only : is_restart
     use restUtilMod     , only : iflag_skip
     use pio
     !
@@ -4397,7 +4405,7 @@ contains
      !
      ! !USES:
      use elm_varctl, only : caseid, inst_suffix
-     use clm_time_manager, only : get_curr_date, get_prev_date
+     use elm_time_manager, only : get_curr_date, get_prev_date
      !
      ! !ARGUMENTS:
      integer, intent(in)  :: hist_freq   !history file frequency
@@ -4827,6 +4835,10 @@ contains
        num2d = nlevcoage*numpft_fates
     case ('fates_levpft')
        num2d = numpft_fates
+    case ('fates_levlanduse')
+       num2d = n_landuse_cats
+    case ('fates_levlulu')
+       num2d = n_landuse_cats * n_landuse_cats
     case ('fates_levage')
        num2d = nlevage_fates
     case ('fates_levfuel')
@@ -4839,6 +4851,8 @@ contains
        num2d = nlevsclass_fates*nlevage_fates
     case ('fates_levcan')
        num2d = nclmax_fates
+    case ('fates_levleaf')
+       num2d = nlevleaf_fates
     case ('fates_levcnlf')
        num2d = nlevleaf_fates * nclmax_fates
     case ('fates_levcnlfpf')
@@ -5182,7 +5196,7 @@ contains
     ! history file is not full.
     !
     ! !USES:
-    use clm_time_manager, only : is_last_step
+    use elm_time_manager, only : is_last_step
     !
     ! !ARGUMENTS:
     integer, intent(in)  :: ntapes              !actual number of history tapes

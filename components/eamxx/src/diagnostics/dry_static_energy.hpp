@@ -2,31 +2,22 @@
 #define EAMXX_DRY_STATIC_ENERGY_DIAGNOSTIC_HPP
 
 #include "share/atm_process/atmosphere_diagnostic.hpp"
-#include "share/util/scream_common_physics_functions.hpp"
-#include "ekat/kokkos/ekat_subview_utils.hpp"
+
+#include "share/scream_types.hpp"
+#include <ekat/ekat_pack.hpp>
 
 namespace scream
 {
-
-/*
- * This diagnostic will produce the potential temperature.
- */
 
 class DryStaticEnergyDiagnostic : public AtmosphereDiagnostic
 {
 public:
   using Pack          = ekat::Pack<Real,SCREAM_PACK_SIZE>;
-  using PF            = scream::PhysicsFunctions<DefaultDevice>;
-
   using KT            = KokkosTypes<DefaultDevice>;
-  using MemberType    = typename KT::MemberType;
   using view_2d       = typename KT::template view_2d<Pack>;
 
   // Constructors
   DryStaticEnergyDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params);
-
-  // Set type to diagnostic
-  AtmosphereProcessType type () const { return AtmosphereProcessType::Diagnostic; }
 
   // The name of the diagnostic
   std::string name () const { return "DryStaticEnergy"; }

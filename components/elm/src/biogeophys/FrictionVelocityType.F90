@@ -28,6 +28,7 @@ module FrictionVelocityType
      real(r8), pointer :: forc_hgt_q_patch (:)   ! patch specific humidity forcing height (10m+z0m+d) (m)
      real(r8), pointer :: u10_patch        (:)   ! patch 10-m wind (m/s) (for dust model)
      real(r8), pointer :: u10_elm_patch    (:)   ! patch 10-m wind (m/s) (for elm_map2gcell)
+     real(r8), pointer :: u10_with_gusts_elm_patch(:)! patch 10-m wind with gusts (m/s) (for elm_map2gcell)
      real(r8), pointer :: va_patch         (:)   ! patch atmospheric wind speed plus convective velocity (m/s)
      real(r8), pointer :: vds_patch        (:)   ! patch deposition velocity term (m/s) (for dry dep SO4, NH4NO3)
      real(r8), pointer :: fv_patch         (:)   ! patch friction velocity (m/s) (for dust model)
@@ -40,7 +41,9 @@ module FrictionVelocityType
      real(r8), pointer :: z0mg_col         (:)   ! col roughness length over ground, momentum  [m]
      real(r8), pointer :: z0hg_col         (:)   ! col roughness length over ground, sensible heat [m]
      real(r8), pointer :: z0qg_col         (:)   ! col roughness length over ground, latent heat [m]
-
+     real(r8), pointer :: num_iter_patch   (:)   ! number of iterations performed to find a solution
+                                                 ! to the land-energy flux balance in CanopyFluxes()
+     
    contains
 
      procedure, public  :: Init
@@ -91,6 +94,7 @@ contains
     allocate(this%forc_hgt_q_patch (begp:endp)) ; this%forc_hgt_q_patch (:)   = spval
     allocate(this%u10_patch        (begp:endp)) ; this%u10_patch        (:)   = spval
     allocate(this%u10_elm_patch    (begp:endp)) ; this%u10_elm_patch    (:)   = spval
+    allocate(this%u10_with_gusts_elm_patch(begp:endp));this%u10_with_gusts_elm_patch(:)=spval
     allocate(this%va_patch         (begp:endp)) ; this%va_patch         (:)   = spval
     allocate(this%vds_patch        (begp:endp)) ; this%vds_patch        (:)   = spval
     allocate(this%fv_patch         (begp:endp)) ; this%fv_patch         (:)   = spval
@@ -100,6 +104,7 @@ contains
     allocate(this%z0mv_patch       (begp:endp)) ; this%z0mv_patch       (:)   = spval
     allocate(this%z0hv_patch       (begp:endp)) ; this%z0hv_patch       (:)   = spval
     allocate(this%z0qv_patch       (begp:endp)) ; this%z0qv_patch       (:)   = spval
+    allocate(this%num_iter_patch   (begp:endp)) ; this%num_iter_patch   (:)   = spval
     allocate(this%z0mg_col         (begc:endc)) ; this%z0mg_col         (:)   = spval
     allocate(this%z0qg_col         (begc:endc)) ; this%z0qg_col         (:)   = spval
     allocate(this%z0hg_col         (begc:endc)) ; this%z0hg_col         (:)   = spval
@@ -153,6 +158,11 @@ contains
          avgflag='A', long_name='10-m wind', &
          ptr_patch=this%u10_elm_patch)
 
+    this%u10_with_gusts_elm_patch(begp:endp) = spval
+    call hist_addfld1d (fname='U10WITHGUSTS', units='m/s', &
+         avgflag='A', long_name='10-m wind with gustiness enhancement included', &
+         ptr_patch=this%u10_with_gusts_elm_patch)
+
     if (use_cn) then
        this%u10_patch(begp:endp) = spval
        call hist_addfld1d (fname='U10_DUST', units='m/s', &
@@ -202,6 +212,11 @@ contains
             ptr_patch=this%z0qv_patch, default='inactive')
     end if
 
+    this%num_iter_patch(begp:endp) = spval
+    call hist_addfld1d(fname='ITER_LND_EBAL_AVG', units='count', &
+         avgflag='A', long_name='average number of iterations performed in land-energy balance', &
+         ptr_patch=this%num_iter_patch, default = 'inactive')
+    
   end subroutine InitHistory
 
   !-----------------------------------------------------------------------

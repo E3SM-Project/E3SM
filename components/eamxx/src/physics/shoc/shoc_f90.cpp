@@ -8,7 +8,7 @@ using scream::Real;
 using scream::Int;
 extern "C" {
   void shoc_init_c(int nlev, Real gravit, Real rair, Real rh2o, Real cpair,
-                   Real zvir, Real latvap, Real latice, Real karman);
+                   Real zvir, Real latvap, Real latice, Real karman, Real p0);
   void shoc_use_cxx_c(bool use_cxx);
 }
 
@@ -119,7 +119,7 @@ void shoc_init(Int nlev, bool use_fortran, bool force_reinit) {
     using C = scream::physics::Constants<Scalar>;
 
     shoc_init_c((int)nlev, C::gravit, C::Rair, C::RH2O, C::Cpair, C::ZVIR,
-                C::LatVap, C::LatIce, C::Karman);
+                C::LatVap, C::LatIce, C::Karman, C::P0);
     is_init = true;
   }
   shoc_use_cxx_c(!use_fortran);

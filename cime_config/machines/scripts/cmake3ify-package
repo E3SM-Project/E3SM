@@ -1,0 +1,83 @@
+#! /usr/bin/env python3
+
+"""
+Rewrite config_machines.xml by converting a dependency to modern
+cmake style. Specifically, change $package_DIR to $packace_ROOT
+while allowing the user to override $package_ROOT.
+"""
+
+import argparse, sys, re, pathlib
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n{0} <PACKAGE_NAME> <CONFIG_MACHINES_PATH>
+OR
+{0} --help
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Cmake3-ify package "FOO" \033[0m
+    > {0} FOO $repo/cime_config/machines/config_machines.xml
+""".format(pathlib.Path(args[0]).name),
+        description=description,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    parser.add_argument("package_name", help="The name of the package")
+
+    parser.add_argument("config_machines", help="The path to config_machines.xml")
+
+    return parser.parse_args(args[1:])
+
+###############################################################################
+def convert_line(package_name, line):
+###############################################################################
+    r"""
+    >>> line = '  <env name="ADIOS2_DIR">/path/to/adios</env>'
+    >>> convert_line('ADIOS2', 'some other line')
+    'some other line'
+    >>> convert_line('ADIOS2', line)
+    '  <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /path/to/adios; else echo "$ADIOS2_ROOT"; fi}</env>\n'
+    """
+    regex = re.compile(fr'^(.+)"{package_name}_DIR" *>(.+)</env>')
+
+    re_match = regex.match(line)
+    if re_match is None:
+        return line
+    else:
+        prelude, default_path = re_match.groups()
+        default_path = default_path.strip()
+        env_var = f"{package_name}_ROOT"
+        new_line = \
+f'{prelude}"{env_var}">$SHELL{{if [ -z "${env_var}" ]; then echo {default_path}; else echo "${env_var}"; fi}}</env>\n'
+        return new_line
+
+
+###############################################################################
+def cmake3ify_package(package_name, config_machines):
+###############################################################################
+    config_machines_p = pathlib.Path(config_machines)
+
+    with config_machines_p.open("r") as fd:
+        lines = fd.readlines()
+        new_lines = []
+        for line in lines:
+            new_lines.append(convert_line(package_name, line))
+
+    with config_machines_p.open("w") as fd:
+        fd.writelines(new_lines)
+
+    return True
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    success = cmake3ify_package(**vars(parse_command_line(sys.argv, description)))
+
+    sys.exit(0 if success else 1)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

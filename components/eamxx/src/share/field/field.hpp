@@ -95,6 +95,10 @@ public:
   // Constructor(s)
   Field () = default;
   explicit Field (const identifier_type& id);
+  template<typename ViewT,
+           typename = typename std::enable_if<Kokkos::is_view<ViewT>::value>::type>
+  Field (const identifier_type& id,
+         const ViewT& view_d);
   Field (const Field& src) = default;
   ~Field () = default;
 
@@ -114,6 +118,7 @@ public:
   // It is created with a pristine header (no providers/customers)
   Field clone () const;
   Field clone (const std::string& name) const;
+  Field alias (const std::string& name) const;
 
   // Allows to get the underlying view, reshaped for a different data type.
   // The class will check that the requested data type is compatible with the
@@ -125,7 +130,7 @@ public:
 
   // Like the method above, but only for rank-1 fields, returning a view with LayoutStride.
   // This is safer to use for fields that could be a subfield of another one, since a
-  // rank-1 view that is the subview of a 2d one along the 2nd index cannot have 
+  // rank-1 view that is the subview of a 2d one along the 2nd index cannot have
   // LayoutRight, and must have LayoutStride instead.
   template<typename DT, HostOrDevice HD = Device>
   get_strided_view_type<DT,HD>
@@ -174,12 +179,13 @@ public:
   // view.data ptr.
   template<typename ST, HostOrDevice HD = Device>
   ST* get_internal_view_data_unsafe () const {
-    // Check that the scalar type is correct                                                                                                   
+    // Check that the scalar type is correct
     using nonconst_ST = typename std::remove_const<ST>::type;
-    EKAT_REQUIRE_MSG ((field_valid_data_types().at<nonconst_ST>()==m_header->get_identifier().data_type()
-                       or std::is_same<nonconst_ST,char>::value),
+    EKAT_REQUIRE_MSG ((std::is_same<nonconst_ST,char>::value or std::is_same<nonconst_ST,void>::value or
+                       (field_valid_data_types().has_t<nonconst_ST>() and
+                        get_data_type<nonconst_ST>()==m_header->get_identifier().data_type())),
           "Error! Attempt to access raw field pointere with the wrong scalar type.\n");
-    
+
     return reinterpret_cast<ST*>(get_view_impl<HD>().data());
   }
 
@@ -187,16 +193,19 @@ public:
   // Note: this class takes no responsibility in keeping track of whether
   //       a sync is required in either direction. Mainly because we expect
   //       host views to be seldom used, and even less frequently modified.
-  void sync_to_host () const;
-  void sync_to_dev () const;
+  // The fence input controls whether a fence is done at the end of the sync.
+  // If multiple syncs are performed in a row on different data, the user may
+  // want to run them asynchronously and fence the final sync_to call.
+  void sync_to_host (const bool fence = true) const;
+  void sync_to_dev (const bool fence = true) const;
 
   // Set the field to a constant value (on host or device)
   template<typename T, HostOrDevice HD = Device>
-  void deep_copy (const T value);
+  void deep_copy (const T value) const;
 
   // Copy the data from one field to this field
   template<HostOrDevice HD = Device>
-  void deep_copy (const Field& src);
+  void deep_copy (const Field& src) const;
 
   // Updates this field y as y=alpha*x+beta*y
   // NOTE: ST=void is just so we can give a default to HD,
@@ -210,6 +219,10 @@ public:
   // Special case of update with alpha=0
   template<HostOrDevice HD = Device, typename ST = void>
   void scale (const ST beta);
+
+  // Scale a field y as y=y*x where x is also a field
+  template<HostOrDevice HD = Device>
+  void scale (const Field& x);
 
   // Returns a subview of this field, slicing at entry k along dimension idim
   // NOTES:
@@ -228,15 +241,24 @@ public:
   //     to store a stride for the slowest dimension.
   //   - If dynamic = true, it is possible to "reset" the slice index (k) at runtime.
   Field subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
-                       const int idim, const int index, const bool dynamic = false) const;
+                  const int idim, const int index, const bool dynamic = false) const;
   Field subfield (const std::string& sf_name, const int idim,
-                       const int index, const bool dynamic = false) const;
+                  const int index, const bool dynamic = false) const;
   Field subfield (const int idim, const int k, const bool dynamic = false) const;
-
+  // extracts a subfield composed of multiple slices in a continuous range of indices
+  // e.g., (in matlab syntax) subf = f.subfield(:, 1:3, :)
+  // but NOT subf = f.subfield(:, [1, 3, 4], :)
+  Field subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
+                  const int idim, const int index_beg, const int index_end) const;
+  Field subfield (const std::string& sf_name, const int idim,
+                  const int index_beg, const int index_end) const;
+  Field subfield (const int idim, const int index_beg, const int index_end) const;
   // If this field is a vector field, get a subfield for the ith component.
   // If dynamic = true, it is possible to "reset" the component index at runtime.
   // Note: throws if this is not a vector field.
   Field get_component (const int i, const bool dynamic = false);
+  // version for slicing across multiple, contiguous indices
+  Field get_components (const int beg, const int end);
 
   // Checks whether the underlying view has been already allocated.
   bool is_allocated () const { return m_data.d_view.data()!=nullptr; }
@@ -259,18 +281,49 @@ public:
   // Allocate the actual view
   void allocate_view ();
 
+  // Create contiguous helper field for running sync_to_host
+  // and sync_to_device with non-contiguous fields
+  void initialize_contiguous_helper_field () {
+    EKAT_REQUIRE_MSG(not m_header->get_alloc_properties().contiguous(),
+                     "Error! We should not setup contiguous helper field "
+                     "for an already contiguous field.\n");
+    EKAT_REQUIRE_MSG(not host_and_device_share_memory_space(),
+                     "Error! We should not setup contiguous helper field for a field "
+                     "when host and device share a memory space.\n");
+
+    auto id = m_header->get_identifier();
+    Field contig(id.alias(name()+std::string("_contiguous")));
+    contig.allocate_view();
+
+    // Sanity check
+    EKAT_REQUIRE_MSG(contig.get_header().get_alloc_properties().contiguous(),
+                     "Error! Contiguous helper field must be contiguous.\n");
+
+    m_contiguous_field = std::make_shared<Field>(contig);
+  }
+
+  inline bool host_and_device_share_memory_space() const {
+    EKAT_REQUIRE_MSG(is_allocated(),
+                     "Error! Must allocate view before querying "
+                     "host_and_device_share_memory_space().\n");
+    return m_data.h_view.data() == m_data.d_view.data();
+  }
+
 #ifndef KOKKOS_ENABLE_CUDA
   // Cuda requires methods enclosing __device__ lambda's to be public
 protected:
 #endif
-  template<HostOrDevice HD, typename ST>
-  void deep_copy_impl (const ST value);
+  template<typename ST, HostOrDevice From, HostOrDevice To>
+  void sync_views_impl () const;
 
   template<HostOrDevice HD, typename ST>
-  void deep_copy_impl (const Field& src);
+  void deep_copy_impl (const ST value) const;
+
+  template<HostOrDevice HD, typename ST>
+  void deep_copy_impl (const Field& src) const;
 
   template<CombineMode CM, HostOrDevice HD, typename ST>
-  void update_impl (const Field& x, const ST alpha, const ST beta);
+  void update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val);
 
 protected:
 
@@ -294,25 +347,38 @@ protected:
   if_t<(N<=2),
        get_view_type<data_nd_t<T,N-1>,HD>>
   get_subview_1 (const get_view_type<data_nd_t<T,N>,HD>&, const int) const {
-    EKAT_ERROR_MSG ("Error! Cannot subview a rank2 view along the second dimension without losing LayoutRight.\n");
+    EKAT_ERROR_MSG ("Error! Cannot subview a rank2 view along the second "
+                    "dimension without losing LayoutRight.\n");
   }
 
   template<HostOrDevice HD,typename T,int N>
   auto get_ND_view () const
-    -> if_t<N==MaxRank, get_view_type<data_nd_t<T,N>,HD>>;
+    -> if_t<(N < MaxRank), get_view_type<data_nd_t<T,N>,HD>>;
 
   template<HostOrDevice HD,typename T,int N>
   auto get_ND_view () const
-    -> if_t<(N<MaxRank), get_view_type<data_nd_t<T,N>,HD>>;
+    -> if_t<N == MaxRank, get_view_type<data_nd_t<T,N>,HD>>;
 
-  // Metadata (name, rank, dims, customere/providers, time stamp, ...)
-  std::shared_ptr<header_type>            m_header;
+  // NOTE: DO NOT USE--it only returns an error and is here to protect
+  // against compiler errors related to sliced subviews in get_strided_view()
+  template<HostOrDevice HD,typename T,int N>
+  auto get_ND_view () const
+    -> if_t<(N >= MaxRank + 1), get_view_type<data_nd_t<T,N>,HD>>;
+
+  // Metadata (name, rank, dims, customer/providers, time stamp, ...)
+  std::shared_ptr<header_type> m_header;
 
   // Actual data.
-  dual_view_t<char*>    m_data;
+  dual_view_t<char*> m_data;
 
-  // Whether this field is read-only
-  bool                  m_is_read_only = false;
+  // Field needed for sync host/device in case of non-contiguous
+  // field when host and device do not share a memory space.
+  std::shared_ptr<Field> m_contiguous_field;
+
+  // Whether this field is read-only. This is given
+  // mutable keyword since it needs to be turned off/on
+  // to allow sync_to_host for constant, read-only fields.
+  mutable bool m_is_read_only = false;
 };
 
 // We use this to find a Field in a std container.

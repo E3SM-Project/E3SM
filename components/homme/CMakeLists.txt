@@ -2,7 +2,7 @@ IF (NOT DEFINED PROJECT_NAME)
   SET (HOMME_STANDALONE TRUE CACHE BOOL "Whether Homme is built in standalone mode" FORCE)
 
   # Best practice to put cmake required version at the top
-  CMAKE_MINIMUM_REQUIRED(VERSION 2.8.5)
+  CMAKE_MINIMUM_REQUIRED(VERSION 3.16)
 
   # Print the sha of the last commit,
   # useful to double check which version was build in the build folder.
@@ -141,7 +141,7 @@ IF(${BUILD_HOMME_SWIM} OR ${BUILD_HOMME_PRIM})
   SET (HOMME_USE_TRILINOS TRUE)
 ENDIF ()
 #if trilinos is needed, we need cxx
-IF (${HOMME_USE_TRILINOS})
+IF (HOMME_USE_TRILINOS)
   SET (HOMME_USE_CXX TRUE)
 ENDIF()
 #if kokkos is needed, then so is cxx
@@ -201,7 +201,7 @@ IF (${HOMME_USE_ARKODE})
   ADD_DEFINITIONS(-DARKODE)
 ENDIF ()
 
-IF (${HOMME_USE_KOKKOS})
+IF (HOMME_USE_KOKKOS)
   ############################################
   # Selection of Kokkos execution space
   ############################################
@@ -210,17 +210,19 @@ IF (${HOMME_USE_KOKKOS})
 
   STRING (TOUPPER ${HOMMEXX_EXEC_SPACE} HOMMEXX_EXEC_SPACE_UPPER)
 
-  IF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "HIP")
+  IF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "SYCL")
+    SET (HOMMEXX_SYCL_SPACE ON)
+  ELSEIF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "HIP")
     SET (HOMMEXX_HIP_SPACE ON)
-  ELSEIF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "CUDA")
+  ELSEIF (HOMMEXX_EXEC_SPACE_UPPER STREQUAL "CUDA")
     SET (HOMMEXX_CUDA_SPACE ON)
-  ELSEIF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "OPENMP")
+  ELSEIF (HOMMEXX_EXEC_SPACE_UPPER STREQUAL "OPENMP")
     SET (HOMMEXX_OPENMP_SPACE ON)
-  ELSEIF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "THREADS")
+  ELSEIF (HOMMEXX_EXEC_SPACE_UPPER STREQUAL "THREADS")
     SET (HOMMEXX_THREADS_SPACE ON)
-  ELSEIF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "SERIAL")
+  ELSEIF (HOMMEXX_EXEC_SPACE_UPPER STREQUAL "SERIAL")
     SET (HOMMEXX_SERIAL_SPACE ON)
-  ELSEIF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "DEFAULT")
+  ELSEIF (HOMMEXX_EXEC_SPACE_UPPER STREQUAL "DEFAULT")
     SET (HOMMEXX_DEFAULT_SPACE ON)
   ELSE()
     MESSAGE (ABORT "Invalid choice for 'HOMMEXX_EXEC_SPACE'. Valid options (case insensitive) are 'Cuda', 'OpenMP', 'Threads', 'Serial', 'Default'")
@@ -258,9 +260,22 @@ elseif (NOT TARGET csm_share)
   message (FATAL_ERROR "Aborting.")
 endif()
 
-OPTION(HOMME_USE_MKL "Whether to use Intel's MKL instead of blas/lapack" FALSE)
+OPTION(HOMME_USE_MKL "Whether to use Intel's MKL/oneMKL instead of blas/lapack" FALSE)
 IF(HOMME_USE_MKL)
-  MESSAGE(STATUS "HOMME_USE_MKL is ON. The flag -mkl will be added to each executable/library.")
+  IF(DEFINED ENV{MKLROOT})
+    SET(MKL_ROOT_PATH "$ENV{MKLROOT}")
+    IF(MKL_ROOT_PATH MATCHES "oneapi/mkl")
+      SET(MKL_TYPE "oneMKL")
+      MESSAGE(STATUS "Detected oneMKL based on MKLROOT: ${MKL_ROOT_PATH}")
+      FIND_PACKAGE(MKL REQUIRED $ENV{MKLROOT}/lib/cmake/mkl)
+    ELSE()
+      SET(MKL_TYPE "Intel MKL")
+      MESSAGE(STATUS "Detected standalone Intel MKL based on MKLROOT: ${MKL_ROOT_PATH}")
+    ENDIF()
+  ELSE()
+    MESSAGE(FATAL_ERROR "MKLROOT environment variable is not set. Please set it to your MKL installation path.")
+  ENDIF()
+  MESSAGE(STATUS "HOMME_USE_MKL is ON. The flag -mkl/-qmkl will be added to each executable/library.")
 ELSE()
   OPTION(HOMME_FIND_BLASLAPACK "Whether to use system blas/lapack" FALSE)
   MESSAGE(STATUS "HOMME_FIND_BLASLAPACK=${HOMME_FIND_BLASLAPACK}")
@@ -302,25 +317,28 @@ MESSAGE(STATUS "C Flags = ${CMAKE_C_FLAGS}")
 MESSAGE(STATUS "CXX Flags = ${CMAKE_CXX_FLAGS}")
 MESSAGE(STATUS "Linker Flags = ${CMAKE_EXE_LINKER_FLAGS}")
 
-SET (HOMMEXX_ENABLE_GPU FALSE) 
+SET (HOMMEXX_ENABLE_GPU FALSE)
+SET (HOMMEXX_ENABLE_GPU_F90 FALSE) 
 
-IF (${HOMME_USE_KOKKOS})
+IF (HOMME_USE_KOKKOS)
 
-  IF (CUDA_BUILD OR HIP_BUILD)
+  IF (CUDA_BUILD OR HIP_BUILD OR SYCL_BUILD)
     SET (DEFAULT_VECTOR_SIZE 1)
-    SET (HOMMEXX_ENABLE_GPU TRUE) 
+    SET (HOMMEXX_ENABLE_GPU TRUE)
+    SET (HOMMEXX_ENABLE_GPU_F90 TRUE) 
   ELSE ()
     SET (DEFAULT_VECTOR_SIZE 8)
   ENDIF()
 
   SET (HOMMEXX_VECTOR_SIZE ${DEFAULT_VECTOR_SIZE} CACHE STRING
-	  "If AVX or Cuda or HIP don't take priority, use this software vector size.")
+	  "If AVX or Cuda or HIP or SYCL don't take priority, use this software vector size.")
 
   IF (CMAKE_BUILD_TYPE_UPPER MATCHES "DEBUG" OR CMAKE_BUILD_TYPE_UPPER MATCHES "RELWITHDEBINFO")
     SET (HOMMEXX_DEBUG ON)
   ENDIF()
 
-  CONFIGURE_FILE (${CMAKE_CURRENT_SOURCE_DIR}/src/share/cxx/Hommexx_config.h.in ${HOMME_BINARY_DIR}/src/share/cxx/Hommexx_config.h)
+  CONFIGURE_FILE (${CMAKE_CURRENT_SOURCE_DIR}/src/share/cxx/Hommexx_config.h.in
+                  ${HOMME_BINARY_DIR}/src/share/cxx/Hommexx_config.h)
 
 ENDIF ()
 
@@ -397,11 +415,14 @@ if (HOMME_BUILD_SCORPIO)
     SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/utils/externals/scorpio/src/genf90)
     SET(PIO_ENABLE_TOOLS OFF CACHE BOOL "Disabling Scorpio tool build")
     ADD_SUBDIRECTORY(utils/externals/scorpio)
+    SET(PIO_INCLUDE_DIRS "${CMAKE_CURRENT_BINARY_DIR}/utils/externals/scorpio/src/flib")
   else ()
     # The default I/O library used in "Scorpio classic"
     ADD_SUBDIRECTORY(utils/externals/scorpio_classic)
     SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/CIME/non_py/externals/genf90)
+    SET(PIO_INCLUDE_DIRS "${CMAKE_CURRENT_BINARY_DIR}/utils/externals/scorpio/pio")
   endif ()
+  INCLUDE_DIRECTORIES(${PIO_INCLUDE_DIRS})
 endif ()
 
 
@@ -448,8 +469,22 @@ if(HOMME_BUILD_EXECS AND NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
   ENDIF ()
 ENDIF ()
 
-IF (${HOMME_USE_KOKKOS})
-  INCLUDE(Kokkos)
+IF (HOMME_USE_KOKKOS)
+  # Add ekat's cmake scripts folders to cmake path
+  set (EKAT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/ekat)
+  set (EKAT_CMAKE_PATH ${EKAT_SOURCE_DIR}/cmake)
+  list(APPEND CMAKE_MODULE_PATH
+    ${EKAT_CMAKE_PATH}
+    ${EKAT_CMAKE_PATH}/tpls
+  )
+
+  # We first try to use find_package. If that doesn't work, build from EKAT's submodule
+  include (EkatFindKokkos)
+  if (NOT Kokkos_FOUND)
+    # The following script checks if Kokkos is already available as a target, and if so does nothing.
+    # For instance, if HOMME is built inside EAMxx, Kokkos will already be available
+    include (EkatBuildKokkos)
+  endif()
 ENDIF ()
 
 # This folder contains the CMake macro used to build cxx unit tests
@@ -536,12 +571,5 @@ ADD_CUSTOM_TARGET(clean-all
    COMMAND ${CMAKE_BUILD_TOOL} clean
    COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/clean-cmake-files.cmake"
 )
-
-IF (${HOMME_USE_KOKKOS})
-  # Put this last so that tribits.cmake's 'check' target doesn't conflict with
-  # Homme's.
-  install_kokkos_if_needed()
-ENDIF ()
-
 
 

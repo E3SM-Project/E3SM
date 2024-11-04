@@ -106,6 +106,7 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${SRC_SHARE_DIR}/planar_mod.F90
     ${SRC_SHARE_DIR}/geometry_mod.F90
     ${SRC_SHARE_DIR}/planar_mesh_mod.F90
+    ${SRC_SHARE_DIR}/semoab_mod.F90
   )
 
   IF (NOT HOMME_ENABLE_COMPOSE)
@@ -183,6 +184,8 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${SRC_SHARE_DIR}/cxx/mpi/MpiBuffersManager.cpp
     ${SRC_SHARE_DIR}/cxx/mpi/mpi_cxx_f90_interface.cpp
     ${SRC_SHARE_DIR}/cxx/utilities/BfbUtils.cpp
+    ${SRC_SHARE_DIR}/cxx/utilities/InternalDiagnostics.cpp
+    ${SRC_SHARE_DIR}/cxx/utilities/Hash.cpp
   )
 
   IF (HOMME_USE_ARKODE)

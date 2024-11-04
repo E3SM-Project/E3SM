@@ -29,7 +29,7 @@
     <rest_file_extension>r\.(INSTANT|AVERAGE|MAX|MIN)\.n(step|sec|min|hour|day|month|year)s_x\d*</rest_file_extension>
     <rest_file_extension>rhist\.(INSTANT|AVERAGE|MAX|MIN)\.n(step|sec|min|hour|day|month|year)s_x\d*</rest_file_extension>
     <!-- The following matches "hi.AVGTYPE.FREQUNITS_xFREQ.TIMESTAMP.nc"-->
-    <hist_file_extension>hi\.(INSTANT|AVERAGE|MAX|MIN)\.n(step|sec|min|hour|day|month|year)s_x\d*\.\d{4}-\d{2}-\d{2}-\d{5}\.nc$</hist_file_extension>
+    <hist_file_extension>.*\.h\.(?!rhist\.).*\.nc$</hist_file_extension>
   </comp_archive_spec>
 
   <comp_archive_spec compname="elm" compclass="lnd">
@@ -55,7 +55,7 @@
     </test_file_names>
   </comp_archive_spec>
 
-  <comp_archive_spec compname="mosart" compclass="rof">
+  <comp_archive_spec compname="mosart" compclass="rof" exclude_testing="true">
     <rest_file_extension>r</rest_file_extension>
     <rest_file_extension>rh\d*</rest_file_extension>
     <hist_file_extension>h\d*</hist_file_extension>
@@ -81,7 +81,7 @@
     </test_file_names>
   </comp_archive_spec>
 
-  <comp_archive_spec compname="mpassi" compclass="ice">
+  <comp_archive_spec compname="mpassi" compclass="ice" exclude_testing="true">
     <rest_file_extension>rst</rest_file_extension>
     <rest_file_extension>rst.am.timeSeriesStatsMonthly</rest_file_extension>
     <hist_file_extension>hist</hist_file_extension>
@@ -99,7 +99,7 @@
     </test_file_names>
   </comp_archive_spec>
 
-  <comp_archive_spec compname="mpaso" compclass="ocn">
+  <comp_archive_spec compname="mpaso" compclass="ocn" exclude_testing="true">
     <rest_file_extension>rst</rest_file_extension>
     <rest_file_extension>rst.am.timeSeriesStatsMonthly</rest_file_extension>
     <hist_file_extension>hist</hist_file_extension>
@@ -119,7 +119,6 @@
 
   <comp_archive_spec compname="mali" compclass="glc">
     <rest_file_extension>rst</rest_file_extension>
-    <rest_file_extension>rst.am.timeSeriesStatsMonthly</rest_file_extension>
     <hist_file_extension>hist</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
@@ -129,9 +128,8 @@
     <test_file_names>
       <tfile disposition="copy">rpointer.glc</tfile>
       <tfile disposition="copy">casename.mali.rst.1976-01-01_00000.nc</tfile>
-      <tfile disposition="copy">casename.mali.rst.am.timeSeriesStatsMonthly.1976-01-01_00000.nc</tfile>
-      <tfile disposition="move">casename.mali.hist.am.globalStats.1976-01-01.nc</tfile>
-      <tfile disposition="move">casename.mali.hist.am.highFrequencyOutput.1976-01-01_00.00.00.nc</tfile>
+      <tfile disposition="move">casename.mali.hist.1976-01-01_00000.nc</tfile>
+      <tfile disposition="move">casename.mali.hist.am.1976-01-01.nc</tfile>
     </test_file_names>
   </comp_archive_spec>
 

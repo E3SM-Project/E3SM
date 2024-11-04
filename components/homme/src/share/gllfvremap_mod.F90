@@ -35,6 +35,7 @@ module gllfvremap_mod
   ! nearly identical out to day 30, whereas pg1 fields differ visibly.
   !
   ! AMB 2019/07-2020/06 Initial
+  ! AMB 2023/11         Handle planar geometry
 
   use hybrid_mod, only: hybrid_t
   use kinds, only: real_kind
@@ -84,7 +85,7 @@ module gllfvremap_mod
   ! GLL remap.
   type, private :: GllFvRemap_t
      integer :: nphys, npi, check
-     logical :: have_fv_topo_file_phis, boost_pg1, check_ok
+     logical :: have_fv_topo_file_phis, boost_pg1, check_ok, is_planar
      real(kind=real_kind) :: tolfac ! for checking
      real(kind=real_kind) :: &
           ! Node or cell weights
@@ -182,7 +183,8 @@ contains
     use kinds, only: iulog
     use dimensions_mod, only: nlev
     use parallel_mod, only: parallel_t, abortmp
-    use quadrature_mod, only : gausslobatto, quadrature_t
+    use quadrature_mod, only: gausslobatto, quadrature_t
+    use control_mod, only: geometry, cubed_sphere_map
 
     type (parallel_t), intent(in) :: par
     type (element_t), intent(in) :: elem(:)
@@ -236,6 +238,8 @@ contains
     gfr%npi = max(2, nphys)
     nphys2 = nphys*nphys
 
+    gfr%is_planar = trim(geometry) == 'plane'
+
     call gfr_init_w_gg(np, gfr%w_gg)
     call gfr_init_w_gg(gfr%npi, gfr%w_sgsg)
     call gfr_init_w_ff(nphys, gfr%w_ff)
@@ -262,21 +266,22 @@ contains
   subroutine gfr_init_hxx() bind(c)
 #if KOKKOS_TARGET
     use control_mod, only: theta_hydrostatic_mode
-    use iso_c_binding, only: c_bool
+    use iso_c_binding, only: c_int
     interface
        subroutine init_gllfvremap_c(nelemd, np, nf, nf_max, theta_hydrostatic_mode, &
             fv_metdet, g2f_remapd, f2g_remapd, D_f, Dinv_f) bind(c)
-         use iso_c_binding, only: c_bool, c_int, c_double
+         use iso_c_binding, only: c_int, c_double
          integer (c_int), value, intent(in) :: nelemd, np, nf, nf_max
-         logical (c_bool), value, intent(in) :: theta_hydrostatic_mode
+         integer (c_int), value, intent(in) :: theta_hydrostatic_mode
          real (c_double), dimension(nf*nf,nelemd), intent(in) :: fv_metdet
          real (c_double), dimension(np,np,nf_max*nf_max), intent(in) :: g2f_remapd
          real (c_double), dimension(nf_max*nf_max,np,np), intent(in) :: f2g_remapd
          real (c_double), dimension(nf*nf,2,2,nelemd), intent(in) :: D_f, Dinv_f
        end subroutine init_gllfvremap_c
     end interface
-    logical (c_bool) :: thm
-    thm = theta_hydrostatic_mode
+    integer (c_int) :: thm
+    thm = 0
+    if (theta_hydrostatic_mode) thm = 1
     call init_gllfvremap_c(nelemd, np, gfr%nphys, nphys_max, thm, &
          gfr%fv_metdet, gfr%g2f_remapd, gfr%f2g_remapd, gfr%D_f, gfr%Dinv_f)
 #endif
@@ -1118,6 +1123,7 @@ contains
     use coordinate_systems_mod, only: cartesian3D_t, spherical_polar_t, &
          sphere_tri_area, change_coordinates
     use cube_mod, only: ref2sphere
+    use physical_constants, only: dx, dy
 
     type (element_t), intent(in) :: elem(:)
     type (GllFvRemap_t), intent(inout) :: gfr
@@ -1154,14 +1160,19 @@ contains
                       end if
                       fv_corners_xyz(ai,bi) = elem(ie)%corners3D(idx)
                    else
-                      ! p_sphere is unused. fv_corners_xyz(ai,bi) contains
-                      ! the cartesian point before it's converted to lat-lon.
-                      p_sphere = ref2sphere(ae(ai), be(bi), elem(ie)%corners3D, &
-                           cubed_sphere_map, elem(ie)%corners, elem(ie)%facenum, &
-                           fv_corners_xyz(ai,bi))
-                      if (cubed_sphere_map == 0) then
-                         ! In this case, fv_corners_xyz above is not set.
-                         fv_corners_xyz(ai,bi) = change_coordinates(p_sphere)
+                      if (gfr%is_planar) then
+                         call ref2plane(elem(ie)%corners3D, ae(ai), be(bi), &
+                              fv_corners_xyz(ai,bi))
+                      else
+                         ! fv_corners_xyz(ai,bi) contains the cartesian point
+                         ! before it's converted to lat-lon.
+                         p_sphere = ref2sphere(ae(ai), be(bi), elem(ie)%corners3D, &
+                              cubed_sphere_map, elem(ie)%corners, elem(ie)%facenum, &
+                              fv_corners_xyz(ai,bi))
+                         if (cubed_sphere_map == 0) then
+                            ! In this case, fv_corners_xyz above is not set.
+                            fv_corners_xyz(ai,bi) = change_coordinates(p_sphere)
+                         end if
                       end if
                    end if
                    ctr%x = ctr%x + fv_corners_xyz(ai,bi)%x
@@ -1170,16 +1181,29 @@ contains
                 end do
              end do
 
-             if (cubed_sphere_map == 2) then
+             if (gfr%is_planar) then
+                ! The cell area is (dx*dy)/nf^2. This must then be divided by
+                ! w_ff = 4/nf^2, leaving (dx*dy)/4.
+                gfr%fv_metdet(k,ie) = (dx*dy)/four
+             elseif (cubed_sphere_map == 2) then
                 call sphere_tri_area(fv_corners_xyz(1,1), fv_corners_xyz(2,1), &
                      fv_corners_xyz(2,2), spherical_area)
                 call sphere_tri_area(fv_corners_xyz(1,1), fv_corners_xyz(2,2), &
                      fv_corners_xyz(1,2), tmp)
                 spherical_area = spherical_area + tmp
                 gfr%fv_metdet(k,ie) = spherical_area/gfr%w_ff(k)
-
-                ! Center is average of 4 corner points projected to sphere.
+             end if
+             if (gfr%is_planar .or. cubed_sphere_map == 2) then
                 ctr%x = ctr%x/four; ctr%y = ctr%y/four; ctr%z = ctr%z/four
+                if (cubed_sphere_map == 2) then
+                   ! [Projection bug 2023/11]: In the initial implementation, I
+                   ! forgot to project to the sphere. Mathematically, it doesn't
+                   ! matter: change_coordinates is invariant to the norm, and
+                   ! sphere2ref does the right thing since it solves a
+                   ! least-squares problem. In finite precision, fixing this bug
+                   ! would cause eps-level changes in ref2sphere and thus cause
+                   ! all pg2 tests to be non-BFB. I'm leaving it as is.
+                end if
                 gfr%center_f(i,j,ie) = ctr
              end if
 
@@ -1199,7 +1223,7 @@ contains
        end do
     end do
 
-    if (cubed_sphere_map == 0) then
+    if (cubed_sphere_map == 0 .and. .not. gfr%is_planar) then
        ! For cubed_sphere_map == 0, we set the center so that it maps to the ref
        ! element center and set fv_metdet so that it corresponds to the integral
        ! of metdet over the FV subcell. TempestRemap establishes the
@@ -1256,6 +1280,7 @@ contains
   subroutine gfr_init_Dmap(elem, gfr)
     use control_mod, only: cubed_sphere_map
     use cube_mod, only: Dmap, ref2sphere
+    use planar_mod, only: plane_Dmap
     use coordinate_systems_mod, only: cartesian3D_t, change_coordinates
 
     type (element_t), intent(in) :: elem(:)
@@ -1272,16 +1297,21 @@ contains
     do ie = 1,nelemd
        do j = 1,nf
           do i = 1,nf
-             if (cubed_sphere_map == 2) then
+             if (gfr%is_planar .or. cubed_sphere_map == 0) then
+                call gfr_f_ref_center(nf, i, a)
+                call gfr_f_ref_center(nf, j, b)                
+             else
                 call gfr_f_get_cartesian3d(ie, i, j, sphere)
                 call sphere2ref(elem(ie)%corners3D, sphere, a, b)
-             else
-                call gfr_f_ref_center(nf, i, a)
-                call gfr_f_ref_center(nf, j, b)
              end if
 
-             call Dmap(wrk, a, b, elem(ie)%corners3D, cubed_sphere_map, elem(ie)%cartp, &
-                  elem(ie)%facenum)
+             if (gfr%is_planar) then
+                call plane_Dmap(wrk, a, b, elem(ie)%corners3D, cubed_sphere_map, &
+                     elem(ie)%cartp, elem(ie)%facenum)
+             else
+                call       Dmap(wrk, a, b, elem(ie)%corners3D, cubed_sphere_map, &
+                     elem(ie)%cartp, elem(ie)%facenum)
+             end if
 
              det = wrk(1,1)*wrk(2,2) - wrk(1,2)*wrk(2,1)
 
@@ -2059,9 +2089,14 @@ contains
 
     type (spherical_polar_t) :: p
 
-    p = change_coordinates(gfr%center_f(i,j,ie))
-    lat = p%lat
-    lon = p%lon
+    if (gfr%is_planar) then
+       lon = gfr%center_f(i,j,ie)%x
+       lat = gfr%center_f(i,j,ie)%y
+    else
+       p = change_coordinates(gfr%center_f(i,j,ie))
+       lat = p%lat
+       lon = p%lon
+    end if
   end subroutine gfr_f_get_latlon
 
   subroutine gfr_f_get_corner_latlon(ie, i, j, c, lat, lon)
@@ -2074,16 +2109,25 @@ contains
 
     type (spherical_polar_t) :: p
 
-    p = change_coordinates(gfr%corners_f(c,i,j,ie))
-    lat = p%lat
-    lon = p%lon
+    if (gfr%is_planar) then
+       lon = gfr%corners_f(c,i,j,ie)%x
+       lat = gfr%corners_f(c,i,j,ie)%y
+    else
+       p = change_coordinates(gfr%corners_f(c,i,j,ie))
+       lat = p%lat
+       lon = p%lon
+    end if
   end subroutine gfr_f_get_corner_latlon
 
   subroutine gfr_f_get_cartesian3d(ie, i, j, p)
     ! Get (x,y,z) of FV point i,j.
+    !   [Projection bug] In the case of sphere goemetry, output is not
+    ! normalized to the sphere.
 
     integer, intent(in) :: ie, i, j
     type (cartesian3D_t), intent(out) :: p
+
+    real(kind=real_kind) :: r
 
     p = gfr%center_f(i,j,ie)
   end subroutine gfr_f_get_cartesian3d
@@ -2175,6 +2219,29 @@ contains
     call limiter1_clip_and_sum(np*np, spheremp, qmin, qmax, dp, q)
   end subroutine limiter_clip_and_sum
 
+  subroutine ref2plane(corners, a, b, plane)
+    ! For planar geometry.
+    
+    use coordinate_systems_mod, only: cartesian3D_t
+
+    type (cartesian3D_t), intent(in) :: corners(4)
+    real(real_kind), intent(in) :: a, b
+    type (cartesian3D_t), intent(out) :: plane
+
+    real(real_kind) :: q(4), c(4,3), p(3)
+    integer :: i
+
+    do i = 1,4
+       c(i,1) = corners(i)%x; c(i,2) = corners(i)%y; c(i,3) = corners(i)%z
+    end do
+    q(1) = (1-a)*(1-b); q(2) = (1+a)*(1-b); q(3) = (1+a)*(1+b); q(4) = (1-a)*(1+b)
+    q = q/four
+    do i = 1,3
+       p(i) = sum(c(:,i)*q)
+    end do
+    plane%x = p(1); plane%y = p(2); plane%z = p(3)
+  end subroutine ref2plane
+
   subroutine ref2spherea_deriv(c, a, b, s_ab, s)
     ! For cubed_sphere_map = 2.
 
@@ -2262,6 +2329,7 @@ contains
     ! Make up a test function for use in unit tests.
 
     use coordinate_systems_mod, only: cartesian3D_t, change_coordinates
+    use physical_constants, only: dd_pi, Lx, Ly
 
     type (element_t), intent(inout) :: elem(:)
     integer, intent(in) :: nets, nete, timeidx, qidx, nlev
@@ -2273,7 +2341,13 @@ contains
     do ie = nets, nete
        do j = 1,np
           do i = 1,np
-             p = change_coordinates(elem(ie)%spherep(i,j))
+             if (gfr%is_planar) then
+                p%x = elem(ie)%spherep(i,j)%lon*2*dd_pi/Lx
+                p%y = elem(ie)%spherep(i,j)%lat*2*dd_pi/Ly
+                p%z = 0
+             else
+                p = change_coordinates(elem(ie)%spherep(i,j))
+             end if
              elem(ie)%state%ps_v(i,j,timeidx) = &
                   1.0d3*(1 + 0.05*sin(2*p%x+0.5)*sin(p%y+1.5)*sin(3*p%z+2.5))
              q = 0.5*(1 + sin(3*p%x)*sin(3*p%y)*sin(4*p%z))
@@ -2479,7 +2553,7 @@ contains
 
     use kinds, only: iulog
     use parallel_mod, only: parallel_t, global_shared_buf, global_shared_sum
-    use physical_constants, only: dd_pi
+    use physical_constants, only: dd_pi, Lx, Ly
     ! Can't use wrap_repro_sum because this routine needs to support
     ! unit testing in an already threaded region.
 #ifdef CAM
@@ -2494,7 +2568,7 @@ contains
     integer, intent(in) :: nets, nete
 
     integer :: ie, i, j, nf
-    real(kind=real_kind) :: area, sphere_area, re
+    real(kind=real_kind) :: area, area_true, re
 
     nf = gfr%nphys
     do ie = nets,nete
@@ -2509,20 +2583,24 @@ contains
        global_shared_buf(ie,3) = sum(elem(ie)%spheremp)
     end do
     call repro_sum(global_shared_buf, global_shared_sum, nelemd, nelemd, 3, commid=par%comm)
-    sphere_area = 4*dd_pi
+    if (gfr%is_planar) then
+       area_true = Lx*Ly
+    else
+       area_true = 4*dd_pi
+    end if
     if (par%masterproc) then
        write(iulog,*) 'gfr> area fv raw', global_shared_sum(1), &
-            abs(global_shared_sum(1) - sphere_area)/sphere_area
+            abs(global_shared_sum(1) - area_true)/area_true
        ! fv vs gll
        re = abs(global_shared_sum(2) - global_shared_sum(3))/global_shared_sum(3)
        write(iulog,*) 'gfr> area fv adj', &
-            abs(global_shared_sum(2) - sphere_area)/sphere_area, re
+            abs(global_shared_sum(2) - area_true)/area_true, re
        if (re > 2*eps) then
           write(iulog,*) 'gfr> check_areas ERROR'
           gfr%check_ok = .false.
        end if
        write(iulog,*) 'gfr> area gll   ', &
-            abs(global_shared_sum(3) - sphere_area)/sphere_area
+            abs(global_shared_sum(3) - area_true)/area_true
     end if
     deallocate(gfr%check_areas)
   end subroutine check_areas
@@ -2549,7 +2627,8 @@ contains
     logical, intent(in) :: verbose
 
     real(kind=real_kind) :: a, b, rd, x, y, f0(np*np), f1(np*np), g(np,np), &
-         wf(np*np), wg(np,np), qmin, qmax, qmin1, qmax1
+         wf(np*np), wg(np,np), qmin, qmax, qmin1, qmax1, lat, lon, latext(2), &
+         lonext(2), tol
     integer :: nf, nf2, ie, i, j, k, iremap, info, ilimit, it
     real(kind=real_kind), allocatable :: Qdp_fv(:,:), ps_v_fv(:,:), &
          qmins(:,:,:), qmaxs(:,:,:)
@@ -2608,6 +2687,31 @@ contains
        if (rd > 10*eps) then
           nerr = nerr + 1
           write(iulog,*) 'gfr> Dinv', ie, rd
+       end if
+       if (gfr%is_planar) then
+          lonext(1) = minval(elem(ie)%spherep(:,:)%lon)
+          lonext(2) = maxval(elem(ie)%spherep(:,:)%lon)
+          latext(1) = minval(elem(ie)%spherep(:,:)%lat)
+          latext(2) = maxval(elem(ie)%spherep(:,:)%lat)
+          tol = max(lonext(2) - lonext(1), latext(2) - latext(1))*1.e4*eps
+          do i = 1, nf
+             do j = 1, nf
+                call gfr_f_get_latlon(ie, i, j, lat, lon)
+                if ( lon < lonext(1) .or. lon > lonext(2) .or. &
+                     lat < latext(1) .or. lat > latext(2)) then
+                   write(iulog,*) 'gfr> planar latlon ctr', ie, latext, lonext, lat, lon
+                   nerr = nerr + 1
+                end if
+                do k = 1, 4
+                   call gfr_f_get_corner_latlon(ie, i, j, k, lat, lon)
+                   if ( lon < lonext(1) - tol .or. lon > lonext(2) + tol .or. &
+                        lat < latext(1) - tol .or. lat > latext(2) + tol) then
+                      write(iulog,*) 'gfr> planar latlon crn', ie, latext, lonext, lat, lon
+                      nerr = nerr + 1
+                   end if                   
+                end do
+             end do
+          end do
        end if
 
        ! Check that FV -> GLL -> FV recovers the original FV values exactly
@@ -2779,8 +2883,8 @@ contains
     use kinds, only: iulog
 
     type (cartesian3D_t) :: corners(4), sphere
-    real (real_kind) :: refin(2), refout(2), err
-    integer :: i, j, n, nerr
+    real (real_kind) :: refin(2), refout(2), err, tol
+    integer :: i, j, n, trial, nerr
 
     nerr = 0
 
@@ -2794,18 +2898,28 @@ contains
     do i = 1,n
        refin(1) = -1 + (1.0_real_kind/(n-1))*(i-1)
        do j = 1,n
-          refin(2) = -1 + (1.0_real_kind/(n-1))*(j-1)
-          call ref2sphere(corners, refin(1), refin(2), sphere)
-          call sphere2ref(corners, sphere, refout(1), refout(2))
-          err = abs(refin(1) - refout(1)) + abs(refin(2) - refout(2))
-          if (err > 15*eps .or. &
-               maxval(abs(refout)) > 1 + 5*eps .or. &
-               any(refout /= refout)) then
-             write(iulog,*) refin(1), refin(2)
-             write(iulog,*) refout(1), refout(2)
-             write(iulog,*) err
-             nerr = nerr + 1
-          end if
+          do trial = 1, 2
+             refin(2) = -1 + (1.0_real_kind/(n-1))*(j-1)
+             call ref2sphere(corners, refin(1), refin(2), sphere)
+             if (trial == 2) then
+                sphere%x = 0.9d0*sphere%x
+                sphere%y = 0.9d0*sphere%y
+                sphere%z = 0.9d0*sphere%z
+             end if
+             call sphere2ref(corners, sphere, refout(1), refout(2))
+             err = abs(refin(1) - refout(1)) + abs(refin(2) - refout(2))
+             tol = 15*eps
+             if (trial == 2) tol = 1e-6
+             if (err > tol .or. &
+                  maxval(abs(refout)) > 1 + 5*eps .or. &
+                  any(refout /= refout)) then
+                write(iulog,*) 'gfr> test_sphere2ref trial', trial
+                write(iulog,*) refin(1), refin(2)
+                write(iulog,*) refout(1), refout(2)
+                write(iulog,*) err
+                nerr = nerr + 1
+             end if
+          end do
        end do
     end do
     if (nerr /= 0) write(iulog,*) 'test_sphere2ref FAILED'

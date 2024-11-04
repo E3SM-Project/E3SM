@@ -65,11 +65,15 @@ contains
   subroutine prim_complete_init1_phase_f90 () bind(c)
     use prim_driver_base,  only: prim_init1_buffers, prim_init1_compose, prim_init1_cleanup
     use homme_context_mod, only: par, elem
+#ifdef HOMME_ENABLE_COMPOSE
     use compose_mod,       only: compose_control_kokkos_init_and_fin
+#endif
     use prim_driver_mod,   only: prim_init_grid_views
 
+#ifdef HOMME_ENABLE_COMPOSE
     ! Compose is not in charge of init/finalize kokkos
     call compose_control_kokkos_init_and_fin(.false.)
+#endif
 
     ! Init compose
     call prim_init1_compose(par,elem)
@@ -242,11 +246,16 @@ contains
   end subroutine prim_run_f90
 
   subroutine prim_finalize_f90 () bind(c)
-    use homme_context_mod,    only: is_model_inited, elem, dom_mt, close_homme_log
+    use homme_context_mod,    only: is_model_inited, elem, par, dom_mt, close_homme_log
     use prim_cxx_driver_base, only: prim_finalize
 
     if (.not. is_model_inited) then
-      call abortmp ("Error! prim_init_model_f90 was not called yet (or prim_finalize_f90 was already called).\n")
+      if (par%masterproc) then
+        print *, "WARNING! prim_init_model_f90 was not called yet (or prim_finalize_f90 was already called)"
+        print *, " We assume this is happening because an exception was thrown during initialization,"
+        print *, " and we're destroying objects as part of the stack unwinding."
+      endif
+      return
     endif
 
     ! Cleanup some f90 stuff in Homme, and cleanup all cxx structures

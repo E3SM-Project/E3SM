@@ -187,7 +187,7 @@ subroutine compute_cape_diags( state, pbuf, pcols, pver, cape_out, dcape_out )
   real(r8) :: pint_in_hPa(pcols,pver+1)
 
   real(r8) ::   zs(pcols)
-  real(r8) :: pblt(pcols)
+  integer  :: pblt(pcols)
   real(r8) :: zmid_above_sealevel(pcols,pver)
 
   real(r8),pointer :: tpert(:), pblh(:)

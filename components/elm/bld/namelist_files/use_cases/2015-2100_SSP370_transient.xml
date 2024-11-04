@@ -15,25 +15,29 @@
 
 <clm_demand >flanduse_timeseries</clm_demand>
 
-<!-- *** NOT USED FOR SATELLITE PHENOLOGY ***
+<!-- *** BELOW NOT USED FOR SATELLITE PHENOLOGY *** -->
+
 <stream_year_first_ndep phys="elm" use_cn=".true."   >1850</stream_year_first_ndep>
-<stream_year_last_ndep  phys="elm" use_cn=".true."   >2005</stream_year_last_ndep>
+<stream_year_last_ndep  phys="elm" use_cn=".true."   >2101</stream_year_last_ndep>
 <model_year_align_ndep  phys="elm" use_cn=".true."   >1850</model_year_align_ndep>
+<stream_fldfilename_ndep use_cn=".true."  >lnd/clm2/ndepdata/fndep_elm_cbgc_exp_simyr1849-2101_1.9x2.5_ssp370_c220614.nc</stream_fldfilename_ndep>
 
 <stream_year_first_pdep phys="elm" use_cn=".true."   >2000</stream_year_first_pdep>
 <stream_year_last_pdep  phys="elm" use_cn=".true."   >2000</stream_year_last_pdep>
 <model_year_align_pdep  phys="elm" use_cn=".true."   >2000</model_year_align_pdep>
 
 <stream_year_first_popdens phys="elm" use_cn=".true."   >1850</stream_year_first_popdens>
-<stream_year_last_popdens  phys="elm" use_cn=".true."   >2010</stream_year_last_popdens>
+<stream_year_last_popdens  phys="elm" use_cn=".true."   >2100</stream_year_last_popdens>
 <model_year_align_popdens  phys="elm" use_cn=".true."   >1850</model_year_align_popdens>
--->
-
+<stream_fldfilename_popdens hgrid="0.5x0.5"   use_cn=".true." >lnd/clm2/firedata/elmforc.Li_20181205_mod_hist_SSP3_CMIP6_hdm_0.5x0.5_AVHRR_simyr1850-2100_c240906.nc</stream_fldfilename_popdens>
 
 <!-- CMIP6 DECK compsets -->
 
-<fsurdat>lnd/clm2/surfdata_map/surfdata_ne30np4.pg2_SSP3_RCP70_simyr2015_c220420.nc </fsurdat>
-<flanduse_timeseries>lnd/clm2/surfdata_map/landuse.timeseries_ne30pg2_SSP3_RCP70_simyr2015-2100_c211015.nc</flanduse_timeseries>
+<fsurdat hgrid="ne30np4.pg2">lnd/clm2/surfdata_map/surfdata_ne30np4.pg2_SSP3_RCP70_simyr2015_c220420_with_TOP.nc </fsurdat -->
+<!-- fsurdat needs to be updated to simyr2015. but ok to run with the simyr1850 one used from piControl then historical -->
+<fsurdat hgrid="r05>"lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c200609_with_TOP.nc</fsurdat -->
+<flanduse_timeseries hgrid="ne30np4.pg2">lnd/clm2/surfdata_map/landuse.timeseries_ne30pg2_SSP3_RCP70_simyr2015-2100_c211015.nc</flanduse_timeseries>
+<flanduse_timeseries hgrid="r05">lnd/clm2/surfdata_map/landuse.timeseries_0.5x0.5_ssp3_rcp70_simyr2015-2100_c240308.nc</flanduse_timeseries>
 
 <!-- Add following for hybrid run of SSP370 continuing from a historical simulation -->
 

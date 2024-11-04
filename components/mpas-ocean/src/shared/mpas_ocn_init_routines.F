@@ -96,7 +96,7 @@ contains
       real (kind=RKIND), intent(in) :: dt
       integer, intent(out) :: err
 
-      type (mpas_pool_type), pointer :: meshPool
+      type (mpas_pool_type), pointer :: meshPool, verticalMeshPool
       type (mpas_pool_type), pointer :: statePool, tracersPool
       type (mpas_pool_type), pointer :: forcingPool, scratchPool
       integer :: iEdge, iCell
@@ -128,6 +128,7 @@ contains
       call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
 
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+      call mpas_pool_get_subpool(block % structs, 'verticalMesh', verticalMeshPool)
       call mpas_pool_get_subpool(block % structs, 'state', statePool)
       call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
       call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
@@ -169,7 +170,7 @@ contains
          !$acc enter data copyin(landIceDraft)
       endif
 #endif
-      call ocn_diagnostic_solve(dt,  statePool, forcingPool, meshPool, scratchPool, tracersPool)
+      call ocn_diagnostic_solve(dt,  statePool, forcingPool, meshPool, verticalMeshPool, scratchPool, tracersPool)
 #ifdef MPAS_OPENACC
       !$acc update host(layerThickEdgeFlux, layerThickEdgeMean)
       !$acc update host(relativeVorticity, circulation)
@@ -217,7 +218,7 @@ contains
          normalVelocity(maxLevelEdgeTop(iEdge)+1:maxLevelEdgeBot(iEdge), iEdge) = 0.0_RKIND
 
          normalVelocity(maxLevelEdgeBot(iEdge)+1:nVertLevels,iEdge) = -1.0e34_RKIND
-         
+
          normalVelocity(1:minLevelEdgeTop(iEdge)-1,iEdge) = -1.0e34_RKIND
       end do
 
@@ -264,7 +265,10 @@ contains
       call ocn_forcing_build_fraction_absorbed_array(meshPool, statePool, forcingPool, err1, 1)
       err = ior(err, err1)
       call ocn_surface_land_ice_fluxes_build_arrays(meshPool, &
-                                                    forcingPool, scratchPool, statePool, dt, err1)
+                                                    forcingPool, scratchPool, statePool, err1)
+      err = ior(err, err1)
+      call ocn_surface_land_ice_fluxes_accumulate_fluxes(meshPool, forcingPool, &
+                                                         statePool, dt, err1)
       err = ior(err, err1)
 
 

@@ -27,18 +27,21 @@ void cleanup_test_f90 ();
 
 namespace {
 
+/*
+ * In this test we do a dyn->physGLL remap "on the fly" during the output phase.
+ * Then, we load the generated file on a separate FieldManager, and compare the
+ * values against the ones we would get manually running the d2p remapper.
+ */
+
 TEST_CASE("dyn_grid_io")
 {
   using namespace scream;
   using namespace ShortFieldTagsNames;
-  constexpr int np  = HOMMEXX_NP;
-  constexpr int nlev = HOMMEXX_NUM_PHYSICAL_LEV;
 
   ekat::Comm comm(MPI_COMM_WORLD);  // MPI communicator group used for I/O set as ekat object.
 
   // Initialize the pio_subsystem for this test:
-  MPI_Fint fcomm = MPI_Comm_c2f(comm.mpi_comm());
-  scorpio::eam_init_pio_subsystem(fcomm);
+  scorpio::init_subsystem(comm);
 
   // Init homme context
   if (!is_parallel_inited_f90()) {
@@ -46,17 +49,6 @@ TEST_CASE("dyn_grid_io")
     init_parallel_f90(comm_f);
   }
   init_test_params_f90 ();
-
-  // The homme context
-  auto& c = Homme::Context::singleton();
-
-  // The TimeLevel structure is needed by the PD remapper
-  // Note: we don't remap states, so doesn't matter what values we pick
-  c.create_if_not_there<Homme::TimeLevel>();
-  auto& tl = c.get<Homme::TimeLevel>();
-  tl.np1 = 0;
-  tl.nm1 = 1;
-  tl.n0  = 2;
 
   // Set parameters
   constexpr int ne = 2;
@@ -73,32 +65,35 @@ TEST_CASE("dyn_grid_io")
   auto phys_grid = gm->get_grid("Physics GLL");
 
   // Local counters
-  const int nelems = get_num_local_elems_f90();
-  const int ncols  = phys_grid->get_num_local_dofs();
-  EKAT_REQUIRE_MSG(ncols>0, "Internal test error! Fix dyn_grid_io, please.\n");
-  EKAT_REQUIRE_MSG(nelems>0, "Internal test error! Fix dyn_grid_io, please.\n");
+  EKAT_REQUIRE_MSG(phys_grid->get_num_local_dofs()>0, "Internal test error! Fix dyn_grid_io, please.\n");
+  EKAT_REQUIRE_MSG(get_num_local_elems_f90()>0, "Internal test error! Fix dyn_grid_io, please.\n");
 
   // Create physics and dynamics Fields
-  FieldLayout layout_dyn_1({EL,GP,GP,LEV},{nelems,np,np,nlev});
-  FieldLayout layout_dyn_2({EL,CMP,GP,GP,LEV},{nelems,2,np,np,nlev});
-  FieldLayout layout_dyn_3({EL,GP,GP},{nelems,np,np});
+  auto dyn_scalar3d_mid = dyn_grid->get_3d_scalar_layout(true);
+  auto dyn_vector3d_mid = dyn_grid->get_3d_vector_layout(true,2);
+  auto dyn_scalar2d     = dyn_grid->get_2d_scalar_layout();
 
-  FieldLayout layout_phys_1({COL,LEV},{ncols,nlev});
-  FieldLayout layout_phys_2({COL,CMP,LEV},{ncols,2,nlev});
-  FieldLayout layout_phys_3({COL},{ncols});
+  auto phys_scalar3d_mid = phys_grid->get_3d_scalar_layout(true);
+  auto phys_vector3d_mid = phys_grid->get_3d_vector_layout(true,2);
+  auto phys_scalar2d     = phys_grid->get_2d_scalar_layout();
 
   auto nondim = ekat::units::Units::nondimensional();
-  FieldIdentifier fid_dyn_1 ("field_1",layout_dyn_1,nondim,dyn_grid->name());
-  FieldIdentifier fid_dyn_2 ("field_2",layout_dyn_2,nondim,dyn_grid->name());
-  FieldIdentifier fid_dyn_3 ("field_3",layout_dyn_3,nondim,dyn_grid->name());
+  FieldIdentifier fid_dyn_1 ("field_1",dyn_scalar3d_mid,nondim,dyn_grid->name());
+  FieldIdentifier fid_dyn_2 ("field_2",dyn_vector3d_mid,nondim,dyn_grid->name());
+  FieldIdentifier fid_dyn_3 ("field_3",dyn_scalar2d    ,nondim,dyn_grid->name());
 
-  FieldIdentifier fid_phys_1 ("field_1",layout_phys_1,nondim,phys_grid->name());
-  FieldIdentifier fid_phys_2 ("field_2",layout_phys_2,nondim,phys_grid->name());
-  FieldIdentifier fid_phys_3 ("field_3",layout_phys_3,nondim,phys_grid->name());
+  FieldIdentifier fid_phys_1 ("field_1",phys_scalar3d_mid,nondim,phys_grid->name());
+  FieldIdentifier fid_phys_2 ("field_2",phys_vector3d_mid,nondim,phys_grid->name());
+  FieldIdentifier fid_phys_3 ("field_3",phys_scalar2d    ,nondim,phys_grid->name());
 
+  // The starting FM
   auto fm_dyn = std::make_shared<FieldManager> (dyn_grid);
-  auto fm_phys= std::make_shared<FieldManager> (phys_grid);
+
+  // The FM we will manually remap onto
   auto fm_ctrl= std::make_shared<FieldManager> (phys_grid);
+
+  // The FM we will read into, and compare against the previous
+  auto fm_phys= std::make_shared<FieldManager> (phys_grid);
 
   fm_dyn->registration_begins();
   fm_phys->registration_begins();
@@ -128,67 +123,54 @@ TEST_CASE("dyn_grid_io")
 
   std::vector<std::string> fnames = {"field_1", "field_2", "field_3"};
 
-  // Randomize control fields, then remap to dyn fields
+  // Randomize dyn fields, then remap to ctrl fields
   std::uniform_real_distribution<Real> pdf(0.01,100.0);
   auto engine = setup_random_test(&comm);
-  auto dyn2phys = gm->create_remapper(dyn_grid,phys_grid);
   auto dyn2ctrl = gm->create_remapper(dyn_grid,phys_grid);
-  dyn2phys->registration_begins();
   dyn2ctrl->registration_begins();
   for (const auto& fn : fnames) {
     auto fd = fm_dyn->get_field(fn);
-    auto fp = fm_phys->get_field(fn);
     auto fc = fm_ctrl->get_field(fn);
     dyn2ctrl->register_field(fd,fc);
-    dyn2phys->register_field(fd,fp);
-    randomize(fc,engine,pdf);
+    randomize(fd,engine,pdf);
 
+    // Init phys field to something obviously wrong
+    auto fp = fm_phys->get_field(fn);
+    fp.deep_copy(-1.0);
   }
-  dyn2phys->registration_ends();
   dyn2ctrl->registration_ends();
-  dyn2ctrl->remap(false); // Remap bwd to get data from ctrl to dyn
+  dyn2ctrl->remap(true);
 
   // Now try to write all fields to file from the dyn grid fm
-  // IMPORTANT! Make the file name dependent on comm size, so all tests
-  //            can run in parallel without race conditions on the nc file.
-  ekat::ParameterList io_params;
-  io_params.set<int>("Max Snapshots Per File",1);
-  io_params.set<std::string>("Averaging Type","Instant");
-  io_params.set<std::vector<std::string>>("Grids",{"Dynamics"});
-  io_params.set<std::string>("filename_prefix","dyn_grid_io_np" + std::to_string(comm.size()));
-  io_params.sublist("Fields").sublist("Dynamics").set<std::vector<std::string>>("Field Names",fnames);
-  io_params.sublist("Fields").sublist("Dynamics").set<std::string>("IO Grid Name","Physics GLL");
+  // Note: add MPI ranks to filename, to allow MPI tests to run in parallel
+  ekat::ParameterList out_params;
+  out_params.set<std::string>("Averaging Type","Instant");
+  out_params.set<std::string>("filename_prefix","dyn_grid_io");
+  out_params.set<bool>("MPI Ranks in Filename",true);
+  out_params.sublist("Fields").sublist("Dynamics").set<std::vector<std::string>>("Field Names",fnames);
+  out_params.sublist("Fields").sublist("Dynamics").set<std::string>("IO Grid Name","Physics GLL");
 
-  io_params.sublist("output_control").set<int>("Frequency",1);
-  io_params.sublist("output_control").set<std::string>("frequency_units","nsteps");
-  io_params.set<std::string>("Floating Point Precision","real");
+  out_params.sublist("output_control").set<int>("Frequency",1);
+  out_params.sublist("output_control").set<std::string>("frequency_units","nsteps");
+  out_params.set<std::string>("Floating Point Precision","real");
 
   OutputManager output;
-  // AtmosphereOutput output(comm,io_params,fm_dyn,gm);
-  output.setup (comm, io_params, fm_dyn, gm, t0, t0, false);
+  output.setup (comm, out_params, fm_dyn, gm, t0, t0, false);
   output.run(t0);
   output.finalize();
 
-  // Clear the content of the dyn fields, to avoid seeing the same numbers
-  // only b/c nothing was in fact read.
-  for (const auto& fn : fnames) {
-    auto f = fm_dyn->get_field(fn);
-    f.deep_copy(-1.0);
-  }
-
   // Next, let's load all fields from file directly into the dyn grid fm
-  std::string filename = "dyn_grid_io_np" + std::to_string(comm.size())
-                       + ".INSTANT.nsteps_x1." + t0.to_string() + ".nc";
+  std::string filename = "dyn_grid_io.INSTANT.nsteps_x1.np" + std::to_string(comm.size()) + "." + t0.to_string() + ".nc";
   filename.erase(std::remove(filename.begin(),filename.end(),':'),filename.end());
 
-  io_params.set<std::string>("Filename",filename);
-  io_params.set<std::string>("Grid",dyn_grid->name());
-  AtmosphereInput input (io_params,fm_dyn, gm);
+  ekat::ParameterList in_params;
+  in_params.set<std::string>("Filename",filename);
+  in_params.set<std::vector<std::string>>("Field Names",fnames);
+  AtmosphereInput input (in_params,fm_phys);
   input.read_variables();
   input.finalize();
 
-  // Remap dyn->phys, and compare against ctrl
-  dyn2phys->remap(true);
+  // Compare against ctrl fields
   for (const auto& fn : fnames) {
     auto fp = fm_phys->get_field(fn);
     auto fc = fm_ctrl->get_field(fn);
@@ -196,7 +178,7 @@ TEST_CASE("dyn_grid_io")
   }
 
   // Cleanup everything
-  scorpio::eam_pio_finalize();
+  scorpio::finalize_subsystem();
   Homme::Context::finalize_singleton();
   cleanup_test_f90();
 }

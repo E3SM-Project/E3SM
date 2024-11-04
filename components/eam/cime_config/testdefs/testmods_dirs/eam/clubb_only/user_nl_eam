@@ -1,4 +1,5 @@
  deep_scheme        = 'off',
+ zmconv_microp      = .false.
  shallow_scheme     = 'CLUBB_SGS',
  l_tracer_aero      = .false.
  l_rayleigh         = .false.

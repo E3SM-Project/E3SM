@@ -125,7 +125,7 @@ end subroutine linoz_readnl
     ! input parameters from netcdf file and interpolate to
     ! present model grid
     !
-    use linoz_data,   only : linoz_data_init, has_linozv3_data, has_linoz_data
+    use linoz_data,   only : linoz_data_init, has_linozv3_data, has_linoz_data,file
     use ppgrid,       only : pver
     use mo_chem_utls, only : get_spc_ndx, get_rxt_ndx
     use cam_history,  only : addfld, horiz_only, add_default
@@ -159,12 +159,6 @@ end subroutine linoz_readnl
 
     uci1_ndx    = get_rxt_ndx('uci1')
 
-    if (uci1_ndx <=0 .and. (.not. has_linoz_data)) then
-       write(iulog,*) 'Warning: Linoz is off! Be sure it is intended.'
-       do_lin_strat_chem = .false.
-       return
-    end if
-
     !linoz_v3= (o3lnz_ndx > 0 .and. n2olnz_ndx >0  .and. noylnz_ndx >0  .and. ch4lnz_ndx > 0)
     !linoz_v2= (o3lnz_ndx > 0 .and. n2olnz_ndx <0  .and. noylnz_ndx <0  .and. ch4lnz_ndx < 0)
     linoz_v3= (n2olnz_ndx >0  .and. noylnz_ndx >0 .and. ch4lnz_ndx > 0)
@@ -178,15 +172,27 @@ end subroutine linoz_readnl
     no2_ndx  =   get_spc_ndx('NO2')
     hno3_ndx =   get_spc_ndx('HNO3')
 
-   !if(masterproc)then
+   if(masterproc)then
    ! write(iulog,*)'in subroutine lin_strat_chem_inti'
    ! write(iulog,*)'O3LNZ=',o3lnz_ndx,'N2OLNZ=',n2olnz_ndx,'NOYLNZ=',noylnz_ndx,'H2OLNZ=',h2olnz_ndx
    ! write(iulog,*)'O3=',o3_ndx,'CH4=',ch4_ndx,'N2O=',n2o_ndx,'NO=',no_ndx,'NO2=',no2_ndx,'HNO3=',hno3_ndx
-   !end if
+   write(iulog,*)'inside lin_strat_solve for ndx o3, o3lnz, n2o, noylnz, ch4', o3_ndx, o3lnz_ndx, n2o_ndx, noylnz_ndx, ch4_ndx
+   end if
     
 !     
 !   initialize the linoz data
 
+    !!set true for linoz_v3 interpolation in interpolation
+    if (linoz_v3) file%linoz_v3=.true.
+    if (linoz_v2) file%linoz_v2=.true.
+    !!
+    if (linoz_v2 .and. linoz_v3 ) then
+            write(iulog,*) 'linoz_readnl, linoz: Both linoz_v2 and linoz_v3 are true. This is wrong! please check.'
+            return
+    elseif (.not. linoz_v2 .and. .not. linoz_v3) then
+            write(iulog,*) 'linoz_readnl, linoz: Both linoz_v2 and linoz_v3 are false, which can be correct, but be sure that is intended!'
+    endif
+    !!
     call linoz_data_init()
 
     ! define additional output
@@ -262,7 +268,8 @@ end subroutine linoz_readnl
                               lnoy_dPmL_dCH4_ndx,lnoy_dPmL_dH2O_ndx, lnoy_dPmL_dT_ndx,  lnoy_dPmL_dO3col_ndx,&
                               nch4_PmL_clim_ndx, nch4_dPmL_dO3_ndx,  nch4_dPmL_dN2O_ndx,nch4_dPmL_dNOy_ndx,  &
                               nch4_dPmL_dCH4_ndx,nch4_dPmL_dH2O_ndx, nch4_dPmL_dT_ndx,  nch4_dPmL_dO3col_ndx,&
-                              cariolle_pscs_ndx, o3lbs_ndx
+                              cariolle_pscs_ndx, o3lbs_ndx,o3_clim_srf_ndx,n2o_clim_srf_ndx,noy_clim_srf_ndx,&
+                              ch4_clim_srf_ndx,  ch4_avg_srf_ndx
     !
     integer,  intent(in)                           :: ncol                ! number of columns in chunk
     integer,  intent(in)                           :: lchnk               ! chunk index
@@ -312,6 +319,11 @@ end subroutine linoz_readnl
     real(r8), dimension(:,:), pointer :: linoz_dPmL_dO3col
     real(r8), dimension(:,:), pointer :: linoz_cariolle_psc
     real(r8), dimension(:,:), pointer :: linoz_o3lbs
+    real(r8), dimension(:,:), pointer :: linoz_o3_clim_srf
+    real(r8), dimension(:,:), pointer :: linoz_n2o_clim_srf
+    real(r8), dimension(:,:), pointer :: linoz_noy_clim_srf
+    real(r8), dimension(:,:), pointer :: linoz_ch4_clim_srf
+    real(r8), dimension(:,:), pointer :: linoz_ch4_avg_srf
     ! real O3 variables
     real(r8), dimension(ncol,pver) :: do3_linoz_du, do3_linoz_psc_du
     real(r8), dimension(ncol) :: twod_do3_linoz
@@ -349,29 +361,34 @@ end subroutine linoz_readnl
        linoz_t_clim       => fields(t_clim_ndx)       %data(:,:,lchnk )
        linoz_o3col_clim   => fields(o3col_clim_ndx)   %data(:,:,lchnk )
        linoz_o3lbs        => fields(o3lbs_ndx)        %data(:,:,lchnk )
-
-       dO3(:,:)     =   o3_vmr(:,:)  - linoz_o3_clim(:,:)
-       dN2O(:,:)    =  n2o_vmr(:,:)  - linoz_n2o_clim(:,:)
-       dNOY(:,:)    =  noy_vmr(:,:)  - linoz_noy_clim(:,:) 
-       dCH4(:,:)    =  ch4_vmr(:,:)  - linoz_ch4_clim(:,:)
-       dH2O(:,:)    =  h2o_vmr(:,:)  - linoz_h2o_clim(:,:) 
-       dTemp(:,:)   =  temp(:,:)     - linoz_t_clim(:,:)
-       dCOL(:,:)     =  o3col(:,:)*convert_to_du - linoz_o3col_clim(:,:)
+       !!add srf
+       linoz_o3_clim_srf  => fields( o3_clim_srf_ndx)  %data(:,:,lchnk )
+       linoz_n2o_clim_srf => fields(n2o_clim_srf_ndx)  %data(:,:,lchnk )
+       linoz_noy_clim_srf => fields(noy_clim_srf_ndx)  %data(:,:,lchnk )
+       linoz_ch4_clim_srf => fields(ch4_clim_srf_ndx)  %data(:,:,lchnk )
+       !!add avg
+       linoz_ch4_avg_srf  => fields(ch4_avg_srf_ndx)  %data(:,:,lchnk )
+       !!
+       dO3(:,:)     =   o3_vmr(:,:)  - linoz_o3_clim(:ncol,:)
+       dN2O(:,:)    =  n2o_vmr(:,:)  - linoz_n2o_clim(:ncol,:)
+       dNOY(:,:)    =  noy_vmr(:,:)  - linoz_noy_clim(:ncol,:) 
+       dCH4(:,:)    =  ch4_vmr(:,:)  - linoz_ch4_clim(:ncol,:)
+       dH2O(:,:)    =  h2o_vmr(:,:)  - linoz_h2o_clim(:ncol,:) 
+       dTemp(:,:)   =  temp(:ncol,:) - linoz_t_clim(:ncol,:)
+       dCOL(:,:)     =  o3col(:,:)*convert_to_du - linoz_o3col_clim(:ncol,:)
 
 ! potential water 2*ch4 +h2o !it might be better to get maxch4 3-4 years back in time but this will do for now 
 ! upated yearly o3,n2o,noy and ch4 value are stored at xx_clim in linoz file at the bottom padding layer
 ! output surface constant concentration to control surface sink/source
 !
 !       write(iulog,*)'pver=',pver
-
-       xsfc(1,:)=   linoz_o3lbs(:,pver) !  ozone surface constant (varying in lat)
-       xsfc(2,:)=   linoz_n2o_clim(:,pver) !  n2o (constant throughout latitude)
-       xsfc(3,:)=   linoz_o3lbs(:,pver)*3.e-3_r8  !noylnz
-       xsfc(4,:)=   linoz_ch4_clim(:,pver) ! ch4 (constant throughout latitude)
-
-! The  local maxval calculation causes NBFB when ncol varies due to threading or pe-layout change
-! Tentatively uses a fixed value
-!      ch4max =     maxval(linoz_ch4_clim(1:ncol,pver))
+       !use srf data from linv3 input data directly
+       xsfc(1,:)=   linoz_o3_clim_srf(:ncol,1)  ! ozone surface constant (varying in lat)
+       xsfc(2,:)=   linoz_n2o_clim_srf(:ncol,1) !  n2o (constant throughout latitude)
+       xsfc(3,:)=   linoz_noy_clim_srf(:ncol,1) !noylnz
+       xsfc(4,:)=   linoz_ch4_clim_srf(:ncol,1) ! ch4 (constant throughout latitude)
+       ! The  local maxval calculation causes NBFB when ncol varies due to threading or pe-layout change
+       ! Tentatively uses a fixed value
        ch4max =     1.8e-6_r8
        pw= 2.0_r8 * ch4max + 3.65e-6_r8 
  
@@ -386,13 +403,13 @@ end subroutine linoz_readnl
        linoz_dPmL_dO3col  => fields(no3_dPmL_dO3col_ndx)  %data(:,:,lchnk )
 
 !for steady-state sol. plug-in, no need for dPmL_dO3 term 
-       PL_O3 =  linoz_PmL_clim             &       
-            +  linoz_dPmL_dn2o    * dN2O  &
-            +  linoz_dPmL_dnoy    * dNOY  &
-            +  linoz_dPmL_dch4    * dCH4  &
-            +  linoz_dPmL_dh2o    * dH2O  &
-            +  linoz_dPmL_dT      * dTemp &
-            +  linoz_dPmL_dO3col  * dCOL
+       PL_O3 =  linoz_PmL_clim(:ncol,:)             &       
+            +  linoz_dPmL_dn2o(:ncol,:)    * dN2O  &
+            +  linoz_dPmL_dnoy(:ncol,:)    * dNOY  &
+            +  linoz_dPmL_dch4(:ncol,:)    * dCH4  &
+            +  linoz_dPmL_dh2o(:ncol,:)    * dH2O  &
+            +  linoz_dPmL_dT(:ncol,:)      * dTemp &
+            +  linoz_dPmL_dO3col(:ncol,:)  * dCOL
 ! 
 !pointer to pn2o
        linoz_PmL_clim     => fields(pn2o_PmL_clim_ndx)     %data(:,:,lchnk )
@@ -404,14 +421,14 @@ end subroutine linoz_readnl
        linoz_dPmL_dT      => fields(pn2o_dPmL_dT_ndx)      %data(:,:,lchnk )
        linoz_dPmL_dO3col  => fields(pn2o_dPmL_dO3col_ndx)  %data(:,:,lchnk )
 !Taylor-expansion of P (mr/sec)
-       P_n2o =  linoz_PmL_clim           &   
-            +  linoz_dPmL_dO3    * dO3      &
-            +  linoz_dPmL_dn2o   * dN2O     &
-            +  linoz_dPmL_dnoy   * dNOY     &
-            +  linoz_dPmL_dch4   * dCH4     &
-            +  linoz_dPmL_dh2o   * dH2O     &
-            +  linoz_dPmL_dT     * dTemp    &
-            +  linoz_dPmL_dO3col * dCOL
+       P_n2o =  linoz_PmL_clim(:ncol,:)           &
+            +  linoz_dPmL_dO3(:ncol,:)    * dO3      &
+            +  linoz_dPmL_dn2o(:ncol,:)   * dN2O     &
+            +  linoz_dPmL_dnoy(:ncol,:)   * dNOY     &
+            +  linoz_dPmL_dch4(:ncol,:)   * dCH4     &
+            +  linoz_dPmL_dh2o(:ncol,:)   * dH2O     &
+            +  linoz_dPmL_dT(:ncol,:)     * dTemp    &
+            +  linoz_dPmL_dO3col(:ncol,:) * dCOL
 ! 
 !pointer to ln2o
        linoz_PmL_clim     => fields(ln2o_PmL_clim_ndx)     %data(:,:,lchnk ) !1/sec not vrm/sec already scaled by n2o vmr
@@ -423,14 +440,14 @@ end subroutine linoz_readnl
        linoz_dPmL_dT      => fields(ln2o_dPmL_dT_ndx)      %data(:,:,lchnk )
        linoz_dPmL_dO3col  => fields(ln2o_dPmL_dO3col_ndx)  %data(:,:,lchnk )
 ! Taylor expanding loss freq (1/sec) of N2O
-       Lfreq_n2o =  linoz_PmL_clim           &
-            +  linoz_dPmL_dO3    * dO3    &
-            +  linoz_dPmL_dn2o   * dN2O   &
-            +  linoz_dPmL_dnoy   * dNOY   &
-            +  linoz_dPmL_dch4   * dCH4   &
-            +  linoz_dPmL_dh2o   * dH2O   &
-            +  linoz_dPmL_dT     * dTemp  &
-            +  linoz_dPmL_dO3col * dCOL
+       Lfreq_n2o =  linoz_PmL_clim(:ncol,:)           &
+            +  linoz_dPmL_dO3(:ncol,:)    * dO3    &
+            +  linoz_dPmL_dn2o(:ncol,:)   * dN2O   &
+            +  linoz_dPmL_dnoy(:ncol,:)   * dNOY   &
+            +  linoz_dPmL_dch4(:ncol,:)   * dCH4   &
+            +  linoz_dPmL_dh2o(:ncol,:)   * dH2O   &
+            +  linoz_dPmL_dT(:ncol,:)     * dTemp  &
+            +  linoz_dPmL_dO3col(:ncol,:) * dCOL
 !
 !pointer to production of NOy
        linoz_PmL_clim     => fields(pnoy_PmL_clim_ndx)     %data(:,:,lchnk )
@@ -442,14 +459,14 @@ end subroutine linoz_readnl
        linoz_dPmL_dT      => fields(pnoy_dPmL_dT_ndx)      %data(:,:,lchnk )
        linoz_dPmL_dO3col  => fields(pnoy_dPmL_dO3col_ndx)  %data(:,:,lchnk )
 !Taylar expanding production of noy divided by fn2o (so unit 1/sec)      
-       Pfreq_noy =  linoz_PmL_clim            & 
-            +  linoz_dPmL_dO3   * dO3    &
-            +  linoz_dPmL_dn2o  * dN2O   &
-            +  linoz_dPmL_dnoy  * dNOY   &
-            +  linoz_dPmL_dch4  * dCH4   &
-            +  linoz_dPmL_dh2o  * dH2O   &
-            +  linoz_dPmL_dT    * dTemp  &
-            +  linoz_dPmL_dO3col* dCOL
+       Pfreq_noy =  linoz_PmL_clim(:ncol,:)            & 
+            +  linoz_dPmL_dO3(:ncol,:)   * dO3    &
+            +  linoz_dPmL_dn2o(:ncol,:)  * dN2O   &
+            +  linoz_dPmL_dnoy(:ncol,:)  * dNOY   &
+            +  linoz_dPmL_dch4(:ncol,:)  * dCH4   &
+            +  linoz_dPmL_dh2o(:ncol,:)  * dH2O   &
+            +  linoz_dPmL_dT(:ncol,:)    * dTemp  &
+            +  linoz_dPmL_dO3col(:ncol,:)* dCOL
 !
 !pointer to loss of NOY
        linoz_PmL_clim     => fields(lnoy_PmL_clim_ndx)     %data(:,:,lchnk )
@@ -461,14 +478,14 @@ end subroutine linoz_readnl
        linoz_dPmL_dT      => fields(lnoy_dPmL_dT_ndx)      %data(:,:,lchnk )
        linoz_dPmL_dO3col  => fields(lnoy_dPmL_dO3col_ndx)  %data(:,:,lchnk )
 !Taylar expanding loss of noy divided by fn2o (so unit 1/sec)      
-       Lfreq_noy =  linoz_PmL_clim    & 
-            +  linoz_dPmL_dO3   * dO3  &
-            +  linoz_dPmL_dn2o  * dN2O &
-            +  linoz_dPmL_dnoy  * dNOY &
-            +  linoz_dPmL_dch4  * dCH4 &
-            +  linoz_dPmL_dh2o  * dH2O &
-            +  linoz_dPmL_dT    * dTemp&
-            +  linoz_dPmL_dO3col* dCOL
+       Lfreq_noy =  linoz_PmL_clim(:ncol,:)    & 
+            +  linoz_dPmL_dO3(:ncol,:)   * dO3  &
+            +  linoz_dPmL_dn2o(:ncol,:)  * dN2O &
+            +  linoz_dPmL_dnoy(:ncol,:)  * dNOY &
+            +  linoz_dPmL_dch4(:ncol,:)  * dCH4 &
+            +  linoz_dPmL_dh2o(:ncol,:)  * dH2O &
+            +  linoz_dPmL_dT(:ncol,:)    * dTemp&
+            +  linoz_dPmL_dO3col(:ncol,:)* dCOL
 
 !pointer to loss of CH4
        linoz_PmL_clim     => fields(nch4_PmL_clim_ndx)     %data(:,:,lchnk )
@@ -480,14 +497,14 @@ end subroutine linoz_readnl
        linoz_dPmL_dT      => fields(nch4_dPmL_dT_ndx)      %data(:,:,lchnk )
        linoz_dPmL_dO3col  => fields(nch4_dPmL_dO3col_ndx)  %data(:,:,lchnk )
 ! Taylor expanding loss frequency of CH4
-       Lfreq_ch4 =  linoz_PmL_clim            & 
-            +  linoz_dPmL_dO3   * dO3    &
-            +  linoz_dPmL_dn2o  * dN2O   &
-            +  linoz_dPmL_dnoy  * dNOY   &
-            +  linoz_dPmL_dch4  * dCH4   &
-            +  linoz_dPmL_dh2o  * dH2O   &
-            +  linoz_dPmL_dT    * dTemp  &
-            +  linoz_dPmL_dO3col* dCOL
+       Lfreq_ch4 =  linoz_PmL_clim(:ncol,:)            & 
+            +  linoz_dPmL_dO3(:ncol,:)   * dO3    &
+            +  linoz_dPmL_dn2o(:ncol,:)  * dN2O   &
+            +  linoz_dPmL_dnoy(:ncol,:)  * dNOY   &
+            +  linoz_dPmL_dch4(:ncol,:)  * dCH4   &
+            +  linoz_dPmL_dh2o(:ncol,:)  * dH2O   &
+            +  linoz_dPmL_dT(:ncol,:)    * dTemp  &
+            +  linoz_dPmL_dO3col(:ncol,:)* dCOL
  
        linoz_cariolle_psc => fields(cariolle_pscs_ndx)%data(:,:,lchnk )
     
@@ -963,7 +980,14 @@ end subroutine linoz_readnl
        mw(1) =  adv_mass(o3lnz_ndx)
        sfc_const(1,:)= o3_sfc
        o3_lbl=4
+     elseif (o3_ndx > 0) then
+       ms=1
+       nx(1) =  o3_ndx
+       mw(1) =  adv_mass(o3_ndx)
+       sfc_const(1,:)= o3_sfc
+       o3_lbl=4
      else
+       write(iulog,*)'warning: linoz_v2 is on but no surface o3 loss'
        return
      endif
     endif

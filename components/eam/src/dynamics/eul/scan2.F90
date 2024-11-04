@@ -69,9 +69,6 @@ subroutine scan2run (ztodt, cwava, etamid,t2      ,fu      ,fv    )
    use mpishorthand, only: mpicom, mpir8
 #endif
    use physconst,    only: cpair
-   use scamMod,      only: fixmascam,alphacam,betacam,use_iop,&
-                           single_column
-   use eul_single_column_mod, only: eul_post_forecast
    use pspect,       only: pnmax
    use tfilt_massfix, only: tfilt_massfixrun
    use massfix,      only: hw1,hw2,hw3,alpha
@@ -171,28 +168,27 @@ subroutine scan2run (ztodt, cwava, etamid,t2      ,fu      ,fv    )
 
 !
 !-----------------------------------------------------------------------
-   if (.not. single_column) then
 
-      call t_startf ('grcalc')
+   call t_startf ('grcalc')
 
-      call prepGRcalc(tmpSPEcoef)
+   call prepGRcalc(tmpSPEcoef)
 
-#if ( defined SPMD )
+   #if ( defined SPMD )
 
-!$OMP PARALLEL DO PRIVATE (J)
+   !$OMP PARALLEL DO PRIVATE (J)
       do j=1,plat/2
          call grcalcs (j, ztodt, grts(1,1,j), grths(1,1,j), grds(1,1,j), &
               grzs(1,1,j), grus(1,1,j), gruhs(1,1,j), grvs(1,1,j), grvhs(1,1,j), &
               grpss(1,j), grdpss(1,j), grpms(1,j), grpls(1,j), tmpSPEcoef)
-         
+
          call grcalca (j, ztodt, grta(1,1,j), grtha(1,1,j), grda(1,1,j), &
               grza(1,1,j), grua(1,1,j), gruha(1,1,j), grva(1,1,j), grvha(1,1,j), &
               grpsa(1,j), grdpsa(1,j), grpma(1,j), grpla(1,j), tmpSPEcoef)
       end do
 
-#else
+   #else
 
-!$OMP PARALLEL DO PRIVATE (LAT, J)
+   !$OMP PARALLEL DO PRIVATE (LAT, J)
    do lat=beglat,endlat
       if (lat > plat/2) then
          j = plat - lat + 1
@@ -207,54 +203,54 @@ subroutine scan2run (ztodt, cwava, etamid,t2      ,fu      ,fv    )
       end if
    end do
 
-#endif
+   #endif
 
    call t_stopf ('grcalc')
 
    call t_startf('spegrd_alloc')
-#if ( defined SPMD )
+   #if ( defined SPMD )
    nlon_fft_in = 2*maxm
    allocate(fftbuf_in(nlon_fft_in,8,plevp,plat))
-#else
+   #else
    nlon_fft_in = 1
    allocate(fftbuf_in(1,1,1,1))
-#endif
+   #endif
 
    nlon_fft_out = plondfft
    allocate(fftbuf_out(nlon_fft_out,8,plevp,beglat:endlat))
    call t_stopf('spegrd_alloc')
-!
+   !
    call t_startf('spegrd_bft')
-!$OMP PARALLEL DO PRIVATE (LAT, IROW)
+   !$OMP PARALLEL DO PRIVATE (LAT, IROW)
    do lat=1,plat
       irow = lat
       if (lat > plat/2) irow = plat - lat + 1
-#if ( defined SPMD )
+   #if ( defined SPMD )
       call spegrd_bft (lat, nlon_fft_in, &
                        grdpss(1,irow), grzs(1,1,irow), grds(1,1,irow), gruhs(1,1,irow), grvhs(1,1,irow), &
                        grths(1,1,irow), grpss(1,irow), grus(1,1,irow), grvs(1,1,irow), grts(1,1,irow), &
                        grpls(1,irow), grpms(1,irow), grdpsa(1,irow), grza(1,1,irow), grda(1,1,irow), &
                        gruha(1,1,irow), grvha(1,1,irow), grtha(1,1,irow), grpsa(1,irow), grua(1,1,irow), &
                        grva(1,1,irow), grta(1,1,irow), grpla(1,irow), grpma(1,irow), fftbuf_in(1,1,1,lat) )
-#else
+   #else
       call spegrd_bft (lat, nlon_fft_out, &
                        grdpss(1,irow), grzs(1,1,irow), grds(1,1,irow), gruhs(1,1,irow), grvhs(1,1,irow), &
                        grths(1,1,irow), grpss(1,irow), grus(1,1,irow), grvs(1,1,irow), grts(1,1,irow), &
                        grpls(1,irow), grpms(1,irow), grdpsa(1,irow), grza(1,1,irow), grda(1,1,irow), &
                        gruha(1,1,irow), grvha(1,1,irow), grtha(1,1,irow), grpsa(1,irow), grua(1,1,irow), &
                        grva(1,1,irow), grta(1,1,irow), grpla(1,irow), grpma(1,irow), fftbuf_out(1,1,1,lat) )
-#endif
+   #endif
    end do
    call t_stopf('spegrd_bft')
 
    call t_startf('spegrd_ift')
    call spegrd_ift ( nlon_fft_in, nlon_fft_out, fftbuf_in, fftbuf_out )
    call t_stopf('spegrd_ift')
-                   
+
    call t_startf('spegrd_aft')
-#ifdef OUTER_OMP
-!$OMP PARALLEL DO PRIVATE (LAT)
-#endif
+   #ifdef OUTER_OMP
+   !$OMP PARALLEL DO PRIVATE (LAT)
+   #endif
    do lat=beglat,endlat
       call spegrd_aft (ztodt, lat, nlon(lat), nlon_fft_out, &
                    cwava(lat), qfcst(1,1,1,lat), etamid, ps(1,lat,n3), &
@@ -263,58 +259,24 @@ subroutine scan2run (ztodt, cwava, etamid,t2      ,fu      ,fv    )
                    hw3al(1,lat), hw3bl(1,lat), hwxal(1,1,lat), hwxbl(1,1,lat), q3(1,1,1,lat,n3m1), &
                    dps(1,lat), dpsl(1,lat), dpsm(1,lat), t3(1,1,lat,n3m2) ,engy2alat(lat), engy2blat(lat), &
                    difftalat(lat), difftblat(lat), phis(1,lat), fftbuf_out(1,1,1,lat) )
-                   
+
    end do
    call t_stopf('spegrd_aft')
-!
+   !
    call t_startf('spegrd_dealloc')
    deallocate(fftbuf_in)
    deallocate(fftbuf_out)
    call t_stopf('spegrd_dealloc')
-!
-#ifdef SPMD
+   !
+   #ifdef SPMD
    call t_barrierf ('sync_realloc5', mpicom)
    call t_startf('realloc5')
    call realloc5 (hw2al   ,hw2bl   ,hw3al   ,hw3bl   ,tmass    , &
                   hw1lat  ,hwxal   ,hwxbl   ,engy1lat,engy2alat, &
                   engy2blat, difftalat, difftblat)
    call t_stopf('realloc5')
-#endif
+   #endif
 
-else
-
-  do lat=beglat,endlat
-      j = lat
-      irow = lat
-      if (lat > plat/2) irow = plat - lat + 1
-      call forecast(lat, ps(1,lat,n3m1), ps(1,lat,n3m2), ps(1,lat,n3), &
-                      u3(1,1,j,n3),u3(1,1,j,n3m1), u3(1,1,j,n3m2), &
-		      v3(1,1,j,n3), v3(1,1,j,n3m1), v3(1,1,j,n3m2), &
-		      t3(1,1,j,n3),t3(1,1,j,n3m1), t3(1,1,j,n3m2), &
-                      q3(1,1,1,j,n3), q3(1,1,1,j,n3m1), q3(1,1,1,j,n3m2), &
-	   	      ztodt, t2(1,1,lat), &
-		      fu(1,1,lat), fv(1,1,lat), qfcst(1,1,1,lat), etamid,&
-                      qminus(1,1,1,j),nlon(lat)) 
-
-      call eul_post_forecast(lat, ps(1,lat,n3m1),qfcst(1,1,1,lat),cwava(lat),&
-                      etamid, qminus(1,1,1,j), hw2al(1,lat), hw2bl(1,lat), &
-                      hw3al(1,lat), hw3bl(1,lat), hwxal(1,1,lat), &
-                      hwxbl(1,1,lat), &
-                      nlon(lat))
-
-   end do
-
-!
-! Initialize fixer variables for routines not called in scam version of
-! model
-!
-	engy2alat=0._r8
-	engy2blat=0._r8
-	difftalat=0._r8
-	difftblat=0._r8
-        engy2b=0._r8
-
-endif ! if not SCAM
 !
 ! Accumulate and normalize global integrals for mass fixer (dry mass of
 ! atmosphere is held constant).
@@ -421,23 +383,6 @@ endif ! if not SCAM
    call t_stopf ('scan2_single')
 
    call t_startf ('tfilt_massfix')
-
-   if (single_column) then
-!
-! read in fixer for scam
-!
-      if ( use_iop ) then
-         fixmas=fixmascam
-         beta=betacam
-         do m = 1, pcnst
-            alpha(m)=alphacam(m)
-         end do
-      else
-         fixmas=1._r8
-         beta=0._r8
-         alpha(:)=0._r8
-      end if
-   endif
 
 #ifdef OUTER_OMP
 !$OMP PARALLEL DO PRIVATE (LAT)

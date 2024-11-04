@@ -1,5 +1,7 @@
 #include "share/property_checks/mass_and_energy_column_conservation_check.hpp"
 #include "physics/share/physics_constants.hpp"
+#include "share/field/field_utils.hpp"
+
 #include <iomanip>
 
 namespace scream
@@ -7,21 +9,21 @@ namespace scream
 
 MassAndEnergyColumnConservationCheck::
 MassAndEnergyColumnConservationCheck (const std::shared_ptr<const AbstractGrid>& grid,
-                                      const Real                                 mass_error_tolerance,
-                                      const Real                                 energy_error_tolerance,
-                                      const std::shared_ptr<const Field>&        pseudo_density_ptr,
-                                      const std::shared_ptr<const Field>&        ps_ptr,
-                                      const std::shared_ptr<const Field>&        phis_ptr,
-                                      const std::shared_ptr<const Field>&        horiz_winds_ptr,
-                                      const std::shared_ptr<const Field>&        T_mid_ptr,
-                                      const std::shared_ptr<const Field>&        qv_ptr,
-                                      const std::shared_ptr<const Field>&        qc_ptr,
-                                      const std::shared_ptr<const Field>&        qr_ptr,
-                                      const std::shared_ptr<const Field>&        qi_ptr,
-                                      const std::shared_ptr<const Field>&        vapor_flux_ptr,
-                                      const std::shared_ptr<const Field>&        water_flux_ptr,
-                                      const std::shared_ptr<const Field>&        ice_flux_ptr,
-                                      const std::shared_ptr<const Field>&        heat_flux_ptr)
+                                      const Real          mass_error_tolerance,
+                                      const Real          energy_error_tolerance,
+                                      const Field&        pseudo_density,
+                                      const Field&        ps,
+                                      const Field&        phis,
+                                      const Field&        horiz_winds,
+                                      const Field&        T_mid,
+                                      const Field&        qv,
+                                      const Field&        qc,
+                                      const Field&        qr,
+                                      const Field&        qi,
+                                      const Field&        vapor_flux,
+                                      const Field&        water_flux,
+                                      const Field&        ice_flux,
+                                      const Field&        heat_flux)
   : m_grid (grid)
   , m_dt (std::nan(""))
   , m_mass_tol (mass_error_tolerance)
@@ -33,39 +35,19 @@ MassAndEnergyColumnConservationCheck (const std::shared_ptr<const AbstractGrid>&
   m_current_mass   = view_1d<Real> ("current_total_water",  m_num_cols);
   m_current_energy = view_1d<Real> ("current_total_energy", m_num_cols);
 
-  m_fields["pseudo_density"] = pseudo_density_ptr;
-  m_fields["ps"]             = ps_ptr;
-  m_fields["phis"]           = phis_ptr;
-  m_fields["horiz_winds"]    = horiz_winds_ptr;
-  m_fields["T_mid"]          = T_mid_ptr;
-  m_fields["qv"]             = qv_ptr;
-  m_fields["qc"]             = qc_ptr;
-  m_fields["qr"]             = qr_ptr;
-  m_fields["qi"]             = qi_ptr;
-  m_fields["vapor_flux"]     = vapor_flux_ptr;
-  m_fields["water_flux"]     = water_flux_ptr;
-  m_fields["ice_flux"]       = ice_flux_ptr;
-  m_fields["heat_flux"]      = heat_flux_ptr;
-
-  // Require that all fields needed for mass and energy computation are not null.
-  const bool all_computation_fields_exist =
-      pseudo_density_ptr && ps_ptr          &&
-      phis_ptr           && horiz_winds_ptr &&
-      T_mid_ptr          && qv_ptr          &&
-      qc_ptr             && qr_ptr          &&
-      qi_ptr;
-  EKAT_REQUIRE_MSG(all_computation_fields_exist,
-                   "Error! Currently we require mass and energy conservation "
-                   "check to contain all fields related to the mass and energy "
-                   "computation.\n");
-
-  // Require any process that add this checker to define all fluxes.
-  // Fluxes which are not relevant to a certain process should be set to 0.
-  EKAT_REQUIRE_MSG(vapor_flux_ptr && water_flux_ptr &&
-                   ice_flux_ptr   && heat_flux_ptr,
-                   "Error! If a process adds this check, it must define all "
-                   "boundary fluxes. Fluxes which are not relevant to a "
-                   "certain process should be set to 0.\n");
+  m_fields["pseudo_density"] = pseudo_density;
+  m_fields["ps"]             = ps;
+  m_fields["phis"]           = phis;
+  m_fields["horiz_winds"]    = horiz_winds;
+  m_fields["T_mid"]          = T_mid;
+  m_fields["qv"]             = qv;
+  m_fields["qc"]             = qc;
+  m_fields["qr"]             = qr;
+  m_fields["qi"]             = qi;
+  m_fields["vapor_flux"]     = vapor_flux;
+  m_fields["water_flux"]     = water_flux;
+  m_fields["ice_flux"]       = ice_flux;
+  m_fields["heat_flux"]      = heat_flux;
 }
 
 void MassAndEnergyColumnConservationCheck::compute_current_mass ()
@@ -74,11 +56,11 @@ void MassAndEnergyColumnConservationCheck::compute_current_mass ()
   const auto ncols = m_num_cols;
   const auto nlevs = m_num_levs;
 
-  const auto pseudo_density = m_fields.at("pseudo_density")->get_view<const Real**>();
-  const auto qv = m_fields.at("qv")->get_view<const Real**>();
-  const auto qc = m_fields.at("qc")->get_view<const Real**>();
-  const auto qi = m_fields.at("qi")->get_view<const Real**>();
-  const auto qr = m_fields.at("qr")->get_view<const Real**>();
+  const auto pseudo_density = m_fields.at("pseudo_density").get_view<const Real**>();
+  const auto qv = m_fields.at("qv").get_view<const Real**>();
+  const auto qc = m_fields.at("qc").get_view<const Real**>();
+  const auto qi = m_fields.at("qi").get_view<const Real**>();
+  const auto qr = m_fields.at("qr").get_view<const Real**>();
 
   const auto policy = ExeSpaceUtils::get_default_team_policy(ncols, nlevs);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
@@ -100,14 +82,14 @@ void MassAndEnergyColumnConservationCheck::compute_current_energy ()
   const auto ncols = m_num_cols;
   const auto nlevs = m_num_levs;
 
-  const auto pseudo_density = m_fields.at("pseudo_density")->get_view<const Real**>();
-  const auto T_mid = m_fields.at("T_mid")->get_view<const Real**>();
-  const auto horiz_winds = m_fields.at("horiz_winds")->get_view<const Real***>();
-  const auto qv = m_fields.at("qv")->get_view<const Real**>();
-  const auto qc = m_fields.at("qc")->get_view<const Real**>();
-  const auto qr = m_fields.at("qr")->get_view<const Real**>();
-  const auto ps = m_fields.at("ps")->get_view<const Real*>();
-  const auto phis = m_fields.at("phis")->get_view<const Real*>();
+  const auto pseudo_density = m_fields.at("pseudo_density").get_view<const Real**>();
+  const auto T_mid = m_fields.at("T_mid").get_view<const Real**>();
+  const auto horiz_winds = m_fields.at("horiz_winds").get_view<const Real***>();
+  const auto qv = m_fields.at("qv").get_view<const Real**>();
+  const auto qc = m_fields.at("qc").get_view<const Real**>();
+  const auto qr = m_fields.at("qr").get_view<const Real**>();
+  const auto ps = m_fields.at("ps").get_view<const Real*>();
+  const auto phis = m_fields.at("phis").get_view<const Real*>();
 
   const auto policy = ExeSpaceUtils::get_default_team_policy(ncols, nlevs);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
@@ -136,20 +118,20 @@ PropertyCheck::ResultAndMsg MassAndEnergyColumnConservationCheck::check() const
                                       "before running check().");
   auto dt = m_dt;
 
-  const auto pseudo_density = m_fields.at("pseudo_density")->get_view<const Real**> ();
-  const auto T_mid          = m_fields.at("T_mid"         )->get_view<const Real**> ();
-  const auto horiz_winds    = m_fields.at("horiz_winds"   )->get_view<const Real***>();
-  const auto qv             = m_fields.at("qv"            )->get_view<const Real**> ();
-  const auto qc             = m_fields.at("qc"            )->get_view<const Real**> ();
-  const auto qi             = m_fields.at("qi"            )->get_view<const Real**> ();
-  const auto qr             = m_fields.at("qr"            )->get_view<const Real**> ();
-  const auto ps             = m_fields.at("ps"            )->get_view<const Real*>  ();
-  const auto phis           = m_fields.at("phis"          )->get_view<const Real*>  ();
+  const auto pseudo_density = m_fields.at("pseudo_density").get_view<const Real**> ();
+  const auto T_mid          = m_fields.at("T_mid"         ).get_view<const Real**> ();
+  const auto horiz_winds    = m_fields.at("horiz_winds"   ).get_view<const Real***>();
+  const auto qv             = m_fields.at("qv"            ).get_view<const Real**> ();
+  const auto qc             = m_fields.at("qc"            ).get_view<const Real**> ();
+  const auto qi             = m_fields.at("qi"            ).get_view<const Real**> ();
+  const auto qr             = m_fields.at("qr"            ).get_view<const Real**> ();
+  const auto ps             = m_fields.at("ps"            ).get_view<const Real*>  ();
+  const auto phis           = m_fields.at("phis"          ).get_view<const Real*>  ();
 
-  const auto vapor_flux = m_fields.at("vapor_flux")->get_view<const Real*>();
-  const auto water_flux = m_fields.at("water_flux")->get_view<const Real*>();
-  const auto ice_flux   = m_fields.at("ice_flux"  )->get_view<const Real*>();
-  const auto heat_flux  = m_fields.at("heat_flux" )->get_view<const Real*>();
+  const auto vapor_flux = m_fields.at("vapor_flux").get_view<const Real*>();
+  const auto water_flux = m_fields.at("water_flux").get_view<const Real*>();
+  const auto ice_flux   = m_fields.at("ice_flux"  ).get_view<const Real*>();
+  const auto heat_flux  = m_fields.at("heat_flux" ).get_view<const Real*>();
 
   // Use Kokkos::MaxLoc to find the largest error for both mass and energy
   using maxloc_t = Kokkos::MaxLoc<Real, int>;
@@ -237,14 +219,16 @@ PropertyCheck::ResultAndMsg MassAndEnergyColumnConservationCheck::check() const
   res_and_msg.result = CheckResult::Fail;
 
   // We output relative errors with lat/lon information (if available)
-  using gid_t = AbstractGrid::gid_type;
-  auto gids = m_grid->get_dofs_gids().get_view<const gid_t*,Host>();
+  using gid_type = AbstractGrid::gid_type;
+  auto gids = m_grid->get_dofs_gids().get_view<const gid_type*,Host>();
   typename Field::view_host_t<const Real*> lat, lon;
   const bool has_latlon = m_grid->has_geometry_data("lat") && m_grid->has_geometry_data("lon");
   if (has_latlon) {
     lat = m_grid->get_geometry_data("lat").get_view<const Real*, Host>();
     lon = m_grid->get_geometry_data("lon").get_view<const Real*, Host>();
   }
+  const bool has_additional_col_info = not additional_data_fields().empty();
+  using namespace ShortFieldTagsNames;
 
   std::stringstream msg;
   msg << "Check failed.\n"
@@ -256,8 +240,17 @@ PropertyCheck::ResultAndMsg MassAndEnergyColumnConservationCheck::check() const
     if (has_latlon) {
       msg << "    - (lat, lon): (" << lat(maxloc_mass.loc) << ", " << lon(maxloc_mass.loc) << ")\n";
     }
+    if (has_additional_col_info) {
+      msg << "    - additional data (w/ local column index):\n";
+      for (auto& f : additional_data_fields()) {
+        f.sync_to_host();
+        msg << "\n";
+        print_field_hyperslab(f, {COL}, {maxloc_mass.loc}, msg);
+      }
+      msg << "\n    END OF ADDITIONAL DATA\n";
+    }
     res_and_msg.fail_loc_indices.resize(1,maxloc_mass.loc);
-    res_and_msg.fail_loc_tags = m_fields.at("phis")->get_header().get_identifier().get_layout().tags();
+    res_and_msg.fail_loc_tags = m_fields.at("phis").get_header().get_identifier().get_layout().tags();
   }
   if (not energy_below_tol) {
     msg << "  - energy error tolerance: " << m_energy_tol << "\n";
@@ -266,8 +259,17 @@ PropertyCheck::ResultAndMsg MassAndEnergyColumnConservationCheck::check() const
     if (has_latlon) {
       msg << "    - (lat, lon): (" << lat(maxloc_energy.loc) << ", " << lon(maxloc_energy.loc) << ")\n";
     }
+    if (has_additional_col_info) {
+      msg << "    - additional data (w/ local column index):\n";
+      for (auto& f : additional_data_fields()) {
+        f.sync_to_host();
+        msg << "\n";
+        print_field_hyperslab(f, {COL}, {maxloc_energy.loc}, msg);
+      }
+      msg << "\n    END OF ADDITIONAL DATA\n";
+    }
     res_and_msg.fail_loc_indices.resize(1,maxloc_energy.loc);
-    res_and_msg.fail_loc_tags = m_fields.at("phis")->get_header().get_identifier().get_layout().tags();
+    res_and_msg.fail_loc_tags = m_fields.at("phis").get_header().get_identifier().get_layout().tags();
   }
 
   res_and_msg.msg = msg.str();

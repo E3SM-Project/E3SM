@@ -27,10 +27,6 @@ contains
     use dimensions_mod,         only: nelemd, nlev, nlevp, np
     use geometry_interface_mod, only: initmp_f90, init_cube_geometry_f90, init_connectivity_f90
     use geometry_interface_mod, only: par, elem
-    use hybvcoord_mod,          only: set_layer_locations
-    use element_state,          only: allocate_element_arrays, setup_element_pointers_ie, &
-                                      nlev_tom, nu_scale_top
-    use mass_matrix_mod,        only: mass_matrix
     use quadrature_mod,         only: gausslobatto, quadrature_t
     use physical_constants,     only: scale_factor, scale_factor_inv, laplacian_rigid_factor, rearth, rrearth
     !
@@ -43,7 +39,7 @@ contains
     !
     ! Locals
     !
-    integer :: ie, k
+    integer :: ie
     type (quadrature_t) :: gp
 
     scale_factor = rearth
@@ -64,6 +60,88 @@ contains
     do ie=1,nelemd
       call cube_init_atomic(elem(ie),gp%points)
     enddo
+
+    call init_common(hyai, hybi, hyam, hybm, dvv, mp, ps0)   
+  end subroutine init_f90
+
+  subroutine init_planar_f90 (ne_x_in, ne_y_in, hyai, hybi, hyam, hybm, dvv, mp, ps0) bind(c)
+    ! Alternative to init_f90 to create a planar model.
+    use control_mod,            only: cubed_sphere_map, geometry, topology
+    use planar_mod,             only: plane_init_atomic, plane_set_corner_coordinates
+    use derivative_mod,         only: derivinit
+    use dimensions_mod,         only: nelemd, nlev, nlevp, np, ne_x, ne_y
+    use geometry_interface_mod, only: initmp_f90, init_cube_geometry_f90, init_connectivity_f90, &
+                                      par, elem
+    use quadrature_mod,         only: gausslobatto, quadrature_t
+    use physical_constants,     only: scale_factor, scale_factor_inv, laplacian_rigid_factor, &
+                                      Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref, domain_size
+    !
+    ! Inputs
+    !
+    integer (kind=c_int), intent(in) :: ne_x_in, ne_y_in
+    real (kind=real_kind), intent(in) :: hyai(nlevp), hybi(nlevp), hyam(nlev), hybm(nlev)
+    real (kind=real_kind), intent(in) :: ps0
+    real (kind=real_kind), intent(out) :: dvv(np,np), mp(np,np)
+    !
+    ! Locals
+    !
+    integer :: ie
+    type (quadrature_t) :: gp
+
+    ne_x = ne_x_in
+    ne_y = ne_y_in
+
+    scale_factor = 1
+    scale_factor_inv = 1
+    laplacian_rigid_factor = 0
+    topology = 'plane'
+    geometry = 'plane'
+    Lx = 10000
+    Ly = 5000
+    Sx = -5000
+    Sy = 2500
+
+    domain_size = Lx * Ly
+    dx = Lx/ne_x
+    dy = Ly/ne_y
+    dx_ref = 1.0D0/ne_x
+    dy_ref = 1.0D0/ne_y
+
+    call derivinit(deriv)
+
+    call initmp_f90()
+    call init_cube_geometry_f90(ne_x) ! ne_x is unused
+    call init_connectivity_f90()
+
+    cubed_sphere_map = 2
+    gp=gausslobatto(np)  ! GLL points
+    do ie=1,nelemd
+      call plane_set_corner_coordinates(elem(ie))
+    end do
+    do ie=1,nelemd
+      call plane_init_atomic(elem(ie),gp%points)
+    enddo
+
+    call init_common(hyai, hybi, hyam, hybm, dvv, mp, ps0)
+  end subroutine init_planar_f90
+
+  subroutine init_common(hyai, hybi, hyam, hybm, dvv, mp, ps0)
+    use element_state,          only: allocate_element_arrays, setup_element_pointers_ie
+    use mass_matrix_mod,        only: mass_matrix
+    use hybvcoord_mod,          only: set_layer_locations
+    use dimensions_mod,         only: nelemd, nlev, nlevp, np
+    use geometry_interface_mod, only: par, elem
+    !
+    ! Inputs
+    !
+    real (kind=real_kind), intent(in) :: hyai(nlevp), hybi(nlevp), hyam(nlev), hybm(nlev)
+    real (kind=real_kind), intent(in) :: ps0
+    real (kind=real_kind), intent(out) :: dvv(np,np), mp(np,np)
+    !
+    ! Locals
+    !
+    integer :: ie, k
+    
     call allocate_element_arrays(nelemd)
 
     call mass_matrix(par,elem)
@@ -89,8 +167,7 @@ contains
     call set_layer_locations (hvcoord,.false.,.false.)
 
     deriv%dvv = dvv
-
-  end subroutine init_f90
+  end subroutine init_common
 
   subroutine init_geo_views_f90 (d_ptr, dinv_ptr,        &
                        phis_ptr, gradphis_ptr, fcor_ptr, &

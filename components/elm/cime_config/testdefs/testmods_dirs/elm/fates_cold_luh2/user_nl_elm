@@ -1,0 +1,5 @@
+use_fates_luh = .true.
+use_fates_nocomp = .true.
+use_fates_fixed_biogeog = .true.
+use_fates_sp = .false.
+use_fates_potentialveg = .false.

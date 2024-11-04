@@ -14,7 +14,7 @@ module SoilStateType
   use landunit_varcon , only : istice, istdlak, istwet, istsoil, istcrop, istice_mec
   use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv 
   use elm_varcon      , only : zsoi, dzsoi, zisoi, spval, namet, grlnd
-  use elm_varcon      , only : secspday, pc, mu, denh2o, denice, grlnd
+  use elm_varcon      , only : secspday, mu, denh2o, denice, grlnd
   use landunit_varcon , only : istice, istdlak, istwet, istsoil, istcrop, istice_mec
   use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
   use elm_varctl      , only : use_cn, use_lch4,use_dynroot, use_fates

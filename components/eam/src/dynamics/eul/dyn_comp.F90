@@ -49,7 +49,6 @@ CONTAINS
 
 subroutine dyn_init(file, nlfilename)
    use dyn_grid,     only: define_cam_grids, initgrid
-   use scamMod,      only: single_column
 
    ! ARGUMENTS:
    type(file_desc_t), intent(in) :: file       ! PIO file handle for initial or restart file
@@ -139,15 +138,6 @@ subroutine dyn_init(file, nlfilename)
    if ( history_budget ) then
       call cnst_get_ind('CLDLIQ', ixcldliq)
       call cnst_get_ind('CLDICE', ixcldice)
-      ! The following variables are not defined for single column
-      if (.not. single_column) then 
-         call add_default(hadvnam(       1), history_budget_histfile_num, ' ')
-         call add_default(hadvnam(ixcldliq), history_budget_histfile_num, ' ')
-         call add_default(hadvnam(ixcldice), history_budget_histfile_num, ' ')
-         call add_default(vadvnam(       1), history_budget_histfile_num, ' ')
-         call add_default(vadvnam(ixcldliq), history_budget_histfile_num, ' ')
-         call add_default(vadvnam(ixcldice), history_budget_histfile_num, ' ')
-      end if
       call add_default(fixcnam(       1), history_budget_histfile_num, ' ')
       call add_default(fixcnam(ixcldliq), history_budget_histfile_num, ' ')
       call add_default(fixcnam(ixcldice), history_budget_histfile_num, ' ')

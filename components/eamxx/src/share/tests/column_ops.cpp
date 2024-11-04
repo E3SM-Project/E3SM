@@ -79,7 +79,7 @@ TEST_CASE("column_ops_ps_1") {
   constexpr int num_cols = 1;
   constexpr int num_levs = 16;
 
-  policy_type policy(num_cols,std::min(num_levs,exec_space::concurrency()));
+  policy_type policy(num_cols,std::min(num_levs,exec_space().concurrency()));
 
   view_2d_type v_int("",num_cols,num_levs+1);
   view_2d_type v_mid("",num_cols,num_levs);
@@ -560,7 +560,7 @@ TEST_CASE("column_ops_ps_N") {
       auto dv_mid_h = Kokkos::create_mirror_view(dv_mid);
       auto dz_mid_h = Kokkos::create_mirror_view(dz_mid);
 
-      policy_type policy(num_cols,std::min(num_mid_packs,exec_space::concurrency()));
+      policy_type policy(num_cols,std::min(num_mid_packs,exec_space().concurrency()));
 
       SECTION ("int_to_mid") {
 

@@ -17,12 +17,13 @@ typename Functions<S,D>::Spack
 Functions<S,D>
 ::calc_bulk_rho_rime(
   const Spack& qi_tot, Spack& qi_rim, Spack& bi_rim,
+  const physics::P3_Constants<S> & p3constants,
   const Smask& context)
 {
   constexpr Scalar bsmall       = C::BSMALL;
   constexpr Scalar qsmall       = C::QSMALL;
-  constexpr Scalar rho_rime_min = C::rho_rimeMin;
-  constexpr Scalar rho_rime_max = C::rho_rimeMax;
+  const Scalar p3_rho_rime_min = p3constants.p3_rho_rime_min;
+  const Scalar p3_rho_rime_max = p3constants.p3_rho_rime_max;
 
   Spack rho_rime(0);
 
@@ -32,12 +33,12 @@ Functions<S,D>
     rho_rime.set(bi_rim_gt_small, qi_rim / bi_rim);
   }
 
-  Smask rho_rime_lt_min = rho_rime < rho_rime_min;
-  Smask rho_rime_gt_max = rho_rime > rho_rime_max;
+  Smask rho_rime_lt_min = rho_rime < p3_rho_rime_min;
+  Smask rho_rime_gt_max = rho_rime > p3_rho_rime_max;
 
   // impose limits on rho_rime;  adjust bi_rim if needed
-  rho_rime.set(bi_rim_gt_small && rho_rime_lt_min, rho_rime_min);
-  rho_rime.set(bi_rim_gt_small && rho_rime_gt_max, rho_rime_max);
+  rho_rime.set(bi_rim_gt_small && rho_rime_lt_min, p3_rho_rime_min);
+  rho_rime.set(bi_rim_gt_small && rho_rime_gt_max, p3_rho_rime_max);
   Smask adjust = bi_rim_gt_small && (rho_rime_gt_max || rho_rime_lt_min);
   if (adjust.any()) {
     bi_rim.set(adjust, qi_rim / rho_rime);
@@ -85,7 +86,8 @@ void Functions<S,D>
   const uview_1d<Spack>& qi_tend,
   const uview_1d<Spack>& ni_tend,
   const view_ice_table& ice_table_vals,
-  Scalar& precip_ice_surf)
+  Scalar& precip_ice_surf,
+  const physics::P3_Constants<S> & p3constants)
 {
   // Get temporary workspaces needed for the ice-sed calculation
   uview_1d<Spack> V_qit, V_nit, flux_nit, flux_bir, flux_qir, flux_qit;
@@ -102,6 +104,9 @@ void Functions<S,D>
   const auto sqi = scalarize(qi);
   constexpr Scalar qsmall = C::QSMALL;
   constexpr Scalar nsmall = C::NSMALL;
+
+  const Scalar p3_ice_sed_knob = p3constants.p3_ice_sed_knob;
+
   bool log_qxpresent;
   const Int k_qxtop = find_top(team, sqi, qsmall, kbot, ktop, kdir, log_qxpresent);
 
@@ -140,7 +145,7 @@ void Functions<S,D>
           // impose lower limits to prevent log(<0)
           ni_incld(pk).set(qi_gt_small, max(ni_incld(pk), nsmall));
 
-          const auto rhop = calc_bulk_rho_rime(qi_incld(pk), qm_incld(pk), bm_incld(pk), qi_gt_small);
+          const auto rhop = calc_bulk_rho_rime(qi_incld(pk), qm_incld(pk), bm_incld(pk), p3constants, qi_gt_small);
           qm(pk).set(qi_gt_small, qm_incld(pk)*cld_frac_i(pk) );
           bm(pk).set(qi_gt_small, bm_incld(pk)*cld_frac_i(pk) );
 
@@ -158,8 +163,8 @@ void Functions<S,D>
           ni_incld(pk).set(qi_gt_small, max(ni_incld(pk), table_val_ni_lammin * ni_incld(pk)));
           ni(pk).set(qi_gt_small, ni_incld(pk) * cld_frac_i(pk));
 
-          V_qit(pk).set(qi_gt_small, table_val_qi_fallspd * rhofaci(pk)); // mass-weighted   fall speed (with density factor)
-          V_nit(pk).set(qi_gt_small, table_val_ni_fallspd * rhofaci(pk)); // number-weighted fall speed (with density factor)
+          V_qit(pk).set(qi_gt_small, p3_ice_sed_knob * table_val_qi_fallspd * rhofaci(pk)); // mass-weighted   fall speed (with density factor)
+          V_nit(pk).set(qi_gt_small, p3_ice_sed_knob * table_val_ni_fallspd * rhofaci(pk)); // number-weighted fall speed (with density factor)
         }
         const auto Co_max_local = max(qi_gt_small, 0,
                                       V_qit(pk) * dt_left * inv_dz(pk));
@@ -205,7 +210,6 @@ void Functions<S,D>
 ::homogeneous_freezing(
   const uview_1d<const Spack>& T_atm,
   const uview_1d<const Spack>& inv_exner,
-  const uview_1d<const Spack>& latent_heat_fusion,
   const MemberType& team,
   const Int& nk, const Int& ktop, const Int& kbot, const Int& kdir,
   const uview_1d<Spack>& qc,
@@ -223,6 +227,7 @@ void Functions<S,D>
   constexpr Scalar T_homogfrz       = C::T_homogfrz;
   constexpr Scalar inv_rho_rimeMax = C::INV_RHO_RIMEMAX;
   constexpr Scalar inv_cp          = C::INV_CP;
+  constexpr Scalar latice          = C::LatIce;
 
   const Int kmin_scalar = ( kdir == 1 ? kbot : ktop);
   const Int kmax_scalar = ( kdir == 1 ? ktop : kbot);
@@ -249,13 +254,13 @@ void Functions<S,D>
     qi(pk).set(qc_ge_small, qi(pk) + Qc_nuc);
     bm(pk).set(qc_ge_small, bm(pk) + Qc_nuc*inv_rho_rimeMax);
     ni(pk).set(qc_ge_small, ni(pk) + Nc_nuc);
-    th_atm(pk).set   (qc_ge_small, th_atm(pk) + inv_exner(pk)*Qc_nuc*latent_heat_fusion(pk)*inv_cp);
+    th_atm(pk).set   (qc_ge_small, th_atm(pk) + inv_exner(pk)*Qc_nuc*latice*inv_cp);
 
     qm(pk).set(qr_ge_small, qm(pk) + Qr_nuc);
     qi(pk).set(qr_ge_small, qi(pk) + Qr_nuc);
     bm(pk).set(qr_ge_small, bm(pk) + Qr_nuc*inv_rho_rimeMax);
     ni(pk).set(qr_ge_small, ni(pk) + Nr_nuc);
-    th_atm(pk).set   (qr_ge_small, th_atm(pk) + inv_exner(pk)*Qr_nuc*latent_heat_fusion(pk)*inv_cp);
+    th_atm(pk).set   (qr_ge_small, th_atm(pk) + inv_exner(pk)*Qr_nuc*latice*inv_cp);
 
     qc(pk).set(qc_ge_small, 0);
     nc(pk).set(qc_ge_small, 0);

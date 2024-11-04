@@ -7,8 +7,8 @@ module ice_therm_mushy
   use ice_constants_colpkg, only: c0, c1, c2, c4, c8, c10, c1000, &
       p001, p01, p05, p1, p2, p5, pi, bignum, puny, ice_ref_salinity, &
       viscosity_dyn, rhow, rhoi, rhos, cp_ocn, cp_ice, Lfresh, gravit, &
-      hs_min, ksno
-  use ice_colpkg_shared, only: a_rapid_mode, Rac_rapid_mode, &
+      hs_min
+  use ice_colpkg_shared, only: a_rapid_mode, Rac_rapid_mode, ksno, &
       aspect_rapid_mode, dSdt_slow_mode, phi_c_slow_mode, phi_i_mushy
 
   use ice_therm_shared, only: ferrmax

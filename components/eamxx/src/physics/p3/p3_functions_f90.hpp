@@ -723,7 +723,7 @@ struct P3MainPart2Data : public PhysicsTestData
 
 struct P3MainPart3Data : public PhysicsTestData
 {
-  static constexpr size_t NUM_ARRAYS = 33;
+  static constexpr size_t NUM_ARRAYS = 34;
 
   // Inputs
   Int kts, kte, kbot, ktop, kdir;
@@ -734,7 +734,8 @@ struct P3MainPart3Data : public PhysicsTestData
     *qv, *th_atm, *qc, *nc, *qr, *nr, *qi, *ni, *qm, *bm, *latent_heat_vapor, *latent_heat_sublim,
     *mu_c, *nu, *lamc, *mu_r,
     *lamr, *vap_liq_exchange,
-    *ze_rain, *ze_ice, *diag_vm_qi, *diag_eff_radius_qi, *diag_diam_qi, *rho_qi, *diag_equiv_reflectivity, *diag_eff_radius_qc;
+    *ze_rain, *ze_ice, *diag_vm_qi, *diag_eff_radius_qi, *diag_diam_qi, *rho_qi,
+    *diag_equiv_reflectivity, *diag_eff_radius_qc, *diag_eff_radius_qr;
 
   P3MainPart3Data(Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_);
 
@@ -747,7 +748,7 @@ struct P3MainPart3Data : public PhysicsTestData
 
 struct P3MainData : public PhysicsTestData
 {
-  static constexpr size_t NUM_ARRAYS = 34;
+  static constexpr size_t NUM_ARRAYS = 35;
   static constexpr size_t NUM_INPUT_ARRAYS = 24;
 
   // Inputs
@@ -760,7 +761,7 @@ struct P3MainData : public PhysicsTestData
   Real* qc, *nc, *qr, *nr, *qi, *qm, *ni, *bm, *qv, *th_atm;
 
   // Out
-  Real *diag_eff_radius_qc, *diag_eff_radius_qi, *rho_qi, *mu_c, *lamc, *qv2qi_depos_tend, *precip_total_tend, *nevapr,
+  Real *diag_eff_radius_qc, *diag_eff_radius_qi, *diag_eff_radius_qr, *rho_qi, *mu_c, *lamc, *qv2qi_depos_tend, *precip_total_tend, *nevapr,
        *qr_evap_tend, *liq_ice_exchange, *vap_liq_exchange, *vap_ice_exchange,
        *precip_liq_flux, *precip_ice_flux, *precip_liq_surf, *precip_ice_surf;
   Real elapsed_s;
@@ -907,10 +908,8 @@ void rain_sedimentation_f(
 
 void homogeneous_freezing_f(
   Int kts, Int kte, Int ktop, Int kbot, Int kdir,
-  Real* T_atm, Real* inv_exner, Real* latent_heat_fusion,
+  Real* T_atm, Real* inv_exner,
   Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni, Real* qm, Real* bm, Real* th_atm);
-
-void get_latent_heat_f(Int its, Int ite, Int kts, Int kte, Real* v, Real* s, Real* f);
 
 void check_values_f(Real* Qv, Real* temp, Int kstart, Int kend,
                     Int timestepcount, bool force_abort, Int source_ind, Real* col_loc);
@@ -920,7 +919,7 @@ void p3_main_part1_f(
   bool do_predict_nc, bool do_prescribed_CCN,
   Real dt,
   Real* pres, Real* dpres, Real* dz, Real* nc_nuceat_tend, Real* nccn_prescribed, Real* inv_exner, Real* exner, Real* inv_cld_frac_l, Real* inv_cld_frac_i,
-  Real* inv_cld_frac_r, Real* latent_heat_vapor, Real* latent_heat_sublim, Real* latent_heat_fusion,
+  Real* inv_cld_frac_r,
   Real* T_atm, Real* rho, Real* inv_rho, Real* qv_sat_l, Real* qv_sat_i, Real* qv_supersat_i, Real* rhofacr, Real* rhofaci,
   Real* acn, Real* qv, Real* th_atm, Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni, Real* qm, Real* bm, Real* qc_incld, Real* qr_incld, Real* qi_incld,
   Real* qm_incld, Real* nc_incld, Real* nr_incld, Real* ni_incld, Real* bm_incld,
@@ -930,7 +929,7 @@ void p3_main_part2_f(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir, bool do_predict_nc, bool do_prescribed_CCN, Real dt, Real inv_dt,
   Real* pres, Real* dpres, Real* dz, Real* nc_nuceat_tend, Real* inv_exner, Real* exner, Real* inv_cld_frac_l, Real* inv_cld_frac_i, Real* inv_cld_frac_r, Real* ni_activated, Real* inv_qc_relvar, Real* cld_frac_i, Real* cld_frac_l, Real* cld_frac_r, Real* qv_prev, Real* t_prev,
   Real* T_atm, Real* rho, Real* inv_rho, Real* qv_sat_l, Real* qv_sat_i, Real* qv_supersat_i, Real* rhofacr, Real* rhofaci, Real* acn, Real* qv, Real* th_atm, Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni,
-  Real* qm, Real* bm, Real* latent_heat_vapor, Real* latent_heat_sublim, Real* latent_heat_fusion, Real* qc_incld, Real* qr_incld, Real* qi_incld, Real* qm_incld, Real* nc_incld, Real* nr_incld,
+  Real* qm, Real* bm, Real* qc_incld, Real* qr_incld, Real* qi_incld, Real* qm_incld, Real* nc_incld, Real* nr_incld,
   Real* ni_incld, Real* bm_incld, Real* mu_c, Real* nu, Real* lamc, Real* cdist, Real* cdist1, Real* cdistr, Real* mu_r, Real* lamr, Real* logn0r, Real* qv2qi_depos_tend, Real* precip_total_tend,
   Real* nevapr, Real* qr_evap_tend, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* liq_ice_exchange, Real* pratot,
   Real* prctot, bool* is_hydromet_present);
@@ -938,16 +937,16 @@ void p3_main_part2_f(
 void p3_main_part3_f(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir,
   Real* inv_exner, Real* cld_frac_l, Real* cld_frac_r, Real* cld_frac_i,
-  Real* rho, Real* inv_rho, Real* rhofaci, Real* qv, Real* th_atm, Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni, Real* qm, Real* bm, Real* latent_heat_vapor, Real* latent_heat_sublim,
+  Real* rho, Real* inv_rho, Real* rhofaci, Real* qv, Real* th_atm, Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni, Real* qm, Real* bm,
   Real* mu_c, Real* nu, Real* lamc, Real* mu_r, Real* lamr, Real* vap_liq_exchange,
-  Real*  ze_rain, Real* ze_ice, Real* diag_vm_qi, Real* diag_eff_radius_qi, Real* diag_diam_qi, Real* rho_qi, Real* diag_equiv_reflectivity, Real* diag_eff_radius_qc);
+  Real*  ze_rain, Real* ze_ice, Real* diag_vm_qi, Real* diag_eff_radius_qi, Real* diag_diam_qi, Real* rho_qi, Real* diag_equiv_reflectivity, Real* diag_eff_radius_qc, Real* diag_eff_radius_qr);
 
 Int p3_main_f(
   Real* qc, Real* nc, Real* qr, Real* nr, Real* th_atm, Real* qv, Real dt,
   Real* qi, Real* qm, Real* ni, Real* bm, Real* pres, Real* dz,
   Real* nc_nuceat_tend, Real* nccn_prescribed, Real* ni_activated, Real* inv_qc_relvar, Int it, Real* precip_liq_surf,
   Real* precip_ice_surf, Int its, Int ite, Int kts, Int kte, Real* diag_eff_radius_qc,
-  Real* diag_eff_radius_qi, Real* rho_qi, bool do_predict_nc, bool do_prescribed_CCN, Real* dpres, Real* inv_exner,
+  Real* diag_eff_radius_qi, Real* diag_eff_radius_qr, Real* rho_qi, bool do_predict_nc, bool do_prescribed_CCN, Real* dpres, Real* inv_exner,
   Real* qv2qi_depos_tend, Real* precip_liq_flux, Real* precip_ice_flux, Real* cld_frac_r, Real* cld_frac_l, Real* cld_frac_i,
   Real* liq_ice_exchange, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* qv_prev, Real* t_prev);
 

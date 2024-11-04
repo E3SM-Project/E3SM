@@ -21,7 +21,7 @@ module mo_drydep
   use cam_pio_utils,only : cam_pio_openfile
   use cam_logfile,  only : iulog
   use dyn_grid,     only : get_dyn_grid_parm, get_horiz_grid_d
-  use scamMod,      only:  single_column
+  use iop_data_mod, only:  single_column
 
   use seq_drydep_mod, only : nddvels =>  n_drydep, drydep_list, mapping
   use physconst,    only : karman
@@ -2045,7 +2045,7 @@ contains
                          wetland, vegetation_map, soilw_map, do_soilw )
 
     use mo_constants, only : r2d
-    use scamMod, only : latiop,loniop,scmlat,scmlon,use_replay
+    use iop_data_mod, only : latiop,loniop,scmlat,scmlon,use_replay
     use shr_scam_mod  , only: shr_scam_getCloseLatLon  ! Standardized system subroutines
     use filenames, only: ncdata
     use dycore, only : dycore_is

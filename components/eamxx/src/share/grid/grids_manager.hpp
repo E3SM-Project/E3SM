@@ -21,11 +21,13 @@ namespace scream
 class GridsManager
 {
 public:
-  using grid_type         = AbstractGrid;
-  using grid_ptr_type     = std::shared_ptr<const grid_type>;
-  using grid_repo_type    = std::map<std::string, grid_ptr_type>;
-  using remapper_type     = AbstractRemapper;
-  using remapper_ptr_type = std::shared_ptr<remapper_type>;
+  using grid_type              = AbstractGrid;
+  using grid_ptr_type          = std::shared_ptr<const grid_type>;
+  using grid_repo_type         = std::map<std::string, grid_ptr_type>;
+  using nonconstgrid_ptr_type  = std::shared_ptr<grid_type>;
+  using nonconstgrid_repo_type = std::map<std::string, nonconstgrid_ptr_type>;
+  using remapper_type          = AbstractRemapper;
+  using remapper_ptr_type      = std::shared_ptr<remapper_type>;
 
   GridsManager () = default;
   virtual ~GridsManager () = default;
@@ -33,6 +35,7 @@ public:
   virtual std::string name () const = 0;
 
   grid_ptr_type get_grid (const std::string& name) const;
+  nonconstgrid_ptr_type get_grid_nonconst (const std::string& name) const;
 
   // Check if the given grid has been built
   bool has_grid (const std::string& grid_name) const;
@@ -52,12 +55,8 @@ public:
   const grid_repo_type& get_repo () const { return m_grids; }
 
 protected:
-  using nonconstgrid_ptr_type     = std::shared_ptr<grid_type>;
-  using nonconstgrid_repo_type    = std::map<std::string, nonconstgrid_ptr_type>;
 
   void add_grid (nonconstgrid_ptr_type grid);
-  nonconstgrid_ptr_type get_grid_nonconst (const std::string& name) const;
-
   void alias_grid (const std::string& grid_name, const std::string& grid_alias);
 
   virtual remapper_ptr_type

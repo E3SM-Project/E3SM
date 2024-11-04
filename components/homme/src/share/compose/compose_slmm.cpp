@@ -276,8 +276,6 @@ extern "C" {
 // Interface for Homme, through compose_mod.F90.
 void kokkos_init () {
   amb::dev_init_threads();
-  Kokkos::InitArguments args;
-  args.disable_warnings = true;
   initialize_kokkos();
   // Test these initialize correctly.
   Kokkos::View<int> v("hi");

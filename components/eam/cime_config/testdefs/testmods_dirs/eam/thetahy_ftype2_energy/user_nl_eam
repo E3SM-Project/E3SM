@@ -1,0 +1,4 @@
+se_ftype=2
+theta_hydrostatic_mode=.true.
+print_additional_diagn = .true.
+

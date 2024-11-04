@@ -33,7 +33,7 @@ public:
   template<typename DevT, typename ScalarT>
   using uview_2d = Unmanaged<view_2d<DevT, ScalarT>>;
 
-   using name_t = char[32];
+  using name_t = char[32];
 
   // Constructors
   SurfaceCouplingImporter (const ekat::Comm& comm, const ekat::ParameterList& params);
@@ -58,6 +58,9 @@ public:
   // Take and store data from SCDataManager
   void setup_surface_coupling_data(const SCDataManager &sc_data_manager);
 
+  // Overwrite imports for IOP cases with IOP file surface data
+  void overwrite_iop_imports (const bool called_during_initialization);
+
 protected:
 
   // The three main overrides for the subcomponent
@@ -66,7 +69,7 @@ protected:
   void finalize_impl   ();
 
   // Keep track of field dimensions
-  Int m_num_cols; 
+  Int m_num_cols;
 
   // Number of fields in cpl data
   Int m_num_cpl_imports;
@@ -79,6 +82,14 @@ protected:
   // pointer to the whole x2a array from Fortran)
   view_2d <DefaultDevice, Real> m_cpl_imports_view_d;
   uview_2d<HostDevice,    Real> m_cpl_imports_view_h;
+
+#ifdef HAVE_MOAB
+  // Views storing a 2d array with dims (num_fields,num_cols) for import data.
+  // The colums index strides faster, since that's what moab does (so we can "view" the
+  // pointer to the whole x2a_am(:,:) array from Fortran)
+  view_2d <DefaultDevice, Real> m_moab_cpl_imports_view_d;
+  uview_2d<HostDevice,    Real> m_moab_cpl_imports_view_h;
+#endif
 
   // Array storing the field names for imports
   name_t* m_import_field_names;
@@ -93,10 +104,8 @@ protected:
   view_1d<DefaultDevice, SurfaceCouplingColumnInfo> m_column_info_d;
   decltype(m_column_info_d)::HostMirror             m_column_info_h;
 
-
   // The grid is needed for property checks
   std::shared_ptr<const AbstractGrid> m_grid;
-
 }; // class SurfaceCouplingImporter
 
 } // namespace scream

@@ -125,7 +125,7 @@ contains
     ! underlying dyn_file variable
     
     ! !USES:
-    use clm_time_manager, only : get_curr_yearfrac
+    use elm_time_manager, only : get_curr_yearfrac
     
     ! !ARGUMENTS:
     class(dyn_var_time_interp_type) , intent(inout) :: this             ! this object

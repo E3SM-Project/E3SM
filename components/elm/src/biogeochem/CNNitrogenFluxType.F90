@@ -7,7 +7,7 @@ module CNNitrogenFluxType
   use elm_varpar             , only : nlevdecomp_full, nlevdecomp, crop_prog
   use elm_varcon             , only : spval, ispval, dzsoi_decomp
   use decompMod              , only : bounds_type
-  use elm_varctl             , only : use_vertsoilc
+  use elm_varctl             , only : use_vertsoilc, use_fan
   use CNDecompCascadeConType , only : decomp_cascade_con
   use abortutils             , only : endrun
   use LandunitType           , only : lun_pp                
@@ -176,7 +176,8 @@ module CNNitrogenFluxType
      real(r8), pointer :: deadstemn_storage_to_xfer_patch           (:)     ! patch dead stem N shift storage to transfer (gN/m2/s)
      real(r8), pointer :: livecrootn_storage_to_xfer_patch          (:)     ! patch live coarse root N shift storage to transfer (gN/m2/s)
      real(r8), pointer :: deadcrootn_storage_to_xfer_patch          (:)     ! patch dead coarse root N shift storage to transfer (gN/m2/s)
-     real(r8), pointer :: fert_patch                                (:)     ! patch applied fertilizer (gN/m2/s)
+     real(r8), pointer :: synthfert_patch                           (:)     ! patch applied synthetic N fertilizer (gN/m2/s)
+     real(r8), pointer :: manure_patch                              (:)     ! patch applied manure (gN/M2/s)
      real(r8), pointer :: fert_counter_patch                        (:)     ! patch >0 fertilize; <=0 not
      real(r8), pointer :: soyfixn_patch                             (:)     ! patch soybean fixed N (gN/m2/s)
 
@@ -413,6 +414,30 @@ module CNNitrogenFluxType
      real(r8), pointer :: hrv_nloss_litter                          (:)     ! total nloss from veg to litter pool due to harvest mortality
      real(r8), pointer :: sen_nloss_litter                          (:)     ! total nloss from veg to litter pool due to senescence
 
+     ! FAN Fluxes
+     real(r8), pointer :: manure_tan_appl_col                       (:)     ! Manure TAN applied on soil (gN/m2/s)
+     real(r8), pointer :: manure_n_appl_col                         (:)     ! Manure N (TAN+organic) applied on soil (gN/m2/s)
+     real(r8), pointer :: manure_n_grz_col                          (:)     ! Manure N from grazing animals (gN/m2/s)
+     real(r8), pointer :: manure_n_mix_col                          (:)     ! Manure N from produced in mixed systems (gN/m2/s)
+     real(r8), pointer :: manure_n_barns_col                        (:)     ! Manure N produced in animal housings (gN/m2/s)
+     real(r8), pointer :: fert_n_appl_col                           (:)     ! Fertilizer N  applied on soil (gN/m2/s)
+     real(r8), pointer :: otherfert_n_appl_col                      (:)     ! Non-urea fertilizer N  applied on soil (gN/m2/s)
+     real(r8), pointer :: manure_n_transf_col                       (:)     ! Manure N removed from the crop column (into the natural veg. column in the gcell) (gN/m2/s)
+     real(r8), pointer :: nh3_barns_col                             (:)     ! NH3 emission from animal housings (gN/m2/s)
+     real(r8), pointer :: nh3_stores_col                            (:)     ! NH3 emission from manure storage (gN/m2/s)
+     real(r8), pointer :: nh3_grz_col                               (:)     ! NH3 emission from manure on pastures (gN/m2/s)
+     real(r8), pointer :: nh3_manure_app_col                        (:)     ! NH3 emission from manure applied on crops and grasslands (gN/m2/s)
+     real(r8), pointer :: nh3_fert_col                              (:)     ! NH3 emission from fertilizers applied on crops and grasslands (gN/m2/s)
+     real(r8), pointer :: nh3_otherfert_col                         (:)     ! NH3 emission from non-urea fertilizers applied on crops and grasslands (gN/m2/s)
+     real(r8), pointer :: manure_no3_to_soil_col                    (:)     ! Nitrification flux from manure (gN/m2/s)  
+     real(r8), pointer :: fert_no3_to_soil_col                      (:)     ! Nitrification flux from fertilizer (gN/m2/s)
+     real(r8), pointer :: manure_nh4_to_soil_col                    (:)     ! NH4 flux to soil mineral N pools from manure (gN/m2/s)
+     real(r8), pointer :: fert_nh4_to_soil_col                      (:)     ! NH4 flux to soil mineral N pools from fertilizer (gN/m2/s)
+     real(r8), pointer :: manure_nh4_runoff_col                     (:)     ! NH4 runoff flux from manure (gN/m2/s)
+     real(r8), pointer :: fert_nh4_runoff_col                       (:)     ! NH4 runoff flux from fertilizer (gN/m2/s)
+     real(r8), pointer :: nh3_total_col                             (:)     ! Total NH3 emission from agriculture (gN/m2/s)
+
+
      ! C4MIP output variable
      real(r8), pointer :: plant_n_to_cwdn                           (:) ! sum of gap, fire, dynamic land use, and harvest mortality, plant nitrogen flux to CWD
 
@@ -602,7 +627,8 @@ contains
     allocate(this%grainn_to_food_patch              (begp:endp)) ; this%grainn_to_food_patch              (:) = nan
     allocate(this%grainn_xfer_to_grainn_patch       (begp:endp)) ; this%grainn_xfer_to_grainn_patch       (:) = nan
     allocate(this%grainn_storage_to_xfer_patch      (begp:endp)) ; this%grainn_storage_to_xfer_patch      (:) = nan
-    allocate(this%fert_patch                        (begp:endp)) ; this%fert_patch                        (:) = nan
+    allocate(this%synthfert_patch                   (begp:endp)) ; this%synthfert_patch                   (:) = nan
+    allocate(this%manure_patch                      (begp:endp)) ; this%manure_patch                      (:) = nan
     allocate(this%fert_counter_patch                (begp:endp)) ; this%fert_counter_patch                (:) = nan
     allocate(this%soyfixn_patch                     (begp:endp)) ; this%soyfixn_patch                     (:) = nan
     allocate(this%nfix_to_plantn_patch              (begp:endp)) ; this%nfix_to_plantn_patch              (:) = nan
@@ -852,6 +878,36 @@ contains
     allocate(this%hrv_nloss_litter            (begp:endp)) ; this%hrv_nloss_litter                  (:) = nan
     allocate(this%sen_nloss_litter            (begp:endp)) ; this%sen_nloss_litter                  (:) = nan
 
+    if (use_fan) then
+       allocate(this%manure_tan_appl_col            (begc:endc)) ; this%manure_tan_appl_col        (:)   = spval
+       allocate(this%manure_n_appl_col              (begc:endc)) ; this%manure_n_appl_col          (:)   = spval
+       allocate(this%manure_n_grz_col               (begc:endc)) ; this%manure_n_grz_col           (:)   = spval
+       allocate(this%manure_n_mix_col               (begc:endc)) ; this%manure_n_mix_col           (:)   = spval
+       allocate(this%manure_n_barns_col             (begc:endc)) ; this%manure_n_barns_col         (:)   = spval
+       allocate(this%fert_n_appl_col                (begc:endc)) ; this%fert_n_appl_col            (:)   = spval
+       allocate(this%otherfert_n_appl_col           (begc:endc)) ; this%otherfert_n_appl_col       (:)   = spval
+       allocate(this%manure_n_transf_col            (begc:endc)) ; this%manure_n_transf_col        (:)   = spval
+
+       allocate(this%nh3_barns_col                  (begc:endc)) ; this%nh3_barns_col              (:)   = spval
+       allocate(this%nh3_stores_col                 (begc:endc)) ; this%nh3_stores_col             (:)   = spval
+       allocate(this%nh3_grz_col                    (begc:endc)) ; this%nh3_grz_col                (:)   = spval 
+       allocate(this%nh3_manure_app_col             (begc:endc))
+       allocate(this%nh3_manure_app_col             (begc:endc)) ; this%nh3_manure_app_col         (:)   = spval 
+       allocate(this%nh3_fert_col                   (begc:endc))
+       allocate(this%nh3_fert_col                   (begc:endc)) ; this%nh3_fert_col               (:)   = spval 
+       allocate(this%nh3_otherfert_col              (begc:endc))
+       allocate(this%nh3_otherfert_col              (begc:endc)) ; this%nh3_otherfert_col          (:)   = spval 
+       allocate(this%nh3_total_col                  (begc:endc))
+       allocate(this%nh3_total_col                  (begc:endc)) ; this%nh3_total_col              (:)   = spval 
+
+       allocate(this%manure_no3_to_soil_col         (begc:endc)) ; this%manure_no3_to_soil_col     (:)   = spval
+       allocate(this%fert_no3_to_soil_col           (begc:endc)) ; this%fert_no3_to_soil_col       (:)   = spval
+       allocate(this%manure_nh4_to_soil_col         (begc:endc)) ; this%manure_nh4_to_soil_col     (:)   = spval
+       allocate(this%fert_nh4_to_soil_col           (begc:endc)) ; this%fert_nh4_to_soil_col       (:)   = spval
+       allocate(this%manure_nh4_runoff_col          (begc:endc)) ; this%manure_nh4_runoff_col      (:)   = spval
+       allocate(this%fert_nh4_runoff_col            (begc:endc)) ; this%fert_nh4_runoff_col        (:)   = spval
+    end if
+
     ! C4MIP output variable
     allocate(this%plant_n_to_cwdn             (begc:endc)) ; this%plant_n_to_cwdn                   (:)  =nan
  
@@ -1022,7 +1078,6 @@ contains
     ! !USES:
     use elm_varpar    , only: nlevdecomp,ndecomp_cascade_transitions,ndecomp_pools
     use subgridAveMod , only: p2c
-    use pftvarcon     , only : npcropmin 
     use tracer_varcon , only: is_active_betr_bgc
     use elm_varpar    , only: nlevdecomp_full
     !
@@ -1055,7 +1110,7 @@ subroutine NSummary_interface(this,bounds,num_soilc, filter_soilc)
 ! !USES:
    use elm_varpar  , only: nlevdecomp_full, ndecomp_pools
    use elm_varpar  , only: i_met_lit, i_cel_lit, i_lig_lit, i_cwd
-   use clm_time_manager    , only : get_step_size
+   use elm_time_manager    , only : get_step_size
 
 !   use elm_varctl    , only: pf_hmode
 !

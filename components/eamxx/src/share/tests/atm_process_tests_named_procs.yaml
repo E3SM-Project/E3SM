@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-atm_procs_list: (MyFoo,BarBaz)
+atm_procs_list: [MyFoo,BarBaz]
 schedule_type: Sequential
 Type: Group
 
@@ -10,7 +10,7 @@ MyFoo:
 BarBaz:
   Type: Group
   schedule_type: Sequential
-  atm_procs_list: (MyBar,MyBaz)
+  atm_procs_list: [MyBar,MyBaz]
 
   MyBar:
     Type: Bar

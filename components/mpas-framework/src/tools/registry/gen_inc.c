@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <stdbool.h>
 #include "ezxml.h"
 #include "registry_types.h"
 #include "gen_inc.h"
@@ -82,11 +83,11 @@ int write_field_pointer_arrays(FILE* fd){/*{{{*/
 }/*}}}*/
 
 
-int set_pointer_name(int type, int ndims, char *pointer_name, int time_levs){/*{{{*/
+int set_pointer_name(int type, int ndims, char *pointer_name, bool mult_time_levs){/*{{{*/
 
 	char suffix[6];
 
-	if (time_levs > 1) {
+	if (mult_time_levs) {
 		snprintf(suffix, 6, "aPtr");
 	} else {
 		snprintf(suffix, 6, "Ptr");
@@ -1109,11 +1110,11 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 	build_dimension_information(registry, var_arr_xml, &ndims, &hasTime, &decomp);
 	ndims++; // Add a dimension for constituents in var_array
 
-	// Determine name of pointer for this field.
-	set_pointer_name(type, ndims, pointer_name, time_levs);
 	if (time_levs > 1) {
+	    set_pointer_name(type, ndims, pointer_name, true);
 		fortprintf(fd, "      allocate(%s(%d))\n", pointer_name, time_levs);
 	} else {
+	    set_pointer_name(type, ndims, pointer_name, false);
 		fortprintf(fd, "      allocate(%s)\n", pointer_name);
 	}
 
@@ -1685,6 +1686,8 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 	char package_spacing[1024];
 	char default_value[1024];
 	char missing_value[1024];
+	char config_name[1024];
+	bool time_levs_from_config;
 
 	var_xml = currentVar;
 
@@ -1714,19 +1717,28 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 		varname_in_code = ezxml_attr(var_xml, "name");
 	}
 
-    varname_in_output = ezxml_attr(var_xml, "name_in_output");
-    if(!varname_in_output){
-        varname_in_output = ezxml_attr(var_xml, "name");
-    }
+	varname_in_output = ezxml_attr(var_xml, "name_in_output");
+	if(!varname_in_output){
+		varname_in_output = ezxml_attr(var_xml, "name");
+	}
 
 	if(!vartimelevs){
 		vartimelevs = ezxml_attr(superStruct, "time_levs");
 	}
 
+	time_levs_from_config = false;
 	if(vartimelevs){
-		time_levs = atoi(vartimelevs);
-		if(time_levs < 1){
-			time_levs = 1;
+		if(strncmp(vartimelevs, "namelist:", 9) == 0){
+			time_levs_from_config = true;
+			snprintf(config_name, 1024, "%s", (vartimelevs)+9);
+			// obtain number of time steps from namelist
+			fortprintf(fd, "      call mpas_pool_get_config(block %% configs, '%s', config_flag_time_levs)\n", config_name);
+			fortprintf(fd, "\n");
+		} else {
+			time_levs = atoi(vartimelevs);
+			if(time_levs < 1){
+				time_levs = 1;
+			}
 		}
 	} else {
 		time_levs = 1;
@@ -1748,210 +1760,212 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 	// Determine ndims, hasTime, and decomp type
 	build_dimension_information(registry, var_xml, &ndims, &hasTime, &decomp);
 
-	// Determine name of pointer for this field.
-	set_pointer_name(type, ndims, pointer_name, time_levs);
-	if (time_levs > 1) {
-		fortprintf(fd, "      allocate(%s(%d))\n", pointer_name, time_levs);
+	if (time_levs_from_config || time_levs > 1) {
+		set_pointer_name(type, ndims, pointer_name, true);
+		if (time_levs_from_config) {
+			fortprintf(fd, "      allocate(%s(config_flag_time_levs))\n", pointer_name);
+			fortprintf(fd, "      do iTime = 1,config_flag_time_levs\n");
+		} else {
+			fortprintf(fd, "      allocate(%s(%d))\n", pointer_name, time_levs);
+			fortprintf(fd, "      do iTime = 1,%d\n",time_levs);
+		}
+		snprintf(pointer_name_arr, 1024, "%s(iTime)", pointer_name);
 	} else {
+		set_pointer_name(type, ndims, pointer_name, false);
+		snprintf(pointer_name_arr, 1024, "%s", pointer_name);
 		fortprintf(fd, "      allocate(%s)\n", pointer_name);
 	}
+	fortprintf(fd, "! Setting up metadata\n");
+	fortprintf(fd, "      %s %% fieldName = '%s'\n", pointer_name_arr, varname);
+	fortprintf(fd, "      %s %% outputFieldName = '%s'\n", pointer_name_arr, varname_in_output);
+	fortprintf(fd, "      %s %% isVarArray = .false.\n", pointer_name_arr);
+	if (decomp != -1) {
+		fortprintf(fd, "      %s %% isDecomposed = .true.\n", pointer_name_arr);
+	} else {
+		fortprintf(fd, "      %s %% isDecomposed = .false.\n", pointer_name_arr);
+	}
 
-	for(time_lev = 1; time_lev <= time_levs; time_lev++){
-		if (time_levs > 1) {
-			snprintf(pointer_name_arr, 1024, "%s(%d)", pointer_name, time_lev);
+	if(hasTime) {
+		fortprintf(fd, "      %s %% hasTimeDimension = .true.\n", pointer_name_arr);
+	} else {
+		fortprintf(fd, "      %s %% hasTimeDimension = .false.\n", pointer_name_arr);
+	}
+
+	if(ndims > 0){
+		if(persistence == SCRATCH){
+			fortprintf(fd, "      %s %% isPersistent = .false.\n", pointer_name_arr);
+			fortprintf(fd, "      %s %% isActive = .false.\n", pointer_name_arr);
 		} else {
-			snprintf(pointer_name_arr, 1024, "%s", pointer_name);
-		}
-		fortprintf(fd, "\n");
-		fortprintf(fd, "! Setting up time level %d\n", time_lev);
-		fortprintf(fd, "      %s %% fieldName = '%s'\n", pointer_name_arr, varname);
-		fortprintf(fd, "      %s %% outputFieldName = '%s'\n", pointer_name_arr, varname_in_output);
-		fortprintf(fd, "      %s %% isVarArray = .false.\n", pointer_name_arr);
-		if (decomp != -1) {
-			fortprintf(fd, "      %s %% isDecomposed = .true.\n", pointer_name_arr);
-		} else {
-			fortprintf(fd, "      %s %% isDecomposed = .false.\n", pointer_name_arr);
+			fortprintf(fd, "      %s %% isPersistent = .true.\n", pointer_name_arr);
+			fortprintf(fd, "      %s %% isActive = .false.\n", pointer_name_arr);
 		}
 
-		if(hasTime) {
-			fortprintf(fd, "      %s %% hasTimeDimension = .true.\n", pointer_name_arr);
-		} else {
-			fortprintf(fd, "      %s %% hasTimeDimension = .false.\n", pointer_name_arr);
+		// Setup dimensions
+		fortprintf(fd, "! Setting up dimensions\n");
+		string = strdup(vardims);
+		tofree = string;
+		i = 1;
+		token = strsep(&string, " ");
+		if(strncmp(token, "Time", 1024) != 0){
+			fortprintf(fd, "      %s %% dimNames(%d) = '%s'\n", pointer_name_arr, i, token);
+			i++;
 		}
-
-		if(ndims > 0){
-			if(persistence == SCRATCH){
-				fortprintf(fd, "      %s %% isPersistent = .false.\n", pointer_name_arr);
-				fortprintf(fd, "      %s %% isActive = .false.\n", pointer_name_arr);
-			} else {
-				fortprintf(fd, "      %s %% isPersistent = .true.\n", pointer_name_arr);
-				fortprintf(fd, "      %s %% isActive = .false.\n", pointer_name_arr);
-			}
-
-			// Setup dimensions
-			fortprintf(fd, "! Setting up dimensions\n");
-			string = strdup(vardims);
-			tofree = string;
-			i = 1;
-			token = strsep(&string, " ");
+		while( (token = strsep(&string, " ")) != NULL){
 			if(strncmp(token, "Time", 1024) != 0){
 				fortprintf(fd, "      %s %% dimNames(%d) = '%s'\n", pointer_name_arr, i, token);
 				i++;
 			}
-			while( (token = strsep(&string, " ")) != NULL){
-				if(strncmp(token, "Time", 1024) != 0){
-					fortprintf(fd, "      %s %% dimNames(%d) = '%s'\n", pointer_name_arr, i, token);
-					i++;
-				}
-			}
-			free(tofree);
+		}
+		free(tofree);
+	}
+
+	fortprintf(fd, "      %s %% defaultValue = %s\n", pointer_name_arr, default_value);
+	if ( ndims == 0 ) {
+		fortprintf(fd, "      %s %% scalar = %s\n", pointer_name_arr, default_value);
+	}
+	fortprintf(fd, "      allocate(%s %% attLists(1))\n", pointer_name_arr);
+	fortprintf(fd, "      allocate(%s %% attLists(1) %% attList)\n", pointer_name_arr);
+
+	if ( varunits != NULL ) {
+		string = strdup(varunits);
+		tofree = string;
+		token = strsep(&string, "'");
+
+		sprintf(temp_str, "%s", token);
+
+		while ( ( token = strsep(&string, "'") ) != NULL ) {
+			sprintf(temp_str, "%s''%s", temp_str, token);
 		}
 
-		fortprintf(fd, "      %s %% defaultValue = %s\n", pointer_name_arr, default_value);
-		if ( ndims == 0 ) {
-			fortprintf(fd, "      %s %% scalar = %s\n", pointer_name_arr, default_value);
-		}
-		fortprintf(fd, "      allocate(%s %% attLists(1))\n", pointer_name_arr);
-		fortprintf(fd, "      allocate(%s %% attLists(1) %% attList)\n", pointer_name_arr);
+		free(tofree);
 
-		if ( varunits != NULL ) {
-			string = strdup(varunits);
-			tofree = string;
-			token = strsep(&string, "'");
+		fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'units', '%s')\n", pointer_name_arr, temp_str);
+	}
 
-			sprintf(temp_str, "%s", token);
+	if ( varbounds != NULL ) {
+		string = strdup(varbounds);
+		tofree = string;
+		token = strsep(&string, "'");
 
-			while ( ( token = strsep(&string, "'") ) != NULL ) {
-				sprintf(temp_str, "%s''%s", temp_str, token);
-			}
+		sprintf(temp_str, "%s", token);
 
-			free(tofree);
-
-			fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'units', '%s')\n", pointer_name_arr, temp_str);
+		while ( ( token = strsep(&string, "'") ) != NULL ) {
+			sprintf(temp_str, "%s''%s", temp_str, token);
 		}
 
-		if ( varbounds != NULL ) {
-			string = strdup(varbounds);
-			tofree = string;
-			token = strsep(&string, "'");
+		free(tofree);
 
-			sprintf(temp_str, "%s", token);
+		fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'bounds', '%s')\n", pointer_name_arr, temp_str);
+	}
 
-			while ( ( token = strsep(&string, "'") ) != NULL ) {
-				sprintf(temp_str, "%s''%s", temp_str, token);
-			}
+	if ( varcellmeasures != NULL ) {
+		string = strdup(varcellmeasures);
+		tofree = string;
+		token = strsep(&string, "'");
 
-			free(tofree);
+		sprintf(temp_str, "%s", token);
 
-			fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'bounds', '%s')\n", pointer_name_arr, temp_str);
+		while ( ( token = strsep(&string, "'") ) != NULL ) {
+			sprintf(temp_str, "%s''%s", temp_str, token);
 		}
 
-		if ( varcellmeasures != NULL ) {
-			string = strdup(varcellmeasures);
-			tofree = string;
-			token = strsep(&string, "'");
+		free(tofree);
 
-			sprintf(temp_str, "%s", token);
+		fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'cell_measures', '%s')\n", pointer_name_arr, temp_str);
+	}
 
-			while ( ( token = strsep(&string, "'") ) != NULL ) {
-				sprintf(temp_str, "%s''%s", temp_str, token);
-			}
+	if ( varcellmethod != NULL ) {
+		string = strdup(varcellmethod);
+		tofree = string;
+		token = strsep(&string, "'");
 
-			free(tofree);
+		sprintf(temp_str, "%s", token);
 
-			fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'cell_measures', '%s')\n", pointer_name_arr, temp_str);
+		while ( ( token = strsep(&string, "'") ) != NULL ) {
+			sprintf(temp_str, "%s''%s", temp_str, token);
 		}
 
-		if ( varcellmethod != NULL ) {
-			string = strdup(varcellmethod);
-			tofree = string;
-			token = strsep(&string, "'");
+		free(tofree);
 
-			sprintf(temp_str, "%s", token);
+		fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'cell_method', '%s')\n", pointer_name_arr, temp_str);
+	}
 
-			while ( ( token = strsep(&string, "'") ) != NULL ) {
-				sprintf(temp_str, "%s''%s", temp_str, token);
-			}
+	if ( varcoords != NULL ) {
+		string = strdup(varcoords);
+		tofree = string;
+		token = strsep(&string, "'");
 
-			free(tofree);
+		sprintf(temp_str, "%s", token);
 
-			fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'cell_method', '%s')\n", pointer_name_arr, temp_str);
+		while ( ( token = strsep(&string, "'") ) != NULL ) {
+			sprintf(temp_str, "%s''%s", temp_str, token);
 		}
 
-		if ( varcoords != NULL ) {
-			string = strdup(varcoords);
-			tofree = string;
-			token = strsep(&string, "'");
+		free(tofree);
 
-			sprintf(temp_str, "%s", token);
+		fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'coordinates', '%s')\n", pointer_name_arr, temp_str);
+	}
 
-			while ( ( token = strsep(&string, "'") ) != NULL ) {
-				sprintf(temp_str, "%s''%s", temp_str, token);
-			}
+	if ( varstdname != NULL ) {
+		string = strdup(varstdname);
+		tofree = string;
+		token = strsep(&string, "'");
 
-			free(tofree);
+		sprintf(temp_str, "%s", token);
 
-			fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'coordinates', '%s')\n", pointer_name_arr, temp_str);
+		while ( ( token = strsep(&string, "'") ) != NULL ) {
+			sprintf(temp_str, "%s''%s", temp_str, token);
 		}
 
-		if ( varstdname != NULL ) {
-			string = strdup(varstdname);
-			tofree = string;
-			token = strsep(&string, "'");
+		free(tofree);
 
-			sprintf(temp_str, "%s", token);
+		fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'standard_name', '%s')\n", pointer_name_arr, temp_str);
+	}
 
-			while ( ( token = strsep(&string, "'") ) != NULL ) {
-				sprintf(temp_str, "%s''%s", temp_str, token);
-			}
+	if ( vardesc != NULL ) {
+		string = strdup(vardesc);
+		tofree = string;
+		token = strsep(&string, "'");
 
-			free(tofree);
+		sprintf(temp_str, "%s", token);
 
-			fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'standard_name', '%s')\n", pointer_name_arr, temp_str);
+		while ( ( token = strsep(&string, "'") ) != NULL ) {
+			sprintf(temp_str, "%s''%s", temp_str, token);
 		}
 
-		if ( vardesc != NULL ) {
-			string = strdup(vardesc);
-			tofree = string;
-			token = strsep(&string, "'");
+		free(tofree);
 
-			sprintf(temp_str, "%s", token);
+		fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'long_name', '%s')\n", pointer_name_arr, temp_str);
+	}
 
-			while ( ( token = strsep(&string, "'") ) != NULL ) {
-				sprintf(temp_str, "%s''%s", temp_str, token);
-			}
+	if ( varmissing_value_mask != NULL && varmissingval != NULL ) {
+		string = strdup(varmissing_value_mask);
+		tofree = string;
 
-			free(tofree);
+		token = strsep(&string, "'");
+		sprintf(temp_str, "%s", token);
 
-			fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'long_name', '%s')\n", pointer_name_arr, temp_str);
+		while ( ( token = strsep(&string, "'") ) != NULL ) {
+			sprintf(temp_str, "%s''%s", temp_str, token);
 		}
 
-		if ( varmissing_value_mask != NULL && varmissingval != NULL ) {
-			string = strdup(varmissing_value_mask);
-			tofree = string;
+		free(tofree);
 
-			token = strsep(&string, "'");
-			sprintf(temp_str, "%s", token);
+		fortprintf(fd, "      %s %% maskName = '%s'\n", pointer_name_arr , temp_str);
+		fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'missing_value_mask', '%s')\n", pointer_name_arr, temp_str);
+	} else {
+		fortprintf(fd, "      %s %% maskName = 'none'\n", pointer_name_arr , temp_str);
+	}
 
-			while ( ( token = strsep(&string, "'") ) != NULL ) {
-				sprintf(temp_str, "%s''%s", temp_str, token);
-			}
+	if ( varmissingval != NULL ) {
+		fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, '_FillValue', %s)\n", pointer_name_arr, missing_value);
+	}
+	fortprintf(fd, "      %s %% missingValue = %s\n", pointer_name_arr, missing_value);
 
-			free(tofree);
+	fortprintf(fd, "      %s %% block => block\n", pointer_name_arr);
 
-		        fortprintf(fd, "      %s %% maskName = '%s'\n", pointer_name_arr , temp_str);
-			fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'missing_value_mask', '%s')\n", pointer_name_arr, temp_str);
-                } else {
-                        fortprintf(fd, "      %s %% maskName = 'none'\n", pointer_name_arr , temp_str);
-		}
-
-		if ( varmissingval != NULL ) {
-			fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, '_FillValue', %s)\n", pointer_name_arr, missing_value);
-		}
-		fortprintf(fd, "      %s %% missingValue = %s\n", pointer_name_arr, missing_value);
-
-		fortprintf(fd, "      %s %% block => block\n", pointer_name_arr);
-
+	if (time_levs_from_config || time_levs > 1) {
+		fortprintf(fd, "      enddo\n");
 	}
 
 	// Parse packages if they are defined
@@ -1972,13 +1986,19 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 		fortprintf(fd, ") then\n");
 	}
 
-	for(time_lev = 1; time_lev <= time_levs; time_lev++){
-		if (time_levs > 1) {
-			snprintf(pointer_name_arr, 1024, "%s(%d)", pointer_name, time_lev);
+	if (time_levs_from_config || time_levs > 1) {
+		if (time_levs_from_config) {
+			fortprintf(fd, "      do iTime = 1,config_flag_time_levs\n");
 		} else {
-			snprintf(pointer_name_arr, 1024, "%s", pointer_name);
+			fortprintf(fd, "      do iTime = 1,%d\n",time_levs);
 		}
-		fortprintf(fd, "      %s%s %% isActive = .true.\n", package_spacing, pointer_name_arr);
+		snprintf(pointer_name_arr, 1024, "%s(iTime)", pointer_name);
+	} else {
+		snprintf(pointer_name_arr, 1024, "%s", pointer_name);
+	}
+	fortprintf(fd, "         %s%s %% isActive = .true.\n", package_spacing, pointer_name_arr);
+	if (time_levs_from_config || time_levs > 1) {
+		fortprintf(fd, "      enddo\n");
 	}
 
 	if(varpackages != NULL){
@@ -2053,6 +2073,8 @@ int parse_struct(FILE *fd, ezxml_t registry, ezxml_t superStruct, int subpool, c
 	fortprintf(fd, "      logical :: group_started\n");
 	fortprintf(fd, "      integer :: group_start\n");
 	fortprintf(fd, "      integer :: index_counter\n");
+	fortprintf(fd, "      integer :: iTime\n");
+	fortprintf(fd, "      integer, pointer :: config_flag_time_levs\n");
 	fortprintf(fd, "      integer, pointer :: const_index\n");
 	fortprintf(fd, "\n");
 

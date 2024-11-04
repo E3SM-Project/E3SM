@@ -48,6 +48,7 @@ inline std::string e2str (const DataType data_type) {
     case DataType::IntType:    return "int";
     case DataType::FloatType:  return "float";
     case DataType::DoubleType: return "double";
+    case DataType::Invalid:    return "invalid";
     default:
       EKAT_ERROR_MSG("Error! Unsupported DataType value.\n");
   }

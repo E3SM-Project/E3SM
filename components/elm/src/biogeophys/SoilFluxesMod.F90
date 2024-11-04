@@ -8,7 +8,7 @@ module SoilFluxesMod
   use shr_log_mod	, only : errMsg => shr_log_errMsg
   use decompMod		, only : bounds_type
   use abortutils	, only : endrun
-  use elm_varctl	, only : iulog, use_extrasnowlayers
+  use elm_varctl	, only : iulog, use_firn_percolation_and_compaction
   use perfMod_GPU
   use elm_varpar	, only : nlevsno, nlevgrnd, nlevurb, max_patch_per_col
   use atm2lndType	, only : atm2lnd_type
@@ -349,7 +349,7 @@ contains
          ! This was moved in from Hydrology2 to keep all pft-level
          ! calculations out of Hydrology2
 
-         if (col_pp%snl(c) < 0 .and. do_capsnow(c) .and. .not. use_extrasnowlayers) then
+         if (col_pp%snl(c) < 0 .and. do_capsnow(c) .and. .not. use_firn_percolation_and_compaction) then
             qflx_snwcp_liq(p) = qflx_snwcp_liq(p)+frac_sno_eff(c)*qflx_dew_grnd(p)
             qflx_snwcp_ice(p) = qflx_snwcp_ice(p)+frac_sno_eff(c)*qflx_dew_snow(p)
          end if

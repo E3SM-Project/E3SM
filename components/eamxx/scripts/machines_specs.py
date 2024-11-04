@@ -4,6 +4,8 @@ import os, sys, pathlib
 ensure_psutil()
 import psutil
 
+CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","cime")
+
 # MACHINE -> (env_setup,                      # list of shell commands to set up scream-approved env
 #             compilers,                      # list of compilers [CXX, F90, C]
 #             batch submit prefix,            # string shell commmand prefix
@@ -21,20 +23,34 @@ MACHINE_METADATA = {
                  ["mpicxx","mpifort","mpicc"],
                   "salloc -N 1 srun -n1 --preserve-env",
                   "/home/projects/e3sm/scream/pr-autotester/master-baselines/blake/"),
-    "weaver"   : (["source /etc/profile.d/modules.sh", "module purge", "module load git/2.10.1 python/3.7.3 cmake/3.23.1 cuda/11.2.2/gcc/8.3.1 openmpi/4.1.1/gcc/8.3.1/cuda/11.2.2 netcdf-c/4.8.1/gcc/8.3.1/openmpi/4.1.1 netcdf-cxx/4.2/gcc/8.3.1/openmpi/4.1.1 netcdf-fortran/4.5.4/gcc/8.3.1/openmpi/4.1.1 parallel-netcdf/1.12.2/gcc/8.3.1/openmpi/4.1.1",
+    "weaver"   : (["source /etc/profile.d/modules.sh", "module purge", "module load cmake/3.25.1 git/2.39.1 python/3.10.8 py-netcdf4/1.5.8 gcc/11.3.0 cuda/11.8.0 openmpi netcdf-c netcdf-fortran parallel-netcdf netlib-lapack", "export HDF5_USE_FILE_LOCKING=FALSE",
                  ],
                  ["mpicxx","mpifort","mpicc"],
-                  "bsub -I -q rhel8 -n 4",
+                  "bsub -I -q rhel8 -n 4 -gpu num=4",
                   "/home/projects/e3sm/scream/pr-autotester/master-baselines/weaver/"),
-    "mappy"   : (["module purge", "module load sems-archive-env acme-env sems-archive-gcc/9.2.0 sems-archive-cmake/3.19.1 sems-archive-git/2.10.1 acme-openmpi/4.0.7 acme-netcdf/4.7.4/acme"],
+    "mappy"   : (["source /projects/sems/modulefiles/utils/sems-modules-init.sh",
+                  "module purge", "module load sems-cmake/3.27.9 sems-git/2.42.0 sems-gcc/11.4.0 sems-openmpi-no-cuda/4.1.6 sems-netcdf-c/4.9.2 sems-netcdf-cxx/4.2 sems-netcdf-fortran/4.6.1 sems-parallel-netcdf/1.12.3 sems-openblas",
+                  "export GATOR_INITIAL_MB=4000MB",
+                 ],
                  ["mpicxx","mpifort","mpicc"],
                   "",
                   "/sems-data-store/ACME/baselines/scream/master-baselines"),
-    "lassen" : (["module --force purge", "module load git gcc/8.3.1 cuda/10.1.243 cmake/3.16.8 spectrum-mpi python/3.7.2", "export LLNL_USE_OMPI_VARS='y'"],
+    "lassen" : (["module --force purge", "module load git gcc/8.3.1 cuda/11.8.0 cmake/3.16.8 spectrum-mpi python/3.7.2", "export LLNL_USE_OMPI_VARS='y'",
+                 "export PATH=/usr/workspace/e3sm/netcdf/bin:$PATH",
+                 "export LD_LIBRARY_PATH=/usr/workspace/e3sm/netcdf/lib:$LD_LIBRARY_PATH",
+                ],
+                ["mpicxx","mpifort","mpicc"],
+                 "bsub -Ip -qpdebug",
+                 ""),
+    "ruby-intel" : (["module --force purge", "module use --append /usr/workspace/e3sm/install/quartz/modulefiles", "module load StdEnv cmake/3.19.2 mkl/2022.1.0 intel-classic/2021.6.0-magic mvapich2/2.3.7 hdf5/1.12.2 netcdf-c/4.9.0 netcdf-fortran/4.6.0 parallel-netcdf/1.12.3 python/3.9.12 screamML-venv/0.0.1"],
                  ["mpicxx","mpifort","mpicc"],
-                  "bsub -Ip -qpdebug",
+                  "salloc --partition=pdebug",
                   ""),
-    "quartz-intel" : (["module --force purge", "module load StdEnv cmake/3.16.8 mkl/2019.0 intel/19.0.4 netcdf-fortran/4.4.4 netcdf/4.4.1.1 pnetcdf/1.9.0 mvapich2/2.3 python/3.8.2"],
+    "dane-intel" : (["module --force purge", "module use --append /usr/workspace/e3sm/install/quartz/modulefiles", "module load StdEnv cmake/3.19.2 mkl/2022.1.0 intel-classic/2021.6.0-magic mvapich2/2.3.7 hdf5/1.12.2 netcdf-c/4.9.0 netcdf-fortran/4.6.0 parallel-netcdf/1.12.3 python/3.9.12 screamML-venv/0.0.1"],
+                 ["mpicxx","mpifort","mpicc"],
+                  "salloc --partition=pdebug",
+                  ""),
+    "quartz-intel" : (["module --force purge", "module use --append /usr/workspace/e3sm/install/quartz/modulefiles", "module load StdEnv cmake/3.19.2 mkl/2022.1.0 intel-classic/2021.6.0-magic mvapich2/2.3.7 hdf5/1.12.2 netcdf-c/4.9.0 netcdf-fortran/4.6.0 parallel-netcdf/1.12.3 python/3.9.12 screamML-venv/0.0.1"],
                  ["mpicxx","mpifort","mpicc"],
                   "salloc --partition=pdebug",
                   ""),
@@ -50,22 +66,42 @@ MACHINE_METADATA = {
                 ["mpicxx","mpifort","mpicc"],
                 "bsub -I -q batch -W 0:30 -P cli115 -nnodes 1",
                 "/gpfs/alpine/cli115/proj-shared/scream/master-baselines"),
-"perlmutter" : (["module load PrgEnv-gnu gcc/10.3.0 cudatoolkit craype-accel-nvidia80 cray-libsci craype cray-mpich cray-hdf5-parallel cray-netcdf-hdf5parallel cray-parallel-netcdf cmake","module unload craype-accel-host perftools-base perftools darshan", "export NVCC_WRAPPER_DEFAULT_COMPILER=CC", "export NVCC_WRAPPER_DEFAULT_ARCH=sm_80"],
+    "pm-cpu" : ([f"eval $({CIMEROOT}/CIME/Tools/get_case_env -c SMS.ne4pg2_ne4pg2.F2010-SCREAMv1.pm-cpu_gnu)"],
                 ["CC","ftn","cc"],
-                "srun --time 00:30:00 --nodes=1 --constraint=gpu --exclusive -q regular --account e3sm_g",
-                ""),
-    "cori-knl" : (["eval $(../../cime/CIME/Tools/get_case_env)", "export OMP_NUM_THREADS=68"],
-                  ["CC","ftn","cc"],
-                  "srun --time 02:00:00 --nodes=1 --constraint=knl,quad,cache --exclusive -q regular --account e3sm",
-                  ""),
+                "salloc --time 00:30:00 --nodes=1 --constraint=cpu -q debug --account e3sm_g",
+                "/global/cfs/cdirs/e3sm/baselines/gnu/scream/pm-cpu"),
+    "pm-gpu" : ([f"eval $({CIMEROOT}/CIME/Tools/get_case_env -c SMS.ne4pg2_ne4pg2.F2010-SCREAMv1.pm-gpu_gnugpu)", "echo cuda=true"],
+                ["CC","ftn","cc"],
+                "salloc --time 02:00:00 --nodes=4 --constraint=gpu --gpus-per-node=4 --gpu-bind=none --exclusive -q regular --account e3sm_g",
+                "/global/cfs/cdirs/e3sm/baselines/gnugpu/scream/pm-gpu"),
     "compy"   : (["module purge", "module load cmake/3.19.6 gcc/8.1.0  mvapich2/2.3.1 python/3.7.3"],
                  ["mpicxx","mpifort","mpicc"],
                   "srun --time 02:00:00 --nodes=1 -p short --exclusive --account e3sm",
                   ""),
-
+    "chrysalis" : ([f"eval $({CIMEROOT}/CIME/Tools/get_case_env)", "export OMP_NUM_THREADS=1"],
+                  ["mpic++","mpif90","mpicc"],
+                  "srun --mpi=pmi2 -l -N 1 --kill-on-bad-exit --cpu_bind=cores",
+                  "/lcrc/group/e3sm/baselines/chrys/intel/scream"),
+    "anlgce"   : ([". /nfs/gce/software/spack/opt/spack/linux-ubuntu20.04-x86_64/gcc-9.3.0/lmod-8.3-6fjdtku/lmod/lmod/init/sh", "module purge", "module load autoconf/2.69-bmnwajj automake/1.16.3-r7w24o4 libtool/2.4.6-uh3mpsu m4/1.4.19-7fztfyz cmake/3.20.5-zyz2eld gcc/11.1.0-qsjmpcg zlib/1.2.11-p7dmb5p", "export LD_LIBRARY_PATH=/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/mpich/4.0/gcc-11.1.0/lib:$LD_LIBRARY_PATH", "export PATH=/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/mpich/4.0/gcc-11.1.0/bin:/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/netcdf/4.8.0c-4.3.1cxx-4.5.3f-serial/gcc-11.1.0/bin:$PATH", "export NetCDF_ROOT=/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/netcdf/4.8.0c-4.3.1cxx-4.5.3f-serial/gcc-11.1.0", "export PERL5LIB=/nfs/gce/projects/climate/software/perl5/lib/perl5"],
+                 ["mpicxx","mpifort","mpicc"],
+                  "",
+                  ""),
+    "ghci-oci" : ([f"eval $({CIMEROOT}/CIME/Tools/get_case_env -c SMS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci-oci_gnu)"],
+                 ["mpicxx","mpifort","mpicc"],
+                 "",
+                 ""),
+    "anlgce-ub22" : ([". /nfs/gce/software/custom/linux-ubuntu22.04-x86_64/spack/opt/spack/linux-ubuntu22.04-x86_64/gcc-11.2.0/lmod-8.5.6-hkjjxhp/lmod/lmod/init/sh", "module purge", "module load gcc/12.1.0", "export LD_LIBRARY_PATH=/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/mpich/4.1.2/gcc-12.1.0/lib:$LD_LIBRARY_PATH", "export PATH=/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/mpich/4.1.2/gcc-12.1.0/bin:/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/netcdf/4.8.0c-4.3.1cxx-4.5.3f-serial/gcc-12.1.0/bin:$PATH", "export NetCDF_ROOT=/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/netcdf/4.8.0c-4.3.1cxx-4.5.3f-serial/gcc-12.1.0", "export PERL5LIB=/nfs/gce/projects/climate/software/perl5/lib/perl5"],
+                 ["mpicxx","mpifort","mpicc"],
+                  "",
+                  ""),
     "linux-generic" :        ([],["mpicxx","mpifort","mpicc"],"", ""),
     "linux-generic-debug" :  ([],["mpicxx","mpifort","mpicc"],"", ""),
     "linux-generic-serial" : ([],["mpicxx","mpifort","mpicc"],"", ""),
+    "ghci-snl-openmp" : ([],
+                         ["mpicxx","mpifort","mpicc"],
+                         "",
+                         "/projects/e3sm/baselines/scream/master-baselines"
+                        ),
 }
 
 if pathlib.Path("~/.cime/scream_mach_specs.py").expanduser().is_file(): # pylint: disable=no-member
@@ -186,9 +222,19 @@ def get_mach_testing_resources(machine):
     of jobs across cores.
     """
     if is_cuda_machine(machine):
-        return int(run_cmd_no_fail("nvidia-smi -L | wc -l"))
+        prefix = "srun " if is_salloc(machine) else ""
+        return int(run_cmd_no_fail(f"{prefix}nvidia-smi -L | wc -l"))
     else:
         return get_available_cpu_count()
+
+###############################################################################
+def is_salloc(machine):
+###############################################################################
+    """
+    Return true if we are running on an salloc'd job.
+    """
+    bcmd = get_mach_batch_command(machine)
+    return "salloc" in bcmd and "srun" not in bcmd
 
 ###############################################################################
 def is_cuda_machine(machine):
@@ -196,9 +242,9 @@ def is_cuda_machine(machine):
     assert_machine_supported(machine)
 
     env_setup_raw = MACHINE_METADATA[machine][0]
-    env_setup_str = " ".join(env_setup_raw)
+    env_setup_str = " ".join(env_setup_raw).lower()
 
-    return "cuda" in env_setup_str.lower()
+    return ("no-cuda" not in env_setup_str and "cuda" in env_setup_str)
 
 ###############################################################################
 def setup_mach_env(machine, ctest_j=None):

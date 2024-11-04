@@ -223,7 +223,7 @@ module ocn_init_sub_ice_shelf_2D
 
         if(associated(landIceFraction)) &
           landIceFraction(:) = 0.0_RKIND
-        modifyLandIcePressureMask(:) = 0
+        sshAdjustmentMask(:) = 0
         if(associated(landIceMask)) &
           landIceMask(:) = 0
 
@@ -241,7 +241,7 @@ module ocn_init_sub_ice_shelf_2D
            ssh(iCell) = -config_sub_ice_shelf_2D_bottom_depth + totalSubIceThickness
 
            if(ssh(iCell) < 0.0_RKIND) then
-              modifyLandIcePressureMask(iCell) = 1
+              sshAdjustmentMask(iCell) = 1
            end if
         end do
 

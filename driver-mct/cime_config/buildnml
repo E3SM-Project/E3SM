@@ -40,6 +40,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
     config['CPL_ALBAV'] = case.get_value('CPL_ALBAV')
     config['CPL_EPBAL'] = case.get_value('CPL_EPBAL')
     config['FLDS_WISO'] = case.get_value('FLDS_WISO')
+    config['FLDS_POLAR'] = case.get_value('FLDS_POLAR')
     config['BUDGETS'] = case.get_value('BUDGETS')
     config['MACH'] = case.get_value('MACH')
     config['MPILIB'] = case.get_value('MPILIB')
@@ -400,6 +401,10 @@ def buildnml(case, caseroot, component):
         cam_config_opts = case.get_value("CAM_CONFIG_OPTS")
         if "aquaplanet" in cam_config_opts:
             infile_text = "aqua_planet = .true. \n aqua_planet_sst = 1"
+
+    # add dust_emis_scheme 
+    dust_emis_scheme = case.get_value('dust_emis_scheme')
+    infile_text += " dust_emis_scheme = {}".format(dust_emis_scheme)
 
     user_nl_file = os.path.join(caseroot, "user_nl_cpl")
     namelist_infile = os.path.join(confdir, "namelist_infile")

@@ -34,6 +34,7 @@ SPECIES
   CH3CHO
   CH3CO3
   ISOP -> C5H8
+  ISOP_VBS -> C5H8
   ISOPO2 -> HOCH2COOCH3CHCH2
   C10H16
   MVKMACR -> C4H6O
@@ -88,7 +89,7 @@ SPECIES
  End Solution
 
  Fixed
-   M, N2, O2, H2O, H2, CH4
+   M, N2, O2, H2O, H2, CH4, prsd_O3, prsd_NO3, prsd_OH
  End Fixed
 
  Col-int
@@ -118,7 +119,7 @@ Solution Classes
    O3, OH, HO2, H2O2, CH2O, CH3O2, CH3OOH
    NO, NO2, NO3, N2O5, HNO3, HO2NO2, PAN
    C2H5O2, C2H5OOH, CH3CHO, CH3CO3, C2H4, ROHO2
-   ISOP, ISOPO2, C10H16, MVKMACR, MVKO2
+   ISOP, ISOP_VBS, ISOPO2, C10H16, MVKMACR, MVKO2
    soa_a1,  soa_a2,  soa_a3
    SOAG0, SOAG15, SOAG24, SOAG31
    SOAG32, SOAG33, SOAG34, SOAG35
@@ -263,24 +264,25 @@ CHEMISTRY
 
 
 * VBS SOAG reactions
-[vsoag0_oh]   SOAG0 + OH -> 1.15*SOAG15 + OH                                  ; 2e-11
-[vsoag15_oh]  SOAG15 + OH -> 1.15*SOAG24 + OH                                 ; 2e-11
-[vsoag24_oh]  SOAG24 + OH -> 0.46*SOAG33 + 0.5*SOAG35 + OH                    ; 2e-11
+[vsoag0_oh]   SOAG0 + prsd_OH -> 1.15*SOAG15                                  ; 2e-11
+[vsoag15_oh]  SOAG15 + prsd_OH -> 1.15*SOAG24                                 ; 2e-11
+[vsoag24_oh]  SOAG24 + prsd_OH -> 0.46*SOAG33 + 0.5*SOAG35                   ; 2e-11
 
-[visop_oh]    ISOP + OH -> 0.00272*SOAG32 + 0.00981*SOAG33 + 0.00218*SOAG34 + ISOP + OH     ; 2.54e-11, 410
-[vc10h16_oh]  C10H16 + OH -> 0.14986*SOAG32 + 0.05450*SOAG33 + 0.09264*SOAG34 + OH          ; 1.2e-11, 444
-[visop_o3]    ISOP + O3 -> 0.00327*SOAG33 + ISOP + O3                                       ; 1.05e-14, -2000
-[vc10h16_o3]  C10H16 + O3 -> 0.04360*SOAG31 + 0.01035*SOAG32 + 0.09809*SOAG33 + 0.01635*SOAG34 + O3 ; 1.e-15, -732
-[visop_no3]   ISOP + NO3 -> 0.00027*SOAG32 + 0.04060*SOAG33 + 0.06458*SOAG34 + ISOP + NO3   ; 3.03e-12,-446
-[vc10h16_no3] C10H16 + NO3 -> 0.17493*SOAG33 + 0.59019*SOAG34 + NO3                    ; 1.2e-12, 490
+[visop_oh]    ISOP_VBS + prsd_OH -> 0.00272*SOAG32 + 0.00981*SOAG33 + 0.00218*SOAG34     ; 2.54e-11, 410
+[vc10h16_oh]  C10H16 + prsd_OH -> 0.14986*SOAG32 + 0.05450*SOAG33 + 0.09264*SOAG34          ; 1.2e-11, 444
+[visop_o3]    ISOP_VBS + prsd_O3 -> 0.00327*SOAG33                                       ; 1.05e-14, -2000
+[vc10h16_o3]  C10H16 + prsd_O3 -> 0.04360*SOAG31 + 0.01035*SOAG32 + 0.09809*SOAG33 + 0.01635*SOAG34  ; 1.e-15, -732
+[visop_no3]   ISOP_VBS + prsd_NO3 -> 0.00027*SOAG32 + 0.04060*SOAG33 + 0.06458*SOAG34     ; 3.03e-12,-446
+[vc10h16_no3] C10H16 + prsd_NO3 -> 0.17493*SOAG33 + 0.59019*SOAG34                   ; 1.2e-12, 490
 
-[vsoag35_oh]  SOAG35 + OH -> 0.46*SOAG34  + 0.5*SOAG35 + OH     ; 2e-11
-[vsoag34_oh]  SOAG34 + OH -> 0.46*SOAG33  + 0.5*SOAG35 + OH     ; 2e-11
-[vsoag33_oh]  SOAG33 + OH -> 0.46*SOAG32  + 0.5*SOAG35 + OH     ; 2e-11
-[vsoag32_oh]  SOAG32 + OH -> 0.46*SOAG31  + 0.5*SOAG35 + OH     ; 2e-11
+[vsoag35_oh]  SOAG35 + prsd_OH -> 0.46*SOAG34  + 0.5*SOAG35     ; 2e-11
+[vsoag34_oh]  SOAG34 + prsd_OH -> 0.46*SOAG33  + 0.5*SOAG35     ; 2e-11
+[vsoag33_oh]  SOAG33 + prsd_OH -> 0.46*SOAG32  + 0.5*SOAG35     ; 2e-11
+[vsoag32_oh]  SOAG32 + prsd_OH -> 0.46*SOAG31  + 0.5*SOAG35     ; 2e-11
  End Reactions
 
  Ext Forcing
+      NO
       NO2 <- dataset
       SO2 <- dataset
       so4_a1 <- dataset

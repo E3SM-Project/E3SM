@@ -103,7 +103,7 @@ module phys_grid
    use cam_abortutils,   only: endrun
    use perf_mod
    use cam_logfile,      only: iulog
-   use scamMod,          only: single_column, scmlat, scmlon, scm_multcols
+   use iop_data_mod,     only: single_column, scmlat, scmlon, scm_multcols
    use shr_const_mod,    only: SHR_CONST_PI
    use dycore,           only: dycore_is
    use units,            only: getunit, freeunit
@@ -490,9 +490,9 @@ contains
     !
     ! Initialize physics grid, using dynamics grid
     ! a) column coordinates
-    if (single_column .and. .not. scm_multcols .and. dycore_is ('SE')) lbal_opt = -1
+    if (single_column .and. .not. scm_multcols) lbal_opt = -1
     call get_horiz_grid_dim_d(hdim1_d,hdim2_d)
-    if (single_column .and. .not. scm_multcols .and. dycore_is('SE')) then
+    if (single_column .and. .not. scm_multcols) then
       ngcols = 1
     else
       ngcols = hdim1_d*hdim2_d
@@ -504,7 +504,7 @@ contains
     allocate( cdex(1:ngcols) )
     clat_d = 100000.0_r8
     clon_d = 100000.0_r8
-    if (single_column .and. dycore_is('SE')) then
+    if (single_column) then
       lat_d = scmlat
       lon_d = scmlon
       clat_d = scmlat * deg2rad
@@ -724,7 +724,7 @@ contains
        !
        ! Calculate maximum block size for each process
        !
-       if (single_column .and. .not. scm_multcols .and. dycore_is('SE')) then
+       if (single_column .and. .not. scm_multcols) then
           maxblksiz_proc(:) = 1
        else
           maxblksiz_proc(:) = 0
@@ -772,7 +772,7 @@ contains
        !
        ! Determine total number of chunks
        !
-       if (single_column .and. .not. scm_multcols .and. dycore_is('SE')) then
+       if (single_column .and. .not. scm_multcols) then
          nchunks = 1
        else
 	 nchunks = (lastblock-firstblock+1)
@@ -795,11 +795,11 @@ contains
 
        do cid=1,nchunks
           ! get number of global column indices in block
-          if (single_column .and. .not. scm_multcols .and. dycore_is('SE')) then
-            max_ncols = 1
-          else
-            max_ncols = get_block_gcol_cnt_d(cid+firstblock-1)
-          endif
+          if (single_column .and. .not. scm_multcols) then
+	    max_ncols = 1
+	  else
+	    max_ncols = get_block_gcol_cnt_d(cid+firstblock-1)
+	  endif
           ! fill cdex array with global indices from current block
           call get_block_gcol_d(cid+firstblock-1,max_ncols,cdex)
 

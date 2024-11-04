@@ -181,7 +181,7 @@ contains
     logical :: streamsExists
     integer :: mesh_iotype
 
-    logical, pointer :: tempLogicalConfig
+    logical, pointer :: tempLogicalConfig, config_create_all_logs_in_e3sm
     character(len=StrKIND), pointer :: tempCharConfig
 
 
@@ -332,22 +332,6 @@ contains
        call mpas_dmpar_abort(domain % dminfo)
     end if
 
-    ! Set core specific options here
-    ! Disable output from all but the master task for E3SM!
-    ! (This overrides the default set by mpas_log_init based on MPAS_DEBUG setting.)
-    if (iam /= 0) then
-       domain % logInfo % outputLog % isActive = .false.
-    endif
-
-    ! After core has had a chance to modify log defaults, open the output log
-    call mpas_log_open(err=ierr)
-    if ( ierr /= 0 ) then
-       write(glcLogUnit,*) 'ERROR: log open failed for core ' // trim(domain % core % coreName)
-       call mpas_dmpar_abort(domain % dminfo)
-    end if
-    ! ===========
-
-
     ! ----------
     ! Process namelist and streams files
     ! ----------
@@ -360,6 +344,26 @@ contains
     if ( ierr /= 0 ) then
        call mpas_log_write('Namelist setup failed for core ' // trim(domain % core % coreName), MPAS_LOG_CRIT)
     end if
+
+    ! Set core specific options here
+    ! Disable output from all but the master task for E3SM!
+    ! (This overrides the default set by mpas_log_init based on MPAS_DEBUG setting.)
+    call mpas_pool_get_config(domain % configs, 'config_create_all_logs_in_e3sm', config_create_all_logs_in_e3sm)
+    if (config_create_all_logs_in_e3sm) then
+       domain % logInfo % outputLog % isActive = .true.
+    else
+       if (iam /= 0) then
+          domain % logInfo % outputLog % isActive = .false.
+       endif
+    endif
+
+    ! After core has had a chance to modify log defaults, open the output log
+    call mpas_log_open(err=ierr)
+    if ( ierr /= 0 ) then
+       write(glcLogUnit,*) 'ERROR: log open failed for core ' // trim(domain % core % coreName)
+       call mpas_dmpar_abort(domain % dminfo)
+    end if
+    ! ===========
 
     call mpas_framework_init_phase2(domain, io_system)
 
@@ -886,12 +890,23 @@ contains
          ! will allow that.
          ! Finally, set whence to latest_before so we have piecewise-constant forcing.
          ! Could add, e.g., linear interpolation later.
-! In coupled mode, we don't want to use forcing from a file - that should come from the coupler!
-!         call mpas_stream_mgr_read(stream_manager, whence=MPAS_STREAM_LATEST_BEFORE, ierr=err_tmp)
-!         err = ior(err, err_tmp)
-!         call mpas_stream_mgr_reset_alarms(stream_manager, direction=MPAS_STREAM_INPUT, ierr=err_tmp)
-!         err = ior(err, err_tmp)
 
+         ! NOTE: If any input ("forcing") files here contain fields that the coupler also passes, 
+         ! the input file versions here will clobber the fields passed from the coupler. 
+         
+         call mpas_stream_mgr_read(domain % streamManager, whence=MPAS_STREAM_LATEST_BEFORE, saveActualWhen = .true., ierr=err_tmp)
+         err = ior(err, err_tmp)
+         call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_INPUT, ierr=err_tmp)
+         err = ior(err, err_tmp)
+
+         ! call analysis driver compute, restart, write subroutines
+         ! (note: alarms and timers are handled by the analysis member code)
+         call li_analysis_compute(domain, err_tmp)
+         err = ior(err, err_tmp)
+         call li_analysis_restart(domain, err_tmp)
+         err = ior(err, err_tmp)
+         call li_analysis_write(domain, err_tmp)
+         err = ior(err, err_tmp)
 
          ! ===
          ! === Write Output and/or Restart, if needed

@@ -1,0 +1,4 @@
+#!/bin/bash
+# Set DIN to be local to the case
+./xmlchange DIN_LOC_ROOT="`./xmlquery --value CASEROOT`/inputdata"
+./xmlchange DIN_LOC_ROOT_CLMFORC="`./xmlquery --value CASEROOT`/inputdata/atm/datm7"

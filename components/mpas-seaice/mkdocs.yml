@@ -1,0 +1,9 @@
+site_name: MPAS-seaice
+
+nav:
+ - Introduction: 'index.md'
+ - User's Guide: 'user-guide/index.md'
+ - Technical Guide: 'tech-guide/index.md'
+ - Developer's Guide: 'dev-guide/index.md'
+ - References: 'references.md'
+ 

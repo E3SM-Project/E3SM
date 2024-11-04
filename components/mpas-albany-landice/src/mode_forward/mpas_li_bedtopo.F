@@ -53,7 +53,7 @@ module li_bedtopo
    !--------------------------------------------------------------------
 
    ! sea-level model timestep
-   integer, save :: slmTimeStep
+   integer, save :: slmTimeStep, nglv_slm, norder_slm
 
    ! Interpolation weights variables
    integer, dimension(:), allocatable :: toRowValues, toColValues
@@ -115,14 +115,20 @@ contains
       !-----------------------------------------------------------------
 
       character (len=StrKIND), pointer :: config_uplift_method
+      integer :: err_tmp
 
       ! No init is needed.
       err = 0
 
       call mpas_pool_get_config(liConfigs, 'config_uplift_method', config_uplift_method)
       if (trim(config_uplift_method)=='sealevelmodel') then
-         ! initialize the 1D sea-level model
-         call slmodel_init(domain, err)
+         ! initialize the 1D sea-level model if fresh start
+         call slmodel_init(domain, err_tmp)
+         err = ior(err, err_tmp)
+
+         if (err /= 0) then
+            call mpas_log_write('Error in li_bedtopo_init', MPAS_LOG_ERR)
+         endif
       endif
 
    !--------------------------------------------------------------------
@@ -362,9 +368,9 @@ contains
    subroutine slmodel_init(domain, err)
 
 #ifdef USE_SEALEVELMODEL
+      use mpas_timekeeping
       use sl_model_mod                    !< this is part of the SLM code
       use sl_io_mod                       !< this is part of the SLM code
-      use user_specs_mod, only: nglv      !< this is part of the SLM code
 #endif
       !-----------------------------------------------------------------
       ! input variables
@@ -386,20 +392,24 @@ contains
       !-----------------------------------------------------------------
 
 #ifdef USE_SEALEVELMODEL
-      character (len=StrKIND), pointer :: config_slm_coupling_interval
+      logical, pointer :: config_do_restart
       type (mpas_pool_type), pointer :: meshPool     !< mesh information
       type (mpas_pool_type), pointer :: geometryPool
       real (kind=RKIND), dimension(:), pointer :: thickness, bedTopography
       real (kind=RKIND), dimension(:), allocatable :: meshMask
-      real (kind=RKIND), dimension(nglv,2*nglv) :: ismIceload, ismBedtopo, ismMask
-      real (kind=RKIND), dimension(nglv*2*nglv) :: thicknessSLgrid1D
-      real (kind=RKIND), dimension(nglv*2*nglv) :: bedtopoSLgrid1D
-      real (kind=RKIND), dimension(nglv*2*nglv) :: maskSLgrid1D
-      integer :: slm_coupling_interval
+      real (kind=RKIND), dimension(:,:), allocatable :: ismIceload, ismBedtopo, ismMask
+      real (kind=RKIND), dimension(:), allocatable :: thicknessSLgrid1D
+      real (kind=RKIND), dimension(:), allocatable :: bedtopoSLgrid1D
+      real (kind=RKIND), dimension(:), allocatable :: maskSLgrid1D
       integer :: err_tmp
-      integer :: unit_num_slm  ! SLM variable
-      integer :: itersl, dtime ! SLM variable
-      real    :: starttime     ! SLM variable
+      integer :: unit_num_slm                     ! SLM variable
+      integer :: itersl, dtime                    ! SLM variable
+      real    :: starttime                        ! SLM variable
+      integer, dimension(:), pointer :: cellMask  ! integer bitmask for cells
+      integer, pointer :: config_slm_coupling_interval
+      type (MPAS_TimeInterval_type) :: slm_coupling_interval
+      character (len=StrKIND), pointer :: simulationStartTime
+      type (MPAS_Time_type) :: simulationStartTime_timeType
 
       ! MPI variables
       integer, dimension(:), pointer :: indexToCellID
@@ -408,12 +418,29 @@ contains
       err = 0
       err_tmp = 0
 
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
+
+      ! Set up the alarm for the coupling time interval
+      call mpas_pool_get_config(liConfigs, 'config_slm_coupling_interval', config_slm_coupling_interval)
+      call mpas_set_timeInterval(slm_coupling_interval, YY=config_slm_coupling_interval, ierr=err_tmp)
+      err = ior(err,err_tmp)
+      call mpas_pool_get_array(meshPool, 'simulationStartTime', simulationStartTime)
+      call mpas_set_time(simulationStartTime_timeType, dateTimeString=simulationStartTime, ierr=err_tmp)
+      err = ior(err,err_tmp)
+      call mpas_add_clock_alarm(domain%clock, 'slmCouplingInterval', alarmTime=simulationStartTime_timeType, &
+           alarmTimeInterval=slm_coupling_interval, ierr=err_tmp)
+      err = ior(err,err_tmp)
+      if (mpas_is_alarm_ringing(domain%clock, 'slmCouplingInterval', ierr=err_tmp)) then
+         err = ior(err, err_tmp)
+         call mpas_reset_clock_alarm(domain%clock, 'slmCouplingInterval', ierr=err_tmp)
+         err = ior(err, err_tmp)
+      endif
+
       ! initialize interpolation
       call interpolate_init(domain, err_tmp)
       err = ior(err, err_tmp)
 
       ! Set needed variables for using MPI
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
       call mpas_pool_get_dimension(meshPool, 'nCells', nCellsAll)
       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsOwned)
       call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
@@ -430,11 +457,29 @@ contains
 
       ! Gather nCellsOwned
       call MPI_GATHER( nCellsOwned, 1, MPI_INTEGER, nCellsPerProc, 1, MPI_INTEGER, &
-                       0, domain % dminfo % comm, err_tmp)
+      0, domain % dminfo % comm, err_tmp)
       err = ior(err, err_tmp)
 
-      ! Set Displacement variable for GATHERV command
       if (curProc.eq.0) then
+         ! First, set SLM unit number to the MALI output log file unit
+         unit_num_slm = domain % logInfo % outputLog % unitNum
+         call sl_set_unit_num(unit_num_slm)
+
+         call sl_drive_readnl(itersl, dtime, starttime) !SLM subroutine
+
+         ! First, check consistency in coupling interval set up in MALI and SLM
+         call check_SLM_coupling_interval(dtime, meshPool, err_tmp)
+         err = ior(err, err_tmp)
+         if (err /= 0) then
+            call mpas_log_write("Error occurred in check_SLM_coupling_interval.", MPAS_LOG_ERR)
+         endif
+
+         ! check the number of points on the SLM Gauss-Legendre grid
+         call sl_get_model_res(norder_slm, nglv_slm)
+         call mpas_log_write("Solving the SLM upto $i order and degrees of Spherical Harmonics", intArgs=(/norder_slm/))
+         call mpas_log_write("Number of Gauss-Legendre latitudinal nodes in the SLM grid is $i", intArgs=(/nglv_slm/))
+
+         ! Set Displacement variable for GATHERV command
          nCellsGlobal = sum(nCellsPerProc)
          allocate(indexToCellIDGathered(nCellsGlobal))
          nCellsDisplacement(1) = 0
@@ -450,88 +495,101 @@ contains
 
       ! Gather indexToCellID
       call MPI_GATHERV( indexToCellID, nCellsOwned, MPI_INTEGER, indexToCellIDGathered, &
-              nCellsPerProc, nCellsDisplacement, MPI_INTEGER, 0, domain % dminfo % comm, err_tmp)
+      nCellsPerProc, nCellsDisplacement, MPI_INTEGER, 0, domain % dminfo % comm, err_tmp)
       err = ior(err, err_tmp)
 
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
-      call mpas_pool_get_array(geometryPool, 'thickness', thickness)
-      call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+      ! check if the run is a restart or not
+      call mpas_pool_get_config(liConfigs, 'config_do_restart', config_do_restart)
+      if (config_do_restart) then
 
-      if (curProc.eq.0) then
-         allocate(globalArrayThickness(nCellsGlobal), gatheredArrayThickness(nCellsGlobal))
-         allocate(globalArrayBedTopography(nCellsGlobal), gatheredArrayBedTopography(nCellsGlobal))
-         allocate(meshMask(nCellsGlobal))
-         ismIceload(:,:) = 0.0
-         ismBedtopo(:,:) = 0.0
-         ismMask(:,:) = 0.0
-         bedtopoSLgrid1D(:) = 0.0
-         thicknessSLgrid1D(:) = 0.0
-         maskSLgrid1D(:) = 0.0
+         call find_slm_restart_timestep(meshPool, slmTimeStep, err_tmp)
+         err = ior(err, err_tmp)
+
+         ! Note: no need to call slmodel_solve on init of a restart.
+         ! If this time level happens to be a coupling interval, SLM would have been solved already
+         ! in the previous run that generated the restart file.
+         ! While it would not hurt (other than unneeded execution time) to call SLM again if the
+         ! restart time level happens to be a coupling interval, if the restart time is in between
+         ! coupling intervals calling SLM here will make things out of sync.
+
       else
-         ! Intel requires these be allocated even though they are not meaningful on the non-destination procs
-         allocate(globalArrayThickness(1), gatheredArrayThickness(1))
-         allocate(globalArrayBedTopography(1), gatheredArrayBedTopography(1))
-         allocate(meshMask(1))
-      endif
 
-      ! Gather only the nCellsOwned from thickness and bedtopo (does not include Halos)
-      call MPI_GATHERV(thickness, nCellsOwned, MPI_DOUBLE, gatheredArrayThickness, nCellsPerProc, &
-                       nCellsDisplacement, MPI_DOUBLE, 0, domain % dminfo % comm, err_tmp)
-      err = ior(err, err_tmp)
-      call MPI_GATHERV(bedTopography, nCellsOwned, MPI_DOUBLE, gatheredArrayBedTopography, nCellsPerProc, &
-                       nCellsDisplacement, MPI_DOUBLE, 0, domain % dminfo % comm, err_tmp)
-      err = ior(err, err_tmp)
-
-      if (curProc.eq.0) then
-
-         ! First, check consistency in coupling interval set up in MALI and SLM
-         err = 0
-         call mpas_pool_get_config(liConfigs, 'config_slm_coupling_interval', config_slm_coupling_interval)
-         read(config_slm_coupling_interval(1:4),*) slm_coupling_interval
-         call sl_drive_readnl(itersl, dtime, starttime) !SLM subroutine
-         if (slm_coupling_interval .NE. dtime) then
-            call mpas_log_write("The coupling interval in MALI and SLM settings are inconsistent", &
-                 MPAS_LOG_ERR)
-            err = ior(err,1)
+         call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
+         call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+         call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+         
+         if (curProc.eq.0) then
+            ! allocate and initialize the SLM-related variables used in this module
+            allocate(globalArrayThickness(nCellsGlobal), gatheredArrayThickness(nCellsGlobal))
+            allocate(globalArrayBedTopography(nCellsGlobal), gatheredArrayBedTopography(nCellsGlobal))
+            allocate(meshMask(nCellsGlobal))
+            allocate(ismIceload(nglv_slm,2*nglv_slm), ismBedtopo(nglv_slm,2*nglv_slm), ismMask(nglv_slm,2*nglv_slm))
+            allocate(bedtopoSLgrid1D(nglv_slm*2*nglv_slm), thicknessSLgrid1D(nglv_slm*2*nglv_slm), maskSLgrid1D(nglv_slm*2*nglv_slm))
+            ismIceload(:,:) = 0.0
+            ismBedtopo(:,:) = 0.0
+            ismMask(:,:) = 0.0
+            bedtopoSLgrid1D(:) = 0.0
+            thicknessSLgrid1D(:) = 0.0
+            maskSLgrid1D(:) = 0.0
+            call mpas_log_write("Allocating SLM variables in MALI, nglv is $i", intArgs=(/nglv_slm/))
+         else
+            ! Intel requires these be allocated even though they are not meaningful on the non-destination procs
+            allocate(globalArrayThickness(1), gatheredArrayThickness(1))
+            allocate(globalArrayBedTopography(1), gatheredArrayBedTopography(1))
+            allocate(meshMask(1))
          endif
 
-         ! Rearrange data into CellID order
-         do iCell = 1,nCellsGlobal
-            globalArrayThickness(indexToCellIDGathered(iCell)) = gatheredArrayThickness(iCell)
-            globalArrayBedTopography(indexToCellIDGathered(iCell)) = gatheredArrayBedTopography(iCell)
-            meshMask(indexToCellIDGathered(iCell)) = 1
-         enddo
+         ! Gather only the nCellsOwned from thickness and bedtopo (does not include Halos)
+         call MPI_GATHERV((thickness*real(li_mask_is_grounded_ice_int(cellMask),RKIND)), &
+                nCellsOwned, MPI_DOUBLE, gatheredArrayThickness, nCellsPerProc, &
+                nCellsDisplacement, MPI_DOUBLE, 0, domain % dminfo % comm, err_tmp)
+         err = ior(err, err_tmp)
+         call MPI_GATHERV(bedTopography, nCellsOwned, MPI_DOUBLE, gatheredArrayBedTopography, nCellsPerProc, &
+                          nCellsDisplacement, MPI_DOUBLE, 0, domain % dminfo % comm, err_tmp)
+         err = ior(err, err_tmp)
 
-         ! interpolate thickness, bedTopograpy, mesh mask to the Gaussian grid
-         call interpolate(toColValues, toRowValues, toSvalues, globalArrayThickness, thicknessSLgrid1D)
-         call interpolate(toColValues, toRowValues, toSvalues, globalArrayBedTopography, bedtopoSLgrid1D)
-         call interpolate(toColValues, toRowValues, toSvalues, meshMask, maskSLgrid1D)
+         if (curProc.eq.0) then
+            ! Rearrange data into CellID order
+            do iCell = 1,nCellsGlobal
+               globalArrayThickness(indexToCellIDGathered(iCell)) = gatheredArrayThickness(iCell)
+               globalArrayBedTopography(indexToCellIDGathered(iCell)) = gatheredArrayBedTopography(iCell)
+               meshMask(indexToCellIDGathered(iCell)) = 1
+            enddo
 
-         ! reformat the interpolated data
-         ismIceload = reshape(thicknessSLgrid1D, [nglv,2*nglv])
-         ismBedtopo = reshape(bedtopoSLgrid1D, [nglv,2*nglv])
-         ismMask = reshape(maskSLgrid1D, [nglv,2*nglv])
+            ! interpolate thickness, bedTopograpy, mesh mask to the Gaussian grid
+            call interpolate(toColValues, toRowValues, toSvalues, globalArrayThickness, thicknessSLgrid1D)
+            call interpolate(toColValues, toRowValues, toSvalues, globalArrayBedTopography, bedtopoSLgrid1D)
+            call interpolate(toColValues, toRowValues, toSvalues, meshMask, maskSLgrid1D)
 
-         ! initialize coupling time step number. initial time is 0
-         slmTimeStep = 0
+            ! reformat the interpolated data
+            ismIceload = reshape(thicknessSLgrid1D, [nglv_slm,2*nglv_slm])
+            ismBedtopo = reshape(bedtopoSLgrid1D, [nglv_slm,2*nglv_slm])
+            ismMask = reshape(maskSLgrid1D, [nglv_slm,2*nglv_slm])
 
-         ! set SLM unit number to the MALI output log file unit
-         unit_num_slm = domain % logInfo % outputLog % unitNum
+            ! initialize coupling time step number. initial time is 0
+            slmTimeStep = 0
 
-         ! series of calling SLM routines
-         call sl_set_unit_num(unit_num_slm)
-         call sl_call_readnl
-         call sl_solver_checkpoint(itersl, dtime)
-         call sl_timewindow(slmTimeStep)
-         call sl_solver_init(itersl, starttime, ismIceload, ismBedtopo, ismMask)
-         call sl_deallocate_array
+            ! series of calling SLM routines
+            if (err == 0) then
+               call sl_call_readnl
+               call sl_timewindow(slmTimeStep)
+               call sl_allocate_and_initialize_array
+               call sl_solver_checkpoint(itersl, dtime)
+               call sl_solver_init(itersl, starttime, ismIceload, ismBedtopo, ismMask)
+               call sl_deallocate_array
+            endif
 
-      endif
-      deallocate(globalArrayThickness)
-      deallocate(gatheredArrayThickness)
-      deallocate(globalArrayBedTopography)
-      deallocate(gatheredArrayBedTopography)
-      deallocate(meshMask)
+            deallocate(ismIceload, ismBedtopo, ismMask)
+            deallocate(bedtopoSLgrid1D, thicknessSLgrid1D, maskSLgrid1D)
+         endif
+         deallocate(globalArrayThickness)
+         deallocate(gatheredArrayThickness)
+         deallocate(globalArrayBedTopography)
+         deallocate(gatheredArrayBedTopography)
+         deallocate(meshMask)
+
+      endif ! endif restart or not
 
 # else
       call mpas_log_write("The sea-level model needs to be included in the compilation with 'SLM=true'", &
@@ -566,7 +624,6 @@ contains
 #ifdef USE_SEALEVELMODEL
       use sl_model_mod                    !< this is part of the SLM code
       use sl_io_mod                       !< this is part of the SLM code
-      use user_specs_mod, only: nglv, dt1 !< this is part of the SLM code
 #endif
       !-----------------------------------------------------------------
       ! input variables
@@ -596,16 +653,17 @@ contains
       real (kind=RKIND), dimension(:), pointer :: bedTopography, thickness
       real (kind=RKIND), dimension(:), pointer :: bedTopographyChange
       real (kind=RKIND), dimension(:), allocatable :: meshMask
-      real (kind=RKIND), dimension(nglv,2*nglv) :: ismIceload, ismMask
-      real (kind=RKIND), dimension(nglv,2*nglv) :: slmSLchange
-      real (kind=RKIND), dimension(nglv*2*nglv) :: slChangeSLgrid1D
-      real (kind=RKIND), dimension(nglv*2*nglv) :: thicknessSLgrid1D
-      real (kind=RKIND), dimension(nglv*2*nglv) :: maskSLgrid1D
+      real (kind=RKIND), dimension(:,:), allocatable :: ismIceload, ismMask
+      real (kind=RKIND), dimension(:,:), allocatable :: slmSLchange
+      real (kind=RKIND), dimension(:), allocatable :: slChangeSLgrid1D
+      real (kind=RKIND), dimension(:), allocatable :: thicknessSLgrid1D
+      real (kind=RKIND), dimension(:), allocatable :: maskSLgrid1D
+      integer, dimension(:), pointer :: cellMask
 
       integer :: err, err_tmp
 
-      integer :: itersl, dtime     ! SLM variable
-      real    :: starttime         ! SLM variable
+      integer :: itersl, dtime                 ! SLM variable
+      real    :: starttime                     ! SLM variable
 
       err = 0
       err_tmp = 0
@@ -614,6 +672,7 @@ contains
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
       call mpas_pool_get_array(geometryPool, 'bedTopographyChange', bedTopographyChange)
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'velocity', velocityPool)
 
@@ -622,9 +681,14 @@ contains
       err = ior(err, err_tmp)
 
       if (curProc.eq.0) then
+         ! call the SLM modules to initialize arrays and their dimensions
+         call sl_drive_readnl(itersl, dtime, starttime)
+         ! allocate and initialize the SLM-related variables used in this module
          allocate(globalArrayThickness(nCellsGlobal), gatheredArrayThickness(nCellsGlobal))
          allocate(globalArrayTopoChange(nCellsGlobal), gatheredArrayTopoChange(nCellsGlobal))
          allocate(meshMask(nCellsGlobal))
+         allocate(ismIceload(nglv_slm,2*nglv_slm), ismMask(nglv_slm,2*nglv_slm), slmSLchange(nglv_slm,2*nglv_slm))
+         allocate(slChangeSLgrid1D(nglv_slm*2*nglv_slm), thicknessSLgrid1D(nglv_slm*2*nglv_slm), maskSLgrid1D(nglv_slm*2*nglv_slm))
          ismIceload(:,:) = 0.0
          ismMask(:,:) = 0.0
          slmSLchange(:,:) = 0.0
@@ -639,7 +703,8 @@ contains
       endif
 
       ! Gather only the nCellsOwned from ice thickness (does not include Halos)
-      call MPI_GATHERV(thickness, nCellsOwned, MPI_DOUBLE, gatheredArrayThickness, nCellsPerProc, &
+      call MPI_GATHERV((thickness*real(li_mask_is_grounded_ice_int(cellMask),RKIND)), &
+                       nCellsOwned, MPI_DOUBLE, gatheredArrayThickness, nCellsPerProc, &
                        nCellsDisplacement, MPI_DOUBLE, 0, domain % dminfo % comm, err_tmp)
       err = ior(err, err_tmp)
 
@@ -656,19 +721,19 @@ contains
          call interpolate(toColValues, toRowValues, toSvalues, meshMask, maskSLgrid1D)
 
          ! reformat the interpolated data
-         ismIceload = reshape(thicknessSLgrid1D, [nglv,2*nglv])
-         ismMask = reshape(maskSLgrid1D, [nglv,2*nglv])
+         ismIceload = reshape(thicknessSLgrid1D, [nglv_slm,2*nglv_slm])
+         ismMask = reshape(maskSLgrid1D, [nglv_slm,2*nglv_slm])
 
          ! series of calling SLM routines
-         call sl_drive_readnl(itersl, dtime, starttime)
          call sl_call_readnl
-         call sl_solver_checkpoint(itersl, dtime)
          call sl_timewindow(slmTimeStep)
+         call sl_allocate_and_initialize_array
+         call sl_solver_checkpoint(itersl, dtime)
          call sl_solver(itersl, slmTimeStep, dtime, starttime, ismIceload, ismMask, slmSLchange)
          call sl_deallocate_array
 
          ! reshape 2D array SLM output into 1D array
-         slChangeSLgrid1D = reshape(slmSLchange, [nglv*2*nglv])
+         slChangeSLgrid1D = reshape(slmSLchange, [nglv_slm*2*nglv_slm])
 
          ! interpolate sea-level change from GL grid to MALI mesh.
          ! note: in the static sea-level theory, sea level and topography are globally defined !>
@@ -681,6 +746,8 @@ contains
             gatheredArrayTopoChange(iCell) = globalArrayTopoChange(indexToCellIDGathered(iCell))
          enddo
 
+         deallocate(ismIceload, ismMask, slmSLchange)
+         deallocate(slChangeSLgrid1D, thicknessSLgrid1D, maskSLgrid1D)
       endif
 
       ! scatter output sea-level changes to processors
@@ -942,6 +1009,170 @@ contains
    !--------------------------------------------------------------------
    end subroutine check
 
+
+!***********************************************************************
+!
+!  routine check_SLM_coupling_interval
+!
+!> \brief   Perform various checks on the SLM coupling interval setting
+!> \author  Matt Hoffman
+!> \date    Feb 2024
+!> \details
+!>  This routine checks that the SLM coupling interval is an even multiple
+!>  of the adaptive timestep force inverval and divides evenly into the
+!>  restart interval.  It also checks that the coupling interval in the MALI
+!>  matches the value in the SLM namelist.
+!
+!-----------------------------------------------------------------------
+
+   subroutine check_SLM_coupling_interval(slm_dt1, meshPool, err)
+
+      use mpas_timekeeping
+      use mpas_stream_manager
+      use mpas_derived_types, only : MPAS_STREAM_PROPERTY_RECORD_INTV
+
+      integer, intent (in) :: slm_dt1
+      type (mpas_pool_type), intent(in) :: meshPool  !< mesh information
+      integer, intent(out) :: err
+
+      ! local variables
+      integer, pointer :: config_slm_coupling_interval
+      logical, pointer :: config_adaptive_timestep
+      character (len=StrKIND), pointer :: config_adaptive_timestep_force_interval, config_dt
+      type (MPAS_TimeInterval_Type) :: coupling_interval, force_interval, dt_interval, zero_interval
+      type (MPAS_Time_Type) :: start_time
+      character (len=StrKIND), pointer :: simulationStartTime
+      integer :: YYYY, MM, DD, H, M, S  ! time components
+      integer (kind=I8KIND) :: n_intervals
+      type (MPAS_TimeInterval_type) :: remainder
+      integer :: err_tmp
+
+      err = 0
+      err_tmp = 0
+
+      call mpas_log_write("")
+      call mpas_log_write("-- Checking consistency of config_slm_coupling_interval and other settings --")
+
+      ! First, check consistency in coupling interval set up in MALI and SLM
+      call mpas_pool_get_config(liConfigs, "config_slm_coupling_interval", config_slm_coupling_interval)
+      if (config_slm_coupling_interval == slm_dt1) then
+         call mpas_log_write("The coupling interval in MALI ($i yr) and SLM ($i yr) are consistent - check passes", &
+                 intArgs=(/config_slm_coupling_interval, slm_dt1/))
+      else
+         call mpas_log_write("The coupling interval in MALI ($i yr) and SLM ($i yr) are inconsistent", MPAS_LOG_ERR, &
+                 intArgs=(/config_slm_coupling_interval, slm_dt1/))
+         err = ior(err, 1)
+      endif
+
+      ! define zero interval for comparing against below
+      call mpas_set_timeInterval(zero_interval, dt = 0.0_RKIND)
+      ! get start time as a reference time
+      call mpas_pool_get_array(meshPool, 'simulationStartTime', simulationStartTime)
+      call mpas_set_time(start_time, dateTimeString=simulationStartTime)
+      ! define SLM coupling interval as a timeInterval type
+      call mpas_set_timeInterval(coupling_interval, YY=config_slm_coupling_interval, MM=0, DD=0, H=0, M=0, S=0, ierr=err_tmp)
+      err = ior(err, err_tmp)
+
+      call mpas_pool_get_config(liConfigs, "config_adaptive_timestep", config_adaptive_timestep)
+      if (config_adaptive_timestep) then
+         ! for adaptive dt, check that config_adaptive_timestep_force_interval divides evenly into config_slm_coupling_interval
+         call mpas_pool_get_config(liConfigs, "config_adaptive_timestep_force_interval", config_adaptive_timestep_force_interval)
+         call mpas_set_timeInterval(force_interval, timeString=config_adaptive_timestep_force_interval, ierr=err_tmp)
+         err = ior(err, err_tmp)
+         call mpas_interval_division(start_time, coupling_interval, force_interval, n_intervals, remainder)
+         if (remainder .EQ. zero_interval) then
+            call mpas_log_write("config_adaptive_timestep_force_interval divides into config_slm_coupling_interval $i times " // &
+                 "with no remainder - check passes", intArgs=(/int(n_intervals)/))
+         else
+            call mpas_log_write("config_adaptive_timestep_force_interval divides into config_slm_coupling_interval $i times " // &
+                 "with nonzero remainder", MPAS_LOG_ERR, intArgs=(/int(n_intervals)/))
+            err = ior(err, 1)
+         endif
+      else
+        ! For fixed dt, check that dt divides evenly into config_slm_coupling_interval
+         call mpas_pool_get_config(liConfigs, "config_dt", config_dt)
+         call mpas_set_timeInterval(dt_interval, timeString=config_dt, ierr=err_tmp)
+         err = ior(err, err_tmp)
+         call mpas_interval_division(start_time, coupling_interval, dt_interval, n_intervals, remainder)
+         if (remainder .EQ. zero_interval) then
+            call mpas_log_write("config_dt divides into config_slm_coupling_interval $i times " // &
+                 "with no remainder - check passes", intArgs=(/int(n_intervals)/))
+         else
+            call mpas_log_write("config_dt divides into config_slm_coupling_interval $i times " // &
+                 "with nonzero remainder", MPAS_LOG_ERR, intArgs=(/int(n_intervals)/))
+            err = ior(err, 1)
+         endif
+      endif
+
+      ! No need to compare restart interval and coupling interval because restarts with SLM are supported for
+      ! any restart interval now
+
+      call mpas_log_write("")
+
+   !--------------------------------------------------------------------
+   end subroutine check_SLM_coupling_interval
+
+
+!***********************************************************************
+!
+!  routine find_slm_restart_timestep
+!
+!> \brief   Perform various checks on the SLM coupling interval setting
+!> \author  Matt Hoffman
+!> \date    Feb 2024
+!> \details
+!>  This routine checks that the SLM coupling interval is an even multiple
+!>  of the adaptive timestep force inverval and divides evenly into the
+!>  restart interval.  It also checks that the coupling interval in the MALI
+!>  matches the value in the SLM namelist.
+!
+!-----------------------------------------------------------------------
+
+   subroutine find_slm_restart_timestep(meshPool, slmTimeStep, err)
+
+      use mpas_timekeeping
+
+      type (mpas_pool_type), intent(in) :: meshPool  !< mesh information
+      integer, intent(out) :: slmTimeStep
+      integer, intent(out) :: err
+
+      ! local vars
+      integer, pointer :: config_slm_coupling_interval
+      character (len=StrKIND), pointer :: xtime, simulationStartTime
+      type (MPAS_TimeInterval_Type) :: coupling_interval
+      type (MPAS_Time_Type) :: start_time, curr_time
+      integer (kind=I8KIND) :: n_intervals
+      type (MPAS_TimeInterval_type) :: remainder
+      character (len=StrKIND) :: remainder_string
+      integer :: err_tmp
+
+      err = 0
+      err_tmp = 0
+
+      call mpas_pool_get_config(liConfigs, "config_slm_coupling_interval", config_slm_coupling_interval)
+      ! define SLM coupling interval as a timeInterval type
+      call mpas_set_timeInterval(coupling_interval, YY=config_slm_coupling_interval, MM=0, DD=0, H=0, M=0, S=0, ierr=err_tmp)
+      err = ior(err, err_tmp)
+
+      call mpas_pool_get_array(meshPool, 'simulationStartTime', simulationStartTime)
+      call mpas_pool_get_array(meshPool, 'xtime', xtime)
+      call mpas_set_time(start_time, dateTimeString=simulationStartTime, ierr=err_tmp)
+      err = ior(err, err_tmp)
+      call mpas_set_time(curr_time, dateTimeString=xtime, ierr=err_tmp)
+      err = ior(err, err_tmp)
+
+      call mpas_interval_division(start_time, curr_time - start_time, coupling_interval, n_intervals, remainder)
+      slmTimeStep = int(n_intervals)
+      call mpas_get_timeInterval(remainder, start_time, timeString=remainder_string, ierr=err_tmp)
+      err = ior(err, err_tmp)
+      call mpas_log_write("SLM Restart: Using SLM time level $i because config_slm_coupling_interval divides into " // &
+              "elapsed time that many times ", intArgs=(/int(slmTimeStep)/))
+      call mpas_log_write("  That calculation implies it has been " // trim(remainder_string) // " since last SLM coupling. " // &
+              "If that interval seems wrong, there may be an error in your configuration.")
+      call mpas_log_write("")
+
+   !--------------------------------------------------------------------
+   end subroutine find_slm_restart_timestep
 
 !***********************************************************************
 

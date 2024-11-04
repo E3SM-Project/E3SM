@@ -2,12 +2,13 @@
 from standard_script_setup import *
 from CIME.utils import copyifnewer, run_bld_cmd_ensure_logging, expect, symlink_force
 from CIME.case import Case
-from CIME.build import get_standard_makefile_args
+from CIME.build import get_standard_cmake_args
 from CIME.XML.files import Files
 import glob
 
 logger = logging.getLogger(__name__)
 
+###############################################################################
 def parse_command_line(args, description):
 ###############################################################################
     parser = argparse.ArgumentParser(
@@ -42,14 +43,20 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     return args.buildroot, args.installpath, args.caseroot
 
-
+###############################################################################
 def buildlib(bldroot, installpath, case):
 ###############################################################################
-    gmake_args = get_standard_makefile_args(case, shared_lib=True)
     comp_interface = case.get_value("COMP_INTERFACE")
     srcroot = case.get_value("SRCROOT")
     caseroot = case.get_value("CASEROOT")
-    libroot = case.get_value("LIBROOT")
+
+    csm_share_dir = os.environ.get("csm_share_ROOT")
+    if csm_share_dir is not None:
+        # We are using a pre-installed csm_share
+        expect(os.path.exists(csm_share_dir), f"Non-existent csm_share root {csm_share_dir}")
+        return
+    else:
+        csm_share_dir = os.path.join(srcroot, "share")
 
     filepath = [os.path.join(caseroot,"SourceMods","src.share"),
                 os.path.join(srcroot,"share","streams"),
@@ -77,7 +84,11 @@ def buildlib(bldroot, installpath, case):
     if not os.path.isdir(libdir):
         os.makedirs(libdir)
 
-    filepathfile = os.path.join(libdir, "Filepath")
+    config_dir = os.path.join(caseroot, "Buildconf", "csm_shareconf")
+    if not os.path.isdir(config_dir):
+        os.makedirs(config_dir)
+
+    filepathfile = os.path.join(config_dir, "Filepath")
     # if the filepathfile has a different number of lines than filepath, replace it
     file_len = 0
     if os.path.isfile(filepathfile):
@@ -103,6 +114,11 @@ def buildlib(bldroot, installpath, case):
     if case.get_value("COMP_OCN") == "nemo":
         multiinst_cppdefs += " -DNEMO_IN_CCSM "
 
+    cppdefs_file = os.path.join(config_dir, "CIME_cppdefs")
+    if not os.path.isfile(cppdefs_file):
+        with open(cppdefs_file, "w") as fd:
+            fd.write(multiinst_cppdefs + " -DTIMING\n")
+
     installdir = os.path.join(installpath, comp_interface,
                               use_esmf, ninst_value)
     for ndir in ("lib", "include"):
@@ -114,35 +130,36 @@ def buildlib(bldroot, installpath, case):
     for _file in glob.iglob(os.path.join(srcroot,"share","RandNum","include","*")):
         copyifnewer(_file, os.path.join(installdir, "include", os.path.basename(_file)))
 
-    # This runs the make command
-    gmake_opts = "-f {}/Makefile complib COMP_NAME=csm_share ".format(os.path.join(caseroot,"Tools"))
-    gmake_opts += "-j {} ".format(case.get_value("GMAKE_J"))
-    gmake_opts += " COMPLIB=libcsm_share.a"
-    gmake_opts += ' USER_CPPDEFS="{} -DTIMING" '.format(multiinst_cppdefs)
-    gmake_opts += "INCLUDE_DIR={} ".format(os.path.join(installdir, "include"))
-    gmake_opts += gmake_args
-    gmake_opts += " -C {}".format(libdir)
+    # This runs the cmake command
+    cmake_args = get_standard_cmake_args(case, installpath)
+    run_bld_cmd_ensure_logging(f"cmake {cmake_args} {csm_share_dir}", logger, from_dir=libdir)
 
     gmake_cmd = case.get_value("GMAKE")
+    gmake_j   = case.get_value("GMAKE_J")
 
-    cmd = "{} {}".format(gmake_cmd, gmake_opts)
-    run_bld_cmd_ensure_logging(cmd, logger)
+    cmd = "{} -j {}".format(gmake_cmd, gmake_j)
+    run_bld_cmd_ensure_logging(cmd, logger, from_dir=libdir)
     #
     # The pgi compiler sometimes has issues with long include paths
     # on the command line, this is a workaround for that problem
     #
-    case_inc_dir = os.path.join(libroot, "include")
+    case_inc_dir = os.path.join(libdir, "..", "include")
     if not os.path.isdir(case_inc_dir):
         os.mkdir(case_inc_dir)
-    for _file in glob.iglob(os.path.join(installdir,"include","*")):
+
+    for _file in glob.iglob(os.path.join(libdir,"*.mod")):
         symlink_force(_file, os.path.join(case_inc_dir,os.path.basename(_file)))
 
+    for _file in glob.iglob(os.path.join(libdir,"*.h")):
+        symlink_force(_file, os.path.join(case_inc_dir,os.path.basename(_file)))
 
-
+###############################################################################
 def _main(argv, documentation):
+###############################################################################
     bldroot, installpath, caseroot = parse_command_line(argv, documentation)
     with Case(caseroot) as case:
         buildlib(bldroot, installpath, case)
 
+###############################################################################
 if (__name__ == "__main__"):
     _main(sys.argv, __doc__)

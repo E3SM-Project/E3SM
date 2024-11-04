@@ -10,6 +10,17 @@ if (NOT DEBUG)
   endforeach()
 endif()
 
+list(APPEND NO_STACK_ARRAY_LIST
+  eam/src/physics/cam/phys_grid_ctem.F90
+)
+
+# Remove -Mstack_arrays for this one file to avoid error (likely compiler bug)
+# As we can't remove flag, try adding -Mnostack_arrays https://github.com/E3SM-Project/E3SM/issues/6350
+# Tried with nvidia/22.7 and 23.9 on pm-cpu
+foreach(ITEM IN LISTS NO_STACK_ARRAY_LIST)
+  e3sm_add_flags("${ITEM}" " -Mnostack_arrays")
+endforeach()
+
 # Use -O2 for a few files already found to benefit from increased optimization in Intel Depends file
 set(PERFOBJS
   homme/src/share/prim_advection_base.F90
@@ -26,7 +37,6 @@ set(PERFOBJS
 
 if (NOT DEBUG)
   foreach(ITEM IN LISTS PERFOBJS)
-    e3sm_remove_flags("${ITEM}" "-O1")
     e3sm_add_flags("${ITEM}" "-O2")
   endforeach()
 endif()

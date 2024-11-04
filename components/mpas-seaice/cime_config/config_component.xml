@@ -46,7 +46,7 @@
         <default_value>no_ice_bgc</default_value>
         <values>
            <value compset="MPASSI_">no_ice_bgc</value>
-           <value compset="_MPASSI%BGC">ice_bgc</value>
+           <value compset="_MPASSI%[^_]*BGC">ice_bgc</value>
         </values>
         <group>case_comp</group>
         <file>env_case.xml</file>
@@ -65,6 +65,20 @@
         <file>env_case.xml</file>
         <desc>Option to enable prescribed ice mode in MPASSI</desc>
   </entry>
+
+  <entry id="MPASSI_COLUMN_MODE">
+        <type>char</type>
+        <valid_values>true,false</valid_values>
+        <default_value>false</default_value>
+        <values>
+           <value compset="MPASSI_">false</value>
+           <value compset="_MPASSI%[^_]*COL">true</value>
+        </values>
+        <group>case_comp</group>
+        <file>env_case.xml</file>
+        <desc>Option to enable MPASSI to be run as a column model</desc>
+  </entry>
+
 
   <description>
     <desc compset="_MPASSI">MPAS seaice:</desc>

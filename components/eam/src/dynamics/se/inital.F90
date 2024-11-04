@@ -25,6 +25,7 @@ subroutine cam_initial(dyn_in, dyn_out, NLFileName)
    use startup_initialconds, only: initial_conds
    use cam_logfile,          only: iulog
    use perf_mod,             only: t_startf, t_stopf
+   use phys_grid_ctem,       only: phys_grid_ctem_reg
    
    ! modules from SE
    use parallel_mod, only : par
@@ -41,6 +42,9 @@ subroutine cam_initial(dyn_in, dyn_out, NLFileName)
    ! Define physics data structures
    if(par%masterproc  ) write(iulog,*) 'Running phys_grid_init()'
    call phys_grid_init()
+
+   ! Register zonal average grid for phys TEM diagnostics
+   call phys_grid_ctem_reg()
 
    ! Initialize index values for advected and non-advected tracers
    call phys_register()

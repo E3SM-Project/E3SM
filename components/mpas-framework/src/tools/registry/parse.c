@@ -222,7 +222,34 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 			fprintf(stderr,"ERROR: time_levs attribute missing for var_struct %s.\n", structname);
 			return 1;
 		} else {
-			if (atoi(time_levs) == 0){
+			if (strncmp(time_levs, "namelist:", 9) == 0){
+				fprintf(stderr,"Namelist string detected in time_levs for %s.\n", structname);
+				found = 0;
+				snprintf(name_holder, 1024, "%s",time_levs);
+				snprintf(name_holder, 1024, "%s",(name_holder)+9);
+				for (nmlrecs_xml = ezxml_child(registry, "nml_record"); nmlrecs_xml; nmlrecs_xml = nmlrecs_xml->next){
+
+					for (nmlopt_xml = ezxml_child(nmlrecs_xml, "nml_option"); nmlopt_xml; nmlopt_xml = nmlopt_xml->next){
+						nmloptname = ezxml_attr(nmlopt_xml, "name");
+						nmlopttype = ezxml_attr(nmlopt_xml, "type");
+
+						if (strncmp(name_holder, nmloptname, 1024) == 0){
+							if (strcasecmp("integer", nmlopttype) != 0){
+								fprintf(stderr, "ERROR: Namelist variable %s must be an integer for namelist-derived time_levs.\n", nmloptname);
+								return 1;
+							}
+
+							found = 1;
+							fprintf(stderr,"Namelist string match in time_levs for %s: %s \n", structname, nmloptname);
+						}
+					}
+				}
+
+				if (!found){
+					fprintf(stderr, "ERROR: Namelist variable %s not found for namelist-derived time_levs\n", name_holder);
+					return 1;
+				}
+			} else if (atoi(time_levs) == 0){
 				fprintf(stderr, "WARNING: time_levs attribute on var_struct %s is 0. It will be replaced with 1.\n", structname);
 			} else if (atoi(time_levs) < 1){
 				fprintf(stderr, "ERROR: time_levs attribute on var_struct %s is negative.\n", structname);

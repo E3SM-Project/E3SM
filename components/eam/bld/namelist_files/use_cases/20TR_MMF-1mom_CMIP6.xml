@@ -25,6 +25,11 @@
 <history_aerosol>.true.</history_aerosol>
 <history_aero_optics>.true.</history_aero_optics>
 
+<!-- Prescribed oxidants for aerosol chemistry.   Ozone is from CMIP6 input4MIPS file -->
+<tracer_cnst_type    >INTERP_MISSING_MONTHS</tracer_cnst_type>
+<tracer_cnst_file    >oxid_1.9x2.5_L26_1850-2015_c20181106.nc</tracer_cnst_file>
+<tracer_cnst_filelist>''</tracer_cnst_filelist>
+
 <!-- Prescribed aerosols -->
 <prescribed_aero_datapath>atm/cam/chem/trop_mam/aero</prescribed_aero_datapath>
 <prescribed_aero_file>mam4_0.9x1.2_L72_2000clim_c170323.nc</prescribed_aero_file>
@@ -35,6 +40,15 @@
 <!-- Stratospheric ozone (Linoz) updated using CMIP6 input4MIPS GHG concentrations -->
 <chlorine_loading_file      >atm/cam/chem/trop_mozart/ub/Linoz_Chlorine_Loading_CMIP6_0003-2017_c20171114.nc</chlorine_loading_file>
 <chlorine_loading_type      >SERIAL</chlorine_loading_type>
+
+<!-- Prescribed Ozone -->
+<prescribed_ozone_datapath>atm/cam/ozone</prescribed_ozone_datapath>
+<prescribed_ozone_file    >ozone_1.9x2.5_L26_1850-2015_rcp45_c101108.nc</prescribed_ozone_file>
+<prescribed_ozone_name    >O3</prescribed_ozone_name>
+<prescribed_ozone_type    >INTERP_MISSING_MONTHS</prescribed_ozone_type>
+
+<!-- Turn off ozone dry deposition, as Linoz O3v2 and ozone are not separated for now. Need to turn on ozone dry deposition when interactive tropospheric chemistry is implemented -->
+<drydep_list            >'H2O2', 'H2SO4', 'SO2'</drydep_list>
 
 <!-- sim_year used for CLM datasets and SSTs forcings -->
 <sim_year>1850-2000</sim_year>

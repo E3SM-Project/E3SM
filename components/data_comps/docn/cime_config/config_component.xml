@@ -13,7 +13,7 @@
        This file may have ocn desc entries.
   -->
   <description modifier_mode="1">
-    <desc ocn="DOCN[%NULL][%DOM][%SOM][%SOMAQP][%IAF][%SST_AQUAP][%AQP1][%AQP2][%AQP3][%AQP4][%AQP5][%AQP6][%AQP7][%AQP8][%AQP9][%AQP10][%AQPFILE][%AQPCONST]">DOCN </desc>
+    <desc ocn="DOCN[%NULL][%DOM][%SOM][%SOMAQP][%IAF][%SST_AQUAP][%AQP1][%AQP2][%AQP3][%AQP4][%AQP5][%AQP6][%AQP7][%AQP8][%AQP9][%AQP10][%AQP11][%AQP12][%AQP13][%AQP14][%AQP15][%AQPFILE][%AQPCONST]">DOCN </desc>
     <desc option="NULL">  null mode</desc>
     <desc option="DOM">  prescribed ocean mode</desc>
     <desc option="SOM">  slab ocean mode</desc>
@@ -45,7 +45,7 @@
 
   <entry id="DOCN_MODE">
     <type>char</type>
-    <valid_values>prescribed,sst_aquap1,sst_aquap2,sst_aquap3,sst_aquap4,sst_aquap5,sst_aquap6,sst_aquap7,sst_aquap8,sst_aquap9,sst_aquap10,sst_aquapfile,som,som_aquap,sst_aquap_constant,interannual,null</valid_values>
+    <valid_values>prescribed,sst_aquap1,sst_aquap2,sst_aquap3,sst_aquap4,sst_aquap5,sst_aquap6,sst_aquap7,sst_aquap8,sst_aquap9,sst_aquap10,sst_aquap11,sst_aquap12,sst_aquap13,sst_aquap14,sst_aquap15,sst_aquapfile,som,som_aquap,sst_aquap_constant,interannual,null</valid_values>
     <default_value>prescribed</default_value>
     <values match="last">
       <value compset="_DOCN%NULL_">null</value>
@@ -63,6 +63,12 @@
       <value compset="_DOCN%AQP8_">sst_aquap8</value>
       <value compset="_DOCN%AQP9_">sst_aquap9</value>
       <value compset="_DOCN%AQP10_">sst_aquap10</value>
+      <!-- RCEMIP phase 2 Mock-Walker SST patterns -->
+      <value compset="_DOCN%AQP11_">sst_aquap11</value>
+      <value compset="_DOCN%AQP12_">sst_aquap12</value>
+      <value compset="_DOCN%AQP13_">sst_aquap13</value>
+      <value compset="_DOCN%AQP14_">sst_aquap14</value>
+      <value compset="_DOCN%AQP15_">sst_aquap15</value>
       <value compset="_DOCN%AQPFILE_">sst_aquapfile</value>
       <value compset="_DOCN%AQPCONST_">sst_aquap_constant</value>
     </values>
@@ -176,8 +182,7 @@
       <value compset="(AMIP_|HIST_|20TR_|5505_|PIPD_|%TSCH)" grid="a%0.9x1.25.*_oi%0.9x1.25"	>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.9x1.25_1850_2012_c130411.nc</value>
       <value compset="(AMIP_|HIST_|20TR_|5505_|PIPD_|%TSCH)" grid="a%0.47x0.63.*_oi%0.47x0.63"	>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.47x0.63_1850_2012_c130411.nc</value>
       <value compset="(AMIP_|HIST_|20TR_|5505_|PIPD_|%TSCH)" grid="a%0.23x0.31.*_oi%0.23x0.31"	>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.23x0.31_1850_2012_c130411.nc</value>
-      <value compset="1850_" grid=".+"								>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_1x1_clim_pi_c101029.nc</value>
-      <value compset="1850S_" grid=".+"								>$DIN_LOC_ROOT/ocn/docn7/SSTDATA/sst_ice_CMIP6_DECK_E3SM_1x1_1850_clim_c20190125.nc</value>
+      <value compset="1850_" grid=".+"								>$DIN_LOC_ROOT/ocn/docn7/SSTDATA/sst_ice_CMIP6_DECK_E3SM_1x1_1850_clim_c20190125.nc</value>
       <value compset="1850_" grid="a%T31.*_oi%T31"						>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_48x96_clim_pi_c101028.nc</value>
       <value compset="1850_" grid="a%1.9x2.5.*_oi%1.9x2.5"					>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_1.9x2.5_clim_pi_c101028.nc</value>
       <value compset="1850_" grid="a%0.9x1.25.*_oi%0.9x1.25"					>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.9x1.25_clim_pi_c101028.nc</value>
@@ -190,7 +195,7 @@
       <value compset="2010_SCREAM%DYAMOND-2"       	                                >$DIN_LOC_ROOT/atm/cam/sst/sst_ifs_360x720_20200110_20200305_c201013.nc</value>
       <value compset="20TR_CAM5%CMIP6" grid=".+"					>$DIN_LOC_ROOT/ocn/docn7/SSTDATA/sst_ice_CMIP6_DECK_E3SM_1x1_c20180213.nc</value>
       <value compset="20TR_EAM%CMIP6" grid=".+"					>$DIN_LOC_ROOT/ocn/docn7/SSTDATA/sst_ice_CMIP6_DECK_E3SM_1x1_c20180213.nc</value>
-      <value compset="20TR_EAM%MMF.*CMIP6" grid=".+" >$DIN_LOC_ROOT/ocn/docn7/SSTDATA/sst_ice_CMIP6_DECK_E3SM_1x1_c20180213.nc</value>
+      <value compset="20TR_EAM%MMF.*CMIP6" grid=".+"                            >$DIN_LOC_ROOT/ocn/docn7/SSTDATA/sst_ice_CMIP6_DECK_E3SM_1x1_c20180213.nc</value>
       <value compset="20TR_EAM%CHEMUCI" grid=".+"				>$DIN_LOC_ROOT/ocn/docn7/SSTDATA/sst_ice_CMIP6_DECK_E3SM_1x1_c20180213.nc</value>
       <value compset="DATM.*_DLND.*_DICE.*_DOCN.*_DROF" 				        >$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.9x1.25_clim_c040926.nc</value>
       <value compset="DATM.*_SLND.*_DICE.*_DOCN.*_DROF" 				        >$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.9x1.25_clim_c040926.nc</value>

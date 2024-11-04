@@ -9,6 +9,7 @@
 
 #include "Types.hpp"
 #include "kokkos_utils.hpp"
+#include "utilities/Hash.hpp"
 
 namespace Homme {
 
@@ -62,10 +63,10 @@ public:
   void randomize(const int seed);
   void randomize(const int seed, const Real max_pressure);
   void randomize(const int seed, const Real max_pressure, const Real ps0, const Real hyai0);
-
   void randomize(const int seed, const Real max_pressure, const Real ps0, const Real hyai0,
                  const ExecViewUnmanaged<const Real*[NP][NP]>& phis);
-
+  void randomize(const int seed, const HybridVCoord& hvcoord);
+  
   KOKKOS_INLINE_FUNCTION
   int num_elems() const { return m_num_elems; }
 
@@ -77,6 +78,8 @@ public:
   // Push the results from the exec space views to the F90 pointers
   void push_to_f90_pointers(F90Ptr& state_v, F90Ptr& state_w_i, F90Ptr& state_vtheta_dp,
                             F90Ptr& state_phinh_i, F90Ptr& state_dp) const;
+
+  HashType hash(const int time_level) const;
 
 private:
   int m_num_elems;

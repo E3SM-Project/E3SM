@@ -36,6 +36,7 @@ module ocn_forward_mode
 
    use ocn_time_integration
    use ocn_time_integration_split
+   use ocn_time_integration_split_ab2
    use ocn_time_integration_si
    use ocn_tendency
    use ocn_diagnostics
@@ -77,7 +78,9 @@ module ocn_forward_mode
    use ocn_tracer_surface_restoring
    use ocn_gm
    use ocn_submesoscale_eddies
-   use ocn_stokes_drift 
+   use ocn_stokes_drift
+   use ocn_manufactured_solution
+   use ocn_subgrid
 
    use ocn_high_freq_thickness_hmix_del2
 
@@ -298,6 +301,8 @@ module ocn_forward_mode
       ierr = ior(ierr, err_tmp)
       call ocn_diagnostics_init(domain, err_tmp)
       ierr = ior(ierr,err_tmp)
+      call ocn_subgrid_init(domain, err_tmp)
+      ierr = ior(ierr,err_tmp)
 
       if(ierr.eq.1) then
           call mpas_log_write('An error was encountered while initializing the MPAS-Ocean forward mode', MPAS_LOG_CRIT)
@@ -499,6 +504,8 @@ module ocn_forward_mode
          call ocn_vertical_remap_init(err_tmp)
       call ocn_stokes_drift_init(err_tmp)
       ierr = ior(ierr,err_tmp)
+      call ocn_manufactured_solution_init(domain, err_tmp)
+      ierr = ior(ierr,err_tmp)
 
       if (ierr /= 0) then
          call mpas_log_write( &
@@ -696,20 +703,26 @@ module ocn_forward_mode
            call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
            call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
            call ocn_forcing_build_fraction_absorbed_array(meshPool, statePool, forcingPool, ierr, 1)
+           call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, statePool, err)
            call mpas_timer_start("land_ice_build_arrays")
            call ocn_surface_land_ice_fluxes_build_arrays(meshPool, &
-                                                         forcingPool, scratchPool, statePool, dt, err)
+                                                         forcingPool, scratchPool, statePool, err)
            call mpas_timer_stop("land_ice_build_arrays")
+           call ocn_surface_land_ice_fluxes_accumulate_fluxes(meshPool, forcingPool, &
+                                                              statePool, dt, err)
 
-           call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, statePool, err)
            call ocn_tidal_forcing_build_array(domain, meshPool, forcingPool, statePool, err)
 
            ! Compute normalGMBolusVelocity, relativeSlope and RediDiffVertCoef if respective flags are turned on
 
            call ocn_eddy_compute_mixed_layer_depth(statePool, forcingPool)
            if (config_use_GM .or. config_submesoscale_enable) then
-               call mpas_timer_start("submesoscale eddy velocity compute", .false.)
                call ocn_eddy_compute_buoyancy_gradient()
+           end if
+
+           if (config_submesoscale_enable) then
+               call mpas_timer_start("submesoscale eddy velocity compute", .false.)
+               call ocn_submesoscale_compute_velocity()
                call mpas_timer_stop("submesoscale eddy velocity compute")
            end if
 
@@ -851,7 +864,8 @@ module ocn_forward_mode
       ! destroy the ocean mesh structure
       call ocn_meshDestroy(ierr)
 
-      if ( config_time_integrator == 'split_explicit') then
+      if ( config_time_integrator == 'split_explicit' .or. &
+           config_time_integrator == 'split_explicit_ab2'      ) then
          call mpas_dmpar_exch_group_destroy_reusable_buffers(domain, 'subcycleFields')
       else if ( config_time_integrator == 'split_implicit') then
          call ocn_time_integrator_si_variable_destroy()

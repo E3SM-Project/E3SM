@@ -1,7 +1,5 @@
-INCLUDE (ScreamUtils)
+include (ScreamUtils)
 
-SET (NEED_LIBS shoc physics_share scream_share)
-SET (SK_NEED_LIBS shoc_sk physics_share scream_share)
 set(SHOC_TESTS_SRCS
     shoc_tests.cpp
     shoc_grid_tests.cpp
@@ -70,68 +68,53 @@ set(SHOC_TESTS_SRCS
     shoc_pblintd_surf_temp_tests.cpp
     shoc_pblintd_check_pblh_tests.cpp
     shoc_pblintd_tests.cpp
+    shoc_compute_shoc_temperature_tests.cpp
     ) # SHOC_TESTS_SRCS
 
 # NOTE: tests inside this if statement won't be built in a baselines-only build
-if (NOT SCREAM_BASELINES_ONLY)
-  CreateUnitTest(shoc_tests    "${SHOC_TESTS_SRCS}" "${NEED_LIBS}"    THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC} DEP shoc_tests_ut_np1_omp1)
-  if (NOT SCREAM_SMALL_KERNELS)
-    CreateUnitTest(shoc_sk_tests "${SHOC_TESTS_SRCS}" "${SK_NEED_LIBS}" THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC} DEP shoc_tests_ut_np1_omp1 EXE_ARGS shoc_main_bfb)
+if (NOT SCREAM_ONLY_GENERATE_BASELINES)
+  CreateUnitTest(shoc_tests    "${SHOC_TESTS_SRCS}"
+    LIBS shoc
+    THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
+  )
+
+  if (NOT SCREAM_SHOC_SMALL_KERNELS)
+    CreateUnitTest(shoc_sk_tests "${SHOC_TESTS_SRCS}"
+      LIBS shoc_sk
+      THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
+      EXE_ARGS shoc_main_bfb
+    )
   endif()
 endif()
 
 if (SCREAM_ENABLE_BASELINE_TESTS)
-  set(BASELINE_FILE_ARG "-b ${SCREAM_TEST_DATA_DIR}/shoc_run_and_cmp.baseline")
+  if (SCREAM_ONLY_GENERATE_BASELINES)
+    set(BASELINE_FILE_ARG "-g -b ${SCREAM_BASELINES_DIR}/data/shoc_run_and_cmp.baseline")
+  else()
+    set(BASELINE_FILE_ARG "-b ${SCREAM_BASELINES_DIR}/data/shoc_run_and_cmp.baseline")
+  endif()
 
-  CreateUnitTestExec(shoc_run_and_cmp "shoc_run_and_cmp.cpp" "${NEED_LIBS}"
-                     EXCLUDE_MAIN_CPP)
+  CreateUnitTestExec(shoc_run_and_cmp "shoc_run_and_cmp.cpp"
+    LIBS shoc
+    EXCLUDE_MAIN_CPP)
 
   CreateUnitTestFromExec(shoc_run_and_cmp_cxx shoc_run_and_cmp
-                 THREADS ${SCREAM_TEST_MAX_THREADS}
-                 EXE_ARGS "${BASELINE_FILE_ARG}"
-                 LABELS "shoc;physics")
+    THREADS ${SCREAM_TEST_MAX_THREADS}
+    EXE_ARGS "${BASELINE_FILE_ARG}"
+    LABELS "shoc;physics")
 
   CreateUnitTestFromExec(shoc_run_and_cmp_f90 shoc_run_and_cmp
-                 THREADS ${SCREAM_TEST_MAX_THREADS}
-                 EXE_ARGS "-f ${BASELINE_FILE_ARG}"
-                 LABELS "shoc;physics")
-
-  #
-  # Use fake tests to generate shell commands to generate baselines
-  #
-  CreateUnitTestFromExec(shoc_baseline_f90_fake shoc_run_and_cmp
     THREADS ${SCREAM_TEST_MAX_THREADS}
-    EXE_ARGS "-f -g ${BASELINE_FILE_ARG}"
-    PROPERTIES DISABLED True)
+    EXE_ARGS "-f ${BASELINE_FILE_ARG}"
+    LABELS "shoc;physics")
 
-  CreateUnitTestFromExec(shoc_baseline_cxx_fake shoc_run_and_cmp
-    THREADS ${SCREAM_TEST_MAX_THREADS}
-    EXE_ARGS "-g ${BASELINE_FILE_ARG}"
-    PROPERTIES DISABLED True)
-
+  # By default, baselines should be created using all fortran (ctest -L baseline_gen). If the user wants
+  # to use CXX to generate their baselines, they should use "ctest -L baseline_gen_cxx".
+  # Note: the baseline_gen label is really only used if SCREAM_ONLY_GENERATE_BASELINES=ON, but no harm adding it
   if (SCREAM_TEST_MAX_THREADS GREATER 1)
-    get_test_property(shoc_baseline_f90_fake_omp${SCREAM_TEST_MAX_THREADS} FULL_TEST_COMMAND SHOC_F90_GEN)
-    get_test_property(shoc_baseline_cxx_fake_omp${SCREAM_TEST_MAX_THREADS} FULL_TEST_COMMAND SHOC_CXX_GEN)
-  else()
-    get_test_property(shoc_baseline_f90_fake FULL_TEST_COMMAND SHOC_F90_GEN)
-    get_test_property(shoc_baseline_cxx_fake FULL_TEST_COMMAND SHOC_CXX_GEN)
+    # ECUT only adds _ompX if we have more than one value of X, or if X>1
+    set (TEST_SUFFIX _omp${SCREAM_TEST_MAX_THREADS})
   endif()
-
-  if (SHOC_F90_GEN STREQUAL "NOTFOUND")
-    message(FATAL_ERROR "Could not get FULL_TEST_COMMAND for shoc_baseline fake test")
-  endif()
-
-  separate_arguments(SHOC_F90_GEN_ARGS UNIX_COMMAND "${SHOC_F90_GEN}")
-  separate_arguments(SHOC_CXX_GEN_ARGS UNIX_COMMAND "${SHOC_CXX_GEN}")
-
-  add_custom_target(shoc_baseline_f90
-    COMMAND ${CMAKE_COMMAND} -E env OMP_NUM_THREADS=${SCREAM_TEST_MAX_THREADS} ${SHOC_F90_GEN_ARGS})
-
-  add_custom_target(shoc_baseline_cxx
-    COMMAND ${CMAKE_COMMAND} -E env OMP_NUM_THREADS=${SCREAM_TEST_MAX_THREADS} ${SHOC_CXX_GEN_ARGS})
-
-  # By default, baselines should be created using all fortran (make baseline). If the user wants
-  # to use CXX to generate their baselines, they should use "make baseline_cxx".
-  add_dependencies(baseline     shoc_baseline_f90)
-  add_dependencies(baseline_cxx shoc_baseline_cxx)
+  set_tests_properties (shoc_run_and_cmp_f90${TEST_SUFFIX} PROPERTIES LABELS "baseline_gen;baseline_cmp")
+  set_tests_properties (shoc_run_and_cmp_cxx${TEST_SUFFIX} PROPERTIES LABELS "baseline_gen;cxx baseline_cmp")
 endif()

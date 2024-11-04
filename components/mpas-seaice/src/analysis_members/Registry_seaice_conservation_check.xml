@@ -77,7 +77,7 @@
 		<var name="energyChange" type="real" dimensions="nHemispheres Time" units="J"
 			description="Total energy change of ice and snow during time step"
 		/>
-		<var name="energyChangeFlux" type="real" dimensions="nHemispheres Time" units="W/m2"
+		<var name="energyChangeFlux" type="real" dimensions="nHemispheres Time" units="W m-2"
 			description="Total energy change flux of ice and snow during time step"
 		/>
 		<var name="netEnergyFlux" type="real" dimensions="nHemispheres Time" units="W"
@@ -136,22 +136,22 @@
                 <var name="iceMassChange" type="real" dimensions="nHemispheres Time" units="kg"
 			description="Total mass change of ice and snow during time step"
 		/>
-		<var name="iceMassChangeFlux" type="real" dimensions="nHemispheres Time" units="kg/m2s"
+		<var name="iceMassChangeFlux" type="real" dimensions="nHemispheres Time" units="kg m-2 s-1"
 			description="Total mass change flux of ice and snow during time step"
 		/>
                 <var name="oceanMassChange" type="real" dimensions="nHemispheres Time" units="kg"
 			description="Total mass change of ice and snow during time step"
 		/>
-		<var name="oceanMassChangeFlux" type="real" dimensions="nHemispheres Time" units="kg/m2s"
+		<var name="oceanMassChangeFlux" type="real" dimensions="nHemispheres Time" units="kg m-2 s-1"
 			description="Total mass change flux of ice and snow during time step"
 		/>
                 <var name="massChange" type="real" dimensions="nHemispheres Time" units="kg"
 			description="Total mass change of ice and snow during time step"
 		/>
-		<var name="massChangeFlux" type="real" dimensions="nHemispheres Time" units="kg/m2s"
+		<var name="massChangeFlux" type="real" dimensions="nHemispheres Time" units="kg m-2 s-1"
 			description="Total mass change flux of ice and snow during time step"
 		/>
-		<var name="netMassFlux" type="real" dimensions="nHemispheres Time" units="kg/s"
+		<var name="netMassFlux" type="real" dimensions="nHemispheres Time" units="kg s-1"
 			description="Net mass flux to ice"
 		/>
 		<var name="absoluteMassError" type="real" dimensions="nHemispheres Time" units="kg"
@@ -192,10 +192,10 @@
 		<var name="saltChange" type="real" dimensions="nHemispheres Time" units="kg"
 			description="Total salt change of ice and snow during time step"
 		/>
-		<var name="saltChangeFlux" type="real" dimensions="nHemispheres Time" units="kg/m2s"
+		<var name="saltChangeFlux" type="real" dimensions="nHemispheres Time" units="kg m-2 s-1"
 			description="Total salt change flux of ice and snow during time step"
 		/>
-		<var name="netSaltFlux" type="real" dimensions="nHemispheres Time" units="kg/s"
+		<var name="netSaltFlux" type="real" dimensions="nHemispheres Time" units="kg s-1"
 			description="Net salt flux to ice"
 		/>
 		<var name="absoluteSaltError" type="real" dimensions="nHemispheres Time" units="kg"
@@ -209,6 +209,98 @@
 		/>
 		<var name="saltConsFrazilSaltFlux" type="real" dimensions="nHemispheres Time" units="None"
 			description=""
+		/>
+	</var_struct>
+	<var_struct name="conservationCheckBlackCarbonAM" time_levs="1" packages="conservationCheckAMPKG">
+		<var name="initialBlackCarbon"
+		     type="real"
+		     dimensions="nHemispheres Time"
+		     units="kg"
+		     description="Total initial black carbon of ice and snow"
+		/>
+		<var name="finalBlackCarbon"
+		     type="real"
+		     dimensions="nHemispheres Time"
+		     units="kg"
+		     description="Total final black carbon of ice and snow"
+		/>
+		<var name="blackCarbonChange"
+		     type="real"
+		     dimensions="nHemispheres Time"
+		     units="kg"
+		     description="Total black carbon change of ice and snow during time step"
+		/>
+		<var name="blackCarbonChangeFlux"
+		     type="real"
+		     dimensions="nHemispheres Time"
+		     units="kg m-2 s-1"
+		     description="Total black carbon change flux of ice and snow during time step"
+		/>
+		<var name="netBlackCarbonFlux"
+		     type="real"
+		     dimensions="nHemispheres Time"
+		     units="kg s-1"
+		     description="Net black carbon flux to sea ice"
+		/>
+		<var name="absoluteBlackCarbonError"
+		     type="real"
+		     dimensions="nHemispheres Time"
+		     units="kg"
+		     description="Absolute black carbon conservation error"
+		/>
+		<var name="relativeBlackCarbonError"
+		     type="real"
+		     dimensions="nHemispheres Time"
+		     units="None"
+		     description="Relative black carbon conservation error"
+		/>
+		<var name="accumAbsoluteBlackCarbonError"
+		     type="real"
+		     dimensions="nHemispheres Time"
+		     units="kg"
+		     description="Accumulated since start absolute black carbon conservation error"
+		/>
+		<var name="accumRelativeBlackCarbonError"
+		     type="real"
+		     dimensions="nHemispheres Time"
+		     units="None"
+		     description="Accumulated since start relative black carbon conservation error"
+		/>
+		<var name="blackCarbonConsAtmBlackCarbonFlux"
+		     type="real"
+		     dimensions="nHemispheres Time"
+		     units="kg s-1"
+		     description="Total atmospheric black carbon flux, positive into the sea ice"
+		/>
+		<var name="blackCarbonConsOceanBlackCarbonFlux"
+		     type="real"
+		     dimensions="nHemispheres Time"
+		     units="kg s-1"
+		     description="Total ocean black carbon flux, positive into the ocean"
+		/>
+		<var name="blackCarbonConsAtmBC1Flux"
+		     type="real"
+		     dimensions="nHemispheres Time"
+		     units="kg s-1"
+		     description="Total black carbon 1 atmospheric flux, positive into the seaice"
+		/>
+		<var name="blackCarbonConsAtmBC2Flux"
+		     type="real"
+		     dimensions="nHemispheres Time"
+		     units="kg s-1"
+		     description="Total black carbon 2 atmospheric flux, positive into the seaice"
+		/>
+		<var name="blackCarbonConsOceanBC1Flux"
+		     type="real"
+		     dimensions="nHemispheres Time"
+		     units="kg s-1"
+		     description="Total black carbon 1 ocean flux, positive into the ocean"
+		/>
+		<var name="blackCarbonConsOceanBC2Flux"
+		     type="real"
+		     dimensions="nHemispheres Time"
+		     units="kg s-1"
+		     description="Total black carbon 2 ocean flux, positive into the ocean"
 		/>
 	</var_struct>
 	<var_struct name="conservationCheckCarbonAM" time_levs="1" packages="conservationCheckAMPKG">
@@ -283,6 +375,12 @@
 		     dimensions="nHemispheres Time"
 		     units="kg s-1"
 		     description="Total ocean carbon flux computed from individual passed fluxes, positive into the ocean"
+		/>
+		<var name="checkCarbonFlux"
+		     type="real"
+		     dimensions="nHemispheres Time"
+		     units="kg s-1"
+		     description="Difference between total of individual carbon fluxes and total carbon flux"
 		/>
 		<var name="carbonConsDiatomFlux"
 		     type="real"
@@ -408,6 +506,17 @@
 			<var name="carbonConsDICFlux"/>
 			<var name="carbonConsTOCFlux"/>
 			<var name="relativeErrorBounds"/>
+			<var name="initialBlackCarbon"/>
+			<var name="finalBlackCarbon"/>
+			<var name="blackCarbonChange"/>
+			<var name="blackCarbonChangeFlux"/>
+			<var name="blackCarbonConsOceanBlackCarbonFlux"/>
+			<var name="blackCarbonConsAtmBlackCarbonFlux"/>
+			<var name="netBlackCarbonFlux"/>
+			<var name="absoluteBlackCarbonError"/>
+			<var name="relativeBlackCarbonError"/>
+			<var name="blackCarbonConsAtmBC1Flux"/>
+			<var name="blackCarbonConsAtmBC2Flux"/>
 		</stream>
 
 		<stream name="conservationCheckRestart_contents"
@@ -442,6 +551,11 @@
 			<var name="accumRelativeCarbonError"/>
 			<var name="relativeErrorBounds"/>
 			<var name="carbonConsOceanCarbonFlux"/>
+			<var name="initialBlackCarbon"/>
+			<var name="accumAbsoluteBlackCarbonError"/>
+			<var name="accumRelativeBlackCarbonError"/>
+			<var name="blackCarbonConsOceanBlackCarbonFlux"/>
+			<var name="blackCarbonConsAtmBlackCarbonFlux"/>
 		</stream>
 
 		<stream name="conservationCheckRestart"

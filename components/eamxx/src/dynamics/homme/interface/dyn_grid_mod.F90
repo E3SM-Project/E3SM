@@ -42,7 +42,7 @@ contains
 
   end subroutine dyn_grid_init
 
-  subroutine get_my_dyn_data (dg_gids, cg_gids, elgpgp, lat, lon)
+  subroutine get_my_dyn_data (dg_gids, cg_gids, elgpgp, elgids, lat, lon)
     use iso_c_binding,     only: c_int, c_double
     use dimensions_mod,    only: nelemd, np
     use homme_context_mod, only: elem, par
@@ -51,17 +51,19 @@ contains
     use edge_mod_base,     only: edgeVpack_nlyr, edgeVunpack_nlyr
     use kinds,             only: real_kind, int_kind
     use dof_mod,           only: genLocalDof
+    use control_mod,       only: geometry
     !
     ! Inputs
     !
     real(kind=c_double), intent(out) :: lat (:,:,:), lon(:,:,:)
-    integer(kind=c_int), intent(out) :: cg_gids (:), dg_gids(:), elgpgp(:,:)
+    integer(kind=c_int), intent(out) :: cg_gids (:), dg_gids(:), elgpgp(:,:), elgids(:)
     !
     ! Local(s)
     !
     real(kind=real_kind), allocatable :: el_cg_gids (:,:,:)  ! Homme's bex stuff only works with reals
     integer(kind=int_kind), allocatable :: el_dg_gids (:,:,:)  ! Homme's getLocalDof might not work with c_int
     integer :: idof, ip,jp, ie, icol
+    logical :: is_sphere
 
     ! Get the gids
     allocate(el_cg_gids(np,np,nelemd))
@@ -78,15 +80,21 @@ contains
       call edgeVpack_nlyr(edge,elem(ie)%desc,el_cg_gids(:,:,ie),1,0,1)
     enddo
     call bndry_exchangeV(par,edge)
+    is_sphere = trim(geometry) /= 'plane'
     do ie=1,nelemd
       call edgeVunpack_nlyr(edge,elem(ie)%desc,el_cg_gids(:,:,ie),1,0,1)
+      elgids(ie) = elem(ie)%GlobalId
       do ip=1,np
         do jp=1,np
           idof = (ie-1)*16+(jp-1)*4+ip
           cg_gids(idof) = INT(el_cg_gids(ip,jp,ie),kind=c_int)
           dg_gids(idof) = INT(el_dg_gids(ip,jp,ie),kind=c_int)
-          lat(ip,jp,ie)  = elem(ie)%spherep(ip,jp)%lat * 180.0_c_double/pi
-          lon(ip,jp,ie)  = elem(ie)%spherep(ip,jp)%lon * 180.0_c_double/pi
+          lat(ip,jp,ie) = elem(ie)%spherep(ip,jp)%lat
+          lon(ip,jp,ie) = elem(ie)%spherep(ip,jp)%lon
+          if (is_sphere) then
+             lat(ip,jp,ie) = lat(ip,jp,ie) * 180.0_c_double/pi
+             lon(ip,jp,ie) = lon(ip,jp,ie) * 180.0_c_double/pi
+          end if
           elgpgp(1,idof) = ie-1
           elgpgp(2,idof) = jp-1
           elgpgp(3,idof) = ip-1

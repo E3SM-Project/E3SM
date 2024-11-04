@@ -5,8 +5,8 @@ module AerosolMod
   use shr_log_mod      , only : errMsg => shr_log_errMsg
   use decompMod        , only : bounds_type
   use elm_varpar       , only : nlevsno 
-  use elm_varctl       , only : use_extrasnowlayers
-  use clm_time_manager , only : get_step_size
+  use elm_varctl       , only : use_firn_percolation_and_compaction
+  use elm_time_manager , only : get_step_size
   use atm2lndType      , only : atm2lnd_type
   use AerosolType      , only : aerosol_type
   use ColumnType       , only : col_pp
@@ -107,7 +107,7 @@ contains
             ! layer mass of snow:
             snowmass = h2osoi_ice(c,j) + h2osoi_liq(c,j)
 
-            if (.not. use_extrasnowlayers) then
+            if (.not. use_firn_percolation_and_compaction) then
                ! Correct the top layer aerosol mass to account for snow capping. 
                ! This approach conserves the aerosol mass concentration
                ! (but not the aerosol amss) when snow-capping is invoked

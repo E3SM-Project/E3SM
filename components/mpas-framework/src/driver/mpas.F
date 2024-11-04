@@ -12,7 +12,6 @@ program mpas
 
    implicit none
 
-   type (core_type), pointer :: corelist => null()
    type (domain_type), pointer :: domain => null()
 
    call mpas_init(corelist, domain)

@@ -4,6 +4,8 @@
 #include "share/io/scorpio_output.hpp"
 #include "share/io/scream_scorpio_interface.hpp"
 #include "share/io/scream_io_utils.hpp"
+#include "share/io/scream_io_file_specs.hpp"
+#include "share/io/scream_io_control.hpp"
 
 #include "share/field/field_manager.hpp"
 #include "share/grid/grids_manager.hpp"
@@ -62,12 +64,11 @@ class OutputManager
 public:
   using fm_type = FieldManager;
   using gm_type = GridsManager;
-  using str_any_pair_t = std::pair<std::string,ekat::any>;
-  using globals_map_t = std::map<std::string,str_any_pair_t>;
+  using globals_map_t = std::map<std::string,ekat::any>;
 
   // Constructor(s) & Destructor
   OutputManager () = default;
-  virtual ~OutputManager () = default;
+  virtual ~OutputManager ();
 
   // Set up the manager, creating all output streams. Inputs:
   //  - params: the parameter list with file/fields info, as well as method of output options
@@ -107,29 +108,29 @@ public:
     setup (io_comm,params,field_mgrs,grids_mgr,run_t0,run_t0,is_model_restart_output);
   }
 
-  void setup_globals_map (const globals_map_t& globals);
-  void set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger)
-    {
+  void set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger) {
       m_atm_logger = atm_logger;
-    }
+  }
+  void add_global (const std::string& name, const ekat::any& global);
+
+  void init_timestep (const util::TimeStamp& start_of_step, const Real dt);
   void run (const util::TimeStamp& current_ts);
   void finalize();
 
   long long res_dep_memory_footprint () const;
 protected:
 
-  std::string compute_filename (const IOControl& control,
-                                const IOFileSpecs& file_specs,
-                                const bool is_checkpoint_step,
+  std::string compute_filename (const IOFileSpecs& file_specs,
                                 const util::TimeStamp& timestamp) const;
+
+  void set_file_header(const IOFileSpecs& file_specs);
 
   // Craft the restart parameter list
   void set_params (const ekat::ParameterList& params,
                    const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs);
 
   void setup_file (      IOFileSpecs& filespecs,
-                   const IOControl& control,
-                   const util::TimeStamp& timestamp);
+                   const IOControl& control);
 
   // Manage logging of info to atm.log
   void push_to_logger();
@@ -146,7 +147,7 @@ protected:
   ekat::ParameterList            m_params;
 
   // The output filename root
-  std::string       m_casename;
+  std::string       m_filename_prefix;
 
   std::vector<double> m_time_bnds;
 
@@ -170,6 +171,9 @@ protected:
   // we might have to load an output checkpoint file (depending on avg type)
   bool m_is_restarted_run;
 
+  // Whether a restarted run can resume filling previous run output file (if not full)
+  bool m_resume_output_file = false;
+
   // The initial time stamp of the simulation and run. For initial runs, they coincide,
   // but for restarted runs, run_t0>case_t0, with the former being the time at which the
   // restart happens, and the latter being the start time of the *original* run.
@@ -178,6 +182,9 @@ protected:
 
   // The logger to be used throughout the ATM to log message
   std::shared_ptr<ekat::logger::LoggerBase> m_atm_logger;
+
+  // If true, we save grid data in output file
+  bool m_save_grid_data;
 };
 
 } // namespace scream

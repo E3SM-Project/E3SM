@@ -37,7 +37,7 @@
       <template>template.case.test</template>
       <prereq>$BUILD_COMPLETE and $TEST</prereq>
     </job>
-    <job name="case.post_run_io">
+    <!--job name="case.post_run_io">
       <template>template.post_run_io</template>
       <dependency>case.run</dependency>
       <prereq>case.get_value("PIO_TYPENAME_ATM") == 'adios' or \
@@ -53,11 +53,12 @@
       <runtime_parameters>
         <walltime>0:30:00</walltime>
       </runtime_parameters>
-    </job>
+    </job-->
     <job name="case.st_archive">
       <template>template.st_archive</template>
       <!-- If DOUT_S is true and case.run (or case.test) exits successfully then run st_archive-->
-      <dependency>(case.run and case.post_run_io) or case.test</dependency>
+      <!--dependency>(case.run and case.post_run_io) or case.test</dependency-->
+      <dependency>case.run or case.test</dependency>
       <prereq>$DOUT_S</prereq>
       <runtime_parameters>
         <task_count>1</task_count>

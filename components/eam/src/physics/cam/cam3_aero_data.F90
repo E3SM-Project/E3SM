@@ -29,8 +29,8 @@ module cam3_aero_data
   use phys_grid,      only: get_ncols_p, scatter_field_to_chunk
   use time_manager,   only: get_curr_calday
   use infnan,         only: nan, assignment(=)
-  use cam_abortutils,     only: endrun
-  use scamMod,        only: scmlon,scmlat,single_column
+  use cam_abortutils, only: endrun
+  use iop_data_mod,   only: scmlon,scmlat,single_column
   use error_messages, only: handle_ncerr
   use physics_types,  only: physics_state
   use boundarydata,   only: boundarydata_init, boundarydata_type

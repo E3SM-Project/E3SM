@@ -65,6 +65,10 @@ private:
   std::map<key_type,ekat::any>  m_objects;
 };
 
+inline void cleanup_singleton() {
+  ScreamContext::singleton().clean_up();
+}
+
 } // namespace scream
 
 #endif // SCREAM_CONTEXT_HPP

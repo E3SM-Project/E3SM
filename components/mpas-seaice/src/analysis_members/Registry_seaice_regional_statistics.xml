@@ -28,40 +28,40 @@
 		<package name="regionalStatisticsAMPKG" description="This package includes variables required for the regionalStatistics analysis member."/>
 	</packages>
 	<var_struct name="regionalStatisticsAM" time_levs="1" packages="regionalStatisticsAMPKG">
-		<var name="totalIceArea" type="real" dimensions="nRegions Time" units="km^2"
+		<var name="totalIceArea" type="real" dimensions="nRegions Time" units="km2"
 			description="Total sea-ice area by region"
 		/>
-		<var name="totalIceExtent" type="real" dimensions="nRegions Time" units="km^2"
+		<var name="totalIceExtent" type="real" dimensions="nRegions Time" units="km2"
 			description="Total sea-ice extent by region"
 		/>
-		<var name="totalIceVolume" type="real" dimensions="nRegions Time" units="km^3"
+		<var name="totalIceVolume" type="real" dimensions="nRegions Time" units="km3"
 			description="Total sea-ice volume by region"
 		/>
-		<var name="totalSnowVolume" type="real" dimensions="nRegions Time" units="km^3"
+		<var name="totalSnowVolume" type="real" dimensions="nRegions Time" units="km3"
 			description="Total snow volume by region"
 		/>
 		<var name="totalKineticEnergy" type="real" dimensions="nRegions Time" units="J"
 			description="Total kinetic energy by region"
 		/>
-		<var name="rmsIceSpeed" type="real" dimensions="nRegions Time" units="m/s"
+		<var name="rmsIceSpeed" type="real" dimensions="nRegions Time" units="m s-1"
 			description="RMS ice speed by region"
 		/>
-		<var name="averageAlbedo" type="real" dimensions="nRegions Time" units="-"
+		<var name="averageAlbedo" type="real" dimensions="nRegions Time" units="1"
 			description="Average albedo by region"
 		/>
-		<var name="maximumIceVolume" type="real" dimensions="nRegions Time" units="km^2"
+		<var name="maximumIceVolume" type="real" dimensions="nRegions Time" units="km2"
 			description="Maximum sea-ice volume by region"
 		/>
-		<var name="maximumIceVolumeLocked" type="real" dimensions="nRegions Time" units="km^2"
+		<var name="maximumIceVolumeLocked" type="real" dimensions="nRegions Time" units="km2"
 			description="Maximum sea-ice volume by region for dynamically locked cells"
 		/>
-		<var name="maximumIceVolumeNotLocked" type="real" dimensions="nRegions Time" units="km^2"
+		<var name="maximumIceVolumeNotLocked" type="real" dimensions="nRegions Time" units="km2"
 			description="Maximum sea-ice volume by region for non-dynamically locked cells"
 		/>
-		<var name="maximumIcePressure" type="real" dimensions="nRegions Time" units="kN/m"
+		<var name="maximumIcePressure" type="real" dimensions="nRegions Time" units="kN m-1"
 			description="Maximum sea-ice pressure by region"
 		/>
-		<var name="maximumIceSpeed" type="real" dimensions="nRegions Time" units="m/s"
+		<var name="maximumIceSpeed" type="real" dimensions="nRegions Time" units="m s-1"
 			description="Maximum sea-ice speed by region"
 		/>
 	</var_struct>
