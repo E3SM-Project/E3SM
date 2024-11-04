@@ -205,7 +205,7 @@ void MAMMicrophysics::set_grids(
         LinozHorizInterp_, linoz_file_name_);
 
     // linoz reader
-    const auto io_grid_linoz = LinozHorizInterp_->get_src_grid();
+    const auto io_grid_linoz = LinozHorizInterp_->get_tgt_grid();
     const int num_cols_io_linoz =
         io_grid_linoz->get_num_local_dofs();  // Number of columns on this rank
     const int num_levs_io_linoz =
@@ -233,7 +233,7 @@ void MAMMicrophysics::set_grids(
         TracerHorizInterp_, oxid_file_name_);
 
     const int nvars    = int(var_names.size());
-    const auto io_grid = TracerHorizInterp_->get_src_grid();
+    const auto io_grid = TracerHorizInterp_->get_tgt_grid();
     const int num_cols_io =
         io_grid->get_num_local_dofs();  // Number of columns on this rank
     const int num_levs_io =
@@ -308,7 +308,7 @@ void MAMMicrophysics::set_grids(
       // I am assuming the order of species in extfrc_lst_.
       // Indexing in mam4xx is fortran.
       forcings_[i].frc_ndx    = i + 1;
-      const auto io_grid_emis = VertEmissionsHorizInterp_[i]->get_src_grid();
+      const auto io_grid_emis = VertEmissionsHorizInterp_[i]->get_tgt_grid();
       const int num_cols_io_emis =
           io_grid_emis->get_num_local_dofs();  // Number of columns on this rank
       const int num_levs_io_emis =
