@@ -20,12 +20,13 @@ on:
   # Manual run is used to bless
   workflow_dispatch:
     inputs:
-      jobs_list:
+      job_to_run:
         description: 'Job to run'
         required: true
         type: choice
         options:
           - cpu-gcc
+          - all
       bless:
         description: 'Generate baselines'
         required: true
@@ -54,7 +55,9 @@ jobs:
             short_name: SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.scream-mam4xx-all_mam4xx_procs
       fail-fast: false
     name: cpu-gcc / ${{ matrix.test.short_name }}
-    if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.jobs_list != 'cpu-gcc') }}
+    if: ${{ !(github.event_name == 'workflow_dispatch' &&
+              github.event.inputs.jobs_list != 'cpu-gcc' &&
+              github.event.inputs.jobs_list != 'all') }}
     steps:
       - name: Check out the repository
         uses: actions/checkout@v4
