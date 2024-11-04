@@ -542,22 +542,14 @@ OceanState *OceanState::get(const std::string Name ///< [in] Name of state
 // TimeLevel == [1:new, 0:current, -1:previous, -2:two times ago, ...]
 I4 OceanState::getTimeIndex(I4 &TimeIndex, const I4 TimeLevel) const {
 
-   // Handle single time level case (no new time level)
-   I4 TimeLevelAdj;
-   if (NTimeLevels == 1) {
-      TimeLevelAdj = TimeLevel;
-   } else {
-      TimeLevelAdj = TimeLevel - 1;
-   }
-
    // Check if time level is valid
-   if (TimeLevelAdj > 0 || (TimeLevelAdj + NTimeLevels) <= 0) {
+   if (NTimeLevels > 1 && (TimeLevel > 1 || (TimeLevel + NTimeLevels) <= 1)) {
       LOG_ERROR("OceanState: Time level {} is out of range for NTimeLevels {}",
                 TimeLevel, NTimeLevels);
       return -1;
    }
 
-   TimeIndex = (TimeLevelAdj + CurTimeIndex + NTimeLevels) % NTimeLevels;
+   TimeIndex = (TimeLevel + CurTimeIndex + NTimeLevels) % NTimeLevels;
 
    return 0;
 

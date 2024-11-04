@@ -492,7 +492,7 @@ I4 Tracers::updateTimeLevels() {
    }
 
    // Exchange halo
-   exchangeHalo(0);
+   exchangeHalo(1);
 
    CurTimeIndex = (CurTimeIndex + 1) % NTimeLevels;
 
@@ -521,22 +521,14 @@ I4 Tracers::updateTimeLevels() {
 //---------------------------------------------------------------------------
 I4 Tracers::getTimeIndex(I4 &TimeIndex, const I4 TimeLevel) {
 
-   // Handle single time level case (no new time level)
-   I4 TimeLevelAdj;
-   if (NTimeLevels == 1) {
-      TimeLevelAdj = TimeIndex;
-   } else {
-      TimeLevelAdj = TimeLevel - 1;
-   }
-
    // Check if time level is valid
-   if (TimeLevelAdj > 0 || (TimeLevelAdj + NTimeLevels) <= 0) {
+   if (NTimeLevels > 1 && (TimeLevel > 1 || (TimeLevel + NTimeLevels) <= 1)) {
       LOG_ERROR("Tracers: Time level {} is out of range for NTimeLevels {}",
                 TimeLevel, NTimeLevels);
       return -1;
    }
 
-   TimeIndex = (TimeLevelAdj + CurTimeIndex + NTimeLevels) % NTimeLevels;
+   TimeIndex = (TimeLevel + CurTimeIndex + NTimeLevels) % NTimeLevels;
 
    return 0;
 }

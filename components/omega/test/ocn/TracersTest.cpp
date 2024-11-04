@@ -286,7 +286,7 @@ int main(int argc, char *argv[]) {
          RetVal += 1;
       }
 
-      deepCopy(RefArray, RefArray);
+      // deepCopy(RefArray, RefArray); TODO: remove this
 
       // Reference field data of all tracers
       std::vector<Array2DReal> RefFieldDataArray;
@@ -301,10 +301,10 @@ int main(int argc, char *argv[]) {
       Tracers::updateTimeLevels();
 
       // getAll of current time level(0) should return the same to RefArray
-      Array3DReal PrevArray;
-      Err = Tracers::getAll(PrevArray, 0);
+      Array3DReal CurArray;
+      Err = Tracers::getAll(CurArray, 0);
       if (Err != 0) {
-         LOG_ERROR("getAll(PrevArray, 0) returns non-zero code: {}", Err);
+         LOG_ERROR("getAll(CurArray, 0) returns non-zero code: {}", Err);
          RetVal += 1;
       }
 
@@ -314,7 +314,7 @@ int main(int argc, char *argv[]) {
       parallelReduce(
           "reduce1", {NTracers, NCellsOwned, NVertLevels},
           KOKKOS_LAMBDA(I4 Tracer, I4 Cell, I4 Vert, I4 & Accum) {
-             if (std::abs(PrevArray(Tracer, Cell, Vert) -
+             if (std::abs(CurArray(Tracer, Cell, Vert) -
                           RefArray(Tracer, Cell, Vert)) > 1e-9) {
                 Accum++;
              }
@@ -335,10 +335,10 @@ int main(int argc, char *argv[]) {
          std::string TracerName;
          Tracers::getName(TracerName, Tracer);
 
-         Array2DReal PrevTracer;
-         Err = Tracers::getByName(PrevTracer, 1, TracerName);
+         Array2DReal CurTracer;
+         Err = Tracers::getByName(CurTracer, 0, TracerName);
          if (Err != 0) {
-            LOG_ERROR("getByName(PrevTracer, 1, TracerName) returns non-zero "
+            LOG_ERROR("getByName(CurTracer, 0, TracerName) returns non-zero "
                       "code: {}",
                       Err);
             RetVal += 1;
@@ -349,8 +349,8 @@ int main(int argc, char *argv[]) {
          parallelReduce(
              "reduce2", {NCellsOwned, NVertLevels},
              KOKKOS_LAMBDA(I4 Cell, I4 Vert, I4 & Accum) {
-                if (std::abs(PrevTracer(Cell, Vert) -
-                             (RefReal + Tracer + Cell + Vert)) > 1e-9) {
+                if (std::abs(CurTracer(Cell, Vert) -
+                             (RefReal + Tracer + Cell + Vert + 1)) > 1e-9) {
                    Accum++;
                 }
              },
@@ -398,7 +398,7 @@ int main(int argc, char *argv[]) {
       }
 
       // update time levels to cycle back to original index
-      for (I4 TimeLevel = -1; TimeLevel + NTimeLevels > 0; --TimeLevel) {
+      for (I4 TimeLevel = 0; TimeLevel + NTimeLevels > 1; --TimeLevel) {
          // update time levels
          Tracers::updateTimeLevels();
       }
@@ -472,7 +472,7 @@ int main(int argc, char *argv[]) {
          HostArray2DReal TestHostArray;
          Err = Tracers::getHostByName(TestHostArray, 1, TracerName);
          if (Err != 0) {
-            LOG_ERROR("getHostByName(TestHostArray, 0, TracerName) returns "
+            LOG_ERROR("getHostByName(TestHostArray, 1, TracerName) returns "
                       "non-zero code: {}",
                       Err);
             RetVal += 1;
