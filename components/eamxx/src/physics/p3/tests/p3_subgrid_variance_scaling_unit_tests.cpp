@@ -36,22 +36,30 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling : public UnitWrap::Un
     //Set of exponents to loop over
     Scalar expons[3] = {1.0,2.47,0.1};
 
-    //initialize struct required for F90 call
-    SubgridVarianceScalingData f_data;
-    Scalar f_scaling;
+    Scalar baseline_scaling;
 
     //Make C++ output available on host and device
     view_1d<Scalar> scaling_device("c scaling",1);
     auto scaling_host = Kokkos::create_mirror_view(scaling_device);
 
+    std::string baseline_name = this->m_baseline_path + "/subgrid_variance_scaling.dat";
+    ekat::FILEPtr rfid = nullptr;
+    ekat::FILEPtr wfid = nullptr;
+    if (this->m_baseline_action == COMPARE) {
+      rfid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
+    }
+    else if (this->m_baseline_action == GENERATE) {
+      wfid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
+    }
+
     for (Int i = 0; i < 3; ++i) {  // loop over exponents
       for (Int j = 0; j < 16; ++j) { // loop over relvars
 
-	// Get F90 solution
+	// Get baseline solution
 	// ----------------------------------
-	f_data.relvar=relvars[j];
-	f_data.expon =expons[i];
-        f_scaling = subgrid_variance_scaling(f_data);
+        if (this->m_baseline_action == COMPARE) {
+          ekat::read(&baseline_scaling, 1, rfid);
+        }
 
 	// Get C++ solution
 	// ----------------------------------
@@ -72,8 +80,11 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling : public UnitWrap::Un
 	Kokkos::deep_copy(scaling_host, scaling_device);
 
 	// Validate results
-        if (SCREAM_BFB_TESTING) {
-          REQUIRE(f_scaling == scaling_host(0) );
+        if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
+          REQUIRE(baseline_scaling == scaling_host(0) );
+        }
+        else if (this->m_baseline_action == GENERATE) {
+          ekat::write(&scaling_host(0), 1, wfid);
         }
       } //end loop over relvar[j]
     } //end loop over expons[i]

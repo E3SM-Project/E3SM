@@ -18,27 +18,31 @@ struct UnitWrap::UnitTest<D>::TestNiConservation : public UnitWrap::UnitTest<D>:
 
   void run_bfb()
   {
-    auto engine = setup_random_test();
+    auto engine = setup_random_test(1925985);
 
-    NiConservationData f90_data[max_pack_size];
+    NiConservationData baseline_data[max_pack_size];
 
     // Generate random input data
-    // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
-    for (auto& d : f90_data) {
+    // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
+    for (auto& d : baseline_data) {
       d.randomize(engine);
-      d.dt = f90_data[0].dt; // hold dt fixed, it is not packed data
+      d.dt = baseline_data[0].dt; // hold dt fixed, it is not packed data
     }
 
     // Create copies of data for use by cxx and sync it to device. Needs to happen before fortran calls so that
     // inout data is in original state
     view_1d<NiConservationData> cxx_device("cxx_device", max_pack_size);
     const auto cxx_host = Kokkos::create_mirror_view(cxx_device);
-    std::copy(&f90_data[0], &f90_data[0] + max_pack_size, cxx_host.data());
+    std::copy(&baseline_data[0], &baseline_data[0] + max_pack_size, cxx_host.data());
     Kokkos::deep_copy(cxx_device, cxx_host);
 
-    // Get data from fortran
-    for (auto& d : f90_data) {
-      ni_conservation(d);
+    // Read baseline data
+    std::string baseline_name = this->m_baseline_path + "/ni_conservation.dat";
+    if (this->m_baseline_action == COMPARE) {
+      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
+      for (Int i = 0; i < max_pack_size; ++i) {
+        baseline_data[i].read(fid);
+      }
     }
 
     // Get data from cxx. Run ni_conservation from a kernel and copy results back to host
@@ -71,17 +75,22 @@ struct UnitWrap::UnitTest<D>::TestNiConservation : public UnitWrap::UnitTest<D>:
     Kokkos::deep_copy(cxx_host, cxx_device);
 
     // Verify BFB results
-    if (SCREAM_BFB_TESTING) {
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        NiConservationData& d_f90 = f90_data[i];
+        NiConservationData& d_baseline = baseline_data[i];
         NiConservationData& d_cxx = cxx_host[i];
-        REQUIRE(d_f90.ni2nr_melt_tend == d_cxx.ni2nr_melt_tend);
-        REQUIRE(d_f90.ni_sublim_tend == d_cxx.ni_sublim_tend);
-        REQUIRE(d_f90.ni_selfcollect_tend == d_cxx.ni_selfcollect_tend);
+        REQUIRE(d_baseline.ni2nr_melt_tend == d_cxx.ni2nr_melt_tend);
+        REQUIRE(d_baseline.ni_sublim_tend == d_cxx.ni_sublim_tend);
+        REQUIRE(d_baseline.ni_selfcollect_tend == d_cxx.ni_selfcollect_tend);
+      }
+    }
+    else if (this->m_baseline_action == GENERATE) {
+      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
+      for (Int s = 0; s < max_pack_size; ++s) {
+        cxx_host(s).write(fid);
       }
     }
   } // run_bfb
-
 };
 
 } // namespace unit_test

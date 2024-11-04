@@ -56,9 +56,13 @@ struct UnitWrap::UnitTest<D>::TestRainSelfCollection : public UnitWrap::UnitTest
     std::copy(&dc[0], &dc[0] + max_pack_size, dc_host.data());
     Kokkos::deep_copy(dc_device, dc_host);
 
-    //Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
-      rain_self_collection(dc[i]);
+    // Read baseline data
+    std::string baseline_name = this->m_baseline_path + "/rain_self_collection.dat";
+    if (this->m_baseline_action == COMPARE) {
+      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
+      for (Int i = 0; i < max_pack_size; ++i) {
+        dc[i].read(fid);
+      }
     }
 
     //Run function from a kernal and copy results back to the host
@@ -91,12 +95,18 @@ struct UnitWrap::UnitTest<D>::TestRainSelfCollection : public UnitWrap::UnitTest
     Kokkos::deep_copy(dc_host, dc_device);
 
     // Validate results
-    if (SCREAM_BFB_TESTING) {
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int s = 0; s < max_pack_size; ++s) {
         REQUIRE(dc[s].rho                 == dc_host(s).rho);
         REQUIRE(dc[s].qr_incld            == dc_host(s).qr_incld);
         REQUIRE(dc[s].nr_incld            == dc_host(s).nr_incld);
         REQUIRE(dc[s].nr_selfcollect_tend == dc_host(s).nr_selfcollect_tend);
+      }
+    }
+    else if (this->m_baseline_action == GENERATE) {
+      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
+      for (Int s = 0; s < max_pack_size; ++s) {
+        dc_host(s).write(fid);
       }
     }
   }
