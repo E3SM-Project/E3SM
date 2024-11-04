@@ -462,12 +462,7 @@ inline std::shared_ptr<AtmosphereInput> create_tracer_data_reader(
 
   // NOTE: If we are using a vertical emission NC file with altitude instead of levels,
   // we must rename this tag. This is only necessary when a map file is used.
-  bool rename_LEV_grid=false;
   if(tracer_data.file_type == VERT_EMISSION && extfrc_map_file != ""){
-        rename_LEV_grid=true;
-  }
-
-  if (rename_LEV_grid) {
     auto horiz_interp_src_grid =
       io_grid->clone("tracer_horiz_interp_src_grid", true);
   horiz_interp_src_grid->reset_field_tag_name(LEV, "altitude");
@@ -478,7 +473,6 @@ inline std::shared_ptr<AtmosphereInput> create_tracer_data_reader(
     return std::make_shared<AtmosphereInput>(tracer_data_file, io_grid, io_fields,
                                            true);
   }
-
 
 }  // create_tracer_data_reader
 
