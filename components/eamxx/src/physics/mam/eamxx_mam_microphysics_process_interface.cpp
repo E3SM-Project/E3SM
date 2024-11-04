@@ -289,8 +289,10 @@ void MAMMicrophysics::set_grids(
                                               verti_emiss_cyclical_ymd);
       auto hor_rem = scream::mam_coupling::create_horiz_remapper(
           grid_, file_name, extfrc_map_file, var_names, data_tracer);
+
       auto file_reader =
-          scream::mam_coupling::create_tracer_data_reader(hor_rem, file_name);
+          scream::mam_coupling::create_tracer_data_reader(hor_rem, file_name,
+                                                          data_tracer, extfrc_map_file);
       VertEmissionsHorizInterp_.push_back(hor_rem);
       VertEmissionsDataReader_.push_back(file_reader);
       vert_emis_data_.push_back(data_tracer);

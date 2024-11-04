@@ -448,6 +448,40 @@ inline std::shared_ptr<AtmosphereInput> create_tracer_data_reader(
                                            true);
 }  // create_tracer_data_reader
 
+inline std::shared_ptr<AtmosphereInput> create_tracer_data_reader(
+    const std::shared_ptr<AbstractRemapper> &horiz_remapper,
+    const std::string &tracer_data_file,
+    const TracerData &tracer_data,
+    const std::string &extfrc_map_file
+    ) {
+  std::vector<Field> io_fields;
+  for(int i = 0; i < horiz_remapper->get_num_fields(); ++i) {
+    io_fields.push_back(horiz_remapper->get_src_field(i));
+  }
+  const auto io_grid = horiz_remapper->get_src_grid();
+
+  // NOTE: If we are using a vertical emission NC file with altitude instead of levels,
+  // we must rename this tag. This is only necessary when a map file is used.
+  bool rename_LEV_grid=false;
+  if(tracer_data.file_type == VERT_EMISSION && extfrc_map_file != ""){
+        rename_LEV_grid=true;
+  }
+
+  if (rename_LEV_grid) {
+    auto horiz_interp_src_grid =
+      io_grid->clone("tracer_horiz_interp_src_grid", true);
+  horiz_interp_src_grid->reset_field_tag_name(LEV, "altitude");
+  horiz_interp_src_grid->reset_field_tag_name(ILEV, "altitude_int");
+  return std::make_shared<AtmosphereInput>(tracer_data_file, horiz_interp_src_grid, io_fields,
+                                           true);
+  } else {
+    return std::make_shared<AtmosphereInput>(tracer_data_file, io_grid, io_fields,
+                                           true);
+  }
+
+
+}  // create_tracer_data_reader
+
 inline void update_tracer_data_from_file(
     const std::shared_ptr<AtmosphereInput> &scorpio_reader,
     const int time_index,  // zero-based
