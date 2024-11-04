@@ -46,7 +46,7 @@ void run_bfb()
     d.randomize(engine, { {d.qc_incld, {C::QSMALL/2, C::QSMALL*2}} });
   }
 
-  // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+  // Create copies of data for use by cxx. Needs to happen before reads so that
   // inout data is in original state
   CloudSedData csds_cxx[num_runs] = {
     CloudSedData(csds_baseline[0]),

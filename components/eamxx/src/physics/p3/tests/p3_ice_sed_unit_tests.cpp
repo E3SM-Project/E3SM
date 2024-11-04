@@ -71,7 +71,7 @@ void run_bfb_calc_bulk_rhime()
     {5.164017E-10, 0.000000E+00, 0.000000E+00},
   };
 
-  // Sync to device, needs to happen before fortran calls so that
+  // Sync to device, needs to happen before reads so that
   // inout data is in original state
   view_1d<CalcBulkRhoRimeData> cbrr_device("cbrr", max_pack_size);
   const auto cbrr_host = Kokkos::create_mirror_view(cbrr_device);
@@ -150,7 +150,7 @@ void run_bfb_ice_sed()
     d.randomize(engine, { {d.qi_incld, {C::QSMALL/2, C::QSMALL*2}} });
   }
 
-  // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+  // Create copies of data for use by cxx. Needs to happen before reads so that
   // inout data is in original state
   IceSedData isds_cxx[num_runs] = {
     IceSedData(isds_baseline[0]),
@@ -233,7 +233,7 @@ void run_bfb_homogeneous_freezing()
     }
   }
 
-  // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+  // Create copies of data for use by cxx. Needs to happen before reads so that
   // inout data is in original state
   HomogeneousFreezingData hfds_cxx[num_runs] = {
     HomogeneousFreezingData(hfds_baseline[0]),

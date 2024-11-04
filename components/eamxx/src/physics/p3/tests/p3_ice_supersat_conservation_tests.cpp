@@ -36,7 +36,7 @@ struct UnitWrap::UnitTest<D>::TestIceSupersatConservation : public UnitWrap::Uni
       d.latent_heat_sublim = latvap+latice;
     }
 
-    // Create copies of data for use by cxx and sync it to device. Needs to happen before fortran calls so that
+    // Create copies of data for use by cxx and sync it to device. Needs to happen before reads so that
     // inout data is in original state
     view_1d<IceSupersatConservationData> cxx_device("cxx_device", max_pack_size);
     const auto cxx_host = Kokkos::create_mirror_view(cxx_device);

@@ -132,7 +132,7 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip : public UnitWrap::UnitTest<D>:
     constexpr Scalar latvap = C::LatVap;
     constexpr Scalar latice = C::LatIce;
 
-    //fortran generated data is input to the following
+    //baseline generated data is input to the following
     //This subroutine has 20 args, only 18 are supplied here for invoking it as last 2 are intent-outs
     //note that dt is the same val for each row - this is needed since dt is a scalar and all rows are executed simultaneously on CPU in C++.
     //row1: above freezing, should trigger

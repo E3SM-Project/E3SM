@@ -74,7 +74,7 @@ struct UnitWrap::UnitTest<D>::TestIceDepositionSublimation : public UnitWrap::Un
     //  d.randomize();
     //}
 
-    // Create copies of data for use by cxx and sync it to device. Needs to happen before fortran calls so that
+    // Create copies of data for use by cxx and sync it to device. Needs to happen before reads so that
     // inout data is in original state
     view_1d<IceDepositionSublimationData> cxx_device("cxx_device", max_pack_size);
     const auto cxx_host = Kokkos::create_mirror_view(cxx_device);

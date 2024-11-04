@@ -147,7 +147,7 @@ void run_bfb_rain_sed()
   constexpr Scalar dt = 1.800E+03;
 #endif
 
-  RainSedData rsds_fortran[] = {
+  RainSedData rsds_baseline[] = {
     //        kts, kte, ktop, kbot, kdir, dt, inv_dt, precip_liq_surf
     RainSedData(1,  72,   27,   72,   -1, dt,   1/dt,            0.0),
     RainSedData(1,  72,   72,   27,    1, dt,   1/dt,            1.0),
@@ -155,27 +155,27 @@ void run_bfb_rain_sed()
     RainSedData(1,  72,   27,   27,    1, dt,   1/dt,            2.0),
   };
 
-  static constexpr Int num_runs = sizeof(rsds_fortran) / sizeof(RainSedData);
+  static constexpr Int num_runs = sizeof(rsds_baseline) / sizeof(RainSedData);
 
   // Set up random input data
-  for (auto& d : rsds_fortran) {
+  for (auto& d : rsds_baseline) {
     d.randomize(engine, { {d.qr_incld, {C::QSMALL/2, C::QSMALL*2}} });
   }
 
   // Create copies of data for use by cxx. Needs to happen before reads so that
   // inout data is in original state
   RainSedData rsds_cxx[num_runs] = {
-    RainSedData(rsds_fortran[0]),
-    RainSedData(rsds_fortran[1]),
-    RainSedData(rsds_fortran[2]),
-    RainSedData(rsds_fortran[3]),
+    RainSedData(rsds_baseline[0]),
+    RainSedData(rsds_baseline[1]),
+    RainSedData(rsds_baseline[2]),
+    RainSedData(rsds_baseline[3]),
   };
 
   // Read baseline data
   std::string baseline_name = this->m_baseline_path + "/rain_sed.dat";
   if (this->m_baseline_action == COMPARE) {
     auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
-    for (auto& d : rsds_fortran) {
+    for (auto& d : rsds_baseline) {
       d.read(fid);
     }
   }
@@ -198,20 +198,20 @@ void run_bfb_rain_sed()
   if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
     for (Int i = 0; i < num_runs; ++i) {
       // Due to pack issues, we must restrict checks to the active k space
-      Int start = std::min(rsds_fortran[i].kbot, rsds_fortran[i].ktop) - 1; // 0-based indx
-      Int end   = std::max(rsds_fortran[i].kbot, rsds_fortran[i].ktop);     // 0-based indx
+      Int start = std::min(rsds_baseline[i].kbot, rsds_baseline[i].ktop) - 1; // 0-based indx
+      Int end   = std::max(rsds_baseline[i].kbot, rsds_baseline[i].ktop);     // 0-based indx
       for (Int k = start; k < end; ++k) {
-        REQUIRE(rsds_fortran[i].qr[k]              == rsds_cxx[i].qr[k]);
-        REQUIRE(rsds_fortran[i].nr[k]              == rsds_cxx[i].nr[k]);
-        REQUIRE(rsds_fortran[i].nr_incld[k]        == rsds_cxx[i].nr_incld[k]);
-        REQUIRE(rsds_fortran[i].mu_r[k]            == rsds_cxx[i].mu_r[k]);
-        REQUIRE(rsds_fortran[i].lamr[k]            == rsds_cxx[i].lamr[k]);
-        REQUIRE(rsds_fortran[i].precip_liq_flux[k] == rsds_cxx[i].precip_liq_flux[k]);
-        REQUIRE(rsds_fortran[i].qr_tend[k]         == rsds_cxx[i].qr_tend[k]);
-        REQUIRE(rsds_fortran[i].nr_tend[k]         == rsds_cxx[i].nr_tend[k]);
+        REQUIRE(rsds_baseline[i].qr[k]              == rsds_cxx[i].qr[k]);
+        REQUIRE(rsds_baseline[i].nr[k]              == rsds_cxx[i].nr[k]);
+        REQUIRE(rsds_baseline[i].nr_incld[k]        == rsds_cxx[i].nr_incld[k]);
+        REQUIRE(rsds_baseline[i].mu_r[k]            == rsds_cxx[i].mu_r[k]);
+        REQUIRE(rsds_baseline[i].lamr[k]            == rsds_cxx[i].lamr[k]);
+        REQUIRE(rsds_baseline[i].precip_liq_flux[k] == rsds_cxx[i].precip_liq_flux[k]);
+        REQUIRE(rsds_baseline[i].qr_tend[k]         == rsds_cxx[i].qr_tend[k]);
+        REQUIRE(rsds_baseline[i].nr_tend[k]         == rsds_cxx[i].nr_tend[k]);
       }
-      REQUIRE(rsds_fortran[i].precip_liq_flux[end] == rsds_cxx[i].precip_liq_flux[end]);
-      REQUIRE(rsds_fortran[i].precip_liq_surf      == rsds_cxx[i].precip_liq_surf);
+      REQUIRE(rsds_baseline[i].precip_liq_flux[end] == rsds_cxx[i].precip_liq_flux[end]);
+      REQUIRE(rsds_baseline[i].precip_liq_surf      == rsds_cxx[i].precip_liq_surf);
     }
   }
   else if (this->m_baseline_action == GENERATE) {

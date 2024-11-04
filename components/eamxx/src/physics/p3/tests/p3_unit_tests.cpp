@@ -513,7 +513,7 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce : public UnitWrap::UnitT
     constexpr Scalar latvap        = C::LatVap;
     constexpr Scalar latice        = C::LatIce;
 
-    //fortran generated data is input to the following
+    //baseline generated data is input to the following
     P3UpdatePrognosticIceData pupidc[max_pack_size] = {
 
       {4.9078E-19, 1.5312E-09, 4.4387E-09, 3.7961E+06, 1.7737E-04, 0.0000E+00, 3.8085E-08, 5.1281E+04, 1.9251E-15,
@@ -748,7 +748,7 @@ struct UnitWrap::UnitTest<D>::TestGetTimeSpacePhysVariables : public UnitWrap::U
     constexpr Scalar latvap = C::LatVap;
     constexpr Scalar latice = C::LatIce;
 
-    //fortran generated data is input to the following
+    //baseline generated data is input to the following
     GetTimeSpacePhysVarsData gtspvd[max_pack_size] = {
       //        T_atm,       pres,        rho,       latent_heat_vapor,       latent_heat_sublim,        qv_sat_l,        qv_sat_i
       {2.9792E+02, 9.8711E+04, 1.1532E+00, latvap, latvap+latice, 2.0321E-02, 2.0321E-02},
@@ -870,7 +870,7 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticLiq : public UnitWrap::UnitT
   void update_prognostic_liquid_unit_bfb_tests() {
     constexpr Scalar latvap = C::LatVap;
 
-    //fortran generated data is input to the following
+    //baseline generated data is input to the following
     P3UpdatePrognosticLiqData pupldc[max_pack_size] = {
 
       {1.0631E-12, 1.0631E+00, 1.5833E-12, 1.5833E+00, 2.4190E-02, 0.0000E+00, 0.0000E+00, 0.0000E+00, 4.2517E+00,

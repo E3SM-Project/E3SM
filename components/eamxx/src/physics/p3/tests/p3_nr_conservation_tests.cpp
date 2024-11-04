@@ -30,7 +30,7 @@ struct UnitWrap::UnitTest<D>::TestNrConservation : public UnitWrap::UnitTest<D>:
       d.nmltratio = baseline_data[0].nmltratio; // hold nmltratio fixed, it is not packed data
     }
 
-    // Create copies of data for use by cxx and sync it to device. Needs to happen before fortran calls so that
+    // Create copies of data for use by cxx and sync it to device. Needs to happen before reads so that
     // inout data is in original state
     view_1d<NrConservationData> cxx_device("cxx_device", max_pack_size);
     const auto cxx_host = Kokkos::create_mirror_view(cxx_device);

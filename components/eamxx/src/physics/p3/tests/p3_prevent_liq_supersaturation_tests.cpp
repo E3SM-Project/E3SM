@@ -110,7 +110,7 @@ struct UnitWrap::UnitTest<D>::TestPreventLiqSupersaturation : public UnitWrap::U
     }
 
     // Create copies of data for use by cxx and sync it to device. Needs to happen before
-    // fortran calls so that inout data is in original state
+    // reads so that inout data is in original state
     view_1d<PreventLiqSupersaturationData> cxx_device("cxx_device", max_pack_size);
     const auto cxx_host = Kokkos::create_mirror_view(cxx_device);
     std::copy(&baseline_data[0], &baseline_data[0] + max_pack_size, cxx_host.data());
