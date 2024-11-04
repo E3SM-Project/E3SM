@@ -44,6 +44,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  submit: ${{ github.event_name == 'schedule' && 'true' || 'false' }}  # Submit to cdash only for nightlies
+
 jobs:
   gcc-openmp:
     runs-on:  [self-hosted, ghci-snl-cpu, gcc]
@@ -73,11 +76,8 @@ jobs:
           pr_number: ${{ github.event.pull_request.number }}
       - name: Set test-all inputs based on event specs
         run: |
-          echo "submit=false" >> $GITHUB_ENV
           echo "generate=false" >> $GITHUB_ENV
-          if [ "${{ github.event_name }}" == "schedule" ]; then
-            echo "submit=true" >> $GITHUB_ENV
-          elif [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             if [ "${{ inputs.bless }}" == "true" ]; then
               echo "generate=true" >> $GITHUB_ENV
             fi
@@ -118,11 +118,8 @@ jobs:
           pr_number: ${{ github.event.pull_request.number }}
       - name: Set test-all inputs based on event specs
         run: |
-          echo "submit=false" >> $GITHUB_ENV
           echo "generate=false" >> $GITHUB_ENV
-          if [ "${{ github.event_name }}" == "schedule" ]; then
-            echo "submit=true" >> $GITHUB_ENV
-          elif [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             if [ "${{ inputs.bless }}" == "true" ]; then
               echo "generate=true" >> $GITHUB_ENV
             fi
