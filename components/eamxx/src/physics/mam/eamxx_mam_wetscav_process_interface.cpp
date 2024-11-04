@@ -28,8 +28,8 @@ void MAMWetscav::set_grids(
 
   // The units of mixing ratio Q are technically non-dimensional.
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
-  auto q_unit    = kg / kg;
-  auto n_unit    = 1 / kg;  // units of number mixing ratios of tracers
+  auto q_unit = kg / kg;
+  auto n_unit = 1 / kg;  // units of number mixing ratios of tracers
 
   m_grid                = grids_manager->get_grid("Physics");
   const auto &grid_name = m_grid->name();
@@ -205,7 +205,7 @@ void MAMWetscav::set_grids(
   static constexpr auto m3 = m * m * m;
 
   // Aerosol dry particle diameter [m]
-  add_field<Computed>("dgncur_a", scalar3d_mid_nmodes, m, grid_name);
+  add_field<Computed>("dgnum", scalar3d_mid_nmodes, m, grid_name);
 
   // Wet aerosol density [kg/m3]
   add_field<Computed>("wetdens", scalar3d_mid_nmodes, kg / m3, grid_name);
@@ -475,7 +475,7 @@ void MAMWetscav::run_impl(const double dt) {
   const auto wet_geometric_mean_diameter_i =
       get_field_out("dgnumwet").get_view<Real ***>();
   const auto dry_geometric_mean_diameter_i =
-      get_field_out("dgncur_a").get_view<Real ***>();
+      get_field_out("dgnum").get_view<Real ***>();
   const auto qaerwat = get_field_out("qaerwat").get_view<Real ***>();
   const auto wetdens = get_field_out("wetdens").get_view<Real ***>();
 
