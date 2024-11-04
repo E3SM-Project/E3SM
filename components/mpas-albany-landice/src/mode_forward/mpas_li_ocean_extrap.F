@@ -735,73 +735,18 @@ contains
       call mpas_pool_get_array(meshPool, 'nISMIP6OceanLayers', nISMIP6OceanLayers)
       call mpas_pool_get_array(meshPool, 'nCells', nCells)
 
-      if (config_TF_param_type == 'AMretreat') then
-         !depth-bin-weighted average of profiles
-         do iCell = 1, nCells
+      do iCell = 1, nCells
+        !Main difference between these parameterization is how we collapse into 2d, which happens in mpas_li_ice_shelt_melt.F
+        !Difference between '...melt' and '...retreat' parameterizations happens in main body of mpas_li_ocean_extrap.F
+        if ( (config_TF_param_type == 'AMretreat') .or. (config_TF_param_type == 'ISMIP6retreat') &
+                .or. (config_TF_param_type == 'AMmelt') .or. (config_TF_param_type == 'ISMIP6melt') &
+                .or. ((config_TF_param_type == 'AMfit') .and. (icebergFjordMask(iCell)) == 1) ) then
+
             ! From Jenkins 2011 and Slater 2020
             ismip6shelfMelt_3dThermalForcing(:,iCell) = MPAS_3dOceanTemperature(:,iCell) - (gamma1 * MPAS_3dOceanSalinity(:,iCell) + gamma2 + gamma3 * ismip6shelfMelt_zOcean)
-            
-            ismip6_2dThermalForcing = 0.0_RKIND
-            dzAccumulated = 0.0_RKIND
-            do iLayer = 1, nISMIP6OceanLayers
-               if (bedTopography(iCell) >= ismip6shelfMelt_zOcean(iLayer)) then
-                  dz = abs(ismip6shelfMelt_zBndsOcean(2,iLayer) - ismip6shelfMelt_zBndsOcean(1,iLayer))
-                  ismip6_2dThermalForcing(iCell) = (ismip6_2dThermalForcing(iCell) * dzAccumulated + &
-                          ismip6shelfMelt_3dThermalForcing(iLayer,iCell) * dz) / (dzAccumulated + dz)
-                  dzAccumulated = dzAccumulated + dz
-               endif
-            enddo
-         enddo
 
-      elseif (config_TF_param_type == 'ISMIP6retreat') then
-         ! simple average between 200-500m
-         do iCell = 1, nCells
-            total = 0.0_RKIND
-            counter = 0
-            do iLayer = 1, nISMIP6OceanLayers
-               if ( (ismip6shelfMelt_zOcean(iLayer) >= 200.0_RKIND) .and. ( ismip6shelfMelt_zOcean(iLayer) <= 500.0_RKIND) &
-                     .and. (bedTopography(iCell) >= ismip6shelfMelt_zOcean(iLayer))) then
-                  total = ismip6shelfMelt_3dThermalForcing(iLayer,iCell) + total
-                  counter = counter + 1
-               endif
-            enddo
-            ismip6_2dThermalForcing(iCell) = total/counter
-         enddo
-
-      elseif (config_TF_param_type == 'AMmelt') then
-            ! depth-bin-weighted average of profiles
-            do iCell = 1, nCells
-               ! << NOTE>> : Using TF equations from Jenkins 2011 for now but Slater 2020 uses gsw toolbox version. May need to change this eventually
-               ismip6shelfMelt_3dThermalForcing(:,iCell) = MPAS_3dOceanTemperature(:,iCell) - (gamma1 * MPAS_3dOceanSalinity(:,iCell) + gamma2 + gamma3 * ismip6shelfMelt_zOcean)
-               
-               ismip6_2dThermalForcing = 0.0_RKIND
-               dzAccumulated = 0.0_RKIND
-               do iLayer = 1, nISMIP6OceanLayers
-                  if (bedTopography(iCell) >= ismip6shelfMelt_zOcean(iLayer)) then
-                     dz = ismip6shelfMelt_zBndsOcean(2,iLayer) - ismip6shelfMelt_zBndsOcean(1,iLayer)
-                     ismip6_2dThermalForcing(iCell) = (ismip6_2dThermalForcing(iCell) * dzAccumulated &
-                          + ismip6shelfMelt_3dThermalForcing(iLayer,iCell) * dz) / (dzAccumulated + dz)
-                     dzAccumulated = dzAccumulated + dz
-                  endif
-               enddo
-            enddo
-
-      elseif (config_TF_param_type == 'ISMIP6melt') then
-            ! define TF at grounding line
-            do iCell = 1, nCells
-               oceanCellVertID(:) = 0
-               do iLayer = 1, nISMIP6OceanLayers
-                  if (ismip6shelfMelt_zOcean(iLayer) >= bedTopography(iCell)) then
-                     oceanCellVertID(iLayer) = iLayer
-                  endif
-               enddo
-               ismip6_2dThermalForcing(iCell) = ismip6shelfMelt_3dThermalForcing(maxval(oceanCellVertID),iCell)
-            enddo
-     
-      elseif (config_TF_param_type == 'AMberg') then
-         ! Iceberg Parameteriation from Hager 2023
-
-         do iCell = 1, nCells
+        elseif ( (config_TF_param_type == 'AMberg') .or. ( (config_TF_param_type == 'AMfit') .and. (icebergFjordMask(iCell) == 1)) ) then
+            ! Alter 3d profile following the iceberg Parameterization from Hager 2023 for fjord where icebergs are prevalent
             ! find cell just above config_TF_iceberg_depth
             icebergCellVertID(:) = 0
             do iLayer = 1, nISMIP6OceanLayers
@@ -834,68 +779,8 @@ contains
                   ismip6shelfMelt_3dThermalForcing(iLayer, iCell) = MPAS_3dOceanTemperature(iLayer, iCell) - freezingTemperature(iLayer)
                endif
             enddo
-         
-            ismip6_2dThermalForcing = 0.0_RKIND
-            dzAccumulated = 0.0_RKIND
-            do iLayer = 1, nISMIP6OceanLayers
-               dz = ismip6shelfMelt_zBndsOcean(2,iLayer) - ismip6shelfMelt_zBndsOcean(1,iLayer)
-               ismip6_2dThermalForcing(iCell) = (ismip6_2dThermalForcing(iCell) * dzAccumulated &
-                       + ismip6shelfMelt_3dThermalForcing(iLayer,iCell) * dz) / (dzAccumulated + dz)
-               dzAccumulated = dzAccumulated + dz
-            enddo
-         enddo
-
-      elseif (config_TF_param_type == 'AMfit') then
-         
-         do iCell = 1, nCells 
-            if (icebergFjordMask(iCell) == 1) then     
-         
-               ! find cell just above config_TF_iceberg_depth
-               icebergCellVertID(:) = 0
-               do iLayer = 1, nISMIP6OceanLayers
-                  if (ismip6shelfMelt_zOcean(iLayer) <= config_TF_iceberg_depth) then
-                     icebergCellVertID(iLayer) = iLayer
-                  endif
-               enddo
-
-               ! calculate freezing temperature. 
-               ! << NOTE >>: Again we are using the simplified equation from Jenkins 2011 to do this. May eventually want to 
-               ! switch to method in gsw toolbox to do this to be consistent with Hager 2023
-               freezingTemperature = (gamma1 * MPAS_3dOceanSalinity(:,iCell) + gamma2 + gamma3 * ismip6shelfMelt_zOcean)
-         
-               ! Calculate Gade slope (slope of submarine melt mixing line) using cell just above iceberg depth as reference point. Assumes ice at pressure melting temperature
-               gadeSlope = (1/MPAS_3dOceanSalinity(maxval(icebergCellVertID),iCell)) * (L/cp - (freezingTemperature(maxval(icebergCellVertID)) & 
-                       - MPAS_3dOceanTemperature(maxval(icebergCellVertID),iCell)))
-
-               ! Now that we have the slope of the melt line, alter ocean temperatures along submarine melt line
-               do iLayer = 1, nISMIP6OceanLayers
-                  if (icebergCellVertID(iLayer) /= 0) then
-                     MPAS_3dOceanTemperature(iLayer, iCell) = gadeSlope * (MPAS_3dOceanSalinity(iLayer, iCell) - MPAS_3dOceanSalinity(maxval(icebergCellVertID),iCell)) &
-                             + MPAS_3dOceanTemperature(iLayer, iCell)
-                  
-                     ! Ensure no artificially adjusted temperatures fall below the freezing temperature
-                     if (MPAS_3dOceanTemperature(iLayer, iCell) < freezingTemperature(iLayer)) then
-                        MPAS_3dOceanTemperature(iLayer, iCell) = freezingTemperature(iLayer)
-                     endif
-
-                     ismip6shelfMelt_3dThermalForcing(iLayer, iCell) = MPAS_3dOceanTemperature(iLayer, iCell) - freezingTemperature(iLayer)
-                  endif
-               enddo
-            endif
-
-            ! << NOTE>> : Using TF equations from Jenkins 2011 for now but Slater 2020 uses gsw toolbox version. May need to change this eventually
-            ismip6shelfMelt_3dThermalForcing(:,iCell) = MPAS_3dOceanTemperature(:,iCell) - (gamma1 * MPAS_3dOceanSalinity(:,iCell) + gamma2 + gamma3 * ismip6shelfMelt_zOcean)
-               
-            ismip6_2dThermalForcing = 0.0_RKIND
-            dzAccumulated = 0.0_RKIND
-            do iLayer = 1, nISMIP6OceanLayers
-               dz = ismip6shelfMelt_zBndsOcean(2,iLayer) - ismip6shelfMelt_zBndsOcean(1,iLayer)
-               ismip6_2dThermalForcing(iCell) = (ismip6_2dThermalForcing(iCell) * dzAccumulated &
-                       + ismip6shelfMelt_3dThermalForcing(iLayer,iCell) * dz) / (dzAccumulated + dz)
-               dzAccumulated = dzAccumulated + dz
-            enddo
-         enddo
-      endif
+        endif
+      enddo
       
       deallocate(icebergCellVertID)
       deallocate(freezingTemperature)

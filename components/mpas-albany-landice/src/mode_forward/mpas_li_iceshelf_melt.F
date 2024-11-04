@@ -1430,6 +1430,7 @@ module li_iceshelf_melt
       real (kind=RKIND), dimension(:,:), pointer :: ismip6shelfMelt_3dThermalForcing
       real (kind=RKIND), dimension(:), pointer :: ismip6shelfMelt_deltaT
       real (kind=RKIND), dimension(:), pointer :: zOcean
+      real (kind=RKIND), dimension(:,:), pointer :: zBndsOcean
       real (kind=RKIND), dimension(:), pointer :: areaCell
       integer, dimension(:), pointer :: cellMask, edgeMask, nEdgesOnCell
       real (kind=RKIND), pointer :: aSubglacial ! param A
@@ -1446,7 +1447,10 @@ module li_iceshelf_melt
       real (kind=RKIND), dimension(:), allocatable :: faceMeltSpeedVertAvg !vertically averaged faceMeltSpeed
                                                                 !to pass to  li_apply_front_ablation_velocity,
                                                                 !because faceMeltSpeed is only below water-line
-      integer :: err_tmp, kk
+      character(len=StrKIND), pointer :: config_TF_param_type
+      logical, pointer :: config_recalculate_thermal_forcing
+      real (kind=RKIND) :: dzAccumulated, total, dz
+      integer :: err_tmp, kk, counter, iLayer
 
       err = 0
       call mpas_log_write('Starting face melt routine')
@@ -1464,6 +1468,9 @@ module li_iceshelf_melt
       call mpas_pool_get_config(liConfigs, 'config_uniform_face_melt_rate', config_uniform_face_melt_rate)
       call mpas_pool_get_config(liConfigs, 'config_front_mass_bal_grounded', config_front_mass_bal_grounded)
       call mpas_pool_get_config(liConfigs, 'config_use_3d_thermal_forcing_for_face_melt', config_use_3d_thermal_forcing_for_face_melt)
+      
+      call mpas_pool_get_config(liConfigs, 'config_recalculate_thermal_forcing', config_recalculate_thermal_forcing)
+      call mpas_pool_get_config(liConfigs, 'config_TF_param_type', config_TF_param_type)
 
       block => domain % blocklist
       do while (associated(block))
@@ -1494,28 +1501,65 @@ module li_iceshelf_melt
             call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_3dThermalForcing', ismip6shelfMelt_3dThermalForcing)
             call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zOcean', zOcean)
             call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_deltaT', ismip6shelfMelt_deltaT)
+            call mpas_pool_get_array(geometryPool, 'ismip6shelfmelt_zBndsOcean', zBndsOcean)
 
-            ! Calculate thermal forcing based on bedTopography
-            TFocean(:) = 0.0_RKIND
-            do iCell = 1, nCells
-               if (bedTopography(iCell) < 0.0_RKIND) then
-                     kk = 1
-                     ! Find deepest zOcean above ocean floor
-                     do while ( (zOcean(kk) >= bedTopography(iCell)) .and. (kk < nISMIP6OceanLayers) )
-                        kk = kk + 1
+               !Consolidate 3d profile to 2d depending on parameterization type
+               if ( (config_recalculate_thermal_forcing) .and. ( (config_TF_param_type == 'AMretreat') &
+                       .or. (config_TF_param_type == 'AMmelt') .or. (config_TF_param_type == 'AMberg') &
+                       .or. (config_TF_param_type == 'AMfit') ) ) then
+                  ! Depth weighted average
+                  TFocean(:) = 0.0_RKIND
+                  do iCell = 1, nCells
+                     dzAccumulated = 0.0_RKIND
+                     do iLayer = 1, nISMIP6OceanLayers
+                       if (bedTopography(iCell) >= zOcean(iLayer)) then
+                           dz = abs(zBndsOcean(2,iLayer) - zBndsOcean(1,iLayer))
+                           TFocean(iCell) = (TFocean(iCell) * dzAccumulated + ismip6shelfMelt_3dThermalForcing(iLayer,iCell) * dz) &
+                                   / (dzAccumulated + dz) + ismip6shelfMelt_deltaT(iCell)
+                           dzAccumulated = dzAccumulated + dz
+                        endif
                      enddo
-                     ! If bed is shallower than first layer, use TF from the first layer.
-                     ! If bed is deeper than the bottomg ocean layer, use TF from the bottom layer.
-                     if ( (kk == 1) .or. ( (kk == nISMIP6OceanLayers) .and. (zOcean(kk) >= bedTopography(iCell)) ) ) then
-                        TFocean(iCell) = ismip6shelfMelt_3dThermalForcing(kk, iCell) + ismip6shelfMelt_deltaT(iCell)
-                     ! For all other bed depths, interpolate linearly between layers above and below bed depth.
-                     else
-                        TFocean(iCell) = ( (zOcean(kk-1) - bedTopography(iCell)) * ismip6shelfMelt_3dThermalForcing(kk, iCell) + &
+                  enddo
+
+               elseif ( (config_recalculate_thermal_forcing) .and. (config_TF_param_type == 'ISMIP6retreat') ) then
+                  ! simple average between 200-500m
+                  TFocean(:) = 0.0_RKIND
+                  do iCell = 1, nCells
+                     total = 0.0_RKIND
+                     counter = 0
+                     do iLayer = 1, nISMIP6OceanLayers
+                        if ( (zOcean(iLayer) >= 200.0_RKIND) .and. (zOcean(iLayer) <= 500.0_RKIND) &
+                              .and. (bedTopography(iCell) >= zOcean(iLayer))) then
+                           total = ismip6shelfMelt_3dThermalForcing(iLayer,iCell) + total
+                           counter = counter + 1
+                        endif
+                     enddo
+                     TFocean(iCell) = total/counter + ismip6shelfMelt_deltaT(iCell)
+                  enddo
+
+               elseif ( (config_TF_param_type == 'ISMIP6melt') .or. (.not. config_recalculate_thermal_forcing) ) then
+                  ! Calculate thermal forcing based solely on bedTopography. Default ISMIP6 method and ISMIP6melt are equivalent
+                  TFocean(:) = 0.0_RKIND
+                  do iCell = 1, nCells
+                     if (bedTopography(iCell) < 0.0_RKIND) then
+                        kk = 1
+                        ! Find deepest zOcean above ocean floor
+                        do while ( (zOcean(kk) >= bedTopography(iCell)) .and. (kk < nISMIP6OceanLayers) )
+                           kk = kk + 1
+                        enddo
+                        ! If bed is shallower than first layer, use TF from the first layer.
+                        ! If bed is deeper than the bottomg ocean layer, use TF from the bottom layer.
+                        if ( (kk == 1) .or. ( (kk == nISMIP6OceanLayers) .and. (zOcean(kk) >= bedTopography(iCell)) ) ) then
+                           TFocean(iCell) = ismip6shelfMelt_3dThermalForcing(kk, iCell) + ismip6shelfMelt_deltaT(iCell)
+                           ! For all other bed depths, interpolate linearly between layers above and below bed depth.
+                        else
+                           TFocean(iCell) = ( (zOcean(kk-1) - bedTopography(iCell)) * ismip6shelfMelt_3dThermalForcing(kk, iCell) + &
                                            (bedTopography(iCell) - zOcean(kk)) * ismip6shelfMelt_3dThermalForcing(kk-1, iCell) ) / &
                                            (zOcean(kk-1) - zOcean(kk)) + ismip6shelfMelt_deltaT(iCell)
+                        endif
                      endif
+                  enddo
                endif
-            end do
          endif
 
          faceMeltSpeed(:) = 0.0_RKIND
