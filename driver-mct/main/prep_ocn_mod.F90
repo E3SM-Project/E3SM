@@ -1446,7 +1446,7 @@ contains
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do ewi = 1,num_inst_wav
        w2x_wx => component_get_c2x_cx(wav(ewi))
-       call seq_map_map(mapper_Sw2o, w2x_wx, w2x_ox(ewi),fldlist=seq_flds_w2x_states, norm=.true.)
+       call seq_map_map(mapper_Sw2o, w2x_wx, w2x_ox(ewi), norm=.true.)
     enddo
     call t_drvstopf  (trim(timer))
   end subroutine prep_ocn_calc_w2x_ox
