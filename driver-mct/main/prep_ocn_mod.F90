@@ -66,7 +66,6 @@ module prep_ocn_mod
   public :: prep_ocn_get_mapper_Sg2o
   public :: prep_ocn_get_mapper_Fg2o
   public :: prep_ocn_get_mapper_Sw2o
-  public :: prep_ocn_get_mapper_Fw2o
 
   !--------------------------------------------------------------------------
   ! Private interfaces
@@ -91,7 +90,6 @@ module prep_ocn_mod
   type(seq_map), pointer :: mapper_Fg2o
   type(seq_map), pointer :: mapper_Sg2o
   type(seq_map), pointer :: mapper_Sw2o
-  type(seq_map), pointer :: mapper_Fw2o
 
   ! attribute vectors
   type(mct_aVect), pointer :: a2x_ox(:) ! Atm export, ocn grid, cpl pes
@@ -192,7 +190,6 @@ contains
     allocate(mapper_Sg2o)
     allocate(mapper_Fg2o)
     allocate(mapper_Sw2o)
-    allocate(mapper_Fw2o)
 
     if (ocn_present) then
 
@@ -385,13 +382,6 @@ contains
           call seq_map_init_rcfile(mapper_Sw2o, wav(1), ocn(1), &
                'seq_maps.rc', 'wav2ocn_smapname:', 'wav2ocn_smaptype:',samegrid_ow, &
                'mapper_Sw2o initialization')
-          if (iamroot_CPLID) then
-             write(logunit,*) ' '
-             write(logunit,F00) 'Initializing mapper_Fw2o'
-          end if
-          call seq_map_init_rcfile(mapper_Fw2o, wav(1), ocn(1), &
-               'seq_maps.rc', 'wav2ocn_fmapname:', 'wav2ocn_fmaptype:',samegrid_ow, &
-               'mapper_Fw2o initialization')
        endif
        call shr_sys_flush(logunit)
 
@@ -1558,9 +1548,4 @@ contains
     prep_ocn_get_mapper_Sw2o => mapper_Sw2o
   end function prep_ocn_get_mapper_Sw2o
   
-  function prep_ocn_get_mapper_Fw2o()
-    type(seq_map), pointer :: prep_ocn_get_mapper_Fw2o
-    prep_ocn_get_mapper_Fw2o => mapper_Fw2o
-  end function prep_ocn_get_mapper_Fw2o
-
 end module prep_ocn_mod
