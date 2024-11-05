@@ -2628,7 +2628,7 @@
 
   <entry id="PIO_TYPENAME">
     <type>char</type>
-    <valid_values>netcdf,pnetcdf,netcdf4p,netcdf4c,adios,hdf5,default</valid_values>
+    <valid_values>netcdf,pnetcdf,netcdf4p,netcdf4c,adios,adiosc,hdf5,default</valid_values>
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio io type</desc>
