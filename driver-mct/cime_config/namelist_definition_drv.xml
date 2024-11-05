@@ -4891,7 +4891,7 @@
       <value bfbflag="on">X</value>
     </values>
   </entry>
-  
+
   <entry id="ocn2wav_smapname"    modify_via_xml="OCN2WAV_SMAPNAME">
     <type>char</type>
     <category>mapping</category>
