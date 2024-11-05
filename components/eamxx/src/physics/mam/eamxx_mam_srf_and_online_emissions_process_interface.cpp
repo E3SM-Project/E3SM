@@ -509,11 +509,12 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
     auto fluxes_in_mks_units = this->fluxes_in_mks_units_;
     const Real mfactor =
         amufac * mam4::gas_chemistry::adv_mass[species_index - offset_];
+    const view_1d ispec_outdata0 =
+        ekat::subview(ispec_srf.data_out_.emiss_sectors, 0);
     // Parallel loop over all the columns to update units
     Kokkos::parallel_for(
         "srf_emis_fluxes", ncol_, KOKKOS_LAMBDA(int icol) {
-          fluxes_in_mks_units(icol) =
-              ispec_srf.data_out_.emiss_sectors(0, icol) * mfactor;
+          fluxes_in_mks_units(icol) = ispec_outdata0(icol) * mfactor;
           constituent_fluxes(icol, species_index) = fluxes_in_mks_units(icol);
         });
   }  // for loop for species

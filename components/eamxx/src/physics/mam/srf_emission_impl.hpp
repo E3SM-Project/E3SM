@@ -179,7 +179,7 @@ void srfEmissFunctions<S, D>::update_srfEmiss_data_from_file(
     const int time_index,  // zero-based
     AbstractRemapper &srfEmiss_horiz_interp, srfEmissInput &srfEmiss_input) {
   using namespace ShortFieldTagsNames;
-  
+
   start_timer("EAMxx::srfEmiss::update_srfEmiss_data_from_file");
 
   // 1. Read from file
