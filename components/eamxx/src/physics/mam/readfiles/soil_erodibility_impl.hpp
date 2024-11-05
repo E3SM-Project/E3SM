@@ -70,8 +70,6 @@ soilErodibilityFunctions<S, D>::create_horiz_remapper(
 }  // create_horiz_remapper
 
 // -------------------------------------------------------------------------------------------
-// -------------------------------------------------------------------------------------------
-
 template <typename S, typename D>
 std::shared_ptr<AtmosphereInput>
 soilErodibilityFunctions<S, D>::create_data_reader(
@@ -86,8 +84,6 @@ soilErodibilityFunctions<S, D>::create_data_reader(
 }  // create_data_reader
 
 // -------------------------------------------------------------------------------------------
-// -------------------------------------------------------------------------------------------
-
 template <typename S, typename D>
 void soilErodibilityFunctions<S, D>::update_soil_erodibility_data_from_file(
     std::shared_ptr<AtmosphereInput> &scorpio_reader,
@@ -129,8 +125,6 @@ void soilErodibilityFunctions<S, D>::update_soil_erodibility_data_from_file(
 }  // END update_soil_erodibility_data_from_file
 
 // -------------------------------------------------------------------------------------------
-// -------------------------------------------------------------------------------------------
-
 template <typename S, typename D>
 void soilErodibilityFunctions<S, D>::init_soil_erodibility_file_read(
     const int ncol, const std::string field_name, const std::string dim_name1,

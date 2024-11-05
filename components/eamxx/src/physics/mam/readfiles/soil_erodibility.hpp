@@ -14,31 +14,18 @@ struct soilErodibilityFunctions {
   using KT            = KokkosTypes<Device>;
   using const_view_1d = typename KT::template view_1d<const Real>;
 
-  // -------------------------------------------------------------------------------------------
-  // -------------------------------------------------------------------------------------------
-
-  // Soil erodibility routines
   static std::shared_ptr<AbstractRemapper> create_horiz_remapper(
       const std::shared_ptr<const AbstractGrid> &model_grid,
       const std::string &soilErodibility_data_file, const std::string &map_file,
       const std::string &field_name, const std::string &dim_name1);
 
-  // -------------------------------------------------------------------------------------------
-  // -------------------------------------------------------------------------------------------
-
   static std::shared_ptr<AtmosphereInput> create_data_reader(
       const std::shared_ptr<AbstractRemapper> &horiz_remapper,
       const std::string &data_file);
 
-  // -------------------------------------------------------------------------------------------
-  // -------------------------------------------------------------------------------------------
-
   static void update_soil_erodibility_data_from_file(
       std::shared_ptr<AtmosphereInput> &scorpio_reader,
       AbstractRemapper &horiz_interp, const_view_1d &input);
-
-  // -------------------------------------------------------------------------------------------
-  // -------------------------------------------------------------------------------------------
 
   static void init_soil_erodibility_file_read(
       const int ncol, const std::string field_name, const std::string dim_name1,

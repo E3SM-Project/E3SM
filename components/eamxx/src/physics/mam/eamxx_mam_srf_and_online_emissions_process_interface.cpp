@@ -15,7 +15,7 @@ using soilErodibilityFunc =
 MAMSrfOnlineEmiss::MAMSrfOnlineEmiss(const ekat::Comm &comm,
                                      const ekat::ParameterList &params)
     : AtmosphereProcess(comm, params) {
-  // FIXME: Do we want to read dust emiss factor hfrom namelist??
+  // FIXME: Do we want to read dust emiss factor from the namelist??
   /* Anything that can be initialized without grid information can be
    * initialized here. Like universal constants.
    */
@@ -238,7 +238,7 @@ void MAMSrfOnlineEmiss::set_grids(
   }  // srf emissions file read init
 
   // -------------------------------------------------------------
-  // setup to enable reading soil erodibility file
+  // Setup to enable reading soil erodibility file
   // -------------------------------------------------------------
 
   const std::string soil_erodibility_data_file =
@@ -257,12 +257,12 @@ void MAMSrfOnlineEmiss::set_grids(
       serod_dataReader_);  // output
 
   // -------------------------------------------------------------
-  // setup to enable reading marine organics file
+  // Setup to enable reading marine organics file
   // -------------------------------------------------------------
   const std::string marine_organics_data_file =
       m_params.get<std::string>("marine_organics_file");
 
-  // Field to be read from file (order matters as they are read in the same
+  // Fields to be read from file (order matters as they are read in the same
   // order)
   const std::vector<std::string> marine_org_fld_name = {
       "TRUEPOLYC", "TRUEPROTC", "TRUELIPC"};
@@ -477,7 +477,7 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
         // Output
         view_1d fluxes_col = ekat::subview(constituent_fluxes, icol);
 
-        // Comput online emissions
+        // Compute online emissions
         // NOTE: mam4::aero_model_emissions calculates mass and number emission
         // fluxes in units of [kg/m2/s or #/m2/s] (MKS), so no need to convert
         mam4::aero_model_emissions::aero_model_emissions(

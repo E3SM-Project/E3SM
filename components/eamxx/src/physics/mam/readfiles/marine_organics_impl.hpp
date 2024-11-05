@@ -77,8 +77,6 @@ marineOrganicsFunctions<S, D>::create_horiz_remapper(
 }  // create_horiz_remapper
 
 // -------------------------------------------------------------------------------------------
-// -------------------------------------------------------------------------------------------
-
 template <typename S, typename D>
 std::shared_ptr<AtmosphereInput>
 marineOrganicsFunctions<S, D>::create_data_reader(
@@ -92,7 +90,6 @@ marineOrganicsFunctions<S, D>::create_data_reader(
   return std::make_shared<AtmosphereInput>(data_file, io_grid, io_fields, true);
 }  // create_data_reader
 
-// -------------------------------------------------------------------------------------------
 // -------------------------------------------------------------------------------------------
 template <typename S, typename D>
 void marineOrganicsFunctions<S, D>::update_marine_organics_data_from_file(
@@ -145,7 +142,6 @@ void marineOrganicsFunctions<S, D>::update_marine_organics_data_from_file(
 }  // END update_marine_organics_data_from_file
 
 // -------------------------------------------------------------------------------------------
-// -------------------------------------------------------------------------------------------
 template <typename S, typename D>
 void marineOrganicsFunctions<S, D>::update_marine_organics_timestate(
     std::shared_ptr<AtmosphereInput> &scorpio_reader, const util::TimeStamp &ts,
@@ -181,7 +177,6 @@ void marineOrganicsFunctions<S, D>::update_marine_organics_timestate(
 }  // END updata_marine_organics_timestate
 
 // -------------------------------------------------------------------------------------------
-// -------------------------------------------------------------------------------------------
 template <typename S, typename D>
 template <typename ScalarX, typename ScalarT>
 KOKKOS_INLINE_FUNCTION ScalarX marineOrganicsFunctions<S, D>::linear_interp(
@@ -189,7 +184,6 @@ KOKKOS_INLINE_FUNCTION ScalarX marineOrganicsFunctions<S, D>::linear_interp(
   return (1 - t) * x0 + t * x1;
 }  // linear_interp
 
-// -------------------------------------------------------------------------------------------
 // -------------------------------------------------------------------------------------------
 template <typename S, typename D>
 void marineOrganicsFunctions<S, D>::perform_time_interpolation(
@@ -240,7 +234,6 @@ void marineOrganicsFunctions<S, D>::perform_time_interpolation(
 }  // perform_time_interpolation
 
 // -------------------------------------------------------------------------------------------
-// -------------------------------------------------------------------------------------------
 template <typename S, typename D>
 void marineOrganicsFunctions<S, D>::marineOrganics_main(
     const marineOrganicsTimeState &time_state,
@@ -270,7 +263,6 @@ void marineOrganicsFunctions<S, D>::marineOrganics_main(
   perform_time_interpolation(time_state, data_beg, data_end, data_out);
 }  // marineOrganics_main
 
-// -------------------------------------------------------------------------------------------
 // -------------------------------------------------------------------------------------------
 template <typename S, typename D>
 void marineOrganicsFunctions<S, D>::init_marine_organics_file_read(

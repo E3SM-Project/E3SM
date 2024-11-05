@@ -130,6 +130,7 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
       const int gas_start_ind = mam4::utils::gasses_start_ind();
 
       // FIXME: Is there a better way to zero out a select indices?
+      // We should probably do it in run_impl directly
       for(int ispc = gas_start_ind; ispc < pcnst; ++ispc) {
         flux_col(ispc) = 0;
       }
