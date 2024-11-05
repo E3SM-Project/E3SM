@@ -1471,6 +1471,6 @@ void init_tables_from_f90_c(Real* vn_table_vals_data, Real* vm_table_vals_data,
 # include "p3_nr_conservation_impl.hpp"
 # include "p3_ni_conservation_impl.hpp"
 # include "p3_prevent_liq_supersaturation_impl.hpp"
-# inlcude "p3_init_impl.hpp"
+# include "p3_init_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // P3_FUNCTIONS_HPP
