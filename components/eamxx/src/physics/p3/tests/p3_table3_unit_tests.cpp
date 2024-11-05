@@ -3,8 +3,8 @@
 #include "p3_unit_tests_common.hpp"
 
 #include "p3_functions.hpp"
-#include "p3_functions_f90.hpp"
-#include "p3_f90.hpp"
+#include "p3_test_data.hpp"
+#include "p3_data.hpp"
 #include "share/scream_types.hpp"
 
 #include "ekat/ekat_pack.hpp"

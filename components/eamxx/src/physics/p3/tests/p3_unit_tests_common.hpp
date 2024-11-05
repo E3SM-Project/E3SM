@@ -3,9 +3,9 @@
 
 #include "share/scream_types.hpp"
 #include "p3_functions.hpp"
-#include "p3_f90.hpp"
+#include "p3_data.hpp"
 #include "ekat/util/ekat_test_utils.hpp"
-#include "p3_functions_f90.hpp"
+#include "p3_test_data.hpp"
 
 #include <vector>
 #include <sstream>

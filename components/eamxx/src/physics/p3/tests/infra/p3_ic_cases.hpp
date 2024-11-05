@@ -1,7 +1,7 @@
 #ifndef INCLUDE_SCREAM_P3_IC_CASES_HPP
 #define INCLUDE_SCREAM_P3_IC_CASES_HPP
 
-#include "p3_f90.hpp"
+#include "p3_data.hpp"
 
 namespace scream {
 namespace p3 {

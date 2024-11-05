@@ -1,5 +1,7 @@
 include(ScreamUtils)
 
+add_subdirectory(infra)
+
 set(P3_TESTS_SRCS
     p3_tests.cpp
     p3_unit_tests.cpp
@@ -56,7 +58,7 @@ else()
 endif()
 
 CreateUnitTest(p3_tests "${P3_TESTS_SRCS}"
-  LIBS p3
+  LIBS p3 p3_test_infra
   EXE_ARGS "--flags=\\'${BASELINE_FILE_ARG}\\'"
   THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
   LABELS "p3;physics")
@@ -65,7 +67,7 @@ CreateUnitTest(p3_tests "${P3_TESTS_SRCS}"
 # No need to run lots of different thread counts.
 if (SCREAM_ENABLE_BASELINE_TESTS)
   CreateUnitTest (p3_tests_fail p3_rain_sed_unit_tests.cpp
-    LIBS p3
+    LIBS p3 p3_test_infra
     EXE_ARGS "--flags=\\'${BASELINE_FILE_ARG}\\'"
     COMPILER_CXX_DEFS SCREAM_FORCE_RUN_DIFF
     LABELS "p3;physics;fail"
@@ -74,7 +76,7 @@ endif()
 
 if (NOT SCREAM_P3_SMALL_KERNELS)
   CreateUnitTest(p3_sk_tests "${P3_TESTS_SRCS}"
-    LIBS p3_sk
+    LIBS p3_sk p3_test_infra
     EXE_ARGS "--flags=\\'${BASELINE_FILE_ARG}\\'"
     THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
     LABELS "p3_sk;physics")
@@ -82,7 +84,7 @@ if (NOT SCREAM_P3_SMALL_KERNELS)
   # Make sure that a diff in the two implementation triggers a failed test (in debug only)
   # No need to run lots of different thread counts.
   CreateUnitTest (p3_sk_tests_fail p3_rain_sed_unit_tests.cpp
-    LIBS p3_sk
+    LIBS p3_sk p3_test_infra
     EXE_ARGS "--flags=\\'${BASELINE_FILE_ARG}\\'"
     COMPILER_CXX_DEFS SCREAM_FORCE_RUN_DIFF
     LABELS "p3_sk;physics;fail"
@@ -90,7 +92,7 @@ if (NOT SCREAM_P3_SMALL_KERNELS)
 endif()
 
 CreateUnitTest(p3_run_and_cmp "p3_run_and_cmp.cpp"
-  LIBS p3
+  LIBS p3 p3_test_infra
   EXCLUDE_MAIN_CPP
   THREADS ${SCREAM_TEST_MAX_THREADS}
   EXE_ARGS "${BASELINE_FILE_ARG}"
@@ -99,7 +101,7 @@ CreateUnitTest(p3_run_and_cmp "p3_run_and_cmp.cpp"
 # Make sure that a diff from baselines triggers a failed test (in debug only)
 if (SCREAM_ENABLE_BASELINE_TESTS)
   CreateUnitTest(p3_run_and_cmp_fail "p3_run_and_cmp.cpp"
-    LIBS p3
+    LIBS p3 p3_test_infra
     COMPILER_CXX_DEFS SCREAM_FORCE_RUN_DIFF
     THREADS ${SCREAM_TEST_MAX_THREADS}
     EXE_ARGS "${BASELINE_FILE_ARG}"

@@ -1,5 +1,5 @@
-#ifndef SCREAM_P3_F90_HPP
-#define SCREAM_P3_F90_HPP
+#ifndef SCREAM_P3_DATA_HPP
+#define SCREAM_P3_DATA_HPP
 
 #include "share/scream_types.hpp"
 
@@ -9,7 +9,7 @@
 namespace scream {
 namespace p3 {
 
-// Data format we can use to communicate with Fortran version.
+// Data format we can use to store (and read/write) data for a full P3 run.
 struct P3Data {
   typedef std::shared_ptr<P3Data> Ptr;
 

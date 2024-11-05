@@ -4,7 +4,7 @@
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
-#include "p3_functions_f90.hpp"
+#include "p3_test_data.hpp"
 #include "share/util/scream_setup_random_test.hpp"
 
 #include "p3_unit_tests_common.hpp"

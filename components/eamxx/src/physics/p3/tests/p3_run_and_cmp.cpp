@@ -3,7 +3,7 @@
 #include "share/util/scream_utils.hpp"
 
 #include "p3_main_wrap.hpp"
-#include "p3_functions_f90.hpp"
+#include "p3_test_data.hpp"
 #include "p3_ic_cases.hpp"
 
 #include "ekat/util/ekat_file_utils.hpp"
