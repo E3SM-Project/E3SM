@@ -2689,13 +2689,16 @@ contains
                                                avgRemovedRiverRunoffFlux, &
                                                avgRemovedIceRunoffFlux, &
                                                avgLandIceHeatFlux, &
-                                               avgRemovedIceRunoffHeatFlux
+                                               avgRemovedIceRunoffHeatFlux, &
+                                               riverRunoffFlux
 
    real (kind=RKIND), dimension(:,:), pointer :: avgTracersSurfaceValue, avgSurfaceVelocity, &
                                                  avgSSHGradient, avgOceanSurfacePhytoC, &
                                                  avgOceanSurfaceDOC, layerThickness
 
    real (kind=RKIND) :: surfaceFreezingTemp
+
+   real (kind=RKIND), pointer :: config_sediment_load1, config_sediment_load2, config_sediment_load3
 
    logical, pointer :: frazilIceActive,          &
                        config_remove_ais_river_runoff, &
@@ -2705,7 +2708,8 @@ contains
                        config_use_MacroMoleculesTracers,  &
                        config_use_ecosysTracers_sea_ice_coupling, &
                        config_use_DMSTracers_sea_ice_coupling,  &
-                       config_use_MacroMoleculesTracers_sea_ice_coupling
+                       config_use_MacroMoleculesTracers_sea_ice_coupling, &
+                       config_use_ocean_sea_ice_aerosols_coupling
 
    character (len=StrKIND), pointer :: config_land_ice_flux_mode
 
@@ -2720,6 +2724,11 @@ contains
    call mpas_pool_get_config(domain % configs, 'config_remove_ais_ice_runoff', config_remove_ais_ice_runoff)
    call mpas_pool_get_config(domain % configs, 'config_use_DMSTracers', config_use_DMSTracers)
    call mpas_pool_get_config(domain % configs, 'config_use_MacroMoleculesTracers', config_use_MacroMoleculesTracers)
+   call mpas_pool_get_config(domain % configs, 'config_use_ocean_sea_ice_aerosols_coupling', &
+                                                config_use_ocean_sea_ice_aerosols_coupling)
+   call mpas_pool_get_config(domain % configs, 'config_sediment_load1', config_sediment_load1)
+   call mpas_pool_get_config(domain % configs, 'config_sediment_load2', config_sediment_load2)
+   call mpas_pool_get_config(domain % configs, 'config_sediment_load3', config_sediment_load3)
    call mpas_pool_get_config(domain % configs, 'config_use_ecosysTracers_sea_ice_coupling',  &
                                                 config_use_ecosysTracers_sea_ice_coupling)
    call mpas_pool_get_config(domain % configs, 'config_use_DMSTracers_sea_ice_coupling',  &
@@ -2773,6 +2782,10 @@ contains
         call mpas_pool_get_array(forcingPool, 'avgRemovedIceRunoffHeatFlux', avgRemovedIceRunoffHeatFlux)
      endif
 
+     ! NJ: Aerosol coupling to sea ice
+     if (config_use_ocean_sea_ice_aerosols_coupling) then
+        call mpas_pool_get_array(forcingPool, 'riverRunoffFlux', riverRunoffFlux)
+     endif
      ! BGC fields
      if (config_use_ecosysTracers) then
 
@@ -2916,6 +2929,15 @@ contains
           o2x_o % rAttr(index_o2x_So_doc3, n) = max(0.0_RKIND,avgOceanSurfaceDOC(3,i))
           o2x_o % rAttr(index_o2x_So_don1, n) = 0.0_RKIND
        endif
+       ! NJ: add ocean source of dust/BC for sea ice
+       if (config_use_ocean_sea_ice_aerosols_coupling) then   
+          o2x_o % rAttr(index_o2x_So_zaer1, n)   = max(0.0_RKIND,riverRunoffFlux(i)*ocn_cpl_dt &
+                                                 / layerThickness(1, i)) / rho_fw * config_sediment_load1
+          o2x_o % rAttr(index_o2x_So_zaer2, n)   = max(0.0_RKIND,riverRunoffFlux(i)*ocn_cpl_dt &
+                                                 / layerThickness(1, i)) / rho_fw * config_sediment_load2
+          o2x_o % rAttr(index_o2x_So_zaer3, n)   = max(0.0_RKIND,riverRunoffFlux(i)*ocn_cpl_dt &
+                                                 / layerThickness(1, i)) / rho_fw * config_sediment_load3
+       end if
 !      o2x_o % rAttr(index_o2x_Faoo_fco2_ocn, n) = CO2Flux(i)
 !      o2x_o % rAttr(index_o2x_Faoo_fdms_ocn, n) = DMSFlux(i)
 !      o2x_o % rAttr(index_o2x_Faoo_fco2_ocn, n) = surfaceUpwardCO2Flux(i)
@@ -3998,13 +4020,16 @@ contains
                                                    avgRemovedRiverRunoffFlux, &
                                                    avgRemovedIceRunoffFlux, &
                                                    avgLandIceHeatFlux, &
-                                                   avgRemovedIceRunoffHeatFlux
+                                                   avgRemovedIceRunoffHeatFlux, &
+                                                   riverRunoffFlux
 
       real (kind=RKIND), dimension(:,:), pointer :: avgTracersSurfaceValue, avgSurfaceVelocity, &
                                                       avgSSHGradient, avgOceanSurfacePhytoC, &
                                                       avgOceanSurfaceDOC, layerThickness
 
       real (kind=RKIND) :: surfaceFreezingTemp
+   
+      real (kind=RKIND), pointer :: config_sediment_load1, config_sediment_load2, config_sediment_load3
 
       logical, pointer :: frazilIceActive,          &
                            config_remove_ais_river_runoff, &
@@ -4014,7 +4039,8 @@ contains
                            config_use_MacroMoleculesTracers,  &
                            config_use_ecosysTracers_sea_ice_coupling, &
                            config_use_DMSTracers_sea_ice_coupling,  &
-                           config_use_MacroMoleculesTracers_sea_ice_coupling
+                           config_use_MacroMoleculesTracers_sea_ice_coupling, &
+                           config_use_ocean_sea_ice_aerosols_coupling
 
       character (len=StrKIND), pointer :: config_land_ice_flux_mode
 
@@ -4029,6 +4055,14 @@ contains
       call mpas_pool_get_config(domain % configs, 'config_remove_ais_ice_runoff', config_remove_ais_ice_runoff)
       call mpas_pool_get_config(domain % configs, 'config_use_DMSTracers', config_use_DMSTracers)
       call mpas_pool_get_config(domain % configs, 'config_use_MacroMoleculesTracers', config_use_MacroMoleculesTracers)
+      call mpas_pool_get_config(domain % configs, 'config_use_ocean_sea_ice_aerosols_coupling', &
+                                                   config_use_ocean_sea_ice_aerosols_coupling)
+      call mpas_pool_get_config(domain % configs, 'config_sediment_load1', &
+                                                   config_sediment_load1)
+      call mpas_pool_get_config(domain % configs, 'config_sediment_load2', &
+                                                   config_sediment_load2)
+      call mpas_pool_get_config(domain % configs, 'config_sediment_load3', &
+                                                   config_sediment_load3)
       call mpas_pool_get_config(domain % configs, 'config_use_ecosysTracers_sea_ice_coupling',  &
                                                    config_use_ecosysTracers_sea_ice_coupling)
       call mpas_pool_get_config(domain % configs, 'config_use_DMSTracers_sea_ice_coupling',  &
@@ -4190,6 +4224,11 @@ contains
                accumulatedFrazilIceMass(i) = 0.0_RKIND
                frazilSurfacePressure(i) = 0.0_RKIND
             end if
+   
+         ! NJ: Aerosol coupling to sea ice
+         if (config_use_ocean_sea_ice_aerosols_coupling) then
+            call mpas_pool_get_array(forcingPool, 'riverRunoffFlux', riverRunoffFlux)
+         endif
 
             ! BGC fields
             if (config_use_ecosysTracers) then
@@ -4212,6 +4251,15 @@ contains
                o2x_om(n, index_o2x_So_fep1)   = max(0.0_RKIND,avgOceanSurfaceFeParticulate(i))
                o2x_om(n, index_o2x_So_fed1)   = max(0.0_RKIND,avgOceanSurfaceFeDissolved(i))
             endif
+            ! NJ: add ocean source of dust/BC for sea ice
+            if (config_use_ocean_sea_ice_aerosols_coupling) then   
+               o2x_om(n, index_o2x_So_zaer1)   = max(0.0_RKIND,riverRunoffFlux(i)*ocn_cpl_dt &                      
+                                               / layerThickness(1, i)) / rho_fw * config_sediment_load1
+               o2x_om(n, index_o2x_So_zaer2)   = max(0.0_RKIND,riverRunoffFlux(i)*ocn_cpl_dt &                      
+                                               / layerThickness(1, i)) / rho_fw * config_sediment_load2
+               o2x_om(n, index_o2x_So_zaer3)   = max(0.0_RKIND,riverRunoffFlux(i)*ocn_cpl_dt &                      
+                                               / layerThickness(1, i)) / rho_fw * config_sediment_load3
+            end if
             if (config_use_DMSTracers .and. config_use_DMSTracers_sea_ice_coupling) then
                o2x_om(n, index_o2x_So_dms)  = max(0.0_RKIND,avgOceanSurfaceDMS(i))
                o2x_om(n, index_o2x_So_dmsp) = max(0.0_RKIND,avgOceanSurfaceDMSP(i))

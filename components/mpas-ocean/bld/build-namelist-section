@@ -239,6 +239,10 @@ add_default($nl, 'config_sgr_salinity_prescribed');
 
 add_default($nl, 'config_remove_ais_river_runoff');
 add_default($nl, 'config_remove_ais_ice_runoff');
+add_default($nl, 'config_use_ocean_sea_ice_aerosols_coupling');
+add_default($nl, 'config_sediment_load1');
+add_default($nl, 'config_sediment_load2');
+add_default($nl, 'config_sediment_load3');
 
 ######################################
 # Namelist group: shortwaveRadiation #
