@@ -4982,36 +4982,6 @@
     </values>
   </entry>
 
-  <entry id="wav2ocn_fmapname"    modify_via_xml="WAV2OCN_FMAPNAME">
-    <type>char</type>
-    <category>mapping</category>
-    <input_pathname>abs</input_pathname>
-    <group>seq_maps</group>
-    <desc>
-      wav to ocn flux mapping file for fluxes
-    </desc>
-    <values>
-      <value>$WAV2OCN_FMAPNAME</value>
-    </values>
-  </entry>
-
-  <entry id="wav2ocn_fmaptype"    modify_via_xml="WAV2OCN_FMAPTYPE">
-    <type>char</type>
-    <category>mapping</category>
-    <group>seq_maps</group>
-    <desc>
-      The type of mapping desired, either "source" or "destination" mapping.
-      X is associated with rearrangement of the source grid to the
-      destination grid and then local mapping.  Y is associated with mapping
-      on the source grid and then rearrangement and sum to the destination
-      grid.
-    </desc>
-    <values>
-      <value>$WAV2OCN_FMAPTYPE</value>
-      <value bfbflag="on">X</value>
-    </values>
-  </entry>
-
   <entry id="drv_flds_in_files" skip_default_entry="true">
     <type>char(10)</type>
     <category>drv_physics</category>
