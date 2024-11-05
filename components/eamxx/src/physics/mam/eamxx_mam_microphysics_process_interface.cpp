@@ -2,9 +2,13 @@
 
 // impl namespace for some driver level functions for microphysics
 
+<<<<<<< HEAD
 #include "readfiles/photo_table_utils.cpp"
 #include "readfiles/find_season_index_utils.hpp"
+=======
+>>>>>>> EAMxx: Clang format
 #include "physics/rrtmgp/shr_orb_mod_c2f.hpp"
+#include "readfiles/photo_table_utils.cpp"
 
 namespace scream {
 
@@ -36,7 +40,7 @@ MAMMicrophysics::MAMMicrophysics(const ekat::Comm &comm,
   config_.linoz.o3_lbl = m_params.get<int>("mam4_o3_lbl");
   config_.linoz.o3_tau = m_params.get<double>("mam4_o3_tau");
   config_.linoz.o3_sfc = m_params.get<double>("mam4_o3_sfc");
-  config_.linoz.psc_T = m_params.get<double>("mam4_psc_T");
+  config_.linoz.psc_T  = m_params.get<double>("mam4_psc_T");
 }
 
 AtmosphereProcessType MAMMicrophysics::type() const {
@@ -81,19 +85,20 @@ void MAMMicrophysics::set_grids(
   // ----------- Atmospheric quantities -------------
 
   // Specific humidity [kg/kg](Require only for building DS)
-  add_tracer<Required>("qv", grid_, kg/kg); // specific humidity
+  add_tracer<Required>("qv", grid_, kg / kg);  // specific humidity
 
   // Cloud liquid mass mixing ratio [kg/kg](Require only for building DS)
-  add_tracer<Updated>("qc", grid_, kg/kg); // cloud liquid wet mixing ratio
+  add_tracer<Updated>("qc", grid_, kg / kg);  // cloud liquid wet mixing ratio
 
   // Cloud ice mass mixing ratio [kg/kg](Require only for building DS)
-  add_tracer<Required>("qi", grid_, kg/kg); // ice wet mixing ratio
+  add_tracer<Required>("qi", grid_, kg / kg);  // ice wet mixing ratio
 
   // Cloud liquid number mixing ratio [1/kg](Require only for building DS)
-  add_tracer<Updated>("nc", grid_, n_unit); // cloud liquid wet number mixing ratio
+  add_tracer<Updated>("nc", grid_,
+                      n_unit);  // cloud liquid wet number mixing ratio
 
   // Cloud ice number mixing ratio [1/kg](Require only for building DS)
-  add_tracer<Required>("ni", grid_, n_unit); // ice number mixing ratio
+  add_tracer<Required>("ni", grid_, n_unit);  // ice number mixing ratio
 
   // Temperature[K] at midpoints
   add_field<Required>("T_mid", scalar3d_mid, K, grid_name);
@@ -161,7 +166,7 @@ void MAMMicrophysics::set_grids(
           mam_coupling::int_aero_mmr_field_name(m, a);
 
       if(strlen(int_mmr_field_name) > 0) {
-        add_tracer<Updated>(int_mmr_field_name, grid_, kg/kg);
+        add_tracer<Updated>(int_mmr_field_name, grid_, kg / kg);
       }
     }  // for loop species
   }    // for loop nmodes interstitial
@@ -183,7 +188,7 @@ void MAMMicrophysics::set_grids(
   // aerosol-related gases: mass mixing ratios
   for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
     const char *gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
-    add_tracer<Updated>(gas_mmr_field_name, grid_, kg/kg);
+    add_tracer<Updated>(gas_mmr_field_name, grid_, kg / kg);
   }
 
   // Creating a Linoz reader and setting Linoz parameters involves reading data
@@ -715,10 +720,17 @@ void MAMMicrophysics::run_impl(const double dt) {
   const auto zenith_angle = acos_cosine_zenith_;
   constexpr int gas_pcnst = mam_coupling::gas_pcnst();
 
+<<<<<<< HEAD
   const auto& elevated_emis_output = elevated_emis_output_;
   const auto& extfrc           = extfrc_;
   const auto& forcings         = forcings_;
   constexpr int extcnt        = mam4::gas_chemistry::extcnt;
+=======
+  const auto &vert_emis_output = vert_emis_output_;
+  const auto &extfrc           = extfrc_;
+  const auto &forcings         = forcings_;
+  constexpr int extcnt         = mam4::gas_chemistry::extcnt;
+>>>>>>> EAMxx: Clang format
 
   const int offset_aerosol = mam4::utils::gasses_start_ind();
   Real adv_mass_kg_per_moles[gas_pcnst];
@@ -809,9 +821,9 @@ void MAMMicrophysics::run_impl(const double dt) {
             linoz_o3col_clim_icol, linoz_PmL_clim_icol, linoz_dPmL_dO3_icol,
             linoz_dPmL_dT_icol, linoz_dPmL_dO3col_icol,
             linoz_cariolle_pscs_icol, eccf, adv_mass_kg_per_moles, clsmap_4,
-            permute_4, offset_aerosol,
-            config.linoz.o3_sfc, config.linoz.o3_tau, config.linoz.o3_lbl,
-            dry_diameter_icol, wet_diameter_icol, wetdens_icol);
+            permute_4, offset_aerosol, config.linoz.o3_sfc, config.linoz.o3_tau,
+            config.linoz.o3_lbl, dry_diameter_icol, wet_diameter_icol,
+            wetdens_icol);
       });  // parallel_for for the column loop
   Kokkos::fence();
 
