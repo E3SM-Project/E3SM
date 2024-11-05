@@ -18,6 +18,7 @@ if (NOT EAMXX_ENABLE_GPU OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE OR Kokkos
     eti/p3_table_ice.cpp
     eti/p3_dsd2.cpp
     eti/p3_find.cpp
+    eti/p3_init.cpp
     eti/p3_update_prognostics.cpp
     eti/p3_get_time_space_phys_variables.cpp
     eti/p3_autoconversion.cpp

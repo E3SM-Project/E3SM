@@ -23,7 +23,9 @@ namespace p3 {
 
 void p3_init_a(P3InitAP3Data& d)
 {
-  p3_init(); // need to initialize p3 first so that tables are loaded
+  using P3F = Functions<Real, DefaultDevice>;
+
+  P3F::p3_init(); // need to initialize p3 first so that tables are loaded
   p3_init_a_c(d.ice_table_vals.data(), d.collect_table_vals.data());
 }
 

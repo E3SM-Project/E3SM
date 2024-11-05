@@ -16,6 +16,7 @@
 namespace {
 using namespace scream;
 using namespace scream::p3;
+using P3F  = Functions<Real, DefaultDevice>;
 
 /*
  * p3_run_and_cmp can be run in 2 modes. First, generate_baseline
@@ -87,7 +88,7 @@ struct Baseline {
       for (Int r = -1; r < ps.repeat; ++r) {
         const auto d = ic::Factory::create(ps.ic, ps.ncol, ps.nlev);
         set_params(ps, *d);
-        p3_init();
+        P3F::p3_init();
 
         if (ps.repeat > 0 && r == -1) {
           std::cout << "Running P3 with ni=" << d->ncol << ", nk=" << d->nlev
@@ -130,7 +131,7 @@ struct Baseline {
       if (no_baseline) {
         const auto d = ic::Factory::create(ps.ic, ps.ncol, ps.nlev);
         set_params(ps, *d);
-        p3_init();
+        P3F::p3_init();
         for (int it=0; it<ps.nsteps; it++) {
           std::cout << "--- running case # " << case_num << ", timestep # " << it+1 << " of " << ps.nsteps << " ---\n" << std::flush;
           p3_main_wrap(*d);
@@ -145,7 +146,7 @@ struct Baseline {
         {
           const auto d = ic::Factory::create(ps.ic, ps.ncol, ps.nlev);
           set_params(ps, *d);
-          p3_init();
+          P3F::p3_init();
           for (int it=0; it<ps.nsteps; it++) {
             std::cout << "--- checking case # " << case_num << ", timestep # " << it+1 << " of " << ps.nsteps << " ---\n" << std::flush;
             read(fid, d_ref);

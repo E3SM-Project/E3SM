@@ -6,12 +6,6 @@
 
 using scream::Real;
 using scream::Int;
-extern "C" {
-  void micro_p3_utils_init_c(Real Cpair, Real Rair, Real RH2O, Real RHO_H2O,
-                 Real MWH2O, Real MWdry, Real gravit, Real LatVap, Real LatIce,
-                 Real CpLiq, Real Tmelt, Real Pi, bool masterproc);
-  void p3_init_c(const char** lookup_file_dir, int* info, const bool& write_tables);
-}
 
 namespace scream {
 namespace p3 {
@@ -91,25 +85,6 @@ const P3DataIterator::RawArray&
 P3DataIterator::getfield (Int i) const {
   EKAT_ASSERT(i >= 0 || i < nfield());
   return fields_[i];
-}
-
-void micro_p3_utils_init (const bool masterproc) {
-  using c = scream::physics::Constants<Real>;
-  micro_p3_utils_init_c(c::Cpair, c::Rair, c::RH2O, c::RHO_H2O,
-                 c::MWH2O, c::MWdry, c::gravit, c::LatVap, c::LatIce,
-                 c::CpLiq, c::Tmelt, c::Pi, masterproc);
-}
-
-void p3_init (const bool write_tables, const bool masterproc) {
-  static bool is_init = false;
-  if (!is_init) {
-    micro_p3_utils_init(masterproc);
-    static const char* dir = SCREAM_DATA_DIR "/tables";
-    Int info;
-    p3_init_c(&dir, &info, write_tables);
-    EKAT_REQUIRE_MSG(info == 0, "p3_init_c returned info " << info);
-    is_init = true;
-  }
 }
 
 int test_P3Data () {

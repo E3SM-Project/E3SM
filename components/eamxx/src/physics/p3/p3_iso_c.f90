@@ -14,15 +14,6 @@ module p3_iso_c
 !
 
 contains
-  subroutine append_precision(string, prefix)
-
-    character(kind=c_char, len=512), intent(out) :: string
-    character(*), intent(in) :: prefix
-    real(kind=c_real) :: s
-
-    write (string, '(a,i1,a1)') prefix, sizeof(s), C_NULL_CHAR
-  end subroutine append_precision
-
   subroutine init_tables_from_f90_c(vn_table_vals_c, vm_table_vals_c, revap_table_vals_c, mu_table_c) bind(C)
     use micro_p3, only: p3_get_tables
 

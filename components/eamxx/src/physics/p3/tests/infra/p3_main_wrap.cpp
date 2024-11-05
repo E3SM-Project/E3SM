@@ -28,15 +28,20 @@ Int p3_main_wrap(const P3Data& d) {
 }
 
 int test_p3_init () {
-  p3_init();
+  using P3F = Functions<Real, DefaultDevice>;
+
+  P3F::p3_init();
   P3GlobalForFortran::deinit();
   return 0;
 }
 
 int test_p3_ic () {
+  using P3F = Functions<Real, DefaultDevice>;
+
   const auto d = ic::Factory::create(ic::Factory::mixed);
+
   d->dt = 300.0;
-  p3_init();
+  P3F::p3_init();
   p3_main_wrap(*d);
   P3GlobalForFortran::deinit();
   return 0;

@@ -78,7 +78,7 @@ struct UnitWrap {
         m_baseline_path(""),
         m_baseline_action(NONE)
       {
-        scream::p3::p3_init(); // many tests will need fortran table data
+        Functions::p3_init(); // many tests will need fortran table data
         auto& ts = ekat::TestSession::get();
         auto raw_flags = ts.flags.begin()->first;
         std::stringstream ss(raw_flags);
