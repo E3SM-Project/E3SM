@@ -43,7 +43,7 @@ initial_conditions:
   
   # we should get the following variables from other processes
   pbl_height : 1.0
-  dstflx : [  0.00000000000000000E+000,  0.00000000000000000E+000,  0.00000000000000000E+000,  0.00000000000000000E+000]
+  dstflx : 0.0
   ocnfrac:   0.10000000000000000E+001
   sst: 0.30178553874977507E+003
   cldfrac_tot: 0.138584624960092
