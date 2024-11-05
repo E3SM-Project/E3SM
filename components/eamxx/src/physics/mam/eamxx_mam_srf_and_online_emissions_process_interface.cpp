@@ -1,5 +1,8 @@
 #include <physics/mam/eamxx_mam_srf_and_online_emissions_process_interface.hpp>
 
+// For surface and online emission functions
+#include <physics/mam/eamxx_mam_srf_and_online_emissions_functions.hpp>
+
 // For reading soil erodibility file
 #include <physics/mam/readfiles/soil_erodibility.hpp>
 
@@ -397,7 +400,7 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   //-----------------------------------------------------------------
   // Setup preprocessing and post processing
   //-----------------------------------------------------------------
-  preprocess_.initialize(ncol_, nlev_, wet_atm_, dry_atm_, constituent_fluxes_);
+  preprocess_.initialize(ncol_, nlev_, wet_atm_, dry_atm_);
 
 }  // end initialize_impl()
 
@@ -412,12 +415,21 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
   Kokkos::fence();
 
+  // Constituent fluxes [kg/m^2/s]
+  auto constituent_fluxes = this->constituent_fluxes_;
+
+  // Zero out constituent fluxes only for gasses and aerosols
+  init_fluxes(ncol_,                // in
+              constituent_fluxes);  // in-out
+
   // Gather time and state information for interpolation
   const auto ts = timestamp() + dt;
 
   //--------------------------------------------------------------------
   // Online emissions from dust and sea salt
   //--------------------------------------------------------------------
+
+  // compute_online_dust_nacl_emiss();
 
   // --- Interpolate marine organics data --
 
@@ -457,38 +469,17 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   // Dust fluxes [kg/m^2/s]: Four flux values for each column
   const const_view_2d dstflx = get_field_in("dstflx").get_view<const Real **>();
 
-  // Constituent fluxes [kg/m^2/s]
-  auto constituent_fluxes = this->constituent_fluxes_;
-
   // Soil edodibility [fraction]
   const const_view_1d soil_erodibility = this->soil_erodibility_;
 
   // Vertical layer height at midpoints
   const const_view_2d z_mid = dry_atm_.z_mid;
 
-  // TODO: potentially combine with below parfor(icol) loop?
-  const int surf_lev = nlev_ - 1;  // surface level
-
-  Kokkos::parallel_for(
-      "online_emis_fluxes", ncol_, KOKKOS_LAMBDA(int icol) {
-        // Input
-        const const_view_1d dstflx_icol = ekat::subview(dstflx, icol);
-
-        // Output
-        view_1d fluxes_col = ekat::subview(constituent_fluxes, icol);
-
-        // Compute online emissions
-        // NOTE: mam4::aero_model_emissions calculates mass and number emission
-        // fluxes in units of [kg/m2/s or #/m2/s] (MKS), so no need to convert
-        mam4::aero_model_emissions::aero_model_emissions(
-            sst(icol), ocnfrac(icol), u_wind(icol, surf_lev),
-            v_wind(icol, surf_lev), z_mid(icol, surf_lev), dstflx_icol,
-            soil_erodibility(icol), mpoly(icol), mprot(icol), mlip(icol),
-            // out
-            fluxes_col);
-      });
-  Kokkos::fence();
-
+  compute_online_dust_nacl_emiss(ncol_, nlev_, ocnfrac, sst, u_wind, v_wind,
+                                 dstflx, mpoly, mprot, mlip, soil_erodibility,
+                                 z_mid,
+                                 // output
+                                 constituent_fluxes);
   //--------------------------------------------------------------------
   // Interpolate srf emiss data read in from emissions files
   //--------------------------------------------------------------------

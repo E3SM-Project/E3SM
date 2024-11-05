@@ -103,13 +103,11 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
     // on host: initializes preprocess functor with necessary state data
     void initialize(const int &ncol, const int &nlev,
                     const mam_coupling::WetAtmosphere &wet_atm,
-                    const mam_coupling::DryAtmosphere &dry_atm,
-                    const view_2d &constituent_fluxes) {
-      ncol_pre_               = ncol;
-      nlev_pre_               = nlev;
-      wet_atm_pre_            = wet_atm;
-      dry_atm_pre_            = dry_atm;
-      constituent_fluxes_pre_ = constituent_fluxes;
+                    const mam_coupling::DryAtmosphere &dry_atm) {
+      ncol_pre_    = ncol;
+      nlev_pre_    = nlev;
+      wet_atm_pre_ = wet_atm;
+      dry_atm_pre_ = dry_atm;
     }
     KOKKOS_INLINE_FUNCTION
     void operator()(
@@ -122,18 +120,6 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
       // for atmosphere
       compute_vertical_layer_heights(team, dry_atm_pre_, icol);
       compute_updraft_velocities(team, wet_atm_pre_, dry_atm_pre_, icol);
-
-      view_1d flux_col = ekat::subview(constituent_fluxes_pre_, icol);
-
-      // Zero out constituent fluxes only for gasses and aerosols
-      const int pcnst         = mam4::aero_model::pcnst;
-      const int gas_start_ind = mam4::utils::gasses_start_ind();
-
-      // FIXME: Is there a better way to zero out a select indices?
-      // We should probably do it in run_impl directly
-      for(int ispc = gas_start_ind; ispc < pcnst; ++ispc) {
-        flux_col(ispc) = 0;
-      }
     }  // Preprocess operator()
 
     // local variables for preprocess struct
@@ -143,7 +129,6 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
     // local atmospheric and aerosol state data
     mam_coupling::WetAtmosphere wet_atm_pre_;
     mam_coupling::DryAtmosphere dry_atm_pre_;
-    view_2d constituent_fluxes_pre_;
   };  // MAMSrfOnlineEmiss::Preprocess
  private:
   // preprocessing scratch pad
