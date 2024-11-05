@@ -1547,5 +1547,5 @@ contains
     type(seq_map), pointer :: prep_ocn_get_mapper_Sw2o
     prep_ocn_get_mapper_Sw2o => mapper_Sw2o
   end function prep_ocn_get_mapper_Sw2o
-  
+
 end module prep_ocn_mod
