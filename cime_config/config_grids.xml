@@ -5109,10 +5109,7 @@
 
     <gridmap atm_grid="ne30np4.pg2" wav_grid="wQU225Icos30E3r5">
       <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/wQU225Icos30E3r5/map_ne30pg2_to_wQU225Icos30E3r5_esmfbilin.20240910.nc</map>
-<<<<<<< HEAD
-=======
       <map name="WAV2ATM_SMAPNAME">cpl/gridmaps/wQU225Icos30E3r5/map_wQU225Icos30E3r5_to_ne30pg2_esmfbilin.20240910.nc</map>
->>>>>>> cd6a57fcd5 (add wave to ocn flux cime_config/config_grids.xml)
     </gridmap>
 
     <gridmap atm_grid="TL319" wav_grid="wQU225EC30to60E2r2">
@@ -5134,10 +5131,7 @@
 
     <gridmap ocn_grid="IcoswISC30E3r5" wav_grid="wQU225Icos30E3r5">
       <map name="WAV2OCN_SMAPNAME">cpl/gridmaps/wQU225Icos30E3r5/map_wQU225Icos30E3r5_to_IcoswISC30E3r5_esmfbilin.20240910.nc</map>
-<<<<<<< HEAD
-=======
       <map name="WAV2OCN_FMAPNAME">cpl/gridmaps/wQU225Icos30E3r5/map_wQU225Icos30E3r5_to_IcoswISC30E3r5_esmfaave.20240910.nc</map>
->>>>>>> cd6a57fcd5 (add wave to ocn flux cime_config/config_grids.xml)
       <map name="OCN2WAV_SMAPNAME">cpl/gridmaps/wQU225Icos30E3r5/map_IcoswISC30E3r5_to_wQU225Icos30E3r5_esmfbilin.20240910.nc</map>
       <map name="ICE2WAV_SMAPNAME">cpl/gridmaps/wQU225Icos30E3r5/map_IcoswISC30E3r5_to_wQU225Icos30E3r5_esmfbilin.20240910.nc</map>
     </gridmap>
