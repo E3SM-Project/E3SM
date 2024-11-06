@@ -21,6 +21,14 @@ target_compile_definitions(
     OMEGA_ARCH=${OMEGA_ARCH}
 )
 
+if(OMEGA_SINGLE_PRECISION)
+  target_compile_definitions(
+      OmegaLibFlags
+      INTERFACE
+      OMEGA_SINGLE_PRECISION=1
+  )
+endif()
+
 target_link_options(
     OmegaLibFlags
     INTERFACE
@@ -56,6 +64,26 @@ target_link_libraries(
     PRIVATE
     OmegaLibFlags
 )
+
+# some tests require single precision version of the library
+# if OmegaLib is configured to use double precision we need to
+# build another version
+if(OMEGA_BUILD_TEST AND NOT OMEGA_SINGLE_PRECISION)
+  add_library(${OMEGA_LIB_NAME}_SP ${_LIBSRC_FILES})
+
+  target_link_libraries(
+      ${OMEGA_LIB_NAME}_SP
+      PRIVATE
+      OmegaLibFlags
+  )
+
+  target_compile_definitions(
+      ${OMEGA_LIB_NAME}_SP
+      PUBLIC
+      OMEGA_SINGLE_PRECISION=1
+  )
+endif()
+
 
 # build Omega executable
 if(OMEGA_BUILD_EXECUTABLE)

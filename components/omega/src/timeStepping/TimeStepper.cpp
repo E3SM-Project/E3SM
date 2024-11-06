@@ -191,7 +191,7 @@ void TimeStepper::updateThicknessByTend(OceanState *State1, int TimeLevel1,
    const auto &LayerThickTend = Tend->LayerThicknessTend;
    const int NVertLevels      = LayerThickTend.extent_int(1);
 
-   Real CoeffSeconds;
+   R8 CoeffSeconds;
    Coeff.get(CoeffSeconds, TimeUnits::Seconds);
 
    parallelFor(
@@ -213,7 +213,7 @@ void TimeStepper::updateVelocityByTend(OceanState *State1, int TimeLevel1,
    const auto &NormalVelTend = Tend->NormalVelocityTend;
    const int NVertLevels     = NormalVelTend.extent_int(1);
 
-   Real CoeffSeconds;
+   R8 CoeffSeconds;
    Coeff.get(CoeffSeconds, TimeUnits::Seconds);
 
    parallelFor(
@@ -247,7 +247,7 @@ void TimeStepper::updateTracersByTend(const Array3DReal &NextTracers,
    const int NTracers      = TracerTend.extent(0);
    const int NVertLevels   = TracerTend.extent(2);
 
-   Real CoeffSeconds;
+   R8 CoeffSeconds;
    Err = Coeff.get(CoeffSeconds, TimeUnits::Seconds);
 
    parallelFor(
@@ -286,7 +286,7 @@ void TimeStepper::accumulateTracersUpdate(const Array3DReal &AccumTracer,
    const int NTracers     = TracerTend.extent(0);
    const int NVertLevels  = TracerTend.extent(2);
 
-   Real CoeffSeconds;
+   R8 CoeffSeconds;
    int Err = Coeff.get(CoeffSeconds, TimeUnits::Seconds);
 
    parallelFor(

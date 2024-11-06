@@ -41,8 +41,8 @@ int main(int argc, char *argv[]) {
       I4 MyInt4 = 1, MyResI4 = 0;
       I8 MyInt8 = 2, MyResI8 = 0;
       R4 MyR4 = 3.000001, MyResR4 = 0.0;
-      R8 MyR8 = 4.0000000000001, MyResR8 = 0.0, MyResReal = 0.0;
-      Real MyReal = 5.000001;
+      R8 MyR8 = 4.0000000000001, MyResR8 = 0.0;
+      Real MyReal = 5.000001, MyResReal = 0.0;
 
       // test SUM for scalars
       err             = globalSum(&MyInt4, Comm, &MyResI4);
@@ -212,10 +212,10 @@ int main(int argc, char *argv[]) {
             LocalSum2D = complex<double>(t1 + t2, t2 - ((t1 + t2) - t1));
          }
       }
-      Sum1DR8   = real(LocalSum1D);
-      Sum2DR8   = real(LocalSum2D);
-      MyResReal = 0.0;
-      err       = globalSum(HostArr1DR8, Comm, &MyResReal);
+      Sum1DR8 = real(LocalSum1D);
+      Sum2DR8 = real(LocalSum2D);
+      MyResR8 = 0.0;
+      err     = globalSum(HostArr1DR8, Comm, &MyResR8);
       // perform serial sum across all MPI tasks
       complex<double> SerialSum(0.0, 0.0);
       for (i = 0; i < MySize; i++) {
@@ -227,22 +227,22 @@ int main(int argc, char *argv[]) {
       }
       expR8 = real(SerialSum);
       res   = "FAIL";
-      if (err == 0 && MyResReal == expR8)
+      if (err == 0 && MyResR8 == expR8)
          res = "PASS";
       else
          RetVal += 1;
       printf("Global sum A1DR8: %s (exp,act=%.13lf,%.13lf)\n", res, expR8,
-             MyResReal);
+             MyResR8);
 
-      err   = globalSum(HostArr2DR8, Comm, &MyResReal);
+      err   = globalSum(HostArr2DR8, Comm, &MyResR8);
       expR8 = Sum2DR8 * MySize;
       res   = "FAIL";
-      if (err == 0 && MyResReal == expR8)
+      if (err == 0 && MyResR8 == expR8)
          res = "PASS";
       else
          RetVal += 1;
       printf("Global sum A2DR8: %s (exp,act=%.13lf,%.13lf)\n", res, expR8,
-             MyResReal);
+             MyResR8);
 
       //==========================================================================
       // test MIN, MAX of scalars

@@ -35,7 +35,7 @@ class ThicknessFluxDivOnCell {
    /// The functor takes cell index, vertical chunk index, and thickness flux
    /// array as inputs, outputs the tendency array
    KOKKOS_FUNCTION void operator()(const Array2DReal &Tend, I4 ICell, I4 KChunk,
-                                   const Array2DR8 &ThicknessFlux,
+                                   const Array2DReal &ThicknessFlux,
                                    const Array2DReal &NormalVelEdge) const {
 
       const I4 KStart        = KChunk * VecLength;
@@ -62,9 +62,9 @@ class ThicknessFluxDivOnCell {
  private:
    Array1DI4 NEdgesOnCell;
    Array2DI4 EdgesOnCell;
-   Array1DR8 DvEdge;
-   Array1DR8 AreaCell;
-   Array2DR8 EdgeSignOnCell;
+   Array1DReal DvEdge;
+   Array1DReal AreaCell;
+   Array2DReal EdgeSignOnCell;
 };
 
 /// Horizontal advection of potential vorticity defined on edges, for
@@ -81,10 +81,10 @@ class PotentialVortHAdvOnEdge {
    /// thickness on edges, and normal velocity on edges as inputs,
    /// outputs the tendency array
    KOKKOS_FUNCTION void operator()(const Array2DReal &Tend, I4 IEdge, I4 KChunk,
-                                   const Array2DR8 &NormRVortEdge,
-                                   const Array2DR8 &NormFEdge,
-                                   const Array2DR8 &FluxLayerThickEdge,
-                                   const Array2DR8 &NormVelEdge) const {
+                                   const Array2DReal &NormRVortEdge,
+                                   const Array2DReal &NormFEdge,
+                                   const Array2DReal &FluxLayerThickEdge,
+                                   const Array2DReal &NormVelEdge) const {
 
       const I4 KStart         = KChunk * VecLength;
       Real VortTmp[VecLength] = {0};
@@ -112,7 +112,7 @@ class PotentialVortHAdvOnEdge {
  private:
    Array1DI4 NEdgesOnEdge;
    Array2DI4 EdgesOnEdge;
-   Array2DR8 WeightsOnEdge;
+   Array2DReal WeightsOnEdge;
 };
 
 /// Gradient of kinetic energy defined on edges, for momentum equation
@@ -126,7 +126,7 @@ class KEGradOnEdge {
    /// The functor takes edge index, vertical chunk index, and kinetic energy
    /// array as inputs, outputs the tendency array
    KOKKOS_FUNCTION void operator()(const Array2DReal &Tend, I4 IEdge, I4 KChunk,
-                                   const Array2DR8 &KECell) const {
+                                   const Array2DReal &KECell) const {
 
       const I4 KStart      = KChunk * VecLength;
       const I4 JCell0      = CellsOnEdge(IEdge, 0);
@@ -141,7 +141,7 @@ class KEGradOnEdge {
 
  private:
    Array2DI4 CellsOnEdge;
-   Array1DR8 DcEdge;
+   Array1DReal DcEdge;
 };
 
 /// Gradient of sea surface height defined on edges multipled by gravitational
@@ -171,9 +171,9 @@ class SSHGradOnEdge {
    }
 
  private:
-   R8 Grav = 9.80665_Real;
+   Real Grav = 9.80665_Real;
    Array2DI4 CellsOnEdge;
-   Array1DR8 DcEdge;
+   Array1DReal DcEdge;
 };
 
 /// Laplacian horizontal mixing, for momentum equation
@@ -181,7 +181,7 @@ class VelocityDiffusionOnEdge {
  public:
    bool Enabled;
 
-   R8 ViscDel2;
+   Real ViscDel2;
 
    /// constructor declaration
    VelocityDiffusionOnEdge(const HorzMesh *Mesh);
@@ -190,8 +190,8 @@ class VelocityDiffusionOnEdge {
    /// divergence of horizontal velocity (defined at cell centers) and relative
    /// vorticity (defined at vertices), outputs tendency array
    KOKKOS_FUNCTION void operator()(const Array2DReal &Tend, I4 IEdge, I4 KChunk,
-                                   const Array2DR8 &DivCell,
-                                   const Array2DR8 &RVortVertex) const {
+                                   const Array2DReal &DivCell,
+                                   const Array2DReal &RVortVertex) const {
 
       const I4 KStart = KChunk * VecLength;
       const I4 ICell0 = CellsOnEdge(IEdge, 0);
@@ -218,10 +218,10 @@ class VelocityDiffusionOnEdge {
  private:
    Array2DI4 CellsOnEdge;
    Array2DI4 VerticesOnEdge;
-   Array1DR8 DcEdge;
-   Array1DR8 DvEdge;
-   Array1DR8 MeshScalingDel2;
-   Array2DR8 EdgeMask;
+   Array1DReal DcEdge;
+   Array1DReal DvEdge;
+   Array1DReal MeshScalingDel2;
+   Array2DReal EdgeMask;
 };
 
 /// Biharmonic horizontal mixing, for momentum equation
@@ -238,8 +238,8 @@ class VelocityHyperDiffOnEdge {
    /// the laplacian of divergence of horizontal velocity and the laplacian of
    /// the relative vorticity, outputs tendency array
    KOKKOS_FUNCTION void operator()(const Array2DReal &Tend, I4 IEdge, I4 KChunk,
-                                   const Array2DR8 &Del2DivCell,
-                                   const Array2DR8 &Del2RVortVertex) const {
+                                   const Array2DReal &Del2DivCell,
+                                   const Array2DReal &Del2RVortVertex) const {
 
       const I4 KStart = KChunk * VecLength;
       const I4 ICell0 = CellsOnEdge(IEdge, 0);
@@ -266,10 +266,10 @@ class VelocityHyperDiffOnEdge {
  private:
    Array2DI4 CellsOnEdge;
    Array2DI4 VerticesOnEdge;
-   Array1DR8 DcEdge;
-   Array1DR8 DvEdge;
-   Array1DR8 MeshScalingDel4;
-   Array2DR8 EdgeMask;
+   Array1DReal DcEdge;
+   Array1DReal DvEdge;
+   Array1DReal MeshScalingDel4;
+   Array2DReal EdgeMask;
 };
 
 // Tracer horizontal advection term
@@ -280,8 +280,8 @@ class TracerHorzAdvOnCell {
    TracerHorzAdvOnCell(const HorzMesh *Mesh);
 
    KOKKOS_FUNCTION void operator()(const Array3DReal &Tend, I4 L, I4 ICell,
-                                   I4 KChunk, const Array2DR8 &NormVelEdge,
-                                   const Array3DR8 &HTracersOnEdge) const {
+                                   I4 KChunk, const Array2DReal &NormVelEdge,
+                                   const Array3DReal &HTracersOnEdge) const {
 
       const I4 KStart        = KChunk * VecLength;
       const Real InvAreaCell = 1._Real / AreaCell(ICell);
@@ -308,9 +308,9 @@ class TracerHorzAdvOnCell {
    Array1DI4 NEdgesOnCell;
    Array2DI4 EdgesOnCell;
    Array2DI4 CellsOnEdge;
-   Array2DR8 EdgeSignOnCell;
-   Array1DR8 DvEdge;
-   Array1DR8 AreaCell;
+   Array2DReal EdgeSignOnCell;
+   Array1DReal DvEdge;
+   Array1DReal AreaCell;
 };
 
 // Tracer horizontal diffusion term
@@ -322,9 +322,10 @@ class TracerDiffOnCell {
 
    TracerDiffOnCell(const HorzMesh *Mesh);
 
-   KOKKOS_FUNCTION void operator()(const Array3DReal &Tend, I4 L, I4 ICell,
-                                   I4 KChunk, const Array3DR8 &TracerCell,
-                                   const Array2DR8 &MeanLayerThickEdge) const {
+   KOKKOS_FUNCTION void
+   operator()(const Array3DReal &Tend, I4 L, I4 ICell, I4 KChunk,
+              const Array3DReal &TracerCell,
+              const Array2DReal &MeanLayerThickEdge) const {
 
       const I4 KStart        = KChunk * VecLength;
       const Real InvAreaCell = 1._Real / AreaCell(ICell);
@@ -359,11 +360,11 @@ class TracerDiffOnCell {
    Array1DI4 NEdgesOnCell;
    Array2DI4 EdgesOnCell;
    Array2DI4 CellsOnEdge;
-   Array2DR8 EdgeSignOnCell;
-   Array1DR8 DvEdge;
-   Array1DR8 DcEdge;
-   Array1DR8 AreaCell;
-   Array1DR8 MeshScalingDel2;
+   Array2DReal EdgeSignOnCell;
+   Array1DReal DvEdge;
+   Array1DReal DcEdge;
+   Array1DReal AreaCell;
+   Array1DReal MeshScalingDel2;
 };
 
 // Tracer biharmonic horizontal mixing term
@@ -377,7 +378,7 @@ class TracerHyperDiffOnCell {
 
    KOKKOS_FUNCTION void operator()(const Array3DReal &Tend, I4 L, I4 ICell,
                                    I4 KChunk,
-                                   const Array3DR8 &TrDel2Cell) const {
+                                   const Array3DReal &TrDel2Cell) const {
 
       const I4 KStart        = KChunk * VecLength;
       const Real InvAreaCell = 1._Real / AreaCell(ICell);
@@ -411,11 +412,11 @@ class TracerHyperDiffOnCell {
    Array1DI4 NEdgesOnCell;
    Array2DI4 EdgesOnCell;
    Array2DI4 CellsOnEdge;
-   Array2DR8 EdgeSignOnCell;
-   Array1DR8 DvEdge;
-   Array1DR8 DcEdge;
-   Array1DR8 AreaCell;
-   Array1DR8 MeshScalingDel4;
+   Array2DReal EdgeSignOnCell;
+   Array1DReal DvEdge;
+   Array1DReal DcEdge;
+   Array1DReal AreaCell;
+   Array1DReal MeshScalingDel4;
 };
 
 /// A class that can be used to calculate the thickness and

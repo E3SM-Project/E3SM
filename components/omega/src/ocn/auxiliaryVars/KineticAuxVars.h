@@ -53,10 +53,10 @@ class KineticAuxVars {
  private:
    Array1DI4 NEdgesOnCell;
    Array2DI4 EdgesOnCell;
-   Array2DR8 EdgeSignOnCell;
-   Array1DR8 DcEdge;
-   Array1DR8 DvEdge;
-   Array1DR8 AreaCell;
+   Array2DReal EdgeSignOnCell;
+   Array1DReal DcEdge;
+   Array1DReal DvEdge;
+   Array1DReal AreaCell;
 };
 
 } // namespace OMEGA
