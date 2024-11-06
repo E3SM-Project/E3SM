@@ -118,11 +118,8 @@ int main(int argc, char *argv[]) {
 
       for (int NTimeLevels = 2; NTimeLevels < 4; NTimeLevels++) {
 
-         int CurLevel = NTimeLevels - 2;
-         int NewLevel = CurLevel - 1;
-         if (NewLevel < 0) {
-            NewLevel = NTimeLevels - 1;
-         }
+         int CurLevel = -1;
+         int NewLevel = 0;
 
          // Create "default" state
          if (NTimeLevels == 2) {
@@ -162,11 +159,13 @@ int main(int argc, char *argv[]) {
          TestState->loadStateFromFile(DefHorzMesh->MeshFileName, DefDecomp);
 
          // Test that reasonable values have been read in for LayerThickness
+         OMEGA::HostArray2DReal LayerThickH;
+         DefState->getLayerThicknessH(LayerThickH, CurLevel);
          int count = 0;
          for (int Cell = 0; Cell < DefState->NCellsAll; Cell++) {
             int colCount = 0;
             for (int Level = 0; Level < DefState->NVertLevels; Level++) {
-               OMEGA::R8 val = DefState->LayerThicknessH[CurLevel](Cell, Level);
+               OMEGA::R8 val = LayerThickH(Cell, Level);
                if (val > 0.0 && val < 300.0) {
                   colCount++;
                }
@@ -184,18 +183,24 @@ int main(int argc, char *argv[]) {
          }
 
          // Initialize NormalVelocity values
+         OMEGA::HostArray2DReal NormalVelocityHDef;
+         OMEGA::HostArray2DReal NormalVelocityHTest;
+         DefState->getNormalVelocityH(NormalVelocityHDef, CurLevel);
+         TestState->getNormalVelocityH(NormalVelocityHTest, CurLevel);
          for (int Edge = 0; Edge < DefState->NEdgesAll; Edge++) {
             for (int Level = 0; Level < DefState->NVertLevels; Level++) {
-               DefState->NormalVelocityH[CurLevel](Edge, Level)  = Edge;
-               TestState->NormalVelocityH[CurLevel](Edge, Level) = Edge;
+               NormalVelocityHDef(Edge, Level)  = Edge;
+               NormalVelocityHTest(Edge, Level) = Edge;
             }
          }
 
          // Test that initally the 0 time levels of the
          // Def and Test state arrays match
-         count                     = 0;
-         auto LayerThicknessH_def  = DefState->LayerThicknessH[CurLevel];
-         auto LayerThicknessH_test = TestState->LayerThicknessH[CurLevel];
+         count = 0;
+         OMEGA::HostArray2DReal LayerThicknessH_def;
+         OMEGA::HostArray2DReal LayerThicknessH_test;
+         DefState->getLayerThicknessH(LayerThicknessH_def, CurLevel);
+         TestState->getLayerThicknessH(LayerThicknessH_test, CurLevel);
          for (int Cell = 0; Cell < DefState->NCellsAll; Cell++) {
             for (int Level = 0; Level < DefState->NVertLevels; Level++) {
                if (LayerThicknessH_def(Cell, Level) !=
@@ -205,8 +210,10 @@ int main(int argc, char *argv[]) {
             }
          }
 
-         auto NormalVelocityH_def  = DefState->NormalVelocityH[CurLevel];
-         auto NormalVelocityH_test = TestState->NormalVelocityH[CurLevel];
+         OMEGA::HostArray2DReal NormalVelocityH_def;
+         OMEGA::HostArray2DReal NormalVelocityH_test;
+         DefState->getNormalVelocityH(NormalVelocityH_def, CurLevel);
+         TestState->getNormalVelocityH(NormalVelocityH_test, CurLevel);
          for (int Edge = 0; Edge < DefState->NEdgesAll; Edge++) {
             for (int Level = 0; Level < DefState->NVertLevels; Level++) {
                if (NormalVelocityH_def(Edge, Level) !=
@@ -227,9 +234,9 @@ int main(int argc, char *argv[]) {
          DefState->updateTimeLevels();
 
          // Test that the time level update is correct.
-         count                = 0;
-         LayerThicknessH_def  = DefState->LayerThicknessH[NewLevel];
-         LayerThicknessH_test = TestState->LayerThicknessH[CurLevel];
+         count = 0;
+         DefState->getLayerThicknessH(LayerThicknessH_def, NewLevel);
+         TestState->getLayerThicknessH(LayerThicknessH_test, CurLevel);
          for (int Cell = 0; Cell < DefState->NCellsAll; Cell++) {
             for (int Level = 0; Level < DefState->NVertLevels; Level++) {
                if (LayerThicknessH_def(Cell, Level) !=
@@ -239,8 +246,8 @@ int main(int argc, char *argv[]) {
             }
          }
 
-         LayerThicknessH_def  = DefState->LayerThicknessH[CurLevel];
-         LayerThicknessH_test = TestState->LayerThicknessH[NewLevel];
+         DefState->getLayerThicknessH(LayerThicknessH_def, CurLevel);
+         TestState->getLayerThicknessH(LayerThicknessH_test, NewLevel);
          for (int Cell = 0; Cell < DefState->NCellsAll; Cell++) {
             for (int Level = 0; Level < DefState->NVertLevels; Level++) {
                if (LayerThicknessH_def(Cell, Level) !=
@@ -250,8 +257,8 @@ int main(int argc, char *argv[]) {
             }
          }
 
-         NormalVelocityH_def  = DefState->NormalVelocityH[NewLevel];
-         NormalVelocityH_test = TestState->NormalVelocityH[CurLevel];
+         DefState->getNormalVelocityH(NormalVelocityH_def, NewLevel);
+         TestState->getNormalVelocityH(NormalVelocityH_test, CurLevel);
          for (int Edge = 0; Edge < DefState->NEdgesAll; Edge++) {
             for (int Level = 0; Level < DefState->NVertLevels; Level++) {
                if (NormalVelocityH_def(Edge, Level) !=
@@ -261,8 +268,8 @@ int main(int argc, char *argv[]) {
             }
          }
 
-         NormalVelocityH_def  = DefState->NormalVelocityH[CurLevel];
-         NormalVelocityH_test = TestState->NormalVelocityH[NewLevel];
+         DefState->getNormalVelocityH(NormalVelocityH_def, CurLevel);
+         TestState->getNormalVelocityH(NormalVelocityH_test, NewLevel);
          for (int Edge = 0; Edge < DefState->NEdgesAll; Edge++) {
             for (int Level = 0; Level < DefState->NVertLevels; Level++) {
                if (NormalVelocityH_def(Edge, Level) !=
@@ -281,8 +288,10 @@ int main(int argc, char *argv[]) {
 
          // Test time level update on device
          int count1;
-         auto LayerThickness_def  = DefState->LayerThickness[NewLevel];
-         auto LayerThickness_test = TestState->LayerThickness[CurLevel];
+         OMEGA::Array2DReal LayerThickness_def;
+         OMEGA::Array2DReal LayerThickness_test;
+         DefState->getLayerThickness(LayerThickness_def, NewLevel);
+         TestState->getLayerThickness(LayerThickness_test, CurLevel);
          OMEGA::parallelReduce(
              "reduce", {DefState->NCellsAll, DefState->NVertLevels},
              KOKKOS_LAMBDA(int Cell, int Level, int &Accum) {
@@ -294,8 +303,8 @@ int main(int argc, char *argv[]) {
              count1);
 
          int count2;
-         LayerThickness_def  = DefState->LayerThickness[CurLevel];
-         LayerThickness_test = TestState->LayerThickness[NewLevel];
+         DefState->getLayerThickness(LayerThickness_def, CurLevel);
+         TestState->getLayerThickness(LayerThickness_test, NewLevel);
          OMEGA::parallelReduce(
              "reduce", {DefState->NCellsAll, DefState->NVertLevels},
              KOKKOS_LAMBDA(int Cell, int Level, int &Accum) {
@@ -307,8 +316,10 @@ int main(int argc, char *argv[]) {
              count2);
 
          int count3;
-         auto NormalVelocity_def  = DefState->NormalVelocity[CurLevel];
-         auto NormalVelocity_test = TestState->NormalVelocity[NewLevel];
+         OMEGA::Array2DReal NormalVelocity_def;
+         OMEGA::Array2DReal NormalVelocity_test;
+         DefState->getNormalVelocity(NormalVelocity_def, CurLevel);
+         TestState->getNormalVelocity(NormalVelocity_test, NewLevel);
          OMEGA::parallelReduce(
              "reduce", {DefState->NEdgesAll, DefState->NVertLevels},
              KOKKOS_LAMBDA(int Edge, int Level, int &Accum) {
@@ -320,8 +331,8 @@ int main(int argc, char *argv[]) {
              count3);
 
          int count4;
-         NormalVelocity_def  = DefState->NormalVelocity[NewLevel];
-         NormalVelocity_test = TestState->NormalVelocity[CurLevel];
+         DefState->getNormalVelocity(NormalVelocity_def, NewLevel);
+         TestState->getNormalVelocity(NormalVelocity_test, CurLevel);
          OMEGA::parallelReduce(
              "reduce", {DefState->NEdgesAll, DefState->NVertLevels},
              KOKKOS_LAMBDA(int Edge, int Level, int &Accum) {
