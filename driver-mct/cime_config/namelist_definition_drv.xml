@@ -237,7 +237,6 @@
     <values>
       <value>none</value>
       <value WAV_ICE_COUP="one">one</value>
-      <value WAV_ICE_COUP="two">two</value>
     </values>
   </entry>
 
