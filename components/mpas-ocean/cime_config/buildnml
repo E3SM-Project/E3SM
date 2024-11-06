@@ -976,6 +976,10 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="atmosphericPressure"/>')
             lines.append('    <var name="windStressZonal"/>')
             lines.append('    <var name="windStressMeridional"/>')
+            if case.get_value('COMP_WAV') == 'ww3' and case.get_value('COMP_OCN') == 'mpaso':
+                lines.append('    <var name="peakWaveFrequency"/>')
+                lines.append('    <var name="peakWaveDirection"/>')
+                lines.append('    <var name="significantWaveHeight"/>')
             if ocn_bgc in ['eco_only', 'eco_and_dms', 'eco_and_macromolecules', 'eco_and_dms_and_macromolecules']:
                 lines.append('    <var name="CO2_gas_flux"/>')
                 lines.append('    <var name="CO2_alt_gas_flux"/>')
