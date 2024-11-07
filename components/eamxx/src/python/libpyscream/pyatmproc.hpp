@@ -183,7 +183,8 @@ struct PyAtmProc {
 
     // Create/setup the output mgr
     output_mgr = std::make_shared<OutputManager>();
-    output_mgr->setup(comm,params,fms,gm,t0,t0,false);
+    output_mgr->initialize(comm, params, t0, false);
+    output_mgr->setup(fms,gm);
     output_mgr->set_logger(ap->get_logger());
   }
 

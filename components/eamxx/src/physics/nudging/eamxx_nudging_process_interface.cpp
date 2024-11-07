@@ -47,7 +47,7 @@ Nudging::Nudging (const ekat::Comm& comm, const ekat::ParameterList& params)
                        "Error! Inconsistent 'lev' dimension found in nudging data files.");
   }
   // use nudging weights
-  if (m_use_weights) 
+  if (m_use_weights)
     m_weights_file = m_params.get<std::string>("nudging_weights_file");
 
   // TODO: Add some warning messages here.
@@ -84,7 +84,7 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
     add_field<Updated>("T_mid", scalar3d_layout_mid, K, grid_name, ps);
   }
   if (ekat::contains(m_fields_nudge,"qv")) {
-    add_field<Updated>("qv",    scalar3d_layout_mid, kg/kg, grid_name, "tracers", ps);
+    add_tracer<Updated>("qv", m_grid, kg/kg, ps);
   }
   if (ekat::contains(m_fields_nudge,"U") or ekat::contains(m_fields_nudge,"V")) {
     add_field<Updated>("horiz_winds",   horiz_wind_layout,   m/s,     grid_name, ps);
@@ -107,7 +107,7 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   /* Check for consistency between nudging files, map file, and remapper */
 
   // Number of columns globally
-  auto num_cols_global = m_grid->get_num_global_dofs(); 
+  auto num_cols_global = m_grid->get_num_global_dofs();
 
   // Get the information from the first nudging data file
   int num_cols_src = scorpio::get_dimlen(m_datafiles[0],"ncol");
@@ -136,7 +136,7 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
                      << "model grid and/or the mapfile.");
     EKAT_REQUIRE_MSG(m_use_weights == false,
                      "Error! Nudging::set_grids - it seems that the user intends to use both nuding "
-                     << "from coarse data as well as weighted nudging simultaneously. This is not supported. " 
+                     << "from coarse data as well as weighted nudging simultaneously. This is not supported. "
                      << "If the user wants to use both at their own risk, the user should edit the source code "
                      << "by deleting this error message.");
     // If we get here, we are good to go!

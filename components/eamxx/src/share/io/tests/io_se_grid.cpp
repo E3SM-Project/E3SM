@@ -64,13 +64,13 @@ TEST_CASE("se_grid_io")
   params.set<int>("Max Snapshots Per File",1);
   params.set<strvec_t>("Field Names",{"field_1","field_2","field_3","field_packed"});
   params.set<std::string>("Floating Point Precision","real");
-  params.set("MPI Ranks in Filename",true);
   auto& ctl_pl = params.sublist("output_control");
   ctl_pl.set("Frequency",1);
   ctl_pl.set<std::string>("frequency_units","nsteps");
 
   OutputManager om;
-  om.setup(io_comm,params,fm0,gm,t0,t0,false);
+  om.initialize(io_comm,params,t0,false);
+  om.setup(fm0,gm);
   om.init_timestep(t0,dt);
   om.run(t0+dt);
   om.finalize();
@@ -95,7 +95,7 @@ TEST_CASE("se_grid_io")
   }
   ins_input.finalize();
 
-  // All Done 
+  // All Done
   scorpio::finalize_subsystem();
 }
 

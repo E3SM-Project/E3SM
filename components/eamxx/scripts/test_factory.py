@@ -115,7 +115,7 @@ class FPE(TestProperty):
             [("CMAKE_BUILD_TYPE", "Debug"), ("EKAT_DEFAULT_BFB", "True"),
              ("SCREAM_PACK_SIZE", "1"), ("SCREAM_FPE","True")],
             uses_baselines=False,
-            on_by_default=(tas is not None and not tas.on_cuda())
+            on_by_default=(tas is not None and not tas._machine.uses_gpu())
         )
 
 ###############################################################################
@@ -161,7 +161,7 @@ class VALG(TestProperty):
         )
         if tas is not None:
             # If a stored suppression file exists for this machine, use it
-            persistent_supp_file = tas.get_root_dir() / "scripts" / "jenkins" / "valgrind" / f"{tas.get_machine()}.supp"
+            persistent_supp_file = tas.get_root_dir() / "scripts" / "jenkins" / "valgrind" / f"{tas.get_machine().name}.supp"
             if persistent_supp_file.exists():
                 self.cmake_args.append( ("EKAT_VALGRIND_SUPPRESSION_FILE", str(persistent_supp_file)) )
 

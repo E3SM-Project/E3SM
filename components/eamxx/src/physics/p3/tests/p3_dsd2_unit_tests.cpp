@@ -161,7 +161,8 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
       }
 
       Spack mu_r(0.0), lamr(0.0), cdistr(0.0), logn0r(0.0);
-      Functions::get_rain_dsd2(qr, nr, mu_r, lamr, physics::P3_Constants<Real>());
+      Functions::get_rain_dsd2(qr, nr, mu_r, lamr,
+                               p3::Functions<Real,DefaultDevice>::P3Runtime());
       Functions::get_cdistr_logn0r(qr, nr, mu_r, lamr, cdistr, logn0r);
 
       // Copy results back into views

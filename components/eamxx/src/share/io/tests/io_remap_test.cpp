@@ -74,7 +74,7 @@ TEST_CASE("io_remap_test","io_remap_test")
   auto field_manager = get_test_fm(grid, false);
   field_manager->init_fields_time_stamp(t0);
   print (" -> Test Setup ... done\n",io_comm);
-  
+
   // Create remap data for both vertical and horizontal remapping
   // The strategy for remapping will be to map every 2 subsequent
   // columns to a single column. So we assume that `ncols_src` is
@@ -100,7 +100,7 @@ TEST_CASE("io_remap_test","io_remap_test")
   std::vector<Real> p_tgt;
   for (int ii=0; ii<nlevs_tgt; ++ii) {
     p_tgt.push_back(set_pressure(p_top, p_bot, nlevs_tgt, ii));
-  }  
+  }
 
   // Write remap data to file
   const std::string remap_filename = "remap_weights_np"+std::to_string(io_comm.size())+".nc";
@@ -132,12 +132,12 @@ TEST_CASE("io_remap_test","io_remap_test")
    * We want to test cases where some values may be masked, to accomplish
    * this we let the pressure profile at each column be a linear progression
    * between p_top to p_surf where p_surf is defined as:
-   * 
+   *
    *            /  p_bot                        for |x| > 4
    *   p_surf = |  0.5*(p_top+p_bot)            for |x| < 2
    *            \  p_bot - (-sign(x)*m + b)     otherwise, where m = (p_top+p_bot)/4.0 and b = p_top+p_bot
-   * 
-   *            
+   *
+   *
    *                             ----
    *                            /    \
    *                           /      \
@@ -180,7 +180,7 @@ TEST_CASE("io_remap_test","io_remap_test")
     pi_v(ii,0) = set_pressure(p_top, p_surf(ii), nlevs_src+1, 0);
     for (int jj=0; jj<nlevs_src; jj++) {
       pi_v(ii,jj+1) = set_pressure(p_top, p_surf(ii), nlevs_src+1, jj+1);
-      pm_v(ii,jj)   = 0.5*(pi_v(ii,jj)+pi_v(ii,jj+1)); 
+      pm_v(ii,jj)   = 0.5*(pi_v(ii,jj)+pi_v(ii,jj+1));
     }
   }
   pm_f.sync_to_dev();
@@ -217,8 +217,8 @@ TEST_CASE("io_remap_test","io_remap_test")
         Vi_v(ii,cc,jj+1) = calculate_output(pi_v(ii,jj+1),ii,cc+1);
       }
     }
-  } 
-   
+  }
+
   Yf_f.sync_to_dev();
   Ym_f.sync_to_dev();
   Yi_f.sync_to_dev();
@@ -234,7 +234,8 @@ TEST_CASE("io_remap_test","io_remap_test")
 
   print ("    -> source data ... \n",io_comm);
   auto source_remap_control = set_output_params("remap_source",remap_filename,p_ref,false,false);
-  om_source.setup(io_comm,source_remap_control,field_manager,gm,t0,t0,false);
+  om_source.initialize(io_comm,source_remap_control,t0,false);
+  om_source.setup(field_manager,gm);
   io_comm.barrier();
   om_source.init_timestep(t0,dt);
   om_source.run(t0+dt);
@@ -243,7 +244,8 @@ TEST_CASE("io_remap_test","io_remap_test")
 
   print ("    -> vertical remap ... \n",io_comm);
   auto vert_remap_control = set_output_params("remap_vertical",remap_filename,p_ref,true,false);
-  om_vert.setup(io_comm,vert_remap_control,field_manager,gm,t0,t0,false);
+  om_vert.initialize(io_comm,vert_remap_control,t0,false);
+  om_vert.setup(field_manager,gm);
   io_comm.barrier();
   om_vert.init_timestep(t0,dt);
   om_vert.run(t0+dt);
@@ -252,7 +254,8 @@ TEST_CASE("io_remap_test","io_remap_test")
 
   print ("    -> horizontal remap ... \n",io_comm);
   auto horiz_remap_control = set_output_params("remap_horizontal",remap_filename,p_ref,false,true);
-  om_horiz.setup(io_comm,horiz_remap_control,field_manager,gm,t0,t0,false);
+  om_horiz.initialize(io_comm,horiz_remap_control,t0,false);
+  om_horiz.setup(field_manager,gm);
   io_comm.barrier();
   om_horiz.init_timestep(t0,dt);
   om_horiz.run(t0+dt);
@@ -261,7 +264,8 @@ TEST_CASE("io_remap_test","io_remap_test")
 
   print ("    -> vertical-horizontal remap ... \n",io_comm);
   auto vert_horiz_remap_control = set_output_params("remap_vertical_horizontal",remap_filename,p_ref,true,true);
-  om_vert_horiz.setup(io_comm,vert_horiz_remap_control,field_manager,gm,t0,t0,false);
+  om_vert_horiz.initialize(io_comm,vert_horiz_remap_control,t0,false);
+  om_vert_horiz.setup(field_manager,gm);
   io_comm.barrier();
   om_vert_horiz.init_timestep(t0,dt);
   om_vert_horiz.run(t0+dt);
@@ -328,12 +332,12 @@ TEST_CASE("io_remap_test","io_remap_test")
       const bool ref_masked = (p_ref>pi_v(ii,nlevs_src) || p_ref<pi_v(ii,0));
       const Real test_val = ref_masked ? mask_val : calculate_output(p_ref,ii,0);
       REQUIRE(approx(Ys_v_vert(ii),test_val));
-  
+
       REQUIRE(approx(Yf_v_vert(ii), Yf_v(ii)));
       for (int jj=0; jj<nlevs_tgt; jj++) {
         auto p_jj = p_tgt[jj];
-        const bool mid_masked = (p_jj>pm_v(ii,nlevs_src-1) || p_jj<pm_v(ii,0)); 
-        const bool int_masked = (p_jj>pi_v(ii,nlevs_src)   || p_jj<pi_v(ii,0)); 
+        const bool mid_masked = (p_jj>pm_v(ii,nlevs_src-1) || p_jj<pm_v(ii,0));
+        const bool int_masked = (p_jj>pi_v(ii,nlevs_src)   || p_jj<pi_v(ii,0));
         REQUIRE(approx(Ym_v_vert(ii,jj),(mid_masked ? mask_val : calculate_output(p_jj,ii,0))));
         REQUIRE(approx(Yi_v_vert(ii,jj),(int_masked ? mask_val : calculate_output(p_jj,ii,0))));
         for (int cc=0; cc<2; cc++) {
@@ -416,7 +420,7 @@ TEST_CASE("io_remap_test","io_remap_test")
         found = true;
         Ys_exp += calculate_output(p_ref,col1,0)*wgt;
         Ys_wgt += wgt;
-      } 
+      }
       if (p_ref<=pi_v(col2,nlevs_src) && p_ref>=pi_v(col2,0)) {
         found = true;
         Ys_exp += calculate_output(p_ref,col2,0)*(1.0-wgt);
@@ -465,7 +469,7 @@ TEST_CASE("io_remap_test","io_remap_test")
     // also translate to more masking in the horizontal reamapping.  So we must check for potential
     // masking for all variables rather than just the Y_int_at_XPa variable for the horizontal interpolation.
     //
-    // NOTE: For scorpio_output.cpp the mask value for vertical remapping is std::numeric_limits<Real>::max()/10.0 
+    // NOTE: For scorpio_output.cpp the mask value for vertical remapping is std::numeric_limits<Real>::max()/10.0
     const auto& Yf_f_vh = fm_vh->get_field("Y_flat");
     const auto& Ys_f_vh = fm_vh->get_field("Y_int_at_"+std::to_string(p_ref)+"Pa");
     const auto& Ym_f_vh = fm_vh->get_field("Y_mid");
@@ -504,7 +508,7 @@ TEST_CASE("io_remap_test","io_remap_test")
           // This point is completely masked out, assign masked value
           test_int = mask_val;
         }
-        REQUIRE(approx(Ym_v_vh(ii,jj), test_mid)); 
+        REQUIRE(approx(Ym_v_vh(ii,jj), test_mid));
         REQUIRE(approx(Yi_v_vh(ii,jj), test_int));
         for (int cc=0; cc<2; cc++) {
           if (mid_mask_1 + mid_mask_2 > 0.0) {
@@ -520,7 +524,7 @@ TEST_CASE("io_remap_test","io_remap_test")
             test_int = mask_val;
           }
           REQUIRE(approx(Vm_v_vh(ii,cc,jj), test_mid));
-          REQUIRE(approx(Vi_v_vh(ii,cc,jj), test_int)); 
+          REQUIRE(approx(Vi_v_vh(ii,cc,jj), test_int));
         }
       }
       // For the pressured sliced variable we expect it to match the solution from horizontal mapping only so we use the same syntax.
@@ -531,7 +535,7 @@ TEST_CASE("io_remap_test","io_remap_test")
         found = true;
         Ys_exp += calculate_output(p_ref,col1,0)*wgt;
         Ys_wgt += wgt;
-      } 
+      }
       if (p_ref<=pi_v(col2,nlevs_src) && p_ref>=pi_v(col2,0)) {
         found = true;
         Ys_exp += calculate_output(p_ref,col2,0)*(1.0-wgt);
@@ -547,7 +551,7 @@ TEST_CASE("io_remap_test","io_remap_test")
     print ("    -> vertical + horizontal remap ... done\n",io_comm);
   }
   // ------------------------------------------------------------------------------------------------------
-  // All Done 
+  // All Done
   print (" -> Test Remapped Output ... done\n",io_comm);
   scorpio::finalize_subsystem();
 
@@ -677,7 +681,6 @@ ekat::ParameterList set_output_params(const std::string& name, const std::string
   params.set<std::string>("Averaging Type","Instant");
   params.set<int>("Max Snapshots Per File",1);
   params.set<std::string>("Floating Point Precision","real");
-  params.set<bool>("MPI Ranks in Filename",true);
   auto& oc = params.sublist("output_control");
   oc.set<int>("Frequency",1);
   oc.set<std::string>("frequency_units","nsteps");
@@ -695,12 +698,12 @@ ekat::ParameterList set_output_params(const std::string& name, const std::string
 
   if (vert_remap) {
     params.set<std::string>("vertical_remap_file",remap_filename); // TODO, make this work for general np=?
-  } 
+  }
   if (horiz_remap) {
     params.set<std::string>("horiz_remap_file",remap_filename); // TODO, make this work for general np=?
-  } 
- 
-  return params; 
+  }
+
+  return params;
 }
 /*==========================================================================================================*/
 ekat::ParameterList set_input_params(const std::string& name, ekat::Comm& comm, const std::string& tstamp, const int p_ref)
@@ -716,7 +719,7 @@ ekat::ParameterList set_input_params(const std::string& name, ekat::Comm& comm, 
 
   in_params.set<vos_type>("Field Names", fields_in);
   in_params.set<std::string>("Floating Point Precision","real");
-  return in_params; 
+  return in_params;
 }
 /*==========================================================================================================*/
 

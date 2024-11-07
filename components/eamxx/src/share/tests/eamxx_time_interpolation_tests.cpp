@@ -75,7 +75,7 @@ TEST_CASE ("eamxx_time_interpolation_simple") {
   // Setup basic test params
   ekat::Comm comm(MPI_COMM_WORLD);
   auto seed = get_random_test_seed(&comm);
-  std::mt19937_64 engine(seed); 
+  std::mt19937_64 engine(seed);
   const auto t0 = init_timestamp();
 
   const int nlevs  = SCREAM_PACK_SIZE*2+1;
@@ -141,7 +141,7 @@ TEST_CASE ("eamxx_time_interpolation_data_from_file") {
   ekat::Comm comm(MPI_COMM_WORLD);
   scorpio::init_subsystem(comm);
   auto seed = get_random_test_seed(&comm);
-  std::mt19937_64 engine(seed); 
+  std::mt19937_64 engine(seed);
   const auto t0 = init_timestamp();
 
   const int nlevs  = SCREAM_PACK_SIZE*2+1;
@@ -332,7 +332,7 @@ std::shared_ptr<FieldManager> get_fm (const std::shared_ptr<const AbstractGrid>&
   //  - Uniform_int_distribution returns an int, and the randomize
   //    util checks that return type matches the Field data type.
   //    So wrap the int pdf in a lambda, that does the cast.
-  std::mt19937_64 engine(seed); 
+  std::mt19937_64 engine(seed);
 
   const int nlcols = grid->get_num_local_dofs();
   const int nlevs  = grid->get_num_vertical_levels();
@@ -367,7 +367,7 @@ std::shared_ptr<FieldManager> get_fm (const std::shared_ptr<const AbstractGrid>&
  * the capability of TimeInterpolation to handle data read from multiple files.
  */
 std::vector<std::string> create_test_data_files(
-		const ekat::Comm& comm, 
+		const ekat::Comm& comm,
 		const std::shared_ptr<const GridsManager>& gm,
 		const util::TimeStamp& t0,
 	       	const int seed)
@@ -385,7 +385,6 @@ std::vector<std::string> create_test_data_files(
   }
   // Create the output parameters
   ekat::ParameterList om_pl;
-  om_pl.set("MPI Ranks in Filename",true);
   om_pl.set("filename_prefix",std::string("source_data_for_time_interpolation"));
   om_pl.set("Field Names",fnames);
   om_pl.set("Averaging Type", std::string("INSTANT"));
@@ -393,12 +392,12 @@ std::vector<std::string> create_test_data_files(
   auto& ctrl_pl = om_pl.sublist("output_control");
   ctrl_pl.set("frequency_units",std::string("nsteps"));
   ctrl_pl.set("Frequency",snap_freq);
-  ctrl_pl.set("MPI Ranks in Filename",true);
   ctrl_pl.set("save_grid_data",false);
   // Create an output manager, note we use a subclass defined in this test so we can extract
   // the list of files created by the output manager.
   OutputManager4Test om;
-  om.setup(comm,om_pl,fm,gm,t0,false);
+  om.initialize(comm,om_pl,t0,false);
+  om.setup(fm,gm);
 
   // Time loop to create and write data
   auto tw = t0;

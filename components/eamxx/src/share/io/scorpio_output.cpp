@@ -500,6 +500,19 @@ run (const std::string& filename,
     // then there's no point in copying from the field's view to dev_view
     if (not is_aliasing_field_view) {
       switch (rank) {
+        case 0:
+        {
+          auto new_view_0d = field.get_view<const Real,Device>();
+          auto avg_view_0d = view_Nd_dev<0>(data);
+          Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int) {
+            if (do_avg_cnt) {
+              combine_and_fill(new_view_0d(),avg_view_0d(),avg_type,fill_value);
+            } else {
+              combine(new_view_0d(),avg_view_0d(),avg_type);
+            }
+          });
+          break;
+        }
         case 1:
         {
           // For rank-1 views, we use strided layout, since it helps us
@@ -1480,6 +1493,17 @@ update_avg_cnt_view(const Field& field, view_1d_dev& dev_view) {
   KT::RangePolicy policy(0,layout.size());
   const auto extents = layout.extents();
   switch (layout.rank()) {
+    case 0:
+    {
+      auto src_view_0d = field.get_view<const Real,Device>();
+      auto tgt_view_0d = view_Nd_dev<0>(data);
+      Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int) {
+        if (src_view_0d()!=fill_value) {
+          tgt_view_0d() += 1;
+        }
+      });
+      break;
+    }
     case 1:
     {
       // For rank-1 views, we use strided layout, since it helps us

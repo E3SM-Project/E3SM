@@ -398,7 +398,7 @@ deep_copy_impl (const Field& src) const {
   if (rank == 0) {
     auto v     =     get_view<      ST,HD>();
     auto v_src = src.get_view<const ST,HD>();
-    v() = v_src();
+    Kokkos::deep_copy(v,v_src);
     return;
   }
 
@@ -543,7 +543,7 @@ void Field::deep_copy_impl (const ST value) const {
     case 0:
       {
         auto v = get_view<ST,HD>();
-        v() = value;
+        Kokkos::deep_copy(v,value);
       }
       break;
     case 1:

@@ -30,6 +30,7 @@ struct P3GlobalForFortran
   using view_ice_table = typename P3F::view_ice_table;
   using view_collect_table = typename P3F::view_collect_table;
   using view_dnu_table = typename P3F::view_dnu_table;
+  using P3Runtime = P3F::P3Runtime;
 
   // All kokkos views must be destructed before Kokkos::finalize
   static void deinit();

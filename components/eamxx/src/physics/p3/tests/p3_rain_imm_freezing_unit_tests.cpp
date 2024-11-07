@@ -91,8 +91,9 @@ static void run_bfb()
     Spack qr2qi_immers_freeze_tend{0.0};
     Spack nr2ni_immers_freeze_tend{0.0};
 
-    Functions::rain_immersion_freezing(T_atm, lamr, mu_r, cdistr, qr_incld,
-                                       qr2qi_immers_freeze_tend, nr2ni_immers_freeze_tend, physics::P3_Constants<Real>());
+    Functions::rain_immersion_freezing(
+        T_atm, lamr, mu_r, cdistr, qr_incld, qr2qi_immers_freeze_tend,
+        nr2ni_immers_freeze_tend, p3::Functions<Real,DefaultDevice>::P3Runtime());
 
     // Copy results back into views
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {

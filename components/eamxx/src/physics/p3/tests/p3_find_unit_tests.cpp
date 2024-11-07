@@ -28,7 +28,7 @@ static void run()
 {
   const int max_threads =
 #ifdef KOKKOS_ENABLE_OPENMP
-    Kokkos::OpenMP::concurrency()
+    Kokkos::OpenMP().concurrency()
 #else
     1
 #endif

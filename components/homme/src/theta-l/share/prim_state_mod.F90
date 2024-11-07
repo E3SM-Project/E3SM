@@ -793,7 +793,7 @@ contains
           write(iulog,100) "(E-E0)/E0    ",(TOTE(2)-TOTE0)/TOTE0
           do q=1,qsize
              if(Qmass0(q)>0.0D0) then
-                write(iulog,'(a,E23.15,a,i1)') "(Q-Q0)/Q0 ",(Qmass(q,2)-Qmass0(q))/Qmass0(q),"   Q",q
+                write(iulog,'(a,E23.15,a,i2)') "(Q-Q0)/Q0 ",(Qmass(q,2)-Qmass0(q))/Qmass0(q),"   Q",q
              end if
           enddo
        endif

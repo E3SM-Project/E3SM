@@ -104,9 +104,6 @@ void srfEmissFunctions<S, D>::perform_time_interpolation(
   // NOTE: we *assume* data_beg and data_end have the *same* hybrid v coords.
   //       IF this ever ceases to be the case, you can interp those too.
 
-  using ExeSpace = typename KT::ExeSpace;
-  using ESU      = ekat::ExeSpaceUtils<ExeSpace>;
-
   // Gather time stamp info
   auto &t_now   = time_state.t_now;
   auto &t_beg   = time_state.t_beg_month;
@@ -184,8 +181,6 @@ void srfEmissFunctions<S, D>::update_srfEmiss_data_from_file(
     const int time_index,  // zero-based
     AbstractRemapper &srfEmiss_horiz_interp, srfEmissInput &srfEmiss_input) {
   using namespace ShortFieldTagsNames;
-  using ESU    = ekat::ExeSpaceUtils<typename DefaultDevice::execution_space>;
-  using Member = typename KokkosTypes<DefaultDevice>::MemberType;
 
   start_timer("EAMxx::srfEmiss::update_srfEmiss_data_from_file");
 
@@ -210,8 +205,6 @@ void srfEmissFunctions<S, D>::update_srfEmiss_data_from_file(
                            .get_header()
                            .get_identifier()
                            .get_layout();
-
-  const int ncols = layout.dim(COL);
 
   // Read fields from the file
   for(int i = 0; i < srfEmiss_horiz_interp.get_num_fields(); ++i) {
