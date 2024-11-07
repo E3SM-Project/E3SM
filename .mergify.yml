@@ -1,6 +1,7 @@
 merge_protections:
   - name: Enforce checks passing
     description: Make sure that checks are not failing on the PR, and reviewers approved
+    comment: false
     if:
       - base = master
     success_conditions:
