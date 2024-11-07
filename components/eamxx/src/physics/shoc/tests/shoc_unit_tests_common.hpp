@@ -48,9 +48,6 @@ struct UnitWrap {
     using Smask              = typename Functions::Smask;
     using C                  = typename Functions::C;
 
-    static constexpr Int max_pack_size = 16;
-    static constexpr Int num_test_itrs = max_pack_size / Spack::n;
-
     // Put struct decls here
     struct TestCalcShocVertflux;
     struct TestShocDiagObklen;

@@ -2,7 +2,6 @@ set(SHOC_SRCS
   shoc_f90.cpp
   shoc_ic_cases.cpp
   shoc_iso_c.f90
-  shoc_iso_f.f90
   ${SCREAM_BASE_DIR}/../eam/src/physics/cam/shoc.F90
   eamxx_shoc_process_interface.cpp
 )
