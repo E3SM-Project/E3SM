@@ -122,8 +122,11 @@ struct Baseline {
   }
 
   Int run_and_cmp (const std::string& filename, const double& tol, bool no_baseline) {
-    auto fid = ekat::FILEPtr(fopen(filename.c_str(), "r"));
-    EKAT_REQUIRE_MSG( fid, "generate_baseline can't read " << filename);
+    ekat::FILEPtr fid;
+    if (no_baseline) {
+      fid = ekat::FILEPtr(fopen(filename.c_str(), "r"));
+      EKAT_REQUIRE_MSG( fid, "generate_baseline can't read " << filename);
+    }
     Int nerr = 0, ne;
     int case_num = 0;
     for (auto ps : params_) {
@@ -352,7 +355,11 @@ int main (int argc, char** argv) {
     if (generate) {
       std::cout << "Generating to " << baseline_fn << "\n";
       nerr += bln.generate_baseline(baseline_fn);
-    } else {
+    } else if (no_baseline) {
+      printf("Running with no baseline actions\n");
+      nerr += bln.run_and_cmp(baseline_fn, tol, no_baseline);
+    }
+    else {
       printf("Comparing with %s at tol %1.1e\n", baseline_fn.c_str(), tol);
       nerr += bln.run_and_cmp(baseline_fn, tol, no_baseline);
     }

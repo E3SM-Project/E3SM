@@ -83,12 +83,14 @@ if (NOT SCREAM_P3_SMALL_KERNELS)
 
   # Make sure that a diff in the two implementation triggers a failed test (in debug only)
   # No need to run lots of different thread counts.
-  CreateUnitTest (p3_sk_tests_fail p3_rain_sed_unit_tests.cpp
-    LIBS p3_sk p3_test_infra
-    EXE_ARGS "--flags=\\'${BASELINE_FILE_ARG}\\'"
-    COMPILER_CXX_DEFS SCREAM_FORCE_RUN_DIFF
-    LABELS "p3_sk;physics;fail"
-    ${FORCE_RUN_DIFF_FAILS})
+  if (SCREAM_ENABLE_BASELINE_TESTS)
+    CreateUnitTest (p3_sk_tests_fail p3_rain_sed_unit_tests.cpp
+      LIBS p3_sk p3_test_infra
+      EXE_ARGS "--flags=\\'${BASELINE_FILE_ARG}\\'"
+      COMPILER_CXX_DEFS SCREAM_FORCE_RUN_DIFF
+      LABELS "p3_sk;physics;fail"
+      ${FORCE_RUN_DIFF_FAILS})
+  endif()
 endif()
 
 CreateUnitTest(p3_run_and_cmp "p3_run_and_cmp.cpp"
