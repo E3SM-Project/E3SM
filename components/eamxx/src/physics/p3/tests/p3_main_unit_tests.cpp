@@ -5,7 +5,6 @@
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
 #include "p3_test_data.hpp"
-#include "share/util/scream_setup_random_test.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -96,9 +95,7 @@ void run_bfb_p3_main_part1()
   };
 
   // Read baseline data
-  std::string baseline_name = this->m_baseline_path + "/p3_main_part1.dat";
   if (this->m_baseline_action == COMPARE) {
-    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
     for (auto& d : isds_baseline) {
       d.read(fid);
     }
@@ -153,7 +150,6 @@ void run_bfb_p3_main_part1()
     }
   }
   else if (this->m_baseline_action == GENERATE) {
-    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
     for (Int i = 0; i < num_runs; ++i) {
       isds_cxx[i].write(fid);
     }
@@ -208,9 +204,7 @@ void run_bfb_p3_main_part2()
   };
 
   // Read baseline data
-  std::string baseline_name = this->m_baseline_path + "/p3_main_part2.dat";
   if (this->m_baseline_action == COMPARE) {
-    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
     for (auto& d : isds_baseline) {
       d.read(fid);
     }
@@ -287,7 +281,6 @@ void run_bfb_p3_main_part2()
     }
   }
   else if (this->m_baseline_action == GENERATE) {
-    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
     for (Int i = 0; i < num_runs; ++i) {
       isds_cxx[i].write(fid);
     }
@@ -335,9 +328,7 @@ void run_bfb_p3_main_part3()
   };
 
   // Read baseline data
-  std::string baseline_name = this->m_baseline_path + "/p3_main_part3.dat";
   if (this->m_baseline_action == COMPARE) {
-    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
     for (auto& d : isds_baseline) {
       d.read(fid);
     }
@@ -392,7 +383,6 @@ void run_bfb_p3_main_part3()
     }
   }
   else if (this->m_baseline_action == GENERATE) {
-    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
     for (Int i = 0; i < num_runs; ++i) {
       isds_cxx[i].write(fid);
     }
@@ -447,9 +437,7 @@ void run_bfb_p3_main()
   };
 
   // Read baseline data
-  std::string baseline_name = this->m_baseline_path + "/p3_main.dat";
   if (this->m_baseline_action == COMPARE) {
-    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
     for (auto& d : isds_baseline) {
       d.read(fid);
     }
@@ -509,7 +497,6 @@ void run_bfb_p3_main()
     }
   }
   else if (this->m_baseline_action == GENERATE) {
-    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
     for (Int i = 0; i < num_runs; ++i) {
       isds_cxx[i].write(fid);
     }

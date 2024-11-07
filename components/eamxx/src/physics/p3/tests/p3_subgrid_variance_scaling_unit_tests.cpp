@@ -42,23 +42,13 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling : public UnitWrap::Un
     view_1d<Scalar> scaling_device("c scaling",1);
     auto scaling_host = Kokkos::create_mirror_view(scaling_device);
 
-    std::string baseline_name = this->m_baseline_path + "/subgrid_variance_scaling.dat";
-    ekat::FILEPtr rfid = nullptr;
-    ekat::FILEPtr wfid = nullptr;
-    if (this->m_baseline_action == COMPARE) {
-      rfid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
-    }
-    else if (this->m_baseline_action == GENERATE) {
-      wfid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
-    }
-
     for (Int i = 0; i < 3; ++i) {  // loop over exponents
       for (Int j = 0; j < 16; ++j) { // loop over relvars
 
 	// Get baseline solution
 	// ----------------------------------
         if (this->m_baseline_action == COMPARE) {
-          ekat::read(&baseline_scaling, 1, rfid);
+          ekat::read(&baseline_scaling, 1, Base::m_fid);
         }
 
 	// Get C++ solution
@@ -84,7 +74,7 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling : public UnitWrap::Un
           REQUIRE(baseline_scaling == scaling_host(0) );
         }
         else if (this->m_baseline_action == GENERATE) {
-          ekat::write(&scaling_host(0), 1, wfid);
+          ekat::write(&scaling_host(0), 1, Base::m_fid);
         }
       } //end loop over relvar[j]
     } //end loop over expons[i]

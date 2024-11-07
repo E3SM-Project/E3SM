@@ -5,7 +5,6 @@
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
 #include "p3_test_data.hpp"
-#include "share/util/scream_setup_random_test.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -79,9 +78,7 @@ void run_bfb_calc_bulk_rhime()
   Kokkos::deep_copy(cbrr_device, cbrr_host);
 
   // Read baseline data
-  std::string baseline_name = this->m_baseline_path + "/calc_bulk_rho_rime.dat";
   if (this->m_baseline_action == COMPARE) {
-    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
     for (Int i = 0; i < max_pack_size; ++i) {
       cbrr_baseline[i].read(fid);
     }
@@ -124,7 +121,6 @@ void run_bfb_calc_bulk_rhime()
     }
   }
   else if (this->m_baseline_action == GENERATE) {
-    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
     for (Int s = 0; s < max_pack_size; ++s) {
       cbrr_host(s).write(fid);
     }
@@ -160,9 +156,7 @@ void run_bfb_ice_sed()
   };
 
   // Read baseline data
-  std::string baseline_name = this->m_baseline_path + "/ice_sedimentation.dat";
   if (this->m_baseline_action == COMPARE) {
-    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
     for (Int i = 0; i < num_runs; ++i) {
       isds_baseline[i].read(fid);
     }
@@ -198,7 +192,6 @@ void run_bfb_ice_sed()
     }
   }
   else if (this->m_baseline_action == GENERATE) {
-    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
     for (Int i = 0; i < num_runs; ++i) {
       isds_cxx[i].write(fid);
     }
@@ -243,9 +236,7 @@ void run_bfb_homogeneous_freezing()
   };
 
   // Read baseline data
-  std::string baseline_name = this->m_baseline_path + "/homogeneous_freezing.dat";
   if (this->m_baseline_action == COMPARE) {
-    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
     for (auto& d : hfds_baseline) {
       d.read(fid);
     }
@@ -277,7 +268,6 @@ void run_bfb_homogeneous_freezing()
     }
   }
   else if (this->m_baseline_action == GENERATE) {
-    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
     for (Int i = 0; i < num_runs; ++i) {
       hfds_cxx[i].write(fid);
     }

@@ -6,8 +6,6 @@
 #include "p3_test_data.hpp"
 
 #include "share/scream_types.hpp"
-#include "share/util/scream_setup_random_test.hpp"
-#include "share/util/scream_setup_random_test.hpp"
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
@@ -204,7 +202,7 @@ void run_phys()
 void run_bfb()
 {
   // With stored baselines, we must use a fixed seed!
-  auto engine = setup_random_test(12345745);
+  auto engine = Base::get_engine();
 
   CalcUpwindData cuds_baseline[] = {
                 // kts, kte, kdir, kbot, k_qxtop, na,   dt_sub,
@@ -237,11 +235,9 @@ void run_bfb()
   };
 
   // Read baseline data
-  std::string baseline_name = this->m_baseline_path + "/upwind.dat";
   if (this->m_baseline_action == COMPARE) {
-    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
     for (auto& d : cuds_baseline) {
-      d.read(fid);
+      d.read(Base::m_fid);
     }
   }
 
@@ -275,9 +271,8 @@ void run_bfb()
     }
   }
   else if (this->m_baseline_action == GENERATE) {
-    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
     for (Int i = 0; i < num_runs; ++i) {
-      cuds_cxx[i].write(fid);
+      cuds_cxx[i].write(Base::m_fid);
     }
   }
 }
@@ -295,7 +290,7 @@ void run_phys()
 void run_bfb()
 {
   // With stored baselines, we must use a fixed seed!
-  auto engine = setup_random_test(2346563);
+  auto engine = Base::get_engine();
 
   GenSedData gsds_baseline[] = {
     //       kts, kte, kdir, k_qxtop, k_qxbot, kbot,     Co_max,   dt_left, prt_accum, num_arrays
@@ -322,11 +317,9 @@ void run_bfb()
   };
 
   // Read baseline data
-  std::string baseline_name = this->m_baseline_path + "/gen_sed.dat";
   if (this->m_baseline_action == COMPARE) {
-    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
     for (auto& d : gsds_baseline) {
-      d.read(fid);
+      d.read(Base::m_fid);
     }
   }
 
@@ -363,9 +356,8 @@ void run_bfb()
     }
   }
   else if (this->m_baseline_action == GENERATE) {
-    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
     for (Int i = 0; i < num_runs; ++i) {
-      gsds_cxx[i].write(fid);
+      gsds_cxx[i].write(Base::m_fid);
     }
   }
 }

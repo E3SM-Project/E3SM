@@ -82,9 +82,7 @@ struct UnitWrap::UnitTest<D>::TestIceDepositionSublimation : public UnitWrap::Un
     Kokkos::deep_copy(cxx_device, cxx_host);
 
     // Read baseline data
-    std::string baseline_name = this->m_baseline_path + "/ice_deposition_sublimation.dat";
     if (this->m_baseline_action == COMPARE) {
-      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
       for (Int i = 0; i < max_pack_size; ++i) {
         baseline_data[i].read(fid);
       }
@@ -152,7 +150,6 @@ struct UnitWrap::UnitTest<D>::TestIceDepositionSublimation : public UnitWrap::Un
       }
     }
     else if (this->m_baseline_action == GENERATE) {
-      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
       for (Int s = 0; s < max_pack_size; ++s) {
         cxx_host(s).write(fid);
       }

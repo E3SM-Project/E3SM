@@ -6,7 +6,6 @@
 #include "p3_functions.hpp"
 #include "p3_test_data.hpp"
 #include "p3_data.hpp"
-#include "share/util/scream_setup_random_test.hpp"
 
 #include "p3_unit_tests_common.hpp"
 

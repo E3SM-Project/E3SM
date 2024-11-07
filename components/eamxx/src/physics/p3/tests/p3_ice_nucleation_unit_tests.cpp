@@ -56,9 +56,7 @@ struct UnitWrap::UnitTest<D>::TestIceNucleation : public UnitWrap::UnitTest<D>::
 
         std::string root_name = "ice_nucleation";
         std::string file_name = root_name + (do_predict_nc ? "1" : "0") + (do_prescribed_CCN ? "1" : "0");
-        std::string baseline_name = this->m_baseline_path + "/" + file_name + ".dat";
         if (this->m_baseline_action == COMPARE) {
-          auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
           for (Int i = 0; i < max_pack_size; ++i) {
             self[i].read(fid);
           }
@@ -106,7 +104,6 @@ struct UnitWrap::UnitTest<D>::TestIceNucleation : public UnitWrap::UnitTest<D>::
           }
         }
         else if (this->m_baseline_action == GENERATE) {
-          auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
           for (Int s = 0; s < max_pack_size; ++s) {
             self_host(s).write(fid);
           }

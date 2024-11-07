@@ -6,7 +6,6 @@
 #include "p3_functions.hpp"
 #include "p3_test_data.hpp"
 #include "p3_data.hpp"
-#include "share/util/scream_setup_random_test.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -78,11 +77,9 @@ void run_bfb_rain_vel()
   Kokkos::deep_copy(crfv_device, crfv_host);
 
   // Read baseline data
-  std::string baseline_name = this->m_baseline_path + "/rain_fall_velocity.dat";
   if (this->m_baseline_action == COMPARE) {
-    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
     for (Int i = 0; i < max_pack_size; ++i) {
-      crfv_baseline[i].read(fid);
+      crfv_baseline[i].read(Base::m_fid);
     }
   }
 
@@ -127,9 +124,8 @@ void run_bfb_rain_vel()
     }
   }
   else if (this->m_baseline_action == GENERATE) {
-    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
     for (Int s = 0; s < max_pack_size; ++s) {
-      crfv_host(s).write(fid);
+      crfv_host(s).write(Base::m_fid);
     }
   }
 }
@@ -137,7 +133,7 @@ void run_bfb_rain_vel()
 void run_bfb_rain_sed()
 {
   // With stored baselines, we must use a fixed seed!
-  auto engine = setup_random_test(1267351);
+  auto engine = Base::get_engine();
 
   // F90 is quite slow on weaver, so we decrease dt to reduce
   // the number of steps in rain_sed.
@@ -172,11 +168,9 @@ void run_bfb_rain_sed()
   };
 
   // Read baseline data
-  std::string baseline_name = this->m_baseline_path + "/rain_sed.dat";
   if (this->m_baseline_action == COMPARE) {
-    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
     for (auto& d : rsds_baseline) {
-      d.read(fid);
+      d.read(Base::m_fid);
     }
   }
 
@@ -215,9 +209,8 @@ void run_bfb_rain_sed()
     }
   }
   else if (this->m_baseline_action == GENERATE) {
-    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
     for (Int i = 0; i < num_runs; ++i) {
-      rsds_cxx[i].write(fid);
+      rsds_cxx[i].write(Base::m_fid);
     }
   }
 }

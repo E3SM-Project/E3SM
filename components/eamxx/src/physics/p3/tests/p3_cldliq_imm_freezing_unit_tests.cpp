@@ -71,9 +71,7 @@ void run_bfb()
   Kokkos::deep_copy(device_data, host_data);
 
   // Read baseline data
-  std::string baseline_name = this->m_baseline_path + "/cldliq_imm_freezing.dat";
   if (this->m_baseline_action == COMPARE) {
-    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
     for (Int i = 0; i < max_pack_size; ++i) {
       cldliq_imm_freezing_data[i].read(fid);
     }
@@ -120,7 +118,6 @@ void run_bfb()
     }
   }
   else if (this->m_baseline_action == GENERATE) {
-    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
     for (Int s = 0; s < max_pack_size; ++s) {
       host_data(s).write(fid);
     }

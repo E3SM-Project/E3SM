@@ -210,9 +210,7 @@ struct UnitWrap::UnitTest<D>::TestTableIce : public UnitWrap::UnitTest<D>::Base 
     Kokkos::deep_copy(lidb_device, lidb_host);
 
     // Read baseline data
-    std::string baseline_name = this->m_baseline_path + "/p3_ice_tables_all.dat";
     if (this->m_baseline_action == COMPARE) {
-      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
       for (Int i = 0; i < max_pack_size; ++i) {
         lid[i].read(fid);
         lidb[i].read(fid);
@@ -296,7 +294,6 @@ struct UnitWrap::UnitTest<D>::TestTableIce : public UnitWrap::UnitTest<D>::Base 
       }
     }
     else if (this->m_baseline_action == GENERATE) {
-      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
       for (Int s = 0; s < max_pack_size; ++s) {
         lid[s].dumi = int_results_mirror(0, s);
         lid[s].dumjj = int_results_mirror(1, s);

@@ -58,9 +58,7 @@ void ice_melting_bfb() {
   Kokkos::deep_copy(IceMelt_device, IceMelt_host);
 
   // Read baseline data
-  std::string baseline_name = this->m_baseline_path + "/ice_melting.dat";
   if (this->m_baseline_action == COMPARE) {
-    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
     for (Int i = 0; i < max_pack_size; ++i) {
       IceMelt[i].read(fid);
     }
@@ -110,7 +108,6 @@ void ice_melting_bfb() {
     }
   }
   else if (this->m_baseline_action == GENERATE) {
-    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
     for (Int s = 0; s < max_pack_size; ++s) {
       IceMelt_host(s).write(fid);
     }

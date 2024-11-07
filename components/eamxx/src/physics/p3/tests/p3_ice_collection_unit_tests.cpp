@@ -64,9 +64,7 @@ struct UnitWrap::UnitTest<D>::TestIceCollection : public UnitWrap::UnitTest<D>::
     Kokkos::deep_copy(cldliq_device, cldliq_host);
 
     // Read baseline data
-    std::string baseline_name = this->m_baseline_path + "/ice_cldliq_collection.dat";
     if (this->m_baseline_action == COMPARE) {
-      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
       for (Int i = 0; i < max_pack_size; ++i) {
         cldliq[i].read(fid);
       }
@@ -122,7 +120,6 @@ struct UnitWrap::UnitTest<D>::TestIceCollection : public UnitWrap::UnitTest<D>::
       }
     }
     else if (this->m_baseline_action == GENERATE) {
-      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
       for (Int s = 0; s < max_pack_size; ++s) {
         cldliq_host(s).write(fid);
       }
@@ -168,9 +165,7 @@ struct UnitWrap::UnitTest<D>::TestIceCollection : public UnitWrap::UnitTest<D>::
     Kokkos::deep_copy(rain_device, rain_host);
 
     // Read baseline data
-    std::string baseline_name = this->m_baseline_path + "/ice_rain_collection.dat";
     if (this->m_baseline_action == COMPARE) {
-      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
       for (Int i = 0; i < max_pack_size; ++i) {
         rain[i].read(fid);
       }
@@ -219,7 +214,6 @@ struct UnitWrap::UnitTest<D>::TestIceCollection : public UnitWrap::UnitTest<D>::
       }
     }
     else if (this->m_baseline_action == GENERATE) {
-      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
       for (Int s = 0; s < max_pack_size; ++s) {
         rain_host(s).write(fid);
       }
@@ -265,9 +259,7 @@ struct UnitWrap::UnitTest<D>::TestIceCollection : public UnitWrap::UnitTest<D>::
     Kokkos::deep_copy(self_device, self_host);
 
     // Read baseline data
-    std::string baseline_name = this->m_baseline_path + "/ice_self_collection.dat";
     if (this->m_baseline_action == COMPARE) {
-      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
       for (Int i = 0; i < max_pack_size; ++i) {
         self[i].read(fid);
       }
@@ -306,7 +298,6 @@ struct UnitWrap::UnitTest<D>::TestIceCollection : public UnitWrap::UnitTest<D>::
       }
     }
     else if (this->m_baseline_action == GENERATE) {
-      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
       for (Int s = 0; s < max_pack_size; ++s) {
         self_host(s).write(fid);
       }

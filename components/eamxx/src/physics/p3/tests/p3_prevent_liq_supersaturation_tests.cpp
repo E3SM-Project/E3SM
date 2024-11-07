@@ -4,7 +4,6 @@
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
 #include "p3_test_data.hpp"
-#include "share/util/scream_setup_random_test.hpp"
 #include "share/scream_types.hpp"
 #include "physics/share/physics_functions.hpp"
 
@@ -124,9 +123,7 @@ struct UnitWrap::UnitTest<D>::TestPreventLiqSupersaturation : public UnitWrap::U
     }
 
     // Read baseline data
-    std::string baseline_name = this->m_baseline_path + "/prevent_liq_supersaturation.dat";
     if (this->m_baseline_action == COMPARE) {
-      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
       for (Int i = 0; i < max_pack_size; ++i) {
         baseline_data[i].read(fid);
       }
@@ -180,7 +177,6 @@ struct UnitWrap::UnitTest<D>::TestPreventLiqSupersaturation : public UnitWrap::U
       }
     }
     else if (this->m_baseline_action == GENERATE) {
-      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
       for (Int s = 0; s < max_pack_size; ++s) {
         cxx_host(s).write(fid);
       }

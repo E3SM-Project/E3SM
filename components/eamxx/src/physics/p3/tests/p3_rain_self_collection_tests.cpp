@@ -57,9 +57,7 @@ struct UnitWrap::UnitTest<D>::TestRainSelfCollection : public UnitWrap::UnitTest
     Kokkos::deep_copy(dc_device, dc_host);
 
     // Read baseline data
-    std::string baseline_name = this->m_baseline_path + "/rain_self_collection.dat";
     if (this->m_baseline_action == COMPARE) {
-      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
       for (Int i = 0; i < max_pack_size; ++i) {
         dc[i].read(fid);
       }
@@ -104,7 +102,6 @@ struct UnitWrap::UnitTest<D>::TestRainSelfCollection : public UnitWrap::UnitTest
       }
     }
     else if (this->m_baseline_action == GENERATE) {
-      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
       for (Int s = 0; s < max_pack_size; ++s) {
         dc_host(s).write(fid);
       }

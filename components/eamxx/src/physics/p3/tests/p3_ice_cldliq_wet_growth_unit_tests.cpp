@@ -58,9 +58,7 @@ struct UnitWrap::UnitTest<D>::TestIceCldliqWetGrowth : public UnitWrap::UnitTest
     Kokkos::deep_copy(self_device, self_host);
 
     // Read baseline data
-    std::string baseline_name = this->m_baseline_path + "/ice_cldliq_wet_growth.dat";
     if (this->m_baseline_action == COMPARE) {
-      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
       for (Int i = 0; i < max_pack_size; ++i) {
         self[i].read(fid);
       }
@@ -130,7 +128,6 @@ struct UnitWrap::UnitTest<D>::TestIceCldliqWetGrowth : public UnitWrap::UnitTest
       }
     }
     else if (this->m_baseline_action == GENERATE) {
-      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
       for (Int s = 0; s < max_pack_size; ++s) {
         self_host(s).write(fid);
       }

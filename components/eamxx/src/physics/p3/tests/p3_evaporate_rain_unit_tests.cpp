@@ -174,9 +174,7 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip : public UnitWrap::UnitTest<D>:
     Kokkos::deep_copy(espd_device, espd_host);
 
     // Read baseline data
-    std::string baseline_name = this->m_baseline_path + "/evaporate_rain.dat";
     if (this->m_baseline_action == COMPARE) {
-      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
       for (Int i = 0; i < max_pack_size; ++i) {
         espd[i].read(fid);
       }
@@ -252,7 +250,6 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip : public UnitWrap::UnitTest<D>:
       }
     }
     else if (this->m_baseline_action == GENERATE) {
-      auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
       for (Int s = 0; s < max_pack_size; ++s) {
         espd_host(s).write(fid);
       }

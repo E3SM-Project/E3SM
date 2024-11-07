@@ -5,7 +5,6 @@
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
 #include "p3_test_data.hpp"
-#include "share/util/scream_setup_random_test.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -57,9 +56,7 @@ void run_bfb()
   };
 
   // Read baseline data
-  std::string baseline_name = this->m_baseline_path + "/cloud_sedimentation.dat";
   if (this->m_baseline_action == COMPARE) {
-    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
     for (auto& d : csds_baseline) {
       d.read(fid);
     }
@@ -91,7 +88,6 @@ void run_bfb()
     }
   }
   else if (this->m_baseline_action == GENERATE) {
-    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
     for (Int i = 0; i < num_runs; ++i) {
       csds_cxx[i].write(fid);
     }

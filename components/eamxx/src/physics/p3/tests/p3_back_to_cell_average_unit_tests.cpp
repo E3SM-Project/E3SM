@@ -5,7 +5,6 @@
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
 #include "p3_test_data.hpp"
-#include "share/util/scream_setup_random_test.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -45,9 +44,7 @@ void run_bfb()
   Kokkos::deep_copy(device_data, host_data);
 
   // Read baseline data
-  std::string baseline_name = this->m_baseline_path + "/back_to_cell_average.dat";
   if (this->m_baseline_action == COMPARE) {
-    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
     for (Int i = 0; i < max_pack_size; ++i) {
       back_to_cell_average_data[i].read(fid);
     }
@@ -176,7 +173,6 @@ void run_bfb()
     }
   }
   else if (this->m_baseline_action == GENERATE) {
-    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
     for (Int s = 0; s < max_pack_size; ++s) {
       host_data(s).write(fid);
     }

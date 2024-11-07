@@ -60,9 +60,7 @@ void cloud_water_autoconversion_unit_bfb_tests() {
   Kokkos::deep_copy(cwadc_device, cwadc_host);
 
   // Read baseline data
-  std::string baseline_name = this->m_baseline_path + "/cloud_water_autoconversion.dat";
   if (this->m_baseline_action == COMPARE) {
-    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
     for (Int i = 0; i < max_pack_size; ++i) {
       cwadc[i].read(fid);
     }
@@ -117,7 +115,6 @@ void cloud_water_autoconversion_unit_bfb_tests() {
     }
   }
   else if (this->m_baseline_action == GENERATE) {
-    auto fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
     for (Int s = 0; s < max_pack_size; ++s) {
       cwadc_host(s).write(fid);
     }
