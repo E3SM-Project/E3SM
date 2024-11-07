@@ -292,7 +292,7 @@ void MAMMicrophysics::set_grids(
 
       auto file_reader =
           scream::mam_coupling::create_tracer_data_reader(hor_rem, file_name,
-                                                          data_tracer, extfrc_map_file);
+                                                          data_tracer.file_type);
       VertEmissionsHorizInterp_.push_back(hor_rem);
       VertEmissionsDataReader_.push_back(file_reader);
       vert_emis_data_.push_back(data_tracer);
