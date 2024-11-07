@@ -104,7 +104,7 @@ struct UnitWrap::UnitTest<D>::TestCalcLiqRelaxationTimescale : public UnitWrap::
         REQUIRE(self[s].epsc == self_host(s).epsc);
       }
     }
-    else {
+    else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
         self_host(s).write(Base::m_fid);
       }
