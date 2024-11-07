@@ -66,7 +66,7 @@ struct UnitWrap::UnitTest<D>::TestIceCollection : public UnitWrap::UnitTest<D>::
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        cldliq[i].read(fid);
+        cldliq[i].read(Base::m_fid);
       }
     }
 
@@ -121,7 +121,7 @@ struct UnitWrap::UnitTest<D>::TestIceCollection : public UnitWrap::UnitTest<D>::
     }
     else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-        cldliq_host(s).write(fid);
+        cldliq_host(s).write(Base::m_fid);
       }
     }
   }
@@ -167,7 +167,7 @@ struct UnitWrap::UnitTest<D>::TestIceCollection : public UnitWrap::UnitTest<D>::
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        rain[i].read(fid);
+        rain[i].read(Base::m_fid);
       }
     }
 
@@ -215,7 +215,7 @@ struct UnitWrap::UnitTest<D>::TestIceCollection : public UnitWrap::UnitTest<D>::
     }
     else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-        rain_host(s).write(fid);
+        rain_host(s).write(Base::m_fid);
       }
     }
   }
@@ -261,7 +261,7 @@ struct UnitWrap::UnitTest<D>::TestIceCollection : public UnitWrap::UnitTest<D>::
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        self[i].read(fid);
+        self[i].read(Base::m_fid);
       }
     }
 
@@ -299,7 +299,7 @@ struct UnitWrap::UnitTest<D>::TestIceCollection : public UnitWrap::UnitTest<D>::
     }
     else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-        self_host(s).write(fid);
+        self_host(s).write(Base::m_fid);
       }
     }
   }

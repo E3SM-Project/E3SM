@@ -80,7 +80,7 @@ void run_bfb_calc_bulk_rhime()
   // Read baseline data
   if (this->m_baseline_action == COMPARE) {
     for (Int i = 0; i < max_pack_size; ++i) {
-      cbrr_baseline[i].read(fid);
+      cbrr_baseline[i].read(Base::m_fid);
     }
   }
 
@@ -122,7 +122,7 @@ void run_bfb_calc_bulk_rhime()
   }
   else if (this->m_baseline_action == GENERATE) {
     for (Int s = 0; s < max_pack_size; ++s) {
-      cbrr_host(s).write(fid);
+      cbrr_host(s).write(Base::m_fid);
     }
   }
 }
@@ -158,7 +158,7 @@ void run_bfb_ice_sed()
   // Read baseline data
   if (this->m_baseline_action == COMPARE) {
     for (Int i = 0; i < num_runs; ++i) {
-      isds_baseline[i].read(fid);
+      isds_baseline[i].read(Base::m_fid);
     }
   }
 
@@ -193,7 +193,7 @@ void run_bfb_ice_sed()
   }
   else if (this->m_baseline_action == GENERATE) {
     for (Int i = 0; i < num_runs; ++i) {
-      isds_cxx[i].write(fid);
+      isds_cxx[i].write(Base::m_fid);
     }
   }
 }
@@ -238,7 +238,7 @@ void run_bfb_homogeneous_freezing()
   // Read baseline data
   if (this->m_baseline_action == COMPARE) {
     for (auto& d : hfds_baseline) {
-      d.read(fid);
+      d.read(Base::m_fid);
     }
   }
 
@@ -269,7 +269,7 @@ void run_bfb_homogeneous_freezing()
   }
   else if (this->m_baseline_action == GENERATE) {
     for (Int i = 0; i < num_runs; ++i) {
-      hfds_cxx[i].write(fid);
+      hfds_cxx[i].write(Base::m_fid);
     }
   }
 

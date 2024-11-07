@@ -62,7 +62,7 @@ void cloud_water_autoconversion_unit_bfb_tests() {
   // Read baseline data
   if (this->m_baseline_action == COMPARE) {
     for (Int i = 0; i < max_pack_size; ++i) {
-      cwadc[i].read(fid);
+      cwadc[i].read(Base::m_fid);
     }
   }
 
@@ -116,7 +116,7 @@ void cloud_water_autoconversion_unit_bfb_tests() {
   }
   else if (this->m_baseline_action == GENERATE) {
     for (Int s = 0; s < max_pack_size; ++s) {
-      cwadc_host(s).write(fid);
+      cwadc_host(s).write(Base::m_fid);
     }
   }
 }

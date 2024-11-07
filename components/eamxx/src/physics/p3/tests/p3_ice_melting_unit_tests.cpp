@@ -60,7 +60,7 @@ void ice_melting_bfb() {
   // Read baseline data
   if (this->m_baseline_action == COMPARE) {
     for (Int i = 0; i < max_pack_size; ++i) {
-      IceMelt[i].read(fid);
+      IceMelt[i].read(Base::m_fid);
     }
   }
 
@@ -109,7 +109,7 @@ void ice_melting_bfb() {
   }
   else if (this->m_baseline_action == GENERATE) {
     for (Int s = 0; s < max_pack_size; ++s) {
-      IceMelt_host(s).write(fid);
+      IceMelt_host(s).write(Base::m_fid);
     }
   }
 

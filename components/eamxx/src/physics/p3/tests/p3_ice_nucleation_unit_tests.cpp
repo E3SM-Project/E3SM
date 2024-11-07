@@ -58,7 +58,7 @@ struct UnitWrap::UnitTest<D>::TestIceNucleation : public UnitWrap::UnitTest<D>::
         std::string file_name = root_name + (do_predict_nc ? "1" : "0") + (do_prescribed_CCN ? "1" : "0");
         if (this->m_baseline_action == COMPARE) {
           for (Int i = 0; i < max_pack_size; ++i) {
-            self[i].read(fid);
+            self[i].read(Base::m_fid);
           }
         }
 
@@ -105,7 +105,7 @@ struct UnitWrap::UnitTest<D>::TestIceNucleation : public UnitWrap::UnitTest<D>::
         }
         else if (this->m_baseline_action == GENERATE) {
           for (Int s = 0; s < max_pack_size; ++s) {
-            self_host(s).write(fid);
+            self_host(s).write(Base::m_fid);
           }
         }
       } //end for do_predict_nc

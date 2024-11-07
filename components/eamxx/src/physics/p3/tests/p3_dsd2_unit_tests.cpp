@@ -63,7 +63,7 @@ struct UnitWrap::UnitTest<D>::TestDsd2 : public UnitWrap::UnitTest<D>::Base {
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        gcdd[i].read(fid);
+        gcdd[i].read(Base::m_fid);
       }
     }
 
@@ -109,7 +109,7 @@ struct UnitWrap::UnitTest<D>::TestDsd2 : public UnitWrap::UnitTest<D>::Base {
     }
     else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-        gcdd_host(s).write(fid);
+        gcdd_host(s).write(Base::m_fid);
       }
     }
   }
@@ -154,7 +154,7 @@ struct UnitWrap::UnitTest<D>::TestDsd2 : public UnitWrap::UnitTest<D>::Base {
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        grdd[i].read(fid);
+        grdd[i].read(Base::m_fid);
       }
     }
 
@@ -199,7 +199,7 @@ struct UnitWrap::UnitTest<D>::TestDsd2 : public UnitWrap::UnitTest<D>::Base {
     }
     else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-        grdd_host(s).write(fid);
+        grdd_host(s).write(Base::m_fid);
       }
     }
   }

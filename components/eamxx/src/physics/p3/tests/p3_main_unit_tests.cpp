@@ -97,7 +97,7 @@ void run_bfb_p3_main_part1()
   // Read baseline data
   if (this->m_baseline_action == COMPARE) {
     for (auto& d : isds_baseline) {
-      d.read(fid);
+      d.read(Base::m_fid);
     }
   }
 
@@ -151,7 +151,7 @@ void run_bfb_p3_main_part1()
   }
   else if (this->m_baseline_action == GENERATE) {
     for (Int i = 0; i < num_runs; ++i) {
-      isds_cxx[i].write(fid);
+      isds_cxx[i].write(Base::m_fid);
     }
   }
 }
@@ -206,7 +206,7 @@ void run_bfb_p3_main_part2()
   // Read baseline data
   if (this->m_baseline_action == COMPARE) {
     for (auto& d : isds_baseline) {
-      d.read(fid);
+      d.read(Base::m_fid);
     }
   }
 
@@ -282,7 +282,7 @@ void run_bfb_p3_main_part2()
   }
   else if (this->m_baseline_action == GENERATE) {
     for (Int i = 0; i < num_runs; ++i) {
-      isds_cxx[i].write(fid);
+      isds_cxx[i].write(Base::m_fid);
     }
   }
 }
@@ -330,7 +330,7 @@ void run_bfb_p3_main_part3()
   // Read baseline data
   if (this->m_baseline_action == COMPARE) {
     for (auto& d : isds_baseline) {
-      d.read(fid);
+      d.read(Base::m_fid);
     }
   }
 
@@ -384,7 +384,7 @@ void run_bfb_p3_main_part3()
   }
   else if (this->m_baseline_action == GENERATE) {
     for (Int i = 0; i < num_runs; ++i) {
-      isds_cxx[i].write(fid);
+      isds_cxx[i].write(Base::m_fid);
     }
   }
 }
@@ -439,7 +439,7 @@ void run_bfb_p3_main()
   // Read baseline data
   if (this->m_baseline_action == COMPARE) {
     for (auto& d : isds_baseline) {
-      d.read(fid);
+      d.read(Base::m_fid);
     }
   }
 
@@ -498,7 +498,7 @@ void run_bfb_p3_main()
   }
   else if (this->m_baseline_action == GENERATE) {
     for (Int i = 0; i < num_runs; ++i) {
-      isds_cxx[i].write(fid);
+      isds_cxx[i].write(Base::m_fid);
     }
   }
 }

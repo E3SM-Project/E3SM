@@ -76,7 +76,7 @@ void run_bfb()
   // Read baseline data
   if (this->m_baseline_action == COMPARE) {
     for (Int i = 0; i < max_pack_size; ++i) {
-      cloud_rain_acc_data[i].read(fid);
+      cloud_rain_acc_data[i].read(Base::m_fid);
     }
   }
 
@@ -122,7 +122,7 @@ void run_bfb()
   }
   else if (this->m_baseline_action == GENERATE) {
     for (Int s = 0; s < max_pack_size; ++s) {
-      host_data(s).write(fid);
+      host_data(s).write(Base::m_fid);
     }
   }
 }

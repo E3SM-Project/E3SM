@@ -84,7 +84,7 @@ struct UnitWrap::UnitTest<D>::TestIceDepositionSublimation : public UnitWrap::Un
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        baseline_data[i].read(fid);
+        baseline_data[i].read(Base::m_fid);
       }
     }
 
@@ -151,7 +151,7 @@ struct UnitWrap::UnitTest<D>::TestIceDepositionSublimation : public UnitWrap::Un
     }
     else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-        cxx_host(s).write(fid);
+        cxx_host(s).write(Base::m_fid);
       }
     }
   } // run_bfb

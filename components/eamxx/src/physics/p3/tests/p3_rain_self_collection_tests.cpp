@@ -59,7 +59,7 @@ struct UnitWrap::UnitTest<D>::TestRainSelfCollection : public UnitWrap::UnitTest
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        dc[i].read(fid);
+        dc[i].read(Base::m_fid);
       }
     }
 
@@ -103,7 +103,7 @@ struct UnitWrap::UnitTest<D>::TestRainSelfCollection : public UnitWrap::UnitTest
     }
     else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-        dc_host(s).write(fid);
+        dc_host(s).write(Base::m_fid);
       }
     }
   }
