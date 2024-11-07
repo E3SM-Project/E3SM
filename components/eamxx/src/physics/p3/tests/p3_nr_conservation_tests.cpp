@@ -17,7 +17,7 @@ struct UnitWrap::UnitTest<D>::TestNrConservation : public UnitWrap::UnitTest<D>:
 
   void run_bfb()
   {
-    auto engine = setup_random_test(912874);
+    auto engine = Base::get_engine();
 
     NrConservationData baseline_data[max_pack_size];
 

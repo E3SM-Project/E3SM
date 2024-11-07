@@ -27,7 +27,7 @@ void run_phys()
 
 void run_bfb()
 {
-  auto engine = setup_random_test(23512);
+  auto engine = Base::get_engine();
 
   CloudSedData csds_baseline[] = {
     //         kts, kte, ktop, kbot, kdir,        dt,    inv_dt, do_predict_nc,     precip_liq_surf,

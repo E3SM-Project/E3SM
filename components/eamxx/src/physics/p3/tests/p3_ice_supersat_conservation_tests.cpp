@@ -20,7 +20,7 @@ struct UnitWrap::UnitTest<D>::TestIceSupersatConservation : public UnitWrap::Uni
     constexpr Scalar latvap       = C::LatVap;
     constexpr Scalar latice       = C::LatIce;
 
-    auto engine = setup_random_test(124151);
+    auto engine = Base::get_engine();
 
     IceSupersatConservationData baseline_data[max_pack_size];
 

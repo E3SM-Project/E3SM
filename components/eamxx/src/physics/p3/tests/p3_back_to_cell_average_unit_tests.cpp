@@ -27,7 +27,7 @@ void run_phys()
 
 void run_bfb()
 {
-  auto engine = setup_random_test(314552);
+  auto engine = Base::get_engine();
 
   // Generate n test structs, each populated with random data (values within
   // [0,1]) by the default constructor.

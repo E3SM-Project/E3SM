@@ -50,7 +50,7 @@ void run_phys()
 
 void run_bfb_p3_main_part1()
 {
-  auto engine = setup_random_test(125125);
+  auto engine = Base::get_engine();
 
   constexpr Scalar qsmall = C::QSMALL; //PMC wouldn't it make more sense to define qsmall at a higher level since used in part1, part2, and part3?
   constexpr Scalar T_zerodegc   = C::T_zerodegc;
@@ -158,7 +158,7 @@ void run_bfb_p3_main_part1()
 
 void run_bfb_p3_main_part2()
 {
-  auto engine = setup_random_test(263267);
+  auto engine = Base::get_engine();
 
   constexpr Scalar qsmall     = C::QSMALL;
   constexpr Scalar T_zerodegc   = C::T_zerodegc;
@@ -292,7 +292,7 @@ void run_bfb_p3_main_part3()
   constexpr Scalar latvap = C::LatVap;
   constexpr Scalar latice = C::LatIce;
 
-  auto engine = setup_random_test(3734734);
+  auto engine = Base::get_engine();
 
   constexpr Scalar qsmall     = C::QSMALL;
 
@@ -391,7 +391,7 @@ void run_bfb_p3_main_part3()
 
 void run_bfb_p3_main()
 {
-  auto engine = setup_random_test(3427727);
+  auto engine = Base::get_engine();
 
   P3MainData isds_baseline[] = {
     //      its, ite, kts, kte,   it,        dt, do_predict_nc, do_prescribed_CCN

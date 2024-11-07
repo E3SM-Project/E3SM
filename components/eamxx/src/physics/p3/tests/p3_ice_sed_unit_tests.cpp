@@ -129,7 +129,7 @@ void run_bfb_calc_bulk_rhime()
 
 void run_bfb_ice_sed()
 {
-  auto engine = setup_random_test(124135);
+  auto engine = Base::get_engine();
 
   IceSedData isds_baseline[] = {
     //       kts, kte, ktop, kbot, kdir,        dt,   inv_dt, precip_ice_surf
@@ -202,7 +202,7 @@ void run_bfb_homogeneous_freezing()
 {
   constexpr Scalar latice = C::LatIce;
 
-  auto engine = setup_random_test(13543563);
+  auto engine = Base::get_engine();
 
   HomogeneousFreezingData hfds_baseline[] = {
     //                    kts, kte, ktop, kbot, kdir

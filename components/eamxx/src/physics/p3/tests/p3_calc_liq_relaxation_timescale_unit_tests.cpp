@@ -28,7 +28,7 @@ struct UnitWrap::UnitTest<D>::TestCalcLiqRelaxationTimescale : public UnitWrap::
 
   void run_bfb()
   {
-    auto engine = setup_random_test(12354);
+    auto engine = Base::get_engine();
 
     // Read in tables
     view_2d_table vn_table_vals, vm_table_vals, revap_table_vals;

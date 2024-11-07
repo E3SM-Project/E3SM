@@ -92,7 +92,7 @@ struct UnitWrap::UnitTest<D>::TestPreventLiqSupersaturation : public UnitWrap::U
     constexpr Scalar latvap = C::LatVap;
     constexpr Scalar latice = C::LatIce;
 
-    auto engine = setup_random_test(1298758);
+    auto engine = Base::get_engine();
 
     PreventLiqSupersaturationData baseline_data[max_pack_size];
 
