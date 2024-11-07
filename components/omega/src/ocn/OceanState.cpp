@@ -104,10 +104,10 @@ OceanState::OceanState(
 
    // Create device arrays and copy host data
    for (int I = 0; I < NTimeLevels; I++) {
-      LayerThickness[I] = Array2DR8("LayerThickness" + std::to_string(I),
-                                    NCellsSize, NVertLevels);
-      NormalVelocity[I] = Array2DR8("NormalVelocity" + std::to_string(I),
-                                    NEdgesSize, NVertLevels);
+      LayerThickness[I] = Array2DReal("LayerThickness" + std::to_string(I),
+                                      NCellsSize, NVertLevels);
+      NormalVelocity[I] = Array2DReal("NormalVelocity" + std::to_string(I),
+                                      NEdgesSize, NVertLevels);
    }
 
    // Register fields and metadata for IO
@@ -314,13 +314,13 @@ void OceanState::defineFields() {
    I4 TimeIndex;
    Err = getTimeIndex(TimeIndex, 0);
 
-   Err = NormalVelocityField->attachData<Array2DReal>(
-       NormalVelocity[TimeIndex]);
+   Err =
+       NormalVelocityField->attachData<Array2DReal>(NormalVelocity[TimeIndex]);
    if (Err != 0)
       LOG_ERROR("Error attaching data array to field {}",
                 NormalVelocityFldName);
-   Err = LayerThicknessField->attachData<Array2DReal>(
-       LayerThickness[TimeIndex]);
+   Err =
+       LayerThicknessField->attachData<Array2DReal>(LayerThickness[TimeIndex]);
    if (Err != 0)
       LOG_ERROR("Error attaching data array to field {}",
                 LayerThicknessFldName);
@@ -350,6 +350,7 @@ void OceanState::finalizeParallelIO(I4 CellDecompR8, I4 EdgeDecompR8) {
 void OceanState::read(int StateFileID, I4 CellDecompR8, I4 EdgeDecompR8) {
 
    I4 Err;
+   I4 TimeIndex;
 
    Err = getTimeIndex(TimeIndex, 0);
 
@@ -505,9 +506,9 @@ I4 OceanState::updateTimeLevels() {
 
    // Update IOField data associations
    Err = Field::attachFieldData<Array2DReal>(NormalVelocityFldName,
-                                           NormalVelocity[CurTimeIndex]);
-   Err = Field::attachFieldData<Array2DReeal>(LayerThicknessFldName,
-                                           LayerThickness[CurTimeIndex]);
+                                             NormalVelocity[CurTimeIndex]);
+   Err = Field::attachFieldData<Array2DReal>(LayerThicknessFldName,
+                                             LayerThickness[CurTimeIndex]);
 
    return 0;
 
