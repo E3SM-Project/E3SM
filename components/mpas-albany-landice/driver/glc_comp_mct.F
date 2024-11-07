@@ -557,6 +557,13 @@ contains
     call check_clocks_sync(domain % clock, Eclock, err_tmp)
     ierr = ior(ierr,err_tmp)
 
+    ! Reset the alarm for checking for force setting of the adaptive timestep interval
+    if (mpas_is_alarm_ringing(domain % clock, 'adaptiveTimestepForceInterval', ierr=err_tmp)) then
+       ierr = ior(ierr, err_tmp)
+       call mpas_reset_clock_alarm(domain % clock, 'adaptiveTimestepForceInterval', ierr=err_tmp)
+       ierr = ior(ierr, err_tmp)
+    endif
+    ierr = ior(ierr, err_tmp)
 
 !-----------------------------------------------------------------------
 !
