@@ -123,7 +123,7 @@ struct Baseline {
 
   Int run_and_cmp (const std::string& filename, const double& tol, bool no_baseline) {
     ekat::FILEPtr fid;
-    if (no_baseline) {
+    if (!no_baseline) {
       fid = ekat::FILEPtr(fopen(filename.c_str(), "r"));
       EKAT_REQUIRE_MSG( fid, "generate_baseline can't read " << filename);
     }
