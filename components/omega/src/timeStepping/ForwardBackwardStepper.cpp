@@ -32,13 +32,10 @@ void ForwardBackwardStepper::doStep(
 
    const int CurLevel  = 0;
    const int NextLevel = 1;
-   // TODO: resolve time level indexing
-   const int TrCurLevel  = -1;
-   const int TrNextLevel = 0;
 
    Array3DReal CurTracerArray, NextTracerArray;
-   Err = Tracers::getAll(CurTracerArray, TrCurLevel);
-   Err = Tracers::getAll(NextTracerArray, TrNextLevel);
+   Err = Tracers::getAll(CurTracerArray, CurLevel);
+   Err = Tracers::getAll(NextTracerArray, NextLevel);
 
    if (State == nullptr)
       LOG_CRITICAL("Invalid State");

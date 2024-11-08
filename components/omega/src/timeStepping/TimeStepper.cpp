@@ -393,12 +393,15 @@ void TimeStepper::updateThicknessByTend(OceanState *State1, int TimeLevel1,
                                         OceanState *State2, int TimeLevel2,
                                         TimeInterval Coeff) const {
 
-   const auto &LayerThick1    = State1->LayerThickness[TimeLevel1];
-   const auto &LayerThick2    = State2->LayerThickness[TimeLevel2];
+   Array2DReal LayerThick1;
+   Array2DReal LayerThick2;
+   I4 Err;
+   Err = State1->getLayerThickness(LayerThick1, TimeLevel1);
+   Err = State2->getLayerThickness(LayerThick2, TimeLevel2);
    const auto &LayerThickTend = Tend->LayerThicknessTend;
    const int NVertLevels      = LayerThickTend.extent_int(1);
 
-   Real CoeffSeconds;
+   R8 CoeffSeconds;
    Coeff.get(CoeffSeconds, TimeUnits::Seconds);
 
    parallelFor(
@@ -417,12 +420,15 @@ void TimeStepper::updateVelocityByTend(OceanState *State1, int TimeLevel1,
                                        OceanState *State2, int TimeLevel2,
                                        TimeInterval Coeff) const {
 
-   const auto &NormalVel1    = State1->NormalVelocity[TimeLevel1];
-   const auto &NormalVel2    = State2->NormalVelocity[TimeLevel2];
+   Array2DReal NormalVel1;
+   Array2DReal NormalVel2;
+   I4 Err;
+   Err = State1->getNormalVelocity(NormalVel1, TimeLevel1);
+   Err = State2->getNormalVelocity(NormalVel2, TimeLevel2);
    const auto &NormalVelTend = Tend->NormalVelocityTend;
    const int NVertLevels     = NormalVelTend.extent_int(1);
 
-   Real CoeffSeconds;
+   R8 CoeffSeconds;
    Coeff.get(CoeffSeconds, TimeUnits::Seconds);
 
    parallelFor(
@@ -460,7 +466,7 @@ void TimeStepper::updateTracersByTend(const Array3DReal &NextTracers,
    const int NTracers      = TracerTend.extent(0);
    const int NVertLevels   = TracerTend.extent(2);
 
-   Real CoeffSeconds;
+   R8 CoeffSeconds;
    Err = Coeff.get(CoeffSeconds, TimeUnits::Seconds);
 
    parallelFor(
@@ -501,7 +507,7 @@ void TimeStepper::accumulateTracersUpdate(const Array3DReal &AccumTracer,
    const int NTracers     = TracerTend.extent(0);
    const int NVertLevels  = TracerTend.extent(2);
 
-   Real CoeffSeconds;
+   R8 CoeffSeconds;
    int Err = Coeff.get(CoeffSeconds, TimeUnits::Seconds);
 
    parallelFor(

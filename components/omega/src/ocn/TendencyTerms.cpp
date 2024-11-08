@@ -252,7 +252,8 @@ void Tendencies::computeThicknessTendenciesOnly(
 
    OMEGA_SCOPE(LocLayerThicknessTend, LayerThicknessTend);
    OMEGA_SCOPE(LocThicknessFluxDiv, ThicknessFluxDiv);
-   const Array2DReal &NormalVelEdge = State->NormalVelocity[VelTimeLevel];
+   Array2DReal NormalVelEdge;
+   State->getNormalVelocity(NormalVelEdge, VelTimeLevel);
 
    deepCopy(LocLayerThicknessTend, 0);
 
@@ -299,7 +300,8 @@ void Tendencies::computeVelocityTendenciesOnly(
        AuxState->LayerThicknessAux.FluxLayerThickEdge;
    const Array2DReal &NormRVortEdge = AuxState->VorticityAux.NormRelVortEdge;
    const Array2DReal &NormFEdge     = AuxState->VorticityAux.NormPlanetVortEdge;
-   const Array2DReal &NormVelEdge   = State->NormalVelocity[VelTimeLevel];
+   Array2DReal NormVelEdge;
+   State->getNormalVelocity(NormVelEdge, VelTimeLevel);
    if (LocPotientialVortHAdv.Enabled) {
       parallelFor(
           {NEdgesAll, NChunks}, KOKKOS_LAMBDA(int IEdge, int KChunk) {
@@ -417,9 +419,13 @@ void Tendencies::computeThicknessTendencies(
     TimeInstant Time                ///< [in] Time
 ) {
    // only need LayerThicknessAux on edge
+   Array2DReal LayerThick;
+   Array2DReal NormVel;
+   State->getLayerThickness(LayerThick, ThickTimeLevel);
+   State->getNormalVelocity(NormVel, VelTimeLevel);
    OMEGA_SCOPE(LayerThicknessAux, AuxState->LayerThicknessAux);
-   OMEGA_SCOPE(LayerThickCell, State->LayerThickness[ThickTimeLevel]);
-   OMEGA_SCOPE(NormalVelEdge, State->NormalVelocity[VelTimeLevel]);
+   OMEGA_SCOPE(LayerThickCell, LayerThick);
+   OMEGA_SCOPE(NormalVelEdge, NormVel);
 
    parallelFor(
        "computeLayerThickAux", {NEdgesAll, NChunks},

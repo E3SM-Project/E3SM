@@ -56,9 +56,10 @@ struct DecayVelocityTendency {
                    const AuxiliaryState *AuxState, int ThickTimeLevel,
                    int VelTimeLevel, TimeInstant Time) const {
 
-      auto *Mesh                = HorzMesh::getDefault();
-      auto NVertLevels          = NormalVelTend.extent_int(1);
-      const auto &NormalVelEdge = State->NormalVelocity[VelTimeLevel];
+      auto *Mesh       = HorzMesh::getDefault();
+      auto NVertLevels = NormalVelTend.extent_int(1);
+      Array2DReal NormalVelEdge;
+      State->getNormalVelocity(NormalVelEdge, VelTimeLevel);
 
       OMEGA_SCOPE(LocCoeff, Coeff);
 
@@ -77,8 +78,10 @@ int initState() {
    Array3DReal TracerArray;
    Err = Tracers::getAll(TracerArray, 0);
 
-   const auto &LayerThickCell = State->LayerThickness[0];
-   const auto &NormalVelEdge  = State->NormalVelocity[0];
+   Array2DReal LayerThickCell;
+   Array2DReal NormalVelEdge;
+   State->getLayerThickness(LayerThickCell, 0);
+   State->getNormalVelocity(NormalVelEdge, 0);
 
    // Initially set thickness and velocity and tracers to 1
    deepCopy(LayerThickCell, 1);
@@ -99,8 +102,10 @@ int createExactSolution(Real TimeEnd) {
    auto *ExactState =
        OceanState::create("Exact", DefMesh, DefHalo, NVertLevels, 1);
 
-   const auto &LayerThickCell = ExactState->LayerThickness[0];
-   const auto &NormalVelEdge  = ExactState->NormalVelocity[0];
+   Array2DReal LayerThickCell;
+   Array2DReal NormalVelEdge;
+   ExactState->getLayerThickness(LayerThickCell, 0);
+   ExactState->getNormalVelocity(NormalVelEdge, 0);
 
    // There are no thickness tendencies in this test, so exact thickness ==
    // initial thickness
@@ -119,8 +124,10 @@ ErrorMeasures computeErrors() {
    const auto *State      = OceanState::get("TestState");
    const auto *ExactState = OceanState::get("Exact");
 
-   const auto &NormalVelEdge      = State->NormalVelocity[0];
-   const auto &ExactNormalVelEdge = ExactState->NormalVelocity[0];
+   Array2DReal NormalVelEdge;
+   Array2DReal ExactNormalVelEdge;
+   State->getNormalVelocity(NormalVelEdge, 0);
+   ExactState->getNormalVelocity(ExactNormalVelEdge, 0);
 
    // Only velocity errors matters, because thickness remains constant
    ErrorMeasures VelErrors;
@@ -264,7 +271,7 @@ int initTimeStepperTest(const std::string &mesh) {
 // of steps
 int adjustTimeStep(TimeStepper *Stepper, Real TimeEnd) {
    TimeInterval TimeStep = Stepper->getTimeStep();
-   Real TimeStepSeconds;
+   R8 TimeStepSeconds;
    TimeStep.get(TimeStepSeconds, TimeUnits::Seconds);
 
    const int NSteps = std::ceil(TimeEnd / TimeStepSeconds);
@@ -342,7 +349,7 @@ int testTimeStepper(const std::string &Name, TimeStepperType Type,
       return true;
    }();
 
-   Real TimeStepSeconds = BaseTimeStepSeconds;
+   R8 TimeStepSeconds = BaseTimeStepSeconds;
 
    // Convergence loop
    for (int RefLevel = 0; RefLevel < NRefinements; ++RefLevel) {

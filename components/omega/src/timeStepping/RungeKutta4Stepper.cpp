@@ -72,13 +72,10 @@ void RungeKutta4Stepper::doStep(OceanState *State,   // model state
 
    const int CurLevel  = 0;
    const int NextLevel = 1;
-   // TODO: resolve time level indexing
-   const int TrCurLevel  = -1;
-   const int TrNextLevel = 0;
 
    Array3DReal NextTracerArray, CurTracerArray;
-   Err = Tracers::getAll(CurTracerArray, TrCurLevel);
-   Err = Tracers::getAll(NextTracerArray, TrNextLevel);
+   Err = Tracers::getAll(CurTracerArray, CurLevel);
+   Err = Tracers::getAll(NextTracerArray, NextLevel);
 
    for (int Stage = 0; Stage < NStages; ++Stage) {
       const TimeInstant StageTime = SimTime + RKC[Stage] * TimeStep;

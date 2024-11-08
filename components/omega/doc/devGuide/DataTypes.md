@@ -9,7 +9,7 @@ integer and floating point variables. Note that these exist in the
 Omega namespace so use the scoped form OMEGA::I4, etc.
 In addition, we define a Real data type that is, by default,
 double precision (8 bytes/64-bit) but if the code is built with a
-`-DSINGLE_PRECISION` (see insert link to build system) preprocessor flag,
+`-DOMEGA_SINGLE_PRECISION` (see insert link to build system) preprocessor flag,
 the default Real becomes single precision (4-byte/32-bit). For floating
 point variables, developers should use this Real type instead of the
 specific R4 or R8 forms unless the specific form is required

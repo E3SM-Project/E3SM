@@ -36,20 +36,20 @@ struct TestSetupPlane {
    Real Lx = 1;
    Real Ly = std::sqrt(3) / 2;
 
-   Real ExpectedDivErrorLInf     = 0.00124886886594453264;
-   Real ExpectedDivErrorL2       = 0.00124886886590977139;
-   Real ExpectedPVErrorLInf      = 0.00807347170900282914;
-   Real ExpectedPVErrorL2        = 0.00794755105765788429;
-   Real ExpectedGradErrorLInf    = 0.00125026071878537952;
-   Real ExpectedGradErrorL2      = 0.00134354611117262161;
-   Real ExpectedLaplaceErrorLInf = 0.00113090174765822192;
-   Real ExpectedLaplaceErrorL2   = 0.00134324628763667899;
-   Real ExpectedTrHAdvErrorLInf  = 0.00205864372747571571;
-   Real ExpectedTrHAdvErrorL2    = 0.00172418025417940784;
-   Real ExpectedTrDel2ErrorLInf  = 0.00334357193650093847;
-   Real ExpectedTrDel2ErrorL2    = 0.00290978146207349032;
-   Real ExpectedTrDel4ErrorLInf  = 0.00508833446725232875;
-   Real ExpectedTrDel4ErrorL2    = 0.00523080740758275625;
+   ErrorMeasures ExpectedDivErrors     = {0.00124886886594453264,
+                                          0.00124886886590977139};
+   ErrorMeasures ExpectedPVErrors      = {0.00807347170900282914,
+                                          0.00794755105765788429};
+   ErrorMeasures ExpectedGradErrors    = {0.00125026071878537952,
+                                          0.00134354611117262161};
+   ErrorMeasures ExpectedLaplaceErrors = {0.00113090174765822192,
+                                          0.00134324628763667899};
+   ErrorMeasures ExpectedTrHAdvErrors  = {0.00205864372747571571,
+                                          0.00172418025417940784};
+   ErrorMeasures ExpectedTrDel2Errors  = {0.00334357193650093847,
+                                          0.00290978146207349032};
+   ErrorMeasures ExpectedTrDel4Errors  = {0.00508833446725232875,
+                                          0.00523080740758275625};
 
    KOKKOS_FUNCTION Real vectorX(Real X, Real Y) const {
       return std::sin(2 * Pi * X / Lx) * std::cos(2 * Pi * Y / Ly);
@@ -154,20 +154,20 @@ struct TestSetupSphere {
 
    Real Pi = M_PI;
 
-   Real ExpectedDivErrorLInf     = 0.0136595773989796766;
-   Real ExpectedDivErrorL2       = 0.00367052484586384131;
-   Real ExpectedPVErrorLInf      = 0.0219217796608757037;
-   Real ExpectedPVErrorL2        = 0.0122537418367830303;
-   Real ExpectedGradErrorLInf    = 0.00187912292540623471;
-   Real ExpectedGradErrorL2      = 0.00149841802817334935;
-   Real ExpectedLaplaceErrorLInf = 0.281930203304510130;
-   Real ExpectedLaplaceErrorL2   = 0.270530313560271740;
-   Real ExpectedTrHAdvErrorLInf  = 0.0132310202299444034;
-   Real ExpectedTrHAdvErrorL2    = 0.0038523368564029538;
-   Real ExpectedTrDel2ErrorLInf  = 0.0486107109846934185;
-   Real ExpectedTrDel2ErrorL2    = 0.00507514214194892694;
-   Real ExpectedTrDel4ErrorLInf  = 0.000819552466009620408;
-   Real ExpectedTrDel4ErrorL2    = 0.00064700084412871962;
+   ErrorMeasures ExpectedDivErrors     = {0.0136595773989796766,
+                                          0.00367052484586384131};
+   ErrorMeasures ExpectedPVErrors      = {0.0219217796608757037,
+                                          0.0122537418367830303};
+   ErrorMeasures ExpectedGradErrors    = {0.00187912292540623471,
+                                          0.00149841802817334935};
+   ErrorMeasures ExpectedLaplaceErrors = {0.281930203304510130,
+                                          0.270530313560271740};
+   ErrorMeasures ExpectedTrHAdvErrors  = {0.0132310202299444034,
+                                          0.0038523368564029538};
+   ErrorMeasures ExpectedTrDel2Errors  = {0.0486107109846934185,
+                                          0.00507514214194892694};
+   ErrorMeasures ExpectedTrDel4Errors  = {0.000819552466009620408,
+                                          0.00064700084412871962};
 
    KOKKOS_FUNCTION Real vectorX(Real Lon, Real Lat) const {
       return -Radius * std::pow(std::sin(Lon), 2) * std::pow(std::cos(Lat), 3);
@@ -291,10 +291,10 @@ int testThickFluxDiv(int NVertLevels, Real RTol) {
        ExactThickFluxDiv, Geom, Mesh, OnCell, NVertLevels, ExchangeHalos::No);
 
    // Set input array
-   Array2DR8 ThickFluxEdge("ThickFluxEdge", Mesh->NEdgesSize, NVertLevels);
+   Array2DReal ThickFluxEdge("ThickFluxEdge", Mesh->NEdgesSize, NVertLevels);
 
    // TODO(mwarusz) temporary fix for this test
-   Array2DR8 OnesEdge("OnesEdge", Mesh->NEdgesSize, NVertLevels);
+   Array2DReal OnesEdge("OnesEdge", Mesh->NEdgesSize, NVertLevels);
    deepCopy(OnesEdge, 1);
 
    Err += setVectorEdge(
@@ -320,15 +320,8 @@ int testThickFluxDiv(int NVertLevels, Real RTol) {
                         OnCell, NVertLevels);
 
    // Check error values
-   if (!isApprox(TFDivErrors.LInf, Setup.ExpectedDivErrorLInf, RTol)) {
-      Err++;
-      LOG_ERROR("TendencyTermsTest: ThickFluxDiv LInf FAIL");
-   }
-
-   if (!isApprox(TFDivErrors.L2, Setup.ExpectedDivErrorL2, RTol)) {
-      Err++;
-      LOG_ERROR("TendencyTermsTest: ThickFluxDiv L2 FAIL");
-   }
+   Err += checkErrors("TendencyTermsTest", "ThickFluxDiv", TFDivErrors,
+                      Setup.ExpectedDivErrors, RTol);
 
    if (Err == 0) {
       LOG_INFO("TendencyTermsTest: ThickFluxDiv PASS");
@@ -359,25 +352,26 @@ int testPotVortHAdv(int NVertLevels, Real RTol) {
        ExchangeHalos::No);
 
    // Set input arrays
-   Array2DR8 NormRelVortEdge("NormRelVortEdge", Mesh->NEdgesSize, NVertLevels);
+   Array2DReal NormRelVortEdge("NormRelVortEdge", Mesh->NEdgesSize,
+                               NVertLevels);
 
    Err += setScalar(
        KOKKOS_LAMBDA(Real X, Real Y) { return Setup.normRelVort(X, Y); },
        NormRelVortEdge, Geom, Mesh, OnEdge, NVertLevels);
 
-   Array2DR8 NormPlanetVortEdge("NormPlanetVortEdge", Mesh->NEdgesSize,
-                                NVertLevels);
+   Array2DReal NormPlanetVortEdge("NormPlanetVortEdge", Mesh->NEdgesSize,
+                                  NVertLevels);
    Err += setScalar(
        KOKKOS_LAMBDA(Real X, Real Y) { return Setup.normPlanetVort(X, Y); },
        NormPlanetVortEdge, Geom, Mesh, OnEdge, NVertLevels);
 
-   Array2DR8 LayerThickEdge("LayerThickEdge", Mesh->NEdgesSize, NVertLevels);
+   Array2DReal LayerThickEdge("LayerThickEdge", Mesh->NEdgesSize, NVertLevels);
 
    Err += setScalar(
        KOKKOS_LAMBDA(Real X, Real Y) { return Setup.layerThick(X, Y); },
        LayerThickEdge, Geom, Mesh, OnEdge, NVertLevels);
 
-   Array2DR8 NormVelEdge("NormVelEdge", Mesh->NEdgesSize, NVertLevels);
+   Array2DReal NormVelEdge("NormVelEdge", Mesh->NEdgesSize, NVertLevels);
 
    Err += setVectorEdge(
        KOKKOS_LAMBDA(Real(&VecField)[2], Real X, Real Y) {
@@ -402,15 +396,8 @@ int testPotVortHAdv(int NVertLevels, Real RTol) {
                         Mesh, OnEdge, NVertLevels);
 
    // Check error values
-   if (!isApprox(PotVortHAdvErrors.LInf, Setup.ExpectedPVErrorLInf, RTol)) {
-      Err++;
-      LOG_ERROR("TendencyTermsTest: PotVortHAdv LInf FAIL");
-   }
-
-   if (!isApprox(PotVortHAdvErrors.L2, Setup.ExpectedPVErrorL2, RTol)) {
-      Err++;
-      LOG_ERROR("TendencyTermsTest: PotVortHAdv L2 FAIL");
-   }
+   Err += checkErrors("TendencyTermsTest", "PotVortHAdv", PotVortHAdvErrors,
+                      Setup.ExpectedPVErrors, RTol);
 
    if (Err == 0) {
       LOG_INFO("TendencyTermsTest: PotVortHAdv PASS");
@@ -459,15 +446,8 @@ int testKEGrad(int NVertLevels, Real RTol) {
                         NVertLevels);
 
    // Check error values
-   if (!isApprox(KEGradErrors.LInf, Setup.ExpectedGradErrorLInf, RTol)) {
-      Err++;
-      LOG_ERROR("TendencyTermsTest: KEGrad LInf FAIL");
-   }
-
-   if (!isApprox(KEGradErrors.L2, Setup.ExpectedGradErrorL2, RTol)) {
-      Err++;
-      LOG_ERROR("TendencyTermsTest: KEGrad L2 FAIL");
-   }
+   Err += checkErrors("TendencyTermsTest", "KEGrad", KEGradErrors,
+                      Setup.ExpectedGradErrors, RTol);
 
    if (Err == 0) {
       LOG_INFO("TendencyTermsTest: KEGrad PASS");
@@ -516,19 +496,8 @@ int testSSHGrad(int NVertLevels, Real RTol) {
                         NVertLevels);
 
    // Check error values
-   if (!isApprox(SSHGradErrors.LInf, Setup.ExpectedGradErrorLInf, RTol)) {
-      Err++;
-      LOG_ERROR("TendencyTermsTest: SSHGrad LInf FAIL");
-   }
-
-   if (!isApprox(SSHGradErrors.L2, Setup.ExpectedGradErrorL2, RTol)) {
-      Err++;
-      LOG_ERROR("TendencyTermsTest: SSHGrad L2 FAIL");
-   }
-
-   if (Err == 0) {
-      LOG_INFO("TendencyTermsTest: SSHGrad PASS");
-   }
+   Err += checkErrors("TendencyTermsTest", "SSHGrad", SSHGradErrors,
+                      Setup.ExpectedGradErrors, RTol);
 
    return Err;
 } // end testSSHGrad
@@ -592,15 +561,8 @@ int testVelDiff(int NVertLevels, Real RTol) {
                         NVertLevels);
 
    // Check error values
-   if (!isApprox(VelDiffErrors.LInf, Setup.ExpectedLaplaceErrorLInf, RTol)) {
-      Err++;
-      LOG_ERROR("TendencyTermsTest: VelDiff LInf FAIL");
-   }
-
-   if (!isApprox(VelDiffErrors.L2, Setup.ExpectedLaplaceErrorL2, RTol)) {
-      Err++;
-      LOG_ERROR("TendencyTermsTest: VelDiff L2 FAIL");
-   }
+   Err += checkErrors("TendencyTermsTest", "VelDiff", VelDiffErrors,
+                      Setup.ExpectedLaplaceErrors, RTol);
 
    if (Err == 0) {
       LOG_INFO("TendencyTermsTest: VelDiff PASS");
@@ -670,16 +632,8 @@ int testVelHyperDiff(int NVertLevels, Real RTol) {
                         Mesh, OnEdge, NVertLevels);
 
    // Check error values
-   if (!isApprox(VelHyperDiffErrors.LInf, Setup.ExpectedLaplaceErrorLInf,
-                 RTol)) {
-      Err++;
-      LOG_ERROR("TendencyTermsTest: VelHyperDiff LInf FAIL");
-   }
-
-   if (!isApprox(VelHyperDiffErrors.L2, Setup.ExpectedLaplaceErrorL2, RTol)) {
-      Err++;
-      LOG_ERROR("TendencyTermsTest: VelHyperDiff L2 FAIL");
-   }
+   Err += checkErrors("TendencyTermsTest", "VelHyperDiff", VelHyperDiffErrors,
+                      Setup.ExpectedLaplaceErrors, RTol);
 
    if (Err == 0) {
       LOG_INFO("TendencyTermsTest: VelHyperDiff PASS");
@@ -705,7 +659,7 @@ int testTracerHorzAdvOnCell(int NVertLevels, int NTracers, Real RTol) {
        ExchangeHalos::No);
 
    // Set input arrays
-   Array2DR8 NormalVelocity("NormalVelocity", Mesh->NEdgesSize, NVertLevels);
+   Array2DReal NormalVelocity("NormalVelocity", Mesh->NEdgesSize, NVertLevels);
 
    Err += setVectorEdge(
        KOKKOS_LAMBDA(Real(&VecField)[2], Real X, Real Y) {
@@ -714,7 +668,7 @@ int testTracerHorzAdvOnCell(int NVertLevels, int NTracers, Real RTol) {
        },
        NormalVelocity, EdgeComponent::Normal, Geom, Mesh, NVertLevels);
 
-   Array3DR8 HTrOnEdge("HTrOnEdge", NTracers, Mesh->NEdgesSize, NVertLevels);
+   Array3DReal HTrOnEdge("HTrOnEdge", NTracers, Mesh->NEdgesSize, NVertLevels);
 
    Err += setScalar(
        KOKKOS_LAMBDA(Real X, Real Y) { return -Setup.layerThick(X, Y); },
@@ -735,15 +689,8 @@ int testTracerHorzAdvOnCell(int NVertLevels, int NTracers, Real RTol) {
    Err += computeErrors(TrHAdvErrors, NumTrFluxDiv, ExactTrFluxDiv, Mesh,
                         OnCell, NVertLevels, NTracers);
 
-   if (!isApprox(TrHAdvErrors.LInf, Setup.ExpectedTrHAdvErrorLInf, RTol)) {
-      Err++;
-      LOG_ERROR("TendencyTermsTest: TracerHorzAdv LInf FAIL");
-   }
-
-   if (!isApprox(TrHAdvErrors.L2, Setup.ExpectedTrHAdvErrorL2, RTol)) {
-      Err++;
-      LOG_ERROR("TendencyTermsTest: TracerHorzAdv L2 FAIL");
-   }
+   Err += checkErrors("TendencyTermsTest", "TracerHorzAdv", TrHAdvErrors,
+                      Setup.ExpectedTrHAdvErrors, RTol);
 
    if (Err == 0) {
       LOG_INFO("TendencyTermsTest: TracerHorzAdv PASS");
@@ -769,13 +716,14 @@ int testTracerDiffOnCell(int NVertLevels, int NTracers, Real RTol) {
        ExchangeHalos::No);
 
    // Set input arrays
-   Array3DR8 TracerCell("TracerCell", NTracers, Mesh->NCellsSize, NVertLevels);
+   Array3DReal TracerCell("TracerCell", NTracers, Mesh->NCellsSize,
+                          NVertLevels);
 
    Err += setScalar(
        KOKKOS_LAMBDA(Real X, Real Y) { return Setup.scalarA(X, Y); },
        TracerCell, Geom, Mesh, OnCell, NVertLevels, NTracers);
 
-   Array2DR8 LayerThickEdge("LayerThickEdge", Mesh->NEdgesSize, NVertLevels);
+   Array2DReal LayerThickEdge("LayerThickEdge", Mesh->NEdgesSize, NVertLevels);
 
    Err += setScalar(
        KOKKOS_LAMBDA(Real X, Real Y) { return Setup.scalarB(X, Y); },
@@ -798,15 +746,8 @@ int testTracerDiffOnCell(int NVertLevels, int NTracers, Real RTol) {
    Err += computeErrors(TrDiffErrors, NumTracerDiff, ExactTracerDiff, Mesh,
                         OnCell, NVertLevels, NTracers);
 
-   if (!isApprox(TrDiffErrors.LInf, Setup.ExpectedTrDel2ErrorLInf, RTol)) {
-      Err++;
-      LOG_ERROR("TendencyTermsTest: TracerDiff LInf FAIL");
-   }
-
-   if (!isApprox(TrDiffErrors.L2, Setup.ExpectedTrDel2ErrorL2, RTol)) {
-      Err++;
-      LOG_ERROR("TendencyTermsTest: TracerDiff L2 FAIL");
-   }
+   Err += checkErrors("TendencyTermsTest", "TracerDiff", TrDiffErrors,
+                      Setup.ExpectedTrDel2Errors, RTol);
 
    if (Err == 0) {
       LOG_INFO("TendencyTermsTest: TracerDiff PASS");
@@ -832,7 +773,8 @@ int testTracerHyperDiffOnCell(int NVertLevels, int NTracers, Real RTol) {
        ExchangeHalos::No);
 
    // Set input arrays
-   Array3DR8 TrDel2Cell("TracerCell", NTracers, Mesh->NCellsSize, NVertLevels);
+   Array3DReal TrDel2Cell("TracerCell", NTracers, Mesh->NCellsSize,
+                          NVertLevels);
 
    Err += setScalar(
        KOKKOS_LAMBDA(Real X, Real Y) { return Setup.scalarC(X, Y); },
@@ -854,15 +796,8 @@ int testTracerHyperDiffOnCell(int NVertLevels, int NTracers, Real RTol) {
        computeErrors(TrHyperDiffErrors, NumTracerHyperDiff,
                      ExactTracerHyperDiff, Mesh, OnCell, NVertLevels, NTracers);
 
-   if (!isApprox(TrHyperDiffErrors.LInf, Setup.ExpectedTrDel4ErrorLInf, RTol)) {
-      Err++;
-      LOG_ERROR("TendencyTermsTest: TracerHyperDiff LInf FAIL");
-   }
-
-   if (!isApprox(TrHyperDiffErrors.L2, Setup.ExpectedTrDel4ErrorL2, RTol)) {
-      Err++;
-      LOG_ERROR("TendencyTermsTest: TracerHyperDiff L2 FAIL");
-   }
+   Err += checkErrors("TendencyTermsTest", "TracerHyperDiff", TrHyperDiffErrors,
+                      Setup.ExpectedTrDel4Errors, RTol);
 
    if (Err == 0) {
       LOG_INFO("TendencyTermsTest: TracerHyperDiff PASS");
@@ -938,7 +873,7 @@ int tendencyTermsTest(const std::string &mesh = DefaultMeshFile) {
    int NVertLevels  = 16;
    int NTracers     = 3;
 
-   const Real RTol = sizeof(Real) == 4 ? 1e-2 : 1e-10;
+   const Real RTol = sizeof(Real) == 4 ? 2e-2 : 1e-10;
 
    Err += testThickFluxDiv(NVertLevels, RTol);
 

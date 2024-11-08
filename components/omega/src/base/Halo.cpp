@@ -647,7 +647,7 @@ int Halo::startReceives() {
          I4 BufferSize = TotSize * MyNeighbor->RecvLists[MyElem].NTot;
          MyNeighbor->RecvBuffer.resize(BufferSize);
          IErr[INghbr] = MPI_Irecv(&MyNeighbor->RecvBuffer[0], BufferSize,
-                                  MPI_RealKind, MyNeighbor->TaskID, MPI_ANY_TAG,
+                                  MPI_DOUBLE, MyNeighbor->TaskID, MPI_ANY_TAG,
                                   MyComm, &MyNeighbor->RReq);
          if (IErr[INghbr] != 0) {
             LOG_ERROR("MPI error {} on task {} receive from task {}",
@@ -676,7 +676,7 @@ int Halo::startSends() {
          MyNeighbor    = &Neighbors[INghbr];
          I4 BufferSize = TotSize * MyNeighbor->SendLists[MyElem].NTot;
          IErr[INghbr] =
-             MPI_Isend(&MyNeighbor->SendBuffer[0], BufferSize, MPI_RealKind,
+             MPI_Isend(&MyNeighbor->SendBuffer[0], BufferSize, MPI_DOUBLE,
                        MyNeighbor->TaskID, 0, MyComm, &MyNeighbor->SReq);
          if (IErr[INghbr] != 0) {
             LOG_ERROR("MPI error {} on task {} send to task {}", IErr[INghbr],
@@ -709,7 +709,7 @@ int Halo::packBuffer(const HostArray1DI4 Array) {
       for (int IExch = 0; IExch < MyList->NList[ILayer]; ++IExch) {
          I4 IBuff = MyList->Offsets[ILayer] + IExch;
          MyNeighbor->SendBuffer[IBuff] =
-             reinterpret_cast<Real &>(Array(MyList->Ind[ILayer][IExch]));
+             reinterpret_cast<R8 &>(Array(MyList->Ind[ILayer][IExch]));
       }
    }
 
@@ -726,7 +726,7 @@ int Halo::packBuffer(const HostArray1DI8 Array) {
       for (int IExch = 0; IExch < MyList->NList[ILayer]; ++IExch) {
          I4 IBuff = MyList->Offsets[ILayer] + IExch;
          MyNeighbor->SendBuffer[IBuff] =
-             reinterpret_cast<Real &>(Array(MyList->Ind[ILayer][IExch]));
+             reinterpret_cast<R8 &>(Array(MyList->Ind[ILayer][IExch]));
       }
    }
 
@@ -777,7 +777,7 @@ int Halo::packBuffer(const HostArray2DI4 Array) {
          for (int J = 0; J < NJ; ++J) {
             I4 IBuff = (MyList->Offsets[ILayer] + IExch) * NJ + J;
             MyNeighbor->SendBuffer[IBuff] =
-                reinterpret_cast<Real &>(Array(MyList->Ind[ILayer][IExch], J));
+                reinterpret_cast<R8 &>(Array(MyList->Ind[ILayer][IExch], J));
          }
       }
    }
@@ -797,7 +797,7 @@ int Halo::packBuffer(const HostArray2DI8 Array) {
          for (int J = 0; J < NJ; ++J) {
             I4 IBuff = (MyList->Offsets[ILayer] + IExch) * NJ + J;
             MyNeighbor->SendBuffer[IBuff] =
-                reinterpret_cast<Real &>(Array(MyList->Ind[ILayer][IExch], J));
+                reinterpret_cast<R8 &>(Array(MyList->Ind[ILayer][IExch], J));
          }
       }
    }
@@ -860,7 +860,7 @@ int Halo::packBuffer(const HostArray3DI4 Array) {
                I4 IBuff =
                    (K * MyList->NTot + MyList->Offsets[ILayer] + IExch) * NJ +
                    J;
-               MyNeighbor->SendBuffer[IBuff] = reinterpret_cast<Real &>(
+               MyNeighbor->SendBuffer[IBuff] = reinterpret_cast<R8 &>(
                    Array(K, MyList->Ind[ILayer][IExch], J));
             }
          }
@@ -885,7 +885,7 @@ int Halo::packBuffer(const HostArray3DI8 Array) {
                I4 IBuff =
                    (K * MyList->NTot + MyList->Offsets[ILayer] + IExch) * NJ +
                    J;
-               MyNeighbor->SendBuffer[IBuff] = reinterpret_cast<Real &>(
+               MyNeighbor->SendBuffer[IBuff] = reinterpret_cast<R8 &>(
                    Array(K, MyList->Ind[ILayer][IExch], J));
             }
          }
@@ -963,7 +963,7 @@ int Halo::packBuffer(const HostArray4DI4 Array) {
                               MyList->Offsets[ILayer] + IExch) *
                                  NJ +
                              J;
-                  MyNeighbor->SendBuffer[IBuff] = reinterpret_cast<Real &>(
+                  MyNeighbor->SendBuffer[IBuff] = reinterpret_cast<R8 &>(
                       Array(L, K, MyList->Ind[ILayer][IExch], J));
                }
             }
@@ -992,7 +992,7 @@ int Halo::packBuffer(const HostArray4DI8 Array) {
                               MyList->Offsets[ILayer] + IExch) *
                                  NJ +
                              J;
-                  MyNeighbor->SendBuffer[IBuff] = reinterpret_cast<Real &>(
+                  MyNeighbor->SendBuffer[IBuff] = reinterpret_cast<R8 &>(
                       Array(L, K, MyList->Ind[ILayer][IExch], J));
                }
             }
@@ -1081,7 +1081,7 @@ int Halo::packBuffer(const HostArray5DI4 Array) {
                                  MyList->Offsets[ILayer] + IExch) *
                                     NJ +
                                 J;
-                     MyNeighbor->SendBuffer[IBuff] = reinterpret_cast<Real &>(
+                     MyNeighbor->SendBuffer[IBuff] = reinterpret_cast<R8 &>(
                          Array(M, L, K, MyList->Ind[ILayer][IExch], J));
                   }
                }
@@ -1113,7 +1113,7 @@ int Halo::packBuffer(const HostArray5DI8 Array) {
                                  MyList->Offsets[ILayer] + IExch) *
                                     NJ +
                                 J;
-                     MyNeighbor->SendBuffer[IBuff] = reinterpret_cast<Real &>(
+                     MyNeighbor->SendBuffer[IBuff] = reinterpret_cast<R8 &>(
                          Array(M, L, K, MyList->Ind[ILayer][IExch], J));
                   }
                }

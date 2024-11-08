@@ -183,42 +183,43 @@ struct TestSetupSphere {
    }
 
    KOKKOS_FUNCTION Real velocityX(Real Lon, Real Lat) const {
-      return -Radius * std::pow(std::sin(Lon), 2) * std::pow(std::cos(Lat), 3);
+      return -std::pow(std::sin(Lon), 2) * std::pow(std::cos(Lat), 3);
    }
 
    KOKKOS_FUNCTION Real velocityY(Real Lon, Real Lat) const {
-      return -4 * Radius * std::sin(Lon) * std::cos(Lon) *
-             std::pow(std::cos(Lat), 3) * std::sin(Lat);
+      return -4 * std::sin(Lon) * std::cos(Lon) * std::pow(std::cos(Lat), 3) *
+             std::sin(Lat);
    }
 
    KOKKOS_FUNCTION Real relativeVorticity(Real Lon, Real Lat) const {
       return -4 * std::pow(std::cos(Lon), 2) * std::pow(std::cos(Lat), 2) *
-             std::sin(Lat);
+             std::sin(Lat) / Radius;
    }
 
    KOKKOS_FUNCTION Real divergence(Real Lon, Real Lat) const {
       return std::sin(Lon) * std::cos(Lon) * std::pow(std::cos(Lat), 2) *
-             (20 * std::pow(std::sin(Lat), 2) - 6);
+             (20 * std::pow(std::sin(Lat), 2) - 6) / Radius;
    }
 
    KOKKOS_FUNCTION Real velocityDel2X(Real Lon, Real Lat) const {
-      return 1 / Radius *
+      return 1 / (Radius * Radius) *
                  (std::pow(std::cos(Lon), 2) - std::pow(std::sin(Lon), 2)) *
                  std::cos(Lat) * (20 * std::pow(std::sin(Lat), 2) - 6) +
-             4 / Radius * std::pow(cos(Lon), 2) *
+             4 / (Radius * Radius) * std::pow(cos(Lon), 2) *
                  (std::pow(cos(Lat), 3) -
                   2 * std::cos(Lat) * std::pow(sin(Lat), 2));
    }
 
    KOKKOS_FUNCTION Real velocityDel2Y(Real Lon, Real Lat) const {
-      return 1 / Radius * std::sin(Lon) * std::cos(Lon) * std::sin(Lat) *
-                 std::cos(Lat) * (80 * std::pow(std::cos(Lat), 2) - 28) +
-             8 / Radius * std::sin(Lon) * std::cos(Lon) * std::sin(Lat) *
-                 std::cos(Lat);
+      return 1 / (Radius * Radius) * std::sin(Lon) * std::cos(Lon) *
+                 std::sin(Lat) * std::cos(Lat) *
+                 (80 * std::pow(std::cos(Lat), 2) - 28) +
+             8 / (Radius * Radius) * std::sin(Lon) * std::cos(Lon) *
+                 std::sin(Lat) * std::cos(Lat);
    }
 
    KOKKOS_FUNCTION Real velocityDel2Div(Real Lon, Real Lat) const {
-      return 1 / (Radius * Radius) *
+      return 1 / (Radius * Radius * Radius) *
              (-2 * std::sin(Lon) * std::cos(Lon) *
                   (28 * std::pow(sin(Lat), 2) - 8) +
               std::sin(Lon) * std::cos(Lon) *
@@ -228,7 +229,7 @@ struct TestSetupSphere {
    }
 
    KOKKOS_FUNCTION Real velocityDel2Curl(Real Lon, Real Lat) const {
-      return 1 / (Radius * Radius) *
+      return 1 / (Radius * Radius * Radius) *
              (-std::sin(Lat) * (std::pow(std::cos(Lat), 2) *
                                     (56 * std::pow(cos(Lon), 2) - 40) -
                                 2 * (std::pow(cos(Lon), 2) *
