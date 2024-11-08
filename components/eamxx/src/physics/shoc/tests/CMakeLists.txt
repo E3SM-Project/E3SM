@@ -1,5 +1,7 @@
 include (ScreamUtils)
 
+add_subdirectory(infra)
+
 set(SHOC_TESTS_SRCS
     shoc_tests.cpp
     shoc_grid_tests.cpp
@@ -71,50 +73,41 @@ set(SHOC_TESTS_SRCS
     shoc_compute_shoc_temperature_tests.cpp
     ) # SHOC_TESTS_SRCS
 
-# NOTE: tests inside this if statement won't be built in a baselines-only build
-if (NOT SCREAM_ONLY_GENERATE_BASELINES)
-  CreateUnitTest(shoc_tests    "${SHOC_TESTS_SRCS}"
-    LIBS shoc
-    THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
-  )
-
-  if (NOT SCREAM_SHOC_SMALL_KERNELS)
-    CreateUnitTest(shoc_sk_tests "${SHOC_TESTS_SRCS}"
-      LIBS shoc_sk
-      THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
-      EXE_ARGS shoc_main_bfb
-    )
-  endif()
-endif()
-
+# All tests should understand the same baseline args
 if (SCREAM_ENABLE_BASELINE_TESTS)
   if (SCREAM_ONLY_GENERATE_BASELINES)
-    set(BASELINE_FILE_ARG "-g -b ${SCREAM_BASELINES_DIR}/data/shoc_run_and_cmp.baseline")
+    set(BASELINE_FILE_ARG "-g -b ${SCREAM_BASELINES_DIR}/data")
   else()
-    set(BASELINE_FILE_ARG "-b ${SCREAM_BASELINES_DIR}/data/shoc_run_and_cmp.baseline")
+    set(BASELINE_FILE_ARG "-c -b ${SCREAM_BASELINES_DIR}/data")
   endif()
-
-  CreateUnitTestExec(shoc_run_and_cmp "shoc_run_and_cmp.cpp"
-    LIBS shoc
-    EXCLUDE_MAIN_CPP)
-
-  CreateUnitTestFromExec(shoc_run_and_cmp_cxx shoc_run_and_cmp
-    THREADS ${SCREAM_TEST_MAX_THREADS}
-    EXE_ARGS "${BASELINE_FILE_ARG}"
-    LABELS "shoc;physics")
-
-  CreateUnitTestFromExec(shoc_run_and_cmp_f90 shoc_run_and_cmp
-    THREADS ${SCREAM_TEST_MAX_THREADS}
-    EXE_ARGS "-f ${BASELINE_FILE_ARG}"
-    LABELS "shoc;physics")
-
-  # By default, baselines should be created using all fortran (ctest -L baseline_gen). If the user wants
-  # to use CXX to generate their baselines, they should use "ctest -L baseline_gen_cxx".
-  # Note: the baseline_gen label is really only used if SCREAM_ONLY_GENERATE_BASELINES=ON, but no harm adding it
-  if (SCREAM_TEST_MAX_THREADS GREATER 1)
-    # ECUT only adds _ompX if we have more than one value of X, or if X>1
-    set (TEST_SUFFIX _omp${SCREAM_TEST_MAX_THREADS})
-  endif()
-  set_tests_properties (shoc_run_and_cmp_f90${TEST_SUFFIX} PROPERTIES LABELS "baseline_gen;baseline_cmp")
-  set_tests_properties (shoc_run_and_cmp_cxx${TEST_SUFFIX} PROPERTIES LABELS "baseline_gen;cxx baseline_cmp")
+else()
+  set(BASELINE_FILE_ARG "-n") # no baselines
 endif()
+
+CreateUnitTest(shoc_tests "${SHOC_TESTS_SRCS}"
+  LIBS shoc shoc_test_infra
+  THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
+  EXE_ARGS "--flags=\\'${BASELINE_FILE_ARG}\\'"
+  )
+
+if (NOT SCREAM_SHOC_SMALL_KERNELS)
+  CreateUnitTest(shoc_sk_tests "${SHOC_TESTS_SRCS}"
+    LIBS shoc_sk shoc_test_infra
+    THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
+    EXE_ARGS shoc_main_bfb "--flags=\\'${BASELINE_FILE_ARG}\\'"
+    )
+endif()
+
+CreateUnitTest(shoc_run_and_cmp "shoc_run_and_cmp.cpp"
+  LIBS shoc shoc_test_infra
+  EXCLUDE_MAIN_CPP
+  THREADS ${SCREAM_TEST_MAX_THREADS}
+  EXE_ARGS "${BASELINE_FILE_ARG}"
+  LABELS "shoc;physics")
+
+if (SCREAM_TEST_MAX_THREADS GREATER 1)
+  # ECUT only adds _ompX if we have more than one value of X, or if X>1
+  set (TEST_SUFFIX _omp${SCREAM_TEST_MAX_THREADS})
+endif()
+
+set_tests_properties (shoc_run_and_cmp${TEST_SUFFIX} PROPERTIES LABELS "baseline_gen;baseline_cmp")
