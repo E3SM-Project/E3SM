@@ -1,18 +1,25 @@
+//===-- RungeKutta4Stepper.cpp - 4th-order Runge Kutta methods --*- C++ -*-===//
+//
+// Methods for the fourth-order Runge-Kutta time stepping scheme
+//
+//===----------------------------------------------------------------------===//
+
 #include "RungeKutta4Stepper.h"
 
 namespace OMEGA {
 
-// Constructor. Construct a fourth order Runge Kutta stepper from
-// name, tendencies, auxiliary state, mesh, and halo
-RungeKutta4Stepper::RungeKutta4Stepper(const std::string &Name,
-                                       Tendencies *Tend,
-                                       AuxiliaryState *AuxState, HorzMesh *Mesh,
-                                       Halo *MeshHalo)
-    : TimeStepper(Name, TimeStepperType::RungeKutta4, 2, Tend, AuxState, Mesh,
-                  MeshHalo) {
-
-   if (Tend)
-      finalizeInit();
+//------------------------------------------------------------------------------
+// Constructor creates an instance of a fourth order Runge Kutta stepper and
+// fills with some time information. Data pointers are added later.
+// Uses the base constructor and adds some coefficients.
+RungeKutta4Stepper::RungeKutta4Stepper(
+    const std::string &InName,      ///< [in] name of time stepper
+    const TimeInstant &InStartTime, ///< [in] start time for time stepping
+    const TimeInstant &InStopTime,  ///< [in] stop  time for time stepping
+    const TimeInterval &InTimeStep  ///< [in] time step
+    )
+    : TimeStepper(InName, TimeStepperType::RungeKutta4, 2, InStartTime,
+                  InStopTime, InTimeStep) {
 
    RKA[0] = 0;
    RKA[1] = 1. / 2;
@@ -30,18 +37,36 @@ RungeKutta4Stepper::RungeKutta4Stepper(const std::string &Name,
    RKC[3] = 1;
 }
 
+//------------------------------------------------------------------------------
+// Performs some additional initialization for provisional fields
 void RungeKutta4Stepper::finalizeInit() {
 
-   auto NVertLevels = Tend->LayerThicknessTend.extent_int(1);
-   auto NTracers    = Tracers::getNumTracers();
+   if (!Tend)
+      LOG_CRITICAL("Tendency not initialized");
+   if (!Mesh)
+      LOG_CRITICAL("Invalid mesh");
+   if (!MeshHalo)
+      LOG_CRITICAL("Invalid MeshHalo");
 
-   ProvisState = OceanState::create("Provis", Mesh, MeshHalo, NVertLevels, 1);
+   int NVertLevels = Tend->LayerThicknessTend.extent_int(1);
+   int NTracers    = Tracers::getNumTracers();
+   int NCellsSize  = Mesh->NCellsSize;
+   int NTimeLevels = 1; // for provisional tracer
+
+   ProvisState =
+       OceanState::create("Provis", Mesh, MeshHalo, NVertLevels, NTimeLevels);
+   if (!ProvisState)
+      LOG_CRITICAL("Error creating Provis state");
+
    ProvisTracers =
-       Array3DReal("ProvisTracers", NTracers, Mesh->NCellsSize, NVertLevels);
+       Array3DReal("ProvisTracers", NTracers, NCellsSize, NVertLevels);
 }
 
+//------------------------------------------------------------------------------
 // Advance the state by one step of the fourth-order Runge Kutta scheme
-void RungeKutta4Stepper::doStep(OceanState *State, TimeInstant Time) const {
+void RungeKutta4Stepper::doStep(OceanState *State,   // model state
+                                TimeInstant &SimTime // current simulation time
+) const {
 
    int Err = 0;
 
@@ -53,7 +78,7 @@ void RungeKutta4Stepper::doStep(OceanState *State, TimeInstant Time) const {
    Err = Tracers::getAll(NextTracerArray, NextLevel);
 
    for (int Stage = 0; Stage < NStages; ++Stage) {
-      const TimeInstant StageTime = Time + RKC[Stage] * TimeStep;
+      const TimeInstant StageTime = SimTime + RKC[Stage] * TimeStep;
       // first stage does:
       // R^{(0)} = RHS(q^{n}, t^{n})
       // q^{n+1} = q^{n} + dt * RKB[0] * R^{(0)}
@@ -96,6 +121,10 @@ void RungeKutta4Stepper::doStep(OceanState *State, TimeInstant Time) const {
    // exchanges
    State->updateTimeLevels();
    Tracers::updateTimeLevels();
+
+   // Advance the clock and update the simulation time
+   Err     = StepClock->advance();
+   SimTime = StepClock->getCurrentTime();
 }
 
 } // namespace OMEGA

@@ -28,9 +28,7 @@
 
 namespace OMEGA {
 
-int ocnInit(MPI_Comm Comm,          ///< [in] ocean MPI communicator
-            TimeInstant &StartTime, ///< [out] sim start time
-            Alarm &EndAlarm         ///< [out] alarm to end simulation
+int ocnInit(MPI_Comm Comm ///< [in] ocean MPI communicator
 ) {
 
    I4 Err = 0; // Error code
@@ -51,13 +49,6 @@ int ocnInit(MPI_Comm Comm,          ///< [in] ocean MPI communicator
    }
    Config *OmegaConfig = Config::getOmegaConfig();
 
-   // read and save time management options from Config
-   Err = initTimeManagement(StartTime, EndAlarm, OmegaConfig);
-   if (Err != 0) {
-      LOG_CRITICAL("ocnInit: Error initializing time management");
-      return Err;
-   }
-
    // initialize remaining Omega modules
    Err = initOmegaModules(Comm);
    if (Err != 0) {
@@ -68,90 +59,14 @@ int ocnInit(MPI_Comm Comm,          ///< [in] ocean MPI communicator
    return Err;
 } // end ocnInit
 
-// Read time management options from config
-int initTimeManagement(TimeInstant &StartTime, Alarm &EndAlarm,
-                       Config *OmegaConfig) {
-
-   // error code
-   I4 Err = 0;
-
-   // create RunInterval and zero length interval for comparison
-   TimeInterval RunInterval, ZeroInterval;
-
-   // extract variables for time management group
-   Config TimeMgmtConfig("TimeManagement");
-   Err = OmegaConfig->get(TimeMgmtConfig);
-   if (Err != 0) {
-      LOG_CRITICAL("ocnInit: TimeManagement group not found in Config");
-      return Err;
-   }
-
-   // Set model calendar
-   std::string ConfigCalStr;
-   Err = TimeMgmtConfig.get("CalendarType", ConfigCalStr);
-   if (Err != 0) {
-      LOG_CRITICAL("ocnInit: CalendarType not found in TimeMgmtConfig");
-      return Err;
-   }
-   Calendar::init(ConfigCalStr);
-
-   // retrieve start time from config
-   std::string StartTimeStr;
-   Err = TimeMgmtConfig.get("StartTime", StartTimeStr);
-   if (Err != 0) {
-      LOG_CRITICAL("ocnInit: StartTime not found in TimeMgmtConfig");
-      return Err;
-   }
-   StartTime = TimeInstant(StartTimeStr);
-
-   std::string NoneStr("none");
-
-   // set RunInterval by checking for StopTime and RunDuration in Config,
-   // if both are present and inconsistent, use RunDuration
-   std::string StopTimeStr;
-   I4 Err1 = TimeMgmtConfig.get("StopTime", StopTimeStr);
-   if (Err1 != 0) {
-      LOG_WARN("ocnInit: StopTime not found in TimeMgmtConfig");
-   } else if (StopTimeStr != NoneStr) {
-      TimeInstant StopTime(StopTimeStr);
-      RunInterval = StopTime - StartTime;
-   }
-   std::string RunDurationStr;
-   I4 Err2 = TimeMgmtConfig.get("RunDuration", RunDurationStr);
-   if (Err2 != 0) {
-      LOG_WARN("ocnInit: RunDuration not found in TimeMgmtConfig");
-   } else if (RunDurationStr != NoneStr) {
-      TimeInterval IntervalFromStr(RunDurationStr);
-      if (IntervalFromStr != RunInterval) {
-         if (StopTimeStr != NoneStr) {
-            LOG_WARN("ocnInit: RunDuration and StopTime are inconsistent: "
-                     "using RunDuration");
-         }
-         RunInterval = IntervalFromStr;
-      }
-   }
-
-   // return error if RunInterval set to zero
-   if (RunInterval == ZeroInterval) {
-      LOG_CRITICAL("ocnInit: Simulation run duration set to zero");
-      Err = -1;
-      return Err;
-   }
-
-   // set EndAlarm based on length of RunInterval
-   TimeInstant EndTime = StartTime + RunInterval;
-   EndAlarm            = Alarm("End Alarm", EndTime);
-
-   return Err;
-} // end initTimeManagement
-
 // Call init routines for remaining Omega modules
 int initOmegaModules(MPI_Comm Comm) {
 
    // error code
    I4 Err = 0;
 
-   // initialize all necessary Omega modules
+   // Initialize the default time stepper (phase 1) that includes the
+   // calendar, model clock and start/stop times and alarms
    Err = TimeStepper::init1();
    if (Err != 0) {
       LOG_CRITICAL("ocnInit: Error phase 1 initializing default time stepper");

@@ -1,12 +1,11 @@
 Omega:
-  TimeManagement:
+  TimeIntegration:
+    CalendarType: No Leap
+    TimeStepper: Forward-Backward
+    TimeStep: 0000_00:10:00
     StartTime: 0001-01-01_00:00:00
     StopTime: 0001-01-01_02:00:00
     RunDuration: none
-    CalendarType: No Leap
-  TimeIntegration:
-    TimeStepper: Forward-Backward
-    TimeStep: 0000_00:10:00
   Dimension:
     NVertLevels: 60
   Decomp:

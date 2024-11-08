@@ -14,6 +14,7 @@
 #include "OceanDriver.h"
 #include "OmegaKokkos.h"
 #include "TimeMgr.h"
+#include "TimeStepper.h"
 
 #include "mpi.h"
 
@@ -29,19 +30,21 @@ int main(int argc, char *argv[]) {
    MPI_Init(&argc, &argv); // initialize MPI
    Kokkos::initialize();   // initialize Kokkos
 
-   // Time management objects
-   OMEGA::TimeInstant CurrTime;
-   OMEGA::Alarm EndAlarm;
-
-   ErrCurr = OMEGA::ocnInit(MPI_COMM_WORLD, CurrTime, EndAlarm);
+   ErrCurr = OMEGA::ocnInit(MPI_COMM_WORLD);
    if (ErrCurr == 0) {
       LOG_INFO("DriverTest: Omega initialize PASS");
    } else {
       LOG_INFO("DriverTest: Omega initialize FAIL");
    }
 
+   // Time management objects
+   OMEGA::TimeStepper *DefStepper = OMEGA::TimeStepper::getDefault();
+   OMEGA::Clock *ModelClock       = DefStepper->getClock();
+   OMEGA::Alarm *EndAlarm         = DefStepper->getEndAlarm();
+   OMEGA::TimeInstant CurrTime    = ModelClock->getCurrentTime();
+
    if (ErrCurr == 0) {
-      ErrCurr = OMEGA::ocnRun(CurrTime, EndAlarm);
+      ErrCurr = OMEGA::ocnRun(CurrTime);
    }
    if (ErrCurr == 0) {
       LOG_INFO("DriverTest: Omega model run PASS");
