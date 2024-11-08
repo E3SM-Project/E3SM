@@ -52,8 +52,10 @@ AuxiliaryState::~AuxiliaryState() {
 // Compute the auxiliary variables needed for momentum equation
 void AuxiliaryState::computeMomAux(const OceanState *State, int ThickTimeLevel,
                                    int VelTimeLevel) const {
-   const Array2DReal &LayerThickCell = State->LayerThickness[ThickTimeLevel];
-   const Array2DReal &NormalVelEdge  = State->NormalVelocity[VelTimeLevel];
+   Array2DReal LayerThickCell;
+   Array2DReal NormalVelEdge;
+   State->getLayerThickness(LayerThickCell, ThickTimeLevel);
+   State->getNormalVelocity(NormalVelEdge, VelTimeLevel);
 
    const int NVertLevels = LayerThickCell.extent_int(1);
    const int NChunks     = NVertLevels / VecLength;
@@ -113,8 +115,10 @@ void AuxiliaryState::computeMomAux(const OceanState *State, int ThickTimeLevel,
 void AuxiliaryState::computeAll(const OceanState *State,
                                 const Array3DReal &TracerArray,
                                 int ThickTimeLevel, int VelTimeLevel) const {
-   const Array2DReal &LayerThickCell = State->LayerThickness[ThickTimeLevel];
-   const Array2DReal &NormalVelEdge  = State->NormalVelocity[VelTimeLevel];
+   Array2DReal LayerThickCell;
+   Array2DReal NormalVelEdge;
+   State->getLayerThickness(LayerThickCell, ThickTimeLevel);
+   State->getNormalVelocity(NormalVelEdge, VelTimeLevel);
 
    const int NVertLevels = LayerThickCell.extent_int(1);
    const int NChunks     = NVertLevels / VecLength;

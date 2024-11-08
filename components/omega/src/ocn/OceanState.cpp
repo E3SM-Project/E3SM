@@ -44,6 +44,11 @@ int OceanState::init() {
    }
    int NTimeLevels = DefTimeStepper->getNTimeLevels();
 
+   if (NTimeLevels < 2) {
+      LOG_ERROR("OceanState: the number of time level is lower than 2");
+      return -2;
+   }
+
    // Create the default state and set pointer to it
    OceanState::DefaultOceanState =
        create("Default", DefHorzMesh, DefHalo, NVertLevels, NTimeLevels);
@@ -75,14 +80,17 @@ OceanState::OceanState(
 
    NVertLevels = NVertLevels_;
    NTimeLevels = NTimeLevels_;
-   CurLevel    = std::max(0, NTimeLevels - 2);
-   NewLevel    = NTimeLevels - 1;
 
    MeshHalo = MeshHalo_;
 
    Name = Name_;
 
+   CurTimeIndex = 0;
+
    // Allocate state host arrays
+   LayerThicknessH.resize(NTimeLevels);
+   NormalVelocityH.resize(NTimeLevels);
+
    for (int I = 0; I < NTimeLevels; I++) {
       LayerThicknessH[I] = HostArray2DReal("LayerThickness" + std::to_string(I),
                                            NCellsSize, NVertLevels);
@@ -90,10 +98,16 @@ OceanState::OceanState(
                                            NEdgesSize, NVertLevels);
    }
 
+   // Allocate state device arrays
+   LayerThickness.resize(NTimeLevels);
+   NormalVelocity.resize(NTimeLevels);
+
    // Create device arrays and copy host data
    for (int I = 0; I < NTimeLevels; I++) {
-      LayerThickness[I] = createDeviceMirrorCopy(LayerThicknessH[I]);
-      NormalVelocity[I] = createDeviceMirrorCopy(NormalVelocityH[I]);
+      LayerThickness[I] = Array2DReal("LayerThickness" + std::to_string(I),
+                                      NCellsSize, NVertLevels);
+      NormalVelocity[I] = Array2DReal("NormalVelocity" + std::to_string(I),
+                                      NEdgesSize, NVertLevels);
    }
 
    // Register fields and metadata for IO
@@ -192,7 +206,8 @@ void OceanState::loadStateFromFile(const std::string &StateFileName,
    finalizeParallelIO(CellDecompR8, EdgeDecompR8);
 
    // Sync with device
-   copyToDevice(CurLevel);
+   copyToDevice(0);
+
 } // end loadStateFromFile
 
 //------------------------------------------------------------------------------
@@ -296,11 +311,16 @@ void OceanState::defineFields() {
                 StateGroupName);
 
    // Associate Field with data
-   Err = NormalVelocityField->attachData<Array2DReal>(NormalVelocity[CurLevel]);
+   I4 TimeIndex;
+   Err = getTimeIndex(TimeIndex, 0);
+
+   Err =
+       NormalVelocityField->attachData<Array2DReal>(NormalVelocity[TimeIndex]);
    if (Err != 0)
       LOG_ERROR("Error attaching data array to field {}",
                 NormalVelocityFldName);
-   Err = LayerThicknessField->attachData<Array2DReal>(LayerThickness[CurLevel]);
+   Err =
+       LayerThicknessField->attachData<Array2DReal>(LayerThickness[TimeIndex]);
    if (Err != 0)
       LOG_ERROR("Error attaching data array to field {}",
                 LayerThicknessFldName);
@@ -330,6 +350,9 @@ void OceanState::finalizeParallelIO(I4 CellDecompR8, I4 EdgeDecompR8) {
 void OceanState::read(int StateFileID, I4 CellDecompR8, I4 EdgeDecompR8) {
 
    I4 Err;
+   I4 TimeIndex;
+
+   Err = getTimeIndex(TimeIndex, 0);
 
    // Read LayerThickness into a temporary double-precision array
    int LayerThicknessID;
@@ -342,7 +365,7 @@ void OceanState::read(int StateFileID, I4 CellDecompR8, I4 EdgeDecompR8) {
 
    // Copy the thickness data into the final state array of user-specified
    // precision
-   deepCopy(LayerThicknessH[CurLevel], TmpLayerThicknessR8);
+   deepCopy(LayerThicknessH[TimeIndex], TmpLayerThicknessR8);
 
    // Read NormalVelocity  into a temporary double-precision array
    int NormalVelocityID;
@@ -355,62 +378,139 @@ void OceanState::read(int StateFileID, I4 CellDecompR8, I4 EdgeDecompR8) {
 
    // Copy the velocity data into the final state array of user-specified
    // precision
-   deepCopy(NormalVelocityH[CurLevel], TmpNormalVelocityR8);
+   deepCopy(NormalVelocityH[TimeIndex], TmpNormalVelocityR8);
 
 } // end read
 
 //------------------------------------------------------------------------------
+// Get layer thickness device array
+I4 OceanState::getLayerThickness(Array2DReal &LayerThick,
+                                 const I4 TimeLevel) const {
+   I4 Err = 0;
+   I4 TimeIndex;
+
+   Err        = getTimeIndex(TimeIndex, TimeLevel);
+   LayerThick = LayerThickness[TimeIndex];
+
+   return Err;
+}
+
+//------------------------------------------------------------------------------
+// Get layer thickness host array
+I4 OceanState::getLayerThicknessH(HostArray2DReal &LayerThickH,
+                                  const I4 TimeLevel) const {
+   I4 Err = 0;
+   I4 TimeIndex;
+
+   Err         = getTimeIndex(TimeIndex, TimeLevel);
+   LayerThickH = LayerThicknessH[TimeIndex];
+
+   return Err;
+}
+
+//------------------------------------------------------------------------------
+// Get normal velocity device array
+I4 OceanState::getNormalVelocity(Array2DReal &NormVel,
+                                 const I4 TimeLevel) const {
+
+   I4 Err = 0;
+   I4 TimeIndex;
+
+   Err     = getTimeIndex(TimeIndex, TimeLevel);
+   NormVel = NormalVelocity[TimeIndex];
+
+   return Err;
+}
+
+//------------------------------------------------------------------------------
+// Get normal velocity host array
+I4 OceanState::getNormalVelocityH(HostArray2DReal &NormVelH,
+                                  const I4 TimeLevel) const {
+   I4 Err = 0;
+   I4 TimeIndex;
+
+   Err      = getTimeIndex(TimeIndex, TimeLevel);
+   NormVelH = NormalVelocityH[TimeIndex];
+
+   return Err;
+}
+
+//------------------------------------------------------------------------------
 // Perform copy to device for state variables
-void OceanState::copyToDevice(int TimeLevel) {
+// TimeLevel == [1:new, 0:current, -1:previous, -2:two times ago, ...]
+I4 OceanState::copyToDevice(const I4 TimeLevel) {
 
-   deepCopy(LayerThickness[TimeLevel], LayerThicknessH[TimeLevel]);
-   deepCopy(NormalVelocity[TimeLevel], NormalVelocityH[TimeLevel]);
+   I4 Err = 0;
+   I4 TimeIndex;
 
+   Err = getTimeIndex(TimeIndex, TimeLevel);
+
+   deepCopy(LayerThickness[TimeIndex], LayerThicknessH[TimeIndex]);
+   deepCopy(NormalVelocity[TimeIndex], NormalVelocityH[TimeIndex]);
+
+   return 0;
 } // end copyToDevice
 
 //------------------------------------------------------------------------------
 // Perform copy to host for state variables
-void OceanState::copyToHost(int TimeLevel) {
+// TimeLevel == [1: new, 0:current, -1:previous, -2:two times ago, ...]
+I4 OceanState::copyToHost(const I4 TimeLevel) {
 
-   deepCopy(LayerThicknessH[TimeLevel], LayerThickness[TimeLevel]);
-   deepCopy(NormalVelocityH[TimeLevel], NormalVelocity[TimeLevel]);
+   I4 Err = 0;
+   I4 TimeIndex;
 
+   Err = getTimeIndex(TimeIndex, TimeLevel);
+
+   deepCopy(LayerThicknessH[TimeIndex], LayerThickness[TimeIndex]);
+   deepCopy(NormalVelocityH[TimeIndex], NormalVelocity[TimeIndex]);
+
+   return 0;
 } // end copyToHost
 
 //------------------------------------------------------------------------------
 // Perform state halo exchange
-void OceanState::exchangeHalo(int TimeLevel) {
+// TimeLevel == [1:new, 0:current, -1:previous, -2:two times ago, ...]
+I4 OceanState::exchangeHalo(const I4 TimeLevel) {
+
    copyToHost(TimeLevel);
-   MeshHalo->exchangeFullArrayHalo(LayerThicknessH[TimeLevel], OnCell);
-   MeshHalo->exchangeFullArrayHalo(NormalVelocityH[TimeLevel], OnEdge);
+
+   I4 Err = 0;
+   I4 TimeIndex;
+   Err = getTimeIndex(TimeIndex, TimeLevel);
+
+   MeshHalo->exchangeFullArrayHalo(LayerThicknessH[TimeIndex], OnCell);
+   MeshHalo->exchangeFullArrayHalo(NormalVelocityH[TimeIndex], OnEdge);
+
    copyToDevice(TimeLevel);
+
+   return 0;
+
 } // end exchangeHalo
 
 //------------------------------------------------------------------------------
 // Perform time level update
-void OceanState::updateTimeLevels() {
+I4 OceanState::updateTimeLevels() {
 
-   int NewLevel = NTimeLevels - 1;
-
-   // Exchange halo
-   exchangeHalo(NewLevel);
-
-   // Update time levels for layer thickness and normal velocity
-   for (int Level = 0; Level < NTimeLevels - 1; Level++) {
-      std::swap(LayerThickness[Level + 1], LayerThickness[Level]);
-      std::swap(LayerThicknessH[Level + 1], LayerThicknessH[Level]);
-
-      std::swap(NormalVelocity[Level + 1], NormalVelocity[Level]);
-      std::swap(NormalVelocityH[Level + 1], NormalVelocityH[Level]);
+   if (NTimeLevels == 1) {
+      LOG_ERROR("OceanState: can't update time levels for NTimeLevels == 1");
+      return -1;
    }
 
-   // Update IOField data associations
-   int Err = 0;
+   // Exchange halo
+   exchangeHalo(1);
 
+   // Update current time index for layer thickness and normal velocity
+   CurTimeIndex = (CurTimeIndex + 1) % NTimeLevels;
+
+   I4 Err = 0;
+
+   // Update IOField data associations
    Err = Field::attachFieldData<Array2DReal>(NormalVelocityFldName,
-                                             NormalVelocity[CurLevel]);
+                                             NormalVelocity[CurTimeIndex]);
    Err = Field::attachFieldData<Array2DReal>(LayerThicknessFldName,
-                                             LayerThickness[CurLevel]);
+                                             LayerThickness[CurTimeIndex]);
+
+   return 0;
 
 } // end updateTimeLevels
 
@@ -437,6 +537,24 @@ OceanState *OceanState::get(const std::string Name ///< [in] Name of state
       return nullptr;
    }
 } // end get state
+
+//------------------------------------------------------------------------------
+// Get time index from time level
+// TimeLevel == [1:new, 0:current, -1:previous, -2:two times ago, ...]
+I4 OceanState::getTimeIndex(I4 &TimeIndex, const I4 TimeLevel) const {
+
+   // Check if time level is valid
+   if (NTimeLevels > 1 && (TimeLevel > 1 || (TimeLevel + NTimeLevels) <= 1)) {
+      LOG_ERROR("OceanState: Time level {} is out of range for NTimeLevels {}",
+                TimeLevel, NTimeLevels);
+      return -1;
+   }
+
+   TimeIndex = (TimeLevel + CurTimeIndex + NTimeLevels) % NTimeLevels;
+
+   return 0;
+
+} // end get time index
 
 } // end namespace OMEGA
 

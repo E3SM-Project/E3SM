@@ -62,6 +62,9 @@ class Tracers {
    // if it is over max index
    static I4 CurTimeIndex; ///< Time dimension array index for current level
 
+   // get the time level index
+   static I4 getTimeIndex(I4 &TimeIndex, const I4 TimeLevel);
+
    // locally defines all tracers but do not allocates memory
    static I4
    define(const std::string &Name,        ///< [in] Name of tracer

@@ -18,13 +18,10 @@ void ForwardBackwardStepper::doStep(OceanState *State, TimeInstant Time) const {
 
    const int CurLevel  = 0;
    const int NextLevel = 1;
-   // TODO: resolve time level indexing
-   const int TrCurLevel  = -1;
-   const int TrNextLevel = 0;
 
    Array3DReal CurTracerArray, NextTracerArray;
-   Err = Tracers::getAll(CurTracerArray, TrCurLevel);
-   Err = Tracers::getAll(NextTracerArray, TrNextLevel);
+   Err = Tracers::getAll(CurTracerArray, CurLevel);
+   Err = Tracers::getAll(NextTracerArray, NextLevel);
 
    // R_h^{n} = RHS_h(u^{n}, h^{n}, t^{n})
    Tend->computeThicknessTendencies(State, AuxState, CurLevel, CurLevel, Time);

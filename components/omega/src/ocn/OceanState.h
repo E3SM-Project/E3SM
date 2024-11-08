@@ -54,6 +54,14 @@ class OceanState {
    OceanState(const OceanState &) = delete;
    OceanState(OceanState &&)      = delete;
 
+   // Current time index
+   // this index is circular so that it returns to index 0
+   // if it is over max index
+   I4 CurTimeIndex; ///< Time dimension array index for current level
+
+   /// Get the current time level index associated with a time level
+   I4 getTimeIndex(I4 &TimeIndex, const I4 TimeLevel) const;
+
  public:
    // Variables
    // Since these are used frequently, we make them public to reduce the
@@ -78,20 +86,13 @@ class OceanState {
    I4 NTimeLevels; ///< Number of time levels in state variable arrays
    I4 NVertLevels; ///< Number of vertical levels in state variable arrays
 
-   I4 CurLevel; ///< Time dimension index for current level
-   I4 NewLevel; ///< Time dimension index for new level
-
    // Prognostic variables
 
-   Kokkos::Array<Array2DReal, MaxTimeLevels>
-       LayerThickness; ///< Device LayerThickness array
-   Kokkos::Array<HostArray2DReal, MaxTimeLevels>
-       LayerThicknessH; ///< Host LayerThickness array
+   std::vector<Array2DReal> LayerThickness; ///< Device LayerThickness array
+   std::vector<HostArray2DReal> LayerThicknessH; ///< Host LayerThickness array
 
-   Kokkos::Array<Array2DReal, MaxTimeLevels>
-       NormalVelocity; ///< Device NormalVelocity array
-   Kokkos::Array<HostArray2DReal, MaxTimeLevels>
-       NormalVelocityH; ///< Host NormalVelocity array
+   std::vector<Array2DReal> NormalVelocity; ///< Device NormalVelocity array
+   std::vector<HostArray2DReal> NormalVelocityH; ///< Host NormalVelocity array
 
    // Field names
    // These are appended with the State name for non-Default state instances
@@ -117,17 +118,30 @@ class OceanState {
    /// load state from file
    void loadStateFromFile(const std::string &StateFileName, Decomp *MeshDecomp);
 
+   /// Get layer thickness device array at given time level
+   I4 getLayerThickness(Array2DReal &LayerThick, const I4 TimeLevel) const;
+
+   /// Get layer thickness host array at given time level
+   I4 getLayerThicknessH(HostArray2DReal &LayerThickH,
+                         const I4 TimeLevel) const;
+
+   /// Get normal velocity device array at given time level
+   I4 getNormalVelocity(Array2DReal &NormVel, const I4 TimeLevel) const;
+
+   /// Get normal velocity host array at given time level
+   I4 getNormalVelocityH(HostArray2DReal &NormVelH, const I4 TimeLevel) const;
+
    /// Exchange halo
-   void exchangeHalo(int TimeLevel);
+   I4 exchangeHalo(const I4 TimeLevel);
 
    /// Swap time levels to update state arrays
-   void updateTimeLevels();
+   I4 updateTimeLevels();
 
    /// Copy state variables from host to device
-   void copyToDevice(int TimeLevel);
+   I4 copyToDevice(const I4 TimeLevel);
 
    /// Copy state variables from device to host
-   void copyToHost(int TimeLevel);
+   I4 copyToHost(const I4 TimeLevel);
 
    /// Destructor - deallocates all memory and deletes an OceanState
    ~OceanState();
