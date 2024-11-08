@@ -1,21 +1,20 @@
 merge_protections:
   - name: Enforce checks passing
     description: Make sure that checks are not failing on the PR, and reviewers approved
-    comment: false
     if:
       - base = master
     success_conditions:
       - "#approved-reviews-by >= 1"            # At least 1 approval
       - "#changes-requested-reviews-by == 0"   # No reviewer asked for changes
       - or:
-        - check-success=eamxx-sa/gcc-openmp/*
-        - check-skipped=eamxx-sa/gcc-openmp/*
+        - check-success="gcc-openmp / .*"
+        - check-skipped="gcc-openmp / .*"
       - or:
-        - check-success=eamxx-sa/gcc-cuda/*
-        - check-skipped=eamxx-sa/gcc-cuda/*
+        - check-success="gcc-cuda / .*"
+        - check-skipped="gcc-cuda / .*"
       - or:
-        - check-success=eamxx-v1/cpu-gcc/*
-        - check-skipped=eamxx-v1/cpu-gcc/*
+        - check-success="cpu-gcc / .*"
+        - check-skipped="cpu-gcc / .*"
       - or:
-        - check-success=eamxx-scripts/cpu-gcc
-        - check-skipped=eamxx-scripts/cpu-gcc
+        - check-success=cpu-gcc
+        - check-skipped=cpu-gcc
