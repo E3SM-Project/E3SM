@@ -172,6 +172,7 @@ struct UnitWrap::UnitTest<D>::TestPblintdInitPot {
       PblintdInitPotData(pblintd_init_pot_data_f90[3]),
     };
 
+    // Get data from fortran
     for (auto& d : pblintd_init_pot_data_f90) {
       // expects data in C layout
       pblintd_init_pot(d);
@@ -192,7 +193,7 @@ struct UnitWrap::UnitTest<D>::TestPblintdInitPot {
           }
         }
       }
-    }
+    } // SCREAM_BFB_TESTING
   }
 
 };

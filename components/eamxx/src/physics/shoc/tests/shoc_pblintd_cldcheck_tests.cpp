@@ -117,6 +117,7 @@ struct UnitWrap::UnitTest<D>::TestPblintdCldCheck {
       PblintdCldcheckData(cldcheck_data_f90[3]),
     };
 
+    // Get data from fortran
     for (auto& d : cldcheck_data_f90) {
       // expects data in C layout
       pblintd_cldcheck(d);
@@ -135,7 +136,7 @@ struct UnitWrap::UnitTest<D>::TestPblintdCldCheck {
           REQUIRE(cldcheck_data_f90[i].pblh[k]  == cldcheck_data_cxx[i].pblh[k]);
         }
       }
-    }
+    } // SCREAM_BFB_TESTING
   }  // run_bfb
 
 };

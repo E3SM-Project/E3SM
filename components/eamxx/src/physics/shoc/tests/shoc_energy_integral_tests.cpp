@@ -189,7 +189,7 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyInt {
           REQUIRE(d_f90.wl_int[c] == d_cxx.wl_int[c]);
         }
       }
-    }
+    } // SCREAM_BFB_TESTING
   }
 };
 

@@ -172,7 +172,7 @@ struct UnitWrap::UnitTest<D>::TestShocIntColStab {
           REQUIRE(d_f90.brunt_int[c] == d_cxx.brunt_int[c]);
         }
       }
-    }
+    } // SCREAM_BFB_TESTING
   } //run_bfb
 };
 

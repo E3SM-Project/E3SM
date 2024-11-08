@@ -228,7 +228,7 @@ struct UnitWrap::UnitTest<D>::TestShocDiagObklen {
           REQUIRE(d_f90.obklen[s] == d_cxx.obklen[s]);
         }
       }
-    }
+    } // SCREAM_BFB_TESTING
   }
 };
 

@@ -395,7 +395,7 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
           REQUIRE(d_f90.y2[k] == d_cxx.y2[k]);
         }
       }
-    }
+    } // SCREAM_BFB_TESTING
   } // run_bfb
 
 };

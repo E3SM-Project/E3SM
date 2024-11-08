@@ -477,7 +477,7 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
           REQUIRE(d_f90.shoc_ql2[k] == d_cxx.shoc_ql2[k]);
         }
       }
-    }
+    } // SCREAM_BFB_TESTING
   }
 };
 

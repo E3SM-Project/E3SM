@@ -132,7 +132,7 @@ struct UnitWrap::UnitTest<D>::TestPblintdCheckPblh {
           REQUIRE(d_f90.pblh[k] == d_cxx.pblh[k]);
         }
       }
-    }
+    } // SCREAM_BFB_TESTING
   } // run_bfb
 
 };

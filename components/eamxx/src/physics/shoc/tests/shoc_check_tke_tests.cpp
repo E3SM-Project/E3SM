@@ -128,7 +128,7 @@ struct UnitWrap::UnitTest<D>::TestShocCheckTke {
           REQUIRE(d_f90.tke[k]    == d_cxx.tke[k]);
         }
       }
-    }
+    } // SCREAM_BFB_TESTING
   }
 
 };

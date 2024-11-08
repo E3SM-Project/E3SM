@@ -139,7 +139,7 @@ struct UnitWrap::UnitTest<D>::TestComputeShocVapor {
           REQUIRE(d_f90.qv[k] == d_cxx.qv[k]);
         }
       }
-    }
+    } // SCREAM_BFB_TESTING
   } // run_bfb
 };
 

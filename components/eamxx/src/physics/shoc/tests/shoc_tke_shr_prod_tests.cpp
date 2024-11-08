@@ -210,7 +210,7 @@ struct UnitWrap::UnitTest<D>::TestShocShearProd {
           REQUIRE(d_f90.sterm[k] == d_cxx.sterm[k]);
         }
       }
-    }
+    } // SCREAM_BFB_TESTING
   } //run_bfb
 };
 

@@ -185,7 +185,7 @@ struct UnitWrap::UnitTest<D>::TestCalcShocVertflux {
           REQUIRE(d_f90.vertflux[k] == d_cxx.vertflux[k]);
         }
       }
-    }
+    } // SCREAM_BFB_TESTING
   }
 
 };

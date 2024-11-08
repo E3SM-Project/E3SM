@@ -246,7 +246,7 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke {
           REQUIRE(d_f90.a_diss[k] == d_cxx.a_diss[k]);
         }
       }
-    }
+    } // SCREAM_BFB_TESTING
   }//run_bfb
 };
 

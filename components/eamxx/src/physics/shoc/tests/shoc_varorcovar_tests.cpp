@@ -339,7 +339,7 @@ static void run_bfb()
           REQUIRE(d_f90.varorcovar[k] == d_cxx.varorcovar[k]);
         }
       }
-    }
+    } // SCREAM_BFB_TESTING
   }
 };
 

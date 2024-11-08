@@ -229,7 +229,7 @@ struct UnitWrap::UnitTest<D>::TestShocIsotropicTs {
           REQUIRE(d_f90.isotropy[k] == d_cxx.isotropy[k]);
         }
       }
-    }
+    } // SCREAM_BFB_TESTING
   }//run_bfb
 
 };

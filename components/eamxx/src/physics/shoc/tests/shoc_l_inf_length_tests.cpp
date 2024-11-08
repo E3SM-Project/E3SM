@@ -160,7 +160,7 @@ struct UnitWrap::UnitTest<D>::TestLInfShocLength {
           REQUIRE(d_f90.l_inf[c] == d_cxx.l_inf[c]);
         }
       }
-    }
+    } // SCREAM_BFB_TESTING
   }
 };
 

@@ -176,7 +176,7 @@ struct UnitWrap::UnitTest<D>::TestCompBruntShocLength {
           REQUIRE(d_f90.brunt[k] == d_cxx.brunt[k]);
         }
       }
-    }
+    } // SCREAM_BFB_TESTING
   }
 };
 

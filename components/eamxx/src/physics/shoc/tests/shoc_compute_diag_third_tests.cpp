@@ -249,7 +249,7 @@ struct UnitWrap::UnitTest<D>::TestShocCompDiagThird {
           REQUIRE(d_f90.w3[k] == d_cxx.w3[k]);
         }
       }
-    }
+    } // SCREAM_BFB_TESTING
   }
 };
 

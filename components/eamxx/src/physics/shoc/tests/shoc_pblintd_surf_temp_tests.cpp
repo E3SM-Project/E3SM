@@ -172,7 +172,7 @@ struct UnitWrap::UnitTest<D>::TestPblintdSurfTemp {
           REQUIRE(d_f90.rino[k] == d_cxx.rino[k]);
         }
       }
-    }
+    } // SCREAM_BFB_TESTING
   } // run_bfb
 
 };

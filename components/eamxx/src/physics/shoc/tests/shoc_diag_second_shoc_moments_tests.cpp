@@ -329,7 +329,7 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondShocMoments {
           REQUIRE(d_f90.wtke_sec[k] == d_cxx.wtke_sec[k]);
         }
       }
-    }
+    } // SCREAM_BFB_TESTING
   } // run_bfb
 
 };

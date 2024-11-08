@@ -184,7 +184,7 @@ struct UnitWrap::UnitTest<D>::TestShocGrid {
           REQUIRE(d_f90.dz_zi[k] == d_cxx.dz_zi[k]);
         }
       }
-    }
+    } // SCREAM_BFB_TESTING
   } // run_bfb
 };
 

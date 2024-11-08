@@ -111,7 +111,7 @@ struct UnitWrap::UnitTest<D>::TestSecondMomUbycond {
           REQUIRE(uby_fortran[i].wtke_sec[k]     == uby_cxx[i].wtke_sec[k]);
         }
       }
-    }
+    } // SCREAM_BFB_TESTING
   }
 
 };

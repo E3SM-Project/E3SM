@@ -251,7 +251,7 @@ struct UnitWrap::UnitTest<D>::TestShocLength {
           REQUIRE(d_f90.shoc_mix[k] == d_cxx.shoc_mix[k]);
         }
       }
-    }
+    } // SCREAM_BFB_TESTING
   }
 };
 

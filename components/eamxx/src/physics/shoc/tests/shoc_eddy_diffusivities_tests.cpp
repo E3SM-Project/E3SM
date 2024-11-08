@@ -315,7 +315,7 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff {
           REQUIRE(d_f90.tk[k] == d_cxx.tk[k]);
         }
       }
-    }
+    } // SCREAM_BFB_TESTING
   } // run_bfb
 };
 

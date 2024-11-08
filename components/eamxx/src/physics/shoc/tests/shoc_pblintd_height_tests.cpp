@@ -236,7 +236,7 @@ struct UnitWrap::UnitTest<D>::TestPblintdHeight {
           REQUIRE(d_f90.check[k] == d_cxx.check[k]);
         }
       }
-    }
+    } // SCREAM_BFB_TESTING
   } // run_bfb
 
 };

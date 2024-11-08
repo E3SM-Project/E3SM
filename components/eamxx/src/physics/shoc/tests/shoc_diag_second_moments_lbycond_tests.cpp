@@ -174,7 +174,7 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondMomentsLbycond {
           REQUIRE(d_f90.qwthl_sec[k] == d_cxx.qwthl_sec[k]);
         }
       }
-    }
+    } // SCREAM_BFB_TESTING
   } // run_bfb
 
 };

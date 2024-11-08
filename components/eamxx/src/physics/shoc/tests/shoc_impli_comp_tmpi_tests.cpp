@@ -169,7 +169,7 @@ struct UnitWrap::UnitTest<D>::TestImpCompTmpi {
           REQUIRE(d_f90.tmpi[k] == d_cxx.tmpi[k]);
         }
       }
-    }
+    } // SCREAM_BFB_TESTING
   }
 };
 

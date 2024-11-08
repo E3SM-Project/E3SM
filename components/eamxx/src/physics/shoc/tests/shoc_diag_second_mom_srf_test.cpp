@@ -124,7 +124,7 @@ struct UnitWrap::UnitTest<D>::TestSecondMomSrf {
           REQUIRE(mom_srf_data_f90[i].wstar[k]  == mom_srf_data_cxx[i].wstar[k]);
         }
       }
-    }
+    } // SCREAM_BFB_TESTING
 #endif
   }
 

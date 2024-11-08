@@ -76,7 +76,7 @@ struct UnitWrap::UnitTest<D>::TestVdShocDecompandSolve {
           REQUIRE(d_f90.var[k] == d_cxx.var[k]);
         }
       }
-    }
+    } // SCREAM_BFB_TESTING
   } // run_bfb
 
 };

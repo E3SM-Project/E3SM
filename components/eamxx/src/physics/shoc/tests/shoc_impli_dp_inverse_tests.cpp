@@ -149,7 +149,7 @@ struct UnitWrap::UnitTest<D>::TestImpDpInverse {
           REQUIRE(d_f90.rdp_zt[k] == d_cxx.rdp_zt[k]);
         }
       }
-    }
+    } // SCREAM_BFB_TESTING
   }
 };
 

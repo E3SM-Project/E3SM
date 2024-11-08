@@ -331,7 +331,7 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
           REQUIRE(d_f90.host_dse[k] == d_cxx.host_dse[k]);
         }
       }
-    }
+    } // SCREAM_BFB_TESTING
   }
 };
 

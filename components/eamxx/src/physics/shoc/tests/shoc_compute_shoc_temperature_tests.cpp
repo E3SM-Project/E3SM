@@ -253,7 +253,7 @@ struct UnitWrap::UnitTest<D>::TestComputeShocTemp {
           REQUIRE(d_f90.tabs[k] == d_cxx.tabs[k]);
         }
       }
-    }
+    } // SCREAM_BFB_TESTING
   }
 };
 

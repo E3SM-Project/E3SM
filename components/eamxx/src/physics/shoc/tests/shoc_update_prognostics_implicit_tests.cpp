@@ -409,7 +409,7 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
           REQUIRE(d_f90.tracer[k] == d_cxx.tracer[k]);
         }
       }
-    }
+    } // SCREAM_BFB_TESTING
   } // run_bfb
 
 };
