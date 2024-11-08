@@ -1,0 +1,65 @@
+%YAML 1.1
+---
+driver_options:
+  atmosphere_dag_verbosity_level: 5
+
+time_stepping:
+  time_step: ${ATM_TIME_STEP}
+  run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
+  number_of_steps: ${NUM_STEPS}
+
+atmosphere_processes:
+  atm_procs_list: [mam4_aero_microphys]
+  mam4_aero_microphys:
+   mam4_do_cond: true
+   mam4_do_newnuc: true
+   mam4_do_coag: true
+   mam4_do_rename: true
+   mam4_o3_tau: 172800.0
+   mam4_o3_sfc: 3.0E-008
+   mam4_o3_lbl: 4
+   mam4_psc_T : 193.0
+   mam4_linoz_ymd : 20100101
+   mam4_linoz_file_name : ${SCREAM_DATA_DIR}/mam4xx/linoz/ne2np4/linoz1850-2015_2010JPL_CMIP6_10deg_58km_ne2np4_c20240724.nc
+   mam4_oxid_file_name : ${SCREAM_DATA_DIR}/mam4xx/invariants/ne2np4/oxid_ne2np4_L26_1850-2015_c20240827.nc
+   mam4_oxid_ymd : 20150101
+   mam4_linoz_chlorine_file : ${SCREAM_DATA_DIR}/mam4xx/linoz/Linoz_Chlorine_Loading_CMIP6_0003-2017_c20171114.nc
+   mam4_chlorine_loading_ymd : 20100101
+   mam4_rsf_file : ${SCREAM_DATA_DIR}/mam4xx/photolysis/RSF_GT200nm_v3.0_c080811.nc
+   mam4_xs_long_file : ${SCREAM_DATA_DIR}/mam4xx/photolysis/temp_prs_GT200nm_JPL10_c130206.nc
+   verti_emiss_ymd : 20100101
+   mam4_so2_verti_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_so2_elev_ne2np4_2010_clim_c20240726.nc
+   mam4_so4_a1_verti_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated//cmip6_mam4_so4_a1_elev_ne2np4_2010_clim_c20240823.nc
+   mam4_so4_a2_verti_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated//cmip6_mam4_so4_a2_elev_ne2np4_2010_clim_c20240823.nc
+   mam4_pom_a4_verti_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated//cmip6_mam4_pom_a4_elev_ne2np4_2010_clim_c20240823.nc
+   mam4_bc_a4_verti_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_bc_a4_elev_ne2np4_2010_clim_c20240823.nc
+   mam4_num_a1_verti_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated//cmip6_mam4_num_a1_elev_ne2np4_2010_clim_c20240823.nc
+   mam4_num_a2_verti_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated//cmip6_mam4_num_a2_elev_ne2np4_2010_clim_c20240823.nc
+   mam4_num_a4_verti_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated//cmip6_mam4_num_a4_elev_ne2np4_2010_clim_c20240823.nc
+   mam4_soag_verti_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated//cmip6_mam4_soag_elev_ne2np4_2010_clim_c20240823.nc
+
+grids_manager:
+  Type: Mesh Free
+  geo_data_source: IC_FILE
+  grids_names: [Physics GLL]
+  Physics GLL:
+    type: point_grid
+    aliases: [Physics]
+    number_of_global_columns:   218
+    number_of_vertical_levels:  72
+
+initial_conditions:
+  # The name of the file containing the initial conditions for this test.
+  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_MAM4xx_72lev}
+  topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
+  phis : 1.0
+  pbl_height: 1.0
+  #These should come from the input file
+  dgnum: [1.246662106183775E-007, 4.081134799487888E-008, 1.103139143795796E-006, 1.000000011686097E-007]
+  dgnumwet: [2.367209731605067E-007, 6.780643470563889E-008, 3.028011448344027E-006, 1.000000096285154E-007]
+  wetdens: [1038.67760516297, 1046.20002003441, 1031.74623165457, 1086.79731859184]
+
+# The parameters for I/O control
+Scorpio:
+  output_yaml_files: ["output.yaml"]
+...

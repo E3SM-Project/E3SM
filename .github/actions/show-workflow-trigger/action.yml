@@ -1,0 +1,27 @@
+name: 'Show workflow trigger'
+description: 'Prints what triggered this workflow'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Print trigger info
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const eventName = context.eventName;
+          const actor = context.actor || 'unknown';  // Default to 'unknown' if actor is not defined
+          let eventAction = 'N/A';
+
+          // Determine the event action based on the event type
+          if (eventName === 'pull_request') {
+            eventAction = context.payload.action || 'N/A';
+          } else if (eventName === 'pull_request_review') {
+            eventAction = context.payload.review.state || 'N/A';
+          } else if (eventName === 'workflow_dispatch') {
+            eventAction = 'manual trigger';
+          } else if (eventName === 'schedule') {
+            eventAction = 'scheduled trigger';
+          }
+          console.log(`The job was triggered by a ${eventName} event.`);
+          console.log(`  - Event action: ${eventAction}`);
+          console.log(`  - Triggered by: ${actor}`);

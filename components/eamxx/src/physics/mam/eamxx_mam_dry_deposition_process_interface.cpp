@@ -3,15 +3,12 @@
 // Drydep functions are stored in the following hpp file
 #include <physics/mam/eamxx_mam_dry_deposition_functions.hpp>
 
-/*
------------------------------------------------------------------
-NOTES:
-1. Add a CIME test and multi-process tests
-2. Ensure that the submodule for MAM4xx is the main branch
-3. Read file for fractional landuse
------------------------------------------------------------------
-*/
+// For reading fractional land use file
+#include <physics/mam/readfiles/fractional_land_use.hpp>
+
 namespace scream {
+
+using FracLandUseFunc = frac_landuse::fracLandUseFunctions<Real, DefaultDevice>;
 
 MAMDryDep::MAMDryDep(const ekat::Comm &comm, const ekat::ParameterList &params)
     : AtmosphereProcess(comm, params) {
@@ -56,7 +53,8 @@ void MAMDryDep::set_grids(
   // Layout for 4D (2d horiz X 1d vertical x number of modes) variables
   // at mid points
   const int num_aero_modes = mam_coupling::num_aero_modes();
-  const FieldLayout vector3d_mid = grid_->get_3d_vector_layout(true, num_aero_modes, "num_modes"); 
+  const FieldLayout vector3d_mid =
+      grid_->get_3d_vector_layout(true, num_aero_modes, "num_modes");
 
   using namespace ekat::units;
 
@@ -73,19 +71,19 @@ void MAMDryDep::set_grids(
 
   // ----------- Atmospheric quantities -------------
   // Specific humidity [kg/kg](Require only for building DS)
-  add_field<Required>("qv", scalar3d_mid, q_unit, grid_name, "tracers");
+  add_tracer<Required>("qv", grid_, q_unit);
 
   // Cloud liquid mass mixing ratio [kg/kg](Require only for building DS)
-  add_field<Required>("qc", scalar3d_mid, q_unit, grid_name, "tracers");
+  add_tracer<Required>("qc", grid_, q_unit);
 
   // Cloud ice mass mixing ratio [kg/kg](Require only for building DS)
-  add_field<Required>("qi", scalar3d_mid, q_unit, grid_name, "tracers");
+  add_tracer<Required>("qi", grid_, q_unit);
 
   // Cloud liquid number mixing ratio [1/kg](Require only for building DS)
-  add_field<Required>("nc", scalar3d_mid, n_unit, grid_name, "tracers");
+  add_tracer<Required>("nc", grid_, n_unit);
 
   // Cloud ice number mixing ratio [1/kg](Require only for building DS)
-  add_field<Required>("ni", scalar3d_mid, n_unit, grid_name, "tracers");
+  add_tracer<Required>("ni", grid_, n_unit);
 
   // Temperature[K] at midpoints
   add_field<Required>("T_mid", scalar3d_mid, K, grid_name);
@@ -158,15 +156,13 @@ void MAMDryDep::set_grids(
   for(int m = 0; m < num_aero_modes; ++m) {
     const char *int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
 
-    add_field<Updated>(int_nmr_field_name, scalar3d_mid, n_unit, grid_name,
-                       "tracers");
+    add_tracer<Updated>(int_nmr_field_name, grid_, n_unit);
     for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
       const char *int_mmr_field_name =
           mam_coupling::int_aero_mmr_field_name(m, a);
 
       if(strlen(int_mmr_field_name) > 0) {
-        add_field<Updated>(int_mmr_field_name, scalar3d_mid, q_unit, grid_name,
-                           "tracers");
+        add_tracer<Updated>(int_mmr_field_name, grid_, q_unit);
       }
     }
   }
@@ -188,8 +184,7 @@ void MAMDryDep::set_grids(
   // aerosol-related gases: mass mixing ratios
   for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
     const char *gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
-    add_field<Updated>(gas_mmr_field_name, scalar3d_mid, q_unit, grid_name,
-                       "tracers");
+    add_tracer<Updated>(gas_mmr_field_name, grid_, q_unit);
   }
 
   // -------------------------------------------------------------
@@ -202,6 +197,27 @@ void MAMDryDep::set_grids(
   // surface deposition flux of interstitial aerosols, [kg/m2/s] or [1/m2/s]
   add_field<Computed>("deposition_flux_of_interstitial_aerosols",
                       vector2d_pcnst, 1 / m2 / s, grid_name);
+
+  // -------------------------------------------------------------
+  // setup to enable reading fractional land use file
+  // -------------------------------------------------------------
+
+  const auto mapping_file = m_params.get<std::string>("drydep_remap_file", "");
+  const std::string frac_landuse_data_file =
+      m_params.get<std::string>("fractional_land_use_file");
+
+  // Field to be read from file
+  const std::string field_name = "fraction_landuse";
+
+  // Dimensions of the filed
+  const std::string dim_name1 = "ncol";
+  const std::string dim_name2 = "class";
+
+  // initialize the file read
+  FracLandUseFunc::init_frac_landuse_file_read(
+      ncol_, field_name, dim_name1, dim_name2, grid_, frac_landuse_data_file,
+      mapping_file, horizInterp_, dataReader_);  // output
+
 }  // set_grids
 
 // ================================================================
@@ -348,10 +364,14 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   // Work array to hold tendency for 1 species [kg/kg/s] or [1/kg/s]
   dqdt_tmp_ = view_3d("dqdt_tmp_", pcnst, ncol_, nlev_);
 
-  static constexpr int n_land_type = mam4::DryDeposition::n_land_type;
-  // FIXME: This should come from a file reading
-  // The fraction of land use for the column. [non-dimentional]
-  fraction_landuse_ = view_2d("fraction_landuse_", n_land_type, ncol_);
+  //-----------------------------------------------------------------
+  // Read fractional land use data
+  //-----------------------------------------------------------------
+  // This data is time-independent, we read all data here for the
+  // entire simulation
+  FracLandUseFunc::update_frac_land_use_data_from_file(
+      dataReader_, *horizInterp_,
+      frac_landuse_);  // output
 
   //-----------------------------------------------------------------
   // Setup preprocessing and post processing
@@ -406,21 +426,20 @@ void MAMDryDep::run_impl(const double dt) {
   auto aerdepdryis_ = get_field_out("deposition_flux_of_interstitial_aerosols")
                           .get_view<Real **>();
 
-  // FIXME: remove it if it read from a file
-  populated_fraction_landuse(fraction_landuse_, ncol_);
-
+  //--------------------------------------------------------------------
   // Call drydeposition and get tendencies
+  //--------------------------------------------------------------------
   compute_tendencies(ncol_, nlev_, dt, obukhov_length_,
                      surface_friction_velocty_, land_fraction_, ice_fraction_,
                      ocean_fraction_, friction_velocity_,
-                     aerodynamical_resistance_, qtracers_, fraction_landuse_,
-                     dgncur_awet_, wet_dens_, dry_atm_, dry_aero_,
+                     aerodynamical_resistance_, frac_landuse_, dgncur_awet_,
+                     wet_dens_, dry_atm_, dry_aero_,
                      // Inouts-outputs
                      qqcw_,
                      // Outputs
                      ptend_q_, aerdepdrycw_, aerdepdryis_,
                      // work arrays
-                     rho_, vlc_dry_, vlc_trb_, vlc_grv_, dqdt_tmp_);
+                     rho_, vlc_dry_, vlc_trb_, vlc_grv_, dqdt_tmp_, qtracers_);
   Kokkos::fence();
 
   // Update the interstitial aerosols using ptend.
