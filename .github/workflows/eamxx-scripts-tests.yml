@@ -28,7 +28,8 @@ jobs:
       relevant_paths: ${{ steps.check_paths.outputs.value}}
       labels: ${{ steps.get_labels.outputs.labels }}
     steps:
-      - id: check_paths
+      - name: Check files modified by PR
+        id: check_paths
         run: |
           paths=(
             components/eamxx/scripts
@@ -53,7 +54,8 @@ jobs:
             echo "No relevant files touched by this PR."
             echo "value=false" >> $GITHUB_OUTPUT
           fi
-      - id: get_labels
+      - name: Retrieve PR labels
+        id: get_labels
         run: |
           labels="${{ join(github.event.pull_request.labels.*.name, ',') }}"
           echo "labels=${labels}" >> $GITHUB_OUTPUT
