@@ -303,30 +303,30 @@ subroutine gw_init()
   character*11 :: subname='gw_init' ! subroutine name
   integer                   :: grid_id
   pblh_idx = pbuf_get_index('pblh')
-  !
   grid_id = cam_grid_id('physgrid')
-  !
+
   if (use_od_ls.or.use_od_bl) then
-                if (.not. cam_grid_check(grid_id)) then
-                call endrun(trim(subname)//': Internal error, no "physgrid" grid')
-                end if
-                call cam_grid_get_dim_names(grid_id, dim1name, dim2name)
-                !
-                call initialize_comsrf_OD()
-                call setup_initial_OD()
-                ncid_topo_OD=>topo_OD_file_get_id()
-                call infld('OC', ncid_topo_OD, dim1name, dim2name, 1, pcols, begchunk, &
-                                 endchunk,  oc          , found, gridname='physgrid')
-                !keep the same interval of OA,OL
-                call infld('OA', ncid_topo_OD,dim1name, 'nvar_dirOA', dim2name, 1, pcols, 1, nvar_dirOA, begchunk, &
-                                 endchunk,  oadir(:,:,:), found, gridname='physgrid')
-                call infld('OL', ncid_topo_OD,dim1name, 'nvar_dirOL', dim2name, 1, pcols, 1, nvar_dirOL, begchunk, &
-                                 endchunk,  ol          , found, gridname='physgrid')
-                if(.not. found) call endrun('ERROR: OD topo file readerr')
-                !
-                call close_initial_file_OD()
+    if (.not. cam_grid_check(grid_id)) then
+    call endrun(trim(subname)//': Internal error, no "physgrid" grid')
+    end if
+
+    call cam_grid_get_dim_names(grid_id, dim1name, dim2name)
+    call initialize_comsrf_OD()
+    call setup_initial_OD()
+
+    ncid_topo_OD=>topo_OD_file_get_id()
+    call infld('OC', ncid_topo_OD, dim1name, dim2name, 1, pcols, begchunk, &
+                     endchunk,  oc          , found, gridname='physgrid')
+    !keep the same interval of OA,OL
+    call infld('OA', ncid_topo_OD,dim1name, 'nvar_dirOA', dim2name, 1, pcols, 1, nvar_dirOA, begchunk, &
+                     endchunk,  oadir(:,:,:), found, gridname='physgrid')
+    call infld('OL', ncid_topo_OD,dim1name, 'nvar_dirOL', dim2name, 1, pcols, 1, nvar_dirOL, begchunk, &
+                     endchunk,  ol          , found, gridname='physgrid')
+    if(.not. found) call endrun('ERROR: OD topo file readerr')
+    call close_initial_file_OD()
+
   endif
-  !
+  
   ! Set model flags.
   do_spectral_waves = (pgwv > 0 .and. (use_gw_front .or. use_gw_convect))
   orographic_only = (use_gw_oro .and. .not. do_spectral_waves)

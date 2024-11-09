@@ -184,7 +184,7 @@ logical, public, protected :: use_od_ss = .false.
 logical, public, protected :: use_od_fd = .false.
 real(r8),public, protected :: od_ls_ncleff     = 3._r8 !tunable parameter for oGWD
 real(r8),public, protected :: od_bl_ncd        = 3._r8 !tunable parameter for FBD
-real(r8),public, protected :: od_ss_od_ss_sncleff = 1._r8 !tunable parameter for sGWD
+real(r8),public, protected :: od_ss_sncleff    = 1._r8 !tunable parameter for sGWD
 !
 ! Switches that turn on/off individual parameterizations.
 !
@@ -383,9 +383,9 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(use_od_bl,                       1 , mpilog,  0, mpicom)
    call mpibcast(use_od_ss,                       1 , mpilog,  0, mpicom)
    call mpibcast(use_od_fd,                       1 , mpilog,  0, mpicom)
-   call mpibcast(od_ls_ncleff                     1 , mpilog,  0, mpicom)
+   call mpibcast(od_ls_ncleff,                    1 , mpilog,  0, mpicom)
    call mpibcast(od_bl_ncd,                       1 , mpilog,  0, mpicom)
-   call mpibcast(od_ss_sncleff                    1 , mpilog,  0, mpicom)
+   call mpibcast(od_ss_sncleff,                   1 , mpilog,  0, mpicom)
    call mpibcast(fix_g1_err_ndrop,                1 , mpilog,  0, mpicom)
    call mpibcast(ssalt_tuning,                    1 , mpilog,  0, mpicom)
    call mpibcast(resus_fix,                       1 , mpilog,  0, mpicom)

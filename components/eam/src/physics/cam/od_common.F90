@@ -1,5 +1,4 @@
 module od_common
-
 !
 ! This module contains code common to different orographic drag 
 ! parameterizations.
@@ -10,7 +9,7 @@ module od_common
 ! turbulent orographic form drag (Beljaars et al.,2004).
 !
 use gw_utils,      only: r8
-use ppgrid,        only: nvar_dirOA,nvar_dirOL
+use ppgrid,        only: pver,nvar_dirOA,nvar_dirOL
 use cam_logfile,   only: iulog
 
 implicit none
@@ -25,14 +24,14 @@ contains
 
 !==========================================================================
 
-subroutine oro_drag_interface(state,    cam_in,   sgh,      pbuf,     dtime,     nm,&
-                            gwd_ls,   gwd_bl,   gwd_ss,   gwd_fd,       &
-                            od_ls_ncleff,       od_bl_ncd,od_ss_sncleff,&
-                            utgw,     vtgw,     ttgw,                   &
-                            dtaux3_ls,dtauy3_ls,dtaux3_bl,dtauy3_bl,    &
-                            dtaux3_ss,dtauy3_ss,dtaux3_fd,dtauy3_fd,    &
-                            dusfc_ls, dvsfc_ls ,dusfc_bl, dvsfc_bl,     &
-                            dusfc_ss, dvsfc_ss ,dusfc_fd, dvsfc_fd)
+subroutine oro_drag_interface(state,    cam_in,   sgh,      pbuf,   dtime,  nm,     &
+                              gwd_ls,   gwd_bl,   gwd_ss,   gwd_fd,                 &
+                              od_ls_ncleff,       od_bl_ncd,od_ss_sncleff,          &
+                              utgw,     vtgw,     ttgw,                             &
+                              dtaux3_ls,dtauy3_ls,dtaux3_bl,dtauy3_bl,              &
+                              dtaux3_ss,dtauy3_ss,dtaux3_fd,dtauy3_fd,              &
+                              dusfc_ls, dvsfc_ls ,dusfc_bl, dvsfc_bl,               &
+                              dusfc_ss, dvsfc_ss ,dusfc_fd, dvsfc_fd)
   use physics_types,  only: physics_state
   use physics_buffer, only: physics_buffer_desc, pbuf_get_field, pbuf_get_index
   use camsrfexch,     only: cam_in_t
@@ -76,12 +75,12 @@ subroutine oro_drag_interface(state,    cam_in,   sgh,      pbuf,     dtime,    
   real(r8), intent(out), optional :: dvsfc_ss(pcols)
   real(r8), intent(out), optional :: dusfc_fd(pcols)
   real(r8), intent(out), optional :: dvsfc_fd(pcols)
-  !
+ 
   real(r8) :: ztop(pcols,pver)             ! top interface height asl (m)
   real(r8) :: zbot(pcols,pver)             ! bottom interface height asl (m)
   real(r8) :: zmid(pcols,pver)             ! middle interface height asl (m)
   real(r8) :: dz(pcols,pver)               ! model layer height
-  !
+  
   !real(r8) :: g
   !pblh input
   integer  :: pblh_idx     = 0
@@ -215,30 +214,30 @@ subroutine dxygrid(dx,dy,theta_in,dxy)
   theta1=MOD(theta_in,360._r8)
   !set negative axis into 0~360
   if (theta1.ge.-360._r8.and.theta1.lt.0._r8) then
-  theta1=theta1+360._r8
+    theta1=theta1+360._r8
   endif
   !in case the angle is not into the judgement
   theta=theta1
   !transform of angle into first quadrant
   if      (theta1.ge.  0._r8.and.theta1.lt. 90._r8) then
-  theta=theta1
+    theta=theta1
   else if (theta1.gt. 90._r8.and.theta1.lt.180._r8) then
-  theta=(180._r8-theta1)
+    theta=(180._r8-theta1)
   else if (theta1.gt.180._r8.and.theta1.lt.270._r8) then
-  theta=(theta1-180._r8)
+    theta=(theta1-180._r8)
   else if (theta1.gt.270._r8.and.theta1.lt.360._r8) then
-  theta=(360._r8-theta1)
+    theta=(360._r8-theta1)
   else if (theta1.eq.90._r8.or.theta1.eq.270._r8) then
-  theta=90._r8
+    theta=90._r8
   else if (theta1.eq.0._r8.or.theta1.eq.180._r8) then
-  theta=0._r8
+    theta=0._r8
   endif
 
   !get dxy
   if   (theta.ge. 0._r8.and.theta.lt.atan2(dy,dx)/rad) then
-  dxy=dx/cos(theta*rad)
+    dxy=dx/cos(theta*rad)
   else if (theta.ge.atan2(dy,dx)/rad.and.theta.le.90._r8)then
-  dxy=dy/sin(theta*rad)
+    dxy=dy/sin(theta*rad)
   endif
 
 end subroutine dxygrid
@@ -681,9 +680,8 @@ subroutine od2d(dudt,dvdt,dthdt,ncleff,ncd,sncleff,                        &
   real(r8),parameter       ::  odmin  = 0.1_r8
   real(r8),parameter       ::  odmax  = 10._r8
   real(r8),parameter       ::  erad   = 6371.315e+3_r8
-  !
-  !  local variables
-  !
+
+  !local variables
   integer                  ::  i,j,k,lcap,lcapp1,nwd,idir
   integer                  ::  klcap,kp1,ikount,kk,nwd1!added nwd1
   real(r8)                 ::  rcs,rclcs,csg,fdir,cleff,cs,rcsks
@@ -1220,7 +1218,6 @@ subroutine od2d(dudt,dvdt,dthdt,ncleff,ncd,sncleff,                        &
                          EXP(-(za(i,k)/1500._r8)**1.5_r8)*a2*za(i,k)**(-1.2_r8)*ss_taper
           vtendform(i,k)=-0.0759_r8*wsp*v1(i,k)* &
                          EXP(-(za(i,k)/1500._r8)**1.5_r8)*a2*za(i,k)**(-1.2_r8)*ss_taper
-          !
         enddo
       endif
     enddo
