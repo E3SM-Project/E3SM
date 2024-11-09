@@ -277,13 +277,13 @@ contains
 !            end if
 
             if(dThreshMLD(cell1) < boundaryLayerDepth(cell1)) then
-              mld1 = boundaryLayerDepth(cell1) + 50.0_RKIND
+              mld1 = boundaryLayerDepth(cell1) + 100.0_RKIND
             else
               mld1 = dThreshMLD(cell1)
             end if
 
             if(dThreshMLD(cell2) < boundaryLayerDepth(cell2)) then
-              mld2 = boundaryLayerDepth(cell2) + 50.0_RKIND
+              mld2 = boundaryLayerDepth(cell2) + 100.0_RKIND
             else
               mld2 = dThreshMLD(cell2)
             end if
@@ -507,7 +507,7 @@ contains
                                                      config_GM_spatially_variable_max_kappa,          &
                                                      BruntVaisalaFreqTopEdge/(maxN + 1.0E-10_RKIND)), &
                                                      1.0_RKIND)
-                  RediKappa(k,iEdge) = RediKappa(k,iEdge)*min(max(0.1_RKIND,BruntVaisalaFreqTopEdge/  &
+                  RediKappa(k,iEdge) = config_GM_spatially_variable_max_kappa*min(max(0.1_RKIND,BruntVaisalaFreqTopEdge/  &
                                                                  (maxN+1.0E-15)),1.0_RKIND)
                end do
            enddo
