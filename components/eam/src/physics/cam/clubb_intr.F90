@@ -20,7 +20,7 @@ module clubb_intr
   use shr_kind_mod,  only: r8=>shr_kind_r8
   use shr_log_mod ,  only: errMsg => shr_log_errMsg
   use ppgrid,        only: pver, pverp
-  use phys_control,  only: phys_getopts,use_od_ss,use_od_fd,ncleff_ls,ncd_bl,sncleff_ss
+  use phys_control,  only: phys_getopts, use_od_ss, use_od_fd, od_ls_ncleff, od_bl_ncd, od_ss_sncleff
   use physconst,     only: rair, cpair, gravit, latvap, latice, zvir, rh2o, karman, &
                            tms_orocnst, tms_z0fac, pi
   use cam_logfile,   only: iulog
@@ -2004,7 +2004,7 @@ end subroutine clubb_init_cnst
         !sgh30 as the input for TOFD instead of sgh
 	call gw_oro_interface(state,cam_in,sgh30,pbuf,hdtime,dummy_nm,&
                               gwd_ls,gwd_bl,gwd_ss,gwd_fd,&
-                              ncleff_ls,ncd_bl,sncleff_ss,&
+                              od_ls_ncleff,od_bl_ncd,od_ss_sncleff,&
                               dummy_utgw,dummy_vtgw,dummy_ttgw,& 
                               dtaux3_ls=dummx3_ls,dtauy3_ls=dummy3_ls,&
                               dtaux3_bl=dummx3_bl,dtauy3_bl=dummy3_bl,&

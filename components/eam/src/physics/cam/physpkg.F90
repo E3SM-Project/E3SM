@@ -1321,7 +1321,7 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
 
 
     use cam_diagnostics,only: diag_deallocate, diag_surf
-    use comsrf,         only: trefmxav, trefmnav, sgh, sgh30, fsds, var, var30, oc, oadir, ol
+    use comsrf,         only: trefmxav, trefmnav, sgh, sgh30, fsds, oc, oadir, ol
     use physconst,      only: stebol, latvap
 #if ( defined OFFLINE_DYN )
     use metdata,        only: get_met_srf2
@@ -1434,8 +1434,6 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
        call t_stopf('diag_surf')
        ! for tranport of ogwd related parameters
        if ( use_od_ls .or. use_od_bl ) then
-         phys_state(c)%var  (:)   =var    (:,c)                   
-         phys_state(c)%var30(:)   =var30  (:,c)
          phys_state(c)%oc   (:)   =oc     (:,c)
          phys_state(c)%oadir(:,:) =oadir  (:,:,c)
          phys_state(c)%ol   (:,:) =ol     (:,:,c)

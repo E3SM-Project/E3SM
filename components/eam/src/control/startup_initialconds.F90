@@ -13,19 +13,19 @@ save
 
 public :: initial_conds ! Read in initial conditions (dycore dependent)
 !added for orographic drag
-public topoGWD_file_get_id
-public setup_initialGWD
-public close_initial_fileGWD
-type(file_desc_t), pointer :: ncid_topoGWD
+public topo_OD_file_get_id
+public setup_initial_OD
+public close_initial_file_OD
+type(file_desc_t), pointer :: ncid_topo_OD
 
 !======================================================================= 
 contains
 !======================================================================= 
 
-function topoGWD_file_get_id()
-        type(file_desc_t), pointer :: topoGWD_file_get_id
-        topoGWD_file_get_id => ncid_topoGWD
-end function topoGWD_file_get_id
+function topo_OD_file_get_id()
+        type(file_desc_t), pointer :: topo_OD_file_get_id
+        topo_OD_file_get_id => ncid_topo_OD
+end function topo_OD_file_get_id
 
 subroutine initial_conds(dyn_in)
 
@@ -74,7 +74,7 @@ end subroutine initial_conds
 
 !======================================================================= 
 
-subroutine setup_initialGWD()
+subroutine setup_initial_OD()
    use filenames,        only: bnd_topo
    use ioFileMod,        only: getfil
    use cam_pio_utils,    only: cam_pio_openfile
@@ -86,17 +86,17 @@ subroutine setup_initialGWD()
    include 'netcdf.inc'
 !-----------------------------------------------------------------------
    character(len=256) :: bnd_topo_loc   ! filepath of topo file on local disk
-      allocate(ncid_topoGWD)
+      allocate(ncid_topo_OD)
       call getfil(bnd_topo, bnd_topo_loc)
-      call cam_pio_openfile(ncid_topoGWD, bnd_topo_loc, PIO_NOWRITE)
-end subroutine setup_initialGWD
+      call cam_pio_openfile(ncid_topo_OD, bnd_topo_loc, PIO_NOWRITE)
+end subroutine setup_initial_OD
 
-subroutine close_initial_fileGWD
+subroutine close_initial_file_OD
   use pio,          only: pio_closefile
-        call pio_closefile(ncid_topoGWD)
-        deallocate(ncid_topoGWD)
-        nullify(ncid_topoGWD)
-end subroutine close_initial_fileGWD
+        call pio_closefile(ncid_topo_OD)
+        deallocate(ncid_topo_OD)
+        nullify(ncid_topo_OD)
+end subroutine close_initial_file_OD
 !======================================================================= 
 
 

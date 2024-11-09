@@ -38,7 +38,7 @@ module gw_drag
 
   ! These are the actual switches for different gravity wave sources.
   ! The orographic control switches are also here
-  use phys_control,  only: use_gw_oro, use_gw_front, use_gw_convect, use_gw_energy_fix, use_od_ls, use_od_bl, use_od_ss, ncleff_ls, ncd_bl, sncleff_ss
+  use phys_control,  only: use_gw_oro, use_gw_front, use_gw_convect, use_gw_energy_fix, use_od_ls, use_od_bl, use_od_ss, od_ls_ncleff, od_bl_ncd, od_ss_sncleff
 
 ! Typical module header
   implicit none
@@ -218,9 +218,9 @@ subroutine gw_init()
   use gw_front,   only: gw_front_init
   use gw_convect, only: gw_convect_init
 
-  use comsrf,              only: var, var30, oc, oadir, ol, initialize_comsrf2
+  use comsrf,              only: oc, oadir, ol, initialize_comsrf_OD
   use pio,                 only: file_desc_t
-  use startup_initialconds,only: topoGWD_file_get_id, setup_initialGWD, close_initial_fileGWD
+  use startup_initialconds,only: topo_OD_file_get_id, setup_initial_OD, close_initial_file_OD
   use ncdio_atm,           only: infld
   use cam_grid_support,    only: cam_grid_check, cam_grid_get_decomp, cam_grid_id,cam_grid_get_dim_names
 
@@ -296,8 +296,8 @@ subroutine gw_init()
   character(len=128) :: errstring
 
   !-----------------------------------------------------------------------
-  !added for input of ogwd parameters
-  type(file_desc_t), pointer :: ncid_topoGWD
+  !added for input of od parameters
+  type(file_desc_t), pointer :: ncid_topo_OD
   logical :: found=.false.      
   character(len=8) :: dim1name, dim2name
   character*11 :: subname='gw_init' ! subroutine name
@@ -311,24 +311,20 @@ subroutine gw_init()
                 call endrun(trim(subname)//': Internal error, no "physgrid" grid')
                 end if
                 call cam_grid_get_dim_names(grid_id, dim1name, dim2name)
-                !!
-                call initialize_comsrf2()
-                call setup_initialGWD()
-		ncid_topoGWD=>topoGWD_file_get_id()
-                call infld('SGH'  ,ncid_topoGWD,dim1name,dim2name, 1,pcols,begchunk,&
-                                endchunk,  var, found, gridname='physgrid')
-                call infld('SGH30',ncid_topoGWD,dim1name,dim2name, 1,pcols,begchunk,&
-                                endchunk,  var30, found, gridname='physgrid')
-                call infld('OC', ncid_topoGWD,dim1name,dim2name, 1,pcols,begchunk,  &
-                                endchunk,  oc,  found, gridname='physgrid')
-                !keep the same interval of OA,OL
-                call infld('OA', ncid_topoGWD,dim1name,'nvar_dirOA',dim2name,1,pcols,1,nvar_dirOA,begchunk, &
-                                endchunk,  oadir(:,:,:),  found, gridname='physgrid')
-                call infld('OL', ncid_topoGWD,dim1name,'nvar_dirOL',dim2name,1,pcols,1,nvar_dirOL,begchunk, &
-                                endchunk,  ol, found, gridname='physgrid')
-                if(.not. found) call endrun('ERROR: GWD topo file readerr')
                 !
-                call close_initial_fileGWD()
+                call initialize_comsrf_OD()
+                call setup_initial_OD()
+                ncid_topo_OD=>topo_OD_file_get_id()
+                call infld('OC', ncid_topo_OD, dim1name, dim2name, 1, pcols, begchunk, &
+                                 endchunk,  oc          , found, gridname='physgrid')
+                !keep the same interval of OA,OL
+                call infld('OA', ncid_topo_OD,dim1name, 'nvar_dirOA', dim2name, 1, pcols, 1, nvar_dirOA, begchunk, &
+                                 endchunk,  oadir(:,:,:), found, gridname='physgrid')
+                call infld('OL', ncid_topo_OD,dim1name, 'nvar_dirOL', dim2name, 1, pcols, 1, nvar_dirOL, begchunk, &
+                                 endchunk,  ol          , found, gridname='physgrid')
+                if(.not. found) call endrun('ERROR: OD topo file readerr')
+                !
+                call close_initial_file_OD()
   endif
   !
   ! Set model flags.
@@ -664,14 +660,15 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
   use camsrfexch, only: cam_in_t
   ! Location-dependent cpair
   use physconst,  only: cpairv
+  use od_common,  only: oro_drag_interface
   use gw_common,  only: gw_prof, momentum_energy_conservation, &
-       gw_drag_prof,gw_oro_interface
+       gw_drag_prof
   use gw_oro,     only: gw_oro_src
   use gw_front,   only: gw_cm_src
   use gw_convect, only: gw_beres_src
   use dycore,     only: dycore_is
-  use phys_grid, only: get_rlat_all_p
-  use physconst,          only: gravit,rair
+  use phys_grid,  only: get_rlat_all_p
+  use physconst,  only: gravit,rair
   !------------------------------Arguments--------------------------------
   type(physics_state), intent(in) :: state      ! physics state structure
   ! Standard deviation of orography.
@@ -1015,18 +1012,18 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
      vtgw=0.0_r8
      ttgw=0.0_r8
      !
-     call gw_oro_interface( state,cam_in,sgh,pbuf,dt,nm,&
-                            gwd_ls,gwd_bl,gwd_ss,gwd_fd,&
-                            ncleff_ls,ncd_bl,sncleff_ss,&
-                            utgw,vtgw,ttgw,&
-                            dtaux3_ls=dtaux3_ls,dtauy3_ls=dtauy3_ls,&
-                            dtaux3_bl=dtaux3_bl,dtauy3_bl=dtauy3_bl,&
-                            dtaux3_ss=dtaux3_ss,dtauy3_ss=dtauy3_ss,&
-                            dtaux3_fd=dummx3_fd,dtauy3_fd=dummy3_fd,&
-                            dusfc_ls=dusfc_ls,dvsfc_ls=dvsfc_ls,&
-                            dusfc_bl=dusfc_bl,dvsfc_bl=dvsfc_bl,&
-                            dusfc_ss=dusfc_ss,dvsfc_ss=dvsfc_ss,&
-                            dusfc_fd=dummx_fd,dvsfc_fd=dummy_fd)
+     call oro_drag_interface(state,cam_in,sgh,pbuf,dt,nm,&
+                             gwd_ls,gwd_bl,gwd_ss,gwd_fd,&
+                             od_ls_ncleff,od_bl_ncd,od_ss_sncleff,&
+                             utgw,vtgw,ttgw,&
+                             dtaux3_ls=dtaux3_ls,dtauy3_ls=dtauy3_ls,&
+                             dtaux3_bl=dtaux3_bl,dtauy3_bl=dtauy3_bl,&
+                             dtaux3_ss=dtaux3_ss,dtauy3_ss=dtauy3_ss,&
+                             dtaux3_fd=dummx3_fd,dtauy3_fd=dummy3_fd,&
+                             dusfc_ls=dusfc_ls,dvsfc_ls=dvsfc_ls,&
+                             dusfc_bl=dusfc_bl,dvsfc_bl=dvsfc_bl,&
+                             dusfc_ss=dusfc_ss,dvsfc_ss=dvsfc_ss,&
+                             dusfc_fd=dummx_fd,dvsfc_fd=dummy_fd)
 
   endif
         !

@@ -1102,19 +1102,19 @@ Whether or not to enable turbulent orographic form drag (TOFD).
 Default: set by build-namelist.
 </entry>
 
-<entry id="ncleff_ls" type="real" category="gw_drag"
+<entry id="od_ls_ncleff" type="real" category="gw_drag"
        group="oro_drag_nl" valid_values="" >
 Tuning parameter of orographic GWD (oGWD). See <varname>use_od_ls</varname>.
 Default: set by build-namelist.
 </entry>
 
-<entry id="ncd_bl" type="real" category="gw_drag"
+<entry id="od_bl_ncd" type="real" category="gw_drag"
        group="oro_drag_nl" valid_values="" >
 Tuning parameter of flow-blocking drag (FBD). See <varname>use_od_bl</varname>.
 Default: set by build-namelist.
 </entry>
 
-<entry id="sncleff_ss" type="real" category="gw_drag"
+<entry id="od_ss_sncleff" type="real" category="gw_drag"
        group="oro_drag_nl" valid_values="" >
 Tuning parameter of small-scale GWD (sGWD). See <varname>use_od_ss</varname>.
 Default: set by build-namelist.

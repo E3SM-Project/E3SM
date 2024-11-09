@@ -138,10 +138,6 @@ module physics_types
      integer :: ulatcnt, &! number of unique lats in chunk
                 uloncnt   ! number of unique lons in chunk
      real(r8), dimension(:),allocatable             :: &
-          var      !standard deviation of high-res grid height
-     real(r8), dimension(:),allocatable             :: &
-          var30    !standard deviation of high-res grid height below 3km
-     real(r8), dimension(:),allocatable             :: &
           oc        !convexity of high-res grid height
      real(r8), dimension(:,:),allocatable           :: &
           oadir        !orographic asymmetry in a coarse grid
@@ -1843,10 +1839,6 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   
   allocate(state%cid(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%cid')
-  allocate(state%var(psetcols), stat=ierr)
-  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%var')
-  allocate(state%var30(psetcols), stat=ierr)
-  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%var30')
   allocate(state%oc(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%oc')
   allocate(state%oadir(psetcols,nvar_dirOA), stat=ierr)
@@ -1857,15 +1849,11 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%pblh')
   allocate(state%ribulk(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%ribulk')
-  !!
-  state%var(:)=0.0_r8!inf
-  state%var30(:)=0.0_r8!inf
   state%oc(:)=inf
   state%oadir(:,:)=inf
   state%ol(:,:)=inf
   state%pblh(:)=inf
   state%ribulk(:)=0.0_r8!inf
-  !!
   state%lat(:) = inf
   state%lon(:) = inf
   state%ulat(:) = inf
