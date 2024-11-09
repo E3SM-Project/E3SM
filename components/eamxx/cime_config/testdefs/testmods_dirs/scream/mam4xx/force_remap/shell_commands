@@ -1,0 +1,26 @@
+
+#!/bin/sh
+#------------------------------------------------------
+# MAM4xx adds additionaltracers to the simulation
+# Increase number of tracers for MAM4xx simulations
+#------------------------------------------------------
+
+$CIMEROOT/../components/eamxx/cime_config/testdefs/testmods_dirs/scream/mam4xx/update_eamxx_num_tracers.sh -b
+
+#------------------------------------------------------
+#Update IC file and add drydep process
+#------------------------------------------------------
+$CIMEROOT/../components/eamxx/scripts/atmchange physics::atm_procs_list="mac_aero_mic,rrtmgp,mam4_aero_microphys" -b
+
+$CIMEROOT/../components/eamxx/scripts/atmchange mam4_aero_microphys::mam4_so2_verti_emiss_file_name='${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_so2_elev_1x1_2010_clim_ne4pg2_c20241008.nc' -b
+$CIMEROOT/../components/eamxx/scripts/atmchange mam4_aero_microphys::mam4_so4_a1_verti_emiss_file_name='${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_so4_a1_elev_1x1_2010_clim_ne4pg2_c20241008.nc' -b
+$CIMEROOT/../components/eamxx/scripts/atmchange mam4_aero_microphys::mam4_so4_a2_verti_emiss_file_name='${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_so4_a2_elev_1x1_2010_clim_ne4pg2_c20241008.nc' -b
+$CIMEROOT/../components/eamxx/scripts/atmchange mam4_aero_microphys::mam4_pom_a4_verti_emiss_file_name='${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_pom_a4_elev_1x1_2010_clim_ne4pg2_c20241008.nc' -b
+$CIMEROOT/../components/eamxx/scripts/atmchange mam4_aero_microphys::mam4_bc_a4_verti_emiss_file_name='${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_bc_a4_elev_1x1_2010_clim_ne4pg2_c20241008.nc' -b
+$CIMEROOT/../components/eamxx/scripts/atmchange mam4_aero_microphys::mam4_num_a1_verti_emiss_file_name='${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_num_a1_elev_1x1_2010_clim_ne4pg2_c20241008.nc' -b
+$CIMEROOT/../components/eamxx/scripts/atmchange mam4_aero_microphys::mam4_num_a2_verti_emiss_file_name='${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_num_a2_elev_1x1_2010_clim_ne4pg2_c20241008.nc' -b
+$CIMEROOT/../components/eamxx/scripts/atmchange mam4_aero_microphys::mam4_num_a4_verti_emiss_file_name='${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_num_a4_elev_1x1_2010_clim_ne4pg2_c20241008.nc' -b
+$CIMEROOT/../components/eamxx/scripts/atmchange mam4_aero_microphys::mam4_soag_verti_emiss_file_name='${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_soag_elev_1x1_2010_clim_ne4pg2_c20241008.nc' -b
+$CIMEROOT/../components/eamxx/scripts/atmchange mam4_aero_microphys::aero_microphys_remap_file='/qfs/people/sing201/eagles/refactor_mam/mam4xx_scream/nco_scripts_mapping_files/map_ne4pg2_to_ne30pg2_nco_c20241107.nc' -b
+
+
