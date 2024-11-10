@@ -7,9 +7,11 @@
 
 $CIMEROOT/../components/eamxx/cime_config/testdefs/testmods_dirs/scream/mam4xx/update_eamxx_num_tracers.sh -b
 
-#----------------------------------------------------------------------------------------------------------
-# Add aerosol microphysics process, force ne4pg2 emissions files and provide a ne4pg2->ne30pg2 mapping file
-#----------------------------------------------------------------------------------------------------------
+#------------------------------------------------------
+# Add aerosol microphysics process, force ne4pg2 
+# emission files and provide a ne4pg2->ne30pg2 mapping
+# file
+#------------------------------------------------------
 alias ATMCHANGE='$CIMEROOT/../components/eamxx/scripts/atmchange'
 
 ATMCHANGE physics::atm_procs_list="mac_aero_mic,rrtmgp,mam4_aero_microphys" -b
