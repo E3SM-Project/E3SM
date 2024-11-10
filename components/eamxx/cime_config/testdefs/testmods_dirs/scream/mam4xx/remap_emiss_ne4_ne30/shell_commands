@@ -10,7 +10,7 @@ $CIMEROOT/../components/eamxx/cime_config/testdefs/testmods_dirs/scream/mam4xx/u
 #------------------------------------------------------
 #Update IC file and add drydep process
 #------------------------------------------------------
-ATMCHANGE=$CIMEROOT/../components/eamxx/scripts/atmchange
+alias ATMCHANGE='$CIMEROOT/../components/eamxx/scripts/atmchange'
 
 ATMCHANGE physics::atm_procs_list="mac_aero_mic,rrtmgp,mam4_aero_microphys" -b
 
@@ -23,6 +23,6 @@ ATMCHANGE mam4_aero_microphys::mam4_num_a1_verti_emiss_file_name='${DIN_LOC_ROOT
 ATMCHANGE mam4_aero_microphys::mam4_num_a2_verti_emiss_file_name='${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_num_a2_elev_1x1_2010_clim_ne4pg2_c20241008.nc' -b
 ATMCHANGE mam4_aero_microphys::mam4_num_a4_verti_emiss_file_name='${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_num_a4_elev_1x1_2010_clim_ne4pg2_c20241008.nc' -b
 ATMCHANGE mam4_aero_microphys::mam4_soag_verti_emiss_file_name='${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_soag_elev_1x1_2010_clim_ne4pg2_c20241008.nc' -b
-ATMCHANGE mam4_aero_microphys::aero_microphys_remap_file='/qfs/people/sing201/eagles/refactor_mam/mam4xx_scream/nco_scripts_mapping_files/map_ne4pg2_to_ne30pg2_nco_c20241107.nc' -b
+ATMCHANGE mam4_aero_microphys::aero_microphys_remap_file='${DIN_LOC_ROOT}/atm/scream/maps/map_ne4pg2_to_ne30pg2_nco_c20241108.nc' -b
 
 
