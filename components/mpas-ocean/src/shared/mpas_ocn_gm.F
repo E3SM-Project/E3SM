@@ -754,7 +754,7 @@ contains
             !$omp do schedule(runtime) private(k)
             do iEdge=1, nEdges
                do k = minLevelEdgeBot(iEdge),maxLevelEdgeTop(iEdge)
-                  RediKappa(k,iEdge) = RediHorizontalTaper(iEdge) * config_Redi_constant_kappa
+                  RediKappa(k,iEdge) = RediHorizontalTaper(iEdge) * RediKappa(k,iEdge) 
                end do
             end do
             !$omp end do
