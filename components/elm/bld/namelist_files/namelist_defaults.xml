@@ -262,6 +262,15 @@ ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".true." irrigate=".true." nu_co
 <finidat hgrid="ne0np4_enax4v1" sim_year="2000">lnd/clm2/initdata_map/clmi.ICRUCLM45SP.2000-01-01.enax4v1_oRRS18to6_simyr2000_c180430.nc</finidat>
 <finidat hgrid="ne0np4_twpx4v1" ic_ymd="101" sim_year="2000">lnd/clm2/initdata_map/clmi.ICRUCLM45SP.2000-01-01.twpx4v1_oRRS18to6v3_simyr2000_c180430.nc</finidat>
 
+<!-- testbeds -->
+<fsurdat hgrid="ne0np4_cus_ne1024_smooth.pg2" sim_year="2010">
+/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/surfdata_CUS_ne32x32pg2_simyr2010_c230226.nc</fsurdat>
+<fsurdat hgrid="ne0np4_ena_ne1024_smooth.pg2" sim_year="2010">
+/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/surfdata_ENA_ne32x32pg2_simyr2010_c230226.nc</fsurdat>
+<fsurdat hgrid="ne0np4_nep_ne1024_smooth.pg2" sim_year="2010">
+/global/cfs/cdirs/m3525/meng/rrm_inputs/nep/grids/surfdata_nep_ne32x32pg2_simyr2010_c240819.nc</fsurdat>
+<fsurdat hgrid="ne0np4_so_ne1024_smooth.pg2" sim_year="2010">
+/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/surfdata_SO_ne32x32pg2_simyr2010_c230226.nc</fsurdat>
 <!-- for present day simulations - year 2010 -->
 <fsurdat hgrid="ne4np4"   sim_year="2010" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne4np4_simyr2010_c210908.nc</fsurdat>

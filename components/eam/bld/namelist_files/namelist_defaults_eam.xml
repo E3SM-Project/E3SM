@@ -26,6 +26,12 @@
 <dtime dyn="se"    hgrid="ne0np4_enax4v1">900</dtime>
 <dtime dyn="se"    hgrid="ne0np4_twpx4v1">900</dtime>
 
+<!-- testbeds -->
+<dtime dyn="se"    hgrid="ne0np4_cus_ne1024_smooth" >100</dtime>
+<dtime dyn="se"    hgrid="ne0np4_ena_ne1024_smooth" >100</dtime>
+<dtime dyn="se"    hgrid="ne0np4_nep_ne1024_smooth" >100</dtime>
+<dtime dyn="se"    hgrid="ne0np4_so_ne1024_smooth" >100</dtime>
+
 <dtime dyn="sld"                   >3600</dtime>
 
 <!-- Initial conditions -->
@@ -154,6 +160,11 @@
 <bnd_topo hgrid="ne0np4_enax4v1">atm/cam/topo/USGS_enax4v1_tensorx12_consistentSGH_170522.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_twpx4v1" >atm/cam/topo/USGS_twpx4v1_tensor12x_consistentSGH_170629.nc</bnd_topo>
 
+<!-- testbeds -->
+<bnd_topo hgrid="ne0np4_cus_ne1024_smooth" npg="2">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/USGS-gtopo30_CUS_ne32x32pg2_12xdel2.nc</bnd_topo>
+<bnd_topo hgrid="ne0np4_ena_ne1024_smooth" npg="2">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/USGS-gtopo30_ENA_ne32x32pg2_12xdel2.nc</bnd_topo>
+<bnd_topo hgrid="ne0np4_nep_ne1024_smooth" npg="2">/global/cfs/cdirs/m3525/meng/rrm_inputs/nep/grids/USGS-gtopo30_nep_ne32x32pg2_12xdel2.nc</bnd_topo>
+<bnd_topo hgrid="ne0np4_so_ne1024_smooth" npg="2">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/USGS-gtopo30_SO_ne32x32pg2_12xdel2.nc</bnd_topo>
 <!-- ieflx_opt 0: atmonly, 3: coupled -->
 <ieflx_opt  ocn="socn"  >0</ieflx_opt>
 <ieflx_opt  ocn="docn"  >0</ieflx_opt>
@@ -707,6 +718,11 @@
 <!-- NOTE: ENA dry deposition file interpolated from existing rather than created new -->
 <drydep_srf_file hgrid="ne0np4_enax4v1">atm/cam/chem/trop_mam/atmsrf_enax4v1_170517.nc</drydep_srf_file>
 
+<!-- testbeds -->
+<drydep_srf_file hgrid="ne0np4_cus_ne1024_smooth" npg="2">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/atmsrf_CUS_ne32x32pg2_20230226.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne0np4_ena_ne1024_smooth" npg="2">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/atmsrf_ENA_ne32x32pg2_20230226.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne0np4_nep_ne1024_smooth" npg="2">/global/cfs/cdirs/m3525/meng/rrm_inputs/nep/grids/atmsrf_nep_ne32x32pg2_240819.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne0np4_so_ne1024_smooth" npg="2">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/atmsrf_SO_ne32x32pg2_20230226.nc</drydep_srf_file>
 <!-- depvel data -->
 <depvel_file    >atm/cam/chem/trop_mozart/dvel/depvel_monthly.nc</depvel_file>
 <depvel_lnd_file>atm/cam/chem/trop_mozart/dvel/regrid_vegetation.nc</depvel_lnd_file>
@@ -1245,6 +1261,12 @@
 <se_ne hgrid="ne0np4_enax4v1">0</se_ne>
 <se_ne hgrid="ne0np4_twpx4v1" > 0 </se_ne>
 
+<!-- testbeds -->
+<se_ne hgrid="ne0np4_cus_ne1024_smooth"> 0 </se_ne>
+<se_ne hgrid="ne0np4_ena_ne1024_smooth"> 0 </se_ne>
+<se_ne hgrid="ne0np4_nep_ne1024_smooth"> 0 </se_ne>
+<se_ne hgrid="ne0np4_so_ne1024_smooth"> 0 </se_ne>
+
 <mesh_file>/dev/null</mesh_file>
 <mesh_file hgrid="ne0np4_arm_x8v3_lowcon"  >atm/cam/inic/homme/arm_x8v3_lowcon.g</mesh_file>
 <mesh_file hgrid="ne0np4_conus_x4v1_lowcon"  >atm/cam/inic/homme/conusx4v1.g</mesh_file>
@@ -1255,6 +1277,12 @@
 <mesh_file hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  >atm/cam/inic/homme/sooberingoax4x8v1.g</mesh_file>
 <mesh_file hgrid="ne0np4_enax4v1">atm/cam/inic/homme/enax4v1.g</mesh_file>
 <mesh_file hgrid="ne0np4_twpx4v1" >atm/cam/inic/homme/twpx4v1.g</mesh_file>
+
+<!-- testbeds -->
+<mesh_file hgrid="ne0np4_cus_ne1024_smooth">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/CUS_ne32x32.g</mesh_file>
+<mesh_file hgrid="ne0np4_ena_ne1024_smooth">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/ENA_ne32x32.g</mesh_file>
+<mesh_file hgrid="ne0np4_nep_ne1024_smooth">/global/cfs/cdirs/m3525/meng/rrm_inputs/nep/grids/nep_ne32x32.g</mesh_file>
+<mesh_file hgrid="ne0np4_so_ne1024_smooth">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/SO_ne32x32.g</mesh_file>
 
 <!-- viscosity  -->
 

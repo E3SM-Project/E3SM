@@ -1882,6 +1882,47 @@
       <mask>WC14to60E2r3</mask>
     </model_grid>
 
+    <!-- testbeds -->
+    <model_grid alias="cus_ne32x32pg2">
+      <grid name="atm">ne0np4_cus_ne1024_smooth.pg2</grid>
+      <grid name="lnd">ne0np4_cus_ne1024_smooth.pg2</grid>
+      <grid name="ocnice">oRRS18to6v3</grid>
+      <grid name="rof">r0125</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oRRS18to6v3</mask>
+    </model_grid>
+
+    <model_grid alias="ena_ne32x32pg2">
+      <grid name="atm">ne0np4_ena_ne1024_smooth.pg2</grid>
+      <grid name="lnd">ne0np4_ena_ne1024_smooth.pg2</grid>
+      <grid name="ocnice">oRRS18to6v3</grid>
+      <grid name="rof">r0125</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oRRS18to6v3</mask>
+    </model_grid>
+
+    <model_grid alias="nep_ne32x32pg2">
+      <grid name="atm">ne0np4_nep_ne1024_smooth.pg2</grid>
+      <grid name="lnd">ne0np4_nep_ne1024_smooth.pg2</grid>
+      <grid name="ocnice">oRRS18to6v3</grid>
+      <grid name="rof">null</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oRRS18to6v3</mask>
+    </model_grid>
+
+    <model_grid alias="so_ne32x32pg2">
+      <grid name="atm">ne0np4_so_ne1024_smooth.pg2</grid>
+      <grid name="lnd">ne0np4_so_ne1024_smooth.pg2</grid>
+      <grid name="ocnice">oRRS18to6v3</grid>
+      <grid name="rof">r0125</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oRRS18to6v3</mask>
+    </model_grid>
+
 <!-- WARNING: THIS GRID COMBINATION IS NOT SCIENTIFICALLY SUPPORTED -->
     <model_grid alias="ne30pg2_oRRS18to6v3">
       <grid name="atm">ne30np4.pg2</grid>
@@ -2879,6 +2920,40 @@
       <ny>1</ny>
       <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.oRRS15to5.160207.nc</file>
       <desc>oRRS15to5 is an MPAS ocean grid with a mesh density function that is roughly proportional to the Rossby radius of deformation, with 15 km gridcells at low and 5 km gridcells at high latitudes:</desc>
+    </domain>
+
+    <!-- testbeds -->
+    
+    <domain name="ne0np4_cus_ne1024_smooth.pg2">
+      <nx>103536</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="oRRS18to6v3">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/domain.lnd.CUS_ne32x32pg2_oRRS18to6v3.230226.nc</file>
+      <file grid="ice|ocn" mask="oRRS18to6v3">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/domain.ocn.CUS_ne32x32pg2_oRRS18to6v3.230226.nc</file>
+      <desc>1/4-deg with 3 km over eastern US (version 1) pg2:</desc>
+    </domain>
+
+    <domain name="ne0np4_ena_ne1024_smooth.pg2">
+      <nx>139200</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="oRRS18to6v3">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/domain.lnd.ENA_ne32x32pg2_oRRS18to6v3.230226.nc</file>
+      <file grid="ice|ocn" mask="oRRS18to6v3">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/domain.ocn.ENA_ne32x32pg2_oRRS18to6v3.230226.nc</file>
+      <desc>1/4-deg with 3 km over eastern US (version 1) pg2:</desc>
+    </domain>
+
+    <domain name="ne0np4_nep_ne1024_smooth.pg2">
+      <nx>448464</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="oRRS18to6v3">/global/cfs/cdirs/m3525/meng/rrm_inputs/nep/grids/domain.lnd.nep_ne32x32pg2_oRRS18to6v3.240819.nc</file>
+      <file grid="ice|ocn" mask="oRRS18to6v3">/global/cfs/cdirs/m3525/meng/rrm_inputs/nep/grids/domain.ocn.nep_ne32x32pg2_oRRS18to6v3.240819.nc</file>
+      <desc>1/4-deg with 3 km over NEP (version 1) pg2:</desc>
+    </domain>
+
+    <domain name="ne0np4_so_ne1024_smooth.pg2">
+      <nx>464832</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="oRRS18to6v3">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/domain.lnd.SO_ne32x32pg2_oRRS18to6v3.230226.nc</file>
+      <file grid="ice|ocn" mask="oRRS18to6v3">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/domain.ocn.SO_ne32x32pg2_oRRS18to6v3.230226.nc</file>
+      <desc>1/4-deg with 3 km over eastern US (version 1) pg2:</desc>
     </domain>
 
   </domains>
@@ -4768,6 +4843,69 @@
       <map name="GLC2OCN_ICE_RMAPNAME">cpl/gridmaps/mpas.ais20km/map_ais20km_to_oEC60to30v3wLI_nomask_nearestdtos.190207.nc</map>
       <map name="OCN2GLC_FMAPNAME">cpl/gridmaps/oEC60to30v3wLI/map_oEC60to30v3wLI_nomask_to_ais20km_aave.190207.nc</map>
       <map name="OCN2GLC_SMAPNAME">cpl/gridmaps/oEC60to30v3wLI/map_oEC60to30v3wLI_nomask_to_ais20km_neareststod.190207.nc</map>
+    </gridmap>
+
+    <!-- testbeds -->
+    <gridmap atm_grid="ne0np4_cus_ne1024_smooth.pg2" ocn_grid="oRRS18to6v3">
+      <map name="ATM2OCN_FMAPNAME">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/map_CUS_ne32x32pg2_to_oRRS18to6v3_mono.20230225.nc</map>
+      <map name="ATM2OCN_VMAPNAME">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/map_CUS_ne32x32pg2_to_oRRS18to6v3_bilin.20230225.nc</map>
+      <map name="ATM2OCN_SMAPNAME">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/map_CUS_ne32x32pg2_to_oRRS18to6v3_bilin.20230225.nc</map>
+      <map name="OCN2ATM_FMAPNAME">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/map_oRRS18to6v3_to_CUS_ne32x32pg2_mono.20230225.nc</map>
+      <map name="OCN2ATM_SMAPNAME">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/map_oRRS18to6v3_to_CUS_ne32x32pg2_mono.20230225.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ne0np4_cus_ne1024_smooth.pg2" rof_grid="r0125">
+      <map name="ATM2ROF_FMAPNAME">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/map_CUS_ne32x32pg2_to_r0125_mono.20230225.nc</map>
+      <map name="ATM2ROF_SMAPNAME">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/map_CUS_ne32x32pg2_to_r0125_mono.20230225.nc</map>
+    </gridmap>
+
+    <gridmap lnd_grid="ne0np4_cus_ne1024_smooth.pg2" rof_grid="r0125">
+      <map name="LND2ROF_FMAPNAME">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/map_CUS_ne32x32pg2_to_r0125_mono.20230225.nc</map>
+      <map name="ROF2LND_FMAPNAME">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/map_r0125_to_CUS_ne32x32pg2_mono.20230225.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ne0np4_ena_ne1024_smooth.pg2" ocn_grid="oRRS18to6v3">
+      <map name="ATM2OCN_FMAPNAME">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/map_ENA_ne32x32pg2_to_oRRS18to6v3_mono.20230225.nc</map>
+      <map name="ATM2OCN_VMAPNAME">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/map_ENA_ne32x32pg2_to_oRRS18to6v3_bilin.20230225.nc</map>
+      <map name="ATM2OCN_SMAPNAME">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/map_ENA_ne32x32pg2_to_oRRS18to6v3_bilin.20230225.nc</map>
+      <map name="OCN2ATM_FMAPNAME">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/map_oRRS18to6v3_to_ENA_ne32x32pg2_mono.20230225.nc</map>
+      <map name="OCN2ATM_SMAPNAME">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/map_oRRS18to6v3_to_ENA_ne32x32pg2_mono.20230225.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ne0np4_ena_ne1024_smooth.pg2" rof_grid="r0125">
+      <map name="ATM2ROF_FMAPNAME">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/map_ENA_ne32x32pg2_to_r0125_mono.20230225.nc</map>
+      <map name="ATM2ROF_SMAPNAME">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/map_ENA_ne32x32pg2_to_r0125_mono.20230225.nc</map>
+    </gridmap>
+
+    <gridmap lnd_grid="ne0np4_ena_ne1024_smooth.pg2" rof_grid="r0125">
+      <map name="LND2ROF_FMAPNAME">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/map_ENA_ne32x32pg2_to_r0125_mono.20230225.nc</map>
+      <map name="ROF2LND_FMAPNAME">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/map_r0125_to_ENA_ne32x32pg2_mono.20230225.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ne0np4_nep_ne1024_smooth.pg2" ocn_grid="oRRS18to6v3">
+      <map name="ATM2OCN_FMAPNAME">/global/cfs/cdirs/m3525/meng/rrm_inputs/nep/grids/map_nep_ne32x32pg2_to_oRRS18to6v3_mono.20240819.nc</map>
+      <map name="ATM2OCN_VMAPNAME">/global/cfs/cdirs/m3525/meng/rrm_inputs/nep/grids/map_nep_ne32x32pg2_to_oRRS18to6v3_bilin.20240819.nc</map>
+      <map name="ATM2OCN_SMAPNAME">/global/cfs/cdirs/m3525/meng/rrm_inputs/nep/grids/map_nep_ne32x32pg2_to_oRRS18to6v3_bilin.20240819.nc</map>
+      <map name="OCN2ATM_FMAPNAME">/global/cfs/cdirs/m3525/meng/rrm_inputs/nep/grids/map_oRRS18to6v3_to_nep_ne32x32pg2_mono.20240819.nc</map>
+      <map name="OCN2ATM_SMAPNAME">/global/cfs/cdirs/m3525/meng/rrm_inputs/nep/grids/map_oRRS18to6v3_to_nep_ne32x32pg2_mono.20240819.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ne0np4_so_ne1024_smooth.pg2" ocn_grid="oRRS18to6v3">
+      <map name="ATM2OCN_FMAPNAME">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/map_SO_ne32x32pg2_to_oRRS18to6v3_mono.20230225.nc</map>
+      <map name="ATM2OCN_VMAPNAME">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/map_SO_ne32x32pg2_to_oRRS18to6v3_bilin.20230225.nc</map>
+      <map name="ATM2OCN_SMAPNAME">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/map_SO_ne32x32pg2_to_oRRS18to6v3_bilin.20230225.nc</map>
+      <map name="OCN2ATM_FMAPNAME">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/map_oRRS18to6v3_to_SO_ne32x32pg2_mono.20230225.nc</map>
+      <map name="OCN2ATM_SMAPNAME">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/map_oRRS18to6v3_to_SO_ne32x32pg2_mono.20230225.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ne0np4_so_ne1024_smooth.pg2" rof_grid="r0125">
+      <map name="ATM2ROF_FMAPNAME">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/map_SO_ne32x32pg2_to_r0125_mono.20230225.nc</map>
+      <map name="ATM2ROF_SMAPNAME">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/map_SO_ne32x32pg2_to_r0125_mono.20230225.nc</map>
+    </gridmap>
+
+    <gridmap lnd_grid="ne0np4_so_ne1024_smooth.pg2" rof_grid="r0125">
+      <map name="LND2ROF_FMAPNAME">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/map_SO_ne32x32pg2_to_r0125_mono.20230225.nc</map>
+      <map name="ROF2LND_FMAPNAME">/global/cfs/projectdirs/m3525/jli628/RRM_Inputs/map_r0125_to_SO_ne32x32pg2_mono.20230225.nc</map>
     </gridmap>
 
   </gridmaps>
