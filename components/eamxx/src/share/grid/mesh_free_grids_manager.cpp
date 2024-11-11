@@ -147,7 +147,7 @@ add_geo_data (const nonconstgrid_ptr_type& grid) const
   if (geo_data_source=="CREATE_EMPTY_DATA") {
     using namespace ShortFieldTagsNames;
     FieldLayout layout_mid ({LEV},{grid->get_num_vertical_levels()});
-    FieldLayout layout_int ({ILEV},{grid->get_num_vertical_levels()});
+    FieldLayout layout_int ({ILEV},{grid->get_num_vertical_levels()+1});
     const auto units = ekat::units::Units::nondimensional();
 
     auto lat  = grid->create_geometry_data("lat" ,  grid->get_2d_scalar_layout(), units);
@@ -242,7 +242,7 @@ load_vertical_coordinates (const nonconstgrid_ptr_type& grid, const std::string&
   using namespace ekat::units;
 
   FieldLayout layout_mid ({LEV},{grid->get_num_vertical_levels()});
-  FieldLayout layout_int ({ILEV},{grid->get_num_vertical_levels()});
+  FieldLayout layout_int ({ILEV},{grid->get_num_vertical_levels()+1});
   Units nondim = Units::nondimensional();
   Units mbar (100*Pa,"mb");
 
