@@ -66,13 +66,18 @@ struct ForcingHelper {
 };
 
 enum TracerFileType {
-  // file with PS ncol, lev, and time
+  // file with ncol, lev, ilev, time and has P0 and PS as variables
+  // example: oxidants
   FORMULA_PS,
-  // nc zonal file from ncremap
-  ZONAL,
   // vertical emission files
+  // example: linoz
+  ZONAL,
+  // file with ncol, altitude, altitude_int, time
+  // example: elevated (at a height) emissions of aerosols and precursors
+  // NOTE: we must rename the default vertical tags when horiz remapping
+  // NOTE: we vert remap in a different routine in mam4xx
   VERT_EMISSION,
-  //
+  // Placeholder for cases where no file type is applicable
   NONE
 };
 
