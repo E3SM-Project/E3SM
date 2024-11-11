@@ -85,28 +85,17 @@ struct UnitWrap {
       {
         Functions::p3_init(); // many tests will need fortran table data
         auto& ts = ekat::TestSession::get();
-        auto raw_flags = ts.flags.begin()->first;
-        std::stringstream ss(raw_flags);
-        std::string flag;
-        bool next_token_is_path = false;
-        while (ss >> flag) {
-          if (flag == "-c") {
-            m_baseline_action = COMPARE;
-          }
-          else if (flag == "-g") {
-            m_baseline_action = GENERATE;
-          }
-          else if (flag == "-n") {
-            m_baseline_action = NONE;
-          }
-          else if (flag == "-b") {
-            next_token_is_path = true;
-          }
-          else if (next_token_is_path) {
-            m_baseline_path = flag;
-            next_token_is_path = false;
-          }
+        if (ts.flags["c"]) {
+          m_baseline_action = COMPARE;
         }
+        else if (ts.flags["g"]) {
+          m_baseline_action = GENERATE;
+        }
+        else if (ts.flags["n"]) {
+          m_baseline_action = NONE;
+        }
+        m_baseline_path = ts.params["b"];
+
         EKAT_REQUIRE_MSG( !(m_baseline_action != NONE && m_baseline_path == ""),
                           "P3 unit test flags problem: baseline actions were requested but no baseline path was provided");
 
