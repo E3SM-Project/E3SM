@@ -1,6 +1,6 @@
-#include "shoc_functions_f90.hpp"
+#include "shoc_test_data.hpp"
 
-#include "shoc_f90.hpp"
+#include "shoc_data.hpp"
 
 #include "ekat/ekat_assert.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"

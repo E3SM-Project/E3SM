@@ -1,6 +1,6 @@
 #include "shoc_main_wrap.hpp"
-#include "shoc_f90.hpp"
-#include "shoc_functions_f90.hpp"
+#include "shoc_data.hpp"
+#include "shoc_test_data.hpp"
 #include "physics_constants.hpp"
 #include "shoc_ic_cases.hpp"
 

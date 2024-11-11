@@ -1,4 +1,4 @@
-#include "shoc_f90.hpp"
+#include "shoc_data.hpp"
 #include "physics_constants.hpp"
 #include "shoc_ic_cases.hpp"
 
