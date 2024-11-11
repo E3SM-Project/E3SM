@@ -258,7 +258,7 @@ void MAMMicrophysics::set_grids(
                    "num_a1", "num_a2", "num_a4", "soag"};
 
     for(const auto &var_name : extfrc_lst_) {
-      std::string item_name = "mam4_" + var_name + "_verti_emiss_file_name";
+      std::string item_name = "mam4_" + var_name + "_elevated_emiss_file_name";
       const auto file_name  = m_params.get<std::string>(item_name);
       elevated_emis_file_name_[var_name] = file_name;
     }
@@ -278,7 +278,7 @@ void MAMMicrophysics::set_grids(
                                       "num_a1_POM_ELEV_BB"};
     elevated_emis_var_names_["soag"]   = {"SOAbb_src", "SOAbg_src", "SOAff_src"};
 
-    int elevated_emiss_cyclical_ymd = m_params.get<int>("verti_emiss_ymd");
+    int elevated_emiss_cyclical_ymd = m_params.get<int>("elevated_emiss_ymd");
 
     for(const auto &var_name : extfrc_lst_) {
       const auto file_name = elevated_emis_file_name_[var_name];
