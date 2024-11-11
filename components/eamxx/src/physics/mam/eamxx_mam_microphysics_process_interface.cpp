@@ -326,10 +326,10 @@ void MAMMicrophysics::set_grids(
       ++i;
     }  // end i
     EKAT_REQUIRE_MSG(
-        offset_emis_ver <= int(mam_coupling::MAX_NUM_VERT_EMISSION_FIELDS),
+        offset_emis_ver <= int(mam_coupling::MAX_NUM_ELEVATED_EMISSIONS_FIELDS),
         "Error! Number of fields is bigger than "
-        "MAX_NUM_VERT_EMISSION_FIELDS. Increase the "
-        "MAX_NUM_VERT_EMISSION_FIELDS in tracer_reader_utils.hpp \n");
+        "MAX_NUM_ELEVATED_EMISSIONS_FIELDS. Increase the "
+        "MAX_NUM_ELEVATED_EMISSIONS_FIELDS in tracer_reader_utils.hpp \n");
 
   }  // Tracer external forcing data
 }  // set_grids

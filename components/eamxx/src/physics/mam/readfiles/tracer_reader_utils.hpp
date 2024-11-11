@@ -69,14 +69,14 @@ enum TracerFileType {
   // file with ncol, lev, ilev, time and has P0 and PS as variables
   // example: oxidants
   FORMULA_PS,
-  // vertical emission files
+  // file with ncol, lev, ilev, time
   // example: linoz
   ZONAL,
   // file with ncol, altitude, altitude_int, time
   // example: elevated (at a height) emissions of aerosols and precursors
   // NOTE: we must rename the default vertical tags when horiz remapping
   // NOTE: we vert remap in a different routine in mam4xx
-  VERT_EMISSION,
+  ELEVATED_EMISSIONS,
   // Placeholder for cases where no file type is applicable
   NONE
 };
@@ -88,7 +88,7 @@ enum TracerDataIndex { BEG = 0, END = 1, OUT = 2 };
  Therefore, if a file contains more than this number, it is acceptable to
  increase this limit. Currently, Linoz files have 8 fields. */
 constexpr int MAX_NVARS_TRACER             = 10;
-constexpr int MAX_NUM_VERT_EMISSION_FIELDS = 25;
+constexpr int MAX_NUM_ELEVATED_EMISSIONS_FIELDS = 25;
 
 // Linoz structures to help manage all of the variables:
 struct TracerTimeState {
@@ -307,7 +307,7 @@ inline void setup_tracer_data(TracerData &tracer_data,             // out
   // This type of files use altitude (zi) for vertical interpolation
   if(has_altitude) {
     nlevs_data       = scorpio::get_dimlen(trace_data_file, "altitude");
-    tracer_file_type = VERT_EMISSION;
+    tracer_file_type = ELEVATED_EMISSIONS;
   }
   EKAT_REQUIRE_MSG(
       nlevs_data != -1,
@@ -339,7 +339,7 @@ inline void setup_tracer_data(TracerData &tracer_data,             // out
     tracer_data.zonal_levs_ = levs;
   }
 
-  if(tracer_file_type == VERT_EMISSION) {
+  if(tracer_file_type == ELEVATED_EMISSIONS) {
     const int nilevs_data =
         scorpio::get_dimlen(trace_data_file, "altitude_int");
     view_1d_host altitude_int_host("altitude_int_host", nilevs_data);
@@ -448,7 +448,7 @@ inline std::shared_ptr<AtmosphereInput> create_tracer_data_reader(
     io_fields.push_back(horiz_remapper->get_src_field(i));
   }
   const auto io_grid = horiz_remapper->get_src_grid();
-  if(file_type == VERT_EMISSION ){
+  if(file_type == ELEVATED_EMISSIONS ){
     // NOTE: If we are using a vertical emission nc file with altitude instead of lev,
     // we must rename this tag.
     // We need to perform a shallow clone of io_grid because tags are const in this object.
@@ -672,7 +672,7 @@ inline void perform_vertical_interpolation(const const_view_1d &altitude_int,
                                            const TracerData &input,
                                            const view_2d output[]) {
   EKAT_REQUIRE_MSG(
-      input.file_type == VERT_EMISSION,
+      input.file_type == ELEVATED_EMISSIONS,
       "Error! vertical interpolation only with altitude variable. \n");
   const int ncols                   = input.ncol_;
   const int num_vars                = input.nvars_;
@@ -749,7 +749,7 @@ inline void advance_tracer_data(
   if(data_tracer.file_type == FORMULA_PS || data_tracer.file_type == ZONAL) {
     perform_vertical_interpolation(data_tracer.p_src_, p_tgt, data_tracer,
                                    output);
-  } else if(data_tracer.file_type == VERT_EMISSION) {
+  } else if(data_tracer.file_type == ELEVATED_EMISSIONS) {
     perform_vertical_interpolation(data_tracer.altitude_int_, zi_tgt,
                                    data_tracer, output);
   }
