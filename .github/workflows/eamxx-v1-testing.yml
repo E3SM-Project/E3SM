@@ -5,39 +5,88 @@ on:
   pull_request:
     branches: [ master ]
     types: [opened, synchronize, ready_for_review, reopened]
-    paths:
-      - components/eamxx/**
-      - components/eam/src/physics/rrtmgp/**
-      - components/eam/src/physics/p3/scream/**
-      - components/eam/src/physics/cam/**
-      - .github/workflows/eamxx-v1-testing.yml
 
   # Manual run is used to bless
   workflow_dispatch:
     inputs:
-      jobs_list:
+      job_to_run:
         description: 'Job to run'
         required: true
         type: choice
         options:
           - cpu-gcc
+          - all
       bless:
         description: 'Generate baselines'
         required: true
         type: boolean
 
 concurrency:
-  # Two runs are in the same group if:
-  #  - they have the same trigger
-  #  - if trigger=pull_request, the PR number must match
-  #  - if trigger=workflow_dispatch, the inputs are the same
-  group: ${{ github.workflow }}-${{ github.event_name }}-${{
-             github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id
-           }}
+  # Two runs are in the same group if they are testing the same git ref
+  #  - if trigger=pull_request, the ref is refs/pull/<PR_NUMBER>/merge
+  #  - for other triggers, the ref is the branch tested
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  pre_process_pr:
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest  # This job can run anywhere
+    outputs:
+      relevant_paths: ${{ steps.check_paths.outputs.value }}
+      labels: ${{ steps.get_labels.outputs.labels }}
+    steps:
+      - name: Check files modified by PR
+        id: check_paths
+        run: |
+          paths=(
+            components/eamxx
+            components/eam/src/physics/rrtmgp
+            components/eam/src/physics/p3/scream
+            components/eam/src/physics/cam
+            components/eam/src/physics/rrtmgp/external
+            externals/ekat
+            externals/scorpio
+            externals/haero
+            externals/YAKL
+            .github/workflows/eamxx-v1-testing.yml
+          )
+          pattern=$(IFS=\|; echo "${paths[*]}")
+
+          # Use the GitHub API to get the list of changed files
+          response=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.number }}/files")
+          changed_files=$(echo "$response" | grep -o '"filename": *"[^"]*"' | sed 's/"filename": *//; s/"//g')
+
+          # Check for matches and echo the matching files (or "" if none)
+          matching_files=$(echo "$changed_files" | grep -E "^($pattern)" || echo "")
+          if [[ -n "$matching_files" ]]; then
+            echo "Found relevant files: $matching_files"
+            echo "value=true" >> $GITHUB_OUTPUT
+          else
+            echo "No relevant files touched by this PR."
+            echo "value=false" >> $GITHUB_OUTPUT
+          fi
+      - name: Retrieve PR labels
+        id: get_labels
+        run: |
+          labels="${{ join(github.event.pull_request.labels.*.name, ',') }}"
+          echo "labels=${labels}" >> $GITHUB_OUTPUT
   cpu-gcc:
+    needs: [pre_process_pr]
+    if: |
+      github.event_name == 'schedule' ||
+      (
+        github.event_name == 'pull_request' &&
+        needs.pre_process_pr.outputs.relevant_paths=='true' &&
+        !contains(needs.pre_process_pr.outputs.labels,'CI: skip gcc') &&
+        !contains(needs.pre_process_pr.outputs.labels,'CI: skip eamxx-v1') &&
+        !contains(needs.pre_process_pr.outputs.labels,'CI: skip eamxx-all')
+      ) || (
+        github.event_name == 'workflow_dispatch' &&
+        github.event.inputs.job_to_run == 'cpu-gcc' ||
+        github.event.inputs.job_to_run == 'all'
+      )
     runs-on:  [self-hosted, gcc, ghci-snl-cpu]
     strategy:
       matrix:
@@ -52,34 +101,15 @@ jobs:
             short_name: SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.scream-mam4xx-all_mam4xx_procs
       fail-fast: false
     name: cpu-gcc / ${{ matrix.test.short_name }}
-    # Run this workflow if:
-    #   - workflow_dispatch: user requested this job.
-    #   - schedule: always:
-    #   - pull_request: matching skip label is NOT found
-    if: |
-      ${{
-          github.event_name == 'schedule' ||
-          ( github.event_name == 'workflow_dispatch' && contains(github.event.inputs.jobs_list, 'gcc-openmp') ) ||
-          (
-            github.event_name == 'pull_request' &&
-            !(
-              contains(github.event.pull_request.labels.*.name, 'AT: skip gcc') ||
-              contains(github.event.pull_request.labels.*.name, 'AT: skip eamxx-v1') ||
-              contains(github.event.pull_request.labels.*.name, 'AT: skip eamxx-all')
-            )
-          )
-        }}
     steps:
-      - name: Show action trigger
-        uses: actions/github-script@v7
+      - name: Check out the repository
+        uses: actions/checkout@v4
         with:
-          script: |
-            const eventName = context.eventName;
-            const eventAction = context.payload.action || 'N/A';
-            const actor = context.actor;
-            console.log(`The job was triggered by a ${eventName} event.`);
-            console.log(`  - Event action: ${eventAction}`);
-            console.log(`  - Triggered by: ${actor}`);
+          persist-credentials: false
+          show-progress: false
+          submodules: recursive
+      - name: Show action trigger
+        uses: ./.github/actions/show-workflow-trigger
       - name: Set CA certificates env var
         run: |
           # Ensure the operating system is Linux
@@ -108,12 +138,6 @@ jobs:
           fi
           echo "flags=$cmp_gen_flag -b master" >> $GITHUB_ENV
           echo "folder_suffix=$dir_suffix" >> $GITHUB_ENV
-      - name: Check out the repository
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-          show-progress: false
-          submodules: recursive
       - name: Run test
         run: |
           ./cime/scripts/create_test ${{ matrix.test.full_name }} ${{ env.flags }} --wait

@@ -57,7 +57,7 @@ Field Names:
   - aerdepwetis
   - aerdepwetcw
   - dgnumwet
-  - dgncur_a
+  - dgnum
   - wetdens
   - qaerwat
 output_control:
