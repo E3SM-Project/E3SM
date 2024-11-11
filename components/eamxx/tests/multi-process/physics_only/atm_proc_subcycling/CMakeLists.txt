@@ -23,7 +23,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output_tend.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/output_tend_subcycled.yaml)
 
 CreateUnitTestFromExec (shoc_p3_subcycled shoc_p3
-      EXE_ARGS "--use-colour no --ekat-test-params ifile=input_subcycled.yaml"
+      EXE_ARGS "--args -ifile=input_subcycled.yaml"
       FIXTURES_SETUP shoc_p3_subcycled)
 
 # Run a test without subcycling and more steps
@@ -38,7 +38,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output.yaml
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output_tend.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/output_tend_monolithic.yaml)
 CreateUnitTestFromExec (shoc_p3_monolithic shoc_p3
-      EXE_ARGS "--use-colour no --ekat-test-params ifile=input_monolithic.yaml"
+      EXE_ARGS "--args -ifile=input_monolithic.yaml"
       FIXTURES_SETUP shoc_p3_monolithic)
 
 # Finally, compare output of the two tests

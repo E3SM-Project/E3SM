@@ -279,10 +279,9 @@ int main (int argc, char** argv) {
       ++i;
       nlev = std::atoi(argv[i]);
     }
-    if (std::string(argv[i])=="--ekat-kokkos-device") {
-      expect_another_arg(i, argc);
-      ++i;
-      device = argv[i];
+    if (std::string(argv[i])=="--kokkos-device-id=") {
+      auto tokens = ekat::split(argv[i],"=");
+      device = tokens[1];
     }
     if (ekat::argv_matches(argv[i], "-r", "--repeat")) {
       expect_another_arg(i, argc);
@@ -311,32 +310,8 @@ int main (int argc, char** argv) {
   // Decorate baseline name with precision.
   baseline_fn += std::to_string(sizeof(scream::Real));
 
-  std::vector<char*> args;
-  for (int i=0; i<argc; ++i) {
-    args.push_back(argv[i]);
-  }
-
-  // If "--ekat-kokkos-device <N>" was specified, add kokkos
-  // initialization flag to argv
-  // Create it outside the if, so its c_str pointer survives
-  std::string dev_arg;
-  if (device!="") {
-    auto is_int = [] (const std::string& s)->bool {
-      std::istringstream is(s);
-      int d;
-      is >> d;
-      return !is.fail() && is.eof();
-    };
-
-    EKAT_REQUIRE_MSG (is_int(device), "Error! Invalid device specification.\n");
-
-    if (std::stoi(device) != -1) {
-      dev_arg = "--kokkos-device-id=" + device;
-      args.push_back(const_cast<char*>(dev_arg.c_str()));
-    }
-  }
-
-  scream::initialize_scream_session(args.size(), args.data()); {
+  scream::initialize_scream_session(argc, argv);
+  {
     Baseline bln(timesteps, static_cast<Real>(dt), ncol, nlev, repeat, predict_nc, prescribed_ccn);
     if (generate) {
       std::cout << "Generating to " << baseline_fn << "\n";
@@ -346,7 +321,8 @@ int main (int argc, char** argv) {
       nerr += bln.run_and_cmp(baseline_fn, tol, use_fortran);
     }
     P3GlobalForFortran::deinit();
-  } scream::finalize_scream_session();
+  }
+  scream::finalize_scream_session();
 
   return nerr != 0 ? 1 : 0;
 }
