@@ -62,11 +62,14 @@ jobs:
   cpu-gcc:
     needs: [pre_process_pr]
     if: |
+      !failure() && !cancelled() &&
+      (
         github.event_name != 'pull_request' ||
         (
           needs.pre_process_pr.outputs.relevant_paths == 'true' &&
           !contains(needs.pre_process_pr.outputs.labels, 'CI: skip eamxx-all')
         )
+      )
     runs-on:  [self-hosted, gcc, ghci-snl-cpu]
     steps:
       - name: Check out the repository
