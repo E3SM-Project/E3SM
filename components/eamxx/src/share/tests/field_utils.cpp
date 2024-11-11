@@ -37,6 +37,31 @@ TEST_CASE("utils") {
   f1.get_header().get_alloc_properties().request_allocation(P8::n);
   f1.allocate_view();
 
+  SECTION("compare-rank-0") {
+    // create two fields with rank-0 and get their views
+    std::vector<FieldTag> tags_0 = {};
+    std::vector<int> dims_0      = {};
+    FieldIdentifier fid_01("field_01", {tags_0, dims_0}, m / s, "some_grid");
+    FieldIdentifier fid_02("field_02", {tags_0, dims_0}, m / s, "some_grid");
+    Field f01(fid_01);
+    Field f02(fid_02);
+    f01.allocate_view();
+    f02.allocate_view();
+    auto f01v = f01.get_view<Real>();
+    auto f02v = f02.get_view<Real>();
+    // fill the views with the same values
+    Real val = 54321;
+    Kokkos::deep_copy(f01v, val);
+    Kokkos::deep_copy(f02v, val);
+    // check that the views are equal
+    REQUIRE(views_are_equal(f01, f02));
+
+    // fill the views with different values
+    Kokkos::deep_copy(f02v, 1 / val);
+    // check that the views are not equal
+    REQUIRE(not views_are_equal(f01, f02));
+  }
+
   SECTION ("compare") {
 
     Field f2(fid);

@@ -81,8 +81,10 @@ struct UnitWrap::UnitTest<D>::TestIceNucleation {
 	    // outputs
 	    Spack qv2qi_nucleat_tend{0.0};
 	    Spack ni_nucleat_tend{0.0};
-	    Functions::ice_nucleation(temp, inv_rho, ni, ni_activated, qv_supersat_i, self_device(0).inv_dt, do_predict_nc,
-				      do_prescribed_CCN, qv2qi_nucleat_tend, ni_nucleat_tend, physics::P3_Constants<Real>());
+        Functions::ice_nucleation(
+          temp, inv_rho, ni, ni_activated, qv_supersat_i, self_device(0).inv_dt,
+          do_predict_nc, do_prescribed_CCN, qv2qi_nucleat_tend, ni_nucleat_tend,
+          p3::Functions<Real,DefaultDevice>::P3Runtime());
 
 	    for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
 	      self_device(vs).qv2qi_nucleat_tend = qv2qi_nucleat_tend[s];

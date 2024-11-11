@@ -93,8 +93,10 @@ static void run_bfb()
     Spack qc2qi_hetero_freeze_tend{0.0};
     Spack nc2ni_immers_freeze_tend{0.0};
 
-    Functions::cldliq_immersion_freezing(T_atm, lamc, mu_c, cdist1, qc_incld, inv_qc_relvar,
-                                         qc2qi_hetero_freeze_tend, nc2ni_immers_freeze_tend, physics::P3_Constants<Real>());
+    Functions::cldliq_immersion_freezing(
+        T_atm, lamc, mu_c, cdist1, qc_incld, inv_qc_relvar,
+        qc2qi_hetero_freeze_tend, nc2ni_immers_freeze_tend,
+        p3::Functions<Real,DefaultDevice>::P3Runtime());
 
     // Copy results back into views
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {

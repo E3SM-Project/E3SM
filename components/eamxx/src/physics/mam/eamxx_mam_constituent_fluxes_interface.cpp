@@ -43,19 +43,19 @@ void MAMConstituentFluxes::set_grids(
   // --------------------------------------------------------------------------
   // ----------- Atmospheric quantities -------------
   // Specific humidity [kg/kg](Require only for building DS)
-  add_field<Required>("qv", scalar3d_mid, q_unit, grid_name, "tracers");
+  add_tracer<Required>("qv", grid_, q_unit);
 
   // Cloud liquid mass mixing ratio [kg/kg](Require only for building DS)
-  add_field<Required>("qc", scalar3d_mid, q_unit, grid_name, "tracers");
+  add_tracer<Required>("qc", grid_, q_unit);
 
   // Cloud ice mass mixing ratio [kg/kg](Require only for building DS)
-  add_field<Required>("qi", scalar3d_mid, q_unit, grid_name, "tracers");
+  add_tracer<Required>("qi", grid_, q_unit);
 
   // Cloud liquid number mixing ratio [1/kg](Require only for building DS)
-  add_field<Required>("nc", scalar3d_mid, n_unit, grid_name, "tracers");
+  add_tracer<Required>("nc", grid_, n_unit);
 
   // Cloud ice number mixing ratio [1/kg](Require only for building DS)
-  add_field<Required>("ni", scalar3d_mid, n_unit, grid_name, "tracers");
+  add_tracer<Required>("ni", grid_, n_unit);
 
   // Temperature[K] at midpoints
   add_field<Required>("T_mid", scalar3d_mid, K, grid_name);
@@ -102,8 +102,7 @@ void MAMConstituentFluxes::set_grids(
     // interstitial aerosol tracers of interest: number (n) mixing ratios
     const std::string int_nmr_field_name =
         mam_coupling::int_aero_nmr_field_name(mode);
-    add_field<Updated>(int_nmr_field_name, scalar3d_mid, n_unit, grid_name,
-                       "tracers");
+    add_tracer<Updated>(int_nmr_field_name, grid_, n_unit);
 
     // cloudborne aerosol tracers of interest: number (n) mixing ratios
     // NOTE: DO NOT add cld borne aerosols to the "tracer" group as these are
@@ -117,8 +116,7 @@ void MAMConstituentFluxes::set_grids(
       const std::string int_mmr_field_name =
           mam_coupling::int_aero_mmr_field_name(mode, a);
       if(not int_mmr_field_name.empty()) {
-        add_field<Updated>(int_mmr_field_name, scalar3d_mid, q_unit, grid_name,
-                           "tracers");
+        add_tracer<Updated>(int_mmr_field_name, grid_, q_unit);
       }
       // (cloudborne) aerosol tracers of interest: mass (q) mixing ratios
       // NOTE: DO NOT add cld borne aerosols to the "tracer" group as these are
@@ -133,8 +131,7 @@ void MAMConstituentFluxes::set_grids(
 
   for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
     const std::string gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
-    add_field<Updated>(gas_mmr_field_name, scalar3d_mid, q_unit, grid_name,
-                       "tracers");
+    add_tracer<Updated>(gas_mmr_field_name, grid_, q_unit);
   }  // end for loop num gases
 
 }  // set_grid

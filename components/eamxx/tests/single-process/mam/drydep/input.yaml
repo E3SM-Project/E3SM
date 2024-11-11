@@ -10,6 +10,10 @@ time_stepping:
 
 atmosphere_processes:
   atm_procs_list: [mam4_drydep]
+  mam4_drydep:
+    # Fractional land use file
+    drydep_remap_file: ""
+    fractional_land_use_file: ${SCREAM_DATA_DIR}/mam4xx/drydep/ne2np4/atmsrf_ne2np4_c20241017.nc
 
 grids_manager:
   Type: Mesh Free

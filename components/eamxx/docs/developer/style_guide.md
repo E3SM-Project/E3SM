@@ -7,4 +7,3 @@ Here's our style guide. Let the holy wars begin!
 ## Functions and Methods
 
 ## Variables
-

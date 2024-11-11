@@ -7,6 +7,7 @@
 
 #include "ekat/ekat_pack_kokkos.hpp"
 #include "ekat/ekat_workspace.hpp"
+#include "ekat/ekat_parameter_list.hpp"
 
 namespace scream {
 namespace p3 {
@@ -72,7 +73,6 @@ struct Functions
   using KT = KokkosTypes<Device>;
 
   using C = scream::physics::Constants<Scalar>;
-  using CP3 = scream::physics::P3_Constants<Scalar>;
 
   template <typename S>
   using view_1d = typename KT::template view_1d<S>;
@@ -110,8 +110,51 @@ struct Functions
 
   // Structure to store p3 runtime options
   struct P3Runtime {
-    // maximum total ice concentration (sum of all categories) (m)
-    Scalar max_total_ni;
+
+    Scalar max_total_ni = 740.0e3;
+    Scalar autoconversion_prefactor = 1350.0;
+    Scalar autoconversion_qc_exponent = 2.47;
+    Scalar autoconversion_nc_exponent = 1.79;
+    Scalar autoconversion_radius = 25.0e-6;
+    Scalar accretion_prefactor = 67.0;
+    Scalar accretion_qc_exponent = 1.15;
+    Scalar accretion_qr_exponent = 1.15;
+    Scalar rain_selfcollection_prefactor = 5.78;
+    Scalar rain_selfcollection_breakup_diameter = 0.00028;
+    Scalar constant_mu_rain = 1.0;
+    Scalar spa_ccn_to_nc_factor = 1.0;
+    Scalar cldliq_to_ice_collection_factor = 0.5;
+    Scalar rain_to_ice_collection_factor = 1.0;
+    Scalar min_rime_rho = 50.0;
+    Scalar max_rime_rho = 900.0;
+    Scalar immersion_freezing_exponent = 0.65;
+    Scalar deposition_nucleation_exponent = 0.304;
+    Scalar ice_sedimentation_factor = 1.0;
+    bool do_ice_production = true;
+
+    void load_runtime_options_from_file(ekat::ParameterList& params) {
+      max_total_ni = params.get<double>("max_total_ni", max_total_ni);
+      autoconversion_prefactor = params.get<double>("autoconversion_prefactor", autoconversion_prefactor);
+      autoconversion_qc_exponent = params.get<double>("autoconversion_qc_exponent", autoconversion_qc_exponent);
+      autoconversion_nc_exponent = params.get<double>("autoconversion_nc_exponent", autoconversion_nc_exponent);
+      autoconversion_radius = params.get<double>("autoconversion_radius", autoconversion_radius);
+      accretion_prefactor = params.get<double>("accretion_prefactor", accretion_prefactor);
+      accretion_qc_exponent = params.get<double>("accretion_qc_exponent", accretion_qc_exponent);
+      accretion_qr_exponent = params.get<double>("accretion_qr_exponent", accretion_qr_exponent);
+      rain_selfcollection_prefactor = params.get<double>("rain_selfcollection_prefactor", rain_selfcollection_prefactor);
+      rain_selfcollection_breakup_diameter = params.get<double>("rain_selfcollection_breakup_diameter", rain_selfcollection_breakup_diameter);
+      constant_mu_rain = params.get<double>("constant_mu_rain", constant_mu_rain);
+      spa_ccn_to_nc_factor = params.get<double>("spa_ccn_to_nc_factor", spa_ccn_to_nc_factor);
+      cldliq_to_ice_collection_factor = params.get<double>("cldliq_to_ice_collection_factor", cldliq_to_ice_collection_factor);
+      rain_to_ice_collection_factor = params.get<double>("rain_to_ice_collection_factor", rain_to_ice_collection_factor);
+      min_rime_rho = params.get<double>("min_rime_rho", min_rime_rho);
+      max_rime_rho = params.get<double>("max_rime_rho", max_rime_rho);
+      immersion_freezing_exponent = params.get<double>("immersion_freezing_exponent", immersion_freezing_exponent);
+      deposition_nucleation_exponent = params.get<double>("deposition_nucleation_exponent", deposition_nucleation_exponent);
+      ice_sedimentation_factor = params.get<double>("ice_sedimentation_factor", ice_sedimentation_factor);
+      do_ice_production = params.get<bool>("do_ice_production", do_ice_production);
+    }
+
   };
 
   // This struct stores prognostic variables evolved by P3.
@@ -505,7 +548,7 @@ struct Functions
     const uview_1d<Spack>& qr_tend,
     const uview_1d<Spack>& nr_tend,
     Scalar& precip_liq_surf,
-    const physics::P3_Constants<ScalarT> & p3constants);
+    const P3Runtime& runtime_options);
 
 #ifdef SCREAM_P3_SMALL_KERNELS
   static void rain_sedimentation_disp(
@@ -529,7 +572,7 @@ struct Functions
     const uview_1d<Scalar>& precip_liq_surf,
     const uview_1d<bool>& is_nucleat_possible,
     const uview_1d<bool>& is_hydromet_present,
-    const physics::P3_Constants<ScalarT> & p3constants);
+    const P3Runtime& runtime_options);
 #endif
 
   // TODO: comment
@@ -555,7 +598,7 @@ struct Functions
     const uview_1d<Spack>& ni_tend,
     const view_ice_table& ice_table_vals,
     Scalar& precip_ice_surf,
-    const physics::P3_Constants<ScalarT> & p3constants);
+    const P3Runtime& runtime_options);
 
 #ifdef SCREAM_P3_SMALL_KERNELS
   static void ice_sedimentation_disp(
@@ -580,7 +623,7 @@ struct Functions
     const uview_1d<Scalar>& precip_ice_surf,
     const uview_1d<bool>& is_nucleat_possible,
     const uview_1d<bool>& is_hydromet_present,
-    const physics::P3_Constants<ScalarT> & p3constants);
+    const P3Runtime& runtime_options);
 #endif
 
   // homogeneous freezing of cloud and rain
@@ -667,7 +710,7 @@ struct Functions
   static void get_rain_dsd2 (
     const Spack& qr, Spack& nr, Spack& mu_r,
     Spack& lamr,
-    const physics::P3_Constants<ScalarT> & p3constants,
+    const P3Runtime& runtime_options,
     const Smask& context = Smask(true) );
 
   // Computes and returns additional rain size distribution parameters
@@ -690,7 +733,7 @@ struct Functions
   static void cldliq_immersion_freezing(const Spack& T_atm, const Spack& lamc,
     const Spack& mu_c, const Spack& cdist1, const Spack& qc_incld, const Spack& inv_qc_relvar,
     Spack& qc2qi_hetero_freeze_tend, Spack& nc2ni_immers_freeze_tend,
-    const physics::P3_Constants<ScalarT> & p3constants,
+    const P3Runtime& runtime_options,
     const Smask& context = Smask(true) );
 
   // Computes the immersion freezing of rain
@@ -698,7 +741,7 @@ struct Functions
   static void rain_immersion_freezing(const Spack& T_atm, const Spack& lamr,
     const Spack& mu_r, const Spack& cdistr, const Spack& qr_incld,
     Spack& qr2qi_immers_freeze_tend, Spack& nr2ni_immers_freeze_tend,
-    const physics::P3_Constants<ScalarT> & p3constants,
+    const P3Runtime& runtime_options,
     const Smask& context = Smask(true) );
 
   // Computes droplet self collection
@@ -713,7 +756,7 @@ struct Functions
   static void cloud_rain_accretion(const Spack& rho, const Spack& inv_rho,
     const Spack& qc_incld, const Spack& nc_incld, const Spack& qr_incld, const Spack& inv_qc_relvar,
     Spack& qc2qr_accret_tend, Spack& nc_accret_tend,
-    const physics::P3_Constants<ScalarT> & p3constants,
+    const P3Runtime& runtime_options,
     const Smask& context = Smask(true) );
 
   // Computes cloud water autoconversion process rate
@@ -721,13 +764,13 @@ struct Functions
   static void cloud_water_autoconversion(const Spack& rho,  const Spack& qc_incld,
     const Spack& nc_incld, const Spack& inv_qc_relvar,
     Spack& qc2qr_autoconv_tend, Spack& nc2nr_autoconv_tend, Spack& ncautr,
-    const physics::P3_Constants<ScalarT> & p3constants,
+    const P3Runtime& runtime_options,
     const Smask& context = Smask(true));
 
   // Computes rain self collection process rate
   KOKKOS_FUNCTION
   static void rain_self_collection(const Spack& rho, const Spack& qr_incld, const Spack& nr_incld, Spack& nr_selfcollect_tend,
-		                   const physics::P3_Constants<ScalarT> & p3constants,
+                                   const P3Runtime& runtime_options,
                                    const Smask& context = Smask(true) );
 
   // Impose maximum ice number
@@ -742,7 +785,7 @@ struct Functions
   KOKKOS_FUNCTION
   static Spack calc_bulk_rho_rime(
     const Spack& qi_tot, Spack& qi_rim, Spack& bi_rim,
-    const physics::P3_Constants<ScalarT> & p3constants,
+    const P3Runtime& runtime_options,
     const Smask& context = Smask(true) );
 
   // TODO - comment
@@ -751,7 +794,7 @@ struct Functions
     const view_2d_table& vn_table_vals, const view_2d_table& vm_table_vals,
     const Spack& qr_incld, const Spack& rhofacr,
     Spack& nr_incld, Spack& mu_r, Spack& lamr, Spack& V_qr, Spack& V_nr,
-    const physics::P3_Constants<ScalarT> & p3constants,
+    const P3Runtime& runtime_options,
     const Smask& context = Smask(true));
 
   //---------------------------------------------------------------------------------
@@ -786,7 +829,7 @@ struct Functions
                                     const Spack& qi_incld, const Spack& qc_incld,
                                     const Spack& ni_incld, const Spack& nc_incld,
                                     Spack& qc2qi_collect_tend, Spack& nc_collect_tend, Spack& qc2qr_ice_shed_tend, Spack& ncshdc,
-                                    const physics::P3_Constants<ScalarT> & p3constants,
+                                    const P3Runtime& runtime_options,
 	      			    const Smask& context = Smask(true));
 
   // TODO (comments)
@@ -797,7 +840,7 @@ struct Functions
                                   const Spack& qi_incld, const Spack& ni_incld,
                                   const Spack& qr_incld,
                                   Spack& qr2qi_collect_tend, Spack& nr_collect_tend,
-                                  const physics::P3_Constants<ScalarT> & p3constants,
+                                  const P3Runtime& runtime_options,
                                   const Smask& context = Smask(true));
 
   // TODO (comments)
@@ -882,7 +925,7 @@ struct Functions
                              const Spack& qv_supersat_i, const Scalar& inv_dt,
                              const bool& do_predict_nc, const bool& do_prescribed_CCN,
                              Spack& qv2qi_nucleat_tend, Spack& ni_nucleat_tend,
-                             const physics::P3_Constants<ScalarT> & p3constants,
+                             const P3Runtime& runtime_options,
                              const Smask& context = Smask(true));
 
   KOKKOS_FUNCTION
@@ -1016,7 +1059,7 @@ struct Functions
     const uview_1d<Spack>& bm_incld,
     bool& is_nucleat_possible,
     bool& is_hydromet_present,
-    const physics::P3_Constants<ScalarT> & p3constants);
+    const P3Runtime& runtime_options);
 
 #ifdef SCREAM_P3_SMALL_KERNELS
   static void p3_main_part1_disp(
@@ -1064,7 +1107,7 @@ struct Functions
     const uview_2d<Spack>& bm_incld,
     const uview_1d<bool>& is_nucleat_possible,
     const uview_1d<bool>& is_hydromet_present,
-    const physics::P3_Constants<ScalarT> & p3constants);
+    const P3Runtime& runtime_options);
 #endif
 
   KOKKOS_FUNCTION
@@ -1143,7 +1186,7 @@ struct Functions
     const uview_1d<Spack>& prctot,
     bool& is_hydromet_present,
     const Int& nk,
-    const physics::P3_Constants<ScalarT> & p3constants);
+    const P3Runtime& runtime_options);
 
 #ifdef SCREAM_P3_SMALL_KERNELS
   static void p3_main_part2_disp(
@@ -1221,7 +1264,7 @@ struct Functions
     const uview_2d<Spack>& prctot,
     const uview_1d<bool>& is_nucleat_possible,
     const uview_1d<bool>& is_hydromet_present,
-    const physics::P3_Constants<ScalarT> & p3constants);
+    const P3Runtime& runtime_options);
 #endif
 
   KOKKOS_FUNCTION
@@ -1263,7 +1306,7 @@ struct Functions
     const uview_1d<Spack>& diag_equiv_reflectivity,
     const uview_1d<Spack>& diag_eff_radius_qc,
     const uview_1d<Spack>& diag_eff_radius_qr,
-    const physics::P3_Constants<ScalarT> & p3constants);
+    const P3Runtime& runtime_options);
 
 #ifdef SCREAM_P3_SMALL_KERNELS
   static void p3_main_part3_disp(
@@ -1306,7 +1349,7 @@ struct Functions
     const uview_2d<Spack>& diag_eff_radius_qr,
     const uview_1d<bool>& is_nucleat_possible,
     const uview_1d<bool>& is_hydromet_present,
-    const physics::P3_Constants<ScalarT> & p3constants);
+    const P3Runtime& runtime_options);
 #endif
 
   // Return microseconds elapsed
@@ -1323,8 +1366,7 @@ struct Functions
 #endif
     const WorkspaceManager& workspace_mgr,
     Int nj, // number of columns
-    Int nk, // number of vertical cells per column
-    const physics::P3_Constants<ScalarT> & p3constants);
+    Int nk); // number of vertical cells per column
 
   static Int p3_main_internal(
     const P3Runtime& runtime_options,
@@ -1336,8 +1378,7 @@ struct Functions
     const P3LookupTables& lookup_tables,
     const WorkspaceManager& workspace_mgr,
     Int nj, // number of columns
-    Int nk, // number of vertical cells per column
-    const physics::P3_Constants<ScalarT> & p3constants);
+    Int nk); // number of vertical cells per column
 
 #ifdef SCREAM_P3_SMALL_KERNELS
   static Int p3_main_internal_disp(
@@ -1351,8 +1392,7 @@ struct Functions
     const P3Temporaries& temporaries,
     const WorkspaceManager& workspace_mgr,
     Int nj, // number of columns
-    Int nk, // number of vertical cells per column
-    const physics::P3_Constants<ScalarT> & p3constants);
+    Int nk); // number of vertical cells per column
 #endif
 
   KOKKOS_FUNCTION

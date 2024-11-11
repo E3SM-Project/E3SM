@@ -83,8 +83,7 @@ Int Functions<S,D>
   const P3LookupTables& lookup_tables,
   const WorkspaceManager& workspace_mgr,
   Int nj,
-  Int nk,
-  const physics::P3_Constants<S> & p3constants)
+  Int nk)
 {
   using ExeSpace = typename KT::ExeSpace;
   using ScratchViewType = Kokkos::View<bool*, typename ExeSpace::scratch_memory_space>;
@@ -99,6 +98,8 @@ Int Functions<S,D>
   const     Int    ktop         = kdir == -1 ? 0    : nk-1;
   const     Int    kbot         = kdir == -1 ? nk-1 : 0;
   constexpr bool   debug_ABORT  = false;
+
+  const bool do_ice_production = runtime_options.do_ice_production;
 
   // we do not want to measure init stuff
   auto start = std::chrono::steady_clock::now();
@@ -230,7 +231,7 @@ Int Functions<S,D>
       T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr,
       rhofaci, acn, oqv, oth, oqc, onc, oqr, onr, oqi, oni, oqm,
       obm, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld,
-      ni_incld, bm_incld, nucleationPossible, hydrometeorsPresent, p3constants);
+      ni_incld, bm_incld, nucleationPossible, hydrometeorsPresent, runtime_options);
 
     // There might not be any work to do for this team
     if (!(nucleationPossible || hydrometeorsPresent)) {
@@ -250,7 +251,7 @@ Int Functions<S,D>
       nr_incld, ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1, cdistr,
       mu_r, lamr, logn0r, oqv2qi_depos_tend, oprecip_total_tend, onevapr, qr_evap_tend,
       ovap_liq_exchange, ovap_ice_exchange, oliq_ice_exchange,
-      pratot, prctot, hydrometeorsPresent, nk, p3constants);
+      pratot, prctot, hydrometeorsPresent, nk, runtime_options);
 
     //NOTE: At this point, it is possible to have negative (but small) nc, nr, ni.  This is not
     //      a problem; those values get clipped to zero in the sedimentation section (if necessary).
@@ -278,19 +279,20 @@ Int Functions<S,D>
       rho, inv_rho, rhofacr, ocld_frac_r, inv_dz, qr_incld, team, workspace,
       lookup_tables.vn_table_vals, lookup_tables.vm_table_vals, nk, ktop, kbot, kdir, infrastructure.dt, inv_dt, oqr,
       onr, nr_incld, mu_r, lamr, oprecip_liq_flux, qtend_ignore, ntend_ignore,
-      diagnostic_outputs.precip_liq_surf(i), p3constants);
+      diagnostic_outputs.precip_liq_surf(i), runtime_options);
 
     // Ice sedimentation:  (adaptive substepping)
     ice_sedimentation(
       rho, inv_rho, rhofaci, ocld_frac_i, inv_dz, team, workspace, nk, ktop, kbot,
       kdir, infrastructure.dt, inv_dt, oqi, qi_incld, oni, ni_incld,
       oqm, qm_incld, obm, bm_incld, qtend_ignore, ntend_ignore,
-      lookup_tables.ice_table_vals, diagnostic_outputs.precip_ice_surf(i), p3constants);
+      lookup_tables.ice_table_vals, diagnostic_outputs.precip_ice_surf(i), runtime_options);
 
     // homogeneous freezing of cloud and rain
-    homogeneous_freezing(
-      T_atm, oinv_exner, team, nk, ktop, kbot, kdir, oqc, onc, oqr, onr, oqi,
-      oni, oqm, obm, oth);
+    if(do_ice_production) {
+      homogeneous_freezing(T_atm, oinv_exner, team, nk, ktop, kbot, kdir, oqc,
+                           onc, oqr, onr, oqi, oni, oqm, obm, oth);
+    }
 
     //
     // final checks to ensure consistency of mass/number
@@ -301,7 +303,7 @@ Int Functions<S,D>
       rho, inv_rho, rhofaci, oqv, oth, oqc, onc, oqr, onr, oqi, oni,
       oqm, obm, mu_c, nu, lamc, mu_r, lamr,
       ovap_liq_exchange, ze_rain, ze_ice, diag_vm_qi, odiag_eff_radius_qi, diag_diam_qi,
-      orho_qi, diag_equiv_reflectivity, odiag_eff_radius_qc, odiag_eff_radius_qr, p3constants);
+      orho_qi, diag_equiv_reflectivity, odiag_eff_radius_qc, odiag_eff_radius_qr, runtime_options);
 
     //
     // merge ice categories with similar properties
@@ -343,8 +345,7 @@ Int Functions<S,D>
 #endif
   const WorkspaceManager& workspace_mgr,
   Int nj,
-  Int nk,
-  const physics::P3_Constants<S> & p3constants)
+  Int nk)
 {
 #ifdef SCREAM_P3_SMALL_KERNELS
   return p3_main_internal_disp(runtime_options,
@@ -356,7 +357,7 @@ Int Functions<S,D>
                                lookup_tables,
                                temporaries,
                                workspace_mgr,
-                               nj, nk, p3constants);
+                               nj, nk);
 #else
   return p3_main_internal(runtime_options,
                           prognostic_state,
@@ -366,7 +367,7 @@ Int Functions<S,D>
                           history_only,
                           lookup_tables,
                           workspace_mgr,
-                          nj, nk, p3constants);
+                          nj, nk);
 #endif
 }
 } // namespace p3
