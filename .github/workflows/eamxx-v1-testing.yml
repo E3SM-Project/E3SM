@@ -75,17 +75,20 @@ jobs:
   cpu-gcc:
     needs: [pre_process_pr]
     if: |
-      github.event_name == 'schedule' ||
+      !failure() && !cancelled() &&
       (
-        github.event_name == 'pull_request' &&
-        needs.pre_process_pr.outputs.relevant_paths=='true' &&
-        !contains(needs.pre_process_pr.outputs.labels,'CI: skip gcc') &&
-        !contains(needs.pre_process_pr.outputs.labels,'CI: skip eamxx-v1') &&
-        !contains(needs.pre_process_pr.outputs.labels,'CI: skip eamxx-all')
-      ) || (
-        github.event_name == 'workflow_dispatch' &&
-        github.event.inputs.job_to_run == 'cpu-gcc' ||
-        github.event.inputs.job_to_run == 'all'
+        github.event_name == 'schedule' ||
+        (
+          github.event_name == 'pull_request' &&
+          needs.pre_process_pr.outputs.relevant_paths=='true' &&
+          !contains(needs.pre_process_pr.outputs.labels,'CI: skip gcc') &&
+          !contains(needs.pre_process_pr.outputs.labels,'CI: skip eamxx-v1') &&
+          !contains(needs.pre_process_pr.outputs.labels,'CI: skip eamxx-all')
+        ) || (
+          github.event_name == 'workflow_dispatch' &&
+          github.event.inputs.job_to_run == 'cpu-gcc' ||
+          github.event.inputs.job_to_run == 'all'
+        )
       )
     runs-on:  [self-hosted, gcc, ghci-snl-cpu]
     strategy:

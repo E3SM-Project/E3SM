@@ -83,18 +83,21 @@ jobs:
   gcc-openmp:
     needs: [pre_process_pr]
     if: |
-      success() && github.event_name == 'schedule' ||
+      !failure() && !cancelled() &&
       (
-        github.event_name == 'pull_request' &&
-        needs.pre_process_pr.outputs.relevant_paths=='true' &&
-        !contains(needs.pre_process_pr.outputs.labels,'CI: skip gcc') &&
-        !contains(needs.pre_process_pr.outputs.labels,'CI: skip openmp') &&
-        !contains(needs.pre_process_pr.outputs.labels,'CI: skip eamxx-sa') &&
-        !contains(needs.pre_process_pr.outputs.labels,'CI: skip eamxx-all')
-      ) || (
-        github.event_name == 'workflow_dispatch' &&
-        github.event.inputs.job_to_run == 'gcc-openmp' || 
-        github.event.inputs.job_to_run == 'all'
+        github.event_name == 'schedule' ||
+        (
+          github.event_name == 'pull_request' &&
+          needs.pre_process_pr.outputs.relevant_paths=='true' &&
+          !contains(needs.pre_process_pr.outputs.labels,'CI: skip gcc') &&
+          !contains(needs.pre_process_pr.outputs.labels,'CI: skip openmp') &&
+          !contains(needs.pre_process_pr.outputs.labels,'CI: skip eamxx-sa') &&
+          !contains(needs.pre_process_pr.outputs.labels,'CI: skip eamxx-all')
+        ) || (
+          github.event_name == 'workflow_dispatch' &&
+          github.event.inputs.job_to_run == 'gcc-openmp' || 
+          github.event.inputs.job_to_run == 'all'
+        )
       )
     runs-on:  [self-hosted, ghci-snl-cpu, gcc]
     strategy:
@@ -130,18 +133,21 @@ jobs:
   gcc-cuda:
     needs: [pre_process_pr]
     if: |
-      success() && github.event_name == 'schedule' ||
+      !failure() && !cancelled() &&
       (
-        github.event_name == 'pull_request' &&
-        needs.pre_process_pr.outputs.relevant_paths=='true' &&
-        !contains(needs.pre_process_pr.outputs.labels,'CI: skip gcc') &&
-        !contains(needs.pre_process_pr.outputs.labels,'CI: skip cuda') &&
-        !contains(needs.pre_process_pr.outputs.labels,'CI: skip eamxx-sa') &&
-        !contains(needs.pre_process_pr.outputs.labels,'CI: skip eamxx-all')
-      ) || (
-        github.event_name == 'workflow_dispatch' &&
-        github.event.inputs.job_to_run == 'gcc-cuda' ||
-        github.event.inputs.job_to_run == 'all'
+        github.event_name == 'schedule' ||
+        (
+          github.event_name == 'pull_request' &&
+          needs.pre_process_pr.outputs.relevant_paths=='true' &&
+          !contains(needs.pre_process_pr.outputs.labels,'CI: skip gcc') &&
+          !contains(needs.pre_process_pr.outputs.labels,'CI: skip cuda') &&
+          !contains(needs.pre_process_pr.outputs.labels,'CI: skip eamxx-sa') &&
+          !contains(needs.pre_process_pr.outputs.labels,'CI: skip eamxx-all')
+        ) || (
+          github.event_name == 'workflow_dispatch' &&
+          github.event.inputs.job_to_run == 'gcc-cuda' ||
+          github.event.inputs.job_to_run == 'all'
+        )
       )
     runs-on:  [self-hosted, ghci-snl-cuda, cuda, gcc]
     strategy:
