@@ -9,7 +9,6 @@ using scream::Int;
 extern "C" {
   void shoc_init_c(int nlev, Real gravit, Real rair, Real rh2o, Real cpair,
                    Real zvir, Real latvap, Real latice, Real karman, Real p0);
-  void shoc_use_cxx_c(bool use_cxx);
 }
 
 namespace scream {
@@ -112,7 +111,7 @@ FortranDataIterator::getfield (Int i) const {
   return fields_[i];
 }
 
-void shoc_init(Int nlev, bool use_fortran, bool force_reinit) {
+void shoc_init(Int nlev, bool force_reinit) {
   static bool is_init = false;
   if (!is_init || force_reinit) {
     using Scalar = Real;
@@ -122,7 +121,6 @@ void shoc_init(Int nlev, bool use_fortran, bool force_reinit) {
                 C::LatVap, C::LatIce, C::Karman, C::P0);
     is_init = true;
   }
-  shoc_use_cxx_c(!use_fortran);
 }
 
 int test_FortranData () {
@@ -132,9 +130,9 @@ int test_FortranData () {
   return 0;
 }
 
-int test_shoc_init (bool use_fortran) {
+int test_shoc_init () {
   Int nz = 160;
-  shoc_init(nz, use_fortran);
+  shoc_init(nz);
   return 0;
 }
 

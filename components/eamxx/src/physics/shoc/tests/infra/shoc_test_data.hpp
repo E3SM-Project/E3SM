@@ -1246,6 +1246,9 @@ void shoc_tke_host(Int shcol, Int nlev, Int nlevi, Real dtime, Real* wthv_sec, R
                 Real* tk, Real* tkh, Real* isotropy);
 void compute_shoc_temperature_host(Int shcol, Int nlev, Real* thetal, Real* ql, Real* inv_exner, Real* tabs);
 
+void shoc_energy_total_fixer_host(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Real* zt_grid, Real* zi_grid, Real* se_b, Real* ke_b, Real* wv_b, Real* wl_b, Real* se_a, Real* ke_a, Real* wv_a, Real* wl_a, Real* wthl_sfc, Real* wqw_sfc, Real* rho_zt, Real* pint, Real* te_a, Real* te_b);
+// end _host function decls
+
 }  // namespace shoc
 }  // namespace scream
 

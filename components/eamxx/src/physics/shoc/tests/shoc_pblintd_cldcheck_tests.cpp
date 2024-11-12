@@ -80,7 +80,7 @@ struct UnitWrap::UnitTest<D>::TestPblintdCldCheck : public UnitWrap::UnitTest<D>
     }
 
     // Call the C++ implementation
-    shoc_pblintd_cldcheck(SDS);
+    pblintd_cldcheck(SDS);
 
     // Check the result
     for(Int s = 0; s < shcol; ++s) {
@@ -117,12 +117,12 @@ struct UnitWrap::UnitTest<D>::TestPblintdCldCheck : public UnitWrap::UnitTest<D>
     };
 
     // Read baseline data
-    for (auto& d : cldcheck_data_f90) {
+    for (auto& d : cldcheck_data_baseline) {
       d.read(Base::m_fid);
     }
 
     for (auto& d : cldcheck_data_cxx) {
-      shoc_pblintd_cldcheck(d);
+      pblintd_cldcheck(d);
     }
 
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
@@ -135,8 +135,8 @@ struct UnitWrap::UnitTest<D>::TestPblintdCldCheck : public UnitWrap::UnitTest<D>
       }
     } // SCREAM_BFB_TESTING
     else if (this->m_baseline_action == GENERATE) {
-      for (Int i = 0; i < num_runs; ++i) {
-        cxx_data[i].write(Base::m_fid);
+      for (auto& d : cldcheck_data_cxx) {
+        d.write(Base::m_fid);
       }
     }
   }  // run_bfb

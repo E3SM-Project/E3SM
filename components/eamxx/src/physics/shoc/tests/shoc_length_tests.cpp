@@ -212,10 +212,12 @@ struct UnitWrap::UnitTest<D>::TestShocLength : public UnitWrap::UnitTest<D>::Bas
       ShocLengthData(SDS_baseline[3]),
     };
 
+    static constexpr Int num_runs = sizeof(SDS_baseline) / sizeof(ShocLengthData);
+
     // Assume all data is in C layout
 
     // Read baseline data
-    for (auto& d : SDS_f90) {
+    for (auto& d : SDS_baseline) {
       d.read(Base::m_fid);
     }
 
@@ -226,7 +228,6 @@ struct UnitWrap::UnitTest<D>::TestShocLength : public UnitWrap::UnitTest<D>::Bas
 
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
-      static constexpr Int num_runs = sizeof(SDS_baseline) / sizeof(ShocLengthData);
       for (Int i = 0; i < num_runs; ++i) {
         ShocLengthData& d_baseline = SDS_baseline[i];
         ShocLengthData& d_cxx = SDS_cxx[i];
@@ -238,7 +239,7 @@ struct UnitWrap::UnitTest<D>::TestShocLength : public UnitWrap::UnitTest<D>::Bas
     } // SCREAM_BFB_TESTING
     else if (this->m_baseline_action == GENERATE) {
       for (Int i = 0; i < num_runs; ++i) {
-        cxx_data[i].write(Base::m_fid);
+        SDS_cxx[i].write(Base::m_fid);
       }
     }
   }

@@ -218,9 +218,9 @@ void gen_plot_script(const std::vector<std::shared_ptr<FortranData> >& data,
 
 } // end anonymous namespace
 
-int test_shoc_ic (bool use_fortran, bool gen_plot_scripts) {
+int test_shoc_ic (bool gen_plot_scripts) {
   Int nz = 160;
-  shoc_init(nz, use_fortran);
+  shoc_init(nz);
   // Here we:
   // 1. Initialize a standard case with settings identical to
   //    scream-doc/ѕhoc_port/shocintr.py's example_run_case method
@@ -238,7 +238,7 @@ int test_shoc_ic (bool use_fortran, bool gen_plot_scripts) {
   // 3. Run 100 steps, each of size dtime = 10 (as in that method)
   d->nadv = 100;
   d->dtime = 10;
-  shoc_main(*d,use_fortran);
+  shoc_main(*d);
 
   // 4. Generate a Python script that plots the results.
   {

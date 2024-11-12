@@ -12,13 +12,12 @@ namespace shoc {
 struct FortranData;
 
 // Run SHOC subroutines, populating inout and out fields of d.
-ekat::Int shoc_main(FortranData& d, bool use_fortran);
-
+ekat::Int shoc_main(FortranData& d);
 
 // Test SHOC by running initial conditions for a number of steps and comparing
 // against reference data. If gen_plot_scripts is true, Python scripts are
 // emitted that plot initial and final conditions.
-int test_shoc_ic(bool use_fortran, bool gen_plot_scripts = false);
+int test_shoc_ic(bool gen_plot_scripts = false);
 
 }  // namespace shoc
 }  // namespace scream

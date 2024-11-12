@@ -77,7 +77,7 @@ struct UnitWrap::UnitTest<D>::TestPblintdInitPot : public UnitWrap::UnitTest<D>:
     }
 
     // call the C++ implementation
-    shoc_pblintd_init_pot(SDS);
+    pblintd_init_pot(SDS);
 
     // Check the result.
     // Verify that virtual potential temperature is idential
@@ -126,7 +126,7 @@ struct UnitWrap::UnitTest<D>::TestPblintdInitPot : public UnitWrap::UnitTest<D>:
     }
 
     // Call the C++ implementation
-    shoc_pblintd_init_pot(SDS);
+    pblintd_init_pot(SDS);
 
     // Check test
     // Verify that column with condensate loading
@@ -173,12 +173,12 @@ struct UnitWrap::UnitTest<D>::TestPblintdInitPot : public UnitWrap::UnitTest<D>:
     };
 
     // Read baseline data
-    for (auto& d : pblintd_init_pot_data_f90) {
+    for (auto& d : pblintd_init_pot_data_baseline) {
       d.read(Base::m_fid);
     }
 
     for (auto& d : pblintd_init_pot_data_cxx) {
-      shoc_pblintd_init_pot(d);
+      pblintd_init_pot(d);
     }
 
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
@@ -194,8 +194,8 @@ struct UnitWrap::UnitTest<D>::TestPblintdInitPot : public UnitWrap::UnitTest<D>:
       }
     } // SCREAM_BFB_TESTING
     else if (this->m_baseline_action == GENERATE) {
-      for (Int i = 0; i < num_runs; ++i) {
-        cxx_data[i].write(Base::m_fid);
+      for (auto& d : pblintd_init_pot_data_cxx) {
+        d.write(Base::m_fid);
       }
     }
   }

@@ -162,10 +162,12 @@ struct UnitWrap::UnitTest<D>::TestShocUpdateDse : public UnitWrap::UnitTest<D>::
       UpdateHostDseData(SDS_baseline[3]),
     };
 
+    static constexpr Int num_runs = sizeof(SDS_baseline) / sizeof(UpdateHostDseData);
+
     // Assume all data is in C layout
 
     // Read baseline data
-    for (auto& d : SDS_f90) {
+    for (auto& d : SDS_baseline) {
       d.read(Base::m_fid);
     }
 
@@ -176,7 +178,6 @@ struct UnitWrap::UnitTest<D>::TestShocUpdateDse : public UnitWrap::UnitTest<D>::
 
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
-      static constexpr Int num_runs = sizeof(SDS_baseline) / sizeof(UpdateHostDseData);
       for (Int i = 0; i < num_runs; ++i) {
         UpdateHostDseData& d_baseline = SDS_baseline[i];
         UpdateHostDseData& d_cxx = SDS_cxx[i];
@@ -187,7 +188,7 @@ struct UnitWrap::UnitTest<D>::TestShocUpdateDse : public UnitWrap::UnitTest<D>::
     } // SCREAM_BFB_TESTING
     else if (this->m_baseline_action == GENERATE) {
       for (Int i = 0; i < num_runs; ++i) {
-        cxx_data[i].write(Base::m_fid);
+        SDS_cxx[i].write(Base::m_fid);
       }
     }
   }

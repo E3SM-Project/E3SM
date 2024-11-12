@@ -52,7 +52,7 @@ struct UnitWrap::UnitTest<D>::TestSecondMomSrf : public UnitWrap::UnitTest<D>::B
     }
 
     // Call the C++ implementation
-    shoc_diag_second_moments_srf(SDS);
+    diag_second_moments_srf(SDS);
 
     // Verify the output
     for (Int s = 0; s < shcol; ++s){

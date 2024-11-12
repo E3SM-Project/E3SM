@@ -43,7 +43,7 @@ struct UnitWrap::UnitTest<D>::TestSecondMomUbycond : public UnitWrap::UnitTest<D
     REQUIRE(shcol > 0);
 
     // Call the C++ implementation
-    shoc_diag_second_moments_ubycond(SDS);
+    diag_second_moments_ubycond(SDS);
 
     // Verify the result
     //  all output should be zero.
@@ -93,7 +93,7 @@ struct UnitWrap::UnitTest<D>::TestSecondMomUbycond : public UnitWrap::UnitTest<D
     }
 
     for (auto& d : uby_cxx) {
-      shoc_diag_second_moments_ubycond(d);
+      diag_second_moments_ubycond(d);
     }
 
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
@@ -113,7 +113,7 @@ struct UnitWrap::UnitTest<D>::TestSecondMomUbycond : public UnitWrap::UnitTest<D
     } // SCREAM_BFB_TESTING
     else if (this->m_baseline_action == GENERATE) {
       for (Int i = 0; i < num_runs; ++i) {
-        cxx_data[i].write(Base::m_fid);
+        uby_cxx[i].write(Base::m_fid);
       }
     }
   }

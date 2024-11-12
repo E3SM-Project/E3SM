@@ -241,8 +241,8 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke : public UnitWrap::UnitTest<D>::
       }
     } // SCREAM_BFB_TESTING
     else if (this->m_baseline_action == GENERATE) {
-      for (Int i = 0; i < num_runs; ++i) {
-        cxx_data[i].write(Base::m_fid);
+      for (auto& d : cxx_data) {
+        d.write(Base::m_fid);
       }
     }
   }//run_bfb

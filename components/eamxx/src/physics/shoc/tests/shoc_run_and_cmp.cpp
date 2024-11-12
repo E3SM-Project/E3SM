@@ -61,7 +61,7 @@ struct Baseline {
     params_.push_back({ic::Factory::standard, repeat, nsteps, ncol, nlev, num_qtracers, nadv, dt});
   }
 
-  Int generate_baseline (const std::string& filename, bool use_fortran) {
+  Int generate_baseline (const std::string& filename) {
     auto fid = ekat::FILEPtr(fopen(filename.c_str(), "w"));
     EKAT_REQUIRE_MSG( fid, "generate_baseline can't write " << filename);
     Int nerr = 0;
@@ -74,20 +74,18 @@ struct Baseline {
         // Run reference shoc on this set of parameters.
         const auto d = ic::Factory::create(ps.ic, ps.ncol, ps.nlev, ps.num_qtracers);
         set_params(ps, *d);
-        shoc_init(ps.nlev, use_fortran);
+        shoc_init(ps.nlev);
 
         if (ps.repeat > 0 && r == -1) {
           std::cout << "Running SHOC with ni=" << d->shcol << ", nk=" << d->nlev
                     << ", dt=" << d->dtime << ", ts=" << ps.nsteps;
 
-          if (!use_fortran) {
-            std::cout << ", small_packn=" << SCREAM_SMALL_PACK_SIZE;
-          }
+          std::cout << ", small_packn=" << SCREAM_SMALL_PACK_SIZE;
           std::cout << std::endl;
         }
 
         for (int it = 0; it < ps.nsteps; ++it) {
-          Int current_microsec = shoc_main(*d, use_fortran);
+          Int current_microsec = shoc_main(*d);
 
           if (r != -1 && ps.repeat > 0) { // do not count the "cold" run
             duration += current_microsec;
@@ -107,7 +105,7 @@ struct Baseline {
     return nerr;
   }
 
-  Int run_and_cmp (const std::string& filename, const double& tol, bool use_fortran) {
+  Int run_and_cmp (const std::string& filename, const double& tol) {
     auto fid = ekat::FILEPtr(fopen(filename.c_str(), "r"));
     EKAT_REQUIRE_MSG( fid, "generate_baseline can't read " << filename);
     Int nerr = 0, ne;
@@ -122,12 +120,12 @@ struct Baseline {
       {
         const auto d = ic::Factory::create(ps.ic, ps.ncol, ps.nlev, ps.num_qtracers);
         set_params(ps, *d);
-        shoc_init(ps.nlev, use_fortran);
+        shoc_init(ps.nlev);
         for (int it = 0; it < ps.nsteps; it++) {
           std::cout << "--- checking case # " << case_num << ", timestep # = " << (it+1)*ps.nadv
                      << " ---\n" << std::flush;
           read(fid, d_ref);
-          shoc_main(*d,use_fortran);
+          shoc_main(*d);
           ne = compare(tol, d_ref, d);
           if (ne) std::cout << "Ref impl failed.\n";
           nerr += ne;
@@ -209,7 +207,7 @@ int main (int argc, char** argv) {
     return 1;
   }
 
-  bool generate = false, use_fortran = false;
+  bool generate = false;
   scream::Real tol = SCREAM_BFB_TESTING ? 0 : std::numeric_limits<Real>::infinity();
   Int nsteps = 10;
   Int dt = 150;
@@ -222,7 +220,6 @@ int main (int argc, char** argv) {
   std::string device;
   for (int i = 1; i < argc-1; ++i) {
     if (ekat::argv_matches(argv[i], "-g", "--generate")) generate = true;
-    if (ekat::argv_matches(argv[i], "-f", "--fortran")) use_fortran = true;
     if (ekat::argv_matches(argv[i], "-b", "--baseline-file")) {
       expect_another_arg(i, argc);
       ++i;
@@ -285,10 +282,10 @@ int main (int argc, char** argv) {
     Baseline bln(nsteps, static_cast<Real>(dt), ncol, nlev, num_qtracers, nadv, repeat);
     if (generate) {
       std::cout << "Generating to " << baseline_fn << "\n";
-      nerr += bln.generate_baseline(baseline_fn, use_fortran);
+      nerr += bln.generate_baseline(baseline_fn);
     } else {
       printf("Comparing with %s at tol %1.1e\n", baseline_fn.c_str(), tol);
-      nerr += bln.run_and_cmp(baseline_fn, tol, use_fortran);
+      nerr += bln.run_and_cmp(baseline_fn, tol);
     }
   }
   scream::finalize_scream_session();
