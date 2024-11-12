@@ -42,3 +42,13 @@ merge_protections:
       - or:
         - check-success=cpu-gcc
         - check-skipped=cpu-gcc
+
+pull_request_rules:
+    - name: Automatic merge when CI passes and approved
+      conditions:
+        - check-success="Mergify Merge Protections" # Pass if merge protection rule passes
+        - "label=CI: automerge"
+        - base=master
+      actions:
+        merge:
+          method: merge
