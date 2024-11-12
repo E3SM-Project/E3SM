@@ -3,6 +3,7 @@
 // impl namespace for some driver level functions for microphysics
 
 #include "readfiles/photo_table_utils.cpp"
+#include "readfiles/find_season_index_utils.hpp"
 #include "physics/rrtmgp/shr_orb_mod_c2f.hpp"
 
 namespace scream {
@@ -332,6 +333,14 @@ void MAMMicrophysics::set_grids(
         "MAX_NUM_ELEVATED_EMISSIONS_FIELDS in tracer_reader_utils.hpp \n");
 
   }  // Tracer external forcing data
+
+  {
+    std::string season_wes_file ="season_wes.nc";
+    const auto& clat = col_latitudes_;
+    mam_coupling::find_season_index_reader(season_wes_file,
+                                         clat,
+                                         index_season_lai_);
+  }
 }  // set_grids
 
 // ================================================================
