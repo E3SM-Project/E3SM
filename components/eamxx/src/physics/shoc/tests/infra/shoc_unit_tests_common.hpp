@@ -6,6 +6,7 @@
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "share/util/scream_setup_random_test.hpp"
 #include "ekat/util/ekat_file_utils.hpp"
+#include "ekat/util/ekat_test_utils.hpp"
 
 namespace scream {
 namespace shoc {
@@ -68,7 +69,7 @@ struct UnitWrap {
         m_baseline_action(NONE),
         m_fid()
       {
-        Functions::shoc_init(); // many tests will need fortran table data
+        //Functions::shoc_init(); // many tests will need fortran table data
         auto& ts = ekat::TestSession::get();
         auto raw_flags = ts.flags.begin()->first;
         std::stringstream ss(raw_flags);
@@ -106,7 +107,6 @@ struct UnitWrap {
 
       ~Base()
       {
-        scream::shoc::SHOCGlobalForFortran::deinit();
       }
 
       std::mt19937_64 get_engine()

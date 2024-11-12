@@ -8,64 +8,30 @@
 
 using scream::Real;
 using scream::Int;
-extern "C" {
-  Int shoc_main_c(int shcol, int nlev, int nlevi, Real dtime, int nadv,
-                   Real* host_dx, Real* host_dy, Real* thv, Real* zt_grid,
-                   Real* zi_grid, Real* pres, Real* presi, Real* pdel,
-                   Real* wthl_sfc, Real* wqw_sfc, Real* uw_sfc, Real* vw_sfc,
-                   Real* wtracer_sfc, int num_qtracers, Real* w_field,
-                   Real* inv_exner, Real* phis, Real* host_dse, Real* tke,
-                   Real* thetal, Real* qw, Real* u_wind, Real* v_wind,
-                   Real* qtracers, Real* wthv_sec, Real* tkh, Real* tk,
-                   Real* shoc_ql, Real* shoc_cldfrac, Real* pblh,
-                   Real* shoc_mix, Real* isotropy, Real* w_sec, Real* thl_sec,
-                   Real* qw_sec, Real* qwthl_sec, Real* wthl_sec, Real* wqw_sec,
-                   Real* wtke_sec, Real* uw_sec, Real* vw_sec, Real* w3,
-                   Real* wqls_sec, Real* brunt, Real* shoc_ql2, Real* elapsed_s);
-}
 
 namespace scream {
 namespace shoc {
 
-Int shoc_main(FortranData& d, bool use_fortran) {
+Int shoc_main(FortranData& d) {
   EKAT_REQUIRE_MSG(d.dtime > 0, "Invalid dtime");
   EKAT_REQUIRE_MSG(d.nadv > 0,  "Invalid nadv");
-  if (use_fortran) {
-    Real elapsed_s;
-    shoc_main_c((int)d.shcol, (int)d.nlev, (int)d.nlevi, d.dtime, (int)d.nadv,
-                d.host_dx.data(), d.host_dy.data(), d.thv.data(),
-                d.zt_grid.data(), d.zi_grid.data(), d.pres.data(), d.presi.data(),
-                d.pdel.data(), d.wthl_sfc.data(), d.wqw_sfc.data(), d.uw_sfc.data(),
-                d.vw_sfc.data(), d.wtracer_sfc.data(), (int)d.num_qtracers,
-                d.w_field.data(), d.inv_exner.data(), d.phis.data(), d.host_dse.data(),
-                d.tke.data(), d.thetal.data(), d.qw.data(), d.u_wind.data(),
-                d.v_wind.data(), d.qtracers.data(), d.wthv_sec.data(), d.tkh.data(),
-                d.tk.data(), d.shoc_ql.data(), d.shoc_cldfrac.data(), d.pblh.data(),
-                d.shoc_mix.data(), d.isotropy.data(), d.w_sec.data(),
-                d.thl_sec.data(), d.qw_sec.data(), d.qwthl_sec.data(),
-                d.wthl_sec.data(), d.wqw_sec.data(), d.wtke_sec.data(),
-                d.uw_sec.data(), d.vw_sec.data(), d.w3.data(), d.wqls_sec.data(),
-                d.brunt.data(), d.shoc_ql2.data(), &elapsed_s);
-    return static_cast<Int>(elapsed_s * 1000000);
-  } else {
-    const int npbl = d.nlev;
-    return shoc_main_f((int)d.shcol, (int)d.nlev, (int)d.nlevi, d.dtime, (int)d.nadv,
-                       npbl, d.host_dx.data(), d.host_dy.data(),
-                       d.thv.data(), d.zt_grid.data(), d.zi_grid.data(), d.pres.data(),
-                       d.presi.data(), d.pdel.data(), d.wthl_sfc.data(),
-                       d.wqw_sfc.data(), d.uw_sfc.data(), d.vw_sfc.data(),
-                       d.wtracer_sfc.data(), (int)d.num_qtracers,
-                       d.w_field.data(), d.inv_exner.data(), d.phis.data(), d.host_dse.data(),
-                       d.tke.data(), d.thetal.data(), d.qw.data(),
-                       d.u_wind.data(), d.v_wind.data(), d.qtracers.data(), d.wthv_sec.data(),
-                       d.tkh.data(), d.tk.data(), d.shoc_ql.data(),
-                       d.shoc_cldfrac.data(), d.pblh.data(), d.shoc_mix.data(), d.isotropy.data(),
-                       d.w_sec.data(), d.thl_sec.data(),
-                       d.qw_sec.data(), d.qwthl_sec.data(), d.wthl_sec.data(), d.wqw_sec.data(),
-                       d.wtke_sec.data(), d.uw_sec.data(),
-                       d.vw_sec.data(), d.w3.data(), d.wqls_sec.data(), d.brunt.data(),
-                       d.shoc_ql2.data());
-  }
+  const int npbl = d.nlev;
+  return shoc_main_host((int)d.shcol, (int)d.nlev, (int)d.nlevi, d.dtime, (int)d.nadv,
+                        npbl, d.host_dx.data(), d.host_dy.data(),
+                        d.thv.data(), d.zt_grid.data(), d.zi_grid.data(), d.pres.data(),
+                        d.presi.data(), d.pdel.data(), d.wthl_sfc.data(),
+                        d.wqw_sfc.data(), d.uw_sfc.data(), d.vw_sfc.data(),
+                        d.wtracer_sfc.data(), (int)d.num_qtracers,
+                        d.w_field.data(), d.inv_exner.data(), d.phis.data(), d.host_dse.data(),
+                        d.tke.data(), d.thetal.data(), d.qw.data(),
+                        d.u_wind.data(), d.v_wind.data(), d.qtracers.data(), d.wthv_sec.data(),
+                        d.tkh.data(), d.tk.data(), d.shoc_ql.data(),
+                        d.shoc_cldfrac.data(), d.pblh.data(), d.shoc_mix.data(), d.isotropy.data(),
+                        d.w_sec.data(), d.thl_sec.data(),
+                        d.qw_sec.data(), d.qwthl_sec.data(), d.wthl_sec.data(), d.wqw_sec.data(),
+                        d.wtke_sec.data(), d.uw_sec.data(),
+                        d.vw_sec.data(), d.w3.data(), d.wqls_sec.data(), d.brunt.data(),
+                        d.shoc_ql2.data());
 }
 
 namespace {

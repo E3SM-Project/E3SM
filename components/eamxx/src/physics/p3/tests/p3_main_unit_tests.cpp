@@ -445,7 +445,6 @@ void run_bfb_p3_main()
 
   // Get data from cxx
   for (auto& d : isds_cxx) {
-    d.template transpose<ekat::TransposeDirection::c2f>();
     p3_main_host(
       d.qc, d.nc, d.qr, d.nr, d.th_atm, d.qv, d.dt, d.qi, d.qm, d.ni,
       d.bm, d.pres, d.dz, d.nc_nuceat_tend, d.nccn_prescribed, d.ni_activated, d.inv_qc_relvar, d.it, d.precip_liq_surf,
@@ -453,7 +452,6 @@ void run_bfb_p3_main()
       d.rho_qi, d.do_predict_nc, d.do_prescribed_CCN, d.dpres, d.inv_exner, d.qv2qi_depos_tend,
       d.precip_liq_flux, d.precip_ice_flux, d.cld_frac_r, d.cld_frac_l, d.cld_frac_i,
       d.liq_ice_exchange, d.vap_liq_exchange, d.vap_ice_exchange, d.qv_prev, d.t_prev);
-    d.template transpose<ekat::TransposeDirection::f2c>();
   }
 
   if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
