@@ -85,8 +85,9 @@ struct LongNames {
 
   // Create map of longnames, can be added to as developers see fit.
   std::map<std::string,std::string> name_2_longname = {
-	  {"lev","hybrid level at midpoints (1000*(A+B))"},
-	  {"hyai","hybrid A coefficient at layer interfaces"},
+    {"lev","hybrid level at midpoints (1000*(A+B))"},
+    {"ilev","hybrid level at interfaces (1000*(A+B))"},
+    {"hyai","hybrid A coefficient at layer interfaces"},
     {"hybi","hybrid B coefficient at layer interfaces"},
     {"hyam","hybrid A coefficient at layer midpoints"},
     {"hybm","hybrid B coefficient at layer midpoints"}
