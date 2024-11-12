@@ -1145,19 +1145,18 @@
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
     </environment_variables>
-<!--
-commented out until "*** No rule to make target '.../libadios2pio-nm-lib.a'" issue is resolved.
-
     <environment_variables compiler="gnu.*" mpilib="mpich">
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/adios2/2.9.1/cray-mpich-8.1.23/gcc-11.2.0; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/adios2/2.10.1/cray-mpich-8.1.27/gcc-12.2.0; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/c-blosc2/2.15.1/gcc-12.2.0; else echo "$BLOSC2_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="crayclang.*" mpilib="mpich">
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/adios2/2.9.1/cray-mpich-8.1.23/crayclang-15.0.1; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/adios2/2.10.1/cray-mpich-8.1.27/crayclang-15.0.1; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/c-blosc2/2.15.1/crayclang-15.0.1; else echo "$BLOSC2_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="amdclang.*" mpilib="mpich">
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/adios2/2.9.1/cray-mpich-8.1.23/amdclang-15.0.0; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/adios2/2.10.1/cray-mpich-8.1.28/amdclang-15.0.0; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/c-blosc2/2.15.1/amdclang-15.0.0; else echo "$BLOSC2_ROOT"; fi}</env>
     </environment_variables>
--->
   </machine>
 
   <machine MACH="frontier-scream-gpu">
