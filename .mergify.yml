@@ -52,3 +52,10 @@ pull_request_rules:
       actions:
         merge:
           method: merge
+          commit_message_template: |
+            Merge pull request #{{number}} from {{head}}
+
+            Automatically merged using mergify
+            PR title: {{title}}
+            PR author: {{author}}
+            PR labels: {{label}}
