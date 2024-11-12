@@ -3,8 +3,8 @@
 #include "p3_unit_tests_common.hpp"
 
 #include "p3_functions.hpp"
-#include "p3_functions_f90.hpp"
-#include "p3_f90.hpp"
+#include "p3_test_data.hpp"
+#include "p3_data.hpp"
 #include "share/scream_types.hpp"
 
 #include "ekat/ekat_pack.hpp"
@@ -44,7 +44,7 @@ namespace unit_test {
 // refinement, where the mesh is a 1D mesh transecting the table domain.
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestTable3 {
+struct UnitWrap::UnitTest<D>::TestTable3 : public UnitWrap::UnitTest<D>::Base {
 
   KOKKOS_FUNCTION static Scalar calc_lamr (const Scalar& mu_r, const Scalar& alpha) {
     // Parameters for lower and upper bounds, derived above, multiplied by
@@ -68,7 +68,7 @@ struct UnitWrap::UnitTest<D>::TestTable3 {
     return Functions::apply_table(table, t3);
   }
 
-  static void run () {
+  void run () {
     // This test doesn't use mu_r_table_vals, as that is not a table3 type. It
     // doesn't matter whether we use vm_table_vals or vn_table_vals, as the table values
     // don't matter in what we are testing; we are testing interpolation
@@ -170,9 +170,10 @@ namespace {
 
 TEST_CASE("p3_tables", "[p3_functions]")
 {
-  scream::p3::p3_init(); // need fortran table data
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestTable3;
 
-  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestTable3::run();
+  T t;
+  t.run();
 }
 
 } // namespace

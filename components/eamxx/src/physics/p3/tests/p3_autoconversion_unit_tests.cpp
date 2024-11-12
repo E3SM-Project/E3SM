@@ -4,7 +4,7 @@
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
-#include "p3_functions_f90.hpp"
+#include "p3_test_data.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -19,10 +19,10 @@ namespace p3 {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestP3CloudWaterAutoconversion
+struct UnitWrap::UnitTest<D>::TestP3CloudWaterAutoconversion : public UnitWrap::UnitTest<D>::Base
 {
 
-static void  cloud_water_autoconversion_unit_bfb_tests(){
+void cloud_water_autoconversion_unit_bfb_tests() {
 
   CloudWaterAutoconversionData cwadc[max_pack_size] = {
     // rho, qc_incld, nc_incld, inv_qc_relvar
@@ -59,12 +59,14 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
   std::copy(&cwadc[0], &cwadc[0] + max_pack_size, cwadc_host.data());
   Kokkos::deep_copy(cwadc_device, cwadc_host);
 
-  // Get data from fortran
-  for (Int i = 0; i < max_pack_size; ++i) {
-    cloud_water_autoconversion(cwadc[i]);
+  // Read baseline data
+  if (this->m_baseline_action == COMPARE) {
+    for (Int i = 0; i < max_pack_size; ++i) {
+      cwadc[i].read(Base::m_fid);
+    }
   }
 
-    // Run the lookup from a kernel and copy results back to host
+  // Run the lookup from a kernel and copy results back to host
   Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
     const Int offset = i * Spack::n;
 
@@ -101,7 +103,7 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
   Kokkos::deep_copy(cwadc_host, cwadc_device);
 
   // Validate results
-  if (SCREAM_BFB_TESTING) {
+  if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
     for (Int s = 0; s < max_pack_size; ++s) {
       REQUIRE(cwadc[s].rho                  == cwadc_host(s).rho);
       REQUIRE(cwadc[s].qc_incld             == cwadc_host(s).qc_incld);
@@ -112,13 +114,18 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
       REQUIRE(cwadc[s].ncautr               == cwadc_host(s).ncautr);
     }
   }
+  else if (this->m_baseline_action == GENERATE) {
+    for (Int s = 0; s < max_pack_size; ++s) {
+      cwadc_host(s).write(Base::m_fid);
+    }
+  }
 }
 
-  static void run_bfb(){
+  void run_bfb() {
     cloud_water_autoconversion_unit_bfb_tests();
   }
 
-  KOKKOS_FUNCTION  static void autoconversion_is_positive(const Int &i, Int &errors){
+  KOKKOS_FUNCTION static void autoconversion_is_positive(const Int &i, Int &errors){
 
     const Spack rho(1.0), inv_qc_relvar(1.0);
     Spack qc_incld, nc_incld(1e7), qc2qr_autoconv_tend(0.0), nc2nr_autoconv_tend(0.0), ncautr(0.0);
@@ -134,7 +141,7 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
     }
   }
 
-  static void run_physics(){
+  void run_physics(){
 
     int nerr = 0;
 
@@ -153,12 +160,14 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
 } // namespace p3
 } // namespace scream
 
-namespace{
+namespace {
 
 TEST_CASE("p3_cloud_water_autoconversion_test", "[p3_cloud_water_autoconversion_test]"){
-  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3CloudWaterAutoconversion::run_physics();
-  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3CloudWaterAutoconversion::run_bfb();
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3CloudWaterAutoconversion;
+
+  T t;
+  t.run_physics();
+  t.run_bfb();
 }
 
 } // namespace
-
