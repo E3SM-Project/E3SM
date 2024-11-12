@@ -142,9 +142,11 @@ to be copied or linked to specifically named files under the `test` directory. A
 wget -O ocean_test_mesh.nc https://web.lcrc.anl.gov/public/e3sm/inputdata/ocn/mpas-o/oQU240/ocean.QU.240km.151209.nc
 wget -O global_test_mesh.nc https://web.lcrc.anl.gov/public/e3sm/polaris/ocean/polaris_cache/global_convergence/icos/cosine_bell/Icos480/init/initial_state.230220.nc
 wget -O planar_test_mesh.nc https://gist.github.com/mwarusz/f8caf260398dbe140d2102ec46a41268/raw/e3c29afbadc835797604369114321d93fd69886d/PlanarPeriodic48x48.nc
-ln -sf  ocean_test_mesh.nc test/OmegaMesh.nc
-ln -sf  global_test_mesh.nc test/OmegaSphereMesh.nc
-ln -sf  planar_test_mesh.nc test/OmegaPlanarMesh.nc
+cd test
+ln -sf  ../ocean_test_mesh.nc OmegaMesh.nc
+ln -sf  ../global_test_mesh.nc OmegaSphereMesh.nc
+ln -sf  ../planar_test_mesh.nc OmegaPlanarMesh.nc
+cd ..
 ```
 
 ### Running CTests
