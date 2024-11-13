@@ -12,18 +12,20 @@ int main(int argc, char **argv){
 
     Pacer::initialize(MPI_COMM_WORLD);
 
-    Pacer::setPrefix("Omega");
+    Pacer::setPrefix("Omega:");
 
     Pacer::start("run_loop");
 
     float tmp = 1;
 
-    for (int i = 1; i <= 1000; i++){
+    for (int i = 1; i <= 10000; i++){
         tmp *= i;
     }
 
     Pacer::stop("run_loop");
 
+    Pacer::unsetPrefix();
+    Pacer::start("final");
 
     if (myrank == 0)
         Pacer::print("omega");
