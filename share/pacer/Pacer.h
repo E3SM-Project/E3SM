@@ -14,11 +14,11 @@
 
 #include <mpi.h>
 #include <gptl.h>
+#include <unordered_map>
 
 #define STANDALONE_OMEGA
 
-namespace Pacer
-{
+namespace Pacer {
  //private:
    /// Flag to determine if the timing infrastructure is initialized 
     static bool IsInitialized;
@@ -29,9 +29,9 @@ namespace Pacer
 
     static MPI_Comm InternalComm;
 
-    static int Rank;
+    static int MyRank;
 
-    static std::unorder_map<std::string,int> OpenTimers;
+    static std::unordered_map<std::string,int> OpenTimers;
 
     // public:
     bool initialize(MPI_Comm InComm);

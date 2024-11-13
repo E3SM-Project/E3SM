@@ -9,9 +9,10 @@
 #include "Pacer.h"
 #include <mpi.h>
 #include <gptl.h>
+#include <iostream>
 
 #define STANDALONE_OMEGA
-
+    
     bool Pacer::initialize(MPI_Comm InComm) {
 
 #ifdef STANDALONE_OMEGA
@@ -22,6 +23,9 @@
 
         GPTLinitialize();
 
+        MPI_Comm_rank(InternalComm, &MyRank);
+
+        IsInitialized = true;
 #endif
         return true;
     }
@@ -66,9 +70,13 @@
     {
         // https://github.com/E3SM-Project/E3SM/blob/master/share/timing/perf_mod.F90
         //GPTLpr(0);
-        GPTLpr_file(TimerFilePrefix.c_str());
+        if (MyRank == 0) {
+            std::string TimerFileName = TimerFilePrefix + ".timing";
+            std::string SummaryFileName = TimerFilePrefix + ".summary";
+            GPTLpr_file(TimerFileName.c_str());
+            GPTLpr_summary_file(InternalComm, SummaryFileName.c_str());
+        }
         // https://github.com/jmrosinski/GPTL/blob/master/tests/global.c
-        //GPTLpr_summary_file(Comm)
         return true;
     }
 
@@ -79,9 +87,9 @@
 #endif
 
         if (OpenTimers.size() > 0){
-            cerr << "PACER: Following timers are not closed." << endl;
+            std::cerr << "PACER: Following timers are not closed." << std::endl;
             for (auto i = OpenTimers.begin(); i != OpenTimers.end(); i++)
-                cerr << i->first << endl;
+                std::cerr << i->first << std::endl;
 
         }
 
