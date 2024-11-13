@@ -18,13 +18,12 @@
 #ifdef STANDALONE_OMEGA
         // GPTL set default options
         GPTLsetoption(GPTLdepthlimit, 20);
-        GPTLsetoption(GPTLdetaillimit, 20);
         GPTLsetoption(GPTLdopr_quotes, 1);
         GPTLsetoption(GPTLprofile_ovhd, 1);
         // default is set to 52
         // GPTLsetoption(GPTLmaxthreads)
         
-        GPTLsetutr(GPTLmpiwtime)
+        GPTLsetutr(GPTLmpiwtime);
 
         if (MPI_Comm_dup(InComm, &InternalComm) != MPI_SUCCESS)
             std::cerr << "Pacer: Error duplicating MPI communicator" << std::endl;
