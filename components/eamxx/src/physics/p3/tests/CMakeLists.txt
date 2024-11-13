@@ -77,22 +77,15 @@ endif()
 # If small kernels are ON, we don't need a separate executable to test them.
 # Also, we never want to generate baselines with this separate executable
 if (NOT SCREAM_P3_SMALL_KERNELS AND NOT SCREAM_ONLY_GENERATE_BASELINES)
-  CreateUnitTest(p3_sk_tests "${P3_TESTS_SRCS}"
+  # Note: Only the p3_main test does something different when
+  # small kernels are on. The SK dispatch routines are mostly trivial
+  # and it's not worth adding tons of test infrastructure to support
+  # BFB unit tests for these.
+  CreateUnitTest(p3_sk_tests "p3_main_unit_tests.cpp"
     LIBS p3_sk p3_test_infra
     EXE_ARGS "--args ${BASELINE_FILE_ARG}"
     THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
     LABELS "p3_sk;physics")
-
-  # Make sure that a diff in the two implementation triggers a failed test (in debug only)
-  # No need to run lots of different thread counts.
-  if (SCREAM_ENABLE_BASELINE_TESTS)
-    CreateUnitTest (p3_sk_tests_fail p3_rain_sed_unit_tests.cpp
-      LIBS p3_sk p3_test_infra
-      EXE_ARGS "--args ${BASELINE_FILE_ARG}"
-      COMPILER_CXX_DEFS SCREAM_FORCE_RUN_DIFF
-      LABELS "p3_sk;physics;fail"
-      ${FORCE_RUN_DIFF_FAILS})
-  endif()
 endif()
 
 CreateUnitTest(p3_run_and_cmp "p3_run_and_cmp.cpp"
