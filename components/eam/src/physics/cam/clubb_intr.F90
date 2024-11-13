@@ -930,24 +930,22 @@ end subroutine clubb_init_cnst
     call addfld ('TPERTBLT',        horiz_only,     'A',             'K', 'perturbation temperature at PBL top')
     !
     if (use_od_fd) then
-    !added for turbulent orographic form drag (TOFD) output
-    call addfld ('DTAUX3_FD',(/'lev'/),'A','m/s2','U tendency - fd orographic drag')
-    call addfld ('DTAUY3_FD',(/'lev'/),'A','m/s2','V tendency - fd orographic drag')
-    call addfld ('DUSFC_FD',horiz_only,'A','N/m2','fd zonal oro surface stress')
-    call addfld ('DVSFC_FD',horiz_only,'A','N/m2','fd merio oro surface stress')
-    call add_default('DTAUX3_FD', 1,  ' ')
-    call add_default('DTAUY3_FD', 1,  ' ')
-    call add_default('DUSFC_FD',  1,  ' ')
-    call add_default('DVSFC_FD',  1,  ' ')
-        if (masterproc) then
+       !added for turbulent orographic form drag (TOFD) output
+       call addfld ('DTAUX3_FD',(/'lev'/),'A','m/s2','U tendency - fd orographic drag')
+       call addfld ('DTAUY3_FD',(/'lev'/),'A','m/s2','V tendency - fd orographic drag')
+       call addfld ('DUSFC_FD',horiz_only,'A','N/m2','fd zonal oro surface stress')
+       call addfld ('DVSFC_FD',horiz_only,'A','N/m2','fd merio oro surface stress')
+       call add_default('DTAUX3_FD', 1,  ' ')
+       call add_default('DTAUY3_FD', 1,  ' ')
+       call add_default('DUSFC_FD',  1,  ' ')
+       call add_default('DVSFC_FD',  1,  ' ')
+       if (masterproc) then
           write(iulog,*)'Using turbulent orographic form drag scheme (TOFD)'
-        end if
-        !
-        if (use_od_fd.and.do_tms) then
-           call endrun("clubb_intr: Both TMS and TOFD are turned on, please turn one off&
-           &by setting use_od_fd or do_tms as .false.")
-        end if 
-        !
+       end if
+       if (use_od_fd.and.do_tms) then
+          call endrun("clubb_intr: Both TMS and TOFD are turned on, please turn one off&
+          &by setting use_od_fd or do_tms as .false.")
+       end if
     end if
     !  Initialize statistics, below are dummy variables
     dum1 = 300._r8
@@ -1541,7 +1539,8 @@ end subroutine clubb_init_cnst
 
    real(r8) :: sfc_v_diff_tau(pcols) ! Response to tau perturbation, m/s
    real(r8), parameter :: pert_tau = 0.1_r8 ! tau perturbation, Pa
-   !add par for tofd
+
+   !variables for turbulent orographic form drag (TOFD) interface
    real(r8) :: dtaux3_fd(pcols,pver)
    real(r8) :: dtauy3_fd(pcols,pver)
    real(r8) :: dusfc_fd(pcols)
@@ -1551,7 +1550,6 @@ end subroutine clubb_init_cnst
    real(r8) :: dummy_utgw(pcols,pver)
    real(r8) :: dummy_vtgw(pcols,pver)
    real(r8) :: dummy_ttgw(pcols,pver)
-   !
    real(r8) :: dummx_ls(pcols,pver)
    real(r8) :: dummx_bl(pcols,pver)
    real(r8) :: dummx_ss(pcols,pver)
@@ -1564,7 +1562,7 @@ end subroutine clubb_init_cnst
    real(r8) :: dummy3_ls(pcols,pver)
    real(r8) :: dummy3_bl(pcols,pver)
    real(r8) :: dummy3_ss(pcols,pver)
-   !
+
    real(r8) :: inv_exner_clubb_surf
 
 
@@ -1991,7 +1989,7 @@ end subroutine clubb_init_cnst
                      tautmsx,      tautmsy,   cam_in%landfrac )
        call t_stopf('compute_tms')
     endif
-        !
+
     if (use_od_fd) then
         gwd_ls    =.false.
         gwd_bl    =.false.
@@ -2020,7 +2018,7 @@ end subroutine clubb_init_cnst
         call outfld ('DUSFC_FD', dusfc_fd,  pcols, lchnk)
         call outfld ('DVSFC_FD', dvsfc_fd,  pcols, lchnk)
    endif
-   !
+
    if (micro_do_icesupersat) then
      call physics_ptend_init(ptend_loc,state%psetcols, 'clubb_ice3', ls=.true., lu=.true., lv=.true., lq=lq)
    endif
