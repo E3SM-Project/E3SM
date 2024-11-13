@@ -295,6 +295,8 @@ be lost if SCREAM_HACK_XML is not enabled.
       <mam4_xs_long_file type="file" doc="File containing photolysis data"> ${DIN_LOC_ROOT}/atm/scream/mam4xx/photolysis/temp_prs_GT200nm_JPL10_c130206.nc</mam4_xs_long_file>
       <!--Elevated emissions-->
       <elevated_emiss_ymd type="integer"> 20100101 </elevated_emiss_ymd>
+      <!--Dry gas deposition-->
+      <mam4_season_wes_file type="file" doc="File containing season_wes data"> ${DIN_LOC_ROOT}/atm/scream/mam4xx/drydep/season_wes.nc</mam4_season_wes_file>
       <!-- For all other grids -->
       <mam4_so2_elevated_emiss_file_name type="file" doc="elevated emissions for so2">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/elevated/cmip6_mam4_so2_elev_1x1_2010_clim_ne30pg2_c20241008.nc</mam4_so2_elevated_emiss_file_name>
       <mam4_so4_a1_elevated_emiss_file_name type="file" doc="elevated emissions for so4_a1">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/elevated/cmip6_mam4_so4_a1_elev_1x1_2010_clim_ne30pg2_c20241008.nc</mam4_so4_a1_elevated_emiss_file_name>

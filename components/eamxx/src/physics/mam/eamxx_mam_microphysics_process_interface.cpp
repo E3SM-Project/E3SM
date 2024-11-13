@@ -335,7 +335,7 @@ void MAMMicrophysics::set_grids(
   }  // Tracer external forcing data
 
   {
-    std::string season_wes_file ="season_wes.nc";
+    const std::string season_wes_file = m_params.get<std::string>("mam4_season_wes_file");
     const auto& clat = col_latitudes_;
     mam_coupling::find_season_index_reader(season_wes_file,
                                          clat,
