@@ -26,7 +26,7 @@ int main(int argc, char **argv){
 
 
     if (myrank == 0)
-        Pacer::print("omega_timing.0");
+        Pacer::print("omega");
 
     Pacer::finalize();
 }
