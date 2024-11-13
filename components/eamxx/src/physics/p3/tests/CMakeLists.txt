@@ -74,7 +74,9 @@ if (SCREAM_ENABLE_BASELINE_TESTS)
     ${FORCE_RUN_DIFF_FAILS})
 endif()
 
-if (NOT SCREAM_P3_SMALL_KERNELS)
+# If small kernels are ON, we don't need a separate executable to test them.
+# Also, we never want to generate baselines with this separate executable
+if (NOT SCREAM_P3_SMALL_KERNELS AND NOT SCREAM_ONLY_GENERATE_BASELINES)
   CreateUnitTest(p3_sk_tests "${P3_TESTS_SRCS}"
     LIBS p3_sk p3_test_infra
     EXE_ARGS "--args ${BASELINE_FILE_ARG}"
