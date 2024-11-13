@@ -30,12 +30,22 @@
     bool Pacer::start(const std::string &TimerName)
     {
         GPTLstart(TimerName.c_str());
+        auto it = OpenTimers.find(TimerName); 
+        if (it != OpenTimers.end() )
+           OpenTimers[TimerName]++;
+        else
+           OpenTimers[TimerName] = 1;
         return true;
     }
 
     bool Pacer::stop(const std::string &TimerName)
     {
         GPTLstop(TimerName.c_str());
+        if ( OpenTimers[TimerName] == 1 )
+            OpenTimers.erase(TimerName);
+        else 
+            OpenTimers[TimerName]--;
+
         return true;
     }
 
@@ -67,6 +77,14 @@
 #ifdef STANDALONE_OMEGA
         GPTLfinalize();
 #endif
+
+        if (OpenTimers.size() > 0){
+            cerr << "PACER: Following timers are not closed." << endl;
+            for (auto i = OpenTimers.begin(); i != OpenTimers.end(); i++)
+                cerr << i->first << endl;
+
+        }
+
         return true;
     }
 

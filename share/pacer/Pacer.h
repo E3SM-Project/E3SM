@@ -29,7 +29,9 @@ namespace Pacer
 
     static MPI_Comm InternalComm;
 
-    static std::map<std::string,int> openTimers;
+    static int Rank;
+
+    static std::unorder_map<std::string,int> OpenTimers;
 
     // public:
     bool initialize(MPI_Comm InComm);
