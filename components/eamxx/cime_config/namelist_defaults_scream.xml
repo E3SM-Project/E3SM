@@ -638,6 +638,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <dgnum type="array(real)" doc="Dry aerosol particles diameters (one per mode) [m]">1.37146e-07 ,3.45899e-08 ,1.00000e-06 ,9.99601e-08</dgnum>
     <dgnumwet type="array(real)" doc="Wet aerosol particles diameter [m]">1.37452e-07 ,3.46684e-08 ,1.00900e-06 ,9.99601e-08</dgnumwet>
     <wetdens type="array(real)" doc="Wet density of interstitial aerosol [kg/m3]">5.08262e-12 ,1.54035e-13 ,3.09018e-13 ,9.14710e-22</wetdens>
+    <constituent_fluxes type="real">0.0</constituent_fluxes>
     <bc_c1 type="real">0.0</bc_c1>
     <bc_c3 type="real">0.0</bc_c3>
     <bc_c4 type="real">0.0</bc_c4>
