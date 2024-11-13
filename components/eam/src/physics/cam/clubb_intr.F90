@@ -1989,7 +1989,7 @@ end subroutine clubb_init_cnst
                      tautmsx,      tautmsy,   cam_in%landfrac )
        call t_stopf('compute_tms')
     endif
-        !
+
     if (use_od_fd) then
         gwd_ls    =.false.
         gwd_bl    =.false.
@@ -2018,7 +2018,7 @@ end subroutine clubb_init_cnst
         call outfld ('DUSFC_FD', dusfc_fd,  pcols, lchnk)
         call outfld ('DVSFC_FD', dvsfc_fd,  pcols, lchnk)
    endif
-   !
+
    if (micro_do_icesupersat) then
      call physics_ptend_init(ptend_loc,state%psetcols, 'clubb_ice3', ls=.true., lu=.true., lv=.true., lq=lq)
    endif
