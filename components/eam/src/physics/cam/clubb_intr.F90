@@ -1539,7 +1539,8 @@ end subroutine clubb_init_cnst
 
    real(r8) :: sfc_v_diff_tau(pcols) ! Response to tau perturbation, m/s
    real(r8), parameter :: pert_tau = 0.1_r8 ! tau perturbation, Pa
-   !add par for tofd
+
+   !variables for turbulent orographic form drag (TOFD) interface
    real(r8) :: dtaux3_fd(pcols,pver)
    real(r8) :: dtauy3_fd(pcols,pver)
    real(r8) :: dusfc_fd(pcols)
@@ -1549,7 +1550,6 @@ end subroutine clubb_init_cnst
    real(r8) :: dummy_utgw(pcols,pver)
    real(r8) :: dummy_vtgw(pcols,pver)
    real(r8) :: dummy_ttgw(pcols,pver)
-   !
    real(r8) :: dummx_ls(pcols,pver)
    real(r8) :: dummx_bl(pcols,pver)
    real(r8) :: dummx_ss(pcols,pver)
@@ -1562,7 +1562,7 @@ end subroutine clubb_init_cnst
    real(r8) :: dummy3_ls(pcols,pver)
    real(r8) :: dummy3_bl(pcols,pver)
    real(r8) :: dummy3_ss(pcols,pver)
-   !
+
    real(r8) :: inv_exner_clubb_surf
 
 
