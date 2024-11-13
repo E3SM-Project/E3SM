@@ -156,7 +156,7 @@ If you are creating a new grid that will be used by the land model the grid name
        valid_values=
 "512x1024,360x720cru,128x256,64x128,...">
 Horizontal resolutions
-Note: 0.1x0.1, 0.5x0.5, 5x5min, 10x10min, 3x3min and 0.33x0.33 are only used for CLM tools
+Note: 0.1x0.1, 0.5x0.5, 5x5min, 10x10min, 3x3min and 0.33x0.33 are only used for ELM tools
 </entry>
 ```
 
