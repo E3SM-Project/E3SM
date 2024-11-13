@@ -15,6 +15,7 @@
 #include <mpi.h>
 #include <gptl.h>
 #include <unordered_map>
+#include <string>
 
 #define STANDALONE_OMEGA
 
