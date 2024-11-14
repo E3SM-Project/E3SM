@@ -50,18 +50,23 @@ endif()
 if (SCREAM_ENABLE_BASELINE_TESTS)
   if (SCREAM_ONLY_GENERATE_BASELINES)
     set(BASELINE_FILE_ARG "-g -b ${SCREAM_BASELINES_DIR}/data")
+    # We don't want to do thread spreads when generating. That
+    # could cause race conditions in the file system.
+    set(P3_THREADS "${SCREAM_TEST_MAX_THREADS}")
   else()
     set(BASELINE_FILE_ARG "-c -b ${SCREAM_BASELINES_DIR}/data")
+    set(P3_THREADS "1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}")
   endif()
 else()
   set(BASELINE_FILE_ARG "-n") # no baselines
+  set(P3_THREADS "1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}")
 endif()
 
 CreateUnitTest(p3_tests "${P3_TESTS_SRCS}"
   LIBS p3 p3_test_infra
   EXE_ARGS "--args ${BASELINE_FILE_ARG}"
-  THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
-  LABELS "p3;physics")
+  THREADS ${P3_THREADS}
+  LABELS "p3;physics;baseline_gen;baseline_cmp")
 
 # Make sure that a diff in the two implementation triggers a failed test (in debug only)
 # No need to run lots of different thread counts.
@@ -85,15 +90,16 @@ if (NOT SCREAM_P3_SMALL_KERNELS AND NOT SCREAM_ONLY_GENERATE_BASELINES)
     LIBS p3_sk p3_test_infra
     EXE_ARGS "--args ${BASELINE_FILE_ARG}"
     THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
-    LABELS "p3_sk;physics")
+    LABELS "p3_sk;physics;baseline_cmp")
 endif()
 
+# Note: the baseline_gen label label is really only used if SCREAM_ONLY_GENERATE_BASELINES=ON, but no harm adding it
 CreateUnitTest(p3_run_and_cmp "p3_run_and_cmp.cpp"
   LIBS p3 p3_test_infra
   EXCLUDE_MAIN_CPP
   THREADS ${SCREAM_TEST_MAX_THREADS}
   EXE_ARGS "${BASELINE_FILE_ARG}"
-  LABELS "p3;physics")
+  LABELS "p3;physics;baseline_gen;baseline_cmp")
 
 # Make sure that a diff from baselines triggers a failed test (in debug only)
 if (SCREAM_ENABLE_BASELINE_TESTS)
@@ -106,11 +112,3 @@ if (SCREAM_ENABLE_BASELINE_TESTS)
     EXCLUDE_MAIN_CPP
     ${FORCE_RUN_DIFF_FAILS})
 endif()
-
-# Note: the baseline_gen label label is really only used if SCREAM_ONLY_GENERATE_BASELINES=ON, but no harm adding it
-if (SCREAM_TEST_MAX_THREADS GREATER 1)
-  # ECUT only adds _ompX if we have more than one value of X, or if X>1
-  set (TEST_SUFFIX _omp${SCREAM_TEST_MAX_THREADS})
-endif()
-
-set_tests_properties (p3_run_and_cmp${TEST_SUFFIX} PROPERTIES LABELS "baseline_gen;cxx baseline_cmp")
