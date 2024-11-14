@@ -630,6 +630,7 @@
 <!-- debug -->
 <config_check_zlevel_consistency>.false.</config_check_zlevel_consistency>
 <config_check_ssh_consistency>.true.</config_check_ssh_consistency>
+<config_check_ssh_consistency ocn_grid="oQU240wLI">.false.</config_check_ssh_consistency>
 <config_check_ssh_consistency ocn_grid="oEC60to30v3wLI">.false.</config_check_ssh_consistency>
 <config_check_ssh_consistency ocn_grid="ECwISC30to60E1r2">.false.</config_check_ssh_consistency>
 <config_check_ssh_consistency ocn_grid="oRRS30to10v3wLI">.false.</config_check_ssh_consistency>
