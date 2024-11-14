@@ -827,7 +827,6 @@ void RRTMGPRadiation::run_impl (const double dt) {
     auto eccen = m_orbital_eccen;
     auto obliq = m_orbital_obliq;
     auto mvelp = m_orbital_mvelp;
-    auto fixed_total_solar_irradiance = m_fixed_total_solar_irradiance;
     if (eccen >= 0 && obliq >= 0 && mvelp >= 0) {
       // use fixed orbital parameters; to force this, we need to set
       // orbital_year to SHR_ORB_UNDEF_INT, which is exposed through
@@ -846,6 +845,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
                      obliqr, &delta, &eccf);
 
     // Overwrite eccf if using a fixed solar constant.
+    auto fixed_total_solar_irradiance = m_fixed_total_solar_irradiance;
     if (fixed_total_solar_irradiance >= 0){
        eccf = fixed_total_solar_irradiance/1360.9;
     }
