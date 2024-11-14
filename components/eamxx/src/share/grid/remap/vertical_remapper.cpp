@@ -63,6 +63,9 @@ VerticalRemapper::
 VerticalRemapper (const grid_ptr_type& src_grid,
                   const grid_ptr_type& tgt_grid)
 {
+  // We only go in one direction for simplicity, since we need to setup some
+  // infrsatructures, and we don't want to setup 2x as many "just in case".
+  // If you need to remap bwd, just create another remapper with src/tgt grids swapped.
   m_bwd_allowed = false;
 
   EKAT_REQUIRE_MSG (src_grid->get_2d_scalar_layout().congruent(tgt_grid->get_2d_scalar_layout()),
