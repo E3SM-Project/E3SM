@@ -2,7 +2,6 @@
 ---
 filename_prefix: homme_shoc_cld_spa_p3_rrtmgp_mam4_wetscav_output
 Averaging Type: Instant
-Max Snapshots Per File: 1
 Fields:
   Physics GLL:
     Field Names:
@@ -104,7 +103,7 @@ Fields:
       - aerdepwetis
       - aerdepwetcw
       - dgnumwet
-      - dgncur_a
+      - dgnum
       - wetdens
       - qaerwat
       - bc_c1

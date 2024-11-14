@@ -1,0 +1,58 @@
+name: eamxx-sa-coverage
+
+on:
+  workflow_dispatch:
+
+  # Add schedule trigger for nightly runs at midnight MT (Standard Time)
+  schedule:
+    - cron: '0 7 * * *'  # Runs at 7 AM UTC, which is midnight MT during Standard Time
+
+concurrency:
+  # Two runs are in the same group if they are testing the same git ref
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  submit: ${{ github.event_name == 'schedule' && 'true' || 'false' }}  # Submit to cdash only for nightlies
+
+jobs:
+  gcc-openmp:
+    runs-on:  [self-hosted, ghci-snl-cpu, gcc]
+    name: gcc-openmp / cov
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          show-progress: false
+          submodules: recursive
+      - name: Show action trigger
+        uses: ./.github/actions/show-workflow-trigger
+      - name: Run tests
+        uses: ./.github/actions/test-all-scream
+        with:
+          build_type: cov
+          machine: ghci-snl-cpu
+          generate: false
+          submit: ${{ env.submit }}
+          cmake-configs: Kokkos_ENABLE_OPENMP=ON
+  gcc-cuda:
+    runs-on:  [self-hosted, ghci-snl-cuda, cuda, gcc]
+    name: gcc-cuda / cov
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          show-progress: false
+          submodules: recursive
+      - name: Show action trigger
+        uses: ./.github/actions/show-workflow-trigger
+      - name: Run tests
+        uses: ./.github/actions/test-all-scream
+        with:
+          build_type: cov
+          machine: ghci-snl-cuda
+          generate: false
+          submit: ${{ env.submit }}
+          cmake-configs: Kokkos_ARCH_VOLTA70=ON;CMAKE_CUDA_ARCHITECTURES=70

@@ -5,7 +5,7 @@
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "ekat/util/ekat_arch.hpp"
 #include "p3_functions.hpp"
-#include "p3_functions_f90.hpp"
+#include "p3_test_data.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -21,10 +21,10 @@ namespace unit_test {
  * Unit-tests for p3_functions.
  */
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestP3Conservation
+struct UnitWrap::UnitTest<D>::TestP3Conservation : public UnitWrap::UnitTest<D>::Base
 {
 
-  static void cloud_water_conservation_tests_device() {
+  void cloud_water_conservation_tests_device() {
 
     using KTH = KokkosTypes<HostDevice>;
 
@@ -78,7 +78,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     REQUIRE(cwdc_host[0].qc2qr_autoconv_tend * cwdc[0].dt <= cwdc_host[0].qc);
   }
 
-  static void rain_water_conservation_tests_device() {
+  void rain_water_conservation_tests_device() {
     using KTH = KokkosTypes<HostDevice>;
 
     RainWaterConservationData rwdc[1] = {{sp(1e-5), 0.0, 0.0, 0.0, 0.0, sp(1.1), sp(1e-4), 0.0, 0.0 }};
@@ -131,7 +131,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     REQUIRE( rwdc_host(0).qr2qv_evap_tend * rwdc_host(0).dt  <= rwdc_host(0).qr);
   }
 
-  static void ice_water_conservation_tests_device(){
+  void ice_water_conservation_tests_device() {
     using KTH = KokkosTypes<HostDevice>;
 
     IceWaterConservationData iwdc[1] = {{sp(1e-5), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, sp(1.1), sp(1e-4), 0.0}};
@@ -173,7 +173,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
 
   }
 
-  static void run()
+  void run()
   {
     cloud_water_conservation_tests_device();
 
@@ -182,7 +182,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     ice_water_conservation_tests_device();
   }
 
-  static void cloud_water_conservation_unit_bfb_tests(){
+  void cloud_water_conservation_unit_bfb_tests() {
 
     using KTH = KokkosTypes<HostDevice>;
 
@@ -222,9 +222,11 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     std::copy(&cwdc[0], &cwdc[0] + max_pack_size, cwdc_host.data());
     Kokkos::deep_copy(cwdc_device, cwdc_host);
 
-    // Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
-      cloud_water_conservation(cwdc[i]);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (Int i = 0; i < max_pack_size; ++i) {
+        cwdc[i].read(Base::m_fid);
+      }
     }
 
     // Run the lookup from a kernel and copy results back to host
@@ -263,7 +265,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     Kokkos::deep_copy(cwdc_host, cwdc_device);
 
     // Validate results
-    if (SCREAM_BFB_TESTING) {
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int s = 0; s < max_pack_size; ++s) {
         REQUIRE(cwdc[s].qc     == cwdc_host(s).qc);
         REQUIRE(cwdc[s].qc2qr_autoconv_tend  == cwdc_host(s).qc2qr_autoconv_tend);
@@ -275,9 +277,14 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
         REQUIRE(cwdc[s].qv2qi_vapdep_tend  == cwdc_host(s).qv2qi_vapdep_tend);
       }
     }
+    else if (this->m_baseline_action == GENERATE) {
+      for (Int s = 0; s < max_pack_size; ++s) {
+        cwdc_host(s).write(Base::m_fid);
+      }
+    }
   }
 
-  static void ice_water_conservation_unit_bfb_tests()
+  void ice_water_conservation_unit_bfb_tests()
   {
     using KTH = KokkosTypes<HostDevice>;
 
@@ -312,9 +319,11 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     std::copy(&iwdc[0], &iwdc[0] + max_pack_size, iwdc_host.data());
     Kokkos::deep_copy(iwdc_device, iwdc_host);
 
-    // Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
-      ice_water_conservation(iwdc[i]);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (Int i = 0; i < max_pack_size; ++i) {
+        iwdc[i].read(Base::m_fid);
+      }
     }
 
     // Run the lookup from a kernel and copy results back to host
@@ -356,7 +365,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     Kokkos::deep_copy(iwdc_host, iwdc_device);
 
     // Validate results
-    if (SCREAM_BFB_TESTING) {
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int s = 0; s < max_pack_size; ++s) {
         REQUIRE(iwdc[s].qi == iwdc_host(s).qi);
         REQUIRE(iwdc[s].qv2qi_vapdep_tend == iwdc_host(s).qv2qi_vapdep_tend );
@@ -370,9 +379,14 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
         REQUIRE(iwdc[s].qi2qr_melt_tend == iwdc_host(s).qi2qr_melt_tend);
       }
     }
+    else if (this->m_baseline_action == GENERATE) {
+      for (Int s = 0; s < max_pack_size; ++s) {
+        iwdc_host(s).write(Base::m_fid);
+      }
+    }
   }
 
-  static void rain_water_conservation_unit_bfb_tests(){
+  void rain_water_conservation_unit_bfb_tests() {
 
     using KTH = KokkosTypes<HostDevice>;
 
@@ -407,9 +421,11 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     std::copy(&rwdc[0], &rwdc[0] + max_pack_size, rwdc_host.data());
     Kokkos::deep_copy(rwdc_device, rwdc_host);
 
-    // Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
-      rain_water_conservation(rwdc[i]);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (Int i = 0; i < max_pack_size; ++i) {
+        rwdc[i].read(Base::m_fid);
+      }
     }
 
     // Run the lookup from a kernel and copy results back to host
@@ -448,7 +464,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     Kokkos::deep_copy(rwdc_host, rwdc_device);
 
     // Validate results
-    if (SCREAM_BFB_TESTING) {
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int s = 0; s < max_pack_size; ++s) {
         REQUIRE(rwdc[s].qr     == rwdc_host(s).qr);
         REQUIRE(rwdc[s].qc2qr_autoconv_tend  == rwdc_host(s).qc2qr_autoconv_tend);
@@ -460,9 +476,14 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
         REQUIRE(rwdc[s].qr2qi_immers_freeze_tend == rwdc_host(s).qr2qi_immers_freeze_tend);
       }
     }
+    else if (this->m_baseline_action == GENERATE) {
+      for (Int s = 0; s < max_pack_size; ++s) {
+        rwdc_host(s).write(Base::m_fid);
+      }
+    }
   }
 
-  static void run_bfb() {
+  void run_bfb() {
     cloud_water_conservation_unit_bfb_tests();
 
     rain_water_conservation_unit_bfb_tests();
@@ -473,9 +494,9 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
 };
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce
+struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce : public UnitWrap::UnitTest<D>::Base
 {
-  static void update_prognostic_ice_unit_bfb_tests() {
+  void update_prognostic_ice_unit_bfb_tests() {
 
     constexpr Scalar nmltratio     = C::nmltratio;
     constexpr Scalar dt            = 1.8000E+03;
@@ -483,7 +504,7 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce
     constexpr Scalar latvap        = C::LatVap;
     constexpr Scalar latice        = C::LatIce;
 
-    //fortran generated data is input to the following
+    //baseline generated data is input to the following
     P3UpdatePrognosticIceData pupidc[max_pack_size] = {
 
       {4.9078E-19, 1.5312E-09, 4.4387E-09, 3.7961E+06, 1.7737E-04, 0.0000E+00, 3.8085E-08, 5.1281E+04, 1.9251E-15,
@@ -591,9 +612,11 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce
     std::copy(&pupidc[0], &pupidc[0] + max_pack_size, pupidc_host.data());
     Kokkos::deep_copy(pupidc_device, pupidc_host);
 
-    // Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
-      update_prognostic_ice(pupidc[i]);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (Int i = 0; i < max_pack_size; ++i) {
+        pupidc[i].read(Base::m_fid);
+      }
     }
 
     // Run the lookup from a kernel and copy results back to host
@@ -679,7 +702,7 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce
     Kokkos::deep_copy(pupidc_host, pupidc_device);
 
     // Validate results
-    if (SCREAM_BFB_TESTING) {
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int s = 0; s < max_pack_size; ++s) {
         REQUIRE(pupidc[s].th_atm    == pupidc_host(s).th_atm);
         REQUIRE(pupidc[s].qc        == pupidc_host(s).qc);
@@ -693,22 +716,27 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce
         REQUIRE(pupidc[s].bm        == pupidc_host(s).bm );
       }
     }
+    else if (this->m_baseline_action == GENERATE) {
+      for (Int s = 0; s < max_pack_size; ++s) {
+        pupidc_host(s).write(Base::m_fid);
+      }
+    }
   }
 
-  static void run_bfb(){
+  void run_bfb() {
     update_prognostic_ice_unit_bfb_tests();
   }
 
 }; //TestP3UpdatePrognosticIce
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestGetTimeSpacePhysVariables
+struct UnitWrap::UnitTest<D>::TestGetTimeSpacePhysVariables : public UnitWrap::UnitTest<D>::Base
 {
-  static void get_time_space_phys_variables_unit_bfb_tests(){
+  void get_time_space_phys_variables_unit_bfb_tests() {
     constexpr Scalar latvap = C::LatVap;
     constexpr Scalar latice = C::LatIce;
 
-    //fortran generated data is input to the following
+    //baseline generated data is input to the following
     GetTimeSpacePhysVarsData gtspvd[max_pack_size] = {
       //        T_atm,       pres,        rho,       latent_heat_vapor,       latent_heat_sublim,        qv_sat_l,        qv_sat_i
       {2.9792E+02, 9.8711E+04, 1.1532E+00, latvap, latvap+latice, 2.0321E-02, 2.0321E-02},
@@ -737,9 +765,11 @@ struct UnitWrap::UnitTest<D>::TestGetTimeSpacePhysVariables
     std::copy(&gtspvd[0], &gtspvd[0] + max_pack_size, gtspvd_host.data());
     Kokkos::deep_copy(gtspvd_device, gtspvd_host);
 
-    // Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
-      get_time_space_phys_variables(gtspvd[i]);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (Int i = 0; i < max_pack_size; ++i) {
+        gtspvd[i].read(Base::m_fid);
+      }
     }
 
     // Run the lookup from a kernel and copy results back to host
@@ -794,7 +824,7 @@ struct UnitWrap::UnitTest<D>::TestGetTimeSpacePhysVariables
     Kokkos::deep_copy(gtspvd_host, gtspvd_device);
 
     // Validate results
-    if (SCREAM_BFB_TESTING) {
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int s = 0; s < max_pack_size; ++s) {
         REQUIRE(gtspvd[s].mu     == gtspvd_host(s).mu);
         REQUIRE(gtspvd[s].dv     == gtspvd_host(s).dv);
@@ -807,20 +837,25 @@ struct UnitWrap::UnitTest<D>::TestGetTimeSpacePhysVariables
         REQUIRE(gtspvd[s].eii    == gtspvd_host(s).eii);
       }
     }
+    else if (this->m_baseline_action == GENERATE) {
+      for (Int s = 0; s < max_pack_size; ++s) {
+        gtspvd_host(s).write(Base::m_fid);
+      }
+    }
   }
 
-  static void run_bfb(){
+  void run_bfb() {
     get_time_space_phys_variables_unit_bfb_tests();
   }
 }; //TestGetTimeSpacePhysVariables
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticLiq
+struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticLiq : public UnitWrap::UnitTest<D>::Base
 {
-  static void  update_prognostic_liquid_unit_bfb_tests(){
+  void update_prognostic_liquid_unit_bfb_tests() {
     constexpr Scalar latvap = C::LatVap;
 
-    //fortran generated data is input to the following
+    //baseline generated data is input to the following
     P3UpdatePrognosticLiqData pupldc[max_pack_size] = {
 
       {1.0631E-12, 1.0631E+00, 1.5833E-12, 1.5833E+00, 2.4190E-02, 0.0000E+00, 0.0000E+00, 0.0000E+00, 4.2517E+00,
@@ -896,9 +931,11 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticLiq
     std::copy(&pupldc[0], &pupldc[0] + max_pack_size, pupldc_host.data());
     Kokkos::deep_copy(pupldc_device, pupldc_host);
 
-    // Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
-      update_prognostic_liquid(pupldc[i]);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (Int i = 0; i < max_pack_size; ++i) {
+        pupldc[i].read(Base::m_fid);
+      }
     }
 
     // Run the lookup from a kernel and copy results back to host
@@ -971,7 +1008,7 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticLiq
     Kokkos::deep_copy(pupldc_host, pupldc_device);
 
     // Validate results
-    if (SCREAM_BFB_TESTING) {
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int s = 0; s < max_pack_size; ++s) {
         REQUIRE(pupldc[s].th_atm == pupldc_host(s).th_atm);
         REQUIRE(pupldc[s].qv     == pupldc_host(s).qv);
@@ -981,18 +1018,23 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticLiq
         REQUIRE(pupldc[s].nr     == pupldc_host(s).nr);
       }
     }
+    else if (this->m_baseline_action == GENERATE) {
+      for (Int s = 0; s < max_pack_size; ++s) {
+        pupldc_host(s).write(Base::m_fid);
+      }
+    }
   }
 
-  static void run_bfb(){
+  void run_bfb() {
     update_prognostic_liquid_unit_bfb_tests();
   }
 
 }; //TestP3UpdatePrognosticLiq
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestP3FunctionsImposeMaxTotalNi
+struct UnitWrap::UnitTest<D>::TestP3FunctionsImposeMaxTotalNi : public UnitWrap::UnitTest<D>::Base
 {
-  static void impose_max_total_ni_bfb_test(){
+  void impose_max_total_ni_bfb_test() {
     constexpr Scalar max_total_ni = 740.0e3;
 
     ImposeMaxTotalNiData dc[max_pack_size]= {
@@ -1026,9 +1068,11 @@ struct UnitWrap::UnitTest<D>::TestP3FunctionsImposeMaxTotalNi
     std::copy(&dc[0], &dc[0] + max_pack_size, dc_host.data());
     Kokkos::deep_copy(dc_device, dc_host);
 
-    //Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
-      impose_max_total_ni(dc[i]);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (Int i = 0; i < max_pack_size; ++i) {
+        dc[i].read(Base::m_fid);
+      }
     }
 
     //Run function from a kernal and copy results back to the host
@@ -1054,15 +1098,20 @@ struct UnitWrap::UnitTest<D>::TestP3FunctionsImposeMaxTotalNi
     Kokkos::deep_copy(dc_host, dc_device);
 
     // Validate results
-    if (SCREAM_BFB_TESTING) {
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int s = 0; s < max_pack_size; ++s) {
         REQUIRE(dc[s].ni_local   == dc_host(s).ni_local);
         REQUIRE(dc[s].inv_rho_local == dc_host(s).inv_rho_local);
       }
     }
+    else if (this->m_baseline_action == GENERATE) {
+      for (Int s = 0; s < max_pack_size; ++s) {
+        dc_host(s).write(Base::m_fid);
+      }
+    }
   }
 
-  static void run_bfb(){
+  void run_bfb() {
     impose_max_total_ni_bfb_test();
   }
 
@@ -1075,24 +1124,39 @@ struct UnitWrap::UnitTest<D>::TestP3FunctionsImposeMaxTotalNi
 namespace {
 
 TEST_CASE("p3_conservation_test", "[p3_unit_tests]"){
-  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3Conservation::run();
-  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3Conservation::run_bfb();
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3Conservation;
+
+  T t;
+  t.run();
+  t.run_bfb();
 }
 
 TEST_CASE("p3_get_time_space_phys_variables_test", "[p3_unit_tests]"){
-  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestGetTimeSpacePhysVariables::run_bfb();
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestGetTimeSpacePhysVariables;
+
+  T t;
+  t.run_bfb();
 }
 
 TEST_CASE("p3_update_prognostic_ice_test", "[p3_unit_tests]"){
-  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3UpdatePrognosticIce::run_bfb();
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3UpdatePrognosticIce;
+
+  T t;
+  t.run_bfb();
 }
 
 TEST_CASE("p3_update_prognostic_liquid_test", "[p3_unit_tests]"){
-  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3UpdatePrognosticLiq::run_bfb();
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3UpdatePrognosticLiq;
+
+  T t;
+  t.run_bfb();
 }
 
 TEST_CASE("p3_impose_max_total_ni_test", "[p3_unit_tests]"){
-  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3FunctionsImposeMaxTotalNi::run_bfb();
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3FunctionsImposeMaxTotalNi;
+
+  T t;
+  t.run_bfb();
 }
 
 } // namespace

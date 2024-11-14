@@ -1633,6 +1633,49 @@ commented out until "*** No rule to make target '.../libadios2pio-nm-lib.a'" iss
     </environment_variables>
   </machine>
 
+  <machine MACH="ghci-snl-cpu">
+    <DESC>Huge Linux workstation for Sandia climate scientists</DESC>
+    <NODENAME_REGEX>^[a-fA-F0-9]{12}$</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <PROXY>proxy.sandia.gov:80</PROXY>
+    <COMPILERS>gnu</COMPILERS>
+    <MPILIBS>openmpi</MPILIBS>
+    <CIME_OUTPUT_ROOT>/projects/e3sm/scratch</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/projects/e3sm/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/projects/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/projects/e3sm/baselines/ghci-snl-cpu/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/projects/e3sm/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE_J>32</GMAKE_J>
+    <TESTS>e3sm_developer</TESTS>
+    <BATCH_SYSTEM>none</BATCH_SYSTEM>
+    <SUPPORTED_BY>lbertag at sandia dot gov</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
+    <mpirun mpilib="default">
+      <executable>mpirun</executable>
+      <arguments>
+        <arg name="binding"> --bind-to core</arg>
+        <arg name="num_tasks"> -np {{ total_tasks }}</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="none"/>
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
+    <MAX_GB_OLD_TEST_DATA>0</MAX_GB_OLD_TEST_DATA>
+    <environment_variables>
+      <env name="NETCDF_C_PATH">$ENV{NETCDF_C_ROOT}</env>
+      <env name="NETCDF_FORTRAN_PATH">$ENV{NETCDF_FORTRAN_ROOT}</env>
+      <env name="PNETCDF_PATH">$ENV{PARALLEL_NETCDF_ROOT}</env>
+      <env name="OMP_STACKSIZE">64M</env>
+      <env name="OMP_PROC_BIND">spread</env>
+      <env name="OMP_PLACES">threads</env>
+      <env name="BLA_VENDOR">Generic</env>
+      <env name="GATOR_INITIAL_MB">4000MB</env>
+    </environment_variables>
+  </machine>
+
   <machine MACH="weaver">
     <DESC>Sandia GPU testbed</DESC>
     <NODENAME_REGEX>weaver</NODENAME_REGEX>

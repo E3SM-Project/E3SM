@@ -153,17 +153,31 @@ init_scorpio(const int atm_id)
 }
 
 void AtmosphereDriver::
-init_time_stamps (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0)
+init_time_stamps (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0, int run_type)
 {
   m_atm_logger->info("  [EAMxx] Run  start time stamp: " + run_t0.to_string());
   m_atm_logger->info("  [EAMxx] Case start time stamp: " + case_t0.to_string());
 
+  EKAT_REQUIRE_MSG (case_t0<=run_t0,
+      "Error! Case t0 time stamp must precede the run t0 time stamp.\n"
+      "  - case t0: " + case_t0.to_string() + "\n"
+      "  - run  t0: " + run_t0.to_string() + "\n");
+
   // Initialize time stamps
   m_run_t0 = m_current_ts = run_t0;
   m_case_t0 = case_t0;
+
+  switch (run_type) {
+    case 0:
+      m_run_type = RunType::Initial; break;
+    case 1:
+      m_run_type = RunType::Restart; break;
+    case -1:
+      m_run_type = case_t0==run_t0 ? RunType::Initial : RunType::Restart; break;
+    default:
+      EKAT_ERROR_MSG ("Unsupported/unrecognized run_type: " + std::to_string(run_type) + "\n");
+  }
 }
-
-
 
 void AtmosphereDriver::
 setup_iop ()
@@ -243,10 +257,11 @@ void AtmosphereDriver::create_grids()
   // To avoid having to pass the same data twice in the input file,
   // we have the AD add the IC file name to the GM params
   const auto& ic_pl = m_atm_params.sublist("initial_conditions");
-  if (m_case_t0<m_run_t0) {
+  if (m_run_type==RunType::Restart) {
     // Restarted run -> read geo data from restart file
-    const auto& casename = ic_pl.get<std::string>("restart_casename");
-    auto filename = find_filename_in_rpointer (casename,true,m_atm_comm,m_run_t0);
+    const auto& provenance = m_atm_params.sublist("provenance");
+    const auto& casename = provenance.get<std::string>("rest_caseid");
+    auto filename = find_filename_in_rpointer (casename+".scream",true,m_atm_comm,m_run_t0);
     gm_params.set("ic_filename", filename);
     m_atm_params.sublist("provenance").set("initial_conditions_file",filename);
   } else if (ic_pl.isParameter("Filename")) {
@@ -697,6 +712,7 @@ void AtmosphereDriver::create_output_managers () {
   if (io_params.isSublist("model_restart")) {
     // Create model restart manager
     auto params = io_params.sublist("model_restart");
+    params.set<std::string>("filename_prefix",m_casename+".scream");
     params.set<std::string>("Averaging Type","Instant");
     params.sublist("provenance") = m_atm_params.sublist("provenance");
 
@@ -789,16 +805,19 @@ void AtmosphereDriver::initialize_output_managers () {
 
 void AtmosphereDriver::
 set_provenance_data (std::string caseid,
+                     std::string rest_caseid,
                      std::string hostname,
                      std::string username)
 {
 #ifdef SCREAM_CIME_BUILD
   // Check the inputs are valid
   EKAT_REQUIRE_MSG (caseid!="", "Error! Invalid case id: " + caseid + "\n");
+  EKAT_REQUIRE_MSG (m_run_type==RunType::Initial or rest_caseid!="",
+      "Error! Invalid restart case id: " + rest_caseid + "\n");
   EKAT_REQUIRE_MSG (hostname!="", "Error! Invalid hostname: " + hostname + "\n");
   EKAT_REQUIRE_MSG (username!="", "Error! Invalid username: " + username + "\n");
 #else
-  caseid = "EAMxx standalone";
+  caseid = rest_caseid = m_casename;
   char* user = new char[32];
   char* host = new char[256];
   int err;
@@ -819,6 +838,7 @@ set_provenance_data (std::string caseid,
 #endif
   auto& provenance = m_atm_params.sublist("provenance");
   provenance.set("caseid",caseid);
+  provenance.set("rest_caseid",rest_caseid);
   provenance.set("hostname",hostname);
   provenance.set("username",username);
   provenance.set("version",std::string(EAMXX_GIT_VERSION));
@@ -834,7 +854,9 @@ initialize_fields ()
   start_timer("EAMxx::initialize_fields");
 
   // See the [rrtmgp active gases] note in share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp
-  if (fvphyshack) fv_phys_rrtmgp_active_gases_set_restart(m_case_t0 < m_run_t0);
+  if (fvphyshack) {
+    TraceGasesWorkaround::singleton().run_type = m_run_type;
+  }
 
   // See if we need to print a DAG. We do this first, cause if any input
   // field is missing from the initial condition file, an error will be thrown.
@@ -859,7 +881,7 @@ initialize_fields ()
   }
 
   // Initialize fields
-  if (m_case_t0<m_run_t0) {
+  if (m_run_type==RunType::Restart) {
     restart_model ();
   } else {
     set_initial_conditions ();
@@ -924,8 +946,9 @@ void AtmosphereDriver::restart_model ()
   m_atm_logger->info("  [EAMxx] restart_model ...");
 
   // First, figure out the name of the netcdf file containing the restart data
-  const auto& casename = m_atm_params.sublist("initial_conditions").get<std::string>("restart_casename");
-  auto filename = find_filename_in_rpointer (casename,true,m_atm_comm,m_run_t0);
+  const auto& provenance = m_atm_params.sublist("provenance");
+  const auto& casename = provenance.get<std::string>("rest_caseid");
+  auto filename = find_filename_in_rpointer (casename+".scream",true,m_atm_comm,m_run_t0);
 
   m_atm_logger->info("    [EAMxx] Restart filename: " + filename);
 
@@ -1555,15 +1578,13 @@ void AtmosphereDriver::initialize_atm_procs ()
   m_memory_buffer->allocate();
   m_atm_process_group->init_buffers(*m_memory_buffer);
 
-  const bool restarted_run = m_case_t0 < m_run_t0;
-
   // Setup SurfaceCoupling import and export (if they exist)
   if (m_surface_coupling_import_data_manager || m_surface_coupling_export_data_manager) {
     setup_surface_coupling_processes();
   }
 
   // Initialize the processes
-  m_atm_process_group->initialize(m_current_ts, restarted_run ? RunType::Restarted : RunType::Initial);
+  m_atm_process_group->initialize(m_current_ts, m_run_type);
 
   // Create and add energy and mass conservation check to appropriate atm procs
   setup_column_conservation_checks();

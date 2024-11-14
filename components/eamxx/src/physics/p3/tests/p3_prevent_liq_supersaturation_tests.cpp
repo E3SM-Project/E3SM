@@ -3,8 +3,7 @@
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
-#include "p3_functions_f90.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "p3_test_data.hpp"
 #include "share/scream_types.hpp"
 #include "physics/share/physics_functions.hpp"
 
@@ -15,9 +14,9 @@ namespace p3 {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestPreventLiqSupersaturation {
+struct UnitWrap::UnitTest<D>::TestPreventLiqSupersaturation : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_property()
+  void run_property()
   //Conceptual tests for prevent_liq_supersaturation. Note many conceptual tests make sense to run on
   //random data, so are included in run_bfb rather than here.
   {
@@ -88,32 +87,32 @@ struct UnitWrap::UnitTest<D>::TestPreventLiqSupersaturation {
 
   } //end run_property
 
-  static void run_bfb()
+  void run_bfb()
   {
     constexpr Scalar latvap = C::LatVap;
     constexpr Scalar latice = C::LatIce;
 
-    auto engine = setup_random_test();
+    auto engine = Base::get_engine();
 
-    PreventLiqSupersaturationData f90_data[max_pack_size];
+    PreventLiqSupersaturationData baseline_data[max_pack_size];
 
     // Generate random input data
-    // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
-    for (auto& d : f90_data) {
+    // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
+    for (auto& d : baseline_data) {
       d.randomize(engine);
-      d.dt = f90_data[0].dt; // Hold this fixed, this is not packed data
+      d.dt = baseline_data[0].dt; // Hold this fixed, this is not packed data
 
       // C++ impl uses constants for latent_heat values. Manually set here
-      // so F90 can match
+      // so BASELINE can match
       d.latent_heat_vapor = latvap;
       d.latent_heat_sublim = latvap+latice;
     }
 
     // Create copies of data for use by cxx and sync it to device. Needs to happen before
-    // fortran calls so that inout data is in original state
+    // reads so that inout data is in original state
     view_1d<PreventLiqSupersaturationData> cxx_device("cxx_device", max_pack_size);
     const auto cxx_host = Kokkos::create_mirror_view(cxx_device);
-    std::copy(&f90_data[0], &f90_data[0] + max_pack_size, cxx_host.data());
+    std::copy(&baseline_data[0], &baseline_data[0] + max_pack_size, cxx_host.data());
     Kokkos::deep_copy(cxx_device, cxx_host);
 
     // Save copy of inout vars to check that prevent_liq_supersaturation always makes them smaller
@@ -123,9 +122,11 @@ struct UnitWrap::UnitTest<D>::TestPreventLiqSupersaturation {
       qr2qv_evap_tend_init[i] = cxx_host(i).qr2qv_evap_tend;
     }
 
-    // Get data from fortran
-    for (auto& d : f90_data) {
-      prevent_liq_supersaturation(d);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (Int i = 0; i < max_pack_size; ++i) {
+        baseline_data[i].read(Base::m_fid);
+      }
     }
 
     // Get data from cxx. Run prevent_liq_supersaturation from a kernel and copy results back to host
@@ -158,13 +159,13 @@ struct UnitWrap::UnitTest<D>::TestPreventLiqSupersaturation {
 
     Kokkos::deep_copy(cxx_host, cxx_device);
 
-    if (SCREAM_BFB_TESTING) {
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
         // Verify BFB results
-        PreventLiqSupersaturationData& d_f90 = f90_data[i];
+        PreventLiqSupersaturationData& d_baseline = baseline_data[i];
         PreventLiqSupersaturationData& d_cxx = cxx_host[i];
-        REQUIRE(d_f90.qi2qv_sublim_tend == d_cxx.qi2qv_sublim_tend);
-        REQUIRE(d_f90.qr2qv_evap_tend == d_cxx.qr2qv_evap_tend);
+        REQUIRE(d_baseline.qi2qv_sublim_tend == d_cxx.qi2qv_sublim_tend);
+        REQUIRE(d_baseline.qr2qv_evap_tend == d_cxx.qr2qv_evap_tend);
 
         //Verify tendencies are always >=0:
         REQUIRE(d_cxx.qi2qv_sublim_tend>=0);
@@ -175,8 +176,12 @@ struct UnitWrap::UnitTest<D>::TestPreventLiqSupersaturation {
         REQUIRE(d_cxx.qr2qv_evap_tend<=qr2qv_evap_tend_init[i]);
       }
     }
+    else if (this->m_baseline_action == GENERATE) {
+      for (Int s = 0; s < max_pack_size; ++s) {
+        cxx_host(s).write(Base::m_fid);
+      }
+    }
   } // run_bfb
-
 };
 
 } // namespace unit_test
@@ -187,14 +192,18 @@ namespace {
 
 TEST_CASE("prevent_liq_supersaturation_property", "[p3]")
 {
-  using TestStruct = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPreventLiqSupersaturation;
-  TestStruct::run_property();
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPreventLiqSupersaturation;
+
+  T t;
+  t.run_property();
 }
 
 TEST_CASE("prevent_liq_supersaturation_bfb", "[p3]")
 {
-  using TestStruct = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPreventLiqSupersaturation;
-  TestStruct::run_bfb();
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPreventLiqSupersaturation;
+
+  T t;
+  t.run_bfb();
 }
 
 } // empty namespace

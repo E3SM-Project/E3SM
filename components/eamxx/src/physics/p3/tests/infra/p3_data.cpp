@@ -1,4 +1,4 @@
-#include "p3_f90.hpp"
+#include "p3_data.hpp"
 #include "physics_constants.hpp"
 #include "p3_ic_cases.hpp"
 
@@ -6,17 +6,11 @@
 
 using scream::Real;
 using scream::Int;
-extern "C" {
-  void micro_p3_utils_init_c(Real Cpair, Real Rair, Real RH2O, Real RHO_H2O,
-                 Real MWH2O, Real MWdry, Real gravit, Real LatVap, Real LatIce,
-                 Real CpLiq, Real Tmelt, Real Pi, bool masterproc);
-  void p3_init_c(const char** lookup_file_dir, int* info, const bool& write_tables);
-}
 
 namespace scream {
 namespace p3 {
 
-FortranData::FortranData (Int ncol_, Int nlev_)
+P3Data::P3Data (Int ncol_, Int nlev_)
   : ncol(ncol_), nlev(nlev_)
 {
   do_predict_nc = true;
@@ -62,11 +56,11 @@ FortranData::FortranData (Int ncol_, Int nlev_)
   vap_ice_exchange   = Array2("sum of vap-ice phase change tendenices", ncol, nlev);
 }
 
-FortranDataIterator::FortranDataIterator (const FortranData::Ptr& d) {
+P3DataIterator::P3DataIterator (const P3Data::Ptr& d) {
   init(d);
 }
 
-void FortranDataIterator::init (const FortranData::Ptr& dp) {
+void P3DataIterator::init (const P3Data::Ptr& dp) {
   d_ = dp;
 #define fdipb(name)                                                     \
   fields_.push_back({#name,                                             \
@@ -79,7 +73,7 @@ void FortranDataIterator::init (const FortranData::Ptr& dp) {
   fdipb(nc); fdipb(qr); fdipb(nr); fdipb(qi); fdipb(ni);
   fdipb(qm); fdipb(bm); fdipb(precip_liq_surf); fdipb(precip_ice_surf);
   fdipb(diag_eff_radius_qc); fdipb(diag_eff_radius_qi); fdipb(diag_eff_radius_qr); fdipb(rho_qi);
-  fdipb(dpres); fdipb(inv_exner); fdipb(qv2qi_depos_tend); 
+  fdipb(dpres); fdipb(inv_exner); fdipb(qv2qi_depos_tend);
   fdipb(precip_liq_flux); fdipb(precip_ice_flux);
   fdipb(cld_frac_r); fdipb(cld_frac_l); fdipb(cld_frac_i);
   fdipb(liq_ice_exchange); fdipb(vap_liq_exchange);
@@ -87,33 +81,14 @@ void FortranDataIterator::init (const FortranData::Ptr& dp) {
 #undef fdipb
 }
 
-const FortranDataIterator::RawArray&
-FortranDataIterator::getfield (Int i) const {
+const P3DataIterator::RawArray&
+P3DataIterator::getfield (Int i) const {
   EKAT_ASSERT(i >= 0 || i < nfield());
   return fields_[i];
 }
 
-void micro_p3_utils_init (const bool masterproc) {
-  using c = scream::physics::Constants<Real>;
-  micro_p3_utils_init_c(c::Cpair, c::Rair, c::RH2O, c::RHO_H2O,
-                 c::MWH2O, c::MWdry, c::gravit, c::LatVap, c::LatIce,
-                 c::CpLiq, c::Tmelt, c::Pi, masterproc);
-}
-
-void p3_init (const bool write_tables, const bool masterproc) {
-  static bool is_init = false;
-  if (!is_init) {
-    micro_p3_utils_init(masterproc);
-    static const char* dir = SCREAM_DATA_DIR "/tables";
-    Int info;
-    p3_init_c(&dir, &info, write_tables);
-    EKAT_REQUIRE_MSG(info == 0, "p3_init_c returned info " << info);
-    is_init = true;
-  }
-}
-
-int test_FortranData () {
-  FortranData d(11, 72);
+int test_P3Data () {
+  P3Data d(11, 72);
   return 0;
 }
 

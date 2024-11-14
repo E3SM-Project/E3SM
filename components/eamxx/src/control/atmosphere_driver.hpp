@@ -66,7 +66,8 @@ public:
   void set_params (const ekat::ParameterList& params);
 
   // Init time stamps
-  void init_time_stamps (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0);
+  // run_type: -1: deduce from run/case t0, 0: initial, 1: restart
+  void init_time_stamps (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0, int run_type = -1);
 
   // Set AD params
   void init_scorpio (const int atm_id = 0);
@@ -113,6 +114,7 @@ public:
   void add_additional_column_data_to_property_checks ();
 
   void set_provenance_data (std::string caseid = "",
+                            std::string rest_caseid = "",
                             std::string hostname = "",
                             std::string username = "");
 
@@ -224,6 +226,7 @@ protected:
   // restarted runs, the latter is "older" than the former
   util::TimeStamp                           m_run_t0;
   util::TimeStamp                           m_case_t0;
+  RunType                                   m_run_type;
 
   // This is the comm containing all (and only) the processes assigned to the atmosphere
   ekat::Comm                                m_atm_comm;

@@ -274,7 +274,8 @@ public:
 
   // For internal diagnostics and debugging.
   void print_global_state_hash(const std::string& label, const bool in = true,
-                               const bool out = true, const bool internal = true) const;
+                               const bool out = true, const bool internal = true,
+                               const Real* mem = nullptr, const int nmem = 0) const;
   // For BFB tracking in production simulations.
   void print_fast_global_state_hash(const std::string& label) const;
 
@@ -347,6 +348,12 @@ protected:
   template<RequestType RT>
   void add_field (const FieldIdentifier& fid, const std::list<std::string>& groups, const int ps)
   { add_field<RT>(FieldRequest(fid,groups,ps)); }
+
+  // Specialization for add_field to tracer group
+  template<RequestType RT>
+  void add_tracer (const std::string& name, std::shared_ptr<const AbstractGrid> grid,
+                   const ekat::units::Units& u, const int ps = 1)
+  { add_field<RT>(name, grid->get_3d_scalar_layout(true), u, grid->name(), "tracers", ps); }
 
   // Group requests
   template<RequestType RT>

@@ -46,7 +46,7 @@ int run_yakl(int argc, char** argv) {
     logger->error(msg);
     return 1;
   }
-  std::string inputfile, baseline, device;
+  std::string inputfile, baseline;
 
   for (int i = 1; i < argc-1; ++i) {
     if (ekat::argv_matches(argv[i], "-b", "--baseline-file")) {
@@ -60,10 +60,8 @@ int run_yakl(int argc, char** argv) {
       inputfile = argv[i];
     }
     // RRTMGP baselines tests to not use kokoks. Swallow the arg, but ignore it
-    if (std::string(argv[i])=="--ekat-kokkos-device") {
-      expect_another_arg(i, argc);
-      ++i;
-      device = argv[i];
+    if (std::string(argv[i])=="--kokkos-device-id=") {
+      continue;
     }
   }
 
@@ -352,10 +350,8 @@ int run_kokkos(int argc, char** argv) {
       inputfile = argv[i];
     }
     // RRTMGP baselines tests to not use kokoks. Swallow the arg, but ignore it
-    if (std::string(argv[i])=="--ekat-kokkos-device") {
-      expect_another_arg(i, argc);
-      ++i;
-      device = argv[i];
+    if (std::string(argv[i])=="--kokkos-device-id=") {
+      continue;
     }
   }
 

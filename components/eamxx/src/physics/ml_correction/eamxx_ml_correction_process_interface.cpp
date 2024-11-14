@@ -50,7 +50,7 @@ void MLCorrection::set_grids(
     add_field<Updated>("sfc_flux_sw_net", scalar2d, W/m2, grid_name);
     add_field<Updated>("sfc_flux_lw_dn", scalar2d, W/m2, grid_name);
     m_lat  = m_grid->get_geometry_data("lat");
-    m_lon  = m_grid->get_geometry_data("lon");      
+    m_lon  = m_grid->get_geometry_data("lon");
   }
 
   /* ----------------------- WARNING --------------------------------*/
@@ -60,20 +60,20 @@ void MLCorrection::set_grids(
    * to be used here which we can then setup using the m_fields_ml_output_variables variable
    */
   add_field<Updated>("T_mid",       scalar3d_mid, K,     grid_name, ps);
-  add_field<Updated>("qv",          scalar3d_mid, kg/kg, grid_name, "tracers", ps);
   add_field<Updated>("horiz_winds", vector3d_mid, m/s,   grid_name, ps);
   /* Note: we also need to update the precipitation after ML commits any column drying */
   add_field<Required>("pseudo_density",      scalar3d_mid, Pa,     grid_name, ps);
   add_field<Updated>("precip_liq_surf_mass", scalar2d,     kg/m2,  grid_name);
   add_field<Updated>("precip_ice_surf_mass", scalar2d,     kg/m2,  grid_name);
   /* ----------------------- WARNING --------------------------------*/
+  add_tracer<Updated>("qv", m_grid, kg/kg, ps);
   add_group<Updated>("tracers", grid_name, 1, Bundling::Required);
 }
 
 // =========================================================================================
 void MLCorrection::initialize_impl(const RunType /* run_type */) {
   fpe_mask = ekat::get_enabled_fpes();
-  ekat::disable_all_fpes();  // required for importing numpy  
+  ekat::disable_all_fpes();  // required for importing numpy
   if ( Py_IsInitialized() == 0 ) {
     pybind11::initialize_interpreter();
   }
@@ -103,7 +103,7 @@ void MLCorrection::run_impl(const double dt) {
   std::string datetime_str = current_ts.get_date_string() + " " + current_ts.get_time_string();
 
   const auto &phis            = get_field_in("phis").get_view<const Real *, Host>();
-  const auto &sfc_alb_dif_vis = get_field_in("sfc_alb_dif_vis").get_view<const Real *, Host>();  
+  const auto &sfc_alb_dif_vis = get_field_in("sfc_alb_dif_vis").get_view<const Real *, Host>();
 
   const auto &qv              = get_field_out("qv").get_view<Real **, Host>();
   const auto &T_mid           = get_field_out("T_mid").get_view<Real **, Host>();
@@ -135,29 +135,29 @@ void MLCorrection::run_impl(const double dt) {
       pybind11::array_t<Real, pybind11::array::c_style | pybind11::array::forcecast>(
           m_num_cols * m_num_levs, T_mid.data(), pybind11::str{}),
       pybind11::array_t<Real, pybind11::array::c_style | pybind11::array::forcecast>(
-          m_num_cols * m_num_levs * num_tracers, qv.data(), pybind11::str{}),          
+          m_num_cols * m_num_levs * num_tracers, qv.data(), pybind11::str{}),
       pybind11::array_t<Real, pybind11::array::c_style | pybind11::array::forcecast>(
-          m_num_cols * m_num_levs, u.data(), pybind11::str{}),        
+          m_num_cols * m_num_levs, u.data(), pybind11::str{}),
       pybind11::array_t<Real, pybind11::array::c_style | pybind11::array::forcecast>(
-          m_num_cols * m_num_levs, v.data(), pybind11::str{}),       
+          m_num_cols * m_num_levs, v.data(), pybind11::str{}),
       pybind11::array_t<Real, pybind11::array::c_style | pybind11::array::forcecast>(
-          m_num_cols, h_lat.data(), pybind11::str{}),       
+          m_num_cols, h_lat.data(), pybind11::str{}),
       pybind11::array_t<Real, pybind11::array::c_style | pybind11::array::forcecast>(
           m_num_cols, h_lon.data(), pybind11::str{}),
       pybind11::array_t<Real, pybind11::array::c_style | pybind11::array::forcecast>(
-          m_num_cols, phis.data(), pybind11::str{}),   
+          m_num_cols, phis.data(), pybind11::str{}),
       pybind11::array_t<Real, pybind11::array::c_style | pybind11::array::forcecast>(
           m_num_cols * (m_num_levs+1), SW_flux_dn.data(), pybind11::str{}),
       pybind11::array_t<Real, pybind11::array::c_style | pybind11::array::forcecast>(
           m_num_cols, sfc_alb_dif_vis.data(), pybind11::str{}),
       pybind11::array_t<Real, pybind11::array::c_style | pybind11::array::forcecast>(
-          m_num_cols, sfc_flux_sw_net.data(), pybind11::str{}),   
+          m_num_cols, sfc_flux_sw_net.data(), pybind11::str{}),
       pybind11::array_t<Real, pybind11::array::c_style | pybind11::array::forcecast>(
-          m_num_cols, sfc_flux_lw_dn.data(), pybind11::str{}),                                                                                                   
-      m_num_cols, m_num_levs, num_tracers, dt, 
+          m_num_cols, sfc_flux_lw_dn.data(), pybind11::str{}),
+      m_num_cols, m_num_levs, num_tracers, dt,
       ML_model_tq, ML_model_uv, ML_model_sfc_fluxes, datetime_str);
-  pybind11::gil_scoped_release no_gil;  
-  ekat::enable_fpes(fpe_mask);   
+  pybind11::gil_scoped_release no_gil;
+  ekat::enable_fpes(fpe_mask);
 
   // Now back out the qv change abd apply it to precipitation, only if Tq ML is turned on
   if (m_ML_model_path_tq != "None") {
@@ -171,7 +171,7 @@ void MLCorrection::run_impl(const double dt) {
     constexpr Real g = PC::gravit;
     const auto num_levs = m_num_levs;
     const auto policy = ESU::get_default_team_policy(m_num_cols, m_num_levs);
-    
+
     const auto &qv_told = qv_in.get_view<const Real **>();
     const auto &qv_tnew = get_field_in("qv").get_view<const Real **>();
     Kokkos::parallel_for("Compute WVP diff", policy,
@@ -233,4 +233,4 @@ void MLCorrection::finalize_impl() {
 }
 // =========================================================================================
 
-}  // namespace scream 
+}  // namespace scream

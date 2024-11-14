@@ -4,7 +4,7 @@
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
-#include "p3_functions_f90.hpp"
+#include "p3_test_data.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -19,9 +19,9 @@ namespace p3 {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestIceCldliqWetGrowth {
+struct UnitWrap::UnitTest<D>::TestIceCldliqWetGrowth : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_ice_cldliq_wet_growth_bfb()
+  void run_ice_cldliq_wet_growth_bfb()
   {
     using KTH = KokkosTypes<HostDevice>;
 
@@ -57,9 +57,11 @@ struct UnitWrap::UnitTest<D>::TestIceCldliqWetGrowth {
     std::copy(&self[0], &self[0] + max_pack_size, self_host.data());
     Kokkos::deep_copy(self_device, self_host);
 
-    // Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
-      ice_cldliq_wet_growth(self[i]);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (Int i = 0; i < max_pack_size; ++i) {
+        self[i].read(Base::m_fid);
+      }
     }
 
     // Run the lookup from a kernel and copy results back to host
@@ -114,7 +116,7 @@ struct UnitWrap::UnitTest<D>::TestIceCldliqWetGrowth {
 
     Kokkos::deep_copy(self_host, self_device);
 
-    if (SCREAM_BFB_TESTING) {
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int s = 0; s < max_pack_size; ++s) {
         REQUIRE(static_cast<bool>(self[s].log_wetgrowth) == static_cast<bool>(self_host(s).log_wetgrowth));
 
@@ -125,9 +127,14 @@ struct UnitWrap::UnitTest<D>::TestIceCldliqWetGrowth {
         REQUIRE(self[s].qc2qr_ice_shed_tend   == self_host(s).qc2qr_ice_shed_tend);
       }
     }
+    else if (this->m_baseline_action == GENERATE) {
+      for (Int s = 0; s < max_pack_size; ++s) {
+        self_host(s).write(Base::m_fid);
+      }
+    }
   }
 
-  static void run_ice_cldliq_wet_growth_phys()
+  void run_ice_cldliq_wet_growth_phys()
   {
     // TODO
   }
@@ -141,10 +148,11 @@ namespace {
 
 TEST_CASE("p3_ice_cldliq_wet_growth", "[p3_functions]")
 {
-  using TD = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceCldliqWetGrowth;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceCldliqWetGrowth;
 
-  TD::run_ice_cldliq_wet_growth_phys();
-  TD::run_ice_cldliq_wet_growth_bfb();
+  T t;
+  t.run_ice_cldliq_wet_growth_phys();
+  t.run_ice_cldliq_wet_growth_bfb();
 }
 
 }

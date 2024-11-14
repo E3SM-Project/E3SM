@@ -14,19 +14,20 @@ interface
   ! any structure related to the component coupler. Other subroutines
   ! will have to be called *after* this one, to achieve that.
   subroutine scream_create_atm_instance (f_comm,atm_id,yaml_fname,atm_log_fname, &
+                                         run_type_c, &
                                          run_start_ymd,run_start_tod, &
                                          case_start_ymd,case_start_tod, &
                                          calendar_name, &
-                                         caseid, hostname, username) bind(c)
+                                         caseid, rest_caseid, hostname, username) bind(c)
     use iso_c_binding, only: c_int, c_char
     !
     ! Input(s)
     !
-    integer (kind=c_int), value, intent(in) :: f_comm, atm_id
+    integer (kind=c_int), value, intent(in) :: f_comm, atm_id, run_type_c
     integer (kind=c_int),  value, intent(in) :: run_start_tod, run_start_ymd
     integer (kind=c_int),  value, intent(in) :: case_start_tod, case_start_ymd
     character(kind=c_char), target, intent(in) :: yaml_fname(*), atm_log_fname(*), calendar_name(*), &
-                                                  caseid(*), hostname(*), username(*)
+                                                  caseid(*), rest_caseid(*), hostname(*), username(*)
   end subroutine scream_create_atm_instance
 
   subroutine scream_get_cols_latlon (lat, lon) bind(c)

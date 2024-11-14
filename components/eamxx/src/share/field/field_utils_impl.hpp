@@ -36,6 +36,16 @@ bool views_are_equal(const Field& f1, const Field& f2, const ekat::Comm* comm)
   bool same_locally = true;
   const auto& dims = l1.dims();
   switch (l1.rank()) {
+    case 0:
+      {
+        auto v1 = f1.template get_strided_view<ST,Host>();
+        auto v2 = f2.template get_strided_view<ST,Host>();
+        if (v1() != v2()) {
+          same_locally = false;
+          break;
+        }
+        break;
+      }
     case 1:
       {
         auto v1 = f1.template get_strided_view<ST*,Host>();
