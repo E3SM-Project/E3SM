@@ -280,7 +280,9 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="simulationStartTime"/>')
         lines.append('    <var name="allowableDtACFL"/>')
         lines.append('    <var name="allowableDtDCFL"/>')
-        lines.append('    <var name="albanyVelocityError"/>')
+        if mali_use_albany:
+            lines.append('    <var name="albanyVelocityError"/>')
+
         lines.append('</stream>')
         lines.append('')
         lines.append('<!--')

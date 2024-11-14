@@ -181,7 +181,7 @@ contains
     logical :: streamsExists
     integer :: mesh_iotype
 
-    logical, pointer :: tempLogicalConfig
+    logical, pointer :: tempLogicalConfig, config_create_all_logs_in_e3sm
     character(len=StrKIND), pointer :: tempCharConfig
 
 
@@ -332,22 +332,6 @@ contains
        call mpas_dmpar_abort(domain % dminfo)
     end if
 
-    ! Set core specific options here
-    ! Disable output from all but the master task for E3SM!
-    ! (This overrides the default set by mpas_log_init based on MPAS_DEBUG setting.)
-    if (iam /= 0) then
-       domain % logInfo % outputLog % isActive = .false.
-    endif
-
-    ! After core has had a chance to modify log defaults, open the output log
-    call mpas_log_open(err=ierr)
-    if ( ierr /= 0 ) then
-       write(glcLogUnit,*) 'ERROR: log open failed for core ' // trim(domain % core % coreName)
-       call mpas_dmpar_abort(domain % dminfo)
-    end if
-    ! ===========
-
-
     ! ----------
     ! Process namelist and streams files
     ! ----------
@@ -360,6 +344,26 @@ contains
     if ( ierr /= 0 ) then
        call mpas_log_write('Namelist setup failed for core ' // trim(domain % core % coreName), MPAS_LOG_CRIT)
     end if
+
+    ! Set core specific options here
+    ! Disable output from all but the master task for E3SM!
+    ! (This overrides the default set by mpas_log_init based on MPAS_DEBUG setting.)
+    call mpas_pool_get_config(domain % configs, 'config_create_all_logs_in_e3sm', config_create_all_logs_in_e3sm)
+    if (config_create_all_logs_in_e3sm) then
+       domain % logInfo % outputLog % isActive = .true.
+    else
+       if (iam /= 0) then
+          domain % logInfo % outputLog % isActive = .false.
+       endif
+    endif
+
+    ! After core has had a chance to modify log defaults, open the output log
+    call mpas_log_open(err=ierr)
+    if ( ierr /= 0 ) then
+       write(glcLogUnit,*) 'ERROR: log open failed for core ' // trim(domain % core % coreName)
+       call mpas_dmpar_abort(domain % dminfo)
+    end if
+    ! ===========
 
     call mpas_framework_init_phase2(domain, io_system)
 
@@ -553,6 +557,13 @@ contains
     call check_clocks_sync(domain % clock, Eclock, err_tmp)
     ierr = ior(ierr,err_tmp)
 
+    ! Reset the alarm for checking for force setting of the adaptive timestep interval
+    if (mpas_is_alarm_ringing(domain % clock, 'adaptiveTimestepForceInterval', ierr=err_tmp)) then
+       ierr = ior(ierr, err_tmp)
+       call mpas_reset_clock_alarm(domain % clock, 'adaptiveTimestepForceInterval', ierr=err_tmp)
+       ierr = ior(ierr, err_tmp)
+    endif
+    ierr = ior(ierr, err_tmp)
 
 !-----------------------------------------------------------------------
 !

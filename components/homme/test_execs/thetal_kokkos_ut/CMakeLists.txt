@@ -11,6 +11,8 @@ SET(UTILS_TIMING_BIN_DIR ${HOMME_BINARY_DIR}/utils/cime/CIME/non_py/src/timing)
 THETAL_KOKKOS_SETUP()
 
 # This is needed to compile the lib and test executables with the correct options
+#these vars shared between all targets, so changing one var
+#for one test only won't work, config is built once and for the last test
 SET(THIS_CONFIG_IN ${HOMME_SOURCE_DIR}/src/theta-l_kokkos/config.h.cmake.in)
 SET(THIS_CONFIG_HC ${CMAKE_CURRENT_BINARY_DIR}/config.h.c)
 SET(THIS_CONFIG_H ${CMAKE_CURRENT_BINARY_DIR}/config.h)
@@ -18,6 +20,7 @@ SET (NUM_POINTS 4)
 SET (NUM_PLEV 12)
 SET (QSIZE_D 4)
 SET (PIO_INTERP TRUE)
+
 HommeConfigFile (${THIS_CONFIG_IN} ${THIS_CONFIG_HC} ${THIS_CONFIG_H} )
 
 ADD_LIBRARY(thetal_kokkos_ut_lib
@@ -39,10 +42,14 @@ ADD_LIBRARY(thetal_kokkos_ut_lib
 TARGET_INCLUDE_DIRECTORIES(thetal_kokkos_ut_lib PUBLIC ${EXEC_INCLUDE_DIRS})
 TARGET_INCLUDE_DIRECTORIES(thetal_kokkos_ut_lib PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 TARGET_COMPILE_DEFINITIONS(thetal_kokkos_ut_lib PUBLIC "HAVE_CONFIG_H")
-target_link_libraries(thetal_kokkos_ut_lib Kokkos::kokkos)
+TARGET_LINK_LIBRARIES(thetal_kokkos_ut_lib Kokkos::kokkos)
 TARGET_LINK_LIBRARIES(thetal_kokkos_ut_lib timing csm_share ${COMPOSE_LIBRARY_CPP} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
 IF (HOMME_USE_MKL)
-  TARGET_LINK_LIBRARIES (thetal_kokkos_ut_lib -mkl)
+  IF (MKL_TYPE STREQUAL "oneMKL")
+    TARGET_LINK_LIBRARIES(thetal_kokkos_ut_lib -qmkl)
+  ELSEIF (MKL_TYPE STREQUAL "Intel MKL")
+    TARGET_LINK_LIBRARIES(thetal_kokkos_ut_lib -mkl)
+  ENDIF ()
 ENDIF()
 IF(BUILD_HOMME_WITHOUT_PIOLIBRARY)
   TARGET_COMPILE_DEFINITIONS(thetal_kokkos_ut_lib PUBLIC HOMME_WITHOUT_PIOLIBRARY)

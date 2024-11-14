@@ -680,10 +680,12 @@ MODULE MOSART_physics_mod
     end do  ! DLevelH2R
     ! subcycling within MOSART ends
 
-! check for negative channel storage
-    if (negchan < -1.e-10) then
-       write(iulog,*) 'Warning: Negative channel storage found! ',negchan
-!       call shr_sys_abort('mosart: negative channel storage')
+   ! check for negative channel storage
+    if (negchan < -1.e-10 .and. negchan >= -1.e-8) then
+       write(iulog,*) 'Warning: Small negative channel storage found! ',negchan
+    elseif(negchan < -1.e-8) then
+       write(iulog,*) 'Error: Negative channel storage found! ',negchan
+       call shr_sys_abort('mosart: negative channel storage')
     endif
     TRunoff%flow = TRunoff%flow / Tctl%DLevelH2R
     TRunoff%erowm_regi(:,nt_nmud:nt_nsan) = TRunoff%erowm_regi(:,nt_nmud:nt_nsan) / Tctl%DLevelH2R
@@ -876,11 +878,7 @@ MODULE MOSART_physics_mod
               TRunoff%erout(iunit,nt) = -TRunoff%vr(iunit,nt) * TRunoff%mr(iunit,nt)
               if(-TRunoff%erout(iunit,nt) > TINYVALUE .and. TRunoff%wr(iunit,nt) + &
                  (TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt) + TRunoff%erout(iunit,nt)) * theDeltaT < TINYVALUE) then
-                 if (sediflag) then
-                  TRunoff%erout(iunit,nt) = -(TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt) + TRunoff%wr(iunit,nt)*MaxStorageDepleted/ theDeltaT)
-                 else
-                  TRunoff%erout(iunit,nt) = -(TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt) + TRunoff%wr(iunit,nt)/ theDeltaT)
-                 end if
+                 TRunoff%erout(iunit,nt) = -(TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt) + TRunoff%wr(iunit,nt)*MaxStorageDepleted/ theDeltaT)
                  if(TRunoff%mr(iunit,nt) > 0._r8) then
                     TRunoff%vr(iunit,nt) = -TRunoff%erout(iunit,nt) / TRunoff%mr(iunit,nt)
                  end if
@@ -917,16 +915,6 @@ MODULE MOSART_physics_mod
     end if
            
     TRunoff%dwr(iunit,nt) = TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt) + TRunoff%erout(iunit,nt) + temp_gwl
-
-    !if(TRunoff%wr(iunit,nt) < TINYVALUE .and. abs(TRunoff%erout(iunit,nt))> TINYVALUE) then
-    !    write(unit=1111,fmt="(i10, 4(e20.11))") iunit, TRunoff%wr(iunit,nt), TRunoff%erout(iunit,nt), TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt), TRunoff%dwr(iunit,nt) 
-    !    write(unit=1112,fmt="(2(i10), 4(e20.11))") iunit, TUnit%mask(iunit), TRunoff%vr(iunit,nt), TUnit%rlen(iunit), TUnit%rwidth(iunit), TUnit%areaTotal2(iunit)/TUnit%rwidth(iunit)/TUnit%rlen(iunit)
-    !end if
-
-!    if(iunit==490 .and. nt==1) then
-!        write(unit=1111,fmt="(3(e20.11), 5(f12.4))") TUnit%areaTotal2(iunit),TUnit%areaTotal(iunit),TUnit%area(iunit),TUnit%rdepth(iunit), TUnit%rwidth(iunit), TUnit%rslp(iunit), TUnit%nr(iunit), TUnit%nt(iunit)
-!        write(unit=1112,fmt="(6(e20.11))") TRunoff%wr(iunit,nt), TRunoff%dwr(iunit,nt), TRunoff%erlateral(iunit,nt), TRunoff%erin(iunit,nt), TRunoff%erout(iunit,nt), temp_gwl
-!    end if
 
 ! check for stability
 !    if(TRunoff%vr(iunit,nt) < -TINYVALUE .or. TRunoff%vr(iunit,nt) > 30) then

@@ -1,59 +1,77 @@
 # Atmospheric Processes
 
-In EAMxx, `AtmosphereProcess` (AP) is an abstract class representing a portion of the atmosphere timestep algorithm.
-In simple terms, an AP is an object that given certain input fields performs some calculations to compute
-some output fields. The concrete AP classes allow to create a buffer layer between particular packages (e.g.,
-dynamics dycore, physics parametrizations) and the atmosphere driver (AD), allowing separation of concerns,
-so that the AD does not need to know details about the package, and the package does not need to know about
-the EAMxx infrastructure.
+In EAMxx, `AtmosphereProcess` (AP) is an abstract class representing a portion
+of the atmosphere timestep algorithm. In simple terms, an AP is an object that
+given certain input fields performs some calculations to compute some output
+fields. The concrete AP classes allow to create a buffer layer between
+particular packages (e.g., dynamics dycore, physics parametrizations) and the
+atmosphere driver (AD), allowing separation of concerns, so that the AD does
+not need to know details about the package, and the package does not need to
+know about the EAMxx infrastructure.
 
-To enhance this separation of concerns, EAMxx implements two more classes for handling APs:
+To enhance this separation of concerns, EAMxx implements two more classes for
+handling APs:
 
-- the concrete class `AtmosphereProcessGroup` (APG), which allows to group together a set of AP's, which can be seen from outside as a single process;
-- the `AtmosphereProcessFactory` class, which allows an APG to create its internal processes without any knowledge of
-what they are.
+- the concrete class `AtmosphereProcessGroup` (APG), which allows to group
+  together a set of AP's, which can be seen from outside as a single process;
+- the `AtmosphereProcessFactory` class, which allows an APG to create its
+  internal processes without any knowledge of what they are.
 
-This infrastructure allows the AD to view the whole atmosphere as a single APG, and to be completely agnostic to
-what processes are run, and in which order. This design allows to have a code base that is cleaner, self-container,
-and easy to test via a battery of targeted unit tests.
+This infrastructure allows the AD to view the whole atmosphere as a single APG,
+and to be completely agnostic to what processes are run, and in which order.
+This design allows to have a code base that is cleaner, self-container, and
+easy to test via a battery of targeted unit tests.
 
-In EAMxx, we already have a few concrete AP's, interfacing the AD to the Hommexx non-hydrostatic dycore as well as
-some physics parametrizations (P3, SHOC, RRMTPG, etc). In the next section we describe the interfaces of an AP class,
-and we show an example of how to write a new concrete AP class.
+In EAMxx, we already have a few concrete AP's, interfacing the AD to the
+Hommexx non-hydrostatic dycore as well as some physics parametrizations (P3,
+SHOC, RRMTPG, etc). In the next section we describe the interfaces of an AP
+class, and we show an example of how to write a new concrete AP class.
 
 ## Atmosphere process interfaces
 
 An AP has several interfaces, which can be grouped into three categories:
 
- - initialization: these interfaces are used to create the AP, as well as to initialize internal data structures;
- - run: these interfaces are used to make the AP compute its output fields from its input fields;
- - finalization: these interfaces are used to perform any clean up operation (e.g., release files) before the AP is
- destroyed.
+- initialization: these interfaces are used to create the AP, as well as to
+  initialize internal data structures;
+- run: these interfaces are used to make the AP compute its output fields from
+  its input fields;
+- finalization: these interfaces are used to perform any clean up operation
+  (e.g., release files) before the AP is destroyed.
 
-Among the above, the initialization sequence is the most complex, and conists of several steps:
+Among the above, the initialization sequence is the most complex, and consists
+of several steps:
 
- - The AD creates the APG corresponding to the whole atmosphere. As mentioned above, this phase will make use of a factory,
-   which allows the AD to be agnostic to what is actually in the group. All AP's can start performing any initialization
-   work that they can, but at this point they are limited to use only an MPI communicator as well as a list of runtime
-   parameters (which were previously read from an input file).
- - The AD passes a `GridsManager` to the AP's, so that they can get information about the grids they need. At this point,
-   all AP's have all the information they need to establish the layout of the input and output fields they need,
-   and can store a list of these "requests"
- - After creating all fields (based on AP's requests), the AD passes a copy of each input and output field to
-   the AP's. These fields will be divided in "required" and "computed", which differ in that the former are only
-   passed to the AP's as 'read-only' fields (see the [field](field.md#Field) documentation for more details)
- - The AP's are queried for how much scratch memory they may need at run time. After all AP's communicate their needs,
-   the AD will provide a pointer to scratch memory to the AP's. This is memory that can be used to initialize
-   temporary views/fields or other internal data structures. All AP's are given the same pointer, which means no
-   data persistence should be expected at run time between one timestep and the next.
- - The AD calls the 'initialize' method on each AP. At this point, all fields are set, and AP's can complete any
-   remaining initialization task
+- The AD creates the APG corresponding to the whole atmosphere. As mentioned
+  above, this phase will make use of a factory, which allows the AD to be
+  agnostic to what is actually in the group. All AP's can start performing any
+  initialization work that they can, but at this point they are limited to use
+  only an MPI communicator as well as a list of runtime parameters (which were
+  previously read from an input file).
+- The AD passes a `GridsManager` to the AP's, so that they can get information
+  about the grids they need. At this point, all AP's have all the information
+  they need to establish the layout of the input and output fields they need,
+  and can store a list of these "requests"
+- After creating all fields (based on AP's requests), the AD passes a copy of
+  each input and output field to the AP's. These fields will be divided in
+  "required" and "computed", which differ in that the former are only passed
+  to the AP's as 'read-only' fields (see the [field](field.md#Field)
+  documentation for more details)
+- The AP's are queried for how much scratch memory they may need at run time.
+  After all AP's communicate their needs, the AD will provide a pointer to
+  scratch memory to the AP's. This is memory that can be used to initialize
+  temporary views/fields or other internal data structures. All AP's are given
+  the same pointer, which means no data persistence should be expected at run
+  time between one timestep and the next.
+- The AD calls the 'initialize' method on each AP. At this point, all fields
+  are set, and AP's can complete any remaining initialization task
 
-While the base AP class provides an (empty) implementation for some methods, in case derived classes do not need a
-feature, some methods are purely virtual, and concrete classes will have to override them. Looking at existing
-concrete AP implementations is a good way to have a first idea of what a new AP class needs to implement. Here,
-we show go over the possible implementation of these methods in a hypothetical AP class. The header file may
-look something like this
+While the base AP class provides an (empty) implementation for some methods, in
+case derived classes do not need a feature, some methods are purely virtual,
+and concrete classes will have to override them. Looking at existing concrete
+AP implementations is a good way to have a first idea of what a new AP class
+needs to implement. Here, we show go over the possible implementation of these
+methods in a hypothetical AP class. The header file may look something like
+this
 
 ```c++
 #include <share/atm_process/atmosphere_process.hpp>
@@ -86,21 +104,26 @@ protected:
   bool m_has_blah;
 };
 ```
+
 A few comments:
 
- - we added two views to the class, which are meant to be used to store intermediate results during calculations at
-runtime;
- - there are other methods that the class can override (such as additional operations when the AD sets a field in the
-   AP), but most AP's only need to override only these;
- - we strongly encourage to add the keyword `override` when overriding a method; in case of small typos (e.g., missing
-   a `&` or a `const`, the compiler will be erroring out, since the signature will not match any virtual method in the
-   base class;
- - `findalize_impl` is often empty; unless the AP is managing external resources, everything should be correctly released
-   during destruction;
- - the two methods for buffers can be omitted if the AP does not need any scratch memory (and the default implementation
-   from the base class will be used).
+- we added two views to the class, which are meant to be used to store
+  intermediate results during calculations at runtime;
+- there are other methods that the class can override (such as additional
+  operations when the AD sets a field in the AP), but most AP's only need to
+  override only these;
+- we strongly encourage to add the keyword `override` when overriding a method;
+  in case of small typos (e.g., missing a `&` or a `const`, the compiler will
+  be erroring out, since the signature will not match any virtual method in the
+  base class;
+- `finalize_impl` is often empty; unless the AP is managing external resources,
+  everything should be correctly released during destruction;
+- the two methods for buffers can be omitted if the AP does not need any
+  scratch memory (and the default implementation from the base class will be
+  used).
 
-Here is a possible implementation of the methods, with some inline comments to explain
+Here is a possible implementation of the methods, with some inline comments to
+explain
 
 ```c++
 MyProcess::MyProcess (const ekat::Comm& comm, const ekat::ParameterList& pl)

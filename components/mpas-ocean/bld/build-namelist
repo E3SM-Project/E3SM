@@ -725,11 +725,20 @@ add_default($nl, 'config_sgr_salinity_prescribed');
 # Namelist group: coupling #
 ############################
 
-add_default($nl, 'config_remove_ais_river_runoff');
-if (($OCN_ICEBERG eq 'true') && ($OCN_FORCING eq 'active_atm')) {
+# When we have a data representation of icebergs, remove ice runoff
+if ($OCN_ICEBERG eq 'true') {
 	add_default($nl, 'config_remove_ais_ice_runoff', 'val'=>".true.");
 } else {
 	add_default($nl, 'config_remove_ais_ice_runoff', 'val'=>".false.");
+}
+# Assume river runoff corresponds to ISMF in Southern Ocean only for G-cases
+# (true for JRA). When atm active, we assume liquid runoff corresonds to precip
+# or snow melt so we do not remove it. In either case, the energy for melting
+# doesn't come from the ocean.
+if (($OCN_ISMF ne 'none') && ($OCN_FORCING ne 'active_atm')) {
+	add_default($nl, 'config_remove_ais_river_runoff', 'val'=>".true.");
+} else {
+	add_default($nl, 'config_remove_ais_river_runoff', 'val'=>".false.");
 }
 
 ######################################
