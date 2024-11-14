@@ -205,6 +205,96 @@ end function bfb_expm1
 
   END SUBROUTINE p3_init
 
+#define READ_P3_LOOKUP_TABLE_WITH_ONE_RANK_ONLY
+#ifdef READ_P3_LOOKUP_TABLE_WITH_ONE_RANK_ONLY
+  SUBROUTINE p3_init_a(lookup_file_dir,version_p3) ! ndk added
+
+    use scream_abortutils, only : endscreamrun
+    use mpishorthand, only: mpir8
+    use spmd_utils,   only: mpicom
+
+    ! Passed arguments:
+    character*(*), intent(in)     :: lookup_file_dir       !directory of the lookup tables
+
+    character(len=16), intent(in) :: version_p3            !version number of P3 package
+    character(len=1024)           :: lookup_file_1         !lookup table, maini
+    character(len=1024)           :: version_header_table_1             !version number read from header, table 1
+    integer                       :: i,j,ii,jj
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    real(rtype8)                  :: dum,dumk1,dumk2
+    real(rtype8), dimension(12)   :: dumk
+#else
+    real(rtype)                   :: dum,dumk1,dumk2
+    real(rtype), dimension(12)    :: dumk
+#endif
+    integer                       :: dumi
+    character(len=1024)           :: dumstr
+
+    !------------------------------------------------------------------------------------------!
+
+    lookup_file_1 = trim(lookup_file_dir)//'/'//'p3_lookup_table_1.dat-v'//trim(version_p3)
+
+    !------------------------------------------------------------------------------------------!
+    ! read in ice microphysics table
+
+    ice_table_vals(:,:,:,:) = 0.
+    collect_table_vals(:,:,:,:,:) = 0.
+
+    if (masterproc) then
+       write(iulog,*) '   P3_INIT (one rank reading/creating look-up tables) ...'
+
+       open(unit=10,file=lookup_file_1, status='old', action='read')
+
+       read(10,*) dumstr, version_header_table_1
+       if (trim(version_p3) /= trim(version_header_table_1)) then
+          print*
+          print*, '***********   WARNING in P3_INIT   *************'
+          print*, ' Loading lookupTable_1: v',trim(version_header_table_1)
+          print*, ' P3 is intended to use lookupTable_1: v', trim(version_p3)
+          print*, '               -- ABORTING -- '
+          print*, '************************************************'
+          print*
+          call endscreamrun()
+       end if
+
+       !ice_table_vals(:,:,:,:) = 0.
+       !collect_table_vals(:,:,:,:,:) = 0.
+       do jj = 1,densize
+          do ii = 1,rimsize
+             do i = 1,isize
+                read(10,*) dumi,dumi,dum,dum,dumk(1),dumk(2),              &
+                     dumk(3),dumk(4),dumk(5),dumk(6),dumk(7),dumk(8),dum,  &
+                     dumk(9),dumk(10),dumk(11),dumk(12)
+                ice_table_vals(jj,ii,i,:) = dumk(:)
+             enddo
+             ! read in table for ice-rain collection
+             do i = 1,isize
+                do j = 1,rcollsize
+                   read(10,*) dumi,dumi,dum,dum,dum,dumk1,dumk2,dum
+                   collect_table_vals(jj,ii,i,j,1) = dlog10(dumk1)
+                   collect_table_vals(jj,ii,i,j,2) = dlog10(dumk2)
+                enddo
+             enddo
+          enddo
+       enddo
+
+       close(10)
+
+       !PMC: deleted ice-ice collision lookup table here b/c only used for nCat>1.
+       ! So there is no need to fill lookup values for lookup table 2.
+    endif
+
+
+#ifdef SPMD
+    !call mpi_comm_rank (mpicom, irank, ierr) #     ! if need the actual rank here
+    call mpibcast(ice_table_vals,     densize*rimsize*isize*ice_table_size,                mpir8, 0, mpicom) ! ndk
+    call mpibcast(collect_table_vals, densize*rimsize*isize*rcollsize*collect_table_size,  mpir8, 0, mpicom) ! ndk
+#endif
+    return
+
+  END SUBROUTINE p3_init_a
+
+#else
   SUBROUTINE p3_init_a(lookup_file_dir,version_p3)
 
     use scream_abortutils, only : endscreamrun
@@ -279,6 +369,7 @@ end function bfb_expm1
    return
 
   END SUBROUTINE p3_init_a
+#endif
 
   subroutine p3_get_tables(mu_r_user, revap_user, vn_user, vm_user)
     ! This can be called after p3_init_b.
