@@ -273,16 +273,19 @@
       <env name="GATOR_INITIAL_MB">4000MB</env>
     </environment_variables>
     <environment_variables compiler="intel" mpilib="mpich">
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.9.1/cray-mpich-8.1.25/intel-2023.1.0; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.10.1/cray-mpich-8.1.28/intel-2023.2.0; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/c-blosc2/2.15.1/intel-2023.2.0; else echo "$BLOSC2_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="gnu" mpilib="mpich">
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.9.1/cray-mpich-8.1.25/gcc-11.2.0; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.10.1/cray-mpich-8.1.28/gcc-native-12.3; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/c-blosc2/2.15.1/gcc-native-12.3; else echo "$BLOSC2_ROOT"; fi}</env>
       <env name="BLA_VENDOR">Generic</env>
       <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /global/common/software/e3sm/albany/2024.03.26/gcc/11.2.0; else echo "$Albany_ROOT"; fi}</env>
       <env name="Trilinos_ROOT">$SHELL{if [ -z "$Trilinos_ROOT" ]; then echo /global/common/software/e3sm/trilinos/15.1.1/gcc/11.2.0; else echo "$Trilinos_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="nvidia" mpilib="mpich">
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.9.1/cray-mpich-8.1.25/nvidia-22.7; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.10.1/cray-mpich-8.1.28/nvidia-24.5; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/c-blosc2/2.15.1/nvidia-24.5; else echo "$BLOSC2_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="nvidia">
       <env name="BLAS_ROOT">$SHELL{if [ -z "$BLAS_ROOT" ]; then echo $NVIDIA_PATH/compilers; else echo "$BLAS_ROOT"; fi}</env>
@@ -293,7 +296,8 @@
       <env name="BLA_VENDOR">Intel10_64_dyn</env>
     </environment_variables>
     <environment_variables compiler="amdclang" mpilib="mpich">
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.9.1/cray-mpich-8.1.25/aocc-4.0.0; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.10.1/cray-mpich-8.1.28/aocc-4.1.0; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/c-blosc2/2.15.1/aocc-4.1.0; else echo "$BLOSC2_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="intel">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/intel; else echo "$MOAB_ROOT"; fi}</env>
@@ -452,10 +456,12 @@
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/gnugpu ; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="gnu.*" mpilib="mpich">
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.9.1/cray-mpich-8.1.25/gcc-11.2.0; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.10.1/cray-mpich-8.1.28/gcc-native-12.3; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/c-blosc2/2.15.1/gcc-native-12.3; else echo "$BLOSC2_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="nvidia.*" mpilib="mpich">
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.9.1/cray-mpich-8.1.25/nvidia-22.7; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.10.1/cray-mpich-8.1.28/nvidia-24.5; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/c-blosc2/2.15.1/nvidia-24.5; else echo "$BLOSC2_ROOT"; fi}</env>
     </environment_variables>
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>
@@ -590,16 +596,19 @@
       <env name="GATOR_INITIAL_MB">4000MB</env>
     </environment_variables>
     <environment_variables compiler="intel" mpilib="mpich">
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.9.1/cray-mpich-8.1.25/intel-2023.1.0; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.10.1/cray-mpich-8.1.28/intel-2023.2.0; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/c-blosc2/2.15.1/intel-2023.2.0; else echo "$BLOSC2_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="gnu" mpilib="mpich">
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.9.1/cray-mpich-8.1.25/gcc-11.2.0; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.10.1/cray-mpich-8.1.28/gcc-native-12.3; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/c-blosc2/2.15.1/gcc-native-12.3; else echo "$BLOSC2_ROOT"; fi}</env>
       <env name="BLA_VENDOR">Generic</env>
       <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /global/common/software/e3sm/albany/2024.03.26/gcc/11.2.0; else echo "$Albany_ROOT"; fi}</env>
       <env name="Trilinos_ROOT">$SHELL{if [ -z "$Trilinos_ROOT" ]; then echo /global/common/software/e3sm/trilinos/15.1.1/gcc/11.2.0; else echo "$Trilinos_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="nvidia" mpilib="mpich">
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.9.1/cray-mpich-8.1.25/nvidia-22.7; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.10.1/cray-mpich-8.1.28/nvidia-24.5; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/c-blosc2/2.15.1/nvidia-24.5; else echo "$BLOSC2_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="nvidia">
       <env name="BLAS_ROOT">$SHELL{if [ -z "$BLAS_ROOT" ]; then echo $NVIDIA_PATH/compilers; else echo "$BLAS_ROOT"; fi}</env>
@@ -610,7 +619,8 @@
       <env name="BLA_VENDOR">Intel10_64_dyn</env>
     </environment_variables>
     <environment_variables compiler="amdclang" mpilib="mpich">
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.9.1/cray-mpich-8.1.25/aocc-4.0.0; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.10.1/cray-mpich-8.1.28/aocc-4.1.0; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/c-blosc2/2.15.1/aocc-4.1.0; else echo "$BLOSC2_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="intel">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/intel; else echo "$MOAB_ROOT"; fi}</env>
@@ -770,10 +780,12 @@
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/gnugpu ; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="gnu.*" mpilib="mpich">
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.9.1/cray-mpich-8.1.25/gcc-11.2.0; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.10.1/cray-mpich-8.1.28/gcc-native-12.3; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/c-blosc2/2.15.1/gcc-native-12.3; else echo "$BLOSC2_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="nvidia.*" mpilib="mpich">
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.9.1/cray-mpich-8.1.25/nvidia-22.7; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.10.1/cray-mpich-8.1.28/nvidia-24.5; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/c-blosc2/2.15.1/nvidia-24.5; else echo "$BLOSC2_ROOT"; fi}</env>
     </environment_variables>
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>
@@ -908,16 +920,19 @@
       <env name="GATOR_INITIAL_MB">4000MB</env>
     </environment_variables>
     <environment_variables compiler="intel" mpilib="mpich">
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.9.1/cray-mpich-8.1.25/intel-2023.1.0; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.10.1/cray-mpich-8.1.28/intel-2023.2.0; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/c-blosc2/2.15.1/intel-2023.2.0; else echo "$BLOSC2_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="gnu" mpilib="mpich">
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.9.1/cray-mpich-8.1.25/gcc-11.2.0; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.10.1/cray-mpich-8.1.28/gcc-native-12.3; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/c-blosc2/2.15.1/gcc-native-12.3; else echo "$BLOSC2_ROOT"; fi}</env>
       <env name="BLA_VENDOR">Generic</env>
       <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /global/common/software/e3sm/albany/2024.03.26/gcc/11.2.0; else echo "$Albany_ROOT"; fi}</env>
       <env name="Trilinos_ROOT">$SHELL{if [ -z "$Trilinos_ROOT" ]; then echo /global/common/software/e3sm/trilinos/15.1.1/gcc/11.2.0; else echo "$Trilinos_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="nvidia" mpilib="mpich">
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.9.1/cray-mpich-8.1.25/nvidia-22.7; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.10.1/cray-mpich-8.1.28/nvidia-24.5; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/c-blosc2/2.15.1/nvidia-24.5; else echo "$BLOSC2_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="nvidia">
       <env name="BLAS_ROOT">$SHELL{if [ -z "$BLAS_ROOT" ]; then echo $NVIDIA_PATH/compilers; else echo "$BLAS_ROOT"; fi}</env>
@@ -928,7 +943,8 @@
       <env name="BLA_VENDOR">Intel10_64_dyn</env>
     </environment_variables>
     <environment_variables compiler="amdclang" mpilib="mpich">
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.9.1/cray-mpich-8.1.25/aocc-4.0.0; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.10.1/cray-mpich-8.1.28/aocc-4.1.0; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/c-blosc2/2.15.1/aocc-4.1.0; else echo "$BLOSC2_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="intel">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/intel; else echo "$MOAB_ROOT"; fi}</env>
@@ -1147,13 +1163,28 @@
       <env name="OMP_PLACES">threads</env>
     </environment_variables>
     <environment_variables compiler="gnu.*" mpilib="mpich">
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/adios2/2.9.1/cray-mpich-8.1.23/gcc-11.2.0; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/adios2/2.10.2/cray-mpich-8.1.27/gcc-12.2.0; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/c-blosc2/2.15.2/gcc-12.2.0; else echo "$BLOSC2_ROOT"; fi}</env>
+      <env name="MGARD_ROOT">$SHELL{if [ -z "$MGARD_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/mgard/1.5.2/gcc-12.2.0; else echo "$MGARD_ROOT"; fi}</env>
+      <env name="SZ_ROOT">$SHELL{if [ -z "$SZ_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/sz/2.1.12.5/gcc-12.2.0; else echo "$SZ_ROOT"; fi}</env>
+      <env name="ZFP_ROOT">$SHELL{if [ -z "$ZFP_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/zfp/1.0.1/gcc-12.2.0; else echo "$ZFP_ROOT"; fi}</env>
+      <env name="PKG_CONFIG_PATH">/lustre/orion/cli115/world-shared/frontier/3rdparty/protobuf/21.6/gcc-12.2.0/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
     </environment_variables>
     <environment_variables compiler="crayclang.*" mpilib="mpich">
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/adios2/2.9.1/cray-mpich-8.1.23/crayclang-15.0.1; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/adios2/2.10.2/cray-mpich-8.1.27/crayclang-15.0.1; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/c-blosc2/2.15.2/crayclang-15.0.1; else echo "$BLOSC2_ROOT"; fi}</env>
+      <env name="MGARD_ROOT">$SHELL{if [ -z "$MGARD_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/mgard/1.5.2/crayclang-15.0.1; else echo "$MGARD_ROOT"; fi}</env>
+      <env name="SZ_ROOT">$SHELL{if [ -z "$SZ_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/sz/2.1.12.5/crayclang-15.0.1; else echo "$SZ_ROOT"; fi}</env>
+      <env name="ZFP_ROOT">$SHELL{if [ -z "$ZFP_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/zfp/1.0.1/crayclang-15.0.1; else echo "$ZFP_ROOT"; fi}</env>
+      <env name="PKG_CONFIG_PATH">/lustre/orion/cli115/world-shared/frontier/3rdparty/protobuf/21.6/crayclang-15.0.1/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
     </environment_variables>
     <environment_variables compiler="amdclang.*" mpilib="mpich">
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/adios2/2.9.1/cray-mpich-8.1.23/amdclang-15.0.0; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/adios2/2.10.2/cray-mpich-8.1.28/amdclang-15.0.0; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/c-blosc2/2.15.2/amdclang-15.0.0; else echo "$BLOSC2_ROOT"; fi}</env>
+      <env name="MGARD_ROOT">$SHELL{if [ -z "$MGARD_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/mgard/1.5.2/amdclang-15.0.0; else echo "$MGARD_ROOT"; fi}</env>
+      <env name="SZ_ROOT">$SHELL{if [ -z "$SZ_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/sz/2.1.12.5/amdclang-15.0.0; else echo "$SZ_ROOT"; fi}</env>
+      <env name="ZFP_ROOT">$SHELL{if [ -z "$ZFP_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/zfp/1.0.1/amdclang-15.0.0; else echo "$ZFP_ROOT"; fi}</env>
+      <env name="PKG_CONFIG_PATH">/lustre/orion/cli115/world-shared/frontier/3rdparty/protobuf/21.6/amdclang-15.0.0/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
     </environment_variables>
   </machine>
 
@@ -1261,10 +1292,20 @@
     </environment_variables>
 
     <environment_variables compiler="craygnuamdgpu" mpilib="mpich">
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/adios2/2.10/install/craygnuamdgppu/cpe-24.07/libfabric-1.15.2.0; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/adios2/2.10.2/cray-mpich-8.1.30/craygnuamdgpu/cpe-24.07; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/c-blosc2/2.15.2/gcc-native-13.2; else echo "$BLOSC2_ROOT"; fi}</env>
+      <env name="MGARD_ROOT">$SHELL{if [ -z "$MGARD_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/mgard/1.5.2/gcc-native-13.2; else echo "$MGARD_ROOT"; fi}</env>
+      <env name="SZ_ROOT">$SHELL{if [ -z "$SZ_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/sz/2.1.12.5/gcc-native-13.2; else echo "$SZ_ROOT"; fi}</env>
+      <env name="ZFP_ROOT">$SHELL{if [ -z "$ZFP_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/zfp/1.0.1/gcc-native-13.2; else echo "$ZFP_ROOT"; fi}</env>
+      <env name="PKG_CONFIG_PATH">/lustre/orion/cli115/world-shared/frontier/3rdparty/protobuf/21.6/gcc-native-13.2/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
     </environment_variables>
     <environment_variables compiler="crayclang-scream" mpilib="mpich">
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/adios2/2.9.1/cray-mpich-8.1.26/crayclang-scream-14.0.0; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/adios2/2.10.2/cray-mpich-8.1.26/crayclang-scream/cpe-22.12; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/c-blosc2/2.15.2/crayclang-15.0.1; else echo "$BLOSC2_ROOT"; fi}</env>
+      <env name="MGARD_ROOT">$SHELL{if [ -z "$MGARD_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/mgard/1.5.2/crayclang-15.0.1; else echo "$MGARD_ROOT"; fi}</env>
+      <env name="SZ_ROOT">$SHELL{if [ -z "$SZ_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/sz/2.1.12.5/crayclang-15.0.1; else echo "$SZ_ROOT"; fi}</env>
+      <env name="ZFP_ROOT">$SHELL{if [ -z "$ZFP_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/zfp/1.0.1/crayclang-15.0.1; else echo "$ZFP_ROOT"; fi}</env>
+      <env name="PKG_CONFIG_PATH">/lustre/orion/cli115/world-shared/frontier/3rdparty/protobuf/21.6/crayclang-15.0.1/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
     </environment_variables>
 
   </machine>
@@ -2010,6 +2051,7 @@
     <environment_variables mpilib="mpich">
       <!-- We currently don't have modules for HDF5, NetCDF & PnetCDF -->
       <env name="LD_LIBRARY_PATH">/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/mpich/4.1.2/gcc-12.1.0/lib:$ENV{LD_LIBRARY_PATH}</env>
+      <env name="PKG_CONFIG_PATH">/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/protobuf/21.6/gcc-12.1.0/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
       <env name="PATH">/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/mpich/4.1.2/gcc-12.1.0/bin:$ENV{PATH}</env>
       <env name="ZLIB_ROOT">/nfs/gce/software/spack/opt/spack/linux-ubuntu20.04-x86_64/gcc-9.3.0/zlib-1.2.11-p7dmb5p</env>
       <env name="HDF5_ROOT">/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/hdf5/1.12.2/mpich-4.1.2/gcc-12.1.0</env>
@@ -2034,8 +2076,11 @@
       <env name="PERL5LIB">/nfs/gce/projects/climate/software/perl5/lib/perl5</env>
     </environment_variables>
     <environment_variables compiler="gnu" mpilib="mpich">
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/adios2/2.10.1/mpich-4.1.2/gcc-12.1.0; else echo "$ADIOS2_ROOT"; fi}</env>
-      <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/c-blosc2/2.15.1/gcc-12.1.0; else echo "$BLOSC2_ROOT"; fi}</env>
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/adios2/2.10.2/mpich-4.1.2/gcc-12.1.0; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/c-blosc2/2.15.2/gcc-12.1.0; else echo "$BLOSC2_ROOT"; fi}</env>
+      <env name="MGARD_ROOT">$SHELL{if [ -z "$MGARD_ROOT" ]; then echo /nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/mgard/1.5.2/gcc-12.1.0; else echo "$MGARD_ROOT"; fi}</env>
+      <env name="SZ_ROOT">$SHELL{if [ -z "$SZ_ROOT" ]; then echo /nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/sz/2.1.12.5/gcc-12.1.0; else echo "$SZ_ROOT"; fi}</env>
+      <env name="ZFP_ROOT">$SHELL{if [ -z "$ZFP_ROOT" ]; then echo /nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/zfp/1.0.1/gcc-12.1.0; else echo "$ZFP_ROOT"; fi}</env>
     </environment_variables>
   </machine>
 
@@ -2103,6 +2148,7 @@
     <environment_variables mpilib="mpich">
       <!-- We currently don't have modules for HDF5, NetCDF & PnetCDF -->
       <env name="LD_LIBRARY_PATH">/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/mpich/4.0/gcc-11.1.0/lib:$ENV{LD_LIBRARY_PATH}</env>
+      <env name="PKG_CONFIG_PATH">/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/protobuf/21.6/gcc-11.1.0/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
       <env name="PATH">/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/mpich/4.0/gcc-11.1.0/bin:$ENV{PATH}</env>
       <env name="ZLIB_ROOT">/nfs/gce/software/spack/opt/spack/linux-ubuntu20.04-x86_64/gcc-9.3.0/zlib-1.2.11-p7dmb5p</env>
       <env name="HDF5_ROOT">/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/hdf5/1.12.1/mpich-4.0/gcc-11.1.0</env>
@@ -2126,7 +2172,11 @@
       <env name="PERL5LIB">/nfs/gce/projects/climate/software/perl5/lib/perl5</env>
     </environment_variables>
     <environment_variables compiler="gnu" mpilib="mpich">
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/adios2/2.9.1/mpich-4.0/gcc-11.1.0; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/adios2/2.10.2/mpich-4.0/gcc-11.1.0; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/c-blosc2/2.15.2/gcc-11.1.0; else echo "$BLOSC2_ROOT"; fi}</env>
+      <env name="MGARD_ROOT">$SHELL{if [ -z "$MGARD_ROOT" ]; then echo /nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/mgard/1.5.2/gcc-11.1.0; else echo "$MGARD_ROOT"; fi}</env>
+      <env name="SZ_ROOT">$SHELL{if [ -z "$SZ_ROOT" ]; then echo /nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/sz/2.1.12.5/gcc-11.1.0; else echo "$SZ_ROOT"; fi}</env>
+      <env name="ZFP_ROOT">$SHELL{if [ -z "$ZFP_ROOT" ]; then echo /nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/zfp/1.0.1/gcc-11.1.0; else echo "$ZFP_ROOT"; fi}</env>
     </environment_variables>
   </machine>
 
