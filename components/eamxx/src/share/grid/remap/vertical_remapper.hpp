@@ -75,9 +75,6 @@ public:
 
 protected:
 
-  FieldLayout create_layout (const FieldLayout& fl_in,
-                             const grid_ptr_type& grid_out) const;
-
   const identifier_type& do_get_src_field_id (const int ifield) const override {
     return m_src_fields[ifield].get_header().get_identifier();
   }
@@ -144,6 +141,10 @@ protected:
   Field                 m_src_pint;
   Field                 m_tgt_pmid;
   Field                 m_tgt_pint;
+
+  // If we remap to a fixed set of pressure levels during I/O,
+  // our tgt pint would be the same as tgt pmid.
+  bool m_tgt_int_same_as_mid = false;
 
   // Extrapolation settings at top/bottom. Default to P0 extrapolation
   ExtrapType            m_etype_top = P0;
