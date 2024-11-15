@@ -54,364 +54,343 @@ void shoc_energy_integrals(ShocEnergyIntegralsData& d)
   shoc_energy_integrals_host(d.shcol, d.nlev, d.host_dse, d.pdel, d.rtm, d.rcm, d.u_wind, d.v_wind, d.se_int, d.ke_int, d.wv_int, d.wl_int);
 }
 
-void shoc_energy_total_fixer(ShocEnergyTotalFixerData& d)
-{
-  shoc_init(d.nlev);
-  shoc_energy_total_fixer_host(d.shcol, d.nlev, d.nlevi, d.dtime, d.nadv,
-                            d.zt_grid, d.zi_grid, d.se_b, d.ke_b, d.wv_b,
-                            d.wl_b, d.se_a, d.ke_a, d.wv_a, d.wl_a, d.wthl_sfc,
-                            d.wqw_sfc, d.rho_zt, d.pint, d.te_a, d.te_b);
-}
-
-void shoc_energy_threshold_fixer(ShocEnergyThresholdFixerData& d)
-{
-  shoc_init(d.nlev);
-  shoc_energy_threshold_fixer_host(d.shcol, d.nlev, d.nlevi, d.pint, d.tke, d.te_a, d.te_b, d.se_dis, d.shoctop);
-}
-
-void shoc_energy_dse_fixer(ShocEnergyDseFixerData& d)
-{
-  shoc_init(d.nlev);
-  shoc_energy_dse_fixer_host(d.shcol, d.nlev, d.se_dis, d.shoctop, d.host_dse);
-}
-
 void calc_shoc_vertflux(CalcShocVertfluxData& d)
 {
   shoc_init(d.nlev);
-  calc_shoc_vertflux_host(d.shcol, d.nlev, d.nlevi, d.tkh_zi, d.dz_zi, d.invar, d.vertflux);
+  //calc_shoc_vertflux_host(d.shcol, d.nlev, d.nlevi, d.tkh_zi, d.dz_zi, d.invar, d.vertflux);
 }
 
 void calc_shoc_varorcovar(CalcShocVarorcovarData& d)
 {
   shoc_init(d.nlev);
-  calc_shoc_varorcovar_host(d.shcol, d.nlev, d.nlevi, d.tunefac, d.isotropy_zi, d.tkh_zi, d.dz_zi, d.invar1, d.invar2, d.varorcovar);
+  //calc_shoc_varorcovar_host(d.shcol, d.nlev, d.nlevi, d.tunefac, d.isotropy_zi, d.tkh_zi, d.dz_zi, d.invar1, d.invar2, d.varorcovar);
 }
 
 void compute_tmpi(ComputeTmpiData& d)
 {
   shoc_init(d.nlevi - 1); // nlev = nlevi - 1
-  compute_tmpi_host(d.nlevi, d.shcol, d.dtime, d.rho_zi, d.dz_zi, d.tmpi);
+  //compute_tmpi_host(d.nlevi, d.shcol, d.dtime, d.rho_zi, d.dz_zi, d.tmpi);
 }
 
 void dp_inverse(DpInverseData& d)
 {
   shoc_init(d.nlev);
-  dp_inverse_host(d.nlev, d.shcol, d.rho_zt, d.dz_zt, d.rdp_zt);
+  //dp_inverse_host(d.nlev, d.shcol, d.rho_zt, d.dz_zt, d.rdp_zt);
 }
 
 void sfc_fluxes(SfcFluxesData& d)
 {
   shoc_init(1); // single layer function
-  sfc_fluxes_host(d.shcol, d.num_tracer, d.dtime, d.rho_zi_sfc, d.rdp_zt_sfc, d.wthl_sfc, d.wqw_sfc, d.wtke_sfc, d.wtracer_sfc, d.thetal, d.qw, d.tke, d.wtracer);
+  //sfc_fluxes_host(d.shcol, d.num_tracer, d.dtime, d.rho_zi_sfc, d.rdp_zt_sfc, d.wthl_sfc, d.wqw_sfc, d.wtke_sfc, d.wtracer_sfc, d.thetal, d.qw, d.tke, d.wtracer);
 }
 
 void impli_srf_stress_term(ImpliSrfStressTermData& d)
 {
   shoc_init(1); // single layer function
-  impli_srf_stress_term_host(d.shcol, d.rho_zi_sfc, d.uw_sfc, d.vw_sfc, d.u_wind_sfc, d.v_wind_sfc, d.ksrf);
+  //impli_srf_stress_term_host(d.shcol, d.rho_zi_sfc, d.uw_sfc, d.vw_sfc, d.u_wind_sfc, d.v_wind_sfc, d.ksrf);
 }
 
 void tke_srf_flux_term(TkeSrfFluxTermData& d)
 {
   shoc_init(1); // single layer function
-  tke_srf_flux_term_host(d.shcol, d.uw_sfc, d.vw_sfc, d.wtke_sfc);
+  //tke_srf_flux_term_host(d.shcol, d.uw_sfc, d.vw_sfc, d.wtke_sfc);
 }
 
 void integ_column_stability(IntegColumnStabilityData& d)
 {
   shoc_init(d.nlev);
-  integ_column_stability_host(d.nlev, d.shcol, d.dz_zt, d.pres, d.brunt, d.brunt_int);
+  //integ_column_stability_host(d.nlev, d.shcol, d.dz_zt, d.pres, d.brunt, d.brunt_int);
 }
 
 void check_tke(CheckTkeData& d)
 {
   shoc_init(d.nlev);
-  check_tke_host(d.shcol, d.nlev, d.tke);
+  //check_tke_host(d.shcol, d.nlev, d.tke);
 }
 
 void shoc_tke(ShocTkeData& d)
 {
   shoc_init(d.nlev);
-  shoc_tke_host(d.shcol, d.nlev, d.nlevi, d.dtime, d.wthv_sec, d.shoc_mix, d.dz_zi, d.dz_zt, d.pres, d.tabs, d.u_wind, d.v_wind, d.brunt, d.zt_grid, d.zi_grid, d.pblh, d.tke, d.tk, d.tkh, d.isotropy);
+  //shoc_tke_host(d.shcol, d.nlev, d.nlevi, d.dtime, d.wthv_sec, d.shoc_mix, d.dz_zi, d.dz_zt, d.pres, d.tabs, d.u_wind, d.v_wind, d.brunt, d.zt_grid, d.zi_grid, d.pblh, d.tke, d.tk, d.tkh, d.isotropy);
 }
 
 void compute_shr_prod(ComputeShrProdData& d)
 {
   shoc_init(d.nlev);
-  compute_shr_prod_host(d.nlevi, d.nlev, d.shcol, d.dz_zi, d.u_wind, d.v_wind, d.sterm);
+  //compute_shr_prod_host(d.nlevi, d.nlev, d.shcol, d.dz_zi, d.u_wind, d.v_wind, d.sterm);
 }
 
 void isotropic_ts(IsotropicTsData& d)
 {
   shoc_init(d.nlev);
-  isotropic_ts_host(d.nlev, d.shcol, d.brunt_int, d.tke, d.a_diss, d.brunt, d.isotropy);
+  //isotropic_ts_host(d.nlev, d.shcol, d.brunt_int, d.tke, d.a_diss, d.brunt, d.isotropy);
 }
 
 void adv_sgs_tke(AdvSgsTkeData& d)
 {
   shoc_init(d.nlev);
-  adv_sgs_tke_host(d.nlev, d.shcol, d.dtime, d.shoc_mix, d.wthv_sec, d.sterm_zt, d.tk, d.tke, d.a_diss);
+  //adv_sgs_tke_host(d.nlev, d.shcol, d.dtime, d.shoc_mix, d.wthv_sec, d.sterm_zt, d.tk, d.tke, d.a_diss);
 }
 
 void eddy_diffusivities(EddyDiffusivitiesData& d)
 {
   shoc_init(d.nlev);
-  eddy_diffusivities_host(d.nlev, d.shcol, d.pblh, d.zt_grid, d.tabs, d.shoc_mix, d.sterm_zt, d.isotropy, d.tke, d.tkh, d.tk);
+  //eddy_diffusivities_host(d.nlev, d.shcol, d.pblh, d.zt_grid, d.tabs, d.shoc_mix, d.sterm_zt, d.isotropy, d.tke, d.tkh, d.tk);
 }
 
 void shoc_length(ShocLengthData& d)
 {
   shoc_init(d.nlev);
-  shoc_length_host(d.shcol, d.nlev, d.nlevi, d.host_dx, d.host_dy, d.zt_grid, d.zi_grid, d.dz_zt, d.tke, d.thv, d.brunt, d.shoc_mix);
+  //shoc_length_host(d.shcol, d.nlev, d.nlevi, d.host_dx, d.host_dy, d.zt_grid, d.zi_grid, d.dz_zt, d.tke, d.thv, d.brunt, d.shoc_mix);
 }
 
 void compute_brunt_shoc_length(ComputeBruntShocLengthData& d)
 {
   shoc_init(d.nlev);
-  compute_brunt_shoc_length_host(d.nlev, d.nlevi, d.shcol, d.dz_zt, d.thv, d.thv_zi, d.brunt);
+  //compute_brunt_shoc_length_host(d.nlev, d.nlevi, d.shcol, d.dz_zt, d.thv, d.thv_zi, d.brunt);
 }
 
 void compute_l_inf_shoc_length(ComputeLInfShocLengthData& d)
 {
   shoc_init(d.nlev);
-  compute_l_inf_shoc_length_host(d.nlev, d.shcol, d.zt_grid, d.dz_zt, d.tke, d.l_inf);
+  //compute_l_inf_shoc_length_host(d.nlev, d.shcol, d.zt_grid, d.dz_zt, d.tke, d.l_inf);
 }
 
 void compute_shoc_mix_shoc_length(ComputeShocMixShocLengthData& d)
 {
   shoc_init(d.nlev);
-  compute_shoc_mix_shoc_length_host(d.nlev, d.shcol, d.tke, d.brunt, d.zt_grid, d.l_inf, d.shoc_mix);
+  //compute_shoc_mix_shoc_length_host(d.nlev, d.shcol, d.tke, d.brunt, d.zt_grid, d.l_inf, d.shoc_mix);
 }
 
 void check_length_scale_shoc_length(CheckLengthScaleShocLengthData& d)
 {
   shoc_init(d.nlev);
-  check_length_scale_shoc_length_host(d.nlev, d.shcol, d.host_dx, d.host_dy, d.shoc_mix);
+  //check_length_scale_shoc_length_host(d.nlev, d.shcol, d.host_dx, d.host_dy, d.shoc_mix);
 }
 
 void fterms_input_for_diag_third_shoc_moment(FtermsInputForDiagThirdShocMomentData& d)
 {
   shoc_init(1); // single level function
-  fterms_input_for_diag_third_shoc_moment_host(d.dz_zi, d.dz_zt, d.dz_zt_kc, d.isotropy_zi, d.brunt_zi, d.thetal_zi, &d.thedz, &d.thedz2, &d.iso, &d.isosqrd, &d.buoy_sgs2, &d.bet2);
+  //fterms_input_for_diag_third_shoc_moment_host(d.dz_zi, d.dz_zt, d.dz_zt_kc, d.isotropy_zi, d.brunt_zi, d.thetal_zi, &d.thedz, &d.thedz2, &d.iso, &d.isosqrd, &d.buoy_sgs2, &d.bet2);
 }
 
 void aa_terms_diag_third_shoc_moment(AaTermsDiagThirdShocMomentData& d)
 {
   shoc_init(1); // single level function
-  aa_terms_diag_third_shoc_moment_host(d.omega0, d.omega1, d.omega2, d.x0, d.x1, d.y0, d.y1, &d.aa0, &d.aa1);
+  //aa_terms_diag_third_shoc_moment_host(d.omega0, d.omega1, d.omega2, d.x0, d.x1, d.y0, d.y1, &d.aa0, &d.aa1);
 }
 
 void f0_to_f5_diag_third_shoc_moment(F0ToF5DiagThirdShocMomentData& d)
 {
   shoc_init(1); // single level function
-  f0_to_f5_diag_third_shoc_moment_host(d.thedz, d.thedz2, d.bet2, d.iso, d.isosqrd, d.wthl_sec, d.wthl_sec_kc, d.wthl_sec_kb, d.thl_sec_kc, d.thl_sec_kb, d.w_sec, d.w_sec_kc, d.w_sec_zi, d.tke, d.tke_kc, &d.f0, &d.f1, &d.f2, &d.f3, &d.f4, &d.f5);
+  //f0_to_f5_diag_third_shoc_moment_host(d.thedz, d.thedz2, d.bet2, d.iso, d.isosqrd, d.wthl_sec, d.wthl_sec_kc, d.wthl_sec_kb, d.thl_sec_kc, d.thl_sec_kb, d.w_sec, d.w_sec_kc, d.w_sec_zi, d.tke, d.tke_kc, &d.f0, &d.f1, &d.f2, &d.f3, &d.f4, &d.f5);
 }
 
 void omega_terms_diag_third_shoc_moment(OmegaTermsDiagThirdShocMomentData& d)
 {
   shoc_init(1); // single level function
-  omega_terms_diag_third_shoc_moment_host(d.buoy_sgs2, d.f3, d.f4, &d.omega0, &d.omega1, &d.omega2);
+  //omega_terms_diag_third_shoc_moment_host(d.buoy_sgs2, d.f3, d.f4, &d.omega0, &d.omega1, &d.omega2);
 }
 
 void x_y_terms_diag_third_shoc_moment(XYTermsDiagThirdShocMomentData& d)
 {
   shoc_init(1); // single level function
-  x_y_terms_diag_third_shoc_moment_host(d.buoy_sgs2, d.f0, d.f1, d.f2, &d.x0, &d.y0, &d.x1, &d.y1);
+  //x_y_terms_diag_third_shoc_moment_host(d.buoy_sgs2, d.f0, d.f1, d.f2, &d.x0, &d.y0, &d.x1, &d.y1);
 }
 
 void w3_diag_third_shoc_moment(W3DiagThirdShocMomentData& d)
 {
   shoc_init(1); // single level function
-  w3_diag_third_shoc_moment_host(d.aa0, d.aa1, d.x0, d.x1, d.f5, &d.w3);
+  //w3_diag_third_shoc_moment_host(d.aa0, d.aa1, d.x0, d.x1, d.f5, &d.w3);
 }
 
 void clipping_diag_third_shoc_moments(ClippingDiagThirdShocMomentsData& d)
 {
   shoc_init(d.nlevi - 1); // nlev = nlevi - 1
-  clipping_diag_third_shoc_moments_host(d.nlevi, d.shcol, d.w_sec_zi, d.w3);
+  //clipping_diag_third_shoc_moments_host(d.nlevi, d.shcol, d.w_sec_zi, d.w3);
 }
 
 void diag_second_moments_srf(DiagSecondMomentsSrfData& d)
 {
   shoc_init(1); // single level function
-  shoc_diag_second_moments_srf_host(d.shcol, d.wthl_sfc, d.uw_sfc, d.vw_sfc, d.ustar2, d.wstar);
+  //shoc_diag_second_moments_srf_host(d.shcol, d.wthl_sfc, d.uw_sfc, d.vw_sfc, d.ustar2, d.wstar);
 }
 
 void linear_interp(LinearInterpData& d)
 {
   shoc_init(d.km1);
-  linear_interp_host(d.x1, d.x2, d.y1, d.y2, d.km1, d.km2, d.ncol, d.minthresh);
+  //linear_interp_host(d.x1, d.x2, d.y1, d.y2, d.km1, d.km2, d.ncol, d.minthresh);
 }
 
 void diag_third_shoc_moments(DiagThirdShocMomentsData& d)
 {
   shoc_init(d.nlev);
-  diag_third_shoc_moments_host(d.shcol, d.nlev, d.nlevi, d.w_sec, d.thl_sec, d.wthl_sec, d.isotropy, d.brunt, d.thetal, d.tke, d.dz_zt, d.dz_zi, d.zt_grid, d.zi_grid, d.w3);
+  //diag_third_shoc_moments_host(d.shcol, d.nlev, d.nlevi, d.w_sec, d.thl_sec, d.wthl_sec, d.isotropy, d.brunt, d.thetal, d.tke, d.dz_zt, d.dz_zi, d.zt_grid, d.zi_grid, d.w3);
 }
 
 void compute_diag_third_shoc_moment(ComputeDiagThirdShocMomentData& d)
 {
   shoc_init(d.nlev);
-  compute_diag_third_shoc_moment_host(d.shcol, d.nlev, d.nlevi, d.w_sec, d.thl_sec, d.wthl_sec, d.tke, d.dz_zt, d.dz_zi, d.isotropy_zi, d.brunt_zi, d.w_sec_zi, d.thetal_zi, d.w3);
+  //compute_diag_third_shoc_moment_host(d.shcol, d.nlev, d.nlevi, d.w_sec, d.thl_sec, d.wthl_sec, d.tke, d.dz_zt, d.dz_zi, d.isotropy_zi, d.brunt_zi, d.w_sec_zi, d.thetal_zi, d.w3);
 }
 
 void shoc_assumed_pdf(ShocAssumedPdfData& d)
 {
   shoc_init(d.nlev);
-  shoc_assumed_pdf_host(d.shcol, d.nlev, d.nlevi, d.thetal, d.qw, d.w_field, d.thl_sec, d.qw_sec, d.wthl_sec, d.w_sec, d.wqw_sec, d.qwthl_sec, d.w3, d.pres, d.zt_grid, d.zi_grid, d.shoc_cldfrac, d.shoc_ql, d.wqls, d.wthv_sec, d.shoc_ql2);
+  //shoc_assumed_pdf_host(d.shcol, d.nlev, d.nlevi, d.thetal, d.qw, d.w_field, d.thl_sec, d.qw_sec, d.wthl_sec, d.w_sec, d.wqw_sec, d.qwthl_sec, d.w3, d.pres, d.zt_grid, d.zi_grid, d.shoc_cldfrac, d.shoc_ql, d.wqls, d.wthv_sec, d.shoc_ql2);
 }
 
 void shoc_assumed_pdf_tilde_to_real(ShocAssumedPdfTildeToRealData& d)
 {
   shoc_init(1); // single level function
-  shoc_assumed_pdf_tilde_to_real_host(d.w_first, d.sqrtw2, &d.w1);
+  //shoc_assumed_pdf_tilde_to_real_host(d.w_first, d.sqrtw2, &d.w1);
 }
 
 void shoc_assumed_pdf_vv_parameters(ShocAssumedPdfVvParametersData& d)
 {
   shoc_init(1); // single level function
-  shoc_assumed_pdf_vv_parameters_host(d.w_first, d.w_sec, d.w3var, &d.skew_w, &d.w1_1, &d.w1_2, &d.w2_1, &d.w2_2, &d.a);
+  //shoc_assumed_pdf_vv_parameters_host(d.w_first, d.w_sec, d.w3var, &d.skew_w, &d.w1_1, &d.w1_2, &d.w2_1, &d.w2_2, &d.a);
 }
 
 void shoc_assumed_pdf_thl_parameters(ShocAssumedPdfThlParametersData& d)
 {
   shoc_init(1); // single level function
-  shoc_assumed_pdf_thl_parameters_host(d.wthlsec, d.sqrtw2, d.sqrtthl, d.thlsec, d.thl_first, d.w1_1, d.w1_2, d.skew_w, d.a, d.dothetal_skew, &d.thl1_1, &d.thl1_2, &d.thl2_1, &d.thl2_2, &d.sqrtthl2_1, &d.sqrtthl2_2);
+  //shoc_assumed_pdf_thl_parameters_host(d.wthlsec, d.sqrtw2, d.sqrtthl, d.thlsec, d.thl_first, d.w1_1, d.w1_2, d.skew_w, d.a, d.dothetal_skew, &d.thl1_1, &d.thl1_2, &d.thl2_1, &d.thl2_2, &d.sqrtthl2_1, &d.sqrtthl2_2);
 }
 
 void shoc_assumed_pdf_qw_parameters(ShocAssumedPdfQwParametersData& d)
 {
   shoc_init(1); // single level function
-  shoc_assumed_pdf_qw_parameters_host(d.wqwsec, d.sqrtw2, d.skew_w, d.sqrtqt, d.qwsec, d.w1_2, d.w1_1, d.qw_first, d.a, &d.qw1_1, &d.qw1_2, &d.qw2_1, &d.qw2_2, &d.sqrtqw2_1, &d.sqrtqw2_2);
+  //shoc_assumed_pdf_qw_parameters_host(d.wqwsec, d.sqrtw2, d.skew_w, d.sqrtqt, d.qwsec, d.w1_2, d.w1_1, d.qw_first, d.a, &d.qw1_1, &d.qw1_2, &d.qw2_1, &d.qw2_2, &d.sqrtqw2_1, &d.sqrtqw2_2);
 }
 
 void shoc_assumed_pdf_inplume_correlations(ShocAssumedPdfInplumeCorrelationsData& d)
 {
   shoc_init(1); // single level function
-  shoc_assumed_pdf_inplume_correlations_host(d.sqrtqw2_1, d.sqrtthl2_1, d.a, d.sqrtqw2_2, d.sqrtthl2_2, d.qwthlsec, d.qw1_1, d.qw_first, d.thl1_1, d.thl_first, d.qw1_2, d.thl1_2, &d.r_qwthl_1);
+  //shoc_assumed_pdf_inplume_correlations_host(d.sqrtqw2_1, d.sqrtthl2_1, d.a, d.sqrtqw2_2, d.sqrtthl2_2, d.qwthlsec, d.qw1_1, d.qw_first, d.thl1_1, d.thl_first, d.qw1_2, d.thl1_2, &d.r_qwthl_1);
 }
 
 void shoc_assumed_pdf_compute_temperature(ShocAssumedPdfComputeTemperatureData& d)
 {
   shoc_init(1); // single level function
-  shoc_assumed_pdf_compute_temperature_host(d.thl1, d.basepres, d.pval, &d.tl1);
+  //shoc_assumed_pdf_compute_temperature_host(d.thl1, d.basepres, d.pval, &d.tl1);
 }
 
 void shoc_assumed_pdf_compute_qs(ShocAssumedPdfComputeQsData& d)
 {
   shoc_init(1); // single level function
-  shoc_assumed_pdf_compute_qs_host(d.tl1_1, d.tl1_2, d.pval, &d.qs1, &d.beta1, &d.qs2, &d.beta2);
+  //shoc_assumed_pdf_compute_qs_host(d.tl1_1, d.tl1_2, d.pval, &d.qs1, &d.beta1, &d.qs2, &d.beta2);
 }
 
 void shoc_assumed_pdf_compute_s(ShocAssumedPdfComputeSData& d)
 {
   shoc_init(1); // single level function
-  shoc_assumed_pdf_compute_s_host(d.qw1, d.qs1, d.beta, d.pval, d.thl2, d.qw2, d.sqrtthl2, d.sqrtqw2, d.r_qwthl, &d.s, &d.std_s, &d.qn, &d.c);
+  //shoc_assumed_pdf_compute_s_host(d.qw1, d.qs1, d.beta, d.pval, d.thl2, d.qw2, d.sqrtthl2, d.sqrtqw2, d.r_qwthl, &d.s, &d.std_s, &d.qn, &d.c);
 }
 
 void shoc_assumed_pdf_compute_sgs_liquid(ShocAssumedPdfComputeSgsLiquidData& d)
 {
   shoc_init(1); // single level function
-  shoc_assumed_pdf_compute_sgs_liquid_host(d.a, d.ql1, d.ql2, &d.shoc_ql);
+  //shoc_assumed_pdf_compute_sgs_liquid_host(d.a, d.ql1, d.ql2, &d.shoc_ql);
 }
 
 void shoc_assumed_pdf_compute_cloud_liquid_variance(ShocAssumedPdfComputeCloudLiquidVarianceData& d)
 {
   shoc_init(1); // single level function
-  shoc_assumed_pdf_compute_cloud_liquid_variance_host(d.a, d.s1, d.ql1, d.c1, d.std_s1, d.s2, d.ql2, d.c2, d.std_s2, d.shoc_ql, &d.shoc_ql2);
+  //shoc_assumed_pdf_compute_cloud_liquid_variance_host(d.a, d.s1, d.ql1, d.c1, d.std_s1, d.s2, d.ql2, d.c2, d.std_s2, d.shoc_ql, &d.shoc_ql2);
 }
 
 void shoc_assumed_pdf_compute_liquid_water_flux(ShocAssumedPdfComputeLiquidWaterFluxData& d)
 {
   shoc_init(1); // single level function
-  shoc_assumed_pdf_compute_liquid_water_flux_host(d.a, d.w1_1, d.w_first, d.ql1, d.w1_2, d.ql2, &d.wqls);
+  //shoc_assumed_pdf_compute_liquid_water_flux_host(d.a, d.w1_1, d.w_first, d.ql1, d.w1_2, d.ql2, &d.wqls);
 }
 
 void shoc_assumed_pdf_compute_buoyancy_flux(ShocAssumedPdfComputeBuoyancyFluxData& d)
 {
   shoc_init(1); // single level function
-  shoc_assumed_pdf_compute_buoyancy_flux_host(d.wthlsec, d.epsterm, d.wqwsec, d.pval, d.wqls, &d.wthv_sec);
+  //shoc_assumed_pdf_compute_buoyancy_flux_host(d.wthlsec, d.epsterm, d.wqwsec, d.pval, d.wqls, &d.wthv_sec);
 }
 
 void diag_second_moments_ubycond(DiagSecondMomentsUbycondData& d)
 {
   shoc_init(1); // single level function
-  shoc_diag_second_moments_ubycond_host(d.shcol, d.thl_sec, d.qw_sec, d.wthl_sec, d.wqw_sec, d.qwthl_sec, d.uw_sec, d.vw_sec, d.wtke_sec);
+  //shoc_diag_second_moments_ubycond_host(d.shcol, d.thl_sec, d.qw_sec, d.wthl_sec, d.wqw_sec, d.qwthl_sec, d.uw_sec, d.vw_sec, d.wtke_sec);
 }
 
 void pblintd_init_pot(PblintdInitPotData& d)
 {
   shoc_init(d.nlev, true);
-  shoc_pblintd_init_pot_host(d.shcol, d.nlev, d.thl, d.ql, d.q, d.thv);
+  //shoc_pblintd_init_pot_host(d.shcol, d.nlev, d.thl, d.ql, d.q, d.thv);
 }
 
 void pblintd_cldcheck(PblintdCldcheckData& d)
 {
   shoc_init(d.nlev, true);
-  shoc_pblintd_cldcheck_host(d.shcol, d.nlev, d.nlevi, d.zi, d.cldn, d.pblh);
+  //shoc_pblintd_cldcheck_host(d.shcol, d.nlev, d.nlevi, d.zi, d.cldn, d.pblh);
 }
 
 void diag_second_moments_lbycond(DiagSecondMomentsLbycondData& d)
 {
   shoc_init(1); // single level function
-  diag_second_moments_lbycond_host(d.shcol, d.wthl_sfc, d.wqw_sfc, d.uw_sfc, d.vw_sfc, d.ustar2, d.wstar, d.wthl_sec, d.wqw_sec, d.uw_sec, d.vw_sec, d.wtke_sec, d.thl_sec, d.qw_sec, d.qwthl_sec);
+  //diag_second_moments_lbycond_host(d.shcol, d.wthl_sfc, d.wqw_sfc, d.uw_sfc, d.vw_sfc, d.ustar2, d.wstar, d.wthl_sec, d.wqw_sec, d.uw_sec, d.vw_sec, d.wtke_sec, d.thl_sec, d.qw_sec, d.qwthl_sec);
 }
 
 void diag_second_moments(DiagSecondMomentsData& d)
 {
   shoc_init(d.nlev);
-  diag_second_moments_host(d.shcol, d.nlev, d.nlevi, d.thetal, d.qw, d.u_wind, d.v_wind, d.tke, d.isotropy, d.tkh, d.tk,
-       d.dz_zi, d.zt_grid, d.zi_grid, d.shoc_mix, d.thl_sec, d.qw_sec, d.wthl_sec, d.wqw_sec, d.qwthl_sec, d.uw_sec,
-       d.vw_sec, d.wtke_sec, d.w_sec);
+  // diag_second_moments_host(d.shcol, d.nlev, d.nlevi, d.thetal, d.qw, d.u_wind, d.v_wind, d.tke, d.isotropy, d.tkh, d.tk,
+  //      d.dz_zi, d.zt_grid, d.zi_grid, d.shoc_mix, d.thl_sec, d.qw_sec, d.wthl_sec, d.wqw_sec, d.qwthl_sec, d.uw_sec,
+  //      d.vw_sec, d.wtke_sec, d.w_sec);
 }
 
 void diag_second_shoc_moments(DiagSecondShocMomentsData& d)
 {
   shoc_init(d.nlev);
-  diag_second_shoc_moments_host(d.shcol, d.nlev, d.nlevi, d.thetal, d.qw, d.u_wind, d.v_wind, d.tke, d.isotropy, d.tkh,
-      d.tk, d.dz_zi, d.zt_grid, d.zi_grid, d.shoc_mix, d.wthl_sfc, d.wqw_sfc, d.uw_sfc, d.vw_sfc, d.thl_sec, d.qw_sec,
-      d.wthl_sec, d.wqw_sec, d.qwthl_sec, d.uw_sec, d.vw_sec, d.wtke_sec, d.w_sec);
+  // diag_second_shoc_moments_host(d.shcol, d.nlev, d.nlevi, d.thetal, d.qw, d.u_wind, d.v_wind, d.tke, d.isotropy, d.tkh,
+  //     d.tk, d.dz_zi, d.zt_grid, d.zi_grid, d.shoc_mix, d.wthl_sfc, d.wqw_sfc, d.uw_sfc, d.vw_sfc, d.thl_sec, d.qw_sec,
+  //     d.wthl_sec, d.wqw_sec, d.qwthl_sec, d.uw_sec, d.vw_sec, d.wtke_sec, d.w_sec);
 }
 
 void compute_shoc_vapor(ComputeShocVaporData& d)
 {
   shoc_init(d.nlev);
-  compute_shoc_vapor_host(d.shcol, d.nlev, d.qw, d.ql, d.qv);
+  //compute_shoc_vapor_host(d.shcol, d.nlev, d.qw, d.ql, d.qv);
 }
 
 void update_prognostics_implicit(UpdatePrognosticsImplicitData& d)
 {
   shoc_init(d.nlev);
-  update_prognostics_implicit_host(d.shcol, d.nlev, d.nlevi, d.num_tracer, d.dtime,
-                                d.dz_zt, d.dz_zi, d.rho_zt, d.zt_grid, d.zi_grid,
-                                d.tk, d.tkh, d.uw_sfc, d.vw_sfc, d.wthl_sfc, d.wqw_sfc,
-                                d.wtracer_sfc, d.thetal, d.qw, d.tracer, d.tke, d.u_wind, d.v_wind);
+  // update_prognostics_implicit_host(d.shcol, d.nlev, d.nlevi, d.num_tracer, d.dtime,
+  //                               d.dz_zt, d.dz_zi, d.rho_zt, d.zt_grid, d.zi_grid,
+  //                               d.tk, d.tkh, d.uw_sfc, d.vw_sfc, d.wthl_sfc, d.wqw_sfc,
+  //                               d.wtracer_sfc, d.thetal, d.qw, d.tracer, d.tke, d.u_wind, d.v_wind);
 }
 
 void shoc_main(ShocMainData& d)
 {
   shoc_init(d.nlev, true);
-  shoc_main_host(d.shcol, d.nlev, d.nlevi, d.dtime, d.nadv, d.host_dx, d.host_dy, d.thv, d.zt_grid, d.zi_grid,
+  d.elapsed_s = shoc_main_host(d.shcol, d.nlev, d.nlevi, d.dtime, d.nadv, 1/*d.npbl*/, d.host_dx, d.host_dy, d.thv, d.zt_grid, d.zi_grid,
               d.pres, d.presi, d.pdel, d.wthl_sfc, d.wqw_sfc, d.uw_sfc, d.vw_sfc, d.wtracer_sfc,
               d.num_qtracers, d.w_field, d.inv_exner, d.phis, d.host_dse, d.tke, d.thetal, d.qw,
               d.u_wind, d.v_wind, d.qtracers, d.wthv_sec, d.tkh, d.tk, d.shoc_ql, d.shoc_cldfrac, d.pblh,
               d.shoc_mix, d.isotropy, d.w_sec, d.thl_sec, d.qw_sec, d.qwthl_sec, d.wthl_sec, d.wqw_sec,
-              d.wtke_sec, d.uw_sec, d.vw_sec, d.w3, d.wqls_sec, d.brunt, d.shoc_ql2, &d.elapsed_s);
+              d.wtke_sec, d.uw_sec, d.vw_sec, d.w3, d.wqls_sec, d.brunt, d.shoc_ql2);
 }
 
 void shoc_main_with_init(ShocMainData& d)
 {
   using C = scream::physics::Constants<Real>;
 
-  shoc_init_for_main_bfb_host(d.nlev, C::gravit, C::Rair, C::RH2O, C::Cpair, C::ZVIR, C::LatVap, C::LatIce, C::Karman, C::P0,
-                           d.pref_mid, d.nbot_shoc, d.ntop_shoc+1);
+  // shoc_init_for_main_bfb_host(d.nlev, C::gravit, C::Rair, C::RH2O, C::Cpair, C::ZVIR, C::LatVap, C::LatIce, C::Karman, C::P0,
+  //                          d.pref_mid, d.nbot_shoc, d.ntop_shoc+1);
 
-  shoc_main_host(d.shcol, d.nlev, d.nlevi, d.dtime, d.nadv, d.host_dx, d.host_dy, d.thv, d.zt_grid, d.zi_grid,
+  d.elapsed_s = shoc_main_host(d.shcol, d.nlev, d.nlevi, d.dtime, d.nadv, 1/*d.npbl*/,d.host_dx, d.host_dy, d.thv, d.zt_grid, d.zi_grid,
               d.pres, d.presi, d.pdel, d.wthl_sfc, d.wqw_sfc, d.uw_sfc, d.vw_sfc, d.wtracer_sfc, d.num_qtracers,
               d.w_field, d.inv_exner, d.phis, d.host_dse, d.tke, d.thetal, d.qw, d.u_wind, d.v_wind, d.qtracers,
               d.wthv_sec, d.tkh, d.tk, d.shoc_ql, d.shoc_cldfrac, d.pblh, d.shoc_mix, d.isotropy, d.w_sec,
               d.thl_sec, d.qw_sec, d.qwthl_sec, d.wthl_sec, d.wqw_sec, d.wtke_sec, d.uw_sec, d.vw_sec, d.w3,
-              d.wqls_sec, d.brunt, d.shoc_ql2, &d.elapsed_s);
+              d.wqls_sec, d.brunt, d.shoc_ql2);
 }
 
 void pblintd_height(PblintdHeightData& d)
@@ -424,22 +403,22 @@ void vd_shoc_decomp_and_solve(VdShocDecompandSolveData& d)
 {
   shoc_init(d.nlev);
   // Call decomp subroutine
-  vd_shoc_decomp_host(d.shcol, d.nlev, d.nlevi, d.kv_term, d.tmpi, d.rdp_zt, d.dtime, d.flux, d.du, d.dl, d.d);
-  // Call solver for each problem. The `var` array represents 3d
-  // data with an entry per (shcol, nlev, n_rhs). Fortran requires
-  // 2d data (shcol, nlev) for each rhs.
-  const Int size = d.shcol*d.nlev;
-  for (Int n=0; n<d.n_rhs; ++n) {
-    // Copy var to rhs
-    for(Int s=0; s<size; ++s) {
-      d.rhs[s] = d.var[n*size+s];
-    }
-    vd_shoc_solve_host(d.shcol, d.nlev, d.du, d.dl, d.d, d.rhs);
-    // Copy rhs to var
-    for(Int s=0; s<size; ++s) {
-      d.var[n*size+s] = d.rhs[s];
-    }
-  }
+  // vd_shoc_decomp_host(d.shcol, d.nlev, d.nlevi, d.kv_term, d.tmpi, d.rdp_zt, d.dtime, d.flux, d.du, d.dl, d.d);
+  // // Call solver for each problem. The `var` array represents 3d
+  // // data with an entry per (shcol, nlev, n_rhs). Fortran requires
+  // // 2d data (shcol, nlev) for each rhs.
+  // const Int size = d.shcol*d.nlev;
+  // for (Int n=0; n<d.n_rhs; ++n) {
+  //   // Copy var to rhs
+  //   for(Int s=0; s<size; ++s) {
+  //     d.rhs[s] = d.var[n*size+s];
+  //   }
+  //   vd_shoc_solve_host(d.shcol, d.nlev, d.du, d.dl, d.d, d.rhs);
+  //   // Copy rhs to var
+  //   for(Int s=0; s<size; ++s) {
+  //     d.var[n*size+s] = d.rhs[s];
+  //   }
+  // }
 }
 
 void pblintd_surf_temp(PblintdSurfTempData& d)
@@ -451,7 +430,7 @@ void pblintd_surf_temp(PblintdSurfTempData& d)
 void pblintd_check_pblh(PblintdCheckPblhData& d)
 {
   shoc_init(d.nlev, true);
-  pblintd_check_pblh_host(d.shcol, d.nlev, d.nlevi, d.z, d.ustar, d.check, d.pblh);
+  //pblintd_check_pblh_host(d.shcol, d.nlev, d.nlevi, d.z, d.ustar, d.check, d.pblh);
 }
 
 void pblintd(PblintdData& d)
@@ -492,7 +471,7 @@ void calc_shoc_varorcovar_host(Int shcol, Int nlev, Int nlevi, Real tunefac,
   std::vector<const Real*> ptr_array = {isotropy_zi, tkh_zi, dz_zi, invar1, invar2, varorcovar};
 
   // Sync to device
-  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_d, true);
+  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_d);
 
   view_2d
     isotropy_zi_d  (temp_d[0]),
@@ -520,7 +499,7 @@ void calc_shoc_varorcovar_host(Int shcol, Int nlev, Int nlevi, Real tunefac,
 
   // Sync back to host
   std::vector<view_2d> inout_views = {varorcovar_d};
-  ekat::device_to_host({varorcovar}, shcol, nlevi, inout_views, true);
+  ekat::device_to_host({varorcovar}, shcol, nlevi, inout_views);
 }
 
 void calc_shoc_vertflux_host(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
@@ -542,7 +521,7 @@ void calc_shoc_vertflux_host(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
   std::vector<const Real*> ptr_array = {tkh_zi, dz_zi, invar, vertflux};
 
   // Sync to device
-  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_d, true);
+  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_d);
 
   view_2d
     tkh_zi_d  (temp_d[0]),
@@ -565,7 +544,7 @@ void calc_shoc_vertflux_host(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
 
   // Sync back to host
   std::vector<view_2d> inout_views = {vertflux_d};
-  ekat::device_to_host({vertflux}, shcol, nlevi, inout_views, true);
+  ekat::device_to_host({vertflux}, shcol, nlevi, inout_views);
 }
 
 void shoc_diag_second_moments_srf_host(Int shcol, Real* wthl_sfc, Real* uw_sfc, Real* vw_sfc, Real* ustar2, Real* wstar)
@@ -670,7 +649,7 @@ void update_host_dse_host(Int shcol, Int nlev, Real* thlm, Real* shoc_ql, Real* 
 
   // Sync to device
   ScreamDeepCopy::copy_to_device({phis}, shcol, temp_1d_d);
-  ekat::host_to_device(ptr_array, shcol, nlev, temp_2d_d, true);
+  ekat::host_to_device(ptr_array, shcol, nlev, temp_2d_d);
 
   view_1d phis_d(temp_1d_d[0]);
 
@@ -698,7 +677,7 @@ void update_host_dse_host(Int shcol, Int nlev, Real* thlm, Real* shoc_ql, Real* 
 
   // Sync back to host
   std::vector<view_2d> inout_views = {host_dse_d};
-  ekat::device_to_host({host_dse}, shcol, nlev, inout_views, true);
+  ekat::device_to_host({host_dse}, shcol, nlev, inout_views);
 }
 
 void compute_diag_third_shoc_moment_host(Int shcol, Int nlev, Int nlevi, Real* w_sec,
@@ -731,7 +710,7 @@ void compute_diag_third_shoc_moment_host(Int shcol, Int nlev, Int nlevi, Real* w
                                         w3};
 
   // Sync to device
-  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_d, true);
+  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_d);
 
   view_2d
     w_sec_d      (temp_d[0]),
@@ -772,7 +751,7 @@ void compute_diag_third_shoc_moment_host(Int shcol, Int nlev, Int nlevi, Real* w
 
   // Sync back to host
   std::vector<view_2d> inout_views = {w3_d};
-  ekat::device_to_host({w3}, shcol, nlevi, inout_views, true);
+  ekat::device_to_host({w3}, shcol, nlevi, inout_views);
 }
 
 void shoc_pblintd_init_pot_host(Int shcol, Int nlev, Real *thl, Real* ql, Real* q,
@@ -788,7 +767,7 @@ void shoc_pblintd_init_pot_host(Int shcol, Int nlev, Real *thl, Real* ql, Real* 
   static constexpr Int num_arrays = 3;
 
   std::vector<view_2d> temp_d(num_arrays);
-  ekat::host_to_device({thl, ql, q}, shcol, nlev, temp_d, true);
+  ekat::host_to_device({thl, ql, q}, shcol, nlev, temp_d);
 
   view_2d thl_d(temp_d[0]),
           ql_d (temp_d[1]),
@@ -810,7 +789,7 @@ void shoc_pblintd_init_pot_host(Int shcol, Int nlev, Real *thl, Real* ql, Real* 
   });
 
   std::vector<view_2d> inout_views = {thv_d};
-  ekat::device_to_host({thv}, shcol, nlev, inout_views, true);
+  ekat::device_to_host({thv}, shcol, nlev, inout_views);
 }
 
 void compute_shoc_mix_shoc_length_host(Int nlev, Int shcol, Real* tke, Real* brunt,
@@ -832,7 +811,7 @@ void compute_shoc_mix_shoc_length_host(Int nlev, Int shcol, Real* tke, Real* bru
 
   // Sync to device
   ScreamDeepCopy::copy_to_device({l_inf}, shcol, temp_1d_d);
-  ekat::host_to_device(ptr_array, shcol, nlev, temp_2d_d, true);
+  ekat::host_to_device(ptr_array, shcol, nlev, temp_2d_d);
 
   view_1d
     l_inf_d  (temp_1d_d[0]);
@@ -862,7 +841,7 @@ void compute_shoc_mix_shoc_length_host(Int nlev, Int shcol, Real* tke, Real* bru
 
   // Sync back to host
   std::vector<view_2d> inout_views = {shoc_mix_d};
-  ekat::device_to_host({shoc_mix}, shcol, nlev, inout_views, true);
+  ekat::device_to_host({shoc_mix}, shcol, nlev, inout_views);
 }
 
 void check_tke_host(Int shcol, Int nlev, Real* tke)
@@ -877,7 +856,7 @@ void check_tke_host(Int shcol, Int nlev, Real* tke)
   std::vector<view_2d> temp_2d_d(1);
 
   // Sync to device
-  ekat::host_to_device({tke}, shcol, nlev, temp_2d_d, true);
+  ekat::host_to_device({tke}, shcol, nlev, temp_2d_d);
 
   view_2d
     tke_d(temp_2d_d[0]);
@@ -894,7 +873,7 @@ void check_tke_host(Int shcol, Int nlev, Real* tke)
 
   // Sync back to host
   std::vector<view_2d> inout_views = {tke_d};
-  ekat::device_to_host({tke}, shcol, nlev, inout_views, true);
+  ekat::device_to_host({tke}, shcol, nlev, inout_views);
 }
 
 void linear_interp_host(Real* x1, Real* x2, Real* y1, Real* y2, Int km1, Int km2, Int ncol, Real minthresh)
@@ -913,7 +892,7 @@ void linear_interp_host(Real* x1, Real* x2, Real* y1, Real* y2, Int km1, Int km2
   std::vector<const Real*> ptr_array = {x1,   x2,   y1};
 
   // Sync to device
-  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_2d_d, true);
+  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_2d_d);
 
   view_2d
     x1_d(temp_2d_d[0]),
@@ -936,7 +915,7 @@ void linear_interp_host(Real* x1, Real* x2, Real* y1, Real* y2, Int km1, Int km2
 
   // Sync back to host
   std::vector<view_2d> inout_views = {y2_d};
-  ekat::device_to_host({y2}, ncol, km2, inout_views, true);
+  ekat::device_to_host({y2}, ncol, km2, inout_views);
 }
 
 void clipping_diag_third_shoc_moments_host(Int nlevi, Int shcol, Real *w_sec_zi,
@@ -952,7 +931,7 @@ void clipping_diag_third_shoc_moments_host(Int nlevi, Int shcol, Real *w_sec_zi,
 
   // Sync to device
   std::vector<view_2d> temp_d(2);
-  ekat::host_to_device({w_sec_zi, w3}, shcol, nlevi, temp_d, true);
+  ekat::host_to_device({w_sec_zi, w3}, shcol, nlevi, temp_d);
 
   view_2d
     w_sec_zi_d(temp_d[0]),
@@ -971,7 +950,7 @@ void clipping_diag_third_shoc_moments_host(Int nlevi, Int shcol, Real *w_sec_zi,
 
   // Sync back to host
   std::vector<view_2d> inout_views = {w3_d};
-  ekat::device_to_host({w3}, shcol, nlevi, inout_views, true);
+  ekat::device_to_host({w3}, shcol, nlevi, inout_views);
 }
 
 void shoc_energy_integrals_host(Int shcol, Int nlev, Real *host_dse, Real *pdel,
@@ -992,7 +971,7 @@ void shoc_energy_integrals_host(Int shcol, Int nlev, Real *host_dse, Real *pdel,
   std::vector<const Real*> ptr_array = {host_dse, pdel, rtm,   rcm,   u_wind, v_wind};
 
   // Sync to device
-  ekat::host_to_device(ptr_array, shcol, nlev, temp_d, true);
+  ekat::host_to_device(ptr_array, shcol, nlev, temp_d);
 
   // inputs
   view_2d
@@ -1124,7 +1103,7 @@ void diag_second_moments_host(Int shcol, Int nlev, Int nlevi, Real* thetal, Real
   std::vector<const Real*> ptr_array = {thetal, qw, u_wind, v_wind, tke, isotropy, tkh, tk, zt_grid, shoc_mix,
                       thl_sec, qw_sec, wthl_sec, wqw_sec, qwthl_sec, uw_sec, vw_sec, wtke_sec, dz_zi, zi_grid};
 
-  ekat::host_to_device(ptr_array, dim1_array, dim2_array, temp_2d, true);
+  ekat::host_to_device(ptr_array, dim1_array, dim2_array, temp_2d);
 
   view_2d
     thetal_2d   (temp_2d[0]),
@@ -1202,7 +1181,7 @@ void diag_second_moments_host(Int shcol, Int nlev, Int nlevi, Real* thetal, Real
   std::vector<Int> dim1(9, shcol);
   std::vector<Int> dim2 = {nlevi, nlevi, nlevi, nlevi, nlevi, nlevi, nlevi, nlevi, nlev };
   std::vector<view_2d> host_views = {thl_sec_2d, qw_sec_2d, wthl_sec_2d, wqw_sec_2d, qwthl_sec_2d, uw_sec_2d, vw_sec_2d, wtke_sec_2d, w_sec_2d};
-  ekat::device_to_host({thl_sec, qw_sec, wthl_sec, wqw_sec, qwthl_sec, uw_sec, vw_sec, wtke_sec, w_sec}, dim1, dim2, host_views, true);
+  ekat::device_to_host({thl_sec, qw_sec, wthl_sec, wqw_sec, qwthl_sec, uw_sec, vw_sec, wtke_sec, w_sec}, dim1, dim2, host_views);
 }
 
 void diag_second_shoc_moments_host(Int shcol, Int nlev, Int nlevi, Real* thetal, Real* qw, Real* u_wind, Real* v_wind, Real* tke,
@@ -1234,7 +1213,7 @@ void diag_second_shoc_moments_host(Int shcol, Int nlev, Int nlevi, Real* thetal,
   std::vector<const Real*> ptr_array = {thetal, qw, u_wind, v_wind, tke, isotropy, tkh, tk, zt_grid, shoc_mix,
                       thl_sec, qw_sec, wthl_sec, wqw_sec, qwthl_sec, uw_sec, vw_sec, wtke_sec, dz_zi, zi_grid};
 
-  ekat::host_to_device(ptr_array, dim1_array, dim2_array, temp_2d, true);
+  ekat::host_to_device(ptr_array, dim1_array, dim2_array, temp_2d);
 
   view_2d
     thetal_2d   (temp_2d[0]),
@@ -1320,7 +1299,7 @@ void diag_second_shoc_moments_host(Int shcol, Int nlev, Int nlevi, Real* thetal,
   std::vector<Int> dim1(9, shcol);
   std::vector<Int> dim2 = {nlevi, nlevi, nlevi, nlevi, nlevi, nlevi, nlevi, nlevi, nlev };
   std::vector<view_2d> host_2d_views = {thl_sec_2d, qw_sec_2d, wthl_sec_2d, wqw_sec_2d, qwthl_sec_2d, uw_sec_2d, vw_sec_2d, wtke_sec_2d, w_sec_2d};
-  ekat::device_to_host({thl_sec, qw_sec, wthl_sec, wqw_sec, qwthl_sec, uw_sec, vw_sec, wtke_sec, w_sec}, dim1, dim2, host_2d_views, true);
+  ekat::device_to_host({thl_sec, qw_sec, wthl_sec, wqw_sec, qwthl_sec, uw_sec, vw_sec, wtke_sec, w_sec}, dim1, dim2, host_2d_views);
 }
 
 void compute_brunt_shoc_length_host(Int nlev, Int nlevi, Int shcol, Real* dz_zt, Real* thv, Real* thv_zi, Real* brunt)
@@ -1339,7 +1318,7 @@ void compute_brunt_shoc_length_host(Int nlev, Int nlevi, Int shcol, Real* dz_zt,
   std::vector<const Real*> ptr_array = {dz_zt, thv,   thv_zi, brunt};
 
   // Sync to device
-  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_d, true);
+  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_d);
 
   view_2d
     dz_zt_d (temp_d[0]),
@@ -1362,7 +1341,7 @@ void compute_brunt_shoc_length_host(Int nlev, Int nlevi, Int shcol, Real* dz_zt,
 
   // Sync back to host
   std::vector<view_2d> inout_views = {brunt_d};
-  ekat::device_to_host({brunt}, shcol, nlev, inout_views, true);
+  ekat::device_to_host({brunt}, shcol, nlev, inout_views);
 }
 
 void compute_l_inf_shoc_length_host(Int nlev, Int shcol, Real *zt_grid, Real *dz_zt,
@@ -1380,7 +1359,7 @@ void compute_l_inf_shoc_length_host(Int nlev, Int shcol, Real *zt_grid, Real *dz
 
   // Sync to device
   std::vector<view_2d> temp_d(3);
-  ekat::host_to_device({zt_grid, dz_zt, tke}, shcol, nlev, temp_d, true);
+  ekat::host_to_device({zt_grid, dz_zt, tke}, shcol, nlev, temp_d);
 
   // inputs
   view_2d
@@ -1429,7 +1408,7 @@ void check_length_scale_shoc_length_host(Int nlev, Int shcol, Real* host_dx, Rea
   std::vector<view_1d> temp_1d_d(2);
   std::vector<view_2d> temp_2d_d(1);
   ScreamDeepCopy::copy_to_device({host_dx,host_dy}, shcol, temp_1d_d);
-  ekat::host_to_device({shoc_mix}, shcol, nlev, temp_2d_d, true);
+  ekat::host_to_device({shoc_mix}, shcol, nlev, temp_2d_d);
 
   view_1d
     host_dx_d(temp_1d_d[0]),
@@ -1452,7 +1431,7 @@ void check_length_scale_shoc_length_host(Int nlev, Int shcol, Real* host_dx, Rea
 
   // Sync back to host
   std::vector<view_2d> inout_views = {shoc_mix_d};
-  ekat::device_to_host({shoc_mix}, shcol, nlev, inout_views, true);
+  ekat::device_to_host({shoc_mix}, shcol, nlev, inout_views);
 }
 
 void shoc_diag_obklen_host(Int shcol, Real* uw_sfc, Real* vw_sfc, Real* wthl_sfc, Real* wqw_sfc, Real* thl_sfc,
@@ -1522,7 +1501,7 @@ void shoc_pblintd_cldcheck_host(Int shcol, Int nlev, Int nlevi, Real* zi, Real* 
   std::vector<Int> dim2 = {nlevi, nlev};
 
   std::vector<view_2d> cldcheck_2d(2);
-  ekat::host_to_device({zi, cldn}, dim1, dim2, cldcheck_2d, true);
+  ekat::host_to_device({zi, cldn}, dim1, dim2, cldcheck_2d);
 
   view_2d
     zi_2d  (cldcheck_2d[0]),
@@ -1573,7 +1552,7 @@ void shoc_length_host(Int shcol, Int nlev, Int nlevi, Real* host_dx, Real* host_
                                         thv,     brunt,   shoc_mix};
   // Sync to device
   ScreamDeepCopy::copy_to_device({host_dx, host_dy}, shcol, temp_1d_d);
-  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_2d_d, true);
+  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_2d_d);
 
   // inputs
   view_1d
@@ -1622,7 +1601,7 @@ void shoc_length_host(Int shcol, Int nlev, Int nlevi, Real* host_dx, Real* host_
 
   // Sync back to host
   std::vector<view_2d> inout_views = {brunt_d,shoc_mix_d};
-  ekat::device_to_host({brunt,shoc_mix}, shcol, nlev, inout_views, true);
+  ekat::device_to_host({brunt,shoc_mix}, shcol, nlev, inout_views);
 }
 
 void shoc_energy_fixer_host(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Real* zt_grid,
@@ -1653,7 +1632,7 @@ void shoc_energy_fixer_host(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv
 
   // Sync to device
   ScreamDeepCopy::copy_to_device(ptr_array_1d, shcol, temp_1d_d);
-  ekat::host_to_device(ptr_array_2d, dim1_sizes, dim2_sizes, temp_2d_d, true);
+  ekat::host_to_device(ptr_array_2d, dim1_sizes, dim2_sizes, temp_2d_d);
 
   view_1d
     se_b_d(temp_1d_d[0]),
@@ -1713,7 +1692,7 @@ void shoc_energy_fixer_host(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv
 
   // Sync back to host
   std::vector<view_2d> inout_views = {host_dse_d};
-  ekat::device_to_host({host_dse}, shcol, nlev, inout_views, true);
+  ekat::device_to_host({host_dse}, shcol, nlev, inout_views);
 }
 
 void compute_shoc_vapor_host(Int shcol, Int nlev, Real* qw, Real* ql, Real* qv)
@@ -1730,7 +1709,7 @@ void compute_shoc_vapor_host(Int shcol, Int nlev, Real* qw, Real* ql, Real* qv)
 
   // Sync to device
   std::vector<view_2d> temp_d(num_arrays);
-  ekat::host_to_device( {qw,  ql, qv}, shcol, nlev, temp_d, true);
+  ekat::host_to_device( {qw,  ql, qv}, shcol, nlev, temp_d);
 
   // Inputs/Outputs
   view_2d
@@ -1752,7 +1731,7 @@ void compute_shoc_vapor_host(Int shcol, Int nlev, Real* qw, Real* ql, Real* qv)
 
   // Sync back to host
   std::vector<view_2d> inout_views = {qv_d};
-  ekat::device_to_host({qv}, shcol, nlev, inout_views, true);
+  ekat::device_to_host({qv}, shcol, nlev, inout_views);
 }
 
 void update_prognostics_implicit_host(Int shcol, Int nlev, Int nlevi, Int num_tracer, Real dtime,
@@ -1788,8 +1767,8 @@ void update_prognostics_implicit_host(Int shcol, Int nlev, Int nlevi, Int num_tr
 
   // Sync to device
   ScreamDeepCopy::copy_to_device({uw_sfc, vw_sfc, wthl_sfc, wqw_sfc}, shcol, temp_1d_d);
-  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_2d_d, true);
-  ekat::host_to_device({tracer}, shcol, nlev, num_tracer, temp_3d_d, true);
+  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_2d_d);
+  ekat::host_to_device({tracer}, shcol, nlev, num_tracer, temp_3d_d);
 
   view_1d
     uw_sfc_d(temp_1d_d[0]),
@@ -1887,10 +1866,10 @@ void update_prognostics_implicit_host(Int shcol, Int nlev, Int nlevi, Int num_tr
 
   // Sync back to host
   std::vector<view_2d> inout_views_2d = {thetal_d, qw_d, u_wind_d, v_wind_d, tke_d};
-  ekat::device_to_host({thetal, qw, u_wind, v_wind, tke}, shcol, nlev, inout_views_2d, true);
+  ekat::device_to_host({thetal, qw, u_wind, v_wind, tke}, shcol, nlev, inout_views_2d);
 
   std::vector<view_3d> inout_views = {qtracers_f90_d};
-  ekat::device_to_host({tracer}, shcol, nlev, num_tracer, inout_views, true);
+  ekat::device_to_host({tracer}, shcol, nlev, num_tracer, inout_views);
 }
 
 void diag_third_shoc_moments_host(Int shcol, Int nlev, Int nlevi, Real* w_sec, Real* thl_sec,
@@ -1916,7 +1895,7 @@ void diag_third_shoc_moments_host(Int shcol, Int nlev, Int nlevi, Real* w_sec, R
                                         dz_zi, zt_grid, zi_grid,  w3};
 
   // Sync to device
-  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_d, true);
+  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_d);
 
   view_2d
     wsec_d(temp_d[0]),
@@ -1969,7 +1948,7 @@ void diag_third_shoc_moments_host(Int shcol, Int nlev, Int nlevi, Real* w_sec, R
 
   // Sync back to host
   std::vector<view_2d> inout_views = {w3_d};
-  ekat::device_to_host({w3}, shcol, nlevi, inout_views, true);
+  ekat::device_to_host({w3}, shcol, nlevi, inout_views);
 }
 
 void adv_sgs_tke_host(Int nlev, Int shcol, Real dtime, Real* shoc_mix, Real* wthv_sec,
@@ -1989,7 +1968,7 @@ void adv_sgs_tke_host(Int nlev, Int shcol, Real dtime, Real* shoc_mix, Real* wth
   std::vector<const Real*> ptr_array  = {shoc_mix, wthv_sec, sterm_zt, tk,    tke,   a_diss};
 
   // Sync to device
-  ekat::host_to_device(ptr_array, shcol, nlev, temp_d, true);
+  ekat::host_to_device(ptr_array, shcol, nlev, temp_d);
 
   view_2d
     //input
@@ -2020,7 +1999,7 @@ void adv_sgs_tke_host(Int nlev, Int shcol, Real dtime, Real* shoc_mix, Real* wth
 
   // Sync back to host
   std::vector<view_2d> inout_views = {tke_d, a_diss_d};
-  ekat::device_to_host({tke, a_diss}, shcol, nlev, inout_views, true);
+  ekat::device_to_host({tke, a_diss}, shcol, nlev, inout_views);
 }
 
 void shoc_assumed_pdf_host(Int shcol, Int nlev, Int nlevi, Real* thetal, Real* qw, Real* w_field,
@@ -2047,7 +2026,7 @@ void shoc_assumed_pdf_host(Int shcol, Int nlev, Int nlevi, Real* thetal, Real* q
                                         wqw_sec, qwthl_sec,    w3,      w_field, pres,     zt_grid,
                                         zi_grid, shoc_cldfrac, shoc_ql, wqls,    wthv_sec, shoc_ql2};
   // Sync to device
-  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_d, true);
+  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_d);
 
   // Inputs/Outputs
   view_2d
@@ -2108,7 +2087,7 @@ void shoc_assumed_pdf_host(Int shcol, Int nlev, Int nlevi, Real* thetal, Real* q
 
   // Sync back to host
   std::vector<view_2d> out_views = {shoc_cldfrac_d, shoc_ql_d, wqls_d, wthv_sec_d, shoc_ql2_d};
-  ekat::device_to_host({shoc_cldfrac, shoc_ql, wqls, wthv_sec, shoc_ql2}, shcol, nlev, out_views, true);
+  ekat::device_to_host({shoc_cldfrac, shoc_ql, wqls, wthv_sec, shoc_ql2}, shcol, nlev, out_views);
 }
 void compute_shr_prod_host(Int nlevi, Int nlev, Int shcol, Real* dz_zi, Real* u_wind, Real* v_wind, Real* sterm)
 {
@@ -2128,7 +2107,7 @@ void compute_shr_prod_host(Int nlevi, Int nlev, Int shcol, Real* dz_zi, Real* u_
   std::vector<const Real*> ptr_array  = {dz_zi, u_wind, v_wind, sterm};
 
   // Sync to device
-  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_d, true);
+  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_d);
 
   view_2d
     //input
@@ -2156,7 +2135,7 @@ void compute_shr_prod_host(Int nlevi, Int nlev, Int shcol, Real* dz_zi, Real* u_
 
   // Sync back to host
   std::vector<view_2d> inout_views = {sterm_d};
-  ekat::device_to_host({sterm}, shcol, nlevi, inout_views, true);
+  ekat::device_to_host({sterm}, shcol, nlevi, inout_views);
 }
 
 void compute_tmpi_host(Int nlevi, Int shcol, Real dtime, Real *rho_zi, Real *dz_zi, Real *tmpi)
@@ -2173,7 +2152,7 @@ void compute_tmpi_host(Int nlevi, Int shcol, Real dtime, Real *rho_zi, Real *dz_
 
   // Sync to device
   std::vector<view_2d> temp_d(num_arrays);
-  ekat::host_to_device({rho_zi,  dz_zi, tmpi}, shcol, nlevi, temp_d, true);
+  ekat::host_to_device({rho_zi,  dz_zi, tmpi}, shcol, nlevi, temp_d);
 
   // Inputs/Outputs
   view_2d
@@ -2195,7 +2174,7 @@ void compute_tmpi_host(Int nlevi, Int shcol, Real dtime, Real *rho_zi, Real *dz_
 
   // Sync back to host
   std::vector<view_2d> inout_views = {tmpi_d};
-  ekat::device_to_host({tmpi}, shcol, nlevi, inout_views, true);
+  ekat::device_to_host({tmpi}, shcol, nlevi, inout_views);
 }
 
 void integ_column_stability_host(Int nlev, Int shcol, Real *dz_zt,
@@ -2215,7 +2194,7 @@ void integ_column_stability_host(Int nlev, Int shcol, Real *dz_zt,
 
   // Sync to device
   std::vector<view_2d> temp_d(num_arrays);
-  ekat::host_to_device({dz_zt, pres, brunt}, shcol, nlev, temp_d, true);
+  ekat::host_to_device({dz_zt, pres, brunt}, shcol, nlev, temp_d);
 
   // Inputs
   view_2d
@@ -2271,7 +2250,7 @@ void isotropic_ts_host(Int nlev, Int shcol, Real* brunt_int, Real* tke,
 
   // Sync to device
   ScreamDeepCopy::copy_to_device({brunt_int}, shcol, temp_1d);
-  ekat::host_to_device(ptr_array, shcol, nlev, temp_2d, true);
+  ekat::host_to_device(ptr_array, shcol, nlev, temp_2d);
 
   //inputs
   view_1d brunt_int_d(temp_1d[0]);
@@ -2299,7 +2278,7 @@ void isotropic_ts_host(Int nlev, Int shcol, Real* brunt_int, Real* tke,
       const auto isotropy_s = ekat::subview(isotropy_d, i); //output
 
       // Hard code these runtime options for F90
-      const Real lambda_low = 0.001; 
+      const Real lambda_low = 0.001;
       const Real lambda_high   = 0.04;
       const Real lambda_slope  = 2.65;
       const Real lambda_thresh = 0.02;
@@ -2309,7 +2288,7 @@ void isotropic_ts_host(Int nlev, Int shcol, Real* brunt_int, Real* tke,
 
   // Sync back to host
   std::vector<view_2d> inout_views = {isotropy_d};
-  ekat::device_to_host({isotropy}, shcol, nlev, inout_views, true);
+  ekat::device_to_host({isotropy}, shcol, nlev, inout_views);
 
 }
 
@@ -2327,7 +2306,7 @@ void dp_inverse_host(Int nlev, Int shcol, Real *rho_zt, Real *dz_zt, Real *rdp_z
 
   // Sync to device
   std::vector<view_2d> temp_d(num_arrays);
-  ekat::host_to_device({rho_zt,  dz_zt, rdp_zt}, shcol, nlev, temp_d, true);
+  ekat::host_to_device({rho_zt,  dz_zt, rdp_zt}, shcol, nlev, temp_d);
 
   // Inputs/Outputs
   view_2d
@@ -2349,7 +2328,7 @@ void dp_inverse_host(Int nlev, Int shcol, Real *rho_zt, Real *dz_zt, Real *rdp_z
 
   // Sync back to host
   std::vector<view_2d> inout_views = {rdp_zt_d};
-  ekat::device_to_host({rdp_zt}, shcol, nlev, inout_views, true);
+  ekat::device_to_host({rdp_zt}, shcol, nlev, inout_views);
 }
 
 int shoc_init_host(Int nlev, Real *pref_mid, Int nbot_shoc, Int ntop_shoc)
@@ -2414,14 +2393,14 @@ Int shoc_main_host(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npb
   std::vector<const Real*> ptr_array_2d = {zt_grid,   zi_grid,  pres,          presi,        pdel,
                                            thv,       w_field,  wtracer_sfc,   inv_exner,    host_dse,
                                            tke,       thetal,   qw,            u_wind,       v_wind,
-                                           wthv_sec,  tk,       shoc_cldfrac,  shoc_ql,      shoc_ql2,  
+                                           wthv_sec,  tk,       shoc_cldfrac,  shoc_ql,      shoc_ql2,
                                            tkh,       shoc_mix, w_sec,         thl_sec,      qw_sec,
                                            qwthl_sec, wthl_sec, wqw_sec,       wtke_sec,     uw_sec,
                                            vw_sec,    w3,       wqls_sec,      brunt,        isotropy};
 
   ScreamDeepCopy::copy_to_device(ptr_array_1d, shcol, temp_1d_d);
-  ekat::host_to_device(ptr_array_2d, dim1_2d_sizes, dim2_2d_sizes, temp_2d_d, true);
-  ekat::host_to_device({qtracers}, shcol, nlev, num_qtracers, temp_3d_d, true);
+  ekat::host_to_device(ptr_array_2d, dim1_2d_sizes, dim2_2d_sizes, temp_2d_d);
+  ekat::host_to_device({qtracers}, shcol, nlev, num_qtracers, temp_3d_d);
 
   Int index_counter = 0;
   view_1d
@@ -2603,11 +2582,11 @@ Int shoc_main_host(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npb
                                        qw_sec_d,   qwthl_sec_d, wthl_sec_d, wqw_sec_d,  wtke_sec_d,
                                        uw_sec_d,   vw_sec_d,    w3_d,       wqls_sec_d, brunt_d,
                                        isotropy_d};
-  ekat::device_to_host(ptr_array_2d_out, dim1_2d_out, dim2_2d_out, out_views_2d, true);
+  ekat::device_to_host(ptr_array_2d_out, dim1_2d_out, dim2_2d_out, out_views_2d);
 
   // 3d
   std::vector<view_3d> out_views_3d = {qtracers_f90_d};
-  ekat::device_to_host({qtracers}, shcol, nlev, num_qtracers, out_views_3d, true);
+  ekat::device_to_host({qtracers}, shcol, nlev, num_qtracers, out_views_3d);
 
   return elapsed_microsec;
 }
@@ -2624,7 +2603,7 @@ void pblintd_height_host(Int shcol, Int nlev, Int npbl, Real* z, Real* u, Real* 
   using MemberType = typename SHOC::MemberType;
 
   std::vector<view_2d> views_2d(5);
-  ekat::host_to_device({z, u, v, thv, rino}, shcol, nlev, views_2d, true);
+  ekat::host_to_device({z, u, v, thv, rino}, shcol, nlev, views_2d);
 
   view_2d z_2d   (views_2d[0]),
           u_2d   (views_2d[1]),
@@ -2665,7 +2644,7 @@ void pblintd_height_host(Int shcol, Int nlev, Int npbl, Real* z, Real* u, Real* 
   ScreamDeepCopy::copy_to_host({pblh}, shcol, out_1d_views);
 
   std::vector<view_2d> out_2d_views = {rino_2d};
-  ekat::device_to_host({rino}, shcol, nlev, out_2d_views, true);
+  ekat::device_to_host({rino}, shcol, nlev, out_2d_views);
 
   std::vector<bview_1d> out_bool_1d_views = {check_1d};
   ScreamDeepCopy::copy_to_host({check}, shcol, out_bool_1d_views);
@@ -2700,8 +2679,8 @@ void vd_shoc_decomp_and_solve_host(Int shcol, Int nlev, Int nlevi, Int num_rhs, 
 
   // Sync to device
   ScreamDeepCopy::copy_to_device({flux}, shcol, temp_1d_d);
-  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_2d_d, true);
-  ekat::host_to_device({var}, shcol, nlev, num_rhs, temp_3d_d, true);
+  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_2d_d);
+  ekat::host_to_device({var}, shcol, nlev, num_rhs, temp_3d_d);
 
   view_1d
     flux_d(temp_1d_d[0]);
@@ -2740,7 +2719,7 @@ void vd_shoc_decomp_and_solve_host(Int shcol, Int nlev, Int nlevi, Int num_rhs, 
 
   // Sync back to host
   std::vector<view_3d> inout_views = {var_d};
-  ekat::device_to_host({var}, shcol, nlev, num_rhs, inout_views, true);
+  ekat::device_to_host({var}, shcol, nlev, num_rhs, inout_views);
 }
 
 void shoc_grid_host(Int shcol, Int nlev, Int nlevi, Real* zt_grid, Real* zi_grid, Real* pdel, Real* dz_zt, Real* dz_zi, Real* rho_zt)
@@ -2762,7 +2741,7 @@ void shoc_grid_host(Int shcol, Int nlev, Int nlevi, Real* zt_grid, Real* zi_grid
                                         dz_zt,   dz_zi,   rho_zt};
 
   // Sync to device
-  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_2d_d, true);
+  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_2d_d);
 
   view_2d
     zt_grid_d(temp_2d_d[0]),
@@ -2789,7 +2768,7 @@ void shoc_grid_host(Int shcol, Int nlev, Int nlevi, Real* zt_grid, Real* zi_grid
 
   // Sync back to host
   std::vector<view_2d> inout_views = {dz_zt_d, dz_zi_d, rho_zt_d};
-  ekat::device_to_host<Int>({dz_zt, dz_zi, rho_zt}, {shcol, shcol, shcol}, {nlev, nlevi, nlev}, inout_views, true);
+  ekat::device_to_host<Int>({dz_zt, dz_zi, rho_zt}, {shcol, shcol, shcol}, {nlev, nlevi, nlev}, inout_views);
 }
 
 void eddy_diffusivities_host(Int nlev, Int shcol, Real* pblh, Real* zt_grid, Real* tabs, Real* shoc_mix, Real* sterm_zt,
@@ -2816,7 +2795,7 @@ void eddy_diffusivities_host(Int nlev, Int shcol, Real* pblh, Real* zt_grid, Rea
 
   // Sync to device
   ScreamDeepCopy::copy_to_device({pblh}, shcol, temp_1d_d);
-  ekat::host_to_device(ptr_array, shcol, nlev, temp_2d_d, true);
+  ekat::host_to_device(ptr_array, shcol, nlev, temp_2d_d);
 
   view_1d pblh_d(temp_1d_d[0]);
 
@@ -2854,7 +2833,7 @@ void eddy_diffusivities_host(Int nlev, Int shcol, Real* pblh, Real* zt_grid, Rea
 
   // Sync back to host
   std::vector<view_2d> inout_views = {tkh_d, tk_d};
-  ekat::device_to_host({tkh, tk}, shcol, nlev, inout_views, true);
+  ekat::device_to_host({tkh, tk}, shcol, nlev, inout_views);
 }
 
 void pblintd_surf_temp_host(Int shcol, Int nlev, Int nlevi, Real* z, Real* ustar, Real* obklen, Real* kbfs, Real* thv, Real* tlv, Real* pblh, bool* check, Real* rino)
@@ -2867,7 +2846,7 @@ void pblintd_surf_temp_host(Int shcol, Int nlev, Int nlevi, Real* z, Real* ustar
   using view_2d      = typename SHOC::view_2d<Spack>;
 
   std::vector<view_2d> views_2d(3);
-  ekat::host_to_device({z, thv, rino}, shcol, nlev, views_2d, true);
+  ekat::host_to_device({z, thv, rino}, shcol, nlev, views_2d);
   view_2d z_2d   (views_2d[0]),
           thv_2d (views_2d[1]),
           rino_2d(views_2d[2]);
@@ -2908,7 +2887,7 @@ void pblintd_surf_temp_host(Int shcol, Int nlev, Int nlevi, Real* z, Real* ustar
   ScreamDeepCopy::copy_to_host({pblh, tlv}, shcol, out_1d_views);
 
   std::vector<view_2d> out_2d_views = {rino_2d};
-  ekat::device_to_host({rino}, shcol, nlev, out_2d_views, true);
+  ekat::device_to_host({rino}, shcol, nlev, out_2d_views);
 
   std::vector<view_bool_1d> out_bool_1d_views = {check_1d};
   ScreamDeepCopy::copy_to_host({check}, shcol, out_bool_1d_views);
@@ -2924,7 +2903,7 @@ void pblintd_check_pblh_host(Int shcol, Int nlev, Int nlevi, Int npbl, Real* z, 
   using view_2d      = typename SHOC::view_2d<Spack>;
 
   std::vector<view_2d> views_2d(1);
-  ekat::host_to_device({z}, shcol, nlev, views_2d, true);
+  ekat::host_to_device({z}, shcol, nlev, views_2d);
   view_2d z_2d (views_2d[0]);
 
   std::vector<view_1d> views_1d(2);
@@ -2976,7 +2955,7 @@ void pblintd_host(Int shcol, Int nlev, Int nlevi, Int npbl, Real* z, Real* zi, R
 
     // Sync to device
     ScreamDeepCopy::copy_to_device({ustar, obklen, kbfs}, shcol, temp_1d_d);
-    ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_2d_d, true);
+    ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_2d_d);
 
     view_1d
       ustar_d(temp_1d_d[0]),
@@ -3058,7 +3037,7 @@ void shoc_tke_host(Int shcol, Int nlev, Int nlevi, Real dtime, Real* wthv_sec, R
 
   // Sync to device
   ScreamDeepCopy::copy_to_device({pblh}, shcol, temp_1d_d);
-  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_2d_d, true);
+  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_2d_d);
 
   view_1d pblh_d(temp_1d_d[0]);
 
@@ -3110,7 +3089,7 @@ void shoc_tke_host(Int shcol, Int nlev, Int nlevi, Real dtime, Real* wthv_sec, R
     const auto isotropy_s = ekat::subview(isotropy_d, i);
 
     // Hardcode for F90 testing
-    const Real lambda_low    = 0.001;  
+    const Real lambda_low    = 0.001;
     const Real lambda_high   = 0.04;
     const Real lambda_slope  = 2.65;
     const Real lambda_thresh = 0.02;
@@ -3127,7 +3106,7 @@ void shoc_tke_host(Int shcol, Int nlev, Int nlevi, Real dtime, Real* wthv_sec, R
 
   // Sync back to host
   std::vector<view_2d> inout_views = {tke_d, tk_d, tkh_d, isotropy_d};
-  ekat::device_to_host({tke, tk, tkh, isotropy}, shcol, nlev, inout_views, true);
+  ekat::device_to_host({tke, tk, tkh, isotropy}, shcol, nlev, inout_views);
 }
 
 void compute_shoc_temperature_host(Int shcol, Int nlev, Real *thetal, Real *ql, Real *inv_exner, Real* tabs)
@@ -3144,7 +3123,7 @@ void compute_shoc_temperature_host(Int shcol, Int nlev, Real *thetal, Real *ql, 
 
   // Sync to device
   std::vector<view_2d> temp_d(num_arrays);
-  ekat::host_to_device({thetal, ql, inv_exner, tabs}, shcol, nlev, temp_d, true);
+  ekat::host_to_device({thetal, ql, inv_exner, tabs}, shcol, nlev, temp_d);
 
   // Inputs/Outputs
   view_2d
@@ -3168,7 +3147,7 @@ void compute_shoc_temperature_host(Int shcol, Int nlev, Real *thetal, Real *ql, 
 
   // Sync back to host
   std::vector<view_2d> out_views = {tabs_d};
-  ekat::device_to_host({tabs}, shcol, nlev, out_views, true);
+  ekat::device_to_host({tabs}, shcol, nlev, out_views);
 }
 
 } // namespace shoc

@@ -137,51 +137,6 @@ struct ShocEnergyIntegralsData : public PhysicsTestData {
   PTD_STD_DEF(ShocEnergyIntegralsData, 2, shcol, nlev);
 };
 
-struct ShocEnergyTotalFixerData : public ShocTestGridDataBase {
-  // Inputs
-  Int shcol, nlev, nlevi, nadv;
-  Real dtime;
-  Real *se_b, *ke_b, *wv_b, *wl_b, *se_a, *ke_a, *wv_a, *wl_a, *wthl_sfc, *wqw_sfc, *rho_zt, *pint;
-
-  // Outputs
-  Real *te_a, *te_b;
-
-  ShocEnergyTotalFixerData(Int shcol_, Int nlev_, Int nlevi_, Real dtime_, Int nadv_) :
-    ShocTestGridDataBase({{ shcol_, nlev_ }, { shcol_, nlevi_ }, { shcol_ }}, {{ &zt_grid, &rho_zt }, { &zi_grid, &pint }, { &se_b, &ke_b, &wv_b, &wl_b, &se_a, &ke_a, &wv_a, &wl_a, &wthl_sfc, &wqw_sfc, &te_a, &te_b }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_), nadv(nadv_), dtime(dtime_) {}
-
-  PTD_STD_DEF(ShocEnergyTotalFixerData, 5, shcol, nlev, nlevi, dtime, nadv);
-};
-
-struct ShocEnergyThresholdFixerData : public PhysicsTestData {
-  // Inputs
-  Int shcol, nlev, nlevi;
-  Real *pint, *tke, *te_a, *te_b;
-
-  // Outputs
-  Real *se_dis;
-  Int *shoctop;
-
-  ShocEnergyThresholdFixerData(Int shcol_, Int nlev_, Int nlevi_) :
-    PhysicsTestData({{ shcol_, nlevi_ }, { shcol_, nlev_ }, { shcol_ }, { shcol_ }}, {{ &pint }, { &tke }, { &te_a, &te_b, &se_dis }}, {{ &shoctop }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_)  {}
-
-  PTD_STD_DEF(ShocEnergyThresholdFixerData, 3, shcol, nlev, nlevi);
-};
-
-struct ShocEnergyDseFixerData : public PhysicsTestData {
-  // Inputs
-  Int shcol, nlev;
-  Real *se_dis;
-  Int *shoctop;
-
-  // Inputs/Outputs
-  Real *host_dse;
-
-  ShocEnergyDseFixerData(Int shcol_, Int nlev_) :
-    PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }, { shcol_ }}, {{ &se_dis }, { &host_dse }}, {{ &shoctop }}), shcol(shcol_), nlev(nlev_) {}
-
-  PTD_STD_DEF(ShocEnergyDseFixerData, 2, shcol, nlev);
-};
-
 struct CalcShocVertfluxData : public PhysicsTestData {
   // Inputs
   Int shcol, nlev, nlevi;
@@ -1076,9 +1031,6 @@ void shoc_diag_obklen                               (ShocDiagObklenData& d);
 void update_host_dse                                (UpdateHostDseData& d);
 void shoc_energy_fixer                              (ShocEnergyFixerData& d);
 void shoc_energy_integrals                          (ShocEnergyIntegralsData& d);
-void shoc_energy_total_fixer                        (ShocEnergyTotalFixerData& d);
-void shoc_energy_threshold_fixer                    (ShocEnergyThresholdFixerData& d);
-void shoc_energy_dse_fixer                          (ShocEnergyDseFixerData& d);
 void calc_shoc_vertflux                             (CalcShocVertfluxData& d);
 void calc_shoc_varorcovar                           (CalcShocVarorcovarData& d);
 void compute_tmpi                                   (ComputeTmpiData& d);
