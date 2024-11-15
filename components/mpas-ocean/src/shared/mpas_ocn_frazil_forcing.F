@@ -493,13 +493,15 @@ contains
 
         ! find deepest level where frazil can be created
         kBottomFrazil=maxLevelCell(iCell)
-        do k=maxLevelCell(iCell), minLevelCell(iCell), -1
+        !do k=maxLevelCell(iCell), minLevelCell(iCell), -1
           ! add the ssh so frazil can form below land ice, where the ssh is depressed
-          if (-zMid(k,iCell) < -ssh(iCell) + config_frazil_maximum_depth) then
-            kBottomFrazil=k
-            exit
-          endif
-        enddo
+        !  if (-zMid(k,iCell) < -ssh(iCell) + config_frazil_maximum_depth) then
+        !    kBottomFrazil=k
+        !    exit
+        !  endif
+        !enddo
+        !NJ: Compute frazil all through the column
+        kBottomFrazil=maxLevelCell(iCell)
 
         ! find minimum temperature between 1:kBottomFrazil
         columnTemperatureMin = 1.0e30_RKIND
