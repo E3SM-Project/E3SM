@@ -54,10 +54,12 @@ module comsrf
   real(r8), allocatable:: trefmxav(:,:)  ! diagnostic: tref max over the day
   real(r8), allocatable:: trefmnav(:,:)  ! diagnostic: tref min over the day
 
-  !
 ! Private module data
 
+!===============================================================================
 CONTAINS
+!===============================================================================
+
 !======================================================================
 ! PUBLIC ROUTINES: Following routines are publically accessable
 !======================================================================
