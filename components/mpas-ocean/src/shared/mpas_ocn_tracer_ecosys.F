@@ -31,6 +31,7 @@ module ocn_tracer_ecosys
    use ocn_config
    use ocn_framework_forcing
    use ocn_diagnostics_variables
+   use ocn_equation_of_state
 
    use marbl_logging             , only : marbl_log_type
    use marbl_interface           , only : marbl_interface_class
@@ -55,6 +56,7 @@ module ocn_tracer_ecosys
 
    public :: ocn_tracer_ecosys_compute, &
              ocn_tracer_ecosys_surface_flux_compute,  &
+             ocn_tracer_ecosys_frazil_compute, &
              ocn_get_ecosysData,  &
              ocn_ecosys_forcing_write_restart,  &
              ocn_tracer_ecosys_init
@@ -504,6 +506,246 @@ module ocn_tracer_ecosys
 !***********************************************************************
 
 contains
+
+!***********************************************************************
+!
+!  routine ocn_tracer_ecosys_frazil_compute
+!
+!> \brief   computes a tracer tendency due to frazil
+!> \author  Nicole Jeffery
+!> \date    10/18/2024
+!> \details
+!>  This routine computes a tracer tendency for ecosys tracers due to  frazil ice
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_tracer_ecosys_frazil_compute(activeTracers, ecosysTracers, forcingPool, nTracers, nCellsSolve, &
+      zMid, minLevelCell, maxLevelCell, nVertLevels, layerThickness, indexTemperature, indexSalinity, &
+      ecosysTracersTend, ssh, dt, err)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      ! one dimensional arrays
+      integer, dimension(:), intent(in) :: &
+         minLevelCell, maxLevelCell
+
+      real (kind=RKIND), intent(in) :: dt
+
+      real (kind=RKIND), dimension(:), intent(in) :: ssh
+
+      ! two dimensional arrays
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         zMid, layerThickness
+
+      ! three dimensional arrays
+      real (kind=RKIND), dimension(:,:,:), intent(in) :: &
+         ecosysTracers
+      real (kind=RKIND), dimension(:,:,:), intent(in) :: &
+         activeTracers
+
+      ! scalars
+      integer, intent(in) :: nTracers, nCellsSolve, nVertLevels, indexTemperature, indexSalinity
+
+      type (mpas_pool_type), intent(inout) :: forcingPool
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:,:,:), intent(inout) :: &
+        ecosysTracersTend
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: Error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, dimension(:), pointer :: landIceMask, landIceFloatingMask
+      logical :: underFloatingLandIce, underLandIce ! indicates if we are under land ice
+
+      integer :: kBottomFrazil  ! k index where testing for frazil begins
+
+      real (kind=RKIND) :: potential  ! scalar holding freezing/melt potential
+      real (kind=RKIND) :: freezingEnergy  ! energy available for freezing, positive definite
+      real (kind=RKIND) :: meltingEnergy ! energy available for melting, positive definite
+      real (kind=RKIND) :: frazilEcosys ! ecosys concentration of frazil ice
+
+      integer :: iCell, k, nCells, n
+      real (kind=RKIND) :: columnTemperatureMin
+
+      real (kind=RKIND) :: newFrazilIceThickness
+      real (kind=RKIND) :: sumNewFrazilIceThickness, newThicknessWeightedEcosysContent
+      real (kind=RKIND) :: meltedFrazilIceThickness, meltedThicknessWeightedEcosysContent
+      real (kind=RKIND) :: oceanFreezingTemperature
+
+      real (kind=RKIND), allocatable, dimension(:) :: sumNewThicknessWeightedEcosysContent
+      err = 0
+
+      call mpas_timer_start("ecosys frazil source-sink")
+
+      ! if frazil is not enabled, return
+      if(.not. config_use_frazil_ice_formation) return
+
+      call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
+      call mpas_pool_get_array(forcingPool, 'landIceFloatingMask', landIceFloatingMask)
+      allocate (sumNewThicknessWeightedEcosysContent(ecosys_tracer_cnt))
+
+      ! loop over all columns
+      !$omp parallel
+      !$omp do schedule(runtime) &
+      !$omp private(kBottomFrazil, columnTemperatureMin, k,&
+      !$omp         sumNewThicknessWeightedEcosysContent, oceanFreezingTemperature, potential, &
+      !$omp         freezingEnergy, meltingEnergy, frazilEcosys, newFrazilIceThickness, &
+      !$omp         newThicknessWeightedEcosysContent, meltedFrazilIceThickness, &
+      !$omp         meltedThicknessWeightedEcosysContent)
+      do iCell=1,nCellsSolve
+
+        underLandIce = .false.
+        if ( associated(landIceMask) ) then
+           underLandIce = (landIceMask(iCell) == 1)
+        end if
+
+        underFloatingLandIce = .false.
+        if ( associated(landIceFloatingMask) ) then
+           underFloatingLandIce = (landIceFloatingMask(iCell) == 1)
+        end if
+
+        ! find deepest level where frazil can be created
+        kBottomFrazil=maxLevelCell(iCell)
+        do k=maxLevelCell(iCell), minLevelCell(iCell), -1
+          ! add the ssh so frazil can form below land ice, where the ssh is depressed
+          if (-zMid(k,iCell) < -ssh(iCell) + config_frazil_maximum_depth) then
+            kBottomFrazil=k
+            exit
+          endif
+        enddo
+
+        ! find minimum temperature between 1:kBottomFrazil
+        columnTemperatureMin = 1.0e30_RKIND
+        do k=minLevelCell(iCell),kBottomFrazil
+          if ( activeTracers(indexTemperature,k,iCell) < columnTemperatureMin ) then
+             columnTemperatureMin = activeTracers(indexTemperature,k,iCell)
+          end if
+        enddo
+
+        ! test min temperature agains max freezing temperature to see if we should even consider creating frazil
+        if (columnTemperatureMin > config_frazil_maximum_freezing_temperature) cycle
+
+        ! initialize the sum of new frazil ice created
+        sumNewFrazilIceThickness = 0.0_RKIND
+        sumNewThicknessWeightedEcosysContent(:) = 0.0_RKIND
+
+        ! loop from maximum depth of frazil creation to surface
+        do k = kBottomFrazil, minLevelCell(iCell), -1
+
+          ! get freezing temperature
+          oceanFreezingTemperature = ocn_freezing_temperature(salinity=activeTracers(indexSalinity,k,iCell), &
+                                                              pressure=pressure(k,iCell), &
+                                                              inLandIceCavity=underLandIce)
+
+          potential = layerThickness(k,iCell) * config_specific_heat_sea_water &
+                    * rho_sw * (activeTracers(indexTemperature,k,iCell) - oceanFreezingTemperature)
+
+          freezingEnergy = max(0.0_RKIND, -potential)
+          meltingEnergy = max(0.0_RKIND, potential)
+
+          !NJ:  Assume frazil ice retains ecosys tracers until precipitating at the surface
+          if (freezingEnergy > 0) then
+
+             ! new frazil ice formation measured in meters
+             newFrazilIceThickness = freezingEnergy / (config_frazil_heat_of_fusion * config_frazil_ice_density)
+
+             ! limit the frazil formed appropriately
+             newFrazilIceThickness = min(newFrazilIceThickness, layerThickness(k,iCell) * config_frazil_fractional_thickness_limit)
+
+             ! keep track of sum of frazil ice
+             sumNewFrazilIceThickness = sumNewFrazilIceThickness + newFrazilIceThickness
+             !NJ:  config_frazil_ice_porosity could be an array for ecosys tracers
+             do n = 1, ecosys_tracer_cnt
+                frazilEcosys = min( ecosysTracers(n,k,iCell), &
+                   config_frazil_ice_porosity * ecosysTracers(n, k, iCell))
+                ! needs to be an array
+                newThicknessWeightedEcosysContent = newFrazilIceThickness * frazilEcosys
+
+                ! bgc is extracted with the frazil
+                ecosysTracersTend(ecosysIndexMARBLtoMPASO(n),k,iCell) = &
+                ecosysTracersTend(ecosysIndexMARBLtoMPASO(n),k,iCell) -newThicknessWeightedEcosysContent / dt
+
+                sumNewThicknessWeightedEcosysContent(n) = sumNewThicknessWeightedEcosysContent(n) + &
+                    newThicknessWeightedEcosysContent
+             end do
+
+          else
+            ! ocean water is warm enough to melt frazil
+
+            ! test to see if there is frazil to be melted
+            if (sumNewFrazilIceThickness > 0.0_RKIND) then
+
+              ! Frazil melting
+              meltedFrazilIceThickness = meltingEnergy / (config_frazil_heat_of_fusion * config_frazil_ice_density)
+              ! limit melting by what there is to melt
+              meltedFrazilIceThickness = min(meltedFrazilIceThickness, sumNewFrazilIceThickness)
+
+              ! limit melting by fraction of layer thickness
+              meltedFrazilIceThickness = min(meltedFrazilIceThickness, layerThickness(k,iCell) &
+                                       * config_frazil_fractional_thickness_limit)
+
+              sumNewFrazilIceThickness = max(0.0_RKIND,sumNewFrazilIceThickness - meltedFrazilIceThickness)
+
+              do n = 1, ecosys_tracer_cnt
+
+                ! assign some ecosys tracer to the melted ice
+                meltedThicknessWeightedEcosysContent = meltedFrazilIceThickness &
+                                                 * ( sumNewThicknessWeightedEcosysContent(n) / sumNewFrazilIceThickness )
+
+                ! ecosys tracer is released into ocean with the melting frazil
+                ecosysTracersTend(ecosysIndexMARBLtoMPASO(n),k,iCell) = &
+                ecosysTracersTend(ecosysIndexMARBLtoMPASO(n),k,iCell) + meltedThicknessWeightedEcosysContent/ dt
+
+                ! keep track of new frazil ice
+                sumNewThicknessWeightedEcosysContent(n) = max(0.0_RKIND,sumNewThicknessWeightedEcosysContent(n) - meltedThicknessWeightedEcosysContent)
+             end do
+
+            endif  ! if (sumNewFrazilIceThickness > 0.0_RKIND)
+
+          endif  ! if (freezingEnergy < 0)
+
+        enddo   ! do k=kBottom,minLevelCell,-1
+
+        if (sumNewFrazilIceThickness > 0.0_RKIND) then
+
+           do n = 1, ecosys_tracer_cnt
+              ! all expelled at the surface
+              newThicknessWeightedEcosysContent = 0.0_RKIND
+
+              ecosysTracersTend(ecosysIndexMARBLtoMPASO(n),minLevelCell(iCell),iCell) =  &
+                  ecosysTracersTend(ecosysIndexMARBLtoMPASO(n),minLevelCell(iCell),iCell) + &
+                  max(0.0_RKIND,(sumNewThicknessWeightedEcosysContent(n) -  newThicknessWeightedEcosysContent) ) / dt
+           end do
+         endif ! if frazil ice is formed
+      enddo   ! do iCell = 1, nCells
+      !$omp end do
+      !$omp end parallel
+
+      deallocate (sumNewThicknessWeightedEcosysContent)
+      call mpas_timer_stop("frazil")
+
+   end subroutine ocn_tracer_ecosys_frazil_compute!}}}
 
 !***********************************************************************
 !

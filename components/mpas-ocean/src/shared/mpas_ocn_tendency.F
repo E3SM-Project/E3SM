@@ -626,7 +626,8 @@ contains
          config_use_tracerGroup_ttd_forcing
 
       real (kind=RKIND), dimension(:), pointer, contiguous :: &
-         penetrativeTemperatureFlux, &! heat flux penetrating below sfc
+         penetrativeTemperatureFlux,    &! heat flux penetrating below sfc
+         ssh,                           &! sea surface height
          tracerGroupExponentialDecayRate ! exp decay rate for forcing
 
       real (kind=RKIND), dimension(:,:), pointer, contiguous :: &
@@ -698,6 +699,8 @@ contains
 
       call mpas_pool_get_array(statePool,   'layerThickness', &
                                              layerThickness, timeLevel)
+      call mpas_pool_get_array(statePool,   'ssh', &
+                                             ssh, timeLevel)
       call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', &
                                              penetrativeTemperatureFlux)
       call mpas_pool_get_array(forcingPool, 'fractionAbsorbed', &
@@ -925,7 +928,17 @@ contains
                                            zMid, minLevelCell, indxTemp, &
                                            indxSalt, tracerGroupSurfaceFlux, &
                                            err)
-                                           
+
+
+            call ocn_tracer_ecosys_frazil_compute(activeTracers, &
+                                           tracerGroup, forcingPool,  &
+                                           nTracersGroup, nCellsOwned, &
+                                           zMid, minLevelCell, maxLevelCell, &
+                                           nVertLevels, layerThickness, &
+                                           indxTemp, indxSalt, &
+                                           tracerGroupTend, ssh, &
+                                           dt, err)
+
          endif ! ecosys tracers
 
          !
