@@ -1281,7 +1281,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_ais_ice_runoff_history_days" type="integer"
 	category="coupling" group="coupling">
-The number of days over for which the history of removed AIS runoff is stored. The default is 7301 days (20 years + 1 day).
+The number of days over for which the history of removed AIS runoff is stored. The default is 731 days (2 years + 1 day).
 
 Valid values: Any positive integer
 Default: Defined in namelist_defaults.xml
