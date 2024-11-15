@@ -56,8 +56,9 @@ where
 - `DataType`: scalar type of the view, given as `ScalarType`+`*`(x's number of
   run-time dimensions). E.g., a 2D view of doubles will have `DataType =
   double**`. There is also an ability to define compile-time dimensions by
-  using `[]`, see [Kokkos wiki section on views](<https://kokkos.org/kokkos-core->
-  wiki/API/core/view/view.html).
+  using `[]`, see
+  [Kokkos wiki section on views]
+  (<https://kokkos.org/kokkos-core-wiki/API/core/view/view.html).
 - `LayoutType`: mapping of indices into the underlying 1D memory storage. Types
   are:
   - `LayoutRight` (used in EAMxx): strides increase from the right most to the
