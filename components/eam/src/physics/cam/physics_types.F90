@@ -137,6 +137,7 @@ module physics_types
           cid        ! unique column id
      integer :: ulatcnt, &! number of unique lats in chunk
                 uloncnt   ! number of unique lons in chunk
+
   end type physics_state
 
 !-------------------------------------------------------------------------------
