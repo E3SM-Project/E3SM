@@ -1,10 +1,18 @@
+////===-- TestPacer.cpp - Simple test for Pacer --*- C++ -*-===//
+//
+// \file
+// \brief Simple example illustrating Pacer API usage.
+//
 // This test exercises basic timer functionality
 // with the Pacer API.
 //
 // This test program should create two files:
-// test_pacer.timing and test_pacer.summary
-// It is also expected to issue a warning about 
-// the "final" timer still being open.
+// test.timing.0 and test.summary
+// It is also expected to issue couple of warnings
+// to illustrate likely scenarios where a timer is
+// not started/stopped properly.
+//
+////===-----------------------------------------------------===//
 
 #include <iostream>
 #include <mpi.h>
@@ -33,10 +41,22 @@ int main(int argc, char **argv){
     Pacer::stop("run_loop");
 
     Pacer::unsetPrefix();
+
+
+    // illustrating situation where attempt to stop timer before starting
+    // will print a warning
+    Pacer::stop("final");
+
+    // as well as dangling timer which is never stopped explicitly
+    // will print a warning at the end during finalize
     Pacer::start("final");
 
-    if (myrank == 0)
-        Pacer::print("test_pacer");
+
+    // print: First argument is the prefix used for timing output file names
+    // Second argument (optional) controls if timing output should be from all ranks
+    // default is false, only rank 0 writes timing output
+    Pacer::print("test");
+    // Pacer::print("test_pacer", true);
 
     Pacer::finalize();
 }

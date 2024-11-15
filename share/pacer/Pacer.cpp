@@ -63,7 +63,7 @@
         }
         else {
             std::cerr << "Pacer Warning: Trying to stop timer:"
-                << TimerName << "before starting it." << std::endl;
+                << TimerName << " before starting it." << std::endl;
 
             return false;
         }
@@ -107,7 +107,7 @@
         GPTLfinalize();
 #endif
         if ( (MyRank == 0) && ( OpenTimers.size() > 0) ){
-            std::cerr << "PACER Warning: Following timers are not closed." << std::endl;
+            std::cerr << "Pacer Warning: Following timers are not closed." << std::endl;
             for (auto i = OpenTimers.begin(); i != OpenTimers.end(); i++)
                 std::cerr << '\t' << i->first << std::endl;
 
