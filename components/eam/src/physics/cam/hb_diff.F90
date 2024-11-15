@@ -770,9 +770,7 @@ end subroutine init_hb_diff
   subroutine pblintd_ri(ncol     ,gravit  , &
        thv     ,z       ,u       ,v       , &
        ustar   ,obklen  ,kbfs    ,rino_bulk)
-    !! 
     use pbl_utils, only: virtem, calc_ustar, calc_obklen
-    !!
     integer, intent(in) :: ncol                      ! number of atmospheric columns
     real(r8), intent(in)  :: gravit
     real(r8), intent(in)  :: thv(pcols,pver)         ! virtual temperature
@@ -782,14 +780,14 @@ end subroutine init_hb_diff
     real(r8), intent(in)  :: ustar(pcols)            ! surface friction velocity [m/s]
     real(r8), intent(in)  :: obklen(pcols)           ! Obukhov length
     real(r8), intent(in)  :: kbfs(pcols)             ! sfc kinematic buoyancy flux [m^2/s^3]
-    !!
+    !
     ! Output arguments
     !
     real(r8)     :: wstar(pcols)            ! convective sclae velocity [m/s]
     real(r8)     :: pblh(pcols)             ! boundary-layer height [m]
     real(r8)     :: bge(pcols)              ! buoyancy gradient enhancment
     real(r8), intent(out) :: rino_bulk(pcols)        ! bulk Richardson no. surface level
-    !!
+    !
     !---------------------------Local parameters----------------------------
     !
     real(r8), parameter   :: tiny = 1.e-36_r8           ! lower bound for wind magnitude
@@ -811,11 +809,10 @@ end subroutine init_hb_diff
     do i=1,ncol
        check(i)     = .true.
        rino(i,pver) = 0.0_r8
-       rino_bulk(i)    = 0.0_r8
+       rino_bulk(i) = 0.0_r8
        pblh(i)      = z(i,pver)
        tref(i)      = thv(i,pver)!if not excess then tref is equal to lowest level thv_lv
     end do
-    !
     !
     ! PBL height calculation:  Scan upward until the Richardson number between
     ! the first level and the current level exceeds the "critical" value.
@@ -845,9 +842,7 @@ end subroutine init_hb_diff
           phiminv(i)   = (1._r8 - binm*pblh(i)/obklen(i))**onet
           rino(i,pver) = 0.0_r8
           tlv(i)       = thv(i,pver) + kbfs(i)*fak/( ustar(i)*phiminv(i) )
-          !
           tref(i)      = tlv(i)
-          !
        end if
     end do
     !
@@ -879,13 +874,13 @@ end subroutine init_hb_diff
     !following Holstag and Boville (1993) equation (2.8)
     !
     do i=1,ncol
-    vvk = u(i,pver)**2 + v(i,pver)**2 + fac*ustar(i)**2
-    vvk = max(vvk,tiny)
-    rino_bulk(i)=gravit*(thv(i,pver) - tref(i))*z(i,pver)/(thv(i,pver)*vvk)
+       vvk = u(i,pver)**2 + v(i,pver)**2 + fac*ustar(i)**2
+       vvk = max(vvk,tiny)
+       rino_bulk(i)=gravit*(thv(i,pver) - tref(i))*z(i,pver)/(thv(i,pver)*vvk)
     enddo
     !
     return
-    end subroutine pblintd_ri
-    !===============================================================================
+  end subroutine pblintd_ri
+  !===============================================================================
 
 end module hb_diff
