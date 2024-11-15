@@ -5,7 +5,6 @@ module gw_common
 ! parameterizations.
 !
 use gw_utils, only: r8
-use cam_logfile,   only: iulog
 
 implicit none
 private
@@ -743,6 +742,4 @@ subroutine gw_drag_prof(ncol, ngwv, src_level, tend_level, do_taper, dt, &
 
 end subroutine gw_drag_prof
 
-!==========================================================================
-    
 end module gw_common
