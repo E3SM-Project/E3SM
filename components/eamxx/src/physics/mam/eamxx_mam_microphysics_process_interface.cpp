@@ -2,11 +2,7 @@
 
 // impl namespace for some driver level functions for microphysics
 
-<<<<<<< HEAD
 #include "readfiles/photo_table_utils.cpp"
-#include "readfiles/find_season_index_utils.hpp"
-=======
->>>>>>> EAMxx: Clang format
 #include "physics/rrtmgp/shr_orb_mod_c2f.hpp"
 #include "readfiles/photo_table_utils.cpp"
 
@@ -211,7 +207,7 @@ void MAMMicrophysics::set_grids(
         LinozHorizInterp_, linoz_file_name_);
 
     // linoz reader
-    const auto io_grid_linoz = LinozHorizInterp_->get_tgt_grid();
+    const auto io_grid_linoz = LinozHorizInterp_->get_src_grid();
     const int num_cols_io_linoz =
         io_grid_linoz->get_num_local_dofs();  // Number of columns on this rank
     const int num_levs_io_linoz =
@@ -239,7 +235,7 @@ void MAMMicrophysics::set_grids(
         TracerHorizInterp_, oxid_file_name_);
 
     const int nvars    = int(var_names.size());
-    const auto io_grid = TracerHorizInterp_->get_tgt_grid();
+    const auto io_grid = TracerHorizInterp_->get_src_grid();
     const int num_cols_io =
         io_grid->get_num_local_dofs();  // Number of columns on this rank
     const int num_levs_io =
@@ -264,88 +260,78 @@ void MAMMicrophysics::set_grids(
                    "num_a1", "num_a2", "num_a4", "soag"};
 
     for(const auto &var_name : extfrc_lst_) {
-      std::string item_name = "mam4_" + var_name + "_elevated_emiss_file_name";
+      std::string item_name = "mam4_" + var_name + "_verti_emiss_file_name";
       const auto file_name  = m_params.get<std::string>(item_name);
-      elevated_emis_file_name_[var_name] = file_name;
+      vert_emis_file_name_[var_name] = file_name;
     }
-    elevated_emis_var_names_["so2"]    = {"BB", "ENE_ELEV", "IND_ELEV", "contvolc"};
-    elevated_emis_var_names_["so4_a1"] = {"BB", "ENE_ELEV", "IND_ELEV", "contvolc"};
-    elevated_emis_var_names_["so4_a2"] = {"contvolc"};
-    elevated_emis_var_names_["pom_a4"] = {"BB"};
-    elevated_emis_var_names_["bc_a4"]  = {"BB"};
-    elevated_emis_var_names_["num_a1"] = {
+    vert_emis_var_names_["so2"]    = {"BB", "ENE_ELEV", "IND_ELEV", "contvolc"};
+    vert_emis_var_names_["so4_a1"] = {"BB", "ENE_ELEV", "IND_ELEV", "contvolc"};
+    vert_emis_var_names_["so4_a2"] = {"contvolc"};
+    vert_emis_var_names_["pom_a4"] = {"BB"};
+    vert_emis_var_names_["bc_a4"]  = {"BB"};
+    vert_emis_var_names_["num_a1"] = {
         "num_a1_SO4_ELEV_BB", "num_a1_SO4_ELEV_ENE", "num_a1_SO4_ELEV_IND",
         "num_a1_SO4_ELEV_contvolc"};
-    elevated_emis_var_names_["num_a2"] = {"num_a2_SO4_ELEV_contvolc"};
+    vert_emis_var_names_["num_a2"] = {"num_a2_SO4_ELEV_contvolc"};
     // num_a4
     // FIXME: why the sectors in this files are num_a1;
     //  I guess this should be num_a4? Is this a bug in the orginal nc files?
-    elevated_emis_var_names_["num_a4"] = {"num_a1_BC_ELEV_BB",
+    vert_emis_var_names_["num_a4"] = {"num_a1_BC_ELEV_BB",
                                       "num_a1_POM_ELEV_BB"};
-    elevated_emis_var_names_["soag"]   = {"SOAbb_src", "SOAbg_src", "SOAff_src"};
+    vert_emis_var_names_["soag"]   = {"SOAbb_src", "SOAbg_src", "SOAff_src"};
 
-    int elevated_emiss_cyclical_ymd = m_params.get<int>("elevated_emiss_ymd");
+    int verti_emiss_cyclical_ymd = m_params.get<int>("verti_emiss_ymd");
 
     for(const auto &var_name : extfrc_lst_) {
-      const auto file_name = elevated_emis_file_name_[var_name];
-      const auto var_names = elevated_emis_var_names_[var_name];
+      const auto file_name = vert_emis_file_name_[var_name];
+      const auto var_names = vert_emis_var_names_[var_name];
 
       scream::mam_coupling::TracerData data_tracer;
       scream::mam_coupling::setup_tracer_data(data_tracer, file_name,
-                                              elevated_emiss_cyclical_ymd);
+                                              verti_emiss_cyclical_ymd);
       auto hor_rem = scream::mam_coupling::create_horiz_remapper(
           grid_, file_name, extfrc_map_file, var_names, data_tracer);
-
       auto file_reader =
-          scream::mam_coupling::create_tracer_data_reader(hor_rem, file_name,
-                                                          data_tracer.file_type);
-      ElevatedEmissionsHorizInterp_.push_back(hor_rem);
-      ElevatedEmissionsDataReader_.push_back(file_reader);
-      elevated_emis_data_.push_back(data_tracer);
-    }  // var_name elevated emissions
+          scream::mam_coupling::create_tracer_data_reader(hor_rem, file_name);
+      VertEmissionsHorizInterp_.push_back(hor_rem);
+      VertEmissionsDataReader_.push_back(file_reader);
+      vert_emis_data_.push_back(data_tracer);
+    }  // var_name vert emissions
     int i               = 0;
     int offset_emis_ver = 0;
     for(const auto &var_name : extfrc_lst_) {
-      const auto file_name = elevated_emis_file_name_[var_name];
-      const auto var_names = elevated_emis_var_names_[var_name];
+      const auto file_name = vert_emis_file_name_[var_name];
+      const auto var_names = vert_emis_var_names_[var_name];
       const int nvars      = static_cast<int>(var_names.size());
 
       forcings_[i].nsectors = nvars;
       // I am assuming the order of species in extfrc_lst_.
       // Indexing in mam4xx is fortran.
       forcings_[i].frc_ndx    = i + 1;
-      const auto io_grid_emis = ElevatedEmissionsHorizInterp_[i]->get_tgt_grid();
+      const auto io_grid_emis = VertEmissionsHorizInterp_[i]->get_src_grid();
       const int num_cols_io_emis =
           io_grid_emis->get_num_local_dofs();  // Number of columns on this rank
       const int num_levs_io_emis =
           io_grid_emis
               ->get_num_vertical_levels();  // Number of levels per column
-      elevated_emis_data_[i].init(num_cols_io_emis, num_levs_io_emis, nvars);
-      elevated_emis_data_[i].allocate_temporal_views();
-      forcings_[i].file_alt_data = elevated_emis_data_[i].has_altitude_;
+      vert_emis_data_[i].init(num_cols_io_emis, num_levs_io_emis, nvars);
+      vert_emis_data_[i].allocate_temporal_views();
+      forcings_[i].file_alt_data = vert_emis_data_[i].has_altitude_;
       for(int isp = 0; isp < nvars; ++isp) {
         forcings_[i].offset = offset_emis_ver;
-        elevated_emis_output_[isp + offset_emis_ver] =
-            view_2d("elevated_emis_output_", ncol_, nlev_);
+        vert_emis_output_[isp + offset_emis_ver] =
+            view_2d("vert_emis_output_", ncol_, nlev_);
       }
       offset_emis_ver += nvars;
       ++i;
     }  // end i
     EKAT_REQUIRE_MSG(
-        offset_emis_ver <= int(mam_coupling::MAX_NUM_ELEVATED_EMISSIONS_FIELDS),
+        offset_emis_ver <= int(mam_coupling::MAX_NUM_VERT_EMISSION_FIELDS),
         "Error! Number of fields is bigger than "
-        "MAX_NUM_ELEVATED_EMISSIONS_FIELDS. Increase the "
-        "MAX_NUM_ELEVATED_EMISSIONS_FIELDS in tracer_reader_utils.hpp \n");
+        "MAX_NUM_VERT_EMISSION_FIELDS. Increase the "
+        "MAX_NUM_VERT_EMISSION_FIELDS in tracer_reader_utils.hpp \n");
 
   }  // Tracer external forcing data
-
-  {
-    const std::string season_wes_file = m_params.get<std::string>("mam4_season_wes_file");
-    const auto& clat = col_latitudes_;
-    mam_coupling::find_season_index_reader(season_wes_file,
-                                         clat,
-                                         index_season_lai_);
-  }
 }  // set_grids
 
 // ================================================================
@@ -534,8 +520,8 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
 
   for(int i = 0; i < static_cast<int>(extfrc_lst_.size()); ++i) {
     scream::mam_coupling::update_tracer_data_from_file(
-        ElevatedEmissionsDataReader_[i], curr_month, *ElevatedEmissionsHorizInterp_[i],
-        elevated_emis_data_[i]);
+        VertEmissionsDataReader_[i], curr_month, *VertEmissionsHorizInterp_[i],
+        vert_emis_data_[i]);
   }
 
   invariants_ = view_3d("invarians", ncol_, nlev_, mam4::gas_chemistry::nfs);
@@ -632,20 +618,20 @@ void MAMMicrophysics::run_impl(const double dt) {
       linoz_output);                     // out
   Kokkos::fence();
 
-  elevated_emiss_time_state_.t_now = ts.frac_of_year_in_days();
+  vert_emiss_time_state_.t_now = ts.frac_of_year_in_days();
   int i                        = 0;
   for(const auto &var_name : extfrc_lst_) {
-    const auto file_name = elevated_emis_file_name_[var_name];
-    const auto var_names = elevated_emis_var_names_[var_name];
+    const auto file_name = vert_emis_file_name_[var_name];
+    const auto var_names = vert_emis_var_names_[var_name];
     const int nsectors   = int(var_names.size());
-    view_2d elevated_emis_output[nsectors];
+    view_2d vert_emis_output[nsectors];
     for(int isp = 0; isp < nsectors; ++isp) {
-      elevated_emis_output[isp] = elevated_emis_output_[isp + forcings_[i].offset];
+      vert_emis_output[isp] = vert_emis_output_[isp + forcings_[i].offset];
     }
     scream::mam_coupling::advance_tracer_data(
-        ElevatedEmissionsDataReader_[i], *ElevatedEmissionsHorizInterp_[i], ts,
-        elevated_emiss_time_state_, elevated_emis_data_[i], dry_atm_.p_mid,
-        dry_atm_.z_iface, elevated_emis_output);
+        VertEmissionsDataReader_[i], *VertEmissionsHorizInterp_[i], ts,
+        vert_emiss_time_state_, vert_emis_data_[i], dry_atm_.p_mid,
+        dry_atm_.z_iface, vert_emis_output);
     i++;
     Kokkos::fence();
   }
@@ -720,17 +706,10 @@ void MAMMicrophysics::run_impl(const double dt) {
   const auto zenith_angle = acos_cosine_zenith_;
   constexpr int gas_pcnst = mam_coupling::gas_pcnst();
 
-<<<<<<< HEAD
-  const auto& elevated_emis_output = elevated_emis_output_;
-  const auto& extfrc           = extfrc_;
-  const auto& forcings         = forcings_;
-  constexpr int extcnt        = mam4::gas_chemistry::extcnt;
-=======
   const auto &vert_emis_output = vert_emis_output_;
   const auto &extfrc           = extfrc_;
   const auto &forcings         = forcings_;
   constexpr int extcnt         = mam4::gas_chemistry::extcnt;
->>>>>>> EAMxx: Clang format
 
   const int offset_aerosol = mam4::utils::gasses_start_ind();
   Real adv_mass_kg_per_moles[gas_pcnst];
@@ -779,7 +758,7 @@ void MAMMicrophysics::run_impl(const double dt) {
           // We may need to move this line where we read files.
           forcings_in[i].file_alt_data = file_alt_data;
           for(int isec = 0; isec < forcings[i].nsectors; ++isec) {
-            const auto field = elevated_emis_output[isec + forcings[i].offset];
+            const auto field = vert_emis_output[isec + forcings[i].offset];
             forcings_in[i].fields_data[isec] = ekat::subview(field, icol);
           }
         }  // extcnt for loop
