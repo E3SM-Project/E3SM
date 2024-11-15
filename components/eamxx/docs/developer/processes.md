@@ -54,7 +54,7 @@ of several steps:
 - After creating all fields (based on AP's requests), the AD passes a copy of
   each input and output field to the AP's. These fields will be divided in
   "required" and "computed", which differ in that the former are only passed
-  to the AP's as 'read-only' fields (see the [field](field.md#Field)
+  to the AP's as 'read-only' fields (see the [field](field.md)
   documentation for more details)
 - The AP's are queried for how much scratch memory they may need at run time.
   After all AP's communicate their needs, the AD will provide a pointer to
