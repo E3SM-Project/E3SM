@@ -110,7 +110,8 @@ void scream_create_atm_instance (const MPI_Fint f_comm, const int atm_id,
                                  const char* caseid,
                                  const char* rest_caseid,
                                  const char* hostname,
-                                 const char* username)
+                                 const char* username,
+                                 const char* versionid)
 {
   using namespace scream;
   using namespace scream::control;
@@ -176,7 +177,7 @@ void scream_create_atm_instance (const MPI_Fint f_comm, const int atm_id,
     ad.set_params(scream_params);
     ad.init_scorpio(atm_id);
     ad.init_time_stamps(run_t0,case_t0,run_type);
-    ad.set_provenance_data (caseid,rest_caseid,hostname,username);
+    ad.set_provenance_data (caseid,rest_caseid,hostname,username,versionid);
     ad.create_output_managers ();
     ad.create_atm_processes ();
     ad.create_grids ();
