@@ -17,8 +17,6 @@
 #include <unordered_map>
 #include <string>
 
-#define STANDALONE_OMEGA
-
 namespace Pacer {
    /// Flag to determine if the timing infrastructure is initialized 
     static bool IsInitialized;
@@ -41,12 +39,10 @@ namespace Pacer {
 
     bool unsetPrefix();
 
-    bool print(const std::string &TimerFilePrefix);
+    bool print(const std::string &TimerFilePrefix, bool PrintAllRanks = false);
 
     bool finalize();
 
 };
-
-
 
 #endif
