@@ -21,6 +21,10 @@ on:
         description: 'Generate baselines'
         required: true
         type: boolean
+      submit:
+        description: 'Force cdash submission'
+        required: true
+        type: boolean
 
   # Add schedule trigger for nightly runs at midnight MT (Standard Time)
   schedule:
@@ -34,7 +38,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  submit: ${{ github.event_name == 'schedule' && 'true' || 'false' }}  # Submit to cdash only for nightlies
+  # Submit to cdash only for nightlies or if the user explicitly forced a submission via workflow dispatch
+  submit: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.submit) }}
 
 jobs:
   pre_process_pr:

@@ -8,6 +8,11 @@ on:
 
   # Manual run for debug purposes only
   workflow_dispatch:
+    inputs:
+      submit:
+        description: 'Force cdash submission'
+        required: true
+        type: boolean
 
   # Add schedule trigger for nightly runs at midnight MT (Standard Time)
   schedule:
@@ -19,6 +24,10 @@ concurrency:
   #  - for other triggers, the ref is the branch tested
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+env:
+  # Submit to cdash only for nightlies or if the user explicitly forced a submission via workflow dispatch
+  submit: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.submit) }}
 
 jobs:
   pre_process_pr:
@@ -83,7 +92,7 @@ jobs:
       - name: Run test
         run: |
           cd components/eamxx
-          if [ ${{ github.event_name == 'schedule' }} ]; then
+          if [ "${{ env.submit }}" == "true" ]; then
             ./scripts/scripts-ctest-driver -s -m ghci-snl-cpu
           else
             ./scripts/scripts-tests -f -m ghci-snl-cpu
