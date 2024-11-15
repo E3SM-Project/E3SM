@@ -56,30 +56,27 @@ jobs:
               exit 1
           fi
 
-          # Get the GPU model from nvidia-smi
+          # Get the GPU model from nvidia-smi, and set env for next step
           gpu_model=$(nvidia-smi --query-gpu=name --format=csv,noheader | head -n 1)
           case "$gpu_model" in
               *"H100"*)
-                  Hopper=ON
+                  echo "Hopper=ON" >> $GITHUB_ENV
+                  echo "CUDA_ARCH=90" >> $GITHUB_ENV
                   ARCH=90
                   ;;
               *"A100"*)
-                  Amper=ON
-                  ARCH=80
+                  echo "Ampere=ON" >> $GITHUB_ENV
+                  echo "CUDA_ARCH=80" >> $GITHUB_ENV
                   ;;
               *"V100"*)
-                  Volta=ON
-                  ARCH=70
+                  echo "Volta=ON" >> $GITHUB_ENV
+                  echo "CUDA_ARCH=70" >> $GITHUB_ENV
                   ;;
               *)
                   echo "Unsupported GPU model: $gpu_model"
                   exit 1
                   ;;
           esac
-
-          # Set the output variables for the next step
-          echo "KOKKOS_ARCH=${KOKKOS_ARCH}" >> $GITHUB_ENV
-          echo "CMAKE_CUDA_ARCHITECTURES=${CMAKE_CUDA_ARCHITECTURES}" >> $GITHUB_ENV
       - name: Run tests
         uses: ./.github/actions/test-all-scream
         with:
@@ -87,4 +84,4 @@ jobs:
           machine: ghci-snl-cuda
           generate: false
           submit: ${{ env.submit }}
-          cmake-configs: Kokkos_ARCH_HOPPER90=${{ env.Hopper }};Kokkos_ARCH_AMPERE80=${{ env.Ampere }};Kokkos_ARCH_VOLTA70=${{ env.Volta }};CMAKE_CUDA_ARCHITECTURES=${{ env.ARCH }}
+          cmake-configs: Kokkos_ARCH_HOPPER90=${{ env.Hopper }};Kokkos_ARCH_AMPERE80=${{ env.Ampere }};Kokkos_ARCH_VOLTA70=${{ env.Volta }};CMAKE_CUDA_ARCHITECTURES=${{ env.CUDA_ARCH }}
