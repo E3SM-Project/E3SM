@@ -282,7 +282,7 @@ contains
 
       !*** Compute eta by summing all constituent contributions
       do jCon = 1, nTidalConstituents
-         period = 2.0_RKIND*pii/tidalConstituentFrequency(jCon)
+         period = 2.0_RKIND*pi/tidalConstituentFrequency(jCon)
          nCycles = real(int(t/period),RKIND)
          targ = tidalConstituentFrequency(jCon)*(t - nCycles*period) + &
                 tidalConstituentNodalPhase(jCon) + &
@@ -583,7 +583,7 @@ contains
       !h = 280.4661_RKIND + 0.98564736_RKIND*T;
       !p = 83.3535_RKIND + 0.11140353_RKIND*T;
       !N = 125.0445_RKIND - 0.05295377_RKIND*T;
-      !N = N*pii/180.0_RKIND
+      !N = N*pi/180.0_RKIND
       
       !! M2
           !tidalConstituentAstronomical(j) = 2.0_RKIND*h - 2.0_RKIND*s 
@@ -611,7 +611,7 @@ contains
           !tidalConstituentNodalAmplitude(j) = 1.009_RKIND + 0.187_RKIND*cos(N)
 
 
-      deg2rad = pii/180.0_RKIND
+      deg2rad = pi/180.0_RKIND
       T = adjust_angle(180.0_RKIND + real(refHour,RKIND)*(360.0_RKIND/24.0_RKIND))
 
       do j = 1,nTidalConstituents
@@ -742,8 +742,8 @@ contains
       real (kind=RKIND) :: deg2rad,rad2deg
       real (kind=RKIND) :: NRad,pRad,IRad,nuRad,xiRad,nupRad,nup2Rad
 
-      deg2rad = pii/180.0_RKIND
-      rad2deg = 180.0_RKIND/pii
+      deg2rad = pi/180.0_RKIND
+      rad2deg = 180.0_RKIND/pi
 
       x = int((real(year,RKIND)-1901.0_RKIND)/4.0_RKIND)
       yr = real(year,RKIND) - 1900.0_RKIND

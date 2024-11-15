@@ -1,3 +1,5 @@
+<!-- markdownlint-disable -->
+
 [![E3SM Logo](https://e3sm.org/wp-content/themes/e3sm/assets/images/e3sm-logo.png)](https://e3sm.org)
 
 Energy Exascale Earth System Model (E3SM)
@@ -9,14 +11,14 @@ the most challenging and demanding climate-change research problems and
 Department of Energy mission needs while efficiently using DOE Leadership
 Computing Facilities.  
 
-DOI: [10.11578/E3SM/dc.20240301.3](http://dx.doi.org/10.11578/E3SM/dc.20240301.3)
+DOI: [10.11578/E3SM/dc.20240930.1](http://dx.doi.org/10.11578/E3SM/dc.20240930.1)
 
 Please visit the [project website](https://e3sm.org) or our [Confluence site](https://acme-climate.atlassian.net/wiki/spaces/DOC/overview)
 for further details.
 
 For questions about the model, use [Github Discussions](https://github.com/E3SM-Project/E3SM/discussions).
 
-See our Github-hosted documentation at [https://e3sm-project.github.io/E3SM/](https://e3sm-project.github.io/E3SM/).
+See our Github-hosted documentation at [https://docs.e3sm.org/E3SM](https://docs.e3sm.org/E3SM/).
 
 Table of Contents 
 --------------------------------------------------------------------------------
