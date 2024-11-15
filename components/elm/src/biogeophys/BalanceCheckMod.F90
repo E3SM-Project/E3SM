@@ -167,7 +167,7 @@ contains
      use elm_varcon        , only : spval
      use column_varcon     , only : icol_roof, icol_sunwall, icol_shadewall
      use column_varcon     , only : icol_road_perv, icol_road_imperv
-     use landunit_varcon   , only : istice_mec, istice, istdlak, istsoil,istcrop,istwet
+     use landunit_varcon   , only : istice_mec, istdlak, istsoil,istcrop,istwet
      use elm_varctl        , only : create_glacier_mec_landunit
      use elm_initializeMod , only : surfalb_vars  
      use CanopyStateType   , only : canopystate_type

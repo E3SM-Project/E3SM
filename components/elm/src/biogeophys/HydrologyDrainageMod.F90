@@ -231,16 +231,10 @@ contains
          ! In the following, we convert glc_snow_persistence_max_days to r8 to avoid overflow
          if ( (snow_persistence(c) >= (real(glc_snow_persistence_max_days, r8) * secspday)) &
               .or. lun_pp%itype(l) == istice_mec ) then
-                   qflx_glcice_frz(c) = qflx_snwcp_ice(c)
-                   qflx_glcice(c) = qflx_glcice(c) + qflx_glcice_frz(c)
-                   if (glc_dyn_runoff_routing(g)) qflx_snwcp_ice(c) = 0._r8
+           qflx_glcice_frz(c) = qflx_snwcp_ice(c)
+           qflx_glcice(c) = qflx_glcice(c) + qflx_glcice_frz(c)
+           if (glc_dyn_runoff_routing(g)) qflx_snwcp_ice(c) = 0._r8
          end if
-
-         !if (lun_pp%itype(l)==istice) then
-         !      qflx_glcice_frz_diag(c) = qflx_snwcp_ice(c)
-         !      qflx_glcice_diag(c) = qflx_glcice_diag(c) + qflx_glcice_frz_diag(c)
-         !endif
-
       end do
 
       ! Determine wetland and land ice hydrology (must be placed here

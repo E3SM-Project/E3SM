@@ -1646,6 +1646,7 @@ contains
             ! as computed in HydrologyDrainageMod.F90.
 
             l = col_pp%landunit(c)
+
             if ( lun_pp%itype(l)==istice_mec) then
                if (j>=1 .and. h2osoi_liq(c,j) > 0._r8) then   ! ice layer with meltwater
                   ! melting corresponds to a negative ice flux
