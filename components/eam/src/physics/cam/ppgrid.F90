@@ -22,6 +22,7 @@ module ppgrid
   public pver
   public pverp
 
+
 ! Grid point resolution parameters
 
 #ifdef PPCOLS
