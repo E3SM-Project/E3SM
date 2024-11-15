@@ -537,8 +537,6 @@ end subroutine micro_p3_readnl
     call addfld(apcnst(ixcldrim), (/ 'lev' /), 'A', 'kg/kg', trim(cnst_name(ixcldrim))//' after physics'  )
     call addfld(bpcnst(ixcldrim), (/ 'lev' /), 'A', 'kg/kg', trim(cnst_name(ixcldrim))//' before physics' )
 
-    call addfld ('P3DT',(/ 'lev' /), 'A','K/s','T tendency - P3 Microphysics')
-
     ! microphysics cloud fraction fields
     call addfld('CLOUDFRAC_LIQ_MICRO', (/ 'lev' /), 'A', 'unitless', 'Grid box liquid cloud fraction in microphysics' )
     call addfld('CLOUDFRAC_ICE_MICRO', (/ 'lev' /), 'A', 'unitless', 'Grid box ice cloud fraction in microphysics' )
@@ -997,8 +995,6 @@ end subroutine micro_p3_readnl
     real(rtype) :: precip_liq_surf(pcols)         !precipitation rate, liquid             m s-1
     real(rtype) :: precip_ice_surf(pcols)         !precipitation rate, solid              m s-1
 
-    real(rtype) :: ftem(pcols,pver)              ! Temporary workspace for outfld variables
-
     real(rtype) :: rho_qi(pcols,pver)  !bulk density of ice                    kg m-1
     real(rtype) :: pres(pcols,pver)       !pressure at midlevel                   hPa
     real(rtype) :: qv2qi_depos_tend(pcols,pver)
@@ -1432,10 +1428,6 @@ end subroutine micro_p3_readnl
     ptend%q(:ncol,:pver,ixnumice)  = ( max(0._rtype,numice(:ncol,:pver) ) - state%q(:ncol,:pver,ixnumice)  )/dtime
     ptend%q(:ncol,:pver,ixcldrim)  = ( max(0._rtype,qm(:ncol,:pver)  ) - state%q(:ncol,:pver,ixcldrim)  )/dtime
     ptend%q(:ncol,:pver,ixrimvol)  = ( max(0._rtype,rimvol(:ncol,:pver) ) - state%q(:ncol,:pver,ixrimvol)  )/dtime
-
-    ftem = 0
-    ftem(:ncol,:pver) = ptend%s(:ncol,:pver)/cpair
-    call outfld('P3DT', ftem, pcols, lchnk )
 
     ! Update t_prev and qv_prev to be used by evap_precip
     t_prev(:ncol,:pver) = temp(:ncol,:pver)
