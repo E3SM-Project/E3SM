@@ -814,8 +814,8 @@
 					description="Whether to scale data ice-shelf melt fluxes by the running mean of removed ice runoff."
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_ais_ice_runoff_history_days" type="integer" default_value="7301"
-					description="The number of days over for which the history of removed AIS runoff is stored. The default is 7301 days (20 years + 1 day)."
+		<nml_option name="config_ais_ice_runoff_history_days" type="integer" default_value="731"
+					description="The number of days over for which the history of removed AIS runoff is stored. The default is 731 days (2 years + 1 day)."
 					possible_values="Any positive integer"
 		/>
 	</nml_record>
