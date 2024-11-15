@@ -29,6 +29,7 @@ module physpkg
   use phys_control,            only: phys_do_flux_avg, phys_getopts
   use iop_data_mod,            only: single_column
   use cam_logfile,             only: iulog
+  use cam_history,             only: outfld
   use check_energy,            only: check_energy_set_print_additional_diagn
   implicit none
   private
@@ -43,6 +44,10 @@ module physpkg
   integer :: water_vap_ac_idx     = 0
   integer :: mmf_clear_rh_idx     = 0
   integer :: species_class(pcnst) = -1 
+  integer :: DSE_ac_idx           = 0
+  integer :: QLV_ac_idx           = 0
+  integer :: DSE_tot_idx          = 0
+  integer :: QLV_tot_idx          = 0
 
   save
   !-----------------------------------------------------------------------------
@@ -135,6 +140,11 @@ subroutine phys_register
   call pbuf_add_field('vmag_gust',      'global', dtype_r8,(/pcols/), dummy)
   call pbuf_add_field('FRACIS',         'physpkg',dtype_r8,(/pcols,pver,pcnst/),dummy)
   call pbuf_add_field('MMF_CLEAR_RH',   'physpkg',dtype_r8,(/pcols,pver/),mmf_clear_rh_idx)
+
+  call pbuf_add_field('DSE_ac',      'global', dtype_r8,(/pcols,pver/),DSE_ac_idx)
+  call pbuf_add_field('QLV_ac',      'global', dtype_r8,(/pcols,pver/),QLV_ac_idx)
+  call pbuf_add_field('DSE_tot',     'global', dtype_r8,(/pcols,pver/),DSE_tot_idx)
+  call pbuf_add_field('QLV_tot',     'global', dtype_r8,(/pcols,pver/),QLV_tot_idx)
 
   ! check energy package
   call check_energy_register()
@@ -691,6 +701,21 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
   !disable additional diagn for crm
   call check_energy_set_print_additional_diagn(.false.)
 
+  ! Special variables to "nearly" close MSE budget
+  call addfld('DDSE_TOT',(/'lev'/),'A','J/kg/s','Total Eulerian DSE tendency', standard_name='ddse_tot')
+  call addfld('DQLV_TOT',(/'lev'/),'A','J/kg/s','Total Eulerian qLv tendency', standard_name='dqlv_tot')
+  call addfld('DDSE_DYN',(/'lev'/),'A','J/kg/s','Dynamics DSE tend', standard_name='ddse_dyn')
+  call addfld('DQLV_DYN',(/'lev'/),'A','J/kg/s','Dynamics qLv tend', standard_name='dqlv_dyn')
+  call addfld('DDSE_PBL',(/'lev'/),'A','J/kg/s','DSE tend from PBL scheme' )
+  call addfld('DQLV_PBL',(/'lev'/),'A','J/kg/s','qLv tend from PBL scheme' )
+  call addfld('DDSE_CEF',(/'lev'/),'A','J/kg/s','DSE tend from check_energy_fix()' )
+  call addfld('DQLV_CEF',(/'lev'/),'A','J/kg/s','qLv tend from check_energy_fix()' )
+  call addfld('DDSE_GWD',(/'lev'/),'A','J/kg/s','DSE tend from gw_tend()' )
+  call addfld('DDSE_RAY',(/'lev'/),'A','J/kg/s','DSE tendency from Rayleigh friction' )
+
+  call addfld('DDSE_CRM_ALT',(/'lev'/),'A','J/kg/s','DSE tend from crm_physics_tend()' )
+  call addfld('DQLV_CRM_ALT',(/'lev'/),'A','J/kg/s','qLv tend from crm_physics_tend()' )
+
 end subroutine phys_init
 
 !===================================================================================================
@@ -753,6 +778,11 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
   integer  :: itim_old, cldo_idx, cld_idx   ! pbuf indices  
   real(r8), pointer, dimension(:,:) :: cld  ! cloud fraction
   real(r8), pointer, dimension(:,:) :: cldo ! old cloud fraction
+
+  integer :: i,k
+
+  real(r8), dimension(begchunk:endchunk,pcols,pver)   :: DSE_save_chnk, QLV_save_chnk
+
   !-----------------------------------------------------------------------------
   !-----------------------------------------------------------------------------
   zero = 0._r8
@@ -827,6 +857,13 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
     call crm_ecpp_output_initialize(crm_ecpp_output,      ncrms,pver)
   end if
 
+  ! Save MSE components
+  do c=begchunk, endchunk
+    ncol = phys_state(c)%ncol
+    DSE_save_chnk(c,1:ncol,1:pver) = phys_state(c)%s(1:ncol,1:pver)
+    QLV_save_chnk(c,1:ncol,1:pver) = phys_state(c)%q(1:ncol,1:pver,1)*latvap
+  end do
+
   call t_startf('crm_physics_tend')
   call crm_physics_tend(ztodt, phys_state, phys_tend, ptend, pbuf2d, cam_in, cam_out, &
                         species_class, crm_ecpp_output, &
@@ -837,6 +874,13 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
     call physics_update(phys_state(c), ptend(c), ztodt, phys_tend(c))
     call check_energy_chng(phys_state(c), phys_tend(c), "crm_tend", nstep, ztodt, zero, &
                            mmf_qchk_prec_dp(c,:), mmf_qchk_snow_dp(c,:), mmf_rad_flux(c,:))
+  end do
+
+  ! Calculate MSE tend
+  do c=begchunk, endchunk
+    ncol = phys_state(c)%ncol
+    call outfld('DDSE_CRM_ALT',( phys_state(c)%s(1:ncol,1:pver)          - DSE_save_chnk(c,1:ncol,1:pver) )/ztodt, ncol, phys_state(c)%lchnk )
+    call outfld('DQLV_CRM_ALT',( phys_state(c)%q(1:ncol,1:pver,1)*latvap - QLV_save_chnk(c,1:ncol,1:pver) )/ztodt, ncol, phys_state(c)%lchnk )
   end do
 
   !-----------------------------------------------------------------------------
@@ -904,7 +948,8 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d, cam_out, cam_in )
   use cam_diagnostics,  only: diag_deallocate, diag_surf
   use comsrf,           only: trefmxav, trefmnav, sgh, sgh30, fsds 
   use physconst,        only: stebol, latvap
-  use time_manager,     only: get_nstep
+  use time_manager,     only: get_nstep, is_first_step, is_end_curr_month, &
+                              is_first_restart_step, is_last_step
   use check_energy,     only: ieflx_gmean, check_ieflx_fix 
   use phys_control,     only: ieflx_opt
   !-----------------------------------------------------------------------------
@@ -1073,6 +1118,8 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   use phys_control,       only: use_qqflx_fixer
   use co2_cycle,          only: co2_cycle_set_ptend
 
+  use physconst,      only: cpair, gravit, latvap
+
   implicit none
   !-----------------------------------------------------------------------------
   ! Arguments
@@ -1092,6 +1139,10 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   !-----------------------------------------------------------------------------
   real(r8), pointer, dimension(:)   :: static_ener_ac_2d  ! Vertically integrated static energy
   real(r8), pointer, dimension(:)   :: water_vap_ac_2d    ! Vertically integrated water vapor
+  real(r8), pointer, dimension(:,:) :: DSE_ac
+  real(r8), pointer, dimension(:,:) :: QLV_ac
+  real(r8), dimension(pcols,pver) :: DSE_ac_start
+  real(r8), dimension(pcols,pver) :: QLV_ac_start
   real(r8), pointer, dimension(:,:) :: tini               !
   real(r8), pointer, dimension(:,:) :: cld                !
   real(r8), pointer, dimension(:,:) :: qini               !
@@ -1114,7 +1165,9 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   real(r8) :: tmp_cldliq(pcols,pver)        ! tmp variable
   real(r8) :: tmp_cldice(pcols,pver)        ! tmp variable
   real(r8) :: tmp_t     (pcols,pver)        ! tmp variable
+  real(r8) :: tmp_s     (pcols,pver)        ! tmp variable
   logical  :: l_tracer_aero, l_vdiff, l_rayleigh, l_gw_drag
+  real(r8), dimension(pcols,pver)   :: DSE_save, QLV_save
   !-----------------------------------------------------------------------------
   !-----------------------------------------------------------------------------
   lchnk = state%lchnk
@@ -1145,6 +1198,16 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   call pbuf_get_field(pbuf, pbuf_get_index('CLD'),cld,start=(/1,1,itim_old/),kount=(/pcols,pver,1/))
   call pbuf_get_field(pbuf, pbuf_get_index('AST'),ast,start=(/1,1,itim_old/),kount=(/pcols,pver,1/))
 
+  !-----------------------------------------------------------------------------
+  ! calculate initial MSE components for tphysac MSE tendencies
+  !-----------------------------------------------------------------------------
+  do i = 1,ncol
+    do k = 1,pver
+      ! DSE_ac_start(i,k) = cpair*state%t(i,k) + gravit*state%zm(i,k) + state%phis(i)
+      DSE_ac_start(i,k) = state%s(i,k)
+      QLV_ac_start(i,k) = state%q(i,k,1)*latvap
+    end do
+  end do
   !-----------------------------------------------------------------------------
   ! emissions of aerosols and gas-phase chemistry constituents at surface
   !-----------------------------------------------------------------------------
@@ -1199,6 +1262,10 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   ! Vertical diffusion/pbl calculation - (pbl, free atmosphere and molecular)
   !-----------------------------------------------------------------------------
 
+  ! Save MSE components
+  DSE_save(:,:) = state%s(:,:)
+  QLV_save(:,:) = state%q(:,:,1)*latvap
+
   call t_startf('vertical_diffusion_tend')
   call vertical_diffusion_tend(ztodt, state, cam_in%wsx, cam_in%wsy, cam_in%shf, cam_in%cflx, &
                                surfric, obklen, ptend, ast, cam_in%landfrac, sgh30, pbuf )
@@ -1208,9 +1275,17 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   obklen(:) = 0.
   surfric(:) = 0.
 
+  ! Calculate MSE tend
+  call outfld('DDSE_PBL',( state%s(1:ncol,:)          - DSE_save(1:ncol,:) )/ztodt, ncol, lchnk )
+  call outfld('DQLV_PBL',( state%q(1:ncol,:,1)*latvap - QLV_save(1:ncol,:) )/ztodt, ncol, lchnk )
+
   !-----------------------------------------------------------------------------
   ! Rayleigh friction calculation
   !-----------------------------------------------------------------------------
+
+  ! Save MSE components
+  DSE_save(:,:) = state%s(:,:)
+
   if (l_rayleigh) then
 
     call t_startf('rayleigh_friction')
@@ -1223,6 +1298,9 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
     call check_tracers_chng(state, tracerint, "vdiff", nstep, ztodt, cam_in%cflx)
 
   end if ! l_rayleigh
+
+  ! Calculate MSE tend
+  call outfld('DDSE_RAY',( state%s(1:ncol,:) - DSE_save(1:ncol,:) )/ztodt, ncol, lchnk )
 
   !-----------------------------------------------------------------------------
   !  aerosol dry deposition processes
@@ -1242,6 +1320,10 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   !-----------------------------------------------------------------------------
   ! Gravity wave drag
   !-----------------------------------------------------------------------------
+
+  ! Save MSE components
+  DSE_save(:,:) = state%s(:,:)
+
   if (l_gw_drag) then
 
     call t_startf('gw_tend')
@@ -1253,6 +1335,8 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
     call check_energy_chng(state, tend, "gwdrag", nstep, ztodt, zero, zero, zero, zero)
 
   end if ! l_gw_drag
+
+  call outfld('DDSE_GWD',( state%s(1:ncol,:) - DSE_save(1:ncol,:) )/ztodt, ncol, lchnk )
 
   !-----------------------------------------------------------------------------
   ! Energy budget checks
@@ -1271,6 +1355,7 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   ! Scale dry mass and energy (does nothing if dycore is EUL or SLD)
   call cnst_get_ind('CLDLIQ', ixcldliq)
   call cnst_get_ind('CLDICE', ixcldice)
+  tmp_s     (:ncol,:pver) = state%s(:ncol,:pver)
   tmp_q     (:ncol,:pver) = state%q(:ncol,:pver,1)
   tmp_cldliq(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)
   tmp_cldice(:ncol,:pver) = state%q(:ncol,:pver,ixcldice)
@@ -1302,6 +1387,21 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   !-----------------------------------------------------------------------------
   call check_tracers_fini(tracerint)
 
+  !-----------------------------------------------------------------------------
+  !-----------------------------------------------------------------------------
+  call pbuf_get_field(pbuf, DSE_ac_idx, DSE_ac )
+  call pbuf_get_field(pbuf, QLV_ac_idx, QLV_ac )
+
+  ! Save MSE components for later tendency calculation
+  do i = 1,ncol
+    do k = 1,pver
+      DSE_ac(i,k) = state%s(i,k)
+      QLV_ac(i,k) = state%q(i,k,1)*latvap
+    end do
+  end do
+  !-----------------------------------------------------------------------------
+  !-----------------------------------------------------------------------------
+
 end subroutine tphysac
 
 !===================================================================================================
@@ -1317,6 +1417,7 @@ subroutine tphysbc1(ztodt, fsns, fsnt, flns, flnt, &
   ! Pass surface fields for separate surface flux calculations
   ! Dump appropriate fields to history file.
   !-----------------------------------------------------------------------------
+  use physconst,              only: rair, cpair, gravit, latvap
   use physics_buffer,         only: physics_buffer_desc, pbuf_get_field
   use physics_buffer,         only: pbuf_get_index, pbuf_old_tim_idx
   use physics_buffer,         only: dyn_time_lvls, pbuf_set_field
@@ -1378,6 +1479,8 @@ subroutine tphysbc1(ztodt, fsns, fsnt, flns, flnt, &
   real(r8), pointer, dimension(:,:) :: cldiceini
   real(r8), pointer, dimension(:,:) :: dtcore
   real(r8), pointer, dimension(:,:,:) :: fracis  ! fraction of transported species that are insoluble
+
+  real(r8), dimension(pcols,pver)   :: DSE_save, QLV_save
 
   ! energy checking variables
   real(r8) :: zero(pcols)                    ! array of zeros
@@ -1513,10 +1616,18 @@ subroutine tphysbc1(ztodt, fsns, fsnt, flns, flnt, &
 
     tini(:ncol,:pver) = state%t(:ncol,:pver)
     
+    ! Save MSE components
+    DSE_save(:,:) = state%s(:,:)
+    QLV_save(:,:) = state%q(:,:,1)*latvap
+
     call check_energy_fix(state, ptend, nstep, flx_heat)
     call physics_update(state, ptend, ztodt, tend)
     call check_energy_chng(state, tend, "chkengyfix", nstep, ztodt, zero, zero, zero, flx_heat)
-    
+
+    ! Calculate MSE tend
+    call outfld('DDSE_CEF',( state%s(1:ncol,:)          - DSE_save(1:ncol,:) )/ztodt, ncol, lchnk )
+    call outfld('DQLV_CEF',( state%q(1:ncol,:,1)*latvap - QLV_save(1:ncol,:) )/ztodt, ncol, lchnk )
+
     ! Save state for convective tendency calculations.
     call diag_conv_tend_ini(state, pbuf)
 
@@ -1600,6 +1711,7 @@ subroutine tphysbc2(ztodt, fsns, fsnt, flns, flnt, &
   ! Pass surface fields for separate surface flux calculations
   ! Dump appropriate fields to history file.
   !-----------------------------------------------------------------------------
+  use physconst,              only: rair, cpair, gravit, latvap
   use physics_buffer,         only: physics_buffer_desc, pbuf_get_field
   use physics_buffer,         only: pbuf_get_index, pbuf_old_tim_idx
   use physics_buffer,         only: dyn_time_lvls

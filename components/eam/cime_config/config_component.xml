@@ -64,6 +64,7 @@
       <!-- idealized configurations -->
       <value compset="_EAM%AQP_"       >&eamv2_phys_defaults; &eamv2_chem_defaults; -aquaplanet</value>
       <value compset="_EAM%RCE_"       >&eamv2_phys_defaults; -chem none -aquaplanet -rce -rad rrtmgp</value>
+      <value compset="_EAM%RCEROT_"    >&eamv2_phys_defaults; -chem none -aquaplanet -rce -rad rrtmgp</value>
       <value compset="_EAM%IDEAL"      >-phys ideal</value>
       <value compset="_EAM%ADIAB"      >-phys adiabatic</value>
 
@@ -81,6 +82,7 @@
       <value compset="_EAM%.*MMF1"     >-use_MMF_ESMT</value> <!-- explicit scalar momentum transport -->
       <value compset="_EAM%AQP-MMF.*"  >-aquaplanet</value>
       <value compset="_EAM%RCE-MMF.*"  >-aquaplanet -rce</value>
+      <value compset="_EAM%RCEROT-MMF.*"  >-aquaplanet -rce</value>
       <value compset="_EAM%SCM-MMF.*"  >-scam</value>
 
       <!-- SCREAM configurations -->
@@ -148,6 +150,7 @@
       <value compset="PIPD_EAM"                         >1850-PD_cam5</value>
       <value compset="_EAM%AQP_"                        >aquaplanet_EAMv1</value>
       <value compset="_EAM%RCE_"                        >RCEMIP_EAMv1</value>
+      <value compset="_EAM%RCEROT_"                     >RCEROT_EAMv1</value>
       <value compset="2010_EAM%SCREAM-LR"               >2010_scream_lr</value>
       <value compset="2010_EAM%SCREAM-HR"               >2010_scream_hr</value>
       <value compset="ARM97_EAM%DPSCREAM"                >dpscream_arm97</value>
@@ -162,6 +165,7 @@
       <value compset="2010(?:SOI)?_EAM%.*MMF"           >2010_mmf_1mom</value>
       <value compset="_EAM%AQP.*MMF"                    >aquaplanet_MMF-1mom</value>
       <value compset="_EAM%RCE.*MMF"                    >RCEMIP_EAMv1</value>
+      <value compset="_EAM%RCEROT.*MMF"                 >RCEROT_EAMv1</value>
       <value compset="ARM97_EAM%SCM.*MMF"               >scam_arm97_MMF-1mom</value>
       <value compset="RICO_EAM%SCM.*MMF"                >scam_rico_MMF-1mom</value>
     </values>

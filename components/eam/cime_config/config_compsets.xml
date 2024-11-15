@@ -229,6 +229,19 @@
     <lname>2000_EAM%RCE-MMF2_SLND_SICE_DOCN%AQPCONST_SROF_SGLC_SWAV</lname>
   </compset>
 
+  <!-- rotating RCE -->
+
+  <compset>
+    <alias>FRCEROT</alias>
+    <lname>2000_EAM%RCEROT_SLND_SICE_DOCN%AQPCONST_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>FRCEROT-MMF1</alias>
+    <!-- <lname>2000_EAM%RCEROT-MMF1_SLND_SICE_DOCN%AQPCONST_SROF_SGLC_SWAV</lname> -->
+    <lname>2000_EAM%RCEROT-MMF1_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
+  </compset>
+
   <!-- Mock-Walker RCE for RCEMIP phase 2 -->
   <compset>
     <alias>FRCE-MW_295dT1p25</alias>
