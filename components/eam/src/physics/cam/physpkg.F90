@@ -156,6 +156,7 @@ subroutine phys_register
     use radiation,          only: radiation_register
     use co2_cycle,          only: co2_register
     use co2_diagnostics,    only: co2_diags_register
+    use gw_drag,            only: gw_register
     use flux_avg,           only: flux_avg_register
     use iondrag,            only: iondrag_register
     use ionosphere,         only: ionos_register
@@ -315,6 +316,8 @@ subroutine phys_register
        ! co2 constituents
        call co2_register()
        call co2_diags_register()
+
+       call gw_register()
 
        ! register data model ozone with pbuf
        if (cam3_ozone_data_on) then
@@ -906,7 +909,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     ! CAM3 prescribed ozone
     if (cam3_ozone_data_on) call cam3_ozone_data_init(phys_state)
 
-    call gw_init()
+    call gw_init(pbuf2d)
 
     call rayleigh_friction_init()
 
@@ -1321,7 +1324,7 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
 
 
     use cam_diagnostics,only: diag_deallocate, diag_surf
-    use comsrf,         only: trefmxav, trefmnav, sgh, sgh30, fsds, oc, oadir, ol
+    use comsrf,         only: trefmxav, trefmnav, sgh, sgh30, fsds
     use physconst,      only: stebol, latvap
 #if ( defined OFFLINE_DYN )
     use metdata,        only: get_met_srf2
@@ -1329,7 +1332,7 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
     use time_manager,   only: get_nstep, is_first_step, is_end_curr_month, &
                               is_first_restart_step, is_last_step
     use check_energy,   only: ieflx_gmean, check_ieflx_fix 
-    use phys_control,   only: ieflx_opt,use_od_ls,use_od_bl
+    use phys_control,   only: ieflx_opt
     use co2_diagnostics,only: get_total_carbon, print_global_carbon_diags, &
                               co2_diags_store_fields, co2_diags_read_fields
     use co2_cycle,      only: co2_transport
@@ -1432,13 +1435,7 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
        call t_startf('diag_surf')
        call diag_surf(cam_in(c), cam_out(c), phys_state(c)%ps,trefmxav(1,c), trefmnav(1,c))
        call t_stopf('diag_surf')
-       ! for tranport of ogwd related parameters
-       if ( use_od_ls .or. use_od_bl ) then
-         phys_state(c)%oc   (:)   =oc     (:,c)
-         phys_state(c)%oadir(:,:) =oadir  (:,:,c)
-         phys_state(c)%ol   (:,:) =ol     (:,:,c)
-       endif
-       !
+
        call tphysac(ztodt, cam_in(c),  &
             sgh(1,c), sgh30(1,c), cam_out(c),                              &
             phys_state(c), phys_tend(c), phys_buffer_chunk, phys_diag(c),  &
@@ -1840,7 +1837,7 @@ end if ! l_tracer_aero
 
        ! If CLUBB is called, do not call vertical diffusion, but still
        ! calculate surface friction velocity (ustar) and Obukhov length
-       call clubb_surface ( state, cam_in, surfric, obklen)
+       call clubb_surface ( state, cam_in, pbuf, surfric, obklen)
 
        ! Diagnose tracer mixing ratio tendencies from surface fluxes, 
        ! then update the mixing ratios. (If cflx_cpl_opt==2, these are done in 

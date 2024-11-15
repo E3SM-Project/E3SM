@@ -24,7 +24,7 @@ module gw_drag
 !--------------------------------------------------------------------------
 
   use shr_kind_mod,  only: r8 => shr_kind_r8
-  use ppgrid,        only: pcols, pver, pverp, nvar_dirOA, nvar_dirOL, begchunk, endchunk
+  use ppgrid,        only: pcols, pver
   use hycoef,        only: hyai, hybi, hyam, hybm, etamid
   use constituents,  only: pcnst
   use physics_types, only: physics_state, physics_ptend, physics_ptend_init
@@ -49,6 +49,7 @@ module gw_drag
 ! PUBLIC: interfaces
 !
   public :: gw_drag_readnl           ! Read namelist
+  public :: gw_register              ! Register pbuf variables
   public :: gw_init                  ! Initialization
   public :: gw_tend                  ! interface to actual parameterization
 
@@ -199,7 +200,16 @@ end subroutine gw_drag_readnl
 
 !==========================================================================
 
-subroutine gw_init()
+subroutine gw_register()
+  use od_common,  only: oro_drag_register
+
+  call oro_drag_register()
+
+end subroutine gw_register
+
+!==========================================================================
+
+subroutine gw_init(pbuf2d)
   !-----------------------------------------------------------------------
   ! Time independent initialization for multiple gravity wave
   ! parameterization.
@@ -208,7 +218,7 @@ subroutine gw_init()
   use cam_history,      only: addfld, horiz_only, add_default
   use interpolate_data, only: lininterp
   use phys_control,     only: phys_getopts
-  use physics_buffer,   only: pbuf_get_index
+  use physics_buffer,   only: pbuf_get_index, physics_buffer_desc
 
   use ref_pres,   only: pref_edge
   use physconst,  only: gravit, rair
@@ -218,12 +228,9 @@ subroutine gw_init()
   use gw_front,   only: gw_front_init
   use gw_convect, only: gw_convect_init
 
-  use comsrf,              only: oc, oadir, ol, initialize_comsrf_OD
-  use pio,                 only: file_desc_t
-  use startup_initialconds,only: topo_OD_file_get_id, setup_initial_OD, close_initial_file_OD
-  use ncdio_atm,           only: infld
-  use cam_grid_support,    only: cam_grid_check, cam_grid_get_decomp, cam_grid_id,cam_grid_get_dim_names
-
+  use od_common,  only: oro_drag_init
+  !------------------------------Arguments--------------------------------
+  type(physics_buffer_desc), pointer :: pbuf2d(:,:)
   !---------------------------Local storage-------------------------------
 
   integer :: l, k
@@ -296,36 +303,8 @@ subroutine gw_init()
   character(len=128) :: errstring
 
   !-----------------------------------------------------------------------
-  !added for input of od parameters
-  type(file_desc_t), pointer :: ncid_topo_OD
-  logical :: found=.false.      
-  character(len=8) :: dim1name, dim2name
-  character*11 :: subname='gw_init' ! subroutine name
-  integer                   :: grid_id
-  pblh_idx = pbuf_get_index('pblh')
-  grid_id = cam_grid_id('physgrid')
 
-  if (use_od_ls.or.use_od_bl) then
-    if (.not. cam_grid_check(grid_id)) then
-    call endrun(trim(subname)//': Internal error, no "physgrid" grid')
-    end if
-
-    call cam_grid_get_dim_names(grid_id, dim1name, dim2name)
-    call initialize_comsrf_OD()
-    call setup_initial_OD()
-
-    ncid_topo_OD=>topo_OD_file_get_id()
-    call infld('OC', ncid_topo_OD, dim1name, dim2name, 1, pcols, begchunk, &
-                     endchunk,  oc          , found, gridname='physgrid')
-    !keep the same interval of OA,OL
-    call infld('OA', ncid_topo_OD,dim1name, 'nvar_dirOA', dim2name, 1, pcols, 1, nvar_dirOA, begchunk, &
-                     endchunk,  oadir(:,:,:), found, gridname='physgrid')
-    call infld('OL', ncid_topo_OD,dim1name, 'nvar_dirOL', dim2name, 1, pcols, 1, nvar_dirOL, begchunk, &
-                     endchunk,  ol          , found, gridname='physgrid')
-    if(.not. found) call endrun('ERROR: OD topo file readerr')
-    call close_initial_file_OD()
-
-  endif
+  call oro_drag_init(pbuf2d)
   
   ! Set model flags.
   do_spectral_waves = (pgwv > 0 .and. (use_gw_front .or. use_gw_convect))
@@ -699,9 +678,6 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
   !
   real(r8), pointer :: pblh(:)
   real(r8) :: dx(pcols),dy(pcols)
-  !
-  logical  :: gwd_ls,gwd_bl,gwd_ss,gwd_fd
-  !
 
   !---------------------------Local storage-------------------------------
 
@@ -998,22 +974,12 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
           ttgw, qtgw,  taucd,     egwdffi,  gwut(:,:,0:0), dttdf, dttke)
   endif
   !
-  if (use_od_ls.or.&
-      use_od_bl.or.&
-      use_od_ss) then
-     !open ogwd,bl,ss, 
-     !close fd
-     gwd_ls=use_od_ls
-     gwd_bl=use_od_bl
-     gwd_ss=use_od_ss
-     gwd_fd=.false.
-     !
+  if ( use_od_ls .or. use_od_bl .or. use_od_ss) then
      utgw=0.0_r8
      vtgw=0.0_r8
      ttgw=0.0_r8
-     !
      call oro_drag_interface(state,cam_in,sgh,pbuf,dt,nm,&
-                             gwd_ls,gwd_bl,gwd_ss,gwd_fd,&
+                             use_od_ls,use_od_bl,use_od_ss,.false.,&
                              od_ls_ncleff,od_bl_ncd,od_ss_sncleff,&
                              utgw,vtgw,ttgw,&
                              dtaux3_ls=dtaux3_ls,dtauy3_ls=dtauy3_ls,&
@@ -1024,14 +990,13 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
                              dusfc_bl=dusfc_bl,dvsfc_bl=dvsfc_bl,&
                              dusfc_ss=dusfc_ss,dvsfc_ss=dvsfc_ss,&
                              dusfc_fd=dummx_fd,dvsfc_fd=dummy_fd)
-
   endif
-        !
-        ! Add the orographic tendencies to the spectrum tendencies
-        ! Compute the temperature tendency from energy conservation
-        ! (includes spectrum).
-        ! both old and new gwd scheme will add the tendency to circulation
-        !
+  !
+  ! Add the orographic tendencies to the spectrum tendencies
+  ! Compute the temperature tendency from energy conservation
+  ! (includes spectrum).
+  ! both old and new gwd scheme will add the tendency to circulation
+  !
   if (use_gw_oro.or.&
       use_od_ls .or.&
       use_od_bl .or.&

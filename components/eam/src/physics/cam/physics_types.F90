@@ -6,7 +6,7 @@
 module physics_types
 
   use shr_kind_mod, only: r8 => shr_kind_r8
-  use ppgrid,       only: pcols, pver, psubcols,nvar_dirOA,nvar_dirOL
+  use ppgrid,       only: pcols, pver, psubcols
   use constituents, only: pcnst, qmin, cnst_name, icldliq, icldice
   use geopotential, only: geopotential_t
   use physconst,    only: zvir, gravit, cpair, rair, cpairv, rairv
@@ -137,16 +137,6 @@ module physics_types
           cid        ! unique column id
      integer :: ulatcnt, &! number of unique lats in chunk
                 uloncnt   ! number of unique lons in chunk
-     real(r8), dimension(:),allocatable             :: &
-          oc        !convexity of high-res grid height
-     real(r8), dimension(:,:),allocatable           :: &
-          oadir        !orographic asymmetry in a coarse grid
-     real(r8), dimension(:,:),allocatable          :: &
-          ol        !orographic length in a coarse grid 
-     real(r8), dimension(:),allocatable          :: &
-          pblh        !get plantet boundary layer height
-     real(r8), dimension(:),allocatable          :: &
-          ribulk
   end type physics_state
 
 !-------------------------------------------------------------------------------
@@ -1839,21 +1829,7 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   
   allocate(state%cid(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%cid')
-  allocate(state%oc(psetcols), stat=ierr)
-  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%oc')
-  allocate(state%oadir(psetcols,nvar_dirOA), stat=ierr)
-  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%oadir')
-  allocate(state%ol(psetcols,nvar_dirOL), stat=ierr)
-  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%ol')
-  allocate(state%pblh(psetcols), stat=ierr)
-  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%pblh')
-  allocate(state%ribulk(psetcols), stat=ierr)
-  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%ribulk')
-  state%oc(:)=inf
-  state%oadir(:,:)=inf
-  state%ol(:,:)=inf
-  state%pblh(:)=inf
-  state%ribulk(:)=0.0_r8!inf
+
   state%lat(:) = inf
   state%lon(:) = inf
   state%ulat(:) = inf

@@ -2139,14 +2139,14 @@ end subroutine clubb_init_cnst
          dum_core_rknd = real((ksrftms(i)*state1%v(i,pver)), kind = core_rknd)
          vpwp_sfc      = vpwp_sfc-(dum_core_rknd/rho_ds_zm(1))
        endif
-      !----------------------------------------------------!
-      !Apply TOFD
-      !----------------------------------------------------!
-      !tendency is flipped already
-       if (use_od_fd) then 
+      ! ------------------------------------------------- !
+      ! Apply TOFD
+      ! ------------------------------------------------- !
+      ! tendency is flipped already
+      if (use_od_fd) then
         um_forcing(2:pverp)=dtaux3_fd(i,pver:1:-1)
         vm_forcing(2:pverp)=dtauy3_fd(i,pver:1:-1)
-       endif
+      endif
       !  Need to flip arrays around for CLUBB core
       do k=1,pverp
          um_in(k)      = real(um(i,pverp-k+1), kind = core_rknd)
@@ -3170,7 +3170,7 @@ end subroutine clubb_init_cnst
   !                                                                                 !
   ! =============================================================================== !
 
-    subroutine clubb_surface (state, cam_in, ustar, obklen)
+    subroutine clubb_surface (state, cam_in, pbuf, ustar, obklen)
 
 !-------------------------------------------------------------------------------
 ! Description: Provide the obukhov length and the surface friction velocity
@@ -3192,7 +3192,7 @@ end subroutine clubb_init_cnst
     use constituents,           only: cnst_get_ind
     use camsrfexch,             only: cam_in_t
     use hb_diff,                only: pblintd_ri
-
+    use physics_buffer,         only: pbuf_get_index, pbuf_get_field, physics_buffer_desc
 
     implicit none
 
@@ -3200,8 +3200,9 @@ end subroutine clubb_init_cnst
     ! Input Auguments !
     ! --------------- !
 
-    type(physics_state), intent(inout)  :: state                ! Physics state variables
-    type(cam_in_t),      intent(in)     :: cam_in
+    type(physics_state),                intent(inout)  :: state ! Physics state variables
+    type(cam_in_t),                     intent(in)     :: cam_in
+    type(physics_buffer_desc), pointer, intent(in)     :: pbuf(:)
 
     ! ---------------- !
     ! Output Auguments !
@@ -3230,6 +3231,9 @@ end subroutine clubb_init_cnst
     real(r8) :: kbfs_pcol(pcols)                                ! kinematic surface buoyancy flux stored for all pcols
     integer  :: ixq,ixcldliq !PMA fix for thv
     real(r8) :: rrho                                            ! Inverse air density
+
+    integer  :: oro_drag_ribulk_idx                             ! pbuf index of bulk richardson number for oro drag
+    real(r8), pointer :: oro_drag_ribulk(:)                     ! pbuf pointer for bulk richardson number
 
 
 #endif
@@ -3295,9 +3299,12 @@ end subroutine clubb_init_cnst
         kbfs_pcol(i)=kbfs
       enddo
 
+      oro_drag_ribulk_idx = pbuf_get_index('oro_drag_ribulk')
+      call pbuf_get_field(pbuf, oro_drag_ribulk_idx, oro_drag_ribulk)
+
       !calculate the bulk richardson number
       call pblintd_ri(ncol, gravit, thv_lv, state%zm, state%u, state%v, &
-                      ustar, obklen, kbfs_pcol, state%ribulk)
+                      ustar, obklen, kbfs_pcol, oro_drag_ribulk)
     endif
 
     return

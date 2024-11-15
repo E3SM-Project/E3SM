@@ -17,7 +17,7 @@ module comsrf
 ! USES:
 !
   use shr_kind_mod, only: r8 => shr_kind_r8, r4 => shr_kind_r4
-  use ppgrid, only: pcols, begchunk, endchunk,nvar_dirOA,nvar_dirOL
+  use ppgrid, only: pcols, begchunk, endchunk
   use infnan, only: nan, assignment(=)
   use cam_abortutils, only: endrun
 
@@ -31,8 +31,6 @@ module comsrf
 ! ! PUBLIC MEMBER FUNCTIONS:
 !
   public initialize_comsrf          ! Set the surface temperature and sea-ice fraction
-  !!added for separate input of ogwd parareters in gw_drag
-  public initialize_comsrf_OD
 !
 ! Public data
 !
@@ -56,10 +54,6 @@ module comsrf
   real(r8), allocatable:: trefmxav(:,:)  ! diagnostic: tref max over the day
   real(r8), allocatable:: trefmnav(:,:)  ! diagnostic: tref min over the day
 
-  public oc, ol, oadir
-  real(r8), allocatable:: oc(:,:)        ! Convexity
-  real(r8), allocatable:: oadir(:,:,:)   ! Asymmetry
-  real(r8), allocatable:: ol(:,:,:)      ! Effective length
   !
 ! Private module data
 
@@ -137,29 +131,5 @@ CONTAINS
        trefmnav (:,:) =  1.0e36_r8
     end if
   end subroutine initialize_comsrf
-
-  subroutine initialize_comsrf_OD
-  use cam_control_mod,  only: ideal_phys, adiabatic
-!-----------------------------------------------------------------------
-!       
-! Purpose:
-! Initialize surface data
-!       
-! Method:
-!   
-! Author: Mariana Vertenstein
-!
-!-----------------------------------------------------------------------
-    integer k,c      ! level, constituent indices
-
-    if(.not. (adiabatic .or. ideal_phys)) then
-        allocate (oc    (pcols,begchunk:endchunk))
-        allocate (oadir (pcols,nvar_dirOA,begchunk:endchunk))
-        allocate (ol    (pcols,nvar_dirOL,begchunk:endchunk))
-        oc    (:,:)   = nan
-        oadir (:,:,:) = nan
-        ol    (:,:,:) = nan
-    end if
-  end subroutine initialize_comsrf_OD
 
 end module comsrf
