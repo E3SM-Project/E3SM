@@ -24,7 +24,7 @@ env:
 jobs:
   gcc-openmp:
     runs-on:  [self-hosted, ghci-snl-cpu, gcc]
-    name: gcc-openmp / cov
+    name: gcc-openmp / valg
     steps:
       - name: Check out the repository
         uses: actions/checkout@v4
