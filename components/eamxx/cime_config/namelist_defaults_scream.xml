@@ -372,15 +372,10 @@ be lost if SCREAM_HACK_XML is not enabled.
       <srf_emis_specifier_for_so4_a1 hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for so4_a1">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/cmip6_mam4_so4_a1_surf_ne4pg2_2010_clim_c20240815.nc</srf_emis_specifier_for_so4_a1>
       <srf_emis_specifier_for_so4_a2 hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for so4_a2">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/cmip6_mam4_so4_a2_surf_ne4pg2_2010_clim_c20240815.nc</srf_emis_specifier_for_so4_a2>
 
-      <!-- Soil erodibility-->
       <soil_erodibility_file type="file" doc="File containing soil erodibility">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/dst_ne30pg2_c20241028.nc</soil_erodibility_file>
-
-      <!-- Soil erodibility ne4 grid-->
       <soil_erodibility_file hgrid="ne4np4.pg2" type="file" doc="File containing soil erodibility">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/dst_ne4pg2_c20241028.nc</soil_erodibility_file>
 
-      <!-- Marine organics file -->
       <marine_organics_file type="file" doc="File containing marine organics emissions">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/monthly_macromolecules_0.1deg_bilinear_year01_merge_ne30pg2_c20241030.nc</marine_organics_file>
-      <!-- Marine organics file ne4 grid -->
       <marine_organics_file hgrid="ne4np4.pg2" type="file" doc="File containing marine organics emissions">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/monthly_macromolecules_0.1deg_bilinear_year01_merge_ne4pg2_c20241030.nc</marine_organics_file>
 
       <!-- Mapping Files for finer resolutions -->

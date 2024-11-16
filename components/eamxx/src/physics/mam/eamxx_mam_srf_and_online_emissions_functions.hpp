@@ -33,7 +33,6 @@ void init_fluxes(const int &ncol,
             Kokkos::TeamVectorRange(team, gas_start_ind, pcnst),
             [&](int icnst) { flux_col(icnst) = 0; });
       });
-  Kokkos::fence();
 }  // init_fluxes ends
 
 //-------- compute online emissions for dust, sea salt and marine organics -----
@@ -66,8 +65,6 @@ void compute_online_dust_nacl_emiss(
             // out
             fluxes_col);
       });
-  Kokkos::fence();
-
 }  // compute_online_dust_nacl_emiss ends
 
 }  // namespace

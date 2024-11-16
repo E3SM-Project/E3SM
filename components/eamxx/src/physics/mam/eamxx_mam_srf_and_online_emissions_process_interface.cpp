@@ -421,15 +421,13 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   // Zero out constituent fluxes only for gasses and aerosols
   init_fluxes(ncol_,                // in
               constituent_fluxes);  // in-out
-
+  Kokkos::fence();
   // Gather time and state information for interpolation
   const auto ts = timestamp() + dt;
 
   //--------------------------------------------------------------------
   // Online emissions from dust and sea salt
   //--------------------------------------------------------------------
-
-  // compute_online_dust_nacl_emiss();
 
   // --- Interpolate marine organics data --
 
@@ -480,6 +478,7 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
                                  z_mid,
                                  // output
                                  constituent_fluxes);
+  Kokkos::fence();
   //--------------------------------------------------------------------
   // Interpolate srf emiss data read in from emissions files
   //--------------------------------------------------------------------
