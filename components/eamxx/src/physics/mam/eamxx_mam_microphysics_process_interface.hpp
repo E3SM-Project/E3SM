@@ -238,6 +238,9 @@ class MAMMicrophysics final : public scream::AtmosphereProcess {
 
   view_1d_host acos_cosine_zenith_host_;
   view_1d acos_cosine_zenith_;
+  // // dq/dt for convection [kg/kg/s] //in ndx_cmfdqr =
+  view_1d cmfdqr_;
+  view_2d work_set_het_;
 
 };  // MAMMicrophysics
 
