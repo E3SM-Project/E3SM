@@ -26,6 +26,7 @@ module mo_gas_phase_chemdr
   character(len=fieldname_len) :: gas_ac_name_2D(gas_pcnst)
 
   integer :: o3_ndx, synoz_ndx, so4_ndx, h2o_ndx, o2_ndx, o_ndx, hno3_ndx, dst_ndx, cldice_ndx, e90_ndx
+  integer :: inv_ndx_o3_ccmi
   !integer :: o3lnz_ndx, n2olnz_ndx, noylnz_ndx, ch4lnz_ndx
   integer :: o3lnz_ndx, ch4lnz_ndx
   integer :: uci1_ndx
@@ -231,6 +232,10 @@ contains
 ! get fixed oxidant (troposphere) index for Linoz_MAM
 !-----------------------------------------------------------------------
    
+     !!Jinbo Xie
+     inv_ndx_o3_ccmi=get_inv_ndx('O3_ccmi')
+     !!Jinbo Xie
+
      inv_ndx_cnst_o3 = get_inv_ndx( 'cnst_O3' ) ! prescribed O3 oxidant field
      inv_ndx_m       = get_inv_ndx( 'M' )        ! airmass.  Elsewhere this variable is known as m_ndx
      inv_ndx_cnst_no3       = get_inv_ndx( 'prsd_NO3' )
@@ -640,6 +645,16 @@ contains
 !      end do
 !    end if
 
+    if ( chem_name == 'linoz_mam3'.or.chem_name == 'linoz_mam4_resus'.or.chem_name == 'linoz_mam4_resus_mom' &
+       .or.chem_name == 'linoz_mam4_resus_soag'.or.chem_name == 'linoz_mam4_resus_mom_soag' &
+       .or.chem_name=='chemuci_linozv3_mam5_vbs' ) then
+     write(iulog,*) 'Set tropospheric ozone for linoz_mam: inv_ndx_cnst_o3 =',inv_ndx_cnst_o3
+      do k = 1, pver                !Following loop logic from below.  However, reordering loops can get rid of IF statement.
+         do i = 1, ncol
+              vmr(i,k,o3_ndx) = invariants(i,k,inv_ndx_o3_ccmi) / invariants(i,k,inv_ndx_m)   ! O3 and o3_ccmi
+         end do
+      end do
+    end if
     !-----------------------------------------------------------------
     ! ... zero out sulfate below tropopause
     !-----------------------------------------------------------------
