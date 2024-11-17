@@ -34,6 +34,9 @@ class MAMMicrophysics final : public scream::AtmosphereProcess {
   // Constructor
   MAMMicrophysics(const ekat::Comm &comm, const ekat::ParameterList &params);
 
+  // Virtual Destructor
+  virtual ~MAMMicrophysics() {}
+
   // --------------------------------------------------------------------------
   // AtmosphereProcess overrides (see share/atm_process/atmosphere_process.hpp)
   // --------------------------------------------------------------------------
@@ -42,7 +45,7 @@ class MAMMicrophysics final : public scream::AtmosphereProcess {
   AtmosphereProcessType type() const override;
 
   // The name of the subcomponent
-  std::string name() const { return "mam_aero_microphysics"; }
+  std::string name() const override { return "mam_aero_microphysics"; }
 
   // grid
   void set_grids(
@@ -59,7 +62,7 @@ class MAMMicrophysics final : public scream::AtmosphereProcess {
   void run_impl(const double dt) override;
 
   // Finalize
-  void finalize_impl(){/*Do nothing*/};
+  void finalize_impl() override {/*Do nothing*/};
 
  private:
   // number of horizontal columns and vertical levels
