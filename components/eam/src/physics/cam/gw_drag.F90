@@ -148,7 +148,7 @@ subroutine gw_drag_readnl(nlfile)
       effgw_oro, fcrit2, frontgfc, gw_drag_file, taubgnd, gw_convect_hcf, &
       hdepth_scaling_factor, gw_convect_hdepth_min, &
       gw_convect_storm_speed_min, gw_convect_plev_src_wind, &
-      use_gw_convect_old)
+      use_gw_convect_old
   !----------------------------------------------------------------------
 
   if (masterproc) then
