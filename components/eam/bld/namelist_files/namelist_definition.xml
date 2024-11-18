@@ -1100,31 +1100,32 @@ Default: set by build-namelist.
 
 <entry id="gw_convect_hcf" type="real" category="gw_drag"
        group="gw_drag_nl" valid_values="" >
-Heating rate conversion factor associated with convective gravity waves
+Heating rate conversion factor associated with convective GWD [unitless].
+Also often interpretted as "convective fraction" [%].
 Default: 20.0
 </entry>
 
 <entry id="hdepth_scaling_factor" type="real" category="gw_drag"
        group="gw_drag_nl" valid_values="" >
-Scaling factor for the heating depth
+Scaling factor for the heating depth [unitless]
 Default: 1.0
 </entry>
 
 <entry id="gw_convect_hdepth_min" type="real" category="gw_drag"
        group="gw_drag_nl" valid_values="" >
-minimum hdepth for for convective GWD spectrum lookup table
-Default: 2.5
+minimum hdepth for for convective GWD spectrum lookup table [km]
+Default: 2.5 km
 </entry>
 
 <entry id="gw_convect_storm_speed_min" type="real" category="gw_drag"
        group="gw_drag_nl" valid_values="" >
-minimum convective storm speed for convective GWD
+minimum convective storm speed in m/s for convective GWD
 Default: 10.0 m/s
 </entry>
 
 <entry id="gw_convect_plev_src_wind" type="real" category="gw_drag"
        group="gw_drag_nl" valid_values="" >
-Reference pressure value used for convective GWD storm/source speed
+Reference pressure value used for convective storm speed in m/s for convective GWD
 Default: 70000 Pa
 </entry>
 
