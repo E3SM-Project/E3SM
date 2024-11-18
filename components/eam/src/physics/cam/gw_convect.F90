@@ -5,6 +5,7 @@ module gw_convect
 ! gw_drag in May 2013.
 !
 use cam_logfile, only: iulog
+use spmd_utils,  only: masterproc
 use gw_utils,    only: r8
 use gw_common,   only: pver, pgwv
 
@@ -36,6 +37,7 @@ subroutine gw_convect_init( plev_src_wind, mfcc_in, errstring)
   real(r8), intent(in) :: mfcc_in(:,:,:)       ! Source spectra to keep as table
   character(len=*), intent(out) :: errstring   ! Report any errors from this routine
   integer :: ierr
+  integer :: k
 
   errstring = ""
 
