@@ -141,6 +141,7 @@ contains
 
        call get_cnst_data( tracer_cnst_flds(i), cnst_offline,  ncol, lchnk, pbuf )
        ndx =  get_inv_ndx( tracer_cnst_flds(i) )
+       !write(iulog,*)"Jinbo Xie tracer_cnst_flds(i),minval(cnst_offline),maxval(cnst_offline)",tracer_cnst_flds(i),minval(cnst_offline),maxval(cnst_offline)
 
        do k = 1,pver
           invariants(:ncol,k,ndx) = cnst_offline(:ncol,k)*invariants(:ncol,k,m_ndx)

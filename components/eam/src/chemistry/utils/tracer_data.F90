@@ -708,8 +708,11 @@ contains
           if ( flds(f)%pbuf_ndx>0 ) then
              call pbuf_get_field(pbuf, flds(f)%pbuf_ndx, tmpptr)
              data(:ncol,:) = tmpptr(:ncol,:)
+   !write(iulog,*)"Jinbo Xie  in tmpptr, trim(flds(f)%fldnam)",trim(flds(f)%fldnam)
           else
              data(:ncol,:) = flds(f)%data(:ncol,:,lchnk)
+   !write(iulog,*)"Jinbo Xie  in flds(f)%data(:ncol,:,lchnk), trim(flds(f)%fldnam)",trim(flds(f)%fldnam)
+   !write(iulog,*)"Jinbo Xie minval(data(:ncol,:)),maxval(data(:ncol,:))",minval(data(:ncol,:)),maxval(data(:ncol,:))
           endif
        endif
     enddo
