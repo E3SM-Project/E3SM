@@ -172,17 +172,17 @@ end subroutine linoz_readnl
     no2_ndx  =   get_spc_ndx('NO2')
     hno3_ndx =   get_spc_ndx('HNO3')
 
-   if(masterproc)then
-   ! write(iulog,*)'in subroutine lin_strat_chem_inti'
-   ! write(iulog,*)'O3LNZ=',o3lnz_ndx,'N2OLNZ=',n2olnz_ndx,'NOYLNZ=',noylnz_ndx,'H2OLNZ=',h2olnz_ndx
-   ! write(iulog,*)'O3=',o3_ndx,'CH4=',ch4_ndx,'N2O=',n2o_ndx,'NO=',no_ndx,'NO2=',no2_ndx,'HNO3=',hno3_ndx
-   write(iulog,*)'inside lin_strat_solve for ndx o3, o3lnz, n2o, noylnz, ch4', o3_ndx, o3lnz_ndx, n2o_ndx, noylnz_ndx, ch4_ndx
-   write(iulog,*)'linoz_v2,linoz_v3',linoz_v2,linoz_v3
-   end if
+    if(masterproc)then
+    ! write(iulog,*)'in subroutine lin_strat_chem_inti'
+    ! write(iulog,*)'O3LNZ=',o3lnz_ndx,'N2OLNZ=',n2olnz_ndx,'NOYLNZ=',noylnz_ndx,'H2OLNZ=',h2olnz_ndx
+    ! write(iulog,*)'O3=',o3_ndx,'CH4=',ch4_ndx,'N2O=',n2o_ndx,'NO=',no_ndx,'NO2=',no2_ndx,'HNO3=',hno3_ndx
+    write(iulog,*)'inside lin_strat_solve for ndx o3, o3lnz, n2o, noylnz, ch4', o3_ndx, o3lnz_ndx, n2o_ndx, noylnz_ndx, ch4_ndx
+    write(iulog,*)'linoz_v2,linoz_v3',linoz_v2,linoz_v3
+    end if
 
-   !!set true for linoz_v3 interpolation in interpolation
-   if (linoz_v3) file%linoz_v3=.true.
-   if (linoz_v2) file%linoz_v2=.true.
+    !!set true for linoz_v3 interpolation in interpolation
+    if (linoz_v3) file%linoz_v3=.true.
+    if (linoz_v2) file%linoz_v2=.true.
     
 !     
 !   initialize the linoz data
@@ -271,6 +271,8 @@ end subroutine linoz_readnl
                               nch4_dPmL_dCH4_ndx,nch4_dPmL_dH2O_ndx, nch4_dPmL_dT_ndx,  nch4_dPmL_dO3col_ndx,&
                               cariolle_pscs_ndx, o3lbs_ndx,o3_clim_srf_ndx,n2o_clim_srf_ndx,noy_clim_srf_ndx,&
                               ch4_clim_srf_ndx,  ch4_avg_srf_ndx
+
+    use spmd_utils,       only : masterproc
     !
     integer,  intent(in)                           :: ncol                ! number of columns in chunk
     integer,  intent(in)                           :: lchnk               ! chunk index
@@ -370,6 +372,13 @@ end subroutine linoz_readnl
        !!add avg
        linoz_ch4_avg_srf  => fields(ch4_avg_srf_ndx)  %data(:,:,lchnk )
        !!
+       !if (masterproc) write(iulog,*) "Jinbo Xie & 
+       !minval(linoz_o3_clim),maxval(linoz_o3_clim)",minval(linoz_o3_clim),maxval(linoz_o3_clim)
+       !if (masterproc) write(iulog,*) "Jinbo Xie &
+       !minval(linoz_n2o_clim),maxval(linoz_n2o_clim)",minval(linoz_n2o_clim),maxval(linoz_n2o_clim)
+       !if (masterproc) write(iulog,*) "Jinbo Xie &
+       !minval(linoz_noy_clim),maxval(linoz_noy_clim)",minval(linoz_noy_clim),maxval(linoz_noy_clim)
+
        dO3(:,:)     =   o3_vmr(:,:)  - linoz_o3_clim(:ncol,:)
        dN2O(:,:)    =  n2o_vmr(:,:)  - linoz_n2o_clim(:ncol,:)
        dNOY(:,:)    =  noy_vmr(:,:)  - linoz_noy_clim(:ncol,:) 
