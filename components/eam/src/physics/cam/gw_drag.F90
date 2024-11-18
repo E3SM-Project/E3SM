@@ -119,9 +119,9 @@ module gw_drag
   logical          :: history_amwg                   ! output the variables used by the AMWG diag package
 
   logical  :: use_gw_convect_old          ! switch to enable legacy behavior
-  real(r8) :: gw_convect_plev_src_wind    ! reference pressure level for source wind for convective GWD
-  real(r8) :: gw_convect_hdepth_min       ! minimum hdepth for for convective GWD spectrum lookup table
-  real(r8) :: gw_convect_storm_speed_min  ! minimum convective storm speed for convective GWD
+  real(r8) :: gw_convect_plev_src_wind    ! reference pressure level for source wind for convective GWD [Pa]
+  real(r8) :: gw_convect_hdepth_min       ! minimum hdepth for for convective GWD spectrum lookup table [km]
+  real(r8) :: gw_convect_storm_speed_min  ! minimum convective storm speed for convective GWD           [m/s]
   
 !==========================================================================
 contains

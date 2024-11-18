@@ -33,7 +33,7 @@ contains
 
 subroutine gw_convect_init( plev_src_wind, mfcc_in, errstring)
   use ref_pres, only: pref_edge
-  real(r8), intent(in) :: plev_src_wind        ! previously hardcoded to 70000._r8
+  real(r8), intent(in) :: plev_src_wind        ! reference pressure value [Pa] to set k_src_wind (previously hardcoded to 70000._r8)
   real(r8), intent(in) :: mfcc_in(:,:,:)       ! Source spectra to keep as table
   character(len=*), intent(out) :: errstring   ! Report any errors from this routine
   integer :: ierr
@@ -153,8 +153,12 @@ subroutine gw_beres_src(ncol, ngwv, lat, u, v, netdt, &
   integer :: shift
 
   ! fixed parameters (we may want to expose these in the namelist for tuning)
-  real(r8), parameter :: tau_avg_length       = 1.0e5_r8 ! spectrum averaging length
-  real(r8), parameter :: heating_altitude_max = 20e3     ! max altitude to check heating (probably don't need this)
+  real(r8), parameter :: tau_avg_length       = 100e3 ! spectrum averaging length [m]
+  real(r8), parameter :: heating_altitude_max = 20e3  ! max altitude [m] to check for max heating
+
+  ! note: the heating_altitude_max is probably not needed because there is
+  ! rarely any convective heating above this level and the performance impact
+  ! of skipping the iteration over higher levels is likely negilible.
 
   integer :: ndepth_pos
   integer :: ndepth_tot
