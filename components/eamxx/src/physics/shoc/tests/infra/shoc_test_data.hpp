@@ -1107,6 +1107,8 @@ void shoc_assumed_pdf_thl_parameters_host(Real wthlsec, Real sqrtw2, Real sqrtth
 
 void shoc_assumed_pdf_qw_parameters_host(Real wqwsec, Real sqrtw2, Real skew_w, Real sqrtqt, Real qwsec, Real w1_2, Real w1_1, Real qw_first, Real a, Real rt_tol, Real w_thresh, Real* qw1_1, Real* qw1_2, Real* qw2_1, Real* qw2_2, Real* sqrtqw2_1, Real* sqrtqw2_2);
 
+void shoc_assumed_pdf_inplume_correlations_host(Real sqrtqw2_1, Real sqrtthl2_1, Real a, Real sqrtqw2_2, Real sqrtthl2_2, Real qwthlsec, Real qw1_1, Real qw_first, Real thl1_1, Real thl_first, Real qw1_2, Real thl1_2, Real* r_qwthl_1);
+
 // end _host function decls
 
 }  // namespace shoc

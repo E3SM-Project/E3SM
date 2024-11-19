@@ -213,7 +213,7 @@ void shoc_assumed_pdf_qw_parameters(ShocAssumedPdfQwParametersData& d)
 void shoc_assumed_pdf_inplume_correlations(ShocAssumedPdfInplumeCorrelationsData& d)
 {
   shoc_init(1); // single level function
-  //shoc_assumed_pdf_inplume_correlations_host(d.sqrtqw2_1, d.sqrtthl2_1, d.a, d.sqrtqw2_2, d.sqrtthl2_2, d.qwthlsec, d.qw1_1, d.qw_first, d.thl1_1, d.thl_first, d.qw1_2, d.thl1_2, &d.r_qwthl_1);
+  shoc_assumed_pdf_inplume_correlations_host(d.sqrtqw2_1, d.sqrtthl2_1, d.a, d.sqrtqw2_2, d.sqrtthl2_2, d.qwthlsec, d.qw1_1, d.qw_first, d.thl1_1, d.thl_first, d.qw1_2, d.thl1_2, &d.r_qwthl_1);
 }
 
 void shoc_assumed_pdf_compute_temperature(ShocAssumedPdfComputeTemperatureData& d)
@@ -3201,6 +3201,25 @@ void shoc_assumed_pdf_qw_parameters_host(Real wqwsec, Real sqrtw2, Real skew_w, 
   *qw2_2 = t_h(3);
   *sqrtqw2_1 = t_h(4);
   *sqrtqw2_2 = t_h(5);
+}
+
+void shoc_assumed_pdf_inplume_correlations_host(Real sqrtqw2_1, Real sqrtthl2_1, Real a, Real sqrtqw2_2, Real sqrtthl2_2, Real qwthlsec, Real qw1_1, Real qw_first, Real thl1_1, Real thl_first, Real qw1_2, Real thl1_2, Real* r_qwthl_1)
+{
+  using SHF = Functions<Real, DefaultDevice>;
+
+  using Spack   = typename SHF::Spack;
+  using view_1d = typename SHF::view_1d<Real>;
+
+  view_1d t_d("t_d", 1);
+  const auto t_h = Kokkos::create_mirror_view(t_d);
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+    Spack a_(a), qw1_1_(qw1_1), qw1_2_(qw1_2), qw_first_(qw_first), qwthlsec_(qwthlsec), sqrtqw2_1_(sqrtqw2_1), sqrtqw2_2_(sqrtqw2_2), sqrtthl2_1_(sqrtthl2_1), sqrtthl2_2_(sqrtthl2_2), thl1_1_(thl1_1), thl1_2_(thl1_2), thl_first_(thl_first), r_qwthl_1_;
+    SHF::shoc_assumed_pdf_inplume_correlations(sqrtqw2_1_, sqrtthl2_1_, a_, sqrtqw2_2_, sqrtthl2_2_, qwthlsec_, qw1_1_, qw_first_, thl1_1_, thl_first_, qw1_2_, thl1_2_, r_qwthl_1_);
+    t_d(0) = r_qwthl_1_[0];
+  });
+  Kokkos::deep_copy(t_h, t_d);
+  *r_qwthl_1 = t_h(0);
 }
 
 } // namespace shoc
