@@ -189,13 +189,13 @@ void shoc_assumed_pdf(ShocAssumedPdfData& d)
 void shoc_assumed_pdf_tilde_to_real(ShocAssumedPdfTildeToRealData& d)
 {
   shoc_init(1); // single level function
-  //shoc_assumed_pdf_tilde_to_real_host(d.w_first, d.sqrtw2, &d.w1);
+  shoc_assumed_pdf_tilde_to_real_host(d.w_first, d.sqrtw2, &d.w1);
 }
 
 void shoc_assumed_pdf_vv_parameters(ShocAssumedPdfVvParametersData& d)
 {
   shoc_init(1); // single level function
-  //shoc_assumed_pdf_vv_parameters_host(d.w_first, d.w_sec, d.w3var, &d.skew_w, &d.w1_1, &d.w1_2, &d.w2_1, &d.w2_2, &d.a);
+  shoc_assumed_pdf_vv_parameters_host(d.w_first, d.w_sec, d.w3var, d.w_tol_sqd, &d.skew_w, &d.w1_1, &d.w1_2, &d.w2_1, &d.w2_2, &d.a);
 }
 
 void shoc_assumed_pdf_thl_parameters(ShocAssumedPdfThlParametersData& d)
@@ -3094,6 +3094,55 @@ void compute_shoc_temperature_host(Int shcol, Int nlev, Real *thetal, Real *ql, 
   // Sync back to host
   std::vector<view_2d> out_views = {tabs_d};
   ekat::device_to_host({tabs}, shcol, nlev, out_views);
+}
+
+void shoc_assumed_pdf_tilde_to_real_host(Real w_first, Real sqrtw2, Real* w1)
+{
+  using SHF = Functions<Real, DefaultDevice>;
+
+  using Spack   = typename SHF::Spack;
+  using view_1d = typename SHF::view_1d<Real>;
+
+  view_1d t_d("t_d", 1);
+  const auto t_h = Kokkos::create_mirror_view(t_d);
+
+  Real local_w1(*w1);
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+    Spack sqrtw2_(sqrtw2), w1_(local_w1), w_first_(w_first);
+    SHF::shoc_assumed_pdf_tilde_to_real(w_first_, sqrtw2_, w1_);
+    t_d(0) = w1_[0];
+  });
+  Kokkos::deep_copy(t_h, t_d);
+  *w1 = t_h(0);
+}
+
+void shoc_assumed_pdf_vv_parameters_host(Real w_first, Real w_sec, Real w3var, Real w_tol_sqd, Real* skew_w, Real* w1_1, Real* w1_2, Real* w2_1, Real* w2_2, Real* a)
+{
+  using SHF = Functions<Real, DefaultDevice>;
+
+  using Spack   = typename SHF::Spack;
+  using view_1d = typename SHF::view_1d<Real>;
+
+  view_1d t_d("t_d", 6);
+  const auto t_h = Kokkos::create_mirror_view(t_d);
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+    Spack w3var_(w3var), w_first_(w_first), w_sec_(w_sec), a_, skew_w_, w1_1_, w1_2_, w2_1_, w2_2_;
+    SHF::shoc_assumed_pdf_vv_parameters(w_first_, w_sec_, w3var_, w_tol_sqd, skew_w_, w1_1_, w1_2_, w2_1_, w2_2_, a_);
+    t_d(0) = a_[0];
+    t_d(1) = skew_w_[0];
+    t_d(2) = w1_1_[0];
+    t_d(3) = w1_2_[0];
+    t_d(4) = w2_1_[0];
+    t_d(5) = w2_2_[0];
+  });
+  Kokkos::deep_copy(t_h, t_d);
+  *a = t_h(0);
+  *skew_w = t_h(1);
+  *w1_1 = t_h(2);
+  *w1_2 = t_h(3);
+  *w2_1 = t_h(4);
+  *w2_2 = t_h(5);
 }
 
 } // namespace shoc

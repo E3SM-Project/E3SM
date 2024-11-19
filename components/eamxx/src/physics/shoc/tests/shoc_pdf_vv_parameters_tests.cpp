@@ -46,6 +46,7 @@ struct UnitWrap::UnitTest<D>::TestShocVVParameters {
     SDS.w_first = w_first_sym;
     SDS.w_sec = w_sec_sym;
     SDS.w3var = w3var_sym;
+    SDS.w_tol_sqd = 0;
 
     // Verify input is physical
     REQUIRE(SDS.w_sec >= 0);
