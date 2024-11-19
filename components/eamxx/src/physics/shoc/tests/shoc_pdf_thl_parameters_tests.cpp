@@ -74,7 +74,8 @@ struct UnitWrap::UnitTest<D>::TestShocThlParameters {
     SDS.w1_2 = w1_2_test1;
     SDS.skew_w = Skew_w_test1;
     SDS.a = a_test1;
-    SDS.dothetal_skew = dothetal_skew;
+    SDS.thl_tol = 0;
+    SDS.w_thresh = 0;
 
     // Verify input is physical
     REQUIRE(SDS.sqrtw2 >= 0);

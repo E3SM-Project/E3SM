@@ -201,7 +201,7 @@ void shoc_assumed_pdf_vv_parameters(ShocAssumedPdfVvParametersData& d)
 void shoc_assumed_pdf_thl_parameters(ShocAssumedPdfThlParametersData& d)
 {
   shoc_init(1); // single level function
-  //shoc_assumed_pdf_thl_parameters_host(d.wthlsec, d.sqrtw2, d.sqrtthl, d.thlsec, d.thl_first, d.w1_1, d.w1_2, d.skew_w, d.a, d.dothetal_skew, &d.thl1_1, &d.thl1_2, &d.thl2_1, &d.thl2_2, &d.sqrtthl2_1, &d.sqrtthl2_2);
+  shoc_assumed_pdf_thl_parameters_host(d.wthlsec, d.sqrtw2, d.sqrtthl, d.thlsec, d.thl_first, d.w1_1, d.w1_2, d.skew_w, d.a, d.thl_tol, d.w_thresh, &d.thl1_1, &d.thl1_2, &d.thl2_1, &d.thl2_2, &d.sqrtthl2_1, &d.sqrtthl2_2);
 }
 
 void shoc_assumed_pdf_qw_parameters(ShocAssumedPdfQwParametersData& d)
@@ -3143,6 +3143,35 @@ void shoc_assumed_pdf_vv_parameters_host(Real w_first, Real w_sec, Real w3var, R
   *w1_2 = t_h(3);
   *w2_1 = t_h(4);
   *w2_2 = t_h(5);
+}
+
+void shoc_assumed_pdf_thl_parameters_host(Real wthlsec, Real sqrtw2, Real sqrtthl, Real thlsec, Real thl_first, Real w1_1, Real w1_2, Real skew_w, Real a, Real thl_tol, Real w_thresh, Real* thl1_1, Real* thl1_2, Real* thl2_1, Real* thl2_2, Real* sqrtthl2_1, Real* sqrtthl2_2)
+{
+  using SHF = Functions<Real, DefaultDevice>;
+
+  using Spack   = typename SHF::Spack;
+  using view_1d = typename SHF::view_1d<Real>;
+
+  view_1d t_d("t_d", 6);
+  const auto t_h = Kokkos::create_mirror_view(t_d);
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+    Spack a_(a), skew_w_(skew_w), sqrtthl_(sqrtthl), sqrtw2_(sqrtw2), thl_first_(thl_first), thlsec_(thlsec), w1_1_(w1_1), w1_2_(w1_2), wthlsec_(wthlsec), sqrtthl2_1_, sqrtthl2_2_, thl1_1_, thl1_2_, thl2_1_, thl2_2_;
+    SHF::shoc_assumed_pdf_thl_parameters(wthlsec_, sqrtw2_, sqrtthl_, thlsec_, thl_first_, w1_1_, w1_2_, skew_w_, a_, thl_tol, w_thresh, thl1_1_, thl1_2_, thl2_1_, thl2_2_, sqrtthl2_1_, sqrtthl2_2_);
+    t_d(0) = sqrtthl2_1_[0];
+    t_d(1) = sqrtthl2_2_[0];
+    t_d(2) = thl1_1_[0];
+    t_d(3) = thl1_2_[0];
+    t_d(4) = thl2_1_[0];
+    t_d(5) = thl2_2_[0];
+  });
+  Kokkos::deep_copy(t_h, t_d);
+  *sqrtthl2_1 = t_h(0);
+  *sqrtthl2_2 = t_h(1);
+  *thl1_1 = t_h(2);
+  *thl1_2 = t_h(3);
+  *thl2_1 = t_h(4);
+  *thl2_2 = t_h(5);
 }
 
 } // namespace shoc

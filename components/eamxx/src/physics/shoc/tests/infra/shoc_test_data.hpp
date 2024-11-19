@@ -491,8 +491,7 @@ struct ShocAssumedPdfVvParametersData {
 
 struct ShocAssumedPdfThlParametersData {
   // Inputs
-  Real wthlsec, sqrtw2, sqrtthl, thlsec, thl_first, w1_1, w1_2, skew_w, a;
-  bool dothetal_skew;
+  Real wthlsec, sqrtw2, sqrtthl, thlsec, thl_first, w1_1, w1_2, skew_w, a, thl_tol, w_thresh;
 
   // Outputs
   Real thl1_1, thl1_2, thl2_1, thl2_2, sqrtthl2_1, sqrtthl2_2;
@@ -1104,6 +1103,7 @@ void shoc_assumed_pdf_tilde_to_real_host(Real w_first, Real sqrtw2, Real* w1);
 
 void shoc_assumed_pdf_vv_parameters_host(Real w_first, Real w_sec, Real w3var, Real w_tol_sqd, Real* skew_w, Real* w1_1, Real* w1_2, Real* w2_1, Real* w2_2, Real* a);
 
+void shoc_assumed_pdf_thl_parameters_host(Real wthlsec, Real sqrtw2, Real sqrtthl, Real thlsec, Real thl_first, Real w1_1, Real w1_2, Real skew_w, Real a, Real thl_tol, Real w_thresh, Real* thl1_1, Real* thl1_2, Real* thl2_1, Real* thl2_2, Real* sqrtthl2_1, Real* sqrtthl2_2);
 // end _host function decls
 
 }  // namespace shoc
