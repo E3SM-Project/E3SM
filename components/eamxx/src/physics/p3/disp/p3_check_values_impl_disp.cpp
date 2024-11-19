@@ -16,7 +16,7 @@ void Functions<Real, DefaultDevice>
   using ExeSpace = typename KT::ExeSpace;
   const Int nk_pack = ekat::npack<Spack>(nk);
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(nj, nk_pack);
-  
+
   Kokkos::parallel_for(
     "p3_check_values",
     policy, KOKKOS_LAMBDA(const MemberType& team) {
@@ -32,4 +32,3 @@ void Functions<Real, DefaultDevice>
 
 } // namespace p3
 } // namespace scream
-

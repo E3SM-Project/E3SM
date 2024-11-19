@@ -652,7 +652,10 @@ public:
         minmax_and_biharmonic();
       }
     }
+
+    GPTLstart("tl-at adv-n-limit");
     advect_and_limit();
+    GPTLstop("tl-at adv-n-limit");
     exchange_qdp_dss_var();
   }
 
@@ -667,6 +670,7 @@ private:
   void run_tracer_phase (const KernelVariables& kv) const {
     compute_qtens(kv);
     kv.team_barrier();
+
     if (m_data.limiter_option == 8) {
       limiter_optim_iter_full(kv);
       kv.team_barrier();
@@ -674,6 +678,7 @@ private:
       limiter_clip_and_sum(kv);
       kv.team_barrier();
     }
+
     apply_spheremp(kv);
   }
 

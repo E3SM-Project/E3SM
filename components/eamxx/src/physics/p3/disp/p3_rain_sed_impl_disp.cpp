@@ -45,11 +45,11 @@ void Functions<Real,DefaultDevice>
 
     // Rain sedimentation:  (adaptive substepping)
     rain_sedimentation(
-      ekat::subview(rho, i), ekat::subview(inv_rho, i), ekat::subview(rhofacr, i), ekat::subview(cld_frac_r, i), 
-      ekat::subview(inv_dz, i), ekat::subview(qr_incld, i), 
-      team, workspace, vn_table_vals, vm_table_vals, nk, ktop, kbot, kdir, dt, inv_dt, 
-      ekat::subview(qr, i), ekat::subview(nr, i), ekat::subview(nr_incld, i), ekat::subview(mu_r, i), 
-      ekat::subview(lamr, i), ekat::subview(precip_liq_flux, i), 
+      ekat::subview(rho, i), ekat::subview(inv_rho, i), ekat::subview(rhofacr, i), ekat::subview(cld_frac_r, i),
+      ekat::subview(inv_dz, i), ekat::subview(qr_incld, i),
+      team, workspace, vn_table_vals, vm_table_vals, nk, ktop, kbot, kdir, dt, inv_dt,
+      ekat::subview(qr, i), ekat::subview(nr, i), ekat::subview(nr_incld, i), ekat::subview(mu_r, i),
+      ekat::subview(lamr, i), ekat::subview(precip_liq_flux, i),
       ekat::subview(qr_tend, i), ekat::subview(nr_tend, i), precip_liq_surf(i), runtime_options);
   });
 

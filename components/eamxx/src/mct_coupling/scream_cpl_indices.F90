@@ -6,7 +6,7 @@ module scream_cpl_indices
   private
 
   ! Focus only on the ones that scream imports/exports (subsets of x2a and a2x)
-  integer, parameter, public :: num_scream_imports = 19
+  integer, parameter, public :: num_scream_imports = 24
   integer, parameter, public :: num_scream_exports = 17
   integer, public :: num_cpl_imports, num_cpl_exports, import_field_size, export_field_size
 
@@ -92,6 +92,11 @@ module scream_cpl_indices
     import_field_names(17) = 'icefrac'
     import_field_names(18) = 'fv'
     import_field_names(19) = 'ram1'
+    import_field_names(20) = 'sst'
+    import_field_names(21) = 'dstflx'
+    import_field_names(22) = 'dstflx'
+    import_field_names(23) = 'dstflx'
+    import_field_names(24) = 'dstflx'
 
     ! CPL indices
     import_cpl_indices(1)  = mct_avect_indexra(x2a,'Sx_avsdr')
@@ -113,10 +118,23 @@ module scream_cpl_indices
     import_cpl_indices(17) = mct_avect_indexra(x2a,'Sf_ifrac') 
     import_cpl_indices(18) = mct_avect_indexra(x2a,'Sl_fv')
     import_cpl_indices(19) = mct_avect_indexra(x2a,'Sl_ram1')
+    !sst
+    import_cpl_indices(20) = mct_avect_indexra(x2a,'So_t')
+    !dust fluxes
+    import_cpl_indices(21) = mct_avect_indexra(x2a,'Fall_flxdst1')
+    import_cpl_indices(22) = mct_avect_indexra(x2a,'Fall_flxdst2')
+    import_cpl_indices(23) = mct_avect_indexra(x2a,'Fall_flxdst3')
+    import_cpl_indices(24) = mct_avect_indexra(x2a,'Fall_flxdst4')
 
     ! Vector components
+    !(Faxx_taux and Faxx_tauy)
     import_vector_components(11) = 0
     import_vector_components(12) = 1
+    !(dust fluxes)
+    import_vector_components(21) = 0
+    import_vector_components(22) = 1
+    import_vector_components(23) = 2
+    import_vector_components(24) = 3
 
     ! Constant multiples
     import_constant_multiple(10) = -1

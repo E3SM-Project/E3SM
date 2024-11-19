@@ -217,8 +217,8 @@ contains
 
       if (.not. config_use_manufactured_solution) return
 
-      kx = 2.0_RKIND*pii / config_manufactured_solution_wavelength_x
-      ky = 2.0_RKIND*pii / config_manufactured_solution_wavelength_y
+      kx = 2.0_RKIND*pi / config_manufactured_solution_wavelength_x
+      ky = 2.0_RKIND*pi / config_manufactured_solution_wavelength_y
 
       eta0 = config_manufactured_solution_amplitude
 

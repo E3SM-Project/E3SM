@@ -42,6 +42,9 @@ endif()
 # we can assume that an MPI case with ADIOS2_ROOT set is probably
 # using adios.
 if (NOT MPILIB STREQUAL "mpi-serial" AND DEFINED ENV{ADIOS2_ROOT})
+  if(DEFINED ENV{BLOSC2_ROOT})
+    set(ENV{Blosc2_DIR} "$ENV{BLOSC2_ROOT}")
+  endif()
   find_package(MPI REQUIRED COMPONENTS C)
   find_package(ADIOS2 REQUIRED COMPONENTS C)
   list(APPEND PIOLIBS adios2::adios2)

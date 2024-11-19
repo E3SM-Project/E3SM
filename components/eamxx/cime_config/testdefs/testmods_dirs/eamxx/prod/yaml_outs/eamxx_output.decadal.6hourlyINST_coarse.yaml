@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-filename_prefix: scream_output.decadal.6hourlyINST_coarse.h
+filename_prefix: eamxx_output.decadal.6hourlyINST_coarse.h
 iotype: pnetcdf
 Averaging Type: Instant
 Max Snapshots Per File: 4  # one file per day

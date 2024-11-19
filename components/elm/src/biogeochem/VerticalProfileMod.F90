@@ -25,9 +25,9 @@ module VerticalProfileMod
   logical , public :: exponential_rooting_profile = .true.
   logical , public :: pftspecific_rootingprofile = .true.
   ! how steep profile is for root C inputs (1/ e-folding depth) (1/m)
-  real(r8), public :: rootprof_exp  = 3.       
+  real(r8), public :: rootprof_exp  = 3._r8 
   ! how steep profile is for surface components (1/ e_folding depth) (1/m)
-  real(r8), public :: surfprof_exp  = 10.      
+  real(r8), public :: surfprof_exp  = 10._r8      
   !-----------------------------------------------------------------------
 
 contains
@@ -83,7 +83,8 @@ contains
     real(r8) :: ndep_prof_sum
     real(r8) :: nfixation_prof_sum
     real(r8) :: pdep_prof_sum
-    real(r8) :: delta = 1.e-10
+    real(r8) :: delta = 1.e-10_r8
+    real(r8), parameter :: smallparameter = tiny(1._r8)
     character(len=32) :: subname = 'decomp_vertprofiles'
     !-----------------------------------------------------------------------
 
@@ -191,7 +192,7 @@ contains
                   surface_prof_tot = surface_prof_tot + surface_prof(j) * dzsoi_decomp(j)
                end if
             end do
-            if ( (altmax_lastyear_indx(c) > 0) .and. (rootfr_tot > 0._r8) .and. (surface_prof_tot > 0._r8) ) then
+            if ( (altmax_lastyear_indx(c) > 0) .and. (rootfr_tot > smallparameter) .and. (surface_prof_tot > smallparameter) ) then
                ! where there is not permafrost extending to the surface, integrate the profiles over the active layer
                ! this is equivalnet to integrating over all soil layers outside of permafrost regions
                do j = 1, min(max(altmax_lastyear_indx(c), 1), nlevdecomp)
@@ -212,10 +213,10 @@ contains
                end do
             else
                ! if fully frozen, or no roots, put everything in the top layer
-               froot_prof(p,1) = 1./dzsoi_decomp(1)
-               croot_prof(p,1) = 1./dzsoi_decomp(1)
-               leaf_prof(p,1) = 1./dzsoi_decomp(1)
-               stem_prof(p,1) = 1./dzsoi_decomp(1)
+               froot_prof(p,1) = 1._r8/dzsoi_decomp(1)
+               croot_prof(p,1) = 1._r8/dzsoi_decomp(1)
+               leaf_prof(p,1) = 1._r8/dzsoi_decomp(1)
+               stem_prof(p,1) = 1._r8/dzsoi_decomp(1)
             endif
 
          end do
@@ -250,19 +251,19 @@ contains
                surface_prof_tot = surface_prof_tot + surface_prof(j) * dzsoi_decomp(j)
             end do
             if(col_pp%is_fates(c))then
-               if ( (altmax_lastyear_indx(c) > 0) .and. (surface_prof_tot > 0._r8) ) then
+               if ( (altmax_lastyear_indx(c) > 0) .and. (surface_prof_tot > smallparameter) ) then
                   do j = 1,min(alt_ind, nlevbed)
                      nfixation_prof(c,j) = surface_prof(j)/ surface_prof_tot
                      ndep_prof(c,j) = surface_prof(j)/ surface_prof_tot
                      pdep_prof(c,j) = surface_prof(j)/ surface_prof_tot
                   end do
                else
-                  nfixation_prof(c,1) = 1./dzsoi_decomp(1)
-                  ndep_prof(c,1) = 1./dzsoi_decomp(1)
-                  pdep_prof(c,1) = 1./dzsoi_decomp(1)
+                  nfixation_prof(c,1) = 1._r8/dzsoi_decomp(1)
+                  ndep_prof(c,1) = 1._r8/dzsoi_decomp(1)
+                  pdep_prof(c,1) = 1._r8/dzsoi_decomp(1)
                endif
             else
-               if ( (altmax_lastyear_indx(c) > 0) .and. (rootfr_tot > 0._r8) .and. (surface_prof_tot > 0._r8) ) then
+               if ( (altmax_lastyear_indx(c) > 0) .and. (rootfr_tot > smallparameter) .and. (surface_prof_tot > smallparameter) ) then
                   do j = 1,  min(max(altmax_lastyear_indx(c), 1), nlevdecomp)
                      nfixation_prof(c,j) = col_cinput_rootfr(c,j) / rootfr_tot
                      if (j <= nlevbed) then
@@ -271,9 +272,9 @@ contains
                      end if
                   end do
                else
-                  nfixation_prof(c,1) = 1./dzsoi_decomp(1)
-                  ndep_prof(c,1) = 1./dzsoi_decomp(1)
-                  pdep_prof(c,1) = 1./dzsoi_decomp(1) 
+                  nfixation_prof(c,1) = 1._r8/dzsoi_decomp(1)
+                  ndep_prof(c,1) = 1._r8/dzsoi_decomp(1)
+                  pdep_prof(c,1) = 1._r8/dzsoi_decomp(1) 
                endif
             end if
          end do
@@ -294,9 +295,9 @@ contains
       ! check to make sure integral of all profiles = 1.
       do fc = 1,num_soilc
          c = filter_soilc(fc)
-         ndep_prof_sum = 0.
-         nfixation_prof_sum = 0.
-         pdep_prof_sum = 0.
+         ndep_prof_sum = 0._r8
+         nfixation_prof_sum = 0._r8
+         pdep_prof_sum = 0._r8
          do j = 1, nlevdecomp
             ndep_prof_sum = ndep_prof_sum + ndep_prof(c,j) *  dzsoi_decomp(j)
             nfixation_prof_sum = nfixation_prof_sum + nfixation_prof(c,j) *  dzsoi_decomp(j)
@@ -324,10 +325,10 @@ contains
 
       do fp = 1,num_soilp
          p = filter_soilp(fp)
-         froot_prof_sum = 0.
-         croot_prof_sum = 0.
-         leaf_prof_sum = 0.
-         stem_prof_sum = 0.
+         froot_prof_sum = 0._r8
+         croot_prof_sum = 0._r8
+         leaf_prof_sum = 0._r8
+         stem_prof_sum = 0._r8
          do j = 1, nlevdecomp
             froot_prof_sum = froot_prof_sum + froot_prof(p,j) *  dzsoi_decomp(j)
             croot_prof_sum = croot_prof_sum + croot_prof(p,j) *  dzsoi_decomp(j)
@@ -336,7 +337,19 @@ contains
          end do
          if ( ( abs(froot_prof_sum - 1._r8) > delta ) .or.  ( abs(croot_prof_sum - 1._r8) > delta ) .or. &
               ( abs(stem_prof_sum - 1._r8) > delta ) .or.  ( abs(leaf_prof_sum - 1._r8) > delta ) ) then
+            c = veg_pp%column(p)
             write(iulog, *) 'profile sums: ', froot_prof_sum, croot_prof_sum, leaf_prof_sum, stem_prof_sum
+            write(iulog, *) 'c: ',c
+            write(iulog, *) 'altmax_lastyear_indx: ', altmax_lastyear_indx(c)
+            write(iulog, *) 'cinput_rootfr: ', col_cinput_rootfr(c,:)
+            write(iulog, *) 'dzsoi_decomp: ', dzsoi_decomp(:)
+            write(iulog, *) 'surface_prof: ', surface_prof(:)
+            write(iulog, *) 'p, itype(p), wtcol(p): ', p, veg_pp%itype(p), veg_pp%wtcol(p)
+            write(iulog, *) 'cinput_rootfr(p,:): ', cinput_rootfr(p,:)
+            write(iulog,*)  'croot_prof(p,:): ',croot_prof(p,:)
+            write(iulog,*)  'froot_prof(p,:): ',froot_prof(p,:)
+            write(iulog,*)  'leaf_prof(p,:): ',leaf_prof(p,:)
+            write(iulog,*)  'stem_prof(p,:): ',stem_prof(p,:)
             call endrun(msg=' ERROR: sum-1 > delta'//errMsg(__FILE__, __LINE__))
          endif
       end do

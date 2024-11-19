@@ -33,6 +33,7 @@ module ocn_mesh
    use mpas_log
 
    use ocn_config
+   use ocn_constants
 
    implicit none
    private
@@ -1792,7 +1793,7 @@ contains
                ! neighboring cells are circles for this calculation.
                cellWidth = 2.0_RKIND* &
                            sqrt((areaCell(cell1) + areaCell(cell2))/ &
-                                2.0_RKIND/pii)
+                                2.0_RKIND/pi)
                meshScalingDel2(iEdge) =  cellWidth/ &
                                          config_hmix_ref_cell_width
                meshScalingDel4(iEdge) = (cellWidth/ &

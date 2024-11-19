@@ -137,8 +137,8 @@ CONTAINS
     ! TODO: read this from the namelist?
     character(len=256)                :: yaml_fname = "./data/scream_input.yaml"
     character(kind=c_char,len=256), target :: yaml_fname_c, atm_log_fname_c
-    character(len=256) :: caseid, username, hostname, rest_caseid
-    character(kind=c_char,len=256), target :: caseid_c, username_c, hostname_c, calendar_c, rest_caseid_c
+    character(len=256) :: caseid, username, hostname, rest_caseid, versionid
+    character(kind=c_char,len=256), target :: caseid_c, username_c, hostname_c, calendar_c, rest_caseid_c, versionid_c
     integer (kind=c_int) :: run_type_c
     !-------------------------------------------------------------------------------
 
@@ -151,7 +151,8 @@ CONTAINS
          infodata=infodata)
     call seq_infodata_getData(infodata, atm_phase=phase, start_type=run_type, &
                               username=username, case_name=caseid, &
-                              rest_case_name=rest_caseid, hostname=hostname)
+                              rest_case_name=rest_caseid, hostname=hostname, &
+                              model_version=versionid)
     call seq_infodata_PutData(infodata, atm_aero=.true.)
     call seq_infodata_PutData(infodata, atm_prognostic=.true.)
 
@@ -213,10 +214,11 @@ CONTAINS
     call string_f2c(trim(rest_caseid),rest_caseid_c)
     call string_f2c(trim(hostname),hostname_c)
     call string_f2c(trim(username),username_c)
+    call string_f2c(trim(versionid),versionid_c)
     call scream_create_atm_instance (mpicom_atm, ATM_ID, yaml_fname_c, atm_log_fname_c, run_type_c, &
                           INT(cur_ymd,kind=C_INT),  INT(cur_tod,kind=C_INT), &
                           INT(case_start_ymd,kind=C_INT), INT(case_start_tod,kind=C_INT), &
-                          calendar_c, caseid_c, rest_caseid_c, hostname_c, username_c)
+                          calendar_c, caseid_c, rest_caseid_c, hostname_c, username_c, versionid_c)
 
     ! Init MCT gsMap
     call atm_Set_gsMap_mct (mpicom_atm, ATM_ID, gsMap_atm)

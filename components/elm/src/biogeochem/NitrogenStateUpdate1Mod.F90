@@ -130,7 +130,7 @@ contains
     associate(                                                                                           &
          ivt                   => veg_pp%itype                                , & ! Input:  [integer  (:)     ]  pft vegetation type
 
-         woody                 => veg_vp%woody                         , & ! Input:  [real(r8) (:)     ]  binary flag for woody lifeform (1=woody, 0=not woody)
+         woody                 => veg_vp%woody                         , & ! Input:  [real(r8) (:)     ]  woody lifeform flag (0 = non-woody, 1 = tree, 2 = shrub)
 
          cascade_donor_pool    => decomp_cascade_con%cascade_donor_pool    , & ! Input:  [integer  (:)     ]  which pool is C taken from for a given decomposition step
          cascade_receiver_pool => decomp_cascade_con%cascade_receiver_pool , & ! Input:  [integer  (:)     ]  which pool is C added to for a given decomposition step
@@ -147,7 +147,7 @@ contains
          do j = 1, nlevdecomp
             do fc = 1,num_soilc
                c = filter_soilc(fc)
-               
+
                ! N deposition and fixation (put all into NH4 pool)
                col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%ndep_to_sminn(c)*dt * ndep_prof(c,j)
                col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%nfix_to_sminn(c)*dt * nfixation_prof(c,j)
@@ -219,7 +219,7 @@ contains
                end do
             end if
          end do
-         
+
          do j = 1, nlevdecomp
             ! column loop
             do fc = 1,num_soilc
@@ -254,8 +254,8 @@ contains
 
             end do ! end of column loop
          end do
-         
-      endif  !end if is_active_betr_bgc 
+
+      endif  !end if is_active_betr_bgc
 
       ! forest fertilization
       call get_curr_date(kyr, kmo, kda, mcsec)
