@@ -219,7 +219,7 @@ void shoc_assumed_pdf_inplume_correlations(ShocAssumedPdfInplumeCorrelationsData
 void shoc_assumed_pdf_compute_temperature(ShocAssumedPdfComputeTemperatureData& d)
 {
   shoc_init(1); // single level function
-  //shoc_assumed_pdf_compute_temperature_host(d.thl1, d.basepres, d.pval, &d.tl1);
+  shoc_assumed_pdf_compute_temperature_host(d.thl1, d.pval, &d.tl1);
 }
 
 void shoc_assumed_pdf_compute_qs(ShocAssumedPdfComputeQsData& d)
@@ -3220,6 +3220,25 @@ void shoc_assumed_pdf_inplume_correlations_host(Real sqrtqw2_1, Real sqrtthl2_1,
   });
   Kokkos::deep_copy(t_h, t_d);
   *r_qwthl_1 = t_h(0);
+}
+
+void shoc_assumed_pdf_compute_temperature_host(Real thl1, Real pval, Real* tl1)
+{
+  using SHF = Functions<Real, DefaultDevice>;
+
+  using Spack   = typename SHF::Spack;
+  using view_1d = typename SHF::view_1d<Real>;
+
+  view_1d t_d("t_d", 1);
+  const auto t_h = Kokkos::create_mirror_view(t_d);
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+    Spack pval_(pval), thl1_(thl1), tl1_;
+    SHF::shoc_assumed_pdf_compute_temperature(thl1_, pval_, tl1_);
+    t_d(0) = tl1_[0];
+  });
+  Kokkos::deep_copy(t_h, t_d);
+  *tl1 = t_h(0);
 }
 
 } // namespace shoc
