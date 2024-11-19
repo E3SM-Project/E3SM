@@ -499,7 +499,7 @@ struct ShocAssumedPdfThlParametersData {
 
 struct ShocAssumedPdfQwParametersData {
   // Inputs
-  Real wqwsec, sqrtw2, skew_w, sqrtqt, qwsec, w1_2, w1_1, qw_first, a;
+  Real wqwsec, sqrtw2, skew_w, sqrtqt, qwsec, w1_2, w1_1, qw_first, a, rt_tol, w_thresh;
 
   // Outputs
   Real qw1_1, qw1_2, qw2_1, qw2_2, sqrtqw2_1, sqrtqw2_2;
@@ -1104,6 +1104,9 @@ void shoc_assumed_pdf_tilde_to_real_host(Real w_first, Real sqrtw2, Real* w1);
 void shoc_assumed_pdf_vv_parameters_host(Real w_first, Real w_sec, Real w3var, Real w_tol_sqd, Real* skew_w, Real* w1_1, Real* w1_2, Real* w2_1, Real* w2_2, Real* a);
 
 void shoc_assumed_pdf_thl_parameters_host(Real wthlsec, Real sqrtw2, Real sqrtthl, Real thlsec, Real thl_first, Real w1_1, Real w1_2, Real skew_w, Real a, Real thl_tol, Real w_thresh, Real* thl1_1, Real* thl1_2, Real* thl2_1, Real* thl2_2, Real* sqrtthl2_1, Real* sqrtthl2_2);
+
+void shoc_assumed_pdf_qw_parameters_host(Real wqwsec, Real sqrtw2, Real skew_w, Real sqrtqt, Real qwsec, Real w1_2, Real w1_1, Real qw_first, Real a, Real rt_tol, Real w_thresh, Real* qw1_1, Real* qw1_2, Real* qw2_1, Real* qw2_2, Real* sqrtqw2_1, Real* sqrtqw2_2);
+
 // end _host function decls
 
 }  // namespace shoc

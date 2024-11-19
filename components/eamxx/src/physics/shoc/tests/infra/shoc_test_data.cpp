@@ -207,7 +207,7 @@ void shoc_assumed_pdf_thl_parameters(ShocAssumedPdfThlParametersData& d)
 void shoc_assumed_pdf_qw_parameters(ShocAssumedPdfQwParametersData& d)
 {
   shoc_init(1); // single level function
-  //shoc_assumed_pdf_qw_parameters_host(d.wqwsec, d.sqrtw2, d.skew_w, d.sqrtqt, d.qwsec, d.w1_2, d.w1_1, d.qw_first, d.a, &d.qw1_1, &d.qw1_2, &d.qw2_1, &d.qw2_2, &d.sqrtqw2_1, &d.sqrtqw2_2);
+  shoc_assumed_pdf_qw_parameters_host(d.wqwsec, d.sqrtw2, d.skew_w, d.sqrtqt, d.qwsec, d.w1_2, d.w1_1, d.qw_first, d.a, d.rt_tol, d.w_thresh, &d.qw1_1, &d.qw1_2, &d.qw2_1, &d.qw2_2, &d.sqrtqw2_1, &d.sqrtqw2_2);
 }
 
 void shoc_assumed_pdf_inplume_correlations(ShocAssumedPdfInplumeCorrelationsData& d)
@@ -3172,6 +3172,35 @@ void shoc_assumed_pdf_thl_parameters_host(Real wthlsec, Real sqrtw2, Real sqrtth
   *thl1_2 = t_h(3);
   *thl2_1 = t_h(4);
   *thl2_2 = t_h(5);
+}
+
+void shoc_assumed_pdf_qw_parameters_host(Real wqwsec, Real sqrtw2, Real skew_w, Real sqrtqt, Real qwsec, Real w1_2, Real w1_1, Real qw_first, Real a, Real rt_tol, Real w_thresh, Real* qw1_1, Real* qw1_2, Real* qw2_1, Real* qw2_2, Real* sqrtqw2_1, Real* sqrtqw2_2)
+{
+  using SHF = Functions<Real, DefaultDevice>;
+
+  using Spack   = typename SHF::Spack;
+  using view_1d = typename SHF::view_1d<Real>;
+
+  view_1d t_d("t_d", 6);
+  const auto t_h = Kokkos::create_mirror_view(t_d);
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+    Spack a_(a), qw_first_(qw_first), qwsec_(qwsec), skew_w_(skew_w), sqrtqt_(sqrtqt), sqrtw2_(sqrtw2), w1_1_(w1_1), w1_2_(w1_2), wqwsec_(wqwsec), qw1_1_, qw1_2_, qw2_1_, qw2_2_, sqrtqw2_1_, sqrtqw2_2_;
+    SHF::shoc_assumed_pdf_qw_parameters(wqwsec_, sqrtw2_, skew_w_, sqrtqt_, qwsec_, w1_2_, w1_1_, qw_first_, a_, rt_tol, w_thresh, qw1_1_, qw1_2_, qw2_1_, qw2_2_, sqrtqw2_1_, sqrtqw2_2_);
+    t_d(0) = qw1_1_[0];
+    t_d(1) = qw1_2_[0];
+    t_d(2) = qw2_1_[0];
+    t_d(3) = qw2_2_[0];
+    t_d(4) = sqrtqw2_1_[0];
+    t_d(5) = sqrtqw2_2_[0];
+  });
+  Kokkos::deep_copy(t_h, t_d);
+  *qw1_1 = t_h(0);
+  *qw1_2 = t_h(1);
+  *qw2_1 = t_h(2);
+  *qw2_2 = t_h(3);
+  *sqrtqw2_1 = t_h(4);
+  *sqrtqw2_2 = t_h(5);
 }
 
 } // namespace shoc
