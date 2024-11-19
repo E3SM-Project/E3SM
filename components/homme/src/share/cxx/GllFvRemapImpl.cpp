@@ -142,7 +142,7 @@ void GllFvRemapImpl
                           " nf must be > 1.", Errors::err_not_implemented);
 
   auto& sp = Context::singleton().get<SimulationParams>();
-  m_data.use_moisture = sp.moisture == MoistDry::MOIST;
+  m_data.use_moisture = sp.use_moisture;
   // Only in the unit test gllfvremap_ut does theta_hydrostatic_mode not already
   // == sp.theta_hydrostatic_mode.
   m_data.theta_hydrostatic_mode = sp.theta_hydrostatic_mode = theta_hydrostatic_mode;

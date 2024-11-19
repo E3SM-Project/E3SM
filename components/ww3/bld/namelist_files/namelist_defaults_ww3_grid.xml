@@ -11,9 +11,9 @@ variables.  Values that depend on the model configuration use
 attributes to express the dependency.  
 -->
 
-<spectrum%xfr>1.07</spectrum%xfr>
+<spectrum%xfr>1.1</spectrum%xfr>
 <spectrum%freq1>0.035</spectrum%freq1>
-<spectrum%nk>50</spectrum%nk>
+<spectrum%nk>36</spectrum%nk>
 
 <spectrum%nth>36</spectrum%nth>
 <spectrum%thoff>0.5</spectrum%thoff>
@@ -30,7 +30,7 @@ attributes to express the dependency.
 <timesteps%dtkth>450.0</timesteps%dtkth>
 <timesteps%dtmin>30.0</timesteps%dtmin>
 
-<grid%name>wQU225EC30to60E2r2</grid%name>
+<grid%name>wQU225Icos30E3r5</grid%name>
 <grid%nml>ww3_grid_namelists.nml</grid%nml>
 <grid%type>UNST</grid%type>
 <grid%coord>SPHE</grid%coord>

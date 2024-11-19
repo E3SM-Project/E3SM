@@ -25,6 +25,8 @@ class MAMMicrophysics final : public scream::AtmosphereProcess {
 
   using view_1d_host = typename KT::view_1d<Real>::HostMirror;
 
+  using view_int_2d       = typename KT::template view_2d<int>;
+
   // a thread team dispatched to a single vertical column
   using ThreadTeam = mam4::ThreadTeam;
 
@@ -238,6 +240,8 @@ class MAMMicrophysics final : public scream::AtmosphereProcess {
 
   view_1d_host acos_cosine_zenith_host_;
   view_1d acos_cosine_zenith_;
+
+  view_int_2d index_season_lai_;
 
 };  // MAMMicrophysics
 

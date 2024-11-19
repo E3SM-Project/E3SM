@@ -807,7 +807,8 @@ void AtmosphereDriver::
 set_provenance_data (std::string caseid,
                      std::string rest_caseid,
                      std::string hostname,
-                     std::string username)
+                     std::string username,
+		     std::string versionid)
 {
 #ifdef SCREAM_CIME_BUILD
   // Check the inputs are valid
@@ -816,6 +817,7 @@ set_provenance_data (std::string caseid,
       "Error! Invalid restart case id: " + rest_caseid + "\n");
   EKAT_REQUIRE_MSG (hostname!="", "Error! Invalid hostname: " + hostname + "\n");
   EKAT_REQUIRE_MSG (username!="", "Error! Invalid username: " + username + "\n");
+  EKAT_REQUIRE_MSG (versionid!="", "Error! Invalid version: " + versionid + "\n");
 #else
   caseid = rest_caseid = m_casename;
   char* user = new char[32];
@@ -835,13 +837,14 @@ set_provenance_data (std::string caseid,
   }
   delete[] user;
   delete[] host;
+  versionid = EAMXX_GIT_VERSION;
 #endif
   auto& provenance = m_atm_params.sublist("provenance");
   provenance.set("caseid",caseid);
   provenance.set("rest_caseid",rest_caseid);
   provenance.set("hostname",hostname);
   provenance.set("username",username);
-  provenance.set("version",std::string(EAMXX_GIT_VERSION));
+  provenance.set("git_version",versionid);
 }
 
 void AtmosphereDriver::

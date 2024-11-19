@@ -54,9 +54,22 @@ jobs:
           pattern=$(IFS=\|; echo "${paths[*]}")
 
           # Use the GitHub API to get the list of changed files
-          response=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.number }}/files")
-          changed_files=$(echo "$response" | grep -o '"filename": *"[^"]*"' | sed 's/"filename": *//; s/"//g')
+          # There are page size limits, so do it in chunks
+          page=1
+          while true; do
+            response=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              "https://api.github.com/repos/E3SM-Project/scream/pulls/${{ github.event.number }}/files?per_page=100&page=$page")
+
+            # Check if the response is empty, and break if it is
+            [ -z "$response" ] && break
+
+            changed_files+=$(echo "$response" | grep -o '"filename": *"[^"]*"' | sed 's/"filename": *//; s/"//g')$'\n'
+
+            # Check if there are more pages, and quite if there aren't
+            [[ $(echo "$response" | jq '. | length') -lt 100 ]] && break
+
+            page=$((page + 1))
+          done
 
           # Check for matches and echo the matching files (or "" if none)
           matching_files=$(echo "$changed_files" | grep -E "^($pattern)" || echo "")

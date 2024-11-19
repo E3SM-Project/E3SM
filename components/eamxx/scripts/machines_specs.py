@@ -221,9 +221,19 @@ class GHCISNLCuda(Machine):
     concrete = True
     @classmethod
     def setup(cls):
-        super().setup_base(name="ghci-snl-cuda",num_bld_res=16,num_run_res=1)
+        super().setup_base(name="ghci-snl-cuda")
         cls.baselines_dir = "/projects/e3sm/baselines/scream/ghci-snl-cuda"
         cls.gpu_arch = "cuda"
+        cls.num_run_res = int(run_cmd_no_fail("nvidia-smi --query-gpu=name --format=csv,noheader | wc -l"))
+
+###############################################################################
+class GHCIOCI(Machine):
+###############################################################################
+    concrete = True
+    @classmethod
+    def setup(cls):
+        super().setup_base(name="ghci-oci")
+        cls.env_setup = [f"eval $({CIMEROOT}/CIME/Tools/get_case_env -c SMS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci-oci_gnu)"]
 
 ###############################################################################
 class Lassen(Machine):
