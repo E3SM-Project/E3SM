@@ -195,49 +195,6 @@ struct DpInverseData : public PhysicsTestData {
   PTD_STD_DEF(DpInverseData, 2, shcol, nlev);
 };
 
-struct SfcFluxesData : public PhysicsTestData {
-  // Inputs
-  Int shcol, num_tracer;
-  Real dtime;
-  Real *rho_zi_sfc, *rdp_zt_sfc, *wthl_sfc, *wqw_sfc, *wtke_sfc, *wtracer_sfc;
-
-  // Inputs/Outputs
-  Real *thetal, *qw, *tke, *wtracer;
-
-  SfcFluxesData(Int shcol_, Int num_tracer_, Real dtime_) :
-    PhysicsTestData({{ shcol_ }, { shcol_, num_tracer_ }}, {{ &rho_zi_sfc, &rdp_zt_sfc, &wthl_sfc, &wqw_sfc, &wtke_sfc, &thetal, &qw, &tke }, { &wtracer_sfc, &wtracer }}), shcol(shcol_), num_tracer(num_tracer_), dtime(dtime_) {}
-
-  PTD_STD_DEF(SfcFluxesData, 3, shcol, num_tracer, dtime);
-};
-
-struct ImpliSrfStressTermData : public PhysicsTestData {
-  // Inputs
-  Int shcol;
-  Real *rho_zi_sfc, *uw_sfc, *vw_sfc, *u_wind_sfc, *v_wind_sfc;
-
-  // Outputs
-  Real *ksrf;
-
-  ImpliSrfStressTermData(Int shcol_) :
-    PhysicsTestData({{ shcol_ }}, {{ &rho_zi_sfc, &uw_sfc, &vw_sfc, &u_wind_sfc, &v_wind_sfc, &ksrf }}), shcol(shcol_) {}
-
-  PTD_STD_DEF(ImpliSrfStressTermData, 1, shcol);
-};
-
-struct TkeSrfFluxTermData : public PhysicsTestData {
-  // Inputs
-  Int shcol;
-  Real *uw_sfc, *vw_sfc;
-
-  // Outputs
-  Real *wtke_sfc;
-
-  TkeSrfFluxTermData(Int shcol_) :
-    PhysicsTestData({{ shcol_ }}, {{ &uw_sfc, &vw_sfc, &wtke_sfc }}), shcol(shcol_) {}
-
-  PTD_STD_DEF(TkeSrfFluxTermData, 1, shcol);
-};
-
 struct IntegColumnStabilityData : public PhysicsTestData {
   // Inputs
   Int shcol, nlev;
@@ -429,54 +386,6 @@ struct CheckLengthScaleShocLengthData : public PhysicsTestData {
     PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }}, {{ &host_dx, &host_dy }, { &shoc_mix }}), shcol(shcol_), nlev(nlev_) {}
 
   PTD_STD_DEF(CheckLengthScaleShocLengthData, 2, shcol, nlev);
-};
-
-struct FtermsInputForDiagThirdShocMomentData {
-  // Inputs
-  Real dz_zi, dz_zt, dz_zt_kc, isotropy_zi, brunt_zi, thetal_zi;
-
-  // Outputs
-  Real thedz, thedz2, iso, isosqrd, buoy_sgs2, bet2;
-};
-
-struct AaTermsDiagThirdShocMomentData {
-  // Inputs
-  Real omega0, omega1, omega2, x0, x1, y0, y1;
-
-  // Outputs
-  Real aa0, aa1;
-};
-
-struct F0ToF5DiagThirdShocMomentData {
-  // Inputs
-  Real thedz, thedz2, bet2, iso, isosqrd, wthl_sec, wthl_sec_kc, wthl_sec_kb, thl_sec_kc, thl_sec_kb, w_sec, w_sec_kc, w_sec_zi, tke, tke_kc;
-
-  // Outputs
-  Real f0, f1, f2, f3, f4, f5;
-};
-
-struct OmegaTermsDiagThirdShocMomentData {
-  // Inputs
-  Real buoy_sgs2, f3, f4;
-
-  // Outputs
-  Real omega0, omega1, omega2;
-};
-
-struct XYTermsDiagThirdShocMomentData {
-  // Inputs
-  Real buoy_sgs2, f0, f1, f2;
-
-  // Outputs
-  Real x0, y0, x1, y1;
-};
-
-struct W3DiagThirdShocMomentData {
-  // Inputs
-  Real aa0, aa1, x0, x1, f5;
-
-  // Outputs
-  Real w3;
 };
 
 struct ClippingDiagThirdShocMomentsData : public PhysicsTestData {
@@ -1035,9 +944,6 @@ void calc_shoc_vertflux                             (CalcShocVertfluxData& d);
 void calc_shoc_varorcovar                           (CalcShocVarorcovarData& d);
 void compute_tmpi                                   (ComputeTmpiData& d);
 void dp_inverse                                     (DpInverseData& d);
-void sfc_fluxes                                     (SfcFluxesData& d);
-void impli_srf_stress_term                          (ImpliSrfStressTermData& d);
-void tke_srf_flux_term                              (TkeSrfFluxTermData& d);
 void integ_column_stability                         (IntegColumnStabilityData& d);
 void check_tke                                      (CheckTkeData& d);
 void shoc_tke                                       (ShocTkeData& d);
@@ -1050,12 +956,6 @@ void compute_brunt_shoc_length                      (ComputeBruntShocLengthData&
 void compute_l_inf_shoc_length                      (ComputeLInfShocLengthData& d);
 void compute_shoc_mix_shoc_length                   (ComputeShocMixShocLengthData& d);
 void check_length_scale_shoc_length                 (CheckLengthScaleShocLengthData& d);
-void fterms_input_for_diag_third_shoc_moment        (FtermsInputForDiagThirdShocMomentData& d);
-void aa_terms_diag_third_shoc_moment                (AaTermsDiagThirdShocMomentData& d);
-void f0_to_f5_diag_third_shoc_moment                (F0ToF5DiagThirdShocMomentData& d);
-void omega_terms_diag_third_shoc_moment             (OmegaTermsDiagThirdShocMomentData& d);
-void x_y_terms_diag_third_shoc_moment               (XYTermsDiagThirdShocMomentData& d);
-void w3_diag_third_shoc_moment                      (W3DiagThirdShocMomentData& d);
 void clipping_diag_third_shoc_moments               (ClippingDiagThirdShocMomentsData& d);
 void diag_second_moments_srf                        (DiagSecondMomentsSrfData& d);
 void linear_interp                                  (LinearInterpData& d);

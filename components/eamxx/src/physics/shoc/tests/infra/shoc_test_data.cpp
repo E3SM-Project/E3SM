@@ -57,187 +57,133 @@ void shoc_energy_integrals(ShocEnergyIntegralsData& d)
 void calc_shoc_vertflux(CalcShocVertfluxData& d)
 {
   shoc_init(d.nlev);
-  //calc_shoc_vertflux_host(d.shcol, d.nlev, d.nlevi, d.tkh_zi, d.dz_zi, d.invar, d.vertflux);
+  calc_shoc_vertflux_host(d.shcol, d.nlev, d.nlevi, d.tkh_zi, d.dz_zi, d.invar, d.vertflux);
 }
 
 void calc_shoc_varorcovar(CalcShocVarorcovarData& d)
 {
   shoc_init(d.nlev);
-  //calc_shoc_varorcovar_host(d.shcol, d.nlev, d.nlevi, d.tunefac, d.isotropy_zi, d.tkh_zi, d.dz_zi, d.invar1, d.invar2, d.varorcovar);
+  calc_shoc_varorcovar_host(d.shcol, d.nlev, d.nlevi, d.tunefac, d.isotropy_zi, d.tkh_zi, d.dz_zi, d.invar1, d.invar2, d.varorcovar);
 }
 
 void compute_tmpi(ComputeTmpiData& d)
 {
   shoc_init(d.nlevi - 1); // nlev = nlevi - 1
-  //compute_tmpi_host(d.nlevi, d.shcol, d.dtime, d.rho_zi, d.dz_zi, d.tmpi);
+  compute_tmpi_host(d.nlevi, d.shcol, d.dtime, d.rho_zi, d.dz_zi, d.tmpi);
 }
 
 void dp_inverse(DpInverseData& d)
 {
   shoc_init(d.nlev);
-  //dp_inverse_host(d.nlev, d.shcol, d.rho_zt, d.dz_zt, d.rdp_zt);
-}
-
-void sfc_fluxes(SfcFluxesData& d)
-{
-  shoc_init(1); // single layer function
-  //sfc_fluxes_host(d.shcol, d.num_tracer, d.dtime, d.rho_zi_sfc, d.rdp_zt_sfc, d.wthl_sfc, d.wqw_sfc, d.wtke_sfc, d.wtracer_sfc, d.thetal, d.qw, d.tke, d.wtracer);
-}
-
-void impli_srf_stress_term(ImpliSrfStressTermData& d)
-{
-  shoc_init(1); // single layer function
-  //impli_srf_stress_term_host(d.shcol, d.rho_zi_sfc, d.uw_sfc, d.vw_sfc, d.u_wind_sfc, d.v_wind_sfc, d.ksrf);
-}
-
-void tke_srf_flux_term(TkeSrfFluxTermData& d)
-{
-  shoc_init(1); // single layer function
-  //tke_srf_flux_term_host(d.shcol, d.uw_sfc, d.vw_sfc, d.wtke_sfc);
+  dp_inverse_host(d.nlev, d.shcol, d.rho_zt, d.dz_zt, d.rdp_zt);
 }
 
 void integ_column_stability(IntegColumnStabilityData& d)
 {
   shoc_init(d.nlev);
-  //integ_column_stability_host(d.nlev, d.shcol, d.dz_zt, d.pres, d.brunt, d.brunt_int);
+  integ_column_stability_host(d.nlev, d.shcol, d.dz_zt, d.pres, d.brunt, d.brunt_int);
 }
 
 void check_tke(CheckTkeData& d)
 {
   shoc_init(d.nlev);
-  //check_tke_host(d.shcol, d.nlev, d.tke);
+  check_tke_host(d.shcol, d.nlev, d.tke);
 }
 
 void shoc_tke(ShocTkeData& d)
 {
   shoc_init(d.nlev);
-  //shoc_tke_host(d.shcol, d.nlev, d.nlevi, d.dtime, d.wthv_sec, d.shoc_mix, d.dz_zi, d.dz_zt, d.pres, d.tabs, d.u_wind, d.v_wind, d.brunt, d.zt_grid, d.zi_grid, d.pblh, d.tke, d.tk, d.tkh, d.isotropy);
+  shoc_tke_host(d.shcol, d.nlev, d.nlevi, d.dtime, d.wthv_sec, d.shoc_mix, d.dz_zi, d.dz_zt, d.pres, d.tabs, d.u_wind, d.v_wind, d.brunt, d.zt_grid, d.zi_grid, d.pblh, d.tke, d.tk, d.tkh, d.isotropy);
 }
 
 void compute_shr_prod(ComputeShrProdData& d)
 {
   shoc_init(d.nlev);
-  //compute_shr_prod_host(d.nlevi, d.nlev, d.shcol, d.dz_zi, d.u_wind, d.v_wind, d.sterm);
+  compute_shr_prod_host(d.nlevi, d.nlev, d.shcol, d.dz_zi, d.u_wind, d.v_wind, d.sterm);
 }
 
 void isotropic_ts(IsotropicTsData& d)
 {
   shoc_init(d.nlev);
-  //isotropic_ts_host(d.nlev, d.shcol, d.brunt_int, d.tke, d.a_diss, d.brunt, d.isotropy);
+  isotropic_ts_host(d.nlev, d.shcol, d.brunt_int, d.tke, d.a_diss, d.brunt, d.isotropy);
 }
 
 void adv_sgs_tke(AdvSgsTkeData& d)
 {
   shoc_init(d.nlev);
-  //adv_sgs_tke_host(d.nlev, d.shcol, d.dtime, d.shoc_mix, d.wthv_sec, d.sterm_zt, d.tk, d.tke, d.a_diss);
+  adv_sgs_tke_host(d.nlev, d.shcol, d.dtime, d.shoc_mix, d.wthv_sec, d.sterm_zt, d.tk, d.tke, d.a_diss);
 }
 
 void eddy_diffusivities(EddyDiffusivitiesData& d)
 {
   shoc_init(d.nlev);
-  //eddy_diffusivities_host(d.nlev, d.shcol, d.pblh, d.zt_grid, d.tabs, d.shoc_mix, d.sterm_zt, d.isotropy, d.tke, d.tkh, d.tk);
+  eddy_diffusivities_host(d.nlev, d.shcol, d.pblh, d.zt_grid, d.tabs, d.shoc_mix, d.sterm_zt, d.isotropy, d.tke, d.tkh, d.tk);
 }
 
 void shoc_length(ShocLengthData& d)
 {
   shoc_init(d.nlev);
-  //shoc_length_host(d.shcol, d.nlev, d.nlevi, d.host_dx, d.host_dy, d.zt_grid, d.zi_grid, d.dz_zt, d.tke, d.thv, d.brunt, d.shoc_mix);
+  shoc_length_host(d.shcol, d.nlev, d.nlevi, d.host_dx, d.host_dy, d.zt_grid, d.zi_grid, d.dz_zt, d.tke, d.thv, d.brunt, d.shoc_mix);
 }
 
 void compute_brunt_shoc_length(ComputeBruntShocLengthData& d)
 {
   shoc_init(d.nlev);
-  //compute_brunt_shoc_length_host(d.nlev, d.nlevi, d.shcol, d.dz_zt, d.thv, d.thv_zi, d.brunt);
+  compute_brunt_shoc_length_host(d.nlev, d.nlevi, d.shcol, d.dz_zt, d.thv, d.thv_zi, d.brunt);
 }
 
 void compute_l_inf_shoc_length(ComputeLInfShocLengthData& d)
 {
   shoc_init(d.nlev);
-  //compute_l_inf_shoc_length_host(d.nlev, d.shcol, d.zt_grid, d.dz_zt, d.tke, d.l_inf);
+  compute_l_inf_shoc_length_host(d.nlev, d.shcol, d.zt_grid, d.dz_zt, d.tke, d.l_inf);
 }
 
 void compute_shoc_mix_shoc_length(ComputeShocMixShocLengthData& d)
 {
   shoc_init(d.nlev);
-  //compute_shoc_mix_shoc_length_host(d.nlev, d.shcol, d.tke, d.brunt, d.zt_grid, d.l_inf, d.shoc_mix);
+  compute_shoc_mix_shoc_length_host(d.nlev, d.shcol, d.tke, d.brunt, d.zt_grid, d.l_inf, d.shoc_mix);
 }
 
 void check_length_scale_shoc_length(CheckLengthScaleShocLengthData& d)
 {
   shoc_init(d.nlev);
-  //check_length_scale_shoc_length_host(d.nlev, d.shcol, d.host_dx, d.host_dy, d.shoc_mix);
-}
-
-void fterms_input_for_diag_third_shoc_moment(FtermsInputForDiagThirdShocMomentData& d)
-{
-  shoc_init(1); // single level function
-  //fterms_input_for_diag_third_shoc_moment_host(d.dz_zi, d.dz_zt, d.dz_zt_kc, d.isotropy_zi, d.brunt_zi, d.thetal_zi, &d.thedz, &d.thedz2, &d.iso, &d.isosqrd, &d.buoy_sgs2, &d.bet2);
-}
-
-void aa_terms_diag_third_shoc_moment(AaTermsDiagThirdShocMomentData& d)
-{
-  shoc_init(1); // single level function
-  //aa_terms_diag_third_shoc_moment_host(d.omega0, d.omega1, d.omega2, d.x0, d.x1, d.y0, d.y1, &d.aa0, &d.aa1);
-}
-
-void f0_to_f5_diag_third_shoc_moment(F0ToF5DiagThirdShocMomentData& d)
-{
-  shoc_init(1); // single level function
-  //f0_to_f5_diag_third_shoc_moment_host(d.thedz, d.thedz2, d.bet2, d.iso, d.isosqrd, d.wthl_sec, d.wthl_sec_kc, d.wthl_sec_kb, d.thl_sec_kc, d.thl_sec_kb, d.w_sec, d.w_sec_kc, d.w_sec_zi, d.tke, d.tke_kc, &d.f0, &d.f1, &d.f2, &d.f3, &d.f4, &d.f5);
-}
-
-void omega_terms_diag_third_shoc_moment(OmegaTermsDiagThirdShocMomentData& d)
-{
-  shoc_init(1); // single level function
-  //omega_terms_diag_third_shoc_moment_host(d.buoy_sgs2, d.f3, d.f4, &d.omega0, &d.omega1, &d.omega2);
-}
-
-void x_y_terms_diag_third_shoc_moment(XYTermsDiagThirdShocMomentData& d)
-{
-  shoc_init(1); // single level function
-  //x_y_terms_diag_third_shoc_moment_host(d.buoy_sgs2, d.f0, d.f1, d.f2, &d.x0, &d.y0, &d.x1, &d.y1);
-}
-
-void w3_diag_third_shoc_moment(W3DiagThirdShocMomentData& d)
-{
-  shoc_init(1); // single level function
-  //w3_diag_third_shoc_moment_host(d.aa0, d.aa1, d.x0, d.x1, d.f5, &d.w3);
+  check_length_scale_shoc_length_host(d.nlev, d.shcol, d.host_dx, d.host_dy, d.shoc_mix);
 }
 
 void clipping_diag_third_shoc_moments(ClippingDiagThirdShocMomentsData& d)
 {
   shoc_init(d.nlevi - 1); // nlev = nlevi - 1
-  //clipping_diag_third_shoc_moments_host(d.nlevi, d.shcol, d.w_sec_zi, d.w3);
+  clipping_diag_third_shoc_moments_host(d.nlevi, d.shcol, d.w_sec_zi, d.w3);
 }
 
 void diag_second_moments_srf(DiagSecondMomentsSrfData& d)
 {
   shoc_init(1); // single level function
-  //shoc_diag_second_moments_srf_host(d.shcol, d.wthl_sfc, d.uw_sfc, d.vw_sfc, d.ustar2, d.wstar);
+  shoc_diag_second_moments_srf_host(d.shcol, d.wthl_sfc, d.uw_sfc, d.vw_sfc, d.ustar2, d.wstar);
 }
 
 void linear_interp(LinearInterpData& d)
 {
   shoc_init(d.km1);
-  //linear_interp_host(d.x1, d.x2, d.y1, d.y2, d.km1, d.km2, d.ncol, d.minthresh);
+  linear_interp_host(d.x1, d.x2, d.y1, d.y2, d.km1, d.km2, d.ncol, d.minthresh);
 }
 
 void diag_third_shoc_moments(DiagThirdShocMomentsData& d)
 {
   shoc_init(d.nlev);
-  //diag_third_shoc_moments_host(d.shcol, d.nlev, d.nlevi, d.w_sec, d.thl_sec, d.wthl_sec, d.isotropy, d.brunt, d.thetal, d.tke, d.dz_zt, d.dz_zi, d.zt_grid, d.zi_grid, d.w3);
+  diag_third_shoc_moments_host(d.shcol, d.nlev, d.nlevi, d.w_sec, d.thl_sec, d.wthl_sec, d.isotropy, d.brunt, d.thetal, d.tke, d.dz_zt, d.dz_zi, d.zt_grid, d.zi_grid, d.w3);
 }
 
 void compute_diag_third_shoc_moment(ComputeDiagThirdShocMomentData& d)
 {
   shoc_init(d.nlev);
-  //compute_diag_third_shoc_moment_host(d.shcol, d.nlev, d.nlevi, d.w_sec, d.thl_sec, d.wthl_sec, d.tke, d.dz_zt, d.dz_zi, d.isotropy_zi, d.brunt_zi, d.w_sec_zi, d.thetal_zi, d.w3);
+  compute_diag_third_shoc_moment_host(d.shcol, d.nlev, d.nlevi, d.w_sec, d.thl_sec, d.wthl_sec, d.tke, d.dz_zt, d.dz_zi, d.isotropy_zi, d.brunt_zi, d.w_sec_zi, d.thetal_zi, d.w3);
 }
 
 void shoc_assumed_pdf(ShocAssumedPdfData& d)
 {
   shoc_init(d.nlev);
-  //shoc_assumed_pdf_host(d.shcol, d.nlev, d.nlevi, d.thetal, d.qw, d.w_field, d.thl_sec, d.qw_sec, d.wthl_sec, d.w_sec, d.wqw_sec, d.qwthl_sec, d.w3, d.pres, d.zt_grid, d.zi_grid, d.shoc_cldfrac, d.shoc_ql, d.wqls, d.wthv_sec, d.shoc_ql2);
+  shoc_assumed_pdf_host(d.shcol, d.nlev, d.nlevi, d.thetal, d.qw, d.w_field, d.thl_sec, d.qw_sec, d.wthl_sec, d.w_sec, d.wqw_sec, d.qwthl_sec, d.w3, d.pres, d.zt_grid, d.zi_grid, d.shoc_cldfrac, d.shoc_ql, d.wqls, d.wthv_sec, d.shoc_ql2);
 }
 
 void shoc_assumed_pdf_tilde_to_real(ShocAssumedPdfTildeToRealData& d)
