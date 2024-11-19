@@ -1113,6 +1113,8 @@ void shoc_assumed_pdf_compute_temperature_host(Real thl1, Real pval, Real* tl1);
 
 void shoc_assumed_pdf_compute_qs_host(Real tl1_1, Real tl1_2, Real pval, Real* qs1, Real* beta1, Real* qs2, Real* beta2);
 
+void shoc_assumed_pdf_compute_s_host(Real qw1, Real qs1, Real beta, Real pval, Real thl2, Real qw2, Real sqrtthl2, Real sqrtqw2, Real r_qwthl, Real* s, Real* std_s, Real* qn, Real* c);
+
 // end _host function decls
 
 }  // namespace shoc

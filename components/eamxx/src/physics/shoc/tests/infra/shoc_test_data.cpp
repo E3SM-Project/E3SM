@@ -231,7 +231,7 @@ void shoc_assumed_pdf_compute_qs(ShocAssumedPdfComputeQsData& d)
 void shoc_assumed_pdf_compute_s(ShocAssumedPdfComputeSData& d)
 {
   shoc_init(1); // single level function
-  //shoc_assumed_pdf_compute_s_host(d.qw1, d.qs1, d.beta, d.pval, d.thl2, d.qw2, d.sqrtthl2, d.sqrtqw2, d.r_qwthl, &d.s, &d.std_s, &d.qn, &d.c);
+  shoc_assumed_pdf_compute_s_host(d.qw1, d.qs1, d.beta, d.pval, d.thl2, d.qw2, d.sqrtthl2, d.sqrtqw2, d.r_qwthl, &d.s, &d.std_s, &d.qn, &d.c);
 }
 
 void shoc_assumed_pdf_compute_sgs_liquid(ShocAssumedPdfComputeSgsLiquidData& d)
@@ -3266,6 +3266,31 @@ void shoc_assumed_pdf_compute_qs_host(Real tl1_1, Real tl1_2, Real pval, Real* q
   *beta2 = t_h(1);
   *qs1 = t_h(2);
   *qs2 = t_h(3);
+}
+
+void shoc_assumed_pdf_compute_s_host(Real qw1, Real qs1, Real beta, Real pval, Real thl2, Real qw2, Real sqrtthl2, Real sqrtqw2, Real r_qwthl, Real* s, Real* std_s, Real* qn, Real* c)
+{
+  using SHF = Functions<Real, DefaultDevice>;
+
+  using Spack   = typename SHF::Spack;
+  using view_1d = typename SHF::view_1d<Real>;
+
+  view_1d t_d("t_d", 4);
+  const auto t_h = Kokkos::create_mirror_view(t_d);
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+    Spack beta_(beta), pval_(pval), qs1_(qs1), qw1_(qw1), qw2_(qw2), r_qwthl_(r_qwthl), sqrtqw2_(sqrtqw2), sqrtthl2_(sqrtthl2), thl2_(thl2), c_, qn_, s_, std_s_;
+    SHF::shoc_assumed_pdf_compute_s(qw1_, qs1_, beta_, pval_, thl2_, qw2_, sqrtthl2_, sqrtqw2_, r_qwthl_, s_, std_s_, qn_, c_);
+    t_d(0) = c_[0];
+    t_d(1) = qn_[0];
+    t_d(2) = s_[0];
+    t_d(3) = std_s_[0];
+  });
+  Kokkos::deep_copy(t_h, t_d);
+  *c = t_h(0);
+  *qn = t_h(1);
+  *s = t_h(2);
+  *std_s = t_h(3);
 }
 
 } // namespace shoc
