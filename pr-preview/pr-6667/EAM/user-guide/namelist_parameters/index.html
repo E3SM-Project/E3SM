@@ -800,6 +800,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#orographic-drag-schemes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Orographic drag schemes
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -891,6 +900,8 @@
       
         
           
+        
+      
         
       
         
@@ -1076,6 +1087,27 @@
   
   <span class="md-ellipsis">
     RRTMG
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tech-guide/orodrag/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Orographic drag scheme
   </span>
   
 
@@ -2994,6 +3026,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#orographic-drag-schemes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Orographic drag schemes
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3628,13 +3669,9 @@
 <td>This namelist sets cosp_ncolumns=10 and cosp_nradsteps=3 (appropriate for COSP statistics derived from seasonal averages), and runs MISR, ISCCP, MODIS, and CALIPSO lidar simulators (cosp_lmisr_sim=.true.,cosp_lisccp_sim=.true., cosp_lmodis_sim=.true.,cosp_llidar_sim=.true.).</td>
 <td><code>false</code></td>
 </tr>
-<tr>
-<td>## Orographic drag schemes</td>
-<td></td>
-<td></td>
-</tr>
 </tbody>
 </table>
+<h2 id="orographic-drag-schemes">Orographic drag schemes</h2>
 <table>
 <thead>
 <tr>
@@ -3661,18 +3698,13 @@
 </tr>
 <tr>
 <td><code>tms_orocnst</code></td>
-<td>Turbulent mountain stress parameter used when turbulent mountain stress calculation</td>
-<td></td>
-</tr>
-<tr>
-<td>is turned on</td>
-<td>``</td>
-<td></td>
+<td>Turbulent mountain stress parameter used when turbulent mountain stress calculation is turned on</td>
+<td><code>1.0</code></td>
 </tr>
 <tr>
 <td><code>tms_z0fac</code></td>
 <td>Factor determining z_0 from orographic standard deviation [ no unit ].</td>
-<td>``</td>
+<td><code>0.75</code></td>
 </tr>
 <tr>
 <td><code>use_od_ls</code></td>
