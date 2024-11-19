@@ -164,8 +164,8 @@
 | `do_tms`           | This namelist controls the default TMS for E3SM, if used, the default TMS is turned on.                                 | `false`                |
 | `effgw_oro`        | Efficiency associated with orographic gravity waves.                                                                     | `0.375`                |
 | `tms_orocnst`      | Turbulent mountain stress parameter used when turbulent mountain stress calculation
-is turned on             | `true`                |
-| `tms_z0fac`        | Factor determining z_0 from orographic standard deviation [ no unit ].                                                   | `true`                |
+is turned on             | ``                |
+| `tms_z0fac`        | Factor determining z_0 from orographic standard deviation [ no unit ].                                                   | ``                |
 | `use_od_ls`        | This namelist controls the new nonlinear oGWD, if used, the nonlinear oGWD is turned on. use_od_ls should not be used at the same time with use_gw_oro.                  | `true`                |
 | `use_od_bl`       | This namelist controls the FBD scheme, if used, the FBD scheme is turned on.        | `true`                |
 | `use_od_ss`       | This namelist controls the sGWD scheme, if used, the sGWD scheme is turned on.        | `true`                |
