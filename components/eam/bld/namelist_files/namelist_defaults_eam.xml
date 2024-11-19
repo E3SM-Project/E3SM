@@ -1890,6 +1890,9 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <gw_convect_hcf        phys="default" > 10.0  </gw_convect_hcf>
 <hdepth_scaling_factor phys="default" > 0.50  </hdepth_scaling_factor>
 <hdepth_scaling_factor phys="default" use_MMF="1" >  1.0  </hdepth_scaling_factor>
+<gw_convect_hdepth_min      phys="default">2.5</gw_convect_hdepth_min>
+<gw_convect_storm_speed_min phys="default">10.0</gw_convect_storm_speed_min>
+<gw_convect_plev_src_wind   phys="default">70000</gw_convect_plev_src_wind>
 <effgw_oro phys="default"> 0.375      </effgw_oro>
 <use_gw_energy_fix phys="default"> .true.      </use_gw_energy_fix>
 <clubb_C14 phys="default"> 2.5D0      </clubb_C14>
