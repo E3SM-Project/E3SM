@@ -249,7 +249,7 @@ void shoc_assumed_pdf_compute_cloud_liquid_variance(ShocAssumedPdfComputeCloudLi
 void shoc_assumed_pdf_compute_liquid_water_flux(ShocAssumedPdfComputeLiquidWaterFluxData& d)
 {
   shoc_init(1); // single level function
-  //shoc_assumed_pdf_compute_liquid_water_flux_host(d.a, d.w1_1, d.w_first, d.ql1, d.w1_2, d.ql2, &d.wqls);
+  shoc_assumed_pdf_compute_liquid_water_flux_host(d.a, d.w1_1, d.w_first, d.ql1, d.w1_2, d.ql2, &d.wqls);
 }
 
 void shoc_assumed_pdf_compute_buoyancy_flux(ShocAssumedPdfComputeBuoyancyFluxData& d)
@@ -3329,6 +3329,25 @@ void shoc_assumed_pdf_compute_cloud_liquid_variance_host(Real a, Real s1, Real q
   });
   Kokkos::deep_copy(t_h, t_d);
   *shoc_ql2 = t_h(0);
+}
+
+void shoc_assumed_pdf_compute_liquid_water_flux_host(Real a, Real w1_1, Real w_first, Real ql1, Real w1_2, Real ql2, Real* wqls)
+{
+  using SHF = Functions<Real, DefaultDevice>;
+
+  using Spack   = typename SHF::Spack;
+  using view_1d = typename SHF::view_1d<Real>;
+
+  view_1d t_d("t_d", 1);
+  const auto t_h = Kokkos::create_mirror_view(t_d);
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+    Spack a_(a), ql1_(ql1), ql2_(ql2), w1_1_(w1_1), w1_2_(w1_2), w_first_(w_first), wqls_;
+    SHF::shoc_assumed_pdf_compute_liquid_water_flux(a_, w1_1_, w_first_, ql1_, w1_2_, ql2_, wqls_);
+    t_d(0) = wqls_[0];
+  });
+  Kokkos::deep_copy(t_h, t_d);
+  *wqls = t_h(0);
 }
 
 } // namespace shoc
