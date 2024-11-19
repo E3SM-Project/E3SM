@@ -1111,6 +1111,8 @@ void shoc_assumed_pdf_inplume_correlations_host(Real sqrtqw2_1, Real sqrtthl2_1,
 
 void shoc_assumed_pdf_compute_temperature_host(Real thl1, Real pval, Real* tl1);
 
+void shoc_assumed_pdf_compute_qs_host(Real tl1_1, Real tl1_2, Real pval, Real* qs1, Real* beta1, Real* qs2, Real* beta2);
+
 // end _host function decls
 
 }  // namespace shoc

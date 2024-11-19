@@ -225,7 +225,7 @@ void shoc_assumed_pdf_compute_temperature(ShocAssumedPdfComputeTemperatureData& 
 void shoc_assumed_pdf_compute_qs(ShocAssumedPdfComputeQsData& d)
 {
   shoc_init(1); // single level function
-  //shoc_assumed_pdf_compute_qs_host(d.tl1_1, d.tl1_2, d.pval, &d.qs1, &d.beta1, &d.qs2, &d.beta2);
+  shoc_assumed_pdf_compute_qs_host(d.tl1_1, d.tl1_2, d.pval, &d.qs1, &d.beta1, &d.qs2, &d.beta2);
 }
 
 void shoc_assumed_pdf_compute_s(ShocAssumedPdfComputeSData& d)
@@ -3239,6 +3239,33 @@ void shoc_assumed_pdf_compute_temperature_host(Real thl1, Real pval, Real* tl1)
   });
   Kokkos::deep_copy(t_h, t_d);
   *tl1 = t_h(0);
+}
+
+void shoc_assumed_pdf_compute_qs_host(Real tl1_1, Real tl1_2, Real pval, Real* qs1, Real* beta1, Real* qs2, Real* beta2)
+{
+  using SHF = Functions<Real, DefaultDevice>;
+
+  using Spack   = typename SHF::Spack;
+  using Smask   = typename SHF::Smask;
+  using view_1d = typename SHF::view_1d<Real>;
+
+  view_1d t_d("t_d", 4);
+  const auto t_h = Kokkos::create_mirror_view(t_d);
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+    Spack pval_(pval), tl1_1_(tl1_1), tl1_2_(tl1_2), beta1_, beta2_, qs1_, qs2_;
+    Smask active_entries(true);
+    SHF::shoc_assumed_pdf_compute_qs(tl1_1_, tl1_2_, pval_, active_entries, qs1_, beta1_, qs2_, beta2_);
+    t_d(0) = beta1_[0];
+    t_d(1) = beta2_[0];
+    t_d(2) = qs1_[0];
+    t_d(3) = qs2_[0];
+  });
+  Kokkos::deep_copy(t_h, t_d);
+  *beta1 = t_h(0);
+  *beta2 = t_h(1);
+  *qs1 = t_h(2);
+  *qs2 = t_h(3);
 }
 
 } // namespace shoc
