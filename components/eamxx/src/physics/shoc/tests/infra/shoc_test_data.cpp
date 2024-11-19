@@ -261,56 +261,56 @@ void shoc_assumed_pdf_compute_buoyancy_flux(ShocAssumedPdfComputeBuoyancyFluxDat
 void diag_second_moments_ubycond(DiagSecondMomentsUbycondData& d)
 {
   shoc_init(1); // single level function
-  //shoc_diag_second_moments_ubycond_host(d.shcol, d.thl_sec, d.qw_sec, d.wthl_sec, d.wqw_sec, d.qwthl_sec, d.uw_sec, d.vw_sec, d.wtke_sec);
+  shoc_diag_second_moments_ubycond_host(d.shcol, d.thl_sec, d.qw_sec, d.wthl_sec, d.wqw_sec, d.qwthl_sec, d.uw_sec, d.vw_sec, d.wtke_sec);
 }
 
 void pblintd_init_pot(PblintdInitPotData& d)
 {
   shoc_init(d.nlev, true);
-  //shoc_pblintd_init_pot_host(d.shcol, d.nlev, d.thl, d.ql, d.q, d.thv);
+  shoc_pblintd_init_pot_host(d.shcol, d.nlev, d.thl, d.ql, d.q, d.thv);
 }
 
 void pblintd_cldcheck(PblintdCldcheckData& d)
 {
   shoc_init(d.nlev, true);
-  //shoc_pblintd_cldcheck_host(d.shcol, d.nlev, d.nlevi, d.zi, d.cldn, d.pblh);
+  shoc_pblintd_cldcheck_host(d.shcol, d.nlev, d.nlevi, d.zi, d.cldn, d.pblh);
 }
 
 void diag_second_moments_lbycond(DiagSecondMomentsLbycondData& d)
 {
   shoc_init(1); // single level function
-  //diag_second_moments_lbycond_host(d.shcol, d.wthl_sfc, d.wqw_sfc, d.uw_sfc, d.vw_sfc, d.ustar2, d.wstar, d.wthl_sec, d.wqw_sec, d.uw_sec, d.vw_sec, d.wtke_sec, d.thl_sec, d.qw_sec, d.qwthl_sec);
+  diag_second_moments_lbycond_host(d.shcol, d.wthl_sfc, d.wqw_sfc, d.uw_sfc, d.vw_sfc, d.ustar2, d.wstar, d.wthl_sec, d.wqw_sec, d.uw_sec, d.vw_sec, d.wtke_sec, d.thl_sec, d.qw_sec, d.qwthl_sec);
 }
 
 void diag_second_moments(DiagSecondMomentsData& d)
 {
   shoc_init(d.nlev);
-  // diag_second_moments_host(d.shcol, d.nlev, d.nlevi, d.thetal, d.qw, d.u_wind, d.v_wind, d.tke, d.isotropy, d.tkh, d.tk,
-  //      d.dz_zi, d.zt_grid, d.zi_grid, d.shoc_mix, d.thl_sec, d.qw_sec, d.wthl_sec, d.wqw_sec, d.qwthl_sec, d.uw_sec,
-  //      d.vw_sec, d.wtke_sec, d.w_sec);
+  diag_second_moments_host(d.shcol, d.nlev, d.nlevi, d.thetal, d.qw, d.u_wind, d.v_wind, d.tke, d.isotropy, d.tkh, d.tk,
+                           d.dz_zi, d.zt_grid, d.zi_grid, d.shoc_mix, d.thl_sec, d.qw_sec, d.wthl_sec, d.wqw_sec, d.qwthl_sec, d.uw_sec,
+                           d.vw_sec, d.wtke_sec, d.w_sec);
 }
 
 void diag_second_shoc_moments(DiagSecondShocMomentsData& d)
 {
   shoc_init(d.nlev);
-  // diag_second_shoc_moments_host(d.shcol, d.nlev, d.nlevi, d.thetal, d.qw, d.u_wind, d.v_wind, d.tke, d.isotropy, d.tkh,
-  //     d.tk, d.dz_zi, d.zt_grid, d.zi_grid, d.shoc_mix, d.wthl_sfc, d.wqw_sfc, d.uw_sfc, d.vw_sfc, d.thl_sec, d.qw_sec,
-  //     d.wthl_sec, d.wqw_sec, d.qwthl_sec, d.uw_sec, d.vw_sec, d.wtke_sec, d.w_sec);
+  diag_second_shoc_moments_host(d.shcol, d.nlev, d.nlevi, d.thetal, d.qw, d.u_wind, d.v_wind, d.tke, d.isotropy, d.tkh,
+                                d.tk, d.dz_zi, d.zt_grid, d.zi_grid, d.shoc_mix, d.wthl_sfc, d.wqw_sfc, d.uw_sfc, d.vw_sfc, d.thl_sec, d.qw_sec,
+                                d.wthl_sec, d.wqw_sec, d.qwthl_sec, d.uw_sec, d.vw_sec, d.wtke_sec, d.w_sec);
 }
 
 void compute_shoc_vapor(ComputeShocVaporData& d)
 {
   shoc_init(d.nlev);
-  //compute_shoc_vapor_host(d.shcol, d.nlev, d.qw, d.ql, d.qv);
+  compute_shoc_vapor_host(d.shcol, d.nlev, d.qw, d.ql, d.qv);
 }
 
 void update_prognostics_implicit(UpdatePrognosticsImplicitData& d)
 {
   shoc_init(d.nlev);
-  // update_prognostics_implicit_host(d.shcol, d.nlev, d.nlevi, d.num_tracer, d.dtime,
-  //                               d.dz_zt, d.dz_zi, d.rho_zt, d.zt_grid, d.zi_grid,
-  //                               d.tk, d.tkh, d.uw_sfc, d.vw_sfc, d.wthl_sfc, d.wqw_sfc,
-  //                               d.wtracer_sfc, d.thetal, d.qw, d.tracer, d.tke, d.u_wind, d.v_wind);
+  update_prognostics_implicit_host(d.shcol, d.nlev, d.nlevi, d.num_tracer, d.dtime,
+                                   d.dz_zt, d.dz_zi, d.rho_zt, d.zt_grid, d.zi_grid,
+                                   d.tk, d.tkh, d.uw_sfc, d.vw_sfc, d.wthl_sfc, d.wqw_sfc,
+                                   d.wtracer_sfc, d.thetal, d.qw, d.tracer, d.tke, d.u_wind, d.v_wind);
 }
 
 void shoc_main(ShocMainData& d)
@@ -376,7 +376,7 @@ void pblintd_surf_temp(PblintdSurfTempData& d)
 void pblintd_check_pblh(PblintdCheckPblhData& d)
 {
   shoc_init(d.nlev, true);
-  //pblintd_check_pblh_host(d.shcol, d.nlev, d.nlevi, d.z, d.ustar, d.check, d.pblh);
+  pblintd_check_pblh_host(d.shcol, d.nlev, d.nlevi, d.z, d.ustar, d.check, d.pblh);
 }
 
 void pblintd(PblintdData& d)
