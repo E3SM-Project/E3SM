@@ -237,7 +237,7 @@ void shoc_assumed_pdf_compute_s(ShocAssumedPdfComputeSData& d)
 void shoc_assumed_pdf_compute_sgs_liquid(ShocAssumedPdfComputeSgsLiquidData& d)
 {
   shoc_init(1); // single level function
-  //shoc_assumed_pdf_compute_sgs_liquid_host(d.a, d.ql1, d.ql2, &d.shoc_ql);
+  shoc_assumed_pdf_compute_sgs_liquid_host(d.a, d.ql1, d.ql2, &d.shoc_ql);
 }
 
 void shoc_assumed_pdf_compute_cloud_liquid_variance(ShocAssumedPdfComputeCloudLiquidVarianceData& d)
@@ -3293,5 +3293,23 @@ void shoc_assumed_pdf_compute_s_host(Real qw1, Real qs1, Real beta, Real pval, R
   *std_s = t_h(3);
 }
 
+void shoc_assumed_pdf_compute_sgs_liquid_host(Real a, Real ql1, Real ql2, Real* shoc_ql)
+{
+  using SHF = Functions<Real, DefaultDevice>;
+
+  using Spack   = typename SHF::Spack;
+  using view_1d = typename SHF::view_1d<Real>;
+
+  view_1d t_d("t_d", 1);
+  const auto t_h = Kokkos::create_mirror_view(t_d);
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+    Spack a_(a), ql1_(ql1), ql2_(ql2), shoc_ql_;
+    SHF::shoc_assumed_pdf_compute_sgs_liquid(a_, ql1_, ql2_, shoc_ql_);
+    t_d(0) = shoc_ql_[0];
+  });
+  Kokkos::deep_copy(t_h, t_d);
+  *shoc_ql = t_h(0);
+}
 } // namespace shoc
 } // namespace scream

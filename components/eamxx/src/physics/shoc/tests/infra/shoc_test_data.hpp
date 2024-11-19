@@ -1115,6 +1115,8 @@ void shoc_assumed_pdf_compute_qs_host(Real tl1_1, Real tl1_2, Real pval, Real* q
 
 void shoc_assumed_pdf_compute_s_host(Real qw1, Real qs1, Real beta, Real pval, Real thl2, Real qw2, Real sqrtthl2, Real sqrtqw2, Real r_qwthl, Real* s, Real* std_s, Real* qn, Real* c);
 
+void shoc_assumed_pdf_compute_sgs_liquid_host(Real a, Real ql1, Real ql2, Real* shoc_ql);
+
 // end _host function decls
 
 }  // namespace shoc
