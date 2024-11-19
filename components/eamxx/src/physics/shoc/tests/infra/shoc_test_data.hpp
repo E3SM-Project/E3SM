@@ -563,7 +563,7 @@ struct ShocAssumedPdfComputeLiquidWaterFluxData {
 
 struct ShocAssumedPdfComputeBuoyancyFluxData {
   // Inputs
-  Real wthlsec, epsterm, wqwsec, pval, wqls;
+  Real wthlsec, wqwsec, pval, wqls;
 
   // Outputs
   Real wthv_sec;
@@ -1120,6 +1120,8 @@ void shoc_assumed_pdf_compute_sgs_liquid_host(Real a, Real ql1, Real ql2, Real* 
 void shoc_assumed_pdf_compute_cloud_liquid_variance_host(Real a, Real s1, Real ql1, Real c1, Real std_s1, Real s2, Real ql2, Real c2, Real std_s2, Real shoc_ql, Real* shoc_ql2);
 
 void shoc_assumed_pdf_compute_liquid_water_flux_host(Real a, Real w1_1, Real w_first, Real ql1, Real w1_2, Real ql2, Real* wqls);
+
+void shoc_assumed_pdf_compute_buoyancy_flux_host(Real wthlsec, Real wqwsec, Real pval, Real wqls, Real* wthv_sec);
 
 // end _host function decls
 

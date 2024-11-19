@@ -24,7 +24,6 @@ struct UnitWrap::UnitTest<D>::TestShocPdfCompBuoyFlux {
 
   static void run_property()
   {
-    static constexpr Real epsterm  = scream::physics::Constants<Real>::ep_2;
     // Property tests for the SHOC function
     //  shoc_assumed_pdf_compute_buoyancy_flux
 
@@ -53,7 +52,6 @@ struct UnitWrap::UnitTest<D>::TestShocPdfCompBuoyFlux {
     SDS.wqwsec = wqwsec_dry;
     SDS.wqls = wqls_dry;
     SDS.pval = pval;
-    SDS.epsterm = epsterm;
 
     // Call the fortran implementation
     shoc_assumed_pdf_compute_buoyancy_flux(SDS);

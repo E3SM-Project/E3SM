@@ -255,7 +255,7 @@ void shoc_assumed_pdf_compute_liquid_water_flux(ShocAssumedPdfComputeLiquidWater
 void shoc_assumed_pdf_compute_buoyancy_flux(ShocAssumedPdfComputeBuoyancyFluxData& d)
 {
   shoc_init(1); // single level function
-  //shoc_assumed_pdf_compute_buoyancy_flux_host(d.wthlsec, d.epsterm, d.wqwsec, d.pval, d.wqls, &d.wthv_sec);
+  shoc_assumed_pdf_compute_buoyancy_flux_host(d.wthlsec, d.wqwsec, d.pval, d.wqls, &d.wthv_sec);
 }
 
 void diag_second_moments_ubycond(DiagSecondMomentsUbycondData& d)
@@ -3348,6 +3348,25 @@ void shoc_assumed_pdf_compute_liquid_water_flux_host(Real a, Real w1_1, Real w_f
   });
   Kokkos::deep_copy(t_h, t_d);
   *wqls = t_h(0);
+}
+
+void shoc_assumed_pdf_compute_buoyancy_flux_host(Real wthlsec, Real wqwsec, Real pval, Real wqls, Real* wthv_sec)
+{
+  using PF = Functions<Real, DefaultDevice>;
+
+  using Spack   = typename PF::Spack;
+  using view_1d = typename PF::view_1d<Real>;
+
+  view_1d t_d("t_d", 1);
+  const auto t_h = Kokkos::create_mirror_view(t_d);
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+    Spack pval_(pval), wqls_(wqls), wqwsec_(wqwsec), wthlsec_(wthlsec), wthv_sec_;
+    PF::shoc_assumed_pdf_compute_buoyancy_flux(wthlsec_, wqwsec_, pval_, wqls_, wthv_sec_);
+    t_d(0) = wthv_sec_[0];
+  });
+  Kokkos::deep_copy(t_h, t_d);
+  *wthv_sec = t_h(0);
 }
 
 } // namespace shoc
