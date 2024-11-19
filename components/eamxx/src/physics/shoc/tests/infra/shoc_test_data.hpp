@@ -1117,6 +1117,8 @@ void shoc_assumed_pdf_compute_s_host(Real qw1, Real qs1, Real beta, Real pval, R
 
 void shoc_assumed_pdf_compute_sgs_liquid_host(Real a, Real ql1, Real ql2, Real* shoc_ql);
 
+void shoc_assumed_pdf_compute_cloud_liquid_variance_host(Real a, Real s1, Real ql1, Real c1, Real std_s1, Real s2, Real ql2, Real c2, Real std_s2, Real shoc_ql, Real* shoc_ql2);
+
 // end _host function decls
 
 }  // namespace shoc
