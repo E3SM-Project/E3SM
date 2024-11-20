@@ -40,7 +40,7 @@
 
    Solution Classes
       Explicit
-        O3,N2OLNZ, NOYLNZ, CH4LNZ, H2OLNZ
+        O3, N2OLNZ, NOYLNZ, CH4LNZ, H2OLNZ
       End Explicit
       Implicit
         H2O2, H2SO4, SO2, DMS, SOAG
@@ -67,9 +67,6 @@
                DMS + OH -> SO2                                                  ; 9.6e-12, -234.
  [usr_DMS_OH]  DMS + OH -> .5 * SO2 + .5 * HO2
                DMS + NO3 -> SO2 + HNO3                                          ; 1.9e-13,  520.
- [uci3]        O3 + CH4LNZ -> OH + CH3OO                     ; 1.750E-10,  0
- [lch4]        CH4LNZ + OH -> CH3O2 + H2O                     ; 2.450E-12, -1775
-*   just the LNZ reactions from linoz v3 are added
       End Reactions
 
       Ext Forcing
