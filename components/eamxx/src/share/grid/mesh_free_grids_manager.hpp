@@ -38,10 +38,6 @@ protected:
 
   void add_geo_data (const nonconstgrid_ptr_type& grid) const;
 
-  std::string get_reference_grid_name () const {
-    return m_params.get<std::string>("reference_grid");
-  }
-
   remapper_ptr_type
   do_create_remapper (const grid_ptr_type from_grid,
                       const grid_ptr_type to_grid) const;
