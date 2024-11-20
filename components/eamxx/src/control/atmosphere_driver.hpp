@@ -116,7 +116,8 @@ public:
   void set_provenance_data (std::string caseid = "",
                             std::string rest_caseid = "",
                             std::string hostname = "",
-                            std::string username = "");
+                            std::string username = "",
+                            std::string versionid = "");
 
   // Load initial conditions for atm inputs
   void initialize_fields ();

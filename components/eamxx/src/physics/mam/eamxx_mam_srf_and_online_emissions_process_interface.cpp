@@ -1,7 +1,16 @@
-//#include <ekat/ekat_assert.hpp>
 #include <physics/mam/eamxx_mam_srf_and_online_emissions_process_interface.hpp>
 
+// For surface and online emission functions
+#include <physics/mam/eamxx_mam_srf_and_online_emissions_functions.hpp>
+
+// For reading soil erodibility file
+#include <physics/mam/readfiles/soil_erodibility.hpp>
+
 namespace scream {
+
+// For reading soil erodibility file
+using soilErodibilityFunc =
+    soil_erodibility::soilErodibilityFunctions<Real, DefaultDevice>;
 
 // ================================================================
 //  Constructor
@@ -9,6 +18,7 @@ namespace scream {
 MAMSrfOnlineEmiss::MAMSrfOnlineEmiss(const ekat::Comm &comm,
                                      const ekat::ParameterList &params)
     : AtmosphereProcess(comm, params) {
+  // FIXME: Do we want to read dust emiss factor from the namelist??
   /* Anything that can be initialized without grid information can be
    * initialized here. Like universal constants.
    */
@@ -26,18 +36,98 @@ void MAMSrfOnlineEmiss::set_grids(
   nlev_ = grid_->get_num_vertical_levels();  // Number of levels per column
 
   using namespace ekat::units;
+  constexpr auto m2     = pow(m, 2);
+  constexpr auto s2     = pow(s, 2);
+  constexpr auto q_unit = kg / kg;  // units of mass mixing ratios of tracers
+  constexpr auto n_unit = 1 / kg;   // units of number mixing ratios of tracers
+  constexpr auto nondim = ekat::units::Units::nondimensional();
 
-  static constexpr int pcnst = mam4::aero_model::pcnst;
-  const FieldLayout scalar2d_pcnct =
+  const FieldLayout scalar2d   = grid_->get_2d_scalar_layout();
+  const FieldLayout scalar3d_m = grid_->get_3d_scalar_layout(true);   // mid
+  const FieldLayout scalar3d_i = grid_->get_3d_scalar_layout(false);  // int
+
+  // For U and V components of wind
+  const FieldLayout vector3d = grid_->get_3d_vector_layout(true, 2);
+
+  // For components of dust flux
+  const FieldLayout vector4d = grid_->get_2d_vector_layout(4);
+
+  // --------------------------------------------------------------------------
+  // These variables are "Required" or pure inputs for the process
+  // --------------------------------------------------------------------------
+
+  // ----------- Atmospheric quantities -------------
+
+  // -- Variables required for building DS to compute z_mid --
+  // Specific humidity [kg/kg]
+  // FIXME: Comply with add_tracer calls
+  add_field<Required>("qv", scalar3d_m, q_unit, grid_name, "tracers");
+
+  // Cloud liquid mass mixing ratio [kg/kg]
+  add_field<Required>("qc", scalar3d_m, q_unit, grid_name, "tracers");
+
+  // Cloud ice mass mixing ratio [kg/kg]
+  add_field<Required>("qi", scalar3d_m, q_unit, grid_name, "tracers");
+
+  // Cloud liquid number mixing ratio [1/kg]
+  add_field<Required>("nc", scalar3d_m, n_unit, grid_name, "tracers");
+
+  // Cloud ice number mixing ratio [1/kg]
+  add_field<Required>("ni", scalar3d_m, n_unit, grid_name, "tracers");
+
+  // Temperature[K] at midpoints
+  add_field<Required>("T_mid", scalar3d_m, K, grid_name);
+
+  // Vertical pressure velocity [Pa/s] at midpoints
+  add_field<Required>("omega", scalar3d_m, Pa / s, grid_name);
+
+  // Total pressure [Pa] at midpoints
+  add_field<Required>("p_mid", scalar3d_m, Pa, grid_name);
+
+  // Total pressure [Pa] at interfaces
+  add_field<Required>("p_int", scalar3d_i, Pa, grid_name);
+
+  // Layer thickness(pdel) [Pa] at midpoints
+  add_field<Required>("pseudo_density", scalar3d_m, Pa, grid_name);
+
+  // Planetary boundary layer height [m]
+  add_field<Required>("pbl_height", scalar2d, m, grid_name);
+
+  // Surface geopotential [m2/s2]
+  add_field<Required>("phis", scalar2d, m2 / s2, grid_name);
+
+  //----------- Variables from microphysics scheme -------------
+
+  // Total cloud fraction [fraction] (Require only for building DS)
+  add_field<Required>("cldfrac_tot", scalar3d_m, nondim, grid_name);
+
+  // -- Variables required for online dust and sea salt emissions --
+
+  // U and V components of the wind[m/s]
+  add_field<Required>("horiz_winds", vector3d, m / s, grid_name);
+
+  //----------- Variables from coupler (ocean component)---------
+  // Ocean fraction [unitless]
+  add_field<Required>("ocnfrac", scalar2d, nondim, grid_name);
+
+  // Sea surface temperature [K]
+  add_field<Required>("sst", scalar2d, K, grid_name);
+
+  // dust fluxes [kg/m^2/s]: Four flux values for each column
+  add_field<Required>("dstflx", vector4d, kg / m2 / s, grid_name);
+
+  // -------------------------------------------------------------
+  // These variables are "Updated" or input-outputs for the process
+  // -------------------------------------------------------------
+
+  constexpr int pcnst = mam4::aero_model::pcnst;
+  const FieldLayout vector2d_pcnst =
       grid_->get_2d_vector_layout(pcnst, "num_phys_constituents");
 
-  // -------------------------------------------------------------
-  // These variables are "Computed" or outputs for the process
-  // -------------------------------------------------------------
-  static constexpr Units m2(m * m, "m2");
   // Constituent fluxes of species in [kg/m2/s]
-  add_field<Computed>("constituent_fluxes", scalar2d_pcnct, kg / m2 / s,
-                      grid_name);
+  // FIXME: confirm if it is Updated or Computed
+  add_field<Updated>("constituent_fluxes", vector2d_pcnst, kg / m2 / s,
+                     grid_name);
 
   // Surface emissions remapping file
   auto srf_map_file = m_params.get<std::string>("srf_remap_file", "");
@@ -63,6 +153,7 @@ void MAMSrfOnlineEmiss::set_grids(
   so2.species_name = "so2";
   so2.sectors      = {"AGR", "RCO", "SHP", "SLV", "TRA", "WST"};
   srf_emiss_species_.push_back(so2);  // add to the vector
+
   //--------------------------------------------------------------------
   // Init bc_a4 srf emiss data structures
   //--------------------------------------------------------------------
@@ -147,7 +238,48 @@ void MAMSrfOnlineEmiss::set_grids(
         // output
         ispec_srf.horizInterp_, ispec_srf.data_start_, ispec_srf.data_end_,
         ispec_srf.data_out_, ispec_srf.dataReader_);
-  }
+  }  // srf emissions file read init
+
+  // -------------------------------------------------------------
+  // Setup to enable reading soil erodibility file
+  // -------------------------------------------------------------
+
+  const std::string soil_erodibility_data_file =
+      m_params.get<std::string>("soil_erodibility_file");
+
+  // Field to be read from file
+  const std::string soil_erod_fld_name = "mbl_bsn_fct_geo";
+
+  // Dimensions of the field
+  const std::string soil_erod_dname = "ncol";
+
+  // initialize the file read
+  soilErodibilityFunc::init_soil_erodibility_file_read(
+      ncol_, soil_erod_fld_name, soil_erod_dname, grid_,
+      soil_erodibility_data_file, srf_map_file, serod_horizInterp_,
+      serod_dataReader_);  // output
+
+  // -------------------------------------------------------------
+  // Setup to enable reading marine organics file
+  // -------------------------------------------------------------
+  const std::string marine_organics_data_file =
+      m_params.get<std::string>("marine_organics_file");
+
+  // Fields to be read from file (order matters as they are read in the same
+  // order)
+  const std::vector<std::string> marine_org_fld_name = {
+      "TRUEPOLYC", "TRUEPROTC", "TRUELIPC"};
+
+  // Dimensions of the field
+  const std::string marine_org_dname = "ncol";
+
+  // initialize the file read
+  marineOrganicsFunc::init_marine_organics_file_read(
+      ncol_, marine_org_fld_name, marine_org_dname, grid_,
+      marine_organics_data_file, srf_map_file,
+      // output
+      morg_horizInterp_, morg_data_start_, morg_data_end_, morg_data_out_,
+      morg_dataReader_);
 
 }  // set_grid ends
 
@@ -183,6 +315,42 @@ void MAMSrfOnlineEmiss::init_buffers(const ATMBufferManager &buffer_manager) {
 // ================================================================
 void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   // ---------------------------------------------------------------
+  // Input fields read in from IC file, namelist or other processes
+  // ---------------------------------------------------------------
+
+  // Populate the wet atmosphere state with views from fields
+  wet_atm_.qv = get_field_in("qv").get_view<const Real **>();
+
+  // Following wet_atm vars are required only for building DS
+  wet_atm_.qc = get_field_in("qc").get_view<const Real **>();
+  wet_atm_.nc = get_field_in("nc").get_view<const Real **>();
+  wet_atm_.qi = get_field_in("qi").get_view<const Real **>();
+  wet_atm_.ni = get_field_in("ni").get_view<const Real **>();
+
+  // Populate the dry atmosphere state with views from fields
+  dry_atm_.T_mid = get_field_in("T_mid").get_view<const Real **>();
+  dry_atm_.p_mid = get_field_in("p_mid").get_view<const Real **>();
+  dry_atm_.p_del = get_field_in("pseudo_density").get_view<const Real **>();
+  dry_atm_.p_int = get_field_in("p_int").get_view<const Real **>();
+
+  // Following dry_atm vars are required only for building DS
+  dry_atm_.cldfrac = get_field_in("cldfrac_tot").get_view<const Real **>();
+  dry_atm_.pblh    = get_field_in("pbl_height").get_view<const Real *>();
+  dry_atm_.omega   = get_field_in("omega").get_view<const Real **>();
+
+  // store fields converted to dry mmr from wet mmr in dry_atm_
+  dry_atm_.z_mid     = buffer_.z_mid;
+  dry_atm_.z_iface   = buffer_.z_iface;
+  dry_atm_.dz        = buffer_.dz;
+  dry_atm_.qv        = buffer_.qv_dry;
+  dry_atm_.qc        = buffer_.qc_dry;
+  dry_atm_.nc        = buffer_.nc_dry;
+  dry_atm_.qi        = buffer_.qi_dry;
+  dry_atm_.ni        = buffer_.ni_dry;
+  dry_atm_.w_updraft = buffer_.w_updraft;
+  dry_atm_.z_surf    = 0.0;  // FIXME: for now
+
+  // ---------------------------------------------------------------
   // Output fields
   // ---------------------------------------------------------------
   // Constituent fluxes of species in [kg/m2/s]
@@ -213,9 +381,26 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   }
 
   //-----------------------------------------------------------------
+  // Read Soil erodibility data
+  //-----------------------------------------------------------------
+  // This data is time-independent, we read all data here for the
+  // entire simulation
+  soilErodibilityFunc::update_soil_erodibility_data_from_file(
+      serod_dataReader_, *serod_horizInterp_,
+      soil_erodibility_);  // output
+
+  //--------------------------------------------------------------------
+  // Update marine orgaincs from file
+  //--------------------------------------------------------------------
+  // Time dependent data
+  marineOrganicsFunc::update_marine_organics_data_from_file(
+      morg_dataReader_, timestamp(), curr_month, *morg_horizInterp_,
+      morg_data_end_);  // output
+
+  //-----------------------------------------------------------------
   // Setup preprocessing and post processing
   //-----------------------------------------------------------------
-  preprocess_.initialize(constituent_fluxes_);
+  preprocess_.initialize(ncol_, nlev_, wet_atm_, dry_atm_);
 
 }  // end initialize_impl()
 
@@ -223,14 +408,79 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
 //  RUN_IMPL
 // ================================================================
 void MAMSrfOnlineEmiss::run_impl(const double dt) {
-  // Zero-out output
-  Kokkos::deep_copy(preprocess_.constituent_fluxes_pre_, 0);
+  const auto scan_policy = ekat::ExeSpaceUtils<
+      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
+  // preprocess input -- needs a scan for the calculation of atm height
+  Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
+  Kokkos::fence();
+
+  // Constituent fluxes [kg/m^2/s]
+  auto constituent_fluxes = this->constituent_fluxes_;
+
+  // Zero out constituent fluxes only for gasses and aerosols
+  init_fluxes(ncol_,                // in
+              constituent_fluxes);  // in-out
+  Kokkos::fence();
   // Gather time and state information for interpolation
-  auto ts = timestamp() + dt;
+  const auto ts = timestamp() + dt;
 
   //--------------------------------------------------------------------
-  // Interpolate srf emiss data
+  // Online emissions from dust and sea salt
+  //--------------------------------------------------------------------
+
+  // --- Interpolate marine organics data --
+
+  // Update TimeState, note the addition of dt
+  morg_timeState_.t_now = ts.frac_of_year_in_days();
+
+  // Update time state and if the month has changed, update the data.
+  marineOrganicsFunc::update_marine_organics_timestate(
+      morg_dataReader_, ts, *morg_horizInterp_,
+      // output
+      morg_timeState_, morg_data_start_, morg_data_end_);
+
+  // Call the main marine organics routine to get interpolated forcings.
+  marineOrganicsFunc::marineOrganics_main(morg_timeState_, morg_data_start_,
+                                          morg_data_end_, morg_data_out_);
+
+  // Marine organics emission data read from the file (order is important here)
+  const const_view_1d mpoly = ekat::subview(morg_data_out_.emiss_sectors, 0);
+  const const_view_1d mprot = ekat::subview(morg_data_out_.emiss_sectors, 1);
+  const const_view_1d mlip  = ekat::subview(morg_data_out_.emiss_sectors, 2);
+
+  // Ocean fraction [unitless]
+  const const_view_1d ocnfrac =
+      get_field_in("ocnfrac").get_view<const Real *>();
+
+  // Sea surface temperature [K]
+  const const_view_1d sst = get_field_in("sst").get_view<const Real *>();
+
+  // U wind component [m/s]
+  const const_view_2d u_wind =
+      get_field_in("horiz_winds").get_component(0).get_view<const Real **>();
+
+  // V wind component [m/s]
+  const const_view_2d v_wind =
+      get_field_in("horiz_winds").get_component(1).get_view<const Real **>();
+
+  // Dust fluxes [kg/m^2/s]: Four flux values for each column
+  const const_view_2d dstflx = get_field_in("dstflx").get_view<const Real **>();
+
+  // Soil edodibility [fraction]
+  const const_view_1d soil_erodibility = this->soil_erodibility_;
+
+  // Vertical layer height at midpoints
+  const const_view_2d z_mid = dry_atm_.z_mid;
+
+  compute_online_dust_nacl_emiss(ncol_, nlev_, ocnfrac, sst, u_wind, v_wind,
+                                 dstflx, mpoly, mprot, mlip, soil_erodibility,
+                                 z_mid,
+                                 // output
+                                 constituent_fluxes);
+  Kokkos::fence();
+  //--------------------------------------------------------------------
+  // Interpolate srf emiss data read in from emissions files
   //--------------------------------------------------------------------
 
   for(srf_emiss_ &ispec_srf : srf_emiss_species_) {
@@ -256,20 +506,18 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
 
     // modify units from molecules/cm2/s to kg/m2/s
     auto fluxes_in_mks_units = this->fluxes_in_mks_units_;
-    auto constituent_fluxes  = this->constituent_fluxes_;
     const Real mfactor =
         amufac * mam4::gas_chemistry::adv_mass[species_index - offset_];
+    const view_1d ispec_outdata0 =
+        ekat::subview(ispec_srf.data_out_.emiss_sectors, 0);
     // Parallel loop over all the columns to update units
     Kokkos::parallel_for(
-        "fluxes", ncol_, KOKKOS_LAMBDA(int icol) {
-          fluxes_in_mks_units(icol) =
-              ispec_srf.data_out_.emiss_sectors(0, icol) * mfactor;
+        "srf_emis_fluxes", ncol_, KOKKOS_LAMBDA(int icol) {
+          fluxes_in_mks_units(icol) = ispec_outdata0(icol) * mfactor;
           constituent_fluxes(icol, species_index) = fluxes_in_mks_units(icol);
         });
-
   }  // for loop for species
   Kokkos::fence();
-}  // run_imple ends
-
+}  // run_impl ends
 // =============================================================================
 }  // namespace scream

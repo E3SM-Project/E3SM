@@ -28,35 +28,41 @@ void SurfaceCouplingImporter::set_grids(const std::shared_ptr<const GridsManager
 
   // The units of mixing ratio Q are technically non-dimensional.
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
-  auto nondim = Units::nondimensional();
-  Units m2 (m*m,"m2");
+  constexpr auto nondim = Units::nondimensional();
+  constexpr auto m2 = pow(m, 2);
 
   // Define the different field layouts that will be used for this process
   using namespace ShortFieldTagsNames;
 
-  FieldLayout scalar2d_layout { {COL     }, {m_num_cols   } };
-  FieldLayout vector2d_layout { {COL, CMP}, {m_num_cols, 2} };
+  const FieldLayout scalar2d = m_grid->get_2d_scalar_layout();
+  const FieldLayout vector2d = m_grid->get_2d_vector_layout(2);
+  const FieldLayout vector4d = m_grid->get_2d_vector_layout(4);
 
-  add_field<Computed>("sfc_alb_dir_vis",  scalar2d_layout, nondim,  grid_name);
-  add_field<Computed>("sfc_alb_dir_nir",  scalar2d_layout, nondim,  grid_name);
-  add_field<Computed>("sfc_alb_dif_vis",  scalar2d_layout, nondim,  grid_name);
-  add_field<Computed>("sfc_alb_dif_nir",  scalar2d_layout, nondim,  grid_name);
-  add_field<Computed>("surf_lw_flux_up",  scalar2d_layout, W/m2,    grid_name);
-  add_field<Computed>("surf_sens_flux",   scalar2d_layout, W/m2,    grid_name);
-  add_field<Computed>("surf_evap",        scalar2d_layout, kg/m2/s, grid_name);
-  add_field<Computed>("surf_mom_flux",    vector2d_layout, N/m2,    grid_name);
-  add_field<Computed>("surf_radiative_T", scalar2d_layout, K,       grid_name);
-  add_field<Computed>("T_2m",             scalar2d_layout, K,       grid_name);
-  add_field<Computed>("qv_2m",            scalar2d_layout, kg/kg,   grid_name);
-  add_field<Computed>("wind_speed_10m",   scalar2d_layout, m/s,     grid_name);
-  add_field<Computed>("snow_depth_land",  scalar2d_layout, m,       grid_name);
-  add_field<Computed>("ocnfrac",          scalar2d_layout, nondim,  grid_name);
-  add_field<Computed>("landfrac",         scalar2d_layout, nondim,  grid_name);
-  add_field<Computed>("icefrac",          scalar2d_layout, nondim,  grid_name);
+  add_field<Computed>("sfc_alb_dir_vis",  scalar2d, nondim,  grid_name);
+  add_field<Computed>("sfc_alb_dir_nir",  scalar2d, nondim,  grid_name);
+  add_field<Computed>("sfc_alb_dif_vis",  scalar2d, nondim,  grid_name);
+  add_field<Computed>("sfc_alb_dif_nir",  scalar2d, nondim,  grid_name);
+  add_field<Computed>("surf_lw_flux_up",  scalar2d, W/m2,    grid_name);
+  add_field<Computed>("surf_sens_flux",   scalar2d, W/m2,    grid_name);
+  add_field<Computed>("surf_evap",        scalar2d, kg/m2/s, grid_name);
+  add_field<Computed>("surf_mom_flux",    vector2d, N/m2,    grid_name);
+  add_field<Computed>("surf_radiative_T", scalar2d, K,       grid_name);
+  add_field<Computed>("T_2m",             scalar2d, K,       grid_name);
+  add_field<Computed>("qv_2m",            scalar2d, kg/kg,   grid_name);
+  add_field<Computed>("wind_speed_10m",   scalar2d, m/s,     grid_name);
+  add_field<Computed>("snow_depth_land",  scalar2d, m,       grid_name);
+  add_field<Computed>("ocnfrac",          scalar2d, nondim,  grid_name);
+  add_field<Computed>("landfrac",         scalar2d, nondim,  grid_name);
+  add_field<Computed>("icefrac",          scalar2d, nondim,  grid_name);
   // Friction velocity [m/s]
-  add_field<Computed>("fv",               scalar2d_layout, m/s,     grid_name);
+  add_field<Computed>("fv",               scalar2d, m/s,     grid_name);
   // Aerodynamical resistance
-  add_field<Computed>("ram1",             scalar2d_layout, s/m,     grid_name);
+  add_field<Computed>("ram1",             scalar2d, s/m,     grid_name);
+  // Sea surface temperature [K]
+  add_field<Computed>("sst",              scalar2d, K,       grid_name);
+  //dust fluxes [kg/m^2/s]: Four flux values for eacch column
+  add_field<Computed>("dstflx",           vector4d, kg/m2/s, grid_name);
+
 }
 // =========================================================================================
   void SurfaceCouplingImporter::setup_surface_coupling_data(const SCDataManager &sc_data_manager)

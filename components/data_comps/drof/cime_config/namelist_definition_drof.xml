@@ -52,18 +52,8 @@
       <value drof_mode="NULL"                 >NULL</value>
       <value drof_mode="CPLHIST"              >rof.cplhist</value>
       <value drof_mode="DIATREN_ANN_RX1"      >rof.diatren_ann_rx1</value>
-      <value drof_mode="DIATREN_ANN_AIS00_RX1">rof.diatren_ann_ais00_rx1</value>
-      <value drof_mode="DIATREN_ANN_AIS45_RX1">rof.diatren_ann_ais45_rx1</value>
-      <value drof_mode="DIATREN_ANN_AIS55_RX1">rof.diatren_ann_ais55_rx1</value>
       <value drof_mode="DIATREN_IAF_RX1"      >rof.diatren_iaf_rx1</value>
-      <value drof_mode="DIATREN_IAF_AIS00_RX1">rof.diatren_iaf_ais00_rx1</value>
-      <value drof_mode="DIATREN_IAF_AIS45_RX1">rof.diatren_iaf_ais45_rx1</value>
-      <value drof_mode="DIATREN_IAF_AIS55_RX1">rof.diatren_iaf_ais55_rx1</value>
-      <value drof_mode="IAF_JRA_1p4_2018_AIS0ICE">rof.iaf_jra_1p4_2018_ais0ice</value>
-      <value drof_mode="IAF_JRA_1p4_2018_AIS0LIQ">rof.iaf_jra_1p4_2018_ais0liq</value>
-      <value drof_mode="IAF_JRA_1p4_2018_AIS0ROF">rof.iaf_jra_1p4_2018_ais0rof</value>
       <value drof_mode="IAF_JRA_1p4_2018"     >rof.iaf_jra_1p4_2018</value>
-      <value drof_mode="IAF_JRA_1p5_AIS0ROF"  >rof.iaf_jra_1p5_ais0rof</value>
       <value drof_mode="IAF_JRA_1p5"          >rof.iaf_jra_1p5</value>
       <value drof_mode="IAF_JRA"              >rof.iaf_jra</value>
       <value drof_mode="RYF8485_JRA"          >rof.ryf8485_jra</value>
@@ -80,13 +70,7 @@
     <values>
       <value>$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
       <value stream="rof.diatren_ann_rx1"      >$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
-      <value stream="rof.diatren_ann_ais00_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
-      <value stream="rof.diatren_ann_ais45_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
-      <value stream="rof.diatren_ann_ais55_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
       <value stream="rof.diatren_iaf_rx1"      >$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
-      <value stream="rof.diatren_iaf_ais00_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
-      <value stream="rof.diatren_iaf_ais45_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
-      <value stream="rof.diatren_iaf_ais55_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
       <value stream="rof.iaf_jra_1p5"          >$DIN_LOC_ROOT/lnd/dlnd7/JRA55</value>
       <value stream="rof.iaf_jra.*"            >$DIN_LOC_ROOT/lnd/dlnd7/JRA55</value>
       <value stream="rof.ryf*"                 >$DIN_LOC_ROOT/lnd/dlnd7/JRA55</value>
@@ -101,13 +85,7 @@
     <desc>Stream domain file path(s).</desc>
     <values>
       <value stream="rof.diatren_ann_rx1"      >runoff.daitren.annual.20190226.nc</value>
-      <value stream="rof.diatren_ann_ais00_rx1">runoff.daitren.annual-AISx00.20190226.nc</value>
-      <value stream="rof.diatren_ann_ais45_rx1">runoff.daitren.annual-AISx45.20190226.nc</value>
-      <value stream="rof.diatren_ann_ais55_rx1">runoff.daitren.annual-AISx55.20190226.nc</value>
       <value stream="rof.diatren_iaf_rx1"      >runoff.daitren.iaf.20120419.nc</value>
-      <value stream="rof.diatren_iaf_ais00_rx1">runoff.daitren.iaf-AISx00.20120419.nc</value>
-      <value stream="rof.diatren_iaf_ais45_rx1">runoff.daitren.iaf-AISx45.20120419.nc</value>
-      <value stream="rof.diatren_iaf_ais55_rx1">runoff.daitren.iaf-AISx55.20120419.nc</value>
       <value stream="rof.iaf_jra.*"            >domain.roff.JRA025.170111.nc</value>
       <value stream="rof.ryf*"                 >domain.roff.JRA025.170111.nc</value>
       <value stream="rof.cplhist"              >null</value>
@@ -134,27 +112,6 @@
         arear  area
         mask   mask
       </value>
-      <value stream="rof.diatren_iaf_ais00_rx1">
-        time   time
-        xc     lon
-        yc     lat
-        arear  area
-        mask   mask
-      </value>
-      <value stream="rof.diatren_iaf_ais45_rx1">
-        time   time
-        xc     lon
-        yc     lat
-        arear  area
-        mask   mask
-      </value>
-      <value stream="rof.diatren_iaf_ais55_rx1">
-        time   time
-        xc     lon
-        yc     lat
-        arear  area
-        mask   mask
-      </value>
       <value stream="rof.cplhist">
         time           time
         domrb_lon      lon
@@ -173,13 +130,7 @@
     <values>
       <value>$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
       <value stream="rof.diatren_ann_rx1"      >$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
-      <value stream="rof.diatren_ann_ais00_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
-      <value stream="rof.diatren_ann_ais45_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
-      <value stream="rof.diatren_ann_ais55_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
       <value stream="rof.diatren_iaf_rx1"      >$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
-      <value stream="rof.diatren_iaf_ais00_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
-      <value stream="rof.diatren_iaf_ais45_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
-      <value stream="rof.diatren_iaf_ais55_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
       <value stream="rof.iaf_jra_1p5"          >$DIN_LOC_ROOT/ocn/jra55/v1.5_noleap</value>
       <value stream="rof.iaf_jra.*"            >$DIN_LOC_ROOT/lnd/dlnd7/JRA55</value>
       <value stream="rof.ryf*"                 >$DIN_LOC_ROOT/lnd/dlnd7/JRA55</value>
@@ -194,30 +145,12 @@
     <desc>Stream data file path(s).</desc>
     <values>
       <value stream="rof.diatren_ann_rx1"      >runoff.daitren.annual.20190226.nc</value>
-      <value stream="rof.diatren_ann_ais00_rx1">runoff.daitren.annual.20190226.nc</value>
-      <value stream="rof.diatren_ann_ais45_rx1">runoff.daitren.annual.20190226.nc</value>
-      <value stream="rof.diatren_ann_ais55_rx1">runoff.daitren.annual.20190226.nc</value>
       <value stream="rof.diatren_iaf_rx1"      >runoff.daitren.iaf.20120419.nc</value>
-      <value stream="rof.diatren_iaf_ais00_rx1">runoff.daitren.iaf-AISx00.20120419.nc</value>
-      <value stream="rof.diatren_iaf_ais45_rx1">runoff.daitren.iaf-AISx45.20120419.nc</value>
-      <value stream="rof.diatren_iaf_ais55_rx1">runoff.daitren.iaf-AISx55.20120419.nc</value>
       <value stream="rof.ryf8485_jra"          >RAF_8485.JRA.v1.3.runoff.180404.nc</value>
       <value stream="rof.ryf9091_jra"          >RAF_9091.JRA.v1.3.runoff.180404.nc</value>
       <value stream="rof.ryf0304_jra"          >RAF_0304.JRA.v1.3.runoff.180404.nc</value>
-      <value stream="rof.iaf_jra_1p5_ais0rof">
-           JRA.v1.5.runoff.%y.no_rofi_no_rofl.240411.nc
-      </value>
       <value stream="rof.iaf_jra_1p5">
            JRA.v1.5.runoff.%y.240411.nc
-      </value>
-      <value stream="rof.iaf_jra_1p4_2018_ais0ice">
-           JRA.v1.4.runoff.%y.no_rofi.190214.nc
-      </value>
-      <value stream="rof.iaf_jra_1p4_2018_ais0liq">
-           JRA.v1.4.runoff.%y.no_rofl.190214.nc
-      </value>
-      <value stream="rof.iaf_jra_1p4_2018_ais0rof">
-           JRA.v1.4.runoff.%y.no_rofi_no_rofl.190214.nc
       </value>
       <value stream="rof.iaf_jra_1p4_2018">
            JRA.v1.4.runoff.%y.190214.nc
@@ -242,9 +175,6 @@
         runoff rofl
       </value>
       <value stream="rof.diatren_iaf_rx1">
-        runoff rofl
-      </value>
-      <value stream="rof.diatren_iaf_ais45_rx1">
         runoff rofl
       </value>
       <value stream="rof.iaf_jra.*">
@@ -282,7 +212,6 @@
       <value>1</value>
       <value stream="rof.diatren_ann_rx1"      >1</value>
       <value stream="rof.diatren_iaf_rx1"      >1</value>
-      <value stream="rof.diatren_iaf_ais45_rx1">1</value>
       <value stream="rof.iaf_jra.*"            >$DROF_STRM_YR_ALIGN</value>
       <value stream="rof.ryf*"                 >$DROF_STRM_YR_ALIGN</value>
       <value stream="rof.cplhist"              >$DROF_CPLHIST_YR_ALIGN</value>
@@ -296,13 +225,7 @@
     <desc>First year of stream.</desc>
     <values>
       <value stream="rof.diatren_ann_rx1"      >1</value>
-      <value stream="rof.diatren_ann_ais00_rx1">1</value>
-      <value stream="rof.diatren_ann_ais45_rx1">1</value>
-      <value stream="rof.diatren_ann_ais55_rx1">1</value>
       <value stream="rof.diatren_iaf_rx1"      >1948</value>
-      <value stream="rof.diatren_iaf_ais00_rx1">1948</value>
-      <value stream="rof.diatren_iaf_ais45_rx1">1948</value>
-      <value stream="rof.diatren_iaf_ais55_rx1">1948</value>
       <value stream="rof.iaf_jra.*"            >$DROF_STRM_YR_START</value>
       <value stream="rof.ryf8485_jra"          >1984</value>
       <value stream="rof.ryf9091_jra"          >1990</value>
@@ -318,18 +241,9 @@
     <desc>Last year of stream.</desc>
     <values>
       <value stream="rof.diatren_ann_rx1"         >1</value>
-      <value stream="rof.diatren_ann_ais00_rx1"   >1</value>
-      <value stream="rof.diatren_ann_ais45_rx1"   >1</value>
-      <value stream="rof.diatren_ann_ais55_rx1"   >1</value>
       <value stream="rof.diatren_iaf_rx1"         >2009</value>
-      <value stream="rof.diatren_iaf_ais00_rx1"   >2009</value>
-      <value stream="rof.diatren_iaf_ais45_rx1"   >2009</value>
-      <value stream="rof.diatren_iaf_ais55_rx1"   >2009</value>
       <value stream="rof.iaf_jra_1p5"             >$DROF_STRM_YR_END</value>
       <value stream="rof.iaf_jra_1p4_2018"        >$DROF_STRM_YR_END</value>
-      <value stream="rof.iaf_jra_1p4_2018_ais0ice">$DROF_STRM_YR_END</value>
-      <value stream="rof.iaf_jra_1p4_2018_ais0liq">$DROF_STRM_YR_END</value>
-      <value stream="rof.iaf_jra_1p4_2018_ais0rof">$DROF_STRM_YR_END</value>
       <value stream="rof.iaf_jra"                 >$DROF_STRM_YR_END</value>
       <value stream="rof.ryf8485_jra"             >1984</value>
       <value stream="rof.ryf9091_jra"             >1990</value>

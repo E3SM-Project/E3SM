@@ -2,6 +2,11 @@ name: eamxx-sa-sanitizer
 
 on:
   workflow_dispatch:
+    inputs:
+      submit:
+        description: 'Force cdash submission'
+        required: true
+        type: boolean
 
   # Add schedule trigger for nightly runs at midnight MT (Standard Time)
   schedule:
@@ -13,12 +18,13 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  submit: ${{ github.event_name == 'schedule' && 'true' || 'false' }}  # Submit to cdash only for nightlies
+  # Submit to cdash only for nightlies or if the user explicitly forced a submission via workflow dispatch
+  submit: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.submit) }}
 
 jobs:
   gcc-openmp:
     runs-on:  [self-hosted, ghci-snl-cpu, gcc]
-    name: gcc-openmp / cov
+    name: gcc-openmp / valg
     steps:
       - name: Check out the repository
         uses: actions/checkout@v4
@@ -52,6 +58,35 @@ jobs:
           submodules: recursive
       - name: Show action trigger
         uses: ./.github/actions/show-workflow-trigger
+      - name: Get CUDA Arch
+        run: |
+          # Ensure nvidia-smi is available
+          if ! command -v nvidia-smi &> /dev/null; then
+              echo "nvidia-smi could not be found. Please ensure you have Nvidia drivers installed."
+              exit 1
+          fi
+
+          # Get the GPU model from nvidia-smi, and set env for next step
+          gpu_model=$(nvidia-smi --query-gpu=name --format=csv,noheader | head -n 1)
+          case "$gpu_model" in
+              *"H100"*)
+                  echo "Hopper=ON" >> $GITHUB_ENV
+                  echo "CUDA_ARCH=90" >> $GITHUB_ENV
+                  ARCH=90
+                  ;;
+              *"A100"*)
+                  echo "Ampere=ON" >> $GITHUB_ENV
+                  echo "CUDA_ARCH=80" >> $GITHUB_ENV
+                  ;;
+              *"V100"*)
+                  echo "Volta=ON" >> $GITHUB_ENV
+                  echo "CUDA_ARCH=70" >> $GITHUB_ENV
+                  ;;
+              *)
+                  echo "Unsupported GPU model: $gpu_model"
+                  exit 1
+                  ;;
+          esac
       - name: Run tests
         uses: ./.github/actions/test-all-scream
         with:
@@ -59,4 +94,4 @@ jobs:
           machine: ghci-snl-cuda
           generate: false
           submit: ${{ env.submit }}
-          cmake-configs: Kokkos_ARCH_VOLTA70=ON;CMAKE_CUDA_ARCHITECTURES=70
+          cmake-configs: Kokkos_ARCH_HOPPER90=${{ env.Hopper }};Kokkos_ARCH_AMPERE80=${{ env.Ampere }};Kokkos_ARCH_VOLTA70=${{ env.Volta }};CMAKE_CUDA_ARCHITECTURES=${{ env.CUDA_ARCH }}
