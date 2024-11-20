@@ -6,6 +6,62 @@ Fields:
   Physics:
     Field Names:
       - T_mid
+      - O3
+      - H2O2
+      - H2SO4
+      - SO2
+      - DMS
+      - SOAG
+      - bc_a1
+      - bc_a3
+      - bc_a4
+      - dst_a1
+      - dst_a3
+      - so4_a1
+      - so4_a2
+      - so4_a3
+      - pom_a1
+      - pom_a3
+      - pom_a4
+      - soa_a1
+      - soa_a2
+      - soa_a3
+      - nacl_a1
+      - nacl_a2
+      - nacl_a3
+      - mom_a1
+      - mom_a2
+      - mom_a3
+      - mom_a4
+      - num_a1
+      - num_a2
+      - num_a3
+      - num_a4
+      - bc_c1
+      - bc_c3
+      - bc_c4
+      - dst_c1
+      - dst_c3
+      - so4_c1
+      - so4_c2
+      - so4_c3
+      - pom_c1
+      - pom_c3
+      - pom_c4
+      - soa_c1
+      - soa_c2
+      - soa_c3
+      - nacl_c1
+      - nacl_c2
+      - nacl_c3
+      - mom_c1
+      - mom_c2
+      - mom_c3
+      - mom_c4
+      - num_c1
+      - num_c2
+      - num_c3
+      - num_c4
       # To save these fields make sure to turn on
       # OUTPUT_TRACER_FIELDS
       #- oxi_fields

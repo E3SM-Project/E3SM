@@ -146,6 +146,15 @@ void MAMMicrophysics::set_grids(
   // surface albedo shortwave, direct
   add_field<Required>("sfc_alb_dir_vis", scalar2d, nondim, grid_name);
 
+  //----------- Variables from microphysics scheme -------------
+
+  // Evaporation from stratiform rain [kg/kg/s]
+  add_field<Required>("nevapr", scalar3d_mid, kg / kg / s, grid_name);
+
+  // Stratiform rain production rate [kg/kg/s]
+  add_field<Required>("precip_total_tend", scalar3d_mid, kg / kg / s,
+                      grid_name);
+
   // ---------------------------------------------------------------------
   // These variables are "updated" or inputs/outputs for the process
   // ---------------------------------------------------------------------
@@ -512,6 +521,9 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
 
   const int photo_table_len = get_photo_table_work_len(photo_table_);
   work_photo_table_ = view_2d("work_photo_table", ncol_, photo_table_len);
+  const int sethet_work_len = mam4::mo_sethet::get_total_work_len_sethet();
+  work_set_het_ = view_2d("work_set_het_array", ncol_, sethet_work_len);
+  cmfdqr_ = view_1d("cmfdqr_", nlev_);
 
   // here's where we store per-column photolysis rates
   photo_rates_ = view_3d("photo_rates", ncol_, nlev_, mam4::mo_photo::phtcnt);
@@ -564,6 +576,14 @@ void MAMMicrophysics::run_impl(const double dt) {
   // preprocess input -- needs a scan for the calculation of atm height
   Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
   Kokkos::fence();
+
+   //----------- Variables from microphysics scheme -------------
+
+  // Evaporation from stratiform rain [kg/kg/s]
+  const auto& nevapr = get_field_in("nevapr").get_view<const Real **>();
+
+  // Stratiform rain production rate [kg/kg/s]
+  const auto& prain = get_field_in("precip_total_tend").get_view<const Real **>();
 
   const auto wet_geometric_mean_diameter_i =
       get_field_in("dgnumwet").get_view<const Real ***>();
@@ -733,6 +753,8 @@ void MAMMicrophysics::run_impl(const double dt) {
     clsmap_4[i]              = mam4::gas_chemistry::clsmap_4[i];
     permute_4[i]             = mam4::gas_chemistry::permute_4[i];
   }
+  const auto& cmfdqr = cmfdqr_;
+  const auto& work_set_het =work_set_het_;
   // loop over atmosphere columns and compute aerosol microphyscs
   Kokkos::parallel_for(
       policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
@@ -798,6 +820,9 @@ void MAMMicrophysics::run_impl(const double dt) {
             ekat::subview(linoz_dPmL_dO3col, icol);
         const auto linoz_cariolle_pscs_icol =
             ekat::subview(linoz_cariolle_pscs, icol);
+        const auto nevapr_icol  = ekat::subview(nevapr, icol);
+        const auto prain_icol = ekat::subview(prain, icol);
+        const auto work_set_het_icol = ekat::subview(work_set_het, icol);
         // Note: All variables are inputs, except for progs, which is an
         // input/output variable.
         mam4::microphysics::perform_atmospheric_chemistry_and_microphysics(
@@ -811,7 +836,12 @@ void MAMMicrophysics::run_impl(const double dt) {
             linoz_cariolle_pscs_icol, eccf, adv_mass_kg_per_moles, clsmap_4,
             permute_4, offset_aerosol,
             config.linoz.o3_sfc, config.linoz.o3_tau, config.linoz.o3_lbl,
-            dry_diameter_icol, wet_diameter_icol, wetdens_icol);
+            dry_diameter_icol, wet_diameter_icol, wetdens_icol,
+            dry_atm.phis(icol),
+            cmfdqr,
+            prain_icol,
+            nevapr_icol,
+            work_set_het_icol);
       });  // parallel_for for the column loop
   Kokkos::fence();
 
