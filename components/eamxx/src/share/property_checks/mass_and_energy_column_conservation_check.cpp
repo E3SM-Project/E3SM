@@ -63,7 +63,7 @@ void MassAndEnergyColumnConservationCheck::compute_current_mass ()
   const auto qr = m_fields.at("qr").get_view<const Real**>();
 
   const auto policy = ExeSpaceUtils::get_default_team_policy(ncols, nlevs);
-  Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
+  Kokkos::parallel_for("MassAndEnergyColumnConservationCheck::compute_current_mass", policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int i = team.league_rank();
 
     const auto pseudo_density_i = ekat::subview(pseudo_density, i);
@@ -92,7 +92,7 @@ void MassAndEnergyColumnConservationCheck::compute_current_energy ()
   const auto phis = m_fields.at("phis").get_view<const Real*>();
 
   const auto policy = ExeSpaceUtils::get_default_team_policy(ncols, nlevs);
-  Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
+  Kokkos::parallel_for("MassAndEnergyColumnConservationCheck::compute_current_energy", policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int i = team.league_rank();
 
     const auto pseudo_density_i = ekat::subview(pseudo_density, i);
@@ -141,7 +141,7 @@ PropertyCheck::ResultAndMsg MassAndEnergyColumnConservationCheck::check() const
 
   // Mass error calculation
   const auto policy = ExeSpaceUtils::get_default_team_policy(ncols, nlevs);
-  Kokkos::parallel_reduce(policy, KOKKOS_LAMBDA (const KT::MemberType& team,
+  Kokkos::parallel_reduce(" MassAndEnergyColumnConservationCheck::check:mass", policy, KOKKOS_LAMBDA (const KT::MemberType& team,
                                                  maxloc_value_t&       result) {
     const int i = team.league_rank();
 
@@ -173,7 +173,7 @@ PropertyCheck::ResultAndMsg MassAndEnergyColumnConservationCheck::check() const
   }, maxloc_t(maxloc_mass));
 
   // Energy error calculation
-  Kokkos::parallel_reduce(policy, KOKKOS_LAMBDA (const KT::MemberType& team,
+  Kokkos::parallel_reduce(" MassAndEnergyColumnConservationCheck::check:energy", policy, KOKKOS_LAMBDA (const KT::MemberType& team,
                                                  maxloc_value_t&       result) {
 
     const int i = team.league_rank();

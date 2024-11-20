@@ -728,7 +728,7 @@ void MAMMicrophysics::run_impl(const double dt) {
   const auto qv = wet_atm_.qv;
   const int month = timestamp().get_month();  // 1-based
   // loop over atmosphere columns and compute aerosol microphyscs
-  Kokkos::parallel_for(
+  Kokkos::parallel_for("MAMMicrophysics::run_impl",
       policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
         const int icol     = team.league_rank();   // column index
         const Real col_lat = col_latitudes(icol);  // column latitude (degrees?)
