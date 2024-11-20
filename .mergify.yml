@@ -31,6 +31,12 @@ merge_protections:
         - check-skipped=cpu-gcc
 
 pull_request_rules:
+    - name: dismiss stale reviews
+      conditions:
+        - base=master
+      actions:
+        dismiss_reviews:
+          when: synchronize # Dismiss reviews when synchronize event happens
     - name: Automatic merge when CI passes and approved
       conditions:
         - "label=CI: automerge"
