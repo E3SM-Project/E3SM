@@ -259,7 +259,6 @@ struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWrap::UnitTest<D>::Base 
     }
 
     // Call the C++ implementation
-    const int npbl = shoc_init_host(SDS.nlev, SDS.pref_mid, SDS.nbot_shoc, SDS.ntop_shoc);
     shoc_main(SDS);
 
     // Make sure output falls within reasonable bounds
@@ -382,8 +381,6 @@ struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWrap::UnitTest<D>::Base 
 
     // Get data from cxx
     for (auto& d : cxx_data) {
-      const int npbl = shoc_init_host(d.nlev, d.pref_mid, d.nbot_shoc, d.ntop_shoc);
-
       shoc_main(d);
     }
 

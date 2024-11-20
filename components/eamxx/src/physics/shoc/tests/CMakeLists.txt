@@ -65,26 +65,33 @@ set(SHOC_TESTS_SRCS
 if (SCREAM_ENABLE_BASELINE_TESTS)
   if (SCREAM_ONLY_GENERATE_BASELINES)
     set(BASELINE_FILE_ARG "-g -b ${SCREAM_BASELINES_DIR}/data")
+    # We don't want to do thread spreads when generating. That
+    # could cause race conditions in the file system.
+    set(SHOC_THREADS "${SCREAM_TEST_MAX_THREADS}")
   else()
     set(BASELINE_FILE_ARG "-c -b ${SCREAM_BASELINES_DIR}/data")
+    set(SHOC_THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC})
   endif()
 else()
   set(BASELINE_FILE_ARG "-n") # no baselines
+  set(SHOC_THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC})
 endif()
 
 CreateUnitTest(shoc_tests "${SHOC_TESTS_SRCS}"
   LIBS shoc shoc_test_infra
-  THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
+  THREADS ${SHOC_THREADS}
   EXE_ARGS "--args ${BASELINE_FILE_ARG}"
-  LABELS "shoc;physics"
+  LABELS "shoc;physics;baseline_gen;baseline_cmp"
   )
 
-if (NOT SCREAM_SHOC_SMALL_KERNELS)
-  CreateUnitTest(shoc_sk_tests "${SHOC_TESTS_SRCS}"
+# If small kernels are ON, we don't need a separate executable to test them.
+# Also, we never want to generate baselines with this separate executable
+if (NOT SCREAM_SHOC_SMALL_KERNELS AND NOT SCREAM_ONLY_GENERATE_BASELINES)
+  CreateUnitTest(shoc_sk_tests "shoc_main_tests.cpp"
     LIBS shoc_sk shoc_test_infra
-    THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
-    EXE_ARGS shoc_main_bfb "--flags=\\'${BASELINE_FILE_ARG}\\'"
-    LABELS "shoc;physics")
+    THREADS ${SHOC_THREADS}
+    EXE_ARGS "--args ${BASELINE_FILE_ARG}"
+    LABELS "shoc;physics;baseline_cmp"
     )
 endif()
 
@@ -93,11 +100,4 @@ CreateUnitTest(shoc_run_and_cmp "shoc_run_and_cmp.cpp"
   EXCLUDE_MAIN_CPP
   THREADS ${SCREAM_TEST_MAX_THREADS}
   EXE_ARGS "${BASELINE_FILE_ARG}"
-  LABELS "shoc;physics")
-
-if (SCREAM_TEST_MAX_THREADS GREATER 1)
-  # ECUT only adds _ompX if we have more than one value of X, or if X>1
-  set (TEST_SUFFIX _omp${SCREAM_TEST_MAX_THREADS})
-endif()
-
-set_tests_properties (shoc_run_and_cmp${TEST_SUFFIX} PROPERTIES LABELS "baseline_gen;baseline_cmp")
+  LABELS "shoc;physics;baseline_gen;baseline_cmp")
