@@ -2,6 +2,7 @@
 #define SCREAM_FIELD_MANAGER_HPP
 
 #include "share/grid/abstract_grid.hpp"
+#include "share/grid/grids_manager.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_group.hpp"
 #include "share/field/field_request.hpp"
@@ -33,16 +34,16 @@ class FieldManager {
 public:
 
   // Public types
-  using header_type      = typename Field::header_type;
-  using identifier_type  = typename Field::identifier_type;
-  using ci_string        = typename identifier_type::ci_string;
-  using repo_type        = std::map<ci_string,std::shared_ptr<Field>>;
-  using group_info_type  = FieldGroupInfo;
-  using group_info_map   = std::map<ci_string,std::shared_ptr<group_info_type>>;
-  using grid_ptr_type    = std::shared_ptr<const AbstractGrid>;
+  using header_type         = typename Field::header_type;
+  using identifier_type     = typename Field::identifier_type;
+  using ci_string           = typename identifier_type::ci_string;
+  using repo_type           = std::map<ci_string,std::map<ci_string,std::shared_ptr<Field>>>;
+  using group_info_type     = FieldGroupInfo;
+  using group_info_map      = std::map<ci_string,std::shared_ptr<group_info_type>>;
 
   // Constructor(s)
-  explicit FieldManager (const grid_ptr_type& grid);
+  explicit FieldManager (const std::shared_ptr<const AbstractGrid>& grid);
+  explicit FieldManager (const std::shared_ptr<const GridsManager>& grid);
 
   // No copies, cause the internal database is not a shared_ptr.
   // NOTE: you can change this if you find that copies are needed/useful.
@@ -69,9 +70,6 @@ public:
   int size () const { return m_fields.size(); }
   RepoState repository_state () const { return m_repo_state; }
 
-  // Return the grid associated to this FieldManager
-  grid_ptr_type get_grid () const { return m_grid; }
-
   // Get the group_name->group_info map of all stored groups
   const group_info_map& get_groups_info () const { return m_field_groups; }
 
@@ -84,11 +82,10 @@ public:
   bool has_field (const std::string& name) const { return m_fields.find(name)!=m_fields.end(); }
   bool has_group (const std::string& name) const { return m_field_groups.find(name)!=m_field_groups.end(); }
 
-  const FieldIdentifier& get_field_id (const std::string& name) const;
   Field get_field (const std::string& name) const;
-  Field get_field (const identifier_type& id) const { return get_field(id.name()); }
+  Field get_field (const std::string& name, const std::string& grid) const;
   Field& get_field (const std::string& name);
-  Field& get_field (const identifier_type& id) { return get_field(id.name()); }
+  Field& get_field (const std::string& name, const std::string& grid);
 
   FieldGroup get_field_group (const std::string& name) const;
 
@@ -130,8 +127,8 @@ protected:
   // So store GroupRequest objects during registration phase.
   std::map<std::string,std::set<GroupRequest>> m_group_requests;
 
-  // The grid where the fields in this FM live
-  std::shared_ptr<const AbstractGrid> m_grid;
+  // The grids where the fields in this FM live
+  std::shared_ptr<const GridsManager> m_grids_mgr;
 
   // If some fields are registered with incomplete FID (just name and grid),
   // we 'skip' them, hoping that some other request will contain the right specs.

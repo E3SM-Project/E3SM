@@ -4,12 +4,19 @@ namespace scream
 {
 
 FieldManager::
-FieldManager (const grid_ptr_type& grid)
-  : m_repo_state (RepoState::Clean)
-  , m_grid       (grid)
+FieldManager (const std::shared_ptr<const AbstractGrid>& grid)
+ : FieldManager (std::make_shared<LibraryGridsManager>(grid))
 {
-  EKAT_REQUIRE_MSG (m_grid!=nullptr,
-      "Error! Input grid pointer is not valid.");
+  // Nothing else to do
+}
+
+FieldManager::
+FieldManager (const std::shared_ptr<const GridsManager>& gm)
+ : m_repo_state (RepoState::Clean)
+ , m_grids_mgr  (gm)
+{
+  EKAT_REQUIRE_MSG (m_grids_mgr!=nullptr,
+      "Error! Input grids manager pointer is not valid.");
 }
 
 void FieldManager::register_field (const FieldRequest& req)
@@ -127,13 +134,6 @@ add_to_group (const std::string& field_name, const std::string& group_name)
   group->m_fields_names.push_back(field_name);
   auto& ft = get_field(field_name).get_header().get_tracking();
   ft.add_to_group(group);
-}
-
-const FieldIdentifier& FieldManager::get_field_id (const std::string& name) const {
-  auto ptr = get_field_ptr(name);
-  EKAT_REQUIRE_MSG(ptr!=nullptr,
-      "Error! Field '" + name + "' not found.\n");
-  return ptr->get_header().get_identifier();
 }
 
 Field FieldManager::get_field (const std::string& name) const {
