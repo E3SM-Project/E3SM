@@ -830,6 +830,10 @@ add_default($nl,'use_hetfrz_classnuc');
 add_default($nl,'hist_hetfrz_classnuc');
 add_default($nl,'gw_convect_hcf') if (get_default_value('gw_convect_hcf'));
 add_default($nl,'hdepth_scaling_factor') if (get_default_value('hdepth_scaling_factor'));
+add_default($nl,'gw_convect_hdepth_min') if (get_default_value('gw_convect_hdepth_min'));
+add_default($nl,'gw_convect_storm_speed_min') if (get_default_value('gw_convect_storm_speed_min'));
+add_default($nl,'gw_convect_plev_src_wind') if (get_default_value('gw_convect_plev_src_wind'));
+add_default($nl,'use_gw_convect_old', 'val'=>'.true.');
 add_default($nl,'linoz_psc_T');
 if ($cfg->get('microphys') =~ /^mg2/) {
     add_default($nl,'micro_mg_dcs_tdep');

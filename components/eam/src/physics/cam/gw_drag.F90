@@ -118,6 +118,11 @@ module gw_drag
   ! namelist 
   logical          :: history_amwg                   ! output the variables used by the AMWG diag package
 
+  logical  :: use_gw_convect_old          ! switch to enable legacy behavior
+  real(r8) :: gw_convect_plev_src_wind    ! reference pressure level for source wind for convective GWD [Pa]
+  real(r8) :: gw_convect_hdepth_min       ! minimum hdepth for for convective GWD spectrum lookup table [km]
+  real(r8) :: gw_convect_storm_speed_min  ! minimum convective storm speed for convective GWD           [m/s]
+  
 !==========================================================================
 contains
 !==========================================================================
@@ -141,7 +146,9 @@ subroutine gw_drag_readnl(nlfile)
 
   namelist /gw_drag_nl/ pgwv, gw_dc, tau_0_ubc, effgw_beres, effgw_cm, &
       effgw_oro, fcrit2, frontgfc, gw_drag_file, taubgnd, gw_convect_hcf, &
-      hdepth_scaling_factor
+      hdepth_scaling_factor, gw_convect_hdepth_min, &
+      gw_convect_storm_speed_min, gw_convect_plev_src_wind, &
+      use_gw_convect_old
   !----------------------------------------------------------------------
 
   if (masterproc) then
@@ -170,8 +177,12 @@ subroutine gw_drag_readnl(nlfile)
   call mpibcast(frontgfc,    1, mpir8,  0, mpicom)
   call mpibcast(taubgnd,     1, mpir8,  0, mpicom)
   call mpibcast(gw_drag_file, len(gw_drag_file), mpichar, 0, mpicom)
-  call mpibcast(gw_convect_hcf, 1, mpir8,  0, mpicom)
-  call mpibcast(hdepth_scaling_factor, 1, mpir8,  0, mpicom)
+  call mpibcast(gw_convect_hcf,             1, mpir8,  0, mpicom)
+  call mpibcast(hdepth_scaling_factor,      1, mpir8,  0, mpicom)
+  call mpibcast(gw_convect_hdepth_min,      1, mpir8,  0, mpicom)
+  call mpibcast(gw_convect_storm_speed_min, 1, mpir8,  0, mpicom)
+  call mpibcast(gw_convect_plev_src_wind,   1, mpir8,  0, mpicom)
+  call mpibcast(use_gw_convect_old,         1, mpilog, 0, mpicom)
 #endif
 
   dc = gw_dc
@@ -224,7 +235,6 @@ subroutine gw_init()
 
   ! Index for levels at specific pressures.
   integer :: kfront
-  integer :: k700
 
   ! output tendencies and state variables for CAM4 temperature,
   ! water vapor, cloud ice and cloud liquid budgets.
@@ -451,20 +461,10 @@ subroutine gw_init()
 
         ttend_dp_idx    = pbuf_get_index('TTEND_DP')
 
-        do k = 0, pver
-           ! 700 hPa index
-           if (pref_edge(k+1) < 70000._r8) k700 = k+1
-        end do
-
-        if (masterproc) then
-           write (iulog,*) 'K700    =',k700
-        end if
-
         ! Initialization of Beres' parameterization parameters
         call gw_init_beres(mfcc)
-        call gw_convect_init(k700, mfcc, errstring)
-        if (trim(errstring) /= "") &
-             call endrun("gw_convect_init: "//errstring)
+        call gw_convect_init(gw_convect_plev_src_wind, mfcc, errstring)
+        if (trim(errstring) /= "") call endrun("gw_convect_init: "//errstring)
 
         ! Output for gravity waves from the Beres scheme.
         call gw_spec_addflds(prefix=beres_pf, scheme="Beres", &
@@ -765,7 +765,9 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         ! Determine wave sources for Beres04 scheme
         call gw_beres_src(ncol, pgwv, state1%lat(:ncol), u, v, ttend_dp, &
              zm, src_level, tend_level, tau, ubm, ubi, xv, yv, c, &
-             hdepth, maxq0, gw_convect_hcf, hdepth_scaling_factor)
+             hdepth, maxq0, gw_convect_hcf, hdepth_scaling_factor, &
+             gw_convect_hdepth_min, gw_convect_storm_speed_min, &
+             use_gw_convect_old)
 
         do_latitude_taper = .false.
 
