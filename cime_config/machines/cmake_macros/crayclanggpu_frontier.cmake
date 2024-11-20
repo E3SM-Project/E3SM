@@ -1,6 +1,5 @@
 set(MPICC "cc")
 set(MPICXX "mpicxx")
-#set(MPICXX "CC")
 set(MPIFC "ftn")
 set(SCC "cc")
 set(SCXX "hipcc")
@@ -34,7 +33,7 @@ set(HAS_F2008_CONTIGUOUS "TRUE")
 # -Wl,--allow-shlib-undefined was added to address rocm 5.4.3 Fortran linker issue:
 # /opt/rocm-5.4.3/lib/libhsa-runtime64.so.1: undefined reference to `std::condition_variable::wait(std::unique_lock<std::mutex>&)@GLIBCXX_3.4.30'
 # AMD started building with GCC 12.2.0, which brings in a GLIBCXX symbol that isn't in CCE's default GCC toolchain.
-#string(APPEND CMAKE_EXE_LINKER_FLAGS " -Wl,--allow-multiple-definition -Wl,--allow-shlib-undefined")
+string(APPEND CMAKE_EXE_LINKER_FLAGS " -Wl,--allow-shlib-undefined -Wl,--allow-multiple-definition")
 
 # Switching to O3 for performance benchmarking
 # Will revisit any failing tests
