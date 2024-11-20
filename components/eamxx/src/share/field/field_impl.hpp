@@ -532,7 +532,7 @@ deep_copy_impl (const Field& src) const {
 
 template<HostOrDevice HD, typename ST>
 void Field::deep_copy_impl (const ST value) const {
-
+  Kokkos::Profiling::pushRegion("Field::deep_copy_impl");
   // Note: we can't just do a deep copy on get_view_impl<HD>(), since this
   //       field might be a subfield of another. Instead, get the
   //       reshaped view first, based on the field rank.
@@ -615,6 +615,7 @@ void Field::deep_copy_impl (const ST value) const {
     default:
       EKAT_ERROR_MSG ("Error! Unsupported field rank in 'deep_copy'.\n");
   }
+  Kokkos::Profiling::popRegion();
 }
 
 template<HostOrDevice HD, typename ST>
