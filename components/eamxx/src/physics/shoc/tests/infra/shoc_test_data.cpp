@@ -20,271 +20,226 @@ namespace shoc {
 //
 // Glue functions to call from host with the Data struct
 //
-// In all of these functions you should see shoc_init(nlev, true).
 // We are provisionally following P3 here in case SHOC uses global data.
 //
 
 void shoc_grid(ShocGridData& d)
 {
-  shoc_init(d.nlev);
   shoc_grid_host(d.shcol, d.nlev, d.nlevi, d.zt_grid, d.zi_grid, d.pdel, d.dz_zt, d.dz_zi, d.rho_zt);
 }
 
 void shoc_diag_obklen(ShocDiagObklenData& d)
 {
-  shoc_init(1); // single level function
   shoc_diag_obklen_host(d.shcol, d.uw_sfc, d.vw_sfc, d.wthl_sfc, d.wqw_sfc, d.thl_sfc, d.cldliq_sfc, d.qv_sfc, d.ustar, d.kbfs, d.obklen);
 }
 
 void update_host_dse(UpdateHostDseData& d)
 {
-  shoc_init(d.nlev);
   update_host_dse_host(d.shcol, d.nlev, d.thlm, d.shoc_ql, d.inv_exner, d.zt_grid, d.phis, d.host_dse);
 }
 
 void shoc_energy_fixer(ShocEnergyFixerData& d)
 {
-  shoc_init(d.nlev);
   shoc_energy_fixer_host(d.shcol, d.nlev, d.nlevi, d.dtime, d.nadv, d.zt_grid, d.zi_grid, d.se_b, d.ke_b, d.wv_b, d.wl_b, d.se_a, d.ke_a, d.wv_a, d.wl_a, d.wthl_sfc, d.wqw_sfc, d.rho_zt, d.tke, d.pint, d.host_dse);
 }
 
 void shoc_energy_integrals(ShocEnergyIntegralsData& d)
 {
-  shoc_init(d.nlev);
   shoc_energy_integrals_host(d.shcol, d.nlev, d.host_dse, d.pdel, d.rtm, d.rcm, d.u_wind, d.v_wind, d.se_int, d.ke_int, d.wv_int, d.wl_int);
 }
 
 void calc_shoc_vertflux(CalcShocVertfluxData& d)
 {
-  shoc_init(d.nlev);
   calc_shoc_vertflux_host(d.shcol, d.nlev, d.nlevi, d.tkh_zi, d.dz_zi, d.invar, d.vertflux);
 }
 
 void calc_shoc_varorcovar(CalcShocVarorcovarData& d)
 {
-  shoc_init(d.nlev);
   calc_shoc_varorcovar_host(d.shcol, d.nlev, d.nlevi, d.tunefac, d.isotropy_zi, d.tkh_zi, d.dz_zi, d.invar1, d.invar2, d.varorcovar);
 }
 
 void compute_tmpi(ComputeTmpiData& d)
 {
-  shoc_init(d.nlevi - 1); // nlev = nlevi - 1
   compute_tmpi_host(d.nlevi, d.shcol, d.dtime, d.rho_zi, d.dz_zi, d.tmpi);
 }
 
 void dp_inverse(DpInverseData& d)
 {
-  shoc_init(d.nlev);
   dp_inverse_host(d.nlev, d.shcol, d.rho_zt, d.dz_zt, d.rdp_zt);
 }
 
 void integ_column_stability(IntegColumnStabilityData& d)
 {
-  shoc_init(d.nlev);
   integ_column_stability_host(d.nlev, d.shcol, d.dz_zt, d.pres, d.brunt, d.brunt_int);
 }
 
 void check_tke(CheckTkeData& d)
 {
-  shoc_init(d.nlev);
   check_tke_host(d.shcol, d.nlev, d.tke);
 }
 
 void shoc_tke(ShocTkeData& d)
 {
-  shoc_init(d.nlev);
   shoc_tke_host(d.shcol, d.nlev, d.nlevi, d.dtime, d.wthv_sec, d.shoc_mix, d.dz_zi, d.dz_zt, d.pres, d.tabs, d.u_wind, d.v_wind, d.brunt, d.zt_grid, d.zi_grid, d.pblh, d.tke, d.tk, d.tkh, d.isotropy);
 }
 
 void compute_shr_prod(ComputeShrProdData& d)
 {
-  shoc_init(d.nlev);
   compute_shr_prod_host(d.nlevi, d.nlev, d.shcol, d.dz_zi, d.u_wind, d.v_wind, d.sterm);
 }
 
 void isotropic_ts(IsotropicTsData& d)
 {
-  shoc_init(d.nlev);
   isotropic_ts_host(d.nlev, d.shcol, d.brunt_int, d.tke, d.a_diss, d.brunt, d.isotropy);
 }
 
 void adv_sgs_tke(AdvSgsTkeData& d)
 {
-  shoc_init(d.nlev);
   adv_sgs_tke_host(d.nlev, d.shcol, d.dtime, d.shoc_mix, d.wthv_sec, d.sterm_zt, d.tk, d.tke, d.a_diss);
 }
 
 void eddy_diffusivities(EddyDiffusivitiesData& d)
 {
-  shoc_init(d.nlev);
   eddy_diffusivities_host(d.nlev, d.shcol, d.pblh, d.zt_grid, d.tabs, d.shoc_mix, d.sterm_zt, d.isotropy, d.tke, d.tkh, d.tk);
 }
 
 void shoc_length(ShocLengthData& d)
 {
-  shoc_init(d.nlev);
   shoc_length_host(d.shcol, d.nlev, d.nlevi, d.host_dx, d.host_dy, d.zt_grid, d.zi_grid, d.dz_zt, d.tke, d.thv, d.brunt, d.shoc_mix);
 }
 
 void compute_brunt_shoc_length(ComputeBruntShocLengthData& d)
 {
-  shoc_init(d.nlev);
   compute_brunt_shoc_length_host(d.nlev, d.nlevi, d.shcol, d.dz_zt, d.thv, d.thv_zi, d.brunt);
 }
 
 void compute_l_inf_shoc_length(ComputeLInfShocLengthData& d)
 {
-  shoc_init(d.nlev);
   compute_l_inf_shoc_length_host(d.nlev, d.shcol, d.zt_grid, d.dz_zt, d.tke, d.l_inf);
 }
 
 void compute_shoc_mix_shoc_length(ComputeShocMixShocLengthData& d)
 {
-  shoc_init(d.nlev);
   compute_shoc_mix_shoc_length_host(d.nlev, d.shcol, d.tke, d.brunt, d.zt_grid, d.l_inf, d.shoc_mix);
 }
 
 void check_length_scale_shoc_length(CheckLengthScaleShocLengthData& d)
 {
-  shoc_init(d.nlev);
   check_length_scale_shoc_length_host(d.nlev, d.shcol, d.host_dx, d.host_dy, d.shoc_mix);
 }
 
 void clipping_diag_third_shoc_moments(ClippingDiagThirdShocMomentsData& d)
 {
-  shoc_init(d.nlevi - 1); // nlev = nlevi - 1
   clipping_diag_third_shoc_moments_host(d.nlevi, d.shcol, d.w_sec_zi, d.w3);
 }
 
 void diag_second_moments_srf(DiagSecondMomentsSrfData& d)
 {
-  shoc_init(1); // single level function
   shoc_diag_second_moments_srf_host(d.shcol, d.wthl_sfc, d.uw_sfc, d.vw_sfc, d.ustar2, d.wstar);
 }
 
 void linear_interp(LinearInterpData& d)
 {
-  shoc_init(d.km1);
   linear_interp_host(d.x1, d.x2, d.y1, d.y2, d.km1, d.km2, d.ncol, d.minthresh);
 }
 
 void diag_third_shoc_moments(DiagThirdShocMomentsData& d)
 {
-  shoc_init(d.nlev);
   diag_third_shoc_moments_host(d.shcol, d.nlev, d.nlevi, d.w_sec, d.thl_sec, d.wthl_sec, d.isotropy, d.brunt, d.thetal, d.tke, d.dz_zt, d.dz_zi, d.zt_grid, d.zi_grid, d.w3);
 }
 
 void compute_diag_third_shoc_moment(ComputeDiagThirdShocMomentData& d)
 {
-  shoc_init(d.nlev);
   compute_diag_third_shoc_moment_host(d.shcol, d.nlev, d.nlevi, d.w_sec, d.thl_sec, d.wthl_sec, d.tke, d.dz_zt, d.dz_zi, d.isotropy_zi, d.brunt_zi, d.w_sec_zi, d.thetal_zi, d.w3);
 }
 
 void shoc_assumed_pdf(ShocAssumedPdfData& d)
 {
-  shoc_init(d.nlev);
   shoc_assumed_pdf_host(d.shcol, d.nlev, d.nlevi, d.thetal, d.qw, d.w_field, d.thl_sec, d.qw_sec, d.wthl_sec, d.w_sec, d.wqw_sec, d.qwthl_sec, d.w3, d.pres, d.zt_grid, d.zi_grid, d.shoc_cldfrac, d.shoc_ql, d.wqls, d.wthv_sec, d.shoc_ql2);
 }
 
 void shoc_assumed_pdf_tilde_to_real(ShocAssumedPdfTildeToRealData& d)
 {
-  shoc_init(1); // single level function
   shoc_assumed_pdf_tilde_to_real_host(d.w_first, d.sqrtw2, &d.w1);
 }
 
 void shoc_assumed_pdf_vv_parameters(ShocAssumedPdfVvParametersData& d)
 {
-  shoc_init(1); // single level function
   shoc_assumed_pdf_vv_parameters_host(d.w_first, d.w_sec, d.w3var, d.w_tol_sqd, &d.skew_w, &d.w1_1, &d.w1_2, &d.w2_1, &d.w2_2, &d.a);
 }
 
 void shoc_assumed_pdf_thl_parameters(ShocAssumedPdfThlParametersData& d)
 {
-  shoc_init(1); // single level function
   shoc_assumed_pdf_thl_parameters_host(d.wthlsec, d.sqrtw2, d.sqrtthl, d.thlsec, d.thl_first, d.w1_1, d.w1_2, d.skew_w, d.a, d.thl_tol, d.w_thresh, &d.thl1_1, &d.thl1_2, &d.thl2_1, &d.thl2_2, &d.sqrtthl2_1, &d.sqrtthl2_2);
 }
 
 void shoc_assumed_pdf_qw_parameters(ShocAssumedPdfQwParametersData& d)
 {
-  shoc_init(1); // single level function
   shoc_assumed_pdf_qw_parameters_host(d.wqwsec, d.sqrtw2, d.skew_w, d.sqrtqt, d.qwsec, d.w1_2, d.w1_1, d.qw_first, d.a, d.rt_tol, d.w_thresh, &d.qw1_1, &d.qw1_2, &d.qw2_1, &d.qw2_2, &d.sqrtqw2_1, &d.sqrtqw2_2);
 }
 
 void shoc_assumed_pdf_inplume_correlations(ShocAssumedPdfInplumeCorrelationsData& d)
 {
-  shoc_init(1); // single level function
   shoc_assumed_pdf_inplume_correlations_host(d.sqrtqw2_1, d.sqrtthl2_1, d.a, d.sqrtqw2_2, d.sqrtthl2_2, d.qwthlsec, d.qw1_1, d.qw_first, d.thl1_1, d.thl_first, d.qw1_2, d.thl1_2, &d.r_qwthl_1);
 }
 
 void shoc_assumed_pdf_compute_temperature(ShocAssumedPdfComputeTemperatureData& d)
 {
-  shoc_init(1); // single level function
   shoc_assumed_pdf_compute_temperature_host(d.thl1, d.pval, &d.tl1);
 }
 
 void shoc_assumed_pdf_compute_qs(ShocAssumedPdfComputeQsData& d)
 {
-  shoc_init(1); // single level function
   shoc_assumed_pdf_compute_qs_host(d.tl1_1, d.tl1_2, d.pval, &d.qs1, &d.beta1, &d.qs2, &d.beta2);
 }
 
 void shoc_assumed_pdf_compute_s(ShocAssumedPdfComputeSData& d)
 {
-  shoc_init(1); // single level function
   shoc_assumed_pdf_compute_s_host(d.qw1, d.qs1, d.beta, d.pval, d.thl2, d.qw2, d.sqrtthl2, d.sqrtqw2, d.r_qwthl, &d.s, &d.std_s, &d.qn, &d.c);
 }
 
 void shoc_assumed_pdf_compute_sgs_liquid(ShocAssumedPdfComputeSgsLiquidData& d)
 {
-  shoc_init(1); // single level function
   shoc_assumed_pdf_compute_sgs_liquid_host(d.a, d.ql1, d.ql2, &d.shoc_ql);
 }
 
 void shoc_assumed_pdf_compute_cloud_liquid_variance(ShocAssumedPdfComputeCloudLiquidVarianceData& d)
 {
-  shoc_init(1); // single level function
   shoc_assumed_pdf_compute_cloud_liquid_variance_host(d.a, d.s1, d.ql1, d.c1, d.std_s1, d.s2, d.ql2, d.c2, d.std_s2, d.shoc_ql, &d.shoc_ql2);
 }
 
 void shoc_assumed_pdf_compute_liquid_water_flux(ShocAssumedPdfComputeLiquidWaterFluxData& d)
 {
-  shoc_init(1); // single level function
   shoc_assumed_pdf_compute_liquid_water_flux_host(d.a, d.w1_1, d.w_first, d.ql1, d.w1_2, d.ql2, &d.wqls);
 }
 
 void shoc_assumed_pdf_compute_buoyancy_flux(ShocAssumedPdfComputeBuoyancyFluxData& d)
 {
-  shoc_init(1); // single level function
   shoc_assumed_pdf_compute_buoyancy_flux_host(d.wthlsec, d.wqwsec, d.pval, d.wqls, &d.wthv_sec);
 }
 
 void diag_second_moments_ubycond(DiagSecondMomentsUbycondData& d)
 {
-  shoc_init(1); // single level function
   shoc_diag_second_moments_ubycond_host(d.shcol, d.thl_sec, d.qw_sec, d.wthl_sec, d.wqw_sec, d.qwthl_sec, d.uw_sec, d.vw_sec, d.wtke_sec);
 }
 
 void pblintd_init_pot(PblintdInitPotData& d)
 {
-  shoc_init(d.nlev, true);
   shoc_pblintd_init_pot_host(d.shcol, d.nlev, d.thl, d.ql, d.q, d.thv);
 }
 
 void pblintd_cldcheck(PblintdCldcheckData& d)
 {
-  shoc_init(d.nlev, true);
   shoc_pblintd_cldcheck_host(d.shcol, d.nlev, d.nlevi, d.zi, d.cldn, d.pblh);
 }
 
 void diag_second_moments_lbycond(DiagSecondMomentsLbycondData& d)
 {
-  shoc_init(1); // single level function
   diag_second_moments_lbycond_host(d.shcol, d.wthl_sfc, d.wqw_sfc, d.uw_sfc, d.vw_sfc, d.ustar2, d.wstar, d.wthl_sec, d.wqw_sec, d.uw_sec, d.vw_sec, d.wtke_sec, d.thl_sec, d.qw_sec, d.qwthl_sec);
 }
 
 void diag_second_moments(DiagSecondMomentsData& d)
 {
-  shoc_init(d.nlev);
   diag_second_moments_host(d.shcol, d.nlev, d.nlevi, d.thetal, d.qw, d.u_wind, d.v_wind, d.tke, d.isotropy, d.tkh, d.tk,
                            d.dz_zi, d.zt_grid, d.zi_grid, d.shoc_mix, d.thl_sec, d.qw_sec, d.wthl_sec, d.wqw_sec, d.qwthl_sec, d.uw_sec,
                            d.vw_sec, d.wtke_sec, d.w_sec);
@@ -292,7 +247,6 @@ void diag_second_moments(DiagSecondMomentsData& d)
 
 void diag_second_shoc_moments(DiagSecondShocMomentsData& d)
 {
-  shoc_init(d.nlev);
   diag_second_shoc_moments_host(d.shcol, d.nlev, d.nlevi, d.thetal, d.qw, d.u_wind, d.v_wind, d.tke, d.isotropy, d.tkh,
                                 d.tk, d.dz_zi, d.zt_grid, d.zi_grid, d.shoc_mix, d.wthl_sfc, d.wqw_sfc, d.uw_sfc, d.vw_sfc, d.thl_sec, d.qw_sec,
                                 d.wthl_sec, d.wqw_sec, d.qwthl_sec, d.uw_sec, d.vw_sec, d.wtke_sec, d.w_sec);
@@ -300,13 +254,11 @@ void diag_second_shoc_moments(DiagSecondShocMomentsData& d)
 
 void compute_shoc_vapor(ComputeShocVaporData& d)
 {
-  shoc_init(d.nlev);
   compute_shoc_vapor_host(d.shcol, d.nlev, d.qw, d.ql, d.qv);
 }
 
 void update_prognostics_implicit(UpdatePrognosticsImplicitData& d)
 {
-  shoc_init(d.nlev);
   update_prognostics_implicit_host(d.shcol, d.nlev, d.nlevi, d.num_tracer, d.dtime,
                                    d.dz_zt, d.dz_zi, d.rho_zt, d.zt_grid, d.zi_grid,
                                    d.tk, d.tkh, d.uw_sfc, d.vw_sfc, d.wthl_sfc, d.wqw_sfc,
@@ -315,8 +267,8 @@ void update_prognostics_implicit(UpdatePrognosticsImplicitData& d)
 
 void shoc_main(ShocMainData& d)
 {
-  shoc_init(d.nlev, true);
-  d.elapsed_s = shoc_main_host(d.shcol, d.nlev, d.nlevi, d.dtime, d.nadv, 1/*d.npbl*/, d.host_dx, d.host_dy, d.thv, d.zt_grid, d.zi_grid,
+  const int npbl = shoc_init_host(d.nlev, d.pref_mid, d.nbot_shoc, d.ntop_shoc);
+  d.elapsed_s = shoc_main_host(d.shcol, d.nlev, d.nlevi, d.dtime, d.nadv, npbl, d.host_dx, d.host_dy, d.thv, d.zt_grid, d.zi_grid,
               d.pres, d.presi, d.pdel, d.wthl_sfc, d.wqw_sfc, d.uw_sfc, d.vw_sfc, d.wtracer_sfc,
               d.num_qtracers, d.w_field, d.inv_exner, d.phis, d.host_dse, d.tke, d.thetal, d.qw,
               d.u_wind, d.v_wind, d.qtracers, d.wthv_sec, d.tkh, d.tk, d.shoc_ql, d.shoc_cldfrac, d.pblh,
@@ -324,30 +276,13 @@ void shoc_main(ShocMainData& d)
               d.wtke_sec, d.uw_sec, d.vw_sec, d.w3, d.wqls_sec, d.brunt, d.shoc_ql2);
 }
 
-void shoc_main_with_init(ShocMainData& d)
-{
-  using C = scream::physics::Constants<Real>;
-
-  // shoc_init_for_main_bfb_host(d.nlev, C::gravit, C::Rair, C::RH2O, C::Cpair, C::ZVIR, C::LatVap, C::LatIce, C::Karman, C::P0,
-  //                          d.pref_mid, d.nbot_shoc, d.ntop_shoc+1);
-
-  d.elapsed_s = shoc_main_host(d.shcol, d.nlev, d.nlevi, d.dtime, d.nadv, 1/*d.npbl*/,d.host_dx, d.host_dy, d.thv, d.zt_grid, d.zi_grid,
-              d.pres, d.presi, d.pdel, d.wthl_sfc, d.wqw_sfc, d.uw_sfc, d.vw_sfc, d.wtracer_sfc, d.num_qtracers,
-              d.w_field, d.inv_exner, d.phis, d.host_dse, d.tke, d.thetal, d.qw, d.u_wind, d.v_wind, d.qtracers,
-              d.wthv_sec, d.tkh, d.tk, d.shoc_ql, d.shoc_cldfrac, d.pblh, d.shoc_mix, d.isotropy, d.w_sec,
-              d.thl_sec, d.qw_sec, d.qwthl_sec, d.wthl_sec, d.wqw_sec, d.wtke_sec, d.uw_sec, d.vw_sec, d.w3,
-              d.wqls_sec, d.brunt, d.shoc_ql2);
-}
-
 void pblintd_height(PblintdHeightData& d)
 {
-  shoc_init(d.nlev, true);
   pblintd_height_host(d.shcol, d.nlev, d.npbl, d.z, d.u, d.v, d.ustar, d.thv, d.thv_ref, d.pblh, d.rino, d.check);
 }
 
 void vd_shoc_decomp_and_solve(VdShocDecompandSolveData& d)
 {
-  shoc_init(d.nlev);
   // Call decomp subroutine
   // vd_shoc_decomp_host(d.shcol, d.nlev, d.nlevi, d.kv_term, d.tmpi, d.rdp_zt, d.dtime, d.flux, d.du, d.dl, d.d);
   // // Call solver for each problem. The `var` array represents 3d
@@ -369,25 +304,21 @@ void vd_shoc_decomp_and_solve(VdShocDecompandSolveData& d)
 
 void pblintd_surf_temp(PblintdSurfTempData& d)
 {
-  shoc_init(d.nlev, true);
   pblintd_surf_temp_host(d.shcol, d.nlev, d.nlevi, d.z, d.ustar, d.obklen, d.kbfs, d.thv, d.tlv, d.pblh, d.check, d.rino);
 }
 
 void pblintd_check_pblh(PblintdCheckPblhData& d)
 {
-  shoc_init(d.nlev, true);
-  pblintd_check_pblh_host(d.shcol, d.nlev, d.nlevi, d.z, d.ustar, d.check, d.pblh);
+  pblintd_check_pblh_host(d.shcol, d.nlev, d.nlevi, d.nlev/*npbl*/, d.z, d.ustar, d.check, d.pblh);
 }
 
 void pblintd(PblintdData& d)
 {
-  shoc_init(d.nlev, true);
   pblintd_host(d.shcol, d.nlev, d.nlevi, d.npbl, d.z, d.zi, d.thl, d.ql, d.q, d.u, d.v, d.ustar, d.obklen, d.kbfs, d.cldn, d.pblh);
 }
 
 void compute_shoc_temperature(ComputeShocTempData& d)
 {
-  shoc_init(d.nlev, true);
   compute_shoc_temperature_host(d.shcol, d.nlev, d.thetal, d.ql, d.inv_exner, d.tabs);
 }
 

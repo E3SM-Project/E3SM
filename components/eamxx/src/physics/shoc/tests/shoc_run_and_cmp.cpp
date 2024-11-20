@@ -74,7 +74,6 @@ struct Baseline {
         // Run reference shoc on this set of parameters.
         const auto d = ic::Factory::create(ps.ic, ps.ncol, ps.nlev, ps.num_qtracers);
         set_params(ps, *d);
-        shoc_init(ps.nlev);
 
         if (ps.repeat > 0 && r == -1) {
           std::cout << "Running SHOC with ni=" << d->shcol << ", nk=" << d->nlev
@@ -105,30 +104,39 @@ struct Baseline {
     return nerr;
   }
 
-  Int run_and_cmp (const std::string& filename, const double& tol) {
+  Int run_and_cmp (const std::string& filename, const double& tol, bool no_baseline) {
     auto fid = ekat::FILEPtr(fopen(filename.c_str(), "r"));
     EKAT_REQUIRE_MSG( fid, "generate_baseline can't read " << filename);
     Int nerr = 0, ne;
     int case_num = 0;
     for (auto ps : params_) {
       case_num++;
-      // Read the reference impl's data from the baseline file.
-      const auto d_ref = ic::Factory::create(ps.ic, ps.ncol, ps.nlev, ps.num_qtracers);
-      set_params(ps, *d_ref);
-      // Now run a sequence of other impls. This includes the reference
-      // implementation b/c it's likely we'll want to change it as we go.
-      {
+      if (no_baseline) {
         const auto d = ic::Factory::create(ps.ic, ps.ncol, ps.nlev, ps.num_qtracers);
         set_params(ps, *d);
-        shoc_init(ps.nlev);
-        for (int it = 0; it < ps.nsteps; it++) {
-          std::cout << "--- checking case # " << case_num << ", timestep # = " << (it+1)*ps.nadv
-                     << " ---\n" << std::flush;
-          read(fid, d_ref);
+        for (int it=0; it<ps.nsteps; it++) {
+          std::cout << "--- running case # " << case_num << ", timestep # " << it+1 << " of " << ps.nsteps << " ---\n" << std::flush;
           shoc_main(*d);
-          ne = compare(tol, d_ref, d);
-          if (ne) std::cout << "Ref impl failed.\n";
-          nerr += ne;
+        }
+      }
+      else {
+        // Read the reference impl's data from the baseline file.
+        const auto d_ref = ic::Factory::create(ps.ic, ps.ncol, ps.nlev, ps.num_qtracers);
+        set_params(ps, *d_ref);
+        // Now run a sequence of other impls. This includes the reference
+        // implementation b/c it's likely we'll want to change it as we go.
+        {
+          const auto d = ic::Factory::create(ps.ic, ps.ncol, ps.nlev, ps.num_qtracers);
+          set_params(ps, *d);
+          for (int it = 0; it < ps.nsteps; it++) {
+            std::cout << "--- checking case # " << case_num << ", timestep # = " << (it+1)*ps.nadv
+                      << " ---\n" << std::flush;
+            read(fid, d_ref);
+            shoc_main(*d);
+            ne = compare(tol, d_ref, d);
+            if (ne) std::cout << "Ref impl failed.\n";
+            nerr += ne;
+          }
         }
       }
     }
@@ -194,7 +202,9 @@ int main (int argc, char** argv) {
       argv[0] << " [options] baseline-filename\n"
       "Options:\n"
       "  -g                Generate baseline file.\n"
-      "  -f                Use fortran impls instead of c++.\n"
+      "  -c                Compare  baseline file. Default False.\n"
+      "  -n                Run without baseline actions. Default True.\n"
+      "  -b <baseline_path>  Path to directory containing baselines.\n"
       "  -t <tol>          Tolerance for relative error.\n"
       "  -s <steps>        Number of timesteps. Default=10.\n"
       "  -dt <seconds>     Length of timestep. Default=150.\n"
@@ -207,7 +217,7 @@ int main (int argc, char** argv) {
     return 1;
   }
 
-  bool generate = false;
+  bool generate = false, no_baseline = false;
   scream::Real tol = SCREAM_BFB_TESTING ? 0 : std::numeric_limits<Real>::infinity();
   Int nsteps = 10;
   Int dt = 150;
@@ -219,7 +229,8 @@ int main (int argc, char** argv) {
   std::string baseline_fn;
   std::string device;
   for (int i = 1; i < argc-1; ++i) {
-    if (ekat::argv_matches(argv[i], "-g", "--generate")) generate = true;
+    if (ekat::argv_matches(argv[i], "-g", "--generate")) { generate = true; no_baseline = false; }
+    if (ekat::argv_matches(argv[i], "-c", "--compare"))  { no_baseline = false; }
     if (ekat::argv_matches(argv[i], "-b", "--baseline-file")) {
       expect_another_arg(i, argc);
       ++i;
@@ -274,8 +285,8 @@ int main (int argc, char** argv) {
     }
   }
 
-  // Decorate baseline name with precision.
-  baseline_fn += std::to_string(sizeof(scream::Real));
+  // Compute full baseline file name with precision.
+  baseline_fn += "/shoc_run_and_cmp.baseline" + std::to_string(sizeof(scream::Real));
 
   scream::initialize_scream_session(argc, argv);
   {
@@ -285,7 +296,7 @@ int main (int argc, char** argv) {
       nerr += bln.generate_baseline(baseline_fn);
     } else {
       printf("Comparing with %s at tol %1.1e\n", baseline_fn.c_str(), tol);
-      nerr += bln.run_and_cmp(baseline_fn, tol);
+      nerr += bln.run_and_cmp(baseline_fn, tol, no_baseline);
     }
   }
   scream::finalize_scream_session();

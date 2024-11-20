@@ -67,9 +67,6 @@ private:
   void init(const FortranData::Ptr& d);
 };
 
-// Initialize SHOC with the given number of levels.
-void shoc_init(Int nlev, bool force_reinit=false);
-
 // We will likely want to remove these checks in the future, as we're not tied
 // to the exact implementation or arithmetic in SHOC. For now, these checks are
 // here to establish that the initial regression-testing code gives results that
@@ -77,7 +74,6 @@ void shoc_init(Int nlev, bool force_reinit=false);
 Int check_against_python(const FortranData& d);
 
 int test_FortranData();
-int test_shoc_init();
 
 }  // namespace shoc
 }  // namespace scream

@@ -220,7 +220,6 @@ void gen_plot_script(const std::vector<std::shared_ptr<FortranData> >& data,
 
 int test_shoc_ic (bool gen_plot_scripts) {
   Int nz = 160;
-  shoc_init(nz);
   // Here we:
   // 1. Initialize a standard case with settings identical to
   //    scream-doc/ѕhoc_port/shocintr.py's example_run_case method

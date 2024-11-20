@@ -982,7 +982,6 @@ void diag_second_shoc_moments                       (DiagSecondShocMomentsData& 
 void compute_shoc_vapor                             (ComputeShocVaporData& d);
 void update_prognostics_implicit                    (UpdatePrognosticsImplicitData& d);
 void shoc_main                                      (ShocMainData& d);
-void shoc_main_with_init                            (ShocMainData& d);
 void pblintd_height                                 (PblintdHeightData& d);
 void vd_shoc_decomp_and_solve                       (VdShocDecompandSolveData& d);
 void pblintd_surf_temp(PblintdSurfTempData& d);

@@ -75,7 +75,8 @@ endif()
 CreateUnitTest(shoc_tests "${SHOC_TESTS_SRCS}"
   LIBS shoc shoc_test_infra
   THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
-  EXE_ARGS "--flags=\\'${BASELINE_FILE_ARG}\\'"
+  EXE_ARGS "--args ${BASELINE_FILE_ARG}"
+  LABELS "shoc;physics"
   )
 
 if (NOT SCREAM_SHOC_SMALL_KERNELS)
@@ -83,6 +84,7 @@ if (NOT SCREAM_SHOC_SMALL_KERNELS)
     LIBS shoc_sk shoc_test_infra
     THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
     EXE_ARGS shoc_main_bfb "--flags=\\'${BASELINE_FILE_ARG}\\'"
+    LABELS "shoc;physics")
     )
 endif()
 
