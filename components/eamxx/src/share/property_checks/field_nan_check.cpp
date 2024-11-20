@@ -50,7 +50,7 @@ PropertyCheck::ResultAndMsg FieldNaNCheck::check_impl() const {
     case 1:
       {
         auto v = f.template get_strided_view<const_ST*>();
-        Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int i, int& result) {
+        Kokkos::parallel_reduce("FieldNaNCheck::check_impl:case_1", size, KOKKOS_LAMBDA(int i, int& result) {
           if (ekat::is_invalid(v(i))) {
             result = i;
           }
@@ -60,7 +60,7 @@ PropertyCheck::ResultAndMsg FieldNaNCheck::check_impl() const {
     case 2:
       {
         auto v = f.template get_strided_view<const_ST**>();
-        Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, int& result) {
+        Kokkos::parallel_reduce("FieldNaNCheck::check_impl:case_2", size, KOKKOS_LAMBDA(int idx, int& result) {
           int i,j;
           unflatten_idx(idx,extents,i,j);
           if (ekat::is_invalid(v(i,j))) {
@@ -72,7 +72,7 @@ PropertyCheck::ResultAndMsg FieldNaNCheck::check_impl() const {
     case 3:
       {
         auto v = f.template get_strided_view<const_ST***>();
-        Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, int& result) {
+        Kokkos::parallel_reduce("FieldNaNCheck::check_impl:case_3", size, KOKKOS_LAMBDA(int idx, int& result) {
           int i,j,k;
           unflatten_idx(idx,extents,i,j,k);
           if (ekat::is_invalid(v(i,j,k))) {
@@ -84,7 +84,7 @@ PropertyCheck::ResultAndMsg FieldNaNCheck::check_impl() const {
     case 4:
       {
         auto v = f.template get_strided_view<const_ST****>();
-        Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, int& result) {
+        Kokkos::parallel_reduce("FieldNaNCheck::check_impl:case_4", size, KOKKOS_LAMBDA(int idx, int& result) {
           int i,j,k,l;
           unflatten_idx(idx,extents,i,j,k,l);
           if (ekat::is_invalid(v(i,j,k,l))) {
@@ -96,7 +96,7 @@ PropertyCheck::ResultAndMsg FieldNaNCheck::check_impl() const {
     case 5:
       {
         auto v = f.template get_strided_view<const_ST*****>();
-        Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, int& result) {
+        Kokkos::parallel_reduce("FieldNaNCheck::check_impl:case_5", size, KOKKOS_LAMBDA(int idx, int& result) {
           int i,j,k,l,m;
           unflatten_idx(idx,extents,i,j,k,l,m);
           if (ekat::is_invalid(v(i,j,k,l,m))) {
@@ -108,7 +108,7 @@ PropertyCheck::ResultAndMsg FieldNaNCheck::check_impl() const {
     case 6:
       {
         auto v = f.template get_strided_view<const_ST******>();
-        Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, int& result) {
+        Kokkos::parallel_reduce("FieldNaNCheck::check_impl:case_6", size, KOKKOS_LAMBDA(int idx, int& result) {
           int i,j,k,l,m,n;
           unflatten_idx(idx,extents,i,j,k,l,m,n);
           if (ekat::is_invalid(v(i,j,k,l,m,n))) {
