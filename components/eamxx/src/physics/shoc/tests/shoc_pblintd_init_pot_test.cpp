@@ -173,8 +173,10 @@ struct UnitWrap::UnitTest<D>::TestPblintdInitPot : public UnitWrap::UnitTest<D>:
     };
 
     // Read baseline data
-    for (auto& d : pblintd_init_pot_data_baseline) {
-      d.read(Base::m_fid);
+    if (this->m_baseline_action == COMPARE) {
+      for (auto& d : pblintd_init_pot_data_baseline) {
+        d.read(Base::m_fid);
+      }
     }
 
     for (auto& d : pblintd_init_pot_data_cxx) {

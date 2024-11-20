@@ -217,8 +217,10 @@ struct UnitWrap::UnitTest<D>::TestShocLength : public UnitWrap::UnitTest<D>::Bas
     // Assume all data is in C layout
 
     // Read baseline data
-    for (auto& d : SDS_baseline) {
-      d.read(Base::m_fid);
+    if (this->m_baseline_action == COMPARE) {
+      for (auto& d : SDS_baseline) {
+        d.read(Base::m_fid);
+      }
     }
 
     // Get data from cxx

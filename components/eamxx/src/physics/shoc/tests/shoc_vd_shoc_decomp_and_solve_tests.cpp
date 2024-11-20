@@ -49,7 +49,10 @@ struct UnitWrap::UnitTest<D>::TestVdShocDecompandSolve : public UnitWrap::UnitTe
     // Assume all data is in C layout
 
     // Read baseline data.
-    for (Int i = 0; i < num_runs; ++i) {
+    if (this->m_baseline_action == COMPARE) {
+      for (auto& d: baseline_data) {
+        d.read(Base::m_fid);
+      }
     }
 
     // Get data from cxx

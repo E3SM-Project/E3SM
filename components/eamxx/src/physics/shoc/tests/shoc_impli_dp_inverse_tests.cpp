@@ -127,8 +127,10 @@ struct UnitWrap::UnitTest<D>::TestImpDpInverse : public UnitWrap::UnitTest<D>::B
     // Assume all data is in C layout
 
     // Read baseline data
-    for (auto& d : baseline_data) {
-      d.read(Base::m_fid);
+    if (this->m_baseline_action == COMPARE) {
+      for (auto& d : baseline_data) {
+        d.read(Base::m_fid);
+      }
     }
 
     // Get data from cxx

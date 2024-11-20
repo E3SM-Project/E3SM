@@ -117,8 +117,10 @@ struct UnitWrap::UnitTest<D>::TestPblintdCldCheck : public UnitWrap::UnitTest<D>
     };
 
     // Read baseline data
-    for (auto& d : cldcheck_data_baseline) {
-      d.read(Base::m_fid);
+    if (this->m_baseline_action == COMPARE) {
+      for (auto& d : cldcheck_data_baseline) {
+        d.read(Base::m_fid);
+      }
     }
 
     for (auto& d : cldcheck_data_cxx) {

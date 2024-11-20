@@ -88,8 +88,10 @@ struct UnitWrap::UnitTest<D>::TestSecondMomUbycond : public UnitWrap::UnitTest<D
     };
 
     // Read baseline data
-    for (auto& d : uby_fortran) {
-      d.read(Base::m_fid);
+    if (this->m_baseline_action == COMPARE) {
+      for (auto& d : uby_fortran) {
+        d.read(Base::m_fid);
+      }
     }
 
     for (auto& d : uby_cxx) {
