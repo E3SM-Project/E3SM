@@ -491,6 +491,11 @@ be lost if SCREAM_HACK_XML is not enabled.
       <orbital_obliquity COMPSET=".*SCREAM%AQUA.*">0.0</orbital_obliquity>
       <orbital_mvelp type="real">-9999.0</orbital_mvelp>
       <orbital_mvelp COMPSET=".*SCREAM%AQUA.*">0.0</orbital_mvelp>
+
+      <!-- Option for prescribing an invariant solar constant -->
+      <fixed_total_solar_irradiance>-9999.0</fixed_total_solar_irradiance>
+      <fixed_total_solar_irradiance COMPSET=".*SCREAM%RCE.*">551.58</fixed_total_solar_irradiance>
+
       <rad_frequency hgrid="ne4np4">1</rad_frequency>
       <rad_frequency hgrid="ne30np4">2</rad_frequency>
       <rad_frequency hgrid="ne120np4">4</rad_frequency>
