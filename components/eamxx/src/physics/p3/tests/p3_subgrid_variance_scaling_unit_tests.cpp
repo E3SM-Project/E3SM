@@ -3,7 +3,7 @@
 #include "share/scream_types.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "p3_functions.hpp"
-#include "p3_functions_f90.hpp"
+#include "p3_test_data.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 
 #include "p3_unit_tests_common.hpp"
@@ -19,11 +19,11 @@ namespace p3 {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling
+struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling : public UnitWrap::UnitTest<D>::Base
 {
 
   //-----------------------------------------------------------------
-  static void run_bfb_tests(){
+  void run_bfb_tests() {
     //test that C++ and F90 implementations are BFB
 
     //Set of relvar values to loop over
@@ -36,9 +36,7 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling
     //Set of exponents to loop over
     Scalar expons[3] = {1.0,2.47,0.1};
 
-    //initialize struct required for F90 call
-    SubgridVarianceScalingData f_data;
-    Scalar f_scaling;
+    Scalar baseline_scaling;
 
     //Make C++ output available on host and device
     view_1d<Scalar> scaling_device("c scaling",1);
@@ -47,11 +45,11 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling
     for (Int i = 0; i < 3; ++i) {  // loop over exponents
       for (Int j = 0; j < 16; ++j) { // loop over relvars
 
-	// Get F90 solution
+	// Get baseline solution
 	// ----------------------------------
-	f_data.relvar=relvars[j];
-	f_data.expon =expons[i];
-        f_scaling = subgrid_variance_scaling(f_data);
+        if (this->m_baseline_action == COMPARE) {
+          ekat::read(&baseline_scaling, 1, Base::m_fid);
+        }
 
 	// Get C++ solution
 	// ----------------------------------
@@ -72,8 +70,11 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling
 	Kokkos::deep_copy(scaling_host, scaling_device);
 
 	// Validate results
-        if (SCREAM_BFB_TESTING) {
-          REQUIRE(f_scaling == scaling_host(0) );
+        if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
+          REQUIRE(baseline_scaling == scaling_host(0) );
+        }
+        else if (this->m_baseline_action == GENERATE) {
+          ekat::write(&scaling_host(0), 1, Base::m_fid);
         }
       } //end loop over relvar[j]
     } //end loop over expons[i]
@@ -81,7 +82,7 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling
 
   //-----------------------------------------------------------------
   KOKKOS_FUNCTION static void subgrid_variance_scaling_linearity_test(const Scalar& relvar,
-    int& errors){
+    int& errors) {
     //If expon=1, subgrid_variance_scaling should be 1
 
     Scalar tol = C::macheps * 1e3; //1e3 is scale factor to make pass, essentially an estimate of numerical error
@@ -97,7 +98,7 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling
   }
 
   //-----------------------------------------------------------------
-  KOKKOS_FUNCTION static void subgrid_variance_scaling_relvar1_test(int& errors){
+  KOKKOS_FUNCTION static void subgrid_variance_scaling_relvar1_test(int& errors) {
     //If relvar=1, subgrid_variance_scaling should be factorial(expon)
 
     Scalar tol = C::macheps * 1e3; //1e3 is scale factor to make pass, essentially an estimate of numerical error
@@ -116,7 +117,7 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling
   }
 
   //-----------------------------------------------------------------
-  KOKKOS_FUNCTION static void subgrid_variance_scaling_relvar3_test(int& errors){
+  KOKKOS_FUNCTION static void subgrid_variance_scaling_relvar3_test(int& errors) {
   //If expon=3, subgrid variance scaling should be relvar^3+3*relvar^2+2*relvar/relvar^3
 
   Scalar tol = C::macheps * 100; //100 is a fudge factor to make sure tests pass. 10 was too small for gnu on CPU.
@@ -151,7 +152,7 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling
   }   //end relvar3_test
 
   //-----------------------------------------------------------------
-  static void run_property_tests(){
+  void run_property_tests() {
     /*This function executes all the SGS variance scaling tests by looping
      *over a bunch of test and summing their return statuses.
      *If that sum is zero, no errors have occurred. Otherwise you have errors.
@@ -189,12 +190,14 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling
 } // namespace p3
 } // namespace scream
 
-namespace{
+namespace {
 
 TEST_CASE("p3_subgrid_variance_scaling_test", "[p3_subgrid_variance_scaling_test]"){
-  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3SubgridVarianceScaling::run_bfb_tests();
-  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3SubgridVarianceScaling::run_property_tests();
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3SubgridVarianceScaling;
+
+  T t;
+  t.run_bfb_tests();
+  t.run_property_tests();
 }
 
 } // namespace
-

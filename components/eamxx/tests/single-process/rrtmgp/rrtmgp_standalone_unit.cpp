@@ -49,8 +49,8 @@ using PC = scream::physics::Constants<Real>;
 #ifdef RRTMGP_ENABLE_YAKL
 TEST_CASE("rrtmgp_scream_standalone", "") {
   // Get baseline name (needs to be passed as an arg)
-  std::string inputfile = ekat::TestSession::get().params.at("rrtmgp_inputfile");
-  std::string baseline = ekat::TestSession::get().params.at("rrtmgp_baseline");
+  std::string inputfile = ekat::TestSession::get().params.at("inputfile");
+  std::string baseline = ekat::TestSession::get().params.at("baseline");
 
   // Check if files exists
   REQUIRE(rrtmgpTest::file_exists(inputfile.c_str()));

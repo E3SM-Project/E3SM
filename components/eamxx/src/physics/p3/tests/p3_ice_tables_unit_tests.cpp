@@ -4,7 +4,7 @@
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
-#include "p3_functions_f90.hpp"
+#include "p3_test_data.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -22,9 +22,9 @@ namespace unit_test {
  */
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestTableIce {
+struct UnitWrap::UnitTest<D>::TestTableIce : public UnitWrap::UnitTest<D>::Base {
 
-  static void test_read_lookup_tables_bfb()
+  void test_read_lookup_tables_bfb()
   {
     // Read in ice tables
     view_ice_table ice_table_vals;
@@ -32,7 +32,7 @@ struct UnitWrap::UnitTest<D>::TestTableIce {
     Functions::init_kokkos_ice_lookup_tables(ice_table_vals, collect_table_vals);
 
     // Get data from fortran
-    P3InitAFortranData d;
+    P3InitAP3Data d;
     p3_init_a(d);
 
     // Copy device data to host
@@ -62,7 +62,7 @@ struct UnitWrap::UnitTest<D>::TestTableIce {
   }
 
   template <typename View>
-  static void init_table_linear_dimension(View& table, int linear_dimension)
+  void init_table_linear_dimension(View& table, int linear_dimension)
   {
     // set up views
     using NonConstView = typename View::non_const_type;
@@ -96,7 +96,7 @@ struct UnitWrap::UnitTest<D>::TestTableIce {
     table = view_device;
   }
 
-  static void run_bfb()
+  void run_bfb()
   {
     using KTH = KokkosTypes<HostDevice>;
 
@@ -199,14 +199,6 @@ struct UnitWrap::UnitTest<D>::TestTableIce {
       {lid[15], lidb[15], access_table_index}
     };
 
-    // Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
-      find_lookuptable_indices_1a(lid[i]);
-      find_lookuptable_indices_1b(lidb[i]);
-      access_lookup_table(altd[i]);
-      access_lookup_table_coll(altcd[i]);
-    }
-
     // Sync to device
     KTH::view_1d<LookupIceData> lid_host("lid_host", max_pack_size);
     KTH::view_1d<LookupIceDataB> lidb_host("lidb_host", max_pack_size);
@@ -216,6 +208,16 @@ struct UnitWrap::UnitTest<D>::TestTableIce {
     std::copy(&lidb[0], &lidb[0] + max_pack_size, lidb_host.data());
     Kokkos::deep_copy(lid_device, lid_host);
     Kokkos::deep_copy(lidb_device, lidb_host);
+
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (Int i = 0; i < max_pack_size; ++i) {
+        lid[i].read(Base::m_fid);
+        lidb[i].read(Base::m_fid);
+        altd[i].read(Base::m_fid);
+        altcd[i].read(Base::m_fid);
+      }
+    }
 
     // Run the lookup from a kernel and copy results back to host
     view_2d<Int>  int_results("int results", 5, max_pack_size);
@@ -270,15 +272,14 @@ struct UnitWrap::UnitTest<D>::TestTableIce {
     Kokkos::deep_copy(real_results_mirror, real_results);
 
     // Validate results
-    if (SCREAM_BFB_TESTING) {
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for(int s = 0; s < max_pack_size; ++s) {
-        // +1 for O vs 1-based indexing
-        REQUIRE(int_results_mirror(0, s)+1 == lid[s].dumi);
-        REQUIRE(int_results_mirror(1, s)+1 == lid[s].dumjj);
-        REQUIRE(int_results_mirror(2, s)+1 == lid[s].dumii);
-        REQUIRE(int_results_mirror(3, s)+1 == lid[s].dumzz);
+        REQUIRE(int_results_mirror(0, s) == lid[s].dumi);
+        REQUIRE(int_results_mirror(1, s) == lid[s].dumjj);
+        REQUIRE(int_results_mirror(2, s) == lid[s].dumii);
+        REQUIRE(int_results_mirror(3, s) == lid[s].dumzz);
 
-        REQUIRE(int_results_mirror(4, s)+1 == lidb[s].dumj);
+        REQUIRE(int_results_mirror(4, s) == lidb[s].dumj);
 
         REQUIRE(real_results_mirror(0, s) == lid[s].dum1);
         REQUIRE(real_results_mirror(1, s) == lid[s].dum4);
@@ -292,9 +293,35 @@ struct UnitWrap::UnitTest<D>::TestTableIce {
         REQUIRE(real_results_mirror(6, s) == altcd[s].proc);
       }
     }
+    else if (this->m_baseline_action == GENERATE) {
+      for (Int s = 0; s < max_pack_size; ++s) {
+        lid[s].dumi = int_results_mirror(0, s);
+        lid[s].dumjj = int_results_mirror(1, s);
+        lid[s].dumii = int_results_mirror(2, s);
+        lid[s].dumzz = int_results_mirror(3, s);
+
+        lidb[s].dumj = int_results_mirror(4, s);
+
+        lid[s].dum1 = real_results_mirror(0, s);
+        lid[s].dum4 = real_results_mirror(1, s);
+        lid[s].dum5 = real_results_mirror(2, s);
+        lid[s].dum6 = real_results_mirror(3, s);
+
+        lidb[s].dum3 = real_results_mirror(4, s);
+
+        altd[s].proc = real_results_mirror(5, s);
+
+        altcd[s].proc = real_results_mirror(6, s);
+
+        lid[s].write(Base::m_fid);
+        lidb[s].write(Base::m_fid);
+        altd[s].write(Base::m_fid);
+        altcd[s].write(Base::m_fid);
+      }
+    }
   }
 
-  static void run_phys()
+  void run_phys()
   {
 #if 0
     view_ice_table ice_table_vals;
@@ -343,11 +370,12 @@ namespace {
 
 TEST_CASE("p3_ice_tables", "[p3_functions]")
 {
-  using TTI = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestTableIce;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestTableIce;
 
-  TTI::test_read_lookup_tables_bfb();
-  TTI::run_phys();
-  TTI::run_bfb();
+  T t;
+  t.test_read_lookup_tables_bfb();
+  t.run_phys();
+  t.run_bfb();
 }
 
 }

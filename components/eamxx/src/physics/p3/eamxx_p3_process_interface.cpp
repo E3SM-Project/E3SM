@@ -1,9 +1,7 @@
-#include "physics/p3/eamxx_p3_process_interface.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 #include "share/property_checks/field_lower_bound_check.hpp"
-// Needed for p3_init, the only F90 code still used.
-#include "physics/p3/p3_functions.hpp"
-#include "physics/p3/p3_f90.hpp"
+#include "p3_functions.hpp"
+#include "eamxx_p3_process_interface.hpp"
 
 #include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_units.hpp"
@@ -243,8 +241,8 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("eff_radius_qr"),m_grid,0.0,5.0e3,false);
 
   // Initialize p3
-  p3::p3_init(/* write_tables = */ false,
-              this->get_comm().am_i_root());
+  P3F::p3_init(/* write_tables = */ false,
+               this->get_comm().am_i_root());
 
   // Initialize all of the structures that are passed to p3_main in run_impl.
   // Note: Some variables in the structures are not stored in the field manager.  For these

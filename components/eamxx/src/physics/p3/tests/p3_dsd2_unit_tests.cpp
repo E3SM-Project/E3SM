@@ -4,7 +4,7 @@
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
-#include "p3_functions_f90.hpp"
+#include "p3_test_data.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -22,9 +22,9 @@ namespace unit_test {
  */
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestDsd2 {
+struct UnitWrap::UnitTest<D>::TestDsd2 : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_cloud_bfb()
+  void run_cloud_bfb()
   {
     // Read in tables
     view_2d_table vn_table_vals; view_2d_table vm_table_vals; view_2d_table revap_table_vals;
@@ -60,9 +60,11 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
     std::copy(&gcdd[0], &gcdd[0] + max_pack_size, gcdd_host.data());
     Kokkos::deep_copy(gcdd_device, gcdd_host);
 
-    // Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
-      get_cloud_dsd2(gcdd[i]);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (Int i = 0; i < max_pack_size; ++i) {
+        gcdd[i].read(Base::m_fid);
+      }
     }
 
     // Run the lookup from a kernel and copy results back to host
@@ -95,7 +97,7 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
     Kokkos::deep_copy(gcdd_host, gcdd_device);
 
     // Validate results
-    if (SCREAM_BFB_TESTING) {
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int s = 0; s < max_pack_size; ++s) {
         REQUIRE(gcdd[s].nc_out == gcdd_host(s).nc_out);
         REQUIRE(gcdd[s].mu_c   == gcdd_host(s).mu_c);
@@ -105,14 +107,19 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
         REQUIRE(gcdd[s].cdist1 == gcdd_host(s).cdist1);
       }
     }
+    else if (this->m_baseline_action == GENERATE) {
+      for (Int s = 0; s < max_pack_size; ++s) {
+        gcdd_host(s).write(Base::m_fid);
+      }
+    }
   }
 
-  static void run_cloud_phys()
+  void run_cloud_phys()
   {
     // TODO
   }
 
-  static void run_rain_bfb()
+  void run_rain_bfb()
   {
     using KTH = KokkosTypes<HostDevice>;
 
@@ -144,9 +151,11 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
     std::copy(&grdd[0], &grdd[0] + max_pack_size, grdd_host.data());
     Kokkos::deep_copy(grdd_device, grdd_host);
 
-    // Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
-      get_rain_dsd2(grdd[i]);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (Int i = 0; i < max_pack_size; ++i) {
+        grdd[i].read(Base::m_fid);
+      }
     }
 
     // Run the lookup from a kernel and copy results back to host
@@ -179,7 +188,7 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
     Kokkos::deep_copy(grdd_host, grdd_device);
 
     // Validate results
-    if (SCREAM_BFB_TESTING) {
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int s = 0; s < max_pack_size; ++s) {
         REQUIRE(grdd[s].nr_out == grdd_host(s).nr_out);
         REQUIRE(grdd[s].mu_r   == grdd_host(s).mu_r);
@@ -188,9 +197,14 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
         REQUIRE(grdd[s].logn0r == grdd_host(s).logn0r);
       }
     }
+    else if (this->m_baseline_action == GENERATE) {
+      for (Int s = 0; s < max_pack_size; ++s) {
+        grdd_host(s).write(Base::m_fid);
+      }
+    }
   }
 
-  static void run_rain_phys()
+  void run_rain_phys()
   {
     // TODO
   }
@@ -204,18 +218,20 @@ namespace {
 
 TEST_CASE("p3_cloud_dsd2", "[p3_functions]")
 {
-  using TD = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestDsd2;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestDsd2;
 
-  TD::run_cloud_phys();
-  TD::run_cloud_bfb();
+  T t;
+  t.run_cloud_phys();
+  t.run_cloud_bfb();
 }
 
 TEST_CASE("p3_rain_dsd2", "[p3_functions]")
 {
-  using TD = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestDsd2;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestDsd2;
 
-  TD::run_rain_phys();
-  TD::run_rain_bfb();
+  T t;
+  t.run_rain_phys();
+  t.run_rain_bfb();
 }
 
 }
