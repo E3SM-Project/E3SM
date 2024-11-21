@@ -651,8 +651,9 @@ contains
          tracerGroup,     &! tracers in current tracer group
          tracerGroupTend, &! tendencies for current tracer group
          activeTracers,   &! retain active tracers
-         ecosysTracers,   &! retain ecosys tracers for DMS, MacroMols
-         tracerGroupInteriorRestoringRate, &! int restoring timescale 
+         ecosysTracers,   &     ! retain ecosys tracers for DMS, MacroMols
+         frazilEcosysTracersTend, & ! frazil tendencies for ecosys
+         tracerGroupInteriorRestoringRate, &! int restoring timescale
          tracerGroupInteriorRestoringValue  ! int restoring value
 
       ! Scratch Arrays
@@ -665,7 +666,7 @@ contains
 
       ! return if all tracer tendencies disabled
       ! otherwise start timer and proceed
-   
+
       if (config_disable_tr_all_tend) return
       call mpas_timer_start("ocn_tend_tracer")
 
@@ -683,7 +684,7 @@ contains
          activeTracersOnly = .false.
       end if
 
-      ! retrieve data from pools 
+      ! retrieve data from pools
       call mpas_pool_get_subpool(statePool,   'tracers', &
                                                tracersPool)
       call mpas_pool_get_subpool(tendPool,    'tracersTend', &
@@ -929,15 +930,16 @@ contains
                                            indxSalt, tracerGroupSurfaceFlux, &
                                            err)
 
-
+            call mpas_pool_get_array(tendPool, 'frazilEcosysTracersTend', &
+                                     frazilEcosysTracersTend)
             call ocn_tracer_ecosys_frazil_compute(activeTracers, &
                                            tracerGroup, forcingPool,  &
                                            nTracersGroup, nCellsOwned, &
                                            zMid, minLevelCell, maxLevelCell, &
                                            nVertLevels, layerThickness, &
                                            indxTemp, indxSalt, &
-                                           tracerGroupTend, ssh, &
-                                           dt, err)
+                                           tracerGroupTend, frazilEcosysTracersTend, &
+                                           ssh, dt, err)
 
          endif ! ecosys tracers
 

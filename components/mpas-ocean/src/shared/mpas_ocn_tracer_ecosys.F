@@ -521,7 +521,7 @@ contains
 
    subroutine ocn_tracer_ecosys_frazil_compute(activeTracers, ecosysTracers, forcingPool, nTracers, nCellsSolve, &
       zMid, minLevelCell, maxLevelCell, nVertLevels, layerThickness, indexTemperature, indexSalinity, &
-      ecosysTracersTend, ssh, dt, err)!{{{
+      ecosysTracersTend, frazilEcosysTracersTend, ssh, dt, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -567,6 +567,9 @@ contains
       !
       !-----------------------------------------------------------------
 
+      real (kind=RKIND), dimension(:,:,:), intent(out) :: &
+        frazilEcosysTracersTend
+
       integer, intent(out) :: err !< Output: Error flag
 
       !-----------------------------------------------------------------
@@ -576,6 +579,7 @@ contains
       !-----------------------------------------------------------------
 
       integer, dimension(:), pointer :: landIceMask, landIceFloatingMask
+
       logical :: underFloatingLandIce, underLandIce ! indicates if we are under land ice
 
       integer :: kBottomFrazil  ! k index where testing for frazil begins
@@ -604,6 +608,9 @@ contains
       call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
       call mpas_pool_get_array(forcingPool, 'landIceFloatingMask', landIceFloatingMask)
       allocate (sumNewThicknessWeightedEcosysContent(ecosys_tracer_cnt))
+
+      ! initialize frazil ecosys tracer tendency field for diagnostics
+      frazilEcosysTracersTend  = 0.0_RKIND
 
       ! loop over all columns
       !$omp parallel
@@ -677,14 +684,16 @@ contains
              sumNewFrazilIceThickness = sumNewFrazilIceThickness + newFrazilIceThickness
              !NJ:  config_frazil_ice_porosity could be an array for ecosys tracers
              do n = 1, ecosys_tracer_cnt
-                frazilEcosys = min( ecosysTracers(n,k,iCell), &
-                   config_frazil_ice_porosity * ecosysTracers(n, k, iCell))
+                frazilEcosys = config_frazil_ice_porosity * ecosysTracers(n, k, iCell)
                 ! needs to be an array
                 newThicknessWeightedEcosysContent = newFrazilIceThickness * frazilEcosys
 
                 ! bgc is extracted with the frazil
-                ecosysTracersTend(ecosysIndexMARBLtoMPASO(n),k,iCell) = &
-                ecosysTracersTend(ecosysIndexMARBLtoMPASO(n),k,iCell) -newThicknessWeightedEcosysContent / dt
+                ! diagnostic
+                frazilEcosysTracersTend(n,k,iCell) =  -newThicknessWeightedEcosysContent / dt
+                ! tendency update
+                ecosysTracersTend(n,k,iCell) = &
+                   ecosysTracersTend(n,k,iCell) -newThicknessWeightedEcosysContent / dt
 
                 sumNewThicknessWeightedEcosysContent(n) = sumNewThicknessWeightedEcosysContent(n) + &
                     newThicknessWeightedEcosysContent
@@ -714,8 +723,10 @@ contains
                                                  * ( sumNewThicknessWeightedEcosysContent(n) / sumNewFrazilIceThickness )
 
                 ! ecosys tracer is released into ocean with the melting frazil
-                ecosysTracersTend(ecosysIndexMARBLtoMPASO(n),k,iCell) = &
-                ecosysTracersTend(ecosysIndexMARBLtoMPASO(n),k,iCell) + meltedThicknessWeightedEcosysContent/ dt
+                ! diagnostic
+                frazilEcosysTracersTend(n,k,iCell) =  -newThicknessWeightedEcosysContent / dt
+                ecosysTracersTend(n,k,iCell) = &
+                   ecosysTracersTend(n,k,iCell) + meltedThicknessWeightedEcosysContent/ dt
 
                 ! keep track of new frazil ice
                 sumNewThicknessWeightedEcosysContent(n) = max(0.0_RKIND,sumNewThicknessWeightedEcosysContent(n) - meltedThicknessWeightedEcosysContent)
@@ -730,11 +741,13 @@ contains
         if (sumNewFrazilIceThickness > 0.0_RKIND) then
 
            do n = 1, ecosys_tracer_cnt
-              ! all expelled at the surface
+              !NJ: Sea ice computes it's own frazil ecosys concentration from the surface ocean
+              !For now, expel all ecosys at the surface
               newThicknessWeightedEcosysContent = 0.0_RKIND
 
-              ecosysTracersTend(ecosysIndexMARBLtoMPASO(n),minLevelCell(iCell),iCell) =  &
-                  ecosysTracersTend(ecosysIndexMARBLtoMPASO(n),minLevelCell(iCell),iCell) + &
+              frazilEcosysTracersTend(n,minLevelCell(iCell),iCell) = max(0.0_RKIND,(sumNewThicknessWeightedEcosysContent(n) -  newThicknessWeightedEcosysContent) ) / dt
+              ecosysTracersTend(n,minLevelCell(iCell),iCell) =  &
+                  ecosysTracersTend(n,minLevelCell(iCell),iCell) + &
                   max(0.0_RKIND,(sumNewThicknessWeightedEcosysContent(n) -  newThicknessWeightedEcosysContent) ) / dt
            end do
          endif ! if frazil ice is formed
