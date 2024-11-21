@@ -4720,6 +4720,11 @@
 
 	<!-- melt and growth rates -->
 	<var_struct name="melt_growth_rates" time_levs="1" packages="pkgColumnPackage">
+		<var name="lateralIceMeltFractionCategory"
+		     type="real"
+		     dimensions="nCategories nCells Time"
+		     units="1"
+		/>
 		<var name="lateralIceMeltFraction"
 		     type="real"
 		     dimensions="nCells Time"
