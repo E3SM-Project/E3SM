@@ -493,15 +493,15 @@ contains
 
         ! find deepest level where frazil can be created
         kBottomFrazil=maxLevelCell(iCell)
-        !do k=maxLevelCell(iCell), minLevelCell(iCell), -1
-          ! add the ssh so frazil can form below land ice, where the ssh is depressed
-        !  if (-zMid(k,iCell) < -ssh(iCell) + config_frazil_maximum_depth) then
-        !    kBottomFrazil=k
-        !    exit
-        !  endif
-        !enddo
+        do k=maxLevelCell(iCell), minLevelCell(iCell), -1
+         ! add the ssh so frazil can form below land ice, where the ssh is depressed
+          if (-zMid(k,iCell) < -ssh(iCell) + config_frazil_maximum_depth) then
+            kBottomFrazil=k
+            exit
+          endif
+        enddo
         !NJ: Compute frazil all through the column
-        kBottomFrazil=maxLevelCell(iCell)
+        !kBottomFrazil=max(maxLevelCell(iCell)-1,kBottomFrazil)
 
         ! find minimum temperature between 1:kBottomFrazil
         columnTemperatureMin = 1.0e30_RKIND
@@ -622,7 +622,7 @@ contains
         accumulatedFrazilIceMassNew(iCell) = accumulatedFrazilIceMassOld(iCell) + sumNewFrazilIceThickness &
            * config_frazil_ice_density
 
-        !NJ: Assumed frazil salinity in coupling with sea ice
+        !NJ: Assume frazil salinity is the coupling salinity
         if ( underLandIce ) then
            ! accumulate frazil formed under land ice in case we're not coupling and we need to keep track of it
            ! for freshwater budgets
@@ -638,11 +638,11 @@ contains
         if (sumNewFrazilIceThickness > 0.0_RKIND) then
            newThicknessWeightedSaltContent = sumNewFrazilIceThickness * frazilSalinity
            if (newThicknessWeightedSaltContent > sumNewThicknessWeightedSaltContent) then
+            !NJ:  Warning: salt conservation error. Track with lowSalinityFrazilIce
             lowSalinityFrazilIce(iCell) = newThicknessWeightedSaltContent - sumNewThicknessWeightedSaltContent
-            ! Warning: May lead to a salt conservation error
             accumulatedFrazilIceSalinityNew(iCell) = accumulatedFrazilIceSalinityOld(iCell) + max(0.0_RKIND, sumNewThicknessWeightedSaltContent)
            else
-            ! salt expelled at the surface
+            !NJ: salt expelled at the surface
             frazilSalinityTendency(minLevelCell(iCell),iCell) = frazilSalinityTendency(minLevelCell(iCell),iCell) + &
                 max(0.0_RKIND,(sumNewThicknessWeightedSaltContent -  newThicknessWeightedSaltContent) ) / dt
             accumulatedFrazilIceSalinityNew(iCell) = accumulatedFrazilIceSalinityOld(iCell) + newThicknessWeightedSaltContent
