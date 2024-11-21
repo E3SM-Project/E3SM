@@ -58,7 +58,13 @@ initial_conditions:
   dgnum: [1.246662106183775E-007, 4.081134799487888E-008, 1.103139143795796E-006, 1.000000011686097E-007]
   dgnumwet: [2.367209731605067E-007, 6.780643470563889E-008, 3.028011448344027E-006, 1.000000096285154E-007]
   wetdens: [1038.67760516297, 1046.20002003441, 1031.74623165457, 1086.79731859184]
-
+  surf_radiative_T: 288.0
+  ps: 105000.0
+  horiz_winds: [-0.24988988196194634E+000, -0.23959782871450760E+000]
+  precip_liq_surf_mass: 0.1
+  precip_ice_surf_mass: 0.1
+  snow_depth_land: 0.01
+  fraction_landuse: [0.5, 0.5, 0.5, 0.5, 0.5, 0.2, 0.0, 0.0, 0.0, 0.2, 0.2]
 # The parameters for I/O control
 Scorpio:
   output_yaml_files: ["output.yaml"]
