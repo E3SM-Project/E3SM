@@ -82,7 +82,7 @@ mpas_li_velocity_external.o: Interface_velocity_solver.o
 
 mpas_li_bedtopo.o: mpas_li_advection.o
 
-mpas_li_ocean_extrap.o:
+mpas_li_ocean_extrap.o: mpas_li_calving.o
 
 Interface_velocity_solver.o:
 
