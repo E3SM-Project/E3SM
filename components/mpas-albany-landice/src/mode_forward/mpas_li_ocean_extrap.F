@@ -92,7 +92,6 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: ismip6shelfMelt_3dThermalForcing, ismip6shelfMelt_zBndsOcean
       real (kind=RKIND), dimension(:), pointer :: ismip6shelfMelt_zOcean
       real (kind=RKIND), dimension(:), pointer :: thickness, bedTopography
-      integer, dimension(:), pointer :: origOceanMaskHoriz
       integer, dimension(:,:), pointer :: orig3dOceanCavityMask         ! CAS 8/16/2024
       integer, dimension(:,:), pointer :: validOceanMask, validOceanMaskOrig, availOceanMask !masks to pass to flood-fill routine
       integer, dimension(:), pointer :: seedOceanMaskHoriz, growOceanMaskHoriz, seedOceanMaskHorizInit
@@ -132,8 +131,7 @@ contains
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
          call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
          call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_3dThermalForcing', ismip6shelfMelt_3dThermalForcing)
-         call mpas_pool_get_array(extrapOceanDataPool, 'origOceanMaskHoriz', origOceanMaskHoriz)
-         call mpas_pool_get_array(extrapOceanDataPool, 'orig3dOceanCavityMask', orig3dOceanCavityMask) ! CAS 8/16/2024
+         call mpas_pool_get_array(extrapOceanDataPool, 'orig3dOceanCavityMask', orig3dOceanCavityMask)
          call mpas_pool_get_array(extrapOceanDataPool, 'validOceanMask', validOceanMask)
          call mpas_pool_get_array(extrapOceanDataPool, 'validOceanMaskOrig', validOceanMaskOrig)
          call mpas_pool_get_array(extrapOceanDataPool, 'availOceanMask', availOceanMask)
@@ -190,7 +188,7 @@ contains
          call mpas_pool_get_field(scratchPool, 'seedMask', seedMaskField)
          call mpas_allocate_scratch_field(seedMaskField, single_block_in = .true.)
          connectedMarineMask => seedMaskField % array
-         connectedmarineMask(:) = 0
+         connectedMarineMask(:) = 0
          call mpas_pool_get_field(scratchPool, 'growMask', growMaskField)
          call mpas_allocate_scratch_field(growMaskField, single_block_in = .true.)
          growMask => growMaskField % array
@@ -223,23 +221,28 @@ contains
             if (ismip6shelfMelt_zOcean(iLayer) >= 0.0_RKIND) then
                call mpas_log_write("ismip6shelfMelt_zOcean has invalid value of $r in layer $i", MPAS_LOG_ERR, &
                        realArgs=(/ismip6shelfMelt_zOcean(iLayer)/), intArgs=(/iLayer/))
+               call mpas_log_write("ismip6shelfMelt_zOcean must have negative values because they represent " // &
+                                   "depths below sea level.", MPAS_LOG_ERR)
                err = ior(err, 1)
             endif
             if ((ismip6shelfMelt_zBndsOcean(1,iLayer) > 0.0_RKIND) .or. &
                     (ismip6shelfMelt_zBndsOcean(1,iLayer) < ismip6shelfMelt_zOcean(iLayer))) then
                call mpas_log_write("ismip6shelfMelt_zBndsOcean(1,:) has invalid value of $r in layer $i", MPAS_LOG_ERR, &
                        realArgs=(/ismip6shelfMelt_zBndsOcean(1,iLayer)/), intArgs=(/iLayer/))
+               call mpas_log_write("ismip6shelfMelt_zBndsOcean(1,:) must be less than or equal to zero " // & 
+                                   "because it represents the upper bound of an ocean layer", MPAS_LOG_ERR)
                err = ior(err, 1)
             endif
             if ((ismip6shelfMelt_zBndsOcean(2,iLayer) >= 0.0_RKIND) .or. &
                     (ismip6shelfMelt_zBndsOcean(2,iLayer) > ismip6shelfMelt_zOcean(iLayer))) then
                call mpas_log_write("ismip6shelfMelt_zBndsOcean(2,:) has invalid value of $r in layer $i", MPAS_LOG_ERR, &
                        realArgs=(/ismip6shelfMelt_zBndsOcean(2,iLayer)/), intArgs=(/iLayer/))
+               call mpas_log_write("ismip6shelfMelt_zBndsOcean(2,:) must be less than zero " // & 
+                                   "because it represents the lower bound of an ocean layer", MPAS_LOG_ERR)
                err = ior(err, 1)
             endif
          enddo
          availOceanMask(:,:) = 0
-         validOceanMask(:,:) = 0
          do iCell = 1, nCells
             do iLayer = 1, nISMIP6OceanLayers
                layerTop = ismip6shelfMelt_zBndsOcean(1, iLayer)
