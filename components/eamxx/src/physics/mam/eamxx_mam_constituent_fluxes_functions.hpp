@@ -36,7 +36,7 @@ void update_gas_aerosols_using_constituents(
       get_default_team_policy(ncol, nconstituents);
 
   // Loop through all columns to update tracer mixing rations
-  Kokkos::parallel_for(
+  Kokkos::parallel_for("scream::update_gas_aerosols_using_constituents",
       policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
         const int icol = team.league_rank();
 

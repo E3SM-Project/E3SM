@@ -127,7 +127,7 @@ void srfEmissFunctions<S, D>::perform_time_interpolation(
   using ESU          = ekat::ExeSpaceUtils<ExeSpace>;
   const auto policy  = ESU::get_default_team_policy(ncols, nsectors);
 
-  Kokkos::parallel_for(
+  Kokkos::parallel_for("srfEmissFunctions::perform_time_interpolation",
       policy, KOKKOS_LAMBDA(const MemberType &team) {
         const int icol = team.league_rank();  // column index
         Real accum     = 0;
