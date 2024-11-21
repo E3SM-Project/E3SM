@@ -36,7 +36,7 @@ MAMMicrophysics::MAMMicrophysics(const ekat::Comm &comm,
   config_.linoz.o3_lbl = m_params.get<int>("mam4_o3_lbl");
   config_.linoz.o3_tau = m_params.get<double>("mam4_o3_tau");
   config_.linoz.o3_sfc = m_params.get<double>("mam4_o3_sfc");
-  config_.linoz.psc_T = m_params.get<double>("mam4_psc_T");
+  config_.linoz.psc_T  = m_params.get<double>("mam4_psc_T");
 }
 
 AtmosphereProcessType MAMMicrophysics::type() const {
@@ -69,6 +69,9 @@ void MAMMicrophysics::set_grids(
   // interfaces
   const FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(true);
   const FieldLayout scalar3d_int = grid_->get_3d_scalar_layout(false);
+
+  // For U and V components of wind
+  const FieldLayout vector3d = grid_->get_3d_vector_layout(true, 2);
 
   using namespace ekat::units;
   constexpr auto q_unit = kg / kg;  // units of mass mixing ratios of tracers
@@ -145,15 +148,6 @@ void MAMMicrophysics::set_grids(
   //----------- Variables from coupler (land component)---------
   // surface albedo shortwave, direct
   add_field<Required>("sfc_alb_dir_vis", scalar2d, nondim, grid_name);
-
-  //----------- Variables from microphysics scheme -------------
-
-  // Evaporation from stratiform rain [kg/kg/s]
-  add_field<Required>("nevapr", scalar3d_mid, kg / kg / s, grid_name);
-
-  // Stratiform rain production rate [kg/kg/s]
-  add_field<Required>("precip_total_tend", scalar3d_mid, kg / kg / s,
-                      grid_name);
 
   // ---------------------------------------------------------------------
   // These variables are "updated" or inputs/outputs for the process
@@ -804,22 +798,22 @@ void MAMMicrophysics::run_impl(const double dt) {
             ekat::subview(linoz_cariolle_pscs, icol);
 
 	      // All of these need to be filled with valid data:
-        const Real sfc_temp = 250; 
-	      const Real air_temp = atm.temperature(nlev-1); 
+        const Real sfc_temp = 250; // Would this be an interface temperature at nlev? Like pressure.
+	      const Real air_temp = atm.temperature(nlev-1); // Or maybe this is the interface temp?
         const Real spec_hum = qv(ncol, nlev-1);
 	      const Real tv = mam4::conversions::virtual_temperature_from_temperature(air_temp, spec_hum);
-        const Real pressure_sfc = atm.pressure(nlev-1); 
+        const Real pressure_sfc = atm.interface_pressure(nlev); 
 	      const Real pressure_10m = 1010; // Millibars?
-        const Real wind_speed = 0; 
-	      const Real rain = 0; 
-	      const Real snow = 0;
+        const Real wind_speed = 0; // SHOC has cell-centered wind speeds. u_wind and v_wind.
+	      const Real rain = 0; // get_field_in("precip_total_tend").get_view<const Real **>()  ?
+	      const Real snow = 0; // total precip - rain ? 
         const Real solar_flux = 1.0; // ? 
 	      const Real mmr[gas_pcnst] = {};
 	      const Real fraction_landuse[mam4::mo_drydep::n_land_type] = {.5, .5, .5, .5, .5};
         const int col_index_season[mam4::mo_drydep::n_land_type] = {1,2,3,4,5,6,7,8,9};
-	// These output values need to be put somewhere:
-	Real dvel[gas_pcnst] = {};
-        Real dflx[gas_pcnst] = {};
+	      // These output values need to be put somewhere:
+	      Real dvel[gas_pcnst] = {}; // deposition velocity [1/cm/s]
+        Real dflx[gas_pcnst] = {}; // deposition flux [1/cm^2/s]
 
         // Output: values are dvel, dvlx
 	// Input/Output: progs::stateq, progs::qqcw

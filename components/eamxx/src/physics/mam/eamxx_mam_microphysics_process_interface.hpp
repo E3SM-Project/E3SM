@@ -4,6 +4,7 @@
 #include <physics/mam/mam_coupling.hpp>
 #include <share/atm_process/atmosphere_process.hpp>
 #include <share/util/scream_common_physics_functions.hpp>
+
 #include "readfiles/tracer_reader_utils.hpp"
 // For calling MAM4 processes
 #include <mam4xx/mam4.hpp>
@@ -14,14 +15,16 @@ namespace scream {
 // The process responsible for handling MAM4 aerosol microphysics. The AD
 // stores exactly ONE instance of this class in its list of subcomponents.
 class MAMMicrophysics final : public scream::AtmosphereProcess {
-  using PF = scream::PhysicsFunctions<DefaultDevice>;
-  using KT = ekat::KokkosTypes<DefaultDevice>;
+  static constexpr int n_land_type = mam4::mo_drydep::n_land_type;
+  using PF                         = scream::PhysicsFunctions<DefaultDevice>;
+  using KT                         = ekat::KokkosTypes<DefaultDevice>;
 
   // views for single- and multi-column data
   using view_1d       = typename KT::template view_1d<Real>;
   using view_2d       = typename KT::template view_2d<Real>;
   using view_3d       = typename KT::template view_3d<Real>;
   using const_view_1d = typename KT::template view_1d<const Real>;
+  using const_view_2d = typename KT::template view_2d<const Real>;
 
   using view_1d_host = typename KT::view_1d<Real>::HostMirror;
 
@@ -62,7 +65,7 @@ class MAMMicrophysics final : public scream::AtmosphereProcess {
   void run_impl(const double dt) override;
 
   // Finalize
-  void finalize_impl() override {/*Do nothing*/};
+  void finalize_impl() override{/*Do nothing*/};
 
  private:
   // number of horizontal columns and vertical levels
@@ -82,13 +85,12 @@ class MAMMicrophysics final : public scream::AtmosphereProcess {
   double m_orbital_mvelp;  // Vernal Equinox Mean Longitude of Perihelion
 
   struct Config {
-
     // stratospheric chemistry parameters
     struct {
-      int o3_lbl;  // number of layers with ozone decay from the surface
+      int o3_lbl;   // number of layers with ozone decay from the surface
       Real o3_sfc;  // set from namelist input linoz_sfc
       Real o3_tau;  // set from namelist input linoz_tau
-      Real psc_T;  // set from namelist input linoz_psc_T
+      Real psc_T;   // set from namelist input linoz_psc_T
     } linoz;
 
     // aqueous chemistry parameters
