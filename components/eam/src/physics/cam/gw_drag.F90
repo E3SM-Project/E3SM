@@ -120,8 +120,7 @@ module gw_drag
 
   ! namelist 
   logical          :: history_amwg                   ! output the variables used by the AMWG diag package
-  integer    ::         pblh_idx     = 0
-  !
+
 !==========================================================================
 contains
 !==========================================================================
@@ -305,7 +304,7 @@ subroutine gw_init(pbuf2d)
   !-----------------------------------------------------------------------
 
   call oro_drag_init(pbuf2d)
-  
+
   ! Set model flags.
   do_spectral_waves = (pgwv > 0 .and. (use_gw_front .or. use_gw_convect))
   orographic_only = (use_gw_oro .and. .not. do_spectral_waves)
@@ -676,7 +675,6 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
   real(r8) :: dummx_fd(pcols)
   real(r8) :: dummy_fd(pcols)
   !
-  real(r8), pointer :: pblh(:)
   real(r8) :: dx(pcols),dy(pcols)
 
   !---------------------------Local storage-------------------------------
