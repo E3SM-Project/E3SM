@@ -399,7 +399,7 @@ void MAMOptics::run_impl(const double dt) {
   const auto &work                           = work_;
   const auto &dry_aero                       = dry_aero_;
   const auto &aerosol_optics_device_data     = aerosol_optics_device_data_;
-  Kokkos::parallel_for(
+  Kokkos::parallel_for("MAMOptics::run_impl",
       policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
         const Int icol     = team.league_rank();  // column index
         // absorption optical depth, per layer [unitless]

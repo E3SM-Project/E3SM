@@ -42,7 +42,7 @@ void compute_tendencies(
           ncol, nlev);
 
   // Parallel loop over all the columns
-  Kokkos::parallel_for(
+  Kokkos::parallel_for("scream::dry_deposition::compute_tendencies",
       policy, KOKKOS_LAMBDA(const MAMDryDep::KT::MemberType &team) {
         static constexpr int num_aero_species =
             mam_coupling::num_aero_species();
@@ -146,7 +146,7 @@ void update_interstitial_mmrs(const MAMDryDep::view_3d ptend_q, const double dt,
       ekat::ExeSpaceUtils<MAMDryDep::KT::ExeSpace>::get_default_team_policy(
           ncol, nlev);
   static constexpr int nmodes = mam4::AeroConfig::num_modes();
-  Kokkos::parallel_for(
+  Kokkos::parallel_for("scream::dry_deposition::update_interstitial_mmrs",
       policy, KOKKOS_LAMBDA(const MAMDryDep::KT::MemberType &team) {
         const int icol = team.league_rank();
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](int kk) {
