@@ -382,11 +382,12 @@ contains
     logical :: flds_bgc_oi
     logical :: flds_wiso
     logical :: flds_polar
+    logical :: flds_tf
     integer :: glc_nec
 
     namelist /seq_cplflds_inparm/  &
-         flds_co2a, flds_co2b, flds_co2c, flds_co2_dmsa, flds_wiso, flds_polar, glc_nec, &
-         ice_ncat, seq_flds_i2o_per_cat, flds_bgc_oi, &
+         flds_co2a, flds_co2b, flds_co2c, flds_co2_dmsa, flds_wiso, flds_polar, flds_tf, &
+         glc_nec, ice_ncat, seq_flds_i2o_per_cat, flds_bgc_oi, &
          nan_check_component_fields, rof_heat, atm_flux_method, atm_gustiness, &
          rof2ocn_nutrients, lnd_rof_two_way, ocn_rof_two_way, rof_sed
 
@@ -420,6 +421,7 @@ contains
        flds_bgc_oi   = .false.
        flds_wiso = .false.
        flds_polar = .false.
+       flds_tf = .false.
        glc_nec   = 0
        ice_ncat  = 1
        seq_flds_i2o_per_cat = .false.
@@ -454,6 +456,7 @@ contains
     call shr_mpi_bcast(flds_bgc_oi  , mpicom)
     call shr_mpi_bcast(flds_wiso    , mpicom)
     call shr_mpi_bcast(flds_polar   , mpicom)
+    call shr_mpi_bcast(flds_tf      , mpicom)
     call shr_mpi_bcast(glc_nec      , mpicom)
     call shr_mpi_bcast(ice_ncat     , mpicom)
     call shr_mpi_bcast(seq_flds_i2o_per_cat, mpicom)
@@ -2987,15 +2990,19 @@ contains
        attname  = 'So_rhoeff'
        call metadata_set(attname, longname, stdname, units)
 
-       name = 'So_tf2d'
-       call seq_flds_add(o2x_states,trim(name))
-       call seq_flds_add(x2g_states,trim(name))
-       call seq_flds_add(x2g_tf_states_from_ocn,trim(name))
-       longname = 'ocean thermal forcing at predefined critical depth'
-       stdname  = 'ocean_thermal_forcing_at_critical_depth'
-       units    = 'C'
-       attname  = name
-       call metadata_set(attname, longname, stdname, units)
+       if (flds_tf) then
+
+          name = 'So_tf2d'
+          call seq_flds_add(o2x_states,trim(name))
+          call seq_flds_add(x2g_states,trim(name))
+          call seq_flds_add(x2g_tf_states_from_ocn,trim(name))
+          longname = 'ocean thermal forcing at predefined critical depth'
+          stdname  = 'ocean_thermal_forcing_at_critical_depth'
+          units    = 'C'
+          attname  = name
+          call metadata_set(attname, longname, stdname, units)
+
+       end if
 
        name = 'Fogx_qicelo'
        call seq_flds_add(g2x_fluxes,trim(name))

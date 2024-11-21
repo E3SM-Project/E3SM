@@ -185,6 +185,18 @@
     <desc>Turn on the passing of polar fields through the coupler</desc>
   </entry>
 
+  <entry id="FLDS_TF">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <values match="last">
+      <value compset="_MPASO.*_MALI">TRUE</value>
+    </values>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>Turn on the passing of ocean thermal forcing fields through the coupler</desc>
+  </entry>
+
   <entry id="TFREEZE_SALTWATER_OPTION">
     <type>char</type>
     <valid_values>minus1p8,linear_salt,mushy</valid_values>
