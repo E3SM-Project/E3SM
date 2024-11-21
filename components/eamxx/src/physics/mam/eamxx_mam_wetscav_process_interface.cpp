@@ -349,6 +349,9 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
     }
   }
 
+  isprx_ = view_2d_int("isprx", ncol_, nlev_);
+  Kokkos::deep_copy(isprx_, 0);
+
   // Allocate work array
   const int work_len = mam4::wetdep::get_aero_model_wetdep_work_len();
   work_              = view_2d("work", ncol_, work_len);
@@ -425,6 +428,8 @@ void MAMWetscav::run_impl(const double dt) {
 
   //----------- Variables from convective scheme -------------
 
+  auto isprx = isprx_;
+
   // TODO: Following variables are from convective parameterization (not
   // implemented yet in EAMxx), so should be zero for now
 
@@ -494,8 +499,12 @@ void MAMWetscav::run_impl(const double dt) {
     }
   }
 
+  Real scavimptblnum[mam4::aero_model::nimptblgrow_total][mam4::AeroConfig::num_modes()];
+  Real scavimptblvol[mam4::aero_model::nimptblgrow_total][mam4::AeroConfig::num_modes()];
+  mam4::wetdep::init_scavimptbl(scavimptblvol, scavimptblnum);
+
   // Loop over atmosphere columns
-  Kokkos::parallel_for(
+  Kokkos::parallel_for("MAMWetscav::run_impl",
       policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
         const int icol = team.league_rank();  // column index
 
@@ -509,6 +518,9 @@ void MAMWetscav::run_impl(const double dt) {
         mam4::Tendencies tends =
             mam_coupling::interstitial_aerosols_tendencies_for_column(
                 dry_aero_tends, icol);
+
+        const auto isprx_icol = ekat::subview(isprx, icol);
+
         /// shallow_convective_precipitation_production
         const auto rprdsh_icol = ekat::subview(rprdsh, icol);
         // deep_convective_precipitation_production
@@ -544,7 +556,7 @@ void MAMWetscav::run_impl(const double dt) {
             // inputs
             cldt_icol, rprdsh_icol, rprddp_icol, evapcdp_icol, evapcsh_icol,
             dp_frac_icol, sh_frac_icol, icwmrdp_col, icwmrsh_icol, nevapr_icol,
-            dlf_icol, prain_icol,
+            dlf_icol, prain_icol, isprx_icol, scavimptblnum, scavimptblvol,
             // outputs
             wet_diameter_icol, dry_diameter_icol, qaerwat_icol, wetdens_icol,
             aerdepwetis_icol, aerdepwetcw_icol, work_icol);
