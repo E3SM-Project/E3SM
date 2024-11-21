@@ -1060,6 +1060,7 @@ module li_time_integration_fe_rk
       character (len=StrKIND), pointer :: config_thickness_advection
       logical, pointer :: config_restore_thickness_after_advection
       character (len=StrKIND), pointer :: config_tracer_advection
+      character (len=StrKIND), pointer :: config_time_integration
 
       logical, pointer :: config_print_thickness_advection_info
 
@@ -1073,6 +1074,7 @@ module li_time_integration_fe_rk
 
       call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
       call mpas_pool_get_config(liConfigs, 'config_tracer_advection', config_tracer_advection)
+      call mpas_pool_get_config(liConfigs, 'config_time_integration', config_time_integration)
       call mpas_pool_get_config(liConfigs, 'config_print_thickness_advection_info', config_print_thickness_advection_info)
       call mpas_pool_get_config(liConfigs, 'config_restore_thickness_after_advection', config_restore_thickness_after_advection)
 
@@ -1099,19 +1101,20 @@ module li_time_integration_fe_rk
             call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
             call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
             call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
-            call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity)
-            call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
-            call mpas_pool_get_array(velocityPool, 'layerNormalVelocity', layerNormalVelocity)
+            if (trim(config_time_integration) == "runge_kutta") then
+               call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity)
+               call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
+               call mpas_pool_get_array(velocityPool, 'layerNormalVelocity', layerNormalVelocity)
 
-            call li_layer_normal_velocity( &
-                 meshPool,               &
-                 normalVelocity,         &
-                 edgeMask,               &
-                 layerNormalVelocity,    &
-                 allowableDtACFL,        &
-                 err_tmp)
-            err = ior(err,err_tmp)
-
+               call li_layer_normal_velocity( &
+                    meshPool,               &
+                    normalVelocity,         &
+                    edgeMask,               &
+                    layerNormalVelocity,    &
+                    allowableDtACFL,        &
+                    err_tmp)
+               err = ior(err,err_tmp)
+            endif
             call calculate_layerThicknessEdge(meshPool, geometryPool, velocityPool, err_tmp)
             err = ior(err,err_tmp)
 
