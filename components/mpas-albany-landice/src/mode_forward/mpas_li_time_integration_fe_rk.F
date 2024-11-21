@@ -1374,6 +1374,7 @@ module li_time_integration_fe_rk
       ! Only include calving CFL if requested and we are using a calving option that calculates it
       if (config_adaptive_timestep_include_calving .and. ( &
              trim(config_calving) == 'specified_calving_velocity' .or. &
+             trim(config_calving) == 'specified_retreat_velocity' .or. &
              trim(config_calving) == 'eigencalving' .or. &
              trim(config_calving) == 'von_Mises_stress' .or. &
              trim(config_calving) == 'ismip6_retreat' .or. &
