@@ -92,8 +92,8 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: ismip6shelfMelt_3dThermalForcing, ismip6shelfMelt_zBndsOcean
       real (kind=RKIND), dimension(:), pointer :: ismip6shelfMelt_zOcean
       real (kind=RKIND), dimension(:), pointer :: thickness, bedTopography
-      integer, dimension(:,:), pointer :: orig3dOceanCavityMask         ! CAS 8/16/2024
-      integer, dimension(:,:), pointer :: validOceanMask, validOceanMaskOrig, availOceanMask !masks to pass to flood-fill routine
+      integer, dimension(:,:), pointer :: orig3dOceanMask
+      integer, dimension(:,:), pointer :: validOceanMask, availOceanMask !masks to pass to flood-fill routine
       integer, dimension(:), pointer :: seedOceanMaskHoriz, growOceanMaskHoriz, seedOceanMaskHorizInit
       integer, dimension(:), allocatable :: seedOceanMaskHorizOld
       integer, pointer :: nCells, nCellsSolve, nISMIP6OceanLayers, nCellsExtra
@@ -131,9 +131,8 @@ contains
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
          call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
          call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_3dThermalForcing', ismip6shelfMelt_3dThermalForcing)
-         call mpas_pool_get_array(extrapOceanDataPool, 'orig3dOceanCavityMask', orig3dOceanCavityMask)
+         call mpas_pool_get_array(extrapOceanDataPool, 'orig3dOceanMask', orig3dOceanMask)
          call mpas_pool_get_array(extrapOceanDataPool, 'validOceanMask', validOceanMask)
-         call mpas_pool_get_array(extrapOceanDataPool, 'validOceanMaskOrig', validOceanMaskOrig)
          call mpas_pool_get_array(extrapOceanDataPool, 'availOceanMask', availOceanMask)
          call mpas_pool_get_array(extrapOceanDataPool, 'seedOceanMaskHoriz', seedOceanMaskHoriz)
          call mpas_pool_get_array(extrapOceanDataPool, 'growOceanMaskHoriz', growOceanMaskHoriz)
@@ -259,11 +258,8 @@ contains
             enddo
          enddo
 
-         ! CAS 8/16/2024 Hijacking Holly's code to test using the 3D SORRM cavity TF field. We set 3d valid ocean mask to original 3d ocean cavity mask.
-         validOceanMask(:,:) = orig3dOceanCavityMask(:,:)
-
-         ! save the initial validOceanMask
-         validOceanMaskOrig(:,:) = validOceanMask(:,:)
+         ! Make a copy of original mask to use for extending the mask during extrapolation
+         validOceanMask(:,:) = orig3dOceanMask(:,:)
 
          ! initialize the TF field
          TFocean(:,:) = ismip6shelfMelt_3dThermalForcing(:,:) * validOceanMask(:,:)
@@ -303,7 +299,7 @@ contains
             endif
             ! call the horizontal extrapolation routine
             call mpas_timer_start("horizontal scheme")
-            call horizontal_extrapolation(domain, availOceanMask, validOceanMask, validOceanMaskOrig, TFocean, err_tmp)
+            call horizontal_extrapolation(domain, availOceanMask, validOceanMask, orig3dOceanMask, TFocean, err_tmp)
             err = ior(err, err_tmp)
             call mpas_timer_stop("horizontal scheme")
             ! call the vertical extrapolation routine
