@@ -94,7 +94,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: thickness, bedTopography
       integer, dimension(:,:), pointer :: orig3dOceanMask
       integer, dimension(:,:), pointer :: validOceanMask, availOceanMask !masks to pass to flood-fill routine
-      integer, dimension(:), pointer :: seedOceanMaskHoriz, growOceanMaskHoriz, seedOceanMaskHorizInit
+      integer, dimension(:), pointer :: seedOceanMaskHoriz, growOceanMaskHoriz
       integer, dimension(:), allocatable :: seedOceanMaskHorizOld
       integer, pointer :: nCells, nCellsSolve, nISMIP6OceanLayers, nCellsExtra
       integer, dimension(:), pointer :: cellMask, nEdgesOnCell
@@ -136,7 +136,6 @@ contains
          call mpas_pool_get_array(extrapOceanDataPool, 'availOceanMask', availOceanMask)
          call mpas_pool_get_array(extrapOceanDataPool, 'seedOceanMaskHoriz', seedOceanMaskHoriz)
          call mpas_pool_get_array(extrapOceanDataPool, 'growOceanMaskHoriz', growOceanMaskHoriz)
-         call mpas_pool_get_array(extrapOceanDataPool, 'seedOceanMaskHorizInit', seedOceanMaskHorizInit)
          call mpas_pool_get_array(extrapOceanDataPool, 'TFoceanOld', TFoceanOld)
          call mpas_pool_get_array(extrapOceanDataPool, 'TFocean', TFocean)
          call mpas_pool_get_config(liConfigs, 'config_invalid_value_TF', invalid_value_TF)

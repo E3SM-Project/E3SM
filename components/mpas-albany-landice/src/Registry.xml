@@ -809,7 +809,8 @@
 			<!-- these variables just for ISMIP6 grounded glacier forcing -->
 			<var name="ismip6Runoff" packages="ismip6GroundedFaceMelt" />
 			<var name="ismip6_2dThermalForcing" packages="ismip6GroundedFaceMelt" />
-                        <var name="orig3dOceanMask" packages="extrapOceanData" />
+			<!-- this variable just for ocean extrapolation -->
+                        <var name="orig3dOceanMask" packages="extrapOceanData"/>
 		</stream>
 
 <!-- An alternate way to allow the HO variables to exist in a separate file.
@@ -1689,25 +1690,24 @@ is the value of that variable from the *previous* time level!
                      description="3D mask of original valid ocean data.  Because it is 3d, it can include the ocean domain inside ice-shelf cavities."
                 />
                 <var name="validOceanMask" type="integer" dimensions="nISMIP6OceanLayers nCells Time" units="none"
-                     description="3D mask for indicating where ocean data is present (i.e., seed mask)"
+                     description="3D mask for indicating where ocean data is present (i.e., seed mask).  Initially this is equal to orig3dOceanMask but it grows as the ocean extrapolation scheme iterates.  It indicates anywhere that valid ocean data is present, whether that is the original ocean data or where it has been extrapolated."
                 />
                 <var name="availOceanMask" type="integer" dimensions="nISMIP6OceanLayers nCells Time" units="none"
-                     description="3D mask for indicating where ocean data can be flood-filled (i.e., grow mask)"
+                     description="3D mask for indicating where ocean data can be flood-filled (i.e., grow mask).  These are the locations into which the ocean data can possibly be expanded.  It is defined as cells below sea level connected to the open ocean and shallower than the first ocean layer below the bed.  It remains constant as the extrapolation scheme iterates."
                 />
                 <var name="seedOceanMaskHoriz" type="integer" dimensions="nCells Time" units="none"
-                     description="seedmask for horizontal floodfill"
+                     description="seedmask for horizontal floodfill used to determine the over-extrapolation region into grounded ice.  It is defined by cells below sea level that are not occupied by grounded ice.  The only purpose is for calculating availOceanMask."
                 />
                 <var name="growOceanMaskHoriz" type="integer" dimensions="nCells Time" units="none"
-                     description="growmask for horizontal floodfill"
-                />
-                <var name="seedOceanMaskHorizInit" type="integer" dimensions="nCells Time" units="none"
-                     description="initial 2D seedMask before the over-extrapolation, for benchmark/debug purpose"
+                     description="growmask for horizontal floodfill used to determine the over-extrapolaton region into grounded ice.  It is initialized as cells where bedTopography is below sea level and represents all the cells that seedOceanMaskHoriz could fill into.  The only purpose is for calculating availOceanMask."
                 />
                 <var name="TFoceanOld" type="real" dimensions="nISMIP6OceanLayers nCells Time" units="deg. C"
                      default_value="1.0"
+                     description="A copy of TFocean used during iteration of the extrapolation scheme."
                 />
                 <var name="TFocean" type="real" dimensions="nISMIP6OceanLayers nCells Time" units="deg. C"
                      default_value="0.0"
+                     description="The extrapolated version of ismip6shelfMelt_3dThermalForcing.  This is the result of the extrapolation scheme, but the result is assigned to ismip6shelfMelt_3dThermalForcing (replacing the initial value) so this field does not typically need to be output.  This field gets updated on each iteration of the extrapolation scheme."
                 />
         </var_struct>
 <!-- ================ -->
