@@ -10263,6 +10263,7 @@ contains
          config_salt_flux_coupling_type, &
          config_ocean_heat_transfer_type, &
          config_frazil_coupling_type, &
+         config_congelation_freezing_method, &
          config_sea_freezing_temperature_type, &
          config_skeletal_bgc_flux_type, &
          config_snow_redistribution_scheme
@@ -10454,6 +10455,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_calc_surface_temperature", config_calc_surface_temperature)
     call MPAS_pool_get_config(domain % configs, "config_update_ocean_fluxes", config_update_ocean_fluxes)
     call MPAS_pool_get_config(domain % configs, "config_frazil_coupling_type", config_frazil_coupling_type)
+    call MPAS_pool_get_config(domain % configs, "config_congelation_freezing_method", config_congelation_freezing_method)
     call MPAS_pool_get_config(domain % configs, "config_min_friction_velocity", config_min_friction_velocity)
     call MPAS_pool_get_config(domain % configs, "config_ice_ocean_drag_coefficient", config_ice_ocean_drag_coefficient)
     call MPAS_pool_get_config(domain % configs, "config_snow_thermal_conductivity", config_snow_thermal_conductivity)
@@ -10782,6 +10784,10 @@ contains
     call icepack_query_parameters(cpl_frazil_out=ctmp2)
     if (trim(ctmp1) /= trim(ctmp2)) call mpas_log_write('cpl_frazil differs')
 
+    ctmp1 = config_congelation_freezing_method
+    call icepack_query_parameters(congel_freeze_out=ctmp2)
+    if (trim(ctmp1) /= trim(ctmp2)) call mpas_log_write('congel_freeze differs')
+
 !    rtmp1 = skeletalLayerThickness
 !    call icepack_query_parameters(sk_l_out=rtmp2)
 !    if (rtmp1 /= rtmp2) call mpas_log_write('sk_l differs $r $r',realArgs=(/rtmp1,rtmp2/))
@@ -10855,6 +10861,7 @@ contains
          calc_Tsfc_in            = config_calc_surface_temperature, &
          !dts_b_in                = , &        ! brine, zsalinity
          cpl_frazil_in           = config_frazil_coupling_type, &
+         congel_freeze_in        = config_congelation_freezing_method, &
          update_ocn_f_in         = config_update_ocean_fluxes, &
          ustar_min_in            = config_min_friction_velocity, &
          a_rapid_mode_in         = config_rapid_mode_channel_radius, &
@@ -11003,6 +11010,10 @@ contains
     call icepack_query_parameters(cpl_frazil_out=ctmp2)
     if (trim(ctmp1) /= trim(ctmp2)) call mpas_log_write('cpl_frazil differs')
 
+    ctmp1 = config_congelation_freezing_method
+    call icepack_query_parameters(congel_freeze_out=ctmp2)
+    if (trim(ctmp1) /= trim(ctmp2)) call mpas_log_write('congel_freeze differs')
+
     call mpas_log_write(" ----- end debugging parameters -----")
     call mpas_log_write(' ')
 !echmod debugging end
@@ -11076,6 +11087,10 @@ contains
     ! dSin0_frazil:
     ! initial frazil salinity reduction
     !dSin0_frazil = seaiceFrazilSalinityReduction
+
+    ! congel_freeze:
+    ! method used for congelation freezing
+    !congel_freeze = config_congelation_freezing_method
 
     !-----------------------------------------------------------------------
     ! Parameters for radiation
