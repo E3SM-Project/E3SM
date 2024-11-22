@@ -27,6 +27,8 @@ int main(int argc, char **argv){
     MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
 
     Pacer::initialize(MPI_COMM_WORLD);
+    // Second argument is optional (default is Pacer::PACER_STANDALONE)
+    // Pacer::initialize(MPI_COMM_WORLD, Pacer::PACER_STANDALONE);
 
     Pacer::setPrefix("Omega:");
 
@@ -42,7 +44,6 @@ int main(int argc, char **argv){
 
     Pacer::unsetPrefix();
 
-
     // illustrating situation where attempt to stop timer before starting
     // will print a warning
     Pacer::stop("final");
@@ -56,7 +57,7 @@ int main(int argc, char **argv){
     // Second argument (optional) controls if timing output should be from all ranks
     // default is false, only rank 0 writes timing output
     Pacer::print("test");
-    // Pacer::print("test_pacer", true);
+    // Pacer::print("test", true);
 
     Pacer::finalize();
 }
