@@ -940,9 +940,12 @@ void MAMMicrophysics::run_impl(const double dt) {
             config.linoz.o3_tau, config.linoz.o3_lbl, dry_diameter_icol,
             wet_diameter_icol, wetdens_icol, drydep_data, dvel, dflx, progs);
 
-        // update constituent fluxes with gas drydep fluxes (dflx)
+        // Update constituent fluxes with gas drydep fluxes (dflx)
+        // FIXME: Possible units mismatch (dflx is in kg/cm2/s but
+        // constituent_fluxes is kg/m2/s) (Following mimics Fortran code
+        // behavior but we should look into it)
         for(int ispc = offset_aerosol; ispc < mam4::pcnst; ++ispc) {
-          constituent_fluxes(icol, ispc) = dflx[ispc - offset_aerosol];
+          constituent_fluxes(icol, ispc) -= dflx[ispc - offset_aerosol];
         }
       });  // parallel_for for the column loop
   Kokkos::fence();
