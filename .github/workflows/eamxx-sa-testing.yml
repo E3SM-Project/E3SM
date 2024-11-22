@@ -5,6 +5,17 @@ on:
   pull_request:
     branches: [ master ]
     types: [opened, synchronize, ready_for_review, reopened]
+    paths:
+      # first, yes to these
+      - '.github/workflows/eamxx-sa-testing.yml'
+      - 'cime_config/machine/config_machines.xml'
+      - 'components/eamxx/**'
+      - 'components/homme/**'
+      - 'externals/ekat'
+      - 'externals/scorpio'
+      # second, no to these
+      - '!components/eamxx/docs/**'
+      - '!components/eamxx/mkdocs.yml'
 
   # Manual run is used to bless
   workflow_dispatch:
@@ -40,83 +51,18 @@ concurrency:
 env:
   # Submit to cdash only for nightlies or if the user explicitly forced a submission via workflow dispatch
   submit: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.submit) }}
+  generate: ${{ github.event_name == 'workflow_dispatch' && inputs.bless }}
 
 jobs:
-  pre_process_pr:
-    if: ${{ github.event_name == 'pull_request' }}
-    runs-on: ubuntu-latest  # This job can run anywhere
-    outputs:
-      relevant_paths: ${{ steps.check_paths.outputs.value }}
-      labels: ${{ steps.get_labels.outputs.labels }}
-    steps:
-      - name: Check files modified by PR
-        id: check_paths
-        run: |
-          paths=(
-            components/eamxx
-            components/eam/src/physics/rrtmgp
-            components/eam/src/physics/p3/scream
-            components/eam/src/physics/cam
-            components/eam/src/physics/rrtmgp/external
-            externals/ekat
-            externals/scorpio
-            externals/haero
-            externals/YAKL
-            .github/workflows/eamxx-sa-testing.yml
-          )
-          pattern=$(IFS=\|; echo "${paths[*]}")
-
-          # Use the GitHub API to get the list of changed files
-          # There are page size limits, so do it in chunks
-          page=1
-          while true; do
-            response=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-              "https://api.github.com/repos/E3SM-Project/scream/pulls/${{ github.event.number }}/files?per_page=100&page=$page")
-
-            # Check if the response is empty, and break if it is
-            [ -z "$response" ] && break
-
-            changed_files+=$(echo "$response" | grep -o '"filename": *"[^"]*"' | sed 's/"filename": *//; s/"//g')$'\n'
-
-            # Check if there are more pages, and quite if there aren't
-            [[ $(echo "$response" | jq '. | length') -lt 100 ]] && break
-
-            page=$((page + 1))
-          done
-
-          # Check for matches and echo the matching files (or "" if none)
-          matching_files=$(echo "$changed_files" | grep -E "^($pattern)" || echo "")
-          if [[ -n "$matching_files" ]]; then
-            echo "Found relevant files: $matching_files"
-            echo "value=true" >> $GITHUB_OUTPUT
-          else
-            echo "No relevant files touched by this PR."
-            echo "value=false" >> $GITHUB_OUTPUT
-          fi
-      - name: Retrieve PR labels
-        id: get_labels
-        run: |
-          labels="${{ join(github.event.pull_request.labels.*.name, ',') }}"
-          echo "labels=${labels}" >> $GITHUB_OUTPUT
   gcc-openmp:
-    needs: [pre_process_pr]
     if: |
-      !failure() && !cancelled() &&
-      (
-        github.event_name == 'schedule' ||
+      ${{
+        github.event_name != 'workflow_dispatch' ||
         (
-          github.event_name == 'pull_request' &&
-          needs.pre_process_pr.outputs.relevant_paths=='true' &&
-          !contains(needs.pre_process_pr.outputs.labels,'CI: skip gcc') &&
-          !contains(needs.pre_process_pr.outputs.labels,'CI: skip openmp') &&
-          !contains(needs.pre_process_pr.outputs.labels,'CI: skip eamxx-sa') &&
-          !contains(needs.pre_process_pr.outputs.labels,'CI: skip eamxx-all')
-        ) || (
-          github.event_name == 'workflow_dispatch' &&
           github.event.inputs.job_to_run == 'gcc-openmp' || 
           github.event.inputs.job_to_run == 'all'
         )
-      )
+      }}
     runs-on:  [self-hosted, ghci-snl-cpu, gcc]
     strategy:
       fail-fast: false
@@ -132,14 +78,6 @@ jobs:
           submodules: recursive
       - name: Show action trigger
         uses: ./.github/actions/show-workflow-trigger
-      - name: Set test-all inputs based on event specs
-        run: |
-          echo "generate=false" >> $GITHUB_ENV
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            if [ "${{ inputs.bless }}" == "true" ]; then
-              echo "generate=true" >> $GITHUB_ENV
-            fi
-          fi
       - name: Run tests
         uses: ./.github/actions/test-all-scream
         with:
@@ -149,24 +87,14 @@ jobs:
           submit: ${{ env.submit }}
           cmake-configs: Kokkos_ENABLE_OPENMP=ON
   gcc-cuda:
-    needs: [pre_process_pr]
     if: |
-      !failure() && !cancelled() &&
-      (
-        github.event_name == 'schedule' ||
+      ${{
+        github.event_name != 'workflow_dispatch' ||
         (
-          github.event_name == 'pull_request' &&
-          needs.pre_process_pr.outputs.relevant_paths=='true' &&
-          !contains(needs.pre_process_pr.outputs.labels,'CI: skip gcc') &&
-          !contains(needs.pre_process_pr.outputs.labels,'CI: skip cuda') &&
-          !contains(needs.pre_process_pr.outputs.labels,'CI: skip eamxx-sa') &&
-          !contains(needs.pre_process_pr.outputs.labels,'CI: skip eamxx-all')
-        ) || (
-          github.event_name == 'workflow_dispatch' &&
-          github.event.inputs.job_to_run == 'gcc-cuda' ||
+          github.event.inputs.job_to_run == 'gcc-cuda' || 
           github.event.inputs.job_to_run == 'all'
         )
-      )
+      }}
     runs-on:  [self-hosted, ghci-snl-cuda, cuda, gcc]
     strategy:
       fail-fast: false
@@ -182,14 +110,6 @@ jobs:
           submodules: recursive
       - name: Show action trigger
         uses: ./.github/actions/show-workflow-trigger
-      - name: Set test-all inputs based on event specs
-        run: |
-          echo "generate=false" >> $GITHUB_ENV
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            if [ "${{ inputs.bless }}" == "true" ]; then
-              echo "generate=true" >> $GITHUB_ENV
-            fi
-          fi
       - name: Get CUDA Arch
         run: |
           # Ensure nvidia-smi is available
