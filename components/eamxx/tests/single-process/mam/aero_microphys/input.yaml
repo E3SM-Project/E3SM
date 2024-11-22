@@ -64,7 +64,7 @@ initial_conditions:
   precip_liq_surf_mass: 0.1
   precip_ice_surf_mass: 0.1
   snow_depth_land: 0.01
-  fraction_landuse: [0.5, 0.5, 0.5, 0.5, 0.5, 0.2, 0.0, 0.0, 0.0, 0.2, 0.2]
+  fraction_landuse: 0.0
   SW_flux_dn: 500.0
   constituent_fluxes: 0.0
 # The parameters for I/O control
