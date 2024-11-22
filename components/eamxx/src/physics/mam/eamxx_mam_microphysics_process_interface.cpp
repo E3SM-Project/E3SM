@@ -219,6 +219,14 @@ void MAMMicrophysics::set_grids(
     const char *gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
     add_tracer<Updated>(gas_mmr_field_name, grid_, kg / kg);
   }
+  //----------- Updated variables from other mam4xx processes ------------
+  // layout for Constituent fluxes
+  FieldLayout scalar2d_pcnst =
+      grid_->get_2d_vector_layout(mam4::pcnst, "num_phys_constituents");
+
+  // Constituent fluxes of species in [kg/m2/s]
+  add_field<Updated>("constituent_fluxes", scalar2d_pcnst, kg / m2 / s,
+                     grid_name);
 
   // Creating a Linoz reader and setting Linoz parameters involves reading data
   // from a file and configuring the necessary parameters for the Linoz model.
@@ -621,6 +629,10 @@ void MAMMicrophysics::run_impl(const double dt) {
   const const_view_2d sw_flux_dn =
       get_field_in("SW_flux_dn").get_view<const Real **>();
 
+  // Constituent fluxes of gas and aerosol species
+  view_2d constituent_fluxes =
+      get_field_out("constituent_fluxes").get_view<Real **>();
+
   // Surface temperature [K]
   const const_view_1d sfc_temperature =
       get_field_in("surf_radiative_T").get_view<const Real *>();
@@ -929,6 +941,11 @@ void MAMMicrophysics::run_impl(const double dt) {
             clsmap_4, permute_4, offset_aerosol, config.linoz.o3_sfc,
             config.linoz.o3_tau, config.linoz.o3_lbl, dry_diameter_icol,
             wet_diameter_icol, wetdens_icol, drydep_data, dvel, dflx, progs);
+
+        // update constituent fluxes with gas drydep fluxes (dflx)
+        for(int ispc = offset_aerosol; ispc < mam4::pcnst; ++ispc) {
+          constituent_fluxes(icol, ispc) = dflx[ispc - offset_aerosol];
+        }
       });  // parallel_for for the column loop
   Kokkos::fence();
 
