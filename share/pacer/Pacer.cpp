@@ -11,7 +11,19 @@
 #include <gptl.h>
 #include <iostream>
 
-#define PACER_CHECK_INIT() { if (!IsInitialized) { std::cerr << "[ERROR] Pacer: Not initialized." << std::endl; return false; } }
+#define PACER_CHECK_INIT() {\
+    if (!IsInitialized) { \
+        std::cerr << "[ERROR] Pacer: Not initialized." << std::endl; \
+        return false; \
+    } \
+}
+
+#define PACER_CHECK_ERROR(x) {\
+    if ( (x) != 0 ) { \
+        std::cerr << "[ERROR] Pacer: Failure calling GPTL function: " << #x << std::endl; \
+        return false; \
+    } \
+}
 
 /// Helper function to check if GPTL is initialized
 /// Function declaration is missing in gptl.h
@@ -41,14 +53,14 @@ bool Pacer::initialize(MPI_Comm InComm, PacerModeType InMode /* = PACER_STANDALO
 
     if (PacerMode == PACER_STANDALONE ) {
         // GPTL set default options
-        GPTLsetoption(GPTLdepthlimit, 20);
-        GPTLsetoption(GPTLdopr_quotes, 1);
-        GPTLsetoption(GPTLprofile_ovhd, 1);
+        PACER_CHECK_ERROR(GPTLsetoption(GPTLdepthlimit, 20));
+        PACER_CHECK_ERROR(GPTLsetoption(GPTLdopr_quotes, 1));
+        PACER_CHECK_ERROR(GPTLsetoption(GPTLprofile_ovhd, 1));
         // GPTL default is set to 52
         // Presently setting to 64
-        GPTLsetoption(GPTLmaxthreads, 64);
+        PACER_CHECK_ERROR(GPTLsetoption(GPTLmaxthreads, 64));
 
-        GPTLsetutr(GPTLmpiwtime);
+        PACER_CHECK_ERROR(GPTLsetutr(GPTLmpiwtime));
 
         if (MPI_Comm_dup(InComm, &InternalComm) != MPI_SUCCESS)
             std::cerr << "Pacer: Error duplicating MPI communicator" << std::endl;
@@ -87,7 +99,8 @@ bool Pacer::start(const std::string &TimerName)
 {
     PACER_CHECK_INIT();
 
-    GPTLstart(TimerName.c_str());
+    PACER_CHECK_ERROR(GPTLstart(TimerName.c_str()));
+
     auto it = OpenTimers.find(TimerName);
     if (it != OpenTimers.end() )
         OpenTimers[TimerName]++;
@@ -105,7 +118,7 @@ bool Pacer::stop(const std::string &TimerName)
     auto it = OpenTimers.find(TimerName);
 
     if (it != OpenTimers.end() ) {
-        GPTLstop(TimerName.c_str());
+        PACER_CHECK_ERROR(GPTLstop(TimerName.c_str()));
 
         if ( OpenTimers[TimerName] == 1 )
             OpenTimers.erase(TimerName);
@@ -127,7 +140,8 @@ bool Pacer::setPrefix(const std::string &Prefix)
 {
     PACER_CHECK_INIT();
 
-    GPTLprefix_set(Prefix.c_str());
+    PACER_CHECK_ERROR(GPTLprefix_set(Prefix.c_str()));
+
     return true;
 }
 
@@ -136,7 +150,8 @@ bool Pacer::unsetPrefix()
 {
     PACER_CHECK_INIT();
 
-    GPTLprefix_unset();
+    PACER_CHECK_ERROR(GPTLprefix_unset());
+
     return true;
 }
 
@@ -150,15 +165,16 @@ bool Pacer::print(const std::string &TimerFilePrefix, bool PrintAllRanks /*= = f
 
     std::string TimerFileName = TimerFilePrefix + ".timing." + std::to_string(MyRank);
     std::string SummaryFileName = TimerFilePrefix + ".summary";
-    GPTLpr_summary_file(InternalComm, SummaryFileName.c_str());
+
+    PACER_CHECK_ERROR(GPTLpr_summary_file(InternalComm, SummaryFileName.c_str()));
 
     if ( PrintAllRanks == false ) {
         if (MyRank == 0) {
-            GPTLpr_file(TimerFileName.c_str());
+            PACER_CHECK_ERROR(GPTLpr_file(TimerFileName.c_str()));
         }
     }
     else
-        GPTLpr_file(TimerFileName.c_str());
+        PACER_CHECK_ERROR(GPTLpr_file(TimerFileName.c_str()));
 
     return true;
 }
@@ -170,10 +186,10 @@ bool Pacer::finalize()
     PACER_CHECK_INIT();
 
     if ( PacerMode == PACER_STANDALONE )
-        GPTLfinalize();
+        PACER_CHECK_ERROR(GPTLfinalize());
 
     if ( (MyRank == 0) && ( OpenTimers.size() > 0) ){
-        std::cerr << "[WARNING] Pacer: Following timers are not closed" << std::endl;
+        std::cerr << "[WARNING] Pacer: Following " << OpenTimers.size() << " timer(s) is/are still open." << std::endl;
         for (auto i = OpenTimers.begin(); i != OpenTimers.end(); i++)
             std::cerr << '\t' << i->first << std::endl;
     }
