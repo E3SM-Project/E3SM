@@ -620,6 +620,10 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
   m_orbital_obliq = m_params.get<double>("orbital_obliquity"   ,-9999);
   m_orbital_mvelp = m_params.get<double>("orbital_mvelp"       ,-9999);
 
+  // Value for prescribing an invariant solar constant (i.e. total solar irradiance at
+  // TOA).  Used for idealized experiments such as RCE. Disabled when value is less than 0.
+  m_fixed_total_solar_irradiance = m_params.get<double>("fixed_total_solar_irradiance", -9999);
+
   // Determine whether or not we are using a fixed solar zenith angle (positive value)
   m_fixed_solar_zenith_angle = m_params.get<double>("Fixed Solar Zenith Angle", -9999);
 
@@ -839,6 +843,12 @@ void RRTMGPRadiation::run_impl (const double dt) {
     auto calday = ts.frac_of_year_in_days() + 1;  // Want day + fraction; calday 1 == Jan 1 0Z
     shr_orb_decl_c2f(calday, eccen, mvelpp, lambm0,
                      obliqr, &delta, &eccf);
+
+    // Overwrite eccf if using a fixed solar constant.
+    auto fixed_total_solar_irradiance = m_fixed_total_solar_irradiance;
+    if (fixed_total_solar_irradiance >= 0){
+       eccf = fixed_total_solar_irradiance/1360.9;
+    }
 
     // Precompute VMR for all gases, on all cols, before starting the chunks loop
     //

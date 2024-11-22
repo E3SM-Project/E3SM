@@ -1,0 +1,53 @@
+merge_protections:
+  - name: Enforce checks passing
+    description: Make sure that checks are not failing on the PR, and reviewers approved
+    if:
+      - base = master
+    success_conditions:
+      - "#approved-reviews-by >= 1"            # At least 1 approval
+      - "#changes-requested-reviews-by == 0"   # No reviewer asked for changes
+      - or:
+        - and:
+          - check-success="gcc-openmp / dbg"
+          - check-success="gcc-openmp / sp"
+          - check-success="gcc-openmp / fpe"
+          - check-success="gcc-openmp / opt"
+        - check-skipped={% raw %}gcc-openmp / ${{ matrix.build_type }}{% endraw %}
+      - or:
+        - and:
+          - check-success="gcc-cuda / dbg"
+          - check-success="gcc-cuda / sp"
+          - check-success="gcc-cuda / opt"
+        - check-skipped={% raw %}gcc-cuda / ${{ matrix.build_type }}{% endraw %}
+      - or:
+        - and:
+          - check-success="cpu-gcc / ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1.scream-output-preset-2"
+          - check-success="cpu-gcc / ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.scream-dpxx-arm97"
+          - check-success="cpu-gcc / ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.scream-small_kernels--scream-output-preset-5"
+          - check-success="cpu-gcc / SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.scream-mam4xx-all_mam4xx_procs"
+        - check-skipped={% raw %}cpu-gcc / ${{ matrix.test.short_name }}{% endraw %}
+      - or:
+        - check-success=cpu-gcc
+        - check-skipped=cpu-gcc
+
+pull_request_rules:
+    - name: dismiss stale reviews
+      conditions:
+        - base=master
+      actions:
+        dismiss_reviews:
+          when: synchronize # Dismiss reviews when synchronize event happens
+    - name: Automatic merge when CI passes and approved
+      conditions:
+        - "label=CI: automerge"
+        - base=master
+      actions:
+        merge:
+          method: merge
+          commit_message_template: |
+            Merge pull request #{{number}} from {{head}}
+
+            Automatically merged using mergify
+            PR title: {{title}}
+            PR author: {{author}}
+            PR labels: {{label}}

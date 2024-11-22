@@ -23,6 +23,8 @@ atmosphere_processes:
     srf_emis_specifier_for_so4_a1: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/surface/cmip6_mam4_so4_a1_surf_ne2np4_2010_clim_c20240726.nc
     srf_emis_specifier_for_so4_a2: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/surface/cmip6_mam4_so4_a2_surf_ne2np4_2010_clim_c20240726.nc
 
+    soil_erodibility_file: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/dst_ne2np4_c20241028.nc
+    marine_organics_file: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/monthly_macromolecules_0.1deg_bilinear_year01_merge_ne2np4_c20241030.nc
 grids_manager:
   Type: Mesh Free
   geo_data_source: IC_FILE
@@ -38,11 +40,15 @@ initial_conditions:
   Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_MAM4xx_72lev}
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
   phis : 1.0
-  #These should come from the input file
-
-  #we should get the following variables from other processes
+  
+  # we should get the following variables from other processes
   pbl_height : 1.0
-
+  dstflx : 0.0
+  ocnfrac:   0.10000000000000000E+001
+  sst: 0.30178553874977507E+003
+  cldfrac_tot: 0.138584624960092
+  horiz_winds: [-0.24988988196194634E+000, -0.23959782871450760E+000]
+  constituent_fluxes: 0.0
 # The parameters for I/O control
 Scorpio:
   output_yaml_files: ["output.yaml"]

@@ -271,6 +271,7 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
     auto hyam = phys_grid->create_geometry_data("hyam",layout_mid,nondim);
     auto hybm = phys_grid->create_geometry_data("hybm",layout_mid,nondim);
     auto lev  = phys_grid->create_geometry_data("lev", layout_mid,mbar);
+    auto ilev = phys_grid->create_geometry_data("ilev",layout_int,mbar);
 
     for (auto f : {hyai, hybi, hyam, hybm}) {
       auto f_d = get_grid("Dynamics")->get_geometry_data(f.name());
@@ -281,13 +282,20 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
     // Build lev from hyam and hybm
     const Real ps0        = 100000.0;
   
-    auto hya_v = hyam.get_view<const Real*,Host>();
-    auto hyb_v = hybm.get_view<const Real*,Host>();
-    auto lev_v = lev.get_view<Real*,Host>();
-    for (int ii=0;ii<phys_grid->get_num_vertical_levels();ii++) {
-      lev_v(ii) = 0.01*ps0*(hya_v(ii)+hyb_v(ii));
+    auto hyam_v = hyam.get_view<const Real*,Host>();
+    auto hybm_v = hybm.get_view<const Real*,Host>();
+    auto hyai_v = hyai.get_view<const Real*,Host>();
+    auto hybi_v = hybi.get_view<const Real*,Host>();
+    auto lev_v  = lev.get_view<Real*,Host>();
+    auto ilev_v = ilev.get_view<Real*,Host>();
+    auto num_v_levs = phys_grid->get_num_vertical_levels();
+    for (int ii=0;ii<num_v_levs;ii++) {
+      lev_v(ii)  = 0.01*ps0*(hyam_v(ii)+hybm_v(ii));
+      ilev_v(ii) = 0.01*ps0*(hyai_v(ii)+hybi_v(ii));
     }
+    ilev_v(num_v_levs) = 0.01*ps0*(hyai_v(num_v_levs)+hybi_v(num_v_levs));
     lev.sync_to_dev();
+    ilev.sync_to_dev();
   }
 
   if (is_planar_geometry_f90()) {

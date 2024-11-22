@@ -24,20 +24,20 @@ set (CASE_TN 2023-01-01-00060)
 
 # Create the baseline (run all 6 timsteps in a single run)
 CreateUnitTestFromExec(model_baseline model_restart
-                        EXE_ARGS "--use-colour no --ekat-test-params ifile=input_baseline.yaml"
+                        EXE_ARGS "--args -ifile=input_baseline.yaml"
                         MPI_RANKS ${SCREAM_TEST_MAX_RANKS}
                         FIXTURES_SETUP baseline_run)
 
 # Start a simulation, but only run half of the time steps
 CreateUnitTestFromExec(model_initial model_restart
-                        EXE_ARGS "--use-colour no --ekat-test-params ifile=input_initial.yaml"
+                        EXE_ARGS "--args -ifile=input_initial.yaml"
                         MPI_RANKS ${SCREAM_TEST_MAX_RANKS}
                         FIXTURES_SETUP initial_run
                         PROPERTIES RESOURCE_LOCK rpointer_file)
 
 # Restart the simulation, and run the second half of the time steps
 CreateUnitTestFromExec(model_restart model_restart
-                        EXE_ARGS "--use-colour no --ekat-test-params ifile=input_restarted.yaml"
+                        EXE_ARGS "--args -ifile=input_restarted.yaml"
                         MPI_RANKS ${SCREAM_TEST_MAX_RANKS}
                         FIXTURES_REQUIRED initial_run
                         FIXTURES_SETUP restarted_run

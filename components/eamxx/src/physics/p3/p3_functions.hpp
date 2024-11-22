@@ -357,6 +357,9 @@ struct Functions
   static void init_kokkos_ice_lookup_tables(
     view_ice_table& ice_table_vals, view_collect_table& collect_table_vals);
 
+  static void p3_init(const bool write_tables = false,
+                      const bool masterproc = false);
+
   // Map (mu_r, lamr) to Table3 data.
   KOKKOS_FUNCTION
   static void lookup(const Spack& mu_r, const Spack& lamr,
@@ -1468,5 +1471,6 @@ void init_tables_from_f90_c(Real* vn_table_vals_data, Real* vm_table_vals_data,
 # include "p3_nr_conservation_impl.hpp"
 # include "p3_ni_conservation_impl.hpp"
 # include "p3_prevent_liq_supersaturation_impl.hpp"
+# include "p3_init_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // P3_FUNCTIONS_HPP

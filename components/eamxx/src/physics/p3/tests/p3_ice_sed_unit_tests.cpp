@@ -4,8 +4,7 @@
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
-#include "p3_functions_f90.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "p3_test_data.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -19,36 +18,36 @@ namespace p3 {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestIceSed {
+struct UnitWrap::UnitTest<D>::TestIceSed : public UnitWrap::UnitTest<D>::Base {
 
-static void run_phys_calc_bulk_rhime()
+void run_phys_calc_bulk_rhime()
 {
   // TODO
 }
 
-static void run_phys_ice_sed()
+void run_phys_ice_sed()
 {
   // TODO
 }
 
-static void run_phys_homogeneous_freezing()
+void run_phys_homogeneous_freezing()
 {
   // TODO
 }
 
-static void run_phys()
+void run_phys()
 {
   run_phys_calc_bulk_rhime();
   run_phys_ice_sed();
   run_phys_homogeneous_freezing();
 }
 
-static void run_bfb_calc_bulk_rhime()
+void run_bfb_calc_bulk_rhime()
 {
   constexpr Scalar qsmall = C::QSMALL;
 
   // Load some lookup inputs, need at least one per pack value
-  CalcBulkRhoRimeData cbrr_fortran[max_pack_size] = {
+  CalcBulkRhoRimeData cbrr_baseline[max_pack_size] = {
     //     qi_tot,       qi_rim,       bi_rim
     {9.999978E-08, 9.999978E-03, 1.111108E-10},
     {0.000000E+00, 8.571428E-05, 1.000000E-02},
@@ -71,17 +70,17 @@ static void run_bfb_calc_bulk_rhime()
     {5.164017E-10, 0.000000E+00, 0.000000E+00},
   };
 
-  // Sync to device, needs to happen before fortran calls so that
+  // Sync to device, needs to happen before reads so that
   // inout data is in original state
   view_1d<CalcBulkRhoRimeData> cbrr_device("cbrr", max_pack_size);
   const auto cbrr_host = Kokkos::create_mirror_view(cbrr_device);
-  std::copy(&cbrr_fortran[0], &cbrr_fortran[0] + max_pack_size, cbrr_host.data());
+  std::copy(&cbrr_baseline[0], &cbrr_baseline[0] + max_pack_size, cbrr_host.data());
   Kokkos::deep_copy(cbrr_device, cbrr_host);
 
-  // Get data from fortran
-  for (Int i = 0; i < max_pack_size; ++i) {
-    if (cbrr_fortran[i].qi_tot > qsmall) {
-      calc_bulk_rho_rime(cbrr_fortran[i]);
+  // Read baseline data
+  if (this->m_baseline_action == COMPARE) {
+    for (Int i = 0; i < max_pack_size; ++i) {
+      cbrr_baseline[i].read(Base::m_fid);
     }
   }
 
@@ -114,20 +113,25 @@ static void run_bfb_calc_bulk_rhime()
   Kokkos::deep_copy(cbrr_host, cbrr_device);
 
   // Validate results
-  if (SCREAM_BFB_TESTING) {
+  if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
     for (Int s = 0; s < max_pack_size; ++s) {
-      REQUIRE(cbrr_fortran[s].qi_rim   == cbrr_host(s).qi_rim);
-      REQUIRE(cbrr_fortran[s].bi_rim   == cbrr_host(s).bi_rim);
-      REQUIRE(cbrr_fortran[s].rho_rime == cbrr_host(s).rho_rime);
+      REQUIRE(cbrr_baseline[s].qi_rim   == cbrr_host(s).qi_rim);
+      REQUIRE(cbrr_baseline[s].bi_rim   == cbrr_host(s).bi_rim);
+      REQUIRE(cbrr_baseline[s].rho_rime == cbrr_host(s).rho_rime);
+    }
+  }
+  else if (this->m_baseline_action == GENERATE) {
+    for (Int s = 0; s < max_pack_size; ++s) {
+      cbrr_host(s).write(Base::m_fid);
     }
   }
 }
 
-static void run_bfb_ice_sed()
+void run_bfb_ice_sed()
 {
-  auto engine = setup_random_test();
+  auto engine = Base::get_engine();
 
-  IceSedData isds_fortran[] = {
+  IceSedData isds_baseline[] = {
     //       kts, kte, ktop, kbot, kdir,        dt,   inv_dt, precip_ice_surf
     IceSedData(1,  72,   27,   72,   -1, 1.800E+03, 5.556E-04,            0.0),
     IceSedData(1,  72,   72,   27,    1, 1.800E+03, 5.556E-04,            1.0),
@@ -135,65 +139,72 @@ static void run_bfb_ice_sed()
     IceSedData(1,  72,   27,   27,    1, 1.800E+03, 5.556E-04,            2.0),
   };
 
-  static constexpr Int num_runs = sizeof(isds_fortran) / sizeof(IceSedData);
+  static constexpr Int num_runs = sizeof(isds_baseline) / sizeof(IceSedData);
 
   // Set up random input data
-  for (auto& d : isds_fortran) {
+  for (auto& d : isds_baseline) {
     d.randomize(engine, { {d.qi_incld, {C::QSMALL/2, C::QSMALL*2}} });
   }
 
-  // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+  // Create copies of data for use by cxx. Needs to happen before reads so that
   // inout data is in original state
   IceSedData isds_cxx[num_runs] = {
-    IceSedData(isds_fortran[0]),
-    IceSedData(isds_fortran[1]),
-    IceSedData(isds_fortran[2]),
-    IceSedData(isds_fortran[3]),
+    IceSedData(isds_baseline[0]),
+    IceSedData(isds_baseline[1]),
+    IceSedData(isds_baseline[2]),
+    IceSedData(isds_baseline[3]),
   };
 
-  // Get data from fortran
-  for (auto& d : isds_fortran) {
-    ice_sedimentation(d);
+  // Read baseline data
+  if (this->m_baseline_action == COMPARE) {
+    for (Int i = 0; i < num_runs; ++i) {
+      isds_baseline[i].read(Base::m_fid);
+    }
   }
 
   // Get data from cxx
   for (auto& d : isds_cxx) {
-    ice_sedimentation_f(d.kts, d.kte, d.ktop, d.kbot, d.kdir,
+    ice_sedimentation_host(d.kts, d.kte, d.ktop, d.kbot, d.kdir,
                         d.rho, d.inv_rho, d.rhofaci, d.cld_frac_i, d.inv_dz,
                         d.dt, d.inv_dt,
                         d.qi, d.qi_incld, d.ni, d.qm, d.qm_incld, d.bm, d.bm_incld,
                         d.ni_incld, &d.precip_ice_surf, d.qi_tend, d.ni_tend);
   }
 
-  if (SCREAM_BFB_TESTING) {
+  if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
     for (Int i = 0; i < num_runs; ++i) {
       // Due to pack issues, we must restrict checks to the active k space
-      Int start = std::min(isds_fortran[i].kbot, isds_fortran[i].ktop) - 1; // 0-based indx
-      Int end   = std::max(isds_fortran[i].kbot, isds_fortran[i].ktop);     // 0-based indx
+      Int start = std::min(isds_baseline[i].kbot, isds_baseline[i].ktop) - 1; // 0-based indx
+      Int end   = std::max(isds_baseline[i].kbot, isds_baseline[i].ktop);     // 0-based indx
       for (Int k = start; k < end; ++k) {
-        REQUIRE(isds_fortran[i].qi[k]       == isds_cxx[i].qi[k]);
-        REQUIRE(isds_fortran[i].qi_incld[k] == isds_cxx[i].qi_incld[k]);
-        REQUIRE(isds_fortran[i].ni[k]       == isds_cxx[i].ni[k]);
-        REQUIRE(isds_fortran[i].ni_incld[k] == isds_cxx[i].ni_incld[k]);
-        REQUIRE(isds_fortran[i].qm[k]       == isds_cxx[i].qm[k]);
-        REQUIRE(isds_fortran[i].qm_incld[k] == isds_cxx[i].qm_incld[k]);
-        REQUIRE(isds_fortran[i].bm[k]       == isds_cxx[i].bm[k]);
-        REQUIRE(isds_fortran[i].bm_incld[k] == isds_cxx[i].bm_incld[k]);
-        REQUIRE(isds_fortran[i].qi_tend[k]  == isds_cxx[i].qi_tend[k]);
-        REQUIRE(isds_fortran[i].ni_tend[k]  == isds_cxx[i].ni_tend[k]);
+        REQUIRE(isds_baseline[i].qi[k]       == isds_cxx[i].qi[k]);
+        REQUIRE(isds_baseline[i].qi_incld[k] == isds_cxx[i].qi_incld[k]);
+        REQUIRE(isds_baseline[i].ni[k]       == isds_cxx[i].ni[k]);
+        REQUIRE(isds_baseline[i].ni_incld[k] == isds_cxx[i].ni_incld[k]);
+        REQUIRE(isds_baseline[i].qm[k]       == isds_cxx[i].qm[k]);
+        REQUIRE(isds_baseline[i].qm_incld[k] == isds_cxx[i].qm_incld[k]);
+        REQUIRE(isds_baseline[i].bm[k]       == isds_cxx[i].bm[k]);
+        REQUIRE(isds_baseline[i].bm_incld[k] == isds_cxx[i].bm_incld[k]);
+        REQUIRE(isds_baseline[i].qi_tend[k]  == isds_cxx[i].qi_tend[k]);
+        REQUIRE(isds_baseline[i].ni_tend[k]  == isds_cxx[i].ni_tend[k]);
       }
-      REQUIRE(isds_fortran[i].precip_ice_surf == isds_cxx[i].precip_ice_surf);
+      REQUIRE(isds_baseline[i].precip_ice_surf == isds_cxx[i].precip_ice_surf);
+    }
+  }
+  else if (this->m_baseline_action == GENERATE) {
+    for (Int i = 0; i < num_runs; ++i) {
+      isds_cxx[i].write(Base::m_fid);
     }
   }
 }
 
-static void run_bfb_homogeneous_freezing()
+void run_bfb_homogeneous_freezing()
 {
   constexpr Scalar latice = C::LatIce;
 
-  auto engine = setup_random_test();
+  auto engine = Base::get_engine();
 
-  HomogeneousFreezingData hfds_fortran[] = {
+  HomogeneousFreezingData hfds_baseline[] = {
     //                    kts, kte, ktop, kbot, kdir
     HomogeneousFreezingData(1,  72,   27,   72,   -1),
     HomogeneousFreezingData(1,  72,   72,   27,    1),
@@ -201,10 +212,10 @@ static void run_bfb_homogeneous_freezing()
     HomogeneousFreezingData(1,  72,   27,   27,    1),
   };
 
-  static constexpr Int num_runs = sizeof(hfds_fortran) / sizeof(HomogeneousFreezingData);
+  static constexpr Int num_runs = sizeof(hfds_baseline) / sizeof(HomogeneousFreezingData);
 
   // Set up random input data
-  for (auto& d : hfds_fortran) {
+  for (auto& d : hfds_baseline) {
     const auto qsmall_r = std::make_pair(C::QSMALL/2, C::QSMALL*2);
     d.randomize(engine, { {d.T_atm, {C::T_homogfrz - 10, C::T_homogfrz + 10}}, {d.qc, qsmall_r}, {d.qr, qsmall_r} });
 
@@ -215,48 +226,56 @@ static void run_bfb_homogeneous_freezing()
     }
   }
 
-  // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+  // Create copies of data for use by cxx. Needs to happen before reads so that
   // inout data is in original state
   HomogeneousFreezingData hfds_cxx[num_runs] = {
-    HomogeneousFreezingData(hfds_fortran[0]),
-    HomogeneousFreezingData(hfds_fortran[1]),
-    HomogeneousFreezingData(hfds_fortran[2]),
-    HomogeneousFreezingData(hfds_fortran[3]),
+    HomogeneousFreezingData(hfds_baseline[0]),
+    HomogeneousFreezingData(hfds_baseline[1]),
+    HomogeneousFreezingData(hfds_baseline[2]),
+    HomogeneousFreezingData(hfds_baseline[3]),
   };
 
-    // Get data from fortran
-  for (auto& d : hfds_fortran) {
-    homogeneous_freezing(d);
+  // Read baseline data
+  if (this->m_baseline_action == COMPARE) {
+    for (auto& d : hfds_baseline) {
+      d.read(Base::m_fid);
+    }
   }
 
   // Get data from cxx
   for (auto& d : hfds_cxx) {
-    homogeneous_freezing_f(d.kts, d.kte, d.ktop, d.kbot, d.kdir,
+    homogeneous_freezing_host(d.kts, d.kte, d.ktop, d.kbot, d.kdir,
                            d.T_atm, d.inv_exner,
                            d.qc, d.nc, d.qr, d.nr, d.qi, d.ni, d.qm, d.bm, d.th_atm);
   }
 
-  if (SCREAM_BFB_TESTING) {
+  if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
     for (Int i = 0; i < num_runs; ++i) {
       // Due to pack issues, we must restrict checks to the active k space
-      Int start = std::min(hfds_fortran[i].kbot, hfds_fortran[i].ktop) - 1; // 0-based indx
-      Int end   = std::max(hfds_fortran[i].kbot, hfds_fortran[i].ktop);     // 0-based indx
+      Int start = std::min(hfds_baseline[i].kbot, hfds_baseline[i].ktop) - 1; // 0-based indx
+      Int end   = std::max(hfds_baseline[i].kbot, hfds_baseline[i].ktop);     // 0-based indx
       for (Int k = start; k < end; ++k) {
-        REQUIRE(hfds_fortran[i].qc[k]     == hfds_cxx[i].qc[k]);
-        REQUIRE(hfds_fortran[i].nc[k]     == hfds_cxx[i].nc[k]);
-        REQUIRE(hfds_fortran[i].qr[k]     == hfds_cxx[i].qr[k]);
-        REQUIRE(hfds_fortran[i].nr[k]     == hfds_cxx[i].nr[k]);
-        REQUIRE(hfds_fortran[i].qi[k]     == hfds_cxx[i].qi[k]);
-        REQUIRE(hfds_fortran[i].ni[k]     == hfds_cxx[i].ni[k]);
-        REQUIRE(hfds_fortran[i].qm[k]     == hfds_cxx[i].qm[k]);
-        REQUIRE(hfds_fortran[i].bm[k]     == hfds_cxx[i].bm[k]);
-        REQUIRE(hfds_fortran[i].th_atm[k] == hfds_cxx[i].th_atm[k]);
+        REQUIRE(hfds_baseline[i].qc[k]     == hfds_cxx[i].qc[k]);
+        REQUIRE(hfds_baseline[i].nc[k]     == hfds_cxx[i].nc[k]);
+        REQUIRE(hfds_baseline[i].qr[k]     == hfds_cxx[i].qr[k]);
+        REQUIRE(hfds_baseline[i].nr[k]     == hfds_cxx[i].nr[k]);
+        REQUIRE(hfds_baseline[i].qi[k]     == hfds_cxx[i].qi[k]);
+        REQUIRE(hfds_baseline[i].ni[k]     == hfds_cxx[i].ni[k]);
+        REQUIRE(hfds_baseline[i].qm[k]     == hfds_cxx[i].qm[k]);
+        REQUIRE(hfds_baseline[i].bm[k]     == hfds_cxx[i].bm[k]);
+        REQUIRE(hfds_baseline[i].th_atm[k] == hfds_cxx[i].th_atm[k]);
       }
     }
   }
+  else if (this->m_baseline_action == GENERATE) {
+    for (Int i = 0; i < num_runs; ++i) {
+      hfds_cxx[i].write(Base::m_fid);
+    }
+  }
+
 }
 
-static void run_bfb()
+void run_bfb()
 {
   run_bfb_calc_bulk_rhime();
   run_bfb_ice_sed();
@@ -273,12 +292,11 @@ namespace {
 
 TEST_CASE("p3_ice_sed", "[p3_functions]")
 {
-  using TCS = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceSed;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceSed;
 
-  TCS::run_phys();
-  TCS::run_bfb();
-
-  scream::p3::P3GlobalForFortran::deinit();
+  T t;
+  t.run_phys();
+  t.run_bfb();
 }
 
 } // namespace

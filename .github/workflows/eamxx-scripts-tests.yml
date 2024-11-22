@@ -5,9 +5,18 @@ on:
   pull_request:
     branches: [ master ]
     types: [opened, synchronize, ready_for_review, reopened]
+    paths:
+      - 'components/eamxx/scripts/**'
+      - 'components/eamxx/cime_config/**'
+      - '.github/workflows/eamxx-scripts-tests.yml'
 
   # Manual run for debug purposes only
   workflow_dispatch:
+    inputs:
+      submit:
+        description: 'Force cdash submission'
+        required: true
+        type: boolean
 
   # Add schedule trigger for nightly runs at midnight MT (Standard Time)
   schedule:
@@ -20,51 +29,12 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # Submit to cdash only for nightlies or if the user explicitly forced a submission via workflow dispatch
+  submit: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.submit) }}
+
 jobs:
-  pre_process_pr:
-    if: ${{ github.event_name == 'pull_request' }}
-    runs-on: ubuntu-latest  # This job can run anywhere
-    outputs:
-      relevant_paths: ${{ steps.check_paths.outputs.value}}
-      labels: ${{ steps.get_labels.outputs.labels }}
-    steps:
-      - id: check_paths
-        run: |
-          paths=(
-            components/eamxx/scripts
-            components/eamxx/cime_config/eamxx
-            components/eamxx/cime_config/build
-            components/eamxx/cime_config/yaml_utils.py
-            .github/workflows/eamxx-scripts-tests.yml
-          )
-          pattern=$(IFS=\|; echo "${paths[*]}")
-
-          # Use the GitHub API to get the list of changed files
-          response=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.number }}/files")
-          changed_files=$(echo "$response" | grep -o '"filename": *"[^"]*"' | sed 's/"filename": *//; s/"//g')
-
-          # Check for matches and echo the matching files (or "" if none)
-          matching_files=$(echo "$changed_files" | grep -E "^($pattern)" || echo "")
-          if [[ -n "$matching_files" ]]; then
-            echo "Found relevant files: $matching_files"
-            echo "value=true" >> $GITHUB_OUTPUT
-          else
-            echo "No relevant files touched by this PR."
-            echo "value=false" >> $GITHUB_OUTPUT
-          fi
-      - id: get_labels
-        run: |
-          labels="${{ join(github.event.pull_request.labels.*.name, ',') }}"
-          echo "labels=${labels}" >> $GITHUB_OUTPUT
   cpu-gcc:
-    needs: [pre_process_pr]
-    if: |
-        github.event_name != 'pull_request' ||
-        (
-          needs.pre_process_pr.outputs.relevant_paths == 'true' &&
-          !contains(needs.pre_process_pr.outputs.labels, 'CI: skip eamxx-all')
-        )
     runs-on:  [self-hosted, gcc, ghci-snl-cpu]
     steps:
       - name: Check out the repository
@@ -78,7 +48,7 @@ jobs:
       - name: Run test
         run: |
           cd components/eamxx
-          if [ ${{ github.event_name == 'schedule' }} ]; then
+          if [ "${{ env.submit }}" == "true" ]; then
             ./scripts/scripts-ctest-driver -s -m ghci-snl-cpu
           else
             ./scripts/scripts-tests -f -m ghci-snl-cpu

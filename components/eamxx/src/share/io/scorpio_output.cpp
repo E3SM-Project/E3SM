@@ -1044,8 +1044,14 @@ register_variables(const std::string& filename,
 
       // Gather longname (if not already in the io: string attributes)
       if (str_atts.count("long_name")==0) {
-        auto longname = m_longnames.get_longname(name);
+        auto longname = m_default_metadata.get_longname(name);
         scorpio::set_attribute(filename, name, "long_name", longname);
+      }
+
+      // Gather standard name, CF-Compliant (if not already in the io: string attributes)
+      if (str_atts.count("standard_name")==0) {
+        auto standardname = m_default_metadata.get_standardname(name);
+        scorpio::set_attribute(filename, name, "standard_name", standardname);
       }
     }
   }

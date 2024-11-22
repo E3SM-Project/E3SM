@@ -850,6 +850,7 @@ TEST_CASE("rrtmgp_aerocom_cloudtop") {
 
 #ifdef RRTMGP_ENABLE_KOKKOS
 using interface_t = scream::rrtmgp::rrtmgp_interface<>;
+using pool_t = interface_t::pool_t;
 using real1dk = interface_t::view_t<scream::Real*>;
 using real2dk = interface_t::view_t<scream::Real**>;
 using real3dk = interface_t::view_t<scream::Real***>;
@@ -861,6 +862,7 @@ using MDRP = interface_t::MDRP;
 TEST_CASE("rrtmgp_test_heating_k") {
   // Initialize Kokkos
   scream::init_kls();
+  pool_t::init(10000);
 
   // Test heating rate function by passing simple inputs
   auto dp = real2dk("dp", 1, 1);
@@ -908,12 +910,14 @@ TEST_CASE("rrtmgp_test_heating_k") {
   REQUIRE(chc(heating)(0,0) == heating_ref);
 
   // Clean up
+  pool_t::finalize();
   scream::finalize_kls();
 }
 
 TEST_CASE("rrtmgp_test_mixing_ratio_to_cloud_mass_k") {
   // Initialize YAKL
   scream::init_kls();
+  pool_t::init(10000);
 
   using physconst = scream::physics::Constants<double>;
 
@@ -966,12 +970,14 @@ TEST_CASE("rrtmgp_test_mixing_ratio_to_cloud_mass_k") {
   REQUIRE(chc(cloud_mass)(0,0) == cloud_mass_ref);
 
   // Clean up
+  pool_t::finalize();
   scream::finalize_kls();
 }
 
 TEST_CASE("rrtmgp_test_limit_to_bounds_k") {
   // Initialize YAKL
   scream::init_kls();
+  pool_t::init(10000);
 
   // Test limiter function
   auto arr = real2dk("arr", 2, 2);
@@ -998,6 +1004,8 @@ TEST_CASE("rrtmgp_test_limit_to_bounds_k") {
   REQUIRE(chc(arr_limited)(0,1) == 2.0);
   REQUIRE(chc(arr_limited)(1,0) == 3.0);
   REQUIRE(chc(arr_limited)(1,1) == 3.5);
+
+  pool_t::finalize();
   scream::finalize_kls();
 }
 
@@ -1070,6 +1078,7 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux_k") {
 
   // Initialize YAKL
   scream::init_kls();
+  pool_t::init(10000);
 
   // Create arrays
   const int ncol = 1;
@@ -1227,6 +1236,7 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux_k") {
   logger->info("Free memory...\n");
   interface_t::rrtmgp_finalize();
   gas_concs.reset();
+  pool_t::finalize();
   scream::finalize_kls();
 }
 
@@ -1255,6 +1265,7 @@ TEST_CASE("rrtmgp_test_radiation_do_k") {
 TEST_CASE("rrtmgp_test_check_range_k") {
   // Initialize YAKL
   scream::init_kls();
+  pool_t::init(10000);
   // Create some dummy data and test with both values inside valid range and outside
   auto dummy = real2dk("dummy", 2, 1);
   // All values within range
@@ -1266,12 +1277,14 @@ TEST_CASE("rrtmgp_test_check_range_k") {
   // At least one value above upper bound
   Kokkos::parallel_for(1, KOKKOS_LAMBDA (int i) {dummy(i, 0) = 1.1;});
   REQUIRE(scream::rrtmgp::check_range_k(dummy, 0.0, 1.0, "dummy") == false);
+  pool_t::finalize();
   scream::finalize_kls();
 }
 
 TEST_CASE("rrtmgp_test_subcol_gen_k") {
   // Initialize YAKL
   scream::init_kls();
+  pool_t::init(10000);
   // Create dummy data
   const int ncol = 1;
   const int nlay = 4;
@@ -1291,7 +1304,7 @@ TEST_CASE("rrtmgp_test_subcol_gen_k") {
   for (unsigned seed = 0; seed < 10; seed++) {
     auto seeds = int1dk("seeds", ncol);
     Kokkos::deep_copy(seeds, seed);
-    cldmask = interface_t::get_subcolumn_mask(ncol, nlay, ngpt, cldfrac, 1, seeds);
+    interface_t::get_subcolumn_mask(ncol, nlay, ngpt, cldfrac, 1, seeds, cldmask);
     // Check answers by computing new cldfrac from mask
     Kokkos::deep_copy(cldfrac_from_mask, 0.0);
     Kokkos::parallel_for(MDRP::template get<2>({nlay,ncol}), KOKKOS_LAMBDA(int ilay, int icol) {
@@ -1325,7 +1338,7 @@ TEST_CASE("rrtmgp_test_subcol_gen_k") {
   for (unsigned seed = 0; seed < 10; seed++) {
     auto seeds = int1dk("seeds", ncol);
     Kokkos::deep_copy(seeds, seed);
-    cldmask = interface_t::get_subcolumn_mask(ncol, nlay, ngpt, cldfrac, 1, seeds);
+    interface_t::get_subcolumn_mask(ncol, nlay, ngpt, cldfrac, 1, seeds, cldmask);
     auto cldmask_h = chc(cldmask);
     for (int igpt = 0; igpt < ngpt; igpt++) {
       if (cldmask_h(0,0,igpt) == 1) {
@@ -1334,12 +1347,14 @@ TEST_CASE("rrtmgp_test_subcol_gen_k") {
     }
   }
   // Clean up after test
+  pool_t::finalize();
   scream::finalize_kls();
 }
 
 TEST_CASE("rrtmgp_cloud_area_k") {
   // Initialize YAKL
   scream::init_kls();
+  pool_t::init(10000);
   // Create dummy data
   const int ncol = 1;
   const int nlay = 2;
@@ -1429,12 +1444,14 @@ TEST_CASE("rrtmgp_cloud_area_k") {
   REQUIRE(chc(cldtot)(0) == 0.0);
   interface_t::compute_cloud_area(ncol, nlay, ngpt, 100, 300, pmid, cldtau, cldtot);
   REQUIRE(chc(cldtot)(0) == 2.0 / 3.0);
+  pool_t::finalize();
   scream::finalize_kls();
 }
 
 TEST_CASE("rrtmgp_aerocom_cloudtop_k") {
   // Initialize YAKL
   scream::init_kls();
+  pool_t::init(10000);
 
   // Create dummy data
   const int ncol = 1;
@@ -1623,6 +1640,7 @@ TEST_CASE("rrtmgp_aerocom_cloudtop_k") {
   REQUIRE(chc(cldfrac_ice_at_cldtop)(0) == 0.7);  // max
 
   // cleanup
+  pool_t::finalize();
   scream::finalize_kls();
 }
 #endif

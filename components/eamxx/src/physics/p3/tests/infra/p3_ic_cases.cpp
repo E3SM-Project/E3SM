@@ -8,12 +8,12 @@ namespace p3 {
 namespace ic {
 
 // From mixed_case_data.py in scream-docs at commit 4bbea4.
-FortranData::Ptr make_mixed (const Int ncol, const Int nlev) {
+P3Data::Ptr make_mixed (const Int ncol, const Int nlev) {
   using consts = scream::physics::Constants<Real>;
 
   const Int nk = nlev;
   Int k;
-  const auto dp = std::make_shared<FortranData>(ncol, nk);
+  const auto dp = std::make_shared<P3Data>(ncol, nk);
   auto& d = *dp;
 
   for (Int i = 0; i < ncol; ++i) {
@@ -66,7 +66,7 @@ FortranData::Ptr make_mixed (const Int ncol, const Int nlev) {
     // To get potential temperature, start by making absolute temperature vary
     // between 150K at top of atmos and 300k at surface, then convert to potential
     // temp.
-    FortranData::Array1 T_atm("T", nk);
+    P3Data::Array1 T_atm("T", nk);
     for (k = 0; k < nk; ++k) {
       T_atm(k) = 150 + 150/double(nk)*k;
       if (i > 0) T_atm(k) += ((i % 3) - 0.5)/double(nk)*k;
@@ -119,7 +119,7 @@ FortranData::Ptr make_mixed (const Int ncol, const Int nlev) {
   return dp;
 }
 
-FortranData::Ptr Factory::create (IC ic, Int ncol, Int nlev) {
+P3Data::Ptr Factory::create (IC ic, Int ncol, Int nlev) {
  switch (ic) {
    case mixed: return make_mixed(ncol, nlev);
  default:
