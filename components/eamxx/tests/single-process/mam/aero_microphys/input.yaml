@@ -66,6 +66,7 @@ initial_conditions:
   snow_depth_land: 0.01
   fraction_landuse: [0.5, 0.5, 0.5, 0.5, 0.5, 0.2, 0.0, 0.0, 0.0, 0.2, 0.2]
   SW_flux_dn: 500.0
+  constituent_fluxes: 0.0
 # The parameters for I/O control
 Scorpio:
   output_yaml_files: ["output.yaml"]
