@@ -1,18 +1,9 @@
 set(P3_SRCS
-  p3_f90.cpp
-  p3_ic_cases.cpp
   p3_iso_c.f90
   ${SCREAM_BASE_DIR}/../eam/src/physics/p3/scream/micro_p3.F90
   eamxx_p3_process_interface.cpp
   eamxx_p3_run.cpp
 )
-
-if (NOT SCREAM_LIB_ONLY)
-  list(APPEND P3_SRCS
-    p3_functions_f90.cpp
-    p3_main_wrap.cpp
-    ) # Add f90 bridges needed for testing
-endif()
 
 # Add ETI source files if not on CUDA/HIP
 if (NOT EAMXX_ENABLE_GPU OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE OR Kokkos_ENABLE_HIP_RELOCATABLE_DEVICE_CODE)
@@ -27,6 +18,7 @@ if (NOT EAMXX_ENABLE_GPU OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE OR Kokkos
     eti/p3_table_ice.cpp
     eti/p3_dsd2.cpp
     eti/p3_find.cpp
+    eti/p3_init.cpp
     eti/p3_update_prognostics.cpp
     eti/p3_get_time_space_phys_variables.cpp
     eti/p3_autoconversion.cpp
@@ -77,6 +69,8 @@ if (SCREAM_P3_SMALL_KERNELS)
   add_library(p3 ${P3_SRCS} ${P3_SK_SRCS})
 else()
   add_library(p3 ${P3_SRCS})
+  # If small kernels are ON, we don't need a separate executable to test them.
+  # Also, we never want to generate baselines with this separate executable
   if (NOT SCREAM_LIBS_ONLY AND NOT SCREAM_ONLY_GENERATE_BASELINES)
     add_library(p3_sk ${P3_SRCS} ${P3_SK_SRCS})
     # Always build p3_sk with SCREAM_P3_SMALL_KERNELS on
@@ -122,11 +116,6 @@ endforeach()
 # This executable can be used to re-generate tables in ${SCREAM_DATA_DIR}
 add_executable(p3_tables_setup EXCLUDE_FROM_ALL p3_tables_setup.cpp)
 target_link_libraries(p3_tables_setup p3)
-
-#crusher change
-if (Kokkos_ENABLE_HIP)
-set_source_files_properties(p3_functions_f90.cpp  PROPERTIES COMPILE_FLAGS -O0)
-endif()
 
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)

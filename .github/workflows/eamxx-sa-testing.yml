@@ -5,6 +5,17 @@ on:
   pull_request:
     branches: [ master ]
     types: [opened, synchronize, ready_for_review, reopened]
+    paths:
+      # first, yes to these
+      - '.github/workflows/eamxx-sa-testing.yml'
+      - 'cime_config/machine/config_machines.xml'
+      - 'components/eamxx/**'
+      - 'components/homme/**'
+      - 'externals/ekat'
+      - 'externals/scorpio'
+      # second, no to these
+      - '!components/eamxx/docs/**'
+      - '!components/eamxx/mkdocs.yml'
 
   # Manual run is used to bless
   workflow_dispatch:
@@ -21,6 +32,10 @@ on:
         description: 'Generate baselines'
         required: true
         type: boolean
+      submit:
+        description: 'Force cdash submission'
+        required: true
+        type: boolean
 
   # Add schedule trigger for nightly runs at midnight MT (Standard Time)
   schedule:
@@ -34,66 +49,20 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  submit: ${{ github.event_name == 'schedule' && 'true' || 'false' }}  # Submit to cdash only for nightlies
+  # Submit to cdash only for nightlies or if the user explicitly forced a submission via workflow dispatch
+  submit: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.submit) }}
+  generate: ${{ github.event_name == 'workflow_dispatch' && inputs.bless }}
 
 jobs:
-  pre_process_pr:
-    if: ${{ github.event_name == 'pull_request' }}
-    runs-on: ubuntu-latest  # This job can run anywhere
-    outputs:
-      relevant_paths: ${{ steps.check_paths.outputs.value }}
-      labels: ${{ steps.get_labels.outputs.labels }}
-    steps:
-      - id: check_paths
-        run: |
-          paths=(
-            components/eamxx
-            components/eam/src/physics/rrtmgp
-            components/eam/src/physics/p3/scream
-            components/eam/src/physics/cam
-            components/eam/src/physics/rrtmgp/external
-            externals/ekat
-            externals/scorpio
-            externals/haero
-            externals/YAKL
-            .github/workflows/eamxx-sa-testing.yml
-          )
-          pattern=$(IFS=\|; echo "${paths[*]}")
-
-          # Use the GitHub API to get the list of changed files
-          response=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.number }}/files")
-          changed_files=$(echo "$response" | grep -o '"filename": *"[^"]*"' | sed 's/"filename": *//; s/"//g')
-
-          # Check for matches and echo the matching files (or "" if none)
-          matching_files=$(echo "$changed_files" | grep -E "^($pattern)" || echo "")
-          if [[ -n "$matching_files" ]]; then
-            echo "Found relevant files: $matching_files"
-            echo "value=true" >> $GITHUB_OUTPUT
-          else
-            echo "No relevant files touched by this PR."
-            echo "value=false" >> $GITHUB_OUTPUT
-          fi
-      - id: get_labels
-        run: |
-          labels="${{ join(github.event.pull_request.labels.*.name, ',') }}"
-          echo "labels=${labels}" >> $GITHUB_OUTPUT
   gcc-openmp:
-    needs: [pre_process_pr]
     if: |
-      github.event_name == 'schedule' ||
-      (
-        github.event_name == 'pull_request' &&
-        needs.pre_process_pr.outputs.relevant_paths=='true' &&
-        !contains(needs.pre_process_pr.outputs.labels,'CI: skip gcc') &&
-        !contains(needs.pre_process_pr.outputs.labels,'CI: skip openmp') &&
-        !contains(needs.pre_process_pr.outputs.labels,'CI: skip eamxx-sa') &&
-        !contains(needs.pre_process_pr.outputs.labels,'CI: skip eamxx-all')
-      ) || (
-        github.event_name == 'workflow_dispatch' &&
-        github.event.inputs.job_to_run == 'gcc-openmp' || 
-        github.event.inputs.job_to_run == 'all'
-      )
+      ${{
+        github.event_name != 'workflow_dispatch' ||
+        (
+          github.event.inputs.job_to_run == 'gcc-openmp' || 
+          github.event.inputs.job_to_run == 'all'
+        )
+      }}
     runs-on:  [self-hosted, ghci-snl-cpu, gcc]
     strategy:
       fail-fast: false
@@ -109,14 +78,6 @@ jobs:
           submodules: recursive
       - name: Show action trigger
         uses: ./.github/actions/show-workflow-trigger
-      - name: Set test-all inputs based on event specs
-        run: |
-          echo "generate=false" >> $GITHUB_ENV
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            if [ "${{ inputs.bless }}" == "true" ]; then
-              echo "generate=true" >> $GITHUB_ENV
-            fi
-          fi
       - name: Run tests
         uses: ./.github/actions/test-all-scream
         with:
@@ -126,21 +87,14 @@ jobs:
           submit: ${{ env.submit }}
           cmake-configs: Kokkos_ENABLE_OPENMP=ON
   gcc-cuda:
-    needs: [pre_process_pr]
     if: |
-      github.event_name == 'schedule' ||
-      (
-        github.event_name == 'pull_request' &&
-        needs.pre_process_pr.outputs.relevant_paths=='true' &&
-        !contains(needs.pre_process_pr.outputs.labels,'CI: skip gcc') &&
-        !contains(needs.pre_process_pr.outputs.labels,'CI: skip cuda') &&
-        !contains(needs.pre_process_pr.outputs.labels,'CI: skip eamxx-sa') &&
-        !contains(needs.pre_process_pr.outputs.labels,'CI: skip eamxx-all')
-      ) || (
-        github.event_name == 'workflow_dispatch' &&
-        github.event.inputs.job_to_run == 'gcc-cuda' ||
-        github.event.inputs.job_to_run == 'all'
-      )
+      ${{
+        github.event_name != 'workflow_dispatch' ||
+        (
+          github.event.inputs.job_to_run == 'gcc-cuda' || 
+          github.event.inputs.job_to_run == 'all'
+        )
+      }}
     runs-on:  [self-hosted, ghci-snl-cuda, cuda, gcc]
     strategy:
       fail-fast: false
@@ -156,14 +110,35 @@ jobs:
           submodules: recursive
       - name: Show action trigger
         uses: ./.github/actions/show-workflow-trigger
-      - name: Set test-all inputs based on event specs
+      - name: Get CUDA Arch
         run: |
-          echo "generate=false" >> $GITHUB_ENV
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            if [ "${{ inputs.bless }}" == "true" ]; then
-              echo "generate=true" >> $GITHUB_ENV
-            fi
+          # Ensure nvidia-smi is available
+          if ! command -v nvidia-smi &> /dev/null; then
+              echo "nvidia-smi could not be found. Please ensure you have Nvidia drivers installed."
+              exit 1
           fi
+
+          # Get the GPU model from nvidia-smi, and set env for next step
+          gpu_model=$(nvidia-smi --query-gpu=name --format=csv,noheader | head -n 1)
+          case "$gpu_model" in
+              *"H100"*)
+                  echo "Hopper=ON" >> $GITHUB_ENV
+                  echo "CUDA_ARCH=90" >> $GITHUB_ENV
+                  ARCH=90
+                  ;;
+              *"A100"*)
+                  echo "Ampere=ON" >> $GITHUB_ENV
+                  echo "CUDA_ARCH=80" >> $GITHUB_ENV
+                  ;;
+              *"V100"*)
+                  echo "Volta=ON" >> $GITHUB_ENV
+                  echo "CUDA_ARCH=70" >> $GITHUB_ENV
+                  ;;
+              *)
+                  echo "Unsupported GPU model: $gpu_model"
+                  exit 1
+                  ;;
+          esac
       - name: Run tests
         uses: ./.github/actions/test-all-scream
         with:
@@ -171,4 +146,4 @@ jobs:
           machine: ghci-snl-cuda
           generate: ${{ env.generate }}
           submit: ${{ env.submit }}
-          cmake-configs: Kokkos_ARCH_VOLTA70=ON;CMAKE_CUDA_ARCHITECTURES=70
+          cmake-configs: Kokkos_ARCH_HOPPER90=${{ env.Hopper }};Kokkos_ARCH_AMPERE80=${{ env.Ampere }};Kokkos_ARCH_VOLTA70=${{ env.Volta }};CMAKE_CUDA_ARCHITECTURES=${{ env.CUDA_ARCH }}

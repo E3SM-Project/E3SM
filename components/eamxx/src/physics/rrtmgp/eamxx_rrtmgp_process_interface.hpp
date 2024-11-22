@@ -95,6 +95,11 @@ public:
   Real m_orbital_obliq;  // Obliquity
   Real m_orbital_mvelp;  // Vernal Equinox Mean Longitude of Perihelion
 
+  // Value for prescribing an invariant solar constant (i.e. total solar irradiance
+  // at TOA).  Used for idealized experiments such as RCE. This is only used when a
+  // positive value is supplied.
+  Real m_fixed_total_solar_irradiance;
+
   // Fixed solar zenith angle to use for shortwave calculations
   // This is only used if a positive value is supplied
   Real m_fixed_solar_zenith_angle;

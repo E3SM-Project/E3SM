@@ -402,7 +402,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     // Check if we need to open a new file
     if (not filespecs.is_open) {
       filespecs.filename = compute_filename (filespecs,timestamp);
-      // Register all dims/vars, write geometry data (e.g. lat/lon/hyam/hybm)
+      // Register all dims/vars, write geometry data (e.g. lat/lon/hyam/hybm/hyai/hybi)
       setup_file(filespecs,control);
     }
 

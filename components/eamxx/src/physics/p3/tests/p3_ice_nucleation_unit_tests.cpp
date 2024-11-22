@@ -4,7 +4,7 @@
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
-#include "p3_functions_f90.hpp"
+#include "p3_test_data.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -19,9 +19,9 @@ namespace p3 {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestIceNucleation {
+struct UnitWrap::UnitTest<D>::TestIceNucleation : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_ice_nucleation_bfb()
+  void run_ice_nucleation_bfb()
   {
     using KTH = KokkosTypes<HostDevice>;
 
@@ -54,10 +54,13 @@ struct UnitWrap::UnitTest<D>::TestIceNucleation {
 	  {2.702E+02, 1.069E+00, 0.323E+03, 2.221E+01, 9.952E-01, inv_dt, do_predict_nc, do_prescribed_CCN }
 	};
 
-	// Run the fortran code
-	for (Int i = 0; i < max_pack_size; ++i) {
-	  ice_nucleation(self[i]);
-	}
+        std::string root_name = "ice_nucleation";
+        std::string file_name = root_name + (do_predict_nc ? "1" : "0") + (do_prescribed_CCN ? "1" : "0");
+        if (this->m_baseline_action == COMPARE) {
+          for (Int i = 0; i < max_pack_size; ++i) {
+            self[i].read(Base::m_fid);
+          }
+        }
 
 	// Sync to device
 	KTH::view_1d<IceNucleationData> self_host("self_host", max_pack_size);
@@ -94,17 +97,22 @@ struct UnitWrap::UnitTest<D>::TestIceNucleation {
 
 	Kokkos::deep_copy(self_host, self_device);
 
-        if (SCREAM_BFB_TESTING) {
+        if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
           for (Int s = 0; s < max_pack_size; ++s) {
             REQUIRE(self[s].qv2qi_nucleat_tend == self_host(s).qv2qi_nucleat_tend);
             REQUIRE(self[s].ni_nucleat_tend    == self_host(s).ni_nucleat_tend);
+          }
+        }
+        else if (this->m_baseline_action == GENERATE) {
+          for (Int s = 0; s < max_pack_size; ++s) {
+            self_host(s).write(Base::m_fid);
           }
         }
       } //end for do_predict_nc
     } //end for do_prescribed_CCN
   }
 
-  static void run_ice_nucleation_phys()
+  void run_ice_nucleation_phys()
   {
     // TODO
   }
@@ -118,10 +126,11 @@ namespace {
 
 TEST_CASE("p3_ice_nucleation", "[p3_functions]")
 {
-  using TD = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceNucleation;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceNucleation;
 
-  TD::run_ice_nucleation_phys();
-  TD::run_ice_nucleation_bfb();
+  T t;
+  t.run_ice_nucleation_phys();
+  t.run_ice_nucleation_bfb();
 }
 
 }

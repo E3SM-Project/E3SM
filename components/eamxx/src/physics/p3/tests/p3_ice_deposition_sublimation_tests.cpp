@@ -4,7 +4,7 @@
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
-#include "p3_functions_f90.hpp"
+#include "p3_test_data.hpp"
 #include "physics/share/physics_constants.hpp"
 #include "p3_unit_tests_common.hpp"
 
@@ -13,9 +13,9 @@ namespace p3 {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestIceDepositionSublimation {
+struct UnitWrap::UnitTest<D>::TestIceDepositionSublimation : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_property(){
+  void run_property() {
     //Note that a lot of property tests are included in run_bfb for simplicity
 
     //Choose default values (just grabbed a row from the array in run_bfb)
@@ -30,13 +30,13 @@ struct UnitWrap::UnitTest<D>::TestIceDepositionSublimation {
 
     //init output vars
     Spack qv2qi_vapdep_tend, qi2qv_sublim_tend, ni_sublim_tend, qc2qi_berg_tend;
-    
+
     //CHECK THAT UNREASONABLY LARGE VAPOR DEPOSITION DOESN'T LEAVE QV SUBSATURATED WRT QI
     Spack epsi_tmp=1e6; //make 1/(sat removal timescale) huge so vapdep rate removes all supersat in 1 dt.
     Functions::ice_deposition_sublimation(qi_incld, ni_incld, T_atm, qv_sat_l, qv_sat_i,
 	        epsi_tmp, abi, qv, inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend, ni_sublim_tend, qc2qi_berg_tend);
     REQUIRE( (qv2qi_vapdep_tend[0]==0 || std::abs( qv2qi_vapdep_tend[0] - (qv[0] - qv_sat_i[0])*inv_dt) <1e-8) );
-   
+
     //CHECK THAT HUGE SUBLIMATION DOESN'T LEAVE QV SUPERSATURATED WRT QI
     Spack qv_sat_i_tmp=1e-2;
     Functions::ice_deposition_sublimation(qi_incld, ni_incld, T_atm, qv_sat_l, qv_sat_i_tmp,
@@ -46,10 +46,10 @@ struct UnitWrap::UnitTest<D>::TestIceDepositionSublimation {
     //CHECK BEHAVIOR AS DT->0?
 
   }
-  
-  static void run_bfb()
+
+  void run_bfb()
   {
-    IceDepositionSublimationData f90_data[max_pack_size] = {
+    IceDepositionSublimationData baseline_data[max_pack_size] = {
       {1.0000E-04,4.5010E+05,2.8750E+02,1.1279E-02,1.1279E-02,0.0000E+00,3.3648E+00,5.0000E-03,1.666667e-02},
       {5.1000E-03,4.5370E+05,2.8542E+02,9.9759E-03,9.9759E-03,0.0000E+00,3.1223E+00,5.0000E-03,1.666667e-02},
       {5.1000E-03,4.5742E+05,2.8334E+02,8.8076E-03,8.8076E-03,0.0000E+00,2.9014E+00,5.0000E-03,1.666667e-02},
@@ -67,25 +67,25 @@ struct UnitWrap::UnitTest<D>::TestIceDepositionSublimation {
       {5.1000E-03,5.1317E+05,2.5834E+02,1.6757E-03,1.4491E-03,6.0620E-02,1.3763E+00,5.0000E-03,1.666667e-02},
       {5.0000E-08,5.4479E+05,2.4793E+02,7.5430E-04,5.8895E-04,4.6769E-04,1.1661E+00,1.5278E-04,1.666667e-02},
     };
-    
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(IceDepositionSublimationData);
 
     // Generate random input data
-    // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
-    //for (auto& d : f90_data) {
+    // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
+    //for (auto& d : baseline_data) {
     //  d.randomize();
     //}
 
-    // Create copies of data for use by cxx and sync it to device. Needs to happen before fortran calls so that
+    // Create copies of data for use by cxx and sync it to device. Needs to happen before reads so that
     // inout data is in original state
     view_1d<IceDepositionSublimationData> cxx_device("cxx_device", max_pack_size);
     const auto cxx_host = Kokkos::create_mirror_view(cxx_device);
-    std::copy(&f90_data[0], &f90_data[0] + max_pack_size, cxx_host.data());
+    std::copy(&baseline_data[0], &baseline_data[0] + max_pack_size, cxx_host.data());
     Kokkos::deep_copy(cxx_device, cxx_host);
 
-    // Get data from fortran
-    for (auto& d : f90_data) {
-      ice_deposition_sublimation(d);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (Int i = 0; i < max_pack_size; ++i) {
+        baseline_data[i].read(Base::m_fid);
+      }
     }
 
     // Get data from cxx. Run ice_deposition_sublimation from a kernel and copy results back to host
@@ -110,7 +110,6 @@ struct UnitWrap::UnitTest<D>::TestIceDepositionSublimation {
       // Init outputs
       Spack ni_sublim_tend(0), qi2qv_sublim_tend(0), qc2qi_berg_tend(0), qv2qi_vapdep_tend(0);
 
-
       Functions::ice_deposition_sublimation(qi_incld, ni_incld, T_atm, qv_sat_l, qv_sat_i, epsi, abi, qv, inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend, ni_sublim_tend, qc2qi_berg_tend);
 
       // Copy spacks back into cxx_device view
@@ -120,35 +119,40 @@ struct UnitWrap::UnitTest<D>::TestIceDepositionSublimation {
         cxx_device(vs).qc2qi_berg_tend = qc2qi_berg_tend[s];
         cxx_device(vs).qv2qi_vapdep_tend = qv2qi_vapdep_tend[s];
       }
-
     });
 
     Kokkos::deep_copy(cxx_host, cxx_device);
 
-    for (Int i = 0; i < num_runs; ++i) {
-      // Verify BFB results
-      IceDepositionSublimationData& d_f90 = f90_data[i];
-      IceDepositionSublimationData& d_cxx = cxx_host[i];
-      REQUIRE(d_f90.qv2qi_vapdep_tend == d_cxx.qv2qi_vapdep_tend);
-      REQUIRE(d_f90.qi2qv_sublim_tend == d_cxx.qi2qv_sublim_tend);
-      REQUIRE(d_f90.ni_sublim_tend == d_cxx.ni_sublim_tend);
-      REQUIRE(d_f90.qc2qi_berg_tend == d_cxx.qc2qi_berg_tend);
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
+      for (Int i = 0; i < max_pack_size; ++i) {
+        // Verify BFB results
+        IceDepositionSublimationData& d_f90 = baseline_data[i];
+        IceDepositionSublimationData& d_cxx = cxx_host[i];
+        REQUIRE(d_f90.qv2qi_vapdep_tend == d_cxx.qv2qi_vapdep_tend);
+        REQUIRE(d_f90.qi2qv_sublim_tend == d_cxx.qi2qv_sublim_tend);
+        REQUIRE(d_f90.ni_sublim_tend == d_cxx.ni_sublim_tend);
+        REQUIRE(d_f90.qc2qi_berg_tend == d_cxx.qc2qi_berg_tend);
 
-      //MAKE SURE OUTPUT IS WITHIN EXPECTED BOUNDS:
-      REQUIRE(d_cxx.qv2qi_vapdep_tend >=0);
-      REQUIRE(d_cxx.qi2qv_sublim_tend >=0);
-      REQUIRE(d_cxx.ni_sublim_tend >=0);
-      REQUIRE(d_cxx.qc2qi_berg_tend >=0);
+        //MAKE SURE OUTPUT IS WITHIN EXPECTED BOUNDS:
+        REQUIRE(d_cxx.qv2qi_vapdep_tend >=0);
+        REQUIRE(d_cxx.qi2qv_sublim_tend >=0);
+        REQUIRE(d_cxx.ni_sublim_tend >=0);
+        REQUIRE(d_cxx.qc2qi_berg_tend >=0);
 
-      //vapdep should only occur when qv>qv_sat_i
-      REQUIRE( (d_cxx.qv2qi_vapdep_tend==0 || d_cxx.qv + d_cxx.qv2qi_vapdep_tend*d_cxx.inv_dt >= d_cxx.qv_sat_i) );
-      //sublim should only occur when qv<qv_sat_i
-      REQUIRE( (d_cxx.qi2qv_sublim_tend==0 || d_cxx.qv + d_cxx.qi2qv_sublim_tend*d_cxx.inv_dt <= d_cxx.qv_sat_i) );
+        //vapdep should only occur when qv>qv_sat_i
+        REQUIRE( (d_cxx.qv2qi_vapdep_tend==0 || d_cxx.qv + d_cxx.qv2qi_vapdep_tend*d_cxx.inv_dt >= d_cxx.qv_sat_i) );
+        //sublim should only occur when qv<qv_sat_i
+        REQUIRE( (d_cxx.qi2qv_sublim_tend==0 || d_cxx.qv + d_cxx.qi2qv_sublim_tend*d_cxx.inv_dt <= d_cxx.qv_sat_i) );
 
-      //if T>frz, berg and vapdep should be 0:
-      REQUIRE( (d_cxx.T_atm<C::T_zerodegc || d_cxx.qc2qi_berg_tend==0) );
-      REQUIRE( (d_cxx.T_atm<C::T_zerodegc || d_cxx.qv2qi_vapdep_tend==0) );
-
+        //if T>frz, berg and vapdep should be 0:
+        REQUIRE( (d_cxx.T_atm<C::T_zerodegc || d_cxx.qc2qi_berg_tend==0) );
+        REQUIRE( (d_cxx.T_atm<C::T_zerodegc || d_cxx.qv2qi_vapdep_tend==0) );
+      }
+    }
+    else if (this->m_baseline_action == GENERATE) {
+      for (Int s = 0; s < max_pack_size; ++s) {
+        cxx_host(s).write(Base::m_fid);
+      }
     }
   } // run_bfb
 
@@ -162,16 +166,18 @@ namespace {
 
 TEST_CASE("ice_deposition_sublimation_property", "[p3]")
 {
-  using TestStruct = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceDepositionSublimation;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceDepositionSublimation;
 
-  TestStruct::run_property();
+  T t;
+  t.run_property();
 }
-  
+
 TEST_CASE("ice_deposition_sublimation_bfb", "[p3]")
 {
-  using TestStruct = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceDepositionSublimation;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceDepositionSublimation;
 
-  TestStruct::run_bfb();
+  T t;
+  t.run_bfb();
 }
 
 } // empty namespace

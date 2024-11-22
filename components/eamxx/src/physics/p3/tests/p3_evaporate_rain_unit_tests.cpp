@@ -4,25 +4,18 @@
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
-#include "p3_functions_f90.hpp"
+#include "p3_test_data.hpp"
 
 #include "p3_unit_tests_common.hpp"
-
-//#include <thread>
-//#include <array>
-//#include <algorithm>
-//#include <random>
-//#include <iomanip>      // std::setprecision
 
 namespace scream {
 namespace p3 {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestEvapSublPrecip
-{
+struct UnitWrap::UnitTest<D>::TestEvapSublPrecip : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_property(){
+  void run_property() {
 
     //TEST WEIGHTING TIMESCALE
     //========================
@@ -133,13 +126,13 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip
     REQUIRE( qrtend[0] <= qr_incld[0]/dt);
     REQUIRE( nrtend[0] <= nr_incld[0]/dt); //keep end-of-step nr positive. Should always be true.
 
-  }; //end run_property
+  } //end run_property
 
-  static void run_bfb(){
+  void run_bfb() {
     constexpr Scalar latvap = C::LatVap;
     constexpr Scalar latice = C::LatIce;
 
-    //fortran generated data is input to the following
+    //baseline generated data is input to the following
     //This subroutine has 20 args, only 18 are supplied here for invoking it as last 2 are intent-outs
     //note that dt is the same val for each row - this is needed since dt is a scalar and all rows are executed simultaneously on CPU in C++.
     //row1: above freezing, should trigger
@@ -180,9 +173,11 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip
     std::copy(&espd[0], &espd[0] + max_pack_size, espd_host.data());
     Kokkos::deep_copy(espd_device, espd_host);
 
-    // Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
-      evaporate_rain(espd[i]);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (Int i = 0; i < max_pack_size; ++i) {
+        espd[i].read(Base::m_fid);
+      }
     }
 
     // Run the lookup from a kernel and copy results back to host
@@ -248,10 +243,15 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip
     Kokkos::deep_copy(espd_host, espd_device);
 
     // Validate results
-    if (SCREAM_BFB_TESTING) {
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int s = 0; s < max_pack_size; ++s) {
         REQUIRE(espd[s].qr2qv_evap_tend == espd_host(s).qr2qv_evap_tend);
         REQUIRE(espd[s].nr_evap_tend == espd_host(s).nr_evap_tend);
+      }
+    }
+    else if (this->m_baseline_action == GENERATE) {
+      for (Int s = 0; s < max_pack_size; ++s) {
+        espd_host(s).write(Base::m_fid);
       }
     }
   } // end run_bfb
@@ -267,14 +267,18 @@ namespace {
 
   TEST_CASE("p3_evaporate_rain_property", "p3_unit_tests")
   {
-    using TestStruct = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestEvapSublPrecip;
-    TestStruct::run_property();
+    using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestEvapSublPrecip;
+
+    T t;
+    t.run_property();
   }
 
   TEST_CASE("p3_evaporate_rain_test", "p3_unit_tests")
   {
-    using TestStruct = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestEvapSublPrecip;
-    TestStruct::run_bfb();
-}
+    using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestEvapSublPrecip;
+
+    T t;
+    t.run_bfb();
+  }
 
 }// end anonymous namespace
