@@ -3405,53 +3405,58 @@
 <li>type: file  </li>
 </ul>
 </li>
-<li>mam4_aero_microphys::verti_emiss_ymd:  <ul>
+<li>mam4_aero_microphys::elevated_emiss_ymd:  <ul>
 <li>description: <strong>MISSING</strong>  </li>
 <li>type: integer  </li>
 </ul>
 </li>
-<li>mam4_aero_microphys::mam4_so2_verti_emiss_file_name:  <ul>
-<li>description: vertical emissions for so2  </li>
+<li>mam4_aero_microphys::mam4_season_wes_file:  <ul>
+<li>description: File containing season_wes data  </li>
 <li>type: file  </li>
 </ul>
 </li>
-<li>mam4_aero_microphys::mam4_so4_a1_verti_emiss_file_name:  <ul>
-<li>description: vertical emissions for so4_a1  </li>
+<li>mam4_aero_microphys::mam4_so2_elevated_emiss_file_name:  <ul>
+<li>description: elevated emissions for so2  </li>
 <li>type: file  </li>
 </ul>
 </li>
-<li>mam4_aero_microphys::mam4_so4_a2_verti_emiss_file_name:  <ul>
-<li>description: vertical emissions for ao4_a2  </li>
+<li>mam4_aero_microphys::mam4_so4_a1_elevated_emiss_file_name:  <ul>
+<li>description: elevated emissions for so4_a1  </li>
 <li>type: file  </li>
 </ul>
 </li>
-<li>mam4_aero_microphys::mam4_pom_a4_verti_emiss_file_name:  <ul>
-<li>description: vertical emissions for pom_a4  </li>
+<li>mam4_aero_microphys::mam4_so4_a2_elevated_emiss_file_name:  <ul>
+<li>description: elevated emissions for ao4_a2  </li>
 <li>type: file  </li>
 </ul>
 </li>
-<li>mam4_aero_microphys::mam4_bc_a4_verti_emiss_file_name:  <ul>
-<li>description: vertical emissions for bc_a4  </li>
+<li>mam4_aero_microphys::mam4_pom_a4_elevated_emiss_file_name:  <ul>
+<li>description: elevated emissions for pom_a4  </li>
 <li>type: file  </li>
 </ul>
 </li>
-<li>mam4_aero_microphys::mam4_num_a1_verti_emiss_file_name:  <ul>
-<li>description: vertical emissions for num_a1  </li>
+<li>mam4_aero_microphys::mam4_bc_a4_elevated_emiss_file_name:  <ul>
+<li>description: elevated emissions for bc_a4  </li>
 <li>type: file  </li>
 </ul>
 </li>
-<li>mam4_aero_microphys::mam4_num_a2_verti_emiss_file_name:  <ul>
-<li>description: vertical emissions for num_a2  </li>
+<li>mam4_aero_microphys::mam4_num_a1_elevated_emiss_file_name:  <ul>
+<li>description: elevated emissions for num_a1  </li>
 <li>type: file  </li>
 </ul>
 </li>
-<li>mam4_aero_microphys::mam4_num_a4_verti_emiss_file_name:  <ul>
-<li>description: vertical emissions for num_a4  </li>
+<li>mam4_aero_microphys::mam4_num_a2_elevated_emiss_file_name:  <ul>
+<li>description: elevated emissions for num_a2  </li>
 <li>type: file  </li>
 </ul>
 </li>
-<li>mam4_aero_microphys::mam4_soag_verti_emiss_file_name:  <ul>
-<li>description: vertical emissions for soag  </li>
+<li>mam4_aero_microphys::mam4_num_a4_elevated_emiss_file_name:  <ul>
+<li>description: elevated emissions for num_a4  </li>
+<li>type: file  </li>
+</ul>
+</li>
+<li>mam4_aero_microphys::mam4_soag_elevated_emiss_file_name:  <ul>
+<li>description: elevated emissions for soag  </li>
 <li>type: file  </li>
 </ul>
 </li>
@@ -3667,6 +3672,16 @@
 </li>
 <li>mam4_srf_online_emiss::srf_emis_specifier_for_so4_a2:  <ul>
 <li>description: File containing surface emissions data for so4_a2  </li>
+<li>type: file  </li>
+</ul>
+</li>
+<li>mam4_srf_online_emiss::soil_erodibility_file:  <ul>
+<li>description: File containing soil erodibility  </li>
+<li>type: file  </li>
+</ul>
+</li>
+<li>mam4_srf_online_emiss::marine_organics_file:  <ul>
+<li>description: File containing marine organics emissions  </li>
 <li>type: file  </li>
 </ul>
 </li>
@@ -4061,6 +4076,11 @@
 <li>type: real  </li>
 </ul>
 </li>
+<li>rrtmgp::fixed_total_solar_irradiance:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: <strong>MISSING</strong>  </li>
+</ul>
+</li>
 <li>rrtmgp::rad_frequency:  <ul>
 <li>description: <strong>MISSING</strong>  </li>
 <li>type: <strong>MISSING</strong>  </li>
@@ -4451,6 +4471,11 @@
 <li>initial_conditions::wetdens:  <ul>
 <li>description: Wet density of interstitial aerosol [kg/m3]  </li>
 <li>type: array(real)  </li>
+</ul>
+</li>
+<li>initial_conditions::constituent_fluxes:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: real  </li>
 </ul>
 </li>
 <li>initial_conditions::bc_c1:  <ul>
