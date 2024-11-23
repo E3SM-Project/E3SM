@@ -33,7 +33,7 @@ jobs:
           - dbg
           - fpe
     container: 
-      image: ghcr.io/e3sm-project/containers-standalone-ghci:standalone-ghci-0.1.0
+      image: ghcr.io/e3sm-project/containers-standalone-ghci:standalone-ghci-0.1.1
 
     steps:
       - 
