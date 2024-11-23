@@ -292,12 +292,13 @@ class TestTestAllScream(TestBaseOuter.TestBase):
                                 self._machine)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
             builddir = "compute_sanitizer_memcheck" if self._machine.gpu_arch=="cuda" else "valgrind"
-            test_cmake_cache_contents(self, builddir, "CMAKE_BUILD_TYPE", "Debug")
             test_cmake_cache_contents(self, builddir, "SCREAM_TEST_SIZE", "SHORT")
             if self._machine.gpu_arch=="cuda":
+                test_cmake_cache_contents(self, builddir, "CMAKE_BUILD_TYPE", "Debug")
                 test_cmake_cache_contents(self, builddir, "EKAT_ENABLE_COMPUTE_SANITIZER", "TRUE")
                 test_cmake_cache_contents(self, builddir, "EKAT_COMPUTE_SANITIZER_OPTIONS", "--tool=memcheck")
             else:
+                test_cmake_cache_contents(self, builddir, "CMAKE_BUILD_TYPE", "RelWithDebInfo")
                 test_cmake_cache_contents(self, builddir, "EKAT_ENABLE_VALGRIND", "TRUE")
         else:
             self.skipTest("Skipping config-only run for jenkins test")
