@@ -214,6 +214,7 @@ class GHCISNLCPU(Machine):
     def setup(cls):
         super().setup_base("ghci-snl-cpu")
         cls.baselines_dir = "/projects/e3sm/baselines/scream/ghci-snl-cpu"
+        cls.env_setup = ["export GATOR_INITIAL_MB=4000MB"]
 
 ###############################################################################
 class GHCISNLCuda(Machine):
