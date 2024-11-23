@@ -453,10 +453,6 @@ if (NOT SCREAM_LIB_ONLY)
   # for LONG use 100. It is *completely* up to the test to decide what short, medium, and long mean.
   if (EKAT_ENABLE_COVERAGE OR EKAT_ENABLE_CUDA_MEMCHECK OR EKAT_ENABLE_VALGRIND OR EKAT_ENABLE_COMPUTE_SANITIZER)
     set (SCREAM_TEST_SIZE_DEFAULT SHORT)
-    # also set thread_ing=$max_thread - 1, so we test at most 2 threading configurations
-    if (SCREAM_TEST_MAX_THREADS GREATER 1)
-      math (EXPR SCREAM_TEST_THREAD_INC ${SCREAM_TEST_MAX_THREADS}-1)
-    endif()
   else()
     set (SCREAM_TEST_SIZE_DEFAULT MEDIUM)
   endif()
