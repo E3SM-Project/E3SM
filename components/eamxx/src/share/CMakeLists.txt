@@ -32,13 +32,13 @@ set(SHARE_SRC
   property_checks/field_nan_check.cpp
   property_checks/field_within_interval_check.cpp
   property_checks/mass_and_energy_column_conservation_check.cpp
+  util/eamxx_data_interpolation.cpp
   util/eamxx_fv_phys_rrtmgp_active_gases_workaround.cpp
+  util/eamxx_time_interpolation.cpp
   util/scream_time_stamp.cpp
   util/scream_timing.cpp
   util/scream_utils.cpp
-  util/eamxx_time_interpolation.cpp
   util/scream_bfbhash.cpp
-  util/eamxx_time_interpolation.cpp
 )
 
 if (EAMXX_ENABLE_EXPERIMENTAL_CODE)
@@ -54,6 +54,9 @@ target_include_directories(scream_share PUBLIC
   ${SCREAM_BIN_DIR}/src
   ${CMAKE_CURRENT_SOURCE_DIR}
 )
+# Used in the data interpolation
+target_link_libraries(scream_share PUBLIC stdc++fs)
+
 
 if (GPTL_PATH)
   target_include_directories(scream_share PUBLIC ${GPTL_PATH})
