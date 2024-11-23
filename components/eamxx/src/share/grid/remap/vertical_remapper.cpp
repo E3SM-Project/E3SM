@@ -656,7 +656,9 @@ extrapolate (const Field& f_src,
       auto f_src_v = f_src.get_view<const Real**>();
       auto f_tgt_v = f_tgt.get_view<      Real**>();
       auto policy = ESU::get_default_team_policy(ncols,nlevs_tgt);
-      auto lambda = KOKKOS_LAMBDA(const auto& team)
+
+      using MemberType = typename decltype(policy)::member_type;
+      auto lambda = KOKKOS_LAMBDA(const MemberType& team)
       {
         const int icol = team.league_rank();
 
@@ -706,7 +708,8 @@ extrapolate (const Field& f_src,
       const int ncomps = f_tgt_l.get_vector_dim();
       auto policy = ESU::get_default_team_policy(ncols*ncomps,nlevs_tgt);
 
-      auto lambda = KOKKOS_LAMBDA(const auto& team)
+      using MemberType = typename decltype(policy)::member_type;
+      auto lambda = KOKKOS_LAMBDA(const MemberType& team)
       {
         const int icol = team.league_rank() / ncomps;
         const int icmp = team.league_rank() % ncomps;
