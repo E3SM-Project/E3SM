@@ -126,6 +126,94 @@ TEST_CASE("utils") {
     REQUIRE(field_sum<Real>(f1,&comm)==gsum);
   }
 
+  SECTION("column_reduction") {
+    using RPDF  = std::uniform_real_distribution<Real>;
+    auto engine = setup_random_test();
+    RPDF pdf(0, 1);
+
+    int dim0 = 3;
+    int dim1 = 9;
+    int dim2 = 2;
+    FieldIdentifier f00("f", {{COL}, {dim0}}, m / s, "g");
+    Field field00(f00);
+    field00.allocate_view();
+    field00.sync_to_host();
+    auto v00 = field00.get_strided_view<Real *, Host>();
+    for(int i = 0; i < dim0; ++i) {
+      v00(i) = (i + 1) / sp(6);
+    }
+    field00.sync_to_dev();
+
+    FieldIdentifier f10("f", {{COL, CMP}, {dim0, dim1}}, m / s, "g");
+    FieldIdentifier f11("f", {{COL, LEV}, {dim0, dim2}}, m / s, "g");
+    FieldIdentifier f20("f", {{COL, CMP, LEV}, {dim0, dim1, dim2}}, m / s, "g");
+
+    Field field10(f10);
+    Field field11(f11);
+    Field field20(f20);
+    field10.allocate_view();
+    field11.allocate_view();
+    field20.allocate_view();
+
+    randomize(field10, engine, pdf);
+    randomize(field11, engine, pdf);
+    randomize(field20, engine, pdf);
+
+    FieldIdentifier F_x("fx", {{COL}, {dim1}}, m/s, "g");
+    FieldIdentifier F_y("fy", {{LEV}, {dim2}}, m/s, "g");
+
+    Field field_x(F_x);
+    Field field_y(F_y);
+
+    REQUIRE_THROWS(column_reduction<Real>(field00, field_x)); // x not allocated
+
+    field_x.allocate_view();
+    field_y.allocate_view();
+
+    REQUIRE_THROWS(column_reduction<Real>(field_x, field_y)); // unmatching layout
+    REQUIRE_THROWS(column_reduction<Real>(field11, field11)); // wrong f1 layout
+
+    Field result;
+
+    result = column_reduction<Real>(field00, field00);
+    result.sync_to_host();
+    auto v = result.get_view<Real, Host>();
+    REQUIRE(v() == (1 / sp(36) + 4 / sp(36) + 9 / sp(36)));
+
+    result = column_reduction<Real>(field00, field10);
+    REQUIRE(result.get_header().get_identifier().get_layout().tags() ==
+            std::vector<FieldTag>({CMP}));
+    REQUIRE(result.get_header().get_identifier().get_layout().dim(0) == dim1);
+
+    result = column_reduction<Real>(field00, field11);
+    REQUIRE(result.get_header().get_identifier().get_layout().tags() ==
+            std::vector<FieldTag>({LEV}));
+    REQUIRE(result.get_header().get_identifier().get_layout().dim(0) == dim2);
+
+    result = column_reduction<Real>(field00, field20);
+    REQUIRE(result.get_header().get_identifier().get_layout().tags() ==
+            std::vector<FieldTag>({CMP, LEV}));
+    REQUIRE(result.get_header().get_identifier().get_layout().dim(0) == dim1);
+    REQUIRE(result.get_header().get_identifier().get_layout().dim(1) == dim2);
+
+    field20.sync_to_host();
+    auto manual_result = result.clone();
+    manual_result.deep_copy(0);
+    manual_result.sync_to_host();
+    auto v2 = field20.get_strided_view<Real ***, Host>();
+    auto mr = manual_result.get_strided_view<Real **, Host>();
+    for(int i = 0; i < dim0; ++i) {
+      for(int j = 0; j < dim1; ++j) {
+        for(int k = 0; k < dim2; ++k) {
+          mr(j, k) += v00(i) * v2(i, j, k);
+        }
+      }
+    }
+    field20.sync_to_dev();
+    manual_result.sync_to_dev();
+    REQUIRE(views_are_equal(result, manual_result));
+  }
+
   SECTION ("frobenius") {
 
     auto v1 = f1.get_strided_view<Real**>();

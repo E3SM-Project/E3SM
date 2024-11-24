@@ -2,6 +2,7 @@
 #define SCREAM_FIELD_UTILS_HPP
 
 #include "share/field/field_utils_impl.hpp"
+#include "share/field/field_utils_impl_colred.hpp"
 
 namespace scream {
 
@@ -109,6 +110,17 @@ void perturb (const Field& f,
   }
 
   impl::perturb<ST>(f, engine, pdf, base_seed, level_mask, dof_gids);
+}
+
+template <typename ST>
+Field column_reduction(const Field &f1, const Field &f2,
+                       const ekat::Comm *comm = nullptr) {
+  EKAT_REQUIRE_MSG(f1.is_allocated() && f2.is_allocated(),
+                   "Error! Input fields must be allocated.");
+  EKAT_REQUIRE_MSG(f1.data_type() == f2.data_type(),
+                   "Error! Input fields must have matching data types.");
+
+  return impl::column_reduction<ST>(f1, f2, comm);
 }
 
 template<typename ST>
