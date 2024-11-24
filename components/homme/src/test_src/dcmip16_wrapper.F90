@@ -30,7 +30,6 @@ use physical_constants,   only: p0, g, Rgas, kappa, Cp, Rwater_vapor, pi=>dd_pi
 use reduction_mod,        only: parallelmax, parallelmin
 use terminator,           only: initial_value_terminator, tendency_terminator
 use time_mod,             only: time_at, TimeLevel_t
-use eos,             only: pnh_and_exner_from_eos
 
 implicit none
 
@@ -185,7 +184,10 @@ subroutine bw_topo_test(elem,hybrid,hvcoord,nets,nete)
   real(rl), dimension(np,np,nlev,6):: q
 
   type (derivative_t) :: deriv
-  
+ 
+#ifndef MODEL_THETA_L
+  call abortmp('ERROR: bw_topo_test runs only with theta')
+#else
   call get_deriv(deriv)
   moist = 0
   if (use_moisture) moist=1
@@ -271,6 +273,9 @@ subroutine bw_topo_test(elem,hybrid,hvcoord,nets,nete)
   enddo
   
   sample_period = 1800.0 ! sec
+
+!ifdef THETA
+#endif
 
 end subroutine
 
@@ -407,6 +412,9 @@ end subroutine
 subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
 
   ! supercell storm test case
+#ifdef DA
+  use eos,             only: pnh_and_exner_from_eos
+#endif
 
   type(element_t),    intent(inout), target :: elem(:)                  ! element array
   type(hybrid_t),     intent(in)            :: hybrid                   ! hybrid parallel structure
@@ -509,14 +517,15 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
 
   enddo
 
+#ifdef DA
 !print *, 'HELLLLLLLLLLLLLLLLLLLLLLo'
 !stop
-
+!temp code to check init
 
    call pnh_and_exner_from_eos(hvcoord,elem(1)%state%vtheta_dp(:,:,:,1),&
        elem(1)%state%dp3d(:,:,:,1),elem(1)%state%phinh_i(:,:,:,1),pnh,exner,munew,caller='NEW MU')
 if (elem(1)%globalid==1)    print *,'after tests_f MU= ', munew(1,1,1:10)
-
+#endif
 
   sample_period = 1 ! 60 orig sec
 end subroutine
