@@ -819,7 +819,15 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     call MPI_bcast(smooth_phis_nudt,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(initial_total_mass ,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(u_perturb     ,1,MPIreal_t   ,par%root,par%comm,ierr)
+
+#ifdef DA
+    if ( rotate_grid /= 0) then
+       if(par%masterproc) print *, 'DA (deep atmosphere) cannot run with rotate_grid != 0'
+       call abortmp('stopping')
+    endif
+#endif
     call MPI_bcast(rotate_grid   ,1,MPIreal_t   ,par%root,par%comm,ierr)
+
     call MPI_bcast(integration,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
 #ifndef HOMME_WITHOUT_PIOLIBRARY
     call MPI_bcast(mesh_file,MAX_FILE_LEN,MPIChar_t ,par%root,par%comm,ierr)
@@ -1272,9 +1280,9 @@ end if
        write(iulog,*)"physconst: rrearth= ",rrearth
        write(iulog,*)""
 #ifdef DA
-       write(iulog,*)"DEEP ATMOSPHERE ----------"
+       write(iulog,*)"--- DEEP ATMOSPHERE ----------"
 #else
-       write(iulog,*)"SHALLOW ATMOSPHERE -------"
+       write(iulog,*)"--- SHALLOW ATMOSPHERE -------"
 #endif
        write(iulog,*)""
 #endif

@@ -1177,11 +1177,7 @@ contains
         nete_in=nete
       endif
 
-!print *, 'phi before', elem(1)%state%phinh_i(1,1,:,tl%np1)
-
-
       call vertical_remap(hybrid,elem,hvcoord,dt_remap,tl%np1,np1_qdp,nets_in,nete_in)
-!print *, 'phi after', elem(1)%state%phinh_i(1,1,:,tl%np1)
 
     elseif(prim_step_type == 2) then
       ! This time stepping routine permits the vertical remap time
@@ -1657,16 +1653,17 @@ contains
    !one can set pprime=0 to hydro regime but it is not done in master
    !compute pnh, here only pnh is needed
 
+#ifdef DA
    dphi(:,:,1:nlev)=elem%state%phinh_i(:,:,2:nlevp,np1)-elem%state%phinh_i(:,:,1:nlev,np1)
-
-!   call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,np1),dp,&
-!        elem%state%phinh_i(:,:,:,np1),pnh,exner,dpnh_dp_i,p_exner=p_exner)
 
    call pnh_and_exner_from_eos3(hvcoord,elem%state%vtheta_dp(:,:,:,np1),dp,&
         dphi,pnh,exner,dpnh_dp_i,elem%state%phis,'forcing',p_exner=p_exner)
 
-adjp=pnh
-
+   adjp=pnh
+#else
+   call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,np1),dp,&
+        elem%state%phinh_i(:,:,:,np1),pnh,exner,dpnh_dp_i)
+#endif
    do k=1,nlev
       pprime(:,:,k) = pnh(:,:,k)-phydro(:,:,k)
    enddo
@@ -1711,9 +1708,8 @@ adjp=pnh
 #endif
    else ! end of adjustment
 
-!standalone homme is here
-!stop
-!print *, elem%derived%FQ(:,:,:,:)
+!STANDALONE HOMME runs this part of the code
+
       ! apply forcing to Qdp
       elem%derived%FQps(:,:)=0
       do q=1,qsize
@@ -1732,11 +1728,9 @@ adjp=pnh
                   if (q==1) then
                      elem%derived%FQps(i,j)=elem%derived%FQps(i,j)+fq/dt
                      dp_adj(i,j,k)=dp_adj(i,j,k) + fq
-
-adjp(i,j,k)=adjp(i,j,k)+fq
-
-!if(abs(fq)>0.0) stop
-
+#ifdef DA
+                     adjp(i,j,k)=adjp(i,j,k)+fq
+#endif
                   endif
                enddo
             enddo
@@ -1781,20 +1775,17 @@ adjp(i,j,k)=adjp(i,j,k)+fq
          ! recompute hydrostatic pressure from dp3d
          call get_hydro_pressure(phydro,elem%state%dp3d(:,:,:,np1),hvcoord)
       endif
+
       do k=1,nlev
+#ifdef DA
+         pnh(:,:,k)=adjp(:,:,k)
+#else
+         pnh(:,:,k)=phydro(:,:,k) + pprime(:,:,k)
+#endif
 
-!da issue NEEDS REVISITING
-         
-!pnh(:,:,k)=phydro(:,:,k) + pprime(:,:,k)
-
-
-!print *, 'diff for pnh and adjp', pnh(1,1,:)-adjp(1,1,:)
-
-pnh(:,:,k)=adjp(:,:,k)
 #ifdef HOMMEXX_BFB_TESTING
          exner(:,:,k)=bfb_pow(pnh(:,:,k)/p0,Rgas/Cp)
 #else
-!da issue
          exner(:,:,k)=(pnh(:,:,k)/p0)**(Rgas/Cp)
 #endif
       enddo
@@ -1809,15 +1800,14 @@ pnh(:,:,k)=adjp(:,:,k)
      
    phi_n1(:,:,nlevp)=elem%state%phinh_i(:,:,nlevp,np1)
 
-!da issue
    do k=nlev,1,-1
 #ifndef DA
       phi_n1(:,:,k)=phi_n1(:,:,k+1) + Rgas*vthn1(:,:,k)*exner(:,:,k)/pnh(:,:,k)
 #else
-      !bottom rhat
+      !bottom rhat for this midlevel
       rs = phi_n1(:,:,k+1)/gravit/r0 + 1.0
      
-      !top rhat
+      !top rhat for this midlevel
       r1=( rs**3.0 + 3.0*Rgas*vthn1(:,:,k)/p_exner(:,:,k)/gravit/r0 )**(1.0/3.0)
 
       phi_n1(:,:,k)=gravit*r0*(r1-1.0)
@@ -1829,14 +1819,8 @@ pnh(:,:,k)=adjp(:,:,k)
    elem%derived%FVTheta(:,:,:) = &
         (vthn1 - elem%state%vtheta_dp(:,:,:,np1))/dt
  
-!not zero
-!print *, elem%derived%FVTheta(:,:,1)
-  
    elem%derived%FPHI(:,:,:) = &
         (phi_n1 - elem%state%phinh_i(:,:,:,np1))/dt
-   
-!print *, elem%derived%FPHI(1,1,:)
-!stop
 #endif
 
   call t_stopf("ApplyCAMForcing_tracers")
