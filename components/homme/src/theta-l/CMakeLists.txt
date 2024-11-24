@@ -1,6 +1,10 @@
 # macro for building theta primitive equations executable
 
-macro(thetal_setup)
+macro(thetal_setup macroDA)
+
+IF (${macroDA})
+ SET(DA TRUE)
+ENDIF ()
 
 SET (KOKKOS_TARGET FALSE)
 
@@ -114,7 +118,7 @@ ENDIF ()
 
 endmacro(thetal_setup)
 
-thetal_setup()
+thetal_setup(0)
 ############################################################################
 # createTestExec(exec_name exec_type NP PLEV USE_PIO USE_ENERGY)
 ############################################################################
