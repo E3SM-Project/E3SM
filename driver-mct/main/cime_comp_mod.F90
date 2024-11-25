@@ -2523,6 +2523,7 @@ contains
     logical               :: lnd2glc_averaged_now ! Whether lnd2glc averages were taken this timestep
     logical               :: prep_glc_accum_avg_called ! Whether prep_glc_accum_avg has been called this timestep
     integer               :: i, nodeId
+    integer               :: l2gacc_lx_cnt
     character(len=15)     :: c_ymdtod
     character(len=18)     :: c_mprof_file
 
@@ -3047,6 +3048,14 @@ contains
        !----------------------------------------------------------
        !| GLC SETUP-SEND
        !----------------------------------------------------------
+       ! zero out x2g_gx if this is the first call to prep_glc_accum_avg
+       if (glc_present) then
+          l2gacc_lx_cnt = prep_glc_get_l2gacc_lx_cnt()
+          if (l2gacc_lx_cnt.eq.1) then
+             call prep_glc_zero_fields()
+          endif
+       endif
+
        if (glc_present .and. glcrun_alarm) then
           call cime_run_glc_setup_send(lnd2glc_averaged_now, prep_glc_accum_avg_called)
        endif
@@ -3095,6 +3104,7 @@ contains
 
           endif
        endif
+
        !----------------------------------------------------------
        !| Budget with old fractions
        !----------------------------------------------------------
@@ -4745,7 +4755,7 @@ contains
           call seq_diag_ice_mct(ice(ens1), fractions_ix(ens1), infodata, do_x2i=.true.)
        endif
        if (glc_present) then
-          !call seq_diag_glc_mct(glc(ens1), fractions_gx(ens1), infodata, do_x2g=.true., do_g2x=.true.) !SFP: comment out for now while debugging
+          call seq_diag_glc_mct(glc(ens1), fractions_gx(ens1), infodata, do_x2g=.true.)
        endif
        if (do_bgc_budgets) then
           if (rof_present) then
@@ -4787,7 +4797,7 @@ contains
           call seq_diag_ice_mct(ice(ens1), fractions_ix(ens1), infodata, do_i2x=.true.)
        endif
        if (glc_present) then
-          call seq_diag_glc_mct(glc(ens1), fractions_gx(ens1), infodata, do_x2g=.true., do_g2x=.true.)
+          call seq_diag_glc_mct(glc(ens1), fractions_gx(ens1), infodata, do_g2x=.true.)
        endif          
        if (do_bgc_budgets) then
           if (atm_present) then
@@ -5596,3 +5606,4 @@ contains
   end function copy_and_trim_rpointer_file
 
 end module cime_comp_mod
+
