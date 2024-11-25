@@ -820,7 +820,7 @@ void MAMMicrophysics::run_impl(const double dt) {
   const auto zenith_angle = acos_cosine_zenith_;
   constexpr int gas_pcnst = mam_coupling::gas_pcnst();
 
-  const auto elevated_emis_output = elevated_emis_output_;
+  const auto &elevated_emis_output = elevated_emis_output_;
   const auto &extfrc              = extfrc_;
   const auto &forcings            = forcings_;
   constexpr int extcnt            = mam4::gas_chemistry::extcnt;
