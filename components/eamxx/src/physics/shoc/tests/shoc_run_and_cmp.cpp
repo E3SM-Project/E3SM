@@ -217,7 +217,7 @@ int main (int argc, char** argv) {
     return 1;
   }
 
-  bool generate = false, no_baseline = false;
+  bool generate = false, no_baseline = true;
   scream::Real tol = SCREAM_BFB_TESTING ? 0 : std::numeric_limits<Real>::infinity();
   Int nsteps = 10;
   Int dt = 150;
@@ -294,7 +294,11 @@ int main (int argc, char** argv) {
     if (generate) {
       std::cout << "Generating to " << baseline_fn << "\n";
       nerr += bln.generate_baseline(baseline_fn);
-    } else {
+    } else if (no_baseline) {
+      printf("Running with no baseline actions\n");
+      nerr += bln.run_and_cmp(baseline_fn, tol, no_baseline);
+    }
+    else {
       printf("Comparing with %s at tol %1.1e\n", baseline_fn.c_str(), tol);
       nerr += bln.run_and_cmp(baseline_fn, tol, no_baseline);
     }
