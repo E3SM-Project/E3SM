@@ -1128,7 +1128,6 @@ contains
           rsub_top(c)      = 0._r8
           fracice_rsub(c)  = 0._r8
           qflx_qrgwl(c)    = 0._r8
-          !qflx_ice_runoff_xs(c) = 0._r8
        end do
 
        ! The layer index of the first unsaturated layer, i.e., the layer right above

@@ -2344,7 +2344,7 @@ contains
            mss_dst2(c,0)    = mss_dst2(c,0) * frac_adjust
            mss_dst3(c,0)    = mss_dst3(c,0) * frac_adjust
            mss_dst4(c,0)    = mss_dst4(c,0) * frac_adjust
-       end if
+        end if
 
      end do loop_columns
 
