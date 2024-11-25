@@ -48,7 +48,7 @@ module seq_diag_mct
   use shr_reprosum_mod, only : shr_reprosum_calc
   use seq_diagBGC_mct,  only : seq_diagBGC_preprint_mct, seq_diagBGC_print_mct
 
-  use prep_glc_mod,  only : prep_glc_get_x2gacc_gx_cnt 
+  use prep_glc_mod,  only : prep_glc_get_l2gacc_lx_cnt_avg
   use glc_elevclass_mod, only: glc_get_num_elevation_classes 
 
   implicit none
@@ -447,7 +447,7 @@ module seq_diag_mct
   integer :: index_x2i_Faxa_snow_HDO
 
   integer :: glc_nec
-  integer :: x2gacc_gx_cnt
+  integer :: l2gacc_lx_cnt_avg
 
   !===============================================================================
 contains
@@ -1319,7 +1319,7 @@ contains
 
     !----- local -----
     type(mct_aVect), pointer :: g2x_g
-    type(mct_aVect), pointer :: x2gacc_g        
+    type(mct_aVect), pointer :: x2g_g
     type(mct_ggrid), pointer :: dom_g
     integer(in)              :: n,ic,nf,ip      ! generic index
     integer(in)              :: kArea           ! index of area field in aVect
@@ -1327,7 +1327,6 @@ contains
     real(r8)                 :: ca_g            ! area of a grid cell
     logical,save             :: first_time = .true.
 
-    integer,save             :: counter,smb_counter,calving_counter ! SFP: Debugging 
     integer,save             :: smb_vector_length,calving_vector_length
 
     !----- formats -----
@@ -1343,7 +1342,7 @@ contains
 
     dom_g => component_get_dom_cx(glc)
     g2x_g => component_get_c2x_cx(glc)
-    x2gacc_g => component_get_x2c_cx(glc)
+    x2g_g => component_get_x2c_cx(glc)
 
     ip = p_inst
 
@@ -1351,7 +1350,6 @@ contains
 
        if (first_time) then
 
-          calving_counter=0
           calving_vector_length = 0
 
           index_g2x_Fogg_rofl   = mct_aVect_indexRA(g2x_g,'Fogg_rofl')
@@ -1377,37 +1375,27 @@ contains
 
     if( present(do_x2g))then  ! do fields from coupler to glc (x2g_)
 
-       x2gacc_gx_cnt = prep_glc_get_x2gacc_gx_cnt() ! counter for how many times SMB flux accumulation has occured 
-                                                    ! note that this would be useful below but does not seem to work currently
-                                                    ! (being reset to zero before being called here?)
        if (first_time) then
 
-          smb_counter=0 ! something like this (or above) needed to turn average flux 
-                        ! into accumulated flux (i.e., multiply average flux by no. of lnd coupling intervals)
+          index_x2g_Flgl_qice   = mct_aVect_indexRA(x2g_g,'Flgl_qice')
 
-          index_x2g_Flgl_qice   = mct_aVect_indexRA(x2gacc_g,'Flgl_qice') ! While name suggests this holds accumulated flux,
-                                                                          ! it appears to actually be the average flux (e.g. see
-                                                                          ! subroutine 'prep_glc_accum_avg' in prep_glc_mod.f90.
-                                                                          ! (also note that this same value gets copied to x2g_)  
        end if
 
+       l2gacc_lx_cnt_avg = prep_glc_get_l2gacc_lx_cnt_avg() ! counter for how many times SMB flux accumulation has occured 
        ic = c_glc_gs
        kArea = mct_aVect_indexRA(dom_g%data,afldname)
-       lSize = mct_avect_lSize(x2gacc_g)        
+       lSize = mct_avect_lSize(x2g_g)
 
        do n=1,lSize
           ca_g =  dom_g%data%rAttr(kArea,n)
-          nf = f_wgsmb; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_g*x2gacc_g%rAttr(index_x2g_Flgl_qice,n)
+          nf = f_wgsmb; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_g*x2g_g%rAttr(index_x2g_Flgl_qice,n)
        end do
 
-       !budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) * x2gacc_gx_cnt ! ideally use something like this for multiplying average flux 
-                                                                    ! to get accumulated flux (but currently always zero)
-       budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) * smb_counter ! works for now, but sloppy and only works for a 1 day run
+       budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) * l2gacc_lx_cnt_avg
 
        budg_dataL(f_hgsmb,ic,ip) = budg_dataL(f_wgsmb,ic,ip)*shr_const_latice 
 
        smb_vector_length = smb_vector_length +lSize
-       smb_counter = smb_counter + 1
 
     end if ! end do fields from coupler to glc (x2g_)
 
