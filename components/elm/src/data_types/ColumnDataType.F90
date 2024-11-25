@@ -5852,17 +5852,17 @@ contains
     if (create_glacier_mec_landunit) then
             this%qflx_glcice(begc:endc) = spval
              call hist_addfld1d (fname='QICE',  units='mm/s',  &
-                  avgflag='A', long_name='ice growth/melt', &
+                  avgflag='A', long_name='ice growth/melt (with active GLC/MECs)', &
                    ptr_col=this%qflx_glcice, l2g_scale_type='ice')
 
             this%qflx_glcice_frz(begc:endc) = spval
              call hist_addfld1d (fname='QICE_FRZ',  units='mm/s',  &
-                  avgflag='A', long_name='ice growth', &
+                  avgflag='A', long_name='ice growth (with active GLC/MECs)', &
                    ptr_col=this%qflx_glcice_frz, l2g_scale_type='ice')
 
             this%qflx_glcice_melt(begc:endc) = spval
              call hist_addfld1d (fname='QICE_MELT',  units='mm/s',  &
-                  avgflag='A', long_name='ice melt', &
+                  avgflag='A', long_name='ice melt (with active GLC/MECs)', &
                    ptr_col=this%qflx_glcice_melt, l2g_scale_type='ice')
     else 
              this%qflx_glcice_diag(begc:endc) = spval
