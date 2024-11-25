@@ -51,6 +51,15 @@ bool Pacer::initialize(MPI_Comm InComm, PacerModeType InMode /* = PACER_STANDALO
 
     PacerMode = InMode;
 
+    // Check if already initialized and return
+    if (IsInitialized)
+        return true;
+
+    // Duplicate comm and get MPI rank for both standalone and integrated modes
+    if (MPI_Comm_dup(InComm, &InternalComm) != MPI_SUCCESS)
+        std::cerr << "Pacer: Error duplicating MPI communicator" << std::endl;
+    MPI_Comm_rank(InternalComm, &MyRank);
+
     if (PacerMode == PACER_STANDALONE ) {
         // GPTL set default options
         PACER_CHECK_ERROR(GPTLsetoption(GPTLdepthlimit, 20));
@@ -61,10 +70,6 @@ bool Pacer::initialize(MPI_Comm InComm, PacerModeType InMode /* = PACER_STANDALO
         PACER_CHECK_ERROR(GPTLsetoption(GPTLmaxthreads, 64));
 
         PACER_CHECK_ERROR(GPTLsetutr(GPTLmpiwtime));
-
-        if (MPI_Comm_dup(InComm, &InternalComm) != MPI_SUCCESS)
-            std::cerr << "Pacer: Error duplicating MPI communicator" << std::endl;
-        MPI_Comm_rank(InternalComm, &MyRank);
 
         errCode = GPTLinitialize();
 
@@ -194,6 +199,10 @@ bool Pacer::finalize()
             std::cerr << '\t' << i->first << std::endl;
     }
     OpenTimers.clear();
+
+    // Clear Pacer state and free communicator
+    IsInitialized = false;
+    MPI_Comm_free(&InternalComm);
 
     return true;
 }
