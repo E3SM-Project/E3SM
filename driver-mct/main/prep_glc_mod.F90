@@ -45,6 +45,7 @@ module prep_glc_mod
   public :: prep_glc_get_l2gacc_lx
   public :: prep_glc_get_l2gacc_lx_one_instance
   public :: prep_glc_get_l2gacc_lx_cnt
+  public :: prep_glc_get_l2gacc_lx_cnt_avg
 
   public :: prep_glc_get_o2x_gx
   public :: prep_glc_get_x2gacc_gx
@@ -91,6 +92,7 @@ module prep_glc_mod
 
   type(mct_aVect), pointer :: l2gacc_lx(:) ! Lnd export, lnd grid, cpl pes - allocated in driver
   integer        , target :: l2gacc_lx_cnt ! l2gacc_lx: number of time samples accumulated
+  integer        , target :: l2gacc_lx_cnt_avg ! l2gacc_lx: number of time samples averaged
 
   ! other module variables
   integer :: mpicom_CPLID  ! MPI cpl communicator
@@ -195,6 +197,7 @@ contains
           call mct_aVect_zero(l2gacc_lx(eli))
        end do
        l2gacc_lx_cnt = 0
+       l2gacc_lx_cnt_avg = 0
     end if
 
     if (glc_present .and. lnd_c2_glc) then
@@ -502,6 +505,7 @@ contains
           call mct_avect_avg(l2gacc_lx(eli), l2gacc_lx_cnt)
        end do
     end if
+    l2gacc_lx_cnt_avg = l2gacc_lx_cnt
     l2gacc_lx_cnt = 0
 
     ! Accumulation for OCN
@@ -949,6 +953,7 @@ contains
     integer :: egi
     type(mct_avect), pointer :: x2g_gx
     !---------------------------------------------------------------
+
 
     do egi = 1,num_inst_glc
        x2g_gx => component_get_x2c_cx(glc(egi))
@@ -1423,6 +1428,11 @@ contains
     integer, pointer :: prep_glc_get_l2gacc_lx_cnt
     prep_glc_get_l2gacc_lx_cnt => l2gacc_lx_cnt
   end function prep_glc_get_l2gacc_lx_cnt
+
+  function prep_glc_get_l2gacc_lx_cnt_avg()
+    integer, pointer :: prep_glc_get_l2gacc_lx_cnt_avg
+    prep_glc_get_l2gacc_lx_cnt_avg => l2gacc_lx_cnt_avg
+  end function prep_glc_get_l2gacc_lx_cnt_avg
 
   function prep_glc_get_o2x_gx()
     type(mct_aVect), pointer :: prep_glc_get_o2x_gx(:)
