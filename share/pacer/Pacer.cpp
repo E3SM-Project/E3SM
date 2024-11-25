@@ -193,6 +193,7 @@ bool Pacer::finalize()
         for (auto i = OpenTimers.begin(); i != OpenTimers.end(); i++)
             std::cerr << '\t' << i->first << std::endl;
     }
+    OpenTimers.clear();
 
     return true;
 }
