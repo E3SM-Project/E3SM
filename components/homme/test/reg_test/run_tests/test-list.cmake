@@ -40,6 +40,7 @@ SET(HOMME_TESTS
   sweqx-dbvor.cmake
   thetanh-moist-bubble.cmake
   thetanh-dry-bubble.cmake
+  thetada-TC.cmake
 )
 
 IF (HOMME_ENABLE_COMPOSE)
