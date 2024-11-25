@@ -185,9 +185,6 @@ subroutine bw_topo_test(elem,hybrid,hvcoord,nets,nete)
 
   type (derivative_t) :: deriv
  
-#ifndef MODEL_THETA_L
-  call abortmp('ERROR: bw_topo_test runs only with theta')
-#else
   call get_deriv(deriv)
   moist = 0
   if (use_moisture) moist=1
@@ -273,9 +270,6 @@ subroutine bw_topo_test(elem,hybrid,hvcoord,nets,nete)
   enddo
   
   sample_period = 1800.0 ! sec
-
-!ifdef THETA
-#endif
 
 end subroutine
 
