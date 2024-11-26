@@ -917,9 +917,11 @@ contains
 
     ! get number of elevation classes and allocate relevant sets of indices 
     glc_nec = glc_get_num_elevation_classes()
-    if (first_time) then
-       allocate(index_l2x_Flgl_qice(0:glc_nec))
-       allocate(index_x2l_Sg_ice_covered(0:glc_nec))
+    if (glc_nec.ge.1) then
+       if (first_time) then
+          allocate(index_l2x_Flgl_qice(0:glc_nec))
+          allocate(index_x2l_Sg_ice_covered(0:glc_nec))
+       end if
     end if
    
     if (present(do_l2x)) then
@@ -937,13 +939,15 @@ contains
           index_l2x_Flrl_irrig  = mct_aVect_indexRA(l2x_l,'Flrl_irrig', perrWith='quiet')
           index_l2x_Flrl_wslake   = mct_aVect_indexRA(l2x_l,'Flrl_wslake')
 
-          do num=0,glc_nec 
-             write(cnum,'(i2.2)') num
-             name = 'Flgl_qice' // cnum
-             index_l2x_Flgl_qice(num) = mct_avect_indexRA(l2x_l,trim(name))
-             name = 'Sg_ice_covered' // cnum
-             index_x2l_Sg_ice_covered(num) = mct_avect_indexRA(x2l_l,trim(name)) 
-          end do
+          if (glc_nec.ge.1) then
+             do num=0,glc_nec 
+                write(cnum,'(i2.2)') num
+                name = 'Flgl_qice' // cnum
+                index_l2x_Flgl_qice(num) = mct_avect_indexRA(l2x_l,trim(name))
+                name = 'Sg_ice_covered' // cnum
+                index_x2l_Sg_ice_covered(num) = mct_avect_indexRA(x2l_l,trim(name)) 
+             end do
+          end if
 
           index_l2x_Fall_evap_16O    = mct_aVect_indexRA(l2x_l,'Fall_evap_16O',perrWith='quiet')
           if ( index_l2x_Fall_evap_16O /= 0 ) flds_wiso_lnd = .true.
@@ -981,11 +985,13 @@ contains
           nf = f_wioff ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_l*l2x_l%rAttr(index_l2x_Flrl_rofi,n) ! contribution from land ice calving currently zero
 
           l2x_Flgl_qice_col_sum = 0.0d0
-          do num=0,glc_nec 
-             ! sums the contributions from fluxes in each set of elevation classes 
-             ! RHS product is flux times fraction of area in specific elevation class times land cell area 
-             l2x_Flgl_qice_col_sum = l2x_Flgl_qice_col_sum + l2x_l%rAttr(index_l2x_Flgl_qice(num),n) * x2l_l%rAttr(index_x2l_Sg_ice_covered(num),n) * ca_l 
-          end do
+          if (glc_nec.ge.1) then
+             do num=0,glc_nec 
+                ! sums the contributions from fluxes in each set of elevation classes 
+                ! RHS product is flux times fraction of area in specific elevation class times land cell area 
+                l2x_Flgl_qice_col_sum = l2x_Flgl_qice_col_sum + l2x_l%rAttr(index_l2x_Flgl_qice(num),n) * x2l_l%rAttr(index_x2l_Sg_ice_covered(num),n) * ca_l 
+             end do
+          end if
           nf = f_wgsmb ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - l2x_Flgl_qice_col_sum
 
           if ( flds_wiso_lnd )then
