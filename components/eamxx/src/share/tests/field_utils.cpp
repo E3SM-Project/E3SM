@@ -126,7 +126,7 @@ TEST_CASE("utils") {
     REQUIRE(field_sum<Real>(f1,&comm)==gsum);
   }
 
-  SECTION("column_reduction") {
+  SECTION("horiz_contraction") {
     using RPDF  = std::uniform_real_distribution<Real>;
     auto engine = setup_random_test();
     RPDF pdf(0, 1);
@@ -134,6 +134,8 @@ TEST_CASE("utils") {
     int dim0 = 3;
     int dim1 = 9;
     int dim2 = 2;
+
+    // Set a weight field
     FieldIdentifier f00("f", {{COL}, {dim0}}, m / s, "g");
     Field field00(f00);
     field00.allocate_view();
@@ -144,10 +146,10 @@ TEST_CASE("utils") {
     }
     field00.sync_to_dev();
 
+    // Create (random) sample fields
     FieldIdentifier f10("f", {{COL, CMP}, {dim0, dim1}}, m / s, "g");
     FieldIdentifier f11("f", {{COL, LEV}, {dim0, dim2}}, m / s, "g");
     FieldIdentifier f20("f", {{COL, CMP, LEV}, {dim0, dim1, dim2}}, m / s, "g");
-
     Field field10(f10);
     Field field11(f11);
     Field field20(f20);
@@ -159,43 +161,49 @@ TEST_CASE("utils") {
     randomize(field11, engine, pdf);
     randomize(field20, engine, pdf);
 
-    FieldIdentifier F_x("fx", {{COL}, {dim1}}, m/s, "g");
-    FieldIdentifier F_y("fy", {{LEV}, {dim2}}, m/s, "g");
+    FieldIdentifier F_x("fx", {{COL}, {dim1}}, m / s, "g");
+    FieldIdentifier F_y("fy", {{LEV}, {dim2}}, m / s, "g");
 
     Field field_x(F_x);
     Field field_y(F_y);
 
-    REQUIRE_THROWS(column_reduction<Real>(field00, field_x)); // x not allocated
+    // Test invalid inputs
+    REQUIRE_THROWS(
+        horiz_contraction<Real>(field_x, &field00));  // x not allocated
 
     field_x.allocate_view();
     field_y.allocate_view();
 
-    REQUIRE_THROWS(column_reduction<Real>(field_x, field_y)); // unmatching layout
-    REQUIRE_THROWS(column_reduction<Real>(field11, field11)); // wrong f1 layout
+    REQUIRE_THROWS(
+        horiz_contraction<Real>(field_y, &field_x));  // unmatching layout
+    REQUIRE_THROWS(
+        horiz_contraction<Real>(field11, &field11));  // wrong f1 layout
 
     Field result;
 
-    result = column_reduction<Real>(field00, field00);
+    // Ensure a scalar case works
+    result = horiz_contraction<Real>(field00, &field00);
     result.sync_to_host();
     auto v = result.get_view<Real, Host>();
     REQUIRE(v() == (1 / sp(36) + 4 / sp(36) + 9 / sp(36)));
 
-    result = column_reduction<Real>(field00, field10);
+    result = horiz_contraction<Real>(field10, &field00);
     REQUIRE(result.get_header().get_identifier().get_layout().tags() ==
             std::vector<FieldTag>({CMP}));
     REQUIRE(result.get_header().get_identifier().get_layout().dim(0) == dim1);
 
-    result = column_reduction<Real>(field00, field11);
+    result = horiz_contraction<Real>(field11, &field00);
     REQUIRE(result.get_header().get_identifier().get_layout().tags() ==
             std::vector<FieldTag>({LEV}));
     REQUIRE(result.get_header().get_identifier().get_layout().dim(0) == dim2);
 
-    result = column_reduction<Real>(field00, field20);
+    result = horiz_contraction<Real>(field20, &field00);
     REQUIRE(result.get_header().get_identifier().get_layout().tags() ==
             std::vector<FieldTag>({CMP, LEV}));
     REQUIRE(result.get_header().get_identifier().get_layout().dim(0) == dim1);
     REQUIRE(result.get_header().get_identifier().get_layout().dim(1) == dim2);
 
+    // Check a 3D case
     field20.sync_to_host();
     auto manual_result = result.clone();
     manual_result.deep_copy(0);
@@ -212,6 +220,32 @@ TEST_CASE("utils") {
     field20.sync_to_dev();
     manual_result.sync_to_dev();
     REQUIRE(views_are_equal(result, manual_result));
+
+    // Test overloaded function with already allocated output field
+    auto another_result = result.clone();
+    another_result.deep_copy(0);
+    horiz_contraction<Real>(another_result, field20, &field00);
+    REQUIRE(views_are_equal(manual_result, another_result));
+
+    // Test a case of unweighted contraction
+    field20.sync_to_host();
+    auto unweighted_result = result.clone();
+    unweighted_result.deep_copy(0);
+    unweighted_result.sync_to_host();
+    auto ur = unweighted_result.get_strided_view<Real **, Host>();
+    for(int i = 0; i < dim0; ++i) {
+      for(int j = 0; j < dim1; ++j) {
+        for(int k = 0; k < dim2; ++k) {
+          ur(j, k) += 1 * v2(i, j, k);
+        }
+      }
+    }
+    field20.sync_to_dev();
+    unweighted_result.sync_to_dev();
+    auto some_other_result = another_result.clone();
+    some_other_result.deep_copy(-999);
+    horiz_contraction<Real>(some_other_result, field20);
+    REQUIRE(views_are_equal(some_other_result, unweighted_result));
   }
 
   SECTION ("frobenius") {
