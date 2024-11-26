@@ -1576,7 +1576,9 @@ contains
   use physical_constants, only : cp, g, kappa, Rgas, p0
   use element_ops,        only : get_temperature, get_r_star, get_hydro_pressure
   use eos,                only : pnh_and_exner_from_eos
-  use eos,                only : pnh_and_exner_from_eos3
+#ifdef DA
+  use eos,                only : pnh_and_exner_from_eos2
+#endif
 #ifdef HOMMEXX_BFB_TESTING
   use bfb_mod,            only : bfb_pow
 #endif
@@ -1655,7 +1657,7 @@ contains
    r0=rearth
    dphi(:,:,1:nlev)=elem%state%phinh_i(:,:,2:nlevp,np1)-elem%state%phinh_i(:,:,1:nlev,np1)
 
-   call pnh_and_exner_from_eos3(hvcoord,elem%state%vtheta_dp(:,:,:,np1),dp,&
+   call pnh_and_exner_from_eos2(hvcoord,elem%state%vtheta_dp(:,:,:,np1),dp,&
         dphi,pnh,exner,dpnh_dp_i,elem%state%phis,'forcing',p_exner=p_exner)
 
    adjp=pnh

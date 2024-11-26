@@ -222,6 +222,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,nt),&
           dp,elem%state%phinh_i(:,:,:,nt),pnh,exner,dpnh_dp_i)
 
+!modify this for DA EOS?
   do k=1,nlev
      temperature(:,:,k)= Rgas*elem%state%vtheta_dp(:,:,k,nt)*exner(:,:,k)&
           /(Rstar(:,:,k)*dp(:,:,k))
@@ -433,7 +434,9 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   subroutine set_thermostate(elem,ps,temperature,hvcoord,qv)
   !
   ! Assuming a hydrostatic intital state and given surface pressure,
-  ! and no moisture, compute theta and phi
+  ! and no moisture, compute theta and phi from p given by dp using SA EOS
+  !
+  ! Code does not do DA EOS
   !
   ! input:  ps_v, temperature
   ! ouput:  state variables:   vtheta_dp, phi
@@ -460,7 +463,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*ps(:,:)
   enddo
 
-! recompute pressure using same algrebra as EOS:
+! recompute pressure using same algebra as EOS:
 ! improves precision for initial T/theta conversion
   pi_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
   do k=1,nlev
@@ -706,14 +709,18 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   integer, optional,   intent(in)   :: ie ! optional element index, to save initial state
 
   integer :: k,tl,ii
-  real(real_kind), dimension(np,np,nlev) :: pi, pmid
-  real(real_kind), dimension(np,np) :: ptop
-  real(real_kind) :: r0
+  real(real_kind), dimension(np,np,nlev)  :: pi
+  real(real_kind), dimension(np,np,nlev)  :: pnh, exner
+  real(real_kind), dimension(np,np,nlevp) :: dpnh_dp_i,phi_i
 
-  real(real_kind), dimension(np,np,2,nlevp) :: v_i
-  real(real_kind), dimension(np,np,nlev) :: pnh,exner, dp3d, vtheta
-  real(real_kind), dimension(np,np,nlevp) :: dpnh_dp_i,phi_i, dp3d_i, phiSA, phiDA, r3int, dpnh,&
+#ifdef DA
+  real(real_kind), dimension(np,np,nlevp) :: dp3d_i, phiSA, phiDA, r3int, dpnh,&
                                              rinter, rhat, munew, muu
+  real(real_kind), dimension(np,np,nlev)  :: pnh,exner, dp3d, vtheta, pmid
+  real(real_kind), dimension(np,np)       :: ptop
+  real(real_kind), dimension(np,np,2,nlevp) :: v_i
+  real(real_kind)                         :: r0
+#endif
 
   tl=1
 
@@ -722,164 +729,100 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
 
   ! Disable the following check in CUDA bfb builds,
   ! since the calls to pow are inexact
+
+#ifndef DA
 #if !(defined(HOMMEXX_BFB_TESTING) && defined(HOMMEXX_ENABLE_GPU_F90))
   ! verify discrete hydrostatic balance
   call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,tl),&
        elem%state%dp3d(:,:,:,tl),elem%state%phinh_i(:,:,:,tl),pnh,exner,dpnh_dp_i)
   do k=1,nlev
      pi(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem%state%ps_v(:,:,tl)
-#ifndef DA
      if (maxval(abs(1-dpnh_dp_i(:,:,k))) > 1e-10) then
         write(iulog,*)'WARNING: hydrostatic inverse FAILED!'
         write(iulog,*)k,minval(dpnh_dp_i(:,:,k)),maxval(dpnh_dp_i(:,:,k))
         write(iulog,*) 'pnh',pi(1,1,k),pnh(1,1,k)
      endif
-#endif
   enddo
 #endif
+#endif
 
+#if DA
 
+  r0=rearth
+  dp3d = elem%state%dp3d(:,:,:,tl)
+  vtheta = elem%state%vtheta_dp(:,:,:,tl)
 
-#if 1
-!use above computed mu to see what we have originally
+  call pnh_and_exner_from_eos(hvcoord,vtheta,&
+      dp3d(:,:,:),elem%state%phinh_i(:,:,:,tl),pnh,exner,munew,caller='NEW MU')
 
-!   print *, dpnh_dp_i(1,1,1:10)
+  !if (elem%globalid==1)    print *,'OLD MU', munew(1,1,1:10)
 
-   r0=rearth
-   dp3d = elem%state%dp3d(:,:,:,tl)
-   vtheta = elem%state%vtheta_dp(:,:,:,tl)
+  !how many times we iterate explicitly to get mu close to 1
+  do ii=1,12
+     phiSA = elem%state%phinh_i(:,:,:,tl)
 
-   call pnh_and_exner_from_eos(hvcoord,vtheta,&
-       dp3d(:,:,:),elem%state%phinh_i(:,:,:,tl),pnh,exner,munew,caller='NEW MU')
+     rinter = phiSA(:,:,:)/g + r0
+     rhat = rinter/r0 ! r/r0
 
-if (elem%globalid==1)    print *,'OLD MU', munew(1,1,1:10)
+     ptop(:,:) = hvcoord%hyai(1)*hvcoord%ps0/rhat(:,:,1)/rhat(:,:,1)  ! hydrostatic ptop/rhat^2
 
-do ii=1,12
+     !now compute dp_int like in eos:
+     dp3d_i(:,:,1) = dp3d(:,:,1)
+     dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
+     do k=2,nlev
+        dp3d_i(:,:,k)=(dp3d(:,:,k)+dp3d(:,:,k-1))/2
+     end do
 
-   phiSA = elem%state%phinh_i(:,:,:,tl)
-
-!print *, 'dp3d', dp3d(1,1,:)
-!print *, 'phiSA', phiSA(1,1,:)
-!print *, 'vtheta', vtheta(1,1,:)
-
-   rinter = phiSA(:,:,:)/g + r0
-   rhat = rinter/r0 ! r/r0
-
-!print *, '1/rhat', 1/rhat(1,1,:)
-!print *, '1/rhat/rhat', 1/rhat(1,1,:)/rhat(1,1,:)
-
-   ptop(:,:) = hvcoord%hyai(1)*hvcoord%ps0/rhat(:,:,1)/rhat(:,:,1)  ! hydrostatic ptop/rhat^2
-
-!print *, 'Pi TOP', hvcoord%hyai(1)*hvcoord%ps0
-!print *, 'r0', r0
-!print *, 'g', g
-!print *, 'p0', p0
-
-!now compute dp_int like in eos:
-   dp3d_i(:,:,1) = dp3d(:,:,1)
-   dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
-   do k=2,nlev
-      dp3d_i(:,:,k)=(dp3d(:,:,k)+dp3d(:,:,k-1))/2
-   end do
-
-!for with u calculations
-   ! special averaging for velocity for energy conservation
-   v_i(:,:,1:2,1) = elem%state%v(:,:,1:2,1,tl)
-   v_i(:,:,1:2,nlevp) = elem%state%v(:,:,1:2,nlev,tl)
-   do k=2,nlev
+#if 0
+!for with u calculations, QHPE
+     ! special averaging for velocity for energy conservation
+     v_i(:,:,1:2,1) = elem%state%v(:,:,1:2,1,tl)
+     v_i(:,:,1:2,nlevp) = elem%state%v(:,:,1:2,nlev,tl)
+     do k=2,nlev
         v_i(:,:,1,k) = (dp3d(:,:,k)*elem%state%v(:,:,1,k,tl) + &
              dp3d(:,:,k-1)*elem%state%v(:,:,1,k-1,tl) ) / (2*dp3d_i(:,:,k))
         v_i(:,:,2,k) = (dp3d(:,:,k)*elem%state%v(:,:,2,k,tl) + &
              dp3d(:,:,k-1)*elem%state%v(:,:,2,k-1,tl) ) / (2*dp3d_i(:,:,k))
-   end do
+     end do
 
-#if 0
-   do k=1,nlevp
-   muu(:,:,k) = -(v_i(:,:,1,k)*v_i(:,:,1,k)+v_i(:,:,2,k)*v_i(:,:,2,k))/rinter(:,:,k)/g &
-                -elem%fcorcosine(:,:)*v_i(:,:,1,k)/g + 1.0
-   enddo
+     do k=1,nlevp
+        muu(:,:,k) = -(v_i(:,:,1,k)*v_i(:,:,1,k)+v_i(:,:,2,k)*v_i(:,:,2,k))/rinter(:,:,k)/g &
+                     -elem%fcorcosine(:,:)*v_i(:,:,1,k)/g + 1.0
+     enddo
 #else
-   muu(:,:,:) = 1.0
+     muu(:,:,:) = 1.0
 #endif
 
-   dpnh = dp3d_i / rhat / rhat * muu
+     dpnh = dp3d_i / rhat / rhat * muu
+     pmid(:,:,1) = ptop(:,:) + dpnh(:,:,1)/2
 
-!print *, 'dp_i', dp3d_i(1,1,:)
-!print *, 'dpnh', dpnh(1,1,:)
+     do k=2,nlev
+        pmid(:,:,k) = pmid(:,:,k-1) + dpnh(:,:,k)
+     enddo
 
-   pmid(:,:,1) = ptop(:,:) + dpnh(:,:,1)/2
+     !reconstruct (r/r0)^3
+     r3int(:,:,nlevp) = (rinter(:,:,nlevp) / r0)**3
+     do k=nlev,1,-1
+        r3int(:,:,k) = r3int(:,:,k+1) + 3.0 * rgas * vtheta(:,:,k) * (pmid(:,:,k)/p0)**kappa / pmid(:,:,k) / g / r0
+     enddo
+     phiDA(:,:,1:nlev) = g*(r3int(:,:,1:nlev)**(1.0/3.0)-1)*r0
+     phiDA(:,:,nlevp) = phiSA(:,:,nlevp)
 
-   do k=2,nlev
-      pmid(:,:,k) = pmid(:,:,k-1) + dpnh(:,:,k)
-   enddo
+     call pnh_and_exner_from_eos(hvcoord,vtheta,&
+         dp3d(:,:,:),phiDA,pnh,exner,munew,caller='NEW MU')
 
-!print *, 'pmid', pmid(1,1,:)
+     !if (elem%globalid==1)   print *,'NEW MU', ii, munew(1,1,1:10)
 
-   !reconstruct (r/r0)^3
-   r3int(:,:,nlevp) = (rinter(:,:,nlevp) / r0)**3
+     elem%state%phinh_i(:,:,:,tl) = phiDA
 
-!print *, 'rinter', rinter(1,1,:)
-!print *, 'bot r3', r3int(1,1,nlevp)
-!print *, 'vtheta', vtheta(1,1,:)
-
-   do k=nlev,1,-1
-!print *,'k=',k
-!print *,'k+1 r3int', r3int(1,1,k+1)
-
-      r3int(:,:,k) = r3int(:,:,k+1) + 3.0 * rgas * vtheta(:,:,k) * (pmid(:,:,k)/p0)**kappa / pmid(:,:,k) / g / r0
-
-!print *,'k r3int', r3int(1,1,k)
-
-   enddo
-   phiDA(:,:,1:nlev) = g*(r3int(:,:,1:nlev)**(1.0/3.0)-1)*r0
-   phiDA(:,:,nlevp) = phiSA(:,:,nlevp)
-
-!print *, 'r3int(1,1,1:nlev)**(1/3)', r3int(1,1,1:nlev)**(1.0/3.0)
-!print *, 'phiDA', phiDA(1,1,:)
-
-   call pnh_and_exner_from_eos(hvcoord,vtheta,&
-       dp3d(:,:,:),phiDA,pnh,exner,munew,caller='NEW MU')
-
-if (elem%globalid==1)   print *,'NEW MU', ii, munew(1,1,1:10)
-
-   elem%state%phinh_i(:,:,:,tl) = phiDA
-
-!stop
-
-enddo
-
-!if (elem%globalid==1)   print *,'NEW PHI', elem%state%phinh_i(1,1,1:10,tl)
+  enddo
 #endif
-
 
   do tl = 2,timelevels
     call copy_state(elem,1,tl)
   enddo
 
   if(present(ie)) call save_initial_state(elem%state,ie)
-
-#if 0
-tl=1
-!print *, 'ID', elem%globalid
-!print *, 'tl is ', tl
-
-!print *, 'vtheta loc - elem', vtheta - elem%state%vtheta_dp(:,:,:,tl)
-!print *, 'dp3d loc - elem', dp3d - elem%state%vtheta_dp(:,:,:,tl)
-
-   call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,tl),&
-       elem%state%dp3d(:,:,:,tl),elem%state%phinh_i(:,:,:,tl),pnh,exner,munew,caller='NEW MU')
-if (elem%globalid==1)    print *,'FINALIZE MU tl=',tl, munew(1,1,1:10)
-
-tl=2
-   call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,tl),&
-       elem%state%dp3d(:,:,:,tl),elem%state%phinh_i(:,:,:,tl),pnh,exner,munew,caller='NEW MU')
-if (elem%globalid==1)    print *,'FINALIZE MU tl=',tl, munew(1,1,1:10)
-
-tl=3
-   call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,tl),&
-       elem%state%dp3d(:,:,:,tl),elem%state%phinh_i(:,:,:,tl),pnh,exner,munew,caller='NEW MU')
-if (elem%globalid==1)    print *,'FINALIZE MU tl=',tl, munew(1,1,1:10)
-#endif
 
   end subroutine tests_finalize
 
