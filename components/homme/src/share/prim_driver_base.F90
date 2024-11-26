@@ -1349,7 +1349,7 @@ contains
 
 #if !defined(CAM) && !defined(SCREAM)
     ! Compute test forcing over tracer time step.
-!    call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_q,nets,nete,tl)
+    call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_q,nets,nete,tl)
 #endif
 
 #ifdef CAM
@@ -1652,7 +1652,6 @@ contains
 
    !one can set pprime=0 to hydro regime but it is not done in master
    !compute pnh, here only pnh is needed
-
 #ifdef DA
    dphi(:,:,1:nlev)=elem%state%phinh_i(:,:,2:nlevp,np1)-elem%state%phinh_i(:,:,1:nlev,np1)
 
@@ -1740,8 +1739,6 @@ contains
       ! to conserve dry mass in the precese of Q1 forcing:
       ps(:,:) = ps(:,:) + dt*elem%derived%FQps(:,:)
 
-!print *, elem%derived%FQps(:,:)
-
    endif ! if adjustment
 
 
@@ -1811,7 +1808,8 @@ contains
       r1=( rs**3.0 + 3.0*Rgas*vthn1(:,:,k)/p_exner(:,:,k)/gravit/r0 )**(1.0/3.0)
 
       phi_n1(:,:,k)=gravit*r0*(r1-1.0)
-#endif    
+!if DA
+#endif  
    enddo
    
    !finally, compute difference for FVTheta
@@ -1821,6 +1819,7 @@ contains
  
    elem%derived%FPHI(:,:,:) = &
         (phi_n1 - elem%state%phinh_i(:,:,:,np1))/dt
+!if THETA
 #endif
 
   call t_stopf("ApplyCAMForcing_tracers")
