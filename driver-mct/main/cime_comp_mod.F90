@@ -2523,7 +2523,6 @@ contains
     logical               :: lnd2glc_averaged_now ! Whether lnd2glc averages were taken this timestep
     logical               :: prep_glc_accum_avg_called ! Whether prep_glc_accum_avg has been called this timestep
     integer               :: i, nodeId
-    integer               :: l2gacc_lx_cnt
     character(len=15)     :: c_ymdtod
     character(len=18)     :: c_mprof_file
 
@@ -3048,16 +3047,12 @@ contains
        !----------------------------------------------------------
        !| GLC SETUP-SEND
        !----------------------------------------------------------
-       ! zero out x2g_gx if this is the first call to prep_glc_accum_avg
        if (glc_present) then
-          l2gacc_lx_cnt = prep_glc_get_l2gacc_lx_cnt()
-          if (l2gacc_lx_cnt.eq.1) then
+          if (glcrun_alarm) then
+             call cime_run_glc_setup_send(lnd2glc_averaged_now, prep_glc_accum_avg_called)
+          else
              call prep_glc_zero_fields()
           endif
-       endif
-
-       if (glc_present .and. glcrun_alarm) then
-          call cime_run_glc_setup_send(lnd2glc_averaged_now, prep_glc_accum_avg_called)
        endif
 
        ! ------------------------------------------------------------------------
