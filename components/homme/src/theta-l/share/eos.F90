@@ -71,7 +71,7 @@ implicit none
           dpnh_dp_i,phi_i(:,:,nlevp),caller,pnh_i_out)
   else
      call pnh_and_exner_from_eos2(hvcoord,vtheta_dp,dp3d,dphi,pnh,exner,&
-     dpnh_dp_i,phi_i(:,:,nlevp),'not specified',pnh_i_out)
+          dpnh_dp_i,phi_i(:,:,nlevp),'not specified',pnh_i_out)
   endif
   end subroutine pnh_and_exner_from_eos
 
