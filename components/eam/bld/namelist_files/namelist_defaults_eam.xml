@@ -143,7 +143,7 @@
 <bnd_topo hgrid="ne0np4_conus_x4v1_lowcon"        >atm/cam/topo/USGS_conusx4v1-tensor12x_consistentSGH_c150924.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_conus_x4v1_lowcon" npg="2">atm/cam/topo/USGS_conusx4v1pg2_12x_consistentSGH_20200609.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_northamericax4v1"  >atm/cam/topo/USGS_northamericax4v1_12xdel2_consistentSGH_191023.nc</bnd_topo>
-<bnd_topo hgrid="ne0np4_northamericax4v1" npg="2">atm/cam/topo/USGS_northamericax4v1pg2_12xdel2_consistentSGH_20020209.nc</bnd_topo>
+<bnd_topo hgrid="ne0np4_northamericax4v1" npg="2">atm/cam/topo/USGS_northamericax4v1pg2_12xdel2_consistentSGH_forOroDrag.c20241019.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_antarcticax4v1"  >atm/cam/topo/USGS-gtopo30_antarcticax4v1_12xdel2_consistentSGH_191120.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_antarcticax4v1"  npg="2">atm/cam/topo/USGS_gtopo30_antarcticax4v1pg2_12xdel2_consistentSGH_20200925.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_svalbard_x8v1_lowcon"  >atm/cam/topo/USGS_svalbardx8v1-tensor12x_c150612.nc</bnd_topo>
