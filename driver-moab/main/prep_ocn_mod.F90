@@ -1043,6 +1043,7 @@ subroutine prep_ocn_accum_avg_moab()
     use iMOAB, only : iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
     ! Local Variables
     integer   :: ent_type, ierr
+    integer noflds, lsize ! used for restart case only?
     character(CXX)  :: tagname
     character(*), parameter  :: subname = '(prep_ocn_accum_avg_moab)'
 #ifdef MOABDEBUG
@@ -1056,7 +1057,18 @@ subroutine prep_ocn_accum_avg_moab()
           x2oacc_om = 1./x2oacc_om_cnt * x2oacc_om
        end if
 
+       if (.not. allocated(x2o_om)) then
+          ! we could come here in the restart case; not sure why only for 
+          ! the case ERS_Vmoab_T62_oQU120.CMPASO-NYF
+          lsize = size(x2oacc_om, 1)
+          noflds = size(x2oacc_om, 2)
+          allocate (x2o_om(lsize, noflds))
+          arrSize_x2o_om = noflds * lsize
+          
+       endif
+
        ! ***NOTE***THE FOLLOWING ACTUALLY MODIFIES x2o_om
+
        x2o_om   = x2oacc_om
        !call mct_avect_copy(x2oacc_ox(eoi), x2o_ox)
        ! modify the tags
@@ -1339,9 +1351,11 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
    !nwflds = mct_aVect_nRattr(w2x_o)
       nxflds = mct_aVect_nRattr(xao_o)
 
-       !ngflds = mct_aVect_nRattr(g2x_o)
-       allocate(x2o_om (lsize, noflds))
-       arrSize_x2o_om = lsize * noflds ! this willbe used to set/get x2o_om tags
+      if (.not. allocated(x2o_om)) then
+         !ngflds = mct_aVect_nRattr(g2x_o)
+         allocate(x2o_om (lsize, noflds))
+         arrSize_x2o_om = lsize * noflds ! this willbe used to set/get x2o_om tags
+      endif
        allocate(a2x_om (lsize, naflds))
        allocate(i2x_om (lsize, niflds))
        allocate(r2x_om (lsize, nrflds))
