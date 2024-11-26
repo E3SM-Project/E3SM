@@ -14,7 +14,7 @@
 #include "utilities/MathUtils.hpp"
 
 #ifdef KOKKOS_ENABLE_CUDA
-# include <cuda.h>
+#include <cuda.h>
 #endif
 
 #ifdef KOKKOS_ENABLE_HIP
@@ -32,56 +32,46 @@ namespace Homme {
 // own. As a side benefit, we'll end up running on GPU platforms optimally
 // without having to specify --kokkos-ndevices on the command line.
 void initialize_kokkos () {
-  // This is in fact const char*, but Kokkos::initialize requires char*.
-  std::vector<char*> args;
-
-  //   This is the only way to get the round-robin rank assignment Kokkos
+  // Count up our devices.
+  // This is the only way to get the round-robin rank assignment Kokkos
   // provides, as that algorithm is hardcoded in Kokkos::initialize(int& narg,
   // char* arg[]). Once the behavior is exposed in the InitArguments version of
   // initialize, we can remove this string code.
   //   If for some reason we're running on a GPU platform, have Cuda enabled,
   // but are using a different execution space, this initialization is still
   // OK. The rank gets a GPU assigned and simply will ignore it.
-#ifdef KOKKOS_ENABLE_CUDA
-  int nd;
-  const auto ret = cudaGetDeviceCount(&nd);
-  if (ret != cudaSuccess) {
-    // It isn't a big deal if we can't get the device count.
-    nd = 1;
-  }
-#elif defined(KOKKOS_ENABLE_HIP)
-  int nd;
-  const auto ret = hipGetDeviceCount(&nd);
-  if (ret != hipSuccess) {
-    // It isn't a big deal if we can't get the device count.
-    nd = 1;
-  }
-#elif defined(KOKKOS_ENABLE_SYCL)
-
-//https://developer.codeplay.com/products/computecpp/ce/2.11.0/guides/sycl-for-cuda-developers/migrating-from-cuda-to-sycl
-
-//to make it build
   int nd = 1;
+#ifdef HOMMEXX_ENABLE_GPU
+# if defined KOKKOS_ENABLE_CUDA
+  const auto ret = cudaGetDeviceCount(&nd);
+  const bool ok = (ret == cudaSuccess);
+# elif defined KOKKOS_ENABLE_HIP
+  const auto ret = hipGetDeviceCount(&nd);
+  const bool ok = (ret == hipSuccess);
+# elif defined KOKKOS_ENABLE_SYCL
+  nd = 0;
+  auto gpu_devs = sycl::device::get_devices(sycl::info::device_type::gpu);
+  for (auto &dev : gpu_devs) {
+    if (dev.get_info<sycl::info::device::partition_max_sub_devices>() > 0) {
+      auto subDevs = dev.create_sub_devices<sycl::info::partition_property::partition_by_affinity_domain>(sycl::info::partition_affinity_domain::numa);
+      nd += subDevs.size();
+    } else {
+      nd++;
+    }
+  }
+  const bool ok = true;
+# endif
+  if (not ok) {
+    // It isn't a big deal if we can't get the device count.
+    nd = 1;
+  }
+#endif // HOMMEXX_ENABLE_GPU
 
-#endif
-
-
-#ifdef HOMMEXX_ENABLE_GPU  
-  std::stringstream ss;
-  ss << "--kokkos-num-devices=" << nd;
-  const auto key = ss.str();
-  std::vector<char> str(key.size()+1);
-  std::copy(key.begin(), key.end(), str.begin());
-  str.back() = 0;
-  args.push_back(const_cast<char*>(str.data()));
-#endif
-
-
-  const char* silence = "--kokkos-disable-warnings";
-  args.push_back(const_cast<char*>(silence));
-
-  int narg = args.size();
-  Kokkos::initialize(narg, args.data());
+  auto const settings = Kokkos::InitializationSettings()
+    .set_map_device_id_by("mpi_rank")
+    .set_num_devices(nd)
+    .set_disable_warnings(true);
+  Kokkos::initialize(settings);
 }
 
 ThreadPreferences::ThreadPreferences ()
@@ -214,7 +204,7 @@ team_num_threads_vectors (const int num_parallel_iterations,
 #endif
 
   min_num_warps = std::min(min_num_warps, max_num_warps);
-  
+
   return Parallel::team_num_threads_vectors_for_gpu(
     num_warps_device, num_threads_warp,
     min_num_warps, max_num_warps,
