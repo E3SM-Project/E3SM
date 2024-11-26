@@ -1162,6 +1162,8 @@ module li_iceshelf_melt
 
     subroutine iceshelf_melt_ismip6(domain, err)
 
+      use li_constants, only: oceanFreezingTempDepthDependence
+
       !-----------------------------------------------------------------
       ! input/output variables
       !-----------------------------------------------------------------
@@ -1253,8 +1255,8 @@ module li_iceshelf_melt
 
             if ( li_mask_is_floating_ice(cellMask(iCell)) ) then
                ! 1 -  Linear interpolation of the thermal forcing on the ice draft depth :
-               ksup=1
-               do kk=2,nOceanLayers-1
+               ksup=0
+               do kk=1,nOceanLayers
                   if ( zOcean(kk) >= lowerSurface(iCell) )  ksup = kk
                enddo
                kinf = ksup + 1
@@ -1279,8 +1281,18 @@ module li_iceshelf_melt
                   err = ior(err, 1)
                endif
 
-               TFdraft(iCell) = ( (zOcean(ksup)-lowerSurface(iCell)) * TFocean(kinf, iCell) &
-                  + (lowerSurface(iCell)-zOcean(kinf)) * TFocean(ksup, iCell) ) / (zOcean(ksup)-zOcean(kinf))
+               if (ksup == 0) then
+                  ! For depths shallower than shallowest layer center, use shallowest layer
+                  TFdraft(iCell) = TFocean(1, iCell)
+               elseif (kinf > nOceanLayers) then
+                  ! for depths below the deepest layer center, use deepest layer corrected for Tfreeze
+                  TFdraft(iCell) = TFocean(nOceanLayers, iCell) - &
+                     (zOcean(nOceanLayers) - lowerSurface(iCell)) * oceanFreezingTempDepthDependence
+               else
+                  ! for depths between the first and last layer centers, linearly interpolate
+                  TFdraft(iCell) = ( (zOcean(ksup)-lowerSurface(iCell)) * TFocean(kinf, iCell) &
+                     + (lowerSurface(iCell)-zOcean(kinf)) * TFocean(ksup, iCell) ) / (zOcean(ksup)-zOcean(kinf))
+               endif
 
                ! 2 -  Mean Thermal forcing in individual basins (NB: fortran norm while basins start at zero):
                mean_TF(basinNumber(iCell)+1) = mean_TF(basinNumber(iCell)+1) + areaCell(iCell) * TFdraft(iCell)
