@@ -17,3 +17,5 @@ option (EKAT_TEST_LAUNCHER_MANAGE_RESOURCES "" ON)
 # Needed by EkatCreateUnitTest
 set (EKAT_MPIRUN_EXE "mpirun" CACHE STRING "")
 set (EKAT_MPI_NP_FLAG "-n" CACHE STRING "")
+
+set(EKAT_VALGRIND_SUPPRESSION_FILE "/projects/e3sm/baselines/scream/ghci-snl-cpu/eamxx-valgrind.supp" CACHE FILEPATH "Use this valgrind suppression file if valgrind is enabled.")
