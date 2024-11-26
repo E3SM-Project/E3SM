@@ -940,12 +940,12 @@ contains
           index_l2x_Flrl_wslake   = mct_aVect_indexRA(l2x_l,'Flrl_wslake')
 
           if (glc_nec.ge.1) then
-             do num=0,glc_nec 
+             do num=0,glc_nec
                 write(cnum,'(i2.2)') num
                 name = 'Flgl_qice' // cnum
                 index_l2x_Flgl_qice(num) = mct_avect_indexRA(l2x_l,trim(name))
                 name = 'Sg_ice_covered' // cnum
-                index_x2l_Sg_ice_covered(num) = mct_avect_indexRA(x2l_l,trim(name)) 
+                index_x2l_Sg_ice_covered(num) = mct_avect_indexRA(x2l_l,trim(name))
              end do
           end if
 
