@@ -1602,11 +1602,13 @@ contains
   real (kind=real_kind)  :: phi_n1(np,np,nlevp)
   real (kind=real_kind)  :: rstarn1(np,np,nlev)
   real (kind=real_kind)  :: exner(np,np,nlev)
+  real (kind=real_kind)  :: dpnh_dp_i(np,np,nlevp)
+#ifdef DA
   real (kind=real_kind)  :: p_exner(np,np,nlev)
   real (kind=real_kind)  :: dphi(np,np,nlev)
-  real (kind=real_kind)  :: dpnh_dp_i(np,np,nlevp), rs(np,np), r1(np,np), r0, aa, bb
-
+  real (kind=real_kind)  :: rs(np,np), r1(np,np), r0, aa, bb
   real (kind=real_kind)  :: adjp(np,np,nlev)
+#endif
 #endif
 
 #ifdef HOMMEXX_BFB_TESTING
@@ -1619,9 +1621,6 @@ contains
   call t_startf("ApplyCAMForcing_tracers")
 
 #ifdef MODEL_THETA_L
-
-  r0=rearth
-
   if (dt_remap_factor==0) then
     adjust_ps=.true.   ! stay on reference levels for Eulerian case
   else
@@ -1653,6 +1652,7 @@ contains
    !one can set pprime=0 to hydro regime but it is not done in master
    !compute pnh, here only pnh is needed
 #ifdef DA
+   r0=rearth
    dphi(:,:,1:nlev)=elem%state%phinh_i(:,:,2:nlevp,np1)-elem%state%phinh_i(:,:,1:nlev,np1)
 
    call pnh_and_exner_from_eos3(hvcoord,elem%state%vtheta_dp(:,:,:,np1),dp,&
@@ -1671,7 +1671,6 @@ contains
 #endif
 
    if (adjustment) then 
-!stop
       ! hard adjust Q from physics.  negativity check done in physics
       do k=1,nlev
          do j=1,np
