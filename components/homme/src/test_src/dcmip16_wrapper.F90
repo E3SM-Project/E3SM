@@ -81,7 +81,11 @@ subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
   integer,            intent(in)            :: nets,nete                ! start, end element index
 
   integer,  parameter :: use_zcoords  = 0                               ! use vertical pressure coordinates
-  integer,  parameter :: is_deep      = 1                               ! use shallow atmosphere approximation
+#ifdef DA
+  integer,  parameter :: is_deep      = 1                               ! use deep atmosphere approximation
+#else
+  integer,  parameter :: is_deep      = 0                               ! use shallow atmosphere approximation
+#endif
   integer,  parameter :: pertt        = 0                               ! use exponential perturbation type
   real(rl), parameter :: dcmip_X      = 1.0_rl                          ! full scale planet
   integer :: moist                                                      ! use moist version
