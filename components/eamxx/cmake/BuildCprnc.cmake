@@ -18,7 +18,9 @@ macro(BuildCprnc)
     configure_file (${SCREAM_BASE_DIR}/cmake/CprncTest.cmake.in
                     ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake @ONLY)
   else()
-    message(WARNING "Path ${CCSM_CPRNC} does not exist, so we will try to build it")
+    if (NOT "${CCSM_CPRNC}" STREQUAL "")
+      message(WARNING "Path ${CCSM_CPRNC} does not exist, so we will try to build it")
+    endif()
     # Make sure this is built only once
     if (NOT TARGET cprnc)
       if (SCREAM_CIME_BUILD)
