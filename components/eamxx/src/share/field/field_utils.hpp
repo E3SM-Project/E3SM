@@ -2,7 +2,6 @@
 #define SCREAM_FIELD_UTILS_HPP
 
 #include "share/field/field_utils_impl.hpp"
-#include "share/field/field_utils_impl_colred.hpp"
 
 namespace scream {
 
@@ -112,15 +111,111 @@ void perturb (const Field& f,
   impl::perturb<ST>(f, engine, pdf, base_seed, level_mask, dof_gids);
 }
 
+// Utility to compute the contraction of a field along its column dimension.
+// This is equivalent to einsum('i,i...k->...k', weight, f_in); i is the column.
+// The layouts are such that:
+// - The first dimension is for the columns (COL)
+// - There can be only up to 3 dimensions
 template <typename ST>
-Field column_reduction(const Field &f1, const Field &f2,
-                       const ekat::Comm *comm = nullptr) {
-  EKAT_REQUIRE_MSG(f1.is_allocated() && f2.is_allocated(),
-                   "Error! Input fields must be allocated.");
-  EKAT_REQUIRE_MSG(f1.data_type() == f2.data_type(),
-                   "Error! Input fields must have matching data types.");
+Field horiz_contraction(const Field &f_in, const Field *weight = nullptr,
+                        const ekat::Comm *comm = nullptr) {
+  const auto &l_in = f_in.get_header().get_identifier().get_layout();
+  const auto &n_in = f_in.get_header().get_identifier().name();
+  const auto &u_in = f_in.get_header().get_identifier().get_units();
+  const auto &g_in = f_in.get_header().get_identifier().get_grid_name();
 
-  return impl::column_reduction<ST>(f1, f2, comm);
+  FieldIdentifier f_out_id(n_in + "_horiz_contraction",
+                           l_in.clone().strip_dim(0), u_in, g_in);
+  // Allocate the output field
+  Field f_out(f_out_id);
+  f_out.allocate_view();
+  f_out.deep_copy(0);
+
+  // Call the implementation
+  horiz_contraction<ST>(f_out, f_in, weight, comm);
+  return f_out;
+}
+
+template <typename ST>
+void horiz_contraction(const Field &f_out, const Field &f_in,
+                       const Field *weight    = nullptr,
+                       const ekat::Comm *comm = nullptr) {
+  using namespace ShortFieldTagsNames;
+
+  const auto &l_out = f_out.get_header().get_identifier().get_layout();
+  const auto &l_in  = f_in.get_header().get_identifier().get_layout();
+  const auto &n_in  = f_in.get_header().get_identifier().name();
+  const auto &u_in  = f_in.get_header().get_identifier().get_units();
+  const auto &g_in  = f_in.get_header().get_identifier().get_grid_name();
+
+  // If weight is not provided, we set it as a field of ones
+  Field wt;
+  if(weight) {
+    wt = *weight;
+  } else {
+    FieldIdentifier wt_id(n_in + "_weight", {{COL}, {l_in.dim(0)}}, u_in, g_in);
+    wt = Field(wt_id);
+    wt.allocate_view();
+    wt.deep_copy(1);
+  }
+
+  const auto &l_w = wt.get_header().get_identifier().get_layout();
+
+  // Sanity checks before handing off to the implementation
+  EKAT_REQUIRE_MSG(l_w.rank() == 1,
+                   "Error! The weight field must be rank-1.\n"
+                   "The input has rank "
+                       << l_w.rank() << ".\n");
+  EKAT_REQUIRE_MSG(l_w.tags() == std::vector<FieldTag>({COL}),
+                   "Error! The weight field must have a column dimension.\n"
+                   "The input f1 layout is "
+                       << l_w.tags() << ".\n");
+  EKAT_REQUIRE_MSG(l_in.rank() <= 3,
+                   "Error! The input field must be at most rank-3.\n"
+                   "The input f_in rank is "
+                       << l_in.rank() << ".\n");
+  EKAT_REQUIRE_MSG(l_in.tags()[0] == COL,
+                   "Error! The input field must have a column dimension.\n"
+                   "The input f_in layout is "
+                       << l_in.to_string() << ".\n");
+  EKAT_REQUIRE_MSG(
+      l_w.dim(0) == l_in.dim(0),
+      "Error! input and weight fields must have the same dimension along "
+      "which we are taking the reducing the field.\n"
+      "The weight field has dimension "
+          << l_w.dim(0)
+          << " while "
+             "the input field has dimension "
+          << l_in.dim(0) << ".\n");
+  EKAT_REQUIRE_MSG(
+      l_in.dim(0) > 0,
+      "Error! The input field must have a non-zero column dimension.\n"
+      "The input f_in layout is "
+          << l_in.to_string() << ".\n");
+  EKAT_REQUIRE_MSG(
+      l_out.rank() == l_in.rank() - 1,
+      "Error! The output field must have rank one less than the input field.\n"
+      "The input f_in rank is "
+          << l_in.rank() << " and the output f_out rank is " << l_out.rank()
+          << ".\n");
+  EKAT_REQUIRE_MSG(
+      l_out == l_in.clone().strip_dim(0),
+      "Error! The output field must have the same layout as the input field "
+      "without the column dimension.\n"
+      "The input f_in layout is "
+          << l_in.to_string() << " and the output f_out layout is "
+          << l_out.to_string() << ".\n");
+  EKAT_REQUIRE_MSG(
+      f_out.is_allocated() && f_in.is_allocated() && wt.is_allocated(),
+      "Error! All fields must be allocated.");
+  EKAT_REQUIRE_MSG(f_out.data_type() == f_in.data_type(),
+                   "Error! In/out Fields have matching data types.");
+  EKAT_REQUIRE_MSG(
+      f_out.data_type() == wt.data_type(),
+      "Error! Weight field must have the same data type as input fields.");
+
+  // All good, call the implementation
+  impl::horiz_contraction<ST>(f_out, f_in, wt, comm);
 }
 
 template<typename ST>
