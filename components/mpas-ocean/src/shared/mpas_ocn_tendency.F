@@ -652,7 +652,6 @@ contains
          tracerGroupTend, &! tendencies for current tracer group
          activeTracers,   &! retain active tracers
          ecosysTracers,   &     ! retain ecosys tracers for DMS, MacroMols
-         frazilEcosysTracersTend, & ! frazil tendencies for ecosys
          tracerGroupInteriorRestoringRate, &! int restoring timescale
          tracerGroupInteriorRestoringValue  ! int restoring value
 
@@ -929,17 +928,6 @@ contains
                                            zMid, minLevelCell, indxTemp, &
                                            indxSalt, tracerGroupSurfaceFlux, &
                                            err)
-
-            call mpas_pool_get_array(tendPool, 'frazilEcosysTracersTend', &
-                                     frazilEcosysTracersTend)
-            call ocn_tracer_ecosys_frazil_compute(activeTracers, &
-                                           tracerGroup, forcingPool,  &
-                                           nTracersGroup, nCellsOwned, &
-                                           zMid, minLevelCell, maxLevelCell, &
-                                           nVertLevels, layerThickness, &
-                                           indxTemp, indxSalt, &
-                                           tracerGroupTend, frazilEcosysTracersTend, &
-                                           ssh, dt, err)
 
          endif ! ecosys tracers
 
@@ -1386,9 +1374,9 @@ contains
 
          ! Compute tracer tendency due to production/destruction of
          ! frazil ice
+
          call ocn_frazil_forcing_tracers(meshPool, tracersPool, &
                      groupName, forcingPool, tracerGroupTend, err)
-
 
       end if ! config use flag on
       end if ! active only
