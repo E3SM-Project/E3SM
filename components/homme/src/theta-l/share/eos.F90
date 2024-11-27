@@ -285,7 +285,7 @@ implicit none
   !_____________________________________________________________________
   subroutine phi_from_eos(hvcoord,phis,vtheta_dp,dp,phi_i)
 !
-! Use Equation of State to compute HYDROSTATIC geopotential
+! Use Equation of State to compute HYDROSTATIC SA geopotential
 !
 ! input:  dp, phis, vtheta_dp  
 ! output:  phi
