@@ -456,6 +456,7 @@
 <config_sea_freezing_temperature_type>'mushy'</config_sea_freezing_temperature_type>
 <config_ocean_surface_type>'free'</config_ocean_surface_type>
 <config_use_data_icebergs>false</config_use_data_icebergs>
+<config_scale_dib_by_removed_ice_runoff>false</config_scale_dib_by_removed_ice_runoff>
 <config_salt_flux_coupling_type>'constant'</config_salt_flux_coupling_type>
 <config_ice_ocean_drag_coefficient>0.00536</config_ice_ocean_drag_coefficient>
 

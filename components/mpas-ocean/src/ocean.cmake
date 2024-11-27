@@ -114,6 +114,7 @@ list(APPEND RAW_SOURCES
   core_ocean/shared/mpas_ocn_stokes_drift.F
   core_ocean/shared/mpas_ocn_manufactured_solution.F
   core_ocean/shared/mpas_ocn_subgrid.F
+  core_ocean/shared/mpas_ocn_scaled_dismf.F
 )
 
 set(OCEAN_DRIVER
