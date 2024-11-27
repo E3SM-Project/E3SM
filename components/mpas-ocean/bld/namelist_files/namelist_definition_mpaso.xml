@@ -1555,6 +1555,14 @@ Valid values: Any positive real number.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_frazil_ice_porosity" type="real"
+	category="frazil_ice" group="frazil_ice">
+Assumed porosity of frazil
+
+Valid values: Any positive real number from 0 to 1.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_frazil_fractional_thickness_limit" type="real"
 	category="frazil_ice" group="frazil_ice">
 maximum fraction of layer thickness than can be used or created at an instant by frazil.

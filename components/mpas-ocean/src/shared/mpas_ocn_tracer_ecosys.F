@@ -31,6 +31,7 @@ module ocn_tracer_ecosys
    use ocn_config
    use ocn_framework_forcing
    use ocn_diagnostics_variables
+   use ocn_equation_of_state
 
    use marbl_logging             , only : marbl_log_type
    use marbl_interface           , only : marbl_interface_class

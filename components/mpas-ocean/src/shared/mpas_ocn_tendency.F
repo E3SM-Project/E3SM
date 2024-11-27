@@ -626,7 +626,8 @@ contains
          config_use_tracerGroup_ttd_forcing
 
       real (kind=RKIND), dimension(:), pointer, contiguous :: &
-         penetrativeTemperatureFlux, &! heat flux penetrating below sfc
+         penetrativeTemperatureFlux,    &! heat flux penetrating below sfc
+         ssh,                           &! sea surface height
          tracerGroupExponentialDecayRate ! exp decay rate for forcing
 
       real (kind=RKIND), dimension(:,:), pointer, contiguous :: &
@@ -650,8 +651,8 @@ contains
          tracerGroup,     &! tracers in current tracer group
          tracerGroupTend, &! tendencies for current tracer group
          activeTracers,   &! retain active tracers
-         ecosysTracers,   &! retain ecosys tracers for DMS, MacroMols
-         tracerGroupInteriorRestoringRate, &! int restoring timescale 
+         ecosysTracers,   &     ! retain ecosys tracers for DMS, MacroMols
+         tracerGroupInteriorRestoringRate, &! int restoring timescale
          tracerGroupInteriorRestoringValue  ! int restoring value
 
       ! Scratch Arrays
@@ -664,7 +665,7 @@ contains
 
       ! return if all tracer tendencies disabled
       ! otherwise start timer and proceed
-   
+
       if (config_disable_tr_all_tend) return
       call mpas_timer_start("ocn_tend_tracer")
 
@@ -682,7 +683,7 @@ contains
          activeTracersOnly = .false.
       end if
 
-      ! retrieve data from pools 
+      ! retrieve data from pools
       call mpas_pool_get_subpool(statePool,   'tracers', &
                                                tracersPool)
       call mpas_pool_get_subpool(tendPool,    'tracersTend', &
@@ -698,6 +699,8 @@ contains
 
       call mpas_pool_get_array(statePool,   'layerThickness', &
                                              layerThickness, timeLevel)
+      call mpas_pool_get_array(statePool,   'ssh', &
+                                             ssh, timeLevel)
       call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', &
                                              penetrativeTemperatureFlux)
       call mpas_pool_get_array(forcingPool, 'fractionAbsorbed', &
@@ -925,7 +928,7 @@ contains
                                            zMid, minLevelCell, indxTemp, &
                                            indxSalt, tracerGroupSurfaceFlux, &
                                            err)
-                                           
+
          endif ! ecosys tracers
 
          !
@@ -1371,9 +1374,9 @@ contains
 
          ! Compute tracer tendency due to production/destruction of
          ! frazil ice
+
          call ocn_frazil_forcing_tracers(meshPool, tracersPool, &
                      groupName, forcingPool, tracerGroupTend, err)
-
 
       end if ! config use flag on
       end if ! active only
