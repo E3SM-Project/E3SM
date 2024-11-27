@@ -51,10 +51,16 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
     LIBS scream_io
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
 
-  # Test vertical remap
-  CreateUnitTest(time_interpolation "eamxx_time_interpolation_tests.cpp"
+  # Generate data for data interpolation test
+  CreateUnitTest(data_interpolation_setup "data_interpolation_setup.cpp"
     LIBS scream_io
-    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
+    FIXTURES_SETUP data_interpolation_setup)
+
+  # Test data interpolation
+  CreateUnitTest(data_interpolation "data_interpolation_tests.cpp"
+    LIBS scream_io
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+    FIXTURES_REQUIRED data_interpolation_setup)
 
   # Test common physics functions
   CreateUnitTest(common_physics "common_physics_functions_tests.cpp")
