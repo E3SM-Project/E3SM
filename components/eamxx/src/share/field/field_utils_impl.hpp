@@ -304,11 +304,12 @@ void horiz_contraction(const Field &f_out, const Field &f_in,
   using TeamMember  = typename TeamPolicy::member_type;
   using ESU         = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
 
-  auto l_out      = f_out.get_header().get_identifier().get_layout();
-  auto l_in       = f_in.get_header().get_identifier().get_layout();
-  const int ncols = l_in.dim(0);
+  auto l_out = f_out.get_header().get_identifier().get_layout();
+  auto l_in  = f_in.get_header().get_identifier().get_layout();
 
   auto v_w = weight.get_view<const ST *>();
+
+  const int ncols = l_in.dim(0);
 
   switch(l_in.rank()) {
     case 1: {
@@ -355,7 +356,7 @@ void horiz_contraction(const Field &f_out, const Field &f_in,
 
   if(comm) {
     // TODO: use device-side MPI calls
-    // TODO: the dev ptr seems to cause problems; revisit this later
+    // TODO: the dev ptr causes problems; revisit this later
     // TODO: doing cuda-aware MPI allreduce would be ~10% faster
     Kokkos::fence();
     f_out.sync_to_host();
