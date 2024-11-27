@@ -126,6 +126,116 @@ TEST_CASE("utils") {
     REQUIRE(field_sum<Real>(f1,&comm)==gsum);
   }
 
+  SECTION("horiz_contraction") {
+    using RPDF  = std::uniform_real_distribution<Real>;
+    auto engine = setup_random_test();
+    RPDF pdf(0, 1);
+
+    int dim0 = 3;
+    int dim1 = 9;
+    int dim2 = 2;
+
+    // Set a weight field
+    FieldIdentifier f00("f", {{COL}, {dim0}}, m / s, "g");
+    Field field00(f00);
+    field00.allocate_view();
+    field00.sync_to_host();
+    auto v00 = field00.get_strided_view<Real *, Host>();
+    for(int i = 0; i < dim0; ++i) {
+      v00(i) = (i + 1) / sp(6);
+    }
+    field00.sync_to_dev();
+
+    // Create (random) sample fields
+    FieldIdentifier fsc("f", {{}, {}}, m / s, "g");  // scalar
+    FieldIdentifier f10("f", {{COL, CMP}, {dim0, dim1}}, m / s, "g");
+    FieldIdentifier f11("f", {{COL, LEV}, {dim0, dim2}}, m / s, "g");
+    FieldIdentifier f20("f", {{COL, CMP, LEV}, {dim0, dim1, dim2}}, m / s, "g");
+    Field fieldsc(fsc);
+    Field field10(f10);
+    Field field11(f11);
+    Field field20(f20);
+    fieldsc.allocate_view();
+    field10.allocate_view();
+    field11.allocate_view();
+    field20.allocate_view();
+    randomize(fieldsc, engine, pdf);
+    randomize(field10, engine, pdf);
+    randomize(field11, engine, pdf);
+    randomize(field20, engine, pdf);
+
+    FieldIdentifier F_x("fx", {{COL}, {dim0}}, m / s, "g");
+    FieldIdentifier F_y("fy", {{LEV}, {dim2}}, m / s, "g");
+    FieldIdentifier F_z("fz", {{CMP}, {dim1}}, m / s, "g");
+    FieldIdentifier F_w("fyz", {{CMP, LEV}, {dim1, dim2}}, m / s, "g");
+
+    Field field_x(F_x);
+    Field field_y(F_y);
+    Field field_z(F_z);
+    Field field_w(F_w);
+
+    // Test invalid inputs
+    REQUIRE_THROWS(horiz_contraction<Real>(fieldsc, field_x,
+                                           field00));  // x not allocated yet
+
+    field_x.allocate_view();
+    field_y.allocate_view();
+    field_z.allocate_view();
+    field_w.allocate_view();
+
+    REQUIRE_THROWS(horiz_contraction<Real>(fieldsc, field_y,
+                                           field_x));  // unmatching layout
+    REQUIRE_THROWS(horiz_contraction<Real>(field_z, field11,
+                                           field11));  // wrong weight layout
+
+    Field result;
+
+    // Ensure a scalar case works
+    result = fieldsc.clone();
+    horiz_contraction<Real>(result, field00, field00);
+    result.sync_to_host();
+    auto v = result.get_view<Real, Host>();
+    REQUIRE(v() == (1 / sp(36) + 4 / sp(36) + 9 / sp(36)));
+
+    // Test higher-order cases
+    result = field_z.clone();
+    horiz_contraction<Real>(result, field10, field00);
+    REQUIRE(result.get_header().get_identifier().get_layout().tags() ==
+            std::vector<FieldTag>({CMP}));
+    REQUIRE(result.get_header().get_identifier().get_layout().dim(0) == dim1);
+
+    result = field_y.clone();
+    horiz_contraction<Real>(result, field11, field00);
+    REQUIRE(result.get_header().get_identifier().get_layout().tags() ==
+            std::vector<FieldTag>({LEV}));
+    REQUIRE(result.get_header().get_identifier().get_layout().dim(0) == dim2);
+
+    result = field_w.clone();
+    horiz_contraction<Real>(result, field20, field00);
+    REQUIRE(result.get_header().get_identifier().get_layout().tags() ==
+            std::vector<FieldTag>({CMP, LEV}));
+    REQUIRE(result.get_header().get_identifier().get_layout().dim(0) == dim1);
+    REQUIRE(result.get_header().get_identifier().get_layout().dim(1) == dim2);
+
+    // Check a 3D case
+    field20.sync_to_host();
+    auto manual_result = result.clone();
+    manual_result.deep_copy(0);
+    manual_result.sync_to_host();
+    auto v2 = field20.get_strided_view<Real ***, Host>();
+    auto mr = manual_result.get_strided_view<Real **, Host>();
+    for(int i = 0; i < dim0; ++i) {
+      for(int j = 0; j < dim1; ++j) {
+        for(int k = 0; k < dim2; ++k) {
+          mr(j, k) += v00(i) * v2(i, j, k);
+        }
+      }
+    }
+    field20.sync_to_dev();
+    manual_result.sync_to_dev();
+    REQUIRE(views_are_equal(result, manual_result));
+  }
+
   SECTION ("frobenius") {
 
     auto v1 = f1.get_strided_view<Real**>();

@@ -5,6 +5,8 @@
 
 #include "ekat/mpi/ekat_comm.hpp"
 
+#include "ekat/kokkos/ekat_kokkos_utils.hpp"
+
 #include <limits>
 #include <type_traits>
 
@@ -290,6 +292,77 @@ void perturb (const Field& f,
         f.subfield(f.rank()-1, ilev).scale(perturb_f);
       }
     }
+  }
+}
+
+template <typename ST>
+void horiz_contraction(const Field &f_out, const Field &f_in,
+                       const Field &weight, const ekat::Comm *comm) {
+  using KT          = ekat::KokkosTypes<DefaultDevice>;
+  using RangePolicy = Kokkos::RangePolicy<Field::device_t::execution_space>;
+  using TeamPolicy  = Kokkos::TeamPolicy<Field::device_t::execution_space>;
+  using TeamMember  = typename TeamPolicy::member_type;
+  using ESU         = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+
+  auto l_out = f_out.get_header().get_identifier().get_layout();
+  auto l_in  = f_in.get_header().get_identifier().get_layout();
+
+  auto v_w = weight.get_view<const ST *>();
+
+  const int ncols = l_in.dim(0);
+
+  switch(l_in.rank()) {
+    case 1: {
+      auto v_in  = f_in.get_view<const ST *>();
+      auto v_out = f_out.get_view<ST>();
+      Kokkos::parallel_reduce(
+          f_out.name(), RangePolicy(0, ncols),
+          KOKKOS_LAMBDA(const int i, ST &ls) { ls += v_w(i) * v_in(i); },
+          v_out);
+    } break;
+    case 2: {
+      auto v_in    = f_in.get_view<const ST **>();
+      auto v_out   = f_out.get_view<ST *>();
+      const int d1 = l_in.dim(1);
+      auto p       = ESU::get_default_team_policy(d1, ncols);
+      Kokkos::parallel_for(
+          f_out.name(), p, KOKKOS_LAMBDA(const TeamMember &tm) {
+            const int j = tm.league_rank();
+            Kokkos::parallel_reduce(
+                Kokkos::TeamVectorRange(tm, ncols),
+                [&](int i, ST &ac) { ac += v_w(i) * v_in(i, j); }, v_out(j));
+          });
+    } break;
+    case 3: {
+      auto v_in    = f_in.get_view<const ST ***>();
+      auto v_out   = f_out.get_view<ST **>();
+      const int d1 = l_in.dim(1);
+      const int d2 = l_in.dim(2);
+      auto p       = ESU::get_default_team_policy(d1 * d2, ncols);
+      Kokkos::parallel_for(
+          f_out.name(), p, KOKKOS_LAMBDA(const TeamMember &tm) {
+            const int idx = tm.league_rank();
+            const int j   = idx / d2;
+            const int k   = idx % d2;
+            Kokkos::parallel_reduce(
+                Kokkos::TeamVectorRange(tm, ncols),
+                [&](int i, ST &ac) { ac += v_w(i) * v_in(i, j, k); },
+                v_out(j, k));
+          });
+    } break;
+    default:
+      EKAT_ERROR_MSG("Error! Unsupported field rank.\n");
+  }
+
+  if(comm) {
+    // TODO: use device-side MPI calls
+    // TODO: the dev ptr causes problems; revisit this later
+    // TODO: doing cuda-aware MPI allreduce would be ~10% faster
+    Kokkos::fence();
+    f_out.sync_to_host();
+    comm->all_reduce(f_out.template get_internal_view_data<ST, Host>(),
+                     l_out.size(), MPI_SUM);
+    f_out.sync_to_dev();
   }
 }
 
