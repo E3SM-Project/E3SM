@@ -125,9 +125,6 @@ void horiz_contraction(const Field &f_out, const Field &f_in,
   const auto &l_out = f_out.get_header().get_identifier().get_layout();
 
   const auto &l_in = f_in.get_header().get_identifier().get_layout();
-  const auto &n_in = f_in.get_header().get_identifier().name();
-  const auto &u_in = f_in.get_header().get_identifier().get_units();
-  const auto &g_in = f_in.get_header().get_identifier().get_grid_name();
 
   const auto &l_w = weight.get_header().get_identifier().get_layout();
 
