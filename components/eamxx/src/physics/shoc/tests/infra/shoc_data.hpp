@@ -16,9 +16,9 @@ struct FortranData {
   using KT     = KokkosTypes<HostDevice>;
   using Scalar = Real;
 
-  using Array1 = typename KT::template lview<Scalar*>;
-  using Array2 = typename KT::template lview<Scalar**>;
-  using Array3 = typename KT::template lview<Scalar***>;
+  using Array1 = typename KT::template view_1d<Scalar>;
+  using Array2 = typename KT::template view_2d<Scalar>;
+  using Array3 = typename KT::template view_3d<Scalar>;
 
   Int shcol, nlev, nlevi, num_qtracers, nadv;
 

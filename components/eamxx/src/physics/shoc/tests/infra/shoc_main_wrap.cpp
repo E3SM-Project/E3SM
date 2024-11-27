@@ -36,10 +36,8 @@ Int shoc_main(FortranData& d) {
 
 namespace {
 
-using KT     = KokkosTypes<HostDevice>;
-using Scalar = Real;
-using Array2 = typename KT::template lview<Scalar**>;
-using Array3 = typename KT::template lview<Scalar***>;
+using Array2 = typename FortranData::Array2;
+using Array3 = typename FortranData::Array3;
 
 // Returns a string representation of the given 2D array.
 std::string array_as_string(const Array2& array)

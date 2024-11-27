@@ -16,11 +16,10 @@ namespace {
 // top and then flips everything, so we do the same.
 //------------------------------------------------------------------------
 
-using KT     = KokkosTypes<HostDevice>;
 using Scalar = Real;
-using Array1 = typename KT::template lview<Scalar*>;
-using Array2 = typename KT::template lview<Scalar**>;
-using Array3 = typename KT::template lview<Scalar***>;
+using Array1 = typename FortranData::Array1;
+using Array2 = typename FortranData::Array2;
+using Array3 = typename FortranData::Array3;
 
 // Flip all vertical data in the given array.
 void flip_vertically(Array2& array)
