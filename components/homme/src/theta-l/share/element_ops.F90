@@ -716,7 +716,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
 #ifdef DA
   real(real_kind), dimension(np,np,nlevp) :: dp3d_i, phiSA, phiDA, r3int, dpnh,&
                                              rinter, rhat, munew, muu
-  real(real_kind), dimension(np,np,nlev)  :: pnh,exner, dp3d, vtheta, pmid
+  real(real_kind), dimension(np,np,nlev)  :: dp3d, vtheta, pmid
   real(real_kind), dimension(np,np)       :: ptop
   real(real_kind), dimension(np,np,2,nlevp) :: v_i
   real(real_kind)                         :: r0
@@ -746,7 +746,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
 #endif
 #endif
 
-#if DA
+#ifdef DA
 
   r0=rearth
   dp3d = elem%state%dp3d(:,:,:,tl)
@@ -816,6 +816,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
      elem%state%phinh_i(:,:,:,tl) = phiDA
 
   enddo
+!endif DA
 #endif
 
   do tl = 2,timelevels

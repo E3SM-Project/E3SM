@@ -139,7 +139,7 @@ contains
 
     call t_startf('compute_stage_value_dirk')
 
-    ! DA is not affected
+    ! DA runs only in nonhydro mode, not affected by this
     if (theta_hydrostatic_mode) then
        itercount=0
        itererr=0
@@ -151,9 +151,8 @@ contains
        return
     endif
 
-       
     ! dirk settings
-    maxiter=100
+    maxiter=20
 #ifdef HOMMEXX_BFB_TESTING
     deltatol=1.0e-6_real_kind ! In BFB testing we can't converge due to calls of zeroulp
 #else
@@ -173,7 +172,6 @@ contains
        phi_np1 => elem(ie)%state%phinh_i(:,:,:,np1)
        w_np1 => elem(ie)%state%w_i(:,:,:,np1)
 
-       ! what part is this?
        if (alphadt_n0.ne.0d0) then ! add dt*alpha*S(un0) to the rhs
           dt3=alphadt_n0
           nt=n0
@@ -510,9 +508,6 @@ contains
     minjacerr=0
     if (hybrid%masterthread) write(iulog,*)'Running IMEX Jacobian unit test...'
     do ie=nets,nete
-
-print *, 'IN IMEX my ie is ', ie
-
        dp3d(:,:,:) = elem(ie)%state%dp3d(:,:,:,tl%n0)
        vtheta_dp(:,:,:) = elem(ie)%state%vtheta_dp(:,:,:,tl%n0)
        phi_i(:,:,:)         = elem(ie)%state%phinh_i(:,:,:,tl%n0)

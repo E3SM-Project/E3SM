@@ -161,10 +161,17 @@ implicit none
         if ( (vtheta_dp(i,j,k) < 0) .or. (dp3d(i,j,k)<0)  .or. &
              (dphi(i,j,k)>0)  ) then
            print *,'bad i,j,k=',i,j,k
+#ifdef DA
            print *,'vertical column: phi_i,dphi,dp3d,vtheta_dp'
            do k2=1,nlev
               write(*,'(i3,5f14.4)') k2,phi_i(i,j,k),dphi(i,j,k2),dp3d(i,j,k2),vtheta_dp(i,j,k2)
            enddo
+#else
+           print *,'vertical column: dphi,dp3d,vtheta_dp'
+           do k2=1,nlev
+              write(*,'(i3,4f14.4)') k2,dphi(i,j,k2),dp3d(i,j,k2),vtheta_dp(i,j,k2)
+           enddo
+#endif
            call abortmp('EOS bad state: d(phi), dp3d or vtheta_dp < 0')
         endif
      enddo
