@@ -1251,6 +1251,18 @@ module li_iceshelf_melt
          mean_TF(:) = 0.d0
          IS_area(:) = 0.d0
 
+         ! Check zOcean for valid values
+         if (minval(zOcean) == 0.0_RKIND) then
+            call mpas_log_write("Invalid value for zOcean. It should have negative values but min value of 0.0 was found", &
+                                MPAS_LOG_ERR)
+            err = ior(err, 1)
+         endif
+         if (maxval(zOcean) > 0.0_RKIND) then
+            call mpas_log_write("Invalid value for zOcean. It should have negative values but max value greater than 0.0 was found", &
+                                MPAS_LOG_ERR)
+            err = ior(err, 1)
+         endif
+
          do iCell = 1, nCellsSolve
 
             if ( li_mask_is_floating_ice(cellMask(iCell)) ) then
@@ -1259,14 +1271,8 @@ module li_iceshelf_melt
                do kk=1,nOceanLayers
                   if ( zOcean(kk) >= lowerSurface(iCell) )  ksup = kk
                enddo
-               kinf = ksup + 1
-               if ((zOcean(ksup)-zOcean(kinf)) == 0) then
-                  call mpas_log_write("iceshelf_melt_ismip6: Invalid value for zOcean. " // &
-                       "ksup=$i kinf=$i zOcean(ksup)=$r zOcean(kinf)=$r indexToCellID=$i lowerSurface=$r", MPAS_LOG_ERR, &
-                       intArgs=(/ksup, kinf, indexToCellID(iCell)/), &
-                       realArgs=(/zOcean(ksup), zOcean(kinf), lowerSurface(iCell) /) )
-                  err = ior(err, 1)
-               endif
+               kinf = min(ksup + 1, nOceanLayers)  ! Don't let exceed maximum index to avoid errors below
+
                !call mpas_log_write("kinf=$i, zOcean(kinf)=$r, TFocean=$r",realArgs=(/zOcean(kinf),TFocean(kinf,iCell)/), &
                !        intArgs=(/kinf/))
                !call mpas_log_write("ksup=$i, zOcean(ksup)=$r, TFocean=$r",realArgs=(/zOcean(ksup),TFocean(ksup,iCell)/), &
@@ -1284,7 +1290,7 @@ module li_iceshelf_melt
                if (ksup == 0) then
                   ! For depths shallower than shallowest layer center, use shallowest layer
                   TFdraft(iCell) = TFocean(1, iCell)
-               elseif (kinf > nOceanLayers) then
+               elseif (ksup == nOceanLayers) then
                   ! for depths below the deepest layer center, use deepest layer corrected for Tfreeze
                   TFdraft(iCell) = TFocean(nOceanLayers, iCell) - &
                      (zOcean(nOceanLayers) - lowerSurface(iCell)) * oceanFreezingTempDepthDependence
