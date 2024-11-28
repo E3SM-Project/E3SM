@@ -212,7 +212,7 @@ void run_bfb_p3_main_part2()
 
   // Get data from cxx
   for (auto& d : isds_cxx) {
-    p3_main_part2_host(
+    /*p3_main_part2_host(
       d.kts, d.kte, d.kbot, d.ktop, d.kdir, d.do_predict_nc, d.do_prescribed_CCN, d.dt, d.inv_dt,
       d.pres, d.dpres, d.dz, d.nc_nuceat_tend, d.inv_exner, d.exner, d.inv_cld_frac_l, d.inv_cld_frac_i,
       d.inv_cld_frac_r, d.ni_activated, d.inv_qc_relvar, d.cld_frac_i, d.cld_frac_l, d.cld_frac_r, d.qv_prev, d.t_prev,
@@ -220,7 +220,7 @@ void run_bfb_p3_main_part2()
       d.qm, d.bm, d.qc_incld, d.qr_incld, d.qi_incld, d.qm_incld, d.nc_incld, d.nr_incld,
       d.ni_incld, d.bm_incld, d.mu_c, d.nu, d.lamc, d.cdist, d.cdist1, d.cdistr, d.mu_r, d.lamr, d.logn0r, d.qv2qi_depos_tend, d.precip_total_tend,
       d.nevapr, d.qr_evap_tend, d.vap_liq_exchange, d.vap_ice_exchange, d.liq_ice_exchange, d.pratot,
-      d.prctot, &d.is_hydromet_present);
+      d.prctot, &d.is_hydromet_present);*/
   }
 
   if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {

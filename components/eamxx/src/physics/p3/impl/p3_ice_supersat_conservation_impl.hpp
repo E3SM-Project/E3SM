@@ -13,7 +13,7 @@ namespace p3 {
 
 template<typename S, typename D>
 KOKKOS_FUNCTION
-void Functions<S,D>::ice_supersat_conservation(Spack& qv2qi_vapdep_tend, Spack& qv2qi_nucleat_tend, const Spack& cld_frac_i, const Spack& qv, const Spack& qv_sat_i, const Spack& t_atm, const Real& dt, const Spack& qi2qv_sublim_tend, const Spack& qr2qv_evap_tend, const Smask& context)
+void Functions<S,D>::ice_supersat_conservation(Spack& qv2qi_vapdep_tend, Spack& qv2qi_nucleat_tend, Spack& qinuc_cnt, const Spack& cld_frac_i, const Spack& qv, const Spack& qv_sat_i, const Spack& t_atm, const Real& dt, const Spack& qi2qv_sublim_tend, const Spack& qr2qv_evap_tend, const bool& use_hetfrz_classnuc, const Smask& context)
 {
   constexpr Scalar qsmall = C::QSMALL;
   constexpr Scalar cp     = C::CP;
@@ -22,7 +22,13 @@ void Functions<S,D>::ice_supersat_conservation(Spack& qv2qi_vapdep_tend, Spack& 
   constexpr Scalar latice = C::LatIce;
   constexpr Scalar latsublim2 = (latvap+latice)*(latvap+latice);
 
-  const auto qv_sink = qv2qi_vapdep_tend + qv2qi_nucleat_tend; // in [kg/kg] cell-avg values
+  Spack qv_sink;
+  if(use_hetfrz_classnuc){
+      qv_sink = qv2qi_vapdep_tend + qv2qi_nucleat_tend + qinuc_cnt; // in [kg/kg] cell-avg values
+  }
+  else{
+      qv_sink = qv2qi_vapdep_tend + qv2qi_nucleat_tend; // in [kg/kg] cell-avg values
+  }
 
   const auto mask = qv_sink > qsmall && cld_frac_i > 1e-20 && context;
   if (mask.any()) {
@@ -36,6 +42,9 @@ void Functions<S,D>::ice_supersat_conservation(Spack& qv2qi_vapdep_tend, Spack& 
     const auto sink_gt_avail = qv_sink > qv_avail && mask;
     if (sink_gt_avail.any()) {
       const auto fract = qv_avail / qv_sink;
+      if(use_hetfrz_classnuc){
+         qinuc_cnt.set(sink_gt_avail, qinuc_cnt * fract);
+      }
       qv2qi_nucleat_tend.set(sink_gt_avail, qv2qi_nucleat_tend * fract);
       qv2qi_vapdep_tend.set(sink_gt_avail, qv2qi_vapdep_tend * fract);
     }
