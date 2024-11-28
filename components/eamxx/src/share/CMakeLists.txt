@@ -49,14 +49,10 @@ if (EAMXX_ENABLE_EXPERIMENTAL_CODE)
 endif()
 
 add_library(scream_share ${SHARE_SRC})
-set_target_properties(scream_share PROPERTIES
-  Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules
-)
 target_include_directories(scream_share PUBLIC
   ${SCREAM_SRC_DIR}
   ${SCREAM_BIN_DIR}/src
   ${CMAKE_CURRENT_SOURCE_DIR}
-  ${CMAKE_CURRENT_BINARY_DIR}/modules
 )
 
 if (GPTL_PATH)
