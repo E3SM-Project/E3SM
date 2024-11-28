@@ -91,6 +91,23 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   add_field<Updated> ("qv_prev_micro_step", scalar3d_layout_mid, kg/kg,        grid_name, ps);
   add_field<Updated> ("T_prev_micro_step",  scalar3d_layout_mid, K,            grid_name, ps);
 
+  // Input from MAM4xx-ACI for heterogeneous freezing calculations
+  constexpr auto cm = m / 100;
+
+  // units of number mixing ratios of tracers
+  constexpr auto frz_unit = 1 / (cm * cm * cm * s);
+  //  heterogeneous freezing by immersion nucleation [cm^-3 s^-1]
+  add_field<Required>("hetfrz_immersion_nucleation_tend", scalar3d_layout_mid,
+                      frz_unit, grid_name, ps);
+
+  // heterogeneous freezing by contact nucleation [cm^-3 s^-1]
+  add_field<Required>("hetfrz_contact_nucleation_tend", scalar3d_layout_mid, frz_unit,
+                      grid_name, ps);
+
+  // heterogeneous freezing by deposition nucleation [cm^-3 s^-1]
+  add_field<Required>("hetfrz_deposition_nucleation_tend", scalar3d_layout_mid,
+                      frz_unit, grid_name, ps);
+
   // Diagnostic Outputs: (all fields are just outputs w.r.t. P3)
   add_field<Updated>("precip_liq_surf_mass", scalar2d_layout,     kg/m2,     grid_name, "ACCUMULATED");
   add_field<Updated>("precip_ice_surf_mass", scalar2d_layout,     kg/m2,     grid_name, "ACCUMULATED");
@@ -313,6 +330,12 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   diag_inputs.cld_frac_r      = p3_preproc.cld_frac_r;
   diag_inputs.dz              = p3_preproc.dz;
   diag_inputs.inv_exner       = p3_preproc.inv_exner;
+  
+  // Inputs for the heteogeneous freezing
+  diag_inputs.hetfrz_immersion_nucleation_tend  = get_field_in("hetfrz_immersion_nucleation_tend").get_view<const Pack**>();
+  diag_inputs.hetfrz_contact_nucleation_tend    = get_field_in("hetfrz_contact_nucleation_tend").get_view<const Pack**>();
+  diag_inputs.hetfrz_deposition_nucleation_tend = get_field_in("hetfrz_deposition_nucleation_tend").get_view<const Pack**>();
+
   // --Diagnostic Outputs
   diag_outputs.diag_eff_radius_qc = get_field_out("eff_radius_qc").get_view<Pack**>();
   diag_outputs.diag_eff_radius_qi = get_field_out("eff_radius_qi").get_view<Pack**>();

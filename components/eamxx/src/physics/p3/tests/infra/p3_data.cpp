@@ -54,6 +54,9 @@ P3Data::P3Data (Int ncol_, Int nlev_)
   liq_ice_exchange   = Array2("sum of liq-ice phase change tendenices", ncol, nlev);
   vap_liq_exchange   = Array2("sum of vap-liq phase change tendenices", ncol, nlev);
   vap_ice_exchange   = Array2("sum of vap-ice phase change tendenices", ncol, nlev);
+  hetfrz_immersion_nucleation_tend  = Array2("hetfrz_immersion_nucleation_tend", ncol, nlev);
+  hetfrz_contact_nucleation_tend    = Array2("hetfrz_contact_nucleation_tend", ncol, nlev);
+  hetfrz_deposition_nucleation_tend = Array2("hetfrz_deposition_nucleation_tend", ncol, nlev);
 }
 
 P3DataIterator::P3DataIterator (const P3Data::Ptr& d) {

@@ -19,6 +19,7 @@ void BackToCellAverageData::randomize(std::mt19937_64& engine)
 {
   // Populate the struct with numbers between 0 and 1.
   std::uniform_real_distribution<Real> data_dist(0.0, 1.0);
+  std::uniform_int_distribution<int> bool_dist(0, 1);
   cld_frac_l = data_dist(engine);
   cld_frac_r = data_dist(engine);
   cld_frac_i = data_dist(engine);
@@ -53,6 +54,13 @@ void BackToCellAverageData::randomize(std::mt19937_64& engine)
   qv2qi_nucleat_tend = data_dist(engine);
   ni_nucleat_tend = data_dist(engine);
   qc2qi_berg_tend = data_dist(engine);
+  ncheti_cnt = data_dist(engine);
+  qcheti_cnt = data_dist(engine);
+  nicnt = data_dist(engine);
+  qicnt = data_dist(engine);
+  ninuc_cnt = data_dist(engine);
+  qinuc_cnt = data_dist(engine);
+  context = bool_dist(engine);
 }
 
 void CalcLiqRelaxationData::randomize(std::mt19937_64& engine)
@@ -161,6 +169,7 @@ P3MainPart2Data::P3MainPart2Data(
   Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
   bool do_predict_nc_, bool do_prescribed_CCN_, Real dt_, Real, bool) :
   PhysicsTestData( { {(kte_ - kts_) + 1} }, { {
+    &hetfrz_immersion_nucleation_tend, &hetfrz_contact_nucleation_tend, &hetfrz_deposition_nucleation_tend,
     &pres, &dpres, &dz, &nc_nuceat_tend, &inv_exner, &exner, &inv_cld_frac_l, &inv_cld_frac_i, &inv_cld_frac_r, &ni_activated, &inv_qc_relvar, &cld_frac_i, &cld_frac_l, &cld_frac_r, &qv_prev, &t_prev,
     &T_atm, &rho, &inv_rho, &qv_sat_l, &qv_sat_i, &qv_supersat_i, &rhofacr, &rhofaci, &acn,
     &qv, &th_atm, &qc, &nc, &qr, &nr, &qi, &ni, &qm, &bm, &latent_heat_vapor, &latent_heat_sublim, &latent_heat_fusion, &qc_incld, &qr_incld,
@@ -189,36 +198,43 @@ P3MainPart3Data::P3MainPart3Data(
 ///////////////////////////////////////////////////////////////////////////////
 
 P3MainData::P3MainData(
-  Int its_, Int ite_, Int kts_, Int kte_, Int it_, Real dt_, bool do_predict_nc_, bool do_prescribed_CCN_, Real) :
+  Int its_, Int ite_, Int kts_, Int kte_, Int it_, Real dt_, bool do_predict_nc_, bool do_prescribed_CCN_, bool use_hetfrz_classnuc_, Real) :
   PhysicsTestData( { {(ite_ - its_) + 1, (kte_ - kts_) + 1}, {(ite_ - its_) + 1, (kte_ - kts_) + 2} }, { {
     &pres, &dz, &nc_nuceat_tend, &nccn_prescribed, &ni_activated, &dpres, &inv_exner, &cld_frac_i, &cld_frac_l, &cld_frac_r,
-    &inv_qc_relvar, &qc, &nc, &qr, &nr, &qi, &qm, &ni, &bm, &qv, &th_atm, &qv_prev, &t_prev,
+    &inv_qc_relvar, &qc, &nc, &qr, &nr, &qi, &qm, &ni, &bm, &qv, &th_atm, &qv_prev, &t_prev, &hetfrz_immersion_nucleation_tend,
+    &hetfrz_contact_nucleation_tend, &hetfrz_deposition_nucleation_tend,
     &diag_eff_radius_qc, &diag_eff_radius_qi, &diag_eff_radius_qr, &rho_qi, &mu_c, &lamc, &qv2qi_depos_tend, &precip_total_tend, &nevapr,
     &qr_evap_tend, &liq_ice_exchange, &vap_liq_exchange, &vap_ice_exchange, &precip_liq_flux,
     &precip_ice_flux},
     {&precip_liq_surf, &precip_ice_surf} }), // these two are (ni, nk+1)
-  its(its_), ite(ite_), kts(kts_), kte(kte_), it(it_), dt(dt_), do_predict_nc(do_predict_nc_), do_prescribed_CCN(do_prescribed_CCN_)
+  its(its_), ite(ite_), kts(kts_), kte(kte_), it(it_), dt(dt_), do_predict_nc(do_predict_nc_), do_prescribed_CCN(do_prescribed_CCN_),
+  use_hetfrz_classnuc(use_hetfrz_classnuc_)
 {}
 
 void IceSupersatConservationData::randomize(std::mt19937_64& engine)
 {
   std::uniform_real_distribution<Real> data_dist(0.0, 1.0);
+  std::uniform_int_distribution<int> bool_dist(0, 1);
 
-  cld_frac_i         = data_dist(engine);
-  qv                 = data_dist(engine);
-  qv_sat_i           = data_dist(engine);
-  latent_heat_sublim = data_dist(engine);
-  t_atm              = data_dist(engine);
-  dt                 = data_dist(engine);
-  qi2qv_sublim_tend  = data_dist(engine);
-  qr2qv_evap_tend    = data_dist(engine);
-  qidep              = data_dist(engine);
-  qinuc              = data_dist(engine);
+  cld_frac_i          = data_dist(engine);
+  qv                  = data_dist(engine);
+  qv_sat_i            = data_dist(engine);
+  latent_heat_sublim  = data_dist(engine);
+  t_atm               = data_dist(engine);
+  dt                  = data_dist(engine);
+  qi2qv_sublim_tend   = data_dist(engine);
+  qr2qv_evap_tend     = data_dist(engine);
+  qidep               = data_dist(engine);
+  qinuc               = data_dist(engine);
+  qinuc_cnt           = data_dist(engine);
+  context             = bool_dist(engine);
+  use_hetfrz_classnuc = bool_dist(engine);
 }
 
 void NcConservationData::randomize(std::mt19937_64& engine)
 {
   std::uniform_real_distribution<Real> data_dist(0.0, 1.0);
+  std::uniform_int_distribution<int> bool_dist(0, 1);
 
   nc                       = data_dist(engine);
   nc_selfcollect_tend      = data_dist(engine);
@@ -227,6 +243,10 @@ void NcConservationData::randomize(std::mt19937_64& engine)
   nc2ni_immers_freeze_tend = data_dist(engine);
   nc_accret_tend           = data_dist(engine);
   nc2nr_autoconv_tend      = data_dist(engine);
+  ncheti_cnt               = data_dist(engine);
+  nicnt                    = data_dist(engine);
+  use_hetfrz_classnuc      = bool_dist(engine);
+  context                  = bool_dist(engine);
 }
 
 void NrConservationData::randomize(std::mt19937_64& engine)
@@ -249,15 +269,21 @@ void NrConservationData::randomize(std::mt19937_64& engine)
 void NiConservationData::randomize(std::mt19937_64& engine)
 {
   std::uniform_real_distribution<Real> data_dist(0.0, 1.0);
+  std::uniform_int_distribution<int> bool_dist(0, 1);
 
   ni                       = data_dist(engine);
   ni_nucleat_tend          = data_dist(engine);
   nr2ni_immers_freeze_tend = data_dist(engine);
   nc2ni_immers_freeze_tend = data_dist(engine);
+  ncheti_cnt               = data_dist(engine);
+  nicnt                    = data_dist(engine);
+  ninuc_cnt                = data_dist(engine);
   dt                       = data_dist(engine);
   ni2nr_melt_tend          = data_dist(engine);
   ni_sublim_tend           = data_dist(engine);
   ni_selfcollect_tend      = data_dist(engine);
+  use_hetfrz_classnuc      = bool_dist(engine);
+  context                  = bool_dist(engine);
 }
 
 void PreventLiqSupersaturationData::randomize(std::mt19937_64& engine)
@@ -947,6 +973,7 @@ void p3_main_part1_host(
 
 void p3_main_part2_host(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir, bool do_predict_nc, bool do_prescribed_CCN, Real dt, Real inv_dt,
+  bool use_hetfrz_classnuc, Real *hetfrz_immersion_nucleation_tend, Real *hetfrz_contact_nucleation_tend, Real *hetfrz_deposition_nucleation_tend,
   Real* pres, Real* dpres, Real* dz, Real* nc_nuceat_tend, Real* inv_exner, Real* exner, Real* inv_cld_frac_l, Real* inv_cld_frac_i,
   Real* inv_cld_frac_r, Real* ni_activated, Real* inv_qc_relvar, Real* cld_frac_i, Real* cld_frac_l, Real* cld_frac_r, Real* qv_prev, Real* t_prev,
   Real* T_atm, Real* rho, Real* inv_rho, Real* qv_sat_l, Real* qv_sat_i, Real* qv_supersat_i, Real* rhofacr, Real* rhofaci,
@@ -980,7 +1007,8 @@ void p3_main_part2_host(
   // Set up views
   std::vector<view_1d> temp_d(P3MainPart2Data::NUM_ARRAYS-3);
 
-  ekat::host_to_device({pres, dpres, dz, nc_nuceat_tend, inv_exner, exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i, cld_frac_l, cld_frac_r,
+  ekat::host_to_device({hetfrz_immersion_nucleation_tend, hetfrz_contact_nucleation_tend, hetfrz_deposition_nucleation_tend,
+        pres, dpres, dz, nc_nuceat_tend, inv_exner, exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i, cld_frac_l, cld_frac_r,
         T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn,
         qv, th_atm, qc, nc, qr, nr, qi, ni, qm, bm, qc_incld, qr_incld,
         qi_incld, qm_incld, nc_incld, nr_incld, ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1,
@@ -991,6 +1019,9 @@ void p3_main_part2_host(
 
   int current_index = 0;
   view_1d
+    hetfrz_immersion_nucleation_tend_d(temp_d[current_index++]), 
+    hetfrz_contact_nucleation_tend_d(temp_d[current_index++]), 
+    hetfrz_deposition_nucleation_tend_d(temp_d[current_index++]),
     pres_d              (temp_d[current_index++]),
     dpres_d             (temp_d[current_index++]),
     dz_d                (temp_d[current_index++]),
@@ -1064,7 +1095,9 @@ void p3_main_part2_host(
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
 
     P3F::p3_main_part2(
-      team, nk_pack, max_total_ni, do_predict_nc, do_prescribed_CCN, dt, inv_dt, dnu, ice_table_vals, collect_table_vals, revap_table_vals,
+      team, nk_pack, max_total_ni, do_predict_nc, do_prescribed_CCN, dt, inv_dt, 
+      use_hetfrz_classnuc, hetfrz_immersion_nucleation_tend_d, hetfrz_contact_nucleation_tend_d, hetfrz_deposition_nucleation_tend_d, 
+      dnu, ice_table_vals, collect_table_vals, revap_table_vals,
       pres_d, dpres_d, dz_d, nc_nuceat_tend_d, inv_exner_d, exner_d, inv_cld_frac_l_d,
       inv_cld_frac_i_d, inv_cld_frac_r_d, ni_activated_d, inv_qc_relvar_d, cld_frac_i_d, cld_frac_l_d, cld_frac_r_d,
       qv_prev_d, t_prev_d, t_d, rho_d, inv_rho_d, qv_sat_l_d, qv_sat_i_d, qv_supersat_i_d, rhofacr_d, rhofaci_d, acn_d,
@@ -1216,9 +1249,10 @@ Int p3_main_host(
   Real* qi, Real* qm, Real* ni, Real* bm, Real* pres, Real* dz,
   Real* nc_nuceat_tend, Real* nccn_prescribed, Real* ni_activated, Real* inv_qc_relvar, Int it, Real* precip_liq_surf,
   Real* precip_ice_surf, Int its, Int ite, Int kts, Int kte, Real* diag_eff_radius_qc,
-  Real* diag_eff_radius_qi, Real* diag_eff_radius_qr, Real* rho_qi, bool do_predict_nc, bool do_prescribed_CCN, Real* dpres, Real* inv_exner,
+  Real* diag_eff_radius_qi, Real* diag_eff_radius_qr, Real* rho_qi, bool do_predict_nc, bool do_prescribed_CCN, bool use_hetfrz_classnuc, Real* dpres, Real* inv_exner,
   Real* qv2qi_depos_tend, Real* precip_liq_flux, Real* precip_ice_flux, Real* cld_frac_r, Real* cld_frac_l, Real* cld_frac_i,
-  Real* liq_ice_exchange, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* qv_prev, Real* t_prev)
+  Real* liq_ice_exchange, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* qv_prev, Real* t_prev,
+  Real* hetfrz_immersion_nucleation_tend, Real* hetfrz_contact_nucleation_tend, Real* hetfrz_deposition_nucleation_tend)
 {
   using P3F  = Functions<Real, DefaultDevice>;
 
@@ -1248,7 +1282,10 @@ Int p3_main_host(
     pres, dz, nc_nuceat_tend, nccn_prescribed, ni_activated, dpres, inv_exner, cld_frac_i, cld_frac_l, cld_frac_r, inv_qc_relvar,
     qc, nc, qr, nr, qi, qm, ni, bm, qv, th_atm, qv_prev, t_prev, diag_eff_radius_qc, diag_eff_radius_qi, diag_eff_radius_qr,
     rho_qi, qv2qi_depos_tend,
-    liq_ice_exchange, vap_liq_exchange, vap_ice_exchange, precip_liq_flux, precip_ice_flux, precip_liq_surf, precip_ice_surf
+    liq_ice_exchange, vap_liq_exchange, vap_ice_exchange, 
+    hetfrz_immersion_nucleation_tend, hetfrz_contact_nucleation_tend, hetfrz_deposition_nucleation_tend,
+    precip_liq_flux, precip_ice_flux, 
+    precip_liq_surf, precip_ice_surf
   };
 
   int dim_sizes_len = dim1_sizes.size();
@@ -1274,7 +1311,7 @@ Int p3_main_host(
     nccn_prescribed_d      (temp_d[counter++]),
     ni_activated_d         (temp_d[counter++]),
     dpres_d                (temp_d[counter++]), //5
-    inv_exner_d                (temp_d[counter++]),
+    inv_exner_d            (temp_d[counter++]),
     cld_frac_i_d           (temp_d[counter++]),
     cld_frac_l_d           (temp_d[counter++]),
     cld_frac_r_d           (temp_d[counter++]),
@@ -1299,10 +1336,13 @@ Int p3_main_host(
     liq_ice_exchange_d     (temp_d[counter++]),
     vap_liq_exchange_d     (temp_d[counter++]),
     vap_ice_exchange_d     (temp_d[counter++]), //30
+    hetfrz_immersion_nucleation_tend_d(temp_d[counter++]), 
+    hetfrz_contact_nucleation_tend_d(temp_d[counter++]),
+    hetfrz_deposition_nucleation_tend_d(temp_d[counter++]),
     precip_liq_flux_d      (temp_d[counter++]),
-    precip_ice_flux_d      (temp_d[counter++]),
+    precip_ice_flux_d      (temp_d[counter++]), // 35
     precip_liq_surf_temp_d (temp_d[counter++]),
-    precip_ice_surf_temp_d (temp_d[counter++]); //34
+    precip_ice_surf_temp_d (temp_d[counter++]); 
 
   // Special cases: precip_liq_surf=1d<scalar>(ni), precip_ice_surf=1d<scalar>(ni), col_location=2d<scalar>(nj, 3)
   sview_1d precip_liq_surf_d("precip_liq_surf_d", nj), precip_ice_surf_d("precip_ice_surf_d", nj);
@@ -1328,7 +1368,7 @@ Int p3_main_host(
                                     ni_d, bm_d, qv_d, th_atm_d};
   P3F::P3DiagnosticInputs diag_inputs{nc_nuceat_tend_d, nccn_prescribed_d, ni_activated_d, inv_qc_relvar_d, cld_frac_i_d,
                                       cld_frac_l_d, cld_frac_r_d, pres_d, dz_d, dpres_d,
-                                      inv_exner_d, qv_prev_d, t_prev_d};
+                                      inv_exner_d, qv_prev_d, t_prev_d, hetfrz_immersion_nucleation_tend_d, hetfrz_contact_nucleation_tend_d, hetfrz_deposition_nucleation_tend_d};
   P3F::P3DiagnosticOutputs diag_outputs{qv2qi_depos_tend_d, precip_liq_surf_d,
                                         precip_ice_surf_d, diag_eff_radius_qc_d, diag_eff_radius_qi_d, diag_eff_radius_qr_d,
                                         rho_qi_d,precip_liq_flux_d, precip_ice_flux_d, precip_total_tend_d, nevapr_d};
@@ -1395,8 +1435,8 @@ Int p3_main_host(
     liq_ice_exchange_d, vap_liq_exchange_d, vap_ice_exchange_d,
     precip_liq_flux_d, precip_ice_flux_d, precip_liq_surf_temp_d, precip_ice_surf_temp_d
   };
-  std::vector<size_t> dim1_sizes_out(P3MainData::NUM_ARRAYS - 13, nj);
-  std::vector<size_t> dim2_sizes_out(P3MainData::NUM_ARRAYS - 13, nk);
+  std::vector<size_t> dim1_sizes_out(P3MainData::NUM_ARRAYS - 16, nj);
+  std::vector<size_t> dim2_sizes_out(P3MainData::NUM_ARRAYS - 16, nk);
   int dim_sizes_out_len = dim1_sizes_out.size();
   dim2_sizes_out[dim_sizes_out_len-4] = nk+1; // precip_liq_flux
   dim2_sizes_out[dim_sizes_out_len-3] = nk+1; // precip_ice_flux

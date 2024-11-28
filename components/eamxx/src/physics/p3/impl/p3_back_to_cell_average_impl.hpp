@@ -27,7 +27,8 @@ void Functions<S,D>
   Spack& nr_collect_tend, Spack& ni_selfcollect_tend, Spack& qv2qi_vapdep_tend,
   Spack& nr2ni_immers_freeze_tend, Spack& ni_sublim_tend, Spack& qv2qi_nucleat_tend,
   Spack& ni_nucleat_tend, Spack& qc2qi_berg_tend,
-  const Smask& context)
+  Spack& ncheti_cnt, Spack& qcheti_cnt, Spack& nicnt, Spack& qicnt, Spack& ninuc_cnt,
+  Spack& qinuc_cnt, const Smask& context)
 {
   Spack ir_cldm, il_cldm, lr_cldm;
   ir_cldm = min(cld_frac_i,cld_frac_r); // Intersection of ICE and RAIN cloud
@@ -69,6 +70,13 @@ void Functions<S,D>
   nr2ni_immers_freeze_tend.set(context, nr2ni_immers_freeze_tend * cld_frac_r);   // Change in number due to immersion freezing of rain
   ni_sublim_tend.set(context, ni_sublim_tend * cld_frac_i);    // Number change due to sublimation of ice
   qc2qi_berg_tend.set(context, qc2qi_berg_tend * il_cldm); // Bergeron process
+
+  ncheti_cnt.set(context,ncheti_cnt*cld_frac_l);
+  qcheti_cnt.set(context, qcheti_cnt*cld_frac_l);
+  nicnt.set(context, nicnt*cld_frac_l);
+  qicnt.set(context, qicnt*cld_frac_l);
+  ninuc_cnt.set(context, ninuc_cnt*cld_frac_l);
+  qinuc_cnt.set(context, qinuc_cnt*cld_frac_l);
 
   // AaronDonahue: These variables are related to aerosol activation and their usage will be changed in a later PR.
   //qv2qi_nucleat_tend = qv2qi_nucleat_tend;           // Deposition and condensation-freezing nucleation, already cell-averaged
