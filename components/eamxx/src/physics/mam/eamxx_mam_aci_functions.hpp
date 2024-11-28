@@ -205,6 +205,7 @@ void call_function_dropmixnuc(
     const MAMAci::view_2d wsub,
     const MAMAci::view_2d cloud_frac, const MAMAci::view_2d cloud_frac_prev,
     const mam_coupling::AerosolState &dry_aero, const int nlev,
+    const bool &enable_aero_vertical_mix,
 
     // Following outputs are all diagnostics
     MAMAci::view_2d coltend[mam4::ndrop::ncnst_tot],
@@ -319,6 +320,7 @@ void call_function_dropmixnuc(
   //---------------------------------------------------------------------------
   //---------------------------------------------------------------------------
 
+  const bool local_enable_aero_vertical_mix = enable_aero_vertical_mix;
   Kokkos::parallel_for("scream::call_function_dropmixnuc",
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
         const int icol = team.league_rank();
@@ -417,10 +419,10 @@ void call_function_dropmixnuc(
             spechygro, lmassptr_amode, num2vol_ratio_min_nmodes,
             num2vol_ratio_max_nmodes, numptr_amode, nspec_amode, exp45logsig,
             alogsig, aten, mam_idx, mam_cnst_idx,
-            ekat::subview(qcld, icol),             // out
-            ekat::subview(wsub, icol),             // in
-            ekat::subview(cloud_frac_prev, icol),  // in
-            qqcw_view,                             // inout
+            local_enable_aero_vertical_mix, ekat::subview(qcld, icol),  // out
+            ekat::subview(wsub, icol),                                  // in
+            ekat::subview(cloud_frac_prev, icol),                       // in
+            qqcw_view,                                                  // inout
             ptend_q_view, ekat::subview(tendnd, icol),
             ekat::subview(factnum, icol), ekat::subview(ndropcol, icol),
             ekat::subview(ndropmix, icol), ekat::subview(nsource, icol),

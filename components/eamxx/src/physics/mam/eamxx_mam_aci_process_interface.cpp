@@ -40,6 +40,9 @@ MAMAci::MAMAci(const ekat::Comm &comm, const ekat::ParameterList &params)
   // Asserts for the runtime or namelist options
   EKAT_REQUIRE_MSG(m_params.isParameter("wsubmin"),
                    "ERROR: wsubmin is missing from mam_aci parameter list.");
+  EKAT_REQUIRE_MSG(m_params.isParameter("enable_aero_vertical_mix"),
+                   "ERROR: enable_aero_vertical_mixing is missing from mam_aci "
+                   "parameter list.");
   EKAT_REQUIRE_MSG(
       m_params.isParameter("top_level_mam4xx"),
       "ERROR: top_level_mam4xx is missing from mam_aci parameter list.");
@@ -271,8 +274,9 @@ void MAMAci::initialize_impl(const RunType run_type) {
   // ## Runtime options
   // ------------------------------------------------------------------------
 
-  wsubmin_ = m_params.get<double>("wsubmin");
-  top_lev_ = m_params.get<int>("top_level_mam4xx");
+  wsubmin_                  = m_params.get<double>("wsubmin");
+  enable_aero_vertical_mix_ = m_params.get<bool>("enable_aero_vertical_mix");
+  top_lev_                  = m_params.get<int>("top_level_mam4xx");
 
   // ------------------------------------------------------------------------
   // Input fields read in from IC file, namelist or other processes
@@ -600,7 +604,7 @@ void MAMAci::run_impl(const double dt) {
   //  aerosols tendencies
   call_function_dropmixnuc(
       team_policy, dt, dry_atm_, rpdel_, kvh_mid_, kvh_int_, wsub_, cloud_frac_,
-      cloud_frac_prev_, dry_aero_, nlev_,
+      cloud_frac_prev_, dry_aero_, nlev_, enable_aero_vertical_mix_,
       // output
       coltend_, coltend_cw_, qcld_, ndropcol_, ndropmix_, nsource_, wtke_, ccn_,
       // ## output to be used by the other processes ##
