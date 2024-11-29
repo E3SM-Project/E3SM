@@ -105,8 +105,11 @@ struct Baseline {
   }
 
   Int run_and_cmp (const std::string& filename, const double& tol, bool no_baseline) {
-    auto fid = ekat::FILEPtr(fopen(filename.c_str(), "r"));
-    EKAT_REQUIRE_MSG( fid, "generate_baseline can't read " << filename);
+    ekat::FILEPtr fid;
+    if (!no_baseline) {
+      fid = ekat::FILEPtr(fopen(filename.c_str(), "r"));
+      EKAT_REQUIRE_MSG( fid, "generate_baseline can't read " << filename);
+    }
     Int nerr = 0, ne;
     int case_num = 0;
     for (auto ps : params_) {

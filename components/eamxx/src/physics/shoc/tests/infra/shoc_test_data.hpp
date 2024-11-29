@@ -860,12 +860,11 @@ struct VdShocDecompandSolveData : public PhysicsTestData {
   Real *kv_term, *tmpi, *rdp_zt, *flux;
 
   // Inputs/Outputs
-  Real *du, *dl, *d;
-  Real *var, *rhs;
+  Real *var;
 
   VdShocDecompandSolveData(Int shcol_, Int nlev_, Int nlevi_, Real dtime_, Int n_rhs_) :
     PhysicsTestData({{shcol_}, {shcol_, nlev_},               {shcol_, nlevi_},  {shcol_, nlev_, n_rhs_}},
-                    {{&flux}, {&rdp_zt, &du, &dl, &d, &rhs}, {&kv_term, &tmpi}, {&var }                }, {}),
+                    {{&flux}, {&rdp_zt}, {&kv_term, &tmpi}, {&var }                }, {}),
                     shcol(shcol_), nlev(nlev_), nlevi(nlevi_), n_rhs(n_rhs_), dtime(dtime_) {}
 
   PTD_STD_DEF(VdShocDecompandSolveData, 5, shcol, nlev, nlevi, dtime, n_rhs);
@@ -1080,8 +1079,8 @@ Int shoc_main_host(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npb
 
 void pblintd_height_host(Int shcol, Int nlev, Int npbl, Real* z, Real* u, Real* v, Real* ustar, Real* thv, Real* thv_ref, Real* pblh, Real* rino, bool* check);
 
-void vd_shoc_decomp_and_solve_host(Int shcol, Int nlev, Int nlevi, Int num_rhs, Real* kv_term, Real* tmpi, Real* rdp_zt, Real dtime,
-                                Real* flux, Real* var);
+void vd_shoc_decomp_and_solve_host(Int shcol, Int nlev, Int nlevi, Int num_rhs, Real dtime, Real* kv_term, Real* tmpi, Real* rdp_zt, Real* flux, Real* var);
+
 
 void pblintd_surf_temp_host(Int shcol, Int nlev, Int nlevi, Real* z, Real* ustar, Real* obklen, Real* kbfs, Real* thv, Real* tlv, Real* pblh, bool* check, Real* rino);
 

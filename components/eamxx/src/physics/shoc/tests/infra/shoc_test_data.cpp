@@ -283,23 +283,7 @@ void pblintd_height(PblintdHeightData& d)
 
 void vd_shoc_decomp_and_solve(VdShocDecompandSolveData& d)
 {
-  // Call decomp subroutine
-  // vd_shoc_decomp_host(d.shcol, d.nlev, d.nlevi, d.kv_term, d.tmpi, d.rdp_zt, d.dtime, d.flux, d.du, d.dl, d.d);
-  // // Call solver for each problem. The `var` array represents 3d
-  // // data with an entry per (shcol, nlev, n_rhs). Fortran requires
-  // // 2d data (shcol, nlev) for each rhs.
-  // const Int size = d.shcol*d.nlev;
-  // for (Int n=0; n<d.n_rhs; ++n) {
-  //   // Copy var to rhs
-  //   for(Int s=0; s<size; ++s) {
-  //     d.rhs[s] = d.var[n*size+s];
-  //   }
-  //   vd_shoc_solve_host(d.shcol, d.nlev, d.du, d.dl, d.d, d.rhs);
-  //   // Copy rhs to var
-  //   for(Int s=0; s<size; ++s) {
-  //     d.var[n*size+s] = d.rhs[s];
-  //   }
-  // }
+  vd_shoc_decomp_and_solve_host(d.shcol, d.nlev, d.nlevi, d.n_rhs, d.dtime, d.kv_term, d.tmpi, d.rdp_zt, d.flux, d.var);
 }
 
 void pblintd_surf_temp(PblintdSurfTempData& d)
@@ -2527,8 +2511,7 @@ void pblintd_height_host(Int shcol, Int nlev, Int npbl, Real* z, Real* u, Real* 
   ScreamDeepCopy::copy_to_host({check}, shcol, out_bool_1d_views);
 }
 
-void vd_shoc_decomp_and_solve_host(Int shcol, Int nlev, Int nlevi, Int num_rhs, Real* kv_term, Real* tmpi, Real* rdp_zt, Real dtime,
-                                Real* flux, Real* var)
+void vd_shoc_decomp_and_solve_host(Int shcol, Int nlev, Int nlevi, Int num_rhs, Real dtime, Real* kv_term, Real* tmpi, Real* rdp_zt, Real* flux, Real* var)
 {
   using SHF = Functions<Real, DefaultDevice>;
 
