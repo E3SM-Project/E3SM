@@ -189,7 +189,7 @@ end subroutine linoz_readnl
                               mw_air => mwdry
     use cam_history,   only : outfld
     use linoz_data,    only : fields, o3_clim_ndx,t_clim_ndx,o3col_clim_ndx,PmL_clim_ndx,dPmL_dO3_ndx,&
-                                      dPmL_dT_ndx,dPmL_dO3col_ndx,cariolle_pscs_ndx
+                                      dPmL_dT_ndx,dPmL_dO3col_ndx,cariolle_pscs_ndx,o3_qboi_fixed_ndx !!Jinbo Xie
     !
     ! dummy arguments
     !
@@ -221,6 +221,9 @@ end subroutine linoz_readnl
     real(r8), dimension(:,:), pointer :: linoz_dPmL_dT
     real(r8), dimension(:,:), pointer :: linoz_dPmL_dO3col
     real(r8), dimension(:,:), pointer :: linoz_cariolle_psc
+    !!Jinbo Xie
+    real(r8), dimension(:,:), pointer :: linoz_o3_qboi_fixed
+    !!Jinbo Xie
 
     !
     ! parameters
@@ -249,6 +252,9 @@ end subroutine linoz_readnl
     linoz_dPmL_dT      => fields(dPmL_dT_ndx)      %data(:,:,lchnk )
     linoz_dPmL_dO3col  => fields(dPmL_dO3col_ndx)  %data(:,:,lchnk )
     linoz_cariolle_psc => fields(cariolle_pscs_ndx)%data(:,:,lchnk )
+    !!Jinbo Xie
+    linoz_o3_qboi_fixed=> fields(o3_qboi_fixed_ndx)%data(:,:,lchnk )
+    !!Jinbo Xie
 
     !
     ! initialize output arrays
@@ -352,10 +358,13 @@ end subroutine linoz_readnl
           !
           ! update ozone vmr
           !
-          o3_vmr(i,k) = o3_new
-
+          o3_vmr(i,k) = linoz_o3_qboi_fixed(i,k)!!o3_new Jinbo Xie
+          !write(iulog,*) "Jinbo Xie o3_vmr(i,k)",o3_vmr(i,k)
        end do LOOP_LEV
     end do LOOP_COL
+    !Jinbo Xie
+    write(iulog,*) 'Set ozone for linoz_mam: o3_qboi_fixed_ndx =',o3_qboi_fixed_ndx
+    !Jinbo Xie
     !
     ! output
     !

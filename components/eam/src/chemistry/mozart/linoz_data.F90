@@ -29,7 +29,7 @@ module linoz_data
   type(trfile) :: file
 
   logical :: has_linoz_data = .false.
-  integer, parameter, public :: N_FLDS = 8
+  integer, parameter, public :: N_FLDS = 9 !8 Jinbo Xie
   integer :: number_flds
 
   character(len=256) :: filename = ''
@@ -43,11 +43,13 @@ module linoz_data
 
   character(len=16), dimension(N_FLDS), parameter :: fld_names = & ! data field names
        (/'o3_clim         ','t_clim          ','o3col_clim      ','PmL_clim        ', &
-         'dPmL_dO3        ','dPmL_dT         ','dPmL_dO3col     ','cariolle_pscs   '/)
+         'dPmL_dO3        ','dPmL_dT         ','dPmL_dO3col     ','cariolle_pscs   ', &
+         'o3_qboi_fixed   '/)!!Jinbo Xie
 
   character(len=16), dimension(N_FLDS), parameter :: fld_units = & ! data field names
        (/'vmr             ','K               ','Dobson Units    ','mr/s            ', &
-         '/s              ','mr/K            ','mr/DU           ','/s              '/)
+         '/s              ','mr/K            ','mr/DU           ','/s              ', &
+         'vmr             '/)!!Jinbo Xie
 
   integer :: index_map(N_FLDS)
 
@@ -60,6 +62,9 @@ module linoz_data
   integer, public, parameter :: dPmL_dT_ndx = 6
   integer, public, parameter :: dPmL_dO3col_ndx = 7
   integer, public, parameter :: cariolle_pscs_ndx = 8
+  !!Jinbo Xie
+  integer, public, parameter :: o3_qboi_fixed_ndx = 9
+  !!Jinbo Xie
 
 contains
 

@@ -507,18 +507,17 @@ contains
 !      end do
 !    end if
 
-    if ( chem_name == 'linoz_mam3'.or.chem_name == 'linoz_mam4_resus'.or.chem_name == 'linoz_mam4_resus_mom' &
-       .or.chem_name == 'linoz_mam4_resus_soag'.or.chem_name == 'linoz_mam4_resus_mom_soag' &
-       .or.chem_name=='chemuci_linozv3_mam5_vbs' ) then
-     write(iulog,*) 'Set ozone for linoz_mam: inv_ndx_o3_qboi_fixed =',inv_ndx_o3_qboi_fixed
-      do k = 1, pver                !Following loop logic from below.  However, reordering loops can get rid of IF statement.
-         do i = 1, ncol
-              vmr(i,k,o3_ndx) = invariants(i,k,inv_ndx_o3_qboi_fixed) / invariants(i,k,inv_ndx_m)   ! O3 and o3_qboi_fixed
-              !write(iulog,*) "Jinbo Xie k,i,invariants(i,k,inv_ndx_o3_qboi_fixed),invariants(i,k,inv_ndx_m),vmr(i,k,o3_ndx)",k,i,invariants(i,k,inv_ndx_o3_qboi_fixed),invariants(i,k,inv_ndx_m),vmr(i,k,o3_ndx)
-         end do
-     
-      end do
-    end if
+!    if ( chem_name == 'linoz_mam3'.or.chem_name == 'linoz_mam4_resus'.or.chem_name == 'linoz_mam4_resus_mom' &
+!       .or.chem_name == 'linoz_mam4_resus_soag'.or.chem_name == 'linoz_mam4_resus_mom_soag' &
+!       .or.chem_name=='chemuci_linozv3_mam5_vbs' ) then
+!     write(iulog,*) 'Set ozone for linoz_mam: inv_ndx_o3_qboi_fixed =',inv_ndx_o3_qboi_fixed
+!      do k = 1, pver                !Following loop logic from below.  However, reordering loops can get rid of IF statement.
+!         do i = 1, ncol
+!              vmr(i,k,o3_ndx) = invariants(i,k,inv_ndx_o3_qboi_fixed) / invariants(i,k,inv_ndx_m)   ! O3 and !o3_qboi_fixed
+!              !write(iulog,*) "Jinbo Xie k,i,invariants(i,k,inv_ndx_o3_qboi_fixed),invariants(i,k,inv_ndx_m),vmr(i,k,o3_ndx)",k,i,invariants(i,k,inv_ndx_o3_qboi_fixed),invariants(i,k,inv_ndx_m),vmr(i,k,o3_ndx)
+!         end do
+!      end do
+!    end if
 
     !-----------------------------------------------------------------
     ! ... zero out sulfate below tropopause
