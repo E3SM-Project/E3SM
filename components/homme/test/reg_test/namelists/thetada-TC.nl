@@ -15,7 +15,7 @@
   tstep             = 1200                      ! largest timestep in seconds
   integration       = 'explicit'                ! explicit time integration
   tstep_type        = 9 
-  rsplit            = 0
+  rsplit            = 1
   qsplit            = 1
   nu                = 3e16                      ! default= 1e15*(ne30/ne8)**3.2 = 6.9e16
   nu_s              = 3e16
