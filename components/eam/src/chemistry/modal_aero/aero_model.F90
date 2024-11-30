@@ -2822,7 +2822,12 @@ do_lphase2_conditional: &
     real(r8) :: F_eff(pcols) ! optional diagnostic output -- organic enrichment ratio
 
     real (r8), parameter :: z0=0.0001_r8  ! m roughness length over oceans--from ocean model
-
+!<shanyp 07052024
+    real (r8), parameter :: dstemislimit=1.e-4  ! kg/m2/s dust emission upper bound
+    integer :: icol,mmn
+    icol=0
+    mmn=0
+!shanyp 07052024>
     lchnk = state%lchnk
     ncol = state%ncol
 
@@ -2834,6 +2839,15 @@ do_lphase2_conditional: &
        sflx(:)=0._r8
        do m=1,dust_nbin+dust_nnum
           mm = dust_indices(m)
+!<shanyp 07052024
+          do icol=1,ncol
+           if((cam_in%cflx(icol,mm).ge.dstemislimit).and.(m.le.dust_nbin)) then
+            mmn=dust_indices(m+2)
+            cam_in%cflx(icol,mmn)=cam_in%cflx(icol,mmn)*dstemislimit/cam_in%cflx(icol,mm)
+            cam_in%cflx(icol,mm)=dstemislimit
+           end if
+          end do
+!shanyp 07052024>
           if (m<=dust_nbin) sflx(:ncol)=sflx(:ncol)+cam_in%cflx(:ncol,mm)
           call outfld(trim(dust_names(m))//'SF',cam_in%cflx(:,mm),pcols, lchnk)
        enddo
