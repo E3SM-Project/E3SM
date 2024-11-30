@@ -531,6 +531,7 @@ void call_hetfrz_compute_tendencies(
         haero::Atmosphere haero_atm =
             atmosphere_for_column(dry_atmosphere, icol);
         haero::Surface surf{};
+        set_min_background_mmr(team, dry_aero,icol);
         mam4::Prognostics progs =
             mam_coupling::aerosols_for_column(dry_aero, icol);
 
