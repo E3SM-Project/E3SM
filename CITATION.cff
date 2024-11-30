@@ -2,11 +2,11 @@
 # Visit https://bit.ly/cffinit to generate yours today!
 
 cff-version: 1.2.0
-title: Energy Exascale Earth System Model
+title: Km-scale E3SM Land Model
 message: '  If you use this software, please cite it using the metadata from this file.'
 type: software
 authors:
-  - given-names: E3SM
+  - given-names: E3SM-kmELM
     family-names: Project
 version: 3.0.0
 doi: 10.11578/E3SM/dc.20240930.1
