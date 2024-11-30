@@ -8,6 +8,7 @@ set(DIAGNOSTIC_SRCS
   field_at_height.cpp
   field_at_level.cpp
   field_at_pressure_level.cpp
+  horiz_avg.cpp
   longwave_cloud_forcing.cpp
   number_path.cpp
   potential_temperature.cpp
