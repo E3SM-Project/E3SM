@@ -1271,7 +1271,7 @@ module li_iceshelf_melt
                do kk=1,nOceanLayers
                   if ( zOcean(kk) >= lowerSurface(iCell) )  ksup = kk
                enddo
-               kinf = min(ksup + 1, nOceanLayers)  ! Don't let exceed maximum index to avoid errors below
+               kinf = ksup + 1
 
                !call mpas_log_write("kinf=$i, zOcean(kinf)=$r, TFocean=$r",realArgs=(/zOcean(kinf),TFocean(kinf,iCell)/), &
                !        intArgs=(/kinf/))
@@ -1279,12 +1279,23 @@ module li_iceshelf_melt
                !        intArgs=(/ksup/))
 
                ! check if any invalid TFocean value is used for calculating TF at the draft
-               if ( (TFocean(kinf, iCell) == invalid_value_TF .or. TFocean(ksup, iCell) == invalid_value_TF) ) then
-                  call mpas_log_write("iceshelf_melt_ismip6: Invalid value for TFocean. " // &
-                       "ksup=$i kinf=$i TFocean(ksup, iCell)=$r TFocean(kinf,iCell)=$r indexToCellID=$i", MPAS_LOG_ERR, &
-                       intArgs=(/ksup, kinf, indexToCellID(iCell)/), &
-                       realArgs=(/TFocean(ksup, iCell), TFocean(kinf, iCell) /) )
-                  err = ior(err, 1)
+               if (ksup >= 1) then
+                  if (TFocean(ksup, iCell) == invalid_value_TF) then
+                     call mpas_log_write("iceshelf_melt_ismip6: Invalid value for TFocean. " // &
+                        "ksup=$i TFocean(ksup, iCell)=$r indexToCellID=$i", MPAS_LOG_ERR, &
+                        intArgs=(/ksup,  indexToCellID(iCell)/), &
+                        realArgs=(/TFocean(ksup, iCell) /) )
+                     err = ior(err, 1)
+                  endif
+               endif
+               if (kinf <= nOceanLayers) then
+                  if (TFocean(kinf, iCell) == invalid_value_TF) then
+                     call mpas_log_write("iceshelf_melt_ismip6: Invalid value for TFocean. " // &
+                        "kinf=$i TFocean(kinf,iCell)=$r indexToCellID=$i", MPAS_LOG_ERR, &
+                        intArgs=(/kinf, indexToCellID(iCell)/), &
+                        realArgs=(/TFocean(kinf, iCell) /) )
+                     err = ior(err, 1)
+                  endif
                endif
 
                if (ksup == 0) then
