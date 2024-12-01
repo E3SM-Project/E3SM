@@ -308,7 +308,7 @@ contains
             call mpas_timer_stop("vertical scheme")
 
             if (err > 0) then
-               call mpas_log_write("Ocean extraolation main iteration loop has encountered an error", MPAS_LOG_ERR)
+               call mpas_log_write("Ocean extrapolation main iteration loop has encountered an error", MPAS_LOG_ERR)
                return
             endif
          enddo
@@ -378,6 +378,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: thickness, bedTopography, areaCell
       integer, pointer :: nCells, nCellsSolve, nISMIP6OceanLayers, nCellsExtra
       integer, dimension(:), pointer :: cellMask, nEdgesOnCell
+      integer, dimension(:), pointer :: indexToCellID
       integer, dimension(:,:), pointer :: cellsOnCell
       integer :: iCell, jCell, iLayer, iNeighbor, iter
       integer :: localLoopCount
@@ -399,6 +400,7 @@ contains
       call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
@@ -430,8 +432,9 @@ contains
                      if ( validOceanMaskOld(iLayer,jCell) == 1 ) then
                         if ( TFoceanOld(iLayer,jCell) > 1.0e6_RKIND) then
                            ! raise error if an invalid ocean data value is used
-                           call mpas_log_write("ocean data value used for extrapolation is invalid", &
-                                MPAS_LOG_ERR)
+                           call mpas_log_write("ocean data value used for extrapolation is invalid " // &
+                                "in horizontal_extrapolation: cell id=$i, iLayer=$i, TF=$r", &
+                                MPAS_LOG_ERR, intArgs=(/indexToCellID(jCell), iLayer/), realArgs=(/TFoceanOld(iLayer,jCell)/))
                            err = ior(err,1)
                         else
                            TFsum = TFsum + (TFoceanOld(iLayer,jCell) * areaCell(jCell))
@@ -533,6 +536,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: thickness, bedTopography, areaCell
       integer, pointer :: nCells, nCellsSolve, nISMIP6OceanLayers
       integer, dimension(:), pointer :: cellMask, nEdgesOnCell
+      integer, dimension(:), pointer :: indexToCellID
       integer, dimension(:,:), pointer :: cellsOnCell
       integer :: iCell, jCell, iLayer, iNeighbor, iter
       integer :: localLoopCount, newMaskCountLocalAccum
@@ -550,6 +554,7 @@ contains
       call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
@@ -564,8 +569,9 @@ contains
               if ( validOceanMask(iLayer-1,iCell) == 1 ) then
                  if (TFocean(iLayer-1,iCell) > 1.0e6_RKIND) then
                     ! raise error if an invalid ocean data value is used
-                    call mpas_log_write("ocean data value used for extrapolation is invalid", &
-                         MPAS_LOG_ERR)
+                    call mpas_log_write("ocean data value used for extrapolation is invalid " // &
+                         "in vertical_extrapolation: cell id=$i, iLayer=$i, TF=$r", &
+                         MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell), iLayer-1/), realArgs=(/TFocean(iLayer-1,iCell)/))
                     err = ior(err,1)
                  else
                     TFocean(iLayer,iCell) = TFocean(iLayer-1,iCell) - &
