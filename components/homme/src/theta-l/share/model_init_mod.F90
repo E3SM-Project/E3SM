@@ -51,13 +51,11 @@ contains
     real (kind=real_kind) ::  rhati(np,np,nlevp), invrhatm(np,np,nlev), invrhati(np,np,nlevp)
 
     r0=rearth
-    !r0 = 1.0
 
     ! other theta specific model initialization should go here
     do ie=nets,nete
 
      rheighti =  elem(ie)%state%phinh_i(:,:,:,1)/g + r0
-     !rheighti = 1.0
      rheightm(:,:,1:nlev) = (rheighti(:,:,1:nlev) + rheighti(:,:,2:nlevp))/2.0
      rhati = rheighti/r0 ! r/r0
      rhatm = rheightm/r0
@@ -108,9 +106,9 @@ contains
 
     enddo
 
-
-    ! unit test for analytic jacobian and tri-diag solve used by IMEX methods
 #ifndef HOMMEDA
+    ! this test won't work for DA yet
+    ! unit test for analytic jacobian and tri-diag solve used by IMEX methods
     if (.not. theta_hydrostatic_mode) &
          call test_imex_jacobian(elem,hybrid,hvcoord,tl,nets,nete)
 #endif
