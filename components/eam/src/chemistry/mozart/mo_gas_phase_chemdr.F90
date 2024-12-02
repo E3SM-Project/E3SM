@@ -1223,8 +1223,8 @@ contains
 #endif   
 
     call t_startf('exp_sol')
-    call exp_sol( vmr, reaction_rates, het_rates, extfrc, delt, invariants(1,1,indexm), ncol, lchnk, ltrop_sol, &
-                  diags_reaction_rates, chem_prod, chem_loss, chemmp_prod, chemmp_loss)
+    !call exp_sol( vmr, reaction_rates, het_rates, extfrc, delt, invariants(1,1,indexm), ncol, lchnk, ltrop_sol, &
+    !              diags_reaction_rates, chem_prod, chem_loss, chemmp_prod, chemmp_loss)
     call t_stopf('exp_sol')
 
     if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels .or.&
