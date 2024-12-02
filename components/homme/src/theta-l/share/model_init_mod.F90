@@ -47,22 +47,28 @@ contains
     real (kind=real_kind) :: gradtemp(np,np,2,nets:nete)
     real (kind=real_kind) :: temp(np,np,nlev),ps_ref(np,np)
     real (kind=real_kind) :: ptop_over_press
+#ifdef HOMMEDA
     real (kind=real_kind) ::  rheighti(np,np,nlevp), rheightm(np,np,nlev), rhatm(np,np,nlev), r0
     real (kind=real_kind) ::  rhati(np,np,nlevp), invrhatm(np,np,nlev), invrhati(np,np,nlevp)
+#endif
 
+#ifdef HOMMEDA
     r0=rearth
+#endif
 
     ! other theta specific model initialization should go here
     do ie=nets,nete
-
+#ifdef HOMMEDA
      rheighti =  elem(ie)%state%phinh_i(:,:,:,1)/g + r0
      rheightm(:,:,1:nlev) = (rheighti(:,:,1:nlev) + rheighti(:,:,2:nlevp))/2.0
      rhati = rheighti/r0 ! r/r0
      rhatm = rheightm/r0
      invrhatm = 1.0/rhatm
      invrhati = 1.0/rhati
+#endif
 
      gradtemp(:,:,:,ie) = gradient_sphere( elem(ie)%state%phis(:,:), deriv, elem(ie)%Dinv)
+
 #ifdef HOMMEDA
      gradtemp(:,:,1,ie) = gradtemp(:,:,1,ie)*invrhati(:,:,nlevp)
      gradtemp(:,:,2,ie) = gradtemp(:,:,2,ie)*invrhati(:,:,nlevp)
