@@ -127,7 +127,6 @@
 
 <!-- Topography -->
 <bnd_topo hgrid="64x128"  >atm/cam/topo/USGS-gtopo30_64x128_c050520.nc</bnd_topo>
-
 <bnd_topo hgrid="ne4np4"   npg="0">atm/cam/topo/USGS-gtopo30_ne4np4_16x.c20160612.nc</bnd_topo>
 <bnd_topo hgrid="ne4np4"   npg="2">atm/cam/topo/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc</bnd_topo>
 <bnd_topo hgrid="ne11np4"  npg="0">atm/cam/topo/USGS-gtopo30_ne11np4_16xconsistentSGH.c20160612.nc</bnd_topo>
@@ -1895,6 +1894,9 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <gw_convect_plev_src_wind   phys="default">70000</gw_convect_plev_src_wind>
 <effgw_oro phys="default"> 0.375      </effgw_oro>
 <use_gw_energy_fix phys="default"> .true.      </use_gw_energy_fix>
+<od_ls_ncleff  phys="default"> 3.D0 </od_ls_ncleff>
+<od_bl_ncd     phys="default"> 3.D0 </od_bl_ncd>
+<od_ss_sncleff phys="default"> 1.D0 </od_ss_sncleff>
 <clubb_C14 phys="default"> 2.5D0      </clubb_C14>
 <clubb_tk1 phys="default"> 268.15D0   </clubb_tk1>
 <dust_emis_fact phys="default"> 13.8D0     </dust_emis_fact>

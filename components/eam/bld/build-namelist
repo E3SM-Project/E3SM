@@ -4093,13 +4093,24 @@ if ($waccm_phys or $cfg->get('nlev') >= 60) {
     add_default($nl, 'use_gw_oro'    , 'val'=>'.true.');
     add_default($nl, 'use_gw_front'  , 'val'=>'.true.');
     add_default($nl, 'use_gw_convect', 'val'=>'.true.');
+    add_default($nl, 'use_od_ls', 'val'=>'.false.');
+    add_default($nl, 'use_od_bl', 'val'=>'.false.');
+    add_default($nl, 'use_od_ss', 'val'=>'.false.');
+    add_default($nl, 'use_od_fd', 'val'=>'.false.');
 } else {
     add_default($nl, 'use_gw_oro'    , 'val'=>'.true.');
     add_default($nl, 'use_gw_front'  , 'val'=>'.false.');
     add_default($nl, 'use_gw_convect', 'val'=>'.false.');
+    add_default($nl, 'use_od_ls', 'val'=>'.false.');
+    add_default($nl, 'use_od_bl', 'val'=>'.false.');
+    add_default($nl, 'use_od_ss', 'val'=>'.false.');
+    add_default($nl, 'use_od_fd', 'val'=>'.false.');
 }
 add_default($nl, 'pgwv', 'val'=>'32');
 add_default($nl, 'gw_dc','val'=>'2.5D0');
+add_default($nl, 'od_ls_ncleff' ,'val'=>'3.D0');
+add_default($nl, 'od_bl_ncd'    ,'val'=>'3.D0');
+add_default($nl, 'od_ss_sncleff','val'=>'1.D0');
 
 if ($nl->get_value('use_gw_oro') =~ /$TRUE/io) {
     add_default($nl, 'effgw_oro');
