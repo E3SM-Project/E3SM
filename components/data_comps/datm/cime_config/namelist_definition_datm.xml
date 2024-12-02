@@ -36,8 +36,8 @@
     CLMCRUNCEP		= Run with the CLM CRU NCEP V4 ( default ) forcing valid from 1900 to 2010 (force CLM)
     CLMCRUNCEPv7 	= Run with the CLM CRU NCEP V7 forcing valid from 1900 to 2010 (force CLM)
     CLMGSWP3v1		= Run with the CLM GSWP3 V1 forcing (force CLM)
-    ELM_KM   = Run with the uELM GSWP3/daymet forcing (force high res. ELM)
-    uELMTES   = Run with the uELM ERA5/daymet forcing (force high res. ELM)    
+    uELM_NA   = Run with the uELM GSWP3/daymet forcing (force high res. ELM)
+    uELM_TES   = Run with the uELM ERA5/daymet forcing (force high res. ELM)    
     CLMMOSARTTEST   	= Run with the CLM NLDAS data (force CLM) for testing MOSART
     CLMNLDAS2		= Run with the CLM NLDAS2 regional forcing valid from 1980 to 2018 (force CLM)
     CLM1PT		= Run with supplied single point data (force CLM)
@@ -105,17 +105,17 @@
     CLMGSWP3v1.Precip
     CLMGSWP3v1.TPQW
     
-    ELM_KM.FSDS
-    ELM_KM.FLDS
-    ELM_KM.TBOT
-    ELM_KM.QBOT
-    ELM_KM.PRECTmms
-    ELM_KM.PSRF
-    ELM_KM.WIND
+    uELM_NA.FSDS
+    uELM_NA.FLDS
+    uELM_NA.TBOT
+    uELM_NA.QBOT
+    uELM_NA.PRECTmms
+    uELM_NA.PSRF
+    uELM_NA.WIND
 
-    uELMTES.Prec
-    uELMTES.Solr
-    uELMTES.TPHWL
+    uELM_TES.Prec
+    uELM_TES.Solr
+    uELM_TES.TPHWL
 
     CLMMOSARTTEST
 
@@ -215,8 +215,8 @@
       <value datm_mode="CLMCRUNCEP$">CLMCRUNCEP.Solar,CLMCRUNCEP.Precip,CLMCRUNCEP.TPQW</value>
       <value datm_mode="CLMCRUNCEPv7">CLMCRUNCEPv7.Solar,CLMCRUNCEPv7.Precip,CLMCRUNCEPv7.TPQW</value>
       <value datm_mode="CLMGSWP3v1">CLMGSWP3v1.Solar,CLMGSWP3v1.Precip,CLMGSWP3v1.TPQW</value>  
-      <value datm_mode="ELM_KM">ELM_KM.FSDS,ELM_KM.FLDS,ELM_KM.TBOT,ELM_KM.QBOT,ELM_KM.PRECTmms,ELM_KM.PSRF,ELM_KM.WIND</value>
-      <value datm_mode="uELMTES">uELMTES.Prec,uELMTES.Solr,uELMTES.TPQWL</value>    
+      <value datm_mode="uELM_NA">uELM_NA.FSDS,uELM_NA.FLDS,uELM_NA.TBOT,uELM_NA.QBOT,uELM_NA.PRECTmms,uELM_NA.PSRF,uELM_NA.WIND</value>
+      <value datm_mode="uELM_TES">uELM_TES.Prec,uELM_TES.Solr,uELM_TES.TPQWL</value>    
       <value datm_mode="CLMMOSARTTEST">CLMMOSARTTEST</value>
       <value datm_mode="CLMNLDAS2">CLMNLDAS2.Solar,CLMNLDAS2.Precip,CLMNLDAS2.TPQW</value>
       <value datm_mode="CORE2_NYF" >CORE2_NYF.GISS,CORE2_NYF.GXGXS,CORE2_NYF.NCEP</value>
@@ -246,8 +246,8 @@
       <value stream="CLMCRUNCEPv7">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.v7.c160715</value>
       <value stream="CLMCRUNCEP">$DIN_LOC_ROOT/share/domains/domain.clm</value>
       <value stream="CLMGSWP3v1">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516</value>
-      <value stream="ELM_KM">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.km.1d</value>
-      <value stream="uELMTES">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.km.1d</value>
+      <value stream="uELM_NA">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.km.1d</value>
+      <value stream="uELM_TES">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.km.1d</value>
       <value stream="CLMCRUNCEP\.">$DIN_LOC_ROOT/share/domains/domain.clm</value>
       <value stream="CLMCRUNCEP_V5">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V5.c140715</value>
       <value stream="CLMGSWP3">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516</value>
@@ -313,8 +313,8 @@
       <value stream="CLMCRUNCEP">domain.lnd.360x720.130305.nc</value>
       <value stream="CLMGSWP3v1">domain.lnd.360x720_gswp3.0v1.c170606.nc</value>
       <value stream="CLMGSWP3">domain.lnd.360x720_gswp3.0v1.c170606.nc</value>
-      <value stream="ELM_KM">domain.lnd.Daymet.km.1d.nc</value>
-      <value stream="uELMTES">domain.lnd.Daymet.km.1d.nc</value>
+      <value stream="uELM_NA">domain.lnd.Daymet.km.1d.nc</value>
+      <value stream="uELM_TES">domain.lnd.Daymet.km.1d.nc</value>
       <value stream="CLMMOSARTTEST">domain.lnd.nldas2_0224x0464_c110415.nc</value>
       <value stream="CLMNLDAS2">domain.lnd.0.125nldas2_0.125nldas2.190410.nc</value>
       <value stream="CORE2_NYF.GISS">nyf.giss.T62.051007.nc</value>
@@ -488,16 +488,16 @@
       <value stream="CLMGSWP3.Solar">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/Solar3Hrly</value>
       <value stream="CLMGSWP3.Precip">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/Precip3Hrly</value>
       <value stream="CLMGSWP3.TPQW">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/TPHWL3Hrly</value>
-      <value stream="ELM_KM.FSDS">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.km.1d</value>
-      <value stream="ELM_KM.FLDS">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.km.1d</value>
-      <value stream="ELM_KM.TBOT">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.km.1d</value>
-      <value stream="ELM_KM.QBOT">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.km.1d</value>
-      <value stream="ELM_KM.PRECTmms">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.km.1d</value>
-      <value stream="ELM_KM.PSRF">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.km.1d</value>
-      <value stream="ELM_KM.WIND">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.km.1d</value>
-      <value stream="uELMTES.Prec">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.km.1d</value>
-      <value stream="uELMTES.Solr">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.km.1d</value>
-      <value stream="uELMTES.TPQWL">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.km.1d</value>
+      <value stream="uELM_NA.FSDS">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.km.1d</value>
+      <value stream="uELM_NA.FLDS">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.km.1d</value>
+      <value stream="uELM_NA.TBOT">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.km.1d</value>
+      <value stream="uELM_NA.QBOT">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.km.1d</value>
+      <value stream="uELM_NA.PRECTmms">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.km.1d</value>
+      <value stream="uELM_NA.PSRF">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.km.1d</value>
+      <value stream="uELM_NA.WIND">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.km.1d</value>
+      <value stream="uELM_TES.Prec">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.km.1d</value>
+      <value stream="uELM_TES.Solr">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.km.1d</value>
+      <value stream="uELM_TES.TPQWL">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.km.1d</value>
       <value stream="CLMMOSARTTEST">$DIN_LOC_ROOT/atm/datm7/NLDAS</value>
       <value stream="CLMNLDAS2.Solar">$DIN_LOC_ROOT/atm/datm7/atm_forcing.datm7.NLDAS2.0.125d.v1/Solar</value>
       <value stream="CLMNLDAS2.Precip">$DIN_LOC_ROOT/atm/datm7/atm_forcing.datm7.NLDAS2.0.125d.v1/Precip</value>
@@ -570,17 +570,17 @@
       <value  stream="CLMGSWP3v1.Solar">clmforc.GSWP3.c2011.0.5x0.5.Solr.%ym.nc</value>
       <value  stream="CLMGSWP3v1.Precip">clmforc.GSWP3.c2011.0.5x0.5.Prec.%ym.nc</value>
       <value  stream="CLMGSWP3v1.TPQW">clmforc.GSWP3.c2011.0.5x0.5.TPQWL.%ym.nc</value>
-      <value stream="ELM_KM.FSDS">clmforc.Daymet.km.1d.FSDS.%ym.nc</value>
-      <value stream="ELM_KM.FLDS">clmforc.Daymet.km.1d.FLDS.%ym.nc</value>
-      <value stream="ELM_KM.TBOT">clmforc.Daymet.km.1d.TBOT.%ym.nc</value>
-      <value stream="ELM_KM.QBOT">clmforc.Daymet.km.1d.QBOT.%ym.nc</value>
-      <value stream="ELM_KM.PRECTmms">clmforc.Daymet.km.1d.PRECTmms.%ym.nc</value>
-      <value stream="ELM_KM.PSRF">clmforc.Daymet.km.1d.PSRF.%ym.nc</value>
-      <value stream="ELM_KM.WIND">clmforc.Daymet.km.1d.WIND.%ym.nc</value>
+      <value stream="uELM_NA.FSDS">clmforc.Daymet.km.1d.FSDS.%ym.nc</value>
+      <value stream="uELM_NA.FLDS">clmforc.Daymet.km.1d.FLDS.%ym.nc</value>
+      <value stream="uELM_NA.TBOT">clmforc.Daymet.km.1d.TBOT.%ym.nc</value>
+      <value stream="uELM_NA.QBOT">clmforc.Daymet.km.1d.QBOT.%ym.nc</value>
+      <value stream="uELM_NA.PRECTmms">clmforc.Daymet.km.1d.PRECTmms.%ym.nc</value>
+      <value stream="uELM_NA.PSRF">clmforc.Daymet.km.1d.PSRF.%ym.nc</value>
+      <value stream="uELM_NA.WIND">clmforc.Daymet.km.1d.WIND.%ym.nc</value>
 
-      <value stream="uELMTES.Prec">clmforc.Daymet.km.1d.Prec.%ym.nc</value>
-      <value stream="uELMTES.Solr">clmforc.Daymet.km.1d.Solr.%ym.nc</value>
-      <value stream="uELMTES.TPQWL">clmforc.Daymet.km.1d.TPQWL.%ym.nc</value>
+      <value stream="uELM_TES.Prec">clmforc.Daymet.km.1d.Prec.%ym.nc</value>
+      <value stream="uELM_TES.Solr">clmforc.Daymet.km.1d.Solr.%ym.nc</value>
+      <value stream="uELM_TES.TPQWL">clmforc.Daymet.km.1d.TPQWL.%ym.nc</value>
 
       <value  stream="CLMMOSARTTEST">clmforc.nldas.%ym.nc</value>
       <value  stream="CLMNLDAS2.Solar">ctsmforc.NLDAS2.0.125d.v1.Solr.%ym.nc</value>
@@ -2470,35 +2470,35 @@
         PSRF     pbot
         FLDS     lwdn
       </value>
-      <value  stream="ELM_KM.FSDS">
+      <value  stream="uELM_NA.FSDS">
         FSDS swdn
       </value>
-      <value  stream="ELM_KM.PRECTmms">
+      <value  stream="uELM_NA.PRECTmms">
         PRECTmms precn
       </value>
-      <value  stream="ELM_KM.TBOT">
+      <value  stream="uELM_NA.TBOT">
         TBOT     tbot
       </value>
-      <value  stream="ELM_KM.WIND">
+      <value  stream="uELM_NA.WIND">
         WIND     wind
       </value>
-      <value  stream="ELM_KM.QBOT">
+      <value  stream="uELM_NA.QBOT">
         QBOT     shum
       </value>
-      <value  stream="ELM_KM.PSRF">
+      <value  stream="uELM_NA.PSRF">
         PSRF     pbot
       </value>
-      <value  stream="ELM_KM.FLDS">
+      <value  stream="uELM_NA.FLDS">
         FLDS     lwdn
       </value>
 
-      <value  stream="uELMTES.Prec">
+      <value  stream="uELM_TES.Prec">
         PRECTmms precn
       </value>
-      <value  stream="uELMTES.Solr">
+      <value  stream="uELM_TES.Solr">
         FSDS swdn
       </value>
-      <value  stream="uELMTES.TPQWL">
+      <value  stream="uELM_TES.TPQWL">
         TBOT     tbot
         QBOT     shum
         PSRF     pbot
@@ -2742,8 +2742,8 @@
       <value stream="CLM_QIAN">$DATM_CLMNCEP_YR_ALIGN</value>
       <value stream="CLMCRUNCEP">$DATM_CLMNCEP_YR_ALIGN</value>
       <value stream="CLMGSWP3">$DATM_CLMNCEP_YR_ALIGN</value>
-      <value stream="ELM_KM">$DATM_CLMNCEP_YR_ALIGN</value>
-      <value stream="uELMTES">$DATM_CLMNCEP_YR_ALIGN</value>
+      <value stream="uELM_NA">$DATM_CLMNCEP_YR_ALIGN</value>
+      <value stream="uELM_TES">$DATM_CLMNCEP_YR_ALIGN</value>
       <value stream="CLMMOSARTTEST">$DATM_CLMNCEP_YR_ALIGN</value>
       <value stream="CLMNLDAS2">$DATM_CLMNCEP_YR_ALIGN</value>
       <value stream="CORE2_NYF">1</value>
@@ -2791,8 +2791,8 @@
       <value stream="CLM_QIAN">$DATM_CLMNCEP_YR_START</value>
       <value stream="CLMCRUNCEP">$DATM_CLMNCEP_YR_START</value>
       <value stream="CLMGSWP3">$DATM_CLMNCEP_YR_START</value>
-      <value stream="ELM_KM">$DATM_CLMNCEP_YR_START</value>
-      <value stream="uELMTES">$DATM_CLMNCEP_YR_START</value>
+      <value stream="uELM_NA">$DATM_CLMNCEP_YR_START</value>
+      <value stream="uELM_TES">$DATM_CLMNCEP_YR_START</value>
       <value stream="CLMMOSARTTEST">$DATM_CLMNCEP_YR_START</value>
       <value stream="CLMNLDAS2">$DATM_CLMNCEP_YR_START</value>
       <value stream="CORE2_NYF">1</value>
@@ -2861,8 +2861,8 @@
       <value stream="CLM_QIAN">$DATM_CLMNCEP_YR_END  </value>
       <value stream="CLMCRUNCEP">$DATM_CLMNCEP_YR_END  </value>
       <value stream="CLMGSWP3">$DATM_CLMNCEP_YR_END  </value>
-      <value stream="ELM_KM">$DATM_CLMNCEP_YR_END</value>
-      <value stream="uELMTES">$DATM_CLMNCEP_YR_END</value>      
+      <value stream="uELM_NA">$DATM_CLMNCEP_YR_END</value>
+      <value stream="uELM_TES">$DATM_CLMNCEP_YR_END</value>      
       <value stream="CLMMOSARTTEST">$DATM_CLMNCEP_YR_END  </value>
       <value stream="CLMNLDAS2">$DATM_CLMNCEP_YR_END  </value>
       <value stream="CORE2_NYF">1</value>
@@ -3116,8 +3116,8 @@
       <value datm_mode="CLM1PT">nn</value>
       <value stream="CLMCRUNCEP" atm_grid="hcru">copy</value>
       <value stream="CLMGSWP3" atm_grid="hcru">copy</value>
-      <value stream="ELM_KM">copy</value>
-      <value stream="uELMTES">copy</value>      
+      <value stream="uELM_NA">copy</value>
+      <value stream="uELM_TES">copy</value>      
       <value stream="CLMNLDAS2" atm_grid="0.125nldas2">copy</value>
       <value stream="co2tseries">nn</value>
     </values>
@@ -3191,16 +3191,16 @@
       <value stream="CLMCRUNCEPv7.Precip">nearest</value>
       <value stream="CLMGSWP3v1.Solar">coszen</value>
       <value stream="CLMGSWP3v1.Precip">nearest</value>
-      <value stream="ELM_KM.FSDS">coszen</value>
-      <value stream="ELM_KM.PRECTmms">nearest</value>
-      <value stream="ELM_KM.FLDS">linear</value>
-      <value stream="ELM_KM.TBOT">linear</value>
-      <value stream="ELM_KM.QBOT">linear</value>
-      <value stream="ELM_KM.PSRF">linear</value>
-      <value stream="ELM_KM.WIND">linear</value>
-      <value stream="uELMTES.Solr">coszen</value>
-      <value stream="uELMTES.Prec">nearest</value>
-      <value stream="uELMTES.TPHWL">linear</value>      
+      <value stream="uELM_NA.FSDS">coszen</value>
+      <value stream="uELM_NA.PRECTmms">nearest</value>
+      <value stream="uELM_NA.FLDS">linear</value>
+      <value stream="uELM_NA.TBOT">linear</value>
+      <value stream="uELM_NA.QBOT">linear</value>
+      <value stream="uELM_NA.PSRF">linear</value>
+      <value stream="uELM_NA.WIND">linear</value>
+      <value stream="uELM_TES.Solr">coszen</value>
+      <value stream="uELM_TES.Prec">nearest</value>
+      <value stream="uELM_TES.TPHWL">linear</value>      
       <value stream="CLMNLDAS2.Solar">coszen</value>
       <value stream="CLMNLDAS2.Precip">nearest</value>
       <value stream="BC.CRUNCEP.GPCP.Precip">nearest</value>

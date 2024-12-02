@@ -21,7 +21,7 @@ SURFDATA_FILE="${EXPID}_surfdata.TES_SE.4km.1d.NLCD.c241128.nc"
 
 #${E3SM_SRCROOT}/cime/scripts/create_newcase --case "${CASEDIR}" --mach summitPlus --compiler pgi --mpilib spectrum-mpi --compset I1850uELMCNPRDCTCBC --res ELM_USRDAT --pecount "${PECOUNT}" --handle-preexisting-dirs r --srcroot "${E3SM_SRCROOT}"
 
-${E3SM_SRCROOT}/cime/scripts/create_newcase --case "${CASEDIR}" --mach cades-baseline --compiler gnu --mpilib openmpi --compset I1850uELMCNPRDCTCBC --res ELM_USRDAT  --handle-preexisting-dirs r --srcroot "${E3SM_SRCROOT}"
+${E3SM_SRCROOT}/cime/scripts/create_newcase --case "${CASEDIR}" --mach cades-baseline --compiler gnu --mpilib openmpi --compset I1850uELMTESCNPRDCTCBC --res ELM_USRDAT  --handle-preexisting-dirs r --srcroot "${E3SM_SRCROOT}"
 
 cd "${CASEDIR}"
 
@@ -33,9 +33,11 @@ cd "${CASEDIR}"
 
 ./xmlchange DIN_LOC_ROOT_CLMFORC="${CASE_DATA}"
 
+./xmlchange CIME_OUTPUT_ROOT="${E3SM_SRCROOT}/e3sm_runs/"
+
 ./xmlchange ELM_FORCE_COLDSTART=on
 
-./xmlchange DATM_MODE="uELMTES"
+./xmlchange DATM_MODE="uELM_TES"
 
 ./xmlchange DATM_CLMNCEP_YR_START="2014"
 
