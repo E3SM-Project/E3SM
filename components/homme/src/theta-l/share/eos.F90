@@ -112,18 +112,18 @@ implicit none
   real (kind=real_kind) :: pnh_i(np,np,nlevp)  
   real (kind=real_kind) :: dp3d_i(np,np,nlevp)
   real (kind=real_kind) :: pi_i(np,np,nlevp)
-#ifdef DA
+#ifdef HOMMEDA
   real (kind=real_kind) :: phi_i(np,np,nlevp) 
 #endif
   integer :: i,j,k,k2
   logical :: ierr
-#ifdef DA
+#ifdef HOMMEDA
   real (kind=real_kind) ::  rheighti(np,np,nlevp), rheightm(np,np,nlev), rhatm(np,np,nlev), r0
   real (kind=real_kind) ::  rhati(np,np,nlevp), invrhatm(np,np,nlev), invrhati(np,np,nlevp), &
                             newrhatsquared(np,np,nlev)
 #endif
 
-#ifdef DA
+#ifdef HOMMEDA
   !construct phi_i here
   phi_i(:,:,nlevp) = phis(:,:)
   do k=nlev,1,-1
@@ -161,7 +161,7 @@ implicit none
         if ( (vtheta_dp(i,j,k) < 0) .or. (dp3d(i,j,k)<0)  .or. &
              (dphi(i,j,k)>0)  ) then
            print *,'bad i,j,k=',i,j,k
-#ifdef DA
+#ifdef HOMMEDA
            print *,'vertical column: phi_i,dphi,dp3d,vtheta_dp'
            do k2=1,nlev
               write(*,'(i3,5f14.4)') k2,phi_i(i,j,k),dphi(i,j,k2),dp3d(i,j,k2),vtheta_dp(i,j,k2)
@@ -210,7 +210,7 @@ implicit none
   do k=1,nlev
      p_over_exner(:,:,k) = Rgas*vtheta_dp(:,:,k)/(-dphi(:,:,k))
 
-#ifdef DA
+#ifdef HOMMEDA
      p_over_exner(:,:,k) = p_over_exner(:,:,k)/newrhatsquared(:,:,k)
 #endif
 
@@ -231,7 +231,7 @@ implicit none
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
    pnh_i(:,:,1) = hvcoord%hyai(1)*hvcoord%ps0  ! hydrostatic ptop   
 
-#ifdef DA
+#ifdef HOMMEDA
    pnh_i(:,:,1) = pnh_i(:,:,1)*invrhati(:,:,1)*invrhati(:,:,1)  ! DA ptop = hydrostatic ptop/rhat^2
 #endif
 
@@ -257,7 +257,7 @@ implicit none
       dpnh_dp_i(:,:,k) = (pnh(:,:,k)-pnh(:,:,k-1))/dp3d_i(:,:,k)        
    end do
 
-#ifdef DA
+#ifdef HOMMEDA
    !keep the bottom val unchanged and set to 1
    dpnh_dp_i(:,:,1:nlev) = dpnh_dp_i(:,:,1:nlev)*rhati(:,:,1:nlev)*rhati(:,:,1:nlev)
 #endif   

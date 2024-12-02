@@ -914,7 +914,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
 #endif
 
 !all DA warnings together
-#ifdef DA
+#ifdef HOMMEDA
     if ( rotate_grid /= 0 ) then
        if(par%masterproc) print *, 'DA (deep atmosphere) cannot run with rotate_grid != 0'
        call abortmp('stopping')
@@ -1289,7 +1289,7 @@ end if
        write(iulog,*)"physconst: rearth = ",rearth
        write(iulog,*)"physconst: rrearth= ",rrearth
        write(iulog,*)""
-#ifdef DA
+#ifdef HOMMEDA
        write(iulog,*)"--- DEEP ATMOSPHERE ----------"
 #else
        write(iulog,*)"--- SHALLOW ATMOSPHERE -------"

@@ -491,7 +491,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   !set phi, copy from 1st timelevel to all
   call tests_finalize(elem,hvcoord)
 
-#ifndef DA
+#ifndef HOMMEDA
   ! verify T
   call get_temperature(elem,p,hvcoord,nt)
 
@@ -713,7 +713,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   real(real_kind), dimension(np,np,nlev)  :: pnh, exner
   real(real_kind), dimension(np,np,nlevp) :: dpnh_dp_i,phi_i
 
-#ifdef DA
+#ifdef HOMMEDA
   real(real_kind), dimension(np,np,nlevp) :: dp3d_i, phiSA, phiDA, r3int, dpnh,&
                                              rinter, rhat, munew, muu
   real(real_kind), dimension(np,np,nlev)  :: dp3d, vtheta, pmid
@@ -730,7 +730,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   ! Disable the following check in CUDA bfb builds,
   ! since the calls to pow are inexact
 
-#ifndef DA
+#ifndef HOMMEDA
 #if !(defined(HOMMEXX_BFB_TESTING) && defined(HOMMEXX_ENABLE_GPU_F90))
   ! verify discrete hydrostatic balance
   call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,tl),&
@@ -746,7 +746,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
 #endif
 #endif
 
-#ifdef DA
+#ifdef HOMMEDA
 
   r0=rearth
   dp3d = elem%state%dp3d(:,:,:,tl)
@@ -816,7 +816,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
      elem%state%phinh_i(:,:,:,tl) = phiDA
 
   enddo
-!endif DA
+!endif HOMMEDA
 #endif
 
   do tl = 2,timelevels

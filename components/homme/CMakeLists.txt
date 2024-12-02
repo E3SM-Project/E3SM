@@ -30,7 +30,7 @@ INCLUDE(FortranCInterface)
 
 #if machine file sets WITH_DA, then all targets are built with DA (for unit testing)
 IF (WITH_DA)
-ADD_DEFINITIONS(-DDA)
+ADD_DEFINITIONS(-DHOMMEDA)
 ENDIF ()
 
 IF (${HOMME_BUILD_EXECS})

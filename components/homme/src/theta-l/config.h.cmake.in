@@ -81,5 +81,5 @@
 #cmakedefine HOMME_ENABLE_COMPOSE
 
 /* Detect whether it is deep atm geometry */
-#cmakedefine DA
+#cmakedefine HOMMEDA
 

@@ -3,7 +3,7 @@
 macro(thetal_setup macroDA)
 
 IF (${macroDA})
- SET(DA TRUE)
+ SET(HOMMEDA TRUE)
 ENDIF ()
 
 SET (KOKKOS_TARGET FALSE)

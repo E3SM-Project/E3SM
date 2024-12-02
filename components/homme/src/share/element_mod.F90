@@ -129,7 +129,7 @@ module element_mod
      integer(kind=long_kind)  :: gdofP(np,np)                         ! global degree of freedom (P-grid)
 
      real (kind=real_kind)    :: fcor(np,np)                          ! Coriolis term sin
-#ifdef DA
+#ifdef HOMMEDA
      real (kind=real_kind)    :: fcorcosine(np,np)                    ! Coriolis term cos
 #endif
      type (index_t) :: idxP

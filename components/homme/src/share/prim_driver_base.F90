@@ -1576,7 +1576,7 @@ contains
   use physical_constants, only : cp, g, kappa, Rgas, p0
   use element_ops,        only : get_temperature, get_r_star, get_hydro_pressure
   use eos,                only : pnh_and_exner_from_eos
-#ifdef DA
+#ifdef HOMMEDA
   use eos,                only : pnh_and_exner_from_eos2
 #endif
 #ifdef HOMMEXX_BFB_TESTING
@@ -1605,7 +1605,7 @@ contains
   real (kind=real_kind)  :: rstarn1(np,np,nlev)
   real (kind=real_kind)  :: exner(np,np,nlev)
   real (kind=real_kind)  :: dpnh_dp_i(np,np,nlevp)
-#ifdef DA
+#ifdef HOMMEDA
   real (kind=real_kind)  :: p_exner(np,np,nlev)
   real (kind=real_kind)  :: dphi(np,np,nlev)
   real (kind=real_kind)  :: rs(np,np), r1(np,np), r0, aa, bb
@@ -1653,7 +1653,7 @@ contains
 
    !one can set pprime=0 to hydro regime but it is not done in master
    !compute pnh, here only pnh is needed
-#ifdef DA
+#ifdef HOMMEDA
    r0=rearth
    dphi(:,:,1:nlev)=elem%state%phinh_i(:,:,2:nlevp,np1)-elem%state%phinh_i(:,:,1:nlev,np1)
 
@@ -1728,7 +1728,7 @@ contains
                   if (q==1) then
                      elem%derived%FQps(i,j)=elem%derived%FQps(i,j)+fq/dt
                      dp_adj(i,j,k)=dp_adj(i,j,k) + fq
-#ifdef DA
+#ifdef HOMMEDA
                      adjp(i,j,k)=adjp(i,j,k)+fq
 #endif
                   endif
@@ -1775,7 +1775,7 @@ contains
       endif
 
       do k=1,nlev
-#ifdef DA
+#ifdef HOMMEDA
          pnh(:,:,k)=adjp(:,:,k)
 #else
          pnh(:,:,k)=phydro(:,:,k) + pprime(:,:,k)
@@ -1799,7 +1799,7 @@ contains
    phi_n1(:,:,nlevp)=elem%state%phinh_i(:,:,nlevp,np1)
 
    do k=nlev,1,-1
-#ifndef DA
+#ifndef HOMMEDA
       phi_n1(:,:,k)=phi_n1(:,:,k+1) + Rgas*vthn1(:,:,k)*exner(:,:,k)/pnh(:,:,k)
 #else
       !bottom rhat for this midlevel
@@ -1809,7 +1809,7 @@ contains
       r1=( rs**3.0 + 3.0*Rgas*vthn1(:,:,k)/p_exner(:,:,k)/gravit/r0 )**(1.0/3.0)
 
       phi_n1(:,:,k)=gravit*r0*(r1-1.0)
-!if DA
+!ifdef HOMMEDA
 #endif  
    enddo
    

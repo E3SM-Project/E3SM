@@ -81,7 +81,7 @@ subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
   integer,            intent(in)            :: nets,nete                ! start, end element index
 
   integer,  parameter :: use_zcoords  = 0                               ! use vertical pressure coordinates
-#ifdef DA
+#ifdef HOMMEDA
   integer,  parameter :: is_deep      = 1                               ! use deep atmosphere approximation
 #else
   integer,  parameter :: is_deep      = 0                               ! use shallow atmosphere approximation
@@ -410,7 +410,7 @@ end subroutine
 subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
 
   ! supercell storm test case
-#ifdef DA
+#ifdef HOMMEDA
   use eos,             only: pnh_and_exner_from_eos
 #endif
 
@@ -515,7 +515,7 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
 
   enddo
 
-#ifdef DA
+#ifdef HOMMEDA
 !print *, 'HELLLLLLLLLLLLLLLLLLLLLLo'
 !stop
 !temp code to check init

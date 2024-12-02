@@ -793,7 +793,7 @@ contains
              else
                 elem%fcor(i,j) = 2.0D0*omega*SIN(elem%spherep(i,j)%lat)
              endif
-#ifdef DA
+#ifdef HOMMEDA
              !DA term, only nonrotated version
              elem%fcorcosine(i,j) = 2.0D0*omega*COS(elem%spherep(i,j)%lat)
 #endif

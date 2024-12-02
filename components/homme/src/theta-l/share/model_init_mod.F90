@@ -65,7 +65,7 @@ contains
      invrhati = 1.0/rhati
 
      gradtemp(:,:,:,ie) = gradient_sphere( elem(ie)%state%phis(:,:), deriv, elem(ie)%Dinv)
-#ifdef DA
+#ifdef HOMMEDA
      gradtemp(:,:,1,ie) = gradtemp(:,:,1,ie)*invrhati(:,:,nlevp)
      gradtemp(:,:,2,ie) = gradtemp(:,:,2,ie)*invrhati(:,:,nlevp)
 #endif
@@ -110,7 +110,7 @@ contains
 
 
     ! unit test for analytic jacobian and tri-diag solve used by IMEX methods
-#ifndef DA
+#ifndef HOMMEDA
     if (.not. theta_hydrostatic_mode) &
          call test_imex_jacobian(elem,hybrid,hvcoord,tl,nets,nete)
 #endif

@@ -1099,14 +1099,14 @@ contains
   real (kind=real_kind) ::  v1,v2,w,d_eta_dot_dpdn_dn, T0
   integer :: i,j,k,kptr,ie, nlyr_tot
 
-#ifdef DA
+#ifdef HOMMEDA
   real (kind=real_kind) ::  rheighti(np,np,nlevp), rheightm(np,np,nlev), rhatm(np,np,nlev), r0
   real (kind=real_kind) ::  rhati(np,np,nlevp), invrhatm(np,np,nlev), invrhati(np,np,nlevp), munew(np,np,nlevp)
 #endif
 
   call t_startf('compute_andor_apply_rhs')
 
-#ifdef DA
+#ifdef HOMMEDA
   r0 = rearth
 #endif
 
@@ -1126,7 +1126,7 @@ contains
      vtheta(:,:,:) = vtheta_dp(:,:,:)/dp3d(:,:,:)
      phi_i => elem(ie)%state%phinh_i(:,:,:,n0)
 
-#ifdef DA
+#ifdef HOMMEDA
      rheighti = phi_i/g + r0
      !rheighti = 1.0
      rheightm(:,:,1:nlev) = (rheighti(:,:,1:nlev) + rheighti(:,:,2:nlevp))/2.0
@@ -1209,7 +1209,7 @@ contains
         vtemp(:,:,1,k) = elem(ie)%state%v(:,:,1,k,n0)*dp3d(:,:,k)
         vtemp(:,:,2,k) = elem(ie)%state%v(:,:,2,k,n0)*dp3d(:,:,k)
 
-#ifdef DA
+#ifdef HOMMEDA
         vtemp(:,:,1,k) = vtemp(:,:,1,k)*invrhatm(:,:,k)
         vtemp(:,:,2,k) = vtemp(:,:,2,k)*invrhatm(:,:,k)
 #endif
@@ -1218,14 +1218,14 @@ contains
         divdp(:,:,k)=divergence_sphere(vtemp(:,:,:,k),deriv,elem(ie))
         vort(:,:,k)=vorticity_sphere(elem(ie)%state%v(:,:,:,k,n0),deriv,elem(ie))
 
-#ifdef DA
+#ifdef HOMMEDA
         vort(:,:,k) = vort(:,:,k)*invrhatm(:,:,k)
 #endif
      enddo
 
 
 !!!! Ignore omega for now
-!DA problematic
+! DA problematic
      ! Compute omega =  Dpi/Dt   Used only as a DIAGNOSTIC
      pi_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
      omega_i(:,:,1)=0
@@ -1257,7 +1257,7 @@ contains
         theta_vadv=0
         v_vadv=0
      else
-!DA does not run rsplit==0
+! DA does not run rsplit==0
         sdot_sum=0
         do k=1,nlev
            ! ==================================================
@@ -1353,13 +1353,13 @@ contains
      do k=1,nlev
         ! compute gradphi at interfaces and then average to levels
         gradphinh_i(:,:,:,k)   = gradient_sphere(phi_i(:,:,k),deriv,elem(ie)%Dinv)   
-#ifdef DA
+#ifdef HOMMEDA
         gradphinh_i(:,:,1,k)   = gradphinh_i(:,:,1,k) * invrhati(:,:,k) 
         gradphinh_i(:,:,2,k)   = gradphinh_i(:,:,2,k) * invrhati(:,:,k) 
 #endif      
      
         gradw_i(:,:,:,k)   = gradient_sphere(elem(ie)%state%w_i(:,:,k,n0),deriv,elem(ie)%Dinv)
-#ifdef DA
+#ifdef HOMMEDA
         gradw_i(:,:,1,k)   = gradw_i(:,:,1,k) * invrhati(:,:,k)
         gradw_i(:,:,2,k)   = gradw_i(:,:,2,k) * invrhati(:,:,k)
 #endif
@@ -1368,7 +1368,7 @@ contains
         ! w - tendency on interfaces
         w_tens(:,:,k) = (-w_vadv_i(:,:,k) - v_gradw_i(:,:,k))*scale1 - scale2*g*(1-dpnh_dp_i(:,:,k))
 
-#ifdef DA
+#ifdef HOMMEDA
         !add DA metric term
         w_tens(:,:,k) = w_tens(:,:,k) +scale1*(v_i(:,:,1,k)*v_i(:,:,1,k)+v_i(:,:,2,k)*v_i(:,:,2,k))/rheighti(:,:,k)
         !add DA cos
@@ -1399,13 +1399,13 @@ contains
      k =nlevp 
      ! compute gradphi at interfaces and then average to levels
      gradphinh_i(:,:,:,k)   = gradient_sphere(phi_i(:,:,k),deriv,elem(ie)%Dinv)
-#ifdef DA
+#ifdef HOMMEDA
      gradphinh_i(:,:,1,k)   = gradphinh_i(:,:,1,k) * invrhati(:,:,k)
      gradphinh_i(:,:,2,k)   = gradphinh_i(:,:,2,k) * invrhati(:,:,k)
 #endif
 
      gradw_i(:,:,:,k)   = gradient_sphere(elem(ie)%state%w_i(:,:,k,n0),deriv,elem(ie)%Dinv)
-#ifdef DA
+#ifdef HOMMEDA
      gradw_i(:,:,1,k)   = gradw_i(:,:,1,k) * invrhati(:,:,k)
      gradw_i(:,:,2,k)   = gradw_i(:,:,2,k) * invrhati(:,:,k)
 #endif
@@ -1413,7 +1413,7 @@ contains
      v_gradw_i(:,:,k) = v_i(:,:,1,k)*gradw_i(:,:,1,k) + v_i(:,:,2,k)*gradw_i(:,:,2,k)
      ! w - tendency on interfaces
      w_tens(:,:,k) = (-w_vadv_i(:,:,k) - v_gradw_i(:,:,k))*scale1 - scale1*g*(1-dpnh_dp_i(:,:,k) )
-#ifdef DA
+#ifdef HOMMEDA
      !add DA metric
      w_tens(:,:,k) = w_tens(:,:,k) +scale1*(v_i(:,:,1,k)*v_i(:,:,1,k)+v_i(:,:,2,k)*v_i(:,:,2,k))/rheighti(:,:,k)
      !add DA cos
@@ -1436,7 +1436,7 @@ contains
         if (theta_advect_form==0) then
            v_theta(:,:,1,k)=elem(ie)%state%v(:,:,1,k,n0)*vtheta_dp(:,:,k)
            v_theta(:,:,2,k)=elem(ie)%state%v(:,:,2,k,n0)*vtheta_dp(:,:,k)
-#ifdef DA
+#ifdef HOMMEDA
            v_theta(:,:,1,k) = v_theta(:,:,1,k) * invrhatm(:,:,k)
            v_theta(:,:,2,k) = v_theta(:,:,2,k) * invrhatm(:,:,k)
 #endif
@@ -1445,7 +1445,7 @@ contains
         else
            ! alternate form, non-conservative, better HS topography results
            v_theta(:,:,:,k) = gradient_sphere(vtheta(:,:,k),deriv,elem(ie)%Dinv)
-#ifdef DA
+#ifdef HOMMEDA
            v_theta(:,:,1,k) = v_theta(:,:,1,k) * invrhatm(:,:,k)
            v_theta(:,:,2,k) = v_theta(:,:,2,k) * invrhatm(:,:,k)
 #endif
@@ -1466,7 +1466,7 @@ contains
         temp(:,:,k) = (elem(ie)%state%w_i(:,:,k,n0)**2 + &
              elem(ie)%state%w_i(:,:,k+1,n0)**2)/4
         wvor(:,:,:,k) = gradient_sphere(temp(:,:,k),deriv,elem(ie)%Dinv)
-#ifdef DA
+#ifdef HOMMEDA
         wvor(:,:,1,k) = wvor(:,:,1,k) * invrhatm(:,:,k)
         wvor(:,:,2,k) = wvor(:,:,2,k) * invrhatm(:,:,k)
 #endif
@@ -1480,7 +1480,7 @@ contains
         KE(:,:,k) = ( elem(ie)%state%v(:,:,1,k,n0)**2 + elem(ie)%state%v(:,:,2,k,n0)**2)/2
         gradKE(:,:,:,k) = gradient_sphere(KE(:,:,k),deriv,elem(ie)%Dinv)
         gradexner(:,:,:,k) = gradient_sphere(exner(:,:,k),deriv,elem(ie)%Dinv)
-#ifdef DA
+#ifdef HOMMEDA
         gradKE(:,:,1,k) = gradKE(:,:,1,k) * invrhatm(:,:,k)
         gradKE(:,:,2,k) = gradKE(:,:,2,k) * invrhatm(:,:,k)
         gradexner(:,:,1,k) = gradexner(:,:,1,k) * invrhatm(:,:,k)
@@ -1576,7 +1576,7 @@ contains
                   -Cp*vtheta(i,j,k)*gradexner(i,j,2,k) &
                   -wvor(i,j,2,k) )*scale1
 
-#ifdef DA
+#ifdef HOMMEDA
               vtens1(i,j,k) = vtens1(i,j,k) - scale1*(elem(ie)%state%w_i(i,j,k,n0)+elem(ie)%state%w_i(i,j,k+1,n0))/2.0*(  v1/rheightm(i,j,k) &
                                                                                   + elem(ie)%fcorcosine(i,j) )
               vtens2(i,j,k) = vtens2(i,j,k) - scale1*(elem(ie)%state%w_i(i,j,k,n0)+elem(ie)%state%w_i(i,j,k+1,n0))/2.0*v2/rheightm(i,j,k)
