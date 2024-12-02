@@ -537,10 +537,10 @@ CONTAINS
        inst_suffix, logunit, read_restart, case_name)
     use shr_cal_mod, only : shr_cal_ymdtod2string
     ! !DESCRIPTION: run method for dice model
+#ifdef HAVE_MOAB
 #ifdef MOABDEBUG
     use iMOAB, only: iMOAB_WriteMesh
 #endif
-#ifdef HAVE_MOAB
     use seq_flds_mod    , only: seq_flds_i2x_fields 
     use seq_flds_mod    , only: moab_set_tag_from_av
 #endif
