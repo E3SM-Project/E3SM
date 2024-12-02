@@ -999,8 +999,8 @@ contains
        vmr_old2(:ncol,:,:) = vmr(:ncol,:,:)
     endif
     call t_startf('imp_sol')
-    call imp_sol( vmr, reaction_rates, het_rates, extfrc, delt, &
-                  invariants(1,1,indexm), ncol, lchnk, ltrop_sol(:ncol) ) 
+    !call imp_sol( vmr, reaction_rates, het_rates, extfrc, delt, &
+    !              invariants(1,1,indexm), ncol, lchnk, ltrop_sol(:ncol) ) 
     call t_stopf('imp_sol')
 
     ! ozone production 
