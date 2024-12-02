@@ -76,7 +76,13 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_manufactured_solution_tend_thick(tend, err)!{{{
+   subroutine ocn_manufactured_solution_tend_thick(forcingPool, tend, err)!{{{
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      type (mpas_pool_type), intent(in) :: forcingPool
 
       !-----------------------------------------------------------------
       ! input/output variables
@@ -97,6 +103,7 @@ contains
 
       integer :: iCell, kmin, kmax, k
       real (kind=RKIND) :: phase, time
+      real (kind=RKIND), pointer :: forcingTimeIncrement
 
       ! End preamble
       !-------------
@@ -104,7 +111,9 @@ contains
 
       if (.not. config_use_manufactured_solution) return
 
-      time = daysSinceStartOfSim*86400.0_RKIND
+      call mpas_pool_get_array(forcingPool, 'forcingTimeIncrement', forcingTimeIncrement) 
+
+      time = daysSinceStartOfSim*86400.0_RKIND + forcingTimeIncrement 
 
       do iCell = 1,nCellsOwned
 
@@ -137,7 +146,13 @@ contains
 !>  This routine computes the velocity tendency for the manufactured solution
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_manufactured_solution_tend_vel(tend, err)!{{{
+   subroutine ocn_manufactured_solution_tend_vel(forcingPool, tend, err)!{{{
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      type (mpas_pool_type), intent(in) :: forcingPool
 
       !-----------------------------------------------------------------
       ! input/output variables
@@ -158,6 +173,7 @@ contains
 
       integer :: iEdge, kmin, kmax, k
       real (kind=RKIND) :: phase, u, v, time
+      real (kind=RKIND), pointer :: forcingTimeIncrement
 
       ! End preamble
       !-----------------------------------------------------------------
@@ -165,7 +181,9 @@ contains
 
       if (.not. config_use_manufactured_solution) return
 
-      time = daysSinceStartOfSim*86400.0_RKIND
+      call mpas_pool_get_array(forcingPool, 'forcingTimeIncrement', forcingTimeIncrement) 
+
+      time = daysSinceStartOfSim*86400.0_RKIND + forcingTimeIncrement 
 
       do iEdge = 1, nEdgesOwned
 
