@@ -493,7 +493,8 @@ contains
     !stddev=f(TKE)
     !!..........................................................
     w2(1:ncol,1:pver) = 0._r8
-    call subgrid_mean_updraft(ncol, w0, wsig, w2)
+    call subgrid_mean_updraft(ncol, w0, wsig, &! in
+    w2) !out
 
     wsubice(1:ncol,1:pver) = 0._r8
     wsubice(1:ncol,1:pver) = wsubi(1:ncol,1:pver)
@@ -510,7 +511,7 @@ contains
     !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
     !ICE Nucleation
 
-    call nucleate_ice_cam_calc(state, wsubice, pbuf)
+    call nucleate_ice_cam_calc(state, wsubice, pbuf) ! BALLI: We need this call to compute NAAI, NAAI_HOM is also computed but not used anywhere in the code
 
     !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
     ! Droplet Activation
@@ -645,10 +646,9 @@ subroutine subgrid_mean_updraft(ncol, w0, wsig, ww)
      do i = 1, ncol
 
         sigma  = max(0.001_r8, wsig(i,k))
-        wlarge = w0(i,k)
-
         xx = 6._r8 * sigma / nbin
 
+        wlarge = w0(i,k)
         do ibin = 1, nbin
            yy = wlarge - 3._r8*sigma + 0.5*xx
            yy = yy + (ibin-1)*xx
@@ -673,9 +673,6 @@ subroutine subgrid_mean_updraft(ncol, w0, wsig, ww)
         else
            ww(i,k) = 0.001_r8
         end if
-
-        !!write(6,*) 'i, k, w0, wsig, ww : ', i, k, w0(i,k), wsig(i,k), ww(i,k)
-
      end do
   end do
 

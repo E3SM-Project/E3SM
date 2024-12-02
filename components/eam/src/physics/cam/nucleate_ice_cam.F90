@@ -63,8 +63,8 @@ integer :: &
    numice_idx = -1
 
 integer :: &
-   naai_idx,     &
-   naai_hom_idx
+   naai_idx!,     &
+   !naai_hom_idx
 
 integer :: &
    ast_idx   = -1, &
@@ -180,7 +180,7 @@ end subroutine nucleate_ice_cam_readnl
 subroutine nucleate_ice_cam_register()
 
    call pbuf_add_field('NAAI',     'physpkg', dtype_r8, (/pcols,pver/), naai_idx)
-   call pbuf_add_field('NAAI_HOM', 'physpkg', dtype_r8, (/pcols,pver/), naai_hom_idx)
+   !call pbuf_add_field('NAAI_HOM', 'physpkg', dtype_r8, (/pcols,pver/), naai_hom_idx)
 
 end subroutine nucleate_ice_cam_register
 
@@ -517,7 +517,7 @@ subroutine nucleate_ice_cam_calc( &
 
    ! naai and naai_hom are the outputs shared with the microphysics
    real(r8), pointer :: naai(:,:)       ! number of activated aerosol for ice nucleation 
-   real(r8), pointer :: naai_hom(:,:)   ! number of activated aerosol for ice nucleation (homogeneous freezing only)
+   !real(r8), pointer :: naai_hom(:,:)   ! number of activated aerosol for ice nucleation (homogeneous freezing only)
 
    integer :: lchnk, ncol
    integer :: itim_old
@@ -676,9 +676,9 @@ subroutine nucleate_ice_cam_calc( &
 
    ! naai and naai_hom are the outputs from this parameterization
    call pbuf_get_field(pbuf, naai_idx, naai)
-   call pbuf_get_field(pbuf, naai_hom_idx, naai_hom)
+   !call pbuf_get_field(pbuf, naai_hom_idx, naai_hom)
    naai(1:ncol,1:pver)     = 0._r8  
-   naai_hom(1:ncol,1:pver) = 0._r8  
+   !naai_hom(1:ncol,1:pver) = 0._r8  
 
    ! initialize history output fields for ice nucleation
    nihf(1:ncol,1:pver)  = 0._r8  
@@ -860,7 +860,7 @@ subroutine nucleate_ice_cam_calc( &
                clim_modal_aero)
 
 
-            naai_hom(i,k) = nihf(i,k)
+            !naai_hom(i,k) = nihf(i,k)
 
             ! output activated ice (convert from #/kg -> #/m3)
             nihf(i,k)     = nihf(i,k) *rho(i,k)
