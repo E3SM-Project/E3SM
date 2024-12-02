@@ -10,13 +10,14 @@
        This file may have atm desc entries.
   -->
   <description modifier_mode="1">
-    <desc atm="DATM[%QIA][%WISOQIA][%CRU][%CRUv7][%GSWP3v1][%DAYMET][%MOSARTTEST][%NLDAS2][%CPLHIST][%1PT][%NYF][%IAF][%JRA][%JRA-1p4-2018][%JRA-RYF8485][%JRA-RYF9091][%JRA-RYF0304]"> Data driven ATM </desc>
+    <desc atm="DATM[%QIA][%WISOQIA][%CRU][%CRUv7][%GSWP3v1][%kmELM][%uELMTES][%MOSARTTEST][%NLDAS2][%CPLHIST][%1PT][%NYF][%IAF][%JRA][%JRA-1p4-2018][%JRA-RYF8485][%JRA-RYF9091][%JRA-RYF0304]"> Data driven ATM </desc>
     <desc option="QIA"> QIAN data set </desc>
     <desc option="WISOQIA">QIAN with water isotopes</desc>
     <desc option="CRU"> CRUNCEP data set </desc>
     <desc option="CRUv7"> CLM CRU NCEP v7 data set </desc>
     <desc option="GSWP3v1"> GSWP3v1 data set </desc>
-    <desc option="DAYMET"> Daymet NA data set, sub-daily downscaled with GSWP3 or ERA5 </desc>
+    <desc option="kmELM"> Daymet NA data set, sub-daily downscaled with GSWP3 </desc>
+    <desc option="uELMTES"> Daymet NA data set, sub-daily downscaled with ERA5 for TESSFA project </desc>
     <desc option="MOSARTTEST"> MOSART test data set using older NLDAS data </desc>
     <desc option="NLDAS2"> NLDAS2 regional 0.125 degree data set over the U.S. (25-53N, 235-293E). WARNING: Garbage data will be produced for runs extending beyond this regional domain. </desc>
     <desc option="CPLHIST"> Coupler hist data set (in this mode, it is strongly recommended that the model domain and the coupler history forcing are on the same domain)</desc>
@@ -41,7 +42,7 @@
 
   <entry id="DATM_MODE">
     <type>char</type>
-    <valid_values>CORE2_NYF,CORE2_IAF,CLM_QIAN,CLM_QIAN_WISO,CLM1PT,CLMCRUNCEP,CLMCRUNCEPv7,CLMGSWP3v1,ELM_KM,uELMTES,CLMMOSARTTEST,CLMNLDAS2,CPLHIST,CORE_IAF_JRA,CORE_IAF_JRA_1p4_2018,CORE_RYF8485_JRA,CORE_RYF9091_JRA,CORE_RYF0304_JRA</valid_values>
+    <valid_values>CORE2_NYF,CORE2_IAF,CLM_QIAN,CLM_QIAN_WISO,CLM1PT,CLMCRUNCEP,CLMCRUNCEPv7,CLMGSWP3v1,uELM_NA,uELM_TES,CLMMOSARTTEST,CLMNLDAS2,CPLHIST,CORE_IAF_JRA,CORE_IAF_JRA_1p4_2018,CORE_RYF8485_JRA,CORE_RYF9091_JRA,CORE_RYF0304_JRA</valid_values>
     <default_value>CORE2_NYF</default_value>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
@@ -51,8 +52,8 @@
       WARNING for CLMNLDAS2: This is a regional forcing dataset over the U.S. (25-53N, 235-293E). Garbage data will be produced for runs extending beyond this regional domain. 
       WARNING for CLMGSWP3v1: Humidity is identically zero for last time step in Dec/2013 and all of 2014 so you should NOT use 2014
 data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
-      ELM_KM are GSWP3v2 downscaled with Daymet v4 for North America at km resolution (ultra-high res. land model)
-      uELMTES are ERA5 downscaled with Daymet v4 for TESSFA at km resolution (ultra-high res. land model)      
+      uELM_NA are GSWP3v2 downscaled with Daymet v4 for North America at km resolution (ultra-high res. land model)
+      uELM_TES are ERA5 downscaled with Daymet v4 for TESSFA at 4km resolution (ultra-high res. land model)      
     </desc>
     <values match="last">
       <value compset="%NYF">CORE2_NYF</value>
@@ -67,8 +68,8 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
       <value compset="%CRU">CLMCRUNCEP</value>
       <value compset="%CRUv7">CLMCRUNCEPv7</value>
       <value compset="%GSWP3v1">CLMGSWP3v1</value>
-      <value compset="%DAYMET">ELM_KM</value>
-      <value compset="%DAYMET">uELMTES</value>      
+      <value compset="%kmELM">uELM_NA</value>
+      <value compset="%uELMTES">uELM_TES</value>      
       <value compset="%MOSARTTEST">CLMMOSARTTEST</value>
       <value compset="%NLDAS2">CLMNLDAS2</value>
       <value compset="%1PT">CLM1PT</value>
@@ -224,7 +225,8 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
       <value compset="1850.*_DATM%QIA">1</value>
       <value compset="1850.*_DATM%CRU">1</value>
       <value compset="1850.*_DATM%GSW">1</value>
-      <value compset="1850.*_DATM%DAYMET">1</value>
+      <value compset="1850.*_DATM%kmELM">1</value>
+      <value compset="1850.*_DATM%uELMTES">1</value>      
       <value compset="HIST.*_DATM%QIA">1895</value>
       <value compset="HIST.*_DATM%CRU">1901</value>
       <value compset="HIST.*_DATM%GSW">1901</value>
@@ -232,7 +234,8 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
       <value compset="20TR.*_DATM%QIA">1895</value>
       <value compset="20TR.*_DATM%CRU">1901</value>
       <value compset="20TR.*_DATM%GSW">1901</value>
-      <value compset="20TR.*_DATM%DAYMET">1980</value>
+      <value compset="20TR.*_DATM%kmELM">1980</value>      
+      <value compset="20TR.*_DATM%uELMTES">1980</value>
       <value compset="SSP.*_DATM%QIA">$DATM_CLMNCEP_YR_START</value>
       <value compset="SSP.*_DATM%CRU">$DATM_CLMNCEP_YR_START</value>
       <value compset="SSP.*_DATM%GSW">$DATM_CLMNCEP_YR_START</value>
@@ -257,7 +260,8 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
       <value compset="1850.*_DATM%QIA">1948</value>
       <value compset="1850.*_DATM%CRU">1901</value>
       <value compset="1850.*_DATM%GSW">1901</value>
-      <value compset="1850.*_DATM%DAYMET">1980</value>
+      <value compset="1850.*_DATM%kmELM">1980</value>
+      <value compset="1850.*_DATM%uELMTES">1980</value>      
       <value compset="1850.*_DATM%NLDAS2">0</value>  <!-- Unsupported -->
       <value compset="2000.*_DATM%WISOQIA">2000</value>
       <value compset="2000.*_DATM%QIA">1972</value>
@@ -268,7 +272,8 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
       <value compset="20TR.*_DATM%QIA">1948</value>
       <value compset="20TR.*_DATM%CRU">1901</value>
       <value compset="20TR.*_DATM%GSW">1901</value>
-      <value compset="20TR.*_DATM%DAYMET">1980</value>
+      <value compset="20TR.*_DATM%kmELM">1980</value>      
+      <value compset="20TR.*_DATM%uELMTES">1980</value>
       <value compset="20TR.*_DATM%NLDAS2">0</value>  <!-- Unsupported -->
       <value compset="4804.*_DATM%QIA">1948</value>
       <value compset="SSP.*_DATM%QIA" >1995</value>
@@ -301,7 +306,8 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
       <value   compset="1850.*_DATM%QIA">1972</value>
       <value   compset="1850.*_DATM%CRU">1920</value>
       <value   compset="1850.*_DATM%GSW">1920</value>
-      <value   compset="1850.*_DATM%DAYMET">1990</value>
+      <value   compset="1850.*_DATM%kmELM">2014</value>
+      <value   compset="1850.*_DATM%uELMTES">2023</value>
       <value   compset="1850.*_DATM%NLDAS2">-1</value>  <!-- Unsupported -->
       <value   compset="2000.*_DATM%WISOQIA">2004</value>
       <value   compset="2000.*_DATM%QIA">2004</value>
@@ -312,7 +318,8 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
       <value   compset="20TR.*_DATM%QIA">1972</value>
       <value   compset="20TR.*_DATM%CRU">1920</value>
       <value   compset="20TR.*_DATM%GSW">1920</value>
-      <value   compset="20TR.*_DATM%DAYMET">2014</value>
+      <value   compset="20TR.*_DATM%kmELM">2014</value>
+      <value   compset="20TR.*_DATM%uELMTES">2023</value>      
       <value   compset="20TR.*_DATM%NLDAS2">-1</value>  <!-- Unsupported -->
       <value   compset="4804.*_DATM%QIA">2004</value>
       <value   compset="SSP.*_DATM%QIA">2004</value>

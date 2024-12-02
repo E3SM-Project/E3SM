@@ -18,10 +18,10 @@ ulimit -c unlimited
 
 ### Repo and Branch 
 ```
-git clone git@github.com:daliwang/uELM.git
+git clone git@github.com:daliwang/kmELM.git
 cd uELM
 export uELM_home=$PWD
-git checkout elm_datmmode_uELM
+git checkout TESSFA
 git submodule update --init --recursive
 ```
 
@@ -38,5 +38,5 @@ $uELM_home/e3sm_cases
 
 Run directory:
 ```
-/gpfs/wolf2/cades/cli185/scratch/$USER 
+$uELM_home/e3sm_runs 
 ```
