@@ -1130,7 +1130,6 @@ struct Functions
     const Scalar& max_total_ni,
     const bool& do_predict_nc,
     const bool& do_prescribed_CCN,
-    const bool& use_hetfrz_classnuc,
     const Scalar& dt,
     const Scalar& inv_dt,
     const view_dnu_table& dnu,

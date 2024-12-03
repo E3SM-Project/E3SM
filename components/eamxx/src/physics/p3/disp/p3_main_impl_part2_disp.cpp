@@ -111,7 +111,7 @@ void Functions<Real,DefaultDevice>
     // main k-loop (for processes):
     const bool use_hetfrz_classnuc = false;
     p3_main_part2(
-      team, nk_pack, predictNc, do_prescribed_CCN, use_hetfrz_classnuc, dt, inv_dt,
+      team, nk_pack, max_total_ni, predictNc, do_prescribed_CCN, dt, inv_dt,
       dnu_table_vals, ice_table_vals, collect_table_vals, revap_table_vals,
       ekat::subview(pres, i), ekat::subview(dpres, i), ekat::subview(dz, i), ekat::subview(nc_nuceat_tend, i), ekat::subview(inv_exner, i),
       ekat::subview(exner, i), ekat::subview(inv_cld_frac_l, i), ekat::subview(inv_cld_frac_i, i), ekat::subview(inv_cld_frac_r, i),

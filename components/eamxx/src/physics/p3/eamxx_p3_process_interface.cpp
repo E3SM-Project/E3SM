@@ -91,6 +91,23 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   add_field<Updated> ("qv_prev_micro_step", scalar3d_layout_mid, kg/kg,        grid_name, ps);
   add_field<Updated> ("T_prev_micro_step",  scalar3d_layout_mid, K,            grid_name, ps);
 
+  // Input from MAM4xx-ACI for heterogeneous freezing calculations
+  constexpr auto cm = m / 100;
+
+  // units of number mixing ratios of tracers
+  constexpr auto frz_unit = 1 / (cm * cm * cm * s);
+  //  heterogeneous freezing by immersion nucleation [cm^-3 s^-1]
+  add_field<Required>("hetfrz_immersion_nucleation_tend", scalar3d_layout_mid,
+                      frz_unit, grid_name, ps);
+
+  // heterogeneous freezing by contact nucleation [cm^-3 s^-1]
+  add_field<Required>("hetfrz_contact_nucleation_tend", scalar3d_layout_mid, frz_unit,
+                      grid_name, ps);
+
+  // heterogeneous freezing by deposition nucleation [cm^-3 s^-1]
+  add_field<Required>("hetfrz_deposition_nucleation_tend", scalar3d_layout_mid,
+                      frz_unit, grid_name, ps);
+
   // Diagnostic Outputs: (all fields are just outputs w.r.t. P3)
   add_field<Updated>("precip_liq_surf_mass", scalar2d_layout,     kg/m2,     grid_name, "ACCUMULATED");
   add_field<Updated>("precip_ice_surf_mass", scalar2d_layout,     kg/m2,     grid_name, "ACCUMULATED");
