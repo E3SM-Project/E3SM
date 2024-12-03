@@ -432,7 +432,7 @@ void Functions<S,D>
     // cloud
     cloud_water_conservation(
       qc(k), dt,
-      qc2qr_autoconv_tend, qc2qr_accret_tend, qc2qi_collect_tend, qc2qi_hetero_freeze_tend, qc2qr_ice_shed_tend, qc2qi_berg_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend, not_skip_all);
+      qc2qr_autoconv_tend, qc2qr_accret_tend, qc2qi_collect_tend, qc2qi_hetero_freeze_tend, qc2qr_ice_shed_tend, qc2qi_berg_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend, qcheti_cnt, qicnt, use_hetfrz_classnuc, not_skip_all);
 
     // rain
     rain_water_conservation(

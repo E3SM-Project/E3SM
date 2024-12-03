@@ -13,9 +13,16 @@ void Functions<S,D>
 ::cloud_water_conservation(const Spack& qc, const Scalar dt,
   Spack& qc2qr_autoconv_tend, Spack& qc2qr_accret_tend, Spack &qc2qi_collect_tend, Spack& qc2qi_hetero_freeze_tend, 
   Spack& qc2qr_ice_shed_tend, Spack& qc2qi_berg_tend, Spack& qi2qv_sublim_tend, Spack& qv2qi_vapdep_tend,
-  const Smask& context)
+  Spack& qcheti_cnt, Spack& qicnt, const bool& use_hetfrz_classnuc, const Smask& context)
 {
-  const auto sinks = (qc2qr_autoconv_tend+qc2qr_accret_tend+qc2qi_collect_tend+qc2qi_hetero_freeze_tend+qc2qr_ice_shed_tend+qc2qi_berg_tend)*dt; // Sinks of cloud water
+
+  Spack sinks;
+  if(use_hetfrz_classnuc){
+    sinks = (qc2qr_autoconv_tend+qc2qr_accret_tend+qc2qi_collect_tend+qcheti_cnt+qc2qr_ice_shed_tend+qc2qi_berg_tend)*dt; // Sinks of cloud water
+  }
+  else{
+    sinks = (qc2qr_autoconv_tend+qc2qr_accret_tend+qc2qi_collect_tend+qc2qi_hetero_freeze_tend+qc2qr_ice_shed_tend+qc2qi_berg_tend)*dt; // Sinks of cloud water
+  }
   const auto sources = qc; // Source of cloud water
   Spack ratio;
 
@@ -28,7 +35,13 @@ void Functions<S,D>
     qc2qr_autoconv_tend.set(enforce_conservation, qc2qr_autoconv_tend*ratio);
     qc2qr_accret_tend.set(enforce_conservation, qc2qr_accret_tend*ratio);
     qc2qi_collect_tend.set(enforce_conservation, qc2qi_collect_tend*ratio);
-    qc2qi_hetero_freeze_tend.set(enforce_conservation, qc2qi_hetero_freeze_tend*ratio);
+    if(use_hetfrz_classnuc){
+         qcheti_cnt.set(enforce_conservation, qcheti_cnt*ratio);
+         qicnt.set(enforce_conservation, qicnt*ratio);
+    }
+    else{
+      qc2qi_hetero_freeze_tend.set(enforce_conservation, qc2qi_hetero_freeze_tend*ratio);
+    }
     qc2qr_ice_shed_tend.set(enforce_conservation, qc2qr_ice_shed_tend*ratio);
     qc2qi_berg_tend.set(enforce_conservation, qc2qi_berg_tend*ratio);
   }
