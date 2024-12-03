@@ -56,7 +56,8 @@ public:
 
 protected:
 
-  void add_grid (nonconstgrid_ptr_type grid);
+  void add_nonconst_grid (nonconstgrid_ptr_type grid);
+  void add_grid (grid_ptr_type grid);
   void alias_grid (const std::string& grid_name, const std::string& grid_alias);
 
   virtual remapper_ptr_type
