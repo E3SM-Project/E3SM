@@ -231,10 +231,11 @@ void AtmProcDAG::write_dag (const std::string& fname, const int verbosity) const
 
         for (const auto& fid : n.computed) {
           std::string fc = "<font color=\"";
+          int fid_out = std::abs(fid);
           fc += "black";
           fc += "\">  ";
           ofile << "      <tr><td align=\"left\">" << fc
-                << html_fix(print_fid(m_fids[fid],fid_verb))
+                << html_fix(print_fid(m_fids[fid_out], fid_verb))
                 << "</font></td></tr>\n";
         }
       }
@@ -279,9 +280,6 @@ void AtmProcDAG::write_dag (const std::string& fname, const int verbosity) const
         for (const auto& gr_fid : n.gr_computed) {
           std::string fc = "<font color=\"";
           fc += "black";
-          // i suspect this, and the below, is a typo, since a computed group
-          // being marked unmet doesn't make sense to me
-          // fc += (ekat::contains(unmet,gr_fid) ? "red" : "black");
           fc += "\">  ";
           ofile << "      <tr><td align=\"left\">" << fc << html_fix(print_fid(m_fids[gr_fid],fid_verb));
           ofile << "</font></td></tr>\n";
@@ -613,6 +611,7 @@ void AtmProcDAG::process_initial_conditions(const grid_field_map &ic_inited) {
   if (ic_inited.size() == 0) {
     return;
   }
+  std::set<int> to_be_marked;
   for (auto &node : m_nodes) {
     if (m_unmet_deps.at(node.id).empty()) {
       continue;
@@ -621,31 +620,38 @@ void AtmProcDAG::process_initial_conditions(const grid_field_map &ic_inited) {
       auto &node_unmet_fields = m_unmet_deps.at(node.id);
       // add the current node as a child of the IC node
       ic_node.children.push_back(node.id);
-      for (auto um_fid : node_unmet_fields) {
+      for (auto &um_fid : node_unmet_fields) {
         for (auto &it1 : ic_inited) {
           const auto &grid_name = it1.first;
           // if this unmet-dependency field's name is in the ic_inited map for
-          // the provided grid_name key, then we flip its value negative and
-          // break from the for (ic_inited) and for (node_unmet_fields) loops;
-          // otherwise, keep trying for the next grid_name
+          // the provided grid_name key, we record the field id in to_be_marked
+          // (because changing it messes up the iterator)
           if (ekat::contains(ic_inited.at(grid_name), m_fids[um_fid].name())) {
-            auto id_now_met = node_unmet_fields.extract(um_fid);
-            id_now_met.value() = -id_now_met.value();
-            node_unmet_fields.insert(std::move(id_now_met));
+            to_be_marked.insert(um_fid);
             // add the fid of the formerly unmet dep to the initial condition
             // node's computed list
             ic_node.computed.insert(um_fid);
-            goto endloop;
           } else {
             continue;
           }
         }
-      endloop:;
+      }
+      if (to_be_marked.empty()) {
+        continue;
+      } else {
+        // change the previously unmet dependency's field id to be negative,
+        // indicating that it is now met and provided by the initial condition
+        for (auto &fid : to_be_marked) {
+          node_unmet_fields.erase(fid);
+          node_unmet_fields.insert(-fid);
+        }
       }
     }
   }
   m_IC_processed = true;
 }
+
+
 
 int AtmProcDAG::add_fid (const FieldIdentifier& fid) {
   auto it = ekat::find(m_fids,fid);

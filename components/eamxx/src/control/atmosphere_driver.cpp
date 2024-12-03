@@ -4,6 +4,7 @@
 
 #include "physics/share/physics_constants.hpp"
 
+#include "share/scream_config.hpp"
 #include "share/atm_process/atmosphere_process_group.hpp"
 #include "share/atm_process/atmosphere_process_dag.hpp"
 #include "share/field/field_utils.hpp"
@@ -694,16 +695,20 @@ void AtmosphereDriver::create_fields()
     AtmProcDAG dag;
     // First, add all atm processes
     dag.create_dag(*m_atm_process_group);
-    // Write a dot file for visualization
+    // Write a dot file for visualizing the DAG
     if (m_atm_comm.am_i_root()) {
-      dag.write_dag("scream_atm_createField_dag.dot", std::max(verb_lvl,0));
+      std::string filename = "scream_atm_createField_dag";
+      if (is_scream_standalone()) {
+        filename += ".np" + std::to_string(m_atm_comm.size());
+      }
+      filename += ".dot";
+      dag.write_dag(filename, verb_lvl);
     }
   }
 
   m_ad_status |= s_fields_created;
 
   // If the user requested it, we can save a dictionary of the FM fields to file
-  auto& driver_options_pl = m_atm_params.sublist("driver_options");
   if (driver_options_pl.get("save_field_manager_content",false)) {
     auto pg = m_grids_manager->get_grid("Physics");
     const auto& fm = m_field_mgrs.at(pg->name());
@@ -1094,7 +1099,6 @@ void AtmosphereDriver::set_initial_conditions ()
   // Check which fields need to have an initial condition.
   std::map<std::string,std::vector<std::string>> ic_fields_names;
   std::vector<FieldIdentifier> ic_fields_to_copy;
-  std::map<std::string,std::vector<std::string>> fields_inited;
 
   // Check which fields should be loaded from the topography file
   std::map<std::string,std::vector<std::string>> topography_file_fields_names;
@@ -1123,7 +1127,7 @@ void AtmosphereDriver::set_initial_conditions ()
         EKAT_ERROR_MSG ("ERROR: invalid assignment for variable " + fname + ", only scalar "
                         "double or string, or vector double arguments are allowed");
       }
-      fields_inited[grid_name].push_back(fname);
+      m_fields_inited[grid_name].push_back(fname);
     } else if (fname == "phis" or fname == "sgh30") {
       // Both phis and sgh30 need to be loaded from the topography file
       auto& this_grid_topo_file_fnames = topography_file_fields_names[grid_name];
@@ -1226,7 +1230,7 @@ void AtmosphereDriver::set_initial_conditions ()
         auto p = f.get_header().get_parent().lock();
         if (p) {
           const auto& pname = p->get_identifier().name();
-          if (ekat::contains(fields_inited[grid_name],pname)) {
+          if (ekat::contains(m_fields_inited[grid_name],pname)) {
             // The parent is already inited. No need to init this field as well.
             names.erase(it2);
             run_again = true;
@@ -1449,7 +1453,7 @@ void AtmosphereDriver::set_initial_conditions ()
     // Loop through fields and apply perturbation.
     for (size_t f=0; f<perturbed_fields.size(); ++f) {
       const auto fname = perturbed_fields[f];
-      EKAT_REQUIRE_MSG(ekat::contains(fields_inited[fm->get_grid()->name()], fname),
+      EKAT_REQUIRE_MSG(ekat::contains(m_fields_inited[fm->get_grid()->name()], fname),
                        "Error! Attempting to apply perturbation to field not in initial_conditions.\n"
                        "  - Field: "+fname+"\n"
                        "  - Grid:  "+fm->get_grid()->name()+"\n");
@@ -1660,9 +1664,14 @@ void AtmosphereDriver::initialize_atm_procs ()
     dag.create_dag(*m_atm_process_group);
     // process the initial conditions to maybe fulfill unmet dependencies
     dag.process_initial_conditions(m_fields_inited);
-    // Write a dot file for visualization
+    // Write a dot file for visualizing the DAG
     if (m_atm_comm.am_i_root()) {
-      dag.write_dag("scream_atm_initProc_dag.dot", std::max(verb_lvl,0));
+      std::string filename = "scream_atm_initProc_dag";
+      if (is_scream_standalone()) {
+        filename += ".np" + std::to_string(m_atm_comm.size());
+      }
+      filename += ".dot";
+      dag.write_dag(filename, verb_lvl);
     }
   }
 }
