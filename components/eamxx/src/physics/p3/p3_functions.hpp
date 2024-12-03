@@ -211,6 +211,12 @@ struct Functions
     view_2d<const Spack> qv_prev;
     // T from previous step [K]
     view_2d<const Spack> t_prev;
+    // Heterogeneous freezing by immersion nucleation [cm^-3 s^-1]
+    view_2d<const Spack> hetfrz_immersion_nucleation_tend;
+    // Heterogeneous freezing by contact nucleation [cm^-3 s^-1]
+    view_2d<const Spack> hetfrz_contact_nucleation_tend;
+    // Heterogeneous freezing by deposition nucleation [cm^-3 s^-1]
+    view_2d<const Spack> hetfrz_deposition_nucleation_tend;
   };
 
   // This struct stores diagnostic outputs computed by P3.
