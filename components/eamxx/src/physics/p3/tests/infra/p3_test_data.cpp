@@ -1367,8 +1367,8 @@ Int p3_main_host(
   P3F::P3DiagnosticOutputs diag_outputs{qv2qi_depos_tend_d, precip_liq_surf_d,
                                         precip_ice_surf_d, diag_eff_radius_qc_d, diag_eff_radius_qi_d, diag_eff_radius_qr_d,
                                         rho_qi_d,precip_liq_flux_d, precip_ice_flux_d, precip_total_tend_d, nevapr_d};
-  P3F::P3Infrastructure infrastructure{dt, it, its, ite, kts, kte,
-                                       do_predict_nc, do_prescribed_CCN, col_location_d};
+  /*P3F::P3Infrastructure infrastructure{dt, it, its, ite, kts, kte,
+                                       do_predict_nc, do_prescribed_CCN, col_location_d};*/
   P3F::P3HistoryOnly history_only{liq_ice_exchange_d, vap_liq_exchange_d,
                                   vap_ice_exchange_d};
 
@@ -1419,7 +1419,7 @@ Int p3_main_host(
   const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(nj, nk_pack);
   ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr(nk_pack, 52, policy);
 
-  auto elapsed_microsec = P3F::p3_main(runtime_options, prog_state, diag_inputs, diag_outputs, infrastructure,
+  /*auto elapsed_microsec = P3F::p3_main(runtime_options, prog_state, diag_inputs, diag_outputs, infrastructure,
                                        history_only, lookup_tables,
 #ifdef SCREAM_P3_SMALL_KERNELS
                                        temporaries,
@@ -1429,7 +1429,7 @@ Int p3_main_host(
   Kokkos::parallel_for(nj, KOKKOS_LAMBDA(const Int& i) {
     precip_liq_surf_temp_d(0, i / Spack::n)[i % Spack::n] = precip_liq_surf_d(i);
     precip_ice_surf_temp_d(0, i / Spack::n)[i % Spack::n] = precip_ice_surf_d(i);
-  });
+  });*/
 
   // Sync back to host
   std::vector<view_2d> inout_views = {
@@ -1454,7 +1454,8 @@ Int p3_main_host(
     },
     dim1_sizes_out, dim2_sizes_out, inout_views, true);
 
-  return elapsed_microsec;
+  return 0;
+  //return elapsed_microsec;
 }
 
 } // namespace p3

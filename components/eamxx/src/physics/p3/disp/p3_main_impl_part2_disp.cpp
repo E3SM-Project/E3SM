@@ -113,7 +113,6 @@ void Functions<Real,DefaultDevice>
 
     // ------------------------------------------------------------------------------------------
     // main k-loop (for processes):
-    const bool use_hetfrz_classnuc = false;
     p3_main_part2(
       team, nk_pack, max_total_ni, predictNc, do_prescribed_CCN, dt, inv_dt,
       use_hetfrz_classnuc, ekat::subview(hetfrz_immersion_nucleation_tend, i),

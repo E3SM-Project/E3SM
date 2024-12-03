@@ -44,6 +44,7 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   infrastructure.kte = m_num_levs-1;
   infrastructure.predictNc = m_params.get<bool>("do_predict_nc",true);
   infrastructure.prescribedCCN = m_params.get<bool>("do_prescribed_ccn",true);
+  infrastructure.use_hetfrz_classnuc = m_params.get<bool>("use_hetfrz_classnuc",true);
 
   // Define the different field layouts that will be used for this process
   using namespace ShortFieldTagsNames;

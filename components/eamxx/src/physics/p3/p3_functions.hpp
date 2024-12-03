@@ -265,6 +265,8 @@ struct Functions
     bool predictNc;
     // Set to true to use prescribed CCN
     bool prescribedCCN;
+    // Set to true to use het frz from MAM4xx-ACI
+    bool use_hetfrz_classnuc;
     // Coordinates of columns, nj x 3
     view_2d<const Scalar> col_location;
   };
