@@ -201,6 +201,11 @@ Int Functions<S,D>
     const auto oqv_prev            = ekat::subview(diagnostic_inputs.qv_prev, i);
     const auto ot_prev             = ekat::subview(diagnostic_inputs.t_prev, i);
 
+    // Inputs for the heteogeneous freezing
+    const auto ohetfrz_immersion_nucleation_tend  = ekat::subview(diagnostic_inputs.hetfrz_immersion_nucleation_tend, i);
+    const auto ohetfrz_contact_nucleation_tend    = ekat::subview(diagnostic_inputs.hetfrz_contact_nucleation_tend, i);
+    const auto ohetfrz_deposition_nucleation_tend = ekat::subview(diagnostic_inputs.hetfrz_deposition_nucleation_tend, i);
+
     // Use Kokkos' scratch pad for allocating 2 bools
     // per team to determine early exits
     ScratchViewType bools(team.team_scratch(0), 2);
