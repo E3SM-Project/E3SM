@@ -446,7 +446,7 @@ void Functions<S,D>
       qi2qv_sublim_tend, qi2qr_melt_tend, not_skip_all);
 
     nc_conservation(nc(k), nc_selfcollect_tend, dt, nc_collect_tend, nc2ni_immers_freeze_tend,
-                    nc_accret_tend, nc2nr_autoconv_tend, ncheti_cnt, nicnt, not_skip_all);
+                    nc_accret_tend, nc2nr_autoconv_tend, ncheti_cnt, nicnt, use_hetfrz_classnuc, not_skip_all);
     nr_conservation(nr(k),ni2nr_melt_tend,nr_ice_shed_tend,ncshdc,nc2nr_autoconv_tend,dt,nmltratio,nr_collect_tend,
                     nr2ni_immers_freeze_tend,nr_selfcollect_tend,nr_evap_tend, not_skip_all);
     ni_conservation(ni(k),ni_nucleat_tend,nr2ni_immers_freeze_tend,nc2ni_immers_freeze_tend,dt,ni2nr_melt_tend,
