@@ -263,15 +263,15 @@ int main (int argc, char** argv) {
   for (int i = 1; i < argc-1; ++i) {
     if (ekat::argv_matches(argv[i], "-g", "--generate")) { generate = true; no_baseline = false; }
     if (ekat::argv_matches(argv[i], "-c", "--compare"))  { no_baseline = false; }
-    if (ekat::argv_matches(argv[i], "-t", "--tol")) {
-      expect_another_arg(i, argc);
-      ++i;
-      tol = std::atof(argv[i]);
-    }
     if (ekat::argv_matches(argv[i], "-b", "--baseline-file")) {
       expect_another_arg(i, argc);
       ++i;
       baseline_fn = argv[i];
+    }
+    if (ekat::argv_matches(argv[i], "-t", "--tol")) {
+      expect_another_arg(i, argc);
+      ++i;
+      tol = std::atof(argv[i]);
     }
     if (ekat::argv_matches(argv[i], "-s", "--steps")) {
       expect_another_arg(i, argc);

@@ -89,7 +89,7 @@ if (NOT SCREAM_P3_SMALL_KERNELS AND NOT SCREAM_ONLY_GENERATE_BASELINES)
   CreateUnitTest(p3_sk_tests "p3_main_unit_tests.cpp"
     LIBS p3_sk p3_test_infra
     EXE_ARGS "--args ${BASELINE_FILE_ARG}"
-    THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
+    THREADS ${P3_THREADS}
     LABELS "p3_sk;physics;baseline_cmp")
 endif()
 

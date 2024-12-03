@@ -1299,7 +1299,7 @@ Int p3_main_host(
     }
   }
 
-  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_d, true);
+  ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_d);
 
   int counter = 0;
   view_2d
@@ -1452,7 +1452,7 @@ Int p3_main_host(
       rho_qi, qv2qi_depos_tend,
       liq_ice_exchange, vap_liq_exchange, vap_ice_exchange, precip_liq_flux, precip_ice_flux, precip_liq_surf, precip_ice_surf
     },
-    dim1_sizes_out, dim2_sizes_out, inout_views, true);
+    dim1_sizes_out, dim2_sizes_out, inout_views);
 
   return elapsed_microsec;
 }
