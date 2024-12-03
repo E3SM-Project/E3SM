@@ -27,9 +27,9 @@ void Functions<S,D>
   const Scalar& dt,
   const Scalar& inv_dt,
   const bool& use_hetfrz_classnuc,
-  const uview_1d<const Spack>& ohetfrz_immersion_nucleation_tend,
-  const uview_1d<const Spack>& ohetfrz_contact_nucleation_tend,
-  const uview_1d<const Spack>& ohetfrz_deposition_nucleation_tend,
+  const uview_1d<const Spack>& hetfrz_immersion_nucleation_tend,
+  const uview_1d<const Spack>& hetfrz_contact_nucleation_tend,
+  const uview_1d<const Spack>& hetfrz_deposition_nucleation_tend,
   const view_dnu_table& dnu,
   const view_ice_table& ice_table_vals,
   const view_collect_table& collect_table_vals,
@@ -329,18 +329,20 @@ void Functions<S,D>
       Spack ncheti_cnt(0), qcheti_cnt(0), nicnt(0), qicnt(0), ninuc_cnt(0), qinuc_cnt(0);
       if(do_ice_production) {
         // contact and immersion freezing droplets
-        /*if (use_hetfrz_classnuc){*/
-          //CNT_couple(frzimm(k),frzcnt(k),frzdep(k),rho(k),qc_incld(k),nc_incld(k),1, & 
-          //                 ncheti_cnt,qcheti_cnt,nicnt,qicnt,ninuc_cnt,qinuc_cnt,inv_dt);
-          /*CNT_couple(frzimm(k),frzcnt(k),frzdep(k),rho(k),qc_incld(k),nc_incld(k),2, & 
-                           ncheti_cnt,qcheti_cnt,nicnt,qicnt,ninuc_cnt,qinuc_cnt,inv_dt);*/
-        /*}
-        else{*/
+        if (use_hetfrz_classnuc){
+          CNT_couple(hetfrz_immersion_nucleation_tend(k),hetfrz_contact_nucleation_tend(k),
+                     hetfrz_deposition_nucleation_tend(k),rho(k),qc_incld(k),nc_incld(k),1,
+                     ncheti_cnt,qcheti_cnt,nicnt,qicnt,ninuc_cnt,qinuc_cnt);
+          CNT_couple(hetfrz_immersion_nucleation_tend(k),hetfrz_contact_nucleation_tend(k),
+                     hetfrz_deposition_nucleation_tend(k),rho(k),qc_incld(k),nc_incld(k),2, 
+                     ncheti_cnt,qcheti_cnt,nicnt,qicnt,ninuc_cnt,qinuc_cnt);
+        }
+        else{
           cldliq_immersion_freezing(
               T_atm(k), lamc(k), mu_c(k), cdist1(k), qc_incld(k),
               inv_qc_relvar(k), qc2qi_hetero_freeze_tend,
               nc2ni_immers_freeze_tend, runtime_options, not_skip_micro);
-        //}
+        }
 
         // for future: get rid of log statements below for rain freezing
         rain_immersion_freezing(T_atm(k), lamr(k), mu_r(k), cdistr(k),
