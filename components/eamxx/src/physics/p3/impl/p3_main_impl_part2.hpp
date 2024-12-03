@@ -469,8 +469,8 @@ void Functions<S,D>
       qc2qi_hetero_freeze_tend, qc2qi_collect_tend, qc2qr_ice_shed_tend, nc_collect_tend, nc2ni_immers_freeze_tend, ncshdc, qr2qi_collect_tend, nr_collect_tend,  qr2qi_immers_freeze_tend,
       nr2ni_immers_freeze_tend, nr_ice_shed_tend, qi2qr_melt_tend, ni2nr_melt_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend, qv2qi_nucleat_tend, ni_nucleat_tend, ni_selfcollect_tend, ni_sublim_tend,
       qc2qi_berg_tend, inv_exner(k), predictNc, wetgrowth, dt, nmltratio,
-      rho_qm_cloud, th_atm(k), qv(k), qi(k), ni(k), qm(k), bm(k), qc(k),
-      nc(k), qr(k), nr(k), not_skip_all);
+      rho_qm_cloud, ncheti_cnt, nicnt, ninuc_cnt, qcheti_cnt, qicnt, qinuc_cnt,  th_atm(k), qv(k), qi(k), ni(k), qm(k), bm(k), qc(k),
+      nc(k), qr(k), nr(k), use_hetfrz_classnuc, not_skip_all);
 
     //-- warm-phase only processes:
     update_prognostic_liquid(

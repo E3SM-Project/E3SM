@@ -830,8 +830,10 @@ struct Functions
     const Spack& qv2qi_vapdep_tend,  const Spack& qv2qi_nucleat_tend,  const Spack& ni_nucleat_tend,  const Spack& ni_selfcollect_tend,
     const Spack& ni_sublim_tend,  const Spack& qc2qi_berg_tend, const Spack& inv_exner,
     const bool do_predict_nc, const Smask& log_wetgrowth, const Scalar dt,
-    const Scalar& nmltratio, const Spack& rho_qm_cloud, Spack& th_atm, Spack& qv, Spack& qi,
-    Spack& ni, Spack& qm, Spack& bm, Spack& qc,  Spack& nc, Spack& qr, Spack& nr,
+    const Scalar& nmltratio, const Spack& rho_qm_cloud, 
+    Spack& ncheti_cnt, Spack& nicnt, Spack& ninuc_cnt, Spack& qcheti_cnt, Spack& qicnt, Spack& qinuc_cnt,  
+    Spack& th_atm, Spack& qv, Spack& qi,
+    Spack& ni, Spack& qm, Spack& bm, Spack& qc,  Spack& nc, Spack& qr, Spack& nr, const bool& use_hetfrz_classnuc,
     const Smask& context = Smask(true));
 
   // TODO (comments)
