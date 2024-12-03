@@ -380,6 +380,8 @@ module ocn_time_integration_si
 
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracersNew
 
+      real (kind=RKIND), pointer :: forcingTimeIncrement
+
       ! Remap variables
       real (kind=RKIND), dimension(:,:), pointer :: &
          layerThicknessLagNew
@@ -506,6 +508,11 @@ module ocn_time_integration_si
                                           lowFreqDivergenceTend)
 
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracersNew, 2)
+
+      call mpas_pool_get_array(forcingPool, 'forcingTimeIncrement', &
+                                             forcingTimeIncrement)
+
+      forcingTimeIncrement = 0.0_RKIND
 
       allocate(bottomDepthEdge(nEdgesAll+1))
 
