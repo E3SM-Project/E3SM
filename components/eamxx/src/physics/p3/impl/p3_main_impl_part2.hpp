@@ -480,7 +480,12 @@ void Functions<S,D>
       qr(k), nr(k), not_skip_all);
 
     // AaronDonahue - Add extra variables needed from microphysics by E3SM:
-    qv2qi_depos_tend(k)         .set(not_skip_all, qv2qi_vapdep_tend - qi2qv_sublim_tend + qv2qi_nucleat_tend);
+    if(use_hetfrz_classnuc){
+      qv2qi_depos_tend(k)         .set(not_skip_all, qv2qi_vapdep_tend - qi2qv_sublim_tend + qv2qi_nucleat_tend  + qinuc_cnt);
+    }
+    else{
+      qv2qi_depos_tend(k)         .set(not_skip_all, qv2qi_vapdep_tend - qi2qv_sublim_tend + qv2qi_nucleat_tend);
+    }
     precip_total_tend(k)           .set(not_skip_all, qc2qr_accret_tend + qc2qr_autoconv_tend + qc2qr_ice_shed_tend + qc2qi_collect_tend);
     nevapr(k)          .set(not_skip_all, qi2qv_sublim_tend + qr2qv_evap_tend);
     qr_evap_tend(k)       .set(not_skip_all, qr2qv_evap_tend);
