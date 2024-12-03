@@ -1,6 +1,4 @@
 set(P3_SRCS
-  p3_iso_c.f90
-  ${SCREAM_BASE_DIR}/../eam/src/physics/p3/scream/micro_p3.F90
   eamxx_p3_process_interface.cpp
   eamxx_p3_run.cpp
 )
@@ -112,10 +110,6 @@ include (ScreamUtils)
 foreach (file IN ITEMS ${P3_TABLES})
   GetInputFile(${file})
 endforeach()
-
-# This executable can be used to re-generate tables in ${SCREAM_DATA_DIR}
-add_executable(p3_tables_setup EXCLUDE_FROM_ALL p3_tables_setup.cpp)
-target_link_libraries(p3_tables_setup p3)
 
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)

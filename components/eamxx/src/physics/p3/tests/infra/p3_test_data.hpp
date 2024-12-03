@@ -15,71 +15,6 @@ namespace p3 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct P3InitAP3Data
-{
-  // Must use Host as device, f90 code might not be able to use Device memory
-  using P3F = Functions<Real, HostDevice>;
-  using P3C = typename P3F::P3C;
-
-  using view_ice_table = typename P3F::KT::template lview<Real[P3C::densize][P3C::rimsize][P3C::isize][P3C::ice_table_size]>;
-  using view_collect_table = typename P3F::KT::template lview<Real[P3C::densize][P3C::rimsize][P3C::isize][P3C::rcollsize][P3C::collect_table_size]>;
-
-  // Need to be LayoutLeft to be fortran compatible
-  view_ice_table ice_table_vals;
-  view_collect_table collect_table_vals;
-
-  P3InitAP3Data() :
-    ice_table_vals("P3InitAP3Data::ice_table_vals"),
-    collect_table_vals("P3InitAP3Data::collect_table_vals")
-  {}
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-// Singleton for holding the same global data that are maintained in
-// micro_p3, but for use in C++.
-struct P3GlobalForFortran
-{
-  using P3F = Functions<Real, DefaultDevice>;
-
-  using view_1d_table = typename P3F::view_1d_table;
-  using view_2d_table = typename P3F::view_2d_table;
-  using view_ice_table = typename P3F::view_ice_table;
-  using view_collect_table = typename P3F::view_collect_table;
-  using view_dnu_table = typename P3F::view_dnu_table;
-  using P3Runtime = P3F::P3Runtime;
-
-  // All kokkos views must be destructed before Kokkos::finalize
-  static void deinit();
-
-  static const view_1d_table& mu_r_table_vals()   { return get().m_mu_r_table_vals; }
-  static const view_2d_table& vn_table_vals()     { return get().m_vn_table_vals; }
-  static const view_2d_table& vm_table_vals()     { return get().m_vm_table_vals; }
-  static const view_2d_table& revap_table_vals()  { return get().m_revap_table_vals; }
-  static const view_ice_table& ice_table_vals()       { return get().m_ice_table_vals; }
-  static const view_collect_table& collect_table_vals() { return get().m_collect_table_vals; }
-  static const view_dnu_table& dnu()         { return get().m_dnu; }
-
-  P3GlobalForFortran() = delete;
-  ~P3GlobalForFortran() = delete;
-  P3GlobalForFortran(const P3GlobalForFortran&) = delete;
-  P3GlobalForFortran& operator=(const P3GlobalForFortran&) = delete;
-
- private:
-  struct Views {
-    view_1d_table m_mu_r_table_vals;
-    view_2d_table m_vn_table_vals, m_vm_table_vals, m_revap_table_vals;
-    view_ice_table m_ice_table_vals;
-    view_collect_table m_collect_table_vals;
-    view_dnu_table m_dnu;
-  };
-
-  static const Views& get();
-  static std::shared_ptr<Views> s_views;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
 /**
  * Structs for holding data related to specific P3 calls; these are used for
  * the BFB unit tests.
@@ -881,8 +816,6 @@ struct PreventLiqSupersaturationData {
 
   PTD_RW_SCALARS_ONLY(2, qi2qv_sublim_tend, qr2qv_evap_tend);
 };
-
-void p3_init_a(P3InitAP3Data& d);
 
 /**
  * Convenience functions for calling p3 routines from the host with scalar data.

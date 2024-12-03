@@ -31,10 +31,7 @@ struct UnitWrap::UnitTest<D>::TestCalcLiqRelaxationTimescale : public UnitWrap::
     auto engine = Base::get_engine();
 
     // Read in tables
-    view_2d_table vn_table_vals, vm_table_vals, revap_table_vals;
-    view_1d_table mu_r_table_vals;
-    view_dnu_table dnu;
-    Functions::init_kokkos_tables(vn_table_vals, vm_table_vals, revap_table_vals, mu_r_table_vals, dnu);
+    auto revap_table_vals = Functions::p3_init().revap_table_vals;
 
     using KTH = KokkosTypes<HostDevice>;
 

@@ -108,10 +108,7 @@ struct UnitWrap {
         }
       }
 
-      ~Base()
-      {
-        scream::p3::P3GlobalForFortran::deinit();
-      }
+      ~Base() {}
 
       std::mt19937_64 get_engine()
       {
