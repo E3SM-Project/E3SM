@@ -651,7 +651,9 @@ contains
      write(iulog,*) 'Set ozone for linoz_mam: inv_ndx_o3_ccmi =',inv_ndx_o3_ccmi
       do k = 1, pver                !Following loop logic from below.  However, reordering loops can get rid of IF statement.
          do i = 1, ncol
+            if( k < troplev(i) ) then !smaller than troplev means stratospheric ozone
               vmr(i,k,o3_ndx) = invariants(i,k,inv_ndx_o3_ccmi) / invariants(i,k,inv_ndx_m)   ! O3 and o3_ccmi
+            endif
               !write(iulog,*) "Jinbo Xie k,i,invariants(i,k,inv_ndx_o3_ccmi),invariants(i,k,inv_ndx_m),vmr(i,k,o3_ndx)",k,i,invariants(i,k,inv_ndx_o3_ccmi),invariants(i,k,inv_ndx_m),vmr(i,k,o3_ndx)
          end do
 
@@ -999,8 +1001,8 @@ contains
        vmr_old2(:ncol,:,:) = vmr(:ncol,:,:)
     endif
     call t_startf('imp_sol')
-    !call imp_sol( vmr, reaction_rates, het_rates, extfrc, delt, &
-    !              invariants(1,1,indexm), ncol, lchnk, ltrop_sol(:ncol) ) 
+    call imp_sol( vmr, reaction_rates, het_rates, extfrc, delt, &
+                  invariants(1,1,indexm), ncol, lchnk, ltrop_sol(:ncol) ) 
     call t_stopf('imp_sol')
 
     ! ozone production 
@@ -1223,8 +1225,8 @@ contains
 #endif   
 
     call t_startf('exp_sol')
-    !call exp_sol( vmr, reaction_rates, het_rates, extfrc, delt, invariants(1,1,indexm), ncol, lchnk, ltrop_sol, &
-    !              diags_reaction_rates, chem_prod, chem_loss, chemmp_prod, chemmp_loss)
+    call exp_sol( vmr, reaction_rates, het_rates, extfrc, delt, invariants(1,1,indexm), ncol, lchnk, ltrop_sol, &
+                  diags_reaction_rates, chem_prod, chem_loss, chemmp_prod, chemmp_loss)
     call t_stopf('exp_sol')
 
     if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels .or.&
