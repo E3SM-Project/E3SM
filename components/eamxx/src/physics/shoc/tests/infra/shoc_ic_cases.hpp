@@ -1,7 +1,7 @@
 #ifndef INCLUDE_SCREAM_SHOC_IC_CASES_HPP
 #define INCLUDE_SCREAM_SHOC_IC_CASES_HPP
 
-#include "shoc_f90.hpp"
+#include "shoc_data.hpp"
 
 namespace scream {
 namespace shoc {

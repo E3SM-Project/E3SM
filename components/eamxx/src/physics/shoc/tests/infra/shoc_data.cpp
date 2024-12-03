@@ -1,4 +1,4 @@
-#include "shoc_f90.hpp"
+#include "shoc_data.hpp"
 #include "physics_constants.hpp"
 #include "shoc_ic_cases.hpp"
 
@@ -6,11 +6,6 @@
 
 using scream::Real;
 using scream::Int;
-extern "C" {
-  void shoc_init_c(int nlev, Real gravit, Real rair, Real rh2o, Real cpair,
-                   Real zvir, Real latvap, Real latice, Real karman, Real p0);
-  void shoc_use_cxx_c(bool use_cxx);
-}
 
 namespace scream {
 namespace shoc {
@@ -112,29 +107,10 @@ FortranDataIterator::getfield (Int i) const {
   return fields_[i];
 }
 
-void shoc_init(Int nlev, bool use_fortran, bool force_reinit) {
-  static bool is_init = false;
-  if (!is_init || force_reinit) {
-    using Scalar = Real;
-    using C = scream::physics::Constants<Scalar>;
-
-    shoc_init_c((int)nlev, C::gravit, C::Rair, C::RH2O, C::Cpair, C::ZVIR,
-                C::LatVap, C::LatIce, C::Karman, C::P0);
-    is_init = true;
-  }
-  shoc_use_cxx_c(!use_fortran);
-}
-
 int test_FortranData () {
   Int shcol = 1;
   Int nlev = 128, num_tracers = 1;
   FortranData d(shcol, nlev, nlev+1, num_tracers);
-  return 0;
-}
-
-int test_shoc_init (bool use_fortran) {
-  Int nz = 160;
-  shoc_init(nz, use_fortran);
   return 0;
 }
 
