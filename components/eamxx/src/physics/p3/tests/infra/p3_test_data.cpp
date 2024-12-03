@@ -976,7 +976,7 @@ void p3_main_part1_host(
   *is_hydromet_present = bools_h(1);
 }
 
-void p3_main_part2_host(
+/*void p3_main_part2_host(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir, bool do_predict_nc, bool do_prescribed_CCN, Real dt, Real inv_dt,
   Real* pres, Real* dpres, Real* dz, Real* nc_nuceat_tend, Real* inv_exner, Real* exner, Real* inv_cld_frac_l, Real* inv_cld_frac_i,
   Real* inv_cld_frac_r, Real* ni_activated, Real* inv_qc_relvar, Real* cld_frac_i, Real* cld_frac_l, Real* cld_frac_r, Real* qv_prev, Real* t_prev,
@@ -1130,7 +1130,7 @@ void p3_main_part2_host(
   Kokkos::deep_copy(bools_h, bools_d);
 
   *is_hydromet_present = bools_h(0);
-}
+}*/
 
 void p3_main_part3_host(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir,
