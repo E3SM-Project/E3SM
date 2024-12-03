@@ -205,13 +205,13 @@ contains
             if (.not. config_disable_vel_hmix) then
                if (config_use_mom_del2) then 
                   viscDel2 = config_mom_del2
-                  u = u + viscDel2 * eta0 * kx**2 * cos(phase)
-                  v = v + viscDel2 * eta0 * ky**2 * cos(phase)
+                  u = u + viscDel2 * eta0 * (kx**2 + ky**2) * cos(phase)
+                  v = v + viscDel2 * eta0 * (kx**2 + ky**2) * cos(phase)
                endif
                if (config_use_mom_del4) then 
                   viscDel4 = config_mom_del4
-                  u = u - viscDel4 * eta0 * (kx**4 * cos(phase) + kx**2 * ky**2 * cos(phase))
-                  v = v - viscDel4 * eta0 * (ky**4 * cos(phase) + kx**2 * ky**2 * cos(phase))
+                  u = u - viscDel4 * eta0 * ((kx**4 + ky**4 + kx**2 * ky**2) * cos(phase))
+                  v = v - viscDel4 * eta0 * ((kx**4 + ky**4 + kx**2 * ky**2) * cos(phase))
                endif
             endif
 
