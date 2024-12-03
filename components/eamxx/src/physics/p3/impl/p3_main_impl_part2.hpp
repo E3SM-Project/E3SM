@@ -443,7 +443,8 @@ void Functions<S,D>
     ice_water_conservation(
       qi(k), qv2qi_vapdep_tend, qv2qi_nucleat_tend, qc2qi_berg_tend, qr2qi_collect_tend,
       qc2qi_collect_tend, qr2qi_immers_freeze_tend, qc2qi_hetero_freeze_tend, dt,
-      qi2qv_sublim_tend, qi2qr_melt_tend, not_skip_all);
+      qinuc_cnt, qcheti_cnt, qicnt,
+      qi2qv_sublim_tend, qi2qr_melt_tend, use_hetfrz_classnuc, not_skip_all);
 
     nc_conservation(nc(k), nc_selfcollect_tend, dt, nc_collect_tend, nc2ni_immers_freeze_tend,
                     nc_accret_tend, nc2nr_autoconv_tend, ncheti_cnt, nicnt, use_hetfrz_classnuc, not_skip_all);

@@ -705,7 +705,8 @@ struct Functions
   static void ice_water_conservation(
     const Spack& qi,const Spack& qv2qi_vapdep_tend,const Spack& qv2qi_nucleat_tend,const Spack& qc2qi_berg_tend, const Spack &qr2qi_collect_tend,
     const Spack &qc2qi_collect_tend,const Spack& qr2qi_immers_freeze_tend,const Spack& qc2qi_hetero_freeze_tend,const Scalar dt,
-    Spack& qi2qv_sublim_tend, Spack& qi2qr_melt_tend,
+    Spack &qinuc_cnt, Spack &qcheti_cnt, Spack &qicnt,
+    Spack& qi2qv_sublim_tend, Spack& qi2qr_melt_tend, const bool& use_hetfrz_classnuc,
     const Smask& context = Smask(true) );
 
   // TODO: comment
