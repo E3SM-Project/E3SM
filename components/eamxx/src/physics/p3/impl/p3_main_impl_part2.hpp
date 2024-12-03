@@ -454,8 +454,8 @@ void Functions<S,D>
                     ni_sublim_tend,ni_selfcollect_tend, use_hetfrz_classnuc, not_skip_all);
 
     // make sure procs don't inappropriately push qv beyond ice saturation
-    ice_supersat_conservation(qv2qi_vapdep_tend,qv2qi_nucleat_tend,cld_frac_i(k),qv(k),qv_sat_i(k),
-			                        th_atm(k)/inv_exner(k),dt,qi2qv_sublim_tend,qr2qv_evap_tend, not_skip_all);
+    ice_supersat_conservation(qv2qi_vapdep_tend,qv2qi_nucleat_tend,qinuc_cnt,cld_frac_i(k),qv(k),qv_sat_i(k),
+			                        th_atm(k)/inv_exner(k),dt,qi2qv_sublim_tend,qr2qv_evap_tend, use_hetfrz_classnuc, not_skip_all);
     // make sure procs don't inappropriately push qv beyond liquid saturation
     prevent_liq_supersaturation(pres(k), T_atm(k), qv(k), dt,
 				qv2qi_vapdep_tend, qv2qi_nucleat_tend, qi2qv_sublim_tend,qr2qv_evap_tend,
