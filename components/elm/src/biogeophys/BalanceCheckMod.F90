@@ -564,7 +564,7 @@ contains
              write(iulog,*)'(glc_dyn_runoff_routing(g))',(glc_dyn_runoff_routing(g))
 
              if (create_glacier_mec_landunit) then
-                write(iulog,*)'qflx_glcice_frz  = ',qflx_glcice_frz(indexc)*dtime`
+                write(iulog,*)'qflx_glcice_frz  = ',qflx_glcice_frz(indexc)*dtime
              end if
              write(iulog,*)'elm model is stopping'
              call endrun(decomp_index=indexc, elmlevel=namec, msg=errmsg(__FILE__, __LINE__))
