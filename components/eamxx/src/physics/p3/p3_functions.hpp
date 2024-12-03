@@ -1433,7 +1433,7 @@ struct Functions
   static void nr_conservation(const Spack& nr, const Spack& ni2nr_melt_tend, const Spack& nr_ice_shed_tend, const Spack& ncshdc, const Spack& nc2nr_autoconv_tend, const Real& dt, const Real& nmltratio, Spack& nr_collect_tend, Spack& nr2ni_immers_freeze_tend, Spack& nr_selfcollect_tend, Spack& nr_evap_tend, const Smask& context = Smask(true));
 
   KOKKOS_FUNCTION
-  static void ni_conservation(const Spack& ni, const Spack& ni_nucleat_tend, const Spack& nr2ni_immers_freeze_tend, const Spack& nc2ni_immers_freeze_tend, const Real& dt, Spack& ni2nr_melt_tend, Spack& ni_sublim_tend, Spack& ni_selfcollect_tend, const Smask& context = Smask(true));
+  static void ni_conservation(const Spack& ni, const Spack& ni_nucleat_tend, const Spack& nr2ni_immers_freeze_tend, const Spack& nc2ni_immers_freeze_tend, const Spack& ncheti_cnt, const Spack& nicnt, const Spack& ninuc_cnt, const Real& dt, Spack& ni2nr_melt_tend, Spack& ni_sublim_tend, Spack& ni_selfcollect_tend, const bool& use_hetfrz_classnuc, const Smask& context = Smask(true));
 
   KOKKOS_FUNCTION
   static void prevent_liq_supersaturation(const Spack& pres, const Spack& t_atm, const Spack& qv, const Scalar& dt, const Spack& qidep, const Spack& qinuc, Spack& qi2qv_sublim_tend, Spack& qr2qv_evap_tend, const Smask& context = Smask(true) );
