@@ -1117,7 +1117,7 @@ contains
   endif
 
   do ie=nets,nete
-
+!temp code to check mu before caar
 !   call pnh_and_exner_from_eos(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,n0),&
 !       elem(ie)%state%dp3d(:,:,:,n0),elem(ie)%state%phinh_i(:,:,:,n0),pnh,exner,munew,caller='caar1')
 
@@ -1127,13 +1127,13 @@ contains
      phi_i => elem(ie)%state%phinh_i(:,:,:,n0)
 
 #ifdef HOMMEDA
+!repeated code
      rheighti = phi_i/g + r0
-     !rheighti = 1.0
-     rheightm(:,:,1:nlev) = (rheighti(:,:,1:nlev) + rheighti(:,:,2:nlevp))/2.0
+     rheightm(:,:,1:nlev) = (rheighti(:,:,1:nlev) + rheighti(:,:,2:nlevp))/2
      rhati = rheighti/r0 ! r/r0
      rhatm = rheightm/r0
-     invrhatm = 1.0/rhatm
-     invrhati = 1.0/rhati
+     invrhatm = 1/rhatm
+     invrhati = 1/rhati
 #endif
 
 #ifdef ENERGY_DIAGNOSTICS
@@ -1577,9 +1577,9 @@ contains
                   -wvor(i,j,2,k) )*scale1
 
 #ifdef HOMMEDA
-              vtens1(i,j,k) = vtens1(i,j,k) - scale1*(elem(ie)%state%w_i(i,j,k,n0)+elem(ie)%state%w_i(i,j,k+1,n0))/2.0*(  v1/rheightm(i,j,k) &
+              vtens1(i,j,k) = vtens1(i,j,k) - scale1*(elem(ie)%state%w_i(i,j,k,n0)+elem(ie)%state%w_i(i,j,k+1,n0))/2*(  v1/rheightm(i,j,k) &
                                                                                   + elem(ie)%fcorcosine(i,j) )
-              vtens2(i,j,k) = vtens2(i,j,k) - scale1*(elem(ie)%state%w_i(i,j,k,n0)+elem(ie)%state%w_i(i,j,k+1,n0))/2.0*v2/rheightm(i,j,k)
+              vtens2(i,j,k) = vtens2(i,j,k) - scale1*(elem(ie)%state%w_i(i,j,k,n0)+elem(ie)%state%w_i(i,j,k+1,n0))/2*v2/rheightm(i,j,k)
 #endif
 
 #endif
