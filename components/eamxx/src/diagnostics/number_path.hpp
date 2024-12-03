@@ -16,7 +16,7 @@ class NumberPathDiagnostic : public AtmosphereDiagnostic {
                        const ekat::ParameterList &params);
 
   // The name of the diagnostic
-  std::string name() const;
+  std::string name() const override { return "NumberPath"; }
 
   // Set the grid
   void set_grids(const std::shared_ptr<const GridsManager> grids_manager);
