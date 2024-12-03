@@ -27,7 +27,8 @@ void Functions<S,D>
   Spack& nr_collect_tend, Spack& ni_selfcollect_tend, Spack& qv2qi_vapdep_tend,
   Spack& nr2ni_immers_freeze_tend, Spack& ni_sublim_tend, Spack& qv2qi_nucleat_tend,
   Spack& ni_nucleat_tend, Spack& qc2qi_berg_tend,
-  const Smask& context)
+  Spack& ncheti_cnt, Spack& qcheti_cnt, Spack& nicnt, Spack& qicnt, Spack& ninuc_cnt,
+  Spack& qinuc_cnt, const Smask& context)
 {
   Spack ir_cldm, il_cldm, lr_cldm;
   ir_cldm = min(cld_frac_i,cld_frac_r); // Intersection of ICE and RAIN cloud

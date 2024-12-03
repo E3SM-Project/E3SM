@@ -179,6 +179,9 @@ void Functions<S,D>
       kap     (0), // TODO(doc)
       eii     (0), // temperature dependent aggregation efficiency
 
+      //Hetreogeneous freezing
+      ncheti_cnt(0), qcheti_cnt(0), nicnt(0), qicnt(0), ninuc_cnt(0), qinuc_cnt(0),
+
       // quantities related to process rates/parameters, interpolated from lookup tables:
       // For a more in depth reference to where these came from consult the file
       // "create_p3_lookupTable_1.F90-v4.1".  All line numbers below reference this
@@ -326,7 +329,6 @@ void Functions<S,D>
                         lamc(k), mu_c(k), qc_incld(k), qc2qi_collect_tend,
                         vtrmi1, rho_qm_cloud, not_skip_micro);
 
-      Spack ncheti_cnt(0), qcheti_cnt(0), nicnt(0), qicnt(0), ninuc_cnt(0), qinuc_cnt(0);
       if(do_ice_production) {
         // contact and immersion freezing droplets
         if (use_hetfrz_classnuc){
@@ -415,7 +417,8 @@ void Functions<S,D>
       nc_accret_tend, nc_selfcollect_tend, nc2nr_autoconv_tend, nr_selfcollect_tend, nr_evap_tend, ncautr, qi2qv_sublim_tend, nr_ice_shed_tend, qc2qi_hetero_freeze_tend,
       qr2qi_collect_tend, qc2qr_ice_shed_tend, qi2qr_melt_tend, qc2qi_collect_tend, qr2qi_immers_freeze_tend, ni2nr_melt_tend, nc_collect_tend,
       ncshdc, nc2ni_immers_freeze_tend, nr_collect_tend, ni_selfcollect_tend,
-      qv2qi_vapdep_tend, nr2ni_immers_freeze_tend, ni_sublim_tend, qv2qi_nucleat_tend, ni_nucleat_tend, qc2qi_berg_tend, not_skip_all);
+      qv2qi_vapdep_tend, nr2ni_immers_freeze_tend, ni_sublim_tend, qv2qi_nucleat_tend, ni_nucleat_tend, qc2qi_berg_tend, 
+      ncheti_cnt, qcheti_cnt, nicnt, qicnt, ninuc_cnt, qinuc_cnt, not_skip_all);
 
     //
     // conservation of water
