@@ -67,7 +67,6 @@ void Functions<S,D>::pblintd(
   // Scalarize views for single entry access
   const auto s_z    = ekat::scalarize(z);
   const auto s_thv  = ekat::scalarize(thv);
-  const auto s_rino = ekat::scalarize(rino);
   const auto s_zi   = ekat::scalarize(zi);
   const auto s_cldn = ekat::scalarize(cldn);
 
