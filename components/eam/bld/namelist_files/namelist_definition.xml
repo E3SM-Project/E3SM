@@ -1078,6 +1078,48 @@ Whether or not to enable GWD brute-force energy fix.
 Default: set by build-namelist.
 </entry>
 
+<entry id="use_od_ls" type="logical" category="gw_drag"
+       group="phys_ctl_nl" valid_values="" >
+Whether or not to enable nonlinear orographic gravity wave drag (oGWD).
+Default: set by build-namelist.
+</entry>
+
+<entry id="use_od_bl" type="logical" category="gw_drag"
+       group="phys_ctl_nl" valid_values="" >
+Whether or not to enable flow-blocking drag (FBD).
+Default: set by build-namelist.
+</entry>
+
+<entry id="use_od_ss" type="logical" category="gw_drag"
+       group="phys_ctl_nl" valid_values="" >
+Whether or not to enable small-scale orographic GWD drag (sGWD).
+Default: set by build-namelist.
+</entry>
+
+<entry id="use_od_fd" type="logical" category="pbl"
+       group="phys_ctl_nl" valid_values="" >
+Whether or not to enable turbulent orographic form drag (TOFD).
+Default: set by build-namelist.
+</entry>
+
+<entry id="od_ls_ncleff" type="real" category="gw_drag"
+       group="oro_drag_nl" valid_values="" >
+Tuning parameter of orographic GWD (oGWD). See <varname>use_od_ls</varname>.
+Default: set by build-namelist.
+</entry>
+
+<entry id="od_bl_ncd" type="real" category="gw_drag"
+       group="oro_drag_nl" valid_values="" >
+Tuning parameter of flow-blocking drag (FBD). See <varname>use_od_bl</varname>.
+Default: set by build-namelist.
+</entry>
+
+<entry id="od_ss_sncleff" type="real" category="gw_drag"
+       group="oro_drag_nl" valid_values="" >
+Tuning parameter of small-scale GWD (sGWD). See <varname>use_od_ss</varname>.
+Default: set by build-namelist.
+</entry>
+
 <entry id="pgwv" type="integer" category="gw_drag"
        group="gw_drag_nl" valid_values="" >
 Gravity wave spectrum dimension (wave numbers are from -pgwv to pgwv).
