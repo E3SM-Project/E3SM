@@ -508,10 +508,8 @@ inline void update_tracer_timestate(
 
     // Update the tracer external forcing time state information
     time_state.current_month = month;
-    time_state.t_beg_month =
-        util::TimeStamp({ts.get_year(), month + 1, 1}, {0, 0, 0})
-            .frac_of_year_in_days();
-    time_state.days_this_month = util::days_in_month(ts.get_year(), month + 1);
+    time_state.t_beg_month = ts.curr_month_beg().frac_of_year_in_days();
+    time_state.days_this_month = ts.days_in_curr_month();
 
     // Copy spa_end'data into spa_beg'data, and read in the new spa_end
     for(int ivar = 0; ivar < nvars; ++ivar) {

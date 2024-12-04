@@ -45,6 +45,11 @@ public:
   std::string get_time_string () const;
   double frac_of_year_in_days () const;
 
+  int days_in_curr_month () const;
+  int days_in_curr_year () const;
+
+  TimeStamp curr_month_beg () const;
+
   // === Update method(s) === //
 
   // Set the counter for the number of steps.
@@ -77,10 +82,6 @@ std::int64_t operator- (const TimeStamp& ts1, const TimeStamp& ts2);
 
 // Rewind time by given number of seconds
 TimeStamp operator- (const TimeStamp& ts, const int dt);
-
-// Time-related free-functions
-int days_in_month (const int year, const int month);
-bool is_leap_year (const int year);
 
 // If input string is not of the format YYYY-MM-DD-XXXXX, returns an invalid time stamp
 TimeStamp str_to_time_stamp (const std::string& s);
