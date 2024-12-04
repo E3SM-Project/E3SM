@@ -67,6 +67,7 @@ void Functions<S,D>::pblintd(
   // Scalarize views for single entry access
   const auto s_z    = ekat::scalarize(z);
   const auto s_thv  = ekat::scalarize(thv);
+  const auto s_rino = ekat::scalarize(rino);
   const auto s_zi   = ekat::scalarize(zi);
   const auto s_cldn = ekat::scalarize(cldn);
 
@@ -82,6 +83,8 @@ void Functions<S,D>::pblintd(
   for (size_t i=0; i<rino.size(); ++i) {
     rino(i)=0;
   }
+#else
+  s_rino(nlev-1) = 0;
 #endif
   pblh = s_z(nlev-1);
 
