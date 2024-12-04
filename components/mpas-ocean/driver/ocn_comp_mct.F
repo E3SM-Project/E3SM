@@ -108,6 +108,8 @@ module ocn_comp_mct
 
    integer  :: nsend, nrecv
 
+   logical  :: ocn_c2_glctf           ! .true.  => ocn to glc thermal forcing coupling on
+
    character(len=StrKIND) :: runtype, coupleTimeStamp
 
    type(seq_infodata_type), pointer :: infodata
@@ -304,6 +306,9 @@ contains
 
     ! Determine coupling type
     call seq_infodata_GetData(infodata, cpl_seq_option=cpl_seq_option)
+
+    ! Determine if ocn to glc thermal forcing coupling is on
+    call seq_infodata_GetData(infodata, ocn_c2_glctf=ocn_c2_glctf)
 
 !-----------------------------------------------------------------------
 !
@@ -2951,7 +2956,7 @@ contains
           o2x_o % rAttr(index_o2x_So_stv, n) = landIceTracerTransferVelocities(indexSaltTrans,i)
           o2x_o % rAttr(index_o2x_So_rhoeff, n) = 0.0_RKIND
        endif
-       if (trim(config_glc_thermal_forcing_coupling_mode) == '2d') then
+       if (trim(config_glc_thermal_forcing_coupling_mode) == '2d' .and. ocn_c2_glctf) then
           o2x_o % rAttr(index_o2x_So_tf2d, n) = avgThermalForcingAtCritDepth(i)
        endif
 

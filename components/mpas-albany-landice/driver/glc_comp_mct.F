@@ -80,6 +80,8 @@ module glc_comp_mct
 
   integer :: glcLogUnit ! unit number for glc log
 
+  logical  :: ocn_c2_glctf           ! .true.  => ocn to glc thermal forcing coupling on
+
   ! MPAS Datatypes
   !type (dm_info), pointer :: dminfo
   type (core_type), pointer :: corelist => null()
@@ -521,6 +523,9 @@ contains
 
     ! Determine coupling type (not currently needed by MALI)
     call seq_infodata_GetData(infodata, cpl_seq_option=cpl_seq_option)
+
+    ! Determine if ocn to glc thermal forcing coupling is on
+    call seq_infodata_GetData(infodata, ocn_c2_glctf=ocn_c2_glctf)
 
     ! Initialize the MALI core
     ierr = domain % core % core_init(domain, timeStamp)
@@ -1410,7 +1415,7 @@ contains
             n = n + 1
             sfcMassBal(i) = x2g_g % rAttr(index_x2g_Flgl_qice, n)
             floatingBasalMassBal(i) = x2g_g % rAttr(index_x2g_Fogx_qiceli, n)
-            if (index_x2g_So_tf2d /= 0) &
+            if (ocn_c2_glctf) &
                ismip6_2dThermalForcing(i) = x2g_g % rAttr(index_x2g_So_tf2d, n)
 !            surfaceTemperature(i) = x2g_g % rAttr(index_x2g_Sl_tsrf, n)
 !JW            basalOceanHeatflx(i) = x2g_g % rAttr(index_x2g_Fogo_qiceh, n)
