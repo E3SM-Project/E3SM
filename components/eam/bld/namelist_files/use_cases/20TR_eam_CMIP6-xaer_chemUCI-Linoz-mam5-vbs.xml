@@ -43,7 +43,7 @@
 <isop_emis_file       >atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_ISOP_surface_1850-2014_1.9x2.5_c20210323.nc </isop_emis_file>
 <isop_vbs_emis_file   >atm/cam/chem/trop_mozart_aero/emis/single_forcings/surf/emissions-cmip6_e3sm_ISOP_surface_1850-2014_1.9x2.5_c20210323_1850_repeated_c20241122.nc </isop_vbs_emis_file>
 <c10h16_emis_file     >atm/cam/chem/trop_mozart_aero/emis/single_forcings/surf/emissions-cmip6_e3sm_MTERP_surface_1850-2014_1.9x2.5_c20230126_1850_repeated_c20241122.nc </c10h16_emis_file>
-<nox_emis_file        >atm/cam/chem/trop_mozart_aero/emis/single_forcings/surf/emissions-cmip6_e3sm_NO_surface_1850-2014_1.9x2.5_c20220425.nc </nox_emis_file>
+<nox_emis_file        >atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_e3sm_NO_surface_1850-2014_1.9x2.5_c20220425.nc </nox_emis_file>
 <dms_emis_file	      >atm/cam/chem/trop_mozart_aero/emis/single_forcings/surf/DMSflux.1850.1deg_latlon_conserv.POPmonthlyClimFromACES4BGC_c20160416_1850_repeated_c20241122.nc </dms_emis_file>
 <soag0_emis_file      >atm/cam/chem/trop_mozart_aero/emis/single_forcings/surf/emissions-cmip6_e3sm_SOAG0_surf_1850-2014_1.9x2.5_c20230201_1850_repeated_c20241122.nc </soag0_emis_file>
 <so2_emis_file	      >atm/cam/chem/trop_mozart_aero/emis/single_forcings/surf/cmip6_mam4_so2_surf_1850-2014_c180205_1850_repeated_c20241122.nc </so2_emis_file>
