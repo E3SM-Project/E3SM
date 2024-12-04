@@ -78,7 +78,7 @@ void Functions<S,D>::pblintd(
 
   // Initialize
   bool check = true;
-  s_rino(nlev-1) = 0;
+  Kokkos::deep_copy(rino, 0);
   pblh = s_z(nlev-1);
 
   // PBL height calculation
