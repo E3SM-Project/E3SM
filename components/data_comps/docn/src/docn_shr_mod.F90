@@ -152,8 +152,9 @@ CONTAINS
         trim(datamode) == 'SST_AQUAP_CONSTANT'  .or. &
         trim(datamode) == 'COPYALL'             .or. &
         trim(datamode) == 'IAF'                 .or. &
-        trim(datamode) == 'SOM'                 .or. &
-        trim(datamode) == 'SOM_AQUAP') then
+        trim(datamode) == 'SOM'                 .or. & ! Traditional slab ocean
+        trim(datamode) == 'RSO'                 .or. & ! Relaxed slab ocean
+        trim(datamode) == 'SOM_AQUAP') then            ! Aquaplanet slab ocean
        if (my_task == master_task) then
           write(logunit,F00) ' docn datamode = ',trim(datamode)
        end if
@@ -181,9 +182,9 @@ CONTAINS
        ocn_prognostic = .true.
        ocnrof_prognostic = .true.
     endif
-    if (trim(datamode) == 'SOM' .or. trim(datamode) == 'SOM_AQUAP') then
-       ocn_prognostic = .true.
-    endif
+    if (trim(datamode) == 'SOM')       ocn_prognostic = .true. ! Traditional slab ocean
+    if (trim(datamode) == 'RSO')       ocn_prognostic = .true. ! Relaxed slab ocean
+    if (trim(datamode) == 'SOM_AQUAP') ocn_prognostic = .true. ! Aquaplanet slab ocean
 
   end subroutine docn_shr_read_namelists
 
