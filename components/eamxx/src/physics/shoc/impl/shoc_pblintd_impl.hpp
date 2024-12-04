@@ -77,7 +77,12 @@ void Functions<S,D>::pblintd(
 
   // Initialize
   bool check = true;
-  Kokkos::deep_copy(rino, 0);
+  // The loop below fixes valgrind uninitialized mem errs
+#ifndef NDEBUG
+  for (size_t i=0; i<rino.size(); ++i) {
+    rino(i)=0;
+  }
+#endif
   pblh = s_z(nlev-1);
 
   // PBL height calculation
