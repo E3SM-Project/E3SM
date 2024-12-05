@@ -502,6 +502,9 @@ module ColumnDataType
     real(r8), pointer :: qflx_glcice          (:)   => null() ! net flux of new glacial ice (growth - melt) (mm H2O/s), passed to GLC
     real(r8), pointer :: qflx_glcice_frz      (:)   => null() ! ice growth (positive definite) (mm H2O/s)
     real(r8), pointer :: qflx_glcice_melt     (:)   => null() ! ice melt (positive definite) (mm H2O/s)
+    real(r8), pointer :: qflx_glcice_diag     (:)   => null() ! net flux of new glacial ice (growth - melt) (mm H2O/s), passed to GLC
+    real(r8), pointer :: qflx_glcice_frz_diag (:)   => null() ! ice growth (positive definite) (mm H2O/s)
+    real(r8), pointer :: qflx_glcice_melt_diag(:)   => null() ! ice melt (positive definite) (mm H2O/s)
     real(r8), pointer :: qflx_drain_vr        (:,:) => null() ! liquid water lost as drainage (m /time step)
     real(r8), pointer :: qflx_h2osfc2topsoi   (:)   => null() ! liquid water coming from surface standing water top soil (mm H2O/s)
     real(r8), pointer :: qflx_snow2topsoi     (:)   => null() ! liquid water coming from residual snow to topsoil (mm H2O/s)
@@ -5725,6 +5728,9 @@ contains
     allocate(this%qflx_glcice            (begc:endc))             ; this%qflx_glcice          (:)   = spval
     allocate(this%qflx_glcice_frz        (begc:endc))             ; this%qflx_glcice_frz      (:)   = spval
     allocate(this%qflx_glcice_melt       (begc:endc))             ; this%qflx_glcice_melt     (:)   = spval
+    allocate(this%qflx_glcice_diag       (begc:endc))             ; this%qflx_glcice_diag     (:)   = spval
+    allocate(this%qflx_glcice_frz_diag   (begc:endc))             ; this%qflx_glcice_frz_diag (:)   = spval
+    allocate(this%qflx_glcice_melt_diag  (begc:endc))             ; this%qflx_glcice_melt_diag(:)   = spval
     allocate(this%qflx_drain_vr          (begc:endc,1:nlevgrnd))  ; this%qflx_drain_vr        (:,:) = spval
     allocate(this%qflx_h2osfc2topsoi     (begc:endc))             ; this%qflx_h2osfc2topsoi   (:)   = spval
     allocate(this%qflx_snow2topsoi       (begc:endc))             ; this%qflx_snow2topsoi     (:)   = spval
@@ -5842,23 +5848,39 @@ contains
      call hist_addfld1d (fname='QSNOFRZ', units='kg/m2/s', &
           avgflag='A', long_name='column-integrated snow freezing rate', &
            ptr_col=this%qflx_snofrz, set_lake=spval, c2l_scale_type='urbanf', default='inactive')
-
+   
     if (create_glacier_mec_landunit) then
-       this%qflx_glcice(begc:endc) = spval
-       call hist_addfld1d (fname='QICE',  units='mm/s',  &
-            avgflag='A', long_name='ice growth/melt', &
-            ptr_col=this%qflx_glcice, l2g_scale_type='ice')
+            this%qflx_glcice(begc:endc) = spval
+             call hist_addfld1d (fname='QICE',  units='mm/s',  &
+                  avgflag='A', long_name='ice growth/melt (with active GLC/MECs)', &
+                   ptr_col=this%qflx_glcice, l2g_scale_type='ice')
 
-       this%qflx_glcice_frz(begc:endc) = spval
-       call hist_addfld1d (fname='QICE_FRZ',  units='mm/s',  &
-            avgflag='A', long_name='ice growth', &
-            ptr_col=this%qflx_glcice_frz, l2g_scale_type='ice')
+            this%qflx_glcice_frz(begc:endc) = spval
+             call hist_addfld1d (fname='QICE_FRZ',  units='mm/s',  &
+                  avgflag='A', long_name='ice growth (with active GLC/MECs)', &
+                   ptr_col=this%qflx_glcice_frz, l2g_scale_type='ice')
 
-       this%qflx_glcice_melt(begc:endc) = spval
-       call hist_addfld1d (fname='QICE_MELT',  units='mm/s',  &
-            avgflag='A', long_name='ice melt', &
-            ptr_col=this%qflx_glcice_melt, l2g_scale_type='ice')
-    endif
+            this%qflx_glcice_melt(begc:endc) = spval
+             call hist_addfld1d (fname='QICE_MELT',  units='mm/s',  &
+                  avgflag='A', long_name='ice melt (with active GLC/MECs)', &
+                   ptr_col=this%qflx_glcice_melt, l2g_scale_type='ice')
+    else 
+             this%qflx_glcice_diag(begc:endc) = spval
+             call hist_addfld1d (fname='QICE',  units='mm/s',  &
+                  avgflag='A', long_name='diagnostic ice growth/melt (no active GLC/MECs)', &
+                   ptr_col=this%qflx_glcice_diag, l2g_scale_type='ice')
+
+            this%qflx_glcice_frz_diag(begc:endc) = spval
+             call hist_addfld1d (fname='QICE_FRZ',  units='mm/s',  &
+                  avgflag='A', long_name='diagnostic ice growth (no active GLC/MECs)', &
+                   ptr_col=this%qflx_glcice_frz_diag, l2g_scale_type='ice')
+
+            this%qflx_glcice_melt_diag(begc:endc) = spval
+             call hist_addfld1d (fname='QICE_MELT',  units='mm/s',  &
+                  avgflag='A', long_name='diagnostic ice melt (no active GLC/MECs)', &
+                   ptr_col=this%qflx_glcice_melt_diag, l2g_scale_type='ice')
+   end if
+
 
     ! As defined here, snow_sources - snow_sinks will equal the change in h2osno at any
     ! given time step but only if there is at least one snow layer (for all landunits
