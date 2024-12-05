@@ -1,0 +1,10 @@
+./xmlchange LND_DOMAIN_FILE=domain_42_FLUXNETSITES_simyr1850_c170912.nc
+./xmlchange ATM_DOMAIN_FILE=domain_42_FLUXNETSITES_simyr1850_c170912.nc
+./xmlchange LND_DOMAIN_PATH="\$DIN_LOC_ROOT/share/domains/domain.clm"
+./xmlchange ATM_DOMAIN_PATH="\$DIN_LOC_ROOT/share/domains/domain.clm"
+./xmlchange DATM_MODE=CLM1PT
+./xmlchange DATM_CLMNCEP_YR_START=2000
+./xmlchange DATM_CLMNCEP_YR_END=2000
+./xmlchange ELM_USRDAT_NAME=42_FLUXNETSITES
+./xmlchange NTASKS=1
+./xmlchange NTHRDS=1

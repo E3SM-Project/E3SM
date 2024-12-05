@@ -1,0 +1,22 @@
+#------------------------------------------------------
+# MAM4xx adds additional tracers to the simulation
+# Increase the number of tracers for MAM4xx simulations
+#------------------------------------------------------
+$CIMEROOT/../components/eamxx/cime_config/testdefs/testmods_dirs/scream/mam4xx/update_eamxx_num_tracers.sh
+
+#modify initial condition file to get aerosol species ICs
+$CIMEROOT/../components/eamxx/scripts/atmchange initial_conditions::Filename='$DIN_LOC_ROOT/atm/scream/init/screami_mam4xx_ne4np4L72_c20240208.nc' -b
+
+# Add all MAM4 processes (except ACI)
+$CIMEROOT/../components/eamxx/scripts/atmchange physics::atm_procs_list="mam4_constituent_fluxes,mac_aero_mic,mam4_wetscav,mam4_optics,rrtmgp,mam4_srf_online_emiss,mam4_drydep" -b
+
+# Add mam4_aci in mac_aero_mic
+$CIMEROOT/../components/eamxx/scripts/atmchange mac_aero_mic::atm_procs_list="tms,shoc,cldFraction,mam4_aci,p3" -b
+
+#Set precribed ccn to false so that P3 uses input from ACI
+$CIMEROOT/../components/eamxx/scripts/atmchange p3::do_prescribed_ccn=false -b
+
+#Set predicted ccn to true so that P3 uses input from ACI
+$CIMEROOT/../components/eamxx/scripts/atmchange p3::do_predict_nc=true -b
+
+

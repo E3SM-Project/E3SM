@@ -159,7 +159,7 @@ contains
          dcEdgeInv = 1.0_RKIND / dcEdge(iEdge)
          dvEdgeInv = 1.0_RKIND / dvEdge(iEdge)
 
-         visc2tmp = (leithParam*dxLeith*meshScalingDel2(iEdge)/pii)**3
+         visc2tmp = (leithParam*dxLeith*meshScalingDel2(iEdge)/pi)**3
 
          do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
 

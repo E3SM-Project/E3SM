@@ -239,6 +239,8 @@ add_default($nl, 'config_sgr_salinity_prescribed');
 
 add_default($nl, 'config_remove_ais_river_runoff');
 add_default($nl, 'config_remove_ais_ice_runoff');
+add_default($nl, 'config_scale_dismf_by_removed_ice_runoff');
+add_default($nl, 'config_ais_ice_runoff_history_days');
 
 ######################################
 # Namelist group: shortwaveRadiation #

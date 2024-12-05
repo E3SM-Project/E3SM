@@ -22,7 +22,6 @@ namespace scream
 class P3Microphysics : public AtmosphereProcess
 {
   using P3F          = p3::Functions<Real, DefaultDevice>;
-  using CP3          = physics::P3_Constants<Real>;
   using Spack        = typename P3F::Spack;
   using Smask        = typename P3F::Smask;
   using Pack         = ekat::Pack<Real,Spack::n>;
@@ -53,8 +52,6 @@ public:
 
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
-
-  CP3 m_p3constants;
 
   /*--------------------------------------------------------------------------------------------*/
   // Most individual processes have a pre-processing step that constructs needed variables from
@@ -158,7 +155,7 @@ public:
     // Assigning local variables
     void set_variables(const int ncol, const int npack,
            const view_2d_const& pmid_, const view_2d_const& pmid_dry_,
-           const view_2d_const& pseudo_density_, 
+           const view_2d_const& pseudo_density_,
            const view_2d_const& pseudo_density_dry_, const view_2d& T_atm_,
            const view_2d_const& cld_frac_t_, const view_2d& qv_, const view_2d& qc_,
            const view_2d& nc_, const view_2d& qr_, const view_2d& nr_, const view_2d& qi_,
@@ -361,7 +358,11 @@ public:
     // 1d view scalar, size (ncol)
     static constexpr int num_1d_scalar = 2; //no 2d vars now, but keeping 1d struct for future expansion
     // 2d view packed, size (ncol, nlev_packs)
+#ifdef SCREAM_P3_SMALL_KERNELS
+    static constexpr int num_2d_vector = 64;
+#else
     static constexpr int num_2d_vector = 8;
+#endif
     static constexpr int num_2dp1_vector = 2;
 
     uview_1d precip_liq_surf_flux;
@@ -376,6 +377,21 @@ public:
     uview_2d precip_liq_flux; //nlev+1
     uview_2d precip_ice_flux; //nlev+1
     uview_2d unused;
+
+#ifdef SCREAM_P3_SMALL_KERNELS
+    uview_2d
+      mu_r, T_atm, lamr, logn0r, nu, cdist, cdist1, cdistr,
+      inv_cld_frac_i, inv_cld_frac_l, inv_cld_frac_r,
+      qc_incld, qr_incld, qi_incld, qm_incld,
+      nc_incld, nr_incld, ni_incld, bm_incld,
+      inv_dz, inv_rho, ze_ice, ze_rain, prec, rho, rhofacr,
+      rhofaci, acn, qv_sat_l, qv_sat_i, sup, qv_supersat_i,
+      tmparr2, exner, diag_equiv_reflectivity, diag_vm_qi,
+      diag_diam_qi, pratot, prctot, qtend_ignore, ntend_ignore,
+      mu_c, lamc, qr_evap_tend, v_qc, v_nc, flux_qx, flux_nx,
+      v_qit, v_nit, flux_nit, flux_bir, flux_qir, flux_qit,
+      v_qr, v_nr;
+#endif
 
     suview_2d col_location;
 
@@ -410,6 +426,9 @@ protected:
   P3F::P3DiagnosticOutputs diag_outputs;
   P3F::P3HistoryOnly       history_only;
   P3F::P3LookupTables      lookup_tables;
+#ifdef SCREAM_P3_SMALL_KERNELS
+  P3F::P3Temporaries       temporaries;
+#endif
   P3F::P3Infrastructure    infrastructure;
   P3F::P3Runtime           runtime_options;
   p3_preamble              p3_preproc;

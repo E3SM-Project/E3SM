@@ -269,7 +269,7 @@ CONTAINS
     end if
 
 #ifdef HAVE_MOAB
-    call create_moab_meshes(par, elem)
+    call create_moab_meshes(par, elem, fv_nphys)
 #endif
     ! Define the CAM grids (this has to be after dycore spinup).
     ! Physics-grid will be defined later by phys_grid_init

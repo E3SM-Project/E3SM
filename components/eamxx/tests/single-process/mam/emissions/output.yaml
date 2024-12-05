@@ -1,0 +1,12 @@
+%YAML 1.1
+---
+filename_prefix: mam4_srf_online_emiss_standalone_output
+Averaging Type: Instant
+Fields:
+  Physics:
+    Field Names:
+      - constituent_fluxes
+output_control:
+  Frequency: 1
+  frequency_units: nsteps
+...

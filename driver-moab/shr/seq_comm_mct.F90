@@ -245,9 +245,9 @@ module seq_comm_mct
   integer, public :: mbintxar ! iMOAB id for intx mesh between atm and river
   integer, public :: mbintxlr ! iMOAB id for intx mesh between land and river
   integer, public :: mbintxrl ! iMOAB id for intx mesh between river and land
-  logical, public :: mb_land_mesh = .false.  ! whether the land uses full FV mesh or not ; made true if domain mesh is read on comp land
-
+  
   integer, public :: num_moab_exports   ! iMOAB id for atm phys grid, on atm pes
+  logical, public :: mb_rof_aream_computed = .false.  ! whether the aream for rof has been set or not 
 
   !=======================================================================
 contains

@@ -1,10 +1,7 @@
-#include "physics/p3/eamxx_p3_process_interface.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 #include "share/property_checks/field_lower_bound_check.hpp"
-// Needed for p3_init, the only F90 code still used.
-#include "physics/p3/p3_functions.hpp"
-#include "physics/share/physics_constants.hpp"
-#include "physics/p3/p3_f90.hpp"
+#include "p3_functions.hpp"
+#include "eamxx_p3_process_interface.hpp"
 
 #include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_units.hpp"
@@ -72,15 +69,15 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   add_field<Updated> ("T_mid",       scalar3d_layout_mid, K,      grid_name, ps);  // T_mid is the only one of these variables that is also updated.
 
   // Prognostic State:  (all fields are both input and output)
-  add_field<Updated>("qv",     scalar3d_layout_mid, kg/kg, grid_name, "tracers", ps);
-  add_field<Updated>("qc",     scalar3d_layout_mid, kg/kg, grid_name, "tracers", ps);
-  add_field<Updated>("qr",     scalar3d_layout_mid, kg/kg, grid_name, "tracers", ps);
-  add_field<Updated>("qi",     scalar3d_layout_mid, kg/kg, grid_name, "tracers", ps);
-  add_field<Updated>("qm",     scalar3d_layout_mid, kg/kg, grid_name, "tracers", ps);
-  add_field<Updated>("nc",     scalar3d_layout_mid, 1/kg,  grid_name, "tracers", ps);
-  add_field<Updated>("nr",     scalar3d_layout_mid, 1/kg,  grid_name, "tracers", ps);
-  add_field<Updated>("ni",     scalar3d_layout_mid, 1/kg,  grid_name, "tracers", ps);
-  add_field<Updated>("bm",     scalar3d_layout_mid, 1/kg,  grid_name, "tracers", ps);
+  add_tracer<Updated>("qv", m_grid, kg/kg, ps);
+  add_tracer<Updated>("qc", m_grid, kg/kg, ps);
+  add_tracer<Updated>("qr", m_grid, kg/kg, ps);
+  add_tracer<Updated>("qi", m_grid, kg/kg, ps);
+  add_tracer<Updated>("qm", m_grid, kg/kg, ps);
+  add_tracer<Updated>("nc", m_grid, 1/kg,  ps);
+  add_tracer<Updated>("nr", m_grid, 1/kg,  ps);
+  add_tracer<Updated>("ni", m_grid, 1/kg,  ps);
+  add_tracer<Updated>("bm", m_grid, 1/kg,  ps);
 
   // Diagnostic Inputs: (only the X_prev fields are both input and output, all others are just inputs)
   add_field<Required>("nc_nuceat_tend",     scalar3d_layout_mid, 1/(kg*s), grid_name, ps);
@@ -95,11 +92,13 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   add_field<Updated> ("T_prev_micro_step",  scalar3d_layout_mid, K,            grid_name, ps);
 
   // Diagnostic Outputs: (all fields are just outputs w.r.t. P3)
-  add_field<Updated>("precip_liq_surf_mass", scalar2d_layout,     kg/m2,  grid_name, "ACCUMULATED");
-  add_field<Updated>("precip_ice_surf_mass", scalar2d_layout,     kg/m2,  grid_name, "ACCUMULATED");
-  add_field<Computed>("eff_radius_qc",       scalar3d_layout_mid, micron, grid_name, ps);
-  add_field<Computed>("eff_radius_qi",       scalar3d_layout_mid, micron, grid_name, ps);
-  add_field<Computed>("eff_radius_qr",       scalar3d_layout_mid, micron, grid_name, ps);
+  add_field<Updated>("precip_liq_surf_mass", scalar2d_layout,     kg/m2,     grid_name, "ACCUMULATED");
+  add_field<Updated>("precip_ice_surf_mass", scalar2d_layout,     kg/m2,     grid_name, "ACCUMULATED");
+  add_field<Computed>("eff_radius_qc",       scalar3d_layout_mid, micron,    grid_name, ps);
+  add_field<Computed>("eff_radius_qi",       scalar3d_layout_mid, micron,    grid_name, ps);
+  add_field<Computed>("eff_radius_qr",       scalar3d_layout_mid, micron,    grid_name, ps);
+  add_field<Computed>("precip_total_tend",   scalar3d_layout_mid, kg/(kg*s), grid_name, ps);
+  add_field<Computed>("nevapr",              scalar3d_layout_mid, kg/(kg*s), grid_name, ps);
 
   // History Only: (all fields are just outputs and are really only meant for I/O purposes)
   // TODO: These should be averaged over subcycle as well.  But there is no simple mechanism
@@ -150,10 +149,14 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
   Real* mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
 
   // 1d scalar views
-  m_buffer.precip_liq_surf_flux = decltype(m_buffer.precip_liq_surf_flux)(mem, m_num_cols);
-  mem += m_buffer.precip_liq_surf_flux.size();
-  m_buffer.precip_ice_surf_flux = decltype(m_buffer.precip_ice_surf_flux)(mem, m_num_cols);
-  mem += m_buffer.precip_ice_surf_flux.size();
+  using scalar_1d_view_t = decltype(m_buffer.precip_liq_surf_flux);
+  scalar_1d_view_t* _1d_scalar_view_ptrs[Buffer::num_1d_scalar] = {
+    &m_buffer.precip_liq_surf_flux, &m_buffer.precip_ice_surf_flux
+  };
+  for (int i=0; i<Buffer::num_1d_scalar; ++i) {
+    *_1d_scalar_view_ptrs[i] = scalar_1d_view_t(mem, m_num_cols);
+    mem += _1d_scalar_view_ptrs[i]->size();
+  }
 
   // 2d scalar views
   m_buffer.col_location = decltype(m_buffer.col_location)(mem, m_num_cols, 3);
@@ -165,26 +168,38 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
   const Int nk_pack    = ekat::npack<Spack>(m_num_levs);
   const Int nk_pack_p1 = ekat::npack<Spack>(m_num_levs+1);
 
-  m_buffer.inv_exner = decltype(m_buffer.inv_exner)(s_mem, m_num_cols, nk_pack);
-  s_mem += m_buffer.inv_exner.size();
-  m_buffer.th_atm = decltype(m_buffer.th_atm)(s_mem, m_num_cols, nk_pack);
-  s_mem += m_buffer.th_atm.size();
-  m_buffer.cld_frac_l = decltype(m_buffer.cld_frac_l)(s_mem, m_num_cols, nk_pack);
-  s_mem += m_buffer.cld_frac_l.size();
-  m_buffer.cld_frac_i = decltype(m_buffer.cld_frac_i)(s_mem, m_num_cols, nk_pack);
-  s_mem += m_buffer.cld_frac_i.size();
-  m_buffer.dz = decltype(m_buffer.dz)(s_mem, m_num_cols, nk_pack);
-  s_mem += m_buffer.dz.size();
-  m_buffer.qv2qi_depos_tend = decltype(m_buffer.qv2qi_depos_tend)(s_mem, m_num_cols, nk_pack);
-  s_mem += m_buffer.qv2qi_depos_tend.size();
-  m_buffer.rho_qi = decltype(m_buffer.rho_qi)(s_mem, m_num_cols, nk_pack);
-  s_mem += m_buffer.rho_qi.size();
-  m_buffer.precip_liq_flux = decltype(m_buffer.precip_liq_flux)(s_mem, m_num_cols, nk_pack_p1);
-  s_mem += m_buffer.precip_liq_flux.size();
-  m_buffer.precip_ice_flux = decltype(m_buffer.precip_ice_flux)(s_mem, m_num_cols, nk_pack_p1);
-  s_mem += m_buffer.precip_ice_flux.size();
-  m_buffer.unused = decltype(m_buffer.unused)(s_mem, m_num_cols, nk_pack);
-  s_mem += m_buffer.unused.size();
+  using spack_2d_view_t = decltype(m_buffer.inv_exner);
+  spack_2d_view_t* _2d_spack_mid_view_ptrs[Buffer::num_2d_vector] = {
+    &m_buffer.inv_exner, &m_buffer.th_atm, &m_buffer.cld_frac_l, &m_buffer.cld_frac_i,
+    &m_buffer.dz, &m_buffer.qv2qi_depos_tend, &m_buffer.rho_qi, &m_buffer.unused
+#ifdef SCREAM_P3_SMALL_KERNELS
+    , &m_buffer.mu_r, &m_buffer.T_atm, &m_buffer.lamr, &m_buffer.logn0r, &m_buffer.nu,
+    &m_buffer.cdist, &m_buffer.cdist1, &m_buffer.cdistr, &m_buffer.inv_cld_frac_i,
+    &m_buffer.inv_cld_frac_l, &m_buffer.inv_cld_frac_r, &m_buffer.qc_incld, &m_buffer.qr_incld,
+    &m_buffer.qi_incld, &m_buffer.qm_incld, &m_buffer.nc_incld, &m_buffer.nr_incld,
+    &m_buffer.ni_incld, &m_buffer.bm_incld, &m_buffer.inv_dz, &m_buffer.inv_rho, &m_buffer.ze_ice,
+    &m_buffer.ze_rain, &m_buffer.prec, &m_buffer.rho, &m_buffer.rhofacr, &m_buffer.rhofaci,
+    &m_buffer.acn, &m_buffer.qv_sat_l, &m_buffer.qv_sat_i, &m_buffer.sup, &m_buffer.qv_supersat_i,
+    &m_buffer.tmparr2, &m_buffer.exner, &m_buffer.diag_equiv_reflectivity, &m_buffer.diag_vm_qi,
+    &m_buffer.diag_diam_qi, &m_buffer.pratot, &m_buffer.prctot, &m_buffer.qtend_ignore,
+    &m_buffer.ntend_ignore, &m_buffer.mu_c, &m_buffer.lamc, &m_buffer.qr_evap_tend, &m_buffer.v_qc,
+    &m_buffer.v_nc, &m_buffer.flux_qx, &m_buffer.flux_nx, &m_buffer.v_qit, &m_buffer.v_nit,
+    &m_buffer.flux_nit, &m_buffer.flux_bir, &m_buffer.flux_qir, &m_buffer.flux_qit, &m_buffer.v_qr,
+    &m_buffer.v_nr
+#endif
+  };
+  for (int i=0; i<Buffer::num_2d_vector; ++i) {
+    *_2d_spack_mid_view_ptrs[i] = spack_2d_view_t(s_mem, m_num_cols, nk_pack);
+    s_mem += _2d_spack_mid_view_ptrs[i]->size();
+  }
+
+  spack_2d_view_t* _2d_spack_int_view_ptrs[Buffer::num_2dp1_vector] = {
+    &m_buffer.precip_liq_flux, &m_buffer.precip_ice_flux
+  };
+  for (int i=0; i<Buffer::num_2dp1_vector; ++i) {
+    *_2d_spack_int_view_ptrs[i] = spack_2d_view_t(s_mem, m_num_cols, nk_pack_p1);
+    s_mem += _2d_spack_int_view_ptrs[i]->size();
+  }
 
   // WSM data
   m_buffer.wsm_data = s_mem;
@@ -202,13 +217,8 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
 // =========================================================================================
 void P3Microphysics::initialize_impl (const RunType /* run_type */)
 {
-  // Gather runtime options
-  runtime_options.max_total_ni = m_params.get<double>("max_total_ni");
-
-  // setting P3 constants in a struct
-  m_p3constants.set_p3_from_namelist(m_params);
-  m_p3constants.print_p3constants(m_atm_logger);
-  // done setting P3 constants
+  // Gather runtime options from file
+  runtime_options.load_runtime_options_from_file(m_params);
 
   // Set property checks for fields in this process
   add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),m_grid,100.0,500.0,false);
@@ -231,8 +241,8 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("eff_radius_qr"),m_grid,0.0,5.0e3,false);
 
   // Initialize p3
-  p3::p3_init(/* write_tables = */ false,
-              this->get_comm().am_i_root());
+  P3F::p3_init(/* write_tables = */ false,
+               this->get_comm().am_i_root());
 
   // Initialize all of the structures that are passed to p3_main in run_impl.
   // Note: Some variables in the structures are not stored in the field manager.  For these
@@ -307,6 +317,8 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   diag_outputs.diag_eff_radius_qc = get_field_out("eff_radius_qc").get_view<Pack**>();
   diag_outputs.diag_eff_radius_qi = get_field_out("eff_radius_qi").get_view<Pack**>();
   diag_outputs.diag_eff_radius_qr = get_field_out("eff_radius_qr").get_view<Pack**>();
+  diag_outputs.precip_total_tend  = get_field_out("precip_total_tend").get_view<Pack**>();
+  diag_outputs.nevapr             = get_field_out("nevapr").get_view<Pack**>();
 
   diag_outputs.precip_liq_surf  = m_buffer.precip_liq_surf_flux;
   diag_outputs.precip_ice_surf  = m_buffer.precip_ice_surf_flux;
@@ -320,6 +332,66 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   history_only.liq_ice_exchange = get_field_out("micro_liq_ice_exchange").get_view<Pack**>();
   history_only.vap_liq_exchange = get_field_out("micro_vap_liq_exchange").get_view<Pack**>();
   history_only.vap_ice_exchange = get_field_out("micro_vap_ice_exchange").get_view<Pack**>();
+#ifdef SCREAM_P3_SMALL_KERNELS
+  // Temporaries
+  temporaries.mu_r                    = m_buffer.mu_r;
+  temporaries.T_atm                   = m_buffer.T_atm;
+  temporaries.lamr                    = m_buffer.lamr;
+  temporaries.logn0r                  = m_buffer.logn0r;
+  temporaries.nu                      = m_buffer.nu;
+  temporaries.cdist                   = m_buffer.cdist;
+  temporaries.cdist1                  = m_buffer.cdist1;
+  temporaries.cdistr                  = m_buffer.cdistr;
+  temporaries.inv_cld_frac_i          = m_buffer.inv_cld_frac_i;
+  temporaries.inv_cld_frac_l          = m_buffer.inv_cld_frac_l;
+  temporaries.inv_cld_frac_r          = m_buffer.inv_cld_frac_r;
+  temporaries.qc_incld                = m_buffer.qc_incld;
+  temporaries.qr_incld                = m_buffer.qr_incld;
+  temporaries.qi_incld                = m_buffer.qi_incld;
+  temporaries.qm_incld                = m_buffer.qm_incld;
+  temporaries.nc_incld                = m_buffer.nc_incld;
+  temporaries.nr_incld                = m_buffer.nr_incld;
+  temporaries.ni_incld                = m_buffer.ni_incld;
+  temporaries.bm_incld                = m_buffer.bm_incld;
+  temporaries.inv_dz                  = m_buffer.inv_dz;
+  temporaries.inv_rho                 = m_buffer.inv_rho;
+  temporaries.ze_ice                  = m_buffer.ze_ice;
+  temporaries.ze_rain                 = m_buffer.ze_rain;
+  temporaries.prec                    = m_buffer.prec;
+  temporaries.rho                     = m_buffer.rho;
+  temporaries.rhofacr                 = m_buffer.rhofacr;
+  temporaries.rhofaci                 = m_buffer.rhofaci;
+  temporaries.acn                     = m_buffer.acn;
+  temporaries.qv_sat_l                = m_buffer.qv_sat_l;
+  temporaries.qv_sat_i                = m_buffer.qv_sat_i;
+  temporaries.sup                     = m_buffer.sup;
+  temporaries.qv_supersat_i           = m_buffer.qv_supersat_i;
+  temporaries.tmparr2                 = m_buffer.tmparr2;
+  temporaries.exner                   = m_buffer.exner;
+  temporaries.diag_equiv_reflectivity = m_buffer.diag_equiv_reflectivity;
+  temporaries.diag_vm_qi              = m_buffer.diag_vm_qi;
+  temporaries.diag_diam_qi            = m_buffer.diag_diam_qi;
+  temporaries.pratot                  = m_buffer.pratot;
+  temporaries.prctot                  = m_buffer.prctot;
+  temporaries.qtend_ignore            = m_buffer.qtend_ignore;
+  temporaries.ntend_ignore            = m_buffer.ntend_ignore;
+  temporaries.mu_c                    = m_buffer.mu_c;
+  temporaries.lamc                    = m_buffer.lamc;
+  temporaries.qr_evap_tend            = m_buffer.qr_evap_tend;
+  temporaries.v_qc                    = m_buffer.v_qc;
+  temporaries.v_nc                    = m_buffer.v_nc;
+  temporaries.flux_qx                 = m_buffer.flux_qx;
+  temporaries.flux_nx                 = m_buffer.flux_nx;
+  temporaries.v_qit                   = m_buffer.v_qit;
+  temporaries.v_nit                   = m_buffer.v_nit;
+  temporaries.flux_nit                = m_buffer.flux_nit;
+  temporaries.flux_bir                = m_buffer.flux_bir;
+  temporaries.flux_qir                = m_buffer.flux_qir;
+  temporaries.flux_qit                = m_buffer.flux_qit;
+  temporaries.v_qr                    = m_buffer.v_qr;
+  temporaries.v_nr                    = m_buffer.v_nr;
+#endif
+
   // -- Set values for the post-amble structure
   p3_postproc.set_variables(m_num_cols,nk_pack,
                             prog_state.th,pmid,pmid_dry,T_atm,t_prev,

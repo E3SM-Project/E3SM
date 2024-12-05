@@ -1,0 +1,122 @@
+name: eamxx-v1
+
+on:
+  # Runs on PRs against master
+  pull_request:
+    branches: [ master ]
+    types: [opened, synchronize, ready_for_review, reopened]
+    paths:
+      # first, yes to these
+      - '.github/workflows/eamxx-v1-testing.yml'
+      - 'cime_config/machine/config_machines.xml'
+      - 'components/eamxx/**'
+      - 'components/homme/**'
+      - 'externals/ekat'
+      - 'externals/scorpio'
+      # second, no to these
+      - '!components/eamxx/docs/**'
+      - '!components/eamxx/mkdocs.yml'
+
+  # Manual run is used to bless
+  workflow_dispatch:
+    inputs:
+      job_to_run:
+        description: 'Job to run'
+        required: true
+        type: choice
+        options:
+          - cpu-gcc
+          - all
+      bless:
+        description: 'Generate baselines'
+        required: true
+        type: boolean
+
+concurrency:
+  # Two runs are in the same group if they are testing the same git ref
+  #  - if trigger=pull_request, the ref is refs/pull/<PR_NUMBER>/merge
+  #  - for other triggers, the ref is the branch tested
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Submit to cdash only for nightlies or if the user explicitly forced a submission via workflow dispatch
+  submit: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.submit) }}
+  # Generate only if user requested via workflow_dispatch
+  generate: ${{ github.event_name == 'workflow_dispatch' && inputs.bless }}
+  # Correct case folder suffix for generate/compare, used to find files to upload as artifacts
+  folder_suffix: ${{ github.event_name == 'workflow_dispatch' && inputs.bless && '.G' || '.C' }}
+  # Compare/generate flags for create_test
+  flags: ${{ github.event_name == 'workflow_dispatch' && inputs.bless && '-o -g -b master' || '-c -b master' }}
+
+jobs:
+  cpu-gcc:
+    if: |
+      ${{
+        github.event_name != 'workflow_dispatch' ||
+        (
+          github.event.inputs.job_to_run == 'cpu-gcc' || 
+          github.event.inputs.job_to_run == 'all'
+        )
+      }}
+    runs-on:  [self-hosted, gcc, ghci-snl-cpu]
+    strategy:
+      matrix:
+        test:
+          - full_name: ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1.ghci-snl-cpu_gnu.scream-output-preset-2
+            short_name: ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1.scream-output-preset-2
+          - full_name: ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.ghci-snl-cpu_gnu.scream-dpxx-arm97
+            short_name: ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.scream-dpxx-arm97
+          - full_name: ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci-snl-cpu_gnu.scream-small_kernels--scream-output-preset-5
+            short_name: ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.scream-small_kernels--scream-output-preset-5
+          - full_name: SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.ghci-snl-cpu_gnu.scream-mam4xx-all_mam4xx_procs
+            short_name: SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.scream-mam4xx-all_mam4xx_procs
+      fail-fast: false
+    name: cpu-gcc / ${{ matrix.test.short_name }}
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          show-progress: false
+          submodules: recursive
+      - name: Show action trigger
+        uses: ./.github/actions/show-workflow-trigger
+      - name: Set CA certificates env var
+        run: |
+          # Ensure the operating system is Linux
+          if [ "$(uname)" != "Linux" ]; then
+            echo "This action only supports Linux."
+            exit 1
+          fi
+          # Set env var to be used in upload-artifacts phase
+          if [ -f /etc/debian_version ]; then
+            echo "NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt" >> $GITHUB_ENV
+          elif [ -f /etc/redhat-release ] || [ -f /etc/centos-release ] || [ -f /etc/fedora-release ]; then
+            echo "NODE_EXTRA_CA_CERTS=/etc/pki/tls/certs/ca-bundle.crt" >> $GITHUB_ENV
+          else
+            echo "Unsupported Linux distribution"
+            exit 1
+          fi
+      - name: Run test
+        run: |
+          ./cime/scripts/create_test ${{ matrix.test.full_name }} ${{ env.flags }} --wait
+      - name: Upload case files
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.test.full_name }}
+          path: |
+            /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/TestStatus.log
+            /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/bld/*.bldlog.*
+            /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/bld/case2bld/*.bldlog.*
+            /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/run/*.log.*
+            /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/run/case2run/*.log.*
+            /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/run/*.cprnc.out
+            /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/run/case2run/*.cprnc.out
+        env:
+          NODE_EXTRA_CA_CERTS: ${{ env.NODE_EXTRA_CA_CERTS }}
+      - name: Clean up
+        if: ${{ always() }}
+        run: |
+          rm -rf /projects/e3sm/scratch/${{ matrix.test.full_name }}*

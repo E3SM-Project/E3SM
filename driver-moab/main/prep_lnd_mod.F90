@@ -1,6 +1,6 @@
 module prep_lnd_mod
 
-  use shr_kind_mod    , only: r8 => SHR_KIND_R8
+  use shr_kind_mod    , only: R8 => SHR_KIND_R8
   use shr_kind_mod    , only: cs => SHR_KIND_CS
   use shr_kind_mod    , only: cl => SHR_KIND_CL
   use shr_kind_mod    , only: cxx => SHR_KIND_CXX
@@ -18,6 +18,7 @@ module prep_lnd_mod
   use seq_comm_mct,     only: mbrxid   !          iMOAB id of moab rof on coupler pes (FV now)
   use seq_comm_mct,     only: mbintxal ! iMOAB id for intx mesh between atm and lnd
   use seq_comm_mct,     only: mbintxrl ! iMOAB id for intx mesh between river and land
+  use seq_comm_mct,     only: mb_rof_aream_computed  ! signal
 
   use seq_comm_mct,     only: mbaxid   ! iMOAB id for atm migrated mesh to coupler pes
   use seq_comm_mct,     only: atm_pg_active  ! whether the atm uses FV mesh or not ; made true if fv_nphys > 0
@@ -162,7 +163,7 @@ contains
     integer  nrflds  ! number of rof fields projected on land
     integer arrsize  ! for setting the r2x fields on land to 0
     integer ent_type ! for setting tags
-    real (kind=r8) , allocatable :: tmparray (:) ! used to set the r2x fields to 0
+    real (kind=R8) , allocatable :: tmparray (:) ! used to set the r2x fields to 0
 
 #endif
     character(*), parameter  :: subname = '(prep_lnd_init)'
@@ -222,7 +223,6 @@ contains
           call seq_map_init_rcfile(mapper_Fr2l, rof(1), lnd(1), &
                'seq_maps.rc','rof2lnd_fmapname:','rof2lnd_fmaptype:',samegrid_lr, &
                string='mapper_Fr2l initialization',esmf_map=esmf_map_flag)
-       end if
 ! symmetric of l2r, from prep_rof
 #ifdef HAVE_MOAB
           ! Call moab intx only if land and river are init in moab
@@ -328,6 +328,9 @@ contains
                                                 fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                 noConserve, validate, &
                                                 trim(dofnameS), trim(dofnameT) )
+
+              ! signal that the aream for rof has been computed
+              mb_rof_aream_computed = .true.
               if (ierr .ne. 0) then
                 write(logunit,*) subname,' error in computing rl weights '
                 call shr_sys_abort(subname//' ERROR in computing rl weights ')
@@ -370,7 +373,7 @@ contains
             arrsize = nrflds*mlsize
             allocate (tmparray(arrsize)) ! mlsize is the size of local land
             ! do we need to zero out others or just river ?
-            tmparray = 0._r8
+            tmparray = 0._R8
             ierr = iMOAB_SetDoubleTagStorage(mblxid, tagname, arrsize , ent_type, tmparray)
             if (ierr .ne. 0) then
                write(logunit,*) subname,' cant zero out r2x tags on land'
@@ -381,6 +384,7 @@ contains
          end if ! if ((mbrxid .ge. 0) .and.  (mblxid .ge. 0))
 ! endif HAVE_MOAB
 #endif
+       end if
        call shr_sys_flush(logunit)
 
        if (atm_c2_lnd) then
@@ -693,7 +697,7 @@ contains
 #endif
 #ifdef MOABCOMP
     character(CXX)           :: tagname, mct_field
-    real(r8)                 :: difference
+    real(R8)                 :: difference
     type(mct_list) :: temp_list
     integer :: size_list, index_list, ent_type
     type(mct_string)    :: mctOStr  !

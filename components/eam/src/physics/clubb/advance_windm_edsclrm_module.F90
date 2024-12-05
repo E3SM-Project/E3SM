@@ -3,6 +3,9 @@
 !===============================================================================
 module advance_windm_edsclrm_module
 
+  !options for turbulent orographic form drag in wind forcing
+  use phys_control,  only: use_od_fd
+
   implicit none
 
   private ! Set Default Scope
@@ -1571,8 +1574,12 @@ module advance_windm_edsclrm_module
       endif
 
     else   ! implemented in a host model.
-
-      xm_tndcy = 0.0_core_rknd
+      !use forcing when using turbulent orographic form drag (TOFD) forcing
+      if (use_od_fd) then
+        xm_tndcy(1:gr%nz) = xm_forcing(1:gr%nz)
+      else
+        xm_tndcy = 0.0_core_rknd
+      endif
 
     endif
 

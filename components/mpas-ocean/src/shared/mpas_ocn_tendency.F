@@ -264,7 +264,8 @@ contains
                                              tendThick, err)
 
       ! Compute thickness tendency to manufactured solution
-      call ocn_manufactured_solution_tend_thick(tendThick, err)
+      call ocn_manufactured_solution_tend_thick(forcingPool, &
+                                                tendThick, err)
 
 #ifdef MPAS_OPENACC
       !$acc exit data copyout(tendThick, surfaceThicknessFlux, surfaceThicknessFluxRunoff, &
@@ -493,7 +494,8 @@ contains
                                 layerThickEdgeMean, tendVel, err)
  
       ! Compute tendency term for manufactured solution
-      call ocn_manufactured_solution_tend_vel(tendVel, err)
+      call ocn_manufactured_solution_tend_vel(forcingPool, &
+                                              tendVel, err)
 
       ! vertical mixing treated implicitly in a later routine
       ! adjust total velocity tendency based on wetting/drying
@@ -1527,7 +1529,7 @@ contains
          do k = 1, maxLevelCell(iCell)
 
             tend_lowFreqDivergence(k,iCell) = &
-               -2.0*pii/thickness_filter_timescale_sec &
+               -2.0*pi/thickness_filter_timescale_sec &
               *(lowFreqDivergence(k,iCell)  - div_hu(k) &
                 + div_hu_btr * layerThickness(k,iCell)/totalThickness)
 
@@ -1535,7 +1537,7 @@ contains
                   div_hu_btr*layerThickness(k,iCell)/totalThickness + &
                   lowFreqDivergence(k,iCell) + &
                   use_highFreqThick_restore* &
-                  (-2.0*pii/highFreqThick_restore_time_sec* &
+                  (-2.0*pi/highFreqThick_restore_time_sec* &
                    highFreqThickness(k,iCell) )
 
          end do ! vert (k) loop

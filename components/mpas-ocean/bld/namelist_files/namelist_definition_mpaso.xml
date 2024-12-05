@@ -1271,6 +1271,22 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_scale_dismf_by_removed_ice_runoff" type="logical"
+	category="coupling" group="coupling">
+Whether to scale data ice-shelf melt fluxes by the running mean of removed ice runoff.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ais_ice_runoff_history_days" type="integer"
+	category="coupling" group="coupling">
+The number of days over for which the history of removed AIS runoff is stored. The default is 731 days (2 years + 1 day).
+
+Valid values: Any positive integer
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- shortwaveRadiation -->
 

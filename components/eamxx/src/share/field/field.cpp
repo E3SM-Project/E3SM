@@ -60,22 +60,62 @@ Field::clone(const std::string& name) const {
 }
 
 void Field::
-sync_to_host () const {
+sync_to_host (const bool fence) const {
   // Sanity check
   EKAT_REQUIRE_MSG (is_allocated(),
       "Error! Input field must be allocated in order to sync host and device views.\n");
 
-  Kokkos::deep_copy(m_data.h_view,m_data.d_view);
+  // Check for early return if Host and Device are the same memory space
+  if (host_and_device_share_memory_space()) return;
+
+  // We allow sync_to_host for constant fields. Temporarily disable read only flag.
+  const bool original_read_only = m_is_read_only;
+  m_is_read_only = false;
+
+  switch (data_type()) {
+    case DataType::IntType:
+      sync_views_impl<int, Device, Host>();
+      break;
+    case DataType::FloatType:
+      sync_views_impl<float, Device, Host>();
+      break;
+    case DataType::DoubleType:
+      sync_views_impl<double, Device, Host>();
+      break;
+    default:
+      EKAT_ERROR_MSG("Error! Unrecognized field data type in Field::sync_to_host.\n");
+  }
+
+  if (fence) Kokkos::fence();
+
+  // Return field to read-only state
+  m_is_read_only = original_read_only;
 }
 
 void Field::
-sync_to_dev () const {
+sync_to_dev (const bool fence) const {
   // Sanity check
   EKAT_REQUIRE_MSG (is_allocated(),
       "Error! Input field must be allocated in order to sync host and device views.\n");
 
-  // Ensure host view was created (lazy construction)
-  Kokkos::deep_copy(m_data.d_view,m_data.h_view);
+  // Check for early return if Host and Device are the same memory space
+  if (host_and_device_share_memory_space()) return;
+
+  switch (data_type()) {
+    case DataType::IntType:
+      sync_views_impl<int, Host, Device>();
+      break;
+    case DataType::FloatType:
+      sync_views_impl<float, Host, Device>();
+      break;
+    case DataType::DoubleType:
+      sync_views_impl<double, Host, Device>();
+      break;
+    default:
+      EKAT_ERROR_MSG("Error! Unrecognized field data type in Field::sync_to_dev.\n");
+  }
+
+  if (fence) Kokkos::fence();
 }
 
 Field Field::
@@ -92,7 +132,7 @@ subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
         "Error! Subview dimension index must be either 0 or 1.\n");
 
   // Create identifier for subfield
-  FieldIdentifier sf_id(sf_name,lt.clone().strip_dim(idim),sf_units,id.get_grid_name());
+  FieldIdentifier sf_id(sf_name,lt.clone().strip_dim(idim),sf_units,id.get_grid_name(),id.data_type());
 
   // Create empty subfield, then set header and views
   // Note: we can access protected members, since it's the same type
@@ -100,6 +140,14 @@ subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
   sf.m_header = create_subfield_header(sf_id,m_header,idim,index,dynamic);
   sf.m_data = m_data;
   sf.m_is_read_only = m_is_read_only;
+
+  if (not sf.m_header->get_alloc_properties().contiguous() and
+      not sf.host_and_device_share_memory_space()) {
+    // If subfield is not contiguous and Host and Device do not
+    // share a memory space, we must initialize the helper field
+    // for sync_to functions.
+    sf.initialize_contiguous_helper_field();
+  }
 
   return sf;
 }
@@ -133,7 +181,7 @@ Field Field::subfield(const std::string& sf_name,
   auto sf_layout = lt.clone();
   sf_layout.reset_dim(idim, index_end - index_beg);
   // Create identifier for subfield
-  FieldIdentifier sf_id(sf_name, sf_layout, sf_units, id.get_grid_name());
+  FieldIdentifier sf_id(sf_name, sf_layout, sf_units, id.get_grid_name(), id.data_type());
 
   // Create empty subfield, then set header and views
   // Note: we can access protected members, since it's the same type
@@ -141,6 +189,14 @@ Field Field::subfield(const std::string& sf_name,
   sf.m_header = create_subfield_header(sf_id, m_header, idim, index_beg,
                                        index_end);
   sf.m_data = m_data;
+
+  if (not sf.m_header->get_alloc_properties().contiguous() and
+      not sf.host_and_device_share_memory_space()) {
+    // If subfield is not contiguous and Host and Device do not
+    // share a memory space, we must initialize the helper field
+    // for sync_to functions.
+    sf.initialize_contiguous_helper_field();
+  }
 
   return sf;
 }

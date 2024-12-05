@@ -206,7 +206,7 @@ protected:
   std::map<std::string,std::shared_ptr<atm_diag_type>>  m_diagnostics;
   std::map<std::string,std::vector<std::string>>        m_diag_depends_on_diags;
   std::map<std::string,bool>                            m_diag_computed;
-  LongNames                                             m_longnames;
+  DefaultMetadata                                       m_default_metadata;
 
   // Use float, so that if output fp_precision=float, this is a representable value.
   // Otherwise, you would get an error from Netcdf, like

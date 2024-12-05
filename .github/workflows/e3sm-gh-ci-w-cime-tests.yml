@@ -1,8 +1,10 @@
-name: gh
+name: gh-w
 
 on:
   pull_request:
-    branches: [ master ]
+    branches: 
+      - master
+      - maint-3.0
     paths-ignore:
       - 'mkdocs.yaml'
       - 'docs/**'
@@ -11,10 +13,14 @@ on:
 
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
 
-  ci-w:
-    if: ${{ github.event.repository.name == 'e3sm' }}
+  ci:
+    if: ${{ github.repository == 'E3SM-Project/E3SM' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -23,7 +29,7 @@ jobs:
           - SMS_D_Ld1_P8.ne4pg2_oQU480.WCYCL2010NS.ghci-oci_gnu
           - ERS_Ld3_P8.ne4pg2_oQU480.WCYCL2010NS.ghci-oci_gnu.allactive-wcprod_1850
     container: 
-      image: ghcr.io/e3sm-project/containers-ghci:ghci-0.1.0
+      image: ghcr.io/e3sm-project/containers-ghci:ghci-0.2.1
 
     steps:
       - 

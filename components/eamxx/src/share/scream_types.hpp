@@ -34,7 +34,7 @@ enum class RepoState {
 // The type of this run
 enum class RunType {
   Initial,
-  Restarted
+  Restart
 };
 
 // We cannot expect BFB results between f90 and cxx if optimizations are on.

@@ -42,15 +42,20 @@ add_subdirectory(${EXTERNALS_SOURCE_DIR}/mam4xx ${CMAKE_BINARY_DIR}/externals/ma
 # EAMxx mam4xx-based atmospheric processes
 add_library(mam
   eamxx_mam_microphysics_process_interface.cpp
+  ${SCREAM_BASE_DIR}/src/physics/rrtmgp/shr_orb_mod_c2f.F90
   eamxx_mam_optics_process_interface.cpp
-  eamxx_mam_aci_process_interface.cpp)
+  eamxx_mam_dry_deposition_process_interface.cpp
+  eamxx_mam_aci_process_interface.cpp
+  eamxx_mam_wetscav_process_interface.cpp
+  eamxx_mam_srf_and_online_emissions_process_interface.cpp
+  eamxx_mam_constituent_fluxes_interface.cpp)
 target_compile_definitions(mam PUBLIC EAMXX_HAS_MAM)
 add_dependencies(mam mam4xx)
 target_include_directories(mam PUBLIC
   ${EXTERNALS_SOURCE_DIR}/haero
   ${EXTERNALS_SOURCE_DIR}/mam4xx/src
 )
-target_link_libraries(mam PUBLIC physics_share scream_share mam4xx haero)
+target_link_libraries(mam PUBLIC physics_share csm_share scream_share mam4xx haero)
 
 #if (NOT SCREAM_LIB_ONLY)
 #  add_subdirectory(tests)

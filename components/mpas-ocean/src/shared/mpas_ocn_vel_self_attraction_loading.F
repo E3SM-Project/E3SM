@@ -863,8 +863,8 @@ contains
             ! Pre-compute sin and cos of latCell (co-latitude) values
             allocate(sinLatCell(nCellsAll), cosLatCell(nCellsAll))
             do iCell = 1,nCellsAll
-                sinLatCell(iCell) = sin(0.5_RKIND*pii-latCell(iCell))
-                cosLatCell(iCell) = cos(0.5_RKIND*pii-latCell(iCell))
+                sinLatCell(iCell) = sin(0.5_RKIND*pi-latCell(iCell))
+                cosLatCell(iCell) = cos(0.5_RKIND*pi-latCell(iCell))
             enddo
 
             ! Calculate blocking indices
@@ -2526,7 +2526,7 @@ contains
         if (n == m) then
 
             do iCell = startIdx,endIdx
-                pmnm2(iCell) = sqrt(1.0_RKIND/(4.0_RKIND*pii))*sinLatCell(iCell)**m
+                pmnm2(iCell) = sqrt(1.0_RKIND/(4.0_RKIND*pi))*sinLatCell(iCell)**m
                 do i = 1,m
                     pmnm2(iCell) = pmnm2(iCell)*sqrt(real(2*i+1,RKIND)/real(2*i,RKIND))
                 enddo

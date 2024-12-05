@@ -4,7 +4,7 @@
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
-#include "p3_functions_f90.hpp"
+#include "p3_test_data.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -19,9 +19,9 @@ namespace p3 {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestIncloudMixing {
+struct UnitWrap::UnitTest<D>::TestIncloudMixing : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_incloud_mixing_bfb()
+  void run_incloud_mixing_bfb()
   {
     using KTH = KokkosTypes<HostDevice>;
 
@@ -69,9 +69,11 @@ struct UnitWrap::UnitTest<D>::TestIncloudMixing {
     std::copy(&self[0], &self[0] + max_pack_size, self_host.data());
     Kokkos::deep_copy(self_device, self_host);
 
-    // Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
-       calculate_incloud_mixingratios(self[i]);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (Int i = 0; i < max_pack_size; ++i) {
+        self[i].read(Base::m_fid);
+      }
     }
 
     // Run the lookup from a kernel and copy results back to host
@@ -115,7 +117,7 @@ struct UnitWrap::UnitTest<D>::TestIncloudMixing {
 
     Kokkos::deep_copy(self_host, self_device);
 
-    if (SCREAM_BFB_TESTING) {
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int s = 0; s < max_pack_size; ++s) {
         REQUIRE(self[s].qc_incld == self_host(s).qc_incld);
         REQUIRE(self[s].qr_incld == self_host(s).qr_incld);
@@ -127,9 +129,14 @@ struct UnitWrap::UnitTest<D>::TestIncloudMixing {
         REQUIRE(self[s].bm_incld == self_host(s).bm_incld);
       }
     }
+    else if (this->m_baseline_action == GENERATE) {
+      for (Int s = 0; s < max_pack_size; ++s) {
+        self_host(s).write(Base::m_fid);
+      }
+    }
   }
 
-  static void run_incloud_mixing_phys()
+  void run_incloud_mixing_phys()
   {
     // TODO
   }
@@ -143,10 +150,11 @@ namespace {
 
 TEST_CASE("p3_incloud_mixingratios", "[p3_functions]")
 {
-  using TD = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIncloudMixing;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIncloudMixing;
 
-  TD::run_incloud_mixing_phys();
-  TD::run_incloud_mixing_bfb();
+  T t;
+  t.run_incloud_mixing_phys();
+  t.run_incloud_mixing_bfb();
 }
 
 }

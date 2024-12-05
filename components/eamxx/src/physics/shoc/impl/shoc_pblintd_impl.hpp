@@ -78,7 +78,14 @@ void Functions<S,D>::pblintd(
 
   // Initialize
   bool check = true;
+  // The loop below fixes valgrind uninitialized mem errs
+#ifndef NDEBUG
+  for (size_t i=0; i<rino.size(); ++i) {
+    rino(i)=0;
+  }
+#else
   s_rino(nlev-1) = 0;
+#endif
   pblh = s_z(nlev-1);
 
   // PBL height calculation

@@ -61,7 +61,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
 
   add_field<Updated>("surf_evap",       scalar2d    , kg/(m2*s), grid_name);
   add_field<Updated> ("T_mid",          scalar3d_mid, K,         grid_name, ps);
-  add_field<Updated> ("qv",             scalar3d_mid, kg/kg,     grid_name, "tracers", ps);
+  add_tracer<Updated>("qv", m_grid, kg/kg, ps);
 
   // If TMS is a process, add surface drag coefficient to required fields
   if (m_params.get<bool>("apply_tms", false)) {
@@ -75,12 +75,12 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   add_field<Required>("phis",           scalar2d    , m2/s2, grid_name, ps);
 
   // Input/Output variables
-  add_field<Updated>("tke",           scalar3d_mid, m2/s2,   grid_name, "tracers", ps);
   add_field<Updated>("horiz_winds",   vector3d_mid,   m/s,     grid_name, ps);
   add_field<Updated>("sgs_buoy_flux", scalar3d_mid, K*(m/s), grid_name, ps);
   add_field<Updated>("eddy_diff_mom", scalar3d_mid, m2/s,    grid_name, ps);
-  add_field<Updated>("qc",            scalar3d_mid, kg/kg,   grid_name, "tracers", ps);
   add_field<Updated>("cldfrac_liq",   scalar3d_mid, nondim,  grid_name, ps);
+  add_tracer<Updated>("tke", m_grid, m2/s2, ps);
+  add_tracer<Updated>("qc",  m_grid, kg/kg, ps);
 
   // Output variables
   add_field<Computed>("pbl_height",    scalar2d    , m,            grid_name);
@@ -88,6 +88,27 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   add_field<Computed>("eddy_diff_heat",   scalar3d_mid, m2/s,        grid_name, ps);
   add_field<Computed>("w_variance",       scalar3d_mid, m2/s2,       grid_name, ps);
   add_field<Computed>("cldfrac_liq_prev", scalar3d_mid, nondim,      grid_name, ps);
+  add_field<Computed>("ustar",            scalar2d,     m/s,         grid_name, ps);
+  add_field<Computed>("obklen",           scalar2d,     m,           grid_name, ps);
+
+  // Extra SHOC output diagnostics
+  if (m_params.get<bool>("extra_shoc_diags", false)) {
+
+    // Diagnostic output - mid point grid
+    add_field<Computed>("brunt", scalar3d_mid, pow(s,-1), grid_name, ps);
+    add_field<Computed>("shoc_mix", scalar3d_mid, m, grid_name, ps);
+    add_field<Computed>("isotropy", scalar3d_mid, s, grid_name, ps);
+
+    // Diagnostic output - interface grid
+    add_field<Computed>("wthl_sec", scalar3d_int, K*(m/s), grid_name, ps);
+    add_field<Computed>("thl_sec", scalar3d_int, pow(K,2), grid_name, ps);
+    add_field<Computed>("wqw_sec", scalar3d_int, (kg/kg)*(m/s), grid_name, ps);
+    add_field<Computed>("qw_sec", scalar3d_int, pow(kg/kg,2), grid_name, ps);
+    add_field<Computed>("uw_sec", scalar3d_int, pow(m/s,2), grid_name, ps);
+    add_field<Computed>("vw_sec", scalar3d_int, pow(m/s,2), grid_name, ps);
+    add_field<Computed>("w3", scalar3d_int, pow(m/s,3), grid_name, ps);
+
+  } // Extra SHOC output diagnostics
 
   // Tracer group
   add_group<Updated>("tracers", grid_name, ps, Bundling::Required);
@@ -154,10 +175,10 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
   using scalar_view_t = decltype(m_buffer.wpthlp_sfc);
   scalar_view_t* _1d_scalar_view_ptrs[Buffer::num_1d_scalar_ncol] =
     {&m_buffer.wpthlp_sfc, &m_buffer.wprtp_sfc, &m_buffer.upwp_sfc, &m_buffer.vpwp_sfc
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_SHOC_SMALL_KERNELS
      , &m_buffer.se_b, &m_buffer.ke_b, &m_buffer.wv_b, &m_buffer.wl_b
      , &m_buffer.se_a, &m_buffer.ke_a, &m_buffer.wv_a, &m_buffer.wl_a
-     , &m_buffer.ustar, &m_buffer.kbfs, &m_buffer.obklen, &m_buffer.ustar2, &m_buffer.wstar
+     , &m_buffer.kbfs, &m_buffer.ustar2, &m_buffer.wstar
 #endif
     };
   for (int i = 0; i < Buffer::num_1d_scalar_ncol; ++i) {
@@ -180,7 +201,7 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
     &m_buffer.z_mid, &m_buffer.rrho, &m_buffer.thv, &m_buffer.dz, &m_buffer.zt_grid, &m_buffer.wm_zt,
     &m_buffer.inv_exner, &m_buffer.thlm, &m_buffer.qw, &m_buffer.dse, &m_buffer.tke_copy, &m_buffer.qc_copy,
     &m_buffer.shoc_ql2, &m_buffer.shoc_mix, &m_buffer.isotropy, &m_buffer.w_sec, &m_buffer.wqls_sec, &m_buffer.brunt
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_SHOC_SMALL_KERNELS
     , &m_buffer.rho_zt, &m_buffer.shoc_qv, &m_buffer.tabs, &m_buffer.dz_zt
 #endif
   };
@@ -189,7 +210,7 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
     &m_buffer.z_int, &m_buffer.rrho_i, &m_buffer.zi_grid, &m_buffer.thl_sec, &m_buffer.qw_sec,
     &m_buffer.qwthl_sec, &m_buffer.wthl_sec, &m_buffer.wqw_sec, &m_buffer.wtke_sec, &m_buffer.uw_sec,
     &m_buffer.vw_sec, &m_buffer.w3
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_SHOC_SMALL_KERNELS
     , &m_buffer.dz_zi
 #endif
   };
@@ -332,6 +353,8 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   output.pblh     = get_field_out("pbl_height").get_view<Real*>();
   output.shoc_ql2 = shoc_ql2;
   output.tkh      = get_field_out("eddy_diff_heat").get_view<Spack**>();
+  output.ustar    = get_field_out("ustar").get_view<Real*>();
+  output.obklen   = get_field_out("obklen").get_view<Real*>();
 
   // Ouput (diagnostic)
   history_output.shoc_mix  = m_buffer.shoc_mix;
@@ -349,7 +372,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   history_output.wqls_sec  = m_buffer.wqls_sec;
   history_output.brunt     = m_buffer.brunt;
 
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_SHOC_SMALL_KERNELS
   temporaries.se_b = m_buffer.se_b;
   temporaries.ke_b = m_buffer.ke_b;
   temporaries.wv_b = m_buffer.wv_b;
@@ -358,9 +381,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   temporaries.ke_a = m_buffer.ke_a;
   temporaries.wv_a = m_buffer.wv_a;
   temporaries.wl_a = m_buffer.wl_a;
-  temporaries.ustar = m_buffer.ustar;
   temporaries.kbfs = m_buffer.kbfs;
-  temporaries.obklen = m_buffer.obklen;
   temporaries.ustar2 = m_buffer.ustar2;
   temporaries.wstar = m_buffer.wstar;
 
@@ -483,7 +504,7 @@ void SHOCMacrophysics::run_impl (const double dt)
   // Run shoc main
   SHF::shoc_main(m_num_cols, m_num_levs, m_num_levs+1, m_npbl, m_nadv, m_num_tracers, dt,
                  workspace_mgr,runtime_options,input,input_output,output,history_output
-#ifdef SCREAM_SMALL_KERNELS
+#ifdef SCREAM_SHOC_SMALL_KERNELS
                  , temporaries
 #endif
                  );
@@ -493,6 +514,41 @@ void SHOCMacrophysics::run_impl (const double dt)
                        default_policy,
                        shoc_postprocess);
   Kokkos::fence();
+
+  // Extra SHOC output diagnostics
+  if (m_params.get<bool>("extra_shoc_diags", false)) {
+
+    const auto& shoc_mix = get_field_out("shoc_mix").get_view<Spack**>();
+    Kokkos::deep_copy(shoc_mix,history_output.shoc_mix);
+
+    const auto& brunt = get_field_out("brunt").get_view<Spack**>();
+    Kokkos::deep_copy(brunt,history_output.brunt);
+
+    const auto& w3 = get_field_out("w3").get_view<Spack**>();
+    Kokkos::deep_copy(w3,history_output.w3);
+
+    const auto& isotropy = get_field_out("isotropy").get_view<Spack**>();
+    Kokkos::deep_copy(isotropy,history_output.isotropy);
+
+    const auto& wthl_sec = get_field_out("wthl_sec").get_view<Spack**>();
+    Kokkos::deep_copy(wthl_sec,history_output.wthl_sec);
+
+    const auto& wqw_sec = get_field_out("wqw_sec").get_view<Spack**>();
+    Kokkos::deep_copy(wqw_sec,history_output.wqw_sec);
+
+    const auto& uw_sec = get_field_out("uw_sec").get_view<Spack**>();
+    Kokkos::deep_copy(uw_sec,history_output.uw_sec);
+
+    const auto& vw_sec = get_field_out("vw_sec").get_view<Spack**>();
+    Kokkos::deep_copy(vw_sec,history_output.vw_sec);
+
+    const auto& qw_sec = get_field_out("qw_sec").get_view<Spack**>();
+    Kokkos::deep_copy(qw_sec,history_output.qw_sec);
+
+    const auto& thl_sec = get_field_out("thl_sec").get_view<Spack**>();
+    Kokkos::deep_copy(thl_sec,history_output.thl_sec);
+
+  } // Extra SHOC output diagnostics
 }
 // =========================================================================================
 void SHOCMacrophysics::finalize_impl()
