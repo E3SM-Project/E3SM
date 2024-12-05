@@ -512,7 +512,6 @@ void IOPForcing::run_impl (const double dt)
       });
       team.team_barrier();
 
-      if (iop_nudge_tq or iop_nudge_uv) {
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_packs), [&](const int& k) {
           if (iop_nudge_tq) {
             // Restrict nudging of T and qv to certain levels if requested by user
@@ -535,7 +534,6 @@ void IOPForcing::run_impl (const double dt)
             v_i(k).update(v_mean(k) - v_iop(k), -dt/rtau, 1.0);
           }
         });
-      }
 
       // Release WS views
       ws.release_many_contiguous<1>({&ref_p_mid});
