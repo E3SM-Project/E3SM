@@ -45,21 +45,16 @@ FieldAtHeight (const ekat::Comm& comm, const ekat::ParameterList& params)
       " - surface reference: " + surf_ref + "\n"
       " -     valid options: sealevel, surface\n");
   m_z_name = (surf_ref == "sealevel") ? "z" : "height";
-  const auto& location = m_params.get<std::string>("vertical_location");
-  auto chars_start = location.find_first_not_of("0123456789.");
-  EKAT_REQUIRE_MSG (chars_start!=0 && chars_start!=std::string::npos,
-      "Error! Invalid string for height value for FieldAtHeight.\n"
-      " - input string   : " + location + "\n"
-      " - expected format: Nm, with N integer\n");
-  const auto z_str = location.substr(0,chars_start);
-  m_z = std::stod(z_str);
 
-  const auto units = location.substr(chars_start);
+  const auto units = m_params.get<std::string>("height_units");
   EKAT_REQUIRE_MSG (units=="m",
-      "Error! Invalid string for height value for FieldAtHeight.\n"
-      " - input string   : " + location + "\n"
-      " - expected format: Nm, with N integer\n");
-  m_diag_name = m_field_name + "_at_" + m_params.get<std::string>("vertical_location") + "_above_" + surf_ref;
+      "Error! Invalid units for FieldAtHeight.\n"
+      " - input units: " + units + "\n"
+      " - valid units: m\n");
+
+  auto z_val = m_params.get<std::string>("height_value");
+  m_z = std::stod(z_val);
+  m_diag_name = m_field_name + "_at_" + z_val + units + "_above_" + surf_ref;
 }
 
 void FieldAtHeight::

@@ -59,7 +59,7 @@ add_library(scream_io
   scream_io_utils.cpp
 )
 
-target_link_libraries(scream_io PUBLIC scream_share scream_scorpio_interface)
+target_link_libraries(scream_io PUBLIC scream_share scream_scorpio_interface diagnostics)
 
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)

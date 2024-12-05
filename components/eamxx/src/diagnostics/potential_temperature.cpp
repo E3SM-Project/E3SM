@@ -24,11 +24,6 @@ PotentialTemperatureDiagnostic::PotentialTemperatureDiagnostic (const ekat::Comm
   }
 }
 
-std::string PotentialTemperatureDiagnostic::name() const
-{
-  return m_ptype;
-}
-
 // =========================================================================================
 void PotentialTemperatureDiagnostic::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
@@ -51,7 +46,7 @@ void PotentialTemperatureDiagnostic::set_grids(const std::shared_ptr<const Grids
   add_field<Required>("qc",             scalar3d_layout_mid, kg/kg,  grid_name, ps);
 
   // Construct and allocate the diagnostic field
-  FieldIdentifier fid (name(), scalar3d_layout_mid, K, grid_name);
+  FieldIdentifier fid (m_ptype, scalar3d_layout_mid, K, grid_name);
   m_diagnostic_output = Field(fid);
   auto& C_ap = m_diagnostic_output.get_header().get_alloc_properties();
   C_ap.request_allocation(ps);
