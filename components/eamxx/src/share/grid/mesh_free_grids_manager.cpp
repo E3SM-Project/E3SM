@@ -106,7 +106,7 @@ build_se_grid (const std::string& name, ekat::ParameterList& params)
   se_grid->m_short_name = "se";
   add_geo_data(se_grid);
 
-  add_grid(se_grid);
+  add_nonconst_grid(se_grid);
 }
 
 void MeshFreeGridsManager::
@@ -132,7 +132,7 @@ build_point_grid (const std::string& name, ekat::ParameterList& params)
   add_geo_data(pt_grid);
   pt_grid->m_short_name = "pt";
 
-  add_grid(pt_grid);
+  add_nonconst_grid(pt_grid);
 }
 
 void MeshFreeGridsManager::

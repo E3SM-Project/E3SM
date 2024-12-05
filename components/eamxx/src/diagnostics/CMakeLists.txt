@@ -1,4 +1,7 @@
 set(DIAGNOSTIC_SRCS
+  aerocom_cld.cpp
+  aodvis.cpp
+  atm_backtend.cpp
   atm_density.cpp
   dry_static_energy.cpp
   exner.cpp
@@ -6,6 +9,7 @@ set(DIAGNOSTIC_SRCS
   field_at_level.cpp
   field_at_pressure_level.cpp
   longwave_cloud_forcing.cpp
+  number_path.cpp
   potential_temperature.cpp
   precip_surf_mass_flux.cpp
   relative_humidity.cpp
@@ -17,15 +21,11 @@ set(DIAGNOSTIC_SRCS
   virtual_temperature.cpp
   water_path.cpp
   wind_speed.cpp
-  aodvis.cpp
-  number_path.cpp
-  aerocom_cld.cpp
-  atm_backtend.cpp
 )
 
 add_library(diagnostics ${DIAGNOSTIC_SRCS})
 target_link_libraries(diagnostics PUBLIC scream_share)
 
-if (NOT SCREAM_LIB_ONLY)
+if (NOT SCREAM_LIB_ONLY AND NOT SCREAM_ONLY_GENERATE_BASELINES)
   add_subdirectory(tests)
 endif()

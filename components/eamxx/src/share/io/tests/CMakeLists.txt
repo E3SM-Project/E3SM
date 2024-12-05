@@ -17,6 +17,12 @@ CreateUnitTest(io_utils "io_utils.cpp"
   PROPERTIES RESOURCE_LOCK rpointer_file
 )
 
+# Test creation of diagnostic from diag_field_name
+CreateUnitTest(create_diag "create_diag.cpp"
+  LIBS diagnostics scream_io
+  LABELS io diagnostics
+)
+
 ## Test basic output (no packs, no diags, all avg types, all freq units)
 CreateUnitTest(io_basic "io_basic.cpp"
   LIBS scream_io LABELS io
