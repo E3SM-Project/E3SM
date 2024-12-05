@@ -1,5 +1,6 @@
 #include "physics/iop_forcing/eamxx_iop_forcing_process_interface.hpp"
 
+#include "share/field/field_utils.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 
 namespace scream
@@ -35,11 +36,21 @@ void IOPForcing::set_grids(const std::shared_ptr<const GridsManager> grids_manag
     "Error! IOPDataManager not setup by driver, but IOPForcing"
     "being used as an ATM process.\n");
 
-  // Compute number of buffer views
+  // Create helper fields for finding horizontal means
+  auto level_only_scalar_layout = scalar3d_mid.clone().strip_dim(0);
+  auto level_only_vector_layout = vector3d_mid.clone().strip_dim(0);
   const auto iop_nudge_tq = m_iop_data_manager->get_params().get<bool>("iop_nudge_tq");
   const auto iop_nudge_uv = m_iop_data_manager->get_params().get<bool>("iop_nudge_uv");
-  if (iop_nudge_tq) m_buffer.num_1d_scalar_nlev += 2;
-  if (iop_nudge_uv) m_buffer.num_1d_scalar_nlev += 2;
+  if (iop_nudge_tq or iop_nudge_uv) {
+    create_helper_field("horiz_mean_weights", scalar2d, grid_name);
+  }
+  if (iop_nudge_tq) {
+    create_helper_field("qv_mean", level_only_scalar_layout, grid_name);
+    create_helper_field("t_mean",  level_only_scalar_layout, grid_name);
+  }
+  if (iop_nudge_uv) {
+    create_helper_field("horiz_winds_mean", level_only_vector_layout, grid_name);
+  }
 }
 // =========================================================================================
 void IOPForcing::
@@ -61,17 +72,12 @@ set_computed_group_impl (const FieldGroup& group)
 // =========================================================================================
 size_t IOPForcing::requested_buffer_size_in_bytes() const
 {
-  const int nlev_packs  = ekat::npack<Pack>(m_num_levs);
-  const int nlevi_packs = ekat::npack<Pack>(m_num_levs+1);
-
-  const size_t temp_view_bytes =
-    m_buffer.num_1d_scalar_nlev*nlev_packs*sizeof(Pack);
-
   // Number of bytes needed by the WorkspaceManager passed to shoc_main
+  const int nlevi_packs  = ekat::npack<Pack>(m_num_levs+1);
   const auto policy      = ESU::get_default_team_policy(m_num_cols, nlevi_packs);
   const size_t wsm_bytes = WorkspaceMgr::get_total_bytes_needed(nlevi_packs, 7+m_num_tracers, policy);
 
-  return temp_view_bytes + wsm_bytes;
+  return wsm_bytes;
 }
 // =========================================================================================
 void IOPForcing::init_buffers(const ATMBufferManager &buffer_manager)
@@ -79,27 +85,8 @@ void IOPForcing::init_buffers(const ATMBufferManager &buffer_manager)
   EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(),
                    "Error! Buffers size not sufficient.\n");
 
-  const int nlev_packs  = ekat::npack<Pack>(m_num_levs);
   const int nlevi_packs = ekat::npack<Pack>(m_num_levs+1);
-
   Pack* mem = reinterpret_cast<Pack*>(buffer_manager.get_memory());
-
-  // Temp view data
-  using mean_view_t = decltype(m_buffer.qv_mean);
-  const auto iop_nudge_tq = m_iop_data_manager->get_params().get<bool>("iop_nudge_tq");
-  const auto iop_nudge_uv = m_iop_data_manager->get_params().get<bool>("iop_nudge_uv");
-  if (iop_nudge_tq) {
-    m_buffer.qv_mean = mean_view_t(mem, nlev_packs);
-    mem += m_buffer.qv_mean.size();
-    m_buffer.t_mean = mean_view_t(mem, nlev_packs);
-    mem += m_buffer.t_mean.size();
-  }
-  if (iop_nudge_uv) {
-    m_buffer.u_mean = mean_view_t(mem, nlev_packs);
-    mem += m_buffer.u_mean.size();
-    m_buffer.v_mean = mean_view_t(mem, nlev_packs);
-    mem += m_buffer.v_mean.size();
-  }
 
   // WSM data
   m_buffer.wsm_data = mem;
@@ -110,6 +97,22 @@ void IOPForcing::init_buffers(const ATMBufferManager &buffer_manager)
 
   size_t used_mem = (reinterpret_cast<Real*>(mem) - buffer_manager.get_memory())*sizeof(Real);
   EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(), "Error! Used memory != requested memory for IOPForcing.\n");
+}
+// =========================================================================================
+void IOPForcing::create_helper_field (const std::string& name,
+                                      const FieldLayout& layout,
+                                      const std::string& grid_name)
+{
+  using namespace ekat::units;
+  FieldIdentifier id(name,layout,Units::nondimensional(),grid_name);
+
+  // Create the field. Init with NaN's, so we spot instances of uninited memory usage
+  Field f(id);
+  f.get_header().get_alloc_properties().request_allocation();
+  f.allocate_view();
+  f.deep_copy(ekat::ScalarTraits<Real>::invalid());
+
+  m_helper_fields[name] = f;
 }
 // =========================================================================================
 void IOPForcing::initialize_impl (const RunType run_type)
@@ -126,6 +129,12 @@ void IOPForcing::initialize_impl (const RunType run_type)
   const auto nlevi_packs = ekat::npack<Pack>(m_num_levs+1);
   const auto policy = ESU::get_default_team_policy(m_num_cols, nlevi_packs);
   m_workspace_mgr.setup(m_buffer.wsm_data, nlevi_packs, 7+m_num_tracers, policy);
+
+  // Compute field for horizontal contraction weights (1/num_global_dofs)
+  const auto iop_nudge_tq = m_iop_data_manager->get_params().get<bool>("iop_nudge_tq");
+  const auto iop_nudge_uv = m_iop_data_manager->get_params().get<bool>("iop_nudge_uv");
+  const Real one_over_num_dofs = 1.0/m_grid->get_num_global_dofs();
+  if (iop_nudge_tq or iop_nudge_uv) m_helper_fields.at("horiz_mean_weights").deep_copy(one_over_num_dofs);
 }
 // =========================================================================================
 KOKKOS_FUNCTION
@@ -437,55 +446,22 @@ void IOPForcing::run_impl (const double dt)
   // and observed quantities of T, Q, u, and v
   if (iop_nudge_tq or iop_nudge_uv) {
     // Compute domain mean of qv, T_mid, u, and v
-    const auto qv_mean = m_buffer.qv_mean;
-    const auto t_mean  = m_buffer.t_mean;
-    const auto u_mean  = m_buffer.u_mean;
-    const auto v_mean  = m_buffer.v_mean;
-
-    const auto qv_mean_h = Kokkos::create_mirror_view(qv_mean);
-    const auto t_mean_h  = Kokkos::create_mirror_view(t_mean);
-    const auto u_mean_h  = Kokkos::create_mirror_view(u_mean);
-    const auto v_mean_h  = Kokkos::create_mirror_view(v_mean);
-
-    const auto num_global_cols = m_grid->get_num_global_dofs();
-    for (int k=0; k<m_num_levs; ++k) {
-      if (iop_nudge_tq){
-        Real& qv_mean_k = qv_mean_h(k/Pack::n)[k%Pack::n];
-        Real& t_mean_k = t_mean_h(k/Pack::n)[k%Pack::n];
-        Kokkos::parallel_reduce("compute_domain_means_tq",
-                                m_num_cols,
-                                KOKKOS_LAMBDA (const int icol, Real& q_sum, Real& t_sum) {
-          q_sum += qv(icol, k/Pack::n)[k%Pack::n];
-          t_sum += T_mid(icol, k/Pack::n)[k%Pack::n];
-        },  qv_mean_k, t_mean_k);
-
-        m_comm.all_reduce(&qv_mean_k, 1, MPI_SUM);
-        m_comm.all_reduce(&t_mean_k, 1, MPI_SUM);
-
-        qv_mean_k /= num_global_cols;
-        t_mean_k /= num_global_cols;
-      }
-      if (iop_nudge_uv){
-        Real& u_mean_k = u_mean_h(k/Pack::n)[k%Pack::n];
-        Real& v_mean_k = v_mean_h(k/Pack::n)[k%Pack::n];
-        Kokkos::parallel_reduce("compute_domain_means_uv",
-                                m_num_cols,
-                                KOKKOS_LAMBDA (const int icol, Real& u_sum, Real& v_sum) {
-          u_sum += horiz_winds(icol, 0, k/Pack::n)[k%Pack::n];
-          v_sum += horiz_winds(icol, 1, k/Pack::n)[k%Pack::n];
-        }, u_mean_k, v_mean_k);
-
-        m_comm.all_reduce(&u_mean_k, 1, MPI_SUM);
-        m_comm.all_reduce(&v_mean_k, 1, MPI_SUM);
-
-        u_mean_k /= num_global_cols;
-        v_mean_k /= num_global_cols;
-      }
+    view_1d<Real> qv_mean, t_mean;
+    view_2d<Real> horiz_winds_mean;
+    if (iop_nudge_tq){
+      horiz_contraction<Real>(m_helper_fields.at("qv_mean"), get_field_out("qv"), 
+                              m_helper_fields.at("horiz_mean_weights"), &m_comm);
+      qv_mean = m_helper_fields.at("qv_mean").get_view<Real*>();
+      
+      horiz_contraction<Real>(m_helper_fields.at("t_mean"), get_field_out("T_mid"), 
+                              m_helper_fields.at("horiz_mean_weights"), &m_comm);
+      t_mean = m_helper_fields.at("t_mean").get_view<Real*>();
     }
-    Kokkos::deep_copy(qv_mean, qv_mean_h);
-    Kokkos::deep_copy(t_mean,  t_mean_h);
-    Kokkos::deep_copy(u_mean,  u_mean_h);
-    Kokkos::deep_copy(v_mean,  v_mean_h);
+    if (iop_nudge_uv){
+      horiz_contraction<Real>(m_helper_fields.at("horiz_winds_mean"), get_field_out("horiz_winds"), 
+                              m_helper_fields.at("horiz_mean_weights"), &m_comm);
+      horiz_winds_mean = m_helper_fields.at("horiz_winds_mean").get_view<Real**>();
+    }
 
     // Apply relaxation
     const auto rtau = std::max(dt, iop_nudge_tscale);
@@ -512,28 +488,28 @@ void IOPForcing::run_impl (const double dt)
       });
       team.team_barrier();
 
-        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_packs), [&](const int& k) {
-          if (iop_nudge_tq) {
-            // Restrict nudging of T and qv to certain levels if requested by user
-            // IOP pressure variable is in unitis of [Pa], while iop_nudge_tq_low/high
-            // is in units of [hPa], thus convert iop_nudge_tq_low/high
-            Mask nudge_level(false);
-            int max_size = hyam.size();
-            for (int lev=k*Pack::n, p = 0; p < Pack::n && lev < max_size; ++lev, ++p) {
-              const auto pressure_from_iop = hyam(lev)*ps0 + hybm(lev)*ps_iop;
-              nudge_level.set(p, pressure_from_iop <= iop_nudge_tq_low*100
-                                 and
-                                 pressure_from_iop >= iop_nudge_tq_high*100);
-            }
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_packs), [&](const int& k) {
+        if (iop_nudge_tq) {
+          // Restrict nudging of T and qv to certain levels if requested by user
+          // IOP pressure variable is in unitis of [Pa], while iop_nudge_tq_low/high
+          // is in units of [hPa], thus convert iop_nudge_tq_low/high
+          Mask nudge_level(false);
+          int max_size = hyam.size();
+          for (int lev=k*Pack::n, p = 0; p < Pack::n && lev < max_size; ++lev, ++p) {
+            const auto pressure_from_iop = hyam(lev)*ps0 + hybm(lev)*ps_iop;
+            nudge_level.set(p, pressure_from_iop <= iop_nudge_tq_low*100
+                                and
+                                pressure_from_iop >= iop_nudge_tq_high*100);
+          }
 
-            qv_i(k).update(nudge_level, qv_mean(k) - qv_iop(k), -dt/rtau, 1.0);
-            T_mid_i(k).update(nudge_level, t_mean(k) - t_iop(k), -dt/rtau, 1.0);
-          }
-          if (iop_nudge_uv) {
-            u_i(k).update(u_mean(k) - u_iop(k), -dt/rtau, 1.0);
-            v_i(k).update(v_mean(k) - v_iop(k), -dt/rtau, 1.0);
-          }
-        });
+          qv_i(k).update(nudge_level, qv_mean(k) - qv_iop(k), -dt/rtau, 1.0);
+          T_mid_i(k).update(nudge_level, t_mean(k) - t_iop(k), -dt/rtau, 1.0);
+        }
+        if (iop_nudge_uv) {
+          u_i(k).update(horiz_winds_mean(0, k) - u_iop(k), -dt/rtau, 1.0);
+          v_i(k).update(horiz_winds_mean(1, k) - v_iop(k), -dt/rtau, 1.0);
+        }
+      });
 
       // Release WS views
       ws.release_many_contiguous<1>({&ref_p_mid});

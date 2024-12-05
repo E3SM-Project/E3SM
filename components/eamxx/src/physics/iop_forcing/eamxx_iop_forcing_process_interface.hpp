@@ -116,6 +116,11 @@ protected:
 
   void finalize_impl   () {}
 
+  // Creates an helper field, not to be shared with the AD's FieldManager
+  void create_helper_field (const std::string& name,
+                            const FieldLayout& layout,
+                            const std::string& grid_name);
+
   void set_computed_group_impl (const FieldGroup& group);
 
   // Computes total number of bytes needed for local variables
@@ -132,12 +137,11 @@ protected:
   Int m_num_tracers;
 
   struct Buffer {
-    int  num_1d_scalar_nlev = 0;
-
-    uview_1d<Pack> qv_mean, t_mean, u_mean, v_mean;
-
     Pack* wsm_data;
   };
+
+  // Some helper fields.
+  std::map<std::string,Field> m_helper_fields;
 
   // Struct which contains local variables
   Buffer m_buffer;
