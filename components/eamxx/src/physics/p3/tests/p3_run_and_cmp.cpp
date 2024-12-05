@@ -260,7 +260,7 @@ int main (int argc, char** argv) {
   std::string predict_nc = "both";
   std::string prescribed_ccn = "both";
   std::string baseline_fn;
-  for (int i = 1; i < argc-1; ++i) {
+  for (int i = 1; i < argc; ++i) {
     if (ekat::argv_matches(argv[i], "-g", "--generate")) { generate = true; no_baseline = false; }
     if (ekat::argv_matches(argv[i], "-c", "--compare"))  { no_baseline = false; }
     if (ekat::argv_matches(argv[i], "-b", "--baseline-file")) {
@@ -301,9 +301,6 @@ int main (int argc, char** argv) {
       expect_another_arg(i, argc);
       ++i;
       repeat = std::atoi(argv[i]);
-      if (repeat > 0) {
-        generate = true;
-      }
     }
     if (ekat::argv_matches(argv[i], "-pn", "--predict-nc")) {
       expect_another_arg(i, argc);

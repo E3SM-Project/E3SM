@@ -214,7 +214,7 @@ int main (int argc, char** argv) {
       "  -i <cols>         Number of columns(ncol). Default=8.\n"
       "  -k <nlev>         Number of vertical levels. Default=72.\n"
       "  -q <num_qtracers> Number of q tracers. Default=3.\n"
-      "  -n <nadv>         Number of SHOC loops per timestep. Default=15.\n"
+      "  -l <nadv>         Number of SHOC loops per timestep. Default=15.\n"
       "  -r <repeat>       Number of repetitions, implies timing run (generate + no I/O). Default=0.\n";
 
     return 1;
@@ -231,7 +231,7 @@ int main (int argc, char** argv) {
   Int repeat = 0;
   std::string baseline_fn;
   std::string device;
-  for (int i = 1; i < argc-1; ++i) {
+  for (int i = 1; i < argc; ++i) {
     if (ekat::argv_matches(argv[i], "-g", "--generate")) { generate = true; no_baseline = false; }
     if (ekat::argv_matches(argv[i], "-c", "--compare"))  { no_baseline = false; }
     if (ekat::argv_matches(argv[i], "-b", "--baseline-file")) {
@@ -269,7 +269,7 @@ int main (int argc, char** argv) {
       ++i;
       num_qtracers = std::atoi(argv[i]);
     }
-    if (ekat::argv_matches(argv[i], "-n", "--nadv")) {
+    if (ekat::argv_matches(argv[i], "-l", "--nadv")) {
       expect_another_arg(i, argc);
       ++i;
       nadv = std::atoi(argv[i]);
