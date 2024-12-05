@@ -1200,8 +1200,9 @@ contains
     aream_l(:) = dom_l%data%rAttr(km,:)
 
     ! Export land fractions from fractions_lx to a local array
+    ! Note that for E3SM we are using lfrin instead of lfrac
     allocate(lfrac(lsize_l))
-    call mct_aVect_exportRattr(fractions_lx, "lfrac", lfrac)
+    call mct_aVect_exportRattr(fractions_lx, "lfrin", lfrac)
 
     ! Map Sg_icemask from the glc grid to the land grid.
     ! This may not be necessary, if Sg_icemask_l has already been mapped from Sg_icemask_g.
@@ -1384,6 +1385,8 @@ contains
     endif
 
     if (iamroot) then
+       write(logunit,*) 'global_accum_on_land_grid = ', global_accum_on_land_grid
+       write(logunit,*) 'global_accum_on_glc_grid = ', global_accum_on_glc_grid
        write(logunit,*) 'accum_renorm_factor = ', accum_renorm_factor
        write(logunit,*) 'ablat_renorm_factor = ', ablat_renorm_factor
     endif

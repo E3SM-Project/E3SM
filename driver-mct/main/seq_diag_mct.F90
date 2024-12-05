@@ -270,6 +270,7 @@ module seq_diag_mct
   integer :: index_l2x_Flrl_irrig
   integer :: index_l2x_Flrl_wslake
 
+  integer :: index_x2l_Sg_icemask
   integer, allocatable :: index_l2x_Flgl_qice(:) 
   integer, allocatable :: index_x2l_Sg_ice_covered(:)
 
@@ -349,6 +350,7 @@ module seq_diag_mct
   integer :: index_g2x_Figg_rofi
 
   integer :: index_x2g_Flgl_qice 
+  integer :: index_g2x_Sg_icemask
 
   integer :: index_x2o_Foxx_rofl_16O
   integer :: index_x2o_Foxx_rofi_16O
@@ -890,6 +892,7 @@ contains
     logical,save             :: flds_wiso_lnd = .false.
 
     real(r8)                 :: l2x_Flgl_qice_col_sum ! for summing fluxes over no. of elev. classes 
+    real(r8)                 :: effective_area
 
     character(len=64)        :: name
     character(len= 2)        :: cnum         
@@ -940,6 +943,7 @@ contains
           index_l2x_Flrl_wslake   = mct_aVect_indexRA(l2x_l,'Flrl_wslake')
 
           if (glc_nec.ge.1) then
+             index_x2l_Sg_icemask = mct_avect_indexRA(x2l_l,'Sg_icemask')
              do num=0,glc_nec
                 write(cnum,'(i2.2)') num
                 name = 'Flgl_qice' // cnum
@@ -986,10 +990,12 @@ contains
 
           l2x_Flgl_qice_col_sum = 0.0d0
           if (glc_nec.ge.1) then
+             effective_area = min(frac_l%rAttr(kl,n),x2l_l%rAttr(index_x2l_Sg_icemask,n)) * dom_l%data%rAttr(kArea,n)
              do num=0,glc_nec 
                 ! sums the contributions from fluxes in each set of elevation classes 
                 ! RHS product is flux times fraction of area in specific elevation class times land cell area 
-                l2x_Flgl_qice_col_sum = l2x_Flgl_qice_col_sum + l2x_l%rAttr(index_l2x_Flgl_qice(num),n) * x2l_l%rAttr(index_x2l_Sg_ice_covered(num),n) * ca_l 
+                l2x_Flgl_qice_col_sum = l2x_Flgl_qice_col_sum + l2x_l%rAttr(index_l2x_Flgl_qice(num),n) * &
+                                                                x2l_l%rAttr(index_x2l_Sg_ice_covered(num),n) * effective_area
              end do
           end if
           nf = f_wgsmb ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - l2x_Flgl_qice_col_sum
@@ -1383,7 +1389,8 @@ contains
 
        if (first_time) then
 
-          index_x2g_Flgl_qice   = mct_aVect_indexRA(x2g_g,'Flgl_qice')
+          index_x2g_Flgl_qice  = mct_aVect_indexRA(x2g_g,'Flgl_qice')
+          index_g2x_Sg_icemask = mct_avect_indexRA(g2x_g,'Sg_icemask')
 
        end if
 
@@ -1393,7 +1400,7 @@ contains
        lSize = mct_avect_lSize(x2g_g)
 
        do n=1,lSize
-          ca_g =  dom_g%data%rAttr(kArea,n)
+          ca_g =  dom_g%data%rAttr(kArea,n)*g2x_g%rAttr(index_g2x_Sg_icemask,n)
           nf = f_wgsmb; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_g*x2g_g%rAttr(index_x2g_Flgl_qice,n)
        end do
 
