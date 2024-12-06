@@ -1315,7 +1315,8 @@ contains
   !     Compute global glc input/output flux diagnostics
   !
   ! !REVISION HISTORY:
-  !    2024-Sept. - S. Price - update
+  !    2008-Jul-10 - T. Craig - update
+  !    2024-Dec-06 - S. Price, J. Wolfe - update
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
