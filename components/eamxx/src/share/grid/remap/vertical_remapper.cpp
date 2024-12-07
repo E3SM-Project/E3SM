@@ -50,13 +50,7 @@ VerticalRemapper (const grid_ptr_type& src_grid,
                   const std::string& map_file)
  : VerticalRemapper(src_grid,create_tgt_grid(src_grid,map_file))
 {
-  // NOTE: we prescribe a uniform tgt pressure levels, so pmid_tgt = pint_tgt (1d field)
-  //       Cannot call set_target_pressure(p_tgt,p_tgt), since in there we do check the
-  //       number of levels (i.e., pint/pmid cannot have the same nlevs). Since we remap
-  //       every field (mid or int) to the same pressure coords, we just hard-code them.
-  m_tgt_pmid = m_tgt_pint = m_tgt_grid->get_geometry_data("p_levs");
-
-  m_tgt_int_same_as_mid = true;
+  set_target_pressure (m_tgt_grid->get_geometry_data("p_levs"),Both);
 }
 
 VerticalRemapper::
@@ -77,56 +71,75 @@ VerticalRemapper (const grid_ptr_type& src_grid,
 FieldLayout VerticalRemapper::
 create_src_layout (const FieldLayout& tgt_layout) const
 {
-  // Since we don't know if the tgt layout is "LEV for everything",
-  // we cannot infer what the corresponding src layout was.
-  // This function should never be used for this remapper.
-  EKAT_ERROR_MSG ("Error! VerticalRemapper does not support creating a src layout from a tgt layout.\n");
-  return FieldLayout();
+  EKAT_REQUIRE_MSG (is_valid_tgt_layout(tgt_layout),
+      "[VerticalRemapper] Error! Input target layout is not valid for this remapper.\n"
+      " - input layout: " + tgt_layout.to_string());
+
+  EKAT_REQUIRE_MSG (not m_tgt_mid_same_as_int,
+      "[VerticalRemapper::create_src_layout] Error! Cannot deduce source layout.\n"
+      " The target layout does not distinguish between LEV and ILEV.\n");
+
+  const auto& mid_layout = m_src_pmid.get_header().get_identifier().get_layout();
+  const auto& int_layout = m_src_pint.get_header().get_identifier().get_layout();
+  return create_layout(tgt_layout,m_src_grid,mid_layout.congruent(int_layout));
 }
 
 FieldLayout VerticalRemapper::
 create_tgt_layout (const FieldLayout& src_layout) const
 {
-  using namespace ShortFieldTagsNames;
-
   EKAT_REQUIRE_MSG (is_valid_src_layout(src_layout),
-      "[VerticalRemapper] Error! Input source layout is not valid for this remapper.\n"
+      "[VerticalRemapper::create_tgt_layout] Error! Input source layout is not valid for this remapper.\n"
       " - input layout: " + src_layout.to_string());
 
-  // If we remap to a fixed set of pressure levels during I/O,
-  // it doesn't really make sense to distinguish between midpoints
-  //  and interfaces, so choose fl_out to have LEV as vertical tag.
-  auto tgt_layout = FieldLayout::invalid();
+  EKAT_REQUIRE_MSG (not m_src_mid_same_as_int,
+      "[VerticalRemapper::create_tgt_layout] Error! Cannot deduce target layout.\n"
+      " The source layout does not distinguish between LEV and ILEV.\n");
+
+  const auto& mid_layout = m_tgt_pmid.get_header().get_identifier().get_layout();
+  const auto& int_layout = m_tgt_pint.get_header().get_identifier().get_layout();
+  return create_layout(src_layout,m_tgt_grid,mid_layout.congruent(int_layout));
+}
+
+FieldLayout VerticalRemapper::
+create_layout (const FieldLayout& from_layout,
+               const std::shared_ptr<const AbstractGrid>& to_grid,
+               const bool int_same_as_mid) const
+{
+  using namespace ShortFieldTagsNames;
+
+  auto to_layout = FieldLayout::invalid();
   bool midpoints;
-  switch (src_layout.type()) {
+  std::string vdim_name;
+  switch (from_layout.type()) {
     case LayoutType::Scalar0D: [[ fallthrough ]];
     case LayoutType::Vector0D: [[ fallthrough ]];
     case LayoutType::Scalar2D: [[ fallthrough ]];
     case LayoutType::Vector2D: [[ fallthrough ]];
     case LayoutType::Tensor2D:
       // These layouts do not have vertical dim tags, so no change
-      tgt_layout = src_layout;
+      to_layout = from_layout;
       break;
     case LayoutType::Scalar1D:
-      midpoints = m_tgt_int_same_as_mid || src_layout.tags().back()==LEV;
-      tgt_layout = m_tgt_grid->get_vertical_layout(midpoints);
+      midpoints = int_same_as_mid || from_layout.tags().back()==LEV;
+      to_layout = to_grid->get_vertical_layout(midpoints);
       break;
     case LayoutType::Scalar3D:
-      midpoints = m_tgt_int_same_as_mid || src_layout.tags().back()==LEV;
-      tgt_layout = m_tgt_grid->get_3d_scalar_layout(midpoints);
+      midpoints = int_same_as_mid || from_layout.tags().back()==LEV;
+      to_layout = to_grid->get_3d_scalar_layout(midpoints);
       break;
     case LayoutType::Vector3D:
-      midpoints = m_tgt_int_same_as_mid || src_layout.tags().back()==LEV;
-      tgt_layout = m_tgt_grid->get_3d_vector_layout(midpoints,src_layout.get_vector_dim());
+      vdim_name = from_layout.name(from_layout.get_vector_component_idx());
+      midpoints = int_same_as_mid || from_layout.tags().back()==LEV;
+      to_layout = to_grid->get_3d_vector_layout(midpoints,from_layout.get_vector_dim(),vdim_name);
       break;
     default:
       // NOTE: this also include Tensor3D. We don't really have any atm proc
       //       that needs to handle a tensor3d quantity, so no need to add it
       EKAT_ERROR_MSG (
         "[VerticalRemapper] Error! Layout not supported by VerticalRemapper.\n"
-        " - input layout: " + src_layout.to_string() + "\n");
+        " - input layout: " + from_layout.to_string() + "\n");
   }
-  return tgt_layout;
+  return to_layout;
 }
 
 void VerticalRemapper::
@@ -150,71 +163,83 @@ set_mask_value (const Real mask_val)
 }
 
 void VerticalRemapper::
-set_source_pressure (const Field& pmid, const Field& pint)
+set_source_pressure (const Field& p, const ProfileType ptype)
+{
+  set_pressure (p, "source", ptype);
+}
+
+void VerticalRemapper::
+set_target_pressure (const Field& p, const ProfileType ptype)
+{
+  set_pressure (p, "target", ptype);
+}
+
+void VerticalRemapper::
+set_pressure (const Field& p, const std::string& src_or_tgt, const ProfileType ptype)
 {
   using namespace ShortFieldTagsNames;
   using PackT = ekat::Pack<Real,SCREAM_PACK_SIZE>;
 
-  EKAT_REQUIRE_MSG(pmid.is_allocated(),
-      "Error! Source midpoint pressure field is not yet allocated.\n"
-      " - field name: " + pmid.name() + "\n");
+  bool src = src_or_tgt=="source";
 
-  EKAT_REQUIRE_MSG(pint.is_allocated(),
-      "Error! Source interface pressure field is not yet allocated.\n"
-      " - field name: " + pint.name() + "\n");
+  std::string msg_prefix = "[VerticalRemapper::set_" + src_or_tgt + "_pressure] ";
 
-  EKAT_REQUIRE_MSG(pmid.get_header().get_alloc_properties().is_compatible<PackT>(),
-      "Error! Source midpoints pressure field not compatible with default pack size.\n"
-      " - pack size: " + std::to_string(SCREAM_PACK_SIZE) + "\n");
-  EKAT_REQUIRE_MSG(pint.get_header().get_alloc_properties().is_compatible<PackT>(),
-      "Error! Source interfaces pressure field not compatible with default pack size.\n"
+  EKAT_REQUIRE_MSG(p.is_allocated(),
+      msg_prefix + "Field is not yet allocated.\n"
+      " - field name: " + p.name() + "\n");
+
+  EKAT_REQUIRE_MSG(p.get_header().get_alloc_properties().is_compatible<PackT>(),
+      msg_prefix + "Field not compatible with default pack size.\n"
       " - pack size: " + std::to_string(SCREAM_PACK_SIZE) + "\n");
 
-  const auto& pmid_layout = pmid.get_header().get_identifier().get_layout();
-  const auto& pint_layout = pint.get_header().get_identifier().get_layout();
-  EKAT_REQUIRE_MSG(pmid_layout.dim(LEV)==m_src_grid->get_num_vertical_levels(),
-      "Error! Source midpoint pressure field has the wrong layout.\n"
-      " - field name: " + pmid.name() + "\n"
-      " - field layout: " + pmid_layout.to_string() + "\n"
-      " - expected num levels: " + std::to_string(m_src_grid->get_num_vertical_levels()) + "\n");
-  EKAT_REQUIRE_MSG(pint_layout.dim(ILEV)==m_src_grid->get_num_vertical_levels()+1,
-      "Error! Source interface pressure field has the wrong layout.\n"
-      " - field name: " + pint.name() + "\n"
-      " - field layout: " + pint_layout.to_string() + "\n"
-      " - expected num levels: " + std::to_string(m_src_grid->get_num_vertical_levels()+1) + "\n");
+  const int nlevs = src ? m_src_grid->get_num_vertical_levels()
+                        : m_tgt_grid->get_num_vertical_levels();
+  const auto& p_layout = p.get_header().get_identifier().get_layout();
+  const auto vtag = p_layout.tags().back();
+  const auto vdim = p_layout.dims().back();
 
-  m_src_pmid = pmid;
-  m_src_pint = pint;
-}
-
-void VerticalRemapper::
-set_target_pressure (const Field& pmid, const Field& pint)
-{
-  using namespace ShortFieldTagsNames;
-
-  EKAT_REQUIRE_MSG(pmid.is_allocated(),
-      "Error! Target midpoint pressure field is not yet allocated.\n"
-      " - field name: " + pmid.name() + "\n");
-
-  EKAT_REQUIRE_MSG(pint.is_allocated(),
-      "Error! Target interface pressure field is not yet allocated.\n"
-      " - field name: " + pint.name() + "\n");
-
-  const auto& pmid_layout = pmid.get_header().get_identifier().get_layout();
-  const auto& pint_layout = pint.get_header().get_identifier().get_layout();
-  EKAT_REQUIRE_MSG(pmid_layout.dim(LEV)==m_tgt_grid->get_num_vertical_levels(),
-      "Error! Target midpoint pressure field has the wrong layout.\n"
-      " - field name: " + pmid.name() + "\n"
-      " - field layout: " + pmid_layout.to_string() + "\n"
-      " - expected num levels: " + std::to_string(m_tgt_grid->get_num_vertical_levels()) + "\n");
-  EKAT_REQUIRE_MSG(pint_layout.dim(ILEV)==m_tgt_grid->get_num_vertical_levels()+1,
-      "Error! Target interface pressure field has the wrong layout.\n"
-      " - field name: " + pint.name() + "\n"
-      " - field layout: " + pint_layout.to_string() + "\n"
-      " - expected num levels: " + std::to_string(m_tgt_grid->get_num_vertical_levels()+1) + "\n");
-
-  m_tgt_pmid = pmid;
-  m_tgt_pint = pint;
+  FieldTag expected_tag;
+  int      expected_dim;
+  switch (ptype) {
+    case Midpoints:
+      expected_tag = LEV;
+      expected_dim = nlevs;
+      if (src) {
+        m_src_pmid = p;
+      } else {
+        m_tgt_pmid = p;
+      }
+      break;
+    case Interfaces:
+      expected_tag = ILEV;
+      expected_dim = nlevs+1;
+      if (src) {
+        m_src_pint = p;
+      } else {
+        m_tgt_pint = p;
+      }
+      break;
+    case Both:
+      expected_tag = LEV;
+      expected_dim = nlevs;
+      if (src) {
+        m_src_pint = p;
+        m_src_pmid = p;
+        m_src_mid_same_as_int = true;
+      } else {
+        m_tgt_pint = p;
+        m_tgt_pmid = p;
+        m_tgt_mid_same_as_int = true;
+      }
+      break;
+    default:
+      EKAT_ERROR_MSG ("[VerticalRemapper::set_source_pressure] Error! Unrecognized value for 'ptype'.\n");
+  }
+  EKAT_REQUIRE_MSG (vtag==expected_tag and vdim==expected_dim,
+      msg_prefix + "Invalid pressure layout.\n"
+      "  - layout: " + p_layout.to_string() + "\n"
+      "  - expected last layout tag: " + e2str(expected_tag) + "\n"
+      "  - expected last layout dim: " + std::to_string(expected_dim) + "\n");
 }
 
 void VerticalRemapper::
