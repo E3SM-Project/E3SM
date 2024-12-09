@@ -78,8 +78,10 @@ void Functions<S,D>::pblintd(
 
   // Initialize
   bool check = true;
-  // The loop below fixes valgrind uninitialized mem errs
-#ifndef NDEBUG
+  // The loop below fixes valgrind uninitialized mem errs. As in other
+  // places in eamxx, we use SCREAM_SHORT_TESTS as a proxy for knowing
+  // mem checking is on.
+#if !defined(NDEBUG) || defined(SCREAM_SHORT_TESTS)
   for (size_t i=0; i<rino.size(); ++i) {
     rino(i)=0;
   }
