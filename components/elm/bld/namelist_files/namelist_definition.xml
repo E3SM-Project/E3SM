@@ -314,7 +314,7 @@ Allowed values are:
  5 : use gross domestic production and population datasets to simulate anthropogenic fire supression
 </entry>
 
-<entry id="fates_harvest_mode" type="char*18" category="physics"
+<entry id="fates_harvest_mode" type="char*256" category="physics"
         group="elm_inparm"
         valid_values="no_harvest,event_code,landuse_timeseries,luhdata_area,luhdata_mass" >
 Set FATES harvesting mode by setting fates_harvest_mode
