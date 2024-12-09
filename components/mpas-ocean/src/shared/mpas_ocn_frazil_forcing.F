@@ -78,8 +78,8 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_frazil_forcing_tracers(meshPool, tracersPool, groupName, forcingPool, tracersTend, er\
-r)!{{{
+   subroutine ocn_frazil_forcing_tracers(meshPool, tracersPool, groupName, forcingPool, tracersTend, &
+                 ecosysFrazilForcingPool, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -96,6 +96,7 @@ r)!{{{
       type (mpas_pool_type), intent(in) :: meshPool !< Input/Output: mesh information
       type (mpas_pool_type), intent(inout) :: tracersPool !< Input/Output: tracer tendency pool
       type (mpas_pool_type), intent(inout) :: forcingPool  !< Input/Output: forcing pool holding frazil-induced tendencies
+      type (mpas_pool_type), intent(inout) :: ecosysFrazilForcingPool !< Input: Forcing information
       real (kind=RKIND), dimension(:,:,:), intent(inout) ::  tracersTend
 
       !-----------------------------------------------------------------
@@ -122,7 +123,8 @@ r)!{{{
          call ocn_frazil_forcing_active_tracers(meshPool, tracersPool, forcingPool, tracersTend, err)
 
       else if (trim(groupName) == 'ecosysTracers') then
-         call ocn_frazil_forcing_ecosys_tracers(meshPool, tracersPool, forcingPool, tracersTend, err)
+         call ocn_frazil_forcing_ecosys_tracers(meshPool, tracersPool, forcingPool, tracersTend, &
+                 ecosysFrazilForcingPool, err)
       end if
 
       call mpas_timer_stop("tracer frazil")
@@ -318,7 +320,8 @@ r)!{{{
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_frazil_forcing_ecosys_tracers(meshPool, tracersPool, forcingPool, ecosysTracersTend, err)!{{{
+   subroutine ocn_frazil_forcing_ecosys_tracers(meshPool, tracersPool, forcingPool, ecosysTracersTend, &
+                 ecosysFrazilForcingPool, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -328,6 +331,7 @@ r)!{{{
       type (mpas_pool_type), intent(in) :: meshPool !< Input: mesh information
       type (mpas_pool_type), intent(inout) :: tracersPool !< Input: tracer tendency pool
       type (mpas_pool_type), intent(inout) :: forcingPool !< Input: Forcing information
+      type (mpas_pool_type), intent(inout) :: ecosysFrazilForcingPool !< Input: Forcing information
 
       !-----------------------------------------------------------------
       !
@@ -363,7 +367,8 @@ r)!{{{
       call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
       call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-      call mpas_pool_get_array(forcingPool, 'frazilEcosysTracersTendency', frazilEcosysTracersTendency)
+      call mpas_pool_get_array(ecosysFrazilForcingPool, 'frazilEcosysTracersTendency', frazilEcosysTrac\
+ersTendency)
 
       ! frazil fields are needed only over 0 and 1 halos
       nCells = nCellsArray( 2 )
@@ -790,7 +795,8 @@ r)!{{{
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_frazil_forcing_build_ecosys_arrays(domain, meshPool, forcingPool, statePool, err)!{{{
+   subroutine ocn_frazil_forcing_build_ecosys_arrays(domain, meshPool, forcingPool, statePool, &
+                 ecosysFrazilForcingPool, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -808,6 +814,7 @@ r)!{{{
       type (domain_type), intent(inout) :: domain
       type (mpas_pool_type), pointer, intent(inout) :: statePool !< Input: State information
       type (mpas_pool_type), pointer, intent(inout) :: forcingPool !< Input: Forcing information
+      type (mpas_pool_type), pointer, intent(inout) :: ecosysFrazilForcingPool !< Input: Forcing information
       integer, intent(inout) :: err !< Error flag
 
       !-----------------------------------------------------------------
@@ -833,10 +840,19 @@ r)!{{{
 
       type (MPAS_timeInterval_type) :: timeStep
 
+      real (kind=RKIND) :: newFrazilIceThickness
+      real (kind=RKIND) :: sumNewFrazilIceThickness, newThicknessWeightedEcosysContent
+      real (kind=RKIND) :: meltedFrazilIceThickness, meltedThicknessWeightedEcosysContent
+      real (kind=RKIND) :: oceanFreezingTemperature
+      real (kind=RKIND) :: frazilEcosys ! ecosys concentration of frazil ice
+
       real (kind=RKIND), pointer, dimension(:)     :: ssh
       real (kind=RKIND), pointer, dimension(:,:)   :: layerThickness
       real (kind=RKIND), pointer, dimension(:,:,:) :: activeTracers
       real (kind=RKIND), pointer, dimension(:,:,:) :: ecosysTracers
+
+      real (kind=RKIND), pointer, dimension(:,:)     :: accumulatedFrazilIceEcosysNew
+      real (kind=RKIND), pointer, dimension(:,:)     :: accumulatedFrazilIceEcosysOld
       
       integer, dimension(:), pointer :: minLevelCell, maxLevelCell
       integer, pointer :: indexTemperaturePtr !< index in tracers array for temperature
@@ -850,15 +866,6 @@ r)!{{{
       real (kind=RKIND) :: potential  ! scalar holding freezing/melt potential
       real (kind=RKIND) :: freezingEnergy  ! energy available for freezing, positive definite
       real (kind=RKIND) :: meltingEnergy ! energy available for melting, positive definite
-      real (kind=RKIND) :: frazilEcosys ! ecosys concentration of frazil ice
-
-      real (kind=RKIND) :: newFrazilIceThickness
-      real (kind=RKIND) :: sumNewFrazilIceThickness, newThicknessWeightedEcosysContent
-      real (kind=RKIND) :: meltedFrazilIceThickness, meltedThicknessWeightedEcosysContent
-      real (kind=RKIND) :: oceanFreezingTemperature
-
-      real (kind=RKIND), pointer, dimension(:,:)     :: accumulatedFrazilIceEcosysNew
-      real (kind=RKIND), pointer, dimension(:,:)     :: accumulatedFrazilIceEcosysOld
 
       real (kind=RKIND), allocatable, dimension(:) :: sumNewThicknessWeightedEcosysContent
       err = 0
@@ -867,9 +874,6 @@ r)!{{{
       if(.not. frazilFormationOn) return
 
       call mpas_timer_start("ecosys frazil source-sink")
-
-      call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
-      call mpas_pool_get_array(forcingPool, 'landIceFloatingMask', landIceFloatingMask)
 
       ! get pool pointers
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
@@ -897,7 +901,7 @@ r)!{{{
       call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
       call mpas_pool_get_array(tracersPool, 'ecosysTracers', ecosysTracers, 1)
-      call mpas_pool_get_array(forcingPool, 'frazilEcosysTracerTendency', frazilEcosysTracersTendency)
+      call mpas_pool_get_array(ecosysFrazilForcingPool, 'frazilEcosysTracersTendency', frazilEcosysTracersTendency)
       call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
       call mpas_pool_get_array(forcingPool, 'landIceFloatingMask', landIceFloatingMask)
 
@@ -909,7 +913,7 @@ r)!{{{
       allocate (sumNewThicknessWeightedEcosysContent(nTracersEcosys))
 
       ! initialize frazil tendency fields
-      frazilEcosysTracersTendency = 0.0_RKIND
+      frazilEcosysTracersTendency(:,:,:) = 0.0_RKIND
 
       ! frazil fields are needed only over 0 and 1 halos
       nCells = nCellsArray( 2 )
