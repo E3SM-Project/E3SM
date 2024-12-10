@@ -1015,7 +1015,28 @@ contains
   end subroutine advance_physical_vis
 
 
+!============================ special averaging routine ============================================
 
+ subroutine vel_mid2inter(fieldm,fieldi,dp3d,dp3d_i)
+
+  real (kind=real_kind), intent(in) :: fieldm(np,np,2,nlev)
+  real (kind=real_kind), intent(in) :: dp3d(np,np,nlev)
+  real (kind=real_kind), intent(inout) :: fieldi(np,np,2,nlevp)
+  real (kind=real_kind), intent(in) :: dp3d_i(np,np,nlevp)
+
+  integer :: k
+
+  ! special averaging for velocity for energy conservation
+  fieldi(:,:,1:2,1) = fieldm(:,:,1:2,1)
+  fieldi(:,:,1:2,nlevp) = fieldm(:,:,1:2,nlev)
+  do k=2,nlev
+     fieldi(:,:,1,k) = (dp3d(:,:,k)*fieldm(:,:,1,k) + &
+          dp3d(:,:,k-1)*fieldm(:,:,1,k-1) ) / (2*dp3d_i(:,:,k))
+     fieldi(:,:,2,k) = (dp3d(:,:,k)*fieldm(:,:,2,k) + &
+          dp3d(:,:,k-1)*fieldm(:,:,2,k-1) ) / (2*dp3d_i(:,:,k))
+  end do
+
+ end subroutine vel_mid2inter
 
 
 !============================ stiff and or non-stiff ============================================
@@ -1075,6 +1096,12 @@ contains
   real (kind=real_kind) :: div_v_theta(np,np,nlev)
   real (kind=real_kind) :: v_gradphinh_i(np,np,nlevp) ! v*gradphi at interfaces
   real (kind=real_kind) :: v_i(np,np,2,nlevp)
+#ifdef HOMMEDA
+  real (kind=real_kind) :: v2_over_r_m(np,np,2,nlev)
+  real (kind=real_kind) :: v2_over_r_i(np,np,2,nlevp)
+  real (kind=real_kind) :: v_over_rhat_m(np,np,2,nlev)
+  real (kind=real_kind) :: v_over_rhat_i(np,np,2,nlevp)
+#endif
 
   real (kind=real_kind) :: v_vadv(np,np,2,nlev)     ! velocity vertical advection
   real (kind=real_kind) :: theta_vadv(np,np,nlev)   ! w,phi, theta  vertical advection term
@@ -1179,6 +1206,17 @@ contains
         dp3d_i(:,:,k)=(dp3d(:,:,k)+dp3d(:,:,k-1))/2
      end do
 
+     call vel_mid2inter(elem(ie)%state%v(:,:,:,:,n0), v_i,           dp3d,dp3d_i)
+#ifdef HOMMEDA
+     v_over_rhat_m(:,:,1,:) = elem(ie)%state%v(:,:,1,:,n0)*invrhatm(:,:,:)
+     v_over_rhat_m(:,:,2,:) = elem(ie)%state%v(:,:,2,:,n0)*invrhatm(:,:,:)
+     v2_over_r_m(:,:,1,:)   = elem(ie)%state%v(:,:,1,:,n0)*elem(ie)%state%v(:,:,1,:,n0) / rheightm(:,:,:)
+     v2_over_r_m(:,:,2,:)   = elem(ie)%state%v(:,:,2,:,n0)*elem(ie)%state%v(:,:,2,:,n0) / rheightm(:,:,:)
+     call vel_mid2inter(v_over_rhat_m,                v_over_rhat_i, dp3d,dp3d_i)
+     call vel_mid2inter(v2_over_r_m,                  v2_over_r_i,   dp3d,dp3d_i)
+#endif 
+
+#if 0
      ! special averaging for velocity for energy conservation
      v_i(:,:,1:2,1) = elem(ie)%state%v(:,:,1:2,1,n0)  
      v_i(:,:,1:2,nlevp) = elem(ie)%state%v(:,:,1:2,nlev,n0)
@@ -1188,7 +1226,8 @@ contains
         v_i(:,:,2,k) = (dp3d(:,:,k)*elem(ie)%state%v(:,:,2,k,n0) + &
              dp3d(:,:,k-1)*elem(ie)%state%v(:,:,2,k-1,n0) ) / (2*dp3d_i(:,:,k))
      end do
-     
+#endif     
+
      ! DA is only NH, so ignoring this
      if (theta_hydrostatic_mode) then
         do k=nlev,1,-1          ! traditional Hydrostatic integral
@@ -1353,36 +1392,38 @@ contains
      do k=1,nlev
         ! compute gradphi at interfaces and then average to levels
         gradphinh_i(:,:,:,k)   = gradient_sphere(phi_i(:,:,k),deriv,elem(ie)%Dinv)   
-#ifdef HOMMEDA
-        gradphinh_i(:,:,1,k)   = gradphinh_i(:,:,1,k) * invrhati(:,:,k) 
-        gradphinh_i(:,:,2,k)   = gradphinh_i(:,:,2,k) * invrhati(:,:,k) 
-#endif      
-     
         gradw_i(:,:,:,k)   = gradient_sphere(elem(ie)%state%w_i(:,:,k,n0),deriv,elem(ie)%Dinv)
+
 #ifdef HOMMEDA
-        gradw_i(:,:,1,k)   = gradw_i(:,:,1,k) * invrhati(:,:,k)
-        gradw_i(:,:,2,k)   = gradw_i(:,:,2,k) * invrhati(:,:,k)
+        !v_over_rhat contains [u/rhat] specially averaged
+        v_gradw_i(:,:,k) = v_over_rhat_i(:,:,1,k)*gradw_i(:,:,1,k) + v_over_rhat_i(:,:,2,k)*gradw_i(:,:,2,k)
+#else
+        v_gradw_i(:,:,k) = v_i(:,:,1,k)*gradw_i(:,:,1,k) + v_i(:,:,2,k)*gradw_i(:,:,2,k)
 #endif
 
-        v_gradw_i(:,:,k) = v_i(:,:,1,k)*gradw_i(:,:,1,k) + v_i(:,:,2,k)*gradw_i(:,:,2,k)
         ! w - tendency on interfaces
         w_tens(:,:,k) = (-w_vadv_i(:,:,k) - v_gradw_i(:,:,k))*scale1 - scale2*g*(1-dpnh_dp_i(:,:,k))
 
 #ifdef HOMMEDA
-        !add DA metric term
-        w_tens(:,:,k) = w_tens(:,:,k) +scale1*(v_i(:,:,1,k)*v_i(:,:,1,k)+v_i(:,:,2,k)*v_i(:,:,2,k))/rheighti(:,:,k)
-        !add DA cos
+        !add DA metric term in w_t : \bu^2/r
+        w_tens(:,:,k) = w_tens(:,:,k) +scale1*(v2_over_r_i(:,:,1,k)*v2_over_r_i(:,:,1,k) + v2_over_r_i(:,:,2,k)*v2_over_r_i(:,:,2,k))
+        !add DA cos term in w_t : \cos * u
         w_tens(:,:,k) = w_tens(:,:,k) +scale1*elem(ie)%fcorcosine(:,:)*v_i(:,:,1,k)
 #endif
 
-        ! phi - tendency on interfaces
-        ! vtemp(:,:,:,k) = gradphinh_i(:,:,:,k) + &
-        !    (scale2-1)*hvcoord%hybi(k)*elem(ie)%derived%gradphis(:,:,:)
-        v_gradphinh_i(:,:,k) = v_i(:,:,1,k)*gradphinh_i(:,:,1,k) &
-             +v_i(:,:,2,k)*gradphinh_i(:,:,2,k) 
+#ifdef HOMMEDA
+        !v_over_rhat contains [u/rhat] specially averaged
+        v_gradphinh_i(:,:,k) = v_over_rhat_i(:,:,1,k)*gradphinh_i(:,:,1,k) + v_over_rhat_i(:,:,2,k)*gradphinh_i(:,:,2,k)
+#else
+        v_gradphinh_i(:,:,k) = v_i(:,:,1,k)*gradphinh_i(:,:,1,k) + v_i(:,:,2,k)*gradphinh_i(:,:,2,k) 
+#endif
+
         phi_tens(:,:,k) =  (-phi_vadv_i(:,:,k) - v_gradphinh_i(:,:,k))*scale1 &
           + scale2*g*elem(ie)%state%w_i(:,:,k,n0)
 
+
+!gradphis term is "artificial", and does not need special [u/rhat] averaging in DA, but needs to 
+!be matched in imex
         if (scale1/=scale2) then
            ! add imex phi_h splitting 
            ! use approximate phi_h = hybi*phis 
@@ -1399,31 +1440,38 @@ contains
      k =nlevp 
      ! compute gradphi at interfaces and then average to levels
      gradphinh_i(:,:,:,k)   = gradient_sphere(phi_i(:,:,k),deriv,elem(ie)%Dinv)
-#ifdef HOMMEDA
-     gradphinh_i(:,:,1,k)   = gradphinh_i(:,:,1,k) * invrhati(:,:,k)
-     gradphinh_i(:,:,2,k)   = gradphinh_i(:,:,2,k) * invrhati(:,:,k)
-#endif
+
+!#ifdef HOMMEDA
+!     gradphinh_i(:,:,1,k)   = gradphinh_i(:,:,1,k) * invrhati(:,:,k)
+!     gradphinh_i(:,:,2,k)   = gradphinh_i(:,:,2,k) * invrhati(:,:,k)
+!#endif
 
      gradw_i(:,:,:,k)   = gradient_sphere(elem(ie)%state%w_i(:,:,k,n0),deriv,elem(ie)%Dinv)
+
 #ifdef HOMMEDA
-     gradw_i(:,:,1,k)   = gradw_i(:,:,1,k) * invrhati(:,:,k)
-     gradw_i(:,:,2,k)   = gradw_i(:,:,2,k) * invrhati(:,:,k)
+     !v_over_rhat contains [u/rhat] specially averaged
+     v_gradw_i(:,:,k) = v_over_rhat_i(:,:,1,k)*gradw_i(:,:,1,k) + v_over_rhat_i(:,:,2,k)*gradw_i(:,:,2,k)
+#else
+     v_gradw_i(:,:,k) = v_i(:,:,1,k)*gradw_i(:,:,1,k) + v_i(:,:,2,k)*gradw_i(:,:,2,k)
 #endif
 
-     v_gradw_i(:,:,k) = v_i(:,:,1,k)*gradw_i(:,:,1,k) + v_i(:,:,2,k)*gradw_i(:,:,2,k)
      ! w - tendency on interfaces
      w_tens(:,:,k) = (-w_vadv_i(:,:,k) - v_gradw_i(:,:,k))*scale1 - scale1*g*(1-dpnh_dp_i(:,:,k) )
 #ifdef HOMMEDA
-     !add DA metric
-     w_tens(:,:,k) = w_tens(:,:,k) +scale1*(v_i(:,:,1,k)*v_i(:,:,1,k)+v_i(:,:,2,k)*v_i(:,:,2,k))/rheighti(:,:,k)
-     !add DA cos
+     !add DA metric term in w_t : \bu^2/r
+     w_tens(:,:,k) = w_tens(:,:,k) +scale1*(v2_over_r_i(:,:,1,k)*v2_over_r_i(:,:,1,k) + v2_over_r_i(:,:,2,k)*v2_over_r_i(:,:,2,k))
+     !add DA cos term in w_t : \cos * u
      w_tens(:,:,k) = w_tens(:,:,k) +scale1*elem(ie)%fcorcosine(:,:)*v_i(:,:,1,k)
 #endif
 
-!why do we have this for phi?
      ! phi - tendency on interfaces
-     v_gradphinh_i(:,:,k) = v_i(:,:,1,k)*gradphinh_i(:,:,1,k) &
-      +v_i(:,:,2,k)*gradphinh_i(:,:,2,k)
+#ifdef HOMMEDA
+     !v_over_rhat contains [u/rhat] specially averaged
+     v_gradphinh_i(:,:,k) = v_over_rhat_i(:,:,1,k)*gradphinh_i(:,:,1,k) + v_over_rhat_i(:,:,2,k)*gradphinh_i(:,:,2,k)
+#else
+     v_gradphinh_i(:,:,k) = v_i(:,:,1,k)*gradphinh_i(:,:,1,k) + v_i(:,:,2,k)*gradphinh_i(:,:,2,k)
+#endif
+
      phi_tens(:,:,k) =  (-phi_vadv_i(:,:,k) - v_gradphinh_i(:,:,k))*scale1 &
      + scale1*g*elem(ie)%state%w_i(:,:,k,n0)
     
@@ -1623,44 +1671,58 @@ contains
             do i=1,np                
                d_eta_dot_dpdn_dn=(eta_dot_dpdn(i,j,k+1)-eta_dot_dpdn(i,j,k))
                !  Form horiz advection of KE-u
+!done
                elem(ie)%accum%KEu_horiz1(i,j)=elem(ie)%accum%KEu_horiz1(i,j) &
                     -dp3d(i,j,k)*( &
                     elem(ie)%state%v(i,j,1,k,n0)*gradKE(i,j,1,k) + &
                     elem(ie)%state%v(i,j,2,k,n0)*gradKE(i,j,2,k) )
+!done
                elem(ie)%accum%KEu_horiz2(i,j)=elem(ie)%accum%KEu_horiz2(i,j)              &
                     -KE(i,j,k)*divdp(i,j,k)
                !  Form horiz advection of KE-w
+!done
                elem(ie)%accum%KEw_horiz1(i,j)=elem(ie)%accum%KEw_horiz1(i,j)-   &
                     dp3d(i,j,k) * (&
                     elem(ie)%state%w_i(i,j,k,n0) * v_gradw_i(i,j,k)    + &
                     elem(ie)%state%w_i(i,j,k+1,n0) * v_gradw_i(i,j,k+1) )/2
+!done
                elem(ie)%accum%KEw_horiz2(i,j)=elem(ie)%accum%KEw_horiz2(i,j)-   &
                     divdp(i,j,k)*(elem(ie)%state%w_i(i,j,k,n0)**2 + &
                     elem(ie)%state%w_i(i,j,k+1,n0)**2 ) /4
+!done
                elem(ie)%accum%KEw_horiz3(i,j)=elem(ie)%accum%KEw_horiz3(i,j)   &
                     -dp3d(i,j,k) * (elem(ie)%state%v(i,j,1,k,n0) * wvor(i,j,1,k) +  &
                     elem(ie)%state%v(i,j,2,k,n0) * wvor(i,j,2,k))
+!done
                !  Form vertical advection of KE-u 
                elem(ie)%accum%KEu_vert1(i,j)=elem(ie)%accum%KEu_vert1(i,j)- &
                     (elem(ie)%state%v(i,j,1,k,n0) * v_vadv(i,j,1,k) +            &
                     elem(ie)%state%v(i,j,2,k,n0) *v_vadv(i,j,2,k))*dp3d(i,j,k)
+
+!done
                elem(ie)%accum%KEu_vert2(i,j)=elem(ie)%accum%KEu_vert2(i,j)- &
                     0.5*((elem(ie)%state%v(i,j,1,k,n0))**2 +                     &
                     (elem(ie)%state%v(i,j,2,k,n0))**2)*d_eta_dot_dpdn_dn
+
+!done
                !  Form vertical advection of KE-w
                elem(ie)%accum%KEw_vert1(i,j)=elem(ie)%accum%KEw_vert1(i,j) - &
                     dp3d(i,j,k) * &
                     (w_vadv_i(i,j,k)*elem(ie)%state%w_i(i,j,k,n0)+ &
                     w_vadv_i(i,j,k+1)*elem(ie)%state%w_i(i,j,k+1,n0))/2
-               
+     
+!done          
                elem(ie)%accum%KEw_vert2(i,j)=elem(ie)%accum%KEw_vert2(i,j)      &
                     -d_eta_dot_dpdn_dn* &
                     (.5*elem(ie)%state%w_i(i,j,k,n0)**2 +&
                     .5*elem(ie)%state%w_i(i,j,k+1,n0)**2)/2
-               
+     
+!done          
                !  Form IEvert1
                elem(ie)%accum%IEvert1(i,j)=elem(ie)%accum%IEvert1(i,j)      &
                     -Cp*exner(i,j,k)*theta_vadv(i,j,k)                        
+
+!done
                ! Form IEvert2 
                ! here use of dpnh_dp_i on boundry (with incorrect data)
                ! is harmess becuase eta_dot_dpdn=0
@@ -1668,10 +1730,13 @@ contains
                     + ( dpnh_dp_i(i,j,k)*eta_dot_dpdn(i,j,k)+ &
                         dpnh_dp_i(i,j,k+1)*eta_dot_dpdn(i,j,k+1)) &
                     *(phi_i(i,j,k+1)-phi_i(i,j,k))/2
-               
+     
+!done          
                !  Form PEhoriz1
                elem(ie)%accum%PEhoriz1(i,j)=(elem(ie)%accum%PEhoriz1(i,j))  &
                     -phi(i,j,k)*divdp(i,j,k) 
+
+!done
                !  Form PEhoriz2
                elem(ie)%accum%PEhoriz2(i,j)=elem(ie)%accum%PEhoriz2(i,j)    &
                     -dp3d(i,j,k)* &
@@ -1679,22 +1744,26 @@ contains
                     (gradphinh_i(i,j,1,k)+gradphinh_i(i,j,1,k+1))/2  +      &
                     elem(ie)%state%v(i,j,2,k,n0)*                           &
                     (gradphinh_i(i,j,2,k)+gradphinh_i(i,j,2,k+1))/2  )
-               
+
+!done as these are 0               
                !  Form PEvert1
                elem(ie)%accum%PEvert1(i,j) = elem(ie)%accum%PEvert1(i,j)    &
                     -phi(i,j,k)*d_eta_dot_dpdn_dn                                 
                elem(ie)%accum%PEvert2(i,j) = elem(ie)%accum%PEvert2(i,j)     &
                     -dp3d(i,j,k)*(phi_vadv_i(i,j,k)+phi_vadv_i(i,j,k+1))/2
                
+!done
                !  Form T01
                elem(ie)%accum%T01(i,j)=elem(ie)%accum%T01(i,j)               &
                     -(Cp*elem(ie)%state%vtheta_dp(i,j,k,n0))                       &
                     *(gradexner(i,j,1,k)*elem(ie)%state%v(i,j,1,k,n0) +           &
                     gradexner(i,j,2,k)*elem(ie)%state%v(i,j,2,k,n0))              
+!done
                !  Form S1 
                elem(ie)%accum%S1(i,j)=elem(ie)%accum%S1(i,j)                 &
                     -Cp*exner(i,j,k)*div_v_theta(i,j,k)
 
+!
                !  Form P1  = -P2  (no reason to compute P2?)
                elem(ie)%accum%P1(i,j)=elem(ie)%accum%P1(i,j) -g*dp3d(i,j,k)* &
                     ( elem(ie)%state%w_i(i,j,k,n0) + &
@@ -1703,6 +1772,8 @@ contains
                elem(ie)%accum%P2(i,j)=elem(ie)%accum%P2(i,j) + g*dp3d(i,j,k)*&
                     ( elem(ie)%state%w_i(i,j,k,n0) + &
                     elem(ie)%state%w_i(i,j,k+1,n0) )/2
+
+!add fcos term that SA does not have. SA does not check fsin term because of the dot product.
             enddo
          enddo
       enddo
