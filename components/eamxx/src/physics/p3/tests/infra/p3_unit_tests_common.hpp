@@ -83,7 +83,7 @@ struct UnitWrap {
         m_baseline_action(NONE),
         m_fid()
       {
-        Functions::p3_init(); // many tests will need fortran table data
+        Functions::p3_init(); // many tests will need table data
         auto& ts = ekat::TestSession::get();
         if (ts.flags["c"]) {
           m_baseline_action = COMPARE;

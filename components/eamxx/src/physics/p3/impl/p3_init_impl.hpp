@@ -189,31 +189,20 @@ void compute_tables(const bool masterproc, MuRT& mu_r_table_vals, VNT& vn_table_
   revap_table_vals = revap_table_vals_nc;
 }
 
-template <bool IsRead>
-struct IoAction
+template <bool IsRead, typename S>
+static void action(const ekat::FILEPtr& fid, S* data, const size_t size)
 {
-  template <typename S>
-  static void action(const ekat::FILEPtr& fid, S* data, const size_t size)
-  {
+  if constexpr (IsRead) {
     ekat::read(data, size, fid);
   }
-};
-
-template <>
-struct IoAction<false>
-{
-  template <typename S>
-  static void action(const ekat::FILEPtr& fid, S* data, const size_t size)
-  {
+  else {
     ekat::write(data, size, fid);
   }
-};
+}
 
 template <bool IsRead, typename MuRT, typename VNT, typename VMT, typename RevapT>
 void io_impl(const bool masterproc, const char* dir, MuRT& mu_r_table_vals, VNT& vn_table_vals, VMT& vm_table_vals, RevapT& revap_table_vals)
 {
-  using Action = IoAction<IsRead>;
-
   if (masterproc) {
     std::cout << (IsRead ? "Reading" : "Writing") << " lookup (non-ice) tables in dir " << dir << std::endl;
   }
@@ -239,10 +228,10 @@ void io_impl(const bool masterproc, const char* dir, MuRT& mu_r_table_vals, VNT&
   ekat::FILEPtr vm_file(fopen(vm_filename.c_str(), rw_flag));
 
   // Read files
-  Action::action(mu_r_file, mu_r_table_vals.data(), mu_r_table_vals.size());
-  Action::action(revap_file, revap_table_vals.data(), revap_table_vals.size());
-  Action::action(vn_file, vn_table_vals.data(), vn_table_vals.size());
-  Action::action(vm_file, vm_table_vals.data(), vm_table_vals.size());
+  action<IsRead>(mu_r_file, mu_r_table_vals.data(), mu_r_table_vals.size());
+  action<IsRead>(revap_file, revap_table_vals.data(), revap_table_vals.size());
+  action<IsRead>(vn_file, vn_table_vals.data(), vn_table_vals.size());
+  action<IsRead>(vm_file, vm_table_vals.data(), vm_table_vals.size());
 }
 
 template <typename MuRT, typename VNT, typename VMT, typename RevapT>

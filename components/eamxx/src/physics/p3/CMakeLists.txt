@@ -80,11 +80,7 @@ endif()
 target_compile_definitions(p3 PUBLIC EAMXX_HAS_P3)
 
 foreach (P3_LIB IN LISTS P3_LIBS)
-  set_target_properties(${P3_LIB} PROPERTIES
-    Fortran_MODULE_DIRECTORY ${P3_LIB}/modules
-  )
   target_include_directories(${P3_LIB} PUBLIC
-    ${CMAKE_CURRENT_BINARY_DIR}/${P3_LIB}/modules
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/impl
     ${SCREAM_BASE_DIR}/../eam/src/physics/cam
