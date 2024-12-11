@@ -195,7 +195,7 @@ class CSR(TestProperty):
             "debug with compute sanitizer racecheck",
             [("CMAKE_BUILD_TYPE", "Debug"),
              ("EKAT_ENABLE_COMPUTE_SANITIZER", "True"),
-             ("EKAT_COMPUTE_SANITIZER_OPTIONS", "'--tool=racecheck --racecheck-detect-level=error'")],
+             ("EKAT_COMPUTE_SANITIZER_OPTIONS", "'--tool=racecheck'")],
             uses_baselines=False,
             on_by_default=False,
             default_test_len="short"
