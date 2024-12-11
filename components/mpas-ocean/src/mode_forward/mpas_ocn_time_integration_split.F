@@ -178,6 +178,66 @@ module ocn_time_integration_split
          edgeHaloComputeCounter, &! halo counters to reduce
          cellHaloComputeCounter   ! halo updates during cycling
 
+      integer :: &
+         indxdyeVolBarents,    &! tracer index for dyeVolBarents
+         indxdyeSaltBarents,   &! tracer index for dyeSaltBarents
+         indxdyeVolBering,    &! tracer index for dyeVolBering
+         indxdyeSaltBering,   &! tracer index for dyeSaltBering
+         indxdyeVolFram,    &! tracer index for dyeVolFram
+         indxdyeSaltFram,   &! tracer index for dyeSaltFram
+         indxdyeVolDavis,    &! tracer index for dyeVolDavis
+         indxdyeSaltDavis,   &! tracer index for dyeSaltDavis
+         indxdyeVolFuryHecla,    &! tracer index for dyeVolFuryHecla
+         indxdyeSaltFuryHecla,   &! tracer index for dyeSaltFuryHecla
+         indxdyeVolMackenzie,  &
+         indxdyeVolOb,  &
+         indxdyeVolYenesei,  &
+         indxdyeVolLena,  &
+         indxdyeVolPrecipEvap,  &
+         indxdyeVolIceMeltForm
+
+      integer, pointer :: &
+         indexdyeVolBarents, indexdyeSaltBarents, & ! tracer indicies for transect dyes
+         indexdyeVolBering, indexdyeSaltBering, & ! tracer indicies for transect dyes
+         indexdyeVolFram, indexdyeSaltFram, & ! tracer indicies for transect dyes
+         indexdyeVolDavis, indexdyeSaltDavis, & ! tracer indicies for transect dyes
+         indexdyeVolFuryHecla, indexdyeSaltFuryHecla, & ! tracer indicies for transect dyes
+         indexdyeVolMackenzie,  &
+         indexdyeVolOb,  &
+         indexdyeVolYenesei,  &
+         indexdyeVolLena,  &
+         indexdyeVolPrecipEvap,  &
+         indexdyeVolIceMeltForm
+
+      real (kind=RKIND), dimension(:,:,:), pointer, contiguous :: &
+         activeTracers   ! retain active tracers for Salt dyes
+
+      type (mpas_pool_type), pointer :: dyeDiagFields
+
+      real (kind=RKIND), dimension(:), pointer :: &
+         dyeVolBarents_zint,  &
+         dyeSaltBarents_zint, &
+         dyeVolBering_zint,  &
+         dyeSaltBering_zint, &
+         dyeVolFram_zint,  &
+         dyeSaltFram_zint, &
+         dyeVolDavis_zint,  &
+         dyeSaltDavis_zint, &
+         dyeVolFuryHecla_zint,  &
+         dyeSaltFuryHecla_zint
+   
+      real (kind=RKIND), dimension(:), pointer :: &
+         dyeBarentsSourceMask,  &
+         dyeBarentsSinkMask,    &
+         dyeBeringSourceMask,  &
+         dyeBeringSinkMask,    &
+         dyeFramSourceMask,  &
+         dyeFramSinkMask,    &
+         dyeDavisSourceMask,  &
+         dyeDavisSinkMask,    &
+         dyeFuryHeclaSourceMask,  &
+         dyeFuryHeclaSinkMask
+
       real (kind=RKIND) :: &
          normalThicknessFluxSum, &! sum of thickness flux in column
          thicknessSum,     &! sum of thicknesses in column
@@ -2207,6 +2267,7 @@ module ocn_time_integration_split
                         !$omp end do
                         !$omp end parallel
 #endif
+
                      end if
 
                      ! Reset debugTracers to fixed value at the surface
@@ -2263,6 +2324,198 @@ module ocn_time_integration_split
                         !$omp end parallel
 #endif
                      end if ! debug tracers
+
+                     ! Reset transect dye tracers
+                     if (trim(groupItr % memberName) == 'dyeTracers') then
+   
+                        indxdyeVolBarents = 0
+                        indxdyeSaltBarents = 0
+                        call mpas_pool_get_dimension(tracersPool, 'index_dyeVolBarents', indexdyeVolBarents)
+                        indxdyeVolBarents = indexdyeVolBarents ! convert to int scalar due to problems with int scalar pointers
+                        call mpas_pool_get_dimension(tracersPool, 'index_dyeSaltBarents', indexdyeSaltBarents)
+                        indxdyeSaltBarents = indexdyeSaltBarents ! convert to int scalar due to problems with int scalar pointers
+
+                        indxdyeVolBering = 0
+                        indxdyeSaltBering = 0
+                        call mpas_pool_get_dimension(tracersPool, 'index_dyeVolBering', indexdyeVolBering)
+                        indxdyeVolBering = indexdyeVolBering ! convert to int scalar due to problems with int scalar pointers
+                        call mpas_pool_get_dimension(tracersPool, 'index_dyeSaltBering', indexdyeSaltBering)
+                        indxdyeSaltBering = indexdyeSaltBering ! convert to int scalar due to problems with int scalar pointers
+
+                        indxdyeVolFram = 0
+                        indxdyeSaltFram = 0
+                        call mpas_pool_get_dimension(tracersPool, 'index_dyeVolFram', indexdyeVolFram)
+                        indxdyeVolFram = indexdyeVolFram ! convert to int scalar due to problems with int scalar pointers
+                        call mpas_pool_get_dimension(tracersPool, 'index_dyeSaltFram', indexdyeSaltFram)
+                        indxdyeSaltFram = indexdyeSaltFram ! convert to int scalar due to problems with int scalar pointers
+
+                        indxdyeVolDavis = 0
+                        indxdyeSaltDavis = 0
+                        call mpas_pool_get_dimension(tracersPool, 'index_dyeVolDavis', indexdyeVolDavis)
+                        indxdyeVolDavis = indexdyeVolDavis ! convert to int scalar due to problems with int scalar pointers
+                        call mpas_pool_get_dimension(tracersPool, 'index_dyeSaltDavis', indexdyeSaltDavis)
+                        indxdyeSaltDavis = indexdyeSaltDavis ! convert to int scalar due to problems with int scalar pointers
+
+                        indxdyeVolFuryHecla = 0
+                        indxdyeSaltFuryHecla = 0
+                        call mpas_pool_get_dimension(tracersPool, 'index_dyeVolFuryHecla', indexdyeVolFuryHecla)
+                        indxdyeVolFuryHecla = indexdyeVolFuryHecla ! convert to int scalar due to problems with int scalar pointers
+                        call mpas_pool_get_dimension(tracersPool, 'index_dyeSaltFuryHecla', indexdyeSaltFuryHecla)
+                        indxdyeSaltFuryHecla = indexdyeSaltFuryHecla ! convert to int scalar due to problems with int scalar pointers
+
+! now do rivers, precip, ice melt
+                        indxdyeVolMackenzie = 0
+                        call mpas_pool_get_dimension(tracersPool, 'index_dyeVolMackenzie', indexdyeVolMackenzie)
+                        indxdyeVolMackenzie = indexdyeVolMackenzie ! convert to int scalar due to problems with int scalar pointers
+
+                        indxdyeVolOb = 0
+                        call mpas_pool_get_dimension(tracersPool, 'index_dyeVolOb', indexdyeVolOb)
+                        indxdyeVolOb = indexdyeVolOb ! convert to int scalar due to problems with int scalar pointers
+
+                        indxdyeVolYenesei = 0
+                        call mpas_pool_get_dimension(tracersPool, 'index_dyeVolYenesei', indexdyeVolYenesei)
+                        indxdyeVolYenesei = indexdyeVolYenesei ! convert to int scalar due to problems with int scalar pointers
+
+                        indxdyeVolLena = 0
+                        call mpas_pool_get_dimension(tracersPool, 'index_dyeVolLena', indexdyeVolLena)
+                        indxdyeVolLena = indexdyeVolLena ! convert to int scalar due to problems with int scalar pointers
+
+                        indxdyeVolPrecipEvap = 0
+                        call mpas_pool_get_dimension(tracersPool, 'index_dyeVolPrecipEvap', indexdyeVolPrecipEvap)
+                        indxdyeVolPrecipEvap = indexdyeVolPrecipEvap ! convert to int scalar due to problems with int scalar pointers
+
+                        indxdyeVolIceMeltForm = 0
+                        call mpas_pool_get_dimension(tracersPool, 'index_dyeVolIceMeltForm', indexdyeVolIceMeltForm)
+                        indxdyeVolIceMeltForm = indexdyeVolIceMeltForm ! convert to int scalar due to problems with int scalar pointers
+
+                        call mpas_pool_get_subpool(forcingPool, 'dyeDiagFields', dyeDiagFields)
+                        call mpas_pool_get_array(meshPool, 'dyeBarentsSourceMask', dyeBarentsSourceMask)
+                        call mpas_pool_get_array(meshPool, 'dyeBarentsSinkMask', dyeBarentsSinkMask)
+                        call mpas_pool_get_array(dyeDiagFields, 'dyeVolBarents_zint', dyeVolBarents_zint)
+                        call mpas_pool_get_array(dyeDiagFields, 'dyeSaltBarents_zint', dyeSaltBarents_zint)
+                        call mpas_pool_get_array(meshPool, 'dyeBeringSourceMask', dyeBeringSourceMask)
+                        call mpas_pool_get_array(meshPool, 'dyeBeringSinkMask', dyeBeringSinkMask)
+                        call mpas_pool_get_array(dyeDiagFields, 'dyeVolBering_zint', dyeVolBering_zint)
+                        call mpas_pool_get_array(dyeDiagFields, 'dyeSaltBering_zint', dyeSaltBering_zint)
+                        call mpas_pool_get_array(meshPool, 'dyeFramSourceMask', dyeFramSourceMask)
+                        call mpas_pool_get_array(meshPool, 'dyeFramSinkMask', dyeFramSinkMask)
+                        call mpas_pool_get_array(dyeDiagFields, 'dyeVolFram_zint', dyeVolFram_zint)
+                        call mpas_pool_get_array(dyeDiagFields, 'dyeSaltFram_zint', dyeSaltFram_zint)
+                        call mpas_pool_get_array(meshPool, 'dyeDavisSourceMask', dyeDavisSourceMask)
+                        call mpas_pool_get_array(meshPool, 'dyeDavisSinkMask', dyeDavisSinkMask)
+                        call mpas_pool_get_array(dyeDiagFields, 'dyeVolDavis_zint', dyeVolDavis_zint)
+                        call mpas_pool_get_array(dyeDiagFields, 'dyeSaltDavis_zint', dyeSaltDavis_zint)
+                        call mpas_pool_get_array(meshPool, 'dyeFuryHeclaSourceMask', dyeFuryHeclaSourceMask)
+                        call mpas_pool_get_array(meshPool, 'dyeFuryHeclaSinkMask', dyeFuryHeclaSinkMask)
+                        call mpas_pool_get_array(dyeDiagFields, 'dyeVolFuryHecla_zint', dyeVolFuryHecla_zint)
+                        call mpas_pool_get_array(dyeDiagFields, 'dyeSaltFuryHecla_zint', dyeSaltFuryHecla_zint)
+
+                        call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 2)
+
+                        ! initialize vertical integrals
+                        dyeVolBarents_zint = 0.0_RKIND
+                        dyeSaltBarents_zint = 0.0_RKIND
+                        dyeVolBering_zint = 0.0_RKIND
+                        dyeSaltBering_zint = 0.0_RKIND
+                        dyeVolFram_zint = 0.0_RKIND
+                        dyeSaltFram_zint = 0.0_RKIND
+                        dyeVolDavis_zint = 0.0_RKIND
+                        dyeSaltDavis_zint = 0.0_RKIND
+                        dyeVolFuryHecla_zint = 0.0_RKIND
+                        dyeSaltFuryHecla_zint = 0.0_RKIND
+
+                        !$omp parallel
+                        !$omp do schedule(runtime) private(k, lat)
+                        do iCell = 1, nCellsAll
+
+                           ! Reset transect volume tracers to 1 if sourceMask = 1, to 0 if sinkMask = 1
+                           ! Reset transect salinity tracers to new S if sourceMask = 1, to 0 if sinkMask = 1
+                           do k = minLevelCell(iCell), maxLevelCell(iCell)
+                             if(dyeBarentsSourceMask(iCell) == 1.0_RKIND) then
+                                tracersGroupNew(indxdyeVolBarents,k,iCell) = 1.0_RKIND
+                                tracersGroupNew(indxdyeSaltBarents,k,iCell) = activeTracers(indexSalinity,k,iCell)
+                             endif
+!                            if(dyeBeringSourceMask(iCell) == 1.0_RKIND) then
+!                               tracersGroupNew(indxdyeVolBering,k,iCell) = 1.0_RKIND
+!                               tracersGroupNew(indxdyeSaltBering,k,iCell) = activeTracers(indexSalinity,k,iCell)
+!                            endif
+!maltrud 2 rows
+                             if(dyeBeringSourceMask(iCell) > 0.0_RKIND) then
+                                tracersGroupNew(indxdyeVolBering,k,iCell) = dyeBeringSourceMask(iCell)
+                                tracersGroupNew(indxdyeSaltBering,k,iCell) = activeTracers(indexSalinity,k,iCell)
+                             endif
+                             if(dyeFramSourceMask(iCell) == 1.0_RKIND) then
+                                tracersGroupNew(indxdyeVolFram,k,iCell) = 1.0_RKIND
+                                tracersGroupNew(indxdyeSaltFram,k,iCell) = activeTracers(indexSalinity,k,iCell)
+                             endif
+                             if(dyeDavisSourceMask(iCell) == 1.0_RKIND) then
+                                tracersGroupNew(indxdyeVolDavis,k,iCell) = 1.0_RKIND
+                                tracersGroupNew(indxdyeSaltDavis,k,iCell) = activeTracers(indexSalinity,k,iCell)
+                             endif
+                             if(dyeFuryHeclaSourceMask(iCell) == 1.0_RKIND) then
+                                tracersGroupNew(indxdyeVolFuryHecla,k,iCell) = 1.0_RKIND
+                                tracersGroupNew(indxdyeSaltFuryHecla,k,iCell) = activeTracers(indexSalinity,k,iCell)
+                             endif
+
+                             if(dyeBarentsSinkMask(iCell) > 0.0_RKIND) then
+                               tracersGroupNew(indxdyeVolBarents,k,iCell) = 0.0_RKIND
+                               tracersGroupNew(indxdyeSaltBarents,k,iCell) = 0.0_RKIND
+                             endif
+                             if(dyeBeringSinkMask(iCell) > 0.0_RKIND) then
+                               tracersGroupNew(indxdyeVolBering,k,iCell) = 0.0_RKIND
+                               tracersGroupNew(indxdyeSaltBering,k,iCell) = 0.0_RKIND
+                             endif
+                             if(dyeFramSinkMask(iCell) > 0.0_RKIND) then
+                               tracersGroupNew(indxdyeVolFram,k,iCell) = 0.0_RKIND
+                               tracersGroupNew(indxdyeSaltFram,k,iCell) = 0.0_RKIND
+                             endif
+                             if(dyeDavisSinkMask(iCell) > 0.0_RKIND) then
+                               tracersGroupNew(indxdyeVolDavis,k,iCell) = 0.0_RKIND
+                               tracersGroupNew(indxdyeSaltDavis,k,iCell) = 0.0_RKIND
+                             endif
+                             if(dyeFuryHeclaSinkMask(iCell) > 0.0_RKIND) then
+                               tracersGroupNew(indxdyeVolFuryHecla,k,iCell) = 0.0_RKIND
+                               tracersGroupNew(indxdyeSaltFuryHecla,k,iCell) = 0.0_RKIND
+                             endif
+
+! now do rivers, precip, ice melt
+! want to always remove these at gateways, and sum of any 2 should be > 0 for all
+                             if(dyeBarentsSinkMask(iCell) + dyeBeringSinkMask(iCell) > 0.0_RKIND) then
+                               tracersGroupNew(indxdyeVolMackenzie,k,iCell) = 0.0_RKIND
+                               tracersGroupNew(indxdyeVolOb,k,iCell) = 0.0_RKIND
+                               tracersGroupNew(indxdyeVolYenesei,k,iCell) = 0.0_RKIND
+                               tracersGroupNew(indxdyeVolLena,k,iCell) = 0.0_RKIND
+                               tracersGroupNew(indxdyeVolPrecipEvap,k,iCell) = 0.0_RKIND
+                               tracersGroupNew(indxdyeVolIceMeltForm,k,iCell) = 0.0_RKIND
+                             endif
+
+                             dyeVolBarents_zint(iCell) = dyeVolBarents_zint(iCell) &
+                               + layerThicknessNew(k,iCell)*tracersGroupNew(indexdyeVolBarents, k, iCell)
+                             dyeSaltBarents_zint(iCell) = dyeSaltBarents_zint(iCell) &
+                               + layerThicknessNew(k,iCell)*tracersGroupNew(indexdyeSaltBarents, k, iCell)
+                             dyeVolBering_zint(iCell) = dyeVolBering_zint(iCell) &
+                               + layerThicknessNew(k,iCell)*tracersGroupNew(indexdyeVolBering, k, iCell)
+                             dyeSaltBering_zint(iCell) = dyeSaltBering_zint(iCell) &
+                               + layerThicknessNew(k,iCell)*tracersGroupNew(indexdyeSaltBering, k, iCell)
+                             dyeVolFram_zint(iCell) = dyeVolFram_zint(iCell) &
+                               + layerThicknessNew(k,iCell)*tracersGroupNew(indexdyeVolFram, k, iCell)
+                             dyeSaltFram_zint(iCell) = dyeSaltFram_zint(iCell) &
+                               + layerThicknessNew(k,iCell)*tracersGroupNew(indexdyeSaltFram, k, iCell)
+                             dyeVolDavis_zint(iCell) = dyeVolDavis_zint(iCell) &
+                               + layerThicknessNew(k,iCell)*tracersGroupNew(indexdyeVolDavis, k, iCell)
+                             dyeSaltDavis_zint(iCell) = dyeSaltDavis_zint(iCell) &
+                               + layerThicknessNew(k,iCell)*tracersGroupNew(indexdyeSaltDavis, k, iCell)
+                             dyeVolFuryHecla_zint(iCell) = dyeVolFuryHecla_zint(iCell) &
+                               + layerThicknessNew(k,iCell)*tracersGroupNew(indexdyeVolFuryHecla, k, iCell)
+                             dyeSaltFuryHecla_zint(iCell) = dyeSaltFuryHecla_zint(iCell) &
+                               + layerThicknessNew(k,iCell)*tracersGroupNew(indexdyeSaltFuryHecla, k, iCell)
+                           end do
+
+                        end do ! cells
+                        !$omp end do
+                        !$omp end parallel
+                     end if ! dye tracers
+
                   end if ! use tracer group
                end if ! tracer
             end do ! tracer group

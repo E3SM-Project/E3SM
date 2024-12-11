@@ -75,6 +75,7 @@ module ocn_forward_mode
    use ocn_tracer_MacroMolecules
    use ocn_tracer_ideal_age
    use ocn_tracer_CFC
+   use ocn_tracer_dye
    use ocn_tracer_surface_restoring
    use ocn_gm
    use ocn_submesoscale_eddies
@@ -483,6 +484,8 @@ module ocn_forward_mode
       call ocn_tracer_ideal_age_init(domain, err_tmp)
       ierr = ior(ierr,err_tmp)
       call ocn_tracer_CFC_init(domain, err_tmp)
+      ierr = ior(ierr,err_tmp)
+      call ocn_tracer_dye_init(domain, err_tmp)
       ierr = ior(ierr,err_tmp)
       if (ierr /= 0) then
          call mpas_log_write( &

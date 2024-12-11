@@ -90,6 +90,7 @@ list(APPEND RAW_SOURCES
   core_ocean/shared/mpas_ocn_tracer_exponential_decay.F
   core_ocean/shared/mpas_ocn_tracer_ideal_age.F
   core_ocean/shared/mpas_ocn_tracer_CFC.F
+  core_ocean/shared/mpas_ocn_tracer_dye.F
   core_ocean/shared/mpas_ocn_tracer_TTD.F
   core_ocean/shared/mpas_ocn_tracer_ecosys.F
   core_ocean/shared/mpas_ocn_tracer_DMS.F

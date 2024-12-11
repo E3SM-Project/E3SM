@@ -1811,6 +1811,21 @@
 			<var name="maxLevelCell"/>
 			<var name="refBottomDepth" packages="forwardMode;analysisMode"/>
 			<var name="restingThickness" packages="forwardMode;analysisMode"/>
+			<var name="dyeBarentsSourceMask"/>
+			<var name="dyeBarentsSinkMask"/>
+			<var name="dyeBeringSourceMask"/>
+			<var name="dyeBeringSinkMask"/>
+			<var name="dyeFramSourceMask"/>
+			<var name="dyeFramSinkMask"/>
+			<var name="dyeDavisSourceMask"/>
+			<var name="dyeDavisSinkMask"/>
+			<var name="dyeFuryHeclaSourceMask"/>
+			<var name="dyeFuryHeclaSinkMask"/>
+			<var name="dyeMackenzieMask"/>
+			<var name="dyeObMask"/>
+			<var name="dyeYeneseiMask"/>
+			<var name="dyeLenaMask"/>
+			<var name="dyeArcticMask"/>
 		</stream>
 
 		<stream name="input"
@@ -2612,6 +2627,51 @@
 		<var name="distanceToCoast" type="real" dimensions="nCells" units="m"
 			 description="Distance of each cell to nearest coastline cell."
 		/>
+                        <var name="dyeBarentsSourceMask" type="real" dimensions="nCells" units="kg m^{-2}"
+                        description="mask defining dyeBarents transect"
+                        />
+                        <var name="dyeBarentsSinkMask" type="real" dimensions="nCells" units="kg m^{-2}"
+                        description="mask defining where dyeBarents value gets zeroed out"
+                        />
+                        <var name="dyeBeringSourceMask" type="real" dimensions="nCells" units="kg m^{-2}"
+                        description="mask defining dyeBering transect"
+                        />
+                        <var name="dyeBeringSinkMask" type="real" dimensions="nCells" units="kg m^{-2}"
+                        description="mask defining where dyeBering value gets zeroed out"
+                        />
+                        <var name="dyeFramSourceMask" type="real" dimensions="nCells" units="kg m^{-2}"
+                        description="mask defining dyeFram transect"
+                        />
+                        <var name="dyeFramSinkMask" type="real" dimensions="nCells" units="kg m^{-2}"
+                        description="mask defining where dyeFram value gets zeroed out"
+                        />
+                        <var name="dyeDavisSourceMask" type="real" dimensions="nCells" units="kg m^{-2}"
+                        description="mask defining dyeDavis transect"
+                        />
+                        <var name="dyeDavisSinkMask" type="real" dimensions="nCells" units="kg m^{-2}"
+                        description="mask defining where dyeDavis value gets zeroed out"
+                        />
+                        <var name="dyeFuryHeclaSourceMask" type="real" dimensions="nCells" units="kg m^{-2}"
+                        description="mask defining dyeFuryHecla transect"
+                        />
+                        <var name="dyeFuryHeclaSinkMask" type="real" dimensions="nCells" units="kg m^{-2}"
+                        description="mask defining where dyeFuryHecla value gets zeroed out"
+                        />
+                        <var name="dyeMackenzieMask" type="real" dimensions="nCells" units="kg m^{-2}"
+                        description="mask defining dyeMackenzie river runoff"
+                        />
+                        <var name="dyeObMask" type="real" dimensions="nCells" units="kg m^{-2}"
+                        description="mask defining dyeOb river runoff"
+                        />
+                        <var name="dyeYeneseiMask" type="real" dimensions="nCells" units="kg m^{-2}"
+                        description="mask defining dyeYenesei river runoff"
+                        />
+                        <var name="dyeLenaMask" type="real" dimensions="nCells" units="kg m^{-2}"
+                        description="mask defining dyeLena river runoff"
+                        />
+                        <var name="dyeArcticMask" type="real" dimensions="nCells" units="kg m^{-2}"
+                        description="mask defining Arctic domain"
+                        />
 	</var_struct>
 	<var_struct name="verticalMesh" time_levs="1">
 		<var name="restingThickness" type="real" dimensions="nVertLevels nCells" units="m"

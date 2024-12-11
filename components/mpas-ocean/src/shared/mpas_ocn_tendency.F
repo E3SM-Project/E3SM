@@ -53,6 +53,7 @@ module ocn_tendency
    use ocn_tracer_DMS
    use ocn_tracer_MacroMolecules
    use ocn_tracer_CFC
+   use ocn_tracer_dye
 
    use ocn_thick_hadv
    use ocn_thick_vadv
@@ -544,6 +545,12 @@ contains
          indxTemp, indxSalt, &! tracer index for temperature, salinity
          indxCFC11,          &! tracer index for CFC11
          indxCFC12,          &! tracer index for CFC12
+         indxdyeVolMackenzie,&! tracer index for dyeVolMackenzie
+         indxdyeVolOb,       &! tracer index for dyeVolOb
+         indxdyeVolYenesei,  &! tracer index for dyeVolYenesei
+         indxdyeVolLena,     &! tracer index for dyeVolLena
+         indxdyeVolPrecipEvap,   &! tracer index for dyeVolPrecipEvap
+         indxdyeVolIceMeltForm,  &! tracer index for dyeVolIceMeltForm
          nTracersGroup,      &! number of tracers in each tracer group
          nTracersEcosys       ! number of ecosystem tracers
 
@@ -576,6 +583,13 @@ contains
          indexTemperature, indexSalinity ! tracer index for temp,salt
       integer, pointer :: &
          indexCFC11, indexCFC12 ! tracer indicies for CFCs
+      integer, pointer :: &
+         indexdyeVolMackenzie, & ! tracer indicies for dyes
+         indexdyeVolOb,        & ! tracer indicies for dyes
+         indexdyeVolYenesei,   & ! tracer indicies for dyes
+         indexdyeVolLena,      & ! tracer indicies for dyes
+         indexdyeVolPrecipEvap,& ! tracer indicies for dyes
+         indexdyeVolIceMeltForm  ! tracer indicies for dyes
 
       logical, pointer :: & ! option configuration flags
          config_use_tracerGroup, &
@@ -616,6 +630,9 @@ contains
       ! Scratch Arrays
       real (kind=RKIND), dimension(:,:), allocatable :: &
          normalThicknessFlux ! Flux of thickness through edge (m^2/s)
+
+!maltrud advection hack
+      integer :: advectionOrderHack
 
       ! End preamble
       !-----------------------------------------------------------------
@@ -934,6 +951,40 @@ contains
          endif ! CFC
 
          !
+         ! compute dye surface fluxes, there are no interior sources/sinks
+         !
+         if ( groupName == 'dyeTracers' ) then
+   
+            indxdyeVolMackenzie = 0
+            call mpas_pool_get_dimension(tracersPool, 'index_dyeVolMackenzie', indexdyeVolMackenzie)
+            indxdyeVolMackenzie = indexdyeVolMackenzie ! convert to int scalar due to problems with int scalar pointers
+            indxdyeVolOb = 0
+            call mpas_pool_get_dimension(tracersPool, 'index_dyeVolOb', indexdyeVolOb)
+            indxdyeVolOb = indexdyeVolOb ! convert to int scalar due to problems with int scalar pointers
+            indxdyeVolYenesei = 0
+            call mpas_pool_get_dimension(tracersPool, 'index_dyeVolYenesei', indexdyeVolYenesei)
+            indxdyeVolYenesei = indexdyeVolYenesei ! convert to int scalar due to problems with int scalar pointers
+            indxdyeVolLena = 0
+            call mpas_pool_get_dimension(tracersPool, 'index_dyeVolLena', indexdyeVolLena)
+            indxdyeVolLena = indexdyeVolLena ! convert to int scalar due to problems with int scalar pointers
+            indxdyeVolPrecipEvap = 0
+            call mpas_pool_get_dimension(tracersPool, 'index_dyeVolPrecipEvap', indexdyeVolPrecipEvap)
+            indxdyeVolPrecipEvap = indexdyeVolPrecipEvap ! convert to int scalar due to problems with int scalar pointers
+            indxdyeVolIceMeltForm = 0
+            call mpas_pool_get_dimension(tracersPool, 'index_dyeVolIceMeltForm', indexdyeVolIceMeltForm)
+            indxdyeVolIceMeltForm = indexdyeVolIceMeltForm ! convert to int scalar due to problems with int scalar pointers
+                                                 
+            call ocn_tracer_dye_surface_flux_compute( &
+                                        tracerGroup, forcingPool, meshPool,  &
+                                        nTracersGroup, nCellsOwned, &
+                                        minLevelCell, maxLevelCell, nVertLevels, layerThickness, &
+                                        tracerGroupSurfaceFlux, tracerGroupSurfaceFluxRunoff,  &
+                                        indxdyeVolMackenzie, indxdyeVolOb,   &
+                                        indxdyeVolYenesei, indxdyeVolLena,  &
+                                        indxdyeVolPrecipEvap, indxdyeVolIceMeltForm, err)
+         endif ! dye
+
+         !
          ! ocean surface restoring
          !
          if (config_use_tracerGroup_surface_restoring) then
@@ -1103,10 +1154,15 @@ contains
          !     -div( layerThickness \phi u)
          ! Tracer budget is computed and stored within the tracer adv
          ! routine
+!maltrud advection hack
+      advectionOrderHack = 2
+      if (groupName=='activeTracers') advectionOrderHack = 3
+
          call ocn_tracer_advection_tend(tracerGroup, &
                             normalThicknessFlux, vertAleTransportTop, &
                             layerThickness, dt, tracerGroupTend, &
-                            computeBudgets)
+                            computeBudgets, advectionOrderHack)
+!                           computeBudgets)
 
          !$acc update host (activeTracerHorizontalAdvectionEdgeFlux, &
          !$acc              activeTracerHorizontalAdvectionTendency, &

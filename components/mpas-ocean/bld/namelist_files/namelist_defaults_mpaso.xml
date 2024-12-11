@@ -717,6 +717,15 @@
 <config_use_CFC11>.true.</config_use_CFC11>
 <config_use_CFC12>.true.</config_use_CFC12>
 
+<!-- tracer_forcing_dyeTracers -->
+<config_use_dyeTracers>.false.</config_use_dyeTracers>
+<config_use_dyeTracers_surface_bulk_forcing>.false.</config_use_dyeTracers_surface_bulk_forcing>
+<config_use_dyeTracers_surface_restoring>.false.</config_use_dyeTracers_surface_restoring>
+<config_use_dyeTracers_interior_restoring>.false.</config_use_dyeTracers_interior_restoring>
+<config_use_dyeTracers_exponential_decay>.false.</config_use_dyeTracers_exponential_decay>
+<config_use_dyeTracers_idealAge_forcing>.false.</config_use_dyeTracers_idealAge_forcing>
+<config_use_dyeTracers_ttd_forcing>.false.</config_use_dyeTracers_ttd_forcing>
+
 <!-- AM_globalStats -->
 <config_AM_globalStats_enable>.true.</config_AM_globalStats_enable>
 <config_AM_globalStats_compute_interval>'output_interval'</config_AM_globalStats_compute_interval>

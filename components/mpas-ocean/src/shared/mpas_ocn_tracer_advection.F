@@ -63,9 +63,11 @@ module ocn_tracer_advection
 !
 !-----------------------------------------------------------------------
 
+!maltrud advection hack
    subroutine ocn_tracer_advection_tend(tracers, normalThicknessFlux, &
                                         w, layerThickness, dt, tend,  &
-                                        computeBudgets)!{{{
+                                        computeBudgets, advectionOrderHack)!{{{
+!                                       computeBudgets)!{{{
 
       !*** Input/Output parameters
 
@@ -88,6 +90,9 @@ module ocn_tracer_advection
       logical, intent(in) :: &
          computeBudgets      ! flag to compute active tracer budget
 
+!maltrud advection hack
+      integer, intent(in) :: advectionOrderHack
+
       ! end of preamble
       !----------------
       ! begin code
@@ -99,9 +104,11 @@ module ocn_tracer_advection
 
       ! call specific advection routine based on choice of monotonicity
       if (monotonicOn) then
+!maltrud advection hack
          call ocn_tracer_advection_mono_tend(tend, tracers, layerThickness,    &
                                              normalThicknessFlux, w, dt,       &
-                                             computeBudgets)
+                                             computeBudgets, advectionOrderHack)
+!                                            computeBudgets)
 
       else
          call ocn_tracer_advection_std_tend(tracers, normalThicknessFlux, &

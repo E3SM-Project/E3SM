@@ -63,8 +63,10 @@ module ocn_tracer_advection_vert
 !
 !-----------------------------------------------------------------------
 
+!maltrud advection hack
    subroutine ocn_tracer_advection_vert_flx(tracer, w, layerThick, &
-                                            vertFlx)
+                                            vertFlx, advectionOrderHack)
+!                                           vertFlx)
 
       !-----------------------------------------------------------------
       ! Output variables
@@ -83,6 +85,9 @@ module ocn_tracer_advection_vert
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          w,             &!< [in] Vertical velocity
          layerThick      !< [in] Layer thickness to use for advection
+
+!maltrud advection hack
+      integer, intent(in) :: advectionOrderHack
 
       !-----------------------------------------------------------------
       ! Local variables
@@ -123,7 +128,9 @@ module ocn_tracer_advection_vert
       ! Compute flux for interior layers at high order based on
       ! user-requested order
 
-      select case (vertOrder)
+!maltrud advection hack
+      select case (advectionOrderHack)
+!     select case (vertOrder)
       case (vertOrder4)
 
 #ifdef MPAS_OPENACC

@@ -161,8 +161,12 @@ module ocn_tracer_advection_std
 
         ! Compute the high order vertical flux.
 
+!maltrud advection hack
+! need an integer to be consistent with the monotone case
+        k = 1
         call ocn_tracer_advection_vert_flx(tracerCur, w, &
-                           layerThickness, highOrderFlxVert)
+                           layerThickness, highOrderFlxVert, k)
+!                          layerThickness, highOrderFlxVert)
 
         ! Compute the high order horizontal flux
 

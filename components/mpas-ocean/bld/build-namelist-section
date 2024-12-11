@@ -617,6 +617,18 @@ add_default($nl, 'config_use_idealAgeTracers_exponential_decay');
 add_default($nl, 'config_use_idealAgeTracers_idealAge_forcing');
 add_default($nl, 'config_use_idealAgeTracers_ttd_forcing');
 
+##################################################
+# Namelist group: tracer_forcing_dyeTracers #
+##################################################
+
+add_default($nl, 'config_use_dyeTracers');
+add_default($nl, 'config_use_dyeTracers_surface_bulk_forcing');
+add_default($nl, 'config_use_dyeTracers_surface_restoring');
+add_default($nl, 'config_use_dyeTracers_interior_restoring');
+add_default($nl, 'config_use_dyeTracers_exponential_decay');
+add_default($nl, 'config_use_dyeTracers_idealAge_forcing');
+add_default($nl, 'config_use_dyeTracers_ttd_forcing');
+
 #############################################
 # Namelist group: tracer_forcing_CFCTracers #
 #############################################

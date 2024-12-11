@@ -1,0 +1,721 @@
+	<nml_record name="tracer_forcing_dyeTracers">
+		<nml_option name="config_use_dyeTracers" type="logical" default_value=".false." units="unitless"
+			description="if true, the 'dyeGRP' category is enabled for the run"
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_dyeTracers_surface_bulk_forcing" type="logical" default_value=".false." units="unitless"
+			description="if true, surface bulk forcing from coupler is added to surfaceTracerFlux in 'dyeGRP' category"
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_dyeTracers_surface_restoring" type="logical" default_value=".false." units="unitless"
+			description="if true, surface restoring source is applied to tracers in 'dyeGRP' category"
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_dyeTracers_interior_restoring" type="logical" default_value=".false." units="unitless"
+			description="if true, interior restoring source is applied to tracers in 'dyeGRP' category"
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_dyeTracers_exponential_decay" type="logical" default_value=".false." units="unitless"
+			description="if true, exponential decay source is applied to tracers in 'dyeGRP' category"
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_dyeTracers_idealAge_forcing" type="logical" default_value=".false." units="unitless"
+			description="if true, idealAge forcing source is applied to tracers in 'dyeGRP' category"
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_dyeTracers_ttd_forcing" type="logical" default_value=".false." units="unitless"
+			description="if true, transit time distribution forcing source is applied to tracers in 'dyeGRP' category"
+			possible_values=".true. or .false."
+		/>
+	</nml_record>
+
+	<packages>
+		<package name="dyeTracersPKG" description="This package includes variables required to include dyeGRP."/>
+		<package name="dyeTracersBulkRestoringPKG" description="This package includes variables required to compute bulk restoring on the dye tracer group."/>
+		<package name="dyeTracersSurfaceRestoringPKG" description="This package includes variables required to compute surface restoring on the dye tracer group."/>
+		<package name="dyeTracersInteriorRestoringPKG" description="This package includes variables required to compute interior restoring on the dye tracer group."/>
+		<package name="dyeTracersExponentialDecayPKG" description="This package includes variables required to compute exponential decay on the dye tracer group."/>
+		<package name="dyeTracersIdealAgePKG" description="This package includes variables required to compute ideal age forcing on the dye tracer group."/>
+		<package name="dyeTracersTTDPKG" description="This package includes variables required to compute transit-time distribution forcing on the dye tracer group."/>
+	</packages>
+
+	<var_struct name="state" time_levs="2">
+		<var_struct name="tracers" time_levs="2">
+			<var_array name="dyeTracers" dimensions="nVertLevels nCells Time" type="real" packages="dyeTracersPKG"  default_value="0.0">
+				<!-- Add constituents of tracer group -->
+				<var name="dyeVolBarents" array_group="dyeGRP" units="kg m^{-3}"
+			description="dyeVolBarents"
+				/>
+				<var name="dyeSaltBarents" array_group="dyeGRP" units="kg m^{-3}"
+			description="dyeSaltBarents"
+				/>
+				<var name="dyeVolBering" array_group="dyeGRP" units="kg m^{-3}"
+			description="dyeVolBering"
+				/>
+				<var name="dyeSaltBering" array_group="dyeGRP" units="kg m^{-3}"
+			description="dyeSaltBering"
+				/>
+				<var name="dyeVolFram" array_group="dyeGRP" units="kg m^{-3}"
+			description="dyeVolFram"
+				/>
+				<var name="dyeSaltFram" array_group="dyeGRP" units="kg m^{-3}"
+			description="dyeSaltFram"
+				/>
+				<var name="dyeVolDavis" array_group="dyeGRP" units="kg m^{-3}"
+			description="dyeVolDavis"
+				/>
+				<var name="dyeSaltDavis" array_group="dyeGRP" units="kg m^{-3}"
+			description="dyeSaltDavis"
+				/>
+				<var name="dyeVolFuryHecla" array_group="dyeGRP" units="kg m^{-3}"
+			description="dyeVolFuryHecla"
+				/>
+				<var name="dyeSaltFuryHecla" array_group="dyeGRP" units="kg m^{-3}"
+			description="dyeSaltFuryHecla"
+				/>
+				<var name="dyeVolMackenzie" array_group="dyeGRP" units="kg m^{-3}"
+			description="dyeVolMackenzie"
+				/>
+				<var name="dyeVolOb" array_group="dyeGRP" units="kg m^{-3}"
+			description="dyeVolOb"
+				/>
+				<var name="dyeVolYenesei" array_group="dyeGRP" units="kg m^{-3}"
+			description="dyeVolYenesei"
+				/>
+				<var name="dyeVolLena" array_group="dyeGRP" units="kg m^{-3}"
+			description="dyeVolLena"
+				/>
+				<var name="dyeVolPrecipEvap" array_group="dyeGRP" units="kg m^{-3}"
+			description="dyeVolPrecipEvap"
+				/>
+				<var name="dyeVolIceMeltForm" array_group="dyeGRP" units="kg m^{-3}"
+			description="dyeVolIceMeltForm"
+				/>
+			</var_array>
+		</var_struct>
+	</var_struct>
+
+	<var_struct name="tend" time_levs="1">
+		<var_struct name="tracersTend" time_levs="1">
+			<var_array name="dyeTracersTend" type="real" dimensions="nVertLevels nCells Time" packages="dyeTracersPKG">
+				<!-- Add constituents of tracer group -->
+				<var name="dyeVolBarentsTend" array_group="dyeGRP" units="kg m^{-3} s^{-1}"
+			description="dyeVolBarents Tendency"
+				/>
+				<var name="dyeSaltBarentsTend" array_group="dyeGRP" units="kg m^{-3} s^{-1}"
+			description="dyeSaltBarents Tendency"
+				/>
+				<var name="dyeVolBeringTend" array_group="dyeGRP" units="kg m^{-3} s^{-1}"
+			description="dyeVolBering Tendency"
+				/>
+				<var name="dyeSaltBeringTend" array_group="dyeGRP" units="kg m^{-3} s^{-1}"
+			description="dyeSaltBering Tendency"
+				/>
+				<var name="dyeVolFramTend" array_group="dyeGRP" units="kg m^{-3} s^{-1}"
+			description="dyeVolFram Tendency"
+				/>
+				<var name="dyeSaltFramTend" array_group="dyeGRP" units="kg m^{-3} s^{-1}"
+			description="dyeSaltFram Tendency"
+				/>
+				<var name="dyeVolDavisTend" array_group="dyeGRP" units="kg m^{-3} s^{-1}"
+			description="dyeVolDavis Tendency"
+				/>
+				<var name="dyeSaltDavisTend" array_group="dyeGRP" units="kg m^{-3} s^{-1}"
+			description="dyeSaltDavis Tendency"
+				/>
+				<var name="dyeVolFuryHeclaTend" array_group="dyeGRP" units="kg m^{-3} s^{-1}"
+			description="dyeVolFuryHecla Tendency"
+				/>
+				<var name="dyeSaltFuryHeclaTend" array_group="dyeGRP" units="kg m^{-3} s^{-1}"
+			description="dyeSaltFuryHecla Tendency"
+				/>
+				<var name="dyeVolMackenzieTend" array_group="dyeGRP" units="kg m^{-3} s^{-1}"
+			description="dyeVolMackenzie Tendency"
+				/>
+				<var name="dyeVolObTend" array_group="dyeGRP" units="kg m^{-3} s^{-1}"
+			description="dyeVolOb Tendency"
+				/>
+				<var name="dyeVolYeneseiTend" array_group="dyeGRP" units="kg m^{-3} s^{-1}"
+			description="dyeVolYenesei Tendency"
+				/>
+				<var name="dyeVolLenaTend" array_group="dyeGRP" units="kg m^{-3} s^{-1}"
+			description="dyeVolLena Tendency"
+				/>
+				<var name="dyeVolPrecipEvapTend" array_group="dyeGRP" units="kg m^{-3} s^{-1}"
+			description="dyeVolPrecipEvap Tendency"
+				/>
+				<var name="dyeVolIceMeltFormTend" array_group="dyeGRP" units="kg m^{-3} s^{-1}"
+			description="dyeVolIceMeltForm Tendency"
+				/>
+			</var_array>
+		</var_struct>
+	</var_struct>
+
+	<var_struct name="forcing" time_levs="1">
+		<var_struct name="tracersSurfaceFlux" time_levs="1">
+			<var_array name="dyeTracersSurfaceFlux" type="real" dimensions="nCells Time" packages="dyeTracersPKG">
+				<!-- Add constituents of tracer group -->
+				<var name="dyeVolBarentsSurfaceFlux" array_group="dyeSurfaceFluxGRP" units="kg m^{-3} m s^{-1}"
+			description="dyeVolBarents Surface Flux"
+				/>
+				<var name="dyeSaltBarentsSurfaceFlux" array_group="dyeSurfaceFluxGRP" units="kg m^{-3} m s^{-1}"
+			description="dyeSaltBarents Surface Flux"
+				/>
+				<var name="dyeVolBeringSurfaceFlux" array_group="dyeSurfaceFluxGRP" units="kg m^{-3} m s^{-1}"
+			description="dyeVolBering Surface Flux"
+				/>
+				<var name="dyeSaltBeringSurfaceFlux" array_group="dyeSurfaceFluxGRP" units="kg m^{-3} m s^{-1}"
+			description="dyeSaltBering Surface Flux"
+				/>
+				<var name="dyeVolFramSurfaceFlux" array_group="dyeSurfaceFluxGRP" units="kg m^{-3} m s^{-1}"
+			description="dyeVolFram Surface Flux"
+				/>
+				<var name="dyeSaltFramSurfaceFlux" array_group="dyeSurfaceFluxGRP" units="kg m^{-3} m s^{-1}"
+			description="dyeSaltFram Surface Flux"
+				/>
+				<var name="dyeVolDavisSurfaceFlux" array_group="dyeSurfaceFluxGRP" units="kg m^{-3} m s^{-1}"
+			description="dyeVolDavis Surface Flux"
+				/>
+				<var name="dyeSaltDavisSurfaceFlux" array_group="dyeSurfaceFluxGRP" units="kg m^{-3} m s^{-1}"
+			description="dyeSaltDavis Surface Flux"
+				/>
+				<var name="dyeVolFuryHeclaSurfaceFlux" array_group="dyeSurfaceFluxGRP" units="kg m^{-3} m s^{-1}"
+			description="dyeVolFuryHecla Surface Flux"
+				/>
+				<var name="dyeSaltFuryHeclaSurfaceFlux" array_group="dyeSurfaceFluxGRP" units="kg m^{-3} m s^{-1}"
+			description="dyeSaltFuryHecla Surface Flux"
+				/>
+				<var name="dyeVolMackenzieSurfaceFlux" array_group="dyeSurfaceFluxGRP" units="kg m^{-3} m s^{-1}"
+			description="dyeVolMackenzie Surface Flux"
+				/>
+				<var name="dyeVolObSurfaceFlux" array_group="dyeSurfaceFluxGRP" units="kg m^{-3} m s^{-1}"
+			description="dyeVolOb Surface Flux"
+				/>
+				<var name="dyeVolYeneseiSurfaceFlux" array_group="dyeSurfaceFluxGRP" units="kg m^{-3} m s^{-1}"
+			description="dyeVolYenesei Surface Flux"
+				/>
+				<var name="dyeVolLenaSurfaceFlux" array_group="dyeSurfaceFluxGRP" units="kg m^{-3} m s^{-1}"
+			description="dyeVolLena Surface Flux"
+				/>
+				<var name="dyeVolPrecipEvapSurfaceFlux" array_group="dyeSurfaceFluxGRP" units="kg m^{-3} m s^{-1}"
+			description="dyeVolPrecipEvap Surface Flux"
+				/>
+				<var name="dyeVolIceMeltFormSurfaceFlux" array_group="dyeSurfaceFluxGRP" units="kg m^{-3} m s^{-1}"
+			description="dyeVolIceMeltForm Surface Flux"
+				/>
+			</var_array>
+			<var_array name="dyeTracersSurfaceFluxRunoff" type="real" dimensions="nCells Time" packages="dyeTracersPKG">
+				<!-- Add constituents of tracer group -->
+				<var name="dyeVolBarentsSurfaceFluxRunoff" array_group="dyeSurfaceFluxRunoffGRP" units="kg m^{-3} m s^{-1}"
+					description="dyeVolBarents Surface Flux Due to Runoff"
+				/>
+				<var name="dyeSaltBarentsSurfaceFluxRunoff" array_group="dyeSurfaceFluxRunoffGRP" units="kg m^{-3} m s^{-1}"
+					description="dyeSaltBarents Surface Flux Due to Runoff"
+				/>
+				<var name="dyeVolBeringSurfaceFluxRunoff" array_group="dyeSurfaceFluxRunoffGRP" units="kg m^{-3} m s^{-1}"
+					description="dyeVolBering Surface Flux Due to Runoff"
+				/>
+				<var name="dyeSaltBeringSurfaceFluxRunoff" array_group="dyeSurfaceFluxRunoffGRP" units="kg m^{-3} m s^{-1}"
+					description="dyeSaltBering Surface Flux Due to Runoff"
+				/>
+				<var name="dyeVolFramSurfaceFluxRunoff" array_group="dyeSurfaceFluxRunoffGRP" units="kg m^{-3} m s^{-1}"
+					description="dyeVolFram Surface Flux Due to Runoff"
+				/>
+				<var name="dyeSaltFramSurfaceFluxRunoff" array_group="dyeSurfaceFluxRunoffGRP" units="kg m^{-3} m s^{-1}"
+					description="dyeSaltFram Surface Flux Due to Runoff"
+				/>
+				<var name="dyeVolDavisSurfaceFluxRunoff" array_group="dyeSurfaceFluxRunoffGRP" units="kg m^{-3} m s^{-1}"
+					description="dyeVolDavis Surface Flux Due to Runoff"
+				/>
+				<var name="dyeSaltDavisSurfaceFluxRunoff" array_group="dyeSurfaceFluxRunoffGRP" units="kg m^{-3} m s^{-1}"
+					description="dyeSaltDavis Surface Flux Due to Runoff"
+				/>
+				<var name="dyeVolFuryHeclaSurfaceFluxRunoff" array_group="dyeSurfaceFluxRunoffGRP" units="kg m^{-3} m s^{-1}"
+					description="dyeVolFuryHecla Surface Flux Due to Runoff"
+				/>
+				<var name="dyeSaltFuryHeclaSurfaceFluxRunoff" array_group="dyeSurfaceFluxRunoffGRP" units="kg m^{-3} m s^{-1}"
+					description="dyeSaltFuryHecla Surface Flux Due to Runoff"
+				/>
+				<var name="dyeVolMackenzieSurfaceFluxRunoff" array_group="dyeSurfaceFluxRunoffGRP" units="kg m^{-3} m s^{-1}"
+					description="dyeVolMackenzie Surface Flux Due to Runoff"
+				/>
+				<var name="dyeVolObSurfaceFluxRunoff" array_group="dyeSurfaceFluxRunoffGRP" units="kg m^{-3} m s^{-1}"
+					description="dyeVolOb Surface Flux Due to Runoff"
+				/>
+				<var name="dyeVolYeneseiSurfaceFluxRunoff" array_group="dyeSurfaceFluxRunoffGRP" units="kg m^{-3} m s^{-1}"
+					description="dyeVolYenesei Surface Flux Due to Runoff"
+				/>
+				<var name="dyeVolLenaSurfaceFluxRunoff" array_group="dyeSurfaceFluxRunoffGRP" units="kg m^{-3} m s^{-1}"
+					description="dyeVolLena Surface Flux Due to Runoff"
+				/>
+				<var name="dyeVolPrecipEvapSurfaceFluxRunoff" array_group="dyeSurfaceFluxRunoffGRP" units="kg m^{-3} m s^{-1}"
+					description="dyeVolPrecipEvap Surface Flux Due to Runoff"
+				/>
+				<var name="dyeVolIceMeltFormSurfaceFluxRunoff" array_group="dyeSurfaceFluxRunoffGRP" units="kg m^{-3} m s^{-1}"
+					description="dyeVolIceMeltForm Surface Flux Due to Runoff"
+				/>
+			</var_array>
+			<var_array name="dyeTracersSurfaceFluxRemoved" type="real" dimensions="nCells Time" packages="dyeTracersPKG">
+				<!-- Add constituents of tracer group -->
+				<var name="dyeVolBarentsSurfaceFluxRemoved" array_group="dyeSurfaceFluxRemovedGRP" units="kg m^{-3} m s^{-1}"
+					description="dyeVolBarents Surface Flux that is ignored"
+				/>
+				<var name="dyeSaltBarentsSurfaceFluxRemoved" array_group="dyeSurfaceFluxRemovedGRP" units="kg m^{-3} m s^{-1}"
+					description="dyeSaltBarents Surface Flux that is ignored"
+				/>
+				<var name="dyeVolBeringSurfaceFluxRemoved" array_group="dyeSurfaceFluxRemovedGRP" units="kg m^{-3} m s^{-1}"
+					description="dyeVolBering Surface Flux that is ignored"
+				/>
+				<var name="dyeSaltBeringSurfaceFluxRemoved" array_group="dyeSurfaceFluxRemovedGRP" units="kg m^{-3} m s^{-1}"
+					description="dyeSaltBering Surface Flux that is ignored"
+				/>
+				<var name="dyeVolFramSurfaceFluxRemoved" array_group="dyeSurfaceFluxRemovedGRP" units="kg m^{-3} m s^{-1}"
+					description="dyeVolFram Surface Flux that is ignored"
+				/>
+				<var name="dyeSaltFramSurfaceFluxRemoved" array_group="dyeSurfaceFluxRemovedGRP" units="kg m^{-3} m s^{-1}"
+					description="dyeSaltFram Surface Flux that is ignored"
+				/>
+				<var name="dyeVolDavisSurfaceFluxRemoved" array_group="dyeSurfaceFluxRemovedGRP" units="kg m^{-3} m s^{-1}"
+					description="dyeVolDavis Surface Flux that is ignored"
+				/>
+				<var name="dyeSaltDavisSurfaceFluxRemoved" array_group="dyeSurfaceFluxRemovedGRP" units="kg m^{-3} m s^{-1}"
+					description="dyeSaltDavis Surface Flux that is ignored"
+				/>
+				<var name="dyeVolFuryHeclaSurfaceFluxRemoved" array_group="dyeSurfaceFluxRemovedGRP" units="kg m^{-3} m s^{-1}"
+					description="dyeVolFuryHecla Surface Flux that is ignored"
+				/>
+				<var name="dyeSaltFuryHeclaSurfaceFluxRemoved" array_group="dyeSurfaceFluxRemovedGRP" units="kg m^{-3} m s^{-1}"
+					description="dyeSaltFuryHecla Surface Flux that is ignored"
+				/>
+				<var name="dyeVolMackenzieSurfaceFluxRemoved" array_group="dyeSurfaceFluxRemovedGRP" units="kg m^{-3} m s^{-1}"
+					description="dyeVolMackenzie Surface Flux that is ignored"
+				/>
+				<var name="dyeVolObSurfaceFluxRemoved" array_group="dyeSurfaceFluxRemovedGRP" units="kg m^{-3} m s^{-1}"
+					description="dyeVolOb Surface Flux that is ignored"
+				/>
+				<var name="dyeVolYeneseiSurfaceFluxRemoved" array_group="dyeSurfaceFluxRemovedGRP" units="kg m^{-3} m s^{-1}"
+					description="dyeVolYenesei Surface Flux that is ignored"
+				/>
+				<var name="dyeVolLenaSurfaceFluxRemoved" array_group="dyeSurfaceFluxRemovedGRP" units="kg m^{-3} m s^{-1}"
+					description="dyeVolLena Surface Flux that is ignored"
+				/>
+				<var name="dyeVolPrecipEvapSurfaceFluxRemoved" array_group="dyeSurfaceFluxRemovedGRP" units="kg m^{-3} m s^{-1}"
+					description="dyeVolPrecipEvap Surface Flux that is ignored"
+				/>
+				<var name="dyeVolIceMeltFormSurfaceFluxRemoved" array_group="dyeSurfaceFluxRemovedGRP" units="kg m^{-3} m s^{-1}"
+					description="dyeVolIceMeltForm Surface Flux that is ignored"
+				/>
+			</var_array>
+		</var_struct>
+		<var_struct name="tracersSurfaceRestoringFields" time_levs="1">
+			<var_array name="dyeTracersPistonVelocity" type="real" dimensions="nCells Time" packages="dyeTracersSurfaceRestoringPKG">
+				<var name="dyeVolBarentsPistonVelocity" array_group="dyePVGRP" units="m s^{-1}"
+				description="A non-negative field controlling the rate at which dyeVolBarents is restored to dyeVolBarentsSurfaceRestoringValue"
+				/>
+				<var name="dyeSaltBarentsPistonVelocity" array_group="dyePVGRP" units="m s^{-1}"
+				description="A non-negative field controlling the rate at which dyeSaltBarents is restored to dyeSaltBarentsSurfaceRestoringValue"
+				/>
+				<var name="dyeVolBeringPistonVelocity" array_group="dyePVGRP" units="m s^{-1}"
+				description="A non-negative field controlling the rate at which dyeVolBering is restored to dyeVolBeringSurfaceRestoringValue"
+				/>
+				<var name="dyeSaltBeringPistonVelocity" array_group="dyePVGRP" units="m s^{-1}"
+				description="A non-negative field controlling the rate at which dyeSaltBering is restored to dyeSaltBeringSurfaceRestoringValue"
+				/>
+				<var name="dyeVolFramPistonVelocity" array_group="dyePVGRP" units="m s^{-1}"
+				description="A non-negative field controlling the rate at which dyeVolFram is restored to dyeVolFramSurfaceRestoringValue"
+				/>
+				<var name="dyeSaltFramPistonVelocity" array_group="dyePVGRP" units="m s^{-1}"
+				description="A non-negative field controlling the rate at which dyeSaltFram is restored to dyeSaltFramSurfaceRestoringValue"
+				/>
+				<var name="dyeVolDavisPistonVelocity" array_group="dyePVGRP" units="m s^{-1}"
+				description="A non-negative field controlling the rate at which dyeVolDavis is restored to dyeVolDavisSurfaceRestoringValue"
+				/>
+				<var name="dyeSaltDavisPistonVelocity" array_group="dyePVGRP" units="m s^{-1}"
+				description="A non-negative field controlling the rate at which dyeSaltDavis is restored to dyeSaltDavisSurfaceRestoringValue"
+				/>
+				<var name="dyeVolFuryHeclaPistonVelocity" array_group="dyePVGRP" units="m s^{-1}"
+				description="A non-negative field controlling the rate at which dyeVolFuryHecla is restored to dyeVolFuryHeclaSurfaceRestoringValue"
+				/>
+				<var name="dyeSaltFuryHeclaPistonVelocity" array_group="dyePVGRP" units="m s^{-1}"
+				description="A non-negative field controlling the rate at which dyeSaltFuryHecla is restored to dyeSaltFuryHeclaSurfaceRestoringValue"
+				/>
+				<var name="dyeVolMackenziePistonVelocity" array_group="dyePVGRP" units="m s^{-1}"
+				description="A non-negative field controlling the rate at which dyeVolMackenzie is restored to dyeVolMackenzieSurfaceRestoringValue"
+				/>
+				<var name="dyeVolObPistonVelocity" array_group="dyePVGRP" units="m s^{-1}"
+				description="A non-negative field controlling the rate at which dyeVolOb is restored to dyeVolObSurfaceRestoringValue"
+				/>
+				<var name="dyeVolYeneseiPistonVelocity" array_group="dyePVGRP" units="m s^{-1}"
+				description="A non-negative field controlling the rate at which dyeVolYenesei is restored to dyeVolYeneseiSurfaceRestoringValue"
+				/>
+				<var name="dyeVolLenaPistonVelocity" array_group="dyePVGRP" units="m s^{-1}"
+				description="A non-negative field controlling the rate at which dyeVolLena is restored to dyeVolLenaSurfaceRestoringValue"
+				/>
+				<var name="dyeVolPrecipEvapPistonVelocity" array_group="dyePVGRP" units="m s^{-1}"
+				description="A non-negative field controlling the rate at which dyeVolPrecipEvap is restored to dyeVolPrecipEvapSurfaceRestoringValue"
+				/>
+				<var name="dyeVolIceMeltFormPistonVelocity" array_group="dyePVGRP" units="m s^{-1}"
+				description="A non-negative field controlling the rate at which dyeVolIceMeltForm is restored to dyeVolIceMeltFormSurfaceRestoringValue"
+				/>
+			</var_array>
+			<var_array name="dyeTracersSurfaceRestoringValue" type="real" dimensions="nCells Time" packages="dyeTracersSurfaceRestoringPKG">
+				<var name="dyeVolBarentsSurfaceRestoringValue" array_group="dyeSRVGRP" units="kg m^{3}"
+				description="Tracer is restored toward this field at a rate controlled by dyeVolBarentsPistonVelocity."
+				/>
+				<var name="dyeSaltBarentsSurfaceRestoringValue" array_group="dyeSRVGRP" units="kg m^{3}"
+				description="Tracer is restored toward this field at a rate controlled by dyeSaltBarentsPistonVelocity."
+				/>
+				<var name="dyeVolBeringSurfaceRestoringValue" array_group="dyeSRVGRP" units="kg m^{3}"
+				description="Tracer is restored toward this field at a rate controlled by dyeVolBeringPistonVelocity."
+				/>
+				<var name="dyeSaltBeringSurfaceRestoringValue" array_group="dyeSRVGRP" units="kg m^{3}"
+				description="Tracer is restored toward this field at a rate controlled by dyeSaltBeringPistonVelocity."
+				/>
+				<var name="dyeVolFramSurfaceRestoringValue" array_group="dyeSRVGRP" units="kg m^{3}"
+				description="Tracer is restored toward this field at a rate controlled by dyeVolFramPistonVelocity."
+				/>
+				<var name="dyeSaltFramSurfaceRestoringValue" array_group="dyeSRVGRP" units="kg m^{3}"
+				description="Tracer is restored toward this field at a rate controlled by dyeSaltFramPistonVelocity."
+				/>
+				<var name="dyeVolDavisSurfaceRestoringValue" array_group="dyeSRVGRP" units="kg m^{3}"
+				description="Tracer is restored toward this field at a rate controlled by dyeVolDavisPistonVelocity."
+				/>
+				<var name="dyeSaltDavisSurfaceRestoringValue" array_group="dyeSRVGRP" units="kg m^{3}"
+				description="Tracer is restored toward this field at a rate controlled by dyeSaltDavisPistonVelocity."
+				/>
+				<var name="dyeVolFuryHeclaSurfaceRestoringValue" array_group="dyeSRVGRP" units="kg m^{3}"
+				description="Tracer is restored toward this field at a rate controlled by dyeVolFuryHeclaPistonVelocity."
+				/>
+				<var name="dyeSaltFuryHeclaSurfaceRestoringValue" array_group="dyeSRVGRP" units="kg m^{3}"
+				description="Tracer is restored toward this field at a rate controlled by dyeSaltFuryHeclaPistonVelocity."
+				/>
+				<var name="dyeVolMackenzieSurfaceRestoringValue" array_group="dyeSRVGRP" units="kg m^{3}"
+				description="Tracer is restored toward this field at a rate controlled by dyeVolMackenziePistonVelocity."
+				/>
+				<var name="dyeVolObSurfaceRestoringValue" array_group="dyeSRVGRP" units="kg m^{3}"
+				description="Tracer is restored toward this field at a rate controlled by dyeVolObPistonVelocity."
+				/>
+				<var name="dyeVolYeneseiSurfaceRestoringValue" array_group="dyeSRVGRP" units="kg m^{3}"
+				description="Tracer is restored toward this field at a rate controlled by dyeVolYeneseiPistonVelocity."
+				/>
+				<var name="dyeVolLenaSurfaceRestoringValue" array_group="dyeSRVGRP" units="kg m^{3}"
+				description="Tracer is restored toward this field at a rate controlled by dyeVolLenaPistonVelocity."
+				/>
+				<var name="dyeVolPrecipEvapSurfaceRestoringValue" array_group="dyeSRVGRP" units="kg m^{3}"
+				description="Tracer is restored toward this field at a rate controlled by dyeVolPrecipEvapPistonVelocity."
+				/>
+				<var name="dyeVolIceMeltFormSurfaceRestoringValue" array_group="dyeSRVGRP" units="kg m^{3}"
+				description="Tracer is restored toward this field at a rate controlled by dyeVolIceMeltFormPistonVelocity."
+				/>
+			</var_array>
+		</var_struct>
+		<var_struct name="tracersInteriorRestoringFields" time_levs="1">
+			<var_array name="dyeTracersInteriorRestoringRate" type="real" dimensions="nVertLevels nCells Time" packages="dyeTracersInteriorRestoringPKG">
+				<var name="dyeVolBarentsInteriorRestoringRate" array_group="dyeIRRGRP" units="{s}^-1"
+				description="A non-negative field controlling the rate at which dyeVolBarents is restored to dyeVolBarentsInteriorRestoringValue"
+				/>
+				<var name="dyeSaltBarentsInteriorRestoringRate" array_group="dyeIRRGRP" units="{s}^-1"
+				description="A non-negative field controlling the rate at which dyeSaltBarents is restored to dyeSaltBarentsInteriorRestoringValue"
+				/>
+				<var name="dyeVolBeringInteriorRestoringRate" array_group="dyeIRRGRP" units="{s}^-1"
+				description="A non-negative field controlling the rate at which dyeVolBering is restored to dyeVolBeringInteriorRestoringValue"
+				/>
+				<var name="dyeSaltBeringInteriorRestoringRate" array_group="dyeIRRGRP" units="{s}^-1"
+				description="A non-negative field controlling the rate at which dyeSaltBering is restored to dyeSaltBeringInteriorRestoringValue"
+				/>
+				<var name="dyeVolFramInteriorRestoringRate" array_group="dyeIRRGRP" units="{s}^-1"
+				description="A non-negative field controlling the rate at which dyeVolFram is restored to dyeVolFramInteriorRestoringValue"
+				/>
+				<var name="dyeSaltFramInteriorRestoringRate" array_group="dyeIRRGRP" units="{s}^-1"
+				description="A non-negative field controlling the rate at which dyeSaltFram is restored to dyeSaltFramInteriorRestoringValue"
+				/>
+				<var name="dyeVolDavisInteriorRestoringRate" array_group="dyeIRRGRP" units="{s}^-1"
+				description="A non-negative field controlling the rate at which dyeVolDavis is restored to dyeVolDavisInteriorRestoringValue"
+				/>
+				<var name="dyeSaltDavisInteriorRestoringRate" array_group="dyeIRRGRP" units="{s}^-1"
+				description="A non-negative field controlling the rate at which dyeSaltDavis is restored to dyeSaltDavisInteriorRestoringValue"
+				/>
+				<var name="dyeVolFuryHeclaInteriorRestoringRate" array_group="dyeIRRGRP" units="{s}^-1"
+				description="A non-negative field controlling the rate at which dyeVolFuryHecla is restored to dyeVolFuryHeclaInteriorRestoringValue"
+				/>
+				<var name="dyeSaltFuryHeclaInteriorRestoringRate" array_group="dyeIRRGRP" units="{s}^-1"
+				description="A non-negative field controlling the rate at which dyeSaltFuryHecla is restored to dyeSaltFuryHeclaInteriorRestoringValue"
+				/>
+				<var name="dyeVolMackenzieInteriorRestoringRate" array_group="dyeIRRGRP" units="{s}^-1"
+				description="A non-negative field controlling the rate at which dyeVolMackenzie is restored to dyeVolMackenzieInteriorRestoringValue"
+				/>
+				<var name="dyeVolObInteriorRestoringRate" array_group="dyeIRRGRP" units="{s}^-1"
+				description="A non-negative field controlling the rate at which dyeVolOb is restored to dyeVolObInteriorRestoringValue"
+				/>
+				<var name="dyeVolYeneseiInteriorRestoringRate" array_group="dyeIRRGRP" units="{s}^-1"
+				description="A non-negative field controlling the rate at which dyeVolYenesei is restored to dyeVolYeneseiInteriorRestoringValue"
+				/>
+				<var name="dyeVolLenaInteriorRestoringRate" array_group="dyeIRRGRP" units="{s}^-1"
+				description="A non-negative field controlling the rate at which dyeVolLena is restored to dyeVolLenaInteriorRestoringValue"
+				/>
+				<var name="dyeVolPrecipEvapInteriorRestoringRate" array_group="dyeIRRGRP" units="{s}^-1"
+				description="A non-negative field controlling the rate at which dyeVolPrecipEvap is restored to dyeVolPrecipEvapInteriorRestoringValue"
+				/>
+				<var name="dyeVolIceMeltFormInteriorRestoringRate" array_group="dyeIRRGRP" units="{s}^-1"
+				description="A non-negative field controlling the rate at which dyeVolIceMeltForm is restored to dyeVolIceMeltFormInteriorRestoringValue"
+				/>
+			</var_array>
+			<var_array name="dyeTracersInteriorRestoringValue" type="real" dimensions="nVertLevels nCells Time" packages="dyeTracersInteriorRestoringPKG">
+				<var name="dyeVolBarentsInteriorRestoringValue" array_group="dyeIRVGRP" units="kg m^{3}"
+				description="Tracer is restored toward this field at a rate controlled by dyeVolBarentsInteriorRestoringRate."
+				/>
+				<var name="dyeSaltBarentsInteriorRestoringValue" array_group="dyeIRVGRP" units="kg m^{3}"
+				description="Tracer is restored toward this field at a rate controlled by dyeSaltBarentsInteriorRestoringRate."
+				/>
+				<var name="dyeVolBeringInteriorRestoringValue" array_group="dyeIRVGRP" units="kg m^{3}"
+				description="Tracer is restored toward this field at a rate controlled by dyeVolBeringInteriorRestoringRate."
+				/>
+				<var name="dyeSaltBeringInteriorRestoringValue" array_group="dyeIRVGRP" units="kg m^{3}"
+				description="Tracer is restored toward this field at a rate controlled by dyeSaltBeringInteriorRestoringRate."
+				/>
+				<var name="dyeVolFramInteriorRestoringValue" array_group="dyeIRVGRP" units="kg m^{3}"
+				description="Tracer is restored toward this field at a rate controlled by dyeVolFramInteriorRestoringRate."
+				/>
+				<var name="dyeSaltFramInteriorRestoringValue" array_group="dyeIRVGRP" units="kg m^{3}"
+				description="Tracer is restored toward this field at a rate controlled by dyeSaltFramInteriorRestoringRate."
+				/>
+				<var name="dyeVolDavisInteriorRestoringValue" array_group="dyeIRVGRP" units="kg m^{3}"
+				description="Tracer is restored toward this field at a rate controlled by dyeVolDavisInteriorRestoringRate."
+				/>
+				<var name="dyeSaltDavisInteriorRestoringValue" array_group="dyeIRVGRP" units="kg m^{3}"
+				description="Tracer is restored toward this field at a rate controlled by dyeSaltDavisInteriorRestoringRate."
+				/>
+				<var name="dyeVolFuryHeclaInteriorRestoringValue" array_group="dyeIRVGRP" units="kg m^{3}"
+				description="Tracer is restored toward this field at a rate controlled by dyeVolFuryHeclaInteriorRestoringRate."
+				/>
+				<var name="dyeSaltFuryHeclaInteriorRestoringValue" array_group="dyeIRVGRP" units="kg m^{3}"
+				description="Tracer is restored toward this field at a rate controlled by dyeSaltFuryHeclaInteriorRestoringRate."
+				/>
+				<var name="dyeVolMackenzieInteriorRestoringValue" array_group="dyeIRVGRP" units="kg m^{3}"
+				description="Tracer is restored toward this field at a rate controlled by dyeVolMackenzieInteriorRestoringRate."
+				/>
+				<var name="dyeVolObInteriorRestoringValue" array_group="dyeIRVGRP" units="kg m^{3}"
+				description="Tracer is restored toward this field at a rate controlled by dyeVolObInteriorRestoringRate."
+				/>
+				<var name="dyeVolYeneseiInteriorRestoringValue" array_group="dyeIRVGRP" units="kg m^{3}"
+				description="Tracer is restored toward this field at a rate controlled by dyeVolYeneseiInteriorRestoringRate."
+				/>
+				<var name="dyeVolLenaInteriorRestoringValue" array_group="dyeIRVGRP" units="kg m^{3}"
+				description="Tracer is restored toward this field at a rate controlled by dyeVolLenaInteriorRestoringRate."
+				/>
+				<var name="dyeVolPrecipEvapInteriorRestoringValue" array_group="dyeIRVGRP" units="kg m^{3}"
+				description="Tracer is restored toward this field at a rate controlled by dyeVolPrecipEvapInteriorRestoringRate."
+				/>
+				<var name="dyeVolIceMeltFormInteriorRestoringValue" array_group="dyeIRVGRP" units="kg m^{3}"
+				description="Tracer is restored toward this field at a rate controlled by dyeVolIceMeltFormInteriorRestoringRate."
+				/>
+			</var_array>
+		</var_struct>
+		<var_struct name="tracersExponentialDecayFields" time_levs="1">
+			<var_array name="dyeTracersExponentialDecayRate" type="real" dimensions="Time" packages="dyeTracersExponentialDecayPKG">
+				<var name="dyeVolBarentsExponentialDecayRate" array_group="dyeGRP" units="s^{-1}"
+				description="A non-negative field controlling the exponential decay of dyeVolBarents"
+				/>
+				<var name="dyeSaltBarentsExponentialDecayRate" array_group="dyeGRP" units="s"
+				description="A non-negative field controlling the exponential decay of dyeSaltBarents"
+				/>
+				<var name="dyeVolBeringExponentialDecayRate" array_group="dyeGRP" units="s^{-1}"
+				description="A non-negative field controlling the exponential decay of dyeVolBering"
+				/>
+				<var name="dyeSaltBeringExponentialDecayRate" array_group="dyeGRP" units="s"
+				description="A non-negative field controlling the exponential decay of dyeSaltBering"
+				/>
+				<var name="dyeVolFramExponentialDecayRate" array_group="dyeGRP" units="s^{-1}"
+				description="A non-negative field controlling the exponential decay of dyeVolFram"
+				/>
+				<var name="dyeSaltFramExponentialDecayRate" array_group="dyeGRP" units="s"
+				description="A non-negative field controlling the exponential decay of dyeSaltFram"
+				/>
+				<var name="dyeVolDavisExponentialDecayRate" array_group="dyeGRP" units="s^{-1}"
+				description="A non-negative field controlling the exponential decay of dyeVolDavis"
+				/>
+				<var name="dyeSaltDavisExponentialDecayRate" array_group="dyeGRP" units="s"
+				description="A non-negative field controlling the exponential decay of dyeSaltDavis"
+				/>
+				<var name="dyeVolFuryHeclaExponentialDecayRate" array_group="dyeGRP" units="s^{-1}"
+				description="A non-negative field controlling the exponential decay of dyeVolFuryHecla"
+				/>
+				<var name="dyeSaltFuryHeclaExponentialDecayRate" array_group="dyeGRP" units="s"
+				description="A non-negative field controlling the exponential decay of dyeSaltFuryHecla"
+				/>
+				<var name="dyeVolMackenzieExponentialDecayRate" array_group="dyeGRP" units="s"
+				description="A non-negative field controlling the exponential decay of dyeVolMackenzie"
+				/>
+				<var name="dyeVolObExponentialDecayRate" array_group="dyeGRP" units="s"
+				description="A non-negative field controlling the exponential decay of dyeVolOb"
+				/>
+				<var name="dyeVolYeneseiExponentialDecayRate" array_group="dyeGRP" units="s"
+				description="A non-negative field controlling the exponential decay of dyeVolYenesei"
+				/>
+				<var name="dyeVolLenaExponentialDecayRate" array_group="dyeGRP" units="s"
+				description="A non-negative field controlling the exponential decay of dyeVolLena"
+				/>
+				<var name="dyeVolPrecipEvapExponentialDecayRate" array_group="dyeGRP" units="s"
+				description="A non-negative field controlling the exponential decay of dyeVolPrecipEvap"
+				/>
+				<var name="dyeVolIceMeltFormExponentialDecayRate" array_group="dyeGRP" units="s"
+				description="A non-negative field controlling the exponential decay of dyeVolIceMeltForm"
+				/>
+			</var_array>
+		</var_struct>
+		<var_struct name="tracersIdealAgeFields" time_levs="1">
+			<var_array name="dyeTracersIdealAgeMask" type="real" dimensions="nCells Time" packages="dyeTracersIdealAgePKG">
+				<var name="dyeVolBarentsIdealAgeMask" array_group="dyeGRP" units="unitless"
+				description="In top layer, dyeVolBarents is reset to dyeVolBarents * dyeVolBarentsIdealAgeMask, valid values of dyeVolBarentsIdealAgeMask or 0 and 1"
+				/>
+				<var name="dyeSaltBarentsIdealAgeMask" array_group="dyeGRP" units="unitless"
+				description="In top layer, dyeSaltBarents is reset to dyeSaltBarents * dyeSaltBarentsIdealAgeMask, valid values of dyeSaltBarentsIdealAgeMask or 0 and 1"
+				/>
+				<var name="dyeVolBeringIdealAgeMask" array_group="dyeGRP" units="unitless"
+				description="In top layer, dyeVolBering is reset to dyeVolBering * dyeVolBeringIdealAgeMask, valid values of dyeVolBeringIdealAgeMask or 0 and 1"
+				/>
+				<var name="dyeSaltBeringIdealAgeMask" array_group="dyeGRP" units="unitless"
+				description="In top layer, dyeSaltBering is reset to dyeSaltBering * dyeSaltBeringIdealAgeMask, valid values of dyeSaltBeringIdealAgeMask or 0 and 1"
+				/>
+				<var name="dyeVolFramIdealAgeMask" array_group="dyeGRP" units="unitless"
+				description="In top layer, dyeVolFram is reset to dyeVolFram * dyeVolFramIdealAgeMask, valid values of dyeVolFramIdealAgeMask or 0 and 1"
+				/>
+				<var name="dyeSaltFramIdealAgeMask" array_group="dyeGRP" units="unitless"
+				description="In top layer, dyeSaltFram is reset to dyeSaltFram * dyeSaltFramIdealAgeMask, valid values of dyeSaltFramIdealAgeMask or 0 and 1"
+				/>
+				<var name="dyeVolDavisIdealAgeMask" array_group="dyeGRP" units="unitless"
+				description="In top layer, dyeVolDavis is reset to dyeVolDavis * dyeVolDavisIdealAgeMask, valid values of dyeVolDavisIdealAgeMask or 0 and 1"
+				/>
+				<var name="dyeSaltDavisIdealAgeMask" array_group="dyeGRP" units="unitless"
+				description="In top layer, dyeSaltDavis is reset to dyeSaltDavis * dyeSaltDavisIdealAgeMask, valid values of dyeSaltDavisIdealAgeMask or 0 and 1"
+				/>
+				<var name="dyeVolFuryHeclaIdealAgeMask" array_group="dyeGRP" units="unitless"
+				description="In top layer, dyeVolFuryHecla is reset to dyeVolFuryHecla * dyeVolFuryHeclaIdealAgeMask, valid values of dyeVolFuryHeclaIdealAgeMask or 0 and 1"
+				/>
+				<var name="dyeSaltFuryHeclaIdealAgeMask" array_group="dyeGRP" units="unitless"
+				description="In top layer, dyeSaltFuryHecla is reset to dyeSaltFuryHecla * dyeSaltFuryHeclaIdealAgeMask, valid values of dyeSaltFuryHeclaIdealAgeMask or 0 and 1"
+				/>
+				<var name="dyeVolMackenzieIdealAgeMask" array_group="dyeGRP" units="unitless"
+				description="In top layer, dyeVolMackenzie is reset to dyeVolMackenzie * dyeVolMackenzieIdealAgeMask, valid values of dyeVolMackenzieIdealAgeMask or 0 and 1"
+				/>
+				<var name="dyeVolObIdealAgeMask" array_group="dyeGRP" units="unitless"
+				description="In top layer, dyeVolOb is reset to dyeVolOb * dyeVolObIdealAgeMask, valid values of dyeVolObIdealAgeMask or 0 and 1"
+				/>
+				<var name="dyeVolYeneseiIdealAgeMask" array_group="dyeGRP" units="unitless"
+				description="In top layer, dyeVolYenesei is reset to dyeVolYenesei * dyeVolYeneseiIdealAgeMask, valid values of dyeVolYeneseiIdealAgeMask or 0 and 1"
+				/>
+				<var name="dyeVolLenaIdealAgeMask" array_group="dyeGRP" units="unitless"
+				description="In top layer, dyeVolLena is reset to dyeVolLena * dyeVolLenaIdealAgeMask, valid values of dyeVolLenaIdealAgeMask or 0 and 1"
+				/>
+				<var name="dyeVolPrecipEvapIdealAgeMask" array_group="dyeGRP" units="unitless"
+				description="In top layer, dyeVolPrecipEvap is reset to dyeVolPrecipEvap * dyeVolPrecipEvapIdealAgeMask, valid values of dyeVolPrecipEvapIdealAgeMask or 0 and 1"
+				/>
+				<var name="dyeVolIceMeltFormIdealAgeMask" array_group="dyeGRP" units="unitless"
+				description="In top layer, dyeVolIceMeltForm is reset to dyeVolIceMeltForm * dyeVolIceMeltFormIdealAgeMask, valid values of dyeVolIceMeltFormIdealAgeMask or 0 and 1"
+				/>
+			</var_array>
+		</var_struct>
+		<var_struct name="tracersTTDFields" time_levs="1">
+			<var_array name="dyeTracersTTDMask" type="real" dimensions="nCells Time" packages="dyeTracersTTDPKG">
+				<var name="dyeVolBarentsTTDMask" array_group="dyeGRP" units="unitless"
+				description="In top layer, dyeVolBarents is reset to TTDMask, valid values of dyeVolBarentsTTDMask or 0 and 1"
+				/>
+				<var name="dyeSaltBarentsTTDMask" array_group="dyeGRP" units="unitless"
+				description="In top layer, dyeSaltBarents is reset to dyeSaltBarentsTTDMask, valid values of dyeSaltBarentsTTDMask or 0 and 1"
+				/>
+				<var name="dyeVolBeringTTDMask" array_group="dyeGRP" units="unitless"
+				description="In top layer, dyeVolBering is reset to TTDMask, valid values of dyeVolBeringTTDMask or 0 and 1"
+				/>
+				<var name="dyeSaltBeringTTDMask" array_group="dyeGRP" units="unitless"
+				description="In top layer, dyeSaltBering is reset to dyeSaltBeringTTDMask, valid values of dyeSaltBeringTTDMask or 0 and 1"
+				/>
+				<var name="dyeVolFramTTDMask" array_group="dyeGRP" units="unitless"
+				description="In top layer, dyeVolFram is reset to TTDMask, valid values of dyeVolFramTTDMask or 0 and 1"
+				/>
+				<var name="dyeSaltFramTTDMask" array_group="dyeGRP" units="unitless"
+				description="In top layer, dyeSaltFram is reset to dyeSaltFramTTDMask, valid values of dyeSaltFramTTDMask or 0 and 1"
+				/>
+				<var name="dyeVolDavisTTDMask" array_group="dyeGRP" units="unitless"
+				description="In top layer, dyeVolDavis is reset to TTDMask, valid values of dyeVolDavisTTDMask or 0 and 1"
+				/>
+				<var name="dyeSaltDavisTTDMask" array_group="dyeGRP" units="unitless"
+				description="In top layer, dyeSaltDavis is reset to dyeSaltDavisTTDMask, valid values of dyeSaltDavisTTDMask or 0 and 1"
+				/>
+				<var name="dyeVolFuryHeclaTTDMask" array_group="dyeGRP" units="unitless"
+				description="In top layer, dyeVolFuryHecla is reset to TTDMask, valid values of dyeVolFuryHeclaTTDMask or 0 and 1"
+				/>
+				<var name="dyeSaltFuryHeclaTTDMask" array_group="dyeGRP" units="unitless"
+				description="In top layer, dyeSaltFuryHecla is reset to dyeSaltFuryHeclaTTDMask, valid values of dyeSaltFuryHeclaTTDMask or 0 and 1"
+				/>
+				<var name="dyeVolMackenzieTTDMask" array_group="dyeGRP" units="unitless"
+				description="In top layer, dyeVolMackenzie is reset to dyeVolMackenzieTTDMask, valid values of dyeVolMackenzieTTDMask or 0 and 1"
+				/>
+				<var name="dyeVolObTTDMask" array_group="dyeGRP" units="unitless"
+				description="In top layer, dyeVolOb is reset to dyeVolObTTDMask, valid values of dyeVolObTTDMask or 0 and 1"
+				/>
+				<var name="dyeVolYeneseiTTDMask" array_group="dyeGRP" units="unitless"
+				description="In top layer, dyeVolYenesei is reset to dyeVolYeneseiTTDMask, valid values of dyeVolYeneseiTTDMask or 0 and 1"
+				/>
+				<var name="dyeVolLenaTTDMask" array_group="dyeGRP" units="unitless"
+				description="In top layer, dyeVolLena is reset to dyeVolLenaTTDMask, valid values of dyeVolLenaTTDMask or 0 and 1"
+				/>
+				<var name="dyeVolPrecipEvapTTDMask" array_group="dyeGRP" units="unitless"
+				description="In top layer, dyeVolPrecipEvap is reset to dyeVolPrecipEvapTTDMask, valid values of dyeVolPrecipEvapTTDMask or 0 and 1"
+				/>
+				<var name="dyeVolIceMeltFormTTDMask" array_group="dyeGRP" units="unitless"
+				description="In top layer, dyeVolIceMeltForm is reset to dyeVolIceMeltFormTTDMask, valid values of dyeVolIceMeltFormTTDMask or 0 and 1"
+				/>
+			</var_array>
+		</var_struct>
+		<var_struct name="dyeDiagFields" time_levs="1">
+			<var name="dyeVolBarents_zint" type="real" dimensions="nCells Time" units="kg m^{-2}"
+			description="Vertical integral of dyeVolBarents"
+			/>
+			<var name="dyeSaltBarents_zint" type="real" dimensions="nCells Time" units="kg m^{-2}"
+			description="Vertical integral of dyeSaltBarents"
+			/>
+			<var name="dyeVolBering_zint" type="real" dimensions="nCells Time" units="kg m^{-2}"
+			description="Vertical integral of dyeVolBering"
+			/>
+			<var name="dyeSaltBering_zint" type="real" dimensions="nCells Time" units="kg m^{-2}"
+			description="Vertical integral of dyeSaltBering"
+			/>
+			<var name="dyeVolFram_zint" type="real" dimensions="nCells Time" units="kg m^{-2}"
+			description="Vertical integral of dyeVolFram"
+			/>
+			<var name="dyeSaltFram_zint" type="real" dimensions="nCells Time" units="kg m^{-2}"
+			description="Vertical integral of dyeSaltFram"
+			/>
+			<var name="dyeVolDavis_zint" type="real" dimensions="nCells Time" units="kg m^{-2}"
+			description="Vertical integral of dyeVolDavis"
+			/>
+			<var name="dyeSaltDavis_zint" type="real" dimensions="nCells Time" units="kg m^{-2}"
+			description="Vertical integral of dyeSaltDavis"
+			/>
+			<var name="dyeVolFuryHecla_zint" type="real" dimensions="nCells Time" units="kg m^{-2}"
+			description="Vertical integral of dyeVolFuryHecla"
+			/>
+			<var name="dyeSaltFuryHecla_zint" type="real" dimensions="nCells Time" units="kg m^{-2}"
+			description="Vertical integral of dyeSaltFuryHecla"
+			/>
+			<var name="dyeVolMackenzie_zint" type="real" dimensions="nCells Time" units="kg m^{-2}"
+			description="Vertical integral of dyeVolMackenzie"
+			/>
+			<var name="dyeVolOb_zint" type="real" dimensions="nCells Time" units="kg m^{-2}"
+			description="Vertical integral of dyeVolOb"
+			/>
+			<var name="dyeVolYenesei_zint" type="real" dimensions="nCells Time" units="kg m^{-2}"
+			description="Vertical integral of dyeVolYenesei"
+			/>
+			<var name="dyeVolLena_zint" type="real" dimensions="nCells Time" units="kg m^{-2}"
+			description="Vertical integral of dyeVolLena"
+			/>
+			<var name="dyeVolPrecipEvap_zint" type="real" dimensions="nCells Time" units="kg m^{-2}"
+			description="Vertical integral of dyeVolPrecipEvap"
+			/>
+			<var name="dyeVolIceMeltForm_zint" type="real" dimensions="nCells Time" units="kg m^{-2}"
+			description="Vertical integral of dyeVolIceMeltForm"
+			/>
+		</var_struct>
+	</var_struct>
+

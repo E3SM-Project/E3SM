@@ -3252,6 +3252,63 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<!-- tracer_forcing_dyeTracers -->
+
+<entry id="config_use_dyeTracers" type="logical"
+        category="tracer_forcing_dyeTracers" group="tracer_forcing_dyeTracers">
+if true, the 'dyeTracers' category is enabled for the run
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_dyeTracers_surface_bulk_forcing" type="logical"
+        category="tracer_forcing_dyeTracers" group="tracer_forcing_dyeTracers">
+if true, surface bulk forcing from coupler is added to surfaceTracerFlux in 'dyeTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_dyeTracers_surface_restoring" type="logical"
+        category="tracer_forcing_dyeTracers" group="tracer_forcing_dyeTracers">
+if true, surface restoring source is applied to tracers in 'dyeTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_dyeTracers_interior_restoring" type="logical"
+        category="tracer_forcing_dyeTracers" group="tracer_forcing_dyeTracers">
+if true, interior restoring source is applied to tracers in 'dyeTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_dyeTracers_exponential_decay" type="logical"
+        category="tracer_forcing_dyeTracers" group="tracer_forcing_dyeTracers">
+if true, exponential decay source is applied to tracers in 'dyeTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_dyeTracers_idealAge_forcing" type="logical"
+        category="tracer_forcing_dyeTracers" group="tracer_forcing_dyeTracers">
+if true, idealAge forcing source is applied to tracers in 'dyeTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_dyeTracers_ttd_forcing" type="logical"
+        category="tracer_forcing_dyeTracers" group="tracer_forcing_dyeTracers">
+if true, transit time distribution forcing source is applied to tracers in 'dyeTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
 
 <!-- AM_globalStats -->
 
