@@ -71,7 +71,6 @@ TEST_CASE("horiz_avg") {
   // Construct random number generator stuff
   using RPDF = std::uniform_real_distribution<Real>;
   RPDF pdf(sp(0.0), sp(200.0));
-
   auto engine = scream::setup_random_test();
 
   // Construct the Diagnostics
@@ -101,44 +100,37 @@ TEST_CASE("horiz_avg") {
   diag2->set_grids(gm);
   diag3->set_grids(gm);
 
-  auto area = grid->get_geometry_data("area");
+  // Clone the area field
+  auto area = grid->get_geometry_data("area").clone();
 
+  // Test the horiz contraction of qc1
+  // Get the diagnostic field
   diag1->set_required_field(qc1);
   diag1->initialize(t0, RunType::Initial);
-
   diag1->compute_diagnostic();
   auto diag1_f = diag1->get_diagnostic();
 
+  // Manual calculation
   FieldIdentifier diag0_fid("qc_horiz_avg_manual",
                             scalar1d_layout.clone().strip_dim(COL), kg / kg,
                             grid->name());
   Field diag0(diag0_fid);
   diag0.allocate_view();
-  auto diag0_v = diag0.get_view<Real>();
-
-  auto qc1_v  = qc1.get_view<Real *>();
-  auto area_v = area.get_view<const Real *>();
 
   // calculate total area
   Real atot = field_sum<Real>(area, &comm);
+  // scale the area field
+  area.scale(1 / atot);
+
   // calculate weighted avg
-  Real wavg = sp(0.0);
-  Kokkos::parallel_reduce(
-      "HorizAvgDiag::compute_diagnostic_impl::weighted_sum", ngcols,
-      KOKKOS_LAMBDA(const int icol, Real &local_wavg) {
-        local_wavg += (area_v[icol] / atot) * qc1_v[icol];
-      },
-      wavg);
-  Kokkos::deep_copy(diag0_v, wavg);
+  horiz_contraction<Real>(diag0, qc1, area, &comm);
+  // Compare
+  REQUIRE(views_are_equal(diag1_f, diag0));
 
-  diag1_f.sync_to_host();
-  auto diag1_v_h = diag1_f.get_view<Real, Host>();
-  REQUIRE(diag1_v_h() == wavg);
-
-  // Try known cases
+  // Try other known cases
   // Set qc1_v to 1.0 to get weighted average of 1.0
-  wavg = sp(1.0);
-  Kokkos::deep_copy(qc1_v, wavg);
+  Real wavg = 1;
+  qc1.deep_copy(wavg);
   diag1->compute_diagnostic();
   auto diag1_v2_host = diag1_f.get_view<Real, Host>();
   REQUIRE_THAT(diag1_v2_host(),
@@ -147,10 +139,8 @@ TEST_CASE("horiz_avg") {
 
   // other diags
   // Set qc2_v to 5.0 to get weighted average of 5.0
-  wavg       = sp(5.0);
-  auto qc2_v = qc2.get_view<Real **>();
-  Kokkos::deep_copy(qc2_v, wavg);
-
+  wavg = sp(5.0);
+  qc2.deep_copy(wavg);
   diag2->set_required_field(qc2);
   diag2->initialize(t0, RunType::Initial);
   diag2->compute_diagnostic();
@@ -162,31 +152,14 @@ TEST_CASE("horiz_avg") {
     REQUIRE_THAT(diag2_v_host(i), Catch::Matchers::WithinRel(wavg, tol));
   }
 
+  // Try a random case with qc3
   auto qc3_v = qc3.get_view<Real ***>();
   FieldIdentifier diag3_manual_fid("qc_horiz_avg_manual",
                                    scalar3d_layout.clone().strip_dim(COL),
                                    kg / kg, grid->name());
   Field diag3_manual(diag3_manual_fid);
   diag3_manual.allocate_view();
-  auto diag3_manual_v = diag3_manual.get_view<Real **>();
-  // calculate diag3_manual by hand
-  auto p = ESU::get_default_team_policy(dim3 * nlevs, ngcols);
-  Kokkos::parallel_for(
-      "HorizAvgDiag::compute_diagnostic_impl::manual_diag3", p,
-      KOKKOS_LAMBDA(const TeamMember &m) {
-        const int idx = m.league_rank();
-        const int j   = idx / nlevs;
-        const int k   = idx % nlevs;
-        Real sum      = sp(0.0);
-        Kokkos::parallel_reduce(
-            Kokkos::TeamThreadRange(m, ngcols),
-            [&](const int icol, Real &accum) {
-              accum += (area_v(icol) / atot) * qc3_v(icol, j, k);
-            },
-            sum);
-        Kokkos::single(Kokkos::PerTeam(m),
-                       [&]() { diag3_manual_v(j, k) = sum; });
-      });
+  horiz_contraction<Real>(diag3_manual, qc3, area, &comm);
   diag3->set_required_field(qc3);
   diag3->initialize(t0, RunType::Initial);
   diag3->compute_diagnostic();
