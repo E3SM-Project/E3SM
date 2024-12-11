@@ -42,14 +42,14 @@ void IOPForcing::set_grids(const std::shared_ptr<const GridsManager> grids_manag
   const auto iop_nudge_tq = m_iop_data_manager->get_params().get<bool>("iop_nudge_tq");
   const auto iop_nudge_uv = m_iop_data_manager->get_params().get<bool>("iop_nudge_uv");
   if (iop_nudge_tq or iop_nudge_uv) {
-    create_helper_field("horiz_mean_weights", scalar2d, grid_name);
+    create_helper_field("horiz_mean_weights", scalar2d, grid_name, pack_size);
   }
   if (iop_nudge_tq) {
-    create_helper_field("qv_mean", level_only_scalar_layout, grid_name);
-    create_helper_field("t_mean",  level_only_scalar_layout, grid_name);
+    create_helper_field("qv_mean", level_only_scalar_layout, grid_name, pack_size);
+    create_helper_field("t_mean",  level_only_scalar_layout, grid_name, pack_size);
   }
   if (iop_nudge_uv) {
-    create_helper_field("horiz_winds_mean", level_only_vector_layout, grid_name);
+    create_helper_field("horiz_winds_mean", level_only_vector_layout, grid_name, pack_size);
   }
 }
 // =========================================================================================
@@ -101,14 +101,15 @@ void IOPForcing::init_buffers(const ATMBufferManager &buffer_manager)
 // =========================================================================================
 void IOPForcing::create_helper_field (const std::string& name,
                                       const FieldLayout& layout,
-                                      const std::string& grid_name)
+                                      const std::string& grid_name,
+                                      const int          ps)
 {
   using namespace ekat::units;
   FieldIdentifier id(name,layout,Units::nondimensional(),grid_name);
 
   // Create the field. Init with NaN's, so we spot instances of uninited memory usage
   Field f(id);
-  f.get_header().get_alloc_properties().request_allocation();
+  f.get_header().get_alloc_properties().request_allocation(ps);
   f.allocate_view();
   f.deep_copy(ekat::ScalarTraits<Real>::invalid());
 
@@ -446,21 +447,21 @@ void IOPForcing::run_impl (const double dt)
   // and observed quantities of T, Q, u, and v
   if (iop_nudge_tq or iop_nudge_uv) {
     // Compute domain mean of qv, T_mid, u, and v
-    view_1d<Real> qv_mean, t_mean;
-    view_2d<Real> horiz_winds_mean;
+    view_1d<Pack> qv_mean, t_mean;
+    view_2d<Pack> horiz_winds_mean;
     if (iop_nudge_tq){
       horiz_contraction<Real>(m_helper_fields.at("qv_mean"), get_field_out("qv"), 
                               m_helper_fields.at("horiz_mean_weights"), &m_comm);
-      qv_mean = m_helper_fields.at("qv_mean").get_view<Real*>();
+      qv_mean = m_helper_fields.at("qv_mean").get_view<Pack*>();
       
       horiz_contraction<Real>(m_helper_fields.at("t_mean"), get_field_out("T_mid"), 
                               m_helper_fields.at("horiz_mean_weights"), &m_comm);
-      t_mean = m_helper_fields.at("t_mean").get_view<Real*>();
+      t_mean = m_helper_fields.at("t_mean").get_view<Pack*>();
     }
     if (iop_nudge_uv){
       horiz_contraction<Real>(m_helper_fields.at("horiz_winds_mean"), get_field_out("horiz_winds"), 
                               m_helper_fields.at("horiz_mean_weights"), &m_comm);
-      horiz_winds_mean = m_helper_fields.at("horiz_winds_mean").get_view<Real**>();
+      horiz_winds_mean = m_helper_fields.at("horiz_winds_mean").get_view<Pack**>();
     }
 
     // Apply relaxation
