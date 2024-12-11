@@ -156,6 +156,7 @@ class VALG(TestProperty):
             "Release build where tests run through valgrind",
             [("CMAKE_BUILD_TYPE", "RelWithDebInfo"),
              ("EKAT_ENABLE_VALGRIND", "True"),
+             ("SCREAM_PACK_SIZE", "1"),
              ("SCREAM_TEST_MAX_THREADS", "2")],
             uses_baselines=False,
             on_by_default=False,
