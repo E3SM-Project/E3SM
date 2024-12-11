@@ -230,7 +230,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <enable_column_conservation_checks>false</enable_column_conservation_checks>
       <check_flux_state_consistency>false</check_flux_state_consistency>
       <lambda_low type="real" doc="minimum value of stability correction.">0.001</lambda_low>
-      <lambda_high type="real" doc="maximum value of stability correction.">0.04</lambda_high>
+      <lambda_high type="real" doc="maximum value of stability correction.">0.08</lambda_high>
       <lambda_slope type="real" doc="slope of change from lambda_low to lambda_high.">2.65</lambda_slope>
       <lambda_thresh type="real" doc="stability threshold for which to apply more stability correction.">0.02</lambda_thresh>
       <thl2tune type="real" doc="Temperature variance tuning factor">1.0</thl2tune>
