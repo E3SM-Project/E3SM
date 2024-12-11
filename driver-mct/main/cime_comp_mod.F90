@@ -1669,6 +1669,7 @@ contains
          ocn_prognostic=ocn_prognostic,         &
          ocnrof_prognostic=ocnrof_prognostic,   &
          ocn_c2_glcshelf=ocn_c2_glcshelf,       &
+         ocn_c2_glctf=ocn_c2_glctf,             &
          glc_prognostic=glc_prognostic,         &
          rof_prognostic=rof_prognostic,         &
          rofocn_prognostic=rofocn_prognostic,   &
@@ -1733,8 +1734,6 @@ contains
     lnd_c2_glc = .false.
     ocn_c2_atm = .false.
     ocn_c2_ice = .false.
-    ocn_c2_glctf = .false.
-    ocn_c2_glcshelf = .false.
     ocn_c2_wav = .false.
     ocn_c2_rof = .false.
     ice_c2_atm = .false.
@@ -1870,9 +1869,9 @@ contains
        write(logunit,F0L)'lnd_c2_rof            = ',lnd_c2_rof
        write(logunit,F0L)'lnd_c2_glc            = ',lnd_c2_glc
        write(logunit,F0L)'ocn_c2_atm            = ',ocn_c2_atm
+       write(logunit,F0L)'ocn_c2_glcshelf       = ',ocn_c2_glcshelf
        write(logunit,F0L)'ocn_c2_glctf          = ',ocn_c2_glctf
        write(logunit,F0L)'ocn_c2_ice            = ',ocn_c2_ice
-       write(logunit,F0L)'ocn_c2_glcshelf       = ',ocn_c2_glcshelf
        write(logunit,F0L)'ocn_c2_wav            = ',ocn_c2_wav
        write(logunit,F0L)'ocn_c2_rof            = ',ocn_c2_rof
        write(logunit,F0L)'ice_c2_atm            = ',ice_c2_atm
