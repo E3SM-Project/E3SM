@@ -426,6 +426,13 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     se_ftype = ftype   ! MNL: For non-CAM runs, ftype=0 in control_mod
     nsplit = 1
     pertlim = 0.0_real_kind
+#else
+    se_partmethod = SFCURVE
+    se_ne = 0
+    se_ne_x = 0
+    se_ne_y = 0
+    se_lx = 0
+    se_ly = 0
 #endif
     sub_case      = 1
     numnodes      = -1
