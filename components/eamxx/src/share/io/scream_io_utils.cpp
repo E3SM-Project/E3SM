@@ -137,6 +137,7 @@ create_diagnostic (const std::string& diag_field_name,
   std::regex backtend ("([A-Za-z0-9_]+)_atm_backtend$");
   std::regex pot_temp ("(Liq)?PotentialTemperature$");
   std::regex vert_layer ("(z|geopotential|height)_(mid|int)$");
+  std::regex horiz_avg ("([A-Za-z0-9_]+)_horiz_avg$");
 
   std::string diag_name;
   std::smatch matches;
@@ -191,7 +192,15 @@ create_diagnostic (const std::string& diag_field_name,
     diag_name = "VerticalLayer";
     params.set<std::string>("diag_name","dz");
     params.set<std::string>("vert_location","mid");
-  } else {
+  }
+  else if (std::regex_search(diag_field_name,matches,horiz_avg)) {
+    diag_name = "HorizAvgDiag";
+    // Set the grid_name
+    params.set("grid_name",grid->name());
+    params.set<std::string>("field_name",matches[1].str());
+  }
+  else
+  {
     // No existing special regex matches, so we assume that the diag field name IS the diag name.
     diag_name = diag_field_name;
   }

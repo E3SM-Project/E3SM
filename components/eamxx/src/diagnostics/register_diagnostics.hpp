@@ -24,6 +24,7 @@
 #include "diagnostics/number_path.hpp"
 #include "diagnostics/aerocom_cld.hpp"
 #include "diagnostics/atm_backtend.hpp"
+#include "diagnostics/horiz_avg.hpp"
 
 namespace scream {
 
@@ -51,6 +52,7 @@ inline void register_diagnostics () {
   diag_factory.register_product("NumberPath",&create_atmosphere_diagnostic<NumberPathDiagnostic>);
   diag_factory.register_product("AeroComCld",&create_atmosphere_diagnostic<AeroComCld>);
   diag_factory.register_product("AtmBackTendDiag",&create_atmosphere_diagnostic<AtmBackTendDiag>);
+  diag_factory.register_product("HorizAvgDiag",&create_atmosphere_diagnostic<HorizAvgDiag>);
 }
 
 } // namespace scream
