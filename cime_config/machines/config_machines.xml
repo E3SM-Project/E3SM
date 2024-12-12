@@ -2868,6 +2868,69 @@
     </environment_variables>
   </machine>
 
+  <machine MACH="tuolumne">
+    <DESC>LLNL Cluster, AMD MI300A, 96 AMD EPYC, 4 GPU CDNA 3, batch system is Slurm</DESC>
+    <OS>TOSS4</OS>
+    <COMPILERS>cray</COMPILERS>
+    <MPILIBS>mpich</MPILIBS>
+    <CIME_OUTPUT_ROOT>/p/lustre5/$USER/e3sm_scratch/tuolumne</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/usr/workspace/e3sm/ccsm3data/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/usr/workspace/e3sm/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>/p/lustre5/$USER/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/p/lustre5/$USER/ccsm_baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/usr/workspace/e3sm/apps/cprnc</CCSM_CPRNC>
+    <GMAKE_J>8</GMAKE_J>
+    <BATCH_SYSTEM>none</BATCH_SYSTEM>
+    <SUPPORTED_BY>donahue5 -at- llnl.gov</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>96</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>4</MAX_MPITASKS_PER_NODE>  
+    <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
+    <mpirun mpilib="default">
+      <executable>srun</executable>
+      <arguments>
+        <arg name="num_tasks">-n {{ total_tasks }} -N {{ num_nodes }}</arg>
+        <arg name="thread_count">-c $ENV{OMP_NUM_THREADS}</arg>
+        <arg name="ntasks_per_gpu">$ENV{NTASKS_PER_GPU}</arg>
+        <arg name="gpu_bind">$ENV{GPU_BIND_ARGS}</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="module" allow_error="true">
+      <init_path lang="python">/usr/share/lmod/lmod/init/env_modules_python.py</init_path>
+      <init_path lang="perl">/usr/share/lmod/lmod/init/perl</init_path>
+      <init_path lang="sh">/usr/share/lmod/lmod/init/sh</init_path>
+      <init_path lang="csh">/usr/share/lmod/lmod/init/csh</init_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
+      <cmd_path lang="perl">/usr/share/lmod/lmod/libexec/lmod perl</cmd_path>
+      <modules compiler="cray">
+        <command name="reset"></command>
+	<command name="load">PrgEnv-gnu</command>
+        <command name="load">cpe/24.11</command>
+	<command name="load">libfabric/2.1</command>
+        <command name="load">craype-accel-amd-gfx90a</command>
+        <command name="load">rocm/6.2.0</command>
+        <command name="load">cray-python</command>
+        <command name="load">git</command>
+        <command name="load">cmake</command>
+        <command name="load">cray-hdf5-parallel</command>
+        <command name="load">cray-parallel-netcdf</command>
+      </modules>
+    </module_system>
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <environment_variables compiler="cray">
+      <env name="HDF5_ROOT">/opt/cray/pe/hdf5-parallel/1.12.2.11/</env>
+      <env name="PNETCDF_PATH">/opt/cray/pe/parallel-netcdf/1.12.3.13/crayclang/18.0/</env>
+      <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
+      <env name="MPICH_VERSION_DISPLAY">1</env>
+      <env name="MPICH_OFI_CXI_COUNTER_REPORT">2</env>
+      <env name="MPICH_CXX">$SHELL{which hipcc}</env>
+      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env>
+      <env name="SKIP_BLAS">True</env> <!-- find_package(blas) doesn't work well with Cray LibSci-->
+    </environment_variables>
+  </machine>
+
   <machine MACH="ruby">
     <DESC>LLNL Linux Cluster, Linux (pgi), 56 pes/node, batch system is Slurm</DESC>
     <OS>LINUX</OS>
