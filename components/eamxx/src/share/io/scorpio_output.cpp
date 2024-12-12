@@ -1314,6 +1314,8 @@ get_field(const std::string& name, const std::string& mode) const
   } else {
     EKAT_ERROR_MSG ("ERROR::AtmosphereOutput::get_field Field " + name + " not found in " + mode + " field manager or diagnostics list.");
   }
+  static Field f;
+  return f;
 }
 /* ---------------------------------------------------------- */
 void AtmosphereOutput::set_diagnostics()

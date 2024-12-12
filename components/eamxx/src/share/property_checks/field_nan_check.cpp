@@ -186,6 +186,7 @@ PropertyCheck::ResultAndMsg FieldNaNCheck::check() const {
           "Internal error in FieldNaNCheck: unsupported field data type.\n"
           "You should not have reached this line. Please, contact developers.\n");
   }
+  return ResultAndMsg{};
 }
 
 } // namespace scream
