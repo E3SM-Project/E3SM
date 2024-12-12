@@ -1015,14 +1015,14 @@ contains
   end subroutine advance_physical_vis
 
 
-!============================ special averaging routine ============================================
+!============================ special averaging routine for velocity-likes ======================
 
  subroutine vel_mid2inter(fieldm,fieldi,dp3d,dp3d_i)
 
-  real (kind=real_kind), intent(in) :: fieldm(np,np,2,nlev)
-  real (kind=real_kind), intent(in) :: dp3d(np,np,nlev)
-  real (kind=real_kind), intent(inout) :: fieldi(np,np,2,nlevp)
-  real (kind=real_kind), intent(in) :: dp3d_i(np,np,nlevp)
+  real (kind=real_kind), intent(in)  :: fieldm(np,np,2,nlev)
+  real (kind=real_kind), intent(in)  :: dp3d(np,np,nlev)
+  real (kind=real_kind), intent(out) :: fieldi(np,np,2,nlevp)
+  real (kind=real_kind), intent(in)  :: dp3d_i(np,np,nlevp)
 
   integer :: k
 
@@ -1038,6 +1038,22 @@ contains
 
  end subroutine vel_mid2inter
 
+!============================ special averaging routine M2I =====================================
+! shoud prob be in some utility file as it is used in outside of caar too
+ subroutine m2i(fieldm,fieldi)
+
+  real (kind=real_kind), intent(in)  :: fieldm(np,np,nlev)
+  real (kind=real_kind), intent(out) :: fieldi(np,np,nlevp)
+  
+  integer :: k
+
+  fieldi(:,:,1) = fieldm(:,:,1)
+  fieldi(:,:,nlevp) = fieldm(:,:,nlev)
+  do k=2,nlev
+     fieldi(:,:,k)=(fieldm(:,:,k)+fieldm(:,:,k-1))/2
+  end do
+
+ end subroutine m2i
 
 !============================ stiff and or non-stiff ============================================
 
@@ -1115,6 +1131,7 @@ contains
   real (kind=real_kind) :: w_tens(np,np,nlevp)  ! need to update w at surface as well
   real (kind=real_kind) :: theta_tens(np,np,nlev)
   real (kind=real_kind) :: phi_tens(np,np,nlevp)
+  real (kind=real_kind) :: phi_tens_notopo(np,np,nlevp)
 
   real (kind=real_kind) :: pi(np,np,nlev)                ! hydrostatic pressure
   real (kind=real_kind) :: pi_i(np,np,nlevp)             ! hydrostatic pressure interfaces
@@ -1200,11 +1217,15 @@ contains
      ! then be corrected below, after the DSS.  
      call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_i,pnh,exner,dpnh_dp_i,caller='CAAR')
 
+     call m2i(dp3d, dp3d_i)
+
+#if 0
      dp3d_i(:,:,1) = dp3d(:,:,1)
      dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
      do k=2,nlev
         dp3d_i(:,:,k)=(dp3d(:,:,k)+dp3d(:,:,k-1))/2
      end do
+#endif
 
      call vel_mid2inter(elem(ie)%state%v(:,:,:,:,n0), v_i,           dp3d,dp3d_i)
 #ifdef HOMMEDA
@@ -1421,6 +1442,9 @@ contains
         phi_tens(:,:,k) =  (-phi_vadv_i(:,:,k) - v_gradphinh_i(:,:,k))*scale1 &
           + scale2*g*elem(ie)%state%w_i(:,:,k,n0)
 
+#ifdef HOMMEDA && ENERGY_DIAGNOSTICS 
+        phi_tens_notopo(:,:,k) = phi_tens(:,:,k)
+#endif
 
 !gradphis term is "artificial", and does not need special [u/rhat] averaging in DA, but needs to 
 !be matched in imex
@@ -1643,6 +1667,8 @@ contains
      ! diagnostics. not performance critical, dont thread
      ! =========================================================
      if (compute_diagnostics) then
+        elem(ie)%accum%PE=0
+
         elem(ie)%accum%KEu_horiz1=0
         elem(ie)%accum%KEu_horiz2=0
         elem(ie)%accum%KEu_vert1=0
