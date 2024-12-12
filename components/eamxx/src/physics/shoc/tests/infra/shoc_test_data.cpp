@@ -2140,7 +2140,7 @@ void isotropic_ts_host(Int nlev, Int shcol, Real* brunt_int, Real* tke,
 
       // Hard code these runtime options for F90
       const Real lambda_low = 0.001;
-      const Real lambda_high   = 0.04;
+      const Real lambda_high   = 0.08;
       const Real lambda_slope  = 2.65;
       const Real lambda_thresh = 0.02;
       SHF::isotropic_ts(team, nlev, lambda_low, lambda_high, lambda_slope, lambda_thresh,
@@ -2950,7 +2950,7 @@ void shoc_tke_host(Int shcol, Int nlev, Int nlevi, Real dtime, Real* wthv_sec, R
 
     // Hardcode for F90 testing
     const Real lambda_low    = 0.001;
-    const Real lambda_high   = 0.04;
+    const Real lambda_high   = 0.08;
     const Real lambda_slope  = 2.65;
     const Real lambda_thresh = 0.02;
     const Real Ckh           = 0.1;
