@@ -1055,6 +1055,17 @@ contains
 
  end subroutine m2i
 
+!============================ special averaging routine I2M =====================================
+! shoud prob be in some utility file as it is used in outside of caar too
+ subroutine i2m(fieldi,fieldm)
+
+  real (kind=real_kind), intent(in)  :: fieldi(np,np,nlevp)
+  real (kind=real_kind), intent(out) :: fieldm(np,np,nlev)
+
+  fieldm(:,:,1:nlev) = (fieldi(:,:,1:nlev)+fieldi(:,:,2:nlevp))/2 
+
+ end subroutine i2m
+
 !============================ stiff and or non-stiff ============================================
 
  subroutine compute_andor_apply_rhs(np1,nm1,n0,dt2,elem,hvcoord,hybrid,&
@@ -1219,14 +1230,6 @@ contains
 
      call m2i(dp3d, dp3d_i)
 
-#if 0
-     dp3d_i(:,:,1) = dp3d(:,:,1)
-     dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
-     do k=2,nlev
-        dp3d_i(:,:,k)=(dp3d(:,:,k)+dp3d(:,:,k-1))/2
-     end do
-#endif
-
      call vel_mid2inter(elem(ie)%state%v(:,:,:,:,n0), v_i,           dp3d,dp3d_i)
 #ifdef HOMMEDA
      v_over_rhat_m(:,:,1,:) = elem(ie)%state%v(:,:,1,:,n0)*invrhatm(:,:,:)
@@ -1236,18 +1239,6 @@ contains
      call vel_mid2inter(v_over_rhat_m,                v_over_rhat_i, dp3d,dp3d_i)
      call vel_mid2inter(v2_over_r_m,                  v2_over_r_i,   dp3d,dp3d_i)
 #endif 
-
-#if 0
-     ! special averaging for velocity for energy conservation
-     v_i(:,:,1:2,1) = elem(ie)%state%v(:,:,1:2,1,n0)  
-     v_i(:,:,1:2,nlevp) = elem(ie)%state%v(:,:,1:2,nlev,n0)
-     do k=2,nlev
-        v_i(:,:,1,k) = (dp3d(:,:,k)*elem(ie)%state%v(:,:,1,k,n0) + &
-             dp3d(:,:,k-1)*elem(ie)%state%v(:,:,1,k-1,n0) ) / (2*dp3d_i(:,:,k))
-        v_i(:,:,2,k) = (dp3d(:,:,k)*elem(ie)%state%v(:,:,2,k,n0) + &
-             dp3d(:,:,k-1)*elem(ie)%state%v(:,:,2,k-1,n0) ) / (2*dp3d_i(:,:,k))
-     end do
-#endif     
 
      ! DA is only NH, so ignoring this
      if (theta_hydrostatic_mode) then
@@ -1260,9 +1251,9 @@ contains
         elem(ie)%state%w_i(:,:,:,n0)=0   
      endif
 
-     do k=1,nlev
-        phi(:,:,k) = (phi_i(:,:,k)+phi_i(:,:,k+1))/2  ! for diagnostics
+     call i2m(phi_i,phi) ! for diagnostics
 
+     do k=1,nlev
         ! ================================
         ! Accumulate mean Vel_rho flux in vn0
         ! ================================
@@ -1442,7 +1433,7 @@ contains
         phi_tens(:,:,k) =  (-phi_vadv_i(:,:,k) - v_gradphinh_i(:,:,k))*scale1 &
           + scale2*g*elem(ie)%state%w_i(:,:,k,n0)
 
-#ifdef HOMMEDA && ENERGY_DIAGNOSTICS 
+#if defined HOMMEDA && defined ENERGY_DIAGNOSTICS 
         phi_tens_notopo(:,:,k) = phi_tens(:,:,k)
 #endif
 
@@ -1464,11 +1455,6 @@ contains
      k =nlevp 
      ! compute gradphi at interfaces and then average to levels
      gradphinh_i(:,:,:,k)   = gradient_sphere(phi_i(:,:,k),deriv,elem(ie)%Dinv)
-
-!#ifdef HOMMEDA
-!     gradphinh_i(:,:,1,k)   = gradphinh_i(:,:,1,k) * invrhati(:,:,k)
-!     gradphinh_i(:,:,2,k)   = gradphinh_i(:,:,2,k) * invrhati(:,:,k)
-!#endif
 
      gradw_i(:,:,:,k)   = gradient_sphere(elem(ie)%state%w_i(:,:,k,n0),deriv,elem(ie)%Dinv)
 
@@ -1503,6 +1489,15 @@ contains
      ! ================================================                                                                 
      ! v1,v2 tendencies:                                                                                          
      ! ================================================           
+
+     !not sure this is efficient
+     call i2m(elem(ie)%state%w_i(:,:,:,n0)*gradw_i(:,:,1,:),temp(:,:,:))
+     vtemp(:,:,1,:) = temp(:,:,:)
+     call i2m(elem(ie)%state%w_i(:,:,:,n0)*gradw_i(:,:,2,:),temp(:,:,:))
+     vtemp(:,:,2,:) = temp(:,:,:)
+
+     call i2m(elem(ie)%state%w_i(:,:,:,n0)*elem(ie)%state%w_i(:,:,:,n0),temp)
+
      do k=1,nlev
         ! theta - tendency on levels
         if (theta_advect_form==0) then
@@ -1522,7 +1517,7 @@ contains
            v_theta(:,:,2,k) = v_theta(:,:,2,k) * invrhatm(:,:,k)
 #endif
 
-           !there is already a da correction in divp term
+           !there is already a da correction in divdp term
            div_v_theta(:,:,k)=vtheta(:,:,k)*divdp(:,:,k) + &
                 dp3d(:,:,k)*elem(ie)%state%v(:,:,1,k,n0)*v_theta(:,:,1,k) + &
                 dp3d(:,:,k)*elem(ie)%state%v(:,:,2,k,n0)*v_theta(:,:,2,k) 
@@ -1535,19 +1530,22 @@ contains
 
         ! grad(w^2/2) term
         ! w vorticity correction term
-        temp(:,:,k) = (elem(ie)%state%w_i(:,:,k,n0)**2 + &
-             elem(ie)%state%w_i(:,:,k+1,n0)**2)/4
-        wvor(:,:,:,k) = gradient_sphere(temp(:,:,k),deriv,elem(ie)%Dinv)
+        wvor(:,:,:,k) = gradient_sphere(temp(:,:,k)/2,deriv,elem(ie)%Dinv)
 #ifdef HOMMEDA
         wvor(:,:,1,k) = wvor(:,:,1,k) * invrhatm(:,:,k)
         wvor(:,:,2,k) = wvor(:,:,2,k) * invrhatm(:,:,k)
 #endif
 
+        wvor(:,:,1,k) = wvor(:,:,1,k) - vtemp(:,:,1,k)
+        wvor(:,:,2,k) = wvor(:,:,2,k) - vtemp(:,:,2,k)
+
         !there is already a DA correction in gradw_i
-        wvor(:,:,1,k) = wvor(:,:,1,k) - (elem(ie)%state%w_i(:,:,k,n0)*gradw_i(:,:,1,k) +&
-             elem(ie)%state%w_i(:,:,k+1,n0)*gradw_i(:,:,1,k+1))/2
-        wvor(:,:,2,k) = wvor(:,:,2,k) - (elem(ie)%state%w_i(:,:,k,n0)*gradw_i(:,:,2,k) +&
-             elem(ie)%state%w_i(:,:,k+1,n0)*gradw_i(:,:,2,k+1))/2
+!        wvor(:,:,1,k) = wvor(:,:,1,k) - (elem(ie)%state%w_i(:,:,k,n0)*gradw_i(:,:,1,k) +&
+!             elem(ie)%state%w_i(:,:,k+1,n0)*gradw_i(:,:,1,k+1))/2
+!        wvor(:,:,2,k) = wvor(:,:,2,k) - (elem(ie)%state%w_i(:,:,k,n0)*gradw_i(:,:,2,k) +&
+!             elem(ie)%state%w_i(:,:,k+1,n0)*gradw_i(:,:,2,k+1))/2
+
+
 
         KE(:,:,k) = ( elem(ie)%state%v(:,:,1,k,n0)**2 + elem(ie)%state%v(:,:,2,k,n0)**2)/2
         gradKE(:,:,:,k) = gradient_sphere(KE(:,:,k),deriv,elem(ie)%Dinv)
