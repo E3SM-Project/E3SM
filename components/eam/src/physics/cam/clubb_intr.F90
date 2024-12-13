@@ -23,7 +23,7 @@ module clubb_intr
   use phys_control,  only: phys_getopts,use_od_ss,use_od_fd
   use physconst,     only: rair, cpair, gravit, latvap, latice, zvir, rh2o, karman, &
                            tms_orocnst, tms_z0fac, pi
-  use gw_drag,       only: ncleff_ls,ncd_bl,sncleff_ss
+  !use gw_drag,       only: ncleff_ls,ncd_bl,sncleff_ss
   use cam_logfile,   only: iulog
   use spmd_utils,    only: masterproc
   use constituents,  only: pcnst, cnst_add
@@ -1540,6 +1540,10 @@ end subroutine clubb_init_cnst
    real(r8) :: dummy3_ls(pcols,pver)
    real(r8) :: dummy3_bl(pcols,pver)
    real(r8) :: dummy3_ss(pcols,pver)
+
+   real(r8) :: dummy_ncleff_ls
+   real(r8) :: dummy_ncd_bl
+   real(r8) :: dummy_sncleff_ss
 ! ZM gustiness equation below from Redelsperger et al. (2000)
 ! numbers are coefficients of the empirical equation
 
@@ -1953,7 +1957,7 @@ end subroutine clubb_init_cnst
         !sgh30 as the input for TOFD instead of sgh
         call gw_oro_interface(state,cam_in,sgh30,pbuf,hdtime,dummy_nm,&
                               gwd_ls,gwd_bl,gwd_ss,gwd_fd,&
-                              ncleff_ls,ncd_bl,sncleff_ss,&
+                              dummy_ncleff_ls,dummy_ncd_bl,dummy_sncleff_ss,&
                               dummy_utgw,dummy_vtgw,dummy_ttgw,&
                               dtaux3_ls=dummx3_ls,dtauy3_ls=dummy3_ls,&
                               dtaux3_bl=dummx3_bl,dtauy3_bl=dummy3_bl,&
