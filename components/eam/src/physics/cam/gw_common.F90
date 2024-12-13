@@ -1250,6 +1250,9 @@ ENDIF
                     ims,ime, jms,jme, kms,kme,                                 &
                     its,ite, jts,jte, kts,kte,                                 &
                     gsd_gwd_ls,gsd_gwd_bl,gsd_gwd_ss,gsd_gwd_fd)!Jinbo Xie 
+
+use spmd_utils,      only: masterproc
+
 !===============================
 ! Jinbo Xie add another dymeter
 !===============================
@@ -1492,7 +1495,6 @@ real(r8), intent(in) :: ncleff,ncd,sncleff
  !open/close low-level momentum adjustment according to scorer parameter
  logical  :: scorer_on=.false.
  !===================================
-
 
 !ncleff    = 3._r8
 !ncd       = 3._r8!1._r8!1._r8!3._r8

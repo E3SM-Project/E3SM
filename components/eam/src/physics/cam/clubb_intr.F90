@@ -20,9 +20,10 @@ module clubb_intr
   use shr_kind_mod,  only: r8=>shr_kind_r8
   use shr_log_mod ,  only: errMsg => shr_log_errMsg
   use ppgrid,        only: pver, pverp
-  use phys_control,  only: phys_getopts,use_od_ss,use_od_fd,ncleff_ls,ncd_bl,sncleff_ss
+  use phys_control,  only: phys_getopts,use_od_ss,use_od_fd
   use physconst,     only: rair, cpair, gravit, latvap, latice, zvir, rh2o, karman, &
                            tms_orocnst, tms_z0fac, pi
+  use gw_drag,       only: ncleff_ls,ncd_bl,sncleff_ss
   use cam_logfile,   only: iulog
   use spmd_utils,    only: masterproc
   use constituents,  only: pcnst, cnst_add

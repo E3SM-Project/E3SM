@@ -41,7 +41,7 @@ module gw_drag
   !zvir is the ep1 in wrf,rearth is the radius of earth(m),r_universal is the gas constant
 
   ! These are the actual switches for different gravity wave sources.
-  use phys_control,  only: use_gw_oro, use_gw_front,use_gw_convect,use_gw_energy_fix,use_od_ls,use_od_bl,use_od_ss,ncleff_ls,ncd_bl,sncleff_ss
+  use phys_control,  only: use_gw_oro, use_gw_front,use_gw_convect,use_gw_energy_fix,use_od_ls,use_od_bl,use_od_ss
 
 ! Typical module header
   implicit none
@@ -54,6 +54,7 @@ module gw_drag
   public :: gw_drag_readnl           ! Read namelist
   public :: gw_init                  ! Initialization
   public :: gw_tend                  ! interface to actual parameterization
+  public :: oro_drag_readnl
 
 !
 ! PRIVATE: Rest of the data and interfaces are private to this module
@@ -123,9 +124,59 @@ module gw_drag
   !!Jinbo Xie
   integer    ::         pblh_idx     = 0
   !!Jinbo Xie
-
+  real(r8),public, protected :: ncleff_ls = 3._r8 !tunable parameter for oGWD
+  real(r8),public, protected :: ncd_bl    = 3._r8 !tunable parameter for FBD
+  real(r8),public, protected :: sncleff_ss= 1._r8 !tunable parameter for sGWD
 !==========================================================================
 contains
+!==========================================================================
+!!Jinbo Xie
+subroutine oro_drag_readnl(nlfile)
+
+  use namelist_utils,  only: find_group_name
+  use units,           only: getunit, freeunit
+  use mpishorthand
+
+  ! File containing namelist input.
+  character(len=*), intent(in) :: nlfile
+
+  ! Local variables
+  integer :: unitn, ierr
+  character(len=*), parameter :: subname = 'oro_drag_readnl'
+
+  ! More specific name for dc to prevent a name clash or confusion in the
+  ! namelist.
+
+  namelist /oro_drag_nl/ ncleff_ls, ncd_bl, sncleff_ss
+  !----------------------------------------------------------------------
+  !!Jinbo Xie debug
+  if (masterproc) write(iulog,*) "Jinbo Xie ncleff_ls, ncd_bl, sncleff_ss",ncleff_ls,ncd_bl,sncleff_ss
+  !!Jinbo Xie
+
+
+  if (masterproc) then
+     unitn = getunit()
+     open( unitn, file=trim(nlfile), status='old' )
+     call find_group_name(unitn, 'oro_drag_nl', status=ierr)
+     if (ierr == 0) then
+        read(unitn, oro_drag_nl, iostat=ierr)
+        if (ierr /= 0) then
+           call endrun(subname // ':: ERROR reading namelist')
+        end if
+     end if
+     close(unitn)
+     call freeunit(unitn)
+  end if
+
+#ifdef SPMD
+  ! Broadcast namelist variables
+  call mpibcast(ncleff_ls,    1, mpir8,  0, mpicom)
+  call mpibcast(ncd_bl,       1, mpir8,  0, mpicom)
+  call mpibcast(sncleff_ss,   1, mpir8,  0, mpicom)
+#endif
+
+end subroutine oro_drag_readnl
+
 !==========================================================================
 
 subroutine gw_drag_readnl(nlfile)
@@ -162,7 +213,6 @@ subroutine gw_drag_readnl(nlfile)
      close(unitn)
      call freeunit(unitn)
   end if
-
 #ifdef SPMD
   ! Broadcast namelist variables
   call mpibcast(pgwv,        1, mpiint, 0, mpicom)
@@ -427,6 +477,11 @@ subroutine gw_init()
         call endrun("gw_drag_init: Both orographic gravity waves schemes are turned on, &
                              &please turn one off by setting use_gw_oro or use_od_ls as .false.")
      end if
+
+     if (use_od_ls.or.use_od_bl.or.use_od_ss) then
+       if (masterproc) write(iulog,*)"ncleff_ls, ncd_bl, sncleff_ss",ncleff_ls, ncd_bl, sncleff_ss
+     endif
+
 
      call gw_oro_init(errstring)
      if (trim(errstring) /= "") call endrun("gw_oro_init: "//errstring)
