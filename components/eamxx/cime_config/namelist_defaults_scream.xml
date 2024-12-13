@@ -224,9 +224,9 @@ be lost if SCREAM_HACK_XML is not enabled.
       <ice_sedimentation_factor type="real" doc="Ice sedimentation fall speed factor">1.0</ice_sedimentation_factor>
       <do_ice_production type="logical" doc="Flag to turn on ice production processes (loss processes unaffected)">true</do_ice_production>
       <!-- flags to override subgrid coud fraction by setting them to 1 everywhere if true -->
-      <fix_cld_frac_r>false</fix_cld_frac_r>
-      <fix_cld_frac_i>false</fix_cld_frac_i>
-      <fix_cld_frac_l>false</fix_cld_frac_l>
+      <set_cld_frac_l_to_one>false</set_cld_frac_l_to_one>
+      <set_cld_frac_r_to_one>false</set_cld_frac_r_to_one>
+      <set_cld_frac_i_to_one>false</set_cld_frac_i_to_one>
     </p3>
 
     <!-- SHOC macrophysics -->
