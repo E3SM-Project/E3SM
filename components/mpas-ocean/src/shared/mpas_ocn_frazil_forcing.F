@@ -391,7 +391,9 @@ contains
       integer, pointer :: indexSalinityPtr !< index in tracers array for salinity
       integer :: indexTemperature !< index in tracers array for temperature
       integer :: indexSalinity !< index in tracers array for salinity
-      integer :: kBottomFrazil  ! k index where testing for frazil begins
+      integer :: kBottomFrazil ! k index where testing for frazil begins
+      integer :: usePorosity   ! 1 when computing internal frazil salinity using porosity
+                               ! 0 when using config_frazil_sea_ice_reference_salinity
 
       logical :: underFloatingLandIce, underLandIce ! indicates if we are under land ice
 
@@ -453,6 +455,10 @@ contains
       ! initialize frazil salinity conservation field
       lowSalinityFrazilIce = 0.0_RKIND
 
+      ! Determine if using porosity to compute internal frazilSalinity
+      usePorosity = 1
+      if (config_frazil_ice_porosity < 0.0_RKIND) usePorosity = 0 ! use config_frazil_sea_ice_reference_salinity
+
       ! frazil fields are needed only over 0 and 1 halos
       nCells = nCellsArray( 2 )
 
@@ -500,8 +506,6 @@ contains
             exit
           endif
         enddo
-        !NJ: Compute frazil all through the column
-        !kBottomFrazil=max(maxLevelCell(iCell)-1,kBottomFrazil)
 
         ! find minimum temperature between 1:kBottomFrazil
         columnTemperatureMin = 1.0e30_RKIND
@@ -532,14 +536,14 @@ contains
           freezingEnergy = max(0.0_RKIND, -potential)
           meltingEnergy = max(0.0_RKIND, potential)
 
-          !NJ:  Assume frazil ice retains salt until precipitating at the surface
           if (freezingEnergy > 0) then
 
             ! get frazil salinity
             if (underLandIce) then
-              frazilSalinity = config_frazil_ice_porosity * activeTracers(indexSalinity, k, iCell) !0.0_RKIND
+              frazilSalinity = usePorosity * config_frazil_ice_porosity * activeTracers(indexSalinity, k, iCell)
             else
-              frazilSalinity = config_frazil_ice_porosity * activeTracers(indexSalinity, k, iCell) !config_frazil_sea_ice_reference_salinity
+              frazilSalinity = usePorosity * config_frazil_ice_porosity * activeTracers(indexSalinity, k, iCell) &
+                 + config_frazil_sea_ice_reference_salinity * (1 - usePorosity)
             end if
             frazilSalinity = min( frazilSalinity, activeTracers(indexSalinity, k, iCell) )
 
@@ -615,15 +619,18 @@ contains
 
         enddo   ! do k=kBottom,minLevelCell,-1
 
-        ! frazilIceFreshwaterFlux forms part of the landIceFreshwaterFluxTotal computed in surface land ice fluxes
-        frazilIceFreshwaterFlux(iCell) = - (sumNewFrazilIceThickness * config_frazil_ice_density) / dt
         ! accumulate frazil mass to column total
         ! note: the accumulatedFrazilIceMass (at both time levels) is reset to zero after being sent to the coupler
         accumulatedFrazilIceMassNew(iCell) = accumulatedFrazilIceMassOld(iCell) + sumNewFrazilIceThickness &
            * config_frazil_ice_density
 
+        accumulatedFrazilIceSalinityNew(iCell) = accumulatedFrazilIceSalinityOld(iCell) + &
+           (1-usePorosity) * sumNewThicknessWeightedSaltContent
+
         !NJ: Assume frazil salinity is the coupling salinity
         if ( underLandIce ) then
+           ! frazilIceFreshwaterFlux forms part of the landIceFreshwaterFluxTotal computed in surface land ice fluxes
+           frazilIceFreshwaterFlux(iCell) = - (sumNewFrazilIceThickness * config_frazil_ice_density) / dt
            ! accumulate frazil formed under land ice in case we're not coupling and we need to keep track of it
            ! for freshwater budgets
            accumulatedLandIceFrazilMassNew(iCell) = accumulatedLandIceFrazilMassOld(iCell) &
@@ -634,21 +641,19 @@ contains
            frazilSalinity = config_frazil_sea_ice_reference_salinity
         end if
 
-        !NJ: Determine salt expelled in the upper layer to arrive at the assumed frazil salt for coupling
-        if (sumNewFrazilIceThickness > 0.0_RKIND) then
+        !Determine salt expelled in the upper layer to arrive at the assumed frazil salt for coupling
+        if (sumNewFrazilIceThickness > 0.0_RKIND .and. usePorosity .ge. 1) then
            newThicknessWeightedSaltContent = sumNewFrazilIceThickness * frazilSalinity
            if (newThicknessWeightedSaltContent > sumNewThicknessWeightedSaltContent) then
-            !NJ:  Warning: salt conservation error. Track with lowSalinityFrazilIce
+            !Warning: salt conservation error. Track with lowSalinityFrazilIce
             lowSalinityFrazilIce(iCell) = newThicknessWeightedSaltContent - sumNewThicknessWeightedSaltContent
             accumulatedFrazilIceSalinityNew(iCell) = accumulatedFrazilIceSalinityOld(iCell) + max(0.0_RKIND, sumNewThicknessWeightedSaltContent)
            else
-            !NJ: salt expelled at the surface
+            !salt expelled at the surface
             frazilSalinityTendency(minLevelCell(iCell),iCell) = frazilSalinityTendency(minLevelCell(iCell),iCell) + &
                 max(0.0_RKIND,(sumNewThicknessWeightedSaltContent -  newThicknessWeightedSaltContent) ) / dt
             accumulatedFrazilIceSalinityNew(iCell) = accumulatedFrazilIceSalinityOld(iCell) + newThicknessWeightedSaltContent
            endif
-         else
-            accumulatedFrazilIceSalinityNew(iCell) = accumulatedFrazilIceSalinityOld(iCell)
          endif ! if frazil ice is formed
       enddo   ! do iCell = 1, nCells
       !$omp end do

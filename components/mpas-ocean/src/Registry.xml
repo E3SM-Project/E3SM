@@ -989,9 +989,9 @@
 					description="Assumed density of frazil. NOTE: test and make consistent with E3SM."
 					possible_values="Any positive real number."
 		/>
-		<nml_option name="config_frazil_ice_porosity" type="real" default_value="0.85" units="1"
-					description="Assumed porosity of frazil"
-					possible_values="Any positive real number from 0 to 1."
+		<nml_option name="config_frazil_ice_porosity" type="real" default_value="-1.0" units="1"
+					description="Internal porosity of frazil"
+					possible_values="Positive real number from 0 to 1. Negative value reverts to using the reference salinity for internal frazil."
 		/>
 		<nml_option name="config_frazil_fractional_thickness_limit" type="real" default_value="0.1" units="non-dimensional"
 					description="maximum fraction of layer thickness than can be used or created at an instant by frazil."

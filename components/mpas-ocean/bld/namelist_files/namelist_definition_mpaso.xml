@@ -1541,9 +1541,9 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_frazil_ice_porosity" type="real"
 	category="frazil_ice" group="frazil_ice">
-Assumed porosity of frazil
+Internal porosity of frazil
 
-Valid values: Any positive real number from 0 to 1.
+Valid values: Positive real number from 0 to 1. Negative value reverts to using the reference salinity for internal frazil.
 Default: Defined in namelist_defaults.xml
 </entry>
 
