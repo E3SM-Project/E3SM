@@ -1322,10 +1322,10 @@ subroutine zm_conv_tend_2( state,  ptend,  ztodt, pbuf, mu, eu, du, md, ed, dp, 
    integer,  dimension(pcols),      intent(in) :: maxg         ! wg top  level index of deep cumulus convection
    integer,  dimension(pcols),      intent(in) :: ideep        ! wg gathered values of maxi
    integer,                         intent(in) :: lengath      ! number of gathered columns
-   integer,  dimension(:)           intent(in) :: species_class! constituent tracer type
+   integer,  dimension(:),          intent(in) :: species_class! constituent tracer type
    !----------------------------------------------------------------------------
    ! Local variables
-   integer :: i, lchnk, istat, m
+   integer :: i, lchnk, ncol, istat, m
    integer :: nstep
    logical :: lq(pcnst)
    integer :: ifld
@@ -1335,6 +1335,7 @@ subroutine zm_conv_tend_2( state,  ptend,  ztodt, pbuf, mu, eu, du, md, ed, dp, 
    ! Initialize
 
    lchnk = state%lchnk
+   ncol  = state%ncol
    nstep = get_nstep()
 
    lq(:) = .FALSE.
