@@ -316,6 +316,8 @@ struct Functions
     const uview_1d<const Spack>& tke,
     const uview_1d<const Spack>& brunt,
     const uview_1d<const Spack>& zt_grid,
+    const uview_1d<const Spack>& dz_zt,
+    const uview_1d<const Spack>& tk,
     const Scalar&                l_inf,
     const uview_1d<Spack>&       shoc_mix);
 
@@ -519,6 +521,7 @@ struct Functions
     const uview_1d<const Spack>& dz_zt,
     const uview_1d<const Spack>& tke,
     const uview_1d<const Spack>& thv,
+    const uview_1d<const Spack>& tk,
     const Workspace&             workspace,
     const uview_1d<Spack>&       brunt,
     const uview_1d<Spack>&       shoc_mix);
@@ -727,6 +730,7 @@ struct Functions
     const uview_1d<const Spack>& wthv_sec,
     const uview_1d<const Spack>& sterm_zt,
     const uview_1d<const Spack>& tk,
+    const uview_1d<const Spack>& brunt,
     const uview_1d<Spack>&       tke,
     const uview_1d<Spack>&       a_diss);
 

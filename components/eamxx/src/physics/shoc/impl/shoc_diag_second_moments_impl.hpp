@@ -31,6 +31,7 @@ void Functions<S,D>::diag_second_moments(
   //  velocity.  In addition the vertical fluxes of thetal, qw,
   //  u, v, TKE, and tracers are computed here as well as the
   //  correlation of qw and thetal.
+  const bool tke_1p5_closure = scream::shoc::Constants<bool>::tke_1p5_closure;
 
   // Interpolate some variables from the midpoint grid to the interface grid
   linear_interp(team, zt_grid, zi_grid, isotropy, isotropy_zi, nlev, nlevi, 0);
@@ -67,6 +68,19 @@ void Functions<S,D>::diag_second_moments(
 
   // Calculate vertical flux for momentum (meridional wind)
   calc_shoc_vertflux(team, nlev, tk_zi, dz_zi, v_wind, vw_sec);
+  
+  if (tke_1p5_closure){
+    const Int nlev_pack = ekat::npack<Spack>(nlev);
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
+      w_sec(k) = 0;
+      thl_sec(k) = 0;
+      qw_sec(k) = 0;
+      qwthl_sec(k) = 0;
+      uw_sec(k) = 0;
+      vw_sec(k) = 0;
+    });
+  }
+  
 }
 
 } // namespace shoc

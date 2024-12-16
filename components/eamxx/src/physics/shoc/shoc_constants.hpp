@@ -21,6 +21,7 @@ struct Constants
     static constexpr Scalar largeneg       = -99999999.99; // Large negative value used for linear_interp threshold
     static constexpr bool   dothetal_skew  = false;        // Allow temperature skewness to be independent of moisture variance
     static constexpr Scalar pblmaxp        = 4e4;          // PBL max depth in pressure units
+    static constexpr bool tke_1p5_closure  = false; // Do 1.5 TKE closure instead of SHOC
   };
 
   } // namespace shoc

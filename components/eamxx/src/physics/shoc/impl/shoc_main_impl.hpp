@@ -209,7 +209,7 @@ void Functions<S,D>::shoc_main_internal(
                 length_fac,            // Runtime Options
                 dx,dy,                 // Input
                 zt_grid,zi_grid,dz_zt, // Input
-                tke,thv,               // Input
+                tke,thv,tk,            // Input
                 workspace,             // Workspace
                 brunt,shoc_mix);       // Output
 

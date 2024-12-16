@@ -242,6 +242,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <Ckh type="real" doc="Eddy diffusivity coefficient for heat">0.1</Ckh>
       <Ckm type="real" doc="Eddy diffusivity coefficient for momentum">0.1</Ckm>
       <extra_shoc_diags type="logical" doc="Extra SHOC diagnostics">false</extra_shoc_diags>
+      <tke_1p5_closure>false</tke_1p5_closure>
     </shoc>
 
     <!-- MAM4xx-ACI -->

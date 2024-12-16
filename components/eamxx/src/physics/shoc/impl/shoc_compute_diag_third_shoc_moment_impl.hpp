@@ -27,6 +27,7 @@ void Functions<S,D>
   const uview_1d<Spack>& w3)
 {
   const auto ggr = C::gravit;
+  const bool tke_1p5_closure = scream::shoc::Constants<bool>::tke_1p5_closure;
 
   const Int nlev_pack = ekat::npack<Spack>(nlev);
 
@@ -118,6 +119,11 @@ void Functions<S,D>
       // Finally, compute the third moment of w
       w3(k).set(active_range,
                 (aa1-sp(1.2)*x1-sp(1.5)*f5)/(Spack(c_diag_3rd_mom)-sp(1.2)*x0+aa0));
+		
+      // If 1.5 TKE scheme set all to zero
+      if (tke_1p5_closure){
+         w3(k).set(active_range,0);
+      }
     }
   });
 

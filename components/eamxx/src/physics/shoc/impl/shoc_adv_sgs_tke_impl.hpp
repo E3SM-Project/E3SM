@@ -22,6 +22,7 @@ void Functions<S,D>
   const uview_1d<const Spack>& wthv_sec,
   const uview_1d<const Spack>& sterm_zt,
   const uview_1d<const Spack>& tk,
+  const uview_1d<const Spack>& brunt,
   const uview_1d<Spack>&       tke,
   const uview_1d<Spack>&       a_diss)
 {
@@ -31,6 +32,8 @@ void Functions<S,D>
   static constexpr Scalar basetemp = C::basetemp;
   static constexpr Scalar mintke   = scream::shoc::Constants<Real>::mintke;
   static constexpr Scalar maxtke   = scream::shoc::Constants<Real>::maxtke;
+  const book tke_1p5_closure       = scream::shoc::Constants<Real>::tke_1p5_closure;
+  Spack a_prod_bu;
 
   //declare some constants
   static constexpr Scalar Cs  = 0.15;
@@ -44,7 +47,15 @@ void Functions<S,D>
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
 
     // Compute buoyant production term
-    const Spack a_prod_bu = (ggr/basetemp)*wthv_sec(k);
+    if (tke_1p5_closure){
+       // If 1.5 closure then buoyancy flux is closed as a function
+       //   of the local moist brunt vaisalla frequency since there is
+       //   no SGS variability and wthv_sec is not computed.
+       a_prod_bu = -tke(k)*brunt(k);
+    }
+    else{
+       a_prod_bu = (ggr/basetemp)*wthv_sec(k);
+    }
 
     tke(k) = ekat::max(0,tke(k));
 
