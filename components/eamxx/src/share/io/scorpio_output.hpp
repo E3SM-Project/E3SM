@@ -6,7 +6,8 @@
 #include "share/field/field_manager.hpp"
 #include "share/grid/abstract_grid.hpp"
 #include "share/grid/grids_manager.hpp"
-#include "share/util//scream_time_stamp.hpp"
+#include "share/util/scream_time_stamp.hpp"
+#include "share/util/scream_utils.hpp"
 #include "share/atm_process/atmosphere_diagnostic.hpp"
 
 #include "ekat/ekat_parameter_list.hpp"

@@ -687,6 +687,47 @@ void AtmosphereDriver::create_fields()
 
   m_ad_status |= s_fields_created;
 
+  // If the user requested it, we can save a dictionary of the FM fields to file
+  auto& driver_options_pl = m_atm_params.sublist("driver_options");
+  if (driver_options_pl.get("save_field_manager_content",false)) {
+    auto pg = m_grids_manager->get_grid("Physics");
+    const auto& fm = m_field_mgrs.at(pg->name());
+    ekat::ParameterList pl_out("field_manager_content");
+    pl_out.sublist("provenance") = m_atm_params.sublist("provenance");
+    DefaultMetadata std_names;
+    std::string desc;
+    desc = "content of the EAMxx FieldManager corresponding to the 'Physics' grid.\n"
+           "The dict keys are the field names as used in EAMxx.\n"
+           "For each field, we add the following entries:\n"
+           "  - standard_name: the name commonly used to refer to this field in atm sciences (if applicable)\n"
+           "  - units: the units for this field used in EAMxx\n"
+           "  - layout: the names of the dimensions for this field (time excluded)\n"
+           "  - providers: the atm processes that update/compute this field\n"
+           "  - customers: the atm processes that require this field as an input\n";
+    pl_out.set("description", desc);
+    auto& dict = pl_out.sublist("fields");
+    for (const auto& it : *fm) {
+      const auto& fid = it.second->get_header().get_identifier();
+      auto& pl = dict.sublist(fid.name());
+
+      pl.set("units",fid.get_units().to_string());
+      pl.set("layout",fid.get_layout().names());
+      pl.set("standard_name",std_names.get_standardname(fid.name()));
+      std::vector<std::string> providers,customers;
+      const auto& track = it.second->get_header().get_tracking();
+      for (auto ap : track.get_providers()) {
+        providers.push_back(ap.lock()->name());
+      }
+      for (auto ap : track.get_customers()) {
+        customers.push_back(ap.lock()->name());
+      }
+      pl.set("providers",providers);
+      pl.set("customers",customers);
+    }
+
+    ekat::write_yaml_file("eamxx_field_manager_content.yaml",pl_out);
+  }
+
   stop_timer("EAMxx::create_fields");
   stop_timer("EAMxx::init");
   m_atm_logger->info("[EAMxx] create_fields ... done!");

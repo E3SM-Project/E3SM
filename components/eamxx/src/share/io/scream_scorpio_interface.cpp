@@ -141,6 +141,7 @@ int nctype (const std::string& type) {
   } else {
     EKAT_ERROR_MSG ("Error! Unrecognized/unsupported data type '" + type + "'.\n");
   }
+  return -1;
 }
 
 template<typename T>
