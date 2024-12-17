@@ -660,7 +660,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
   call nucleate_ice_cam_init(mincld, bulk_scale)
   call hetfrz_classnuc_cam_init(mincld)
 
-  call conv_water_init
+  call conv_water_init(pbuf2d)
 
   call crm_physics_init(phys_state, pbuf2d, species_class)
 
