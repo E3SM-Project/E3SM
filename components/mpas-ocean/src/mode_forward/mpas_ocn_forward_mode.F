@@ -664,6 +664,14 @@ module ocn_forward_mode
         call mpas_timer_stop('io_monthly_surface_salinity')
       endif
 
+      ! ---  update halos for diagnostic ocean boundary layer depth
+      if (config_use_cvmix_kpp) then
+         call mpas_timer_start("se halo diag obd")
+         call mpas_dmpar_field_halo_exch(domain,'boundaryLayerDepth')
+         call mpas_dmpar_field_halo_exch(domain,'dThreshMLD')
+         call mpas_timer_stop("se halo diag obd")
+      end if
+
       ! initialize time-varying forcing
       call ocn_time_varying_forcing_init(domain)
 

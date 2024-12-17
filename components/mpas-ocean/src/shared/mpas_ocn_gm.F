@@ -248,34 +248,6 @@ contains
             cell1 = cellsOnEdge(1, iEdge)
             cell2 = cellsOnEdge(2, iEdge)
 
-!            kmin = indexBoundaryLayerDepth(cell1)
-!            n2check = BruntVaisalaFreqTop(kmin, cell1)
-!            do k = kmin+1, maxLevelEdgeTop(iEdge)
-!               if(BruntVaisalaFreqTop(k,cell1) < n2check) then
-!                  kmax = k-1
-!                  mld1 = abs(zTop(k-1,cell1))
-!                  exit
-!               end if
-!            end do
-
-!            if(kmax == maxLevelEdgeTop(iEdge)) then
-!               mld1 = boundaryLayerDepth(cell1) + 100.0_RKIND !hard code a depth for now
-!            end if
-
-!            kmin = indexBoundaryLayerDepth(cell2)
-!            n2check = BruntVaisalaFreqTop(kmin, cell2)
-!            do k = kmin+1, maxLevelEdgeTop(iEdge)
-!               if(BruntVaisalaFreqTop(k,cell2) < n2check) then
-!                  kmax = k-1
-!                  mld2 = abs(zTop(k-1,cell2))
-!                  exit
-!               end if
-!            end do
-
-!            if(kmax == maxLevelEdgeTop(iEdge)) then
-!               mld2 = boundaryLayerDepth(cell2) + 100.0_RKIND !hard code a depth for now
-!            end if
-
             if(dThreshMLD(cell1) < boundaryLayerDepth(cell1)) then
               mld1 = boundaryLayerDepth(cell1) + 100.0_RKIND
             else
