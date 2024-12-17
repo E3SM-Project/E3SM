@@ -243,7 +243,7 @@ contains
          !$omp parallel
          !$omp do schedule(runtime)  &
          !$omp private(k, iEdge, cell1, cell2, kmin, kmax, n2check, mld1, mld2, mldEdge, &
-         !$omp         bldEdge, sfcTaper, thickSlope)
+         !$omp         bldEdge, sfcTaper, thickSlope, scaleFactor)
          do iEdge = 1, nEdges
             cell1 = cellsOnEdge(1, iEdge)
             cell2 = cellsOnEdge(2, iEdge)
@@ -282,9 +282,7 @@ contains
          nCells = nCellsArray(4)
          !$omp parallel
          !$omp do schedule(runtime)  &
-         !$omp private(invAreaCell, k33Norm, k, dzTop, dTdzTop, dSdzTop, i, iEdge, cell1, cell2, &
-         !$omp         iCellSelf, dcEdgeInv, areaEdge, drhoDT, drhoDS, dTdx, dSdx, drhoDx, &
-         !$omp         slopeTaperUp, slopeTaperDown, sfcTaperUp, sfcTaperDown, sfcTaper)
+         !$omp private(k)
          do iCell = 1, nCells
             ! prep dz, dTdz and dSdz for this column
             do k = minLevelCell(iCell)+1, maxLevelCell(iCell)
@@ -309,7 +307,7 @@ contains
          nCells = nCellsArray(3)
          !$omp parallel
          !$omp do schedule(runtime)  &
-         !$omp private(invAreaCell, k33Norm, k, dzTop, dTdzTop, dSdzTop, i, iEdge, cell1, cell2, &
+         !$omp private(invAreaCell, k33Norm, k, i, iEdge, cell1, cell2, &
          !$omp         iCellSelf, dcEdgeInv, areaEdge, drhoDT, drhoDS, dTdx, dSdx, drhoDx, &
          !$omp         slopeTaperUp, slopeTaperDown, sfcTaperUp, sfcTaperDown, sfcTaper)
          do iCell = 1, nCells
@@ -448,7 +446,7 @@ contains
          ! based on stratification relative to the maximum in the column
          if (local_config_GM_kappa_lat_depth_variable) then
             !$omp parallel
-            !$omp do schedule(runtime) private(k, BruntVaisalaFreqTopEdge, maxN, cell1, cell2)
+            !$omp do schedule(runtime) private(i, k, BruntVaisalaFreqTopEdge, maxN, cell1, cell2)
             do iEdge=1,nEdges
                k=minLevelEdgeBot(iEdge)
                cell1 = cellsOnEdge(1,iEdge)

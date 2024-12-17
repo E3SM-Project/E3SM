@@ -682,7 +682,7 @@ contains
             coef = 1.0_RKIND &
                     /(config_Redi_horizontal_ramp_max - config_Redi_horizontal_ramp_min)
             !$omp parallel
-            !$omp do schedule(runtime) 
+            !$omp do schedule(runtime) private(k) 
             do iEdge=1,nEdges
                do k=1,nVertLevels
                   if (dcEdge(iEdge) <= config_Redi_horizontal_ramp_min) then
