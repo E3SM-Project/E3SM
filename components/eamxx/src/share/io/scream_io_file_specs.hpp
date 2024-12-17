@@ -56,6 +56,7 @@ struct StorageSpecs {
       default:
         EKAT_ERROR_MSG ("Error! Unrecognized/unsupported file storage type.\n");
     }
+    return false;
   }
 
   void update_storage (const util::TimeStamp& t) {

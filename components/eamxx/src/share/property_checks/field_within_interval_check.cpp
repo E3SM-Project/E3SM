@@ -332,6 +332,7 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check() const {
           "Internal error in FieldWithinIntervalCheck: unsupported field data type.\n"
           "You should not have reached this line. Please, contact developers.\n");
   }
+  return ResultAndMsg{};
 }
 
 template<typename ST>

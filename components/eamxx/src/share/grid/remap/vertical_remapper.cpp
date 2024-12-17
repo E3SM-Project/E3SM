@@ -81,6 +81,7 @@ create_src_layout (const FieldLayout& tgt_layout) const
   // we cannot infer what the corresponding src layout was.
   // This function should never be used for this remapper.
   EKAT_ERROR_MSG ("Error! VerticalRemapper does not support creating a src layout from a tgt layout.\n");
+  return FieldLayout();
 }
 
 FieldLayout VerticalRemapper::
