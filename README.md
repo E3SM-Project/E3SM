@@ -2,7 +2,7 @@
 
 [![E3SM Logo](https://e3sm.org/wp-content/themes/e3sm/assets/images/e3sm-logo.png)](https://e3sm.org)
 
-Energy Exascale Earth System Model (E3SM)
+Energy Exascale Earth System Model (E3SM) version 3
 ================================================================================
 
 E3SM is a state-of-the-art fully coupled model of the Earth's climate including
@@ -11,7 +11,10 @@ the most challenging and demanding climate-change research problems and
 Department of Energy mission needs while efficiently using DOE Leadership
 Computing Facilities.  
 
-DOI: [10.11578/E3SM/dc.20240930.1](http://dx.doi.org/10.11578/E3SM/dc.20240930.1)
+This is version 3.0.2 of E3SM, the latest patch release of version 3.0
+
+If you use this model, please reference the software using this
+DOI: [10.11578/E3SM/dc.20241216.1](http://dx.doi.org/10.11578/E3SM/dc.20241216.1)
 
 Please visit the [project website](https://e3sm.org) or our [Confluence site](https://acme-climate.atlassian.net/wiki/spaces/DOC/overview)
 for further details.
@@ -68,11 +71,11 @@ the following BibTeX entry is provided.
 	author = {{E3SM Project}},
 	abstractNote = {{E3SM} is a state-of-the-art fully coupled model of the {E}arth's 
 		climate including important biogeochemical and cryospheric processes.},
-	howpublished = {[Computer Software] \url{https://dx.doi.org/10.11578/E3SM/dc.20240301.3}},
-	url = {https://dx.doi.org/10.11578/E3SM/dc.20240301.3},
-	doi = {10.11578/E3SM/dc.20240301.3},
+	howpublished = {[Computer Software] \url{https://dx.doi.org/10.11578/E3SM/dc.20241216.1}},
+	url = {https://dx.doi.org/10.11578/E3SM/dc.20241216.1},
+	doi = {10.11578/E3SM/dc.20241216.1},
 	year = 2024,
-	month = mar,
+	month = dec,
 }
 ```
 
