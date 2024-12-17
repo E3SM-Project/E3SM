@@ -15,20 +15,6 @@ void P3Microphysics::run_impl (const double dt)
   ); // Kokkos::parallel_for(p3_main_local_vals)
   Kokkos::fence();
 
-  // allow namelist flags to override sub-grid cloud fraction (set it to 1 everywhere)
-  if (m_params.get<bool>("set_cld_frac_l_to_one", false)) {
-    auto& cld_frac_l = p3_preproc.cld_frac_l;
-    Kokkos::deep_copy(cld_frac_l,1.0);
-  }
-  if (m_params.get<bool>("set_cld_frac_r_to_one", false)) {
-    auto& cld_frac_r = p3_preproc.cld_frac_r;
-    Kokkos::deep_copy(cld_frac_r,1.0);
-  }
-  if (m_params.get<bool>("set_cld_frac_i_to_one", false)) {
-    auto& cld_frac_i = p3_preproc.cld_frac_i;
-    Kokkos::deep_copy(cld_frac_i,1.0);
-  }
-
   // Update the variables in the p3 input structures with local values.
 
   infrastructure.dt = dt;
