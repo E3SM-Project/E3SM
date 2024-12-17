@@ -441,7 +441,6 @@ void IOPForcing::run_impl (const double dt)
     // Release WS views
     ws.release_many_contiguous<3>({&ref_p_mid, &ref_p_int, &ref_p_del});
   });
-  Kokkos::fence();
 
   // Nudge the domain based on the domain mean
   // and observed quantities of T, Q, u, and v
@@ -450,16 +449,16 @@ void IOPForcing::run_impl (const double dt)
     view_1d<Pack> qv_mean, t_mean;
     view_2d<Pack> horiz_winds_mean;
     if (iop_nudge_tq){
-      horiz_contraction<Real>(m_helper_fields.at("qv_mean"), get_field_out("qv"), 
+      horiz_contraction<Real>(m_helper_fields.at("qv_mean"), get_field_out("qv"),
                               m_helper_fields.at("horiz_mean_weights"), &m_comm);
       qv_mean = m_helper_fields.at("qv_mean").get_view<Pack*>();
-      
-      horiz_contraction<Real>(m_helper_fields.at("t_mean"), get_field_out("T_mid"), 
+
+      horiz_contraction<Real>(m_helper_fields.at("t_mean"), get_field_out("T_mid"),
                               m_helper_fields.at("horiz_mean_weights"), &m_comm);
       t_mean = m_helper_fields.at("t_mean").get_view<Pack*>();
     }
     if (iop_nudge_uv){
-      horiz_contraction<Real>(m_helper_fields.at("horiz_winds_mean"), get_field_out("horiz_winds"), 
+      horiz_contraction<Real>(m_helper_fields.at("horiz_winds_mean"), get_field_out("horiz_winds"),
                               m_helper_fields.at("horiz_mean_weights"), &m_comm);
       horiz_winds_mean = m_helper_fields.at("horiz_winds_mean").get_view<Pack**>();
     }
