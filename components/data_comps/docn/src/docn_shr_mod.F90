@@ -35,6 +35,8 @@ module docn_shr_mod
   character(CL) , public :: datamode              ! mode
   integer(IN)   , public :: aquap_option
   real(R8)      , public :: sst_constant_value
+  real(R8)      , public :: RSO_relax_tau         ! relaxed slab ocean relaxation timescale [sec]
+  real(R8)      , public :: RSO_fixed_MLD         ! relaxed slab ocean globally fixed mixed layer depth (MLD)
   character(len=*), public, parameter :: nullstr = 'undefined'
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
@@ -77,7 +79,8 @@ CONTAINS
 
     !----- define namelist -----
     namelist / docn_nml / &
-         decomp, restfilm, restfils, force_prognostic_true, sst_constant_value
+         decomp, restfilm, restfils, force_prognostic_true, sst_constant_value, &
+         RSO_fixed_MLD, RSO_relax_tau
 
     !----------------------------------------------------------------------------
     ! Determine input filenamname
@@ -110,12 +113,16 @@ CONTAINS
        write(logunit,F00)' restfils   = ',trim(restfils)
        write(logunit,F0L)' force_prognostic_true = ',force_prognostic_true
        write(logunit,*)  ' sst_constant_value    = ',sst_constant_value
+       write(logunit,*)  ' RSO_fixed_MLD         = ',RSO_fixed_MLD
+       write(logunit,*)  ' RSO_relax_tau         = ',RSO_relax_tau
     endif
     call shr_mpi_bcast(decomp  ,mpicom,'decomp')
     call shr_mpi_bcast(restfilm,mpicom,'restfilm')
     call shr_mpi_bcast(restfils,mpicom,'restfils')
     call shr_mpi_bcast(force_prognostic_true,mpicom,'force_prognostic_true')
     call shr_mpi_bcast(sst_constant_value   ,mpicom,'sst_constant_value')
+    call shr_mpi_bcast(RSO_fixed_MLD        ,mpicom,'RSO_fixed_MLD')
+    call shr_mpi_bcast(RSO_relax_tau        ,mpicom,'RSO_relax_tau')
 
     rest_file = trim(restfilm)
     rest_file_strm = trim(restfils)

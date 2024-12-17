@@ -95,7 +95,7 @@
       <value>null</value>
       <value stream="aquapfile">$DIN_LOC_ROOT/ocn/docn7/AQUAPLANET/</value>
       <value stream="som">$DIN_LOC_ROOT/ocn/docn7/SOM</value>
-      <value stream="rso">$DIN_LOC_ROOT/ocn/docn7/RSO</value>
+      <value stream="rso">/</value> <!-- use this for $SSTICE_GRID_FILENAME -->
       <value stream="interannual">$DIN_LOC_ROOT/atm/cam/sst</value>
     </values>
   </entry>
@@ -109,8 +109,7 @@
       <value>null</value>
       <value stream="aquapfile">$DOCN_AQP_FILENAME</value>
       <value stream="som">$DOCN_SOM_FILENAME</value>
-      <!-- <value stream="rso">$DOCN_RSO_FILENAME</value> -->
-      <value stream="rso">pop_frc.1x1d.090130.nc</value>
+      <value stream="rso">$SSTICE_GRID_FILENAME</value>
       <value stream="interannual">sst_HadOIBl_bc_1x1_1850_2014_c150416.nc</value>
     </values>
   </entry>
@@ -150,7 +149,7 @@
       <value>null</value>
       <value stream="aquapfile">$DIN_LOC_ROOT/ocn/docn7/AQUAPLANET</value>
       <value stream="som">$DIN_LOC_ROOT/ocn/docn7/SOM</value>
-      <value stream="rso">$DIN_LOC_ROOT/ocn/docn7/RSO</value>
+      <value stream="rso">/</value> <!-- use this for $SSTICE_DATA_FILENAME -->
       <value stream="interannual">$DIN_LOC_ROOT/atm/cam/sst</value>
     </values>
   </entry>
@@ -164,8 +163,7 @@
       <value>null</value>
       <value stream="aquapfile">$DOCN_AQP_FILENAME</value>
       <value stream="som">$DOCN_SOM_FILENAME</value>
-      <!-- <value stream="rso">$DOCN_RSO_FILENAME</value> -->
-      <value stream="rso">pop_frc.1x1d.090130.nc</value>
+      <value stream="rso">$SSTICE_DATA_FILENAME</value>
       <value stream="interannual">sst_HadOIBl_bc_1x1_1850_2014_c150416.nc</value>
     </values>
   </entry>
@@ -189,9 +187,9 @@
         hblt  h
         qdp   qbot
       </value>
-      <value stream="rso">
-        T     t
-        hblt  h
+      <value stream="rso" sstice_stream="CAMDATA">
+        SST_cpl t
+        hblt    h
       </value>
       <value stream="interannual">
         SST_cpl t
@@ -225,7 +223,7 @@
       <value stream="prescribed">$SSTICE_YEAR_ALIGN</value>
       <value stream="aquapfile">0</value>
       <value stream="som">1</value>
-      <value stream="rso">1</value>
+      <value stream="rso">$SSTICE_YEAR_ALIGN</value>
       <value stream="interannual">1</value>
     </values>
   </entry>
@@ -240,7 +238,7 @@
       <value stream="prescribed">$SSTICE_YEAR_START</value>
       <value stream="aquapfile">0</value>
       <value stream="som">1</value>
-      <value stream="rso">1</value>
+      <value stream="rso">$SSTICE_YEAR_START</value>
       <value stream="interannual">1850</value>
     </values>
   </entry>
@@ -255,7 +253,7 @@
       <value stream="prescribed">$SSTICE_YEAR_END</value>
       <value stream="aquapfile">0</value>
       <value stream="som">1</value>
-      <value stream="rso">1</value>
+      <value stream="rso">$SSTICE_YEAR_END</value>
       <value stream="interannual">2014</value>
     </values>
   </entry>
@@ -675,6 +673,31 @@
     </desc>
     <values>
       <value>-1.0</value>
+    </values>
+  </entry>
+
+  <entry id="RSO_relax_tau" per_stream_entry="true">
+    <type>real(30)</type>
+    <category>docn</category>
+    <group>docn_nml</group>
+    <desc>
+      Relaxation timescale for relaxed slab ocean (RSO) mode
+    </desc>
+    <values>
+      <value>691200</value> <!-- 8 days * 86400 sec/day = 691200 sec -->
+    </values>
+  </entry>
+
+  <entry id="RSO_fixed_MLD" per_stream_entry="true">
+    <type>real(30)</type>
+    <category>docn</category>
+    <group>docn_nml</group>
+    <desc>
+      globally fixed mixed layer depth (MLD) for relaxed slab ocean (RSO) mode
+      use -1 to disable - input data file should have hblt field to override this
+    </desc>
+    <values>
+      <value>50</value>
     </values>
   </entry>
 

@@ -29,6 +29,8 @@ module docn_comp_mod
   use docn_shr_mod   , only: rest_file      ! namelist input
   use docn_shr_mod   , only: rest_file_strm ! namelist input
   use docn_shr_mod   , only: sst_constant_value ! namelist input
+  use docn_shr_mod   , only: RSO_relax_tau      ! namelist input for relaxed slab ocean (RSO)
+  use docn_shr_mod   , only: RSO_fixed_MLD      ! namelist input for relaxed slab ocean (RSO)
   use docn_shr_mod   , only: nullstr
 
 #ifdef HAVE_MOAB
@@ -569,16 +571,17 @@ CONTAINS
     integer(IN)   :: idt                   ! integer timestep
     real(R8)      :: dt                    ! timestep
     integer(IN)   :: nu                    ! unit number
-    real(R8)      :: hn                    ! h field
+    real(R8)      :: hn                    ! h field - mixed layer depth (MLD)
     ! fields for relaxed slab ocean mode
     integer       :: RSO_slab_option       ! Option for setting RSO_X_cool
     real(R8)      :: RSO_bckgrd_sst        ! background SST 
-    real(R8)      :: RSO_relax_tau         ! relaxation timescale [sec]
     real(R8)      :: RSO_X_cool            ! logistics function weight
     real(R8)      :: RSO_R_cool            ! base cooling rate [K/s]
     real(R8)      :: RSO_Tdeep             ! deep water temperature [K]
     real(R8)      :: RSO_dT_o              ! scaling temperature gradient
     real(R8)      :: RSO_h_o               ! scaling mixed layer depth
+    ! real(R8)      :: RSO_relax_tau         ! relaxation timescale [sec]
+    ! real(R8)      :: RSO_fixed_MLD         ! globally fixed mixed layer depth (MLD)
     real(R8)      :: u10                   ! 10 m wind
     character(len=18) :: date_str
     character(len=CL) :: local_case_name
@@ -806,14 +809,17 @@ CONTAINS
         do n = 1,lsize
           if (imask(n) /= 0) then
             !*******************************************************************
-            hn = avstrm%rAttr(kh,n)
+            if (RSO_fixed_MLD>=0) then
+              hn = RSO_fixed_MLD
+            else
+              hn = avstrm%rAttr(kh,n)
+            endif
             ! Get "background" temperature for relaxation
             RSO_bckgrd_sst = avstrm%rAttr(kRSO_bckgrd_sst,n) + TkFrz
             u10 = SQRT(x2o%rAttr(k10uu,n))
             !*******************************************************************
-            ! Set parameter values
+            ! RSO parameter values
             RSO_slab_option = 0           ! Option for setting RSO_X_cool
-            RSO_relax_tau   = 8.0*86400   ! relaxation timescale [sec]
             RSO_R_cool      = 11.75/86400 ! base cooling rate [K/s]
             RSO_Tdeep       = 271.00      ! deep water temperature [K]
             RSO_dT_o        = 27.0        ! scaling temperature gradient
