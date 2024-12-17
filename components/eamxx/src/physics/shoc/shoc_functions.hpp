@@ -538,6 +538,7 @@ struct Functions
     const view_2d<const Spack>&  dz_zt,
     const view_2d<const Spack>&  tke,
     const view_2d<const Spack>&  thv,
+    const view_2d<const Spack>&  tk,
     const WorkspaceMgr&          workspace_mgr,
     const view_2d<Spack>&        brunt,
     const view_2d<Spack>&        shoc_mix);
