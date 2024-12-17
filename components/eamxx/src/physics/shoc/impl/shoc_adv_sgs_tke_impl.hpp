@@ -32,7 +32,7 @@ void Functions<S,D>
   static constexpr Scalar basetemp = C::basetemp;
   static constexpr Scalar mintke   = scream::shoc::Constants<Real>::mintke;
   static constexpr Scalar maxtke   = scream::shoc::Constants<Real>::maxtke;
-  const book tke_1p5_closure       = scream::shoc::Constants<Real>::tke_1p5_closure;
+  const bool tke_1p5_closure       = scream::shoc::Constants<Real>::tke_1p5_closure;
   Spack a_prod_bu;
 
   //declare some constants

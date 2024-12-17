@@ -19,6 +19,7 @@ void Functions<Real,DefaultDevice>
   const view_2d<const Spack>&  dz_zt,
   const view_2d<const Spack>&  tke,
   const view_2d<const Spack>&  thv,
+  const view_2d<const Spack>&  tk,
   const WorkspaceMgr&          workspace_mgr,
   const view_2d<Spack>&        brunt,
   const view_2d<Spack>&        shoc_mix)
@@ -39,6 +40,7 @@ void Functions<Real,DefaultDevice>
                 ekat::subview(dz_zt, i),
                 ekat::subview(tke, i),
                 ekat::subview(thv, i),
+		ekat::subview(tk, i),
                 workspace,
                 ekat::subview(brunt, i),
                 ekat::subview(shoc_mix, i));
