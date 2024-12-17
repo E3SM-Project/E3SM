@@ -7,7 +7,7 @@ module HydrologyDrainageMod
   use shr_kind_mod      , only : r8 => shr_kind_r8
   use shr_log_mod       , only : errMsg => shr_log_errMsg
   use decompMod         , only : bounds_type
-  use elm_varctl        , only : iulog, use_vichydro, use_firn_percolation_and_compaction
+  use elm_varctl        , only : iulog, use_vichydro
   use elm_varcon        , only : e_ice, denh2o, denice, rpi, spval
   use atm2lndType       , only : atm2lnd_type
   use glc2lndMod        , only : glc2lnd_type
