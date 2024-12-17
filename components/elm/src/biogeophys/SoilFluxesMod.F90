@@ -8,7 +8,7 @@ module SoilFluxesMod
   use shr_log_mod	, only : errMsg => shr_log_errMsg
   use decompMod		, only : bounds_type
   use abortutils	, only : endrun
-  use elm_varctl	, only : iulog 
+  use elm_varctl	, only : iulog, use_extrasnowlayers 
   use perfMod_GPU
   use elm_varpar	, only : nlevsno, nlevgrnd, nlevurb, max_patch_per_col
   use atm2lndType	, only : atm2lnd_type

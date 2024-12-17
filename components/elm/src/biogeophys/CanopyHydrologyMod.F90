@@ -116,7 +116,7 @@ contains
      use elm_varcon         , only : hfus, denice, zlnd, rpi, spval, tfrz
      use column_varcon      , only : icol_roof, icol_sunwall, icol_shadewall
      use landunit_varcon    , only : istcrop, istice, istwet, istsoil, istice_mec, istdlak
-     use elm_varctl         , only : subgridflag
+     use elm_varctl         , only : subgridflag, use_extrasnowlayers
      use elm_varpar         , only : nlevsoi,nlevsno
      use elm_varsur         , only : wt_lunit, f_grd, f_surf
      use atm2lndType        , only : atm2lnd_type
