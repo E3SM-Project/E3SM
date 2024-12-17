@@ -89,6 +89,11 @@ module element_state
 
 #ifdef ENERGY_DIAGNOSTICS
     ! Energy equation:
+    real (kind=real_kind) :: PE(np,np)
+    real (kind=real_kind) :: PEexpected(np,np)
+    real (kind=real_kind) :: ieterm1(np,np)
+    real (kind=real_kind) :: keterm1(np,np)
+
     real (kind=real_kind) :: KEu_horiz1(np,np)
     real (kind=real_kind) :: KEu_horiz2(np,np)
     real (kind=real_kind) :: KEu_vert1(np,np)

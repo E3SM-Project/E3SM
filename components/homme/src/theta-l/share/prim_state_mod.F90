@@ -148,6 +148,9 @@ contains
     real (kind=real_kind) :: PEhorz1,PEhorz2
     real (kind=real_kind) :: KEH1,KEH2,KEV1,KEV2
     real (kind=real_kind) :: KEwH1,KEwH2,KEwH3,KEwV1,KEwV2
+
+    real (kind=real_kind) :: PEscalar, PEexpected_scalar, iet1s, ket1s
+
     real (kind=real_kind) :: ddt_tot,ddt_diss, ddt_diss_adj
     integer               :: n0, n0q
     integer               :: npts,n,q
@@ -169,6 +172,9 @@ contains
     PEner    = 0
     IEner    = 0
     muvalue  = 0
+
+    PEscalar = 0; PEexpected_scalar = 0; iet1s = 0; ket1s = 0;
+
     ! dynamics timelevels
     n0=tl%n0
     call TimeLevel_Qdp(tl, qsplit, n0q) ! get n0 level into n0q
@@ -638,6 +644,24 @@ contains
     PEvert2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     PEvert2 = PEvert2*scale
     
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%PE
+    enddo
+    PEscalar = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%PEexpected
+    enddo
+    PEexpected_scalar = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%ieterm1
+    enddo
+    iet1s = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%keterm1
+    enddo
+    ket1s = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+
     !   KE->IE
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%T01
@@ -711,6 +735,7 @@ contains
           write(iulog,'(a,2e22.14)')'KEu v-adv,sum=0:',KEV1,KEV2
           write(iulog,'(a,3e22.14)')'IE  v-adv,sum=0:',IEvert1,PEvert1
           write(iulog,'(a,2e22.14)')'KE->I+P,I+P->KE:',(T1+PEhorz2),(S1+PEhorz1)
+          write(iulog,'(a,2e22.14)')'PEhorz1,PEhorz2:',PEhorz1,PEhorz2
           
           ddt_tot  =  (KEner(2)-KEner(1))/dt
           ddt_diss = ddt_tot -(T1+PEhorz2)
@@ -731,6 +756,12 @@ contains
           write(iulog,'(a,3e22.14)')'KEw h-adv,sum=0:',KEwH1+KEwH3,KEwH2
           write(iulog,'(a,2e22.14)')'KEu v-adv,sum=0:',KEV1,KEV2
           write(iulog,'(a,2e22.14)')'KEw v-adv,sum=0:',KEwV1,KEwV2
+
+          write(iulog,'(a,2e22.14)')'PEhorz1,PEhorz2:',PEhorz1,PEhorz2
+
+          write(iulog,'(a,2e22.14)')'PE_t,PE_t exp:',PEscalar, PEexpected_scalar
+          write(iulog,'(a,2e22.14)')'ieterm1,keterm1:', iet1s, ket1s
+
           write(iulog,'(a,2e22.14)')'PE h-adv, sum=0:',PEhorz1,PEhorz2
           write(iulog,'(a,2e22.14)')'PE v-adv, sum=0:',PEvert1,PEvert2
           write(iulog,'(a,3e22.14)')'IE v-adv, sum=0:',IEvert1,IEvert2

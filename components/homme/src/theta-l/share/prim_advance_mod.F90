@@ -1149,7 +1149,9 @@ contains
   real (kind=real_kind), dimension(np,np,nlev) :: vgrad_p
 
   real (kind=real_kind) ::  temp(np,np,nlev)
+  real (kind=real_kind) ::  tempp(np,np,nlevp)
   real (kind=real_kind) ::  vtemp(np,np,2,nlev)       ! generic gradient storage
+  real (kind=real_kind) ::  w_m(np,np,nlev)       
   real (kind=real_kind), dimension(np,np) :: sdot_sum ! temporary field
   real (kind=real_kind) ::  v1,v2,w,d_eta_dot_dpdn_dn, T0
   integer :: i,j,k,kptr,ie, nlyr_tot
@@ -1180,6 +1182,8 @@ contains
      vtheta_dp  => elem(ie)%state%vtheta_dp(:,:,:,n0)
      vtheta(:,:,:) = vtheta_dp(:,:,:)/dp3d(:,:,:)
      phi_i => elem(ie)%state%phinh_i(:,:,:,n0)
+
+     !make w_i alias too
 
 #ifdef HOMMEDA
 !repeated code
@@ -1485,6 +1489,10 @@ contains
      phi_tens(:,:,k) =  (-phi_vadv_i(:,:,k) - v_gradphinh_i(:,:,k))*scale1 &
      + scale1*g*elem(ie)%state%w_i(:,:,k,n0)
     
+#if defined HOMMEDA && defined ENERGY_DIAGNOSTICS 
+     phi_tens_notopo(:,:,k) = phi_tens(:,:,k)
+#endif
+
 
      ! ================================================                                                                 
      ! v1,v2 tendencies:                                                                                          
@@ -1496,7 +1504,21 @@ contains
      call i2m(elem(ie)%state%w_i(:,:,:,n0)*gradw_i(:,:,2,:),temp(:,:,:))
      vtemp(:,:,2,:) = temp(:,:,:)
 
+     call i2m(dpnh_dp_i*gradphinh_i(:,:,1,:),temp(:,:,:))
+#ifdef HOMMEDA
+     mgrad(:,:,1,:) = temp(:,:,:)*invrhatm(:,:,:)
+#else
+     mgrad(:,:,1,:) = temp(:,:,:)
+#endif
+     call i2m(dpnh_dp_i*gradphinh_i(:,:,2,:),temp(:,:,:))
+#ifdef HOMMEDA
+     mgrad(:,:,2,:) = temp(:,:,:)*invrhatm(:,:,:)
+#else
+     mgrad(:,:,2,:) = temp(:,:,:)
+#endif
+
      call i2m(elem(ie)%state%w_i(:,:,:,n0)*elem(ie)%state%w_i(:,:,:,n0),temp)
+     call i2m(elem(ie)%state%w_i(:,:,:,n0),w_m)
 
      do k=1,nlev
         ! theta - tendency on levels
@@ -1534,18 +1556,12 @@ contains
 #ifdef HOMMEDA
         wvor(:,:,1,k) = wvor(:,:,1,k) * invrhatm(:,:,k)
         wvor(:,:,2,k) = wvor(:,:,2,k) * invrhatm(:,:,k)
-#endif
-
+        wvor(:,:,1,k) = wvor(:,:,1,k) - vtemp(:,:,1,k) * invrhatm(:,:,k)
+        wvor(:,:,2,k) = wvor(:,:,2,k) - vtemp(:,:,2,k) * invrhatm(:,:,k)
+#else
         wvor(:,:,1,k) = wvor(:,:,1,k) - vtemp(:,:,1,k)
         wvor(:,:,2,k) = wvor(:,:,2,k) - vtemp(:,:,2,k)
-
-        !there is already a DA correction in gradw_i
-!        wvor(:,:,1,k) = wvor(:,:,1,k) - (elem(ie)%state%w_i(:,:,k,n0)*gradw_i(:,:,1,k) +&
-!             elem(ie)%state%w_i(:,:,k+1,n0)*gradw_i(:,:,1,k+1))/2
-!        wvor(:,:,2,k) = wvor(:,:,2,k) - (elem(ie)%state%w_i(:,:,k,n0)*gradw_i(:,:,2,k) +&
-!             elem(ie)%state%w_i(:,:,k+1,n0)*gradw_i(:,:,2,k+1))/2
-
-
+#endif
 
         KE(:,:,k) = ( elem(ie)%state%v(:,:,1,k,n0)**2 + elem(ie)%state%v(:,:,2,k,n0)**2)/2
         gradKE(:,:,:,k) = gradient_sphere(KE(:,:,k),deriv,elem(ie)%Dinv)
@@ -1587,14 +1603,6 @@ contains
         gradexner(:,:,1,k) = gradexner(:,:,1,k)*(Rgas/Cp)*exner(:,:,k)/pnh(:,:,k)
         gradexner(:,:,2,k) = gradexner(:,:,2,k)*(Rgas/Cp)*exner(:,:,k)/pnh(:,:,k)
 #endif
-
-        !gradphinh_i already has DA correction
-        ! special averaging of dpnh/dpi grad(phi) for E conservation
-        mgrad(:,:,1,k) = (dpnh_dp_i(:,:,k)*gradphinh_i(:,:,1,k)+ &
-              dpnh_dp_i(:,:,k+1)*gradphinh_i(:,:,1,k+1))/2
-        mgrad(:,:,2,k) = (dpnh_dp_i(:,:,k)*gradphinh_i(:,:,2,k)+ &
-              dpnh_dp_i(:,:,k+1)*gradphinh_i(:,:,2,k+1))/2
-
 
 !OG do pgrad DA later !
         if (pgrad_correction==1) then
@@ -1647,9 +1655,8 @@ contains
                   -wvor(i,j,2,k) )*scale1
 
 #ifdef HOMMEDA
-              vtens1(i,j,k) = vtens1(i,j,k) - scale1*(elem(ie)%state%w_i(i,j,k,n0)+elem(ie)%state%w_i(i,j,k+1,n0))/2*(  v1/rheightm(i,j,k) &
-                                                                                  + elem(ie)%fcorcosine(i,j) )
-              vtens2(i,j,k) = vtens2(i,j,k) - scale1*(elem(ie)%state%w_i(i,j,k,n0)+elem(ie)%state%w_i(i,j,k+1,n0))/2*v2/rheightm(i,j,k)
+              vtens1(i,j,k) = vtens1(i,j,k) - scale1*w_m(i,j,k)*( v1/rheightm(i,j,k) + elem(ie)%fcorcosine(i,j) )
+              vtens2(i,j,k) = vtens2(i,j,k) - scale1*w_m(i,j,k)*v2/rheightm(i,j,k)
 #endif
 
 #endif
@@ -1665,7 +1672,12 @@ contains
      ! diagnostics. not performance critical, dont thread
      ! =========================================================
      if (compute_diagnostics) then
+
         elem(ie)%accum%PE=0
+        elem(ie)%accum%PEexpected=0
+
+        elem(ie)%accum%ieterm1=0
+        elem(ie)%accum%keterm1=0
 
         elem(ie)%accum%KEu_horiz1=0
         elem(ie)%accum%KEu_horiz2=0
@@ -1689,6 +1701,39 @@ contains
         elem(ie)%accum%S2=0
         elem(ie)%accum%P1=0
         elem(ie)%accum%P2=0
+
+        !use temp and vtemp
+        call m2i(divdp,tempp)
+
+        !divdp  = -dp3d_tens
+        do k=2,nlev
+           elem(ie)%accum%PE(:,:) = elem(ie)%accum%PE(:,:) + phi_i(:,:,k)*tempp(:,:,k) &  
+                                                           - dp3d_i(:,:,k)*phi_tens_notopo(:,:,k) 
+           elem(ie)%accum%PEexpected(:,:) = elem(ie)%accum%PEexpected(:,:) + g*dp3d_i(:,:,k)*elem(ie)%state%w_i(:,:,k,n0)
+        enddo
+        do k=1,nlevp,nlev
+           elem(ie)%accum%PE(:,:) = elem(ie)%accum%PE(:,:) + phi_i(:,:,k)*tempp(:,:,k)/2 & 
+                                                           - dp3d_i(:,:,k)*phi_tens_notopo(:,:,k)/2
+           elem(ie)%accum%PEexpected(:,:) = elem(ie)%accum%PEexpected(:,:) + g*dp3d_i(:,:,k)*elem(ie)%state%w_i(:,:,k,n0)/2
+        enddo
+
+        !note that mgrad is overwritten above, so do not re-use, recompute
+        call i2m(dpnh_dp_i*gradphinh_i(:,:,1,:),temp(:,:,:))
+        mgrad(:,:,1,:) = temp(:,:,:)
+        call i2m(dpnh_dp_i*gradphinh_i(:,:,2,:),temp(:,:,:))
+        mgrad(:,:,2,:) = temp(:,:,:)
+        do k=2,nlev
+           elem(ie)%accum%ieterm1(:,:) = elem(ie)%accum%ieterm1(:,:) + dpnh_dp_i(:,:,k)*dp3d_i(:,:,k)*v_gradphinh_i(:,:,k)
+        enddo
+        do k=1,nlevp,nlev
+           elem(ie)%accum%ieterm1(:,:) = elem(ie)%accum%ieterm1(:,:) + dpnh_dp_i(:,:,k)*dp3d_i(:,:,k)*v_gradphinh_i(:,:,k)/2
+        enddo
+        do k=1,nlev
+           elem(ie)%accum%keterm1(:,:) = elem(ie)%accum%keterm1(:,:) - dp3d(:,:,k)*invrhatm(:,:,k)* &
+                        (  elem(ie)%state%v(:,:,1,k,n0)*mgrad(:,:,1,k) + elem(ie)%state%v(:,:,2,k,n0)*mgrad(:,:,2,k)   )
+        enddo
+
+
 
         do k =1,nlev
           do j=1,np
@@ -1762,12 +1807,19 @@ contains
 
 !done
                !  Form PEhoriz2
+!               elem(ie)%accum%PEhoriz2(i,j)=elem(ie)%accum%PEhoriz2(i,j)    &
+!                    -dp3d(i,j,k)* &
+!                    (elem(ie)%state%v(i,j,1,k,n0)*                          &
+!                    (gradphinh_i(i,j,1,k)+gradphinh_i(i,j,1,k+1))/2  +      &
+!                    elem(ie)%state%v(i,j,2,k,n0)*                           &
+!                    (gradphinh_i(i,j,2,k)+gradphinh_i(i,j,2,k+1))/2  )
+
                elem(ie)%accum%PEhoriz2(i,j)=elem(ie)%accum%PEhoriz2(i,j)    &
                     -dp3d(i,j,k)* &
-                    (elem(ie)%state%v(i,j,1,k,n0)*                          &
-                    (gradphinh_i(i,j,1,k)+gradphinh_i(i,j,1,k+1))/2  +      &
-                    elem(ie)%state%v(i,j,2,k,n0)*                           &
-                    (gradphinh_i(i,j,2,k)+gradphinh_i(i,j,2,k+1))/2  )
+                    (v_gradphinh_i(i,j,k) + v_gradphinh_i(i,j,k+1))/2  
+
+
+
 
 !done as these are 0               
                !  Form PEvert1
