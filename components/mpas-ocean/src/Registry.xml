@@ -3202,10 +3202,6 @@
 			description="Scaling coefficient for Redi kappa. Varies from 0 to 1."
 			packages="gm"
 		/>
-   	    <var name="gmdiagMLD" type="real" dimensions="nEdges Time" units="1"
-		    description="MLD diagnostic for redi at edges"
-			packages="gm"
-		  />
 		<var name="rediLimiterCount" type="integer" dimensions="nVertLevels nCells Time"
 			description="count of times redi limiter is invoked on a timestep"
 			packages="gm"

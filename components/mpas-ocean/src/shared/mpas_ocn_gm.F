@@ -290,7 +290,6 @@ contains
 
             mldEdge = 0.5_RKIND*(mld1+mld2)
             bldEdge = 0.5_RKIND*(boundaryLayerDepth(cell1) + boundaryLayerDepth(cell2))
-            gmdiagMLD(iEdge) = mldEdge
 
             ! if we need to turn off sfc taper we need to set rediKappaSfcTaper to 0 I think
             ! so just wrap this in a use sfc taper thing and it's good
