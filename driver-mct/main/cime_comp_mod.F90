@@ -145,7 +145,8 @@ module cime_comp_mod
   ! diagnostic routines
   use seq_diag_mct, only : seq_diag_zero_mct , seq_diag_avect_mct, seq_diag_lnd_mct
   use seq_diag_mct, only : seq_diag_rof_mct  , seq_diag_ocn_mct  , seq_diag_atm_mct
-  use seq_diag_mct, only : seq_diag_ice_mct  , seq_diag_accum_mct, seq_diag_print_mct
+  use seq_diag_mct, only : seq_diag_ice_mct  , seq_diag_glc_mct 
+  use seq_diag_mct, only : seq_diag_accum_mct, seq_diag_print_mct
   use seq_diagBGC_mct, only : seq_diagBGC_zero_mct , seq_diagBGC_avect_mct, seq_diagBGC_lnd_mct
   use seq_diagBGC_mct, only : seq_diagBGC_rof_mct  , seq_diagBGC_ocn_mct  , seq_diagBGC_atm_mct
   use seq_diagBGC_mct, only : seq_diagBGC_ice_mct  , seq_diagBGC_accum_mct
@@ -3052,8 +3053,12 @@ contains
        !----------------------------------------------------------
        !| GLC SETUP-SEND
        !----------------------------------------------------------
-       if (glc_present .and. glcrun_alarm) then
-          call cime_run_glc_setup_send(lnd2glc_averaged_now, prep_glc_accum_avg_called)
+       if (glc_present) then
+          if (glcrun_alarm) then
+             call cime_run_glc_setup_send(lnd2glc_averaged_now, prep_glc_accum_avg_called)
+          else
+             call prep_glc_zero_fields()
+          endif
        endif
 
        ! ------------------------------------------------------------------------
@@ -3100,6 +3105,7 @@ contains
 
           endif
        endif
+
        !----------------------------------------------------------
        !| Budget with old fractions
        !----------------------------------------------------------
@@ -4749,6 +4755,9 @@ contains
        if (ice_present) then
           call seq_diag_ice_mct(ice(ens1), fractions_ix(ens1), infodata, do_x2i=.true.)
        endif
+       if (glc_present) then
+          call seq_diag_glc_mct(glc(ens1), fractions_gx(ens1), infodata, do_x2g=.true.)
+       endif
        if (do_bgc_budgets) then
           if (rof_present) then
              call seq_diagBGC_rof_mct(rof(ens1), fractions_rx(ens1), infodata)
@@ -4788,6 +4797,9 @@ contains
        if (ice_present) then
           call seq_diag_ice_mct(ice(ens1), fractions_ix(ens1), infodata, do_i2x=.true.)
        endif
+       if (glc_present) then
+          call seq_diag_glc_mct(glc(ens1), fractions_gx(ens1), infodata, do_g2x=.true.)
+       endif          
        if (do_bgc_budgets) then
           if (atm_present) then
              call seq_diagBGC_atm_mct(atm(ens1), fractions_ax(ens1), infodata, do_a2x=.true., do_x2a=.true.)
@@ -5595,3 +5607,4 @@ contains
   end function copy_and_trim_rpointer_file
 
 end module cime_comp_mod
+
