@@ -60,7 +60,7 @@ void compute_heating_rate (
   using MDRP = typename conv::MDRP<typename View1::array_layout>;
   auto ncol = flux_up.extent(0);
   auto nlay = flux_up.extent(1)-1;
-  Kokkos::parallel_for(MDRP::template get<2>({nlay,ncol}), KOKKOS_LAMBDA(int ilay, int icol) {
+  Kokkos::parallel_for(MDRP::template get<2>({ncol, nlay}), KOKKOS_LAMBDA(int icol, int ilay) {
     heating_rate(icol,ilay) = (
       flux_up(icol,ilay+1) - flux_up(icol,ilay) -
       flux_dn(icol,ilay+1) + flux_dn(icol,ilay)

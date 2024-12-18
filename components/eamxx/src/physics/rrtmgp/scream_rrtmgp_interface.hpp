@@ -130,7 +130,7 @@ void mixing_ratio_to_cloud_mass(
   int ncol = mixing_ratio.dimension[0];
   int nlay = mixing_ratio.dimension[1];
   using physconst = scream::physics::Constants<Real>;
-  yakl::fortran::parallel_for(yakl::fortran::SimpleBounds<2>(nlay, ncol), YAKL_LAMBDA(int ilay, int icol) {
+  TIMED_KERNEL(yakl::fortran::parallel_for(yakl::fortran::SimpleBounds<2>(nlay, ncol), YAKL_LAMBDA(int ilay, int icol) {
     // Compute in-cloud mixing ratio (mixing ratio of the cloudy part of the layer)
     // NOTE: these thresholds (from E3SM) seem arbitrary, but included here for consistency
     // This limits in-cloud mixing ratio to 0.005 kg/kg. According to note in cloud_diagnostics
@@ -142,14 +142,14 @@ void mixing_ratio_to_cloud_mass(
     } else {
       cloud_mass(icol,ilay) = 0;
     }
-  });
+      }));
 }
 
 template<class S, class T>
 void limit_to_bounds(S const &arr_in, T const lower, T const upper, S &arr_out) {
-  yakl::c::parallel_for(arr_in.totElems(), YAKL_LAMBDA(int i) {
+  TIMED_KERNEL(yakl::c::parallel_for(arr_in.totElems(), YAKL_LAMBDA(int i) {
     arr_out.data()[i] = std::min(std::max(arr_in.data()[i], lower), upper);
-  });
+      }));
 }
 
 int get_wavelength_index(OpticalProps &kdist, double wavelength);
@@ -170,7 +170,7 @@ using view_t = Kokkos::View<T, LayoutT, DeviceT>;
 template <typename T>
 using hview_t = Kokkos::View<T, LayoutT, HostDevice>;
 
-using pool_t = conv::MemPoolSingleton<RealT, DeviceT>;
+using pool_t = conv::MemPoolSingleton<RealT, LayoutT, DeviceT>;
 
 using real1dk = view_t<RealT*>;
 using real2dk = view_t<RealT**>;
@@ -270,7 +270,7 @@ static void compute_band_by_band_surface_albedos(
 
   // Loop over bands, and determine for each band whether it is broadly in the
   // visible or infrared part of the spectrum (visible or "not visible")
-  Kokkos::parallel_for(MDRP::template get<2>({nswbands, ncol}), KOKKOS_LAMBDA(const int ibnd, const int icol) {
+  TIMED_KERNEL(Kokkos::parallel_for(MDRP::template get<2>({ncol, nswbands}), KOKKOS_LAMBDA(const int icol, const int ibnd) {
 
     // Threshold between visible and infrared is 0.7 micron, or 14286 cm^-1.
     const RealT visible_wavenumber_threshold = 14286;
@@ -297,7 +297,7 @@ static void compute_band_by_band_surface_albedos(
       sfc_alb_dir(icol,ibnd) = 0.5*(sfc_alb_dir_vis(icol) + sfc_alb_dir_nir(icol));
       sfc_alb_dif(icol,ibnd) = 0.5*(sfc_alb_dif_vis(icol) + sfc_alb_dif_nir(icol));
     }
-  });
+  }));
 }
 
 /*
@@ -327,7 +327,7 @@ static void compute_broadband_surface_fluxes(
   // Threshold between visible and infrared is 0.7 micron, or 14286 cm^-1.
   const RealT visible_wavenumber_threshold = 14286;
   auto wavenumber_limits = k_dist_sw_k.get_band_lims_wavenumber();
-  Kokkos::parallel_for(ncol, KOKKOS_LAMBDA(const int icol) {
+  TIMED_KERNEL(Kokkos::parallel_for(ncol, KOKKOS_LAMBDA(const int icol) {
     for (int ibnd = 0; ibnd < nswbands; ++ibnd) {
       // Wavenumber is in the visible if it is above the visible wavenumber
       // threshold, and in the infrared if it is below the threshold
@@ -353,7 +353,7 @@ static void compute_broadband_surface_fluxes(
         sfc_flux_dif_nir(icol) += 0.5 * sw_bnd_flux_dif(icol,ktop,ibnd);
       }
     }
-  });
+  }));
 }
 
 /*
@@ -450,16 +450,16 @@ static void rrtmgp_main(
   optical_props1_t aerosol_lw;
   aerosol_sw.init(k_dist_sw_k.get_band_lims_wavenumber());
   aerosol_sw.alloc_2str(ncol, nlay);
-  Kokkos::parallel_for(MDRP::template get<3>({nswbands,nlay,ncol}) , KOKKOS_LAMBDA (int ibnd, int ilay, int icol) {
+  TIMED_KERNEL(Kokkos::parallel_for(MDRP::template get<3>({ncol,nlay,nswbands}) , KOKKOS_LAMBDA (int icol, int ilay, int ibnd) {
     aerosol_sw.tau(icol,ilay,ibnd) = aer_tau_sw(icol,ilay,ibnd);
     aerosol_sw.ssa(icol,ilay,ibnd) = aer_ssa_sw(icol,ilay,ibnd);
     aerosol_sw.g  (icol,ilay,ibnd) = aer_asm_sw(icol,ilay,ibnd);
-  });
+  }));
   aerosol_lw.init(k_dist_lw_k.get_band_lims_wavenumber());
   aerosol_lw.alloc_1scl(ncol, nlay);
-  Kokkos::parallel_for(MDRP::template get<3>({nlwbands,nlay,ncol}) , KOKKOS_LAMBDA (int ibnd, int ilay, int icol) {
+  TIMED_KERNEL(Kokkos::parallel_for(MDRP::template get<3>({ncol,nlay,nlwbands}) , KOKKOS_LAMBDA (int icol, int ilay, int ibnd) {
     aerosol_lw.tau(icol,ilay,ibnd) = aer_tau_lw(icol,ilay,ibnd);
-  });
+  }));
 
 #ifdef SCREAM_RRTMGP_DEBUG
   // Check aerosol optical properties
@@ -488,12 +488,12 @@ static void rrtmgp_main(
 
   // Copy cloud properties to outputs (is this needed, or can we just use pointers?)
   // Alternatively, just compute and output a subcolumn cloud mask
-  Kokkos::parallel_for(MDRP::template get<3>({nswgpts, nlay, ncol}), KOKKOS_LAMBDA (int igpt, int ilay, int icol) {
+  TIMED_KERNEL(Kokkos::parallel_for(MDRP::template get<3>({ncol, nlay, nswgpts}), KOKKOS_LAMBDA (int icol, int ilay, int igpt) {
     cld_tau_sw_gpt(icol,ilay,igpt) = clouds_sw_gpt.tau(icol,ilay,igpt);
-  });
-  Kokkos::parallel_for(MDRP::template get<3>({nlwgpts, nlay, ncol}), KOKKOS_LAMBDA (int igpt, int ilay, int icol) {
+  }));
+  TIMED_KERNEL(Kokkos::parallel_for(MDRP::template get<3>({ncol, nlay, nlwgpts}), KOKKOS_LAMBDA (int icol, int ilay, int igpt) {
     cld_tau_lw_gpt(icol,ilay,igpt) = clouds_lw_gpt.tau(icol,ilay,igpt);
-  });
+  }));
 
 #ifdef SCREAM_RRTMGP_DEBUG
   // Perform checks on optics; these would be caught by RRTMGP_EXPENSIVE_CHECKS in the RRTMGP code,
@@ -580,7 +580,7 @@ static void rrtmgp_sw(
   auto &clnsky_flux_dn_dir = clnsky_fluxes.flux_dn_dir;
 
   // Reset fluxes to zero
-  Kokkos::parallel_for(MDRP::template get<2>({nlay+1,ncol}), KOKKOS_LAMBDA(int ilev, int icol) {
+  TIMED_KERNEL(Kokkos::parallel_for(MDRP::template get<2>({ncol, nlay+1}), KOKKOS_LAMBDA(int icol, int ilev) {
     flux_up    (icol,ilev) = 0;
     flux_dn    (icol,ilev) = 0;
     flux_dn_dir(icol,ilev) = 0;
@@ -593,12 +593,12 @@ static void rrtmgp_sw(
     clnsky_flux_up    (icol,ilev) = 0;
     clnsky_flux_dn    (icol,ilev) = 0;
     clnsky_flux_dn_dir(icol,ilev) = 0;
-  });
-  Kokkos::parallel_for(MDRP::template get<3>({nbnd,nlay+1,ncol}), KOKKOS_LAMBDA(int ibnd, int ilev, int icol) {
+  }));
+  TIMED_KERNEL(Kokkos::parallel_for(MDRP::template get<3>({ncol, nlay+1, nbnd}), KOKKOS_LAMBDA(int icol, int ilev, int ibnd) {
     bnd_flux_up    (icol,ilev,ibnd) = 0;
     bnd_flux_dn    (icol,ilev,ibnd) = 0;
     bnd_flux_dn_dir(icol,ilev,ibnd) = 0;
-  });
+  }));
 
   // Get daytime indices
   auto dayIndices = pool_t::template alloc_and_init<int>(ncol);
@@ -660,19 +660,19 @@ static void rrtmgp_sw(
   auto col_gas             = view_t<RealT***>(dcurr, ncol, nlay, k_dist.get_ngas()+1); dcurr += size8;
 
   // Subset mu0
-  Kokkos::parallel_for(nday, KOKKOS_LAMBDA(int iday) {
+  TIMED_KERNEL(Kokkos::parallel_for(nday, KOKKOS_LAMBDA(int iday) {
     mu0_day(iday) = mu0(dayIndices(iday));
-  });
+  }));
 
   // subset state variables
-  Kokkos::parallel_for(MDRP::template get<2>({nlay,nday}), KOKKOS_LAMBDA(int ilay, int iday) {
+  TIMED_KERNEL(Kokkos::parallel_for(MDRP::template get<2>({nday, nlay}), KOKKOS_LAMBDA(int iday, int ilay) {
     p_lay_day(iday,ilay) = p_lay(dayIndices(iday),ilay);
     t_lay_day(iday,ilay) = t_lay(dayIndices(iday),ilay);
-  });
-  Kokkos::parallel_for(MDRP::template get<2>({nlay+1,nday}), KOKKOS_LAMBDA(int ilev, int iday) {
+  }));
+  TIMED_KERNEL(Kokkos::parallel_for(MDRP::template get<2>({nday, nlay+1}), KOKKOS_LAMBDA(int iday, int ilev) {
     p_lev_day(iday,ilev) = p_lev(dayIndices(iday),ilev);
     t_lev_day(iday,ilev) = t_lev(dayIndices(iday),ilev);
-  });
+  }));
 
   // Subset gases
   auto gas_names = gas_concs.get_gas_names();
@@ -680,9 +680,9 @@ static void rrtmgp_sw(
   gas_concs_day.init(gas_names, nday, nlay);
   for (int igas = 0; igas < ngas; igas++) {
     gas_concs.get_vmr(gas_names[igas], vmr);
-    Kokkos::parallel_for(MDRP::template get<2>({nlay,nday}), KOKKOS_LAMBDA(int ilay, int iday) {
+    TIMED_KERNEL(Kokkos::parallel_for(MDRP::template get<2>({nday, nlay}), KOKKOS_LAMBDA(int iday, int ilay) {
       vmr_day(iday,ilay) = vmr(dayIndices(iday),ilay);
-    });
+    }));
     gas_concs_day.set_vmr(gas_names[igas], vmr_day);
   }
 
@@ -690,30 +690,30 @@ static void rrtmgp_sw(
   optical_props2_t aerosol_day;
   aerosol_day.init(k_dist.get_band_lims_wavenumber());
   aerosol_day.alloc_2str(nday, nlay);
-  Kokkos::parallel_for(MDRP::template get<3>({nbnd,nlay,nday}), KOKKOS_LAMBDA(int ibnd, int ilay, int iday) {
+  TIMED_KERNEL(Kokkos::parallel_for(MDRP::template get<3>({nday,nlay,nbnd}), KOKKOS_LAMBDA(int iday, int ilay, int ibnd) {
     aerosol_day.tau(iday,ilay,ibnd) = aerosol.tau(dayIndices(iday),ilay,ibnd);
     aerosol_day.ssa(iday,ilay,ibnd) = aerosol.ssa(dayIndices(iday),ilay,ibnd);
     aerosol_day.g  (iday,ilay,ibnd) = aerosol.g  (dayIndices(iday),ilay,ibnd);
-  });
+  }));
 
   // Subset cloud optics
   // TODO: nbnd -> ngpt once we pass sub-sampled cloud state
   optical_props2_t clouds_day;
   clouds_day.init(k_dist.get_band_lims_wavenumber(), k_dist.get_band_lims_gpoint());
   clouds_day.alloc_2str(nday, nlay);
-  Kokkos::parallel_for(MDRP::template get<3>({ngpt,nlay,nday}), KOKKOS_LAMBDA(int igpt, int ilay, int iday) {
+  TIMED_KERNEL(Kokkos::parallel_for(MDRP::template get<3>({nday,nlay,ngpt}), KOKKOS_LAMBDA(int iday, int ilay, int igpt) {
     clouds_day.tau(iday,ilay,igpt) = clouds.tau(dayIndices(iday),ilay,igpt);
     clouds_day.ssa(iday,ilay,igpt) = clouds.ssa(dayIndices(iday),ilay,igpt);
     clouds_day.g  (iday,ilay,igpt) = clouds.g  (dayIndices(iday),ilay,igpt);
-  });
+  }));
 
   // RRTMGP assumes surface albedos have a screwy dimension ordering
   // for some strange reason, so we need to transpose these; also do
   // daytime subsetting in the same kernel
-  Kokkos::parallel_for(MDRP::template get<2>({nbnd,nday}), KOKKOS_LAMBDA(int ibnd, int icol) {
+  TIMED_KERNEL(Kokkos::parallel_for(MDRP::template get<2>({nbnd,nday}), KOKKOS_LAMBDA(int ibnd, int icol) {
     sfc_alb_dir_T(ibnd,icol) = sfc_alb_dir(dayIndices(icol),ibnd);
     sfc_alb_dif_T(ibnd,icol) = sfc_alb_dif(dayIndices(icol),ibnd);
-  });
+  }));
 
   // Temporaries we need for daytime-only fluxes
   fluxes_t fluxes_day;
@@ -756,20 +756,20 @@ static void rrtmgp_sw(
 #endif
 
   // Apply tsi_scaling
-  Kokkos::parallel_for(MDRP::template get<2>({ngpt,nday}), KOKKOS_LAMBDA(int igpt, int iday) {
+  TIMED_KERNEL(Kokkos::parallel_for(MDRP::template get<2>({nday, ngpt}), KOKKOS_LAMBDA(int iday, int igpt) {
     toa_flux(iday,igpt) = tsi_scaling * toa_flux(iday,igpt);
-  });
+  }));
 
   if (extra_clnclrsky_diag) {
     // Compute clear-clean-sky (just gas) fluxes on daytime columns
     rte_sw(optics, top_at_1, mu0_day, toa_flux, sfc_alb_dir_T, sfc_alb_dif_T, fluxes_day);
     // Expand daytime fluxes to all columns
-    Kokkos::parallel_for(MDRP::template get<2>({nlay+1,nday}), KOKKOS_LAMBDA(int ilev, int iday) {
+    TIMED_KERNEL(Kokkos::parallel_for(MDRP::template get<2>({nday, nlay+1}), KOKKOS_LAMBDA(int iday, int ilev) {
       const int icol = dayIndices(iday);
       clnclrsky_flux_up    (icol,ilev) = flux_up_day    (iday,ilev);
       clnclrsky_flux_dn    (icol,ilev) = flux_dn_day    (iday,ilev);
       clnclrsky_flux_dn_dir(icol,ilev) = flux_dn_dir_day(iday,ilev);
-    });
+    }));
   }
 
   // Combine gas and aerosol optics
@@ -780,12 +780,12 @@ static void rrtmgp_sw(
   rte_sw(optics, top_at_1, mu0_day, toa_flux, sfc_alb_dir_T, sfc_alb_dif_T, fluxes_day);
 
   // Expand daytime fluxes to all columns
-  Kokkos::parallel_for(MDRP::template get<2>({nlay+1,nday}), KOKKOS_LAMBDA(int ilev, int iday) {
+  TIMED_KERNEL(Kokkos::parallel_for(MDRP::template get<2>({nday, nlay+1}), KOKKOS_LAMBDA(int iday, int ilev) {
     const int icol = dayIndices(iday);
     clrsky_flux_up    (icol,ilev) = flux_up_day    (iday,ilev);
     clrsky_flux_dn    (icol,ilev) = flux_dn_day    (iday,ilev);
     clrsky_flux_dn_dir(icol,ilev) = flux_dn_dir_day(iday,ilev);
-  });
+  }));
 
   // Now merge in cloud optics and do allsky calculations
 
@@ -795,18 +795,18 @@ static void rrtmgp_sw(
   // Compute fluxes on daytime columns
   rte_sw(optics, top_at_1, mu0_day, toa_flux, sfc_alb_dir_T, sfc_alb_dif_T, fluxes_day);
   // Expand daytime fluxes to all columns
-  Kokkos::parallel_for(MDRP::template get<2>({nlay+1,nday}), KOKKOS_LAMBDA(int ilev, int iday) {
+  TIMED_KERNEL(Kokkos::parallel_for(MDRP::template get<2>({nday, nlay+1}), KOKKOS_LAMBDA(int iday, int ilev) {
     const int icol = dayIndices(iday);
     flux_up    (icol,ilev) = flux_up_day    (iday,ilev);
     flux_dn    (icol,ilev) = flux_dn_day    (iday,ilev);
     flux_dn_dir(icol,ilev) = flux_dn_dir_day(iday,ilev);
-  });
-  Kokkos::parallel_for(MDRP::template get<3>({nbnd,nlay+1,nday}), KOKKOS_LAMBDA(int ibnd, int ilev, int iday) {
+  }));
+  TIMED_KERNEL(Kokkos::parallel_for(MDRP::template get<3>({nday, nlay+1, nbnd}), KOKKOS_LAMBDA(int iday, int ilev, int ibnd) {
     const int icol = dayIndices(iday);
     bnd_flux_up    (icol,ilev,ibnd) = bnd_flux_up_day    (iday,ilev,ibnd);
     bnd_flux_dn    (icol,ilev,ibnd) = bnd_flux_dn_day    (iday,ilev,ibnd);
     bnd_flux_dn_dir(icol,ilev,ibnd) = bnd_flux_dn_dir_day(iday,ilev,ibnd);
-  });
+  }));
 
   if (extra_clnsky_diag) {
     // First increment clouds in optics_no_aerosols
@@ -814,12 +814,12 @@ static void rrtmgp_sw(
     // Compute cleansky (gas + clouds) fluxes on daytime columns
     rte_sw(optics_no_aerosols, top_at_1, mu0_day, toa_flux, sfc_alb_dir_T, sfc_alb_dif_T, fluxes_day);
     // Expand daytime fluxes to all columns
-    Kokkos::parallel_for(MDRP::template get<2>({nlay+1,nday}), KOKKOS_LAMBDA(int ilev, int iday) {
+    TIMED_KERNEL(Kokkos::parallel_for(MDRP::template get<2>({nday, nlay+1}), KOKKOS_LAMBDA(int iday, int ilev) {
       const int icol = dayIndices(iday);
       clnsky_flux_up    (icol,ilev) = flux_up_day    (iday,ilev);
       clnsky_flux_dn    (icol,ilev) = flux_dn_day    (iday,ilev);
       clnsky_flux_dn_dir(icol,ilev) = flux_dn_dir_day(iday,ilev);
-    });
+    }));
   }
 
   pool_t::dealloc(data);
@@ -873,8 +873,8 @@ static void rrtmgp_lw(
   auto &clnsky_flux_dn    = clnsky_fluxes.flux_dn;
 
   // Reset fluxes to zero
-  Kokkos::parallel_for(
-    MDRP::template get<2>({nlay + 1, ncol}), KOKKOS_LAMBDA(int ilev, int icol) {
+  TIMED_KERNEL(Kokkos::parallel_for(
+    MDRP::template get<2>({ncol, nlay + 1}), KOKKOS_LAMBDA(int icol, int ilev) {
       flux_up(icol, ilev)           = 0;
       flux_dn(icol, ilev)           = 0;
       clnclrsky_flux_up(icol, ilev) = 0;
@@ -883,13 +883,13 @@ static void rrtmgp_lw(
       clrsky_flux_dn(icol, ilev)    = 0;
       clnsky_flux_up(icol, ilev)    = 0;
       clnsky_flux_dn(icol, ilev)    = 0;
-    });
-  Kokkos::parallel_for(
-    MDRP::template get<3>({nbnd, nlay + 1, ncol}),
-    KOKKOS_LAMBDA(int ibnd, int ilev, int icol) {
+    }));
+  TIMED_KERNEL(Kokkos::parallel_for(
+    MDRP::template get<3>({ncol, nlay + 1, nbnd}),
+    KOKKOS_LAMBDA(int icol, int ilev, int ibnd) {
       bnd_flux_up(icol, ilev, ibnd) = 0;
       bnd_flux_dn(icol, ilev, ibnd) = 0;
-    });
+    }));
 
   // Allocate space for optical properties
   optical_props1_t optics;
@@ -910,9 +910,9 @@ static void rrtmgp_lw(
   }, Kokkos::LOr<bool>(top_at_1));
 
   // Surface temperature
-  Kokkos::parallel_for(ncol, KOKKOS_LAMBDA(int icol) {
+  TIMED_KERNEL(Kokkos::parallel_for(ncol, KOKKOS_LAMBDA(int icol) {
     t_sfc(icol) = t_lev(icol, conv::merge(nlay, 0, top_at_1));
-  });
+  }));
   Kokkos::deep_copy(emis_sfc , 0.98);
 
   // Get Gaussian quadrature weights
@@ -1011,23 +1011,27 @@ static void get_subcolumn_mask(const int ncol, const int nlay, const int ngpt, c
     // Kokkos::deep_copy(seeds_host, seeds);
     // for (int icol = 0; icol < ncol; ++icol) {
     //   Kokkos::Random_XorShift64_Pool<> random_pool(seeds_host(icol));
-    //   Kokkos::parallel_for(MDRP::template get<2>({ngpt, nlay}), KOKKOS_LAMBDA(int igpt, int ilay) {
+    //   TIMED_KERNEL(Kokkos::parallel_for(MDRP::template get<2>({nlay, ngpt}), KOKKOS_LAMBDA(int ilay, int igpt) {
     //     auto generator = random_pool.get_state();
     //     cldx(icol,ilay,igpt) = generator.drand(0., 1.);
     //     random_pool.free_state(generator);
-    //   });
+    //   }));
     // }
-    Kokkos::parallel_for(ncol, KOKKOS_LAMBDA(int icol) {
-      conv::Random rand(seeds(icol));
-      for (int igpt = 0; igpt < ngpt; igpt++) {
-        for (int ilay = 0; ilay < nlay; ilay++) {
-          cldx(icol,ilay,igpt) = rand.genFP<RealT>();
-        }
-      }
-    });
+    // TIMED_KERNEL(Kokkos::parallel_for(ncol, KOKKOS_LAMBDA(int icol) {
+    //   conv::Random rand(seeds(icol));
+    //   for (int igpt = 0; igpt < ngpt; igpt++) {
+    //     for (int ilay = 0; ilay < nlay; ilay++) {
+    //       cldx(icol,ilay,igpt) = rand.genFP<RealT>();
+    //     }
+    //   }
+    // }));
+    TIMED_KERNEL(Kokkos::parallel_for(MDRP::template get<3>({ncol, nlay, ngpt}), KOKKOS_LAMBDA(int icol, int ilay, int igpt) {
+      conv::Random rand(seeds(icol) + ilay*ngpt + igpt);
+      cldx(icol,ilay,igpt) = rand.genFP<RealT>();
+    }));
 
     // Step down columns and apply algorithm from eq (14)
-    Kokkos::parallel_for(MDRP::template get<2>({ngpt,ncol}), KOKKOS_LAMBDA(int igpt, int icol) {
+    TIMED_KERNEL(Kokkos::parallel_for(MDRP::template get<2>({ncol,ngpt}), KOKKOS_LAMBDA(int icol, int igpt) {
       for (int ilay = 1; ilay < nlay; ilay++) {
         // Check cldx in level above and see if it satisfies conditions to create a cloudy subcolumn
         if (cldx(icol,ilay-1,igpt) > 1.0 - cldf(icol,ilay-1)) {
@@ -1043,17 +1047,17 @@ static void get_subcolumn_mask(const int ncol, const int nlay, const int ngpt, c
           cldx(icol,ilay,igpt) = cldx(icol,ilay  ,igpt) * (1.0 - cldf(icol,ilay-1));
         }
       }
-    });
+    }));
   }
 
   // Use cldx array to create subcolumn mask
-  Kokkos::parallel_for(MDRP::template get<3>({ngpt,nlay,ncol}), KOKKOS_LAMBDA(int igpt, int ilay, int icol) {
+  TIMED_KERNEL(Kokkos::parallel_for(MDRP::template get<3>({ncol,nlay,ngpt}), KOKKOS_LAMBDA(int icol, int ilay, int igpt) {
     if (cldx(icol,ilay,igpt) > 1.0 - cldf(icol,ilay)) {
       subcolumn_mask(icol,ilay,igpt) = 1;
     } else {
       subcolumn_mask(icol,ilay,igpt) = 0;
     }
-  });
+  }));
 
   pool_t::dealloc(cldx);
 }
@@ -1068,22 +1072,22 @@ static void compute_cloud_area(
   // Subcolumn binary cld mask; if any layers with pressure between pmin and pmax are cloudy
   // then 2d subcol mask is 1, otherwise it is 0
   auto subcol_mask = pool_t::template alloc_and_init<RealT>(ncol, ngpt);
-  Kokkos::parallel_for(MDRP::template get<3>({ngpt, nlay, ncol}), KOKKOS_LAMBDA(int igpt, int ilay, int icol) {
+  TIMED_KERNEL(Kokkos::parallel_for(MDRP::template get<3>({ncol, nlay, ngpt}), KOKKOS_LAMBDA(int icol, int ilay, int igpt) {
     // NOTE: using plev would need to assume level ordering (top to bottom or bottom to top), but
     // using play/pmid does not
     if (cld_tau_gpt(icol,ilay,igpt) > 0 && pmid(icol,ilay) >= pmin && pmid(icol,ilay) < pmax) {
       subcol_mask(icol,igpt) = 1;
     }
-  });
+  }));
   // Compute average over subcols to get cloud area
   auto ngpt_inv = 1.0 / ngpt;
   Kokkos::deep_copy(cld_area, 0);
-  Kokkos::parallel_for(ncol, KOKKOS_LAMBDA(int icol) {
+  TIMED_KERNEL(Kokkos::parallel_for(ncol, KOKKOS_LAMBDA(int icol) {
     // This loop needs to be serial because of the atomic reduction
     for (int igpt = 0; igpt < ngpt; ++igpt) {
       cld_area(icol) += subcol_mask(icol,igpt) * ngpt_inv;
     }
-  });
+  }));
 
   pool_t::dealloc(subcol_mask);
 }
@@ -1131,7 +1135,7 @@ static void compute_aerocom_cloudtop(
   constexpr RealT cldfrac_tot_threshold = 0.001;  // BAD_CONSTANT!
 
   // Loop over all columns in parallel
-  Kokkos::parallel_for(ncol, KOKKOS_LAMBDA(int icol) {
+  TIMED_KERNEL(Kokkos::parallel_for(ncol, KOKKOS_LAMBDA(int icol) {
     // Loop over all layers in serial (due to accumulative
     // product), starting at 2 (second highest) layer because the
     // highest is assumed to hav no clouds
@@ -1190,7 +1194,7 @@ static void compute_aerocom_cloudtop(
     // aerocom_clr is the result of accumulative probabilities
     // (their products)
     cldfrac_tot_at_cldtop(icol) = 1.0 - aerocom_clr(icol);
-  });
+  }));
 
   pool_t::dealloc(aerocom_clr);
 }
@@ -1211,7 +1215,7 @@ static void mixing_ratio_to_cloud_mass(
   int ncol = mixing_ratio.extent(0);
   int nlay = mixing_ratio.extent(1);
   using physconst = scream::physics::Constants<Real>;
-  Kokkos::parallel_for(MDRP::template get<2>({nlay, ncol}), KOKKOS_LAMBDA(int ilay, int icol) {
+  TIMED_KERNEL(Kokkos::parallel_for(MDRP::template get<2>({ncol, nlay}), KOKKOS_LAMBDA(int icol, int ilay) {
     // Compute in-cloud mixing ratio (mixing ratio of the cloudy part of the layer)
     // NOTE: these thresholds (from E3SM) seem arbitrary, but included here for consistency
     // This limits in-cloud mixing ratio to 0.005 kg/kg. According to note in cloud_diagnostics
@@ -1223,7 +1227,7 @@ static void mixing_ratio_to_cloud_mass(
     } else {
       cloud_mass(icol,ilay) = 0;
     }
-  });
+  }));
 }
 
 /*
@@ -1234,16 +1238,16 @@ static void mixing_ratio_to_cloud_mass(
  */
 template<typename InT, typename T, typename OutT, typename std::enable_if<OutT::rank == 1>::type* dummy = nullptr>
 static void limit_to_bounds_k(InT const &arr_in, T const lower, T const upper, OutT &arr_out) {
-  Kokkos::parallel_for(arr_out.size(), KOKKOS_LAMBDA(int i) {
+  TIMED_KERNEL(Kokkos::parallel_for(arr_out.size(), KOKKOS_LAMBDA(int i) {
     arr_out(i) = std::min(std::max(arr_in(i), lower), upper);
-  });
+  }));
 }
 
 template<typename InT, typename T, typename OutT, typename std::enable_if<OutT::rank == 2>::type* dummy = nullptr>
 static void limit_to_bounds_k(InT const &arr_in, T const lower, T const upper, OutT &arr_out) {
-  Kokkos::parallel_for(MDRP::template get<2>({arr_out.extent(0), arr_out.extent(1)}), KOKKOS_LAMBDA(int i, int j) {
+  TIMED_KERNEL(Kokkos::parallel_for(MDRP::template get<2>({arr_out.extent(0), arr_out.extent(1)}), KOKKOS_LAMBDA(int i, int j) {
     arr_out(i, j) = std::min(std::max(arr_in(i, j), lower), upper);
-  });
+  }));
 }
 
 
@@ -1257,7 +1261,7 @@ static int get_wavelength_index(optical_props_t &kdist, RealT wavelength)
   // in units of meters, we need a conversion factor of 10^2
   const int nbnds = kdist.get_nband();
   int band_index = -1;
-  Kokkos::parallel_reduce(nbnds, KOKKOS_LAMBDA(int ibnd, int& band_index_inner) {
+  TIMED_KERNEL(Kokkos::parallel_reduce(nbnds, KOKKOS_LAMBDA(int ibnd, int& band_index_inner) {
     if (wavelength_bounds(0,ibnd) < wavelength_bounds(1,ibnd)) {
       if (wavelength_bounds(0,ibnd) <= wavelength * 1e2 && wavelength * 1e2 <= wavelength_bounds(1,ibnd)) {
         band_index_inner = ibnd;
@@ -1267,7 +1271,7 @@ static int get_wavelength_index(optical_props_t &kdist, RealT wavelength)
         band_index_inner = ibnd;
       }
     }
-  }, Kokkos::Max<int>(band_index));
+      }, Kokkos::Max<int>(band_index)));
   return band_index;
 }
 
@@ -1358,11 +1362,11 @@ static optical_props2_t get_subsampled_clouds(
   // even when separated by layers with no cloud properties, when in fact those layers should be
   // randomly overlapped.
   auto cldfrac_rad = pool_t::template alloc_and_init<RealT>(ncol, nlay);
-  Kokkos::parallel_for(MDRP::template get<3>({nbnd,nlay,ncol}), KOKKOS_LAMBDA (int ibnd, int ilay, int icol) {
+  TIMED_KERNEL(Kokkos::parallel_for(MDRP::template get<3>({ncol, nlay, nbnd}), KOKKOS_LAMBDA (int icol, int ilay, int ibnd) {
     if (cloud_optics.tau(icol,ilay,ibnd) > 0) {
       cldfrac_rad(icol,ilay) = cld(icol,ilay);
     }
-  });
+  }));
   // Get subcolumn cloud mask; note that get_subcolumn_mask exposes overlap assumption as an option,
   // but the only currently supported options are 0 (trivial all-or-nothing cloud) or 1 (max-rand),
   // so overlap has not been exposed as an option beyond this subcolumn. In the future, we should
@@ -1372,13 +1376,13 @@ static optical_props2_t get_subsampled_clouds(
   // Get unique seeds for each column that are reproducible across different MPI rank layouts;
   // use decimal part of pressure for this, consistent with the implementation in EAM
   auto seeds = pool_t::template alloc_and_init<int>(ncol);
-  Kokkos::parallel_for(ncol, KOKKOS_LAMBDA(int icol) {
+  TIMED_KERNEL(Kokkos::parallel_for(ncol, KOKKOS_LAMBDA(int icol) {
     seeds(icol) = 1e9 * (p_lay(icol,nlay-1) - int(p_lay(icol,nlay-1)));
-  });
+  }));
   get_subcolumn_mask(ncol, nlay, ngpt, cldfrac_rad, overlap, seeds, cldmask);
   // Assign optical properties to subcolumns (note this implements MCICA)
   auto gpoint_bands = kdist.get_gpoint_bands();
-  Kokkos::parallel_for(MDRP::template get<3>({ngpt,nlay,ncol}), KOKKOS_LAMBDA(int igpt, int ilay, int icol) {
+  TIMED_KERNEL(Kokkos::parallel_for(MDRP::template get<3>({ncol,nlay,ngpt}), KOKKOS_LAMBDA(int icol, int ilay, int igpt) {
     auto ibnd = gpoint_bands(igpt);
     if (cldmask(icol,ilay,igpt) == 1) {
       subsampled_optics.tau(icol,ilay,igpt) = cloud_optics.tau(icol,ilay,ibnd);
@@ -1389,7 +1393,7 @@ static optical_props2_t get_subsampled_clouds(
       subsampled_optics.ssa(icol,ilay,igpt) = 0;
       subsampled_optics.g  (icol,ilay,igpt) = 0;
     }
-  });
+  }));
 
   pool_t::dealloc(cldmask);
   pool_t::dealloc(cldfrac_rad);
@@ -1418,31 +1422,31 @@ static optical_props1_t get_subsampled_clouds(
   // even when separated by layers with no cloud properties, when in fact those layers should be
   // randomly overlapped.
   auto cldfrac_rad = pool_t::template alloc_and_init<RealT>(ncol, nlay);
-  Kokkos::parallel_for(MDRP::template get<3>({nbnd,nlay,ncol}), KOKKOS_LAMBDA (int ibnd, int ilay, int icol) {
+  TIMED_KERNEL(Kokkos::parallel_for(MDRP::template get<3>({ncol,nlay,nbnd}), KOKKOS_LAMBDA (int icol, int ilay, int ibnd) {
     if (cloud_optics.tau(icol,ilay,ibnd) > 0) {
       cldfrac_rad(icol,ilay) = cld(icol,ilay);
     }
-  });
+  }));
   // Get subcolumn cloud mask
   int overlap = 1;
   // Get unique seeds for each column that are reproducible across different MPI rank layouts;
   // use decimal part of pressure for this, consistent with the implementation in EAM; use different
   // seed values for longwave and shortwave
   auto seeds = pool_t::template alloc_and_init<int>(ncol);
-  Kokkos::parallel_for(ncol, KOKKOS_LAMBDA(int icol) {
+  TIMED_KERNEL(Kokkos::parallel_for(ncol, KOKKOS_LAMBDA(int icol) {
     seeds(icol) = 1e9 * (p_lay(icol,nlay-2) - int(p_lay(icol,nlay-2)));
-  });
+  }));
   get_subcolumn_mask(ncol, nlay, ngpt, cldfrac_rad, overlap, seeds, cldmask);
   // Assign optical properties to subcolumns (note this implements MCICA)
   auto gpoint_bands = kdist.get_gpoint_bands();
-  Kokkos::parallel_for(MDRP::template get<3>({ngpt,nlay,ncol}), KOKKOS_LAMBDA(int igpt, int ilay, int icol) {
-      auto ibnd = gpoint_bands(igpt);
-      if (cldmask(icol,ilay,igpt) == 1) {
-        subsampled_optics.tau(icol,ilay,igpt) = cloud_optics.tau(icol,ilay,ibnd);
-      } else {
-        subsampled_optics.tau(icol,ilay,igpt) = 0;
-      }
-    });
+  TIMED_KERNEL(Kokkos::parallel_for(MDRP::template get<3>({ncol,nlay,ngpt}), KOKKOS_LAMBDA(int icol, int ilay, int igpt) {
+    auto ibnd = gpoint_bands(igpt);
+    if (cldmask(icol,ilay,igpt) == 1) {
+      subsampled_optics.tau(icol,ilay,igpt) = cloud_optics.tau(icol,ilay,ibnd);
+    } else {
+      subsampled_optics.tau(icol,ilay,igpt) = 0;
+    }
+  }));
 
   pool_t::dealloc(cldmask);
   pool_t::dealloc(cldfrac_rad);
