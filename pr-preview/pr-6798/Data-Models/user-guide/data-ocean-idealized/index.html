@@ -2986,7 +2986,7 @@ FRCE-MW-MMF1_300dT1p25
 FRCE-MW-MMF1_300dT2p5
 FRCE-MW-MMF1_305dT1p25
 </code></pre></div>
-<p>These all use "analytic" SST patterns that are specified via the <code>docn_comp_run()</code> subroutine in <code>components/data_comps/docn/src/docn_comp_mod.F90</code>. The <code>AQP</code> compsets currently only use the basic aquaplanet pattern that is symmetric about the equator. Other APE patterns introduce different meridional gradients and/or asymmetries. The various analytic SST patterns can be selected by changing the data ocean specifier: <code>_DOCN%AQP1_</code>. </p>
+<p>These all use "analytic" SST patterns that are specified via the <code>docn_comp_run()</code> subroutine in <code>components/data_comps/docn/src/docn_comp_mod.F90</code>. The <code>AQP</code> compsets currently only use the basic aquaplanet pattern that is symmetric about the equator. Other APE patterns introduce different meridional gradients and/or asymmetries. The various analytic SST patterns can be selected by changing the data ocean specifier: <code>_DOCN%AQP1_</code>.</p>
 <p>The first 10 analytic aquaplanet SST patterns correspond to the aqua-planet experiment (APE) protocol as follows</p>
 <div class="highlight"><pre><span></span><code>AQP1    = control symmetric SST pattern
 AQP2    = Flat
