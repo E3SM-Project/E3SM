@@ -26,6 +26,8 @@ public:
 
   ~DataInterpolation () = default;
 
+  void toggle_debug_output (bool enable_dbg_output) { m_dbg_output = enable_dbg_output; }
+
   void setup_time_database (const strvec_t& input_files, const util::TimeLine timeline);
 
   void setup_remappers (const std::string& hremap_filename,
@@ -89,6 +91,8 @@ protected:
   bool                  m_time_db_created   = false;
   bool                  m_remappers_created = false;
   bool                  m_data_initialized  = false;
+
+  bool m_dbg_output = false;
 };
 
 } // namespace scream

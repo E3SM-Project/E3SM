@@ -129,6 +129,14 @@ void DataInterpolation::
 setup_time_database (const strvec_t& input_files,
                      const util::TimeLine timeline)
 {
+  // Log the final list of files, so the user know if something went wrong (e.g. a bad regex)
+  if (m_dbg_output and m_comm.am_i_root()) {
+    std::cout << "Setting up DataInerpolation object. List of input files:\n";
+    for (const auto& fname : input_files) {
+      std::cout << "  - " << fname << "\n";
+    }
+  }
+
   // Make sure there are no repetitions
   EKAT_REQUIRE_MSG (std::unordered_set(input_files.begin(),input_files.end()).size()==input_files.size(),
       "[DataInterpolation] Error! The input files list contains duplicates.\n"
@@ -141,14 +149,6 @@ setup_time_database (const strvec_t& input_files,
     std::ifstream file(fileName);
     return file.good(); // Check if the file can be opened
   };
-
-  // Log the final list of files, so the user know if something went wrong (e.g. a bad regex)
-  if (m_comm.am_i_root()) {
-    std::cout << "Setting up DataInerpolation object. List of input files:\n";
-    for (const auto& fname : input_files) {
-      std::cout << "  - " << fname << "\n";
-    }
-  }
 
   // Read what time stamps we have in each file
   auto ts2str = [](const util::TimeStamp& t) { return t.to_string(); };
@@ -222,9 +222,6 @@ setup_time_database (const strvec_t& input_files,
       "[DataInterpolation] Error! Input file(s) only contain 1 time slice overall.\n");
 
   m_time_db_created = true;
-
-  // Initialize horiz/vert remappers to identities
-  setup_remappers ("",None,"",{},{});
 }
 
 void DataInterpolation::
@@ -273,7 +270,32 @@ setup_remappers (const std::string& hremap_filename,
     m_vert_remapper = std::make_shared<IDR>(grid_after_hremap,SAT);
   }
 
-  // Setup remappers. Vertical first, since we only have model-grid fields
+  // Setup vertical pressure profiles (which can add 1 extra field to hremap)
+  // This MUST be done before registering in vremap, since register_field_from_tgt
+  // REQUIRES to have source pressure profiles set BEFORE.
+  Field data_p;
+  if (vr_type==Dynamic3D) {
+    // We also need to load and remap the pressure from the input files
+    auto hr_tgt_grid = m_horiz_remapper_beg->get_tgt_grid();
+    auto p_layout = hr_tgt_grid->get_3d_scalar_layout(true);
+    data_p = Field (FieldIdentifier(data_pname,p_layout,ekat::units::Pa,hr_tgt_grid->name()));
+    data_p.allocate_view();
+
+    auto vremap = std::dynamic_pointer_cast<VerticalRemapper>(m_vert_remapper);
+    vremap->set_source_pressure (data_p,VerticalRemapper::Both);
+    vremap->set_target_pressure (model_pmid,model_pint);
+  } else if (vr_type==Static1D) {
+    auto hr_tgt_grid = m_horiz_remapper_beg->get_tgt_grid();
+    auto p_layout = hr_tgt_grid->get_vertical_layout(true);
+    data_p = Field (FieldIdentifier(data_pname,p_layout,ekat::units::Pa,hr_tgt_grid->name()));
+    data_p.allocate_view();
+
+    auto vremap = std::dynamic_pointer_cast<VerticalRemapper>(m_vert_remapper);
+    vremap->set_source_pressure (data_p,VerticalRemapper::Both);
+    vremap->set_target_pressure (model_pmid,model_pint);
+  }
+
+  // Register fields in the remappers. Vertical first, since we only have model-grid fields
   int nfields = m_fields.size();
   m_vert_remapper->registration_begins();
   for (int i=0; i<nfields; ++i) {
@@ -288,31 +310,10 @@ setup_remappers (const std::string& hremap_filename,
     m_horiz_remapper_beg->register_field_from_tgt(f.clone());
     m_horiz_remapper_end->register_field_from_tgt(f.clone());
   }
-
-  // Setup vertical pressure profiles (which can add 1 extra field to hremap)
   if (vr_type==Dynamic3D) {
-    // We also need to load and remap the pressure from the input files
-    auto hr_tgt_grid = m_horiz_remapper_beg->get_tgt_grid();
-    auto p_layout = hr_tgt_grid->get_3d_scalar_layout(true);
-    Field data_p (FieldIdentifier(data_pname,p_layout,ekat::units::Pa,hr_tgt_grid->name()));
-    data_p.allocate_view();
     m_horiz_remapper_beg->register_field_from_tgt(data_p.clone());
     m_horiz_remapper_end->register_field_from_tgt(data_p.clone());
-
-    auto vremap = std::dynamic_pointer_cast<VerticalRemapper>(m_vert_remapper);
-    vremap->set_source_pressure (data_p,VerticalRemapper::Both);
-    vremap->set_target_pressure (model_pmid,model_pint);
-  } else if (vr_type==Static1D) {
-    auto hr_tgt_grid = m_horiz_remapper_beg->get_tgt_grid();
-    auto p_layout = hr_tgt_grid->get_vertical_layout(true);
-    Field data_p (FieldIdentifier(data_pname,p_layout,ekat::units::Pa,hr_tgt_grid->name()));
-    data_p.allocate_view();
-
-    auto vremap = std::dynamic_pointer_cast<VerticalRemapper>(m_vert_remapper);
-    vremap->set_target_pressure (data_p,VerticalRemapper::Both);
-    vremap->set_source_pressure (model_pmid,model_pint);
   }
-
   m_horiz_remapper_beg->registration_ends();
   m_horiz_remapper_end->registration_ends();
 
