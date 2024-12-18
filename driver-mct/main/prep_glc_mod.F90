@@ -45,6 +45,7 @@ module prep_glc_mod
   public :: prep_glc_get_l2gacc_lx
   public :: prep_glc_get_l2gacc_lx_one_instance
   public :: prep_glc_get_l2gacc_lx_cnt
+  public :: prep_glc_get_l2gacc_lx_cnt_avg
 
   public :: prep_glc_get_o2x_gx
   public :: prep_glc_get_x2gacc_gx
@@ -91,6 +92,7 @@ module prep_glc_mod
 
   type(mct_aVect), pointer :: l2gacc_lx(:) ! Lnd export, lnd grid, cpl pes - allocated in driver
   integer        , target :: l2gacc_lx_cnt ! l2gacc_lx: number of time samples accumulated
+  integer        , target :: l2gacc_lx_cnt_avg ! l2gacc_lx: number of time samples averaged
 
   ! other module variables
   integer :: mpicom_CPLID  ! MPI cpl communicator
@@ -195,6 +197,7 @@ contains
           call mct_aVect_zero(l2gacc_lx(eli))
        end do
        l2gacc_lx_cnt = 0
+       l2gacc_lx_cnt_avg = 0
     end if
 
     if (glc_present .and. lnd_c2_glc) then
@@ -502,6 +505,7 @@ contains
           call mct_avect_avg(l2gacc_lx(eli), l2gacc_lx_cnt)
        end do
     end if
+    l2gacc_lx_cnt_avg = l2gacc_lx_cnt
     l2gacc_lx_cnt = 0
 
     ! Accumulation for OCN
@@ -950,6 +954,7 @@ contains
     type(mct_avect), pointer :: x2g_gx
     !---------------------------------------------------------------
 
+
     do egi = 1,num_inst_glc
        x2g_gx => component_get_x2c_cx(glc(egi))
        call mct_aVect_zero(x2g_gx)
@@ -1195,8 +1200,9 @@ contains
     aream_l(:) = dom_l%data%rAttr(km,:)
 
     ! Export land fractions from fractions_lx to a local array
+    ! Note that for E3SM we are using lfrin instead of lfrac
     allocate(lfrac(lsize_l))
-    call mct_aVect_exportRattr(fractions_lx, "lfrac", lfrac)
+    call mct_aVect_exportRattr(fractions_lx, "lfrin", lfrac)
 
     ! Map Sg_icemask from the glc grid to the land grid.
     ! This may not be necessary, if Sg_icemask_l has already been mapped from Sg_icemask_g.
@@ -1379,6 +1385,8 @@ contains
     endif
 
     if (iamroot) then
+       write(logunit,*) 'global_accum_on_land_grid = ', global_accum_on_land_grid
+       write(logunit,*) 'global_accum_on_glc_grid = ', global_accum_on_glc_grid
        write(logunit,*) 'accum_renorm_factor = ', accum_renorm_factor
        write(logunit,*) 'ablat_renorm_factor = ', ablat_renorm_factor
     endif
@@ -1423,6 +1431,11 @@ contains
     integer, pointer :: prep_glc_get_l2gacc_lx_cnt
     prep_glc_get_l2gacc_lx_cnt => l2gacc_lx_cnt
   end function prep_glc_get_l2gacc_lx_cnt
+
+  function prep_glc_get_l2gacc_lx_cnt_avg()
+    integer, pointer :: prep_glc_get_l2gacc_lx_cnt_avg
+    prep_glc_get_l2gacc_lx_cnt_avg => l2gacc_lx_cnt_avg
+  end function prep_glc_get_l2gacc_lx_cnt_avg
 
   function prep_glc_get_o2x_gx()
     type(mct_aVect), pointer :: prep_glc_get_o2x_gx(:)
