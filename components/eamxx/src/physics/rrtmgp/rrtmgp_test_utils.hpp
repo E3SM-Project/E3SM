@@ -88,7 +88,7 @@ static void dummy_clouds(
   // put them in 2/3 of the columns since that's roughly the total cloudiness of earth.
   // Set sane values for liquid and ice water path.
   // NOTE: these "sane" values are in g/m2!
-  Kokkos::parallel_for( MDRP::template get<2>({nlay,ncol}) , KOKKOS_LAMBDA (int ilay, int icol) {
+  Kokkos::parallel_for( MDRP::template get<2>({ncol, nlay}) , KOKKOS_LAMBDA (int icol, int ilay) {
     cloud_mask(icol,ilay) = p_lay(icol,ilay) > 100. * 100. && p_lay(icol,ilay) < 900. * 100. && ((icol+1)%3) != 0;
     // Ice and liquid will overlap in a few layers
     lwp(icol,ilay) = conv::merge(10.,  0., cloud_mask(icol,ilay) && t_lay(icol,ilay) > 263.);
