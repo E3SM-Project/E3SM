@@ -6,14 +6,14 @@ A key consideration for the user is whether they need to use a realistic distrib
 
 The RSO mode has the following namelist variables to influence the ocean behavior:
 
-```
+```text
 RSO_relax_tau   SST relaxation timescale
 RSO_fixed_MLD   globally uniform MLD value (use -1 for realistic MLD)
 ```
 
 Other RSO parameter values are hardcoded in `components/data_comps/docn/src/docn_comp_mod.F90`.
 
-```
+```text
 RSO_slab_option = 0           ! Option for setting RSO_X_cool
 RSO_R_cool      = 11.75/86400 ! base cooling rate [K/s]
 RSO_Tdeep       = 271.00      ! deep water temperature [K]

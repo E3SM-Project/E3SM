@@ -6,7 +6,7 @@ The two main uses of idealized SST modes are aquaplanet (AQP) and radiative-conv
 
 The following list shows the currently defined E3SM compsets that utilize idealized SST.
 
-```
+```text
 FAQP
 FAQP-MMF1
 FAQP-MMF2
@@ -27,11 +27,11 @@ FRCE-MW-MMF1_300dT2p5
 FRCE-MW-MMF1_305dT1p25
 ```
 
-These all use "analytic" SST patterns that are specified via the `docn_comp_run()` subroutine in `components/data_comps/docn/src/docn_comp_mod.F90`. The `AQP` compsets currently only use the basic aquaplanet pattern that is symmetric about the equator. Other APE patterns introduce different meridional gradients and/or asymmetries. The various analytic SST patterns can be selected by changing the data ocean specifier: `_DOCN%AQP1_`. 
+These all use "analytic" SST patterns that are specified via the `docn_comp_run()` subroutine in `components/data_comps/docn/src/docn_comp_mod.F90`. The `AQP` compsets currently only use the basic aquaplanet pattern that is symmetric about the equator. Other APE patterns introduce different meridional gradients and/or asymmetries. The various analytic SST patterns can be selected by changing the data ocean specifier: `_DOCN%AQP1_`.
 
 The first 10 analytic aquaplanet SST patterns correspond to the aqua-planet experiment (APE) protocol as follows
 
-```
+```text
 AQP1    = control symmetric SST pattern
 AQP2    = Flat
 AQP3    = Qobs = average of AQP1 and AQP2
@@ -46,7 +46,7 @@ AQP10   = Control+15N
 
 !!!NOTE
     When using aquaplanet mode the orbital parameters will take on the idealized values shown below such that there are no seasonal variations, but there is still a diurnal cycle.
-    ```
+    ```text
     orb_eccen = 0
     orb_obliq = 0
     orb_mvelp = 0

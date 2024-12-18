@@ -6,7 +6,7 @@ Example compsets that use this capability are `F2010` and `F20TR`. These compset
 
 Several additional XML variables need to be set in order to use this capability, which are set to defaults for common configurations, such as `F2010` at `ne30pg2` atmospheric resolution.
 
-```
+```text
 SSTICE_DATA_FILENAME  Prescribed SST and ice coverage data file name
 SSTICE_GRID_FILENAME  Grid file in "domain" format corresponding to SSTICE_DATA_FILENAME
 SSTICE_YEAR_ALIGN     The model year that corresponds to SSTICE_YEAR_START on the data file

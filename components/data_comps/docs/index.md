@@ -8,6 +8,6 @@ The E3SM data models are key components to support many different scenarios:
 
 More details can be found for each component below.
 
-* [Data Atmosphere](user-guide/data-atmos-main.md)
-* [Data Land](user-guide/data-land-main.md)
-* [Data Ocean](user-guide/data-ocean-main.md)
+- [Data Atmosphere](user-guide/data-atmos-main.md)
+- [Data Land](user-guide/data-land-main.md)
+- [Data Ocean](user-guide/data-ocean-main.md)
