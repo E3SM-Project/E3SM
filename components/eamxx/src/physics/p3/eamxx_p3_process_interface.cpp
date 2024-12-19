@@ -275,19 +275,12 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   auto cld_frac_l = m_buffer.cld_frac_l;
   auto cld_frac_i = m_buffer.cld_frac_i;
   auto dz         = m_buffer.dz;
-  auto set_cld_frac_l_to_one = m_params.get<bool>("set_cld_frac_l_to_one", false);
-  auto set_cld_frac_i_to_one = m_params.get<bool>("set_cld_frac_i_to_one", false);
-  auto set_cld_frac_r_to_one = m_params.get<bool>("set_cld_frac_r_to_one", false);
 
   // -- Set values for the pre-amble structure
-  p3_preproc.set_variables(m_num_cols,nk_pack,
-                        set_cld_frac_l_to_one,
-                        set_cld_frac_i_to_one,
-                        set_cld_frac_r_to_one,
-                        pmid,pmid_dry,pseudo_density,pseudo_density_dry,
+  p3_preproc.set_variables(m_num_cols,nk_pack,pmid,pmid_dry,pseudo_density,pseudo_density_dry,
                         T_atm,cld_frac_t,
                         qv, qc, nc, qr, nr, qi, qm, ni, bm, qv_prev,
-                        inv_exner, th_atm, cld_frac_l, cld_frac_i, cld_frac_r, dz);
+                        inv_exner, th_atm, cld_frac_l, cld_frac_i, cld_frac_r, dz, runtime_options);
   // --Prognostic State Variables:
   prog_state.qc     = p3_preproc.qc;
   prog_state.nc     = p3_preproc.nc;

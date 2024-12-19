@@ -106,12 +106,12 @@ public:
         // Cloud fraction
         // Set minimum cloud fraction - avoids division by zero
         // Alternatively set fraction to 1 everywhere to disable subgrid effects
-        cld_frac_l(icol,ipack) = m_set_cld_frac_l_to_one ? 1 : ekat::max(cld_frac_t_pack,mincld);
-        cld_frac_i(icol,ipack) = m_set_cld_frac_i_to_one ? 1 : ekat::max(cld_frac_t_pack,mincld);
-        cld_frac_r(icol,ipack) = m_set_cld_frac_r_to_one ? 1 : ekat::max(cld_frac_t_pack,mincld);
+        cld_frac_l(icol,ipack) = runtime_opts.set_cld_frac_l_to_one ? 1 : ekat::max(cld_frac_t_pack,mincld);
+        cld_frac_i(icol,ipack) = runtime_opts.set_cld_frac_i_to_one ? 1 : ekat::max(cld_frac_t_pack,mincld);
+        cld_frac_r(icol,ipack) = runtime_opts.set_cld_frac_r_to_one ? 1 : ekat::max(cld_frac_t_pack,mincld);
 
         // update rain cloud fraction given neighboring levels using max-overlap approach.
-        if ( !m_set_cld_frac_r_to_one ) {
+        if ( !runtime_opts.set_cld_frac_r_to_one ) {
           for (int ivec=0;ivec<Spack::n;ivec++)
           {
             // Hard-coded max-overlap cloud fraction calculation.  Cycle through the layers from top to bottom and determine if the rain fraction needs to
@@ -132,7 +132,6 @@ public:
     } // operator
     // Local variables
     int m_ncol, m_npack;
-    bool m_set_cld_frac_l_to_one, m_set_cld_frac_i_to_one, m_set_cld_frac_r_to_one;
     Real mincld = 0.0001;  // TODO: These should be stored somewhere as more universal constants.  Or maybe in the P3 class hpp
     view_2d_const pmid;
     view_2d_const pmid_dry;
@@ -156,11 +155,10 @@ public:
     view_2d       cld_frac_i;
     view_2d       cld_frac_r;
     view_2d       dz;
+    // Add runtime_options as a member variable
+    P3F::P3Runtime runtime_opts;
     // Assigning local variables
     void set_variables(const int ncol, const int npack,
-           const bool set_cld_frac_l_to_one,
-           const bool set_cld_frac_i_to_one,
-           const bool set_cld_frac_r_to_one,
            const view_2d_const& pmid_, const view_2d_const& pmid_dry_,
            const view_2d_const& pseudo_density_,
            const view_2d_const& pseudo_density_dry_, const view_2d& T_atm_,
@@ -168,14 +166,12 @@ public:
            const view_2d& nc_, const view_2d& qr_, const view_2d& nr_, const view_2d& qi_,
            const view_2d& qm_, const view_2d& ni_, const view_2d& bm_, const view_2d& qv_prev_,
            const view_2d& inv_exner_, const view_2d& th_atm_, const view_2d& cld_frac_l_,
-           const view_2d& cld_frac_i_, const view_2d& cld_frac_r_, const view_2d& dz_
+           const view_2d& cld_frac_i_, const view_2d& cld_frac_r_, const view_2d& dz_,
+           const P3F::P3Runtime& runtime_options
            )
     {
       m_ncol = ncol;
       m_npack = npack;
-      m_set_cld_frac_l_to_one = set_cld_frac_l_to_one;
-      m_set_cld_frac_i_to_one = set_cld_frac_i_to_one;
-      m_set_cld_frac_r_to_one = set_cld_frac_r_to_one;
       // IN
       pmid           = pmid_;
       pmid_dry       = pmid_dry_;
@@ -200,6 +196,7 @@ public:
       cld_frac_i = cld_frac_i_;
       cld_frac_r = cld_frac_r_;
       dz = dz_;
+      runtime_opts = runtime_options;
     } // set_variables
   }; // p3_preamble
   /* --------------------------------------------------------------------------------------------*/
@@ -272,9 +269,6 @@ public:
     } // operator
     // Local variables
     int m_ncol, m_npack;
-    bool m_set_cld_frac_l_to_one;
-    bool m_set_cld_frac_i_to_one;
-    bool m_set_cld_frac_r_to_one;
     double m_dt;
     view_2d       T_atm;
     view_2d_const pmid;
