@@ -2106,7 +2106,6 @@
 			<var name="testArrayRestartability"/>
 			<var name="forcingGroupNames"/>
 			<var name="forcingGroupRestartTimes"/>
-			<var name="runningMeanRemovedIceRunoff" packages="pkgScaledDIB"/>
 		</stream>
 
 		<stream name="restart"
@@ -2120,6 +2119,7 @@
 			<var name="xtime"/>
 			<var name="simulationStartTime"/>
 			<stream name="restart_contents"/>
+			<var name="runningMeanRemovedIceRunoff" packages="pkgScaledDIB"/>
 		</stream>
 
 		<stream name="restart_ic"
@@ -2131,6 +2131,7 @@
 				immutable="true">
 			<stream name="mesh"/>
 			<stream name="restart_contents"/>
+			<var name="runningMeanRemovedIceRunoff" packages="pkgScaledDIB"/>
 		</stream>
 
 		<stream name="output"
