@@ -204,12 +204,10 @@ contains
 
             if (.not. config_disable_vel_hmix) then
                if (config_use_mom_del2) then 
-                  viscDel2 = config_mom_del2
                   u = u + viscDel2 * eta0 * (kx**2 + ky**2) * cos(phase)
                   v = v + viscDel2 * eta0 * (kx**2 + ky**2) * cos(phase)
                endif
                if (config_use_mom_del4) then 
-                  viscDel4 = config_mom_del4
                   u = u - viscDel4 * eta0 * ((kx**4 + ky**4 + kx**2 * ky**2) * cos(phase))
                   v = v - viscDel4 * eta0 * ((kx**4 + ky**4 + kx**2 * ky**2) * cos(phase))
                endif
@@ -248,6 +246,9 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: restingThickness
 
       if (.not. config_use_manufactured_solution) return
+
+      viscDel2 = config_mom_del2
+      viscDel4 = config_mom_del4
 
       kx = 2.0_RKIND*pi / config_manufactured_solution_wavelength_x
       ky = 2.0_RKIND*pi / config_manufactured_solution_wavelength_y
