@@ -54,21 +54,23 @@ public:
     // NOTE: tgt layouts always use LEV (not ILEV), while src can have ILEV or LEV.
 
     using namespace ShortFieldTagsNames;
-    auto src_stripped = src.clone().strip_dim(ILEV,false).strip_dim(LEV,false);
-    auto tgt_stripped = tgt.clone().strip_dim(LEV,false);
+    auto src_stripped = src.clone().strip_dims({LEV,ILEV});
+    auto tgt_stripped = tgt.clone().strip_dims({LEV,ILEV});
 
     return src.rank()==tgt.rank() and
            src_stripped.congruent(tgt_stripped);
   }
 
-  // NOTE: for the vert remapper, it doesn't really make sense to distinguish
-  //       between midpoints and interfaces: we're simply asking for a quantity
-  //       at a given set of pressure levels. So we choose to NOT allow a tgt
-  //       layout with ILEV tag.
   bool is_valid_tgt_layout (const layout_type& layout) const override {
     using namespace ShortFieldTagsNames;
-    return not layout.has_tag(ILEV)
+    return !(m_tgt_mid_same_as_int and layout.has_tag(ILEV))
            and AbstractRemapper::is_valid_tgt_layout(layout);
+  }
+
+  bool is_valid_src_layout (const layout_type& layout) const override {
+    using namespace ShortFieldTagsNames;
+    return !(m_src_mid_same_as_int and layout.has_tag(ILEV))
+           and AbstractRemapper::is_valid_src_layout(layout);
   }
 
   void set_extrapolation_type (const ExtrapType etype, const TopBot where = TopAndBot);

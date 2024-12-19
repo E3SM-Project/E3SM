@@ -278,10 +278,13 @@ do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
   auto& f_tgt = m_tgt_fields[ifield]; // Nonconst, since we need to set extra data in the header
   if (src_layout.has_tag(LEV) or src_layout.has_tag(ILEV)) {
     // Determine if this field can be handled with packs, and whether it's at midpoints
+    // NOTE: we don't know if mid==int on src or tgt. If it is, we use the other to determine mid-vs-int
     // Add mask tracking to the target field. The mask tracks location of tgt pressure levs that are outside the
     // bounds of the src pressure field, and hence cannot be recovered by interpolation
     auto& ft = m_field2type[src.name()];
-    ft.midpoints = src.get_header().get_identifier().get_layout().has_tag(LEV);
+    ft.midpoints = m_src_mid_same_as_int
+                 ? tgt.get_header().get_identifier().get_layout().has_tag(LEV)
+                 : src.get_header().get_identifier().get_layout().has_tag(LEV);
     ft.packed    = src.get_header().get_alloc_properties().is_compatible<PackT>() and
                    tgt.get_header().get_alloc_properties().is_compatible<PackT>();
 
@@ -440,7 +443,7 @@ void VerticalRemapper::do_remap_fwd ()
     const auto& f_src    = m_src_fields[i];
           auto& f_tgt    = m_tgt_fields[i];
     const auto& tgt_layout   = f_tgt.get_header().get_identifier().get_layout();
-    if (tgt_layout.has_tag(LEV)) {
+    if (tgt_layout.has_tag(LEV) or tgt_layout.has_tag(ILEV)) {
       const auto& type = m_field2type.at(f_src.name());
       // Dispatch interpolation to the proper lin interp object
       if (type.midpoints) {
