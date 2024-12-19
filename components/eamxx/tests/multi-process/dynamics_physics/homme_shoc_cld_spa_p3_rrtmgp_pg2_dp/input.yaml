@@ -40,7 +40,7 @@ atmosphere_processes:
   homme:
     Moisture: moist
   physics:
-    atm_procs_list: [mac_aero_mic,rrtmgp]
+    atm_procs_list: [iop_forcing,mac_aero_mic,rrtmgp]
     schedule_type: Sequential
     Type: Group
     mac_aero_mic:

@@ -38,6 +38,7 @@ set (SCREAM_LIBS
      eamxx_cosp
      cld_fraction
      spa
+     iop_forcing
      nudging
      diagnostics
      tms
