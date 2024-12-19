@@ -80,7 +80,7 @@ This tool is not used in our core testing tools and goes through long periods of
 (IE there are no active ongoing porting efforts). It is likely this tool will not work exactly as expected if it
 has not been run in a while or is being used on a package on which it has not been used before.
 
-## cf-xml-to-yaml
+## query-cf-database/cf-xml-to-yaml
 
 Given an XML file containing the CF conventions for standardized field names
 (https://cfconventions.org/standard-names.html), this tool generates a YAML
