@@ -60,6 +60,15 @@ initial_conditions:
   wetdens: [1038.67760516297, 1046.20002003441, 1031.74623165457, 1086.79731859184]
   nevapr: 0.0
   precip_total_tend: 0.0  
+  surf_radiative_T: 288.0
+  ps: 105000.0
+  horiz_winds: [-0.24988988196194634E+000, -0.23959782871450760E+000]
+  precip_liq_surf_mass: 0.1
+  precip_ice_surf_mass: 0.1
+  snow_depth_land: 0.01
+  fraction_landuse: 0.0
+  SW_flux_dn: 500.0
+  constituent_fluxes: 0.0
 # The parameters for I/O control
 Scorpio:
   output_yaml_files: ["output.yaml"]

@@ -1,10 +1,10 @@
+#include <mam4xx/mam4.hpp>
 #include <physics/mam/eamxx_mam_microphysics_process_interface.hpp>
-
 // impl namespace for some driver level functions for microphysics
 
-#include "readfiles/photo_table_utils.cpp"
-#include "readfiles/find_season_index_utils.hpp"
 #include "physics/rrtmgp/shr_orb_mod_c2f.hpp"
+#include "readfiles/find_season_index_utils.hpp"
+#include "readfiles/photo_table_utils.cpp"
 
 namespace scream {
 
@@ -36,7 +36,7 @@ MAMMicrophysics::MAMMicrophysics(const ekat::Comm &comm,
   config_.linoz.o3_lbl = m_params.get<int>("mam4_o3_lbl");
   config_.linoz.o3_tau = m_params.get<double>("mam4_o3_tau");
   config_.linoz.o3_sfc = m_params.get<double>("mam4_o3_sfc");
-  config_.linoz.psc_T = m_params.get<double>("mam4_psc_T");
+  config_.linoz.psc_T  = m_params.get<double>("mam4_psc_T");
 }
 
 AtmosphereProcessType MAMMicrophysics::type() const {
@@ -70,6 +70,9 @@ void MAMMicrophysics::set_grids(
   const FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(true);
   const FieldLayout scalar3d_int = grid_->get_3d_scalar_layout(false);
 
+  // For U and V components of wind
+  const FieldLayout vector3d = grid_->get_3d_vector_layout(true, 2);
+
   using namespace ekat::units;
   constexpr auto q_unit = kg / kg;  // units of mass mixing ratios of tracers
   constexpr auto n_unit = 1 / kg;   // units of number mixing ratios of tracers
@@ -81,19 +84,20 @@ void MAMMicrophysics::set_grids(
   // ----------- Atmospheric quantities -------------
 
   // Specific humidity [kg/kg](Require only for building DS)
-  add_tracer<Required>("qv", grid_, kg/kg); // specific humidity
+  add_tracer<Required>("qv", grid_, kg / kg);  // specific humidity
 
   // Cloud liquid mass mixing ratio [kg/kg](Require only for building DS)
-  add_tracer<Updated>("qc", grid_, kg/kg); // cloud liquid wet mixing ratio
+  add_tracer<Updated>("qc", grid_, kg / kg);  // cloud liquid wet mixing ratio
 
   // Cloud ice mass mixing ratio [kg/kg](Require only for building DS)
-  add_tracer<Required>("qi", grid_, kg/kg); // ice wet mixing ratio
+  add_tracer<Required>("qi", grid_, kg / kg);  // ice wet mixing ratio
 
   // Cloud liquid number mixing ratio [1/kg](Require only for building DS)
-  add_tracer<Updated>("nc", grid_, n_unit); // cloud liquid wet number mixing ratio
+  add_tracer<Updated>("nc", grid_,
+                      n_unit);  // cloud liquid wet number mixing ratio
 
   // Cloud ice number mixing ratio [1/kg](Require only for building DS)
-  add_tracer<Required>("ni", grid_, n_unit); // ice number mixing ratio
+  add_tracer<Required>("ni", grid_, n_unit);  // ice number mixing ratio
 
   // Temperature[K] at midpoints
   add_field<Required>("T_mid", scalar3d_mid, K, grid_name);
@@ -120,10 +124,29 @@ void MAMMicrophysics::set_grids(
   // Surface geopotential [m2/s2]
   add_field<Required>("phis", scalar2d, m2 / s2, grid_name);
 
+  // Surface pressure [Pa]
+  add_field<Required>("ps", scalar2d, Pa, grid_name);
+
+  // U and V components of the wind[m/s]
+  add_field<Required>("horiz_winds", vector3d, m / s, grid_name);
+
   //----------- Variables from microphysics scheme -------------
   constexpr auto nondim = ekat::units::Units::nondimensional();
   // Total cloud fraction [fraction]
   add_field<Required>("cldfrac_liq", scalar3d_mid, nondim, grid_name);
+
+  // Evaporation from stratiform rain [kg/kg/s]
+  add_field<Required>("nevapr", scalar3d_mid, kg / kg / s, grid_name);
+
+  // Stratiform rain production rate [kg/kg/s]
+  add_field<Required>("precip_total_tend", scalar3d_mid, kg / kg / s,
+                      grid_name);
+
+  // precipitation liquid mass [kg/m2]
+  add_field<Required>("precip_liq_surf_mass", scalar3d_mid, kg / m2, grid_name);
+
+  // precipitation ice mass [kg/m2]
+  add_field<Required>("precip_ice_surf_mass", scalar3d_mid, kg / m2, grid_name);
 
   //----------- Variables from other mam4xx processes ------------
   // Number of modes
@@ -142,18 +165,26 @@ void MAMMicrophysics::set_grids(
   // Wet density of interstitial aerosol [kg/m3]
   add_field<Required>("wetdens", scalar3d_mid_nmodes, kg / m3, grid_name);
 
-  //----------- Variables from coupler (land component)---------
+  // For fractional land use
+  const FieldLayout vector2d_class =
+      grid_->get_2d_vector_layout(mam4::mo_drydep::n_land_type, "class");
+
+  // Fractional land use [fraction]
+  add_field<Required>("fraction_landuse", vector2d_class, nondim, grid_name);
+
+  //----------- Variables from the coupler ---------
   // surface albedo shortwave, direct
   add_field<Required>("sfc_alb_dir_vis", scalar2d, nondim, grid_name);
 
-  //----------- Variables from microphysics scheme -------------
+  // Surface temperature[K]
+  add_field<Required>("surf_radiative_T", scalar2d, K, grid_name);
 
-  // Evaporation from stratiform rain [kg/kg/s]
-  add_field<Required>("nevapr", scalar3d_mid, kg / kg / s, grid_name);
+  // snow depth land [m]
+  add_field<Required>("snow_depth_land", scalar2d, m, grid_name);
 
-  // Stratiform rain production rate [kg/kg/s]
-  add_field<Required>("precip_total_tend", scalar3d_mid, kg / kg / s,
-                      grid_name);
+  //----------- Variables from the RRTMGP radiation ---------
+  // Downwelling solar flux at the surface [w/m2]
+  add_field<Required>("SW_flux_dn", scalar3d_int, W / m2, grid_name);
 
   // ---------------------------------------------------------------------
   // These variables are "updated" or inputs/outputs for the process
@@ -170,7 +201,7 @@ void MAMMicrophysics::set_grids(
           mam_coupling::int_aero_mmr_field_name(m, a);
 
       if(strlen(int_mmr_field_name) > 0) {
-        add_tracer<Updated>(int_mmr_field_name, grid_, kg/kg);
+        add_tracer<Updated>(int_mmr_field_name, grid_, kg / kg);
       }
     }  // for loop species
   }    // for loop nmodes interstitial
@@ -192,8 +223,16 @@ void MAMMicrophysics::set_grids(
   // aerosol-related gases: mass mixing ratios
   for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
     const char *gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
-    add_tracer<Updated>(gas_mmr_field_name, grid_, kg/kg);
+    add_tracer<Updated>(gas_mmr_field_name, grid_, kg / kg);
   }
+  //----------- Updated variables from other mam4xx processes ------------
+  // layout for Constituent fluxes
+  FieldLayout scalar2d_pcnst =
+      grid_->get_2d_vector_layout(mam4::pcnst, "num_phys_constituents");
+
+  // Constituent fluxes of species in [kg/m2/s]
+  add_field<Updated>("constituent_fluxes", scalar2d_pcnst, kg / m2 / s,
+                     grid_name);
 
   // Creating a Linoz reader and setting Linoz parameters involves reading data
   // from a file and configuring the necessary parameters for the Linoz model.
@@ -272,8 +311,10 @@ void MAMMicrophysics::set_grids(
       const auto file_name  = m_params.get<std::string>(item_name);
       elevated_emis_file_name_[var_name] = file_name;
     }
-    elevated_emis_var_names_["so2"]    = {"BB", "ENE_ELEV", "IND_ELEV", "contvolc"};
-    elevated_emis_var_names_["so4_a1"] = {"BB", "ENE_ELEV", "IND_ELEV", "contvolc"};
+    elevated_emis_var_names_["so2"]    = {"BB", "ENE_ELEV", "IND_ELEV",
+                                          "contvolc"};
+    elevated_emis_var_names_["so4_a1"] = {"BB", "ENE_ELEV", "IND_ELEV",
+                                          "contvolc"};
     elevated_emis_var_names_["so4_a2"] = {"contvolc"};
     elevated_emis_var_names_["pom_a4"] = {"BB"};
     elevated_emis_var_names_["bc_a4"]  = {"BB"};
@@ -285,8 +326,8 @@ void MAMMicrophysics::set_grids(
     // FIXME: why the sectors in this files are num_a1;
     //  I guess this should be num_a4? Is this a bug in the orginal nc files?
     elevated_emis_var_names_["num_a4"] = {"num_a1_BC_ELEV_BB",
-                                      "num_a1_POM_ELEV_BB"};
-    elevated_emis_var_names_["soag"]   = {"SOAbb_src", "SOAbg_src", "SOAff_src"};
+                                          "num_a1_POM_ELEV_BB"};
+    elevated_emis_var_names_["soag"] = {"SOAbb_src", "SOAbg_src", "SOAff_src"};
 
     int elevated_emiss_cyclical_ymd = m_params.get<int>("elevated_emiss_ymd");
 
@@ -300,9 +341,8 @@ void MAMMicrophysics::set_grids(
       auto hor_rem = scream::mam_coupling::create_horiz_remapper(
           grid_, file_name, extfrc_map_file, var_names, data_tracer);
 
-      auto file_reader =
-          scream::mam_coupling::create_tracer_data_reader(hor_rem, file_name,
-                                                          data_tracer.file_type);
+      auto file_reader = scream::mam_coupling::create_tracer_data_reader(
+          hor_rem, file_name, data_tracer.file_type);
       ElevatedEmissionsHorizInterp_.push_back(hor_rem);
       ElevatedEmissionsDataReader_.push_back(file_reader);
       elevated_emis_data_.push_back(data_tracer);
@@ -317,8 +357,9 @@ void MAMMicrophysics::set_grids(
       forcings_[i].nsectors = nvars;
       // I am assuming the order of species in extfrc_lst_.
       // Indexing in mam4xx is fortran.
-      forcings_[i].frc_ndx    = i + 1;
-      const auto io_grid_emis = ElevatedEmissionsHorizInterp_[i]->get_tgt_grid();
+      forcings_[i].frc_ndx = i + 1;
+      const auto io_grid_emis =
+          ElevatedEmissionsHorizInterp_[i]->get_tgt_grid();
       const int num_cols_io_emis =
           io_grid_emis->get_num_local_dofs();  // Number of columns on this rank
       const int num_levs_io_emis =
@@ -344,11 +385,11 @@ void MAMMicrophysics::set_grids(
   }  // Tracer external forcing data
 
   {
-    const std::string season_wes_file = m_params.get<std::string>("mam4_season_wes_file");
-    const auto& clat = col_latitudes_;
-    mam_coupling::find_season_index_reader(season_wes_file,
-                                         clat,
-                                         index_season_lai_);
+    const std::string season_wes_file =
+        m_params.get<std::string>("mam4_season_wes_file");
+    const auto &clat = col_latitudes_;
+    mam_coupling::find_season_index_reader(season_wes_file, clat,
+                                           index_season_lai_);
   }
 }  // set_grids
 
@@ -523,7 +564,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   work_photo_table_ = view_2d("work_photo_table", ncol_, photo_table_len);
   const int sethet_work_len = mam4::mo_sethet::get_total_work_len_sethet();
   work_set_het_ = view_2d("work_set_het_array", ncol_, sethet_work_len);
-  cmfdqr_ = view_1d("cmfdqr_", nlev_);
+  cmfdqr_       = view_1d("cmfdqr_", nlev_);
 
   // here's where we store per-column photolysis rates
   photo_rates_ = view_3d("photo_rates", ncol_, nlev_, mam4::mo_photo::phtcnt);
@@ -541,8 +582,8 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
 
   for(int i = 0; i < static_cast<int>(extfrc_lst_.size()); ++i) {
     scream::mam_coupling::update_tracer_data_from_file(
-        ElevatedEmissionsDataReader_[i], curr_month, *ElevatedEmissionsHorizInterp_[i],
-        elevated_emis_data_[i]);
+        ElevatedEmissionsDataReader_[i], curr_month,
+        *ElevatedEmissionsHorizInterp_[i], elevated_emis_data_[i]);
   }
 
   invariants_ = view_3d("invarians", ncol_, nlev_, mam4::gas_chemistry::nfs);
@@ -568,28 +609,71 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
 //  RUN_IMPL
 // ================================================================
 void MAMMicrophysics::run_impl(const double dt) {
+  const int ncol         = ncol_;
+  const int nlev         = nlev_;
   const auto scan_policy = ekat::ExeSpaceUtils<
-      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol, nlev);
   const auto policy =
-      ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
+      ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol, nlev);
 
   // preprocess input -- needs a scan for the calculation of atm height
   Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
   Kokkos::fence();
 
-   //----------- Variables from microphysics scheme -------------
+  //----------- Variables from microphysics scheme -------------
 
   // Evaporation from stratiform rain [kg/kg/s]
-  const auto& nevapr = get_field_in("nevapr").get_view<const Real **>();
+  const auto &nevapr = get_field_in("nevapr").get_view<const Real **>();
 
   // Stratiform rain production rate [kg/kg/s]
-  const auto& prain = get_field_in("precip_total_tend").get_view<const Real **>();
+  const auto &prain =
+      get_field_in("precip_total_tend").get_view<const Real **>();
 
   const auto wet_geometric_mean_diameter_i =
       get_field_in("dgnumwet").get_view<const Real ***>();
   const auto dry_geometric_mean_diameter_i =
       get_field_in("dgnum").get_view<const Real ***>();
   const auto wetdens = get_field_in("wetdens").get_view<const Real ***>();
+
+  // U wind component [m/s]
+  const const_view_2d u_wind =
+      get_field_in("horiz_winds").get_component(0).get_view<const Real **>();
+
+  // V wind component [m/s]
+  const const_view_2d v_wind =
+      get_field_in("horiz_winds").get_component(1).get_view<const Real **>();
+
+  // Liquid precip [kg/m2]
+  const const_view_2d precip_liq_surf_mass =
+      get_field_in("precip_liq_surf_mass").get_view<const Real **>();
+
+  // Ice precip [kg/m2]
+  const const_view_2d precip_ice_surf_mass =
+      get_field_in("precip_ice_surf_mass").get_view<const Real **>();
+
+  // Fractional land use [fraction]
+  const const_view_2d fraction_landuse =
+      get_field_in("fraction_landuse").get_view<const Real **>();
+
+  // Downwelling solar flux at the surface [w/m2]
+  const const_view_2d sw_flux_dn =
+      get_field_in("SW_flux_dn").get_view<const Real **>();
+
+  // Constituent fluxes of gas and aerosol species
+  view_2d constituent_fluxes =
+      get_field_out("constituent_fluxes").get_view<Real **>();
+
+  // Surface temperature [K]
+  const const_view_1d sfc_temperature =
+      get_field_in("surf_radiative_T").get_view<const Real *>();
+
+  // Surface pressure [Pa]
+  const const_view_1d sfc_pressure =
+      get_field_in("ps").get_view<const Real *>();
+
+  // Snow depth on land [m]
+  const const_view_1d snow_depth_land =
+      get_field_in("snow_depth_land").get_view<const Real *>();
 
   // climatology data for linear stratospheric chemistry
   // ozone (climatology) [vmr]
@@ -648,14 +732,15 @@ void MAMMicrophysics::run_impl(const double dt) {
   Kokkos::fence();
 
   elevated_emiss_time_state_.t_now = ts.frac_of_year_in_days();
-  int i                        = 0;
+  int i                            = 0;
   for(const auto &var_name : extfrc_lst_) {
     const auto file_name = elevated_emis_file_name_[var_name];
     const auto var_names = elevated_emis_var_names_[var_name];
     const int nsectors   = int(var_names.size());
     view_2d elevated_emis_output[nsectors];
     for(int isp = 0; isp < nsectors; ++isp) {
-      elevated_emis_output[isp] = elevated_emis_output_[isp + forcings_[i].offset];
+      elevated_emis_output[isp] =
+          elevated_emis_output_[isp + forcings_[i].offset];
     }
     scream::mam_coupling::advance_tracer_data(
         ElevatedEmissionsDataReader_[i], *ElevatedEmissionsHorizInterp_[i], ts,
@@ -722,7 +807,7 @@ void MAMMicrophysics::run_impl(const double dt) {
     // then deep copied to a device view.
 
     // Now use solar declination to calculate zenith angle for all points
-    for(int i = 0; i < ncol_; i++) {
+    for(int i = 0; i < ncol; i++) {
       Real lat =
           col_latitudes_host(i) * M_PI / 180.0;  // Convert lat/lon to radians
       Real lon = col_longitudes_host(i) * M_PI / 180.0;
@@ -735,10 +820,10 @@ void MAMMicrophysics::run_impl(const double dt) {
   const auto zenith_angle = acos_cosine_zenith_;
   constexpr int gas_pcnst = mam_coupling::gas_pcnst();
 
-  const auto& elevated_emis_output = elevated_emis_output_;
-  const auto& extfrc           = extfrc_;
-  const auto& forcings         = forcings_;
-  constexpr int extcnt        = mam4::gas_chemistry::extcnt;
+  const auto &elevated_emis_output = elevated_emis_output_;
+  const auto &extfrc              = extfrc_;
+  const auto &forcings            = forcings_;
+  constexpr int extcnt            = mam4::gas_chemistry::extcnt;
 
   const int offset_aerosol = mam4::utils::gasses_start_ind();
   Real adv_mass_kg_per_moles[gas_pcnst];
@@ -753,11 +838,18 @@ void MAMMicrophysics::run_impl(const double dt) {
     clsmap_4[i]              = mam4::gas_chemistry::clsmap_4[i];
     permute_4[i]             = mam4::gas_chemistry::permute_4[i];
   }
-  const auto& cmfdqr = cmfdqr_;
-  const auto& work_set_het =work_set_het_;
+  const auto &cmfdqr       = cmfdqr_;
+  const auto &work_set_het = work_set_het_;
+  const mam4::seq_drydep::Data drydep_data =
+      mam4::seq_drydep::set_gas_drydep_data();
+  const auto qv         = wet_atm_.qv;
+  const int month       = timestamp().get_month();  // 1-based
+  const int surface_lev = nlev - 1;                 // Surface level
+
   // loop over atmosphere columns and compute aerosol microphyscs
   Kokkos::parallel_for(
-      policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
+      "MAMMicrophysics::run_impl", policy,
+      KOKKOS_LAMBDA(const ThreadTeam &team) {
         const int icol     = team.league_rank();   // column index
         const Real col_lat = col_latitudes(icol);  // column latitude (degrees?)
 
@@ -820,28 +912,81 @@ void MAMMicrophysics::run_impl(const double dt) {
             ekat::subview(linoz_dPmL_dO3col, icol);
         const auto linoz_cariolle_pscs_icol =
             ekat::subview(linoz_cariolle_pscs, icol);
-        const auto nevapr_icol  = ekat::subview(nevapr, icol);
-        const auto prain_icol = ekat::subview(prain, icol);
+        const auto nevapr_icol       = ekat::subview(nevapr, icol);
+        const auto prain_icol        = ekat::subview(prain, icol);
         const auto work_set_het_icol = ekat::subview(work_set_het, icol);
-        // Note: All variables are inputs, except for progs, which is an
-        // input/output variable.
+
+        // Surface temperature
+        const Real sfc_air_temp = atm.temperature(surface_lev);
+
+        // Surface specific humidity
+        const Real sfc_spec_hum = atm.vapor_mixing_ratio(surface_lev);
+
+        // Surface potential temperature
+        //(FIXME: We followed Fortran, compare it with MAM4xx's potential temp
+        // func)
+        const Real sfc_potential_temp = sfc_air_temp * (1.0 + sfc_spec_hum);
+
+        // Surface pressure at 10m (Followed the fortran code)
+        const Real pressure_10m = dry_atm.p_mid(icol, surface_lev);
+
+        // Wind speed at the surface
+        const Real wind_speed =
+            haero::sqrt(u_wind(icol, surface_lev) * u_wind(icol, surface_lev) +
+                        v_wind(icol, surface_lev) * v_wind(icol, surface_lev));
+
+        // Total rain at the surface
+        const Real rain = precip_liq_surf_mass(icol, surface_lev) +
+                          precip_ice_surf_mass(icol, surface_lev);
+
+        // Snow depth on land [m]
+        const Real snow_height = snow_depth_land(icol);
+
+        // Downwelling solar flux at the surface (value at interface) [w/m2]
+        const Real solar_flux = sw_flux_dn(icol, surface_lev + 1);
+
+        Real fraction_landuse_icol[mam4::mo_drydep::n_land_type];
+        for(int i = 0; i < mam4::mo_drydep::n_land_type; ++i) {
+          fraction_landuse_icol[i] = fraction_landuse(icol, i);
+        }
+
+        // ????? FIXME: We should get its value after the rebase
+        const int col_index_season[mam4::mo_drydep::n_land_type] = {
+            1, 2, 3, 4, 5, 6, 7, 8, 9};
+        // These output values need to be put somewhere:
+        Real dvel[gas_pcnst] = {};  // deposition velocity [1/cm/s]
+        Real dflx[gas_pcnst] = {};  // deposition flux [1/cm^2/s]
+
+        // Output: values are dvel, dvlx
+        // Input/Output: progs::stateq, progs::qqcw
         mam4::microphysics::perform_atmospheric_chemistry_and_microphysics(
-            team, dt, rlats, cnst_offline_icol, forcings_in, atm, progs,
-            photo_table, chlorine_loading, config.setsox, config.amicphys,
-            config.linoz.psc_T, zenith_angle(icol), d_sfc_alb_dir_vis(icol),
-            o3_col_dens_i, photo_rates_icol, extfrc_icol, invariants_icol,
-            work_photo_table_icol, linoz_o3_clim_icol, linoz_t_clim_icol,
-            linoz_o3col_clim_icol, linoz_PmL_clim_icol, linoz_dPmL_dO3_icol,
-            linoz_dPmL_dT_icol, linoz_dPmL_dO3col_icol,
-            linoz_cariolle_pscs_icol, eccf, adv_mass_kg_per_moles, clsmap_4,
-            permute_4, offset_aerosol,
-            config.linoz.o3_sfc, config.linoz.o3_tau, config.linoz.o3_lbl,
-            dry_diameter_icol, wet_diameter_icol, wetdens_icol,
-            dry_atm.phis(icol),
-            cmfdqr,
-            prain_icol,
-            nevapr_icol,
-            work_set_het_icol);
+            team, dt, rlats, month, sfc_temperature(icol), sfc_air_temp,
+            sfc_potential_temp, sfc_pressure(icol), pressure_10m, sfc_spec_hum,
+            wind_speed, rain, snow_height, solar_flux, cnst_offline_icol,
+            forcings_in, atm, photo_table, chlorine_loading, config.setsox,
+            config.amicphys, config.linoz.psc_T, zenith_angle(icol),
+            d_sfc_alb_dir_vis(icol), o3_col_dens_i, photo_rates_icol,
+            extfrc_icol, invariants_icol, work_photo_table_icol,
+            linoz_o3_clim_icol, linoz_t_clim_icol, linoz_o3col_clim_icol,
+            linoz_PmL_clim_icol, linoz_dPmL_dO3_icol, linoz_dPmL_dT_icol,
+            linoz_dPmL_dO3col_icol, linoz_cariolle_pscs_icol, eccf,
+            adv_mass_kg_per_moles, fraction_landuse_icol,
+
+            col_index_season,  // FIXME: Get it after Changes sync with E3SM
+
+            clsmap_4, permute_4, offset_aerosol, config.linoz.o3_sfc,
+            config.linoz.o3_tau, config.linoz.o3_lbl, dry_diameter_icol,
+            wet_diameter_icol, wetdens_icol, dry_atm.phis(icol), cmfdqr,
+            prain_icol, nevapr_icol, work_set_het_icol, drydep_data, dvel, dflx,
+            progs);
+
+        // Update constituent fluxes with gas drydep fluxes (dflx)
+        // FIXME: Possible units mismatch (dflx is in kg/cm2/s but
+        // constituent_fluxes is kg/m2/s) (Following mimics Fortran code
+        // behavior but we should look into it)
+        for(int ispc = offset_aerosol; ispc < mam4::pcnst; ++ispc) {
+          constituent_fluxes(icol, ispc) = dflx[ispc - offset_aerosol];
+        }
       });  // parallel_for for the column loop
   Kokkos::fence();
 
