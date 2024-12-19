@@ -31,7 +31,16 @@ public:
   void setup_time_database (const strvec_t& input_files, const util::TimeLine timeline);
 
   void setup_remappers (const std::string& hremap_filename,
-                        const VRemapType vremap,
+                        const VRemapType vr_type,
+                        const std::string& data_pname,
+                        const Field& model_pmid,
+                        const Field& model_pint);
+
+  void setup_remappers (const std::string& hremap_filename,
+                        const VRemapType vr_type,
+                        const std::string& extrap_type_top,
+                        const std::string& extrap_type_bot,
+                        const Real mask_value,
                         const std::string& data_pname,
                         const Field& model_pmid,
                         const Field& model_pint);

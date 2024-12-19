@@ -231,6 +231,22 @@ setup_remappers (const std::string& hremap_filename,
                  const Field& model_pmid,
                  const Field& model_pint)
 {
+  setup_remappers(hremap_filename,
+                  vr_type,"P0","P0",
+                  -1, // Unused, since we do P0 extrapolation at top/bot
+                  data_pname,model_pmid,model_pint);
+}
+
+void DataInterpolation::
+setup_remappers (const std::string& hremap_filename,
+                 const VRemapType vr_type,
+                 const std::string& extrap_type_top,
+                 const std::string& extrap_type_bot,
+                 const Real mask_value,
+                 const std::string& data_pname,
+                 const Field& model_pmid,
+                 const Field& model_pint)
+{
   EKAT_REQUIRE_MSG (m_time_db_created,
       "[DataInterpolation] Error! Cannot create remappers before time database.\n");
 
@@ -258,8 +274,26 @@ setup_remappers (const std::string& hremap_filename,
     m_horiz_remapper_end = std::make_shared<IDR>(grid_after_hremap,SAT);
   }
 
+  std::shared_ptr<VerticalRemapper> vremap;
   if (vr_type!=None) {
-    m_vert_remapper = std::make_shared<VerticalRemapper>(grid_after_hremap,m_model_grid);
+    auto s2et = [](const std::string& s) {
+      if (s=="P0") {
+        return VerticalRemapper::P0;
+      } else if (s=="Mask") {
+        return VerticalRemapper::Mask;
+      } else {
+        EKAT_ERROR_MSG (
+            "Error! Invalid/unsupported extrapolation type.\n"
+            " - input value : " + s + "\n"
+            " - valid values: P0, Mask\n");
+        return static_cast<VerticalRemapper::ExtrapType>(-1);
+      }
+    };
+
+    m_vert_remapper = vremap = std::make_shared<VerticalRemapper>(grid_after_hremap,m_model_grid);
+    vremap->set_extrapolation_type(s2et(extrap_type_top),VerticalRemapper::Top);
+    vremap->set_extrapolation_type(s2et(extrap_type_bot),VerticalRemapper::Bot);
+    vremap->set_mask_value(mask_value);
   } else {
     // If no vert remap is requested, model_grid and grid_after_hremap MUST have same nlevs
     int model_nlevs = m_model_grid->get_num_vertical_levels();
@@ -281,7 +315,6 @@ setup_remappers (const std::string& hremap_filename,
     data_p = Field (FieldIdentifier(data_pname,p_layout,ekat::units::Pa,hr_tgt_grid->name()));
     data_p.allocate_view();
 
-    auto vremap = std::dynamic_pointer_cast<VerticalRemapper>(m_vert_remapper);
     vremap->set_source_pressure (data_p,VerticalRemapper::Both);
     vremap->set_target_pressure (model_pmid,model_pint);
   } else if (vr_type==Static1D) {
@@ -290,7 +323,6 @@ setup_remappers (const std::string& hremap_filename,
     data_p = Field (FieldIdentifier(data_pname,p_layout,ekat::units::Pa,hr_tgt_grid->name()));
     data_p.allocate_view();
 
-    auto vremap = std::dynamic_pointer_cast<VerticalRemapper>(m_vert_remapper);
     vremap->set_source_pressure (data_p,VerticalRemapper::Both);
     vremap->set_target_pressure (model_pmid,model_pint);
   }
