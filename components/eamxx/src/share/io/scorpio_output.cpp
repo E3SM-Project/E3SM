@@ -1369,7 +1369,6 @@ AtmosphereOutput::create_diagnostic (const std::string& diag_field_name)
   for (const auto& freq : diag->get_required_field_requests()) {
     const auto& fname = freq.fid.name();
     if (!sim_field_mgr->has_field(fname)) {
-      std::cout << diag_field_name << " depends on the diag " << fname << "\n";
       // This diag depends on another diag. Create and init the dependency
       if (m_diagnostics.count(fname)==0) {
         m_diagnostics[fname] = create_diagnostic(fname);

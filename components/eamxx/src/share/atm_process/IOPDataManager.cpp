@@ -1,7 +1,7 @@
 #include "share/grid/point_grid.hpp"
 #include "share/io/scorpio_input.hpp"
 #include "share/io/scream_scorpio_interface.hpp"
-#include "share/iop/intensive_observation_period.hpp"
+#include "share/atm_process/IOPDataManager.hpp"
 
 #include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_lin_interp.hpp"
@@ -27,13 +27,13 @@ namespace ekat {
 namespace scream {
 namespace control {
 
-IntensiveObservationPeriod::
-IntensiveObservationPeriod(const ekat::Comm& comm,
-                           const ekat::ParameterList& params,
-                           const util::TimeStamp& run_t0,
-                           const int model_nlevs,
-                           const Field& hyam,
-                           const Field& hybm)
+IOPDataManager::
+IOPDataManager(const ekat::Comm& comm,
+               const ekat::ParameterList& params,
+               const util::TimeStamp& run_t0,
+               const int model_nlevs,
+               const Field& hyam,
+               const Field& hybm)
 {
   m_comm = comm;
   m_params = params;
@@ -72,14 +72,14 @@ IntensiveObservationPeriod(const ekat::Comm& comm,
   initialize_iop_file(run_t0, model_nlevs);
 }
 
-IntensiveObservationPeriod::
-~IntensiveObservationPeriod ()
+IOPDataManager::
+~IOPDataManager ()
 {
   const auto iop_file = m_params.get<std::string>("iop_file");
   scorpio::release_file(iop_file);
 }
 
-void IntensiveObservationPeriod::
+void IOPDataManager::
 initialize_iop_file(const util::TimeStamp& run_t0,
                     int model_nlevs)
 {
@@ -310,7 +310,7 @@ initialize_iop_file(const util::TimeStamp& run_t0,
   m_helper_fields.insert({"model_pressure", model_pressure});
 }
 
-void IntensiveObservationPeriod::
+void IOPDataManager::
 setup_io_info(const std::string& file_name,
               const grid_ptr& grid)
 {
@@ -397,7 +397,7 @@ setup_io_info(const std::string& file_name,
   }
 }
 
-void IntensiveObservationPeriod::
+void IOPDataManager::
 read_fields_from_file_for_iop (const std::string& file_name,
                                const vos& field_names_nc,
                                const vos& field_names_eamxx,
@@ -501,7 +501,7 @@ read_fields_from_file_for_iop (const std::string& file_name,
   }
 }
 
-void IntensiveObservationPeriod::
+void IOPDataManager::
 read_iop_file_data (const util::TimeStamp& current_ts)
 {
   // Query to see if we need to load data from IOP file.
@@ -749,7 +749,7 @@ read_iop_file_data (const util::TimeStamp& current_ts)
   m_time_info.time_idx_of_current_data = iop_file_time_idx;
 }
 
-void IntensiveObservationPeriod::
+void IOPDataManager::
 set_fields_from_iop_data(const field_mgr_ptr field_mgr)
 {
   if (m_params.get<bool>("zero_non_iop_tracers") && field_mgr->has_group("tracers")) {
@@ -858,7 +858,7 @@ set_fields_from_iop_data(const field_mgr_ptr field_mgr)
   });
 }
 
-void IntensiveObservationPeriod::
+void IOPDataManager::
 correct_temperature_and_water_vapor(const field_mgr_ptr field_mgr)
 {
   // Find the first valid level index for t_iop, i.e., first non-zero entry
