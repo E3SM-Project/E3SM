@@ -2179,6 +2179,7 @@ end function bfb_expm1
     !------------------------------------------------------------------------------------
 
     use scream_abortutils, only : endscreamrun
+    use cam_control_mod,   only: aqua_planet
 
     implicit none
 
@@ -2189,7 +2190,7 @@ end function bfb_expm1
     logical(btype),                intent(in) :: force_abort         !.TRUE. = forces abort if value violation is detected
 
     !Local variables:
-    real(rtype), parameter :: T_low  = 160._rtype !173._rtype
+    real(rtype) :: T_low
     real(rtype), parameter :: T_high = 355._rtype !323._rtype
     real(rtype), parameter :: Q_high = 40.e-3_rtype
     real(rtype), parameter :: N_high = 1.e+20_rtype
@@ -2201,6 +2202,12 @@ end function bfb_expm1
     character(len=1000)    :: err_msg
 
     trap = .false.
+
+    if (aqua_planet) then
+      T_low = 50
+    else
+      T_low = 160
+    end if
 
     k_loop: do k = kts, kte
 

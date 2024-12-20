@@ -4,14 +4,10 @@
 <!-- Orbital parameters cannot be set here, they need to be in drv_in -->
 <!-- see CAM_USER_MODS in cam/cime_config/config_component.xml -->
 
-<!-- ------------------------------------------------------------------------------------------ -->
 <!-- Set Aquaplanet to True -->
-<!-- ------------------------------------------------------------------------------------------ -->
 <aqua_planet>.true.</aqua_planet>
 
-<!-- ------------------------------------------------------------------------------------------ -->
 <!-- Solar data (insolation of 1365) -->
-<!-- ------------------------------------------------------------------------------------------ -->
 <!-- <solar_data_file>atm/cam/solar/spectral_irradiance_Lean_1976-2007_ave_c20160517.nc</solar_data_file> -->
 <!-- <solar_data_ymd>20000101</solar_data_ymd> -->
 <!-- <solar_data_type>FIXED</solar_data_type> -->
@@ -20,9 +16,7 @@
 <solar_htng_spctrl_scl>.true. </solar_htng_spctrl_scl>
 <solar_data_type      >FIXED  </solar_data_type>
 
-<!-- ------------------------------------------------------------------------------------------ -->
 <!-- Revised physics constants for ape experiments (from CAM5/6 use case) -->
-<!-- ------------------------------------------------------------------------------------------ -->
 <!-- <sday>   86164.10063718943  </sday> -->
 <!-- <rearth> 6.37100e6          </rearth> -->
 <!-- <gravit> 9.79764         </gravit> -->
@@ -30,9 +24,7 @@
 <!-- <mwh2o>  18.01618112892741  </mwh2o> -->
 <!-- <cpwv>   1.846e3         </cpwv> -->
 
-<!-- ------------------------------------------------------------------------------------------ -->
 <!-- Constant hydrometeor number -->
-<!-- ------------------------------------------------------------------------------------------ -->
 <micro_do_nccons > .true.     </micro_do_nccons>
 <micro_do_nicons > .true.     </micro_do_nicons>
 <micro_nccons    > 70.0D6     </micro_nccons>
@@ -42,9 +34,7 @@
 <srf_emis_specifier   > '' </srf_emis_specifier>
 <tracer_cnst_specifier> '' </tracer_cnst_specifier>
 
-<!-- ------------------------------------------------------------------------------------------ -->
 <!-- GHG values - co2 set by CCSM_CO2_PPMV in config_compset.xml -->
-<!-- ------------------------------------------------------------------------------------------ -->
 <ch4vmr>1.650e-6 </ch4vmr>
 <n2ovmr>0.306e-6 </n2ovmr>
 <f11vmr>0.0      </f11vmr>
@@ -57,9 +47,7 @@
 <!-- <f11vmr>676.0526e-12</f11vmr> -->
 <!-- <f12vmr>537.05e-12</f12vmr> -->
 
-<!-- ------------------------------------------------------------------------------------------ -->
 <!-- zonally symmetric prescribed ozone -->
-<!-- ------------------------------------------------------------------------------------------ -->
 <prescribed_ozone_type    > CYCLICAL              </prescribed_ozone_type>
 <prescribed_ozone_datapath> atm/cam/ozone         </prescribed_ozone_datapath>
 
@@ -74,9 +62,7 @@
 <!-- <prescribed_ozone_cycle_yr> 2000                  </prescribed_ozone_cycle_yr> -->
 
 <!-- ========================================================================================== -->
-<!-- ------------------------------------------------------------------------------------------ -->
 <!-- Non-aqua-planet specific settings -->
-<!-- ------------------------------------------------------------------------------------------ -->
 <!-- ========================================================================================== -->
 
 <!-- Ice nucleation mods-->

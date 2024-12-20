@@ -62,7 +62,8 @@
       <value compset="_EAM%SCM_"       >&eamv3_phys_defaults; &eamv3_chem_defaults; -scam</value>
 
       <!-- idealized configurations -->
-      <value compset="_EAM%AQP_"       >&eamv2_phys_defaults; &eamv2_chem_defaults; -aquaplanet</value>
+      <!-- <value compset="_EAM%AQP_"       >&eamv2_phys_defaults; &eamv2_chem_defaults; -aquaplanet</value> -->
+      <value compset="_EAM%AQP_"       >&eamv3_phys_defaults; &eamv3_chem_defaults; -aquaplanet</value>
       <value compset="_EAM%RCE_"       >&eamv2_phys_defaults; -chem none -aquaplanet -rce -rad rrtmgp</value>
       <value compset="_EAM%IDEAL"      >-phys ideal</value>
       <value compset="_EAM%ADIAB"      >-phys adiabatic</value>
@@ -146,7 +147,8 @@
       <value compset="ARM97_EAM"                        >scm_arm97_chemUCI-Linoz-mam5-vbs</value>
       <value compset="SCM_EAM"                          >scam_generic</value>
       <value compset="PIPD_EAM"                         >1850-PD_cam5</value>
-      <value compset="_EAM%AQP_"                        >aquaplanet_EAMv1</value>
+      <!-- <value compset="_EAM%AQP_"                        >aquaplanet_EAMv1</value> -->
+      <value compset="_EAM%AQP_"                        >aquaplanet_EAMv3</value>
       <value compset="_EAM%RCE_"                        >RCEMIP_EAMv1</value>
       <value compset="2010_EAM%SCREAM-LR"               >2010_scream_lr</value>
       <value compset="2010_EAM%SCREAM-HR"               >2010_scream_hr</value>
