@@ -751,7 +751,7 @@ contains
     use model_init_mod,       only: model_init2
     use time_mod,             only: timelevel_t, tstep, timelevel_init, nendstep, smooth, nsplit, TimeLevel_Qdp
     use control_mod,          only: smooth_phis_numcycle
-    use viscosity_mod,        only: dss_hvtensor
+    use viscosity_base,       only: dss_hvtensor
 
 #ifdef TRILINOS
     use prim_derived_type_mod ,only : derived_type, initialize
