@@ -169,6 +169,18 @@ contains
             end do
          end do
 
+         do fp = 1,num_soilp
+            p = filter_soilp(fp)
+
+            ! update residue pools
+            col_cs%residue_cpools(p,i_met_lit) = col_cs%residue_cpools(p,i_met_lit) + &
+                 col_cf%harvest_c_to_residue_met_c(p) * dt
+            col_cs%residue_cpools(p,i_cel_lit) = col_cs%residue_cpools(p,i_cel_lit) + &
+                 col_cf%harvest_c_to_residue_cel_c(p) * dt
+            col_cs%residue_cpools(p,i_lig_lit) = col_cs%residue_cpools(p,i_lig_lit) + &
+                 col_cf%harvest_c_to_residue_lig_c(p) * dt
+         end do
+
       endif
 
       ! patch loop

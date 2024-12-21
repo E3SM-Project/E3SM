@@ -7,6 +7,7 @@ module PhosphorusStateUpdate1Mod
   use shr_kind_mod           , only: r8 => shr_kind_r8
   use elm_varpar             , only : nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
   use elm_varpar             , only : crop_prog, i_met_lit, i_cel_lit, i_lig_lit, i_cwd
+  use elm_varpar             , only : nlit_pools
   use elm_varctl             , only : iulog
   use pftvarcon              , only : iscft
   use soilorder_varcon       , only : smax,ks_sorption
@@ -115,6 +116,8 @@ contains
     ! !LOCAL VARIABLES:
     integer :: c,p,j,l,k ! indices
     integer :: fp,fc     ! lake filter indices
+    integer :: csi
+    real(r8) :: wt_col
 
     integer:: kyr                     ! current year
     integer:: kmo                     ! month of year  (1, ..., 12)
@@ -131,7 +134,8 @@ contains
          cascade_receiver_pool => decomp_cascade_con%cascade_receiver_pool , & ! Input:  [integer  (:)     ]  which pool is C added to for a given decomposition step
 
          !!! N deposition profile, will weathering profile be needed?  -X.YANG
-         ndep_prof             => cnstate_vars%ndep_prof_col               & ! Input:  [real(r8) (:,:)   ]  profile over which N deposition is distributed through column (1/m)
+         ndep_prof             => cnstate_vars%ndep_prof_col               , & ! Input:  [real(r8) (:,:)   ]  profile over which N deposition is distributed through column (1/m)
+         residue2litr          => cnstate_vars%residue2litr_patch            & ! Input:  [real(r8) (:)     ]  Residue to litter conversion rate (1/s)
          )
 
 
@@ -151,15 +155,36 @@ contains
                   ! plant to litter fluxes
                   ! phenology and dynamic landcover fluxes
                   col_pf%decomp_ppools_sourcesink(c,j,i_met_lit) = &
-                       col_pf%phenology_p_to_litr_met_p(c,j) * dt
-
+                       col_pf%phenology_p_to_litr_met_p(c,j) * dt + &
+                       col_pf%residue_to_litr_met_p(c,j) * dt
+                  
                   col_pf%decomp_ppools_sourcesink(c,j,i_cel_lit) = &
-                       col_pf%phenology_p_to_litr_cel_p(c,j) * dt
-
+                       col_pf%phenology_p_to_litr_cel_p(c,j) * dt + &
+                       col_pf%residue_to_litr_cel_p(c,j) * dt
+                  
                   col_pf%decomp_ppools_sourcesink(c,j,i_lig_lit) = &
-                       col_pf%phenology_p_to_litr_lig_p(c,j) * dt
-
+                       col_pf%phenology_p_to_litr_lig_p(c,j) * dt + &
+                       col_pf%residue_to_litr_lig_p(c,j) * dt
+                  
                end do
+            end do
+
+            do fp = 1, num_soilp
+               p = filter_soilp(fp)
+
+               ! update residue pools
+               col_ps%residue_ppools(p,i_met_lit) = col_ps%residue_ppools(p,i_met_lit) - &
+                    col_ps%residue_ppools(p,i_met_lit) * residue2litr(p) * dt - &
+                    (col_pf%residue_sminp_flux(p,i_met_lit) + col_pf%residue_ptransfer(p,i_met_lit)) * dt + &
+                    col_pf%phenology_p_to_residue_met_p(p) * dt
+               col_ps%residue_ppools(p,i_cel_lit) = col_ps%residue_ppools(p,i_cel_lit) - &
+                    col_ps%residue_ppools(p,i_cel_lit) * residue2litr(p) * dt - &
+                    (col_pf%residue_sminp_flux(p,i_cel_lit) + col_pf%residue_ptransfer(p,i_cel_lit)) * dt + &
+                    col_pf%phenology_p_to_residue_cel_p(p) * dt
+               col_ps%residue_ppools(p,i_lig_lit) = col_ps%residue_ppools(p,i_lig_lit) - &
+                    col_ps%residue_ppools(p,i_lig_lit) * residue2litr(p) * dt - &
+                    (col_pf%residue_sminp_flux(p,i_lig_lit) + col_pf%residue_ptransfer(p,i_lig_lit)) * dt + &
+                    col_pf%phenology_p_to_residue_lig_p(p) * dt
             end do
          end if
 
@@ -210,6 +235,25 @@ contains
                        col_pf%decomp_ppools_sourcesink(c,j,cascade_donor_pool(k)) - &
                        col_pf%decomp_cascade_sminp_flux_vr(c,j,k) * dt
                end do
+            end do
+         end if
+      end do
+      do k = 1, nlit_pools
+         do j = 1, ndecomp_cascade_transitions
+            if (cascade_donor_pool(j) == i_met_lit+k-1) then
+               csi = j
+               exit
+            end if
+         end do
+         if ( cascade_receiver_pool(csi) /= 0 ) then  ! skip terminal transitions
+            do fp = 1, num_soilp
+               p = filter_soilp(fp)
+               c = veg_pp%column(p)
+               wt_col = veg_pp%wtcol(p)
+
+               col_pf%decomp_ppools_sourcesink(c,1,cascade_receiver_pool(csi)) = &
+                  col_pf%decomp_ppools_sourcesink(c,1,cascade_receiver_pool(csi)) &
+                  + col_pf%residue_ptransfer(p,k) * wt_col * dt
             end do
          end if
       end do

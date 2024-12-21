@@ -37,7 +37,7 @@ module CanopyFluxesMod
   use GridcellType          , only : grc_pp
   use TopounitDataType      , only : top_as, top_af
   use ColumnType            , only : col_pp
-  use ColumnDataType        , only : col_es, col_ef, col_ws
+  use ColumnDataType        , only : col_cs, col_es, col_ef, col_ws
   use VegetationType        , only : veg_pp
   use VegetationDataType    , only : veg_es, veg_ef, veg_ws, veg_wf
 
@@ -98,6 +98,7 @@ contains
     use elm_varcon         , only : isecspday, degpsec
     use pftvarcon          , only : irrigated
     use elm_varcon         , only : c14ratio
+    use elm_varctl         , only : use_cn
 
     !NEW
     use elm_varsur         , only : firrig
@@ -257,6 +258,7 @@ contains
     real(r8) :: fm(bounds%begp:bounds%endp)          ! needed for BGC only to diagnose 10m wind speed
     real(r8) :: wtshi                                ! sensible heat resistance for air, grnd and leaf [-]
     real(r8) :: wtsqi                                ! latent heat resistance for air, grnd and leaf [-]
+    real(r8) :: attscov                              ! residue cover introduced resistance
     integer  :: j                                    ! soil/snow level index
     integer  :: p                                    ! patch index
     integer  :: c                                    ! column index
@@ -380,6 +382,8 @@ contains
          z0qv                 => frictionvel_vars%z0qv_patch               , & ! Output: [real(r8) (:)   ]  roughness length over vegetation, latent heat [m]
          rb1                  => frictionvel_vars%rb1_patch                , & ! Output: [real(r8) (:)   ]  boundary layer resistance (s/m)
          num_iter             => frictionvel_vars%num_iter_patch           , & ! Output: number of iterations required
+
+         residue_cpools       => col_cs%residue_cpools       , & ! Input:  [real(r8) (:,:) ]  surface residue (surface litter) c pools (gC/m2)
 
          t_h2osfc             => col_es%t_h2osfc             , & ! Input:  [real(r8) (:)   ]  surface water temperature
          t_soisno             => col_es%t_soisno             , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)
@@ -1217,14 +1221,19 @@ contains
 
          delt_h2osfc  = wtal(p)*t_h2osfc(c)-wtl0(p)*t_veg(p)-wta0(p)*thm(p)
          eflx_sh_h2osfc(p) = cpair*forc_rho(t)*wtg(p)*delt_h2osfc
-         qflx_evap_soi(p) = forc_rho(t)*wtgq(p)*delq(p)
+         if (use_cn) then
+            attscov = exp( -6.4e-4_r8 * 2.38_r8 * sum(residue_cpools(p,:)) )
+         else
+            attscov = 1._r8
+         end if
+         qflx_evap_soi(p) = forc_rho(t)*wtgq(p)*attscov*delq(p)
 
          ! compute individual latent heat fluxes
          delq_snow = wtalq(p)*qg_snow(c)-wtlq0(p)*qsatl(p)-wtaq0(p)*forc_q(t)
          qflx_ev_snow(p) = forc_rho(t)*wtgq(p)*delq_snow
 
          delq_soil = wtalq(p)*qg_soil(c)-wtlq0(p)*qsatl(p)-wtaq0(p)*forc_q(t)
-         qflx_ev_soil(p) = forc_rho(t)*wtgq(p)*delq_soil
+         qflx_ev_soil(p) = forc_rho(t)*wtgq(p)*attscov*delq_soil
 
          delq_h2osfc = wtalq(p)*qg_h2osfc(c)-wtlq0(p)*qsatl(p)-wtaq0(p)*forc_q(t)
          qflx_ev_h2osfc(p) = forc_rho(t)*wtgq(p)*delq_h2osfc

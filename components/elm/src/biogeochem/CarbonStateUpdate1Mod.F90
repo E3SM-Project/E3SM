@@ -8,6 +8,7 @@ module CarbonStateUpdate1Mod
   use decompMod               , only : bounds_type
   use elm_varpar              , only : ndecomp_cascade_transitions, nlevdecomp
   use elm_varpar              , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
+  use elm_varpar              , only : nlit_pools
   use elm_varcon              , only : dzsoi_decomp
   use elm_varctl              , only : nu_com, use_c13, use_c14
   use elm_varctl              , only : use_pflotran, pf_cmode, use_fates
@@ -170,7 +171,7 @@ contains
   subroutine CarbonStateUpdate1(bounds, &
        num_soilc, filter_soilc, &
        num_soilp, filter_soilp, &
-       crop_vars, col_cs, veg_cs, col_cf, veg_cf, dt)
+       cnstate_vars, crop_vars, col_cs, veg_cs, col_cf, veg_cf, dt)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update all the prognostic carbon state
@@ -185,6 +186,7 @@ contains
     integer                      , intent(in)    :: filter_soilc(:) ! filter for soil columns
     integer                      , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                      , intent(in)    :: filter_soilp(:) ! filter for soil patches
+    type(cnstate_type)           , intent(in)    :: cnstate_vars
     type(crop_type)              , intent(inout) :: crop_vars
     type(column_carbon_state)    , intent(inout) :: col_cs
     type(vegetation_carbon_state), intent(inout) :: veg_cs
@@ -196,6 +198,8 @@ contains
     ! !LOCAL VARIABLES:
     integer  :: c,p,j,k,l ! indices
     integer  :: fp,fc     ! lake filter indices
+    integer  :: csi
+    real(r8) :: wt_col
     !-----------------------------------------------------------------------
 
     associate(                                                                                 &
@@ -203,6 +207,7 @@ contains
          woody                 =>    veg_vp%woody                               , & ! Input:  [real(r8) (:)     ]  woody lifeform flag (0 = non-woody, 1 = tree, 2 = shrub)
          cascade_donor_pool    =>    decomp_cascade_con%cascade_donor_pool      , & ! Input:  [integer  (:)     ]  which pool is C taken from for a given decomposition step
          cascade_receiver_pool =>    decomp_cascade_con%cascade_receiver_pool   , & ! Input:  [integer  (:)     ]  which pool is C added to for a given decomposition step
+         residue2litr          =>    cnstate_vars%residue2litr_patch            , & ! Input:  [real(r8) (:)     ]  Residue to litter conversion rate (1/s)
          harvdate              =>    crop_vars%harvdate_patch                     & ! Input:  [integer  (:)     ]  harvest date
          )
 
@@ -226,12 +231,33 @@ contains
                   c = filter_soilc(fc)
                   ! phenology and dynamic land cover fluxes
                   col_cf%decomp_cpools_sourcesink(c,j,i_met_lit) = &
-                       col_cf%phenology_c_to_litr_met_c(c,j) * dt
+                       col_cf%phenology_c_to_litr_met_c(c,j) * dt + &
+                       col_cf%residue_to_litr_met_c(c,j) * dt
                   col_cf%decomp_cpools_sourcesink(c,j,i_cel_lit) = &
-                       col_cf%phenology_c_to_litr_cel_c(c,j) * dt
+                       col_cf%phenology_c_to_litr_cel_c(c,j) * dt + &
+                       col_cf%residue_to_litr_cel_c(c,j) * dt
                   col_cf%decomp_cpools_sourcesink(c,j,i_lig_lit) = &
-                       col_cf%phenology_c_to_litr_lig_c(c,j) * dt
+                       col_cf%phenology_c_to_litr_lig_c(c,j) * dt + &
+                       col_cf%residue_to_litr_lig_c(c,j) * dt
                end do
+            end do
+
+            do fp = 1, num_soilp
+               p = filter_soilp(fp)
+               
+               ! update residue pools
+               col_cs%residue_cpools(p,i_met_lit) = col_cs%residue_cpools(p,i_met_lit) - &
+                     col_cs%residue_cpools(p,i_met_lit) * residue2litr(p) * dt - &
+                     (col_cf%residue_hr(p,i_met_lit) + col_cf%residue_ctransfer(p,i_met_lit)) * dt + &
+                     col_cf%phenology_c_to_residue_met_c(p) * dt
+               col_cs%residue_cpools(p,i_cel_lit) = col_cs%residue_cpools(p,i_cel_lit) - &
+                     col_cs%residue_cpools(p,i_cel_lit) * residue2litr(p) * dt - &
+                     (col_cf%residue_hr(p,i_cel_lit) + col_cf%residue_ctransfer(p,i_cel_lit)) * dt + &
+                     col_cf%phenology_c_to_residue_cel_c(p) * dt
+               col_cs%residue_cpools(p,i_lig_lit) = col_cs%residue_cpools(p,i_lig_lit) - &
+                     col_cs%residue_cpools(p,i_lig_lit) * residue2litr(p) * dt - &
+                     (col_cf%residue_hr(p,i_lig_lit) + col_cf%residue_ctransfer(p,i_lig_lit)) * dt + &
+                     col_cf%phenology_c_to_residue_lig_c(p) * dt
             end do
          end if
 
@@ -257,6 +283,25 @@ contains
                           col_cf%decomp_cpools_sourcesink(c,j,cascade_receiver_pool(k)) &
                           + col_cf%decomp_cascade_ctransfer_vr(c,j,k)*dt
                   end do
+               end do
+            end if
+         end do
+         do k = 1, nlit_pools
+            do j = 1, ndecomp_cascade_transitions
+               if (cascade_donor_pool(j) == i_met_lit+k-1) then
+                  csi = j
+                  exit
+               end if
+            end do
+            if ( cascade_receiver_pool(csi) /= 0 ) then  ! skip terminal transitions
+               do fp = 1, num_soilp
+                  p = filter_soilp(fp)
+                  c = veg_pp%column(p)
+                  wt_col = veg_pp%wtcol(p)
+
+                  col_cf%decomp_cpools_sourcesink(c,1,cascade_receiver_pool(csi)) = &
+                     col_cf%decomp_cpools_sourcesink(c,1,cascade_receiver_pool(csi)) &
+                     + col_cf%residue_ctransfer(p,k) * wt_col * dt
                end do
             end if
          end do

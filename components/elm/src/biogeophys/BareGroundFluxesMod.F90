@@ -17,7 +17,7 @@ module BareGroundFluxesMod
   use TopounitDataType     , only : top_as
   use LandunitType         , only : lun_pp
   use ColumnType           , only : col_pp
-  use ColumnDataType       , only : col_es, col_ef, col_ws
+  use ColumnDataType       , only : col_cs, col_es, col_ef, col_ws
   use VegetationType       , only : veg_pp
   use VegetationDataType   , only : veg_es, veg_ef, veg_ws, veg_wf
   !
@@ -46,7 +46,7 @@ contains
     use shr_flux_mod         , only : shr_flux_update_stress
     use elm_varpar           , only : nlevgrnd
     use elm_varcon           , only : cpair, vkc, grav, denice, denh2o
-    use elm_varctl           , only : iulog, use_lch4
+    use elm_varctl           , only : iulog, use_lch4, use_cn
     use landunit_varcon      , only : istsoil, istcrop
     use FrictionVelocityMod  , only : FrictionVelocity, MoninObukIni, &
          implicit_stress, atm_gustiness, force_land_gustiness
@@ -104,6 +104,7 @@ contains
     real(r8) :: raw                              ! moisture resistance [s/m]
     real(r8) :: raih                             ! temporary variable [kg/m2/s]
     real(r8) :: raiw                             ! temporary variable [kg/m2/s]
+    real(r8) :: attscov                          ! temporary variable
     real(r8) :: fm(bounds%begp:bounds%endp)      ! needed for BGC only to diagnose 10m wind speed
     real(r8) :: z0mg_patch(bounds%begp:bounds%endp)
     real(r8) :: z0hg_patch(bounds%begp:bounds%endp)
@@ -143,6 +144,8 @@ contains
 
          watsat           =>    soilstate_vars%watsat_col             , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)
          soilbeta         =>    soilstate_vars%soilbeta_col           , & ! Input:  [real(r8) (:)   ]  soil wetness relative to field capacity
+
+         residue_cpools   =>    col_cs%residue_cpools   , & ! Input:  [real(r8) (:,:) ]  surface residue (surface litter) c pools (gC/m2)
 
          t_soisno         =>    col_es%t_soisno         , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)
          t_grnd           =>    col_es%t_grnd           , & ! Input:  [real(r8) (:)   ]  ground surface temperature [K]
@@ -395,12 +398,17 @@ contains
          eflx_sh_h2osfc(p) = -raih*(thm(p)-t_h2osfc(c))
 
          ! water fluxes from soil
-         qflx_evap_soi(p)  = -raiw*dqh(p)
+         if (use_cn) then
+            attscov = exp( -6.4e-4_r8 * 2.38_r8 * sum(residue_cpools(p,:)) )
+         else
+            attscov = 1._r8
+         end if
+         qflx_evap_soi(p)  = -raiw*attscov*dqh(p)
          qflx_evap_tot(p)  = qflx_evap_soi(p)
 
          ! compute latent heat fluxes individually
          qflx_ev_snow(p)   = -raiw*(forc_q(t) - qg_snow(c))
-         qflx_ev_soil(p)   = -raiw*(forc_q(t) - qg_soil(c))
+         qflx_ev_soil(p)   = -raiw*attscov*(forc_q(t) - qg_soil(c))
          qflx_ev_h2osfc(p) = -raiw*(forc_q(t) - qg_h2osfc(c))
 
          ! 2 m height air temperature

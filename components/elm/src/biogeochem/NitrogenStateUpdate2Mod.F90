@@ -154,6 +154,18 @@ contains
             end do
          end do
 
+         do fp = 1,num_soilp
+            p = filter_soilp(fp)
+
+            ! update residue pools
+            col_ns%residue_npools(p,i_met_lit) = col_ns%residue_npools(p,i_met_lit) + &
+                 col_nf%harvest_n_to_residue_met_n(p) * dt
+            col_ns%residue_npools(p,i_cel_lit) = col_ns%residue_npools(p,i_cel_lit) + &
+                 col_nf%harvest_n_to_residue_cel_n(p) * dt
+            col_ns%residue_npools(p,i_lig_lit) = col_ns%residue_npools(p,i_lig_lit) + &
+                 col_nf%harvest_n_to_residue_lig_n(p) * dt
+         end do
+
       endif
 
       ! patch-level nitrogen fluxes from harvest mortality

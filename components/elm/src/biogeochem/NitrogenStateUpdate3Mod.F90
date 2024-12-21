@@ -10,6 +10,7 @@ module NitrogenStateUpdate3Mod
   use elm_varpar          , only: nlevdecomp, ndecomp_pools
   use elm_varctl          , only : iulog
   use elm_varpar          , only : i_cwd, i_met_lit, i_cel_lit, i_lig_lit
+  use elm_varpar          , only : nlit_pools
   use elm_varctl          , only : use_erosion, ero_ccycle
   use CNDecompCascadeConType , only : decomp_cascade_con
   use ColumnDataType      , only : col_ns, col_nf
@@ -91,6 +92,13 @@ contains
                   c = filter_soilc(fc)
                   col_ns%decomp_npools_vr(c,j,l) = col_ns%decomp_npools_vr(c,j,l) - col_nf%m_decomp_npools_to_fire_vr(c,j,l) * dt
                end do
+            end do
+         end do
+
+         do l = 1, nlit_pools
+            do fp = 1, num_soilp
+               p = filter_soilp(fp)
+               col_ns%residue_npools(p,l) = col_ns%residue_npools(p,l) - col_nf%m_residue_fire_nloss(p,l) * dt
             end do
          end do
 

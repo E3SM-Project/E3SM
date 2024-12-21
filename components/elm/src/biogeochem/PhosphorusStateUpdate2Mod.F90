@@ -163,6 +163,18 @@ contains
                  col_ps%decomp_ppools_vr(c,j,i_cwd)     + col_pf%harvest_p_to_cwdp(c,j)       * dt
          end do
       end do
+
+      do fp = 1,num_soilp
+         p = filter_soilp(fp)
+
+         ! update residue pools
+         col_ps%residue_ppools(p,i_met_lit) = col_ps%residue_ppools(p,i_met_lit) + &
+              col_pf%harvest_p_to_residue_met_p(p) * dt
+         col_ps%residue_ppools(p,i_cel_lit) = col_ps%residue_ppools(p,i_cel_lit) + &
+              col_pf%harvest_p_to_residue_cel_p(p) * dt
+         col_ps%residue_ppools(p,i_lig_lit) = col_ps%residue_ppools(p,i_lig_lit) + &
+              col_pf%harvest_p_to_residue_lig_p(p) * dt
+      end do
       endif ! if (.not.(use_pflotran .and. pf_cmode))
       !------------------------------------------------------------------
 

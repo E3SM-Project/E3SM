@@ -79,6 +79,7 @@ module elm_varpar
 
   integer :: ndecomp_pools
   integer :: ndecomp_cascade_transitions
+  integer :: nlit_pools
 
   ! Indices used in surface file read and set in elm_varpar_init
 
@@ -234,6 +235,7 @@ contains
     if (use_century_decomp) then
        ndecomp_pools = 7
        ndecomp_cascade_transitions = 10
+       nlit_pools = 3
        i_met_lit = 1
        i_cel_lit = 2
        i_lig_lit = 3
@@ -241,6 +243,7 @@ contains
     else
        ndecomp_pools = 8
        ndecomp_cascade_transitions = 9
+       nlit_pools = 3
        i_met_lit = 1
        i_cel_lit = 2
        i_lig_lit = 3

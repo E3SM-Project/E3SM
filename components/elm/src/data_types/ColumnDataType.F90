@@ -17,6 +17,7 @@ module ColumnDataType
   use elm_varpar      , only : ndecomp_cascade_transitions, ndecomp_pools, nlevcan
   use elm_varpar      , only : nlevdecomp_full, crop_prog, nlevdecomp
   use elm_varpar      , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
+  use elm_varpar      , only : nlit_pools
   use elm_varcon      , only : spval, ispval, zlnd, snw_rds_min, denice, denh2o, tfrz, pondmx
   use elm_varcon      , only : watmin, bdsno, bdfirn, zsoi, zisoi, dzsoi_decomp
   use elm_varcon      , only : c13ratio, c14ratio, secspday
@@ -48,6 +49,7 @@ module ColumnDataType
   use CNDecompCascadeConType , only : decomp_cascade_con
   use ColumnType      , only : col_pp
   use LandunitType    , only : lun_pp
+  use VegetationType  , only : veg_pp
   use timeInfoMod , only : nstep_mod 
   !
   ! !PUBLIC TYPES:
@@ -202,6 +204,10 @@ module ColumnDataType
     real(r8), pointer :: ctrunc               (:)    => null() ! (gC/m2) column-level sink for C truncation
     real(r8), pointer :: totlitc              (:)    => null() ! (gC/m2) total litter carbon
     real(r8), pointer :: totsomc              (:)    => null() ! (gC/m2) total soil organic matter carbon
+    real(r8), pointer :: residue_cpools       (:,:)  => null() ! (gC/m2) surface residue (surface litter) c pools
+    real(r8), pointer :: residuec             (:)    => null() ! (gC/m2) column-level surface residue C
+    real(r8), pointer :: fscov_veg            (:)    => null() ! fraction of surface cover by residue in each patch
+    real(r8), pointer :: fscov                (:)    => null() ! fraction of surface cover by residue
     real(r8), pointer :: som1c                (:)    => null()
     real(r8), pointer :: som2c                (:)    => null()
     real(r8), pointer :: som3c                (:)    => null()
@@ -253,6 +259,8 @@ module ColumnDataType
     real(r8), pointer :: ntrunc                   (:)     => null() ! (gN/m2) column-level sink for N truncation
     real(r8), pointer :: cwdn                     (:)     => null() ! (gN/m2) Diagnostic: coarse woody debris N
     real(r8), pointer :: totlitn                  (:)     => null() ! (gN/m2) total litter nitrogen
+    real(r8), pointer :: residue_npools           (:,:)   => null() ! (gN/m2) surface residue (surface litter) N pools
+    real(r8), pointer :: residuen                 (:)     => null() ! (gN/m2) column-level surface residue N
     real(r8), pointer :: totsomn                  (:)     => null() ! (gN/m2) total soil organic matter nitrogen
     real(r8), pointer :: som1n                    (:)     => null()
     real(r8), pointer :: som2n                    (:)     => null()
@@ -365,6 +373,8 @@ module ColumnDataType
     real(r8), pointer :: totcolp                  (:)      => null() ! (gP/m2) total column phosphorus, incl veg
     real(r8), pointer :: totvegp                  (:)      => null() ! (gP/m2) total vegetation phosphorus (p2c)
     real(r8), pointer :: totpftp                  (:)      => null() ! (gP/m2) total pft-level phosphorus (p2c)
+    real(r8), pointer :: residue_ppools           (:,:)    => null() ! (gP/m2) surface residue (surface litter) P pools
+    real(r8), pointer :: residuep                 (:)      => null() ! (gP/m2) column-level surface residue P
     real(r8), pointer :: begpb                    (:)      => null() ! phosphorus mass, beginning of time step (gP/m**2)
     real(r8), pointer :: endpb                    (:)      => null() ! phosphorus mass, end of time step (gP/m**2)
     real(r8), pointer :: errpb                    (:)      => null() ! phosphorus balance error for the timestep (gP/m**2)
@@ -559,12 +569,17 @@ module ColumnDataType
     real(r8), pointer :: decomp_cpools_leached                 (:,:)   => null() ! C loss from vertical transport from each decomposing C pool (gC/m^2/s)
     real(r8), pointer :: phr_vr                                (:,:)   => null() ! potential hr (not N-limited) (gC/m3/s)
     real(r8), pointer :: fphr                                  (:,:)   => null() ! fraction of potential heterotrophic respiration
+    real(r8), pointer :: residue_hr                            (:,:)   => null() ! het. resp. from decomposing residue C pools (gC/m^2/s)
+    real(r8), pointer :: residue_ctransfer                     (:,:)   => null() ! C transferred from deomposition residue C pools (gC/m^2/s)
     real(r8), pointer :: som_c_leached                         (:)     => null() ! total SOM C loss from vertical transport (gC/m^2/s)
     real(r8), pointer :: som_c_runoff                          (:)     => null() 
     ! phenology: litterfall and crop fluxes
     real(r8), pointer :: phenology_c_to_litr_met_c             (:,:)   => null() ! C fluxes associated with phenology (litterfall and crop) to litter metabolic pool (gC/m3/s)
     real(r8), pointer :: phenology_c_to_litr_cel_c             (:,:)   => null() ! C fluxes associated with phenology (litterfall and crop) to litter cellulose pool (gC/m3/s)
     real(r8), pointer :: phenology_c_to_litr_lig_c             (:,:)   => null() ! C fluxes associated with phenology (litterfall and crop) to litter lignin pool (gC/m3/s)
+    real(r8), pointer :: phenology_c_to_residue_met_c          (:)     => null() ! C fluxes associated with phenology (litterfall and crop) to residue metabolic pool (gC/m2/s)
+    real(r8), pointer :: phenology_c_to_residue_cel_c          (:)     => null() ! C fluxes associated with phenology (litterfall and crop) to residue cellulose pool (gC/m2/s)
+    real(r8), pointer :: phenology_c_to_residue_lig_c          (:)     => null() ! C fluxes associated with phenology (litterfall and crop) to residue lignin pool (gC/m2/s)
     ! gap mortality
     real(r8), pointer :: gap_mortality_c_to_litr_met_c         (:,:)   => null() ! C fluxes associated with gap mortality to litter metabolic pool (gC/m3/s)
     real(r8), pointer :: gap_mortality_c_to_litr_cel_c         (:,:)   => null() ! C fluxes associated with gap mortality to litter cellulose pool (gC/m3/s)
@@ -573,11 +588,16 @@ module ColumnDataType
     ! column-level fire fluxes
     real(r8), pointer :: m_decomp_cpools_to_fire_vr            (:,:,:) => null() ! vertically-resolved decomposing C fire loss (gC/m3/s)
     real(r8), pointer :: m_decomp_cpools_to_fire               (:,:)   => null() ! vertically-integrated (diagnostic) decomposing C fire loss (gC/m2/s)
+    real(r8), pointer :: m_residue_fire_closs                  (:,:)   => null() ! residue C fire loss (gC/m2/s)
     real(r8), pointer :: m_c_to_litr_met_fire                  (:,:)   => null() ! C from leaf, froot, xfer and storage C to litter labile C by fire (gC/m3/s)
     real(r8), pointer :: m_c_to_litr_cel_fire                  (:,:)   => null() ! C from leaf, froot, xfer and storage C to litter cellulose C by fire (gC/m3/s)
     real(r8), pointer :: m_c_to_litr_lig_fire                  (:,:)   => null() ! C from leaf, froot, xfer and storage C to litter lignin C by fire (gC/m3/s)
     real(r8), pointer :: fire_mortality_c_to_cwdc              (:,:)   => null() ! C fluxes associated with fire mortality to CWD pool (gC/m3/s)
     real(r8), pointer :: somc_fire                             (:)     => null() ! (gC/m2/s) carbon emissions due to peat burning
+    ! surface to incorporated litter fluxes
+    real(r8), pointer :: residue_to_litr_met_c                 (:,:)   => null() ! C fluxes associated with residue to litter metabolic pool (gC/m3/s)
+    real(r8), pointer :: residue_to_litr_cel_c                 (:,:)   => null() ! C fluxes associated with residue to litter cellulose pool (gC/m3/s)
+    real(r8), pointer :: residue_to_litr_lig_c                 (:,:)   => null() ! C fluxes associated with residue to litter lignin pool (gC/m3/s)
     ! soil erosion fluxes
     real(r8), pointer :: somc_erode                            (:)     => null() ! total SOM C detachment (gC/m^2/s)
     real(r8), pointer :: somc_deposit                          (:)     => null() ! total SOM C hillslope redeposition (gC/m^2/s)
@@ -590,6 +610,9 @@ module ColumnDataType
     real(r8), pointer :: harvest_c_to_litr_met_c               (:,:)   => null() ! C fluxes associated with harvest to litter metabolic pool (gC/m3/s)
     real(r8), pointer :: harvest_c_to_litr_cel_c               (:,:)   => null() ! C fluxes associated with harvest to litter cellulose pool (gC/m3/s)
     real(r8), pointer :: harvest_c_to_litr_lig_c               (:,:)   => null() ! C fluxes associated with harvest to litter lignin pool (gC/m3/s)
+    real(r8), pointer :: harvest_c_to_residue_met_c            (:)     => null() ! C fluxes associated with harvest to residue metabolic pool (gC/m2/s)
+    real(r8), pointer :: harvest_c_to_residue_cel_c            (:)     => null() ! C fluxes associated with harvest to residue cellulose pool (gC/m2/s)
+    real(r8), pointer :: harvest_c_to_residue_lig_c            (:)     => null() ! C fluxes associated with harvest to residue lignin pool (gC/m2/s)
     real(r8), pointer :: harvest_c_to_cwdc                     (:,:)   => null() ! C fluxes associated with harvest to CWD pool (gC/m3/s)
     real(r8), pointer :: hrv_deadstemc_to_prod10c              (:)     => null() ! dead stem C harvest mortality to 10-year product pool (gC/m2/s)
     real(r8), pointer :: hrv_deadstemc_to_prod100c             (:)     => null() ! dead stem C harvest mortality to 100-year product pool (gC/m2/s)
@@ -688,15 +711,23 @@ module ColumnDataType
     real(r8), pointer :: harvest_n_to_litr_met_n               (:,:)   => null() ! N fluxes associated with harvest to litter metabolic pool (gN/m3/s)
     real(r8), pointer :: harvest_n_to_litr_cel_n               (:,:)   => null() ! N fluxes associated with harvest to litter cellulose pool (gN/m3/s)
     real(r8), pointer :: harvest_n_to_litr_lig_n               (:,:)   => null() ! N fluxes associated with harvest to litter lignin pool (gN/m3/s)
+    real(r8), pointer :: harvest_n_to_residue_met_n            (:)     => null() ! N fluxes associated with harvest to residue metabolic pool (gN/m2/s)
+    real(r8), pointer :: harvest_n_to_residue_cel_n            (:)     => null() ! N fluxes associated with harvest to residue cellulose pool (gN/m2/s)
+    real(r8), pointer :: harvest_n_to_residue_lig_n            (:)     => null() ! N fluxes associated with harvest to residue lignin pool (gN/m2/s)
     real(r8), pointer :: harvest_n_to_cwdn                     (:,:)   => null() ! N fluxes associated with harvest to CWD pool (gN/m3/s)
     real(r8), pointer :: hrv_cropn_to_prod1n                   (:)     => null() ! crop N harvest mortality to 1-yr product pool (gN/m2/s)
     ! fire N fluxes
     real(r8), pointer :: m_decomp_npools_to_fire_vr            (:,:,:) => null() ! vertically-resolved decomposing N fire loss (gN/m3/s)
     real(r8), pointer :: m_decomp_npools_to_fire               (:,:)   => null() ! vertically-integrated (diagnostic) decomposing N fire loss (gN/m2/s)
+    real(r8), pointer :: m_residue_fire_nloss                  (:,:)   => null() ! residue N fire loss (gN/m2/s)
     real(r8), pointer :: fire_nloss                            (:)     => null() ! total column-level fire N loss (gN/m2/s)
     real(r8), pointer :: fire_decomp_nloss                     (:)     => null() ! fire N loss from decomposable pools (gN/m2/s)
     real(r8), pointer :: fire_nloss_p2c                        (:)     => null() ! patch2col column-level fire N loss (gN/m2/s) (p2c)
     real(r8), pointer :: fire_mortality_n_to_cwdn              (:,:)   => null() ! N fluxes associated with fire mortality to CWD pool (gN/m3/s)
+    ! surface to incorporated litter fluxes
+    real(r8), pointer :: residue_to_litr_met_n                 (:,:)   => null() ! N fluxes associated with residue to litter metabolic pool (gN/m3/s)
+    real(r8), pointer :: residue_to_litr_cel_n                 (:,:)   => null() ! N fluxes associated with residue to litter cellulose pool (gN/m3/s)
+    real(r8), pointer :: residue_to_litr_lig_n                 (:,:)   => null() ! N fluxes associated with residue to litter lignin pool (gN/m3/s)
     ! soil erosion fluxes
     real(r8), pointer :: somn_erode                            (:)     => null() ! total SOM N detachment (gN/m^2/s)
     real(r8), pointer :: somn_deposit                          (:)     => null() ! total SOM N hillslope redeposition (gN/m^2/s)
@@ -719,6 +750,9 @@ module ColumnDataType
     real(r8), pointer :: phenology_n_to_litr_met_n             (:,:)   => null() ! N fluxes associated with phenology (litterfall and crop) to litter metabolic pool (gN/m3/s)
     real(r8), pointer :: phenology_n_to_litr_cel_n             (:,:)   => null() ! N fluxes associated with phenology (litterfall and crop) to litter cellulose pool (gN/m3/s)
     real(r8), pointer :: phenology_n_to_litr_lig_n             (:,:)   => null() ! N fluxes associated with phenology (litterfall and crop) to litter lignin pool (gN/m3/s)
+    real(r8), pointer :: phenology_n_to_residue_met_n          (:)     => null() ! N fluxes associated with phenology (litterfall and crop) to residue metabolic pool (gN/m2/s)
+    real(r8), pointer :: phenology_n_to_residue_cel_n          (:)     => null() ! N fluxes associated with phenology (litterfall and crop) to residue cellulose pool (gN/m2/s)
+    real(r8), pointer :: phenology_n_to_residue_lig_n          (:)     => null() ! N fluxes associated with phenology (litterfall and crop) to residue lignin pool (gN/m2/s)
     ! gap mortality fluxes
     real(r8), pointer :: gap_mortality_n_to_litr_met_n         (:,:)   => null() ! N fluxes associated with gap mortality to litter metabolic pool (gN/m3/s)
     real(r8), pointer :: gap_mortality_n_to_litr_cel_n         (:,:)   => null() ! N fluxes associated with gap mortality to litter cellulose pool (gN/m3/s)
@@ -729,6 +763,9 @@ module ColumnDataType
     real(r8), pointer :: decomp_cascade_ntransfer              (:,:)   => null() ! vert-int (diagnostic) transfer of N from donor to receiver pool along decomp. cascade (gN/m2/s)
     real(r8), pointer :: decomp_cascade_sminn_flux_vr          (:,:,:) => null() ! vert-res mineral N flux for transition along decomposition cascade (gN/m3/s)
     real(r8), pointer :: decomp_cascade_sminn_flux             (:,:)   => null() ! vert-int (diagnostic) mineral N flux for transition along decomposition cascade (gN/m2/s)
+    ! decomposition residue fluxes
+    real(r8), pointer :: residue_ntransfer                     (:,:)   => null() ! transfer of N from residue to receiver pool along decomp. cascade (gN/m2/s)
+    real(r8), pointer :: residue_sminn_flux                    (:,:)   => null() ! mineral N flux from residue for transition along decomposition cascade (gN/m2/s)
     ! vertically-resolved immobilization fluxes
     real(r8), pointer :: potential_immob_vr                    (:,:)   => null() ! vertically-resolved potential N immobilization (gN/m3/s) at each level
     real(r8), pointer :: potential_immob                       (:)     => null() ! vert-int (diagnostic) potential N immobilization (gN/m2/s)
@@ -855,6 +892,7 @@ module ColumnDataType
     real(r8), pointer :: col_plant_nh4demand_vr                (:,:)   => null() ! plant NH4 demand
     real(r8), pointer :: col_plant_no3demand_vr                (:,:)   => null() ! plant NO3 demand
     real(r8), pointer :: pmnf_decomp_cascade                   (:,:,:) => null() ! potential mineral N flux, from one pool to another
+    real(r8), pointer :: pmnf_residue                          (:,:)   => null() ! potential mineral N flux, from residue decomposition 
     real(r8), pointer :: plant_n_uptake_flux                   (:)     => null() ! for the purpose of mass balance check
     real(r8), pointer :: soil_n_immob_flux                     (:)     => null() ! for the purpose of mass balance check
     real(r8), pointer :: soil_n_immob_flux_vr                  (:,:)   => null() ! for the purpose of mass balance check
@@ -914,10 +952,14 @@ module ColumnDataType
     real(r8), pointer :: harvest_p_to_litr_met_p               (:,:)   => null() ! P fluxes associated with harvest to litter metabolic pool (gP/m3/s)
     real(r8), pointer :: harvest_p_to_litr_cel_p               (:,:)   => null() ! P fluxes associated with harvest to litter cellulose pool (gP/m3/s)
     real(r8), pointer :: harvest_p_to_litr_lig_p               (:,:)   => null() ! P fluxes associated with harvest to litter lignin pool (gP/m3/s)
+    real(r8), pointer :: harvest_p_to_residue_met_p            (:)     => null() ! P fluxes associated with harvest to residue metabolic pool (gP/m2/s)
+    real(r8), pointer :: harvest_p_to_residue_cel_p            (:)     => null() ! P fluxes associated with harvest to residue cellulose pool (gP/m2/s)
+    real(r8), pointer :: harvest_p_to_residue_lig_p            (:)     => null() ! P fluxes associated with harvest to residue lignin pool (gP/m2/s)
     real(r8), pointer :: harvest_p_to_cwdp                     (:,:)   => null() ! P fluxes associated with harvest to CWD pool (gP/m3/s)
     real(r8), pointer :: hrv_cropp_to_prod1p                   (:)     => null() ! crop P harvest mortality to 1-yr product pool (gP/m2/s)
     real(r8), pointer :: m_decomp_ppools_to_fire_vr            (:,:,:) => null() ! vertically-resolved decomposing P fire loss (gP/m3/s)
     real(r8), pointer :: m_decomp_ppools_to_fire               (:,:)   => null() ! vertically-integrated (diagnostic) decomposing P fire loss (gP/m2/s)
+    real(r8), pointer :: m_residue_fire_ploss                  (:,:)   => null() ! residue P fire loss (gP/m2/s)
     real(r8), pointer :: fire_ploss                            (:)     => null() ! total column-level fire P loss (gP/m2/s)
     real(r8), pointer :: fire_decomp_ploss                     (:)     => null() ! fire p loss from decomposable pools (gP/m2/s)
     real(r8), pointer :: fire_ploss_p2c                        (:)     => null() ! patch2col column-level fire P loss (gP/m2/s) (p2c)
@@ -928,6 +970,9 @@ module ColumnDataType
     real(r8), pointer :: phenology_p_to_litr_met_p             (:,:)   => null() ! P fluxes associated with phenology (litterfall and crop) to litter metabolic pool (gP/m3/s)
     real(r8), pointer :: phenology_p_to_litr_cel_p             (:,:)   => null() ! P fluxes associated with phenology (litterfall and crop) to litter cellulose pool (gP/m3/s)
     real(r8), pointer :: phenology_p_to_litr_lig_p             (:,:)   => null() ! P fluxes associated with phenology (litterfall and crop) to litter lignin pool (gP/m3/s)
+    real(r8), pointer :: phenology_p_to_residue_met_p          (:)     => null() ! P fluxes associated with phenology (litterfall and crop) to residue metabolic pool (gP/m2/s)
+    real(r8), pointer :: phenology_p_to_residue_cel_p          (:)     => null() ! P fluxes associated with phenology (litterfall and crop) to residue cellulose pool (gP/m2/s)
+    real(r8), pointer :: phenology_p_to_residue_lig_p          (:)     => null() ! P fluxes associated with phenology (litterfall and crop) to residue lignin pool (gP/m2/s)
     real(r8), pointer :: gap_mortality_p_to_litr_met_p         (:,:)   => null() ! P fluxes associated with gap mortality to litter metabolic pool (gP/m3/s)
     real(r8), pointer :: gap_mortality_p_to_litr_cel_p         (:,:)   => null() ! P fluxes associated with gap mortality to litter cellulose pool (gP/m3/s)
     real(r8), pointer :: gap_mortality_p_to_litr_lig_p         (:,:)   => null() ! P fluxes associated with gap mortality to litter lignin pool (gP/m3/s)
@@ -936,6 +981,8 @@ module ColumnDataType
     real(r8), pointer :: decomp_cascade_ptransfer              (:,:)   => null() ! vert-int (diagnostic) transfer of P from donor to receiver pool along decomp. cascade (gP/m2/s)
     real(r8), pointer :: decomp_cascade_sminp_flux_vr          (:,:,:) => null() ! vert-res mineral P flux for transition along decomposition cascade (gP/m3/s)
     real(r8), pointer :: decomp_cascade_sminp_flux             (:,:)   => null() ! vert-int (diagnostic) mineral P flux for transition along decomposition cascade (gP/m2/s)
+    real(r8), pointer :: residue_ptransfer                     (:,:)   => null() ! transfer of P from residue to receiver pool along decomp. cascade (gP/m2/s)
+    real(r8), pointer :: residue_sminp_flux                    (:,:)   => null() ! mineral P flux from residue for transition along decomposition cascade (gP/m2/s)
     real(r8), pointer :: potential_immob_p_vr                  (:,:)   => null() ! vertically-resolved potential P immobilization (gP/m3/s) at each level
     real(r8), pointer :: potential_immob_p                     (:)     => null() ! vert-int (diagnostic) potential P immobilization (gP/m2/s)
     real(r8), pointer :: actual_immob_p_vr                     (:,:)   => null() ! vertically-resolved actual P immobilization (gP/m3/s) at each level
@@ -943,6 +990,9 @@ module ColumnDataType
     real(r8), pointer :: sminp_to_plant_vr                     (:,:)   => null() ! vertically-resolved plant uptake of soil mineral P (gP/m3/s)
     real(r8), pointer :: sminp_to_plant                        (:)     => null() ! vert-int (diagnostic) plant uptake of soil mineral P (gP/m2/s)
     real(r8), pointer :: net_mineralization_p_vr               (:,:)   => null() 
+    real(r8), pointer :: residue_to_litr_met_p                 (:,:)   => null() ! P fluxes associated with residue to litter metabolic pool (gP/m3/s)
+    real(r8), pointer :: residue_to_litr_cel_p                 (:,:)   => null() ! P fluxes associated with residue to litter cellulose pool (gP/m3/s)
+    real(r8), pointer :: residue_to_litr_lig_p                 (:,:)   => null() ! P fluxes associated with residue to litter lignin pool (gP/m3/s)
     real(r8), pointer :: supplement_to_sminp_vr                (:,:)   =>null() ! vertically-resolved supplemental P supply (gP/m3/s)
     real(r8), pointer :: supplement_to_sminp                   (:)     =>null() ! vert-int (diagnostic) supplemental P supply (gP/m2/s)
     real(r8), pointer :: gross_pmin_vr                         (:,:)   =>null() ! vertically-resolved gross rate of P mineralization (gP/m3/s)
@@ -1021,6 +1071,7 @@ module ColumnDataType
     real(r8), pointer :: adsorb_to_labilep                     (:)     => null()
     real(r8), pointer :: desorb_to_solutionp                   (:)     => null()
     real(r8), pointer :: pmpf_decomp_cascade                   (:,:,:) => null()
+    real(r8), pointer :: pmpf_residue                          (:,:)   => null()
     real(r8), pointer :: plant_p_uptake_flux                   (:)     => null() ! for the purpose of mass balance check
     real(r8), pointer :: col_plant_pdemand_vr                  (:,:)   => null() ! plant P demand
     real(r8), pointer :: soil_p_immob_flux                     (:)   => null()  ! for the purpose of mass balance check
@@ -2023,17 +2074,18 @@ contains
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean column carbon state data structure
   !------------------------------------------------------------------------
-  subroutine col_cs_init(this, begc, endc, carbon_type, ratio, c12_carbonstate_vars)
+  subroutine col_cs_init(this, begc, endc, begp, endp, carbon_type, ratio, c12_carbonstate_vars)
     !
     ! !ARGUMENTS:
     class(column_carbon_state)    :: this
     integer          , intent(in) :: begc,endc
+    integer          , intent(in) :: begp,endp
     character(len=3) , intent(in) :: carbon_type ! one of ['c12', c13','c14']
     real(r8)         , intent(in) :: ratio
     type(column_carbon_state), optional, intent(in) :: c12_carbonstate_vars
     !
     ! !LOCAL VARIABLES:
-    integer           :: c,l,j,k
+    integer           :: c,p,l,j,k
     character(24)     :: fieldname
     character(100)    :: longname
     real(r8), pointer :: data1dptr(:)   ! temp. pointer for slicing larger arrays
@@ -2092,6 +2144,10 @@ contains
     allocate(this%totsomc_1m           (begc:endc))     ; this%totsomc_1m           (:)     = spval
     allocate(this%totlitc              (begc:endc))     ; this%totlitc              (:)     = spval
     allocate(this%totsomc              (begc:endc))     ; this%totsomc              (:)     = spval
+    allocate(this%residue_cpools   (begp:endp,1:nlit_pools))                      ; this%residue_cpools   (:,:)   = spval
+    allocate(this%residuec             (begc:endc))     ; this%residuec             (:)     = spval
+    allocate(this%fscov_veg            (begp:endp))     ; this%fscov_veg            (:)     = spval
+    allocate(this%fscov                (begc:endc))     ; this%fscov                (:)     = spval
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of col_cs
@@ -2186,6 +2242,25 @@ contains
        call hist_addfld1d (fname='PROD100C', units='gC/m^2', &
             avgflag='A', long_name='100-yr wood product C', &
             ptr_col=this%prod100c, default='inactive')
+
+       !this%residue_cpools(begp:endp,:) = spval
+       !do l  = 1, nlit_pools
+       !   data1dptr => this%residue_cpools(:,l)
+       !   fieldname = 'RESIDUE_' // trim(decomp_cascade_con%decomp_pool_name_history(i_met_lit+l-1)) // 'C'
+       !   longname =  'surface residue ' // trim(decomp_cascade_con%decomp_pool_name_history(i_met_lit+l-1)) // ' C'
+       !   call hist_addfld1d (fname=fieldname, units='gC/m^2', &
+       !        avgflag='A', long_name=longname, ptr_patch=data1dptr)
+       !end do
+
+       this%residuec(begc:endc) = spval
+       call hist_addfld1d (fname='RESIDUEC', units='gC/m^2', &
+            avgflag='A', long_name='total surface residue carbon', &
+            ptr_col=this%residuec)
+
+       this%fscov(begc:endc) = spval
+       call hist_addfld1d (fname='FSCOV', units='fraction', &
+            avgflag='A', long_name='fraction of soil covered by residue', &
+            ptr_col=this%fscov, default='inactive')
 
        if(.not.use_fates)then
 
@@ -2294,6 +2369,11 @@ contains
               avgflag='A', long_name='C13 total wood product C', &
                ptr_col=this%totprodc)
 
+       this%residuec(begc:endc) = spval
+       call hist_addfld1d (fname='C13_RESIDUEC', units='gC13/m^2', &
+            avgflag='A', long_name='C13 total surface residue carbon', &
+            ptr_col=this%residuec)
+
 
     else if ( carbon_type == 'c14' ) then
        this%decomp_cpools_vr(begc:endc,:,:) = spval
@@ -2382,11 +2462,31 @@ contains
              avgflag='A', long_name='C14 total wood product C', &
              ptr_col=this%totprodc)
 
+       this%residuec(begc:endc) = spval
+       call hist_addfld1d (fname='C14_RESIDUEC', units='gC14/m^2', &
+            avgflag='A', long_name='C14 total surface residue carbon', &
+            ptr_col=this%residuec)
+
     endif ! if c12/c13/c14
 
     !-----------------------------------------------------------------------
     ! set cold-start initial values for select members of col_cs
     !-----------------------------------------------------------------------
+
+    do p = begp, endp
+       l = veg_pp%landunit(p)
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+          if (.not. present(c12_carbonstate_vars)) then ! initializing a c12 type
+             this%residue_cpools(p,1:nlit_pools) = 0._r8
+          else ! initializing a c13 or c14 type, using input c12 data and a ratio
+             do k = 1, nlit_pools
+                this%residue_cpools(p,k) = c12_carbonstate_vars%residue_cpools(p,k) * ratio
+             end do   
+          endif ! C12 or C13/14 initialization
+       end if
+
+       this%fscov_veg(p) = 0._r8
+    end do
 
     do c = begc, endc
        l = col_pp%landunit(c)
@@ -2445,6 +2545,8 @@ contains
           this%totecosysc(c) = 0._r8
           this%totcolc(c)    = 0._r8
           this%cropseedc_deficit(c) = 0._r8
+          this%residuec(c)   = 0._r8
+          this%fscov(c)      = 0._r8
 
           ! dynamic landcover state variables
           this%seedc(c)      = 0._r8
@@ -2492,6 +2594,8 @@ contains
        this%totsomc_1m(c) = 0._r8
        this%errcb(c)      = 0._r8
        this%cropseedc_deficit(c) = 0._r8
+       this%residuec(c)   = 0._r8
+       this%fscov(c)      = 0._r8
     end do
 
     do j = 1,nlevdecomp_full
@@ -2516,6 +2620,15 @@ contains
              this%decomp_cpools_vr(c,j,k) = 0._r8
           end do
        end do
+    end do
+
+    ! Set temporary veg filter for special landunits
+    do p = begp, endp
+       l = veg_pp%landunit(p)
+       if (lun_pp%ifspecial(l)) then
+          this%residue_cpools(p,:) = 0._r8
+          this%fscov_veg(p) = 0._r8
+       end if
     end do
 
   end subroutine col_cs_init
@@ -2594,6 +2707,18 @@ contains
           end if
        end do
 
+       do k = 1, nlit_pools
+          varname = 'residue_' // trim(decomp_cascade_con%decomp_pool_name_restart(i_met_lit+k-1)) // 'c'
+          ptr1d => this%residue_cpools(:,k)
+          call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_double,  &
+               dim1name='pft', long_name='',  units='', fill_value=spval, &
+               interpinic_flag='interp' , readvar=readvar, data=ptr1d)
+          if (flag=='read' .and. .not. readvar) then
+             call endrun(msg='ERROR:: '//trim(varname)//' is required on an initialization dataset'//&
+                  errMsg(__FILE__, __LINE__))
+          end if
+       end do
+
        if (use_vertsoilc) then
           ptr2d => this%ctrunc_vr
           call restartvar(ncid=ncid, flag=flag, varname='col_ctrunc_vr', xtype=ncd_double,  &
@@ -2649,6 +2774,18 @@ contains
             dim1name='column', long_name='', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%prod1c)
 
+       call restartvar(ncid=ncid, flag=flag, varname='residuec', xtype=ncd_double,  &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%residuec)
+
+       call restartvar(ncid=ncid, flag=flag, varname='fscov', xtype=ncd_double,  &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%fscov)
+
+       call restartvar(ncid=ncid, flag=flag, varname='fscov_veg', xtype=ncd_double, &
+            dim1name='pft', long_name='', units='', fill_value=spval, &
+            interpinic_flag='interp', readvar=readvar, data=this%fscov_veg)
+
     end if ! C12
 
     if ( carbon_type == 'c13' ) then
@@ -2679,12 +2816,29 @@ contains
                 do j = 1, nlevdecomp
                    if (c12_carbonstate_vars%decomp_cpools_vr(i,j,k) /= spval .and. &
                         .not. isnan(this%decomp_cpools_vr(i,j,k)) ) then
-                         this%decomp_cpools_vr(i,j,k) = c12_carbonstate_vars%decomp_cpools_vr(i,j,k) * c14ratio
+                         this%decomp_cpools_vr(i,j,k) = c12_carbonstate_vars%decomp_cpools_vr(i,j,k) * c3_r2
                    endif
                 end do
              end do
           end if
        end do ! ndecomp_pools
+
+       do k = 1, nlit_pools
+          varname = 'residue_' // trim(decomp_cascade_con%decomp_pool_name_restart(i_met_lit+k-1)) // 'c_13'
+          ptr1d => this%residue_cpools(:,k)
+          call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_double,  &
+               dim1name='pft', long_name='',  units='', fill_value=spval, &
+               interpinic_flag='interp' , readvar=readvar, data=ptr1d)
+          if (flag=='read' .and. .not. readvar) then
+             write(iulog,*) 'initializing this%residue_cpools with atmospheric c13 value for: '//varname
+             do i = bounds%begp,bounds%endp
+                if (c12_carbonstate_vars%residue_cpools(i,k) /= spval .and. &
+                     .not. isnan(c12_carbonstate_vars%residue_cpools(i,k)) ) then
+                      this%residue_cpools(i,k) = c12_carbonstate_vars%residue_cpools(i,k) * c3_r2
+                end if
+             end do
+          end if
+       end do
 
        if (use_vertsoilc) then
           ptr2d => this%ctrunc_vr
@@ -2796,9 +2950,26 @@ contains
                 do j = 1, nlevdecomp
                    if (c12_carbonstate_vars%decomp_cpools_vr(i,j,k) /= spval .and. &
                         .not. isnan(c12_carbonstate_vars%decomp_cpools_vr(i,j,k)) ) then
-                         this%decomp_cpools_vr(i,j,k) = c12_carbonstate_vars%decomp_cpools_vr(i,j,k) * c3_r2
+                         this%decomp_cpools_vr(i,j,k) = c12_carbonstate_vars%decomp_cpools_vr(i,j,k) * c14ratio
                    endif
                 end do
+             end do
+          end if
+       end do
+
+       do k = 1, nlit_pools
+          varname = 'residue_' // trim(decomp_cascade_con%decomp_pool_name_restart(i_met_lit+k-1)) // 'c_14'
+          ptr1d => this%residue_cpools(:,k)
+          call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_double,  &
+               dim1name='pft', long_name='',  units='', fill_value=spval, &
+               interpinic_flag='interp' , readvar=readvar, data=ptr1d)
+          if (flag=='read' .and. .not. readvar) then
+             write(iulog,*) 'initializing this%residue_cpools with atmospheric c14 value for: '//varname
+             do i = bounds%begp,bounds%endp
+                if (c12_carbonstate_vars%residue_cpools(i,k) /= spval .and. &
+                     .not. isnan(c12_carbonstate_vars%residue_cpools(i,k)) ) then
+                      this%residue_cpools(i,k) = c12_carbonstate_vars%residue_cpools(i,k) * c14ratio
+                end if
              end do
           end if
        end do
@@ -2965,13 +3136,26 @@ contains
                  end do ! nlevdecomp
               end do ! columns
            end do ! ndecomp_pools
+           do k = 1, nlit_pools
+              do p = bounds%begp, bounds%endp
+                 c = veg_pp%column(p)
+                 if ( exit_spinup ) then
+                    m = decomp_cascade_con%spinup_factor(i_met_lit+k-1)
+                    if (decomp_cascade_con%spinup_factor(i_met_lit+k-1) > 1) m = m / cnstate_vars%scalaravg_col(c,1)
+                 else if ( enter_spinup ) then
+                    m = 1. / decomp_cascade_con%spinup_factor(i_met_lit+k-1)
+                    if (decomp_cascade_con%spinup_factor(i_met_lit+k-1) > 1) m = m * cnstate_vars%scalaravg_col(c,1)
+                 end if
+                 this%residue_cpools(p,k) = this%residue_cpools(p,k) * m
+              end do
+           end do
         end if ! read
      end if ! c12 or c14 (PET: why not c13?)
 
   end subroutine col_cs_restart
 
   !-----------------------------------------------------------------------
-  subroutine col_cs_summary(this, bounds, num_soilc, filter_soilc)
+  subroutine col_cs_summary(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
     !
     ! !DESCRIPTION:
     ! Column-level carbon state summary calculations
@@ -2981,12 +3165,15 @@ contains
     type(bounds_type)      , intent(in)    :: bounds
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
+    integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
     !
     ! !LOCAL VARIABLES:
     real(r8) :: nfixlags, dtime ! temp variables for making lagged npp
     integer  :: c,p,j,k,l       ! indices
     integer  :: fp,fc           ! lake filter indices
     real(r8) :: maxdepth        ! depth to integrate soil variables
+    real(r8) :: wt_col
     integer  :: nlev
     !-----------------------------------------------------------------------
 
@@ -3092,6 +3279,37 @@ contains
        endif
     end do
 
+    ! total surface residue carbon (RESIDUEC)
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%residuec(c) = 0._r8
+    end do
+    do l = 1, nlit_pools
+       if ( decomp_cascade_con%is_litter(i_met_lit+l-1) ) then
+          do fp = 1,num_soilp
+             p = filter_soilp(fp)
+             c = veg_pp%column(p)
+             wt_col = veg_pp%wtcol(p)
+             this%residuec(c) = &
+                  this%residuec(c) + &
+                  this%residue_cpools(p,l) * wt_col 
+          end do
+       endif
+    end do
+
+    ! fraction of soil covered by residue
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%fscov(c) = 0._r8
+    end do
+    do fp = 1,num_soilp
+       p = filter_soilp(fp)
+       c = veg_pp%column(p)
+       wt_col = veg_pp%wtcol(p)
+       this%fscov_veg(p) = 1.0 - exp( -9.52e-3_r8 * sum(this%residue_cpools(p,:)) )
+       this%fscov(c) = this%fscov(c) + this%fscov_veg(p) * wt_col
+    end do
+
     ! total soil organic matter carbon (TOTSOMC)
     do fc = 1,num_soilc
        c = filter_soilc(fc)
@@ -3153,6 +3371,7 @@ contains
             this%totlitc(c)  + &
             this%totsomc(c)  + &
             this%totprodc(c) + &
+            this%residuec(c) + &
             this%totvegc(c)
 
        ! total column carbon, including veg and cpool (TOTCOLC)
@@ -3165,6 +3384,7 @@ contains
             this%totsomc(c)  + &
             this%totprodc(c) + &
             this%ctrunc(c)   + &
+            this%residuec(c) + &
             this%cropseedc_deficit(c)
 
        this%totabgc(c) =       &
@@ -3220,11 +3440,12 @@ contains
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean column nitrogen state data structure
   !------------------------------------------------------------------------
-  subroutine col_ns_init(this, begc, endc, col_cs)
+  subroutine col_ns_init(this, begc, endc, begp, endp, col_cs)
     !
     ! !ARGUMENTS:
     class(column_nitrogen_state)          :: this
     integer, intent(in)                   :: begc,endc
+    integer, intent(in)                   :: begp,endp
     type(column_carbon_state), intent(in) :: col_cs
     !
     ! !LOCAL VARIABLES:
@@ -3278,6 +3499,8 @@ contains
     allocate(this%prod100n              (begc:endc))                     ; this%prod100n              (:)   = spval
     allocate(this%totprodn              (begc:endc))                     ; this%totprodn              (:)   = spval
     allocate(this%dyn_nbal_adjustments  (begc:endc))                     ; this%dyn_nbal_adjustments  (:)   = spval
+    allocate(this%residue_npools        (begp:endp,1:nlit_pools))        ; this%residue_npools        (:,:) = spval
+    allocate(this%residuen              (begc:endc))                     ; this%residuen              (:)   = spval
     if (use_fan) then
        allocate(this%tan_g1                (begc:endc))                     ; this%tan_g1                (:)   = spval
        allocate(this%tan_g2                (begc:endc))                     ; this%tan_g2                (:)   = spval
@@ -3382,6 +3605,20 @@ contains
              avgflag='A', long_name='total soil organic matter N to 1 meter', &
               ptr_col=this%totsomn_1m, default='inactive')
     endif
+
+    !this%residue_npools(begp:endp,:) = spval
+    !do l  = 1, nlit_pools
+    !   data1dptr => this%residue_npools(:,l)
+    !   fieldname = 'RESIDUE_' // trim(decomp_cascade_con%decomp_pool_name_history(i_met_lit+l-1)) // 'N'
+    !   longname =  'surface residue ' // trim(decomp_cascade_con%decomp_pool_name_history(i_met_lit+l-1)) // ' N'
+    !   call hist_addfld1d (fname=fieldname, units='gN/m^2', &
+    !        avgflag='A', long_name=longname, ptr_patch=data1dptr)
+    !end do
+
+    this%residuen(begc:endc) = spval
+    call hist_addfld1d (fname='RESIDUEN', units='gN/m^2', &
+         avgflag='A', long_name='total surface residue N', &
+         ptr_col=this%residuen)
 
     this%ntrunc(begc:endc) = spval
      call hist_addfld1d (fname='COL_NTRUNC', units='gN/m^2',  &
@@ -3607,6 +3844,17 @@ contains
     ! set cold-start initial values for select members of col_ns
     !-----------------------------------------------------------------------
 
+    do p = begp, endp
+       l = veg_pp%landunit(p)
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+          this%residue_npools(p,1:nlit_pools) = 0._r8
+       end if
+       ! Set temporary veg filter for special landunits
+       if (lun_pp%ifspecial(l)) then
+          this%residue_npools(p,1:nlit_pools) = 0._r8
+       end if
+    end do
+
     do c = begc, endc
        l = col_pp%landunit(c)
        if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
@@ -3655,6 +3903,7 @@ contains
           this%totecosysn(c) = 0._r8
           this%totcoln(c)    = 0._r8
           this%cwdn(c)       = 0._r8
+          this%residuen(c)   = 0._r8
 
           ! dynamic landcover state variables
           this%seedn(c)         = 0._r8
@@ -3794,6 +4043,18 @@ contains
        end if
     end do
 
+    do k = 1, nlit_pools
+       varname = 'residue_' // trim(decomp_cascade_con%decomp_pool_name_restart(i_met_lit+k-1)) // 'n'
+       ptr1d => this%residue_npools(:,k)
+       call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_double,  &
+            dim1name='pft', long_name='',  units='', fill_value=spval, &
+            interpinic_flag='interp' , readvar=readvar, data=ptr1d)
+       if (flag=='read' .and. .not. readvar) then
+          call endrun(msg='ERROR:: '//trim(varname)//' is required on an initialization dataset'//&
+               errMsg(__FILE__, __LINE__))
+       end if
+    end do
+
     if (use_vertsoilc) then
        ptr2d => this%ntrunc_vr
        call restartvar(ncid=ncid, flag=flag, varname="col_ntrunc_vr", xtype=ncd_double,  &
@@ -3895,6 +4156,10 @@ contains
     call restartvar(ncid=ncid, flag=flag, varname='prod1n', xtype=ncd_double,  &
          dim1name='column', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%prod1n)
+
+    call restartvar(ncid=ncid, flag=flag, varname='residuen', xtype=ncd_double,  &
+         dim1name='column', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%residuen)
 
     if (use_fan) then
        call restartvar(ncid=ncid, flag=flag, varname='tan_g1', xtype=ncd_double, &
@@ -4081,14 +4346,27 @@ contains
           do c = bounds%begc, bounds%endc
              do j = 1, nlevdecomp
                 if ( exit_spinup ) then
-		             m = decomp_cascade_con%spinup_factor(k)
+                   m = decomp_cascade_con%spinup_factor(k)
                    if (decomp_cascade_con%spinup_factor(k) > 1) m = m / cnstate_vars%scalaravg_col(c,j)
                 else if ( enter_spinup ) then
                    m = 1. / decomp_cascade_con%spinup_factor(k)
-		             if (decomp_cascade_con%spinup_factor(k) > 1) m = m * cnstate_vars%scalaravg_col(c,j)
+                   if (decomp_cascade_con%spinup_factor(k) > 1) m = m * cnstate_vars%scalaravg_col(c,j)
                 end if
                 this%decomp_npools_vr(c,j,k) = this%decomp_npools_vr(c,j,k) * m
              end do
+          end do
+       end do
+       do k = 1, nlit_pools
+          do p = bounds%begp, bounds%endp
+             c = veg_pp%column(p)
+             if ( exit_spinup ) then
+                m = decomp_cascade_con%spinup_factor(i_met_lit+k-1)
+                if (decomp_cascade_con%spinup_factor(i_met_lit+k-1) > 1) m = m / cnstate_vars%scalaravg_col(c,1)
+             else if ( enter_spinup ) then
+                m = 1. / decomp_cascade_con%spinup_factor(i_met_lit+k-1)
+                if (decomp_cascade_con%spinup_factor(i_met_lit+k-1) > 1) m = m * cnstate_vars%scalaravg_col(c,1)
+             end if
+             this%residue_npools(p,k) = this%residue_npools(p,k) * m
           end do
        end do
     end if
@@ -4129,6 +4407,7 @@ contains
        this%totcoln(i)     = value_column
        this%totsomn_1m(i)  = value_column
        this%totlitn_1m(i)  = value_column
+       this%residuen(i)    = value_column
        if (use_fan) then
           this%tan_g1(i)   = value_column
           this%tan_g2(i)   = value_column
@@ -4189,18 +4468,21 @@ contains
   end subroutine col_ns_setvalues
 
   !-----------------------------------------------------------------------
-  subroutine col_ns_summary(this, bounds, num_soilc, filter_soilc)
+  subroutine col_ns_summary(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
     !
     ! !ARGUMENTS:
     class (column_nitrogen_state)  :: this
     type(bounds_type) , intent(in) :: bounds
     integer           , intent(in) :: num_soilc       ! number of soil columns in filter
     integer           , intent(in) :: filter_soilc(:) ! filter for soil columns
+    integer           , intent(in) :: num_soilp       ! number of soil patches in filter
+    integer           , intent(in) :: filter_soilp(:) ! filter for soil patches
     !
     ! !LOCAL VARIABLES:
     integer  :: c,p,j,k,l   ! indices
     integer  :: fp,fc       ! lake filter indices
     real(r8) :: maxdepth    ! depth to integrate soil variables
+    real(r8) :: wt_col
     integer  :: nlev
     !-----------------------------------------------------------------------
 
@@ -4392,6 +4674,24 @@ contains
        end do
     end do
 
+    ! total surface residue N
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%residuen(c) = 0._r8
+    end do
+    do l = 1, nlit_pools
+       if ( decomp_cascade_con%is_litter(i_met_lit+l-1) ) then
+          do fp = 1,num_soilp 
+             p = filter_soilp(fp)
+             c = veg_pp%column(p)
+             wt_col = veg_pp%wtcol(p)
+             this%residuen(c) = &
+                  this%residuen(c) + &
+                  this%residue_npools(p,l) * wt_col
+          end do
+       endif
+    end do
+
     do fc = 1,num_soilc
        c = filter_soilc(fc)
 
@@ -4408,6 +4708,7 @@ contains
             this%totsomn(c) + &
             this%sminn(c) + &
             this%totprodn(c) + &
+            this%residuen(c) + &
             this%totvegn(c)
 
 
@@ -4420,6 +4721,7 @@ contains
             this%totsomn(c) + &
             this%sminn(c) + &
             this%totprodn(c) + &
+            this%residuen(c) + &
             this%ntrunc(c)+ &
             this%plant_n_buffer(c) + &
             this%cropseedn_deficit(c) + &
@@ -4436,7 +4738,8 @@ contains
             this%cwdn(c) + &
             this%totlitn(c) + &
             this%totsomn(c) + &
-            this%sminn(c)
+            this%sminn(c) + &
+            this%residuen(c)
     end do
 
   end subroutine col_ns_summary
@@ -4484,15 +4787,16 @@ contains
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean column phosphorus state data structure
   !------------------------------------------------------------------------
-  subroutine col_ps_init(this, begc, endc, col_cs)
+  subroutine col_ps_init(this, begc, endc, begp, endp, col_cs)
     !
     ! !ARGUMENTS:
     class(column_phosphorus_state)        :: this
     integer, intent(in)                   :: begc,endc
+    integer, intent(in)                   :: begp,endp
     type(column_carbon_state), intent(in) :: col_cs
     !
     ! !LOCAL VARIABLES:
-    integer           :: fc,l,c,j,k               ! indices
+    integer           :: fc,fp,l,c,p,j,k          ! indices
     integer           :: num_special_col          ! number of good values in special_col filter
     integer           :: special_col(endc-begc+1) ! special landunit filter - columns
     character(8)      :: vr_suffix
@@ -4537,6 +4841,8 @@ contains
     allocate(this%totpftp              (begc:endc))                   ; this%totpftp              (:)   = spval
     allocate(this%totvegp              (begc:endc))                   ; this%totvegp              (:)   = spval
     allocate(this%decomp_ppools_vr     (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)); this%decomp_ppools_vr(:,:,:)= spval
+    allocate(this%residue_ppools       (begp:endp,1:nlit_pools))      ; this%residue_ppools       (:,:) = spval
+    allocate(this%residuep             (begc:endc))                   ; this%residuep             (:)   = spval
     allocate(this%begpb                (begc:endc))                   ; this%begpb                (:)   = spval
     allocate(this%endpb                (begc:endc))                   ; this%endpb                (:)   = spval
     allocate(this%errpb                (begc:endc))                   ; this%errpb                (:)   = spval
@@ -4607,6 +4913,20 @@ contains
                  ptr_col=data1dptr, default = 'inactive')
        endif
     end do
+
+    !this%residue_ppools(begp:endp,:) = spval
+    !do l  = 1, nlit_pools
+    !   data1dptr => this%residue_ppools(:,l)
+    !   fieldname = 'RESIDUE_' // trim(decomp_cascade_con%decomp_pool_name_history(i_met_lit+l-1)) // 'P'
+    !   longname =  'surface residue ' // trim(decomp_cascade_con%decomp_pool_name_history(i_met_lit+l-1)) // ' P'
+    !   call hist_addfld1d (fname=fieldname, units='gP/m^2', &
+    !        avgflag='A', long_name=longname, ptr_patch=data1dptr)
+    !end do
+
+    this%residuep(begc:endc) = spval
+    call hist_addfld1d (fname='RESIDUEP', units='gP/m^2', &
+         avgflag='A', long_name='total surface residue P', &
+         ptr_col=this%residuep)
 
 
     if ( nlevdecomp_full > 1 ) then
@@ -4803,6 +5123,7 @@ contains
           this%totecosysp(c) = 0._r8
           this%totcolp(c)    = 0._r8
           this%cwdp(c)       = 0._r8
+          this%residuep(c)   = 0._r8
 
           ! dynamic landcover state variables
           this%seedp(c)         = 0._r8
@@ -4810,6 +5131,17 @@ contains
           this%prod10p(c)       = 0._r8
           this%prod100p(c)      = 0._r8
           this%totprodp(c)      = 0._r8
+       end if
+    end do
+
+    do p = begp, endp
+       l = veg_pp%landunit(p)
+       if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+          this%residue_ppools(p,1:nlit_pools) = 0._r8
+       end if
+       ! Set temporary veg filter for special landunits
+       if (lun_pp%ifspecial(l)) then
+          this%residue_ppools(p,1:nlit_pools) = 0._r8
        end if
     end do
 
@@ -4953,6 +5285,19 @@ contains
        end if
     end do
 
+    ! residue P
+    do k = 1, nlit_pools
+       varname = 'residue_' // trim(decomp_cascade_con%decomp_pool_name_restart(i_met_lit+k-1)) // 'p'
+       ptr1d => this%residue_ppools(:,k)
+       call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_double,  &
+            dim1name='pft', long_name='',  units='', fill_value=spval, &
+            interpinic_flag='interp' , readvar=readvar, data=ptr1d)
+       if (flag=='read' .and. .not. readvar) then
+          call endrun(msg='ERROR:: '//trim(varname)//' is required on an initialization dataset'//&
+               errMsg(__FILE__, __LINE__))
+       end if
+    end do
+
     if (use_vertsoilc) then
        ptr2d => this%ptrunc_vr
        call restartvar(ncid=ncid, flag=flag, varname="col_ptrunc_vr", xtype=ncd_double,  &
@@ -4997,6 +5342,10 @@ contains
     call restartvar(ncid=ncid, flag=flag, varname='prod1p', xtype=ncd_double,  &
          dim1name='column', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%prod1p)
+
+    call restartvar(ncid=ncid, flag=flag, varname='residuep', xtype=ncd_double,  &
+         dim1name='column', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%residuep)
 
     !--------------------------------
     ! Spinup state
@@ -5051,6 +5400,19 @@ contains
                 end if
                 this%decomp_ppools_vr(c,j,k) = this%decomp_ppools_vr(c,j,k) * m
              end do
+          end do
+       end do
+       do k = 1, nlit_pools
+          do p = bounds%begp, bounds%endp
+             c = veg_pp%column(p)
+             if ( exit_spinup ) then
+                m = decomp_cascade_con%spinup_factor(i_met_lit+k-1)
+                if (decomp_cascade_con%spinup_factor(i_met_lit+k-1) > 1) m = m / cnstate_vars%scalaravg_col(c,1)
+             else if ( enter_spinup ) then
+                m = 1. / decomp_cascade_con%spinup_factor(i_met_lit+k-1)
+                if (decomp_cascade_con%spinup_factor(i_met_lit+k-1) > 1) m = m * cnstate_vars%scalaravg_col(c,1)
+             end if
+             this%residue_ppools(p,k) = this%residue_ppools(p,k) * m
           end do
        end do
        ! soil phosphorus initialization when exit AD spinup Qing Z. 2017
@@ -5192,6 +5554,7 @@ contains
        this%totcolp(i)     = value_column
        this%totsomp_1m(i)  = value_column
        this%totlitp_1m(i)  = value_column
+       this%residuep(i)    = value_column
     end do
 
     do j = 1,nlevdecomp_full
@@ -5229,18 +5592,21 @@ contains
   end subroutine col_ps_setvalues
 
   !-----------------------------------------------------------------------
-  subroutine col_ps_summary(this, bounds, num_soilc, filter_soilc)
+  subroutine col_ps_summary(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
     !
     ! !ARGUMENTS:
     class (column_phosphorus_state) :: this
     type(bounds_type) , intent(in)  :: bounds
     integer           , intent(in)  :: num_soilc       ! number of soil columns in filter
     integer           , intent(in)  :: filter_soilc(:) ! filter for soil columns
+    integer           , intent(in)  :: num_soilp       ! number of soil patches in filter
+    integer           , intent(in)  :: filter_soilp(:) ! filter for soil patches
     !
     ! !LOCAL VARIABLES:
-    integer  :: c,j,k,l   ! indices
-    integer  :: fc       ! lake filter indices
+    integer  :: c,p,j,k,l   ! indices
+    integer  :: fc,fp       ! lake filter indices
     real(r8) :: maxdepth    ! depth to integrate soil variables
+    real(r8) :: wt_col
     !-----------------------------------------------------------------------
    do fc = 1,num_soilc
       c = filter_soilc(fc)
@@ -5436,6 +5802,24 @@ contains
       end do
    end do
 
+    ! total surface residue P
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%residuep(c) = 0._r8
+    end do
+    do l = 1, nlit_pools
+       if ( decomp_cascade_con%is_litter(i_met_lit+l-1) ) then
+          do fp = 1,num_soilp 
+             p = filter_soilp(fp)
+             c = veg_pp%column(p)
+             wt_col = veg_pp%wtcol(p)
+             this%residuep(c) = &
+                  this%residuep(c) + &
+                  this%residue_ppools(p,l) * wt_col
+          end do
+       endif
+    end do
+
    do fc = 1,num_soilc
       c = filter_soilc(fc)
 
@@ -5456,6 +5840,7 @@ contains
            this%primp(c) + &
            this%occlp(c) + &
            this%totprodp(c) + &
+           this%residuep(c) + &
            this%totvegp(c)
 
       ! total column phosphorus, including pft (TOTCOLP)
@@ -5465,6 +5850,7 @@ contains
            this%totlitp(c) + &
            this%totsomp(c) + &
            this%totprodp(c) + &
+           this%residuep(c) + &
            this%solutionp(c) + &
            this%labilep(c) + &
            this%secondp(c) + &
@@ -5980,15 +6366,16 @@ contains
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean column carbon flux data structure
   !------------------------------------------------------------------------
-  subroutine col_cf_init(this, begc, endc, carbon_type)
+  subroutine col_cf_init(this, begc, endc, begp, endp, carbon_type)
     !
     ! !ARGUMENTS:
     class(column_carbon_flux) :: this
     integer, intent(in) :: begc,endc
+    integer, intent(in) :: begp,endp
     character(len=3) , intent(in) :: carbon_type ! one of ['c12', c13','c14']
     !
     ! !LOCAL VARIABLES:
-    integer           :: c,j                        ! indices
+    integer           :: c,p,j                       ! indices
     integer           :: k,l,ii,jj
     character(8)      :: vr_suffix = ""
     character(10)     :: active  = ""
@@ -6013,6 +6400,8 @@ contains
     allocate(this%decomp_cpools_yield_vr            (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)) ; this%decomp_cpools_yield_vr(:,:,:) = spval
     allocate(this%decomp_cascade_hr                 (begc:endc,1:ndecomp_cascade_transitions))     ; this%decomp_cascade_hr               (:,:)   = spval
     allocate(this%decomp_cascade_ctransfer          (begc:endc,1:ndecomp_cascade_transitions))     ; this%decomp_cascade_ctransfer        (:,:)   = spval
+    allocate(this%residue_hr                        (begp:endp,1:nlit_pools))     ; this%residue_hr                   (:,:) = spval
+    allocate(this%residue_ctransfer                 (begp:endp,1:nlit_pools))     ; this%residue_ctransfer            (:,:) = spval
     allocate(this%o_scalar                          (begc:endc,1:nlevdecomp_full)); this%o_scalar                     (:,:) = spval
     allocate(this%w_scalar                          (begc:endc,1:nlevdecomp_full)); this%w_scalar                     (:,:) = spval
     allocate(this%t_scalar                          (begc:endc,1:nlevdecomp_full)); this%t_scalar                     (:,:) = spval
@@ -6024,12 +6413,16 @@ contains
     allocate(this%phenology_c_to_litr_met_c         (begc:endc,1:nlevdecomp_full)); this%phenology_c_to_litr_met_c    (:,:) = spval
     allocate(this%phenology_c_to_litr_cel_c         (begc:endc,1:nlevdecomp_full)); this%phenology_c_to_litr_cel_c    (:,:) = spval
     allocate(this%phenology_c_to_litr_lig_c         (begc:endc,1:nlevdecomp_full)); this%phenology_c_to_litr_lig_c    (:,:) = spval
+    allocate(this%phenology_c_to_residue_met_c      (begp:endp))                  ; this%phenology_c_to_residue_met_c (:)   = spval
+    allocate(this%phenology_c_to_residue_cel_c      (begp:endp))                  ; this%phenology_c_to_residue_cel_c (:)   = spval
+    allocate(this%phenology_c_to_residue_lig_c      (begp:endp))                  ; this%phenology_c_to_residue_lig_c (:)   = spval
     allocate(this%gap_mortality_c_to_litr_met_c     (begc:endc,1:nlevdecomp_full)); this%gap_mortality_c_to_litr_met_c(:,:) = spval
     allocate(this%gap_mortality_c_to_litr_cel_c     (begc:endc,1:nlevdecomp_full)); this%gap_mortality_c_to_litr_cel_c(:,:) = spval
     allocate(this%gap_mortality_c_to_litr_lig_c     (begc:endc,1:nlevdecomp_full)); this%gap_mortality_c_to_litr_lig_c(:,:) = spval
     allocate(this%gap_mortality_c_to_cwdc           (begc:endc,1:nlevdecomp_full)); this%gap_mortality_c_to_cwdc      (:,:) = spval
     allocate(this%m_decomp_cpools_to_fire_vr        (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)) ; this%m_decomp_cpools_to_fire_vr(:,:,:)= spval
     allocate(this%m_decomp_cpools_to_fire           (begc:endc,1:ndecomp_pools))  ; this%m_decomp_cpools_to_fire      (:,:) = spval
+    allocate(this%m_residue_fire_closs              (begp:endp,1:nlit_pools))     ; this%m_residue_fire_closs         (:,:) = spval
     allocate(this%decomp_cpools_erode               (begc:endc,1:ndecomp_pools))  ; this%decomp_cpools_erode          (:,:) = spval
     allocate(this%decomp_cpools_deposit             (begc:endc,1:ndecomp_pools))  ; this%decomp_cpools_deposit        (:,:) = spval
     allocate(this%decomp_cpools_yield               (begc:endc,1:ndecomp_pools))  ; this%decomp_cpools_yield          (:,:) = spval
@@ -6041,9 +6434,15 @@ contains
     allocate(this%somc_erode                        (begc:endc))                  ; this%somc_erode                   (:)   = spval
     allocate(this%somc_deposit                      (begc:endc))                  ; this%somc_deposit                 (:)   = spval
     allocate(this%somc_yield                        (begc:endc))                  ; this%somc_yield                   (:)   = spval
+    allocate(this%residue_to_litr_met_c             (begc:endc,1:nlevdecomp_full)); this%residue_to_litr_met_c        (:,:) = spval
+    allocate(this%residue_to_litr_cel_c             (begc:endc,1:nlevdecomp_full)); this%residue_to_litr_cel_c        (:,:) = spval
+    allocate(this%residue_to_litr_lig_c             (begc:endc,1:nlevdecomp_full)); this%residue_to_litr_lig_c        (:,:) = spval
     allocate(this%harvest_c_to_litr_met_c           (begc:endc,1:nlevdecomp_full)); this%harvest_c_to_litr_met_c      (:,:) = spval
     allocate(this%harvest_c_to_litr_cel_c           (begc:endc,1:nlevdecomp_full)); this%harvest_c_to_litr_cel_c      (:,:) = spval
     allocate(this%harvest_c_to_litr_lig_c           (begc:endc,1:nlevdecomp_full)); this%harvest_c_to_litr_lig_c      (:,:) = spval
+    allocate(this%harvest_c_to_residue_met_c        (begp:endp))                  ; this%harvest_c_to_residue_met_c   (:)   = spval
+    allocate(this%harvest_c_to_residue_cel_c        (begp:endp))                  ; this%harvest_c_to_residue_cel_c   (:)   = spval
+    allocate(this%harvest_c_to_residue_lig_c        (begp:endp))                  ; this%harvest_c_to_residue_lig_c   (:)   = spval
     allocate(this%harvest_c_to_cwdc                 (begc:endc,1:nlevdecomp_full)); this%harvest_c_to_cwdc            (:,:) = spval
     allocate(this%hrv_deadstemc_to_prod10c          (begc:endc))                  ; this%hrv_deadstemc_to_prod10c     (:)   = spval
     allocate(this%hrv_deadstemc_to_prod100c         (begc:endc))                  ; this%hrv_deadstemc_to_prod100c    (:)   = spval
@@ -7180,7 +7579,7 @@ contains
   end subroutine col_cf_restart
 
   !-----------------------------------------------------------------------
-  subroutine col_cf_summary(this, bounds, num_soilc, filter_soilc, isotope)
+  subroutine col_cf_summary(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, isotope)
     !
     ! !DESCRIPTION:
     ! column-level carbon flux summary calculations
@@ -7191,13 +7590,16 @@ contains
     type(bounds_type)      , intent(in)    :: bounds
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
+    integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
     character(len=*)       , intent(in)    :: isotope
     !
     ! !LOCAL VARIABLES:
     real(r8) :: nfixlags, dtime ! temp variables for making lagged npp
     integer  :: c,p,j,k,l       ! indices
-    integer  :: fc              ! lake filter indices
+    integer  :: fc,fp           ! lake filter indices
     real(r8) :: maxdepth        ! depth to integrate soil variables
+    real(r8) :: wt_col
     integer  :: nlev
     !-----------------------------------------------------------------------
     associate(&
@@ -7314,6 +7716,19 @@ contains
        end if
     end do
 
+    do l = 1, nlit_pools
+       if ( decomp_cascade_con%is_litter(i_met_lit+l-1) ) then
+          do fp = 1, num_soilp
+             p = filter_soilp(fp)
+             c = veg_pp%column(p)
+             wt_col = veg_pp%wtcol(p)
+             this%lithr(c) = &
+                this%lithr(c) + &
+                this%residue_hr(p,l) * wt_col
+          end do
+       end if
+    end do
+
     ! soil organic matter heterotrophic respiration (SOMHR)
     do k = 1, ndecomp_cascade_transitions
        if ( is_soil(decomp_cascade_con%cascade_donor_pool(k)) ) then
@@ -7337,6 +7752,19 @@ contains
                 this%decomp_cascade_hr_vr(c,j,k)
           end do
        end do
+    end do
+
+    do l = 1, nlit_pools
+       if ( decomp_cascade_con%is_litter(i_met_lit+l-1) ) then
+          do fp = 1, num_soilp
+             p = filter_soilp(fp)
+             c = veg_pp%column(p)
+             wt_col = veg_pp%wtcol(p)
+             this%hr_vr(c,1) = &
+                this%hr_vr(c,1) + &
+                this%residue_hr(p,l) * wt_col / dzsoi_decomp(1)
+          end do
+       end if
     end do
 
     !----------------------------------------------------------------
@@ -7413,6 +7841,15 @@ contains
           this%fire_closs(c) = &
                this%fire_closs(c) + &
                this%m_decomp_cpools_to_fire(c,l)
+       end do
+
+       do p = col_pp%pfti(c), col_pp%pftf(c)
+          wt_col = veg_pp%wtcol(p)
+          do l = 1, nlit_pools
+             this%fire_closs(c) = &
+                this%fire_closs(c) + &
+                this%m_residue_fire_closs(p,l) * wt_col
+          end do
        end do
 
        ! column-level carbon losses due to landcover change
@@ -7518,6 +7955,17 @@ contains
           end if
        end do
 
+       do l = 1, nlit_pools
+          do fp = 1, num_soilp
+             p = filter_soilp(fp)
+             c = veg_pp%column(p)
+             wt_col = veg_pp%wtcol(p)
+             this%litterc_loss(c) = &
+                this%litterc_loss(c) + &
+                this%m_residue_fire_closs(p,l) * wt_col
+          end do
+       end do
+
 
        do k = 1, ndecomp_cascade_transitions
          if ( is_litter(decomp_cascade_con%cascade_donor_pool(k)) ) then
@@ -7528,6 +7976,19 @@ contains
                   this%decomp_cascade_ctransfer(c,k)
            end do
          end if
+       end do
+
+       do l = 1, nlit_pools
+          if ( decomp_cascade_con%is_litter(i_met_lit+l-1) ) then
+             do fp = 1, num_soilp
+                p = filter_soilp(fp)
+                c = veg_pp%column(p)
+                wt_col = veg_pp%wtcol(p)
+                this%litterc_loss(c) = &
+                   this%litterc_loss(c) + &
+                   this%residue_ctransfer(p,l) * wt_col
+             end do
+          end if
        end do
 
        if (use_pflotran .and. pf_cmode) then
@@ -7582,12 +8043,22 @@ contains
         end do
     end do
 
+    do fp = 1, num_soilp
+       p = filter_soilp(fp)
+       c = veg_pp%column(p)
+       wt_col = veg_pp%wtcol(p)
+       this%plant_to_litter_cflux(c) = this%plant_to_litter_cflux(c) + &
+           this%phenology_c_to_residue_met_c(p) * wt_col + &
+           this%phenology_c_to_residue_cel_c(p) * wt_col + &
+           this%phenology_c_to_residue_lig_c(p) * wt_col
+    end do
+
     end associate
 
   end subroutine col_cf_summary
 
   !------------------------------------------------------------
-  subroutine col_cf_summary_for_ch4( this, bounds, num_soilc, filter_soilc)
+  subroutine col_cf_summary_for_ch4( this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
     !
     ! !DESCRIPTION:
     ! summarize column-level fluxes for methane calculation
@@ -7599,10 +8070,13 @@ contains
     type(bounds_type), intent(in) :: bounds
     integer, intent(in) :: num_soilc
     integer, intent(in) :: filter_soilc(:)
+    integer , intent(in) :: num_soilp
+    integer , intent(in) :: filter_soilp(:)
     !
     ! !LOCAL VARIABLES
-    integer :: fc, c
-    integer :: j,k,l       ! indices
+    integer  :: c,p,j,k,l       ! indices
+    integer  :: fc,fp
+    real(r8) :: wt_col
     !------------------------------------------------------------
     associate(&
          is_litter =>    decomp_cascade_con%is_litter , & ! Input:  [logical (:) ]  TRUE => pool is a litter pool
@@ -7650,6 +8124,19 @@ contains
         end if
       end do
 
+      do l = 1, nlit_pools
+         if ( decomp_cascade_con%is_litter(i_met_lit+l-1) ) then
+            do fp = 1, num_soilp
+               p = filter_soilp(fp)
+               c = veg_pp%column(p)
+               wt_col = veg_pp%wtcol(p)
+               this%lithr(c) = &
+                  this%lithr(c) + &
+                  this%residue_hr(p,l) * wt_col
+            end do
+         end if
+      end do
+
       ! soil organic matter heterotrophic respiration (SOMHR)
       do k = 1, ndecomp_cascade_transitions
         if ( is_soil(decomp_cascade_con%cascade_donor_pool(k)) ) then
@@ -7674,6 +8161,19 @@ contains
           end do
         end do
       end do
+
+      do l = 1, nlit_pools
+         if ( decomp_cascade_con%is_litter(i_met_lit+l-1) ) then
+            do fp = 1, num_soilp
+               p = filter_soilp(fp)
+               c = veg_pp%column(p)
+               wt_col = veg_pp%wtcol(p)
+               this%hr_vr(c,1) = &
+                  this%hr_vr(c,1) + &
+                  this%residue_hr(p,l) * wt_col / dzsoi_decomp(1)
+            end do
+         end if
+      end do
     endif
 
     end associate
@@ -7681,22 +8181,24 @@ contains
   end subroutine col_cf_summary_for_ch4
 
   !-----------------------------------------------------------------------
-  subroutine col_cf_setvalues ( this, num_column, filter_column, value_column)
+  subroutine col_cf_setvalues ( this, num_soilc, filter_soilc, num_soilp, filter_soilp, value_column)
     ! !DESCRIPTION:
     ! Set column-level carbon fluxes
     !
     ! !ARGUMENTS:
     class(column_carbon_flux) :: this
-    integer , intent(in) :: num_column
-    integer , intent(in) :: filter_column(:)
+    integer , intent(in) :: num_soilc
+    integer , intent(in) :: filter_soilc(:)
+    integer , intent(in) :: num_soilp
+    integer , intent(in) :: filter_soilp(:)
     real(r8), intent(in) :: value_column
     !
     ! !LOCAL VARIABLES:
     integer :: fi,i,j,k,l     ! loop index
     !------------------------------------------------------------------------
     do j = 1, nlevdecomp_full
-       do fi = 1,num_column
-          i = filter_column(fi)
+       do fi = 1,num_soilc
+          i = filter_soilc(fi)
 
           this%phenology_c_to_litr_met_c(i,j)     = value_column
           this%phenology_c_to_litr_cel_c(i,j)     = value_column
@@ -7717,26 +8219,30 @@ contains
           this%harvest_c_to_litr_lig_c(i,j)       = value_column
           this%harvest_c_to_cwdc(i,j)             = value_column
 
+          this%residue_to_litr_met_c(i,j)         = value_column
+          this%residue_to_litr_cel_c(i,j)         = value_column
+          this%residue_to_litr_lig_c(i,j)         = value_column
+
           this%hr_vr(i,j)                         = value_column
        end do
     end do
     do l = 1, ndecomp_cascade_transitions
-       do fi = 1,num_column
-          i = filter_column(fi)
+       do fi = 1,num_soilc
+          i = filter_soilc(fi)
           this%decomp_cascade_ctransfer(i,l) = value_column
        end do
     end do
     do j = 1, nlevdecomp_full
-       do fi = 1,num_column
-          i = filter_column(fi)
+       do fi = 1,num_soilc
+          i = filter_soilc(fi)
           this%f_co2_soil_vr(i,j) = value_column
        end do
     end do
     
     do k = 1, ndecomp_pools
        do j = 1, nlevdecomp_full
-          do fi = 1,num_column
-             i = filter_column(fi)
+          do fi = 1,num_soilc
+             i = filter_soilc(fi)
              this%decomp_cpools_sourcesink(i,j,k) = value_column
              this%decomp_cpools_transport_tendency(i,j,k) = value_column
           end do
@@ -7747,29 +8253,29 @@ contains
     if(nstep_mod == 0 .or. is_first_restart_step()) then 
       do k = 1, ndecomp_pools
          do j = 1, nlevdecomp_full
-            do fi = 1,num_column
-               i = filter_column(fi)
+            do fi = 1,num_soilc
+               i = filter_soilc(fi)
                this%externalc_to_decomp_cpools(i,j,k) = value_column
             end do
          end do
       end do
-      do fi = 1,num_column
-         i = filter_column(fi)
+      do fi = 1,num_soilc
+         i = filter_soilc(fi)
          this%f_co2_soil(i) = value_column
          this%externalc_to_decomp_delta(i) = value_column
       end do
     end if 
 
     do k = 1, ndecomp_pools
-       do fi = 1,num_column
-          i = filter_column(fi)
+       do fi = 1,num_soilc
+          i = filter_soilc(fi)
           this%decomp_cpools_yield(i,k) = value_column !if ero_ccycle
           this%m_decomp_cpools_to_fire(i,k) = value_column
        end do
     end do 
 
-    do fi = 1,num_column
-       i = filter_column(fi)
+    do fi = 1,num_soilc
+       i = filter_soilc(fi)
 
        this%hrv_deadstemc_to_prod10c(i)  = value_column
        this%hrv_deadstemc_to_prod100c(i) = value_column
@@ -7787,7 +8293,7 @@ contains
        this%coutputs(i)                  = value_column
        this%cwdc_hr(i)                   = value_column
        this%litterc_loss(i)              = value_column
-       
+
        this%nee(i)                       = value_column
        this%er(i)                        = value_column  
        this%som_c_leached(i)             = value_column  
@@ -7803,10 +8309,21 @@ contains
        this%wood_harvestc(i)         = value_column
        this%hrv_xsmrpool_to_atm(i)   = value_column
     end do
+
+    do fi = 1, num_soilp
+       i = filter_soilp(fi)
+
+       this%phenology_c_to_residue_met_c(i) = value_column
+       this%phenology_c_to_residue_cel_c(i) = value_column
+       this%phenology_c_to_residue_lig_c(i) = value_column
+       this%harvest_c_to_residue_met_c(i)   = value_column
+       this%harvest_c_to_residue_cel_c(i)   = value_column
+       this%harvest_c_to_residue_lig_c(i)   = value_column
+    end do
   
     if(use_crop) then 
-      do fi = 1,num_column
-         i = filter_column(fi)
+      do fi = 1,num_soilc
+         i = filter_soilc(fi)
          this%somc_fire(i)                 = value_column
          this%product_closs(i)             = value_column
          this%sr(i)                        = value_column
@@ -7821,15 +8338,23 @@ contains
          this%somc_yield(i)                = value_column
       enddo 
     end if 
-    
+      
     do k = 1, ndecomp_pools
-      do fi = 1,num_column
-        i = filter_column(fi)
-        this%decomp_cpools_leached(i,k) = value_column
-        this%decomp_cpools_erode(i,k) = value_column
-        this%decomp_cpools_deposit(i,k) = value_column
-      end do 
+       do fi = 1,num_soilc
+          i = filter_soilc(fi)
+          this%decomp_cpools_leached(i,k) = value_column
+          this%decomp_cpools_erode(i,k) = value_column
+          this%decomp_cpools_deposit(i,k) = value_column
+       end do 
     end do 
+    do k = 1, ndecomp_pools
+       do j = 1, nlevdecomp_full
+          do fi = 1,num_soilc
+             i = filter_soilc(fi)
+             this%decomp_cpools_transport_tendency(i,j,k) = value_column
+          end do
+       end do
+    end do
 
   end subroutine col_cf_setvalues
 
@@ -7848,7 +8373,7 @@ contains
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
     ! locals
     integer :: fc
-    integer :: c, j, k
+    integer :: c, p, j, k
 
     if(.not.use_fates) return
 
@@ -7873,6 +8398,15 @@ contains
         end do
        end do
      end do
+
+    do fc = 1, num_soilc
+       c = filter_soilc(fc)
+       do p = col_pp%pfti(c), col_pp%pftf(c)
+          do k = 1, nlit_pools
+             this%m_residue_fire_closs(p,k) = 0._r8
+          end do
+       end do
+    end do
 
 
   end subroutine col_cf_zero_forfates_veg
@@ -8065,7 +8599,8 @@ contains
                         + this%dwt_frootc_to_litr_met_c(c,j)             &
                         + this%gap_mortality_c_to_litr_met_c(c,j)        &
                         + this%harvest_c_to_litr_met_c(c,j)              &
-                        + this%m_c_to_litr_met_fire(c,j)
+                        + this%m_c_to_litr_met_fire(c,j)                 &
+                        + this%residue_to_litr_met_c(c,j)
 
              elseif (l==i_cel_lit) then
                 this%externalc_to_decomp_cpools(c,j,l) =                 &
@@ -8074,7 +8609,8 @@ contains
                         + this%dwt_frootc_to_litr_cel_c(c,j)             &
                         + this%gap_mortality_c_to_litr_cel_c(c,j)        &
                         + this%harvest_c_to_litr_cel_c(c,j)              &
-                        + this%m_c_to_litr_cel_fire(c,j)
+                        + this%m_c_to_litr_cel_fire(c,j)                 &
+                        + this%residue_to_litr_cel_c(c,j)
 
              elseif (l==i_lig_lit) then
                 this%externalc_to_decomp_cpools(c,j,l) =                 &
@@ -8083,7 +8619,8 @@ contains
                         + this%dwt_frootc_to_litr_lig_c(c,j)             &
                         + this%gap_mortality_c_to_litr_lig_c(c,j)        &
                         + this%harvest_c_to_litr_lig_c(c,j)              &
-                        + this%m_c_to_litr_lig_fire(c,j)
+                        + this%m_c_to_litr_lig_fire(c,j)                 &
+                        + this%residue_to_litr_lig_c(c,j)
 
              ! for cwd
              elseif (l==i_cwd) then
@@ -8134,11 +8671,12 @@ contains
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean column nitrogen flux data structure
   !------------------------------------------------------------------------
-  subroutine col_nf_init(this, begc, endc)
+  subroutine col_nf_init(this, begc, endc, begp, endp)
     !
     ! !ARGUMENTS:
     class(column_nitrogen_flux) :: this
     integer, intent(in) :: begc,endc
+    integer, intent(in) :: begp,endp
     !
     ! !LOCAL VARIABLES:
     integer        :: k,l
@@ -8147,8 +8685,8 @@ contains
     character(100) :: longname
     character(8)   :: vr_suffix
     real(r8), pointer :: data2dptr(:,:), data1dptr(:) ! temp. pointers for slicing larger arrays
-    integer :: c
-    integer :: fc                          ! filter indices
+    integer :: c,p
+    integer :: fc,fp                       ! filter indices
     integer :: num_special_col             ! number of good values in special_col filter
     integer :: special_col(endc-begc+1)    ! special landunit filter - columns
     !------------------------------------------------------------------------
@@ -8259,6 +8797,9 @@ contains
     allocate(this%phenology_n_to_litr_met_n       (begc:endc, 1:nlevdecomp_full)) ; this%phenology_n_to_litr_met_n     (:,:) = spval
     allocate(this%phenology_n_to_litr_cel_n       (begc:endc, 1:nlevdecomp_full)) ; this%phenology_n_to_litr_cel_n     (:,:) = spval
     allocate(this%phenology_n_to_litr_lig_n       (begc:endc, 1:nlevdecomp_full)) ; this%phenology_n_to_litr_lig_n     (:,:) = spval
+    allocate(this%phenology_n_to_residue_met_n    (begp:endp))                    ; this%phenology_n_to_residue_met_n  (:)   = spval
+    allocate(this%phenology_n_to_residue_cel_n    (begp:endp))                    ; this%phenology_n_to_residue_cel_n  (:)   = spval
+    allocate(this%phenology_n_to_residue_lig_n    (begp:endp))                    ; this%phenology_n_to_residue_lig_n  (:)   = spval
     allocate(this%gap_mortality_n_to_litr_met_n   (begc:endc, 1:nlevdecomp_full)) ; this%gap_mortality_n_to_litr_met_n (:,:) = spval
     allocate(this%gap_mortality_n_to_litr_cel_n   (begc:endc, 1:nlevdecomp_full)) ; this%gap_mortality_n_to_litr_cel_n (:,:) = spval
     allocate(this%gap_mortality_n_to_litr_lig_n   (begc:endc, 1:nlevdecomp_full)) ; this%gap_mortality_n_to_litr_lig_n (:,:) = spval
@@ -8267,7 +8808,13 @@ contains
     allocate(this%harvest_n_to_litr_met_n         (begc:endc, 1:nlevdecomp_full)) ; this%harvest_n_to_litr_met_n       (:,:) = spval
     allocate(this%harvest_n_to_litr_cel_n         (begc:endc, 1:nlevdecomp_full)) ; this%harvest_n_to_litr_cel_n       (:,:) = spval
     allocate(this%harvest_n_to_litr_lig_n         (begc:endc, 1:nlevdecomp_full)) ; this%harvest_n_to_litr_lig_n       (:,:) = spval
+    allocate(this%harvest_n_to_residue_met_n      (begp:endp))                    ; this%harvest_n_to_residue_met_n    (:)   = spval
+    allocate(this%harvest_n_to_residue_cel_n      (begp:endp))                    ; this%harvest_n_to_residue_cel_n    (:)   = spval
+    allocate(this%harvest_n_to_residue_lig_n      (begp:endp))                    ; this%harvest_n_to_residue_lig_n    (:)   = spval
     allocate(this%harvest_n_to_cwdn               (begc:endc, 1:nlevdecomp_full)) ; this%harvest_n_to_cwdn             (:,:) = spval
+    allocate(this%residue_to_litr_met_n           (begc:endc, 1:nlevdecomp_full)) ; this%residue_to_litr_met_n         (:,:) = spval
+    allocate(this%residue_to_litr_cel_n           (begc:endc, 1:nlevdecomp_full)) ; this%residue_to_litr_cel_n         (:,:) = spval
+    allocate(this%residue_to_litr_lig_n           (begc:endc, 1:nlevdecomp_full)) ; this%residue_to_litr_lig_n         (:,:) = spval
     allocate(this%plant_ndemand                   (begc:endc))                    ; this%plant_ndemand                 (:)   = spval
     allocate(this%plant_ndemand_vr                (begc:endc,1:nlevdecomp_full))  ; this%plant_ndemand_vr              (:,:) = spval
     allocate(this%f_ngas_decomp_vr                (begc:endc,1:nlevdecomp_full))  ; this%f_ngas_decomp_vr              (:,:) = spval
@@ -8304,8 +8851,11 @@ contains
     allocate(this%decomp_cascade_ntransfer_vr     (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)) ; this%decomp_cascade_ntransfer_vr      (:,:,:) = spval
     allocate(this%decomp_cascade_sminn_flux_vr    (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)) ; this%decomp_cascade_sminn_flux_vr     (:,:,:) = spval
     allocate(this%m_decomp_npools_to_fire_vr      (begc:endc,1:nlevdecomp_full,1:ndecomp_pools              )) ; this%m_decomp_npools_to_fire_vr       (:,:,:) = spval
+    allocate(this%m_residue_fire_nloss            (begp:endp,1:nlit_pools                                   )) ; this%m_residue_fire_nloss             (:,:)   = spval
     allocate(this%decomp_cascade_ntransfer        (begc:endc,1:ndecomp_cascade_transitions                  )) ; this%decomp_cascade_ntransfer         (:,:)   = spval
     allocate(this%decomp_cascade_sminn_flux       (begc:endc,1:ndecomp_cascade_transitions                  )) ; this%decomp_cascade_sminn_flux        (:,:)   = spval
+    allocate(this%residue_ntransfer               (begp:endp,1:nlit_pools                                   )) ; this%residue_ntransfer                (:,:)   = spval
+    allocate(this%residue_sminn_flux              (begp:endp,1:nlit_pools                                   )) ; this%residue_sminn_flux               (:,:)   = spval
     allocate(this%m_decomp_npools_to_fire         (begc:endc,1:ndecomp_pools                                )) ; this%m_decomp_npools_to_fire          (:,:)   = spval
     allocate(this%decomp_npools_erode             (begc:endc,1:ndecomp_pools                                )) ; this%decomp_npools_erode              (:,:)   = spval
     allocate(this%decomp_npools_deposit           (begc:endc,1:ndecomp_pools                                )) ; this%decomp_npools_deposit            (:,:)   = spval
@@ -8322,6 +8872,7 @@ contains
     allocate(this%decomp_npools_sourcesink        (begc:endc,1:nlevdecomp_full,1:ndecomp_pools              )) ; this%decomp_npools_sourcesink         (:,:,:) = spval
     allocate(this%externaln_to_decomp_npools      (begc:endc,1:nlevdecomp_full, 1:ndecomp_pools             )) ; this%externaln_to_decomp_npools       (:,:,:) = spval
     allocate(this%pmnf_decomp_cascade             (begc:endc,1:nlevdecomp,1:ndecomp_cascade_transitions     )) ; this%pmnf_decomp_cascade              (:,:,:) = spval
+    allocate(this%pmnf_residue                    (begp:endp,1:nlit_pools                                   )) ; this%pmnf_residue                     (:,:)   = spval
 
     if (use_fan) then
        allocate(this%manure_tan_appl                 (begc:endc)) ; this%manure_tan_appl               (:)   = spval
@@ -9301,7 +9852,7 @@ contains
   end subroutine col_nf_restart
 
   !-----------------------------------------------------------------------
-  subroutine col_nf_setvalues ( this, num_column, filter_column, value_column)
+  subroutine col_nf_setvalues ( this, num_column, filter_column, num_soilp, filter_soilp, value_column)
     !
     ! !DESCRIPTION:
     ! Set column-level nitrogen fluxes
@@ -9310,10 +9861,12 @@ contains
     class(column_nitrogen_flux) :: this
     integer , intent(in)         :: num_column
     integer , intent(in)         :: filter_column(:)
+    integer , intent(in)         :: num_soilp
+    integer , intent(in)         :: filter_soilp(:)
     real(r8), intent(in)         :: value_column
     !
     ! !LOCAL VARIABLES:
-    integer :: fi,i,j,k,l     ! loop index
+    integer :: fi,fp,i,j,k,l     ! loop index
     !------------------------------------------------------------------------
     do j = 1, nlevdecomp_full
        do fi = 1,num_column
@@ -9345,6 +9898,11 @@ contains
           this%net_nmin_vr(i,j)                      = value_column
           this%sminn_nh4_input_vr(i,j)               = value_column !not used anywhere?
           this%sminn_no3_input_vr(i,j)               = value_column !not used anywhere?
+
+          ! residue
+          this%residue_to_litr_met_n(i,j)            = value_column
+          this%residue_to_litr_cel_n(i,j)            = value_column
+          this%residue_to_litr_lig_n(i,j)            = value_column
        end do
     end do
 
@@ -9364,6 +9922,17 @@ contains
        end do 
      end if 
 
+    do fi = 1, num_soilp
+       i = filter_soilp(fi)
+
+       this%phenology_n_to_residue_met_n(i) = value_column
+       this%phenology_n_to_residue_cel_n(i) = value_column
+       this%phenology_n_to_residue_lig_n(i) = value_column
+       this%harvest_n_to_residue_met_n(i)   = value_column
+       this%harvest_n_to_residue_cel_n(i)   = value_column
+       this%harvest_n_to_residue_lig_n(i)   = value_column
+    end do
+
     do fi = 1,num_column
        i = filter_column(fi)
 
@@ -9378,7 +9947,7 @@ contains
        this%smin_no3_to_plant(i)      = value_column
        this%fire_nloss(i)                = value_column
        this%som_n_leached(i)             = value_column
-       
+
        this%hrv_deadstemn_to_prod10n(i)  = value_column
        this%hrv_deadstemn_to_prod100n(i) = value_column
        this%hrv_cropn_to_prod1n(i)       = value_column
@@ -9464,13 +10033,13 @@ contains
     end do
 
 
-       do l = 1, ndecomp_cascade_transitions
-          do fi = 1,num_column
-             i = filter_column(fi)
-             this%decomp_cascade_ntransfer(i,l) = value_column
-             this%decomp_cascade_sminn_flux(i,l) = value_column
-          end do
+    do l = 1, ndecomp_cascade_transitions
+       do fi = 1,num_column
+          i = filter_column(fi)
+          this%decomp_cascade_ntransfer(i,l) = value_column
+          this%decomp_cascade_sminn_flux(i,l) = value_column
        end do
+    end do
 
     do k = 1, ndecomp_pools
        do j = 1, nlevdecomp_full
@@ -9494,6 +10063,15 @@ contains
             end do
          end do
       end do
+
+    do l = 1, nlit_pools
+       do fp = 1, num_soilp
+          i = filter_soilp(fp)
+          this%residue_ntransfer(i,l) = value_column
+          this%residue_sminn_flux(i,l) = value_column
+          this%m_residue_fire_nloss(i,l) = value_column
+       end do
+    end do
 
     do k = 1, ndecomp_pools
        do j = 1, nlevdecomp_full
@@ -9595,7 +10173,7 @@ contains
   end subroutine col_nf_zero_forfates_veg
 
   !-----------------------------------------------------------------------
-  subroutine col_nf_summary(this, bounds, num_soilc, filter_soilc)
+  subroutine col_nf_summary(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
     !
     ! !DESCRIPTION:
     ! Column-level nitrogen summary calculations
@@ -9605,10 +10183,14 @@ contains
     type(bounds_type)      , intent(in)    :: bounds
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
+    integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
     !
     ! !LOCAL VARIABLES:
-    integer  :: fc,c,j,k,l       ! indices
+    integer  :: c,p,j,k,l       ! indices
+    integer  :: fc,fp
     integer  :: nlev
+    real(r8) :: wt_col
     !-----------------------------------------------------------------------
 
     nlev = nlevdecomp
@@ -9728,6 +10310,16 @@ contains
                this%m_decomp_npools_to_fire(c,k)
        end do
     end do
+    do k = 1, nlit_pools
+       do fp = 1, num_soilp
+          p = filter_soilp(fp)
+          c = veg_pp%column(p)
+          wt_col = veg_pp%wtcol(p)
+          this%fire_nloss(c) = &
+             this%fire_nloss(c) + &
+             this%m_residue_fire_nloss(p,k) * wt_col
+       end do
+    end do
 
     ! total column-level soil erosion N losses
     if ( ero_ccycle ) then
@@ -9832,6 +10424,16 @@ contains
                   this%fire_mortality_n_to_cwdn(c,j)* dzsoi_decomp(j)
           end do
        end do
+
+       do fp = 1, num_soilp
+          p = filter_soilp(fp)
+          c = veg_pp%column(p)
+          wt_col = veg_pp%wtcol(p)
+          this%plant_to_litter_nflux(c) = this%plant_to_litter_nflux(c) + &
+              this%phenology_n_to_residue_met_n(p) * wt_col + &
+              this%phenology_n_to_residue_cel_n(p) * wt_col + &
+              this%phenology_n_to_residue_lig_n(p) * wt_col
+       end do
     end if
 
     do fc = 1,num_soilc
@@ -9848,7 +10450,7 @@ contains
 
     ! bgc interface & pflotran
     if (use_elm_interface .and. (use_pflotran .and. pf_cmode)) then
-        call this%SummaryInt(bounds, num_soilc, filter_soilc)
+        call this%SummaryInt(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
     end if
 
   end subroutine col_nf_summary
@@ -9980,7 +10582,8 @@ contains
                      + this%dwt_frootn_to_litr_met_n(c,j)             &
                      + this%gap_mortality_n_to_litr_met_n(c,j)        &
                      + this%harvest_n_to_litr_met_n(c,j)              &
-                     + this%m_n_to_litr_met_fire(c,j)
+                     + this%m_n_to_litr_met_fire(c,j)                 &
+                     + this%residue_to_litr_met_n(c,j)
 
              elseif (l==i_cel_lit) then
                 this%externaln_to_decomp_npools(c,j,l) =              &
@@ -9989,7 +10592,8 @@ contains
                      + this%dwt_frootn_to_litr_cel_n(c,j)             &
                      + this%gap_mortality_n_to_litr_cel_n(c,j)        &
                      + this%harvest_n_to_litr_cel_n(c,j)              &
-                     + this%m_n_to_litr_cel_fire(c,j)
+                     + this%m_n_to_litr_cel_fire(c,j)                 &
+                     + this%residue_to_litr_cel_n(c,j)
 
              elseif (l==i_lig_lit) then
                 this%externaln_to_decomp_npools(c,j,l) =              &
@@ -9998,7 +10602,8 @@ contains
                      + this%dwt_frootn_to_litr_lig_n(c,j)             &
                      + this%gap_mortality_n_to_litr_lig_n(c,j)        &
                      + this%harvest_n_to_litr_lig_n(c,j)              &
-                     + this%m_n_to_litr_lig_fire(c,j)
+                     + this%m_n_to_litr_lig_fire(c,j)                 &
+                     + this%residue_to_litr_lig_n(c,j)
 
              ! for cwd
              elseif (l==i_cwd) then
@@ -10068,11 +10673,12 @@ contains
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean column phosphorus flux data structure
   !------------------------------------------------------------------------
-  subroutine col_pf_init(this, begc, endc)
+  subroutine col_pf_init(this, begc, endc, begp, endp)
     !
     ! !ARGUMENTS:
     class(column_phosphorus_flux) :: this
     integer, intent(in) :: begc,endc
+    integer, intent(in) :: begp,endp
     !
     ! !LOCAL VARIABLES:
     integer           :: k,l
@@ -10156,12 +10762,18 @@ contains
     allocate(this%decomp_cascade_ptransfer_vr      (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions )) ; this%decomp_cascade_ptransfer_vr  (:,:,:) = spval
     allocate(this%decomp_cascade_sminp_flux_vr     (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions )) ; this%decomp_cascade_sminp_flux_vr (:,:,:) = spval
     allocate(this%m_decomp_ppools_to_fire_vr       (begc:endc,1:nlevdecomp_full,1:ndecomp_pools               )) ; this%m_decomp_ppools_to_fire_vr   (:,:,:) = spval
+    allocate(this%m_residue_fire_ploss             (begp:endp,1:nlit_pools))      ; this%m_residue_fire_ploss          (:,:) = spval
     allocate(this%decomp_cascade_ptransfer         (begc:endc,1:ndecomp_cascade_transitions                   )) ; this%decomp_cascade_ptransfer     (:,:)   = spval
     allocate(this%decomp_cascade_sminp_flux        (begc:endc,1:ndecomp_cascade_transitions                   )) ; this%decomp_cascade_sminp_flux    (:,:)   = spval
+    allocate(this%residue_ptransfer                (begp:endp,1:nlit_pools))      ; this%residue_ptransfer             (:,:) = spval
+    allocate(this%residue_sminp_flux               (begp:endp,1:nlit_pools))      ; this%residue_sminp_flux            (:,:) = spval
     allocate(this%m_decomp_ppools_to_fire          (begc:endc,1:ndecomp_pools ))  ; this%m_decomp_ppools_to_fire       (:,:) = spval
     allocate(this%phenology_p_to_litr_met_p        (begc:endc,1:nlevdecomp_full)) ; this%phenology_p_to_litr_met_p     (:,:) = spval
     allocate(this%phenology_p_to_litr_cel_p        (begc:endc,1:nlevdecomp_full)) ; this%phenology_p_to_litr_cel_p     (:,:) = spval
     allocate(this%phenology_p_to_litr_lig_p        (begc:endc,1:nlevdecomp_full)) ; this%phenology_p_to_litr_lig_p     (:,:) = spval
+    allocate(this%phenology_p_to_residue_met_p     (begp:endp))                   ; this%phenology_p_to_residue_met_p  (:)   = spval
+    allocate(this%phenology_p_to_residue_cel_p     (begp:endp))                   ; this%phenology_p_to_residue_cel_p  (:)   = spval
+    allocate(this%phenology_p_to_residue_lig_p     (begp:endp))                   ; this%phenology_p_to_residue_lig_p  (:)   = spval
     allocate(this%gap_mortality_p_to_litr_met_p    (begc:endc,1:nlevdecomp_full)) ; this%gap_mortality_p_to_litr_met_p (:,:) = spval
     allocate(this%gap_mortality_p_to_litr_cel_p    (begc:endc,1:nlevdecomp_full)) ; this%gap_mortality_p_to_litr_cel_p (:,:) = spval
     allocate(this%gap_mortality_p_to_litr_lig_p    (begc:endc,1:nlevdecomp_full)) ; this%gap_mortality_p_to_litr_lig_p (:,:) = spval
@@ -10170,7 +10782,14 @@ contains
     allocate(this%harvest_p_to_litr_met_p          (begc:endc,1:nlevdecomp_full)) ; this%harvest_p_to_litr_met_p       (:,:) = spval
     allocate(this%harvest_p_to_litr_cel_p          (begc:endc,1:nlevdecomp_full)) ; this%harvest_p_to_litr_cel_p       (:,:) = spval
     allocate(this%harvest_p_to_litr_lig_p          (begc:endc,1:nlevdecomp_full)) ; this%harvest_p_to_litr_lig_p       (:,:) = spval
+    allocate(this%harvest_p_to_residue_met_p       (begp:endp))                   ; this%harvest_p_to_residue_met_p    (:)   = spval
+    allocate(this%harvest_p_to_residue_cel_p       (begp:endp))                   ; this%harvest_p_to_residue_cel_p    (:)   = spval
+    allocate(this%harvest_p_to_residue_lig_p       (begp:endp))                   ; this%harvest_p_to_residue_lig_p    (:)   = spval
     allocate(this%harvest_p_to_cwdp                (begc:endc,1:nlevdecomp_full)) ; this%harvest_p_to_cwdp             (:,:) = spval
+    allocate(this%residue_to_litr_met_p            (begc:endc,1:nlevdecomp_full)) ; this%residue_to_litr_met_p         (:,:) = spval
+    allocate(this%residue_to_litr_cel_p            (begc:endc,1:nlevdecomp_full)) ; this%residue_to_litr_cel_p         (:,:) = spval
+    allocate(this%residue_to_litr_lig_p            (begc:endc,1:nlevdecomp_full)) ; this%residue_to_litr_lig_p         (:,:) = spval
+    allocate(this%residue_ppools_to_litr           (begp:endp,1:nlit_pools))      ; this%residue_ppools_to_litr        (:,:) = spval
     allocate(this%primp_to_labilep_vr              (begc:endc,1:nlevdecomp_full)) ; this%primp_to_labilep_vr           (:,:) = spval
     allocate(this%primp_to_labilep                 (begc:endc))                   ; this%primp_to_labilep              (:)   = spval
     allocate(this%labilep_to_secondp_vr            (begc:endc,1:nlevdecomp_full)) ; this%labilep_to_secondp_vr         (:,:) = spval
@@ -10199,6 +10818,7 @@ contains
     allocate(this%adsorb_to_labilep                (begc:endc))                   ; this%adsorb_to_labilep             (:)   = spval
     allocate(this%desorb_to_solutionp              (begc:endc))                   ; this%desorb_to_solutionp           (:)   = spval
     allocate(this%pmpf_decomp_cascade              (begc:endc,1:nlevdecomp,1:ndecomp_cascade_transitions  )) ; this%pmpf_decomp_cascade              (:,:,:) = spval
+    allocate(this%pmpf_residue                     (begp:endp,1:nlit_pools))      ; this%pmpf_residue                  (:,:) = spval
     allocate(this%plant_p_uptake_flux              (begc:endc))                   ; this%plant_p_uptake_flux           (:)   = spval
     allocate(this%soil_p_immob_flux                (begc:endc))                   ; this%soil_p_immob_flux             (:)   = spval
     allocate(this%soil_p_immob_flux_vr             (begc:endc,1:nlevdecomp_full)) ; this%soil_p_immob_flux_vr          (:,:) = spval
@@ -10858,7 +11478,7 @@ contains
   end subroutine col_pf_restart
 
   !-----------------------------------------------------------------------
-  subroutine col_pf_setvalues ( this, num_column, filter_column, value_column)
+  subroutine col_pf_setvalues ( this, num_column, filter_column, num_soilp, filter_soilp, value_column)
     !
     ! !DESCRIPTION:
     ! Set phosphorus flux variables
@@ -10866,10 +11486,12 @@ contains
     class (column_phosphorus_flux) :: this
     integer , intent(in) :: num_column
     integer , intent(in) :: filter_column(:)
+    integer , intent(in) :: num_soilp
+    integer , intent(in) :: filter_soilp(:)
     real(r8), intent(in) :: value_column
     !
     ! !LOCAL VARIABLES:
-    integer :: fi,i,j,k,l     ! loop index
+    integer :: fi,fp,i,j,k,l     ! loop index
     !------------------------------------------------------------------------
     do j = 1, nlevdecomp_full
        do fi = 1,num_column
@@ -10897,6 +11519,11 @@ contains
           this%harvest_p_to_litr_cel_p(i,j)          = value_column
           this%harvest_p_to_litr_lig_p(i,j)          = value_column
           this%harvest_p_to_cwdp(i,j)                = value_column
+
+          ! residue
+          this%residue_to_litr_met_p(i,j)            = value_column
+          this%residue_to_litr_cel_p(i,j)            = value_column
+          this%residue_to_litr_lig_p(i,j)            = value_column
 
           this%primp_to_labilep_vr(i,j)              = value_column
           this%labilep_to_secondp_vr(i,j)            = value_column
@@ -10986,6 +11613,21 @@ contains
 
     end do
 
+    do fi = 1, num_soilp
+       i = filter_soilp(fi)
+
+       this%phenology_p_to_residue_met_p(i) = value_column
+       this%phenology_p_to_residue_cel_p(i) = value_column
+       this%phenology_p_to_residue_lig_p(i) = value_column
+       this%harvest_p_to_residue_met_p(i)   = value_column
+       this%harvest_p_to_residue_cel_p(i)   = value_column
+       this%harvest_p_to_residue_lig_p(i)   = value_column
+
+       do k = 1, nlit_pools
+          this%residue_ppools_to_litr(i,k)  = value_column
+       end do
+    end do
+
     do k = 1, ndecomp_pools
        do fi = 1,num_column
           i = filter_column(fi)
@@ -11002,6 +11644,15 @@ contains
           i = filter_column(fi)
           this%decomp_cascade_ptransfer(i,l) = value_column
           this%decomp_cascade_sminp_flux(i,l) = value_column
+       end do
+    end do
+
+    do l = 1, nlit_pools
+       do fp = 1, num_soilp
+          i = filter_soilp(fp)
+          this%residue_ptransfer(i,l) = value_column
+          this%residue_sminp_flux(i,l) = value_column
+          this%m_residue_fire_ploss(i,l) = value_column
        end do
     end do
 
@@ -11115,17 +11766,19 @@ contains
   end subroutine col_pf_zero_forfates_veg
 
   !-----------------------------------------------------------------------
-  subroutine col_pf_summary(this, bounds, num_soilc, filter_soilc)
+  subroutine col_pf_summary(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
     !
     ! !ARGUMENTS:
     class (column_phosphorus_flux) :: this
     type(bounds_type) , intent(in) :: bounds
     integer           , intent(in) :: num_soilc       ! number of soil columns in filter
     integer           , intent(in) :: filter_soilc(:) ! filter for soil columns
+    integer           , intent(in) :: num_soilp       ! number of soil patches in filter
+    integer           , intent(in) :: filter_soilp(:) ! filter for soil patches
     !
     ! !LOCAL VARIABLES:
-    integer  :: c,j,k,l   ! indices
-    integer  :: fc       ! lake filter indices
+    integer  :: c,p,j,k,l   ! indices
+    integer  :: fc,fp       ! lake filter indices
     real(r8) :: maxdepth    ! depth to integrate soil variables
     !-----------------------------------------------------------------------
     do fc = 1,num_soilc
@@ -11270,6 +11923,16 @@ contains
                this%m_decomp_ppools_to_fire(c,k)
        end do
     end do
+    do k = 1, nlit_pools
+       do fp = 1, num_soilp
+          p = filter_soilp(fp)
+          c = veg_pp%column(p)
+          wt_col = veg_pp%wtcol(p)
+          this%fire_ploss(c) = &
+               this%fire_ploss(c) + &
+               this%m_residue_fire_ploss(p,k) * wt_col
+       end do
+    end do
 
     ! total column-level soil erosion P losses
     if ( ero_ccycle ) then
@@ -11402,6 +12065,16 @@ contains
                   this%fire_mortality_p_to_cwdp(c,j)* dzsoi_decomp(j)
           end do
        end do
+
+       do fp = 1, num_soilp
+          p = filter_soilp(fp)
+          c = veg_pp%column(p)
+          wt_col = veg_pp%wtcol(p)
+          this%plant_to_litter_pflux(c) = this%plant_to_litter_pflux(c) + &
+              this%phenology_p_to_residue_met_p(p) * wt_col + &
+              this%phenology_p_to_residue_cel_p(p) * wt_col + &
+              this%phenology_p_to_residue_lig_p(p) * wt_col
+       end do
     end if
 
     ! bgc interface & pflotran:
@@ -11474,7 +12147,8 @@ contains
                      + this%phenology_p_to_litr_met_p(c,j)            &
                      + this%dwt_frootp_to_litr_met_p(c,j)             &
                      + this%gap_mortality_p_to_litr_met_p(c,j)        &
-                     + this%harvest_p_to_litr_met_p(c,j)
+                     + this%harvest_p_to_litr_met_p(c,j)              &
+                     + this%residue_to_litr_met_p(c,j)
 
              elseif (l==i_cel_lit) then
                 this%externalp_to_decomp_ppools(c,j,l) =              &
@@ -11482,7 +12156,8 @@ contains
                      + this%phenology_p_to_litr_cel_p(c,j)            &
                      + this%dwt_frootp_to_litr_cel_p(c,j)             &
                      + this%gap_mortality_p_to_litr_cel_p(c,j)        &
-                     + this%harvest_p_to_litr_cel_p(c,j)
+                     + this%harvest_p_to_litr_cel_p(c,j)              &
+                     + this%residue_to_litr_cel_p(c,j)
 
              elseif (l==i_lig_lit) then
                 this%externalp_to_decomp_ppools(c,j,l) =              &
@@ -11490,7 +12165,8 @@ contains
                      + this%phenology_p_to_litr_lig_p(c,j)            &
                      + this%dwt_frootp_to_litr_lig_p(c,j)             &
                      + this%gap_mortality_p_to_litr_lig_p(c,j)        &
-                     + this%harvest_p_to_litr_lig_p(c,j)
+                     + this%harvest_p_to_litr_lig_p(c,j)              &
+                     + this%residue_to_litr_lig_p(c,j)
 
              ! for cwd
              elseif (l==i_cwd) then

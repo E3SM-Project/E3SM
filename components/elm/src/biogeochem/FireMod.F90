@@ -18,7 +18,7 @@ module FireMod
   use shr_strdata_mod        , only : shr_strdata_advance
   use shr_log_mod            , only : errMsg => shr_log_errMsg
   use elm_varctl             , only : iulog
-  use elm_varpar             , only : nlevdecomp, ndecomp_pools
+  use elm_varpar             , only : nlevdecomp, ndecomp_pools, nlit_pools
   use elm_varcon             , only : dzsoi_decomp
   use pftvarcon              , only : fsr_pft, fd_pft, noveg
   use spmdMod                , only : masterproc, mpicom, comp_id
@@ -702,6 +702,7 @@ contains
    real(r8):: m_veg                ! speedup factor for accelerated decomp
    integer :: fp,fc                ! filter indices
    real(r8):: f                    ! rate for fire effects (1/s)
+   real(r8):: wt_col
    integer :: itype
    real(r8):: cc_other_sc, wt_col, baf_crop_sc,lprof_pj,fr_prof_pj,cr_prof_pj,st_prof_pj
 
@@ -742,6 +743,7 @@ contains
         dtrotr_col                          =>    cnstate_vars%dtrotr_col              , & ! Input:  [real(r8) (:)     ]  ann. decreased frac. coverage of BET+BDT (0-1) on GC
 
         decomp_cpools_vr                    =>    col_cs%decomp_cpools_vr                       , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  VR decomp. (litter, cwd, soil)
+        residue_cpools                      =>    col_cs%residue_cpools                         , & ! Input:  [real(r8) (:,:)   ]  (gC/m2) surface residue (surface litter) c pools
         totsomc                             =>    col_cs%totsomc                                , & ! Input:  [real(r8) (:)     ]  (gC/m2) total soil organic matter C
         leafcmax                            =>    veg_cs%leafcmax            , & ! Output: [real(r8) (:)     ]  (gC/m2) ann max leaf C
         leafc                               =>    veg_cs%leafc               , & ! Input:  [real(r8) (:)     ]  (gC/m2) leaf C
@@ -767,6 +769,7 @@ contains
         cpool                               =>    veg_cs%cpool               , & ! Input:  [real(r8) (:)     ]  (gC/m2) C pool
 
         decomp_npools_vr                    =>    col_ns%decomp_npools_vr      , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  VR decomp. (litter, cwd, soil)
+        residue_npools                      =>    col_ns%residue_npools        , & ! Input:  [real(r8) (:,:)   ] (gN/m2) surface residue (surface litter) N pools
         leafn                               =>    veg_ns%leafn               , & ! Input:  [real(r8) (:)     ]  (gN/m2) leaf N
         leafn_storage                       =>    veg_ns%leafn_storage       , & ! Input:  [real(r8) (:)     ]  (gN/m2) leaf N storage
         leafn_xfer                          =>    veg_ns%leafn_xfer          , & ! Input:  [real(r8) (:)     ]  (gN/m2) leaf N transfer
@@ -789,6 +792,7 @@ contains
         npool                               =>    veg_ns%npool               , & ! Input:  [real(r8) (:)     ]  (gN/m2) plant pool of stored N
         ! add phosphorus state variables - X.YANG
         decomp_ppools_vr                    =>    col_ps%decomp_ppools_vr      , & ! Input:  [real(r8) (:,:,:) ]  (gP/m3)  VR decomp. (litter, cwd, soil)
+        residue_ppools                      =>    col_ps%residue_ppools        , & ! Input:  [real(r8) (:,:)   ]  (gP/m2) surface residue (surface litter) P pools
         leafp                               =>    veg_ps%leafp               , & ! Input:  [real(r8) (:)     ]  (gP/m2) leaf P
         leafp_storage                       =>    veg_ps%leafp_storage       , & ! Input:  [real(r8) (:)     ]  (gP/m2) leaf P storage
         leafp_xfer                          =>    veg_ps%leafp_xfer          , & ! Input:  [real(r8) (:)     ]  (gP/m2) leaf P transfer
@@ -905,6 +909,7 @@ contains
         m_gresp_xfer_to_litter_fire         =>    veg_cf%m_gresp_xfer_to_litter_fire           , & ! Output: [real(r8) (:)     ]
         m_cpool_to_litter_fire              =>    veg_cf%m_cpool_to_litter_fire                , & ! Output: [real(r8) (:)     ]
         m_decomp_cpools_to_fire_vr          =>    col_cf%m_decomp_cpools_to_fire_vr , & ! Output: [real(r8) (:,:,:) ]  (gC/m3/s) VR decomp. C fire loss
+        m_residue_fire_closs                =>    col_cf%m_residue_fire_closs       , & ! Output: [real(r8) (:,:)   ]  residue C fire loss (gC/m2/s)
         m_c_to_litr_met_fire                =>    col_cf%m_c_to_litr_met_fire       , & ! Output: [real(r8) (:,:)   ]
         m_c_to_litr_cel_fire                =>    col_cf%m_c_to_litr_cel_fire       , & ! Output: [real(r8) (:,:)   ]
         m_c_to_litr_lig_fire                =>    col_cf%m_c_to_litr_lig_fire       , & ! Output: [real(r8) (:,:)   ]
@@ -931,6 +936,7 @@ contains
         m_retransn_to_litter_fire           =>    veg_nf%m_retransn_to_litter_fire           ,&
         m_npool_to_litter_fire              =>    veg_nf%m_npool_to_litter_fire              ,&
         m_decomp_npools_to_fire_vr          =>    col_nf%m_decomp_npools_to_fire_vr       ,&
+        m_residue_fire_nloss                =>    col_nf%m_residue_fire_nloss             ,&
         m_n_to_litr_met_fire                =>    col_nf%m_n_to_litr_met_fire                ,&
         m_n_to_litr_cel_fire                =>    col_nf%m_n_to_litr_cel_fire                ,&
         m_n_to_litr_lig_fire                =>    col_nf%m_n_to_litr_lig_fire                ,&
@@ -957,6 +963,7 @@ contains
         m_retransp_to_litter_fire           =>    veg_pf%m_retransp_to_litter_fire ,&
         m_ppool_to_litter_fire              =>    veg_pf%m_ppool_to_litter_fire ,&
         m_decomp_ppools_to_fire_vr          =>    col_pf%m_decomp_ppools_to_fire_vr ,&
+        m_residue_fire_ploss                =>    col_pf%m_residue_fire_ploss ,&
         m_p_to_litr_met_fire                =>    col_pf%m_p_to_litr_met_fire ,&
         m_p_to_litr_cel_fire                =>    col_pf%m_p_to_litr_cel_fire ,&
         m_p_to_litr_lig_fire                =>    col_pf%m_p_to_litr_lig_fire &
@@ -1369,6 +1376,21 @@ contains
               (m_leafp_to_litter_fire(p)*lf_flig(itype)*lprof_pj + &
               m_frootp_to_litter_fire(p)*fr_flig(itype)*fr_prof_pj)* wt_col
 
+        end do
+     end do
+     ! residue C/N/P fire loss
+     do fp = 1, num_soilp
+        p = filter_soilp(fp)
+        c = veg_pp%column(p)
+        wt_col = veg_pp%wtcol(p)
+
+        baf_crop_sc = baf_crop(c)
+        f = farea_burned(c)
+
+        do l = 1, nlit_pools
+           m_residue_fire_closs(p,l) = residue_cpools(p,l) * f * 0.5_r8
+           m_residue_fire_nloss(p,l) = residue_npools(p,l) * f * 0.5_r8
+           m_residue_fire_ploss(p,l) = residue_ppools(p,l) * f * 0.5_r8
         end do
      end do
      !

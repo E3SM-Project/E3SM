@@ -223,7 +223,7 @@ contains
     call t_start_lnd(event)
     call PrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp  )
 
-    call col_cf_summary_for_ch4(col_cf,bounds, num_soilc, filter_soilc)
+    call col_cf_summary_for_ch4(col_cf,bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
 
     ! Only update the veg_ data structures if we are using cn
     if(.not.use_fates) then
@@ -231,20 +231,20 @@ contains
        call veg_cf_Summary(veg_cf,bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, 'bulk', col_cf)
        if ( use_c13 ) then
           call veg_cf_Summary(veg_cf,bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, 'c13', c13_col_cf)
-          call col_cf_Summary(col_cf,bounds, num_soilc, filter_soilc, 'c13')
+          call col_cf_Summary(col_cf,bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'c13')
        end if
        if ( use_c14 ) then
           call veg_cf_Summary(veg_cf,bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, 'c14', c14_col_cf)
-          call col_cf_Summary(col_cf,bounds, num_soilc, filter_soilc, 'c14')
+          call col_cf_Summary(col_cf,bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'c14')
        end if
        call veg_cs_Summary(veg_cs,bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_cs)
        if ( use_c13 ) then
           call veg_cs_Summary(c13_veg_cs,bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, c13_col_cs)
-          call col_cs_Summary(c13_col_cs,bounds, num_soilc, filter_soilc)
+          call col_cs_Summary(c13_col_cs,bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
        end if
        if ( use_c14 ) then
           call veg_cs_Summary(c14_veg_cs,bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, c14_col_cs)
-          call col_cs_Summary(c14_col_cs,bounds, num_soilc, filter_soilc)
+          call col_cs_Summary(c14_col_cs,bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
        end if
        call veg_nf_Summary(veg_nf, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_nf)
        call veg_ns_Summary(veg_ns, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_ns)
@@ -262,14 +262,14 @@ contains
        call col_pf%ZeroForFates(bounds,num_soilc, filter_soilc)
     end if
 
-    call col_cf_Summary(col_cf,bounds, num_soilc, filter_soilc, 'bulk')
-    call col_cs_Summary(col_cs,bounds, num_soilc, filter_soilc)
+    call col_cf_Summary(col_cf,bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'bulk')
+    call col_cs_Summary(col_cs,bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
 
-    call col_nf_Summary(col_nf,bounds, num_soilc, filter_soilc)
-    call col_ns_Summary(col_ns,bounds, num_soilc, filter_soilc)
+    call col_nf_Summary(col_nf,bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+    call col_ns_Summary(col_ns,bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
 
-    call col_pf_Summary(col_pf,bounds, num_soilc, filter_soilc)
-    call col_ps_Summary(col_ps,bounds, num_soilc, filter_soilc)
+    call col_pf_Summary(col_pf,bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+    call col_ps_Summary(col_ps,bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
 
     call t_stop_lnd(event)
 
@@ -352,20 +352,20 @@ contains
     if(.not.use_fates) then
        call veg_cf_SetValues(veg_cf, num_soilp, filter_soilp, 0._r8)
        if ( use_c13 ) then
-          call veg_cf_setvalues(c13_veg_cf,num_soilp, filter_soilp, 0._r8)
-          call col_cf_SetValues(c13_col_cf,num_soilc, filter_soilc, 0._r8)
+          call veg_cf_setvalues(c13_veg_cf, num_soilp, filter_soilp, 0._r8)
+          call col_cf_SetValues(c13_col_cf, num_soilc, filter_soilc, num_soilp, filter_soilp, 0._r8)
        end if
        if ( use_c14 ) then
-          call veg_cf_setvalues(c14_veg_cf,num_soilp, filter_soilp, 0._r8)
-          call col_cf_SetValues(c14_col_cf,num_soilc, filter_soilc, 0._r8)
+          call veg_cf_setvalues(c14_veg_cf, num_soilp, filter_soilp, 0._r8)
+          call col_cf_SetValues(c14_col_cf, num_soilc, filter_soilc, num_soilp, filter_soilp, 0._r8)
        end if
-       call veg_nf_setvalues (veg_nf,num_soilp, filter_soilp, 0._r8)
-       call veg_pf_SetValues (veg_pf,num_soilp, filter_soilp, 0._r8)
+       call veg_nf_setvalues (veg_nf, num_soilp, filter_soilp, 0._r8)
+       call veg_pf_SetValues (veg_pf, num_soilp, filter_soilp, 0._r8)
     end if
 
-    call col_cf_SetValues(col_cf,num_soilc, filter_soilc, 0._r8)
-    call col_nf_SetValues(col_nf,num_soilc, filter_soilc, 0._r8)
-    call col_pf_SetValues(col_pf,num_soilc, filter_soilc, 0._r8)
+    call col_cf_SetValues(col_cf, num_soilc, filter_soilc, num_soilp, filter_soilp, 0._r8)
+    call col_nf_SetValues(col_nf, num_soilc, filter_soilc, num_soilp, filter_soilp, 0._r8)
+    call col_pf_SetValues(col_pf, num_soilc, filter_soilc, num_soilp, filter_soilp, 0._r8)
 
     call t_stop_lnd(event)
 
@@ -508,6 +508,7 @@ contains
     !
     ! !USES:
     use PhenologyMod         , only: Phenology, CNLitterToColumn
+    use ResidueMod           , only: CNResidueToColumn
     use GrowthRespMod             , only: GrowthResp
     use CarbonStateUpdate1Mod     , only: CarbonStateUpdate1,CarbonStateUpdate0
     use NitrogenStateUpdate1Mod     , only: NitrogenStateUpdate1
@@ -675,6 +676,12 @@ contains
         call CNLitterToColumn(num_soilp, filter_soilp, cnstate_vars )
         call t_stop_lnd(event)
 
+        event = 'CNResidueToColumn'
+        call t_start_lnd(event)
+        call CNResidueToColumn(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+          crop_vars, cnstate_vars )
+        call t_stop_lnd(event)
+
         !--------------------------------------------
         ! Update1
         !--------------------------------------------
@@ -710,15 +717,15 @@ contains
    call t_start_lnd(event)
 
    call CarbonStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-         crop_vars, col_cs, veg_cs, col_cf, veg_cf, dt)
+         cnstate_vars, crop_vars, col_cs, veg_cs, col_cf, veg_cf, dt)
 
    if ( use_c13 ) then
       call CarbonStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-           crop_vars, c13_col_cs, c13_veg_cs, c13_col_cf, c13_veg_cf,dt)
+           cnstate_vars, crop_vars, c13_col_cs, c13_veg_cs, c13_col_cf, c13_veg_cf,dt)
    end if
    if ( use_c14 ) then
       call CarbonStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-           crop_vars, c14_col_cs, c14_veg_cs, c14_col_cf, c14_veg_cf,dt)
+           cnstate_vars, crop_vars, c14_col_cs, c14_veg_cs, c14_col_cf, c14_veg_cf,dt)
    end if
 
    call NitrogenStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
@@ -884,17 +891,17 @@ contains
 
        call veg_cf_summary_for_ch4(veg_cf,bounds, num_soilp, filter_soilp)
        if( use_c13 ) then
-          call col_cf_summary_for_ch4(c13_col_cf,bounds, num_soilc, filter_soilc)
+          call col_cf_summary_for_ch4(c13_col_cf,bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
           call veg_cf_summary_for_ch4(c13_veg_cf,bounds, num_soilp, filter_soilp)
        endif
        if( use_c14 ) then
-          call col_cf_summary_for_ch4(c14_col_cf,bounds, num_soilc, filter_soilc)
+          call col_cf_summary_for_ch4(c14_col_cf,bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
           call veg_cf_summary_for_ch4(c14_veg_cf,bounds, num_soilp, filter_soilp)
        endif
 
   end if !end of if not use_fates block
 
-  call col_cf_summary_for_ch4(col_cf,bounds, num_soilc, filter_soilc)
+  call col_cf_summary_for_ch4(col_cf,bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
 
 
 

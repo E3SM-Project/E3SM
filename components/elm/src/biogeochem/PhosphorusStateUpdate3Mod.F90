@@ -11,6 +11,7 @@ module PhosphorusStateUpdate3Mod
   use elm_varpar          , only: nlevdecomp,ndecomp_pools,ndecomp_cascade_transitions
   use elm_varctl          , only : iulog
   use elm_varpar          , only : i_cwd, i_met_lit, i_cel_lit, i_lig_lit
+  use elm_varpar          , only : nlit_pools 
   use elm_varctl          , only : use_erosion, ero_ccycle, use_fates
   use CNDecompCascadeConType , only : decomp_cascade_con
   use CNStateType         , only : cnstate_type
@@ -61,6 +62,8 @@ contains
     ! !LOCAL VARIABLES:
     integer :: c,p,j,l,k        ! indices
     integer :: fp,fc      ! lake filter indices
+    integer :: csi
+    real(r8) :: wt_col
 
    real(r8):: smax_c       ! parameter(gP/m2), maximum amount of sorbed P in equilibrium with solution P
    real(r8):: ks_sorption_c ! parameter(gP/m2), empirical constant for sorbed P in equilibrium with solution P
@@ -118,6 +121,34 @@ contains
              end do
            endif
         end do
+
+         do k = 1, nlit_pools
+            do j = 1, ndecomp_cascade_transitions
+               if (cascade_donor_pool(j) == i_met_lit+k-1) then
+                  csi = j
+                  exit
+               end if
+            end do
+            if ( cascade_receiver_pool(csi) /= 0 ) then  ! skip terminal transitions
+               do fp = 1, num_soilp
+                  p = filter_soilp(fp)
+                  c = veg_pp%column(p)
+                  wt_col = veg_pp%wtcol(p)
+
+                  flux_mineralization(c,1) = flux_mineralization(c,1) - &
+                     col_pf%residue_sminp_flux(p,k) * wt_col * dt
+               end do
+            else
+               do fp = 1, num_soilp
+                  p = filter_soilp(fp)
+                  c = veg_pp%column(p)
+                  wt_col = veg_pp%wtcol(p)
+
+                  flux_mineralization(c,1) = flux_mineralization(c,1) + &
+                     col_pf%residue_sminp_flux(p,k) * wt_col * dt
+               end do
+            end if
+         end do 
 
 
         do j = 1, nlevdecomp
@@ -302,6 +333,13 @@ contains
                c = filter_soilc(fc)
                col_ps%decomp_ppools_vr(c,j,l) = col_ps%decomp_ppools_vr(c,j,l) - col_pf%m_decomp_ppools_to_fire_vr(c,j,l) * dt
             end do
+         end do
+      end do
+
+      do l = 1, nlit_pools
+         do fp = 1, num_soilp
+            p = filter_soilp(fp)
+            col_ps%residue_ppools(p,l) = col_ps%residue_ppools(p,l) - col_pf%m_residue_fire_ploss(p,l) * dt
          end do
       end do
 

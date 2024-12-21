@@ -222,6 +222,12 @@ module elm_varcon
   real(r8), public, parameter :: snw_rds_min = 54.526_r8    
   !-----------------------------------------------------------------------
 
+  !------------------------------------------------------------------
+  ! agricultural management constants
+  real(r8), parameter :: krsd = 2.2e-8_r8    ! background residue incorporation rate (s^-1)
+  real(r8), parameter :: zsoi_till = 0.2_r8  ! tillage depth (m)
+  !------------------------------------------------------------------
+
 contains
 
   !------------------------------------------------------------------------------

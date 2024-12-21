@@ -10,6 +10,7 @@ module SoilHydrologyMod
   use elm_varctl        , only : iulog, use_vichydro
   use elm_varctl        , only : use_lnd_rof_two_way, lnd_rof_coupling_nstep
   use elm_varctl        , only : use_modified_infil
+  use elm_varctl        , only : use_cn
   use elm_varcon        , only : e_ice, denh2o, denice, rpi
   use EnergyFluxType    , only : energyflux_type
   use SoilHydrologyType , only : soilhydrology_type
@@ -17,7 +18,7 @@ module SoilHydrologyMod
   use WaterfluxType     , only : waterflux_type
   use LandunitType      , only : lun_pp
   use ColumnType        , only : col_pp
-  use ColumnDataType    , only : col_es, col_ws, col_wf
+  use ColumnDataType    , only : col_es, col_ws, col_wf, col_cs
   use VegetationType    , only : veg_pp
   use VegetationDataType, only : veg_wf
   use abortutils      , only : endrun
@@ -313,6 +314,8 @@ contains
      real(r8) :: d
      real(r8) :: h2osoi_vol
      real(r8) :: basis                                      ! temporary, variable soil moisture holding capacity
+     real(r8) :: pscov                                      ! infiltration parameter
+     real(r8) :: rscov(3)                                   ! surface cover factor for infiltration
      ! in top VIC layers for runoff calculation
      real(r8) :: rsurf_vic                                  ! temp VIC surface runoff
      real(r8) :: top_moist(bounds%begc:bounds%endc)         ! temporary, soil moisture in top VIC layers
@@ -329,6 +332,8 @@ contains
           nlev2bed             =>    col_pp%nlevbed              , & ! Input:  [integer  (:)   ]  number of layers to bedrock
           cgridcell            =>    col_pp%gridcell             , & ! Input:  [integer  (:)   ]  column's gridcell    
           wtgcell              =>    col_pp%wtgcell              , & ! Input:  [real(r8) (:)   ]  weight (relative to gridcell) 
+
+          fscov                =>    col_cs%fscov                , & ! Input: [real(r8) (:) ] fraction of soil covered by residue 
 
           t_soisno             =>    col_es%t_soisno             , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)
 
@@ -463,10 +468,16 @@ contains
                 rsurf_vic = min(qflx_in_soil(c), rsurf_vic)
                 qinmax = (1._r8 - fsat(c)) * 10._r8**(-e_ice*top_icefrac)*(qflx_in_soil(c) - rsurf_vic)
              else
-                if ( use_modified_infil ) then
-                  qinmax=minval(10._r8**(-e_ice*(icefrac(c,1:3)))*hksat(c,1:3))
+                if (use_cn) then
+                   pscov = 2._r8 * (1._r8 + 2._r8 * fscov(c))
                 else
-                  qinmax=(1._r8 - fsat(c)) * minval(10._r8**(-e_ice*(icefrac(c,1:3)))*hksat(c,1:3))
+                   pscov = 2._r8
+                end if
+                rscov = (1._r8 - h2osoi_liq(c,1:3)/(denh2o*dz(c,1:3))/watsat(c,1:3))**(1._r8/pscov-0.5_r8)
+                if ( use_modified_infil ) then
+                  qinmax=minval(10._r8**(-e_ice*(icefrac(c,1:3)))*hksat(c,1:3)*rscov)
+                else
+                  qinmax=(1._r8 - fsat(c)) * minval(10._r8**(-e_ice*(icefrac(c,1:3)))*hksat(c,1:3)*rscov)
                 end if
              end if
              

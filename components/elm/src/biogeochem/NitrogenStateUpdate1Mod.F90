@@ -7,6 +7,7 @@ module NitrogenStateUpdate1Mod
   use shr_kind_mod           , only: r8 => shr_kind_r8
   use elm_varpar             , only : nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
   use elm_varpar             , only : crop_prog, i_met_lit, i_cel_lit, i_lig_lit, i_cwd
+  use elm_varpar             , only : nlit_pools
   use elm_varctl             , only : iulog
   use elm_varcon             , only : nitrif_n2o_loss_frac
   use pftvarcon              , only : iscft
@@ -119,6 +120,8 @@ contains
     ! !LOCAL VARIABLES:
     integer :: c,p,j,l,k ! indices
     integer :: fp,fc     ! lake filter indices
+    integer :: csi
+    real(r8) :: wt_col
     real(r8), parameter :: frootc_nfix_thc = 10._r8  !threshold fine root carbon for nitrogen fixation gC/m2
 
     integer:: kyr                     ! current year
@@ -136,7 +139,8 @@ contains
          cascade_receiver_pool => decomp_cascade_con%cascade_receiver_pool , & ! Input:  [integer  (:)     ]  which pool is C added to for a given decomposition step
 
          ndep_prof             => cnstate_vars%ndep_prof_col               , & ! Input:  [real(r8) (:,:)   ]  profile over which N deposition is distributed through column (1/m)
-         nfixation_prof        => cnstate_vars%nfixation_prof_col           & ! Input:  [real(r8) (:,:)   ]  profile over which N fixation is distributed through column (1/m)
+         nfixation_prof        => cnstate_vars%nfixation_prof_col          , & ! Input:  [real(r8) (:,:)   ]  profile over which N fixation is distributed through column (1/m)
+         residue2litr          => cnstate_vars%residue2litr_patch            & ! Input:  [real(r8) (:)     ]  Residue to litter conversion rate (1/s)
 
          )
 
@@ -156,15 +160,36 @@ contains
                ! phenology and dynamic landcover fluxes
                if(.not.use_fates) then
                   col_nf%decomp_npools_sourcesink(c,j,i_met_lit) = &
-                       col_nf%phenology_n_to_litr_met_n(c,j) * dt
+                       col_nf%phenology_n_to_litr_met_n(c,j) * dt + &
+                       col_nf%residue_to_litr_met_n(c,j) * dt
 
                   col_nf%decomp_npools_sourcesink(c,j,i_cel_lit) = &
-                       col_nf%phenology_n_to_litr_cel_n(c,j) * dt
+                       col_nf%phenology_n_to_litr_cel_n(c,j) * dt + &
+                       col_nf%residue_to_litr_cel_n(c,j) * dt
 
                   col_nf%decomp_npools_sourcesink(c,j,i_lig_lit) = &
-                       col_nf%phenology_n_to_litr_lig_n(c,j) * dt
+                       col_nf%phenology_n_to_litr_lig_n(c,j) * dt + &
+                       col_nf%residue_to_litr_lig_n(c,j) * dt
                end if
             end do
+         end do
+
+         do fp = 1, num_soilp
+            p = filter_soilp(fp)
+
+            ! update residue pools
+            col_ns%residue_npools(p,i_met_lit) = col_ns%residue_npools(p,i_met_lit) - &
+                  col_ns%residue_npools(p,i_met_lit) * residue2litr(p) * dt - &
+                  (col_nf%residue_sminn_flux(p,i_met_lit) + col_nf%residue_ntransfer(p,i_met_lit)) * dt + &
+                  col_nf%phenology_n_to_residue_met_n(p) * dt
+            col_ns%residue_npools(p,i_cel_lit) = col_ns%residue_npools(p,i_cel_lit) - &
+                  col_ns%residue_npools(p,i_cel_lit) * residue2litr(p) * dt - &
+                  (col_nf%residue_sminn_flux(p,i_cel_lit) + col_nf%residue_ntransfer(p,i_cel_lit)) * dt + &
+                  col_nf%phenology_n_to_residue_cel_n(p) * dt
+            col_ns%residue_npools(p,i_lig_lit) = col_ns%residue_npools(p,i_lig_lit) - &
+                  col_ns%residue_npools(p,i_lig_lit) * residue2litr(p) * dt - &
+                  (col_nf%residue_sminn_flux(p,i_lig_lit) + col_nf%residue_ntransfer(p,i_lig_lit)) * dt + &
+                  col_nf%phenology_n_to_residue_lig_n(p) * dt
          end do
 
          ! repeating N dep and fixation for crops
@@ -220,6 +245,26 @@ contains
             end if
          end do
 
+         do k = 1, nlit_pools
+            do j = 1, ndecomp_cascade_transitions
+               if (cascade_donor_pool(j) == i_met_lit+k-1) then
+                  csi = j
+                  exit
+               end if
+            end do
+            if ( cascade_receiver_pool(csi) /= 0 ) then  ! skip terminal transitions
+               do fp = 1, num_soilp
+                  p = filter_soilp(fp)
+                  c = veg_pp%column(p)
+                  wt_col = veg_pp%wtcol(p)
+
+                  col_nf%decomp_npools_sourcesink(c,1,cascade_receiver_pool(csi)) = &
+                     col_nf%decomp_npools_sourcesink(c,1,cascade_receiver_pool(csi)) &
+                     + col_nf%residue_ntransfer(p,k) * wt_col * dt
+               end do
+            end if
+         end do
+         
          do j = 1, nlevdecomp
             ! column loop
             do fc = 1,num_soilc

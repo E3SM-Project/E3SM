@@ -14,12 +14,14 @@ module SedYieldMod
   use elm_varcon        , only : dzsoi_decomp
   use elm_varcon        , only : grav, denh2o, rpi
   use elm_varcon        , only : ispval
+  use elm_varctl        , only : use_crop, use_cn
   use elm_varpar        , only : mxpft, nlevsno, max_patch_per_col
   use elm_varpar        , only : nlevslp
   use elm_varpar        , only : ndecomp_pools
   use atm2lndType       , only : atm2lnd_type
   use CNDecompCascadeConType , only : decomp_cascade_con
   use CanopyStateType   , only : CanopyState_type
+  use CropType          , only : crop_type 
   use CNStateType       , only : cnstate_type
   use EnergyFluxType    , only : energyflux_type
   use SoilHydrologyType , only : soilhydrology_type
@@ -51,7 +53,8 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine SoilErosion (bounds, num_soilc, filter_soilc, &
-    canopystate_vars, cnstate_vars, soilstate_vars, sedflux_vars)
+    canopystate_vars, cnstate_vars, crop_vars, soilstate_vars, &
+    sedflux_vars)
     !
     ! !DESCRIPTION:
     ! Calculate rainfall and runoff driven erosion 
@@ -64,6 +67,7 @@ contains
     use landunit_varcon , only : istcrop, istsoil, istice
     use pftvarcon       , only : gcbc_p, gcbc_q, gcbr_p, gcbr_q 
     use pftvarcon       , only : crop, iscft
+    use pftvarcon       , only : nc4_grass, npcropmin
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
@@ -71,6 +75,7 @@ contains
     integer                  , intent(in)    :: filter_soilc(:) ! column filter for soil points
     type(CanopyState_type)   , intent(in)    :: canopystate_vars
     type(cnstate_type)       , intent(in)    :: cnstate_vars
+    type(crop_type)          , intent(in)    :: crop_vars 
     type(soilstate_type)     , intent(in)    :: soilstate_vars
     type(sedflux_type)       , intent(inout) :: sedflux_vars
     !
@@ -86,7 +91,7 @@ contains
     real(r8) :: fungrvl                                    ! ground uncovered by gravel
     real(r8) :: ftillage, flitho, fglacier                 ! factors of tillage, lithology and glacier
     real(r8) :: wglc                                       ! weight of glacier land unit
-    real(r8) :: Brsd, Broot                                ! biomass of residue and roots
+    real(r8) :: Broot                                      ! biomass of roots [kg/m3]
     real(r8) :: Crsd, Clai, PCT_gnd                        ! ground cover calculated from residue and LAI
     real(r8) :: nh                                         ! Manning's coefficient 
     real(r8) :: K, COH                                     ! soil erodibility
@@ -108,19 +113,19 @@ contains
          froot_prof       =>    cnstate_vars%froot_prof_patch       , & ! Input: [real(r8) (:,:) ] fine root vertical profile (1/m)
          croot_prof       =>    cnstate_vars%croot_prof_patch       , & ! Input: [real(r8) (:,:) ] coarse root vertical profile (1/m)
 
-         hslp_p10         =>    col_pp%hslp_p10                     , & ! Input: [real(r8) (:,:) ] hillslope gradient percentiles
+         conservag        =>    crop_vars%conservag_patch           , & ! Input: [real(r8) (:) ] conservation agriculture fraction
 
          bd               =>    soilstate_vars%bd_col               , & ! Input: [real(r8) (:,:) ] soil bulk density (kg/m3)
          fsand            =>    soilstate_vars%cellsand_col         , & ! Input: [real(r8) (:,:) ] sand percentage
          fclay            =>    soilstate_vars%cellclay_col         , & ! Input: [real(r8) (:,:) ] clay percentage
          fgrvl            =>    soilstate_vars%cellgrvl_col         , & ! Input: [real(r8) (:,:) ] gravel percentage
-
-         tillage          =>    soilstate_vars%tillage_col          , & ! Input: [real(r8) (:) ] conserved tillage fraction 
          litho            =>    soilstate_vars%litho_col            , & ! Input: [real(r8) (:) ] lithology erodiblity index
 
-         decomp_cpools_vr =>    col_cs%decomp_cpools_vr             , & ! Input: [real(r8) (:,:,:) ] soil carbon pools [gC/m3]
+         fscov_p          =>    col_cs%fscov_veg                    , & ! Input: [real(r8) (:) ] fraction of soil covered by residue
 
          frac_sno         =>    col_ws%frac_sno                     , & ! Input: [real(r8) (:) ] fraction of ground covered by snow (0 to 1)
+
+         hslp_p10         =>    col_pp%hslp_p10                     , & ! Input: [real(r8) (:,:) ] hillslope gradient percentiles
 
          pfactor          =>    sedflux_vars%pfactor_col            , & ! Input: [real(r8) (:) ] rainfall-driven erosion scaling factor
          qfactor          =>    sedflux_vars%qfactor_col            , & ! Input: [real(r8) (:) ] runoff-driven erosion scaling factor
@@ -179,18 +184,8 @@ contains
                end if
             end if
 
-            ! tillage, lithology factors
-            ftillage = 2.7_r8 - 1.7_r8 * tillage(c)
+            ! lithology factors
             flitho = litho(c)
-
-            ! ground cover calculated by plant residue
-            Brsd = 0.0_r8  ! kg/m2
-            do lp = 1, ndecomp_pools
-               if ( decomp_cascade_con%is_litter(lp) .and. decomp_cpools_vr(c,1,lp)>0._r8 ) then
-                  Brsd = Brsd + 1.e-3_r8 * decomp_cpools_vr(c,1,lp) * dzsoi_decomp(1) 
-               end if
-            end do
-            Crsd = 1._r8 - exp(-6.68_r8 * Brsd)
 
             stxt = (/fclay(c,1), 100._r8-fclay(c,1)-fsand(c,1), fsand(c,1), &
                 fgrvl(c,1)/)
@@ -211,14 +206,26 @@ contains
                      Dl = max(qflx_leafdrip(p)*dtime, 0._r8)      ! mm
                      cheight = 0.5_r8*min(htop(p)+hbot(p),40._r8) ! m
                      KE_LD = max(15.8_r8*sqrt(cheight)-5.87_r8, 0._r8) * fungrvl * Dl
-                     ! LAI and root biomass (kgC/m3): OM/OC = 1.72 
+                     ! ground cover factor
                      Clai = 1._r8 - exp(-tlai(p))
+                     if (use_cn) then
+                        Crsd = fscov_p(p)
+                        Broot = 1.e-3_r8 * ( veg_cs%frootc(p)*froot_prof(p,1) + &
+                           (veg_cs%livecrootc(p)+veg_cs%deadcrootc(p))*croot_prof(p,1) )
+                     else
+                        Crsd = 0._r8
+                        Broot = 0._r8
+                     end if
                      PCT_gnd = 100._r8 * max(Crsd,Clai) ! ground cover in percentage
-                     Broot = 1.e-3_r8 * ( veg_cs%frootc(p)*froot_prof(p,1) + &
-                        (veg_cs%livecrootc(p)+veg_cs%deadcrootc(p))*croot_prof(p,1) )
                      fgndcov = exp( -gcbc_p(veg_pp%itype(p))*PCT_gnd - &
                         gcbr_p(veg_pp%itype(p))*Broot ) 
                      if( crop(veg_pp%itype(p)) >= 1 .or. iscft(veg_pp%itype(p)))then
+                        if (use_crop) then
+                           ftillage = 2.7_r8 - 1.7_r8 * conservag(p)
+                        else
+                           ftillage = 2.7_r8
+                        end if
+
                         Es_Pcrp = Es_Pcrp + pfactor(c) * ftillage * flitho * &
                            fgndcov * veg_pp%wtcol(p) * K * (KE_DT+KE_LD)
                         
@@ -255,11 +262,17 @@ contains
                ftillage_tc = 0._r8 
                do p = col_pp%pfti(c), col_pp%pftf(c)
                   if (veg_pp%active(p) .and. veg_pp%wtcol(p)>0._r8) then
-                     ! LAI and root biomass (kgC/m3): OM/OC = 1.72
+                     ! ground cover factor 
                      Clai = 1._r8 - exp(-tlai(p))
+                     if (use_cn) then
+                        Crsd = fscov_p(p)
+                        Broot = 1.e-3_r8 * ( veg_cs%frootc(p)*froot_prof(p,1) + &
+                           (veg_cs%livecrootc(p)+veg_cs%deadcrootc(p))*croot_prof(p,1) )
+                     else
+                        Crsd = 0._r8
+                        Broot = 0._r8
+                     end if
                      PCT_gnd = 100._r8 * max(Crsd,Clai) ! ground cover in percentage
-                     Broot = 1.e-3_r8 * ( veg_cs%frootc(p)*froot_prof(p,1) + &
-                        (veg_cs%livecrootc(p)+veg_cs%deadcrootc(p))*croot_prof(p,1) )
                      fgndcov = exp( -gcbc_q(veg_pp%itype(p))*PCT_gnd - &
                         gcbr_q(veg_pp%itype(p))*Broot )
 
@@ -267,6 +280,11 @@ contains
                      fsr = fsr + veg_pp%wtcol(p) * (0.03_r8/nh)**0.6_r8
                   
                      if ( crop(veg_pp%itype(p)) >= 1 .or. iscft(veg_pp%itype(p))) then
+                        if (use_crop) then
+                           ftillage = 2.7_r8 - 1.7_r8 * conservag(p)
+                        else
+                           ftillage = 2.7_r8
+                        end if
                         ftillage_tc = ftillage_tc + ftillage * veg_pp%wtcol(p)
 
                         Es_Q = Es_Q + 19.1_r8 * qfactor(c) * 2._r8/COH * flitho * fslp * &

@@ -9,6 +9,7 @@ module CarbonStateUpdate3Mod
   use shr_log_mod      , only : errMsg => shr_log_errMsg
   use abortutils       , only : endrun
   use elm_varpar       , only : nlevdecomp, ndecomp_pools, i_cwd, i_met_lit, i_cel_lit, i_lig_lit
+  use elm_varpar       , only : nlit_pools
   use elm_varctl       , only : use_erosion, ero_ccycle
   use CNCarbonStateType, only : carbonstate_type
   use CNCarbonFluxType , only : carbonflux_type
@@ -83,6 +84,13 @@ contains
                   c = filter_soilc(fc)
                   col_cs%decomp_cpools_vr(c,j,l) = col_cs%decomp_cpools_vr(c,j,l) - col_cf%m_decomp_cpools_to_fire_vr(c,j,l) * dt
                end do
+            end do
+         end do
+         
+         do l = 1, nlit_pools
+            do fp = 1, num_soilp
+               p = filter_soilp(fp)
+               col_cs%residue_cpools(p,l) = col_cs%residue_cpools(p,l) - col_cf%m_residue_fire_closs(p,l) * dt
             end do
          end do
       endif !

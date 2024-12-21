@@ -52,6 +52,7 @@ contains
     ! 
     ! !USES:
     use elm_varcon  , only : zsoi, dzsoi, zisoi, dzsoi_decomp
+    use elm_varcon  , only : zsoi_till
     use elm_varpar  , only : nlevdecomp, nlevgrnd, nlevdecomp_full, maxpatch_pft
     use elm_varctl  , only : use_vertsoilc, iulog, use_dynroot
     use pftvarcon   , only : rootprof_beta, noveg
@@ -72,6 +73,7 @@ contains
     real(r8) :: rootfr_tot
     real(r8) :: cinput_rootfr(bounds%begp:bounds%endp, 1:nlevdecomp_full)      ! pft-native root fraction used for calculating inputs
     real(r8) :: col_cinput_rootfr(bounds%begc:bounds%endc, 1:nlevdecomp_full)  ! col-native root fraction used for calculating inputs
+    real(r8) :: zsoi_till_active
     integer  :: c, j, fc, p, fp, pi
     integer  :: alt_ind
     integer  :: nlevbed
@@ -83,6 +85,8 @@ contains
     real(r8) :: ndep_prof_sum
     real(r8) :: nfixation_prof_sum
     real(r8) :: pdep_prof_sum
+    real(r8) :: residue_prof_sum
+    real(r8) :: tillage_prof_sum
     real(r8) :: delta = 1.e-10_r8
     real(r8), parameter :: smallparameter = tiny(1._r8)
     character(len=32) :: subname = 'decomp_vertprofiles'
@@ -94,14 +98,16 @@ contains
          
          altmax_lastyear_indx => canopystate_vars%altmax_lastyear_indx_col , & ! Input:  [integer   (:)   ]  frost table depth (m)                              
          
-         nfixation_prof       => cnstate_vars%nfixation_prof_col           , & ! Input:  [real(r8)  (:,:) ]  (1/m) profile for N fixation additions          
-         ndep_prof            => cnstate_vars%ndep_prof_col                , & ! Input:  [real(r8)  (:,:) ]  (1/m) profile for N fixation additions
-         pdep_prof            => cnstate_vars%pdep_prof_col                , & ! Input:  [real(r8)  (:,:) ]  (1/m) profile for P depostition additions          
+         nfixation_prof       => cnstate_vars%nfixation_prof_col           , & ! Output:  [real(r8)  (:,:) ]  (1/m) profile for N fixation additions
+         ndep_prof            => cnstate_vars%ndep_prof_col                , & ! Output:  [real(r8)  (:,:) ]  (1/m) profile for N fixation additions
+         pdep_prof            => cnstate_vars%pdep_prof_col                , & ! Output:  [real(r8)  (:,:) ]  (1/m) profile for P depostition additions
          
          leaf_prof            => cnstate_vars%leaf_prof_patch              , & ! Output:  [real(r8) (:,:) ]  (1/m) profile of leaves                         
          froot_prof           => cnstate_vars%froot_prof_patch             , & ! Output:  [real(r8) (:,:) ]  (1/m) profile of fine roots                     
          croot_prof           => cnstate_vars%croot_prof_patch             , & ! Output:  [real(r8) (:,:) ]  (1/m) profile of coarse roots                   
          stem_prof            => cnstate_vars%stem_prof_patch              , & ! Output:  [real(r8) (:,:) ]  (1/m) profile of stems                          
+         residue_prof         => cnstate_vars%residue_prof_patch           , & ! Output:  [real(r8) (:,:) ]  (1/m) profile of residue
+         tillage_prof         => cnstate_vars%tillage_prof_patch           , & ! Output:  [real(r8) (:,:) ]  (1/m) profile of tilled residue
          
          begp                 => bounds%begp                               , &
          endp                 => bounds%endp                               , &
@@ -122,6 +128,8 @@ contains
          froot_prof(begp:endp, :)     = 0._r8
          croot_prof(begp:endp, :)     = 0._r8
          stem_prof(begp:endp, :)      = 0._r8
+         residue_prof(begp:endp,:)    = 0._r8
+         tillage_prof(begp:endp,:)    = 0._r8
          nfixation_prof(begc:endc, :) = 0._r8
          ndep_prof(begc:endc, :)      = 0._r8
          pdep_prof(begc:endc, :)      = 0._r8
@@ -202,12 +210,15 @@ contains
                   if (j <= nlevbed) then
                      if (nlevbed < nlevdecomp) then
                         leaf_prof(p,j) = exp(log(surface_prof(j)) * zisoi(nlevdecomp) / zisoi(nlevbed))/ &
-                        	surface_prof_tot
+                           surface_prof_tot
                         stem_prof(p,j) = exp(log(surface_prof(j)) * zisoi(nlevdecomp) / zisoi(nlevbed))/ &
-                        	surface_prof_tot
+                           surface_prof_tot
+                        residue_prof(p,j) = exp(log(surface_prof(j)) * zisoi(nlevdecomp) / zisoi(nlevbed))/ &
+                           surface_prof_tot
                      else
                         leaf_prof(p,j) = surface_prof(j)/ surface_prof_tot
                         stem_prof(p,j) = surface_prof(j)/ surface_prof_tot
+                        residue_prof(p,j) = surface_prof(j)/ surface_prof_tot
                      end if
                   end if
                end do
@@ -217,7 +228,23 @@ contains
                croot_prof(p,1) = 1._r8/dzsoi_decomp(1)
                leaf_prof(p,1) = 1._r8/dzsoi_decomp(1)
                stem_prof(p,1) = 1._r8/dzsoi_decomp(1)
+               residue_prof(p,1) = 1._r8/dzsoi_decomp(1)
             endif
+
+            if (altmax_lastyear_indx(c) > 0) then
+               zsoi_till_active = min( zsoi_till, zisoi(nlevbed) )
+               do j = 1, min(max(altmax_lastyear_indx(c), 1), nlevdecomp)
+                  if (zisoi(j) <= zsoi_till_active) then
+                     tillage_prof(p,j) = 1./zsoi_till_active
+                  else if (zisoi(j) - dzsoi_decomp(j) < zsoi_till_active) then
+                     tillage_prof(p,j) = (zsoi_till_active - zisoi(j) + dzsoi_decomp(j)) / &
+                        zsoi_till_active / dzsoi_decomp(j)
+                  end if
+               end do
+            else
+               ! if fully frozen, or no roots, put everything in the top layer
+               tillage_prof(p,1) = 1./dzsoi_decomp(1)
+            end if
 
          end do
 
@@ -286,6 +313,8 @@ contains
          froot_prof(begp:endp, :) = 1._r8
          croot_prof(begp:endp, :) = 1._r8
          stem_prof(begp:endp, :) = 1._r8
+         residue_prof(begp:endp, :) = 1._r8
+         tillage_prof(begp:endp, :) = 1._r8
          nfixation_prof(begc:endc, :) = 1._r8
          ndep_prof(begc:endc, :) = 1._r8
          pdep_prof(begc:endc, :) = 1._r8
@@ -304,7 +333,7 @@ contains
             pdep_prof_sum = pdep_prof_sum + pdep_prof(c,j) *  dzsoi_decomp(j)
          end do
          if ( ( abs(ndep_prof_sum - 1._r8) > delta ) .or.  ( abs(nfixation_prof_sum - 1._r8) > delta ) .or. &
-              ( abs(pdep_prof_sum - 1._r8) > delta )  ) then
+              ( abs(pdep_prof_sum - 1._r8) > delta ) ) then
             write(iulog, *) 'profile sums: ', ndep_prof_sum, nfixation_prof_sum, pdep_prof_sum
             write(iulog, *) 'c: ', c
             write(iulog, *) 'altmax_lastyear_indx: ', altmax_lastyear_indx(c)
@@ -329,16 +358,22 @@ contains
          croot_prof_sum = 0._r8
          leaf_prof_sum = 0._r8
          stem_prof_sum = 0._r8
+         residue_prof_sum = 0._r8
+         tillage_prof_sum = 0._r8
          do j = 1, nlevdecomp
             froot_prof_sum = froot_prof_sum + froot_prof(p,j) *  dzsoi_decomp(j)
             croot_prof_sum = croot_prof_sum + croot_prof(p,j) *  dzsoi_decomp(j)
             leaf_prof_sum = leaf_prof_sum + leaf_prof(p,j) *  dzsoi_decomp(j)
             stem_prof_sum = stem_prof_sum + stem_prof(p,j) *  dzsoi_decomp(j)
+            residue_prof_sum = residue_prof_sum + residue_prof(p,j) * dzsoi_decomp(j)
+            tillage_prof_sum = tillage_prof_sum + tillage_prof(p,j) * dzsoi_decomp(j)
          end do
          if ( ( abs(froot_prof_sum - 1._r8) > delta ) .or.  ( abs(croot_prof_sum - 1._r8) > delta ) .or. &
-              ( abs(stem_prof_sum - 1._r8) > delta ) .or.  ( abs(leaf_prof_sum - 1._r8) > delta ) ) then
+              ( abs(stem_prof_sum - 1._r8) > delta ) .or.  ( abs(leaf_prof_sum - 1._r8) > delta ) .or. &
+              ( abs(residue_prof_sum - 1._r8) > delta ) .or. ( abs(tillage_prof_sum - 1._r8) > delta ) ) then
             c = veg_pp%column(p)
-            write(iulog, *) 'profile sums: ', froot_prof_sum, croot_prof_sum, leaf_prof_sum, stem_prof_sum
+            write(iulog, *) 'profile sums: ', froot_prof_sum, croot_prof_sum, leaf_prof_sum, &
+               stem_prof_sum, residue_prof_sum, tillage_prof_sum
             write(iulog, *) 'c: ',c
             write(iulog, *) 'altmax_lastyear_indx: ', altmax_lastyear_indx(c)
             write(iulog, *) 'cinput_rootfr: ', col_cinput_rootfr(c,:)

@@ -936,6 +936,7 @@ contains
    use elm_varctl      , only : carbonphosphorus_only!
    use pftvarcon        , only: noveg
    use elm_varpar       , only: nlevdecomp, ndecomp_cascade_transitions
+   use elm_varpar      , only : nlit_pools 
    use elm_varcon       , only: nitrif_n2o_loss_frac, secspday
    use elm_varcon       , only : zisoi
    !
@@ -1091,8 +1092,10 @@ contains
         actual_immob_p_vr            => col_pf%actual_immob_p_vr           , & ! Output: [real(r8) (:,:) ]
         bd                           => soilstate_vars%bd_col                               , &
         h2osoi_vol                   => col_ws%h2osoi_vol                      , &
-        pmnf_decomp_cascade          => col_nf%pmnf_decomp_cascade               , &
+        pmnf_decomp_cascade          => col_nf%pmnf_decomp_cascade             , &
+        pmnf_residue                 => col_nf%pmnf_residue                    , &
         pmpf_decomp_cascade          => col_pf%pmpf_decomp_cascade             , &
+        pmpf_residue                 => col_pf%pmpf_residue                    , &
         leafc_storage                => veg_cs%leafc_storage                , &
         leafc_xfer                   => veg_cs%leafc_xfer                   , &
         leafn_storage                => veg_ns%leafn_storage              , &
@@ -1502,6 +1505,16 @@ contains
                                *(fpi_p_vr(c,j)-fpi_vr(c,j))
                        end if
                     end do
+                    if (j == 1) then
+                       do k = 1, nlit_pools
+                          do p = col_pp%pfti(c), col_pp%pftf(c)
+                             if (pmnf_residue(p,k) > 0._r8 .and. pmpf_residue(p,k) > 0._r8) then 
+                                actual_immob_p_vr(c,j) = actual_immob_p_vr(c,j) - pmpf_residue(p,k) &
+                                   * (fpi_p_vr(c,j)-fpi_vr(c,j)) * veg_pp%wtcol(p)
+                             end if
+                          end do
+                       end do
+                    end if
                  else
                     if (fpi_nh4_vr(j) > fpi_p_vr(c,j)) then ! more P limited
                        do k = 1, ndecomp_cascade_transitions
@@ -1511,6 +1524,18 @@ contains
                              actual_immob_no3_vr(c,j) = actual_immob_no3_vr(c,j) - pmnf_decomp_cascade(c,j,k) * fpi_no3_vr(j)
                           end if
                        end do
+                       if (j == 1) then
+                          do k = 1, nlit_pools
+                             do p = col_pp%pfti(c), col_pp%pftf(c)
+                                if (pmnf_residue(p,k) > 0.0_r8 .and. pmpf_residue(p,k) > 0.0_r8) then
+                                   actual_immob_nh4_vr(c,j) = actual_immob_nh4_vr(c,j) - pmnf_residue(p,k) &
+                                      * (fpi_nh4_vr(j) - fpi_p_vr(c,j)) * veg_pp%wtcol(p) 
+                                   actual_immob_no3_vr(c,j) = actual_immob_no3_vr(c,j) - pmnf_residue(p,k) &
+                                      * fpi_no3_vr(j) * veg_pp%wtcol(p)
+                                end if
+                             end do
+                          end do
+                       end if
                     else
                        do k = 1, ndecomp_cascade_transitions
                           if (pmnf_decomp_cascade(c,j,k) > 0.0_r8 .and. pmpf_decomp_cascade(c,j,k) > 0.0_r8) then
@@ -1518,6 +1543,16 @@ contains
                                   (fpi_nh4_vr(j) + fpi_no3_vr(j) - fpi_p_vr(c,j) )
                           end if
                        end do
+                       if (j == 1) then
+                          do k = 1, nlit_pools
+                             do p = col_pp%pfti(c), col_pp%pftf(c)
+                                if (pmnf_residue(p,k) > 0.0_r8 .and. pmpf_residue(p,k) > 0.0_r8) then
+                                   actual_immob_no3_vr(c,j) = actual_immob_no3_vr(c,j) - pmnf_residue(p,k) &
+                                      * (fpi_nh4_vr(j) + fpi_no3_vr(j) - fpi_p_vr(c,j) ) * veg_pp%wtcol(p) 
+                                end if
+                             end do
+                          end do
+                       end if
                     end if
                  endif
                  ! sum up no3 and nh4 fluxes
@@ -1542,6 +1577,18 @@ contains
                                -fpi_vr(c,j))
                        end if
                     end do
+                    if (j == 1) then
+                       do k = 1, nlit_pools
+                          do p = col_pp%pfti(c), col_pp%pftf(c)
+                             if (pmnf_residue(p,k) > 0.0_r8 .and. pmpf_residue(p,k) > 0.0_r8) then
+                                excess_immob_p_vr(j) = excess_immob_p_vr(j) + pmpf_residue(p,k) &
+                                   * (fpi_p_vr(c,j) - fpi_vr(c,j)) * veg_pp%wtcol(p) 
+                                actual_immob_p_vr(c,j) = actual_immob_p_vr(c,j) - pmpf_residue(p,k) &
+                                   * (fpi_p_vr(c,j) - fpi_vr(c,j)) * veg_pp%wtcol(p)
+                             end if
+                          end do
+                       end do
+                    end if
                  else
                     if (fpi_nh4_vr(j) > fpi_p_vr(c,j)) then ! more P limited
                        do k = 1, ndecomp_cascade_transitions
@@ -1554,6 +1601,22 @@ contains
                              actual_immob_no3_vr(c,j) = actual_immob_no3_vr(c,j) - pmnf_decomp_cascade(c,j,k) * fpi_no3_vr(j)
                           end if
                        end do
+                       if (j == 1) then
+                          do k = 1, nlit_pools
+                             do p = col_pp%pfti(c), col_pp%pftf(c)
+                                if (pmnf_residue(p,k) > 0.0_r8 .and. pmpf_residue(p,k) > 0.0_r8) then
+                                   excess_immob_nh4_vr(j) = excess_immob_nh4_vr(j) + pmnf_residue(p,k) &
+                                      * (fpi_nh4_vr(j) - fpi_p_vr(c,j)) * veg_pp%wtcol(p) 
+                                   excess_immob_no3_vr(j) = excess_immob_no3_vr(j) + pmnf_residue(p,k) &
+                                      * fpi_no3_vr(j) * veg_pp%wtcol(p)
+                                   actual_immob_nh4_vr(c,j) = actual_immob_nh4_vr(c,j) - pmnf_residue(p,k) &
+                                      * (fpi_nh4_vr(j) - fpi_p_vr(c,j)) * veg_pp%wtcol(p) 
+                                   actual_immob_no3_vr(c,j) = actual_immob_no3_vr(c,j) - pmnf_residue(p,k) &
+                                      * fpi_no3_vr(j) * veg_pp%wtcol(p) 
+                                end if
+                             end do
+                          end do
+                       end if
                     else
                        do k = 1, ndecomp_cascade_transitions
                           if (pmnf_decomp_cascade(c,j,k) > 0.0_r8 .and. pmpf_decomp_cascade(c,j,k) > 0.0_r8) then
@@ -1563,6 +1626,18 @@ contains
                                   * (fpi_nh4_vr(j) + fpi_no3_vr(j) - fpi_p_vr(c,j) )
                           end if
                        end do
+                       if (j == 1) then
+                          do k = 1, nlit_pools
+                             do p = col_pp%pfti(c), col_pp%pftf(c)
+                                if (pmnf_residue(p,k) > 0.0_r8 .and. pmpf_residue(p,k) > 0.0_r8) then
+                                   excess_immob_no3_vr(j) = excess_immob_no3_vr(j) + pmnf_residue(p,k) &
+                                      * (fpi_nh4_vr(j) + fpi_no3_vr(j) - fpi_p_vr(c,j) ) * veg_pp%wtcol(p) 
+                                   actual_immob_no3_vr(c,j) = actual_immob_no3_vr(c,j) - pmnf_residue(p,k) &
+                                      * (fpi_nh4_vr(j) + fpi_no3_vr(j) - fpi_p_vr(c,j) ) * veg_pp%wtcol(p) 
+                                end if
+                             end do
+                          end do
+                       end if
                     end if
                  endif
                  ! sum up no3 and nh4 fluxes

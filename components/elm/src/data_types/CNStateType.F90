@@ -58,6 +58,10 @@ module CNStateType
      real(r8) , pointer :: croot_prof_patch            (:,:)   ! patch (1/m) profile of coarse roots (vertical profiles for calculating fluxes)
      real(r8) , pointer :: stem_prof_patch             (:,:)   ! patch (1/m) profile of stems (vertical profiles for calculating fluxes)
 
+     real(r8) , pointer :: residue_prof_patch          (:,:)   ! patch (1/m) profile of residue litter input naturally
+     real(r8) , pointer :: tillage_prof_patch          (:,:)   ! patch (1/m) profile of residue litter input by tillage
+     real(r8) , pointer :: residue2litr_patch          (:)     ! patch (1/s) residue to conversion rate
+
      real(r8) , pointer :: gdp_lf_col                  (:)     ! col global real gdp data (k US$/capita)
      real(r8) , pointer :: peatf_lf_col                (:)     ! col global peatland fraction data (0-1)
      integer  , pointer :: abm_lf_col                  (:)     ! col global peak month of crop fire emissions 
@@ -241,6 +245,9 @@ contains
     allocate(this%froot_prof_patch    (begp:endp,1:nlevdecomp_full)) ; this%froot_prof_patch    (:,:) = spval
     allocate(this%croot_prof_patch    (begp:endp,1:nlevdecomp_full)) ; this%croot_prof_patch    (:,:) = spval
     allocate(this%stem_prof_patch     (begp:endp,1:nlevdecomp_full)) ; this%stem_prof_patch     (:,:) = spval
+    allocate(this%residue_prof_patch  (begp:endp,1:nlevdecomp_full)) ; this%residue_prof_patch  (:,:) = spval
+    allocate(this%tillage_prof_patch  (begp:endp,1:nlevdecomp_full)) ; this%tillage_prof_patch  (:,:) = spval
+    allocate(this%residue2litr_patch  (begp:endp))                   ; this%residue2litr_patch  (:)   = spval
 
     allocate(this%gdp_lf_col          (begc:endc))                   ;
     allocate(this%peatf_lf_col        (begc:endc))                   ; 
@@ -410,6 +417,16 @@ contains
     call hist_addfld_decomp (fname='STEM_PROF', units='1/m',  type2d='levdcmp', &
          avgflag='A', long_name='profile for litter C and N inputs from stems', &
          ptr_patch=this%stem_prof_patch, default='inactive')
+
+    this%residue_prof_patch(begp:endp,:) = spval
+    call hist_addfld_decomp (fname='RESIDUE_PROF', units='1/m',  type2d='levdcmp', &
+         avgflag='A', long_name='profile for plant residue conversion to litters', &
+         ptr_patch=this%residue_prof_patch, default='inactive')
+
+    this%residue2litr_patch(begp:endp) = spval
+    call hist_addfld1d (fname='RESIDUE2LITR', units='1/s', &
+         avgflag='A', long_name='residue to litter conversion rate', &
+         ptr_patch=this%residue2litr_patch, default='inactive')
 
     this%nfixation_prof_col(begc:endc,:) = spval
     call hist_addfld_decomp (fname='NFIXATION_PROF', units='1/m',  type2d='levdcmp', &

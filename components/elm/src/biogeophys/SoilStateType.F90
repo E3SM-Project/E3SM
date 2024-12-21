@@ -89,7 +89,6 @@ module SoilStateType
      real(r8), pointer :: soil_conductance_patch(:,:) ! patch soil conductance [mm/s]
 
      ! soil erosion
-     real(r8), pointer :: tillage_col          (:)    ! col soil conserved tillage fraction 
      real(r8), pointer :: litho_col            (:)    ! col soil lithology erodiblity index
 
    contains
@@ -190,7 +189,6 @@ contains
     allocate(this%root_conductance_patch(begp:endp,1:nlevsoi))          ; this%root_conductance_patch (:,:) = spval
     allocate(this%soil_conductance_patch(begp:endp,1:nlevsoi))          ; this%soil_conductance_patch (:,:) = spval
 
-    allocate(this%tillage_col          (begc:endc))                     ; this%tillage_col          (:)   = spval
     allocate(this%litho_col            (begc:endc))                     ; this%litho_col            (:)   = spval
 
   end subroutine InitAllocate
@@ -374,7 +372,6 @@ contains
     real(r8) ,pointer  :: clay3d (:,:,:)                ! read in - soil texture: percent clay (needs to be a pointer for use in ncdio)
     real(r8) ,pointer  :: grvl3d (:,:,:)                ! read in - soil texture: percent gravel (needs to be a pointer for use in ncdio)
     real(r8) ,pointer  :: organic3d (:,:,:)             ! read in - organic matter: kg/m3 (needs to be a pointer for use in ncdio)
-    real(r8) ,pointer  :: tillage_in (:,:)              ! read in - conserved tillage fraction
     real(r8) ,pointer  :: litho_in (:,:)                ! read in - lithology erodibility index
     character(len=256) :: locfn                         ! local filename
     integer            :: nlevbed                       ! # of layers above bedrock
@@ -517,16 +514,10 @@ contains
     end do
     deallocate(gti)
 
-    ! Read tillage and lithology
+    ! Read lithology
     if (use_erosion) then
-       allocate(tillage_in(bounds%begg:bounds%endg,max_topounits))
        allocate(litho_in(bounds%begg:bounds%endg,max_topounits))
 
-       call ncd_io(ncid=ncid, varname='Tillage', flag='read', data=tillage_in, dim1name=grlnd, readvar=readvar)
-       if (.not. readvar) then
-          call endrun(msg=' ERROR: Tillage NOT on surfdata file'//errMsg(__FILE__, __LINE__))
-       end if
-      
        call ncd_io(ncid=ncid, varname='Litho', flag='read', data=litho_in, dim1name=grlnd, readvar=readvar)
        if (.not. readvar) then
           call endrun(msg=' ERROR: Litho NOT on surfdata file'//errMsg(__FILE__, __LINE__))
@@ -537,11 +528,10 @@ contains
           t = col_pp%topounit(c)
           topi = grc_pp%topi(g)
           ti = t - topi + 1
-          this%tillage_col(c) = tillage_in(g,ti)
           this%litho_col(c) = litho_in(g,ti)
        end do
 
-       deallocate(tillage_in, litho_in)
+       deallocate(litho_in)
     end if
 
     ! Close file

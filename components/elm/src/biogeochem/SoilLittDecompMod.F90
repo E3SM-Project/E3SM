@@ -14,6 +14,8 @@ module SoilLittDecompMod
   use elm_varctl             , only : iulog, use_lch4, use_century_decomp
   use elm_varcon             , only : dzsoi_decomp
   use elm_varpar             , only : nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools
+  use elm_varpar             , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
+  use elm_varpar             , only : nlit_pools
   use DecompCascadeCNMod     , only : decomp_rate_constants_cn
   use DecompCascadeBGCMod    , only : decomp_rate_constants_bgc
   use NitrifDenitrifMod    , only : nitrif_denitrif
@@ -32,6 +34,7 @@ module SoilLittDecompMod
   use ColumnDataType         , only : col_ns, col_nf
   use ColumnDataType         , only : col_ps, col_pf
   use VegetationDataType     , only : veg_ps, veg_pf
+  use VegetationType         , only : veg_pp
   use ELMFatesInterfaceMod   , only : hlm_fates_interface_type
   ! clm interface & pflotran:
   use elm_varctl             , only : use_elm_interface, use_pflotran, pf_cmode
@@ -127,16 +130,21 @@ contains
     real(r8),   intent(in)    :: dtime
     !
     ! !LOCAL VARIABLES:
-    integer :: c,j,k,l,m                                                                               !indices
-    integer :: fc                                                                                      !lake filter column index
+    integer :: c,p,i,j,k,l,m                                                                           !indices
+    integer :: fc,fp                                                                                   !lake filter column index
+    integer :: ci                                                                                      !cascade index
     real(r8):: p_decomp_cpool_loss(bounds%begc:bounds%endc,1:nlevdecomp,1:ndecomp_cascade_transitions) !potential C loss from one pool to another
+    real(r8):: p_residue_cpool_loss(bounds%begp:bounds%endp,1:nlit_pools)                              !potential C loss from residue pools
     real(r8):: immob(bounds%begc:bounds%endc,1:nlevdecomp)                                             !potential N immobilization
     real(r8):: immob_p(bounds%begc:bounds%endc,1:nlevdecomp)                                             !potential P immobilization
     real(r8):: ratio                                                                                   !temporary variable
     real(r8):: dnp                                                                        !denitrification proportion
+    real(r8):: wt_col
     real(r8):: cn_decomp_pools(bounds%begc:bounds%endc,1:nlevdecomp,1:ndecomp_pools)
     real(r8):: cp_decomp_pools(bounds%begc:bounds%endc,1:nlevdecomp,1:ndecomp_pools)
     real(r8):: cp_decomp_pools_new(bounds%begc:bounds%endc,1:nlevdecomp,1:ndecomp_pools)               !C:P ratio of new SOM
+    real(r8):: cn_residue_pools(bounds%begp:bounds%endp,1:nlit_pools)
+    real(r8):: cp_residue_pools(bounds%begp:bounds%endp,1:nlit_pools)
     integer, parameter :: i_atm = 0
     ! For methane code
     real(r8):: phr_vr(bounds%begc:bounds%endc,1:nlevdecomp)                                            !potential HR (gC/m3/s)
@@ -160,12 +168,16 @@ contains
          rf_decomp_cascade                =>    cnstate_vars%rf_decomp_cascade_col                     , & ! Input:  [real(r8) (:,:,:) ]  respired fraction in decomposition step (frac)
          pathfrac_decomp_cascade          =>    cnstate_vars%pathfrac_decomp_cascade_col               , & ! Input:  [real(r8) (:,:,:) ]  what fraction of C leaving a given pool passes through a given transition (frac)
 
-         decomp_npools_vr                 =>    col_ns%decomp_npools_vr                , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) N pools
-         decomp_ppools_vr                 =>    col_ps%decomp_ppools_vr              , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) P pools
+         decomp_npools_vr                 =>    col_ns%decomp_npools_vr                 , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) N pools
+         residue_npools                   =>    col_ns%residue_npools                   , & ! Input:  [real(r8) (:,:)   ]  (gN/m2)  surface residue (surface litter) N pools
 
-         decomp_cpools_vr                 =>    col_cs%decomp_cpools_vr                  , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) c pools
+         decomp_ppools_vr                 =>    col_ps%decomp_ppools_vr                 , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) P pools
+         residue_ppools                   =>    col_ps%residue_ppools                   , & ! Input:  [real(r8) (:,:)   ]  (gP/m2)  surface residue (surface litter) P pools
 
-         w_scalar                         =>    col_cf%w_scalar                           , & ! Input:  [real(r8) (:,:)   ]  fraction by which decomposition is limited by moisture availability
+         decomp_cpools_vr                 =>    col_cs%decomp_cpools_vr                 , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) c pools
+         residue_cpools                   =>    col_cs%residue_cpools                   , & ! Input:  [real(r8) (:,:)   ]  (gC/m2)  surface residue (surface litter) c pools
+
+         w_scalar                         =>    col_cf%w_scalar                         , & ! Input:  [real(r8) (:,:)   ]  fraction by which decomposition is limited by moisture availability
 
          decomp_cascade_ntransfer_vr      =>    col_nf%decomp_cascade_ntransfer_vr      , & ! Output: [real(r8) (:,:,:) ]  vert-res transfer of N from donor to receiver pool along decomp. cascade (gN/m3/s)
          decomp_cascade_sminn_flux_vr     =>    col_nf%decomp_cascade_sminn_flux_vr     , & ! Output: [real(r8) (:,:,:) ]  vert-res mineral N flux for transition along decomposition cascade (gN/m3/s)
@@ -186,11 +198,19 @@ contains
 
          decomp_cascade_hr_vr             =>    col_cf%decomp_cascade_hr_vr               , & ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
          decomp_cascade_ctransfer_vr      =>    col_cf%decomp_cascade_ctransfer_vr        , & ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
+         residue_hr                       =>    col_cf%residue_hr                         , & ! Output: [real(r8) (:,:)   ]  het. resp. from decomposing residue C pools (gC/m^2/s)
+         residue_ctransfer                =>    col_cf%residue_ctransfer                  , & ! Output: [real(r8) (:,:)   ]  C transferred from deomposition residue C pools (gC/m^2/s)
+         residue_sminn_flux               =>    col_nf%residue_sminn_flux                 , & ! Output: [real(r8) (:,:)   ]  mineral N flux from residue for transition along decomposition cascade (gN/m2/s)
+         residue_ntransfer                =>    col_nf%residue_ntransfer                  , & ! Output: [real(r8) (:,:)   ]  transfer of N from residue to receiver pool along decomp. cascade (gN/m2/s)
+         residue_sminp_flux               =>    col_pf%residue_sminp_flux                 , & ! Output: [real(r8) (:,:)   ]  mineral P flux from residue for transition along decomposition cascade (gP/m2/s)
+         residue_ptransfer                =>    col_pf%residue_ptransfer                  , & ! Output: [real(r8) (:,:)   ]  transfer of P from residue to receiver pool along decomp. cascade (gP/m2/s) 
          decomp_k                         =>    col_cf%decomp_k                           , & ! Output: [real(r8) (:,:,:) ]  rate constant for decomposition (1./sec)
          phr_vr                           =>    col_cf%phr_vr                             , & ! Output: [real(r8) (:,:)   ]  potential HR (gC/m3/s)
          fphr                             =>    col_cf%fphr                               , & ! Output: [real(r8) (:,:)   ]  fraction of potential SOM + LITTER heterotrophic
          pmnf_decomp_cascade              =>    col_nf%pmnf_decomp_cascade                  , &
          pmpf_decomp_cascade              =>    col_pf%pmpf_decomp_cascade                , &
+         pmnf_residue                     =>    col_nf%pmnf_residue                       , &
+         pmpf_residue                     =>    col_pf%pmpf_residue                       , &
          soil_n_immob_flux                =>    col_nf%soil_n_immob_flux                    , &
          soil_n_immob_flux_vr             =>    col_nf%soil_n_immob_flux_vr                 , &
          soil_n_grossmin_flux             =>    col_nf%soil_n_grossmin_flux                 , &
@@ -208,6 +228,9 @@ contains
       p_decomp_cpool_loss(bounds%begc : bounds%endc, :, :) = 0._r8
       pmnf_decomp_cascade(bounds%begc : bounds%endc, :, :) = 0._r8
       pmpf_decomp_cascade(bounds%begc : bounds%endc, :, :) = 0._r8    !! initial values for potential P fluxes
+      p_residue_cpool_loss(bounds%begp : bounds%endp, :) = 0._r8
+      pmnf_residue(bounds%begp : bounds%endp, :) = 0._r8
+      pmpf_residue(bounds%begp : bounds%endp, :) = 0._r8
 
       ! column loop to calculate potential decomp rates and total immobilization
       ! demand.
@@ -229,6 +252,22 @@ contains
                   c = filter_soilc(fc)
                   cn_decomp_pools(c,j,l) = initial_cn_ratio(l)
                end do
+            end do
+         end if
+      end do
+
+      do l = 1, nlit_pools
+         if ( floating_cn_ratio_decomp_pools(i_met_lit+l-1) ) then
+            do fp = 1, num_soilp
+               p = filter_soilp(fp)
+               if ( residue_npools(p,l) > 0._r8 ) then
+                  cn_residue_pools(p,l) = residue_cpools(p,l) / residue_npools(p,l)
+               end if
+            end do
+         else
+            do fp = 1, num_soilp
+               p = filter_soilp(fp)
+               cn_residue_pools(p,l) = initial_cn_ratio(i_met_lit+l-1)
             end do
          end if
       end do
@@ -258,6 +297,22 @@ contains
                cp_decomp_pools_new(c,j,l) = initial_cp_ratio(l)
             end do
          end do
+      end do
+
+      do l = 1, nlit_pools
+         if ( floating_cp_ratio_decomp_pools(i_met_lit+l-1) ) then
+            do fp = 1, num_soilp
+               p = filter_soilp(fp)
+               if ( residue_ppools(p,l) > 0._r8 ) then
+                  cp_residue_pools(p,l) = residue_cpools(p,l) / residue_ppools(p,l)
+               end if
+            end do
+         else
+            do fp = 1, num_soilp
+               p = filter_soilp(fp)
+               cp_residue_pools(p,l) = initial_cp_ratio(i_met_lit+l-1)
+            end do
+         end if
       end do
 
       ! calculate the non-nitrogen-limited fluxes
@@ -322,6 +377,52 @@ contains
          end do
       end do
 
+      do k = 1, nlit_pools
+         do i = 1, ndecomp_cascade_transitions
+            if (cascade_donor_pool(i) == i_met_lit+k-1) then
+               csi = i
+               exit
+            end if
+         end do
+         do fp = 1, num_soilp
+            p = filter_soilp(fp)
+            c = veg_pp%column(p)
+
+            if (residue_cpools(p,k) > 0._r8 .and. decomp_k(c,1,i_met_lit+k-1) > 0._r8 ) then 
+               p_residue_cpool_loss(p,k) = residue_cpool(p,k) / dzsoi_decomp(1) * &
+                  decomp_k(c,1,i_met_lit+k-1)  * pathfrac_decomp_cascade(c,1,csi)
+
+               if (cascade_receiver_pool(csi) /= i_atm ) then  ! not 100% respiration
+                  ratio = 0._r8
+
+                  if (residue_npools(p,k) > 0._r8) then
+                     ratio = cn_decomp_pools(c,1,cascade_receiver_pool(csi)) / cn_residue_pools(p,k)
+                  end if
+                  pmnf_residue(p,k) = (p_residue_cpool_loss(p,k) * (1.0_r8 - rf_decomp_cascade(c,1,csi) - ratio) &
+                     / cn_decomp_pools(c,1,cascade_receiver_pool(csi)) )
+
+               else   ! 100% respiration
+                  pmnf_residue(p,k) = - p_residue_cpool_loss(p,k) / cn_residue_pools(p,k)
+               end if
+               !!! add phosphorus fluxes
+               if (cascade_receiver_pool(csi) /= i_atm ) then  ! not 100% respiration
+                  ratio = 0._r8
+
+                  if (residue_ppools(p,k) > 0._r8) then
+                     ratio = cp_decomp_pools_new(c,1,cascade_receiver_pool(csi)) / cp_residue_pools(p,k)
+                  end if
+                  pmpf_residue(p,k) = (p_residue_cpool_loss(p,k) * (1.0_r8 - rf_decomp_cascade(c,1,csi) - ratio) &
+                     / cp_decomp_pools_new(c,1,cascade_receiver_pool(csi)) )
+
+               else   ! 100% respiration
+                  if (residue_ppools(p,k) > 0._r8) then
+                     pmpf_residue(p,k) = - p_residue_cpool_loss(p,k) / cp_residue_pools(p,k)   
+                  end if
+               end if
+            end if
+         end do
+      end do
+
       ! Sum up all the potential immobilization fluxes (positive pmnf flux)
       ! and all the mineralization fluxes (negative pmnf flux)
       do j = 1,nlevdecomp
@@ -350,6 +451,24 @@ contains
             end do
          end do
       end do
+      do k = 1, nlit_pools
+         do fp = 1, num_soilp
+            p = filter_soilp(fp)
+            c = veg_pp%column(p)
+            wt_col = veg_pp%wtcol(p)
+
+            if (pmnf_residue(p,k) > 0._r8) then
+               immob(c,1) = immob(c,1) + pmnf_residue(p,k) * wt_col 
+            else
+               gross_nmin_vr(c,1) = gross_nmin_vr(c,1) - pmnf_residue(p,k) * wt_col
+            end if
+            if (pmpf_residue(p,k) > 0._r8) then
+               immob_p(c,1) = immob_p(c,1) + pmpf_residue(p,k) * wt_col
+            else
+               gross_pmin_vr(c,1) = gross_pmin_vr(c,1) - pmpf_residue(p,k) * wt_col
+            end if
+         end do
+      end do
 
       do j = 1,nlevdecomp
          do fc = 1,num_soilc
@@ -372,6 +491,22 @@ contains
                c = filter_soilc(fc)
                phr_vr(c,j) = phr_vr(c,j) + rf_decomp_cascade(c,j,k) * p_decomp_cpool_loss(c,j,k)
             end do
+         end do
+      end do
+      do k = 1, nlit_pools
+         do i = 1, ndecomp_cascade_transitions
+            if (cascade_donor_pool(i) == i_met_lit+k-1) then
+               csi = i
+               exit
+            end if
+         end do
+         do fp = 1, num_soilp
+            p = filter_soilp(fp)
+            c = veg_pp%column(p)
+            wt_col = veg_pp%wtcol(p)
+
+            phr_vr(c,1) = phr_vr(c,1) + rf_decomp_cascade(c,1,csi) * &
+               p_residue_cpool_loss(p,k) * wt_col
          end do
       end do
 
@@ -469,6 +604,70 @@ contains
          end do
       end do
 
+      do k = 1, nlit_pools
+         do i = 1, ndecomp_cascade_transitions
+            if (cascade_donor_pool(i) == i_met_lit+k-1) then
+               csi = i
+               exit
+            end if
+         end do
+         do fp = 1, num_soilp
+            p = filter_soilp(fp)
+            c = veg_pp%column(p)
+            wt_col = veg_pp%wtcol(p)
+
+            residue_hr(p,k) = 0._r8
+            residue_ctransfer(p,k) = 0._r8
+            residue_ntransfer(p,k) = 0._r8
+            residue_sminn_flux(p,k) = 0._r8
+            residue_ptransfer(p,k) = 0._r8
+            residue_sminp_flux(p,k) = 0._r8
+            if (residue_cpools(p,k) > 0._r8) then
+               if ( pmnf_residue(p,k) > 0._r8 .and. pmpf_residue(p,k) > 0._r8 ) then    ! N and P co-limitation 
+                  p_residue_cpool_loss(p,k) = p_residue_cpool_loss(p,k) * min( fpi_vr(c,1),fpi_p_vr(c,1) )
+                  pmnf_residue(p,k) = pmnf_residue(p,k) * min( fpi_vr(c,1),fpi_p_vr(c,1) )
+                  pmpf_residue(p,k) = pmpf_residue(p,k) * min( fpi_vr(c,1),fpi_p_vr(c,1) )   !!! immobilization step
+               elseif ( pmnf_residue(p,k) > 0._r8 .and. pmpf_residue(p,k) <= 0._r8 ) then  ! N limitation 
+                  p_residue_cpool_loss(p,k) = p_residue_cpool_loss(p,k) * fpi_vr(c,1)
+                  pmnf_residue(p,k) = pmnf_residue(p,k) * fpi_vr(c,1)
+                  pmpf_residue(p,k) = pmpf_residue(p,k) * fpi_vr(c,1) !!! immobilization step
+               elseif ( pmnf_residue(p,k) <= 0._r8 .and. pmpf_residue(p,k) >  0._r8 ) then  ! P limitation
+                  p_residue_cpool_loss(p,k) = p_residue_cpool_loss(p,k) * fpi_p_vr(c,1)
+                  pmnf_residue(p,k) = pmnf_residue(p,k) * fpi_p_vr(c,1)
+                  pmpf_residue(p,k) = pmpf_residue(p,k) * fpi_p_vr(c,1) !!! immobilization step
+               end if
+               residue_hr(p,k) = rf_decomp_cascade(c,1,csi) * p_residue_cpool_loss(p,k) * dzsoi_decomp(1)
+               residue_ctransfer(p,k) = (1._r8 - rf_decomp_cascade(c,1,csi)) * p_residue_cpool_loss(p,k) &
+                  dzsoi_decomp(1)
+               if (residue_npools(p,k) > 0._r8 .and. cascade_receiver_pool(csi) /= i_atm) then
+                  residue_ntransfer(p,k) = p_residue_cpool_loss(p,k) * dzsoi_decomp(1) / cn_residue_pools(p,k)
+               else
+                  residue_ntransfer(p,k) = 0._r8
+               end if
+               !!! phosphorus fluxes
+               if (residue_ppools(p,k) > 0._r8 .and. cascade_receiver_pool(csi) /= i_atm) then
+                  residue_ptransfer(p,k) = p_residue_cpool_loss(p,k) * dzsoi_decomp(1) / cp_residue_pools(p,k)
+               else
+                  residue_ptransfer(p,k) = 0._r8
+               end if
+               if ( cascade_receiver_pool(csi) /= 0 ) then
+                  residue_sminn_flux(p,k) = pmnf_residue(p,k) * dzsoi_decomp(1)
+                  residue_sminp_flux(p,k) = pmpf_residue(p,k) * dzsoi_decomp(1)
+               else  ! keep sign convention negative for terminal pools
+                  residue_sminn_flux(p,k) = - pmnf_residue(p,k) * dzsoi_decomp(1)
+                  residue_sminp_flux(p,k) = - pmpf_residue(p,k) * dzsoi_decomp(1)
+               end if
+               net_nmin_vr(c,1) = net_nmin_vr(c,1) - pmnf_residue(p,k) * wt_col
+               net_pmin_vr(c,1) = net_pmin_vr(c,1) - pmpf_residue(p,k) * wt_col
+            else
+               residue_ntransfer(p,k) = 0._r8
+               residue_sminn_flux(p,k) = 0._r8
+               residue_ptransfer(p,k) = 0._r8
+               residue_sminp_flux(p,k) = 0._r8
+            end if
+         end do
+      end do
+
       if (nu_com .eq. 'RD') then
          do fc = 1,num_soilc
             c = filter_soilc(fc)
@@ -488,6 +687,20 @@ contains
                       gross_pmin_vr(c,j) = gross_pmin_vr(c,j) - 1.0_r8*pmpf_decomp_cascade(c,j,k)
                   end if
                 end do
+             end do
+          end do
+          do k = 1, nlit_pools
+             do fp = 1, num_soilp
+                p = filter_soilp(fp)
+                c = veg_pp%column(p)
+                wt_col = veg_pp%wtcol(p)
+
+                if (pmnf_residue(p,k) <= 0._r8) then
+                   gross_nmin_vr(c,1) = gross_nmin_vr(c,1) - 1.0_r8*pmnf_residue(p,k)*wt_col
+                end if
+                if (pmpf_residue(p,k) <= 0._r8) then
+                   gross_pmin_vr(c,1) = gross_pmin_vr(c,1) - 1.0_r8*pmpf_residue(p,k)*wt_col
+                end if
              end do
           end do
       end if
@@ -527,6 +740,28 @@ contains
              end do
           end do
        end do
+       do k = 1, nlit_pools
+          do fp = 1, num_soilp
+             p = filter_soilp(fp)
+             c = veg_pp%column(p)
+             wt_col = veg_pp%wtcol(p)
+
+             if (pmnf_residue(p,k) > 0._r8) then
+                soil_n_immob_flux(c) = soil_n_immob_flux(c) + pmnf_residue(p,k)*dzsoi_decomp(1)*wt_col
+                soil_n_immob_flux_vr(c,1) = soil_n_immob_flux_vr(c,1) + pmnf_residue(p,k)*wt_col
+             else
+                soil_n_grossmin_flux(c) = soil_n_grossmin_flux(c) -1.0_r8*pmnf_residue(p,k)*dzsoi_decomp(1)*wt_col
+                gross_nmin_vr(c,1) = gross_nmin_vr(c,1) - 1.0_r8*pmnf_residue(p,k)*wt_col
+             end if
+             if (pmpf_residue(p,k) > 0._r8) then
+                soil_p_immob_flux(c) = soil_p_immob_flux(c) + pmpf_residue(p,k)*dzsoi_decomp(1)*wt_col
+                soil_p_immob_flux_vr(c,1) = soil_p_immob_flux_vr(c,1) + pmpf_residue(p,k)*wt_col
+             else
+                soil_p_grossmin_flux(c) = soil_p_grossmin_flux(c) -1.0_r8*pmpf_residue(p,k)*dzsoi_decomp(1)*wt_col
+                gross_pmin_vr(c,1) = gross_pmin_vr(c,1) - 1.0_r8*pmpf_residue(p,k)*wt_col
+             end if
+          end do
+       end do
        end if
 
       if (use_lch4) then
@@ -543,6 +778,22 @@ contains
                   c = filter_soilc(fc)
                   hrsum(c,j) = hrsum(c,j) + rf_decomp_cascade(c,j,k) * p_decomp_cpool_loss(c,j,k)
                end do
+            end do
+         end do
+         do k = 1, nlit_pools
+            do i = 1, ndecomp_cascade_transitions
+               if (cascade_donor_pool(i) == i_met_lit+k-1) then
+                  csi = i
+                  exit
+               end if
+            end do
+            do fp = 1, num_soilp
+               p = filter_soilp(fp)
+               c = veg_pp%column(p)
+               wt_col = veg_pp%wtcol(p)
+
+               hrsum(c,1) = hrsum(c,1) + rf_decomp_cascade(c,1,csi) * &
+                  p_residue_cpool_loss(p,k) * wt_col
             end do
          end do
 
@@ -833,6 +1084,10 @@ contains
    !
    !-----------------------------------------------------------------------
    associate (&
+         residue_hr                       =>    col_cf%residue_hr                         , & ! Output: [real(r8) (:,:)   ]  het. resp. from decomposing residue C pools (gC/m^2/s)
+         residue_ctransfer                =>    col_cf%residue_ctransfer                  , & ! Output: [real(r8) (:,:)   ]  C transferred from deomposition residue C pools (gC/m^2/s)
+         residue_ntransfer                =>    col_nf%residue_ntransfer                  , & ! Output: [real(r8) (:,:)   ]  transfer of N from residue to receiver pool along decomp. cascade (gN/m2/s)
+         
          decomp_cascade_hr_vr             =>    col_cf%decomp_cascade_hr_vr               , & ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
          decomp_cascade_ctransfer_vr      =>    col_cf%decomp_cascade_ctransfer_vr        , & ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
          decomp_cascade_ntransfer_vr      =>    col_nf%decomp_cascade_ntransfer_vr        & ! Output: [real(r8) (:,:,:) ]  vert-res transfer of N from donor to receiver pool along decomp. cascade (gN/m3/s)
@@ -852,13 +1107,22 @@ contains
 
    end do
 
+   do fp = 1, num_soilp
+      p = filter_soilp(fp)
+      do k = 1, nlit_pools
+         residue_hr(p,k) = 0._r8
+         residue_ctransfer(p,k) = 0._r8
+         residue_ntransfer(p,k) = 0._r8
+      end do
+   end do
+
    ! pflotran not yet support phosphous cycle
    if ( carbon_only .or.  carbonnitrogen_only  ) then
       call veg_ps%SetValues(num_patch=num_soilp,  filter_patch=filter_soilp,  value_patch=0._r8)
-      call col_ps%SetValues(num_column=num_soilc, filter_column=filter_soilc, value_column=0._r8)
+      call col_ps%SetValues(num_soilc, filter_soilc, num_soilp, filter_soilp, value_column=0._r8)
 
       call veg_pf%SetValues( num_patch=num_soilp,  filter_patch=filter_soilp,  value_patch=0._r8)
-      call col_pf%SetValues( num_column=num_soilc, filter_column=filter_soilc, value_column=0._r8)
+      call col_pf%SetValues( num_soilc, filter_soilc, num_soilp, filter_soilp, value_column=0._r8)
    end if
 
   end associate
