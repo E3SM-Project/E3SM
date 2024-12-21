@@ -180,17 +180,17 @@ subroutine neu_wetdep_init
     call addfld     ('DTWR_'//trim(gas_wetdep_list(m)),(/ 'lev' /), 'A','kg/kg/s','wet removal Neu scheme tendency')
     call addfld     ('WD_'//trim(gas_wetdep_list(m)),horiz_only, 'A','kg/m2/s','vertical integrated wet deposition flux')
     call addfld     ('HEFF_'//trim(gas_wetdep_list(m)),(/ 'lev' /), 'A','M/atm','Effective Henrys Law coeff.')
-    call add_default('DTWR_'//trim(gas_wetdep_list(m)), 1, ' ')
+!!    call add_default('DTWR_'//trim(gas_wetdep_list(m)), 1, ' ')
     call add_default('WD_'//trim(gas_wetdep_list(m)), 1, ' ')
     if (history_gaschmbudget_2D_levels) then
     call addfld     ('WD_L1_'//trim(gas_wetdep_list(m)),horiz_only, 'A','kg/m2/s','vertical integrated wet deposition flux for L1')
     call addfld     ('WD_L2_'//trim(gas_wetdep_list(m)),horiz_only, 'A','kg/m2/s','vertical integrated wet deposition flux for L2')
     call addfld     ('WD_L3_'//trim(gas_wetdep_list(m)),horiz_only, 'A','kg/m2/s','vertical integrated wet deposition flux for L3')
     call addfld     ('WD_L4_'//trim(gas_wetdep_list(m)),horiz_only, 'A','kg/m2/s','vertical integrated wet deposition flux for L4')
-    call add_default('WD_L1_'//trim(gas_wetdep_list(m)), 1, ' ')
-    call add_default('WD_L2_'//trim(gas_wetdep_list(m)), 1, ' ')
-    call add_default('WD_L3_'//trim(gas_wetdep_list(m)), 1, ' ')
-    call add_default('WD_L4_'//trim(gas_wetdep_list(m)), 1, ' ')
+!!    call add_default('WD_L1_'//trim(gas_wetdep_list(m)), 1, ' ')
+!!    call add_default('WD_L2_'//trim(gas_wetdep_list(m)), 1, ' ')
+!!    call add_default('WD_L3_'//trim(gas_wetdep_list(m)), 1, ' ')
+!!    call add_default('WD_L4_'//trim(gas_wetdep_list(m)), 1, ' ')
     end if
   end do
 !

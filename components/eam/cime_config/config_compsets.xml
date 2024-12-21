@@ -41,6 +41,48 @@
     <lname>20TR_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>
 
+  <!-- Compsets for RFMIP single forcing experiments -->
+  
+  <compset>
+    <alias>F20TR-GHG</alias>
+    <lname>20TRSOI_EAM%CMIP6-GHG_ELM%CNPRDCTCBCTOP_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+  </compset>
+  
+  <compset>
+    <alias>F20TR-aer</alias>
+    <lname>20TRSOI_EAM%CMIP6-AER_ELM%CNPRDCTCBCTOP_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+  </compset>
+  
+  <compset>
+    <alias>F20TR-xGHG-xaer</alias>
+    <lname>20TRSOI_EAM%CMIP6-xGHG-xAER_ELM%CNPRDCTCBCTOP_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+  </compset>
+  
+  <compset>
+    <alias>F20TR-nat</alias>
+    <lname>20TRSOI_EAM%CMIP6-NAT_ELM%CNPRDCTCBCTOP_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+  </compset>
+  
+  <compset>
+    <alias>F20TR-ozone</alias>
+    <lname>20TRSOI_EAM%CMIP6-OZONE_ELM%CNPRDCTCBCTOP_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+  </compset>
+  
+  <compset>
+    <alias>F20TR-lulc</alias>
+    <lname>20TRSOI_EAM%CMIP6-LULC_ELM%CNPRDCTCBCTOP_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+  </compset>
+  
+  <compset>
+    <alias>F20TR-volc</alias>
+    <lname>20TRSOI_EAM%CMIP6-VOLC_ELM%CNPRDCTCBCTOP_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+  </compset>
+  
+  <compset>
+    <alias>F20TR-xaer</alias>
+    <lname>20TRSOI_EAM%CMIP6-xAER_ELM%CNPRDCTCBCTOP_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+  </compset>
+
   <compset>
     <alias>F2010-CICE</alias>
     <lname>2010_EAM%CMIP6_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
