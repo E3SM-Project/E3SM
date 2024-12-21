@@ -114,6 +114,8 @@ module element_state
     real (kind=real_kind) :: pair8b(np,np)
     real (kind=real_kind) :: pair9a(np,np)
     real (kind=real_kind) :: pair9b(np,np)
+    real (kind=real_kind) :: pair10a(np,np)
+    real (kind=real_kind) :: pair10b(np,np)
 
     real (kind=real_kind) :: KEu_horiz1(np,np)
     real (kind=real_kind) :: KEu_horiz2(np,np)

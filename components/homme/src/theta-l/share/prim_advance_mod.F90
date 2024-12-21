@@ -1510,6 +1510,7 @@ contains
      w_tens(:,:,k) = (-w_vadv_i(:,:,k) - v_gradw_i(:,:,k))*scale1 - scale1*g*(1-dpnh_dp_i(:,:,k) )
 #ifdef HOMMEDA
      wt4(:,:,k) = dpnh_dp_i(:,:,k)*g
+     wt5(:,:,k) = -g
 
      !add DA metric term in w_t : \bu^2/r
      w_tens(:,:,k) = w_tens(:,:,k) +scale1*(v2_over_r_i(:,:,1,k) + v2_over_r_i(:,:,2,k))
@@ -1753,6 +1754,15 @@ contains
         elem(ie)%accum%pair5b=0
         elem(ie)%accum%pair6a=0
         elem(ie)%accum%pair6b=0
+        elem(ie)%accum%pair7a=0
+        elem(ie)%accum%pair7b=0
+        elem(ie)%accum%pair8a=0
+        elem(ie)%accum%pair8b=0
+        elem(ie)%accum%pair9a=0
+        elem(ie)%accum%pair9b=0
+        elem(ie)%accum%pair10a=0
+        elem(ie)%accum%pair10b=0
+
 
         elem(ie)%accum%ieterm1=0
         elem(ie)%accum%keterm1=0
@@ -1783,17 +1793,19 @@ contains
         !use temp for nlev, tempp for nlevp, and vtemp
         call m2i(divdp,tempp)
 
+        !below, PE, KE etc are not energies but PE_t, KE_t, PE_t_expected
+
         !make PE parts
         !divdp  = -dp3d_tens
         do k=2,nlev
-           elem(ie)%accum%PE(:,:) = elem(ie)%accum%PE(:,:) + phi_i(:,:,k)*tempp(:,:,k) &  
-                                                           - dp3d_i(:,:,k)*phi_tens_notopo(:,:,k) 
-           elem(ie)%accum%PEexpected(:,:) = elem(ie)%accum%PEexpected(:,:) - g*dp3d_i(:,:,k)*ww(:,:,k)
+           elem(ie)%accum%PE(:,:) = elem(ie)%accum%PE(:,:) - phi_i(:,:,k)*tempp(:,:,k) &  
+                                                           + dp3d_i(:,:,k)*phi_tens_notopo(:,:,k) 
+           elem(ie)%accum%PEexpected(:,:) = elem(ie)%accum%PEexpected(:,:) + g*dp3d_i(:,:,k)*ww(:,:,k)
         enddo
         do k=1,nlevp,nlev
-           elem(ie)%accum%PE(:,:) = elem(ie)%accum%PE(:,:) + phi_i(:,:,k)*tempp(:,:,k)/2 & 
-                                                           - dp3d_i(:,:,k)*phi_tens_notopo(:,:,k)/2
-           elem(ie)%accum%PEexpected(:,:) = elem(ie)%accum%PEexpected(:,:) - g*dp3d_i(:,:,k)*ww(:,:,k)/2
+           elem(ie)%accum%PE(:,:) = elem(ie)%accum%PE(:,:) - phi_i(:,:,k)*tempp(:,:,k)/2 & 
+                                                           + dp3d_i(:,:,k)*phi_tens_notopo(:,:,k)/2
+           elem(ie)%accum%PEexpected(:,:) = elem(ie)%accum%PEexpected(:,:) + g*dp3d_i(:,:,k)*ww(:,:,k)/2
         enddo
         
         !note that mgrad is overwritten above, so do not re-use, recompute
@@ -1808,11 +1820,19 @@ contains
            elem(ie)%accum%keterm1(:,:) = elem(ie)%accum%keterm1(:,:) + dp3d(:,:,k)* &
                         (  vv(:,:,1,k)*ut8(:,:,1,k) + vv(:,:,2,k)*ut8(:,:,2,k)   )
         enddo
-       
+      
         !make IE parts
+        do k=2,nlev
+           elem(ie)%accum%IE(:,:) = elem(ie)%accum%IE(:,:) - mu(:,:,k)*dp3d_i(:,:,k)*( phi_tens_notopo(:,:,k) )!phi_tens_notopo(:,:,k)
+        enddo
+        do k=1,nlevp,nlev
+           elem(ie)%accum%IE(:,:) = elem(ie)%accum%IE(:,:) - mu(:,:,k)*dp3d_i(:,:,k)*( phi_tens_notopo(:,:,k) )/2
+        enddo
+        do k=1,nlev
+           elem(ie)%accum%IE(:,:) = elem(ie)%accum%IE(:,:) - cp*exner(:,:,k)*div_v_theta(:,:,k)
+        enddo
 
         !make KE parts
-
         elem(ie)%accum%KEexpected(:,:) = elem(ie)%accum%keterm1
         do k=1,nlev
            elem(ie)%accum%KEexpected(:,:) = elem(ie)%accum%KEexpected(:,:) + dp3d(:,:,k)* &
@@ -1880,13 +1900,31 @@ contains
            elem(ie)%accum%pair7b(:,:) = elem(ie)%accum%pair7b(:,:) - cp*exner(:,:,k)*div_v_theta(:,:,k)
         enddo
 
-        !make pair8
-        do k=1,nlevp
-           elem(ie)%accum%pair8a(:,:) = elem(ie)%accum%pair8a(:,:) + dp3d_i(:,:,k)*pt2(:,:,k)
-           elem(ie)%accum%pair8b(:,:) = elem(ie)%accum%pair8b(:,:) + dp3d_i(:,:,k)*ww(:,:,k)*wt5(:,:,k)
+        do k=2,nlev
+           elem(ie)%accum%pair8a(:,:) = elem(ie)%accum%pair8a(:,:) - mu(:,:,k)*dp3d_i(:,:,k)*( pt2(:,:,k) )
+           elem(ie)%accum%pair8b(:,:) = elem(ie)%accum%pair8b(:,:) + dp3d_i(:,:,k)*ww(:,:,k)*wt4(:,:,k)
+        enddo
+        do k=1,nlevp,nlev
+           elem(ie)%accum%pair8a(:,:) = elem(ie)%accum%pair8a(:,:) -  mu(:,:,k)*dp3d_i(:,:,k)*( pt2(:,:,k) )/2
+           elem(ie)%accum%pair8b(:,:) = elem(ie)%accum%pair8b(:,:) + dp3d_i(:,:,k)*ww(:,:,k)*wt4(:,:,k)/2
         enddo
 
-        !make pair9, dot product
+        ! pair 10 for dp3d_i * g * w
+        do k=2,nlev
+           elem(ie)%accum%pair10a(:,:) = elem(ie)%accum%pair10a(:,:) + dp3d_i(:,:,k)*pt2(:,:,k)
+           elem(ie)%accum%pair10b(:,:) = elem(ie)%accum%pair10b(:,:) + dp3d_i(:,:,k)*ww(:,:,k)*wt5(:,:,k)
+        enddo
+        do k=1,nlevp,nlev
+           elem(ie)%accum%pair10a(:,:) = elem(ie)%accum%pair10a(:,:) + dp3d_i(:,:,k)*pt2(:,:,k)/2
+           elem(ie)%accum%pair10b(:,:) = elem(ie)%accum%pair10b(:,:) + dp3d_i(:,:,k)*ww(:,:,k)*wt5(:,:,k)/2
+        enddo
+
+
+
+!print *, '8a', elem(ie)%accum%pair8a(1,1)
+!print *, 'IE', elem(ie)%accum%IE(1,1)
+
+        !make pair9, dot product, pointwise, so do not use proper integration in vertical?
         do k=1,nlevp
            elem(ie)%accum%pair9a(:,:) = elem(ie)%accum%pair9a(:,:) + dp3d(:,:,k)*(vv(:,:,1,k)*ut1(:,:,1,k) +vv(:,:,2,k)*ut1(:,:,2,k))
         enddo

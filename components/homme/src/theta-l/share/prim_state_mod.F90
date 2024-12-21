@@ -158,6 +158,7 @@ contains
     real (kind=real_kind) :: pair7as,pair7bs
     real (kind=real_kind) :: pair8as,pair8bs
     real (kind=real_kind) :: pair9as,pair9bs
+    real (kind=real_kind) :: pair10as,pair10bs
 
     real (kind=real_kind) :: ddt_tot,ddt_diss, ddt_diss_adj
     integer               :: n0, n0q
@@ -191,6 +192,7 @@ contains
     pair7as=0;pair7bs=0;
     pair8as=0;pair8bs=0;
     pair9as=0;pair9bs=0;
+    pair10as=0;pair10bs=0;
 
 
     ! dynamics timelevels
@@ -762,6 +764,15 @@ contains
     enddo
     pair9as = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
 
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%pair10a
+    enddo
+    pair10as = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%pair10b
+    enddo
+    pair10bs = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+
 
     !   KE->IE
     do ie=nets,nete
@@ -862,6 +873,8 @@ contains
 
           write(iulog,'(a,3e22.14)')'- PE_t,PE_t exp:',PEscalar, PEexpected_scalar, PEscalar-PEexpected_scalar
           write(iulog,'(a,3e22.14)')'- KE_t,KE_t exp:',KEscalar, KEexpected_scalar, KEscalar-KEexpected_scalar
+          write(iulog,'(a,1e22.14)')'- IE_t:',IEscalar
+          write(iulog,'(a,1e22.14)')'- (IE+PE+KE)_t in caar:',IEscalar+PEscalar+KEscalar
           write(iulog,'(a,3e22.14)')'- ietrm1,ketrm1:', iet1s, ket1s, (iet1s+ket1s)/iet1s
           write(iulog,'(a,3e22.14)')'- pair2a,pair2b:', pair2as, pair2bs, (pair2as + pair2bs)/pair2as
           write(iulog,'(a,3e22.14)')'- pair3a,pair3b:', pair3as, pair3bs, (pair3as + pair3bs)/pair3as
@@ -871,6 +884,7 @@ contains
           write(iulog,'(a,3e22.14)')'- pair7a,pair7b:', pair7as, pair7bs, (pair7as + pair7bs)/pair7as
           write(iulog,'(a,3e22.14)')'- pair8a,pair8b:', pair8as, pair8bs, (pair8as + pair8bs)/pair8as
           write(iulog,'(a,1e22.14)')'- pair9a       :', pair9as
+          write(iulog,'(a,3e22.14)')'- pair10a,pair10b:', pair10as, pair10bs, (pair10as + pair10bs)/pair10as
 
           write(iulog,'(a,2e22.14)')'PE h-adv, sum=0:',PEhorz1,PEhorz2
           write(iulog,'(a,2e22.14)')'PE v-adv, sum=0:',PEvert1,PEvert2
