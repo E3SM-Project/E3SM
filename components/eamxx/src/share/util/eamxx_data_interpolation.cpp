@@ -5,7 +5,6 @@
 #include "share/grid/remap/refining_remapper_p2p.hpp"
 #include "share/io/scream_scorpio_interface.hpp"
 #include "share/io/scream_io_utils.hpp"
-#include "share/field/field_utils.hpp"
 #include "share/util/scream_universal_constants.hpp"
 
 #include <filesystem>
@@ -24,6 +23,7 @@ DataInterpolation (const std::shared_ptr<const AbstractGrid>& model_grid,
   EKAT_REQUIRE_MSG (model_grid!=nullptr,
       "[DataInterpolation] Error! Invalid grid pointer.\n");
 
+  m_nfields = m_fields.size();
   m_comm = model_grid->get_comm();
 }
 
@@ -51,14 +51,25 @@ void DataInterpolation::run (const util::TimeStamp& ts)
     "  interval length    : " + std::to_string(m_data_interval.length) + "\n"
     "  interpolation coeff: " + std::to_string(alpha) + "\n");
 
-  int nfields = m_fields.size();
-  for (int i=0; i<nfields; ++i) {
+  for (int i=0; i<m_nfields; ++i) {
     const auto& beg = m_horiz_remapper_beg->get_tgt_field(i);
     const auto& end = m_horiz_remapper_end->get_tgt_field(i);
           auto  out = m_vert_remapper->get_src_field(i);
 
     out.deep_copy(beg);
     out.update(end,alpha,1-alpha);
+  }
+  // For Dynamic3D profile we also need to compute the source pressure profile
+  // NOTE: this can't be done in the loop above, since src_p is not a "remapped"
+  //       field in the vertical remapper (also, we need to use ad different ptr)
+  if (m_vr_type==Dynamic3D) {
+    // The pressure field is THE LAST registered in the horiz remappers
+    const auto p_beg = m_horiz_remapper_beg->get_tgt_field(m_nfields);
+    const auto p_end = m_horiz_remapper_end->get_tgt_field(m_nfields);
+
+    auto p = m_vremap->get_source_pressure(true); // mid or int doesn't matter
+    p.deep_copy(p_beg);
+    p.update(p_end,alpha,1-alpha);
   }
   
   m_vert_remapper->remap(true);
@@ -78,10 +89,14 @@ void DataInterpolation::
 update_end_fields ()
 {
   // First, set the correct fields in the reader
-  int nfields = m_horiz_remapper_end->get_num_fields();
   std::vector<Field> fields;
-  for (int i=0; i<nfields; ++i) {
+  for (int i=0; i<m_nfields; ++i) {
     fields.push_back(m_horiz_remapper_end->get_src_field(i));
+  }
+
+  if (m_vr_type==Dynamic3D) {
+    // We also need to read the src pressure profile
+    fields.push_back(m_horiz_remapper_end->get_src_field(m_nfields));
   }
   m_reader->set_fields(fields);
 
@@ -107,6 +122,7 @@ init_data_interval (const util::TimeStamp& t0)
   for (auto f : m_fields) {
     fnames.push_back(f.name());
   }
+
   m_reader = std::make_shared<AtmosphereInput>(fnames,m_horiz_remapper_beg->get_src_grid());
 
   // Loop over all stored time slices to find an interval that contains t0
@@ -274,7 +290,6 @@ setup_remappers (const std::string& hremap_filename,
     m_horiz_remapper_end = std::make_shared<IDR>(grid_after_hremap,SAT);
   }
 
-  std::shared_ptr<VerticalRemapper> vremap;
   if (vr_type!=None) {
     auto s2et = [](const std::string& s) {
       if (s=="P0") {
@@ -290,10 +305,10 @@ setup_remappers (const std::string& hremap_filename,
       }
     };
 
-    m_vert_remapper = vremap = std::make_shared<VerticalRemapper>(grid_after_hremap,m_model_grid);
-    vremap->set_extrapolation_type(s2et(extrap_type_top),VerticalRemapper::Top);
-    vremap->set_extrapolation_type(s2et(extrap_type_bot),VerticalRemapper::Bot);
-    vremap->set_mask_value(mask_value);
+    m_vert_remapper = m_vremap = std::make_shared<VerticalRemapper>(grid_after_hremap,m_model_grid);
+    m_vremap->set_extrapolation_type(s2et(extrap_type_top),VerticalRemapper::Top);
+    m_vremap->set_extrapolation_type(s2et(extrap_type_bot),VerticalRemapper::Bot);
+    m_vremap->set_mask_value(mask_value);
   } else {
     // If no vert remap is requested, model_grid and grid_after_hremap MUST have same nlevs
     int model_nlevs = m_model_grid->get_num_vertical_levels();
@@ -315,8 +330,8 @@ setup_remappers (const std::string& hremap_filename,
     data_p = Field (FieldIdentifier(data_pname,p_layout,ekat::units::Pa,hr_tgt_grid->name()));
     data_p.allocate_view();
 
-    vremap->set_source_pressure (data_p,VerticalRemapper::Both);
-    vremap->set_target_pressure (model_pmid,model_pint);
+    m_vremap->set_source_pressure (data_p,VerticalRemapper::Both);
+    m_vremap->set_target_pressure (model_pmid,model_pint);
   } else if (vr_type==Static1D) {
     auto hr_tgt_grid = m_horiz_remapper_beg->get_tgt_grid();
     auto p_layout = hr_tgt_grid->get_vertical_layout(true);
@@ -330,21 +345,21 @@ setup_remappers (const std::string& hremap_filename,
     scorpio::release_file(filename);
     data_p.sync_to_dev();
 
-    vremap->set_source_pressure (data_p,VerticalRemapper::Both);
-    vremap->set_target_pressure (model_pmid,model_pint);
+    m_vremap->set_source_pressure (data_p,VerticalRemapper::Both);
+    m_vremap->set_target_pressure (model_pmid,model_pint);
   }
+  m_vr_type = vr_type;
 
   // Register fields in the remappers. Vertical first, since we only have model-grid fields
-  int nfields = m_fields.size();
   m_vert_remapper->registration_begins();
-  for (int i=0; i<nfields; ++i) {
+  for (int i=0; i<m_nfields; ++i) {
     m_vert_remapper->register_field_from_tgt(m_fields[i]);
   }
   m_vert_remapper->registration_ends();
 
   m_horiz_remapper_beg->registration_begins();
   m_horiz_remapper_end->registration_begins();
-  for (int i=0; i<nfields; ++i) {
+  for (int i=0; i<m_nfields; ++i) {
     const auto& f = m_vert_remapper->get_src_field(i);
     m_horiz_remapper_beg->register_field_from_tgt(f.clone());
     m_horiz_remapper_end->register_field_from_tgt(f.clone());

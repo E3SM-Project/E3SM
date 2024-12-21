@@ -10,6 +10,8 @@
 
 namespace scream{
 
+class VerticalRemapper;
+
 class DataInterpolation
 {
 public:
@@ -88,6 +90,10 @@ protected:
   std::shared_ptr<AbstractRemapper> m_horiz_remapper_beg;
   std::shared_ptr<AbstractRemapper> m_horiz_remapper_end;
   std::shared_ptr<AbstractRemapper> m_vert_remapper;
+  std::shared_ptr<VerticalRemapper> m_vremap;
+
+  VRemapType            m_vr_type;
+  int                   m_nfields;
 
   util::TimeInterval    m_data_interval;
   std::pair<int,int>    m_curr_interval_idx;

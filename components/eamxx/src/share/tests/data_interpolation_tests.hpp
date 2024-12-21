@@ -48,13 +48,14 @@ inline util::TimeStamp get_last_slice_time () {
 std::vector<Field>
 create_fields (const std::shared_ptr<const AbstractGrid>& grid,
                const bool init_values,
-               const bool with_pressure = false)
+               const bool int_same_as_mid = false,
+               const bool pad_for_packing = true)
 {
   constexpr auto m  = ekat::units::m;
-  constexpr auto Pa = ekat::units::Pa;
   const auto& gn = grid->name();
 
-  auto int_same_as_mid = with_pressure;
+  int ncols = grid->get_num_local_dofs();
+  int nlevs = grid->get_num_vertical_levels();
 
   // Create fields
 
@@ -72,10 +73,12 @@ create_fields (const std::shared_ptr<const AbstractGrid>& grid,
   Field s3d_i(FieldIdentifier("s3d_i", layout_s3d_i, m, gn));
   Field v3d_i(FieldIdentifier("v3d_i", layout_v3d_i, m, gn));
 
-  s3d_m.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
-  v3d_m.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
-  s3d_i.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
-  v3d_i.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
+  if (pad_for_packing) {
+    s3d_m.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
+    v3d_m.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
+    s3d_i.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
+    v3d_i.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
+  }
 
   s2d.allocate_view();
   v2d.allocate_view();
@@ -90,10 +93,7 @@ create_fields (const std::shared_ptr<const AbstractGrid>& grid,
     //  - leftmost h dof gets a value of 0, rightmost a value of 1.0
     //  - bottom interface gets a value of 0, top interface get a value of 1.0
     //  - midpoints are the avg of interfaces
-    //  - we do hvalue*prod_other_dims + icmp*num_v_levs + v_value
-    int ncols = grid->get_num_local_dofs();
-    int nlevs = grid->get_num_vertical_levels();
-    int nlevsp1 = nlevs+1;
+    //  - we do h_value*v_value + icmp
     int ngcols = grid->get_num_global_dofs();
     int nh_intervals = ngcols - 1;
     double h_value, v_value;
@@ -104,28 +104,36 @@ create_fields (const std::shared_ptr<const AbstractGrid>& grid,
     auto gids = grid->get_dofs_gids().get_view<const int*,Host>();
     for (int icol=0; icol<ncols; ++icol) {
       auto gid = gids[icol];
-      h_value = gid*dh;
+      h_value = gid*dh + 1.0; // +1.0 to avoid a whole column full of zeros
       // 3D quantities
       for (int ilev=0; ilev<nlevs; ++ilev) {
         v_value = ilev*dv;
         for (int icmp=0; icmp<ncmps; ++icmp) {
-          v3d_m.get_view<Real***,Host>()(icol,icmp,ilev) = h_value*ncmps*nlevs   + icmp*nlevs   + v_value + dv/2;
-          v3d_i.get_view<Real***,Host>()(icol,icmp,ilev) = h_value*ncmps*nlevsp1 + icmp*nlevsp1 + v_value;
+          v3d_m.get_view<Real***,Host>()(icol,icmp,ilev) = h_value*(v_value + dv/2) + icmp;
+          if (int_same_as_mid) {
+            v3d_i.get_view<Real***,Host>()(icol,icmp,ilev) = h_value*(v_value + dv/2) + icmp;
+          } else {
+            v3d_i.get_view<Real***,Host>()(icol,icmp,ilev) = h_value*(v_value) + icmp;
+          }
         }
-        s3d_m.get_view<Real**,Host>()(icol,ilev) = h_value*nlevs   + v_value;
-        s3d_i.get_view<Real**,Host>()(icol,ilev) = h_value*nlevsp1 + v_value;
+        s3d_m.get_view<Real**,Host>()(icol,ilev) = h_value*(v_value + dv/2);
+        if (int_same_as_mid) {
+          s3d_i.get_view<Real**,Host>()(icol,ilev) = h_value*(v_value + dv/2);
+        } else {
+          s3d_i.get_view<Real**,Host>()(icol,ilev) = h_value*(v_value);
+        }
       }
-      // Last interface (if mid!=int)
+      // Last interface (if mid!=int), where v_value=1
       if (not int_same_as_mid) {
-        s3d_i.get_view<Real**,Host>()(icol,nlevs) = h_value*nlevsp1 + v_max;
+        s3d_i.get_view<Real**,Host>()(icol,nlevs) = h_value;
         for (int icmp=0; icmp<ncmps; ++icmp) {
-          v3d_i.get_view<Real***,Host>()(icol,icmp,nlevs) = h_value*ncmps*nlevsp1 + icmp*nlevsp1 + v_max;
+          v3d_i.get_view<Real***,Host>()(icol,icmp,nlevs) = h_value + icmp;
         }
       }
 
       // 2D quantities
       for (int icmp=0; icmp<ncmps; ++icmp) {
-        v2d.get_view<Real**,Host>()(icol,icmp) = h_value*ncmps + icmp;
+        v2d.get_view<Real**,Host>()(icol,icmp) = h_value + icmp;
       }
       s2d.get_view<Real*,Host>()(icol) = h_value;
     }
@@ -138,16 +146,12 @@ create_fields (const std::shared_ptr<const AbstractGrid>& grid,
     v3d_i.sync_to_dev();
   }
 
-  if (with_pressure) {
-    // Don't just clone s3d_m, so we actually get "Pa" in the nc file units
-    Field p3d(FieldIdentifier("p3d",layout_s3d_m,Pa,gn));
-    p3d.allocate_view();
-    p3d.deep_copy(s3d_m);
+  auto p1d = s3d_m.subfield(0,0).clone("p1d");
+  auto comm = grid->get_comm();
+  comm.broadcast(p1d.get_internal_view_data<Real,Host>(),nlevs,0);
+  p1d.sync_to_dev();
 
-    return {s2d, v2d, s3d_m, v3d_m, s3d_i, v3d_i, p3d};
-  } else {
-    return {s2d, v2d, s3d_m, v3d_m, s3d_i, v3d_i};
-  }
+  return {s2d, v2d, s3d_m, v3d_m, s3d_i, v3d_i, p1d};
 }
 
 } // namespace scream

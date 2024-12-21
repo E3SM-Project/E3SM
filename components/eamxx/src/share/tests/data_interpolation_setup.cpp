@@ -20,6 +20,7 @@ TEST_CASE ("data_interpolation_setup")
   ekat::Comm comm(MPI_COMM_WORLD);
   scorpio::init_subsystem(comm);
 
+  // We use raw scorpio calls without decomp, so ensure we're in serial case
   EKAT_REQUIRE_MSG (comm.size()==1,
       "Error! You should run the data_interpolation_setup test with ONE rank.\n");
 
@@ -32,33 +33,32 @@ TEST_CASE ("data_interpolation_setup")
     "data_interpolation_1"
   };
 
-  for (auto with_pressure : {true, false}) {
-    auto suffix = with_pressure ? "_with_p.nc" : ".nc";
+  for (auto int_same_as_mid : {true, false}) {
+    auto suffix = int_same_as_mid ? "_no_ilev.nc" : ".nc";
     for (const std::string& fname : files) {
       scorpio::register_file(fname+suffix,scorpio::Write);
 
       scorpio::define_dim (fname+suffix,"ncol",ngcols);
       scorpio::define_dim (fname+suffix,"lev",nlevs);
-      if (not with_pressure) {
-        scorpio::define_dim (fname+suffix,"ilev",nlevs+1);
-      }
       scorpio::define_dim (fname+suffix,"dim2",ncmps);
       scorpio::define_time(fname+suffix,"days since " + t_ref.to_string());
-
-      std::string ilev_tag = with_pressure ? "lev" : "ilev";
-
-      scorpio::define_var(fname+suffix,"s2d",  {"ncol"},                 "real", true);
-      scorpio::define_var(fname+suffix,"s2d",  {"ncol"},                 "real", true);
-      scorpio::define_var(fname+suffix,"v2d",  {"ncol","dim2"},          "real", true);
-      scorpio::define_var(fname+suffix,"s3d_m",{"ncol","lev"},           "real", true);
-      scorpio::define_var(fname+suffix,"v3d_m",{"ncol","dim2","lev"},    "real", true);
-      scorpio::define_var(fname+suffix,"s3d_i",{"ncol",ilev_tag},        "real", true);
-      scorpio::define_var(fname+suffix,"v3d_i",{"ncol","dim2",ilev_tag}, "real", true);
-
-      if (with_pressure) {
-        scorpio::define_var(fname+suffix,"p1d",{"lev"},"real", false);
-        scorpio::define_var(fname+suffix,"p3d",{"ncol","lev"},"real", true);
+      if (not int_same_as_mid) {
+        scorpio::define_dim (fname+suffix,"ilev",nlevs+1);
       }
+
+      std::string ilev = int_same_as_mid ? "lev" : "ilev";
+
+      scorpio::define_var(fname+suffix,"s2d",  {"ncol"},             "real", true);
+      scorpio::define_var(fname+suffix,"s2d",  {"ncol"},             "real", true);
+      scorpio::define_var(fname+suffix,"v2d",  {"ncol","dim2"},      "real", true);
+      scorpio::define_var(fname+suffix,"s3d_m",{"ncol","lev"},       "real", true);
+      scorpio::define_var(fname+suffix,"v3d_m",{"ncol","dim2","lev"},"real", true);
+      scorpio::define_var(fname+suffix,"s3d_i",{"ncol",ilev},        "real", true);
+      scorpio::define_var(fname+suffix,"v3d_i",{"ncol","dim2",ilev}, "real", true);
+
+      // We keep p1d and p3d NOT time-dep
+      scorpio::define_var(fname+suffix,"p1d",  {"lev"},"real", false);
+      scorpio::define_var(fname+suffix,"p3d",  {"ncol","lev"},"real", false);
 
       scorpio::enddef(fname+suffix);
     }
@@ -66,14 +66,13 @@ TEST_CASE ("data_interpolation_setup")
     // Fields and some helper fields (for later)
     // NOTE: if we save a pressure field, there is not distinction
     //       between interfaces and midpoints in the file
-    auto base_fields = create_fields (grid,true,with_pressure);
-    auto fields      = create_fields(grid,false,with_pressure);
-    auto ones        = create_fields(grid,false,with_pressure);
+    // NOTE: do not pad, so that we can grab pointers and pass them to scorpio
+    auto base_fields = create_fields(grid,true, int_same_as_mid,false);
+    auto fields      = create_fields(grid,false,int_same_as_mid,false);
+    auto ones        = create_fields(grid,false,int_same_as_mid,false);
     for (const auto& f : ones) {
       f.deep_copy(1);
     }
-    int nfields = fields.size();
-
     // Loop over time, and add 30 to the value for the first 6 months,
     // and subtract 30 for the last 6 months. This guarantees that the data
     // is indeed periodic. We'll write at the 15th of each month
@@ -82,17 +81,17 @@ TEST_CASE ("data_interpolation_setup")
     //   - two to be used for linear-hystory interp
     util::TimeStamp time = get_first_slice_time ();
 
-    if (with_pressure) {
-      // Create p1d as slice of p3d, and ensure it's the same on all ranks, then write it.
-      auto p1d = fields.back().subfield(0,0).clone("p1d");
-      auto comm = grid->get_comm();
-      comm.broadcast(p1d.get_internal_view_data<Real,Host>(),nlevs,0);
-      p1d.sync_to_dev();
-      for (const std::string& fname : files) {
-        scorpio::write_var(fname+suffix,p1d.name(),p1d.get_internal_view_data<Real,Host>());
-      }
+    // We keep p1d and p3d NOT time-dep, so we write outside the loop
+    auto p1d = base_fields.back();
+    auto p3d = base_fields[2].alias("p3d");
+    p1d.sync_to_host();
+    p3d.sync_to_host();
+    for (const std::string& fname : files) {
+      scorpio::write_var(fname+suffix,p1d.name(),p1d.get_internal_view_data<Real,Host>());
+      scorpio::write_var(fname+suffix,p3d.name(),p3d.get_internal_view_data<Real,Host>());
     }
 
+    int nfields = fields.size() - 1; // Don't handle p1d, since it's done above
     for (int mm=0; mm<12; ++mm) {
       std::string file_name = "data_interpolation_" + std::to_string(mm/6) + suffix;
 
@@ -103,6 +102,7 @@ TEST_CASE ("data_interpolation_setup")
         auto& f = fields[i];
         f.deep_copy(base_fields[i]);
         f.update(ones[i],delta_data[ mm_index % 12],1.0);
+        f.sync_to_host();
         scorpio::write_var(file_name,f.name(),f.get_internal_view_data<Real,Host>());
       }
       time += 86400*time.days_in_curr_month();
