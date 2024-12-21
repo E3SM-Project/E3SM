@@ -1903,58 +1903,42 @@ contains
             do i=1,np                
                d_eta_dot_dpdn_dn=(eta_dot_dpdn(i,j,k+1)-eta_dot_dpdn(i,j,k))
                !  Form horiz advection of KE-u
-!done
                elem(ie)%accum%KEu_horiz1(i,j)=elem(ie)%accum%KEu_horiz1(i,j) &
                     -dp3d(i,j,k)*( &
                     elem(ie)%state%v(i,j,1,k,n0)*gradKE(i,j,1,k) + &
                     elem(ie)%state%v(i,j,2,k,n0)*gradKE(i,j,2,k) )
-!done
                elem(ie)%accum%KEu_horiz2(i,j)=elem(ie)%accum%KEu_horiz2(i,j)              &
                     -KE(i,j,k)*divdp(i,j,k)
                !  Form horiz advection of KE-w
-!done
                elem(ie)%accum%KEw_horiz1(i,j)=elem(ie)%accum%KEw_horiz1(i,j)-   &
                     dp3d(i,j,k) * (&
                     elem(ie)%state%w_i(i,j,k,n0) * v_gradw_i(i,j,k)    + &
                     elem(ie)%state%w_i(i,j,k+1,n0) * v_gradw_i(i,j,k+1) )/2
-!done
                elem(ie)%accum%KEw_horiz2(i,j)=elem(ie)%accum%KEw_horiz2(i,j)-   &
                     divdp(i,j,k)*(elem(ie)%state%w_i(i,j,k,n0)**2 + &
                     elem(ie)%state%w_i(i,j,k+1,n0)**2 ) /4
-!done
                elem(ie)%accum%KEw_horiz3(i,j)=elem(ie)%accum%KEw_horiz3(i,j)   &
                     -dp3d(i,j,k) * (elem(ie)%state%v(i,j,1,k,n0) * wvor(i,j,1,k) +  &
                     elem(ie)%state%v(i,j,2,k,n0) * wvor(i,j,2,k))
-!done
                !  Form vertical advection of KE-u 
                elem(ie)%accum%KEu_vert1(i,j)=elem(ie)%accum%KEu_vert1(i,j)- &
                     (elem(ie)%state%v(i,j,1,k,n0) * v_vadv(i,j,1,k) +            &
                     elem(ie)%state%v(i,j,2,k,n0) *v_vadv(i,j,2,k))*dp3d(i,j,k)
-
-!done
                elem(ie)%accum%KEu_vert2(i,j)=elem(ie)%accum%KEu_vert2(i,j)- &
                     0.5*((elem(ie)%state%v(i,j,1,k,n0))**2 +                     &
                     (elem(ie)%state%v(i,j,2,k,n0))**2)*d_eta_dot_dpdn_dn
-
-!done
                !  Form vertical advection of KE-w
                elem(ie)%accum%KEw_vert1(i,j)=elem(ie)%accum%KEw_vert1(i,j) - &
                     dp3d(i,j,k) * &
                     (w_vadv_i(i,j,k)*elem(ie)%state%w_i(i,j,k,n0)+ &
                     w_vadv_i(i,j,k+1)*elem(ie)%state%w_i(i,j,k+1,n0))/2
-     
-!done          
                elem(ie)%accum%KEw_vert2(i,j)=elem(ie)%accum%KEw_vert2(i,j)      &
                     -d_eta_dot_dpdn_dn* &
                     (.5*elem(ie)%state%w_i(i,j,k,n0)**2 +&
                     .5*elem(ie)%state%w_i(i,j,k+1,n0)**2)/2
-     
-!done          
                !  Form IEvert1
                elem(ie)%accum%IEvert1(i,j)=elem(ie)%accum%IEvert1(i,j)      &
                     -Cp*exner(i,j,k)*theta_vadv(i,j,k)                        
-
-!done
                ! Form IEvert2 
                ! here use of dpnh_dp_i on boundry (with incorrect data)
                ! is harmess becuase eta_dot_dpdn=0
@@ -1962,13 +1946,9 @@ contains
                     + ( dpnh_dp_i(i,j,k)*eta_dot_dpdn(i,j,k)+ &
                         dpnh_dp_i(i,j,k+1)*eta_dot_dpdn(i,j,k+1)) &
                     *(phi_i(i,j,k+1)-phi_i(i,j,k))/2
-     
-!done          
                !  Form PEhoriz1
                elem(ie)%accum%PEhoriz1(i,j)=(elem(ie)%accum%PEhoriz1(i,j))  &
                     -phi(i,j,k)*divdp(i,j,k) 
-
-!done
                !  Form PEhoriz2
 !               elem(ie)%accum%PEhoriz2(i,j)=elem(ie)%accum%PEhoriz2(i,j)    &
 !                    -dp3d(i,j,k)* &
@@ -1981,28 +1961,21 @@ contains
                     -dp3d(i,j,k)* &
                     (v_gradphinh_i(i,j,k) + v_gradphinh_i(i,j,k+1))/2  
 
-
-
-
-!done as these are 0               
                !  Form PEvert1
                elem(ie)%accum%PEvert1(i,j) = elem(ie)%accum%PEvert1(i,j)    &
                     -phi(i,j,k)*d_eta_dot_dpdn_dn                                 
                elem(ie)%accum%PEvert2(i,j) = elem(ie)%accum%PEvert2(i,j)     &
                     -dp3d(i,j,k)*(phi_vadv_i(i,j,k)+phi_vadv_i(i,j,k+1))/2
                
-!done
                !  Form T01
                elem(ie)%accum%T01(i,j)=elem(ie)%accum%T01(i,j)               &
                     -(Cp*elem(ie)%state%vtheta_dp(i,j,k,n0))                       &
                     *(gradexner(i,j,1,k)*elem(ie)%state%v(i,j,1,k,n0) +           &
                     gradexner(i,j,2,k)*elem(ie)%state%v(i,j,2,k,n0))              
-!done
                !  Form S1 
                elem(ie)%accum%S1(i,j)=elem(ie)%accum%S1(i,j)                 &
                     -Cp*exner(i,j,k)*div_v_theta(i,j,k)
 
-!
                !  Form P1  = -P2  (no reason to compute P2?)
                elem(ie)%accum%P1(i,j)=elem(ie)%accum%P1(i,j) -g*dp3d(i,j,k)* &
                     ( elem(ie)%state%w_i(i,j,k,n0) + &
@@ -2012,7 +1985,6 @@ contains
                     ( elem(ie)%state%w_i(i,j,k,n0) + &
                     elem(ie)%state%w_i(i,j,k+1,n0) )/2
 
-!add fcos term that SA does not have. SA does not check fsin term because of the dot product.
             enddo
          enddo
       enddo
