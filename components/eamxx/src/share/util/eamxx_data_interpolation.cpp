@@ -323,6 +323,13 @@ setup_remappers (const std::string& hremap_filename,
     data_p = Field (FieldIdentifier(data_pname,p_layout,ekat::units::Pa,hr_tgt_grid->name()));
     data_p.allocate_view();
 
+    // Use raw scorpio to read this var, since it's not decomposed. Use any file, since it's static
+    auto filename = m_time_database.files.front();
+    scorpio::register_file(filename,scorpio::Read);
+    scorpio::read_var(filename,data_pname,data_p.get_internal_view_data<Real,Host>());
+    scorpio::release_file(filename);
+    data_p.sync_to_dev();
+
     vremap->set_source_pressure (data_p,VerticalRemapper::Both);
     vremap->set_target_pressure (model_pmid,model_pint);
   }
