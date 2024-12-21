@@ -1128,6 +1128,28 @@ contains
   real (kind=real_kind) :: v2_over_r_i(np,np,2,nlevp)
   real (kind=real_kind) :: v_over_rhat_m(np,np,2,nlev)
   real (kind=real_kind) :: v_over_rhat_i(np,np,2,nlevp)
+
+  real (kind=real_kind), pointer, dimension(:,:,:,:) :: vv
+  real (kind=real_kind), pointer, dimension(:,:,:)   :: ww
+  real (kind=real_kind) :: mu(np,np,nlevp)
+
+  real (kind=real_kind) :: wt1(np,np,nlevp)
+  real (kind=real_kind) :: wt2(np,np,nlevp)
+  real (kind=real_kind) :: wt3(np,np,nlevp)
+  real (kind=real_kind) :: wt4(np,np,nlevp)
+  real (kind=real_kind) :: wt5(np,np,nlevp)
+
+  real (kind=real_kind) :: pt1(np,np,nlevp)
+  real (kind=real_kind) :: pt2(np,np,nlevp)
+
+  real (kind=real_kind) :: ut1(np,np,2,nlev)
+  real (kind=real_kind) :: ut2(np,np,2,nlev)
+  real (kind=real_kind) :: ut3(np,np,2,nlev)
+  real (kind=real_kind) :: ut4(np,np,2,nlev)
+  real (kind=real_kind) :: ut5(np,np,2,nlev)
+  real (kind=real_kind) :: ut6(np,np,2,nlev)
+  real (kind=real_kind) :: ut7(np,np,2,nlev)
+  real (kind=real_kind) :: ut8(np,np,2,nlev)
 #endif
 
   real (kind=real_kind) :: v_vadv(np,np,2,nlev)     ! velocity vertical advection
@@ -1183,9 +1205,9 @@ contains
      vtheta(:,:,:) = vtheta_dp(:,:,:)/dp3d(:,:,:)
      phi_i => elem(ie)%state%phinh_i(:,:,:,n0)
 
-     !make w_i alias too
-
 #ifdef HOMMEDA
+     vv => elem(ie)%state%v(:,:,:,:,n0)
+     ww => elem(ie)%state%w_i(:,:,:,n0)
 !repeated code
      rheighti = phi_i/g + r0
      rheightm(:,:,1:nlev) = (rheighti(:,:,1:nlev) + rheighti(:,:,2:nlevp))/2
@@ -1236,6 +1258,7 @@ contains
 
      call vel_mid2inter(elem(ie)%state%v(:,:,:,:,n0), v_i,           dp3d,dp3d_i)
 #ifdef HOMMEDA
+     mu = dpnh_dp_i
      v_over_rhat_m(:,:,1,:) = elem(ie)%state%v(:,:,1,:,n0)*invrhatm(:,:,:)
      v_over_rhat_m(:,:,2,:) = elem(ie)%state%v(:,:,2,:,n0)*invrhatm(:,:,:)
      v2_over_r_m(:,:,1,:)   = elem(ie)%state%v(:,:,1,:,n0)*elem(ie)%state%v(:,:,1,:,n0) / rheightm(:,:,:)
@@ -1312,7 +1335,7 @@ contains
         theta_vadv=0
         v_vadv=0
      else
-! DA does not run rsplit==0
+! DA does not run rsplit==0 yet
         sdot_sum=0
         do k=1,nlev
            ! ==================================================
@@ -1413,6 +1436,8 @@ contains
 #ifdef HOMMEDA
         !v_over_rhat contains [u/rhat] specially averaged
         v_gradw_i(:,:,k) = v_over_rhat_i(:,:,1,k)*gradw_i(:,:,1,k) + v_over_rhat_i(:,:,2,k)*gradw_i(:,:,2,k)
+
+        wt1(:,:,k) = -v_gradw_i(:,:,k)
 #else
         v_gradw_i(:,:,k) = v_i(:,:,1,k)*gradw_i(:,:,1,k) + v_i(:,:,2,k)*gradw_i(:,:,2,k)
 #endif
@@ -1421,15 +1446,23 @@ contains
         w_tens(:,:,k) = (-w_vadv_i(:,:,k) - v_gradw_i(:,:,k))*scale1 - scale2*g*(1-dpnh_dp_i(:,:,k))
 
 #ifdef HOMMEDA
+        wt4(:,:,k) = dpnh_dp_i(:,:,k)*g
+        wt5(:,:,k) = -g
+
         !add DA metric term in w_t : \bu^2/r
-        w_tens(:,:,k) = w_tens(:,:,k) +scale1*(v2_over_r_i(:,:,1,k)*v2_over_r_i(:,:,1,k) + v2_over_r_i(:,:,2,k)*v2_over_r_i(:,:,2,k))
+        w_tens(:,:,k) = w_tens(:,:,k) +scale1*(v2_over_r_i(:,:,1,k) + v2_over_r_i(:,:,2,k))
         !add DA cos term in w_t : \cos * u
         w_tens(:,:,k) = w_tens(:,:,k) +scale1*elem(ie)%fcorcosine(:,:)*v_i(:,:,1,k)
+
+        wt2(:,:,k) = v2_over_r_i(:,:,1,k) + v2_over_r_i(:,:,2,k)
+        wt3(:,:,k) = elem(ie)%fcorcosine(:,:)*v_i(:,:,1,k)
 #endif
 
 #ifdef HOMMEDA
         !v_over_rhat contains [u/rhat] specially averaged
         v_gradphinh_i(:,:,k) = v_over_rhat_i(:,:,1,k)*gradphinh_i(:,:,1,k) + v_over_rhat_i(:,:,2,k)*gradphinh_i(:,:,2,k)
+
+        pt1(:,:,k) = -v_gradphinh_i(:,:,k)
 #else
         v_gradphinh_i(:,:,k) = v_i(:,:,1,k)*gradphinh_i(:,:,1,k) + v_i(:,:,2,k)*gradphinh_i(:,:,2,k) 
 #endif
@@ -1438,6 +1471,8 @@ contains
           + scale2*g*elem(ie)%state%w_i(:,:,k,n0)
 
 #if defined HOMMEDA && defined ENERGY_DIAGNOSTICS 
+        pt2(:,:,k) = g*elem(ie)%state%w_i(:,:,k,n0)
+
         phi_tens_notopo(:,:,k) = phi_tens(:,:,k)
 #endif
 
@@ -1465,6 +1500,8 @@ contains
 #ifdef HOMMEDA
      !v_over_rhat contains [u/rhat] specially averaged
      v_gradw_i(:,:,k) = v_over_rhat_i(:,:,1,k)*gradw_i(:,:,1,k) + v_over_rhat_i(:,:,2,k)*gradw_i(:,:,2,k)
+
+     wt1(:,:,k) = -v_gradw_i(:,:,k)
 #else
      v_gradw_i(:,:,k) = v_i(:,:,1,k)*gradw_i(:,:,1,k) + v_i(:,:,2,k)*gradw_i(:,:,2,k)
 #endif
@@ -1472,16 +1509,23 @@ contains
      ! w - tendency on interfaces
      w_tens(:,:,k) = (-w_vadv_i(:,:,k) - v_gradw_i(:,:,k))*scale1 - scale1*g*(1-dpnh_dp_i(:,:,k) )
 #ifdef HOMMEDA
+     wt4(:,:,k) = dpnh_dp_i(:,:,k)*g
+
      !add DA metric term in w_t : \bu^2/r
-     w_tens(:,:,k) = w_tens(:,:,k) +scale1*(v2_over_r_i(:,:,1,k)*v2_over_r_i(:,:,1,k) + v2_over_r_i(:,:,2,k)*v2_over_r_i(:,:,2,k))
+     w_tens(:,:,k) = w_tens(:,:,k) +scale1*(v2_over_r_i(:,:,1,k) + v2_over_r_i(:,:,2,k))
      !add DA cos term in w_t : \cos * u
      w_tens(:,:,k) = w_tens(:,:,k) +scale1*elem(ie)%fcorcosine(:,:)*v_i(:,:,1,k)
+
+     wt2(:,:,k) = v2_over_r_i(:,:,1,k) + v2_over_r_i(:,:,2,k)
+     wt3(:,:,k) = elem(ie)%fcorcosine(:,:)*v_i(:,:,1,k)
 #endif
 
      ! phi - tendency on interfaces
 #ifdef HOMMEDA
      !v_over_rhat contains [u/rhat] specially averaged
      v_gradphinh_i(:,:,k) = v_over_rhat_i(:,:,1,k)*gradphinh_i(:,:,1,k) + v_over_rhat_i(:,:,2,k)*gradphinh_i(:,:,2,k)
+
+     pt1(:,:,k) = -v_gradphinh_i(:,:,k)
 #else
      v_gradphinh_i(:,:,k) = v_i(:,:,1,k)*gradphinh_i(:,:,1,k) + v_i(:,:,2,k)*gradphinh_i(:,:,2,k)
 #endif
@@ -1490,6 +1534,7 @@ contains
      + scale1*g*elem(ie)%state%w_i(:,:,k,n0)
     
 #if defined HOMMEDA && defined ENERGY_DIAGNOSTICS 
+     pt2(:,:,k) = g*elem(ie)%state%w_i(:,:,k,n0)
      phi_tens_notopo(:,:,k) = phi_tens(:,:,k)
 #endif
 
@@ -1504,7 +1549,7 @@ contains
      call i2m(elem(ie)%state%w_i(:,:,:,n0)*gradw_i(:,:,2,:),temp(:,:,:))
      vtemp(:,:,2,:) = temp(:,:,:)
 
-     call i2m(dpnh_dp_i*gradphinh_i(:,:,1,:),temp(:,:,:))
+     call i2m(dpnh_dp_i(:,:,:)*gradphinh_i(:,:,1,:),temp(:,:,:))
 #ifdef HOMMEDA
      mgrad(:,:,1,:) = temp(:,:,:)*invrhatm(:,:,:)
 #else
@@ -1513,6 +1558,7 @@ contains
      call i2m(dpnh_dp_i*gradphinh_i(:,:,2,:),temp(:,:,:))
 #ifdef HOMMEDA
      mgrad(:,:,2,:) = temp(:,:,:)*invrhatm(:,:,:)
+     ut8 = -mgrad
 #else
      mgrad(:,:,2,:) = temp(:,:,:)
 #endif
@@ -1556,8 +1602,13 @@ contains
 #ifdef HOMMEDA
         wvor(:,:,1,k) = wvor(:,:,1,k) * invrhatm(:,:,k)
         wvor(:,:,2,k) = wvor(:,:,2,k) * invrhatm(:,:,k)
+        ut3(:,:,:,k)  = -wvor(:,:,:,k)
+
         wvor(:,:,1,k) = wvor(:,:,1,k) - vtemp(:,:,1,k) * invrhatm(:,:,k)
         wvor(:,:,2,k) = wvor(:,:,2,k) - vtemp(:,:,2,k) * invrhatm(:,:,k)
+
+        ut4(:,:,1,k) = vtemp(:,:,1,k) * invrhatm(:,:,k)
+        ut4(:,:,2,k) = vtemp(:,:,2,k) * invrhatm(:,:,k)
 #else
         wvor(:,:,1,k) = wvor(:,:,1,k) - vtemp(:,:,1,k)
         wvor(:,:,2,k) = wvor(:,:,2,k) - vtemp(:,:,2,k)
@@ -1571,6 +1622,8 @@ contains
         gradKE(:,:,2,k) = gradKE(:,:,2,k) * invrhatm(:,:,k)
         gradexner(:,:,1,k) = gradexner(:,:,1,k) * invrhatm(:,:,k)
         gradexner(:,:,2,k) = gradexner(:,:,2,k) * invrhatm(:,:,k)
+
+        ut2(:,:,:,k) = -gradKE(:,:,:,k)
 #endif
 
 #if 0
@@ -1653,13 +1706,24 @@ contains
                    - gradKE(i,j,2,k) - mgrad(i,j,2,k) &
                   -Cp*vtheta(i,j,k)*gradexner(i,j,2,k) &
                   -wvor(i,j,2,k) )*scale1
+#endif
 
 #ifdef HOMMEDA
+              ut1(i,j,1,k) = v2*(elem(ie)%fcor(i,j) + vort(i,j,k))
+              ut1(i,j,2,k) = -v1*(elem(ie)%fcor(i,j) + vort(i,j,k))
+
+              ut7(i,j,1,k) = -Cp*vtheta(i,j,k)*gradexner(i,j,1,k)
+              ut7(i,j,2,k) = -Cp*vtheta(i,j,k)*gradexner(i,j,2,k)
+
               vtens1(i,j,k) = vtens1(i,j,k) - scale1*w_m(i,j,k)*( v1/rheightm(i,j,k) + elem(ie)%fcorcosine(i,j) )
               vtens2(i,j,k) = vtens2(i,j,k) - scale1*w_m(i,j,k)*v2/rheightm(i,j,k)
+
+              ut6(i,j,1,k) = -w_m(i,j,k)*(  elem(ie)%fcorcosine(i,j) )
+              ut6(i,j,2,k) = 0
+              ut5(i,j,1,k) = -w_m(i,j,k)*(  v1/rheightm(i,j,k)       )
+              ut5(i,j,2,k) = -w_m(i,j,k)*(  v2/rheightm(i,j,k)       )
 #endif
 
-#endif
            end do
         end do     
      end do 
@@ -1675,6 +1739,20 @@ contains
 
         elem(ie)%accum%PE=0
         elem(ie)%accum%PEexpected=0
+        elem(ie)%accum%IE=0
+        elem(ie)%accum%KE=0
+        elem(ie)%accum%KEexpected=0
+
+        elem(ie)%accum%pair2a=0
+        elem(ie)%accum%pair2b=0
+        elem(ie)%accum%pair3a=0
+        elem(ie)%accum%pair3b=0
+        elem(ie)%accum%pair4a=0
+        elem(ie)%accum%pair4b=0
+        elem(ie)%accum%pair5a=0
+        elem(ie)%accum%pair5b=0
+        elem(ie)%accum%pair6a=0
+        elem(ie)%accum%pair6b=0
 
         elem(ie)%accum%ieterm1=0
         elem(ie)%accum%keterm1=0
@@ -1702,36 +1780,121 @@ contains
         elem(ie)%accum%P1=0
         elem(ie)%accum%P2=0
 
-        !use temp and vtemp
+        !use temp for nlev, tempp for nlevp, and vtemp
         call m2i(divdp,tempp)
 
+        !make PE parts
         !divdp  = -dp3d_tens
         do k=2,nlev
            elem(ie)%accum%PE(:,:) = elem(ie)%accum%PE(:,:) + phi_i(:,:,k)*tempp(:,:,k) &  
                                                            - dp3d_i(:,:,k)*phi_tens_notopo(:,:,k) 
-           elem(ie)%accum%PEexpected(:,:) = elem(ie)%accum%PEexpected(:,:) + g*dp3d_i(:,:,k)*elem(ie)%state%w_i(:,:,k,n0)
+           elem(ie)%accum%PEexpected(:,:) = elem(ie)%accum%PEexpected(:,:) - g*dp3d_i(:,:,k)*ww(:,:,k)
         enddo
         do k=1,nlevp,nlev
            elem(ie)%accum%PE(:,:) = elem(ie)%accum%PE(:,:) + phi_i(:,:,k)*tempp(:,:,k)/2 & 
                                                            - dp3d_i(:,:,k)*phi_tens_notopo(:,:,k)/2
-           elem(ie)%accum%PEexpected(:,:) = elem(ie)%accum%PEexpected(:,:) + g*dp3d_i(:,:,k)*elem(ie)%state%w_i(:,:,k,n0)/2
+           elem(ie)%accum%PEexpected(:,:) = elem(ie)%accum%PEexpected(:,:) - g*dp3d_i(:,:,k)*ww(:,:,k)/2
         enddo
-
+        
         !note that mgrad is overwritten above, so do not re-use, recompute
-        call i2m(dpnh_dp_i*gradphinh_i(:,:,1,:),temp(:,:,:))
-        mgrad(:,:,1,:) = temp(:,:,:)
-        call i2m(dpnh_dp_i*gradphinh_i(:,:,2,:),temp(:,:,:))
-        mgrad(:,:,2,:) = temp(:,:,:)
+        !this is just to compute 2 mu terms in I and in K
         do k=2,nlev
-           elem(ie)%accum%ieterm1(:,:) = elem(ie)%accum%ieterm1(:,:) + dpnh_dp_i(:,:,k)*dp3d_i(:,:,k)*v_gradphinh_i(:,:,k)
+           elem(ie)%accum%ieterm1(:,:) = elem(ie)%accum%ieterm1(:,:) - mu(:,:,k)*dp3d_i(:,:,k)*pt1(:,:,k)
         enddo
         do k=1,nlevp,nlev
-           elem(ie)%accum%ieterm1(:,:) = elem(ie)%accum%ieterm1(:,:) + dpnh_dp_i(:,:,k)*dp3d_i(:,:,k)*v_gradphinh_i(:,:,k)/2
+           elem(ie)%accum%ieterm1(:,:) = elem(ie)%accum%ieterm1(:,:) - mu(:,:,k)*dp3d_i(:,:,k)*pt1(:,:,k)/2
         enddo
         do k=1,nlev
-           elem(ie)%accum%keterm1(:,:) = elem(ie)%accum%keterm1(:,:) - dp3d(:,:,k)*invrhatm(:,:,k)* &
-                        (  elem(ie)%state%v(:,:,1,k,n0)*mgrad(:,:,1,k) + elem(ie)%state%v(:,:,2,k,n0)*mgrad(:,:,2,k)   )
+           elem(ie)%accum%keterm1(:,:) = elem(ie)%accum%keterm1(:,:) + dp3d(:,:,k)* &
+                        (  vv(:,:,1,k)*ut8(:,:,1,k) + vv(:,:,2,k)*ut8(:,:,2,k)   )
         enddo
+       
+        !make IE parts
+
+        !make KE parts
+
+        elem(ie)%accum%KEexpected(:,:) = elem(ie)%accum%keterm1
+        do k=1,nlev
+           elem(ie)%accum%KEexpected(:,:) = elem(ie)%accum%KEexpected(:,:) + dp3d(:,:,k)* &
+                        (  vv(:,:,1,k)*ut7(:,:,1,k) + vv(:,:,2,k)*ut7(:,:,2,k)  )
+        enddo
+        do k=2,nlev
+           elem(ie)%accum%KEexpected(:,:) = elem(ie)%accum%KEexpected(:,:) + dp3d_i(:,:,k)*ww(:,:,k)* &
+                        (  wt5(:,:,k) + wt4(:,:,k) )
+        enddo
+        do k=1,nlevp,nlev
+           elem(ie)%accum%KEexpected(:,:) = elem(ie)%accum%KEexpected(:,:) + dp3d_i(:,:,k)*ww(:,:,k)* &
+                        (  wt5(:,:,k) + wt4(:,:,k) )/2
+        enddo
+
+        call i2m( ww(:,:,:)*ww(:,:,:), temp)
+        do k=1,nlev
+           elem(ie)%accum%KE(:,:) = elem(ie)%accum%KE(:,:) + dp3d(:,:,k)*(  vv(:,:,1,k)*vtens1(:,:,k) + vv(:,:,2,k)*vtens2(:,:,k)  ) &
+                                                           - divdp(:,:,k)*( vv(:,:,1,k)**2 + vv(:,:,2,k)**2 + temp(:,:,k) )/2
+        enddo
+        do k=2,nlev
+           elem(ie)%accum%KE(:,:) = elem(ie)%accum%KE(:,:) + dp3d_i(:,:,k) * ww(:,:,k) * w_tens(:,:,k)
+        enddo
+        do k=1,nlevp,nlev
+           elem(ie)%accum%KE(:,:) = elem(ie)%accum%KE(:,:) + dp3d_i(:,:,k) * ww(:,:,k) * w_tens(:,:,k)/2
+        enddo
+
+        !make pair2
+        do k=1,nlev
+           elem(ie)%accum%pair2a(:,:) = elem(ie)%accum%pair2a(:,:) + dp3d(:,:,k)*(  vv(:,:,1,k)*ut2(:,:,1,k) + vv(:,:,2,k)*ut2(:,:,2,k)  ) 
+           elem(ie)%accum%pair2b(:,:) = elem(ie)%accum%pair2b(:,:) - divdp(:,:,k)*(  vv(:,:,1,k)**2 + vv(:,:,2,k)**2  )/2 
+        enddo
+
+        !make pair3
+        do k=1,nlev
+           elem(ie)%accum%pair3a(:,:) = elem(ie)%accum%pair3a(:,:) + dp3d(:,:,k)*(  vv(:,:,1,k)*ut3(:,:,1,k) + vv(:,:,2,k)*ut3(:,:,2,k)  )
+           elem(ie)%accum%pair3b(:,:) = elem(ie)%accum%pair3b(:,:) - divdp(:,:,k)*temp(:,:,k)/2
+        enddo
+
+        !make pair4
+        do k=1,nlev
+           elem(ie)%accum%pair4a(:,:) = elem(ie)%accum%pair4a(:,:) + dp3d(:,:,k)*(vv(:,:,1,k)*ut6(:,:,1,k) +vv(:,:,2,k)*ut6(:,:,2,k))
+           elem(ie)%accum%pair4b(:,:) = elem(ie)%accum%pair4b(:,:) + dp3d_i(:,:,k)*ww(:,:,k)*wt3(:,:,k)
+        enddo
+
+        !make pair5
+        do k=1,nlev
+           elem(ie)%accum%pair5a(:,:) = elem(ie)%accum%pair5a(:,:) + dp3d(:,:,k)*(vv(:,:,1,k)*ut5(:,:,1,k) +vv(:,:,2,k)*ut5(:,:,2,k))
+           elem(ie)%accum%pair5b(:,:) = elem(ie)%accum%pair5b(:,:) + dp3d_i(:,:,k)*ww(:,:,k)*wt2(:,:,k)
+        enddo
+
+        !make pair6
+        do k=1,nlev
+           elem(ie)%accum%pair6a(:,:) = elem(ie)%accum%pair6a(:,:) + dp3d(:,:,k)*(vv(:,:,1,k)*ut4(:,:,1,k) +vv(:,:,2,k)*ut4(:,:,2,k))
+        enddo       
+        do k=2,nlev
+           elem(ie)%accum%pair6b(:,:) = elem(ie)%accum%pair6b(:,:) + dp3d_i(:,:,k) * ww(:,:,k) * wt1(:,:,k)
+        enddo
+        do k=1,nlevp,nlev
+           elem(ie)%accum%pair6b(:,:) = elem(ie)%accum%pair6b(:,:) + dp3d_i(:,:,k) * ww(:,:,k) * wt1(:,:,k)/2
+        enddo
+
+        !make pair7
+        do k=1,nlev
+           elem(ie)%accum%pair7a(:,:) = elem(ie)%accum%pair7a(:,:) + dp3d(:,:,k)*(vv(:,:,1,k)*ut7(:,:,1,k) +vv(:,:,2,k)*ut7(:,:,2,k))
+           elem(ie)%accum%pair7b(:,:) = elem(ie)%accum%pair7b(:,:) - cp*exner(:,:,k)*div_v_theta(:,:,k)
+        enddo
+
+        !make pair8
+        do k=1,nlevp
+           elem(ie)%accum%pair8a(:,:) = elem(ie)%accum%pair8a(:,:) + dp3d_i(:,:,k)*pt2(:,:,k)
+           elem(ie)%accum%pair8b(:,:) = elem(ie)%accum%pair8b(:,:) + dp3d_i(:,:,k)*ww(:,:,k)*wt5(:,:,k)
+        enddo
+
+        !make pair9, dot product
+        do k=1,nlevp
+           elem(ie)%accum%pair9a(:,:) = elem(ie)%accum%pair9a(:,:) + dp3d(:,:,k)*(vv(:,:,1,k)*ut1(:,:,1,k) +vv(:,:,2,k)*ut1(:,:,2,k))
+        enddo
+
+
+!print *,"ut3", ut3(1,1,1,:)
+!print *,"temp=w^2interp", temp(1,1,:)
+
 
 
 

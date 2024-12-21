@@ -150,6 +150,14 @@ contains
     real (kind=real_kind) :: KEwH1,KEwH2,KEwH3,KEwV1,KEwV2
 
     real (kind=real_kind) :: PEscalar, PEexpected_scalar, iet1s, ket1s
+    real (kind=real_kind) :: KEscalar, KEexpected_scalar, IEscalar, pair2as,pair2bs
+    real (kind=real_kind) :: pair3as,pair3bs
+    real (kind=real_kind) :: pair4as,pair4bs
+    real (kind=real_kind) :: pair5as,pair5bs
+    real (kind=real_kind) :: pair6as,pair6bs
+    real (kind=real_kind) :: pair7as,pair7bs
+    real (kind=real_kind) :: pair8as,pair8bs
+    real (kind=real_kind) :: pair9as,pair9bs
 
     real (kind=real_kind) :: ddt_tot,ddt_diss, ddt_diss_adj
     integer               :: n0, n0q
@@ -174,6 +182,16 @@ contains
     muvalue  = 0
 
     PEscalar = 0; PEexpected_scalar = 0; iet1s = 0; ket1s = 0;
+    KEscalar = 0; KEexpected_scalar = 0; IEscalar = 0;
+    pair2as=0;pair2bs=0;
+    pair3as=0;pair3bs=0;
+    pair4as=0;pair4bs=0;
+    pair5as=0;pair5bs=0;
+    pair6as=0;pair6bs=0;
+    pair7as=0;pair7bs=0;
+    pair8as=0;pair8bs=0;
+    pair9as=0;pair9bs=0;
+
 
     ! dynamics timelevels
     n0=tl%n0
@@ -654,6 +672,20 @@ contains
     PEexpected_scalar = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
 
     do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%KE
+    enddo
+    KEscalar = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%KEexpected
+    enddo
+    KEexpected_scalar = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%IE
+    enddo
+    IEscalar = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+
+    do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%ieterm1
     enddo
     iet1s = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
@@ -661,6 +693,75 @@ contains
        tmp(:,:,ie) = elem(ie)%accum%keterm1
     enddo
     ket1s = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%pair2a
+    enddo
+    pair2as = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%pair2b
+    enddo
+    pair2bs = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%pair3a
+    enddo
+    pair3as = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%pair3b
+    enddo
+    pair3bs = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%pair4a
+    enddo
+    pair4as = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%pair4b
+    enddo
+    pair4bs = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%pair5a
+    enddo
+    pair5as = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%pair5b
+    enddo
+    pair5bs = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%pair6a
+    enddo
+    pair6as = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%pair6b
+    enddo
+    pair6bs = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%pair7a
+    enddo
+    pair7as = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%pair7b
+    enddo
+    pair7bs = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%pair8a
+    enddo
+    pair8as = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%pair8b
+    enddo
+    pair8bs = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%pair9a
+    enddo
+    pair9as = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+
 
     !   KE->IE
     do ie=nets,nete
@@ -759,8 +860,17 @@ contains
 
           write(iulog,'(a,2e22.14)')'PEhorz1,PEhorz2:',PEhorz1,PEhorz2
 
-          write(iulog,'(a,2e22.14)')'PE_t,PE_t exp:',PEscalar, PEexpected_scalar
-          write(iulog,'(a,2e22.14)')'ieterm1,keterm1:', iet1s, ket1s
+          write(iulog,'(a,3e22.14)')'- PE_t,PE_t exp:',PEscalar, PEexpected_scalar, PEscalar-PEexpected_scalar
+          write(iulog,'(a,3e22.14)')'- KE_t,KE_t exp:',KEscalar, KEexpected_scalar, KEscalar-KEexpected_scalar
+          write(iulog,'(a,3e22.14)')'- ietrm1,ketrm1:', iet1s, ket1s, (iet1s+ket1s)/iet1s
+          write(iulog,'(a,3e22.14)')'- pair2a,pair2b:', pair2as, pair2bs, (pair2as + pair2bs)/pair2as
+          write(iulog,'(a,3e22.14)')'- pair3a,pair3b:', pair3as, pair3bs, (pair3as + pair3bs)/pair3as
+          write(iulog,'(a,3e22.14)')'- pair4a,pair4b:', pair4as, pair4bs, (pair4as + pair4bs)/pair4as
+          write(iulog,'(a,3e22.14)')'- pair5a,pair5b:', pair5as, pair5bs, (pair5as + pair5bs)/pair5as
+          write(iulog,'(a,3e22.14)')'- pair6a,pair6b:', pair6as, pair6bs, (pair6as + pair6bs)/pair6as
+          write(iulog,'(a,3e22.14)')'- pair7a,pair7b:', pair7as, pair7bs, (pair7as + pair7bs)/pair7as
+          write(iulog,'(a,3e22.14)')'- pair8a,pair8b:', pair8as, pair8bs, (pair8as + pair8bs)/pair8as
+          write(iulog,'(a,1e22.14)')'- pair9a       :', pair9as
 
           write(iulog,'(a,2e22.14)')'PE h-adv, sum=0:',PEhorz1,PEhorz2
           write(iulog,'(a,2e22.14)')'PE v-adv, sum=0:',PEvert1,PEvert2
