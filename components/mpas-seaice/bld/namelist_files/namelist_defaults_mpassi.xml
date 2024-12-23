@@ -45,6 +45,7 @@
 <config_test_case_diag>false</config_test_case_diag>
 <config_test_case_diag_type>'none'</config_test_case_diag_type>
 <config_full_abort_write>true</config_full_abort_write>
+<config_create_all_logs_in_e3sm>.false.</config_create_all_logs_in_e3sm>
 
 <!-- decomposition -->
 <config_block_decomp_file_prefix>'graph.info.part.'</config_block_decomp_file_prefix>

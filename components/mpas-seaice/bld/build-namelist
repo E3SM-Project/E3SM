@@ -488,6 +488,7 @@ add_default($nl, 'config_write_output_on_startup');
 add_default($nl, 'config_test_case_diag');
 add_default($nl, 'config_test_case_diag_type');
 add_default($nl, 'config_full_abort_write');
+add_default($nl, 'config_create_all_logs_in_e3sm');
 
 #################################
 # Namelist group: decomposition #

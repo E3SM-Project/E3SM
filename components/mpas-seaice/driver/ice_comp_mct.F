@@ -248,7 +248,8 @@ contains
 #endif
     logical, pointer :: &
          tempLogicalConfig, &
-         config_scale_dib_by_removed_ice_runoff
+         config_scale_dib_by_removed_ice_runoff, &
+         config_create_all_logs_in_e3sm
     character(len=StrKIND), pointer :: tempCharConfig
     real (kind=RKIND), pointer :: tempRealConfig
 
@@ -404,22 +405,6 @@ contains
        call mpas_dmpar_abort(domain % dminfo)
     end if
 
-    ! Set core specific options here
-    ! Disable output from all but the master task for E3SM!
-    ! (This overrides the default set by mpas_log_init based on MPAS_DEBUG setting.)
-    if (iam /= 0) then
-       domain % logInfo % outputLog % isActive = .false.
-    endif
-
-    ! After core has had a chance to modify log defaults, open the output log
-    call mpas_log_open(err=ierr)
-    if ( ierr /= 0 ) then
-       write(iceLogUnit,*) 'ERROR: log open failed for core ' // trim(domain % core % coreName)
-       call mpas_dmpar_abort(domain % dminfo)
-    end if
-    ! ===========
-
-
     ! ----------
     ! Process namelist and streams files
     ! ----------
@@ -432,6 +417,26 @@ contains
     if ( ierr /= 0 ) then
        call mpas_log_write('Namelist setup failed for core ' // trim(domain % core % coreName), MPAS_LOG_CRIT)
     end if
+
+    ! Set core specific options here
+    ! Disable output from all but the master task for E3SM unless specified otherwise by config_create_all_logs_in_e3sm
+    ! (This overrides the default set by mpas_log_init based on MPAS_DEBUG setting.)
+    call mpas_pool_get_config(domain % configs, 'config_create_all_logs_in_e3sm', config_create_all_logs_in_e3sm)
+    if (config_create_all_logs_in_e3sm) then
+       domain % logInfo % outputLog % isActive = .true.
+    else
+       if (iam /= 0) then
+          domain % logInfo % outputLog % isActive = .false.
+       endif
+    endif
+
+    ! After core has had a chance to modify log defaults, open the output log
+    call mpas_log_open(err=ierr)
+    if ( ierr /= 0 ) then
+       write(iceLogUnit,*) 'ERROR: log open failed for core ' // trim(domain % core % coreName)
+       call mpas_dmpar_abort(domain % dminfo)
+    end if
+    ! ===========
 
     call mpas_framework_init_phase2(domain, io_system)
 
