@@ -20,6 +20,7 @@
 <config_write_output_on_startup>.false.</config_write_output_on_startup>
 <config_pio_num_iotasks>0</config_pio_num_iotasks>
 <config_pio_stride>1</config_pio_stride>
+<config_create_all_logs_in_e3sm>.false.</config_create_all_logs_in_e3sm>
 
 <!-- decomposition -->
 <config_num_halos>3</config_num_halos>

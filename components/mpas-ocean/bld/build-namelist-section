@@ -29,6 +29,7 @@ add_default($nl, 'config_output_reference_time');
 add_default($nl, 'config_write_output_on_startup');
 add_default($nl, 'config_pio_num_iotasks');
 add_default($nl, 'config_pio_stride');
+add_default($nl, 'config_create_all_logs_in_e3sm');
 
 #################################
 # Namelist group: decomposition #
