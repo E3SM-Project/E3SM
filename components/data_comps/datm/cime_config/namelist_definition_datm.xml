@@ -1435,10 +1435,10 @@
         FLDS     lwdn
       </value>
       <value stream="CPLHISTForcing.Solar">
-        a2x1hi_Faxa_swndr swndr
-        a2x1hi_Faxa_swvdr swvdr
-        a2x1hi_Faxa_swndf swndf
-        a2x1hi_Faxa_swvdf swvdf
+        a2x3h_Faxa_swndr swndr
+        a2x3h_Faxa_swvdr swvdr
+        a2x3h_Faxa_swndf swndf
+        a2x3h_Faxa_swvdf swvdf
       </value>
       <value stream="CPLHISTForcing.nonSolarFlux">
         a2x3h_Faxa_rainc rainc
@@ -1459,8 +1459,8 @@
 	a2x3h_Sa_co2prog co2prog
       </value>
       <value stream="CPLHISTForcing.State1hr">
-        a2x1h_Sa_u  u
-        a2x1h_Sa_v  v
+        a2x3h_Sa_u  u
+        a2x3h_Sa_v  v
       </value>
       <value  stream="CLM_QIAN.Solar">
         FSDS swdn
