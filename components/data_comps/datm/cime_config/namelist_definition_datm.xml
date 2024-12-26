@@ -532,10 +532,10 @@
       </value>
       <value  stream="CLM1PT.CLM_USRDAT">%ym.nc</value>
       <value  stream="CLM1PT.ELM_USRDAT">%ym.nc</value>
-      <value  stream="CPLHISTForcing.Solar">$DATM_CPLHIST_CASE.cpl.ha2x1hi.%ymd-10800.nc</value>
+      <value  stream="CPLHISTForcing.Solar">$DATM_CPLHIST_CASE.cpl.ha2x3h.%ymd-10800.nc</value>
       <value  stream="CPLHISTForcing.nonSolarFlux">$DATM_CPLHIST_CASE.cpl.ha2x3h.%ymd-10800.nc</value>
       <value  stream="CPLHISTForcing.State3hr">$DATM_CPLHIST_CASE.cpl.ha2x3h.%ymd-10800.nc</value>
-      <value  stream="CPLHISTForcing.State1hr">$DATM_CPLHIST_CASE.cpl.ha2x1h.%ymd-10800.nc</value>
+      <value  stream="CPLHISTForcing.State1hr">$DATM_CPLHIST_CASE.cpl.ha2x3h.%ymd-10800.nc</value>
       <value  stream="presaero.cplhist">$DATM_CPLHIST_CASE.cpl.ha2x1d.%ym.nc</value>
       <value  stream="topo.cplhist">$DATM_CPLHIST_CASE.cpl.ha2x3h.%ym.nc</value>
       <value  stream="CLM_QIAN.Solar">clmforc.Qian.c2006.T62.Solr.%ym.nc</value>
