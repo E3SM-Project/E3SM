@@ -207,6 +207,7 @@ ENDIF()
 
 IF(${BUILD_HOMME_THETA})
   ADD_SUBDIRECTORY(thetada-nlev26)
+  ADD_SUBDIRECTORY(thetada-nlev30)
   ADD_SUBDIRECTORY(theta-l-nlev20)
   ADD_SUBDIRECTORY(theta-l-nlev30)
   ADD_SUBDIRECTORY(theta-l-nlev40)
