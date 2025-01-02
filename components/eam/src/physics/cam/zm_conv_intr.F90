@@ -474,7 +474,7 @@ subroutine zm_conv_init(pref_edge)
             end select
          end do
 
-         ! Check that required modal specie types were found
+         ! Check that required modal species types were found
          if (aero%coarse_dust_idx == -1 .or. &
              aero%coarse_nacl_idx == -1) then
             write(iulog,*) routine//': ERROR required mode-species type not found - indicies:', &
