@@ -452,10 +452,12 @@ subroutine zm_conv_init(pref_edge)
             case ('coarse')
                aero%mode_coarse_idx = m
             end select
-          end do
+         end do
 
-          ! Check that required mode types were found
-         if (aero%mode_accum_idx == -1 .or. aero%mode_aitken_idx == -1 .or. aero%mode_coarse_idx == -1) then
+         ! Check that required mode types were found
+         if (aero%mode_accum_idx == -1 .or. &
+             aero%mode_aitken_idx == -1 .or. &
+             aero%mode_coarse_idx == -1) then
             write(iulog,*) routine//': ERROR required mode type not found - mode idx:', &
                aero%mode_accum_idx, aero%mode_aitken_idx, aero%mode_coarse_idx
             call endrun(routine//': ERROR required mode type not found')
@@ -473,7 +475,8 @@ subroutine zm_conv_init(pref_edge)
          end do
 
          ! Check that required modal specie types were found
-         if (aero%coarse_dust_idx == -1 .or. aero%coarse_nacl_idx == -1) then
+         if (aero%coarse_dust_idx == -1 .or. &
+             aero%coarse_nacl_idx == -1) then
             write(iulog,*) routine//': ERROR required mode-species type not found - indicies:', &
                aero%coarse_dust_idx, aero%coarse_nacl_idx
             call endrun(routine//': ERROR required mode-species type not found')
