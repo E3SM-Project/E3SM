@@ -1738,6 +1738,7 @@ contains
      ! =========================================================
      if (compute_diagnostics) then
 
+#ifdef HOMMEDA
         elem(ie)%accum%PE=0
         elem(ie)%accum%PEexpected=0
         elem(ie)%accum%IE=0
@@ -1763,9 +1764,9 @@ contains
         elem(ie)%accum%pair10a=0
         elem(ie)%accum%pair10b=0
 
-
         elem(ie)%accum%ieterm1=0
         elem(ie)%accum%keterm1=0
+#endif
 
         elem(ie)%accum%KEu_horiz1=0
         elem(ie)%accum%KEu_horiz2=0
@@ -1790,6 +1791,8 @@ contains
         elem(ie)%accum%P1=0
         elem(ie)%accum%P2=0
 
+
+#ifdef HOMMEDA
         !use temp for nlev, tempp for nlevp, and vtemp
         call m2i(divdp,tempp)
 
@@ -1932,7 +1935,7 @@ contains
 
 !print *,"ut3", ut3(1,1,1,:)
 !print *,"temp=w^2interp", temp(1,1,:)
-
+#endif
 
 
 

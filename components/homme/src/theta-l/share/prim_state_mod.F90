@@ -1013,7 +1013,7 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     use dimensions_mod, only : np, np, nlev,nlevp
     use hybvcoord_mod, only : hvcoord_t
     use element_mod, only : element_t
-    use physical_constants, only : Cp, cpwater_vapor
+    use physical_constants, only : Cp, cpwater_vapor, g, rearth
     use physics_mod, only : Virtual_Specific_Heat
     use prim_si_mod, only : preq_hydrostatic
 
@@ -1034,9 +1034,17 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp) 
     real (kind=real_kind) :: exner(np,np,nlev)  ! exner nh pressure
     real (kind=real_kind) :: pnh_i(np,np,nlevp)  ! pressure on intefaces
-
+    real (kind=real_kind) :: pi_top
 
     integer:: tmp, t1_qdp   ! the time pointers for Qdp are not the same
+
+#ifdef HOMMEDA
+    real (kind=real_kind) :: rheighti3(np,np,nlevp), r0
+#endif
+
+#ifdef HOMMEDA
+    r0=rearth
+#endif
 
     if (t_before_advance) then
        t1=tl%n0
@@ -1046,6 +1054,12 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
        call TimeLevel_Qdp(tl, qsplit, tmp, t1_qdp) !get np1 into t2_qdp
     endif
     do ie=nets,nete
+
+!repeated code
+#ifdef HOMMEDA
+       rheighti3 = ( elem(ie)%state%phinh_i(:,:,:,1)/g + r0 )**3
+#endif
+
        dpt1=elem(ie)%state%dp3d(:,:,:,t1)
        call pnh_and_exner_from_eos(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,t1),dpt1,&
             elem(ie)%state%phinh_i(:,:,:,t1),pnh,exner,dpnh_dp_i,pnh_i,'prim_state_mod')
@@ -1081,17 +1095,25 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
        elem(ie)%accum%PEner(:,:,n)=suml(:,:)
        
 
-    !  IE = c_p^* dp/deta T - pnh dphi/deta  + ptop phi_top
+    ! SA: IE = c_p^* dp/deta T + pnh dphi/deta  + pi_top phi_top
+    ! DA: IE = c_p^* dp/deta T + pnh g / 3 / R0^2 dr^3/deta  + pi_top phi_top
+
+       pi_top = hvcoord%hyai(1)*hvcoord%ps0
        suml=0
        suml2=0
        do k=1,nlev
           suml(:,:)=suml(:,:)+&
-                Cp*elem(ie)%state%vtheta_dp(:,:,k,t1)*exner(:,:,k) 
+                Cp*elem(ie)%state%vtheta_dp(:,:,k,t1)*exner(:,:,k)
+#ifdef HOMMEDA
+          suml2(:,:) = suml2(:,:)+ g / r0 / r0 / 3 * (rheighti3(:,:,k+1)-rheighti3(:,:,k))*pnh(:,:,k)
+#else
           suml2(:,:) = suml2(:,:)+(phi_i(:,:,k+1)-phi_i(:,:,k))*pnh(:,:,k)
+#endif
        enddo
-       elem(ie)%accum%IEner(:,:,n)=suml(:,:) + suml2(:,:) +&
-            pnh_i(:,:,1)* phi_i(:,:,1)
-
+!new, works for da and sa (identical tot he old line)
+       elem(ie)%accum%IEner(:,:,n)=suml(:,:) + suml2(:,:) + pi_top * phi_i(:,:,1)
+!old for debugging
+!       elem(ie)%accum%IEner(:,:,n)=suml(:,:) + suml2(:,:) + pnh_i(:,:,1)* phi_i(:,:,1)
        enddo
     
 end subroutine prim_energy_halftimes
