@@ -138,8 +138,6 @@ subroutine zm_conv_init(pref_edge)
    !----------------------------------------------------------------------------
    ! Purpose:  declare output fields, initialize variables needed by convection
    !----------------------------------------------------------------------------
-   use cam_history,        only: outfld, addfld, horiz_only, add_default
-   use ppgrid,             only: pcols, pver
    use zm_conv,            only: zm_convi
    use pmgrid,             only: plev,plevp
    use spmd_utils,         only: masterproc
@@ -189,7 +187,7 @@ subroutine zm_conv_init(pref_edge)
    call addfld('MAXI',         horiz_only, 'A', 'level',    'ZM model level of launching parcel')
    call addfld('CAPE_ZM',      horiz_only, 'A', 'J/kg',     'ZM convectively available potential energy')
    call addfld('DCAPE',        horiz_only, 'A', 'J/kg',     'ZM rate of change of CAPE')
-   call addfld('FREQZM',       horiz_only, 'A', 'fraction', 'ZM fractional occurance of convection')
+   call addfld('FREQZM',       horiz_only, 'A', 'fraction', 'ZM fractional occurrence of convection')
    call addfld('ZMMTT',        (/ 'lev'/), 'A', 'K/s',      'ZM T tendency from convective momentum transport')
    call addfld('ZMMTU',        (/ 'lev'/), 'A', 'm/s2',     'ZM U tendency from convective momentum transport')
    call addfld('ZMMTV',        (/ 'lev'/), 'A', 'm/s2',     'ZM V tendency from convective momentum transport')
@@ -553,7 +551,6 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
                         state, ptend_all, landfrac, pbuf, mu, eu, &
                         du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath )
    !----------------------------------------------------------------------------
-   use cam_history,        only: outfld
    use physics_types,      only: physics_state, physics_ptend
    use physics_types,      only: physics_ptend_init
    use physics_update_mod, only: physics_update
@@ -595,7 +592,7 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    integer,                          intent(out) :: lengath    ! gathered points vs longitude index
    !----------------------------------------------------------------------------
    ! Local variables
-   type(zm_microp_st) :: microp_st     ! ZM microphsyics data structure
+   type(zm_microp_st) :: microp_st     ! ZM microphysics data structure
 
    integer :: i,k,l,m                  ! loop iterators
    integer :: nstep                    ! model time step number
@@ -651,7 +648,7 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    integer , dimension(pcols) :: jcbot                ! row of base of cloud indices passed out
    real(r8), dimension(pcols) :: pcont                ! convection top pressure
    real(r8), dimension(pcols) :: pconb                ! convection base pressure
-   real(r8), dimension(pcols) :: freqzm               ! fractional occurance of ZM convection
+   real(r8), dimension(pcols) :: freqzm               ! fractional occurrence of ZM convection
 
    ! history output fields
    real(r8), dimension(pcols)      :: cape            ! convective available potential energy
@@ -856,7 +853,7 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
       call pbuf_get_field(pbuf, dnifzm_idx, dnif)
       call pbuf_get_field(pbuf, dsfzm_idx,  dsf)
       call pbuf_get_field(pbuf, dnsfzm_idx, dnsf)
-      call pbuf_get_field(pbuf, wuc_idx, wuc  )
+      call pbuf_get_field(pbuf, wuc_idx,    wuc)
    else
       allocate(dnlf(pcols,pver), &
                dnif(pcols,pver), &
@@ -1035,7 +1032,7 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    call outfld('DCAPE',  dcape, pcols, lchnk )
    call outfld('CAPE_ZM', cape, pcols, lchnk )
 
-   ! Output fractional occurance of ZM convection
+   ! Output fractional occurrence of ZM convection
    freqzm(:) = 0
    do i = 1,lengath
       freqzm(ideep(i)) = 1.0
