@@ -36,8 +36,8 @@ module zm_conv_intr
    ! physics buffer field indices
    integer :: dp_flxprc_idx    ! deep conv flux of precipitation from deep convection (kg/m2/s)
    integer :: dp_flxsnw_idx    ! deep conv flux of snow from deep convection (kg/m2/s)
-   integer :: dp_cldliq_idx    ! deep conv cloud liquid water (kg/kg)
-   integer :: dp_cldice_idx    ! deep conv cloud liquid water (kg/kg)
+   integer :: dp_cldliq_idx    ! deep conv cloud liq water (kg/kg)
+   integer :: dp_cldice_idx    ! deep conv cloud ice water (kg/kg)
    integer :: dlfzm_idx        ! detrained convective cloud water mixing ratio
    integer :: difzm_idx        ! detrained convective cloud ice mixing ratio
    integer :: dsfzm_idx        ! detrained convective snow mixing ratio
