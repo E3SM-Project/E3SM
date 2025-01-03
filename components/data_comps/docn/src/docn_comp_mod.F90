@@ -1005,6 +1005,8 @@ CONTAINS
     real(r8), parameter ::   latrad8    = 30._r8*pio180
     real(r8), parameter ::   lonrad     = 30._r8*pio180
 
+    real(r8) :: glb_offset
+
     pi = SHR_CONST_PI
 
     ! convert xc and yc from degrees to radians
@@ -1032,14 +1034,28 @@ CONTAINS
 
     ! Flat
 
+    ! if (sst_option == 2) then
+    !    do i = 1,lsize
+    !       if (abs(rlat(i)) > maxlat) then
+    !          sst(i) = t0_min
+    !       else
+    !          tmp = sin(rlat(i)*pi*0.5_r8/maxlat)
+    !          tmp = 1._r8 - tmp*tmp*tmp*tmp
+    !          sst(i) = tmp*(t0_max - t0_min) + t0_min
+    !       end if
+    !    end do
+    ! end if
+
+    ! custom override for AQP2 to mimic AQP1
     if (sst_option == 2) then
+       glb_offset = 20 ! add 20K uniformly to the default AQP1 option
        do i = 1,lsize
           if (abs(rlat(i)) > maxlat) then
-             sst(i) = t0_min
+             sst(i) = t0_min + glb_offset
           else
              tmp = sin(rlat(i)*pi*0.5_r8/maxlat)
-             tmp = 1._r8 - tmp*tmp*tmp*tmp
-             sst(i) = tmp*(t0_max - t0_min) + t0_min
+             tmp = 1._r8 - tmp*tmp
+             sst(i) = tmp*(t0_max - t0_min) + t0_min + glb_offset
           end if
        end do
     end if

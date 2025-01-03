@@ -233,13 +233,24 @@
 
   <compset>
     <alias>FRCEROT</alias>
-    <lname>2000_EAM%RCEROT_SLND_SICE_DOCN%AQPCONST_SROF_SGLC_SWAV</lname>
+    <!-- <lname>2000_EAM%RCEROT_SLND_SICE_DOCN%AQPCONST_SROF_SGLC_SWAV</lname> -->
+    <lname>2000_EAM%RCEROT_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
   </compset>
 
   <compset>
     <alias>FRCEROT-MMF1</alias>
     <!-- <lname>2000_EAM%RCEROT-MMF1_SLND_SICE_DOCN%AQPCONST_SROF_SGLC_SWAV</lname> -->
     <lname>2000_EAM%RCEROT-MMF1_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>FRCEROT-320</alias>
+    <lname>2000_EAM%RCEROT_SLND_SICE_DOCN%AQP2_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>FRCEROT-320-MMF1</alias>
+    <lname>2000_EAM%RCEROT-MMF1_SLND_SICE_DOCN%AQP2_SROF_SGLC_SWAV</lname>
   </compset>
 
   <!-- Mock-Walker RCE for RCEMIP phase 2 -->
