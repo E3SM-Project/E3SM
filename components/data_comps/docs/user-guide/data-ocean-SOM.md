@@ -1,5 +1,0 @@
-# Data Ocean - Traditional Slab Ocean Model (SOM)
-
-A slab ocean model (SOM) allows responsive SSTs to address the "infinite heat source" problem associated with prescribed SSTs, but is much cheaper than running with a full ocean model. The traditional SOM appraoch requires special inputs, such as a specified mixed layer depth pattern that can vary in time and a prescribed heat flux to account for the missing effects of ocean dynamics often referred to as "Q-flux". The Q-flux data is often estimated from a fully coupled simulation with active ocean and sea-ice so that the SOM simulation will resemble the full model.
-
-Currently, we do not have Q-flux data to drive the SOM in E3SM. An alternative appraoch is to use a "relaxed" slab ocean (RSO) in which a specified relaxation time scale is used to bring the SST field back to a target SST field. The RSO mode is much simpler to use, but carries caveats that the user should be aware of before using. See [Data Ocean - Relaxed Slab Ocean](data-ocean-RSO.md) for more information.
