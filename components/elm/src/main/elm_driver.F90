@@ -995,7 +995,8 @@ contains
        if (use_erosion) then
           call t_startf('erosion')
           call SoilErosion(bounds_clump, filter(nc)%num_soilc, filter(nc)%soilc, &
-               canopystate_vars, cnstate_vars, soilstate_vars, sedflux_vars)
+               canopystate_vars, cnstate_vars, crop_vars, soilstate_vars,        &
+               sedflux_vars)
           call t_stopf('erosion')
        end if
 

@@ -152,23 +152,23 @@ module CNEcosystemDynBetrMod
 
        call t_startf('CNZero')
 
-       call col_cf%SetValues(num_soilc, filter_soilc, 0._r8)
+       call col_cf%SetValues(num_soilc, filter_soilc, num_soilp, filter_soilp, 0._r8)
        call veg_cf%SetValues(num_soilp, filter_soilp, 0._r8)
 
        if ( use_c13 ) then
-          call c13_col_cf%SetValues(num_soilc, filter_soilc, 0._r8)
+          call c13_col_cf%SetValues(num_soilc, filter_soilc, num_soilp, filter_soilp, 0._r8)
           call c13_veg_cf%SetValues(num_soilp, filter_soilp, 0._r8)
        end if
 
        if ( use_c14 ) then
-          call c14_col_cf%SetValues(num_soilc, filter_soilc, 0._r8)
+          call c14_col_cf%SetValues(num_soilc, filter_soilc, num_soilp, filter_soilp, 0._r8)
           call c14_veg_cf%SetValues(num_soilp, filter_soilp, 0._r8)
        end if
        
-       call col_nf%SetValues (num_soilc, filter_soilc, 0._r8)
+       call col_nf%SetValues (num_soilc, filter_soilc, num_soilp, filter_soilp, 0._r8)
        call veg_nf%SetValues (num_soilp, filter_soilp, 0._r8)
 
-       call col_pf%SetValues (num_soilc, filter_soilc, 0._r8)
+       call col_pf%SetValues (num_soilc, filter_soilc, num_soilp, filter_soilp, 0._r8)
        call veg_pf%SetValues (num_soilp, filter_soilp, 0._r8)
 
        call t_stopf('CNZero')
@@ -336,15 +336,15 @@ module CNEcosystemDynBetrMod
        end if
 
        call CarbonStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            crop_vars, col_cs, veg_cs, col_cf, veg_cf, dt)
+            cnstate_vars, crop_vars, col_cs, veg_cs, col_cf, veg_cf, dt)
 
        if ( use_c13 ) then
           call CarbonStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               crop_vars, c13_col_cs, c13_veg_cs, c13_col_cf, c13_veg_cf,dt)
+               cnstate_vars, crop_vars, c13_col_cs, c13_veg_cs, c13_col_cf, c13_veg_cf,dt)
        end if
        if ( use_c14 ) then
           call CarbonStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               crop_vars, c14_col_cs, c14_veg_cs, c14_col_cf, c14_veg_cf,dt)
+               cnstate_vars, crop_vars, c14_col_cs, c14_veg_cs, c14_col_cf, c14_veg_cf,dt)
        end if
 
        call NStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
@@ -524,26 +524,26 @@ module CNEcosystemDynBetrMod
             
 
     call veg_cf%Summary(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, 'bulk', col_cf)
-    call col_cf%Summary(bounds, num_soilc, filter_soilc, 'bulk')
+    call col_cf%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'bulk')
     if ( use_c13 ) then
        call c13_veg_cf%Summary(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, 'c13', c13_col_cf)
-       call c13_col_cf%Summary(bounds, num_soilc, filter_soilc, 'c13')
+       call c13_col_cf%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'c13')
 
     end if
     if ( use_c14 ) then
        call C14_veg_cf%Summary(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, 'c14', c14_col_cf)
-       call c14_col_cf%Summary(bounds, num_soilc, filter_soilc, 'c14')
+       call c14_col_cf%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'c14')
     end if
 
     call veg_cs%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_cs)
-    call col_cs%Summary(bounds, num_soilc, filter_soilc)
+    call col_cs%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
     if ( use_c13 ) then
        call c13_veg_cs%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, c13_col_cs)
-       call c13_col_cs%Summary(bounds, num_soilc, filter_soilc)
+       call c13_col_cs%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
     end if
     if ( use_c14 ) then
        call c14_veg_cs%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, c14_col_cs)
-       call c14_col_cs%Summary(bounds, num_soilc, filter_soilc)
+       call c14_col_cs%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
 
     end if
 
@@ -551,16 +551,16 @@ module CNEcosystemDynBetrMod
       nitrogenflux_vars, nitrogenstate_vars, phosphorusflux_vars, phosphorusstate_vars)
 
     call veg_nf%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_nf)
-    call col_nf%Summary(bounds, num_soilc, filter_soilc)
+    call col_nf%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
 
     call veg_ns%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_ns)
-    call col_ns%Summary(bounds, num_soilc, filter_soilc)
+    call col_ns%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
 
     call veg_pf%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_pf)
-    call col_pf%Summary(bounds, num_soilc, filter_soilc)
+    call col_pf%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
 
     call veg_ps%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_ps)
-    call col_ps%Summary(bounds, num_soilc, filter_soilc)
+    call col_ps%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
 
     call t_stopf('CNsumBetr')
 

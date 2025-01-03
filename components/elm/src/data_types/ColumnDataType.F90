@@ -2655,7 +2655,7 @@ contains
     real(r8), pointer  :: ptr2d(:,:) ! temp. pointers for slicing larger arrays
     real(r8), pointer  :: ptr1d(:)   ! temp. pointers for slicing larger arrays
     character(len=128) :: varname    ! temporary
-    integer            :: i,j,k,l,c  ! indices
+    integer            :: i,j,k,l,c,p  ! indices
     real(r8)           :: c3_del13c  ! typical del13C for C3 photosynthesis (permil, relative to PDB)
     real(r8)           :: c4_del13c  ! typical del13C for C4 photosynthesis (permil, relative to PDB)
     real(r8)           :: c3_r1      ! isotope ratio (13c/12c) for C3 photosynthesis
@@ -3449,7 +3449,7 @@ contains
     type(column_carbon_state), intent(in) :: col_cs
     !
     ! !LOCAL VARIABLES:
-    integer           :: c,l,j,k,fc
+    integer           :: c,p,l,j,k,fc,fp
     integer           :: num_special_col           ! number of good values in special_col filter
     integer           :: special_col (endc-begc+1) ! special landunit filter - columns
     character(24)     :: fieldname
@@ -3985,7 +3985,7 @@ contains
     type(cnstate_type)         , intent(in)    :: cnstate_vars
     !
     ! !LOCAL VARIABLES:
-    integer            :: i,j,k,l,c
+    integer            :: i,j,k,l,c,p
     logical            :: readvar
     integer            :: idata
     logical            :: exit_spinup = .false.
@@ -5176,7 +5176,7 @@ contains
     type(cnstate_type)         , intent(in)    :: cnstate_vars
     !
     ! !LOCAL VARIABLES:
-    integer            :: i,j,k,l,c
+    integer            :: i,j,k,l,c,p
     real(r8)           :: a,b,d
     logical            :: readvar
     integer            :: idata
@@ -6387,6 +6387,8 @@ contains
     integer           :: fc                                        ! filter index
     integer           :: num_special_col                           ! number of good values in special_col filter
     integer           :: special_col(endc-begc+1)    ! special landunit filter - columns
+    integer           :: num_special_veg                           ! number of good values in special_patch filter
+    integer           :: special_veg(endp-begp+1)    ! special landunit filter - patches
     !------------------------------------------------------------------------
 
     !-----------------------------------------------------------------------
@@ -7498,7 +7500,17 @@ contains
        this%landuptake(c)  = 0._r8
     end do
 
-    call this%SetValues (num_column=num_special_col, filter_column=special_col, value_column=0._r8)
+    num_special_veg = 0
+    do p = begp,endp
+       l = veg_pp%landunit(p)
+       if (lun_pp%ifspecial(l)) then
+          num_special_veg = num_special_veg + 1
+          special_veg(num_special_veg) = p
+       end if
+    end do
+
+    call this%SetValues (num_special_col, special_col, &
+                         num_special_veg, special_veg, 0._r8)
 
   end subroutine col_cf_init
 
@@ -8689,6 +8701,8 @@ contains
     integer :: fc,fp                       ! filter indices
     integer :: num_special_col             ! number of good values in special_col filter
     integer :: special_col(endc-begc+1)    ! special landunit filter - columns
+    integer :: num_special_veg             ! number of good values in special_veg filter
+    integer :: special_veg(endp-begp+1)    ! special landunit filter - veg 
     !------------------------------------------------------------------------
 
     !-----------------------------------------------------------------------
@@ -9741,7 +9755,18 @@ contains
        this%dwt_nloss(c) = 0._r8
     end do
 
-    call this%SetValues (num_column=num_special_col, filter_column=special_col, value_column=0._r8)
+    num_special_veg = 0
+    do p = begp,endp
+       l = veg_pp%landunit(p)
+       if (lun_pp%ifspecial(l)) then
+          num_special_veg = num_special_veg + 1
+          special_veg(num_special_veg) = p
+       end if
+    end do
+
+    call this%SetValues (num_column=num_special_col, filter_column=special_col, &
+                         num_soilp=num_special_veg, filter_soilp=special_veg, &
+                         value_column=0._r8)
 
   end subroutine col_nf_init
 
@@ -10450,7 +10475,7 @@ contains
 
     ! bgc interface & pflotran
     if (use_elm_interface .and. (use_pflotran .and. pf_cmode)) then
-        call this%SummaryInt(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+        call this%SummaryInt(bounds, num_soilc, filter_soilc)
     end if
 
   end subroutine col_nf_summary
@@ -10687,10 +10712,12 @@ contains
     character(8)      :: vr_suffix
     character(1)      :: aa
     real(r8), pointer :: data2dptr(:,:), data1dptr(:) ! temp. pointers for slicing larger arrays
-    integer           :: c
+    integer           :: c,p
     integer           :: fc                           ! filter indices
     integer           :: num_special_col              ! number of good values in special_col filter
     integer           :: special_col(endc-begc+1)     ! special landunit filter - columns
+    integer           :: num_special_veg              ! number of good values in special_patch filter
+    integer           :: special_veg(endp-begp+1)     ! special landunit filter - patches
     !------------------------------------------------------------------------
 
     !-----------------------------------------------------------------------
@@ -10789,7 +10816,6 @@ contains
     allocate(this%residue_to_litr_met_p            (begc:endc,1:nlevdecomp_full)) ; this%residue_to_litr_met_p         (:,:) = spval
     allocate(this%residue_to_litr_cel_p            (begc:endc,1:nlevdecomp_full)) ; this%residue_to_litr_cel_p         (:,:) = spval
     allocate(this%residue_to_litr_lig_p            (begc:endc,1:nlevdecomp_full)) ; this%residue_to_litr_lig_p         (:,:) = spval
-    allocate(this%residue_ppools_to_litr           (begp:endp,1:nlit_pools))      ; this%residue_ppools_to_litr        (:,:) = spval
     allocate(this%primp_to_labilep_vr              (begc:endc,1:nlevdecomp_full)) ; this%primp_to_labilep_vr           (:,:) = spval
     allocate(this%primp_to_labilep                 (begc:endc))                   ; this%primp_to_labilep              (:)   = spval
     allocate(this%labilep_to_secondp_vr            (begc:endc,1:nlevdecomp_full)) ; this%labilep_to_secondp_vr         (:,:) = spval
@@ -11403,7 +11429,18 @@ contains
        this%dwt_ploss(c) = 0._r8
     end do
 
-    call this%SetValues (num_column=num_special_col, filter_column=special_col, value_column=0._r8)
+    num_special_veg = 0
+    do p = begp,endp
+       l = veg_pp%landunit(p)
+       if (lun_pp%ifspecial(l)) then
+          num_special_veg = num_special_veg + 1
+          special_veg(num_special_veg) = p
+       end if
+    end do
+
+    call this%SetValues (num_column=num_special_col, filter_column=special_col, &
+                         num_soilp=num_special_veg, filter_soilp=special_veg, &
+                         value_column=0._r8)
 
   end subroutine col_pf_init
 
@@ -11622,10 +11659,6 @@ contains
        this%harvest_p_to_residue_met_p(i)   = value_column
        this%harvest_p_to_residue_cel_p(i)   = value_column
        this%harvest_p_to_residue_lig_p(i)   = value_column
-
-       do k = 1, nlit_pools
-          this%residue_ppools_to_litr(i,k)  = value_column
-       end do
     end do
 
     do k = 1, ndecomp_pools
@@ -11780,6 +11813,7 @@ contains
     integer  :: c,p,j,k,l   ! indices
     integer  :: fc,fp       ! lake filter indices
     real(r8) :: maxdepth    ! depth to integrate soil variables
+    real(r8) :: wt_col
     !-----------------------------------------------------------------------
     do fc = 1,num_soilc
        c = filter_soilc(fc)

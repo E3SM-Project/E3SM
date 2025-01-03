@@ -8,7 +8,7 @@ module ResidueMod
   !
   ! !USES:
   use elm_varpar              , only : i_met_lit, i_cel_lit, i_lig_lit
-  use elm_varpar              , only : nlit_pools
+  use elm_varpar              , only : nlit_pools, nlevdecomp
   use ColumnDataType          , only : col_cs, col_ns, col_ps
   use ColumnDataType          , only : col_cf, col_nf, col_pf
   use CNStateType             , only : cnstate_type
@@ -72,17 +72,14 @@ contains
        residue_to_litr_met_c               =>    col_cf%residue_to_litr_met_c,        & ! Output: [real(r8) (:,:) ] C fluxes associated with residue to litter metabolic pool (gC/m3/s)
        residue_to_litr_cel_c               =>    col_cf%residue_to_litr_cel_c,        & ! Output: [real(r8) (:,:) ] C fluxes associated with residue to litter cellulose pool (gC/m3/s) 
        residue_to_litr_lig_c               =>    col_cf%residue_to_litr_lig_c,        & ! Output: [real(r8) (:,:) ] C fluxes associated with residue to litter lignin pool (gC/m3/s)
-       residue_cpools_to_litr              =>    col_cf%residue_cpools_to_litr,       & ! Output: [real(r8) (:,:) ] residue to litter C fluxes (gC/m2/s)
        
        residue_to_litr_met_n               =>    col_nf%residue_to_litr_met_n,        & ! Output: [real(r8) (:,:) ] N fluxes associated with residue to litter metabolic pool (gN/m3/s) 
        residue_to_litr_cel_n               =>    col_nf%residue_to_litr_cel_n,        & ! Output: [real(r8) (:,:) ] N fluxes associated with residue to litter cellulose pool (gN/m3/s)
        residue_to_litr_lig_n               =>    col_nf%residue_to_litr_lig_n,        & ! Output: [real(r8) (:,:) ] N fluxes associated with residue to litter lignin pool (gN/m3/s)
-       residue_npools_to_litr              =>    col_nf%residue_npools_to_litr,       & ! Output: [real(r8) (:,:) ] residue to litter N fluxes (gN/m2/s)
 
        residue_to_litr_met_p               =>    col_pf%residue_to_litr_met_p,        & ! Output: [real(r8) (:,:) ] P fluxes associated with residue to litter metabolic pool (gP/m3/s)
        residue_to_litr_cel_p               =>    col_pf%residue_to_litr_cel_p,        & ! Output: [real(r8) (:,:) ] P fluxes associated with residue to litter cellulose pool (gP/m3/s)
-       residue_to_litr_lig_p               =>    col_pf%residue_to_litr_lig_p,        & ! Output: [real(r8) (:,:) ] P fluxes associated with residue to litter lignin pool (gP/m3/s)
-       residue_ppools_to_litr              =>    col_pf%residue_ppools_to_litr        & ! Output: [real(r8) (:,:) ] residue to litter P fluxes (gP/m2/s)
+       residue_to_litr_lig_p               =>    col_pf%residue_to_litr_lig_p         & ! Output: [real(r8) (:,:) ] P fluxes associated with residue to litter lignin pool (gP/m3/s)
        )
 
     ! Get time step
@@ -138,13 +135,15 @@ contains
           residue_npools(p,i_lig_lit) * litr_prof * residue2litr(p) * wt_col
 
        residue_to_litr_met_p(c,1:nlevdecomp) = residue_to_litr_met_p(c,1:nlevdecomp) + &
-          residue_ppools(p,i_met_lit) * litr_prof * residue2litr(p) * wc_col
+          residue_ppools(p,i_met_lit) * litr_prof * residue2litr(p) * wt_col
        residue_to_litr_cel_p(c,1:nlevdecomp) = residue_to_litr_cel_p(c,1:nlevdecomp) + &
-          residue_ppools(p,i_cel_lit) * litr_prof * residue2litr(p) * wc_col
+          residue_ppools(p,i_cel_lit) * litr_prof * residue2litr(p) * wt_col
        residue_to_litr_lig_p(c,1:nlevdecomp) = residue_to_litr_lig_p(c,1:nlevdecomp) + &
-          residue_ppools(p,i_lig_lit) * litr_prof * residue2litr(p) * wc_col
+          residue_ppools(p,i_lig_lit) * litr_prof * residue2litr(p) * wt_col
     end do
 
-    end subroutine CNResidueToColumn
+    end associate
 
-end module ResidueMode
+  end subroutine CNResidueToColumn
+
+end module ResidueMod

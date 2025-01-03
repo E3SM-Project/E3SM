@@ -702,7 +702,6 @@ contains
    real(r8):: m_veg                ! speedup factor for accelerated decomp
    integer :: fp,fc                ! filter indices
    real(r8):: f                    ! rate for fire effects (1/s)
-   real(r8):: wt_col
    integer :: itype
    real(r8):: cc_other_sc, wt_col, baf_crop_sc,lprof_pj,fr_prof_pj,cr_prof_pj,st_prof_pj
 

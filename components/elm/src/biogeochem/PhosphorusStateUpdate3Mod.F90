@@ -25,6 +25,7 @@ module PhosphorusStateUpdate3Mod
   use elm_varctl          , only : ECA_Pconst_RGspin
   use VegetationPropertiesType      , only : veg_vp
   use ColumnDataType      , only : col_ps, col_pf
+  use VegetationType      , only : veg_pp
   use VegetationDataType  , only : veg_ps, veg_pf
   !
   implicit none
@@ -76,6 +77,7 @@ contains
     associate(&
          isoilorder     => cnstate_vars%isoilorder ,&
          pdep_prof      => cnstate_vars%pdep_prof_col ,&
+         cascade_donor_pool    => decomp_cascade_con%cascade_donor_pool    ,&
          cascade_receiver_pool => decomp_cascade_con%cascade_receiver_pool ,&
          vmax_minsurf_p_vr => veg_vp%vmax_minsurf_p_vr , &
          km_minsurf_p_vr   => veg_vp%km_minsurf_p_vr     &

@@ -973,7 +973,7 @@ contains
 
          leaf_prof                 =>    cnstate_vars%leaf_prof_patch                  , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of leaves
          froot_prof                =>    cnstate_vars%froot_prof_patch                 , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of fine roots
-         residue_prof              =>    cnstate_vars%residue_prof_col                 , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of residue litter input
+         residue_prof              =>    cnstate_vars%residue_prof_patch               , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of residue litter input
          residue2litr              =>    cnstate_vars%residue2litr_patch               , & ! Input:  [real(r8) (:)   ]  (1/s) residue to litter conversion rate
 
          residue_cpools            =>    col_cs%residue_cpools,               & ! Input: [real(r8) (:,:) ] (gC/m2) surface residue (surface litter) c pools
@@ -1025,11 +1025,11 @@ contains
                   r2l = residue2litr(p)
                   ! residue C to litter C
                   residue_to_litr_met_c(c,1:nlevdecomp) = residue_to_litr_met_c(c,1:nlevdecomp) + &
-                     residue_cpools(p,i_met_lit) * residue_prof(p,1:nlevdecomp) * r2l * wt_col(p) 
+                     residue_cpools(p,i_met_lit) * residue_prof(p,1:nlevdecomp) * r2l * wtcol(p) 
                   residue_to_litr_cel_c(c,1:nlevdecomp) = residue_to_litr_cel_c(c,1:nlevdecomp) + &
-                     residue_cpools(p,i_cel_lit) * residue_prof(p,1:nlevdecomp) * r2l * wt_col(p)
+                     residue_cpools(p,i_cel_lit) * residue_prof(p,1:nlevdecomp) * r2l * wtcol(p)
                   residue_to_litr_lig_c(c,1:nlevdecomp) = residue_to_litr_lig_c(c,1:nlevdecomp) + &
-                     residue_cpools(p,i_lig_lit) * residue_prof(p,1:nlevdecomp) * r2l * wt_col(p)
+                     residue_cpools(p,i_lig_lit) * residue_prof(p,1:nlevdecomp) * r2l * wtcol(p)
                end if
             end if
          end do

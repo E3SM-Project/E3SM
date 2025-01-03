@@ -132,7 +132,7 @@ contains
     ! !LOCAL VARIABLES:
     integer :: c,p,i,j,k,l,m                                                                           !indices
     integer :: fc,fp                                                                                   !lake filter column index
-    integer :: ci                                                                                      !cascade index
+    integer :: csi                                                                                     !cascade index
     real(r8):: p_decomp_cpool_loss(bounds%begc:bounds%endc,1:nlevdecomp,1:ndecomp_cascade_transitions) !potential C loss from one pool to another
     real(r8):: p_residue_cpool_loss(bounds%begp:bounds%endp,1:nlit_pools)                              !potential C loss from residue pools
     real(r8):: immob(bounds%begc:bounds%endc,1:nlevdecomp)                                             !potential N immobilization
@@ -389,7 +389,7 @@ contains
             c = veg_pp%column(p)
 
             if (residue_cpools(p,k) > 0._r8 .and. decomp_k(c,1,i_met_lit+k-1) > 0._r8 ) then 
-               p_residue_cpool_loss(p,k) = residue_cpool(p,k) / dzsoi_decomp(1) * &
+               p_residue_cpool_loss(p,k) = residue_cpools(p,k) / dzsoi_decomp(1) * &
                   decomp_k(c,1,i_met_lit+k-1)  * pathfrac_decomp_cascade(c,1,csi)
 
                if (cascade_receiver_pool(csi) /= i_atm ) then  ! not 100% respiration
@@ -638,7 +638,7 @@ contains
                end if
                residue_hr(p,k) = rf_decomp_cascade(c,1,csi) * p_residue_cpool_loss(p,k) * dzsoi_decomp(1)
                residue_ctransfer(p,k) = (1._r8 - rf_decomp_cascade(c,1,csi)) * p_residue_cpool_loss(p,k) &
-                  dzsoi_decomp(1)
+                  * dzsoi_decomp(1)
                if (residue_npools(p,k) > 0._r8 .and. cascade_receiver_pool(csi) /= i_atm) then
                   residue_ntransfer(p,k) = p_residue_cpool_loss(p,k) * dzsoi_decomp(1) / cn_residue_pools(p,k)
                else
@@ -1080,7 +1080,7 @@ contains
    !CALLED FROM:
    !
    !LOCAL VARIABLES:
-   integer :: c,j,k,fc          !indices
+   integer :: c,p,j,k,fc,fp          !indices
    !
    !-----------------------------------------------------------------------
    associate (&
@@ -1119,10 +1119,10 @@ contains
    ! pflotran not yet support phosphous cycle
    if ( carbon_only .or.  carbonnitrogen_only  ) then
       call veg_ps%SetValues(num_patch=num_soilp,  filter_patch=filter_soilp,  value_patch=0._r8)
-      call col_ps%SetValues(num_soilc, filter_soilc, num_soilp, filter_soilp, value_column=0._r8)
+      call col_ps%SetValues(num_column=num_soilc, filter_column=filter_soilc, value_column=0._r8)
 
-      call veg_pf%SetValues( num_patch=num_soilp,  filter_patch=filter_soilp,  value_patch=0._r8)
-      call col_pf%SetValues( num_soilc, filter_soilc, num_soilp, filter_soilp, value_column=0._r8)
+      call veg_pf%SetValues(num_patch=num_soilp,  filter_patch=filter_soilp,  value_patch=0._r8)
+      call col_pf%SetValues(num_soilc, filter_soilc, num_soilp, filter_soilp, value_column=0._r8)
    end if
 
   end associate
