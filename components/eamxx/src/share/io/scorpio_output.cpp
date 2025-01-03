@@ -1314,6 +1314,8 @@ get_field(const std::string& name, const std::string& mode) const
   } else {
     EKAT_ERROR_MSG ("ERROR::AtmosphereOutput::get_field Field " + name + " not found in " + mode + " field manager or diagnostics list.");
   }
+  static Field f;
+  return f;
 }
 /* ---------------------------------------------------------- */
 void AtmosphereOutput::set_diagnostics()
@@ -1367,7 +1369,6 @@ AtmosphereOutput::create_diagnostic (const std::string& diag_field_name)
   for (const auto& freq : diag->get_required_field_requests()) {
     const auto& fname = freq.fid.name();
     if (!sim_field_mgr->has_field(fname)) {
-      std::cout << diag_field_name << " depends on the diag " << fname << "\n";
       // This diag depends on another diag. Create and init the dependency
       if (m_diagnostics.count(fname)==0) {
         m_diagnostics[fname] = create_diagnostic(fname);

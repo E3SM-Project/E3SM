@@ -14,11 +14,9 @@
 namespace scream {
 namespace control {
 /*
- * Class which provides functionality for running EAMxx with an intensive
- * observation period (IOP). Currently the only use case is the doubly
- * periodic model (DP-SCREAM).
+ * Class which data for an intensive observation period (IOP).
  */
-class IntensiveObservationPeriod
+class IOPDataManager
 {
   using vos = std::vector<std::string>;
   using field_mgr_ptr = std::shared_ptr<FieldManager>;
@@ -47,15 +45,15 @@ public:
   //   - run_t0: Initial timestamp for the simulation
   //   - model_nlevs: Number of vertical levels in the simulation. Needed since
   //                  the iop file contains a (potentially) different number of levels
-  IntensiveObservationPeriod(const ekat::Comm& comm,
-                             const ekat::ParameterList& params,
-                             const util::TimeStamp& run_t0,
-                             const int model_nlevs,
-                             const Field& hyam,
-                             const Field& hybm);
+  IOPDataManager(const ekat::Comm& comm,
+                 const ekat::ParameterList& params,
+                 const util::TimeStamp& run_t0,
+                 const int model_nlevs,
+                 const Field& hyam,
+                 const Field& hybm);
 
-  // Default destructor
-  ~IntensiveObservationPeriod();
+  // Destructor
+  ~IOPDataManager();
 
   // Read data from IOP file and store internally.
   void read_iop_file_data(const util::TimeStamp& current_ts);
@@ -197,7 +195,7 @@ private:
   std::map<std::string, std::string> m_iop_file_varnames;
   std::map<std::string, std::string> m_iop_field_surface_varnames;
   std::map<std::string, IOPFieldType> m_iop_field_type;
-}; // class IntensiveObservationPeriod
+}; // class IOPDataManager
 
 } // namespace control
 } // namespace scream

@@ -99,16 +99,16 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   m_ncol = m_grid->get_num_local_dofs();
   m_nlay = m_grid->get_num_vertical_levels();
 
-  if (m_iop) {
+  if (m_iop_data_manager) {
     // For IOP runs, we need to use the lat/lon from the
     // IOP files instead of the geometry data. Deep copy
     // to device and sync to host since both will be used.
     m_lat = m_grid->get_geometry_data("lat").clone();
-    m_lat.deep_copy(m_iop->get_params().get<Real>("target_latitude"));
+    m_lat.deep_copy(m_iop_data_manager->get_params().get<Real>("target_latitude"));
     m_lat.sync_to_host();
 
     m_lon = m_grid->get_geometry_data("lon").clone();
-    m_lon.deep_copy(m_iop->get_params().get<Real>("target_longitude"));
+    m_lon.deep_copy(m_iop_data_manager->get_params().get<Real>("target_longitude"));
     m_lon.sync_to_host();
   } else {
     m_lat = m_grid->get_geometry_data("lat");

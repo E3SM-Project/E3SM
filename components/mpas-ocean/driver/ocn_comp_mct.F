@@ -2181,7 +2181,7 @@ contains
                call shr_sys_abort ('Error: incoming rofi_F is negative')
            end if
            if (config_remove_ais_ice_runoff) then
-              if (latCell(i) < -1.04719666667_RKIND) then ! 60S in radians
+              if (latCell(i) < -0.99483767345_RKIND) then ! 57S in radians
                  removedIceRunoffFlux(i) = iceRunoffFlux(i)
                  iceRunoffFlux(i) = 0.0_RKIND
                  removedIceRunoffFluxThisProc = removedIceRunoffFluxThisProc + removedIceRunoffFlux(i)
@@ -3714,7 +3714,7 @@ contains
                call shr_sys_abort ('Error: incoming rofi_F is negative')
            end if
            if (config_remove_ais_ice_runoff) then
-              if (latCell(i) < -1.04719666667_RKIND) then ! 60S in radians
+              if (latCell(i) < -0.99483767345_RKIND) then ! 57S in radians
                  removedIceRunoffFlux(i) = iceRunoffFlux(i)
                  iceRunoffFlux(i) = 0.0_RKIND
                  removedIceRunoffFluxThisProc = removedIceRunoffFluxThisProc + removedIceRunoffFlux(i)

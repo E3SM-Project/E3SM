@@ -966,6 +966,7 @@ auto Field::get_ND_view () const
                  "MaxRank = 6.\n"
                  "This should never be called at run time.\n"
                  "Please contact developer if this functionality is required\n");
+  return get_view_type<data_nd_t<T,N>,HD>();
 }
 
 } // namespace scream
