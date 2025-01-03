@@ -40,8 +40,9 @@ module mpas_moabmesh
     integer, pointer :: nCells, nVertices, maxEdges
     integer  :: pid, nblocks
     integer, dimension(:,:), pointer :: verticesOnCell
+    integer, dimension(:,:), pointer :: verticesOnEdge
     integer, dimension(:), pointer :: nEdgesOnCell
-    integer, dimension(:), pointer :: indexToVertexID, indexToCellID
+    integer, dimension(:), pointer :: indexToVertexID, indexToEdgeID, indexToCellID
     real(kind=RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
     real (kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell, areaCell
     logical, pointer :: on_a_sphere, is_periodic
@@ -85,7 +86,9 @@ module mpas_moabmesh
        call mpas_pool_get_config(meshPool, 'x_period', x_period)
        call mpas_pool_get_config(meshPool, 'y_period', y_period)
        call mpas_pool_get_array(meshPool, 'verticesOnCell', verticesOnCell)
+       call mpas_pool_get_array(meshPool, 'verticesOnEdge', verticesOnEdge)
        call mpas_pool_get_array(meshPool, 'indexToVertexID', indexToVertexID)
+       call mpas_pool_get_array(meshPool, 'indexToEdgeID', indexToEdgeID)
        call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
        call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
        call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
@@ -154,7 +157,21 @@ module mpas_moabmesh
 
        ierr = iMOAB_CreateElements( pid, nCellsSolve, mbtype, maxEdges, all_connects, block_ID );
        call errorout(ierr, 'fail to create polygons')
- 
+
+       deallocate (all_connects)
+       allocate(all_connects(nEdgesSolve*2))
+       ! create also edges, based on verticesOnEdge
+       j1 = 1 ! reset the counter in all_connects; we should have enough allocation for number of edges
+       do i1=1, nEdgesSolve
+          all_connects(j1) = indexUsed(verticesOnEdge( 1, i1) )
+          all_connects(j1 + 1) = indexUsed(verticesOnEdge( 2, i1) )
+          j1 = j1 + 2
+       enddo
+       mbtype = 1 ! edges MBEDGE
+       ierr = iMOAB_CreateElements( pid, nEdgesSolve, mbtype, 2, all_connects, block_ID );
+       call errorout(ierr, 'fail to create edges')
+       ! now we need to set global id for those edges
+       
 !      set the global id for vertices
 !   first, retrieve the tag
        tagname='GLOBAL_ID'//C_NULL_CHAR
@@ -175,9 +192,10 @@ module mpas_moabmesh
        ent_type = 1 ! now set the global id tag on elements
        ierr = iMOAB_SetIntTagStorage ( pid, tagname, nCellsSolve, ent_type, indexToCellID)
        call errorout(ierr, 'fail to set global id tag for polygons')
-       ! get next block
-       ierr = iMOAB_ResolveSharedEntities( pid, currentVertex, localIds );
-       call errorout(ierr, 'fail to resolve shared entities')
+       ! set global id tag for edges
+       ent_type = 2 ! now set the global id tag on edges
+       ierr = iMOAB_SetIntTagStorage ( pid, tagname, nEdgesSolve, ent_type, indexToEdgeID)
+       call errorout(ierr, 'fail to set global id tag for edges')
 
        allocate(data(nCellsSolve))
        n=0
@@ -192,10 +210,17 @@ module mpas_moabmesh
        ierr = iMOAB_DefineTagStorage(pid, tagname, tagtype, numco,  tagindex )
        call errorout(ierr, 'fail to define area tag')
 
+       ent_type = 1 ! now set the area tag on cells
        ierr = iMOAB_SetDoubleTagStorage ( pid, tagname, nCellsSolve , ent_type, data)
        if (ierr > 0 )  &
           call errorout(ierr,'Error: fail to set area tag ')
 
+
+       ! this will also reset number of entities
+       ierr = iMOAB_ResolveSharedEntities( pid, currentVertex, localIds );
+       call errorout(ierr, 'fail to resolve shared entities')
+
+       
        ! set it to the same area, but change it eventually with the area from mapping routing (tempestremap for MOAB)
        ! comment it 
        ! tagname='aream'//C_NULL_CHAR
