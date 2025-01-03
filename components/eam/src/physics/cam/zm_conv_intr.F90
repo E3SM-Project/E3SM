@@ -513,7 +513,7 @@ subroutine zm_conv_init(pref_edge)
 
          end do
 
-       else if (nbulk > 0) then
+      else if (nbulk > 0) then
 
          aero%scheme = 'bulk'
 
