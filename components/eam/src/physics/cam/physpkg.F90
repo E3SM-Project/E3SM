@@ -84,6 +84,11 @@ module physpkg
   integer ::  gas_ac_idx         = 0
   integer :: species_class(pcnst)  = -1 !BSINGH: Moved from modal_aero_data.F90 as it is being used in second call to zm deep convection scheme (convect_deep_tend_2)
 
+  integer :: DSE_ac_idx           = 0
+  integer :: QLV_ac_idx           = 0
+  integer :: DSE_tot_idx          = 0
+  integer :: QLV_tot_idx          = 0
+
   save
 
   ! Public methods
@@ -276,6 +281,11 @@ subroutine phys_register
     ! -- It does not seem that aero_intr should add it since FRACIS is used in convection
     !     even if there are no prognostic aerosols ... so do it here for now 
        call pbuf_add_field('FRACIS','physpkg',dtype_r8,(/pcols,pver,pcnst/),m)
+
+       call pbuf_add_field('DSE_ac',      'global', dtype_r8,(/pcols,pver/),DSE_ac_idx)
+       call pbuf_add_field('QLV_ac',      'global', dtype_r8,(/pcols,pver/),QLV_ac_idx)
+       call pbuf_add_field('DSE_tot',     'global', dtype_r8,(/pcols,pver/),DSE_tot_idx)
+       call pbuf_add_field('QLV_tot',     'global', dtype_r8,(/pcols,pver/),QLV_tot_idx)
 
        call conv_water_register()
        
@@ -785,6 +795,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     use misc_diagnostics,   only: dcape_diags_init
     use conditional_diag_output_utils, only: cnd_diag_output_init
     use phys_grid_ctem,     only: phys_grid_ctem_init
+    use cam_history,        only: addfld
 
     ! Input/output arguments
     type(physics_state), pointer       :: phys_state(:)
@@ -1021,6 +1032,24 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
       nstep_ignore_diagn1 = get_nstep()
       nstep_ignore_diagn2 = nstep_ignore_diagn1 + 1
     endif
+
+
+    ! Special variables to "nearly" close MSE budget
+    call addfld('DDSE_TOT',(/'lev'/),'A','J/kg/s','Total Eulerian DSE tendency', standard_name='ddse_tot')
+    call addfld('DQLV_TOT',(/'lev'/),'A','J/kg/s','Total Eulerian qLv tendency', standard_name='dqlv_tot')
+    call addfld('DDSE_DYN',(/'lev'/),'A','J/kg/s','Dynamics DSE tend', standard_name='ddse_dyn')
+    call addfld('DQLV_DYN',(/'lev'/),'A','J/kg/s','Dynamics qLv tend', standard_name='dqlv_dyn')
+    ! call addfld('DDSE_PBL',(/'lev'/),'A','J/kg/s','DSE tend from PBL scheme' )
+    ! call addfld('DQLV_PBL',(/'lev'/),'A','J/kg/s','qLv tend from PBL scheme' )
+    call addfld('DDSE_CEF',(/'lev'/),'A','J/kg/s','DSE tend from check_energy_fix()' )
+    call addfld('DQLV_CEF',(/'lev'/),'A','J/kg/s','qLv tend from check_energy_fix()' )
+    call addfld('DDSE_GWD',(/'lev'/),'A','J/kg/s','DSE tend from gw_tend()' )
+    ! call addfld('DDSE_RAY',(/'lev'/),'A','J/kg/s','DSE tendency from Rayleigh friction' )
+
+    call addfld('DDSE_CLD',(/'lev'/),'A','J/kg/s','DSE tendency due to clouds' )
+    call addfld('DQLV_CLD',(/'lev'/),'A','J/kg/s','qLv tendency due to clouds' )
+    call addfld('DDSE_QRS',(/'lev'/),'A','J/kg/s','DSE tendency due to SW rad' )
+    call addfld('DDSE_QRL',(/'lev'/),'A','J/kg/s','DSE tendency due to LW rad' )
 
 
 end subroutine phys_init
@@ -1595,6 +1624,7 @@ subroutine tphysac (ztodt,   cam_in,  &
     use phys_control,       only: use_qqflx_fixer
     use co2_cycle,          only: co2_cycle_set_ptend, co2_transport
     use co2_diagnostics,    only: get_carbon_sfc_fluxes, get_carbon_air_fluxes
+    use cam_history,        only: outfld
 
     implicit none
 
@@ -1658,6 +1688,8 @@ subroutine tphysac (ztodt,   cam_in,  &
     !DCAPE-ULL: physics buffer fields to compute tendencies for dcape
     real(r8), pointer, dimension(:,:) :: t_star   ! temperature
     real(r8), pointer, dimension(:,:) :: q_star   ! moisture
+
+    real(r8), dimension(pcols,pver)   :: DSE_save, QLV_save
 
     character(len=16)  :: deep_scheme             ! Default set in phys_control.F90
 
@@ -1923,6 +1955,10 @@ if (l_gw_drag) then
     !===================================================
     call t_startf('gw_tend')
 
+    ! Save MSE components
+    DSE_save(1:ncol,1:pver) = state%s(1:ncol,1:pver)
+    QLV_save(1:ncol,1:pver) = state%q(1:ncol,1:pver,1)*latvap
+
     call gw_tend(state, sgh, pbuf, ztodt, ptend, cam_in)
 
     call physics_update(state, ptend, ztodt, tend)
@@ -1930,6 +1966,8 @@ if (l_gw_drag) then
     call check_energy_chng(state, tend, "gwdrag", nstep, ztodt, zero, zero, zero, zero)
     call t_stopf('gw_tend')
     call cnd_diag_checkpoint( diag, 'GWDRAG', state, pbuf, cam_in, cam_out )
+
+    call outfld('DDSE_GWD',( state%s(1:ncol,:) - DSE_save(1:ncol,:) )/ztodt, ncol, lchnk )
 
     ! QBO relaxation
     call qbo_relax(state, pbuf, ptend)
@@ -2381,6 +2419,10 @@ subroutine tphysbc (ztodt,               &
     logical :: l_rad
     !HuiWan (2014/15): added for a short-term time step convergence test ==
 
+    ! MSE budget stuff
+    real(r8), dimension(pcols,pver)   :: DSE_save, QLV_save
+    real(r8), pointer, dimension(:,:) :: qrs, qrl
+
     ! Numerical schemes for process coupling
     integer :: cflx_cpl_opt  ! When to apply surface tracer fluxes  (not including water vapor).
                              ! The default for aerosols is to do this 
@@ -2422,6 +2464,10 @@ subroutine tphysbc (ztodt,               &
     rtdt = 1._r8/ztodt
 
     nstep = get_nstep()
+
+    ! Save MSE components
+    DSE_save(1:ncol,1:pver) = state%s(1:ncol,1:pver)
+    QLV_save(1:ncol,1:pver) = state%q(1:ncol,1:pver,1)*latvap
 
     if (pergro_test_active) then 
        !call outfld calls
@@ -2581,9 +2627,19 @@ if (l_bc_energy_fix) then
 
     tini(:ncol,:pver) = state%t(:ncol,:pver)
     if (dycore_is('LR') .or. dycore_is('SE'))  then
+
+       ! Save MSE components
+       DSE_save(1:ncol,1:pver) = state%s(1:ncol,1:pver)
+       QLV_save(1:ncol,1:pver) = state%q(1:ncol,1:pver,1)*latvap
+
        call check_energy_fix(state, ptend, nstep, flx_heat)
        call physics_update(state, ptend, ztodt, tend)
        call check_energy_chng(state, tend, "chkengyfix", nstep, ztodt, zero, zero, zero, flx_heat)
+
+       ! Calculate MSE tend
+       call outfld('DDSE_CEF',( state%s(1:ncol,:)          - DSE_save(1:ncol,:) )/ztodt, ncol, lchnk )
+       call outfld('DQLV_CEF',( state%q(1:ncol,:,1)*latvap - QLV_save(1:ncol,:) )/ztodt, ncol, lchnk )
+
     end if
     ! Save state for convective tendency calculations.
     call diag_conv_tend_ini(state, pbuf)
@@ -3054,6 +3110,11 @@ end if
 
     call cnd_diag_checkpoint( diag, 'PBCDIAG', state, pbuf, cam_in, cam_out )
 
+    ! Output MSE tend from clouds
+    call outfld('DDSE_CLD',( state%s(1:ncol,1:pver)          - DSE_save(1:ncol,1:pver) )/ztodt, ncol, lchnk )
+    call outfld('DQLV_CLD',( state%q(1:ncol,1:pver,1)*latvap - QLV_save(1:ncol,1:pver) )/ztodt, ncol, lchnk )
+
+
 if (l_rad) then
     !===================================================
     ! Radiation computations
@@ -3079,6 +3140,12 @@ if (l_rad) then
 end if ! l_rad
 
     call cnd_diag_checkpoint( diag, 'RAD', state, pbuf, cam_in, cam_out )
+
+    ! Output MSE tend from radiation
+    call pbuf_get_field(pbuf, pbuf_get_index('QRS'), qrs)
+    call pbuf_get_field(pbuf, pbuf_get_index('QRL'), qrl)
+    call outfld('DDSE_QRS', qrs(1:ncol,:), ncol, lchnk )
+    call outfld('DDSE_QRL', qrl(1:ncol,:), ncol, lchnk )
 
     if(do_aerocom_ind3) then
        call cloud_top_aerocom(state, pbuf) 
