@@ -393,6 +393,7 @@ my $START_TOD              = "$xmlvars{'START_TOD'}";
 my $RUN_REFDATE            = "$xmlvars{'RUN_REFDATE'}";
 my $CONTINUE_RUN           = "$xmlvars{'CONTINUE_RUN'}";
 my $MALI_USE_ALBANY        = "$xmlvars{'MALI_USE_ALBANY'}";
+my $MALI_ICESHEET_COUPLING_MODE = "$xmlvars{'MALI_ICESHEET_COUPLING_MODE'}";
 
 my $output_r = "./${CASE}.mali.r";
 my $output_h = "./${CASE}.mali.h";
@@ -412,6 +413,7 @@ my $ntasks = $NTASKS_GLC / $NINST_GLC;
 print "MALI build-namelist: glc_grid is $GLC_GRID \n";
 print "MALI build-namelist: MALI_DYNAMIC is $MALI_DYNAMIC \n";
 print "MALI build-namelist: MALI_USE_ALBANY is $MALI_USE_ALBANY \n";
+print "MALI build-namelist: MALI_ICESHEET_COUPLING_MODE is $MALI_ICESHEET_COUPLING_MODE \n";
 
 (-d $DIN_LOC_ROOT)  or mkdir $DIN_LOC_ROOT;
 if ($print>=2) { print "CESM inputdata root directory: $DIN_LOC_ROOT$eol"; }
@@ -533,7 +535,7 @@ add_default($nl, 'config_max_water_fraction');
 # Namelist group: iceshelf_melt #
 #################################
 
-add_default($nl, 'config_basal_mass_bal_float');
+add_default($nl, 'config_basal_mass_bal_float', 'mali_icesheet_coupling_mode'=>"$MALI_ICESHEET_COUPLING_MODE");
 add_default($nl, 'config_bmlt_float_flux');
 add_default($nl, 'config_bmlt_float_xlimit');
 add_default($nl, 'config_basal_mass_bal_seroussi_amplitude');

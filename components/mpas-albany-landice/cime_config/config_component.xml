@@ -22,6 +22,28 @@
     <desc>MALI configure options. Currently not used</desc>
   </entry>
 
+  <entry id="MALI_ICESHEET_COUPLING_MODE">
+    <type>char</type>
+    <valid_values>AIS,GIS</valid_values>
+    <default_value>AIS</default_value>
+    <values>
+      <value compset="_MALI%AIS">AIS</value>
+      <value compset="_MALI%GIS">GIS</value>
+    </values>
+    <group>case_comp</group>
+    <file>env_case.xml</file>
+    <desc>Selection of which ice sheet, Antarctica or Greenland,
+      that MALI physics setting and coupling should be configured
+      ais=Antarctic Ice Sheet, gis=Greenland Ice Sheet
+      In ais mode, ice-shelf basal melting is calculated in the
+      coupler based on the state from the ocean model.
+      In gis mode, ice-shelf basal melting and facemelting are
+      calculated in MALI using the ISMIP6 parameterizations
+      forced by ocean thermal forcing passed from the ocean model
+      through the coupler.
+    </desc>
+  </entry>
+
   <entry id="MALI_USE_ALBANY">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
