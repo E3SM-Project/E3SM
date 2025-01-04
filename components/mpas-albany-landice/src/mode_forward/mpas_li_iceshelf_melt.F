@@ -1252,8 +1252,8 @@ module li_iceshelf_melt
          IS_area(:) = 0.d0
 
          ! Check zOcean for valid values
-         if (minval(zOcean) == 0.0_RKIND) then
-            call mpas_log_write("Invalid value for zOcean. It should have negative values but min value of 0.0 was found", &
+         if (minval(zOcean) >= 0.0_RKIND) then
+            call mpas_log_write("Invalid value for zOcean. It should have negative values but min value >= 0.0 was found", &
                                 MPAS_LOG_ERR)
             err = ior(err, 1)
          endif
