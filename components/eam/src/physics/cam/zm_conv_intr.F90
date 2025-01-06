@@ -861,7 +861,7 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
                dnsf(pcols,pver), &
                wuc(pcols,pver)   )
    end if
-   wuc(:,:) = 0
+   wuc(1:pcols,1:pver) = 0
 
    call pbuf_get_field(pbuf, lambdadpcu_idx, lambdadpcu)
    call pbuf_get_field(pbuf, mudpcu_idx,     mudpcu)
