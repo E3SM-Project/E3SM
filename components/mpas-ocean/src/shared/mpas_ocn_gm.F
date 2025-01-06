@@ -249,13 +249,13 @@ contains
             cell2 = cellsOnEdge(2, iEdge)
 
             if(dThreshMLD(cell1) < boundaryLayerDepth(cell1)) then
-              mld1 = boundaryLayerDepth(cell1) + 100.0_RKIND
+              mld1 = boundaryLayerDepth(cell1) + config_redi_transition_layer_mld_offset 
             else
               mld1 = dThreshMLD(cell1)
             end if
 
             if(dThreshMLD(cell2) < boundaryLayerDepth(cell2)) then
-              mld2 = boundaryLayerDepth(cell2) + 100.0_RKIND
+              mld2 = boundaryLayerDepth(cell2) + config_redi_transition_layer_mld_offset
             else
               mld2 = dThreshMLD(cell2)
             end if
