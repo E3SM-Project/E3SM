@@ -12,7 +12,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.48">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.49">
     
     
       
@@ -3078,6 +3078,21 @@
 <li>type: logical  </li>
 </ul>
 </li>
+<li>p3::set_cld_frac_l_to_one:  <ul>
+<li>description: set P3 input liquid cloud fraction to 1 everywhere  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>p3::set_cld_frac_r_to_one:  <ul>
+<li>description: set P3 input rain cloud fraction to 1 everywhere  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>p3::set_cld_frac_i_to_one:  <ul>
+<li>description: set P3 input ice cloud fraction to 1 everywhere  </li>
+<li>type: logical  </li>
+</ul>
+</li>
 <li>p3::number_of_subcycles:  <ul>
 <li>description: how many times to subcycle this atm process  </li>
 <li>type: <strong>MISSING</strong>  </li>
@@ -3927,6 +3942,41 @@
 </ul>
 </li>
 </ul>
+<h2 id="iop_forcing">iop_forcing</h2>
+<ul>
+<li>iop_forcing::number_of_subcycles:  <ul>
+<li>description: how many times to subcycle this atm process  </li>
+<li>type: <strong>MISSING</strong>  </li>
+<li>constraints: gt 0  </li>
+</ul>
+</li>
+<li>iop_forcing::enable_precondition_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>iop_forcing::enable_postcondition_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>iop_forcing::repair_log_level:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: string  </li>
+<li>valid values: trace,debug,info,warn  </li>
+</ul>
+</li>
+<li>iop_forcing::internal_diagnostics_level:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: integer  </li>
+</ul>
+</li>
+<li>iop_forcing::compute_tendencies:  <ul>
+<li>description: list of computed fields for which this process will back out tendencies  </li>
+<li>type: array(string)  </li>
+</ul>
+</li>
+</ul>
 <h2 id="testonly">testOnly</h2>
 <ul>
 <li>testOnly::my_param:  <ul>
@@ -4724,6 +4774,11 @@
 <li>type: <strong>MISSING</strong>  </li>
 </ul>
 </li>
+<li>driver_options::save_field_manager_dictionary:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
 <li>driver_options::atm_log_level:  <ul>
 <li>description: Verbosity level for the atm logger  </li>
 <li>type: string  </li>
@@ -5016,7 +5071,7 @@
     <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.sections", "navigation.path", "navigation.tracking", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.select", "content.code.copy", "content.action.view", "content.tooltips"], "search": "../../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.83f73b43.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.88dd0f4e.min.js"></script>
       
         <script src="../../../javascript/mathjax.js"></script>
       
