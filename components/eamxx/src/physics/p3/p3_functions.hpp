@@ -131,6 +131,9 @@ struct Functions
     Scalar deposition_nucleation_exponent = 0.304;
     Scalar ice_sedimentation_factor = 1.0;
     bool do_ice_production = true;
+    bool set_cld_frac_l_to_one = false;
+    bool set_cld_frac_i_to_one = false;
+    bool set_cld_frac_r_to_one = false;
 
     void load_runtime_options_from_file(ekat::ParameterList& params) {
       max_total_ni = params.get<double>("max_total_ni", max_total_ni);
@@ -153,6 +156,9 @@ struct Functions
       deposition_nucleation_exponent = params.get<double>("deposition_nucleation_exponent", deposition_nucleation_exponent);
       ice_sedimentation_factor = params.get<double>("ice_sedimentation_factor", ice_sedimentation_factor);
       do_ice_production = params.get<bool>("do_ice_production", do_ice_production);
+      set_cld_frac_l_to_one = params.get<bool>("set_cld_frac_l_to_one", set_cld_frac_l_to_one);
+      set_cld_frac_i_to_one = params.get<bool>("set_cld_frac_i_to_one", set_cld_frac_i_to_one);
+      set_cld_frac_r_to_one = params.get<bool>("set_cld_frac_r_to_one", set_cld_frac_r_to_one);
     }
 
   };
