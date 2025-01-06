@@ -391,6 +391,14 @@ Valid values: 'constant', 'equalGM', 'data'
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_redi_transition_layer_mld_offset" type="real"
+	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
+For instances where MLD lt BLD, the MLD for the transition layer (from isopycnal at depth to horizontal in the BLD) is set to BLD + this config value
+
+Valid values: Positive real numbers.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_Redi_constant_kappa" type="real"
 	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
 The Redi diffusion coefficient. Only used when config_Redi_closure = 'constant'.
