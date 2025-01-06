@@ -1258,7 +1258,7 @@ module li_iceshelf_melt
             err = ior(err, 1)
          endif
          if (maxval(zOcean) > 0.0_RKIND) then
-            call mpas_log_write("Invalid value for zOcean. It should have negative values but max value greater than 0.0 was found", &
+            call mpas_log_write("Invalid value for zOcean. It should have non-positive values but max value greater than 0.0 was found", &
                                 MPAS_LOG_ERR)
             err = ior(err, 1)
          endif
