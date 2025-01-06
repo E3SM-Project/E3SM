@@ -115,6 +115,7 @@ void compute_tables(const bool masterproc, MuRT& mu_r_table_vals, VNT& vn_table_
   Kokkos::deep_copy(mu_r_table_vals_nc, 1); // mu_r_constant =1. In other places, this is runtime_options.constant_mu_rain
 
   static constexpr S thrd = 1./3;
+  static constexpr S small = 1.e-30;
 
   //.......................................................................
   // Generate lookup table for rain fallspeed and ventilation parameters
@@ -173,9 +174,9 @@ void compute_tables(const bool masterproc, MuRT& mu_r_table_vals, VNT& vn_table_
         dum5 += std::pow(vt*dia, 0.5) * std::pow(10, (mu_r+1)*std::log10(dia) + 3*mu_r) * std::exp(-lamr*dia) * dd * 1.e-6;
       }
 
-      dum2 = std::max(dum2, 1.e-30); // to prevent divide-by-zero below
-      dum4 = std::max(dum4, 1.e-30); // to prevent divide-by-zero below
-      dum5 = std::max(dum5, 1.e-30); // to prevent log10-of-zero below
+      dum2 = std::max(dum2, small); // to prevent divide-by-zero below
+      dum4 = std::max(dum4, small); // to prevent divide-by-zero below
+      dum5 = std::max(dum5, small); // to prevent log10-of-zero below
 
       vn_table_vals_nc(jj-1,ii-1)    = dum1/dum2;
       vm_table_vals_nc(jj-1,ii-1)    = dum3/dum4;
@@ -217,10 +218,12 @@ void io_impl(const bool masterproc, const char* dir, MuRT& mu_r_table_vals, VNT&
 
   const char* rw_flag = IsRead ? "r" : "w";
 
-  std::string mu_r_filename  = std::string(dir) + "/mu_r_table_vals.dat" + extension;
-  std::string revap_filename = std::string(dir) + "/revap_table_vals.dat" + extension;
-  std::string vn_filename    = std::string(dir) + "/vn_table_vals.dat" + extension;
-  std::string vm_filename    = std::string(dir) + "/vm_table_vals.dat" + extension;
+  // Add v2 because these tables are not identical to v1 due to roundoff differences
+  // caused by doing the math in C++ instead of f90.
+  std::string mu_r_filename  = std::string(dir) + "/mu_r_table_vals_v2.dat" + extension;
+  std::string revap_filename = std::string(dir) + "/revap_table_vals_v2.dat" + extension;
+  std::string vn_filename    = std::string(dir) + "/vn_table_vals_v2.dat" + extension;
+  std::string vm_filename    = std::string(dir) + "/vm_table_vals_v2.dat" + extension;
 
   ekat::FILEPtr mu_r_file(fopen(mu_r_filename.c_str(), rw_flag));
   ekat::FILEPtr revap_file(fopen(revap_filename.c_str(), rw_flag));

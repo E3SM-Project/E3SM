@@ -199,10 +199,10 @@ be lost if SCREAM_HACK_XML is not enabled.
       <max_total_ni type="real" doc="maximum total ice concentration (sum of all categories)" constraints="gt 0">740.0e3</max_total_ni>
       <tables type="array(file)">
         ${DIN_LOC_ROOT}/atm/scream/tables/p3_lookup_table_1.dat-v4.1.1,
-        ${DIN_LOC_ROOT}/atm/scream/tables/mu_r_table_vals.dat8,
-        ${DIN_LOC_ROOT}/atm/scream/tables/revap_table_vals.dat8,
-        ${DIN_LOC_ROOT}/atm/scream/tables/vn_table_vals.dat8,
-        ${DIN_LOC_ROOT}/atm/scream/tables/vm_table_vals.dat8
+        ${DIN_LOC_ROOT}/atm/scream/tables/mu_r_table_vals_v2.dat8,
+        ${DIN_LOC_ROOT}/atm/scream/tables/revap_table_vals_v2.dat8,
+        ${DIN_LOC_ROOT}/atm/scream/tables/vn_table_vals_v2.dat8,
+        ${DIN_LOC_ROOT}/atm/scream/tables/vm_table_vals_v2.dat8
       </tables>
       <autoconversion_prefactor type="real" doc="Autoconversion linear prefactor">1350.0</autoconversion_prefactor>
       <autoconversion_qc_exponent type="real" doc="Autoconversion qc exponent">2.47</autoconversion_qc_exponent>

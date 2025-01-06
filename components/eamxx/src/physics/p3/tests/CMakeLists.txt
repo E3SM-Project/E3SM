@@ -101,12 +101,9 @@ CreateUnitTest(p3_run_and_cmp "p3_run_and_cmp.cpp"
   EXE_ARGS "${BASELINE_FILE_ARG}"
   LABELS "p3;physics;baseline_gen;baseline_cmp")
 
-if (SCREAM_ONLY_GENERATE_BASELINES)
-  # This test can be used to re-generate tables in ${SCREAM_DATA_DIR}
-  CreateUnitTest(p3_tables_setup "p3_tables_setup.cpp"
-    LIBS p3
-    LABELS "p3;physics;baseline_gen")
-endif()
+# This executable can be used to re-generate tables in ${SCREAM_DATA_DIR}
+add_executable(p3_tables_setup EXCLUDE_FROM_ALL p3_tables_setup.cpp)
+target_link_libraries(p3_tables_setup p3)
 
 # Make sure that a diff from baselines triggers a failed test (in debug only)
 if (SCREAM_ENABLE_BASELINE_TESTS)
