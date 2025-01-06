@@ -10,6 +10,7 @@
 program convterr
   use shr_kind_mod, only: r8 => shr_kind_r8
   use reconstruct
+  use orographic_shape_methods
   implicit none
 #include <netcdf.inc>
 
@@ -18,7 +19,9 @@ program convterr
   ! USER SETTINGS BELOW
   !
   !**************************************
-  !
+  ! 
+  ! flag to enable calculation of orographic shape parameters
+  logical :: calc_orographic_shape_params = .FALSE.
   !
   ! If smoothed PHIS is available SGH needs to be recomputed to account for the 
   ! sub-grid-scale variability introduced by the smoothing; This will be set
@@ -155,6 +158,20 @@ program convterr
   character(len=512) :: input_topography_file
   character(len=512) :: output_topography_file
   character(len=512) :: smoothed_topography_file
+
+  ! variables for orographic shape parameters
+  real(r8), allocatable, dimension(:,:)   :: oa_target
+  real(r8), allocatable, dimension(:)     :: oc_target
+  real(r8), allocatable, dimension(:,:)   :: ol_target
+  integer,  allocatable, dimension(:)     :: indexb !max indice dimension
+  real(r8), allocatable, dimension(:,:,:) :: terrout
+  real(r8), allocatable, dimension(:,:)   :: dxy
+  real(r8), allocatable, dimension(:)     :: lat_terr
+  real(r8), allocatable, dimension(:)     :: lon_terr
+  real(r8), allocatable, dimension(:,:)   :: target_corner_lon_deg
+  real(r8), allocatable, dimension(:,:)   :: target_corner_lat_deg
+  integer :: nvar_dirOA
+  integer :: nvar_dirOL
   
   !
   ! turn extra debugging on/off
@@ -165,7 +182,7 @@ program convterr
 
   call parse_arguments(target_grid_file      , input_topography_file   , &
                        output_topography_file, smoothed_topography_file, &
-                       lsmooth_terr                                      )
+                       lsmooth_terr, calc_orographic_shape_params        )
 
   if (lsmooth_terr) then
      status = nf_open(trim(smoothed_topography_file), 0, ncid)
@@ -217,6 +234,8 @@ program convterr
   
   allocate ( target_corner_lon(ncorner,ntarget),stat=alloc_error)
   allocate ( target_corner_lat(ncorner,ntarget),stat=alloc_error)
+  allocate ( target_corner_lon_deg(ncorner,ntarget),stat=alloc_error)
+  allocate ( target_corner_lat_deg(ncorner,ntarget),stat=alloc_error)
   
   status = NF_INQ_VARID(ncid, 'grid_corner_lon', lonid)
   status = NF_GET_VAR_DOUBLE(ncid, lonid,target_corner_lon)
@@ -841,17 +860,73 @@ program convterr
   sgh30_target = SQRT(sgh30_target)
   WRITE(*,*) "min/max of sgh_target     : ",MINVAL(sgh_target),MAXVAL(sgh_target)
   WRITE(*,*) "min/max of sgh30_target   : ",MINVAL(sgh30_target),MAXVAL(sgh30_target)
+
+  !-----------------------------------------------------------------------------
+  ! Orographic shape parameters
+  if (calc_orographic_shape_params) then
+
+    nvar_dirOA=2+1
+    nvar_dirOL=180
+
+    allocate(oa_target(ntarget,nvar_dirOA),     stat=alloc_error)
+    allocate(oc_target(ntarget),                stat=alloc_error)
+    allocate(ol_target(ntarget,nvar_dirOL),     stat=alloc_error)
+    allocate(indexb(ntarget),                   stat=alloc_error)
+    allocate(terrout(4,ntarget,maxval(indexb)), stat=alloc_error)
+    allocate(dxy(ntarget,nvar_dirOL),           stat=alloc_error)
+    oc_target = 0
+    ol_target = 0
+    indexb    = 0
+
+    ! Orographic asymmetry
+    print*,"calculating orographic asymmetry..."
+    call orographic_asymmetry_xie2020(terr, ntarget, ncube, n, nvar_dirOA, jall, &
+                                      weights_lgr_index_all, weights_eul_index_all(:,1), &
+                                      weights_eul_index_all(:,2), weights_eul_index_all(:,3), &
+                                      weights_all, target_center_lon, target_center_lat, &
+                                      lon_terr, lat_terr, area_target, oa_target)
+    
+    ! Orographic convexity
+    print*,"calculating orographic convexity..."
+    call orographic_convexity_kim2005(terr, ntarget, ncube, n, jall, &
+                                      weights_lgr_index_all, weights_eul_index_all(:,1), &
+                                      weights_eul_index_all(:,2), weights_eul_index_all(:,3), &
+                                      weights_all, area_target, sgh_target, terr_target, oc_target)
+
+    ! Orographic effective length
+    print*,"calculating orographic effective length..."
+    do count=1,jall
+      i = weights_lgr_index_all(count)
+      indexb(i) = indexb(i)+1
+    enddo
+    call orographic_efflength_xie2020(terr, ntarget, ncube, n, jall, nlon, nlat, maxval(indexb), &
+                                      nvar_dirOL, weights_lgr_index_all, weights_eul_index_all(:,1), &
+                                      weights_eul_index_all(:,2), weights_eul_index_all(:,3), &
+                                      weights_all, target_center_lon, target_center_lat, &
+                                      target_corner_lon_deg, target_corner_lat_deg, &
+                                      lon_terr, lat_terr, sgh_target, area_target, ol_target, &
+                                      terrout, dxy)
+    
+  end if
+  !-----------------------------------------------------------------------------
   
   DEALLOCATE(terr,weights_all,weights_eul_index_all)
   
   
-  IF (ltarget_latlon) THEN
-    CALL wrtncdf_rll(nlon,nlat,lpole,ntarget,terr_target,sgh_target,sgh30_target,&
-         target_center_lon,target_center_lat,.true.,output_topography_file)
-  ELSE
-    CALL wrtncdf_unstructured(ntarget,terr_target,sgh_target,sgh30_target,&
-         target_center_lon,target_center_lat,output_topography_file)
-  END IF
+  if (ltarget_latlon) then
+
+    call wrtncdf_rll( nlon, nlat, lpole, ntarget, &
+                      ! nvar_dirOA, nvar_dirOL, maxval(indexb), &
+                      terr_target, sgh_target, sgh30_target, &
+                      ! oc_target, oa_target, ol_target, terrout, dxy, &
+                      target_center_lon, target_center_lat, .true., output_topography_file )
+  else
+    call wrtncdf_unstructured( ntarget, &
+                               nvar_dirOA, nvar_dirOL, maxval(indexb), &
+                               terr_target, sgh_target, sgh30_target, &
+                               oc_target, oa_target, ol_target, terrout, dxy, &
+                               target_center_lon, target_center_lat, output_topography_file)
+  end if
   DEALLOCATE(terr_target,sgh30_target,sgh_target)
   
 end program convterr
@@ -862,13 +937,14 @@ end program convterr
 !
 subroutine parse_arguments(target_grid_file      , input_topography_file   , &
                            output_topography_file, smoothed_topography_file, &
-                           lsmooth_terr                                      )
+                           lsmooth_terr, calc_orographic_shape_params        )
    implicit none
    character(len=*), intent(inout) :: target_grid_file
    character(len=*), intent(inout) :: input_topography_file
    character(len=*), intent(inout) :: output_topography_file
    character(len=*), intent(inout) :: smoothed_topography_file
-   logical, intent(inout) :: lsmooth_terr
+   logical,          intent(inout) :: lsmooth_terr
+   logical,          intent(inout) :: calc_orographic_shape_params
 
    integer :: n, nargs
    character(len=512) :: arg
@@ -879,6 +955,7 @@ subroutine parse_arguments(target_grid_file      , input_topography_file   , &
    output_topography_file = ''
    smoothed_topography_file = ''
    lsmooth_terr = .false.
+   calc_orographic_shape_params = .false.
 
    ! Get number of arguments and make sure at least some arguments were passed
    nargs = iargc()
@@ -916,6 +993,10 @@ subroutine parse_arguments(target_grid_file      , input_topography_file   , &
         call getarg(n, arg)
         smoothed_topography_file = trim(arg)
         lsmooth_terr = .true.
+        n = n + 1
+     case ('--add-oro-shape')
+        ! if flag is present then calculate the orographic shape parameters
+        calc_orographic_shape_params = .true.
         n = n + 1
      case ('--help')
         call usage()
@@ -981,7 +1062,10 @@ end subroutine usage
 !
 !
 !
-subroutine wrtncdf_unstructured(n,terr,sgh,sgh30,lon,lat,fout)
+subroutine wrtncdf_unstructured(n, nvar_oa, nvar_ol, indexb, &
+                                terr, sgh, sgh30, &
+                                oc_in, oa_in, ol_in, terrout, dxy_in, &
+                                lon, lat, fout)
   use shr_kind_mod, only: r8 => shr_kind_r8
   implicit none
   
@@ -991,7 +1075,18 @@ subroutine wrtncdf_unstructured(n,terr,sgh,sgh30,lon,lat,fout)
   ! Dummy arguments
   !
   integer, intent(in) :: n
-  real(r8),dimension(n)  , intent(in) :: terr, sgh,sgh30,lon, lat
+  integer, intent(in) :: nvar_dirOA
+  integer, intent(in) :: nvar_dirOL
+  integer, intent(in) :: indexb
+  real(r8),dimension(n), intent(in) :: terr
+  real(r8),dimension(n), intent(in) :: sgh
+  real(r8),dimension(n), intent(in) :: sgh30
+  real(r8),dimension(n,nvar_oa),   intent(in) :: oa_in
+  real(r8),dimension(n,nvar_ol),   intent(in) :: ol_in
+  real(r8),dimension(4,n,indexb),  intent(in) :: terrout
+  real(r8),dimension(n,nvar_ol),   intent(in) :: dxy_in
+  real(r8),dimension(n), intent(in) :: lon
+  real(r8),dimension(n), intent(in) :: lat
   !
   ! Local variables
   !
