@@ -9,7 +9,7 @@ module planar_mesh_mod
  use parallel_mod, only : abortmp
 
 #ifndef HOMME_WITHOUT_PIOLIBRARY
-  use netcdf ! _EXTERNAL
+  use pnetcdf ! _EXTERNAL
 #endif
 
   implicit none

@@ -294,7 +294,7 @@ contains
    character(len=*)    , optional :: nlfilename_in
 !-----------------------------------------------------------------------
 
-   include 'netcdf.inc'
+   include 'pnetcdf.inc'
 
 !---------------------------Local variables-----------------------------
    character(len=*), parameter ::  subname = "read_namelist"
@@ -707,7 +707,7 @@ subroutine preset
 !-----------------------------------------------------------------------
    use rgrid
 !-----------------------------------------------------------------------
-   include 'netcdf.inc'
+   include 'pnetcdf.inc'
 !-----------------------------------------------------------------------
 !
 !

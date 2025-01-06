@@ -30,7 +30,8 @@ subroutine getinterpncdata( NCID, camlat, camlon, TimeIdx, &
 
    use shr_kind_mod, only: r8 => shr_kind_r8, i8 => shr_kind_i8
    use shr_scam_mod, only: shr_scam_GetCloseLatLon
-   use netcdf
+   use pnetcdf
+   use mpi
    implicit none
 !-----------------------------------------------------------------------
 
@@ -55,7 +56,7 @@ subroutine getinterpncdata( NCID, camlat, camlon, TimeIdx, &
 !     -------  locals ---------
 
    real(r8)  surfdat       ! surface value to be added before interpolation
-   integer nlev          ! number of levels in dataset
+   integer(MPI_OFFSET_KIND) nlev          ! number of levels in dataset
    integer     latIdx        ! latitude index
    integer     lonIdx        ! longitude index
    real(r8),allocatable :: tmp(:)
@@ -66,8 +67,8 @@ subroutine getinterpncdata( NCID, camlat, camlon, TimeIdx, &
    integer     dims_set
    integer     i
    integer     var_dimIDs( NF90_MAX_VAR_DIMS )
-   integer     start( NF90_MAX_VAR_DIMS ) 
-   integer     count( NF90_MAX_VAR_DIMS )
+   integer(MPI_OFFSET_KIND)     start( NF90_MAX_VAR_DIMS ) 
+   integer(MPI_OFFSET_KIND)     count( NF90_MAX_VAR_DIMS )
 
    character   varName*(*)
    character   dim_name*( 256 )
@@ -85,7 +86,7 @@ subroutine getinterpncdata( NCID, camlat, camlon, TimeIdx, &
 !
 ! Get var ID.  Check to make sure it's there.
 !
-   STATUS = NF90_INQ_VARID( NCID, varName, varID )
+   STATUS = NF90MPI_INQ_VARID( NCID, varName, varID )
 
    if ( STATUS .NE. NF90_NOERR )  return
 
@@ -94,7 +95,7 @@ subroutine getinterpncdata( NCID, camlat, camlon, TimeIdx, &
 ! it to be.
 !
 
-   STATUS = NF90_INQUIRE_VARIABLE( NCID, varID, ndims=var_ndims )
+   STATUS = NF90MPI_INQUIRE_VARIABLE( NCID, varID, ndims=var_ndims )
    if ( var_ndims .GT. 4 ) then
       write(iulog,* ) 'ERROR - extractdata.F: The input var',varName, &
          'has', var_ndims, 'dimensions'
@@ -105,11 +106,11 @@ subroutine getinterpncdata( NCID, camlat, camlon, TimeIdx, &
 !     surface variables
 !
    if ( var_ndims .EQ. 0 ) then
-      STATUS = NF90_GET_VAR( NCID, varID, outData )
+      STATUS = NF90MPI_GET_VAR( NCID, varID, outData )
       return
    endif
 
-   STATUS = NF90_INQUIRE_VARIABLE( NCID, varID, dimids=var_dimIDs )
+   STATUS = NF90MPI_INQUIRE_VARIABLE( NCID, varID, dimids=var_dimIDs )
    if ( STATUS .NE. NF90_NOERR ) then
       write(iulog,* ) 'ERROR - extractdata.F:Cant get dimension IDs for', varName
       return
@@ -122,7 +123,7 @@ subroutine getinterpncdata( NCID, camlat, camlon, TimeIdx, &
    do i =  var_ndims, 1, -1
 
       usable_var = .false.
-      STATUS = NF90_INQUIRE_DIMENSION( NCID, var_dimIDs( i ), dim_name )
+      STATUS = NF90MPI_INQUIRE_DIMENSION( NCID, var_dimIDs( i ), dim_name )
 
       if ( dim_name .EQ. 'lat' ) then
          start( i ) =  latIdx
@@ -139,7 +140,7 @@ subroutine getinterpncdata( NCID, camlat, camlon, TimeIdx, &
       endif
 
       if ( dim_name .EQ. 'lev' ) then
-         STATUS = NF90_INQUIRE_DIMENSION( NCID, var_dimIDs( i ), len=nlev )
+         STATUS = NF90MPI_INQUIRE_DIMENSION( NCID, var_dimIDs( i ), len=nlev )
          start( i ) = 1
          count( i ) = nlev       ! Extract all levels
          dims_set = dims_set + 1
@@ -147,7 +148,7 @@ subroutine getinterpncdata( NCID, camlat, camlon, TimeIdx, &
       endif
 
       if ( dim_name .EQ. 'ilev' ) then
-         STATUS = NF90_INQUIRE_DIMENSION( NCID, var_dimIDs( i ), len=nlev )
+         STATUS = NF90MPI_INQUIRE_DIMENSION( NCID, var_dimIDs( i ), len=nlev )
          start( i ) = 1
          count( i ) = nlev        ! Extract all levels
          dims_set = dims_set + 1
@@ -177,7 +178,7 @@ subroutine getinterpncdata( NCID, camlat, camlon, TimeIdx, &
 
    allocate(tmp(nlev+1))
 
-   STATUS = NF90_GET_VAR( NCID, varID, tmp, start, count )
+   STATUS = NF90MPI_GET_VAR( NCID, varID, tmp, start, count )
 
    if ( STATUS .NE. NF90_NOERR ) then
       write(iulog,* )'ERROR - extractdata.F: Could not get data for input var ', varName
@@ -218,7 +219,7 @@ subroutine getinterpncdata( NCID, camlat, camlon, TimeIdx, &
 !     check data for missing values
 !
 
-      STATUS = NF90_GET_ATT( NCID, varID, 'missing_value', missing_val )
+      STATUS = NF90MPI_GET_ATT( NCID, varID, 'missing_value', missing_val )
       if ( STATUS .NE. NF90_NOERR ) then
          missing_val = -9999999.0_r8
       endif

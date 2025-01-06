@@ -1,4 +1,3 @@
-
 module gw_drag
 
 !--------------------------------------------------------------------------
@@ -39,6 +38,7 @@ module gw_drag
   ! These are the actual switches for different gravity wave sources.
   ! The orographic control switches are also here
   use phys_control,  only: use_gw_oro, use_gw_front, use_gw_convect, use_gw_energy_fix, use_od_ls, use_od_bl, use_od_ss, od_ls_ncleff, od_bl_ncd, od_ss_sncleff
+  use mpi,           only: MPI_COMM_WORLD, MPI_INFO_NULL
 
 ! Typical module header
   implicit none
@@ -572,7 +572,7 @@ subroutine gw_init_beres(mfcc)
   use mpishorthand
 #endif
 
-  use netcdf
+  use pnetcdf
 
   real(r8), intent(out) :: mfcc(maxh,-maxuh:maxuh,-pgwv:pgwv)
 
@@ -585,6 +585,9 @@ subroutine gw_init_beres(mfcc)
   ! from the file itself, rather than hard-coded.
   integer, parameter :: ngwv_file = 40
   character(len=256) :: gw_drag_file_loc ! local filepath of gw_drag_file
+  integer(MPI_OFFSET_KIND) :: one_pnetcdf = 1
+  integer(MPI_OFFSET_KIND) :: len_pnetcdf
+
 
   !----------------------------------------------------------------------
   ! read in look-up table for source spectra
@@ -593,26 +596,27 @@ subroutine gw_init_beres(mfcc)
   if (masterproc) then
 
      call getfil(gw_drag_file, gw_drag_file_loc)
-     ncstat = NF90_OPEN (gw_drag_file_loc,0,ncid)
+     ncstat = NF90MPI_OPEN (MPI_COMM_WORLD,gw_drag_file_loc,0,MPI_INFO_NULL,ncid)
 
      if (ncstat .ne. 0) then
         write(iulog,*) 'Error reading in netcdf file ',gw_drag_file,'.  ',&
-             NF90_STRERROR(ncstat)
+             NF90MPI_STRERROR(ncstat)
         write(iulog,*) 'Check that the namelist variable gw_drag_file is &
              &correct.'
         call endrun
      endif
 
-     ncstat = NF90_INQ_VARID (ncid,'mfcc',varid)
+     ncstat = NF90MPI_INQ_VARID (ncid,'mfcc',varid)
 
      if (ncstat .ne. 0) then
         write(iulog,*) 'Error reading data from ',gw_drag_file,'.  ',&
-             NF90_STRERROR(ncstat)
+             NF90MPI_STRERROR(ncstat)
         call endrun
      endif
 
-     ncstat = NF90_GET_VAR(ncid,varid,mfcc,start=[1,1,ngwv_file-pgwv+1])
-     ncstat = NF90_CLOSE(ncid)
+     len_pnetcdf = ngwv_file-pgwv+1
+     ncstat = NF90MPI_GET_VAR(ncid,varid,mfcc,start=[one_pnetcdf,one_pnetcdf,len_pnetcdf])
+     ncstat = NF90MPI_CLOSE(ncid)
 
      write(iulog,*) 'Read-in source spectra from file'
      write(iulog,*) 'MFCC=',maxval(mfcc),minval(mfcc)

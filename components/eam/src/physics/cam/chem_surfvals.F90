@@ -13,7 +13,8 @@ module chem_surfvals
    use time_manager,   only: get_curr_date, get_start_date, is_end_curr_day, &
                              timemgr_datediff, get_curr_calday
    use cam_abortutils,     only: endrun
-   use netcdf
+   use pnetcdf
+   use mpi
    use error_messages, only: handle_ncerr  
    use cam_logfile,    only: iulog
    use m_types,        only: time_ramp
@@ -302,23 +303,25 @@ subroutine ghg_ramp_read()
    integer :: date_id
    integer :: time_id
    integer :: ierror
+   integer(MPI_OFFSET_KIND) :: len_pnetcdf
    character(len=256) :: locfn          ! netcdf local filename to open
 
    if (masterproc) then
      call getfil (bndtvghg, locfn, 0)
-     call handle_ncerr( nf90_open (trim(locfn), NF90_NOWRITE, ncid),subname,__LINE__)
+     call handle_ncerr( nf90mpi_open (MPI_COMM_WORLD, trim(locfn), NF90_NOWRITE, MPI_INFO_NULL, ncid),subname,__LINE__)
 
      write(iulog,*)'GHG_RAMP_READ:  reading ramped greenhouse gas surface data from file ',trim(locfn)
 
-     call handle_ncerr( nf90_inq_varid( ncid, 'date', date_id ),subname,__LINE__)
-     call handle_ncerr( nf90_inq_varid( ncid, 'CO2', co2_id ),subname,__LINE__)
-     call handle_ncerr( nf90_inq_varid( ncid, 'CH4', ch4_id ),subname,__LINE__)
-     call handle_ncerr( nf90_inq_varid( ncid, 'N2O', n2o_id ),subname,__LINE__)
-     call handle_ncerr( nf90_inq_varid( ncid, 'f11', f11_id ),subname,__LINE__)
-     call handle_ncerr( nf90_inq_varid( ncid, 'f12', f12_id ),subname,__LINE__)
-     call handle_ncerr( nf90_inq_varid( ncid, 'adj', adj_id ),subname,__LINE__)
-     call handle_ncerr( nf90_inq_dimid( ncid, 'time', time_id ),subname,__LINE__)
-     call handle_ncerr( nf90_inquire_dimension( ncid, time_id, len=ntim ),subname,__LINE__)
+     call handle_ncerr( nf90mpi_inq_varid( ncid, 'date', date_id ),subname,__LINE__)
+     call handle_ncerr( nf90mpi_inq_varid( ncid, 'CO2', co2_id ),subname,__LINE__)
+     call handle_ncerr( nf90mpi_inq_varid( ncid, 'CH4', ch4_id ),subname,__LINE__)
+     call handle_ncerr( nf90mpi_inq_varid( ncid, 'N2O', n2o_id ),subname,__LINE__)
+     call handle_ncerr( nf90mpi_inq_varid( ncid, 'f11', f11_id ),subname,__LINE__)
+     call handle_ncerr( nf90mpi_inq_varid( ncid, 'f12', f12_id ),subname,__LINE__)
+     call handle_ncerr( nf90mpi_inq_varid( ncid, 'adj', adj_id ),subname,__LINE__)
+     call handle_ncerr( nf90mpi_inq_dimid( ncid, 'time', time_id ),subname,__LINE__)
+     call handle_ncerr( nf90mpi_inquire_dimension( ncid, time_id, len=len_pnetcdf ),subname,__LINE__)
+     ntim = len_pnetcdf
 
    endif
 #if (defined SPMD )
@@ -332,15 +335,15 @@ subroutine ghg_ramp_read()
      call endrun
    endif
    if (masterproc) then
-     call handle_ncerr( nf90_get_var (ncid, date_id, yrdata ),subname,__LINE__)
+     call handle_ncerr( nf90mpi_get_var (ncid, date_id, yrdata ),subname,__LINE__)
      yrdata = yrdata / 10000
-     call handle_ncerr( nf90_get_var (ncid, co2_id, co2 ),subname,__LINE__)
-     call handle_ncerr( nf90_get_var (ncid, ch4_id, ch4 ),subname,__LINE__)
-     call handle_ncerr( nf90_get_var (ncid, n2o_id, n2o ),subname,__LINE__)
-     call handle_ncerr( nf90_get_var (ncid, f11_id, f11 ),subname,__LINE__)
-     call handle_ncerr( nf90_get_var (ncid, f12_id, f12 ),subname,__LINE__)
-     call handle_ncerr( nf90_get_var (ncid, adj_id, adj ),subname,__LINE__)
-     call handle_ncerr( nf90_close (ncid),subname,__LINE__)
+     call handle_ncerr( nf90mpi_get_var (ncid, co2_id, co2 ),subname,__LINE__)
+     call handle_ncerr( nf90mpi_get_var (ncid, ch4_id, ch4 ),subname,__LINE__)
+     call handle_ncerr( nf90mpi_get_var (ncid, n2o_id, n2o ),subname,__LINE__)
+     call handle_ncerr( nf90mpi_get_var (ncid, f11_id, f11 ),subname,__LINE__)
+     call handle_ncerr( nf90mpi_get_var (ncid, f12_id, f12 ),subname,__LINE__)
+     call handle_ncerr( nf90mpi_get_var (ncid, adj_id, adj ),subname,__LINE__)
+     call handle_ncerr( nf90mpi_close (ncid),subname,__LINE__)
      write(iulog,*)'GHG_RAMP_READ:  successfully read ramped greenhouse gas surface data from years ',&
 	yrdata(1),' through ',yrdata(ntim)
    endif

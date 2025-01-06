@@ -93,7 +93,7 @@ contains
       !----------------------------------------------------------------------- 
 
 !-----------------------------------------------------------------------
-     use netcdf
+     use pnetcdf
 !-----------------------------------------------------------------------
 
       integer, intent(in) ::&
@@ -109,7 +109,7 @@ contains
          else	
             write(iulog,*) mes
          end if
-         write(iulog,*) nf90_strerror( ret )
+         write(iulog,*) nf90mpi_strerror( ret )
          call endrun ('HANDLE_NCERR')
       endif
 

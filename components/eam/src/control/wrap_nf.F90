@@ -13,7 +13,8 @@ module wrap_nf
   use shr_kind_mod, only: r8 => shr_kind_r8, r4 => shr_kind_r4
   use cam_abortutils,   only: endrun
   use cam_logfile,  only: iulog
-  use netcdf
+  use pnetcdf
+  use mpi
 
 !-------------------------------------------------------------------------------
 !
@@ -40,7 +41,7 @@ contains
 
    integer ret      ! NetCDF return code
 
-   ret = nf90_redef (nfid)
+   ret = nf90mpi_redef (nfid)
    if (ret/=NF90_NOERR) call handle_error (ret)
    
    end subroutine wrap_redef
@@ -54,7 +55,7 @@ contains
 
    integer ret      ! NetCDF return code
 
-   ret = nf90_enddef (nfid)
+   ret = nf90mpi_enddef (nfid)
    if (ret/=NF90_NOERR) call handle_error (ret)
 
    end subroutine wrap_enddef
@@ -75,7 +76,7 @@ contains
 
    integer ret      ! NetCDF return code
 
-   ret = nf90_create (path, cmode, ncid)
+   ret = nf90mpi_create (MPI_COMM_WORLD, path, cmode, MPI_INFO_NULL, ncid)
    if (ret/=NF90_NOERR) call handle_error (ret)
 
    end subroutine wrap_create
@@ -96,7 +97,7 @@ contains
 
     integer ret      ! NetCDF return code
 
-    ret = nf90_inquire(nfid, unlimitedDimId=dimid)
+    ret = nf90mpi_inquire(nfid, unlimitedDimId=dimid)
     if (ret/=NF90_NOERR) call handle_error (ret)
   end subroutine wrap_inq_unlimdim
 
@@ -116,7 +117,7 @@ contains
 
    integer ret      ! NetCDF return code
 
-   ret = nf90_inquire_dimension (nfid, dimid, dimname, dimlen)
+   !ret = nf90mpi_inquire_dimension (nfid, dimid, dimname, dimlen)
    if (ret/=NF90_NOERR) call handle_error (ret)
 
    end subroutine wrap_inq_dim
@@ -136,7 +137,7 @@ contains
 
    integer ret      ! NetCDF return code
 
-   ret = nf90_inquire (nfid, nvars)
+   ret = nf90mpi_inquire (nfid, nvars)
    if (ret/=NF90_NOERR) call handle_error (ret)
 
    end subroutine wrap_inq_nvars
@@ -155,7 +156,7 @@ contains
 
    integer ret      ! NetCDF return code
 
-   ret = nf90_inquire(nfid, ndims)
+   ret = nf90mpi_inquire(nfid, ndims)
    if (ret/=NF90_NOERR) call handle_error (ret)
 
  end subroutine wrap_inq_ndims
@@ -178,7 +179,7 @@ contains
 
    integer ret      ! NetCDF return code
 
-   ret = nf90_inq_dimid (nfid, dimname, dimid)
+   ret = nf90mpi_inq_dimid (nfid, dimname, dimid)
    if(ret==NF90_NOERR) return
    if (ret/=NF90_EBADDIM) call handle_error (ret)
    dimid=-1  ! do not exist on bad dim.  This allows the user to check for dims that may not
@@ -203,7 +204,7 @@ contains
    
    integer ret      ! NetCDF return code
 
-   ret = nf90_inquire_dimension (nfid, dimid, len=dimlen)
+   !ret = nf90mpi_inquire_dimension (nfid, dimid, len=dimlen)
    if (ret/=NF90_NOERR) call handle_error (ret)
    end subroutine wrap_inq_dimlen
 
@@ -225,7 +226,7 @@ contains
    
    integer ret      ! NetCDF return code
 
-   ret = nf90_inquire_variable (nfid, varid, dimids=dimids)
+   ret = nf90mpi_inquire_variable (nfid, varid, dimids=dimids)
    if (ret/=NF90_NOERR) call handle_error (ret)
    end subroutine wrap_inq_vardimid
 
@@ -247,7 +248,7 @@ contains
    
    integer ret      ! NetCDF return code
 
-   ret = nf90_inquire_variable (nfid, varid, ndims=ndims)
+   ret = nf90mpi_inquire_variable (nfid, varid, ndims=ndims)
    if (ret/=NF90_NOERR) call handle_error (ret)
    end subroutine wrap_inq_varndims
 
@@ -271,7 +272,7 @@ contains
    integer ret      ! NetCDF return code
    logical :: call_endrun
 
-   ret = nf90_inq_varid (nfid, varname, varid)
+   ret = nf90mpi_inq_varid (nfid, varname, varid)
    if (ret/=NF90_NOERR ) then
       call_endrun = .true.
       if ( present(abrtf) ) then
@@ -310,7 +311,7 @@ contains
 
    integer ret      ! NetCDF return code
 
-   ret = nf90_inquire_variable (nfid, varid, varname, xtype, ndims, dimids, &
+   ret = nf90mpi_inquire_variable (nfid, varid, varname, xtype, ndims, dimids, &
                      natts)
    if (ret/=NF90_NOERR) call handle_error (ret)
    end subroutine wrap_inq_var
@@ -333,7 +334,7 @@ contains
    integer, intent(in):: varid
    character*(*), intent(out):: varname
 
-   ret = nf90_inquire_variable(nfid, varid, varname)
+   ret = nf90mpi_inquire_variable(nfid, varid, varname)
    if (ret/=NF90_NOERR) call handle_error (ret)
    end subroutine wrap_inq_varname
 
@@ -356,7 +357,7 @@ contains
 
    integer ret      ! NetCDF return code
 
-   ret = nf90_get_att(nfid, varid, attname, atttext)
+   !ret = nf90mpi_get_att(nfid, varid, attname, atttext)
    if (ret/=NF90_NOERR) then
       write(iulog,*)'WRAP_GET_ATT_TEXT: error reading attribute '//trim(attname)
       call handle_error (ret)
@@ -387,7 +388,7 @@ contains
    integer ret      ! NetCDF return code
    integer siz
 
-   ret = nf90_put_att(nfid, varid, attname, atttext)
+   ret = nf90mpi_put_att(nfid, varid, attname, atttext)
    if (ret/=NF90_NOERR) call handle_error (ret)
    end subroutine wrap_put_att_text
 
@@ -413,7 +414,7 @@ contains
 
    integer ret      ! NetCDF return code
 
-   ret = nf90_put_att(nfid, varid, attname, attval)
+   ret = nf90mpi_put_att(nfid, varid, attname, attval)
    if (ret/=NF90_NOERR) call handle_error (ret)
    end subroutine wrap_put_att_realx
 !===============================================================================
@@ -434,7 +435,7 @@ contains
    
    integer ret      ! NetCDF return code
 
-   ret = nf90_def_dim (nfid, dimname, len, dimid)
+   !ret = nf90mpi_def_dim (nfid, dimname, len, dimid)
    if (ret/=NF90_NOERR) call handle_error (ret)
    end subroutine wrap_def_dim
 
@@ -459,7 +460,7 @@ contains
    
    integer ret      ! NetCDF return code
 
-   ret = nf90_def_var(nfid, name, xtype, vdims, varid)
+   ret = nf90mpi_def_var(nfid, name, xtype, vdims, varid)
    if (ret/=NF90_NOERR) call handle_error (ret)
    end subroutine wrap_def_var
 
@@ -481,7 +482,7 @@ contains
 
    integer ret      ! NetCDF return code
 
-   ret = nf90_get_var (nfid, varid, arr)
+   !ret = nf90mpi_get_var (nfid, varid, arr)
    if (ret/=NF90_NOERR) then
      write(iulog,*)'WRAP_GET_VAR_REALX: error reading varid =', varid
      call handle_error (ret)
@@ -506,7 +507,7 @@ contains
 
    integer ret      ! NetCDF return code
 
-   ret = nf90_get_var (nfid, varid, arr)
+   !ret = nf90mpi_get_var (nfid, varid, arr)
    if (ret/=NF90_NOERR) then
      write(iulog,*)'WRAP_GET_VAR_REAL4: error reading varid =', varid
      call handle_error (ret)
@@ -531,7 +532,7 @@ contains
 
    integer ret      ! NetCDF return code
 
-   ret = nf90_get_var (nfid, varid, x)
+   !ret = nf90mpi_get_var (nfid, varid, x)
    if (ret/=NF90_NOERR) then
      write(iulog,*)'WRAP_GET_SCALAR_REALX: error reading varid =', varid
      call handle_error (ret)
@@ -556,7 +557,7 @@ contains
 
    integer ret      ! NetCDF return code
 
-   ret = nf90_get_var (nfid, varid, arr)
+   !ret = nf90mpi_get_var (nfid, varid, arr)
    if (ret/=NF90_NOERR) then
      write(iulog,*)'WRAP_GET_VAR_INT: error reading varid =', varid
      call handle_error (ret)
@@ -581,7 +582,7 @@ contains
 
    integer ret      ! NetCDF return code
 
-   ret = nf90_get_var (nfid, varid, x)
+   !ret = nf90mpi_get_var (nfid, varid, x)
    if (ret/=NF90_NOERR) then
      write(iulog,*)'WRAP_GET_SCALAR_INT: error reading varid =', varid
      call handle_error (ret)
@@ -608,7 +609,7 @@ contains
 
    integer ret      ! NetCDF return code
 
-   ret = nf90_get_var (nfid, varid, arr, start, count)
+   !ret = nf90mpi_get_var (nfid, varid, arr, start, count)
    if (ret/=NF90_NOERR) then
      write(iulog,*)'WRAP_GET_VARA_REALX: error reading varid =', varid
      call handle_error (ret)
@@ -635,7 +636,7 @@ contains
 
    integer ret      ! NetCDF return code
 
-   ret = nf90_get_var (nfid, varid, arr, start, count)
+   !ret = nf90mpi_get_var (nfid, varid, arr, start, count)
    if (ret/=NF90_NOERR) then
      write(iulog,*)'WRAP_GET_VARA_INT: error reading varid =', varid
      call handle_error (ret)
@@ -662,7 +663,7 @@ contains
 
    integer ret      ! NetCDF return code
 
-   ret = nf90_get_var (nfid, varid, text, start, count)
+   !ret = nf90mpi_get_var (nfid, varid, text, start, count)
    if (ret/=NF90_NOERR) call handle_error (ret)
    end subroutine wrap_get_vara_text
 
@@ -684,9 +685,9 @@ contains
 
    integer ret      ! NetCDF return code
 
-   ret = nf90_open (path, omode, ncid)
+   ret = nf90mpi_open (MPI_COMM_WORLD, path, omode, MPI_INFO_NULL, ncid)
    if (ret/=NF90_NOERR) then
-     write(iulog,*)'WRAP_OPEN: nf90_open failed for file ',path
+     write(iulog,*)'WRAP_OPEN: nf90mpi_open failed for file ',path
      call handle_error (ret)
    end if
    end subroutine wrap_open
@@ -707,9 +708,9 @@ contains
 
    integer ret      ! NetCDF return code
 
-   ret = nf90_close (ncid)
+   ret = nf90mpi_close (ncid)
    if (ret/=NF90_NOERR) then
-     write(iulog,*)'WRAP_CLOSE: nf90_close failed for id ',ncid
+     write(iulog,*)'WRAP_CLOSE: nf90mpi_close failed for id ',ncid
      call handle_error (ret)
    end if
    end subroutine wrap_close
@@ -732,7 +733,7 @@ contains
 
    integer ret      ! NetCDF return code
 
-   ret = nf90_put_var (nfid, varid, arr)
+   !ret = nf90mpi_put_var (nfid, varid, arr)
    if (ret/=NF90_NOERR) call handle_error (ret)
    end subroutine wrap_put_var_int
 
@@ -755,7 +756,7 @@ contains
 
    integer ret      ! NetCDF return code
 
-   ret = nf90_put_var (nfid, varid, ival, index)
+   !ret = nf90mpi_put_var (nfid, varid, ival, index)
    if (ret/=NF90_NOERR) call handle_error (ret)
    end subroutine wrap_put_var1_int
 
@@ -779,7 +780,7 @@ contains
 
    integer ret      ! NetCDF return code
 
-   ret = nf90_put_var (nfid, varid, arr, start, count)
+   !ret = nf90mpi_put_var (nfid, varid, arr, start, count)
    if (ret/=NF90_NOERR) call handle_error (ret)
    end subroutine wrap_put_vara_int
 
@@ -803,7 +804,7 @@ contains
 
    integer ret      ! NetCDF return code
 
-   ret = nf90_put_var (nfid, varid, text, start, count)
+   !ret = nf90mpi_put_var (nfid, varid, text, start, count)
    if (ret/=NF90_NOERR) call handle_error (ret)
    end subroutine wrap_put_vara_text
 
@@ -826,7 +827,7 @@ contains
 
    integer ret      ! NetCDF return code
 
-   ret = nf90_put_var (nfid, varid, val, index)
+   !ret = nf90mpi_put_var (nfid, varid, val, index)
    if (ret/=NF90_NOERR) call handle_error (ret)
    end subroutine wrap_put_var1_realx
 
@@ -849,7 +850,7 @@ contains
    real(r8), intent(in):: arr(:)
 
    integer ret      ! NetCDF return code
-   ret = nf90_put_var (nfid, varid, arr, start, count)
+   !ret = nf90mpi_put_var (nfid, varid, arr, start, count)
    if (ret/=NF90_NOERR) call handle_error (ret)
    end subroutine wrap_put_vara_realx
 
@@ -872,7 +873,7 @@ contains
    real(r4), intent(in):: arr(:)
 
    integer ret      ! NetCDF return code
-   ret = nf90_put_var (nfid, varid, arr, start, count)
+   !ret = nf90mpi_put_var (nfid, varid, arr, start, count)
    if (ret/=NF90_NOERR) call handle_error (ret)
    end subroutine wrap_put_vara_real
 
@@ -894,7 +895,7 @@ contains
 
    integer ret      ! NetCDF return code
 
-   ret = nf90_put_var (nfid, varid, arr)
+   !ret = nf90mpi_put_var (nfid, varid, arr)
    if (ret/=NF90_NOERR) call handle_error (ret)
    end subroutine wrap_put_var_realx
 
@@ -913,7 +914,7 @@ contains
 
    integer, intent(in):: ret
    
-   write(iulog,*)nf90_strerror(ret)
+   write(iulog,*)nf90mpi_strerror(ret)
    call endrun ('HANDLE_ERROR')
    end subroutine handle_error
 

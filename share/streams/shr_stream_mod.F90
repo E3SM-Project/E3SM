@@ -1422,7 +1422,8 @@ contains
 
   subroutine shr_stream_readTCoord(strm,k,rc)
 
-    use netcdf
+    use pnetcdf
+    use mpi
 
     implicit none
 
@@ -1436,7 +1437,7 @@ contains
 
     !----- local -----
     character(SHR_KIND_CL) :: fileName    ! filename to read
-    integer(SHR_KIND_IN)   :: nt
+    integer(MPI_OFFSET_KIND) :: nt
     integer(SHR_KIND_IN)   :: num,n
     integer(SHR_KIND_IN)   :: din,dout
     integer(SHR_KIND_IN)   :: sin,sout,offin
@@ -1460,17 +1461,17 @@ contains
 
     !--- need to read in this data ---
     call shr_stream_getFile(strm%filePath,strm%file(k)%name,fileName)
-    rCode = nf90_open(fileName,nf90_nowrite,fid)
-    if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_open file '//trim(filename))
-    rCode = nf90_inq_varid(fid,trim(strm%domTvarName),vid)
-    if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_inq_varid')
-    rCode = nf90_inquire_variable(fid,vid,ndims=ndims)
-    if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_inquire_variable1')
+    rCode = nf90mpi_open(MPI_COMM_WORLD,fileName,nf90_nowrite,MPI_INFO_NULL,fid)
+    if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90mpi_open file '//trim(filename))
+    rCode = nf90mpi_inq_varid(fid,trim(strm%domTvarName),vid)
+    if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90mpi_inq_varid')
+    rCode = nf90mpi_inquire_variable(fid,vid,ndims=ndims)
+    if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90mpi_inquire_variable1')
     allocate(dids(ndims))
-    rCode = nf90_inquire_variable(fid,vid,dimids=dids)
-    if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_inquire_variable2')
-    rCode = nf90_inquire_dimension(fid,dids(1),len=nt)
-    if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_inquire_dimension')
+    rCode = nf90mpi_inquire_variable(fid,vid,dimids=dids)
+    if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90mpi_inquire_variable2')
+    rCode = nf90mpi_inquire_dimension(fid,dids(1),len=nt)
+    if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90mpi_inquire_dimension')
     deallocate(dids)
 
     allocate(strm%file(k)%date(nt),strm%file(k)%secs(nt))
@@ -1478,12 +1479,12 @@ contains
 
     units = ' '
     calendar = ' '
-    rCode = nf90_get_att(fid, vid, 'units', units)
-    if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_get_att units')
-    rCode = nf90_inquire_attribute(fid, vid, 'calendar')
+    rCode = nf90mpi_get_att(fid, vid, 'units', units)
+    if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90mpi_get_att units')
+    rCode = nf90mpi_inquire_attribute(fid, vid, 'calendar')
     if (rCode == nf90_noerr) then
-       rCode = nf90_get_att(fid, vid, 'calendar', calendar)
-       if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_get_att calendar')
+       rCode = nf90mpi_get_att(fid, vid, 'calendar', calendar)
+       if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90mpi_get_att calendar')
     else
        calendar = trim(shr_cal_noleap)
     endif
@@ -1497,10 +1498,10 @@ contains
     strm%calendar = trim(shr_cal_calendarName(trim(calendar)))
 
     allocate(tvar(nt))
-    rcode = nf90_get_var(fid,vid,tvar)
-    if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_get_var')
-    rCode = nf90_close(fid)
-    if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_close')
+    rcode = nf90mpi_get_var(fid,vid,tvar)
+    if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90mpi_get_var')
+    rCode = nf90mpi_close(fid)
+    if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90mpi_close')
     do n = 1,nt
        call shr_cal_advDate(tvar(n),bunits,bdate,bsec,ndate,nsec,calendar)
        strm%file(k)%date(n) = ndate
@@ -1922,7 +1923,8 @@ contains
 
   subroutine shr_stream_getCalendar(strm,k,calendar)
 
-    use netcdf
+    use pnetcdf
+    use mpi
 
     ! !INPUT/OUTPUT PARAMETERS:
 
@@ -1946,14 +1948,14 @@ contains
     if (k > strm%nfiles) call shr_sys_abort(subname//' ERROR: k gt nfiles')
     strmfile = strm%file(k)%name
     call shr_stream_getFile(strm%filePath,strmfile,fileName)
-    rCode = nf90_open(fileName,nf90_nowrite,fid)
-    if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_open file '//trim(filename))
-    rCode = nf90_inq_varid(fid,trim(strm%domTvarName),vid)
-    if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_inq_varid')
-    rCode = nf90_inquire_attribute(fid, vid, 'calendar')
+    rCode = nf90mpi_open(MPI_COMM_WORLD,fileName,nf90_nowrite,MPI_INFO_NULL,fid)
+    if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nfmpi90_open file '//trim(filename))
+    rCode = nf90mpi_inq_varid(fid,trim(strm%domTvarName),vid)
+    if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90mpi_inq_varid')
+    rCode = nf90mpi_inquire_attribute(fid, vid, 'calendar')
     if (rCode == nf90_noerr) then
-       rCode = nf90_get_att(fid, vid, 'calendar', lcal)
-       if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_get_att calendar')
+       rCode = nf90mpi_get_att(fid, vid, 'calendar', lcal)
+       if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90mpi_get_att calendar')
     else
        lcal = trim(shr_cal_noleap)
     endif
@@ -1961,8 +1963,8 @@ contains
     if (ichar(lcal(n:n)) == 0 ) lcal(n:n) = ' '
     call shr_string_leftalign_and_convert_tabs(lcal)
     calendar = trim(shr_cal_calendarName(trim(lcal)))
-    rCode = nf90_close(fid)
-    if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_close')
+    rCode = nf90mpi_close(fid)
+    if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90mpi_close')
 
     return
 

@@ -1670,7 +1670,8 @@ contains
    !===============================================================
 !   use wrap_nf
    use ppgrid ,only: pver
-   use netcdf
+   use pnetcdf
+   use mpi
    use filenames ,only: interpret_filename_spec
 
    ! Arguments
@@ -1693,6 +1694,7 @@ contains
    integer :: n, n_cnt, ncid1, ind
    integer :: timesiz               ! size of time dimension on dataset
    integer :: Year, Month, Day, Sec
+   integer(MPI_OFFSET_KIND) :: len_pnetcdf
 
    ! Check the existence of the analyses file; broadcast the file status to
    ! all the other MPI nodes. If the file is not there, then just return.
@@ -1711,10 +1713,10 @@ contains
 
      ! Open the given file
      !-----------------------
-     istat=nf90_open(trim(anal_file),NF90_NOWRITE,ncid)
+     istat=nf90mpi_open(MPI_COMM_WORLD,trim(anal_file),NF90_NOWRITE,MPI_INFO_NULL,ncid)
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*)'NF90_OPEN: failed for file ',trim(anal_file)
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*)'NF90MPI_OPEN: failed for file ',trim(anal_file)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_SE_OPEN')
      endif
 
@@ -1722,53 +1724,55 @@ contains
      !--------------------
 !     call wrap_inq_dimid (ncid,'ncol',varid)
 !     call wrap_inq_dimlen(ncid,varid,ncol)
-     istat=nf90_inq_dimid(ncid,'ncol',varid)
+     istat=nf90mpi_inq_dimid(ncid,'ncol',varid)
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_SE')
      endif
-     istat=nf90_inquire_dimension(ncid,varid,len=ncol)
+     istat=nf90mpi_inquire_dimension(ncid,varid,len=len_pnetcdf)
+     ncol = len_pnetcdf
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_SE')
      endif
 
 !     call wrap_inq_dimid (ncid,'lev',varid)
 !     call wrap_inq_dimlen(ncid,varid,plev)
-     istat=nf90_inq_dimid(ncid,'lev',varid)
+     istat=nf90mpi_inq_dimid(ncid,'lev',varid)
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_SE')
      endif
-     istat=nf90_inquire_dimension(ncid,varid,len=plev)
+     istat=nf90mpi_inquire_dimension(ncid,varid,len=len_pnetcdf)
+     plev = len_pnetcdf
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_SE')
      endif
 
 !     call wrap_inq_varid(ncid,'lon',varid)
 !     call wrap_get_var_realx(ncid,varid,Lon_anal)
-     istat=nf90_inq_varid(ncid,'lon',varid)
+     istat=nf90mpi_inq_varid(ncid,'lon',varid)
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_SE')
      endif
-     istat=nf90_get_var(ncid,varid,Lon_anal)
+     istat=nf90mpi_get_var(ncid,varid,Lon_anal)
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_SE')
      endif
 
 !     call wrap_inq_varid(ncid,'lat',varid)
 !     call wrap_get_var_realx(ncid,varid,Lat_anal)
-     istat=nf90_inq_varid(ncid,'lat',varid)
+     istat=nf90mpi_inq_varid(ncid,'lat',varid)
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_SE')
      endif
-     istat=nf90_get_var(ncid,varid,Lat_anal)
+     istat=nf90mpi_get_var(ncid,varid,Lat_anal)
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_SE')
      endif
 
@@ -1893,9 +1897,9 @@ contains
 
                   call t_startf ('read_nudging_data')
                   if (masterproc) then
-                      istat=nf90_close(ncid1)
+                      istat=nf90mpi_close(ncid1)
                       if (istat.ne.NF90_NOERR) then
-                         write(iulog,*) nf90_strerror(istat)
+                         write(iulog,*) nf90mpi_strerror(istat)
                          call endrun ('UPDATE_ANALYSES_SE_CLOSE_LINEAR_NETCDF')
                       end if
                   end if
@@ -1997,9 +2001,9 @@ contains
 
                      call t_startf ('read_nudging_data')
                      if (masterproc) then
-                         istat=nf90_close(ncid1)
+                         istat=nf90mpi_close(ncid1)
                          if (istat.ne.NF90_NOERR) then
-                            write(iulog,*) nf90_strerror(istat)
+                            write(iulog,*) nf90mpi_strerror(istat)
                             call endrun ('UPDATE_ANALYSES_SE_CLOSE_LINEAR_NETCDF')
                          end if
                      end if
@@ -2085,25 +2089,12 @@ contains
    end select
 
    if(masterproc) then
-!!    call wrap_inq_varid    (ncid,'PS',varid)
-!!    call wrap_get_var_realx(ncid,varid,PSanal)
-!    istat=nf90_inq_varid(ncid,'PS',varid)
-!    if(istat.ne.NF90_NOERR) then
-!      write(iulog,*) nf90_strerror(istat)
-!      call endrun ('UPDATE_ANALYSES_SE')
-!    endif
-!    istat=nf90_get_var(ncid,varid,PSanal)
-!    if(istat.ne.NF90_NOERR) then
-!      write(iulog,*) nf90_strerror(istat)
-!      call endrun ('UPDATE_ANALYSES_SE')
-!    endif
-
      ! Close the analyses file
      !------------------------
 !     call wrap_close(ncid)
-     istat=nf90_close(ncid)
+     istat=nf90mpi_close(ncid)
      if (istat.ne.NF90_NOERR) then
-        write(iulog,*) nf90_strerror(istat)
+        write(iulog,*) nf90mpi_strerror(istat)
         call endrun ('UPDATE_ANALYSES_SE_CLOSE')
      end if
    end if ! (masterproc) then
@@ -2126,7 +2117,8 @@ contains
    !===============================================================
 !   use wrap_nf
    use ppgrid ,only: pver
-   use netcdf
+   use pnetcdf
+   use mpi
 
    ! Arguments
    !-------------
@@ -2143,6 +2135,7 @@ contains
    real(r8) Lat_anal(Nudge_nlat)
    real(r8) Lon_anal(Nudge_nlon)
    real(r8) Xtrans(Nudge_nlon,Nudge_nlev,Nudge_nlat)
+   integer(MPI_OFFSET_KIND) :: len_pnetcdf
 
    ! Check the existence of the analyses file; broadcast the file status to
    ! all the other MPI nodes. If the file is not there, then just return.
@@ -2161,10 +2154,10 @@ contains
 
      ! Open the given file
      !-----------------------
-     istat=nf90_open(trim(anal_file),NF90_NOWRITE,ncid)
+     istat=nf90mpi_open(MPI_COMM_WORLD,trim(anal_file),NF90_NOWRITE,MPI_INFO_NULL,ncid)
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*)'NF90_OPEN: failed for file ',trim(anal_file)
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*)'NF90MPI_OPEN: failed for file ',trim(anal_file)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_EUL')
      endif
 
@@ -2172,66 +2165,69 @@ contains
      !--------------------
 !     call wrap_inq_dimid (ncid,'lon',varid)
 !     call wrap_inq_dimlen(ncid,varid,nlon)
-     istat=nf90_inq_dimid(ncid,'lon',varid)
+     istat=nf90mpi_inq_dimid(ncid,'lon',varid)
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_EUL')
      endif
-     istat=nf90_inquire_dimension(ncid,varid,len=nlon)
+     istat=nf90mpi_inquire_dimension(ncid,varid,len=len_pnetcdf)
+     nlon = len_pnetcdf
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_EUL')
      endif
 
 !     call wrap_inq_dimid (ncid,'lat',varid)
 !     call wrap_inq_dimlen(ncid,varid,nlat)
-     istat=nf90_inq_dimid(ncid,'lat',varid)
+     istat=nf90mpi_inq_dimid(ncid,'lat',varid)
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_EUL')
      endif
-     istat=nf90_inquire_dimension(ncid,varid,len=nlat)
+     istat=nf90mpi_inquire_dimension(ncid,varid,len=len_pnetcdf)
+     nlat = len_pnetcdf
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_EUL')
      endif
 
 !     call wrap_inq_dimid (ncid,'lev',varid)
 !     call wrap_inq_dimlen(ncid,varid,plev)
-     istat=nf90_inq_dimid(ncid,'lev',varid)
+     istat=nf90mpi_inq_dimid(ncid,'lev',varid)
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_EUL')
      endif
-     istat=nf90_inquire_dimension(ncid,varid,len=plev)
+     istat=nf90mpi_inquire_dimension(ncid,varid,len=len_pnetcdf)
+     plev = len_pnetcdf
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_EUL')
      endif
 
 !     call wrap_inq_varid(ncid,'lon',varid)
 !     call wrap_get_var_realx(ncid,varid,Lon_anal)
-     istat=nf90_inq_varid(ncid,'lon',varid)
+     istat=nf90mpi_inq_varid(ncid,'lon',varid)
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_EUL')
      endif
-     istat=nf90_get_var(ncid,varid,Lon_anal)
+     istat=nf90mpi_get_var(ncid,varid,Lon_anal)
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_EUL')
      endif
 
 !     call wrap_inq_varid(ncid,'lat',varid)
 !     call wrap_get_var_realx(ncid,varid,Lat_anal)
-     istat=nf90_inq_varid(ncid,'lat',varid)
+     istat=nf90mpi_inq_varid(ncid,'lat',varid)
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_EUL')
      endif
-     istat=nf90_get_var(ncid,varid,Lat_anal)
+     istat=nf90mpi_get_var(ncid,varid,Lat_anal)
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_EUL')
      endif
 
@@ -2247,14 +2243,14 @@ contains
      !----------------------------------
 !     call wrap_inq_varid    (ncid,'U',varid)
 !     call wrap_get_var_realx(ncid,varid,Xanal)
-     istat=nf90_inq_varid(ncid,'U',varid)
+     istat=nf90mpi_inq_varid(ncid,'U',varid)
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_EUL')
      endif
-     istat=nf90_get_var(ncid,varid,Xanal)
+     istat=nf90mpi_get_var(ncid,varid,Xanal)
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_EUL')
      endif
      do ilat=1,nlat
@@ -2270,14 +2266,14 @@ contains
    if(masterproc) then
 !     call wrap_inq_varid    (ncid,'V',varid)
 !     call wrap_get_var_realx(ncid,varid,Xanal)
-     istat=nf90_inq_varid(ncid,'V',varid)
+     istat=nf90mpi_inq_varid(ncid,'V',varid)
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_EUL')
      endif
-     istat=nf90_get_var(ncid,varid,Xanal)
+     istat=nf90mpi_get_var(ncid,varid,Xanal)
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_EUL')
      endif
      do ilat=1,nlat
@@ -2293,14 +2289,14 @@ contains
    if(masterproc) then
 !     call wrap_inq_varid    (ncid,'T',varid)
 !     call wrap_get_var_realx(ncid,varid,Xanal)
-     istat=nf90_inq_varid(ncid,'T',varid)
+     istat=nf90mpi_inq_varid(ncid,'T',varid)
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_EUL')
      endif
-     istat=nf90_get_var(ncid,varid,Xanal)
+     istat=nf90mpi_get_var(ncid,varid,Xanal)
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_EUL')
      endif
      do ilat=1,nlat
@@ -2316,14 +2312,14 @@ contains
    if(masterproc) then
 !     call wrap_inq_varid    (ncid,'Q',varid)
 !     call wrap_get_var_realx(ncid,varid,Xanal)
-     istat=nf90_inq_varid(ncid,'Q',varid)
+     istat=nf90mpi_inq_varid(ncid,'Q',varid)
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_EUL')
      endif
-     istat=nf90_get_var(ncid,varid,Xanal)
+     istat=nf90mpi_get_var(ncid,varid,Xanal)
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_EUL')
      endif
      do ilat=1,nlat
@@ -2337,25 +2333,12 @@ contains
    call scatter_field_to_chunk(1,Nudge_nlev,1,Nudge_nlon,Xtrans ,Target_Q)
 
    if(masterproc) then
-!!    call wrap_inq_varid    (ncid,'PS',varid)
-!!    call wrap_get_var_realx(ncid,varid,PSanal)
-!    istat=nf90_inq_varid(ncid,'PS',varid)
-!    if(istat.ne.NF90_NOERR) then
-!      write(iulog,*) nf90_strerror(istat)
-!      call endrun ('UPDATE_ANALYSES_SE')
-!    endif
-!    istat=nf90_get_var(ncid,varid,PSanal)
-!    if(istat.ne.NF90_NOERR) then
-!      write(iulog,*) nf90_strerror(istat)
-!      call endrun ('UPDATE_ANALYSES_SE')
-!    endif
-
      ! Close the analyses file
      !-----------------------
 !     call wrap_close(ncid)
-     istat=nf90_close(ncid)
+     istat=nf90mpi_close(ncid)
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_EUL')
      endif
    endif ! (masterproc) then
@@ -2378,7 +2361,8 @@ contains
    !===============================================================
 !   use wrap_nf
    use ppgrid ,only: pver
-   use netcdf
+   use pnetcdf
+   use mpi
    use filenames ,only: interpret_filename_spec
 
    ! Arguments
@@ -2405,6 +2389,7 @@ contains
    character(len=cl) :: nudge_file1
    integer :: n, n_cnt, ncid1, ind
    integer :: Year, Month, Day, Sec
+   integer(MPI_OFFSET_KIND) :: len_pnetcdf
 
    ! Check the existence of the analyses file; broadcast the file status to
    ! all the other MPI nodes. If the file is not there, then just return.
@@ -2423,10 +2408,10 @@ contains
 
      ! Open the given file
      !-----------------------
-     istat=nf90_open(trim(anal_file),NF90_NOWRITE,ncid)
+     istat=nf90mpi_open(MPI_COMM_WORLD,trim(anal_file),NF90_NOWRITE,MPI_INFO_NULL,ncid)
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*)'NF90_OPEN: failed for file ',trim(anal_file)
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*)'NF90MPI_OPEN: failed for file ',trim(anal_file)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_FV')
      endif
 
@@ -2434,66 +2419,69 @@ contains
      !--------------------
 !     call wrap_inq_dimid (ncid,'lon',varid)
 !     call wrap_inq_dimlen(ncid,varid,nlon)
-     istat=nf90_inq_dimid(ncid,'lon',varid)
+     istat=nf90mpi_inq_dimid(ncid,'lon',varid)
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_FV')
      endif
-     istat=nf90_inquire_dimension(ncid,varid,len=nlon)
+     istat=nf90mpi_inquire_dimension(ncid,varid,len=len_pnetcdf)
+     nlon = len_pnetcdf
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_FV')
      endif
 
 !     call wrap_inq_dimid (ncid,'lat',varid)
 !     call wrap_inq_dimlen(ncid,varid,nlat)
-     istat=nf90_inq_dimid(ncid,'lat',varid)
+     istat=nf90mpi_inq_dimid(ncid,'lat',varid)
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_FV')
      endif
-     istat=nf90_inquire_dimension(ncid,varid,len=nlat)
+     istat=nf90mpi_inquire_dimension(ncid,varid,len=len_pnetcdf)
+     nlat = len_pnetcdf
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_FV')
      endif
 
 !     call wrap_inq_dimid (ncid,'lev',varid)
 !     call wrap_inq_dimlen(ncid,varid,plev)
-     istat=nf90_inq_dimid(ncid,'lev',varid)
+     istat=nf90mpi_inq_dimid(ncid,'lev',varid)
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_FV')
      endif
-     istat=nf90_inquire_dimension(ncid,varid,len=plev)
+     istat=nf90mpi_inquire_dimension(ncid,varid,len=len_pnetcdf)
+     plev = len_pnetcdf
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_FV')
      endif
 
 !     call wrap_inq_varid(ncid,'lon',varid)
 !     call wrap_get_var_realx(ncid,varid,Lon_anal)
-     istat=nf90_inq_varid(ncid,'lon',varid)
+     istat=nf90mpi_inq_varid(ncid,'lon',varid)
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_FV')
      endif
-     istat=nf90_get_var(ncid,varid,Lon_anal)
+     istat=nf90mpi_get_var(ncid,varid,Lon_anal)
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_FV')
      endif
 
 !     call wrap_inq_varid(ncid,'lat',varid)
 !     call wrap_get_var_realx(ncid,varid,Lat_anal)
-     istat=nf90_inq_varid(ncid,'lat',varid)
+     istat=nf90mpi_inq_varid(ncid,'lat',varid)
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_FV')
      endif
-     istat=nf90_get_var(ncid,varid,Lat_anal)
+     istat=nf90mpi_get_var(ncid,varid,Lat_anal)
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_FV')
      endif
 
@@ -2624,9 +2612,9 @@ contains
 
                   call t_startf ('read_nudging_data')
                   if (masterproc) then
-                      istat=nf90_close(ncid1)
+                      istat=nf90mpi_close(ncid1)
                       if (istat.ne.NF90_NOERR) then
-                         write(iulog,*) nf90_strerror(istat)
+                         write(iulog,*) nf90mpi_strerror(istat)
                          call endrun ('UPDATE_ANALYSES_FV_CLOSE_LINEAR_NETCDF')
                       end if
                   end if
@@ -2732,9 +2720,9 @@ contains
 
                      call t_startf ('read_nudging_data')
                      if (masterproc) then
-                         istat=nf90_close(ncid1)
+                         istat=nf90mpi_close(ncid1)
                          if (istat.ne.NF90_NOERR) then
-                            write(iulog,*) nf90_strerror(istat)
+                            write(iulog,*) nf90mpi_strerror(istat)
                             call endrun ('UPDATE_ANALYSES_SE_CLOSE_LINEAR_NETCDF')
                          end if
                      end if
@@ -2824,143 +2812,13 @@ contains
           call endrun('nudging_update_analyses_fv: bad input nudge method')
    end select
 
-!! JS 04/11/2020 - Comment out the old versions for FV dycore, 
-!!                 which uses US and VS instead U and V.
-!!     ! Read in, transpose lat/lev indices,
-!!     ! and scatter data arrays
-!!     !----------------------------------
-!!!DIAG:  Dont have U, so jam US into U so tests can proceed:
-!!!DIAG     call wrap_inq_varid    (ncid,'U',varid)
-!!!DIAG     call wrap_get_var_realx(ncid,varid,Xanal)
-!!!DIAG     do ilat=1,nlat
-!!!DIAG     do ilev=1,plev
-!!!DIAG     do ilon=1,nlon
-!!!DIAG       Xtrans(ilon,ilev,ilat)=Xanal(ilon,ilat,ilev)
-!!!DIAG     end do
-!!!DIAG     end do
-!!!DIAG     end do
-!!!     call wrap_inq_varid    (ncid,'US',varid)
-!!!     call wrap_get_var_realx(ncid,varid,Uanal)
-!!     istat=nf90_inq_varid(ncid,'US',varid)
-!!     if(istat.ne.NF90_NOERR) then
-!!       write(iulog,*) nf90_strerror(istat)
-!!       call endrun ('UPDATE_ANALYSES_FV')
-!!     endif
-!!     istat=nf90_get_var(ncid,varid,Uanal)
-!!     if(istat.ne.NF90_NOERR) then
-!!       write(iulog,*) nf90_strerror(istat)
-!!       call endrun ('UPDATE_ANALYSES_FV')
-!!     endif
-!!     do ilat=1,(nlat-1)
-!!     do ilev=1,plev
-!!     do ilon=1,nlon
-!!       Xtrans(ilon,ilev,ilat)=Uanal(ilon,ilat,ilev)
-!!     end do
-!!     end do
-!!     end do
-!!     Xtrans(:,:,ilat)=Xtrans(:,:,ilat-1)
-!!   endif ! (masterproc) then
-!!   call scatter_field_to_chunk(1,Nudge_nlev,1,Nudge_nlon,Xtrans ,Target_U)
-!!
-!!   if(masterproc) then
-!!!DIAG:  Dont have V, so jam VS into V so tests can proceed:
-!!!DIAG     call wrap_inq_varid    (ncid,'V',varid)
-!!!DIAG     call wrap_get_var_realx(ncid,varid,Xanal)
-!!!DIAG     do ilat=1,nlat
-!!!DIAG     do ilev=1,plev
-!!!DIAG     do ilon=1,nlon
-!!!DIAG       Xtrans(ilon,ilev,ilat)=Xanal(ilon,ilat,ilev)
-!!!DIAG     end do
-!!!DIAG     end do
-!!!DIAG     end do
-!!!     call wrap_inq_varid    (ncid,'VS',varid)
-!!!     call wrap_get_var_realx(ncid,varid,Xanal)
-!!     istat=nf90_inq_varid(ncid,'VS',varid)
-!!     if(istat.ne.NF90_NOERR) then
-!!       write(iulog,*) nf90_strerror(istat)
-!!       call endrun ('UPDATE_ANALYSES_FV')
-!!     endif
-!!     istat=nf90_get_var(ncid,varid,Xanal)
-!!     if(istat.ne.NF90_NOERR) then
-!!       write(iulog,*) nf90_strerror(istat)
-!!       call endrun ('UPDATE_ANALYSES_FV')
-!!     endif
-!!     do ilat=1,nlat
-!!     do ilev=1,plev
-!!     do ilon=1,nlon
-!!       Xtrans(ilon,ilev,ilat)=Xanal(ilon,ilat,ilev)
-!!     end do
-!!     end do
-!!     end do
-!!   endif ! (masterproc) then
-!!   call scatter_field_to_chunk(1,Nudge_nlev,1,Nudge_nlon,Xtrans ,Target_V)
-!!
-!!   if(masterproc) then
-!!!     call wrap_inq_varid    (ncid,'T',varid)
-!!!     call wrap_get_var_realx(ncid,varid,Xanal)
-!!     istat=nf90_inq_varid(ncid,'T',varid)
-!!     if(istat.ne.NF90_NOERR) then
-!!       write(iulog,*) nf90_strerror(istat)
-!!       call endrun ('UPDATE_ANALYSES_FV')
-!!     endif
-!!     istat=nf90_get_var(ncid,varid,Xanal)
-!!     if(istat.ne.NF90_NOERR) then
-!!       write(iulog,*) nf90_strerror(istat)
-!!       call endrun ('UPDATE_ANALYSES_FV')
-!!     endif
-!!     do ilat=1,nlat
-!!     do ilev=1,plev
-!!     do ilon=1,nlon
-!!       Xtrans(ilon,ilev,ilat)=Xanal(ilon,ilat,ilev)
-!!     end do
-!!     end do
-!!     end do
-!!   endif ! (masterproc) then
-!!   call scatter_field_to_chunk(1,Nudge_nlev,1,Nudge_nlon,Xtrans ,Target_T)
-!!
-!!   if(masterproc) then
-!!!     call wrap_inq_varid    (ncid,'Q',varid)
-!!!     call wrap_get_var_realx(ncid,varid,Xanal)
-!!     istat=nf90_inq_varid(ncid,'Q',varid)
-!!     if(istat.ne.NF90_NOERR) then
-!!       write(iulog,*) nf90_strerror(istat)
-!!       call endrun ('UPDATE_ANALYSES_FV')
-!!     endif
-!!     istat=nf90_get_var(ncid,varid,Xanal)
-!!     if(istat.ne.NF90_NOERR) then
-!!       write(iulog,*) nf90_strerror(istat)
-!!       call endrun ('UPDATE_ANALYSES_FV')
-!!     endif
-!!     do ilat=1,nlat
-!!     do ilev=1,plev
-!!     do ilon=1,nlon
-!!       Xtrans(ilon,ilev,ilat)=Xanal(ilon,ilat,ilev)
-!!     end do
-!!     end do
-!!     end do
-!!   endif ! (masterproc) then
-!!   call scatter_field_to_chunk(1,Nudge_nlev,1,Nudge_nlon,Xtrans ,Target_Q)
-
    if(masterproc) then
-!!    call wrap_inq_varid    (ncid,'PS',varid)
-!!    call wrap_get_var_realx(ncid,varid,PSanal)
-!    istat=nf90_inq_varid(ncid,'PS',varid)
-!    if(istat.ne.NF90_NOERR) then
-!      write(iulog,*) nf90_strerror(istat)
-!      call endrun ('UPDATE_ANALYSES_SE')
-!    endif
-!    istat=nf90_get_var(ncid,varid,PSanal)
-!    if(istat.ne.NF90_NOERR) then
-!      write(iulog,*) nf90_strerror(istat)
-!      call endrun ('UPDATE_ANALYSES_SE')
-!    endif
-
      ! Close the analyses file
      !-----------------------
 !     call wrap_close(ncid)
-     istat=nf90_close(ncid)
+     istat=nf90mpi_close(ncid)
      if(istat.ne.NF90_NOERR) then
-       write(iulog,*) nf90_strerror(istat)
+       write(iulog,*) nf90mpi_strerror(istat)
        call endrun ('UPDATE_ANALYSES_FV')
      endif
    endif ! (masterproc) then
@@ -3123,7 +2981,8 @@ contains
   subroutine open_netcdf (ncid, incre_step)
   use cam_abortutils, only : endrun
   use perf_mod
-  use netcdf
+  use pnetcdf
+  use mpi
   use filenames ,only      : interpret_filename_spec
 
   integer, intent(out)    :: ncid
@@ -3149,10 +3008,10 @@ contains
               mon_spec=Nudge_Next1_Month, &
               day_spec=Nudge_Next1_Day  , &
               sec_spec=Nudge_Next1_Sec    )
-  istat=nf90_open(trim(Nudge_Path)//trim(nudge_file),NF90_NOWRITE,ncid)
+  istat=nf90mpi_open(MPI_COMM_WORLD,trim(Nudge_Path)//trim(nudge_file),NF90_NOWRITE,MPI_INFO_NULL,ncid)
   if (istat .ne. NF90_NOERR) then
-      write(iulog,*) 'NF90_OPEN: failed for file',trim(nudge_file)
-      write(iulog,*) nf90_strerror(istat)
+      write(iulog,*) 'NF90MPI_OPEN: failed for file',trim(nudge_file)
+      write(iulog,*) nf90mpi_strerror(istat)
       call endrun ('UPDATE_ANALYSES_OPEN_NETCDF')
   endif
   write(iulog,*) 'NUDGING: Reading new analyses:',trim(Nudge_Path)//trim(nudge_file)
@@ -3166,7 +3025,8 @@ contains
   use ppgrid, only                 : pver,pcols,begchunk,endchunk
   use cam_abortutils, only         : endrun
   use perf_mod
-  use netcdf
+  use pnetcdf
+  use mpi
 
   integer, intent(in)             :: ncid
   integer, intent(in)             :: strt3(3), cnt3(3)
@@ -3177,30 +3037,34 @@ contains
   real(r8)                        :: Xanal(Nudge_ncol,Nudge_nlev)
   real(r8)                        :: tinfo
   integer                         :: istat, varid, varid1
+  integer(MPI_OFFSET_KIND)        :: strt3_pnetcdf(3), cnt3_pnetcdf(3)
+
+  strt3_pnetcdf = int(strt3, MPI_OFFSET_KIND)
+  cnt3_pnetcdf = int(cnt3, MPI_OFFSET_KIND)
 
   if (masterproc) then
     call t_startf ('read_nudging_data')
-    istat = nf90_inq_varid(ncid,vname,varid)
+    istat = nf90mpi_inq_varid(ncid,vname,varid)
     if (istat .ne. NF90_NOERR) then
-        write(iulog,*) nf90_strerror(istat)
+        write(iulog,*) nf90mpi_strerror(istat)
         call endrun ('ANALYSES_SE_INQ_VARID')
     end if
-    istat = nf90_get_var(ncid,varid,Xanal,strt3,cnt3)
+    istat = nf90mpi_get_var(ncid,varid,Xanal,strt3_pnetcdf,cnt3_pnetcdf)
     if (istat .ne. NF90_NOERR) then
-        write(iulog,*) nf90_strerror(istat)
+        write(iulog,*) nf90mpi_strerror(istat)
         call endrun ('ANALYSES_SE_GET_VAR')
     end if
     call t_stopf ('read_nudging_data')
 
     ! check whether the time slice is read in correctly
-    istat = nf90_inq_varid(ncid,'time',varid1)
+    istat = nf90mpi_inq_varid(ncid,'time',varid1)
     if (istat .ne. NF90_NOERR) then         
-         write(iulog,*) nf90_strerror(istat)                
+         write(iulog,*) nf90mpi_strerror(istat)                
          call endrun ('ANALYSES_SE_INQ_VARID')              
      end if         
-     istat = nf90_get_var(ncid,varid1,tinfo,start=(/strt3(3)/))             
+     istat = nf90mpi_get_var(ncid,varid1,tinfo,start=(/strt3_pnetcdf(3)/))             
      if (istat .ne. NF90_NOERR) then                
-         write(iulog,*) nf90_strerror(istat)                
+         write(iulog,*) nf90mpi_strerror(istat)                
          call endrun ('ANALYSES_SE_GET_VAR')                
      end if         
      write(iulog,*) 'NUDGING: Current time slice is: ', tinfo, ', strt3(3) = ', strt3(3), ', reading variable: ', vname
@@ -3218,7 +3082,8 @@ contains
   use ppgrid, only                 : pver,pcols,begchunk,endchunk              
   use cam_abortutils, only         : endrun            
   use perf_mod         
-  use netcdf           
+  use pnetcdf
+  use mpi           
                
   integer, intent(in)             :: ncid 
   integer, intent(in)             :: strt4(4), cnt4(4)         
@@ -3231,30 +3096,35 @@ contains
   real(r8)                        :: tinfo             
   integer                         :: istat, varid, varid1, &           
                                      ilat, ilon, ilev          
-               
+ 
+  integer(MPI_OFFSET_KIND)        :: strt4_pnetcdf(4), cnt4_pnetcdf(4)
+
+  strt4_pnetcdf = int(strt4, MPI_OFFSET_KIND)
+  cnt4_pnetcdf = int(cnt4, MPI_OFFSET_KIND)
+              
   if (masterproc) then              
      call t_startf ('read_nudging_data')            
-     istat = nf90_inq_varid(ncid,vname,varid)               
+     istat = nf90mpi_inq_varid(ncid,vname,varid)               
      if (istat .ne. NF90_NOERR) then                
-         write(iulog,*) nf90_strerror(istat)                
+         write(iulog,*) nf90mpi_strerror(istat)                
          call endrun ('ANALYSES_FV_INQ_VARID')              
      end if         
-     istat = nf90_get_var(ncid,varid,Xanal,strt4,cnt4)              
+     istat = nf90mpi_get_var(ncid,varid,Xanal,strt4_pnetcdf,cnt4_pnetcdf)              
      if (istat .ne. NF90_NOERR) then                
-         write(iulog,*) nf90_strerror(istat)                
+         write(iulog,*) nf90mpi_strerror(istat)                
          call endrun ('ANALYSES_FV_GET_VAR')                
      end if         
      call t_stopf ('read_nudging_data')             
             
      ! check whether the time slice is read in correctly            
-     istat = nf90_inq_varid(ncid,'time',varid1)             
+     istat = nf90mpi_inq_varid(ncid,'time',varid1)             
      if (istat .ne. NF90_NOERR) then                
-         write(iulog,*) nf90_strerror(istat)                
+         write(iulog,*) nf90mpi_strerror(istat)                
          call endrun ('ANALYSES_FV_INQ_VARID')              
      end if         
-     istat = nf90_get_var(ncid,varid1,tinfo,start=(/strt4(4)/))             
+     istat = nf90mpi_get_var(ncid,varid1,tinfo,start=(/strt4_pnetcdf(4)/))             
      if (istat .ne. NF90_NOERR) then                
-         write(iulog,*) nf90_strerror(istat)
+         write(iulog,*) nf90mpi_strerror(istat)
          call endrun ('ANALYSES_FV_GET_VAR')
     end if
     write(iulog,*) 'NUDGING: Current time slice is: ', tinfo, ', strt4(4) = ', strt4(4), ', reading variable: ', vname

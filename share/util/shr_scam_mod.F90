@@ -83,7 +83,8 @@ CONTAINS
 subroutine shr_scam_getCloseLatLonNC(ncid, targetLat,  targetLon, closeLat, closeLon, &
                                      closeLatIdx, closeLonIdx, found, rc)
 ! !USES:
-   use netcdf
+   use pnetcdf
+   use mpi
    use shr_ncread_mod, only: shr_ncread_handleErr
    implicit none
 
@@ -106,7 +107,7 @@ subroutine shr_scam_getCloseLatLonNC(ncid, targetLat,  targetLon, closeLat, clos
    !----- local variables -----
    real   (R8),allocatable          :: lats(:),lons(:)
    integer(IN)                      :: rcode   ! netCDF routine return code
-   integer(IN)                      ::  len
+   integer(MPI_OFFSET_KIND)         ::  len
    integer(IN)                      ::  latlen
    integer(IN)                      ::  lonlen
    integer(IN)                      ::  ndims
@@ -116,6 +117,7 @@ subroutine shr_scam_getCloseLatLonNC(ncid, targetLat,  targetLon, closeLat, clos
    integer(IN)                      ::  nvarid
    integer(IN)                      ::  ndimid
    integer(IN)                      ::  strt(nf90_max_var_dims),cnt(nf90_max_var_dims)
+   integer(MPI_OFFSET_KIND)         ::  strt_pnetcdf(nf90_max_var_dims),cnt_pnetcdf(nf90_max_var_dims)
    integer(IN)                      ::  nlon,nlat
    integer(IN), dimension(nf90_max_var_dims) :: dimids
    logical                          ::  lfound        ! local version of found
@@ -142,9 +144,9 @@ subroutine shr_scam_getCloseLatLonNC(ncid, targetLat,  targetLon, closeLat, clos
 
    !--- Get variable info for search ---
 
-   rcode = nf90_inquire(ncid, nVariables=nvars)
+   rcode = nf90mpi_inquire(ncid, nVariables=nvars)
    if (rcode /= nf90_noerr) then
-      call shr_ncread_handleErr( rcode, subname//"ERROR from nf90_inquire" )
+      call shr_ncread_handleErr( rcode, subname//"ERROR from nf90mpi_inquire" )
       if ( present(rc) )then
          rc = rcode
          return
@@ -153,7 +155,7 @@ subroutine shr_scam_getCloseLatLonNC(ncid, targetLat,  targetLon, closeLat, clos
 
    allocate( vars(nvars) )
    do nvarid = 1, nvars
-      rcode = nf90_inquire_variable(ncid, nvarid, vars(nvarid), ndims=ndims,dimids = dimids)
+      rcode = nf90mpi_inquire_variable(ncid, nvarid, vars(nvarid), ndims=ndims,dimids = dimids)
       if (rcode /= nf90_noerr) then
          call shr_ncread_handleErr( rcode, subname//"ERROR inquiring about variable "// &
                                     trim(vars(nvarid)) )
@@ -167,7 +169,7 @@ subroutine shr_scam_getCloseLatLonNC(ncid, targetLat,  targetLon, closeLat, clos
          nlatdims = ndims
          allocate( latdimnames(ndims) )
          do ndimid =  1,ndims
-            rcode = nf90_inquire_dimension(ncid, dimids(ndimid), latdimnames(ndimid), len)
+            rcode = nf90mpi_inquire_dimension(ncid, dimids(ndimid), latdimnames(ndimid), len)
             if (rcode /= nf90_noerr) then
                call shr_ncread_handleErr( rcode, subname// &
                    "ERROR: Cant read netcdf latitude variable dimension")
@@ -187,7 +189,7 @@ subroutine shr_scam_getCloseLatLonNC(ncid, targetLat,  targetLon, closeLat, clos
          nlondims = ndims
          allocate( londimnames(ndims) )
          do ndimid =  1,ndims
-            rcode = nf90_inquire_dimension(ncid, dimids(ndimid), londimnames(ndimid), len)
+            rcode = nf90mpi_inquire_dimension(ncid, dimids(ndimid), londimnames(ndimid), len)
             call shr_ncread_handleErr( rcode, subname &
                            //"ERROR: Cant read netcdf longitude variable dimension" )
             if ( rcode /= nf90_noerr .and. present(rc) )then
@@ -221,7 +223,9 @@ subroutine shr_scam_getCloseLatLonNC(ncid, targetLat,  targetLon, closeLat, clos
                                  nlen=latlen, strt=strt, cnt=cnt )
          nlat = latlen
          allocate(lats(nlat))
-         rcode= nf90_get_var(ncid, nvarid ,lats, start = strt, count = cnt)
+         strt_pnetcdf = strt
+         cnt_pnetcdf = cnt
+         rcode= nf90mpi_get_var(ncid, nvarid ,lats, start = strt_pnetcdf, count = cnt_pnetcdf)
          call shr_ncread_handleErr( rcode, subname &
                            //"ERROR: Cant read netcdf latitude" )
          if ( rcode /= nf90_noerr .and. present(rc) )then
@@ -237,7 +241,9 @@ subroutine shr_scam_getCloseLatLonNC(ncid, targetLat,  targetLon, closeLat, clos
                                  nlen=lonlen, strt=strt, cnt=cnt )
          nlon = lonlen
          allocate(lons(nlon))
-         rcode= nf90_get_var(ncid, nvarid ,lons, start = strt, count = cnt)
+         strt_pnetcdf = strt
+         cnt_pnetcdf = cnt
+         rcode= nf90mpi_get_var(ncid, nvarid ,lons, start = strt_pnetcdf, count = cnt_pnetcdf)
          call shr_ncread_handleErr( rcode, subname &
                            //"ERROR: Cant read netcdf longitude" )
          if ( rcode /= nf90_noerr .and. present(rc) )then
@@ -299,7 +305,7 @@ end subroutine shr_scam_getCloseLatLonNC
 
 subroutine shr_scam_getCloseLatLonPIO(pioid, targetLat,  targetLon, closeLat, closeLon, &
                                       closeLatIdx, closeLonIdx, found, rc )
-   use netcdf
+   use pnetcdf
    use pio
    use shr_ncread_mod, only: shr_ncread_handleErr
    implicit none
@@ -525,7 +531,7 @@ subroutine shr_scam_getCloseLatLonFile(filename, targetLat,  targetLon, closeLat
                                        closeLatIdx, closeLonIdx, found, rc)
 ! !USES:
    use shr_ncread_mod, only: shr_ncread_open, shr_ncread_close
-   use netcdf
+   use pnetcdf
    implicit none
 
 ! !INPUT/OUTPUT PARAMETERS:
@@ -594,7 +600,8 @@ subroutine shr_scam_checkSurface(scmlon, scmlat, scm_multcols, scm_nx, scm_ny, &
 ! !USES:
    use shr_dmodel_mod    ! shr data model stuff
    use mct_mod
-   use netcdf
+   use pnetcdf
+   use mpi
    use shr_strdata_mod, only : shr_strdata_readnml, shr_strdata_type
    implicit none
 
@@ -623,6 +630,9 @@ subroutine shr_scam_checkSurface(scmlon, scmlat, scm_multcols, scm_nx, scm_ny, &
    integer(IN)             :: fracid           !  id for frac variable
    integer(IN)             :: closeLatIdx      ! index of returned lat point
    integer(IN)             :: closeLonIdx      ! index of returned lon point
+   integer(MPI_OFFSET_KIND) :: closeLatIdx_pnetcdf ! closeLatIdx passed to pnetcdf
+   integer(MPI_OFFSET_KIND) :: closeLonIdx_pnetcdf ! closeLonIdx passed to pnetcdf
+   integer(MPI_OFFSET_KIND) :: one_pnetcdf     ! constant 1 passed to pnetcdf
    integer(IN)             :: unitn            ! io unit
    real   (R8)             :: ocn_frac(1,1)    ! ocean fraction
    real   (R8)             :: closeLat         ! returned close lat
@@ -678,18 +688,20 @@ subroutine shr_scam_checkSurface(scmlon, scmlat, scm_multcols, scm_nx, scm_ny, &
 
       inquire(file=trim(focndomain),exist=exists)
       if (.not.exists) call shr_sys_abort(subName//"ERROR: file does not exist: "//trim(focndomain))
-      rcode = nf90_open(focndomain,nf90_nowrite,ncid_ocn)
+      rcode = nf90mpi_open(MPI_COMM_WORLD,focndomain,nf90_nowrite,MPI_INFO_NULL,ncid_ocn)
       if (rCode /= nf90_noerr) call shr_sys_abort(subName//"ERROR opening data file : "//trim(focndomain))
       if (s_loglev > 0) write(s_logunit,F00) 'opened netCDF data file: ',trim(focndomain)
 
       !--- Extract the fraction for current column ---
 
       call shr_scam_getCloseLatLon(ncid_ocn,scmlat,scmlon,closelat,closelon,closelatidx,closelonidx)
-      rcode = nf90_inq_varid(ncid_ocn, 'frac', fracid)
+      rcode = nf90mpi_inq_varid(ncid_ocn, 'frac', fracid)
       if (rcode /= nf90_noerr) then
          call shr_sys_abort(subname//"ERROR getting varid from variable frac in file "//trim(focndomain))
       end if
-      rcode = nf90_get_var(ncid_ocn,fracid,ocn_frac,start=(/closelonidx,closelatidx/),count=(/1,1/))
+      closelonidx_pnetcdf = closelonidx
+      closelatidx_pnetcdf = closelatidx
+      rcode = nf90mpi_get_var(ncid_ocn,fracid,ocn_frac,start=(/closelonidx_pnetcdf,closelatidx_pnetcdf/),count=(/one_pnetcdf,one_pnetcdf/))
       if (rcode /= nf90_noerr) then
          call shr_sys_abort(subname//"ERROR getting ocean fraction from "//trim(focndomain))
       end if

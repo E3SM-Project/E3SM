@@ -42,7 +42,7 @@ contains
     use FrictionVelocityMod, only: implicit_stress, atm_gustiness
     use lnd_disagg_forc
     use lnd_downscale_atm_forcing
-    use netcdf
+    use pnetcdf
     !
     ! !ARGUMENTS:
     type(bounds_type)  , intent(in)    :: bounds   ! bounds
@@ -290,12 +290,12 @@ contains
           else if (atm2lnd_vars%metsource == 2) then
             metsource_str = 'site'
             !get year information from file
-            ierr = nf90_open(trim(metdata_bypass) // '/all_hourly.nc', nf90_nowrite, ncid)
-            ierr = nf90_inq_varid(ncid, 'start_year', varid) 
-            ierr = nf90_get_var(ncid, varid, atm2lnd_vars%startyear_met)
-            ierr = nf90_inq_varid(ncid, 'end_year', varid)
-            ierr = nf90_get_var(ncid, varid, atm2lnd_vars%endyear_met_spinup)
-            ierr = nf90_close(ncid)
+            ierr = nf90mpi_open(MPI_COMM_WORLD, trim(metdata_bypass) // '/all_hourly.nc', nf90_nowrite, MPI_INFO_NULL, ncid)
+            ierr = nf90mpi_inq_varid(ncid, 'start_year', varid) 
+            ierr = nf90mpi_get_var(ncid, varid, atm2lnd_vars%startyear_met)
+            ierr = nf90mpi_inq_varid(ncid, 'end_year', varid)
+            ierr = nf90mpi_get_var(ncid, varid, atm2lnd_vars%endyear_met_spinup)
+            ierr = nf90mpi_close(ncid)
             atm2lnd_vars%endyear_met_trans = atm2lnd_vars%endyear_met_spinup
           else if (atm2lnd_vars%metsource == 3) then 
             metsource_str = 'princeton'
@@ -406,25 +406,25 @@ contains
                     metdata_fname = 'CBGC1850S.ne30_' // trim(metvars(v)) // '_0566-0590_z' // zst(2:3) // '.nc'
             end if
   
-            ierr = nf90_open(trim(metdata_bypass) // '/' // trim(metdata_fname), NF90_NOWRITE, met_ncids(v))
+            ierr = nf90mpi_open(MPI_COMM_WORLD, trim(metdata_bypass) // '/' // trim(metdata_fname), NF90_NOWRITE, MPI_INFO_NULL, met_ncids(v))
             if (ierr .ne. 0) call endrun(msg=' ERROR: Failed to open cpl_bypass input meteorology file' )
        
             !get timestep information
-            ierr = nf90_inq_dimid(met_ncids(v), 'DTIME', dimid)
-            ierr = nf90_Inquire_Dimension(met_ncids(v), dimid, len = atm2lnd_vars%timelen(v))
+            ierr = nf90mpi_inq_dimid(met_ncids(v), 'DTIME', dimid)
+            ierr = nf90mpi_Inquire_Dimension(met_ncids(v), dimid, len = atm2lnd_vars%timelen(v))
 
             starti(1) = 1
             counti(1) = 2
-            ierr = nf90_inq_varid(met_ncids(v), 'DTIME', varid)
-            ierr = nf90_get_var(met_ncids(v), varid, timetemp, starti(1:1), counti(1:1))   
+            ierr = nf90mpi_inq_varid(met_ncids(v), 'DTIME', varid)
+            ierr = nf90mpi_get_var(met_ncids(v), varid, timetemp, starti(1:1), counti(1:1))   
             atm2lnd_vars%timeres(v)        = (timetemp(2)-timetemp(1))*24._r8
             atm2lnd_vars%npf(v)            = 86400d0*(timetemp(2)-timetemp(1))/get_step_size()  
             atm2lnd_vars%timelen_spinup(v) = nyears_spinup*(365*nint(24./atm2lnd_vars%timeres(v)))
     
-            ierr = nf90_inq_varid(met_ncids(v), trim(metvars(v)), varid)
+            ierr = nf90mpi_inq_varid(met_ncids(v), trim(metvars(v)), varid)
             !get the conversion factors
-            ierr = nf90_get_att(met_ncids(v), varid, 'scale_factor', atm2lnd_vars%scale_factors(v))
-            ierr = nf90_get_att(met_ncids(v), varid, 'add_offset', atm2lnd_vars%add_offsets(v))
+            ierr = nf90mpi_get_att(met_ncids(v), varid, 'scale_factor', atm2lnd_vars%scale_factors(v))
+            ierr = nf90mpi_get_att(met_ncids(v), varid, 'add_offset', atm2lnd_vars%add_offsets(v))
             !get the met data         
             starti(1) = 1
             starti(2) = gtoget
@@ -436,8 +436,8 @@ contains
               allocate(atm2lnd_vars%atm_input       (met_nvars,bounds%begg:bounds%endg,1,1:counti(1)))
             end if 
 
-            ierr = nf90_get_var(met_ncids(v), varid, atm2lnd_vars%atm_input(v,g:g,1,1:counti(1)), starti(1:2), counti(1:2))
-            ierr = nf90_close(met_ncids(v))
+            ierr = nf90mpi_get_var(met_ncids(v), varid, atm2lnd_vars%atm_input(v,g:g,1,1:counti(1)), starti(1:2), counti(1:2))
+            ierr = nf90mpi_close(met_ncids(v))
     
             if (use_sitedata .and. v == 1) then 
                 starti_site = max((nint(site_metdata(4,1))-atm2lnd_vars%startyear_met) * &
@@ -729,25 +729,25 @@ contains
               close(nu_nml)
               call relavu( nu_nml )
 
-              ierr = nf90_open(trim(stream_fldFileName_popdens), NF90_NOWRITE, ncid)
-              ierr = nf90_inq_varid(ncid, 'lat', varid)
-              ierr = nf90_get_var(ncid, varid, smap05_lat)
-              ierr = nf90_inq_varid(ncid, 'lon', varid)
-              ierr = nf90_get_var(ncid, varid, smap05_lon)
-              ierr = nf90_inq_varid(ncid, 'hdm', varid)
+              ierr = nf90mpi_open(MPI_COMM_WORLD, trim(stream_fldFileName_popdens), NF90_NOWRITE, MPI_INFO_NULL, ncid)
+              ierr = nf90mpi_inq_varid(ncid, 'lat', varid)
+              ierr = nf90mpi_get_var(ncid, varid, smap05_lat)
+              ierr = nf90mpi_inq_varid(ncid, 'lon', varid)
+              ierr = nf90mpi_get_var(ncid, varid, smap05_lon)
+              ierr = nf90mpi_inq_varid(ncid, 'hdm', varid)
               starti(1:2) = 1 
               starti(3)   = nindex(1)
               counti(1) = 720
               counti(2) = 360
               counti(3) = 1       
-              ierr = nf90_get_var(ncid, varid, atm2lnd_vars%hdm1, starti, counti)
+              ierr = nf90mpi_get_var(ncid, varid, atm2lnd_vars%hdm1, starti, counti)
               starti(3) = nindex(2)
               if (nindex(1) .ne. nindex(2)) then 
-                  ierr = nf90_get_var(ncid, varid, atm2lnd_vars%hdm2, starti, counti)
+                  ierr = nf90mpi_get_var(ncid, varid, atm2lnd_vars%hdm2, starti, counti)
               else
                   atm2lnd_vars%hdm2 = atm2lnd_vars%hdm1 
               end if
-              ierr = nf90_close(ncid)
+              ierr = nf90mpi_close(ncid)
             end if
 
             if (i .eq. 1) then 
@@ -800,14 +800,14 @@ contains
 
             !Get all of the data (master processor only)
             allocate(atm2lnd_vars%lnfm_all       (192,94,2920))
-            ierr = nf90_open(trim(stream_fldFileName_lightng), NF90_NOWRITE, ncid)
-            ierr = nf90_inq_varid(ncid, 'lat', varid)
-            ierr = nf90_get_var(ncid, varid, smapt62_lat)
-            ierr = nf90_inq_varid(ncid, 'lon', varid)
-            ierr = nf90_get_var(ncid, varid, smapt62_lon)
-            ierr = nf90_inq_varid(ncid, 'lnfm', varid)
-            ierr = nf90_get_var(ncid, varid, atm2lnd_vars%lnfm_all)
-            ierr = nf90_close(ncid)
+            ierr = nf90mpi_open(MPI_COMM_WORLD, trim(stream_fldFileName_lightng), NF90_NOWRITE, MPI_INFO_NULL, ncid)
+            ierr = nf90mpi_inq_varid(ncid, 'lat', varid)
+            ierr = nf90mpi_get_var(ncid, varid, smapt62_lat)
+            ierr = nf90mpi_inq_varid(ncid, 'lon', varid)
+            ierr = nf90mpi_get_var(ncid, varid, smapt62_lon)
+            ierr = nf90mpi_inq_varid(ncid, 'lnfm', varid)
+            ierr = nf90mpi_get_var(ncid, varid, atm2lnd_vars%lnfm_all)
+            ierr = nf90mpi_close(ncid)
           end if
           if (atm2lnd_vars%loaded_bypassdata .eq. 0 .and. i .eq. 1) then
             call mpi_bcast (smapt62_lon, 192, MPI_REAL8, 0, mpicom, ier)
@@ -875,25 +875,25 @@ contains
               close(nu_nml)
               call relavu( nu_nml )
 
-              ierr = nf90_open(trim(stream_fldFileName_ndep), nf90_nowrite, ncid)
-              ierr = nf90_inq_varid(ncid, 'lat', varid)
-              ierr = nf90_get_var(ncid, varid, smap2_lat)
-              ierr = nf90_inq_varid(ncid, 'lon', varid)      
-              ierr = nf90_get_var(ncid, varid, smap2_lon)
-              ierr = nf90_inq_varid(ncid, 'NDEP_year', varid)
+              ierr = nf90mpi_open(MPI_COMM_WORLD, trim(stream_fldFileName_ndep), nf90_nowrite, MPI_INFO_NULL, ncid)
+              ierr = nf90mpi_inq_varid(ncid, 'lat', varid)
+              ierr = nf90mpi_get_var(ncid, varid, smap2_lat)
+              ierr = nf90mpi_inq_varid(ncid, 'lon', varid)      
+              ierr = nf90mpi_get_var(ncid, varid, smap2_lon)
+              ierr = nf90mpi_inq_varid(ncid, 'NDEP_year', varid)
               starti(1:2) = 1
               starti(3)   = nindex(1)
               counti(1)   = 144
               counti(2)   = 96
               counti(3)   = 1
-              ierr = nf90_get_var(ncid, varid, atm2lnd_vars%ndep1, starti, counti)
+              ierr = nf90mpi_get_var(ncid, varid, atm2lnd_vars%ndep1, starti, counti)
               if (nindex(1) .ne. nindex(2)) then 
                 starti(3) = nindex(2)
-                ierr = nf90_get_var(ncid, varid, atm2lnd_vars%ndep2, starti, counti)
+                ierr = nf90mpi_get_var(ncid, varid, atm2lnd_vars%ndep2, starti, counti)
               else
                 atm2lnd_vars%ndep2 = atm2lnd_vars%ndep1
               end if
-              ierr = nf90_close(ncid)
+              ierr = nf90mpi_close(ncid)
              end if
              if (i .eq. 1) then
                call mpi_bcast (atm2lnd_vars%ndep1, 144*96, MPI_REAL8, 0, mpicom, ier)
@@ -949,21 +949,21 @@ contains
             aerovars(12) = 'DSTX02WD'
             aerovars(13) = 'DSTX03WD'
             aerovars(14) = 'DSTX04WD'
-            ierr = nf90_open(trim(aero_file), nf90_nowrite, ncid)
-            ierr = nf90_inq_varid(ncid, 'lat', varid)
-            ierr = nf90_get_var(ncid, varid, smap2_lat)
-            ierr = nf90_inq_varid(ncid, 'lon', varid)      
-            ierr = nf90_get_var(ncid, varid, smap2_lon)
+            ierr = nf90mpi_open(MPI_COMM_WORLD, trim(aero_file), nf90_nowrite, MPI_INFO_NULL, ncid)
+            ierr = nf90mpi_inq_varid(ncid, 'lat', varid)
+            ierr = nf90mpi_get_var(ncid, varid, smap2_lat)
+            ierr = nf90mpi_inq_varid(ncid, 'lon', varid)      
+            ierr = nf90mpi_get_var(ncid, varid, smap2_lon)
             starti(1:2) = 1
             starti(3)   = max((min(yr,2100)-1849)*12+1, 13)-1
             counti(1)   = 144
             counti(2)   = 96
             counti(3)   = 14
             do av=1,14
-              ierr = nf90_inq_varid(ncid, trim(aerovars(av)), varid)
-              ierr = nf90_get_var(ncid, varid, atm2lnd_vars%aerodata(av,:,:,:), starti, counti)
+              ierr = nf90mpi_inq_varid(ncid, trim(aerovars(av)), varid)
+              ierr = nf90mpi_get_var(ncid, varid, atm2lnd_vars%aerodata(av,:,:,:), starti, counti)
             end do
-            ierr = nf90_close(ncid)
+            ierr = nf90mpi_close(ncid)
           end if
           if (i .eq. 1) then 
              call mpi_bcast (atm2lnd_vars%aerodata, 14*144*96*14, MPI_REAL8, 0, mpicom, ier)
@@ -1283,14 +1283,14 @@ contains
 #ifdef CPL_BYPASS
         !atmospheric CO2 (to be used for transient simulations only)
         if (atm2lnd_vars%loaded_bypassdata .eq. 0) then 
-          ierr = nf90_open(trim(co2_file), nf90_nowrite, ncid)
-          ierr = nf90_inq_dimid(ncid, 'time', dimid)
-          ierr = nf90_Inquire_Dimension(ncid, dimid, len = thistimelen)
-          ierr = nf90_inq_varid(ncid, 'CO2', varid)
-          ierr = nf90_get_var(ncid, varid, atm2lnd_vars%co2_input(:,:,1:thistimelen))
-          ierr = nf90_inq_varid(ncid, 'C13O2', varid)
-          ierr = nf90_get_var(ncid, varid, atm2lnd_vars%c13o2_input(:,:,1:thistimelen))
-          ierr = nf90_close(ncid)
+          ierr = nf90mpi_open(MPI_COMM_WORLD, trim(co2_file), nf90_nowrite, MPI_INFO_NULL, ncid)
+          ierr = nf90mpi_inq_dimid(ncid, 'time', dimid)
+          ierr = nf90mpi_Inquire_Dimension(ncid, dimid, len = thistimelen)
+          ierr = nf90mpi_inq_varid(ncid, 'CO2', varid)
+          ierr = nf90mpi_get_var(ncid, varid, atm2lnd_vars%co2_input(:,:,1:thistimelen))
+          ierr = nf90mpi_inq_varid(ncid, 'C13O2', varid)
+          ierr = nf90mpi_get_var(ncid, varid, atm2lnd_vars%c13o2_input(:,:,1:thistimelen))
+          ierr = nf90mpi_close(ncid)
         end if
 
         !get weights/indices for interpolation (assume values represent annual averages)

@@ -357,7 +357,7 @@ subroutine iop_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
          endif
          call wrap_open (iopfile, NF90_NOWRITE, ncid)
 
-	 if ( nf90_inquire_attribute( ncid, NF90_GLOBAL, 'E3SM_GENERATED_FORCING', attnum=i ).EQ. NF90_NOERR ) then
+	 if ( nf90mpi_inquire_attribute( ncid, NF90_GLOBAL, 'E3SM_GENERATED_FORCING', attnum=i ).EQ. NF90_NOERR ) then
             use_replay = .true.
          else
             use_replay = .false.
@@ -386,11 +386,11 @@ subroutine iop_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
                call endrun('SCAM_SETOPTS: SCMLON must be between 0. and 360. degrees.')
             else
                if (latsiz==1 .and. lonsiz==1) then
-                  ret = nf90_get_var(ncid, lonid, ioplon)
+                  ret = nf90mpi_get_var(ncid, lonid, ioplon)
                   if (ret/=NF90_NOERR) then
                      call endrun('SCAM_SETOPTS: error reading longitude variable from iopfile')
                   end if
-                  ret = nf90_get_var(ncid, latid, ioplat)
+                  ret = nf90mpi_get_var(ncid, latid, ioplat)
                   if (ret/=NF90_NOERR) then
                      call endrun('SCAM_SETOPTS: error reading latitude variable from iopfile')
                   end if
@@ -439,6 +439,8 @@ subroutine setiopupdate_init
 ! Modified for E3SM by  Peter Bogenschutz 2017 - onward
 ! 
 !-----------------------------------------------------------------------
+  use pnetcdf
+  use mpi, only : MPI_COMM_WORLD, MPI_INFO_NULL, MPI_OFFSET_KIND
   implicit none
 #if ( defined RS6000 )
   implicit automatic (a-z)
@@ -456,31 +458,32 @@ subroutine setiopupdate_init
    integer :: yr, mon, day                      ! year, month, and day component
    integer :: start_ymd,start_tod
    logical :: doiter
+   integer(MPI_OFFSET_KIND) :: len_pnetcdf
 !------------------------------------------------------------------------------
 
     ! Open and read pertinent information from the IOP file
 
-    STATUS = NF90_OPEN( iopfile, NF90_NOWRITE, NCID )
+    STATUS = NF90MPI_OPEN( MPI_COMM_WORLD, iopfile, NF90_NOWRITE, MPI_INFO_NULL, NCID )
 
     ! Read time (tsec) variable
 
-    STATUS = NF90_INQ_VARID( NCID, 'tsec', tsec_varID )
+    STATUS = NF90MPI_INQ_VARID( NCID, 'tsec', tsec_varID )
     if ( STATUS .NE. NF90_NOERR ) write(iulog,*)'ERROR - setiopupdate.F:', &
        'Cant get variable ID for tsec'
 
-    STATUS = NF90_INQ_VARID( NCID, 'bdate', bdate_varID )
+    STATUS = NF90MPI_INQ_VARID( NCID, 'bdate', bdate_varID )
     if ( STATUS .NE. NF90_NOERR ) then
-       STATUS = NF90_INQ_VARID( NCID, 'basedate', bdate_varID )
+       STATUS = NF90MPI_INQ_VARID( NCID, 'basedate', bdate_varID )
        if ( STATUS .NE. NF90_NOERR )         &
           write(iulog,*)'ERROR - setiopupdate.F:Cant get variable ID for bdate'
     endif
 
-    STATUS = NF90_INQ_DIMID( NCID, 'time', time_dimID )
+    STATUS = NF90MPI_INQ_DIMID( NCID, 'time', time_dimID )
     if ( STATUS .NE. NF90_NOERR )  then
-       STATUS = NF90_INQ_DIMID( NCID, 'tsec', time_dimID )
+       STATUS = NF90MPI_INQ_DIMID( NCID, 'tsec', time_dimID )
        if ( STATUS .NE. NF90_NOERR )  then
           write(iulog,* )'ERROR - setiopupdate.F:Could not find variable dim ID for time'
-          STATUS = NF90_CLOSE ( NCID )
+          STATUS = NF90MPI_CLOSE ( NCID )
           return
        end if
     end if
@@ -488,24 +491,25 @@ subroutine setiopupdate_init
     if ( STATUS .NE. NF90_NOERR )  &
        write(iulog,*)'ERROR - setiopupdate.F:Cant get variable dim ID for time'
 
-    STATUS = NF90_INQUIRE_DIMENSION( NCID, time_dimID, len=ntime )
+    STATUS = NF90MPI_INQUIRE_DIMENSION( NCID, time_dimID, len=len_pnetcdf )
+    ntime = len_pnetcdf
     if ( STATUS .NE. NF90_NOERR )then
        write(iulog,*)'ERROR - setiopupdate.F:Cant get time dimlen'
     endif
 
     if (.not.allocated(tsec)) allocate(tsec(ntime))
 
-    STATUS = NF90_GET_VAR( NCID, tsec_varID, tsec )
+    STATUS = NF90MPI_GET_VAR( NCID, tsec_varID, tsec )
     if ( STATUS .NE. NF90_NOERR )then
        write(iulog,*)'ERROR - setiopupdate.F:Cant get variable tsec'
     endif
-    STATUS = NF90_GET_VAR( NCID, bdate_varID, bdate )
+    STATUS = NF90MPI_GET_VAR( NCID, bdate_varID, bdate )
     if ( STATUS .NE. NF90_NOERR )then
        write(iulog,*)'ERROR - setiopupdate.F:Cant get variable bdate'
     endif
 
     ! Close the netCDF file
-    STATUS = NF90_CLOSE( NCID )
+    STATUS = NF90MPI_CLOSE( NCID )
 
     ! determine the last date in the iop dataset
 
@@ -644,7 +648,8 @@ subroutine readiopdata(iop_update_phase1,hyam,hybm)
         use getinterpnetcdfdata
         use shr_sys_mod,      only: shr_sys_flush
         use error_messages, only : handle_ncerr
-        use netcdf
+        use pnetcdf
+        use mpi, only : MPI_OFFSET_KIND, MPI_COMM_WORLD, MPI_INFO_NULL
         use shr_const_mod, only : SHR_CONST_PI
 !-----------------------------------------------------------------------
    implicit none
@@ -687,18 +692,20 @@ subroutine readiopdata(iop_update_phase1,hyam,hybm)
    integer strt4(4),cnt4(4)
    character(len=16) :: lowername
    real(r8), parameter :: rad2deg = 180.0_r8/SHR_CONST_PI
+   integer(MPI_OFFSET_KIND) strt4_pnetcdf(4)
+   integer(MPI_OFFSET_KIND) :: len_pnetcdf
 
    fill_ends= .false.
 
    ! Open IOP dataset
 
-   call handle_ncerr( nf90_open (iopfile, 0, ncid),&
+   call handle_ncerr( nf90mpi_open (MPI_COMM_WORLD, iopfile, 0, MPI_INFO_NULL, ncid),&
        'readiopdata.F90', __LINE__)
 
    !  If the dataset is a CAM generated dataset set use_replay to true
    !    E3SM IOP datasets have a global attribute called E3SM_GENERATED_IOP
 
-   if ( nf90_inquire_attribute( ncid, NF90_GLOBAL, 'E3SM_GENERATED_FORCING',attnum=i ).EQ. NF90_NOERR ) then
+   if ( nf90mpi_inquire_attribute( ncid, NF90_GLOBAL, 'E3SM_GENERATED_FORCING',attnum=i ).EQ. NF90_NOERR ) then
       use_replay = .true.
    else
       use_replay = .false.
@@ -709,85 +716,89 @@ subroutine readiopdata(iop_update_phase1,hyam,hybm)
 !  Read time variables
 
 
-   status = nf90_inq_dimid (ncid, 'time', time_dimID )
+   status = nf90mpi_inq_dimid (ncid, 'time', time_dimID )
    if (status /= NF90_NOERR) then
-      status = nf90_inq_dimid (ncid, 'tsec', time_dimID )
+      status = nf90mpi_inq_dimid (ncid, 'tsec', time_dimID )
       if (status /= NF90_NOERR) then
          write(iulog,* )'ERROR - readiopdata.F:Could not find dimension ID for time/tsec'
-         status = NF90_CLOSE ( ncid )
+         status = NF90MPI_CLOSE ( ncid )
          call endrun
       end if
    end if
 
-   call handle_ncerr( nf90_inquire_dimension( ncid, time_dimID, len=ntime ),&
+   call handle_ncerr( nf90mpi_inquire_dimension( ncid, time_dimID, len=len_pnetcdf ),&
          'readiopdata.F90', __LINE__)
+   ntime = len_pnetcdf
 
    allocate(tsec(ntime))
 
-   status = nf90_inq_varid (ncid, 'tsec', tsec_varID )
-   call handle_ncerr( nf90_get_var (ncid, tsec_varID, tsec),&
+   status = nf90mpi_inq_varid (ncid, 'tsec', tsec_varID )
+   call handle_ncerr( nf90mpi_get_var (ncid, tsec_varID, tsec),&
            'readiopdata.F90', __LINE__)
 
-   status = nf90_inq_varid (ncid, 'nbdate', bdate_varID )
+   status = nf90mpi_inq_varid (ncid, 'nbdate', bdate_varID )
    if (status /= NF90_NOERR) then
-      status = nf90_inq_varid (ncid, 'bdate', bdate_varID )
+      status = nf90mpi_inq_varid (ncid, 'bdate', bdate_varID )
       if (status /= NF90_NOERR) then
          write(iulog,* )'ERROR - readiopdata.F:Could not find variable ID for bdate'
-         status = NF90_CLOSE ( ncid )
+         status = NF90MPI_CLOSE ( ncid )
          call endrun
       end if
    end if
-   call handle_ncerr( nf90_get_var (ncid, bdate_varID, bdate),&
+   call handle_ncerr( nf90mpi_get_var (ncid, bdate_varID, bdate),&
         'readiopdata.F90', __LINE__)
 
    !======================================================
    ! read level data
 
-   status = NF90_INQ_DIMID( ncid, 'lev', lev_dimID )
+   status = NF90MPI_INQ_DIMID( ncid, 'lev', lev_dimID )
    if ( status .ne. nf90_noerr ) then
       write(iulog,* )'ERROR - readiopdata.F:Could not find variable dim ID  for lev'
-      status = NF90_CLOSE ( ncid )
+      status = NF90MPI_CLOSE ( ncid )
       return
    end if
 
-   call handle_ncerr( nf90_inquire_dimension( ncid, lev_dimID, len=nlev ),&
+   call handle_ncerr( nf90mpi_inquire_dimension( ncid, lev_dimID, len=len_pnetcdf ),&
          'readiopdata.F90', __LINE__)
+   nlev = len_pnetcdf
 
    allocate(dplevs(nlev+1))
 
-   status = NF90_INQ_VARID( ncid, 'lev', lev_varID )
+   status = NF90MPI_INQ_VARID( ncid, 'lev', lev_varID )
    if ( status .ne. nf90_noerr ) then
       write(iulog,* )'ERROR - readiopdata.F:Could not find variable ID for lev'
-      status = NF90_CLOSE ( ncid )
+      status = NF90MPI_CLOSE ( ncid )
       return
    end if
 
-   call handle_ncerr( nf90_get_var (ncid, lev_varID, dplevs(:nlev)),&
+   call handle_ncerr( nf90mpi_get_var (ncid, lev_varID, dplevs(:nlev)),&
                     'readiopdata.F90', __LINE__)
 
    ! =====================================================
    ! read observed aersol data
 
    if(scm_observed_aero .and. .not. iop_update_phase1) then
-   status = NF90_INQ_DIMID( ncid, 'mod', mod_dimID )
+   status = NF90MPI_INQ_DIMID( ncid, 'mod', mod_dimID )
    if ( status .ne. nf90_noerr ) then
       write(iulog,* )'ERROR - readiopdata.F:Could not find variable dim ID  for lev'
-      status = NF90_CLOSE ( ncid )
+      status = NF90MPI_CLOSE ( ncid )
       return
    end if
 
-   call handle_ncerr( nf90_inquire_dimension( ncid, mod_dimID, len=nmod ),&
+   call handle_ncerr( nf90mpi_inquire_dimension( ncid, mod_dimID, len=len_pnetcdf ),&
          'readiopdata.F90', __LINE__)
+   nmod = len_pnetcdf
 
-   status = NF90_INQ_DIMID( ncid, 'sps', sps_dimID )
+   status = NF90MPI_INQ_DIMID( ncid, 'sps', sps_dimID )
    if ( status .ne. nf90_noerr ) then
       write(iulog,* )'ERROR - readiopdata.F:Could not find variable dim ID  for sps'
-      status = NF90_CLOSE ( ncid )
+      status = NF90MPI_CLOSE ( ncid )
       return
    end if
 
-   call handle_ncerr( nf90_inquire_dimension( ncid, sps_dimID, len=nsps ),&
+   call handle_ncerr( nf90mpi_inquire_dimension( ncid, sps_dimID, len=len_pnetcdf ),&
          'readiopdata.F90', __LINE__)
+   nsps = len_pnetcdf
 
    if (.not.allocated(dmods)) then
       allocate(dmods(nmod))
@@ -810,75 +821,75 @@ subroutine readiopdata(iop_update_phase1,hyam,hybm)
       scm_div= 1.0e30_R8
    end if
 
-   status = NF90_INQ_VARID( ncid, 'mod', mod_varID )
+   status = NF90MPI_INQ_VARID( ncid, 'mod', mod_varID )
    if ( status .ne. nf90_noerr ) then
       write(iulog,* )'ERROR - readiopdata.F:Could not find variable ID for mode'
-      status = NF90_CLOSE ( ncid )
+      status = NF90MPI_CLOSE ( ncid )
       return
    end if
 
-   call handle_ncerr( nf90_get_var (ncid, mod_varID, dmods(:nmod)),&
+   call handle_ncerr( nf90mpi_get_var (ncid, mod_varID, dmods(:nmod)),&
                     'readiopdata.F90', __LINE__)
 
-   status = NF90_INQ_VARID( ncid, 'scm_num', mod_varID )
+   status = NF90MPI_INQ_VARID( ncid, 'scm_num', mod_varID )
    if ( status .ne. nf90_noerr ) then
       write(iulog,* )'ERROR - readiopdata.F:Could not find variable ID for mode'
-      status = NF90_CLOSE ( ncid )
+      status = NF90MPI_CLOSE ( ncid )
       return
    end if
 
-   call handle_ncerr( nf90_get_var (ncid, mod_varID, scm_num(:nmod)),&
+   call handle_ncerr( nf90mpi_get_var (ncid, mod_varID, scm_num(:nmod)),&
                     'readiopdata.F90', __LINE__)
 
-   status = NF90_INQ_VARID( ncid, 'scm_diam', mod_varID )
+   status = NF90MPI_INQ_VARID( ncid, 'scm_diam', mod_varID )
    if ( status .ne. nf90_noerr ) then
       write(iulog,* )'ERROR - readiopdata.F:Could not find variable ID for mode'
-      status = NF90_CLOSE ( ncid )
+      status = NF90MPI_CLOSE ( ncid )
       return
    end if
 
-   call handle_ncerr( nf90_get_var (ncid, mod_varID, scm_dgnum(:nmod)),&
+   call handle_ncerr( nf90mpi_get_var (ncid, mod_varID, scm_dgnum(:nmod)),&
                     'readiopdata.F90', __LINE__)
 
-   status = NF90_INQ_VARID( ncid, 'scm_std', mod_varID )
+   status = NF90MPI_INQ_VARID( ncid, 'scm_std', mod_varID )
    if ( status .ne. nf90_noerr ) then
       write(iulog,* )'ERROR - readiopdata.F:Could not find variable ID for mode'
-      status = NF90_CLOSE ( ncid )
+      status = NF90MPI_CLOSE ( ncid )
       return
    end if
 
-   call handle_ncerr( nf90_get_var (ncid, mod_varID, scm_std(:nmod)),&
+   call handle_ncerr( nf90mpi_get_var (ncid, mod_varID, scm_std(:nmod)),&
                     'readiopdata.F90', __LINE__)
 
-   status = NF90_INQ_VARID( ncid, 'scm_accum_div', sps_varID )
+   status = NF90MPI_INQ_VARID( ncid, 'scm_accum_div', sps_varID )
    if ( status .ne. nf90_noerr ) then
       write(iulog,* )'ERROR - readiopdata.F:Could not find variable ID for mode'
-      status = NF90_CLOSE ( ncid )
+      status = NF90MPI_CLOSE ( ncid )
       return
    end if
 
-   call handle_ncerr( nf90_get_var (ncid, sps_varID, scm_div(1,:nsps)),&
+   call handle_ncerr( nf90mpi_get_var (ncid, sps_varID, scm_div(1,:nsps)),&
                     'readiopdata.F90', __LINE__)
 
 
-   status = NF90_INQ_VARID( ncid, 'scm_aitken_div', sps_varID )
+   status = NF90MPI_INQ_VARID( ncid, 'scm_aitken_div', sps_varID )
    if ( status .ne. nf90_noerr ) then
       write(iulog,* )'ERROR - readiopdata.F:Could not find variable ID for mode'
-      status = NF90_CLOSE ( ncid )
+      status = NF90MPI_CLOSE ( ncid )
       return
    end if
 
-   call handle_ncerr( nf90_get_var (ncid, sps_varID, scm_div(2,:nsps)),&
+   call handle_ncerr( nf90mpi_get_var (ncid, sps_varID, scm_div(2,:nsps)),&
                     'readiopdata.F90', __LINE__)
 
-   status = NF90_INQ_VARID( ncid, 'scm_coarse_div', sps_varID )
+   status = NF90MPI_INQ_VARID( ncid, 'scm_coarse_div', sps_varID )
    if ( status .ne. nf90_noerr ) then
       write(iulog,* )'ERROR - readiopdata.F:Could not find variable ID for mode'
-      status = NF90_CLOSE ( ncid )
+      status = NF90MPI_CLOSE ( ncid )
       return
    end if
 
-   call handle_ncerr( nf90_get_var (ncid, sps_varID, scm_div(3,:nsps)),&
+   call handle_ncerr( nf90mpi_get_var (ncid, sps_varID, scm_div(3,:nsps)),&
                     'readiopdata.F90', __LINE__)
 
 endif !scm_observed_aero 
@@ -922,17 +933,22 @@ endif !scm_observed_aero
    cnt4(3)  = 1
    cnt4(4)  = 1
 
+   strt4_pnetcdf(1) = strt4(1)
+   strt4_pnetcdf(2) = strt4(2)
+   strt4_pnetcdf(3) = strt4(3)
+   strt4_pnetcdf(4) = strt4(4)
+
    if (.not. iop_update_phase1) then
 
-     status = nf90_inq_varid( ncid, 'Ps', varid   )
+     status = nf90mpi_inq_varid( ncid, 'Ps', varid   )
      if ( status .ne. nf90_noerr ) then
        have_ps = .false.
        write(iulog,*)'Could not find variable Ps'
-       status = NF90_CLOSE( ncid )
+       status = NF90MPI_CLOSE( ncid )
        return
      else
        !+ PAB, check the time levels for all variables
-       status = nf90_get_var(ncid, varid, psobs, strt4)
+       status = nf90mpi_get_var(ncid, varid, psobs, strt4_pnetcdf)
        have_ps = .true.
      endif
 
@@ -970,7 +986,7 @@ endif !scm_observed_aero
 !=====================================================================
 
 
-     status =  nf90_inq_varid( ncid, 'Tsair', varid   )
+     status =  nf90mpi_inq_varid( ncid, 'Tsair', varid   )
      if ( status .ne. nf90_noerr ) then
        have_tsair = .false.
      else
@@ -992,7 +1008,7 @@ endif !scm_observed_aero
      if ( status .ne. nf90_noerr ) then
        have_t = .false.
        write(iulog,*)'Could not find variable T'
-       status = NF90_CLOSE( ncid )
+       status = NF90MPI_CLOSE( ncid )
        return
 
      ! Set T3 to Tobs on first time step
@@ -1005,7 +1021,7 @@ endif !scm_observed_aero
      !  for first radiation call, to ensure b4b (or close) reproducibility. 
      !  Else, for other SCM cases, it is fine initialize as a cold start.   
      if (is_first_step() .and. use_replay) then      
-       status = nf90_inq_varid( ncid, 'Tg', varid   )
+       status = nf90mpi_inq_varid( ncid, 'Tg', varid   )
        if (status .ne. nf90_noerr) then
          write(iulog,*)'Could not find variable Tg'
          if ( have_tsair ) then
@@ -1021,11 +1037,11 @@ endif !scm_observed_aero
        endif    
      endif      
 
-     status = nf90_inq_varid( ncid, 'qsrf', varid   )
+     status = nf90mpi_inq_varid( ncid, 'qsrf', varid   )
      if ( status .ne. nf90_noerr ) then
        have_srf = .false.
      else
-       status = nf90_get_var(ncid, varid, srf(1), strt4)
+       status = nf90mpi_get_var(ncid, varid, srf(1), strt4_pnetcdf)
        have_srf = .true.
      endif
 
@@ -1035,7 +1051,7 @@ endif !scm_observed_aero
      if ( status .ne. nf90_noerr ) then
        have_q = .false.
        write(iulog,*)'Could not find variable q'
-       status = nf90_close( ncid )
+       status = nf90mpi_close( ncid )
        return
      else
        have_q=.true.
@@ -1059,11 +1075,11 @@ endif !scm_observed_aero
 
      ! Read divq (horizontal advection)
 
-     status = nf90_inq_varid( ncid, 'divqsrf', varid   )
+     status = nf90mpi_inq_varid( ncid, 'divqsrf', varid   )
      if ( status .ne. nf90_noerr ) then
        have_srf = .false.
      else
-       status = nf90_get_var(ncid, varid, srf(1), strt4)
+       status = nf90mpi_get_var(ncid, varid, srf(1), strt4_pnetcdf)
        have_srf = .true.
      endif
 
@@ -1077,11 +1093,11 @@ endif !scm_observed_aero
 
      ! Read vertdivq if available
 
-     status = nf90_inq_varid( ncid, 'vertdivqsrf', varid   )
+     status = nf90mpi_inq_varid( ncid, 'vertdivqsrf', varid   )
      if ( status .ne. nf90_noerr ) then
        have_srf = .false.
      else
-       status = nf90_get_var(ncid, varid, srf(1), strt4)
+       status = nf90mpi_get_var(ncid, varid, srf(1), strt4_pnetcdf)
        have_srf = .true.
      endif
 
@@ -1093,11 +1109,11 @@ endif !scm_observed_aero
        have_vertdivq = .true.
      endif
 
-     status = nf90_inq_varid( ncid, 'vertdivqsrf', varid   )
+     status = nf90mpi_inq_varid( ncid, 'vertdivqsrf', varid   )
      if ( status .ne. nf90_noerr ) then
        have_srf = .false.
      else
-       status = nf90_get_var(ncid, varid, srf(1), strt4)
+       status = nf90mpi_get_var(ncid, varid, srf(1), strt4_pnetcdf)
        have_srf = .true.
      endif
 
@@ -1180,11 +1196,11 @@ endif !scm_observed_aero
 
      ! Read divu (optional field)
 
-     status = nf90_inq_varid( ncid, 'divusrf', varid   )
+     status = nf90mpi_inq_varid( ncid, 'divusrf', varid   )
      if ( status .ne. nf90_noerr ) then
        have_srf = .false.
      else
-       status = nf90_get_var(ncid, varid, srf(1), strt4)
+       status = nf90mpi_get_var(ncid, varid, srf(1), strt4_pnetcdf)
        have_srf = .true.
      endif
 
@@ -1198,11 +1214,11 @@ endif !scm_observed_aero
 
      ! Read divv (optional field)
 
-     status = nf90_inq_varid( ncid, 'divvsrf', varid   )
+     status = nf90mpi_inq_varid( ncid, 'divvsrf', varid   )
      if ( status .ne. nf90_noerr ) then
        have_srf = .false.
      else
-       status = nf90_get_var(ncid, varid, srf(1), strt4)
+       status = nf90mpi_get_var(ncid, varid, srf(1), strt4_pnetcdf)
        have_srf = .true.
      endif
 
@@ -1216,11 +1232,11 @@ endif !scm_observed_aero
 
      ! Read divt (optional field)
 
-     status = nf90_inq_varid( ncid, 'divtsrf', varid   )
+     status = nf90mpi_inq_varid( ncid, 'divtsrf', varid   )
      if ( status .ne. nf90_noerr ) then
        have_srf = .false.
      else
-       status = nf90_get_var(ncid, varid, srf(1), strt4)
+       status = nf90mpi_get_var(ncid, varid, srf(1), strt4_pnetcdf)
        have_srf = .true.
      endif
 
@@ -1234,11 +1250,11 @@ endif !scm_observed_aero
 
      ! Read vertdivt if available
 
-     status = nf90_inq_varid( ncid, 'vertdivTsrf', varid   )
+     status = nf90mpi_inq_varid( ncid, 'vertdivTsrf', varid   )
      if ( status .ne. nf90_noerr ) then
        have_srf = .false.
      else
-       status = nf90_get_var(ncid, varid, srf(1), strt4)
+       status = nf90mpi_get_var(ncid, varid, srf(1), strt4_pnetcdf)
        have_srf = .true.
      endif
 
@@ -1253,11 +1269,11 @@ endif !scm_observed_aero
      ! Read divt3d (combined vertical/horizontal advection)
      !   (optional field)
 
-     status = nf90_inq_varid( ncid, 'divT3dsrf', varid   )
+     status = nf90mpi_inq_varid( ncid, 'divT3dsrf', varid   )
      if ( status .ne. nf90_noerr ) then
        have_srf = .false.
      else
-       status = nf90_get_var(ncid, varid, srf(1), strt4)
+       status = nf90mpi_get_var(ncid, varid, srf(1), strt4_pnetcdf)
        have_srf = .true.
      endif
 
@@ -1269,13 +1285,13 @@ endif !scm_observed_aero
        have_divt3d = .true.
      endif
 
-     status = nf90_inq_varid( ncid, 'Ptend', varid   )
+     status = nf90mpi_inq_varid( ncid, 'Ptend', varid   )
      if ( status .ne. nf90_noerr ) then
        have_ptend = .false.
        write(iulog,*)'Could not find variable Ptend. Setting to zero'
        ptend = 0.0_r8
      else
-       status = nf90_get_var(ncid, varid, srf(1), strt4)
+       status = nf90mpi_get_var(ncid, varid, srf(1), strt4_pnetcdf)
        have_ptend = .true.
        ptend= srf(1)
      endif
@@ -1296,7 +1312,7 @@ endif !scm_observed_aero
      wfldh(plevp) = 0.0_r8
 
 
-     status = nf90_inq_varid( ncid, 'usrf', varid   )
+     status = nf90mpi_inq_varid( ncid, 'usrf', varid   )
      if ( status .ne. nf90_noerr ) then
        have_srf = .false.
      else
@@ -1328,7 +1344,7 @@ endif !scm_observed_aero
        have_uls = .true.
      endif
 
-     status = nf90_inq_varid( ncid, 'vsrf', varid   )
+     status = nf90mpi_inq_varid( ncid, 'vsrf', varid   )
      if ( status .ne. nf90_noerr ) then
        have_srf = .false.
      else
@@ -1361,7 +1377,7 @@ endif !scm_observed_aero
        have_vls = .true.
      endif
 
-     status = nf90_inq_varid( ncid, 'Prec', varid   )
+     status = nf90mpi_inq_varid( ncid, 'Prec', varid   )
      if ( status .ne. nf90_noerr ) then
        have_prec = .false.
      else
@@ -1417,25 +1433,25 @@ endif !scm_observed_aero
      endif
      call shr_sys_flush( iulog )
 
-     status =  nf90_inq_varid( ncid, 'beta', varid   )
+     status =  nf90mpi_inq_varid( ncid, 'beta', varid   )
      if ( status .ne. nf90_noerr ) then
        betacam = 0._r8
      else
-       status = nf90_get_var(ncid, varid, srf(1), strt4)
+       status = nf90mpi_get_var(ncid, varid, srf(1), strt4_pnetcdf)
        betacam=srf(1)
      endif
 
-     status =  nf90_inq_varid( ncid, 'fixmas', varid   )
+     status =  nf90mpi_inq_varid( ncid, 'fixmas', varid   )
      if ( status .ne. nf90_noerr ) then
        fixmascam=1.0_r8
      else
-       status = nf90_get_var(ncid, varid, srf(1), strt4)
+       status = nf90mpi_get_var(ncid, varid, srf(1), strt4_pnetcdf)
        fixmascam=srf(1)
      endif
    
    else ! if read in surface information
    
-     status = nf90_inq_varid( ncid, 'Tg', varid   )
+     status = nf90mpi_inq_varid( ncid, 'Tg', varid   )
      if (status .ne. nf90_noerr) then
        write(iulog,*)'Could not find variable Tg'
        if ( have_tsair ) then
@@ -1455,7 +1471,7 @@ endif !scm_observed_aero
      if ( status .ne. nf90_noerr ) then
         have_omega = .false.
         write(iulog,*)'Could not find variable omega'
-        status = nf90_close( ncid )
+        status = nf90mpi_close( ncid )
         return
      else
         have_omega = .true.
@@ -1464,7 +1480,7 @@ endif !scm_observed_aero
      ! If REPLAY is used, then need to read in the global
      !   energy fixer
      if (use_replay) then 
-       status = nf90_inq_varid( ncid, 'heat_glob', varid   )
+       status = nf90mpi_inq_varid( ncid, 'heat_glob', varid   )
        if (status .ne. nf90_noerr) then
          have_heat_glob = .false.
        else
@@ -1473,9 +1489,9 @@ endif !scm_observed_aero
        endif
      endif
    
-     status = nf90_inq_varid( ncid, 'lhflx', varid   )
+     status = nf90mpi_inq_varid( ncid, 'lhflx', varid   )
      if ( status .ne. nf90_noerr ) then
-       status = nf90_inq_varid( ncid, 'lh', varid   )
+       status = nf90mpi_inq_varid( ncid, 'lh', varid   )
        if ( status .ne. nf90_noerr ) then
          have_lhflx = .false.
        else
@@ -1487,9 +1503,9 @@ endif !scm_observed_aero
        have_lhflx = .true.
      endif
 
-     status = nf90_inq_varid( ncid, 'shflx', varid   )
+     status = nf90mpi_inq_varid( ncid, 'shflx', varid   )
      if ( status .ne. nf90_noerr ) then
-       status = nf90_inq_varid( ncid, 'sh', varid   )
+       status = nf90mpi_inq_varid( ncid, 'sh', varid   )
        if ( status .ne. nf90_noerr ) then
          have_shflx = .false.
        else
@@ -1505,9 +1521,9 @@ endif !scm_observed_aero
 
    call shr_sys_flush( iulog )
 
-   status = nf90_close( ncid )
+   status = nf90mpi_close( ncid )
    call shr_sys_flush( iulog )
-   status = nf90_close( ncid )
+   status = nf90mpi_close( ncid )
    call shr_sys_flush( iulog )
 
    deallocate(dplevs,tsec)

@@ -22,7 +22,7 @@ module MOSART_BGC_type
   use shr_const_mod , only : denh2o => SHR_CONST_RHOFW, denice => SHR_CONST_RHOICE, grav => SHR_CONST_G, SHR_CONST_REARTH, SHR_CONST_PI
   use shr_sys_mod   , only : shr_sys_flush, shr_sys_abort
   use MOSART_RES_type  , only : Tres_ctl, Tres_para, Tres
-  use netcdf
+  use pnetcdf
   use pio
 
 

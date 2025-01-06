@@ -20,7 +20,7 @@ module MOSART_RES_type
   use shr_kind_mod  , only : r8 => shr_kind_r8, SHR_KIND_CL
   use shr_const_mod , only : SHR_CONST_REARTH, SHR_CONST_PI
   use shr_sys_mod   , only : shr_sys_flush, shr_sys_abort
-  use netcdf
+  use pnetcdf
   use pio
   use WRM_type_mod  , only : ctlSubwWRM, WRMUnit 
 

@@ -59,7 +59,7 @@ contains
 subroutine slingo_rad_props_init()
 
    use cam_history, only: addfld
-   use netcdf
+   use pnetcdf
    use spmd_utils,     only: masterproc
    use ioFileMod,      only: getfil
    use cam_logfile,    only: iulog

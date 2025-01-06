@@ -49,7 +49,7 @@ subroutine oro_drag_open_topo_file()
   use ioFileMod,    only: getfil
   use cam_pio_utils,only: cam_pio_openfile
   use pio,          only: pio_nowrite
-  include 'netcdf.inc'
+  include 'pnetcdf.inc'
   !-----------------------------------------------------------------------
   character(len=256) :: bnd_topo_loc   ! filepath of topo file on local disk
   allocate(topo_file_ncid)

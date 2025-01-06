@@ -88,7 +88,7 @@ function(create_netcdf_target)
     find_path(netcdf_f_incdir netcdf.inc REQUIRED HINTS ${NETCDF_PATH}/include)
 
   else()
-    message(FATAL_ERROR "NETCDF not found: Define NETCDF_PATH or NETCDF_C_PATH and NETCDF_FORTRAN_PATH in config_machines.xml or config_compilers.xml")
+    # message(FATAL_ERROR "NETCDF not found: Define NETCDF_PATH or NETCDF_C_PATH and NETCDF_FORTRAN_PATH in config_machines.xml or config_compilers.xml")
   endif()
 
   set(pnetcdf_lib ${pnetcdf_lib})

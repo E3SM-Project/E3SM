@@ -24,7 +24,8 @@ MODULE WRM_subw_IO_mod
   use WRM_modules   , only : RegulationRelease, WRM_storage_targets
   use WRM_start_op_year, only : WRM_init_StOp_FC
   use mct_mod
-  use netcdf
+  use pnetcdf
+  use mpi           , only : MPI_COMM_WORLD, MPI_INFO_NULL, MPI_OFFSET_KIND
   use pio
   use perf_mod      , only : t_startf, t_stopf
 
@@ -53,6 +54,7 @@ MODULE WRM_subw_IO_mod
      ! !DESCRIPTION: initilization of WRM model
      implicit none
 
+     integer(MPI_OFFSET_KIND) :: len_pnetcdf
      integer :: nr, nd, ng, mth        ! local loop indices
      integer :: cnt, idam, ntotal, cntw, cntg
      integer :: begr, endr, maxnumdependentgrid, lsize, gsize, lsized, gsized, ssize, dimsize
@@ -155,11 +157,13 @@ MODULE WRM_subw_IO_mod
      !-------------------
 
      ! start by opening and reading the dam IDs, can't use pio yet, need decomp first
-     ier = nf90_open(trim(ctlSubwWRM%paraFile), NF90_NOWRITE, ncdfid)
-     ier = nf90_inq_dimid(ncdfid,'DependentGrids',did)
-     ier = nf90_inquire_dimension(ncdfid,did,len=maxNumDependentGrid)
-     ier = nf90_inq_dimid(ncdfid,'Dams',did)
-     ier = nf90_inquire_dimension(ncdfid,did,len=ctlSubwWRM%NDam)
+     ier = nf90mpi_open(MPI_COMM_WORLD, trim(ctlSubwWRM%paraFile), NF90_NOWRITE, MPI_INFO_NULL, ncdfid)
+     ier = nf90mpi_inq_dimid(ncdfid,'DependentGrids',did)
+     ier = nf90mpi_inquire_dimension(ncdfid,did,len=len_pnetcdf)
+     maxNumDependentGrid = len_pnetcdf
+     ier = nf90mpi_inq_dimid(ncdfid,'Dams',did)
+     ier = nf90mpi_inquire_dimension(ncdfid,did,len=len_pnetcdf)
+     ctlSubwWRM%NDam = len_pnetcdf
 
      if (masterproc) write(iulog,*) subname,' dams = ',ctlSubwWRM%NDam
      if (masterproc) write(iulog,*) subname,' dependentgrids = ',maxNumDependentGrid
@@ -296,9 +300,9 @@ MODULE WRM_subw_IO_mod
      !--- read in entire gridID_from_Dam field on all pes
      allocate(temp_gridID_from_Dam(ctlSubwWRM%NDam, maxNumDependentGrid))
      temp_gridID_from_Dam = -99
-     ier = nf90_inq_varid(ncdfid,'gridID_from_Dam',varid)
-     ier = nf90_get_var(ncdfid,varid,temp_gridID_from_Dam)
-     ier = nf90_close(ncdfid)
+     ier = nf90mpi_inq_varid(ncdfid,'gridID_from_Dam',varid)
+     ier = nf90mpi_get_var(ncdfid,varid,temp_gridID_from_Dam)
+     ier = nf90mpi_close(ncdfid)
 
      allocate (WRMUnit%myDamNum(begr:endr))
      WRMUnit%myDamNum = 0
