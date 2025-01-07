@@ -2,7 +2,7 @@
 
 set -e
 
-# Create a test case uELM_AKSP_I1850uELMCNPRDCTCBC
+# Create a test case uELM_TES_TVA_I1850uELMCNPRDCTCBC
 
 #E3SM_DIN="/gpfs/wolf2/cades/cli185/proj-shared/pt-e3sm-inputdata"
 E3SM_DIN="//gpfs/wolf2/cades/cli185/world-shared/e3sm"
@@ -17,8 +17,15 @@ CASE_DATA="${DATA_ROOT}/${EXPID}"
 DOMAIN_FILE="${EXPID}_domain.lnd.TES_SE.4km.1d.c241218.nc"
 SURFDATA_FILE="${EXPID}_surfdata.TES_SE.4km.1d.NLCD.c241219.nc"
 
-# add a soft link to forcing domain (lnd)
-ln -s ${CASE_DATA}/domain_surfdata/${DOMAIN_FILE} ${CASE_DATA}/atm_forcing.datm7.km.1d/domain.lnd.Daymet.km.1d.nc
+DOMAIN_SOFT_LINK="${CASE_DATA}/atm_forcing.datm7.km.1d/domain.lnd.Daymet.km.1d.nc"
+
+# add a soft link to domain (lnd/atm)
+# Check if the soft link exists
+if [ ! -L "$DOMAIN_SOFT_LINK" ]; then
+    # The soft link does not exist, create it
+    ln -s "${CASE_DATA}/domain_surfdata/${DOMAIN_FILE}" "$SOFT_LINK"
+    echo "Soft link created: $SOFT_LINK -> ${CASE_DATA}/domain_surfdata/${DOMAIN_FILE}"
+fi
 
 \rm -rf "${CASEDIR}"
 
@@ -38,19 +45,7 @@ cd "${CASEDIR}"
 
 ./xmlchange CIME_OUTPUT_ROOT="${E3SM_SRCROOT}/e3sm_runs/"
 
-./xmlchange ELM_FORCE_COLDSTART=on
-
 ./xmlchange DATM_MODE="uELM_TES"
-
-./xmlchange DATM_CLMNCEP_YR_START="1980"
-./xmlchange DATM_CLMNCEP_YR_END="1999"
-
-
-./xmlchange ATM_NCPL="24"
-
-./xmlchange STOP_N="400"
-./xmlchange REST_N="20"
-./xmlchange STOP_OPTION="nyears"
 
 ./xmlchange NTASKS="1"
 ./xmlchange NTASKS_LND="2560"
@@ -73,18 +68,38 @@ cd "${CASEDIR}"
 
 ./xmlchange USER_REQUESTED_WALLTIME="24:00:00"
 
+./xmlchange ATM_NCPL="24"
+
+./xmlchange DATM_CLMNCEP_YR_START="1980"
+./xmlchange DATM_CLMNCEP_YR_END="1999"
+./xmlchange DATM_CLMNCEP_YR_ALIGN="1990"
+
+./xmlchange STOP_N="400"
+./xmlchange REST_N="20"
+./xmlchange STOP_OPTION="nyears"
+
+./xmlchange ELM_FORCE_COLDSTART="on"
+
+./xmlchange CONTINUE_RUN="FALSE"
+./xmlchange ELM_ACCELERATED_SPINUP="on"
+./xmlchange  --append ELM_BLDNML_OPTS="-bgc_spinup on"
+
 echo "fsurdat = '${CASE_DATA}/domain_surfdata/${SURFDATA_FILE}'
-      hist_nhtfrq=0
+      spinup_state = 1
+      suplphos = 'ALL'
+      hist_nhtfrq=-175200
       hist_mfilt=1
+      nyears_ad_carbon_only = 25
+      spinup_mortality_factor = 10
      " >> user_nl_elm
 
-#./case.setup --reset
+./case.setup --reset
 
 ./case.setup
 
-#./case.build --clean-all
+./case.build --clean-all
 
 ./case.build
 
 #./case.submit
-}
+
