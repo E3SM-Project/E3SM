@@ -38,6 +38,7 @@ module shr_stream_mod
   use shr_log_mod, only: errMsg => shr_log_errMsg
   use pio, only : file_desc_t
   use perf_mod
+  use mpi, only : MPI_OFFSET_KIND, MPI_COMM_SELF, MPI_INFO_NULL
 
   implicit none
 
@@ -1423,7 +1424,6 @@ contains
   subroutine shr_stream_readTCoord(strm,k,rc)
 
     use pnetcdf
-    use mpi
 
     implicit none
 
@@ -1437,7 +1437,7 @@ contains
 
     !----- local -----
     character(SHR_KIND_CL) :: fileName    ! filename to read
-    integer(MPI_OFFSET_KIND) :: nt
+    integer(SHR_KIND_IN)   :: nt
     integer(SHR_KIND_IN)   :: num,n
     integer(SHR_KIND_IN)   :: din,dout
     integer(SHR_KIND_IN)   :: sin,sout,offin
@@ -1455,13 +1455,15 @@ contains
     character(*),parameter :: subname = '(shr_stream_readTCoord) '
     character(*),parameter :: F01   = "('(shr_stream_readTCoord) ',a,2i7)"
 
+    integer(MPI_OFFSET_KIND) :: len_pnetcdf
+
     !-------------------------------------------------------------------------------
 
     lrc = 0
 
     !--- need to read in this data ---
     call shr_stream_getFile(strm%filePath,strm%file(k)%name,fileName)
-    rCode = nf90mpi_open(MPI_COMM_WORLD,fileName,nf90_nowrite,MPI_INFO_NULL,fid)
+    rCode = nf90mpi_open(MPI_COMM_SELF,fileName,nf90_nowrite,MPI_INFO_NULL,fid)
     if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90mpi_open file '//trim(filename))
     rCode = nf90mpi_inq_varid(fid,trim(strm%domTvarName),vid)
     if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90mpi_inq_varid')
@@ -1470,7 +1472,8 @@ contains
     allocate(dids(ndims))
     rCode = nf90mpi_inquire_variable(fid,vid,dimids=dids)
     if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90mpi_inquire_variable2')
-    rCode = nf90mpi_inquire_dimension(fid,dids(1),len=nt)
+    rCode = nf90mpi_inquire_dimension(fid,dids(1),len=len_pnetcdf)
+    nt = len_pnetcdf
     if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90mpi_inquire_dimension')
     deallocate(dids)
 
@@ -1498,7 +1501,9 @@ contains
     strm%calendar = trim(shr_cal_calendarName(trim(calendar)))
 
     allocate(tvar(nt))
+    rcode = nf90mpi_begin_indep_data(fid)
     rcode = nf90mpi_get_var(fid,vid,tvar)
+    rcode = nf90mpi_end_indep_data(fid)
     if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90mpi_get_var')
     rCode = nf90mpi_close(fid)
     if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90mpi_close')
@@ -1924,7 +1929,6 @@ contains
   subroutine shr_stream_getCalendar(strm,k,calendar)
 
     use pnetcdf
-    use mpi
 
     ! !INPUT/OUTPUT PARAMETERS:
 
@@ -1948,7 +1952,7 @@ contains
     if (k > strm%nfiles) call shr_sys_abort(subname//' ERROR: k gt nfiles')
     strmfile = strm%file(k)%name
     call shr_stream_getFile(strm%filePath,strmfile,fileName)
-    rCode = nf90mpi_open(MPI_COMM_WORLD,fileName,nf90_nowrite,MPI_INFO_NULL,fid)
+    rCode = nf90mpi_open(MPI_COMM_SELF,fileName,nf90_nowrite,MPI_INFO_NULL,fid)
     if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nfmpi90_open file '//trim(filename))
     rCode = nf90mpi_inq_varid(fid,trim(strm%domTvarName),vid)
     if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90mpi_inq_varid')

@@ -26,6 +26,7 @@ module shr_scam_mod
    use shr_kind_mod,    only : R8=>SHR_KIND_R8,IN=>SHR_KIND_IN,CL=>SHR_KIND_CL
    use shr_log_mod,     only : s_loglev  => shr_log_Level
    use shr_log_mod,     only : s_logunit => shr_log_Unit
+   use mpi,             only : MPI_OFFSET_KIND, MPI_COMM_SELF, MPI_INFO_NULL
 
    implicit none
 
@@ -84,7 +85,6 @@ subroutine shr_scam_getCloseLatLonNC(ncid, targetLat,  targetLon, closeLat, clos
                                      closeLatIdx, closeLonIdx, found, rc)
 ! !USES:
    use pnetcdf
-   use mpi
    use shr_ncread_mod, only: shr_ncread_handleErr
    implicit none
 
@@ -107,7 +107,7 @@ subroutine shr_scam_getCloseLatLonNC(ncid, targetLat,  targetLon, closeLat, clos
    !----- local variables -----
    real   (R8),allocatable          :: lats(:),lons(:)
    integer(IN)                      :: rcode   ! netCDF routine return code
-   integer(MPI_OFFSET_KIND)         ::  len
+   integer(IN)                      ::  len
    integer(IN)                      ::  latlen
    integer(IN)                      ::  lonlen
    integer(IN)                      ::  ndims
@@ -116,15 +116,17 @@ subroutine shr_scam_getCloseLatLonNC(ncid, targetLat,  targetLon, closeLat, clos
    integer(IN)                      ::  nvars
    integer(IN)                      ::  nvarid
    integer(IN)                      ::  ndimid
-   integer(IN)                      ::  strt(nf90_max_var_dims),cnt(nf90_max_var_dims)
-   integer(MPI_OFFSET_KIND)         ::  strt_pnetcdf(nf90_max_var_dims),cnt_pnetcdf(nf90_max_var_dims)
+   integer(IN)                      ::  strt(1024),cnt(1024)
    integer(IN)                      ::  nlon,nlat
-   integer(IN), dimension(nf90_max_var_dims) :: dimids
+   integer(IN), dimension(1024)     ::  dimids
    logical                          ::  lfound        ! local version of found
    character(len=80), allocatable   ::  vars(:)
    character(len=80), allocatable   ::  latdimnames(:)
    character(len=80), allocatable   ::  londimnames(:)
    character(*),parameter :: subname = "(shr_scam_getCloseLatLonNC) "
+
+   integer(MPI_OFFSET_KIND) :: len_pnetcdf
+   integer(MPI_OFFSET_KIND) :: strt_pnetcdf(1024),cnt_pnetcdf(1024)
 
 !-------------------------------------------------------------------------------
 ! Notes:
@@ -169,7 +171,8 @@ subroutine shr_scam_getCloseLatLonNC(ncid, targetLat,  targetLon, closeLat, clos
          nlatdims = ndims
          allocate( latdimnames(ndims) )
          do ndimid =  1,ndims
-            rcode = nf90mpi_inquire_dimension(ncid, dimids(ndimid), latdimnames(ndimid), len)
+            rcode = nf90mpi_inquire_dimension(ncid, dimids(ndimid), latdimnames(ndimid), len_pnetcdf)
+            len = len_pnetcdf
             if (rcode /= nf90_noerr) then
                call shr_ncread_handleErr( rcode, subname// &
                    "ERROR: Cant read netcdf latitude variable dimension")
@@ -189,7 +192,8 @@ subroutine shr_scam_getCloseLatLonNC(ncid, targetLat,  targetLon, closeLat, clos
          nlondims = ndims
          allocate( londimnames(ndims) )
          do ndimid =  1,ndims
-            rcode = nf90mpi_inquire_dimension(ncid, dimids(ndimid), londimnames(ndimid), len)
+            rcode = nf90mpi_inquire_dimension(ncid, dimids(ndimid), londimnames(ndimid), len_pnetcdf)
+            len = len_pnetcdf
             call shr_ncread_handleErr( rcode, subname &
                            //"ERROR: Cant read netcdf longitude variable dimension" )
             if ( rcode /= nf90_noerr .and. present(rc) )then
@@ -223,9 +227,11 @@ subroutine shr_scam_getCloseLatLonNC(ncid, targetLat,  targetLon, closeLat, clos
                                  nlen=latlen, strt=strt, cnt=cnt )
          nlat = latlen
          allocate(lats(nlat))
-         strt_pnetcdf = strt
-         cnt_pnetcdf = cnt
+         strt_pnetcdf = int(strt, MPI_OFFSET_KIND)
+         cnt_pnetcdf = int(cnt, MPI_OFFSET_KIND)
+         rcode = nf90mpi_begin_indep_data(ncid)
          rcode= nf90mpi_get_var(ncid, nvarid ,lats, start = strt_pnetcdf, count = cnt_pnetcdf)
+         rcode = nf90mpi_end_indep_data(ncid)
          call shr_ncread_handleErr( rcode, subname &
                            //"ERROR: Cant read netcdf latitude" )
          if ( rcode /= nf90_noerr .and. present(rc) )then
@@ -241,9 +247,11 @@ subroutine shr_scam_getCloseLatLonNC(ncid, targetLat,  targetLon, closeLat, clos
                                  nlen=lonlen, strt=strt, cnt=cnt )
          nlon = lonlen
          allocate(lons(nlon))
-         strt_pnetcdf = strt
-         cnt_pnetcdf = cnt
+         strt_pnetcdf = int(strt, MPI_OFFSET_KIND)
+         cnt_pnetcdf = int(cnt, MPI_OFFSET_KIND)
+         rcode = nf90mpi_begin_indep_data(ncid)
          rcode= nf90mpi_get_var(ncid, nvarid ,lons, start = strt_pnetcdf, count = cnt_pnetcdf)
+         rcode = nf90mpi_end_indep_data(ncid)
          call shr_ncread_handleErr( rcode, subname &
                            //"ERROR: Cant read netcdf longitude" )
          if ( rcode /= nf90_noerr .and. present(rc) )then
@@ -305,7 +313,6 @@ end subroutine shr_scam_getCloseLatLonNC
 
 subroutine shr_scam_getCloseLatLonPIO(pioid, targetLat,  targetLon, closeLat, closeLon, &
                                       closeLatIdx, closeLonIdx, found, rc )
-   use pnetcdf
    use pio
    use shr_ncread_mod, only: shr_ncread_handleErr
    implicit none
@@ -338,11 +345,11 @@ subroutine shr_scam_getCloseLatLonPIO(pioid, targetLat,  targetLon, closeLat, cl
    integer(IN)                      ::  nvars    = 0
    integer(IN)                      ::  nvarid
    integer(IN)                      ::  ndimid
-   integer(IN)                      ::  strt(nf90_max_var_dims),cnt(nf90_max_var_dims)
+   integer(IN)                      ::  strt(1024),cnt(1024)
    integer(IN)                      ::  nlon = 0, nlat = 0
    logical                          ::  lfound
    logical                          ::  is_segrid, islatitude        ! local version of found
-   integer(IN), dimension(nf90_max_var_dims) :: dimids
+   integer(IN), dimension(1024)     :: dimids
    character(len=80), allocatable   ::  vars(:)
    character(len=80), allocatable   ::  latdimnames(:)
    character(len=80), allocatable   ::  londimnames(:)
@@ -531,7 +538,7 @@ subroutine shr_scam_getCloseLatLonFile(filename, targetLat,  targetLon, closeLat
                                        closeLatIdx, closeLonIdx, found, rc)
 ! !USES:
    use shr_ncread_mod, only: shr_ncread_open, shr_ncread_close
-   use pnetcdf
+   use pnetcdf, only: NF90_NOERR
    implicit none
 
 ! !INPUT/OUTPUT PARAMETERS:
@@ -601,7 +608,6 @@ subroutine shr_scam_checkSurface(scmlon, scmlat, scm_multcols, scm_nx, scm_ny, &
    use shr_dmodel_mod    ! shr data model stuff
    use mct_mod
    use pnetcdf
-   use mpi
    use shr_strdata_mod, only : shr_strdata_readnml, shr_strdata_type
    implicit none
 
@@ -630,9 +636,6 @@ subroutine shr_scam_checkSurface(scmlon, scmlat, scm_multcols, scm_nx, scm_ny, &
    integer(IN)             :: fracid           !  id for frac variable
    integer(IN)             :: closeLatIdx      ! index of returned lat point
    integer(IN)             :: closeLonIdx      ! index of returned lon point
-   integer(MPI_OFFSET_KIND) :: closeLatIdx_pnetcdf ! closeLatIdx passed to pnetcdf
-   integer(MPI_OFFSET_KIND) :: closeLonIdx_pnetcdf ! closeLonIdx passed to pnetcdf
-   integer(MPI_OFFSET_KIND) :: one_pnetcdf     ! constant 1 passed to pnetcdf
    integer(IN)             :: unitn            ! io unit
    real   (R8)             :: ocn_frac(1,1)    ! ocean fraction
    real   (R8)             :: closeLat         ! returned close lat
@@ -663,6 +666,9 @@ subroutine shr_scam_checkSurface(scmlon, scmlat, scm_multcols, scm_nx, scm_ny, &
    namelist / docn_nml / decomp, sst_constant_value, force_prognostic_true, &
         restfilm, restfils
 
+   integer(MPI_OFFSET_KIND) :: closeLatIdx_pnetcdf
+   integer(MPI_OFFSET_KIND) :: closeLonIdx_pnetcdf
+
 !-------------------------------------------------------------------------------
 ! Notes:
 !-------------------------------------------------------------------------------
@@ -688,7 +694,7 @@ subroutine shr_scam_checkSurface(scmlon, scmlat, scm_multcols, scm_nx, scm_ny, &
 
       inquire(file=trim(focndomain),exist=exists)
       if (.not.exists) call shr_sys_abort(subName//"ERROR: file does not exist: "//trim(focndomain))
-      rcode = nf90mpi_open(MPI_COMM_WORLD,focndomain,nf90_nowrite,MPI_INFO_NULL,ncid_ocn)
+      rcode = nf90mpi_open(MPI_COMM_SELF,focndomain,nf90_nowrite,MPI_INFO_NULL,ncid_ocn)
       if (rCode /= nf90_noerr) call shr_sys_abort(subName//"ERROR opening data file : "//trim(focndomain))
       if (s_loglev > 0) write(s_logunit,F00) 'opened netCDF data file: ',trim(focndomain)
 
@@ -699,9 +705,11 @@ subroutine shr_scam_checkSurface(scmlon, scmlat, scm_multcols, scm_nx, scm_ny, &
       if (rcode /= nf90_noerr) then
          call shr_sys_abort(subname//"ERROR getting varid from variable frac in file "//trim(focndomain))
       end if
-      closelonidx_pnetcdf = closelonidx
-      closelatidx_pnetcdf = closelatidx
-      rcode = nf90mpi_get_var(ncid_ocn,fracid,ocn_frac,start=(/closelonidx_pnetcdf,closelatidx_pnetcdf/),count=(/one_pnetcdf,one_pnetcdf/))
+      closeLatIdx_pnetcdf = int(closelatidx, MPI_OFFSET_KIND)
+      closeLonIdx_pnetcdf = int(closelonidx, MPI_OFFSET_KIND)
+      rcode = nf90mpi_begin_indep_data(ncid_ocn)
+      rcode = nf90mpi_get_var(ncid_ocn,fracid,ocn_frac,start=(/closeLonIdx_pnetcdf,closeLatIdx_pnetcdf/),count=(/1_MPI_OFFSET_KIND,1_MPI_OFFSET_KIND/))
+      rcode = nf90mpi_end_indep_data(ncid_ocn)
       if (rcode /= nf90_noerr) then
          call shr_sys_abort(subname//"ERROR getting ocean fraction from "//trim(focndomain))
       end if

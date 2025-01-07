@@ -37,7 +37,7 @@ module shr_ncread_mod
   use shr_log_mod, only: s_loglev  => shr_log_Level
   use shr_log_mod, only: s_logunit => shr_log_Unit
   use pnetcdf
-  use mpi
+  use mpi, only: MPI_OFFSET_KIND, MPI_COMM_SELF, MPI_INFO_NULL
 
   implicit none
 
@@ -233,7 +233,7 @@ contains
     character(*)        ,intent(in)           :: fileName ! nc file name
     character(*)        ,intent(in)           :: varName  ! name of variable
     character(*)        ,intent(in)           :: dimName  ! name of dimension
-    integer(MPI_OFFSET_KIND),intent(out)      :: ns       ! number of dims of var
+    integer(SHR_KIND_IN),intent(out)          :: ns       ! number of dims of var
     integer(SHR_KIND_IN),intent(out),optional :: rc       ! return code
 
     !EOP
@@ -281,7 +281,7 @@ contains
     character(*)        ,intent(in)           :: fileName ! nc file name
     character(*)        ,intent(in)           :: varName  ! name of variable
     integer(SHR_KIND_IN),intent(in)           :: dnum     ! dim number in var
-    integer(MPI_OFFSET_KIND),intent(out)      :: ns       ! size of dim in var
+    integer(SHR_KIND_IN),intent(out)          :: ns       ! size of dim in var
     integer(SHR_KIND_IN),intent(out),optional :: rc       ! return code
 
     !EOP
@@ -299,6 +299,8 @@ contains
     character(*),parameter :: F00     = "('(shr_ncread_varDimSizeID) ',4a)"
     character(*),parameter :: F01     = "('(shr_ncread_varDimSizeID) ',a,i6)"
 
+    integer(MPI_OFFSET_KIND) :: len_pnetcdf
+
     !-------------------------------------------------------------------------------
     !
     !-------------------------------------------------------------------------------
@@ -312,7 +314,8 @@ contains
     allocate(dids(ndims))
     rCode = nf90mpi_inquire_variable(fid,vid,dimids=dids)
     call shr_ncread_handleErr(rCode,subName//' ERROR inquire variable dimids')
-    rcode = nf90mpi_inquire_dimension(fid,dids(dnum),name=dimName,len=ns)
+    rcode = nf90mpi_inquire_dimension(fid,dids(dnum),name=dimName,len=len_pnetcdf)
+    ns = len_pnetcdf
     call shr_ncread_handleErr(rCode, subName//" ERROR inquire dimension")
     if (debug > 1 .and. s_loglev > 0) write(s_logunit,F01) trim(dimName)//' dimension has size = ',ns
 
@@ -364,13 +367,15 @@ contains
     integer(SHR_KIND_IN) :: vid                    ! variable id
     integer(SHR_KIND_IN) :: ndims                  ! number of dims
     integer(SHR_KIND_IN),allocatable :: dids(:)    ! dimids
-    integer(MPI_OFFSET_KIND),allocatable :: ns(:)  ! size of dims
+    integer(SHR_KIND_IN),allocatable :: ns(:)      ! size of dims
     integer(SHR_KIND_IN) :: rCode                  ! error code
 
     !----- formats -----
     character(*),parameter :: subName = "(shr_ncread_varDimSizes)"
     character(*),parameter :: F00     = "('(shr_ncread_varDimSizes) ',4a)"
     character(*),parameter :: F01     = "('(shr_ncread_varDimSizes) ',a,i6)"
+
+    integer(MPI_OFFSET_KIND) :: len_pnetcdf
 
     !-------------------------------------------------------------------------------
     !
@@ -390,7 +395,8 @@ contains
     !--- get dim sizes for all dims or to maxn, default result is 1 ---
     ns = 1
     do n=1,min(ndims,maxn)
-       rcode = nf90mpi_inquire_dimension(fid,dids(n),len=ns(n))
+       rcode = nf90mpi_inquire_dimension(fid,dids(n),len=len_pnetcdf)
+       ns(n) = len_pnetcdf
        call shr_ncread_handleErr(rCode, subName//" ERROR inquire dimension")
     enddo
 
@@ -446,7 +452,7 @@ contains
 
     character(*)        ,intent(in)           :: fileName ! nc file name
     character(*)        ,intent(in)           :: dimName  ! name of dimension
-    integer(MPI_OFFSET_KIND),intent(out)      :: ns       ! size of dimension
+    integer(SHR_KIND_IN),intent(out)          :: ns       ! size of dimension
     integer(SHR_KIND_IN),intent(out),optional :: rc       ! return code
 
     !EOP
@@ -461,6 +467,8 @@ contains
     character(*),parameter :: F00     = "('(shr_ncread_dimSizeName) ',4a)"
     character(*),parameter :: F01     = "('(shr_ncread_dimSizeName) ',a,i6)"
 
+    integer(MPI_OFFSET_KIND) :: len_pnetcdf
+
     !-------------------------------------------------------------------------------
     !
     !-------------------------------------------------------------------------------
@@ -470,7 +478,8 @@ contains
     !--- read coordinate dimensions ---
     rcode = nf90mpi_inq_dimid        (fid, trim(dimName), did)  ! size of dimension
     call shr_ncread_handleErr(rCode, subName//" ERROR inq dimid")
-    rcode = nf90mpi_inquire_dimension(fid,did,len=ns)
+    rcode = nf90mpi_inquire_dimension(fid,did,len=len_pnetcdf)
+    ns = len_pnetcdf
     call shr_ncread_handleErr(rCode, subName//" ERROR inquire dimension")
     if (debug > 1 .and. s_loglev > 0) write(s_logunit,F01) trim(dimName)//' dimension has size = ',ns
 
@@ -536,8 +545,7 @@ contains
     character(SHR_KIND_CS)        :: varName       ! var name
     integer(SHR_KIND_IN)          :: nflds         ! number of flds to read
     integer(SHR_KIND_IN)          :: n,i,j         ! counters
-    integer(SHR_KIND_IN)          :: ndim          ! dims
-    integer(MPI_OFFSET_KIND)      :: nd1,nd2       ! size of 2 dims for cdf field
+    integer(SHR_KIND_IN)          :: ndim,nd1,nd2  ! dims and size of 2 dims for cdf field
     integer(SHR_KIND_IN)          ::      pd1,pd2  ! size of 2 dims for P2d
     integer(SHR_KIND_IN)          :: rCode         ! error code
 
@@ -1313,12 +1321,12 @@ contains
     integer(SHR_KIND_IN)  ,allocatable :: dids(:)      ! dimension ids for cdf
     integer(SHR_KIND_IN)  ,allocatable :: start(:)     ! cdf start array
     integer(SHR_KIND_IN)  ,allocatable :: count(:)     ! cdf count array
-    integer(MPI_OFFSET_KIND)  ,allocatable :: len(:)   ! size of dim
+    integer(SHR_KIND_IN)  ,allocatable :: len(:)       ! size of dim
     character(SHR_KIND_CS),allocatable :: name(:)      ! name of dim
     real(SHR_KIND_R8)     ,allocatable :: rin(:,:)     ! local 2d array
     integer(SHR_KIND_IN)  ,allocatable :: iin(:,:)     ! local 2d array
-    integer(MPI_OFFSET_KIND)  ,allocatable :: start2d(:)   ! start for 2d local array
-    integer(MPI_OFFSET_KIND)  ,allocatable :: count2d(:)   ! count for 2d local array
+    integer(SHR_KIND_IN)  ,allocatable :: start2d(:)   ! start for 2d local array
+    integer(SHR_KIND_IN)  ,allocatable :: count2d(:)   ! count for 2d local array
     logical :: found                                   ! search logical
     integer(SHR_KIND_IN) :: rCode                      ! error code
 
@@ -1326,6 +1334,10 @@ contains
     character(*),parameter :: subName = "(shr_ncread_field4dG) "
     character(*),parameter :: F00   = "('(shr_ncread_field4dG) ',4a)"
     character(*),parameter :: F01   = "('(shr_ncread_field4dG) ',2a,3i6,2x,a)"
+
+    integer(MPI_OFFSET_KIND) :: len_pnetcdf
+    integer(MPI_OFFSET_KIND)  ,allocatable :: start2d_pnetcdf(:)
+    integer(MPI_OFFSET_KIND)  ,allocatable :: count2d_pnetcdf(:)
 
     !-------------------------------------------------------------------------------
     !
@@ -1361,12 +1373,15 @@ contains
     allocate(count  (n4)) ; count   = 1
     allocate(start2d(n4)) ; start2d = 1
     allocate(count2d(n4)) ; count2d = 1
+    allocate(start2d_pnetcdf(n4)) ; start2d_pnetcdf = 1
+    allocate(count2d_pnetcdf(n4)) ; count2d_pnetcdf = 1
 
     !--- get dimension info for vid
     rCode = nf90mpi_inquire_variable(fid,vid,dimids=dids)
     call shr_ncread_handleErr(rCode,subName//'inquire variable dids: '//trim(fldName))
     do n=1,ndims
-       rCode = nf90mpi_inquire_dimension(fid,dids(n),name=name(n),len=len(n))
+       rCode = nf90mpi_inquire_dimension(fid,dids(n),name=name(n),len=len_pnetcdf)
+       len(n) = len_pnetcdf
        call shr_ncread_handleErr(rCode,subName//'inquire dimension len: '//trim(fldName))
     enddo
 
@@ -1496,10 +1511,16 @@ contains
        do n3 = 1,count(dimid(3))
           start2d(dimid(3)) = n3 + start(dimid(3)) - 1
           start2d(dimid(4)) = n4 + start(dimid(4)) - 1
+          start2d_pnetcdf = int(start2d, MPI_OFFSET_KIND)
+          count2d_pnetcdf = int(count2d, MPI_OFFSET_KIND)
           if (present(rfld)) then
-             rCode = nf90mpi_get_var(fid,vid,rin,start=start2d,count=count2d)
+             rcode = nf90mpi_begin_indep_data(fid)
+             rCode = nf90mpi_get_var(fid,vid,rin,start=start2d_pnetcdf,count=count2d_pnetcdf)
+             rcode = nf90mpi_end_indep_data(fid)
           elseif (present(ifld)) then
-             rCode = nf90mpi_get_var(fid,vid,iin,start=start2d,count=count2d)
+             rcode = nf90mpi_begin_indep_data(fid)
+             rCode = nf90mpi_get_var(fid,vid,iin,start=start2d_pnetcdf,count=count2d_pnetcdf)
+             rcode = nf90mpi_end_indep_data(fid)
           endif
           call shr_ncread_handleErr(rCode,subName//'get var: '//trim(fldName))
 
@@ -1548,6 +1569,8 @@ contains
     deallocate(len)
     deallocate(start2d)
     deallocate(count2d)
+    deallocate(start2d_pnetcdf)
+    deallocate(count2d_pnetcdf)
     if (.not.present(fidi)) then
        call shr_ncread_close(fid,rCode)
     endif
@@ -1603,7 +1626,7 @@ contains
 
     !--- open the data file ---
     if (debug > 1 .and. s_loglev > 0) write(s_logunit,F00) 'open netCDF data file: ',trim(fileName)
-    rCode = nf90mpi_open(MPI_COMM_WORLD,fileName,nf90_nowrite,MPI_INFO_NULL,fid)
+    rCode = nf90mpi_open(MPI_COMM_SELF,fileName,nf90_nowrite,MPI_INFO_NULL,fid)
     call shr_ncread_handleErr(rCode, subName//"ERROR opening input data file")
 
   end subroutine shr_ncread_open
