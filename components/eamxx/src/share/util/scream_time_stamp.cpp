@@ -149,7 +149,7 @@ TimeStamp TimeStamp::curr_month_beg () const
 {
   auto date = m_date;
   date[2] = 1;
-  return TimeStamp (date,m_time);
+  return TimeStamp (date,{0,0,0});
 }
 
 TimeStamp& TimeStamp::operator+=(const double seconds) {

@@ -89,17 +89,25 @@ struct IOControl {
     } else if (frequency_units=="ndays") {
       next_write_ts += frequency*86400;
     } else if (frequency_units=="nmonths") {
-      for (int im=0; im<frequency; ++im) {
-        next_write_ts += 86400*next_write_ts.days_in_curr_month();
-      }
+      auto date = last_write_ts.get_date();
+      int temp = date[1] + frequency - 1;
+      date[1]  = temp % 12 + 1;
+      date[0] += temp / 12;
+
+      // NOTE: we MAY have moved to an invalid date. E.g., if last_write
+      // was on Mar 31st, and units='nmonths', date now points to Apr 31st.
+      // We fix this by adjusting the date to the last day of the month.
+      // HOWEVER, this means we will *always* write on the 30th of each month after then,
+      // since we have no memory of the fact that we were writing on the 31st before.
+      auto month_beg = util::TimeStamp({date[0],date[1],1},{0,0,0});
+      auto last_day = month_beg.days_in_curr_month();
+      date[2] = std::min(date[2],last_day);
+
+      next_write_ts = util::TimeStamp(date,last_write_ts.get_time());
     } else if (frequency_units=="nyears") {
-      // Note: advance 1 month at a time, since we don't know if we're past or before
-      // the end of Feb, where a leap day may occur.
-      for (int iy=0; iy<frequency; ++iy) {
-        for (int im=0; im<12; ++im) {
-          next_write_ts += 86400*next_write_ts.days_in_curr_month();
-        }
-      }
+      auto date = last_write_ts.get_date();
+      date[0] += frequency;
+      next_write_ts = util::TimeStamp(date,last_write_ts.get_time());
     } else {
       EKAT_ERROR_MSG ("Error! Unrecognized/unsupported frequency unit '" + frequency_units + "'\n");
     }
