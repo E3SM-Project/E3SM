@@ -184,6 +184,28 @@ program convterr
                        output_topography_file, smoothed_topography_file, &
                        lsmooth_terr, calc_orographic_shape_params        )
 
+  
+  !
+  !*********************************************************
+  !
+  ! check that options are compatible
+  !
+  !*********************************************************
+  !
+
+  if (ltarget_latlon.and.calc_orographic_shape_params) then
+    print *, 'ERROR: calc_orographic_shape_params not supported for lat/lon grids.'
+    stop
+  end if
+
+  !
+  !*********************************************************
+  !
+  ! check input files
+  !
+  !*********************************************************
+  !
+
   if (lsmooth_terr) then
      status = nf_open(trim(smoothed_topography_file), 0, ncid)
      IF (STATUS .NE. NF_NOERR) CALL HANDLE_ERR(STATUS)
@@ -914,17 +936,14 @@ program convterr
   
   
   if (ltarget_latlon) then
-
     call wrtncdf_rll( nlon, nlat, lpole, ntarget, &
-                      ! nvar_dirOA, nvar_dirOL, maxval(indexb), &
                       terr_target, sgh_target, sgh30_target, &
-                      ! oc_target, oa_target, ol_target, terrout, dxy, &
                       target_center_lon, target_center_lat, .true., output_topography_file )
   else
-    call wrtncdf_unstructured( ntarget, &
-                               nvar_dirOA, nvar_dirOL, maxval(indexb), &
-                               terr_target, sgh_target, sgh30_target, &
-                               oc_target, oa_target, ol_target, terrout, dxy, &
+    call wrtncdf_unstructured( ntarget, terr_target, sgh_target, sgh30_target, &
+                               calc_orographic_shape_params, &
+                               nvar_dirOA, nvar_dirOL, &
+                               oc_target, oa_target, ol_target, &
                                target_center_lon, target_center_lat, output_topography_file)
   end if
   DEALLOCATE(terr_target,sgh30_target,sgh_target)
@@ -1062,31 +1081,31 @@ end subroutine usage
 !
 !
 !
-subroutine wrtncdf_unstructured(n, nvar_oa, nvar_ol, indexb, &
-                                terr, sgh, sgh30, &
-                                oc_in, oa_in, ol_in, terrout, dxy_in, &
+subroutine wrtncdf_unstructured(n, terr, sgh, sgh30, &
+                                calc_orographic_shape_params, &
+                                nvar_dirOA, nvar_dirOL, &
+                                orographic_convexity, &
+                                orographic_asymmetry, &
+                                orographic_efflength, &
                                 lon, lat, fout)
   use shr_kind_mod, only: r8 => shr_kind_r8
   implicit none
-  
-#     include         <netcdf.inc>
-  
+#include         <netcdf.inc>
   !
-  ! Dummy arguments
+  ! Arguments
   !
-  integer, intent(in) :: n
-  integer, intent(in) :: nvar_dirOA
-  integer, intent(in) :: nvar_dirOL
-  integer, intent(in) :: indexb
-  real(r8),dimension(n), intent(in) :: terr
-  real(r8),dimension(n), intent(in) :: sgh
-  real(r8),dimension(n), intent(in) :: sgh30
-  real(r8),dimension(n,nvar_oa),   intent(in) :: oa_in
-  real(r8),dimension(n,nvar_ol),   intent(in) :: ol_in
-  real(r8),dimension(4,n,indexb),  intent(in) :: terrout
-  real(r8),dimension(n,nvar_ol),   intent(in) :: dxy_in
-  real(r8),dimension(n), intent(in) :: lon
-  real(r8),dimension(n), intent(in) :: lat
+  integer,                          intent(in) :: n
+  real(r8),dimension(n),            intent(in) :: terr
+  real(r8),dimension(n),            intent(in) :: sgh
+  real(r8),dimension(n),            intent(in) :: sgh30
+  logical,                          intent(in) :: calc_orographic_shape_params
+  integer,                          intent(in) :: nvar_dirOA
+  integer,                          intent(in) :: nvar_dirOL
+  real(r8),dimension(n),            intent(in) :: orographic_convexity
+  real(r8),dimension(n,nvar_dirOA), intent(in) :: orographic_asymmetry
+  real(r8),dimension(n,nvar_dirOL), intent(in) :: orographic_efflength
+  real(r8),dimension(n),            intent(in) :: lon
+  real(r8),dimension(n),            intent(in) :: lat
   !
   ! Local variables
   !
@@ -1103,6 +1122,14 @@ subroutine wrtncdf_unstructured(n, nvar_oa, nvar_ol, indexb, &
   integer :: nc_gridcorn_id, lat_vid, lon_vid
   
   real(r8), parameter :: fillvalue = 1.d36
+
+  integer               :: nvar_dirOA_id
+  integer               :: nvar_dirOL_id
+  integer               :: ocid
+  integer               :: oaid
+  integer               :: olid 
+  integer, dimension(3) :: oadim
+  integer, dimension(3) :: oldim
   
   !
   !  Create NetCDF file for output
@@ -1114,6 +1141,10 @@ subroutine wrtncdf_unstructured(n, nvar_oa, nvar_ol, indexb, &
   ! Create dimensions for output
   !
   status = nf_def_dim (foutid, 'ncol', n, nid)
+  if (status .ne. NF_NOERR) call handle_err(status)
+  status = nf_def_dim (foutid, 'nvar_dirOA', nvar_dirOA, nvar_dirOA_id)
+  if (status .ne. NF_NOERR) call handle_err(status)
+  status = nf_def_dim (foutid, 'nvar_dirOL', nvar_dirOL, nvar_dirOL_id)
   if (status .ne. NF_NOERR) call handle_err(status)
   !
   ! Create variable for output
@@ -1133,6 +1164,23 @@ subroutine wrtncdf_unstructured(n, nvar_oa, nvar_ol, indexb, &
   
   status = nf_def_var (foutid,'lon', NF_DOUBLE, 1, nid, lonvid)
   if (status .ne. NF_NOERR) call handle_err(status)
+
+  if (calc_orographic_shape_params) then
+    
+    status = nf_def_var (foutid,'OC', NF_DOUBLE,  1, nid, ocid)
+    if (status .ne. NF_NOERR) call handle_err(status)
+
+    oadim(1) = nid
+    oadim(2) = nvar_dirOA_id
+    status = nf_def_var (foutid,'OA', NF_DOUBLE, 2, oadim, oaid)
+    if (status .ne. NF_NOERR) call handle_err(status)
+
+    oldim(1) = nid
+    oldim(2) = nvar_dirOL_id
+    status = nf_def_var (foutid,'OL', NF_DOUBLE, 2, oldim, olid)
+    if (status .ne. NF_NOERR) call handle_err(status)
+
+  end if
   
   !
   ! Create attributes for output variables
@@ -1179,6 +1227,13 @@ subroutine wrtncdf_unstructured(n, nvar_oa, nvar_ol, indexb, &
   call DATE_AND_TIME(DATE=datestring)
   status = nf_put_att_text (foutid,NF_GLOBAL,'history',25, 'Written on date: ' // datestring )
   if (status .ne. NF_NOERR) call handle_err(status)
+
+  if (calc_orographic_shape_params) then
+
+    status = nf_put_att_text (foutid,oaid,'note', 40, '(2)+1 in nvar_dirOA to avoid bug in io')
+    if (status .ne. NF_NOERR) call handle_err(status)
+
+  end if
   
   !
   ! End define mode for output file
@@ -1212,6 +1267,23 @@ subroutine wrtncdf_unstructured(n, nvar_oa, nvar_ol, indexb, &
   status = nf_put_var_double (foutid, lonvid, lon)
   if (status .ne. NF_NOERR) call handle_err(status)
   print*,"done writing lon data"
+
+  if (calc_orographic_shape_params) then
+
+    status = nf_put_var_double (foutid, ocid, orographic_convexity)
+    if (status .ne. NF_NOERR) call handle_err(status)
+    print*,"done writing orographic convexity data"
+
+    status = nf_put_var_double (foutid, oaid, orographic_asymmetry)
+    if (status .ne. NF_NOERR) call handle_err(status)
+    print*,"done writing orographic asymmetry data"
+    
+    status = nf_put_var_double (foutid, olid, orographic_efflength)
+    if (status .ne. NF_NOERR) call handle_err(status)
+    print*,"done writing orographic eff length data"
+  
+  end if
+
   !
   ! Close output file
   !
