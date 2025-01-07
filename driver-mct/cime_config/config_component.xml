@@ -1898,40 +1898,58 @@
     <desc>glc2ocn runoff mapping file decomp type for ice runoff</desc>
   </entry>
 
-  <entry id="OCN2GLC_FMAPNAME">
+  <entry id="OCN2GLC_SHELF_FMAPNAME">
     <type>char</type>
     <default_value>idmap_ignore</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
-    <desc>ocn2glc flux mapping file - the default value idmap_ignore, if set, will be ignored by buildnml and
+    <desc>ocn2glc shelf flux mapping file - the default value idmap_ignore, if set, will be ignored by buildnml and
     will generate a runtime error if in fact a file is required for the given compset</desc>
   </entry>
 
-  <entry id="OCN2GLC_FMAPTYPE">
+  <entry id="OCN2GLC_SHELF_FMAPTYPE">
     <type>char</type>
     <valid_values>X,Y</valid_values>
     <default_value>Y</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
-    <desc>ocn2glc flux mapping file decomp type</desc>
+    <desc>ocn2glc shelf flux mapping file decomp type</desc>
   </entry>
 
-  <entry id="OCN2GLC_SMAPNAME">
+  <entry id="OCN2GLC_SHELF_SMAPNAME">
     <type>char</type>
     <default_value>idmap_ignore</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
-    <desc>ocn2glc state mapping file - the default value idmap_ignore, if set, will be ignored by buildnml and
+    <desc>ocn2glc shelf state mapping file - the default value idmap_ignore, if set, will be ignored by buildnml and
     will generate a runtime error if in fact a file is required for the given compset</desc>
   </entry>
 
-  <entry id="OCN2GLC_SMAPTYPE">
+  <entry id="OCN2GLC_SHELF_SMAPTYPE">
     <type>char</type>
     <valid_values>X,Y</valid_values>
     <default_value>Y</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
-    <desc>ocn2glc state mapping file decomp type</desc>
+    <desc>ocn2glc shelf state mapping file decomp type</desc>
+  </entry>
+
+  <entry id="OCN2GLC_TF_SMAPNAME">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>ocn2glc state mapping file for thermal forcing - the default value idmap_ignore, if set, will be ignored by buildnml and
+    will generate a runtime error if in fact a file is required for the given compset</desc>
+  </entry>
+
+  <entry id="OCN2GLC_TF_SMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>Y</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>ocn2glc thermal forcing state mapping file decomp type</desc>
   </entry>
 
   <entry id="OCN2WAV_SMAPNAME">

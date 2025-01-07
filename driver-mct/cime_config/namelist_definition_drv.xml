@@ -149,6 +149,18 @@
     </values>
   </entry>
 
+  <entry id="flds_tf">
+    <type>logical</type>
+    <category>seq_flds</category>
+    <group>seq_cplflds_inparm</group>
+    <desc>
+      If set to .true. thermal forcing fields will be passed from the ocean to the coupler.
+    </desc>
+    <values>
+      <value>$FLDS_TF</value>
+    </values>
+  </entry>
+
   <entry  id="flds_wiso" modify_via_xml="FLDS_WISO">
     <type>logical</type>
     <category>seq_flds</category>
@@ -4531,20 +4543,20 @@
     </values>
   </entry>
 
-  <entry id="ocn2glc_fmapname"    modify_via_xml="OCN2GLC_FMAPNAME">
+  <entry id="ocn2glc_shelf_fmapname"    modify_via_xml="OCN2GLC_SHELF_FMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
     <desc>
-      ocn to glc flux mapping file for fluxes
+      ocn to glc shelf mapping file for fluxes
     </desc>
     <values>
-      <value>$OCN2GLC_FMAPNAME</value>
+      <value>$OCN2GLC_SHELF_FMAPNAME</value>
     </values>
   </entry>
 
-  <entry id="ocn2glc_fmaptype"    modify_via_xml="OCN2GLC_FMAPTYPE">
+  <entry id="ocn2glc_shelf_fmaptype"    modify_via_xml="OCN2GLC_SHELF_FMAPTYPE">
     <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
@@ -4556,25 +4568,25 @@
       grid.
     </desc>
     <values>
-      <value>$OCN2GLC_FMAPTYPE</value>
+      <value>$OCN2GLC_SHELF_FMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
 
-  <entry id="ocn2glc_smapname"    modify_via_xml="OCN2GLC_SMAPNAME">
+  <entry id="ocn2glc_shelf_smapname"    modify_via_xml="OCN2GLC_SHELF_SMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
     <desc>
-      ocn to glc state mapping file for states
+      ocn to glc shelf mapping file for states
     </desc>
     <values>
-      <value>$OCN2GLC_SMAPNAME</value>
+      <value>$OCN2GLC_SHELF_SMAPNAME</value>
     </values>
   </entry>
 
-  <entry id="ocn2glc_smaptype"    modify_via_xml="OCN2GLC_SMAPTYPE">
+  <entry id="ocn2glc_shelf_smaptype"    modify_via_xml="OCN2GLC_SHELF_SMAPTYPE">
     <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
@@ -4586,7 +4598,37 @@
       grid.
     </desc>
     <values>
-      <value>$OCN2GLC_SMAPTYPE</value>
+      <value>$OCN2GLC_SHELF_SMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="ocn2glc_tf_smapname"    modify_via_xml="OCN2GLC_TF_SMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      ocn to glc state mapping file for thermal forcing state fields
+    </desc>
+    <values>
+      <value>$OCN2GLC_TF_SMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="ocn2glc_tf_smaptype"    modify_via_xml="OCN2GLC_TF_SMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$OCN2GLC_TF_SMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
