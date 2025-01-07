@@ -18,7 +18,7 @@ module SnowHydrologyMod
   use decompMod       , only : bounds_type
   use abortutils      , only : endrun
   use elm_varpar      , only : nlevsno
-  use elm_varctl      , only : iulog, use_extrasnowlayers
+  use elm_varctl      , only : iulog, use_extrasnowlayers, use_firn_percolation_and_compaction
   use elm_varcon      , only : namec, h2osno_max
   use atm2lndType     , only : atm2lnd_type
   use AerosolType     , only : aerosol_type
@@ -233,7 +233,7 @@ contains
          c = filter_snowc(fc)
          l=col_pp%landunit(c)
 
-         if (do_capsnow(c) .and. .not. use_extrasnowlayers) then
+         if (do_capsnow(c) .and. .not. use_firn_percolation_and_compaction) then
             wgdif = h2osoi_ice(c,snl(c)+1) - frac_sno_eff(c)*qflx_sub_snow(c)*dtime
             h2osoi_ice(c,snl(c)+1) = wgdif
             if (wgdif < 0._r8) then
@@ -623,7 +623,7 @@ contains
 
        ! Begin calculation - note that the following column loops are only invoked if snl(c) < 0
 
-       if (use_extrasnowlayers) then
+       if (use_firn_percolation_and_compaction) then
           do fc = 1, num_snowc
              c = filter_snowc(fc)
              burden(c) = 0._r8
@@ -637,7 +637,7 @@ contains
        do j = -nlevsno+1, 0
           do fc = 1, num_snowc
              c = filter_snowc(fc)
-             if (use_extrasnowlayers) then
+             if (use_firn_percolation_and_compaction) then
                 t = col_pp%topounit(c)
              end if
              if (j >= snl(c)+1) then
@@ -647,7 +647,7 @@ contains
                 ! If void is negative, then increase dz such that void = 0.
                 ! This should be done for any landunit, but for now is done only for glacier_mec 1andunits.
                 
-                if (.not. use_extrasnowlayers) then
+                if (.not. use_firn_percolation_and_compaction) then
                    ! I don't think the next 5 lines are necessary (removed in CLMv5)
                    l = col_pp%landunit(c)
                    if (ltype(l)==istice_mec .and. void < 0._r8) then
@@ -665,7 +665,7 @@ contains
                    dexpf = exp(-c4*td)
 
                    ! Settling as a result of destructive metamorphism
-                   if (.not. use_extrasnowlayers) then
+                   if (.not. use_firn_percolation_and_compaction) then
                       ddz1 = -c3*dexpf 
                       if (bi > dm) ddz1 = ddz1*exp(-46.0e-3_r8*(bi-dm))
                    else
@@ -685,7 +685,7 @@ contains
                    if (h2osoi_liq(c,j) > 0.01_r8*dz(c,j)*frac_sno(c)) ddz1=ddz1*c5
 
                    ! Compaction due to overburden
-                   if (.not. use_extrasnowlayers) then
+                   if (.not. use_firn_percolation_and_compaction) then
                       ddz2 = -(burden(c)+wx/2._r8)*exp(-0.08_r8*td - c2*bi)/eta0 
                    else
                       p_gls = max(denice / bi, 1._r8) * grav * (burden(c) + wx/2._r8)
@@ -724,7 +724,7 @@ contains
                       ddz3 = 0._r8
                    end if
                    
-                   if (use_extrasnowlayers) then
+                   if (use_firn_percolation_and_compaction) then
                       ! Compaction occurring due to wind drift
                       call WindDriftCompaction( &
                            bi = bi, &
