@@ -575,7 +575,6 @@ contains
     use spmdMod          , only : masterproc, mpicom, MPI_REAL8, MPI_INTEGER
     use shr_scam_mod     , only : shr_scam_getCloseLatLon
     use elm_time_manager , only : get_nstep
-    use pnetcdf
     !
     ! !ARGUMENTS:
     type(bounds_type) , intent(in) :: bounds
