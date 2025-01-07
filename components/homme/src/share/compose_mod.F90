@@ -304,7 +304,7 @@ contains
        ! a parcel can cross a cell in three time steps. Since this is closely
        ! related to the dynamics' tstep, dt_tracer_factor is meaningful,
        ! implying:
-       semi_lagrange_halo = dt_tracer_factor / 3
+       semi_lagrange_halo = (dt_tracer_factor + 2) / 3
        if (semi_lagrange_halo < 1) semi_lagrange_halo = 1
     end if
 
