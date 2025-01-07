@@ -97,6 +97,12 @@ void compute_tables(const bool masterproc, MuRT& mu_r_table_vals, VNT& vn_table_
   VMT_NC    vm_table_vals_nc("vm_table_vals");
   RevapT_NC revap_table_vals_nc("revap_table_vals");
 
+  // Get host views
+  auto mu_r_table_vals_h  = Kokkos::create_mirror_view(mu_r_table_vals_nc);
+  auto revap_table_vals_h = Kokkos::create_mirror_view(revap_table_vals_nc);
+  auto vn_table_vals_h    = Kokkos::create_mirror_view(vn_table_vals_nc);
+  auto vm_table_vals_h    = Kokkos::create_mirror_view(vm_table_vals_nc);
+
   if (masterproc) {
     std::cout << "Recomputing lookup (non-ice) tables" << std::endl;
   }
@@ -112,7 +118,7 @@ void compute_tables(const bool masterproc, MuRT& mu_r_table_vals, VNT& vn_table_
 
   // AaronDonahue: Switching to table ver 4 means switching to a constand mu_r,
   // so this section is commented out.
-  Kokkos::deep_copy(mu_r_table_vals_nc, 1); // mu_r_constant =1. In other places, this is runtime_options.constant_mu_rain
+  Kokkos::deep_copy(mu_r_table_vals_h, 1); // mu_r_constant =1. In other places, this is runtime_options.constant_mu_rain
 
   static constexpr S thrd = 1./3;
   static constexpr S small = 1.e-30;
@@ -178,11 +184,16 @@ void compute_tables(const bool masterproc, MuRT& mu_r_table_vals, VNT& vn_table_
       dum4 = std::max(dum4, small); // to prevent divide-by-zero below
       dum5 = std::max(dum5, small); // to prevent log10-of-zero below
 
-      vn_table_vals_nc(jj-1,ii-1)    = dum1/dum2;
-      vm_table_vals_nc(jj-1,ii-1)    = dum3/dum4;
-      revap_table_vals_nc(jj-1,ii-1) = std::pow(10, std::log10(dum5) + (mu_r+1)*std::log10(lamr) - (3*mu_r));
+      vn_table_vals_h(jj-1,ii-1)    = dum1/dum2;
+      vm_table_vals_h(jj-1,ii-1)    = dum3/dum4;
+      revap_table_vals_h(jj-1,ii-1) = std::pow(10, std::log10(dum5) + (mu_r+1)*std::log10(lamr) - (3*mu_r));
     }
   }
+
+  Kokkos::deep_copy(mu_r_table_vals_nc, mu_r_table_vals_h);
+  Kokkos::deep_copy(revap_table_vals_nc, revap_table_vals_h);
+  Kokkos::deep_copy(vn_table_vals_nc, vn_table_vals_h);
+  Kokkos::deep_copy(vm_table_vals_nc, vm_table_vals_h);
 
   mu_r_table_vals = mu_r_table_vals_nc;
   vn_table_vals = vn_table_vals_nc;
@@ -218,6 +229,12 @@ void io_impl(const bool masterproc, const char* dir, MuRT& mu_r_table_vals, VNT&
 
   const char* rw_flag = IsRead ? "r" : "w";
 
+  // Get host views
+  auto mu_r_table_vals_h  = Kokkos::create_mirror_view(mu_r_table_vals);
+  auto revap_table_vals_h = Kokkos::create_mirror_view(revap_table_vals);
+  auto vn_table_vals_h    = Kokkos::create_mirror_view(vn_table_vals);
+  auto vm_table_vals_h    = Kokkos::create_mirror_view(vm_table_vals);
+
   // Add v2 because these tables are not identical to v1 due to roundoff differences
   // caused by doing the math in C++ instead of f90.
   std::string mu_r_filename  = std::string(dir) + "/mu_r_table_vals_v2.dat" + extension;
@@ -231,10 +248,18 @@ void io_impl(const bool masterproc, const char* dir, MuRT& mu_r_table_vals, VNT&
   ekat::FILEPtr vm_file(fopen(vm_filename.c_str(), rw_flag));
 
   // Read files
-  action<IsRead>(mu_r_file, mu_r_table_vals.data(), mu_r_table_vals.size());
-  action<IsRead>(revap_file, revap_table_vals.data(), revap_table_vals.size());
-  action<IsRead>(vn_file, vn_table_vals.data(), vn_table_vals.size());
-  action<IsRead>(vm_file, vm_table_vals.data(), vm_table_vals.size());
+  action<IsRead>(mu_r_file, mu_r_table_vals_h.data(), mu_r_table_vals.size());
+  action<IsRead>(revap_file, revap_table_vals_h.data(), revap_table_vals.size());
+  action<IsRead>(vn_file, vn_table_vals_h.data(), vn_table_vals.size());
+  action<IsRead>(vm_file, vm_table_vals_h.data(), vm_table_vals.size());
+
+  // Copy back to device
+  if constexpr (IsRead) {
+    Kokkos::deep_copy(mu_r_table_vals, mu_r_table_vals_h);
+    Kokkos::deep_copy(revap_table_vals, revap_table_vals_h);
+    Kokkos::deep_copy(vn_table_vals, vn_table_vals_h);
+    Kokkos::deep_copy(vm_table_vals, vm_table_vals_h);
+  }
 }
 
 template <typename MuRT, typename VNT, typename VMT, typename RevapT>
