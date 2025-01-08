@@ -136,6 +136,8 @@
       use error_messages, only : alloc_err
       use chem_mods,      only : phtcnt, pht_alias_lst, rxt_tag_lst
       use pnetcdf, only: &
+           nf90mpi_begin_indep_data, &
+           nf90mpi_end_indep_data, &
            nf90mpi_open, &
            nf90_nowrite, &
            nf90mpi_inq_dimid, &
@@ -344,6 +346,8 @@
       use ioFileMod,      only : getfil
       use error_messages, only : alloc_err
       use pnetcdf, only: &
+           nf90mpi_begin_indep_data, &
+           nf90mpi_end_indep_data, &
            nf90mpi_open, &
            nf90_nowrite, &
            nf90mpi_inq_dimid, &
