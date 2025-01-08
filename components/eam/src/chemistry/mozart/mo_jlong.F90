@@ -144,7 +144,7 @@
            nf90_noerr, &
            nf90mpi_get_var, &
            nf90mpi_close
-      use mpi
+      use mpi, only: MPI_OFFSET_KIND, MPI_COMM_SELF, MPI_INFO_NULL
 
 !------------------------------------------------------------------------------
 !    ... Dummy arguments
@@ -161,6 +161,7 @@
       integer :: i, k, m, n
       integer :: wrk_ndx(phtcnt)
       character(len=256) :: locfn
+
       integer(MPI_OFFSET_KIND) :: len_pnetcdf
 
       Masterproc_only : if( masterproc ) then
@@ -168,7 +169,7 @@
          !       ... open NetCDF File
          !------------------------------------------------------------------------------
          call getfil(xs_long_file, locfn, 0)
-         iret = nf90mpi_open(MPI_COMM_WORLD, trim(locfn), NF90_NOWRITE, MPI_INFO_NULL,  ncid)
+         iret = nf90mpi_open(MPI_COMM_SELF, trim(locfn), NF90_NOWRITE, MPI_INFO_NULL,  ncid)
 
          !------------------------------------------------------------------------------
          !       ... get dimensions
@@ -240,7 +241,9 @@
                   cycle
                end if
                ndx = ndx + 1
+               iret = nf90mpi_begin_indep_data(ncid)
                iret = nf90mpi_get_var( ncid, lng_indexer(m), xsqy(ndx,:,:,:) )
+               iret = nf90mpi_end_indep_data(ncid)
             end if
          end do
          if( ndx /= numj ) then
@@ -248,11 +251,17 @@
             call endrun
          end if
          iret = nf90mpi_inq_varid( ncid, 'jo2_b', varid )
+         iret = nf90mpi_begin_indep_data(ncid)
          iret = nf90mpi_get_var( ncid, varid, xs_o2b )
+         iret = nf90mpi_end_indep_data(ncid)
          iret = nf90mpi_inq_varid( ncid, 'jo3_a', varid )
+         iret = nf90mpi_begin_indep_data(ncid)
          iret = nf90mpi_get_var( ncid, varid, xs_o3a )
+         iret = nf90mpi_end_indep_data(ncid)
          iret = nf90mpi_inq_varid( ncid, 'jo3_b', varid )
+         iret = nf90mpi_begin_indep_data(ncid)
          iret = nf90mpi_get_var( ncid, varid, xs_o3b )
+         iret = nf90mpi_end_indep_data(ncid)
          !------------------------------------------------------------------------------
          !       ... setup final lng_indexer
          !------------------------------------------------------------------------------
@@ -270,7 +279,9 @@
          end do
 
          iret = nf90mpi_inq_varid( ncid, 'pressure', varid )
+         iret = nf90mpi_begin_indep_data(ncid)
          iret = nf90mpi_get_var( ncid, varid, prs )
+         iret = nf90mpi_end_indep_data(ncid)
          iret = nf90mpi_close( ncid )
       end if Masterproc_only
 
@@ -341,7 +352,7 @@
            nf90_noerr, &
            nf90mpi_get_var, &
            nf90mpi_close
-      use mpi
+      use mpi, only: MPI_OFFSET_KIND, MPI_COMM_SELF, MPI_INFO_NULL
 
 !------------------------------------------------------------------------------
 !    ... dummy arguments
@@ -359,6 +370,7 @@
       integer :: start(5)
       real(r8) :: wrk
       character(len=256) :: locfn
+
       integer(MPI_OFFSET_KIND) :: len_pnetcdf
 
       Masterproc_only : if( masterproc ) then
@@ -366,7 +378,7 @@
          !       ... open NetCDF File
          !------------------------------------------------------------------------------
          call getfil(rsf_file, locfn, 0)
-         iret = nf90mpi_open(MPI_COMM_WORLD, trim(locfn), NF90_NOWRITE, MPI_INFO_NULL, ncid)
+         iret = nf90mpi_open(MPI_COMM_SELF, trim(locfn), NF90_NOWRITE, MPI_INFO_NULL, ncid)
 
          !------------------------------------------------------------------------------
          !       ... get dimensions
@@ -438,19 +450,33 @@
          !       ... read variables
          !------------------------------------------------------------------------------
          iret = nf90mpi_inq_varid( ncid, 'wc', varid )
+         iret = nf90mpi_begin_indep_data(ncid)
          iret = nf90mpi_get_var( ncid, varid, wc )
+         iret = nf90mpi_end_indep_data(ncid)
          iret = nf90mpi_inq_varid( ncid, 'wlintv', varid )
+         iret = nf90mpi_begin_indep_data(ncid)
          iret = nf90mpi_get_var( ncid, varid, wlintv )
+         iret = nf90mpi_end_indep_data(ncid)
          iret = nf90mpi_inq_varid( ncid, 'pm', varid )
+         iret = nf90mpi_begin_indep_data(ncid)
          iret = nf90mpi_get_var( ncid, varid, p )
+         iret = nf90mpi_end_indep_data(ncid)
          iret = nf90mpi_inq_varid( ncid, 'sza', varid )
+         iret = nf90mpi_begin_indep_data(ncid)
          iret = nf90mpi_get_var( ncid, varid, sza )
+         iret = nf90mpi_end_indep_data(ncid)
          iret = nf90mpi_inq_varid( ncid, 'alb', varid )
+         iret = nf90mpi_begin_indep_data(ncid)
          iret = nf90mpi_get_var( ncid, varid, alb )
+         iret = nf90mpi_end_indep_data(ncid)
          iret = nf90mpi_inq_varid( ncid, 'colo3fact', varid )
+         iret = nf90mpi_begin_indep_data(ncid)
          iret = nf90mpi_get_var( ncid, varid, o3rat )
+         iret = nf90mpi_end_indep_data(ncid)
          iret = nf90mpi_inq_varid( ncid, 'colo3', varid )
+         iret = nf90mpi_begin_indep_data(ncid)
          iret = nf90mpi_get_var( ncid, varid, colo3 )
+         iret = nf90mpi_end_indep_data(ncid)
 
          iret = nf90mpi_inq_varid( ncid, 'RSF', varid )
          
@@ -465,7 +491,9 @@
             write(iulog,*) ' '
          endif
 
+         iret = nf90mpi_begin_indep_data(ncid)
          iret = nf90mpi_get_var( ncid, varid, rsf_tab )
+         iret = nf90mpi_end_indep_data(ncid)
          iret = nf90mpi_close( ncid )
 
          do w = 1,nw
