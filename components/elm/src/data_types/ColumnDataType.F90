@@ -20,7 +20,7 @@ module ColumnDataType
   use elm_varcon      , only : spval, ispval, zlnd, snw_rds_min, denice, denh2o, tfrz, pondmx
   use elm_varcon      , only : watmin, bdsno, bdfirn, zsoi, zisoi, dzsoi_decomp
   use elm_varcon      , only : c13ratio, c14ratio, secspday
-  use elm_varctl      , only : use_fates, use_fates_planthydro, create_glacier_mec_landunit
+  use elm_varctl      , only : use_fates, use_fates_planthydro, create_glacier_mec_landunit, use_IM2_hillslope_hydrology
   use elm_varctl      , only : use_hydrstress, use_crop
   use elm_varctl      , only : bound_h2osoi, use_cn, iulog, use_vertsoilc, spinup_state
   use elm_varctl      , only : ero_ccycle
@@ -5847,13 +5847,15 @@ contains
           avgflag='A', long_name='column-integrated snow freezing rate', &
            ptr_col=this%qflx_snofrz, set_lake=spval, c2l_scale_type='urbanf', default='inactive')
 
-     call hist_addfld1d (fname='QFROM_UPHILL',  units='mm/s',  &
-          avgflag='A', long_name='input to top layer soil from uphill topounit(s)', &
-           ptr_col=this%qflx_from_uphill, c2l_scale_type='urbanf')
+    if (use_IM2_hillslope_hydrology) then
+      call hist_addfld1d (fname='QFROM_UPHILL',  units='mm/s',  &
+            avgflag='A', long_name='input to top layer soil from uphill topounit(s)', &
+            ptr_col=this%qflx_from_uphill, c2l_scale_type='urbanf')
 
-     call hist_addfld1d (fname='QTO_DOWNHILL',  units='mm/s',  &
-          avgflag='A', long_name='output from column to downhill topounit', &
-           ptr_col=this%qflx_to_downhill, c2l_scale_type='urbanf')
+      call hist_addfld1d (fname='QTO_DOWNHILL',  units='mm/s',  &
+            avgflag='A', long_name='output from column to downhill topounit', &
+            ptr_col=this%qflx_to_downhill, c2l_scale_type='urbanf')
+    endif
 
     if (create_glacier_mec_landunit) then
        this%qflx_glcice(begc:endc) = spval

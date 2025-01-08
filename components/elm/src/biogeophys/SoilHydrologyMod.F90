@@ -265,14 +265,17 @@ contains
          t = col_pp%topounit(c)
          ! add flood water flux to qflx_top_soil
          qflx_top_soil(c) = qflx_top_soil(c) + qflx_snow_h2osfc(c) + qflx_floodc(c)
-         
-         ! flow from uphill topounit goes to top of soil for soil, crop, and pervious road columns
-         if (use_IM2_hillslope_hydrology) then
+      end do
+
+      ! flow from uphill topounit goes to top of soil for soil, crop, and pervious road columns
+      if (use_IM2_hillslope_hydrology) then
+         do fc = 1, num_hydrologyc
+            c = filter_hydrologyc(fc)
+            t = col_pp%topounit(c)
             qflx_from_uphill(c) = (col_pp%wttopounit(c)/top_pp%uphill_wt(t)) * (frac_from_uphill * top_ws%from_uphill(t)) / dtime
             qflx_top_soil(c) = qflx_top_soil(c) + qflx_from_uphill(c)
-        endif
-
-      end do
+        end do
+      endif
 
     end associate
 

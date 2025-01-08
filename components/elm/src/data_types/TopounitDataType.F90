@@ -10,7 +10,7 @@ module TopounitDataType
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use abortutils     , only : endrun
   use elm_varcon     , only : spval, ispval
-  use elm_varctl     , only : iulog, use_cn, use_fates, use_lch4
+  use elm_varctl     , only : iulog, use_cn, use_fates, use_lch4, use_IM2_hillslope_hydrology
   use elm_varpar     , only : numrad
   use histFileMod    , only : hist_addfld1d, hist_addfld2d
   use ncdio_pio      , only : file_desc_t, ncd_double
@@ -661,9 +661,11 @@ module TopounitDataType
     !-----------------------------------------------------------------------
     ! initialize history fields for members of top_ws
     !-----------------------------------------------------------------------
-     call hist_addfld1d (fname='FROM_UPHILL',  units='mm',  &
+    if (use_IM2_hillslope_hydrology) then
+      call hist_addfld1d (fname='WATER_FROM_UPHILL',  units='mm',  &
           avgflag='A', long_name='water received from uphill topounit(s)', &
-           ptr_topo=this%from_uphill, t2g_scale_type='unity')
+          ptr_topo=this%from_uphill, t2g_scale_type='unity')
+    endif
 
     !-----------------------------------------------------------------------
     ! set cold-start initial values for top_ws
