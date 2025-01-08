@@ -48,20 +48,10 @@ initialize(const ekat::Comm& io_comm, const ekat::ParameterList& params,
 
 void OutputManager::
 setup (const std::shared_ptr<fm_type>& field_mgr,
-       const std::shared_ptr<const gm_type>& grids_mgr)
-{
-  using map_t = std::map<std::string,std::shared_ptr<fm_type>>;
-  map_t fms;
-  fms[field_mgr->get_grid()->name()] = field_mgr;
-  setup(fms,grids_mgr);
-}
-
-void OutputManager::
-setup (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs,
-       const std::shared_ptr<const gm_type>& grids_mgr)
+       const std::set<std::string>& grid_names)
 {
   // Read input parameters and setup internal data
-  setup_internals(field_mgrs);
+  setup_internals(field_mgr, grid_names);
 
   // Here, store if PG2 fields will be present in output streams.
   // Will be useful if multiple grids are defined (see below).
@@ -72,8 +62,8 @@ setup (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs,
   }
 
   // For each grid, create a separate output stream.
-  if (field_mgrs.size()==1) {
-    auto output = std::make_shared<output_type>(m_io_comm,m_params,field_mgrs.begin()->second,grids_mgr);
+  if (grid_names.size()==1) {
+    auto output = std::make_shared<output_type>(m_io_comm,m_params,field_mgr,*grid_names.begin());
     output->set_logger(m_atm_logger);
     m_output_streams.push_back(output);
   } else {
@@ -94,19 +84,16 @@ setup (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs,
           }
         }
         if (reset_ncol_naming) {
-          grids_mgr->
+          field_mgr->get_grids_manager()->
             get_grid_nonconst(grid_pl.get<std::string>("IO Grid Name"))->
               reset_field_tag_name(ShortFieldTagsNames::COL,"ncol_d");
 	      }
       }
 
-      EKAT_REQUIRE_MSG (grids_mgr->has_grid(gname),
-          "Error! Output requested on grid '" + gname + "', but the grids manager does not store such grid.\n");
+      EKAT_REQUIRE_MSG (field_mgr->get_grids_manager()->has_grid(gname),
+          "Error! Output requested on grid '" + gname + "', but the field manager does not store such grid.\n");
 
-      EKAT_REQUIRE_MSG (field_mgrs.find(gname)!=field_mgrs.end(),
-          "Error! Output requested on grid '" + gname + "', but no field manager is available for such grid.\n");
-
-      auto output = std::make_shared<output_type>(m_io_comm,m_params,field_mgrs.at(gname),grids_mgr);
+      auto output = std::make_shared<output_type>(m_io_comm,m_params,field_mgr,gname);
       output->set_logger(m_atm_logger);
       m_output_streams.push_back(output);
     }
@@ -138,9 +125,9 @@ setup (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs,
           continue;
         }
         if (use_suffix) {
-          fields.push_back(f.clone(f.name()+"_"+grid.second->m_short_name));
+          fields.push_back(f.clone(f.name()+"_"+grid.second->m_short_name, grid.second->name()));
         } else {
-          fields.push_back(f.clone());
+          fields.push_back(f.clone(f.name(), grid.second->name()));
         }
       }
 
@@ -649,7 +636,8 @@ compute_filename (const IOFileSpecs& file_specs,
 }
 
 void OutputManager::
-setup_internals (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs)
+setup_internals (const std::shared_ptr<fm_type>& field_mgr,
+                 const std::set<std::string>& grid_names)
 {
   using vos_t = std::vector<std::string>;
 
@@ -661,19 +649,18 @@ setup_internals (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgr
     m_output_file_specs.flush_frequency = 1;
 
     auto& fields_pl = m_params.sublist("Fields");
-    for (const auto& it : field_mgrs) {
-      const auto& fm = it.second;
+    for (const auto& gname : grid_names) {
       vos_t fnames;
       // There may be no RESTART group on this grid
-      if (fm->has_group("RESTART")) {
-        auto restart_group = fm->get_groups_info().at("RESTART");
-        EKAT_REQUIRE_MSG (not fields_pl.isParameter(it.first),
+      if (field_mgr->has_group("RESTART", gname)) {
+        auto restart_group = field_mgr->get_groups_info().at("RESTART");
+        EKAT_REQUIRE_MSG (not fields_pl.isParameter(gname),
           "Error! For restart output, don't specify the fields names. We will create this info internally.\n");
         for (const auto& n : restart_group->m_fields_names) {
           fnames.push_back(n);
         }
       }
-      fields_pl.sublist(it.first).set("Field Names",fnames);
+      fields_pl.sublist(gname).set("Field Names",fnames);
     }
     m_filename_prefix = m_params.get<std::string>("filename_prefix");
 

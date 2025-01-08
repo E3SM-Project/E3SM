@@ -136,6 +136,18 @@ alias_grid (const std::string& grid_name,
   g->add_alias(grid_alias);
 }
 
+std::set<std::string> GridsManager::
+get_grid_names () const {
+  std::set<std::string> names;
+  if (m_grids.size()==0) {
+    return names;
+  }
+  for (const auto& g : m_grids) {
+    names.emplace(g.second->name());
+  }
+  return names;
+}
+
 std::string GridsManager::
 print_available_grids () const {
   std::string str;

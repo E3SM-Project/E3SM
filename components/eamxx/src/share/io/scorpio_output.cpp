@@ -98,7 +98,7 @@ AtmosphereOutput (const ekat::Comm& comm,
     fm->add_field(f);
   }
 
-  set_field_manager (fm,"sim");
+  set_field_manager (fm,grid->name(),"sim");
 
   for (auto f : fields) {
     m_fields_names.push_back(f.name());
@@ -106,7 +106,7 @@ AtmosphereOutput (const ekat::Comm& comm,
   sort_and_check(m_fields_names);
 
   set_grid (grid);
-  set_field_manager (fm,"io");
+  set_field_manager (fm,grid->name(),"io");
 
   // Setup I/O structures
   init ();
@@ -115,9 +115,9 @@ AtmosphereOutput (const ekat::Comm& comm,
 AtmosphereOutput::
 AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
                   const std::shared_ptr<const fm_type>& field_mgr,
-                  const std::shared_ptr<const gm_type>& grids_mgr)
- : m_comm         (comm)
- , m_add_time_dim (true)
+                  const std::string& grid_name)
+ : m_comm           (comm)
+ , m_add_time_dim   (true)
 {
   using vos_t = std::vector<std::string>;
 
@@ -131,12 +131,11 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   // Set all internal field managers to the simulation field manager to start with.  If
   // vertical remapping, horizontal remapping or both are used then those remapper will
   // set things accordingly.
-  set_field_manager (field_mgr,{"sim","io","int"});
+  set_field_manager (field_mgr,grid_name,std::vector<std::string>{"sim","io"});
 
   // By default, IO is done directly on the field mgr grid
-  m_grids_manager = grids_mgr;
   std::shared_ptr<const grid_type> fm_grid, io_grid;
-  io_grid = fm_grid = field_mgr->get_grid();
+  io_grid = fm_grid = field_mgr->get_grids_manager()->get_grid(grid_name);
   if (params.isParameter("Field Names")) {
     // This simple parameter list option does *not* allow to remap fields
     // to an io grid different from that of the field manager. In order to
@@ -161,7 +160,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
 
         // Check if the user wants to remap fields on a different grid first
         if (pl.isParameter("IO Grid Name")) {
-          io_grid = grids_mgr->get_grid(pl.get<std::string>("IO Grid Name"));
+          io_grid = field_mgr->get_grids_manager()->get_grid(pl.get<std::string>("IO Grid Name"));
         }
         break;
       }
@@ -252,7 +251,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     io_fm->registration_ends();
     for (const auto& fname : m_fields_names) {
       const auto& src = get_field(fname,"sim");
-            auto& tgt = io_fm->get_field(fname);
+            auto& tgt = io_fm->get_field(fname, io_grid->name());
       transfer_io_str_atts (src,tgt);
     }
 
@@ -260,16 +259,16 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     m_vert_remapper->registration_begins();
     for (const auto& fname : m_fields_names) {
       const auto src = get_field(fname,"sim");
-      const auto tgt = io_fm->get_field(src.name());
+      const auto tgt = io_fm->get_field(src.name(), io_grid->name());
       m_vert_remapper->register_field(src,tgt);
     }
     m_vert_remapper->registration_ends();
 
     // Reet the field manager for IO
-    set_field_manager(io_fm,"io");
+    set_field_manager(io_fm,io_grid->name(),"io");
 
     // Store a handle to 'after-vremap' FM
-    set_field_manager(io_fm,"after_vertical_remap");
+    set_field_manager(io_fm,io_grid->name(),"after_vertical_remap");
   }
 
   // Online remapper and horizontal remapper follow a similar pattern so we check in the same conditional.
@@ -279,7 +278,10 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     const auto fm_pre_hremap = use_vertical_remap_from_file
                              ? get_field_manager("after_vertical_remap")
                              : get_field_manager("sim");
-    set_field_manager(fm_pre_hremap,"before_horizontal_remap");
+    const auto gn = use_vertical_remap_from_file
+                  ? m_fm_grid_name.at("after_vertical_remap")
+                  : m_fm_grid_name.at("sim");
+    set_field_manager(fm_pre_hremap,gn,"before_horizontal_remap");
 
     // We build a remapper, to remap fields from the fm grid to the io grid
     if (use_horiz_remap_from_file) {
@@ -290,7 +292,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
       set_grid(io_grid);
     } else {
       // Construct a generic remapper (likely, SE->Point)
-      m_horiz_remapper = grids_mgr->create_remapper(fm_grid,io_grid);
+      m_horiz_remapper = field_mgr->get_grids_manager()->create_remapper(fm_grid,io_grid);
     }
 
     // Create a FM on the horiz remapper tgt grid, and register fields on it
@@ -305,7 +307,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     io_fm->registration_ends();
     for (const auto& fname : m_fields_names) {
       const auto& src = get_field(fname,"before_horizontal_remap");
-            auto& tgt = io_fm->get_field(fname);
+            auto& tgt = io_fm->get_field(fname, io_grid->name());
       transfer_io_str_atts (src,tgt);
     }
 
@@ -313,7 +315,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     m_horiz_remapper->registration_begins();
     for (const auto& fname : m_fields_names) {
       const auto src = get_field(fname,"before_horizontal_remap");
-      const auto tgt = io_fm->get_field(src.name());
+      const auto tgt = io_fm->get_field(src.name(), io_grid->name());
       EKAT_REQUIRE_MSG(src.data_type()==DataType::RealType,
           "Error! I/O supports only Real data, for now.\n");
       m_horiz_remapper->register_field(src,tgt);
@@ -321,7 +323,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     m_horiz_remapper->registration_ends();
 
     // Reset the IO field manager
-    set_field_manager(io_fm,"io");
+    set_field_manager(io_fm,io_grid->name(),"io");
   }
 
   // Setup I/O structures
@@ -668,16 +670,17 @@ res_dep_memory_footprint () const {
   // first make a copy so we can grab just unique pointers.
   std::set<std::string> grids;
   for (auto fm : m_field_mgrs) {
+    auto mode = fm.first;
     auto field_mgr = fm.second;
     if (field_mgr != sim_field_mgr) {
-      const auto& gn = field_mgr->get_grid()->name();
+      const auto& gn = field_mgr->get_grids_manager()->get_grid(m_fm_grid_name.at(mode))->name();
       if (grids.count(gn)>0) {
         continue; // Grid has already been parsed
       }
       grids.insert(gn);
       // This FM is done on a different grid than SIM and hasn't been included in
       // the memory calculation yet.  So we can safely add its footprint
-      for (const auto& it : *field_mgr) {
+      for (const auto& it : field_mgr->get_repo(gn)) {
         const auto& fap = it.second->get_header().get_alloc_properties();
         if (fap.is_subfield()) {
           continue;
@@ -688,12 +691,13 @@ res_dep_memory_footprint () const {
   }
 
   const auto io_field_mgr = get_field_manager("io");
+  const auto gn = m_fm_grid_name.at("io");
   for (const auto& fn : m_fields_names) {
     bool is_diagnostic = (m_diagnostics.find(fn) != m_diagnostics.end());
     bool can_alias_field_view =
         m_avg_type==OutputAvgType::Instant && not is_diagnostic &&
-        io_field_mgr->get_field(fn).get_header().get_alloc_properties().get_padding()==0 &&
-        io_field_mgr->get_field(fn).get_header().get_parent()==nullptr;
+        io_field_mgr->get_field(fn, gn).get_header().get_alloc_properties().get_padding()==0 &&
+        io_field_mgr->get_field(fn, gn).get_header().get_parent()==nullptr;
 
     if (not can_alias_field_view) {
       rdmf += m_dev_views_1d.size()*sizeof(Real);
@@ -704,30 +708,37 @@ res_dep_memory_footprint () const {
 }
 /* ---------------------------------------------------------- */
 void AtmosphereOutput::
-set_field_manager (const std::shared_ptr<const fm_type>& field_mgr, const std::vector<std::string>& modes)
+set_field_manager (const std::shared_ptr<const fm_type>& field_mgr,
+                   const std::string& grid_name,
+                   const std::vector<std::string>& modes)
 {
 
   // Sanity checks
   EKAT_REQUIRE_MSG (field_mgr, "Error! Invalid field manager pointer.\n");
-  EKAT_REQUIRE_MSG (field_mgr->get_grid(), "Error! Field manager stores an invalid grid pointer.\n");
+  EKAT_REQUIRE_MSG (field_mgr->get_grids_manager()->has_grid(grid_name),
+    "Error! Field manager does not contain the selected grid: " + grid_name + ".\n");
 
   for (unsigned ii=0; ii<modes.size(); ii++) {
     const auto mode = modes[ii];
     if (m_field_mgrs.count(mode)) {
       // We must redefine the field manager for this location in the map.
-      m_field_mgrs.at(mode) = field_mgr;
+      m_field_mgrs[mode] = field_mgr;
+      m_fm_grid_name[mode] = grid_name;
     } else {
       m_field_mgrs.emplace(mode, field_mgr);
+      m_fm_grid_name.emplace(mode, grid_name);
     }
   }
 
 }
 /* ---------------------------------------------------------- */
 void AtmosphereOutput::
-set_field_manager (const std::shared_ptr<const fm_type>& field_mgr, const std::string& mode)
+set_field_manager (const std::shared_ptr<const fm_type>& field_mgr,
+                   const std::string& grid_name,
+                   const std::string& mode)
 {
   const std::vector<std::string> modes = {mode};
-  set_field_manager(field_mgr,modes);
+  set_field_manager(field_mgr,grid_name,modes);
 }
 
 std::shared_ptr<const FieldManager>
@@ -1196,7 +1207,7 @@ void AtmosphereOutput::set_decompositions(const std::string& filename)
     // If none of the vars are decomposed on this grid,
     // then there's nothing to do here
     return;
-  } 
+  }
 
   // Set the decomposition for the partitioned dimension
   const int local_dim = m_io_grid->get_partitioned_dim_local_size();
@@ -1296,10 +1307,11 @@ Field AtmosphereOutput::
 get_field(const std::string& name, const std::string& mode) const
 {
   const auto field_mgr = get_field_manager(mode);
+  const auto gn = m_fm_grid_name.at(mode);
   const auto sim_field_mgr = get_field_manager("sim");
   const bool can_be_diag = field_mgr == sim_field_mgr;
-  if (field_mgr->has_field(name)) {
-    return field_mgr->get_field(name);
+  if (field_mgr->has_field(name, gn)) {
+    return field_mgr->get_field(name, gn);
   } else if (m_diagnostics.find(name) != m_diagnostics.end() && can_be_diag) {
     const auto& diag = m_diagnostics.at(name);
     return diag->get_diagnostic();
@@ -1313,9 +1325,10 @@ get_field(const std::string& name, const std::string& mode) const
 void AtmosphereOutput::set_diagnostics()
 {
   const auto sim_field_mgr = get_field_manager("sim");
+  const auto gn = m_fm_grid_name.at("sim");
   // Create all diagnostics
   for (auto& fname : m_fields_names) {
-    if (!sim_field_mgr->has_field(fname)) {
+    if (!sim_field_mgr->has_field(fname, gn)) {
       auto diag = create_diagnostic(fname);
       auto diag_fname = diag->get_diagnostic().name();
       m_diagnostics[diag_fname] = diag;
@@ -1333,7 +1346,8 @@ std::shared_ptr<AtmosphereDiagnostic>
 AtmosphereOutput::create_diagnostic (const std::string& diag_field_name)
 {
   // We need scream scope resolution, since this->create_diagnostic is hiding it
-  auto diag = scream::create_diagnostic(diag_field_name,get_field_manager("sim")->get_grid());
+  auto sim_grid = get_field_manager("sim")->get_grids_manager()->get_grid(m_fm_grid_name.at("sim"));
+  auto diag = scream::create_diagnostic(diag_field_name,sim_grid);
 
   // Some diags need some extra setup or trigger extra behaviors
   std::string diag_avg_cnt_name = "";
@@ -1358,9 +1372,10 @@ AtmosphereOutput::create_diagnostic (const std::string& diag_field_name)
 
   // Initialize the diagnostic
   const auto sim_field_mgr = get_field_manager("sim");
+  const auto gn = m_fm_grid_name.at("sim");
   for (const auto& freq : diag->get_required_field_requests()) {
     const auto& fname = freq.fid.name();
-    if (!sim_field_mgr->has_field(fname)) {
+    if (!sim_field_mgr->has_field(fname, gn)) {
       // This diag depends on another diag. Create and init the dependency
       if (m_diagnostics.count(fname)==0) {
         m_diagnostics[fname] = create_diagnostic(fname);

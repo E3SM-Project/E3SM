@@ -75,6 +75,10 @@ FieldTag FieldLayout::get_vector_tag () const {
   return m_tags[get_vector_component_idx()];
 }
 
+std::vector<std::string> FieldLayout::get_dim_names() const {
+  return m_names;
+}
+
 std::vector<int> FieldLayout::get_tensor_components_ids () const {
   EKAT_REQUIRE_MSG (is_tensor_layout(),
       "Error! 'get_tensor_dims' available only for tensor layouts.\n"

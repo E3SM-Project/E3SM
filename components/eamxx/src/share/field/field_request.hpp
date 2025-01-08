@@ -20,35 +20,6 @@ enum class Bundling : int {
   NotNeeded
 };
 
-// What's the relation of group A and group B. In particular, if group A is 'derived'
-// from group B, this enum explains how it is derived.
-//  - None: not a "derived" request
-//  - Import: group B is on a different grid than group A. This derivation type makes
-//            sure that there is a replica of B on the grid associated with A.
-//  - Copy: a hard copy of the group B is created, with only the "bundled" field being
-//          allocated, to avoid creating two copies of the samae field.
-//          This derivation type requires group A and group B to be on the *same* grid.
-//  - Superset: all fields in A also appear in B (the *same* fields)
-//  - Subset: all fields in B also appear in A (the *same* fields)
-enum class DerivationType : int {
-  None,
-  Import,
-  Copy,
-  Superset,
-  Subset
-};
-
-inline std::string e2str (const DerivationType rt) {
-  switch (rt) {
-    case DerivationType::None:      return "None";
-    case DerivationType::Import:    return "Import";
-    case DerivationType::Copy:      return "Copy";
-    case DerivationType::Subset:    return "Subset";
-    case DerivationType::Superset:  return "Superset";
-  }
-  return "INVALID";
-}
-
 /*
  * A struct used to request a group of fields.
  *
@@ -71,35 +42,11 @@ struct GroupRequest {
   //  - ps: the pack size that the allocation of the fields in the group
   //        (and the bundled field, if any) should accommodate (see field_alloc_prop.hpp)
   //  - bundling: whether the group should be bundled (see field_group.hpp)
-  //  - r: allows to specify specs of this request in terms of another.
-  //  - t: the relationshipt of group in request r compared to this one.
-  //       E.g.: t=Superset means r->name is a superset of group this->name.
-  //  - exclude: if t=Superset/Subset, this group contains all field in r, *except/plus* those in this list.
-  GroupRequest (const std::string& name_, const std::string& grid_, const int ps, const Bundling b,
-                const DerivationType rt, const std::string& src_name_, const std::string& src_grid_,
-                const std::list<std::string>& exclude_ = {})
-   : name(name_), grid(grid_), pack_size(ps), bundling(b), derived_type(rt)
+  GroupRequest (const std::string& name_, const std::string& grid_, const int ps, const Bundling b = Bundling::NotNeeded)
+   : name(name_), grid(grid_), pack_size(ps), bundling(b)
   {
     EKAT_REQUIRE_MSG(pack_size>=1, "Error! Invalid pack size request.\n");
-    if (rt!=DerivationType::None) {
-      src_name = src_name_;
-      src_grid = src_grid_;
-
-      EKAT_REQUIRE_MSG (src_grid==grid || rt==DerivationType::Import,
-          "Error! We only allow cross-grid group derivation if the derivation type is 'Import'.");
-
-      EKAT_REQUIRE_MSG (exclude_.size()==0 || rt==DerivationType::Subset,
-          "Error! You can only exclude fields when deriving a group from another if this group\n"
-          "       is a subset of the source group.\n");
-      exclude = exclude_;
-    }
   }
-
-  // Convenience ctors when some features are not needed
-  GroupRequest (const std::string& name_, const std::string& grid_,
-                const int ps, const Bundling b = Bundling::NotNeeded)
-   : GroupRequest(name_,grid_,ps,b,DerivationType::None,"","",{})
-  { /* Nothing to do here */ }
 
   GroupRequest (const std::string& name_, const std::string& grid_,
                 const Bundling b = Bundling::NotNeeded)
@@ -108,27 +55,12 @@ struct GroupRequest {
 
   // Default copy ctor is perfectly fine
   GroupRequest (const GroupRequest&) = default;
-  
+
   // Main parts of a group request
   std::string name;   // Group name
   std::string grid;   // Grid name
   int pack_size;      // Request an allocation that can accomodate Pack<Real,pack_size>
   Bundling bundling;  // Whether the group should be allocated as a single n+1 dimensional field
-
-  // The following members allow to specify a request in terms of another group.
-  // A possible use of this is when an atm proc wants to create G1 "excluding"
-  // some fields from G2, and have the remaining ones still contiguous in mem (i.e.,
-  // accessible with a bundled array). This will inform the FM to rearrange the fields
-  // in G2 so that the subset of fields that are in G1 appear contiguously.
-  // Another use is to create group G2 on grid B to contain the same fields of
-  // group G1 on grid A, without knowing what's in G1 a priori.
-  // See comments in FieldManager::registration_ends() for more details
-  // Note: derived_type is what *this group* is for $src_name. So, if derived_type=Subset,
-  //       then this group is a subset of the group $src_name.
-  DerivationType derived_type;
-  std::string src_name;
-  std::string src_grid;
-  std::list<std::string> exclude;  // Only for derived_type=Subset
 };
 
 // In order to use GroupRequest in std sorted containers (like std::set),
@@ -158,40 +90,12 @@ inline bool operator< (const GroupRequest& lhs,
   }
 
   // Same pack size, order by bundling
-  if (etoi(lhs.bundling)<etoi(rhs.bundling)) {
-    return true;
-  } else if (etoi(lhs.bundling)>etoi(rhs.bundling)) {
-    return false;
-  }
-
-  // Same bundling, order by derivation type
-  if (etoi(lhs.derived_type)<etoi(rhs.derived_type)) {
-    return true;
-  } else if (etoi(lhs.derived_type)<etoi(rhs.derived_type)) {
-    return false;
-  }
-
-  // Same derivation type, order by source group name
-  if (lhs.src_name<rhs.src_name) {
-    return true;
-  } else if (lhs.src_name>rhs.src_name) {
-    return false;
-  }
-
-  // Same souce group name, order by source group grid
-  if (lhs.src_grid<rhs.src_grid) {
-    return true;
-  } else if (lhs.src_grid>rhs.src_grid) {
-    return false;
-  }
-
-  // Same source group grid, order by exclude fields
-  return (lhs.exclude<rhs.exclude);
+  return etoi(lhs.bundling)<etoi(rhs.bundling);
 }
 
 /*
  * A struct used to request a field.
- * 
+ *
  * The request contains at least a FieldIdentifier, but can also contain
  * a pack size, and a list of names of groups that the field should belong to.
  */

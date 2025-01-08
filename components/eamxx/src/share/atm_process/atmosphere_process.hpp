@@ -358,9 +358,8 @@ protected:
   // Group requests
   template<RequestType RT>
   void add_group (const std::string& name, const std::string& grid, const int ps, const Bundling b,
-                  const DerivationType t, const std::string& src_name, const std::string& src_grid,
-                  const std::list<std::string>& excl = {})
-  { add_group<RT>(GroupRequest(name,grid,ps,b,t,src_name,src_grid,excl)); }
+                  const bool imported, const std::string& src_name, const std::string& src_grid)
+  { add_group<RT>(GroupRequest(name,grid,ps,b,imported,src_name,src_grid)); }
 
   template<RequestType RT>
   void add_group (const std::string& name, const std::string& grid_name,

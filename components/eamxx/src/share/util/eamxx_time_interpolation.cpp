@@ -8,10 +8,11 @@ namespace util {
 /*-----------------------------------------------------------------------------------------------*/
 // Constructors
 TimeInterpolation::TimeInterpolation(
-  const grid_ptr_type& grid 
+  const grid_ptr_type& grid
 )
 {
   // Given the grid initialize field managers to store interpolation data
+  m_grid_name = grid->name();
   m_fm_time0 = std::make_shared<FieldManager>(grid);
   m_fm_time1 = std::make_shared<FieldManager>(grid);
   m_fm_time0->registration_begins();
@@ -21,7 +22,7 @@ TimeInterpolation::TimeInterpolation(
 }
 /*-----------------------------------------------------------------------------------------------*/
 TimeInterpolation::TimeInterpolation(
-  const grid_ptr_type& grid, 
+  const grid_ptr_type& grid,
   const vos_type& list_of_files
 ) : TimeInterpolation(grid)
 {
@@ -68,8 +69,8 @@ void TimeInterpolation::perform_time_interpolation(const TimeStamp& time_in)
   // Cycle through all stored fields and conduct the time interpolation
   for (auto name : m_field_names)
   {
-    const auto& field0   = m_fm_time0->get_field(name);
-    const auto& field1   = m_fm_time1->get_field(name);
+    const auto& field0   = m_fm_time0->get_field(name, m_grid_name);
+    const auto& field1   = m_fm_time1->get_field(name, m_grid_name);
           auto field_out = m_interp_fields.at(name);
     field_out.deep_copy(field0);
     field_out.update(field1,weight1,weight0);
@@ -86,7 +87,7 @@ void TimeInterpolation::add_field(const Field& field_in, const bool store_shallo
 {
   // First check that we haven't already added a field with the same name.
   const std::string name = field_in.name();
-  EKAT_REQUIRE_MSG(!m_fm_time0->has_field(name) and !m_fm_time1->has_field(name),
+  EKAT_REQUIRE_MSG(!m_fm_time0->has_field(name, m_grid_name) and !m_fm_time1->has_field(name, m_grid_name),
 		  "Error!! TimeInterpolation:add_field, field + " << name << " has already been added." << "\n");
   EKAT_REQUIRE_MSG (field_in.data_type()==DataType::FloatType or field_in.data_type()==DataType::DoubleType,
       "[TimeInterpolation] Error! Input field must have floating-point data type.\n"
@@ -115,8 +116,8 @@ void TimeInterpolation::shift_data()
 {
   for (auto name : m_field_names)
   {
-    auto& field0 = m_fm_time0->get_field(name);
-    auto& field1 = m_fm_time1->get_field(name);
+    auto& field0 = m_fm_time0->get_field(name, m_grid_name);
+    auto& field1 = m_fm_time1->get_field(name, m_grid_name);
     std::swap(field0,field1);
   }
   m_file_data_atm_input->set_field_manager(m_fm_time1);
@@ -124,10 +125,10 @@ void TimeInterpolation::shift_data()
 /*-----------------------------------------------------------------------------------------------*/
 /* Function which will initialize the TimeStamps.
  * Input:
- *   ts_in - A timestamp to set both time0 and time1 to. 
+ *   ts_in - A timestamp to set both time0 and time1 to.
  *
  * At initialization we assume that only the first timestep of data has been set.  Subsequent
- * timesteps of data are added using update_data and then a call to update_timestamp will 
+ * timesteps of data are added using update_data and then a call to update_timestamp will
  * shift time0 to time1 and update time1.
  */
 void TimeInterpolation::initialize_timestamps(const TimeStamp& ts_in)
@@ -144,8 +145,8 @@ void TimeInterpolation::initialize_timestamps(const TimeStamp& ts_in)
 void TimeInterpolation::initialize_data_from_field(const Field& field_in)
 {
   const auto name = field_in.name();
-  auto field0 = m_fm_time0->get_field(name);
-  auto field1 = m_fm_time1->get_field(name);
+  auto field0 = m_fm_time0->get_field(name, m_grid_name);
+  auto field1 = m_fm_time1->get_field(name, m_grid_name);
   field0.deep_copy(field_in);
   field1.deep_copy(field_in);
   auto ts = field_in.get_header().get_tracking().get_time_stamp();
@@ -166,13 +167,13 @@ void TimeInterpolation::initialize_data_from_files()
   ekat::ParameterList input_params;
   input_params.set("Field Names",m_field_names);
   input_params.set("Filename",triplet_curr.filename);
-  m_file_data_atm_input = std::make_shared<AtmosphereInput>(input_params,m_fm_time1);
+  m_file_data_atm_input = std::make_shared<AtmosphereInput>(input_params,m_fm_time1,m_grid_name);
   m_file_data_atm_input->set_logger(m_logger);
   // Assign the mask value gathered from the FillValue found in the source file.
   // TODO: Should we make it possible to check if FillValue is in the metadata and only assign mask_value if it is?
   for (auto& name : m_field_names) {
-    auto& field0 = m_fm_time0->get_field(name);
-    auto& field1 = m_fm_time1->get_field(name);
+    auto& field0 = m_fm_time0->get_field(name, m_grid_name);
+    auto& field1 = m_fm_time1->get_field(name, m_grid_name);
     auto& field_out = m_interp_fields.at(name);
 
     auto set_fill_value = [&](const auto var_fill_value) {
@@ -243,13 +244,13 @@ void TimeInterpolation::update_timestamp(const TimeStamp& ts_in)
 void TimeInterpolation::update_data_from_field(const Field& field_in)
 {
   const auto name = field_in.name();
-  auto& field0 = m_fm_time0->get_field(name);
-  auto& field1 = m_fm_time1->get_field(name);
+  auto& field0 = m_fm_time0->get_field(name, m_grid_name);
+  auto& field1 = m_fm_time1->get_field(name, m_grid_name);
   std::swap(field0,field1);
   // Now that we have swapped field0 and field 1 we need to grab field 1 from the field manager again.
   // Alternatively we could just update `field0` which is now inside m_fm_time1, but choosing this
   // approach for code readability.
-  auto& field1_new = m_fm_time1->get_field(name);
+  auto& field1_new = m_fm_time1->get_field(name, m_grid_name);
   field1_new.deep_copy(field_in);
 }
 /*-----------------------------------------------------------------------------------------------*/
@@ -317,8 +318,8 @@ void TimeInterpolation::set_file_data_triplets(const vos_type& list_of_files) {
       }
       auto time = ts_snap.seconds_from(ts_ref);
       // Sanity check that we don't have multiples of the same timesnap
-      EKAT_REQUIRE_MSG(map_of_times_to_vector_idx.count(time)==0,"Error! TimeInterpolation::set_file_data_triplets - The same time step has been encountered more than once in the data files, please check\n"  
-		      << "    TimeStamp: " << ts_snap.to_string() << "\n"  
+      EKAT_REQUIRE_MSG(map_of_times_to_vector_idx.count(time)==0,"Error! TimeInterpolation::set_file_data_triplets - The same time step has been encountered more than once in the data files, please check\n"
+		      << "    TimeStamp: " << ts_snap.to_string() << "\n"
 		      << "     Filename: " << filename << "\n");
       map_of_times_to_vector_idx.emplace(time,running_idx);
       filenames_tmp.push_back(filename);
@@ -340,7 +341,7 @@ void TimeInterpolation::set_file_data_triplets(const vos_type& list_of_files) {
   }
   // Finally set the iterator to point to the first triplet.
   m_triplet_idx = 0;
-}	
+}
 /*-----------------------------------------------------------------------------------------------*/
 /* Function to read a new set of data from file using the current iterator pointing to the current
  * DataFromFileTriplet.
@@ -353,12 +354,12 @@ void TimeInterpolation::read_data()
     ekat::ParameterList input_params;
     input_params.set("Field Names",m_field_names);
     input_params.set("Filename",triplet_curr.filename);
-    m_file_data_atm_input = std::make_shared<AtmosphereInput>(input_params,m_fm_time1);
+    m_file_data_atm_input = std::make_shared<AtmosphereInput>(input_params,m_fm_time1,m_grid_name);
     m_file_data_atm_input->set_logger(m_logger);
     // Also determine the FillValue, if used
     // TODO: Should we make it possible to check if FillValue is in the metadata and only assign mask_value if it is?
     for (auto& name : m_field_names) {
-      auto& field = m_fm_time1->get_field(name);
+      auto& field = m_fm_time1->get_field(name, m_grid_name);
       const auto dt = field.data_type();
       if (dt==DataType::FloatType) {
         auto var_fill_value = scorpio::get_attribute<float>(triplet_curr.filename,name,"_FillValue");
@@ -398,7 +399,7 @@ void TimeInterpolation::check_and_update_data(const TimeStamp& ts_in)
     // The timestamp is out of bounds, need to load new data.
     // First cycle through the DataFromFileTriplet's to find a timestamp that is greater than this one.
     bool found = false;
-    int step_cnt = 0; // Track how many triplets we passed to find one that worked. 
+    int step_cnt = 0; // Track how many triplets we passed to find one that worked.
     while (m_triplet_idx < static_cast<int>(m_file_data_triplets.size())) {
       ++m_triplet_idx;
       ++step_cnt;
