@@ -580,8 +580,6 @@ CONTAINS
     real(R8)      :: RSO_Tdeep             ! deep water temperature [K]
     real(R8)      :: RSO_dT_o              ! scaling temperature gradient
     real(R8)      :: RSO_h_o               ! scaling mixed layer depth
-    ! real(R8)      :: RSO_relax_tau         ! relaxation timescale [sec]
-    ! real(R8)      :: RSO_fixed_MLD         ! globally fixed mixed layer depth (MLD)
     real(R8)      :: u10                   ! 10 m wind
     character(len=18) :: date_str
     character(len=CL) :: local_case_name
@@ -819,16 +817,16 @@ CONTAINS
             u10 = SQRT(x2o%rAttr(k10uu,n))
             !*******************************************************************
             ! RSO parameter values
-            RSO_slab_option = 0           ! Option for setting RSO_X_cool
-            RSO_R_cool      = 11.75/86400 ! base cooling rate [K/s]
-            RSO_Tdeep       = 271.00      ! deep water temperature [K]
-            RSO_dT_o        = 27.0        ! scaling temperature gradient
-            RSO_h_o         = 30.0        ! scaling mixed layer depth
+            RSO_slab_option = 0                  ! Option for setting RSO_X_cool
+            RSO_R_cool      = 11.75_r8/86400._r8 ! base cooling rate [K/s]
+            RSO_Tdeep       = 271.00             ! deep water temperature [K]
+            RSO_dT_o        = 27.0               ! scaling temperature gradient
+            RSO_h_o         = 30.0               ! scaling mixed layer depth
             !*******************************************************************
             ! Calculate scaling function - see Eq 3 in Zarzycki (2016)
-            if (RSO_slab_option==0) RSO_X_cool = 1/(1+EXP(-0.5*(u10-30)) )               ! SLAB1
-            if (RSO_slab_option==1) RSO_X_cool =(1/(1+EXP(-0.2*(u10-30)) ))*(u10*2.4/80) ! SLAB2
-            if (RSO_slab_option==2) RSO_X_cool = 0.0                                     ! THERMO
+            if (RSO_slab_option==0) RSO_X_cool = 1._r8/(1._r8+EXP(-0.5_r8*(u10-30._r8)) )                      ! SLAB1
+            if (RSO_slab_option==1) RSO_X_cool =(1._r8/(1._r8+EXP(-0.2_r8*(u10-30._r8)) ))*(u10*2.4_r8/80._r8) ! SLAB2
+            if (RSO_slab_option==2) RSO_X_cool = 0.0                                                           ! THERMO
             !*******************************************************************
             ! compute new ocean surface temperature
             o2x%rAttr(kt,n) = somtp(n) &
@@ -842,7 +840,7 @@ CONTAINS
                                 -x2o%rAttr(krofi ,n)*latice & ! latent heat from runoff
                               ) * dt/(cpsw*rhosw*hn) & 
                               - RSO_X_cool*RSO_R_cool*((somtp(n)-RSO_Tdeep)/RSO_dT_o)*(RSO_h_o/hn)*dt & ! Turb mixing
-                              + (1/RSO_relax_tau)*(RSO_bckgrd_sst - somtp(n))*dt ! Newtonian Relaxation
+                              + (1_r8/RSO_relax_tau)*(RSO_bckgrd_sst - somtp(n))*dt ! Newtonian Relaxation
             !*******************************************************************
             ! Ignore ice formed or melt potential
             o2x%rAttr(kq,n) = 0.0
