@@ -596,7 +596,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../Data-Models/user-guide/data-atmos-main/" class="md-nav__link">
+      <a href="../../../../Data-Models/user-guide/data-atmos/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -617,7 +617,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../Data-Models/user-guide/data-land-main/" class="md-nav__link">
+      <a href="../../../../Data-Models/user-guide/data-land/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -638,7 +638,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../Data-Models/user-guide/data-ocean-main/" class="md-nav__link">
+      <a href="../../../../Data-Models/user-guide/data-ocean/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3037,7 +3037,7 @@ ConvertMeshToSCRIP<span class="w"> </span>--in<span class="w"> </span><span clas
 <p>Below is some example python code to generate a "feathered" refined region around a given central point. The resulting numpy array can then be plotted with your preferred plotting library (ex. matplotlib, pyngl)</p>
 <!-- no-inline-html --><details>
   <summary>generate_RRM_png_feathered.py</summary>
-    <div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">ngl</span><span class="o">,</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span><span class="o">,</span> <span class="nn">xarray</span> <span class="k">as</span> <span class="nn">xr</span>
+    <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">os</span><span class="o">,</span><span class="w"> </span><span class="nn">ngl</span><span class="o">,</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span><span class="o">,</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
 <span class="n">target_lat</span><span class="p">,</span> <span class="n">target_lon</span> <span class="o">=</span> <span class="mf">39.7392</span><span class="p">,</span> <span class="mi">360</span><span class="o">-</span><span class="mf">104.9903</span> <span class="c1"># Denver, CO</span>
 <span class="c1">#-------------------------------------------------------------------------------</span>
 <span class="n">scrip_ds</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">open_dataset</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s1">&#39;HOME&#39;</span><span class="p">)</span><span class="o">+</span><span class="s1">&#39;/E3SM/data_grid/ne30pg2_scrip.nc&#39;</span><span class="p">)</span>
@@ -3045,7 +3045,7 @@ ConvertMeshToSCRIP<span class="w"> </span>--in<span class="w"> </span><span clas
 <span class="n">deg_to_rad</span><span class="p">,</span><span class="n">rad_to_deg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mf">180.</span><span class="p">,</span> <span class="mf">180.</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span>
 <span class="c1">#-------------------------------------------------------------------------------</span>
 <span class="c1"># method for calculating the length of great circle arcs</span>
-<span class="k">def</span> <span class="nf">calc_great_circle_distance</span><span class="p">(</span><span class="n">lat1</span><span class="p">,</span><span class="n">lat2</span><span class="p">,</span><span class="n">lon1</span><span class="p">,</span><span class="n">lon2</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">calc_great_circle_distance</span><span class="p">(</span><span class="n">lat1</span><span class="p">,</span><span class="n">lat2</span><span class="p">,</span><span class="n">lon1</span><span class="p">,</span><span class="n">lon2</span><span class="p">):</span>
 <span class="w">  </span><span class="sd">&#39;&#39;&#39; input should be in degrees &#39;&#39;&#39;</span>
   <span class="n">dlon</span> <span class="o">=</span> <span class="n">lon2</span> <span class="o">-</span> <span class="n">lon1</span>
   <span class="n">cos_dist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">lat1</span><span class="o">*</span><span class="n">deg_to_rad</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">lat2</span><span class="o">*</span><span class="n">deg_to_rad</span><span class="p">)</span> <span class="o">+</span> \
@@ -3057,7 +3057,7 @@ ConvertMeshToSCRIP<span class="w"> </span>--in<span class="w"> </span><span clas
   <span class="k">return</span> <span class="n">dist</span>
 <span class="c1">#-------------------------------------------------------------------------------</span>
 <span class="c1"># method for defining a feathered refinement region</span>
-<span class="k">def</span> <span class="nf">define_refinement</span><span class="p">(</span> <span class="n">ncol</span><span class="p">,</span> <span class="n">dmin</span><span class="p">,</span> <span class="n">dmax</span><span class="p">,</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">define_refinement</span><span class="p">(</span> <span class="n">ncol</span><span class="p">,</span> <span class="n">dmin</span><span class="p">,</span> <span class="n">dmax</span><span class="p">,</span>
                       <span class="n">target_lat</span><span class="p">,</span> <span class="n">target_lon</span><span class="p">,</span>
                       <span class="n">center_lat</span><span class="p">,</span> <span class="n">center_lon</span><span class="p">,</span>
                       <span class="n">refine_level</span><span class="p">):</span>
@@ -3139,7 +3139,7 @@ ConvertMeshToSCRIP<span class="w"> </span>--in<span class="w"> </span><span clas
   <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="si">{</span><span class="n">fig_file</span><span class="si">}</span><span class="s1">.png does not exist?!</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
 <span class="c1">#-------------------------------------------------------------------------------</span>
 <span class="c1"># apply gaussian blur</span>
-<span class="kn">from</span> <span class="nn">PIL</span> <span class="kn">import</span> <span class="n">Image</span><span class="p">,</span> <span class="n">ImageFilter</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span><span class="p">,</span> <span class="n">ImageFilter</span>
 <span class="n">image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">fig_file</span><span class="si">}</span><span class="s1">.png&#39;</span><span class="p">)</span>
 <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nsmooth</span><span class="p">):</span> <span class="n">image</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">ImageFilter</span><span class="o">.</span><span class="n">GaussianBlur</span><span class="p">(</span><span class="n">radius</span><span class="o">=</span><span class="mi">6</span><span class="p">))</span>
 <span class="n">image</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">fig_file</span><span class="si">}</span><span class="s1">.png&#39;</span><span class="p">)</span>
@@ -3152,7 +3152,7 @@ ConvertMeshToSCRIP<span class="w"> </span>--in<span class="w"> </span><span clas
 <p>The next example creates a refinement region based on land fraction.</p>
 <details>
   <summary>generate_RRM_png_landfrac.py</summary>
-    <div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">ngl</span><span class="o">,</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span><span class="o">,</span> <span class="nn">xarray</span> <span class="k">as</span> <span class="nn">xr</span>
+    <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">os</span><span class="o">,</span><span class="w"> </span><span class="nn">ngl</span><span class="o">,</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span><span class="o">,</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
 <span class="n">refine_level</span> <span class="o">=</span> <span class="mi">1</span>
 <span class="n">nsmooth</span>      <span class="o">=</span> <span class="mi">4</span>
 <span class="n">land_data_file</span> <span class="o">=</span> <span class="s1">&#39;inputdata/atm/cam/topo/USGS-gtopo30_0.9x1.25_remap_c051027.nc&#39;</span>
@@ -3205,7 +3205,7 @@ ConvertMeshToSCRIP<span class="w"> </span>--in<span class="w"> </span><span clas
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">refine_png_file: </span><span class="si">{</span><span class="n">refine_png_file</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
 <span class="c1">#-------------------------------------------------------------------------------</span>
 <span class="c1"># more smoothing via gaussian blur from the pillow package</span>
-<span class="kn">from</span> <span class="nn">PIL</span> <span class="kn">import</span> <span class="n">Image</span><span class="p">,</span> <span class="n">ImageFilter</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span><span class="p">,</span> <span class="n">ImageFilter</span>
 <span class="n">image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">refine_png_file</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
 <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nsmooth</span><span class="p">):</span> <span class="n">image</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">ImageFilter</span><span class="o">.</span><span class="n">GaussianBlur</span><span class="p">(</span><span class="n">radius</span><span class="o">=</span><span class="mi">3</span><span class="p">))</span>
 <span class="n">image</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">refine_png_file</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
