@@ -55,6 +55,8 @@ OPTIONS
      -ninst_glc            NINST_GLC for this case
      -mali_dynamic         turns on dynamic ice sheet mode
                            Options are: FALSE, TRUE
+     -ocn2glc_shelf_mode   mode for OCN2GLC ice-shelf coupling
+                           Options are: 'coupler', 'glc'
 
 NOTE: The precedence for setting the values of namelist variables is (highest to lowest):
       1. namelist values set by specific command-line options, i.e. (none right now)
@@ -100,6 +102,7 @@ my %opts = ( help              => 0,
              ntasks_glc        => 0,
              ninst_glc         => 0,
              mali_dynamic      => undef,
+             ocn2glc_shelf_mode=> undef,
            );
 
 GetOptions(
@@ -119,6 +122,7 @@ GetOptions(
     "ntasks_glc=i"        => \$opts{'ntasks_glc'},
     "ninst_glc=i"         => \$opts{'ninst_glc'},
     "mali_dynamic=s"      => \$opts{'mali_dynamic'},
+    "ocn2glc_shelf_mode=s"=> \$opts{'ocn2glc_shelf_mode'},
 
 )  or usage();
 
@@ -154,6 +158,7 @@ $cfgdir               = $opts{'cfg_dir'};
 my $NINST_GLC         = $opts{'ninst_glc'};
 my $NTASKS_GLC        = $opts{'ntasks_glc'};
 my $MALI_DYNAMIC      = uc($opts{'mali_dynamic'});
+my $OCN2GLC_SHELF_MODE= uc($opts{'ocn2glc_shelf_mode'});
 
 my $CIMEROOT;
 if ( defined $opts{'cimeroot'} ) {
@@ -413,7 +418,7 @@ my $ntasks = $NTASKS_GLC / $NINST_GLC;
 print "MALI build-namelist: glc_grid is $GLC_GRID \n";
 print "MALI build-namelist: MALI_DYNAMIC is $MALI_DYNAMIC \n";
 print "MALI build-namelist: MALI_USE_ALBANY is $MALI_USE_ALBANY \n";
-print "MALI build-namelist: MALI_ICESHEET_COUPLING_MODE is $MALI_ICESHEET_COUPLING_MODE \n";
+print "MALI build-namelist: OCN2GLC_SHELF_MODE is $OCN2GLC_SHELF_MODE \n";
 
 (-d $DIN_LOC_ROOT)  or mkdir $DIN_LOC_ROOT;
 if ($print>=2) { print "CESM inputdata root directory: $DIN_LOC_ROOT$eol"; }
@@ -535,7 +540,7 @@ add_default($nl, 'config_max_water_fraction');
 # Namelist group: iceshelf_melt #
 #################################
 
-add_default($nl, 'config_basal_mass_bal_float', 'mali_icesheet_coupling_mode'=>"$MALI_ICESHEET_COUPLING_MODE");
+add_default($nl, 'config_basal_mass_bal_float', 'ocn2glc_shelf_mode'=>"$OCN2GLC_SHELF_MODE");
 add_default($nl, 'config_bmlt_float_flux');
 add_default($nl, 'config_bmlt_float_xlimit');
 add_default($nl, 'config_basal_mass_bal_seroussi_amplitude');

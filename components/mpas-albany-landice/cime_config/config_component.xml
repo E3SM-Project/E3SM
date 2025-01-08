@@ -22,25 +22,25 @@
     <desc>MALI configure options. Currently not used</desc>
   </entry>
 
-  <entry id="MALI_ICESHEET_COUPLING_MODE">
+  <entry id="OCN2GLC_SHELF_MODE">
     <type>char</type>
-    <valid_values>AIS,GIS</valid_values>
-    <default_value>AIS</default_value>
+    <valid_values>coupler,glc</valid_values>
+    <default_value>coupler</default_value>
     <values>
-      <value compset="_MALI%AIS">AIS</value>
-      <value compset="_MALI%GIS">GIS</value>
+      <value compset="_MALI%AIS">coupler</value>
+      <value compset="_MALI%GIS">glc</value>
     </values>
     <group>case_comp</group>
     <file>env_case.xml</file>
-    <desc>Selection of which ice sheet, Antarctica or Greenland,
-      that MALI physics setting and coupling should be configured
-      ais=Antarctic Ice Sheet, gis=Greenland Ice Sheet
-      In ais mode, ice-shelf basal melting is calculated in the
-      coupler based on the state from the ocean model.
-      In gis mode, ice-shelf basal melting and facemelting are
-      calculated in MALI using the ISMIP6 parameterizations
-      forced by ocean thermal forcing passed from the ocean model
-      through the coupler.
+    <desc>Selection of mode for how ocn2glc_shelf coupling.
+      'coupler' indicates ice-shelf basal melt fluxes should
+      be calculated in the coupler based on the ocean state
+      and ice-sheet geometry.  The coupler will pass the melt
+      and heat fluxes to both OCN and GLC>
+      'tf' indicates thermal forcing should be passed from OCN to
+      GLC and GLC should calculate ice-shelf basal melt fluxes based
+      on a TF-based parameterization and then pass the melt and heat
+      fluxes back to OCN.
     </desc>
   </entry>
 

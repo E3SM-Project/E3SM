@@ -95,7 +95,7 @@ add_default($nl, 'config_max_water_fraction');
 # Namelist group: iceshelf_melt #
 #################################
 
-add_default($nl, 'config_basal_mass_bal_float', 'mali_icesheet_coupling_mode'=>"$MALI_ICESHEET_COUPLING_MODE");
+add_default($nl, 'config_basal_mass_bal_float', 'ocn2glc_shelf_mode'=>"$OCN2GLC_SHELF_MODE");
 add_default($nl, 'config_bmlt_float_flux');
 add_default($nl, 'config_bmlt_float_xlimit');
 add_default($nl, 'config_basal_mass_bal_seroussi_amplitude');

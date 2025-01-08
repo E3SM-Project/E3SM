@@ -80,8 +80,8 @@
 <config_max_water_fraction>1.0e-2</config_max_water_fraction>
 
 <!-- iceshelf_melt -->
-<config_basal_mass_bal_float mali_icesheet_coupling_mode="AIS">'file'</config_basal_mass_bal_float>
-<config_basal_mass_bal_float mali_icesheet_coupling_mode="GIS">'ismip6'</config_basal_mass_bal_float>
+<config_basal_mass_bal_float ocn2glc_shelf_mode="coupler">'file'</config_basal_mass_bal_float>
+<config_basal_mass_bal_float ocn2glc_shelf_mode="glc">'ismip6'</config_basal_mass_bal_float>
 <config_bmlt_float_flux>0.0</config_bmlt_float_flux>
 <config_bmlt_float_xlimit>0.0</config_bmlt_float_xlimit>
 <config_basal_mass_bal_seroussi_amplitude>0.0</config_basal_mass_bal_seroussi_amplitude>
