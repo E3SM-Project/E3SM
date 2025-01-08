@@ -89,8 +89,8 @@ TEST_CASE ("eamxx_time_interpolation_simple") {
   // Construct a time interpolation object and add all of the fields to it.
   printf(  "Constructing a time interpolation object ...\n");
   util::TimeInterpolation time_interpolator(grid);
-  for (auto ff_pair = fields_man_t0->begin(); ff_pair != fields_man_t0->end(); ff_pair++) {
-    const auto ff   = ff_pair->second;
+  for (auto ff_pair : fields_man_t0->get_repo(grid->name())) {
+    const auto ff   = ff_pair.second;
     time_interpolator.add_field(*ff);
     time_interpolator.initialize_data_from_field(*ff);
   }
@@ -103,9 +103,9 @@ TEST_CASE ("eamxx_time_interpolation_simple") {
   auto slope = my_pdf(engine);
   auto fields_man_tf = get_fm(grid, t0, seed);
   auto t1 = t0 + 10*dt;
-  for (auto ff_pair = fields_man_tf->begin(); ff_pair != fields_man_tf->end(); ff_pair++)
+  for (auto ff_pair : fields_man_tf->get_repo(grid->name()))
   {
-    auto  ff = ff_pair->second;
+    auto  ff = ff_pair.second;
     update_field_data(slope, t1.seconds_from(t0), *ff);
     time_interpolator.update_data_from_field(*ff);
   }
@@ -122,10 +122,10 @@ TEST_CASE ("eamxx_time_interpolation_simple") {
     t1 += dt;
     printf("                        ... t = %s\n",t1.to_string().c_str());
     time_interpolator.perform_time_interpolation(t1);
-    for (auto ff_pair = fields_man_test->begin(); ff_pair != fields_man_test->end(); ff_pair++)
+    for (auto ff_pair : fields_man_test->get_repo(grid->name()))
     {
-      const auto name = ff_pair->first;
-      auto ff = ff_pair->second;
+      const auto name = ff_pair.first;
+      auto ff = ff_pair.second;
       update_field_data(slope, dt, *ff);
       REQUIRE(views_are_approx_equal(*ff,time_interpolator.get_field(name),tol));
     }
@@ -158,7 +158,7 @@ TEST_CASE ("eamxx_time_interpolation_data_from_file") {
   auto fields_man_t0 = get_fm(grid, t0, seed);
   auto fields_man_deep = get_fm(grid, t0, seed);  // A field manager for checking deep copies.
   std::vector<std::string> fnames;
-  for (auto it : *fields_man_t0) {
+  for (auto it : fields_man_t0->get_repo(grid->name())) {
     fnames.push_back(it.second->name());
   }
   printf("   - Fields Manager...DONE\n");
@@ -172,8 +172,8 @@ TEST_CASE ("eamxx_time_interpolation_data_from_file") {
   util::TimeInterpolation time_interpolator(grid,list_of_files);
   util::TimeInterpolation time_interpolator_deep(grid,list_of_files);
   for (auto name : fnames) {
-    auto ff      = fields_man_t0->get_field(name);
-    auto ff_deep = fields_man_deep->get_field(name);
+    auto ff      = fields_man_t0->get_field(name,grid->name());
+    auto ff_deep = fields_man_deep->get_field(name,grid->name());
     time_interpolator.add_field(ff);
     time_interpolator_deep.add_field(ff_deep,true);
   }
@@ -200,10 +200,10 @@ TEST_CASE ("eamxx_time_interpolation_data_from_file") {
     if (nn > 0) {
       const Real slope = ((nn-1) / slope_freq) + 1;
       for (auto name : fnames) {
-        auto field = fields_man_t0->get_field(name);
+        auto field = fields_man_t0->get_field(name,grid->name());
         update_field_data(slope,dt,field);
 	// We set the deep copy fields to wrong values to stress test that everything still works.
-	auto field_deep = fields_man_deep->get_field(name);
+	auto field_deep = fields_man_deep->get_field(name,grid->name());
 	field_deep.deep_copy(-9999.0);
       }
     }
@@ -211,8 +211,8 @@ TEST_CASE ("eamxx_time_interpolation_data_from_file") {
     time_interpolator_deep.perform_time_interpolation(ts);
     // Now compare the interp_fields to the fields in the field manager which should be updated.
     for (auto name : fnames) {
-      auto field      = fields_man_t0->get_field(name);
-      auto field_deep = fields_man_deep->get_field(name);
+      auto field      = fields_man_t0->get_field(name,grid->name());
+      auto field_deep = fields_man_deep->get_field(name,grid->name());
       // Check that the shallow copies match the expected values
       REQUIRE(views_are_approx_equal(field,time_interpolator.get_field(name),tol));
       // Check that the deep fields which were not updated directly are the same as the ones stored in the time interpolator.
@@ -373,6 +373,8 @@ std::vector<std::string> create_test_data_files(
 	       	const int seed)
 {
   // We initialize a local field manager to use for output
+  auto grid = gm->get_grid("Point Grid");
+  const auto gn = grid->name();
   auto fm = get_fm(gm->get_grid("Point Grid"), t0, seed);
   // We will write data for 10 snaps for this test.  We set the max snaps per file to 3 to
   // ensure that a) there is more than 1 file and b) at least one file has fewer snap then
@@ -380,7 +382,7 @@ std::vector<std::string> create_test_data_files(
   const int max_steps      = snap_freq*total_snaps;
   // Gather the set of fields from the field manager
   std::vector<std::string> fnames;
-  for (auto it : *fm) {
+  for (auto it : fm->get_repo(gn)) {
     fnames.push_back(it.second->name());
   }
   // Create the output parameters
@@ -397,7 +399,7 @@ std::vector<std::string> create_test_data_files(
   // the list of files created by the output manager.
   OutputManager4Test om;
   om.initialize(comm,om_pl,t0,false);
-  om.setup(fm,gm);
+  om.setup(fm,gm->get_grid_names());
 
   // Time loop to create and write data
   auto tw = t0;
@@ -407,7 +409,7 @@ std::vector<std::string> create_test_data_files(
     const Real slope = (nn / slope_freq) + 1;
     // Update Fields
     for (auto ff : fnames) {
-      auto field = fm->get_field(ff);
+      auto field = fm->get_field(ff, gn);
       update_field_data(slope,dt,field);
     }
     // Run output manager

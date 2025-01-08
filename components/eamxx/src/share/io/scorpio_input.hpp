@@ -37,7 +37,7 @@
 namespace scream
 {
 
-class AtmosphereInput 
+class AtmosphereInput
 {
 public:
   using fm_type       = FieldManager;
@@ -52,7 +52,8 @@ public:
   // NOTE: non-trivial constructors simply call the corresponding init method
   AtmosphereInput () = default;
   AtmosphereInput (const ekat::ParameterList& params,
-                   const std::shared_ptr<const fm_type>& field_mgr);
+                   const std::shared_ptr<const fm_type>& field_mgr,
+                   const std::string& grid_name);
   AtmosphereInput (const ekat::ParameterList& params,
                    const std::shared_ptr<const grid_type>& grid,
                    const std::map<std::string,view_1d_host>& host_views_1d,
@@ -76,11 +77,13 @@ public:
   // --- Methods --- //
   // Initialize the class for reading into FieldManager-owned fields.
   //  - params: input parameters (must contain at least "Filename")
+  //  - grid_name: name of the grid where FM fields will be read to
   //  - field_mgr: the FieldManager containing the Field's where the
   //               variables from the input filed will be read into.
   //               Fields can be padded/strided.
   void init (const ekat::ParameterList& params,
-             const std::shared_ptr<const fm_type>& field_mgr);
+             const std::shared_ptr<const fm_type>& field_mgr,
+             const std::string& grid_name);
 
   // Initialize the class for reading into user-provided flattened 1d host views.
   //  - params: input parameters (must contain at least "Filename")
@@ -131,7 +134,7 @@ protected:
 
   std::map<std::string, view_1d_host>   m_host_views_1d;
   std::map<std::string, FieldLayout>    m_layouts;
-  
+
   std::string               m_filename;
   std::vector<std::string>  m_fields_names;
 

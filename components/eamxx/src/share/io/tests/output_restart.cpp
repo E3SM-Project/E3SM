@@ -33,15 +33,17 @@ std::shared_ptr<FieldManager>
 get_test_fm(const std::shared_ptr<const AbstractGrid>& grid);
 
 std::shared_ptr<FieldManager>
-clone_fm (const std::shared_ptr<const FieldManager>& fm);
+clone_fm (const std::shared_ptr<const FieldManager>& fm,
+          const std::string& gn);
 
 std::shared_ptr<GridsManager>
 get_test_gm(const ekat::Comm& comm, const Int num_gcols, const Int num_levs);
 
 template<typename Engine>
-void randomize_fields (const FieldManager& fm, Engine& engine);
+void randomize_fields (const FieldManager& fm, const std::string& gn, Engine& engine);
 
 void time_advance (const FieldManager& fm,
+                   const std::string& gn,
                    const std::list<ekat::CaseInsensitiveString>& fnames,
                    const int dt);
 
@@ -63,7 +65,7 @@ TEST_CASE("output_restart","io")
 
   // The the IC field manager
   auto fm0 = get_test_fm(grid);
-  randomize_fields(*fm0,engine);
+  randomize_fields(*fm0,grid->name(),engine);
 
   const auto& out_fields = fm0->get_groups_info().at("output")->m_fields_names;
 
@@ -94,14 +96,14 @@ TEST_CASE("output_restart","io")
   {
     OutputManager output_manager;
     output_manager.initialize(comm, output_params, run_t0, case_t0, false);
-    output_manager.setup(fm,gm);
+    output_manager.setup(fm,gm->get_grid_names());
 
     // We advance the fields, by adding dt to each entry of the fields at each time step
     // The output restart data is written every 5 time steps, while the output freq is 10.
     auto time = run_t0;
     for (int i=0; i<nsteps; ++i) {
       output_manager.init_timestep(time,dt);
-      time_advance(*fm,out_fields,dt);
+      time_advance(*fm,grid->name(),out_fields,dt);
       time += dt;
       output_manager.run(time);
     }
@@ -129,13 +131,13 @@ TEST_CASE("output_restart","io")
     output_params.set<std::string>("Averaging Type",avg_type);
 
     // 1. Run for full 20 days, no restarts needed
-    auto fm_mono = clone_fm(fm0);
+    auto fm_mono = clone_fm(fm0,grid->name());
     output_params.set<std::string>("filename_prefix","monolithic");
     output_params.sublist("Checkpoint Control").set<std::string>("frequency_units","never");
     run(fm_mono,t0,t0,20);
 
     // 2. Run for 15 days on fm0, write restart every 5 steps
-    auto fm_rest = clone_fm(fm0);
+    auto fm_rest = clone_fm(fm0,grid->name());
     output_params.set<std::string>("filename_prefix","restarted");
     output_params.sublist("Checkpoint Control").set<std::string>("frequency_units","nsteps");
     run(fm_rest,t0,t0,15);
@@ -192,21 +194,22 @@ get_test_fm(const std::shared_ptr<const AbstractGrid>& grid)
 
   // Initialize fields to -1.0, and set initial time stamp
   util::TimeStamp time ({2000,1,1},{0,0,0});
-  fm->init_fields_time_stamp(time);
+  fm->init_fields_time_stamp(time,grid->name());
   for (const auto& fn : {"field_1","field_2","field_3","field_4","field_5"} ) {
-    fm->get_field(fn).deep_copy(-1.0);
-    fm->get_field(fn).sync_to_host();
+    fm->get_field(fn,grid->name()).deep_copy(-1.0);
+    fm->get_field(fn,grid->name()).sync_to_host();
   }
 
   return fm;
 }
 
 std::shared_ptr<FieldManager>
-clone_fm(const std::shared_ptr<const FieldManager>& src) {
-  auto copy = std::make_shared<FieldManager>(src->get_grid());
+clone_fm(const std::shared_ptr<const FieldManager>& src,
+         const std::string& gn) {
+  auto copy = std::make_shared<FieldManager>(src->get_grids_manager()->get_grid(gn));
   copy->registration_begins();
   copy->registration_ends();
-  for (auto it : *src) {
+  for (auto it : src->get_repo(gn)) {
     copy->add_field(it.second->clone());
   }
 
@@ -215,17 +218,17 @@ clone_fm(const std::shared_ptr<const FieldManager>& src) {
 
 /*=================================================================================================*/
 template<typename Engine>
-void randomize_fields (const FieldManager& fm, Engine& engine)
+void randomize_fields (const FieldManager& fm, const std::string& gn, Engine& engine)
 {
   using RPDF = std::uniform_real_distribution<Real>;
   RPDF pdf(0.01,0.99);
 
   // Initialize these fields
-  const auto& f1 = fm.get_field("field_1");
-  const auto& f2 = fm.get_field("field_2");
-  const auto& f3 = fm.get_field("field_3");
-  const auto& f4 = fm.get_field("field_4");
-  const auto& f5 = fm.get_field("field_5");
+  const auto& f1 = fm.get_field("field_1", gn);
+  const auto& f2 = fm.get_field("field_2", gn);
+  const auto& f3 = fm.get_field("field_3", gn);
+  const auto& f4 = fm.get_field("field_4", gn);
+  const auto& f5 = fm.get_field("field_5", gn);
   randomize(f1,engine,pdf);
   randomize(f2,engine,pdf);
   randomize(f3,engine,pdf);
@@ -243,10 +246,11 @@ get_test_gm(const ekat::Comm& comm, const Int num_gcols, const Int num_levs)
 }
 /*===================================================================================================*/
 void time_advance (const FieldManager& fm,
+                   const std::string& gn,
                    const std::list<ekat::CaseInsensitiveString>& fnames,
                    const int dt) {
   for (const auto& fname : fnames) {
-    auto f  = fm.get_field(fname);
+    auto f  = fm.get_field(fname, gn);
     f.sync_to_host();
     auto fl = f.get_header().get_identifier().get_layout();
     switch (fl.rank()) {
@@ -298,13 +302,14 @@ void time_advance (const FieldManager& fm,
 }
 
 std::shared_ptr<FieldManager>
-backup_fm (const std::shared_ptr<FieldManager>& src_fm)
+backup_fm (const std::shared_ptr<FieldManager>& src_fm,
+           const std::string& gn)
 {
   // Now, create a copy of the field manager current status, for comparisong
-  auto dst_fm = get_test_fm(src_fm->get_grid());
+  auto dst_fm = get_test_fm(src_fm->get_grids_manager()->get_grid(gn));
   for (const auto& fn : {"field_1","field_2","field_3","field_4","field_5"} ) {
-          auto f_dst = dst_fm->get_field(fn);
-    const auto f_src = src_fm->get_field(fn);
+          auto f_dst = dst_fm->get_field(fn,gn);
+    const auto f_src = src_fm->get_field(fn,gn);
     f_dst.deep_copy(f_src);
 
     auto src_ts = f_src.get_header().get_tracking().get_time_stamp();

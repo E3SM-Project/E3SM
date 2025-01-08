@@ -161,7 +161,7 @@ public:
   // NOTE: if already finalized, this is a no-op
   void finalize ();
 
-  field_mgr_ptr get_field_mgr (const std::string& grid_name) const;
+  field_mgr_ptr get_field_mgr () const { return m_field_mgr; }
 
   // Get atmosphere time stamp
   const util::TimeStamp& get_atm_time_stamp () const { return m_current_ts; }
@@ -191,7 +191,7 @@ protected:
                               const std::string& file_name);
   void register_groups ();
 
-  std::map<std::string,field_mgr_ptr>       m_field_mgrs;
+  field_mgr_ptr                             m_field_mgr;
 
   std::shared_ptr<AtmosphereProcessGroup>   m_atm_process_group;
 

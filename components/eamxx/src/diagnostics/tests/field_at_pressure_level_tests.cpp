@@ -30,7 +30,7 @@ bool approx(const T a, const T b) {
   if (std::abs(a-b)>eps) {
     printf("approx violated with std::abs(%e - %e) = %e > %e\n",a,b,std::abs(a-b),eps);
   }
-  return std::abs(a-b)<=eps; 
+  return std::abs(a-b)<=eps;
 }
 
 struct PressureBnds
@@ -54,7 +54,7 @@ TEST_CASE("field_at_pressure_level_p2")
   ekat::Comm comm(MPI_COMM_WORLD);
 
   // For any random case, set a number of iterations of that test
-  int num_checks = 10; 
+  int num_checks = 10;
 
   // Create a grids manager w/ a point grid
   int ncols = 3;
@@ -73,7 +73,7 @@ TEST_CASE("field_at_pressure_level_p2")
   Real p_mid_bnds_dz = pressure_bounds.p_surf/nlevs;  // Note, p_mid will actually never make it to p_top or p_surf in all columns, so we offset the bounds.
   RPDF pdf_pmid(pressure_bounds.p_top+p_mid_bnds_dz,pressure_bounds.p_surf-p_mid_bnds_dz);
   RPDF pdf_pint(pressure_bounds.p_top,pressure_bounds.p_surf);
- 
+
   // Get a diagnostic factory
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();
   diag_factory.register_product("FieldAtPressureLevel",&create_atmosphere_diagnostic<FieldAtPressureLevel>);
@@ -92,7 +92,7 @@ TEST_CASE("field_at_pressure_level_p2")
         REQUIRE(approx(test1_diag_v(icol),get_test_data(plevel)));
       }
     }
-  } 
+  }
   {
     // Test 2: Take a slice at a random value for variable defined at interface.
     for (int test_itr=0;test_itr<num_checks;test_itr++) {
@@ -113,7 +113,7 @@ TEST_CASE("field_at_pressure_level_p2")
         REQUIRE(approx(test2_mask_v(icol),Real(1.0)));
       }
     }
-  } 
+  }
   {
     // Test 3: Take a slice at a value outside the bounds, which should return the default masked value
     for (int test_itr=0;test_itr<num_checks;test_itr++) {
@@ -135,8 +135,8 @@ TEST_CASE("field_at_pressure_level_p2")
         REQUIRE(approx(test2_mask_v(icol),Real(0.0)));
       }
     }
-  } 
-  
+  }
+
 } // TEST_CASE("field_at_pressure_level")
 /*==========================================================================================================*/
 std::shared_ptr<FieldManager> get_test_fm(std::shared_ptr<const AbstractGrid> grid)
@@ -191,21 +191,21 @@ std::shared_ptr<FieldManager> get_test_fm(std::shared_ptr<const AbstractGrid> gr
       int ivec  = jj % packsize;
       Real p_mid = (get_test_pres(ii,jj,num_levs,num_lcols) + get_test_pres(ii,jj+1,num_levs,num_lcols)) / 2;
       Real p_int = get_test_pres(ii,jj,num_levs,num_lcols);
-      f1_host(ii,ipack)[ivec] = get_test_data(p_mid); 
-      f2_host(ii,ipack)[ivec] = get_test_data(p_int); 
-      f3_host(ii,ipack)[ivec] = p_mid; 
+      f1_host(ii,ipack)[ivec] = get_test_data(p_mid);
+      f2_host(ii,ipack)[ivec] = get_test_data(p_int);
+      f3_host(ii,ipack)[ivec] = p_mid;
       f4_host(ii,ipack)[ivec] = p_int;
     }
     // The interface values have one more vertical level
     int ipack = num_levs / packsize;
     int ivec  = num_levs % packsize;
     Real p_int = get_test_pres(ii,num_levs,num_levs,num_lcols);
-    f2_host(ii,ipack)[ivec] = get_test_data(p_int); 
+    f2_host(ii,ipack)[ivec] = get_test_data(p_int);
     f4_host(ii,ipack)[ivec] = p_int;
   }
   // Update timestamp
   util::TimeStamp time ({2000,1,1},{0,0,0});
-  fm->init_fields_time_stamp(time);
+  fm->init_fields_time_stamp(time, grid->name());
   // Sync back to device
   f1.sync_to_dev();
   f2.sync_to_dev();
@@ -219,11 +219,12 @@ std::shared_ptr<FieldAtPressureLevel>
 get_test_diag(const ekat::Comm& comm, std::shared_ptr<const FieldManager> fm, std::shared_ptr<const GridsManager> gm, const std::string& type, const Real plevel)
 {
     std::string fname = "V_"+type;
-    auto field = fm->get_field(fname);
+    const auto gn = gm->get_repo().begin()->second->name();
+    auto field = fm->get_field(fname, gn);
     auto fid = field.get_header().get_identifier();
     ekat::ParameterList params;
     params.set("field_name",field.name());
-    params.set("grid_name",fm->get_grid()->name());
+    params.set("grid_name",gn);
     params.set("pressure_value",std::to_string(plevel));
     params.set("pressure_units",std::string("Pa"));
     auto diag = std::make_shared<FieldAtPressureLevel>(comm,params);
@@ -238,8 +239,8 @@ get_test_diag(const ekat::Comm& comm, std::shared_ptr<const FieldManager> fm, st
 Real get_test_pres(const int col, const int lev, const int num_lev, const int num_cols)
 {
   PressureBnds pressure_bounds;
-  Real p_surf = pressure_bounds.p_surf; 
-  Real p_top  = pressure_bounds.p_top;  
+  Real p_surf = pressure_bounds.p_surf;
+  Real p_top  = pressure_bounds.p_top;
   Real dp_dx  = p_top/(num_cols);        // Make sure that 1 column hits the min pressure of 0 at tom
   Real dp_dz  = (p_surf-(p_top-(col+1)*dp_dx))/(num_lev); // Make sure the max pressure at surface is the surf pressure
   return (p_top - (col+1)*dp_dx) + lev*dp_dz;

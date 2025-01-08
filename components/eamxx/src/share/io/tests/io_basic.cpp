@@ -139,7 +139,7 @@ void write (const std::string& avg_type, const std::string& freq_units,
   // Create some fields
   auto fm = get_fm(grid,t0,seed);
   std::vector<std::string> fnames;
-  for (auto it : *fm) {
+  for (auto it : fm->get_repo(grid->name())) {
     fnames.push_back(it.second->name());
   }
 
@@ -168,10 +168,10 @@ void write (const std::string& avg_type, const std::string& freq_units,
   // Attempt to use invalid fp precision string
   om_pl.set("Floating Point Precision",std::string("triple"));
   om.initialize(comm,om_pl,t0,false);
-  REQUIRE_THROWS (om.setup(fm,gm));
+  REQUIRE_THROWS (om.setup(fm,gm->get_grid_names()));
   om_pl.set("Floating Point Precision",std::string("single"));
   om.initialize(comm,om_pl,t0,false);
-  om.setup(fm,gm);
+  om.setup(fm,gm->get_grid_names());
 
   // Time loop: ensure we always hit 3 output steps
   const int nsteps = num_output_steps*freq;
@@ -183,7 +183,7 @@ void write (const std::string& avg_type, const std::string& freq_units,
 
     // Add 1 to all fields entries
     for (const auto& name : fnames) {
-      auto f = fm->get_field(name);
+      auto f = fm->get_field(name, grid->name());
       add(f,1.0);
     }
 
@@ -218,7 +218,7 @@ void read (const std::string& avg_type, const std::string& freq_units,
   auto fm0 = get_fm(grid,t0,seed);
   auto fm  = get_fm(grid,t0,-seed-1);
   std::vector<std::string> fnames;
-  for (auto it : *fm) {
+  for (auto it : fm->get_repo(grid->name())) {
     fnames.push_back(it.second->name());
   }
 
@@ -234,7 +234,7 @@ void read (const std::string& avg_type, const std::string& freq_units,
     + ".nc";
   reader_pl.set("Filename",filename);
   reader_pl.set("Field Names",fnames);
-  AtmosphereInput reader(reader_pl,fm);
+  AtmosphereInput reader(reader_pl,fm, grid->name());
 
   // We added 1.0 to the input fields for each timestep
   // Hence, at output step N, we should get
@@ -251,8 +251,8 @@ void read (const std::string& avg_type, const std::string& freq_units,
   for (int n=0; n<num_writes; ++n) {
     reader.read_variables(n);
     for (const auto& fn : fnames) {
-      auto f0 = fm0->get_field(fn).clone();
-      auto f  = fm->get_field(fn);
+      auto f0 = fm0->get_field(fn,grid->name()).clone();
+      auto f  = fm->get_field(fn,grid->name());
       if (avg_type=="MIN") {
         // The 1st snap in the avg window (the smallest)
         // is one past window_start=n*freq

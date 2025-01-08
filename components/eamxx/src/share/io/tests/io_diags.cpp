@@ -178,7 +178,7 @@ void write (const int seed, const ekat::Comm& comm)
   // Create some fields
   auto fm = get_fm(grid,t0,seed);
   std::vector<std::string> fnames;
-  for (auto it : *fm) {
+  for (auto it : fm->get_repo(grid->name())) {
     const auto& fn = it.second->name();
     fnames.push_back(fn);
   }
@@ -197,10 +197,10 @@ void write (const int seed, const ekat::Comm& comm)
   // Create Output manager
   OutputManager om;
   om.initialize(comm, om_pl, t0, false);
-  om.setup(fm,gm);
+  om.setup(fm,gm->get_grid_names());
 
   // Run output manager
-  for (auto it : *fm) {
+  for (auto it : fm->get_repo(grid->name())) {
     auto& f = *it.second;
     Field one = f.clone("one");
     one.deep_copy(1.0);
@@ -229,7 +229,7 @@ void read (const int seed, const ekat::Comm& comm)
 
   std::vector<std::string> fnames;
   std::string f_name;
-  for (auto it : *fm) {
+  for (auto it : fm->get_repo(grid->name())) {
     const auto& fn = it.second->name();
     fnames.push_back(fn);
     if (fn!="MyDiag") {
@@ -237,8 +237,8 @@ void read (const int seed, const ekat::Comm& comm)
     }
   }
 
-  auto f0 = fm0->get_field(f_name).clone();
-  auto f  = fm->get_field(f_name);
+  auto f0 = fm0->get_field(f_name,grid->name()).clone();
+  auto f  = fm->get_field(f_name,grid->name());
 
   // Sanity check
   REQUIRE (f_name!="");
@@ -253,7 +253,7 @@ void read (const int seed, const ekat::Comm& comm)
     + ".nc";
   reader_pl.set("Filename",filename);
   reader_pl.set("Field Names",fnames);
-  AtmosphereInput reader(reader_pl,fm);
+  AtmosphereInput reader(reader_pl,fm,grid->name());
 
   Field one = f0.clone("one");
   one.deep_copy(1.0);
@@ -266,7 +266,7 @@ void read (const int seed, const ekat::Comm& comm)
     // Check diag field is correct
     const auto t = t0+i*get_dt();
     const double dt = t-t0;
-    auto d = fm->get_field("MyDiag");
+    auto d = fm->get_field("MyDiag",grid->name());
     auto d0 = f0.clone();
     d0.update(one,dt,2.0);
     REQUIRE (views_are_equal(d,d0));

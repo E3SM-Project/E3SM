@@ -303,6 +303,7 @@ void AtmosphereDriver::create_grids()
   // Each process will grab what they need
   m_atm_process_group->set_grids(m_grids_manager);
 
+
   // Also make each atm proc build requests for tendency fields, if needed
   m_atm_process_group->setup_tendencies_requests();
 
@@ -393,13 +394,13 @@ void AtmosphereDriver::setup_surface_coupling_processes () const
 void AtmosphereDriver::reset_accumulated_fields ()
 {
   constexpr Real zero = 0;
-  for (auto fm_it : m_field_mgrs) {
-    const auto& fm = fm_it.second;
-    if (not fm->has_group("ACCUMULATED")) {
+  for (auto grid_it : m_grids_manager->get_repo()) {
+    const auto& grid_name = grid_it.second->name();
+    if (not m_field_mgr->has_group("ACCUMULATED", grid_name)) {
       continue;
     }
 
-    auto accum_group = fm->get_field_group("ACCUMULATED");
+    auto accum_group = m_field_mgr->get_field_group("ACCUMULATED", grid_name);
     for (auto f_it : accum_group.m_fields) {
       auto& track = f_it.second->get_header().get_tracking();
       f_it.second->deep_copy(zero);
@@ -418,26 +419,25 @@ void AtmosphereDriver::setup_column_conservation_checks ()
 
   auto phys_grid = m_grids_manager->get_grid("Physics");
   const auto phys_grid_name = phys_grid->name();
-  auto phys_field_mgr = m_field_mgrs[phys_grid_name];
 
   // Get fields needed to run the mass and energy conservation checks. Require that
   // all fields exist.
   EKAT_REQUIRE_MSG (
-    phys_field_mgr->has_field("pseudo_density") and
-    phys_field_mgr->has_field("ps") and
-    phys_field_mgr->has_field("phis") and
-    phys_field_mgr->has_field("horiz_winds") and
-    phys_field_mgr->has_field("T_mid") and
-    phys_field_mgr->has_field("qv") and
-    phys_field_mgr->has_field("qc") and
-    phys_field_mgr->has_field("qr") and
-    phys_field_mgr->has_field("qi") and
-    phys_field_mgr->has_field("vapor_flux") and
-    phys_field_mgr->has_field("water_flux") and
-    phys_field_mgr->has_field("ice_flux") and
-    phys_field_mgr->has_field("heat_flux"),
-                   "Error! enable_column_conservation_checks=true for some atm process, "
-                   "but not all fields needed for this check exist in the FieldManager.\n");
+    m_field_mgr->has_field("pseudo_density", phys_grid_name) and
+    m_field_mgr->has_field("ps",             phys_grid_name) and
+    m_field_mgr->has_field("phis",           phys_grid_name) and
+    m_field_mgr->has_field("horiz_winds",    phys_grid_name) and
+    m_field_mgr->has_field("T_mid",          phys_grid_name) and
+    m_field_mgr->has_field("qv",             phys_grid_name) and
+    m_field_mgr->has_field("qc",             phys_grid_name) and
+    m_field_mgr->has_field("qr",             phys_grid_name) and
+    m_field_mgr->has_field("qi",             phys_grid_name) and
+    m_field_mgr->has_field("vapor_flux",     phys_grid_name) and
+    m_field_mgr->has_field("water_flux",     phys_grid_name) and
+    m_field_mgr->has_field("ice_flux",       phys_grid_name) and
+    m_field_mgr->has_field("heat_flux",      phys_grid_name),
+    "Error! enable_column_conservation_checks=true for some atm process, "
+    "but not all fields needed for this check exist in the FieldManager.\n");
 
   // Get tolerances for mass and energy checks from driver_option parameters.
   auto& driver_options_pl = m_atm_params.sublist("driver_options");
@@ -445,19 +445,19 @@ void AtmosphereDriver::setup_column_conservation_checks ()
   const Real energy_error_tol = driver_options_pl.get<double>("energy_column_conservation_error_tolerance", 1e-14);
 
   // Create energy checker
-  const auto pseudo_density = phys_field_mgr->get_field("pseudo_density");
-  const auto ps             = phys_field_mgr->get_field("ps");
-  const auto phis           = phys_field_mgr->get_field("phis");
-  const auto horiz_winds    = phys_field_mgr->get_field("horiz_winds");
-  const auto T_mid          = phys_field_mgr->get_field("T_mid");
-  const auto qv             = phys_field_mgr->get_field("qv");
-  const auto qc             = phys_field_mgr->get_field("qc");
-  const auto qr             = phys_field_mgr->get_field("qr");
-  const auto qi             = phys_field_mgr->get_field("qi");
-  const auto vapor_flux     = phys_field_mgr->get_field("vapor_flux");
-  const auto water_flux     = phys_field_mgr->get_field("water_flux");
-  const auto ice_flux       = phys_field_mgr->get_field("ice_flux");
-  const auto heat_flux      = phys_field_mgr->get_field("heat_flux");
+  const auto pseudo_density = m_field_mgr->get_field("pseudo_density", phys_grid_name);
+  const auto ps             = m_field_mgr->get_field("ps",             phys_grid_name);
+  const auto phis           = m_field_mgr->get_field("phis",           phys_grid_name);
+  const auto horiz_winds    = m_field_mgr->get_field("horiz_winds",    phys_grid_name);
+  const auto T_mid          = m_field_mgr->get_field("T_mid",          phys_grid_name);
+  const auto qv             = m_field_mgr->get_field("qv",             phys_grid_name);
+  const auto qc             = m_field_mgr->get_field("qc",             phys_grid_name);
+  const auto qr             = m_field_mgr->get_field("qr",             phys_grid_name);
+  const auto qi             = m_field_mgr->get_field("qi",             phys_grid_name);
+  const auto vapor_flux     = m_field_mgr->get_field("vapor_flux",     phys_grid_name);
+  const auto water_flux     = m_field_mgr->get_field("water_flux",     phys_grid_name);
+  const auto ice_flux       = m_field_mgr->get_field("ice_flux",       phys_grid_name);
+  const auto heat_flux      = m_field_mgr->get_field("heat_flux",      phys_grid_name);
 
   auto conservation_check =
     std::make_shared<MassAndEnergyColumnConservationCheck>(phys_grid,
@@ -509,12 +509,12 @@ void AtmosphereDriver::add_additional_column_data_to_property_checks () {
   if (additional_data_fields == vos_t{"NONE"}) return;
 
   // Add requested fields to property checks
-  auto phys_field_mgr = m_field_mgrs[m_grids_manager->get_grid("Physics")->name()];
+  const auto& grid_name = m_grids_manager->get_grid("Physics")->name();
   for (auto fname : additional_data_fields) {
-    EKAT_REQUIRE_MSG(phys_field_mgr->has_field(fname), "Error! The field "+fname+" is requested for property check output "
-                                                       "but does not exist in the physics field manager.\n");
-
-    m_atm_process_group->add_additional_data_fields_to_property_checks(phys_field_mgr->get_field(fname));
+    EKAT_REQUIRE_MSG(m_field_mgr->has_field(fname, grid_name),
+      "Error! The field " + fname + " is requested for property "
+      "check output but does not exist on the physics grid.\n");
+    m_atm_process_group->add_additional_data_fields_to_property_checks(m_field_mgr->get_field(fname, grid_name));
   }
 }
 
@@ -527,93 +527,27 @@ void AtmosphereDriver::create_fields()
   // Must have grids and procs at this point
   check_ad_status (s_procs_created | s_grids_created);
 
+  // Create FM
+  m_field_mgr = std::make_shared<field_mgr_type>(m_grids_manager);
+  m_field_mgr->registration_begins();
+
   // By now, the processes should have fully built the ids of their
   // required/computed fields and groups. Let them register them in the FM
-  for (auto it : m_grids_manager->get_repo()) {
-    auto grid = it.second;
-    m_field_mgrs[grid->name()] = std::make_shared<field_mgr_type>(grid);
-    m_field_mgrs[grid->name()]->registration_begins();
-  }
-
-  // Register required/computed fields
   for (const auto& req : m_atm_process_group->get_required_field_requests()) {
-    m_field_mgrs.at(req.fid.get_grid_name())->register_field(req);
+    m_field_mgr->register_field(req);
   }
   for (const auto& req : m_atm_process_group->get_computed_field_requests()) {
-    m_field_mgrs.at(req.fid.get_grid_name())->register_field(req);
+    m_field_mgr->register_field(req);
+  }
+  for (const auto& greq : m_atm_process_group->get_required_group_requests()) {
+    m_field_mgr->register_group(greq);
+  }
+  for (const auto& greq : m_atm_process_group->get_computed_group_requests()) {
+    m_field_mgr->register_group(greq);
   }
 
-  // Register required/updated groups
-  // IMPORTANT: Some group requests might be formulated in terms of another
-  //   group request (see field_requests.hpp). The FieldManager class is able
-  //   to handle most of these. However, a GroupRequest that requests to Import
-  //   a group from another grid cannot be handled internally by the FieldManager.
-  //   In particular, the FM needs the fields in the imported group to be
-  //   registered in the FM before it can handle the request.
-  //   For this reason, we scan required/updated group requests from all atm procs,
-  //   and if we find an Import request, for each field in the "source" group,
-  //   we register a corresponding version of the field on the "target" FM.
-
-  // Helper lambda to reduce code duplication
-  auto process_imported_groups = [&](const std::set<GroupRequest>& group_requests) {
-    for (auto req : group_requests) {
-      if (req.derived_type==DerivationType::Import) {
-        EKAT_REQUIRE_MSG (req.grid!=req.src_grid,
-            "Error! A group request with 'Import' derivation type is meant to import\n"
-            "       a group of fields from a grid to another. Found same grid name instead.\n"
-            "   group name: " + req.name + "\n"
-            "   group to import: " + req.src_name + "\n"
-            "   grid name: " + req.grid + "\n");
-        // Given request for group A on grid g1 to be an Import of
-        // group B on grid g2, register each field in group B in the
-        // field manager on grid g1.
-        const auto& fm = m_field_mgrs.at(req.grid);
-        const auto& rel_fm   = m_field_mgrs.at(req.src_grid);
-        const auto& rel_info = rel_fm->get_groups_info().at(req.src_name);
-
-        // In the case of pg2, can't use create_remapper. But the remapper is
-        // used only for a convenience function, anyway, create_tgt_fid.
-        auto r = fvphyshack ? nullptr : m_grids_manager->create_remapper(req.src_grid,req.grid);
-        // Loop over all fields in group src_name on grid src_grid.
-        for (const auto& fname : rel_info->m_fields_names) {
-          // Get field on src_grid
-          const auto& rel_fid = rel_fm->get_field_id(fname);
-
-          // Build a FieldRequest for the same field on greq's grid,
-          // and add it to the group of this request
-          if (fvphyshack) {
-            auto dims = rel_fid.get_layout().dims();
-            dims[0] = fm->get_grid()->get_num_local_dofs();
-            FieldLayout fl(rel_fid.get_layout().tags(), dims);
-            FieldIdentifier fid(rel_fid.name(), fl, rel_fid.get_units(), req.grid);
-            FieldRequest freq(fid,req.name,req.pack_size);
-            fm->register_field(freq);
-          } else {
-            const auto fid = r->create_tgt_fid(rel_fid);
-            FieldRequest freq(fid,req.name,req.pack_size);
-            fm->register_field(freq);
-          }
-        }
-
-        // Now that the fields have been imported on this grid's GM,
-        // this group request is a "normal" group request, and we can
-        // reset the derivation type to "None"
-        req.derived_type=DerivationType::None;
-      }
-
-      m_field_mgrs.at(req.grid)->register_group(req);
-    }
-  };
-
-  process_imported_groups (m_atm_process_group->get_required_group_requests());
-  process_imported_groups (m_atm_process_group->get_computed_group_requests());
-
-  // Close the FM's, allocate all fields
-  for (auto it : m_grids_manager->get_repo()) {
-    auto grid = it.second;
-    auto fm = m_field_mgrs.at(grid->name());
-    fm->registration_ends();
-  }
+  // Closes the FM, allocate all fields
+  m_field_mgr->registration_ends();
 
   // Set all the fields/groups in the processes. Input fields/groups will be handed
   // to the processes with const scalar type (const Real), to prevent them from
@@ -625,23 +559,19 @@ void AtmosphereDriver::create_fields()
   // group for the AtmProcGroup, even if it is a required group for B.
   for (const auto& req : m_atm_process_group->get_computed_field_requests()) {
     const auto& fid = req.fid;
-    auto fm = get_field_mgr(fid.get_grid_name());
-    m_atm_process_group->set_computed_field(fm->get_field(fid));
+    m_atm_process_group->set_computed_field(m_field_mgr->get_field(fid));
   }
   for (const auto& it : m_atm_process_group->get_computed_group_requests()) {
-    auto fm = get_field_mgr(it.grid);
-    auto group = fm->get_field_group(it.name);
+    auto group = m_field_mgr->get_field_group(it.name, it.grid);
     m_atm_process_group->set_computed_group(group);
   }
   for (const auto& it : m_atm_process_group->get_required_group_requests()) {
-    auto fm = get_field_mgr(it.grid);
-    auto group = fm->get_field_group(it.name).get_const();
+    auto group = m_field_mgr->get_field_group(it.name, it.grid).get_const();
     m_atm_process_group->set_required_group(group);
   }
   for (const auto& req : m_atm_process_group->get_required_field_requests()) {
     const auto& fid = req.fid;
-    auto fm = get_field_mgr(fid.get_grid_name());
-    m_atm_process_group->set_required_field(fm->get_field(fid).get_const());
+    m_atm_process_group->set_required_field(m_field_mgr->get_field(fid).get_const());
   }
 
   // Now that all processes have all the required/computed fields/groups, they
@@ -655,35 +585,27 @@ void AtmosphereDriver::create_fields()
   // the registration phase has ended.
   m_atm_process_group->gather_internal_fields();
   for (const auto& f : m_atm_process_group->get_internal_fields()) {
-    const auto& fid = f.get_header().get_identifier();
-    auto fm = get_field_mgr(fid.get_grid_name());
-    fm->add_field(f);
+    m_field_mgr->add_field(f);
   }
 
   // Now go through the input fields/groups to the atm proc group, as well as
   // the internal fields/groups, and mark them as part of the RESTART group.
   for (const auto& f : m_atm_process_group->get_fields_in()) {
     const auto& fid = f.get_header().get_identifier();
-    const auto& gn = fid.get_grid_name();
-    auto fm = get_field_mgr(gn);
-    fm->add_to_group(fid.name(),"RESTART");
+    m_field_mgr->add_to_group(fid, "RESTART");
   }
   for (const auto& g : m_atm_process_group->get_groups_in()) {
-    const auto& gn = g.grid_name();
-    auto fm = get_field_mgr(gn);
     if (g.m_bundle) {
-      fm->add_to_group(g.m_bundle->get_header().get_identifier().name(),"RESTART");
+      m_field_mgr->add_to_group(g.m_bundle->get_header().get_identifier(), "RESTART");
     } else {
       for (const auto& fn : g.m_info->m_fields_names) {
-        fm->add_to_group(fn,"RESTART");
+        m_field_mgr->add_to_group(fn, g.grid_name(), "RESTART");
       }
     }
   }
   for (const auto& f : m_atm_process_group->get_internal_fields()) {
     const auto& fid = f.get_header().get_identifier();
-    const auto& gn = fid.get_grid_name();
-    auto fm = get_field_mgr(gn);
-    fm->add_to_group(fid.name(),"RESTART");
+    m_field_mgr->add_to_group(fid, "RESTART");
   }
 
   auto& driver_options_pl = m_atm_params.sublist("driver_options");
@@ -710,8 +632,8 @@ void AtmosphereDriver::create_fields()
 
   // If the user requested it, we can save a dictionary of the FM fields to file
   if (driver_options_pl.get("save_field_manager_content",false)) {
-    auto pg = m_grids_manager->get_grid("Physics");
-    const auto& fm = m_field_mgrs.at(pg->name());
+    auto grid_name = m_grids_manager->get_grid("Physics")->name();
+    auto& phys_fields = m_field_mgr->get_repo(grid_name);
     ekat::ParameterList pl_out("field_manager_content");
     pl_out.sublist("provenance") = m_atm_params.sublist("provenance");
     DefaultMetadata std_names;
@@ -726,7 +648,7 @@ void AtmosphereDriver::create_fields()
            "  - customers: the atm processes that require this field as an input\n";
     pl_out.set("description", desc);
     auto& dict = pl_out.sublist("fields");
-    for (const auto& it : *fm) {
+    for (const auto& it : phys_fields) {
       const auto& fid = it.second->get_header().get_identifier();
       auto& pl = dict.sublist(fid.name());
 
@@ -830,17 +752,14 @@ void AtmosphereDriver::initialize_output_managers () {
 
   // Check for model restart output manager and setup if it exists.
   if (m_restart_output_manager) {
-    if (fvphyshack) {
-      // Don't save CGLL fields from ICs to the restart file.
-      std::map<std::string,field_mgr_ptr> fms;
-      for (auto& it : m_field_mgrs) {
-        if (it.first == "Physics GLL") continue;
-        fms[it.first] = it.second;
-      }
-      m_restart_output_manager->setup(fms, m_grids_manager);
-    } else {
-      m_restart_output_manager->setup(m_field_mgrs,m_grids_manager);
+    auto output_grids = m_grids_manager->get_grid_names();
+
+    // Don't save CGLL fields from ICs to the restart file if we are running with PG2.
+    if (fvphyshack and output_grids.find("Physics GLL")!=output_grids.end()) {
+      output_grids.erase("Physics GLL");
     }
+
+    m_restart_output_manager->setup(m_field_mgr, output_grids);
     m_restart_output_manager->set_logger(m_atm_logger);
     for (const auto& it : m_atm_process_group->get_restart_extra_data()) {
       m_restart_output_manager->add_global(it.first,it.second);
@@ -854,7 +773,7 @@ void AtmosphereDriver::initialize_output_managers () {
                      "output should be setup in m_restart_output_manager./n");
 
     om.set_logger(m_atm_logger);
-    om.setup(m_field_mgrs,m_grids_manager);
+    om.setup(m_field_mgr,m_grids_manager->get_grid_names());
   }
 
   m_ad_status |= s_output_inited;
@@ -936,36 +855,37 @@ initialize_fields ()
   //       missing in the IC file, would cause horiz_winds=0.
   for (auto it : m_grids_manager->get_repo()) {
     auto grid = it.second;
-    auto fm = m_field_mgrs.at(grid->name());
-    if (fm->has_field("horiz_winds")) {
+    auto gn = grid->name();
+    auto fm = m_field_mgr;
+    if (fm->has_field("horiz_winds", gn)) {
       using namespace ShortFieldTagsNames;
-      auto hw = fm->get_field("horiz_winds");
+      auto hw = fm->get_field("horiz_winds", gn);
       const auto& fid = hw.get_header().get_identifier();
       const auto& layout = fid.get_layout();
       const int vec_dim = layout.get_vector_component_idx();
       const auto& units = fid.get_units();
       auto U = hw.subfield("U",units,vec_dim,0);
       auto V = hw.subfield("V",units,vec_dim,1);
-      if (not fm->has_field("U")) {
+      if (not fm->has_field("U", gn)) {
         fm->add_field(U);
       }
-      if (not fm->has_field("V")) {
+      if (not fm->has_field("V", gn)) {
         fm->add_field(V);
       }
     }
-    if (fm->has_field("surf_mom_flux")) {
+    if (fm->has_field("surf_mom_flux", gn)) {
       using namespace ShortFieldTagsNames;
-      auto hw = fm->get_field("surf_mom_flux");
+      auto hw = fm->get_field("surf_mom_flux", gn);
       const auto& fid = hw.get_header().get_identifier();
       const auto& layout = fid.get_layout();
       const int vec_dim = layout.get_vector_component_idx();
       const auto& units = fid.get_units();
       auto surf_mom_flux_U = hw.subfield("surf_mom_flux_U",units,vec_dim,0);
       auto surf_mom_flux_V = hw.subfield("surf_mom_flux_V",units,vec_dim,1);
-      if (not fm->has_field("surf_mom_flux_U")) {
+      if (not fm->has_field("surf_mom_flux_U", gn)) {
         fm->add_field(surf_mom_flux_U);
       }
-      if (not fm->has_field("surf_mom_flux_V")) {
+      if (not fm->has_field("surf_mom_flux_V", gn)) {
         fm->add_field(surf_mom_flux_V);
       }
     }
@@ -994,18 +914,18 @@ void AtmosphereDriver::restart_model ()
 
   m_atm_logger->info("    [EAMxx] Restart filename: " + filename);
 
-  for (auto& it : m_field_mgrs) {
-    if (fvphyshack and it.second->get_grid()->name() == "Physics GLL") continue;
-    if (not it.second->has_group("RESTART")) {
+  for (auto& gn : m_grids_manager->get_grid_names()) {
+    if (fvphyshack and gn == "Physics GLL") continue;
+    if (not m_field_mgr->has_group("RESTART", gn)) {
       // No field needs to be restarted on this grid.
       continue;
     }
-    const auto& restart_group = it.second->get_groups_info().at("RESTART");
+    const auto& restart_group = m_field_mgr->get_groups_info().at("RESTART");
     std::vector<Field> fields;
     for (const auto& fn : restart_group->m_fields_names) {
-      fields.push_back(it.second->get_field(fn));
+      fields.push_back(m_field_mgr->get_field(fn,gn));
     }
-    read_fields_from_file (fields,it.second->get_grid(),filename);
+    read_fields_from_file (fields,m_grids_manager->get_grid(gn),filename);
     for (auto& f : fields) {
       f.get_header().get_tracking().update_time_stamp(m_current_ts);
     }
@@ -1121,7 +1041,7 @@ void AtmosphereDriver::set_initial_conditions ()
         initialize_constant_field(fid, ic_pl);
 
         // Note: f is const, so we can't modify the tracking. So get the same field from the fm
-        auto f_nonconst = m_field_mgrs.at(grid_name)->get_field(fid.name());
+        auto f_nonconst = m_field_mgr->get_field(fid);
         f_nonconst.get_header().get_tracking().update_time_stamp(m_current_ts);
       } else if (ic_pl.isType<std::string>(fname)) {
         // Initial condition is a string
@@ -1219,7 +1139,6 @@ void AtmosphereDriver::set_initial_conditions ()
   // (perhaps via initialize_constant_field, or copied from another field).
   for (auto& it1 : ic_fields_names) {
     const auto& grid_name =  it1.first;
-    auto fm = m_field_mgrs.at(grid_name);
 
     // Note: every time we erase an entry in the vector, all iterators are
     //       invalidated, so we need to re-start the for loop.
@@ -1229,7 +1148,7 @@ void AtmosphereDriver::set_initial_conditions ()
       auto& names = it1.second;
       for (auto it2=names.begin(); it2!=names.end(); ++it2) {
         const auto& fname = *it2;
-        auto f = fm->get_field(fname);
+        auto f = fm->get_field(fname, grid_name);
         auto p = f.get_header().get_parent();
         if (p) {
           const auto& pname = p->get_identifier().name();
@@ -1251,8 +1170,9 @@ void AtmosphereDriver::set_initial_conditions ()
     // lat/lon data in topo file is defined in terms of PG2 grid,
     // so if we have a topo field on GLL grid, we need to setup
     // io info using the IC file (which is always GLL).
-    for (const auto& it : m_field_mgrs) {
-      const auto& grid_name = it.first;
+    for (const auto& it : m_grids_manager->get_repo()) {
+      const auto& grid = it.second;
+      const auto& grid_name = grid->name();
       if (ic_fields_names[grid_name].size() > 0 or
 	        topography_eamxx_fields_names[grid_name].size() > 0) {
         const auto& file_name = grid_name == "Physics GLL"
@@ -1260,7 +1180,7 @@ void AtmosphereDriver::set_initial_conditions ()
                                 ic_pl.get<std::string>("Filename")
                                 :
                                 ic_pl.get<std::string>("topography_filename");
-        m_iop_data_manager->setup_io_info(file_name, it.second->get_grid());
+        m_iop_data_manager->setup_io_info(file_name, grid);
       }
     }
   }
@@ -1270,20 +1190,23 @@ void AtmosphereDriver::set_initial_conditions ()
     // Now loop over all grids, and load from file the needed fields on each grid (if any).
     const auto& file_name = ic_pl.get<std::string>("Filename");
     m_atm_logger->info("    [EAMxx] IC filename: " + file_name);
-    for (const auto& [grid_name,fm] : m_field_mgrs) {
-      if (ic_fields_names[grid_name].size()==0)
-        continue;
+
+    for (const auto& it : m_grids_manager->get_repo()) {
+      const auto& grid = it.second;
+      const auto& grid_name = grid->name();
+
+      if (ic_fields_names[grid_name].size()==0) continue;
 
       std::vector<Field> ic_fields;
       for (const auto& fn : ic_fields_names[grid_name]) {
-        ic_fields.push_back(fm->get_field(fn));
+        ic_fields.push_back(m_field_mgr->get_field(fn,grid_name));
       }
       if (not m_iop_data_manager) {
-        read_fields_from_file (ic_fields,fm->get_grid(),file_name);
+        read_fields_from_file (ic_fields,grid,file_name);
       } else {
         // For IOP enabled, we load from file and copy data from the closest
         // lat/lon column to every other column
-        m_iop_data_manager->read_fields_from_file_for_iop(file_name,ic_fields,fm->get_grid());
+        m_iop_data_manager->read_fields_from_file_for_iop(file_name,ic_fields,grid);
       }
       for (auto& f : ic_fields) {
         f.get_header().get_tracking().update_time_stamp(m_current_ts);
@@ -1299,18 +1222,16 @@ void AtmosphereDriver::set_initial_conditions ()
 
     const auto& src_fname = ic_pl.get<std::string>(tgt_fname);
 
-    auto fm = get_field_mgr(gname);
-
     // The field must exist in the fm on the input field's grid
-    EKAT_REQUIRE_MSG (fm->has_field(src_fname),
+    EKAT_REQUIRE_MSG (m_field_mgr->has_field(src_fname, gname),
         "Error! Source field for initial condition not found in the field manager.\n"
         "       Grid name:     " + gname + "\n"
         "       Field to init: " + tgt_fname + "\n"
         "       Source field:  " + src_fname + " (NOT FOUND)\n");
 
     // Get the two fields, and copy src to tgt
-    auto f_tgt = fm->get_field(tgt_fname);
-    auto f_src = fm->get_field(src_fname);
+    auto f_tgt = m_field_mgr->get_field(tgt_fname, gname);
+    auto f_src = m_field_mgr->get_field(src_fname, gname);
     f_tgt.deep_copy(f_src);
 
     // Set the initial time stamp
@@ -1351,7 +1272,12 @@ void AtmosphereDriver::set_initial_conditions ()
     m_atm_logger->info("    [EAMxx] Reading topography from file ...");
     const auto& file_name = ic_pl.get<std::string>("topography_filename");
     m_atm_logger->info("        filename: " + file_name);
-    for (const auto& [grid_name,fm] : m_field_mgrs) {
+
+    for (const auto& it : m_grids_manager->get_repo()) {
+      const auto& grid = it.second;
+      const auto& grid_name = grid->name();
+
+      std::vector<Field> topo_fields;
       int nfields = topography_eamxx_fields_names[grid_name].size();
       if (nfields==0)
         continue;
@@ -1360,24 +1286,24 @@ void AtmosphereDriver::set_initial_conditions ()
       for (int i=0; i<nfields; ++i) {
         auto eamxx_fname = topography_eamxx_fields_names[grid_name][i];
         auto file_fname  = topography_file_fields_names[grid_name][i];
-        topo_fields.push_back(fm->get_field(eamxx_fname).alias(file_fname));
+        topo_fields.push_back(m_field_mgr->get_field(eamxx_fname,grid_name).alias(file_fname));
       }
 
       if (not m_iop_data_manager) {
         // Topography files always use "ncol_d" for the GLL grid value of ncol.
         // To ensure we read in the correct value, we must change the name for that dimension
-        auto io_grid = fm->get_grid();
+        auto io_grid = grid;
         if (grid_name=="Physics GLL") {
           using namespace ShortFieldTagsNames;
-          auto grid = io_grid->clone(io_grid->name(),true);
-          grid->reset_field_tag_name(COL,"ncol_d");
-          io_grid = grid;
+          auto tmp_grid = io_grid->clone(io_grid->name(),true);
+          tmp_grid->reset_field_tag_name(COL,"ncol_d");
+          io_grid = tmp_grid;
         }
         read_fields_from_file (topo_fields,io_grid,file_name);
       } else {
         // For IOP enabled, we load from file and copy data from the closest
         // lat/lon column to every other column
-        m_iop_data_manager->read_fields_from_file_for_iop(file_name,topo_fields,fm->get_grid());
+        m_iop_data_manager->read_fields_from_file_for_iop(file_name,topo_fields,grid);
       }
       for (auto& f : topo_fields) {
         f.get_header().get_tracking().update_time_stamp(m_current_ts);
@@ -1390,8 +1316,7 @@ void AtmosphereDriver::set_initial_conditions ()
     // Ensure that, if no topography_filename is given, no
     // processes is asking for topography data (assuming a
     // separate IC param entry isn't given for the field).
-    for (const auto& it : m_field_mgrs) {
-      const auto& grid_name = it.first;
+    for (const auto& grid_name : m_grids_manager->get_grid_names()) {
       EKAT_REQUIRE_MSG(topography_file_fields_names[grid_name].size()==0,
                       "Error! Topography data was requested in the FM, but no "
                       "topography_filename or entry matching the field name "
@@ -1408,9 +1333,8 @@ void AtmosphereDriver::set_initial_conditions ()
     // Now that ICs are processed, set appropriate fields using IOP file data.
     // Since ICs are loaded on GLL grid, we set those fields only and dynamics
     // will take care of the rest (for PG2 case).
-    if (m_field_mgrs.count("Physics GLL") > 0) {
-      const auto& fm = m_field_mgrs.at("Physics GLL");
-      m_iop_data_manager->set_fields_from_iop_data(fm);
+    if (m_field_mgr->get_grids_manager()->get_grid_names().count("Physics GLL") > 0) {
+      m_iop_data_manager->set_fields_from_iop_data(m_field_mgr, "Physics GLL");
     }
   }
 
@@ -1421,10 +1345,9 @@ void AtmosphereDriver::set_initial_conditions ()
   if (num_perturb_fields > 0) {
     m_atm_logger->info("    [EAMxx] Adding random perturbation to ICs ...");
 
-    EKAT_REQUIRE_MSG(m_field_mgrs.count("Physics GLL") > 0,
+    EKAT_REQUIRE_MSG(m_field_mgr->get_grids_manager()->get_grid_names().count("Physics GLL") > 0,
                      "Error! Random perturbation can only be applied to fields on "
-                     "the GLL grid, but no Physics GLL FieldManager was defined.\n");
-    const auto& fm = m_field_mgrs.at("Physics GLL");
+                     "the GLL grid, but no Physics GLL grid was defined in FieldManager.\n");
 
     // Setup RNG. There are two relevant params: generate_perturbation_random_seed and
     // perturbation_random_seed. We have 3 cases:
@@ -1467,15 +1390,16 @@ void AtmosphereDriver::set_initial_conditions ()
     };
 
     // Loop through fields and apply perturbation.
+    const std::string gll_grid_name = gll_grid->name();
     for (size_t f=0; f<perturbed_fields.size(); ++f) {
       const auto fname = perturbed_fields[f];
-      EKAT_REQUIRE_MSG(ekat::contains(m_fields_inited[fm->get_grid()->name()], fname),
+      EKAT_REQUIRE_MSG(ekat::contains(m_fields_inited[gll_grid_name], fname),
                        "Error! Attempting to apply perturbation to field not in initial_conditions.\n"
                        "  - Field: "+fname+"\n"
-                       "  - Grid:  "+fm->get_grid()->name()+"\n");
+                       "  - Grid:  "+gll_grid_name+"\n");
 
-      auto field = fm->get_field(fname);
-      perturb(field, engine, pdf, seed, pressure_mask, fm->get_grid()->get_dofs_gids());
+      auto field = m_field_mgr->get_field(fname, gll_grid_name);
+      perturb(field, engine, pdf, seed, pressure_mask, gll_grid->get_dofs_gids());
     }
 
     m_atm_logger->info("    [EAMxx] Adding random perturbation to ICs ... done!");
@@ -1502,9 +1426,7 @@ void AtmosphereDriver::
 initialize_constant_field(const FieldIdentifier& fid,
                           const ekat::ParameterList& ic_pl)
 {
-  const auto& name = fid.name();
-  const auto& grid = fid.get_grid_name();
-  auto f = get_field_mgr(grid)->get_field(name);
+  auto f = m_field_mgr->get_field(fid);
   // The user provided a constant value for this field. Simply use that.
   const auto& layout = f.get_header().get_identifier().get_layout();
 
@@ -1514,6 +1436,7 @@ initialize_constant_field(const FieldIdentifier& fid,
   //   fname: [val1,...,valN]
   // In the first case, all entries of the field are inited to val, while in the latter,
   // each component is inited to the corresponding entry of the array.
+  const auto& name = fid.name();
   if (layout.is_vector_layout() and ic_pl.isType<std::vector<double>>(name)) {
     const auto idim = layout.get_vector_component_idx();
     const auto vec_dim = layout.get_vector_dim();
@@ -1591,8 +1514,7 @@ void AtmosphereDriver::initialize_atm_procs ()
   if (fvphyshack) {
     // [CGLL ICs in pg2] See related notes in atmosphere_dynamics.cpp.
     const auto gn = "Physics GLL";
-    m_field_mgrs[gn]->clean_up();
-    m_field_mgrs.erase(gn);
+    m_field_mgr->clean_up(gn);
   }
 
   m_ad_status |= s_procs_inited;
@@ -1700,13 +1622,12 @@ void AtmosphereDriver::run (const int dt) {
   m_atm_process_group->run(dt);
 
   // Some accumulated fields need to be divided by dt at the end of the atm step
-  for (auto fm_it : m_field_mgrs) {
-    const auto& fm = fm_it.second;
-    if (not fm->has_group("DIVIDE_BY_DT")) {
+  for (auto gname : m_grids_manager->get_grid_names()) {
+    if (not m_field_mgr->has_group("DIVIDE_BY_DT", gname)) {
       continue;
     }
 
-    auto rescale_group = fm->get_field_group("DIVIDE_BY_DT");
+    auto rescale_group = m_field_mgr->get_field_group("DIVIDE_BY_DT", gname);
     for (auto f_it : rescale_group.m_fields) {
       f_it.second->scale(Real(1) / dt);
     }
@@ -1777,9 +1698,7 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
   m_grids_manager = nullptr;
 
   // Destroy all the fields manager
-  for (auto it : m_field_mgrs) {
-    it.second->clean_up();
-  }
+  m_field_mgr->clean_up();
 
   // Write all timers to file, and possibly finalize gptl
   if (not m_gptl_externally_handled) {
@@ -1808,22 +1727,6 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
   stop_timer("EAMxx::finalize");
 }
 
-AtmosphereDriver::field_mgr_ptr
-AtmosphereDriver::get_field_mgr (const std::string& grid_name) const {
-  EKAT_REQUIRE_MSG (m_ad_status & s_grids_created,
-      "Error! Field manager(s) are created *after* the grids.\n");
-  // map::at would throw, but you won't know which map threw.
-  // With our own msg, we can tell you where the throw happened.
-  EKAT_REQUIRE_MSG(m_grids_manager->has_grid(grid_name),
-      "Error! Request for field manager on a non-existing grid '" + grid_name + "'.\n");
-
-  // Do not use $grid_name, since it might be an alias. Fetch grid,
-  // then get the actual name from the grid itself
-  auto grid = m_grids_manager->get_grid(grid_name);
-
-  return m_field_mgrs.at(grid->name());
-}
-
 void AtmosphereDriver::
 check_ad_status (const int flag, const bool must_be_set)
 {
@@ -1850,8 +1753,8 @@ void AtmosphereDriver::report_res_dep_memory_footprint () const {
   // 2) grids data (dofs, maps, geo views), 3) atm buff manager, and 4) IO.
 
   // Fields
-  for (const auto& fm_it : m_field_mgrs) {
-    for (const auto& it : *fm_it.second) {
+  for (auto gname : m_field_mgr->get_grids_manager()->get_grid_names()) {
+    for (const auto& it : m_field_mgr->get_repo(gname)) {
       const auto& fap = it.second->get_header().get_alloc_properties();
       if (fap.is_subfield()) {
         continue;

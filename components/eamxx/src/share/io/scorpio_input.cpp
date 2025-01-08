@@ -12,9 +12,13 @@ namespace scream
 
 AtmosphereInput::
 AtmosphereInput (const ekat::ParameterList& params,
-                 const std::shared_ptr<const fm_type>& field_mgr)
+                 const std::shared_ptr<const fm_type>& field_mgr,
+                 const std::string& grid_name)
 {
-  init(params,field_mgr);
+  // Set io grid to the grid in FM associated with input grid_name
+  set_grid(field_mgr->get_grids_manager()->get_grid(grid_name));
+
+  init(params,field_mgr, grid_name);
 }
 
 AtmosphereInput::
@@ -23,6 +27,9 @@ AtmosphereInput (const ekat::ParameterList& params,
                  const std::map<std::string,view_1d_host>& host_views_1d,
                  const std::map<std::string,FieldLayout>&  layouts)
 {
+  // Set the io grid to the input grid
+  set_grid(grid);
+
   init (params,grid,host_views_1d,layouts);
 }
 
@@ -38,12 +45,15 @@ AtmosphereInput (const std::string& filename,
   params.set("Skip_Grid_Checks",skip_grid_checks);
   auto& names = params.get<std::vector<std::string>>("Field Names",{});
 
-  auto fm = std::make_shared<fm_type>(grid);
+  // Set the io grid to the input grid
+  set_grid(grid);
+
+  auto fm = std::make_shared<fm_type>(m_io_grid);
   for (auto& f : fields) {
     fm->add_field(f);
     names.push_back(f.name());
   }
-  init(params,fm);
+  init(params,fm,grid->name());
 }
 
 AtmosphereInput::
@@ -67,7 +77,8 @@ AtmosphereInput::
 
 void AtmosphereInput::
 init (const ekat::ParameterList& params,
-      const std::shared_ptr<const fm_type>& field_mgr)
+      const std::shared_ptr<const fm_type>& field_mgr,
+      const std::string& grid_name)
 {
   EKAT_REQUIRE_MSG (not m_inited_with_views,
       "Error! Input class was already inited (with user-provided views).\n");
@@ -101,9 +112,6 @@ init (const ekat::ParameterList& params,
   m_params = params;
   m_filename = m_params.get<std::string>("Filename");
 
-  // Set the grid associated with the input views
-  set_grid(grid);
-
   EKAT_REQUIRE_MSG (host_views_1d.size()==layouts.size(),
       "Error! Input host views and layouts maps has different sizes.\n"
       "       host_views_1d size: " + std::to_string(host_views_1d.size()) + "\n"
@@ -134,14 +142,16 @@ set_field_manager (const std::shared_ptr<const fm_type>& field_mgr)
 {
   // Sanity checks
   EKAT_REQUIRE_MSG (field_mgr, "Error! Invalid field manager pointer.\n");
-  EKAT_REQUIRE_MSG (field_mgr->get_grid(), "Error! Field manager stores an invalid grid pointer.\n");
+  EKAT_REQUIRE_MSG (m_io_grid, "Error! Grid must be setup before setting field manager.\n");
+
+  const auto grid_name = m_io_grid->name();
 
   // If resetting a field manager we want to check that the layouts of all fields are the same.
   if (m_field_mgr) {
-    for (auto felem = m_field_mgr->begin(); felem != m_field_mgr->end(); felem++) {
-      auto name = felem->first;
-      auto field_curr = m_field_mgr->get_field(name);
-      auto field_new  = field_mgr->get_field(name);
+    for (auto felem : m_field_mgr->get_repo(grid_name)) {
+      auto name = felem.first;
+      auto field_curr = m_field_mgr->get_field(name, grid_name);
+      auto field_new  = field_mgr->get_field(name, grid_name);
       // Check Layouts
       auto lay_curr   = field_curr.get_header().get_identifier().get_layout();
       auto lay_new    = field_new.get_header().get_identifier().get_layout();
@@ -153,12 +163,9 @@ set_field_manager (const std::shared_ptr<const fm_type>& field_mgr)
 
   m_field_mgr = field_mgr;
 
-  // Store grid and fm
-  set_grid(m_field_mgr->get_grid());
-
   // Init fields specs
   for (auto const& name : m_fields_names) {
-    auto f = m_field_mgr->get_field(name);
+    auto f = m_field_mgr->get_field(name, grid_name);
     const auto& fh  = f.get_header();
     const auto& fap = fh.get_alloc_properties();
     const auto& fid = fh.get_identifier();
@@ -246,6 +253,8 @@ void AtmosphereInput::read_variables (const int time_index)
   EKAT_REQUIRE_MSG (m_inited_with_views || m_inited_with_fields,
       "Error! Scorpio structures not inited yet. Did you forget to call 'init(..)'?\n");
 
+  const auto grid_name = m_io_grid->name();
+
   for (auto const& name : m_fields_names) {
 
     // Read the data
@@ -257,7 +266,7 @@ void AtmosphereInput::read_variables (const int time_index)
     // synced to both host and device views of the field.
     if (m_field_mgr) {
 
-      auto f = m_field_mgr->get_field(name);
+      auto f = m_field_mgr->get_field(name, grid_name);
       const auto& fh  = f.get_header();
       const auto& fl  = fh.get_identifier().get_layout();
       const auto& fap = fh.get_alloc_properties();
@@ -361,10 +370,10 @@ void AtmosphereInput::read_variables (const int time_index)
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start)/1000.0;
     m_atm_logger->info("  Done! Elapsed time: " + std::to_string(duration.count()) +" seconds");
   }
-} 
+}
 
 /* ---------------------------------------------------------- */
-void AtmosphereInput::finalize() 
+void AtmosphereInput::finalize()
 {
   scorpio::release_file(m_filename);
 
@@ -379,7 +388,7 @@ void AtmosphereInput::finalize()
 } // finalize
 
 /* ---------------------------------------------------------- */
-void AtmosphereInput::init_scorpio_structures() 
+void AtmosphereInput::init_scorpio_structures()
 {
   EKAT_REQUIRE_MSG (m_inited_with_views or m_inited_with_fields,
       "Error! Cannot init scorpio structures until fields/views have been set.\n");
@@ -486,7 +495,7 @@ void AtmosphereInput::set_decompositions()
     // If none of the input vars are decomposed on this grid,
     // then there's nothing to do here
     return;
-  } 
+  }
 
   // Set the decomposition for the partitioned dimension
   const int local_dim = m_io_grid->get_partitioned_dim_local_size();

@@ -113,7 +113,7 @@ void DataInterpolation::run (const util::TimeStamp& ts)
       });
     });
   }
-  
+
   m_vert_remapper->remap_fwd();
 }
 
@@ -462,7 +462,7 @@ setup_vert_remapper (const RemapData& data)
   };
 
   auto vremap = std::make_shared<VerticalRemapper>(m_grid_after_hremap,m_model_grid);
-  
+
   vremap->set_extrapolation_type(s2et(data.extrap_top),VerticalRemapper::Top);
   vremap->set_extrapolation_type(s2et(data.extrap_bot),VerticalRemapper::Bot);
 

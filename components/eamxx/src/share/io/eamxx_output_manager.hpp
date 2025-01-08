@@ -98,14 +98,10 @@ public:
 
   // Setup manager by creating the internal output streams using grids/field data
   // Inputs:
-  //  - field_mgr/field_mgrs: field manager(s) storing fields to be outputed
-  //  - grids_mgr: grid manager to create remapping from field managers grids onto the IO grid.
-  //               This is needed, e.g., when outputing SEGrid fields without duplicating dofs.
+  //  - field_mgr: field manager storing fields to be outputed on various grids
+  //  - grid_names: grid names used for output
   void setup (const std::shared_ptr<fm_type>& field_mgr,
-              const std::shared_ptr<const gm_type>& grids_mgr);
-
-  void setup (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs,
-              const std::shared_ptr<const gm_type>& grids_mgr);
+              const std::set<std::string>& grid_names);
 
   void set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger) {
       m_atm_logger = atm_logger;
@@ -130,9 +126,10 @@ protected:
 
   void set_file_header(const IOFileSpecs& file_specs);
 
-  // Set internal class variables and processes the field_mgrs for restart fields
+  // Set internal class variables and processes the field_mgr for restart fields
   // to add to the parameter list for a model restart managers.
-  void setup_internals (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs);
+  void setup_internals (const std::shared_ptr<fm_type>& field_mgr,
+                        const std::set<std::string>& grid_names);
 
   void setup_file (      IOFileSpecs& filespecs,
                    const IOControl& control);
