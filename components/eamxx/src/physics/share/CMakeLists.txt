@@ -3,11 +3,6 @@ set(PHYSICS_SHARE_SRCS
   physics_share.cpp
   physics_test_data.cpp
   scream_trcmix.cpp
-  ${SCREAM_BASE_DIR}/../eam/src/physics/cam/physics_utils.F90
-  ${SCREAM_BASE_DIR}/../eam/src/physics/cam/scream_abortutils.F90
-  ${SCREAM_BASE_DIR}/../eam/src/physics/cam/wv_sat_scream.F90
-  ${SCREAM_BASE_DIR}/../eam/src/physics/p3/scream/micro_p3_utils.F90
-  ${SCREAM_BASE_DIR}/../eam/src/physics/cam/debug_info.F90
 )
 
 # Add ETI source files if not on CUDA/HIP

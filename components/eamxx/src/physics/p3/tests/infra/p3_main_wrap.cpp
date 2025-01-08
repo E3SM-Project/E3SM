@@ -31,7 +31,6 @@ int test_p3_init () {
   using P3F = Functions<Real, DefaultDevice>;
 
   P3F::p3_init();
-  P3GlobalForFortran::deinit();
   return 0;
 }
 
@@ -43,7 +42,6 @@ int test_p3_ic () {
   d->dt = 300.0;
   P3F::p3_init();
   p3_main_wrap(*d);
-  P3GlobalForFortran::deinit();
   return 0;
 }
 

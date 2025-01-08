@@ -12,22 +12,8 @@ using scream::Real;
 using scream::Int;
 
 
-extern "C" {
-
-void p3_init_a_c(Real* ice_table_vals, Real* collect_table_vals);
-
-} // extern "C" : end _c decls
-
 namespace scream {
 namespace p3 {
-
-void p3_init_a(P3InitAP3Data& d)
-{
-  using P3F = Functions<Real, DefaultDevice>;
-
-  P3F::p3_init(); // need to initialize p3 first so that tables are loaded
-  p3_init_a_c(d.ice_table_vals.data(), d.collect_table_vals.data());
-}
 
 void BackToCellAverageData::randomize(std::mt19937_64& engine)
 {
@@ -329,24 +315,6 @@ void PreventLiqSupersaturationData::randomize(std::mt19937_64& engine)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-std::shared_ptr<P3GlobalForFortran::Views> P3GlobalForFortran::s_views;
-
-const P3GlobalForFortran::Views& P3GlobalForFortran::get()
-{
-  if (!P3GlobalForFortran::s_views) {
-    P3GlobalForFortran::s_views = std::make_shared<Views>();
-    P3F::init_kokkos_ice_lookup_tables(s_views->m_ice_table_vals, s_views->m_collect_table_vals);
-    P3F::init_kokkos_tables(s_views->m_vn_table_vals, s_views->m_vm_table_vals,
-      s_views->m_revap_table_vals, s_views->m_mu_r_table_vals, s_views->m_dnu);
-  }
-  return *P3GlobalForFortran::s_views;
-}
-
-void P3GlobalForFortran::deinit()
-{
-  P3GlobalForFortran::s_views = nullptr;
-}
-
 //
 // _host function definitions
 //
@@ -581,7 +549,7 @@ void cloud_sedimentation_host(
   const Int nk_pack = ekat::npack<Spack>(nk);
 
   // Set up views
-  const auto dnu = P3GlobalForFortran::dnu();
+  const auto dnu = P3F::p3_init().dnu_table_vals;
 
   std::vector<view_1d> temp_d(CloudSedData::NUM_ARRAYS);
 
@@ -672,7 +640,7 @@ void ice_sedimentation_host(
     ni_tend_d    (temp_d[14]);
 
   // Call core function from kernel
-  auto ice_table_vals = P3GlobalForFortran::ice_table_vals();
+  auto ice_table_vals = P3F::p3_init().ice_table_vals;
   auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
   ekat::WorkspaceManager<Spack> wsm(rho_d.extent(0), 6, policy);
   Real my_precip_ice_surf = 0;
@@ -745,8 +713,9 @@ void rain_sedimentation_host(
     precip_liq_flux_d(temp_d[13]);
 
   // Call core function from kernel
-  auto vn_table_vals = P3GlobalForFortran::vn_table_vals();
-  auto vm_table_vals = P3GlobalForFortran::vm_table_vals();
+  auto tables = P3F::p3_init();
+  auto vn_table_vals = tables.vn_table_vals;
+  auto vm_table_vals = tables.vm_table_vals;
   auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
   ekat::WorkspaceManager<Spack> wsm(rho_d.extent(0), 4, policy);
   Real my_precip_liq_surf = 0;
@@ -1085,10 +1054,11 @@ void p3_main_part2_host(
     t_prev_d            (temp_d[current_index++]);
 
   // Call core function from kernel
-  const auto dnu         = P3GlobalForFortran::dnu();
-  const auto ice_table_vals        = P3GlobalForFortran::ice_table_vals();
-  const auto collect_table_vals     = P3GlobalForFortran::collect_table_vals();
-  const auto revap_table_vals = P3GlobalForFortran::revap_table_vals();
+  auto tables = P3F::p3_init();
+  const auto dnu         = tables.dnu_table_vals;
+  const auto ice_table_vals        = tables.ice_table_vals;
+  const auto collect_table_vals     = tables.collect_table_vals;
+  const auto revap_table_vals = tables.revap_table_vals;
   bview_1d bools_d("bools", 1);
   auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
@@ -1208,8 +1178,9 @@ void p3_main_part3_host(
     diag_eff_radius_qr_d       (temp_d[current_index++]);
 
   // Call core function from kernel
-  const auto dnu            = P3GlobalForFortran::dnu();
-  const auto ice_table_vals = P3GlobalForFortran::ice_table_vals();
+  auto tables = P3F::p3_init();
+  const auto dnu            = tables.dnu_table_vals;
+  const auto ice_table_vals = tables.ice_table_vals;
   auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
 
@@ -1256,12 +1227,6 @@ Int p3_main_host(
   using view_2d    = typename P3F::view_2d<Spack>;
   using sview_1d   = typename P3F::view_1d<Real>;
   using sview_2d   = typename P3F::view_2d<Real>;
-
-  using view_1d_table      = typename P3F::view_1d_table;
-  using view_2d_table      = typename P3F::view_2d_table;
-  using view_ice_table     = typename P3F::view_ice_table;
-  using view_collect_table = typename P3F::view_collect_table;
-  using view_dnu_table     = typename P3F::view_dnu_table;
 
   EKAT_REQUIRE_MSG(its == 1, "its must be 1, got " << its);
   EKAT_REQUIRE_MSG(kts == 1, "kts must be 1, got " << kts);
@@ -1403,16 +1368,7 @@ Int p3_main_host(
 #endif
 
   // load tables
-  view_1d_table mu_r_table_vals;
-  view_2d_table vn_table_vals, vm_table_vals, revap_table_vals;
-  view_ice_table ice_table_vals;
-  view_collect_table collect_table_vals;
-  view_dnu_table dnu_table_vals;
-  P3F::init_kokkos_ice_lookup_tables(ice_table_vals, collect_table_vals);
-  P3F::init_kokkos_tables(vn_table_vals, vm_table_vals, revap_table_vals, mu_r_table_vals, dnu_table_vals);
-
-  P3F::P3LookupTables lookup_tables{mu_r_table_vals, vn_table_vals, vm_table_vals, revap_table_vals,
-                                    ice_table_vals, collect_table_vals, dnu_table_vals};
+  auto lookup_tables = P3F::p3_init();
   P3F::P3Runtime runtime_options{740.0e3};
 
   // Create local workspace
