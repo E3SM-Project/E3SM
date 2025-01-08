@@ -335,7 +335,6 @@ int main (int argc, char** argv) {
       printf("Comparing with %s at tol %1.1e\n", baseline_fn.c_str(), tol);
       nerr += bln.run_and_cmp(baseline_fn, tol, no_baseline);
     }
-    P3GlobalForFortran::deinit();
   }
   scream::finalize_scream_session();
 

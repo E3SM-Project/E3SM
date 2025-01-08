@@ -1,6 +1,4 @@
 set(P3_SRCS
-  p3_iso_c.f90
-  ${SCREAM_BASE_DIR}/../eam/src/physics/p3/scream/micro_p3.F90
   eamxx_p3_process_interface.cpp
   eamxx_p3_run.cpp
 )
@@ -82,11 +80,7 @@ endif()
 target_compile_definitions(p3 PUBLIC EAMXX_HAS_P3)
 
 foreach (P3_LIB IN LISTS P3_LIBS)
-  set_target_properties(${P3_LIB} PROPERTIES
-    Fortran_MODULE_DIRECTORY ${P3_LIB}/modules
-  )
   target_include_directories(${P3_LIB} PUBLIC
-    ${CMAKE_CURRENT_BINARY_DIR}/${P3_LIB}/modules
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/impl
     ${SCREAM_BASE_DIR}/../eam/src/physics/cam
@@ -102,20 +96,16 @@ else()
 endif()
 set (P3_TABLES
   scream/tables/p3_lookup_table_1.dat-v4.1.1
-  scream/tables/mu_r_table_vals.dat${PRECISION_SUFFIX}
-  scream/tables/revap_table_vals.dat${PRECISION_SUFFIX}
-  scream/tables/vm_table_vals.dat${PRECISION_SUFFIX}
-  scream/tables/vn_table_vals.dat${PRECISION_SUFFIX}
+  scream/tables/mu_r_table_vals_v2.dat${PRECISION_SUFFIX}
+  scream/tables/revap_table_vals_v2.dat${PRECISION_SUFFIX}
+  scream/tables/vm_table_vals_v2.dat${PRECISION_SUFFIX}
+  scream/tables/vn_table_vals_v2.dat${PRECISION_SUFFIX}
 )
 
 include (ScreamUtils)
 foreach (file IN ITEMS ${P3_TABLES})
   GetInputFile(${file})
 endforeach()
-
-# This executable can be used to re-generate tables in ${SCREAM_DATA_DIR}
-add_executable(p3_tables_setup EXCLUDE_FROM_ALL p3_tables_setup.cpp)
-target_link_libraries(p3_tables_setup p3)
 
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)

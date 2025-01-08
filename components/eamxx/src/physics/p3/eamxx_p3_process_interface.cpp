@@ -241,8 +241,8 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("eff_radius_qr"),m_grid,0.0,5.0e3,false);
 
   // Initialize p3
-  P3F::p3_init(/* write_tables = */ false,
-               this->get_comm().am_i_root());
+  lookup_tables = P3F::p3_init(/* write_tables = */ false,
+                               this->get_comm().am_i_root());
 
   // Initialize all of the structures that are passed to p3_main in run_impl.
   // Note: Some variables in the structures are not stored in the field manager.  For these
@@ -410,12 +410,6 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
     const auto& heat_flux  = get_field_out("heat_flux").get_view<Real*>();
     p3_postproc.set_mass_and_energy_fluxes(vapor_flux, water_flux, ice_flux, heat_flux);
   }
-
-  // Load tables
-  P3F::init_kokkos_ice_lookup_tables(lookup_tables.ice_table_vals, lookup_tables.collect_table_vals);
-  P3F::init_kokkos_tables(lookup_tables.vn_table_vals, lookup_tables.vm_table_vals,
-                          lookup_tables.revap_table_vals, lookup_tables.mu_r_table_vals,
-                          lookup_tables.dnu_table_vals);
 
   // Setup WSM for internal local variables
   const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nk_pack);

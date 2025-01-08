@@ -76,7 +76,7 @@ struct UnitWrap::UnitTest<D>::TestTable3 : public UnitWrap::UnitTest<D>::Base {
     view_1d_table mu_r_table_vals;
     view_2d_table vn_table_vals, vm_table_vals, revap_table_vals;
     view_dnu_table dnu;
-    Functions::init_kokkos_tables(vn_table_vals, vm_table_vals, revap_table_vals, mu_r_table_vals, dnu);
+    Functions::get_global_tables(vn_table_vals, vm_table_vals, revap_table_vals, mu_r_table_vals, dnu);
 
     // Estimate two maximum slope magnitudes for two meshes, the second 10x
     // refined w.r.t. the first.
