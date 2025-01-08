@@ -10,7 +10,7 @@ module mesh_mod
 
 #ifndef HOMME_WITHOUT_PIOLIBRARY
   use pnetcdf ! _EXTERNAL
-  use mpi
+  use mpi, only : MPI_OFFSET_KIND, MPI_COMM_SELF, MPI_INFO_NULL
 #endif
 
   implicit none
@@ -119,7 +119,7 @@ contains
     implicit none
     integer                        :: status
 
-    status = nf90mpi_open(MPI_COMM_WORLD, p_mesh_file_name, NF90_NOWRITE, MPI_INFO_NULL, p_ncid)
+    status = nf90mpi_open(MPI_COMM_SELF, p_mesh_file_name, NF90_NOWRITE, MPI_INFO_NULL, p_ncid)
     if(status /= nf90_NoErr) call handle_error(status, __FILE__, __LINE__)
 
     MeshUseMeshFile = .true. 
@@ -149,6 +149,7 @@ contains
     
      ! local variables
      integer              :: status, number_of_dim_id
+
      integer(MPI_OFFSET_KIND) :: len_pnetcdf
 
      ! Get the id of 'num_elem', if such dimension is not there panic and quit :P
@@ -157,8 +158,8 @@ contains
 
     ! How many values for 'num_elem' are there?
     status = nf90mpi_inquire_dimension(p_ncid, number_of_dim_id, len = len_pnetcdf)
-    if(status /= nf90_NoErr) call handle_error(status, __FILE__, __LINE__)
     number_dimensions = len_pnetcdf
+    if(status /= nf90_NoErr) call handle_error(status, __FILE__, __LINE__)
 
   end function get_number_of_dimensions
 
@@ -171,6 +172,7 @@ contains
     integer              :: number_elements 
     ! local variables
     integer              :: status, number_of_elements_id
+
     integer(MPI_OFFSET_KIND) :: len_pnetcdf
 
     ! Get the id of 'num_elem', if such dimension is not there panic and quit :P
@@ -179,8 +181,8 @@ contains
 
     ! How many values for 'num_elem' are there?
     status = nf90mpi_inquire_dimension(p_ncid, number_of_elements_id, len = len_pnetcdf)
-    if(status /= nf90_NoErr) call handle_error(status, __FILE__, __LINE__)
     number_elements = len_pnetcdf
+    if(status /= nf90_NoErr) call handle_error(status, __FILE__, __LINE__)
 
   end function get_number_of_elements
 
@@ -192,6 +194,7 @@ contains
     integer              :: number_nodes
     ! local variables
     integer              :: status, number_of_nodes_id
+
     integer(MPI_OFFSET_KIND) :: len_pnetcdf
 
     ! Get the id of 'num_nodes', if such dimension is not there panic and quit :P
@@ -200,8 +203,8 @@ contains
 
     ! How many values for 'num_nodes' are there?
     status = nf90mpi_inquire_dimension(p_ncid, number_of_nodes_id, len = len_pnetcdf)
-    if(status /= nf90_NoErr) call handle_error(status, __FILE__, __LINE__)
     number_nodes = len_pnetcdf
+    if(status /= nf90_NoErr) call handle_error(status, __FILE__, __LINE__)
 
   end function get_number_of_nodes
 
@@ -215,16 +218,17 @@ contains
     integer              :: number_element_blocks 
     ! local variables
     integer              :: status, number_of_element_blocks_id
-    integer(MPI_OFFSET_KIND) :: len_pnetcdf
     
+    integer(MPI_OFFSET_KIND) :: len_pnetcdf
+
     ! Get the id of 'num_el_blk', if such dimension is not there panic and quit :P
     status = nf90mpi_inq_dimid(p_ncid, "num_el_blk", number_of_element_blocks_id)
     if(status /= nf90_NoErr) call handle_error(status, __FILE__, __LINE__)
 
     ! How many values for 'num_el_blk' are there?
     status = nf90mpi_inquire_dimension(p_ncid, number_of_element_blocks_id, len = len_pnetcdf)
-    if(status /= nf90_NoErr) call handle_error(status, __FILE__, __LINE__)
     number_element_blocks = len_pnetcdf
+    if(status /= nf90_NoErr) call handle_error(status, __FILE__, __LINE__)
 
      if (number_element_blocks /= 1) then
         if (number_element_blocks /= 6  ) then
@@ -251,6 +255,7 @@ contains
     integer               :: number_of_attributes ! How many attributes in the face
 
     integer               :: status, dimension_id
+
     integer(MPI_OFFSET_KIND) :: len_pnetcdf
 
     if (p_number_blocks == 0)  then
@@ -260,15 +265,15 @@ contains
        status = nf90mpi_inq_dimid(p_ncid, "num_nod_per_el1", dimension_id)
        if(status /= nf90_NoErr) call handle_error(status, __FILE__, __LINE__)
        status = nf90mpi_inquire_dimension(p_ncid, dimension_id, len = len_pnetcdf)
-       if(status /= nf90_NoErr) call handle_error(status, __FILE__, __LINE__)
        num_nodes_per_elem = len_pnetcdf
+       if(status /= nf90_NoErr) call handle_error(status, __FILE__, __LINE__)
        if (num_nodes_per_elem /= 4)  call abortmp('Number of nodes per element is not four')
        ! now we check how many elements there are in the face
        status = nf90mpi_inq_dimid(p_ncid, "num_el_in_blk1", dimension_id)
        if(status /= nf90_NoErr) call handle_error(status, __FILE__, __LINE__)
        status = nf90mpi_inquire_dimension(p_ncid, dimension_id, len = len_pnetcdf)
-       if(status /= nf90_NoErr) call handle_error(status, __FILE__, __LINE__)
        number_elements_in_face = len_pnetcdf
+       if(status /= nf90_NoErr) call handle_error(status, __FILE__, __LINE__)
        number_elements_per_face =  number_elements_in_face
     else if (p_number_blocks == 6) then ! we are in the presence of a cube-sphere
        call abortmp('Reading a mesh for a cube-sphere is not supported')
@@ -304,7 +309,9 @@ contains
 
     status = nf90mpi_inq_varid(p_ncid, "connect1", var_id)
     if(status /= nf90_NoErr) call handle_error(status, __FILE__, __LINE__)
+    status = nf90mpi_begin_indep_data(p_ncid)
     status = nf90mpi_get_var(p_ncid, var_id, p_connectivity)
+    status = nf90mpi_end_indep_data(p_ncid)
     if(status /= nf90_NoErr) call handle_error(status, __FILE__, __LINE__)
   end subroutine get_face_connectivity
 
@@ -356,7 +363,9 @@ contains
 
     status = nf90mpi_inq_varid(p_ncid, "coord", var_id)
     if(status /= nf90_NoErr) call handle_error(status, __FILE__, __LINE__)
+    status = nf90mpi_begin_indep_data(p_ncid)
     status = nf90mpi_get_var(p_ncid, var_id, p_node_coordinates)
+    status = nf90mpi_end_indep_data(p_ncid)
     if(status /= nf90_NoErr) call handle_error(status, __FILE__, __LINE__)
   end subroutine get_node_coordinates
 
