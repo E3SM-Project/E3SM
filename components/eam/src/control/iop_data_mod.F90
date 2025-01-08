@@ -239,6 +239,7 @@ subroutine iop_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
                          scm_observed_aero_in, iop_dosubsidence_in, iop_coriolis_in, &
                          scm_multcols_in, dp_crm_in, iop_perturb_high_in, &
                          precip_off_in, scm_zero_non_iop_tracers_in)
+  use pnetcdf
   !-----------------------------------------------------------------------
   real(r8), intent(in), optional       :: scmlon_in, scmlat_in
   character*(max_path_len), intent(in), optional :: iopfile_in
@@ -386,11 +387,15 @@ subroutine iop_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
                call endrun('SCAM_SETOPTS: SCMLON must be between 0. and 360. degrees.')
             else
                if (latsiz==1 .and. lonsiz==1) then
+                  ret = nf90mpi_begin_indep_data(ncid)
                   ret = nf90mpi_get_var(ncid, lonid, ioplon)
+                  ret = nf90mpi_end_indep_data(ncid)
                   if (ret/=NF90_NOERR) then
                      call endrun('SCAM_SETOPTS: error reading longitude variable from iopfile')
                   end if
+                  ret = nf90mpi_begin_indep_data(ncid)
                   ret = nf90mpi_get_var(ncid, latid, ioplat)
+                  ret = nf90mpi_end_indep_data(ncid)
                   if (ret/=NF90_NOERR) then
                      call endrun('SCAM_SETOPTS: error reading latitude variable from iopfile')
                   end if
@@ -440,7 +445,7 @@ subroutine setiopupdate_init
 ! 
 !-----------------------------------------------------------------------
   use pnetcdf
-  use mpi, only : MPI_COMM_WORLD, MPI_INFO_NULL, MPI_OFFSET_KIND
+  use mpi, only : MPI_OFFSET_KIND, MPI_COMM_SELF, MPI_INFO_NULL
   implicit none
 #if ( defined RS6000 )
   implicit automatic (a-z)
@@ -458,12 +463,13 @@ subroutine setiopupdate_init
    integer :: yr, mon, day                      ! year, month, and day component
    integer :: start_ymd,start_tod
    logical :: doiter
+
    integer(MPI_OFFSET_KIND) :: len_pnetcdf
 !------------------------------------------------------------------------------
 
     ! Open and read pertinent information from the IOP file
 
-    STATUS = NF90MPI_OPEN( MPI_COMM_WORLD, iopfile, NF90_NOWRITE, MPI_INFO_NULL, NCID )
+    STATUS = NF90MPI_OPEN( MPI_COMM_SELF, iopfile, NF90_NOWRITE, MPI_INFO_NULL, NCID )
 
     ! Read time (tsec) variable
 
@@ -499,11 +505,15 @@ subroutine setiopupdate_init
 
     if (.not.allocated(tsec)) allocate(tsec(ntime))
 
+    STATUS = NF90MPI_BEGIN_INDEP_DATA( NCID )
     STATUS = NF90MPI_GET_VAR( NCID, tsec_varID, tsec )
+    STATUS = NF90MPI_END_INDEP_DATA( NCID )
     if ( STATUS .NE. NF90_NOERR )then
        write(iulog,*)'ERROR - setiopupdate.F:Cant get variable tsec'
     endif
+    STATUS = NF90MPI_BEGIN_INDEP_DATA( NCID )
     STATUS = NF90MPI_GET_VAR( NCID, bdate_varID, bdate )
+    STATUS = NF90MPI_END_INDEP_DATA( NCID )
     if ( STATUS .NE. NF90_NOERR )then
        write(iulog,*)'ERROR - setiopupdate.F:Cant get variable bdate'
     endif
@@ -649,7 +659,7 @@ subroutine readiopdata(iop_update_phase1,hyam,hybm)
         use shr_sys_mod,      only: shr_sys_flush
         use error_messages, only : handle_ncerr
         use pnetcdf
-        use mpi, only : MPI_OFFSET_KIND, MPI_COMM_WORLD, MPI_INFO_NULL
+        use mpi, only : MPI_OFFSET_KIND, MPI_COMM_SELF, MPI_INFO_NULL
         use shr_const_mod, only : SHR_CONST_PI
 !-----------------------------------------------------------------------
    implicit none
@@ -692,14 +702,15 @@ subroutine readiopdata(iop_update_phase1,hyam,hybm)
    integer strt4(4),cnt4(4)
    character(len=16) :: lowername
    real(r8), parameter :: rad2deg = 180.0_r8/SHR_CONST_PI
-   integer(MPI_OFFSET_KIND) strt4_pnetcdf(4)
+
    integer(MPI_OFFSET_KIND) :: len_pnetcdf
+   integer(MPI_OFFSET_KIND) strt4_pnetcdf(4)
 
    fill_ends= .false.
 
    ! Open IOP dataset
 
-   call handle_ncerr( nf90mpi_open (MPI_COMM_WORLD, iopfile, 0, MPI_INFO_NULL, ncid),&
+   call handle_ncerr( nf90mpi_open (MPI_COMM_SELF, iopfile, 0, MPI_INFO_NULL, ncid),&
        'readiopdata.F90', __LINE__)
 
    !  If the dataset is a CAM generated dataset set use_replay to true
@@ -733,8 +744,10 @@ subroutine readiopdata(iop_update_phase1,hyam,hybm)
    allocate(tsec(ntime))
 
    status = nf90mpi_inq_varid (ncid, 'tsec', tsec_varID )
+   status = nf90mpi_begin_indep_data(ncid)
    call handle_ncerr( nf90mpi_get_var (ncid, tsec_varID, tsec),&
            'readiopdata.F90', __LINE__)
+   status = nf90mpi_end_indep_data(ncid)
 
    status = nf90mpi_inq_varid (ncid, 'nbdate', bdate_varID )
    if (status /= NF90_NOERR) then
@@ -745,8 +758,10 @@ subroutine readiopdata(iop_update_phase1,hyam,hybm)
          call endrun
       end if
    end if
+   status = nf90mpi_begin_indep_data(ncid)
    call handle_ncerr( nf90mpi_get_var (ncid, bdate_varID, bdate),&
         'readiopdata.F90', __LINE__)
+   status = nf90mpi_end_indep_data(ncid)
 
    !======================================================
    ! read level data
@@ -771,8 +786,10 @@ subroutine readiopdata(iop_update_phase1,hyam,hybm)
       return
    end if
 
+   status = nf90mpi_begin_indep_data(ncid)
    call handle_ncerr( nf90mpi_get_var (ncid, lev_varID, dplevs(:nlev)),&
                     'readiopdata.F90', __LINE__)
+   status = nf90mpi_end_indep_data(ncid)
 
    ! =====================================================
    ! read observed aersol data
@@ -828,8 +845,10 @@ subroutine readiopdata(iop_update_phase1,hyam,hybm)
       return
    end if
 
+   status = nf90mpi_begin_indep_data(ncid)
    call handle_ncerr( nf90mpi_get_var (ncid, mod_varID, dmods(:nmod)),&
                     'readiopdata.F90', __LINE__)
+   status = nf90mpi_end_indep_data(ncid)
 
    status = NF90MPI_INQ_VARID( ncid, 'scm_num', mod_varID )
    if ( status .ne. nf90_noerr ) then
@@ -838,8 +857,10 @@ subroutine readiopdata(iop_update_phase1,hyam,hybm)
       return
    end if
 
+   status = nf90mpi_begin_indep_data(ncid)
    call handle_ncerr( nf90mpi_get_var (ncid, mod_varID, scm_num(:nmod)),&
                     'readiopdata.F90', __LINE__)
+   status = nf90mpi_end_indep_data(ncid)
 
    status = NF90MPI_INQ_VARID( ncid, 'scm_diam', mod_varID )
    if ( status .ne. nf90_noerr ) then
@@ -848,8 +869,10 @@ subroutine readiopdata(iop_update_phase1,hyam,hybm)
       return
    end if
 
+   status = nf90mpi_begin_indep_data(ncid)
    call handle_ncerr( nf90mpi_get_var (ncid, mod_varID, scm_dgnum(:nmod)),&
                     'readiopdata.F90', __LINE__)
+   status = nf90mpi_end_indep_data(ncid)
 
    status = NF90MPI_INQ_VARID( ncid, 'scm_std', mod_varID )
    if ( status .ne. nf90_noerr ) then
@@ -858,8 +881,10 @@ subroutine readiopdata(iop_update_phase1,hyam,hybm)
       return
    end if
 
+   status = nf90mpi_begin_indep_data(ncid)
    call handle_ncerr( nf90mpi_get_var (ncid, mod_varID, scm_std(:nmod)),&
                     'readiopdata.F90', __LINE__)
+   status = nf90mpi_end_indep_data(ncid)
 
    status = NF90MPI_INQ_VARID( ncid, 'scm_accum_div', sps_varID )
    if ( status .ne. nf90_noerr ) then
@@ -868,8 +893,10 @@ subroutine readiopdata(iop_update_phase1,hyam,hybm)
       return
    end if
 
+   status = nf90mpi_begin_indep_data(ncid)
    call handle_ncerr( nf90mpi_get_var (ncid, sps_varID, scm_div(1,:nsps)),&
                     'readiopdata.F90', __LINE__)
+   status = nf90mpi_end_indep_data(ncid)
 
 
    status = NF90MPI_INQ_VARID( ncid, 'scm_aitken_div', sps_varID )
@@ -879,8 +906,10 @@ subroutine readiopdata(iop_update_phase1,hyam,hybm)
       return
    end if
 
+   status = nf90mpi_begin_indep_data(ncid)
    call handle_ncerr( nf90mpi_get_var (ncid, sps_varID, scm_div(2,:nsps)),&
                     'readiopdata.F90', __LINE__)
+   status = nf90mpi_end_indep_data(ncid)
 
    status = NF90MPI_INQ_VARID( ncid, 'scm_coarse_div', sps_varID )
    if ( status .ne. nf90_noerr ) then
@@ -889,8 +918,10 @@ subroutine readiopdata(iop_update_phase1,hyam,hybm)
       return
    end if
 
+   status = nf90mpi_begin_indep_data(ncid)
    call handle_ncerr( nf90mpi_get_var (ncid, sps_varID, scm_div(3,:nsps)),&
                     'readiopdata.F90', __LINE__)
+   status = nf90mpi_end_indep_data(ncid)
 
 endif !scm_observed_aero 
 
@@ -933,10 +964,7 @@ endif !scm_observed_aero
    cnt4(3)  = 1
    cnt4(4)  = 1
 
-   strt4_pnetcdf(1) = strt4(1)
-   strt4_pnetcdf(2) = strt4(2)
-   strt4_pnetcdf(3) = strt4(3)
-   strt4_pnetcdf(4) = strt4(4)
+   strt4_pnetcdf = int(strt4, MPI_OFFSET_KIND)
 
    if (.not. iop_update_phase1) then
 
@@ -948,7 +976,9 @@ endif !scm_observed_aero
        return
      else
        !+ PAB, check the time levels for all variables
+       status = nf90mpi_begin_indep_data(ncid)
        status = nf90mpi_get_var(ncid, varid, psobs, strt4_pnetcdf)
+       status = nf90mpi_end_indep_data(ncid)
        have_ps = .true.
      endif
 
@@ -1041,7 +1071,9 @@ endif !scm_observed_aero
      if ( status .ne. nf90_noerr ) then
        have_srf = .false.
      else
+       status = nf90mpi_begin_indep_data(ncid)
        status = nf90mpi_get_var(ncid, varid, srf(1), strt4_pnetcdf)
+       status = nf90mpi_end_indep_data(ncid)
        have_srf = .true.
      endif
 
@@ -1079,7 +1111,9 @@ endif !scm_observed_aero
      if ( status .ne. nf90_noerr ) then
        have_srf = .false.
      else
+       status = nf90mpi_begin_indep_data(ncid)
        status = nf90mpi_get_var(ncid, varid, srf(1), strt4_pnetcdf)
+       status = nf90mpi_end_indep_data(ncid)
        have_srf = .true.
      endif
 
@@ -1097,7 +1131,9 @@ endif !scm_observed_aero
      if ( status .ne. nf90_noerr ) then
        have_srf = .false.
      else
+       status = nf90mpi_begin_indep_data(ncid)
        status = nf90mpi_get_var(ncid, varid, srf(1), strt4_pnetcdf)
+       status = nf90mpi_end_indep_data(ncid)
        have_srf = .true.
      endif
 
@@ -1113,7 +1149,9 @@ endif !scm_observed_aero
      if ( status .ne. nf90_noerr ) then
        have_srf = .false.
      else
+       status = nf90mpi_begin_indep_data(ncid)
        status = nf90mpi_get_var(ncid, varid, srf(1), strt4_pnetcdf)
+       status = nf90mpi_end_indep_data(ncid)
        have_srf = .true.
      endif
 
@@ -1200,7 +1238,9 @@ endif !scm_observed_aero
      if ( status .ne. nf90_noerr ) then
        have_srf = .false.
      else
+       status = nf90mpi_begin_indep_data(ncid)
        status = nf90mpi_get_var(ncid, varid, srf(1), strt4_pnetcdf)
+       status = nf90mpi_end_indep_data(ncid)
        have_srf = .true.
      endif
 
@@ -1218,7 +1258,9 @@ endif !scm_observed_aero
      if ( status .ne. nf90_noerr ) then
        have_srf = .false.
      else
+       status = nf90mpi_begin_indep_data(ncid)
        status = nf90mpi_get_var(ncid, varid, srf(1), strt4_pnetcdf)
+       status = nf90mpi_end_indep_data(ncid)
        have_srf = .true.
      endif
 
@@ -1236,7 +1278,9 @@ endif !scm_observed_aero
      if ( status .ne. nf90_noerr ) then
        have_srf = .false.
      else
+       status = nf90mpi_begin_indep_data(ncid)
        status = nf90mpi_get_var(ncid, varid, srf(1), strt4_pnetcdf)
+       status = nf90mpi_end_indep_data(ncid)
        have_srf = .true.
      endif
 
@@ -1254,7 +1298,9 @@ endif !scm_observed_aero
      if ( status .ne. nf90_noerr ) then
        have_srf = .false.
      else
+       status = nf90mpi_begin_indep_data(ncid)
        status = nf90mpi_get_var(ncid, varid, srf(1), strt4_pnetcdf)
+       status = nf90mpi_end_indep_data(ncid)
        have_srf = .true.
      endif
 
@@ -1273,7 +1319,9 @@ endif !scm_observed_aero
      if ( status .ne. nf90_noerr ) then
        have_srf = .false.
      else
+       status = nf90mpi_begin_indep_data(ncid)
        status = nf90mpi_get_var(ncid, varid, srf(1), strt4_pnetcdf)
+       status = nf90mpi_end_indep_data(ncid)
        have_srf = .true.
      endif
 
@@ -1291,7 +1339,9 @@ endif !scm_observed_aero
        write(iulog,*)'Could not find variable Ptend. Setting to zero'
        ptend = 0.0_r8
      else
+       status = nf90mpi_begin_indep_data(ncid)
        status = nf90mpi_get_var(ncid, varid, srf(1), strt4_pnetcdf)
+       status = nf90mpi_end_indep_data(ncid)
        have_ptend = .true.
        ptend= srf(1)
      endif
@@ -1437,7 +1487,9 @@ endif !scm_observed_aero
      if ( status .ne. nf90_noerr ) then
        betacam = 0._r8
      else
+       status = nf90mpi_begin_indep_data(ncid)
        status = nf90mpi_get_var(ncid, varid, srf(1), strt4_pnetcdf)
+       status = nf90mpi_end_indep_data(ncid)
        betacam=srf(1)
      endif
 
@@ -1445,7 +1497,9 @@ endif !scm_observed_aero
      if ( status .ne. nf90_noerr ) then
        fixmascam=1.0_r8
      else
+       status = nf90mpi_begin_indep_data(ncid)
        status = nf90mpi_get_var(ncid, varid, srf(1), strt4_pnetcdf)
+       status = nf90mpi_end_indep_data(ncid)
        fixmascam=srf(1)
      endif
    

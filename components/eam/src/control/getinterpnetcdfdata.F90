@@ -31,7 +31,7 @@ subroutine getinterpncdata( NCID, camlat, camlon, TimeIdx, &
    use shr_kind_mod, only: r8 => shr_kind_r8, i8 => shr_kind_i8
    use shr_scam_mod, only: shr_scam_GetCloseLatLon
    use pnetcdf
-   use mpi
+   use mpi, only: MPI_OFFSET_KIND
    implicit none
 !-----------------------------------------------------------------------
 
@@ -56,7 +56,7 @@ subroutine getinterpncdata( NCID, camlat, camlon, TimeIdx, &
 !     -------  locals ---------
 
    real(r8)  surfdat       ! surface value to be added before interpolation
-   integer(MPI_OFFSET_KIND) nlev          ! number of levels in dataset
+   integer nlev          ! number of levels in dataset
    integer     latIdx        ! latitude index
    integer     lonIdx        ! longitude index
    real(r8),allocatable :: tmp(:)
@@ -66,14 +66,18 @@ subroutine getinterpncdata( NCID, camlat, camlon, TimeIdx, &
    integer     var_ndims
    integer     dims_set
    integer     i
-   integer     var_dimIDs( NF90_MAX_VAR_DIMS )
-   integer(MPI_OFFSET_KIND)     start( NF90_MAX_VAR_DIMS ) 
-   integer(MPI_OFFSET_KIND)     count( NF90_MAX_VAR_DIMS )
+   integer     var_dimIDs( 1024 )
+   integer     start( 1024 )
+   integer     count( 1024 )
 
    character   varName*(*)
    character   dim_name*( 256 )
    real(r8)        missing_val
    logical     usable_var
+
+   integer(MPI_OFFSET_KIND)     len_pnetcdf
+   integer(MPI_OFFSET_KIND)     start_pnetcdf( 1024 )
+   integer(MPI_OFFSET_KIND)     count_pnetcdf( 1024 )
 
 !     -------  code ---------
 
@@ -106,7 +110,9 @@ subroutine getinterpncdata( NCID, camlat, camlon, TimeIdx, &
 !     surface variables
 !
    if ( var_ndims .EQ. 0 ) then
+      STATUS = NF90MPI_BEGIN_INDEP_DATA( NCID )
       STATUS = NF90MPI_GET_VAR( NCID, varID, outData )
+      STATUS = NF90MPI_END_INDEP_DATA( NCID )
       return
    endif
 
@@ -140,7 +146,8 @@ subroutine getinterpncdata( NCID, camlat, camlon, TimeIdx, &
       endif
 
       if ( dim_name .EQ. 'lev' ) then
-         STATUS = NF90MPI_INQUIRE_DIMENSION( NCID, var_dimIDs( i ), len=nlev )
+         STATUS = NF90MPI_INQUIRE_DIMENSION( NCID, var_dimIDs( i ), len=len_pnetcdf )
+         nlev = len_pnetcdf
          start( i ) = 1
          count( i ) = nlev       ! Extract all levels
          dims_set = dims_set + 1
@@ -148,7 +155,8 @@ subroutine getinterpncdata( NCID, camlat, camlon, TimeIdx, &
       endif
 
       if ( dim_name .EQ. 'ilev' ) then
-         STATUS = NF90MPI_INQUIRE_DIMENSION( NCID, var_dimIDs( i ), len=nlev )
+         STATUS = NF90MPI_INQUIRE_DIMENSION( NCID, var_dimIDs( i ), len=len_pnetcdf )
+         nlev = len_pnetcdf
          start( i ) = 1
          count( i ) = nlev        ! Extract all levels
          dims_set = dims_set + 1
@@ -178,7 +186,12 @@ subroutine getinterpncdata( NCID, camlat, camlon, TimeIdx, &
 
    allocate(tmp(nlev+1))
 
-   STATUS = NF90MPI_GET_VAR( NCID, varID, tmp, start, count )
+   start_pnetcdf = int(start, MPI_OFFSET_KIND)
+   count_pnetcdf = int(count, MPI_OFFSET_KIND)
+
+   STATUS = NF90MPI_BEGIN_INDEP_DATA( NCID )
+   STATUS = NF90MPI_GET_VAR( NCID, varID, tmp, start_pnetcdf, count_pnetcdf )
+   STATUS = NF90MPI_END_INDEP_DATA( NCID )
 
    if ( STATUS .NE. NF90_NOERR ) then
       write(iulog,* )'ERROR - extractdata.F: Could not get data for input var ', varName

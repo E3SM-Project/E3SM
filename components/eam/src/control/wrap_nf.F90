@@ -14,7 +14,7 @@ module wrap_nf
   use cam_abortutils,   only: endrun
   use cam_logfile,  only: iulog
   use pnetcdf
-  use mpi
+  use mpi, only: MPI_OFFSET_KIND, MPI_COMM_SELF, MPI_INFO_NULL
 
 !-------------------------------------------------------------------------------
 !
@@ -76,7 +76,7 @@ contains
 
    integer ret      ! NetCDF return code
 
-   ret = nf90mpi_create (MPI_COMM_WORLD, path, cmode, MPI_INFO_NULL, ncid)
+   ret = nf90mpi_create (MPI_COMM_SELF, path, cmode, MPI_INFO_NULL, ncid)
    if (ret/=NF90_NOERR) call handle_error (ret)
 
    end subroutine wrap_create
@@ -115,9 +115,12 @@ contains
    integer, intent(out):: dimlen
    character*(*), intent(out):: dimname
 
+   integer(MPI_OFFSET_KIND) :: len_pnetcdf
+
    integer ret      ! NetCDF return code
 
-   !ret = nf90mpi_inquire_dimension (nfid, dimid, dimname, dimlen)
+   ret = nf90mpi_inquire_dimension (nfid, dimid, dimname, len_pnetcdf)
+   dimlen = len_pnetcdf
    if (ret/=NF90_NOERR) call handle_error (ret)
 
    end subroutine wrap_inq_dim
@@ -202,9 +205,12 @@ contains
    integer, intent(in)::  dimid 
    integer, intent(out):: dimlen
    
+   integer(MPI_OFFSET_KIND) :: len_pnetcdf
+
    integer ret      ! NetCDF return code
 
-   !ret = nf90mpi_inquire_dimension (nfid, dimid, len=dimlen)
+   ret = nf90mpi_inquire_dimension (nfid, dimid, len=len_pnetcdf)
+   dimlen = len_pnetcdf
    if (ret/=NF90_NOERR) call handle_error (ret)
    end subroutine wrap_inq_dimlen
 
@@ -357,7 +363,7 @@ contains
 
    integer ret      ! NetCDF return code
 
-   !ret = nf90mpi_get_att(nfid, varid, attname, atttext)
+   ret = nf90mpi_get_att(nfid, varid, attname, atttext)
    if (ret/=NF90_NOERR) then
       write(iulog,*)'WRAP_GET_ATT_TEXT: error reading attribute '//trim(attname)
       call handle_error (ret)
@@ -433,9 +439,12 @@ contains
    integer, intent(out):: dimid
    character*(*), intent(in):: dimname
    
+   integer(MPI_OFFSET_KIND) :: len_pnetcdf
+
    integer ret      ! NetCDF return code
 
-   !ret = nf90mpi_def_dim (nfid, dimname, len, dimid)
+   len_pnetcdf = int(len, MPI_OFFSET_KIND)
+   ret = nf90mpi_def_dim (nfid, dimname, len_pnetcdf, dimid)
    if (ret/=NF90_NOERR) call handle_error (ret)
    end subroutine wrap_def_dim
 
@@ -482,7 +491,9 @@ contains
 
    integer ret      ! NetCDF return code
 
-   !ret = nf90mpi_get_var (nfid, varid, arr)
+   ret = nf90mpi_begin_indep_data(nfid)
+   ret = nf90mpi_get_var (nfid, varid, arr)
+   ret = nf90mpi_end_indep_data(nfid)
    if (ret/=NF90_NOERR) then
      write(iulog,*)'WRAP_GET_VAR_REALX: error reading varid =', varid
      call handle_error (ret)
@@ -507,7 +518,9 @@ contains
 
    integer ret      ! NetCDF return code
 
-   !ret = nf90mpi_get_var (nfid, varid, arr)
+   ret = nf90mpi_begin_indep_data(nfid)
+   ret = nf90mpi_get_var (nfid, varid, arr)
+   ret = nf90mpi_end_indep_data(nfid)
    if (ret/=NF90_NOERR) then
      write(iulog,*)'WRAP_GET_VAR_REAL4: error reading varid =', varid
      call handle_error (ret)
@@ -532,7 +545,9 @@ contains
 
    integer ret      ! NetCDF return code
 
-   !ret = nf90mpi_get_var (nfid, varid, x)
+   ret = nf90mpi_begin_indep_data(nfid)
+   ret = nf90mpi_get_var (nfid, varid, x)
+   ret = nf90mpi_end_indep_data(nfid)
    if (ret/=NF90_NOERR) then
      write(iulog,*)'WRAP_GET_SCALAR_REALX: error reading varid =', varid
      call handle_error (ret)
@@ -557,7 +572,9 @@ contains
 
    integer ret      ! NetCDF return code
 
-   !ret = nf90mpi_get_var (nfid, varid, arr)
+   ret = nf90mpi_begin_indep_data(nfid)
+   ret = nf90mpi_get_var (nfid, varid, arr)
+   ret = nf90mpi_end_indep_data(nfid)
    if (ret/=NF90_NOERR) then
      write(iulog,*)'WRAP_GET_VAR_INT: error reading varid =', varid
      call handle_error (ret)
@@ -582,7 +599,9 @@ contains
 
    integer ret      ! NetCDF return code
 
-   !ret = nf90mpi_get_var (nfid, varid, x)
+   ret = nf90mpi_begin_indep_data(nfid)
+   ret = nf90mpi_get_var (nfid, varid, x)
+   ret = nf90mpi_end_indep_data(nfid)
    if (ret/=NF90_NOERR) then
      write(iulog,*)'WRAP_GET_SCALAR_INT: error reading varid =', varid
      call handle_error (ret)
@@ -607,13 +626,23 @@ contains
    integer, intent(in)::count(:)
    real(r8), intent(out):: arr(:)
 
+   integer(MPI_OFFSET_KIND), allocatable :: start_pnetcdf(:)
+   integer(MPI_OFFSET_KIND), allocatable :: count_pnetcdf(:)
+
    integer ret      ! NetCDF return code
 
-   !ret = nf90mpi_get_var (nfid, varid, arr, start, count)
+   allocate(start_pnetcdf(size(start)), count_pnetcdf(size(count)))
+   start_pnetcdf = int(start, MPI_OFFSET_KIND)
+   count_pnetcdf = int(count, MPI_OFFSET_KIND)
+
+   ret = nf90mpi_begin_indep_data(nfid)
+   ret = nf90mpi_get_var (nfid, varid, arr, start_pnetcdf, count_pnetcdf)
+   ret = nf90mpi_end_indep_data(nfid)
    if (ret/=NF90_NOERR) then
      write(iulog,*)'WRAP_GET_VARA_REALX: error reading varid =', varid
      call handle_error (ret)
    end if
+   deallocate(start_pnetcdf, count_pnetcdf)
    end subroutine wrap_get_vara_realx
 
 !===============================================================================
@@ -634,13 +663,23 @@ contains
    integer, intent(in):: count(:)
    integer, intent(out):: arr(:)
 
+   integer(MPI_OFFSET_KIND), allocatable :: start_pnetcdf(:)
+   integer(MPI_OFFSET_KIND), allocatable :: count_pnetcdf(:)
+
    integer ret      ! NetCDF return code
 
-   !ret = nf90mpi_get_var (nfid, varid, arr, start, count)
+   allocate(start_pnetcdf(size(start)), count_pnetcdf(size(count)))
+   start_pnetcdf = int(start, MPI_OFFSET_KIND)
+   count_pnetcdf = int(count, MPI_OFFSET_KIND)
+
+   ret = nf90mpi_begin_indep_data(nfid)
+   ret = nf90mpi_get_var (nfid, varid, arr, start_pnetcdf, count_pnetcdf)
+   ret = nf90mpi_end_indep_data(nfid)
    if (ret/=NF90_NOERR) then
      write(iulog,*)'WRAP_GET_VARA_INT: error reading varid =', varid
      call handle_error (ret)
    end if
+   deallocate(start_pnetcdf, count_pnetcdf)
    end subroutine wrap_get_vara_int
 
 !===============================================================================
@@ -661,10 +700,20 @@ contains
    integer, intent(in):: count(:)
    character(len=*), intent(out):: text(:)
 
+   integer(MPI_OFFSET_KIND), allocatable :: start_pnetcdf(:)
+   integer(MPI_OFFSET_KIND), allocatable :: count_pnetcdf(:)
+
    integer ret      ! NetCDF return code
 
-   !ret = nf90mpi_get_var (nfid, varid, text, start, count)
+   allocate(start_pnetcdf(size(start)), count_pnetcdf(size(count)))
+   start_pnetcdf = int(start, MPI_OFFSET_KIND)
+   count_pnetcdf = int(count, MPI_OFFSET_KIND)
+
+   ret = nf90mpi_begin_indep_data(nfid)
+   ret = nf90mpi_get_var (nfid, varid, text, start_pnetcdf, count_pnetcdf)
+   ret = nf90mpi_end_indep_data(nfid)
    if (ret/=NF90_NOERR) call handle_error (ret)
+   deallocate(start_pnetcdf, count_pnetcdf)
    end subroutine wrap_get_vara_text
 
 !===============================================================================
@@ -685,7 +734,7 @@ contains
 
    integer ret      ! NetCDF return code
 
-   ret = nf90mpi_open (MPI_COMM_WORLD, path, omode, MPI_INFO_NULL, ncid)
+   ret = nf90mpi_open (MPI_COMM_SELF, path, omode, MPI_INFO_NULL, ncid)
    if (ret/=NF90_NOERR) then
      write(iulog,*)'WRAP_OPEN: nf90mpi_open failed for file ',path
      call handle_error (ret)
@@ -733,7 +782,9 @@ contains
 
    integer ret      ! NetCDF return code
 
-   !ret = nf90mpi_put_var (nfid, varid, arr)
+   ret = nf90mpi_begin_indep_data(nfid)
+   ret = nf90mpi_put_var (nfid, varid, arr)
+   ret = nf90mpi_end_indep_data(nfid)
    if (ret/=NF90_NOERR) call handle_error (ret)
    end subroutine wrap_put_var_int
 
@@ -754,10 +805,18 @@ contains
    integer, intent(in):: index(:)
    integer, intent(in):: ival
 
+   integer(MPI_OFFSET_KIND), allocatable :: index_pnetcdf(:)
+
    integer ret      ! NetCDF return code
 
-   !ret = nf90mpi_put_var (nfid, varid, ival, index)
+   allocate(index_pnetcdf(size(index)))
+   index_pnetcdf = int(index, MPI_OFFSET_KIND)
+
+   ret = nf90mpi_begin_indep_data(nfid)
+   ret = nf90mpi_put_var (nfid, varid, ival, index_pnetcdf)
+   ret = nf90mpi_end_indep_data(nfid)
    if (ret/=NF90_NOERR) call handle_error (ret)
+   deallocate(index_pnetcdf)
    end subroutine wrap_put_var1_int
 
 !===============================================================================
@@ -778,10 +837,20 @@ contains
    integer, intent(in):: count(:)
    integer, intent(in):: arr(:)
 
+   integer(MPI_OFFSET_KIND), allocatable :: start_pnetcdf(:)
+   integer(MPI_OFFSET_KIND), allocatable :: count_pnetcdf(:)
+
    integer ret      ! NetCDF return code
 
-   !ret = nf90mpi_put_var (nfid, varid, arr, start, count)
+   allocate(start_pnetcdf(size(start)), count_pnetcdf(size(count)))
+   start_pnetcdf = int(start, MPI_OFFSET_KIND)
+   count_pnetcdf = int(count, MPI_OFFSET_KIND)
+
+   ret = nf90mpi_begin_indep_data(nfid)
+   ret = nf90mpi_put_var (nfid, varid, arr, start_pnetcdf, count_pnetcdf)
+   ret = nf90mpi_end_indep_data(nfid)
    if (ret/=NF90_NOERR) call handle_error (ret)
+   deallocate(start_pnetcdf, count_pnetcdf)
    end subroutine wrap_put_vara_int
 
 !===============================================================================
@@ -802,10 +871,20 @@ contains
    integer, intent(in):: count(:)
    character(len=*), intent(in):: text(:)
 
+   integer(MPI_OFFSET_KIND), allocatable :: start_pnetcdf(:)
+   integer(MPI_OFFSET_KIND), allocatable :: count_pnetcdf(:)
+
    integer ret      ! NetCDF return code
 
-   !ret = nf90mpi_put_var (nfid, varid, text, start, count)
+   allocate(start_pnetcdf(size(start)), count_pnetcdf(size(count)))
+   start_pnetcdf = int(start, MPI_OFFSET_KIND)
+   count_pnetcdf = int(count, MPI_OFFSET_KIND)
+
+   ret = nf90mpi_begin_indep_data(nfid)
+   ret = nf90mpi_put_var (nfid, varid, text, start_pnetcdf, count_pnetcdf)
+   ret = nf90mpi_end_indep_data(nfid)
    if (ret/=NF90_NOERR) call handle_error (ret)
+   deallocate(start_pnetcdf, count_pnetcdf)
    end subroutine wrap_put_vara_text
 
 !===============================================================================
@@ -825,10 +904,18 @@ contains
    integer, intent(in):: index(:)
    real(r8), intent(in):: val
 
+   integer(MPI_OFFSET_KIND), allocatable :: index_pnetcdf(:)
+
    integer ret      ! NetCDF return code
 
-   !ret = nf90mpi_put_var (nfid, varid, val, index)
+   allocate(index_pnetcdf(size(index)))
+   index_pnetcdf = int(index, MPI_OFFSET_KIND)
+
+   ret = nf90mpi_begin_indep_data(nfid)
+   ret = nf90mpi_put_var (nfid, varid, val, index_pnetcdf)
+   ret = nf90mpi_end_indep_data(nfid)
    if (ret/=NF90_NOERR) call handle_error (ret)
+   deallocate(index_pnetcdf)
    end subroutine wrap_put_var1_realx
 
 !===============================================================================
@@ -849,9 +936,20 @@ contains
    integer, intent(in):: count(:)
    real(r8), intent(in):: arr(:)
 
+   integer(MPI_OFFSET_KIND), allocatable :: start_pnetcdf(:)
+   integer(MPI_OFFSET_KIND), allocatable :: count_pnetcdf(:)
+
    integer ret      ! NetCDF return code
-   !ret = nf90mpi_put_var (nfid, varid, arr, start, count)
+
+   allocate(start_pnetcdf(size(start)), count_pnetcdf(size(count)))
+   start_pnetcdf = int(start, MPI_OFFSET_KIND)
+   count_pnetcdf = int(count, MPI_OFFSET_KIND)
+
+   ret = nf90mpi_begin_indep_data(nfid)
+   ret = nf90mpi_put_var (nfid, varid, arr, start_pnetcdf, count_pnetcdf)
+   ret = nf90mpi_end_indep_data(nfid)
    if (ret/=NF90_NOERR) call handle_error (ret)
+   deallocate(start_pnetcdf, count_pnetcdf)
    end subroutine wrap_put_vara_realx
 
 !===============================================================================
@@ -872,9 +970,20 @@ contains
    integer, intent(in):: count(:)
    real(r4), intent(in):: arr(:)
 
+   integer(MPI_OFFSET_KIND), allocatable :: start_pnetcdf(:)
+   integer(MPI_OFFSET_KIND), allocatable :: count_pnetcdf(:)
+
    integer ret      ! NetCDF return code
-   !ret = nf90mpi_put_var (nfid, varid, arr, start, count)
+
+   allocate(start_pnetcdf(size(start)), count_pnetcdf(size(count)))
+   start_pnetcdf = int(start, MPI_OFFSET_KIND)
+   count_pnetcdf = int(count, MPI_OFFSET_KIND)
+
+   ret = nf90mpi_begin_indep_data(nfid)
+   ret = nf90mpi_put_var (nfid, varid, arr, start_pnetcdf, count_pnetcdf)
+   ret = nf90mpi_end_indep_data(nfid)
    if (ret/=NF90_NOERR) call handle_error (ret)
+   deallocate(start_pnetcdf, count_pnetcdf)
    end subroutine wrap_put_vara_real
 
 !===============================================================================
@@ -895,7 +1004,9 @@ contains
 
    integer ret      ! NetCDF return code
 
-   !ret = nf90mpi_put_var (nfid, varid, arr)
+   ret = nf90mpi_begin_indep_data(nfid)
+   ret = nf90mpi_put_var (nfid, varid, arr)
+   ret = nf90mpi_end_indep_data(nfid)
    if (ret/=NF90_NOERR) call handle_error (ret)
    end subroutine wrap_put_var_realx
 
