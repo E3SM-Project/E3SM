@@ -25,7 +25,7 @@ MODULE WRM_subw_IO_mod
   use WRM_start_op_year, only : WRM_init_StOp_FC
   use mct_mod
   use pnetcdf
-  use mpi           , only : MPI_COMM_WORLD, MPI_INFO_NULL, MPI_OFFSET_KIND
+  use mpi           , only : MPI_COMM_SELF, MPI_INFO_NULL, MPI_OFFSET_KIND
   use pio
   use perf_mod      , only : t_startf, t_stopf
 
@@ -54,7 +54,6 @@ MODULE WRM_subw_IO_mod
      ! !DESCRIPTION: initilization of WRM model
      implicit none
 
-     integer(MPI_OFFSET_KIND) :: len_pnetcdf
      integer :: nr, nd, ng, mth        ! local loop indices
      integer :: cnt, idam, ntotal, cntw, cntg
      integer :: begr, endr, maxnumdependentgrid, lsize, gsize, lsized, gsized, ssize, dimsize
@@ -86,6 +85,8 @@ MODULE WRM_subw_IO_mod
         ReturnFlowFlag, TotalDemandFlag, GroundWaterFlag, ExternalDemandFlag, DamConstructionFlag
 
      character(len=*),parameter :: subname='(WRM_init)'
+
+     integer(MPI_OFFSET_KIND) :: len_pnetcdf
 
      begr = rtmCTL%begr
      endr = rtmCTL%endr
@@ -157,7 +158,7 @@ MODULE WRM_subw_IO_mod
      !-------------------
 
      ! start by opening and reading the dam IDs, can't use pio yet, need decomp first
-     ier = nf90mpi_open(MPI_COMM_WORLD, trim(ctlSubwWRM%paraFile), NF90_NOWRITE, MPI_INFO_NULL, ncdfid)
+     ier = nf90mpi_open(MPI_COMM_SELF, trim(ctlSubwWRM%paraFile), NF90_NOWRITE, MPI_INFO_NULL, ncdfid)
      ier = nf90mpi_inq_dimid(ncdfid,'DependentGrids',did)
      ier = nf90mpi_inquire_dimension(ncdfid,did,len=len_pnetcdf)
      maxNumDependentGrid = len_pnetcdf
@@ -301,7 +302,9 @@ MODULE WRM_subw_IO_mod
      allocate(temp_gridID_from_Dam(ctlSubwWRM%NDam, maxNumDependentGrid))
      temp_gridID_from_Dam = -99
      ier = nf90mpi_inq_varid(ncdfid,'gridID_from_Dam',varid)
+     ier = nf90mpi_begin_indep_data(ncdfid)
      ier = nf90mpi_get_var(ncdfid,varid,temp_gridID_from_Dam)
+     ier = nf90mpi_end_indep_data(ncdfid)
      ier = nf90mpi_close(ncdfid)
 
      allocate (WRMUnit%myDamNum(begr:endr))
