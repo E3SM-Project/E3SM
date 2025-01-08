@@ -2,6 +2,6 @@ site_name: Data-Models
 
 nav:
   - Introduction: 'index.md'
-  - Atmosphere: user-guide/data-atmos-main.md
-  - Land: user-guide/data-land-main.md
-  - Ocean: user-guide/data-ocean-main.md
+  - Atmosphere: user-guide/data-atmos.md
+  - Land: user-guide/data-land.md
+  - Ocean: user-guide/data-ocean.md
