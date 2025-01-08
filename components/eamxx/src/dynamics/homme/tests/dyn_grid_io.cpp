@@ -86,40 +86,34 @@ TEST_CASE("dyn_grid_io")
   FieldIdentifier fid_phys_2 ("field_2",phys_vector3d_mid,nondim,phys_grid->name());
   FieldIdentifier fid_phys_3 ("field_3",phys_scalar2d    ,nondim,phys_grid->name());
 
-  // The starting FM
-  auto fm_dyn = std::make_shared<FieldManager> (dyn_grid);
+  // FM with dyn and phys where we read into
+  auto fm = std::make_shared<FieldManager> (gm);
 
   // The FM we will manually remap onto
   auto fm_ctrl= std::make_shared<FieldManager> (phys_grid);
 
-  // The FM we will read into, and compare against the previous
-  auto fm_phys= std::make_shared<FieldManager> (phys_grid);
-
-  fm_dyn->registration_begins();
-  fm_phys->registration_begins();
+  fm->registration_begins();
   fm_ctrl->registration_begins();
 
   const int ps = HOMMEXX_PACK_SIZE;
   util::TimeStamp t0({2000,1,1},{0,0,0});
 
-  fm_dyn->register_field(FieldRequest(fid_dyn_1,ps));
-  fm_dyn->register_field(FieldRequest(fid_dyn_2,ps));
-  fm_dyn->register_field(FieldRequest(fid_dyn_3));
-
-  fm_phys->register_field(FieldRequest(fid_phys_1,ps));
-  fm_phys->register_field(FieldRequest(fid_phys_2,ps));
-  fm_phys->register_field(FieldRequest(fid_phys_3));
+  fm->register_field(FieldRequest(fid_dyn_1,ps));
+  fm->register_field(FieldRequest(fid_dyn_2,ps));
+  fm->register_field(FieldRequest(fid_dyn_3));
+  fm->register_field(FieldRequest(fid_phys_1,ps));
+  fm->register_field(FieldRequest(fid_phys_2,ps));
+  fm->register_field(FieldRequest(fid_phys_3));
 
   fm_ctrl->register_field(FieldRequest(fid_phys_1,ps));
   fm_ctrl->register_field(FieldRequest(fid_phys_2,ps));
   fm_ctrl->register_field(FieldRequest(fid_phys_3));
 
-  fm_dyn->registration_ends();
-  fm_phys->registration_ends();
+  fm->registration_ends();
   fm_ctrl->registration_ends();
-  fm_dyn->init_fields_time_stamp(t0);
-  fm_phys->init_fields_time_stamp(t0);
-  fm_ctrl->init_fields_time_stamp(t0);
+  fm->init_fields_time_stamp(t0,dyn_grid->name());
+  fm->init_fields_time_stamp(t0, phys_grid->name());
+  fm_ctrl->init_fields_time_stamp(t0, phys_grid->name());
 
   std::vector<std::string> fnames = {"field_1", "field_2", "field_3"};
 
@@ -129,13 +123,13 @@ TEST_CASE("dyn_grid_io")
   auto dyn2ctrl = gm->create_remapper(dyn_grid,phys_grid);
   dyn2ctrl->registration_begins();
   for (const auto& fn : fnames) {
-    auto fd = fm_dyn->get_field(fn);
-    auto fc = fm_ctrl->get_field(fn);
+    auto fd = fm->get_field(fn,dyn_grid->name());
+    auto fc = fm_ctrl->get_field(fn,phys_grid->name());
     dyn2ctrl->register_field(fd,fc);
     randomize(fd,engine,pdf);
 
     // Init phys field to something obviously wrong
-    auto fp = fm_phys->get_field(fn);
+    auto fp = fm->get_field(fn,phys_grid->name());
     fp.deep_copy(-1.0);
   }
   dyn2ctrl->registration_ends();
@@ -155,7 +149,7 @@ TEST_CASE("dyn_grid_io")
 
   OutputManager output;
   output.initialize(comm, out_params, t0, false);
-  output.setup (fm_dyn, gm);
+  output.setup (fm, {dyn_grid->name()});
   output.run(t0);
   output.finalize();
 
@@ -166,14 +160,14 @@ TEST_CASE("dyn_grid_io")
   ekat::ParameterList in_params;
   in_params.set<std::string>("Filename",filename);
   in_params.set<std::vector<std::string>>("Field Names",fnames);
-  AtmosphereInput input (in_params,fm_phys);
+  AtmosphereInput input (in_params,fm,phys_grid->name());
   input.read_variables();
   input.finalize();
 
   // Compare against ctrl fields
   for (const auto& fn : fnames) {
-    auto fp = fm_phys->get_field(fn);
-    auto fc = fm_ctrl->get_field(fn);
+    auto fp = fm->get_field(fn,phys_grid->name());
+    auto fc = fm_ctrl->get_field(fn,phys_grid->name());
     REQUIRE(views_are_equal(fp,fc));
   }
 

@@ -70,9 +70,10 @@ TEST_CASE("io_remap_test","io_remap_test")
   // First set up a field manager and grids manager to interact with the output functions
   auto gm = get_test_gm(io_comm,ncols_src,nlevs_src);
   auto grid = gm->get_grid("Point Grid");
+  const auto gn = grid->name();
   const int  ncols_src_l = grid->get_num_local_dofs();
   auto field_manager = get_test_fm(grid, false);
-  field_manager->init_fields_time_stamp(t0);
+  field_manager->init_fields_time_stamp(t0, gn);
   print (" -> Test Setup ... done\n",io_comm);
 
   // Create remap data for both vertical and horizontal remapping
@@ -146,7 +147,7 @@ TEST_CASE("io_remap_test","io_remap_test")
   print (" -> Create pressure data ... \n",io_comm);
   print ("    -> setup x_src ... \n",io_comm);
   std::vector<Real> x_src;
-  const auto& p_surf_f = field_manager->get_field("p_surf");
+  const auto& p_surf_f = field_manager->get_field("p_surf", gn);
   const auto& p_surf   = p_surf_f.get_view<Real*,Host>();
   const Real dp_x = 16.0/(ncols_src-1);
   for (int ii=0; ii<ncols_src; ii++) {
@@ -172,8 +173,8 @@ TEST_CASE("io_remap_test","io_remap_test")
 
   // With p_surf set we can set the actual data, starting with p_mid and p_int:
   print ("    -> p_mid and p_int ... \n",io_comm);
-  const auto& pm_f = field_manager->get_field("p_mid");
-  const auto& pi_f = field_manager->get_field("p_int");
+  const auto& pm_f = field_manager->get_field("p_mid", gn);
+  const auto& pi_f = field_manager->get_field("p_int", gn);
   const auto& pm_v = pm_f.get_view<Real**,Host>();
   const auto& pi_v = pi_f.get_view<Real**,Host>();
   for (int ii=0; ii<ncols_src_l; ii++) {
@@ -191,11 +192,11 @@ TEST_CASE("io_remap_test","io_remap_test")
   // in pressure, level and component.  This will make it easier to check
   // that the work of the remappers.
   print (" -> Create source data ... \n",io_comm);
-  const auto& Yf_f = field_manager->get_field("Y_flat");
-  const auto& Ym_f = field_manager->get_field("Y_mid");
-  const auto& Yi_f = field_manager->get_field("Y_int");
-  const auto& Vm_f = field_manager->get_field("V_mid");
-  const auto& Vi_f = field_manager->get_field("V_int");
+  const auto& Yf_f = field_manager->get_field("Y_flat", gn);
+  const auto& Ym_f = field_manager->get_field("Y_mid", gn);
+  const auto& Yi_f = field_manager->get_field("Y_int", gn);
+  const auto& Vm_f = field_manager->get_field("V_mid", gn);
+  const auto& Vi_f = field_manager->get_field("V_int", gn);
 
   const auto& Yf_v = Yf_f.get_view<Real*,Host>();
   const auto& Ym_v = Ym_f.get_view<Real**,Host>();
@@ -235,7 +236,7 @@ TEST_CASE("io_remap_test","io_remap_test")
   print ("    -> source data ... \n",io_comm);
   auto source_remap_control = set_output_params("remap_source",remap_filename,p_ref,false,false);
   om_source.initialize(io_comm,source_remap_control,t0,false);
-  om_source.setup(field_manager,gm);
+  om_source.setup(field_manager,gm->get_grid_names());
   io_comm.barrier();
   om_source.init_timestep(t0,dt);
   om_source.run(t0+dt);
@@ -245,7 +246,7 @@ TEST_CASE("io_remap_test","io_remap_test")
   print ("    -> vertical remap ... \n",io_comm);
   auto vert_remap_control = set_output_params("remap_vertical",remap_filename,p_ref,true,false);
   om_vert.initialize(io_comm,vert_remap_control,t0,false);
-  om_vert.setup(field_manager,gm);
+  om_vert.setup(field_manager,gm->get_grid_names());
   io_comm.barrier();
   om_vert.init_timestep(t0,dt);
   om_vert.run(t0+dt);
@@ -255,7 +256,7 @@ TEST_CASE("io_remap_test","io_remap_test")
   print ("    -> horizontal remap ... \n",io_comm);
   auto horiz_remap_control = set_output_params("remap_horizontal",remap_filename,p_ref,false,true);
   om_horiz.initialize(io_comm,horiz_remap_control,t0,false);
-  om_horiz.setup(field_manager,gm);
+  om_horiz.setup(field_manager,gm->get_grid_names());
   io_comm.barrier();
   om_horiz.init_timestep(t0,dt);
   om_horiz.run(t0+dt);
@@ -265,7 +266,7 @@ TEST_CASE("io_remap_test","io_remap_test")
   print ("    -> vertical-horizontal remap ... \n",io_comm);
   auto vert_horiz_remap_control = set_output_params("remap_vertical_horizontal",remap_filename,p_ref,true,true);
   om_vert_horiz.initialize(io_comm,vert_horiz_remap_control,t0,false);
-  om_vert_horiz.setup(field_manager,gm);
+  om_vert_horiz.setup(field_manager,gm->get_grid_names());
   io_comm.barrier();
   om_vert_horiz.init_timestep(t0,dt);
   om_vert_horiz.run(t0+dt);
@@ -287,9 +288,10 @@ TEST_CASE("io_remap_test","io_remap_test")
     print ("    -> vertical remap ... \n",io_comm);
     auto gm_vert   = get_test_gm(io_comm,ncols_src,nlevs_tgt);
     auto grid_vert = gm_vert->get_grid("Point Grid");
+    const auto gn_vert = grid_vert->name();
     auto fm_vert   = get_test_fm(grid_vert,true,p_ref);
     auto vert_in   = set_input_params("remap_vertical",io_comm,t0.to_string(),p_ref);
-    AtmosphereInput test_input(vert_in,fm_vert);
+    AtmosphereInput test_input(vert_in,fm_vert,gn_vert);
     test_input.read_variables();
 
     // Check the "test" metadata, which should match the field name
@@ -314,12 +316,12 @@ TEST_CASE("io_remap_test","io_remap_test")
     // value is expected to be masked.
     //
     // NOTE: For scorpio_output.cpp the mask value for vertical remapping is std::numeric_limits<Real>::max()/10.0
-    const auto& Yf_f_vert = fm_vert->get_field("Y_flat");
-    const auto& Ys_f_vert = fm_vert->get_field("Y_int_at_"+std::to_string(p_ref)+"Pa");
-    const auto& Ym_f_vert = fm_vert->get_field("Y_mid");
-    const auto& Yi_f_vert = fm_vert->get_field("Y_int");
-    const auto& Vm_f_vert = fm_vert->get_field("V_mid");
-    const auto& Vi_f_vert = fm_vert->get_field("V_int");
+    const auto& Yf_f_vert = fm_vert->get_field("Y_flat", gn_vert);
+    const auto& Ys_f_vert = fm_vert->get_field("Y_int_at_"+std::to_string(p_ref)+"Pa", gn_vert);
+    const auto& Ym_f_vert = fm_vert->get_field("Y_mid", gn_vert);
+    const auto& Yi_f_vert = fm_vert->get_field("Y_int", gn_vert);
+    const auto& Vm_f_vert = fm_vert->get_field("V_mid", gn_vert);
+    const auto& Vi_f_vert = fm_vert->get_field("V_int", gn_vert);
 
     const auto& Yf_v_vert = Yf_f_vert.get_view<Real*,Host>();
     const auto& Ys_v_vert = Ys_f_vert.get_view<Real*,Host>();
@@ -357,9 +359,10 @@ TEST_CASE("io_remap_test","io_remap_test")
     print ("    -> horizontal remap ... \n",io_comm);
     auto gm_horiz   = get_test_gm(io_comm,ncols_tgt,nlevs_src);
     auto grid_horiz = gm_horiz->get_grid("Point Grid");
+    const auto gn_horiz = grid_horiz->name();
     auto fm_horiz   = get_test_fm(grid_horiz,false,p_ref);
     auto horiz_in   = set_input_params("remap_horizontal",io_comm,t0.to_string(),p_ref);
-    AtmosphereInput test_input(horiz_in,fm_horiz);
+    AtmosphereInput test_input(horiz_in,fm_horiz,gn_horiz);
     test_input.read_variables();
 
     // Check the "test" metadata, which should match the field name
@@ -382,12 +385,12 @@ TEST_CASE("io_remap_test","io_remap_test")
     //
     // Note: For horizontal remapping we added the variable Y_min_at_XPa to check that this diagnostic does
     // provide some masking, since it applies vertical remapping.
-    const auto& Yf_f_horiz = fm_horiz->get_field("Y_flat");
-    const auto& Ys_f_horiz = fm_horiz->get_field("Y_int_at_"+std::to_string(p_ref)+"Pa");
-    const auto& Ym_f_horiz = fm_horiz->get_field("Y_mid");
-    const auto& Yi_f_horiz = fm_horiz->get_field("Y_int");
-    const auto& Vm_f_horiz = fm_horiz->get_field("V_mid");
-    const auto& Vi_f_horiz = fm_horiz->get_field("V_int");
+    const auto& Yf_f_horiz = fm_horiz->get_field("Y_flat", gn_horiz);
+    const auto& Ys_f_horiz = fm_horiz->get_field("Y_int_at_"+std::to_string(p_ref)+"Pa", gn_horiz);
+    const auto& Ym_f_horiz = fm_horiz->get_field("Y_mid", gn_horiz);
+    const auto& Yi_f_horiz = fm_horiz->get_field("Y_int", gn_horiz);
+    const auto& Vm_f_horiz = fm_horiz->get_field("V_mid", gn_horiz);
+    const auto& Vi_f_horiz = fm_horiz->get_field("V_int", gn_horiz);
 
     const auto& Yf_v_horiz = Yf_f_horiz.get_view<Real*,Host>();
     const auto& Ys_v_horiz = Ys_f_horiz.get_view<Real*,Host>();
@@ -443,9 +446,10 @@ TEST_CASE("io_remap_test","io_remap_test")
     print ("    -> vertical + horizontal remap ... \n",io_comm);
     auto gm_vh   = get_test_gm(io_comm,ncols_tgt,nlevs_tgt);
     auto grid_vh = gm_vh->get_grid("Point Grid");
+    const auto gn_vh = grid_vh->name();
     auto fm_vh   = get_test_fm(grid_vh,true,p_ref);
     auto vh_in   = set_input_params("remap_vertical_horizontal",io_comm,t0.to_string(),p_ref);
-    AtmosphereInput test_input(vh_in,fm_vh);
+    AtmosphereInput test_input(vh_in,fm_vh,gn_vh);
     test_input.read_variables();
 
     // Check the "test" metadata, which should match the field name
@@ -470,12 +474,12 @@ TEST_CASE("io_remap_test","io_remap_test")
     // masking for all variables rather than just the Y_int_at_XPa variable for the horizontal interpolation.
     //
     // NOTE: For scorpio_output.cpp the mask value for vertical remapping is std::numeric_limits<Real>::max()/10.0
-    const auto& Yf_f_vh = fm_vh->get_field("Y_flat");
-    const auto& Ys_f_vh = fm_vh->get_field("Y_int_at_"+std::to_string(p_ref)+"Pa");
-    const auto& Ym_f_vh = fm_vh->get_field("Y_mid");
-    const auto& Yi_f_vh = fm_vh->get_field("Y_int");
-    const auto& Vm_f_vh = fm_vh->get_field("V_mid");
-    const auto& Vi_f_vh = fm_vh->get_field("V_int");
+    const auto& Yf_f_vh = fm_vh->get_field("Y_flat",gn_vh);
+    const auto& Ys_f_vh = fm_vh->get_field("Y_int_at_"+std::to_string(p_ref)+"Pa",gn_vh);
+    const auto& Ym_f_vh = fm_vh->get_field("Y_mid",gn_vh);
+    const auto& Yi_f_vh = fm_vh->get_field("Y_int",gn_vh);
+    const auto& Vm_f_vh = fm_vh->get_field("V_mid",gn_vh);
+    const auto& Vi_f_vh = fm_vh->get_field("V_int",gn_vh);
 
     const auto& Yf_v_vh = Yf_f_vh.get_view<Real*,Host>();
     const auto& Ys_v_vh = Ys_f_vh.get_view<Real*,Host>();
@@ -647,13 +651,13 @@ std::shared_ptr<FieldManager> get_test_fm(std::shared_ptr<const AbstractGrid> gr
 
   // Set some string to be written to file as attribute to the variables
   for (const std::string fname : {"Y_flat","Y_mid","Y_int","V_mid","V_int"}) {
-    auto& f = fm->get_field(fname);
+    auto& f = fm->get_field(fname, gn);
     auto& str_atts = f.get_header().get_extra_data<stratts_t>("io: string attributes");
     str_atts["test"] = fname;
   }
  // Update timestamp
   util::TimeStamp time ({2000,1,1},{0,0,0});
-  fm->init_fields_time_stamp(time);
+  fm->init_fields_time_stamp(time, gn);
 
   // Sync back to device
   f_ps.sync_to_dev();
@@ -665,7 +669,7 @@ std::shared_ptr<FieldManager> get_test_fm(std::shared_ptr<const AbstractGrid> gr
   f_Vm.sync_to_dev();
   f_Vi.sync_to_dev();
   if (p_ref>=0) {
-    auto f_di = fm->get_field("Y_int_at_"+std::to_string(p_ref)+"Pa");
+    auto f_di = fm->get_field("Y_int_at_"+std::to_string(p_ref)+"Pa", gn);
     f_di.sync_to_dev();
   }
 

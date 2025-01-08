@@ -24,20 +24,16 @@ Field::clone() const {
 }
 
 Field
-Field::alias (const std::string& name) const {
-  Field f;
-  f.m_header = get_header().alias(name);
-  f.m_data = m_data;
-  f.m_is_read_only = m_is_read_only;
-  return f;
+Field::clone(const std::string& name) const {
+  return clone(name, get_header().get_identifier().get_grid_name());
 }
 
 Field
-Field::clone(const std::string& name) const {
+Field::clone(const std::string& name, const std::string& grid_name) const {
   // Create new field
   const auto& my_fid = get_header().get_identifier();
   FieldIdentifier fid(name,my_fid.get_layout(),my_fid.get_units(),
-                      my_fid.get_grid_name(),my_fid.data_type());
+                      grid_name,my_fid.data_type());
   Field f(fid);
 
   // Ensure alloc props match
@@ -56,6 +52,15 @@ Field::clone(const std::string& name) const {
   f.deep_copy<Device>(*this);
   f.deep_copy<Host>(*this);
 
+  return f;
+}
+
+Field
+Field::alias (const std::string& name) const {
+  Field f;
+  f.m_header = get_header().alias(name);
+  f.m_data = m_data;
+  f.m_is_read_only = m_is_read_only;
   return f;
 }
 
@@ -185,7 +190,7 @@ Field Field::subfield(const std::string& sf_name,
       "Error! Input field must be allocated in order to subview it.\n");
 
   auto sf_layout = lt.clone();
-  sf_layout.reset_dim(idim, index_end - index_beg);
+  sf_layout.reset_dim(idim, index_end+1 - index_beg);
   // Create identifier for subfield
   FieldIdentifier sf_id(sf_name, sf_layout, sf_units, id.get_grid_name(), id.data_type());
 

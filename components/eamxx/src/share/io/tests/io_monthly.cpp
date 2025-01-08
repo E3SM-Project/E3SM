@@ -113,7 +113,7 @@ void write (const int seed, const ekat::Comm& comm)
   // Create some fields
   auto fm = get_fm(grid,t0,seed);
   std::vector<std::string> fnames;
-  for (auto it : *fm) {
+  for (auto it : fm->get_repo(grid->name())) {
     fnames.push_back(it.second->name());
   }
 
@@ -132,7 +132,7 @@ void write (const int seed, const ekat::Comm& comm)
   // Create Output manager
   OutputManager om;
   om.initialize(comm,om_pl,t0,false);
-  om.setup(fm,gm);
+  om.setup(fm,gm->get_grid_names());
 
   // Time loop: do 11 steps, since we already did Jan output at t0
   const int nsteps = 11;
@@ -144,7 +144,7 @@ void write (const int seed, const ekat::Comm& comm)
 
     // Add 1 to all fields entries
     for (const auto& name : fnames) {
-      auto f = fm->get_field(name);
+      auto f = fm->get_field(name, grid->name());
       add(f,1);
     }
 
@@ -171,7 +171,7 @@ void read (const int seed, const ekat::Comm& comm)
   auto fm0 = get_fm(grid,t0,seed);
   auto fm  = get_fm(grid,t0,-seed-1);
   std::vector<std::string> fnames;
-  for (auto it : *fm) {
+  for (auto it : fm->get_repo(grid->name())) {
     fnames.push_back(it.second->name());
   }
 
@@ -199,12 +199,12 @@ void read (const int seed, const ekat::Comm& comm)
     REQUIRE(scorpio::get_dimlen(filename,"time")==1);
 
     reader_pl.set("Filename",filename);
-    AtmosphereInput reader(reader_pl,fm);
+    AtmosphereInput reader(reader_pl,fm, grid->name());
     reader.read_variables();
 
     for (const auto& fn : fnames) {
-      auto f0 = fm0->get_field(fn).clone();
-      auto f  = fm->get_field(fn);
+      auto f0 = fm0->get_field(fn,grid->name()).clone();
+      auto f  = fm->get_field(fn,grid->name());
       add(f0,n);
       REQUIRE (views_are_equal(f,f0));
     }

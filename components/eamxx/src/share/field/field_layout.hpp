@@ -117,6 +117,7 @@ public:
   // calls get_vector_component_idx()
   int get_vector_dim () const;
   FieldTag get_vector_tag () const;
+  std::vector<std::string> get_dim_names() const;
 
   // If this is the layout of a tensor field, get the idx of the tensor dimensions
   // Note: throws if is_tensor_layout()==false.
@@ -214,7 +215,7 @@ inline long long FieldLayout::size () const {
   return prod;
 }
 
-inline FieldTag FieldLayout::tag (const int idim) const { 
+inline FieldTag FieldLayout::tag (const int idim) const {
   EKAT_REQUIRE_MSG (idim>=0 && idim<m_rank, "Error! Index out of bounds.");
   return m_tags[idim];
 }

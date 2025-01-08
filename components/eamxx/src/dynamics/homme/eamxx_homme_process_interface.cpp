@@ -196,7 +196,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
     add_field<Required>("T_mid",         rg_scalar3d_mid,K,     rgn,N);
     add_field<Required>("ps",            rg_scalar2d    ,Pa,    rgn);
     add_field<Required>("phis",          rg_scalar2d    ,m2/s2, rgn);
-    add_group<Required>("tracers",rgn,N, Bundling::Required, DerivationType::Import, "tracers", pgn);
+    add_group<Required>("tracers",rgn,N, Bundling::Required);
     fv_phys_rrtmgp_active_gases_init(grids_manager);
     // This is needed for the dp_ref init in initialize_homme_state.
     add_field<Computed>("pseudo_density",rg_scalar3d_mid,Pa,    rgn,N);
