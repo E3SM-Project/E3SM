@@ -366,7 +366,7 @@ subroutine orographic_efflength_kim2005( terr, ntarget, ncube, n, jall, &
                                          weights_eul_index_all2, weights_eul_index_all3, &
                                          weights_all, lon_terr, lat_terr, area_target, sgh_target, &
                                          target_center_lat, target_center_lon, &
-                                         target_corner_lat_deg, target_corner_lon_deg, ol_target)
+                                         target_corner_lat, target_corner_lon, ol_target)
   IMPLICIT NONE
   integer, intent(in)  :: ncube
   integer, intent(in)  :: ntarget
@@ -384,8 +384,8 @@ subroutine orographic_efflength_kim2005( terr, ntarget, ncube, n, jall, &
   real(r8),intent(in)  :: lat_terr(n)
   real(r8),intent(in)  :: target_center_lat(ntarget)
   real(r8),intent(in)  :: target_center_lon(ntarget)
-  real(r8),intent(in)  :: target_corner_lat_deg(4,ntarget)
-  real(r8),intent(in)  :: target_corner_lon_deg(4,ntarget)
+  real(r8),intent(in)  :: target_corner_lat(4,ntarget)
+  real(r8),intent(in)  :: target_corner_lon(4,ntarget)
   real(r8),intent(out) :: ol_target(ntarget,4)
   !local 
   integer  :: count,i,ix,iy,ip,ii,j
@@ -415,18 +415,18 @@ subroutine orographic_efflength_kim2005( terr, ntarget, ncube, n, jall, &
     ! (4):  the upper left corner
     !OL1
     if (lat_terr(ii) &!(ii)&
-    .GT.(target_corner_lat_deg(1,i)+target_center_lat(i))/2..and. &
+    .GT.(target_corner_lat(1,i)+target_center_lat(i))/2..and. &
     lat_terr(ii) &!(ii)&
-    .LT.(target_corner_lat_deg(4,i)+target_center_lat(i))/2.) then
+    .LT.(target_corner_lat(4,i)+target_center_lat(i))/2.) then
       Nw(1,i)=Nw(1,i)+wt*terr_if
       area_target_par(1,i)=area_target_par(1,i)+wt
     endif
           
     !OL2
     if (lon_terr(ii) &!(ii)&
-    .GT.(target_corner_lon_deg(1,i)+target_center_lon(i))/2..and. &
+    .GT.(target_corner_lon(1,i)+target_center_lon(i))/2..and. &
       lon_terr(ii) &!(ii)&
-    .LT.(target_corner_lon_deg(3,i)+target_center_lon(i))/2.) then
+    .LT.(target_corner_lon(3,i)+target_center_lon(i))/2.) then
       Nw(2,i)=Nw(2,i)+wt*terr_if
       area_target_par(2,i)=area_target_par(2,i)+wt
     end if

@@ -168,8 +168,6 @@ program convterr
   real(r8), allocatable, dimension(:,:)   :: dxy
   real(r8), allocatable, dimension(:)     :: lat_terr
   real(r8), allocatable, dimension(:)     :: lon_terr
-  real(r8), allocatable, dimension(:,:)   :: target_corner_lon_deg
-  real(r8), allocatable, dimension(:,:)   :: target_corner_lat_deg
   integer :: nvar_dirOA
   integer :: nvar_dirOL
   
@@ -256,8 +254,6 @@ program convterr
   
   allocate ( target_corner_lon(ncorner,ntarget),stat=alloc_error)
   allocate ( target_corner_lat(ncorner,ntarget),stat=alloc_error)
-  allocate ( target_corner_lon_deg(ncorner,ntarget),stat=alloc_error)
-  allocate ( target_corner_lat_deg(ncorner,ntarget),stat=alloc_error)
   
   status = NF_INQ_VARID(ncid, 'grid_corner_lon', lonid)
   status = NF_GET_VAR_DOUBLE(ncid, lonid,target_corner_lon)
@@ -356,8 +352,41 @@ program convterr
   status = NF_GET_VAR_DOUBLE(ncid, landid,terr)
   IF (status .NE. NF_NOERR) CALL HANDLE_ERR(status)
   WRITE(*,*) "min/max of terr",MINVAL(terr),MAXVAL(terr)
+
   !
+  ! read lat/lon coordinates from topo file if shape parameters are requested
   !
+  if (calc_orographic_shape_params) then
+    
+    ! read latitude coordinate
+    allocate ( lat_terr(n),stat=alloc_error )
+    if( alloc_error /= 0 ) then
+      print*,'Program could not allocate space for lat_terr'
+      stop
+    end if
+
+    status = NF_INQ_VARID(ncid, 'lat', landid)
+    IF (status .NE. NF_NOERR) CALL HANDLE_ERR(status)
+
+    status = NF_GET_VAR_DOUBLE(ncid, landid,lat_terr)
+    IF (status .NE. NF_NOERR) CALL HANDLE_ERR(status)
+
+    ! read longitude coordinate
+    allocate ( lon_terr(n),stat=alloc_error )
+    if( alloc_error /= 0 ) then
+      print*,'Program could not allocate space for lon_terr'
+      stop
+    end if
+
+    status = NF_INQ_VARID(ncid, 'lon', landid)
+    IF (status .NE. NF_NOERR) CALL HANDLE_ERR(status)
+
+    status = NF_GET_VAR_DOUBLE(ncid, landid,lon_terr)
+    IF (status .NE. NF_NOERR) CALL HANDLE_ERR(status)
+
+  end if
+  !
+  ! read SGH30
   !
   allocate ( sgh30(n),stat=alloc_error )
   if( alloc_error /= 0 ) then
@@ -887,15 +916,19 @@ program convterr
   ! Orographic shape parameters
   if (calc_orographic_shape_params) then
 
-    nvar_dirOA=2+1
-    nvar_dirOL=180
+    nvar_dirOA = 2   ! only 2 directions needed for asymmetry (i.e. lat/lon)
+    nvar_dirOL = 180 ! 180 => 2 degree angular resolution for effective length
 
+    ! allocate variable for orographic shape calcualtions
     allocate(oa_target(ntarget,nvar_dirOA),     stat=alloc_error)
     allocate(oc_target(ntarget),                stat=alloc_error)
     allocate(ol_target(ntarget,nvar_dirOL),     stat=alloc_error)
     allocate(indexb(ntarget),                   stat=alloc_error)
     allocate(terrout(4,ntarget,maxval(indexb)), stat=alloc_error)
     allocate(dxy(ntarget,nvar_dirOL),           stat=alloc_error)
+
+    ! initialize allocated vairables
+    oa_target = 0
     oc_target = 0
     ol_target = 0
     indexb    = 0
@@ -925,7 +958,7 @@ program convterr
                                       nvar_dirOL, weights_lgr_index_all, weights_eul_index_all(:,1), &
                                       weights_eul_index_all(:,2), weights_eul_index_all(:,3), &
                                       weights_all, target_center_lon, target_center_lat, &
-                                      target_corner_lon_deg, target_corner_lat_deg, &
+                                      target_corner_lon, target_corner_lat, &
                                       lon_terr, lat_terr, sgh_target, area_target, ol_target, &
                                       terrout, dxy)
     
@@ -1066,7 +1099,7 @@ subroutine usage()
    print *, '                                      3km grid (SGH30) is also downscaled,   '
    print *, '                                      but does not depend on the smoothing.  '
    print *, '                                                                             '
-   print *, '  --add-oro-shape                     Enable the calculate of orographic     '
+   print *, '  --add-oro-shape                     Enable the calculation of orographic   '
    print *, '                                      shape parameters needed for certain    '
    print *, '                                      orographic drag schemes. The parameters'
    print *, '                                      are convexivity, asymmetry, and eff.   ' 
