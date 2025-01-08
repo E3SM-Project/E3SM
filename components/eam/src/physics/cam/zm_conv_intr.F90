@@ -69,11 +69,11 @@ module zm_conv_intr
    integer :: nbulk
    type(zm_aero_t), allocatable :: aero(:) ! object contains aerosol information
    
-   real(r8), parameter :: ZM_upper_limit_pref   = 40e2  ! pressure limit above which deep convection is not allowed [Pa]
-   real(r8), parameter :: MCSP_storm_speed_pref = 600e2 ! pressure level for winds in MCSP calculation [Pa]
-   real(r8), parameter :: MCSP_conv_depth_min   = 700e2 ! pressure thickness of convective heating [Pa]
-   real(r8), parameter :: MCSP_shear_min        = 3     ! min shear value for MCSP to be active
-   real(r8), parameter :: MCSP_shear_max        = 200   ! max shear value for MCSP to be active
+   real(r8), parameter :: ZM_upper_limit_pref   = 40e2_r8  ! pressure limit above which deep convection is not allowed [Pa]
+   real(r8), parameter :: MCSP_storm_speed_pref = 600e2_r8 ! pressure level for winds in MCSP calculation [Pa]
+   real(r8), parameter :: MCSP_conv_depth_min   = 700e2_r8 ! pressure thickness of convective heating [Pa]
+   real(r8), parameter :: MCSP_shear_min        = 3.0_r8   ! min shear value for MCSP to be active
+   real(r8), parameter :: MCSP_shear_max        = 200.0_r8 ! max shear value for MCSP to be active
 
 contains
 
@@ -498,8 +498,8 @@ subroutine zm_conv_init(pref_edge)
             call rad_cnst_get_mode_props( 0, m, sigmag=sigmag, dgnumlo=dgnumlo, dgnumhi=dgnumhi )
 
             alnsg               = log(sigmag)
-            aero%voltonumblo(m) = 1 / ( (pi/6)*(dgnumlo**3)*exp(4.5*alnsg**2) )
-            aero%voltonumbhi(m) = 1 / ( (pi/6)*(dgnumhi**3)*exp(4.5*alnsg**2) )
+            aero%voltonumblo(m) = 1 / ( (pi/6.0_r8)*(dgnumlo**3)*exp(4.5_r8*alnsg**2) )
+            aero%voltonumbhi(m) = 1 / ( (pi/6.0_r8)*(dgnumhi**3)*exp(4.5_r8*alnsg**2) )
 
             ! save sigmag of aitken mode
             if (m == aero%mode_aitken_idx) aero%sigmag_aitken = sigmag
@@ -974,9 +974,9 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
                   mcsp_top = state%pint(i,pver+1) - state%pmid(i,k)
                   mcsp_bot = state%pint(i,pver+1) - state%pmid(i,jctop(i))
 
-                  Qm(i,k)  = -1 * Qs_zmconv(i) * alpha2 * sin(2*pi*(mcsp_top/mcsp_bot))
-                  Qmq(i,k) = -1 * Qv_zmconv(i) * alpha2 * sin(2*pi*(mcsp_top/mcsp_bot))
-                  Qmq(i,k) = Qm(i,k)/2500000/4
+                  Qm(i,k)  = -1 * Qs_zmconv(i) * alpha2 * sin(2.0_r8*pi*(mcsp_top/mcsp_bot))
+                  Qmq(i,k) = -1 * Qv_zmconv(i) * alpha2 * sin(2.0_r8*pi*(mcsp_top/mcsp_bot))
+                  Qmq(i,k) = Qm(i,k)/2500000.0_r8/4.0_r8
 
                   Qmu(i,k) = alphau * (cos(pi*(mcsp_top/mcsp_bot)))
                   Qmv(i,k) = alphav * (cos(pi*(mcsp_top/mcsp_bot)))
@@ -984,10 +984,10 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
                   dpg = state%pdel(i,k)/gravit
 
                   Qm_int_end(i)  = Qm_int_end(i) + Qm(i,k) * dpg
-                  Qm_int_end(i)  = Qm_int_end(i) + (2*Qmu(i,k)*ztodt*state%u(i,k)+ &
-                                                   Qmu(i,k)*Qmu(i,k)*ztodt*ztodt)/2 * dpg/ztodt
-                  Qm_int_end(i)  = Qm_int_end(i) + (2*Qmv(i,k)*ztodt*state%v(i,k)+ &
-                                                   Qmv(i,k)*Qmv(i,k)*ztodt*ztodt)/2 * dpg/ztodt
+                  Qm_int_end(i)  = Qm_int_end(i) + (2.0_r8*Qmu(i,k)*ztodt*state%u(i,k)+ &
+                                                   Qmu(i,k)*Qmu(i,k)*ztodt*ztodt)/2.0_r8 * dpg/ztodt
+                  Qm_int_end(i)  = Qm_int_end(i) + (2.0_r8*Qmv(i,k)*ztodt*state%v(i,k)+ &
+                                                   Qmv(i,k)*Qmv(i,k)*ztodt*ztodt)/2.0_r8 * dpg/ztodt
                   Qmq_int_end(i) = Qmq_int_end(i) + Qmq(i,k) * dpg
                   Pa_int_end(i)  = Pa_int_end(i) + state%pdel(i,k)
                end do
@@ -1019,8 +1019,8 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
       MCSP_DT(1:ncol,1:pver) = MCSP_DT(1:ncol,1:pver)/cpair
       call outfld('MCSP_DT    ',MCSP_DT,   pcols, lchnk )
       call outfld('MCSP_freq  ',MCSP_freq, pcols, lchnk )
-      if (doslop_uwind) call outfld('MCSP_DU    ',ptend_loc%u*86400, pcols, lchnk )
-      if (doslop_vwind) call outfld('MCSP_DV    ',ptend_loc%v*86400, pcols, lchnk )
+      if (doslop_uwind) call outfld('MCSP_DU    ',ptend_loc%u*86400.0_r8, pcols, lchnk )
+      if (doslop_vwind) call outfld('MCSP_DV    ',ptend_loc%v*86400.0_r8, pcols, lchnk )
       call outfld('ZM_depth   ',ZM_depth,   pcols, lchnk )
       call outfld('MCSP_shear ',MCSP_shear, pcols, lchnk )
 
@@ -1035,20 +1035,20 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    ! Output fractional occurrence of ZM convection
    freqzm(:) = 0
    do i = 1,lengath
-      freqzm(ideep(i)) = 1.0
+      freqzm(ideep(i)) = 1.0_r8
    end do
    call outfld('FREQZM  ', freqzm, pcols, lchnk )
 
    ! Convert mass flux from reported mb/s to kg/m^2/s
-   mcon(1:ncol,1:pver) = mcon(1:ncol,1:pver) * 100/gravit
+   mcon(1:ncol,1:pver) = mcon(1:ncol,1:pver) * 100.0_r8/gravit
 
    call outfld('CMFMCDZM', mcon, pcols, lchnk )
 
    ! Store upward and downward mass fluxes in un-gathered arrays + convert from mb/s to kg/m^2/s
    do i = 1,lengath
       do k = 1,pver
-         mu_out(ideep(i),k) = mu(i,k) * 100/gravit
-         md_out(ideep(i),k) = md(i,k) * 100/gravit
+         mu_out(ideep(i),k) = mu(i,k) * 100.0_r8/gravit
+         md_out(ideep(i),k) = md(i,k) * 100.0_r8/gravit
       end do
    end do
 
@@ -1360,7 +1360,7 @@ subroutine zm_conv_tend_2( state,  ptend,  ztodt, pbuf, mu, eu, du, md, ed, dp, 
       ! initialize dpdry for call to convtran for tracers of dry mixing ratio type
       dpdry(1:ncol,1:pver) = 0
       do i = 1,lengath
-         dpdry(i,1:pver) = state%pdeldry(ideep(i),1:pver)/100
+         dpdry(i,1:pver) = state%pdeldry(ideep(i),1:pver)/100_r8
       end do
       call t_startf ('convtran2')
       call convtran (lchnk, ptend%lq, state%q, pcnst,  mu, md, &
