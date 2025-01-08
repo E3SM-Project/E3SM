@@ -9,7 +9,7 @@ module boundarydata
   use mpishorthand,    only: mpicom, mpir8, mpiint
 #endif
   use pnetcdf
-  use mpi
+  use mpi,             only: MPI_OFFSET_KIND, MPI_COMM_SELF, MPI_INFO_NULL
   use error_messages,  only: handle_ncerr
   use cam_logfile,     only: iulog
   implicit none
@@ -134,10 +134,12 @@ contains
                    start_pnetcdf = int(start, MPI_OFFSET_KIND)
                    count_pnetcdf = int(count, MPI_OFFSET_KIND)
                    do fld=1,bndydata%fieldcnt
+                      ierr = nf90mpi_begin_indep_data(bndydata%ncid)
                       call handle_ncerr( nf90mpi_get_var(bndydata%ncid, bndydata%dataid(fld) , &
                            bndydata%fields(cols:cole,:,lchnk,fld,np),  &
                            start_pnetcdf(1:ndims), count_pnetcdf(1:ndims)),&
                            _FILE,__LINE__)
+                      ierr = nf90mpi_end_indep_data(bndydata%ncid)
 
                    end do
                    if(cols==ncol) exit
@@ -161,8 +163,10 @@ contains
                 start_pnetcdf = int(start, MPI_OFFSET_KIND)
                 count_pnetcdf = int(count, MPI_OFFSET_KIND)
                 do fld=1,bndydata%fieldcnt
+                   ierr = nf90mpi_begin_indep_data(bndydata%ncid)
                    call handle_ncerr( nf90mpi_get_var(bndydata%ncid, bndydata%dataid(fld), &
                         datain(:,:,:,:,fld), start_pnetcdf, count_pnetcdf),_FILE,__LINE__)
+                   ierr = nf90mpi_end_indep_data(bndydata%ncid)
                 end do
              end if
 #ifdef SPMD
@@ -262,11 +266,11 @@ contains
     integer :: cols, cole
     integer ::  ierr, dimcnt
     integer ::  i, ncol, lchnk
+    character(len=256) :: locfn    ! netcdf local filename to open 
     integer(MPI_OFFSET_KIND) :: len_pnetcdf
     integer(MPI_OFFSET_KIND) :: start_pnetcdf(4), count_pnetcdf(4)
     integer(MPI_OFFSET_KIND), allocatable :: start2d_pnetcdf(:,:), count2d_pnetcdf(:,:)
     integer(MPI_OFFSET_KIND), allocatable :: map_pnetcdf(:)
-    character(len=256) :: locfn    ! netcdf local filename to open 
 
     !
     !-----------------------------------------------------------------------
@@ -281,7 +285,7 @@ contains
     end if
 #endif
     call getfil(bndyfilename, locfn)
-    call handle_ncerr( nf90mpi_open(MPI_COMM_WORLD, locfn, 0, MPI_INFO_NULL, bndydata%ncid),&
+    call handle_ncerr( nf90mpi_open(MPI_COMM_SELF, locfn, 0, MPI_INFO_NULL, bndydata%ncid),&
          _FILE,__LINE__)
 
     !       write(iulog,*)'boundarydata_read: NCOPN returns id ',bndydata%ncid,' for file ',trim(locfn)
@@ -350,8 +354,10 @@ contains
              allocate(bndydata%hybi(levsiz+1))
              call handle_ncerr(nf90mpi_inq_varid(bndydata%ncid,'hybi',hybid),&
                   _FILE,__LINE__)
+             ierr = nf90mpi_begin_indep_data(bndydata%ncid)
              call handle_ncerr( nf90mpi_get_var(bndydata%ncid, hybid, bndydata%hybi ),&
                   _FILE,__LINE__)
+             ierr = nf90mpi_end_indep_data(bndydata%ncid)
           else 
              call endrun('Did not recognize a vertical coordinate variable')
           end if
@@ -393,12 +399,16 @@ contains
 
     call handle_ncerr(nf90mpi_inq_varid(bndydata%ncid, 'date'   , dateid), &
          _FILE,__LINE__)
+    ierr = nf90mpi_begin_indep_data(bndydata%ncid)
     call handle_ncerr( nf90mpi_get_var(bndydata%ncid, dateid, date_tr),&
          _FILE,__LINE__)
+    ierr = nf90mpi_end_indep_data(bndydata%ncid)
     ierr = nf90mpi_inq_varid(bndydata%ncid, 'datesec', secid)
     if(ierr==NF90_NOERR) then
+       ierr = nf90mpi_begin_indep_data(bndydata%ncid)
        call handle_ncerr( nf90mpi_get_var(bndydata%ncid, secid , sec_tr),&
             _FILE,__LINE__)
+       ierr = nf90mpi_end_indep_data(bndydata%ncid)
     else
        sec_tr=0
     end if
@@ -445,11 +455,15 @@ contains
     ! Obtain input data latitude and level arrays.
     !
     if(bndydata%iszonal) then
+       ierr = nf90mpi_begin_indep_data(bndydata%ncid)
        call handle_ncerr( nf90mpi_get_var(bndydata%ncid, latid, bndydata%lat),&
             _FILE,__LINE__)
+       ierr = nf90mpi_end_indep_data(bndydata%ncid)
        ierr = nf90mpi_inq_varid(bndydata%ncid, 'lev'    , levid)
+       ierr = nf90mpi_begin_indep_data(bndydata%ncid)
        call handle_ncerr( nf90mpi_get_var(bndydata%ncid, levid, pin ),&
             _FILE,__LINE__)
+       ierr = nf90mpi_end_indep_data(bndydata%ncid)
     end if
 
     allocate(bndydata%dataid(fieldcnt))
@@ -492,17 +506,21 @@ contains
        start_pnetcdf = int(start, MPI_OFFSET_KIND)
        count_pnetcdf = int(count, MPI_OFFSET_KIND)
        if(associated(bndydata%ps) ) then
+          ierr = nf90mpi_begin_indep_data(bndydata%ncid)
           call handle_ncerr( nf90mpi_get_var(bndydata%ncid, bndydata%psid , &
                tmp_ps(:,1:count(2)), start_pnetcdf(1:2), &
                count_pnetcdf(1:2)),&
                _FILE,__LINE__)
+          ierr = nf90mpi_end_indep_data(bndydata%ncid)
           if(bndydata%np<bndydata%nm) then
              start(2)=bndydata%np
              start_pnetcdf(2) = start(2)
+             ierr = nf90mpi_begin_indep_data(bndydata%ncid)
              call handle_ncerr( nf90mpi_get_var(bndydata%ncid, bndydata%psid , &
                   tmp_ps(:,2:2), start_pnetcdf(1:2), &
                   count_pnetcdf(1:2)),&
                   _FILE,__LINE__)
+             ierr = nf90mpi_end_indep_data(bndydata%ncid)
           end if
 
           do lchnk=begchunk,endchunk
@@ -535,10 +553,12 @@ contains
        count_pnetcdf = int(count, MPI_OFFSET_KIND)
 
        do i=1,fieldcnt
+          ierr = nf90mpi_begin_indep_data(bndydata%ncid)
           call handle_ncerr( nf90mpi_get_var(bndydata%ncid, bndydata%dataid(i) , &
                tmp_fld(:,:,1:count(dimcnt)), &
                start_pnetcdf(1:dimcnt), count_pnetcdf(1:dimcnt)),&
                _FILE,__LINE__)
+          ierr = nf90mpi_end_indep_data(bndydata%ncid)
 
           do lchnk=begchunk,endchunk
              do n=1,phys_state(lchnk)%ncol
@@ -549,10 +569,12 @@ contains
        if(bndydata%np<bndydata%nm) then
           start(dimcnt)=bndydata%np
           do i=1,fieldcnt
+             ierr = nf90mpi_begin_indep_data(bndydata%ncid)
              call handle_ncerr( nf90mpi_get_var(bndydata%ncid, bndydata%dataid(i) , &
                   tmp_fld(:,:,2:2), &
                   start_pnetcdf(1:dimcnt), count_pnetcdf(1:dimcnt)),&
                   _FILE,__LINE__)
+             ierr = nf90mpi_end_indep_data(bndydata%ncid)
              do lchnk=begchunk,endchunk
                 do n=1,phys_state(lchnk)%ncol
                    bndydata%fields(n,:,lchnk,i,1:count(dimcnt)) = tmp_fld(phys_state(lchnk)%cid(n),:,:)
@@ -597,9 +619,7 @@ contains
        end do
 
        allocate(start2d_pnetcdf(4, 1), count2d_pnetcdf(4, 1))
-
        allocate(map_pnetcdf(size(bndydata%map)))
-       map_pnetcdf = int(bndydata%map, MPI_OFFSET_KIND)
 
        do i=1,fieldcnt
           call handle_ncerr( nf90mpi_inq_varid(bndydata%ncid, fieldnames(i), bndydata%dataid(i)),&
@@ -615,29 +635,35 @@ contains
           if(bndydata%np .gt. bndydata%nm) then
              start2d_pnetcdf = int(bndydata%start, MPI_OFFSET_KIND)
              count2d_pnetcdf = int(bndydata%count, MPI_OFFSET_KIND)
+             map_pnetcdf = int(bndydata%map, MPI_OFFSET_KIND)
+             ierr = nf90mpi_begin_indep_data(bndydata%ncid)
              call handle_ncerr( nf90mpi_get_var(bndydata%ncid, bndydata%dataid(i), &
                   datain(:,:,:,:,i),start2d_pnetcdf(:,1), count2d_pnetcdf(:,1), &
                   map=map_pnetcdf),_FILE,__LINE__)
+             ierr = nf90mpi_end_indep_data(bndydata%ncid)
           else
              bndydata%count(bndydata%thistimedim,1)=1
              start2d_pnetcdf = int(bndydata%start, MPI_OFFSET_KIND)
              count2d_pnetcdf = int(bndydata%count, MPI_OFFSET_KIND)
+             ierr = nf90mpi_begin_indep_data(bndydata%ncid)
              call handle_ncerr( nf90mpi_get_var(bndydata%ncid, bndydata%dataid(i), &
                   datain(:,:,:,1:1,i), start2d_pnetcdf(:,1), count2d_pnetcdf(:,1), &
                   map=map_pnetcdf), _FILE,__LINE__)
+             ierr = nf90mpi_end_indep_data(bndydata%ncid)
 
              bndydata%start(bndydata%thistimedim,1)=bndydata%np
              start2d_pnetcdf = int(bndydata%start, MPI_OFFSET_KIND)
              count2d_pnetcdf = int(bndydata%count, MPI_OFFSET_KIND)
+             ierr = nf90mpi_begin_indep_data(bndydata%ncid)
              call handle_ncerr( nf90mpi_get_var(bndydata%ncid, bndydata%dataid(i), &
                   datain(:,:,:,2:2,i), start2d_pnetcdf(:,1), count2d_pnetcdf(:,1), &
                   map=map_pnetcdf), _FILE,__LINE__)
+             ierr = nf90mpi_end_indep_data(bndydata%ncid)
 
           endif
        end do
 
        deallocate(start2d_pnetcdf, count2d_pnetcdf)
-
        deallocate(map_pnetcdf)
 
     end if

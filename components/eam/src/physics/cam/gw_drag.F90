@@ -1,3 +1,4 @@
+
 module gw_drag
 
 !--------------------------------------------------------------------------
@@ -38,7 +39,6 @@ module gw_drag
   ! These are the actual switches for different gravity wave sources.
   ! The orographic control switches are also here
   use phys_control,  only: use_gw_oro, use_gw_front, use_gw_convect, use_gw_energy_fix, use_od_ls, use_od_bl, use_od_ss, od_ls_ncleff, od_bl_ncd, od_ss_sncleff
-  use mpi,           only: MPI_COMM_WORLD, MPI_INFO_NULL
 
 ! Typical module header
   implicit none
@@ -570,6 +570,8 @@ subroutine gw_init_beres(mfcc)
   use ioFileMod,        only: getfil
 #if ( defined SPMD )
   use mpishorthand
+#else
+  use mpi, only: MPI_OFFSET_KIND, MPI_COMM_SELF, MPI_INFO_NULL
 #endif
 
   use pnetcdf
@@ -585,9 +587,8 @@ subroutine gw_init_beres(mfcc)
   ! from the file itself, rather than hard-coded.
   integer, parameter :: ngwv_file = 40
   character(len=256) :: gw_drag_file_loc ! local filepath of gw_drag_file
-  integer(MPI_OFFSET_KIND) :: one_pnetcdf = 1
-  integer(MPI_OFFSET_KIND) :: len_pnetcdf
 
+  integer(MPI_OFFSET_KIND) :: len_pnetcdf
 
   !----------------------------------------------------------------------
   ! read in look-up table for source spectra
@@ -596,7 +597,7 @@ subroutine gw_init_beres(mfcc)
   if (masterproc) then
 
      call getfil(gw_drag_file, gw_drag_file_loc)
-     ncstat = NF90MPI_OPEN (MPI_COMM_WORLD,gw_drag_file_loc,0,MPI_INFO_NULL,ncid)
+     ncstat = NF90MPI_OPEN (MPI_COMM_SELF,gw_drag_file_loc,0,MPI_INFO_NULL,ncid)
 
      if (ncstat .ne. 0) then
         write(iulog,*) 'Error reading in netcdf file ',gw_drag_file,'.  ',&
@@ -615,7 +616,9 @@ subroutine gw_init_beres(mfcc)
      endif
 
      len_pnetcdf = ngwv_file-pgwv+1
-     ncstat = NF90MPI_GET_VAR(ncid,varid,mfcc,start=[one_pnetcdf,one_pnetcdf,len_pnetcdf])
+     ncstat = NF90MPI_BEGIN_INDEP_DATA(ncid)
+     ncstat = NF90MPI_GET_VAR(ncid,varid,mfcc,start=[1_MPI_OFFSET_KIND,1_MPI_OFFSET_KIND,len_pnetcdf])
+     ncstat = NF90MPI_END_INDEP_DATA(ncid)
      ncstat = NF90MPI_CLOSE(ncid)
 
      write(iulog,*) 'Read-in source spectra from file'

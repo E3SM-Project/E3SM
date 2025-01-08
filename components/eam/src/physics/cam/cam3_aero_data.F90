@@ -37,7 +37,7 @@ module cam3_aero_data
   use perf_mod,       only: t_startf, t_stopf
   use cam_logfile,    only: iulog
   use pnetcdf
-  use mpi
+  use mpi,            only: MPI_OFFSET_KIND, MPI_COMM_SELF, MPI_INFO_NULL
 
   implicit none
   private
@@ -267,7 +267,6 @@ subroutine cam3_aero_data_init(phys_state)
    integer dimids(nf90_max_var_dims)      ! variable shape
    integer :: start(4)                  ! start vector for netcdf calls
    integer :: kount(4)                  ! count vector for netcdf calls
-   integer(MPI_OFFSET_KIND) start_pnetcdf(4), kount_pnetcdf(4)
    integer mo                           ! month index
    integer m                            ! constituent index
    integer :: n                         ! loop index
@@ -294,7 +293,10 @@ subroutine cam3_aero_data_init(phys_state)
    real(r8) :: closelat,closelon
 
    character(len=*), parameter :: subname = 'cam3_aero_data_init'
+
    integer(MPI_OFFSET_KIND) :: len_pnetcdf
+   integer(MPI_OFFSET_KIND) :: start_pnetcdf(4)
+   integer(MPI_OFFSET_KIND) :: kount_pnetcdf(4)
    !------------------------------------------------------------------
 
    call t_startf(subname)
@@ -338,7 +340,7 @@ subroutine cam3_aero_data_init(phys_state)
 
    call getfil (bndtvaer, locfn, 0)
 
-   call handle_ncerr( nf90mpi_open (MPI_COMM_WORLD, locfn, 0, MPI_INFO_NULL, aernid),&
+   call handle_ncerr( nf90mpi_open (MPI_COMM_SELF, locfn, 0, MPI_INFO_NULL, aernid),&
       subname, __LINE__)
 
    if (single_column) &
@@ -448,12 +450,16 @@ subroutine cam3_aero_data_init(phys_state)
          end if
 
          ! read in hybi from MATCH
+         ierr = nf90mpi_begin_indep_data(aernid)
          call handle_ncerr( nf90mpi_get_var (aernid, Mhybiid, M_hybi),&
               subname, __LINE__)
+         ierr = nf90mpi_end_indep_data(aernid)
 
          ! Retrieve date and sec variables.
+         ierr = nf90mpi_begin_indep_data(aernid)
          call handle_ncerr( nf90mpi_get_var (aernid, dateid, date_aer),&
               subname, __LINE__)
+         ierr = nf90mpi_end_indep_data(aernid)
          if (timesiz < 12) then
             write(iulog,*) subname//': When cycling aerosols, dataset must have 12 consecutive ', &
                  'months of data starting with Jan'
@@ -508,8 +514,10 @@ subroutine cam3_aero_data_init(phys_state)
 
                start_pnetcdf = int(start, MPI_OFFSET_KIND)
                kount_pnetcdf = int(kount, MPI_OFFSET_KIND)
+               ierr = nf90mpi_begin_indep_data(aernid)
                call handle_ncerr( nf90mpi_get_var (aernid, species_id(m),aerosol_data, start_pnetcdf, kount_pnetcdf),&
                     subname, __LINE__)
+               ierr = nf90mpi_end_indep_data(aernid)
                do j=1,naerlat
                   do k=1,paerlev
                      aerosol_field(:,k,j) = aerosol_data(:,j,k)
@@ -533,8 +541,10 @@ subroutine cam3_aero_data_init(phys_state)
             kount(:) = (/naerlon,naerlat,1,-1/)
             start_pnetcdf = int(start, MPI_OFFSET_KIND)
             kount_pnetcdf = int(kount, MPI_OFFSET_KIND)
+            ierr = nf90mpi_begin_indep_data(aernid)
             call handle_ncerr( nf90mpi_get_var(aernid, Mpsid, M_ps,start_pnetcdf,kount_pnetcdf),&
                  subname, __LINE__)
+            ierr = nf90mpi_end_indep_data(aernid)
          end if
          call scatter_field_to_chunk (1, 1, 1, naerlon, M_ps(:,:), M_ps_cam_col(:,:,n))
       end do     ! n=nm,np (=1,2)
@@ -912,7 +922,6 @@ subroutine aerint (phys_state)
    integer :: ntmp                                ! used in index swapping
    integer :: start(4)                            ! start vector for netcdf calls
    integer :: kount(4)                            ! count vector for netcdf calls
-   integer(MPI_OFFSET_KIND) start_pnetcdf(4), kount_pnetcdf(4)
    integer :: i,j,k                               ! spatial indices
    integer :: m                                   ! constituent index
    integer :: cols, cole
@@ -924,6 +933,10 @@ subroutine aerint (phys_state)
    real(r8) closelat,closelon
 
    character(len=*), parameter :: subname = 'cam3_aero_data.aerint'
+
+   integer(MPI_OFFSET_KIND) :: start_pnetcdf(4)
+   integer(MPI_OFFSET_KIND) :: kount_pnetcdf(4)
+   integer :: ierr
    !-----------------------------------------------------------------------
 
    if (single_column) &
@@ -965,10 +978,12 @@ subroutine aerint (phys_state)
                kount=(/aerosol_datan%count(cols,lchnk),1,-1,-1/)
                start_pnetcdf = int(start, MPI_OFFSET_KIND)
                kount_pnetcdf = int(kount, MPI_OFFSET_KIND)
+               ierr = nf90mpi_begin_indep_data(aerosol_datan%ncid)
                call handle_ncerr( nf90mpi_get_var(aerosol_datan%ncid, aerosol_datan%psid , &
                     aerosol_datan%ps(cols:cole,lchnk,np), start_pnetcdf(1:2), &
                     kount_pnetcdf(1:2)),&
                     subname, __LINE__)
+               ierr = nf90mpi_end_indep_data(aerosol_datan%ncid)
                start(2)=1
                start(3)=mo_nxt
                kount(2)=paerlev
@@ -976,10 +991,12 @@ subroutine aerint (phys_state)
                start_pnetcdf = int(start, MPI_OFFSET_KIND)
                kount_pnetcdf = int(kount, MPI_OFFSET_KIND)
                do m=1,naer
+                  ierr = nf90mpi_begin_indep_data(aerosol_datan%ncid)
                   call handle_ncerr( nf90mpi_get_var(aerosol_datan%ncid, aerosol_datan%dataid(m) , &
                        aerosol_datan%fields(cols:cole,:,lchnk,m,np),  &
                        start_pnetcdf(1:3), kount_pnetcdf(1:3)),&
                        subname, __LINE__)
+                  ierr = nf90mpi_end_indep_data(aerosol_datan%ncid)
 
                end do
                if(cols==ncol) exit
@@ -1001,8 +1018,10 @@ subroutine aerint (phys_state)
                kount(:) = (/naerlon,naerlat,paerlev,1/)
                start_pnetcdf = int(start, MPI_OFFSET_KIND)
                kount_pnetcdf = int(kount, MPI_OFFSET_KIND)
+               ierr = nf90mpi_begin_indep_data(aernid)
                call handle_ncerr( nf90mpi_get_var (aernid, species_id(m), aerosol_data, start_pnetcdf, kount_pnetcdf),&
                     subname, __LINE__)
+               ierr = nf90mpi_end_indep_data(aernid)
 
                do j=1,naerlat
                   do k=1,paerlev
@@ -1028,8 +1047,10 @@ subroutine aerint (phys_state)
                kount(:) = (/naerlon,naerlat,1,-1/)
                start_pnetcdf = int(start, MPI_OFFSET_KIND)
                kount_pnetcdf = int(kount, MPI_OFFSET_KIND)
+               ierr = nf90mpi_begin_indep_data(aernid)
                call handle_ncerr( nf90mpi_get_var (aernid, Mpsid, M_ps, start_pnetcdf, kount_pnetcdf),&
                     subname, __LINE__)
+               ierr = nf90mpi_end_indep_data(aernid)
                write(iulog,*) subname//': Read aerosols data for julian day', Mid(mo_nxt)
             end if
             call scatter_field_to_chunk (1, 1, 1, naerlon, M_ps(:,:), M_ps_cam_col(:,:,np))

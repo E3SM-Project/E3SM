@@ -14,7 +14,7 @@ module chem_surfvals
                              timemgr_datediff, get_curr_calday
    use cam_abortutils,     only: endrun
    use pnetcdf
-   use mpi
+   use mpi,                only: MPI_OFFSET_KIND, MPI_COMM_SELF, MPI_INFO_NULL
    use error_messages, only: handle_ncerr  
    use cam_logfile,    only: iulog
    use m_types,        only: time_ramp
@@ -303,12 +303,13 @@ subroutine ghg_ramp_read()
    integer :: date_id
    integer :: time_id
    integer :: ierror
-   integer(MPI_OFFSET_KIND) :: len_pnetcdf
    character(len=256) :: locfn          ! netcdf local filename to open
+
+   integer(MPI_OFFSET_KIND) :: len_pnetcdf
 
    if (masterproc) then
      call getfil (bndtvghg, locfn, 0)
-     call handle_ncerr( nf90mpi_open (MPI_COMM_WORLD, trim(locfn), NF90_NOWRITE, MPI_INFO_NULL, ncid),subname,__LINE__)
+     call handle_ncerr( nf90mpi_open (MPI_COMM_SELF, trim(locfn), NF90_NOWRITE, MPI_INFO_NULL, ncid),subname,__LINE__)
 
      write(iulog,*)'GHG_RAMP_READ:  reading ramped greenhouse gas surface data from file ',trim(locfn)
 
@@ -335,6 +336,7 @@ subroutine ghg_ramp_read()
      call endrun
    endif
    if (masterproc) then
+     ierror = nf90mpi_begin_indep_data(ncid)
      call handle_ncerr( nf90mpi_get_var (ncid, date_id, yrdata ),subname,__LINE__)
      yrdata = yrdata / 10000
      call handle_ncerr( nf90mpi_get_var (ncid, co2_id, co2 ),subname,__LINE__)
@@ -343,6 +345,7 @@ subroutine ghg_ramp_read()
      call handle_ncerr( nf90mpi_get_var (ncid, f11_id, f11 ),subname,__LINE__)
      call handle_ncerr( nf90mpi_get_var (ncid, f12_id, f12 ),subname,__LINE__)
      call handle_ncerr( nf90mpi_get_var (ncid, adj_id, adj ),subname,__LINE__)
+     ierror = nf90mpi_end_indep_data(ncid)
      call handle_ncerr( nf90mpi_close (ncid),subname,__LINE__)
      write(iulog,*)'GHG_RAMP_READ:  successfully read ramped greenhouse gas surface data from years ',&
 	yrdata(1),' through ',yrdata(ntim)
