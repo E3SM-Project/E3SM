@@ -186,8 +186,6 @@ void run_local (CDR<MT>& cdr, CDRT* cedr_cdr_p,
   const Int nsuplev = cdr.nsuplev;
   const auto cdr_over_super_levels = cdr.cdr_over_super_levels;
   const auto caas_in_suplev = cdr.caas_in_suplev;
-  const auto is_point = Alg::is_point(cdr.alg);
-  const Int n_in_elem = is_point ? np2 : 1;
   const typename CDRT::DeviceOp
 #ifndef COMPOSE_PORT
     &
@@ -213,21 +211,7 @@ void run_local (CDR<MT>& cdr, CDRT* cedr_cdr_p,
 #endif
     const Int k0 = nsublev*spli;
     const Int ti = cdr_over_super_levels ? q : spli*qsize + q;
-    if (is_point) {
-      for (Int g = 0; g < np2; ++g)
-        for (Int sbli = 0; sbli < nsublev; ++sbli) {
-          const Int k = k0 + sbli;
-          if (k >= nlev) break;
-          const auto ie_idx = (cdr_over_super_levels ?
-                               nlevwrem*(n_in_elem*ie + g) + k :
-                               nsublev*(n_in_elem*ie + g) + sbli);
-          const auto lci = ie2lci[ie_idx];
-          const Real Qm = cedr_cdr.get_Qm(lci, ti);
-          const Real rhom = dp3d_c1(np1,g,k) * spheremp1(g);
-          q_c1(q,g,k) = Qm / rhom;
-          qdp_c1(n1_qdp,q,g,k) = q_c1(q,g,k) * dp3d_c1(np1,g,k);
-        }
-    } else if (caas_in_suplev) {
+    if (caas_in_suplev) {
       const auto ie_idx = (cdr_over_super_levels ?
                            nsuplev*ie + spli :
                            ie);
