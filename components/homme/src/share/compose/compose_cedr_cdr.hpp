@@ -9,7 +9,7 @@ namespace homme {
 
 struct Alg {
   enum Enum { qlt, qlt_super_level, qlt_super_level_local_caas, caas,
-              caas_super_level, caas_point };
+              caas_super_level };
   static Enum convert (int cdr_alg) {
     switch (cdr_alg) {
     case 2:  return qlt;
@@ -18,7 +18,6 @@ struct Alg {
     case 3:  return caas;
     case 30: return caas_super_level;
     case 42: return caas_super_level; // actually none
-    case 5:  return caas_point;
     default: cedr_throw_if(true,  "cdr_alg " << cdr_alg << " is invalid.");
     }
   }
@@ -27,10 +26,10 @@ struct Alg {
             e == qlt_super_level_local_caas);
   }
   static bool is_caas (Enum e) {
-    return e == caas || e == caas_super_level || e == caas_point;
+    return e == caas || e == caas_super_level;
   }
   static bool is_point (Enum e) {
-    return e == caas_point;
+    return false;
   }
   static bool is_suplev (Enum e) {
     return (e == qlt_super_level || e == caas_super_level ||
