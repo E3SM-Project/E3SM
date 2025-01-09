@@ -781,6 +781,7 @@ _TESTS = {
     "e3sm_moab_dev" : {
         "time"  : "01:00:00",
         "tests" : (
+            "ERS_Vmoab_Ld3.ne4pg2_r05_oQU480.WCYCL1850NS",
             "ERS_Vmoab_Ld3.ne4pg2_oQU480.WCYCL1850NS",
             "ERS_Vmoab_Ld3.ne4pg2_oQU480.F1850",
             "ERS_Vmoab_Ld3.ne4pg2_ne4pg2.I1850CNPRDCTCBCTOP",
