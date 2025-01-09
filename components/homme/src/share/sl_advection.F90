@@ -1568,7 +1568,7 @@ contains
        end do
        ! Transform eta_dot_dpdn at interfaces to eta_dot at midpoints using the
        ! formula
-       !     eta_dot = eta_dot_dpdn/(A_eta p0 + B_eta ps).
+       !     eta_dot = eta_dot_dpdn/(A_eta p0 + B_eta ps)
        !            a= eta_dot_dpdn diff(eta)/(diff(A) p0 + diff(B) ps).
        !   Compute ps.
        w1 = hvcoord%hyai(1)*hvcoord%ps0 + &
