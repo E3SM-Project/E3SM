@@ -162,6 +162,7 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${SRC_SHARE_DIR}/cxx/ComposeTransportImplGeneral.cpp
     ${SRC_SHARE_DIR}/cxx/ComposeTransportImplTrajectory.cpp
     ${SRC_SHARE_DIR}/cxx/ComposeTransportImplEnhancedTrajectory.cpp
+    ${SRC_SHARE_DIR}/cxx/ComposeTransportImplEnhancedTrajectoryTests.cpp
     ${SRC_SHARE_DIR}/cxx/ComposeTransportImplVerticalRemap.cpp
     ${SRC_SHARE_DIR}/cxx/ComposeTransportImplHypervis.cpp
     ${SRC_SHARE_DIR}/cxx/ComposeTransportImplTest2D.cpp
