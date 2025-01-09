@@ -264,6 +264,8 @@ protected:
 
   // Current simulation casename
   std::string m_casename;
+  // maps grid name to a vector of its initialized fields
+  std::map<std::string, std::vector<std::string>> m_fields_inited;
 };
 
 }  // namespace control
