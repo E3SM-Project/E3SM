@@ -924,8 +924,6 @@ program convterr
     allocate(oc_target(ntarget),                stat=alloc_error)
     allocate(ol_target(ntarget,nvar_dirOL),     stat=alloc_error)
     allocate(indexb(ntarget),                   stat=alloc_error)
-    allocate(terrout(4,ntarget,maxval(indexb)), stat=alloc_error)
-    allocate(dxy(ntarget,nvar_dirOL),           stat=alloc_error)
 
     ! initialize allocated vairables
     oa_target = 0
@@ -954,6 +952,9 @@ program convterr
       i = weights_lgr_index_all(count)
       indexb(i) = indexb(i)+1
     enddo
+    allocate(terrout(4,ntarget,maxval(indexb)), stat=alloc_error)
+    allocate(dxy(ntarget,nvar_dirOL),           stat=alloc_error)
+
     call orographic_efflength_xie2020(terr, ntarget, ncube, n, jall, nlon, nlat, maxval(indexb), &
                                       nvar_dirOL, weights_lgr_index_all, weights_eul_index_all(:,1), &
                                       weights_eul_index_all(:,2), weights_eul_index_all(:,3), &
@@ -961,7 +962,7 @@ program convterr
                                       target_corner_lon, target_corner_lat, &
                                       lon_terr, lat_terr, sgh_target, area_target, ol_target, &
                                       terrout, dxy)
-    
+
   end if
   !-----------------------------------------------------------------------------
   
@@ -979,7 +980,10 @@ program convterr
                                oc_target, oa_target, ol_target, &
                                target_center_lon, target_center_lat, output_topography_file)
   end if
+
   DEALLOCATE(terr_target,sgh30_target,sgh_target)
+
+  if (calc_orographic_shape_params) deallocate(oa_target,oc_target,ol_target,indexb,terrout,dxy)
   
 end program convterr
 

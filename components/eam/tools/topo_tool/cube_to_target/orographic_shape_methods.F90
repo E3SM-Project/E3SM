@@ -640,6 +640,8 @@ subroutine orographic_efflength_xie2020( terr, ntarget, ncube, n, jall, nlon, nl
   real(r8) :: terr_avg(ntarget),wt
   integer :: ii
 
+  logical :: verbose = .true. ! verbosity flag for debugging
+
   !initialize
   index_b=0
   indexii_b=0
@@ -651,7 +653,7 @@ subroutine orographic_efflength_xie2020( terr, ntarget, ncube, n, jall, nlon, nl
   rad=4.0_r8*atan(1.0_r8)/180.0_r8
   !determine correspondent upper and 
   !lower bound of the large grid
-  print*,"begin ol index_b"
+  if (verbose) print*,"  oro_efflen: begin ol index_b"
   do count=1,jall
     i   = weights_lgr_index_all(count)
     index_b(3,i)=index_b(3,i)+1
@@ -665,10 +667,10 @@ subroutine orographic_efflength_xie2020( terr, ntarget, ncube, n, jall, nlon, nl
   do i=2,ntarget
     index_b(1,i)=index_b(2,i-1)+1
   enddo
-  print*,"after index_b"
+  if (verbose) print*,"  oro_efflen: after index_b"
   !leave largest possible dimension first
   allocate(indexii_b(maxval(index_b(3,:)),ntarget),stat=alloc_error)
-  print*,"maxval(index_b(3,:)",maxval(index_b(3,:))
+  if (verbose) print*,"  oro_efflen: maxval(index_b(3,:)",maxval(index_b(3,:))
   indexii_b=0
 
   do i=1,ntarget               
@@ -676,7 +678,7 @@ subroutine orographic_efflength_xie2020( terr, ntarget, ncube, n, jall, nlon, nl
       index_jall(index_b(1,i)+j-1)=j                             
     enddo                
   enddo
-  print*,"after index_jall"
+  if (verbose) print*,"  oro_efflen: after index_jall"
 
   !get terr avg
   terr_avg=0.0_r8
@@ -700,7 +702,7 @@ subroutine orographic_efflength_xie2020( terr, ntarget, ncube, n, jall, nlon, nl
     ! convert to 1D indexing of cubed-sphere
     indexii_b(index_jall(count),i) = (ip-1)*ncube*ncube+(iy-1)*ncube+ix
   enddo
-  print*,"convert indexii_b"
+  if (verbose) print*,"  oro_efflen: convert indexii_b"
   !input small grids and make OL for individual large grid
   !critical height using empirical function
   !set to avg of the height
@@ -726,7 +728,7 @@ subroutine orographic_efflength_xie2020( terr, ntarget, ncube, n, jall, nlon, nl
   where(reflon_terr.gt.350) reflon_terr=reflon_terr-360
   where(reflon_terr.lt.-350) reflon_terr=reflon_terr+360
   !
-  print*,"get reflonlat"
+  if (verbose) print*,"  oro_efflen: get reflonlat"
   !determine real length on cartesian coordinate
   xterr=reflon_terr*cos(lat_terr*rad)
   yterr=reflat_terr
@@ -754,7 +756,7 @@ subroutine orographic_efflength_xie2020( terr, ntarget, ncube, n, jall, nlon, nl
     enddo
   enddo
 
-  print*,"before into orographic_efflength_grid"
+  if (verbose) print*,"  oro_efflen: before into orographic_efflength_grid"
   !input into every large grid
   do j=1,nvar_dir
     do i=1,ntarget
@@ -766,7 +768,7 @@ subroutine orographic_efflength_xie2020( terr, ntarget, ncube, n, jall, nlon, nl
                                       theta1(j), hc(i), ol_target(i,j) )
     enddo
   enddo
-  print*,"after orographic_efflength_grid"
+  if (verbose) print*,"  oro_efflen: after orographic_efflength_grid"
   !get correspondent relationship for terr,terrx,terry,wt
   terrout=1.d36
   do i=1,ntarget
@@ -783,6 +785,8 @@ subroutine orographic_efflength_xie2020( terr, ntarget, ncube, n, jall, nlon, nl
   where(abs(ol_target).gt.1) ol_target=1.0_r8
   where(ol_target.lt.0) ol_target=0.0_r8
   where(ol_target.ne.ol_target) ol_target=0.0_r8
+
+  if (verbose) print*,"  oro_efflen: done"
 
 end subroutine orographic_efflength_xie2020
 !===================================================================================================
