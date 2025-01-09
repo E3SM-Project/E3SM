@@ -1224,6 +1224,7 @@ CONTAINS
                 w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_6,jsea) = 0.0
                 w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_6,jsea) = 0.0
           endif
+        endif
       enddo
 
       !----------------------------------------------------------------------------
