@@ -2028,6 +2028,7 @@
 			<var name="normalBarotropicVelocity"/>
 			<var name="vertCoordMovementWeights"/>
 			<var name="xtime"/>
+			<var_array name="nonLocalSurfaceTracerFlux"/>
 			<var name="simulationStartTime"/>
 			<var name="landIcePressure"/>
 			<var name="landIceDraft"/>
