@@ -406,6 +406,10 @@ void call_function_dropmixnuc(
               }
             });
         team.team_barrier();
+        // HACK: dropmixnuc() requires the parameter enable_aero_vertical_mix,
+        //       so we define it here until we have a better idea of where it
+        //       might come from
+        const bool enable_aero_vertical_mix = true;
         mam4::ndrop::dropmixnuc(
             team, dt, ekat::subview(T_mid, icol), ekat::subview(p_mid, icol),
             ekat::subview(p_int, icol), ekat::subview(pdel, icol),
@@ -417,6 +421,7 @@ void call_function_dropmixnuc(
             spechygro, lmassptr_amode, num2vol_ratio_min_nmodes,
             num2vol_ratio_max_nmodes, numptr_amode, nspec_amode, exp45logsig,
             alogsig, aten, mam_idx, mam_cnst_idx,
+            enable_aero_vertical_mix,
             ekat::subview(qcld, icol),             // out
             ekat::subview(wsub, icol),             // in
             ekat::subview(cloud_frac_prev, icol),  // in

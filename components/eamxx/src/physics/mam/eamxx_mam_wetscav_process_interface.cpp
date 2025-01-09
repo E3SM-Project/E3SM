@@ -539,12 +539,19 @@ void MAMWetscav::run_impl(const double dt) {
         auto wetdens_icol     = ekat::subview(wetdens, icol);
         const auto prain_icol = ekat::subview(prain, icol);
 
+        Real scavimptblnum[mam4::aero_model::nimptblgrow_total]
+                          [mam4::AeroConfig::num_modes()];
+        Real scavimptblvol[mam4::aero_model::nimptblgrow_total]
+                          [mam4::AeroConfig::num_modes()];
+
+        mam4::wetdep::init_scavimptbl(scavimptblvol, scavimptblnum);
+
         mam4::wetdep::aero_model_wetdep(
             team, atm, progs, tends, dt,
             // inputs
             cldt_icol, rprdsh_icol, rprddp_icol, evapcdp_icol, evapcsh_icol,
             dp_frac_icol, sh_frac_icol, icwmrdp_col, icwmrsh_icol, nevapr_icol,
-            dlf_icol, prain_icol,
+            dlf_icol, prain_icol, scavimptblnum, scavimptblvol,
             // outputs
             wet_diameter_icol, dry_diameter_icol, qaerwat_icol, wetdens_icol,
             aerdepwetis_icol, aerdepwetcw_icol, work_icol);
