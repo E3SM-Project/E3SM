@@ -13,18 +13,19 @@
                          MPAS_IO_PNETCDF  = 4, &
                          MPAS_IO_NETCDF4  = 5, &
                          MPAS_IO_PNETCDF5 = 6, &
-                         MPAS_IO_ADIOS    = 7
+                         MPAS_IO_ADIOS    = 7, &
+                         MPAS_IO_ADIOSC   = 8
 
    ! Field and attribute types
-   integer, parameter :: MPAS_IO_REAL     =  8,  &
-                         MPAS_IO_DOUBLE   =  9,  &
-                         MPAS_IO_INT      = 10,  &
-                         MPAS_IO_LOGICAL  = 11,  &
-                         MPAS_IO_CHAR     = 12
+   integer, parameter :: MPAS_IO_REAL     =  9,  &
+                         MPAS_IO_DOUBLE   = 10,  &
+                         MPAS_IO_INT      = 11,  &
+                         MPAS_IO_LOGICAL  = 12,  &
+                         MPAS_IO_CHAR     = 13
 
    ! Field precision
-   integer, parameter :: MPAS_IO_SINGLE_PRECISION = 13, &
-                         MPAS_IO_DOUBLE_PRECISION = 14, &
+   integer, parameter :: MPAS_IO_SINGLE_PRECISION = 14, &
+                         MPAS_IO_DOUBLE_PRECISION = 15, &
 #ifdef SINGLE_PRECISION
                          MPAS_IO_NATIVE_PRECISION = MPAS_IO_SINGLE_PRECISION
 #else
