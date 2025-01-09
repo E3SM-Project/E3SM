@@ -244,21 +244,6 @@ contains
 
       end do
 
-      ! calculate the sum of column weights on each topounit for columns in the hydrologyc filter
-      ! This will be the istsoil, istcrop, and icol_road_perv subset of urban columns
-      ! First zero the topounit sum of weights. This zeros some multiple times, but no harm done.
-      do fc = 1, num_hydrologyc
-         c = filter_hydrologyc(fc)
-         t = col_pp%topounit(c)
-         top_pp%uphill_wt(t) = 0._r8
-      end do
-      ! Next sum the weights
-      do fc = 1, num_hydrologyc
-         c = filter_hydrologyc(fc)
-         t = col_pp%topounit(c)
-         top_pp%uphill_wt(t) = top_pp%uphill_wt(t) + col_pp%wttopounit(c)
-      end do
-
       ! remove stormflow and snow on h2osfc from qflx_top_soil
       do fc = 1, num_hydrologyc
          c = filter_hydrologyc(fc)
@@ -267,14 +252,32 @@ contains
          qflx_top_soil(c) = qflx_top_soil(c) + qflx_snow_h2osfc(c) + qflx_floodc(c)
       end do
 
-      ! flow from uphill topounit goes to top of soil for soil, crop, and pervious road columns
+      ! when using the subgrid hillslope lateral flow mechanism (IM2 from NGEE Arctic):
+      ! 1. calculate fraction of topounit flow that goes to each column
+      ! 2. Calculate the weighted flux from uphill (qflx_from_uphill) and add to qflx_top_soil 
       if (use_IM2_hillslope_hydrology) then
+         ! calculate the sum of column weights on each topounit for columns in the hydrologyc filter
+         ! This will be the istsoil, istcrop, and icol_road_perv subset of urban columns
+         ! First zero the topounit sum of weights. This zeros some multiple times, but no harm done.
+         do fc = 1, num_hydrologyc
+            c = filter_hydrologyc(fc)
+            t = col_pp%topounit(c)
+            top_pp%uphill_wt(t) = 0._r8
+         end do
+         ! Next sum the relevant column weights
+         do fc = 1, num_hydrologyc
+            c = filter_hydrologyc(fc)
+            t = col_pp%topounit(c)
+            top_pp%uphill_wt(t) = top_pp%uphill_wt(t) + col_pp%wttopounit(c)
+         end do
+
+         ! flow from uphill topounit goes to top of soil for soil, crop, and pervious road columns
          do fc = 1, num_hydrologyc
             c = filter_hydrologyc(fc)
             t = col_pp%topounit(c)
             qflx_from_uphill(c) = (col_pp%wttopounit(c)/top_pp%uphill_wt(t)) * (frac_from_uphill * top_ws%from_uphill(t)) / dtime
             qflx_top_soil(c) = qflx_top_soil(c) + qflx_from_uphill(c)
-        end do
+         end do
       endif
 
     end associate
