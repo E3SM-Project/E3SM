@@ -24,6 +24,7 @@ research problems and Department of Energy mission needs while efficiently using
 - [MPAS-Ocean](./MPAS-Ocean/index.md)
 - [MPAS-seaice](./MPAS-seaice/index.md)
 - [Omega](https://docs.e3sm.org/Omega/omega/) — not yet supported.
+- [Data Models](./Data-Models/index.md)
 
 ## Tools
 

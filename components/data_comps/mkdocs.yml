@@ -1,0 +1,7 @@
+site_name: Data-Models
+
+nav:
+  - Introduction: 'index.md'
+  - Atmosphere: user-guide/data-atmos.md
+  - Land: user-guide/data-land.md
+  - Ocean: user-guide/data-ocean.md
