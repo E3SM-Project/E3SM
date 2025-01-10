@@ -38,7 +38,8 @@ module gw_drag
 
   ! These are the actual switches for different gravity wave sources.
   ! The orographic control switches are also here
-  use phys_control,  only: use_gw_oro, use_gw_front, use_gw_convect, use_gw_energy_fix, use_od_ls, use_od_bl, use_od_ss, od_ls_ncleff, od_bl_ncd, od_ss_sncleff
+  use phys_control,  only: use_gw_oro, use_gw_front, use_gw_convect, use_gw_energy_fix, use_od_ls, use_od_bl, use_od_ss
+  use od_common,     only: od_ls_ncleff, od_bl_ncd, od_ss_sncleff
 
 ! Typical module header
   implicit none
