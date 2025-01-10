@@ -241,7 +241,7 @@ static void rrtmgp_initialize(
   load_cld_lutcoeff(cloud_optics_lw_k, cloud_optics_file_lw);
 
   // initialize kokkos rrtmgp pool allocator
-  const size_t base_ref = 80000;
+  const size_t base_ref = 40000;
   const size_t ncol = gas_concs.ncol;
   const size_t nlay = gas_concs.nlay;
   const size_t nlev = SCREAM_NUM_VERTICAL_LEV;
@@ -681,10 +681,11 @@ static void rrtmgp_sw(
   const int size6 = nday*ngpt;
   const int size7 = nday*(nlay+1)*nbnd; // 3
   const int size8 = ncol*nlay*(k_dist.get_ngas()+1);
-  const int size9 = ncol*nlay*ngas;
-  const int size10 = ncol*nlay*ngpt; // 12
+  const int size9 = nday*nlay*ngas;
+  const int size10 = nday*nlay*nbnd; // 3
+  const int size11 = nday*nlay*ngpt; // 9
 
-  const int total_size = size1 + size2*4 + size3*5 + size4 + size5*2 + size6 + size7*3 + size8 + size9 + size10*12;
+  const int total_size = size1 + size2*4 + size3*5 + size4 + size5*2 + size6 + size7*3 + size8 + size9 + size10*3 + size11*9;
   auto data = pool_t::template alloc_and_init<RealT>(total_size); RealT* dcurr = data.data();
 
   auto mu0_day             = view_t<RealT*>  (dcurr, nday); dcurr += size1;
@@ -713,34 +714,36 @@ static void rrtmgp_sw(
 
   auto col_gas             = view_t<RealT***>(dcurr, ncol, nlay, k_dist.get_ngas()+1); dcurr += size8;
 
-  auto concs_mem           = view_t<RealT***>(dcurr, ncol, nlay, ngas); dcurr += size9;
+  auto concs_mem           = view_t<RealT***>(dcurr, nday, nlay, ngas); dcurr += size9;
 
-  auto sw_aero_tau_mem     = view_t<RealT***>(dcurr, ncol, nlay, ngpt); dcurr += size10;
-  auto sw_aero_ssa_mem     = view_t<RealT***>(dcurr, ncol, nlay, ngpt); dcurr += size10;
-  auto sw_aero_g_mem       = view_t<RealT***>(dcurr, ncol, nlay, ngpt); dcurr += size10;
-  auto sw_cloud_tau_mem     = view_t<RealT***>(dcurr, ncol, nlay, ngpt); dcurr += size10;
-  auto sw_cloud_ssa_mem     = view_t<RealT***>(dcurr, ncol, nlay, ngpt); dcurr += size10;
-  auto sw_cloud_g_mem       = view_t<RealT***>(dcurr, ncol, nlay, ngpt); dcurr += size10;
-  auto sw_optics_tau_mem     = view_t<RealT***>(dcurr, ncol, nlay, ngpt); dcurr += size10;
-  auto sw_optics_ssa_mem     = view_t<RealT***>(dcurr, ncol, nlay, ngpt); dcurr += size10;
-  auto sw_optics_g_mem       = view_t<RealT***>(dcurr, ncol, nlay, ngpt); dcurr += size10;
-  auto sw_noaero_tau_mem     = view_t<RealT***>(dcurr, ncol, nlay, ngpt); dcurr += size10;
-  auto sw_noaero_ssa_mem     = view_t<RealT***>(dcurr, ncol, nlay, ngpt); dcurr += size10;
-  auto sw_noaero_g_mem       = view_t<RealT***>(dcurr, ncol, nlay, ngpt); dcurr += size10;
+  auto sw_aero_tau_mem     = view_t<RealT***>(dcurr, nday, nlay, nbnd); dcurr += size10;
+  auto sw_aero_ssa_mem     = view_t<RealT***>(dcurr, nday, nlay, nbnd); dcurr += size10;
+  auto sw_aero_g_mem       = view_t<RealT***>(dcurr, nday, nlay, nbnd); dcurr += size10;
+
+  auto sw_cloud_tau_mem     = view_t<RealT***>(dcurr, nday, nlay, ngpt); dcurr += size11;
+  auto sw_cloud_ssa_mem     = view_t<RealT***>(dcurr, nday, nlay, ngpt); dcurr += size11;
+  auto sw_cloud_g_mem       = view_t<RealT***>(dcurr, nday, nlay, ngpt); dcurr += size11;
+  auto sw_optics_tau_mem     = view_t<RealT***>(dcurr, nday, nlay, ngpt); dcurr += size11;
+  auto sw_optics_ssa_mem     = view_t<RealT***>(dcurr, nday, nlay, ngpt); dcurr += size11;
+  auto sw_optics_g_mem       = view_t<RealT***>(dcurr, nday, nlay, ngpt); dcurr += size11;
+  auto sw_noaero_tau_mem     = view_t<RealT***>(dcurr, nday, nlay, ngpt); dcurr += size11;
+  auto sw_noaero_ssa_mem     = view_t<RealT***>(dcurr, nday, nlay, ngpt); dcurr += size11;
+  auto sw_noaero_g_mem       = view_t<RealT***>(dcurr, nday, nlay, ngpt); dcurr += size11;
 
   const int int_size1 = 2*nbnd;
-  const int int_size2 = ngpt;
-  const int total_int_size = 4 * (int_size1 + int_size2);
+  const int int_size2 = nbnd;
+  const int int_size3 = ngpt;
+  const int total_int_size = 3 * (int_size1 + int_size3) + (int_size1 + int_size2);
   auto int_data = pool_t::template alloc_and_init<int>(total_int_size); int *dcurr_int = int_data.data();
 
   auto sw_aero_band2gpt_mem = view_t<int**>(dcurr_int, 2, nbnd); dcurr_int += int_size1;
-  auto sw_aero_gpt2band_mem = view_t<int*>(dcurr_int, ngpt); dcurr_int += int_size2;
+  auto sw_aero_gpt2band_mem = view_t<int*>(dcurr_int, nbnd); dcurr_int += int_size2;
   auto sw_cloud_band2gpt_mem = view_t<int**>(dcurr_int, 2, nbnd); dcurr_int += int_size1;
-  auto sw_cloud_gpt2band_mem = view_t<int*>(dcurr_int, ngpt); dcurr_int += int_size2;
+  auto sw_cloud_gpt2band_mem = view_t<int*>(dcurr_int, ngpt); dcurr_int += int_size3;
   auto sw_optics_band2gpt_mem = view_t<int**>(dcurr_int, 2, nbnd); dcurr_int += int_size1;
-  auto sw_optics_gpt2band_mem = view_t<int*>(dcurr_int, ngpt); dcurr_int += int_size2;
+  auto sw_optics_gpt2band_mem = view_t<int*>(dcurr_int, ngpt); dcurr_int += int_size3;
   auto sw_noaero_band2gpt_mem = view_t<int**>(dcurr_int, 2, nbnd); dcurr_int += int_size1;
-  auto sw_noaero_gpt2band_mem = view_t<int*>(dcurr_int, ngpt); dcurr_int += int_size2;
+  auto sw_noaero_gpt2band_mem = view_t<int*>(dcurr_int, ngpt); dcurr_int += int_size3;
 
   // Subset mu0
   TIMED_KERNEL(Kokkos::parallel_for(nday, KOKKOS_LAMBDA(int iday) {
@@ -936,7 +939,7 @@ static void rrtmgp_lw(
   const int size7 = ncol*nlay*ngpt; // 5
   const int size8 = ncol*ngpt;
 
-  const int total_size = size1 + size2 + size3*2 + size4 + size5 + size6 + size7*5 * size8;;
+  const int total_size = size1 + size2 + size3*2 + size4 + size5 + size6 + size7*5 + size8;
   auto data = pool_t::template alloc_and_init<RealT>(total_size); RealT *dcurr = data.data();
 
   view_t<RealT*>   t_sfc        (dcurr, ncol); dcurr += size1;
