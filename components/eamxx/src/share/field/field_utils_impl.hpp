@@ -366,6 +366,105 @@ void horiz_contraction(const Field &f_out, const Field &f_in,
   }
 }
 
+template <typename ST>
+void vert_contraction(const Field &f_out, const Field &f_in,
+                      const Field &weight, const ekat::Comm *comm) {
+  using KT          = ekat::KokkosTypes<DefaultDevice>;
+  using RangePolicy = Kokkos::RangePolicy<Field::device_t::execution_space>;
+  using TeamPolicy  = Kokkos::TeamPolicy<Field::device_t::execution_space>;
+  using TeamMember  = typename TeamPolicy::member_type;
+  using ESU         = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+
+  auto l_out = f_out.get_header().get_identifier().get_layout();
+  auto l_in  = f_in.get_header().get_identifier().get_layout();
+  auto l_w   = weight.get_header().get_identifier().get_layout();
+
+  const int nlevs = l_in.dim(l_in.rank() - 1);
+
+  switch(l_in.rank()) {
+    case 1: {
+      auto v_w   = weight.get_view<const ST *>();
+      auto v_in  = f_in.get_view<const ST *>();
+      auto v_out = f_out.get_view<ST>();
+      Kokkos::parallel_reduce(
+          f_out.name(), RangePolicy(0, nlevs),
+          KOKKOS_LAMBDA(const int i, ST &ls) { ls += v_w(i) * v_in(i); },
+          v_out);
+    } break;
+    case 2: {
+      auto v_in    = f_in.get_view<const ST **>();
+      auto v_out   = f_out.get_view<ST *>();
+      const int d0 = l_in.dim(0);
+      auto p       = ESU::get_default_team_policy(d0, nlevs);
+      if(l_w.rank() == 1) {
+        auto v_w = weight.get_view<const ST *>();
+        Kokkos::parallel_for(
+            f_out.name(), p, KOKKOS_LAMBDA(const TeamMember &tm) {
+              const int i = tm.league_rank();
+              Kokkos::parallel_reduce(
+                  Kokkos::TeamVectorRange(tm, nlevs),
+                  [&](int j, ST &ac) { ac += v_w(j) * v_in(i, j); }, v_out(i));
+            });
+      } else {
+        auto v_w = weight.get_view<const ST **>();
+        Kokkos::parallel_for(
+            f_out.name(), p, KOKKOS_LAMBDA(const TeamMember &tm) {
+              const int i = tm.league_rank();
+              Kokkos::parallel_reduce(
+                  Kokkos::TeamVectorRange(tm, nlevs),
+                  [&](int j, ST &ac) { ac += v_w(i, j) * v_in(i, j); },
+                  v_out(i));
+            });
+      }
+    } break;
+    case 3: {
+      auto v_in    = f_in.get_view<const ST ***>();
+      auto v_out   = f_out.get_view<ST **>();
+      const int d0 = l_in.dim(0);
+      const int d1 = l_in.dim(1);
+      auto p       = ESU::get_default_team_policy(d0 * d1, nlevs);
+      if(l_w.rank() == 1) {
+        auto v_w = weight.get_view<const ST *>();
+        Kokkos::parallel_for(
+            f_out.name(), p, KOKKOS_LAMBDA(const TeamMember &tm) {
+              const int idx = tm.league_rank();
+              const int i   = idx / d1;
+              const int j   = idx % d1;
+              Kokkos::parallel_reduce(
+                  Kokkos::TeamVectorRange(tm, nlevs),
+                  [&](int k, ST &ac) { ac += v_w(k) * v_in(i, j, k); },
+                  v_out(i, j));
+            });
+      } else {
+        auto v_w = weight.get_view<const ST **>();
+        Kokkos::parallel_for(
+            f_out.name(), p, KOKKOS_LAMBDA(const TeamMember &tm) {
+              const int idx = tm.league_rank();
+              const int i   = idx / d1;
+              const int j   = idx % d1;
+              Kokkos::parallel_reduce(
+                  Kokkos::TeamVectorRange(tm, nlevs),
+                  [&](int k, ST &ac) { ac += v_w(i, k) * v_in(i, j, k); },
+                  v_out(i, j));
+            });
+      }
+    } break;
+    default:
+      EKAT_ERROR_MSG("Error! Unsupported field rank in vert_contraction.\n");
+  }
+
+  if(comm) {
+    // TODO: use device-side MPI calls
+    // TODO: the dev ptr causes problems; revisit this later
+    // TODO: doing cuda-aware MPI allreduce would be ~10% faster
+    Kokkos::fence();
+    f_out.sync_to_host();
+    comm->all_reduce(f_out.template get_internal_view_data<ST, Host>(),
+                     l_out.size(), MPI_SUM);
+    f_out.sync_to_dev();
+  }
+}
+
 template<typename ST>
 ST frobenius_norm(const Field& f, const ekat::Comm* comm)
 {
