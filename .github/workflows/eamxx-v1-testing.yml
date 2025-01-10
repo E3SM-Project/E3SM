@@ -12,6 +12,8 @@ on:
       - 'components/eamxx/**'
       - 'components/homme/**'
       - 'externals/ekat'
+      - 'externals/mam4xx'
+      - 'externals/haero'
       - 'externals/scorpio'
       # second, no to these
       - '!components/eamxx/docs/**'
