@@ -638,7 +638,8 @@ contains
 
          ! initialize Redi kappa array
          if (config_Redi_closure == 'constant'.or. &
-             config_Redi_closure == 'equalGM') then
+             config_Redi_closure == 'equalGM' .or. &
+             config_Redi_closure == 'N2_dependent') then
              ! For 'equalGM' RediKappa is updated every step. Just
              ! initialize here.
             !$omp parallel
