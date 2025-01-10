@@ -179,6 +179,7 @@ using creal1dk = view_t<const RealT*>;
 using creal2dk = view_t<const RealT**>;
 using creal3dk = view_t<const RealT***>;
 using int1dk  = view_t<int*>;
+using int2dk  = view_t<int**>;
 using int3dk  = view_t<int***>;
 
 using gas_optics_t   = GasOpticsRRTMGPK<RealT, LayoutT, DeviceT>;
@@ -384,6 +385,11 @@ static void rrtmgp_main(
   const std::shared_ptr<spdlog::logger>& logger,
   const bool extra_clnclrsky_diag = false, const bool extra_clnsky_diag = false)
 {
+  const int sw_nband = k_dist_sw_k.get_nband();
+  const int lw_nband = k_dist_lw_k.get_nband();
+  const int sw_ngpt = k_dist_sw_k.get_ngpt();
+  const int lw_ngpt = k_dist_lw_k.get_ngpt();
+
 #ifdef SCREAM_RRTMGP_DEBUG
   // Sanity check inputs, and possibly repair
   check_range_k(t_lay      ,  k_dist_sw_k.get_temp_min(),         k_dist_sw_k.get_temp_max(), "rrtmgp_main::t_lay");
@@ -398,6 +404,50 @@ static void rrtmgp_main(
   check_range_k(rel        ,                         0, std::numeric_limits<RealT>::max(), "rrtmgp_main::rel");
   check_range_k(rei        ,                         0, std::numeric_limits<RealT>::max(), "rrtmgp_main::rei");
 #endif
+
+  const int int_size1 = 2*sw_nband;
+  const int int_size2 = sw_nband;
+  const int int_size3 = 2*lw_nband;
+  const int int_size4 = lw_nband;
+
+  const int real_size1 = ncol*nlay*sw_nband;
+  const int real_size2 = ncol*nlay*lw_nband;
+
+  const int total_int_size = 3 * (int_size1 + int_size2 + int_size3 + int_size4);
+  const int total_real_size = 3 * (3 * real_size1 + real_size2);
+  auto int_data = pool_t::template alloc_and_init<int>(total_int_size); int *dcurr_int = int_data.data();
+
+  view_t<int**> sw_band2gpt_mem(dcurr_int, 2, sw_nband); dcurr_int += int_size1;
+  view_t<int*> sw_gpt2band_mem(dcurr_int, sw_nband); dcurr_int += int_size2;
+  view_t<int**> lw_band2gpt_mem(dcurr_int, 2, lw_nband); dcurr_int += int_size3;
+  view_t<int*> lw_gpt2band_mem(dcurr_int, lw_nband); dcurr_int += int_size4;
+
+  view_t<int**> sw_cloud_band2gpt_mem(dcurr_int, 2, sw_nband); dcurr_int += int_size1;
+  view_t<int*> sw_cloud_gpt2band_mem(dcurr_int, sw_nband); dcurr_int += int_size2;
+  view_t<int**> lw_cloud_band2gpt_mem(dcurr_int, 2, lw_nband); dcurr_int += int_size3;
+  view_t<int*> lw_cloud_gpt2band_mem(dcurr_int, lw_nband); dcurr_int += int_size4;
+
+  view_t<int**> sw_subcloud_band2gpt_mem(dcurr_int, 2, sw_nband); dcurr_int += int_size1;
+  view_t<int*> sw_subcloud_gpt2band_mem(dcurr_int, sw_ngpt); dcurr_int += int_size2;
+  view_t<int**> lw_subcloud_band2gpt_mem(dcurr_int, 2, lw_nband); dcurr_int += int_size3;
+  view_t<int*> lw_subcloud_gpt2band_mem(dcurr_int, lw_ngpt); dcurr_int += int_size4;
+
+  auto data = pool_t::template alloc<RealT>(total_real_size); RealT *dcurr = data.data();
+
+  view_t<RealT***> sw_tau_mem(dcurr, ncol, nlay, sw_nband); dcurr += real_size1;
+  view_t<RealT***> sw_ssa_mem(dcurr, ncol, nlay, sw_nband); dcurr += real_size1;
+  view_t<RealT***> sw_g_mem(dcurr, ncol, nlay, sw_nband); dcurr += real_size1;
+  view_t<RealT***> lw_tau_mem(dcurr, ncol, nlay, lw_nband); dcurr += real_size2;
+
+  view_t<RealT***> sw_cloud_tau_mem(dcurr, ncol, nlay, sw_nband); dcurr += real_size1;
+  view_t<RealT***> sw_cloud_ssa_mem(dcurr, ncol, nlay, sw_nband); dcurr += real_size1;
+  view_t<RealT***> sw_cloud_g_mem(dcurr, ncol, nlay, sw_nband); dcurr += real_size1;
+  view_t<RealT***> lw_cloud_tau_mem(dcurr, ncol, nlay, lw_nband); dcurr += real_size2;
+
+  view_t<RealT***> sw_subcloud_tau_mem(dcurr, ncol, nlay, sw_ngpt); dcurr += real_size1;
+  view_t<RealT***> sw_subcloud_ssa_mem(dcurr, ncol, nlay, sw_ngpt); dcurr += real_size1;
+  view_t<RealT***> sw_subcloud_g_mem(dcurr, ncol, nlay, sw_ngpt); dcurr += real_size1;
+  view_t<RealT***> lw_subcloud_tau_mem(dcurr, ncol, nlay, lw_ngpt); dcurr += real_size2;
 
   // Setup pointers to RRTMGP SW fluxes
   fluxes_t fluxes_sw;
@@ -448,15 +498,15 @@ static void rrtmgp_main(
   // Setup aerosol optical properties
   optical_props2_t aerosol_sw;
   optical_props1_t aerosol_lw;
-  aerosol_sw.init(k_dist_sw_k.get_band_lims_wavenumber());
-  aerosol_sw.alloc_2str(ncol, nlay);
+  aerosol_sw.init_no_alloc(k_dist_sw_k.get_band_lims_wavenumber(), sw_band2gpt_mem, sw_gpt2band_mem);
+  aerosol_sw.alloc_2str_no_alloc(ncol, nlay, sw_tau_mem, sw_ssa_mem, sw_g_mem);
   TIMED_KERNEL(Kokkos::parallel_for(MDRP::template get<3>({ncol,nlay,nswbands}) , KOKKOS_LAMBDA (int icol, int ilay, int ibnd) {
     aerosol_sw.tau(icol,ilay,ibnd) = aer_tau_sw(icol,ilay,ibnd);
     aerosol_sw.ssa(icol,ilay,ibnd) = aer_ssa_sw(icol,ilay,ibnd);
     aerosol_sw.g  (icol,ilay,ibnd) = aer_asm_sw(icol,ilay,ibnd);
   }));
-  aerosol_lw.init(k_dist_lw_k.get_band_lims_wavenumber());
-  aerosol_lw.alloc_1scl(ncol, nlay);
+  aerosol_lw.init_no_alloc(k_dist_lw_k.get_band_lims_wavenumber(), lw_band2gpt_mem, lw_gpt2band_mem);
+  aerosol_lw.alloc_1scl_no_alloc(ncol, nlay, lw_tau_mem);
   TIMED_KERNEL(Kokkos::parallel_for(MDRP::template get<3>({ncol,nlay,nlwbands}) , KOKKOS_LAMBDA (int icol, int ilay, int ibnd) {
     aerosol_lw.tau(icol,ilay,ibnd) = aer_tau_lw(icol,ilay,ibnd);
   }));
@@ -472,8 +522,8 @@ static void rrtmgp_main(
 #endif
 
   // Convert cloud physical properties to optical properties for input to RRTMGP
-  optical_props2_t clouds_sw = get_cloud_optics_sw(ncol, nlay, cloud_optics_sw_k, k_dist_sw_k, lwp, iwp, rel, rei);
-  optical_props1_t clouds_lw = get_cloud_optics_lw(ncol, nlay, cloud_optics_lw_k, k_dist_lw_k, lwp, iwp, rel, rei);
+  optical_props2_t clouds_sw = get_cloud_optics_sw(ncol, nlay, cloud_optics_sw_k, k_dist_sw_k, lwp, iwp, rel, rei, sw_cloud_band2gpt_mem, sw_cloud_gpt2band_mem, sw_cloud_tau_mem, sw_cloud_ssa_mem, sw_cloud_g_mem);
+  optical_props1_t clouds_lw = get_cloud_optics_lw(ncol, nlay, cloud_optics_lw_k, k_dist_lw_k, lwp, iwp, rel, rei, lw_cloud_band2gpt_mem, lw_cloud_gpt2band_mem, lw_cloud_tau_mem);
   Kokkos::deep_copy(cld_tau_sw_bnd, clouds_sw.tau);
   Kokkos::deep_copy(cld_tau_lw_bnd, clouds_lw.tau);
 
@@ -481,10 +531,10 @@ static void rrtmgp_main(
   // This implements the Monte Carlo Independing Column Approximation by mapping only a single
   // subcolumn (cloud state) to each gpoint.
   auto nswgpts = k_dist_sw_k.get_ngpt();
-  auto clouds_sw_gpt = get_subsampled_clouds(ncol, nlay, nswbands, nswgpts, clouds_sw, k_dist_sw_k, cldfrac, p_lay);
+  auto clouds_sw_gpt = get_subsampled_clouds(ncol, nlay, nswbands, nswgpts, clouds_sw, k_dist_sw_k, cldfrac, p_lay, sw_subcloud_band2gpt_mem, sw_subcloud_gpt2band_mem, sw_subcloud_tau_mem, sw_subcloud_ssa_mem, sw_subcloud_g_mem);
   // Longwave
   auto nlwgpts = k_dist_lw_k.get_ngpt();
-  auto clouds_lw_gpt = get_subsampled_clouds(ncol, nlay, nlwbands, nlwgpts, clouds_lw, k_dist_lw_k, cldfrac, p_lay);
+  auto clouds_lw_gpt = get_subsampled_clouds(ncol, nlay, nlwbands, nlwgpts, clouds_lw, k_dist_lw_k, cldfrac, p_lay, lw_subcloud_band2gpt_mem, lw_subcloud_gpt2band_mem, lw_subcloud_tau_mem);
 
   // Copy cloud properties to outputs (is this needed, or can we just use pointers?)
   // Alternatively, just compute and output a subcolumn cloud mask
@@ -527,6 +577,8 @@ static void rrtmgp_main(
     extra_clnclrsky_diag, extra_clnsky_diag
             );
 
+  pool_t::dealloc(int_data);
+  pool_t::dealloc(data);
 }
 
 /*
@@ -629,8 +681,10 @@ static void rrtmgp_sw(
   const int size6 = nday*ngpt;
   const int size7 = nday*(nlay+1)*nbnd; // 3
   const int size8 = ncol*nlay*(k_dist.get_ngas()+1);
+  const int size9 = ncol*nlay*ngas;
+  const int size10 = ncol*nlay*ngpt; // 12
 
-  const int total_size = size1 + size2*4 + size3*5 + size4 + size5*2 + size6 + size7*3 + size8;
+  const int total_size = size1 + size2*4 + size3*5 + size4 + size5*2 + size6 + size7*3 + size8 + size9 + size10*12;
   auto data = pool_t::template alloc_and_init<RealT>(total_size); RealT* dcurr = data.data();
 
   auto mu0_day             = view_t<RealT*>  (dcurr, nday); dcurr += size1;
@@ -659,6 +713,35 @@ static void rrtmgp_sw(
 
   auto col_gas             = view_t<RealT***>(dcurr, ncol, nlay, k_dist.get_ngas()+1); dcurr += size8;
 
+  auto concs_mem           = view_t<RealT***>(dcurr, ncol, nlay, ngas); dcurr += size9;
+
+  auto sw_aero_tau_mem     = view_t<RealT***>(dcurr, ncol, nlay, ngpt); dcurr += size10;
+  auto sw_aero_ssa_mem     = view_t<RealT***>(dcurr, ncol, nlay, ngpt); dcurr += size10;
+  auto sw_aero_g_mem       = view_t<RealT***>(dcurr, ncol, nlay, ngpt); dcurr += size10;
+  auto sw_cloud_tau_mem     = view_t<RealT***>(dcurr, ncol, nlay, ngpt); dcurr += size10;
+  auto sw_cloud_ssa_mem     = view_t<RealT***>(dcurr, ncol, nlay, ngpt); dcurr += size10;
+  auto sw_cloud_g_mem       = view_t<RealT***>(dcurr, ncol, nlay, ngpt); dcurr += size10;
+  auto sw_optics_tau_mem     = view_t<RealT***>(dcurr, ncol, nlay, ngpt); dcurr += size10;
+  auto sw_optics_ssa_mem     = view_t<RealT***>(dcurr, ncol, nlay, ngpt); dcurr += size10;
+  auto sw_optics_g_mem       = view_t<RealT***>(dcurr, ncol, nlay, ngpt); dcurr += size10;
+  auto sw_noaero_tau_mem     = view_t<RealT***>(dcurr, ncol, nlay, ngpt); dcurr += size10;
+  auto sw_noaero_ssa_mem     = view_t<RealT***>(dcurr, ncol, nlay, ngpt); dcurr += size10;
+  auto sw_noaero_g_mem       = view_t<RealT***>(dcurr, ncol, nlay, ngpt); dcurr += size10;
+
+  const int int_size1 = 2*nbnd;
+  const int int_size2 = ngpt;
+  const int total_int_size = 4 * (int_size1 + int_size2);
+  auto int_data = pool_t::template alloc_and_init<int>(total_int_size); int *dcurr_int = int_data.data();
+
+  auto sw_aero_band2gpt_mem = view_t<int**>(dcurr_int, 2, nbnd); dcurr_int += int_size1;
+  auto sw_aero_gpt2band_mem = view_t<int*>(dcurr_int, ngpt); dcurr_int += int_size2;
+  auto sw_cloud_band2gpt_mem = view_t<int**>(dcurr_int, 2, nbnd); dcurr_int += int_size1;
+  auto sw_cloud_gpt2band_mem = view_t<int*>(dcurr_int, ngpt); dcurr_int += int_size2;
+  auto sw_optics_band2gpt_mem = view_t<int**>(dcurr_int, 2, nbnd); dcurr_int += int_size1;
+  auto sw_optics_gpt2band_mem = view_t<int*>(dcurr_int, ngpt); dcurr_int += int_size2;
+  auto sw_noaero_band2gpt_mem = view_t<int**>(dcurr_int, 2, nbnd); dcurr_int += int_size1;
+  auto sw_noaero_gpt2band_mem = view_t<int*>(dcurr_int, ngpt); dcurr_int += int_size2;
+
   // Subset mu0
   TIMED_KERNEL(Kokkos::parallel_for(nday, KOKKOS_LAMBDA(int iday) {
     mu0_day(iday) = mu0(dayIndices(iday));
@@ -677,7 +760,7 @@ static void rrtmgp_sw(
   // Subset gases
   auto gas_names = gas_concs.get_gas_names();
   gas_concs_t gas_concs_day;
-  gas_concs_day.init(gas_names, nday, nlay);
+  gas_concs_day.init_no_alloc(gas_names, nday, nlay, concs_mem);
   for (int igas = 0; igas < ngas; igas++) {
     gas_concs.get_vmr(gas_names[igas], vmr);
     TIMED_KERNEL(Kokkos::parallel_for(MDRP::template get<2>({nday, nlay}), KOKKOS_LAMBDA(int iday, int ilay) {
@@ -688,8 +771,8 @@ static void rrtmgp_sw(
 
   // Subset aerosol optics
   optical_props2_t aerosol_day;
-  aerosol_day.init(k_dist.get_band_lims_wavenumber());
-  aerosol_day.alloc_2str(nday, nlay);
+  aerosol_day.init_no_alloc(k_dist.get_band_lims_wavenumber(), sw_aero_band2gpt_mem, sw_aero_gpt2band_mem);
+  aerosol_day.alloc_2str_no_alloc(nday, nlay, sw_aero_tau_mem, sw_aero_ssa_mem, sw_aero_g_mem);
   TIMED_KERNEL(Kokkos::parallel_for(MDRP::template get<3>({nday,nlay,nbnd}), KOKKOS_LAMBDA(int iday, int ilay, int ibnd) {
     aerosol_day.tau(iday,ilay,ibnd) = aerosol.tau(dayIndices(iday),ilay,ibnd);
     aerosol_day.ssa(iday,ilay,ibnd) = aerosol.ssa(dayIndices(iday),ilay,ibnd);
@@ -699,8 +782,8 @@ static void rrtmgp_sw(
   // Subset cloud optics
   // TODO: nbnd -> ngpt once we pass sub-sampled cloud state
   optical_props2_t clouds_day;
-  clouds_day.init(k_dist.get_band_lims_wavenumber(), k_dist.get_band_lims_gpoint());
-  clouds_day.alloc_2str(nday, nlay);
+  clouds_day.init_no_alloc(k_dist.get_band_lims_wavenumber(), k_dist.get_band_lims_gpoint(), sw_cloud_band2gpt_mem, sw_cloud_gpt2band_mem);
+  clouds_day.alloc_2str_no_alloc(nday, nlay, sw_cloud_tau_mem, sw_cloud_ssa_mem, sw_cloud_g_mem);
   TIMED_KERNEL(Kokkos::parallel_for(MDRP::template get<3>({nday,nlay,ngpt}), KOKKOS_LAMBDA(int iday, int ilay, int igpt) {
     clouds_day.tau(iday,ilay,igpt) = clouds.tau(dayIndices(iday),ilay,igpt);
     clouds_day.ssa(iday,ilay,igpt) = clouds.ssa(dayIndices(iday),ilay,igpt);
@@ -726,12 +809,12 @@ static void rrtmgp_sw(
 
   // Allocate space for optical properties
   optical_props2_t optics;
-  optics.alloc_2str(nday, nlay, k_dist);
+  optics.alloc_2str_no_alloc(nday, nlay, k_dist, sw_optics_band2gpt_mem, sw_optics_gpt2band_mem, sw_optics_tau_mem, sw_optics_ssa_mem, sw_optics_g_mem);
 
   optical_props2_t optics_no_aerosols;
   if (extra_clnsky_diag) {
     // Allocate space for optical properties (no aerosols)
-    optics_no_aerosols.alloc_2str(nday, nlay, k_dist);
+    optics_no_aerosols.alloc_2str_no_alloc(nday, nlay, k_dist, sw_noaero_band2gpt_mem, sw_noaero_gpt2band_mem, sw_noaero_tau_mem, sw_noaero_ssa_mem, sw_noaero_g_mem);
   }
 
   // Limit temperatures for gas optics look-up tables
@@ -824,6 +907,7 @@ static void rrtmgp_sw(
 
   pool_t::dealloc(data);
   pool_t::dealloc(dayIndices);
+  pool_t::dealloc(int_data);
 }
 
 /*
@@ -841,6 +925,7 @@ static void rrtmgp_lw(
   // Problem size
   int nbnd = k_dist.get_nband();
   int constexpr max_gauss_pts = 4;
+  const int ngpt = k_dist.get_ngpt();
 
   const int size1 = ncol;
   const int size2 = nbnd*ncol;
@@ -848,8 +933,10 @@ static void rrtmgp_lw(
   const int size4 = ncol*nlay;
   const int size5 = ncol*(nlay+1);
   const int size6 = ncol*nlay*(k_dist.get_ngas()+1);
+  const int size7 = ncol*nlay*ngpt; // 5
+  const int size8 = ncol*ngpt;
 
-  const int total_size = size1 + size2 + size3*2 + size4 + size5 + size6;
+  const int total_size = size1 + size2 + size3*2 + size4 + size5 + size6 + size7*5 * size8;;
   auto data = pool_t::template alloc_and_init<RealT>(total_size); RealT *dcurr = data.data();
 
   view_t<RealT*>   t_sfc        (dcurr, ncol); dcurr += size1;
@@ -859,6 +946,24 @@ static void rrtmgp_lw(
   view_t<RealT**>  t_lay_limited(dcurr, ncol, nlay); dcurr += size4;
   view_t<RealT**>  t_lev_limited(dcurr, ncol, nlay+1); dcurr += size5;
   view_t<RealT***> col_gas      (dcurr, ncol, nlay, k_dist.get_ngas()+1); dcurr += size6;
+  view_t<RealT***> lw_optics_tau_mem(dcurr, ncol, nlay, ngpt); dcurr += size7;
+  view_t<RealT***> lw_noaero_tau_mem(dcurr, ncol, nlay, ngpt); dcurr += size7;
+  view_t<RealT***> lay_source_mem(dcurr, ncol, nlay, ngpt); dcurr += size7;
+  view_t<RealT***> lev_source_inc_mem(dcurr, ncol, nlay, ngpt); dcurr += size7;
+  view_t<RealT***> lev_source_dec_mem(dcurr, ncol, nlay, ngpt); dcurr += size7;
+  view_t<RealT**>  sfc_source_mem(dcurr, ncol, ngpt); dcurr += size8;
+
+  const int int_size1 = 2*nbnd;
+  const int int_size2 = ngpt;
+  const int total_int_size = 3 * (int_size1 + int_size2);
+  auto int_data = pool_t::template alloc_and_init<int>(total_int_size); int *dcurr_int = int_data.data();
+
+  auto lw_optics_band2gpt_mem = view_t<int**>(dcurr_int, 2, nbnd);
+  auto lw_optics_gpt2band_mem = view_t<int*>(dcurr_int, ngpt);
+  auto lw_noaero_band2gpt_mem = view_t<int**>(dcurr_int, 2, nbnd);
+  auto lw_noaero_gpt2band_mem = view_t<int*>(dcurr_int, ngpt);
+  auto lw_source_band2gpt_mem = view_t<int**>(dcurr_int, 2, nbnd);
+  auto lw_source_gpt2band_mem = view_t<int*>(dcurr_int, ngpt);
 
   // Associate local pointers for fluxes
   auto &flux_up           = fluxes.flux_up;
@@ -893,16 +998,16 @@ static void rrtmgp_lw(
 
   // Allocate space for optical properties
   optical_props1_t optics;
-  optics.alloc_1scl(ncol, nlay, k_dist);
+  optics.alloc_1scl_no_alloc(ncol, nlay, k_dist, lw_optics_band2gpt_mem, lw_optics_gpt2band_mem, lw_optics_tau_mem);
   optical_props1_t optics_no_aerosols;
   if (extra_clnsky_diag) {
     // Allocate space for optical properties (no aerosols)
-    optics_no_aerosols.alloc_1scl(ncol, nlay, k_dist);
+    optics_no_aerosols.alloc_1scl_no_alloc(ncol, nlay, k_dist, lw_noaero_band2gpt_mem, lw_noaero_gpt2band_mem, lw_noaero_tau_mem);
   }
 
   // Boundary conditions
   source_func_t lw_sources;
-  lw_sources.alloc(ncol, nlay, k_dist);
+  lw_sources.alloc_no_alloc(ncol, nlay, k_dist, lw_source_band2gpt_mem, lw_source_gpt2band_mem, sfc_source_mem, lay_source_mem, lev_source_inc_mem, lev_source_dec_mem);
 
   bool top_at_1 = false;
   Kokkos::parallel_reduce(1, KOKKOS_LAMBDA(int, bool& val) {
@@ -980,6 +1085,7 @@ static void rrtmgp_lw(
   }
 
   pool_t::dealloc(data);
+  pool_t::dealloc(int_data);
 }
 
 /*
@@ -1253,8 +1359,10 @@ static void limit_to_bounds_k(InT const &arr_in, T const lower, T const upper, O
 
 static int get_wavelength_index(optical_props_t &kdist, RealT wavelength)
 {
+  auto band_lims_wvn = kdist.get_band_lims_wavenumber();
+  auto wavelength_bounds = pool_t::template alloc<RealT>(band_lims_wvn.extent(0), band_lims_wvn.extent(1));
   // Get wavelength bounds for all wavelength bands
-  auto wavelength_bounds = kdist.get_band_lims_wavelength();
+  kdist.get_band_lims_wavelength(wavelength_bounds);
 
   // Find the band index for the specified wavelength
   // Note that bands are stored in wavenumber space, units of cm-1, so if we are passed wavelength
@@ -1272,6 +1380,7 @@ static int get_wavelength_index(optical_props_t &kdist, RealT wavelength)
       }
     }
       }, Kokkos::Max<int>(band_index)));
+  pool_t::dealloc(wavelength_bounds);
   return band_index;
 }
 
@@ -1288,12 +1397,13 @@ static inline int get_wavelength_index_lw_k(RealT wavelength)
 static optical_props2_t get_cloud_optics_sw(
   const int ncol, const int nlay,
   cloud_optics_t &cloud_optics, gas_optics_t &kdist,
-  const real2dk &lwp, const real2dk &iwp, const creal2dk &rel, const creal2dk &rei) {
+  const real2dk &lwp, const real2dk &iwp, const creal2dk &rel, const creal2dk &rei,
+  const int2dk& sw_band2gpt_mem, const int1dk& sw_gpt2band_mem, const real3dk& sw_tau_mem, const real3dk& sw_ssa_mem, const real3dk& sw_g_mem) {
 
   // Initialize optics
   optical_props2_t clouds;
-  clouds.init(kdist.get_band_lims_wavenumber());
-  clouds.alloc_2str(ncol, nlay);
+  clouds.init_no_alloc(kdist.get_band_lims_wavenumber(), sw_band2gpt_mem, sw_gpt2band_mem);
+  clouds.alloc_2str_no_alloc(ncol, nlay, sw_tau_mem, sw_ssa_mem, sw_g_mem);
 
   // Needed for consistency with all-sky example problem?
   cloud_optics.set_ice_roughness(2);
@@ -1317,12 +1427,13 @@ static optical_props2_t get_cloud_optics_sw(
 static optical_props1_t get_cloud_optics_lw(
   const int ncol, const int nlay,
   cloud_optics_t &cloud_optics, gas_optics_t &kdist,
-  const real2dk &lwp, const real2dk &iwp, const creal2dk &rel, const creal2dk &rei) {
+  const real2dk &lwp, const real2dk &iwp, const creal2dk &rel, const creal2dk &rei,
+  const int2dk& lw_band2gpt_mem, const int1dk& lw_gpt2band_mem, const real3dk& lw_tau_mem) {
 
   // Initialize optics
   optical_props1_t clouds;
-  clouds.init(kdist.get_band_lims_wavenumber());
-  clouds.alloc_1scl(ncol, nlay);  // this is dumb, why do we need to init and alloc separately?!
+  clouds.init_no_alloc(kdist.get_band_lims_wavenumber(), lw_band2gpt_mem, lw_gpt2band_mem);
+  clouds.alloc_1scl_no_alloc(ncol, nlay, lw_tau_mem);  // this is dumb, why do we need to init and alloc separately?!
 
   // Needed for consistency with all-sky example problem?
   cloud_optics.set_ice_roughness(2);
@@ -1345,11 +1456,12 @@ static optical_props1_t get_cloud_optics_lw(
 
 static optical_props2_t get_subsampled_clouds(
   const int ncol, const int nlay, const int nbnd, const int ngpt,
-  optical_props2_t &cloud_optics, gas_optics_t &kdist, const real2dk &cld, const creal2dk &p_lay) {
+  optical_props2_t &cloud_optics, gas_optics_t &kdist, const real2dk &cld, const creal2dk &p_lay,
+  const int2dk& sw_band2gpt_mem, const int1dk& sw_gpt2band_mem, const real3dk& sw_tau_mem, const real3dk& sw_ssa_mem, const real3dk& sw_g_mem) {
   // Initialized subsampled optics
   optical_props2_t subsampled_optics;
-  subsampled_optics.init(kdist.get_band_lims_wavenumber(), kdist.get_band_lims_gpoint(), "subsampled_optics");
-  subsampled_optics.alloc_2str(ncol, nlay);
+  subsampled_optics.init_no_alloc(kdist.get_band_lims_wavenumber(), kdist.get_band_lims_gpoint(), sw_band2gpt_mem, sw_gpt2band_mem, "subsampled_optics");
+  subsampled_optics.alloc_2str_no_alloc(ncol, nlay, sw_tau_mem, sw_ssa_mem, sw_g_mem);
 
   // Subcolumn mask with values of 0 indicating no cloud, 1 indicating cloud
   auto cldmask = pool_t::template alloc_and_init<int>(ncol, nlay, ngpt);
@@ -1404,12 +1516,13 @@ static optical_props2_t get_subsampled_clouds(
 
 static optical_props1_t get_subsampled_clouds(
   const int ncol, const int nlay, const int nbnd, const int ngpt,
-  optical_props1_t &cloud_optics, gas_optics_t &kdist, const real2dk &cld, const creal2dk &p_lay) {
+  optical_props1_t &cloud_optics, gas_optics_t &kdist, const real2dk &cld, const creal2dk &p_lay,
+  const int2dk& lw_band2gpt_mem, const int1dk& lw_gpt2band_mem, const real3dk& lw_tau_mem) {
 
   // Initialized subsampled optics
   optical_props1_t subsampled_optics;
-  subsampled_optics.init(kdist.get_band_lims_wavenumber(), kdist.get_band_lims_gpoint(), "subsampled_optics");
-  subsampled_optics.alloc_1scl(ncol, nlay);
+  subsampled_optics.init_no_alloc(kdist.get_band_lims_wavenumber(), kdist.get_band_lims_gpoint(), lw_band2gpt_mem, lw_gpt2band_mem, "subsampled_optics");
+  subsampled_optics.alloc_1scl_no_alloc(ncol, nlay, lw_tau_mem);
 
   // Subcolumn mask with values of 0 indicating no cloud, 1 indicating cloud
   auto cldmask = pool_t::template alloc_and_init<int>(ncol, nlay, ngpt);
