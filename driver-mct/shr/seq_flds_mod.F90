@@ -165,7 +165,6 @@ module seq_flds_mod
   character(len=CS)  :: wav_ocn_coup     ! 'two' if wave-ocean two-way coupling turned on
   character(len=CS)  :: wav_atm_coup     ! 'two' if wave-atm two-way coupling turned on
   character(len=CS)  :: wav_ice_coup     ! 'two' if wave-ice two-way coupling turned on
->>>>>>> 48258e2298 (change all wave coupling namelists from boolean to char.)
   !----------------------------------------------------------------------------
   ! metadata
   !----------------------------------------------------------------------------
