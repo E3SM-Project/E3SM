@@ -64,7 +64,7 @@ module ocn_diagnostics
              ocn_fuperp, &
              ocn_filter_btr_mode_tend_vel, &
              ocn_reconstruct_eddy_vectors, &
-             ocn_compute_kpp_input_fields, &
+             ocn_compute_mixing_input_fields, &
              ocn_validate_state, &
              ocn_build_log_filename, &
              ocn_diagnostics_init
@@ -3319,12 +3319,12 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_compute_KPP_input_fields
+!  routine ocn_compute_mixing_input_fields
 !
 !> \brief
-!>    Compute fields necessary to drive the CVMix KPP module
-!> \author  Todd Ringler
-!> \date    20 August 2013
+!>    Compute fields necessary to drive the CVMix KPP and gotm modules
+!> \author  Todd Ringler, Luke Van Roekel
+!> \date    11 July 2024
 !> \details
 !>    CVMix/KPP requires the following fields as intent(in):
 !>       surfaceBuoyancyForcing
@@ -3333,7 +3333,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    subroutine ocn_compute_KPP_input_fields(statePool, forcingPool, &
+    subroutine ocn_compute_mixing_input_fields(statePool, forcingPool, &
                                             meshPool, timeLevelIn)!{{{
 
       !-----------------------------------------------------------------
@@ -3385,8 +3385,7 @@ contains
          evapTemperatureFlux, &
          icebergTemperatureFlux, &
          seaIceTemperatureFlux, &
-         surfaceStress, &
-         surfaceStressMagnitude
+         sfcStressMag
 
       real (kind=RKIND), dimension(:,:), pointer ::  &
          layerThickness,           &! layer thickness
@@ -3419,7 +3418,7 @@ contains
       !-----------------------------------------------------------------
       ! Begin code
 
-      call mpas_timer_start('KPP input fields')
+      call mpas_timer_start('Mixing input fields')
 
       if (present(timeLevelIn)) then
          timeLevel = timeLevelIn
@@ -3469,18 +3468,8 @@ contains
                                              surfaceThicknessFluxSubglacialRunoff)
       call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', &
                                              penetrativeTemperatureFlux)
-      call mpas_pool_get_array(forcingPool, 'surfaceStress', &
-                                             surfaceStress)
       call mpas_pool_get_array(forcingPool, 'surfaceStressMagnitude', &
-                                             surfaceStressMagnitude)
-      call mpas_pool_get_array(forcingPool, 'rainTemperatureFlux', &
-                                             rainTemperatureFlux)
-      call mpas_pool_get_array(forcingPool, 'evapTemperatureFlux', &
-                                             evapTemperatureFlux)
-      call mpas_pool_get_array(forcingPool, 'seaIceTemperatureFlux', &
-                                             seaIceTemperatureFlux)
-      call mpas_pool_get_array(forcingPool, 'icebergTemperatureFlux', &
-                                             icebergTemperatureFlux)
+                                             sfcStressMag)
 
       ! allocate scratch space displaced density computation
       ncells = nCellsAll
@@ -3594,17 +3583,8 @@ contains
                    activeTracersSurfaceFlux(indexTempFlux,iCell) &
                  + penetrativeTemperatureFlux(iCell) &
                  - penetrativeTemperatureFluxOBL(iCell)  &
-                 - fracAbsorbed* (rainTemperatureFlux(iCell) + &
-                                  evapTemperatureFlux(iCell) + &
-                                  seaIceTemperatureFlux(iCell) + &
-                                  icebergTemperatureFlux(iCell)) &
-                 - fracAbsorbedRunoff* &
-                   activeTracersSurfaceFluxRunoff(indexTempFlux,iCell)
-         if (trim(config_subglacial_runoff_mode) == 'data') then
-            nonLocalSurfaceTracerFlux(indexTempFlux, iCell) = nonLocalSurfaceTracerFlux(indexTempFlux, iCell) &
-                 - fracAbsorbedSubglacialRunoff* &
-                   activeTracersSurfaceFluxSubglacialRunoff(indexTempFlux,iCell)
-         end if
+                 - fracAbsorbed*surfaceThicknessFlux(iCell) * &
+                   activeTracers(indexTempFlux,kmin,iCell)
 
          nonLocalSurfaceTracerFlux(indexSaltFlux,iCell) = &
                    activeTracersSurfaceFlux(indexSaltFlux,iCell) &
@@ -3630,21 +3610,8 @@ contains
          surfaceBuoyancyForcing(iCell) = surfaceBuoyancyForcing(iCell)* &
                                          gravity
 
-         ! compute magnitude of surface stress
-         sumSurfaceStressSquared = 0.0_RKIND
-         do i = 1, nEdgesOnCell(iCell)
-            iEdge = edgesOnCell(i, iCell)
-            sumSurfaceStressSquared = sumSurfaceStressSquared &
-                                    + edgeAreaFractionOfCell(i,iCell)* &
-                                      surfaceStress(iEdge)**2
-         enddo
-
-         ! NOTE that the factor of 2 is from averaging dot products
-         ! to cell centers on a C-grid
-         surfaceStressMagnitude(iCell) = &
-                           sqrt(2.0_RKIND * sumSurfaceStressSquared)
          surfaceFrictionVelocity(iCell) = &
-                           sqrt(surfaceStressMagnitude(iCell) / rho_sw)
+                           sqrt(sfcStressMag(iCell) / rho_sw)
 
       enddo
       !$omp end do
@@ -3655,11 +3622,11 @@ contains
                  salineContractionCoeff, &
                  densitySurfaceDisplaced)
 
-      call mpas_timer_stop('KPP input fields')
+      call mpas_timer_stop('Mixing input fields')
 
     !-------------------------------------------------------------------
 
-    end subroutine ocn_compute_KPP_input_fields!}}}
+    end subroutine ocn_compute_mixing_input_fields!}}}
 
 !***********************************************************************
 !
