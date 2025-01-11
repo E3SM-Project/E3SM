@@ -183,11 +183,11 @@ void horiz_contraction(const Field &f_out, const Field &f_in,
 // This is equivalent to f_out = einsum('...k->...', weight, f_in).
 // The impl is such that:
 // - f_out, f_in, and weight must be provided and allocated
-// - The last dimension is for the levels (LEV)
+// - The last dimension is for the levels (LEV/ILEV)
 // - There can be only up to 3 dimensions of f_in
 // - Weight is assumed to be (in order of checking/impl):
-//   - rank-1, with only LEV dimension
-//   - rank-2, with only COL and LEV dimensions
+//   - rank-1, with only LEV/ILEV dimension
+//   - rank-2, with only COL and LEV/ILEV dimensions
 template <typename ST>
 void vert_contraction(const Field &f_out, const Field &f_in,
                       const Field &weight, const ekat::Comm *comm = nullptr) {
@@ -201,12 +201,12 @@ void vert_contraction(const Field &f_out, const Field &f_in,
 
   // Sanity checks before handing off to the implementation
   EKAT_REQUIRE_MSG(
-      l_w.rank() >= 1 && l_w.rank() <= 2,
+      l_w.rank() == 1 or l_w.rank() == 2,
       "Error! The weight field must be at least rank-1 and at most rank-2.\n"
       "The weight field has rank "
           << l_w.rank() << ".\n");
   EKAT_REQUIRE_MSG(
-      l_w.tags().back() == LEV,
+      l_w.tags().back() == LEV or l_w.tags().back() == ILEV,
       "Error! The weight field must have LEV as its last dimension.\n"
       "The weight field layout is "
           << l_w.to_string() << ".\n");
@@ -220,37 +220,32 @@ void vert_contraction(const Field &f_out, const Field &f_in,
                    "The input field rank is "
                        << l_in.rank() << " and the weight field rank is "
                        << l_w.rank() << ".\n");
-  EKAT_REQUIRE_MSG(l_in.tags().back() == LEV,
+  EKAT_REQUIRE_MSG(l_in.tags().back() == LEV or l_in.tags().back() == ILEV,
                    "Error! The input field must have a level dimension.\n"
                    "The input field layout is "
                        << l_in.to_string() << ".\n");
   EKAT_REQUIRE_MSG(
-      l_in.dim(l_in.rank() - 1) == l_w.dim(l_w.rank() - 1),
+      l_in.dims().back() == l_w.dims().back(),
       "Error! input and weight fields must have the same dimension along "
       "which we are taking the reducing the field (last dimensions).\n"
       "The weight field has last dimension "
-          << l_w.dim(l_w.rank() - 1)
+          << l_w.dims().back()
           << " while "
              "the input field has last dimension "
-          << l_in.dim(l_in.rank() - 1) << ".\n");
+          << l_in.dims().back() << ".\n");
   EKAT_REQUIRE_MSG(
-      l_in.dim(l_in.rank() - 1) > 0,
+      l_in.dims().back() > 0,
       "Error! The input field must have a non-zero level dimension.\n"
       "The input field layout is "
           << l_in.to_string() << ".\n");
   if(l_w.rank() == 2) {
-    EKAT_REQUIRE_MSG(
-        l_w.tags()[0] == COL && l_in.tags()[0] == COL,
-        "Error! Rank-2 weight field must have COL as first dimension");
-    EKAT_REQUIRE_MSG(
-        l_w.dim(0) == l_in.dim(0),
-        "Error! input and weight fields must have the same dimension along "
-        "which we are taking the reducing the field (first dimensions).\n"
-        "The weight field has first dimension "
-            << l_w.dim(0)
-            << " while "
-               "the input field has first dimension "
-            << l_in.dim(0) << ".\n");
+    EKAT_REQUIRE_MSG(l_w.congruent(l_in.clone().strip_dim(CMP, false)),
+                     "Error! Incompatible layouts\n"
+                     "  field in: " +
+                         l_in.to_string() +
+                         "\n"
+                         "  weight: " +
+                         l_w.to_string() + "\n");
   }
   EKAT_REQUIRE_MSG(
       l_out == l_in.clone().strip_dim(l_in.rank() - 1),
