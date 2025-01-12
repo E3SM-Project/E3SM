@@ -403,10 +403,10 @@ contains
                   slopeTaperUp = 1.0_RKIND + slopeTaperFactor*(slopeTaperUp - 1.0_RKIND)
                   slopeTaperDown = 1.0_RKIND + slopeTaperFactor*(slopeTaperDown - 1.0_RKIND)
 
-                  limiterUp(k,iCellSelf,iEdge) = (1.0_RKIND - RediKappaSfcTaper(k,iEdge)* &
-                                    (1.0_RKIND - slopeTaperUp))
-                  limiterDown(k,iCellSelf,iEdge) = (1.0_RKIND - RediKappaSfcTaper(k,iEdge)* &
-                                    (1.0_RKIND - slopeTaperDown))
+                  limiterUp(k,iCellSelf,iEdge) = 1.0_RKIND !(1.0_RKIND - RediKappaSfcTaper(k,iEdge)* &
+                                   ! (1.0_RKIND - slopeTaperUp))
+                  limiterDown(k,iCellSelf,iEdge) = 1.0_RKIND !(1.0_RKIND - RediKappaSfcTaper(k,iEdge))!* &
+                                   ! (1.0_RKIND - slopeTaperDown))
 
                   sfcTaper = 1.0_RKIND + sfcTaperFactor*(RediKappaSfcTaper(k,iEdge) - 1.0_RKIND) !Note that this term is 1 - sfcTaper
                   !removing sfcTaperUp/Down as they are identical
