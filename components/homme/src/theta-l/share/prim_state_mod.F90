@@ -149,6 +149,7 @@ contains
     real (kind=real_kind) :: KEH1,KEH2,KEV1,KEV2
     real (kind=real_kind) :: KEwH1,KEwH2,KEwH3,KEwV1,KEwV2
 
+#ifdef HOMMEDA
     real (kind=real_kind) :: PEscalar, PEexpected_scalar, iet1s, ket1s
     real (kind=real_kind) :: KEscalar, KEexpected_scalar, IEscalar, pair2as,pair2bs
     real (kind=real_kind) :: pair3as,pair3bs
@@ -159,6 +160,7 @@ contains
     real (kind=real_kind) :: pair8as,pair8bs
     real (kind=real_kind) :: pair9as,pair9bs
     real (kind=real_kind) :: pair10as,pair10bs
+#endif
 
     real (kind=real_kind) :: ddt_tot,ddt_diss, ddt_diss_adj
     integer               :: n0, n0q
@@ -182,6 +184,7 @@ contains
     IEner    = 0
     muvalue  = 0
 
+#ifdef HOMMEDA
     PEscalar = 0; PEexpected_scalar = 0; iet1s = 0; ket1s = 0;
     KEscalar = 0; KEexpected_scalar = 0; IEscalar = 0;
     pair2as=0;pair2bs=0;
@@ -193,7 +196,7 @@ contains
     pair8as=0;pair8bs=0;
     pair9as=0;pair9bs=0;
     pair10as=0;pair10bs=0;
-
+#endif
 
     ! dynamics timelevels
     n0=tl%n0
@@ -663,7 +666,8 @@ contains
     !if(hybrid%masterthread) print *,'PEver2'
     PEvert2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     PEvert2 = PEvert2*scale
-    
+   
+#ifdef HOMMEDA 
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%PE
     enddo
@@ -772,7 +776,7 @@ contains
        tmp(:,:,ie) = elem(ie)%accum%pair10b
     enddo
     pair10bs = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
-
+#endif
 
     !   KE->IE
     do ie=nets,nete
@@ -871,6 +875,7 @@ contains
 
           write(iulog,'(a,2e22.14)')'PEhorz1,PEhorz2:',PEhorz1,PEhorz2
 
+#ifdef HOMMEDA
           write(iulog,'(a,3e22.14)')'- PE_t,PE_t exp:',PEscalar, PEexpected_scalar, PEscalar-PEexpected_scalar
           write(iulog,'(a,3e22.14)')'- KE_t,KE_t exp:',KEscalar, KEexpected_scalar, KEscalar-KEexpected_scalar
           write(iulog,'(a,1e22.14)')'- IE_t:',IEscalar
@@ -885,6 +890,7 @@ contains
           write(iulog,'(a,3e22.14)')'- pair8a,pair8b:', pair8as, pair8bs, (pair8as + pair8bs)/pair8as
           write(iulog,'(a,1e22.14)')'- pair9a       :', pair9as
           write(iulog,'(a,3e22.14)')'- pair10a,pair10b:', pair10as, pair10bs, (pair10as + pair10bs)/pair10as
+#endif
 
           write(iulog,'(a,2e22.14)')'PE h-adv, sum=0:',PEhorz1,PEhorz2
           write(iulog,'(a,2e22.14)')'PE v-adv, sum=0:',PEvert1,PEvert2
