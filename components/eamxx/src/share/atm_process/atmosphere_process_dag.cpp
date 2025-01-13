@@ -594,13 +594,16 @@ void AtmProcDAG::add_edges () {
 void AtmProcDAG::process_initial_conditions(const grid_field_map &ic_inited) {
   // First, add the fields that were determined to come from the previous time
   // step => IC for t = 0
-  // get the begin_node since the IC is identical at first
-  const Node &begin_node = m_nodes[m_nodes.size() - 2];
-  int id = m_nodes.size();
-  // Create a node for the ICs by copying the begin_node
-  m_nodes.push_back(Node(begin_node));
-  Node& ic_node = m_nodes.back();
+
+  // Create a node for the ICs by copying the begin_node. Recall that so far
+  // m_nodes contains [<processes>, 'beg-of-step', 'end-of-step']
+  // WARNING: do NOT get a ref to beg-of-step node, since calls to m_nodes.push_back
+  //          may resize the vector, invalidating the reference.
+  auto begin_node = m_nodes[m_nodes.size()-2];
+  auto& ic_node = m_nodes.emplace_back(begin_node);
+
   // now set/clear the basic data for the ic_node
+  int id = m_nodes.size();
   ic_node.id = id;
   ic_node.name = "Initial Conditions";
   m_unmet_deps[id].clear();
@@ -650,8 +653,6 @@ void AtmProcDAG::process_initial_conditions(const grid_field_map &ic_inited) {
   }
   m_IC_processed = true;
 }
-
-
 
 int AtmProcDAG::add_fid (const FieldIdentifier& fid) {
   auto it = ekat::find(m_fids,fid);

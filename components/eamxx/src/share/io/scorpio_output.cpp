@@ -1110,7 +1110,7 @@ AtmosphereOutput::get_var_dof_offsets(const FieldLayout& layout)
 
   // Precompute this *before* the early return, since it involves collectives.
   // If one rank owns zero cols, and returns prematurely, the others will be left waiting.
-  AbstractGrid::gid_type min_gid;
+  AbstractGrid::gid_type min_gid = -1;
   if (layout.has_tag(COL) or layout.has_tag(EL)) {
     min_gid = m_io_grid->get_global_min_dof_gid();
   }
