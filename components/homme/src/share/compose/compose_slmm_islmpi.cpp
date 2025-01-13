@@ -92,20 +92,23 @@ typedef std::vector<GidRankPair> GidRankPairs;
 typedef std::map<Gid, GidRankPairs> Gid2Nbrs;
 typedef std::vector<Int> IntBuf;
 typedef std::vector<Real> RealBuf;
+typedef std::map<Gid, int> Gid2Count;
 
 template <typename MT>
-GidRankPairs all_nbrs_but_me (const typename IslMpi<MT>::ElemDataH& ed) {
+GidRankPairs all_1halo_nbrs_but_me (const typename IslMpi<MT>::ElemDataH& ed) {
   GidRankPairs gs;
-  gs.reserve(ed.nbrs.size() - 1);
-  for (const auto& n : ed.nbrs)
+  gs.reserve(ed.nin1halo - 1);
+  for (Int i = 0; i < ed.nin1halo; ++i) {
+    const auto& n = ed.nbrs(i);
     if (&n != ed.me)
       gs.push_back(GidRankPair(n.gid, n.rank));
+  }
   return gs;
 }
 
 template <typename MT>
 void fill_gid2nbrs (const mpi::Parallel& p, const typename IslMpi<MT>::ElemDataListH& eds,
-                    Gid2Nbrs& gid2nbrs) {
+                    Gid2Nbrs& gid2nbrs, Gid2Count& gid2ninprevhalo) {
   static const Int tag = 6;
   const Rank my_rank = p.rank();
   const Int n_owned = eds.size();
@@ -113,7 +116,7 @@ void fill_gid2nbrs (const mpi::Parallel& p, const typename IslMpi<MT>::ElemDataL
   // Fill in the ones we know.
   for (const auto& ed : eds) {
     slmm_assert(ed.me->rank == my_rank);
-    gid2nbrs[ed.me->gid] = all_nbrs_but_me<MT>(ed);
+    gid2nbrs[ed.me->gid] = all_1halo_nbrs_but_me<MT>(ed);
   }
 
   std::vector<Rank> ranks;
@@ -126,13 +129,18 @@ void fill_gid2nbrs (const mpi::Parallel& p, const typename IslMpi<MT>::ElemDataL
     std::map<Gid,Rank> needgid2rank;
     {
       std::set<Rank> unique_ranks;
-      for (const auto& item : gid2nbrs)
-        for (const auto& n : item.second)
-          if (n.rank != my_rank) {
-            slmm_assert(gid2nbrs.find(n.gid) == gid2nbrs.end());
-            needgid2rank.insert(std::make_pair(n.gid, n.rank));
-            unique_ranks.insert(n.rank);
-          }
+      for (const auto& ed : eds) {
+        // We only need information for GIDs in the current outermost halo.
+        const auto& it = gid2ninprevhalo.find(ed.me->gid);
+        const Int i0 = it == gid2ninprevhalo.end() ? 0 : it->second;
+        for (Int i = i0; i < ed.nbrs.size(); ++i) {
+          const auto& n = ed.nbrs(i);
+          if (n.rank == my_rank) continue;
+          slmm_assert(gid2nbrs.find(n.gid) == gid2nbrs.end());
+          needgid2rank.insert(std::make_pair(n.gid, n.rank));
+          unique_ranks.insert(n.rank);
+        }
+      }
       nrank = unique_ranks.size();
       ranks.insert(ranks.begin(), unique_ranks.begin(), unique_ranks.end());
       Int i = 0;
@@ -171,8 +179,9 @@ void fill_gid2nbrs (const mpi::Parallel& p, const typename IslMpi<MT>::ElemDataL
   std::vector<mpi::Request> nbr_send_reqs(nrank), nbr_recv_reqs(nrank);
   for (Int i = 0; i < nrank; ++i) {
     auto& r = nbr_recvs[i];
-    // 20 is from dimensions_mod::set_mesh_dimensions; factor of 2 is to get
-    // (gid,rank); 1 is for size datum.
+    // 20 is from dimensions_mod::set_mesh_dimensions, the maximum size of the
+    // 1-halo minus the 0-halo; factor of 2 is to get (gid,rank); 1 is for the
+    // size datum.
     r.resize((20*2 + 1)*(req_sends[i].size() - 1));
     mpi::irecv(p, r.data(), r.size(), ranks[i], tag, &nbr_recv_reqs[i]);
   }
@@ -215,17 +224,22 @@ void fill_gid2nbrs (const mpi::Parallel& p, const typename IslMpi<MT>::ElemDataL
 }
 
 template <typename MT>
-void extend_nbrs (const Gid2Nbrs& gid2nbrs, typename IslMpi<MT>::ElemDataListH& eds) {
+void extend_nbrs (const Gid2Nbrs& gid2nbrs, typename IslMpi<MT>::ElemDataListH& eds,
+                  Gid2Count& gid2ninprevhalo) {
   for (auto& ed : eds) {
-    // Get all <=2-halo neighbors.
-    std::set<GidRankPair> new_nbrs;
-    for (const auto& n : ed.nbrs) {
-      if (&n == ed.me) continue;
-      const auto& it = gid2nbrs.find(n.gid);
-      slmm_assert(it != gid2nbrs.end());
-      const auto& gid_nbrs = it->second;
-      for (const auto& gn : gid_nbrs)
-        new_nbrs.insert(gn);
+    // Get all <=(n+1)-halo neighbors, where we already have <=n-halo neighbors.
+    std::set<GidRankPair> new_nbrs; {
+      const auto& it = gid2ninprevhalo.find(ed.me->gid);
+      const Int i0 = it == gid2ninprevhalo.end() ? 0 : it->second;
+      for (Int i = i0; i < ed.nbrs.size(); ++i) {
+        const auto& n = ed.nbrs(i);
+        if (&n == ed.me) continue;
+        const auto& it = gid2nbrs.find(n.gid);
+        slmm_assert(it != gid2nbrs.end());
+        const auto& gid_nbrs = it->second;
+        for (const auto& gn : gid_nbrs)
+          new_nbrs.insert(gn);
+      }
     }
     // Remove the already known ones.
     for (const auto& n : ed.nbrs)
@@ -238,8 +252,9 @@ void extend_nbrs (const Gid2Nbrs& gid2nbrs, typename IslMpi<MT>::ElemDataListH& 
         break;
       }
     slmm_assert(me >= 0);
-    // Append the, now only new, 2-halo ones.
+    // Append the, now only new, (n+1)-halo ones.
     Int i = ed.nbrs.size();
+    gid2ninprevhalo[ed.me->gid] = i;
     ed.nbrs.reset_capacity(i + new_nbrs.size(), true);
     ed.me = &ed.nbrs(me);
     for (const auto& n : new_nbrs) {
@@ -250,14 +265,22 @@ void extend_nbrs (const Gid2Nbrs& gid2nbrs, typename IslMpi<MT>::ElemDataListH& 
       en.lid_on_rank = -1;
       en.lid_on_rank_idx = -1;
     }
+#ifndef NDEBUG
+    {
+      std::set<Gid> ugid;
+      for (Int i = 0; i < ed.nbrs.size(); ++i) ugid.insert(ed.nbrs(i).gid);
+      slmm_assert(ugid.size() == size_t(ed.nbrs.size()));
+    }
+#endif
   }
 }
 
 template <typename MT>
-void collect_gid_rank (const mpi::Parallel& p, typename IslMpi<MT>::ElemDataListH& eds) {
+void collect_gid_rank (const mpi::Parallel& p, typename IslMpi<MT>::ElemDataListH& eds,
+                       Gid2Count& gid2ninprevhalo) {
   Gid2Nbrs gid2nbrs;
-  fill_gid2nbrs<MT>(p, eds, gid2nbrs);
-  extend_nbrs<MT>(gid2nbrs, eds);
+  fill_gid2nbrs<MT>(p, eds, gid2nbrs, gid2ninprevhalo);
+  extend_nbrs<MT>(gid2nbrs, eds, gid2ninprevhalo);
 }
 
 template <typename MT>
@@ -478,7 +501,11 @@ void collect_gid_rank (IslMpi<MT>& cm, const Int* nbr_id_rank, const Int* nirptr
     }
     slmm_assert(ed.me);
   }
-  if (cm.halo == 2) extend_halo::collect_gid_rank<MT>(*cm.p, cm.ed_h);
+  if (cm.halo > 1) {
+    extend_halo::Gid2Count gid2ninprevhalo;
+    for (int halo = 2; halo <= cm.halo; ++halo)
+      extend_halo::collect_gid_rank<MT>(*cm.p, cm.ed_h, gid2ninprevhalo);
+  }
 #ifdef COMPOSE_PORT
   cm.own_dep_mask = typename IslMpi<MT>::DepMask("own_dep_mask",
                                                  cm.nelemd, cm.nlev, cm.np2);
@@ -682,17 +709,20 @@ void size_mpi_buffers (IslMpi<MT>& cm, const Rank2Gids& rank2rmtgids,
   const Int sor = sizeof(Real), soi = sizeof(Int), sosi = sor;
   static_assert(sizeof(Real) >= sizeof(Int),
                 "For buffer packing, we require sizeof(Real) >= sizeof(Int)");
+  const bool calc_trajectory = cm.traj_nsubstep > 0;
+  const Int ndim = calc_trajectory ? cm.dep_points_ndim : 3;
+  const Int qsize = calc_trajectory ? std::max(cm.dep_points_ndim, cm.qsize) : cm.qsize;
   const auto xbufcnt = [&] (const std::set<Int>& rmtgids,
                             const std::set<Int>& owngids,
                             const bool include_bulk = true) -> Int {
-    return (sosi + (2*soi + (2*soi)*cm.nlev)*rmtgids.size() +            // meta data
-            (include_bulk ? 1 : 0)*owngids.size()*cm.nlev*cm.np2*3*sor); // bulk data
+    return (sosi + (2*soi + (2*soi)*cm.nlev)*rmtgids.size() +               // meta data
+            (include_bulk ? 1 : 0)*owngids.size()*cm.nlev*cm.np2*ndim*sor); // bulk data
   };
   const auto qbufcnt = [&] (const std::set<Int>& rmtgids,
                             const std::set<Int>& owngids) -> Int {
     return ((rmtgids.size()*2 +      // min/max q
              owngids.size()*cm.np2)* // q
-            cm.qsize*cm.nlev*sor);
+            qsize*cm.nlev*sor);
   };
   const auto bytes2real = [&] (const Int& bytes) {
     return (bytes + sor - 1)/sor;

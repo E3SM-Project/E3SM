@@ -12,7 +12,7 @@ module dcmip12_wrapper
 use control_mod,          only: test_case, dcmip4_moist, dcmip4_X, vanalytic
 use dcmip2012_test1_2_3,  only: test1_advection_deformation, test1_advection_hadley, test1_advection_orography, &
                                 test2_steady_state_mountain, test2_schaer_mountain,test3_gravity_wave
-use dcmip2012_test1_conv, only: test1_conv_advection_deformation
+use dcmip2012_test1_conv_mod, only: test1_conv_advection, test1_conv_print_results
 use dcmip2012_test4,      only: test4_baroclinic_wave 
 use mtests,               only: mtest_state
 use derivative_mod,       only: derivative_t, gradient_sphere
@@ -101,82 +101,6 @@ subroutine dcmip2012_test1_1(elem,hybrid,hvcoord,nets,nete,time,n0,n1)
       z = H  * log(1.0d0/hvcoord%etai(k))
       p = p0 * hvcoord%etai(k)
       call test1_advection_deformation(time,lon,lat,p,z,zcoords,u,v,w,T,phis,ps,rho,q(1),q(2),q(3),q(4))
-      call set_state_i(u,v,w,T,ps,phis,p,zi(k),g, i,j,k,elem(ie),n0,n1)
-
-      ! get vertical derivative of p at point i,j,k
-      dp_dn = ddn_hyai(k)*p0 + ddn_hybi(k)*ps
-
-      ! get vertical eta velocity at point i,j,k
-      eta_dot = -g*rho*w/p0
-
-      ! store vertical mass flux
-      elem(ie)%derived%eta_dot_dpdn_prescribed(i,j,k) = eta_dot * dp_dn
-
-  enddo; enddo; enddo; enddo
-
-end subroutine
-
-!_____________________________________________________________________
-subroutine dcmip2012_test1_1_conv(elem,hybrid,hvcoord,nets,nete,time,n0,n1)
-
-  ! 3d deformational flow
-
-  ! Use physical constants consistent with HOMME
-  use physical_constants, only: Rd => Rgas, p0
-
-  type(element_t),    intent(inout), target :: elem(:)                  ! element array
-  type(hybrid_t),     intent(in)            :: hybrid                   ! hybrid parallel structure
-  type(hvcoord_t),    intent(inout)         :: hvcoord                  ! hybrid vertical coordinates
-  integer,            intent(in)            :: nets,nete                ! start, end element index
-  real(rl),           intent(in)            :: time                     ! current time
-  integer,            intent(in)            :: n0,n1                    ! time level indices
-
-  logical ::  initialized = .false.
-
-  integer,  parameter :: zcoords = 0                                    ! we are not using z coords
-  logical,  parameter :: use_eta = .true.                               ! we are using hybrid eta coords
-  real(rl), parameter ::      &
-      T0      = 300.d0,       &                                         ! temperature (K)
-      ztop    = 12000.d0,     &                                         ! model top (m)
-      H       = Rd * T0 / g                                             ! scale height
-
-  integer :: i,j,k,ie                                                   ! loop indices
-  real(rl):: lon,lat                                                    ! pointwise coordiantes
-  real(rl):: p,z,phis,u,v,w,T,phis_ps,ps,rho,q(4),dp,eta_dot,dp_dn       ! pointwise field values
-
-  ! set analytic vertical coordinates at t=0
-  if(.not. initialized) then
-    !$omp barrier
-    !$omp master
-    if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2012 test 1-1: 3d deformational flow'
-    call get_evenly_spaced_p(zi,zm,0.0_rl,ztop,H)                       ! get evenly spaced p levels
-    hvcoord%etai  = exp(-zi/H)                                          ! set eta levels from z
-    call set_hybrid_coefficients(hvcoord,hybrid, hvcoord%etai(1),1.0_rl)! set hybrid A and B from eta levels
-    call set_layer_locations(hvcoord, .true., hybrid%masterthread)
-    initialized = .true.
-    !$omp end master
-    !$omp barrier
-  endif
-
-  ! set prescribed state at level midpoints
-  do ie = nets,nete; do k=1,nlev; do j=1,np; do i=1,np
-      lon  = elem(ie)%spherep(i,j)%lon; lat  = elem(ie)%spherep(i,j)%lat
-      z = H * log(1.0d0/hvcoord%etam(k))
-      p = p0 * hvcoord%etam(k)
-      call test1_conv_advection_deformation(time,lon,lat,p,z,zcoords,u,v,w,T,phis,ps,rho,q(1),q(2),q(3),q(4))
-
-      dp = pressure_thickness(ps,k,hvcoord)
-      call set_state(u,v,w,T,ps,phis,p,dp,zm(k),g, i,j,k,elem(ie),n0,n1)
-      if(time==0) call set_tracers(q,qsize,dp,i,j,k,lat,lon,elem(ie))
-
-  enddo; enddo; enddo; enddo
-
-  ! set prescribed state at level interfaces
-  do ie = nets,nete; do k=1,nlevp; do j=1,np; do i=1,np
-      lon  = elem(ie)%spherep(i,j)%lon; lat  = elem(ie)%spherep(i,j)%lat
-      z = H  * log(1.0d0/hvcoord%etai(k))
-      p = p0 * hvcoord%etai(k)
-      call test1_conv_advection_deformation(time,lon,lat,p,z,zcoords,u,v,w,T,phis,ps,rho,q(1),q(2),q(3),q(4))
       call set_state_i(u,v,w,T,ps,phis,p,zi(k),g, i,j,k,elem(ie),n0,n1)
 
       ! get vertical derivative of p at point i,j,k
@@ -332,6 +256,105 @@ subroutine dcmip2012_test1_3(elem,hybrid,hvcoord,nets,nete,time,n0,n1,deriv)
   enddo;
 
 end subroutine
+
+!_____________________________________________________________________
+subroutine dcmip2012_test1_conv(test_case,elem,hybrid,hvcoord,deriv,nets,nete,time,n0,n1)
+
+  ! 3D tracer transport tests, modified to permit good convergence testing.
+
+  ! Use physical constants consistent with HOMME
+  use physical_constants, only: Rd => Rgas, p0
+
+  character(len=*),   intent(in)            :: test_case
+  type(element_t),    intent(inout), target :: elem(:)                  ! element array
+  type(hybrid_t),     intent(in)            :: hybrid                   ! hybrid parallel structure
+  type(hvcoord_t),    intent(inout)         :: hvcoord                  ! hybrid vertical coordinates
+  type (derivative_t),intent(in)            :: deriv
+  integer,            intent(in)            :: nets,nete                ! start, end element index
+  real(rl),           intent(in)            :: time                     ! current time
+  integer,            intent(in)            :: n0,n1                    ! time level indices
+
+  logical ::  initialized = .false.
+
+  real(rl), parameter ::      &
+      T0      = 300.d0,       &                                         ! temperature (K)
+      ztop    = 12000.d0,     &                                         ! model top (m)
+      H       = Rd * T0 / g                                             ! scale height
+
+  integer :: i,j,k,ie                                                   ! loop indices
+  real(rl):: lon,lat,hyai,hyam,hybi,hybm                                ! pointwise coordiantes
+  real(rl):: p,z,phis,u,v,w,T,phis_ps,ps,rho,q(5),dp,eta_dot,dp_dn      ! pointwise field values
+  logical :: use_w
+  real(rl):: grad_p(np,np,2),p_i(np,np),u_i(np,np),v_i(np,np)
+
+  ! set analytic vertical coordinates at t=0
+  if (.not. initialized) then
+     !$omp barrier
+     !$omp master
+     if (hybrid%masterthread) then
+        write(iulog,*) 'initializing dcmip2012 test 3(a-e): &
+             &modified 3d deformational flows for convergence testing'
+     end if
+     call get_evenly_spaced_z(zi,zm,0.0_rl,ztop)                        ! get evenly spaced z levels
+     hvcoord%etai = exp(-zi/H)                                          ! set eta levels from z
+     call set_hybrid_coefficients(hvcoord,hybrid,hvcoord%etai(1),1.0_rl)! set hybrid A and B from eta levels
+     call set_layer_locations(hvcoord, .true., hybrid%masterthread)
+     initialized = .true.
+     !$omp end master
+     !$omp barrier
+  endif
+
+  ! set prescribed state at level midpoints
+  do ie = nets,nete; do k=1,nlev; do j=1,np; do i=1,np
+     hyam = hvcoord%hyam(k); hybm = hvcoord%hybm(k)
+     lon = elem(ie)%spherep(i,j)%lon; lat = elem(ie)%spherep(i,j)%lat
+     z = H * log(1.0d0/hvcoord%etam(k))
+     p = p0 * hvcoord%etam(k)
+     call test1_conv_advection(test_case,time,lon,lat,hyam,hybm,p,z,u,v,w,use_w, &
+          &                    T,phis,ps,rho,q)
+     dp = pressure_thickness(ps,k,hvcoord)
+     call set_state(u,v,w,T,ps,phis,p,dp,zm(k),g, i,j,k,elem(ie),n0,n1)
+     if (time==0) call set_tracers(q,qsize,dp,i,j,k,lat,lon,elem(ie))
+  enddo; enddo; enddo; enddo
+
+  ! set prescribed state at level interfaces
+  do ie = nets,nete
+     do k = 1,nlevp
+        do j = 1,np
+           do i = 1,np
+              hyai = hvcoord%hyai(k); hybi = hvcoord%hybi(k)
+              lon = elem(ie)%spherep(i,j)%lon; lat = elem(ie)%spherep(i,j)%lat
+              z = H  * log(1.0d0/hvcoord%etai(k))
+              p = p0 * hvcoord%etai(k)
+              call test1_conv_advection(test_case,time,lon,lat,hyai,hybi,p,z,u,v,w,use_w, &
+                   &                    T,phis,ps,rho,q)
+              call set_state_i(u,v,w,T,ps,phis,p,zi(k),g,i,j,k,elem(ie),n0,n1)
+              if (use_w) then
+                 ! get vertical derivative of p at point i,j,k
+                 dp_dn = ddn_hyai(k)*p0 + ddn_hybi(k)*ps
+                 ! get vertical eta velocity at point i,j,k
+                 eta_dot = -g*rho*w/p0
+                 ! store vertical mass flux
+                 elem(ie)%derived%eta_dot_dpdn_prescribed(i,j,k) = eta_dot * dp_dn
+              else
+                 p_i(i,j) = p
+                 u_i(i,j) = u
+                 v_i(i,j) = v
+              end if
+           enddo
+        enddo
+        if (.not. use_w) then
+           ! get vertical mass flux
+           grad_p = gradient_sphere(p_i,deriv,elem(ie)%Dinv)
+           elem(ie)%derived%eta_dot_dpdn_prescribed(:,:,k) = -u_i*grad_p(:,:,1) - v_i*grad_p(:,:,2)
+        end if
+     enddo
+     if (.not. use_w) then
+        elem(ie)%derived%eta_dot_dpdn_prescribed(:,:,1)     = 0
+        elem(ie)%derived%eta_dot_dpdn_prescribed(:,:,nlevp) = 0
+     end if
+  enddo
+end subroutine dcmip2012_test1_conv
 
 !_____________________________________________________________________
 subroutine dcmip2012_test2_0(elem,hybrid,hvcoord,nets,nete)
@@ -814,67 +837,18 @@ subroutine set_tracers(q,nq, dp,i,j,k,lat,lon,elem)
 
 end subroutine
 
-subroutine dcmip2012_print_test1_conv_results(elem, tl, hvcoord, par, subnum)
+subroutine dcmip2012_print_test1_conv_results(test_case, elem, tl, hvcoord, par, subnum)
   use time_mod, only: timelevel_t
   use parallel_mod, only: parallel_t
-  use dimensions_mod, only: nelemd, nlev, qsize
-  use parallel_mod, only: global_shared_buf, global_shared_sum
-  use global_norms_mod, only: wrap_repro_sum
-  use physical_constants, only: Rd => Rgas, p0
 
+  character(len=*), intent(in) :: test_case
   type(element_t), intent(in) :: elem(:)
   type(timelevel_t), intent(in) :: tl
   type(hvcoord_t), intent(in) :: hvcoord
   type(parallel_t), intent(in) :: par
   integer, intent(in) :: subnum
 
-  integer,  parameter :: zcoords = 0
-  real(rl), parameter ::       &
-       T0      = 300.d0,       &               ! temperature (K)
-       ztop    = 12000.d0,     &               ! model top (m)
-       H       = Rd * T0 / g                   ! scale height
-
-  real(rl) :: q(np,np,4), lon, lat, z, p, phis, u, v, w, T, phis_ps, ps, rho, time, &
-       a, b, reldif
-  integer :: ie, k, iq, i, j
-
-  ! Set time to 0 to get the initial conditions.
-  time = 0._rl
-
-  do ie = 1,nelemd
-     global_shared_buf(ie,:2*qsize) = 0._rl
-     do k = 1,nlev
-        z = H * log(1.0d0/hvcoord%etam(k))
-        p = p0 * hvcoord%etam(k)
-        do j = 1,np
-           do i = 1,np
-              lon = elem(ie)%spherep(i,j)%lon
-              lat = elem(ie)%spherep(i,j)%lat
-              select case(subnum)
-              case (1)
-                 call test1_conv_advection_deformation( &
-                      time,lon,lat,p,z,zcoords,u,v,w,T,phis,ps,rho, &
-                      q(i,j,1),q(i,j,2),q(i,j,3),q(i,j,4))
-              end select
-           end do
-        end do
-        do iq = 1,qsize
-           global_shared_buf(ie,2*iq-1) = global_shared_buf(ie,2*iq-1) + &
-                sum(elem(ie)%spheremp*(elem(ie)%state%Q(:,:,k,iq) - q(:,:,iq))**2)
-           global_shared_buf(ie,2*iq) = global_shared_buf(ie,2*iq) + &
-                sum(elem(ie)%spheremp*q(:,:,iq)**2)
-        end do
-     end do
-  end do
-  call wrap_repro_sum(nvars=2*qsize, comm=par%comm)
-  if (par%masterproc) then
-     do iq = 1,qsize
-        a = global_shared_sum(2*iq-1)
-        b = global_shared_sum(2*iq)
-        reldif = sqrt(a/b)
-        print '(a,i2,es24.16)', 'test1_conv> Q', iq, reldif
-     end do
-  end if
+  call test1_conv_print_results(test_case, elem, tl, hvcoord, par, subnum)
 end subroutine dcmip2012_print_test1_conv_results
 
 end module dcmip12_wrapper

@@ -6809,6 +6809,36 @@ example, to apply hyperviscosity to moisture, the first tracer, set the value to
 Default: (set by dycore)
 </entry>
 
+<entry id="semi_lagrange_halo" type="integer" category="se"
+       group="ctl_nl" valid_values="">
+Number of element haloes to include in trajectory search. -1 triggers an
+automatic calculation of max(1, dt_tracer_factor/3). This is based on the
+advective CFL condition that governs the dynamics time step.
+Default: -1 (set by dycore)
+</entry>
+
+<entry id="semi_lagrange_trajectory_nsubstep" type="integer" category="se"
+       group="ctl_nl" valid_values="">
+Number of substeps to take in computing semi-Lagrangian transport
+trajectories. 0 triggers the original algorithm; 1 or larger triggers the
+enhanced-trajectory algorithm.
+Default: 0 (set by dycore)
+</entry>
+
+<entry id="semi_lagrange_trajectory_nvelocity" type="integer" category="se"
+       group="ctl_nl" valid_values="">
+Number of velocity snapshots to store for use when computing the enhanced
+trajectories. -1 triggers an automatic calculation. 0, 1, 2 all become 2, the
+minimum.
+Default: -1 (set by dycore)
+</entry>
+
+<entry id="semi_lagrange_diagnostics" type="integer" category="se"
+       group="ctl_nl" valid_values="">
+Optional diagnostic output from transport module.
+Default: 0 (set by dycore)
+</entry>
+
 <!-- Physics grid -->
 
 <entry id="se_fv_phys_remap_alg" type="integer" category="se"
