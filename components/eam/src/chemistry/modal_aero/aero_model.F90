@@ -102,7 +102,9 @@ module aero_model
   real(r8)          :: sol_factic_interstitial = 0.4_r8
   real(r8)          :: seasalt_emis_scale
   real(r8)          :: small = 1.e-36
-
+!<shanyp 01132025
+  real(r8)          :: dstemislimit = 1.e-4_r8
+!shanyp 01132025>
   integer :: ndrydep = 0
   integer,allocatable :: drydep_indices(:)
   integer :: nwetdep = 0
@@ -132,8 +134,10 @@ contains
     character(len=16) :: aer_drydep_list(pcnst) = ' '
     namelist /aerosol_nl/ aer_wetdep_list, aer_drydep_list,          &
              sol_facti_cloud_borne, seasalt_emis_scale, sscav_tuning, &
-       sol_factb_interstitial, sol_factic_interstitial
-
+!<shanyp 01132025
+!             sol_factb_interstitial, sol_factic_interstitial
+             sol_factb_interstitial, sol_factic_interstitial,dstemislimit
+!shanyp 01132025>
     !-----------------------------------------------------------------------------
 
     ! Read namelist
@@ -161,6 +165,9 @@ contains
     call mpibcast(sol_factic_interstitial, 1,                       mpir8,   0, mpicom)
     call mpibcast(sscav_tuning,          1,                         mpilog,  0, mpicom)
     call mpibcast(seasalt_emis_scale, 1, mpir8,   0, mpicom)
+!<shanyp 01132025
+    call mpibcast(dstemislimit, 1,                       mpir8,   0, mpicom) !dstemislimit
+!shanyp 01130225>
 #endif
 
     wetdep_list = aer_wetdep_list
@@ -2823,7 +2830,7 @@ do_lphase2_conditional: &
 
     real (r8), parameter :: z0=0.0001_r8  ! m roughness length over oceans--from ocean model
 !<shanyp 07052024
-    real (r8), parameter :: dstemislimit=1.e-4  ! kg/m2/s dust emission upper bound
+!    real (r8), parameter :: dstemislimit=1.e-4  ! kg/m2/s dust emission upper bound
     integer :: icol,mmn
     icol=0
     mmn=0
