@@ -152,8 +152,9 @@ get_test_fm(const std::shared_ptr<const AbstractGrid>& grid,
 
   // field_2 is not partitioned, so let's sync it across ranks
   auto f2 = fm->get_field("field_2");
-  auto v2 = f2.get_view<Real*>();
+  auto v2 = f2.get_view<Real*,Host>();
   comm.all_reduce(v2.data(),nlevs,MPI_MAX);
+  f2.sync_to_dev();
 
   return fm;
 }
