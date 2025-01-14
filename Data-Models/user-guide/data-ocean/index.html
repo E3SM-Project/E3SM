@@ -9,10 +9,10 @@
       
       
       
-        <link rel="prev" href="../">
+        <link rel="prev" href="../data-land/">
       
       
-        <link rel="next" href="../atmosphere-grid-overview/">
+        <link rel="next" href="../../../EAM/">
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
@@ -20,7 +20,7 @@
     
     
       
-        <title>High-Order Methods Modeling Environment - E3SM</title>
+        <title>Ocean - E3SM</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#high-order-methods-modeling-environment" class="md-skip">
+        <a href="#the-e3sm-data-ocean-model" class="md-skip">
           Skip to content
         </a>
       
@@ -116,7 +116,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              High-Order Methods Modeling Environment
+              Ocean
             
           </span>
         </div>
@@ -540,6 +540,8 @@
                 
   
   
+    
+  
   
   
     
@@ -560,16 +562,16 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1" checked>
         
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../Data-Models/" class="md-nav__link ">
+            <a href="../../" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -586,7 +588,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_1_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_1_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3_1">
             <span class="md-nav__icon md-icon"></span>
             Data-Models
@@ -602,7 +604,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../Data-Models/user-guide/data-atmos/" class="md-nav__link">
+      <a href="../data-atmos/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -623,7 +625,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../Data-Models/user-guide/data-land/" class="md-nav__link">
+      <a href="../data-land/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -641,10 +643,30 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../../Data-Models/user-guide/data-ocean/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Ocean
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -653,6 +675,86 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#sst-from-observations" class="md-nav__link">
+    <span class="md-ellipsis">
+      SST from Observations
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#idealized-sst" class="md-nav__link">
+    <span class="md-ellipsis">
+      Idealized SST
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Idealized SST">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#idealized-sst-compsets" class="md-nav__link">
+    <span class="md-ellipsis">
+      Idealized SST compsets
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sst-data-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      SST Data File
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#traditional-slab-ocean-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      Traditional Slab Ocean Model
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#relaxed-slab-ocean" class="md-nav__link">
+    <span class="md-ellipsis">
+      Relaxed Slab Ocean
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -670,8 +772,6 @@
                 
   
   
-    
-  
   
   
     
@@ -694,16 +794,16 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
         
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../" class="md-nav__link ">
+            <a href="../../../EAM/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -720,7 +820,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3_2">
             <span class="md-nav__icon md-icon"></span>
             EAM
@@ -762,7 +862,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../user-guide/" class="md-nav__link ">
+            <a href="../../../EAM/user-guide/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -795,7 +895,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../user-guide/namelist_parameters/" class="md-nav__link">
+      <a href="../../../EAM/user-guide/namelist_parameters/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -816,7 +916,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../user-guide/aerosol_phys_prop/" class="md-nav__link">
+      <a href="../../../EAM/user-guide/aerosol_phys_prop/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -837,7 +937,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../user-guide/emission_oxidant_files/" class="md-nav__link">
+      <a href="../../../EAM/user-guide/emission_oxidant_files/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -866,7 +966,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../dev-guide/" class="md-nav__link">
+      <a href="../../../EAM/dev-guide/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -884,8 +984,6 @@
                 
   
   
-    
-  
   
   
     
@@ -928,16 +1026,16 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4" >
         
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../../EAM/tech-guide/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -954,7 +1052,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_4_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_4_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3_2_4">
             <span class="md-nav__icon md-icon"></span>
             Technical Guide
@@ -967,30 +1065,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    High-Order Methods Modeling Environment
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../../EAM/tech-guide/homme/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -999,44 +1077,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
-    <span class="md-ellipsis">
-      Overview
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#namelist-parameters" class="md-nav__link">
-    <span class="md-ellipsis">
-      Namelist parameters
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1049,7 +1089,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../atmosphere-grid-overview/" class="md-nav__link">
+      <a href="../../../EAM/tech-guide/atmosphere-grid-overview/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1070,7 +1110,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../p3/" class="md-nav__link">
+      <a href="../../../EAM/tech-guide/p3/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1091,7 +1131,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../clubb/" class="md-nav__link">
+      <a href="../../../EAM/tech-guide/clubb/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1112,7 +1152,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../zm/" class="md-nav__link">
+      <a href="../../../EAM/tech-guide/zm/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1133,7 +1173,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../rrtmg/" class="md-nav__link">
+      <a href="../../../EAM/tech-guide/rrtmg/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1154,7 +1194,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../orodrag/" class="md-nav__link">
+      <a href="../../../EAM/tech-guide/orodrag/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1175,7 +1215,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../mam/" class="md-nav__link">
+      <a href="../../../EAM/tech-guide/mam/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1196,7 +1236,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../vbs/" class="md-nav__link">
+      <a href="../../../EAM/tech-guide/vbs/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1217,7 +1257,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../dust/" class="md-nav__link">
+      <a href="../../../EAM/tech-guide/dust/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1238,7 +1278,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../oceanfilms/" class="md-nav__link">
+      <a href="../../../EAM/tech-guide/oceanfilms/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1259,7 +1299,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../chemUCIlinozv3/" class="md-nav__link">
+      <a href="../../../EAM/tech-guide/chemUCIlinozv3/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1280,7 +1320,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../cosp/" class="md-nav__link">
+      <a href="../../../EAM/tech-guide/cosp/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1301,7 +1341,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../armdiags/" class="md-nav__link">
+      <a href="../../../EAM/tech-guide/armdiags/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2988,18 +3028,60 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#sst-from-observations" class="md-nav__link">
     <span class="md-ellipsis">
-      Overview
+      SST from Observations
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#namelist-parameters" class="md-nav__link">
+  <a href="#idealized-sst" class="md-nav__link">
     <span class="md-ellipsis">
-      Namelist parameters
+      Idealized SST
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Idealized SST">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#idealized-sst-compsets" class="md-nav__link">
+    <span class="md-ellipsis">
+      Idealized SST compsets
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sst-data-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      SST Data File
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#traditional-slab-ocean-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      Traditional Slab Ocean Model
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#relaxed-slab-ocean" class="md-nav__link">
+    <span class="md-ellipsis">
+      Relaxed Slab Ocean
     </span>
   </a>
   
@@ -3024,30 +3106,121 @@
     
       
     
-    <a href="https://github.com/E3SM-Project/E3SM/raw/master/components/eam/docs/tech-guide/homme.md" title="View source of this page" class="md-content__button md-icon">
+    <a href="https://github.com/E3SM-Project/E3SM/raw/master/components/data_comps/docs/user-guide/data-ocean.md" title="View source of this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.2 8.2 0 0 1-1.23-2"/></svg>
     </a>
   
 
 
-<h1 id="high-order-methods-modeling-environment">High-Order Methods Modeling Environment</h1>
-<h2 id="overview">Overview</h2>
-<p>EAM uses the a dynamical core (dycore) from the High Order Method Modeling Environment (HOMME).<sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup><sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup><sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup> The EAM dycore solves the atmospheric primitive equations governing the evolution of velocity, density, pressure and temperature, as well as the transport of water species and related hydrometers, aerosols and other atmospheric constituents.  The governing equations are written in a vertically lagrangian terrain following mass coordinate.  They are discretized with second order finite differences in the radial direction and spectral finite elements in the horizontal (surface of the sphere) directions, and advanced in time with a 3rd order accurate 5 stage Runge-Kutta method.  Dissipation is added through the use of monotoncity contraints on some advectiion terms, explicitly added hyperviscosity, and a Laplacian-based sponge layer in the first few layers at the model top.  The transported species  makes use of an efficient interpolatory semi-Lagrangian method.  EAMv3 uses 80 layers in the vertical.  The use of the spectral finite element method allows EAMv3 to run on fully unstructured grids, including the cubed-sphere grid (<a href="https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/34113147">SE Atmosphere Grid Overview (EAM &amp; CAM)</a>) which provides quasi-uniform resolution over the globe, and regionally refined meshes (RRM) which enhance horizontal resolution in regions of interest (<a href="https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/3690397775">Library of Regionally-Refined Model (RRM) Grids</a>).</p>
-<h2 id="namelist-parameters">Namelist parameters</h2>
-<p>Many dynamical core parameters can not be changed independently.  For example, increasing the hyperviscosity coefficient may require reducing the hyperviscosity timestep.   Dycore timesteps are tuned for each resolution and the defaults are close to the CFL stability limit. For complete details, as well as their interactions, see <a href="https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/1044644202/EAM+s+HOMME+dycore">EAM's HOMME dycore</a>.</p>
-<p><a href="../../user-guide/namelist_parameters/#homme">HOMME Namelist Parameters</a></p>
+<h1 id="the-e3sm-data-ocean-model">The E3SM Data Ocean Model</h1>
+<!-- disable certain linter checks here for more readable nested markdown  -->
+<!-- markdownlint-disable  MD007 -->
+<p>The E3SM data ocean has several different modes to support various realistic and idealized experiments. Sea surface temperatures (SST) can be either prescribed or prognostic. Prescribed SSTs are specified either through a data stream or analytically. Prognostic modes allow the SST field to evolve and respond to atmospheric conditions. The guides below provide more details on how to use these capabilities.</p>
+<ul>
+<li>Prescribed<ul>
+<li><a href="#sst-from-observations">SST from Observations</a></li>
+<li><a href="#idealized-sst">Idealized SST</a></li>
+</ul>
+</li>
+<li>Prognostic<ul>
+<li><a href="#traditional-slab-ocean-model">Traditional Slab Ocean Model</a> (SOM)</li>
+<li><a href="#relaxed-slab-ocean">Relaxed Slab Ocean</a> (RSO)</li>
+</ul>
+</li>
+</ul>
+<h2 id="sst-from-observations">SST from Observations</h2>
+<p>Using SST data derived from observations is the most common use of the data ocean model, often for AMIP style experiments to reproduce historical periods.</p>
+<p>Example compsets that use this capability are <code>F2010</code> and <code>F20TR</code>. These compsets use the <code>_DOCN%DOM_</code> compset modifier, which sets the <code>DOCN_MODE</code> variable in <code>env_run.xml</code>  to "prescribed".</p>
+<p>Several additional XML variables need to be set in order to use this capability, which are set to defaults for common configurations, such as <code>F2010</code> at <code>ne30pg2</code> atmospheric resolution.</p>
+<div class="highlight"><pre><span></span><code>SSTICE_DATA_FILENAME  Prescribed SST and ice coverage data file name
+SSTICE_GRID_FILENAME  Grid file in &quot;domain&quot; format corresponding to SSTICE_DATA_FILENAME
+SSTICE_YEAR_ALIGN     The model year that corresponds to SSTICE_YEAR_START on the data file
+SSTICE_YEAR_START     The first year of data to use from SSTICE_DATA_FILENAME
+SSTICE_YEAR_END       The last year of data to use from SSTICE_DATA_FILENAME
+</code></pre></div>
+<p>Most users will not need to edit these values from their defaults, but many scenarios require non-standard SST data, such as tropical cyclone hindcasts where the daily evolution of high-resolution SST data may be desireable.</p>
+<h2 id="idealized-sst">Idealized SST</h2>
+<p>The two main uses of idealized SST modes are aquaplanet (AQP) and radiative-convective equilibrium (RCE). The latter is just a special case of an aquaplanet where the SST is [usually] a constant value everywhere, traditionally used in conjunction with special modifications to homogenize radiation and disable rotation. There are several analytically specified SST patterns established by model intercomparison projects such as the Aqua-Planet Experiment (APE)<sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup> and RCEMIP<sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup><sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup>.</p>
+<h3 id="idealized-sst-compsets">Idealized SST compsets</h3>
+<p>The following list shows the currently defined E3SM compsets that utilize idealized SST.</p>
+<div class="highlight"><pre><span></span><code>FAQP
+FAQP-MMF1
+FAQP-MMF2
+F-SCREAM-LR-AQP1
+F-SCREAM-HR-AQP1
+FRCE
+FRCE-MMF1
+FRCE-MMF2
+FRCE-MW_295dT1p25
+FRCE-MW_300dT0p625
+FRCE-MW_300dT1p25
+FRCE-MW_300dT2p5
+FRCE-MW_305dT1p25
+FRCE-MW-MMF1_295dT1p25
+FRCE-MW-MMF1_300dT0p625
+FRCE-MW-MMF1_300dT1p25
+FRCE-MW-MMF1_300dT2p5
+FRCE-MW-MMF1_305dT1p25
+</code></pre></div>
+<p>These all use "analytic" SST patterns that are specified via the <code>docn_comp_run()</code> subroutine in <code>components/data_comps/docn/src/docn_comp_mod.F90</code>. The <code>AQP</code> compsets currently only use the basic aquaplanet pattern that is symmetric about the equator. Other APE patterns introduce different meridional gradients and/or asymmetries. The various analytic SST patterns can be selected by changing the data ocean specifier: <code>_DOCN%AQP1_</code>.</p>
+<p>The first 10 analytic aquaplanet SST patterns correspond to the aqua-planet experiment (APE) protocol as follows</p>
+<div class="highlight"><pre><span></span><code>AQP1    = control symmetric SST pattern
+AQP2    = Flat
+AQP3    = Qobs = average of AQP1 and AQP2
+AQP4    = Peaked
+AQP5    = Control+5N
+AQP6    = 1KEQ - small warm pool
+AQP7    = 3KEQ - small warm pool
+AQP8    = 3KW1 - large warm pool
+AQP9    = Control+10N
+AQP10   = Control+15N
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When using aquaplanet mode the orbital parameters will take on the idealized values shown below such that there are no seasonal variations, but there is still a diurnal cycle.
+<div class="highlight"><pre><span></span><code>orb_eccen = 0
+orb_obliq = 0
+orb_mvelp = 0
+orb_mode = &quot;fixed_parameters&quot;
+</code></pre></div></p>
+</div>
+<p>The basic RCE compsets use the <code>_DOCN%AQPCONST_</code> modifier to produce a globally constant SST value, which is set by the <code>DOCN_AQPCONST_VALUE</code> variable in <code>env_run.xml</code>. The "FRCE-MW" compsets were designed for RCEMIP-II to produce a "mock walker-cell" configuration, in which sinusoidal SST variations are applied to promote a coherent large-scale circulation.</p>
+<h3 id="sst-data-file">SST Data File</h3>
+<p>In addition to the analytic SST modes the user can also specify an idealized aquaplanet SST pattern via the <code>_DOCN%AQPFILE_</code> option. The <code>aquapfile</code> namelist variable is used to specify the SST pattern in this mode. Note that this option has not been used or tested recently, so the user may experience difficulty trying to use this feature.</p>
+<h2 id="traditional-slab-ocean-model">Traditional Slab Ocean Model</h2>
+<p>A slab ocean model (SOM) allows responsive SSTs to address the "infinite heat source" problem associated with prescribed SSTs, but is much cheaper than running with a full ocean model. The traditional SOM appraoch requires special inputs, such as a specified mixed layer depth pattern that can vary in time and a prescribed heat flux to account for the missing effects of ocean dynamics often referred to as "Q-flux". The Q-flux data is often estimated from a fully coupled simulation with active ocean and sea-ice so that the SOM simulation will resemble the full model.</p>
+<p>Currently, we do not have Q-flux data to drive the SOM in E3SM. An alternative appraoch is to use a "relaxed" slab ocean (RSO) in which a specified relaxation time scale is used to bring the SST field back to a target SST field. The RSO mode is much simpler to use, but carries caveats that the user should be aware of before using. See <a href="#relaxed-slab-ocean">Data Ocean - Relaxed Slab Ocean</a> for more information.</p>
+<h2 id="relaxed-slab-ocean">Relaxed Slab Ocean</h2>
+<p>The relaxed slab ocean (RSO) is similar in many ways to the <a href="#traditional-slab-ocean-model">traditional slab ocean model</a>, but uses a specified relaxation time scale to avoid the need for specified "Q-flux" data to represent the effects of ocean transport. The RSO implementation in E3SM was inspired by Zarzycki (2016)<sup id="fnref:4"><a class="footnote-ref" href="#fn:4">4</a></sup>.</p>
+<p>A key consideration for the user is whether they need to use a realistic distribution of mixed layer depths (MLD), or whether their use case can benefit from the simplicity of a globally uniform MLD.</p>
+<p>The RSO mode has the following namelist variables to influence the ocean behavior:</p>
+<div class="highlight"><pre><span></span><code>RSO_relax_tau   SST relaxation timescale
+RSO_fixed_MLD   globally uniform MLD value (use -1 for realistic MLD)
+</code></pre></div>
+<p>Other RSO parameter values are hardcoded in <code>components/data_comps/docn/src/docn_comp_mod.F90</code>.</p>
+<div class="highlight"><pre><span></span><code>RSO_slab_option = 0           ! Option for setting RSO_X_cool
+RSO_R_cool      = 11.75/86400 ! base cooling rate [K/s]
+RSO_Tdeep       = 271.00      ! deep water temperature [K]
+RSO_dT_o        = 27.0        ! scaling temperature gradient
+RSO_h_o         = 30.0        ! scaling mixed layer depth
+</code></pre></div>
+<p>The RSO mode uses the <code>SSTICE_DATA_FILENAME</code> in <code>env_run.xml</code> for its data stream. For a globally uniform MLD this file only need to contain a <code>SST_cpl</code> variable for the SST that will act as the target SST value for relaxation. If a realistic MLD pattern is desired then the <code>hblt</code> variable must also be present. This data can be derived a number of ways, but we currently do not have a dedicated tool or workflow.</p>
+<!-- ul-indent -->
 <div class="footnote">
 <hr />
 <ol>
 <li id="fn:1">
-<p>Mark A. Taylor and Aimé Fournier. A compatible and conservative spectral element method on unstructured grids. <em>Journal of Computational Physics</em>, 229(17):5879–5895, August 2010. URL: <a href="https://linkinghub.elsevier.com/retrieve/pii/S0021999110001841">https://linkinghub.elsevier.com/retrieve/pii/S0021999110001841</a> (visited on 2024-03-29), <a href="https://doi.org/10.1016/j.jcp.2010.04.008">doi:10.1016/j.jcp.2010.04.008</a>.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+<p>Michael BLACKBURN and Brian J. HOSKINS. Context and Aims of the Aqua-Planet Experiment. <em>Journal of the Meteorological Society of Japan. Ser. II</em>, 91A:1–15, October 2013. <a href="https://doi.org/10.2151/jmsj.2013-A01">doi:10.2151/jmsj.2013-A01</a>.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 1 in the text">&#8617;</a></p>
 </li>
 <li id="fn:2">
-<p>O. Guba, M. A. Taylor, P. A. Ullrich, J. R. Overfelt, and M. N. Levy. The spectral element method on variable resolution grids: evaluating grid sensitivity and resolution-aware numerical viscosity. preprint, Numerical Methods, June 2014. URL: <a href="https://gmd.copernicus.org/preprints/7/4081/2014/gmdd-7-4081-2014.pdf">https://gmd.copernicus.org/preprints/7/4081/2014/gmdd-7-4081-2014.pdf</a> (visited on 2024-03-29), <a href="https://doi.org/10.5194/gmdd-7-4081-2014">doi:10.5194/gmdd-7-4081-2014</a>.&#160;<a class="footnote-backref" href="#fnref:2" title="Jump back to footnote 2 in the text">&#8617;</a></p>
+<p>Allison A. Wing, Kevin A. Reed, Masaki Satoh, Bjorn Stevens, Sandrine Bony, and Tomoki Ohno. Radiative–convective equilibrium model intercomparison project. <em>Geoscientific Model Development</em>, 11(2):793–813, March 2018. Publisher: Copernicus GmbH. <a href="https://doi.org/10.5194/gmd-11-793-2018">doi:10.5194/gmd-11-793-2018</a>.&#160;<a class="footnote-backref" href="#fnref:2" title="Jump back to footnote 2 in the text">&#8617;</a></p>
 </li>
 <li id="fn:3">
-<p>Mark A. Taylor, Oksana Guba, Andrew Steyer, Paul A. Ullrich, David M. Hall, and Christopher Eldred. An Energy Consistent Discretization of the Nonhydrostatic Equations in Primitive Variables. <em>Journal of Advances in Modeling Earth Systems</em>, 12(1):e2019MS001783, January 2020. URL: <a href="https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2019MS001783">https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2019MS001783</a> (visited on 2024-03-29), <a href="https://doi.org/10.1029/2019MS001783">doi:10.1029/2019MS001783</a>.&#160;<a class="footnote-backref" href="#fnref:3" title="Jump back to footnote 3 in the text">&#8617;</a></p>
+<p>Allison A. Wing, Levi G. Silvers, and Kevin A. Reed. RCEMIP-II: mock-Walker simulations as phase II of the radiative–convective equilibrium model intercomparison project. <em>Geoscientific Model Development</em>, 17(16):6195–6225, August 2024. Publisher: Copernicus GmbH. <a href="https://doi.org/10.5194/gmd-17-6195-2024">doi:10.5194/gmd-17-6195-2024</a>.&#160;<a class="footnote-backref" href="#fnref:3" title="Jump back to footnote 3 in the text">&#8617;</a></p>
+</li>
+<li id="fn:4">
+<p>Colin M. Zarzycki. Tropical cyclone intensity errors associated with lack of two-way ocean coupling in high-resolution global simulations. <em>Journal of Climate</em>, 29(23):8589 &ndash; 8610, 2016. <a href="https://doi.org/10.1175/JCLI-D-16-0273.1">doi:10.1175/JCLI-D-16-0273.1</a>.&#160;<a class="footnote-backref" href="#fnref:4" title="Jump back to footnote 4 in the text">&#8617;</a></p>
 </li>
 </ol>
 </div>
