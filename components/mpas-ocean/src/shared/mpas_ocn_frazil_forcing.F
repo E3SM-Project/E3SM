@@ -456,8 +456,8 @@ contains
       lowSalinityFrazilIce = 0.0_RKIND
 
       ! Determine if using porosity to compute internal frazilSalinity
-      usePorosity = 1
-      if (config_frazil_ice_porosity < 0.0_RKIND) usePorosity = 0 ! use config_frazil_sea_ice_reference_salinity
+      usePorosity = 0 ! use config_frazil_sea_ice_reference_salinity
+      if (config_use_frazil_ice_porosity) usePorosity = 1
 
       ! frazil fields are needed only over 0 and 1 halos
       nCells = nCellsArray( 2 )
@@ -468,7 +468,7 @@ contains
       !$omp private(underFloatingLandIce, underLandIce, kBottomFrazil, columnTemperatureMin, k, sumNewFrazilIceThickness, &
       !$omp         sumNewThicknessWeightedSaltContent, oceanFreezingTemperature, potential, &
       !$omp         freezingEnergy, meltingEnergy, frazilSalinity, newFrazilIceThickness, &
-      !$omp         newThicknessWeightedSaltContent, meltedFrazilIceThickness, lowSalinityFrazilIce, &
+      !$omp         newThicknessWeightedSaltContent, meltedFrazilIceThickness, &
       !$omp         meltedThicknessWeightedSaltContent)
       do iCell=1,nCells
 
