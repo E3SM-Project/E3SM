@@ -72,16 +72,17 @@ struct ComposeTransportImpl {
   typedef typename ViewConst<S2Nlev>::type CS2Nlev;
   typedef typename ViewConst<R2Nlev>::type CR2Nlev;
 
-  using  DpSlot = ExecViewUnmanaged<      Scalar**   [NP][NP][NUM_LEV]>;
-  using   VSlot = ExecViewUnmanaged<      Scalar**[2][NP][NP][NUM_LEV]>;
-  using CDpSlot = ExecViewUnmanaged<const Scalar**   [NP][NP][NUM_LEV]>;
-  using  CVSlot = ExecViewUnmanaged<const Scalar**[2][NP][NP][NUM_LEV]>;
+  using DpSnaps = ExecViewManaged<Scalar**   [NP][NP][NUM_LEV]>;
+  using  VSnaps = ExecViewManaged<Scalar**[2][NP][NP][NUM_LEV]>;
+
   struct VelocityRecord;
 
   struct Data {
     int nelemd, qsize, limiter_option, cdr_check, hv_q, hv_subcycle_q;
     int geometry_type; // 0: sphere, 1: plane
     int trajectory_nsubstep; // 0: original alg, >= 1: enhanced
+    int trajectory_nvelocity;
+    int diagnostics;
     Real nu_q, hv_scaling, dp_tol, deta_tol;
     bool independent_time_steps;
 
@@ -94,8 +95,12 @@ struct ComposeTransportImpl {
 
     ExecView<Scalar[NUM_LEV]> hydetai; // diff(etai)
     ExecView<Real[NUM_INTERFACE_LEV]> hydetam_ref;
+    ExecView<Scalar[NUM_LEV_P]> db_deta_i; // B_eta at interfaces
 
+    // Persistent, allocated memory, depending on options.
     DeparturePoints dep_pts, vnode, vdep; // (ie,lev,i,j,d)
+    DpSnaps dp_extra_snapshots; // (ie,snapshot,i,j,lev)
+    VSnaps vel_extra_snapshots; // (ie,snapshot,d,i,j,lev)
 
     std::shared_ptr<VelocityRecord> vrec;
 
@@ -133,17 +138,18 @@ struct ComposeTransportImpl {
   }
 
   void set_dp_tol();
-  void setup_enhanced_trajectory();
+  void setup_enhanced_trajectory(const SimulationParams& params, const int num_elems);
   void reset(const SimulationParams& params);
   int requested_buffer_size() const;
   void init_buffers(const FunctorsBuffersManager& fbm);
   void init_boundary_exchanges();
 
+  void observe_velocity(const TimeLevel& tl, const int step);
   void run(const TimeLevel& tl, const Real dt);
   void remap_q(const TimeLevel& tl);
 
   void calc_trajectory(const int np1, const Real dt);
-  void calc_enhanced_trajectory(const int np1, const Real dt);
+  void calc_enhanced_trajectory(const int nstep, const int np1, const Real dt);
   void remap_v(const ExecViewUnmanaged<const Scalar*[NUM_TIME_LEVELS][NP][NP][NUM_LEV]>& dp3d,
                const int np1, const ExecViewUnmanaged<const Scalar*[NP][NP][NUM_LEV]>& dp,
                const ExecViewUnmanaged<Scalar*[2][NP][NP][NUM_LEV]>& v);
@@ -334,20 +340,39 @@ struct ComposeTransportImpl {
     }
   }
 
-  // Form a 3rd-degree Lagrange polynomial over (x(k-1:k+1), y(k-1:k+1)) and set
+  // Form a 2nd-degree Lagrange polynomial over (x(k-1:k+1), y(k-1:k+1)) and set
   // yi(k) to its derivative at x(k). yps(:,:,0) is not written.
+  //   This is equivalent to a weighted average of 1-sided finite differences:
+  //      dx1 = xk - xkm1, dx2 = xkp1 - xk
+  //      w = dx2/(dx1 + dx2)
+  //      return w (yk - ykm1)/dx1 + (1-w) (ykp1 - yk)/dx2.
+  // This impl is retained for BFBness in the original trajectory algorithm with
+  // the F90. The next impl is preferred in practice.
+  template <typename Real>
+  KOKKOS_FUNCTION static Real approx_derivative1 (
+    const Real& xkm1, const Real& xk, const Real& xkp1,
+    const Real& ykm1, const Real& yk, const Real& ykp1)
+  {
+    return (ykm1*((1/(xkm1 - xk))*((xk - xkp1)/(xkm1 - xkp1))) +
+            yk  *(1/(xk - xkm1) + 1/(xk - xkp1)) +
+            ykp1*((1/(xkp1 - xk))*((xk - xkm1)/(xkp1 - xkm1))));
+  }
+
+  // In infinite precision, same as above. Impl as the weighted average of
+  // 1-sided finite differences to reduce ops.
   template <typename Real>
   KOKKOS_FUNCTION static Real approx_derivative (
     const Real& xkm1, const Real& xk, const Real& xkp1,
     const Real& ykm1, const Real& yk, const Real& ykp1)
   {
-    return (ykm1*((         1 /(xkm1 - xk  ))*((xk - xkp1)/(xkm1 - xkp1))) +
-            yk  *((         1 /(xk   - xkm1))*((xk - xkp1)/(xk   - xkp1)) +
-                  ((xk - xkm1)/(xk   - xkm1))*(         1 /(xk   - xkp1))) +
-            ykp1*(((xk - xkm1)/(xkp1 - xkm1))*(         1 /(xkp1 - xk  ))));
+    const auto
+      dx1 = xk - xkm1,
+      dx2 = xkp1 - xk,
+      w = dx2/(dx1 + dx2);
+    return w*(yk - ykm1)/dx1 + (1-w)*(ykp1 - yk)/dx2;
   }
 
-  KOKKOS_INLINE_FUNCTION static void approx_derivative (
+  KOKKOS_INLINE_FUNCTION static void approx_derivative1 (
     const KernelVariables& kv, const CSNlevp& xs, const CSNlevp& ys,
     const SNlev& yps) // yps(:,:,0) is undefined
   {
@@ -356,8 +381,8 @@ struct ComposeTransportImpl {
     RNlev yp(pack2real(yps));
     const auto f = [&] (const int i, const int j, const int k) {
       if (k == 0) return;
-      yp(i,j,k) = approx_derivative(x(i,j,k-1), x(i,j,k), x(i,j,k+1),
-                                    y(i,j,k-1), y(i,j,k), y(i,j,k+1));
+      yp(i,j,k) = approx_derivative1(x(i,j,k-1), x(i,j,k), x(i,j,k+1),
+                                     y(i,j,k-1), y(i,j,k), y(i,j,k+1));
     };
     loop_ijk<num_phys_lev>(kv, f);
   }

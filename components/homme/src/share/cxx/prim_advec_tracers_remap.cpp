@@ -14,10 +14,28 @@
 namespace Homme
 {
 
+static void prim_advec_tracers_observe_velocity_compose (const int step);
 static void prim_advec_tracers_remap_RK2 (const Real dt);
 static void prim_advec_tracers_remap_compose (const Real dt);
 
 // ----------- IMPLEMENTATION ---------- //
+
+void prim_advec_tracers_observe_velocity (const int step) {
+  SimulationParams& params = Context::singleton().get<SimulationParams>();
+
+  if (params.transport_alg > 0)
+    prim_advec_tracers_observe_velocity_compose(step);
+}
+
+static void prim_advec_tracers_observe_velocity_compose (const int step) {
+#if defined MODEL_THETA_L && defined HOMME_ENABLE_COMPOSE
+  GPTLstart("tl-at prim_advec_observe_velocity");
+  const auto& tl = Context::singleton().get<TimeLevel>();
+  auto& ct = Context::singleton().get<ComposeTransport>();
+  ct.observe_velocity(tl, step);
+  GPTLstop("tl-at prim_advec_observe_velocity");
+#endif  
+}
 
 void prim_advec_tracers_remap (const Real dt) {
   SimulationParams& params = Context::singleton().get<SimulationParams>();
@@ -97,7 +115,6 @@ static void prim_advec_tracers_remap_compose (const Real dt) {
   auto& tl = Context::singleton().get<TimeLevel>();
   tl.update_tracers_levels(params.dt_tracer_factor);
   auto& ct = Context::singleton().get<ComposeTransport>();
-  ct.reset(params);
   ct.run(tl, dt);
   GPTLstop("tl-at prim_advec_tracers_compose");
 #else

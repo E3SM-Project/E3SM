@@ -43,8 +43,8 @@ contains
     vert_remap_q_alg = 10
     qsplit = 1
     rsplit = 1
-    dt_tracer_factor = -1
-    dt_remap_factor = -1
+    dt_tracer_factor = 1
+    dt_remap_factor = 1
     theta_hydrostatic_mode = .true.
     semi_lagrange_nearest_point_lev = -1
     if (nearest_point) semi_lagrange_nearest_point_lev = 100000
@@ -144,7 +144,7 @@ contains
     call cleanup_f90()
   end subroutine cleanup_compose_f90
 
-  subroutine run_compose_standalone_test_f90(nmax_out, eval) bind(c)
+  subroutine run_compose_standalone_test_f90(nmax_out, eval, nerr) bind(c)
     use thetal_test_interface, only: deriv, hvcoord
     use compose_test_mod, only: compose_test
     use domain_mod, only: domain1d_t
@@ -155,6 +155,7 @@ contains
 
     integer(c_int), intent(inout) :: nmax_out
     real(c_double), intent(out) :: eval((nlev+1)*qsize)
+    integer(c_int), intent(out) :: nerr
 
     type (domain1d_t), pointer :: dom_mt(:)
     real(real_kind) :: buf((nlev+1)*qsize)
@@ -174,7 +175,7 @@ contains
        nmax = nmax_out
     end if
     statefreq = 2*ne
-    call compose_test(par, hvcoord, dom_mt, elem, buf)
+    call compose_test(par, hvcoord, dom_mt, elem, nerr, buf)
     do i = 1,size(buf)
        eval(i) = buf(i)
     end do
