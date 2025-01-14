@@ -536,7 +536,7 @@ contains
                ' col_pp%itype= ',col_pp%itype(indexc), &
                ' lun_pp%itype= ',lun_pp%itype(col_pp%landunit(indexc)), &
                ' errh2osno= ',errh2osno(indexc)
-                   
+
           if (abs(errh2osno(indexc)) > 1.e-4_r8 .and. (nstep > 2) ) then
              write(iulog,*)'elm model is stopping - error is greater than 1e-4 (mm)'
              write(iulog,*)'nstep            = ',nstep
