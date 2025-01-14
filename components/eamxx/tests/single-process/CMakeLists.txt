@@ -24,9 +24,7 @@ if (SCREAM_ENABLE_MAM)
   add_subdirectory(mam/drydep)
   add_subdirectory(mam/emissions)
   add_subdirectory(mam/constituent_fluxes)
-
-  # Currently, this test has a runtime error. Disabling while MAM folks debug.
-  # add_subdirectory(mam/wet_scav)
+  add_subdirectory(mam/wet_scav)
 
   # Currently this test produces non-deterministic output.
   # Commenting it so the other PRs can test normally
