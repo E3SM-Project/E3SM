@@ -1567,7 +1567,6 @@ contains
                            qflx_snomelt(c) = max(0._r8,(temp1-h2osno(c)))/dtime   ! kg/(m2 s)
                            xmf(c) = hfus*qflx_snomelt(c)
                            qflx_snow_melt(c) = qflx_snomelt(c)
-                           !qflx_snomelt_lyr(c,j) = qflx_snomelt(c)
                         endif
                      endif
 
