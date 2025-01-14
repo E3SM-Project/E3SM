@@ -495,13 +495,14 @@ contains
                    else ! firn model
                       snow_sources(c) = (qflx_snow_grnd_col(c) - qflx_snow_h2osfc(c) ) &
                            + frac_sno_eff(c) * (qflx_rain_grnd_col(c) &
-                           + qflx_dew_snow(c) + qflx_dew_grnd(c) ) + qflx_h2osfc_to_ice(c)
+                           +  qflx_dew_snow(c) + qflx_dew_grnd(c) ) + qflx_h2osfc_to_ice(c)
 
                       snow_sinks(c) = frac_sno_eff(c) * (qflx_sub_snow(c) + qflx_evap_grnd(c)) &
                            + qflx_snwcp_ice(c) + qflx_snwcp_liq(c) &
                            + qflx_snow_melt(c) + qflx_sl_top_soil(c)
                    endif
                 endif
+
                 if (glc_dyn_runoff_routing(g)) then
                    ! Need to add qflx_glcice_frz to snow_sinks for the same reason as it is
                    ! added to errh2o above - see the comment above for details.
