@@ -16,15 +16,6 @@
 namespace scream {
 namespace util {
 
-int days_in_month (const int yy, const int mm) {
-  EKAT_REQUIRE_MSG (mm>=1 && mm<=12,
-      "Error! Month out of bounds. Did you call `days_in_month` with yy and mm swapped?\n");
-  constexpr int nonleap_days [12] = {31,28,31,30,31,30,31,31,30,31,30,31};
-  constexpr int leap_days    [12] = {31,29,31,30,31,30,31,31,30,31,30,31};
-  auto& arr = is_leap_year(yy) ? leap_days : nonleap_days;
-  return arr[mm-1];
-}
-
 bool is_leap_year (const int yy) {
   if (use_leap_year()) {
     if (yy%4==0) {
@@ -39,6 +30,15 @@ bool is_leap_year (const int yy) {
     }
   }
   return false;
+}
+
+int days_in_month (const int yy, const int mm) {
+  EKAT_REQUIRE_MSG (mm>=1 && mm<=12,
+      "Error! Month out of bounds. Did you call `days_in_month` with yy and mm swapped?\n");
+  constexpr int nonleap_days [12] = {31,28,31,30,31,30,31,31,30,31,30,31};
+  constexpr int leap_days    [12] = {31,29,31,30,31,30,31,31,30,31,30,31};
+  auto& arr = is_leap_year(yy) ? leap_days : nonleap_days;
+  return arr[mm-1];
 }
 
 TimeStamp::TimeStamp()
@@ -133,6 +133,23 @@ double TimeStamp::frac_of_year_in_days () const {
     doy += days_in_month(m_date[0],m);
   }
   return doy;
+}
+
+int TimeStamp::days_in_curr_month () const
+{
+  return days_in_month(m_date[0],m_date[1]);
+}
+
+int TimeStamp::days_in_curr_year () const
+{
+  return is_leap_year(m_date[0]) ? 366 : 365;
+}
+
+TimeStamp TimeStamp::curr_month_beg () const
+{
+  auto date = m_date;
+  date[2] = 1;
+  return TimeStamp (date,{0,0,0});
 }
 
 TimeStamp& TimeStamp::operator+=(const double seconds) {

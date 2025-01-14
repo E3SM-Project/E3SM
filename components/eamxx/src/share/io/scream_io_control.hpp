@@ -74,38 +74,39 @@ struct IOControl {
   void compute_next_write_ts () {
     EKAT_REQUIRE_MSG (last_write_ts.is_valid(),
         "Error! Cannot compute next_write_ts, since last_write_ts was never set.\n");
+    next_write_ts = last_write_ts;
     if (frequency_units=="nsteps") {
       // This avoids having an invalid/wrong date/time in StorageSpecs::snapshot_fits
       // if storage type is NumSnaps
-      next_write_ts = last_write_ts + dt*frequency;
+      next_write_ts += dt*frequency;
       next_write_ts.set_num_steps(last_write_ts.get_num_steps()+frequency);
     } else if (frequency_units=="nsecs") {
-      next_write_ts = last_write_ts;
       next_write_ts += frequency;
     } else if (frequency_units=="nmins") {
-      next_write_ts = last_write_ts;
       next_write_ts += frequency*60;
     } else if (frequency_units=="nhours") {
-      next_write_ts = last_write_ts;
       next_write_ts += frequency*3600;
     } else if (frequency_units=="ndays") {
-      next_write_ts = last_write_ts;
       next_write_ts += frequency*86400;
-    } else if (frequency_units=="nmonths" or frequency_units=="nyears") {
+    } else if (frequency_units=="nmonths") {
       auto date = last_write_ts.get_date();
-      if (frequency_units=="nmonths") {
-        int temp = date[1] + frequency - 1;
-        date[1] = temp % 12 + 1;
-        date[0] += temp / 12;
-      } else {
-        date[0] += frequency;
-      }
+      int temp = date[1] + frequency - 1;
+      date[1]  = temp % 12 + 1;
+      date[0] += temp / 12;
 
-      // Fix day, in case we moved to a month/year where current days. E.g., if last_write
-      // was on Mar 31st, and units='nmonths', next write is on Apr 30th. HOWEVER, this
-      // means we will *always* write on the 30th of each month after then, since we have
-      // no memory of the fact that we were writing on the 31st before.
-      date[2] = std::min(date[2],util::days_in_month(date[0],date[1]));
+      // NOTE: we MAY have moved to an invalid date. E.g., if last_write
+      // was on Mar 31st, and units='nmonths', date now points to Apr 31st.
+      // We fix this by adjusting the date to the last day of the month.
+      // HOWEVER, this means we will *always* write on the 30th of each month after then,
+      // since we have no memory of the fact that we were writing on the 31st before.
+      auto month_beg = util::TimeStamp({date[0],date[1],1},{0,0,0});
+      auto last_day = month_beg.days_in_curr_month();
+      date[2] = std::min(date[2],last_day);
+
+      next_write_ts = util::TimeStamp(date,last_write_ts.get_time());
+    } else if (frequency_units=="nyears") {
+      auto date = last_write_ts.get_date();
+      date[0] += frequency;
       next_write_ts = util::TimeStamp(date,last_write_ts.get_time());
     } else {
       EKAT_ERROR_MSG ("Error! Unrecognized/unsupported frequency unit '" + frequency_units + "'\n");

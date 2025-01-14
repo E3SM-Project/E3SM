@@ -50,8 +50,6 @@ struct UnitWrap::UnitTest<D>::TestShocThlParameters {
     static constexpr Real Skew_w_test1 = 3;
     // Define fraction of first gaussian
     static constexpr Real a_test1 = 0.2;
-    // Define logical
-    static constexpr bool dothetal_skew = false;
 
     // Define reasonable bounds checking for output
     static constexpr Real thl_bound_low = 200; // [K]

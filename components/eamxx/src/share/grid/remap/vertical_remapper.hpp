@@ -26,6 +26,15 @@ public:
     TopAndBot = Top | Bot
   };
 
+  // When setting src/tgt pressure profiles, we may not care to distinguish
+  // between midpoints/interface. E.g., in output, we may remap both midpoints
+  // and interface quantities to the SAME set of pressure levels.
+  enum ProfileType {
+    Midpoints,
+    Interfaces,
+    Both
+  };
+
   // Use fixed value as mask value
   VerticalRemapper (const grid_ptr_type& src_grid,
                     const std::string& map_file);
@@ -45,28 +54,46 @@ public:
     // NOTE: tgt layouts always use LEV (not ILEV), while src can have ILEV or LEV.
 
     using namespace ShortFieldTagsNames;
-    auto src_stripped = src.clone().strip_dim(ILEV,false).strip_dim(LEV,false);
-    auto tgt_stripped = tgt.clone().strip_dim(LEV,false);
+    auto src_stripped = src.clone().strip_dims({LEV,ILEV});
+    auto tgt_stripped = tgt.clone().strip_dims({LEV,ILEV});
 
     return src.rank()==tgt.rank() and
            src_stripped.congruent(tgt_stripped);
   }
 
-  // NOTE: for the vert remapper, it doesn't really make sense to distinguish
-  //       between midpoints and interfaces: we're simply asking for a quantity
-  //       at a given set of pressure levels. So we choose to NOT allow a tgt
-  //       layout with ILEV tag.
   bool is_valid_tgt_layout (const layout_type& layout) const override {
     using namespace ShortFieldTagsNames;
-    return not layout.has_tag(ILEV)
+    return !(m_tgt_mid_same_as_int and layout.has_tag(ILEV))
            and AbstractRemapper::is_valid_tgt_layout(layout);
+  }
+
+  bool is_valid_src_layout (const layout_type& layout) const override {
+    using namespace ShortFieldTagsNames;
+    return !(m_src_mid_same_as_int and layout.has_tag(ILEV))
+           and AbstractRemapper::is_valid_src_layout(layout);
   }
 
   void set_extrapolation_type (const ExtrapType etype, const TopBot where = TopAndBot);
   void set_mask_value (const Real mask_val);
 
-  void set_source_pressure (const Field& pmid, const Field& pint);
-  void set_target_pressure (const Field& pmid, const Field& pint);
+  void set_source_pressure (const Field& p, const ProfileType ptype);
+  void set_target_pressure (const Field& p, const ProfileType ptype);
+
+  void set_source_pressure (const Field& pmid, const Field& pint) {
+    set_source_pressure (pmid, Midpoints);
+    set_source_pressure (pint, Interfaces);
+  }
+  void set_target_pressure (const Field& pmid, const Field& pint) {
+    set_target_pressure (pmid, Midpoints);
+    set_target_pressure (pint, Interfaces);
+  }
+
+  Field get_source_pressure (bool midpoints) const {
+    return midpoints ? m_src_pmid : m_src_pint;
+  }
+  Field get_target_pressure (bool midpoints) const {
+    return midpoints ? m_tgt_pmid : m_tgt_pint;
+  }
 
   // This method simply creates the tgt grid from a map file
   static std::shared_ptr<AbstractGrid>
@@ -74,6 +101,11 @@ public:
                    const std::string& map_file);
 
 protected:
+
+  void set_pressure (const Field& p, const std::string& src_or_tgt, const ProfileType ptype);
+  FieldLayout create_layout (const FieldLayout& from_layout,
+                             const std::shared_ptr<const AbstractGrid>& to_grid,
+                             const bool int_same_as_mid) const;
 
   const identifier_type& do_get_src_field_id (const int ifield) const override {
     return m_src_fields[ifield].get_header().get_identifier();
@@ -142,9 +174,8 @@ protected:
   Field                 m_tgt_pmid;
   Field                 m_tgt_pint;
 
-  // If we remap to a fixed set of pressure levels during I/O,
-  // our tgt pint would be the same as tgt pmid.
-  bool m_tgt_int_same_as_mid = false;
+  bool m_src_mid_same_as_int = false;
+  bool m_tgt_mid_same_as_int = false;
 
   // Extrapolation settings at top/bottom. Default to P0 extrapolation
   ExtrapType            m_etype_top = P0;
