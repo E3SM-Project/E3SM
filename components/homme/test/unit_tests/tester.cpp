@@ -25,13 +25,13 @@ int main(int argc, char **argv) {
   Homme::initialize_hommexx_session();
 
   // Filter arguments so catch2 doesn't try to interpret hommexx-specific ones.
-  hommexx_catch2_argc = argc;
+  hommexx_catch2_argc = 0;
   hommexx_catch2_argv = argv;
   for (int i = 1; i < argc; ++i) {
     if (std::string(argv[i]) == "hommexx") {
-      argc = i;
-      hommexx_catch2_argc -= i + 1;
+      hommexx_catch2_argc = argc - (i + 1);
       hommexx_catch2_argv = argv + i + 1;
+      argc = i;
       break;
     }
   }

@@ -7,11 +7,18 @@
 #ifndef HOMMEXX_VECTOR_PRAGMAS_HPP
 #define HOMMEXX_VECTOR_PRAGMAS_HPP
 
+#include "Config.hpp"
+
 #if defined(__INTEL_COMPILER) || defined(__INTEL_CLANG_COMPILER) || defined(__INTEL_LLVM_COMPILER)
 
 #define VECTOR_IVDEP_LOOP _Pragma("ivdep")
 #define ALWAYS_VECTORIZE_LOOP _Pragma("vector always")
 #define VECTOR_SIMD_LOOP _Pragma("omp simd")
+#if HOMMEXX_VECTOR_SIZE == 1
+# define VECTOR_SIMD_LOOP
+#else
+# define VECTOR_SIMD_LOOP _Pragma("omp simd")
+#endif
 
 #elif defined(__GNUG__) && !defined(__NVCC__)
 #if(__GNUG__ == 4 && __GNUC_MINOR__ >= 9) || __GNUG__ > 4

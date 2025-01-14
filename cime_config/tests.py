@@ -533,6 +533,7 @@ _TESTS = {
                  "SMS.ne4pg2_oQU480.F2010.eam-thetanh_ftype2",
                  "SMS.ne4pg2_oQU480.F2010.eam-thetanh_ftype4",
                  "SMS.ne4pg2_oQU480.F2010.eam-thetahy_sl",
+                 "ERS.ne4pg2_oQU480.F2010.eam-thetahy_sl_nsubstep2",
                  "ERS.ne4pg2_oQU480.F2010.eam-thetahy_ftype2",
                  "ERS.ne4pg2_oQU480.F2010.eam-thetanh_ftype2",
                  )
@@ -723,7 +724,8 @@ _TESTS = {
             "ERS_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1.scream-small_kernels--scream-output-preset-5",
             "ERP_Ln22.conusx4v1pg2_r05_oECv3.F2010-SCREAMv1-noAero.scream-bfbhash--scream-output-preset-6",
             "ERS_Ln22.ne30pg2_ne30pg2.F2010-SCREAMv1.scream-L128--scream-output-preset-4",
-            "REP_Ld5.ne30pg2_ne30pg2.F2010-SCREAMv1.scream-L128--scream-output-preset-6"
+            "REP_Ld5.ne30pg2_ne30pg2.F2010-SCREAMv1.scream-L128--scream-output-preset-6",
+            "ERS_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1.scream-L128--scream-sl_nsubstep2",
             )
     },
 
