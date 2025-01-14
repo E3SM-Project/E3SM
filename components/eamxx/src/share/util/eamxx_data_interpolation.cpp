@@ -154,7 +154,8 @@ setup_time_database (const strvec_t& input_files,
   }
 
   // Make sure there are no repetitions
-  EKAT_REQUIRE_MSG (std::unordered_set(input_files.begin(),input_files.end()).size()==input_files.size(),
+  auto num_unique_files = std::unordered_set(input_files.begin(),input_files.end()).size();
+  EKAT_REQUIRE_MSG (num_unique_files==input_files.size(),
       "[DataInterpolation] Error! The input files list contains duplicates.\n"
       " - input_files:\n     " + ekat::join(input_files,"\n     ") + "\n");
 
