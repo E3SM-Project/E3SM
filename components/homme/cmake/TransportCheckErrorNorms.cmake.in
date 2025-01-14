@@ -1,0 +1,39 @@
+# This utility checks output of the form
+#   planar_conv>                          l2                    linf
+#   planar_conv> Q 1  3.7612654153016604E-03  9.8620728873592828E-03
+#   planar_conv> Q 2  3.9526251584022527E-03  8.2639849437505641E-03
+# against caller-provided upper bounds on the l2 norms. Output of this sort
+# appears on stdout at the end of some tracer transport tests. 'planar_conv' can
+# be something else; it is caller-configurable. Example usage:
+#   set(TCEN_ERROR_ANCHOR "planar_conv")
+#   set(TCEN_FILENAME "out.txt")
+#   set(TCEN_UPPER_BOUNDS "3.9e-3;4.1e-3")
+#   configure_file(TransportCheckErrorNorms.cmake.in check.cmake @ONLY)
+#   add_test(
+#     NAME "${TEST_NAME}_l2err"
+#     COMMAND ${CMAKE_COMMAND} -P check.cmake
+#     WORKING_DIRECTORY ${HOMME_BINARY_DIR}/tests/${TEST_NAME})
+#   set_tests_properties(
+#     "${TEST_NAME}_l2err" PROPERTIES DEPENDS "${TEST_NAME}")
+# Function check_transport_error_norms in HommeMacros.cmake encapsulates the
+# above commands.
+
+function(check_error_norms test_name filename upper_bounds)
+  execute_process(COMMAND grep "${test_name}> Q" ${filename} OUTPUT_VARIABLE grep_stdout)
+  separate_arguments(tokens NATIVE_COMMAND "${grep_stdout}")
+  list(LENGTH upper_bounds nchk)
+  math(EXPR nchk "${nchk} - 1")
+  foreach(idx RANGE 0 ${nchk})
+    math(EXPR tidx "3 + 5 * ${idx}")
+    list(GET tokens ${tidx} e)
+    list(GET upper_bounds ${idx} ub)
+    if(e GREATER ub)
+      message(FATAL_ERROR "${e} should be <= ${ub} but is not")
+    endif()
+  endforeach()
+endfunction()
+
+check_error_norms(
+  "@TCEN_ERROR_ANCHOR@"
+  "@TCEN_FILENAME@"
+  "@TCEN_UPPER_BOUNDS@")
