@@ -41,6 +41,8 @@ module convect_deep
    integer :: dp_flxprc_idx    = 0  ! deep convective flux of precipitation         [kg/m2/s]
    integer :: dp_flxsnw_idx    = 0  ! deep convective flux of snow                  [kg/m2/s]
    integer :: dp_frac_idx      = 0  ! deep convection cloud fraction
+   integer :: lambdadpcu_idx   = 0  ! droplet size distribution shape parameter for radiation
+   integer :: mudpcu_idx       = 0  ! droplet size distribution shape parameter for radiation
    integer :: ttend_dp_idx     = 0  ! convective heating for convective gravity wave scheme
 
 contains 
@@ -52,7 +54,8 @@ function deep_scheme_does_scav_trans()
    ! Function called by tphysbc to determine if it needs to do scavenging and 
    ! convective transport or if those have been done by the deep convection.
    !----------------------------------------------------------------------------
-   logical deep_scheme_does_scav_trans = .false.
+   logical :: deep_scheme_does_scav_trans
+   deep_scheme_does_scav_trans = .false.
    return
 end function deep_scheme_does_scav_trans
 
@@ -87,9 +90,11 @@ subroutine convect_deep_register()
    call pbuf_add_field('NEVAPR_DPCU','physpkg', dtype_r8, (/pcols,pver/), nevapr_dpcu_idx)
    call pbuf_add_field('PREC_DP',    'physpkg', dtype_r8, (/pcols/),      prec_dp_idx)
    call pbuf_add_field('SNOW_DP',    'physpkg', dtype_r8, (/pcols/),      snow_dp_idx)
+   call pbuf_add_field('LAMBDADPCU', 'physpkg', dtype_r8, (/pcols,pver/), lambdadpcu_idx)
+   call pbuf_add_field('MUDPCU',     'physpkg', dtype_r8, (/pcols,pver/), mudpcu_idx)
 
    if (use_gw_convect) then
-      call pbuf_add_field('TTEND_DP','physpkg', dtype_r8,( /pcols,pver/), ttend_dp_idx)
+      call pbuf_add_field('TTEND_DP','physpkg', dtype_r8, (/pcols,pver/), ttend_dp_idx)
    end if
 
 end subroutine convect_deep_register
@@ -142,7 +147,7 @@ subroutine convect_deep_init(pref_edge,pbuf2d)
    pblh_idx   = pbuf_get_index('pblh')
    tpert_idx  = pbuf_get_index('tpert')
 
-   call addfld ('ICWMRDP', (/ 'lev' /), 'A', 'kg/kg', 'Deep Convection in-cloud water mixing ratio ')
+   call addfld('ICWMRDP', (/'lev'/), 'A', 'kg/kg', 'Deep Convection in-cloud water mixing ratio ')
 
 end subroutine convect_deep_init
 
@@ -200,6 +205,8 @@ subroutine convect_deep_tend( mcon, cme, dlf, pflx, zdu, rliq, rice, ztodt, stat
    real(r8), pointer, dimension(:)     :: pblh        ! planetary boundary layer height
    real(r8), pointer, dimension(:)     :: tpert       ! thermal temperature excess 
    real(r8), pointer, dimension(:,:,:) :: fracis      ! fraction of transported species that are insoluble
+   real(r8), pointer, dimension(:,:)   :: mudpcu      ! Droplet size distribution shape parameter for radiation
+   real(r8), pointer, dimension(:,:)   :: lambdadpcu  ! Droplet size distribution shape parameter for radiation
    real(r8), pointer, dimension(:,:)   :: ttend_dp    ! temperature tendency from deep convection
    integer :: i, k ! loop iterators
    !----------------------------------------------------------------------------
@@ -216,15 +223,19 @@ subroutine convect_deep_tend( mcon, cme, dlf, pflx, zdu, rliq, rice, ztodt, stat
    call pbuf_get_field(pbuf, icimrdp_idx,     qi         )
    call pbuf_get_field(pbuf, cldtop_idx,      jctop_r8   )
    call pbuf_get_field(pbuf, cldbot_idx,      jcbot_r8   )
+   call pbuf_get_field(pbuf, mudpcu_idx,      mudpcu     )
+   call pbuf_get_field(pbuf, lambdadpcu_idx,  lambdadpcu )
 
    ! initialize variables
-   ql          = 0
-   qi          = 0
-   rprd        = 0
-   fracis      = 0
-   evapcdp     = 0
-   prec        = 0
-   snow        = 0
+   ql          = 0.0_r8
+   qi          = 0.0_r8
+   rprd        = 0.0_r8
+   fracis      = 0.0_r8
+   evapcdp     = 0.0_r8
+   prec        = 0.0_r8
+   snow        = 0.0_r8
+   mudpcu      = 0.0_r8
+   lambdadpcu  = 0.0_r8
 
    select case ( deep_scheme )
    case('off', 'CLUBB_SGS' )
@@ -260,13 +271,13 @@ subroutine convect_deep_tend( mcon, cme, dlf, pflx, zdu, rliq, rice, ztodt, stat
    if (ttend_dp_idx > 0) then
       call pbuf_get_field(pbuf, ttend_dp_idx, ttend_dp)
       if ( allocated(ptend%s) ) then
-         ttend_dp(:state%ncol,:pver) = ptend%s(:state%ncol,:pver)/cpair
+         ttend_dp(1:state%ncol,1:pver) = ptend%s(:state%ncol,:pver)/cpair
       else
-         ttend_dp(:state%ncol,:pver) = 0.0_r8
+         ttend_dp(1:state%ncol,1:pver) = 0.0_r8
       endif
    end if
 
-   call outfld( 'ICWMRDP ', ql  , pcols, state%lchnk )
+   call outfld( 'ICWMRDP ', ql, pcols, state%lchnk )
 
 end subroutine convect_deep_tend
 
