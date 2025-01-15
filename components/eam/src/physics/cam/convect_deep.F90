@@ -1,6 +1,6 @@
 module convect_deep
    !----------------------------------------------------------------------------
-   ! Deep convection parameterization interface.
+   ! Deep convection parameterization interface
    ! Zhang-McFarlane is the only supported scheme
    !
    ! Author: D.B. Coleman, Sep 2004
@@ -8,6 +8,7 @@ module convect_deep
    use shr_kind_mod, only: r8=>shr_kind_r8
    use ppgrid,       only: pver, pcols, pverp
    use cam_logfile,  only: iulog
+   use spmd_utils,   only: masterproc
    use perf_mod,     only: t_startf, t_stopf
 
    implicit none
@@ -17,33 +18,33 @@ module convect_deep
    ! public methods
    public :: convect_deep_register        ! register fields in physics buffer
    public :: convect_deep_init            ! initialize donner_deep module
-   public :: convect_deep_tend            ! return tendencies
-   public :: convect_deep_tend_2          ! return tendencies
-   public :: deep_scheme_does_scav_trans  ! function to indicate if scheme does scavenging and transport
+   public :: convect_deep_tend            ! call the deep convection scheme
+   public :: convect_deep_tend_2          ! convective transport of constituents
+   public :: deep_scheme_does_scav_trans  ! indicate if deep scheme does scavenging and transport
    
    ! private module data
    character(len=16) :: deep_scheme ! name of deep scheme from namelist
 
    ! physics buffer field indices
-   integer :: icwmrdp_idx      = 0  ! deep convective in cloud water mixing ratio   [kg/m2]
-   integer :: icimrdp_idx      = 0  ! deep convective in-cloud ice water content    [kg/m2]
-   integer :: rprddp_idx       = 0  ! deep convective rain production rate          []
-   integer :: nevapr_dpcu_idx  = 0  ! deep convective evaporation of precip         []
+   integer :: icwmrdp_idx      = 0  ! deep convective in cloud water mixing ratio            [kg/m2]
+   integer :: icimrdp_idx      = 0  ! deep convective in-cloud ice water content             [kg/m2]
+   integer :: rprddp_idx       = 0  ! deep convective rain production rate                   [?]
+   integer :: nevapr_dpcu_idx  = 0  ! deep convective evaporation of precip                  [?]
    integer :: cldtop_idx       = 0  ! level index for top of deep convection
    integer :: cldbot_idx       = 0  ! level index for bottom of deep convection
    integer :: fracis_idx       = 0  ! fraction of transported species that are insoluble
    integer :: pblh_idx         = 0  ! planetary boundary layer height
-   integer :: tpert_idx        = 0  ! thermal temperature excess
-   integer :: prec_dp_idx      = 0  ! total surface precip from deep convection     [m/s]
-   integer :: snow_dp_idx      = 0  ! frozen surface precip from deep convection    [m/s]
-   integer :: dp_cldliq_idx    = 0  ! deep convective cloud liquid water            [kg/kg]
-   integer :: dp_cldice_idx    = 0  ! deep convective cloud liquid water            [kg/kg]
-   integer :: dp_flxprc_idx    = 0  ! deep convective flux of precipitation         [kg/m2/s]
-   integer :: dp_flxsnw_idx    = 0  ! deep convective flux of snow                  [kg/m2/s]
+   integer :: tpert_idx        = 0  ! thermal temperature excess                             [K]
+   integer :: prec_dp_idx      = 0  ! total surface precip from deep convection              [m/s]
+   integer :: snow_dp_idx      = 0  ! frozen surface precip from deep convection             [m/s]
+   integer :: dp_cldliq_idx    = 0  ! deep convective cloud liquid water                     [kg/kg]
+   integer :: dp_cldice_idx    = 0  ! deep convective cloud liquid water                     [kg/kg]
+   integer :: dp_flxprc_idx    = 0  ! deep convective flux of precipitation                  [kg/m2/s]
+   integer :: dp_flxsnw_idx    = 0  ! deep convective flux of snow                           [kg/m2/s]
    integer :: dp_frac_idx      = 0  ! deep convection cloud fraction
    integer :: lambdadpcu_idx   = 0  ! droplet size distribution shape parameter for radiation
    integer :: mudpcu_idx       = 0  ! droplet size distribution shape parameter for radiation
-   integer :: ttend_dp_idx     = 0  ! convective heating for convective gravity wave scheme
+   integer :: ttend_dp_idx     = 0  ! convective heating for convective gravity wave scheme  [K/s]
 
 contains 
 
@@ -52,7 +53,7 @@ contains
 function deep_scheme_does_scav_trans()
    !----------------------------------------------------------------------------
    ! Function called by tphysbc to determine if it needs to do scavenging and 
-   ! convective transport or if those have been done by the deep convection.
+   ! convective transport or if those have been done by the deep convection
    !----------------------------------------------------------------------------
    logical :: deep_scheme_does_scav_trans
    deep_scheme_does_scav_trans = .false.
@@ -65,9 +66,9 @@ subroutine convect_deep_register()
    !----------------------------------------------------------------------------
    ! Purpose: register fields with the physics buffer
    !----------------------------------------------------------------------------
+   use phys_control,   only: phys_getopts, use_gw_convect
    use physics_buffer, only: pbuf_add_field, dtype_r8
    use zm_conv_intr,   only: zm_conv_register
-   use phys_control,   only: phys_getopts, use_gw_convect
    !----------------------------------------------------------------------------
    integer idx
 
@@ -107,7 +108,6 @@ subroutine convect_deep_init(pref_edge,pbuf2d)
    !----------------------------------------------------------------------------
    use cam_history,     only: addfld
    use pmgrid,          only: plevp
-   use spmd_utils,      only: masterproc
    use zm_conv_intr,    only: zm_conv_init
    use cam_abortutils,  only: endrun
    use physics_buffer,  only: physics_buffer_desc, pbuf_get_index, pbuf_set_field
@@ -138,7 +138,7 @@ subroutine convect_deep_init(pref_edge,pbuf2d)
       if (masterproc) write(iulog,*)'convect_deep initializing Zhang-McFarlane convection'
       call zm_conv_init(pref_edge)
    case default
-      if (masterproc) write(iulog,*)'WARNING: convect_deep: no deep convection scheme. May fail.'
+      if (masterproc) write(iulog,*)'WARNING: convect_deep: no deep convection scheme'
    end select
 
    cldtop_idx = pbuf_get_index('CLDTOP')
@@ -156,14 +156,14 @@ subroutine convect_deep_tend( mcon, cme, dlf, pflx, zdu, rliq, rice, ztodt, stat
                               landfrac, pbuf, mu, eu, du, md, ed, dp, dsubcld, jt, maxg, &
                               ideep,lengath ) 
    !----------------------------------------------------------------------------
-   ! Purpose: 
+   ! Purpose: call the deep convection scheme (or zero output fields if no deep scheme)
    !----------------------------------------------------------------------------
    use physics_types,  only: physics_state, physics_ptend, physics_tend, physics_ptend_init
+   use physics_buffer, only: physics_buffer_desc, pbuf_get_field
+   use zm_conv_intr,   only: zm_conv_tend
    use cam_history,    only: outfld
    use constituents,   only: pcnst
-   use zm_conv_intr,   only: zm_conv_tend
    use physconst,      only: cpair
-   use physics_buffer, only: physics_buffer_desc, pbuf_get_field
    !----------------------------------------------------------------------------
    ! Arguments
    type(physics_state),             intent(in ) :: state    ! Physics state variables
@@ -174,21 +174,21 @@ subroutine convect_deep_tend( mcon, cme, dlf, pflx, zdu, rliq, rice, ztodt, stat
    real(r8), dimension(pcols,pverp),intent(out) :: mcon     ! Convective mass flux--m sub c
    real(r8), dimension(pcols,pver), intent(out) :: dlf      ! scattered detraining cld h2o tend
    real(r8), dimension(pcols,pverp),intent(out) :: pflx     ! scattered precip flux at each level
-   real(r8), dimension(pcols,pver), intent(out) :: cme      ! cmf condensation - evaporation
+   real(r8), dimension(pcols,pver), intent(out) :: cme      ! mass tendency due to condensation - evaporation
    real(r8), dimension(pcols,pver), intent(out) :: zdu      ! detraining mass flux
    real(r8), dimension(pcols),      intent(out) :: rliq     ! reserved liq (not yet in cldliq) for energy integrals
    real(r8), dimension(pcols),      intent(out) :: rice     ! reserved ice (not yet in cldice) for energy integrals
-   real(r8), dimension(pcols,pver), intent(out) :: mu       !
-   real(r8), dimension(pcols,pver), intent(out) :: eu       !
-   real(r8), dimension(pcols,pver), intent(out) :: du       !
-   real(r8), dimension(pcols,pver), intent(out) :: md       !
-   real(r8), dimension(pcols,pver), intent(out) :: ed       !
-   real(r8), dimension(pcols,pver), intent(out) :: dp       !
-   real(r8), dimension(pcols),      intent(out) :: dsubcld  ! wg layer thickness in mbs (between upper/lower interface)
-   integer,  dimension(pcols),      intent(out) :: jt       ! wg layer thickness in mbs between lcl and maxi
-   integer,  dimension(pcols),      intent(out) :: maxg     ! wg top  level index of deep cumulus convection
-   integer,  dimension(pcols),      intent(out) :: ideep    ! wg gathered values of maxi
-   integer,                         intent(out) :: lengath  ! w holds position of gathered points vs longitude index   
+   real(r8), dimension(pcols,pver), intent(out) :: mu       ! upward cloud mass flux               [?]
+   real(r8), dimension(pcols,pver), intent(out) :: eu       ! entrainment in updraft               [?]
+   real(r8), dimension(pcols,pver), intent(out) :: du       ! detrainment in updraft               [?]
+   real(r8), dimension(pcols,pver), intent(out) :: md       ! downward cloud mass flux             [?]
+   real(r8), dimension(pcols,pver), intent(out) :: ed       ! entrainment in downdraft             [?]
+   real(r8), dimension(pcols,pver), intent(out) :: dp       ! layer thickness between interfaces   [mb]
+   real(r8), dimension(pcols),      intent(out) :: dsubcld  ! layer thickness between lcl and maxi [mb]
+   integer,  dimension(pcols),      intent(out) :: jt       ! top level index of deep convection
+   integer,  dimension(pcols),      intent(out) :: maxg     ! gathered values of maxi
+   integer,  dimension(pcols),      intent(out) :: ideep    ! flag to indicate active column for gathering
+   integer,                         intent(out) :: lengath  ! number of columns in gathered arrays
    !----------------------------------------------------------------------------
    ! Local variables
    integer,           dimension(pcols) :: jctop       ! integer version of cloud top level index
@@ -289,10 +289,10 @@ end subroutine convect_deep_tend
 
 !===================================================================================================
 
-subroutine convect_deep_tend_2( state,  ptend,  ztodt, pbuf, mu, eu, &
-     du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class)
+subroutine convect_deep_tend_2( state,  ptend,  ztodt, pbuf, mu, eu, du, md, ed, dp, &
+                                dsubcld, jt, maxg, ideep, lengath, species_class)
    !----------------------------------------------------------------------------
-   ! Purpose: 
+   ! Purpose: convective transport of constituents not handled by convect_deep_tend
    !----------------------------------------------------------------------------
    use physics_types,   only: physics_state, physics_ptend, physics_ptend_init
    use physics_buffer,  only: physics_buffer_desc
@@ -304,23 +304,23 @@ subroutine convect_deep_tend_2( state,  ptend,  ztodt, pbuf, mu, eu, &
    type(physics_ptend),             intent(out) :: ptend          ! output tendencies
    real(r8),                        intent(in ) :: ztodt          ! 2 delta t (model time increment)
    type(physics_buffer_desc),       pointer     :: pbuf(:)        ! physics buffer
-   real(r8), dimension(pcols,pver), intent(in ) :: mu             !
-   real(r8), dimension(pcols,pver), intent(in ) :: eu             !
-   real(r8), dimension(pcols,pver), intent(in ) :: du             !
-   real(r8), dimension(pcols,pver), intent(in ) :: md             !
-   real(r8), dimension(pcols,pver), intent(in ) :: ed             !
-   real(r8), dimension(pcols,pver), intent(in ) :: dp             !
-   real(r8), dimension(pcols),      intent(in ) :: dsubcld        ! wg layer thickness in mbs (between upper/lower interface)
-   integer,  dimension(pcols),      intent(in ) :: jt             ! wg layer thickness in mbs between lcl and maxi
-   integer,  dimension(pcols),      intent(in ) :: maxg           ! wg top  level index of deep cumulus convection
-   integer,  dimension(pcols),      intent(in ) :: ideep          ! wg gathered values of maxi
-   integer,                         intent(in ) :: lengath        ! w holds position of gathered points vs longitude index
-   integer,  dimension(:),          intent(in ) :: species_class  !
+   real(r8), dimension(pcols,pver), intent(in ) :: mu             ! upward cloud mass flux               [?]
+   real(r8), dimension(pcols,pver), intent(in ) :: eu             ! entrainment in updraft               [?]
+   real(r8), dimension(pcols,pver), intent(in ) :: du             ! detrainment in updraft               [?]
+   real(r8), dimension(pcols,pver), intent(in ) :: md             ! downward cloud mass flux             [?]
+   real(r8), dimension(pcols,pver), intent(in ) :: ed             ! entrainment in downdraft             [?]
+   real(r8), dimension(pcols,pver), intent(in ) :: dp             ! layer thickness between interfaces   [mb]
+   real(r8), dimension(pcols),      intent(in ) :: dsubcld        ! layer thickness between lcl and maxi [mb]
+   integer,  dimension(pcols),      intent(in ) :: jt             ! top level index of deep convection
+   integer,  dimension(pcols),      intent(in ) :: maxg           ! gathered values of maxi
+   integer,  dimension(pcols),      intent(in ) :: ideep          ! flag to indicate active column for gathering
+   integer,                         intent(in ) :: lengath        ! number of columns in gathered arrays
+   integer,  dimension(:),          intent(in ) :: species_class  ! constituent tracer type
    !----------------------------------------------------------------------------
    if ( deep_scheme .eq. 'ZM' ) then ! Zhang-McFarlane
-      call zm_conv_tend_2( state,  ptend,  ztodt,  pbuf, mu, eu, du, md, ed, dp, &
-                           dsubcld, jt, maxg, ideep, lengath, species_class) 
-   else
+      call zm_conv_tend_2( state, ptend, ztodt,  pbuf, mu, eu, du, md, ed, dp, &
+                           dsubcld, jt, maxg, ideep, lengath, species_class)
+   else ! no deep convection  
       call physics_ptend_init(ptend, state%psetcols, 'convect_deep2')
    end if
 
