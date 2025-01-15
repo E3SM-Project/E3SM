@@ -162,7 +162,6 @@ subroutine convect_deep_tend( mcon, cme, dlf, pflx, zdu, rliq, rice, ztodt, stat
    use cam_history,    only: outfld
    use constituents,   only: pcnst
    use zm_conv_intr,   only: zm_conv_tend
-   use cam_history,    only: outfld
    use physconst,      only: cpair
    use physics_buffer, only: physics_buffer_desc, pbuf_get_field
    !----------------------------------------------------------------------------
@@ -211,63 +210,69 @@ subroutine convect_deep_tend( mcon, cme, dlf, pflx, zdu, rliq, rice, ztodt, stat
    integer :: i, k ! loop iterators
    !----------------------------------------------------------------------------
 
-   call physics_ptend_init(ptend, state%psetcols, 'convect_deep')
-
    ! Associate pointers with physics buffer fields
-   call pbuf_get_field(pbuf, fracis_idx,      fracis,    start=(/1,1,1/), kount=(/pcols,pver,pcnst/) )
-   call pbuf_get_field(pbuf, rprddp_idx,      rprd       )
-   call pbuf_get_field(pbuf, nevapr_dpcu_idx, evapcdp    )
-   call pbuf_get_field(pbuf, prec_dp_idx,     prec       )
-   call pbuf_get_field(pbuf, snow_dp_idx,     snow       )
-   call pbuf_get_field(pbuf, icwmrdp_idx,     ql         )
-   call pbuf_get_field(pbuf, icimrdp_idx,     qi         )
-   call pbuf_get_field(pbuf, cldtop_idx,      jctop_r8   )
-   call pbuf_get_field(pbuf, cldbot_idx,      jcbot_r8   )
-   call pbuf_get_field(pbuf, mudpcu_idx,      mudpcu     )
-   call pbuf_get_field(pbuf, lambdadpcu_idx,  lambdadpcu )
+   call pbuf_get_field(pbuf, cldtop_idx,  jctop_r8 )
+   call pbuf_get_field(pbuf, cldbot_idx,  jcbot_r8 )
+   call pbuf_get_field(pbuf, icwmrdp_idx, ql    )
 
-   ! initialize variables
-   ql          = 0.0_r8
-   qi          = 0.0_r8
-   rprd        = 0.0_r8
-   fracis      = 0.0_r8
-   evapcdp     = 0.0_r8
-   prec        = 0.0_r8
-   snow        = 0.0_r8
-   mudpcu      = 0.0_r8
-   lambdadpcu  = 0.0_r8
+  select case ( deep_scheme )
+     case('off', 'CLUBB_SGS' ) ! no deep convection  
+         ! initialize physics tendencies
+         call physics_ptend_init(ptend, state%psetcols, 'convect_deep')
 
-   select case ( deep_scheme )
-   case('off', 'CLUBB_SGS' )
-      mcon = 0
-      dlf  = 0
-      pflx = 0
-      cme  = 0
-      zdu  = 0
-      rliq = 0
-      rice = 0
+         ! Associate pointers with physics buffer fields
+         call pbuf_get_field(pbuf, fracis_idx,      fracis,    start=(/1,1,1/), kount=(/pcols,pver,pcnst/) )
+         call pbuf_get_field(pbuf, icimrdp_idx,     qi         )
+         call pbuf_get_field(pbuf, rprddp_idx,      rprd       )
+         call pbuf_get_field(pbuf, nevapr_dpcu_idx, evapcdp    )
+         call pbuf_get_field(pbuf, prec_dp_idx,     prec       )
+         call pbuf_get_field(pbuf, snow_dp_idx,     snow       )
+         call pbuf_get_field(pbuf, mudpcu_idx,      mudpcu     )
+         call pbuf_get_field(pbuf, lambdadpcu_idx,  lambdadpcu )
 
-   jctop = pver
-   jcbot = 1
+         ! initialize pbuf variables to zero
+         fracis     = 0
+         ql         = 0
+         qi         = 0
+         rprd       = 0
+         evapcdp    = 0
+         prec       = 0
+         snow       = 0
+         mudpcu     = 0
+         lambdadpcu = 0
+         
+         ! initialize output variables to zero
+         mcon       = 0
+         dlf        = 0
+         pflx       = 0
+         cme        = 0
+         zdu        = 0
+         rliq       = 0
+         rice       = 0
 
-   case('ZM') ! Zhang-McFarlane
-      call pbuf_get_field(pbuf, pblh_idx,  pblh)
-      call pbuf_get_field(pbuf, tpert_idx, tpert)
+         ! set cloud bot/top level indices to encompass all levels
+         jctop = pver
+         jcbot = 1
 
-      call t_startf('zm_conv_tend')
-      call zm_conv_tend( pblh, mcon, cme, tpert, dlf, pflx, zdu, rliq, rice, ztodt, jctop, jcbot, &
-                         state, ptend, landfrac, pbuf, mu, eu, du, md, ed, dp, dsubcld, jt, maxg, &
-                         ideep, lengath )
-      call t_stopf('zm_conv_tend')
-
+      case('ZM') ! Zhang-McFarlane
+         ! Associate pointers with physics buffer fields
+         call pbuf_get_field(pbuf, pblh_idx,  pblh)
+         call pbuf_get_field(pbuf, tpert_idx, tpert)
+         ! run the deep convection scheme
+         call t_startf('zm_conv_tend')
+         call zm_conv_tend( pblh, mcon, cme, tpert, dlf, pflx, zdu, rliq, rice, &
+                            ztodt, jctop, jcbot, state, ptend, landfrac, pbuf, &
+                            mu, eu, du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath )
+         call t_stopf('zm_conv_tend')
    end select
 
+   ! set the real version of cloud bot/top level indices
    do i = 1,pcols
       jctop_r8(i) = real(jctop(i), r8)
       jcbot_r8(i) = real(jcbot(i), r8)
    end do
 
-   ! If we added this, set it.
+   ! set the deep convective tendency if it was added to pbuf
    if (ttend_dp_idx > 0) then
       call pbuf_get_field(pbuf, ttend_dp_idx, ttend_dp)
       if ( allocated(ptend%s) ) then
@@ -277,6 +282,7 @@ subroutine convect_deep_tend( mcon, cme, dlf, pflx, zdu, rliq, rice, ztodt, stat
       endif
    end if
 
+   ! history file output
    call outfld( 'ICWMRDP ', ql, pcols, state%lchnk )
 
 end subroutine convect_deep_tend
