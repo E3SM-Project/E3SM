@@ -613,6 +613,7 @@ subroutine shr_scam_checkSurface(scmlon, scmlat, scm_multcols, scm_nx, scm_ny, &
    logical,            optional, intent(inout) :: rof_present  ! land point with rof
    logical,            optional, intent(inout) :: flood_present  ! rof doing flood
    logical,            optional, intent(inout) :: rofice_present ! land point with rof
+   logical,            optional, intent(inout) :: iac_present ! iac model 
 
 !EOP
 
@@ -741,6 +742,9 @@ subroutine shr_scam_checkSurface(scmlon, scmlat, scm_multcols, scm_nx, scm_ny, &
    if (present(rof_present))    rof_present   = .false.
    if (present(flood_present))  flood_present = .false.
    if (present(rofice_present)) rofice_present = .false.
+
+   ! Always turn iac off
+   if (present(iac_present)) iac_present = .false.
 
 end subroutine shr_scam_checkSurface
 

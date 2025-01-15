@@ -417,6 +417,7 @@ module cime_comp_mod
   logical  :: ocnrof_prognostic      ! .true.  => ocn comp expects runoff input
   logical  :: glc_prognostic         ! .true.  => glc comp expects input
   logical  :: rof_prognostic         ! .true.  => rof comp expects input
+  logical  :: rofocn_prognostic      ! .true.  => rof comp expects ssh input
   logical  :: wav_prognostic         ! .true.  => wav comp expects input
   logical  :: esp_prognostic         ! .true.  => esp comp expects input
   logical  :: iac_prognostic         ! .true.  => iac comp expects input
@@ -1938,12 +1939,6 @@ contains
 
     if (.not. samegrid_oi) then
        call shr_sys_abort(subname//' ERROR: samegrid_oi is false')
-    endif
-
-    ! if iac is present then lnd and atm must be on same grid
-    if (iac_present .and. .not.(samegrid_al)) then
-       call shr_sys_abort(subname//' ERROR: if iac present must also have '// &
-          'lnd and atm on the same grid')
     endif
 
     !----------------------------------------------------------

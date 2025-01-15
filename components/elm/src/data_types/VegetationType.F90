@@ -5,7 +5,7 @@ module VegetationType
   ! Vegetation data type allocation 
   ! -------------------------------------------------------- 
   ! Vegetation types can have values of
-  ! --------------------------------------------------------
+  ! -------------------------------------------------------- 
   !   0  => not vegetated
   !   1  => needleleaf evergreen temperate tree
   !   2  => needleleaf evergreen boreal tree
@@ -125,8 +125,6 @@ contains
        allocate(this%sp_pftorder_index      (begp:endp)); this%sp_pftorder_index      (:) = nan
     end if
 
-! avd
-write(iulog,*) 'in veg_pp_init iac_active is ', iac_active
     if (iac_active) then
        allocate(this%wtgcell_iac   (begp:endp)); this%wtgcell (:) = nan
     end if

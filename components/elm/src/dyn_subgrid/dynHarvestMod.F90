@@ -113,7 +113,9 @@ contains
 
     SHR_ASSERT_ALL(bounds%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
 
-    allocate(harvest(bounds%begg:bounds%endg),stat=ier)
+    allocate(harvest_rates(num_harvest_vars,bounds%begg:bounds%endg),stat=ier)
+
+    harvest_rates(:,bounds%begg:bounds%endg) = 0._r8
     if (ier /= 0) then
        call endrun(msg=' allocation error for harvest_rates'//errMsg(__FILE__, __LINE__))
     end if

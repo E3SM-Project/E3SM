@@ -7,6 +7,7 @@ module elm_instMod
   use abortutils                 , only : endrun
   use decompMod                  , only : bounds_type, get_proc_bounds
   use elm_varctl                 , only : use_cn, use_voc, use_c13, use_c14, use_fates, use_betr
+  use elm_varctl                 , only : iulog
   !-----------------------------------------
   ! Definition of component types
   !-----------------------------------------
@@ -74,7 +75,7 @@ module elm_instMod
 
   use elm_interface_dataType     , only : elm_interface_data_type
   use ChemStateType              , only : chemstate_type     ! structure for chemical indices of the soil, such as pH and Eh
-  use BeTRSimulationALM          , only : betr_simulation_alm_type
+  use BeTRSimulationELM          , only : betr_simulation_elm_type
   use PlantMicKineticsMod        , only : PlantMicKinetics_type
   use ELMFatesInterfaceMod       , only : hlm_fates_interface_type
 
@@ -132,7 +133,7 @@ module elm_instMod
   type(elm_interface_data_type)                       :: elm_interface_data
   type(chemstate_type)                                :: chemstate_vars
   type(hlm_fates_interface_type)                      :: alm_fates
-  class(betr_simulation_alm_type), pointer            :: ep_betr
+  class(betr_simulation_elm_type), pointer            :: ep_betr
   type(PlantMicKinetics_type)                         :: PlantMicKinetics_vars
   public :: elm_inst_biogeochem
   public :: elm_inst_biogeophys
@@ -161,7 +162,6 @@ contains
     begc = bounds_proc%begc; endc = bounds_proc%endc
     begl = bounds_proc%begl; endl = bounds_proc%endl
     begg = bounds_proc%begg; endg = bounds_proc%endg
-
 
     if (use_voc ) then
        call vocemis_vars%Init(bounds_proc)
@@ -385,9 +385,7 @@ contains
 
     ! Initialize lnd2iac and iac2lnd
     call lnd2iac_vars%Init( bounds_proc )
-    ! Not implemented yet
-    ! call iac2lnd_vars%Init ( bounds_proc )
-    !end if
+    call iac2lnd_vars%Init( bounds_proc )
 
     ! If single-column determine closest latitude and longitude
 

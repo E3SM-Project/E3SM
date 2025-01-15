@@ -1,3 +1,2046 @@
+4/28/2022 13:46:30 PDT
+
+* Okay, as far as I can tell everything is running fine - the zlnd_v2 case,
+  compiled without debug, now runs really fast, like 50 minutes wall clock
+  for two hours.  I just don't know if I believe that, and I'm worried
+  somewhere in my coding I've short-circuited some calculation we used to
+  be doing, but I'm going to build with debug and see if it takes four
+  hours again or not.
+
+* Otherwise, I'm ready to merge with Alan when he's ready, hopefully today
+  or tomorrow, although he's had some issues running on compy.
+
+* In the meantime, I'm going to review the log files and see if I can see
+  anything else that doesn't seem to work right, or something else I don't
+  understand.  I also should probably dump the coupled avects somehow and
+  check them over manually - maybe find an i index (or a range) where I
+  can check the math (averaging, maxmonmean) as we go along.
+
+4/28/2022
+
+* So, I learned an important thing: The "eli" counters over the
+  num_inst_lnd and num_inst_iac in the prep_foo_mod functions are *not*
+  looping over the number of processors in the component in question -
+  instead, num_inst_xxx refers to the number of *coupler* instances of
+  those avects.
+
+  So it's not looping over teh component decomposition, but the *coupler*
+  decomposition.  And, for our runs at least (and probably for most
+  others), nun_inst_xxx are all 1 - we don't decompose in the coupler, we
+  keep the whole arrays together.
+
+  My guess is only fully coupled, very complicated model runs will
+  decompose in the coupler - or maybe the ocean model, which seems to have
+  some exotic ways to run, has multiple instances of the avects in the
+  coupler.  
+
+  Anyway, so the weird mod behavior in these loops, e.g.
+  
+	do eli=1,num_inst_lnd 
+	   ezi=mod((eli-1), num_inst_iac) +1
+
+  are still weird and I don't understand them, but becuase they are all
+  related to coupler decompositions that we don't user, I don't have to
+  understand.  Apparently it's some kind of way of associating instances of
+  the decompositions when you have a different total number of instances
+  for each coupled component, so the mapping from instance 1 and 3 of
+  component a (with num_inst_a=4) will go into instance 1 of component b
+  (with num_inst=b=2).  In other words, the two instances of component b
+  each cover the merged domain of two instances of component a.
+
+* Whatever, just don't think about it too hard, as none of that mod stuff
+  mattters if all the num_insts are 1.
+
+4/27/2022
+
+* Wrt timing, it looks like the first sample of the year (or of the run) is
+  actually timestamped 1800 seconds into the year - not midnight of the
+  year, but 0030 of the year.  If you look at the alarms for the regular
+  components, they all start at year 1, 1800 seconds, including iac.
+
+  Therefore, this implies January 1, 00:00 is the last sample of the
+  previous year.
+
+* I've double checked this with print statements in zlnd_v2 - the first
+  sample time in the cime_run() while loop has a time of day (tod, in
+  seconds) of tod=1800.  The iacrun_alarm and lndrun_alarm both are set to true
+  for this first sample.
+
+  At the end of the year, the iacrun_avg_alarm is true only for 20160101
+  tod=0, then the iacrun_alarm is true for the next sample, tod=1800.
+
+* Okay, so that means a year is basically from tod=1800 on January 1 year 1
+  to tod=0000 January 1 for year 2.  When you tell it to run for 2015, it
+  starts one time step in.  Theis might make it a little easier to
+  set meaningful restart files; the restart for 20160101 will contain all
+  the info up to midnight on 20151231, but it has the same time stamp as
+  the year you want to restart on.
+
+* Anyway, this is important because I was wondering how the iac monthly
+  averaging would work with restart files, since I current do the monthly
+  (and yearly) average on 0000 of the first day of the following month.  I
+  was assuming that tod=0 was the first sample of the month, so I did the
+  average and maximum at the top of the while loop, which meant it might
+  not be computed at the end of a yearly run if we stopped processing at
+  2xxx1231.233000.  So we would have to do the averaging and final
+  maxmonmean stuff before storing the restart data - but *that* might cause
+  issues with the restart at 0000 of January 1, unless we turn off the
+  iacrun_avg_alarm for the first part on restart.
+
+* But if the run (or restart)  actually starts at tod=1800, then we will
+  have wrapped up the averaging and maxing on 12/31 0000Z, and that will be
+  ready for use by iac when it runs on tod=1800 on the first restart day.
+
+! Anyway, the point of all this exposition is that I should keep the alarms
+  the way they are - iac runs on tod=1800 of the first year, while iac_avg
+  runs on tod=0000 of the first day of the month...but I should run iac_avg
+  *after* everything (or, at least, after the lnd component), rather than
+  before, because the iacrun_avg_alarm is offset by -1800 seconds from the
+  tod iacrun_alarm.  So it wraps up the year a time step before iac runs,
+  so we need to do it after all computations are done.
+
+@ So, the point is: run iac_accum_avg() in the lnd post section, not at the
+  top of the cime_run() loop.
+
+4/21/2022
+
+* Discovered the reason why zatm ran so slow - the dtime for cam was at 4
+  seconds, because it was dividing one day by 17520, rather than one year.
+
+  We found this for zlnd, but apparently the fix has to happen in each
+  component.  For clm we modified .../clm/bldCMBuildNameList.pm, which was
+  a perl module the namelist script was built upon.  For cam, I had to
+  modify .../cam/cime_config/buildnml (a python script) directly.  We need
+  to grab NCPL_BASE_PERIOD to determine that our base period is one year,
+  and then modify around line 167 to use a full year as the numerator when
+  calculting dtime.
+
+! So, every component that we use in our build will probably have to be
+  modified to use a full year to calculate dtime.
+
+* With dtime at 1800 like it should, it took five hours wallclock to run
+  one year of zatm.  That tracks - zlnd takes five hours to run two years,
+  so adding another component should make it take twice as long.
+
+@ I should probably run zatm for two years, just to make sure I haven't
+  munged up the land back coupling (l->z) with these mods.
+
+4/6/2022
+
+* Okay, ran a grep and it appears that yes, we never actually fill
+  iac2atm_var%co2emiss, so I gotta figure out how to extract that from the
+  gcam_run_mod() call.
+
+  Pro tip: when all else fails, look at the *names* of the arrays being
+  passed to a function.  When it has 36 input arrays named like this:
+
+  gcamoco2sfcaug(:,:)
+  gcamoco2airlojun(:,:)
+  gcamoco2airhioct(:,:)
+
+  ...then obviously those are the monthly values for surface, lower level
+  air, and higher level air fluxes from CO2.  So I just need to collapse
+  these down into individual arrays of inputs:
+
+  iac2atm_var%co2emissfc(mon,i,j) 
+  iac2atm_var%co2emisairlo(mon,i,j) 
+  iac2atm_var%co2emisairhi(mon,i,j) 
+
+  Or, I guess I could just have 36 arrays directly, but I feel like we'll
+@ need the integer month index on the back end for how eam will use it.
+  Review how cam deals with monthly input fossil fuel values from a file,
+  as per the notes from 4/5/2022.
+
+4/5/2022
+
+* Getting our ducks in a row for teh rebase:
+
+* Alan is making progress on fractions.  My understanding is taht the GCAM
+  downscaling and upscaling functions will deal with any land-area
+  normalization that has to happen, so for l->z we don't need to weight
+  anything, and thus we don't need landfractions in our mapping.  The
+  gridcell conversions (in both directions) of the GCAM variables already
+  assume a full grid cell, and any further normalization happens in the
+  gcam stuff.
+
+* Co2 - I'm trying to get the co2 variables coupled.  I *think* Kate never
+  got to the part where she took the emissions-on-a-gridcell (downscaled)
+  Co2 output and stuffed it into the actual lnd2atm_var data structure that
+@ gets coupled.  So I need to set up and allocate those variables, and then
+  figure out how to put them correctly into lnd2atm_var.  
+
+  But, the time interpolation of these monthly values should *not* be a
+  problem - Alan remembered, and I did too after some prodding, that the
+  reason we are sending monthly Co2 values is that's the format the cam
+  (eam) code gets them from when reading a data file.  So eam has already
+  implemented whatever interpolation across these monthly values they
+  want.  So we can just send across our monthly values, fill in the data
+  structures with our values instead of the co2emissions file they
+  currently are using, and it should work.
+
+* Trying to get maximum of monthly averages going - the real trick is to
+  set up a monthly alarm to calculate the averages of our accum data, and
+  then a yearly alarm to grab a maximum of those.
+
+  The yearly alarm is just the regular gcam alarm - we'll just add in an
+  average for December of the previous year first, then do the max, and
+  then get on with running gcam.  We won't want to do this for the first
+  year, though...
+
+3/4/2022
+
+* Heh, so here's something funny.  Kate's original ZATM compset string was:
+
+  2000_CAM5_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_GCAM
+
+  I think she was trying to find a real CAM/CLM coupling case to attach
+  GCAM to.  However, SPBC doesn't run the carbon nitrogen model (and other
+  bgc options), so we need to use CLM45%%CNPRDCTCBC like ZLND does.  (I
+  think any CN* or BGC* option to clm would probably work, but any SP*
+  option definitely will not.  See
+  ~/compy/E3SM_current/components/clm/bld/CLMBuildNamelist.pm).
+
+! But, I wasn't sure what CICE was doing there - we had never talked about
+  coupling with the ice model.  So I also changed things to stub out ice
+  and ocean - ...SICE_SOCN....
+
+  But, obviously, that doesn't work - you can't just stub out the ocean
+  model when coupling with atmosphere, because all those water grid cells
+  then are just using their initialized data values.  In practical terms,
+  this means that the surface temp (along with all the other variables) is
+  set to zero (degK), which ends up failing in some calculation where we
+  are dividing by surf_t.
+
+  So, of course we need at least DOCN set when using the atm/lnd coupling.
+  Apparently, CICE *also* prescribes ice values - DICE does not work, but I
+  don't think CICE actually runs a model but inputs data values?  Maybe
+  calculated ice values?
+
+  Anyway, I could find no existing compsets with atm/lnd coupling where we
+  didn't either have an active ice model or CICE set, so which is probably
+  why Kate included it in the first place.
+
+* The 2000_CAM5_CLM45%CNPRDCTCBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_GCAM
+  compset with 480 procs for lnd and atm runs without bombing, but it times
+  out after only one day of processing, with 4 hours wall clock.  That
+  seems really really slow, but maybe that's just the way these things
+  work.  That's why restarting is so important, and maybe I need thousands
+  of procs to run with as well.
+
+  I've turned off DEBUG and rebuilt and resubmitted, to see if that will
+  speed things up.
+
+* Also, Kate encountered run issues with DEBUG=FALSE.  I briefly looked at
+  her log message, and it failed while trying to do E3SM mapping (which
+  isn't supported), which is crazy because that is governed by a namelist
+  variable which should always be false.  So my guess was a memory error,
+  but I've fixed some issues in the merged code since then, and Alan had
+  made some changes in his code (which is merged into my branch), so I'm
+  kind of hoping the thing just runs now.  Kate was unable to get ZATM to
+  run off her branch and I'm cranking out a full day (about 50 timesteps)
+  before time out, so maybe that will even happen.
+
+* If things really are this slow, then we'll have to figure something out
+  to test lnd->iac coupling, which will only happen at the end of a model
+  year.  In principle, it shouldn't change between ZLND and ZATM, and we
+  can run a full year of ZLND in our four hour block, so there's that.  But
+  we definitely want to make sure it still works correctly under ZATM as
+  well. 
+
+  Given how ZLND runs relatively quickly, I'm skeptical that adding ZATM
+  coupling (and maybe the ocean/ice calculations) could make it run
+  something like 700 times slower (as we get two years of ZLND in 4.5 wall
+  clock hours).  But I don't really know how slow cam is on compy, so I
+  definitely need to ask somebody about that, and what the usual number of
+  procs are used for lnd/atm runs.
+
+3/1/2022
+
+* I never included Kate's last update, which splains where we are and where
+  we should be going when she left.
+
+----
+  From:	Bond-Lamberty, Benjamin
+  Sent:	Wednesday, January 12, 2022 9:40 AM
+  To:	Alan Di Vittorio; Shippert, Timothy R
+  Subject:	Current status notes
+
+  Hi guys, as promised here are Kate's notes from last week on the current
+  status of the GCAM coupling work. Thoughts/corrections are welcome if you
+  see something surprising. 
+
+  Thanks,
+  Ben
+
+Current status
+* We have three compsets that we've been testing: Z, ZLND, ZATM
+
+o Z: GCAM + all iac code (GLM, mksurfdat, etc). This compset will complete 
+  without errors.
+
+o ZLND: GCAM + all iac code + ELM. This compset will complete without
+  errors.  However, Alan & Tim are still verifying that the land is
+  being passed correctly from GCAM to ELM (they think that the
+  mapping file isn't doing fractions correctly right
+  now). Additionally, I don't think we've tested whether the ELM data
+  used for scalars (NPP, HR) are being passed correctly. 
+
+o ZATM: GCAM + ELM + EAM. This compset currently times out in the atm run. 
+  I have not tried giving it a large enough wall clock or enough
+  nodes to see if it  would complete successfully. It does
+  successfully run the initialization code +  GCAM. I doubt that CO2
+  emissions are being passed correctly from GCAM to  EAM even though
+  we have no errors (Kate will try to check this more before  Sunday) 
+
+* Everything has been tested in debug mode. For reasons I don't
+  understand, running with DEBUG set to false generates an error for
+  compsets that work in DEBUG mode. 
+
+o For ZLND, the error is: "ERROR: (seq_map_init_rcfile)  ERROR: esmf
+  SMM not supported" 
+
+* We have tested running multiple years and running from annual
+  restarts. I have not tried using a monthly restart, but don't
+  expect issues. 
+
+* We have several branches. 
+
+o The main branches are Tim's:
+? E3SM: shippert/gcam/active-gcam-debug
+? GIAC: shippert/merge
+
+o Alan & Kate will create new branches from those and then Tim integrates those 
+  changes later. I think all of Alan's changes have been incorporated
+  into Tim's branches. Kate still has changes on these branches: 
+
+? E3SM: kvcalvin/gcam/atm-coupling
+? GIAC: kvcalvin/cleanup
+o GCAM is using the `e3sm-integration` branch on GitHub (jgcri/gcam-core repo). 
+
+  It branched from GCAMv5.3 and then added a bunch of coupling
+  code. I've also cherry-picked some post v5.3 bugfixes (e.g., those
+  related to tidyr). I debated upgrading to v5.4 since it includes
+  DACCS and lets GCAM run on multiple processors on a single
+  node. But, GCAMv5.4 has a lot more solver failures and that seemed
+  too risky for E3SM. 
+
+Remaining work
+* Need to thoroughly test the coupling
+
+o We've got things mechanically working, but need to check that
+  everything that is being passed through the coupler is being passed
+  correctly 
+
+* Need to get all input files in the right spot. Right now, our run
+  scripts copy a bunch of files to the case directory to work. 
+
+o Namelist defaults: The namelist isn't being generated with the
+  right defaults (Tim was looking into this). 
+
+o GCAM inputs: The model was slow when it was using GCAM input files
+  from the inputdata directory. To speed up testing, we've just been
+  copying those files to the case directory, but they should not be
+  there. 
+
+o Something else: I think there was some other issue related to
+  having C/C++ copy files to the right directory on its own, but I
+  need to look into this to remember what was going wrong. 
+
+* Need to figure out (and fix) whatever is leading to the creation of
+  a $RUNDIR folder in the scratch directory. 
+
+* Need to add tests, clean up code, and open a PR
+
+o Once the coupling is working correctly, we need to open the PR. We
+  have only been testing on compy. Rob J says the infrastructure team
+  can help port to other E3SM supported machines when we are ready
+
+o We need to add a set of smoke tests at a minimum to ensure no one
+  breaks the code. I don't think those need to be scientifically
+  valid compsets, but they do need to work out of the box.
+
+o There is probably some code clean up to be done. Not sure how
+  important that is given E3SM coding/style standards but probably
+  worth a look 
+
+* Need to document, including how to use and how to extend the
+  coupling to other variables
+
+o We may want to check with Rob on whether there would be value in
+  having documentation on how to add a new component - in general, I
+  would think so, but I think they are switching couplers at some
+  point in the future. 
+
+* Need to develop scientifically valid compsets
+
+o Resolution: We wanted a coarser resolution version of the land &
+  atm for testing, but you have to make mapping files between
+  components. We've currently set up the land/atm to be at ~2 x 2.5
+  and the iac at 0.9 x 1.25. However, the land/atm resolution is not
+  scientifically supported in E3SM. It will need to be changed to a
+  ne grid (standard low res is ne30, but they test sometimes at
+  ne4). We could change the resolution of the iac grid but we'd need
+  to regenerate some mapping files there between GCAM regions and the
+  grid.  
+
+o GCAM configurations: 
+
+? I've just been using a GCAM reference case for testing. We will
+  need to set up configurations for the specific v2 scenarios planned
+  (low radiative forcing scenarios with different types of CDR).  
+
+? For reasons I don't completely understand, the GCAM reference
+  scenario has solving problems in 2020 --- this could be related to
+  debug mode (testing that now).  
+
+? GCAM uses binary restarts, so changing the scenario (or the machine
+  or the compiler) means we need to regenerate the restarts for the
+  GCAM historical period (this can be done by simply running GCAM
+  through that period with the exact compiler options & configuration
+  planned). I do not know whether that needs to be done when you turn
+  off debug mode (testing that now). 
+
+* Need to develop some standard diagnostics and analysis scripts. We
+  have stuff from both E3SM and GCAM, but haven't standardized or
+  automated stuff related to the coupling. We could probably start
+  from my GEC paper figure scripts or other iESM scripts.  
+
+----
+
+2/11/2022
+
+* Okay, I don't know if anything below makes sense anymore, but *this* is
+  how fractions are used:
+
+1 As weights when interpolating from one grid to the next - so if we are
+  averaging the land contribution of some variable to a bigger grid, we
+  clearly want to weight by the land fractions in the smaller grid.
+
+2 As weights when calculating the contribution of each component to a grid
+  cell for a given quantity.
+
+  As an example of the latter, let's say the atmosphere is trying to
+  determine a quantity over a cell where the components are 1/3 land,
+  ocean, and ice.  Obviously, you want to scale that quantity for each
+  component in that cell by 1/3 before adding them together.
+
+* The thing is, you can apply these fractions in a lot of different places
+  in the code.  Apparently, the atm component chooses to do it not when the
+  quantity is calculated in the atm code, but in the prep_atm_merge
+  function, as soon as it grabs each components avects from the coupler.
+  That's why you see all those "* xfrac" scalings in the prep_atm_merge
+  function. 
+
+* But other components don't do this kind of scaling, presumably because
+  either they don't need to weight by fraction or because they do it
+  internally in the component model code.
+
+* Now, as far as iac is concerned, we actually have a number of fractions
+  to consider.  When iac is coupling with atm, we have already scaled the
+  co2 flux to be the contribution of the full grid cell, not just from the
+  land part (I dunno, do we consider boats?  Or we have just scaled it up
+  to full grid cell.  Whatever.)  So zfrac(a) = 1.0, for z2a.
+
+  We also have the landfrac, which should match that of the land component,
+  but we've read it in separately.  So that's zfrac(l) = lfrac(z)
+  (hopefully). 
+
+  But Alan has pointed out that we also need to further subgrid the cell by
+  vegetation fraction - some pfts are vegetation land types, while some are
+  urban, so we need a zfrac(veg), which we will use as a weight when
+  coupling z2l.
+
+  So, when coupling with atm, we have frac=1.0.  When coupling with lnd, we
+  sometimes need to just weight by landfrac (to interpolate onto the bigger
+  grid), but sometimes we need to weight by vegfrac/landfrac (if vegfrac is
+  the fraction of the whole grid cell - or, we could store the fraction of
+  the *land* part of the cell that is vegetation,
+  i.e. vegfrac'=vegfrac/landfrac).
+
+* To get this right, then, we really need to figure out how we want to
+  weight each field we are coupling in all the cases we are using them.
+  But I think that, unlike atm, we'll scale by the appropriate fractions
+  internally in the lnd and iac components, and not in the p   qy
+rep_merge
+  functions.  We also need to couple fractions_z(zair:zfrac:zvfrac), with
+  fractions_a(...:zair) and fractions_l(...:zfrac:zvfrac)
+
+2/1/2022
+
+* So, I've got a couple things we are working through.
+
+* Fractions_z, mapped to the land grid - does that make sense?  The lnd and
+  iac landfrac is ostensibly the same, but if we interpolate one onto the
+  other that could make changes.  Alan pointed out the mapping conserves
+  area, and that's what's important, but it still seems like
+  fractions_l(lfrac) and fractions_l(zfrac) should be identical, but
+  there's a lot of reason to think they might vary somewhat, and does that
+  matter. 
+
+* The other issue is coupling z->a, sending CO2 emissions across.  Right
+  now we were going to have a number of different heights, so we couple N
+  different emiss_co2[h] variables, similar to how we couple 17 different
+  variables of npp for the 17 different pfts in z->l.
+
+  Alan points out, though, that gcam calculates a single emission value on
+  its grid, without it being scaled to landfrac.  In other words, the iac
+  generates a value on the grid, not a value from the fraction of land on
+  each grid.  So we need a separate fractions_z(z->a) that gives fraction
+  values of 1.0 for use when coupling z->a.
+
+? So, my question is - isn't that the same thing as fractions_z(afrac)?
+  The atmos fractions are always 1.0, so if we interpolate that onto the z
+  grid, which I think we do, we should get 1.0 everywhere.  So if we use
+  fractions_z(afrac) to build our z->a maps rather than fractions_z(zfrac),
+  wouldn't that work automatically?
+
+? Or, do I not know what I'm talking about, wrt how fractions are
+  calcualted.  My understanding is that we build fractions_c(cfrac) on
+  component c's grid, and then run it through the mappings to calculate
+  fractions_c(yfrac) for every coupled component y's fractions on the c
+  grid.  Then the mapping uses the fractions from the source component on
+  both grids to do the interpolation. If that's true, then
+  fractions_z(afrac) makes sense, and is what we want to use while coupling
+  to atmosphere - 1.0s everywhere on the z grid.
+
+  The alternative is to build a whole new variable to hold the z2a
+  fractions (which are 1.0): something like fractions_z2a, and then make
+  sure to use that whenever we map z->a.
+
+  My worry is that we might not be able to tell it to use
+  fractions_z(afrac) while coupling z->a - the calling sequence to the
+  functions might force you to look up fractions_z(zfrac) and
+  fractions_a(zfrac) only when doing z->a coupling.  If that's the case,
+  then I'm not sure a new variable like fractions_z2a will even work,
+  unless we send the fraction (and not the index to use) into
+  seq_map_map(). 
+
+! A third possibility is to actually scale co2 emissions that we get by
+  gcam by 1/fractions_z(zfrac), so that the scaling offsets the fraction
+  used my MCT to interpolate.  I.e. we trick MCT into doing the right
+  math.  This is obviously obfuscatory and not ideal, but it might involve
+  a lot less coding and refactoring MCT functions than the other way.
+
+1/24/2022
+
+* I've found the problem - the field list of fields to couple is getting
+  truncated.   The z2x%rlist(:) is a colon-separated character string
+  listing all the fields to send to the coupler, and there's a similar one
+  built for x2l.  We are coupling way more fields than other compsets, so
+  we (eventually) end up with a truncated list, and that's why prev for
+  pft=14 and both current and pref for pfts 15 and 16 aren't getting
+  coupled. 
+
+  But it's trickier than this, because the z2x%rlist DOES allocate enough
+  space (4096 characters, the "CXX" size), and the seq_add_flds() function
+  actually does a check to make sure we don't write past the allocated
+  space, and it will throw an error if we do.  So these rlists are being
+  built and stored correctly in the coupling variables.
+
+  BUT! Deep in the MCT code, in seq_map_map(), we *copy* over these lists
+  to a working variable before calling mct_aVect_init() to set up all the
+  coupled variables.  (Maybe we destroy the fields list while using is,
+  popping off values or something?  Or, maybe no reason.)  Anyway, the
+  variable lrList in seq_map_map() was only allocated "CX" (512)
+  characters.  As it turns out, that gets you to Sz_pct_pft14, but NOT to
+  Sz_pct_pft_prev14 or the pft=15,16 variables.  So we end up truncating
+  our correct list of fields, and only couple through current_pft14.
+
+  The solution, of course, is to allocate lrList with size CXX (4096), so
+  we can copy over the full list and couple all the fields we ask.
+
+  When you do that, the normalization and other errors go away, and the
+  code (lnd/iac coupled) runs through two full model years.
+
+1/21/2022
+
+* Okay, I've learned a couple things.  Here is the output for pft=14 for
+  all 13 grid cells the masterproc (apparently) gets from the decomp, after
+  importing from the coupler
+
+           g pft      lat       lon      pft_prev   pft_curr        diff
+TRS8:      1  14  -90.00000    0.00000    0.00000    0.00000    0.0000000000
+TRS8:      2  14  -86.21053  280.00000    0.00000    0.00000    0.0000000000
+TRS8:      3  14  -80.52632  200.00000    0.00000    0.00000    0.0000000000
+TRS8:      4  14  -74.84211  152.50000    0.00000    0.00000    0.0000000000
+TRS8:      5  14  -54.00000  295.00000    0.00000    0.00000    0.0000000000
+TRS8:      6  14  -18.00000   35.00000    0.00000   51.32734   51.3273393133
+TRS8:      7  14   -0.94737  300.00000    0.00000    0.10030    0.1002995088
+TRS8:      8  14   16.10526  347.50000    0.00000   33.08695   33.0869547983
+TRS8:      9  14   29.36842   40.00000    0.00000    0.00000    0.0000000000
+TRS8:     10  14   38.84211  250.00000    0.00000    0.83565    0.8356476962
+TRS8:     11  14   48.31579  115.00000    0.00000    0.00000    0.0000000000
+TRS8:     12  14   55.89474  265.00000    0.00000    0.00000    0.0000000000
+TRS8:     13  14   63.47368  202.50000    0.00000    0.00000    0.0000000000
+
+  You will notice that pft_prev=0 for all cells.  Only four cells have
+  anything for pft_curr, and those are the ones I've found a problem with,
+  but what this means is that:
+
+! The problem is in the coupling of pft=14 (p=15 on iac side) for the
+  pft_prev field, not in the mapping or anything else.  Somehow, the pft=14
+  pft_prev field is not getting coupled correctly, while (probably/maybe/we
+  don't have any evidence otherwise) the pft_curr field IS getting coupled
+  correctly. 
+
+* Here are the index_z2x_Sz_pct_pft(p), and _pref values on the iac side:
+
+                             p         z2x_curr   z2x_prev
+ TRS: indexz2x(p):           1           1           2
+ TRS: indexz2x(p):           2           4           5
+ TRS: indexz2x(p):           3           7           8
+ TRS: indexz2x(p):           4          10          11
+ TRS: indexz2x(p):           5          13          14
+ TRS: indexz2x(p):           6          16          17
+ TRS: indexz2x(p):           7          18          19
+ TRS: indexz2x(p):           8          20          21
+ TRS: indexz2x(p):           9          22          23
+ TRS: indexz2x(p):          10          24          25
+ TRS: indexz2x(p):          11          26          27
+ TRS: indexz2x(p):          12          28          29
+ TRS: indexz2x(p):          13          30          31
+ TRS: indexz2x(p):          14          32          33
+ TRS: indexz2x(p):          15          34          35
+ TRS: indexz2x(p):          16          36          37
+ TRS: indexz2x(p):          17          38          39
+
+  ...so these look normal.  I'll investigate the lnd side in the next run,
+  to make sure the l2x(p) indeces are getting set correctly over there.
+  Then, I guess I need to track down where in the code we tell MCT which
+  fields to couple and pull over.
+
+  My conjecture is that somehow the pct_pft_prev stuff stops working at
+  pft=13, or at least before pft=14.  So some index isn't being set right,
+  we aren't looping over the right things, or there is a typo somewhere
+  that's keeping either the lnd from importing or iac from exporting the
+  prev field, but not the curr field.
+
+* Okay, I just checked the lnd log again - both prev and current are all
+  zeros for pft=15 and pft=16.  So, either they are not getting coupled
+  correctly too, or those pfts really are zero for these grid cells -
+  either way, it's consistent with fields starting at pct_pft_pref(pft=14)
+  and higher indeces not getting imported/exported correctly.
+
+  I.e. it's not just pft=14, it could be that and everything with a higher
+  index, which means there's a looping index or something that's not going
+  far enough.
+
+* In iac, the z2x_index_pct_pft_prev(p=15) = 35, so that's the limit we are
+  looking at over there.
+
+* At some point we tell MCT how many fields we expect the coupler to give
+  and take from us - my current guess is we didn't update that right for
+  either adding pref/harvest to iac, or adding iac to lnd.
+
+1/20/2022
+
+* Okay, I'm dumb - we zero-offset our pfts in the lnd model, but one-offset
+  them in the iac model, so we need to look at p=15 in iac to understand
+  whatever is going on with pft=14 in lnd.
+
+  And when we do that, we get this for the iac grid points around g=6,8
+  (lnd):
+
+        g     p   i   j     lon       lat        prev   current
+TRS:  21628  15  28  76   33.7500  -19.3194   50.6301   50.6301
+TRS:  21629  15  29  76   35.0000  -19.3194   51.5226   51.5226
+TRS:  21630  15  30  76   36.2500  -19.3194   32.5006   32.5005
+TRS:  21916  15  28  77   33.7500  -18.3770   48.8705   48.8704
+TRS:  21917  15  29  77   35.0000  -18.3770   46.3922   46.3922
+TRS:  21918  15  30  77   36.2500  -18.3770   41.9186   41.9186
+TRS:  22204  15  28  78   33.7500  -17.4346   61.1200   61.1200
+TRS:  22205  15  29  78   35.0000  -17.4346   64.5736   64.5735
+TRS:  22206  15  30  78   36.2500  -17.4346   41.2494   41.2494
+TRS:  22492  15  28  79   33.7500  -16.4921   70.1149   70.1150
+TRS:  22493  15  29  79   35.0000  -16.4921   50.1504   50.1504
+TRS:  22494  15  30  79   36.2500  -16.4921   30.1438   30.1438
+
+TRS:  32245  15 277 112  345.0000   14.6073   59.1920   59.1920
+TRS:  32246  15 278 112  346.2500   14.6073   76.3799   76.3799
+TRS:  32247  15 279 112  347.5000   14.6073   64.4084   64.4084
+TRS:  32248  15 280 112  348.7500   14.6073   70.9835   70.9835
+TRS:  32533  15 277 113  345.0000   15.5497   51.0057   51.0057
+TRS:  32534  15 278 113  346.2500   15.5497   44.7880   44.7880
+TRS:  32535  15 279 113  347.5000   15.5497   35.9804   35.9804
+TRS:  32536  15 280 113  348.7500   15.5497   58.1320   58.1320
+TRS:  32821  15 277 114  345.0000   16.4921   42.3875   42.3875
+TRS:  32822  15 278 114  346.2500   16.4921   16.2948   16.2948
+TRS:  32823  15 279 114  347.5000   16.4921   21.0899   21.0899
+TRS:  32824  15 280 114  348.7500   16.4921   45.1869   45.1869
+TRS:  33109  15 277 115  345.0000   17.4346   10.2364   10.2364
+TRS:  33110  15 278 115  346.2500   17.4346    7.9039    7.9039
+TRS:  33111  15 279 115  347.5000   17.4346    5.4487    5.4487
+TRS:  33112  15 280 115  348.7500   17.4346    5.8889    5.8889
+
+* So, the first thing we notice is that these values for g=6, which we
+  analyze below, actually do compare with the value of 51.33 we get for the
+  pct_current calculation.  Similarly, without doing the average, I can see
+  where g=8 (lat=16.11,lon=347.5) might lead to a value of 33.09 or so - we
+  have some higher and some lower, although there is more of a gradiant.
+
+* Okay, so I'll probably have to actually calculate an average at some
+  point, but for now it looks like the main problem may NOT be the mapping
+  file, but why the prev is getting mapped to zero while the current is
+  not.  The prev and current values are either identical or within 1e-5 or
+  so on the iac side, so it looks like we are somehow not mapping prev in
+  some (or all?) cases in the same way as we are mapping current.
+
+* Could we be overwriting the prev values somehow, post-coupling?  My test
+  1/19/2022 shows that it's wrong from the first time we see the x2l fields
+  in lnd, but maybe something is happening upstream of that?  Something
+  like we couple our correct fields, and then some downstream coupling
+  fields overwrites it - i.e. an ABR or something?
+
+  Or, could we somehow not be telling the coupler which mapping to use for
+  prev?  Maybe there's another place in the driver or cpl component we have
+  to send our coupling indeces and we didn't correctly add them in that
+  spot when adding in the _prev fields?  (I originally just coupled the
+  pct_current fields, but Alan, I think, updated to send prev (and harvest)
+  fields because we need to interpolate across the year.)
+
+1/19/2022
+
+* Just some test runs to nail down when the interpolation fails - I wanted
+  to check to see if maybe a memory error was corrupting the x2l fields
+  post-coupling.  But I don't think so:
+
+ TRS8:            1           1   51.3273393132519       0.000000000000000E+000
+
+  This is printing x2l(<pft_current>,<g=6>) and x2l(<pft_pref>,<g=6>) for
+  each loop over g, to see if it changes during this assignment loop from
+  the coupler fields x2l to internal lnd fields.  As you can see, the
+  values are the same from the jump, so my only conclusion is that the
+  mapping is wrong, and thus our interpolated values coming out of the
+  coupler are wrong.
+
+* Next up is examining the mapping files and seeing if I can convince
+  myself they are either correct or incorrect.
+
+1/17/2022
+
+* Okay, I don't understand something.  Looking at the g=6 case below, on
+  the lnd side we have prev=0.0, val=51.3, around lat=-18, lon=35.4
+
+  Around those lat/lons on the iac, we have these values:
+
+ TRS: g=       21628 p=          14 i=          28 j=          76
+ TRS: lon=   33.7500000000000      lat=  -19.3193717277487     
+ TRS: pft_prev=   8.43277380296120      pft_current=   8.43277166762248     
+ TRS: g=       21629 p=          14 i=          29 j=          76
+ TRS: lon=   35.0000000000000      lat=  -19.3193717277487     
+ TRS: pft_prev=   7.18035845724506      pft_current=   7.18035669368101     
+ TRS: g=       21630 p=          14 i=          30 j=          76
+ TRS: lon=   36.2500000000000      lat=  -19.3193717277487     
+ TRS: pft_prev=   7.98092779772900      pft_current=   7.98091431201467     
+ TRS: g=       21916 p=          14 i=          28 j=          77
+ TRS: lon=   33.7500000000000      lat=  -18.3769633507853     
+ TRS: pft_prev=   11.5671136481443      pft_current=   11.5671110424742     
+ TRS: g=       21917 p=          14 i=          29 j=          77
+ TRS: lon=   35.0000000000000      lat=  -18.3769633507853     
+ TRS: pft_prev=   7.27121726373166      pft_current=   7.27121706487410     
+ TRS: g=       21918 p=          14 i=          30 j=          77
+ TRS: lon=   36.2500000000000      lat=  -18.3769633507853     
+ TRS: pft_prev=   14.2817357391326      pft_current=   14.2817319949631     
+ TRS: g=       22204 p=          14 i=          28 j=          78
+ TRS: lon=   33.7500000000000      lat=  -17.4345549738220     
+ TRS: pft_prev=   5.48228584734313      pft_current=   5.48228586988706     
+ TRS: g=       22205 p=          14 i=          29 j=          78
+ TRS: lon=   35.0000000000000      lat=  -17.4345549738220     
+ TRS: pft_prev=   3.03892747447383      pft_current=   3.03892515919722     
+ TRS: g=       22206 p=          14 i=          30 j=          78
+ TRS: lon=   36.2500000000000      lat=  -17.4345549738220     
+ TRS: pft_prev=   14.2585355637895      pft_current=   14.2585308215280     
+ TRS: g=       22492 p=          14 i=          28 j=          79
+ TRS: lon=   33.7500000000000      lat=  -16.4921465968586     
+ TRS: pft_prev=  0.000000000000000E+000 pft_current=  0.000000000000000E+000
+ TRS: g=       22493 p=          14 i=          29 j=          79
+ TRS: lon=   35.0000000000000      lat=  -16.4921465968586     
+ TRS: pft_prev=   7.67635828282414      pft_current=   7.67635737261794     
+ TRS: g=       22494 p=          14 i=          30 j=          79
+ TRS: lon=   36.2500000000000      lat=  -16.4921465968586     
+ TRS: pft_prev=   19.3584850211624      pft_current=   19.3584796391147     
+
+  These are all the points in the iac grid within 2 degrees of both the
+  target lon and lat (35 degN, -18 degE).  Notice that (a) the prev and
+  current values are all very similar, if not identical, in each point, (b)
+  there are no prev=0, current>0 pairs, which is what we see on the lnd
+  side, and (c) none of the percentages approach the pft_current lnd val of 
+  51.33.  
+
+  So, I don't see how we can interpolate or average some subset of the
+  iac points (above) to get the lnd values (below).
+
+* If you look at the values in lnd_import_export.F90, right after grabbing
+  them from the coupler, you see prev=0, currrent=51.33, just like in my
+  print statement.  So the problem really is in the mapping/coupling, and
+  we aren't overwriting values with a memory error in the lnd code or
+  something.
+
+* I'm going to do a run where we try to find a prev value of 0.0 and and
+  current value of > 0.0 on iac.  That seems like a prerequisite to get
+  values like that in lnd post-coupling.  If we have none of those, then
+  I'll be very confused - how can we get 0 and non-zero interpolated values
+  starting with non-zero values, using the same mapping for both variables?
+
+? Okay, while that's building and running, let's speculate.  Obviously, the
+  mapping could be wrong somehow - the wrong grids in the mapping file?  Or
+  the iac grid could be specified incorrectly internally, so MCT maps the
+  wrong grid points.  Or, our coupling variables get messed up on the iac
+  side some time after the import/export function.
+
+  Here's a thing - it looks like the lnd import_export loops over 0,numpft
+  while extracting the pft-based variables, while in iac import_export, we
+  loop the p index from 1,npft.  So, need to check this - is numpft=16 in
+  lnd, so our pft index is 0-offset and p is 1-offset?  Or, do we have a
+  mismatch between the number of pfts we are sending/recieving on both
+  sides of the coupling?
+
+1/13/2022
+
+* Issue: veg_pp%wtcol(p), calculated in iac2lndMod.F90 c. L192, do not sum
+  to 100%.  This is calculated from the coupled pft values we send over
+  from iac, so something is wrong about the coupling.  The actual failure
+  happens in subgridWeightsMod.F90, in the calculations above L683.
+
+* Here are the key points where we have pft_prev=0 and pft_current>0 in the
+  calculation of veg_pp%wtcol(p) (basically taking our g,pft decomposed
+  percentages coupled from iac and building  patch-indexed weights):
+
+ TRS g=           6 p=         100 pft=          14 wt1=   1.00000000000000     
+ TRS lat=  -18.0000000000001      lon=   35.0000000000000     
+ TRS prev_val=  0.000000000000000E+000 val=   51.3273393132519     
+ TRS interp=  0.000000000000000E+000
+
+ TRS g=           7 p=         117 pft=          14 wt1=   1.00000000000000     
+ TRS lat= -0.947368421052715      lon=   300.000000000000     
+ TRS prev_val=  0.000000000000000E+000 val=  0.100299508791858     
+ TRS interp=  0.000000000000000E+000
+
+ TRS g=           8 p=         134 pft=          14 wt1=   1.00000000000000     
+ TRS lat=   16.1052631578947      lon=   347.500000000000     
+ TRS prev_val=  0.000000000000000E+000 val=   33.0869547982631     
+ TRS interp=  0.000000000000000E+000
+
+ TRS g=          10 p=         168 pft=          14 wt1=   1.00000000000000     
+ TRS lat=   38.8421052631578      lon=   250.000000000000     
+ TRS prev_val=  0.000000000000000E+000 val=  0.835647696229087     
+ TRS interp=  0.000000000000000E+000
+
+  So, this is for the very first sample, so wt1 = 1 (meaning completely
+  weighted towards the prev values).  It just looks wrong to have the
+  prev_val = 0.0 and the current_val greater than 1, sometimes by a lot.
+  So this is my first guess as to why we end up with weights summing to <
+  1.
+
+* As far as I can tell, the iac2lnd mapping is being set up correctly, or
+  at least in a similar way as with other components.  There might still be
+  an issue there, some irregularity in iac that makes following the (e.g.)
+  glc2lnd mapping code structure incorrect, but that seems fairly unlikely.
+
+  So, my current guess is one or more of these problems:
+
+1 The mapping file is incorrect, so we end up not interpolating between the
+  iac and lnd grid correctly.
+
+2 The prev and current values are not being correctly calculated and/or
+  read in on the iac side, which leads to problems post-coupling inside the
+  lnd code.
+
+3 Memory errors modifying values inside of lnd?  Or some kind of weird
+  initialization that corrupts the prev values?
+
+4 The mappings between components we all follow use the flux mapping
+  variables, e.g. Fa2l_foo, whereas between lnd and iac we have things set
+  up as state variables (Sz2l_foo).  It's possible, I guess, that this
+  causes a problem building the mappings?  Or there is some slightly
+  different procedure for building a state based mapping?
+
+* I'm grasping at straws with 4. above - there are state variables being
+  coupled elsewhere, and the ocean even has SFo2a_foo mappings which,
+  presumably means both state and flux variables.  Anyway, I just remember
+  seeing a thing where we were using the flux mappings as some kind of
+  baseline, and Alan added in the state mappings for iac in the same way,
+  and I need to verify that that makes sense.
+
+1/7/2022
+
+* Well, I'm dumb.  Of course we crack the iac2lnd_smapname file to build
+  the mapper_Sz2l, etc - see calls to seq_map_init_rcfile() in
+  prep_lnd_mod.F90 and similarly for other components.  But the 'aream'
+  stuff below is largely correct - we need aream for each component we are
+  going to couple, and then we also build a mapping for each coupling, and
+  some of that information comes from the same place.  So we end up
+  cracking some of our map files twice - once to read in aream for our
+  component, and once to build the mapping.
+
+* So we already have implemented the mapping stuff for z2l in
+  prep_lnd_mod.F90.  We may need to do the same thing for z2a, or maybe
+  it's already in there.  But the main thing is to update the
+  component_init_aream() code.
+
+  Do we need to do the samegrid_lz stuff we see elsewhere?  We'd have to
+  pass in samegrid_lz as an argument, which means updating where we call
+  component_init_aream()...in cime_comp_mod.F90.
+
+! Okay, more stuff - the mapper_Ab2c is always defined in the 'c'
+  component, and we do have complementary maps (mapper_Fa2l and
+  mapper_Fl2a).  So we will need both mapper_Fz2l (defined and assigned in 
+  prep_lnd_mod.F90) and mapper_Fl2z (in prep_iac_mod.F90).
+
+1/6/2022
+
+* Okay, I think I've got this aream thing figured out.  The trick is that
+  we have a default grid, the one we setup the case with - the aream
+  loading then basically works against that default grid.  So we only need
+  to crack open one fmap (or smap) file to get the area_a/b per component.
+  So, e.g., when we are setting up lnd to do the mapping between lnd and
+  air, we only need to crack the fmap_atm2lnd to get the lnd mapping,
+  because atm is on the default grid.  (I think).  
+
+* Anyway, it looks like "area_a" and "area_b" are the mapping areas
+  between components a and b, with the file variable "a2b_fmapname"
+  indicating which is a and which is b.
+
+  So, this is how it works:
+
+* First, in component_init_cc(), we set the aream attribute vector to the
+  area array of the default grid.  We do this for each component, so at
+  this point the areas are all the same and match the default grid.
+
+* Then, in component_init_aream(), we read in the areams from the mapping
+  files for each component that does not match the default grid.  So,
+  pre-iac, we have five sections:
+
+1 if atm and ocean are coupling, then if they are not on the same grid,
+  crack and read aream from the ocn2atm_fmap file, with area_a the ocean
+  and area_b the atmosphere.  I'm not exactly sure why we need both, but
+  this is the only case where we read both area_a and area_b, so my
+  conjecture is that's dilatory - the atm is on the default grid anyway, so
+  area_a will match the aream already in there.  But I don't know.
+
+  if atm and ocean are on the same grid, we skip reading a mapping file and
+  just directly call seq_map_map() to generate mapper_Fa2o.
+
+2 if ice and ocean are coupling, we don't crack any files and just do a
+  straight mapping.  Maybe ice and ocean have to be on the same grid?
+
+  Also, mapper_SFo2i - the same mapping for state and flux calculations?
+  Would we ever have different mappings?
+
+3 If rof and ocean couple and are on different grids, we crack open *two*
+  mapping files, one for liq and one for ice.  But it appears it reads both
+  of these into the rof mapping aream, with only the "string" value
+  different in seq_map_readdata().  Okay, I don't really get this either,
+  but it follows my general suggestion that ocean aream has already been
+  set (either by the default grid aream, or by the atm2ocn_fmap stuff in
+  section 1).
+
+  If rof and ocn are on the same grid, do nothing.  No mapping required?
+
+4 If lnd and atm is present and on different grids, then crack
+  atm2lnd_fmapname and read in the lnd aream, meaning the atm aream is
+  either the default grid or from atm2ocean mapping.
+
+  If atm and lnd on same grid, seq_map_map(mapper_Sa2l,...), using the
+  areams already set (probably by default grid).
+
+5 if lnd and glc and not the same grid, crack and read in aream for glc,
+  using lnd aream already set (default or as per previous couplings).  If
+  same grid, call seq_map_map() on mapper_Sl2g.
+
+* So, while I still have questions, I think we follow the glc model - if
+  lnd and iac, if samegrid generate mapper_Si2l, otherwise crack
+  iac2lnd_smapfile and read area_a into the aream attribute vector.
+
+  This will provide the right iac aream to allow us to later generate the
+  mapper_Fi2a to couple iac with atm model.  We use iac and lnd to decide
+  if we need to crack a file, because we always couple with lnd as well if
+  we are coupling with atm.
+
+  I'll need to dig in to the mapper_S/Fx2x stuff elsewhere - I think the
+  full set of these mappings are generated in the prep_foo_mod.F90 files,
+  during initialization (and maybe at run time if the grid and therefore
+  mappings change, although I don't know if that happens - I thought lnd
+  model had dynamic grid changes (i.e. sea-level changes), but I might just
+  be making that up).
+
+  Look at ~/mapper.out to find where mapper_Xy2z are used and (hopefully)
+  defined and generated.
+
+1/4/2022
+
+* So, the mapping files are set in env_run.xml in the case directory
+  (i.e. ~/zlnd_v2), and we get entries like this:
+
+    <entry id="IAC2LND_SMAPNAME" value="cpl/gridmaps/0.9x1.25/map_0.9x1.25_TO_1.9x2.5_aave.210910.nc">
+      <type>char</type>
+      <desc>iac2lnd state mapping file</desc>
+    </entry>
+    <entry id="IAC2LND_SMAPTYPE" value="X">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <desc>iac2lnd state mapping file decomp type</desc>
+    </entry>
+  
+  This seems to be governed up by
+  .../cime/src/drivers/mct/cime_config/config_component.xml, or maybe is
+  set by default or something somewhere else in the build process.
+
+* Anyway, these mapping files show (e.g.) area_a for the a grid and area_b
+  for the b grid, which are fields that are passed into MCT to calculate
+  the fractions and mappings between the domain boundaries.
+
+* Leaving aside how that file name is passed in, what we need is a mapping
+  between l->z, since they are on different grids (0.9x1.25 vs. 1.9x2.5, in
+  our test case).
+
+  So, I need to revisit all this stuff - figure out how we read area_a/b
+  into the attribute vectors needed to do the mapping, then build in the
+  mapping infrastructure (mct function calls) do actually build this
+  mapping correctly.
+
+12/15/2021
+
+* Okay, with one more change to deallocate topo at the end of the iac run,
+  so we can allocate it again next time, and getting the domain stuff
+  working, I have now successfully run two full timesteps.
+
+  So I'm going to try and see how things get coupled back from lnd to iac,
+  and whether that is happening right.  I suspect it is not - the accum
+  calls for averaging the lnd stuff don't bomb, but I'm not convinced they
+  work correctly.
+
+* Also, Alan has said the z->l coupling didn't work, because the order of
+  operations in cime_run() wasn't right.  After looking at what I've
+  currently got in there, I think I may see the issue - we do, in order,
+  iac setup, lnd setup, iac run, lnd run, iac post, lnd post.  I think we
+  have to wrap up iac setup/run/post before we call lnd setup in order to
+  get the output of iac for this timestep to get through the coupler to the
+  lnd model.
+
+  The problem is the iac is weirdly different than the other components -
+  I think they are fine coupling with the previous timestep, so lnd takes
+  the atm post output from last timestep and doesn't worry about it.  But
+  we can't really do that with iac, because that's a whole year previous -
+  so we have to wrap up everything iac before anything else runs.
+
+* Unless, of course, I don't understand what setup-send/post-recv do - I
+  believe setup-send grabs the stuff it needs *from* the copler, and
+  post-recv sends the output of this time step *to* the coupler.  (The
+  "send" and "recv", therefore, is from the perspective of the coupler - so
+  you send stuff to the component first, then you run, then you receive the
+  stuff from the component afterwards.)
+
+! Huh - it looks like we have calls to prep_lnd_calc_z2x_lx() in *both* the
+  iac post-recv and the lnd setup-send functions!  I don't know where it
+  more appropriate - do we couple every land time step, or only at the end
+  of the iac time step?
+
+* Okay, I think it's obvious we couple all ways on the iac time scale, if
+  possible, so l->z should happen in iac setup-send, while z->l, z->a
+  should happen on iac post-recv.  Hopefully that works and the values from
+  z->x coupling stick around.  If not, then maybe we couple z->x in the x
+  component setup-send, instead.
+
+  Also, perhaps l->z coupling needs to happen on the lnd time scale, if the
+  accum/averaging happens in the coupler.
+
+! So, I need to figure out exactly what the coupler does - does stuff
+  coupled once a year stick around that whole year, and does the coupler do
+  the accum/average?
+
+* Okay, it looks like lnd recv-post calls prep_iac_accum() on its time
+  scale, which makes sense.  So then iac setup should call the averaging
+  function - see how rof and glc accum works wrt to land.  I know the glc
+  averaging has its own alarm setup to do the averaging, but we can simply
+  do it in iac setup-send.
+
+* Right, cime_run_glc_setup_send() checks the glc averaging alarm, and if
+  it's sent, then it calls prep_glc_accum_avg().  So, by comparison, we
+  should always call prep_iac_accum_avg() in cime_run_iac_setup_send(), and
+  call prep_iac_accum() in cime_run_lnd_recv_post() (like we currently do).
+
+12/14/2021
+
+* Figured out the memory issue with domain_read_map() in the mksurfdat
+  stuff.  
+
+  TL;DR: domain_clean frees up domain%ns, so have to store ne=ns before the
+  clean and allocate with ne rather than ns; otherwise you end up
+  allocating an undefined number of elements.
+
+  Apparently, every time you call that function, it reinitialized
+  the domain structure, which involves calling domain_clean() to deallocate
+  everything before you reallocate the space.  The problem comes when you
+  call something like:  
+
+      call domain_init(domain, domain%ns)
+
+  The domain_clean() wipes clean the domain structure...including the %ns
+  variable!  Internally, domain_init(domain,ns) uses ns like a regular
+  variable, but it's actually a pointer back to domain%ns, which means the
+  internal ns variable gets reset after the clean.  If you then use ns as
+  the size of the allocate that follows the clean, you end up allocating an
+  arbitrary number of elements.
+
+  Obviously, then, in domain_init() you should use ne=ns and allocate with
+  ne. 
+
+* I've fixed the allocate(foo(ne),...) stuff, but I still wonder why we
+  have to crack and read the grid file using this domain stuff every time?
+  We actually *are* carrying the domain structure from timestep to
+  timestep, and only deallocate/reallocate when calling read_domain_map()
+  again during the next timestep - so there is no memory savings, all we do
+  is take the time and churn to read the file again for no real reason.
+
+  UNLESS that file changes, like we write out a new grid file between
+  timesteps or something, then there doesn't seem to be a reason to call
+  domain_read_map again - we should just switch on "%set" and only call the
+  domain_read if it is not yet set.
+
+11/30/2021
+
+* Huh.  When I ran with lnd ntasks=64, we crash on a different column
+  (c=30) but same time step 366.  My col=56 prints from this run look like
+  this:
+
+======
+ Beginning timestep   : 2015-01-08_15:00:00
+ TRS Debug2         366          56 -3.825552378243753E-010
+  4.134697279933682E-004  7.551932844945582E-005  6.884084725096922E-005
+  7.310531940145805E-005  1.487689291751433E-002          10
+ TRS Debug2         366          56 -1.434158082969919E-013
+  1.721422719162096E-007  3.751353951305753E-008  4.713990565421693E-007
+  7.310531940145805E-005  1.487689291751433E-002           0
+ CH4 Conservation Error in CH4Mod during diffusion, nstep, c, errch4 (mol /m^2.t
+ imestep)         366          30   2147483648.00000     
+======
+
+  So these values are of the right magnitude, but different than the
+  ntasks=36 runs - which, I'm not sure should be happening.  The
+  decomposition shouldn't affect each column calculation, right?
+
+  Also, of course, we don't have the spurious 7e21 value blowing everything
+  up.  But note that the errch4 value is *exactly* the same in the old c=56
+  as it is in the currentn c=30 runs.
+
+? Do the c=56 values look the same for previous nsteps?
+
+* Okay, this *now* looks like a memory thing, since changing the memory map
+  across multiple nodes changes the answers I'm getting.
+
+11/29/2021
+
+* Digging into the first error we find with a lnd run - stops at nstep 366
+  with c = 56.  The errch4(c) value jumps to 2147483648.00000, which not
+  merely above the 1e-8 tolerance but comically so, which suggests a math
+  or memory error.
+
+  The element of errch4(c) that blows up is ch4_surf_diff(c) at this time
+  step, which goes from order ~1e-9 in the previous time step, to
+  7.359163363910448E+021. 
+
+  (see
+  /compyfs/d3a230/e3sm_scratch/zlnd_v2/run/lnd.log.253888.211129-104902).
+
+* So now I'm printing near line 3436 to see how ch4_surf_diff(c) is
+  calculated for this nstep.
+
+  ...it looks like conc_ch4_rel(c,1) is the term that blows up, from 1e-6
+  to 1e26 in successive calls near line 3436.  Note that we get two
+  printing of nstep 366 and c=56.  The first call everything looks normal,
+  it's for the second call that conc_ch4_rel(c,1) has blown up.  This can't
+  be in the fc loop, because conc_ch4_rel(c,1) hasn't changed inside this
+  loop, so we must be nested inside another loop...
+
+  Here's the relevant printout from the log:
+
+=======
+ Beginning timestep   : 2015-01-08_15:00:00
+ TRS Debug2         366          56 -1.675304498840987E-009
+  6.455042782800097E-003  9.288544559760978E-005  4.599325768290392E-005
+  6.969888586105318E-005  3.387602486391894E-003          10
+ TRS Debug2         366          56  7.359163363910448E+021
+  1.375684987377554E-004  1.069890771714985E+026  8.083328515988145E-007
+  6.969888586105318E-005  3.387602486391894E-003           0
+ CH4 Conservation Error in CH4Mod during diffusion, nstep, c, errch4 (mol /m^2.t
+ imestep)         366          56   2147483648.00000     
+ Latdeg,Londeg=  -33.1578947368422        17.5000000000000     
+=======
+
+  ...and here's the code for the printout:
+
+-------
+       if (c .eq. 56) then 
+          write(iulog,*), 'TRS Debug2', nstep, c,&
+               ch4_surf_diff(c), dm1_zm1(c,1), &
+               conc_ch4_rel(c,1), conc_ch4_rel_old(c,1), &
+               c_atm(g,s), k_h_cc(c,0,s), jwt(c)
+       endif
+-------
+
+
+11/18/2021
+
+* To get to run lnd with multiprocessors, I simply did this:
+
+  ./xmlchange --id "NTASKS_LND" --val 24
+
+  You have to do this (which it will tell you):
+
+  ./case.setup --reset
+  ./case.build --clean-all
+  ./case.build
+
+* I had to fix my code to run in multiproc mode, though - I had been
+  skipping the arrays of NaNs by checking the first value of the array
+  (.ie. isnan(foo(1) ).  But since these were column arrays and we decomp
+  over columns, for all but the first proc "1" is not a valid array index.
+  So I had to change all of these to "foo(begc)".  
+
+* So it now runs with 24 procs, and seems to crash in the same place as
+  before, PhosphorusStateUpdate3Mod.F90, line 162.  We now get eight cores
+  dumped, which show the bomb in the same place.  Of course, running
+  asynchronously, some procs will hit the problem before others, so that's
+  why we don't get 24 cores.  But it does make the logs complicated,
+  because some will show the error and some will simply show where they
+  were when the abort came through.
+
+  You can use gdb to find the problem on each core:
+
+  $ gdb /compyfs/d3a230/e3sm_scratch/zlnd_v2/bld/e3sm.exe core.417493
+  
+  ... then do a 'where' to climb back up the calling three to where the error
+  occured, because the first few levels will be abort and support
+  functions.
+
+  (gdb) where
+  #0  0x00002ac460b09207 in raise () from /lib64/libc.so.6
+  #1  0x00002ac460b0a8f8 in abort () from /lib64/libc.so.6
+  #2  0x000000000571ba41 in for__signal_handler ()
+  #3  <signal handler called>
+  #4  0x0000000002d65fb6 in phosphorusstateupdate3mod::phosphorusstateupdate3 (
+    bounds=<error reading variable: Cannot access memory at address 0x0>, 
+    num_soilc=<error reading variable: Cannot access memory at address 0x0>, 
+    filter_soilc=<error reading variable: Cannot resolve DW_OP_push_object_address for a missing object>, 
+    num_soilp=<error reading variable: Cannot access memory at address 0x0>, 
+    filter_soilp=<error reading variable: Cannot resolve DW_OP_push_object_address for a missing object>, 
+    cnstate_vars=<error reading variable: Cannot access memory at address 0x0>, 
+    phosphorusflux_vars=<error reading variable: Cannot access memory at address 0x0>, 
+    phosphorusstate_vars=<error reading variable: Cannot access memory at address 0x0>)
+    at
+    /qfs/people/d3a230/E3SM_current/components/clm/src/biogeochem/PhosphorusStateUpdate3Mod.F90:162
+
+* You can switch to new core files with:
+
+  (gdb) target core core.417509
+
+* When running in serial mode you can examine variables and stuff, but for
+  some reason these parallel core dumps show this "cannot access memory"
+  errors. 
+
+* Huh, interesting - one of the cores bombs in a different place (core.417509):
+
+  #4  0x0000000001291f42 in balancecheckmod::colwaterbalancecheck (bounds=<error reading variable: Cannot access memory at address 0x0>, 
+    num_do_smb_c=<error reading variable: Cannot access memory at address 0x0>, 
+    filter_do_smb_c=<error reading variable: Cannot resolve DW_OP_push_object_address for a missing object>, 
+    atm2lnd_vars=<error reading variable: Cannot access memory at address 0x0>, 
+    glc2lnd_vars=<error reading variable: Cannot access memory at address 0x0>, 
+    solarabs_vars=<error reading variable: Cannot access memory at address 0x0>, 
+    waterflux_vars=<error reading variable: Cannot access memory at address 0x0>, 
+    waterstate_vars=<error reading variable: Cannot access memory at address 0x0>, 
+    energyflux_vars=<error reading variable: Cannot access memory at address 0x0>, 
+    canopystate_vars=<error reading variable: Cannot access memory at address 0x0>)
+    at /qfs/people/d3a230/E3SM_current/components/clm/src/biogeophys/BalanceCheckMod.F90:657
+
+  This is from the surface energy balance check, during the log write for
+  "sabg", which is weird.
+
+* The log also shows some exiting at BalanceCheckMod.F90 line 695, which is
+  another explicit call to endrun after tthe soil balance error fails.
+  Apparently calls to endrun don't dump a core, so you still have to look
+  at the log.
+
+* Okay, there are a number of places where the code stopped - only the
+  phosphorus and balancecheckmod line 657 dump a core, but I'll examine all
+  the other places.
+
+  e3sm.exe           0000000000902414  accumulmod_mp_pri         221  accumulMod.F90
+  *e3sm.exe           0000000002D65FB6  phosphorusstateup         162  PhosphorusStateUpdate3Mod.F90
+  e3sm.exe           00000000038A20A2  urbanradiationmod         705  UrbanRadiationMod.F90
+  *e3sm.exe           0000000001291F42  balancecheckmod_m         657  BalanceCheckMod.F90
+  e3sm.exe           000000000129AAEC  balancecheckmod_m         694  BalanceCheckMod.F90
+  e3sm.exe           0000000002834E46  firemod_mp_lnfm_i        1812  FireMod.F90
+
+* accumulMod.F90 line 221: a write statement, so not really an error.
+
+* UrbanRadiationMod.F90 line 704 is an endrun call after failing urban net
+  longwave radiation balance error.
+
+* BalanceCheckMod.F90 line 694: endrun after failing soil balance error
+  check. 
+
+* FireMod.F90 line 1812: regular call to shr_strdata_advance(), so probably
+  not really an error.
+
+* Okay, so either we are stopping in the middle when teh abort comes
+  through, or we have a number of endruns() happening after failing various
+  checks.  
+
+* So what this all means, I think, is that we actually have a number of
+  issues at this level - we are failing a number of checks (simultaneously
+  and/or asynchronously), plus we get some math errors that lead to core
+  dumpy crashes.
+
+! Just for fun, I'm going to run in 32 tasks and see what happens.
+
+11/9/2021
+
+* Okay!  The iac_in file in the run directory was *copied* over from Kate,
+  and thus with Alan's mods we need to copy over *his* iac_in from his run
+  directory:
+
+  rundir=$scratchdir/run
+  adir=/compyfs/divi553/e3sm_scratch/zlnd_ldt2/run
+  cp $adir/iac_in $rundir
+
+  I've incorporated this into the latest build instructions.
+
+* So giac.template is never actually called, and iac_in is not generated by
+  the E3SM build process but built *by hand*, right now.  And Alan added a
+  bunch of stuff to the iac_in file, but did not update giac.template to
+  reflect that, but it doesn't matter because giac.template isn't called
+  anyway.  
+
+
+11/9/2021
+
+* Time for another set of instructions on how to clone and build.  Note
+  that the input files we copy over to the run directory will probably
+  change the next time we have to clone anything.
+
+  # Set these to reflect what directories to clone and build into, and what
+  # branches and submodule branches to change to.
+  clone=E3SM_current
+  build=zatm_v2
+  branch=shippert/gcam/active-gcam-debug
+  giac_branch=kvcalvin/working
+  gcam_branch=e3sm-integration
+
+  mkdir $clone
+  git clone git@github.com:E3SM-Project/E3SM.git $clone
+  cd $clone
+  git checkout $branch
+  git submodule update --init --recursive
+
+  cd components/gcam/src
+  git checkout $giac_branch
+  cd iac/gcam
+  git checkout $gcam_branch
+
+  cd ~/$clone/cime/scripts
+
+  ./create_newcase --project e3sm --case ~/$build --compset ZATM --res f19_g16
+
+  cd ~/$build
+
+  ./xmlchange --id "RUN_STARTDATE" --val "2015-01-01"
+  ./xmlchange --id STOP_N --val 1
+  ./xmlchange --id DEBUG --val TRUE
+  ./xmlchange --id NTASKS --val 1
+  ./xmlchange -id "NCPL_BASE_PERIOD" -val "year"
+  ./xmlchange -id "ATM_NCPL" -val 17520
+  ./xmlchange -id "IAC_NCPL" -val 1
+  ./xmlchange -id "STOP_OPTION" -val "nyears"
+  ./xmlchange --id "JOB_WALLCLOCK_TIME" --val 4:00:00
+  ./xmlchange --id "NTASKS_LND" --val 480
+  ./xmlchange --id "NTASKS_ATM" --val 480
+
+  cp ~/zlnd_v2/user_nl_gcam .
+
+  ./case.setup --reset
+  ./case.setup 
+
+  # Modify this to match the new build directory name
+  scratchdir=/compyfs/d3a230/e3sm_scratch/$build
+  rundir=$scratchdir/run
+  kdir=/compyfs/d3x132/e3sm_scratch/zatm
+
+  cp -r $kdir/input $scratchdir
+  cp $kdir/run/log_conf.xml $rundir
+  cp $kdir/run/iac_in $rundir
+  cp $kdir/run/gcamo_base.csv $rundir
+  cp $kdir/run/glm.fut.conf $rundir
+  cp $kdir/run/iESM_Dyn_CropPast.nc $rundir
+  cp $kdir/run/mksurf_landuse_iESM_720x360.nc $rundir
+  cp $kdir/run/restart.* $rundir
+  cp $kdir/run/surfdata_360x720* $rundir
+  cp $kdir/run/surfdata_iESM_dyn.nc $rundir
+
+  adir=/compyfs/divi553/e3sm_scratch/zlnd_ldt2/run
+
+  cp $adir/iESM_Init_CropPast.nc $rundir
+  cp $adir/surfdata_360x720_mcrop_init.nc $rundir
+  cp $adir/landuse.timeseries_0.9x1.25_HIST_simyr2015_c201021.nc $rundir
+  cp $adir/surfdata_360x720_potveg.nc $rundir
+  cp $adir/iac_in $rundir
+  cp $rundir/iESM_Init_CropPast.nc $rundir/iESM_Dyn_CropPast.nc
+  cp $rundir/surfdata_360x720_mcrop_init.nc  $rundir/surfdata_360x720_mcrop_dyn.nc
+  cp $rundir/landuse.timeseries_0.9x1.25_HIST_simyr2015_c201021.nc  $rundir/surfdata_iESM_dyn.nc
+
+  ./case.build --clean-all && ./case.build && ./case.submit
+
+11/8/2021
+
+* Alan's updated instructions for setting up a run with the right
+  initialization files (from email from today).  I've modified it a bit so
+  we can see what is happening:
+
+--------
+  rundir=/compyfs/d3a230/e3sm_scratch/zlnd_v2/run
+  adir=/compyfs/divi553/e3sm_scratch/zlnd_ldt2/run
+
+  cp $adir/iESM_Init_CropPast.nc $rundir
+  cp $adir/surfdata_360x720_mcrop_init.nc $rundir
+  cp $adir/landuse.timeseries_0.9x1.25_HIST_simyr2015_c201021.nc $rundir
+  cp $adir/surfdata_360x720_potveg.nc $rundir
+  cp $rundir/iESM_Init_CropPast.nc $rundir/iESM_Dyn_CropPast.nc
+  cp $rundir/surfdata_360x720_mcrop_init.nc  $rundir/surfdata_360x720_mcrop_dyn.nc
+  cp $rundir/landuse.timeseries_0.9x1.25_HIST_simyr2015_c201021.nc  $rundir/surfdata_iESM_dyn.nc
+--------
+
+  Basically, we want to have actual initialization files, because the
+  dynamic files grow with each run, so if we debug we keep adding to them.
+  They still work, but it's better to start with a clean init each time.
+
+? I don't know if we do this every time we build...
+
+11/5/2021
+
+* Alan's branches:
+
+  E3SM: aldivi/gcam/active-gcam/iac2land_transfer
+  GIAC: aldivi/mksurfdat_update_7oct
+
+  Kate's branch:
+
+  E3SM: kvcalvin/gcam/active-gcam
+
+  My current branch:
+
+  E3SM: shippert/gcam/active-gcam-debug
+
+
+* I *think* you can pull a branch that you are not on without changing
+ 
+ locally, by this:
+
+  git pull origin 
+
+XXXXXXXXXX
+XX Then you can git merge with that branch to do a full merge.
+XXXXXXXXXX
+
+  Nope - it appears that maybe you automatically merge, or maybe there's a
+  git option that does this.  Anyway, there's nothing to it but to make the
+  pull and hope for the best.
+
+* Yeah, the pull automatically merged and committed.  So if you want more
+  control of this, you need to do it in two steps:
+
+  git checkout aldivi/gcam/active-gcam/iac2land_transfer
+  git pull
+  git checkout shippert/active-gcam-debug
+  git merge aldivi/gcam/active-gcam/iac2land_transfer
+
+* If the new branch isn't in there yet, then you may have to pull master
+  first and then do the above (or maybe just go back to your branch and
+  merge). 
+
+10/29/2021
+
+* So I think we are at the point where we are bombing for non-bug reasons -
+  my current theory is that we are not supplying a finidat initialization
+  file, so that leads to the negative flux from the methane model, and that
+  leads to us failing the carbon balance check (we aren't conserving carbon
+  mass from timestep to timestep).  
+
+* Here is what I'm seeing: 
+
+ Beginning timestep   : 2015-01-01_00:00:00
+ --WARNING-- skipping CN balance check for first timestep
+ --WARNING-- skipping CN balance check for first timestep
+    Completed timestep: 2015-01-01_00:00:00
+ Beginning timestep   : 2015-01-01_00:30:00
+ --WARNING-- skipping CN balance check for first timestep
+ Note: sink > source in ch4_tran, sources are changing  quickly relative to diff
+ usion timestep, and/or diffusion is rapid.
+ Latdeg,Londeg=   19.8947368421052        205.000000000000     
+ This typically occurs when there is a larger than normal  diffusive flux.
+ If this occurs frequently, consider reducing land model (or  methane model) tim
+ estep, or reducing the max. sink per timestep in the methane model.
+ Negative conc. in ch4tran. c,j,deficit (mol):        2907           2
+   12.3179796521575     
+ --WARNING-- skipping CN balance check for first timestep
+    Completed timestep: 2015-01-01_00:30:00
+ Beginning timestep   : 2015-01-01_01:00:00
+    Completed timestep: 2015-01-01_01:00:00
+ Beginning timestep   : 2015-01-01_01:30:00
+ column cbalance error =  -2.980232238769531E-007        2907
+ Latdeg,Londeg         =    19.8947368421052        205.000000000000     
+ input                 =   0.000000000000000E+000
+ output                =   5.744097029181580E-007
+ er                    =    386336967.241103        386336967.241101     
+ fire                  =   0.000000000000000E+000
+ hrv_to_atm            =   0.000000000000000E+000
+ hrv_to_prod10         =   0.000000000000000E+000
+ hrv_to_prod100        =   0.000000000000000E+000
+ leach                 =   0.000000000000000E+000
+ begcb                 =   -3756.59607498606     
+ endcb                 =   -386340723.837178       -386334545.774726     
+ delta store           =   -386336967.241103     
+ ENDRUN:
+ ERROR in EcosystemBalanceCheckMod.F90 at line 289                              
+ 
+
+10/27/2021
+
+* Most (or all?) of the NaNs I'm seeing come from the vegetation variables,
+  and from calculating a summary to write out to a history file -
+  otherwise, these variables/structure elements don't seem to be used for
+  anything in the code.
+
+  My conjecture is these are hooks for further development - they get
+  initialized to NaN and then never considered again (at least in this old
+  version of clm).  This would imply that there are a bunch of history
+  files being written with NaNs in the summary fields, but apparently
+  nobody looks at those, either.
+
+* Latest error - still in vegetation calculation, but this time we end up
+  with a negative lw flux in veg_ef%eflx_lwrad_out, which causes the
+  conversion back to temperature in lnd2atm_minimal() (c. line 115 of
+  lnd2atmMod.F90, at the end of the function) to crash, since it takes the
+  fourth root (or sqrt(sqrt(flx)), technically).  
+
+  I'm doing some detailed write statements to find out what is going on -
+  see ~/zlnd_v2/lnd.log.eflx_lwrad_out.analysis.  The tags are this:
+
+    TRS4 - just before the p2g() call for eflux_lwrad_out (other variables
+    	   use this, so I needed a tag to find the pertinent output).
+	   (lnd2atmMod.F90) 
+
+    TRS3 - (subgridAveMod.F90, p2g_1d())
+           variables used in the p2g conversion, for gridcell (g) = 2907,
+           where the negative flux happens.  The columns are:
+
+	   p, c, l, g, parr(p), scale_c2l(c), scale_l2g(l), garr(g), sumwt(g)
+
+	   parr(p) is the veg_nf p-indexed input variable (in this case
+	   veg_nf%eflux_lwrad_out), and garr(g) is the output g-indexed
+	   variable we are building. (Above, garr(g) is the current,
+	   pre-calculation value, before adding in this patch's
+	   contribution.) 
+
+	   garr(g) is set to zero if sumwt(g) is zero, so it resets at
+	   the start of each patch loop.
+
+    TRS5 - the value of garr(g) after the above calculation.
+
+  We iterate over several patches (p) to build up the g-based average, so
+  as the sumwt(g) approaches 1.0 we approach the final value, and at the
+  end that's what's used in the flux->T calculation that's crashing.
+
+* It looks like we do an initialization, then the first time step, then
+  tries another time step.  But!  The problem seems to be in the CN balance
+  check, that they skip for the first timestep.  We end up with a negative
+  flux in the methane model (and maybe elsewhere, but this is where it
+  crashes).  Here's the note in the log:
+
+     Beginning timestep   : 2015-01-01_00:30:00
+     --WARNING-- skipping CN balance check for first timestep
+     Note: sink > source in ch4_tran, sources are changing  quickly relative to diff
+     usion timestep, and/or diffusion is rapid.
+     Latdeg,Londeg=   19.8947368421052        205.000000000000     
+     This typically occurs when there is a larger than normal  diffusive flux.
+     If this occurs frequently, consider reducing land model (or  methane model) tim
+     estep, or reducing the max. sink per timestep in the methane model.
+     Negative conc. in ch4tran. c,j,deficit (mol):        2907           2
+
+* To me, this suggests that we aren't initializing things very well, so
+  that second timestep leads to a too-rapid diffusion and we get a negative
+  flux.  This *might* imply that we need better initialization, or it might
+  just be normal and the (flux)^-4 calculation with a negative flux just
+  leads to an NaN somewhere that nobody cares about, at least in this
+  initial step.
+
+* Okay, so we'll just trap out the flux^-4 calc for flux < 0, and continue on.
+
+10/22/2021
+
+* veg_nf%livestemn_to_litter(p)
+  veg_pf%livestemp_to_litter(p)
+
+  Both set to NaN.
+
+* Other NaNs in dyngrid stuff, and veg_cs% functions - grep for 'TRS'
+  comments.
+
+* lnd2atmMod.F90, line 109, lnd2atm_vars%eflx_lwrad_out_grc(g) is large and
+  negative for g = 2907 (out of 1:5663), value = -146196.658095096.
+
+  The calculation takes the 4th root, so this crashes.
+
+  See the output of :
+  /compyfs/d3a230/e3sm_scratch/zlnd_v2/run/lnd.log.239063.211022-130553
+
+  This comes after a p2g() call, so check veg_ef%eflx_lwrad_out(), which is
+  (possibly) an input to that transformation function.
+
+10/5/2021
+
+* Heh, lots of notes I got to track down somewhere else.
+
+* Kate's current build is in /compyfs/d3x132/zlnd_v2, there's a readme with
+  some configuration information.
+
+* Building Kate's branch:
+
+  mkdir E3SM_current
+  git clone git@github.com:E3SM-Project/E3SM.git E3SM_current
+  cd E3SM_current
+  git checkout kvcalvin/gcam/active-gcam
+  git submodule update --init --recursive
+
+  # Submodule checkout:
+  # giac branch: kvcalvin/working
+  # gcam branch: e3sm-integration
+
+  cd components/gcam/src
+  git checkout kvcalvin/working
+  cd iac/gcam
+  git checkout e3sm-integration
+
+  cd ~/E3SM_current/cime
+
+  ./create_newcase --project e3sm --case ~/zlnd_v2 --compset ZLND --res f19_g16
+
+  cd ~/zlnd_v2
+
+  ./xmlchange --id "RUN_STARTDATE" --val "2015-01-01"
+  ./xmlchange --id STOP_N --val 1
+  ./xmlchange --id DEBUG --val TRUE
+  ./xmlchange --id NTASKS --val 1
+  ./xmlchange -id "NCPL_BASE_PERIOD" -val "year"
+  ./xmlchange -id "IAC_NCPL" -val 1
+  ./xmlchange -id "STOP_OPTION" -val "nyears"
+  ./xmlchange --id "JOB_WALLCLOCK_TIME" --val 4:00:00
+
+  cp /compyfs/d3x132/iac_E3SM_working_Z/user_nl_gcam .
+
+  ./case.setup --reset
+  ./case.setup 
+
+  # Modify this to match the new build directory name
+  scratchdir=/compyfs/d3a230/e3sm_scratch/zlnd_v2
+  rundir=$scratchdir/run
+  cp -r /compyfs/d3x132/e3sm_scratch/zlnd_v2/input $scratchdir
+  cp /compyfs/d3x132/e3sm_scratch/zlnd_v2/run/log_conf.xml $rundir
+  cp /compyfs/d3x132/e3sm_scratch/zlnd_v2/run/iac_in $rundir
+  cp /compyfs/d3x132/e3sm_scratch/zlnd_v2/run/gcamo_base.csv $rundir
+  cp /compyfs/d3x132/e3sm_scratch/zlnd_v2/run/glm.fut.conf $rundir
+  cp /compyfs/d3x132/e3sm_scratch/zlnd_v2/run/iESM_Dyn_CropPast.nc $rundir
+  cp /compyfs/d3x132/e3sm_scratch/zlnd_v2/run/mksurf_landuse_iESM_720x360.nc $rundir
+  cp /compyfs/d3x132/e3sm_scratch/zlnd_v2/run/restart.* $rundir
+  cp /compyfs/d3x132/e3sm_scratch/zlnd_v2/run/surfdata_360x720* $rundir
+  cp /compyfs/d3x132/e3sm_scratch/zlnd_v2/run/surfdata_iESM_dyn.nc $rundir
+
+  ./case.build --clean-all
+  ./case.build 
+  ./case.submit
+
+3/16/2021
+
+* Git merge strategy syntax, for git pull etc.
+
+  git merge -s recursive -Xtheirs # short options
+  git merge --strategy recursive --strategy-option theirs # long options
+
+* Trying to update the e3sm-integration branch for iac/gcam:
+
+  # save definitions.h and wrapper.cpp print changes, and revert
+  # so the pull won't complain
+  git stash 
+
+  # Try to pull the latest branch, and hope their are no merge issues. 
+  git pull origin e3sm-integration
+
+* Sadly, that didn't work, for whatever reason - lots of merge issues.
+  First, reset --hard to get back to my unpulled, unmerged, unfubar'd code,
+  then try a vanila git pull:
+
+  git reset --hard
+  git pull
+
+* Finally, try to use the merge strategy above - hopefully, blast
+  everything I have that conflicts and grab just the latest stuff in the
+  e3sm-integration repo. 
+
+  git reset --hard
+  git pull -s recursive -Xtheirs
+
+3/11/2021
+
+* Okay, so the easiest thing is to just copy over from the E3SM_test
+  directory:
+
+  cd ~/E3SM_gcam_core_submodule/components/gcam/src
+  cp ~/E3SM_test/components/gcam/src/iac/bld/giac.template iac/bld/giac.template 
+  cp ~/E3SM_test/components/gcam/src/iac/bld/iac_glm_namelist_items.txt iac/bld/iac_glm_namelist_items.txt
+  cp ~/E3SM_test/components/gcam/src/iac/coupling/gcam2glm_mod.F90 iac/coupling/gcam2glm_mod.F90 
+  cp ~/E3SM_test/components/gcam/src/iac/coupling/updateannuallanduse_v2.c iac/coupling/updateannuallanduse_v2.c 
+  cp ~/E3SM_test/components/gcam/src/iac/glm/glm.conf iac/glm/glm.conf 
+  cp ~/E3SM_test/components/gcam/src/iac/glm/glm.fut.conf iac/glm/glm.fut.conf 
+  cp ~/E3SM_test/components/gcam/src/iac/glm/glm_future.c iac/glm/glm_future.c 
+
+* The gcam_comp_mod, gcam_var_mod, iac_data_mod, iac_init_mod are my branch
+  changes, so we are simply trying to merge in the giac-update changes that
+  matter - the glm stuff that Alan added that I didn't properly bring over
+  to my compy branch but that I haven't otherwise touched.
+
+* Kate's email from 2/25/21 on errors:
+
+=====
+@Xcall gcam_init_mod
+
+  I can get this to successfully complete with the changes I made + the
+  hardcoding of strings as they go into GCAM. I think if we can null
+  terminate the strings in fortran this problem will be solved without any
+  workarounds. 
+
+@ call gcam2glm_init_mod
+
+  This fails on line 172 of gcam2glm_mod.F90. It looks like it can’t open a
+  netCDF file, but I can’t tell which file or why it won’t open. 
+
+  The solution here is to move everything to namelists rather than the
+  silly cdata structure - so use gcam_var_mod read and set the variables
+  there - mods to gcam2glm
+
+@ call glm_init_mod
+
+  This fails on line 88 of glm_comp_mod.F90. It says “Attempt to use
+  pointer GLMI when it is not associated with a target” 
+
+@ call iac_domain_mct
+
+  This fails on this line “call mct_gGrid_importIAttr(dom_z,"mask"
+  ,idata,lsize)” because it cannot find the attribute “mask” 
+
+@ call iac_export
+
+  I get a bunch of errors here all essentially related to indices being out
+  of range. It does not like that LAT starts at -90 (it wants it to start
+  at 1) or that LON starts at 0 (it wants it to start at 1). I tried
+  offsetting both, but then it gets out of range on the high end (sees
+  index 193 when only defined until 192). Similarly, the statement
+  iac_ctl%lat(g) will fail because g reaches 193 and should stop at
+  192. And, index_z2x_Sz_pct_pft(p) starts at 0 and it wants it to start at
+  1. 
+ 
+3/10/2021
+
+* Here's the output of 'git diff working' when checking out the giac-update
+  branch of gcam-core in the ~/E3SM_test/components/gcam/src directory:
+
+=========
+  [d3a230@compy01 coupling]$ egrep '\+\+\+' *.diff
+  +++ b/.gitmodules
+  +++ b/iac/bld/giac.template
+  +++ b/iac/bld/iac_glm_namelist_items.txt
+  +++ b/iac/coupling/gcam2glm_mod.F90
+  +++ b/iac/coupling/gcam_comp_mod.F90
+  +++ b/iac/coupling/gcam_var_mod.F90
+  +++ b/iac/coupling/iac_data_mod.F90
+  +++ b/iac/coupling/iac_init_mod.F90
+  +++ b/iac/coupling/updateannuallanduse_v2.c
+  +++ b/iac/gcam
+  +++ b/iac/glm/glm.conf
+  +++ b/iac/glm/glm.fut.conf
+  +++ /dev/null
+  +++ /dev/null
+  +++ b/iac/glm/glm_future.c
+=========
+
+* Argh.  This is so hard to keep track of.  But I *think* this means we
+  need to copy the gcam2glm_mod.F90, updateannuallanduse_v2.c,
+  glm_future.c, and the glm comp files from E3SM_test (giac-update branch)
+  to E3SM_gcam_core_submodule (working branch), then commit and push.
+
+* Also, check on the diffs of these others - maybe need the giac.template
+  and iac_glm_namelist_items.txt, too, especially if they don't exist in
+  gcam_core. 
+
+2/10/2021
+
+* Here are the xmlchanges you want to do after newcase for zero level
+  debugging: 
+
+    ./xmlchange --id STOP_N --val 1
+    ./xmlchange --id DEBUG --val TRUE
+    ./xmlchange --id NTASKS --val 1
+
+* So, here are my build instructions for my branch.  Also, check out
+  ~/NOTES.build, for an ever so slightly more generic version, to make it
+  easier to do a bunch of tests:
+
+  mkdir E3SM_test
+  git clone git@github.com:E3SM-Project/E3SM.git E3SM_test
+  cd E3SM_test
+  git checkout shippert/gcam/active-gcam-submod
+  git submodule update --init --recursive
+
+  # Modify definitions.h here if necessary
+  cd cime/scripts
+  ./create_newcase --project e3sm --case ~/iac_E3SM_test_Z --compset Z --res f19_g16
+
+  cd ~/iac_E3SM_test_Z/
+  ./xmlchange --id STOP_N --val 1
+  ./xmlchange --id DEBUG --val TRUE
+  ./xmlchange --id NTASKS --val 1
+  ./case.setup
+  ./case.build 
+
+  ./case.submit
+
+2/3/2021
+
+* Kate's pnnl id is d3x132
+
+  /compyfs/d3x132/gcam-e3sm/cpl/data
+
+  for config files.
+
+12/1/2020
+
+* Man, it's been a frustrating couple of weeks - I can't get the namelist
+  defaults to work, and the compy system is now balking at mpi_bcast.  I'm
+  trying to restrict the number of tasks via:
+
+  ./xmlchange --id NTASKS --val 4
+
+  ...and hopefully that will help setup the right mpi_bcast setup 
+
+* ./pelayout says how things are configured.
+
+* Might need to do stuff like 
+
+  ./xmlchange --id NTASKS_IAC --val 1
+
+  ...etc.
+
+* The reason I'm restricting the ntasks is I'm getting this message:
+
+  MPIR_Bcast_binomial(265)..............: message sizes do not match across processes in the collective routine: Received 98 but expected 4096)
+
+* The former pe layout had 40 tasks for each component, which is excessive,
+  and that adds up to 360 tasks so I don't know where the 98 is coming
+  from.  And I certainly don't know why it expects 4096 - perhaps the IAC
+  bcast I've got setup doesn't have something initialized like it should
+  be. 
+
+! Ah, wait! It's the *message size*, not the number of procs - we are
+  telling it we are sending 4096 bits but only sending 98.  I've got
+  something initialized wrong.
+
+11/10/2020
+
+* Email from Alan way back when:
+
+============
+
+  The land grid is defined in the mksurfout_init namelist file.
+  This file is an existing dynamic land surface file that is used as a
+  template for updating with the annually calculated land cover. 
+
+  I just generated land surface files for 0.9x1.25 to create the new
+  mksurfout_init file (on Compy), as I found a note in my giac branch that
+  this file needs to be updated. So far I have just put this file on compy,
+  but I will eventually put it on NERSC and Blues as well:
+  /compyfs/inputdata/iac/giac/glm2iac/landuse.timeseries_0.9x1.25_template_simyr2015-2100_c201021.nc
+  I am designating a future file in case the years matter (it looks there
+  used to be different files for the historical and future). I also created
+  the historical files. This future file has been renamed as a template
+  from the ssp5rcp85 scenario that was used to create it. 
+
+  I am not sure how the grid used to be read in, as the new file includes
+  only the cell centers, and not the edges (the old files included
+  both). The dimensions are uniform (0.9424084 in lat and 1.25 in lon), but
+  at the poles there are half cells in the lat dimension. The relevant
+  variables that you are looking for (if I recall correctly) are: AREA -
+  grid cell area in km^2 LANDFRAC_PFT - fraction of grid cell that is land
+  PFTDATA_MASK - land mask LATIXY - center lat of grid cell LONGXY - center
+  lon of grid cell 
+
+  It looks like any finite-element grid (e.g., 0.9x1.25, 0.5x0.5) has these
+  variables indexed by lat and lon, but the spectral grids (e.g., ne30np4)
+  have these indexed by land grid cell. iESM currently supports the lat-lon
+  grid indexing, but not the spectral grid indexing.
+============ 
+
+11/3/2020
+
+* .../E3SM_gcam_core_submodule/components/gcam/bld/namelist_files
+
+8/21/2020
+
+* Aha, found the documentation for the version of Totalview (2017) on   Compy:
+
+  https://docs.roguewave.com/totalview/2017.3/pdfs/TotalView_for_HPC_User_Guide.pdf
+
+* Basically, in .case.run.sh:
+
+  module load totalview   totalview srun -a <...>
+
+  The trick is the -a in the right place, not -args before or not some   other syntax, which you find in the documentation for newer (or at least   different) versions of totalview.  To tell the truth, this documentation   doesn't even get it right (it wants -args srun), but this -a after worked   for something like the SGI machines, so I tried it, and it finally seems   to start things up correctly.
+
+8/19/2020 13:29:33 PDT
+
+* So, Kate mentioned in the phonecall that the standard we need for gcam is   -std=c++14, which explains a couple of the errors I've been seeing.
+
+  But I can confirm that if the compile line goes -std=c++14 -std=gnu99, we   have problems, whereas if it goes -std=gnu99 -std=c++14 we are fine   (although we still have warnings about deprecated calls, etc.)
+
+* In configure_compilers.xml, we see CFLAGS set to -std=gnu99 and CXXFLAGS   set to -std=c++14, but I can see in the compile line that c++ flags come   first - apparently when you build the compile line you use  $(CXXFLAGS)   $(CFLAGS) in that order somewhere.
+
+* The issue here is that updateannuallanduse.c in gcam is straight C, and   may need the gnu99 standard.  So I may not be able to overwrite the   CFLAGS -std call to use c++14 without breaking that piece of code.  We'll   see.
+
+* Simply modifying config_compilers.xml didn't work - I may have to   case.setup to get the build MAkefiles right - there's a Macros.make file   in the build directory that was probably made by case.setup.
+
+  Of course, the Tools/Makefile has CXXFLAGS+=$(CFLAGS), so when building a   c++ we tack the CFLAGS on the end.  Instead, we should make:
+
+  CXXFLAGS := $(CFLAGS) $(CXXFLAGS)
+
+  ...to prepend.
+
+! Huh.  Well, when modifing config_compilers.xml, I had to actually   *remove* Macros.make before calling case.setup again in order to get the   right CXXFLAGS.  Whatever, it should work now.
+
+8/19/2020
+
+* From Kate:
+
+  Here are the modules and libraries that work with GCAM on compy.
+
+  Modules:     module purge      module load intel/19.0.3 mvapich2/2.3.1 netcdf/4.6.3 pnetcdf/1.9.0 mkl/2019u3
+
+  Libraries:
+
+  boost: /qfs/people/crai556/boost_intel_19.0.3   xerces: /qfs/people/crai556/xerces_intel_19.0.3
+
+* Excellent - all those compiler mods are already set up for compy in   config_machines.xml.  I just need to modify buildlib to load boost and   xerces correctly.
+
+  Also, .../cime/scripts/Tools/Makefile to point XDIR to the libs for xerces
+
+8/18/2020
+
+* Once again, for compy:
+
+  mkdir E3SM_gcam_core_submodule
+  git clone git@github.com:E3SM-Project/E3SM.git E3SM_gcam_core_submodule
+  cd E3SM_gcam_core_submodule/
+  git checkout shippert/gcam/active-gcam-submod
+  git submodule update --init --recursive
+
+  cd cime/scripts
+  ./create_newcase --project e3sm --case ~/iac_ZLND_test --compset Z --res f19_g16
+
+  cd ~/iac_ZLND_test/
+  ./case.setup
+  ./case.build 
+
+* If you do the submodule update *before* checking out the branch, you get   a bunch of git errors, probably because master has a ton of new   submodules that muck up everything.  I think they've moved CIME and other   stuff in to a submod.  Whatever, just do this in order.
+
+* Note, you need --project e3sm in create_newcase - that is new.
+
+* Once again, you have to modify:
+
+    .../components/gcam/src/iac/gcam/cvs/objects/util/base/include/definitions.h
+
+  so that HAVE_JAVA and USE_HECTOR are 0.
+
+8/10/2020
+
+* salloc -N 4 -t 30:00 -p acme-small -A condo
+
+  This now seems to be giving me some problems allocating - fairly long   delays.  I don't know if that's something new, or if I got lucky in the   past, or what.  Is there an interactive queue on anvil?  Go ahead and try   -p interactive and see...
+
+  Well, no interactive, but it might be in an maintenance mode.  Let me   just try to run regularly without a salloc call and see.
+
+* Um, I really have no notes about where to change acme to acme-small?   Sheesh.  Apparently I modify env_batch.xml to replace acme with   acme-small.
+
+* And, I'm right, the maintenance mode means my job is submitted, but not   accepted - that's why the salloc didn't work just now.
+
+* Worried about the X11 lag - the DMF is much worse, for whatever reason,   but I still see a minute delay to pop up an xterm.
+
+6/10/2020
+
+* By default, E3SM builds with -DNDEBUG command line option to the   compilers, whcih turns off assert() functions.  But when you specify the   DEBUG=TRUE E3SM build option (in the .xml files), it turns off -DNDEBUG,   which is why building a debug version of es3m.exe suddenly found all   these problems with assert()s in gcam.
+
+  Kate says that there are a ton of assert() functions throughout e3sm that   are obsolete - the problems I found were all because of obsolete variable   names, either because they'e been superceded or renamed something else.   They got around this legacy problem by simply always compiling with   -DNDEBUG - otherwise, they are going to have to clean up all their   assert() calls.
+
+  The DEBUG=TRUE E3SM build option basically turns on -g -O0 - and there is   no reason why this should be incompatible with -DNDEBUG, which is   actually a C/C++ standard used by assert.h to void out assert() calls if   set. 
+
+  So, it is my claim that having E3SM turn off NDEBUG if DEBUG is set is   incorrect - they can coexist peacefully (i.e. -g -O0 -DNDEBUG is   perfectly valid and functional).  I kludged the Tools/Makefile to always   set -DNDEBUG in CPPDEFS no matter what, but realistically it should be   allowed in it's own E3SM build options.  I tried setting it using   xmlchange, but that won't me set an environment variable that's not   already defined, so we'd have to modify the schema or something.
+
+* Anyway, right now my kludged solution has let me build a debugging   version of e3sm.exe with asserts all turned off.  So, yay for me.
+
+6/9/2020
+
+* So, this is weird - I suddenly cannot compile gcam anymore.
+
+* Acutal error:
+
+  /blues/gpfs/home/ac.shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/util/base/source/calibrate_resource_visitor.cpp(152): error: class "SubRenewableResource" has no member "gdpSupplyElasticity"
+
+  calibrate_resource_visitor.cpp is the only place a straight   "gdpSupplyElasticity" is used without some kind of prefix; it's in an   assert that it is 0.
+
+* Conjecture: this came about because I ran xmlchange to change to DEBUG and   also to change NTASKS - I think the latter forced a ./case.build   --clean-all and maybe another thing, and that may have forced a   recheckout of the repo, with the faulty calibrate_resource_visitor.cpp file.
+
+* I don't have any notes below on dealing with this, but when originally   building gcam I had to hide a number of standalone files and some others   for use with gcam builds in different contexts.  So my conjecture is that   I originally hid this file, and the checkout brought it back.  But I   don't know...
+
+* The other possibility is that moving to ac.shippert has messed soemthing   up in buildlib and it's compiling wrong.  Or something.
+
+* Anyway, my current solution is to hide this offending source file.  If   that doesn't work, maybe remove the offending assert?
+
+  I checked out a whole new build into ~/iac_ZLND_debug, but the native   build failed in the same way, even without any xmlchange mods.
+
+* So, removing the assert worked, as did removing the file altogether...at   least, they both lead to this failure in   /land_allocator/source/land_leaf.cpp, line 207:
+
+    assert( mCarbonContentCalc.get() );
+
+  ...which gets me:
+
+    /blues/gpfs/home/ac.shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/land_allocator/source/land_leaf.cpp(207):     error: expression must have class type 
+
+  Yeah, I don't know.  So I commented out *that* assert, as well...
+
+* Now this:
+
+  /blues/gpfs/home/ac.shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/containers/source/scenario.cpp(190): error: identifier "world" is undefined   /blues/gpfs/home/ac.shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/containers/source/scenario.cpp(200): error: identifier "modeltime" is undefined   gmake: *** [scenario.o] Error 2   /blues/gpfs/home/ac.shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/sectors/source/sector.cpp(389): error: identifier "subsec" is undefined   /blues/gpfs/home/ac.shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/sectors/source/sector.cpp(404): error: identifier "subsec" is undefined
+
+
+6/3/2020
+
+* config_compilers.xml for compiler options.  Probably somewhere in   config_machines.xml for machine specific options.
+
+5/22/2020
+
+* Some links to help runnign and debugging:
+
+1 https://acme-climate.atlassian.net/wiki/spaces/ED/pages/98992379/Anvil+-+ACME+s+dedicated+nodes+hosted+on+Blues 2 https://www.lcrc.anl.gov/for-users/using-lcrc/running-jobs/running-jobs-on-blues/
+
+* To make an interactive session, use salloc (from 2, above).  
+
+* The idea seems to be to use ./preview_run to help, and to modify some of   the .sh scripts to start up totalview.  Or, it could be to run totalview   withe e3sm.exe executable, after setting up a salloc, and calling from   there.  Time to review the NERSC doc, below (5/11/2020).
+
 5/13/2020
 
 * Ah, I think I know how to set environment variables - it's hidden in the   xml stuff, which you modify with ./xmlchange:

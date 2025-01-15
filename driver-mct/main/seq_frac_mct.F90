@@ -414,7 +414,30 @@ iamroot = seq_comm_iamroot(CPLID)
        lSize = mct_aVect_lSize(dom_z%data)
        call mct_aVect_init(fractions_z,rList=fraclist_z,lsize=lsize)
        call mct_aVect_zero(fractions_z)
-       fractions_z%rAttr(:,:) = 1.0_r8
+
+       kz = mct_aVect_indexRA(fractions_z,"zfrac",perrWith=subName)
+       kf = mct_aVect_indexRA(dom_z%data ,"frac" ,perrWith=subName)
+
+       ! these iac domain fractions are 1, as the z2a data
+       !   represent the whole grid cell
+       fractions_z%rAttr(kz,:) = dom_z%data%rAttr(kf,:)
+
+       ! this checks out correct with all 1 values
+       !if (iamroot) write(logunit,"('(seq_frac_check) ',a,2g26.18)") ' z domain fractions_z zfrac min/max     =',&
+       !   minval(fractions_z%rAttr(kz,:)),maxval(fractions_z%rAttr(kz,:))
+    
+       if (atm_present) then
+          mapper_z2a => prep_atm_get_mapper_Fz2a()
+          mapper_a2z => prep_iac_get_mapper_Sa2z()
+          call seq_map_map(mapper_z2a, fractions_z, fractions_a, &
+                           fldlist='zfrac', norm=.false.)
+          ! use the a2z mapper to get the atm fracs into fractions_z
+          if (associated(mapper_a2z)) then
+             call seq_map_map(mapper_a2z, fractions_a, fractions_z, &
+                  fldlist='afrac', norm=.false.)
+          endif
+       endif
+
     end if
 
     ! Initialize fractions on ice grid/decomp (initialize ice fraction to zero)

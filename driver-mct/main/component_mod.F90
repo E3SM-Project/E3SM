@@ -578,9 +578,12 @@ contains
        endif
     endif
 
-    if (lnd_present .and. iac_present) then
-       if (samegrid_zl) then
-          dom_s  => component_get_dom_cx(lnd(1))   !dom_lx
+    ! currently lnd and atm must be present if iac is present
+    ! this is based on the atm because iac domain is defined
+    !    in relation to the atmosphere, not the land
+    if (atm_present .and. iac_present) then
+       if (samegrid_az) then
+          dom_s  => component_get_dom_cx(atm(1))   !dom_ax
           dom_d  => component_get_dom_cx(iac(1))   !dom_zx
 
           call seq_map_map(mapper_Sa2z, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream')

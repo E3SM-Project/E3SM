@@ -199,6 +199,11 @@ contains
        atm2lnd_vars%supply_grc(g) = x2l(index_x2l_Flrr_supply,i)
        atm2lnd_vars%deficit_grc(g) = x2l(index_x2l_Flrr_deficit,i)
 
+       if (index_x2l_Sr_h2orof /= 0) then
+         atm2lnd_vars%h2orof_grc(g)      = x2l(index_x2l_Sr_h2orof,i)
+         atm2lnd_vars%frac_h2orof_grc(g) = x2l(index_x2l_Sr_frac_h2orof,i)
+       endif
+
        ! Determine required receive fields
 
 #ifdef CPL_BYPASS
@@ -1339,20 +1344,13 @@ contains
        ! land), even though the coupler pct labels are still present
 
        if (iac_active) then
+
           do num = 0,numpft
              iac2lnd_vars%frac_pft(g,num) = x2l(index_x2l_Sz_pct_pft(num),i)
              iac2lnd_vars%frac_pft_prev(g,num) = x2l(index_x2l_Sz_pct_pft_prev(num),i)
              if (num < numharvest) then
                 iac2lnd_vars%harvest_frac(g,num) = x2l(index_x2l_Sz_harvest_frac(num),i)
              end if
-
-!avd
-!if (iac2lnd_vars%pct_pft_prev(g,num) /= 0.) then 
-!   write(iulog,*) 'lnd_import g=',g,' pft=', num, ' val=', iac2lnd_vars%pct_pft(g,num), &
-!       ' prev_val=', iac2lnd_vars%pct_pft_prev(g,num)
-!end if
-
-
           end do
         endif
 
@@ -1472,6 +1470,11 @@ contains
        l2x(index_l2x_Flrl_Tqsub,i)  = lnd2atm_vars%Tqsub_grc(g)
        l2x(index_l2x_coszen_str,i) = lnd2atm_vars%coszen_str(g)
        l2x(index_l2x_Flrl_wslake,i) = lnd2atm_vars%wslake_grc(g)/dtime
+
+       if (index_l2x_Flrl_inundinf /= 0) then
+          l2x(index_l2x_Flrl_inundinf,i) = lnd2atm_vars%qflx_h2orof_drain_grc(g)
+       endif
+       
        ! glc coupling
 
        if (create_glacier_mec_landunit) then

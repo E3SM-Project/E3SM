@@ -134,7 +134,7 @@ contains
          lnd_gnam=lnd_gnam,             &
          rof_gnam=rof_gnam,             &
          glc_gnam=glc_gnam,             &
-         iac_gnam=iac_gnam
+         iac_gnam=iac_gnam)
 
     allocate(mapper_Sa2l)
     allocate(mapper_Fa2l)

@@ -395,4 +395,170 @@ contains
     end associate
   end subroutine dynSubgrid_wrapup_weight_changes
 
+ !-----------------------------------------------------------------------
+  subroutine dyn_iac_init(bounds)
+    !
+    ! !DESCRIPTION:
+    ! Initialize data structures for harvest information and check pft #s
+    ! Copies initial weights into iac weight array
+    ! This should be called once, during model initialization.
+    ! !USES:
+    use dynHarvestMod   , only : harvest_rates, num_harvest_vars
+    use dynHarvestMod   , only : do_cn_harvest
+    use elm_varpar     , only : numpft, maxpatch_pft
+    use abortutils          , only : endrun
+    !
+    ! !ARGUMENTS:
+    type(bounds_type), intent(in) :: bounds           ! proc-level bounds
+    !
+    ! !LOCAL VARIABLES:
+    integer :: ier        ! error code
+    integer :: p
+
+    character(len=*), parameter :: subname = 'dyn_iac_init'
+  !-----------------------------------------------------------------------
+
+    SHR_ASSERT_ALL(bounds%level == BOUNDS_LEVEL_PROC, subname // &
+                     ': argument must be PROC-level bounds')
+
+    ! TRS
+    ! We need to allocate if do_harvest = .false., befause then
+    ! dynHarvest_ini() has not been called but we still need
+    ! harvest_rates.  Should we switch on do_harvest == .false.?
+    if (.not. get_do_harvest()) then
+       allocate(harvest_rates(num_harvest_vars,bounds%begg:bounds%endg),stat=ier)
+       if (ier /= 0) then
+          call endrun(msg=' allocation error for harvest'//errMsg(__FILE__, &
+                          __LINE__))
+       end if
+
+       harvest_rates(:,:) = 0._r8
+    end if
+
+    if ( maxpatch_pft /= numpft+1 ) then
+       call endrun(msg=' maxpatch_pft does NOT equal numpft+1'// &
+                   ' -- this is invalid for dynamic PFT case'// &
+                   'for dynamic PFT case'// &
+                   errMsg(__FILE__, __LINE__) )
+    end if
+
+    ! set the cn harveset flag
+    do_cn_harvest = .true.
+
+    ! fill the iac weights with initial values
+    ! so that dynsubgrid_wrapup_weight_changes works in init
+    do p = bounds%begp, bounds%endp
+       veg_pp%wtgcell_iac(p) = veg_pp%wtgcell(p)
+    end do
+
+  end subroutine dyn_iac_init
+
+  !-----------------------------------------------------------------------
+  subroutine set_iac_veg_weights(bounds)
+    !
+    ! !DESCRIPTION:
+    ! Set veg_pp weights from veg_pp%wtgcell_iac
+    ! The wtcol value sums need to be normalized to 1
+    ! This is called after all other weights have been updated,
+    !    and before checks, if the iac is active
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    implicit none
+    type(bounds_type), intent(in) :: bounds  ! clump bounds
+    !
+    ! !LOCAL VARIABLES:
+    integer :: p, c, l, t, g      ! indices for pft, col, lu, topo, gcell
+    real(r8), allocatable :: sumwtcol(:), sumwtlunit(:), sumwttopounit(:), &
+                             sumwtgcell(:)
+    character(len=*), parameter :: subname = 'set_iac_veg_weights'
+    logical :: weights_equal_1
+    real(r8), parameter :: tolerance = 1.e-12_r8  ! tolerance for weight sums
+  !-----------------------------------------------------------------------
+
+    allocate(sumwtcol(bounds%begc:bounds%endc))
+    sumwtcol(bounds%begc : bounds%endc) = 0._r8
+    allocate(sumwtlunit(bounds%begl:bounds%endl))
+    sumwtlunit(bounds%begl : bounds%endl) = 0._r8
+    allocate(sumwttopounit(bounds%begt:bounds%endt))
+    sumwttopounit(bounds%begt : bounds%endt) = 0._r8
+    allocate(sumwtgcell(bounds%begg:bounds%endg))
+    sumwtgcell(bounds%begg : bounds%endg) = 0._r8
+
+    ! First calc the wtcol and sum the values
+    ! fill bare pft value if col wtgcell is zero
+    ! calculate the higher order wts
+    do p = bounds%begp, bounds%endp
+       c = veg_pp%column(p)
+       l = veg_pp%landunit(p)
+       t = veg_pp%topounit(p)
+       g = veg_pp%gridcell(p)
+       if (col_pp%wtgcell(c) .eq. 0._r8) then
+          !write(iulog,*) subname//'setting wtcol to zero' // &
+           !              'for p, c, l, g ', p,c,l,g
+          if (veg_pp%itype(p) .eq. 0) then
+             veg_pp%wtcol(p) = 1._r8
+          else
+             veg_pp%wtcol(p) = 0._r8
+          end if
+       else
+          veg_pp%wtcol(p) = veg_pp%wtgcell_iac(p) / col_pp%wtgcell(c)
+       end if
+       veg_pp%wtlunit(p)    = veg_pp%wtcol(p) * col_pp%wtlunit(c)
+       veg_pp%wttopounit(p) = veg_pp%wtcol(p) * col_pp%wttopounit(c)
+       veg_pp%wtgcell(p)    = veg_pp%wtcol(p) * col_pp%wtgcell(c)
+       ! get the sums for normalizing below
+       sumwtcol(c) = sumwtcol(c) + veg_pp%wtcol(p)
+       !sumwtlunit(l) = sumwtlunit(l) + veg_pp%wtlunit(p)
+       !sumwttopounit(t) = sumwttopounit(t) + veg_pp%wttopounit(p)
+       !sumwtgcell(g) = sumwtgcell(g) + veg_pp%wtgcell(p)
+    end do
+
+    ! Normalize the wtcol if necessary and recalc higher order weights
+    do c = bounds%begc,bounds%endc
+       weights_equal_1 = (abs(sumwtcol(c) - 1._r8) <= tolerance)
+       if (.not.weights_equal_1) then
+          !write(iulog,*) subname//'weights not equal 1, sumwtcol = ', &
+                !           sumwtcol(c), 'c= ', c
+          do p = bounds%begp, bounds%endp
+             if (veg_pp%column(p) .eq. c) then
+                if (sumwtcol(c) .eq. 0._r8) then
+                   write(iulog,*) subname//'setting wtcol to zero'// &
+                                  'for p, c, l, g ', p,c,l,g
+                   veg_pp%wtcol(p) = 0._r8
+                else
+                   veg_pp%wtcol(p) = veg_pp%wtcol(p) / sumwtcol(c)
+                end if
+                veg_pp%wtlunit(p)    = veg_pp%wtcol(p) * col_pp%wtlunit(c)
+                veg_pp%wttopounit(p) = veg_pp%wtcol(p) * col_pp%wttopounit(c)
+                veg_pp%wtgcell(p)    = veg_pp%wtcol(p) * col_pp%wtgcell(c)
+
+
+                ! get the higher order sums
+                !l = veg_pp%landunit(p)
+                !t = veg_pp%topounit(p)
+                !g = veg_pp%gridcell(p)
+                !sumwtlunit(l) = sumwtlunit(l) + veg_pp%wtlunit(p)
+                !sumwttopounit(t) = sumwttopounit(t) + veg_pp%wttopounit(p)
+                !sumwtgcell(g) = sumwtgcell(g) + veg_pp%wtgcell(p)
+
+             end if
+          end do
+       end if
+    end do
+
+    ! Normalize the wtlunit if necessary and recalc higher order weights
+
+    ! Normalize the wttopounit if necessary and recalc higher order weights
+
+    ! Normalize the wtgcell if necessary and recalc higher order weights
+
+    deallocate(sumwtcol)
+    deallocate(sumwtlunit)
+    deallocate(sumwttopounit)
+    deallocate(sumwtgcell)
+
+  endsubroutine set_iac_veg_weights
+
 end module dynSubgridDriverMod
