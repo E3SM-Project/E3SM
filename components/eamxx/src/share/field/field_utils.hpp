@@ -11,16 +11,18 @@ inline bool views_are_equal(const Field& f1, const Field& f2, const ekat::Comm* 
   EKAT_REQUIRE_MSG (f1.data_type()==f2.data_type(),
       "Error! Views have different data types.\n");
 
+  bool ret = false;
   switch (f1.data_type()) {
     case DataType::IntType:
-      return impl::views_are_equal<const int>(f1,f2,comm);
+      ret = impl::views_are_equal<const int>(f1,f2,comm); break;
     case DataType::FloatType:
-      return impl::views_are_equal<const float>(f1,f2,comm);
+      ret = impl::views_are_equal<const float>(f1,f2,comm); break;
     case DataType::DoubleType:
-      return impl::views_are_equal<const double>(f1,f2,comm);
+      ret = impl::views_are_equal<const double>(f1,f2,comm); break;
     default:
       EKAT_ERROR_MSG ("Error! Unrecognized field data type.\n");
   }
+  return ret;
 }
 
 template<typename Engine, typename PDF>

@@ -29,10 +29,6 @@ std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
 TEST_CASE("horiz_avg") {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
-  using TeamPolicy = Kokkos::TeamPolicy<Field::device_t::execution_space>;
-  using TeamMember = typename TeamPolicy::member_type;
-  using KT         = ekat::KokkosTypes<DefaultDevice>;
-  using ESU        = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
 
   // A numerical tolerance
   auto tol = std::numeric_limits<Real>::epsilon() * 100;
