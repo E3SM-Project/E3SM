@@ -60,6 +60,8 @@ public:
     FieldIdentifier fid (name(), lt, units, grid_name);
     m_diagnostic_output = Field(fid);
     m_diagnostic_output.allocate_view();
+    // For backward compatibility, for now, just make the single output the first item in the map
+    m_diagnostic_fields[name()] = m_diagnostic_output;
     m_one = m_diagnostic_output.clone("one");
     m_one.deep_copy(1.0);
   }

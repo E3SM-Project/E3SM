@@ -53,9 +53,11 @@ void NumberPathDiagnostic::set_grids(
   add_field<Required>(m_nname, scalar3d, 1 / kg, grid_name);
 
   // Construct and allocate the diagnostic field
-  FieldIdentifier fid(m_kind + "NumberPath", scalar2d, kg/(kg*m2), grid_name);
+  FieldIdentifier fid(m_kind+name(), scalar2d, kg/(kg*m2), grid_name);
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
+  // For backward compatibility, for now, just make the single output the first item in the map
+  m_diagnostic_fields[m_kind+name()] = m_diagnostic_output;
 }
 
 void NumberPathDiagnostic::compute_diagnostic_impl() {

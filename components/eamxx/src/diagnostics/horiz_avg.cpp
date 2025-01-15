@@ -49,6 +49,8 @@ void HorizAvgDiag::initialize_impl(const RunType /*run_type*/) {
                         fid.get_units(), fid.get_grid_name());
   m_diagnostic_output = Field(d_fid);
   m_diagnostic_output.allocate_view();
+  // For backward compatibility, for now, just make the single output the first item in the map
+  m_diagnostic_fields[m_diag_name] = m_diagnostic_output;
 
   // scale the area field
   auto total_area = field_sum<Real>(m_scaled_area, &m_comm);

@@ -45,6 +45,8 @@ void DryStaticEnergyDiagnostic::set_grids(const std::shared_ptr<const GridsManag
   auto& C_ap = m_diagnostic_output.get_header().get_alloc_properties();
   C_ap.request_allocation(ps);
   m_diagnostic_output.allocate_view();
+  // For backward compatibility, for now, just make the single output the first item in the map
+  m_diagnostic_fields[name()] = m_diagnostic_output;
 
   // Initialize a 2d view of dz to be used in compute_diagnostic
   const auto npacks     = ekat::npack<Pack>(m_num_levs);

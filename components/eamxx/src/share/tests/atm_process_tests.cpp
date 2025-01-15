@@ -120,6 +120,8 @@ public:
     FieldIdentifier fid (name(), lt, K, m_grid_name);
     m_diagnostic_output = Field(fid);
     m_diagnostic_output.allocate_view();
+    // For backward compatibility, for now, just make the single output the first item in the map
+    m_diagnostic_fields[name()] = m_diagnostic_output;
   }
 protected:
   void compute_diagnostic_impl () {
@@ -150,6 +152,8 @@ public:
     FieldIdentifier fid (name(), lt, K, m_grid_name);
     m_diagnostic_output = Field(fid);
     m_diagnostic_output.allocate_view();
+    // For backward compatibility, for now, just make the single output the first item in the map
+    m_diagnostic_fields[name()] = m_diagnostic_output;
   }
 protected:
   void compute_diagnostic_impl () {
@@ -186,6 +190,8 @@ public:
     FieldIdentifier fid (name(), lt, K, m_grid_name);
     m_diagnostic_output = Field(fid);
     m_diagnostic_output.allocate_view();
+    // For backward compatibility, for now, just make the single output the first item in the map
+    m_diagnostic_fields[name()] = m_diagnostic_output;
   }
 
 protected:

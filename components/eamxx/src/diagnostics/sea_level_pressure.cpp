@@ -40,6 +40,8 @@ void SeaLevelPressureDiagnostic::set_grids(const std::shared_ptr<const GridsMana
   auto& C_ap = m_diagnostic_output.get_header().get_alloc_properties();
   C_ap.request_allocation();
   m_diagnostic_output.allocate_view();
+  // For backward compatibility, for now, just make the single output the first item in the map
+  m_diagnostic_fields[name()] = m_diagnostic_output;
 }
 // =========================================================================================
 void SeaLevelPressureDiagnostic::compute_diagnostic_impl()

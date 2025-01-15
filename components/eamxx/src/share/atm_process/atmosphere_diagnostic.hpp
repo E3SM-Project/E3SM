@@ -50,6 +50,8 @@ public:
 
   // Getting the diagnostic output
   Field get_diagnostic () const;
+  // Overload it with a name for backward compatibility
+  Field get_diagnostic (const std::string &output_name) const;
 
   // Allows the diagnostic to save some start-of-step quantity (e.g., in case
   // we need to compute tendencies, or accumulated stuff)
@@ -74,7 +76,10 @@ protected:
   double m_dt;
 
   // Diagnostics are meant to return a field
+  // For backward compatibility, keep m_diagnostic_output
+  // Even thought, we are going to be saving fields the map going forward
   Field m_diagnostic_output;
+  std::map<std::string, Field> m_diagnostic_fields;
 };
 
 // A short name for the factory for atmosphere diagnostics

@@ -31,9 +31,11 @@ set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   add_field<Required>("horiz_winds", vector3d, Pa, grid_name);
 
   // Construct and allocate the 3d wind_speed field
-  FieldIdentifier fid ("wind_speed", scalar3d, m/s, grid_name);
+  FieldIdentifier fid (name(), scalar3d, m/s, grid_name);
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
+  // For backward compatibility, for now, just make the single output the first item in the map
+  m_diagnostic_fields[name()] = m_diagnostic_output;
 }
 
 void WindSpeed::compute_diagnostic_impl()

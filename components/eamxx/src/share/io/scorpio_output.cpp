@@ -1268,7 +1268,7 @@ compute_diagnostic(const std::string& name, const bool allow_invalid_fields)
     for (auto f : diag->get_fields_in()) {
       if (not f.get_header().get_tracking().get_time_stamp().is_valid()) {
         // Fill diag with invalid data and return
-        diag->get_diagnostic().deep_copy(m_fill_value);
+        diag->get_diagnostic(name).deep_copy(m_fill_value);
         return;
       }
     }
@@ -1280,7 +1280,7 @@ compute_diagnostic(const std::string& name, const bool allow_invalid_fields)
   // The diag may have failed to compute (e.g., t=0 output with a flux-like diag).
   // If we're allowing invalid fields, then we should simply set diag=m_fill_value
   if (allow_invalid_fields) {
-    auto d = diag->get_diagnostic();
+    auto d = diag->get_diagnostic(name);
     if (not d.get_header().get_tracking().get_time_stamp().is_valid()) {
       d.deep_copy(m_fill_value);
     }
@@ -1302,7 +1302,7 @@ get_field(const std::string& name, const std::string& mode) const
     return field_mgr->get_field(name);
   } else if (m_diagnostics.find(name) != m_diagnostics.end() && can_be_diag) {
     const auto& diag = m_diagnostics.at(name);
-    return diag->get_diagnostic();
+    return diag->get_diagnostic(name);
   } else {
     EKAT_ERROR_MSG ("ERROR::AtmosphereOutput::get_field Field " + name + " not found in " + mode + " field manager or diagnostics list.");
   }
@@ -1317,7 +1317,7 @@ void AtmosphereOutput::set_diagnostics()
   for (auto& fname : m_fields_names) {
     if (!sim_field_mgr->has_field(fname)) {
       auto diag = create_diagnostic(fname);
-      auto diag_fname = diag->get_diagnostic().name();
+      auto diag_fname = diag->get_diagnostic(fname).name();
       m_diagnostics[diag_fname] = diag;
 
       // Note: the diag field may have a name different from what was used
@@ -1374,7 +1374,7 @@ AtmosphereOutput::create_diagnostic (const std::string& diag_field_name)
 
   // If specified, set avg_cnt tracking for this diagnostic.
   if (m_track_avg_cnt) {
-    const auto diag_field = diag->get_diagnostic();
+    const auto diag_field = diag->get_diagnostic(diag_field_name);
     const auto name       = diag_field.name();
     m_field_to_avg_cnt_suffix.emplace(name,diag_avg_cnt_name);
   }
