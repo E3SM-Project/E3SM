@@ -56,9 +56,12 @@ TEST_CASE ("data_interpolation_setup")
       scorpio::define_var(fname+suffix,"s3d_i",{"ncol",ilev},        "real", true);
       scorpio::define_var(fname+suffix,"v3d_i",{"ncol","dim2",ilev}, "real", true);
 
-      // We keep p1d and p3d NOT time-dep
+      // We keep p1d, p2d, p3d, hyam, and hybm as NOT time-dep
       scorpio::define_var(fname+suffix,"p1d",  {"lev"},"real", false);
+      scorpio::define_var(fname+suffix,"p2d",  {"ncol"},"real", false);
       scorpio::define_var(fname+suffix,"p3d",  {"ncol","lev"},"real", false);
+      scorpio::define_var(fname+suffix,"hyam", {"lev"},"real", false);
+      scorpio::define_var(fname+suffix,"hybm", {"lev"},"real", false);
 
       scorpio::enddef(fname+suffix);
     }
@@ -81,14 +84,22 @@ TEST_CASE ("data_interpolation_setup")
     //   - two to be used for linear-hystory interp
     util::TimeStamp time = get_first_slice_time ();
 
-    // We keep p1d and p3d NOT time-dep, so we write outside the loop
-    auto p1d = base_fields.back();
+    // We keep pressures fields NOT time-dep, so we write outside the loop. Also write hyam/hybm here
+    auto p1d = base_fields[6];
     auto p3d = base_fields[2].alias("p3d");
+    auto p2d = base_fields[0].alias("p2d");
+    auto hybm = p1d.alias("hybm");
+    auto hyam = hybm.clone("hyam");
     p1d.sync_to_host();
+    p2d.sync_to_host();
     p3d.sync_to_host();
+    hyam.deep_copy(0); hyam.sync_to_host();
     for (const std::string& fname : files) {
       scorpio::write_var(fname+suffix,p1d.name(),p1d.get_internal_view_data<Real,Host>());
+      scorpio::write_var(fname+suffix,p2d.name(),p2d.get_internal_view_data<Real,Host>());
       scorpio::write_var(fname+suffix,p3d.name(),p3d.get_internal_view_data<Real,Host>());
+      scorpio::write_var(fname+suffix,hybm.name(),hybm.get_internal_view_data<Real,Host>());
+      scorpio::write_var(fname+suffix,hyam.name(),hyam.get_internal_view_data<Real,Host>());
     }
 
     int nfields = fields.size() - 1; // Don't handle p1d, since it's done above

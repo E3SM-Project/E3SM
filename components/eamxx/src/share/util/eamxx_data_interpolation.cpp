@@ -6,6 +6,7 @@
 #include "share/io/scream_scorpio_interface.hpp"
 #include "share/io/scream_io_utils.hpp"
 #include "share/util/scream_universal_constants.hpp"
+#include "physics/share/physics_constants.hpp"
 
 #include <filesystem>
 #include <fstream>
@@ -59,7 +60,8 @@ void DataInterpolation::run (const util::TimeStamp& ts)
     out.deep_copy(beg);
     out.update(end,alpha,1-alpha);
   }
-  // For Dynamic3D profile we also need to compute the source pressure profile
+
+  // For Dynamic3D/Dynamic3D profile we also need to compute the source pressure profile
   // NOTE: this can't be done in the loop above, since src_p is not a "remapped"
   //       field in the vertical remapper (also, we need to use ad different ptr)
   if (m_vr_type==Dynamic3D) {
@@ -67,9 +69,46 @@ void DataInterpolation::run (const util::TimeStamp& ts)
     const auto p_beg = m_horiz_remapper_beg->get_tgt_field(m_nfields);
     const auto p_end = m_horiz_remapper_end->get_tgt_field(m_nfields);
 
-    auto p = m_vremap->get_source_pressure(true); // mid or int doesn't matter
+    auto p = m_helper_pressure_fields["src_p"];
     p.deep_copy(p_beg);
     p.update(p_end,alpha,1-alpha);
+  } else if (m_vr_type==Dynamic3DRef) {
+    // The surface pressure field is THE LAST registered in the horiz remappers
+    const auto ps_beg = m_horiz_remapper_beg->get_tgt_field(m_nfields);
+    const auto ps_end = m_horiz_remapper_end->get_tgt_field(m_nfields);
+
+    auto p  = m_helper_pressure_fields["src_p"];
+    auto ps = m_helper_pressure_fields["p_data"];
+    ps.deep_copy(ps_beg);
+    ps.update(ps_end,alpha,1-alpha);
+
+    // Reconstruct reference p from ps, hyam, and hybm
+    using KT = KokkosTypes<DefaultDevice>;
+    using ExeSpace = typename KT::ExeSpace;
+    using MemberType = typename KT::MemberType;
+    using ESU = ekat::ExeSpaceUtils<ExeSpace>;
+    using C = scream::physics::Constants<Real>;
+    using PT = ekat::Pack<Real,SCREAM_PACK_SIZE>;
+
+    auto ps_v = ps.get_view<const Real*>();
+    auto p_v  = p.get_view<PT**>();
+    auto hyam = m_vert_remapper->get_src_grid()->get_geometry_data("hyam").get_view<const PT*>();
+    auto hybm = m_vert_remapper->get_src_grid()->get_geometry_data("hybm").get_view<const PT*>();
+
+    constexpr auto P0 = C::P0;
+
+    const int ncols = ps_v.extent(0);
+    const int num_vert_packs = p_v.extent(1);
+    const auto policy = ESU::get_default_team_policy(ncols, num_vert_packs);
+
+    Kokkos::parallel_for("spa_compute_p_src_loop", policy,
+      KOKKOS_LAMBDA (const MemberType& team) {
+      const int icol = team.league_rank();
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team,num_vert_packs),
+                           [&](const int k) {
+        p_v(icol,k) = ps_v(icol) * hybm(k)  + P0 * hyam(k);
+      });
+    });
   }
   
   m_vert_remapper->remap_fwd();
@@ -94,7 +133,7 @@ update_end_fields ()
     fields.push_back(m_horiz_remapper_end->get_src_field(i));
   }
 
-  if (m_vr_type==Dynamic3D) {
+  if (m_vr_type==Dynamic3D or m_vr_type==Dynamic3DRef) {
     // We also need to read the src pressure profile
     fields.push_back(m_horiz_remapper_end->get_src_field(m_nfields));
   }
@@ -276,6 +315,7 @@ setup_remappers (const std::string& hremap_filename,
   int nlevs_data = get_input_files_dimlen ("lev");
   grid_after_hremap->reset_num_vertical_lev(nlevs_data);
 
+  std::shared_ptr<VerticalRemapper> vremap;
   if (hremap_filename!="") {
     m_horiz_remapper_beg = std::make_shared<RefiningRemapperP2P>(grid_after_hremap,hremap_filename);
     m_horiz_remapper_end = std::make_shared<RefiningRemapperP2P>(grid_after_hremap,hremap_filename);
@@ -306,10 +346,49 @@ setup_remappers (const std::string& hremap_filename,
       }
     };
 
-    m_vert_remapper = m_vremap = std::make_shared<VerticalRemapper>(grid_after_hremap,m_model_grid);
-    m_vremap->set_extrapolation_type(s2et(extrap_type_top),VerticalRemapper::Top);
-    m_vremap->set_extrapolation_type(s2et(extrap_type_bot),VerticalRemapper::Bot);
-    m_vremap->set_mask_value(mask_value);
+    auto vremap = std::make_shared<VerticalRemapper>(grid_after_hremap,m_model_grid);
+    
+    vremap->set_extrapolation_type(s2et(extrap_type_top),VerticalRemapper::Top);
+    vremap->set_extrapolation_type(s2et(extrap_type_bot),VerticalRemapper::Bot);
+    vremap->set_mask_value(mask_value);
+
+    // Setup vertical pressure profiles (which can add 1 extra field to hremap)
+    // This MUST be done before registering in vremap, since register_field_from_tgt
+    // REQUIRES to have source pressure profiles set BEFORE.
+
+    auto p_layout = vr_type==Static1D ? grid_after_hremap->get_vertical_layout(true)
+                                      : grid_after_hremap->get_3d_scalar_layout(true);
+    auto& src_p = m_helper_pressure_fields ["src_p"];
+    src_p = Field (FieldIdentifier("src_p",p_layout,ekat::units::Pa,grid_after_hremap->name()));
+    src_p.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
+    src_p.allocate_view();
+    if (vr_type==Dynamic3D) {
+      // We load a full 3d profile, so p_data IS src_p
+      m_helper_pressure_fields ["p_data"] = src_p.alias(data_pname);
+    } else if (vr_type==Dynamic3DRef) {
+      // We load the surface pressure, and reconstruct src_p via p=ps*hybm(k) + p0*hyam(k)
+      auto& ps = m_helper_pressure_fields ["p_data"];
+      ps = Field(FieldIdentifier(data_pname,grid_after_hremap->get_2d_scalar_layout(),ekat::units::Pa,grid_after_hremap->name()));
+      ps.allocate_view();
+
+      // We need to reconstruct the 3d pressure from ps, hybm, and hyam.
+      // We read and store hyam/hybm in the vremap src grid
+      auto layout = grid_after_hremap->get_vertical_layout(true);
+      auto nondim = ekat::units::Units::nondimensional();
+      DataType real_t = DataType::RealType;
+      auto hyam = grid_after_hremap->create_geometry_data("hyam",layout,nondim,real_t,SCREAM_PACK_SIZE);
+      auto hybm = grid_after_hremap->create_geometry_data("hybm",layout,nondim,real_t,SCREAM_PACK_SIZE);
+      AtmosphereInput hvcoord_reader (m_time_database.files.front(),grid_after_hremap,{hyam,hybm},true);
+      hvcoord_reader.read_variables();
+    } else if (vr_type==Static1D) {
+      // Can load p now, since it's static
+      AtmosphereInput src_p_reader (m_time_database.files.front(),grid_after_hremap,{src_p.alias(data_pname)},true);
+      src_p_reader.read_variables();
+    }
+    vremap->set_source_pressure (m_helper_pressure_fields["src_p"],VerticalRemapper::Both);
+    vremap->set_target_pressure (model_pmid,model_pint);
+
+    m_vert_remapper = vremap;
   } else {
     // If no vert remap is requested, model_grid and grid_after_hremap MUST have same nlevs
     int model_nlevs = m_model_grid->get_num_vertical_levels();
@@ -318,36 +397,6 @@ setup_remappers (const std::string& hremap_filename,
         " - model grid num vert levels: " + std::to_string(model_nlevs) + "\n"
         " - input data num vert levels: " + std::to_string(nlevs_data) + "\n");
     m_vert_remapper = std::make_shared<IDR>(grid_after_hremap,SAT);
-  }
-
-  // Setup vertical pressure profiles (which can add 1 extra field to hremap)
-  // This MUST be done before registering in vremap, since register_field_from_tgt
-  // REQUIRES to have source pressure profiles set BEFORE.
-  Field data_p;
-  if (vr_type==Dynamic3D) {
-    // We also need to load and remap the pressure from the input files
-    auto hr_tgt_grid = m_horiz_remapper_beg->get_tgt_grid();
-    auto p_layout = hr_tgt_grid->get_3d_scalar_layout(true);
-    data_p = Field (FieldIdentifier(data_pname,p_layout,ekat::units::Pa,hr_tgt_grid->name()));
-    data_p.allocate_view();
-
-    m_vremap->set_source_pressure (data_p,VerticalRemapper::Both);
-    m_vremap->set_target_pressure (model_pmid,model_pint);
-  } else if (vr_type==Static1D) {
-    auto hr_tgt_grid = m_horiz_remapper_beg->get_tgt_grid();
-    auto p_layout = hr_tgt_grid->get_vertical_layout(true);
-    data_p = Field (FieldIdentifier(data_pname,p_layout,ekat::units::Pa,hr_tgt_grid->name()));
-    data_p.allocate_view();
-
-    // Use raw scorpio to read this var, since it's not decomposed. Use any file, since it's static
-    auto filename = m_time_database.files.front();
-    scorpio::register_file(filename,scorpio::Read);
-    scorpio::read_var(filename,data_pname,data_p.get_internal_view_data<Real,Host>());
-    scorpio::release_file(filename);
-    data_p.sync_to_dev();
-
-    m_vremap->set_source_pressure (data_p,VerticalRemapper::Both);
-    m_vremap->set_target_pressure (model_pmid,model_pint);
   }
   m_vr_type = vr_type;
 
@@ -365,9 +414,10 @@ setup_remappers (const std::string& hremap_filename,
     m_horiz_remapper_beg->register_field_from_tgt(f.clone());
     m_horiz_remapper_end->register_field_from_tgt(f.clone());
   }
-  if (vr_type==Dynamic3D) {
-    m_horiz_remapper_beg->register_field_from_tgt(data_p.clone());
-    m_horiz_remapper_end->register_field_from_tgt(data_p.clone());
+  if (vr_type==Dynamic3D or vr_type==Dynamic3DRef) {
+    const auto& data_p = m_helper_pressure_fields["p_data"];
+    m_horiz_remapper_beg->register_field_from_tgt(data_p.clone(data_pname));
+    m_horiz_remapper_end->register_field_from_tgt(data_p.clone(data_pname));
   }
   m_horiz_remapper_beg->registration_ends();
   m_horiz_remapper_end->registration_ends();
