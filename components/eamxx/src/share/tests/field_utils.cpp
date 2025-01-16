@@ -126,17 +126,25 @@ TEST_CASE("utils") {
     REQUIRE(field_sum<Real>(f1,&comm)==gsum);
   }
 
+  // The following two functions are used in both horiz_contraction and
+  // vert_contraction below
+  auto sum_n    = [](int n) { return n * (n + 1) / 2; };
+  auto sum_n_sq = [](int n) { return n * (n + 1) * (2 * n + 1) / 6; };
+
   SECTION("horiz_contraction") {
     // A numerical tolerance
+    // Accumulations in the Kokkos threaded reductions may be done in a
+    // different order than the manual ones below, so we can only test
+    // correctness up to a tolerance
     auto tol = std::numeric_limits<Real>::epsilon() * 100;
 
     using RPDF  = std::uniform_real_distribution<Real>;
     auto engine = setup_random_test();
     RPDF pdf(0, 1);
 
-    int dim0 = 9;
+    int dim0 = 129;
     int dim1 = 4;
-    int dim2 = 7;
+    int dim2 = 17;
 
     // Set a weight field
     FieldIdentifier f00("f", {{COL}, {dim0}}, m / s, "g");
@@ -146,8 +154,7 @@ TEST_CASE("utils") {
     auto v00 = field00.get_strided_view<Real *, Host>();
     for(int i = 0; i < dim0; ++i) {
       // By design, denominator is the sum of the first dim0 integers
-      // (analytically known)
-      v00(i) = sp(i + 1) / sp(dim0 * (dim0 + 1) / 2);
+      v00(i) = sp(i + 1) / sp(sum_n(dim0));
     }
     field00.sync_to_dev();
 
@@ -201,10 +208,8 @@ TEST_CASE("utils") {
     result.sync_to_host();
     auto v = result.get_view<Real, Host>();
     // The numerator is the sum of the squares of the first dim0 integers
-    // (analytically known). The denominator is the sum of the first dim0
-    // integers squared (analytically known)
-    Real wavg = sp(dim0 * (dim0 + 1) * (2 * dim0 + 1) / 6) /
-                sp((dim0 * (dim0 + 1) / 2) * (dim0 * (dim0 + 1) / 2));
+    // The denominator is the sum of the first dim0 integers squared
+    Real wavg = sp(sum_n_sq(dim0)) / sp(sum_n(dim0) * sum_n(dim0));
     REQUIRE_THAT(v(), Catch::Matchers::WithinRel(wavg, tol));
 
     // Test higher-order cases
@@ -249,6 +254,9 @@ TEST_CASE("utils") {
 
   SECTION("vert_contraction") {
     // A numerical tolerance
+    // Accumulations in the Kokkos threaded reductions may be done in a
+    // different order than the manual ones below, so we can only test
+    // correctness up to a tolerance
     auto tol = std::numeric_limits<Real>::epsilon() * 100;
 
     std::vector<FieldTag> lev_tags = {LEV, ILEV};
@@ -258,10 +266,10 @@ TEST_CASE("utils") {
       auto engine = setup_random_test();
       RPDF pdf(0, 1);
 
-      int dim0 = 8;
+      int dim0 = 18;
       int dim1 = 9;
       // Note that parallel reduction is happening over dim2 (LEV/ILEV)
-      int dim2 = lev_tag == LEV ? 5 : 6;
+      int dim2 = lev_tag == LEV ? 225 : 226;
 
       // Set a weight field
       FieldIdentifier f00("f", {{lev_tag}, {dim2}}, m / s, "g");
@@ -272,7 +280,7 @@ TEST_CASE("utils") {
       for(int i = 0; i < dim2; ++i) {
         // The denominator is the sum of the first dim2 integers (analytically
         // known)
-        v00(i) = sp(i + 1) / sp(dim2 * (dim2 + 1) / 2);
+        v00(i) = sp(i + 1) / sp(sum_n(dim2));
       }
       field00.sync_to_dev();
 
@@ -340,8 +348,7 @@ TEST_CASE("utils") {
       // The numerator is the sum of the squares of the first dim2 integers
       // (analytically known). The denominator is the sum of the first dim2
       // integers squared (analytically known)
-      Real havg = sp(dim2 * (dim2 + 1) * (2 * dim2 + 1) / 6) /
-                  sp((dim2 * (dim2 + 1) / 2) * (dim2 * (dim2 + 1) / 2));
+      Real havg = sp(sum_n_sq(dim2)) / sp(sum_n(dim2) * sum_n(dim2));
       REQUIRE_THAT(v(), Catch::Matchers::WithinRel(havg, tol));
 
       // Test higher-order cases
