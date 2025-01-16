@@ -3105,7 +3105,7 @@ unset MPIR_CVAR_CH4_POSIX_COLL_SELECTION_TUNING_JSON_FILE
 
         <env name="FI_CXI_DEFAULT_CQ_SIZE">131072</env>
         <env name="FI_CXI_CQ_FILL_PERCENT">20</env>
-        <env name="FI_PROVIDER">cxi</env>
+        <!--<env name="FI_PROVIDER">cxi</env>-->
         <env name="FI_MR_CACHE_MONITOR">disabled</env>
         <env name="FI_CXI_OVFLOW_BUF_SIZE">8388608</env>
 
