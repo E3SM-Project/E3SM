@@ -758,11 +758,25 @@ contains
           ! this code was moved from prep_rof_ocn_moab, because we will do everything on coupler side, not
           ! needed to be on joint comm anymore for the second hop
 
+           
           type_grid = 3 ! this is type of grid, maybe should be saved on imoab app ?
           call moab_map_init_rcfile(mbrxid, mboxid, mbintxro, type_grid, &
                'seq_maps.rc', 'rof2ocn_liq_rmapname:', 'rof2ocn_liq_rmaptype:',samegrid_ro, &
                'scalar_r2o'//C_NULL_CHAR, 'mapper_Rr2o_liq moab initialization',esmf_map_flag)
 
+          ! need to compute coverage of rof over ocean, and comm graph for sending from rof to rof over ocean
+          ierr = iMOAB_ComputeCoverageMesh( mbrxid, mboxid, mbintxro )
+          if (ierr .ne. 0) then
+              write(logunit,*) subname,' error in compute coverage mesh rof for ocean'
+              call shr_sys_abort(subname//' ERROR in compute coverage mesh rof for ocean ')
+          endif
+
+          ierr = iMOAB_ComputeCommGraph( mbrxid, mbintxro, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type_grid, &
+             type_grid, rof(1)%cplcompid, rmapid )
+          if (ierr .ne. 0) then
+              write(logunit,*) subname,' error in compute graph rof - rof cov for ocean'
+              call shr_sys_abort(subname//' ERROR in compute graph rof - rof cov for ocean ')
+         endif
          !  it read on the coupler side, from file, the scrip mosart, that has a full mesh;
          !  also migrate rof mesh on coupler pes, in ocean context, mbrxoid (this will be like coverage mesh,
          !    it will cover ocean target per process)
@@ -856,7 +870,8 @@ contains
             mapper_Rr2o_liq%tgt_mbid = mboxid ! this is special, it will really need this coverage type mesh
             mapper_Rr2o_liq%intx_mbid = mbintxro
             mapper_Rr2o_liq%src_context = rof(1)%cplcompid
-            mapper_Rr2o_liq%intx_context = ocn(1)%cplcompid ! this context was used in migrate mesh
+            !mapper_Rr2o_liq%intx_context = ocn(1)%cplcompid ! this context was used in migrate mesh
+            mapper_Rr2o_liq%intx_context = rmapid ! read map is the same context as intersection now
             mapper_Rr2o_liq%weight_identifier = 'scalar_r2o'//C_NULL_CHAR
             mapper_Rr2o_liq%mbname = 'mapper_Rr2o_liq'
             ! mapper_Rr2o_liq%read_map = .true.
@@ -884,7 +899,8 @@ contains
             mapper_Rr2o_ice%tgt_mbid = mboxid ! special
             mapper_Rr2o_ice%intx_mbid = mbintxro
             mapper_Rr2o_ice%src_context = rof(1)%cplcompid
-            mapper_Rr2o_ice%intx_context = ocn(1)%cplcompid ! this context was used in migrate mesh
+            !mapper_Rr2o_ice%intx_context = ocn(1)%cplcompid ! this context was used in migrate mesh
+            mapper_Rr2o_ice%intx_context = rmapid ! read map is the same context as intersection now
             mapper_Rr2o_ice%weight_identifier = 'scalar_r2o'//C_NULL_CHAR
             mapper_Rr2o_ice%mbname = 'mapper_Rr2o_ice'
             ! mapper_Rr2o_ice%read_map = .true.
@@ -909,7 +925,8 @@ contains
                mapper_Fr2o%tgt_mbid = mboxid ! special
                mapper_Fr2o%intx_mbid = mbintxro
                mapper_Fr2o%src_context = rof(1)%cplcompid
-               mapper_Fr2o%intx_context = ocn(1)%cplcompid ! this context was used in migrate mesh
+               !mapper_Fr2o%intx_context = ocn(1)%cplcompid ! this context was used in migrate mesh
+               mapper_Fr2o%intx_context = rmapid ! read map is the same context as intersection now
                mapper_Fr2o%weight_identifier = 'scalar_r2o'//C_NULL_CHAR
                mapper_Fr2o%mbname = 'mapper_Fr2o'
 #endif
