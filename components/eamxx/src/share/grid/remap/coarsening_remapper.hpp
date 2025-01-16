@@ -51,7 +51,7 @@ public:
 
 protected:
 
-  void do_bind_field (const int ifield, const field_type& src, const field_type& tgt) override;
+  void do_register_field (Field& src, Field& tgt) override;
 
   void do_remap_fwd () override;
 

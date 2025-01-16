@@ -139,7 +139,7 @@ TEST_CASE("dyn_grid_io")
     fp.deep_copy(-1.0);
   }
   dyn2ctrl->registration_ends();
-  dyn2ctrl->remap(true);
+  dyn2ctrl->remap_fwd();
 
   // Now try to write all fields to file from the dyn grid fm
   // Note: add MPI ranks to filename, to allow MPI tests to run in parallel

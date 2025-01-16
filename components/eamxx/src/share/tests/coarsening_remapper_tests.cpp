@@ -360,7 +360,7 @@ TEST_CASE("coarsening_remap")
   };
   for (int irun=0; irun<5; ++irun) {
     root_print (" -> Run " + std::to_string(irun) + "\n",comm);
-    remap->remap(true);
+    remap->remap_fwd();
 
     // Recall, tgt gid K should be the avg of local src_gids
     for (size_t ifield=0; ifield<tgt_f.size(); ++ifield) {

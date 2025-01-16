@@ -226,8 +226,8 @@ TEST_CASE ("refining_remapper") {
   r->registration_ends();
 
   // Run remap
-  CHECK_THROWS (r->remap(false)); // No backward remap
-  r->remap(true);
+  CHECK_THROWS (r->remap_bwd()); // No backward remap
+  r->remap_fwd();
 
   // Gather global copies (to make checks easier) and check src/tgt fields
   auto gs2d_src = all_gather_field(s2d_src,comm);

@@ -270,10 +270,6 @@ public:
   //    - both views are allocated (if not, allocating one won't be reflected on the other)
   //    - both fields have the same header
   //    - both fields have the same views
-  // We need to SFINAE on RhsRT, cause this==&rhs only works if the
-  // two are the same. And we do want to check this==&rhs for the
-  // same type, since if we didn't, f.equivalent(f) would return false
-  // if f is not allocated...
   bool equivalent (const Field& rhs) const;
 
   // ---- Setters and non-const methods ---- //

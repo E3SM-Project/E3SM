@@ -58,7 +58,7 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
     }
     registration_ends();
     if (get_num_fields()>0) {
-      remap(true);
+      remap_fwd();
 
       // The remap phase only alters the fields on device.
       // We need to sync them to host as well
@@ -84,10 +84,13 @@ CoarseningRemapper::
 }
 
 void CoarseningRemapper::
-do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
+do_register_field (Field& src, Field& tgt)
 {
+  // src/tgt just got added to m_src_fields/m_tgt_fields, so they're the last ones
+  const int field_idx = m_src_fields.size()-1;
+
   // Assume no mask tracking for this field. Can correct below
-  m_field_idx_to_mask_idx[ifield] = -1;
+  m_field_idx_to_mask_idx[field_idx] = -1;
 
   if (m_track_mask) {
     if (src.get_header().has_extra_data("mask_data")) {
@@ -96,9 +99,7 @@ do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
           "Error! Field " + src.name() + " stores a mask field but not a mask value.\n");
       const auto& src_mask_val = src.get_header().get_extra_data<Real>("mask_value");
 
-      Field tgt_copy = tgt;
-
-      auto& tgt_hdr = tgt_copy.get_header();
+      auto& tgt_hdr = tgt.get_header();
       if (tgt_hdr.has_extra_data("mask_value")) {
         const auto& tgt_mask_val = tgt_hdr.get_extra_data<Real>("mask_value");
 
@@ -122,16 +123,27 @@ do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
           "  - mask field name: " + src_mask.name() + "\n");
 
       const auto tgt_mask_fid = create_tgt_fid(src_mask_fid);
-      if (not has_src_field (src_mask_fid)) {
+      int mask_idx = -1;
+      for (int i=0; i<m_num_fields; ++i) {
+        if (m_src_fields[i].get_header().get_identifier()==src_mask_fid) {
+          mask_idx = i;
+          break;
+        }
+      }
+
+      if (mask_idx==-1) {
         Field tgt_mask(tgt_mask_fid);
         tgt_mask.get_header().get_alloc_properties().request_allocation(src_mask.get_header().get_alloc_properties().get_largest_pack_size());
         tgt_mask.allocate_view();
         register_field(src_mask,tgt_mask);
+
+        // Note: the call to register_field above will have appended the mask to m_src_fields,
+        //       so mask_idx is NOT the same as field_idx
+        mask_idx = m_src_fields.size()-1;
       }
 
       // Store position of the mask for this field
-      const int mask_idx = find_field(src_mask_fid,tgt_mask_fid);
-      m_field_idx_to_mask_idx[ifield] = mask_idx;
+      m_field_idx_to_mask_idx[field_idx] = mask_idx;
 
       // Check that the mask field has the correct layout
       const auto& f_lt = src.get_header().get_identifier().get_layout();
@@ -149,7 +161,6 @@ do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
           "  - mask layout: " + m_lt.to_string() + "\n");
     }
   }
-  HorizInterpRemapperBase::do_bind_field(ifield,src,tgt);
 }
 
 void CoarseningRemapper::do_remap_fwd ()
@@ -581,11 +592,15 @@ void CoarseningRemapper::pack_and_send ()
   const auto pid_lid_start = m_send_pid_lids_start;
   const auto lids_pids = m_send_lids_pids;
   const auto buf = m_send_buffer;
+  constexpr auto COL = FieldTag::Column;
 
   for (int ifield=0; ifield<m_num_fields; ++ifield) {
     const auto& f  = m_ov_fields[ifield];
     const auto& fl = f.get_header().get_identifier().get_layout();
     const auto f_pid_offsets = ekat::subview(m_send_f_pid_offsets,ifield);
+
+    if (not fl.has_tag(COL))
+      continue; // Not a field to coarsen
 
     switch (fl.rank()) {
       case 1:

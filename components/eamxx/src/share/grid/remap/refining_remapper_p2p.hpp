@@ -59,8 +59,6 @@ protected:
 
   void do_remap_fwd () override;
 
-protected:
-
   void setup_mpi_data_structures () override;
 
   // This class uses itself to remap src grid geo data to the tgt grid. But in order
