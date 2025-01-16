@@ -92,6 +92,7 @@ add_default($nl, 'config_Leith_visc2_max');
 
 add_default($nl, 'config_use_Redi');
 add_default($nl, 'config_Redi_closure');
+add_default($nl, 'config_redi_transition_layer_mld_offset');
 add_default($nl, 'config_Redi_constant_kappa');
 add_default($nl, 'config_Redi_maximum_slope');
 add_default($nl, 'config_Redi_use_slope_taper');
