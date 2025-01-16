@@ -123,16 +123,19 @@ Real ccn3_func(const int t, const gid_type i, const int klev)
 //
 Real aer_func(const int t, const gid_type i, const int bnd, const int klev, const int mode)
 {
+  Real ret = -1;
   if (mode==0) {  // G
-    return  t;
+    ret = t;
   } else if (mode==1) { // SSA
-    return  i;
+    ret = i;
   } else if (mode==2) { // TAU
-    return  bnd;
+    ret = bnd;
   } else if (mode==3) { // LW-TAU
-    return  klev;
+    ret = klev;
+  } else {
+    EKAT_REQUIRE_MSG(false,"Error in aer_func, incorrect mode passed"); // Shouldn't get here, but just in case
   }
-  EKAT_REQUIRE_MSG(false,"Error in aer_func, incorrect mode passed"); // Shouldn't get here, but just in case
+  return ret;
 } // aer_func
 
 } // namespace
