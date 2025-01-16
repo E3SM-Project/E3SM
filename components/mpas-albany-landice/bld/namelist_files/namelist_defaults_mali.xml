@@ -106,6 +106,10 @@
 <config_subglacial_discharge_coefficient>3.0e-4</config_subglacial_discharge_coefficient>
 <config_subglacial_discharge_intercept>0.15</config_subglacial_discharge_intercept>
 <config_uniform_face_melt_rate>0.0</config_uniform_face_melt_rate>
+<config_ocean_data_extrapolation>.false.</config_ocean_data_extrapolation>
+<config_ocean_data_extrap_ncells_extra>10</config_ocean_data_extrap_ncells_extra>
+<config_invalid_value_TF>1.0e36</config_invalid_value_TF>
+<config_weight_value_cell>0.9</config_weight_value_cell>
 
 <!-- physical_parameters -->
 <config_ice_density>910.0</config_ice_density>
