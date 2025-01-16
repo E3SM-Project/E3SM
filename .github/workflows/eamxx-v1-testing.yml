@@ -65,14 +65,14 @@ jobs:
     strategy:
       matrix:
         test:
-          - full_name: ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1.ghci-snl-cpu_gnu.scream-output-preset-2
-            short_name: ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1.scream-output-preset-2
-          - full_name: ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.ghci-snl-cpu_gnu.scream-dpxx-arm97
-            short_name: ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.scream-dpxx-arm97
-          - full_name: ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci-snl-cpu_gnu.scream-small_kernels--scream-output-preset-5
-            short_name: ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.scream-small_kernels--scream-output-preset-5
-          - full_name: SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.ghci-snl-cpu_gnu.scream-mam4xx-all_mam4xx_procs
-            short_name: SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.scream-mam4xx-all_mam4xx_procs
+          - full_name: ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1.ghci-snl-cpu_gnu.eamxx-output-preset-2
+            short_name: ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1.eamxx-output-preset-2
+          - full_name: ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.ghci-snl-cpu_gnu.eamxx-dpxx-arm97
+            short_name: ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.eamxx-dpxx-arm97
+          - full_name: ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci-snl-cpu_gnu.eamxx-small_kernels--eamxx-output-preset-5
+            short_name: ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-small_kernels--eamxx-output-preset-5
+          - full_name: SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.ghci-snl-cpu_gnu.eamxx-mam4xx-all_mam4xx_procs
+            short_name: SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-all_mam4xx_procs
           - full_name: SMS_Ln3_P4.ne4pg2_oQU480.F2010-MMF2.ghci-snl-cpu_gnu
             short_name: SMS_Ln3_P4.ne4pg2_oQU480.F2010-MMF2
       fail-fast: false
