@@ -536,6 +536,8 @@ contains
                                                      config_GM_spatially_variable_max_kappa,          &
                                                      BruntVaisalaFreqTopEdge/(maxN + 1.0E-10_RKIND)), &
                                                      1.0_RKIND)
+                  RediKappa(k,iEdge) = config_GM_spatially_variable_max_kappa*min(max(0.1_RKIND,BruntVaisalaFreqTopEdge/  &
+                                                                 (maxN+1.0E-15)),1.0_RKIND)
                end do
            enddo
            !$omp end do
@@ -767,7 +769,7 @@ contains
            !$omp do schedule(runtime) private(k)
            do iEdge = 1,nEdges
               do k = minLevelEdgeBot(iEdge),maxLevelEdgeTop(iEdge)
-                 RediKappa(k,iEdge) = RediHorizontalTaper(iEdge)*gmKappaScaling(k,iEdge)*RediKappa(k,iEdge)
+                 RediKappa(k,iEdge) = gmKappaScaling(k,iEdge)*RediKappa(k,iEdge)
               end do
            end do
            !$omp end do
