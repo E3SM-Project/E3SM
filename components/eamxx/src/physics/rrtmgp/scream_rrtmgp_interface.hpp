@@ -1146,18 +1146,18 @@ static void get_subcolumn_mask(const int ncol, const int nlay, const int ngpt, c
     //     }
     //   }
     // }));
-    Kokkos::parallel_for(ncol, KOKKOS_LAMBDA(int icol) {
-        conv::Random rand(seeds(icol));
-        for (int igpt = 0; igpt < ngpt; igpt++) {
-          for (int ilay = 0; ilay < nlay; ilay++) {
-            cldx(icol,ilay,igpt) = rand.genFP<RealT>();
-          }
-        }
-      });
-    // TIMED_KERNEL(Kokkos::parallel_for(MDRP::template get<3>({ncol, nlay, ngpt}), KOKKOS_LAMBDA(int icol, int ilay, int igpt) {
-    //   conv::Random rand(seeds(icol) + ilay*ngpt + igpt);
-    //   cldx(icol,ilay,igpt) = rand.genFP<RealT>();
-    // }));
+    // Kokkos::parallel_for(ncol, KOKKOS_LAMBDA(int icol) {
+    //     conv::Random rand(seeds(icol));
+    //     for (int igpt = 0; igpt < ngpt; igpt++) {
+    //       for (int ilay = 0; ilay < nlay; ilay++) {
+    //         cldx(icol,ilay,igpt) = rand.genFP<RealT>();
+    //       }
+    //     }
+    //   });
+    TIMED_KERNEL(Kokkos::parallel_for(MDRP::template get<3>({ncol, nlay, ngpt}), KOKKOS_LAMBDA(int icol, int ilay, int igpt) {
+      conv::Random rand(seeds(icol) + ilay*ngpt + igpt);
+      cldx(icol,ilay,igpt) = rand.genFP<RealT>();
+    }));
 
     // Step down columns and apply algorithm from eq (14)
     TIMED_KERNEL(Kokkos::parallel_for(MDRP::template get<2>({ncol,ngpt}), KOKKOS_LAMBDA(int icol, int igpt) {
