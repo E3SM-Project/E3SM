@@ -143,10 +143,10 @@ void MAMMicrophysics::set_grids(
                       grid_name);
 
   // precipitation liquid mass [kg/m2]
-  add_field<Required>("precip_liq_surf_mass", scalar3d_mid, kg / m2, grid_name);
+  add_field<Required>("precip_liq_surf_mass", scalar2d, kg / m2, grid_name);
 
   // precipitation ice mass [kg/m2]
-  add_field<Required>("precip_ice_surf_mass", scalar3d_mid, kg / m2, grid_name);
+  add_field<Required>("precip_ice_surf_mass", scalar2d, kg / m2, grid_name);
 
   //----------- Variables from other mam4xx processes ------------
   // Number of modes
@@ -644,12 +644,12 @@ void MAMMicrophysics::run_impl(const double dt) {
       get_field_in("horiz_winds").get_component(1).get_view<const Real **>();
 
   // Liquid precip [kg/m2]
-  const const_view_2d precip_liq_surf_mass =
-      get_field_in("precip_liq_surf_mass").get_view<const Real **>();
+  const const_view_1d precip_liq_surf_mass =
+      get_field_in("precip_liq_surf_mass").get_view<const Real *>();
 
   // Ice precip [kg/m2]
-  const const_view_2d precip_ice_surf_mass =
-      get_field_in("precip_ice_surf_mass").get_view<const Real **>();
+  const const_view_1d precip_ice_surf_mass =
+      get_field_in("precip_ice_surf_mass").get_view<const Real *>();
 
   // Fractional land use [fraction]
   const const_view_2d fraction_landuse =
@@ -936,8 +936,8 @@ void MAMMicrophysics::run_impl(const double dt) {
                         v_wind(icol, surface_lev) * v_wind(icol, surface_lev));
 
         // Total rain at the surface
-        const Real rain = precip_liq_surf_mass(icol, surface_lev) +
-                          precip_ice_surf_mass(icol, surface_lev);
+        const Real rain = precip_liq_surf_mass(icol) +
+                          precip_ice_surf_mass(icol);
 
         // Snow depth on land [m]
         const Real snow_height = snow_depth_land(icol);
