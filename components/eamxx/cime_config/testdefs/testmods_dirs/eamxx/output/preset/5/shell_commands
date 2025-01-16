@@ -1,7 +1,7 @@
 # This preset uses the three output streams (phys_dyn, phys, and diags)
 # It adds vertical remap, and uses AVERAGE output
 
-SCRIPTS_DIR=$CIMEROOT/../components/eamxx/cime_config/testdefs/testmods_dirs/scream/output
+SCRIPTS_DIR=$CIMEROOT/../components/eamxx/cime_config/testdefs/testmods_dirs/eamxx/output
 
 # Add the phys/dyn/diags streams
 . $SCRIPTS_DIR/phys/shell_commands

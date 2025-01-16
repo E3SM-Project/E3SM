@@ -5,7 +5,7 @@
 # Increase number of tracers for MAM4xx simulations
 #------------------------------------------------------
 
-$CIMEROOT/../components/eamxx/cime_config/testdefs/testmods_dirs/scream/mam4xx/update_eamxx_num_tracers.sh -b
+$CIMEROOT/../components/eamxx/cime_config/testdefs/testmods_dirs/eamxx/mam4xx/update_eamxx_num_tracers.sh -b
 
 #------------------------------------------------------
 # Add the processes
