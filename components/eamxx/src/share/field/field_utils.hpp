@@ -170,7 +170,7 @@ void horiz_contraction(const Field &f_out, const Field &f_in,
       f_out.is_allocated() && f_in.is_allocated() && weight.is_allocated(),
       "Error! All fields must be allocated.");
   EKAT_REQUIRE_MSG(f_out.data_type() == f_in.data_type(),
-                   "Error! In/out fields have matching data types.");
+                   "Error! In/out fields must have matching data types.");
   EKAT_REQUIRE_MSG(
       f_out.data_type() == weight.data_type(),
       "Error! Weight field must have the same data type as input fields.");
@@ -258,7 +258,7 @@ void vert_contraction(const Field &f_out, const Field &f_in,
       f_out.is_allocated() && f_in.is_allocated() && weight.is_allocated(),
       "Error! All fields must be allocated.");
   EKAT_REQUIRE_MSG(f_out.data_type() == f_in.data_type(),
-                   "Error! In/out fields have matching data types.");
+                   "Error! In/out fields must have matching data types.");
   EKAT_REQUIRE_MSG(
       f_out.data_type() == weight.data_type(),
       "Error! Weight field must have the same data type as input field.");
