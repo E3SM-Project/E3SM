@@ -403,9 +403,9 @@ contains
                   slopeTaperUp = 1.0_RKIND + slopeTaperFactor*(slopeTaperUp - 1.0_RKIND)
                   slopeTaperDown = 1.0_RKIND + slopeTaperFactor*(slopeTaperDown - 1.0_RKIND)
 
-                  limiterUp(k,iCellSelf,iEdge) = 1.0_RKIND !(1.0_RKIND - RediKappaSfcTaper(k,iEdge)* &
+                  limiterUp(k,iCellSelf,iEdge) = slopeTaperUp !1.0_RKIND !(1.0_RKIND - RediKappaSfcTaper(k,iEdge)* &
                                    ! (1.0_RKIND - slopeTaperUp))
-                  limiterDown(k,iCellSelf,iEdge) = 1.0_RKIND !(1.0_RKIND - RediKappaSfcTaper(k,iEdge))!* &
+                  limiterDown(k,iCellSelf,iEdge) = slopeTaperDown! 1.0_RKIND !(1.0_RKIND - RediKappaSfcTaper(k,iEdge))!* &
                                    ! (1.0_RKIND - slopeTaperDown))
 
                   sfcTaper = 1.0_RKIND + sfcTaperFactor*(RediKappaSfcTaper(k,iEdge) - 1.0_RKIND) !Note that this term is 1 - sfcTaper
@@ -536,8 +536,6 @@ contains
                                                      config_GM_spatially_variable_max_kappa,          &
                                                      BruntVaisalaFreqTopEdge/(maxN + 1.0E-10_RKIND)), &
                                                      1.0_RKIND)
-                  RediKappa(k,iEdge) = config_GM_spatially_variable_max_kappa*min(max(0.1_RKIND,BruntVaisalaFreqTopEdge/  &
-                                                                 (maxN+1.0E-15)),1.0_RKIND)
                end do
            enddo
            !$omp end do
@@ -614,8 +612,9 @@ contains
               cell2 = cellsOnEdge(2, iEdge)
 
               k = minLevelEdgeBot(iEdge)+1
-              zEdge = -layerThickEdgeMean(k-1,iEdge)
-              do while(zEdge > -config_GM_Visbeck_max_depth .and. k < maxLevelEdgeTop(iEdge))
+            !  zEdge = -layerThickEdgeMean(k-1,iEdge)
+            !  do while(zEdge > -config_GM_Visbeck_max_depth .and. k < maxLevelEdgeTop(iEdge))
+              do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)-1
                 lt1 = 0.5_RKIND*(layerThickness(k,cell1) + layerThickness(k-1,cell1))
                 lt2 = 0.5_RKIND*(layerThickness(k,cell2) + layerThickness(k-1,cell2))
                 sum_hN = sum_hN + 0.5_RKIND*(lt1*max(BruntVaisalaFreqTop(k,cell1),0.0_RKIND) + &
@@ -625,12 +624,12 @@ contains
                 ltsum = ltsum + 0.5_RKIND*(lt1+lt2)
                 countN2 = countN2 + 1
 
-                k = k + 1
-                zEdge = zEdge - layerThickEdgeMean(k-1,iEdge)
+            !    k = k + 1
+             !   zEdge = zEdge - layerThickEdgeMean(k-1,iEdge)
               end do
 
               if (countN2 > 0) then
-                c_Visbeck = sqrt(sum_hN*ltsum)
+                c_Visbeck = cGMphaseSpeed(iEdge) !sqrt(sum_hN*ltsum)
                 sumRi = sumRi / (ltsum + 1.0E-11_RKIND)
 
                 eddyLength = max(dcEdge(iEdge), min(c_Visbeck/(1.0E-15_RKIND + abs(fEdge(iEdge))), &
@@ -768,7 +767,7 @@ contains
            !$omp do schedule(runtime) private(k)
            do iEdge = 1,nEdges
               do k = minLevelEdgeBot(iEdge),maxLevelEdgeTop(iEdge)
-                 RediKappa(k,iEdge) = gmKappaScaling(k,iEdge)*RediKappa(k,iEdge)
+                 RediKappa(k,iEdge) = RediHorizontalTaper(iEdge)*gmKappaScaling(k,iEdge)*RediKappa(k,iEdge)
               end do
            end do
            !$omp end do
