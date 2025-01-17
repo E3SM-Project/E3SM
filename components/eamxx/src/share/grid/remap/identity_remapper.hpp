@@ -36,11 +36,6 @@ public:
   void register_field_from_src (const Field& src) override;
   void register_field_from_tgt (const Field& tgt) override;
 
-  FieldLayout create_src_layout (const FieldLayout& tgt_layout) const override;
-  FieldLayout create_tgt_layout (const FieldLayout& src_layout) const override;
-
-  bool compatible_layouts (const FieldLayout& src, const FieldLayout& tgt) const override;
-
 protected:
 
   void registration_ends_impl () override;

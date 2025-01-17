@@ -26,7 +26,6 @@ public:
 
 protected:
 
-  bool compatible_layouts (const FieldLayout& src, const FieldLayout& tgt) const override;
   void registration_ends_impl () override;
 
   using KT = KokkosTypes<DefaultDevice>;

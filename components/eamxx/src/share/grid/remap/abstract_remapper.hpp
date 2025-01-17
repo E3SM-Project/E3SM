@@ -70,10 +70,10 @@ public:
   FieldIdentifier create_tgt_fid (const FieldIdentifier& src_fid) const;
 
   // These are public, so that InverseRemapper can call them on the stored remapper
+  // We provide reasonable default implementations, but derived classes can specialize
   virtual FieldLayout create_src_layout (const FieldLayout& tgt_layout) const;
   virtual FieldLayout create_tgt_layout (const FieldLayout& src_layout) const;
-  virtual bool compatible_layouts (const FieldLayout& src,
-                                   const FieldLayout& tgt) const = 0;
+  virtual bool compatible_layouts (const FieldLayout& src, const FieldLayout& tgt) const;
   virtual bool is_valid_src_layout (const FieldLayout& layout) const {
     return m_src_grid->is_valid_layout(layout);
   }

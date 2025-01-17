@@ -197,6 +197,21 @@ create_tgt_layout (const FieldLayout& src_layout) const
   return create_layout(src_layout,m_tgt_grid);
 }
 
+bool AbstractRemapper::
+compatible_layouts (const FieldLayout& src, const FieldLayout& tgt) const
+{
+  if (src.type()!=tgt.type())
+    return false;
+
+  if (src.is_vector_layout()) {
+    return src.get_vector_dim()==tgt.get_vector_dim();
+  } else if (src.is_tensor_layout()) {
+    return src.get_tensor_dims()==tgt.get_tensor_dims();
+  }
+
+  return true;
+}
+
 FieldLayout AbstractRemapper::
 create_layout (const FieldLayout& from_layout,
                const grid_ptr_type& to_grid) const

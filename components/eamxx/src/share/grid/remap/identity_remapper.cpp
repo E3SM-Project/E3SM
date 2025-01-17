@@ -38,32 +38,6 @@ void IdentityRemapper::register_field_from_tgt (const Field& tgt)
   }
 }
 
-FieldLayout IdentityRemapper::create_src_layout (const FieldLayout& tgt_layout) const
-{
-  EKAT_REQUIRE_MSG (is_valid_tgt_layout(tgt_layout),
-      "[IdentityRemapper] Error! Input target layout is not valid for this remapper.\n"
-      " - input layout: " + tgt_layout.to_string());
-
-  // Src and tgt grids are the same, so return the input
-  return tgt_layout;
-}
-
-FieldLayout IdentityRemapper::create_tgt_layout (const FieldLayout& src_layout) const
-{
-  EKAT_REQUIRE_MSG (is_valid_src_layout(src_layout),
-      "[IdentityRemapper] Error! Input source layout is not valid for this remapper.\n"
-      " - input layout: " + src_layout.to_string());
-
-  // Src and tgt grids are the same, so return the input
-  return src_layout;
-}
-
-bool IdentityRemapper::
-compatible_layouts (const FieldLayout& src, const FieldLayout& tgt) const
-{
-  return src.congruent(tgt);
-}
-
 void IdentityRemapper::registration_ends_impl ()
 {
   // If there is aliasing, src and tgt must be the SAME field

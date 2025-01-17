@@ -249,19 +249,6 @@ local_mat_vec (const Field& x, const Field& y) const
   }
 }
 
-bool HorizInterpRemapperBase::
-compatible_layouts (const FieldLayout& src,
-                    const FieldLayout& tgt) const
-{
-  // Same type of layout, and same sizes except for possibly the first one
-  // Note: we can't do [src|tgt].size()/[src|tgt].dim(0)), since there may
-  // be 0 src/tgt gids on some ranks, which means src/tgt.dim(0)=0.
-  using namespace ShortFieldTagsNames;
-
-  // Use congruence, since we don't really care about dimension names, only tags/extents
-  return src.clone().strip_dim(COL).congruent(tgt.clone().strip_dim(COL));
-}
-
 void HorizInterpRemapperBase::clean_up ()
 {
   // Clear all fields
