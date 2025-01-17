@@ -252,8 +252,7 @@ MODULE seq_infodata_mod
      integer(SHR_KIND_IN)    :: iac_phase       ! iac phase
      logical                 :: atm_aero        ! atmosphere aerosols
      logical                 :: glc_g2lupdate   ! update glc2lnd fields in lnd model
-     real(SHR_KIND_R8)       :: max_cplstep_time ! abort if cplstep time exceeds this value
-     real(SHR_KIND_R8)       :: rmean_rmv_ice_runoff ! running mean of removed Antarctic ice runoff
+     real(shr_kind_r8) :: max_cplstep_time  ! abort if cplstep time exceeds this value
      !--- set from restart file ---
      character(SHR_KIND_CL)  :: rest_case_name  ! Short case identification
      !--- set by driver and may be time varying
@@ -761,7 +760,7 @@ CONTAINS
        infodata%atm_prognostic = .false.
        infodata%lnd_prognostic = .false.
        infodata%rof_prognostic = .false.
-       infodata%rofocn_prognostic = .false.
+       infodata%rofocn_prognostic = .false. 
        infodata%ocn_prognostic = .false.
        infodata%ocnrof_prognostic = .false.
        infodata%ocn_c2_glcshelf = .false.
@@ -798,8 +797,8 @@ CONTAINS
        infodata%lnd_domain = 'none'
        infodata%rof_mesh = 'none'
        infodata%rof_domain = 'none'
-       infodata%ocn_domain = 'none' ! will be used for ocean data models only; will be used as a signal
-       infodata%ice_domain = 'none' ! will be used for ice   data models only; will be used as a signal
+       infodata%ocn_domain = 'none' ! will be used for ocean data models only; will be used as a signal 
+       infodata%ice_domain = 'none' ! will be used for ice   data models only; will be used as a signal 
        infodata%atm_mesh = 'none' ! will be used for atmosphere data models only; will be used as a signal
                                     ! not sure if it exists always actually
 
@@ -816,7 +815,6 @@ CONTAINS
        infodata%atm_aero      = .false.
        infodata%glc_g2lupdate = .false.
        infodata%glc_valid_input = .true.
-       infodata%rmean_rmv_ice_runoff   = -1.0_SHR_KIND_R8
 
        infodata%max_cplstep_time = max_cplstep_time
        infodata%model_doi_url = model_doi_url
@@ -916,13 +914,11 @@ CONTAINS
           call seq_io_read(infodata%restart_file,pioid,infodata%nextsw_cday   ,'seq_infodata_nextsw_cday')
           call seq_io_read(infodata%restart_file,pioid,infodata%precip_fact   ,'seq_infodata_precip_fact')
           call seq_io_read(infodata%restart_file,pioid,infodata%rest_case_name,'seq_infodata_case_name')
-          call seq_io_read(infodata%restart_file,pioid,infodata%rmean_rmv_ice_runoff   ,'seq_infodata_rmean_rmv_ice_runoff')
        endif
        !--- Send from CPLID ROOT to GLOBALID ROOT, use bcast as surrogate
        call shr_mpi_bcast(infodata%nextsw_cday,mpicom,pebcast=seq_comm_gloroot(CPLID))
        call shr_mpi_bcast(infodata%precip_fact,mpicom,pebcast=seq_comm_gloroot(CPLID))
        call shr_mpi_bcast(infodata%rest_case_name,mpicom,pebcast=seq_comm_gloroot(CPLID))
-       call shr_mpi_bcast(infodata%rmean_rmv_ice_runoff,mpicom,pebcast=seq_comm_gloroot(CPLID))
     endif
 
     if (seq_comm_iamroot(ID)) then
@@ -1054,7 +1050,7 @@ CONTAINS
        reprosum_use_ddpdd, reprosum_allow_infnan,                         &
        reprosum_diffmax, reprosum_recompute,                              &
        mct_usealltoall, mct_usevector, max_cplstep_time, model_doi_url,   &
-       glc_valid_input, nlmaps_verbosity, rmean_rmv_ice_runoff)
+       glc_valid_input, nlmaps_verbosity)
 
     implicit none
 
@@ -1246,7 +1242,6 @@ CONTAINS
     real(shr_kind_r8),      optional, intent(out) :: max_cplstep_time
     character(SHR_KIND_CL), optional, intent(OUT) :: model_doi_url
     logical,                optional, intent(OUT) :: glc_valid_input
-    real(SHR_KIND_R8),      optional, intent(OUT) :: rmean_rmv_ice_runoff    ! running mean of removed Antarctic ice runoff
 
     !----- local -----
     character(len=*), parameter :: subname = '(seq_infodata_GetData_explicit) '
@@ -1452,7 +1447,6 @@ CONTAINS
     if ( present(model_doi_url) ) model_doi_url = infodata%model_doi_url
 
     if ( present(glc_valid_input)) glc_valid_input = infodata%glc_valid_input
-    if ( present(rmean_rmv_ice_runoff) ) rmean_rmv_ice_runoff = infodata%rmean_rmv_ice_runoff
 
   END SUBROUTINE seq_infodata_GetData_explicit
 
@@ -1622,8 +1616,7 @@ CONTAINS
        eps_aarea, eps_omask, eps_ogrid, eps_oarea,                        &
        reprosum_use_ddpdd, reprosum_allow_infnan,                         &
        reprosum_diffmax, reprosum_recompute,                              &
-       mct_usealltoall, mct_usevector, glc_valid_input, nlmaps_verbosity, &
-       rmean_rmv_ice_runoff)
+       mct_usealltoall, mct_usevector, glc_valid_input, nlmaps_verbosity)
 
 
     implicit none
@@ -1812,7 +1805,6 @@ CONTAINS
     logical,                optional, intent(IN) :: atm_aero              ! atm aerosols
     logical,                optional, intent(IN) :: glc_g2lupdate         ! update glc2lnd fields in lnd model
     logical,                optional, intent(IN) :: glc_valid_input
-    real(SHR_KIND_R8),      optional, intent(IN)    :: rmean_rmv_ice_runoff ! running mean of removed Antarctic ice runoff
 
     !EOP
 
@@ -2004,7 +1996,6 @@ CONTAINS
     if ( present(atm_aero)       ) infodata%atm_aero       = atm_aero
     if ( present(glc_g2lupdate)  ) infodata%glc_g2lupdate  = glc_g2lupdate
     if ( present(glc_valid_input) ) infodata%glc_valid_input = glc_valid_input
-    if ( present(rmean_rmv_ice_runoff) ) infodata%rmean_rmv_ice_runoff = rmean_rmv_ice_runoff
 
   END SUBROUTINE seq_infodata_PutData_explicit
 
@@ -2320,7 +2311,6 @@ CONTAINS
     call shr_mpi_bcast(infodata%glc_valid_input,         mpicom)
     call shr_mpi_bcast(infodata%model_doi_url,           mpicom)
     call shr_mpi_bcast(infodata%constant_zenith_deg,     mpicom)
-    call shr_mpi_bcast(infodata%rmean_rmv_ice_runoff,    mpicom)
 
   end subroutine seq_infodata_bcast
 
@@ -2669,7 +2659,6 @@ CONTAINS
 
     if (ocn2cplr) then
        call shr_mpi_bcast(infodata%precip_fact,        mpicom, pebcast=cmppe)
-       call shr_mpi_bcast(infodata%rmean_rmv_ice_runoff, mpicom, pebcast=cmppe)
     endif
 
     if (cpl2r) then
@@ -2677,7 +2666,6 @@ CONTAINS
        call shr_mpi_bcast(infodata%precip_fact,        mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%glc_g2lupdate,      mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%glc_valid_input,    mpicom, pebcast=cplpe)
-       call shr_mpi_bcast(infodata%rmean_rmv_ice_runoff, mpicom, pebcast=cplpe)
     endif
 
   end subroutine seq_infodata_Exchange
@@ -3049,7 +3037,6 @@ CONTAINS
     write(logunit,F0S) subname,'iac_phase                = ', infodata%iac_phase
 
     write(logunit,F0L) subname,'glc_g2lupdate            = ', infodata%glc_g2lupdate
-    write(logunit,F0R) subname,'rmean_rmv_ice_runoff     = ', infodata%rmean_rmv_ice_runoff
     !     endif
 
   END SUBROUTINE seq_infodata_print

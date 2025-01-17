@@ -8,7 +8,6 @@ module seaice_core_interface
    use seaice_analysis_driver
    use mpas_log, only: mpas_log_write
 
-   implicit none
    public
 
    contains
@@ -547,10 +546,10 @@ module seaice_core_interface
    !  routine setup_packages_bergs
    !
    !> \brief   Setup icebergs package
-   !> \author  Darin Comeau, Xylar Asay-Davis
-   !> \date    August 2024
-   !> \details This routine is intended to set the icebergs packages PkgBergs
-   !> and pkgScaledDIB as active/deactive based on the namelist options.
+   !> \author  Darin Comeau
+   !> \date    19 May 2017
+   !> \details This routine is intended to set the icebergs package PkgBergs
+   !> as active/deactive based on the namelist option config_use_bergs.
    !
    !-----------------------------------------------------------------------
 
@@ -562,13 +561,10 @@ module seaice_core_interface
 
           ! icebergs package
      logical, pointer :: &
-          config_use_data_icebergs, &
-          config_scale_dib_by_removed_ice_runoff
-
+          config_use_data_icebergs
 
      logical, pointer :: &
-          pkgBergsActive, &
-          pkgScaledDIBActive
+          pkgBergsActive
 
      ierr = 0
 
@@ -579,10 +575,6 @@ module seaice_core_interface
      call MPAS_pool_get_config(configPool, "config_use_data_icebergs", config_use_data_icebergs)
      call MPAS_pool_get_package(packagePool, "pkgBergsActive", pkgBergsActive)
      pkgBergsActive = config_use_data_icebergs
-
-     call MPAS_pool_get_config(configPool, "config_scale_dib_by_removed_ice_runoff", config_scale_dib_by_removed_ice_runoff)
-     call MPAS_pool_get_package(packagePool, "pkgScaledDIBActive", pkgScaledDIBActive)
-     pkgScaledDIBActive = config_scale_dib_by_removed_ice_runoff
 
    end subroutine setup_packages_bergs!}}}
 

@@ -278,12 +278,6 @@ contains
       real (kind=RKIND), dimension(:), pointer :: landIceFreshwaterFlux, &
                                                   dataLandIceFreshwaterFlux
 
-      real (kind=RKIND), pointer :: runningMeanRemovedIceRunoff, &
-                                    areaIntegAnnMeanDataIcebergIceShelfFreshwaterFlux
-
-
-      real (kind=RKIND) :: scaling
-
       err = 0
 
       if (.not.landIceFluxesOn) return
@@ -293,16 +287,6 @@ contains
       call mpas_pool_get_array(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFlux)
 
       if ( landIceDataOn ) then
-
-         if (config_scale_dismf_by_removed_ice_runoff) then
-            call mpas_pool_get_array(forcingPool, 'runningMeanRemovedIceRunoff', runningMeanRemovedIceRunoff)
-            call mpas_pool_get_array(forcingPool, 'areaIntegAnnMeanDataIcebergIceShelfFreshwaterFlux', &
-                                     areaIntegAnnMeanDataIcebergIceShelfFreshwaterFlux)
-            scaling = runningMeanRemovedIceRunoff / areaIntegAnnMeanDataIcebergIceShelfFreshwaterFlux
-         else
-            scaling = 1.0_RKIND
-         end if
-
          call mpas_pool_get_array(forcingPool, 'dataLandIceFreshwaterFlux', dataLandIceFreshwaterFlux)
 #ifdef MPAS_OPENACC
          !$acc enter data copyin(landIceFreshwaterFlux)
@@ -313,7 +297,7 @@ contains
          !$omp do schedule(runtime)
 #endif
          do iCell = 1, nCellsAll
-            landIceFreshwaterFlux(iCell) = scaling * dataLandIceFreshwaterFlux(iCell)
+            landIceFreshwaterFlux(iCell) = dataLandIceFreshwaterFlux(iCell)
          end do
 #ifndef MPAS_OPENACC
          !$omp end do
@@ -394,12 +378,6 @@ contains
       real (kind=RKIND), dimension(:), pointer :: landIceHeatFlux, &
                                                   dataLandIceHeatFlux
 
-      real (kind=RKIND), pointer :: runningMeanRemovedIceRunoff, &
-                                    areaIntegAnnMeanDataIcebergIceShelfFreshwaterFlux
-
-
-      real (kind=RKIND) :: scaling
-
       err = 0
 
       if (.not.landIceFluxesOn) return
@@ -409,21 +387,11 @@ contains
       call mpas_pool_get_array(forcingPool, 'landIceHeatFlux', landIceHeatFlux)
 
       if ( landIceDataOn ) then
-
-         if (config_scale_dismf_by_removed_ice_runoff) then
-            call mpas_pool_get_array(forcingPool, 'runningMeanRemovedIceRunoff', runningMeanRemovedIceRunoff)
-            call mpas_pool_get_array(forcingPool, 'areaIntegAnnMeanDataIcebergIceShelfFreshwaterFlux', &
-                                     areaIntegAnnMeanDataIcebergIceShelfFreshwaterFlux)
-            scaling = runningMeanRemovedIceRunoff / areaIntegAnnMeanDataIcebergIceShelfFreshwaterFlux
-         else
-            scaling = 1.0_RKIND
-         end if
-
          call mpas_pool_get_array(forcingPool, 'dataLandIceHeatFlux', dataLandIceHeatFlux)
          !$omp parallel
          !$omp do schedule(runtime)
          do iCell = 1, nCells
-            landIceHeatFlux(iCell) = scaling * dataLandIceHeatFlux(iCell)
+            landIceHeatFlux(iCell) = dataLandIceHeatFlux(iCell)
          end do
          !$omp end do
          !$omp end parallel
