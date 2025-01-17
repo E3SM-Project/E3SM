@@ -245,6 +245,7 @@ public:
   Field subfield (const std::string& sf_name, const int idim,
                   const int index, const bool dynamic = false) const;
   Field subfield (const int idim, const int k, const bool dynamic = false) const;
+  Field subfield (const FieldTag tag, const int k, const bool dynamic = false) const;
   // extracts a subfield composed of multiple slices in a continuous range of indices
   // e.g., (in matlab syntax) subf = f.subfield(:, 1:3, :)
   // but NOT subf = f.subfield(:, [1, 3, 4], :)
