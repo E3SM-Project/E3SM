@@ -3,3 +3,7 @@
 if [ `./xmlquery --value MACH` == frontier-scream-gpu ]; then
     ./xmlchange NTASKS=8
 fi
+
+if [ `./xmlquery --value MACH` == frontier-unified ]; then
+    ./xmlchange NTASKS=8
+fi
