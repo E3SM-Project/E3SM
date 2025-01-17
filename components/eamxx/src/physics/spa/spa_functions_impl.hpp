@@ -2,7 +2,8 @@
 #define SPA_FUNCTIONS_IMPL_HPP
 
 #include "physics/share/physics_constants.hpp"
-#include "share/grid/remap/coarsening_remapper.hpp"
+#include "share/grid/point_grid.hpp"
+#include "share/grid/remap/iop_remapper.hpp"
 #include "share/grid/remap/refining_remapper_p2p.hpp"
 #include "share/grid/remap/identity_remapper.hpp"
 #include "share/io/scream_scorpio_interface.hpp"
@@ -74,7 +75,7 @@ create_horiz_remapper (
     const std::shared_ptr<const AbstractGrid>& model_grid,
     const std::string& spa_data_file,
     const std::string& map_file,
-    const bool use_iop)
+    const std::shared_ptr<control::IOPDataManager>& iop_data_mgr)
 {
   using namespace ShortFieldTagsNames;
 
@@ -85,27 +86,39 @@ create_horiz_remapper (
   const int nlwbands   = scorpio::get_dimlen(spa_data_file,"lwband");
   scorpio::release_file(spa_data_file);
 
-  // We could use model_grid directly if using same num levels,
-  // but since shallow clones are cheap, we may as well do it (less lines of code)
-  auto horiz_interp_tgt_grid = model_grid->clone("spa_horiz_interp_tgt_grid",true);
-  horiz_interp_tgt_grid->reset_num_vertical_lev(nlevs_data);
+  auto horiz_remap_tgt_grid = model_grid->clone("spa_horiz_remap_tgt_grid",true);
+  horiz_remap_tgt_grid->reset_num_vertical_lev(nlevs_data);
 
-  const int ncols_model = model_grid->get_num_global_dofs();
   std::shared_ptr<AbstractRemapper> remapper;
-  if (ncols_data==ncols_model
-      or
-      use_iop /*IOP class defines it's own remapper for file data*/) {
-    remapper = std::make_shared<IdentityRemapper>(horiz_interp_tgt_grid,IdentityRemapper::SrcAliasTgt);
-  } else {
-    EKAT_REQUIRE_MSG (ncols_data<=ncols_model,
-      "Error! We do not allow to coarsen spa data to fit the model. We only allow\n"
-      "       spa data to be at the same or coarser resolution as the model.\n");
-    // We must have a valid map file
-    EKAT_REQUIRE_MSG (map_file!="",
-        "ERROR: Spa data is on a different grid than the model one,\n"
-        "       but spa_remap_file is missing from SPA parameter list.");
+  if (iop_data_mgr) {
+    auto src_grid = create_point_grid("spa_data",ncols_data,nlevs_data,model_grid->get_comm());
+    auto lat_f = src_grid->create_geometry_data("lat",src_grid->get_2d_scalar_layout());
+    auto lon_f = src_grid->create_geometry_data("lon",src_grid->get_2d_scalar_layout());
+    AtmosphereInput latlon_reader (spa_data_file,src_grid,{lat_f,lon_f});
+    latlon_reader.read_variables();
 
-    remapper = std::make_shared<RefiningRemapperP2P>(horiz_interp_tgt_grid,map_file);
+    // TODO: expose tgt lat/lon in IOPDataManager, to avoid injencting knowledge of its param list structure here
+    auto lat = iop_data_mgr->get_params().get<Real>("target_latitude");
+    auto lon = iop_data_mgr->get_params().get<Real>("target_longitude");
+    remapper = std::make_shared<IOPRemapper>(src_grid,horiz_remap_tgt_grid,lat,lon);
+  } else {
+    // We could use model_grid directly if using same num levels,
+    // but since shallow clones are cheap, we may as well do it (less lines of code)
+
+    const int ncols_model = model_grid->get_num_global_dofs();
+    if (ncols_data==ncols_model) {
+      remapper = std::make_shared<IdentityRemapper>(horiz_remap_tgt_grid,IdentityRemapper::SrcAliasTgt);
+    } else {
+      EKAT_REQUIRE_MSG (ncols_data<=ncols_model,
+        "Error! We do not allow to coarsen spa data to fit the model. We only allow\n"
+        "       spa data to be at the same or coarser resolution as the model.\n");
+      // We must have a valid map file
+      EKAT_REQUIRE_MSG (map_file!="",
+          "ERROR: Spa data is on a different grid than the model one,\n"
+          "       but spa_remap_file is missing from SPA parameter list.");
+
+      remapper = std::make_shared<RefiningRemapperP2P>(horiz_remap_tgt_grid,map_file);
+    }
   }
 
   remapper->registration_begins();
@@ -156,22 +169,6 @@ create_spa_data_reader (
   }
   const auto io_grid = horiz_remapper->get_src_grid();
   return std::make_shared<AtmosphereInput>(spa_data_file,io_grid,io_fields,true);
-}
-
-template <typename S, typename D>
-std::shared_ptr<typename SPAFunctions<S,D>::IOPReader>
-SPAFunctions<S,D>::
-create_spa_data_reader (
-    iop_data_ptr_type& iop_data_manager,
-    const std::shared_ptr<AbstractRemapper>& horiz_remapper,
-    const std::string& spa_data_file)
-{
-  std::vector<Field> io_fields;
-  for (int i=0; i<horiz_remapper->get_num_fields(); ++i) {
-    io_fields.push_back(horiz_remapper->get_src_field(i));
-  }
-  const auto io_grid = horiz_remapper->get_src_grid();
-  return std::make_shared<IOPReader>(iop_data_manager, spa_data_file, io_fields, io_grid);
 }
 
 /*-----------------------------------------------------------------*/
@@ -449,12 +446,10 @@ perform_vertical_interpolation(
 template<typename S, typename D>
 void SPAFunctions<S,D>
 ::update_spa_data_from_file(
-    std::shared_ptr<AtmosphereInput>& scorpio_reader,
-    std::shared_ptr<IOPReader>&       iop_reader,
-    const util::TimeStamp&            ts,
-    const int                         time_index, // zero-based
-    AbstractRemapper&                 spa_horiz_interp,
-    SPAInput&                         spa_input)
+    AtmosphereInput&    scorpio_reader,
+    const int           time_index, // zero-based
+    AbstractRemapper&   spa_horiz_interp,
+    SPAInput&           spa_input)
 {
   using namespace ShortFieldTagsNames;
   using ESU = ekat::ExeSpaceUtils<typename DefaultDevice::execution_space>;
@@ -464,11 +459,7 @@ void SPAFunctions<S,D>
 
   // 1. Read from file
   start_timer("EAMxx::SPA::update_spa_data_from_file::read_data");
-  if (iop_reader) {
-    iop_reader->read_variables(time_index, ts);
-  } else {
-    scorpio_reader->read_variables(time_index);
-  }
+  scorpio_reader.read_variables(time_index);
   stop_timer("EAMxx::SPA::update_spa_data_from_file::read_data");
 
   // 2. Run the horiz remapper (it is a do-nothing op if spa data is on same grid as model)
@@ -553,13 +544,12 @@ void SPAFunctions<S,D>
 template<typename S, typename D>
 void SPAFunctions<S,D>
 ::update_spa_timestate(
-    std::shared_ptr<AtmosphereInput>& scorpio_reader,
-    std::shared_ptr<IOPReader>&       iop_reader,
-    const util::TimeStamp&            ts,
-    AbstractRemapper&                 spa_horiz_interp,
-    SPATimeState&                     time_state,
-    SPAInput&                         spa_beg,
-    SPAInput&                         spa_end)
+    AtmosphereInput&          scorpio_reader,
+    const util::TimeStamp&    ts,
+    AbstractRemapper&         spa_horiz_interp,
+    SPATimeState&             time_state,
+    SPAInput&                 spa_beg,
+    SPAInput&                 spa_end)
 {
   // Now we check if we have to update the data that changes monthly
   // NOTE:  This means that SPA assumes monthly data to update.  Not
@@ -580,7 +570,7 @@ void SPAFunctions<S,D>
     //       to be assigned.  A timestep greater than a month is very unlikely so we
     //       will proceed.
     int next_month = (time_state.current_month + 1) % 12;
-    update_spa_data_from_file(scorpio_reader,iop_reader,ts,next_month,spa_horiz_interp,spa_end);
+    update_spa_data_from_file(scorpio_reader,next_month,spa_horiz_interp,spa_end);
   }
 
 } // END updata_spa_timestate
