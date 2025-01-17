@@ -795,6 +795,38 @@ Valid values: any non-negative value
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_ocean_data_extrapolation" type="logical"
+	category="iceshelf_melt" group="iceshelf_melt">
+If true, extrapolate ocean data (temperature, salinity, thermal forcing) from external source into underneath the ice draft.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ocean_data_extrap_ncells_extra" type="integer"
+	category="iceshelf_melt" group="iceshelf_melt">
+number of extra cells for over-extrapolation into grounded ice
+
+Valid values: any non-negative value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_invalid_value_TF" type="real"
+	category="iceshelf_melt" group="iceshelf_melt">
+value assigned to indicate invalid thermal forcing value when config_ocean_data_extrapolation is set to true
+
+Valid values: Any real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_weight_value_cell" type="real"
+	category="iceshelf_melt" group="iceshelf_melt">
+weight used to smooth horizontal extrapolation of ocean data field. Value close to 1 implies more weight of the current cell value versus the averaged value of the neighbouring cells around the cell
+
+Valid values: any real value between 0 and 1
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- physical_parameters -->
 
