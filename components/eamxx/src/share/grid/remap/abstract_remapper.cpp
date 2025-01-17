@@ -93,6 +93,8 @@ void AbstractRemapper::registration_ends ()
       "Error! Cannot call registration_ends at this time.\n"
       "       Did you accidentally call 'registration_ends' already?");
 
+  // Call derived class impl first. They may register extra/internal fields,
+  // so we must keep the repo OPEN until they're done.
   registration_ends_impl();
 
   m_state = RepoState::Closed;

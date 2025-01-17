@@ -96,7 +96,6 @@ protected:
 
   // Mask fields, if needed
   bool                  m_track_mask;
-  std::map<int,int>     m_field_idx_to_mask_idx;
 
   // ------- MPI data structures -------- //
 

@@ -86,9 +86,9 @@ CoarseningRemapper::
 void CoarseningRemapper::
 registration_ends_impl ()
 {
-  HorizInterpRemapperBase::registration_ends_impl();
-
   if (not m_track_mask) {
+    // Just call base class and be done
+    HorizInterpRemapperBase::registration_ends_impl();
     return;
   }
 
@@ -98,11 +98,11 @@ registration_ends_impl ()
   // vectors will grow, which may cause reallocation and references invalidation
   std::vector<std::pair<Field,Field>> masks;
 
-  auto src_mask_idx = [&](const FieldIdentifier& src_mask_fid) {
+  auto get_mask_idx = [&](const FieldIdentifier& src_mask_fid) {
 
     // Masks will be registered AFTER all fields, so the 1st mask will
     // be right after the last registered "regular" field.
-    int idx = m_num_fields;
+    int idx = 0;
     for (const auto& it : masks) {
       if (it.first.get_header().get_identifier()==src_mask_fid) {
         return idx;
@@ -114,7 +114,7 @@ registration_ends_impl ()
 
   for (int i=0; i<m_num_fields; ++i) {
     const auto& src = m_src_fields[i];
-    const auto& tgt = m_tgt_fields[i];
+          auto& tgt = m_tgt_fields[i];
     if (not src.get_header().has_extra_data("mask_data"))
       continue;
 
@@ -147,9 +147,8 @@ registration_ends_impl ()
         "  - mask layout: " + m_lt.to_string() + "\n");
 
     // If not there, set mask value in the tgt field too
-    auto& tgt_hdr = m_tgt_fields[i].get_header();
-    if (tgt_hdr.has_extra_data("mask_value")) {
-      const auto& tgt_mask_val = tgt_hdr.get_extra_data<Real>("mask_value");
+    if (tgt.get_header().has_extra_data("mask_value")) {
+      const auto& tgt_mask_val = tgt.get_header().get_extra_data<Real>("mask_value");
 
       EKAT_REQUIRE_MSG (tgt_mask_val==src_mask_val,
           "Error! Target field stores a mask data different from the src field.\n"
@@ -158,29 +157,31 @@ registration_ends_impl ()
           "  - src mask value: " << src_mask_val << "\n"
           "  - tgt mask value: " << tgt_mask_val << "\n");
     } else {
-      tgt_hdr.set_extra_data("mask_value",src_mask_val);
+      tgt.get_header().set_extra_data("mask_value",src_mask_val);
     }
 
     // If it's the first time we find this mask, store it, so we can register later
     const auto& src_mask_fid = src_mask.get_header().get_identifier();
-    int mask_idx = src_mask_idx(src_mask_fid);
+    int mask_idx = get_mask_idx(src_mask_fid);
     if (mask_idx==-1) {
-      mask_idx = m_num_fields + masks.size();
-
       Field tgt_mask(create_tgt_fid(src_mask_fid));
       auto src_pack_size = src_mask.get_header().get_alloc_properties().get_largest_pack_size();
       tgt_mask.get_header().get_alloc_properties().request_allocation(src_pack_size);
       tgt_mask.allocate_view();
-    }
 
-    // Store position of the mask for this field
-    m_field_idx_to_mask_idx[i] = mask_idx;
+      masks.push_back(std::make_pair(src_mask,tgt_mask));
+      mask_idx = masks.size()-1;
+    }
+    tgt.get_header().set_extra_data("mask_data",masks[mask_idx].second);
   }
 
   // Add all masks to the fields to remap
   for (const auto& it : masks) {
     register_field(it.first,it.second);
   }
+
+  // Now that ALL fields (including masks) are registered, we can setup internal data
+  HorizInterpRemapperBase::registration_ends_impl();
 }
 
 void CoarseningRemapper::remap_fwd_impl ()
@@ -209,12 +210,10 @@ void CoarseningRemapper::remap_fwd_impl ()
     const auto& f_src = m_src_fields[i];
     const auto& f_ov  = m_ov_fields[i];
 
-    // NOTE: if m_track_mask=false, the map is empty, so it returns 0.
-    //       masks are registered AFTER fields, mask idx MUST be >0.
-    const int mask_idx = m_field_idx_to_mask_idx[i];
-    if (mask_idx>0) {
+    const bool masked = m_track_mask and f_src.get_header().has_extra_data("mask_data");
+    if (masked) {
       // Pass the mask to the local_mat_vec routine
-      const auto& mask = m_src_fields[mask_idx];
+      const auto& mask = f_src.get_header().get_extra_data<Field>("mask_data");
 
       // If possible, dispatch kernel with SCREAM_PACK_SIZE
       if (can_pack_field(f_src) and can_pack_field(f_ov) and can_pack_field(mask)) {
@@ -250,10 +249,9 @@ void CoarseningRemapper::remap_fwd_impl ()
   if (m_track_mask) {
     for (int i=0; i<m_num_fields; ++i) {
       const auto& f_tgt = m_tgt_fields[i];
-      const int mask_idx = m_field_idx_to_mask_idx[i];
-      if (mask_idx>0) {
+      if (f_tgt.get_header().has_extra_data("mask_data")) {
         // Then this field did use a mask
-        const auto& mask = m_tgt_fields[mask_idx];
+        const auto& mask = f_tgt.get_header().get_extra_data<Field>("mask_data");
         if (can_pack_field(f_tgt) and can_pack_field(mask)) {
           rescale_masked_fields<SCREAM_PACK_SIZE>(f_tgt,mask);
         } else {
