@@ -2106,7 +2106,6 @@
 			<var name="testArrayRestartability"/>
 			<var name="forcingGroupNames"/>
 			<var name="forcingGroupRestartTimes"/>
-			<var name="runningMeanRemovedIceRunoff" packages="pkgScaledDIB"/>
 		</stream>
 
 		<stream name="restart"
