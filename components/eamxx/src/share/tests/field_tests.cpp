@@ -171,19 +171,6 @@ TEST_CASE("field", "") {
     REQUIRE_THROWS (f1.get_const().get_view<Real**>());
   }
 
-  SECTION ("equivalent") {
-    Field f1 (fid), f2(fid);
-    f1.allocate_view();
-    f2.allocate_view();
-
-    // Check self equivalence
-    // get_const returns a copy of self, so equivalent (if already allocated)
-    REQUIRE (f1.equivalent(f1.get_const()));
-    REQUIRE (f1.equivalent(f1));
-    // f1 and f2 have independent views, so they are not equivalent.
-    REQUIRE (!f1.equivalent(f2));
-  }
-
   // Check copy constructor
   SECTION ("copy ctor") {
     Field f1 (fid);
@@ -258,6 +245,45 @@ TEST_CASE("field", "") {
     // Check extra data is also shared
     f1.get_header().set_extra_data("foo",1);
     REQUIRE (f2.get_header().has_extra_data("foo"));
+  }
+
+  SECTION ("is_aliasing") {
+    Field f1 (fid), f2(fid);
+    f1.allocate_view();
+    f2.allocate_view();
+
+    // Check aliasing
+    REQUIRE (f1.is_aliasing(f1.get_const()));
+    REQUIRE (f1.is_aliasing(f1));
+    REQUIRE (f1.is_aliasing(f1.alias("foo")));
+
+    // f1 and f2 have independent views, so they are not aliasing each other
+    REQUIRE (!f1.is_aliasing(f2));
+    REQUIRE (!f1.is_aliasing(f2));
+
+    auto f1_0x = f1.subfield(0,0);
+    auto f1_1x = f1.subfield(0,1);
+    auto f1_x0 = f1.subfield(1,0);
+    auto f1_x1 = f1.subfield(1,1);
+
+    auto g1_0x = f1.subfield(0,0);
+    auto g1_1x = f1.subfield(0,1);
+    auto g1_x0 = f1.subfield(1,0);
+    auto g1_x1 = f1.subfield(1,1);
+
+    REQUIRE (f1_0x.is_aliasing(g1_0x));
+    REQUIRE (f1_1x.is_aliasing(g1_1x));
+    REQUIRE (f1_x0.is_aliasing(g1_x0));
+    REQUIRE (f1_x1.is_aliasing(g1_x1));
+
+    REQUIRE (not f1_0x.is_aliasing(f1_1x));
+    REQUIRE (not f1_0x.is_aliasing(f1_x0));
+    REQUIRE (not f1_0x.is_aliasing(f1_x1));
+
+    REQUIRE (not f1_1x.is_aliasing(f1_x0));
+    REQUIRE (not f1_1x.is_aliasing(f1_x1));
+
+    REQUIRE (not f1_x0.is_aliasing(f1_x1));
   }
 
   SECTION ("deep_copy") {
@@ -581,7 +607,7 @@ TEST_CASE("tracers_bundle", "") {
   auto Q = field_mgr.get_field(Q_name);
 
   // The bundled field in the group should match the field we get from the field_mgr
-  REQUIRE (Q.equivalent(*group.m_bundle));
+  REQUIRE (Q.is_aliasing(*group.m_bundle));
 
   // Check that Q is set as parent for all q's.
   auto qvp = qv.get_header().get_parent().lock();
@@ -632,9 +658,9 @@ TEST_CASE("tracers_bundle", "") {
   auto qc_ptr = group.m_fields.at("qc");
   auto qr_ptr = group.m_fields.at("qr");
 
-  REQUIRE (qv_ptr->equivalent(qv));
-  REQUIRE (qc_ptr->equivalent(qc));
-  REQUIRE (qr_ptr->equivalent(qr));
+  REQUIRE (qv_ptr->is_aliasing(qv));
+  REQUIRE (qc_ptr->is_aliasing(qc));
+  REQUIRE (qr_ptr->is_aliasing(qr));
 }
 
 TEST_CASE("multiple_bundles") {

@@ -45,8 +45,8 @@ void IdentityRemapper::registration_ends_impl ()
     for (int i=0; i<m_num_fields; ++i) {
       const auto& src = m_src_fields[i];
       const auto& tgt = m_tgt_fields[i];
-      EKAT_REQUIRE_MSG (src.equivalent(tgt),
-          "Error! Input fields are not aliasing eahc other, but aliasing was requested.\n"
+      EKAT_REQUIRE_MSG (src.is_aliasing(tgt),
+          "Error! Input fields are not aliasing each other, but aliasing was requested in the IdentityRemapper.\n"
           "       To register field when aliasing is active, use register_field_from_tgt/src.\n");
     }
   }
