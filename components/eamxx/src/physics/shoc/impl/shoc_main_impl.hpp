@@ -607,6 +607,7 @@ Int Functions<S,D>::shoc_main(
   const Scalar c_diag_3rd_mom = shoc_runtime.c_diag_3rd_mom;
   const Scalar Ckh           = shoc_runtime.Ckh;
   const Scalar Ckm           = shoc_runtime.Ckm;
+  const bool   tke_1p5_closure = shoc_runtime.tke_1p5_closure;
 
 #ifndef SCREAM_SHOC_SMALL_KERNELS
   using ExeSpace = typename KT::ExeSpace;

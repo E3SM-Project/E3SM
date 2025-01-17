@@ -85,6 +85,7 @@ struct Functions
    Scalar c_diag_3rd_mom;
    Scalar Ckh;
    Scalar Ckm;
+   bool tke_1p5_closure;
  };
 
   // This struct stores input views for shoc_main.
