@@ -29,6 +29,10 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   CreateUnitTest(grid_imp_exp "grid_import_export_tests.cpp"
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
 
+  # Test iop remap
+  CreateUnitTest(iop_remapper "iop_remapper_tests.cpp"
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
+
   # Test coarsening remap
   CreateUnitTest(coarsening_remapper "coarsening_remapper_tests.cpp"
     LIBS scream_io
