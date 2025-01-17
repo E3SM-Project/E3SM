@@ -133,24 +133,24 @@ void horiz_contraction(const Field &f_out, const Field &f_in,
   // Sanity checks before handing off to the implementation
   EKAT_REQUIRE_MSG(l_w.rank() == 1,
                    "Error! The weight field must be rank-1.\n"
-                   "The input has rank "
+                   "The input weight has rank "
                        << l_w.rank() << ".\n");
   EKAT_REQUIRE_MSG(l_w.tags() == std::vector<FieldTag>({COL}),
                    "Error! The weight field must have a column dimension.\n"
-                   "The input f1 layout is "
+                   "The input field has layout "
                        << l_w.tags() << ".\n");
   EKAT_REQUIRE_MSG(l_in.rank() <= 3,
                    "Error! The input field must be at most rank-3.\n"
-                   "The input f_in rank is "
+                   "The input field's rank is "
                        << l_in.rank() << ".\n");
   EKAT_REQUIRE_MSG(l_in.tags()[0] == COL,
                    "Error! The input field must have a column dimension.\n"
-                   "The input f_in layout is "
+                   "The input field's layout is "
                        << l_in.to_string() << ".\n");
   EKAT_REQUIRE_MSG(
       l_w.dim(0) == l_in.dim(0),
       "Error! input and weight fields must have the same dimension along "
-      "which we are taking the reducing the field.\n"
+      "which we are reducing the field.\n"
       "The weight field has dimension "
           << l_w.dim(0)
           << " while "
@@ -159,20 +159,20 @@ void horiz_contraction(const Field &f_out, const Field &f_in,
   EKAT_REQUIRE_MSG(
       l_in.dim(0) > 0,
       "Error! The input field must have a non-zero column dimension.\n"
-      "The input f_in layout is "
+      "The input field's layout is "
           << l_in.to_string() << ".\n");
   EKAT_REQUIRE_MSG(
       l_out == l_in.clone().strip_dim(0),
       "Error! The output field must have the same layout as the input field "
       "without the column dimension.\n"
-      "The input f_in layout is "
-          << l_in.to_string() << " and the output f_out layout is "
+      "The input field's layout is "
+          << l_in.to_string() << " and the output field's layout is "
           << l_out.to_string() << ".\n");
   EKAT_REQUIRE_MSG(
       f_out.is_allocated() && f_in.is_allocated() && weight.is_allocated(),
       "Error! All fields must be allocated.");
   EKAT_REQUIRE_MSG(f_out.data_type() == f_in.data_type(),
-                   "Error! In/out Fields have matching data types.");
+                   "Error! In/out fields must have matching data types.");
   EKAT_REQUIRE_MSG(
       f_out.data_type() == weight.data_type(),
       "Error! Weight field must have the same data type as input fields.");
@@ -260,7 +260,7 @@ void vert_contraction(const Field &f_out, const Field &f_in,
       f_out.is_allocated() && f_in.is_allocated() && weight.is_allocated(),
       "Error! All fields must be allocated.");
   EKAT_REQUIRE_MSG(f_out.data_type() == f_in.data_type(),
-                   "Error! In/out Fields have matching data types.");
+                   "Error! In/out fields must have matching data types.");
   EKAT_REQUIRE_MSG(
       f_out.data_type() == weight.data_type(),
       "Error! Weight field must have the same data type as input field.");
