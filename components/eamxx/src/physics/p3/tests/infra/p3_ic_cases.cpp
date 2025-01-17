@@ -119,12 +119,15 @@ P3Data::Ptr make_mixed (const Int ncol, const Int nlev) {
   return dp;
 }
 
-P3Data::Ptr Factory::create (IC ic, Int ncol, Int nlev) {
- switch (ic) {
-   case mixed: return make_mixed(ncol, nlev);
- default:
-   EKAT_REQUIRE_MSG(false, "Not an IC: " << ic);
- }
+P3Data::Ptr Factory::create (IC ic, Int ncol, Int nlev)
+{
+  P3Data::Ptr ret;
+  switch (ic) {
+    case mixed: ret = make_mixed(ncol, nlev); break;
+    default:
+      EKAT_REQUIRE_MSG(false, "Not an IC: " << ic);
+  }
+  return ret;
 }
 
 } // namespace ic
