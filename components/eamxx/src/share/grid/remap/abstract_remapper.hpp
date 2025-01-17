@@ -89,28 +89,20 @@ protected:
   void set_grids (const grid_ptr_type& src_grid,
                   const grid_ptr_type& tgt_grid);
 
-  // Override this method to insert logic executed at the beginning of the field
-  // registration process.
-  virtual void do_registration_begins () { /* Default to do-nothing */ }
-
-  // Override this method to insert logic executed when a pair of source/target
-  // fields are registered. Note: src/tgt are the field in m_src/tgt_fields
-  virtual void do_register_field (Field& src, Field& tgt) { /* Default to do-nothing */ }
-
   // Override this method to insert logic executed when the field registration
   // process ends.
-  virtual void do_registration_ends () { /* Default to do-nothing */ }
+  virtual void registration_ends_impl () { /* Default to do-nothing */ }
 
   // Override this method to implement the forward remapping process using
   // the protected data members of this class.
-  virtual void do_remap_fwd () {
-    EKAT_ERROR_MSG ("Error! Missing override of do_remap_fwd for this remapper.\n");
+  virtual void remap_fwd_impl () {
+    EKAT_ERROR_MSG ("Error! Missing override of remap_fwd_impl for this remapper.\n");
   }
 
   // Override this method to implement the backward/inverse remapping process
   // using the protected data members of this class.
-  virtual void do_remap_bwd () {
-    EKAT_ERROR_MSG ("Error! Missing override of do_remap_bwd for this remapper.\n");
+  virtual void remap_bwd_impl () {
+    EKAT_ERROR_MSG ("Error! Missing override of remap_bwd_impl for this remapper.\n");
   }
 
   // By default, assume both are allowed.

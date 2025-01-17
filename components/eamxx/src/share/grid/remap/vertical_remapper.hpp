@@ -84,11 +84,9 @@ protected:
                              const std::shared_ptr<const AbstractGrid>& to_grid,
                              const bool int_same_as_mid) const;
 
-  void do_register_field (Field& src, Field& tgt) override;
+  void registration_ends_impl () override;
 
-  void do_registration_ends () override;
-
-  void do_remap_fwd () override;
+  void remap_fwd_impl () override;
 
 #ifdef KOKKOS_ENABLE_CUDA
 public:

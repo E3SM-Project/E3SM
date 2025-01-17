@@ -57,7 +57,7 @@ public:
 
 protected:
 
-  void do_remap_fwd () override;
+  void remap_fwd_impl () override;
 
   void setup_mpi_data_structures () override;
 

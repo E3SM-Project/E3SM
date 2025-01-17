@@ -169,99 +169,100 @@ set_pressure (const Field& p, const std::string& src_or_tgt, const ProfileType p
 }
 
 void VerticalRemapper::
-do_register_field (Field& src, Field& tgt)
+registration_ends_impl ()
 {
   using namespace ShortFieldTagsNames;
   using PackT = ekat::Pack<Real,SCREAM_PACK_SIZE>;
 
-  // Clone src layout, since we may strip dims later for mask creation
-  auto src_layout = src.get_header().get_identifier().get_layout().clone();
+  for (int i=0; i<m_num_fields; ++i) {
+    const auto& src = m_src_fields[i];
+          auto& tgt = m_tgt_fields[i];
 
-  if (src_layout.has_tag(LEV) or src_layout.has_tag(ILEV)) {
-    // Determine if this field can be handled with packs, and whether it's at midpoints
-    // NOTE: we don't know if mid==int on src or tgt. If it is, we use the other to determine mid-vs-int
-    // Add mask tracking to the target field. The mask tracks location of tgt pressure levs that are outside the
-    // bounds of the src pressure field, and hence cannot be recovered by interpolation
-    auto& ft = m_field2type[src.name()];
-    ft.midpoints = m_src_mid_same_as_int
-                 ? tgt.get_header().get_identifier().get_layout().has_tag(LEV)
-                 : src.get_header().get_identifier().get_layout().has_tag(LEV);
-    ft.packed    = src.get_header().get_alloc_properties().is_compatible<PackT>() and
-                   tgt.get_header().get_alloc_properties().is_compatible<PackT>();
+    // Clone src layout, since we may strip dims later for mask creation
+    auto src_layout = src.get_header().get_identifier().get_layout().clone();
 
-    if (m_etype_top==Mask or m_etype_bot==Mask) {
-      // NOTE: for now we assume that masking is determined only by the COL,LEV location in space
-      //       and that fields with multiple components will have the same masking for each component
-      //       at a specific COL,LEV
-      src_layout.strip_dims({CMP});
+    if (src_layout.has_tag(LEV) or src_layout.has_tag(ILEV)) {
+      // Determine if this field can be handled with packs, and whether it's at midpoints
+      // NOTE: we don't know if mid==int on src or tgt. If it is, we use the other to determine mid-vs-int
+      // Add mask tracking to the target field. The mask tracks location of tgt pressure levs that are outside the
+      // bounds of the src pressure field, and hence cannot be recovered by interpolation
+      auto& ft = m_field2type[src.name()];
+      ft.midpoints = m_src_mid_same_as_int
+                   ? tgt.get_header().get_identifier().get_layout().has_tag(LEV)
+                   : src.get_header().get_identifier().get_layout().has_tag(LEV);
+      ft.packed    = src.get_header().get_alloc_properties().is_compatible<PackT>() and
+                     tgt.get_header().get_alloc_properties().is_compatible<PackT>();
 
-      // I this mask has already been created, retrieve it, otherwise create it
-      const auto mask_name = m_tgt_grid->name() + "_" + ekat::join(src_layout.names(),"_") + "_mask";
-      Field tgt_mask;
-      if (m_field2type.count(mask_name)==0) {
-        auto nondim = ekat::units::Units::nondimensional();
-        // Create this src/tgt mask fields, and assign them to these src/tgt fields extra data
+      if (m_etype_top==Mask or m_etype_bot==Mask) {
+        // NOTE: for now we assume that masking is determined only by the COL,LEV location in space
+        //       and that fields with multiple components will have the same masking for each component
+        //       at a specific COL,LEV
+        src_layout.strip_dims({CMP});
 
-        FieldIdentifier src_mask_fid (mask_name, src_layout, nondim, m_src_grid->name() );
-        FieldIdentifier tgt_mask_fid = create_tgt_fid(src_mask_fid);
+        // I this mask has already been created, retrieve it, otherwise create it
+        const auto mask_name = m_tgt_grid->name() + "_" + ekat::join(src_layout.names(),"_") + "_mask";
+        Field tgt_mask;
+        if (m_field2type.count(mask_name)==0) {
+          auto nondim = ekat::units::Units::nondimensional();
+          // Create this src/tgt mask fields, and assign them to these src/tgt fields extra data
 
-        Field src_mask (src_mask_fid);
-        src_mask.allocate_view();
+          FieldIdentifier src_mask_fid (mask_name, src_layout, nondim, m_src_grid->name() );
+          FieldIdentifier tgt_mask_fid = create_tgt_fid(src_mask_fid);
 
-        tgt_mask  = Field (tgt_mask_fid);
-        tgt_mask.allocate_view();
+          Field src_mask (src_mask_fid);
+          src_mask.allocate_view();
 
-        // Initialize the src mask values to 1.0
-        src_mask.deep_copy(1.0);
+          tgt_mask  = Field (tgt_mask_fid);
+          tgt_mask.allocate_view();
 
-        m_src_masks.push_back(src_mask);
-        m_tgt_masks.push_back(tgt_mask);
+          // Initialize the src mask values to 1.0
+          src_mask.deep_copy(1.0);
 
-        auto& mt = m_field2type[src_mask_fid.name()];
-        mt.packed = false;
-        mt.midpoints = src_layout.has_tag(LEV);
-      } else {
-        for (size_t i=0; i<m_tgt_masks.size(); ++i) {
-          if (m_tgt_masks[i].name()==mask_name) {
-            tgt_mask = m_tgt_masks[i];
-            break;
+          m_src_masks.push_back(src_mask);
+          m_tgt_masks.push_back(tgt_mask);
+
+          auto& mt = m_field2type[src_mask_fid.name()];
+          mt.packed = false;
+          mt.midpoints = src_layout.has_tag(LEV);
+        } else {
+          for (size_t i=0; i<m_tgt_masks.size(); ++i) {
+            if (m_tgt_masks[i].name()==mask_name) {
+              tgt_mask = m_tgt_masks[i];
+              break;
+            }
           }
         }
+
+        EKAT_REQUIRE_MSG(not tgt.get_header().has_extra_data("mask_data"),
+            "[VerticalRemapper::registration_ends_impl] Error! Target field already has mask data assigned.\n"
+            " - tgt field name: " + tgt.name() + "\n");
+        EKAT_REQUIRE_MSG(not tgt.get_header().has_extra_data("mask_value"),
+            "[VerticalRemapper::registration_ends_impl] Error! Target field already has mask value assigned.\n"
+            " - tgt field name: " + tgt.name() + "\n");
+
+        tgt.get_header().set_extra_data("mask_data",tgt_mask);
+        tgt.get_header().set_extra_data("mask_value",m_mask_val);
       }
-
-      EKAT_REQUIRE_MSG(not tgt.get_header().has_extra_data("mask_data"),
-          "[VerticalRemapper::do_bind_field] Error! Target field already has mask data assigned.\n"
-          " - tgt field name: " + tgt.name() + "\n");
-      EKAT_REQUIRE_MSG(not tgt.get_header().has_extra_data("mask_value"),
-          "[VerticalRemapper::do_bind_field] Error! Target field already has mask value assigned.\n"
-          " - tgt field name: " + tgt.name() + "\n");
-
-      tgt.get_header().set_extra_data("mask_data",tgt_mask);
-      tgt.get_header().set_extra_data("mask_value",m_mask_val);
-    }
-  } else {
-    // If a field does not have LEV or ILEV it may still have mask tracking assigned from somewhere else.
-    // For instance, this could be a 2d field computed by FieldAtPressureLevel diagnostic.
-    // In those cases we want to copy that mask tracking to the target field.
-    if (src.get_header().has_extra_data("mask_data")) {
-      EKAT_REQUIRE_MSG(not tgt.get_header().has_extra_data("mask_data"),
-          "[VerticalRemapper::do_bind_field] Error! Target field already has mask data assigned.\n"
-          " - tgt field name: " + tgt.name() + "\n");
-      auto src_mask = src.get_header().get_extra_data<Field>("mask_data");
-      tgt.get_header().set_extra_data("mask_data",src_mask);
-    }
-    if (src.get_header().has_extra_data("mask_value")) {
-      EKAT_REQUIRE_MSG(not tgt.get_header().has_extra_data("mask_value"),
-          "[VerticalRemapper::do_bind_field] Error! Target field already has mask value assigned.\n"
-          " - tgt field name: " + tgt.name() + "\n");
-      auto src_mask_val = src.get_header().get_extra_data<Real>("mask_value");
-      tgt.get_header().set_extra_data("mask_value",src_mask_val);
+    } else {
+      // If a field does not have LEV or ILEV it may still have mask tracking assigned from somewhere else.
+      // For instance, this could be a 2d field computed by FieldAtPressureLevel diagnostic.
+      // In those cases we want to copy that mask tracking to the target field.
+      if (src.get_header().has_extra_data("mask_data")) {
+        EKAT_REQUIRE_MSG(not tgt.get_header().has_extra_data("mask_data"),
+            "[VerticalRemapper::registration_ends_impl] Error! Target field already has mask data assigned.\n"
+            " - tgt field name: " + tgt.name() + "\n");
+        auto src_mask = src.get_header().get_extra_data<Field>("mask_data");
+        tgt.get_header().set_extra_data("mask_data",src_mask);
+      }
+      if (src.get_header().has_extra_data("mask_value")) {
+        EKAT_REQUIRE_MSG(not tgt.get_header().has_extra_data("mask_value"),
+            "[VerticalRemapper::registration_ends_impl] Error! Target field already has mask value assigned.\n"
+            " - tgt field name: " + tgt.name() + "\n");
+        auto src_mask_val = src.get_header().get_extra_data<Real>("mask_value");
+        tgt.get_header().set_extra_data("mask_value",src_mask_val);
+      }
     }
   }
-}
-
-void VerticalRemapper::do_registration_ends ()
-{
   create_lin_interp ();
 }
 
@@ -418,7 +419,7 @@ create_layout (const FieldLayout& from_layout,
   return to_layout;
 }
 
-void VerticalRemapper::do_remap_fwd ()
+void VerticalRemapper::remap_fwd_impl ()
 {
   // 1. Setup any interp object that was created (if nullptr, no fields need it)
   if (m_lin_interp_mid_packed) {

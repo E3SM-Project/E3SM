@@ -51,11 +51,9 @@ public:
 
 protected:
 
-  void do_register_field (Field& src, Field& tgt) override;
+  void registration_ends_impl () override;
 
-  void do_remap_fwd () override;
-
-protected:
+  void remap_fwd_impl () override;
 
   template<typename T>
   using view_2d = typename KT::template view_2d<T>;

@@ -50,7 +50,7 @@ public:
 protected:
 
   // Registration methods
-  void do_registration_ends () override;
+  void registration_ends_impl () override;
 
   void setup_boundary_exchange ();
 
@@ -156,8 +156,8 @@ protected:
                                const std::vector<Field>& fields) const;
 
   // Remap methods
-  void do_remap_fwd () override;
-  void do_remap_bwd () override;
+  void remap_fwd_impl () override;
+  void remap_bwd_impl () override;
 
   // phys->dyn requires a halo-exchange. Since not all entries in dyn
   // are overwritten before the exchange, to avoid leftover garbage,

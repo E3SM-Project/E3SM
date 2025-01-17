@@ -27,7 +27,7 @@ RefiningRemapperP2P::
   clean_up();
 }
 
-void RefiningRemapperP2P::do_remap_fwd ()
+void RefiningRemapperP2P::remap_fwd_impl ()
 {
   // Fire the recv requests right away, so that if some other ranks
   // is done packing before us, we can start receiving their data

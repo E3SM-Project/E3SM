@@ -43,10 +43,9 @@ public:
 
 protected:
 
-  void do_register_field (Field& src, Field& tgt) override;
-
-  void do_remap_fwd () override;
-  void do_remap_bwd () override;
+  void registration_ends_impl () override;
+  void remap_fwd_impl () override;
+  void remap_bwd_impl () override;
 
   Aliasing m_aliasing;
 };

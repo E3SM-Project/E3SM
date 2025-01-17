@@ -84,86 +84,106 @@ CoarseningRemapper::
 }
 
 void CoarseningRemapper::
-do_register_field (Field& src, Field& tgt)
+registration_ends_impl ()
 {
-  // src/tgt just got added to m_src_fields/m_tgt_fields, so they're the last ones
-  const int field_idx = m_src_fields.size()-1;
+  HorizInterpRemapperBase::registration_ends_impl();
 
-  // Assume no mask tracking for this field. Can correct below
-  m_field_idx_to_mask_idx[field_idx] = -1;
+  if (not m_track_mask) {
+    return;
+  }
 
-  if (m_track_mask) {
-    if (src.get_header().has_extra_data("mask_data")) {
-      // First, check that we also have the mask value, to be used if mask_data is too small
-      EKAT_REQUIRE_MSG (src.get_header().has_extra_data("mask_value"),
-          "Error! Field " + src.name() + " stores a mask field but not a mask value.\n");
-      const auto& src_mask_val = src.get_header().get_extra_data<Real>("mask_value");
+  // We store masks (src-tgt) here, and register them AFTER we parse all currently registered fields.
+  // That makes the for loop below easier, since we can take references without worrring that they
+  // would get invalidated. In fact, if you call register_field inside the loop, the src/tgt fields
+  // vectors will grow, which may cause reallocation and references invalidation
+  std::vector<std::pair<Field,Field>> masks;
 
-      auto& tgt_hdr = tgt.get_header();
-      if (tgt_hdr.has_extra_data("mask_value")) {
-        const auto& tgt_mask_val = tgt_hdr.get_extra_data<Real>("mask_value");
+  auto src_mask_idx = [&](const FieldIdentifier& src_mask_fid) {
 
-        EKAT_REQUIRE_MSG (tgt_mask_val==src_mask_val,
-            "Error! Target field stores a mask data different from the src field.\n"
-            "  - src field name: " + src.name() + "\n"
-            "  - tgt field name: " + tgt.name() + "\n"
-            "  - src mask value: " << src_mask_val << "\n"
-            "  - tgt mask value: " << tgt_mask_val << "\n");
-      } else {
-        tgt_hdr.set_extra_data("mask_value",src_mask_val);
+    // Masks will be registered AFTER all fields, so the 1st mask will
+    // be right after the last registered "regular" field.
+    int idx = m_num_fields;
+    for (const auto& it : masks) {
+      if (it.first.get_header().get_identifier()==src_mask_fid) {
+        return idx;
       }
-
-      // Then, register the mask field, if not yet registered
-      const auto& src_mask = src.get_header().get_extra_data<Field>("mask_data");
-      const auto& src_mask_fid = src_mask.get_header().get_identifier();
-      // Make sure fields representing masks are not themselves meant to be masked.
-      EKAT_REQUIRE_MSG(not src_mask.get_header().has_extra_data("mask_data"),
-          "Error! A mask field cannot be itself masked.\n"
-          "  - field name: " + src.name() + "\n"
-          "  - mask field name: " + src_mask.name() + "\n");
-
-      const auto tgt_mask_fid = create_tgt_fid(src_mask_fid);
-      int mask_idx = -1;
-      for (int i=0; i<m_num_fields; ++i) {
-        if (m_src_fields[i].get_header().get_identifier()==src_mask_fid) {
-          mask_idx = i;
-          break;
-        }
-      }
-
-      if (mask_idx==-1) {
-        Field tgt_mask(tgt_mask_fid);
-        tgt_mask.get_header().get_alloc_properties().request_allocation(src_mask.get_header().get_alloc_properties().get_largest_pack_size());
-        tgt_mask.allocate_view();
-        register_field(src_mask,tgt_mask);
-
-        // Note: the call to register_field above will have appended the mask to m_src_fields,
-        //       so mask_idx is NOT the same as field_idx
-        mask_idx = m_src_fields.size()-1;
-      }
-
-      // Store position of the mask for this field
-      m_field_idx_to_mask_idx[field_idx] = mask_idx;
-
-      // Check that the mask field has the correct layout
-      const auto& f_lt = src.get_header().get_identifier().get_layout();
-      const auto& m_lt = src_mask.get_header().get_identifier().get_layout();
-      using namespace ShortFieldTagsNames;
-      EKAT_REQUIRE_MSG(f_lt.has_tag(COL) == m_lt.has_tag(COL),
-          "Error! Incompatible field and mask layouts.\n"
-          "  - field name: " + src.name() + "\n"
-          "  - field layout: " + f_lt.to_string() + "\n"
-          "  - mask layout: " + m_lt.to_string() + "\n");
-      EKAT_REQUIRE_MSG(f_lt.has_tag(LEV) == m_lt.has_tag(LEV),
-          "Error! Incompatible field and mask layouts.\n"
-          "  - field name: " + src.name() + "\n"
-          "  - field layout: " + f_lt.to_string() + "\n"
-          "  - mask layout: " + m_lt.to_string() + "\n");
+      ++idx;
     }
+    return -1;
+  };
+
+  for (int i=0; i<m_num_fields; ++i) {
+    const auto& src = m_src_fields[i];
+    const auto& tgt = m_tgt_fields[i];
+    if (not src.get_header().has_extra_data("mask_data"))
+      continue;
+
+    // First, check that we also have the mask value, to be used if mask_data is too small
+    EKAT_REQUIRE_MSG (src.get_header().has_extra_data("mask_value"),
+        "Error! Field " + src.name() + " stores a mask field but not a mask value.\n");
+
+    const auto& src_mask = src.get_header().get_extra_data<Field>("mask_data");
+    const auto& src_mask_val = src.get_header().get_extra_data<Real>("mask_value");
+
+    // Make sure fields representing masks are not themselves meant to be masked.
+    EKAT_REQUIRE_MSG(not src_mask.get_header().has_extra_data("mask_data"),
+        "Error! A mask field cannot be itself masked.\n"
+        "  - field name: " + src.name() + "\n"
+        "  - mask field name: " + src_mask.name() + "\n");
+
+    // Check that the mask field has the correct layout
+    const auto& f_lt = src.get_header().get_identifier().get_layout();
+    const auto& m_lt = src_mask.get_header().get_identifier().get_layout();
+    using namespace ShortFieldTagsNames;
+    EKAT_REQUIRE_MSG(f_lt.has_tag(COL) == m_lt.has_tag(COL),
+        "Error! Incompatible field and mask layouts.\n"
+        "  - field name: " + src.name() + "\n"
+        "  - field layout: " + f_lt.to_string() + "\n"
+        "  - mask layout: " + m_lt.to_string() + "\n");
+    EKAT_REQUIRE_MSG(f_lt.has_tag(LEV) == m_lt.has_tag(LEV),
+        "Error! Incompatible field and mask layouts.\n"
+        "  - field name: " + src.name() + "\n"
+        "  - field layout: " + f_lt.to_string() + "\n"
+        "  - mask layout: " + m_lt.to_string() + "\n");
+
+    // If not there, set mask value in the tgt field too
+    auto& tgt_hdr = m_tgt_fields[i].get_header();
+    if (tgt_hdr.has_extra_data("mask_value")) {
+      const auto& tgt_mask_val = tgt_hdr.get_extra_data<Real>("mask_value");
+
+      EKAT_REQUIRE_MSG (tgt_mask_val==src_mask_val,
+          "Error! Target field stores a mask data different from the src field.\n"
+          "  - src field name: " + src.name() + "\n"
+          "  - tgt field name: " + tgt.name() + "\n"
+          "  - src mask value: " << src_mask_val << "\n"
+          "  - tgt mask value: " << tgt_mask_val << "\n");
+    } else {
+      tgt_hdr.set_extra_data("mask_value",src_mask_val);
+    }
+
+    // If it's the first time we find this mask, store it, so we can register later
+    const auto& src_mask_fid = src_mask.get_header().get_identifier();
+    int mask_idx = src_mask_idx(src_mask_fid);
+    if (mask_idx==-1) {
+      mask_idx = m_num_fields + masks.size();
+
+      Field tgt_mask(create_tgt_fid(src_mask_fid));
+      auto src_pack_size = src_mask.get_header().get_alloc_properties().get_largest_pack_size();
+      tgt_mask.get_header().get_alloc_properties().request_allocation(src_pack_size);
+      tgt_mask.allocate_view();
+    }
+
+    // Store position of the mask for this field
+    m_field_idx_to_mask_idx[i] = mask_idx;
+  }
+
+  // Add all masks to the fields to remap
+  for (const auto& it : masks) {
+    register_field(it.first,it.second);
   }
 }
 
-void CoarseningRemapper::do_remap_fwd ()
+void CoarseningRemapper::remap_fwd_impl ()
 {
   // Fire the recv requests right away, so that if some other ranks
   // is done packing before us, we can start receiving their data
@@ -189,6 +209,8 @@ void CoarseningRemapper::do_remap_fwd ()
     const auto& f_src = m_src_fields[i];
     const auto& f_ov  = m_ov_fields[i];
 
+    // NOTE: if m_track_mask=false, the map is empty, so it returns 0.
+    //       masks are registered AFTER fields, mask idx MUST be >0.
     const int mask_idx = m_field_idx_to_mask_idx[i];
     if (mask_idx>0) {
       // Pass the mask to the local_mat_vec routine

@@ -45,20 +45,18 @@ public:
 
 protected:
 
-  void do_remap_fwd () override {
+  void remap_fwd_impl () override {
     m_remapper->remap_bwd();
   }
-  void do_remap_bwd () override {
+  void remap_bwd_impl () override {
     m_remapper->remap_fwd();
   }
 
-  void do_registration_begins () override {
+  void registration_ends_impl () override {
     m_remapper->registration_begins();
-  }
-  void do_register_field (Field& src, Field& tgt) override {
-    m_remapper->register_field(tgt,src);
-  }
-  void do_registration_ends () override {
+    for (int i=0; i<m_num_fields; ++i) {
+      m_remapper->register_field(m_tgt_fields[i],m_src_fields[i]);
+    }
     m_remapper->registration_ends();
   }
 

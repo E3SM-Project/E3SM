@@ -63,7 +63,7 @@ PhysicsDynamicsRemapper (const grid_ptr_type& phys_grid,
 }
 
 void PhysicsDynamicsRemapper::
-do_registration_ends ()
+registration_ends_impl ()
 {
   setup_boundary_exchange ();
   initialize_device_variables();
@@ -275,7 +275,7 @@ set_dyn_to_zero(const MT& team) const
 }
 
 void PhysicsDynamicsRemapper::
-do_remap_fwd()
+remap_fwd_impl ()
 {
   // When remapping from phys to dyn, we need to perform a BEX
   // on the dyn fields. The BEX is 'static', meaning that the stored
@@ -322,7 +322,7 @@ do_remap_fwd()
 }
 
 void PhysicsDynamicsRemapper::
-do_remap_bwd()
+remap_bwd_impl ()
 {
   // Check if we need to update the views for subfields
   update_subfields_views(m_subfield_info_dyn,m_dyn_repo,m_tgt_fields);
@@ -338,9 +338,8 @@ do_remap_bwd()
   const int team_size = (concurrency<this->m_num_fields*m_num_phys_cols ? 1 : concurrency/(this->m_num_fields*m_num_phys_cols));
 #endif
 
-  // TeamPolicy over m_num_phys_cols*this->m_num_fields. Unlike do_remap_fwd,
-  // here we do not require setting dyn=0, allowing us to extend
-  // the TeamPolicy
+  // TeamPolicy over m_num_phys_cols*this->m_num_fields. Unlike remap_fwd_impl,
+  // here we do not require setting dyn=0, allowing us to extend the TeamPolicy
   const TeamPolicy policy(this->m_num_fields*m_num_phys_cols,team_size);
   Kokkos::parallel_for(policy, *this);
   Kokkos::fence();

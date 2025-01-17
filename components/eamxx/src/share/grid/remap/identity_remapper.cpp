@@ -64,17 +64,21 @@ compatible_layouts (const FieldLayout& src, const FieldLayout& tgt) const
   return src.congruent(tgt);
 }
 
-void IdentityRemapper::do_register_field (Field& src, Field& tgt)
+void IdentityRemapper::registration_ends_impl ()
 {
   // If there is aliasing, src and tgt must be the SAME field
   if (m_aliasing!=Aliasing::NoAliasing) {
-    EKAT_REQUIRE_MSG (src.equivalent(tgt),
-        "Error! Input fields are not aliasing eahc other, but aliasing was requested.\n"
-        "       To register field when aliasing is active, use register_field_from_tgt/src.\n");
+    for (int i=0; i<m_num_fields; ++i) {
+      const auto& src = m_src_fields[i];
+      const auto& tgt = m_tgt_fields[i];
+      EKAT_REQUIRE_MSG (src.equivalent(tgt),
+          "Error! Input fields are not aliasing eahc other, but aliasing was requested.\n"
+          "       To register field when aliasing is active, use register_field_from_tgt/src.\n");
+    }
   }
 }
 
-void IdentityRemapper::do_remap_fwd () {
+void IdentityRemapper::remap_fwd_impl () {
   // Only do deep copies if there's no aliasing
   if (m_aliasing==Aliasing::NoAliasing) {
     for (int i=0; i<m_num_fields; ++i) {
@@ -83,7 +87,7 @@ void IdentityRemapper::do_remap_fwd () {
   }
 }
 
-void IdentityRemapper::do_remap_bwd () {
+void IdentityRemapper::remap_bwd_impl () {
   // Only do deep copies if there's no aliasing
   if (m_aliasing==Aliasing::NoAliasing) {
     for (int i=0; i<m_num_fields; ++i) {

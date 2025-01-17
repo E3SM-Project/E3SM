@@ -16,8 +16,6 @@ registration_begins () {
       "Error! Cannot start registration on a non-clean repo.\n"
       "       Did you call 'registration_begins' already?\n");
 
-  do_registration_begins();
-
   m_state = RepoState::Open;
 }
 
@@ -58,8 +56,6 @@ register_field (const Field& src, const Field& tgt)
   m_src_fields.emplace_back(src);
   m_tgt_fields.emplace_back(tgt);
 
-  do_register_field (m_src_fields.back(),m_tgt_fields.back());
-
   ++m_num_fields;
 }
 
@@ -97,7 +93,7 @@ void AbstractRemapper::registration_ends ()
       "Error! Cannot call registration_ends at this time.\n"
       "       Did you accidentally call 'registration_ends' already?");
 
-  do_registration_ends();
+  registration_ends_impl();
 
   m_state = RepoState::Closed;
 }
@@ -113,7 +109,7 @@ void AbstractRemapper::remap_fwd ()
         "Error! Forward remap is not allowed by this remapper.\n");
     EKAT_REQUIRE_MSG (not m_has_read_only_tgt_fields,
         "Error! Forward remap IS allowed by this remapper, but some of the tgt fields are read-only\n");
-    do_remap_fwd ();
+    remap_fwd_impl ();
   }
 }
 
@@ -128,7 +124,7 @@ void AbstractRemapper::remap_bwd ()
         "Error! Backward remap is not allowed by this remapper.\n");
     EKAT_REQUIRE_MSG (not m_has_read_only_src_fields,
         "Error! Backward remap IS allowed by this remapper, but some of the src fields are read-only\n");
-    do_remap_bwd ();
+    remap_bwd_impl ();
   }
 }
 

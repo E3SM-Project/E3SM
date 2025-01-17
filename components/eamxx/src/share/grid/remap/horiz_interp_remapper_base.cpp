@@ -88,8 +88,19 @@ HorizInterpRemapperBase::
   }
 }
 
-void HorizInterpRemapperBase::do_registration_ends ()
+void HorizInterpRemapperBase::registration_ends_impl ()
 {
+  for (int i=0; i<m_num_fields; ++i) {
+    const auto& src_dt = m_src_fields[i].get_header().get_identifier().data_type();
+    const auto& tgt_dt = m_tgt_fields[i].get_header().get_identifier().data_type();
+    EKAT_REQUIRE_MSG (src_dt==DataType::RealType and tgt_dt==DataType::RealType,
+        "Error! HorizInterpRmapperBase requires src/tgt fields to have Real data type.\n"
+        "  - src field name: " + m_src_fields[i].name() + "\n"
+        "  - tgt field name: " + m_tgt_fields[i].name() + "\n"
+        "  - src data type : " + e2str(src_dt) + "\n"
+        "  - tgt data type : " + e2str(tgt_dt) + "\n");
+  }
+
   create_ov_fields ();
   setup_mpi_data_structures ();
 }
