@@ -72,6 +72,15 @@ else ()
     string (REPLACE " " ";" YAKL_HIP_FLAGS_LIST ${YAKL_HIP_FLAGS})
   endif()
 
+  ####### SYCL here
+  if (SYCL_BUILD)
+    set(YAKL_ARCH "SYCL")
+    set(YAKL_SYCL_FLAGS " -fp-model precise -DYAKL_ARCH_SYCL -\-intel -fsycl -fsycl-targets=spir64_gen -mlong-double-64")
+    string (REPLACE " " ";" YAKL_SYCL_FLAGS_LIST ${YAKL_SYCL_FLAGS})
+  endif()
+
+
+
   set (YAKL_SOURCE_DIR ${SCREAM_BASE_DIR}/../../externals/YAKL)
   add_subdirectory(${YAKL_SOURCE_DIR} ${CMAKE_BINARY_DIR}/externals/YAKL)
 
@@ -168,12 +177,17 @@ yakl_process_target(scream_rrtmgp_yakl)
 # NOTE: cannot use 'PUBLIC' in target_link_libraries,
 #       since yakl_process_target already used it
 #       with the "plain" signature
+
+#<<<<<<< HEAD
+#find_library(NETCDF_C netcdf HINTS $ENV{NETCDF_C_PATH}/lib)
+#target_link_libraries(scream_rrtmgp_yakl ${NETCDF_C} rrtmgp scream_share)
+#=======
 find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATH}/lib)
 target_link_libraries(scream_rrtmgp_yakl ${NETCDF_C} rrtmgp scream_share Kokkos::kokkos)
 target_include_directories(scream_rrtmgp_yakl PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(scream_rrtmgp_yakl SYSTEM PUBLIC
-    ${NetCDF_C_PATH}/include
+	${NETCDF_C_PATH}/include
     ${EAM_RRTMGP_DIR}/external)
 
 ##################################
