@@ -1,0 +1,110 @@
+Omega:
+  TimeIntegration:
+    CalendarType: No Leap
+    TimeStepper: Forward-Backward
+    TimeStep: 0000_00:10:00
+    StartTime: 0001-01-01_00:00:00
+    StopTime: 0001-01-01_02:00:00
+    RunDuration: none
+  Dimension:
+    NVertLevels: 60
+  Decomp:
+    HaloWidth: 3
+    DecompMethod: MetisKWay
+  State:
+    NTimeLevels: 2
+  Advection:
+    FluxThicknessType: Center
+    FluxTracerType: Center
+  Tendencies:
+    ThicknessFluxTendencyEnable: true
+    PVTendencyEnable: true
+    KETendencyEnable: true
+    SSHTendencyEnable: true
+    VelDiffTendencyEnable: true
+    ViscDel2: 1.0e3
+    VelHyperDiffTendencyEnable: true
+    ViscDel4: 1.2e11
+    TracerHorzAdvTendencyEnable: true
+    TracerDiffTendencyEnable: true
+    EddyDiff2: 10.0
+    TracerHyperDiffTendencyEnable: true
+    EddyDiff4: 0.0
+    UseCustomTendency: false
+    ManufacturedSolutionTendency: false
+  Tracers:
+    Base: [Temperature, Salinity]
+    Debug: [Debug1, Debug2, Debug3]
+  IOStreams:
+    # InitialState should only be used when starting from scratch.
+    # For restart runs, the frequency units should be changed from
+    # "OnStartup" to "never" so that the initial state file is not read.
+    InitialState:
+      UsePointerFile: false
+      Filename: OmegaMesh.nc
+      Mode: read
+      Precision: double
+      Freq: 1
+      FreqUnits: OnStartup
+      UseStartEnd: false
+      Contents:
+        - State
+        - Base
+    # Restarts are used to initialize for all job submissions after the very
+    # first startup job. We use UseStartEnd with a start time just after the
+    # simulation start time so that omega does not attempt to use a restart
+    # for the first startup job.
+    RestartRead:
+      UsePointerFile: true
+      PointerFilename: ocn.pointer
+      Mode: read
+      Precision: double
+      Freq: 1
+      FreqUnits: OnStartup
+      UseStartEnd: true
+      StartTime: 0001-01-01_00:00:01
+      EndTime: 99999-12-31_00:00:00
+      Contents:
+        - Restart
+    RestartWrite:
+      UsePointerFile: true
+      PointerFilename: ocn.pointer
+      Filename: ocn.restart.$Y-$M-$D_$h.$m.$s
+      Mode: write
+      IfExists: replace
+      Precision: double
+      Freq: 6
+      FreqUnits: months
+      UseStartEnd: false
+      Contents:
+        - Restart
+    History:
+      UsePointerFile: false
+      Filename: ocn.hist.$SimTime
+      Mode: write
+      IfExists: replace
+      Precision: double
+      Freq: 1
+      FreqUnits: months
+      UseStartEnd: false
+      Contents:
+        - Tracers
+        - State
+        - SshCellDefault
+    Highfreq:
+      UsePointerFile: false
+      Filename: ocn.hifreq.$Y-$M-$D_$h.$m.$s
+      Mode: write
+      IfExists: replace
+      Precision: single
+      Freq: 10
+      FreqUnits: days
+      UseStartEnd: true
+      StartTime: 0001-06-01_00:00:00
+      EndTime: 0001-06-30_00:00:00
+      Contents:
+        - Tracers
+  ManufacturedSolution:
+    WavelengthX: 5.0e6
+    WavelengthY: 4.33013e6
+    Amplitude: 1.0
