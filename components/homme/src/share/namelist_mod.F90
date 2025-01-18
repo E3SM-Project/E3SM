@@ -46,6 +46,10 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     semi_lagrange_cdr_check, &
     semi_lagrange_hv_q, &
     semi_lagrange_nearest_point_lev, &
+    semi_lagrange_halo, &
+    semi_lagrange_trajectory_nsubstep, &
+    semi_lagrange_trajectory_nvelocity, &
+    semi_lagrange_diagnostics, &
     tstep_type,    &
     cubed_sphere_map, &
     qsplit,        &
@@ -272,6 +276,11 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
       semi_lagrange_cdr_check, &
       semi_lagrange_hv_q, &
       semi_lagrange_nearest_point_lev, &
+      semi_lagrange_halo, &
+      semi_lagrange_trajectory_nsubstep, &
+      semi_lagrange_trajectory_nvelocity, &
+      semi_lagrange_diagnostics, &
+      semi_lagrange_hv_q, &
       tstep_type,    &
       cubed_sphere_map, &
       qsplit,        &
@@ -426,6 +435,13 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     se_ftype = ftype   ! MNL: For non-CAM runs, ftype=0 in control_mod
     nsplit = 1
     pertlim = 0.0_real_kind
+#else
+    se_partmethod = SFCURVE
+    se_ne = 0
+    se_ne_x = 0
+    se_ne_y = 0
+    se_lx = 0
+    se_ly = 0
 #endif
     sub_case      = 1
     numnodes      = -1
@@ -446,6 +462,10 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     semi_lagrange_cdr_check = .false.
     semi_lagrange_hv_q = 1
     semi_lagrange_nearest_point_lev = 256
+    semi_lagrange_halo = 2
+    semi_lagrange_trajectory_nsubstep = 0
+    semi_lagrange_trajectory_nvelocity = -1
+    semi_lagrange_diagnostics = 0
     disable_diagnostics = .false.
     se_fv_phys_remap_alg = 1
     internal_diagnostics_level = 0
@@ -856,6 +876,10 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     call MPI_bcast(semi_lagrange_cdr_check ,1,MPIlogical_t,par%root,par%comm,ierr)
     call MPI_bcast(semi_lagrange_hv_q ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(semi_lagrange_nearest_point_lev ,1,MPIinteger_t,par%root,par%comm,ierr)
+    call MPI_bcast(semi_lagrange_halo ,1,MPIinteger_t,par%root,par%comm,ierr)
+    call MPI_bcast(semi_lagrange_trajectory_nsubstep ,1,MPIinteger_t,par%root,par%comm,ierr)
+    call MPI_bcast(semi_lagrange_trajectory_nvelocity ,1,MPIinteger_t,par%root,par%comm,ierr)
+    call MPI_bcast(semi_lagrange_diagnostics ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(tstep_type,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(cubed_sphere_map,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(qsplit,1,MPIinteger_t ,par%root,par%comm,ierr)
@@ -1172,6 +1196,10 @@ end if
        write(iulog,*)"readnl: semi_lagrange_cdr_check   = ",semi_lagrange_cdr_check
        write(iulog,*)"readnl: semi_lagrange_hv_q   = ",semi_lagrange_hv_q
        write(iulog,*)"readnl: semi_lagrange_nearest_point_lev   = ",semi_lagrange_nearest_point_lev
+       write(iulog,*)"readnl: semi_lagrange_halo   = ",semi_lagrange_halo
+       write(iulog,*)"readnl: semi_lagrange_trajectory_nsubstep   = ",semi_lagrange_trajectory_nsubstep
+       write(iulog,*)"readnl: semi_lagrange_trajectory_nvelocity   = ",semi_lagrange_trajectory_nvelocity
+       write(iulog,*)"readnl: semi_lagrange_diagnostics   = ",semi_lagrange_diagnostics
        write(iulog,*)"readnl: tstep_type    = ",tstep_type
        write(iulog,*)"readnl: theta_advect_form = ",theta_advect_form
        write(iulog,*)"readnl: vtheta_thresh     = ",vtheta_thresh

@@ -461,10 +461,6 @@ if (NOT SCREAM_LIB_ONLY)
   # for LONG use 100. It is *completely* up to the test to decide what short, medium, and long mean.
   if (EKAT_ENABLE_COVERAGE OR EKAT_ENABLE_CUDA_MEMCHECK OR EKAT_ENABLE_VALGRIND OR EKAT_ENABLE_COMPUTE_SANITIZER)
     set (SCREAM_TEST_SIZE_DEFAULT SHORT)
-    # also set thread_ing=$max_thread - 1, so we test at most 2 threading configurations
-    if (SCREAM_TEST_MAX_THREADS GREATER 1)
-      math (EXPR SCREAM_TEST_THREAD_INC ${SCREAM_TEST_MAX_THREADS}-1)
-    endif()
   else()
     set (SCREAM_TEST_SIZE_DEFAULT MEDIUM)
   endif()
@@ -595,9 +591,6 @@ if (NOT DEFINED ENV{SCREAM_FAKE_ONLY})
   EkatConfigFile(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.h.in
                  ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.h
                  F90_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.f)
-
-  # Build any tools in the scripts/ dir.
-  add_subdirectory(scripts)
 
   # Generate scream_config.h and scream_config.f
   include (EkatUtils)

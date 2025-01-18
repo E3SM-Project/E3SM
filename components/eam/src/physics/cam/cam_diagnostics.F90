@@ -306,6 +306,7 @@ subroutine diag_init()
    call addfld ('MQ',(/ 'lev' /), 'A','kg/m2','Water vapor mass in layer')
    call addfld ('TMQ',horiz_only,    'A','kg/m2','Total (vertically integrated) precipitable water', &
    standard_name='atmosphere_mass_content_of_water_vapor')
+   call addfld ('TMQS',horiz_only,   'A','kg/m2','Total (vertically integrated) saturated precipitable water')
    call addfld ('TTQ',horiz_only,   'A', 'kg/m/s','Total (vertically integrated) vapor transport')
    call addfld ('TUQ',horiz_only,    'A','kg/m/s','Total (vertically integrated) zonal water flux')
    call addfld ('TVQ',horiz_only,    'A','kg/m/s','Total (vertically integrated) meridional water flux')
@@ -1367,6 +1368,14 @@ end subroutine diag_conv_tend_ini
     call outfld ('TVH     ',ftem, pcols   ,lchnk     )
 
     if (moist_physics) then
+
+      ! Mass of saturated q vertically integrated
+       call qsat(state%t(:ncol,:), state%pmid(:ncol,:), tem2(:ncol,:), ftem(:ncol,:))
+       ftem(:ncol,:) = ftem(:ncol,:) * state%pdel(:ncol,:) * rga
+       do k=2,pver
+          ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
+       end do
+       call outfld ('TMQS    ',ftem, pcols   ,lchnk     )
 
        ! Relative humidity
        call qsat(state%t(:ncol,:), state%pmid(:ncol,:), &

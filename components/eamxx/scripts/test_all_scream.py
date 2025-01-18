@@ -1,13 +1,11 @@
 from utils import run_cmd, run_cmd_no_fail, expect, check_minimum_python_version, ensure_psutil, \
-    SharedArea, safe_copy
+    SharedArea
 from git_utils import get_current_head, get_current_commit
 
 from test_factory import create_tests, COV, CSR
 
-from machines_specs import get_mach_compilation_resources, get_mach_testing_resources, \
-    get_mach_baseline_root_dir, setup_mach_env, is_cuda_machine, \
-    get_mach_cxx_compiler, get_mach_f90_compiler, get_mach_c_compiler, is_machine_supported, \
-    logical_cores_per_physical_core
+from machines_specs import get_machine, setup_mach_env, is_machine_supported, \
+                           logical_cores_per_physical_core, get_cpu_ids_from_slurm_env_var
 
 check_minimum_python_version(3, 4)
 
@@ -49,8 +47,6 @@ class TestAllScream(object):
         self._c_compiler              = c_compiler
         self._submit                  = submit
         self._parallel                = parallel
-        self._machine                 = machine
-        self._local                   = local
         self._config_only             = config_only
         self._baseline_dir            = baseline_dir
         self._custom_cmake_opts       = custom_cmake_opts
@@ -78,18 +74,19 @@ class TestAllScream(object):
                 "Makes no sense to ask for --quick-rerun and --config-only at the same time")
 
         # Probe machine if none was specified
-        if self._machine is None:
+        if machine is not None:
+            self._machine = get_machine(machine)
+            expect (not local, "Specifying a machine while passing '-l,--local' is ambiguous.")
+        else:
             # We could potentially integrate more with CIME here to do actual
             # nodename probing.
             if "SCREAM_MACHINE" in os.environ and is_machine_supported(os.environ["SCREAM_MACHINE"]):
-                self._machine = os.environ["SCREAM_MACHINE"]
+                self._machine = get_machine(os.environ["SCREAM_MACHINE"])
             else:
-                expect(self._local,
+                expect(local,
                        "test-all-scream requires either the machine arg (-m $machine) or the -l flag,"
                        "which makes it look for machine specs in '~/.cime/scream_mach_specs.py'.")
-                self._machine = "local"
-        else:
-            expect (not self._local, "Specifying a machine while passing '-l,--local' is ambiguous.")
+                self._machine = get_machine("local")
 
         # Compute root dir (where repo is) and work dir (where build/test will happen)
         if not self._root_dir:
@@ -101,7 +98,7 @@ class TestAllScream(object):
 
         # Make our test objects! Change mem to default mem-check test for current platform
         if "mem" in tests:
-            tests[tests.index("mem")] = "csm" if self.on_cuda() else "valg"
+            tests[tests.index("mem")] = "csm" if self._machine.gpu_arch=="cuda" else "valg"
         self._tests = create_tests(tests, self)
 
         if self._work_dir is not None:
@@ -118,7 +115,7 @@ class TestAllScream(object):
         ###################################
 
         # Deduce how many compilation resources per test
-        make_max_jobs = get_mach_compilation_resources()
+        make_max_jobs = self._machine.num_bld_res
         if make_parallel_level > 0:
             expect(make_parallel_level <= make_max_jobs,
                    f"Requested make_parallel_level {make_parallel_level} is more than max available {make_max_jobs}")
@@ -127,7 +124,7 @@ class TestAllScream(object):
         else:
             print(f"Note: no value passed for --make-parallel-level. Using the default for this machine: {make_max_jobs}")
 
-        ctest_max_jobs = get_mach_testing_resources(self._machine)
+        ctest_max_jobs = self._machine.num_run_res
         if ctest_parallel_level > 0:
             expect(ctest_parallel_level <= ctest_max_jobs,
                    f"Requested ctest_parallel_level {ctest_parallel_level} is more than max available {ctest_max_jobs}")
@@ -155,7 +152,7 @@ class TestAllScream(object):
 
             # Avoid splitting physical cores across test types
             make_jobs_per_test  = ((make_max_jobs  // len(self._tests)) // log_per_phys) * log_per_phys
-            if self.on_cuda():
+            if self._machine.uses_gpu():
                 ctest_jobs_per_test = ctest_max_jobs // len(self._tests)
             else:
                 ctest_jobs_per_test = ((ctest_max_jobs // len(self._tests)) // log_per_phys) * log_per_phys
@@ -176,7 +173,7 @@ class TestAllScream(object):
         # Need to happen before compiler probing
         if not self._preserve_env:
             # Setup the env on this machine
-            setup_mach_env(self._machine, ctest_j=ctest_max_jobs)
+            setup_mach_env(self._machine.name, ctest_j=ctest_max_jobs)
 
         ############################################
         #           Check repo status              #
@@ -193,7 +190,7 @@ class TestAllScream(object):
 
         # These two dir are special dir for "on-the-fly baselines" and "machine's official baselines"
         local_baseline_dir = self._work_dir/"baselines"
-        auto_dir = Path(get_mach_baseline_root_dir(self._machine)).absolute()
+        auto_dir = Path(self._machine.baselines_dir).expanduser().absolute()
         # Handle the "fake" auto case, used in scripts tests
         if "SCREAM_FAKE_AUTO" in os.environ:
             auto_dir = auto_dir / "fake"
@@ -224,11 +221,11 @@ class TestAllScream(object):
         ############################################
 
         if self._cxx_compiler is None:
-            self._cxx_compiler = get_mach_cxx_compiler(self._machine)
+            self._cxx_compiler = self._machine.cxx_compiler
         if self._f90_compiler is None:
-            self._f90_compiler = get_mach_f90_compiler(self._machine)
+            self._f90_compiler = self._machine.ftn_compiler
         if self._c_compiler is None:
-            self._c_compiler = get_mach_c_compiler(self._machine)
+            self._c_compiler = self._machine.c_compiler
 
     ###############################################################################
     def create_tests_dirs(self, root, clean):
@@ -276,11 +273,6 @@ class TestAllScream(object):
     ###############################################################################
         return self._machine
 
-    ###########################################################################
-    def on_cuda(self):
-    ###########################################################################
-        return is_cuda_machine(self._machine)
-
     ###############################################################################
     def get_preexisting_baseline(self, test):
     ###############################################################################
@@ -314,19 +306,11 @@ class TestAllScream(object):
         return missing
 
     ###############################################################################
-    def get_machine_file(self):
-    ###############################################################################
-        if self._local:
-            return Path("~/.cime/scream_mach_file.cmake").expanduser()
-        else:
-            return self._root_dir/"cmake"/"machine-files"/f"{self._machine}.cmake"
-
-    ###############################################################################
     def generate_cmake_config(self, test, for_ctest=False):
     ###############################################################################
 
         # Ctest only needs config options, and doesn't need the leading 'cmake '
-        result  = f"{'' if for_ctest else 'cmake '}-C {self.get_machine_file()}"
+        result  = f"{'' if for_ctest else 'cmake '}-C {self._machine.mach_file}"
 
         # Netcdf should be available. But if the user is doing a testing session
         # where all netcdf-related code is disabled, he/she should be able to run
@@ -402,9 +386,11 @@ class TestAllScream(object):
     ###############################################################################
         res_name = "compile_res_count" if for_compile else "testing_res_count"
 
-        if not for_compile and self.on_cuda():
+        if not for_compile and self._machine.uses_gpu():
             # For GPUs, the cpu affinity is irrelevant. Just assume all GPUS are open
             affinity_cp = list(range(self._ctest_max_jobs))
+        elif "SLURM_CPU_BIND_LIST" in os.environ:
+            affinity_cp = get_cpu_ids_from_slurm_env_var()
         else:
             this_process = psutil.Process()
             affinity_cp = list(this_process.cpu_affinity())
@@ -492,7 +478,7 @@ class TestAllScream(object):
 
         if self._limit_test_regex:
             result += f"-DINCLUDE_REGEX={self._limit_test_regex} "
-        result += f'-S {self._root_dir}/cmake/ctest_script.cmake -DCTEST_SITE={self._machine} -DCMAKE_COMMAND="{cmake_config}" '
+        result += f'-S {self._root_dir}/cmake/ctest_script.cmake -DCTEST_SITE={self._machine.name} -DCMAKE_COMMAND="{cmake_config}" '
 
         # Ctest can only competently manage test pinning across a single instance of ctest. For
         # multiple concurrent instances of ctest, we have to help it. It's OK to use the compile_res_count
@@ -511,7 +497,7 @@ class TestAllScream(object):
                f"Something is off. generate_baseline should have not be called for test {test}")
 
         baseline_dir = self.get_test_dir(self._baseline_dir, test)
-        test_dir = self.get_test_dir(self._work_dir / "tas_baseline_build", test)
+        test_dir = self.get_test_dir(self._work_dir, test)
         if test_dir.exists():
             shutil.rmtree(test_dir)
         test_dir.mkdir()
@@ -565,7 +551,7 @@ class TestAllScream(object):
                     if fn != "":
                         src = Path(fn)
                         dst = baseline_dir / "data" / src.name
-                        safe_copy(src, dst)
+                        shutil.copyfile(src, dst)
 
         # Store the sha used for baselines generation. This is only for record
         # keeping.
@@ -589,11 +575,6 @@ class TestAllScream(object):
         print("###############################################################################")
         print(f"Generating baselines using '{git_head}'")
         print("###############################################################################")
-
-        tas_baseline_bld = self._work_dir / "tas_baseline_build"
-        if tas_baseline_bld.exists():
-            shutil.rmtree(tas_baseline_bld)
-        tas_baseline_bld.mkdir()
 
         success = True
         num_workers = len(tests_needing_baselines) if self._parallel else 1

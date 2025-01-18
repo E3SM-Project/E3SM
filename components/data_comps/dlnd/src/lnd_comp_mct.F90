@@ -16,7 +16,11 @@ module lnd_comp_mct
   use dlnd_comp_mod   , only: dlnd_comp_init, dlnd_comp_run, dlnd_comp_final
   use dlnd_shr_mod    , only: dlnd_shr_read_namelists
   use seq_flds_mod    , only: seq_flds_x2l_fields, seq_flds_l2x_fields
-
+#ifdef HAVE_MOAB
+  use seq_comm_mct, only : mlnid !            iMOAB app id for lnd
+  use iso_c_binding
+  use iMOAB           , only: iMOAB_RegisterApplication
+#endif
   ! !PUBLIC TYPES:
   implicit none
   private ! except
@@ -52,7 +56,9 @@ CONTAINS
 
   !===============================================================================
   subroutine lnd_init_mct( EClock, cdata, x2l, l2x, NLFilename )
-
+#ifdef HAVE_MOAB
+    use shr_stream_mod, only: shr_stream_getDomainInfo, shr_stream_getFile
+#endif
     ! !DESCRIPTION:  initialize dlnd model
     implicit none
 
@@ -146,13 +152,25 @@ CONTAINS
     !----------------------------------------------------------------------------
     ! Initialize dlnd
     !----------------------------------------------------------------------------
-
+#ifdef HAVE_MOAB
+    ierr = iMOAB_RegisterApplication(trim("DLND")//C_NULL_CHAR, mpicom, compid, mlnid)
+    if (ierr .ne. 0) then
+      write(logunit,*) subname,' error in registering data lnd comp'
+      call shr_sys_abort(subname//' ERROR in registering data lnd comp')
+    endif
+#endif
     call dlnd_comp_init(Eclock, x2l, l2x, &
          seq_flds_x2l_fields, seq_flds_l2x_fields, &
          SDLND, gsmap, ggrid, mpicom, compid, my_task, master_task, &
          inst_suffix, inst_name, logunit, read_restart, &
          scmMode, scmlat, scmlon)
-
+#ifdef HAVE_MOAB
+     if (my_task == master_task) then
+          call seq_infodata_PutData( infodata, lnd_domain=SDLND%domainFile) ! we use the same one for regular case
+          ! in regular case, it is copied from fatmlndfrc ; so we don't know if it is data land or not
+          write(logunit,*), ' use this land domain file: ', SDLND%domainFile
+     endif
+#endif
     !----------------------------------------------------------------------------
     ! Fill infodata that needs to be returned from dlnd
     !----------------------------------------------------------------------------

@@ -183,7 +183,7 @@ do_register_field (const identifier_type& src, const identifier_type& tgt)
 {
   constexpr auto COL = ShortFieldTagsNames::COL;
   EKAT_REQUIRE_MSG (src.get_layout().has_tag(COL),
-      "Error! Cannot register a field without COL tag in RefiningRemapperP2P.\n"
+      "Error! Cannot register a field without COL tag in HorizInterpRemapperBase.\n"
       "  - field name: " + src.name() + "\n"
       "  - field layout: " + src.get_layout().to_string() + "\n");
   m_src_fields.push_back(field_type(src));
@@ -194,11 +194,11 @@ void HorizInterpRemapperBase::
 do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
 {
   EKAT_REQUIRE_MSG (src.data_type()==DataType::RealType,
-      "Error! RefiningRemapperRMA only allows fields with RealType data.\n"
+      "Error! HorizInterpRemapperBase only allows fields with RealType data.\n"
       "  - src field name: " + src.name() + "\n"
       "  - src field type: " + e2str(src.data_type()) + "\n");
   EKAT_REQUIRE_MSG (tgt.data_type()==DataType::RealType,
-      "Error! RefiningRemapperRMA only allows fields with RealType data.\n"
+      "Error! HorizInterpRemapperBase only allows fields with RealType data.\n"
       "  - tgt field name: " + tgt.name() + "\n"
       "  - tgt field type: " + e2str(tgt.data_type()) + "\n");
 
@@ -352,7 +352,7 @@ local_mat_vec (const Field& x, const Field& y) const
     }
     default:
     {
-      EKAT_ERROR_MSG("Error::refining_remapper::local_mat_vec doesn't support fields of rank 4 or greater");
+      EKAT_ERROR_MSG("[HorizInterpRemapperBase::local_mat_vec] Error! Fields of rank 4 or greater are not supported.\n");
     }
   }
 }

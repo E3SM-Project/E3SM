@@ -22,6 +22,7 @@ module glc_cpl_indices
   integer, public :: index_x2g_So_htv    = 0 !Ice shelf ocean heat transfer velocity
   integer, public :: index_x2g_So_stv    = 0 !Ice shelf ocean salinity transfer velocity
   integer, public :: index_x2g_So_rhoeff = 0 !Ocean effective pressure
+  integer, public :: index_x2g_So_tf2d   = 0 !Ocean thermal forcing at predefined critical depth
   integer, public :: index_x2g_Fogx_qiceli = 0 !Subshelf mass flux
   integer, public :: index_x2g_Fogx_qicehi = 0 !Subshelf heat flux for the ice sheet
 
@@ -70,6 +71,7 @@ contains
     index_x2g_Fogx_qiceli =               mct_avect_indexra(x2g,'Fogx_qiceli',perrwith='quiet')
     index_x2g_Fogx_qicehi =               mct_avect_indexra(x2g,'Fogx_qicehi',perrwith='quiet')
     index_x2g_So_rhoeff =                 mct_avect_indexra(x2g,'So_rhoeff',perrwith='quiet')
+    index_x2g_So_tf2d =                   mct_avect_indexra(x2g,'So_tf2d',perrwith='quiet')
 
     !Following block of x2g/g2x vectors are used internally within coupler for subshelf melt flux
     !calculations (and so do not have directly-related export-side arrays)

@@ -376,7 +376,7 @@ def buildnml(case, caseroot, compname):
             ic_prefix = 'mpaso.IcoswISC30E3r5.20231120+MARBL_ICfromOMIP_64levels'
             eco_forcing_file = 'ecoForcingSurfaceMonthly.IcoswISC30E3r5.20231215.nc'
         if ocn_ismf == 'data':
-            data_ismf_file = 'prescribed_ismf_paolo2023.IcoswISC30E3r5.20240227.nc'
+            data_ismf_file = 'prescribed_ismf_paolo2023.IcoswISC30E3r5.20240805.nc'
         if ocn_tidal_mixing == 'true':
             u_tidal_rms_file = 'velocityTidalRMS_CATS2008.IcoswISC30E3r5.20231120.nc'
         if ocn_sgr == 'data':
@@ -405,6 +405,20 @@ def buildnml(case, caseroot, compname):
             logger.warning("         But no file available for this grid.")
         if ocn_ismf == 'data':
             data_ismf_file = 'prescribed_ismf_paolo2023.RRSwISC6to18E3r5.20240327.nc'
+
+    elif ocn_grid == 'SOwISC12to30E3r3':
+        decomp_date = '20240829'
+        decomp_prefix = 'partitions/mpas-o.graph.info.'
+        restoring_file = 'sss.PHC2_monthlyClimatology.SOwISC12to30E3r3.20240829.nc'
+        analysis_mask_file = 'SOwISC12to30E3r3_mocBasinsAndTransects20210623.nc'
+        ic_date = '20240829'
+        ic_prefix = 'mpaso.SOwISC12to30E3r3'
+        if ocn_ic_mode == 'spunup':
+            ic_date = '20240829'
+            ic_prefix = 'mpaso.SOwISC12to30E3r3.rstFromG-chrysalis'
+        if ocn_ismf == 'data':
+            data_ismf_file = 'prescribed_ismf_paolo2023.SOwISC12to30E3r3.20241017.nc'
+
 
     #--------------------------------------------------------------------
     # Set OCN_FORCING = datm_forced_restoring if restoring file is available
@@ -948,6 +962,7 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var_array name="activeTracersAtBottom"/>')
             lines.append('    <var name="kineticEnergyAtSurface"/>')
             lines.append('    <var name="kineticEnergyAt250m"/>')
+            lines.append('    <var name="relativeVorticityAtSurface"/>')
             lines.append('    <var name="relativeVorticityAt250m"/>')
             lines.append('    <var name="ssh"/>')
             lines.append('    <var name="pressureAdjustedSSH"/>')
@@ -1156,7 +1171,7 @@ def buildnml(case, caseroot, compname):
             lines.append('        filename_interval="00-01-00_00:00:00"')
             lines.append('        reference_time="01-01-01_00:00:00"')
             lines.append('        output_interval="00-00-01_00:00:00"')
-            lines.append('        clobber_mode="truncate"')
+            lines.append('        clobber_mode="append"')
             lines.append('        packages="conservationCheckAMPKG">')
             lines.append('')
             lines.append('<var name="xtime"/>')
@@ -1803,6 +1818,7 @@ def buildnml(case, caseroot, compname):
                 lines.append('        packages="dataLandIceFluxesPKG">')
                 lines.append('    <var name="dataLandIceFreshwaterFlux"/>')
                 lines.append('    <var name="dataLandIceHeatFlux"/>')
+                lines.append('    <var name="areaIntegAnnMeanDataIcebergIceShelfFreshwaterFlux"/>')
                 lines.append('</stream>')
                 lines.append('')
 

@@ -119,7 +119,7 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${TEST_SRC_DIR}/baroclinic_inst_mod.F90
     ${TEST_SRC_DIR}/dcmip12_wrapper.F90
     ${TEST_SRC_DIR}/dcmip16_wrapper.F90
-    ${TEST_SRC_DIR}/dcmip2012_test1_conv.F90
+    ${TEST_SRC_DIR}/dcmip2012_test1_conv_mod.F90
     ${TEST_SRC_DIR}/dcmip2012_test1_2_3.F90
     ${TEST_SRC_DIR}/dcmip2012_test4.F90
     ${TEST_SRC_DIR}/dcmip2016-baroclinic.F90
@@ -161,6 +161,8 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${SRC_SHARE_DIR}/cxx/ComposeTransport.cpp
     ${SRC_SHARE_DIR}/cxx/ComposeTransportImplGeneral.cpp
     ${SRC_SHARE_DIR}/cxx/ComposeTransportImplTrajectory.cpp
+    ${SRC_SHARE_DIR}/cxx/ComposeTransportImplEnhancedTrajectory.cpp
+    ${SRC_SHARE_DIR}/cxx/ComposeTransportImplEnhancedTrajectoryTests.cpp
     ${SRC_SHARE_DIR}/cxx/ComposeTransportImplVerticalRemap.cpp
     ${SRC_SHARE_DIR}/cxx/ComposeTransportImplHypervis.cpp
     ${SRC_SHARE_DIR}/cxx/ComposeTransportImplTest2D.cpp

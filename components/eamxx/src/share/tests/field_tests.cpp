@@ -261,6 +261,17 @@ TEST_CASE("field", "") {
   }
 
   SECTION ("deep_copy") {
+    // rank-0
+    std::vector<FieldTag> t0 = {};
+    std::vector<int> d0 = {};
+    FieldIdentifier fid0("scalar_0d",{t0,d0},m/s,"some_grid");
+    Field f0(fid0);
+    f0.allocate_view();
+    f0.deep_copy(1.5);
+    f0.sync_to_host();
+    REQUIRE (reinterpret_cast<Real*>(f0.get_internal_view_data<Real,Host>())[0]==1.5);
+
+    // rank-3
     std::vector<FieldTag> t1 = {COL,CMP,LEV};
     std::vector<int> d1 = {3,2,24};
 

@@ -113,6 +113,9 @@
 		<dim name="nSubgridTableLevels" definition="namelist:config_subgrid_table_levels"
 			description="Number of subgrid look-up table levels"
 		/>
+		<dim name="nRemovedIceRunoffHistory" definition="namelist:config_ais_ice_runoff_history_days"
+			 description="The number of days stored in the history of removed ice runoff."
+		/>
 	</dims>
 
 	<!--*************************************-->
@@ -807,6 +810,22 @@
 					description="If true, solid runoff from the Antarctic Ice Sheet (below 60S latitude) coming from the coupled is zeroed in the coupler import routines.  To be used with data iceberg fluxes coming from the sea ice model."
 					possible_values=".true. or .false."
 		/>
+		<nml_option name="config_scale_dismf_by_removed_ice_runoff" type="logical" default_value=".false."
+					description="Whether to scale data ice-shelf melt fluxes by the running mean of removed ice runoff."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_ais_ice_runoff_history_days" type="integer" default_value="731"
+					description="The number of days over for which the history of removed AIS runoff is stored. The default is 731 days (2 years + 1 day)."
+					possible_values="Any positive integer"
+		/>
+		<nml_option name="config_glc_thermal_forcing_coupling_mode" type="character" default_value="off"
+					description="If and how MPAS-Ocean sends thermal forcing to GLC (MALI) in E3SM.  This is used for ocean coupling with a melt parameterization for grounded marine ice-cliffs in MALI.  This is primarily relevant to the Greenland Ice Sheet, but also relevant to the Antarctic Ice Sheet. 'none' means no coupling of thermal forcing.  '2d' means thermal forcing at a prescribed depth is passed to GLC.  That depth is controlled by 'config_2d_thermal_forcing_depth', and the resulting thermal forcing field is calculated in the field 'avgThermalForcingAtCritDepth'."
+					possible_values="'off', '2d'"
+		/>
+		<nml_option name="config_2d_thermal_forcing_depth" type="real" default_value="300" units="m"
+					description="Depth at which to pass 2d thermal forcing to the coupler for use in the GLC component.  Note that mapping files for this field must be created with a mask to exclude ocean grid cells shallower than this value and thus must be regenerated if this value is changed."
+					possible_values="any non-negative value"
+		/>
 	</nml_record>
 	<nml_record name="shortwaveRadiation" mode="init;forward">
 		<nml_option name="config_sw_absorption_type" type="character" default_value="none"
@@ -977,7 +996,7 @@
 					description="If frazil formation is used, controls if frazil fluxes are computed in the open ocean (as opposed to under land ice)."
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_frazil_under_land_ice" type="logical" default_value=".true."
+		<nml_option name="config_frazil_under_land_ice" type="logical" default_value=".false."
 					description="If frazil formation is used, controls if frazil fluxes are computed under land ice."
 					possible_values=".true. or .false."
 		/>
@@ -1717,6 +1736,7 @@
 		<package name="verticalRemapPKG" description="This package is for variables required for vertical Lagrangian remapping."/>
 		<package name="activeWavePKG" description="This package controls variables required for wave coupling"/>
 		<package name="subgridWetDryPKG" description="This package includes variables required for subgrid wetting and drying."/>
+		<package name="scaledDISMFPKG" description="This package includes variables required scaling data ice-shelf melt fluxes based on the running mean of removed ice runoff."/>
 	</packages>
 
 	<streams>
@@ -2008,6 +2028,7 @@
 			<var name="normalBarotropicVelocity"/>
 			<var name="vertCoordMovementWeights"/>
 			<var name="xtime"/>
+			<var_array name="nonLocalSurfaceTracerFlux"/>
 			<var name="simulationStartTime"/>
 			<var name="landIcePressure"/>
 			<var name="landIceDraft"/>
@@ -2043,6 +2064,11 @@
             <var name="gotmDissTopOfCell"/>
             <var name="gotmLengthTopOfCell"/>
             <var name="pgf_sal"/>
+            <var name="nAccumulatedRemovedIceRunoff" packages="scaledDISMFPKG"/>
+            <var name="avgRemovedIceRunoff" packages="scaledDISMFPKG"/>
+            <var name="totalRemovedIceRunoffHistory" packages="scaledDISMFPKG"/>
+            <var name="nValidTotalRemovedIceRunoffHistory" packages="scaledDISMFPKG"/>
+            <var name="runningMeanRemovedIceRunoff" packages="scaledDISMFPKG"/>
 		</stream>
 
 		<stream name="output"
@@ -3827,6 +3853,30 @@
 			 description="Fresh water flux from ice runoff from the coupler that was removed due to config_remove_ais_ice_runoff option. Positive into the ocean."
 			 packages="thicknessBulkPKG;activeTracersBulkRestoringPKG"
 		/>
+		<var name="nAccumulatedRemovedIceRunoff" type="integer" dimensions="Time"
+			 description="Number of accumulations in time averaging of removed ice runoff"
+			 packages="scaledDISMFPKG"
+		/>
+		<var name="avgRemovedIceRunoff" type="real" dimensions="Time" units="kg s^-1"
+			 description="The daily mean, area integrated value of removedIceRunoffFlux."
+			 packages="scaledDISMFPKG"
+		/>
+		<var name="dailyAvgRemovedIceRunoff" type="real" dimensions="Time" units="kg s^-1"
+			 description="The daily mean, area integrated value of removedIceRunoffFlux."
+			 packages="scaledDISMFPKG"
+		/>
+		<var name="totalRemovedIceRunoffHistory" type="real" dimensions="nRemovedIceRunoffHistory Time" units="kg"
+			 description="The history of avgRemovedIceRunoff, used to compute a running mean."
+			 packages="scaledDISMFPKG"
+		/>
+		<var name="nValidTotalRemovedIceRunoffHistory" type="integer" dimensions="Time"
+			 description="The number of valid days in dailyMeanRemovedIceRunoff, used in computing the running mean."
+			 packages="scaledDISMFPKG"
+		/>
+		<var name="runningMeanRemovedIceRunoff" type="real" dimensions="Time" units="kg s^-1"
+			 description="The running mean of dailyMeanRemovedIceRunoff, averaged over the nValidTotalRemovedIceRunoffHistory-1 valid entries"
+			 packages="scaledDISMFPKG"
+		/>
 		<var name="rainFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
 			 description="Fresh water flux from rain at cell centers from coupler. Positive into the ocean."
 		/>
@@ -4010,6 +4060,9 @@
 			description="The time-averaged effective ocean density within ice shelves based on Archimedes' principle."
 			packages="landIceCouplingPKG"
 		/>
+		<var name="avgThermalForcingAtCritDepth" type="real" dimensions="nCells Time" units="C"
+			description="The time-averaged thermal forcing at the predefined critical depth specified by config_2d_thermal_forcing_depth"
+		/>
 		<!-- Input fields for data (prescribed) land-ice fluxes -->
 		<var name="dataLandIceFreshwaterFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
 			description="Flux of mass through the ocean surface, as read in from a forcing file. Positive into ocean."
@@ -4018,6 +4071,10 @@
 		<var name="dataLandIceHeatFlux"  type="real" dimensions="nCells Time" units="W m^-2"
 			description="Flux of heat into the ocean at land ice-ocean interface, as read in from a forcing file. Positive into ocean."
 			packages="dataLandIceFluxesPKG"
+		/>
+		<var name="areaIntegAnnMeanDataIcebergIceShelfFreshwaterFlux"  type="real" dimensions="Time" units="kg s^-1"
+			description="The area integrated, annually averaged freshwater flux into the ocean from both data icebergs and ice-shelf melting."
+			packages="scaledDISMFPKG"
 		/>
 
 		<!-- Input fields for forcing due to tides -->
@@ -4129,6 +4186,10 @@
 		<var name="coastalSmoothingFactor" type="real" dimensions="nCells" units="1"
 			 description="Multiplication factors to smooth ssh at coastlines for SAL caculation"
 			 packages="tidalPotentialForcingPKG"
+		/>
+               	<var name="forcingTimeIncrement" type="real" dimensions="" units="s"
+			description="Time increment to compute forcing terms at intermediate time intervals"
+			packages="forwardMode"
 		/>
 	</var_struct>
 	<var_struct name="timeVaryingForcing" time_levs="1">

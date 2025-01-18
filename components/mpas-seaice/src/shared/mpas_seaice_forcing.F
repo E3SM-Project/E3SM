@@ -3318,6 +3318,9 @@ contains
          berg_forcing, &
          berg_fluxes
 
+    logical, pointer :: &
+         config_scale_dib_by_removed_ice_runoff
+
     integer, pointer :: &
          nCellsSolve
 
@@ -3326,13 +3329,35 @@ contains
          bergFreshwaterFlux, & ! iceberg freshwater flux for ocean (kg/m^2/s)
          bergLatentHeatFlux ! iceberg latent heat flux for ocean (J/m^2/s)
 
+    real(kind=RKIND), pointer :: &
+         areaIntegAnnMeanDataIcebergIceShelfFreshwaterFlux, & ! area integrated, annual mean freshwater flux from icebegs and ice shelves (kg/s)
+         runningMeanRemovedIceRunoff ! the area integrated, running mean of removed ice runoff (kg/s)
+
     integer :: &
          iCell
+
+    real(kind=RKIND) :: &
+         scaling
 
     ! dc including as parameters here so as not to create new namelist options
     real(kind=RKIND), parameter :: &
          specificHeatFreshIce = 2106.0_RKIND, & ! specific heat of fresh ice J * kg^-1 * K^-1
          bergTemperature = -4.0_RKIND           ! iceberg temperature, assumed constant
+
+
+    call MPAS_pool_get_config(domain % configs, "config_scale_dib_by_removed_ice_runoff", &
+                              config_scale_dib_by_removed_ice_runoff)
+
+    if (config_scale_dib_by_removed_ice_runoff) then
+       block => domain % blocklist
+       call MPAS_pool_get_subpool(block % structs, "berg_forcing", berg_forcing)
+       call mpas_pool_get_array(berg_forcing, 'runningMeanRemovedIceRunoff', runningMeanRemovedIceRunoff)
+       call mpas_pool_get_array(berg_forcing, 'areaIntegAnnMeanDataIcebergIceShelfFreshwaterFlux', &
+                                areaIntegAnnMeanDataIcebergIceShelfFreshwaterFlux)
+       scaling = runningMeanRemovedIceRunoff / areaIntegAnnMeanDataIcebergIceShelfFreshwaterFlux
+    else
+       scaling = 1.0_RKIND
+    end if
 
     block => domain % blocklist
     do while (associated(block))
@@ -3349,8 +3374,8 @@ contains
 
        do iCell = 1, nCellsSolve
 
-          bergFreshwaterFlux(iCell) = bergFreshwaterFluxData(iCell)
-          bergLatentHeatFlux(iCell) = -bergFreshwaterFluxData(iCell) * &
+          bergFreshwaterFlux(iCell) = scaling * bergFreshwaterFluxData(iCell)
+          bergLatentHeatFlux(iCell) = -scaling * bergFreshwaterFluxData(iCell) * &
                                      (seaiceLatentHeatMelting - specificHeatFreshIce*bergTemperature)
 
        enddo

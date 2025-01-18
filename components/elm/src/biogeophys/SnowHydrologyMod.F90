@@ -670,7 +670,7 @@ contains
                       if (bi > dm) ddz1 = ddz1*exp(-46.0e-3_r8*(bi-dm))
                    else
                       ddz1_fresh = (-grav * (burden(c) + wx/2._r8)) / &
-                                   (0.007_r8 * bi**(4.75_r8 + td/40._r8))
+                                   (0.007_r8 * min(max(bi,dm),denice)**(4.75_r8 + min(td,0._r8)/40._r8))
                       snw_ssa = 3.e6_r8 / (denice * snw_rds(c,j))
                       if (snw_ssa < 50._r8) then
                           ddz1_fresh = ddz1_fresh * exp(-46.e-2_r8 * (50._r8 - snw_ssa))

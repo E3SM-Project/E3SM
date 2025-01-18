@@ -38,7 +38,7 @@ void CldFraction::set_grids(const std::shared_ptr<const GridsManager> grids_mana
 
   // Set of fields used strictly as input
   constexpr int ps = Pack::n;
-  add_field<Required>("qi",          scalar3d_layout_mid, kg/kg,  grid_name,"tracers",ps);
+  add_tracer<Required>("qi", m_grid, kg/kg, ps);
   add_field<Required>("cldfrac_liq", scalar3d_layout_mid, nondim, grid_name,ps);
 
   // Set of fields used strictly as output

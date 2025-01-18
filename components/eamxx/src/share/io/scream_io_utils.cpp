@@ -1,6 +1,7 @@
 #include "share/io/scream_io_utils.hpp"
 
 #include "share/io/scream_scorpio_interface.hpp"
+#include "share/grid/library_grids_manager.hpp"
 #include "share/util/scream_utils.hpp"
 #include "share/scream_config.hpp"
 
@@ -115,6 +116,101 @@ util::TimeStamp read_timestamp (const std::string& filename,
     ts.set_num_steps(scorpio::get_attribute<int>(filename,"GLOBAL",ts_name+"_nsteps"));
   }
   return ts;
+}
+
+std::shared_ptr<AtmosphereDiagnostic>
+create_diagnostic (const std::string& diag_field_name,
+                   const std::shared_ptr<const AbstractGrid>& grid)
+{
+  // Note: use grouping (the (..) syntax), so you can later query the content
+  //       of each group in the matches output var!
+  // Note: use raw string syntax R"(<string>)" to avoid having to escape the \ character
+  // Note: the number for field_at_p/h can match positive integer/floating-point numbers
+  std::regex field_at_l (R"(([A-Za-z0-9_]+)_at_(lev_(\d+)|model_(top|bot))$)");
+  std::regex field_at_p (R"(([A-Za-z0-9_]+)_at_(\d+(\.\d+)?)(hPa|mb|Pa)$)");
+  std::regex field_at_h (R"(([A-Za-z0-9_]+)_at_(\d+(\.\d+)?)(m)_above_(sealevel|surface)$)");
+  std::regex surf_mass_flux ("precip_(liq|ice|total)_surf_mass_flux$");
+  std::regex water_path ("(Ice|Liq|Rain|Rime|Vap)WaterPath$");
+  std::regex number_path ("(Ice|Liq|Rain)NumberPath$");
+  std::regex aerocom_cld ("AeroComCld(Top|Bot)$");
+  std::regex vap_flux ("(Meridional|Zonal)VapFlux$");
+  std::regex backtend ("([A-Za-z0-9_]+)_atm_backtend$");
+  std::regex pot_temp ("(Liq)?PotentialTemperature$");
+  std::regex vert_layer ("(z|geopotential|height)_(mid|int)$");
+  std::regex horiz_avg ("([A-Za-z0-9_]+)_horiz_avg$");
+
+  std::string diag_name;
+  std::smatch matches;
+  ekat::ParameterList params(diag_field_name);
+
+  if (std::regex_search(diag_field_name,matches,field_at_l)) {
+    params.set("field_name",matches[1].str());
+    params.set("grid_name",grid->name());
+    params.set("vertical_location", matches[2].str());
+    diag_name = "FieldAtLevel";
+  } else if (std::regex_search(diag_field_name,matches,field_at_p)) {
+    params.set("field_name",matches[1].str());
+    params.set("grid_name",grid->name());
+    params.set("pressure_value",matches[2].str());
+    params.set("pressure_units", matches[4].str());
+    diag_name = "FieldAtPressureLevel";
+  } else if (std::regex_search(diag_field_name,matches,field_at_h)) {
+    params.set("field_name",matches[1].str());
+    params.set("grid_name",grid->name());
+    params.set("height_value",matches[2].str());
+    params.set("height_units",matches[4].str());
+    params.set("surface_reference", matches[5].str());
+    diag_name = "FieldAtHeight";
+  } else if (std::regex_search(diag_field_name,matches,surf_mass_flux)) {
+    diag_name = "precip_surf_mass_flux";
+    params.set<std::string>("precip_type",matches[1].str());
+  } else if (std::regex_search(diag_field_name,matches,water_path)) {
+    diag_name = "WaterPath";
+    params.set<std::string>("Water Kind",matches[1].str());
+  } else if (std::regex_search(diag_field_name,matches,number_path)) {
+    diag_name = "NumberPath";
+    params.set<std::string>("Number Kind",matches[1].str());
+  } else if (std::regex_search(diag_field_name,matches,aerocom_cld)) {
+    diag_name = "AeroComCld";
+    params.set<std::string>("AeroComCld Kind",matches[1].str());
+  } else if (std::regex_search(diag_field_name,matches,vap_flux)) {
+    diag_name = "VaporFlux";
+    params.set<std::string>("Wind Component",matches[1].str());
+  } else if (std::regex_search(diag_field_name,matches,backtend)) {
+    diag_name = "AtmBackTendDiag";
+    // Set the grid_name
+    params.set("grid_name",grid->name());
+    params.set<std::string>("Tendency Name",matches[1].str());
+  } else if (std::regex_search(diag_field_name,matches,pot_temp)) {
+    diag_name = "PotentialTemperature";
+    params.set<std::string>("Temperature Kind", matches[1].str()!="" ? matches[1].str() : std::string("Tot"));
+  } else if (std::regex_search(diag_field_name,matches,vert_layer)) {
+    diag_name = "VerticalLayer";
+    params.set<std::string>("diag_name",matches[1].str());
+    params.set<std::string>("vert_location",matches[2].str());
+  } else if (diag_field_name=="dz") {
+    diag_name = "VerticalLayer";
+    params.set<std::string>("diag_name","dz");
+    params.set<std::string>("vert_location","mid");
+  }
+  else if (std::regex_search(diag_field_name,matches,horiz_avg)) {
+    diag_name = "HorizAvgDiag";
+    // Set the grid_name
+    params.set("grid_name",grid->name());
+    params.set<std::string>("field_name",matches[1].str());
+  }
+  else
+  {
+    // No existing special regex matches, so we assume that the diag field name IS the diag name.
+    diag_name = diag_field_name;
+  }
+
+  auto comm = grid->get_comm();
+  auto diag = AtmosphereDiagnosticFactory::instance().create(diag_name,comm,params);
+  auto gm = std::make_shared<LibraryGridsManager>(grid);
+  diag->set_grids(gm);
+
+  return diag;
 }
 
 } // namespace scream

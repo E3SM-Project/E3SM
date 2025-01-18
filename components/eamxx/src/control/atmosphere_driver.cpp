@@ -4,6 +4,7 @@
 
 #include "physics/share/physics_constants.hpp"
 
+#include "share/scream_config.hpp"
 #include "share/atm_process/atmosphere_process_group.hpp"
 #include "share/atm_process/atmosphere_process_dag.hpp"
 #include "share/field/field_utils.hpp"
@@ -153,37 +154,51 @@ init_scorpio(const int atm_id)
 }
 
 void AtmosphereDriver::
-init_time_stamps (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0)
+init_time_stamps (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0, int run_type)
 {
   m_atm_logger->info("  [EAMxx] Run  start time stamp: " + run_t0.to_string());
   m_atm_logger->info("  [EAMxx] Case start time stamp: " + case_t0.to_string());
 
+  EKAT_REQUIRE_MSG (case_t0<=run_t0,
+      "Error! Case t0 time stamp must precede the run t0 time stamp.\n"
+      "  - case t0: " + case_t0.to_string() + "\n"
+      "  - run  t0: " + run_t0.to_string() + "\n");
+
   // Initialize time stamps
   m_run_t0 = m_current_ts = run_t0;
   m_case_t0 = case_t0;
+
+  switch (run_type) {
+    case 0:
+      m_run_type = RunType::Initial; break;
+    case 1:
+      m_run_type = RunType::Restart; break;
+    case -1:
+      m_run_type = case_t0==run_t0 ? RunType::Initial : RunType::Restart; break;
+    default:
+      EKAT_ERROR_MSG ("Unsupported/unrecognized run_type: " + std::to_string(run_type) + "\n");
+  }
 }
 
-
-
 void AtmosphereDriver::
-setup_iop ()
+setup_iop_data_manager ()
 {
   // At this point, must have comm, params, initialized timestamps created.
   check_ad_status(s_comm_set | s_params_set | s_ts_inited);
 
   // Check to make sure iop is not already initialized
-  EKAT_REQUIRE_MSG(not m_iop, "Error! setup_iop() is called, but IOP already set up.\n");
+  EKAT_REQUIRE_MSG(not m_iop_data_manager, "Error! setup_iop_data_manager() is called, but IOP already set up.\n");
 
   // This function should only be called if we are enabling IOP
   const bool enable_iop =
     m_atm_params.sublist("driver_options").get("enable_iop", false);
-  EKAT_REQUIRE_MSG(enable_iop, "Error! setup_iop() is called, but enable_iop=false "
+  EKAT_REQUIRE_MSG(enable_iop, "Error! setup_iop_data_manager() is called, but enable_iop=false "
                                "in driver_options parameters.\n");
 
   // Params must include iop_options sublist.
   const auto iop_sublist_exists = m_atm_params.isSublist("iop_options");
   EKAT_REQUIRE_MSG(iop_sublist_exists,
-                   "Error! setup_iop() is called, but no iop_options "
+                   "Error! setup_iop_data_manager() is called, but no iop_options "
                    "defined in parameters.\n");
 
   const auto iop_params = m_atm_params.sublist("iop_options");
@@ -192,15 +207,15 @@ setup_iop ()
   const auto hyam = phys_grid->get_geometry_data("hyam");
   const auto hybm = phys_grid->get_geometry_data("hybm");
 
-  m_iop = std::make_shared<IntensiveObservationPeriod>(m_atm_comm,
-                                                       iop_params,
-                                                       m_run_t0,
-                                                       nlevs,
-                                                       hyam,
-                                                       hybm);
+  m_iop_data_manager = std::make_shared<IOPDataManager>(m_atm_comm,
+                                                        iop_params,
+                                                        m_run_t0,
+                                                        nlevs,
+                                                        hyam,
+                                                        hybm);
 
   // Set IOP object in atm processes
-  m_atm_process_group->set_iop(m_iop);
+  m_atm_process_group->set_iop_data_manager(m_iop_data_manager);
 }
 
 void AtmosphereDriver::create_atm_processes()
@@ -243,10 +258,11 @@ void AtmosphereDriver::create_grids()
   // To avoid having to pass the same data twice in the input file,
   // we have the AD add the IC file name to the GM params
   const auto& ic_pl = m_atm_params.sublist("initial_conditions");
-  if (m_case_t0<m_run_t0) {
+  if (m_run_type==RunType::Restart) {
     // Restarted run -> read geo data from restart file
-    const auto& casename = ic_pl.get<std::string>("restart_casename");
-    auto filename = find_filename_in_rpointer (casename,true,m_atm_comm,m_run_t0);
+    const auto& provenance = m_atm_params.sublist("provenance");
+    const auto& casename = provenance.get<std::string>("rest_caseid");
+    auto filename = find_filename_in_rpointer (casename+".scream",true,m_atm_comm,m_run_t0);
     gm_params.set("ic_filename", filename);
     m_atm_params.sublist("provenance").set("initial_conditions_file",filename);
   } else if (ic_pl.isParameter("Filename")) {
@@ -280,7 +296,7 @@ void AtmosphereDriver::create_grids()
   const bool enable_iop =
     m_atm_params.sublist("driver_options").get("enable_iop", false);
   if (enable_iop) {
-    setup_iop ();
+    setup_iop_data_manager ();
   }
 
   // Set the grids in the processes. Do this by passing the grids manager.
@@ -670,63 +686,112 @@ void AtmosphereDriver::create_fields()
     fm->add_to_group(fid.name(),"RESTART");
   }
 
+  auto& driver_options_pl = m_atm_params.sublist("driver_options");
+  const int verb_lvl = driver_options_pl.get<int>("atmosphere_dag_verbosity_level",-1);
+  if (verb_lvl>0) {
+    // now that we've got fields, generate a DAG with fields and dependencies
+    // NOTE: at this point, fields provided by initial conditions may (will)
+    // appear as unmet dependencies
+    AtmProcDAG dag;
+    // First, add all atm processes
+    dag.create_dag(*m_atm_process_group);
+    // Write a dot file for visualizing the DAG
+    if (m_atm_comm.am_i_root()) {
+      std::string filename = "scream_atm_createField_dag";
+      if (is_scream_standalone()) {
+        filename += ".np" + std::to_string(m_atm_comm.size());
+      }
+      filename += ".dot";
+      dag.write_dag(filename, verb_lvl);
+    }
+  }
+
   m_ad_status |= s_fields_created;
+
+  // If the user requested it, we can save a dictionary of the FM fields to file
+  if (driver_options_pl.get("save_field_manager_content",false)) {
+    auto pg = m_grids_manager->get_grid("Physics");
+    const auto& fm = m_field_mgrs.at(pg->name());
+    ekat::ParameterList pl_out("field_manager_content");
+    pl_out.sublist("provenance") = m_atm_params.sublist("provenance");
+    DefaultMetadata std_names;
+    std::string desc;
+    desc = "content of the EAMxx FieldManager corresponding to the 'Physics' grid.\n"
+           "The dict keys are the field names as used in EAMxx.\n"
+           "For each field, we add the following entries:\n"
+           "  - standard_name: the name commonly used to refer to this field in atm sciences (if applicable)\n"
+           "  - units: the units for this field used in EAMxx\n"
+           "  - layout: the names of the dimensions for this field (time excluded)\n"
+           "  - providers: the atm processes that update/compute this field\n"
+           "  - customers: the atm processes that require this field as an input\n";
+    pl_out.set("description", desc);
+    auto& dict = pl_out.sublist("fields");
+    for (const auto& it : *fm) {
+      const auto& fid = it.second->get_header().get_identifier();
+      auto& pl = dict.sublist(fid.name());
+
+      pl.set("units",fid.get_units().to_string());
+      pl.set("layout",fid.get_layout().names());
+      pl.set("standard_name",std_names.get_standardname(fid.name()));
+      std::vector<std::string> providers,customers;
+      const auto& track = it.second->get_header().get_tracking();
+      for (auto ap : track.get_providers()) {
+        providers.push_back(ap.lock()->name());
+      }
+      for (auto ap : track.get_customers()) {
+        customers.push_back(ap.lock()->name());
+      }
+      pl.set("providers",providers);
+      pl.set("customers",customers);
+    }
+
+    ekat::write_yaml_file("eamxx_field_manager_content.yaml",pl_out);
+  }
 
   stop_timer("EAMxx::create_fields");
   stop_timer("EAMxx::init");
   m_atm_logger->info("[EAMxx] create_fields ... done!");
 }
 
-void AtmosphereDriver::initialize_output_managers () {
-  m_atm_logger->info("[EAMxx] initialize_output_managers ...");
+void AtmosphereDriver::create_output_managers () {
+  m_atm_logger->info("[EAMxx] create_output_managers ...");
   start_timer("EAMxx::init");
-  start_timer("EAMxx::initialize_output_managers");
+  start_timer("EAMxx::create_output_managers");
 
-  check_ad_status (s_comm_set | s_params_set | s_grids_created | s_fields_created);
+  check_ad_status (s_comm_set | s_params_set | s_ts_inited);
 
   auto& io_params = m_atm_params.sublist("Scorpio");
 
-  // IMPORTANT: create model restart OutputManager first! This OM will be in charge
-  // of creating rpointer.atm, while other OM's will simply append to it.
-  // If this assumption is not verified, we must always append to rpointer, which
-  // can make the rpointer file a bit confusing.
-
-  // Check for model restart output
   ekat::ParameterList checkpoint_params;
   checkpoint_params.set("frequency_units",std::string("never"));
   checkpoint_params.set("Frequency",-1);
+
+  // Create model restart OutputManager first. This OM will be in charge
+  // of creating rpointer.atm, while other OM's will simply append to it.
+  // If this assumption is not verified, we must always append to rpointer, which
+  // can make the rpointer file a bit confusing.
   if (io_params.isSublist("model_restart")) {
-    auto restart_pl = io_params.sublist("model_restart");
-    restart_pl.set<std::string>("Averaging Type","Instant");
-    restart_pl.sublist("provenance") = m_atm_params.sublist("provenance");
-    auto& om = m_output_managers.emplace_back();
-    if (fvphyshack) {
-      // Don't save CGLL fields from ICs to the restart file.
-      std::map<std::string,field_mgr_ptr> fms;
-      for (auto& it : m_field_mgrs) {
-        if (it.first == "Physics GLL") continue;
-        fms[it.first] = it.second;
-      }
-      om.set_logger(m_atm_logger);
-      om.setup(m_atm_comm,restart_pl,         fms,m_grids_manager,m_run_t0,m_case_t0,true);
-    } else {
-      om.set_logger(m_atm_logger);
-      om.setup(m_atm_comm,restart_pl,m_field_mgrs,m_grids_manager,m_run_t0,m_case_t0,true);
-    }
-    om.set_logger(m_atm_logger);
-    for (const auto& it : m_atm_process_group->get_restart_extra_data()) {
-      om.add_global(it.first,it.second);
-    }
+    // Create model restart manager
+    auto params = io_params.sublist("model_restart");
+    params.set<std::string>("filename_prefix",m_casename+".scream");
+    params.set<std::string>("Averaging Type","Instant");
+    params.sublist("provenance") = m_atm_params.sublist("provenance");
+
+    m_restart_output_manager = std::make_shared<OutputManager>();
+    m_restart_output_manager->initialize(m_atm_comm,
+                                         params,
+                                         m_run_t0,
+                                         m_case_t0,
+                                         /*is_model_restart_output*/ true);
 
     // Store the "Output Control" pl of the model restart as the "Checkpoint Control" for all other output streams
-    checkpoint_params.set<std::string>("frequency_units",restart_pl.sublist("output_control").get<std::string>("frequency_units"));
-    checkpoint_params.set("Frequency",restart_pl.sublist("output_control").get<int>("Frequency"));
+    checkpoint_params.set<std::string>("frequency_units",params.sublist("output_control").get<std::string>("frequency_units"));
+    checkpoint_params.set("Frequency",params.sublist("output_control").get<int>("Frequency"));
   }
 
-  // Build one manager per output yaml file
+  // Create one output manager per output yaml file
   using vos_t = std::vector<std::string>;
   const auto& output_yaml_files = io_params.get<vos_t>("output_yaml_files",vos_t{});
-  int om_tally = 0;
   for (const auto& fname : output_yaml_files) {
     ekat::ParameterList params;
     ekat::parse_yaml_file(fname,params);
@@ -737,15 +802,59 @@ void AtmosphereDriver::initialize_output_managers () {
 
     // Check if the filename prefix for this file has already been set.  If not, use the simulation casename.
     if (not params.isParameter("filename_prefix")) {
-      params.set<std::string>("filename_prefix",m_casename+".scream.h"+std::to_string(om_tally));
-      om_tally++;
+      params.set<std::string>("filename_prefix",m_casename+".scream.h");
     }
     params.sublist("provenance") = m_atm_params.sublist("provenance");
-    // Add a new output manager
-    m_output_managers.emplace_back();
-    auto& om = m_output_managers.back();
+
+    auto& om = m_output_managers.emplace_back();
+    om.initialize(m_atm_comm,
+                  params,
+                  m_run_t0,
+                  m_case_t0,
+                  /*is_model_restart_output*/ false);
+  }
+
+  m_ad_status |= s_output_created;
+
+  stop_timer("EAMxx::create_output_managers");
+  stop_timer("EAMxx::init");
+  m_atm_logger->info("[EAMxx] create_output_managers ... done!");
+}
+
+void AtmosphereDriver::initialize_output_managers () {
+  m_atm_logger->info("[EAMxx] initialize_output_managers ...");
+  start_timer("EAMxx::init");
+  start_timer("EAMxx::initialize_output_managers");
+
+  check_ad_status (s_output_created | s_grids_created | s_fields_created);
+
+  // Check for model restart output manager and setup if it exists.
+  if (m_restart_output_manager) {
+    if (fvphyshack) {
+      // Don't save CGLL fields from ICs to the restart file.
+      std::map<std::string,field_mgr_ptr> fms;
+      for (auto& it : m_field_mgrs) {
+        if (it.first == "Physics GLL") continue;
+        fms[it.first] = it.second;
+      }
+      m_restart_output_manager->setup(fms, m_grids_manager);
+    } else {
+      m_restart_output_manager->setup(m_field_mgrs,m_grids_manager);
+    }
+    m_restart_output_manager->set_logger(m_atm_logger);
+    for (const auto& it : m_atm_process_group->get_restart_extra_data()) {
+      m_restart_output_manager->add_global(it.first,it.second);
+    }
+  }
+
+  // Setup output managers
+  for (auto& om : m_output_managers) {
+    EKAT_REQUIRE_MSG(not om.is_restart(),
+                     "Error! No restart output should be in m_output_managers. Model restart "
+                     "output should be setup in m_restart_output_manager./n");
+
     om.set_logger(m_atm_logger);
-    om.setup(m_atm_comm,params,m_field_mgrs,m_grids_manager,m_run_t0,m_case_t0,false);
+    om.setup(m_field_mgrs,m_grids_manager);
   }
 
   m_ad_status |= s_output_inited;
@@ -757,16 +866,21 @@ void AtmosphereDriver::initialize_output_managers () {
 
 void AtmosphereDriver::
 set_provenance_data (std::string caseid,
+                     std::string rest_caseid,
                      std::string hostname,
-                     std::string username)
+                     std::string username,
+		     std::string versionid)
 {
 #ifdef SCREAM_CIME_BUILD
   // Check the inputs are valid
   EKAT_REQUIRE_MSG (caseid!="", "Error! Invalid case id: " + caseid + "\n");
+  EKAT_REQUIRE_MSG (m_run_type==RunType::Initial or rest_caseid!="",
+      "Error! Invalid restart case id: " + rest_caseid + "\n");
   EKAT_REQUIRE_MSG (hostname!="", "Error! Invalid hostname: " + hostname + "\n");
   EKAT_REQUIRE_MSG (username!="", "Error! Invalid username: " + username + "\n");
+  EKAT_REQUIRE_MSG (versionid!="", "Error! Invalid version: " + versionid + "\n");
 #else
-  caseid = "EAMxx standalone";
+  caseid = rest_caseid = m_casename;
   char* user = new char[32];
   char* host = new char[256];
   int err;
@@ -784,12 +898,14 @@ set_provenance_data (std::string caseid,
   }
   delete[] user;
   delete[] host;
+  versionid = EAMXX_GIT_VERSION;
 #endif
   auto& provenance = m_atm_params.sublist("provenance");
   provenance.set("caseid",caseid);
+  provenance.set("rest_caseid",rest_caseid);
   provenance.set("hostname",hostname);
   provenance.set("username",username);
-  provenance.set("version",std::string(EAMXX_GIT_VERSION));
+  provenance.set("git_version",versionid);
 }
 
 void AtmosphereDriver::
@@ -802,32 +918,12 @@ initialize_fields ()
   start_timer("EAMxx::initialize_fields");
 
   // See the [rrtmgp active gases] note in share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp
-  if (fvphyshack) fv_phys_rrtmgp_active_gases_set_restart(m_case_t0 < m_run_t0);
-
-  // See if we need to print a DAG. We do this first, cause if any input
-  // field is missing from the initial condition file, an error will be thrown.
-  // By printing the DAG first, we give the user the possibility of seeing
-  // what fields are inputs to the atm time step, so he/she can fix the i.c. file.
-  // TODO: would be nice to do the IC input first, and mark the fields in the
-  //       DAG node "Begin of atm time step" in red if there's no initialization
-  //       mechanism set for them. That is, allow field XYZ to not be found in
-  //       the IC file, and throw an error when the dag is created.
-
-  auto& driver_options_pl = m_atm_params.sublist("driver_options");
-  const int verb_lvl = driver_options_pl.get<int>("atmosphere_dag_verbosity_level",-1);
-  if (verb_lvl>0) {
-    // Check the atm DAG for missing stuff
-    AtmProcDAG dag;
-
-    // First, add all atm processes
-    dag.create_dag(*m_atm_process_group);
-
-    // Write a dot file for visualization
-    dag.write_dag("scream_atm_dag.dot",std::max(verb_lvl,0));
+  if (fvphyshack) {
+    TraceGasesWorkaround::singleton().run_type = m_run_type;
   }
 
   // Initialize fields
-  if (m_case_t0<m_run_t0) {
+  if (m_run_type==RunType::Restart) {
     restart_model ();
   } else {
     set_initial_conditions ();
@@ -892,8 +988,9 @@ void AtmosphereDriver::restart_model ()
   m_atm_logger->info("  [EAMxx] restart_model ...");
 
   // First, figure out the name of the netcdf file containing the restart data
-  const auto& casename = m_atm_params.sublist("initial_conditions").get<std::string>("restart_casename");
-  auto filename = find_filename_in_rpointer (casename,true,m_atm_comm,m_run_t0);
+  const auto& provenance = m_atm_params.sublist("provenance");
+  const auto& casename = provenance.get<std::string>("rest_caseid");
+  auto filename = find_filename_in_rpointer (casename+".scream",true,m_atm_comm,m_run_t0);
 
   m_atm_logger->info("    [EAMxx] Restart filename: " + filename);
 
@@ -1002,7 +1099,6 @@ void AtmosphereDriver::set_initial_conditions ()
   // Check which fields need to have an initial condition.
   std::map<std::string,std::vector<std::string>> ic_fields_names;
   std::vector<FieldIdentifier> ic_fields_to_copy;
-  std::map<std::string,std::vector<std::string>> fields_inited;
 
   // Check which fields should be loaded from the topography file
   std::map<std::string,std::vector<std::string>> topography_file_fields_names;
@@ -1031,7 +1127,7 @@ void AtmosphereDriver::set_initial_conditions ()
         EKAT_ERROR_MSG ("ERROR: invalid assignment for variable " + fname + ", only scalar "
                         "double or string, or vector double arguments are allowed");
       }
-      fields_inited[grid_name].push_back(fname);
+      m_fields_inited[grid_name].push_back(fname);
     } else if (fname == "phis" or fname == "sgh30") {
       // Both phis and sgh30 need to be loaded from the topography file
       auto& this_grid_topo_file_fnames = topography_file_fields_names[grid_name];
@@ -1047,7 +1143,7 @@ void AtmosphereDriver::set_initial_conditions ()
                    grid_name == "Point Grid") {
           this_grid_topo_file_fnames.push_back("PHIS_d");
           this_grid_topo_eamxx_fnames.push_back(fname);
-          fields_inited[grid_name].push_back(fname);
+          m_fields_inited[grid_name].push_back(fname);
         } else {
           EKAT_ERROR_MSG ("Error! Requesting phis on an unknown grid: " + grid_name + ".\n");
         }
@@ -1059,7 +1155,7 @@ void AtmosphereDriver::set_initial_conditions ()
                         " topo file only has sgh30 for Physics PG2.\n");
         topography_file_fields_names[grid_name].push_back("SGH30");
         topography_eamxx_fields_names[grid_name].push_back(fname);
-	fields_inited[grid_name].push_back(fname);
+        m_fields_inited[grid_name].push_back(fname);
       }
     } else if (not (fvphyshack and grid_name == "Physics PG2")) {
       // The IC file is written for the GLL grid, so we only load
@@ -1071,7 +1167,7 @@ void AtmosphereDriver::set_initial_conditions ()
         // If this field is the parent of other subfields, we only read from file the subfields.
         if (not ekat::contains(this_grid_ic_fnames,fname)) {
           this_grid_ic_fnames.push_back(fname);
-	  fields_inited[grid_name].push_back(fname);
+          m_fields_inited[grid_name].push_back(fname);
         }
       } else if (fvphyshack and grid_name == "Physics GLL") {
         // [CGLL ICs in pg2] I tried doing something like this in
@@ -1088,7 +1184,7 @@ void AtmosphereDriver::set_initial_conditions ()
           } else {
             this_grid_ic_fnames.push_back(fname);
           }
-	  fields_inited[grid_name].push_back(fname);
+          m_fields_inited[grid_name].push_back(fname);
         }
       }
     }
@@ -1134,7 +1230,7 @@ void AtmosphereDriver::set_initial_conditions ()
         auto p = f.get_header().get_parent().lock();
         if (p) {
           const auto& pname = p->get_identifier().name();
-          if (ekat::contains(fields_inited[grid_name],pname)) {
+          if (ekat::contains(m_fields_inited[grid_name],pname)) {
             // The parent is already inited. No need to init this field as well.
             names.erase(it2);
             run_again = true;
@@ -1145,7 +1241,7 @@ void AtmosphereDriver::set_initial_conditions ()
     }
   }
 
-  if (m_iop) {
+  if (m_iop_data_manager) {
     // For runs with IOP, call to setup io grids and lat
     // lon information needed for reading from file
     // We use a single topo file for both GLL and PG2 runs. All
@@ -1155,13 +1251,13 @@ void AtmosphereDriver::set_initial_conditions ()
     for (const auto& it : m_field_mgrs) {
       const auto& grid_name = it.first;
       if (ic_fields_names[grid_name].size() > 0 or
-	  topography_eamxx_fields_names[grid_name].size() > 0) {
+	        topography_eamxx_fields_names[grid_name].size() > 0) {
         const auto& file_name = grid_name == "Physics GLL"
                                 ?
                                 ic_pl.get<std::string>("Filename")
                                 :
                                 ic_pl.get<std::string>("topography_filename");
-        m_iop->setup_io_info(file_name, it.second->get_grid());
+        m_iop_data_manager->setup_io_info(file_name, it.second->get_grid());
       }
     }
   }
@@ -1173,12 +1269,12 @@ void AtmosphereDriver::set_initial_conditions ()
     m_atm_logger->info("    [EAMxx] IC filename: " + file_name);
     for (const auto& it : m_field_mgrs) {
       const auto& grid_name = it.first;
-      if (not m_iop) {
+      if (not m_iop_data_manager) {
         read_fields_from_file (ic_fields_names[grid_name],it.second->get_grid(),file_name,m_current_ts);
       } else {
         // For IOP enabled, we load from file and copy data from the closest
         // lat/lon column to every other column
-        m_iop->read_fields_from_file_for_iop(file_name,
+        m_iop_data_manager->read_fields_from_file_for_iop(file_name,
                                              ic_fields_names[grid_name],
                                              m_current_ts,
                                              it.second);
@@ -1248,7 +1344,7 @@ void AtmosphereDriver::set_initial_conditions ()
     m_atm_logger->info("        filename: " + file_name);
     for (const auto& it : m_field_mgrs) {
       const auto& grid_name = it.first;
-      if (not m_iop) {
+      if (not m_iop_data_manager) {
         // Topography files always use "ncol_d" for the GLL grid value of ncol.
         // To ensure we read in the correct value, we must change the name for that dimension
         auto io_grid = it.second->get_grid();
@@ -1264,7 +1360,7 @@ void AtmosphereDriver::set_initial_conditions ()
       } else {
         // For IOP enabled, we load from file and copy data from the closest
         // lat/lon column to every other column
-        m_iop->read_fields_from_file_for_iop(file_name,
+        m_iop_data_manager->read_fields_from_file_for_iop(file_name,
                                              topography_file_fields_names[grid_name],
                                              topography_eamxx_fields_names[grid_name],
                                              m_current_ts,
@@ -1289,16 +1385,16 @@ void AtmosphereDriver::set_initial_conditions ()
     m_atm_params.sublist("provenance").set<std::string>("topography_file","NONE");
   }
 
-  if (m_iop) {
+  if (m_iop_data_manager) {
     // Load IOP data file data for initial time stamp
-    m_iop->read_iop_file_data(m_current_ts);
+    m_iop_data_manager->read_iop_file_data(m_current_ts);
 
     // Now that ICs are processed, set appropriate fields using IOP file data.
     // Since ICs are loaded on GLL grid, we set those fields only and dynamics
     // will take care of the rest (for PG2 case).
     if (m_field_mgrs.count("Physics GLL") > 0) {
       const auto& fm = m_field_mgrs.at("Physics GLL");
-      m_iop->set_fields_from_iop_data(fm);
+      m_iop_data_manager->set_fields_from_iop_data(fm);
     }
   }
 
@@ -1357,7 +1453,7 @@ void AtmosphereDriver::set_initial_conditions ()
     // Loop through fields and apply perturbation.
     for (size_t f=0; f<perturbed_fields.size(); ++f) {
       const auto fname = perturbed_fields[f];
-      EKAT_REQUIRE_MSG(ekat::contains(fields_inited[fm->get_grid()->name()], fname),
+      EKAT_REQUIRE_MSG(ekat::contains(m_fields_inited[fm->get_grid()->name()], fname),
                        "Error! Attempting to apply perturbation to field not in initial_conditions.\n"
                        "  - Field: "+fname+"\n"
                        "  - Grid:  "+fm->get_grid()->name()+"\n");
@@ -1523,15 +1619,13 @@ void AtmosphereDriver::initialize_atm_procs ()
   m_memory_buffer->allocate();
   m_atm_process_group->init_buffers(*m_memory_buffer);
 
-  const bool restarted_run = m_case_t0 < m_run_t0;
-
   // Setup SurfaceCoupling import and export (if they exist)
   if (m_surface_coupling_import_data_manager || m_surface_coupling_export_data_manager) {
     setup_surface_coupling_processes();
   }
 
   // Initialize the processes
-  m_atm_process_group->initialize(m_current_ts, restarted_run ? RunType::Restarted : RunType::Initial);
+  m_atm_process_group->initialize(m_current_ts, m_run_type);
 
   // Create and add energy and mass conservation check to appropriate atm procs
   setup_column_conservation_checks();
@@ -1558,6 +1652,28 @@ void AtmosphereDriver::initialize_atm_procs ()
   m_atm_logger->info("[EAMxx] initialize_atm_procs ... done!");
 
   report_res_dep_memory_footprint ();
+
+  auto& driver_options_pl = m_atm_params.sublist("driver_options");
+  const int verb_lvl = driver_options_pl.get<int>("atmosphere_dag_verbosity_level",-1);
+  if (verb_lvl>0) {
+    // now that we've got fields, generate a DAG with fields and dependencies
+    // NOTE: at this point, fields provided by initial conditions may (will)
+    // appear as unmet dependencies
+    AtmProcDAG dag;
+    // First, add all atm processes
+    dag.create_dag(*m_atm_process_group);
+    // process the initial conditions to maybe fulfill unmet dependencies
+    dag.process_initial_conditions(m_fields_inited);
+    // Write a dot file for visualizing the DAG
+    if (m_atm_comm.am_i_root()) {
+      std::string filename = "scream_atm_initProc_dag";
+      if (is_scream_standalone()) {
+        filename += ".np" + std::to_string(m_atm_comm.size());
+      }
+      filename += ".dot";
+      dag.write_dag(filename, verb_lvl);
+    }
+  }
 }
 
 void AtmosphereDriver::
@@ -1573,6 +1689,8 @@ initialize (const ekat::Comm& atm_comm,
   init_scorpio ();
 
   init_time_stamps (run_t0, case_t0);
+
+  create_output_managers ();
 
   create_atm_processes ();
 
@@ -1595,10 +1713,10 @@ void AtmosphereDriver::run (const int dt) {
   start_timer("EAMxx::run");
 
   // DEBUG option: Check if user has set the run to fail at a specific timestep.
-  auto& debug = m_atm_params.sublist("driver_debug_options"); 
-  auto fail_step = debug.get<int>("force_crash_nsteps",-1); 
-  if (fail_step==m_current_ts.get_num_steps()) { 
-    std::abort(); 
+  auto& debug = m_atm_params.sublist("driver_debug_options");
+  auto fail_step = debug.get<int>("force_crash_nsteps",-1);
+  if (fail_step==m_current_ts.get_num_steps()) {
+    std::abort();
   }
 
   // Make sure the end of the time step is after the current start_time
@@ -1622,6 +1740,7 @@ void AtmosphereDriver::run (const int dt) {
   // that quantity at the beginning of the timestep. Or they may need to store
   // the timestamp at the beginning of the timestep, so that we can compute
   // dt at the end.
+  if (m_restart_output_manager) m_restart_output_manager->init_timestep(m_current_ts, dt);
   for (auto& it : m_output_managers) {
     it.init_timestep(m_current_ts,dt);
   }
@@ -1648,6 +1767,7 @@ void AtmosphereDriver::run (const int dt) {
 
   // Update output streams
   m_atm_logger->debug("[EAMxx::run] running output managers...");
+  if (m_restart_output_manager) m_restart_output_manager->run(m_current_ts);
   for (auto& out_mgr : m_output_managers) {
     out_mgr.run(m_current_ts);
   }
@@ -1678,6 +1798,10 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
   m_atm_logger->info("[EAMxx] Finalize ...");
 
   // Finalize and destroy output streams, make sure files are closed
+  if (m_restart_output_manager) {
+    m_restart_output_manager->finalize();
+    m_restart_output_manager = nullptr;
+  }
   for (auto& out_mgr : m_output_managers) {
     out_mgr.finalize();
   }
@@ -1690,7 +1814,7 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
   }
 
   // Destroy iop
-  m_iop = nullptr;
+  m_iop_data_manager = nullptr;
 
   // Destroy the buffer manager
   m_memory_buffer = nullptr;
@@ -1801,6 +1925,11 @@ void AtmosphereDriver::report_res_dep_memory_footprint () const {
   // Atm buffer
   my_dev_mem_usage += m_memory_buffer->allocated_bytes();
   // Output
+  if (m_restart_output_manager) {
+    const auto om_footprint = m_restart_output_manager->res_dep_memory_footprint();
+    my_dev_mem_usage += om_footprint;
+    my_host_mem_usage += om_footprint;
+  }
   for (const auto& om : m_output_managers) {
     const auto om_footprint = om.res_dep_memory_footprint ();
     my_dev_mem_usage += om_footprint;

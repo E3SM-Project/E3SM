@@ -3828,9 +3828,8 @@ module li_calving
          call mpas_pool_get_array(geometryPool, 'damageNye', damageNye)
          call mpas_pool_get_array(velocityPool, 'stiffnessFactor', stiffnessFactor)
 
-         ! make sure masks are up to date.  May not be necessary, but safer to do anyway.
-         call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
-         err = ior(err, err_tmp)
+         ! Note: In order to preserve accuracy of time integration,
+         ! we do not update masks before finalizing damage.
 
          if (config_preserve_damage) then
              do iCell = 1, nCells

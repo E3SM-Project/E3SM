@@ -398,7 +398,7 @@ deep_copy_impl (const Field& src) const {
   if (rank == 0) {
     auto v     =     get_view<      ST,HD>();
     auto v_src = src.get_view<const ST,HD>();
-    v() = v_src();
+    Kokkos::deep_copy(v,v_src);
     return;
   }
 
@@ -543,7 +543,7 @@ void Field::deep_copy_impl (const ST value) const {
     case 0:
       {
         auto v = get_view<ST,HD>();
-        v() = value;
+        Kokkos::deep_copy(v,value);
       }
       break;
     case 1:
@@ -966,6 +966,7 @@ auto Field::get_ND_view () const
                  "MaxRank = 6.\n"
                  "This should never be called at run time.\n"
                  "Please contact developer if this functionality is required\n");
+  return get_view_type<data_nd_t<T,N>,HD>();
 }
 
 } // namespace scream

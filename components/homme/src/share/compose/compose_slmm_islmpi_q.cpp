@@ -1,197 +1,9 @@
 #include "compose_slmm_islmpi.hpp"
-
-namespace slmm {
-static Int test_gll () {
-  Int nerr = 0;
-  const Real tol = 1e2*std::numeric_limits<Real>::epsilon();
-  GLL gll;
-  const Real* x, * wt;
-  for (Int np = 2; np <= 4; ++np) {
-    for (Int monotone_type = 0; monotone_type <= 1; ++monotone_type) {
-      const Basis b(np, monotone_type);
-      gll.get_coef(b, x, wt);
-      Real sum = 0;
-      for (Int i = 0; i < b.np; ++i)
-        sum += wt[i];
-      if (std::abs(2 - sum) > tol) {
-        std::cerr << "test_gll " << np << ", " << monotone_type
-                  << ": 2 - sum = " << 2 - sum << "\n";
-        ++nerr;
-      }
-      for (Int j = 0; j < b.np; ++j) {
-        Real gj[GLL::np_max];
-        gll.eval(b, x[j], gj);
-        for (Int i = 0; i < b.np; ++i) {
-          if (j == i) continue;
-          if (std::abs(gj[i]) > tol) {
-            std::cerr << "test_gll " << np << ", " << monotone_type << ": gj["
-                      << i << "] = " << gj[i] << "\n";
-            ++nerr;
-          }
-        }
-      }
-    }
-  }
-  for (Int np = 2; np <= 4; ++np) {
-    const Basis b(np, 0);
-    Real a[] = {-0.9, -0.7, -0.3, 0.1, 0.2, 0.4, 0.6, 0.8};
-    const Real delta = std::sqrt(std::numeric_limits<Real>::epsilon());
-    for (size_t ia = 0; ia < sizeof(a)/sizeof(Real); ++ia) {
-      Real gj[GLL::np_max], gjp[GLL::np_max], gjm[GLL::np_max];
-      gll.eval_derivative(b, a[ia], gj);
-      gll.eval(b, a[ia] + delta, gjp);
-      gll.eval(b, a[ia] - delta, gjm);
-      for (Int i = 0; i < b.np; ++i) {
-        const Real fd = (gjp[i] - gjm[i])/(2*delta);
-        if (std::abs(fd - gj[i]) >= delta*std::abs(gjp[i]))
-          ++nerr;
-      }
-    }
-  }
-  return nerr;
-}
-
-int unittest () {
-  int nerr = 0;
-  nerr += test_gll();
-  return nerr;
-}
-
-static constexpr Real sqrt5 = 2.23606797749978969641; // std::sqrt(5.0);
-static constexpr Real oosqrt5 = 1.0 / sqrt5;
-
-SLMM_KF void gll_np4_eval (const Real x, Real y[4]) {
-  static constexpr Real oo8 = 1.0/8.0;
-  const Real x2 = x*x;
-  y[0] = (1.0 - x)*(5.0*x2 - 1.0)*oo8;
-  y[1] = -sqrt5*oo8*(sqrt5 - 5.0*x)*(x2 - 1.0);
-  y[2] = -sqrt5*oo8*(sqrt5 + 5.0*x)*(x2 - 1.0);
-  y[3] = (1.0 + x)*(5.0*x2 - 1.0)*oo8;
-}
-
-// Linear interp in each region.
-SLMM_KF void gll_np4_subgrid_eval_impl (const Real& x, Real y[4]) {
-  if (x < -oosqrt5) {
-    const Real alpha = (x + 1)/(1 - oosqrt5);
-    y[0] = 1 - alpha;
-    y[1] = alpha;
-    y[2] = 0;
-    y[3] = 0;
-  } else {
-    const Real alpha = (x + oosqrt5)/(2*oosqrt5);
-    y[0] = 0;
-    y[1] = 1 - alpha;
-    y[2] = alpha;
-    y[3] = 0;
-  }
-}
-
-SLMM_KF void gll_np4_subgrid_eval (const Real& x, Real y[4]) {
-  if (x > 0) {
-    gll_np4_subgrid_eval_impl(-x, y);
-    ko::swap(y[0], y[3]);
-    ko::swap(y[1], y[2]);    
-    return;
-  }
-  gll_np4_subgrid_eval_impl(x, y);
-}
-
-// Quadratic interpolant across nodes 1,2,3 -- i.e., excluding node 0 -- of the
-// np=4 reference element.
-SLMM_KF void outer_eval (const Real& x, Real v[4]) {
-  static constexpr Real
-    xbar = (2*oosqrt5) / (1 + oosqrt5),
-    ooxbar = 1 / xbar,
-    ybar = 1 / (xbar - 1);
-  const Real xn = (x + oosqrt5) / (1 + oosqrt5);
-  v[0] = 0;
-  v[1] = 1 + ybar*xn*((1 - ooxbar)*xn + ooxbar - xbar);
-  v[2] = ybar*ooxbar*xn*(xn - 1);
-  v[3] = ybar*xn*(xbar - xn);
-}
-
-// In the middle region, use the standard GLL np=4 interpolant; in the two outer
-// regions, use an order-reduced interpolant that stabilizes the method.
-SLMM_KF void gll_np4_subgrid_exp_eval (const Real& x, Real y[4]) {
-  static constexpr Real
-    alpha = 0.5527864045000416708,
-    v = 0.427*(1 + alpha),
-    x2 = 0.4472135954999579277,
-    x3 = 1 - x2,
-    det = x2*x3*(x2 - x3),
-    y2 = alpha,
-    y3 = v,
-    c1 = (x3*y2 - x2*y3)/det,
-    c2 = (-x3*x3*y2 + x2*x2*y3)/det;
-  if (x < -oosqrt5 || x > oosqrt5) {
-    if (x < -oosqrt5) {
-      outer_eval(-x, y);
-      ko::swap(y[0], y[3]);
-      ko::swap(y[1], y[2]);
-    } else
-      outer_eval(x, y);
-    Real y4[4];
-    gll_np4_eval(x, y4);
-    const Real x0 = 1 - std::abs(x);
-    const Real a = (c1*x0 + c2)*x0;
-    for (int i = 0; i < 4; ++i)
-      y[i] = a*y[i] + (1 - a)*y4[i];
-  } else
-    gll_np4_eval(x, y);
-}
-} // namespace slmm
+#include "compose_slmm_islmpi_interpolate.hpp"
+#include "compose_slmm_islmpi_buf.hpp"
 
 namespace homme {
 namespace islmpi {
-
-template <typename MT>
-SLMM_KIF void interpolate (const typename IslMpi<MT>::Advecter::Alg::Enum& alg,
-                           const Real ref_coord[2], Real rx[4], Real ry[4]) {
-  typedef typename IslMpi<MT>::Advecter::Alg Alg;
-  switch (alg) {
-  case Alg::csl_gll:
-    slmm::gll_np4_eval(ref_coord[0], rx);
-    slmm::gll_np4_eval(ref_coord[1], ry);
-    break;
-  case Alg::csl_gll_subgrid:
-    slmm::gll_np4_subgrid_eval(ref_coord[0], rx);
-    slmm::gll_np4_subgrid_eval(ref_coord[1], ry);
-    break;
-  case Alg::csl_gll_exp:
-    slmm::gll_np4_subgrid_exp_eval(ref_coord[0], rx);
-    slmm::gll_np4_subgrid_exp_eval(ref_coord[1], ry);
-    break;
-  default:
-    slmm_kernel_assert(0);
-  }  
-}
-
-SLMM_KIF Real calc_q_tgt (const Real rx[4], const Real ry[4], const Real qs[16]) {
-  return (ry[0]*(rx[0]*qs[ 0] + rx[1]*qs[ 1] + rx[2]*qs[ 2] + rx[3]*qs[ 3]) +
-          ry[1]*(rx[0]*qs[ 4] + rx[1]*qs[ 5] + rx[2]*qs[ 6] + rx[3]*qs[ 7]) +
-          ry[2]*(rx[0]*qs[ 8] + rx[1]*qs[ 9] + rx[2]*qs[10] + rx[3]*qs[11]) +
-          ry[3]*(rx[0]*qs[12] + rx[1]*qs[13] + rx[2]*qs[14] + rx[3]*qs[15]));
-}
-
-SLMM_KIF Real calc_q_tgt (const Real rx[4], const Real ry[4], const Real qdp[16],
-                          const Real dp[16]) {
-  return (ry[0]*(rx[0]*(qdp[ 0]/dp[ 0]) + rx[1]*(qdp[ 1]/dp[ 1])  +
-                 rx[2]*(qdp[ 2]/dp[ 2]) + rx[3]*(qdp[ 3]/dp[ 3])) +
-          ry[1]*(rx[0]*(qdp[ 4]/dp[ 4]) + rx[1]*(qdp[ 5]/dp[ 5])  +
-                 rx[2]*(qdp[ 6]/dp[ 6]) + rx[3]*(qdp[ 7]/dp[ 7])) +
-          ry[2]*(rx[0]*(qdp[ 8]/dp[ 8]) + rx[1]*(qdp[ 9]/dp[ 9])  +
-                 rx[2]*(qdp[10]/dp[10]) + rx[3]*(qdp[11]/dp[11])) +
-          ry[3]*(rx[0]*(qdp[12]/dp[12]) + rx[1]*(qdp[13]/dp[13])  +
-                 rx[2]*(qdp[14]/dp[14]) + rx[3]*(qdp[15]/dp[15])));
-}
-
-template <typename Buffer> SLMM_KIF
-Int getbuf (Buffer& buf, const Int& os, Int& i1, Int& i2) {
-  const Int* const b = reinterpret_cast<const Int*>(&buf(os));
-  i1 = b[0];
-  i2 = b[1];
-  return nreal_per_2int;
-}
 
 #ifndef COMPOSE_PORT
 // Homme computational pattern.
@@ -267,7 +79,7 @@ void calc_own_q (IslMpi<MT>& cm, const Int& nets, const Int& nete,
     auto& ed = cm.ed_d(tci);
     const FA3<Real> q_tgt(ed.q, cm.np2, cm.nlev, cm.qsize);
     const Int ned = ed.own.n();
-#ifdef HORIZ_OPENMP
+#ifdef COMPOSE_HORIZ_OPENMP
 #   pragma omp for
 #endif
     for (Int idx = 0; idx < ned; ++idx) {
@@ -317,7 +129,7 @@ template <Int np, typename MT>
 void calc_rmt_q_pass2 (IslMpi<MT>& cm) {
   const Int qsize = cm.qsize;
 
-#ifdef HORIZ_OPENMP
+#ifdef COMPOSE_HORIZ_OPENMP
 # pragma omp for
 #endif
   for (Int it = 0; it < cm.nrmt_qs_extrema; ++it) {
@@ -331,7 +143,7 @@ void calc_rmt_q_pass2 (IslMpi<MT>& cm) {
         qs(qos + 2*iq + i) = ed.q_extrema(iq, lev, i);
   }
 
-#ifdef HORIZ_OPENMP
+#ifdef COMPOSE_HORIZ_OPENMP
 # pragma omp for
 #endif
   for (Int it = 0; it < cm.nrmt_xs; ++it) {
@@ -466,12 +278,13 @@ struct Accum {
   }
 };
 
-template <Int np, typename MT>
-void calc_rmt_q_pass1_scan (IslMpi<MT>& cm) {
+template <typename MT>
+void calc_rmt_q_pass1_scan (IslMpi<MT>& cm, const bool trajectory) {
   const auto& recvbuf = cm.recvbuf;
   const auto& rmt_xs = cm.rmt_xs;
   const auto& rmt_qs_extrema = cm.rmt_qs_extrema;
   const Int nrmtrank = static_cast<Int>(cm.ranks.size()) - 1;
+  const Int ndim = trajectory ? cm.dep_points_ndim : 3;
   Int cnt = 0, qcnt = 0;
   for (Int ri = 0; ri < nrmtrank; ++ri) {
     const auto get_xos = COMPOSE_LAMBDA (const Int, Int& xos) {
@@ -492,7 +305,7 @@ void calc_rmt_q_pass1_scan (IslMpi<MT>& cm) {
       short lev, nx;
       getbuf(xs, (idx + 1)*nreal_per_2int, lid, lev, nx);
       slmm_kernel_assert(nx > 0);
-      if (fin) {
+      if (fin && ! trajectory) {
         const auto qcnt_tot = qcnt + a.qcnt;
         rmt_qs_extrema(4*qcnt_tot + 0) = ri;
         rmt_qs_extrema(4*qcnt_tot + 1) = lid;
@@ -500,7 +313,8 @@ void calc_rmt_q_pass1_scan (IslMpi<MT>& cm) {
         rmt_qs_extrema(4*qcnt_tot + 3) = a.qos;
       }
       a.qcnt += 1;
-      a.qos += 2;
+      if ( ! trajectory)
+        a.qos += 2;
       if (fin) {
         for (Int xi = 0; xi < nx; ++xi) {
           const auto cnt_tot = cnt + a.cnt;
@@ -510,23 +324,23 @@ void calc_rmt_q_pass1_scan (IslMpi<MT>& cm) {
           rmt_xs(5*cnt_tot + 3) = xos + a.xos;
           rmt_xs(5*cnt_tot + 4) = a.qos;
           a.cnt += 1;
-          a.xos += 3;
+          a.xos += ndim;
           a.qos += 1;
         }
       } else {
         a.cnt += nx;
-        a.xos += 3*nx;
-        a.qos += nx;        
+        a.xos += ndim*nx;
+        a.qos += nx;
       }
     };
     Accum a;
     ko::parallel_scan(ko::RangePolicy<typename MT::DES>(0, xos/nreal_per_2int - 1), f, a);
-    cm.sendcount_h(ri) = cm.qsize*a.qos;
+    cm.sendcount_h(ri) = (trajectory ? ndim : cm.qsize)*a.qos;
     cnt += a.cnt;
     qcnt += a.qcnt;
   }
   cm.nrmt_xs = cnt;
-  cm.nrmt_qs_extrema = qcnt;
+  cm.nrmt_qs_extrema = trajectory ? 0 : qcnt;
 }
 
 template <Int np, typename MT>
@@ -593,13 +407,20 @@ void calc_rmt_q_pass2 (IslMpi<MT>& cm) {
 
 #endif // COMPOSE_PORT
 
-template <Int np, typename MT>
-void calc_rmt_q_pass1_noscan (IslMpi<MT>& cm) {
+template <typename MT>
+void calc_rmt_q_pass1_noscan (IslMpi<MT>& cm, const bool trajectory) {
   const Int nrmtrank = static_cast<Int>(cm.ranks.size()) - 1;
+  const Int ndim = trajectory ? cm.dep_points_ndim : 3;
 #ifdef COMPOSE_PORT_SEPARATE_VIEWS
+#ifdef COMPOSE_HORIZ_OPENMP
+# pragma omp for
+#endif
   for (Int ri = 0; ri < nrmtrank; ++ri)
     ko::deep_copy(ko::View<Real*, typename MT::HES>(cm.recvbuf_meta_h(ri).data(), 1),
                   ko::View<Real*, typename MT::DES>(cm.recvbuf.get_h(ri).data(), 1));
+#ifdef COMPOSE_HORIZ_OPENMP
+# pragma omp for
+#endif
   for (Int ri = 0; ri < nrmtrank; ++ri) {
     const auto&& xs = cm.recvbuf_meta_h(ri);
     Int n, unused;
@@ -610,71 +431,79 @@ void calc_rmt_q_pass1_noscan (IslMpi<MT>& cm) {
                   ko::View<Real*, typename MT::DES>(cm.recvbuf.get_h(ri).data(), n));
   }
 #endif
-  Int cnt = 0, qcnt = 0;
-  for (Int ri = 0; ri < nrmtrank; ++ri) {
-    const auto&& xs = cm.recvbuf_meta_h(ri);
-    Int mos = 0, qos = 0, nx_in_rank, xos;
-    mos += getbuf(xs, mos, xos, nx_in_rank);
-    if (nx_in_rank == 0) {
-      cm.sendcount_h(ri) = 0;
-      continue; 
-    }
-    // The upper bound is to prevent an inf loop if the msg is corrupted.
-    for (Int lidi = 0; lidi < cm.nelemd; ++lidi) {
-      Int lid, nx_in_lid;
-      mos += getbuf(xs, mos, lid, nx_in_lid);
-      for (Int levi = 0; levi < cm.nlev; ++levi) { // same re: inf loop
-        Int lev, nx;
-        mos += getbuf(xs, mos, lev, nx);
-        slmm_assert(nx > 0);
-        {
-          cm.rmt_qs_extrema_h(4*qcnt + 0) = ri;
-          cm.rmt_qs_extrema_h(4*qcnt + 1) = lid;
-          cm.rmt_qs_extrema_h(4*qcnt + 2) = lev;
-          cm.rmt_qs_extrema_h(4*qcnt + 3) = qos;
-          ++qcnt;
-          qos += 2;
-        }
-        for (Int xi = 0; xi < nx; ++xi) {
-          cm.rmt_xs_h(5*cnt + 0) = ri;
-          cm.rmt_xs_h(5*cnt + 1) = lid;
-          cm.rmt_xs_h(5*cnt + 2) = lev;
-          cm.rmt_xs_h(5*cnt + 3) = xos;
-          cm.rmt_xs_h(5*cnt + 4) = qos;
-          ++cnt;
-          xos += 3;
-          ++qos;
-        }
-        nx_in_lid -= nx;
-        nx_in_rank -= nx;
-        if (nx_in_lid == 0) break;
+#ifdef COMPOSE_HORIZ_OPENMP
+# pragma omp master
+#endif
+  {
+    Int cnt = 0, qcnt = 0;
+    for (Int ri = 0; ri < nrmtrank; ++ri) {
+      const auto&& xs = cm.recvbuf_meta_h(ri);
+      Int mos = 0, qos = 0, nx_in_rank, xos;
+      mos += getbuf(xs, mos, xos, nx_in_rank);
+      if (nx_in_rank == 0) {
+        cm.sendcount_h(ri) = 0;
+        continue; 
       }
-      slmm_assert(nx_in_lid == 0);
-      if (nx_in_rank == 0) break;
+      // The upper bound is to prevent an inf loop if the msg is corrupted.
+      for (Int lidi = 0; lidi < cm.nelemd; ++lidi) {
+        Int lid, nx_in_lid;
+        mos += getbuf(xs, mos, lid, nx_in_lid);
+        for (Int levi = 0; levi < cm.nlev; ++levi) { // same re: inf loop
+          Int lev, nx;
+          mos += getbuf(xs, mos, lev, nx);
+          slmm_assert(nx > 0);
+          if ( ! trajectory) {
+            cm.rmt_qs_extrema_h(4*qcnt + 0) = ri;
+            cm.rmt_qs_extrema_h(4*qcnt + 1) = lid;
+            cm.rmt_qs_extrema_h(4*qcnt + 2) = lev;
+            cm.rmt_qs_extrema_h(4*qcnt + 3) = qos;
+            ++qcnt;
+            qos += 2;
+          }
+          for (Int xi = 0; xi < nx; ++xi) {
+            cm.rmt_xs_h(5*cnt + 0) = ri;
+            cm.rmt_xs_h(5*cnt + 1) = lid;
+            cm.rmt_xs_h(5*cnt + 2) = lev;
+            cm.rmt_xs_h(5*cnt + 3) = xos;
+            cm.rmt_xs_h(5*cnt + 4) = qos;
+            ++cnt;
+            xos += ndim;
+            ++qos;
+          }
+          nx_in_lid -= nx;
+          nx_in_rank -= nx;
+          if (nx_in_lid == 0) break;
+        }
+        slmm_assert(nx_in_lid == 0);
+        if (nx_in_rank == 0) break;
+      }
+      slmm_assert(nx_in_rank == 0);
+      cm.sendcount_h(ri) = (trajectory ? ndim : cm.qsize)*qos;
     }
-    slmm_assert(nx_in_rank == 0);
-    cm.sendcount_h(ri) = cm.qsize*qos;
+    cm.nrmt_xs = cnt;
+    cm.nrmt_qs_extrema = trajectory ? 0 : qcnt;
+    deep_copy(cm.rmt_xs, cm.rmt_xs_h);
+    deep_copy(cm.rmt_qs_extrema, cm.rmt_qs_extrema_h);
   }
-  cm.nrmt_xs = cnt;
-  cm.nrmt_qs_extrema = qcnt;
-  deep_copy(cm.rmt_xs, cm.rmt_xs_h);
-  deep_copy(cm.rmt_qs_extrema, cm.rmt_qs_extrema_h);
+#ifdef COMPOSE_HORIZ_OPENMP
+# pragma omp barrier
+#endif
 }
 
-template <Int np, typename MT>
-void calc_rmt_q_pass1 (IslMpi<MT>& cm) {
+template <typename MT>
+void calc_rmt_q_pass1 (IslMpi<MT>& cm, const bool trajectory) {
 #if defined COMPOSE_PORT && ! defined COMPOSE_PACK_NOSCAN
   if (ko::OnGpu<typename MT::DES>::value)
-    calc_rmt_q_pass1_scan<np>(cm);
+    calc_rmt_q_pass1_scan(cm, trajectory);
   else
 #endif
-    calc_rmt_q_pass1_noscan<np>(cm);
+    calc_rmt_q_pass1_noscan(cm, trajectory);
 }
 
 template <Int np, typename MT>
 void calc_rmt_q (IslMpi<MT>& cm) {
   { slmm::Timer t("09_rmt_q_pass1");
-    calc_rmt_q_pass1<np>(cm); }
+    calc_rmt_q_pass1(cm); }
   { slmm::Timer t("09_rmt_q_pass2");
     calc_rmt_q_pass2<np>(cm); }
 }
@@ -697,6 +526,8 @@ void calc_rmt_q (IslMpi<MT>& cm) {
   }
 }
 
+template void calc_rmt_q_pass1(IslMpi<ko::MachineTraits>& cm,
+                               const bool trajectory);
 template void calc_rmt_q(IslMpi<ko::MachineTraits>& cm);
 template void calc_own_q(IslMpi<ko::MachineTraits>& cm,
                          const Int& nets, const Int& nete,

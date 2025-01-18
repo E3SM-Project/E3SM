@@ -113,19 +113,32 @@ void hash (const std::list<FieldGroup>& fgs, HashType& accum) {
 
 } // namespace anon
 
+// (mem, nmem) describe an arbitrary device array. If non-0, the array will be
+// hashed and reported as a fourth line.
 void AtmosphereProcess
 ::print_global_state_hash (const std::string& label, const bool in, const bool out,
-                           const bool internal) const {
-  static constexpr int nslot = 3;
+                           const bool internal, const Real* mem, const int nmem) const {
+  static constexpr int nslot = 4;
   HashType laccum[nslot] = {0};
   hash(m_fields_in, laccum[0]);
   hash(m_groups_in, laccum[0]);
   hash(m_fields_out, laccum[1]);
   hash(m_groups_out, laccum[1]);
   hash(m_internal_fields, laccum[2]);
+  const bool hash_array = mem != nullptr;
+  if (hash_array) {
+    HashType accum = 0;
+    Kokkos::parallel_reduce(
+      Kokkos::RangePolicy<ExeSpace>(0, nmem),
+      KOKKOS_LAMBDA(const int i, HashType& accum) { bfbhash::hash(mem[i], accum); },
+      bfbhash::HashReducer<>(accum));
+    Kokkos::fence();
+    laccum[3] = accum;
+  }
   HashType gaccum[nslot];
-  bfbhash::all_reduce_HashType(m_comm.mpi_comm(), laccum, gaccum, nslot);
-  const bool show[] = {in, out, internal};
+  const int nr = hash_array ? nslot : nslot-1;
+  bfbhash::all_reduce_HashType(m_comm.mpi_comm(), laccum, gaccum, nr);
+  const bool show[] = {in, out, internal, hash_array};
   if (m_comm.am_i_root())
     for (int i = 0; i < nslot; ++i)
       if (show[i])

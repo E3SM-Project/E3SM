@@ -5,6 +5,7 @@
 
 #include "ekat/util/ekat_math_utils.hpp"
 #include "ekat/ekat_assert.hpp"
+#include "ekat/util/ekat_file_utils.hpp"
 
 #include <random>
 #include <vector>
@@ -68,34 +69,81 @@ struct SHOCGridData : public PhysicsTestData {
 #define PTD_DATA_COPY_CTOR(name, num_args) \
   name(const name& rhs) : name(PTD_ONES(num_args)) { *this = rhs; }
 
-#define  PTD_ASS0(                                ) ((void) (0))
-#define  PTD_ASS1(a                               )                                           a = rhs.a
-#define  PTD_ASS2(a, b                            )  PTD_ASS1(a)                            ; b = rhs.b
-#define  PTD_ASS3(a, b, c                         )  PTD_ASS2(a, b)                         ; c = rhs.c
-#define  PTD_ASS4(a, b, c, d                      )  PTD_ASS3(a, b, c)                      ; d = rhs.d
-#define  PTD_ASS5(a, b, c, d, e                   )  PTD_ASS4(a, b, c, d)                   ; e = rhs.e
-#define  PTD_ASS6(a, b, c, d, e, f                )  PTD_ASS5(a, b, c, d, e)                ; f = rhs.f
-#define  PTD_ASS7(a, b, c, d, e, f, g             )  PTD_ASS6(a, b, c, d, e, f)             ; g = rhs.g
-#define  PTD_ASS8(a, b, c, d, e, f, g, h          )  PTD_ASS7(a, b, c, d, e, f, g)          ; h = rhs.h
-#define  PTD_ASS9(a, b, c, d, e, f, g, h, i       )  PTD_ASS8(a, b, c, d, e, f, g, h)       ; i = rhs.i
-#define PTD_ASS10(a, b, c, d, e, f, g, h, i, j    )  PTD_ASS9(a, b, c, d, e, f, g, h, i)    ; j = rhs.j
-#define PTD_ASS11(a, b, c, d, e, f, g, h, i, j, k                            ) PTD_ASS10(a, b, c, d, e, f, g, h, i, j)                            ; k = rhs.k
-#define PTD_ASS12(a, b, c, d, e, f, g, h, i, j, k, l                         ) PTD_ASS11(a, b, c, d, e, f, g, h, i, j, k)                         ; l = rhs.l
-#define PTD_ASS13(a, b, c, d, e, f, g, h, i, j, k, l, m                      ) PTD_ASS12(a, b, c, d, e, f, g, h, i, j, k, l)                      ; m = rhs.m
-#define PTD_ASS14(a, b, c, d, e, f, g, h, i, j, k, l, m, n                   ) PTD_ASS13(a, b, c, d, e, f, g, h, i, j, k, l, m)                   ; n = rhs.n
-#define PTD_ASS15(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o                ) PTD_ASS14(a, b, c, d, e, f, g, h, i, j, k, l, m, n)                ; o = rhs.o
-#define PTD_ASS16(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p             ) PTD_ASS15(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o)             ; p = rhs.p
-#define PTD_ASS17(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q          ) PTD_ASS16(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p)          ; q = rhs.q
-#define PTD_ASS18(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r       ) PTD_ASS17(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q)       ; r = rhs.r
-#define PTD_ASS19(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s    ) PTD_ASS18(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r)    ; s = rhs.s
-#define PTD_ASS20(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t ) PTD_ASS19(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s) ; t = rhs.t
+#define  PTD_ASS0()           ((void) (0))
+#define  PTD_ASS1(first)      first = rhs.first; PTD_ASS0()
+#define  PTD_ASS2(first, ...) first = rhs.first; PTD_ASS1(__VA_ARGS__)
+#define  PTD_ASS3(first, ...) first = rhs.first; PTD_ASS2(__VA_ARGS__)
+#define  PTD_ASS4(first, ...) first = rhs.first; PTD_ASS3(__VA_ARGS__)
+#define  PTD_ASS5(first, ...) first = rhs.first; PTD_ASS4(__VA_ARGS__)
+#define  PTD_ASS6(first, ...) first = rhs.first; PTD_ASS5(__VA_ARGS__)
+#define  PTD_ASS7(first, ...) first = rhs.first; PTD_ASS6(__VA_ARGS__)
+#define  PTD_ASS8(first, ...) first = rhs.first; PTD_ASS7(__VA_ARGS__)
+#define  PTD_ASS9(first, ...) first = rhs.first; PTD_ASS8(__VA_ARGS__)
+#define PTD_ASS10(first, ...) first = rhs.first; PTD_ASS9(__VA_ARGS__)
+#define PTD_ASS11(first, ...) first = rhs.first; PTD_ASS10(__VA_ARGS__)
+#define PTD_ASS12(first, ...) first = rhs.first; PTD_ASS11(__VA_ARGS__)
+#define PTD_ASS13(first, ...) first = rhs.first; PTD_ASS12(__VA_ARGS__)
+#define PTD_ASS14(first, ...) first = rhs.first; PTD_ASS13(__VA_ARGS__)
+#define PTD_ASS15(first, ...) first = rhs.first; PTD_ASS14(__VA_ARGS__)
+#define PTD_ASS16(first, ...) first = rhs.first; PTD_ASS15(__VA_ARGS__)
+#define PTD_ASS17(first, ...) first = rhs.first; PTD_ASS16(__VA_ARGS__)
+#define PTD_ASS18(first, ...) first = rhs.first; PTD_ASS17(__VA_ARGS__)
+#define PTD_ASS19(first, ...) first = rhs.first; PTD_ASS18(__VA_ARGS__)
+#define PTD_ASS20(first, ...) first = rhs.first; PTD_ASS19(__VA_ARGS__)
+
+#define  PTD_RW0(action)             ((void) (0))
+#define  PTD_RW1(action, first)      ekat::action(&first, 1, fid); PTD_RW0(action)
+#define  PTD_RW2(action, first, ...) ekat::action(&first, 1, fid); PTD_RW1(action, __VA_ARGS__)
+#define  PTD_RW3(action, first, ...) ekat::action(&first, 1, fid); PTD_RW2(action, __VA_ARGS__)
+#define  PTD_RW4(action, first, ...) ekat::action(&first, 1, fid); PTD_RW3(action, __VA_ARGS__)
+#define  PTD_RW5(action, first, ...) ekat::action(&first, 1, fid); PTD_RW4(action, __VA_ARGS__)
+#define  PTD_RW6(action, first, ...) ekat::action(&first, 1, fid); PTD_RW5(action, __VA_ARGS__)
+#define  PTD_RW7(action, first, ...) ekat::action(&first, 1, fid); PTD_RW6(action, __VA_ARGS__)
+#define  PTD_RW8(action, first, ...) ekat::action(&first, 1, fid); PTD_RW7(action, __VA_ARGS__)
+#define  PTD_RW9(action, first, ...) ekat::action(&first, 1, fid); PTD_RW8(action, __VA_ARGS__)
+#define PTD_RW10(action, first, ...) ekat::action(&first, 1, fid); PTD_RW9(action, __VA_ARGS__)
+#define PTD_RW11(action, first, ...) ekat::action(&first, 1, fid); PTD_RW10(action, __VA_ARGS__)
+#define PTD_RW12(action, first, ...) ekat::action(&first, 1, fid); PTD_RW11(action, __VA_ARGS__)
+#define PTD_RW13(action, first, ...) ekat::action(&first, 1, fid); PTD_RW12(action, __VA_ARGS__)
+#define PTD_RW14(action, first, ...) ekat::action(&first, 1, fid); PTD_RW13(action, __VA_ARGS__)
+#define PTD_RW15(action, first, ...) ekat::action(&first, 1, fid); PTD_RW14(action, __VA_ARGS__)
+#define PTD_RW16(action, first, ...) ekat::action(&first, 1, fid); PTD_RW15(action, __VA_ARGS__)
+#define PTD_RW17(action, first, ...) ekat::action(&first, 1, fid); PTD_RW16(action, __VA_ARGS__)
+#define PTD_RW18(action, first, ...) ekat::action(&first, 1, fid); PTD_RW17(action, __VA_ARGS__)
+#define PTD_RW19(action, first, ...) ekat::action(&first, 1, fid); PTD_RW18(action, __VA_ARGS__)
+#define PTD_RW20(action, first, ...) ekat::action(&first, 1, fid); PTD_RW19(action, __VA_ARGS__)
+#define PTD_RW21(action, first, ...) ekat::action(&first, 1, fid); PTD_RW20(action, __VA_ARGS__)
+#define PTD_RW22(action, first, ...) ekat::action(&first, 1, fid); PTD_RW21(action, __VA_ARGS__)
+#define PTD_RW23(action, first, ...) ekat::action(&first, 1, fid); PTD_RW22(action, __VA_ARGS__)
+#define PTD_RW24(action, first, ...) ekat::action(&first, 1, fid); PTD_RW23(action, __VA_ARGS__)
+#define PTD_RW25(action, first, ...) ekat::action(&first, 1, fid); PTD_RW24(action, __VA_ARGS__)
+#define PTD_RW26(action, first, ...) ekat::action(&first, 1, fid); PTD_RW25(action, __VA_ARGS__)
+#define PTD_RW27(action, first, ...) ekat::action(&first, 1, fid); PTD_RW26(action, __VA_ARGS__)
+#define PTD_RW28(action, first, ...) ekat::action(&first, 1, fid); PTD_RW27(action, __VA_ARGS__)
+#define PTD_RW29(action, first, ...) ekat::action(&first, 1, fid); PTD_RW28(action, __VA_ARGS__)
+#define PTD_RW30(action, first, ...) ekat::action(&first, 1, fid); PTD_RW29(action, __VA_ARGS__)
+#define PTD_RW31(action, first, ...) ekat::action(&first, 1, fid); PTD_RW30(action, __VA_ARGS__)
 
 #define PTD_ASSIGN_OP(name, num_scalars, ...)                                  \
   name& operator=(const name& rhs) { PTD_ASS##num_scalars(__VA_ARGS__); assignment_impl(rhs); return *this; }
 
+#define PTD_RW_SCALARS(num_scalars, ...) \
+  void read_scalars(const ekat::FILEPtr& fid) { EKAT_REQUIRE_MSG(fid, "Tried to read from missing file. You may have forgotten to generate baselines for some BFB unit tests"); PTD_RW##num_scalars(read, __VA_ARGS__); } \
+  void write_scalars(const ekat::FILEPtr& fid) const { PTD_RW##num_scalars(write, __VA_ARGS__); }
+
+#define PTD_RW_SCALARS_ONLY(num_scalars, ...) \
+  void read(const ekat::FILEPtr& fid) { EKAT_REQUIRE_MSG(fid, "Tried to read from missing file. You may have forgotten to generate baselines for some BFB unit tests"); PTD_RW##num_scalars(read, __VA_ARGS__); } \
+  void write(const ekat::FILEPtr& fid) const { PTD_RW##num_scalars(write, __VA_ARGS__); }
+
+#define PTD_RW() \
+  void read(const ekat::FILEPtr& fid) { read_scalars(fid); PhysicsTestData::read(fid); } \
+  void write(const ekat::FILEPtr& fid) const { write_scalars(fid); PhysicsTestData::write(fid); }
+
 #define PTD_STD_DEF(name, num_scalars, ...) \
   PTD_DATA_COPY_CTOR(name, num_scalars);     \
-  PTD_ASSIGN_OP(name, num_scalars, __VA_ARGS__)
+  PTD_ASSIGN_OP(name, num_scalars, __VA_ARGS__) \
+  PTD_RW() \
+  PTD_RW_SCALARS(num_scalars, __VA_ARGS__)
 
 namespace scream {
 
@@ -241,6 +289,16 @@ class PhysicsTestData
       m_data = new_data;
     }
 
+    void read(const ekat::FILEPtr& fid)
+    {
+      ekat::read(m_data.data(), m_data.size(), fid);
+    }
+
+    void write(const ekat::FILEPtr& fid) const
+    {
+      ekat::write(m_data.data(), m_data.size(), fid);
+    }
+
     std::vector<std::vector<Int> > m_dims_list;    // list of dims, one per unique set of dims
     std::vector<std::vector<T**> > m_members_list; // list of member pointers, same outer index space as m_dims_list
     std::vector<T>                 m_data;         // the member data in a flat vector
@@ -335,6 +393,10 @@ class PhysicsTestData
       EKAT_ASSERT_MSG(m_ints.m_data[i] >= 0, "Bad index: " << m_ints.m_data[i]);
     }
   }
+
+  void read(const ekat::FILEPtr& fid);
+
+  void write(const ekat::FILEPtr& fid) const;
 
  protected:
 

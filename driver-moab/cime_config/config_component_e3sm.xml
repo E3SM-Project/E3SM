@@ -185,6 +185,18 @@
     <desc>Turn on the passing of polar fields through the coupler</desc>
   </entry>
 
+  <entry id="FLDS_TF">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <values match="last">
+      <value compset="_MPASO.*_MALI">TRUE</value>
+    </values>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>Turn on the passing of ocean thermal forcing fields through the coupler</desc>
+  </entry>
+
   <entry id="TFREEZE_SALTWATER_OPTION">
     <type>char</type>
     <valid_values>minus1p8,linear_salt,mushy</valid_values>
@@ -245,6 +257,7 @@
       <value compset="_SOCN"                     >CESM1_MOD</value>
       <value compset="_MPASO"                    >CESM1_MOD</value>
       <value compset="_MPASSI.*_MPASO"           >RASM_OPTION1</value>
+      <value compset="_MPASSI.*_MPASO" grid="oi%RRSwISC6to18E3r5">RASM_OPTION2</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -275,7 +288,7 @@
       <value compset="_DATM"    >none</value>
       <value compset="_BGC%BPRP">CO2C</value>
       <value compset="HIST.*_DATM%(QIA|CRU|GSW)">CO2A</value>
-      <value compset="20TR.*_DATM%(QIA|CRU|GSW)">CO2A</value>
+      <value compset="20TR.*_DATM%(QIA|CRU|GSW|E3SMWCv2|CPLWCH)">CO2A</value>
       <value compset="RCP.*_DATM%(QIA|CRU|GSW)" >CO2A</value>
       <value compset="_DATM%IAF.*_MPASO%OECO" >CO2A</value>
       <value compset="_DATM%JRA.*_MPASO%OECO" >CO2A</value>
@@ -383,6 +396,10 @@
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU120">24</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oEC60to30v3">48</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%ECwISC30to60E1r2">48</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%FRISwISC08to60E3r1">180</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%FRISwISC04to60E3r1">360</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%FRISwISC02to60E3r1">720</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%FRISwISC01to60E3r1">1440</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%EC30to60E2r2">48</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%WC14to60E2r3">48</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oRRS30to10v3">96</value>
@@ -407,6 +424,7 @@
       <value compset=".+" grid="a%ne256np4">144</value>
       <value compset=".+" grid="a%ne512np4">432</value>
       <value compset=".+" grid="a%ne1024np4">864</value>
+      <value compset=".+" grid="a%ne0np4_CAx32v1">864</value>
       <value compset=".+" grid="a%ne0np4_arm_x8v3" >144</value>
       <value compset=".+" grid="a%ne0np4_conus_x4v1" >96</value>
       <value compset=".+" grid="a%ne0np4_northamericax4v1" >48</value>
@@ -446,6 +464,7 @@
       <value compset="_SLND.*SOCN.*_MALI">1</value>
       <value compset="_DATM.*_SLND.*MPASO.*_MALI">$ATM_NCPL</value>
       <value compset="_EAM.*_ELM.*MPASO">48</value>
+      <value compset="_EAMXX.*_ELM.*MPASO">$ATM_NCPL</value>
       <value compset="_EAM.*_ELM.*MPASO" grid="a%ne4np4">$ATM_NCPL</value>
       <value compset="_EAM.*_ELM.*MPASO" grid="a%ne11np4">12</value>
       <value compset="_EAM.*_ELM.*MPASO" grid="a%ne120np4">96</value>
@@ -747,8 +766,13 @@
       <value compset="^1950.+CMIP6"                             >312.821</value>
       <value compset="^2010"                                    >388.717</value>
       <value compset="^2010.+CMIP6"                             >388.717</value>
-      <value compset="^SSP585.+CMIP6"				>0.000001</value>
-      <value compset="^SSP370.+CMIP6"                           >0.000001</value>
+      <value compset="^20TR.+CMIP6-AER"                         >284.317</value>
+      <value compset="^20TR.+CMIP6-xGHG-xAER"                   >284.317</value>
+      <value compset="^20TR.+CMIP6-NAT"                         >284.317</value>
+      <value compset="^20TR.+CMIP6-OZONE"                       >284.317</value>
+      <value compset="^20TR.+CMIP6-LULC"                        >284.317</value>
+      <value compset="^20TR.+CMIP6-VOLC"                        >284.317</value>
+      <value compset="^SSP.+CMIP6"                              >0.000001</value>
       <value compset="^20TR.*BGC%BCRC"                          >284.317</value>
       <value compset="^20TR.*BGC%BCRD"                          >284.317</value>
       <value compset="^20TR.*BGC%BDRC"                          >284.317</value>
@@ -851,6 +875,7 @@
     <default_value>1</default_value>
     <values match="last">
       <value compset=".+EAM%CMIP6"				>2</value>
+      <value compset=".+EAM%MMF"				>2</value>
     </values>
     <group>shr_dust_nl</group>
     <file>env_run.xml</file>

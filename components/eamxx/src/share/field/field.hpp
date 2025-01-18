@@ -349,6 +349,7 @@ protected:
   get_subview_1 (const get_view_type<data_nd_t<T,N>,HD>&, const int) const {
     EKAT_ERROR_MSG ("Error! Cannot subview a rank2 view along the second "
                     "dimension without losing LayoutRight.\n");
+    return get_view_type<data_nd_t<T,N-1>,HD>();
   }
 
   template<HostOrDevice HD,typename T,int N>

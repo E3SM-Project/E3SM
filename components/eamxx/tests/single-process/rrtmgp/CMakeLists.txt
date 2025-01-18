@@ -13,7 +13,7 @@ if (SCREAM_ENABLE_BASELINE_TESTS AND NOT SCREAM_ONLY_GENERATE_BASELINES)
   CreateUnitTest(${TEST_BASE_NAME}_unit rrtmgp_standalone_unit.cpp
     LABELS rrtmgp physics driver
     LIBS scream_rrtmgp rrtmgp scream_control yakl diagnostics rrtmgp_test_utils
-    EXE_ARGS "--ekat-test-params rrtmgp_inputfile=${SCREAM_DATA_DIR}/init/rrtmgp-allsky.nc,rrtmgp_baseline=${SCREAM_BASELINES_DIR}/data/rrtmgp-allsky-baseline.nc"
+    EXE_ARGS "--args --inputfile ${SCREAM_DATA_DIR}/init/rrtmgp-allsky.nc --baseline ${SCREAM_BASELINES_DIR}/data/rrtmgp-allsky-baseline.nc"
   )
 endif()
 
@@ -39,7 +39,7 @@ CreateUnitTestFromExec(
   ${TEST_BASE_NAME}_not_chunked ${TEST_BASE_NAME}
   LABELS rrtmgp physics driver
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
-  EXE_ARGS "--ekat-test-params inputfile=input_not_chunked.yaml"
+  EXE_ARGS "--args -inputfile input_not_chunked.yaml"
   FIXTURES_SETUP_INDIVIDUAL ${FIXTURES_BASE_NAME}_not_chunked
 )
 
@@ -70,7 +70,7 @@ CreateUnitTestFromExec(
     ${TEST_BASE_NAME}_chunked ${TEST_BASE_NAME}
     LABELS rrtmgp physics driver
     MPI_RANKS ${TEST_RANK_END}
-    EXE_ARGS "--ekat-test-params inputfile=input_chunked.yaml"
+    EXE_ARGS "--args --inputfile=input_chunked.yaml"
     FIXTURES_SETUP_INDIVIDUAL ${FIXTURES_BASE_NAME}_chunked
     PROPERTIES PASS_REGULAR_EXPRESSION "(beg.end: 0, ${COL_CHUNK_SIZE})"
 )

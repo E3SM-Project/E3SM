@@ -107,7 +107,7 @@ TEST_CASE("spa_main")
   util::TimeStamp t_end(1900,2,1,0,0,0);
   spa_time_state.current_month = t_beg.get_month();
   spa_time_state.t_beg_month = t_beg.frac_of_year_in_days();
-  spa_time_state.days_this_month = util::days_in_month(t_beg.get_year(),t_beg.get_month());
+  spa_time_state.days_this_month = t_beg.days_in_curr_month();
 
   // Generate random beg/end data
   randomize(spa_beg.data,engine,RPDF(1.0,10.0));

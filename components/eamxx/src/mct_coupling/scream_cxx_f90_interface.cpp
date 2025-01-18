@@ -101,11 +101,17 @@ extern "C"
 void scream_create_atm_instance (const MPI_Fint f_comm, const int atm_id,
                                  const char* input_yaml_file,
                                  const char* atm_log_file,
+                                 const int run_type,
                                  const int run_start_ymd,
                                  const int run_start_tod,
                                  const int case_start_ymd,
                                  const int case_start_tod,
-                                 const char* calendar_name)
+                                 const char* calendar_name,
+                                 const char* caseid,
+                                 const char* rest_caseid,
+                                 const char* hostname,
+                                 const char* username,
+                                 const char* versionid)
 {
   using namespace scream;
   using namespace scream::control;
@@ -170,7 +176,9 @@ void scream_create_atm_instance (const MPI_Fint f_comm, const int atm_id,
     ad.set_comm(atm_comm);
     ad.set_params(scream_params);
     ad.init_scorpio(atm_id);
-    ad.init_time_stamps(run_t0,case_t0);
+    ad.init_time_stamps(run_t0,case_t0,run_type);
+    ad.set_provenance_data (caseid,rest_caseid,hostname,username,versionid);
+    ad.create_output_managers ();
     ad.create_atm_processes ();
     ad.create_grids ();
     ad.create_fields ();
@@ -239,9 +247,7 @@ void scream_init_hip_atm () {
 }
 #endif
 
-void scream_init_atm (const char* caseid,
-                      const char* hostname,
-                      const char* username)
+void scream_init_atm ()
 {
   using namespace scream;
   using namespace scream::control;
@@ -249,9 +255,6 @@ void scream_init_atm (const char* caseid,
   fpe_guard_wrapper([&](){
     // Get the ad, then complete initialization
     auto& ad = get_ad_nonconst();
-
-    // Set provenance info in the driver (will be added to the output files)
-    ad.set_provenance_data (caseid,hostname,username);
 
     // Init all fields, atm processes, and output streams
     ad.initialize_fields ();
@@ -293,7 +296,7 @@ void scream_finalize (/* args ? */) {
 
 // Get the local (i.e., on current atm rank only) number of physics columns
 int scream_get_num_local_cols () {
-  int ncols;
+  int ncols = -1;
   fpe_guard_wrapper([&]() {
     const auto& ad = get_ad();
     const auto& gm = ad.get_grids_manager();
@@ -307,7 +310,7 @@ int scream_get_num_local_cols () {
 
 // Get the global (i.e., the whole earth) number of physics columns
 int scream_get_num_global_cols () {
-  int ncols;
+  int ncols = -1;
   fpe_guard_wrapper([&]() {
     const auto& ad = get_ad();
     const auto& gm = ad.get_grids_manager();
