@@ -426,6 +426,10 @@ do_remap_fwd()
   const int team_size = std::min(256, std::min(128*m_num_phys_cols,32*(concurrency/this->m_num_fields+31)/32));
 #endif
 
+#ifdef KOKKOS_ENABLE_SYCL
+  const int team_size = 4;
+#endif
+
 //should exclude above cases of CUDA and HIP
 #ifndef EAMXX_ENABLE_GPU
   const int team_size = (concurrency<this->m_num_fields ? 1 : concurrency/this->m_num_fields);
