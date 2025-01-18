@@ -41,8 +41,6 @@ void Functions<S,D>
   const uview_1d<Spack>& ni,
   const uview_1d<Spack>& qm,
   const uview_1d<Spack>& bm,
-  const uview_1d<Spack>& latent_heat_vapor,
-  const uview_1d<Spack>& latent_heat_sublim,
   const uview_1d<Spack>& mu_c,
   const uview_1d<Spack>& nu,
   const uview_1d<Spack>& lamc,
@@ -58,11 +56,13 @@ void Functions<S,D>
   const uview_1d<Spack>& diag_equiv_reflectivity,
   const uview_1d<Spack>& diag_eff_radius_qc,
   const uview_1d<Spack>& diag_eff_radius_qr,
-  const physics::P3_Constants<S> & p3constants)
+  const P3Runtime& runtime_options)
 {
   constexpr Scalar qsmall       = C::QSMALL;
   constexpr Scalar inv_cp       = C::INV_CP;
   constexpr Scalar nsmall       = C::NSMALL;
+  constexpr Scalar latvap       = C::LatVap;
+  constexpr Scalar latice       = C::LatIce;
 
   Kokkos::parallel_for(
     Kokkos::TeamVectorRange(team, nk_pack), [&] (Int k) {
@@ -93,7 +93,7 @@ void Functions<S,D>
       }
       if (qc_small.any()) {
         qv(k)                .set(qc_small, qv(k)+qc(k));
-        th_atm(k)            .set(qc_small, th_atm(k)-inv_exner(k)*qc(k)*latent_heat_vapor(k)*inv_cp);
+        th_atm(k)            .set(qc_small, th_atm(k)-inv_exner(k)*qc(k)*latvap*inv_cp);
         vap_liq_exchange(k)  .set(qc_small, vap_liq_exchange(k) - qc(k));
         qc(k)                .set(qc_small, 0);
         nc(k)                .set(qc_small, 0);
@@ -108,7 +108,7 @@ void Functions<S,D>
       auto nr_incld = nr(k)/cld_frac_r(k); //nr_incld is updated in get_rain_dsd2 but isn't used again
 
       get_rain_dsd2(
-        qr_incld, nr_incld, mu_r(k), lamr(k), p3constants, qr_gt_small);
+        qr_incld, nr_incld, mu_r(k), lamr(k), runtime_options, qr_gt_small);
 
       //Note that integrating over the drop-size PDF as done here should only be done to in-cloud
       //quantities but radar reflectivity is likely meant to be a cell ave. Thus nr in the next line
@@ -123,7 +123,7 @@ void Functions<S,D>
 
       if (qr_small.any()) {
         qv(k)              .set(qr_small, qv(k) + qr(k));
-        th_atm(k)          .set(qr_small, th_atm(k) - inv_exner(k)*qr(k)*latent_heat_vapor(k)*inv_cp);
+        th_atm(k)          .set(qr_small, th_atm(k) - inv_exner(k)*qr(k)*latvap*inv_cp);
         vap_liq_exchange(k).set(qr_small, vap_liq_exchange(k) - qr(k));
         qr(k)              .set(qr_small, 0);
         nr(k)              .set(qr_small, 0);
@@ -143,7 +143,7 @@ void Functions<S,D>
       auto qm_incld = qm(k)/cld_frac_i(k);
       auto bm_incld = bm(k)/cld_frac_i(k);
 
-      const auto rhop = calc_bulk_rho_rime(qi_incld, qm_incld, bm_incld, p3constants, qi_gt_small);
+      const auto rhop = calc_bulk_rho_rime(qi_incld, qm_incld, bm_incld, runtime_options, qi_gt_small);
       qm(k).set(qi_gt_small, qm_incld*cld_frac_i(k) );
       bm(k).set(qi_gt_small, bm_incld*cld_frac_i(k) );
 
@@ -185,7 +185,7 @@ void Functions<S,D>
       ze_ice(k).set(qi_gt_small, ze_ice(k)*cld_frac_i(k));
 
       qv(k).set(qi_small, qv(k) + qi(k));
-      th_atm(k).set(qi_small, th_atm(k) - inv_exner(k)*qi(k)*latent_heat_sublim(k)*inv_cp);
+      th_atm(k).set(qi_small, th_atm(k) - inv_exner(k)*qi(k)*(latvap+latice)*inv_cp);
       qi(k).set(qi_small, 0);
       ni(k).set(qi_small, 0);
       qm(k).set(qi_small, 0);

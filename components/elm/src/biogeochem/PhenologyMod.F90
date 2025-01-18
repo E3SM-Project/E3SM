@@ -163,7 +163,7 @@ contains
      allocate(PhenolParamsInst%lwtop           )
     !
     ! read in parameters
-    !   
+    !
     tString='crit_dayl'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
@@ -175,7 +175,7 @@ contains
     else
        tString='crit_dayl_stress'
        call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
-       if ( .not. readv ) then 
+       if ( .not. readv ) then
           PhenolParamsInst%crit_dayl_stress = secspqtrday
        else
           PhenolParamsInst%crit_dayl_stress = tempr
@@ -238,7 +238,7 @@ contains
     tString='lwtop_ann'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    PhenolParamsInst%lwtop=tempr   
+    PhenolParamsInst%lwtop=tempr
 
      !!!!========== Update to device ========= !!!
      !$acc update device(PhenolParamsInst%crit_dayl, &
@@ -601,7 +601,7 @@ contains
          prev_dayl                           =>    grc_pp%prev_dayl                                         , & ! Input:  [real(r8)  (:)   ]  daylength from previous time step (s)
 
          season_decid                        =>    veg_vp%season_decid                               , & ! Input:  [real(r8)  (:)   ]  binary flag for seasonal-deciduous leaf habit (0 or 1)
-         woody                               =>    veg_vp%woody                                      , & ! Input:  [real(r8)  (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
+         woody                               =>    veg_vp%woody                                      , & ! Input:  [real(r8)  (:)   ]  woody lifeform flag (0 = non-woody, 1 = tree, 2 = shrub)
 
          t_soisno                            =>    col_es%t_soisno                         , & ! Input:  [real(r8)  (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)
 
@@ -946,7 +946,7 @@ contains
 
          leaf_long                           =>    veg_vp%leaf_long                                  , & ! Input:  [real(r8)  (:)   ]  leaf longevity (yrs)
          froot_long                          =>    veg_vp%froot_long                                 , & ! Input:  [real(r8)  (:)   ]  fine root longevity (yrs)
-         woody                               =>    veg_vp%woody                                      , & ! Input:  [real(r8)  (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
+         woody                               =>    veg_vp%woody                                      , & ! Input:  [real(r8)  (:)   ]  woody lifeform flag (0 = non-woody, 1 = tree, 2 = shrub)
          stress_decid                        =>    veg_vp%stress_decid                               , & ! Input:  [real(r8)  (:)   ]  binary flag for stress-deciduous leaf habit (0 or 1)
 
          soilpsi                             =>    soilstate_vars%soilpsi_col                            , & ! Input:  [real(r8)  (:,:) ]  soil water potential in each soil layer (MPa)
@@ -1445,7 +1445,7 @@ contains
          froot_long         =>    veg_vp%froot_long                            , & ! Input:  [real(r8) (:) ]  fine root longevity (yrs)
 
          leafcn             =>    veg_vp%leafcn                                , & ! Input:  [real(r8) (:) ]  leaf C:N (gC/gN)
-         manunitro          =>    veg_vp%manunitro             , & ! Input: max manure to apply (kgN/m2) 
+         manunitro          =>    veg_vp%manunitro             , & ! Input: max manure to apply (kgN/m2)
          t_ref2m_min        =>    veg_es%t_ref2m_min           , & ! Input:  [real(r8) (:) ]  daily minimum of average 2 m height surface air temperature (K)
          t10                =>    veg_es%t_a10                 , & ! Input:  [real(r8) (:) ]  10-day running mean of the 2 m temperature (K)
          a5tmin             =>    veg_es%t_a5min               , & ! Input:  [real(r8) (:) ]  5-day running mean of min 2-m temperature
@@ -1988,7 +1988,7 @@ contains
          froot_long         =>    veg_vp%froot_long                   , & ! Input:  [real(r8) (:) ]  fine root longevity (yrs)
          leafcn             =>    veg_vp%leafcn                       , & ! Input:  [real(r8) (:) ]  leaf C:N (gC/gN)
          leafcp             =>    veg_vp%leafcp                       , & ! Input:  [real(r8) (:) ]  leaf C:P (gC/gP)
-         manunitro          =>    veg_vp%manunitro                    , & ! Input: max manure to apply (kgN/m2) 
+         manunitro          =>    veg_vp%manunitro                    , & ! Input: max manure to apply (kgN/m2)
          t10                =>    veg_es%t_a10                        , & ! Input:  [real(r8) (:) ]  10-day running mean of the 2 m temperature (K)
          a10tmin            =>    veg_es%t_a10min                     , & ! Input:  [real(r8) (:) ]  10-day running mean of min 2-m temperature
          fertnitro          =>    crop_vars%fertnitro_patch           , & ! Input:  [real(r8) (:) ]  max fertilizer to be applied in total (kgN/m2)
@@ -2016,8 +2016,8 @@ contains
 
          crop_seedc_to_leaf =>    veg_cf%crop_seedc_to_leaf           , & ! Output: [real(r8) (:) ]  (gC/m2/s) seed source to PFT-level
 
-         synthfert          =>    veg_nf%synthfert                    , & ! Output: [real(r8) (:) ]  (gN/m2/s) fertilizer applied each timestep 
-         manure             =>    veg_nf%manure                       , & ! Output: [real(r8) (:) ]  (gN/m2/s) manure applied each timestep 
+         synthfert          =>    veg_nf%synthfert                    , & ! Output: [real(r8) (:) ]  (gN/m2/s) fertilizer applied each timestep
+         manure             =>    veg_nf%manure                       , & ! Output: [real(r8) (:) ]  (gN/m2/s) manure applied each timestep
          fert_p             =>    veg_pf%fert_p                       , & ! Output:  [real(r8) (:) ] (gP/m2/s) phosphorus fertilizer applied each timestep
          fert_counter       =>    veg_nf%fert_counter                 , & ! Output: [real(r8) (:) ]  >0 fertilize; <=0 not (seconds)
 
@@ -2550,22 +2550,22 @@ contains
 
          xt(p,kmo) = xt(p,kmo) + t_ref2m(p) * fracday/ndaypm(kmo) ! monthly average temperature
          xp(p,kmo) = xp(p,kmo) + (forc_rain(t)+forc_snow(t))*dt   ! monthly average precipitation
-         ! calculate the potential evapotranspiration 
+         ! calculate the potential evapotranspiration
          netrad = fsa(p) + eflx_lwrad_net(p) ! moved this here because it is calculated too late
          call calculate_eto(t_ref2m(p), netrad, eflx_soil_grnd(p), forc_pbot(t), forc_rh(t), forc_wind(t), dt, ETout)
          ! monthly ETo
          ETo(p,kmo) = ETo(p,kmo) + ETout
-         
+
          ! calculate the P:PET for each month
-         if ( abs(ETo(p,kmo)) > 0._r8) then 
+         if ( abs(ETo(p,kmo)) > 0._r8) then
             p2ETo(p,kmo) = xp(p,kmo)/ETo(p,kmo)
          else ! P:PET is undefined.
             ! Setting to a fill value ( 'spval' ) would
-            ! require nested if statements due to 
+            ! require nested if statements due to
             ! the weighting of previous years (i.e., p2ETo and prev_p2ETo_bar )
             ! So, set to zero for simplicity.
             p2ETo(p,kmo) = 0._r8
-         end if 
+         end if
 
          if (nyrs_crop_active(p) == 0) then ! for the first year, use last years values
             prev_xt_bar(p,kmo) = xt(p,kmo)
@@ -2617,7 +2617,7 @@ contains
     associate(                                                                                             &
          ivt                                 =>    veg_pp%itype                                             , & ! Input:  [integer   (:) ]  pft vegetation type
 
-         woody                               =>    veg_vp%woody                                      , & ! Input:  [real(r8)  (:) ]  binary flag for woody lifeform (1=woody, 0=not woody)
+         woody                               =>    veg_vp%woody                                      , & ! Input:  [real(r8)  (:) ]  woody lifeform flag (0 = non-woody, 1 = tree, 2 = shrub)
 
          onset_flag                          =>    cnstate_vars%onset_flag_patch                           , & ! Input:  [real(r8)  (:) ]  onset flag
          onset_counter                       =>    cnstate_vars%onset_counter_patch                        , & ! Input:  [real(r8)  (:) ]  onset days counter
@@ -3277,7 +3277,7 @@ contains
     associate(                                                                             &
          ivt                      =>    veg_pp%itype                                        , & ! Input:  [integer  (:) ]  pft vegetation type
 
-         woody                    =>    veg_vp%woody                                 , & ! Input:  [real(r8) (:) ]  binary flag for woody lifeform (1=woody, 0=not woody)
+         woody                    =>    veg_vp%woody                                 , & ! Input:  [real(r8) (:) ]  woody lifeform flag (0 = non-woody, 1 = tree, 2 = shrub)
          livewdcn                 =>    veg_vp%livewdcn                              , & ! Input:  [real(r8) (:) ]  live wood (phloem and ray parenchyma) C:N (gC/gN)
          deadwdcn                 =>    veg_vp%deadwdcn                              , & ! Input:  [real(r8) (:) ]  dead wood (xylem and heartwood) C:N (gC/gN)
 

@@ -1,12 +1,16 @@
 #ifndef SCREAM_IO_UTILS_HPP
 #define SCREAM_IO_UTILS_HPP
 
+#include "scream_io_control.hpp"
 #include "share/util/scream_time_stamp.hpp"
+#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/grid/abstract_grid.hpp"
 
 #include <ekat/util/ekat_string_utils.hpp>
 #include <ekat/mpi/ekat_comm.hpp>
 
 #include <string>
+#include <memory>
 
 namespace scream
 {
@@ -59,33 +63,17 @@ inline OutputAvgType str2avg (const std::string& s) {
   return OAT::Invalid;
 }
 
+// The AD will pass a default constructed control, since it doesn't know the values
+// of REST_N/REST_OPTION used in the previous run
+// Output streams MUST pass a valid control structure, cause we need to differentiate
+// between, e.g., streams with same filename prefix, but different output freq specs
 std::string find_filename_in_rpointer (
-    const std::string& casename,
+    const std::string& filename_prefix,
     const bool model_restart,
     const ekat::Comm& comm,
-    const util::TimeStamp& run_t0);
-
-struct LongNames {
-
-  std::string get_longname (const std::string& name) {
-    if (name_2_longname.count(name)>0) {
-      return name_2_longname.at(name);
-    } else {
-      // TODO: Do we want to print a Warning message?  I'm not sure if its needed.
-      return name;
-    }
-  }
-
-  // Create map of longnames, can be added to as developers see fit.
-  std::map<std::string,std::string> name_2_longname = {
-	  {"lev","hybrid level at midpoints (1000*(A+B))"},
-	  {"hyai","hybrid A coefficient at layer interfaces"},
-    {"hybi","hybrid B coefficient at layer interfaces"},
-    {"hyam","hybrid A coefficient at layer midpoints"},
-    {"hybm","hybrid B coefficient at layer midpoints"}
-  };
-  
-};
+    const util::TimeStamp& run_t0,
+    const OutputAvgType avg_type = OutputAvgType::Instant,
+    const IOControl& control = {});
 
 // Shortcut to write/read to/from YYYYMMDD/HHMMSS attributes in the NC file
 void write_timestamp (const std::string& filename, const std::string& ts_name,
@@ -93,6 +81,12 @@ void write_timestamp (const std::string& filename, const std::string& ts_name,
 util::TimeStamp read_timestamp (const std::string& filename,
                                 const std::string& ts_name,
                                 const bool read_nsteps = false);
+
+// Create a diagnostic from a string representation of it.
+// E.g., create the diag to compute fieldX_at_500hPa.
+std::shared_ptr<AtmosphereDiagnostic>
+create_diagnostic (const std::string& diag_name,
+                   const std::shared_ptr<const AbstractGrid>& grid);
 
 } // namespace scream
 #endif // SCREAM_IO_UTILS_HPP

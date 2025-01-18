@@ -26,4 +26,21 @@ PhysicsTestData& PhysicsTestData::assignment_impl(const PhysicsTestData& rhs)
   return *this;
 }
 
+void PhysicsTestData::read(const ekat::FILEPtr& fid)
+{
+  EKAT_REQUIRE_MSG(fid,
+                   "Tried to read from missing file. You may have forgotten to generate baselines for some BFB unit tests");
+  m_reals.read(fid);
+  m_ints.read(fid);
+  m_bools.read(fid);
+}
+
+void PhysicsTestData::write(const ekat::FILEPtr& fid) const
+{
+  m_reals.write(fid);
+  m_ints.write(fid);
+  m_bools.write(fid);
+}
+
+
 } // namespace scream

@@ -200,7 +200,7 @@ contains
 
     associate(                                                                                 &
          ivt                   =>    veg_pp%itype                               , & ! Input:  [integer  (:)     ]  pft vegetation type
-         woody                 =>    veg_vp%woody                               , & ! Input:  [real(r8) (:)     ]  binary flag for woody lifeform (1=woody, 0=not woody)
+         woody                 =>    veg_vp%woody                               , & ! Input:  [real(r8) (:)     ]  woody lifeform flag (0 = non-woody, 1 = tree, 2 = shrub)
          cascade_donor_pool    =>    decomp_cascade_con%cascade_donor_pool      , & ! Input:  [integer  (:)     ]  which pool is C taken from for a given decomposition step
          cascade_receiver_pool =>    decomp_cascade_con%cascade_receiver_pool   , & ! Input:  [integer  (:)     ]  which pool is C added to for a given decomposition step
          harvdate              =>    crop_vars%harvdate_patch                     & ! Input:  [integer  (:)     ]  harvest date

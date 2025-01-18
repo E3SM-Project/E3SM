@@ -139,6 +139,15 @@
     <alias>FAQP-MMF2</alias>
     <lname>2000_EAM%AQP-MMF2_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
   </compset>
+
+  <!-- *********************************** -->
+  <!-- Relaxed Slab Ocean (RSO) -->
+  <!-- *********************************** -->
+
+  <compset>
+    <alias>F2010-RSO</alias>
+    <lname>2010_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI%PRES_DOCN%RSO_MOSART_SGLC_SWAV</lname>
+  </compset>
   
   <!-- *********************************** -->
   <!-- SCREAM compsets -->

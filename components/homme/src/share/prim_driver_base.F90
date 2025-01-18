@@ -46,6 +46,8 @@ module prim_driver_base
 
   public :: applyCAMforcing_tracers
 
+  public :: set_tracer_transport_derived_values
+
   ! Service variables used to partition the mesh.
   ! Note: GridEdge and MeshVertex are public, cause kokkos targets need to access them
   type (GridVertex_t), pointer :: GridVertex(:)
@@ -1316,7 +1318,7 @@ contains
     use hybvcoord_mod,      only: hvcoord_t
     use parallel_mod,       only: abortmp
     use prim_advance_mod,   only: prim_advance_exp, applycamforcing_dynamics
-    use prim_advection_mod, only: prim_advec_tracers_remap
+    use prim_advection_mod, only: prim_advec_tracers_observe_velocity, prim_advec_tracers_remap
     use reduction_mod,      only: parallelmax
     use time_mod,           only: TimeLevel_t, timelevel_update, timelevel_qdp
     use prim_state_mod,     only: prim_printstate
@@ -1334,7 +1336,7 @@ contains
 
     real(kind=real_kind) :: dt_q, dt_remap, dp(np,np,nlev)
     integer :: ie, q, k, n, n0_qdp, np1_qdp
-    logical :: compute_diagnostics_it, apply_forcing
+    logical :: compute_diagnostics_it, apply_forcing, observe
 
     dt_q = dt*dt_tracer_factor
     if (dt_remap_factor == 0) then
@@ -1392,11 +1394,13 @@ contains
        call prim_advance_exp(elem, deriv1, hvcoord, hybrid, dt, tl, nets, nete, &
             compute_diagnostics_it)
 
+       observe = .false.
        if (dt_remap_factor == 0) then
           ! Set np1_qdp to -1. Since dt_remap == 0, the only part of
           ! vertical_remap that is active is the updates to
           ! ps_v(:,:,np1) and dp3d(:,:,:,np1).
           call vertical_remap(hybrid, elem, hvcoord, dt_remap, tl%np1, -1, nets, nete)
+          observe = .true.
        else
           if (modulo(n, dt_remap_factor) == 0) then
              if (compute_diagnostics) call run_diagnostics(elem,hvcoord,tl,4,.false.,nets,nete)
@@ -1417,8 +1421,10 @@ contains
                 ! not tracers.
                 call vertical_remap(hybrid, elem, hvcoord, dt_remap, tl%np1, -1, nets, nete)
              end if
+             observe = .true.
           end if
        end if
+       if (observe) call Prim_Advec_Tracers_observe_velocity(elem, tl, n, nets, nete)
        ! defer final timelevel update until after Q update.
     enddo
     call t_stopf("prim_step_dyn")

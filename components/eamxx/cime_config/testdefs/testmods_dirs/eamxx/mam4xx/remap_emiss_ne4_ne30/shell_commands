@@ -1,0 +1,28 @@
+
+#!/bin/sh
+#------------------------------------------------------
+# MAM4xx adds additionaltracers to the simulation
+# Increase number of tracers for MAM4xx simulations
+#------------------------------------------------------
+
+$CIMEROOT/../components/eamxx/cime_config/testdefs/testmods_dirs/eamxx/mam4xx/update_eamxx_num_tracers.sh -b
+
+#------------------------------------------------------
+# Add aerosol microphysics process, force ne4pg2
+# emission files and provide a ne4pg2->ne30pg2 mapping
+# file
+#------------------------------------------------------
+alias ATMCHANGE='$CIMEROOT/../components/eamxx/scripts/atmchange'
+
+ATMCHANGE physics::atm_procs_list="mac_aero_mic,rrtmgp,mam4_aero_microphys" -b
+
+ATMCHANGE mam4_aero_microphys::mam4_so2_elevated_emiss_file_name='${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_so2_elev_1x1_2010_clim_ne4pg2_c20241008.nc' -b
+ATMCHANGE mam4_aero_microphys::mam4_so4_a1_elevated_emiss_file_name='${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_so4_a1_elev_1x1_2010_clim_ne4pg2_c20241008.nc' -b
+ATMCHANGE mam4_aero_microphys::mam4_so4_a2_elevated_emiss_file_name='${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_so4_a2_elev_1x1_2010_clim_ne4pg2_c20241008.nc' -b
+ATMCHANGE mam4_aero_microphys::mam4_pom_a4_elevated_emiss_file_name='${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_pom_a4_elev_1x1_2010_clim_ne4pg2_c20241008.nc' -b
+ATMCHANGE mam4_aero_microphys::mam4_bc_a4_elevated_emiss_file_name='${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_bc_a4_elev_1x1_2010_clim_ne4pg2_c20241008.nc' -b
+ATMCHANGE mam4_aero_microphys::mam4_num_a1_elevated_emiss_file_name='${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_num_a1_elev_1x1_2010_clim_ne4pg2_c20241008.nc' -b
+ATMCHANGE mam4_aero_microphys::mam4_num_a2_elevated_emiss_file_name='${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_num_a2_elev_1x1_2010_clim_ne4pg2_c20241008.nc' -b
+ATMCHANGE mam4_aero_microphys::mam4_num_a4_elevated_emiss_file_name='${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_num_a4_elev_1x1_2010_clim_ne4pg2_c20241008.nc' -b
+ATMCHANGE mam4_aero_microphys::mam4_soag_elevated_emiss_file_name='${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_soag_elev_1x1_2010_clim_ne4pg2_c20241008.nc' -b
+ATMCHANGE mam4_aero_microphys::aero_microphys_remap_file='${DIN_LOC_ROOT}/atm/scream/maps/map_ne4pg2_to_ne30pg2_nco_c20241108.nc' -b

@@ -363,7 +363,7 @@ if ($NML_TYPE eq "ww3_grid") {
     add_default($nl, 'grid%dmin');
 
     add_default($nl, 'unst%sf');
-    add_default($nl, 'unst%filename', 'val'=>"'${DIN_LOC_ROOT}/wav/ww3/${WAV_GRID}.msh'");
+    add_default($nl, 'unst%filename', 'val'=>"'${DIN_LOC_ROOT}/wav/ww3/${WAV_GRID}_rtd.msh'");
     add_default($nl, 'unst%idf');
     add_default($nl, 'unst%idla');
     add_default($nl, 'unst%idfm');
@@ -398,8 +398,8 @@ if ($NML_TYPE eq "ww3_grid_nml") {
     add_default($nl, 'icedisp');
     add_default($nl, 'rwndc');
 
-    add_default($nl, 'uostfilelocal', 'val'=>"'${DIN_LOC_ROOT}/wav/ww3/obstructions_local.${WAV_GRID}${WAV_SPEC}.in'");
-    add_default($nl, 'uostfileshadow', 'val'=>"'${DIN_LOC_ROOT}/wav/ww3/obstructions_shadow.${WAV_GRID}${WAV_SPEC}.in'");
+    add_default($nl, 'uostfilelocal', 'val'=>"'${DIN_LOC_ROOT}/wav/ww3/obstructions_local.${WAV_GRID}${WAV_SPEC}.rtd.in'");
+    add_default($nl, 'uostfileshadow', 'val'=>"'${DIN_LOC_ROOT}/wav/ww3/obstructions_shadow.${WAV_GRID}${WAV_SPEC}.rtd.in'");
     
 }
 

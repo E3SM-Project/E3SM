@@ -33,8 +33,6 @@ NumberPathDiagnostic::NumberPathDiagnostic(const ekat::Comm &comm,
   }
 }
 
-std::string NumberPathDiagnostic::name() const { return m_kind + "NumberPath"; }
-
 void NumberPathDiagnostic::set_grids(
     const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
@@ -55,7 +53,7 @@ void NumberPathDiagnostic::set_grids(
   add_field<Required>(m_nname, scalar3d, 1 / kg, grid_name);
 
   // Construct and allocate the diagnostic field
-  FieldIdentifier fid(name(), scalar2d, kg/(kg*m2), grid_name);
+  FieldIdentifier fid(m_kind + "NumberPath", scalar2d, kg/(kg*m2), grid_name);
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
 }

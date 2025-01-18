@@ -162,7 +162,7 @@ template <typename S, typename D>
 std::shared_ptr<typename SPAFunctions<S,D>::IOPReader>
 SPAFunctions<S,D>::
 create_spa_data_reader (
-    iop_ptr_type& iop,
+    iop_data_ptr_type& iop_data_manager,
     const std::shared_ptr<AbstractRemapper>& horiz_remapper,
     const std::string& spa_data_file)
 {
@@ -171,7 +171,7 @@ create_spa_data_reader (
     io_fields.push_back(horiz_remapper->get_src_field(i));
   }
   const auto io_grid = horiz_remapper->get_src_grid();
-  return std::make_shared<IOPReader>(iop, spa_data_file, io_fields, io_grid);
+  return std::make_shared<IOPReader>(iop_data_manager, spa_data_file, io_fields, io_grid);
 }
 
 /*-----------------------------------------------------------------*/
@@ -521,14 +521,14 @@ void SPAFunctions<S,D>
     // Set the first/last entries of the spa data, so that linear interp
     // can extrapolate if the p_tgt is outside the p_src bounds
     Kokkos::single(Kokkos::PerTeam(team),[&]{
-      spa_data_ccn3(icol,0) = 0;
+      spa_data_ccn3(icol,0) = ccn3(icol,0);
       for (int isw=0; isw<nswbands; ++isw) {
-        spa_data_aero_g_sw(icol,isw,0)   = 0;
-        spa_data_aero_ssa_sw(icol,isw,0) = 0;
-        spa_data_aero_tau_sw(icol,isw,0) = 0;
+        spa_data_aero_g_sw(icol,isw,0)   = aero_g_sw(icol,isw,0);
+        spa_data_aero_ssa_sw(icol,isw,0) = aero_ssa_sw(icol,isw,0);
+        spa_data_aero_tau_sw(icol,isw,0) = aero_tau_sw(icol,isw,0);
       }
       for (int ilw=0; ilw<nlwbands; ++ilw) {
-        spa_data_aero_tau_lw(icol,ilw,0) = 0;
+        spa_data_aero_tau_lw(icol,ilw,0) = aero_tau_lw(icol,ilw,0);
       }
       spa_data_ccn3(icol,nlevs+1) = ccn3(icol,nlevs-1);
       for (int isw=0; isw<nswbands; ++isw) {
@@ -568,8 +568,8 @@ void SPAFunctions<S,D>
   if (month != time_state.current_month) {
     // Update the SPA time state information
     time_state.current_month = month;
-    time_state.t_beg_month = util::TimeStamp({ts.get_year(),month+1,1}, {0,0,0}).frac_of_year_in_days();
-    time_state.days_this_month = util::days_in_month(ts.get_year(),month+1);
+    time_state.t_beg_month = ts.curr_month_beg().frac_of_year_in_days();
+    time_state.days_this_month = ts.days_in_curr_month();
 
     // Copy spa_end'data into spa_beg'data, and read in the new spa_end
     std::swap(spa_beg,spa_end);

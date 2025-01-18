@@ -183,7 +183,9 @@ void prim_step_flexible (const Real dt, const bool compute_diagnostics) {
                               Errors::err_not_implemented);
       } else {
         // Remap dynamics variables but not tracers.
+        GPTLstart("tl-sc vertical_remap");
         vertical_remap(dt_remap);
+        GPTLstop("tl-sc vertical_remap");
       }
     }
   }

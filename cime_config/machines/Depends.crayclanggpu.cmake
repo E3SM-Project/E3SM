@@ -4,6 +4,8 @@ list(APPEND NOOPT_FILES
   elm/src/data_types/VegetationDataType.F90
   elm/src/biogeochem/CNNitrogenFluxType.F90
   elm/src/biogeochem/CNCarbonFluxType.F90
+  mosart/src/wrm/WRM_subw_IO_mod.F90
+  mosart/src/riverroute/RtmMod.F90
 )
 
 # Files added below to mitigate excessive compilation times

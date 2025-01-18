@@ -25,7 +25,7 @@ module reduction_mod
      integer :: ctr
   end type ReductionBuffer_ordered_1d_t
 
-  public :: ParallelMin,ParallelMax
+  public :: ParallelMin,ParallelMax,ParallelSum
 
   !type (ReductionBuffer_ordered_1d_t), public :: red_sum
   type (ReductionBuffer_int_1d_t),     public :: red_max_int
@@ -51,6 +51,9 @@ module reduction_mod
      module procedure ParallelMax0d
      module procedure ParallelMax0d_int
   end interface
+  interface ParallelSum
+     module procedure ParallelSum0d_int
+  end interface
 
   interface pmax_mt
      module procedure pmax_mt_int_1d
@@ -59,6 +62,10 @@ module reduction_mod
 
   interface pmin_mt
      module procedure pmin_mt_r_1d
+  end interface
+
+  interface psum_mt
+     module procedure psum_mt_int_1d
   end interface
 
   interface InitReductionBuffer
@@ -179,7 +186,19 @@ contains
 
   end function ParallelMax0d_int
 
+  !****************************************************************
+  function ParallelSum0d_int(data,hybrid) result(psum)
+    use hybrid_mod, only : hybrid_t
+    implicit none
+    integer             , intent(in)    :: data
+    type (hybrid_t),      intent(in)    :: hybrid
+    integer                             :: psum
+    integer                             :: tmp(1)
 
+    tmp(1)=data
+    call psum_mt(red_sum_int,tmp,1,hybrid)
+    psum = red_sum_int%buf(1)
+  end function ParallelSum0d_int
 
   !****************************************************************
   subroutine InitReductionBuffer_int_1d(red,len)
@@ -486,7 +505,53 @@ contains
     !$OMP BARRIER
   end subroutine pmin_mt_r_1d
 
+  ! =======================================
+  ! psum_mt:
+  !
+  ! thread safe, parallel reduce sum of a
+  ! one dimensional INTEGER reduction vector
+  ! =======================================
+  subroutine psum_mt_int_1d(red,redp,len,hybrid)
+    use hybrid_mod, only : hybrid_t
+#ifdef _MPI
+    use parallel_mod, only: mpi_sum, mpiinteger_t
+#endif
+    use parallel_mod, only: abortmp
 
+    type (ReductionBuffer_int_1d_t)   :: red       ! shared memory reduction buffer struct
+    integer,               intent(in) :: len       ! buffer length
+    integer, intent(inout)            :: redp(len) ! thread private vector of partial sum
+    type (hybrid_t),       intent(in) :: hybrid    ! parallel handle
+
+    ! Local variables
+    integer ierr, k
+
+    if (len>red%len) call abortmp('ERROR: threadsafe reduction buffer too small')
+
+    !$OMP BARRIER
+    ! the first and fastest thread performs initializing copy
+    !$OMP SINGLE
+    red%buf(1:len) = redp(1:len)
+    red%ctr = hybrid%ithr
+    !$OMP END SINGLE
+
+    !$OMP CRITICAL (CRITMAXINT)
+    if (hybrid%ithr /= red%ctr) then
+       do k=1,len
+          red%buf(k) = red%buf(k) + redp(k)
+       enddo
+    end if
+    !$OMP END CRITICAL (CRITMAXINT)
+#ifdef _MPI
+    !$OMP BARRIER
+    if (hybrid%ithr==0) then
+       call MPI_Allreduce(red%buf(1),redp,len,MPIinteger_t, &
+            MPI_SUM,hybrid%par%comm,ierr)
+       red%buf(1:len)=redp(1:len)
+    end if
+#endif
+    !$OMP BARRIER
+  end subroutine psum_mt_int_1d
 
   ! =======================================
   subroutine ElementSum_1d(res,variable,type,hybrid)

@@ -4,7 +4,7 @@
 Download SCREAM input files using CIME
 """
 
-from utils import check_minimum_python_version
+from utils import check_minimum_python_version, GoodFormatter
 check_minimum_python_version(3, 4)
 
 import argparse, sys, pathlib
@@ -24,7 +24,7 @@ OR
     > {0} /my/input/root my/file
 """.format(pathlib.Path(args[0]).name),
         description=description,
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        formatter_class=GoodFormatter
     )
 
     parser.add_argument("input_root", help="The root input area (called DIN_LOC_ROOT in CIME)")

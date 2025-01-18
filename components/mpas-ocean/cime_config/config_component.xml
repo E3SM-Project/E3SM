@@ -107,6 +107,8 @@
         <default_value>constant</default_value>
         <values>
            <value compset="MPASO_">none</value>
+           <value compset="MPASO%IBDISMF_">none</value>
+           <value compset="MPASO%DISMF_">none</value>
            <value compset="2000_DATM.*_MPASO%OECO">constant</value>
            <value compset="1850_DATM.*_MPASO%OECO">constant</value>
            <value compset="20TR_DATM.*_MPASO%OECO">diagnostic</value>

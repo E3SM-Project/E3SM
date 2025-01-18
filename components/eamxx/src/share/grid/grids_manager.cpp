@@ -7,7 +7,24 @@ auto GridsManager::
 get_grid(const std::string& name) const
  -> grid_ptr_type
 {
-  auto g = get_grid_nonconst(name);
+  EKAT_REQUIRE_MSG (has_grid(name),
+      "Error! Grids manager '" + this->name() + "' does not provide grid '" + name + "'.\n"
+      "       Avaialble grids are: " + print_available_grids()  + "\n");
+
+  grid_ptr_type g;
+  for (const auto& it : m_grids) {
+    if (it.second->name()==name or
+        ekat::contains(it.second->aliases(),name)) {
+      g = it.second;
+      break;
+    }
+  }
+
+  EKAT_REQUIRE_MSG (g!=nullptr,
+      "Something went wrong while looking up a grid.\n"
+      "  - grids manager: " + this->name() + "\n"
+      "  - grid name    : " + name   + "\n");
+
   return g;
 }
 
@@ -51,7 +68,14 @@ create_remapper (const grid_ptr_type& from_grid,
 }
 
 void GridsManager::
-add_grid (nonconstgrid_ptr_type grid)
+add_nonconst_grid (nonconstgrid_ptr_type grid)
+{
+  add_grid(grid);
+  m_nonconst_grids[grid->name()] = grid;
+}
+
+void GridsManager::
+add_grid (grid_ptr_type grid)
 {
   const auto& name = grid->name();
   EKAT_REQUIRE_MSG (not has_grid(name),
@@ -59,7 +83,6 @@ add_grid (nonconstgrid_ptr_type grid)
       "  - grids manager: " + this->name() + "\n"
       "  - grid name    : " + name + "\n");
 
-  m_nonconst_grids[name] = grid;
   m_grids[name] = grid;
 }
 
@@ -86,7 +109,6 @@ get_grid_nonconst (const std::string& name) const
       "  - grid name    : " + name   + "\n");
 
   return g;
-  
 }
 
 void GridsManager::

@@ -679,6 +679,8 @@ contains
 #ifndef PIO1
     else if ( typename .eq. 'ADIOS') then
        iotype = pio_iotype_adios
+    else if ( typename .eq. 'ADIOSC') then
+       iotype = pio_iotype_adiosc
     else if ( typename .eq. 'HDF5') then
        iotype = pio_iotype_hdf5
 #endif

@@ -2,7 +2,7 @@ Except for the separable pieces descibed below, E3SM is released
 under the following 3-Clause BSD Open Source license.
 
 *******************************************************************************
-Copyright ©2023, UChicago Argonne, LLC All Rights Reserved
+Copyright 2024, UChicago Argonne, LLC All Rights Reserved
 
 Software Name: Energy Exascale Earth System Model (E3SM)
 
@@ -55,15 +55,29 @@ GPTL            share/timing                    author              non-commeric
 MCT             externals/mct                   ANL                 BSD
 YAKL		externals/YAKL			author              BSD
 cub		externals/cub                   author, NVIDIA      BSD
-kokkos          externals/kokkos                SNL                 BSD
+kokkos          externals/ekat                  SNL                 BSD
+haero           externals/haero                 SNL/Battelle        BSD
+mam4xx          externals/mam4xx                SNL/Battelle        BSD
 
 Ocean/Ice       under components/
 -----------     -----------------
 CICE            cice                            LANL                BSD
 MPAS Framework  mpas-framework                  LANL                BSD
-MPAS Ocean      mpas-ocean                      LANL                BSD
-MPAS SeaIce     mpas-seaice                     LANL                BSD
-MPAS-Albany LandIce   mpas-albany-landice       LANL, SNL           BSD
+FFTW            mpas-ocean/src/FFTW             author/MIT          GPL
+MARBL           mpas-ocean/src/MARBL            NCAR                BSD
+SHTNS           mpas-ocean/src/SHTNS            CeCILL              GPL
+cvmix           mpas-ocean/src/cvmix            NCAR                LGPL
+gotm            mpas-ocean/src/gotm             authors             GPL
+ppr             mpas-ocean/src/ppr              author              custom
+Icepack         mpas-seaice/src/icepack         LANL                BSD
+
+Waves           under components/ww3
+-----------     --------------------
+WW3             src/WW3                         NWS/NOAA            custom
+
+Land-ice        under components/mpas-albany-landice
+-----------     ------------------------------------
+SeaLevelModel   src/SeaLevelModel               author              MIT
 
 Land            under components/elm/src
 -----------     ------------------------
@@ -91,7 +105,7 @@ HOMMEXX         components/homme/src/share/cxx  SNL                 BSD
 
 Actual copyright holder for above Institutions:
 NCAR =  University Corporation for Atmospheric Research
-LANL =  Los Alamos National Security, LLC
+LANL =  Los Alamos National Security, LLC, Triad National Security, LLC
 SNL  =  National Technology & Engineering Solutions of Sandia, LLC 
 LBNL =  The Regents of the University of California, 
         through Lawrence Berkeley National Laboratory

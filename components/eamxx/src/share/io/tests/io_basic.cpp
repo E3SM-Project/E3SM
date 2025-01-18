@@ -87,7 +87,7 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
   //  - Uniform_int_distribution returns an int, and the randomize
   //    util checks that return type matches the Field data type.
   //    So wrap the int pdf in a lambda, that does the cast.
-  std::mt19937_64 engine(seed); 
+  std::mt19937_64 engine(seed);
   auto my_pdf = [&](std::mt19937_64& engine) -> Real {
     std::uniform_int_distribution<int> pdf (0,100);
     Real v = pdf(engine);
@@ -105,7 +105,7 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
   };
 
   auto fm = std::make_shared<FieldManager>(grid);
-  
+
   const auto units = ekat::units::Units::nondimensional();
   int count=0;
   using stratts_t = std::map<std::string,std::string>;
@@ -145,7 +145,6 @@ void write (const std::string& avg_type, const std::string& freq_units,
 
   // Create output params
   ekat::ParameterList om_pl;
-  om_pl.set("MPI Ranks in Filename",true);
   om_pl.set("filename_prefix",std::string("io_basic"));
   om_pl.set("Field Names",fnames);
   om_pl.set("Averaging Type", avg_type);
@@ -154,14 +153,25 @@ void write (const std::string& avg_type, const std::string& freq_units,
   ctrl_pl.set("Frequency",freq);
   ctrl_pl.set("save_grid_data",false);
 
+  // While setting this is in practice irrelevant (we would close
+  // the file anyways at the end of the run), we can test that the OM closes
+  // the file AS SOON as it's full (before calling finalize)
+  int max_snaps = num_output_steps;
+  if (avg_type=="INSTANT") {
+    ++max_snaps;
+  }
+  om_pl.set("Max Snapshots Per File", max_snaps);
+
   // Create Output manager
   OutputManager om;
 
   // Attempt to use invalid fp precision string
   om_pl.set("Floating Point Precision",std::string("triple"));
-  REQUIRE_THROWS (om.setup(comm,om_pl,fm,gm,t0,t0,false));
+  om.initialize(comm,om_pl,t0,false);
+  REQUIRE_THROWS (om.setup(fm,gm));
   om_pl.set("Floating Point Precision",std::string("single"));
-  om.setup(comm,om_pl,fm,gm,t0,t0,false);
+  om.initialize(comm,om_pl,t0,false);
+  om.setup(fm,gm);
 
   // Time loop: ensure we always hit 3 output steps
   const int nsteps = num_output_steps*freq;
@@ -180,6 +190,10 @@ void write (const std::string& avg_type, const std::string& freq_units,
     // Run output manager
     om.run (t);
   }
+
+  // Check that the file was closed, since we reached full capacity
+  const auto& file_specs = om.output_file_specs();
+  REQUIRE (not file_specs.is_open);
 
   // Close file and cleanup
   om.finalize();

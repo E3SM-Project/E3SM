@@ -2896,10 +2896,12 @@ contains
        num_moab_exports = num_moab_exports + 1! this is moab clock used for debugging
        call seq_timemgr_clockAdvance( seq_SyncClock, force_stop, force_stop_ymd, force_stop_tod)
        call seq_timemgr_EClockGetData(EClock_d, stepno=cur_step_no)
+#ifdef MOABDEBUG
        if (iamroot_CPLID) then
          write(logunit,*) ' num_moab_exports , cur_step_no ',num_moab_exports, cur_step_no
          call shr_sys_flush(logunit)
        endif
+#endif
        call seq_timemgr_EClockGetData( EClock_d, curr_ymd=ymd, curr_tod=tod)
        call shr_cal_date2ymd(ymd,year,month,day)
        stop_alarm    = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_stop)

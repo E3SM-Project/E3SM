@@ -91,7 +91,6 @@ public:
   FieldLayout get_2d_vector_layout (const int vector_dim) const;
   FieldLayout get_2d_tensor_layout (const std::vector<int>& cmp_dims) const;
 
-  FieldLayout get_3d_vector_layout (const bool midpoints) const;
   FieldLayout get_3d_vector_layout (const bool midpoints, const int vector_dim) const;
   FieldLayout get_3d_tensor_layout (const bool midpoints, const std::vector<int>& cmp_dims) const;
 

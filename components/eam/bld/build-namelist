@@ -830,6 +830,10 @@ add_default($nl,'use_hetfrz_classnuc');
 add_default($nl,'hist_hetfrz_classnuc');
 add_default($nl,'gw_convect_hcf') if (get_default_value('gw_convect_hcf'));
 add_default($nl,'hdepth_scaling_factor') if (get_default_value('hdepth_scaling_factor'));
+add_default($nl,'gw_convect_hdepth_min') if (get_default_value('gw_convect_hdepth_min'));
+add_default($nl,'gw_convect_storm_speed_min') if (get_default_value('gw_convect_storm_speed_min'));
+add_default($nl,'gw_convect_plev_src_wind') if (get_default_value('gw_convect_plev_src_wind'));
+add_default($nl,'use_gw_convect_old', 'val'=>'.true.');
 add_default($nl,'linoz_psc_T');
 if ($cfg->get('microphys') =~ /^mg2/) {
     add_default($nl,'micro_mg_dcs_tdep');
@@ -4089,13 +4093,24 @@ if ($waccm_phys or $cfg->get('nlev') >= 60) {
     add_default($nl, 'use_gw_oro'    , 'val'=>'.true.');
     add_default($nl, 'use_gw_front'  , 'val'=>'.true.');
     add_default($nl, 'use_gw_convect', 'val'=>'.true.');
+    add_default($nl, 'use_od_ls', 'val'=>'.false.');
+    add_default($nl, 'use_od_bl', 'val'=>'.false.');
+    add_default($nl, 'use_od_ss', 'val'=>'.false.');
+    add_default($nl, 'use_od_fd', 'val'=>'.false.');
 } else {
     add_default($nl, 'use_gw_oro'    , 'val'=>'.true.');
     add_default($nl, 'use_gw_front'  , 'val'=>'.false.');
     add_default($nl, 'use_gw_convect', 'val'=>'.false.');
+    add_default($nl, 'use_od_ls', 'val'=>'.false.');
+    add_default($nl, 'use_od_bl', 'val'=>'.false.');
+    add_default($nl, 'use_od_ss', 'val'=>'.false.');
+    add_default($nl, 'use_od_fd', 'val'=>'.false.');
 }
 add_default($nl, 'pgwv', 'val'=>'32');
 add_default($nl, 'gw_dc','val'=>'2.5D0');
+add_default($nl, 'od_ls_ncleff' ,'val'=>'3.D0');
+add_default($nl, 'od_bl_ncd'    ,'val'=>'3.D0');
+add_default($nl, 'od_ss_sncleff','val'=>'1.D0');
 
 if ($nl->get_value('use_gw_oro') =~ /$TRUE/io) {
     add_default($nl, 'effgw_oro');

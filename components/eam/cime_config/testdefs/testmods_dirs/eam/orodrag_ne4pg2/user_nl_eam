@@ -1,0 +1,7 @@
+use_gw_oro=.false.
+use_od_ls=.true.
+use_od_bl=.true.
+use_od_ss=.true.
+use_od_fd=.true.
+
+bnd_topo='$DIN_LOC_ROOT/atm/cam/topo/USGS-gtopo30_ne4np4pg2_16x_converted_forOroDrag.c20241019.nc'

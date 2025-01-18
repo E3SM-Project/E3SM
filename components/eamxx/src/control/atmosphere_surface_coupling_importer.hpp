@@ -83,6 +83,14 @@ protected:
   view_2d <DefaultDevice, Real> m_cpl_imports_view_d;
   uview_2d<HostDevice,    Real> m_cpl_imports_view_h;
 
+#ifdef HAVE_MOAB
+  // Views storing a 2d array with dims (num_fields,num_cols) for import data.
+  // The colums index strides faster, since that's what moab does (so we can "view" the
+  // pointer to the whole x2a_am(:,:) array from Fortran)
+  view_2d <DefaultDevice, Real> m_moab_cpl_imports_view_d;
+  uview_2d<HostDevice,    Real> m_moab_cpl_imports_view_h;
+#endif
+
   // Array storing the field names for imports
   name_t* m_import_field_names;
 

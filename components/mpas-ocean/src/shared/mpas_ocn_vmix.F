@@ -27,6 +27,7 @@ module ocn_vmix
    use mpas_timer
    use ocn_mesh
 
+   use ocn_diagnostics
    use mpas_constants
    use ocn_constants
    use ocn_config
@@ -201,6 +202,11 @@ contains
       !$omp end do
       !$omp end parallel
 #endif
+
+      if(config_use_cvmix_kpp .or. config_use_gotm) then
+         call ocn_compute_mixing_input_fields(statePool, forcingPool,&
+                                              meshPool, timeLevel)
+      end if
 
 #ifdef MPAS_OPENACC
       !$acc update host(vertViscTopOfEdge, vertDiffTopOfCell)

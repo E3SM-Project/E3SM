@@ -1077,7 +1077,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_use_humics" type="logical"
 	category="biogeochemistry" group="biogeochemistry">
-Use the humic matter tracer
+Use the humic (refractory dissolved organic matter) tracer
 
 Valid values: true or false
 Default: Defined in namelist_defaults.xml
@@ -1949,7 +1949,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_mobility_type_humics" type="real"
 	category="biogeochemistry" group="biogeochemistry">
-Transport type of humics
+Transport type of humics (refractory dissolved organic matter)
 
 Valid values: -1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange
 Default: Defined in namelist_defaults.xml
@@ -2681,6 +2681,14 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_use_data_icebergs" type="logical"
 	category="ocean" group="ocean">
 Use data iceberg meltwater forcing
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_scale_dib_by_removed_ice_runoff" type="logical"
+	category="ocean" group="ocean">
+Whether to scale data iceberg fluxes by the running mean of removed ice runoff
 
 Valid values: true or false
 Default: Defined in namelist_defaults.xml

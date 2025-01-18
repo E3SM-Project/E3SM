@@ -4,37 +4,46 @@
 #include "share/grid/remap/coarsening_remapper.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/io/scream_scorpio_interface.hpp"
+#include "share/util/scream_timing.hpp"
+#include "share/field/field_utils.hpp"
 
 namespace scream {
 
-template<typename ViewT>
-typename ViewT::HostMirror
-cmvc (const ViewT& v) {
-  auto vh = Kokkos::create_mirror_view(v);
-  Kokkos::deep_copy(vh,v);
-  return vh;
-}
+constexpr int vec_dim = 3;
+constexpr auto P0 = VerticalRemapper::P0;
+constexpr auto Mask = VerticalRemapper::Mask;
+constexpr auto Top = VerticalRemapper::Top;
+constexpr auto Bot = VerticalRemapper::Bot;
+constexpr auto TopBot = VerticalRemapper::TopAndBot;
+constexpr Real mask_val = -99999.0;
 
-void print (const std::string& msg, const ekat::Comm& comm) {
+template<typename... Args>
+void print (const std::string& fmt, const ekat::Comm& comm, Args&&... args) {
   if (comm.am_i_root()) {
-    printf("%s",msg.c_str());
+    printf(fmt.c_str(),std::forward<Args>(args)...);
+  }
+}
+// Overload for when there are no additional arguments
+void print(const std::string& fmt, const ekat::Comm& comm) {
+  if (comm.am_i_root()) {
+    printf(fmt.c_str());
   }
 }
 
 // Helper function to create a grid given the number of dof's and a comm group.
 std::shared_ptr<AbstractGrid>
-build_src_grid(const ekat::Comm& comm, const int nldofs_src, const int nlevs_src) 
+build_grid(const ekat::Comm& comm, const int nldofs, const int nlevs)
 {
   using gid_type = AbstractGrid::gid_type;
 
-  auto src_grid = std::make_shared<PointGrid>("src",nldofs_src,nlevs_src,comm);
+  auto grid = std::make_shared<PointGrid>("src",nldofs,nlevs,comm);
 
-  auto src_dofs = src_grid->get_dofs_gids();
-  auto src_dofs_h = src_dofs.get_view<gid_type*,Host>();
-  std::iota(src_dofs_h.data(),src_dofs_h.data()+nldofs_src,nldofs_src*comm.rank());
-  src_dofs.sync_to_dev();
+  auto dofs = grid->get_dofs_gids();
+  auto dofs_h = dofs.get_view<gid_type*,Host>();
+  std::iota(dofs_h.data(),dofs_h.data()+nldofs,nldofs*comm.rank());
+  dofs.sync_to_dev();
 
-  return src_grid;
+  return grid;
 }
 
 // Helper function to create fields
@@ -64,7 +73,133 @@ Real data_func(const int col, const int vec, const Real pres) {
   //   - pres, the current pressure
   // Should ensure that the interpolated values match exactly, since vertical interp is also a linear interpolator.
   // Note, we don't use the level, because here the vertical interpolation is over pressure, so it represents the level.
-  return col*pres + vec*100.0;
+  return (col+1)*pres + vec*100.0;
+}
+
+void compute_field (const Field& f, const Field& p)
+{
+  Field::view_host_t<const Real*> p1d;
+  Field::view_host_t<const Real**> p2d;
+  bool rank1 = p.rank()==1;
+  const auto& l = f.get_header().get_identifier().get_layout();
+  const int ncols = l.dims().front();
+  const int nlevs = l.dims().back();
+  if (rank1) {
+    p1d = p.get_view<const Real*,Host>();
+  } else {
+    p2d = p.get_view<const Real**,Host>();
+  }
+
+  // Grab correct pressure (1d or 2d)
+  auto pval = [&](int i, int k) {
+    if (rank1) return p1d(k);
+    else       return p2d(i,k);
+  };
+
+  switch (l.type()) {
+    case LayoutType::Scalar2D:
+    {
+      const auto v = f.get_view<Real*,Host>();
+      for (int i=0; i<ncols; ++i) {
+        v(i) = i+1;
+      }
+    } break;
+    case LayoutType::Vector2D:
+    {
+      const auto v = f.get_view<Real**,Host>();
+      for (int i=0; i<ncols; ++i) {
+        for (int j=0; j<vec_dim; ++j) {
+          v(i,j) = i+1 + ncols*(j+1);
+      }}
+    } break;
+    case LayoutType::Scalar3D:
+    {
+      const auto v = f.get_view<Real**,Host>();
+      for (int i=0; i<ncols; ++i) {
+        for (int j=0; j<nlevs; ++j) {
+          v(i,j) = data_func(i,0,pval(i,j));
+      }}
+    } break;
+    case LayoutType::Vector3D:
+    {
+      const auto v = f.get_view<Real***,Host>();
+      for (int i=0; i<ncols; ++i) {
+        for (int j=0; j<vec_dim; ++j) {
+          for (int k=0; k<nlevs; ++k) {
+            v(i,j,k) = data_func(i,j,pval(i,k));
+      }}}
+    } break;
+    default:
+      EKAT_ERROR_MSG ("Unexpected layout.\n");
+  }
+  f.sync_to_dev();
+}
+
+void extrapolate (const Field& p_src, const Field& p_tgt, const Field& f,
+                  const VerticalRemapper::ExtrapType etype_top,
+                  const VerticalRemapper::ExtrapType etype_bot)
+{
+  Field::view_host_t<const Real*>  p1d_src,p1d_tgt;
+  Field::view_host_t<const Real**> p2d_src,p2d_tgt;
+  if (p_src.rank()==1) {
+    p1d_src = p_src.get_view<const Real*,Host>();
+  } else {
+    p2d_src = p_src.get_view<const Real**,Host>();
+  }
+  if (p_tgt.rank()==1) {
+    p1d_tgt = p_tgt.get_view<const Real*,Host>();
+  } else {
+    p2d_tgt = p_tgt.get_view<const Real**,Host>();
+  }
+
+  auto pval = [&](auto p1d, auto p2d, int i, int k, int rank) {
+    if (rank==1) return p1d(k);
+    else         return p2d(i,k);
+  };
+
+  const auto& l = f.get_header().get_identifier().get_layout();
+  const int ncols = l.dims().front();
+  const int nlevs = l.dims().back();
+  const int nlevs_src = p_src.get_header().get_identifier().get_layout().dims().back();
+  // print_field_hyperslab(p_src);
+  switch (l.type()) {
+    case LayoutType::Scalar2D: break;
+    case LayoutType::Vector2D: break;
+    case LayoutType::Scalar3D:
+    {
+      const auto v = f.get_view<Real**,Host>();
+      for (int i=0; i<ncols; ++i) {
+        auto pmin = pval(p1d_src,p2d_src,i,0,p_src.rank());
+        auto pmax = pval(p1d_src,p2d_src,i,nlevs_src-1,p_src.rank());
+        for (int j=0; j<nlevs; ++j) {
+          auto p = pval(p1d_tgt,p2d_tgt,i,j,p_tgt.rank());
+          if (p>pmax) {
+            v(i,j) = etype_bot==Mask ? mask_val : data_func(i,0,pmax);
+          } else if (p<pmin) {
+            v(i,j) = etype_top==Mask ? mask_val : data_func(i,0,pmin);
+          }
+      }}
+    } break;
+    case LayoutType::Vector3D:
+    {
+      const auto v = f.get_view<Real***,Host>();
+      for (int i=0; i<ncols; ++i) {
+        auto pmin = pval(p1d_src,p2d_src,i,0,p_src.rank());
+        auto pmax = pval(p1d_src,p2d_src,i,nlevs_src-1,p_src.rank());
+        for (int j=0; j<vec_dim; ++j) {
+          for (int k=0; k<nlevs; ++k) {
+            auto p = pval(p1d_tgt,p2d_tgt,i,k,p_tgt.rank());
+            if (p>pmax) {
+              v(i,j,k) = etype_bot==Mask ? mask_val : data_func(i,j,pmax);
+            } else if (p<pmin) {
+              v(i,j,k) = etype_top==Mask ? mask_val : data_func(i,j,pmin);
+            }
+      }}}
+    } break;
+    default:
+      EKAT_ERROR_MSG ("Unexpected layout.\n");
+  }
+  f.sync_to_dev();
 }
 
 // Helper function to create a remap file
@@ -80,14 +215,15 @@ void create_remap_file(const std::string& filename, const int nlevs, const std::
   scorpio::release_file(filename);
 }
 
-TEST_CASE ("vertical_remap") {
-  using gid_type = AbstractGrid::gid_type;
+TEST_CASE ("create_tgt_grid") {
 
   // -------------------------------------- //
   //           Init MPI and PIO             //
   // -------------------------------------- //
 
   ekat::Comm comm(MPI_COMM_WORLD);
+
+  print ("Testing retrieval of tgt grid from map file ...\n",comm);
 
   scorpio::init_subsystem(comm);
 
@@ -97,7 +233,7 @@ TEST_CASE ("vertical_remap") {
 
   const int nlevs_src  = 2*SCREAM_PACK_SIZE + 2;  // Make sure we check what happens when the vertical extent is a little larger than the max PACK SIZE
   const int nlevs_tgt  = nlevs_src/2;
-  const int nldofs_src = 10;
+  const int nldofs = 1;
 
   // -------------------------------------- //
   //           Create a map file            //
@@ -115,248 +251,317 @@ TEST_CASE ("vertical_remap") {
   std::vector<std::int64_t> dofs_p(nlevs_tgt);
   std::iota(dofs_p.begin(),dofs_p.end(),0);
   std::vector<Real> p_tgt;
-  for (int ii=0; ii<nlevs_tgt; ++ii) {
-    p_tgt.push_back(ptop_tgt + dp_tgt*ii);
+  for (int k=0; k<nlevs_tgt; ++k) {
+    p_tgt.push_back(ptop_tgt + dp_tgt*k);
   }
 
   create_remap_file(filename, nlevs_tgt, dofs_p, p_tgt);
   print (" -> creating map file ... done!\n",comm);
 
   // -------------------------------------- //
-  //      Build src grid and remapper       //
+  //             Build src grid             //
   // -------------------------------------- //
 
-  print (" -> creating grid and remapper ...\n",comm);
+  print (" -> creating src grid ...\n",comm);
+  auto src_grid = build_grid(comm, nldofs, nlevs_src);
+  print (" -> creating src grid ... done!\n",comm);
 
+  // -------------------------------------- //
+  //           Retrieve tgt grid            //
+  // -------------------------------------- //
+
+  print (" -> retreiving tgt grid ...\n",comm);
+  auto tgt_grid = VerticalRemapper::create_tgt_grid (src_grid,filename);
+  print (" -> retreiving tgt grid ... done!\n",comm);
+
+  // -------------------------------------- //
+  //             Check tgt grid             //
+  // -------------------------------------- //
+
+  print (" -> checking tgt grid ...\n",comm);
+  REQUIRE (tgt_grid->get_num_local_dofs()==src_grid->get_num_local_dofs());
+  REQUIRE (tgt_grid->get_num_vertical_levels()==nlevs_tgt);
+  REQUIRE (tgt_grid->has_geometry_data("p_levs"));
+  auto p_levs = tgt_grid->get_geometry_data("p_levs");
+  auto p_levs_v = p_levs.get_view<const Real*,Host>();
+  for (int k=0; k<nlevs_tgt; ++k) {
+    REQUIRE (p_tgt[k]==p_levs_v[k]);
+  }
+
+  print (" -> checking tgt grid ... done!\n",comm);
+
+  // Clean up scorpio stuff
+  scorpio::finalize_subsystem();
+
+  print ("Testing retrieval of tgt grid from map file ...\n",comm);
+}
+
+TEST_CASE ("vertical_remapper") {
+  // -------------------------------------- //
+  //           Init MPI and PIO             //
+  // -------------------------------------- //
+
+  ekat::Comm comm(MPI_COMM_WORLD);
+
+  print ("Testing vertical remapper ...\n",comm);
+
+  scorpio::init_subsystem(comm);
+
+  // -------------------------------------- //
+  //           Set grid/map sizes           //
+  // -------------------------------------- //
+
+  const int nlevs_src  = 2*SCREAM_PACK_SIZE + 2;  // Make sure we check what happens when the vertical extent is a little larger than the max PACK SIZE
+  const int nldofs = 1;
+
+  // -------------------------------------- //
+  //             Build src grid             //
+  // -------------------------------------- //
+
+  print (" -> creating src grid ...\n",comm);
+  auto src_grid = build_grid(comm, nldofs, nlevs_src);
+  print ("      nlevs src: %d\n",comm,nlevs_src);
+  print (" -> creating src grid ...done!\n",comm);
+
+  // Tgt grid must have same 2d layout as src grid
+  REQUIRE_THROWS (std::make_shared<VerticalRemapper>(src_grid,build_grid(comm,nldofs+1,nlevs_src)));
+
+  // Helper lambda, to create p_int profile. If it is a 3d field, make same profile on each col
+  auto create_pint = [&](const auto& grid, const bool one_d, const Real ptop, const Real pbot) {
+    auto layout = one_d ? grid->get_vertical_layout(false)
+                        : grid->get_3d_scalar_layout(false);
+    FieldIdentifier fid("p_int",layout,ekat::units::Pa,grid->name());
+    Field pint (fid);
+    pint.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
+    pint.allocate_view();
+
+    int nlevs = grid->get_num_vertical_levels();
+    const Real dp = (pbot-ptop)/nlevs;
+
+    if (one_d) {
+      auto pv = pint.get_view<Real*,Host>();
+      pv(nlevs) = pbot;
+      for (int k=nlevs; k>0; --k) {
+        pv(k-1) = pv(k) - dp;
+      }
+    } else {
+      auto pv = pint.get_view<Real**,Host>();
+      for (int i=0; i<nldofs; ++i) {
+        pv(i,nlevs) = pbot;
+        for (int k=nlevs; k>0; --k) {
+          pv(i,k-1) = pv(i,k) - dp;
+        }
+      }
+    }
+    pint.sync_to_dev();
+    return pint;
+  };
+
+  // Helper lambda to create pmid from pint
+  auto create_pmid = [&](const Field& pint) {
+    using namespace ShortFieldTagsNames;
+    auto fid_int = pint.get_header().get_identifier();
+    auto layout = fid_int.get_layout();
+    int nlevs = layout.dims().back()-1;
+    layout.strip_dim(ILEV);
+    layout.append_dim(LEV,nlevs);
+    FieldIdentifier fid("p_mid",layout,ekat::units::Pa,fid_int.get_grid_name());
+    Field pmid(fid);
+    pmid.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
+    pmid.allocate_view();
+    if (pmid.rank()==1) {
+      auto pint_v = pint.get_view<const Real*,Host>();
+      auto pmid_v = pmid.get_view<      Real*,Host>();
+      for (int k=0; k<nlevs; ++k) {
+        pmid_v(k) = 0.5*(pint_v(k) + pint_v(k+1));
+      }
+    } else {
+      auto pint_v = pint.get_view<const Real**,Host>();
+      auto pmid_v = pmid.get_view<      Real**,Host>();
+      for (int i=0; i<nldofs; ++i) {
+        for (int k=0; k<nlevs; ++k) {
+          pmid_v(i,k) = 0.5*(pint_v(i,k) + pint_v(i,k+1));
+        }
+      }
+    }
+    pmid.sync_to_dev();
+    return pmid;
+  };
+
+  const Real ptop_src = 50;
+  const Real pbot_src = 1000;
   const Real mask_val = -99999.0;
 
-  auto src_grid = build_src_grid(comm, nldofs_src, nlevs_src);
+  // Test tgt grid with 2x and 0.5x as many levels as src grid
+  for (int nlevs_tgt : {nlevs_src/2, 2*nlevs_src}) {
+    for (bool src_1d : {true, false}) {
+      for (bool tgt_1d : {true, false}) {
+        for (auto etype_top : {P0, Mask}) {
+          for (auto etype_bot : {P0, Mask}) {
+            print ("************************************************\n",comm);
+            print ("      nlevs tgt: %d\n",comm,nlevs_tgt);
+            print ("      src pressure is 1d: %s\n",comm,src_1d ? "true" : "false");
+            print ("      tgt pressure is 1d: %s\n",comm,tgt_1d ? "true" : "false");
+            print ("      extrap type at top: %s\n",comm,etype_top==P0 ? "p0" : "masked");
+            print ("      extrap type at bot: %s\n",comm,etype_bot==P0 ? "p0" : "masked");
+            print ("************************************************\n",comm);
 
-  // We need the source pressure level fields for both p_mid and p_int
-  auto pmid_src   = create_field("p_mid",  src_grid, false, false, true,  SCREAM_PACK_SIZE);
-  auto pint_src   = create_field("p_int",  src_grid, false, false, false, SCREAM_PACK_SIZE);
-  // Set the source pressures
-  {
-    // By adding 1 to the pbot_tgt and subtrating 1 from ptop_tgt we ensure some masking, which 
-    // we also want to check.
-    const Real ptop_src = ptop_tgt-1;
-    const Real pbot_src = pbot_tgt+1;
-    const Real dp_src = (pbot_src-ptop_src)/(nlevs_src-1);
-    auto pmid_v = pmid_src.get_view<Real**,Host>();
-    auto pint_v = pint_src.get_view<Real**,Host>();
-    for (int ii=0; ii<pmid_v.extent_int(0); ++ii) {
-      pint_v(ii,0) = ptop_src;
-      for (int kk=0; kk<nlevs_src; ++kk) {
-        pint_v(ii,kk+1) = pint_v(ii,kk) + dp_src;
-        pmid_v(ii,kk)   = 0.5*(pint_v(ii,kk) + pint_v(ii,kk+1));
-      }
-    }
-  }
-  pmid_src.sync_to_dev();
-  pint_src.sync_to_dev();
-  auto remap = std::make_shared<VerticalRemapper>(src_grid,filename,pmid_src,pint_src,mask_val);
-  print (" -> creating grid and remapper ... done!\n",comm);
+            print (" -> creating tgt grid ...\n",comm);
+            auto tgt_grid = src_grid->clone("tgt",true);
+            tgt_grid->reset_num_vertical_lev(nlevs_tgt);
+            print (" -> creating tgt grid ...done!\n",comm);
 
-  // -------------------------------------- //
-  //      Create src/tgt grid fields        //
-  // -------------------------------------- //
+            print (" -> creating src/tgt pressure fields ...\n",comm);
+            auto pint_src   = create_pint(src_grid, src_1d, ptop_src, pbot_src);
+            auto pmid_src   = create_pmid(pint_src);
 
-  print (" -> creating fields ...\n",comm);
-  constexpr int vec_dim = 3;
+            // Make ptop_tgt<ptop_src and psurf_tgt>psurf_src, so we do have extrapolation
+            const Real ptop_tgt = 10;
+            const Real pbot_tgt = 1020;
+            auto pint_tgt   = create_pint(tgt_grid, tgt_1d, ptop_tgt, pbot_tgt);
+            auto pmid_tgt   = create_pmid(pint_tgt);
+            print (" -> creating src/tgt pressure fields ... done!\n",comm);
 
-  auto tgt_grid = remap->get_tgt_grid();
-  // Check that the target grid made by the remapper has the same number of columns as the source grid.
-  // Also check that the number of levels matches the expectation.
-  REQUIRE(tgt_grid->get_num_vertical_levels()==nlevs_tgt);
-  REQUIRE(tgt_grid->get_num_global_dofs()==src_grid->get_num_global_dofs());
+            print (" -> creating fields ... done!\n",comm);
+            auto src_s2d   = create_field("s2d",  src_grid,true,false);
+            auto src_v2d   = create_field("v2d",  src_grid,true,true);
+            auto src_s3d_m = create_field("s3d_m",src_grid,false,false,true, 1);
+            auto src_s3d_i = create_field("s3d_i",src_grid,false,false,false,SCREAM_PACK_SIZE);
+            auto src_v3d_m = create_field("v3d_m",src_grid,false,true ,true, 1);
+            auto src_v3d_i = create_field("v3d_i",src_grid,false,true ,false,SCREAM_PACK_SIZE);
 
-  auto src_s2d   = create_field("s2d",  src_grid,true,false);
-  auto src_v2d   = create_field("v2d",  src_grid,true,true);
-  // For now we can only support PS = SCREAM_PACK_SIZE because the source and target pressure levels will assume that packsize.
-  // If we use a smaller packsize we throw an error in the property check step of the vertical interpolation scheme.
-  // TODO: Fix that.
-  auto src_s3d_m = create_field("s3d_m",src_grid,false,false,true, 1);
-  auto src_s3d_i = create_field("s3d_i",src_grid,false,false,false,SCREAM_PACK_SIZE);
-  auto src_v3d_m = create_field("v3d_m",src_grid,false,true ,true, 1);
-  auto src_v3d_i = create_field("v3d_i",src_grid,false,true ,false,SCREAM_PACK_SIZE);
+            auto tgt_s2d   = create_field("s2d",  tgt_grid,true,false);
+            auto tgt_v2d   = create_field("v2d",  tgt_grid,true,true);
+            auto tgt_s3d_m = create_field("s3d_m",tgt_grid,false,false,true, 1);
+            auto tgt_s3d_i = create_field("s3d_i",tgt_grid,false,false,true, SCREAM_PACK_SIZE);
+            auto tgt_v3d_m = create_field("v3d_m",tgt_grid,false,true ,true, 1);
+            auto tgt_v3d_i = create_field("v3d_i",tgt_grid,false,true ,true, SCREAM_PACK_SIZE);
 
-  auto tgt_s2d   = create_field("s2d",  tgt_grid,true,false);
-  auto tgt_v2d   = create_field("v2d",  tgt_grid,true,true);
-  auto tgt_s3d_m = create_field("s3d_m",tgt_grid,false,false,true, 1);
-  auto tgt_s3d_i = create_field("s3d_i",tgt_grid,false,false,true, SCREAM_PACK_SIZE);
-  auto tgt_v3d_m = create_field("v3d_m",tgt_grid,false,true ,true, 1);
-  auto tgt_v3d_i = create_field("v3d_i",tgt_grid,false,true ,true, SCREAM_PACK_SIZE);
+            auto expected_s2d   = tgt_s2d.clone();
+            auto expected_v2d   = tgt_v2d.clone();
+            auto expected_s3d_m = tgt_s3d_m.clone();
+            auto expected_s3d_i = tgt_s3d_i.clone();
+            auto expected_v3d_m = tgt_v3d_m.clone();
+            auto expected_v3d_i = tgt_v3d_i.clone();
+            print (" -> creating fields ... done!\n",comm);
 
-  std::vector<Field> src_f = {src_s2d,src_v2d,src_s3d_m,src_s3d_i,src_v3d_m,src_v3d_i};
-  std::vector<Field> tgt_f = {tgt_s2d,tgt_v2d,tgt_s3d_m,tgt_s3d_i,tgt_v3d_m,tgt_v3d_i};
+            // -------------------------------------- //
+            //     Register fields in the remapper    //
+            // -------------------------------------- //
 
-  print (" -> creating fields ... done!\n",comm);
+            print (" -> creating and initializing remapper ...\n",comm);
+            auto remap = std::make_shared<VerticalRemapper>(src_grid,tgt_grid);
+            remap->set_source_pressure (pmid_src, pint_src);
+            remap->set_target_pressure (pmid_tgt, pint_tgt);
+            remap->set_extrapolation_type(etype_top,Top);
+            remap->set_extrapolation_type(etype_bot,Bot);
+            REQUIRE_THROWS (remap->set_mask_value(std::numeric_limits<Real>::quiet_NaN()));
+            remap->set_mask_value(mask_val); // Only needed if top and/or bot use etype=Mask
 
-  // -------------------------------------- //
-  //     Register fields in the remapper    //
-  // -------------------------------------- //
+            remap->registration_begins();
+            remap->register_field(src_s2d,  tgt_s2d);
+            remap->register_field(src_v2d,  tgt_v2d);
+            remap->register_field(src_s3d_m,tgt_s3d_m);
+            remap->register_field(src_s3d_i,tgt_s3d_i);
+            remap->register_field(src_v3d_m,tgt_v3d_m);
+            remap->register_field(src_v3d_i,tgt_v3d_i);
+            remap->registration_ends();
+            print (" -> creating and initializing remapper ... done!\n",comm);
 
-  print (" -> registering fields ...\n",comm);
-  remap->registration_begins();
-  remap->register_field(src_s2d,  tgt_s2d);
-  remap->register_field(src_v2d,  tgt_v2d);
-  remap->register_field(src_s3d_m,tgt_s3d_m);
-  remap->register_field(src_s3d_i,tgt_s3d_i);
-  remap->register_field(src_v3d_m,tgt_v3d_m);
-  remap->register_field(src_v3d_i,tgt_v3d_i);
-  remap->registration_ends();
-  print (" -> registering fields ... done!\n",comm);
+            // -------------------------------------- //
+            //       Generate data for src fields     //
+            // -------------------------------------- //
 
-  // -------------------------------------- //
-  //        Check remapper internals        //
-  // -------------------------------------- //
+            print (" -> generate fields data ...\n",comm);
+            compute_field(src_s2d,  pmid_src);
+            compute_field(src_v2d,  pmid_src);
+            compute_field(src_s3d_m,pmid_src);
+            compute_field(src_s3d_i,pint_src);
+            compute_field(src_v3d_m,pmid_src);
+            compute_field(src_v3d_i,pint_src);
 
-  print (" -> Checking remapper internal state ...\n",comm);
+            // Pre-compute what we expect the tgt fields to be
+            compute_field(expected_s2d,  pmid_tgt);
+            compute_field(expected_v2d,  pmid_tgt);
+            compute_field(expected_s3d_m,pmid_tgt);
+            compute_field(expected_s3d_i,pint_tgt);
+            compute_field(expected_v3d_m,pmid_tgt);
+            compute_field(expected_v3d_i,pint_tgt);
 
+            extrapolate(pmid_src,pmid_tgt,expected_s2d,  etype_top,etype_bot);
+            extrapolate(pmid_src,pmid_tgt,expected_v2d,  etype_top,etype_bot);
+            extrapolate(pmid_src,pmid_tgt,expected_s3d_m,etype_top,etype_bot);
+            extrapolate(pint_src,pint_tgt,expected_s3d_i,etype_top,etype_bot);
+            extrapolate(pmid_src,pmid_tgt,expected_v3d_m,etype_top,etype_bot);
+            extrapolate(pint_src,pint_tgt,expected_v3d_i,etype_top,etype_bot);
+            print (" -> generate fields data ... done!\n",comm);
 
-  // Check the pressure levels read from map file
+            // -------------------------------------- //
+            //              Perform remap             //
+            // -------------------------------------- //
 
-  // -------------------------------------- //
-  //       Generate data for src fields     //
-  // -------------------------------------- //
+            // No bwd remap
+            REQUIRE_THROWS(remap->remap(false));
 
-  print (" -> generate src fields data ...\n",comm);
-  using namespace ShortFieldTagsNames;
-  // Generate data in a deterministic way, so that when we check results,
-  // we know a priori what the input data that generated the tgt field's
-  // values was, even if that data was off rank.
-  auto pmid_v = pmid_src.get_view<Real**,Host>();
-  auto pint_v = pint_src.get_view<Real**,Host>();
-  auto src_gids    = remap->get_src_grid()->get_dofs_gids().get_view<const gid_type*,Host>();
-  for (const auto& f : src_f) {
-    const auto& l = f.get_header().get_identifier().get_layout();
-    switch (l.type()) {
-      case LayoutType::Scalar2D:
-      {
-        const auto v_src = f.get_view<Real*,Host>();
-        for (int i=0; i<nldofs_src; ++i) {
-          v_src(i) = data_func(i,0,pmid_v(i,0));
-        }
-      } break;
-      case LayoutType::Vector2D:
-      {
-        const auto v_src = f.get_view<Real**,Host>();
-        for (int i=0; i<nldofs_src; ++i) {
-          for (int j=0; j<vec_dim; ++j) {
-            v_src(i,j) = data_func(i,j+1,pmid_v(i,0));
-        }}
-      } break;
-      case LayoutType::Scalar3D:
-      {
-        const int  nlevs = l.dims().back();
-        const auto p_v   = l.has_tag(LEV) ? pmid_v : pint_v;
-        const auto v_src = f.get_view<Real**,Host>();
-        for (int i=0; i<nldofs_src; ++i) {
-          for (int j=0; j<nlevs; ++j) {
-            v_src(i,j) = data_func(i,0,p_v(i,j));
-        }}
-      } break;
-      case LayoutType::Vector3D:
-      {
-        const int nlevs  = l.dims().back();
-        const auto p_v   = l.has_tag(LEV) ? pmid_v : pint_v;
-        const auto v_src = f.get_view<Real***,Host>();
-        for (int i=0; i<nldofs_src; ++i) {
-          for (int j=0; j<vec_dim; ++j) {
-            for (int k=0; k<nlevs; ++k) {
-              v_src(i,j,k) = data_func(i,j+1,p_v(i,k));
-        }}}
-      } break;
-      default:
-        EKAT_ERROR_MSG ("Unexpected layout.\n");
-    }
-    f.sync_to_dev();
-  }
-  print (" -> generate src fields data ... done!\n",comm);
+            print (" -> run remap ...\n",comm);
+            remap->remap(true);
+            print (" -> run remap ... done!\n",comm);
 
-  // No bwd remap
-  REQUIRE_THROWS(remap->remap(false));
+            // -------------------------------------- //
+            //          Check remapped fields         //
+            // -------------------------------------- //
 
-  for (int irun=0; irun<5; ++irun) {
-    print (" -> run remap ...\n",comm);
-    remap->remap(true);
-    print (" -> run remap ... done!\n",comm);
+            using namespace Catch::Matchers;
+            Real tol = 10*std::numeric_limits<Real>::epsilon();
 
-    // -------------------------------------- //
-    //          Check remapped fields         //
-    // -------------------------------------- //
-
-    print (" -> check tgt fields ...\n",comm);
-    const auto tgt_gids = tgt_grid->get_dofs_gids().get_view<const gid_type*,Host>();
-    const int ntgt_gids = tgt_gids.size();
-    for (size_t ifield=0; ifield<tgt_f.size(); ++ifield) {
-      const auto& f     = tgt_f[ifield];
-      const auto& fsrc  = src_f[ifield];
-      const auto& lsrc  = fsrc.get_header().get_identifier().get_layout();
-      const auto p_v    = lsrc.has_tag(LEV) ? pmid_v : pint_v;
-      const int nlevs_p = lsrc.has_tag(LEV) ? nlevs_src : nlevs_src+1;
-      const auto ls     = lsrc.to_string();
-      std::string dots (25-ls.size(),'.');
-      print ("   -> Checking field with source layout " + ls +" " + dots + "\n",comm);
-
-      f.sync_to_host();
-
-      switch (lsrc.type()) {
-        case LayoutType::Scalar2D:
-        {
-          // This is a flat array w/ no LEV tag so the interpolated value for source and target should match.
-          const auto v_src = fsrc.get_view<const Real*,Host>();
-          const auto v_tgt = f.get_view<const Real*,Host>();
-          for (int i=0; i<ntgt_gids; ++i) {
-            REQUIRE ( v_tgt(i) == v_src(i) );
+            print (" -> check tgt fields ...\n",comm);
+            {
+              auto diff = tgt_s2d.clone("diff");
+              auto ex_norm = frobenius_norm<Real>(expected_s2d);
+              diff.update(expected_s2d,1/ex_norm,-1/ex_norm);
+              REQUIRE (frobenius_norm<Real>(diff)<tol);
+            }
+            {
+              auto diff = tgt_v2d.clone("diff");
+              auto ex_norm = frobenius_norm<Real>(expected_v2d);
+              diff.update(expected_v2d,1/ex_norm,-1/ex_norm);
+              REQUIRE (frobenius_norm<Real>(diff)<tol);
+            }
+            {
+              auto diff = tgt_s3d_m.clone("diff");
+              auto ex_norm = frobenius_norm<Real>(expected_s3d_m);
+              diff.update(expected_s3d_m,1/ex_norm,-1/ex_norm);
+              REQUIRE (frobenius_norm<Real>(diff)<tol);
+            }
+            {
+              auto diff = tgt_s3d_i.clone("diff");
+              auto ex_norm = frobenius_norm<Real>(expected_s3d_i);
+              diff.update(expected_s3d_i,1/ex_norm,-1/ex_norm);
+              REQUIRE (frobenius_norm<Real>(diff)<tol);
+            }
+            {
+              auto diff = tgt_v3d_m.clone("diff");
+              auto ex_norm = frobenius_norm<Real>(expected_v3d_m);
+              diff.update(expected_v3d_m,1 / ex_norm,-1 / ex_norm);
+              REQUIRE (frobenius_norm<Real>(diff)<tol);
+            }
+            {
+              auto diff = tgt_v3d_i.clone("diff");
+              auto ex_norm = frobenius_norm<Real>(expected_v3d_i);
+              diff.update(expected_v3d_i,1 / ex_norm,-1 / ex_norm);
+              REQUIRE (frobenius_norm<Real>(diff)<tol);
+            }
+            print (" -> check tgt fields ... done!\n",comm);
           }
-        } break;
-        case LayoutType::Vector2D:
-        {
-          // This is a flat array w/ no LEV tag so the interpolated value for source and target should match.
-          const auto v_tgt = f.get_view<const Real**,Host>();
-          const auto v_src = fsrc.get_view<const Real**,Host>();
-          for (int i=0; i<ntgt_gids; ++i) {
-            for (int j=0; j<vec_dim; ++j) {
-              REQUIRE ( v_tgt(i,j) == v_src(i,j) );
-          }}
-        } break;
-        case LayoutType::Scalar3D:
-        {
-          const auto v_tgt = f.get_view<const Real**,Host>();
-          for (int i=0; i<ntgt_gids; ++i) {
-            for (int j=0; j<nlevs_tgt; ++j) {
-              if (p_tgt[j]>p_v(i,nlevs_p-1) || p_tgt[j]<p_v(i,0)) {
-                REQUIRE ( v_tgt(i,j) == mask_val );
-              } else {
-                REQUIRE ( v_tgt(i,j) == data_func(i,0,p_tgt[j]) );
-              }
-          }}
-        } break;
-        case LayoutType::Vector3D:
-        {
-          const auto v_tgt = f.get_view<const Real***,Host>();
-          for (int i=0; i<ntgt_gids; ++i) {
-            for (int j=0; j<vec_dim; ++j) {
-              for (int k=0; k<nlevs_tgt; ++k) {
-                if (p_tgt[k]>p_v(i,nlevs_p-1) || p_tgt[k]<p_v(i,0)) {
-                  REQUIRE ( v_tgt(i,j,k) == mask_val );
-                } else {
-                  REQUIRE ( v_tgt(i,j,k)== data_func(i,j+1,p_tgt[k]) );
-                }
-          }}}
-        } break;
-        default:
-          EKAT_ERROR_MSG ("Unexpected layout.\n");
+        }
       }
-
-      print ("   -> Checking field with source layout " + ls + " " + dots + " OK!\n",comm);
     }
-    print ("check tgt fields ... done!\n",comm);
   }
 
   // Clean up scorpio stuff
   scorpio::finalize_subsystem();
+
+  print ("Testing vertical remapper ... done!\n",comm);
 }
 
 } // namespace scream

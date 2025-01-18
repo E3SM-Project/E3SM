@@ -4,8 +4,7 @@
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
-#include "p3_functions_f90.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "p3_test_data.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -19,45 +18,49 @@ namespace p3 {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestBackToCellAverage {
+struct UnitWrap::UnitTest<D>::TestBackToCellAverage : public UnitWrap::UnitTest<D>::Base {
 
-static void run_phys()
+void run_phys()
 {
   // TODO
 }
 
-static void run_bfb()
+void run_bfb()
 {
-  auto engine = setup_random_test();
+  auto engine = Base::get_engine();
 
   // Generate n test structs, each populated with random data (values within
   // [0,1]) by the default constructor.
-  BackToCellAverageData back_to_cell_average_data[Spack::n];
-  for (Int i = 0; i < Spack::n; ++i) {
-    back_to_cell_average_data[i].randomize(engine);
+  BackToCellAverageData back_to_cell_average_data[max_pack_size];
+  for (auto& item : back_to_cell_average_data) {
+    item.randomize(engine);
   }
 
   // Sync to device.
-  view_1d<BackToCellAverageData> device_data("back_to_cell_average", Spack::n);
+  view_1d<BackToCellAverageData> device_data("back_to_cell_average", max_pack_size);
   const auto host_data = Kokkos::create_mirror_view(device_data);
-  std::copy(&back_to_cell_average_data[0], &back_to_cell_average_data[0] + Spack::n,
+  std::copy(&back_to_cell_average_data[0], &back_to_cell_average_data[0] + max_pack_size,
             host_data.data());
   Kokkos::deep_copy(device_data, host_data);
 
-  // Run the Fortran subroutine.
-  for (Int i = 0; i < Spack::n; ++i) {
-    back_to_cell_average(back_to_cell_average_data[i]);
+  // Read baseline data
+  if (this->m_baseline_action == COMPARE) {
+    for (Int i = 0; i < max_pack_size; ++i) {
+      back_to_cell_average_data[i].read(Base::m_fid);
+    }
   }
 
   // Run the lookup from a kernel and copy results back to host
-  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+  Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
+    const Int offset = i * Spack::n;
+
     // Init pack inputs
     Spack cld_frac_l, cld_frac_r, cld_frac_i, qc2qr_accret_tend, qr2qv_evap_tend, qc2qr_autoconv_tend, nc_accret_tend, nc_selfcollect_tend, nc2nr_autoconv_tend, nr_selfcollect_tend,
       nr_evap_tend, ncautr, qi2qv_sublim_tend, nr_ice_shed_tend, qc2qi_hetero_freeze_tend, qr2qi_collect_tend, qc2qr_ice_shed_tend, qi2qr_melt_tend,
       qc2qi_collect_tend, qr2qi_immers_freeze_tend, ni2nr_melt_tend, nc_collect_tend, ncshdc, nc2ni_immers_freeze_tend,
       nr_collect_tend, ni_selfcollect_tend, qv2qi_vapdep_tend, nr2ni_immers_freeze_tend,
       ni_sublim_tend, qv2qi_nucleat_tend, ni_nucleat_tend, qc2qi_berg_tend;
-    for (Int s = 0; s < Spack::n; ++s) {
+    for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
       cld_frac_l[s]               = device_data[s].cld_frac_l;
       cld_frac_r[s]               = device_data[s].cld_frac_r;
       cld_frac_i[s]               = device_data[s].cld_frac_i;
@@ -99,7 +102,7 @@ static void run_bfb()
       nr_collect_tend, ni_selfcollect_tend, qv2qi_vapdep_tend, nr2ni_immers_freeze_tend, ni_sublim_tend, qv2qi_nucleat_tend, ni_nucleat_tend, qc2qi_berg_tend);
 
     // Copy results back into views
-    for (Int s = 0; s < Spack::n; ++s) {
+    for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
       device_data(s).qc2qr_accret_tend        = qc2qr_accret_tend[s];
       device_data(s).qr2qv_evap_tend          = qr2qv_evap_tend[s];
       device_data(s).qc2qr_autoconv_tend      = qc2qr_autoconv_tend[s];
@@ -136,8 +139,8 @@ static void run_bfb()
   Kokkos::deep_copy(host_data, device_data);
 
   // Validate results.
-  if (SCREAM_BFB_TESTING) {
-    for (Int s = 0; s < Spack::n; ++s) {
+  if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
+    for (Int s = 0; s < max_pack_size; ++s) {
       REQUIRE(back_to_cell_average_data[s].qc2qr_accret_tend        == host_data[s].qc2qr_accret_tend);
       REQUIRE(back_to_cell_average_data[s].qr2qv_evap_tend          == host_data[s].qr2qv_evap_tend);
       REQUIRE(back_to_cell_average_data[s].qc2qr_autoconv_tend      == host_data[s].qc2qr_autoconv_tend);
@@ -169,6 +172,11 @@ static void run_bfb()
       REQUIRE(back_to_cell_average_data[s].qc2qi_berg_tend          == host_data[s].qc2qi_berg_tend);
     }
   }
+  else if (this->m_baseline_action == GENERATE) {
+    for (Int s = 0; s < max_pack_size; ++s) {
+      host_data(s).write(Base::m_fid);
+    }
+  }
 }
 
 };
@@ -181,12 +189,11 @@ namespace {
 
 TEST_CASE("p3_back_to_cell_average", "[p3_functions]")
 {
-  using TRIF = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestBackToCellAverage;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestBackToCellAverage;
 
-  TRIF::run_phys();
-  TRIF::run_bfb();
-
-  scream::p3::P3GlobalForFortran::deinit();
+  T t;
+  t.run_phys();
+  t.run_bfb();
 }
 
 } // namespace

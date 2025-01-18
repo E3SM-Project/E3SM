@@ -62,7 +62,7 @@ module ocn_time_filters
    !--------------------------------------------------------------------
 #ifdef TIME_FILTERS_DEBUG
    integer :: iEdgeOutput = 0, iBlockOutput = 0, iklevel = 1
-   real (kind=RKIND) :: lonEdgePoint = 10.0_RKIND*pii/180.0_RKIND, latEdgePoint = 30.0_RKIND*pii/180.0_RKIND
+   real (kind=RKIND) :: lonEdgePoint = 10.0_RKIND*pi/180.0_RKIND, latEdgePoint = 30.0_RKIND*pi/180.0_RKIND
 #endif
 
 !***********************************************************************
@@ -182,7 +182,7 @@ contains
       call mpas_pool_get_subpool(block % structs, 'mesh', statePool)
       call mpas_pool_get_array(statePool, 'latEdge', latEdge)
       call mpas_pool_get_array(statePool, 'lonEdge', lonEdge)
-      print *,  'lon = ', 180.0_RKIND/pii*lonEdge(iEdgeOutput), ' lat = ', 180.0_RKIND/pii*latEdge(iEdgeOutput), &
+      print *,  'lon = ', 180.0_RKIND/pi*lonEdge(iEdgeOutput), ' lat = ', 180.0_RKIND/pi*latEdge(iEdgeOutput), &
                           ' iklevel=',iklevel, ' iEdgeOutput=',iEdgeOutput, ' iBlockOutput = ', iBlockOutput
 #endif
 

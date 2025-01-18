@@ -1,0 +1,8 @@
+This testdef is used to test a stealth feature in mpaso and mpassi introduced
+by PR #6696. It simply changes sets the following namelist option in mpaso
+to true
+   config_scale_dismf_by_removed_ice_runoff
+and the following namelist option in mpassi to true
+   config_scale_dib_by_removed_ice_runoff
+These flags only makes sense to use in a B-case runs with data icebergs (DIB)
+and data ice-shelf melt fluxes (DISMF).

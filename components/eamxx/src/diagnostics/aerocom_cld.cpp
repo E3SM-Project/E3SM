@@ -22,8 +22,6 @@ AeroComCld::AeroComCld(const ekat::Comm &comm,
                    "to be 'Bot' or 'Top' in its input parameters.\n");
 }
 
-std::string AeroComCld::name() const { return "AeroComCld" + m_topbot; }
-
 void AeroComCld::set_grids(
     const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
@@ -76,7 +74,8 @@ void AeroComCld::set_grids(
   m_dz.allocate_view();
 
   // Construct and allocate the output field
-  FieldIdentifier fid(name(), vector1d_layout, nondim, grid_name);
+
+  FieldIdentifier fid("AeroComCld"+m_topbot, vector1d_layout, nondim, grid_name);
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
 

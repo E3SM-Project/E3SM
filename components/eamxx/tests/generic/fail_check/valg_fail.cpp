@@ -6,15 +6,18 @@ namespace scream {
 
 TEST_CASE("force_valgrind_err")
 {
-  bool uninit;
+  bool* uninit = new bool[1];
   int i = 0;
-  if (uninit) {
+  if (uninit[0]) {
     ++i;
   }
   else {
     i += 4;
   }
-  REQUIRE(i < 10);
+  if (i<4) {
+    printf("less than four\n");
+  }
+  delete uninit;
 }
 
 } // empty namespace

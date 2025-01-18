@@ -183,16 +183,10 @@ contains
     pstorage = 0._r8
     pxfer    = 0._r8
 
-    if (tot_leaf == 0._r8 .or. ignore_current_state) then
-       if (veg_vp%evergreen(pft_type) == 1._r8) then
-          pleaf    = 1._r8
-       else
-          pstorage = 1._r8
-       end if
+    if (veg_vp%evergreen(pft_type) == 1._r8) then
+       pleaf    = 1._r8
     else
-       pleaf    = leaf        /tot_leaf
-       pstorage = leaf_storage/tot_leaf
-       pxfer    = leaf_xfer   /tot_leaf
+       pstorage = 1._r8
     end if
 
   end subroutine LeafProportions

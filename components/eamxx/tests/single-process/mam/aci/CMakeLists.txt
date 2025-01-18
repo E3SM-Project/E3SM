@@ -24,6 +24,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output.yaml
 
 # Ensure test input files are present in the data dir
 GetInputFile(scream/init/${EAMxx_tests_IC_FILE_MAM4xx_72lev})
+GetInputFile(cam/topo/${EAMxx_tests_TOPO_FILE})
 
 # Compare output files produced by npX tests, to ensure they are bfb
 include (CompareNCFiles)

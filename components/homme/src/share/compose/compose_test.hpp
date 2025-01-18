@@ -13,6 +13,7 @@ namespace test {
 int slmm_unittest();
 int cedr_unittest();
 int cedr_unittest(MPI_Comm comm);
+int interpolate_unittest();
 
 typedef double Real;
 typedef int Int;

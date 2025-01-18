@@ -32,6 +32,7 @@
       Currently the following datamods are supported
       prescribed    SSTDATA     (Run with prescribed SST, ICE_COV)
       som           SOM         (Slab ocean model)
+      rso           RSO         (Relaxed slab ocean model)
       null          NULL        (NULL mode)
   -->
 
@@ -59,6 +60,7 @@
       <value docn_mode="sst_aquapfile">aquapfile</value>
       <value docn_mode="sst_aquap_constant">''</value>
       <value docn_mode="som">som</value>
+      <value docn_mode="rso">rso</value>
       <value docn_mode="som_aquap">som</value>
       <value docn_mode="interannual">interannual</value>
     </values>
@@ -93,6 +95,7 @@
       <value>null</value>
       <value stream="aquapfile">$DIN_LOC_ROOT/ocn/docn7/AQUAPLANET/</value>
       <value stream="som">$DIN_LOC_ROOT/ocn/docn7/SOM</value>
+      <value stream="rso">/</value> <!-- use this for $SSTICE_GRID_FILENAME -->
       <value stream="interannual">$DIN_LOC_ROOT/atm/cam/sst</value>
     </values>
   </entry>
@@ -106,6 +109,7 @@
       <value>null</value>
       <value stream="aquapfile">$DOCN_AQP_FILENAME</value>
       <value stream="som">$DOCN_SOM_FILENAME</value>
+      <value stream="rso">$SSTICE_GRID_FILENAME</value>
       <value stream="interannual">sst_HadOIBl_bc_1x1_1850_2014_c150416.nc</value>
     </values>
   </entry>
@@ -145,6 +149,7 @@
       <value>null</value>
       <value stream="aquapfile">$DIN_LOC_ROOT/ocn/docn7/AQUAPLANET</value>
       <value stream="som">$DIN_LOC_ROOT/ocn/docn7/SOM</value>
+      <value stream="rso">/</value> <!-- use this for $SSTICE_DATA_FILENAME -->
       <value stream="interannual">$DIN_LOC_ROOT/atm/cam/sst</value>
     </values>
   </entry>
@@ -158,6 +163,7 @@
       <value>null</value>
       <value stream="aquapfile">$DOCN_AQP_FILENAME</value>
       <value stream="som">$DOCN_SOM_FILENAME</value>
+      <value stream="rso">$SSTICE_DATA_FILENAME</value>
       <value stream="interannual">sst_HadOIBl_bc_1x1_1850_2014_c150416.nc</value>
     </values>
   </entry>
@@ -180,6 +186,10 @@
         dhdy  dhdy
         hblt  h
         qdp   qbot
+      </value>
+      <value stream="rso" sstice_stream="CAMDATA">
+        SST_cpl t
+        hblt    h
       </value>
       <value stream="interannual">
         SST_cpl t
@@ -213,6 +223,7 @@
       <value stream="prescribed">$SSTICE_YEAR_ALIGN</value>
       <value stream="aquapfile">0</value>
       <value stream="som">1</value>
+      <value stream="rso">$SSTICE_YEAR_ALIGN</value>
       <value stream="interannual">1</value>
     </values>
   </entry>
@@ -227,6 +238,7 @@
       <value stream="prescribed">$SSTICE_YEAR_START</value>
       <value stream="aquapfile">0</value>
       <value stream="som">1</value>
+      <value stream="rso">$SSTICE_YEAR_START</value>
       <value stream="interannual">1850</value>
     </values>
   </entry>
@@ -241,6 +253,7 @@
       <value stream="prescribed">$SSTICE_YEAR_END</value>
       <value stream="aquapfile">0</value>
       <value stream="som">1</value>
+      <value stream="rso">$SSTICE_YEAR_END</value>
       <value stream="interannual">2014</value>
     </values>
   </entry>
@@ -257,7 +270,7 @@
     <type>char</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
-    <valid_values>SSTDATA,SST_AQUAP1,SST_AQUAP2,SST_AQUAP3,SST_AQUAP4,SST_AQUAP5,SST_AQUAP6,SST_AQUAP7,SST_AQUAP8,SST_AQUAP9,SST_AQUAP10,SST_AQUAP11,SST_AQUAP12,SST_AQUAP13,SST_AQUAP14,SST_AQUAP15,SST_AQUAPFILE,SST_AQUAP_CONSTANT,SOM,SOM_AQUAP,IAF,NULL,COPYALL</valid_values>
+    <valid_values>SSTDATA,SST_AQUAP1,SST_AQUAP2,SST_AQUAP3,SST_AQUAP4,SST_AQUAP5,SST_AQUAP6,SST_AQUAP7,SST_AQUAP8,SST_AQUAP9,SST_AQUAP10,SST_AQUAP11,SST_AQUAP12,SST_AQUAP13,SST_AQUAP14,SST_AQUAP15,SST_AQUAPFILE,SST_AQUAP_CONSTANT,SOM,RSO,SOM_AQUAP,IAF,NULL,COPYALL</valid_values>
     <desc>
       General method that operates on the data. This is generally
       implemented in the data models but is set in the strdata method for
@@ -331,6 +344,7 @@
       <value docn_mode="sst_aquapfile$">SST_AQUAPFILE</value>
       <value docn_mode="sst_aquap_constant$">SST_AQUAP_CONSTANT</value>
       <value docn_mode="som$">SOM</value>
+      <value docn_mode="rso$">RSO</value>
       <value docn_mode="som_aquap">SOM_AQUAP</value>
       <value docn_mode="interannual">IAF</value>
     </values>
@@ -659,6 +673,31 @@
     </desc>
     <values>
       <value>-1.0</value>
+    </values>
+  </entry>
+
+  <entry id="RSO_relax_tau" per_stream_entry="true">
+    <type>real(30)</type>
+    <category>docn</category>
+    <group>docn_nml</group>
+    <desc>
+      Relaxation timescale for relaxed slab ocean (RSO) mode
+    </desc>
+    <values>
+      <value>691200</value> <!-- 8 days * 86400 sec/day = 691200 sec -->
+    </values>
+  </entry>
+
+  <entry id="RSO_fixed_MLD" per_stream_entry="true">
+    <type>real(30)</type>
+    <category>docn</category>
+    <group>docn_nml</group>
+    <desc>
+      globally fixed mixed layer depth (MLD) for relaxed slab ocean (RSO) mode
+      use -1 to disable - input data file should have hblt field to override this
+    </desc>
+    <values>
+      <value>50</value>
     </values>
   </entry>
 

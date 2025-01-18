@@ -261,6 +261,17 @@ TEST_CASE("field", "") {
   }
 
   SECTION ("deep_copy") {
+    // rank-0
+    std::vector<FieldTag> t0 = {};
+    std::vector<int> d0 = {};
+    FieldIdentifier fid0("scalar_0d",{t0,d0},m/s,"some_grid");
+    Field f0(fid0);
+    f0.allocate_view();
+    f0.deep_copy(1.5);
+    f0.sync_to_host();
+    REQUIRE (reinterpret_cast<Real*>(f0.get_internal_view_data<Real,Host>())[0]==1.5);
+
+    // rank-3
     std::vector<FieldTag> t1 = {COL,CMP,LEV};
     std::vector<int> d1 = {3,2,24};
 
@@ -809,6 +820,80 @@ TEST_CASE ("update") {
     f1.scale(f2);
     f2.scale(2.0);
     REQUIRE (views_are_equal(f1, f2));
+  }
+}
+
+
+TEST_CASE ("sync_subfields") {
+  // This test is for previously incorrect behavior, where syncing a subfield
+  // to host/device would deep copy the entire data view (including all entries of
+  // the parent view). Here, if memory space is not shared between host and device,
+  // syncing a subfield to host/device will not sync the data of the other subfields.
+
+  using namespace scream;
+  using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
+  using FID = FieldIdentifier;
+  using FL  = FieldLayout;
+
+  constexpr int ncols = 10;
+  constexpr int ndims = 4;
+  constexpr int nlevs = 8;
+
+  // Create field with (col, cmp, lev)
+  FID fid ("V",FL({COL,CMP,LEV},{ncols,ndims,nlevs}),Units::nondimensional(),"the_grid",DataType::IntType);
+  Field f (fid);
+  f.allocate_view();
+
+  // Store whether mem space for host and device are the same for testing subfield values
+  const bool shared_mem_space = f.host_and_device_share_memory_space();
+
+  // Deep copy all values to ndims on device and host
+  f.deep_copy(ndims);
+  f.sync_to_host();
+
+  // Set subfield values to their index on device
+  for (int c=0; c<ndims; ++c) {
+    f.get_component(c).deep_copy(c);
+  }
+
+  // Sync only component 0 to host
+  f.get_component(0).sync_to_host();
+
+  // For components 1,...,ndims-1, if device and host do not share a
+  // memory space, host values should be equal to ndims, else host
+  // values should be equal to component index
+  for (int c=1; c<ndims; ++c) {
+    auto host_subview = f.get_component(c).get_view<int**, Host>();
+    for (int idx=0; idx<ncols*nlevs; ++idx) {
+      const int icol = idx/nlevs; const int ilev = idx%nlevs;
+      if (shared_mem_space) REQUIRE(host_subview(icol, ilev) == c);
+      else                  REQUIRE(host_subview(icol, ilev) == ndims);
+    }
+  }
+
+  // Deep copy all values to ndims on device and host
+  f.deep_copy(ndims);
+  f.sync_to_host();
+
+  // Set subfield values to their index on host
+  for (int c=0; c<ndims; ++c) {
+    f.get_component(c).deep_copy<int, Host>(c);
+  }
+
+  // Sync only component 0 to device
+  f.get_component(0).sync_to_dev();
+
+  // For components 1,...,ndims-1, if device and host do not share a
+  // memory space, device values should be equal to ndims, else device
+  // values should be equal to component index
+  for (int c=1; c<ndims; ++c) {
+    auto device_subview = f.get_component(c).get_view<int**, Device>();
+    Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0,0}, {ncols,nlevs}),
+                         KOKKOS_LAMBDA (const int icol, const int ilev) {
+      if (shared_mem_space) EKAT_KERNEL_ASSERT(device_subview(icol, ilev) == c);
+      else                  EKAT_KERNEL_ASSERT(device_subview(icol, ilev) == ndims);
+    });
   }
 }
 

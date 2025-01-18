@@ -18,6 +18,7 @@ module prep_lnd_mod
   use seq_comm_mct,     only: mbrxid   !          iMOAB id of moab rof on coupler pes (FV now)
   use seq_comm_mct,     only: mbintxal ! iMOAB id for intx mesh between atm and lnd
   use seq_comm_mct,     only: mbintxrl ! iMOAB id for intx mesh between river and land
+  use seq_comm_mct,     only: mb_rof_aream_computed  ! signal
 
   use seq_comm_mct,     only: mbaxid   ! iMOAB id for atm migrated mesh to coupler pes
   use seq_comm_mct,     only: atm_pg_active  ! whether the atm uses FV mesh or not ; made true if fv_nphys > 0
@@ -327,6 +328,9 @@ contains
                                                 fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                 noConserve, validate, &
                                                 trim(dofnameS), trim(dofnameT) )
+
+              ! signal that the aream for rof has been computed
+              mb_rof_aream_computed = .true.
               if (ierr .ne. 0) then
                 write(logunit,*) subname,' error in computing rl weights '
                 call shr_sys_abort(subname//' ERROR in computing rl weights ')

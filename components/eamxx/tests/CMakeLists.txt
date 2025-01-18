@@ -68,10 +68,14 @@ if (NOT DEFINED ENV{SCREAM_FAKE_ONLY})
   # Testing individual atm processes
   add_subdirectory(single-process)
 
-  # Testing multiple atm processes coupled together
-  add_subdirectory(multi-process)
-
-  if (EAMXX_ENABLE_PYBIND)
+  # Testing multiple atm processes coupled together.
+  # Some compute-sanitizer tests time out with these
+  # larger multiprocess tests, so disable in that case.
+  if (NOT EKAT_ENABLE_COMPUTE_SANITIZER)
+    add_subdirectory(multi-process)
+  endif()
+  
+  if (EAMXX_ENABLE_PYSCREAM)
     add_subdirectory(python)
   endif()
 endif()

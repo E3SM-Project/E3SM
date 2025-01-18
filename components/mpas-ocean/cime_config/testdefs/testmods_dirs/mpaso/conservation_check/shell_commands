@@ -1,0 +1,5 @@
+# include mpas-ocean outputs in testing
+sed -i 's/\(compname="mpaso" exclude_testing="true"\)/compname="mpaso"/' env_archive.xml
+sed -i '/\(compname="mpaso"\)/,/<hist_file_extension>/ s/<hist_file_extension>hist/<hist_file_extension>hist.am.conservationCheck\\..*\\.nc$/' env_archive.xml
+sed -i 's/casename.mpaso.hist.am.globalStats.1976-01-01.nc/casename.mpaso.hist.am.conservationCheck.1976-01-01.nc/' env_archive.xml
+sed -i '/casename.mpaso.hist.am.highFrequencyOutput.1976-01-01_00.00.00.nc/d' env_archive.xml

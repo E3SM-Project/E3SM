@@ -78,6 +78,8 @@ def buildlib(bldroot, installpath, case):
     # ADIOS2_ROOT. This is a workaround
     if "ADIOS2_ROOT" in os.environ:
         os.environ["ADIOS2_DIR"] = os.environ["ADIOS2_ROOT"]
+    if "BLOSC2_ROOT" in os.environ:
+        os.environ["Blosc2_DIR"] = os.environ["BLOSC2_ROOT"]
 
     # If variable PIO_VERSION_MAJOR is defined in the environment then
     # we assume that PIO is installed on the system
@@ -105,10 +107,14 @@ def buildlib(bldroot, installpath, case):
     else:
         cmake_opts += f"-DGENF90_PATH={scorpio_src_dir}/src/genf90 "
 
+    adiosc_found = False
     if "ADIOS2_ROOT" in os.environ:
         cmake_opts += "-DWITH_ADIOS2:BOOL=ON "
         if "FROM_CREATE_TEST" in os.environ and os.environ["FROM_CREATE_TEST"] == "True":
             cmake_opts += "-DADIOS_BP2NC_TEST:BOOL=ON "
+        if "BLOSC2_ROOT" in os.environ:
+            cmake_opts += "-DADIOS_USE_COMPRESSION:BOOL=ON "
+            adiosc_found = True
 
     if debug:
         cmake_opts += "-DPIO_ENABLE_LOGGING=ON "
@@ -281,6 +287,8 @@ def buildlib(bldroot, installpath, case):
         valid_values += ",netcdf4p,netcdf4c"
     if adios_found:
         valid_values += ",adios"
+        if adiosc_found:
+            valid_values += ",adiosc"
     if hdf5_found:
         valid_values += ",hdf5"
 

@@ -64,11 +64,11 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   // where a single column of data corresponding to the closest lat/lon pair to
   // the IOP lat/lon parameters is read from file, and that column data is mapped
   // to all columns of the IdentityRemapper source fields.
-  EKAT_REQUIRE_MSG(spa_map_file == "" or spa_map_file == "None" or not m_iop,
+  EKAT_REQUIRE_MSG(spa_map_file == "" or spa_map_file == "None" or not m_iop_data_manager,
     "Error! Cannot define spa_remap_file for cases with an Intensive Observation Period defined. "
     "The IOP class defines it's own remap from file data -> model data.\n");
 
-  SPAHorizInterp = SPAFunc::create_horiz_remapper (m_grid,spa_data_file,spa_map_file, m_iop!=nullptr);
+  SPAHorizInterp = SPAFunc::create_horiz_remapper (m_grid,spa_data_file,spa_map_file, m_iop_data_manager!=nullptr);
 
   // Grab a sw and lw field from the horiz interp, and check sw/lw dim against what we hardcoded in this class
   auto nswbands_data = SPAHorizInterp->get_src_field(4).get_header().get_identifier().get_layout().dim("swband");
@@ -128,8 +128,8 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   //    AtmosphereInput object (for reading into standard
   //    grids) or a SpaFunctions::IOPReader (for reading into
   //    an IOP grid).
-  if (m_iop) {
-    SPAIOPDataReader = SPAFunc::create_spa_data_reader(m_iop,SPAHorizInterp,spa_data_file);
+  if (m_iop_data_manager) {
+    SPAIOPDataReader = SPAFunc::create_spa_data_reader(m_iop_data_manager,SPAHorizInterp,spa_data_file);
   } else {
     SPADataReader = SPAFunc::create_spa_data_reader(SPAHorizInterp,spa_data_file);
   }

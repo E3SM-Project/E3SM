@@ -101,7 +101,7 @@ interface
     ! return
     real(kind=c_real)            :: scream_expm1
   end function scream_expm1
-  
+
   function scream_tanh(input) bind(C)
     use iso_c_binding
 

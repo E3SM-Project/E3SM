@@ -11,7 +11,11 @@ module prim_driver_mod
   use prim_driver_base,     only : deriv1, smooth_topo_datasets
   use prim_cxx_driver_base, only : prim_init1, prim_finalize
   use physical_constants,   only : scale_factor, laplacian_rigid_factor
-
+  use hybrid_mod,           only : hybrid_t
+  use hybvcoord_mod,        only : hvcoord_t
+  use derivative_mod,       only : derivative_t
+  use time_mod,             only : timelevel_t
+  
   implicit none
 
   public :: prim_init2
@@ -23,10 +27,19 @@ module prim_driver_mod
   public :: prim_init_ref_states_views
   public :: prim_init_diags_views
 
+  type, private :: PrescribedWind_t
+     type (element_t), pointer :: elem(:)
+     type (hybrid_t) :: hybrid
+     type (hvcoord_t) :: hvcoord
+     type (derivative_t) :: deriv
+     integer :: nets, nete
+  end type PrescribedWind_t
+
+  type (PrescribedWind_t), private :: prescribed_wind_args
+
 contains
 
   subroutine prim_init2(elem, hybrid, nets, nete, tl, hvcoord)
-    use hybrid_mod,       only : hybrid_t
     use hybvcoord_mod,    only : hvcoord_t
     use time_mod,         only : timelevel_t
     use prim_driver_base, only : deriv1, prim_init2_base => prim_init2
@@ -46,10 +59,6 @@ contains
     ! Call the base version of prim_init2
     call prim_init2_base(elem,hybrid,nets,nete,tl,hvcoord)
 
-    if (prescribed_wind == 1) then
-       call init_standalone_test(elem,deriv1,hybrid,hvcoord,tl,nets,nete)
-    end if
-
     ! Init the c data structures
     call prim_create_c_data_structures(tl,hvcoord,elem(1)%mp)
 
@@ -61,6 +70,10 @@ contains
 
     ! Initialize dp3d from ps_v
     call initialize_dp3d_from_ps_c ()
+
+    if (prescribed_wind == 1) then
+       call init_standalone_test(elem,deriv1,hybrid,hvcoord,tl,nets,nete)
+    end if
   end subroutine prim_init2
 
   subroutine prim_create_c_data_structures (tl, hvcoord, mp)
@@ -461,8 +474,8 @@ contains
                              elem_derived_FPHI, elem_derived_FQ)
       call t_stopf('push_to_cxx')
     end if
-    if (prescribed_wind == 1) then ! standalone Homme
-      call set_prescribed_wind_f(elem,deriv1,hybrid,hvcoord,dt,tl,nets,nete)
+    if (prescribed_wind == 1) then
+       call init_prescribed_wind_subcycle(elem,nets,nete,tl)
     end if
 
     call prim_run_subcycle_c(dt,nstep_c,nm1_c,n0_c,np1_c,nextOutputStep,nsplit_iteration)
@@ -616,7 +629,7 @@ contains
     use element_mod,      only : element_t
     use derivative_mod,   only : derivative_t
 #if !defined(CAM) && !defined(SCREAM)
-    use test_mod,         only : set_prescribed_wind
+    use test_mod,         only : set_test_initial_conditions
 #endif
 
     type (element_t),      intent(inout), target  :: elem(:)
@@ -628,11 +641,18 @@ contains
     integer              , intent(in)             :: nete
 
 #if !defined(CAM) && !defined(SCREAM)
-    real(kind=real_kind) :: dt, eta_ave_w
+    ! Already called in prim_driver_base::prim_init2:
+    !   call set_test_initial_conditions(elem,deriv,hybrid,hvcoord,tl,nets,nete)
+    ! Also already taken care of:
+    !   call push_test_state_to_c_wrapper()
 
-    dt = 0        ! value unused in initialization
-    eta_ave_w = 0 ! same
-    call set_prescribed_wind(elem,deriv,hybrid,hvcoord,dt,tl,nets,nete,eta_ave_w)
+    ! Save arguments for the C++-F90 bridge for prescribed winds.
+    prescribed_wind_args%elem => elem
+    prescribed_wind_args%hybrid = hybrid
+    prescribed_wind_args%hvcoord = hvcoord
+    prescribed_wind_args%deriv = deriv
+    prescribed_wind_args%nets = nets
+    prescribed_wind_args%nete = nete
 #endif
   end subroutine init_standalone_test
 
@@ -657,53 +677,18 @@ contains
 #endif
   end subroutine compute_test_forcing_f
 
-  subroutine set_prescribed_wind_f(elem,deriv,hybrid,hvcoord,dt,tl,nets,nete)
-    use iso_c_binding,    only : c_ptr, c_loc
-    use hybrid_mod,       only : hybrid_t
-    use hybvcoord_mod,    only : hvcoord_t
-    use time_mod,         only : timelevel_t
-    use element_mod,      only : element_t
-    use derivative_mod,   only : derivative_t
+  subroutine push_test_state_to_c_wrapper()
 #if !defined(CAM) && !defined(SCREAM)
-    use control_mod,      only : qsplit
-    use perf_mod,         only : t_startf, t_stopf
-    use theta_f2c_mod,    only : push_test_state_to_c
-    use test_mod,         only : set_prescribed_wind
-    use element_state,    only : elem_state_v, elem_state_w_i, elem_state_vtheta_dp,     &
-                                 elem_state_phinh_i, elem_state_dp3d, elem_state_ps_v,   &
-                                 elem_derived_eta_dot_dpdn, elem_derived_vn0
-#endif
+    use iso_c_binding, only : c_ptr, c_loc
+    use perf_mod,      only : t_startf, t_stopf
+    use theta_f2c_mod, only : push_test_state_to_c
+    use element_state, only : elem_state_v, elem_state_w_i, elem_state_vtheta_dp,     &
+                              elem_state_phinh_i, elem_state_dp3d, elem_state_ps_v,   &
+                              elem_derived_eta_dot_dpdn, elem_derived_vn0
 
-    type (element_t),      intent(inout), target  :: elem(:)
-    type (derivative_t),   intent(in)             :: deriv
-    type (hvcoord_t),      intent(in)             :: hvcoord
-    type (hybrid_t),       intent(in)             :: hybrid
-    real (kind=real_kind), intent(in)             :: dt
-    type (TimeLevel_t)   , intent(in)             :: tl
-    integer              , intent(in)             :: nets
-    integer              , intent(in)             :: nete
-
-#if !defined(CAM) && !defined(SCREAM)
-    type (hvcoord_t) :: hv
     type (c_ptr) :: elem_state_v_ptr, elem_state_w_i_ptr, elem_state_vtheta_dp_ptr, elem_state_phinh_i_ptr
     type (c_ptr) :: elem_state_dp3d_ptr, elem_state_Qdp_ptr, elem_state_Q_ptr, elem_state_ps_v_ptr
     type (c_ptr) :: elem_derived_eta_dot_dpdn_ptr, elem_derived_vn0_ptr
-
-    real(kind=real_kind) :: eta_ave_w
-
-    ! We need to set up an hvcoord_t that can be passed as intent(inout), even
-    ! though at this point, it won't be changed in the set_prescribed_wind call.
-    hv%ps0  = hvcoord%ps0
-    hv%hyai = hvcoord%hyai
-    hv%hyam = hvcoord%hyam
-    hv%hybi = hvcoord%hybi
-    hv%hybm = hvcoord%hybm
-    hv%etam = hvcoord%etam
-    hv%etai = hvcoord%etai
-    hv%dp0  = hvcoord%dp0
-
-    eta_ave_w = 1d0/qsplit
-    call set_prescribed_wind(elem,deriv,hybrid,hv,dt,tl,nets,nete,eta_ave_w)
 
     call t_startf('push_to_cxx')
     elem_state_v_ptr         = c_loc(elem_state_v)
@@ -718,6 +703,83 @@ contains
          elem_state_vtheta_dp_ptr, elem_state_phinh_i_ptr, elem_state_v_ptr, &
          elem_state_w_i_ptr, elem_derived_eta_dot_dpdn_ptr, elem_derived_vn0_ptr)
     call t_stopf('push_to_cxx')
+#endif
+  end subroutine push_test_state_to_c_wrapper
+
+  subroutine init_prescribed_wind_subcycle(elem, nets, nete, tl)
+    ! Set the derived values used in tracer transport on the F90 side even
+    ! though most of the work is done on the C++ side. This is needed because
+    ! set_prescribed_wind accumulates certain derived quantities during
+    ! prim_advance_exp that get repeatedly copied from F90 to C++. Here we
+    ! initialize values for accumulation.
+    !   In summary: Call this before entering the prim_run_subcycle loop.
+    
+    use prim_driver_base, only: set_tracer_transport_derived_values
+    
+    type (element_t), intent(inout) :: elem(:)
+    integer, intent(in) :: nets, nete
+    type (timelevel_t) :: tl
+
+    call set_tracer_transport_derived_values(elem, nets, nete, tl)
+  end subroutine init_prescribed_wind_subcycle
+
+  subroutine set_prescribed_wind_f_bridge(n0, np1, nstep, dt) bind(c)
+    ! This routine is called from the C++ prim_advance_exp implementation inside
+    ! the prim_run_subcycle loop.
+    
+    use iso_c_binding, only: c_int, c_double
+    
+    integer(c_int), value, intent(in) :: n0, np1, nstep
+    real(c_double), value, intent(in) :: dt
+
+    type (TimeLevel_t) :: tl
+
+    ! Only these fields need to be valid.
+    tl%n0 = n0+1
+    tl%np1 = np1+1
+    tl%nstep = nstep
+
+    call set_prescribed_wind_f(prescribed_wind_args%elem, prescribed_wind_args%deriv, &
+         prescribed_wind_args%hybrid, prescribed_wind_args%hvcoord, dt, tl, &
+         prescribed_wind_args%nets, prescribed_wind_args%nete)
+  end subroutine set_prescribed_wind_f_bridge
+
+  subroutine set_prescribed_wind_f(elem,deriv,hybrid,hvcoord,dt,tl,nets,nete)
+    ! Here we finally can compute the prescribed wind in F90 and then push the
+    ! data to C++.
+    
+    use hybrid_mod,       only : hybrid_t
+    use hybvcoord_mod,    only : hvcoord_t
+    use time_mod,         only : timelevel_t
+    use element_mod,      only : element_t
+    use derivative_mod,   only : derivative_t
+#if !defined(CAM) && !defined(SCREAM)
+    use control_mod,      only : qsplit
+    use test_mod,         only : set_prescribed_wind
+#endif
+
+    type (element_t),      intent(inout), target  :: elem(:)
+    type (derivative_t),   intent(in)             :: deriv
+    type (hvcoord_t),      intent(in)             :: hvcoord
+    type (hybrid_t),       intent(in)             :: hybrid
+    real (kind=real_kind), intent(in)             :: dt
+    type (TimeLevel_t)   , intent(in)             :: tl
+    integer              , intent(in)             :: nets
+    integer              , intent(in)             :: nete
+
+#if !defined(CAM) && !defined(SCREAM)
+    type (hvcoord_t) :: hv
+
+    real(kind=real_kind) :: eta_ave_w
+
+    ! We need to set up an hvcoord_t that can be passed as intent(inout), even
+    ! though at this point, it won't be changed in the set_prescribed_wind call.
+    hv = hvcoord
+
+    eta_ave_w = 1d0/qsplit
+    call set_prescribed_wind(elem,deriv,hybrid,hv,dt,tl,nets,nete,eta_ave_w)
+
+    call push_test_state_to_c_wrapper()
 #endif
   end subroutine set_prescribed_wind_f
 

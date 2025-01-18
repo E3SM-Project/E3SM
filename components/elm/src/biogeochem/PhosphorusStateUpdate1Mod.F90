@@ -75,7 +75,7 @@ contains
             c = filter_soilc_with_inactive(fc)
             col_ps%prod10p(c) = col_ps%prod10p(c) + col_pf%dwt_prod10p_gain(c)*dt
             col_ps%prod100p(c) = col_ps%prod100p(c) + col_pf%dwt_prod100p_gain(c)*dt
-            col_ps%prod1p(c) = col_ps%prod1p(c) + col_pf%dwt_crop_productp_gain(c)*dt            
+            col_ps%prod1p(c) = col_ps%prod1p(c) + col_pf%dwt_crop_productp_gain(c)*dt
 
             do j = 1,nlevdecomp
 
@@ -125,7 +125,7 @@ contains
     associate(                                                                                           &
          ivt                   => veg_pp%itype                                , & ! Input:  [integer  (:)     ]  pft vegetation type
 
-         woody                 => veg_vp%woody                         , & ! Input:  [real(r8) (:)     ]  binary flag for woody lifeform (1=woody, 0=not woody)
+         woody                 => veg_vp%woody                         , & ! Input:  [real(r8) (:)     ]  woody lifeform flag (0 = non-woody, 1 = tree, 2 = shrub)
 
          cascade_donor_pool    => decomp_cascade_con%cascade_donor_pool    , & ! Input:  [integer  (:)     ]  which pool is C taken from for a given decomposition step
          cascade_receiver_pool => decomp_cascade_con%cascade_receiver_pool , & ! Input:  [integer  (:)     ]  which pool is C added to for a given decomposition step
@@ -147,18 +147,18 @@ contains
             do j = 1, nlevdecomp
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
-                  
+
                   ! plant to litter fluxes
                   ! phenology and dynamic landcover fluxes
                   col_pf%decomp_ppools_sourcesink(c,j,i_met_lit) = &
                        col_pf%phenology_p_to_litr_met_p(c,j) * dt
-                  
+
                   col_pf%decomp_ppools_sourcesink(c,j,i_cel_lit) = &
                        col_pf%phenology_p_to_litr_cel_p(c,j) * dt
-                  
+
                   col_pf%decomp_ppools_sourcesink(c,j,i_lig_lit) = &
                        col_pf%phenology_p_to_litr_lig_p(c,j) * dt
-                  
+
                end do
             end do
          end if

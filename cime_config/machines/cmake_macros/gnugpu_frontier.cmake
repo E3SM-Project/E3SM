@@ -14,7 +14,6 @@ string(APPEND CMAKE_Fortran_FLAGS " -Wno-implicit-interface")
 string(APPEND CMAKE_C_FLAGS_RELEASE   " -O2")
 string(APPEND CMAKE_CXX_FLAGS_RELEASE " -O2")
 string(APPEND CMAKE_Fortran_FLAGS_RELEASE   " -O2")
-string(APPEND SPIO_CMAKE_OPTS " -DPIO_ENABLE_TOOLS:BOOL=OFF")
 
 string(APPEND CMAKE_CXX_FLAGS " --offload-arch=gfx90a")
 string(APPEND CMAKE_EXE_LINKER_FLAGS " -L$ENV{CRAY_MPICH_ROOTDIR}/gtl/lib -lmpi_gtl_hsa")

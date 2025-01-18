@@ -10,11 +10,11 @@ If you are on a batch machine, it is expected that you are on a compute node.
 TODO: Add doctests to libs
 """
 
-from utils import check_minimum_python_version, expect, ensure_pylint, run_cmd_no_fail, run_cmd_assert_result
+from utils import check_minimum_python_version, expect, ensure_pylint, run_cmd_no_fail, run_cmd_assert_result, GoodFormatter
 
 check_minimum_python_version(3, 6)
 
-from machines_specs import is_machine_supported, is_cuda_machine
+from machines_specs import is_machine_supported, get_machine
 
 from git_utils import get_current_branch, get_current_commit, get_current_head, git_refs_difference, \
     is_repo_clean, get_common_ancestor, checkout_git_ref, get_git_toplevel_dir
@@ -34,12 +34,12 @@ CONFIG = {
 def test_cmake_cache_contents(test_obj, build_name, cache_var, expected_value):
 ###############################################################################
     cache_file = TEST_DIR.parent.joinpath("ctest-build", build_name, "CMakeCache.txt")
-    test_obj.assertTrue(cache_file.is_file(), "Missing cache file {}".format(cache_file)) # pylint: disable=no-member
+    test_obj.assertTrue(cache_file.is_file(), f"Missing cache file {cache_file}") # pylint: disable=no-member
 
-    grep_output = run_cmd_assert_result(test_obj, "grep ^{} CMakeCache.txt".format(cache_var), from_dir=cache_file.parent)
+    grep_output = run_cmd_assert_result(test_obj, f"grep ^{cache_var} CMakeCache.txt", from_dir=cache_file.parent)
     value = grep_output.split("=", maxsplit=1)[-1]
     test_obj.assertEqual(expected_value.upper(), value.upper(),
-                         msg="For CMake cache variable {}, expected value '{}', got '{}'".format(cache_var, expected_value, value))
+                         msg=f"For CMake cache variable {cache_var}, expected value '{expected_value}', got '{value}'")
 
 ###############################################################################
 def test_baseline_has_sha(test_obj, test_dir, build_name, expected_sha):
@@ -58,8 +58,8 @@ def add_file_and_commit(repo, filename, contents, commit_msg):
     with filepath.open("w", encoding="utf-8") as fd:
         fd.write(contents)
 
-    run_cmd_no_fail("git add {}".format(filename), from_dir=repo)
-    run_cmd_no_fail("git commit -m {}".format(commit_msg), from_dir=repo)
+    run_cmd_no_fail(f"git add {filename}", from_dir=repo)
+    run_cmd_no_fail(f"git commit -m {commit_msg}", from_dir=repo)
 
 ###############################################################################
 def test_branch_switch(test_obj, repo, branch_name):
@@ -116,7 +116,7 @@ class TestBaseOuter: # Hides the TestBase class from test scanner
             super(TestBaseOuter.TestBase, self).__init__(*internal_args)
             self._source_file = source_file
             self._cmds        = list(cmds)
-            self._machine     = CONFIG["machine"]
+            self._machine     = get_machine(CONFIG["machine"])
             self._full        = CONFIG["full"]
             self._jenkins     = CONFIG["jenkins"]
 
@@ -126,14 +126,14 @@ class TestBaseOuter: # Hides the TestBase class from test scanner
             self._results.mkdir(parents=True, exist_ok=True) # pylint: disable=no-member
 
         def get_cmd(self, cmd, machine):
-            return cmd.replace("$machine", machine).replace("$results", str(self._results))
+            return cmd.replace("$machine", machine.name).replace("$results", str(self._results))
 
         def test_doctests(self):
-            run_cmd_assert_result(self, "python3 -m doctest {}".format(self._source_file), from_dir=TEST_DIR)
+            run_cmd_assert_result(self, f"python3 -m doctest {self._source_file}", from_dir=TEST_DIR)
 
         def test_pylint(self):
             ensure_pylint()
-            run_cmd_assert_result(self, "python3 -m pylint --disable C --disable R {}".format(self._source_file), from_dir=TEST_DIR)
+            run_cmd_assert_result(self, f"python3 -m pylint --disable C --disable R {self._source_file}", from_dir=TEST_DIR)
 
         def test_full(self):
             if self._full:
@@ -231,13 +231,13 @@ class TestTestAllScream(TestBaseOuter.TestBase):
         """
         if not self._jenkins:
             options = "-t dbg --config-only"
-            cmd = self.get_cmd("./test-all-scream -m $machine {}".format(options),
+            cmd = self.get_cmd(f"./test-all-scream -m $machine {options}",
                                 self._machine)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
             test_cmake_cache_contents(self, "full_debug", "CMAKE_BUILD_TYPE", "Debug")
             test_cmake_cache_contents(self, "full_debug", "SCREAM_DOUBLE_PRECISION", "TRUE")
             test_cmake_cache_contents(self, "full_debug", "SCREAM_FPE", "FALSE")
-            if is_cuda_machine(self._machine):
+            if self._machine.uses_gpu():
                 test_cmake_cache_contents(self, "full_debug", "SCREAM_PACK_SIZE", "1")
             else:
                 test_cmake_cache_contents(self, "full_debug", "SCREAM_PACK_SIZE", "16")
@@ -250,13 +250,13 @@ class TestTestAllScream(TestBaseOuter.TestBase):
         """
         if not self._jenkins:
             options = "-t sp --config-only"
-            cmd = self.get_cmd("./test-all-scream -m $machine {}".format(options),
+            cmd = self.get_cmd(f"./test-all-scream -m $machine {options}",
                                 self._machine)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
             test_cmake_cache_contents(self, "full_sp_debug", "CMAKE_BUILD_TYPE", "Debug")
             test_cmake_cache_contents(self, "full_sp_debug", "SCREAM_DOUBLE_PRECISION", "FALSE")
             test_cmake_cache_contents(self, "full_sp_debug", "SCREAM_FPE", "FALSE")
-            if is_cuda_machine(self._machine):
+            if self._machine.uses_gpu():
                 test_cmake_cache_contents(self, "full_sp_debug", "SCREAM_PACK_SIZE", "1")
             else:
                 test_cmake_cache_contents(self, "full_sp_debug", "SCREAM_PACK_SIZE", "16")
@@ -268,11 +268,11 @@ class TestTestAllScream(TestBaseOuter.TestBase):
         Test the 'fpe' test in test-all-scream. It should set certain CMake values
         """
         if not self._jenkins:
-            if is_cuda_machine(self._machine):
-                self.skipTest("Skipping FPE check on cuda")
+            if self._machine.uses_gpu():
+                self.skipTest("Skipping FPE check on gpu machines")
             else:
                 options = "-t fpe --config-only"
-                cmd = self.get_cmd("./test-all-scream -m $machine {}".format(options),
+                cmd = self.get_cmd(f"./test-all-scream -m $machine {options}",
                                     self._machine)
                 run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
                 test_cmake_cache_contents(self, "debug_nopack_fpe", "CMAKE_BUILD_TYPE", "Debug")
@@ -288,16 +288,17 @@ class TestTestAllScream(TestBaseOuter.TestBase):
         """
         if not self._jenkins:
             options = "-t mem --config-only"
-            cmd = self.get_cmd("./test-all-scream -m $machine {}".format(options),
+            cmd = self.get_cmd(f"./test-all-scream -m $machine {options}",
                                 self._machine)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
-            builddir = "compute_sanitizer_memcheck" if is_cuda_machine(self._machine) else "valgrind"
-            test_cmake_cache_contents(self, builddir, "CMAKE_BUILD_TYPE", "Debug")
+            builddir = "compute_sanitizer_memcheck" if self._machine.gpu_arch=="cuda" else "valgrind"
             test_cmake_cache_contents(self, builddir, "SCREAM_TEST_SIZE", "SHORT")
-            if is_cuda_machine(self._machine):
+            if self._machine.gpu_arch=="cuda":
+                test_cmake_cache_contents(self, builddir, "CMAKE_BUILD_TYPE", "Debug")
                 test_cmake_cache_contents(self, builddir, "EKAT_ENABLE_COMPUTE_SANITIZER", "TRUE")
                 test_cmake_cache_contents(self, builddir, "EKAT_COMPUTE_SANITIZER_OPTIONS", "--tool=memcheck")
             else:
+                test_cmake_cache_contents(self, builddir, "CMAKE_BUILD_TYPE", "RelWithDebInfo")
                 test_cmake_cache_contents(self, builddir, "EKAT_ENABLE_VALGRIND", "TRUE")
         else:
             self.skipTest("Skipping config-only run for jenkins test")
@@ -308,7 +309,7 @@ class TestTestAllScream(TestBaseOuter.TestBase):
         """
         if not self._jenkins:
             options = "-t opt --config-only"
-            cmd = self.get_cmd("./test-all-scream -m $machine {}".format(options),
+            cmd = self.get_cmd(f"./test-all-scream -m $machine {options}",
                                self._machine)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
             test_cmake_cache_contents(self, "release", "CMAKE_BUILD_TYPE", "Release")
@@ -439,7 +440,7 @@ class TestTestAllScream(TestBaseOuter.TestBase):
         if self._jenkins:
             # We set PULLREQUESTNUM to block dashboard submission
             # We set SCREAM_FAKE_AUTO to not interere with real baselines
-            cmd = self.get_cmd("PR_LABELS= NODE_NAME={} SCREAM_FAKE_AUTO=TRUE PULLREQUESTNUM=42 ./jenkins/jenkins_common.sh".format(self._machine),
+            cmd = self.get_cmd(f"PR_LABELS= NODE_NAME={self._machine.name} SCREAM_FAKE_AUTO=TRUE PULLREQUESTNUM=42 ./jenkins/jenkins_common.sh",
                                self._machine)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
 
@@ -453,7 +454,7 @@ class TestTestAllScream(TestBaseOuter.TestBase):
         if self._jenkins:
             # We set PULLREQUESTNUM to block dashboard submission
             # We set SCREAM_FAKE_AUTO to not interere with real baselines
-            cmd = self.get_cmd("PR_LABELS= NODE_NAME={} SCREAM_FAKE_AUTO=TRUE PULLREQUESTNUM= ./jenkins/jenkins_common.sh".format(self._machine),
+            cmd = self.get_cmd(f"PR_LABELS= NODE_NAME={self._machine.name} SCREAM_FAKE_AUTO=TRUE PULLREQUESTNUM= ./jenkins/jenkins_common.sh",
                                self._machine)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
 
@@ -466,7 +467,7 @@ class TestTestAllScream(TestBaseOuter.TestBase):
         """
         if self._jenkins:
             # Any fail will do, we already checked test-all-scream captures all the fail types
-            cmd = self.get_cmd("PR_LABELS= SCREAM_FORCE_CONFIG_FAIL=True NODE_NAME={} SCREAM_FAKE_AUTO=TRUE PULLREQUESTNUM=42 ./jenkins/jenkins_common.sh".format(self._machine),
+            cmd = self.get_cmd(f"PR_LABELS= SCREAM_FORCE_CONFIG_FAIL=True NODE_NAME={self._machine.name} SCREAM_FAKE_AUTO=TRUE PULLREQUESTNUM=42 ./jenkins/jenkins_common.sh",
                                self._machine)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR, expect_works=False)
 
@@ -479,7 +480,7 @@ class TestTestAllScream(TestBaseOuter.TestBase):
         """
         if self._jenkins:
             # Any fail will do, we already checked test-all-scream captures all the fail types
-            cmd = self.get_cmd("PR_LABELS= SCREAM_FORCE_CONFIG_FAIL=True NODE_NAME={} SCREAM_FAKE_AUTO=TRUE PULLREQUESTNUM= ./jenkins/jenkins_common.sh".format(self._machine),
+            cmd = self.get_cmd(f"PR_LABELS= SCREAM_FORCE_CONFIG_FAIL=True NODE_NAME={self._machine} SCREAM_FAKE_AUTO=TRUE PULLREQUESTNUM= ./jenkins/jenkins_common.sh",
                                self._machine)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR, expect_works=False)
 
@@ -544,7 +545,7 @@ OR
     parser = argparse.ArgumentParser(
         usage=help_str,
         description=desc,
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        formatter_class=GoodFormatter)
 
     parser.add_argument("-m", "--machine",
                         help="Provide machine name. This is required for full (not dry) runs")
@@ -567,7 +568,7 @@ def scripts_tests(machine=None, full=False, jenkins=False):
 
     # Store test params in environment
     if machine:
-        expect(is_machine_supported(machine), "Machine {} is not supported".format(machine))
+        expect(is_machine_supported(machine), f"Machine {machine} is not supported")
         CONFIG["machine"] = machine
 
     CONFIG["jenkins"] = jenkins

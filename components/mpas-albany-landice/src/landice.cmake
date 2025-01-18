@@ -76,6 +76,7 @@ list(APPEND RAW_SOURCES
   core_landice/mode_forward/mpas_li_velocity_external.F
   core_landice/mode_forward/mpas_li_subglacial_hydro.F
   core_landice/mode_forward/mpas_li_bedtopo.F
+  core_landice/mode_forward/mpas_li_ocean_extrap.F
 )
 
 if (CPPDEFS MATCHES ".*MPAS_LI_BUILD_INTERFACE.*")

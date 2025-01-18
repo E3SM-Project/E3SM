@@ -2,6 +2,9 @@
 
 OBJS = mpas_ocn_analysis_driver.o
 
+UTILS = shr_kind_mod.o \
+        shr_const_mod.o
+
 MEMBERS = mpas_ocn_global_stats.o \
           mpas_ocn_okubo_weiss.o \
           mpas_ocn_layer_volume_weighted_averages.o \
@@ -35,7 +38,7 @@ MEMBERS = mpas_ocn_global_stats.o \
 
 all: $(OBJS)
 
-mpas_ocn_analysis_driver.o: $(MEMBERS)
+mpas_ocn_analysis_driver.o: $(UTILS) $(MEMBERS)
 
 mpas_ocn_okubo_weiss.o: mpas_ocn_okubo_weiss_eigenvalues.o
 

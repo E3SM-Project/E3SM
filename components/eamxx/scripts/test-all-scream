@@ -15,7 +15,9 @@ Baselines: By default, test-all-scream will not run baseline tests. If you set
 the location specified by the machine spec. You can regenerate
 baselines any time by using the -g flag, but be aware this will impact everyone
 if you regenerate the public baselines. You can change the target baseline area
-using -b $path. If -g is provided, no tests will be run; -g means generate only.
+using -b $path. You can also use the magic word "LOCAL" to have test-all-scream
+pick a local directory for you if you want to manage your own baselines within
+the current repo. If -g is provided, no tests will be run; -g means generate only.
 
 The general workflow for baseline-changing PRs is:
 1) Issue PR
@@ -32,7 +34,7 @@ do for create_test tests, the only difference is that test-all-scream does basel
 comparison tests by default.
 """
 
-from utils import check_minimum_python_version
+from utils import check_minimum_python_version, GoodFormatter
 check_minimum_python_version(3, 4)
 
 import argparse, sys, pathlib
@@ -70,7 +72,7 @@ OR
     > ./scripts/{0} -m mappy -t dbg
 """.format(pathlib.Path(args[0]).name),
         description=description,
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        formatter_class=GoodFormatter
     )
 
     parser.add_argument("-cxx","--cxx-compiler", help="C++ compiler", default=None)

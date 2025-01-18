@@ -39,7 +39,6 @@ struct GllFvRemapImpl {
   enum : int { num_lev_aligned = num_lev_pack*packn };
   enum : int { num_levp_aligned = max_num_lev_pack*packn };
   enum : int { num_phys_lev = NUM_PHYSICAL_LEV };
-  enum : int { num_work = 12 };
 
   typedef GllFvRemap::Phys1T Phys1T;
   typedef GllFvRemap::Phys2T Phys2T;

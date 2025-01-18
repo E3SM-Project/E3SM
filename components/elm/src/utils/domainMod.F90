@@ -52,10 +52,6 @@ module domainMod
      integer          :: nv           ! number of vertices
      real(r8),pointer :: latv(:,:)    ! latitude of grid cell's vertices (deg)
      real(r8),pointer :: lonv(:,:)    ! longitude of grid cell's vertices (deg)
-#ifdef HAVE_MOAB
-     real(r8),pointer :: mblatv(:,:)    ! latitude of grid cell's vertices (deg) for MOAB
-     real(r8),pointer :: mblonv(:,:)    ! longitude of grid cell's vertices (deg) for MOAB
-#endif
      real(r8)         :: lon0         ! the origin lon/lat (Most western/southern corner, if not globally covered grids; OR -180W(360E)/-90N)
      real(r8)         :: lat0         ! the origin lon/lat (Most western/southern corner, if not globally covered grids; OR -180W(360E)/-90N)
 
@@ -154,22 +150,6 @@ contains
        endif
     end if
     ! pflotran:end-----------------------------------------------------
-#ifdef HAVE_MOAB
-    if (domain%nv > 0 .and. domain%nv /= huge(1)) then
-       if(.not.associated(domain%mblonv)) then
-           allocate(domain%mblonv(nb:ne, 1:domain%nv), stat=ier)
-           if (ier /= 0) &
-           call shr_sys_abort('domain_init ERROR: allocate mblonv ')
-           domain%mblonv     = nan
-       endif
-       if(.not.associated(domain%mblatv)) then
-           allocate(domain%mblatv(nb:ne, 1:domain%nv))
-           if (ier /= 0) &
-           call shr_sys_abort('domain_init ERROR: allocate mblatv ')
-           domain%mblatv     = nan
-       endif
-    end if
-#endif
 
     if (present(elmlevel)) then
        domain%elmlevel = elmlevel
@@ -265,23 +245,6 @@ end subroutine domain_init
           endif
        endif
        ! pflotran:beg-----------------------------------------------------
-#ifdef HAVE_MOAB
-       if (domain%nv > 0 .and. domain%nv /= huge(1)) then
-          if (associated(domain%mblonv)) then
-             deallocate(domain%mblonv, stat=ier)
-             if (ier /= 0) &
-             call shr_sys_abort('domain_clean ERROR: deallocate mblonv ')
-             nullify(domain%mblonv)
-          endif
-
-          if (associated(domain%mblatv)) then
-             deallocate(domain%mblatv, stat=ier)
-             if (ier /= 0) &
-             call shr_sys_abort('domain_clean ERROR: deallocate mblatv ')
-             nullify(domain%mblatv)
-          endif
-       endif
-#endif
 
     else
        if (masterproc) then

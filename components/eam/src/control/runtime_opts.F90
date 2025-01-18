@@ -246,6 +246,7 @@ contains
    use uwshcu,              only: uwshcu_readnl
    use pkg_cld_sediment,    only: cld_sediment_readnl
    use gw_drag,             only: gw_drag_readnl
+   use od_common,           only: oro_drag_readnl
    use qbo,                 only: qbo_readnl
    use iondrag,             only: iondrag_readnl
    use phys_debug_util,     only: phys_debug_readnl
@@ -516,6 +517,7 @@ contains
    call uwshcu_readnl(nlfilename)
    call cld_sediment_readnl(nlfilename)
    call gw_drag_readnl(nlfilename)
+   call oro_drag_readnl(nlfilename)
    call qbo_readnl(nlfilename)
    call iondrag_readnl(nlfilename)
    call phys_debug_readnl(nlfilename)

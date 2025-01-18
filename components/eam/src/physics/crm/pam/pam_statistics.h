@@ -458,29 +458,34 @@ inline void pam_statistics_compute_means( pam::PamCoupler &coupler ) {
     if (clear_rh_cnt(k,iens)>0) {
       clear_rh(k,iens) = clear_rh(k,iens) / clear_rh_cnt(k,iens);
     }
-    phys_tend_sgs_temp  (k,iens) = phys_tend_sgs_temp  (k,iens) / phys_tend_sgs_cnt  (iens);
-    phys_tend_sgs_qv    (k,iens) = phys_tend_sgs_qv    (k,iens) / phys_tend_sgs_cnt  (iens);
-    phys_tend_sgs_qc    (k,iens) = phys_tend_sgs_qc    (k,iens) / phys_tend_sgs_cnt  (iens);
-    phys_tend_sgs_qi    (k,iens) = phys_tend_sgs_qi    (k,iens) / phys_tend_sgs_cnt  (iens);
-    phys_tend_sgs_qr    (k,iens) = phys_tend_sgs_qr    (k,iens) / phys_tend_sgs_cnt  (iens);
-
-    phys_tend_micro_temp(k,iens) = phys_tend_micro_temp(k,iens) / phys_tend_micro_cnt(iens);
-    phys_tend_micro_qv  (k,iens) = phys_tend_micro_qv  (k,iens) / phys_tend_micro_cnt(iens);
-    phys_tend_micro_qc  (k,iens) = phys_tend_micro_qc  (k,iens) / phys_tend_micro_cnt(iens);
-    phys_tend_micro_qi  (k,iens) = phys_tend_micro_qi  (k,iens) / phys_tend_micro_cnt(iens);
-    phys_tend_micro_qr  (k,iens) = phys_tend_micro_qr  (k,iens) / phys_tend_micro_cnt(iens);
-
-    phys_tend_dycor_temp (k,iens) = phys_tend_dycor_temp (k,iens) / phys_tend_dycor_cnt(iens);
-    phys_tend_dycor_qv   (k,iens) = phys_tend_dycor_qv   (k,iens) / phys_tend_dycor_cnt(iens);
-    phys_tend_dycor_qc   (k,iens) = phys_tend_dycor_qc   (k,iens) / phys_tend_dycor_cnt(iens);
-    phys_tend_dycor_qi   (k,iens) = phys_tend_dycor_qi   (k,iens) / phys_tend_dycor_cnt(iens);
-    phys_tend_dycor_qr   (k,iens) = phys_tend_dycor_qr   (k,iens) / phys_tend_dycor_cnt(iens);
-
-    phys_tend_sponge_temp(k,iens) = phys_tend_sponge_temp(k,iens) / phys_tend_sponge_cnt(iens);
-    phys_tend_sponge_qv  (k,iens) = phys_tend_sponge_qv  (k,iens) / phys_tend_sponge_cnt(iens);
-    phys_tend_sponge_qc  (k,iens) = phys_tend_sponge_qc  (k,iens) / phys_tend_sponge_cnt(iens);
-    phys_tend_sponge_qi  (k,iens) = phys_tend_sponge_qi  (k,iens) / phys_tend_sponge_cnt(iens);
-    phys_tend_sponge_qr  (k,iens) = phys_tend_sponge_qr  (k,iens) / phys_tend_sponge_cnt(iens);
+    if (phys_tend_sgs_cnt(iens)>0) {
+      phys_tend_sgs_temp  (k,iens) = phys_tend_sgs_temp  (k,iens) / phys_tend_sgs_cnt  (iens);
+      phys_tend_sgs_qv    (k,iens) = phys_tend_sgs_qv    (k,iens) / phys_tend_sgs_cnt  (iens);
+      phys_tend_sgs_qc    (k,iens) = phys_tend_sgs_qc    (k,iens) / phys_tend_sgs_cnt  (iens);
+      phys_tend_sgs_qi    (k,iens) = phys_tend_sgs_qi    (k,iens) / phys_tend_sgs_cnt  (iens);
+      phys_tend_sgs_qr    (k,iens) = phys_tend_sgs_qr    (k,iens) / phys_tend_sgs_cnt  (iens);
+    }
+    if (phys_tend_micro_cnt(iens)>0) {
+      phys_tend_micro_temp(k,iens) = phys_tend_micro_temp(k,iens) / phys_tend_micro_cnt(iens);
+      phys_tend_micro_qv  (k,iens) = phys_tend_micro_qv  (k,iens) / phys_tend_micro_cnt(iens);
+      phys_tend_micro_qc  (k,iens) = phys_tend_micro_qc  (k,iens) / phys_tend_micro_cnt(iens);
+      phys_tend_micro_qi  (k,iens) = phys_tend_micro_qi  (k,iens) / phys_tend_micro_cnt(iens);
+      phys_tend_micro_qr  (k,iens) = phys_tend_micro_qr  (k,iens) / phys_tend_micro_cnt(iens);
+    }
+    if (phys_tend_dycor_cnt(iens)>0) {
+      phys_tend_dycor_temp (k,iens) = phys_tend_dycor_temp (k,iens) / phys_tend_dycor_cnt(iens);
+      phys_tend_dycor_qv   (k,iens) = phys_tend_dycor_qv   (k,iens) / phys_tend_dycor_cnt(iens);
+      phys_tend_dycor_qc   (k,iens) = phys_tend_dycor_qc   (k,iens) / phys_tend_dycor_cnt(iens);
+      phys_tend_dycor_qi   (k,iens) = phys_tend_dycor_qi   (k,iens) / phys_tend_dycor_cnt(iens);
+      phys_tend_dycor_qr   (k,iens) = phys_tend_dycor_qr   (k,iens) / phys_tend_dycor_cnt(iens);
+    }
+    if (phys_tend_sponge_cnt(iens)>0) {
+      phys_tend_sponge_temp(k,iens) = phys_tend_sponge_temp(k,iens) / phys_tend_sponge_cnt(iens);
+      phys_tend_sponge_qv  (k,iens) = phys_tend_sponge_qv  (k,iens) / phys_tend_sponge_cnt(iens);
+      phys_tend_sponge_qc  (k,iens) = phys_tend_sponge_qc  (k,iens) / phys_tend_sponge_cnt(iens);
+      phys_tend_sponge_qi  (k,iens) = phys_tend_sponge_qi  (k,iens) / phys_tend_sponge_cnt(iens);
+      phys_tend_sponge_qr  (k,iens) = phys_tend_sponge_qr  (k,iens) / phys_tend_sponge_cnt(iens);
+    }
   });
   //------------------------------------------------------------------------------------------------
 }

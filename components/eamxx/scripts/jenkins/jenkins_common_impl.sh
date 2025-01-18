@@ -17,11 +17,11 @@ if [ ${#labels[@]} -gt 0 ]; then
   # We do have some labels. Look for some supported ones.
   for label in "${labels[@]}"
   do
-    if [ "$label" == "AT: Integrate Without Testing" ]; then
+    if [ "$label" == "AT: skip eamxx-all" ]; then
       skip_testing=1
-    elif [ "$label" == "AT: Skip Stand-Alone Testing" ]; then
+    elif [ "$label" == "AT: skip eamxx-sa" ]; then
       test_SA=0
-    elif [ "$label" == "AT: Skip v1 Testing" ]; then
+    elif [ "$label" == "AT: skip eamxx-v1" ]; then
       test_v1=0
     elif [ "$label" == "scripts" ]; then
       test_scripts=1
@@ -137,7 +137,7 @@ if [ $skip_testing -eq 0 ]; then
 
     fi
   else
-    echo "SCREAM Stand-Alone tests were skipped, since the Github label 'AT: Skip Stand-Alone Testing' was found.\n"
+    echo "SCREAM Stand-Alone tests were skipped, since the Github label 'AT: skip eamxx-sa' was found.\n"
   fi
 
   # Run expensive tests on mappy only

@@ -250,9 +250,9 @@ FieldLayout& FieldLayout::reset_dim (const FieldTag t, const int extent, const b
 
 void FieldLayout::set_extents () {
   m_extents = decltype(m_extents)("",m_rank);
-  auto extents_h = Kokkos::create_mirror_view(m_extents);
-  std::copy_n(m_dims.begin(),m_rank,extents_h.data());
-  Kokkos::deep_copy(m_extents,extents_h);
+  m_extents_h = Kokkos::create_mirror_view(m_extents);
+  std::copy_n(m_dims.begin(),m_rank,m_extents_h.data());
+  Kokkos::deep_copy(m_extents,m_extents_h);
 }
 
 void FieldLayout::compute_type () {

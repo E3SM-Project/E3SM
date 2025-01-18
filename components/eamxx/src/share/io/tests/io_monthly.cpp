@@ -65,7 +65,7 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
   //  - Uniform_int_distribution returns an int, and the randomize
   //    util checks that return type matches the Field data type.
   //    So wrap the int pdf in a lambda, that does the cast.
-  std::mt19937_64 engine(seed); 
+  std::mt19937_64 engine(seed);
   auto my_pdf = [&](std::mt19937_64& engine) -> Real {
     std::uniform_int_distribution<int> pdf (0,100);
     Real v = pdf(engine);
@@ -83,7 +83,7 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
   };
 
   auto fm = std::make_shared<FieldManager>(grid);
-  
+
   const auto units = ekat::units::Units::nondimensional();
   int count=0;
   for (const auto& fl : layouts) {
@@ -119,7 +119,6 @@ void write (const int seed, const ekat::Comm& comm)
 
   // Create output params
   ekat::ParameterList om_pl;
-  om_pl.set("MPI Ranks in Filename",true);
   om_pl.set("filename_prefix",std::string("io_monthly"));
   om_pl.set("Field Names",fnames);
   om_pl.set("Averaging Type", std::string("Instant"));
@@ -132,7 +131,8 @@ void write (const int seed, const ekat::Comm& comm)
 
   // Create Output manager
   OutputManager om;
-  om.setup(comm,om_pl,fm,gm,t0,t0,false);
+  om.initialize(comm,om_pl,t0,false);
+  om.setup(fm,gm);
 
   // Time loop: do 11 steps, since we already did Jan output at t0
   const int nsteps = 11;
@@ -178,11 +178,11 @@ void read (const int seed, const ekat::Comm& comm)
   // Get filename from timestamp
   std::string casename = "io_monthly";
   auto get_filename = [&](const util::TimeStamp& t) {
+    auto t_str = t.to_string().substr(0,7);
     std::string fname = casename
                       + ".INSTANT.nsteps_x1"
                       + ".np" + std::to_string(comm.size())
-                      + "." + std::to_string(t.get_year())
-                      + "-" + std::to_string(t.get_month())
+                      + "." + t_str
                       + ".nc";
     return fname;
   };

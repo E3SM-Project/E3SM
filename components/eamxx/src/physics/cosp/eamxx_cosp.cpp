@@ -49,7 +49,7 @@ void Cosp::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 
   // Define the different field layouts that will be used for this process
 
-  // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and interfaces 
+  // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and interfaces
   FieldLayout scalar2d     = m_grid->get_2d_scalar_layout();
   FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout(true);
   FieldLayout scalar3d_int = m_grid->get_3d_scalar_layout(false);
@@ -71,12 +71,12 @@ void Cosp::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   //add_field<Required>("height_mid",  scalar3d_mid, m,      grid_name);
   //add_field<Required>("height_int",  scalar3d_int, m,      grid_name);
   add_field<Required>("T_mid",            scalar3d_mid, K,      grid_name);
-  add_field<Required>("qv",               scalar3d_mid, kg/kg,      grid_name, "tracers");
-  add_field<Required>("qc",               scalar3d_mid, kg/kg,      grid_name, "tracers");
-  add_field<Required>("qi",               scalar3d_mid, kg/kg,      grid_name, "tracers");
   add_field<Required>("phis",             scalar2d    , m2/s2,  grid_name);
   add_field<Required>("pseudo_density",   scalar3d_mid, Pa,     grid_name);
   add_field<Required>("cldfrac_rad",      scalar3d_mid, nondim, grid_name);
+  add_tracer<Required>("qv", m_grid, kg/kg);
+  add_tracer<Required>("qc", m_grid, kg/kg);
+  add_tracer<Required>("qi", m_grid, kg/kg);
   // Optical properties, should be computed in radiation interface
   add_field<Required>("dtau067",     scalar3d_mid, nondim, grid_name); // 0.67 micron optical depth
   add_field<Required>("dtau105",     scalar3d_mid, nondim, grid_name); // 10.5 micron optical depth

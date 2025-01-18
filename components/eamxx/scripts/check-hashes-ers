@@ -10,7 +10,7 @@ hash output after a test has run.
 
 import sys, re, glob, pathlib, argparse
 
-from utils import run_cmd_no_fail, expect
+from utils import run_cmd_no_fail, expect, GoodFormatter
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -25,7 +25,7 @@ OR
     > {0} /my/case/dir
 """.format(pathlib.Path(args[0]).name),
         description=description,
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        formatter_class=GoodFormatter
     )
 
     parser.add_argument(

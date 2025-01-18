@@ -140,6 +140,7 @@ module ocn_core_interface
       logical, pointer :: verticalRemapPKGActive
       logical, pointer :: activeWavePKGActive
       logical, pointer :: subgridWetDryPKGActive
+      logical, pointer :: scaledDISMFPKGActive
 
       type (mpas_pool_iterator_type) :: pkgItr
       logical, pointer :: packageActive
@@ -175,6 +176,7 @@ module ocn_core_interface
       logical, pointer :: config_use_gotm
       logical, pointer :: config_use_active_wave
       logical, pointer :: config_use_subgrid_wetting_drying
+      logical, pointer :: config_scale_dismf_by_removed_ice_runoff
 
       character (len=StrKIND), pointer :: config_time_integrator
       character (len=StrKIND), pointer :: config_ocean_run_mode
@@ -447,6 +449,17 @@ module ocn_core_interface
       call mpas_pool_get_config(configPool, 'config_use_subgrid_wetting_drying', config_use_subgrid_wetting_drying)
       if (config_use_subgrid_wetting_drying) then
          subgridWetDryPKGActive = .true.
+      end if
+
+      !
+      ! test for scaling data ice-shelf melt fluxes by the running mean of removed ice runoff
+      !
+      call mpas_pool_get_package(packagePool, 'scaledDISMFPKGActive', scaledDISMFPKGActive)
+      call mpas_pool_get_config(configPool, &
+                                'config_scale_dismf_by_removed_ice_runoff', &
+                                config_scale_dismf_by_removed_ice_runoff)
+      if (config_scale_dismf_by_removed_ice_runoff) then
+         scaledDISMFPKGActive = .true.
       end if
 
       !

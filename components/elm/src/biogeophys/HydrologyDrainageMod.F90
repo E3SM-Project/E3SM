@@ -47,7 +47,7 @@ contains
     !
     ! !USES:
       !$acc routine seq
-    use landunit_varcon  , only : istice, istwet, istsoil, istice_mec, istcrop
+    use landunit_varcon  , only : istice, istwet, istsoil, istice_mec, istcrop, istice
     use column_varcon    , only : icol_roof, icol_road_imperv, icol_road_perv, icol_sunwall, icol_shadewall
     use elm_varcon       , only : denh2o, denice, secspday, frac_to_downhill
     use elm_varctl       , only : glc_snow_persistence_max_days, use_vichydro, use_betr
@@ -124,6 +124,8 @@ contains
          qflx_glcice            => col_wf%qflx_glcice             , & ! Output: [real(r8) (:)   ]  flux of new glacier ice (mm H2O /s)
          qflx_glcice_frz        => col_wf%qflx_glcice_frz         , & ! Output: [real(r8) (:)   ]  ice growth (positive definite) (mm H2O/s)
          qflx_to_downhill       => col_wf%qflx_to_downhill          & ! Output: [real(r8) (:)   ]  flux transferred to downhill topounit (mm H2O/s)
+         qflx_glcice_diag       => col_wf%qflx_glcice_diag        , & ! Output: [real(r8) (:)   ]  flux of new glacier ice (mm H2O/s) - diagnostic, no MECs or GLC
+         qflx_glcice_frz_diag   => col_wf%qflx_glcice_frz_diag      & ! Output: [real(r8) (:)   ]  ice growth (positive definite) (mm H2O/s)) - diagnostic, no MECs or GLC
          )
 
       ! Determine time step and step size
@@ -218,6 +220,12 @@ contains
 
       do c = bounds%begc,bounds%endc
          qflx_glcice_frz(c) = 0._r8
+         qflx_glcice_frz_diag(c) = 0._r8
+
+         if (lun_pp%itype(l)==istice .and. qflx_snwcp_ice(c) > 0.0_r8) then
+               qflx_glcice_frz_diag(c) = qflx_snwcp_ice(c)
+               qflx_glcice_diag(c) = qflx_glcice_diag(c) + qflx_glcice_frz_diag(c)
+         endif
       end do
       do fc = 1,num_do_smb_c
          c = filter_do_smb_c(fc)
@@ -225,10 +233,10 @@ contains
          g = col_pp%gridcell(c)
          ! In the following, we convert glc_snow_persistence_max_days to r8 to avoid overflow
          if ( (snow_persistence(c) >= (real(glc_snow_persistence_max_days, r8) * secspday)) &
-              .or. lun_pp%itype(l) == istice_mec) then
-            qflx_glcice_frz(c) = qflx_snwcp_ice(c)
-            qflx_glcice(c) = qflx_glcice(c) + qflx_glcice_frz(c)
-            if (glc_dyn_runoff_routing(g)) qflx_snwcp_ice(c) = 0._r8
+              .or. lun_pp%itype(l) == istice_mec ) then
+           qflx_glcice_frz(c) = qflx_snwcp_ice(c)
+           qflx_glcice(c) = qflx_glcice(c) + qflx_glcice_frz(c)
+           if (glc_dyn_runoff_routing(g)) qflx_snwcp_ice(c) = 0._r8
          end if
       end do
 

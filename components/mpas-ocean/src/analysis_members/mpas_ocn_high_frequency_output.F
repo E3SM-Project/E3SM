@@ -175,7 +175,7 @@ contains
       type (mpas_pool_type), pointer :: highFrequencyOutputAMPool
       type (mpas_pool_type), pointer :: tracersPool
 
-      integer :: iLevel, iLevelTarget, iCell, iEdge, i, cell1, cell2, k, eoe
+      integer :: iLevel, iCell, iEdge, i, cell1, cell2, k, eoe
       integer :: iLevel0100, iLevel0250, iLevel0700, iLevel2000
       real (kind=RKIND) :: sumLayerThickness
       integer, pointer :: nVertLevels, nCells, nEdges
@@ -183,7 +183,7 @@ contains
       integer, dimension(:,:), pointer :: edgesOnCell, cellsOnEdge, edgesOnEdge
 
       real (kind=RKIND) :: invAreaCell1, layerThicknessEdge1, coeff, weightedNormalVel, cellArea
-      real (kind=RKIND), dimension(:), pointer :: refBottomDepth, kineticEnergyAt250m, kineticEnergyAtSurface, relativeVorticityAt250m
+      real (kind=RKIND), dimension(:), pointer :: refBottomDepth, kineticEnergyAt250m, kineticEnergyAtSurface, relativeVorticityAt250m, relativeVorticityAtSurface
       real (kind=RKIND), dimension(:), pointer :: divergenceAt250m, relativeVorticityVertexAt250m
       real (kind=RKIND), dimension(:), pointer :: divergenceAtBottom,relativeVorticityAtBottom,kineticEnergyAtBottom
       real (kind=RKIND), dimension(:), pointer :: vertVelAt250m
@@ -263,6 +263,7 @@ contains
          call mpas_pool_get_array(highFrequencyOutputAMPool, 'kineticEnergyAt250m', kineticEnergyAt250m)
          call mpas_pool_get_array(highFrequencyOutputAMPool, 'kineticEnergyAtSurface', kineticEnergyAtSurface)
          call mpas_pool_get_array(highFrequencyOutputAMPool, 'relativeVorticityAt250m', relativeVorticityAt250m)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'relativeVorticityAtSurface', relativeVorticityAtSurface)
          call mpas_pool_get_array(highFrequencyOutputAMPool, 'divergenceAt250m', divergenceAt250m)
          call mpas_pool_get_array(highFrequencyOutputAMPool, 'relativeVorticityAtBottom', relativeVorticityAtBottom)
          call mpas_pool_get_array(highFrequencyOutputAMPool, 'divergenceAtBottom', divergenceAtBottom)
@@ -377,37 +378,41 @@ contains
          call mpas_pool_get_array(highFrequencyOutputAMPool, 'columnIntegratedSpeed', columnIntegratedSpeed)
 
          ! find vertical level that is just above the 100 m reference level
-         iLevel0100 = 1
-         do iLevel=2,nVertLevels
+         ! if even the bottom level isn't deep enough, we still default to the bottom level
+         iLevel0100 = nVertLevels
+         do iLevel=1,nVertLevels
            if(refBottomDepth(iLevel) > 100.0_RKIND) then
-              iLevel0100 = iLevel-1
+              iLevel0100 = iLevel
               exit
            endif
          enddo
 
          ! find vertical level that is just above the 250 m reference level
-         iLevel0250 = 1
+         ! if even the bottom level isn't deep enough, we still default to the bottom level
+         iLevel0250 = nVertLevels
          do iLevel=iLevel0100,nVertLevels
            if(refBottomDepth(iLevel) > 250.0_RKIND) then
-              iLevel0250 = iLevel-1
+              iLevel0250 = iLevel
               exit
            endif
          enddo
 
          ! find vertical level that is just above the 700 m reference level
-         iLevel0700 = 1
+         ! if even the bottom level isn't deep enough, we still default to the bottom level
+         iLevel0700 = nVertLevels
          do iLevel=iLevel0250,nVertLevels
            if(refBottomDepth(iLevel) > 700.0_RKIND) then
-              iLevel0700 = iLevel-1
+              iLevel0700 = iLevel
               exit
            endif
          enddo
 
          ! find vertical level that is just above the 2000 m reference level
-         iLevel2000 = 1
+         ! if even the bottom level isn't deep enough, we still default to the bottom level
+         iLevel2000 = nVertLevels
          do iLevel=iLevel0700,nVertLevels
            if(refBottomDepth(iLevel) > 2000.0_RKIND) then
-              iLevel2000 = iLevel-1
+              iLevel2000 = iLevel
               exit
            endif
          enddo
@@ -418,6 +423,7 @@ contains
          divergenceAt250m(:) = divergence(iLevel0250,:)
          relativeVorticityVertexAt250m(:) = relativeVorticity(iLevel0250,:)
          kineticEnergyAtSurface(:) = kineticEnergyCell(1,:)
+         relativeVorticityAtSurface(:) = relativeVorticityCell(1,:)
          activeTracersAtSurface(1,:) = activeTracers(1,1,:)
          activeTracersAtSurface(2,:) = activeTracers(2,1,:)
          activeTracersAt250m(1,:) = activeTracers(1,iLevel0250,:)

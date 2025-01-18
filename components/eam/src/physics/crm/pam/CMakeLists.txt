@@ -9,8 +9,9 @@ set(PAM_DRIVER_SRC
     params.F90)
 
 add_library(pam_driver 
-           ${PAM_DRIVER_SRC})
+  ${PAM_DRIVER_SRC})
 
+set(SCREAM_LIBS_ONLY TRUE)
 set(SCREAM_HOME ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../..)
 add_library(eamxx_physics INTERFACE ${SCREAM_HOME}/components/eamxx/src/physics/)
 

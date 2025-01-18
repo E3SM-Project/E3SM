@@ -638,7 +638,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
   if (co2_transport()) call co2_init()
   call co2_diags_init(phys_state)
 
-  call gw_init()
+  call gw_init(pbuf2d)
 
   call rayleigh_friction_init()
 

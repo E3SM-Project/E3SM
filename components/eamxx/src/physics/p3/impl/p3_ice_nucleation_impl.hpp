@@ -13,7 +13,7 @@ void Functions<S,D>
   const Spack& temp, const Spack& inv_rho, const Spack& ni, const Spack& ni_activated,
   const Spack& qv_supersat_i, const Scalar& inv_dt, const bool& do_predict_nc, const bool& do_prescribed_CCN,
   Spack& qv2qi_nucleat_tend, Spack& ni_nucleat_tend,
-  const physics::P3_Constants<S> & p3constants, 
+  const P3Runtime& runtime_options, 
   const Smask& context)
 {
    constexpr Scalar nsmall  = C::NSMALL;
@@ -23,7 +23,8 @@ void Functions<S,D>
    constexpr Scalar piov3   = C::PIOV3;
    constexpr Scalar mi0     = sp(4.0)*piov3*sp(900.0)*sp(1.e-18);
 
-   const Scalar p3_dep_nucleation_exponent = p3constants.p3_dep_nucleation_exponent;
+   const Scalar deposition_nucleation_exponent =
+       runtime_options.deposition_nucleation_exponent;
 
    const auto t_lt_T_icenuc = temp < T_icenuc;
    const auto qv_supersat_i_ge_005 = qv_supersat_i >= 0.05;
@@ -36,7 +37,7 @@ void Functions<S,D>
    Spack dum{0.0}, N_nuc{0.0}, Q_nuc{0.0};
 
    if (any_if_not_log.any()) {
-     dum = sp(0.005)*exp(sp(p3_dep_nucleation_exponent)*(tmelt-temp))*sp(1.0e3)*inv_rho;
+     dum = sp(0.005)*exp(sp(deposition_nucleation_exponent)*(tmelt-temp))*sp(1.0e3)*inv_rho;
 
      dum = min(dum, sp(1.0e5)*inv_rho);
 

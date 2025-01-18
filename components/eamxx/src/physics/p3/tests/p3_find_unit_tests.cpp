@@ -4,7 +4,7 @@
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
-#include "p3_functions_f90.hpp"
+#include "p3_test_data.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -22,13 +22,13 @@ namespace unit_test {
 //
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestFind {
+struct UnitWrap::UnitTest<D>::TestFind : public UnitWrap::UnitTest<D>::Base {
 
-static void run()
+void run()
 {
   const int max_threads =
 #ifdef KOKKOS_ENABLE_OPENMP
-    Kokkos::OpenMP::concurrency()
+    Kokkos::OpenMP().concurrency()
 #else
     1
 #endif
@@ -112,7 +112,10 @@ namespace {
 
 TEST_CASE("p3_find", "[p3_functions]")
 {
-  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestFind::run();
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestFind;
+
+  T t;
+  t.run();
 }
 
 } // namespace

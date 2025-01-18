@@ -30,10 +30,12 @@ initialize_impl (const RunType /*run_type*/)
   using namespace ShortFieldTagsNames;
   const auto& fid    = f.get_header().get_identifier();
   const auto& layout = fid.get_layout();
-  EKAT_REQUIRE_MSG (layout.rank()>1 && layout.rank()<=6,
+  EKAT_REQUIRE_MSG (layout.rank()>=2 && layout.rank()<=6,
       "Error! Field rank not supported by FieldAtLevel.\n"
       " - field name: " + fid.name() + "\n"
-      " - field layout: " + layout.to_string() + "\n");
+      " - field layout: " + layout.to_string() + "\n"
+      "NOTE: if you requested something like 'field_horiz_avg_at_Y',\n"
+      "      you can avoid this error by requesting 'fieldX_at_Y_horiz_avg' instead.\n");
   const auto tag = layout.tags().back();
   EKAT_REQUIRE_MSG (tag==LEV || tag==ILEV,
       "Error! FieldAtLevel diagnostic expects a layout ending with 'LEV'/'ILEV' tag.\n"

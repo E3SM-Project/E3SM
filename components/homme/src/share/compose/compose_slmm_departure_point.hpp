@@ -1,6 +1,7 @@
 #ifndef INCLUDE_COMPOSE_SLMM_DEPARTURE_POINT_HPP
 #define INCLUDE_COMPOSE_SLMM_DEPARTURE_POINT_HPP
 
+#include "compose.hpp"
 #include "compose_slmm.hpp"
 
 namespace slmm {

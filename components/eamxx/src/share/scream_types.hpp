@@ -34,12 +34,13 @@ enum class RepoState {
 // The type of this run
 enum class RunType {
   Initial,
-  Restarted
+  Restart
 };
 
 // We cannot expect BFB results between f90 and cxx if optimizations are on.
 // Same goes for cuda-memcheck because it makes the bfb math layer prohibitively
-// expensive and so must be turned off.
+// expensive and so must be turned off. SCREAM_SHORT_TESTS is a proxy
+// for mem checking.
 #if defined (NDEBUG) || defined (SCREAM_SHORT_TESTS)
 static constexpr bool SCREAM_BFB_TESTING = false;
 #else

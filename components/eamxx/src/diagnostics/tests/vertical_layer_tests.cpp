@@ -50,14 +50,10 @@ void run (const std::string& diag_name, const std::string& location)
   
   // Construct the Diagnostic
   ekat::ParameterList params;
-  std::string name = diag_name;
-  if (location=="midpoints") {
-    name += "_mid";
-  } else if (location=="interfaces") {
-    name += "_int";
-  }
-  params.set<std::string>("diag_name", name);
-  auto diag = diag_factory.create(name,comm,params);
+
+  params.set<std::string>("diag_name", diag_name);
+  params.set<std::string>("vert_location",location);
+  auto diag = diag_factory.create("VerticalLayer",comm,params);
   diag->set_grids(gm);
 
   const bool needs_phis = diag_name=="z" or diag_name=="geopotential";
@@ -180,7 +176,7 @@ TEST_CASE("vertical_layer_test", "vertical_layer_test]"){
     std::string msg = "    -> Testing diag=dz ";
     std::string dots (50-msg.size(),'.');
     root_print (msg + dots + "\n");
-    run<Device, N>("dz", "UNUSED");
+    run<Device, N>("dz", "midpoints");
     root_print (msg + dots + " PASS!\n");
   };
 

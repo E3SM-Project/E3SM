@@ -2,7 +2,7 @@
   nthreads          = -1                        ! use OMP_NUM_THREADS
   partmethod        = 4                         ! mesh parition method: 4 = space filling curve
   topology          = "cube"                    ! mesh type: cubed sphere
-  test_case         = "dcmip2012_test1_1_conv"  ! test identifier
+  test_case         = "dcmip2012_test1_3a_conv" ! test identifier
   prescribed_wind   = 1
   ne                = 5                         ! number of elements per cube face
   qsize             = 4                         ! num tracer fields

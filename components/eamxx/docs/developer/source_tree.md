@@ -56,4 +56,3 @@ You'll also see some other files in the `src/` directory itself, such as
 
 + `scream_config.h.in`: A template for generating a C++ header file with
   EAMxx configuration information.
-

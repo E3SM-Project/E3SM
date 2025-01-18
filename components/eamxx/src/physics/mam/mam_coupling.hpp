@@ -562,6 +562,34 @@ mam4::Prognostics interstitial_aerosols_for_column(const AerosolState& dry_aero,
   return progs;
 }
 
+
+// Given an AerosolState with views for dry aerosol quantities, creates a
+// mam4::Tendencies object for the column with the given index with
+// ONLY INTERSTITIAL AEROSOL VIEWS DEFINED. This object can be provided to
+// mam4xx for the column.
+KOKKOS_INLINE_FUNCTION
+mam4::Tendencies interstitial_aerosols_tendencies_for_column(const AerosolState& dry_aero,
+                                                   const int column_index) {
+  constexpr int nlev = mam4::nlev;
+  mam4::Tendencies tends(nlev);
+  for (int m = 0; m < num_aero_modes(); ++m) {
+    EKAT_KERNEL_ASSERT_MSG(dry_aero.int_aero_nmr[m].data(),
+      "int_aero_nmr not defined for dry aerosol state!");
+    tends.n_mode_i[m] = ekat::subview(dry_aero.int_aero_nmr[m], column_index);
+    for (int a = 0; a < num_aero_species(); ++a) {
+      if (dry_aero.int_aero_mmr[m][a].data()) {
+        tends.q_aero_i[m][a] = ekat::subview(dry_aero.int_aero_mmr[m][a], column_index);
+      }
+    }
+  }
+  for (int g = 0; g < num_aero_gases(); ++g) {
+    EKAT_KERNEL_ASSERT_MSG(dry_aero.gas_mmr[g].data(),
+      "gas_mmr not defined for dry aerosol state!");
+    tends.q_gas[g] = ekat::subview(dry_aero.gas_mmr[g], column_index);
+  }
+  return tends;
+}
+
 // Given a dry aerosol state, creates a mam4::Prognostics object for the column
 // with the given index with interstitial and cloudborne aerosol views defined.
 // This object can be provided to mam4xx for the column.
@@ -581,7 +609,25 @@ mam4::Prognostics aerosols_for_column(const AerosolState& dry_aero,
   }
   return progs;
 }
-
+// Given a dry aerosol state tendencies, creates a mam4::Tendencies object for the column
+// with the given index with interstitial and cloudborne aerosol views defined.
+// This object can be provided to mam4xx for the column.
+KOKKOS_INLINE_FUNCTION
+mam4::Tendencies aerosols_tendencies_for_column(const AerosolState& dry_aero,
+                                      const int column_index) {
+  auto tends = interstitial_aerosols_tendencies_for_column(dry_aero, column_index);
+  for (int m = 0; m < num_aero_modes(); ++m) {
+    EKAT_KERNEL_ASSERT_MSG(dry_aero.cld_aero_nmr[m].data(),
+      "Tendencies : dry_cld_aero_nmr not defined for aerosol state!");
+    tends.n_mode_c[m] = ekat::subview(dry_aero.cld_aero_nmr[m], column_index);
+    for (int a = 0; a < num_aero_species(); ++a) {
+      if (dry_aero.cld_aero_mmr[m][a].data()) {
+        tends.q_aero_c[m][a] = ekat::subview(dry_aero.cld_aero_mmr[m][a], column_index);
+      }
+    }
+  }
+  return tends;
+}
 // Given a thread team and a dry atmosphere state, dispatches threads from the
 // team to compute vertical layer heights and interfaces for the column with
 // the given index.
@@ -592,21 +638,27 @@ void compute_vertical_layer_heights(const Team& team,
   EKAT_KERNEL_ASSERT_MSG(column_index == team.league_rank(),
     "Given column index does not correspond to given team!");
 
+  //outputs
   const auto dz = ekat::subview(dry_atm.dz, column_index);
   const auto z_iface  = ekat::subview(dry_atm.z_iface, column_index);
   const auto z_mid    = ekat::subview(dry_atm.z_mid, column_index);
+  //inputs
   const auto qv = ekat::subview(dry_atm.qv, column_index);
   const auto p_mid = ekat::subview(dry_atm.p_mid, column_index);
   const auto T_mid = ekat::subview(dry_atm.T_mid, column_index);
   const auto pseudo_density = ekat::subview(dry_atm.p_del, column_index);
+
   // NOTE: we are using dry qv. Does calculate_dz require dry or wet?
   PF::calculate_dz(team, pseudo_density, p_mid, T_mid, qv, // inputs
             dz);//output
   team.team_barrier();
+  // NOTE: we are not currently allowing surface topography:
+  EKAT_KERNEL_ASSERT_MSG(dry_atm.z_surf == 0, "dry_atm.z_surf must be zero");
   PF::calculate_z_int(team, mam4::nlev, dz, dry_atm.z_surf, //inputs
    z_iface); //output
   team.team_barrier(); // likely necessary to have z_iface up to date
-  PF::calculate_z_mid(team, mam4::nlev, z_iface, z_mid);
+  PF::calculate_z_mid(team, mam4::nlev, z_iface, //input
+   z_mid); //output
 }
 
 // Given a thread team and wet and dry atmospheres, dispatches threads from the
@@ -724,6 +776,24 @@ void compute_wet_mixing_ratios(const Team& team,
   });
 }
 
+// Computes the reciprocal of pseudo density for a column
+inline
+void compute_recipical_pseudo_density(haero::ThreadTeamPolicy team_policy,
+                                      const_view_2d pdel,
+                                      const int nlev,
+                                      // output
+                                      view_2d rpdel) {
+  Kokkos::parallel_for(
+      team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
+        const int icol = team.league_rank();
+        Kokkos::parallel_for(
+            Kokkos::TeamVectorRange(team, 0, nlev), [&](int kk) {
+              EKAT_KERNEL_ASSERT_MSG(0 < pdel(icol, kk),
+                                     "Error: pdel should be > 0.\n");
+              rpdel(icol, kk) = 1 / pdel(icol, kk);
+            });
+      });
+}
 // Scream (or EAMxx) can sometimes extend views beyond model levels (nlev) as it uses
 // "packs". Following function copies a 2d view till model levels
 inline
@@ -740,196 +810,6 @@ void copy_view_lev_slice(haero::ThreadTeamPolicy team_policy, //inputs
         });
       });
  }
-
-// Because CUDA C++ doesn't allow us to declare and use constants outside of
-// KOKKOS_INLINE_FUNCTIONS, we define this macro that allows us to (re)define
-// these constants where needed within two such functions so we don't define
-// them inconsistently. Yes, it's the 21st century and we're still struggling
-// with these basic things.
-#define DECLARE_PROG_TRANSFER_CONSTANTS \
-  /* mapping of constituent indices to aerosol modes */ \
-  const auto Accum = mam4::ModeIndex::Accumulation; \
-  const auto Aitken = mam4::ModeIndex::Aitken; \
-  const auto Coarse = mam4::ModeIndex::Coarse; \
-  const auto PC = mam4::ModeIndex::PrimaryCarbon; \
-  const auto NoMode = mam4::ModeIndex::None; \
-  static const mam4::ModeIndex mode_for_cnst[gas_pcnst()] = { \
-    NoMode, NoMode, NoMode, NoMode, NoMode, NoMode, /* gases (not aerosols) */ \
-    Accum, Accum, Accum, Accum, Accum, Accum, Accum, Accum,         /* 7 aero species + NMR */ \
-    Aitken, Aitken, Aitken, Aitken, Aitken,                         /* 4 aero species + NMR */ \
-    Coarse, Coarse, Coarse, Coarse, Coarse, Coarse, Coarse, Coarse, /* 7 aero species + NMR */ \
-    PC, PC, PC, PC,                                                 /* 3 aero species + NMR */ \
-  }; \
-  /* mapping of constituent indices to aerosol species */ \
-  const auto SOA = mam4::AeroId::SOA; \
-  const auto SO4 = mam4::AeroId::SO4; \
-  const auto POM = mam4::AeroId::POM; \
-  const auto BC = mam4::AeroId::BC; \
-  const auto NaCl = mam4::AeroId::NaCl; \
-  const auto DST = mam4::AeroId::DST; \
-  const auto MOM = mam4::AeroId::MOM; \
-  const auto NoAero = mam4::AeroId::None; \
-  static const mam4::AeroId aero_for_cnst[gas_pcnst()] = { \
-    NoAero, NoAero, NoAero, NoAero, NoAero, NoAero, /* gases (not aerosols) */ \
-    SO4, POM, SOA, BC, DST, NaCl, MOM, NoAero,      /* accumulation mode */ \
-    SO4, SOA, NaCl, MOM, NoAero,                    /* aitken mode */ \
-    DST, NaCl, SO4, BC, POM, SOA, MOM, NoAero,      /* coarse mode */ \
-    POM, BC, MOM, NoAero,                           /* primary carbon mode */ \
-  }; \
-  /* mapping of constituent indices to gases */ \
-  const auto O3 = mam4::GasId::O3; \
-  const auto H2O2 = mam4::GasId::H2O2; \
-  const auto H2SO4 = mam4::GasId::H2SO4; \
-  const auto SO2 = mam4::GasId::SO2; \
-  const auto DMS = mam4::GasId::DMS; \
-  const auto SOAG = mam4::GasId::SOAG; \
-  const auto NoGas = mam4::GasId::None; \
-  static const mam4::GasId gas_for_cnst[gas_pcnst()] = { \
-    O3, H2O2, H2SO4, SO2, DMS, SOAG, \
-    NoGas, NoGas, NoGas, NoGas, NoGas, NoGas, NoGas, NoGas, \
-    NoGas, NoGas, NoGas, NoGas, NoGas, \
-    NoGas, NoGas, NoGas, NoGas, NoGas, NoGas, NoGas, NoGas, \
-    NoGas, NoGas, NoGas, NoGas, \
-  };
-
-// Given a Prognostics object, transfers data for interstitial aerosols to the
-// chemistry work array q, and cloudborne aerosols to the chemistry work array
-// qqcw, both at vertical level k. The input and output quantities are stored as
-// number/mass mixing ratios.
-// NOTE: this mapping is chemistry-mechanism-specific (see mo_sim_dat.F90
-// NOTE: in the relevant preprocessed chemical mechanism)
-// NOTE: see mam4xx/aero_modes.hpp to interpret these mode/aerosol/gas
-// NOTE: indices
-KOKKOS_INLINE_FUNCTION
-void transfer_prognostics_to_work_arrays(const mam4::Prognostics &progs,
-                                         const int k,
-                                         Real q[gas_pcnst()],
-                                         Real qqcw[gas_pcnst()]) {
-  DECLARE_PROG_TRANSFER_CONSTANTS
-
-  // copy number/mass mixing ratios from progs to q and qqcw at level k,
-  // converting them to VMR
-  for (int i = 0; i < gas_pcnst(); ++i) {
-    auto mode_index = mode_for_cnst[i];
-    auto aero_id = aero_for_cnst[i];
-    auto gas_id = gas_for_cnst[i];
-    if (gas_id != NoGas) { // constituent is a gas
-      int g = static_cast<int>(gas_id);
-      q[i] = progs.q_gas[g](k);
-      qqcw[i] = progs.q_gas[g](k);
-    } else {
-      int m = static_cast<int>(mode_index);
-      if (aero_id != NoAero) { // constituent is an aerosol species
-        int a = aerosol_index_for_mode(mode_index, aero_id);
-        q[i] = progs.q_aero_i[m][a](k);
-        qqcw[i] = progs.q_aero_c[m][a](k);
-      } else { // constituent is a modal number mixing ratio
-        int m = static_cast<int>(mode_index);
-        q[i] = progs.n_mode_i[m](k);
-        qqcw[i] = progs.n_mode_c[m](k);
-      }
-    }
-  }
-}
-
-// converts the quantities in the work arrays q and qqcw from mass/number
-// mixing ratios to volume/number mixing ratios
-KOKKOS_INLINE_FUNCTION
-void convert_work_arrays_to_vmr(const Real q[gas_pcnst()],
-                                const Real qqcw[gas_pcnst()],
-                                Real vmr[gas_pcnst()],
-                                Real vmrcw[gas_pcnst()]) {
-  DECLARE_PROG_TRANSFER_CONSTANTS
-
-  for (int i = 0; i < gas_pcnst(); ++i) {
-    auto mode_index = mode_for_cnst[i];
-    auto aero_id = aero_for_cnst[i];
-    auto gas_id = gas_for_cnst[i];
-    if (gas_id != NoGas) { // constituent is a gas
-      int g = static_cast<int>(gas_id);
-      const Real mw = mam4::gas_species(g).molecular_weight;
-      vmr[i] = mam4::conversions::vmr_from_mmr(q[i], mw);
-      vmrcw[i] = mam4::conversions::vmr_from_mmr(qqcw[i], mw);
-    } else {
-      if (aero_id != NoAero) { // constituent is an aerosol species
-        int a = aerosol_index_for_mode(mode_index, aero_id);
-        const Real mw = mam4::aero_species(a).molecular_weight;
-        vmr[i] = mam4::conversions::vmr_from_mmr(q[i], mw);
-        vmrcw[i] = mam4::conversions::vmr_from_mmr(qqcw[i], mw);
-      } else { // constituent is a modal number mixing ratio
-        vmr[i] = q[i];
-        vmrcw[i] = qqcw[i];
-      }
-    }
-  }
-}
-
-// converts the quantities in the work arrays vmrs and vmrscw from mass/number
-// mixing ratios to volume/number mixing ratios
-KOKKOS_INLINE_FUNCTION
-void convert_work_arrays_to_mmr(const Real vmr[gas_pcnst()],
-                                const Real vmrcw[gas_pcnst()],
-                                Real q[gas_pcnst()],
-                                Real qqcw[gas_pcnst()]) {
-  DECLARE_PROG_TRANSFER_CONSTANTS
-
-  for (int i = 0; i < gas_pcnst(); ++i) {
-    auto mode_index = mode_for_cnst[i];
-    auto aero_id = aero_for_cnst[i];
-    auto gas_id = gas_for_cnst[i];
-    if (gas_id != NoGas) { // constituent is a gas
-      int g = static_cast<int>(gas_id);
-      const Real mw = mam4::gas_species(g).molecular_weight;
-      q[i] = mam4::conversions::mmr_from_vmr(vmr[i], mw);
-      qqcw[i] = mam4::conversions::mmr_from_vmr(vmrcw[i], mw);
-    } else {
-      if (aero_id != NoAero) { // constituent is an aerosol species
-        int a = aerosol_index_for_mode(mode_index, aero_id);
-        const Real mw = mam4::aero_species(a).molecular_weight;
-        q[i] = mam4::conversions::mmr_from_vmr(vmr[i], mw);
-        qqcw[i] = mam4::conversions::mmr_from_vmr(vmrcw[i], mw);
-      } else { // constituent is a modal number mixing ratio
-        q[i] = vmr[i];
-        qqcw[i] = vmrcw[i];
-      }
-    }
-  }
-}
-
-// Given work arrays with interstitial and cloudborne aerosol data, transfers
-// them to the given Prognostics object at the kth vertical level. This is the
-// "inverse operator" for transfer_prognostics_to_work_arrays, above.
-KOKKOS_INLINE_FUNCTION
-void transfer_work_arrays_to_prognostics(const Real q[gas_pcnst()],
-                                         const Real qqcw[gas_pcnst()],
-                                         mam4::Prognostics &progs, const int k) {
-  DECLARE_PROG_TRANSFER_CONSTANTS
-
-  // copy number/mass mixing ratios from progs to q and qqcw at level k,
-  // converting them to VMR
-  for (int i = 0; i < gas_pcnst(); ++i) {
-    auto mode_index = mode_for_cnst[i];
-    auto aero_id = aero_for_cnst[i];
-    auto gas_id = gas_for_cnst[i];
-    if (gas_id != NoGas) { // constituent is a gas
-      int g = static_cast<int>(gas_id);
-      progs.q_gas[g](k) = q[i];
-    } else {
-      int m = static_cast<int>(mode_index);
-      if (aero_id != NoAero) { // constituent is an aerosol species
-        int a = aerosol_index_for_mode(mode_index, aero_id);
-        progs.q_aero_i[m][a](k) = q[i];
-        progs.q_aero_c[m][a](k) = qqcw[i];
-      } else { // constituent is a modal number mixing ratio
-        int m = static_cast<int>(mode_index);
-        progs.n_mode_i[m](k) = q[i];
-        progs.n_mode_c[m](k) = qqcw[i];
-      }
-    }
-  }
-}
-
-#undef DECLARE_PROG_TRANSFER_CONSTANTS
 
 } // namespace scream::mam_coupling
 

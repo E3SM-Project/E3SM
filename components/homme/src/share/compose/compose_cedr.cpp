@@ -419,12 +419,12 @@ private:
 };
 
 template <typename MT>
-CDR<MT>::CDR (Int cdr_alg_, Int ngblcell_, Int nlclcell_, Int nlev_, Int qsize_,
-              bool use_sgi, bool independent_time_steps, const bool hard_zero_,
-              const Int* gid_data, const Int* rank_data,
+CDR<MT>::CDR (Int cdr_alg_, Int ngblcell_, Int nlclcell_, Int nlev_, Int np_,
+              Int qsize_, bool use_sgi, bool independent_time_steps,
+              const bool hard_zero_, const Int* gid_data, const Int* rank_data,
               const cedr::mpi::Parallel::Ptr& p_, Int fcomm)
   : alg(Alg::convert(cdr_alg_)),
-    ncell(ngblcell_), nlclcell(nlclcell_), nlev(nlev_), qsize(qsize_),
+    ncell(ngblcell_), nlclcell(nlclcell_), nlev(nlev_), np(np_), qsize(qsize_),
     nsublev(Alg::is_suplev(alg) ? nsublev_per_suplev : 1),
     nsuplev((nlev + nsublev - 1) / nsublev),
     threed(independent_time_steps),
@@ -444,8 +444,9 @@ CDR<MT>::CDR (Int cdr_alg_, Int ngblcell_, Int nlclcell_, Int nlev_, Int qsize_,
     cdr = std::make_shared<QLTT>(p, nleaf, tree, options, threed ? nsuplev : 0);
     tree = nullptr;
   } else if (Alg::is_caas(alg)) {
-    const Int n_accum_in_place = n_id_in_suplev*(cdr_over_super_levels ?
-                                                 nsuplev : 1);
+    const Int n_accum_in_place = (n_id_in_suplev*
+                                  (Alg::is_point(alg) ? np*np : 1)*
+                                  (cdr_over_super_levels ? nsuplev : 1));
     typename CAAST::UserAllReducer::Ptr reducer;
     //todo Measure perf on CPU and GPU of TreeReducer vs
     // ReproSumReducer. For now, I'll continue to use ReproSumReducer.
@@ -458,7 +459,8 @@ CDR<MT>::CDR (Int cdr_alg_, Int ngblcell_, Int nlclcell_, Int nlev_, Int qsize_,
     } else {
       reducer = std::make_shared<ReproSumReducer<MT> >(fcomm, n_accum_in_place);
     }
-    const auto caas = std::make_shared<CAAST>(p, nlclcell*n_accum_in_place, reducer);
+    const auto caas = std::make_shared<CAAST>(p, nlclcell*n_accum_in_place,
+                                              reducer);
     cdr = caas;
   } else {
     cedr_throw_if(true, "Invalid semi_lagrange_cdr_alg " << alg);
@@ -502,11 +504,13 @@ void set_ie2gci (CDR<MT>& q, const Int ie, const Int gci) { q.ie2gci_h[ie] = gci
 
 template <typename MT>
 void init_ie2lci (CDR<MT>& q) {
+  const Int n_in_elem = Alg::is_point(q.alg) ? q.np*q.np : 1;
   const Int n_id_in_suplev = q.caas_in_suplev ? 1 : q.nsublev;
   const Int nleaf =
     n_id_in_suplev*
     q.ie2gci.size()*
-    (q.cdr_over_super_levels ? q.nsuplev : 1);
+    (q.cdr_over_super_levels ? q.nsuplev : 1)*
+    n_in_elem;
   q.ie2lci = typename CDR<MT>::Idxs("ie2lci", nleaf);
   q.ie2lci_h = Kokkos::create_mirror_view(q.ie2lci);
   if (Alg::is_qlt(q.alg)) {
@@ -516,9 +520,9 @@ void init_ie2lci (CDR<MT>& q) {
       for (size_t ie = 0; ie < q.ie2gci_h.size(); ++ie)
         for (Int spli = 0; spli < q.nsuplev; ++spli)
           for (Int sbli = 0; sbli < n_id_in_suplev; ++sbli)
-            //       local indexing is fastest over the whole column
+            // Local indexing is fastest over the whole column ...
             q.ie2lci_h[nlevwrem*ie + n_id_in_suplev*spli + sbli] =
-              //           but global indexing is organized according to the tree
+              // ... but global indexing is organized according to the tree.
               qlt->gci2lci(n_id_in_suplev*(q.ncell*spli + q.ie2gci_h[ie]) + sbli);
     } else {
       for (size_t ie = 0; ie < q.ie2gci_h.size(); ++ie)
@@ -531,16 +535,18 @@ void init_ie2lci (CDR<MT>& q) {
       const auto nlevwrem = q.nsuplev*n_id_in_suplev;
       for (size_t ie = 0; ie < q.ie2gci_h.size(); ++ie)
         for (Int spli = 0; spli < q.nsuplev; ++spli)
-          for (Int sbli = 0; sbli < n_id_in_suplev; ++sbli) {
-            const Int id = nlevwrem*ie + n_id_in_suplev*spli + sbli;
-            q.ie2lci_h[id] = id;
-          }
+          for (Int sbli = 0; sbli < n_id_in_suplev; ++sbli)
+            for (Int k = 0; k < n_in_elem; ++k) {
+              const Int id = nlevwrem*(n_in_elem*ie + k) + n_id_in_suplev*spli + sbli;
+              q.ie2lci_h[id] = id;
+            }
     } else {
       for (size_t ie = 0; ie < q.ie2gci_h.size(); ++ie)
-        for (Int sbli = 0; sbli < n_id_in_suplev; ++sbli) {
-          const Int id = n_id_in_suplev*ie + sbli;
-          q.ie2lci_h[id] = id;
-        }
+        for (Int sbli = 0; sbli < n_id_in_suplev; ++sbli)
+          for (Int k = 0; k < n_in_elem; ++k) {
+            const Int id = n_id_in_suplev*(n_in_elem*ie + k) + sbli;
+            q.ie2lci_h[id] = id;
+          }
     }
   }
   Kokkos::deep_copy(q.ie2lci, q.ie2lci_h);
@@ -625,12 +631,12 @@ extern "C" void
 cedr_init_impl (const homme::Int fcomm, const homme::Int cdr_alg, const bool use_sgi,
                 const homme::Int* gid_data, const homme::Int* rank_data,
                 const homme::Int gbl_ncell, const homme::Int lcl_ncell,
-                const homme::Int nlev, const homme::Int qsize,
+                const homme::Int nlev, const homme::Int np, const homme::Int qsize,
                 const bool independent_time_steps, const bool hard_zero,
                 const homme::Int, const homme::Int) {
   const auto p = cedr::mpi::make_parallel(MPI_Comm_f2c(fcomm));
   g_cdr = std::make_shared<homme::CDR<ko::MachineTraits> >(
-    cdr_alg, gbl_ncell, lcl_ncell, nlev, qsize, use_sgi,
+    cdr_alg, gbl_ncell, lcl_ncell, nlev, np, qsize, use_sgi,
     independent_time_steps, hard_zero, gid_data, rank_data, p, fcomm);
 }
 
@@ -650,17 +656,7 @@ extern "C" void cedr_set_bufs (homme::Real* sendbuf, homme::Real* recvbuf,
 extern "C" void cedr_set_null_bufs () { cedr_set_bufs(nullptr, nullptr, 0, 0); }
 
 extern "C" void cedr_unittest (const homme::Int fcomm, homme::Int* nerrp) {
-#if 0
-  auto p = cedr::mpi::make_parallel(MPI_Comm_f2c(fcomm));
-  cedr_assert(g_cdr);
-  cedr_assert(g_cdr->tree);
-  if (homme::CDR::Alg::is_qlt(g_cdr->alg))
-    *nerrp = cedr::qlt::test::test_qlt(p, g_cdr->tree, g_cdr->nsublev*g_cdr->ncell,
-                                       1, false, false, true, false);
-  else
-    *nerrp = cedr::caas::test::unittest(p);
-#endif
-  *nerrp += compose::test::cedr_unittest();
+  *nerrp = compose::test::cedr_unittest();
 }
 
 extern "C" void cedr_set_ie2gci (const homme::Int ie, const homme::Int gci) {
@@ -715,7 +711,6 @@ extern "C" void cedr_sl_run_global (homme::Real* minq, const homme::Real* maxq,
   cedr_assert(g_cdr);
   cedr_assert(g_sl);
   { homme::Timer timer("h2d");
-    //if (g_cdr->p->amroot() && s_h2d) printf("cedr_h2d\n");
     homme::cedr_h2d(*g_sl->ta, s_h2d); }
   homme::sl::run_global<ko::MachineTraits>(*g_cdr, *g_sl, minq, maxq, nets-1, nete-1);
 }
@@ -730,7 +725,6 @@ extern "C" void cedr_sl_run_local (homme::Real* minq, const homme::Real* maxq,
   homme::sl::run_local(*g_cdr, *g_sl, minq, maxq, nets-1, nete-1, use_ir,
                        limiter_option);
   { homme::Timer timer("d2h");
-    //if (g_cdr->p->amroot() && s_d2h) printf("cedr_d2h\n");
     homme::cedr_d2h(*g_sl->ta, s_d2h); }
 }
 

@@ -223,7 +223,7 @@ contains
     ! Allocate module variables and data structures
     !
     ! !USES:
-    use shr_infnan_mod, only: spval => shr_infnan_nan, assignment(=)
+    use shr_infnan_mod, only: nan  => shr_infnan_nan, assignment(=)
     use elm_varpar    , only: nlevgrnd
     !
     ! !ARGUMENTS:

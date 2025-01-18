@@ -1,0 +1,56 @@
+name: eamxx-scripts
+
+on:
+  # Runs on PRs against master, but only if they touch eamxx scripts
+  pull_request:
+    branches: [ master ]
+    types: [opened, synchronize, ready_for_review, reopened]
+    paths:
+      - 'components/eamxx/scripts/**'
+      - 'components/eamxx/cime_config/**'
+      - '.github/workflows/eamxx-scripts-tests.yml'
+
+  # Manual run for debug purposes only
+  workflow_dispatch:
+    inputs:
+      submit:
+        description: 'Force cdash submission'
+        required: true
+        type: boolean
+
+  # Add schedule trigger for nightly runs at midnight MT (Standard Time)
+  schedule:
+    - cron: '0 7 * * *'  # Runs at 7 AM UTC, which is midnight MT during Standard Time
+
+concurrency:
+  # Two runs are in the same group if they are testing the same git ref
+  #  - if trigger=pull_request, the ref is refs/pull/<PR_NUMBER>/merge
+  #  - for other triggers, the ref is the branch tested
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Submit to cdash only for nightlies or if the user explicitly forced a submission via workflow dispatch
+  submit: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.submit) }}
+
+jobs:
+  cpu-gcc:
+    runs-on:  [self-hosted, gcc, ghci-snl-cpu]
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          show-progress: false
+          submodules: recursive
+      - name: Show action trigger
+        uses: ./.github/actions/show-workflow-trigger
+      - name: Run test
+        run: |
+          cd components/eamxx
+          if [ "${{ env.submit }}" == "true" ]; then
+            ./scripts/scripts-ctest-driver -s -m ghci-snl-cpu
+          else
+            ./scripts/scripts-tests -f -m ghci-snl-cpu
+            ./scripts/cime-nml-tests
+          fi

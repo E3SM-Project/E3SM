@@ -30,6 +30,7 @@ module prep_rof_mod
   use component_type_mod, only: ocn ! used for context for projection towards ocean from rof !
   use prep_lnd_mod, only: prep_lnd_get_mapper_Fr2l
   use map_lnd2rof_irrig_mod, only: map_lnd2rof_irrig
+  use seq_comm_mct,     only: mb_rof_aream_computed  ! signal
 
   use iso_c_binding
 #ifdef MOABCOMP
@@ -417,6 +418,7 @@ contains
                                                 fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                 noConserve, validate, &
                                                 trim(dofnameS), trim(dofnameT) )
+               mb_rof_aream_computed = .true. ! signal
                if (ierr .ne. 0) then
                   write(logunit,*) subname,' error in computing lr weights '
                   call shr_sys_abort(subname//' ERROR in computing lr weights ')

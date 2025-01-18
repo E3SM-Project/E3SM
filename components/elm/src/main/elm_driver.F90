@@ -1604,6 +1604,8 @@ contains
 
          qflx_glcice        => col_wf%qflx_glcice            , & ! Output: [real(r8) (:)   ]  flux of new glacier ice (mm H2O/s) [+ = ice grows]
 
+         qflx_glcice_diag   => col_wf%qflx_glcice_diag       , & ! Output: [real(r8) (:)   ]  flux of new glacier ice (mm H2O/s) [+ = ice grows]
+
          eflx_bot           => col_ef%eflx_bot              , & ! Output: [real(r8) (:)   ]  heat flux from beneath soil/ice column (W/m**2)
 
          cisun_z            => photosyns_vars%cisun_z_patch              , & ! Output: [real(r8) (:)   ]  intracellular sunlit leaf CO2 (Pa)
@@ -1637,6 +1639,7 @@ contains
 
          ! Initialize qflx_glcice everywhere, to zero.
          qflx_glcice(c) = 0._r8
+         qflx_glcice_diag(c) = 0._r8
 
       end do
 

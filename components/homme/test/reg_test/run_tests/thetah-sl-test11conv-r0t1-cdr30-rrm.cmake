@@ -11,4 +11,4 @@ SET(MESH_FILES ${HOMME_ROOT}/test/mesh_files/mountain_10_x2.g)
 
 # compare all of these files against baselines:
 SET(NC_OUTPUT_FILES 
-  dcmip2012_test1_1_conv1.nc)
+  dcmip2012_test1_3a_conv1.nc)

@@ -280,6 +280,8 @@ module ocn_time_integration_split
 
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracersNew
 
+      real (kind=RKIND), pointer :: forcingTimeIncrement
+
       ! Remap variables
       real (kind=RKIND), dimension(:,:), pointer :: &
          layerThicknessLagNew
@@ -397,6 +399,11 @@ module ocn_time_integration_split
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracersNew, 2)
 
       allocate(baroclinicThickness(nEdgesAll+1))
+
+      call mpas_pool_get_array(forcingPool, 'forcingTimeIncrement', &
+                                             forcingTimeIncrement)
+
+      forcingTimeIncrement = 0.0_RKIND
 
       if (config_transport_tests_flow_id > 0) then
         ! This is a transport test. Write advection velocity from prescribed
@@ -2225,7 +2232,7 @@ module ocn_time_integration_split
 
                            ! Reset tracer2 to 2 in top n layers
                            ! in zonal bands, and 1 outside
-                           lat = latCell(iCell)*180./3.1415
+                           lat = latCell(iCell)*180.0_RKIND/pi
                            if (     lat>-60.0.and.lat<-55.0 &
                                 .or.lat>-40.0.and.lat<-35.0 &
                                 .or.lat>- 2.5.and.lat<  2.5 &
@@ -2242,7 +2249,7 @@ module ocn_time_integration_split
 
                            ! Reset tracer3 to 2 in top n layers
                            ! in zonal bands, and 1 outside
-                           lat = latCell(iCell)*180./3.1415
+                           lat = latCell(iCell)*180.0_RKIND/pi
                            if (     lat>-55.0.and.lat<-50.0 &
                                 .or.lat>-35.0.and.lat<-30.0 &
                                 .or.lat>-15.0.and.lat<-10.0 &

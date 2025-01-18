@@ -77,3 +77,7 @@
 
 /* Detect whether COMPOSE passive tracer transport is enabled */
 #cmakedefine HOMME_ENABLE_COMPOSE
+
+/* For just-in-time compilation (e.g., SYCL compilers), disable timers at the */
+/* first prim_run level when nstep == 1. */
+#cmakedefine DISABLE_TIMERS_IN_FIRST_STEP

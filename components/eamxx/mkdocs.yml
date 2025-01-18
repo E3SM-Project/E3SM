@@ -1,0 +1,77 @@
+site_name: EAMxx
+
+nav:
+  - 'Home': 'index.md'
+  - 'User Guide':
+    - 'Overview': 'user/index.md'
+    - 'EAMxx case basics': 'user/eamxx_cases.md'
+    - 'Model input': 'user/model_input.md'
+    - 'Model output': 'user/model_output.md'
+    - 'Nudging': 'user/nudging.md'
+    - 'Extra radiation calls': 'user/clean_clear_sky.md'
+    - 'COSP': 'user/cosp.md'
+    - 'Regionally Refined EAMxx': 'user/rrm_eamxx.md'
+    - 'Doubly Periodic EAMxx': 'user/dp_eamxx.md'
+    - 'PySCREAM': 'user/pyscream.md'
+  - 'Developer Guide':
+    - 'Overview': 'developer/index.md'
+    - 'Installation': 'common/installation.md'
+    - 'Style Guide': 'developer/style_guide.md'
+    - 'Kokkos and EKAT': 'developer/kokkos_ekat.md'
+    - 'Source Tree': 'developer/source_tree.md'
+    - 'Important Data Structures':
+      - 'Fields': 'developer/field.md'
+      - 'Grids and Remappers': 'developer/grid.md'
+      - 'Atmosphere Processes': 'developer/processes.md'
+      - 'Managers': 'developer/managers.md'
+    - 'I/O': 'developer/io.md'
+    - 'Testing':
+      - 'Standalone': 'developer/standalone_testing.md'
+      - 'Full model': 'developer/cime_testing.md'
+      - 'CI and Nightly Testing': 'developer/ci_nightly.md'
+  - 'Technical Guide':
+    - 'Overview': 'technical/index.md'
+    - 'AeroCom cloud top': 'technical/aerocom_cldtop.md'
+
+edit_uri: ""
+
+theme:
+  name: material
+  custom_dir: docs/overrides
+  palette:
+  - media: "(prefers-color-scheme: light)"
+    scheme: default
+    toggle:
+      icon: material/weather-sunny
+      name: Switch to dark mode
+  - media: "(prefers-color-scheme: dark)"
+    scheme: slate
+    toggle:
+      icon: material/weather-night
+      name: Switch to light mode
+  features:
+    - navigation.indices
+    - navigation.instant
+    - navigation.top
+#    - navigation.tabs
+
+markdown_extensions:
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.arithmatex:
+      generic: true
+  - footnotes
+
+extra_javascript:
+  # - javascript/mathjax.js
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
+repo_url: https://github.com/E3SM-Project/scream
+
+plugins:
+  - search
+  - bibtex:
+      bib_dir: docs/refs

@@ -1,0 +1,12 @@
+# This preset uses the three output streams (phys_dyn, phys, and diags)
+# It does not add remap, and uses AVERAGE output
+
+SCRIPTS_DIR=$CIMEROOT/../components/eamxx/cime_config/testdefs/testmods_dirs/eamxx/output
+
+# Add the three streams
+. $SCRIPTS_DIR/phys/shell_commands
+. $SCRIPTS_DIR/phys_dyn/shell_commands
+. $SCRIPTS_DIR/diags/shell_commands
+
+# Change avg-type to AVERAGE for all streams
+. $SCRIPTS_DIR/set_avg/shell_commands

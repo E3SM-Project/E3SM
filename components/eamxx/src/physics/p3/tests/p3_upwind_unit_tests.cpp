@@ -3,11 +3,9 @@
 #include "p3_unit_tests_common.hpp"
 
 #include "p3_functions.hpp"
-#include "p3_functions_f90.hpp"
+#include "p3_test_data.hpp"
 
 #include "share/scream_types.hpp"
-#include "share/util/scream_setup_random_test.hpp"
-#include "share/util/scream_setup_random_test.hpp"
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
@@ -36,9 +34,9 @@ namespace unit_test {
 // cells in the domain are 0. This lets us check the restricted-domain usage of
 // the upwind routine in the first time step.
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestUpwind {
+struct UnitWrap::UnitTest<D>::TestUpwind : public UnitWrap::UnitTest<D>::Base {
 
-static void run_phys()
+void run_phys()
 {
   using ekat::repack;
   constexpr auto SPS = SCREAM_SMALL_PACK_SIZE;
@@ -201,11 +199,12 @@ static void run_phys()
   }
 }
 
-static void run_bfb()
+void run_bfb()
 {
-  auto engine = setup_random_test();
+  // With stored baselines, we must use a fixed seed!
+  auto engine = Base::get_engine();
 
-  CalcUpwindData cuds_fortran[] = {
+  CalcUpwindData cuds_baseline[] = {
                 // kts, kte, kdir, kbot, k_qxtop, na,   dt_sub,
     CalcUpwindData(  1,  72,   -1,   72,      36,  2,  1.833E+03),
     CalcUpwindData(  1,  72,    1,   36,      72,  2,  1.833E+03),
@@ -216,28 +215,30 @@ static void run_bfb()
     CalcUpwindData(  1,  32,   -1,   21,      7,  1,  1.833E+03),
   };
 
-  static constexpr Int num_runs = sizeof(cuds_fortran) / sizeof(CalcUpwindData);
+  static constexpr Int num_runs = sizeof(cuds_baseline) / sizeof(CalcUpwindData);
 
   // Set up random input data
-  for (auto& d : cuds_fortran) {
+  for (auto& d : cuds_baseline) {
     d.randomize(engine);
   }
 
-  // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+  // Create copies of data for use by cxx. Needs to happen before reads so that
   // inout data is in original state
   CalcUpwindData cuds_cxx[num_runs] = {
-    CalcUpwindData(cuds_fortran[0]),
-    CalcUpwindData(cuds_fortran[1]),
-    CalcUpwindData(cuds_fortran[2]),
-    CalcUpwindData(cuds_fortran[3]),
-    CalcUpwindData(cuds_fortran[4]),
-    CalcUpwindData(cuds_fortran[5]),
-    CalcUpwindData(cuds_fortran[6]),
+    CalcUpwindData(cuds_baseline[0]),
+    CalcUpwindData(cuds_baseline[1]),
+    CalcUpwindData(cuds_baseline[2]),
+    CalcUpwindData(cuds_baseline[3]),
+    CalcUpwindData(cuds_baseline[4]),
+    CalcUpwindData(cuds_baseline[5]),
+    CalcUpwindData(cuds_baseline[6]),
   };
 
-  // Get data from fortran
-  for (auto& d : cuds_fortran) {
-    calc_first_order_upwind_step(d);
+  // Read baseline data
+  if (this->m_baseline_action == COMPARE) {
+    for (auto& d : cuds_baseline) {
+      d.read(Base::m_fid);
+    }
   }
 
   // Get data from cxx
@@ -245,23 +246,23 @@ static void run_bfb()
   for (auto& d : cuds_cxx) {
     Real** fluxes, **vs, **qnx;
     d.convert_to_ptr_arr(tmp1, fluxes, vs, qnx);
-    calc_first_order_upwind_step_f(
+    calc_first_order_upwind_step_host(
       d.kts, d.kte, d.kdir, d.kbot, d.k_qxtop, d.dt_sub,
       d.rho, d.inv_rho, d.inv_dz,
       d.num_arrays, fluxes, vs, qnx);
   }
 
-  if (SCREAM_BFB_TESTING) {
+  if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
     for (Int i = 0; i < num_runs; ++i) {
       // Due to pack issues, we must restrict checks to the active k space
-      Int start = std::min(cuds_fortran[i].kbot, cuds_fortran[i].k_qxtop) - 1; // 0-based indx
-      Int end   = std::max(cuds_fortran[i].kbot, cuds_fortran[i].k_qxtop); // 0-based indx
+      Int start = std::min(cuds_baseline[i].kbot, cuds_baseline[i].k_qxtop) - 1; // 0-based indx
+      Int end   = std::max(cuds_baseline[i].kbot, cuds_baseline[i].k_qxtop); // 0-based indx
 
       Real** fluxesf90, **vsf90, **qnxf90, **fluxescxx, **vscxx, **qnxcxx;
-      cuds_fortran[i].convert_to_ptr_arr(tmp1, fluxesf90, vsf90, qnxf90);
+      cuds_baseline[i].convert_to_ptr_arr(tmp1, fluxesf90, vsf90, qnxf90);
       cuds_cxx[i].convert_to_ptr_arr(tmp1, fluxescxx, vscxx, qnxcxx);
 
-      for (int n = 0; n < cuds_fortran[i].num_arrays; ++n) {
+      for (int n = 0; n < cuds_baseline[i].num_arrays; ++n) {
         for (Int k = start; k < end; ++k) {
           REQUIRE(fluxesf90[n][k] == fluxescxx[n][k]);
           REQUIRE(qnxf90[n][k]    == qnxcxx[n][k]);
@@ -269,23 +270,29 @@ static void run_bfb()
       }
     }
   }
+  else if (this->m_baseline_action == GENERATE) {
+    for (Int i = 0; i < num_runs; ++i) {
+      cuds_cxx[i].write(Base::m_fid);
+    }
+  }
 }
 
 };
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestGenSed {
+struct UnitWrap::UnitTest<D>::TestGenSed : public UnitWrap::UnitTest<D>::Base {
 
-static void run_phys()
+void run_phys()
 {
   // TODO
 }
 
-static void run_bfb()
+void run_bfb()
 {
-  auto engine = setup_random_test();
+  // With stored baselines, we must use a fixed seed!
+  auto engine = Base::get_engine();
 
-  GenSedData gsds_fortran[] = {
+  GenSedData gsds_baseline[] = {
     //       kts, kte, kdir, k_qxtop, k_qxbot, kbot,     Co_max,   dt_left, prt_accum, num_arrays
     GenSedData(1,  72,    -1,     36,      72,   72,  9.196E-02, 1.818E+01, 4.959E-05, 2),
     GenSedData(1,  72,    -1,     36,      57,   72,  4.196E-01, 1.418E+02, 4.959E-06, 1),
@@ -293,25 +300,27 @@ static void run_bfb()
     GenSedData(1,  72,    -1,     72,      72,   72,  4.196E-01, 1.418E+02, 4.959E-06, 1),
   };
 
-  static constexpr Int num_runs = sizeof(gsds_fortran) / sizeof(GenSedData);
+  static constexpr Int num_runs = sizeof(gsds_baseline) / sizeof(GenSedData);
 
   // Set up random input data
-  for (auto& d : gsds_fortran) {
+  for (auto& d : gsds_baseline) {
     d.randomize(engine);
   }
 
-  // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+  // Create copies of data for use by cxx. Needs to happen before reads so that
   // inout data is in original state
   GenSedData gsds_cxx[num_runs] = {
-    GenSedData(gsds_fortran[0]),
-    GenSedData(gsds_fortran[1]),
-    GenSedData(gsds_fortran[2]),
-    GenSedData(gsds_fortran[3]),
+    GenSedData(gsds_baseline[0]),
+    GenSedData(gsds_baseline[1]),
+    GenSedData(gsds_baseline[2]),
+    GenSedData(gsds_baseline[3]),
   };
 
-  // Get data from fortran
-  for (auto& d : gsds_fortran) {
-    generalized_sedimentation(d);
+  // Read baseline data
+  if (this->m_baseline_action == COMPARE) {
+    for (auto& d : gsds_baseline) {
+      d.read(Base::m_fid);
+    }
   }
 
   // Get data from cxx
@@ -319,31 +328,36 @@ static void run_bfb()
   for (auto& d : gsds_cxx) {
     Real** fluxes, **vs, **qnx;
     d.convert_to_ptr_arr(tmp1, fluxes, vs, qnx);
-    generalized_sedimentation_f(d.kts, d.kte, d.kdir, d.k_qxtop,
+    generalized_sedimentation_host(d.kts, d.kte, d.kdir, d.k_qxtop,
                                 &d.k_qxbot, d.kbot, d.Co_max,
                                 &d.dt_left, &d.prt_accum, d.inv_dz, d.inv_rho, d.rho,
                                 d.num_arrays, fluxes, vs, qnx);
   }
 
-  if (SCREAM_BFB_TESTING) {
+  if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
     for (Int i = 0; i < num_runs; ++i) {
       // Due to pack issues, we must restrict checks to the active k space
-      Int start = std::min(gsds_fortran[i].k_qxbot, gsds_fortran[i].k_qxtop) - 1; // 0-based indx
-      Int end   = std::max(gsds_fortran[i].k_qxbot, gsds_fortran[i].k_qxtop); // 0-based indx
+      Int start = std::min(gsds_baseline[i].k_qxbot, gsds_baseline[i].k_qxtop) - 1; // 0-based indx
+      Int end   = std::max(gsds_baseline[i].k_qxbot, gsds_baseline[i].k_qxtop); // 0-based indx
 
       Real** fluxesf90, **vsf90, **qnxf90, **fluxescxx, **vscxx, **qnxcxx;
-      gsds_fortran[i].convert_to_ptr_arr(tmp1, fluxesf90, vsf90, qnxf90);
+      gsds_baseline[i].convert_to_ptr_arr(tmp1, fluxesf90, vsf90, qnxf90);
       gsds_cxx[i].convert_to_ptr_arr(tmp1, fluxescxx, vscxx, qnxcxx);
 
-      for (int n = 0; n < gsds_fortran[i].num_arrays; ++n) {
+      for (int n = 0; n < gsds_baseline[i].num_arrays; ++n) {
         for (Int k = start; k < end; ++k) {
           REQUIRE(fluxesf90[n][k] == fluxescxx[n][k]);
           REQUIRE(qnxf90[n][k]    == qnxcxx[n][k]);
         }
       }
-      REQUIRE(gsds_fortran[i].k_qxbot   == gsds_cxx[i].k_qxbot);
-      REQUIRE(gsds_fortran[i].dt_left   == gsds_cxx[i].dt_left);
-      REQUIRE(gsds_fortran[i].prt_accum == gsds_cxx[i].prt_accum);
+      REQUIRE(gsds_baseline[i].k_qxbot   == gsds_cxx[i].k_qxbot);
+      REQUIRE(gsds_baseline[i].dt_left   == gsds_cxx[i].dt_left);
+      REQUIRE(gsds_baseline[i].prt_accum == gsds_cxx[i].prt_accum);
+    }
+  }
+  else if (this->m_baseline_action == GENERATE) {
+    for (Int i = 0; i < num_runs; ++i) {
+      gsds_cxx[i].write(Base::m_fid);
     }
   }
 }
@@ -358,18 +372,20 @@ namespace {
 
 TEST_CASE("p3_upwind", "[p3_functions]")
 {
-  using TU = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestUpwind;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestUpwind;
 
-  TU::run_phys();
-  TU::run_bfb();
+  T t;
+  t.run_phys();
+  t.run_bfb();
 }
 
 TEST_CASE("p3_gen_sed", "[p3_functions]")
 {
-  using TG = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestGenSed;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestGenSed;
 
-  TG::run_phys();
-  TG::run_bfb();
+  T t;
+  t.run_phys();
+  t.run_bfb();
 }
 
 } // namespace

@@ -10,7 +10,7 @@
        This file may have atm desc entries.
   -->
   <description modifier_mode="1">
-    <desc atm="DATM[%QIA][%WISOQIA][%CRU][%CRUv7][%GSWP3v1][%ERA5][%ERA56HR][%GSWP3w5e5][%MOSARTTEST][%NLDAS2][%CPLHIST][%E3SMWCv2][%CPLWCH][%1PT][%NYF][%IAF][%JRA][%JRA-1p5][%JRA-1p4-2018][%JRA-RYF8485][%JRA-RYF9091][%JRA-RYF0304][%CFSv2][%CFSR]"> Data driven ATM </desc>
+    <desc atm="DATM[%QIA][%WISOQIA][%CRU][%CRUv7][%GSWP3v1][%ERA5][%ERA56HR][%GSWP3w5e5][%MOSARTTEST][%NLDAS2][%CPLHIST][%E3SMWCv2][%CPLWCH][%1PT][%NYF][%IAF][%JRA][%JRA-1p5][%JRA-1p5-2023][%JRA-1p4-2018][%JRA-RYF8485][%JRA-RYF9091][%JRA-RYF0304][%CFSv2][%CFSR]"> Data driven ATM </desc>
     <desc option="QIA"> QIAN data set </desc>
     <desc option="WISOQIA">QIAN with water isotopes</desc>
     <desc option="CRU"> CRUNCEP data set </desc>
@@ -28,8 +28,9 @@
     <desc option="NYF">COREv2 normal year forcing</desc>
     <desc option="IAF">COREv2 interannual forcing</desc>
     <desc option="JRA">interannual JRA55 forcing</desc>
-    <desc option="JRA-1p5">interannual JRA55 forcing, v1.5, through 2020</desc>
     <desc option="JRA-1p4-2018">interannual JRA55 forcing, v1.4, through 2018</desc>
+    <desc option="JRA-1p5">interannual JRA55 forcing, v1.5, through 2020</desc>
+    <desc option="JRA-1p5-2023">interannual JRA55 forcing, v1.5, through 2023</desc>
     <desc option="JRA-RYF8485"> JRA55 Repeat Year Forcing v1.3 1984-1985</desc>
     <desc option="JRA-RYF9091"> JRA55 Repeat Year Forcing v1.3 1990-1991</desc>
     <desc option="JRA-RYF0304"> JRA55 Repeat Year Forcing v1.3 2003-2004</desc>
@@ -63,8 +64,9 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
       <value compset="%NYF">CORE2_NYF</value>
       <value compset="%IAF">CORE2_IAF</value>
       <value compset="%JRA">CORE_IAF_JRA</value>
-      <value compset="%JRA-1p5">IAF_JRA_1p5</value>
       <value compset="%JRA-1p4-2018">CORE_IAF_JRA_1p4_2018</value>
+      <value compset="%JRA-1p5">IAF_JRA_1p5</value>
+      <value compset="%JRA-1p5-2023">IAF_JRA_1p5</value>
       <value compset="%JRA-RYF8485">CORE_RYF8485_JRA</value>
       <value compset="%JRA-RYF9091">CORE_RYF9091_JRA</value>
       <value compset="%JRA-RYF0304">CORE_RYF0304_JRA</value>
@@ -391,6 +393,7 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
       <value compset="2000.*_DATM">$DATM_CLMNCEP_YR_START</value>
       <value compset="2000_DATM%JRA">1</value>
       <value compset="2000_DATM%JRA-1p5">1</value>
+      <value compset="2000_DATM%JRA-1p5_2023">1</value>
       <value compset="2003.*_DATM">$DATM_CLMNCEP_YR_START</value>
       <value compset="2010.*_DATM">$DATM_CLMNCEP_YR_START</value>
       <value compset="4804.*_DATM">$DATM_CLMNCEP_YR_START</value>
@@ -488,6 +491,7 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
       <value   compset="2003.*_DATM%NLDAS2">2003</value>
       <value   compset="2000_DATM%JRA">2016</value>
       <value   compset="2000_DATM%JRA-1p5">2020</value>
+      <value   compset="2000_DATM%JRA-1p5-2023">2023</value>
       <value   compset="2000.*_DATM%ERA5">1979</value>
       <value   compset="2000.*_DATM%ERA56HR">1979</value>
     </values>

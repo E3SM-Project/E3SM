@@ -77,7 +77,7 @@ void Functions<S,D>::
 get_rain_dsd2 (
   const Spack& qr, Spack& nr, Spack& mu_r,
   Spack& lamr,
-  const physics::P3_Constants<S> & p3constants,
+  const P3Runtime& runtime_options,
   const Smask& context)
 {
   constexpr auto nsmall = C::NSMALL;
@@ -88,7 +88,7 @@ get_rain_dsd2 (
 
   const auto qr_gt_small = qr >= qsmall && context;
 
-  const Scalar mu_r_const = p3constants.p3_mu_r_constant;
+  const Scalar mu_r_const = runtime_options.constant_mu_rain;
 
   if (qr_gt_small.any()) {
     // use lookup table to get mu

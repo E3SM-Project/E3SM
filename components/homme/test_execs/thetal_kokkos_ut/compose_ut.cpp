@@ -37,7 +37,8 @@ extern char** hommexx_catch2_argv;
 extern "C" {
   void init_compose_f90(int ne, const Real* hyai, const Real* hybi, const Real* hyam,
                         const Real* hybm, Real ps0, Real* dvv, Real* mp, int qsize,
-                        int hv_q, int limiter_option, bool cdr_check, bool is_sphere);
+                        int hv_q, int limiter_option, bool cdr_check, bool is_sphere,
+                        bool nearest_point, int halo, int traj_nsubstep);
   void init_geometry_f90();
   void cleanup_compose_f90();
   void run_compose_standalone_test_f90(int* nmax, Real* eval);
@@ -99,8 +100,8 @@ void fill (Random& r, const V& a,
 }
 
 struct Session {
-  int ne, hv_q;
-  bool cdr_check, is_sphere;
+  int ne, hv_q, nmax, halo, traj_nsubstep;
+  bool cdr_check, is_sphere, run_only_advection_test, nearest_point;
   HybridVCoord h;
   Random r;
   std::shared_ptr<Elements> e;
@@ -112,6 +113,11 @@ struct Session {
   void init () {
     const auto seed = r.gen_seed();
     printf("seed %u\n", seed);
+
+    nlev = NUM_PHYSICAL_LEV;
+    assert(nlev > 0);
+    np = NP;
+    assert(np == 4);
 
     assert(QSIZE_D >= 4);
     parse_command_line();
@@ -141,11 +147,12 @@ struct Session {
     const auto hybi = cmvdc(h.hybrid_bi);
     const auto hyam = cmvdc(h.hybrid_am);
     const auto hybm = cmvdc(h.hybrid_bm);
+    
     auto& ref_FE = c.create<ReferenceElement>();
     std::vector<Real> dvv(NP*NP), mp(NP*NP);
     init_compose_f90(ne, hyai.data(), hybi.data(), &hyam(0)[0], &hybm(0)[0], h.ps0,
                      dvv.data(), mp.data(), qsize, hv_q, p.limiter_option, cdr_check,
-                     is_sphere);
+                     is_sphere, nearest_point, halo, traj_nsubstep);
     ref_FE.init_mass(mp.data());
     ref_FE.init_deriv(dvv.data());
 
@@ -167,11 +174,6 @@ struct Session {
     fbm.allocate();
     ct.init_buffers(fbm);
     ct.init_boundary_exchanges();
-
-    nlev = NUM_PHYSICAL_LEV;
-    assert(nlev > 0);
-    np = NP;
-    assert(np == 4);
 
     c.create<VerticalRemapManager>();
   }
@@ -203,37 +205,87 @@ private:
 
   // compose_ut hommexx -ne NE -qsize QSIZE -hvq HV_Q -cdrcheck
   void parse_command_line () {
-    const bool am_root = get_comm().root();
     ne = 2;
     qsize = QSIZE_D;
     hv_q = 1;
     cdr_check = false;
     is_sphere = true;
+    run_only_advection_test = false;
+    nmax = -1;
+    halo = 2;
+    traj_nsubstep = 0;
+    nearest_point = true;
+
+    const bool am_root = get_comm().root();
     bool ok = true;
     int i;
     for (i = 0; i < hommexx_catch2_argc; ++i) {
       const std::string tok(hommexx_catch2_argv[i]);
       if (tok == "-ne") {
-        if (i+1 == hommexx_catch2_argc) { ok = false; break; }
+        if (i+1 == hommexx_catch2_argc) ok = false;
         ne = std::atoi(hommexx_catch2_argv[++i]);
+        if (ne < 2) {
+          printf("ne must be >= 2\n");
+          ok = false;
+        }
       } else if (tok == "-qsize") {
-        if (i+1 == hommexx_catch2_argc) { ok = false; break; }
+        if (i+1 == hommexx_catch2_argc) ok = false;
         qsize = std::atoi(hommexx_catch2_argv[++i]);
+        if (qsize > QSIZE_D || qsize < 1) {
+          printf("qsize must be >= 1 and <= QSIZE_D\n");
+          ok = false;
+        }
       } else if (tok == "-hvq") {
-        if (i+1 == hommexx_catch2_argc) { ok = false; break; }
+        if (i+1 == hommexx_catch2_argc) ok = false;
         hv_q = std::atoi(hommexx_catch2_argv[++i]);
       } else if (tok == "-cdrcheck") {
         cdr_check = true;
       } else if (tok == "-planar") {
         is_sphere = false;
+      } else if (tok == "-convergence") {
+        // When running this as a convergence-test driver, don't run any tests
+        // except the prescribed-flow one.
+        run_only_advection_test = true;
+      } else if (tok == "-nmax") {
+        if (i+1 == hommexx_catch2_argc) ok = false;
+        nmax = std::atoi(hommexx_catch2_argv[++i]);
+        if (nmax < 1) {
+          printf("nmax must be >= 1\n");
+          ok = false;
+        }
+      } else if (tok == "-halo") {
+        if (i+1 == hommexx_catch2_argc) ok = false;
+        halo = std::atoi(hommexx_catch2_argv[++i]);
+        if (halo < 1) {
+          printf("halo must be >= 1");
+          ok = false;
+        }
+      } else if (tok == "-trajnsubstep") {
+        if (i+1 == hommexx_catch2_argc) ok = false;
+        traj_nsubstep = std::atoi(hommexx_catch2_argv[++i]);
+        if (traj_nsubstep < 0) {
+          printf("traj_nsubstep must be >= 0\n");
+          ok = false;
+        }
+      } else if (tok == "-nonearest") {
+        nearest_point = false;
+      } else {
+        printf("unrecognized token %s\n", tok.c_str());
+        ok = false;
       }
+      if ( ! ok) break;
     }
-    ne = std::max(2, std::min(128, ne));
+
+    ne = std::max(2, ne);
     qsize = std::max(1, std::min(QSIZE_D, qsize));
     hv_q = std::max(0, std::min(qsize, hv_q));
-    if ( ! ok && am_root)
+
+    if ( ! ok && am_root) {
       printf("compose_ut> Failed to parse command line, starting with: %s\n",
              hommexx_catch2_argv[i]);
+      Homme::Errors::runtime_abort("compose_ut invalid command line");
+    }
+
     if (am_root) {
       const int bfb =
 #ifdef HOMMEXX_BFB_TESTING
@@ -241,8 +293,10 @@ private:
 #else
         0;
 #endif
-      printf("compose_ut> bfb %d ne %d qsize %d hv_q %d cdr_check %d\n",
-             bfb, ne, qsize, hv_q, cdr_check ? 1 : 0);
+      printf("compose_ut> sphere %d bfb %d ne %d qsize %d hv_q %d cdr_check %d "
+             "halo %d traj_nsubstep %d nearest %d\n",
+             int(is_sphere), bfb, ne, qsize, hv_q, cdr_check ? 1 : 0, halo,
+             traj_nsubstep, int(nearest_point));
     }
   }
 };
@@ -337,10 +391,19 @@ TEST_CASE ("compose_transport_testing") {
   static constexpr Real tol = std::numeric_limits<Real>::epsilon();
 
   auto& s = Session::singleton(); try {
+  do { // breakable
+
+  if (s.run_only_advection_test) {
+    int nmax = s.nmax;
+    std::vector<Real> eval_f((s.nlev+1)*s.qsize);
+    run_compose_standalone_test_f90(&nmax, eval_f.data());
+    break;
+  }
 
   // unit tests
   REQUIRE(compose::test::slmm_unittest() == 0);
   REQUIRE(compose::test::cedr_unittest() == 0);
+  REQUIRE(compose::test::interpolate_unittest() == 0);
   REQUIRE(compose::test::cedr_unittest(s.get_comm().mpi_comm()) == 0);
 
   auto& ct = Context::singleton().get<ComposeTransport>();
@@ -349,33 +412,35 @@ TEST_CASE ("compose_transport_testing") {
   REQUIRE(fails.empty());
 
   // trajectory BFB
-  for (const bool independent_time_steps : {false, true}) {
-    printf("independent_time_steps %d\n", independent_time_steps);
-    const Real twelve_days = 3600 * 24 * 12;
-    const Real t0 = 0.13*twelve_days;
-    const Real t1 = independent_time_steps ? t0 + 1800 : 0.22*twelve_days;
-    CA5d depf("depf", s.nelemd, s.nlev, s.np, s.np, 3);
-    CA4d dpreconf("dpreconf", s.nelemd, s.nlev, s.np, s.np);
-    run_trajectory_f90(t0, t1, independent_time_steps, depf.data(),
-                       dpreconf.data());
-    const auto depc = ct.test_trajectory(t0, t1, independent_time_steps);
-    REQUIRE(depc.extent_int(0) == s.nelemd);
-    REQUIRE(depc.extent_int(2) == s.np);
-    REQUIRE(depc.extent_int(4) == 3);
-    if (independent_time_steps) {
-      const auto dpreconc = cmvdc(RNlev(pack2real(s.e->m_derived.m_divdp), s.nelemd));
+  if (s.traj_nsubstep == 0) {
+    for (const bool independent_time_steps : {false, true}) {
+      printf("independent_time_steps %d\n", independent_time_steps);
+      const Real twelve_days = 3600 * 24 * 12;
+      const Real t0 = 0.13*twelve_days;
+      const Real t1 = independent_time_steps ? t0 + 1800 : 0.22*twelve_days;
+      CA5d depf("depf", s.nelemd, s.nlev, s.np, s.np, 3);
+      CA4d dpreconf("dpreconf", s.nelemd, s.nlev, s.np, s.np);
+      run_trajectory_f90(t0, t1, independent_time_steps, depf.data(),
+                         dpreconf.data());
+      const auto depc = ct.test_trajectory(t0, t1, independent_time_steps);
+      REQUIRE(depc.extent_int(0) == s.nelemd);
+      REQUIRE(depc.extent_int(2) == s.np);
+      REQUIRE(depc.extent_int(4) == 3);
+      if (independent_time_steps) {
+        const auto dpreconc = cmvdc(RNlev(pack2real(s.e->m_derived.m_divdp), s.nelemd));
+        for (int ie = 0; ie < s.nelemd; ++ie)
+          for (int lev = 0; lev < s.nlev; ++lev)
+            for (int i = 0; i < s.np; ++i)
+              for (int j = 0; j < s.np; ++j)
+                REQUIRE(equal(dpreconf(ie,lev,i,j), dpreconc(ie,i,j,lev), 100*tol));
+      }
       for (int ie = 0; ie < s.nelemd; ++ie)
         for (int lev = 0; lev < s.nlev; ++lev)
           for (int i = 0; i < s.np; ++i)
             for (int j = 0; j < s.np; ++j)
-              REQUIRE(equal(dpreconf(ie,lev,i,j), dpreconc(ie,i,j,lev), 10*tol));
+              for (int d = 0; d < 3; ++d)
+                REQUIRE(equal(depf(ie,lev,i,j,d), depc(ie,lev,i,j,d), 100*tol));
     }
-    for (int ie = 0; ie < s.nelemd; ++ie)
-      for (int lev = 0; lev < s.nlev; ++lev)
-        for (int i = 0; i < s.np; ++i)
-          for (int j = 0; j < s.np; ++j)
-            for (int d = 0; d < 3; ++d)
-              REQUIRE(equal(depf(ie,lev,i,j,d), depc(ie,lev,i,j,d), 10*tol));
   }
 
   { // q vertical remap
@@ -386,7 +451,7 @@ TEST_CASE ("compose_transport_testing") {
   }
 
   { // 2D SL BFB
-    int nmax;
+    int nmax = s.nmax;
     std::vector<Real> eval_f((s.nlev+1)*s.qsize), eval_c(eval_f.size());
     run_compose_standalone_test_f90(&nmax, eval_f.data());
     for (const bool bfb : {false, true}) {
@@ -397,9 +462,10 @@ TEST_CASE ("compose_transport_testing") {
       if (s.get_comm().root()) {
         const Real f = bfb ? 0 : 1;
         const int n = s.nlev*s.qsize;
-        // When not a BFB build, still expect l2 error to be the same to a few digits.
-        for (int i = 0; i < n; ++i) REQUIRE(almost_equal(eval_f[i], eval_c[i], f*1e-3));
-        // Mass conservation error should be within a factor of 10 of each other.
+        // When not a BFB build, still expect l2 error to be the same to several digits.
+        for (int i = 0; i < n; ++i) REQUIRE(almost_equal(eval_f[i], eval_c[i], f*1e5*tol));
+        // Mass conservation error should be within a factor of 10 of each
+        // other.
         for (int i = n; i < n + s.qsize; ++i) REQUIRE(almost_equal(eval_f[i], eval_c[i], f*10));
         // And mass conservation itself should be small.
         for (int i = n; i < n + s.qsize; ++i) REQUIRE(std::abs(eval_f[i]) <= 20*tol);
@@ -409,6 +475,7 @@ TEST_CASE ("compose_transport_testing") {
     }
   }
 
+  } while (false); // do
   } catch (...) {}
   Session::delete_singleton();
 }

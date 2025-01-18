@@ -39,6 +39,7 @@ module li_time_integration_fe_rk
    use li_constants
    use li_mesh
    use li_mask
+   use li_tracer_advection_fct_shared
 
    implicit none
    private
@@ -87,6 +88,7 @@ module li_time_integration_fe_rk
       use li_bedtopo
       use li_mask
       use li_advection, only: li_grounded_to_floating
+      use li_ocean_extrap
 
       !-----------------------------------------------------------------
       ! input variables
@@ -114,7 +116,8 @@ module li_time_integration_fe_rk
       logical, pointer :: config_calculate_damage
       logical, pointer :: config_finalize_damage_after_advection
       logical, pointer :: config_update_velocity_before_calving
-      character (len=StrKIND), pointer :: config_thickness_advection
+      character (len=StrKIND), pointer :: config_thickness_advection, &
+                                          config_tracer_advection
       character (len=StrKIND), pointer :: config_thermal_solver
       character (len=StrKIND), pointer :: config_time_integration
       integer, pointer :: config_rk_order, config_rk3_stages
@@ -166,9 +169,10 @@ module li_time_integration_fe_rk
 
       call mpas_pool_get_config(liConfigs, 'config_restore_calving_front', config_restore_calving_front)
       call mpas_pool_get_config(liConfigs, 'config_restore_calving_front_prevent_retreat', config_restore_calving_front_prevent_retreat)
-      call mpas_pool_get_config(liConfigs, 'config_calculate_damage',config_calculate_damage)
+      call mpas_pool_get_config(liConfigs, 'config_calculate_damage', config_calculate_damage)
       call mpas_pool_get_config(liConfigs, 'config_finalize_damage_after_advection', config_finalize_damage_after_advection)
       call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
+      call mpas_pool_get_config(liConfigs, 'config_tracer_advection', config_tracer_advection)
       call mpas_pool_get_config(liConfigs, 'config_thermal_solver', config_thermal_solver)
       call mpas_pool_get_config(liConfigs, 'config_rk_order', config_rk_order)
       call mpas_pool_get_config(liConfigs, 'config_rk3_stages', config_rk3_stages)
@@ -241,13 +245,17 @@ module li_time_integration_fe_rk
       call mpas_timer_stop("advancing clock")
 
 !TODO: Determine whether grounded melting should in fact be called first
+! === Ocean forcing extrapolation into ice-shelf cavities ===========
+      call mpas_timer_start("ocean forcing extrapolation")
+      call li_ocean_extrap_solve(domain, err_tmp)
+      err = ior(err, err_tmp)
+      call mpas_timer_stop("ocean forcing extrapolation")
+
 ! === Face melting for grounded ice ===========
       call mpas_timer_start("face melting for grounded ice")
       call li_face_melt_grounded_ice(domain, err_tmp)
       err = ior(err, err_tmp)
       call mpas_timer_stop("face melting for grounded ice")
-
-! *** TODO: Should basal melt rate calculation and column physics go inside RK loop? ***
 
 ! === Basal melting for floating ice ===========
       call mpas_timer_start("basal melting for floating ice")
@@ -280,6 +288,17 @@ module li_time_integration_fe_rk
          passiveTracer3dPrev(k,:) = passiveTracer2d(:)
       enddo
       deltatFull = deltat ! Save deltat in order to reset it at end of RK loop
+
+      if ( (trim(config_tracer_advection) == 'fct') .or. &
+           (trim(config_thickness_advection) == 'fct') ) then
+         call li_tracer_advection_fct_shared_init(geometryPool, err_tmp)
+         if (err_tmp /= 0) then
+            err = 1
+            call mpas_log_write(                                 &
+               'Error encountered during fct tracer advection shared init', &
+               MPAS_LOG_ERR)
+         endif
+      endif
 
       ! Set RK weights based on desired time integration method. Note
       ! that rkSubstepWeights are used to update at each sub-step, and
@@ -350,7 +369,13 @@ module li_time_integration_fe_rk
                              // ' is not supported with config_rk_order = $i', &
                              intArgs=(/config_rk_order/), messageType=MPAS_LOG_ERR)
          return
-      endif 
+      endif
+
+      ! Calculate masks prior to RK loop, but do not update masks within the loop
+      ! to preserve the accuracy of time integration.
+      call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+      err = ior(err, err_tmp)
+
 ! *** Start RK loop ***
       do rkStage = 1, nRKstages
          call mpas_log_write('beginning rk stage $i of $i', &
@@ -387,9 +412,8 @@ module li_time_integration_fe_rk
             layerThickness(:,:) = rkSSPweights(rkStage) * layerThicknessPrev(:,:) + &
                                      (1.0_RKIND - rkSSPweights(rkStage)) * layerThickness(:,:)
             thickness = sum(layerThickness, 1)
-            ! Calculate masks after updating thickness
-            call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
-            err = ior(err, err_tmp)
+            ! Do not calculate masks after updating thickness! We need to keep masks
+            ! constant for now to preserve accuracy of time integration
 
             if (trim(config_thermal_solver) .ne. 'none') then
                do iCell = 1, nCells
@@ -520,6 +544,17 @@ module li_time_integration_fe_rk
       floatingBasalMassBalApplied(:) = floatingBasalMassBalAccum(:)
       fluxAcrossGroundingLine(:) = fluxAcrossGroundingLineAccum(:)
       fluxAcrossGroundingLineOnCells(:) = fluxAcrossGroundingLineOnCellsAccum(:)
+
+      ! Deallocate arrays for fct
+      if ( (trim(config_thickness_advection) .eq. 'fct') .or. &
+           (trim(config_tracer_advection) .eq. 'fct') ) then
+         deallocate( nAdvCellsForEdge, &
+                     advCellsForEdge, &
+                     advCoefs, &
+                     advCoefs3rd, &
+                     advMaskHighOrder, &
+                     advMask2ndOrder)
+      endif
 
 ! Reset time step to full length after RK loop
       deltat = deltatFull
@@ -1010,6 +1045,11 @@ module li_time_integration_fe_rk
       real (kind=RKIND), dimension(:), pointer :: thicknessNew
       real (kind=RKIND), dimension(:), pointer :: thickness
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness
+      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity
+      real (kind=RKIND), dimension(:,:), pointer :: layerNormalVelocity
+
+      integer, dimension(:), pointer :: edgeMask
+      real (kind=RKIND) :: allowableDtACFL
 
       real (kind=RKIND), dimension(:,:), pointer :: temperature
       real (kind=RKIND), dimension(:,:), pointer :: waterFrac
@@ -1020,6 +1060,7 @@ module li_time_integration_fe_rk
       character (len=StrKIND), pointer :: config_thickness_advection
       logical, pointer :: config_restore_thickness_after_advection
       character (len=StrKIND), pointer :: config_tracer_advection
+      character (len=StrKIND), pointer :: config_time_integration
 
       logical, pointer :: config_print_thickness_advection_info
 
@@ -1033,6 +1074,7 @@ module li_time_integration_fe_rk
 
       call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
       call mpas_pool_get_config(liConfigs, 'config_tracer_advection', config_tracer_advection)
+      call mpas_pool_get_config(liConfigs, 'config_time_integration', config_time_integration)
       call mpas_pool_get_config(liConfigs, 'config_print_thickness_advection_info', config_print_thickness_advection_info)
       call mpas_pool_get_config(liConfigs, 'config_restore_thickness_after_advection', config_restore_thickness_after_advection)
 
@@ -1059,7 +1101,20 @@ module li_time_integration_fe_rk
             call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
             call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
             call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+            if (trim(config_time_integration) == "runge_kutta") then
+               call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity)
+               call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
+               call mpas_pool_get_array(velocityPool, 'layerNormalVelocity', layerNormalVelocity)
 
+               call li_layer_normal_velocity( &
+                    meshPool,               &
+                    normalVelocity,         &
+                    edgeMask,               &
+                    layerNormalVelocity,    &
+                    allowableDtACFL,        &
+                    err_tmp)
+               err = ior(err,err_tmp)
+            endif
             call calculate_layerThicknessEdge(meshPool, geometryPool, velocityPool, err_tmp)
             err = ior(err,err_tmp)
 

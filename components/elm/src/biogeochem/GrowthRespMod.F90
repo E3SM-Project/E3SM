@@ -51,7 +51,7 @@ contains
     associate(                                                                      &
          ivt                           =>    veg_pp%itype                         , & ! Input:  [integer (:)]  pft vegetation type
 
-         woody                         =>    veg_vp%woody                         , & ! Input:  [real(r8) (:)]  binary flag for woody lifeform (1=woody, 0=not woody)
+         woody                         =>    veg_vp%woody                         , & ! Input:  [real(r8) (:)]  woody lifeform flag (0 = non-woody, 1 = tree, 2 = shrub)
 
          cpool_to_leafc                =>    veg_cf%cpool_to_leafc                , & ! Input:  [real(r8) (:)]
          cpool_to_leafc_storage        =>    veg_cf%cpool_to_leafc_storage        , & ! Input:  [real(r8) (:)]
@@ -98,7 +98,7 @@ contains
          )
 
       ! Loop through patches
-      ! start pft loop 
+      ! start pft loop
       do fp = 1,num_soilp
 
         p = filter_soilp(fp)

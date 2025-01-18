@@ -20,7 +20,6 @@
 
 // Needed for p3_init
 #include "p3_functions.hpp"
-#include "p3_f90.hpp"
 
 #include "pam_debug.h"
 bool constexpr enable_check_state = false;
@@ -203,7 +202,8 @@ extern "C" void pam_driver() {
   #if defined(P3_CXX)
     if (is_first_step || is_restart) {
       auto am_i_root = coupler.get_option<bool>("am_i_root");
-      scream::p3::p3_init(/*write_tables=*/false, am_i_root);
+      using P3F = scream::p3::Functions<scream::Real, scream::DefaultDevice>;
+      P3F::p3_init(/*write_tables=*/false, am_i_root);
       pam::p3_init_lookup_tables(); // Load P3 lookup table data - avoid re-loading every CRM call
     }
   #endif

@@ -69,7 +69,7 @@ void Functions<S,D>
   const Spack& cld_frac_l, const Spack& cld_frac_r, const Spack& qv, const Spack& qv_prev,
   const Spack& qv_sat_l, const Spack& qv_sat_i, const Spack& ab, const Spack& abi,
   const Spack& epsr, const Spack& epsi_tot, const Spack& t_atm, const Spack& t_atm_prev,
-  const Spack& latent_heat_sublim, const Spack& dqsdt, const Scalar& dt,
+  const Spack& dqsdt, const Scalar& dt,
   Spack& qr2qv_evap_tend, Spack& nr_evap_tend,
   const Smask& context)
 {
@@ -92,6 +92,8 @@ void Functions<S,D>
   constexpr Scalar QSMALL   = C::QSMALL;
   constexpr Scalar Tmelt  = C::Tmelt;
   constexpr Scalar inv_cp = 1/C::Cpair;
+  constexpr Scalar latvap = C::LatVap;
+  constexpr Scalar latice = C::LatIce;
 
   //Compute absolute supersaturation.
   //Ignore the difference between clear-sky and cell-ave qv and T
@@ -133,9 +135,9 @@ void Functions<S,D>
     const Smask not_freezing = !is_freezing && context;
     Spack eps_eff, A_c;
     if (is_freezing.any()){
-      eps_eff.set(is_freezing,epsr + epsi_tot*(1 + latent_heat_sublim*inv_cp*dqsdt)/abi);
+      eps_eff.set(is_freezing,epsr + epsi_tot*(1 + (latvap+latice)*inv_cp*dqsdt)/abi);
       A_c.set(is_freezing,(qv - qv_prev)*inv_dt - dqsdt*(t_atm-t_atm_prev)*inv_dt
-	      - (qv_sat_l - qv_sat_i)*(1 + latent_heat_sublim*inv_cp*dqsdt)/abi*epsi_tot );
+	      - (qv_sat_l - qv_sat_i)*(1 + (latvap+latice)*inv_cp*dqsdt)/abi*epsi_tot );
     }
     if (not_freezing.any()){
       eps_eff.set(not_freezing,epsr);

@@ -212,7 +212,8 @@ module seq_flds_mod
   character(CXX) :: seq_flds_g2o_ice_fluxes
   character(CXX) :: seq_flds_x2g_states
   character(CXX) :: seq_flds_x2g_states_from_lnd
-  character(CXX) :: seq_flds_x2g_states_from_ocn
+  character(CXX) :: seq_flds_x2g_shelf_states_from_ocn
+  character(CXX) :: seq_flds_x2g_tf_states_from_ocn
   character(CXX) :: seq_flds_x2g_fluxes
   character(CXX) :: seq_flds_x2g_fluxes_from_lnd
 
@@ -347,7 +348,8 @@ contains
     character(CXX) :: g2o_ice_fluxes = ''
     character(CXX) :: x2g_states = ''
     character(CXX) :: x2g_states_from_lnd = ''
-    character(CXX) :: x2g_states_from_ocn = ''
+    character(CXX) :: x2g_shelf_states_from_ocn = ''
+    character(CXX) :: x2g_tf_states_from_ocn = ''
     character(CXX) :: x2g_fluxes = ''
     character(CXX) :: x2g_fluxes_from_lnd = ''
     character(CXX) :: xao_albedo = ''
@@ -380,11 +382,12 @@ contains
     logical :: flds_bgc_oi
     logical :: flds_wiso
     logical :: flds_polar
+    logical :: flds_tf
     integer :: glc_nec
 
     namelist /seq_cplflds_inparm/  &
-         flds_co2a, flds_co2b, flds_co2c, flds_co2_dmsa, flds_wiso, flds_polar, glc_nec, &
-         ice_ncat, seq_flds_i2o_per_cat, flds_bgc_oi, &
+         flds_co2a, flds_co2b, flds_co2c, flds_co2_dmsa, flds_wiso, flds_polar, flds_tf, &
+         glc_nec, ice_ncat, seq_flds_i2o_per_cat, flds_bgc_oi, &
          nan_check_component_fields, rof_heat, atm_flux_method, atm_gustiness, &
          rof2ocn_nutrients, lnd_rof_two_way, ocn_rof_two_way, rof_sed
 
@@ -418,6 +421,7 @@ contains
        flds_bgc_oi   = .false.
        flds_wiso = .false.
        flds_polar = .false.
+       flds_tf = .false.
        glc_nec   = 0
        ice_ncat  = 1
        seq_flds_i2o_per_cat = .false.
@@ -452,6 +456,7 @@ contains
     call shr_mpi_bcast(flds_bgc_oi  , mpicom)
     call shr_mpi_bcast(flds_wiso    , mpicom)
     call shr_mpi_bcast(flds_polar   , mpicom)
+    call shr_mpi_bcast(flds_tf      , mpicom)
     call shr_mpi_bcast(glc_nec      , mpicom)
     call shr_mpi_bcast(ice_ncat     , mpicom)
     call shr_mpi_bcast(seq_flds_i2o_per_cat, mpicom)
@@ -2938,7 +2943,7 @@ contains
        name = 'So_blt'
        call seq_flds_add(o2x_states,trim(name))
        call seq_flds_add(x2g_states,trim(name))
-       call seq_flds_add(x2g_states_from_ocn,trim(name))
+       call seq_flds_add(x2g_shelf_states_from_ocn,trim(name))
        longname = 'Ice shelf boundary layer ocean temperature'
        stdname  = 'Ice_shelf_boundary_layer_ocean_temperature'
        units    = 'C'
@@ -2948,7 +2953,7 @@ contains
        name = 'So_bls'
        call seq_flds_add(o2x_states,trim(name))
        call seq_flds_add(x2g_states,trim(name))
-       call seq_flds_add(x2g_states_from_ocn,trim(name))
+       call seq_flds_add(x2g_shelf_states_from_ocn,trim(name))
        longname = 'Ice shelf boundary layer ocean salinity'
        stdname  = 'Ice_shelf_boundary_layer_ocean_salinity'
        units    = 'psu'
@@ -2958,7 +2963,7 @@ contains
        name = 'So_htv'
        call seq_flds_add(o2x_states,trim(name))
        call seq_flds_add(x2g_states,trim(name))
-       call seq_flds_add(x2g_states_from_ocn,trim(name))
+       call seq_flds_add(x2g_shelf_states_from_ocn,trim(name))
        longname = 'Ice shelf ocean heat transfer velocity'
        stdname  = 'Ice_shelf_ocean_heat_transfer_velocity'
        units    = 'm/s'
@@ -2968,7 +2973,7 @@ contains
        name = 'So_stv'
        call seq_flds_add(o2x_states,trim(name))
        call seq_flds_add(x2g_states,trim(name))
-       call seq_flds_add(x2g_states_from_ocn,trim(name))
+       call seq_flds_add(x2g_shelf_states_from_ocn,trim(name))
        longname = 'Ice shelf ocean salinity transfer velocity'
        stdname  = 'Ice_shelf_ocean_salinity_transfer_velocity'
        units    = 'm/s'
@@ -2978,12 +2983,26 @@ contains
        name = 'So_rhoeff'
        call seq_flds_add(o2x_states,trim(name))
        call seq_flds_add(x2g_states,trim(name))
-       call seq_flds_add(x2g_states_from_ocn,trim(name))
+       call seq_flds_add(x2g_shelf_states_from_ocn,trim(name))
        longname = 'Ocean effective pressure'
        stdname  = 'Ocean_effective_pressure'
        units    = 'Pa'
        attname  = 'So_rhoeff'
        call metadata_set(attname, longname, stdname, units)
+
+       if (flds_tf) then
+
+          name = 'So_tf2d'
+          call seq_flds_add(o2x_states,trim(name))
+          call seq_flds_add(x2g_states,trim(name))
+          call seq_flds_add(x2g_tf_states_from_ocn,trim(name))
+          longname = 'ocean thermal forcing at predefined critical depth'
+          stdname  = 'ocean_thermal_forcing_at_critical_depth'
+          units    = 'C'
+          attname  = name
+          call metadata_set(attname, longname, stdname, units)
+
+       end if
 
        name = 'Fogx_qicelo'
        call seq_flds_add(g2x_fluxes,trim(name))
@@ -3936,7 +3955,8 @@ contains
     seq_flds_g2x_states_to_lnd = trim(g2x_states_to_lnd)
     seq_flds_x2g_states = trim(x2g_states)
     seq_flds_x2g_states_from_lnd = trim(x2g_states_from_lnd)
-    seq_flds_x2g_states_from_ocn = trim(x2g_states_from_ocn)
+    seq_flds_x2g_shelf_states_from_ocn = trim(x2g_shelf_states_from_ocn)
+    seq_flds_x2g_tf_states_from_ocn = trim(x2g_tf_states_from_ocn)
     seq_flds_xao_states = trim(xao_states)
     seq_flds_xao_albedo = trim(xao_albedo)
     seq_flds_xao_diurnl = trim(xao_diurnl)
@@ -4003,7 +4023,8 @@ contains
        write(logunit,*) subname//': seq_flds_x2g_states= ',trim(seq_flds_x2g_states)
        write(logunit,*) subname//': seq_flds_x2g_states_from_lnd= ',trim(seq_flds_x2g_states_from_lnd)
        write(logunit,*) subname//': seq_flds_l2x_states_to_glc= ',trim(seq_flds_l2x_states_to_glc)
-       write(logunit,*) subname//': seq_flds_x2g_states_from_ocn= ',trim(seq_flds_x2g_states_from_ocn)
+       write(logunit,*) subname//': seq_flds_x2g_shelf_states_from_ocn= ',trim(seq_flds_x2g_shelf_states_from_ocn)
+       write(logunit,*) subname//': seq_flds_x2g_tf_states_from_ocn= ',trim(seq_flds_x2g_tf_states_from_ocn)
        write(logunit,*) subname//': seq_flds_x2g_fluxes= ',trim(seq_flds_x2g_fluxes)
        write(logunit,*) subname//': seq_flds_x2g_fluxes_from_lnd= ',trim(seq_flds_x2g_fluxes_from_lnd)
        write(logunit,*) subname//': seq_flds_l2x_fluxes_to_glc= ',trim(seq_flds_l2x_fluxes_to_glc)

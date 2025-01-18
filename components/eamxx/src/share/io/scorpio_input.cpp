@@ -47,6 +47,14 @@ AtmosphereInput (const std::string& filename,
 }
 
 AtmosphereInput::
+AtmosphereInput (const std::vector<std::string>& fields_names,
+                 const std::shared_ptr<const grid_type>& grid)
+{
+  set_grid(grid);
+  m_fields_names = fields_names;
+}
+
+AtmosphereInput::
 ~AtmosphereInput ()
 {
   // In practice, this should always be true, but since we have a do-nothing default ctor,
@@ -73,10 +81,10 @@ init (const ekat::ParameterList& params,
   // Sets the internal field mgr, and possibly sets up the remapper
   set_field_manager(field_mgr);
 
+  m_inited_with_fields = true;
+
   // Init scorpio internal structures
   init_scorpio_structures ();
-
-  m_inited_with_fields = true;
 }
 
 void AtmosphereInput::
@@ -113,10 +121,10 @@ init (const ekat::ParameterList& params,
 	"    layout = " + it.first);
   }
 
+  m_inited_with_views = true;
+
   // Init scorpio internal structures
   init_scorpio_structures ();
-
-  m_inited_with_views = true;
 }
 
 /* ---------------------------------------------------------- */
@@ -173,6 +181,28 @@ set_field_manager (const std::shared_ptr<const fm_type>& field_mgr)
   }
 }
 
+void AtmosphereInput::
+set_fields (const std::vector<Field>& fields) {
+  auto fm = std::make_shared<fm_type>(m_io_grid);
+  m_fields_names.clear();
+  for (const auto& f : fields) {
+    fm->add_field(f);
+    m_fields_names.push_back(f.name());
+  }
+  set_field_manager(fm);
+  m_inited_with_fields = true;
+}
+
+void AtmosphereInput::
+reset_filename (const std::string& filename)
+{
+  if (m_filename!="") {
+    scorpio::release_file(m_filename);
+  }
+  m_params.set("Filename",filename);
+  m_filename = filename;
+  init_scorpio_structures();
+}
 
 /* ---------------------------------------------------------- */
 void AtmosphereInput::
@@ -220,6 +250,7 @@ void AtmosphereInput::read_variables (const int time_index)
 
     // Read the data
     auto v1d = m_host_views_1d.at(name);
+
     scorpio::read_var(m_filename,name,v1d.data(),time_index);
 
     // If we have a field manager, make sure the data is correctly
@@ -350,6 +381,9 @@ void AtmosphereInput::finalize()
 /* ---------------------------------------------------------- */
 void AtmosphereInput::init_scorpio_structures() 
 {
+  EKAT_REQUIRE_MSG (m_inited_with_views or m_inited_with_fields,
+      "Error! Cannot init scorpio structures until fields/views have been set.\n");
+
   std::string iotype_str = m_params.get<std::string>("iotype", "default");
   auto iotype = scorpio::str2iotype(iotype_str);
 

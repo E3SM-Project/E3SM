@@ -1,0 +1,104 @@
+name: EAMxx standalone testing
+description: |
+  Run EAMxx standalone testing with required configuration inputs.
+  More precisely, it launches test-all-scream with the proper flags.
+  See components/eamxx/scripts/test-all-scream for more details.
+  The configuration inputs are:
+    - build_type: the type of build to pass to test-all-scream.
+    - machine: the name of the machine to pass to test-all-scream
+    - generate: whether to generate baselines
+    - submit: whether to submit to cdash (unused if generate is 'true')
+
+inputs:
+  build_type:
+    description: 'Build type to run'
+    required: true
+  machine:
+    description: 'Machine name for test-all-scream'
+    required: true
+  generate:
+    description: 'Generate baselines instead of running tests'
+    required: true
+    default: 'false'
+    valid_values:
+      - 'true'
+      - 'false'
+  submit:
+    description: 'Submit results to cdash (unused if generate=true)'
+    required: true
+    default: 'false'
+    valid_values:
+      - 'true'
+      - 'false'
+  cmake-configs:
+    description: 'Semicolon-separated list of key=value pairs for CMake to pass to test-all-scream'
+    required: false
+    default: ''
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set CA certificates env var
+      run: |
+        # Ensure the operating system is Linux
+        if [ "$(uname)" != "Linux" ]; then
+          echo "This action only supports Linux."
+          exit 1
+        fi
+        # Set env var to be used in upload-artifacts phase
+        if [ -f /etc/debian_version ]; then
+          echo "NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt" >> $GITHUB_ENV
+        elif [ -f /etc/redhat-release ] || [ -f /etc/centos-release ] || [ -f /etc/fedora-release ]; then
+          echo "NODE_EXTRA_CA_CERTS=/etc/pki/tls/certs/ca-bundle.crt" >> $GITHUB_ENV
+        else
+          echo "Unsupported Linux distribution"
+          exit 1
+        fi
+      shell: sh
+    - name: Check repo presence
+      run: |
+        if [ ! -d ".git" ]; then
+          echo "Repository is not checked out. Please ensure the repository is checked out before running this action."
+          exit 1
+        fi
+      shell: sh
+    - name: Print build specs
+      run: |
+        echo "Testing EAMxx standalone, for the following configuration:"
+        echo "  build type   : ${{ inputs.build_type }}"
+        echo "  machine      : ${{ inputs.machine }}"
+        echo "  generate     : ${{ inputs.generate }}"
+        echo "  submit       : ${{ inputs.submit }}"
+        echo "  cmake-configs: ${{ inputs.cmake-configs }}"
+      shell: sh
+    - name: Run test-all-scream
+      working-directory: components/eamxx
+      run: |
+        cmd="./scripts/test-all-scream -m ${{ inputs.machine }} -t ${{inputs.build_type}} --baseline-dir AUTO -c EKAT_DISABLE_TPL_WARNINGS=ON"
+        if [ "${{ inputs.generate }}" = "true" ]; then
+          cmd+=" -g"
+        elif [ "${{ inputs.submit }}" = "true" ]; then 
+          cmd+=" -s"
+        fi
+
+        # If cmake-configs is non-empty, add tokens to test-all-scream via "-c key=val"
+        IFS=';' read -ra configs <<< "${{ inputs.cmake-configs }}"
+        for config in "${configs[@]}"; do
+          cmd+=" -c $config"
+        done
+
+        # Print the full command, then run it
+        echo "test-all-scream call: $cmd"
+        $cmd
+      shell: sh
+    - name: Upload ctest logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: log-files-${{ inputs.build_type }}-${{ inputs.machine }}
+        path: |
+          components/eamxx/ctest-build/*/Testing/Temporary/Last*.log
+          components/eamxx/ctest-build/*/ctest_resource_file.json
+          components/eamxx/ctest-build/*/CMakeCache.txt
+      env:
+        NODE_EXTRA_CA_CERTS: ${{ env.NODE_EXTRA_CA_CERTS }}

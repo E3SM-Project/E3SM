@@ -28,7 +28,7 @@ module histFileMod
   use FatesInterfaceTypesMod , only : nlevheight_fates => nlevheight
   use FatesInterfaceTypesMod , only : nlevdamage_fates => nlevdamage
   use FatesInterfaceTypesMod , only : nlevcoage
-  use FatesLitterMod         , only : nfsc_fates       => nfsc
+  use FatesFuelClassesMod    , only : nfc_fates       => num_fuel_classes
   use FatesConstantsMod      , only : n_landuse_cats
   use FatesLitterMod         , only : ncwd_fates       => ncwd
   use FatesInterfaceTypesMod , only : numpft_fates     => numpft
@@ -1933,7 +1933,7 @@ contains
        call ncd_defdim(lnfid, 'fates_levcacls',nlevcoage, dimid)
        call ncd_defdim(lnfid, 'fates_levpft', numpft_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levage', nlevage_fates, dimid)
-       call ncd_defdim(lnfid, 'fates_levfuel', nfsc_fates, dimid)
+       call ncd_defdim(lnfid, 'fates_levfuel', nfc_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levcwdsc', ncwd_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levscpf', nlevsclass_fates*numpft_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levcapf',  nlevcoage*numpft_fates, dimid)
@@ -1951,7 +1951,7 @@ contains
        call ncd_defdim(lnfid, 'fates_levelpft', nelements_fates * numpft_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levelcwd', nelements_fates * ncwd_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levelage', nelements_fates * nlevage_fates, dimid)
-       call ncd_defdim(lnfid, 'fates_levagefuel', nlevage_fates * nfsc_fates, dimid)
+       call ncd_defdim(lnfid, 'fates_levagefuel', nlevage_fates * nfc_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levlanduse', n_landuse_cats, dimid)
        call ncd_defdim(lnfid, 'fates_levlulu', n_landuse_cats * n_landuse_cats, dimid)
     end if
@@ -4796,7 +4796,7 @@ contains
     case ('fates_levelage')
        num2d = nelements_fates*nlevage_fates
     case ('fates_levagefuel')
-       num2d = nlevage_fates*nfsc_fates
+       num2d = nlevage_fates*nfc_fates
     case('cft')
        if (cft_size > 0) then
           num2d = cft_size
@@ -4842,7 +4842,7 @@ contains
     case ('fates_levage')
        num2d = nlevage_fates
     case ('fates_levfuel')
-       num2d = nfsc_fates
+       num2d = nfc_fates
     case ('fates_levcwdsc')
        num2d = ncwd_fates
     case ('fates_levscpf')

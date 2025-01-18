@@ -233,9 +233,12 @@ void HommeDynamics::remap_fv_phys_to_dyn () const {
 
 // See the [rrtmgp active gases] note in share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp
 void HommeDynamics
-::fv_phys_rrtmgp_active_gases_init (const std::shared_ptr<const GridsManager>& gm) {
+::fv_phys_rrtmgp_active_gases_init (const std::shared_ptr<const GridsManager>& gm)
+{
+  // NOTE: we would like to avoid this if it's a restart run, but at this point of the
+  //       init sequence we still don't know the run type. So we must add the trace gases
+  //       fields, and we will deal with them later
   auto& trace_gases_workaround = TraceGasesWorkaround::singleton();
-  if (trace_gases_workaround.is_restart()) return; // always false b/c it hasn't been set yet
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
   const auto& rgn = m_cgll_grid->name();
@@ -254,7 +257,7 @@ void HommeDynamics
 }
 
 // See the [rrtmgp active gases] note in share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp
-void HommeDynamics::fv_phys_rrtmgp_active_gases_remap () {
+void HommeDynamics::fv_phys_rrtmgp_active_gases_remap (const RunType run_type) {
   // Note re: restart: Ideally, we'd know if we're restarting before having to
   // call add_field above. However, we only find out after. Because the pg2
   // field was declared Updated, it will read the restart data. But we don't
@@ -262,7 +265,7 @@ void HommeDynamics::fv_phys_rrtmgp_active_gases_remap () {
   // cleanup part at the end.
   auto& trace_gases_workaround = TraceGasesWorkaround::singleton();
   const auto& rgn = m_cgll_grid->name();
-  if (not trace_gases_workaround.is_restart()) {
+  if (run_type==RunType::Initial) {
     using namespace ShortFieldTagsNames;
     const auto& dgn = m_dyn_grid ->name();
     const auto& pgn = m_phys_grid->name();

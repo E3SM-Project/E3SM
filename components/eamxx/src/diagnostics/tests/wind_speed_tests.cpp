@@ -62,6 +62,11 @@ TEST_CASE("wind_speed")
   register_diagnostics();
 
   constexpr int ntests = 5;
+#ifdef NDEBUG
+  constexpr int ulp_tol = 1;
+#else
+  constexpr int ulp_tol = 0;
+#endif
   for (int itest=0; itest<ntests; ++itest) {
     // Randomize wind
     randomize(uv,engine,pdf);
@@ -87,7 +92,7 @@ TEST_CASE("wind_speed")
       for (int ilev=0; ilev<nlevs; ++ilev) {
         const auto u = uv_h (icol,0,ilev);
         const auto v = uv_h (icol,1,ilev);
-        REQUIRE (ws_h(icol,ilev) == std::sqrt(u*u+v*v));
+        REQUIRE_THAT (ws_h(icol,ilev), Catch::Matchers::WithinULP(std::sqrt(u*u+v*v),ulp_tol));
       }
     }
   }

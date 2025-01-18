@@ -1427,6 +1427,8 @@ module mpas_timekeeping
             timeString_ = timeString
          end if
 
+         !call mpas_log_write('timeString_ '//trim(timeString_))
+
          numerator = 0
          denominator = 1
 
@@ -1518,6 +1520,12 @@ module mpas_timekeeping
             call mpas_log_write('Invalid TimeInterval string (invalid time substring) ' // trim(timeString), MPAS_LOG_ERR)
             return
          end if
+
+         if (sec < 0) then
+            numerator = -numerator
+         end if
+
+         !call mpas_log_write('sec $i, num $i, denom $i', intArgs=(/int(sec),numerator,denominator/))
 
          call ESMF_TimeIntervalSet(interval % ti, YY=year, MM=month, D=day, H=hour, M=min, S_i8=sec, Sn=numerator, Sd=denominator, rc=ierr)
 

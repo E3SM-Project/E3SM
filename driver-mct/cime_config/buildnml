@@ -41,6 +41,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
     config['CPL_EPBAL'] = case.get_value('CPL_EPBAL')
     config['FLDS_WISO'] = case.get_value('FLDS_WISO')
     config['FLDS_POLAR'] = case.get_value('FLDS_POLAR')
+    config['FLDS_TF'] = case.get_value('FLDS_TF')
     config['BUDGETS'] = case.get_value('BUDGETS')
     config['MACH'] = case.get_value('MACH')
     config['MPILIB'] = case.get_value('MPILIB')

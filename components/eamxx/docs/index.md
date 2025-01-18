@@ -1,6 +1,6 @@
 # The E3SM Atmosphere Model in C++ (EAMxx)
 
-EAMxx 
+##EAMxx
 EAMxx is almost completely different in all ways from the atmosphere model used for E3SM versions 1-3. 
 
 

@@ -48,7 +48,7 @@ void Functions<Real,DefaultDevice>
     }
 
     cloud_sedimentation(
-      ekat::subview(qc_incld, i), ekat::subview(rho, i), ekat::subview(inv_rho, i), ekat::subview(cld_frac_l, i), 
+      ekat::subview(qc_incld, i), ekat::subview(rho, i), ekat::subview(inv_rho, i), ekat::subview(cld_frac_l, i),
       ekat::subview(acn, i), ekat::subview(inv_dz, i), dnu, team, workspace,
       nk, ktop, kbot, kdir, dt, inv_dt, do_predict_nc,
       ekat::subview(qc, i), ekat::subview(nc, i), ekat::subview(nc_incld, i), ekat::subview(mu_c, i), ekat::subview(lamc, i), ekat::subview(qc_tend, i),
@@ -60,4 +60,3 @@ void Functions<Real,DefaultDevice>
 
 } // namespace p3
 } // namespace scream
-

@@ -26,11 +26,6 @@ VaporFluxDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
   }
 }
 
-std::string VaporFluxDiagnostic::name() const
-{
-  return m_component==0 ? "ZonalVapFlux" : "MeridionalVapFlux";
-}
-
 void VaporFluxDiagnostic::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
   using namespace ekat::units;
@@ -51,7 +46,8 @@ void VaporFluxDiagnostic::set_grids(const std::shared_ptr<const GridsManager> gr
   add_field<Required>("horiz_winds",    vector3d, m/s,   grid_name);
 
   // Construct and allocate the diagnostic field
-  FieldIdentifier fid (name(), scalar2d, kg/m/s, grid_name);
+  std::string dname = m_component==0 ? "ZonalVapFlux" : "MeridionalVapFlux";
+  FieldIdentifier fid (dname, scalar2d, kg/m/s, grid_name);
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
 }
