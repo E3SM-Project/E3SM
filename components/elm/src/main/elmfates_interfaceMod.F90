@@ -58,6 +58,7 @@ module ELMFatesInterfaceMod
    use elm_varctl        , only : use_fates_luh
    use elm_varctl        , only : use_fates_lupft
    use elm_varctl        , only : use_fates_potentialveg
+   use elm_varctl        , only : use_fates_daylength_factor
    use elm_varctl        , only : flandusepftdat
    use elm_varctl        , only : use_fates_tree_damage
    use elm_varctl        , only : nsrest, nsrBranch
@@ -418,6 +419,8 @@ contains
      integer                                        :: pass_num_luh_states
      integer                                        :: pass_num_luh_transitions
      integer                                        :: pass_lupftdat
+     integer                                        :: pass_daylength_factor_switch
+
      ! ----------------------------------------------------------------------------------
      ! FATES lightning definitions
      ! 1 : use a global constant lightning rate found in fates_params.
@@ -598,6 +601,13 @@ contains
            pass_cohort_age_tracking = 0
         end if
         call set_fates_ctrlparms('use_cohort_age_tracking',ival=pass_cohort_age_tracking)
+
+        if(use_fates_daylength_factor) then
+           pass_daylength_factor_switch = 1
+        else
+           pass_daylength_factor_switch = 0
+        end if
+        call set_fates_ctrlparms('use_daylength_factor_switch',ival=pass_daylength_factor_switch)
 
         if(use_fates_inventory_init) then
            pass_inventory_init = 1
