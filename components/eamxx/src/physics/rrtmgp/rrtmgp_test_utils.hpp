@@ -46,9 +46,9 @@ template <typename RealT=scream::Real, typename LayoutT=Kokkos::LayoutRight, typ
 struct rrtmgp_test_utils {
 
 using interface_t = scream::rrtmgp::rrtmgp_interface<RealT, LayoutT, DeviceT>;
-using real1dk = typename interface_t::view_t<RealT*>;
-using real2dk = typename interface_t::view_t<RealT**>;
-using real3dk = typename interface_t::view_t<RealT***>;
+using real1dk = typename interface_t::template view_t<RealT*>;
+using real2dk = typename interface_t::template view_t<RealT**>;
+using real3dk = typename interface_t::template view_t<RealT***>;
 using MDRP = typename conv::MDRP<LayoutT>;
 
 static bool all_close(real2dk &arr1, real2dk &arr2, double tolerance)
