@@ -192,7 +192,7 @@ contains
                                  elem, hybrid, hvcoord, deriv, tl
 
     ! Local variable
-    logical(kind=c_bool), parameter :: allocate_buffer = .false.
+    logical, parameter :: allocate_buffer = 0
 
     if (.not. is_data_structures_inited) then
       call abortmp ("Error! 'prim_init_data_structures_f90' has not been called yet.\n")
