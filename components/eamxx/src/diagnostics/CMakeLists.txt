@@ -11,6 +11,7 @@ set(DIAGNOSTIC_SRCS
   horiz_avg.cpp
   longwave_cloud_forcing.cpp
   number_path.cpp
+  pbl_entrainment_budget.cpp
   potential_temperature.cpp
   precip_surf_mass_flux.cpp
   relative_humidity.cpp

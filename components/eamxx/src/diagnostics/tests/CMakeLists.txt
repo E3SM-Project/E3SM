@@ -3,7 +3,8 @@ include(ScreamUtils)
 function (createDiagTest test_name test_srcs)
   CreateUnitTest(${test_name} "${test_srcs}"
     LIBS diagnostics physics_share
-    LABELS diagnostics)
+    LABELS diagnostics
+    ${ARGN})
 endfunction ()
 
 # Test extracting a single level of a field
@@ -74,3 +75,8 @@ CreateDiagTest(atm_backtend "atm_backtend_test.cpp")
 
 # Test horizontal averaging
 CreateDiagTest(horiz_avg "horiz_avg_test.cpp")
+
+# Test PBL entrainment diags
+GetInputFile(cam/scam/iop/DYCOMSrf02_iopfile_4scam.nc)
+CreateDiagTest(pbl_entrainment_budget "pbl_entrainment_budget_test.cpp"
+  EXE_ARGS "--args --iop_file=${SCREAM_INPUT_ROOT}/atm/cam/scam/iop/DYCOMSrf02_iopfile_4scam.nc")

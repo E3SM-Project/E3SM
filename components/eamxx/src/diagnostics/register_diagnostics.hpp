@@ -25,6 +25,7 @@
 #include "diagnostics/aerocom_cld.hpp"
 #include "diagnostics/atm_backtend.hpp"
 #include "diagnostics/horiz_avg.hpp"
+#include "pbl_entrainment_budget.hpp"
 
 namespace scream {
 
@@ -53,6 +54,7 @@ inline void register_diagnostics () {
   diag_factory.register_product("AeroComCld",&create_atmosphere_diagnostic<AeroComCld>);
   diag_factory.register_product("AtmBackTendDiag",&create_atmosphere_diagnostic<AtmBackTendDiag>);
   diag_factory.register_product("HorizAvgDiag",&create_atmosphere_diagnostic<HorizAvgDiag>);
+  diag_factory.register_product("PBLEntrainmentBudget",&create_atmosphere_diagnostic<PBLEntrainmentBudget>);
 }
 
 } // namespace scream
