@@ -104,6 +104,7 @@ module aero_model
   real(r8)          :: small = 1.e-36
 !<shanyp 01132025
   real(r8)          :: dstemislimit = 1.e-4_r8
+  logical           :: dstemislimitswitch = .false.
 !shanyp 01132025>
   integer :: ndrydep = 0
   integer,allocatable :: drydep_indices(:)
@@ -136,7 +137,7 @@ contains
              sol_facti_cloud_borne, seasalt_emis_scale, sscav_tuning, &
 !<shanyp 01132025
 !             sol_factb_interstitial, sol_factic_interstitial
-             sol_factb_interstitial, sol_factic_interstitial,dstemislimit
+             sol_factb_interstitial, sol_factic_interstitial,dstemislimit,dstemislimitswitch
 !shanyp 01132025>
     !-----------------------------------------------------------------------------
 
@@ -167,6 +168,7 @@ contains
     call mpibcast(seasalt_emis_scale, 1, mpir8,   0, mpicom)
 !<shanyp 01132025
     call mpibcast(dstemislimit, 1,                       mpir8,   0, mpicom) !dstemislimit
+    call mpibcast(dstemislimitswith, 1,                  mpilog,  0, mpicom) !dstemislimit
 !shanyp 01130225>
 #endif
 
@@ -2847,13 +2849,16 @@ do_lphase2_conditional: &
        do m=1,dust_nbin+dust_nnum
           mm = dust_indices(m)
 !<shanyp 07052024
-          do icol=1,ncol
-           if((cam_in%cflx(icol,mm).ge.dstemislimit).and.(m.le.dust_nbin)) then
-            mmn=dust_indices(m+2)
-            cam_in%cflx(icol,mmn)=cam_in%cflx(icol,mmn)*dstemislimit/cam_in%cflx(icol,mm)
-            cam_in%cflx(icol,mm)=dstemislimit
-           end if
-          end do
+          if(dstemislimitswitch) then
+           do icol=1,ncol
+            if((cam_in%cflx(icol,mm).ge.dstemislimit).and.(m.le.dust_nbin)) then
+             mmn=dust_indices(m+2)
+             cam_in%cflx(icol,mmn)=cam_in%cflx(icol,mmn)*dstemislimit/cam_in%cflx(icol,mm)
+             cam_in%cflx(icol,mm)=dstemislimit
+             write(iulog,'(a,1x,i10)') 'The dust emission cap is hit at icol=', icol
+            end if
+           end do
+          end if
 !shanyp 07052024>
           if (m<=dust_nbin) sflx(:ncol)=sflx(:ncol)+cam_in%cflx(:ncol,mm)
           call outfld(trim(dust_names(m))//'SF',cam_in%cflx(:,mm),pcols, lchnk)
