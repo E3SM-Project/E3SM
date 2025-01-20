@@ -20,9 +20,5 @@ set(NETCDF_PATH   "/lus/gila/projects/CSC249ADSE15_CNDA/software/oneAPI.2022.12.
 set(NETCDF_DIR    "/lus/gila/projects/CSC249ADSE15_CNDA/software/oneAPI.2022.12.30.003/netcdf" CACHE STRING "")
 set(NETCDF_C_PATH "/lus/gila/projects/CSC249ADSE15_CNDA/software/oneAPI.2022.12.30.003/netcdf" CACHE STRING "")
 set(NETCDF_C      "/lus/gila/projects/CSC249ADSE15_CNDA/software/oneAPI.2022.12.30.003/netcdf" CACHE STRING "")
-#this one is for rrtmgp
-set(NetCDF_C_PATH "/lus/gila/projects/CSC249ADSE15_CNDA/software/oneAPI.2022.12.30.003/netcdf" CACHE STRING "")
-set(NETCDF_FORTRAN_PATH "/lus/gila/projects/CSC249ADSE15_CNDA/software/oneAPI.2022.12.30.003/netcdf" CACHE STRING "")
-set(PNETCDF_PATH "/lus/gila/projects/CSC249ADSE15_CNDA/software/oneAPI.2022.12.30.003/pnetcdf" CACHE STRING "")
 
 
