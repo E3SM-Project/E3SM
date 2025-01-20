@@ -61,6 +61,7 @@ module ELMFatesInterfaceMod
    use elm_varctl        , only : use_fates_daylength_factor
    use elm_varctl        , only : fates_photosynth_acclimation
    use elm_varctl        , only : fates_stomatal_model
+   use elm_varctl        , only : fates_stomatal_assimilation
    use elm_varctl        , only : flandusepftdat
    use elm_varctl        , only : use_fates_tree_damage
    use elm_varctl        , only : nsrest, nsrBranch
@@ -424,6 +425,7 @@ contains
      integer                                        :: pass_daylength_factor_switch
      integer                                        :: pass_photosynth_acclimation_switch
      integer                                        :: pass_stomatal_model
+     integer                                        :: pass_stomatal_assimilation
 
      ! ----------------------------------------------------------------------------------
      ! FATES lightning definitions
@@ -605,6 +607,13 @@ contains
            pass_cohort_age_tracking = 0
         end if
         call set_fates_ctrlparms('use_cohort_age_tracking',ival=pass_cohort_age_tracking)
+
+        if (trim(fates_stomatal_assimilation) == 'net') then
+           pass_stomatal_assimilation = 1
+        else if (trim(fates_stomatal_assimilation) == 'gross') then
+           pass_stomatal_assimilation = 2
+        end if
+        call set_fates_ctrlparms('stomatal_assim_model',ival=pass_stomatal_assimilation)
 
         if (trim(fates_stomatal_model) == 'ballberry1987') then
            pass_stomatal_model = 1

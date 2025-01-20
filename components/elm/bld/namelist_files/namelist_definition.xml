@@ -360,6 +360,11 @@ Toggle to turn on FATES no competition mode (only relevant if FATES is being use
 Toggle to turn on FATES satellite phenology mode (only relevant if FATES is being used).
 </entry>
 
+<entry id="fates_stomatal_assimilation" type="char*256" category="physics"
+        group="elm_inparm" valid_values="net, gross" value="net">
+Set net or gross asslimiation for the FATES stomatal model
+</entry>
+
 <entry id="fates_stomatal_model" type="char*256" category="physics"
         group="elm_inparm" valid_values="ballberry1987, medlyn2011" value="ballberry1987">
 Set the FATES stomatal conductance model
