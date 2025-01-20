@@ -190,7 +190,7 @@ void srfEmissFunctions<S, D>::update_srfEmiss_data_from_file(
   // 2. Run the horiz remapper (it is a do-nothing op if srfEmiss data is on
   // same grid as model)
   start_timer("EAMxx::srfEmiss::update_srfEmiss_data_from_file::horiz_remap");
-  srfEmiss_horiz_interp.remap(/*forward = */ true);
+  srfEmiss_horiz_interp.remap_fwd();
   stop_timer("EAMxx::srfEmiss::update_srfEmiss_data_from_file::horiz_remap");
 
   // 3. Copy from the tgt field of the remapper into the srfEmiss_data, padding

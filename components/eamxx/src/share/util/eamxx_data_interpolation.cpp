@@ -72,7 +72,7 @@ void DataInterpolation::run (const util::TimeStamp& ts)
     p.update(p_end,alpha,1-alpha);
   }
   
-  m_vert_remapper->remap(true);
+  m_vert_remapper->remap_fwd();
 }
 
 void DataInterpolation::shift_data_interval ()
@@ -108,7 +108,7 @@ update_end_fields ()
 
   // Read and interpolate fields
   m_reader->read_variables(slice.time_idx);
-  m_horiz_remapper_end->remap(true);
+  m_horiz_remapper_end->remap_fwd();
 }
 
 void DataInterpolation::

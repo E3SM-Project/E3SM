@@ -501,10 +501,10 @@ TEST_CASE ("vertical_remapper") {
             // -------------------------------------- //
 
             // No bwd remap
-            REQUIRE_THROWS(remap->remap(false));
+            REQUIRE_THROWS(remap->remap_bwd());
 
             print (" -> run remap ...\n",comm);
-            remap->remap(true);
+            remap->remap_fwd();
             print (" -> run remap ... done!\n",comm);
 
             // -------------------------------------- //

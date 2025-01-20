@@ -105,7 +105,7 @@ void fracLandUseFunctions<S, D>::update_frac_land_use_data_from_file(
   // same grid as model)
   start_timer(
       "EAMxx::FracLandUse::update_frac_land_use_data_from_file::horiz_remap");
-  horiz_interp.remap(/*forward = */ true);
+  horiz_interp.remap_fwd();
   stop_timer(
       "EAMxx::FracLandUse::update_frac_land_use_data_from_file::horiz_remap");
 

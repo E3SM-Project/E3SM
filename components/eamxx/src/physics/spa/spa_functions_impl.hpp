@@ -473,7 +473,7 @@ void SPAFunctions<S,D>
 
   // 2. Run the horiz remapper (it is a do-nothing op if spa data is on same grid as model)
   start_timer("EAMxx::SPA::update_spa_data_from_file::horiz_remap");
-  spa_horiz_interp.remap(/*forward = */ true);
+  spa_horiz_interp.remap_fwd();
   stop_timer("EAMxx::SPA::update_spa_data_from_file::horiz_remap");
 
   // 3. Copy from the tgt field of the remapper into the spa_data, padding data if necessary

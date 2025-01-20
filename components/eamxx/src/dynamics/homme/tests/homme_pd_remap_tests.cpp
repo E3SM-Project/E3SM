@@ -301,7 +301,11 @@ TEST_CASE("remap", "") {
       }
 
       // Remap
-      remapper->remap(fwd);
+      if (fwd) {
+        remapper->remap_fwd();
+      } else {
+        remapper->remap_fwd();
+      }
 
       // Check
       {
@@ -839,12 +843,12 @@ TEST_CASE("combo_remap", "") {
 
       // Remap
       if (pdp) {
-        remapper->remap(true);
+        remapper->remap_fwd();
         Kokkos::fence();
-        remapper->remap(false);
+        remapper->remap_bwd();
       } else {
-        remapper->remap(false);
-        remapper->remap(true);
+        remapper->remap_bwd();
+        remapper->remap_fwd();
       }
 
       // Check

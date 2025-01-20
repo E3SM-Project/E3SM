@@ -44,35 +44,6 @@ public:
 
   ~VerticalRemapper () = default;
 
-  FieldLayout create_src_layout (const FieldLayout& tgt_layout) const override;
-  FieldLayout create_tgt_layout (const FieldLayout& src_layout) const override;
-
-  bool compatible_layouts (const layout_type& src,
-                           const layout_type& tgt) const override {
-    // Strip the LEV/ILEV tags, and check if they are the same
-    // Also, check rank compatibility, in case one has LEV/ILEV and the other doesn't
-    // NOTE: tgt layouts always use LEV (not ILEV), while src can have ILEV or LEV.
-
-    using namespace ShortFieldTagsNames;
-    auto src_stripped = src.clone().strip_dims({LEV,ILEV});
-    auto tgt_stripped = tgt.clone().strip_dims({LEV,ILEV});
-
-    return src.rank()==tgt.rank() and
-           src_stripped.congruent(tgt_stripped);
-  }
-
-  bool is_valid_tgt_layout (const layout_type& layout) const override {
-    using namespace ShortFieldTagsNames;
-    return !(m_tgt_mid_same_as_int and layout.has_tag(ILEV))
-           and AbstractRemapper::is_valid_tgt_layout(layout);
-  }
-
-  bool is_valid_src_layout (const layout_type& layout) const override {
-    using namespace ShortFieldTagsNames;
-    return !(m_src_mid_same_as_int and layout.has_tag(ILEV))
-           and AbstractRemapper::is_valid_src_layout(layout);
-  }
-
   void set_extrapolation_type (const ExtrapType etype, const TopBot where = TopAndBot);
   void set_mask_value (const Real mask_val);
 
@@ -97,9 +68,15 @@ public:
 
   // This method simply creates the tgt grid from a map file
   static std::shared_ptr<AbstractGrid>
-  create_tgt_grid (const grid_ptr_type& src_grid,
-                   const std::string& map_file);
+  create_tgt_grid (const grid_ptr_type& src_grid, const std::string& map_file);
 
+  FieldLayout create_src_layout (const FieldLayout& tgt_layout) const override;
+  FieldLayout create_tgt_layout (const FieldLayout& src_layout) const override;
+
+  bool compatible_layouts (const FieldLayout& src, const FieldLayout& tgt) const override;
+
+  bool is_valid_tgt_layout (const FieldLayout& layout) const override;
+  bool is_valid_src_layout (const FieldLayout& layout) const override;
 protected:
 
   void set_pressure (const Field& p, const std::string& src_or_tgt, const ProfileType ptype);
@@ -107,32 +84,9 @@ protected:
                              const std::shared_ptr<const AbstractGrid>& to_grid,
                              const bool int_same_as_mid) const;
 
-  const identifier_type& do_get_src_field_id (const int ifield) const override {
-    return m_src_fields[ifield].get_header().get_identifier();
-  }
-  const identifier_type& do_get_tgt_field_id (const int ifield) const override {
-    return m_tgt_fields[ifield].get_header().get_identifier();
-  }
-  const field_type& do_get_src_field (const int ifield) const override {
-    return m_src_fields[ifield];
-  }
-  const field_type& do_get_tgt_field (const int ifield) const override {
-    return m_tgt_fields[ifield];
-  }
+  void registration_ends_impl () override;
 
-  void do_registration_begins () override { /* Nothing to do here */ }
-
-  void do_register_field (const identifier_type& src, const identifier_type& tgt) override;
-
-  void do_bind_field (const int ifield, const field_type& src, const field_type& tgt) override;
-
-  void do_registration_ends () override;
-
-  void do_remap_fwd () override;
-
-  void do_remap_bwd () override {
-    EKAT_ERROR_MSG ("VerticalRemapper only supports fwd remapping.\n");
-  }
+  void remap_fwd_impl () override;
 
 #ifdef KOKKOS_ENABLE_CUDA
 public:
@@ -163,8 +117,6 @@ protected:
   ekat::Comm            m_comm;
 
   // Source and target fields
-  std::vector<Field>    m_src_fields;
-  std::vector<Field>    m_tgt_fields;
   std::vector<Field>    m_src_masks;
   std::vector<Field>    m_tgt_masks;
 

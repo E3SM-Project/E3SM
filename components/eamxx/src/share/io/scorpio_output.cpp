@@ -270,10 +270,6 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
 
     // Store a handle to 'after-vremap' FM
     set_field_manager(io_fm,"after_vertical_remap");
-
-    // This should never fail, but just in case
-    EKAT_REQUIRE_MSG (m_vert_remapper->get_num_fields()==m_vert_remapper->get_num_bound_fields(),
-        "Error! Something went wrong while building the scorpio input remapper.\n");
   }
 
   // Online remapper and horizontal remapper follow a similar pattern so we check in the same conditional.
@@ -323,10 +319,6 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
       m_horiz_remapper->register_field(src,tgt);
     }
     m_horiz_remapper->registration_ends();
-
-    // This should never fail, but just in case
-    EKAT_REQUIRE_MSG (m_horiz_remapper->get_num_fields()==m_horiz_remapper->get_num_bound_fields(),
-        "Error! Something went wrong while building the scorpio input remapper.\n");
 
     // Reset the IO field manager
     set_field_manager(io_fm,"io");
@@ -407,7 +399,7 @@ run (const std::string& filename,
 
   auto apply_remap = [&](const std::shared_ptr<AbstractRemapper> remapper)
   {
-    remapper->remap(true);
+    remapper->remap_fwd();
 
     for (int i=0; i<remapper->get_num_fields(); ++i) {
       // Need to update the time stamp of the fields on the IO grid,

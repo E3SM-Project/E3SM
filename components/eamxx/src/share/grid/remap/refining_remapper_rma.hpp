@@ -55,9 +55,7 @@ public:
 
 protected:
 
-  void do_remap_fwd () override;
-
-protected:
+  void remap_fwd_impl () override;
 
   void setup_mpi_data_structures () override;
 
@@ -65,8 +63,6 @@ protected:
   // to not pollute the remapper for later use, we must be able to clean it up after
   // remapping all the geo data.
   void clean_up ();
-
-protected:
 
   // Wrap a pointer in an MPI_Win
   template<typename T>
