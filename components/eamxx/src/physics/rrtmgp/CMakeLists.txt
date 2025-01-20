@@ -178,16 +178,13 @@ yakl_process_target(scream_rrtmgp_yakl)
 #       since yakl_process_target already used it
 #       with the "plain" signature
 
-#<<<<<<< HEAD
-#find_library(NETCDF_C netcdf HINTS $ENV{NETCDF_C_PATH}/lib)
-#target_link_libraries(scream_rrtmgp_yakl ${NETCDF_C} rrtmgp scream_share)
-#=======
-find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATH}/lib)
+find_library(NETCDF_C netcdf HINTS ${NETCDF_C_PATH}/lib)
+find_library(NETCDF_C netcdf HINTS ${NETCDF_C_PATH}/lib64)
 target_link_libraries(scream_rrtmgp_yakl ${NETCDF_C} rrtmgp scream_share Kokkos::kokkos)
 target_include_directories(scream_rrtmgp_yakl PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(scream_rrtmgp_yakl SYSTEM PUBLIC
-	${NETCDF_C_PATH}/include
+    ${NETCDF_C_PATH}/include
     ${EAM_RRTMGP_DIR}/external)
 
 ##################################
