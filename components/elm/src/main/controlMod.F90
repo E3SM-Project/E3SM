@@ -273,6 +273,7 @@ contains
           fates_seeddisp_cadence,                       &
           use_fates_tree_damage,                        &
           use_fates_daylength_factor,                   &
+          fates_photosynth_acclimation,                 &
           fates_history_dimlevel
 
     namelist /elm_inparm / use_betr
@@ -837,6 +838,7 @@ contains
     call mpi_bcast (use_fates_ed_prescribed_phys,  1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_fates_inventory_init, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_fates_daylength_factor, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (fates_photosynth_acclimation, len(fates_photosynth_acclimation), MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (fates_inventory_ctrl_filename, len(fates_inventory_ctrl_filename), &
           MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (fates_parteh_mode, 1, MPI_INTEGER, 0, mpicom, ier)
@@ -1268,6 +1270,7 @@ contains
        write(iulog, *) '    use_fates_lupft = ', use_fates_lupft
        write(iulog, *) '    use_fates_potentialveg = ', use_fates_potentialveg
        write(iulog, *) '    use_fates_daylength_factor = ', use_fates_daylength_factor
+       write(iulog, *) '    fates_photosynth_acclimation = ', trim(fates_photosynth_acclimation)
        write(iulog, *) '    fates_inventory_ctrl_filename = ',fates_inventory_ctrl_filename
        write(iulog, *) '    fates_seeddisp_cadence = ', fates_seeddisp_cadence
        write(iulog, *) '    fates_seeddisp_cadence: 0, 1, 2, 3 => off, daily, monthly, or yearly dispersal'

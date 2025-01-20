@@ -59,6 +59,7 @@ module ELMFatesInterfaceMod
    use elm_varctl        , only : use_fates_lupft
    use elm_varctl        , only : use_fates_potentialveg
    use elm_varctl        , only : use_fates_daylength_factor
+   use elm_varctl        , only : fates_photosynth_acclimation
    use elm_varctl        , only : flandusepftdat
    use elm_varctl        , only : use_fates_tree_damage
    use elm_varctl        , only : nsrest, nsrBranch
@@ -420,6 +421,7 @@ contains
      integer                                        :: pass_num_luh_transitions
      integer                                        :: pass_lupftdat
      integer                                        :: pass_daylength_factor_switch
+     integer                                        :: pass_photosynth_acclimation_switch
 
      ! ----------------------------------------------------------------------------------
      ! FATES lightning definitions
@@ -601,6 +603,13 @@ contains
            pass_cohort_age_tracking = 0
         end if
         call set_fates_ctrlparms('use_cohort_age_tracking',ival=pass_cohort_age_tracking)
+
+        if(trim(fates_photosynth_acclimation) == 'kumarathunge2019') then
+           pass_photosynth_acclimation_switch = 1
+        else if(trim(fates_photosynth_acclimation) == 'nonacclimating') then
+           pass_photosynth_acclimation_switch = 0
+        end if
+        call set_fates_ctrlparms('photosynth_acclimation',ival=pass_photosynth_acclimation_switch)
 
         if(use_fates_daylength_factor) then
            pass_daylength_factor_switch = 1

@@ -360,6 +360,12 @@ Toggle to turn on FATES no competition mode (only relevant if FATES is being use
 Toggle to turn on FATES satellite phenology mode (only relevant if FATES is being used).
 </entry>
 
+<entry id="fates_photosynth_acclimation" type="char*256" category="physics"
+       group="elm_inparm" valid_values="nonacclimating, kumarathunge2019" value="nonacclimating">
+Set the FATES photosynthesis temperature acclimation model.
+(Only relevant if FATES is on)
+</entry>
+
 <entry id="use_fates_daylength_factor" type="logical" category="physics"
        group="elm_inparm" valid_values="" value=".true.">
 If TRUE, enable FATES to utilize the day length factor from the host land model.
