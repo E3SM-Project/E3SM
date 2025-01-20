@@ -360,6 +360,11 @@ Toggle to turn on FATES no competition mode (only relevant if FATES is being use
 Toggle to turn on FATES satellite phenology mode (only relevant if FATES is being used).
 </entry>
 
+<entry id="fates_cstarvation_model" type="char*256" category="physics"
+        group="elm_inparm" valid_values="linear, exponential" value="linear">
+Set the FATES carbon starvation model
+</entry>
+
 <entry id="fates_leafresp_model" type="char*256" category="physics"
         group="elm_inparm" valid_values="ryan1991, atkin2017" value="ryan1991">
 Set the FATES leaf maintenance respiration model

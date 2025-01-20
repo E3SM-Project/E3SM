@@ -835,7 +835,8 @@ sub setup_cmdl_fates_mode {
                      "fates_photosynth_acclimation",
                      "fates_stomatal_model",
                      "fates_stomatal_assimilation",
-                     "fates_leafresp_model");
+                     "fates_leafresp_model",
+                     "fates_cstarvation_model");
 
       foreach my $var ( @list ) {
 	  if ( defined($nl->get_value($var))  ) {
@@ -3440,7 +3441,8 @@ sub setup_logic_fates {
                    "fates_photosynth_acclimation",
                    "fates_stomatal_model",
                    "fates_stomatal_assimilation",
-                   "fates_leafresp_model");
+                   "fates_leafresp_model",
+                   "fates_cstarvation_model");
 
     foreach my $var (@list) {
        add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, $var,'use_fates'=>$nl_flags->{'use_fates'});
