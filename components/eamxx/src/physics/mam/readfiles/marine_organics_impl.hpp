@@ -112,7 +112,7 @@ void marineOrganicsFunctions<S, D>::update_marine_organics_data_from_file(
   start_timer(
       "EAMxx::marineOrganics::update_marine_organics_data_from_file::horiz_"
       "remap");
-  horiz_interp.remap(/*forward = */ true);
+  horiz_interp.remap_fwd();
   stop_timer(
       "EAMxx::marineOrganics::update_marine_organics_data_from_file::horiz_"
       "remap");

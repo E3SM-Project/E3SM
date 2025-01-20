@@ -104,7 +104,7 @@ void soilErodibilityFunctions<S, D>::update_soil_erodibility_data_from_file(
   start_timer(
       "EAMxx::soilErodibility::update_soil_erodibility_data_from_file::horiz_"
       "remap");
-  horiz_interp.remap(/*forward = */ true);
+  horiz_interp.remap_fwd();
   stop_timer(
       "EAMxx::soilErodibility::update_soil_erodibility_data_from_file::horiz_"
       "remap");

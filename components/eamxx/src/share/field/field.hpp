@@ -263,18 +263,12 @@ public:
   // Checks whether the underlying view has been already allocated.
   bool is_allocated () const { return m_data.d_view.data()!=nullptr; }
 
-  // Whether this field is equivalent to the rhs. To be equivalent is
-  // less strict than to have all the members equal. In particular,
-  // this method returns true if and only if:
-  //  - this==&rhs OR all the following apply
-  //    - both views are allocated (if not, allocating one won't be reflected on the other)
-  //    - both fields have the same header
-  //    - both fields have the same views
-  // We need to SFINAE on RhsRT, cause this==&rhs only works if the
-  // two are the same. And we do want to check this==&rhs for the
-  // same type, since if we didn't, f.equivalent(f) would return false
-  // if f is not allocated...
-  bool equivalent (const Field& rhs) const;
+  // Whether this field is an alias to the same field as rhs.
+  // To return true, one of the following must hold
+  //  - this==&rhs
+  //  - the fields are NOT subfield, and point to the same data
+  //  - the fields are subfield of fields aliasing each other, with same subfield info
+  bool is_aliasing (const Field& rhs) const;
 
   // ---- Setters and non-const methods ---- //
 

@@ -250,12 +250,17 @@ Field Field::get_components(const int beg, const int end) {
                   idim, beg, end);
 }
 
-bool Field::equivalent(const Field& rhs) const
+bool Field::is_aliasing(const Field& rhs) const
 {
-  return (m_header==rhs.m_header &&
-          is_allocated() &&
-          m_data.d_view==rhs.m_data.d_view &&
-          m_data.h_view==rhs.m_data.h_view);
+  if (this==&rhs)
+    return true;  // Same object
+
+  if (not is_allocated() or not rhs.is_allocated())
+    return false; // Once allocated, they will be different
+
+  // NOTE: I'm not sure we NEED to check m_data, but we might as well
+  return m_header->is_aliasing(rhs.get_header()) and
+         m_data.d_view==rhs.m_data.d_view;
 }
 
 void Field::allocate_view ()
