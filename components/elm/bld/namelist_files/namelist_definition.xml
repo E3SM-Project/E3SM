@@ -360,6 +360,11 @@ Toggle to turn on FATES no competition mode (only relevant if FATES is being use
 Toggle to turn on FATES satellite phenology mode (only relevant if FATES is being used).
 </entry>
 
+<entry id="fates_radiation_model" type="char*256" category="physics"
+        group="elm_inparm" valid_values="norman, twostream" value="norman">
+Set the FATES radiation model
+</entry>
+
 <entry id="fates_hydro_solver" type="char*256" category="physics"
         group="elm_inparm" valid_values="1D_Taylor, 2D_Picard, 2D_Newton" value="1D_Taylor">
 Set the FATES hydro solver method
