@@ -32,7 +32,12 @@ protected:
     int col_lid = -1;
   };  
 
+// CUDA requires the parent fcn of a KOKKOS_LAMBDA to have public access
+#ifdef EAMXX_ENABLE_GPU
+public:
+#endif
   void setup_closest_col_info (const Real lat, const Real lon);
+protected:
 
   void registration_ends_impl () override;
 
