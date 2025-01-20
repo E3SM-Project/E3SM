@@ -120,8 +120,8 @@ TEST_CASE("iop_remap")
     lat = src_lat.get_view<const Real*,Host>()[closest_lid];
     lon = src_lon.get_view<const Real*,Host>()[closest_lid];
   }
-  comm.broadcast(&lat,1,0);
-  comm.broadcast(&lon,1,0);
+  comm.broadcast(&lat,1,closest_rank);
+  comm.broadcast(&lon,1,closest_rank);
 
   auto remap = std::make_shared<IOPRemapper>(src_grid,tgt_grid,lat,lon);
 
