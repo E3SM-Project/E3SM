@@ -360,6 +360,15 @@ Toggle to turn on FATES no competition mode (only relevant if FATES is being use
 Toggle to turn on FATES satellite phenology mode (only relevant if FATES is being used).
 </entry>
 
+<entry id="fates_regeneration_model" type="char*256" category="physics"
+        group="elm_inparm" valid_values="default, trs, trs_no_seed_dyn" value="default">
+Set the FATES seed regeneration model
+Valid values:
+  default: default scheme
+  trs: Tree Recruitment Scheme (Hanbury-Brown et al., 2022)
+  trs_no_seed_dyn: Tree Recruitment Scheme (Hanbury-Brown et al., 2022) without seed dynamics
+</entry>
+
 <entry id="fates_cstarvation_model" type="char*256" category="physics"
         group="elm_inparm" valid_values="linear, exponential" value="linear">
 Set the FATES carbon starvation model

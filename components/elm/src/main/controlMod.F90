@@ -278,6 +278,7 @@ contains
           fates_stomatal_assimilation,                  &
           fates_leafresp_model,                         &
           fates_cstarvation_model,                      &
+          fates_regeneration_model,                     &
           fates_history_dimlevel
 
     namelist /elm_inparm / use_betr
@@ -847,6 +848,7 @@ contains
     call mpi_bcast (fates_stomatal_assimilation, len(fates_stomatal_assimilation) , MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (fates_leafresp_model, len(fates_leafresp_model) , MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (fates_cstarvation_model, len(fates_cstarvation_model) , MPI_CHARACTER, 0, mpicom, ier)
+    call mpi_bcast (fates_regeneration_model, len(fates_regeneration_model) , MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (fates_inventory_ctrl_filename, len(fates_inventory_ctrl_filename), &
           MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (fates_parteh_mode, 1, MPI_INTEGER, 0, mpicom, ier)
@@ -1283,6 +1285,7 @@ contains
        write(iulog, *) '    fates_stomatal_assimilation = ', fates_stomatal_assimilation
        write(iulog, *) '    fates_leafresp_model = ', fates_leafresp_model
        write(iulog, *) '    fates_cstarvation_model = ', fates_cstarvation_model
+       write(iulog, *) '    fates_regeneration_model = ', fates_regeneration_model
        write(iulog, *) '    fates_inventory_ctrl_filename = ',fates_inventory_ctrl_filename
        write(iulog, *) '    fates_seeddisp_cadence = ', fates_seeddisp_cadence
        write(iulog, *) '    fates_seeddisp_cadence: 0, 1, 2, 3 => off, daily, monthly, or yearly dispersal'

@@ -64,6 +64,7 @@ module ELMFatesInterfaceMod
    use elm_varctl        , only : fates_stomatal_assimilation
    use elm_varctl        , only : fates_leafresp_model
    use elm_varctl        , only : fates_cstarvation_model
+   use elm_varctl        , only : fates_regeneration_model
    use elm_varctl        , only : flandusepftdat
    use elm_varctl        , only : use_fates_tree_damage
    use elm_varctl        , only : nsrest, nsrBranch
@@ -430,6 +431,7 @@ contains
      integer                                        :: pass_stomatal_assimilation
      integer                                        :: pass_leafresp_model
      integer                                        :: pass_cstarvation_model
+     integer                                        :: pass_regeneration_model
 
      ! ----------------------------------------------------------------------------------
      ! FATES lightning definitions
@@ -611,6 +613,16 @@ contains
            pass_cohort_age_tracking = 0
         end if
         call set_fates_ctrlparms('use_cohort_age_tracking',ival=pass_cohort_age_tracking)
+
+        if (trim(fates_regeneration_model) == 'default') then
+           pass_regeneration_model = 1
+        else if (trim(fates_regeneration_model) == 'trs') then
+           pass_regeneration_model = 2
+        else if (trim(fates_regeneration_model) == 'trs_no_seed_dyn') then
+           pass_regeneration_model = 3
+        end if
+        call set_fates_ctrlparms('regeneration_model',ival=pass_regeneration_model)
+
 
         if (trim(fates_cstarvation_model) == 'linear') then
            pass_cstarvation_model = 1
