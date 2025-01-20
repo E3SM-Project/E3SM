@@ -18,7 +18,7 @@ inline int get_random_test_seed(const ekat::Comm* comm=nullptr)
 
   std::random_device rdev;
   const int catchRngSeed = Catch::rngSeed();
-  int seed = catchRngSeed==0 ? rdev() : catchRngSeed;
+  int seed = catchRngSeed==0 ? rdev()/2 : catchRngSeed;
 
   if (comm == nullptr || comm->am_i_root()) {
     // Print seed to screen to trace tests that fail.
