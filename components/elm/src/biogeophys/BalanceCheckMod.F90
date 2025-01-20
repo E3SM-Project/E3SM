@@ -20,7 +20,7 @@ module BalanceCheckMod
   use GridcellType       , only : grc_pp
   use TopounitType   , only : top_pp
   use GridcellDataType   , only : grc_ef, grc_wf, grc_ws
-  use TopounitDataType   , only : top_af ! atmospheric flux variables
+  use TopounitDataType   , only : top_af, top_ws 
   use LandunitType       , only : lun_pp
   use ColumnType         , only : col_pp
   use ColumnDataType     , only : col_ef, col_ws, col_wf
@@ -168,7 +168,7 @@ contains
      use column_varcon     , only : icol_roof, icol_sunwall, icol_shadewall
      use column_varcon     , only : icol_road_perv, icol_road_imperv
      use landunit_varcon   , only : istice_mec, istdlak, istsoil,istcrop,istwet
-     use elm_varctl        , only : create_glacier_mec_landunit
+     use elm_varctl        , only : create_glacier_mec_landunit, use_IM2_hillslope_hydrology
      use elm_initializeMod , only : surfalb_vars  
      use CanopyStateType   , only : canopystate_type
      use subgridAveMod
@@ -232,6 +232,8 @@ contains
           qflx_h2osfc_to_ice         =>    col_wf%qflx_h2osfc_to_ice      , & ! Input:  [real(r8) (:)   ]  conversion of h2osfc to ice
           qflx_drain_perched         =>    col_wf%qflx_drain_perched      , & ! Input:  [real(r8) (:)   ]  sub-surface runoff (mm H2O /s)
           qflx_floodc                =>    col_wf%qflx_floodc             , & ! Input:  [real(r8) (:)   ]  total runoff due to flooding
+          qflx_from_uphill           =>    col_wf%qflx_from_uphill        , & ! Input:  [real(r8) (:)   ]  received from uphill topounit
+          qflx_to_downhill           =>    col_wf%qflx_to_downhill        , & ! Input:  [real(r8) (:)   ]  sent to downhill topounit
           qflx_h2osfc_surf           =>    col_wf%qflx_h2osfc_surf        , & ! Input:  [real(r8) (:)   ]  surface water runoff (mm/s)
           qflx_snow_melt             =>    col_wf%qflx_snow_melt          , & ! Input:  [real(r8) (:)   ]  snow melt (net)
           qflx_surf                  =>    col_wf%qflx_surf               , & ! Input:  [real(r8) (:)   ]  surface runoff (mm H2O /s)
@@ -308,6 +310,17 @@ contains
              forc_rain_col(c) = forc_rain(t)
              forc_snow_col(c) = forc_snow(t)
           end if
+
+          ! update the topounit-level from_uphill water state
+          ! when using fraction_from_uphill < 1.0, this state can get very small during recession
+          ! which can lead to negative state from roundoff error. Trap this with a max(), and force to zero
+          ! when the state gets too small.
+          if (use_IM2_hillslope_hydrology) then
+            top_ws%from_uphill(t) = max(0._r8, top_ws%from_uphill(t) - (col_wf%qflx_from_uphill(c) * dtime))
+            if (top_ws%from_uphill(t) < 1.e-20_r8) then
+               top_ws%from_uphill(t) = 0._r8
+            endif
+          endif
        end do
 
        ! Water balance check
@@ -315,10 +328,12 @@ contains
        do c = bounds%begc, bounds%endc
 
           ! add qflx_drain_perched and qflx_flood
+          ! add qflx_from_uphill and qflx_to_downhill
           if (col_pp%active(c)) then
              errh2o(c) = endwb(c) - begwb(c) &
-                  - (forc_rain_col(c) + forc_snow_col(c)  + qflx_floodc(c) + qflx_surf_irrig_col(c) + qflx_over_supply_col(c) &
-                  - qflx_evap_tot(c) - qflx_surf(c)  - qflx_h2osfc_surf(c) &
+                  - (forc_rain_col(c) + forc_snow_col(c)  + qflx_floodc(c) + qflx_from_uphill(c) &
+                  + qflx_surf_irrig_col(c) + qflx_over_supply_col(c) &
+                  - qflx_evap_tot(c) - qflx_surf(c)  - qflx_h2osfc_surf(c) - qflx_to_downhill(c) &
                   - qflx_qrgwl(c) - qflx_drain(c) - qflx_drain_perched(c) - qflx_snwcp_ice(c) &
                   - qflx_lateral(c) + qflx_h2orof_drain(c)) * dtime
              dwb(c) = (endwb(c)-begwb(c))/dtime
@@ -960,6 +975,8 @@ contains
           qflx_h2osfc_to_ice         =>    col_wf%qflx_h2osfc_to_ice      , & ! Input:  [real(r8) (:)   ]  conversion of h2osfc to ice
           qflx_drain_perched         =>    col_wf%qflx_drain_perched      , & ! Input:  [real(r8) (:)   ]  sub-surface runoff (mm H2O /s)
           qflx_floodc                =>    col_wf%qflx_floodc             , & ! Input:  [real(r8) (:)   ]  total runoff due to flooding
+          qflx_from_uphill           =>    col_wf%qflx_from_uphill        , & ! Input:  [real(r8) (:)   ]  received from uphill topounit (mm/s)
+          qflx_to_downhill           =>    col_wf%qflx_to_downhill        , & ! Input:  [real(r8) (:)   ]  sent to downhill topounit (mm/s)
           qflx_h2osfc_surf           =>    col_wf%qflx_h2osfc_surf        , & ! Input:  [real(r8) (:)   ]  surface water runoff (mm/s)
           qflx_snow_melt             =>    col_wf%qflx_snow_melt          , & ! Input:  [real(r8) (:)   ]  snow melt (net)
           qflx_surf                  =>    col_wf%qflx_surf               , & ! Input:  [real(r8) (:)   ]  surface runoff (mm H2O /s)
@@ -1053,8 +1070,8 @@ contains
          if (col_pp%active(c)) then
 
             qflx_net_col(c) = &
-                 - forc_rain_col(c) - forc_snow_col(c)  - qflx_floodc(c) - qflx_irrig(c) &
-                 + qflx_evap_tot(c) + qflx_surf(c)  + qflx_h2osfc_surf(c) &
+                 - forc_rain_col(c) - forc_snow_col(c)  - qflx_floodc(c) - qflx_from_uphill(c) - qflx_irrig(c) &
+                 + qflx_evap_tot(c) + qflx_surf(c)  + qflx_h2osfc_surf(c) + qflx_to_downhill(c) &
                  + qflx_qrgwl(c) + qflx_drain(c) + qflx_drain_perched(c) + qflx_snwcp_ice(c) &
                  + qflx_lateral(c)
 

@@ -313,6 +313,9 @@ contains
        lateral_connectivity, domain_decomp_type
 
     namelist /elm_inparm/ &
+         use_IM2_hillslope_hydrology
+
+    namelist /elm_inparm/ &
          use_petsc_thermal_model
 
     namelist /elm_inparm/ &
@@ -943,6 +946,9 @@ contains
     call mpi_bcast (lateral_connectivity, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (domain_decomp_type, len(domain_decomp_type), MPI_CHARACTER, 0, mpicom, ier)
 
+    ! hillslope connectivity via topounits
+    call mpi_bcast (use_IM2_hillslope_hydrology, 1, MPI_LOGICAL, 0, mpicom, ier)
+
     ! bgc & pflotran interface
     call mpi_bcast (use_elm_interface, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_elm_bgc, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -1054,6 +1060,7 @@ contains
     write(iulog,*) '    use_mexicocity = ', use_mexicocity
     write(iulog,*) '    use_noio = ', use_noio
     write(iulog,*) '    use_betr = ', use_betr
+    write(iulog,*) '    use_IM2_hillslope_hydrology = ', use_IM2_hillslope_hydrology
     write(iulog,*) '    use_atm_downscaling_to_topunit = ', use_atm_downscaling_to_topunit
     write(iulog,*) '    precip_downscaling_method = ', precip_downscaling_method
     write(iulog,*) 'input data files:'

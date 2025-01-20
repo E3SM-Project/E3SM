@@ -95,6 +95,7 @@ _TESTS = {
             "SMS_Ly2_P1x1.1x1_smallvilleIA.IELMCNCROP.elm-per_crop",
             "SMS_Ly2_P1x1.1x1_smallvilleIA.IELMCNCROP.elm-fan",
             "SMS.r05_r05.IELM.elm-topounit",
+            "SMS.r05_r05.IELM.elm-topounit_im2",
             "ERS.ELM_USRDAT.I1850ELM.elm-usrdat",
             "ERS.r05_r05.IELM.elm-lnd_rof_2way",
             "ERS.r05_r05.IELM.elm-V2_ELM_MOSART_features",
