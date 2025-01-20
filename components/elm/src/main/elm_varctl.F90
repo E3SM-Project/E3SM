@@ -228,6 +228,7 @@ module elm_varctl
   character(len=256), public :: fates_leafresp_model = ''               ! Leaf maintenance respiration model, Ryan or Atkin
   character(len=256), public :: fates_cstarvation_model = ''            ! linear or exponential function
   character(len=256), public :: fates_regeneration_model = ''           ! default, TRS, or TRS without seed dynamics
+  character(len=256), public :: fates_hydro_solver = ''                 ! 1D Taylor, 2D Picard, 2D Newton
   logical, public            :: use_fates_fixed_biogeog = .false.       ! true => use fixed biogeography mode
   logical, public            :: use_fates_planthydro = .false.          ! true => turn on fates hydro
   logical, public            :: use_fates_cohort_age_tracking = .false. ! true => turn on cohort age tracking
