@@ -832,7 +832,9 @@ sub setup_cmdl_fates_mode {
                      "use_snicar_ad",
                      "use_vertsoilc",
                      "use_fates_daylength_factor",
-                     "fates_photosynth_acclimation");
+                     "fates_photosynth_acclimation",
+                     "fates_stomatal_model");
+
       foreach my $var ( @list ) {
 	  if ( defined($nl->get_value($var))  ) {
 	      $nl_flags->{$var} = $nl->get_value($var);
@@ -3433,7 +3435,8 @@ sub setup_logic_fates {
                    "use_fates_sp",
                    "use_fates_tree_damage",
                    "use_fates_daylength_factor",
-                   "fates_photosynth_acclimation");
+                   "fates_photosynth_acclimation",
+                   "fates_stomatal_model");
 
     foreach my $var (@list) {
        add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, $var,'use_fates'=>$nl_flags->{'use_fates'});
