@@ -78,9 +78,6 @@ void run_tests (const std::shared_ptr<const AbstractGrid>& grid,
     f.deep_copy(1);
   }
 
-  std::string data_pname =  // if vr_type==None, it's not used anyways
-    vr_type==P1D ? "p1d" :
-                   (vr_type==P3D ? "p3d" : "p2d");
   auto model_pmid = base[2].clone("pmid");
   auto model_pint = base[4].clone("pint");
   if (vr_type==P1D) {
@@ -114,10 +111,19 @@ void run_tests (const std::shared_ptr<const AbstractGrid>& grid,
     }
   }
 
+  DataInterpolation::RemapData remap_data;
+  remap_data.hremap_file = map_file;
+  remap_data.vr_type = vr_type;
+  remap_data.pname =  // if vr_type==None, it's not used anyways
+    vr_type==P1D ? "p1d" :
+                   (vr_type==P3D ? "p3d" : "p2d");
+  remap_data.pmid = model_pmid;
+  remap_data.pint = model_pint;
+
   int nfields = fields.size();
   auto interp = create_interp(grid,fields);
   interp->setup_time_database(input_files,util::TimeLine::YearlyPeriodic);
-  interp->setup_remappers (map_file,vr_type,data_pname,model_pmid,model_pint);
+  interp->setup_remappers (remap_data);
   interp->init_data_interval(t0);
 
   // We jump ahead by 2 months, but the shift interval logic cannot keep up with
