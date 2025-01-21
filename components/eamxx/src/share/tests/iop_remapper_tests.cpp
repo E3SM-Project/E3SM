@@ -171,7 +171,7 @@ TEST_CASE("iop_remap")
     if (comm.rank()==closest_rank) {
       col.deep_copy(src.subfield(COL,closest_lid));
     }
-#ifdef SCREAM_MPI_ON_DEVICE
+#if SCREAM_MPI_ON_DEVICE
     comm.broadcast(col.get_internal_view_data<Real>(),col_size,closest_rank);
 #else
     col.sync_to_host();
