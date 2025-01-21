@@ -294,7 +294,7 @@ AbstractGrid::get_geometry_data (const std::string& name) const {
 }
 
 Field
-AbstractGrid::create_geometry_data (const FieldIdentifier& fid)
+AbstractGrid::create_geometry_data (const FieldIdentifier& fid, const int pack_size)
 {
   const auto& name = fid.name();
 
@@ -307,6 +307,7 @@ AbstractGrid::create_geometry_data (const FieldIdentifier& fid)
 
   // Create field and the read only copy as well
   auto& f = m_geo_fields[name] = Field(fid);
+  f.get_header().get_alloc_properties().request_allocation(pack_size);
   f.allocate_view();
   return f;
 }

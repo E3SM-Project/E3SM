@@ -136,11 +136,12 @@ public:
   Field get_geometry_data (const std::string& name) const;
 
   // Create geometry data, throws if already existing. Returns writable field
-  Field create_geometry_data (const FieldIdentifier& fid);
+  Field create_geometry_data (const FieldIdentifier& fid, const int pack_size = 1);
   Field create_geometry_data (const std::string& name, const FieldLayout& layout,
                               const ekat::units::Units& units = ekat::units::Units::invalid(),
-                              const DataType data_type = DataType::RealType) {
-    return create_geometry_data(FieldIdentifier(name,layout,units,this->name(),data_type));
+                              const DataType data_type = DataType::RealType,
+                              const int pack_size = 1) {
+    return create_geometry_data(FieldIdentifier(name,layout,units,this->name(),data_type),pack_size);
   }
 
   // Sets pre-existing field as geometry data.
