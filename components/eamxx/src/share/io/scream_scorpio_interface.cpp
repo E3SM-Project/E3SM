@@ -1204,19 +1204,6 @@ void read_var (const std::string &filename, const std::string &varname, T* buf, 
         " - time len: " + std::to_string(f.time_dim->length));
     err = PIOc_setframe(f.ncid,var.ncid,frame);
     check_scorpio_noerr (err,f.name,"variable",varname,"read_var","setframe");
-  } else if (time_index>=0) {
-    // This is a bit of a hacky usage. We want to read a time index of a var,
-    // but the time dim is NOT unlimited in the input file. Apparently, SCORPIO
-    // supports this, and some E3SM input files are indeed like this, so we
-    // need to support it here too, hacky as it may be.
-    frame = time_index;
-
-    EKAT_REQUIRE_MSG (frame<var.dims[0]->length,
-        "Error! First dim index out of bounds.\n"
-        " - filename     : " + filename + "\n"
-        " - varname      : " + varname + "\n"
-        " - first dim idx: " + std::to_string(time_index) + "\n"
-        " - first dim len: " + std::to_string(var.dims[0]->length) + "\n");
   }
 
   std::string pioc_func;
