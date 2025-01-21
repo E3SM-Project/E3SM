@@ -5,7 +5,7 @@ if (compile_threaded)
   string(APPEND CMAKE_EXE_LINKER_FLAGS  " -qopenmp")
 endif()
 
-#adding -g here leads to linker internal errors
+# 'just' -g may lead to linker internal errors and/or huge builds out of quotas
 string(APPEND CMAKE_C_FLAGS_RELEASE   " -O2 -g -gline-tables-only")
 string(APPEND CMAKE_Fortran_FLAGS_RELEASE   " -O2 -fpscomp logicals -g -gline-tables-only")
 string(APPEND CMAKE_CXX_FLAGS_RELEASE " -fp-model precise -O2 -g -gline-tables-only")
