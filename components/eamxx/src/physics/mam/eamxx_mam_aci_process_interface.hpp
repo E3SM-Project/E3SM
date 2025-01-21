@@ -41,8 +41,9 @@ class MAMAci final : public scream::AtmosphereProcess {
   // ACI runtime ( or namelist) options
   //------------------------------------------------------------------------
 
-  Real wsubmin_;  // Minimum subgrid vertical velocity
-  int top_lev_;   // Top level for MAM4xx
+  Real wsubmin_;                   // Minimum subgrid vertical velocity
+  bool enable_aero_vertical_mix_;  // To enable vertical mixing of aerosols
+  int top_lev_;                    // Top level for MAM4xx
 
   //------------------------------------------------------------------------
   // END: ACI runtime ( or namelist) options
@@ -212,7 +213,9 @@ class MAMAci final : public scream::AtmosphereProcess {
       // for atmosphere
       compute_vertical_layer_heights(team, dry_atm_pre_, i);
       compute_updraft_velocities(team, wet_atm_pre_, dry_atm_pre_, i);
-    }  // operator()
+      set_min_background_mmr(team, dry_aero_pre_,
+                             i);  // dry_atm_pre_ is the output
+    }                             // operator()
 
     // local variables for preprocess struct
     // number of horizontal columns and vertical levels
