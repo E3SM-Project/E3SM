@@ -18,8 +18,9 @@ public:
   using strvec_t = std::vector<std::string>;
   enum VRemapType {
     None,
-    Static1D,
-    Dynamic3D
+    Static1D,     // USes a constant 1d (vertical) pressure from input data
+    Dynamic3D,    // Uses a time-dep 3d pressure from input data
+    Dynamic3DRef, // Reconstructs a reference 3d pressure from time-dep PS in input data
   };
 
   // Constructor(s) & Destructor
@@ -90,7 +91,10 @@ protected:
   std::shared_ptr<AbstractRemapper> m_horiz_remapper_beg;
   std::shared_ptr<AbstractRemapper> m_horiz_remapper_end;
   std::shared_ptr<AbstractRemapper> m_vert_remapper;
-  std::shared_ptr<VerticalRemapper> m_vremap;
+
+  // If vertical remap happens, at runtime we may need to access some
+  // versions of certain perssure fields. Store them here for convenient access
+  std::map<std::string,Field>     m_helper_pressure_fields;
 
   VRemapType            m_vr_type;
   int                   m_nfields;
