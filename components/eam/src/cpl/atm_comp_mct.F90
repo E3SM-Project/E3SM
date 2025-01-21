@@ -387,10 +387,10 @@ CONTAINS
        ! Set dof (module variable, needed for pio for restarts)
        call mct_gsmap_orderedpoints(gsmap_atm, iam, dof)
        !
-       ! Initialize MCT domain 
+       ! Initialize MCT domain and add data
        !
        call atm_domain_mct( lsize, gsMap_atm, dom_a )
-       !
+
        ! Initialize MCT attribute vectors
        !
        call mct_aVect_init(a2x_a, rList=seq_flds_a2x_fields, lsize=lsize)
@@ -402,6 +402,26 @@ CONTAINS
        ! Create initial atm export state
        !
        call atm_export( cam_out, a2x_a%rattr )
+
+#ifdef HAVE_MOAB
+       ! Initialize MOAB physgrid mesh and add coordinate,mask data
+       ! NOTE:  dynamics mesh is initialized in homme source
+       ! as part of cam_init above
+       call init_moab_atm_phys( cdata_a )
+       ! initialize arrays to hold data for MOAB
+       mblsize = lsize
+       nsend = mct_avect_nRattr(a2x_a)
+       totalmbls = mblsize * nsend   ! size of the double array
+       allocate (a2x_am(mblsize, nsend) )
+
+       nrecv = mct_avect_nRattr(x2a_a)
+       totalmbls_r = mblsize * nrecv   ! size of the double array used to receive
+       allocate (x2a_am(mblsize, nrecv) ) ! these will be received by moab tags, then used to set cam in surf data
+       !
+       ! Create initial atm export state inside moab
+       !
+       call atm_export_moab(Eclock, cam_out )
+#endif
        !
        ! Set flag to specify that an extra albedo calculation is to be done (i.e. specify active)
        !
@@ -427,24 +447,6 @@ CONTAINS
        
        call shr_file_setLogUnit (shrlogunit)
        call shr_file_setLogLevel(shrloglev)
-       ! when called first time, initialize MOAB atm phis grid, and create the mesh
-       ! on the atm
-#ifdef HAVE_MOAB
-       call init_moab_atm_phys( cdata_a )
-       mblsize = lsize
-       nsend = mct_avect_nRattr(a2x_a)
-       totalmbls = mblsize * nsend   ! size of the double array
-       allocate (a2x_am(mblsize, nsend) )
-
-       nrecv = mct_avect_nRattr(x2a_a)
-       totalmbls_r = mblsize * nrecv   ! size of the double array used to receive 
-       allocate (x2a_am(mblsize, nrecv) ) ! these will be received by moab tags, then used to set cam in surf data
-       !
-       ! Create initial atm export state inside moab 
-       !
-       call atm_export_moab(Eclock, cam_out )
-
-#endif
 
        first_time = .false.
 
@@ -1665,7 +1667,7 @@ CONTAINS
     write(lnum,"(I0.2)")cur_atm_stepno
     local_count = local_count + 1
     write(lnum2,"(I0.2)")local_count
-    outfile = 'AtmPhys_'//trim(lnum)//'_'//trim(lnum2)//'.h5m'//C_NULL_CHAR
+    outfile = 'atm_export_'//trim(lnum)//'_'//trim(lnum2)//'.h5m'//C_NULL_CHAR
     wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
     ierr = iMOAB_WriteMesh(mphaid, outfile, wopts)
     if (ierr > 0 )  &
