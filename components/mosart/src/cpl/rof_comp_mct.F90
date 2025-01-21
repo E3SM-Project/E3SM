@@ -1200,7 +1200,7 @@ subroutine rof_export_moab(EClock)
    call seq_timemgr_EClockGetData( EClock, stepno=cur_rof_stepno )
 #ifdef MOABDEBUG
       write(lnum,"(I0.2)")cur_rof_stepno
-      outfile = 'wholeRof_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+      outfile = 'rof_export_'//trim(lnum)//'.h5m'//C_NULL_CHAR
       wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
       ierr = iMOAB_WriteMesh(mrofid, outfile, wopts)
       if (ierr > 0 )  &
@@ -1242,7 +1242,7 @@ end subroutine rof_export_moab
     call seq_timemgr_EClockGetData( EClock, stepno=cur_rof_stepno )
 #ifdef MOABDEBUG
     write(lnum,"(I0.2)")cur_rof_stepno
-    outfile = 'RofImp_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+    outfile = 'rof_import_'//trim(lnum)//'.h5m'//C_NULL_CHAR
     wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
     ierr = iMOAB_WriteMesh(mrofid, outfile, wopts)
     if (ierr > 0 )  then

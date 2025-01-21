@@ -1326,7 +1326,7 @@ contains
     call seq_timemgr_EClockGetData( EClock, stepno=cur_lnd_stepno )
 #ifdef MOABDEBUG
     write(lnum,"(I0.2)")cur_lnd_stepno
-    outfile = 'LndImp_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+    outfile = 'lnd_import_'//trim(lnum)//'.h5m'//C_NULL_CHAR
     wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
     ierr = iMOAB_WriteMesh(mlnid, outfile, wopts)
     if (ierr > 0 )  &
