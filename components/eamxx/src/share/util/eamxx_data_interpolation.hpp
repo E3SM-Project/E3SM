@@ -45,6 +45,9 @@ public:
 
   void toggle_debug_output (bool enable_dbg_output) { m_dbg_output = enable_dbg_output; }
 
+  void setup_time_database (const strvec_t& input_files,
+                            const util::TimeLine timeline,
+                            const util::TimeStamp& ref_ts = util::TimeStamp());
 
   void setup_remappers (const RemapData& data);
 

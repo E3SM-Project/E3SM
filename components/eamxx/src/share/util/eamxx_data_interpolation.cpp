@@ -185,7 +185,8 @@ init_data_interval (const util::TimeStamp& t0)
 
 void DataInterpolation::
 setup_time_database (const strvec_t& input_files,
-                     const util::TimeLine timeline)
+                     const util::TimeLine timeline,
+                     const util::TimeStamp& ref_ts)
 {
   // Log the final list of files, so the user know if something went wrong (e.g. a bad regex)
   if (m_dbg_output and m_comm.am_i_root()) {
@@ -224,7 +225,7 @@ setup_time_database (const strvec_t& input_files,
         "[DataInterpolation] Error! Input file contains no time variable.\n"
         " - file name: " + fname + "\n");
 
-    auto t_ref = read_timestamp (fname,"reference_time_stamp");
+    auto t_ref = ref_ts.is_valid() ? ref_ts : read_timestamp (fname,"reference_time_stamp");
 
     times.emplace_back();
     for (const auto& t : file_times) {
