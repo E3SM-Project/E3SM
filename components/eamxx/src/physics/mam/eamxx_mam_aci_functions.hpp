@@ -205,6 +205,7 @@ void call_function_dropmixnuc(
     const MAMAci::view_2d wsub,
     const MAMAci::view_2d cloud_frac, const MAMAci::view_2d cloud_frac_prev,
     const mam_coupling::AerosolState &dry_aero, const int nlev,
+    const bool &enable_aero_vertical_mix,
 
     // Following outputs are all diagnostics
     MAMAci::view_2d coltend[mam4::ndrop::ncnst_tot],
@@ -318,7 +319,7 @@ void call_function_dropmixnuc(
                           num2vol_ratio_max_nmodes);
   //---------------------------------------------------------------------------
   //---------------------------------------------------------------------------
-
+  const bool local_enable_aero_vertical_mix = enable_aero_vertical_mix;
   Kokkos::parallel_for(
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
         const int icol = team.league_rank();
@@ -406,10 +407,6 @@ void call_function_dropmixnuc(
               }
             });
         team.team_barrier();
-        // HACK: dropmixnuc() requires the parameter enable_aero_vertical_mix,
-        //       so we define it here until we have a better idea of where it
-        //       might come from
-        const bool enable_aero_vertical_mix = true;
         mam4::ndrop::dropmixnuc(
             team, dt, ekat::subview(T_mid, icol), ekat::subview(p_mid, icol),
             ekat::subview(p_int, icol), ekat::subview(pdel, icol),
@@ -421,11 +418,10 @@ void call_function_dropmixnuc(
             spechygro, lmassptr_amode, num2vol_ratio_min_nmodes,
             num2vol_ratio_max_nmodes, numptr_amode, nspec_amode, exp45logsig,
             alogsig, aten, mam_idx, mam_cnst_idx,
-            enable_aero_vertical_mix,
-            ekat::subview(qcld, icol),             // out
-            ekat::subview(wsub, icol),             // in
-            ekat::subview(cloud_frac_prev, icol),  // in
-            qqcw_view,                             // inout
+            local_enable_aero_vertical_mix, ekat::subview(qcld, icol),  // out
+            ekat::subview(wsub, icol),                                  // in
+            ekat::subview(cloud_frac_prev, icol),                       // in
+            qqcw_view,                                                  // inout
             ptend_q_view, ekat::subview(tendnd, icol),
             ekat::subview(factnum, icol), ekat::subview(ndropcol, icol),
             ekat::subview(ndropmix, icol), ekat::subview(nsource, icol),
@@ -534,6 +530,7 @@ void call_hetfrz_compute_tendencies(
         haero::Atmosphere haero_atm =
             atmosphere_for_column(dry_atmosphere, icol);
         haero::Surface surf{};
+        set_min_background_mmr(team, dry_aero,icol);
         mam4::Prognostics progs =
             mam_coupling::aerosols_for_column(dry_aero, icol);
 
