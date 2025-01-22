@@ -40,7 +40,7 @@ def buildnml(case, caseroot, compname):
     run_refdate       = case.get_value("RUN_REFDATE")
     run_reftod        = case.get_value("RUN_REFTOD")
     mali_use_albany   = case.get_value("MALI_USE_ALBANY")
-    mali_dynamic      = case.get_value("MALI_DYNAMIC")
+    mali_prognostic_mode = case.get_value("MALI_PROGNOSTIC_MODE")
     stream_name       = 'streams.landice'
     albany_input_name = 'albany_input.yaml'
 
@@ -160,7 +160,7 @@ def buildnml(case, caseroot, compname):
         sysmod += " -glc_grid '{}'".format(glc_grid)
         sysmod += " -ntasks_glc '{}'".format(ntasks_glc)
         sysmod += " -ninst_glc '{}'".format(ninst_glc_real)
-        sysmod += " -mali_dynamic '{}'".format(mali_dynamic)
+        sysmod += " -mali_prognostic_mode '{}'".format(mali_prognostic_mode)
 
         run_cmd_no_fail(sysmod, from_dir=maliconf_dir)
 
@@ -288,7 +288,7 @@ def buildnml(case, caseroot, compname):
 
         lines.append('</stream>')
         lines.append('')
-        if not mali_dynamic:
+        if mali_prognostic_mode == 'DATA':
             # in MALI data mode, read an input stream with ice thickness monthly
             lines.append('    <stream name="data-mode-input"')
             lines.append('            type="input"')
