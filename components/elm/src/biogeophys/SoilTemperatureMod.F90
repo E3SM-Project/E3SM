@@ -1628,8 +1628,7 @@ contains
 
                      if (imelt(c,j) == 1 .AND. j < 1) then
                         qflx_snomelt(c) = qflx_snomelt(c) + max(0._r8,(wice0(c,j)-h2osoi_ice(c,j)))/dtime
-                        qflx_snomelt_lyr(c,j) = qflx_snomelt(c)
-
+                        qflx_snomelt_lyr(c,j) = max(0._r8,(wice0(c,j)-h2osoi_ice(c,j)))/dtime 
 
                      endif
 
