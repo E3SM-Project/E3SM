@@ -131,7 +131,8 @@ void Cosp::run_impl (const double dt)
   // Make sure cosp frequency is multiple of rad frequency?
 
   // Compare frequency in steps with current timestep
-  auto ts = timestamp();
+  // NOTE: timestamp() returns the time RIGHT BEFORE the call to run
+  auto end_of_step = timestamp()+dt;
   auto update_cosp = cosp_do(cosp_freq_in_steps, ts.get_num_steps());
 
   // Get fields from field manager; note that we get host views because this
