@@ -148,8 +148,8 @@
   </compset>
 
   <compset>
-    <alias>GMPAS-JRA1p4-DIB-PISMF-DIS</alias>
-    <lname>2000_DATM%JRA-1p4-2018_SLND_MPASSI%DIB_MPASO%IBPISMFDATMFORCED_DROF%JRA-1p4-2018_MALI%DATA_SWAV</lname>
+    <alias>GMPAS-JRA1p5-DIB-PISMF-DIS</alias>
+    <lname>2000_DATM%JRA-1p5_SLND_MPASSI%DIB_MPASO%IBPISMFDATMFORCED_DROF%JRA-1p5_MALI%DATA_SWAV</lname>
   </compset>
 
   <compset>
