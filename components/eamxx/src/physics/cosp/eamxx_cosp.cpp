@@ -167,10 +167,10 @@ void Cosp::run_impl (const double dt)
     const auto T_mid_d = get_field_in("T_mid").get_view<const Real**>();
     const auto qv_d  = get_field_in("qv").get_view<const Real**>();
     const auto p_mid_d = get_field_in("p_mid").get_view<const Real**>();
-    const auto phis  = get_field_in("phis").get_view<const Real*>();
-    const auto pseudo_density = get_field_in("pseudo_density").get_view<const Real**>();
+    const auto phis_d  = get_field_in("phis").get_view<const Real*>();
+    const auto pseudo_density_d = get_field_in("pseudo_density").get_view<const Real**>();
     const auto z_mid_d = m_z_mid.get_view<Real**>();
-    const auto z_int = m_z_int.get_view<Real**>();
+    const auto z_int_d = m_z_int.get_view<Real**>();
     const auto ncol = m_num_cols;
     const auto nlev = m_num_levs;
 
@@ -186,10 +186,10 @@ void Cosp::run_impl (const double dt)
         const auto p_mid_s = ekat::subview(p_mid_d, i);
         const auto T_mid_s = ekat::subview(T_mid_d, i);
         const auto qv_s = ekat::subview(qv_d, i);
-        const auto z_int_s = ekat::subview(z_int, i);
+        const auto z_int_s = ekat::subview(z_int_d, i);
         const auto z_mid_s = ekat::subview(z_mid_d, i);
-        const Real z_surf  = phis(i) / g;
-        const auto pseudo_density_s = ekat::subview(pseudo_density, i);
+        const Real z_surf  = phis_d(i) / g;
+        const auto pseudo_density_s = ekat::subview(pseudo_density_d, i);
 
         // 1. Compute dz (recycle z_mid_s as a temporary)
         const auto dz_s = z_mid_s; // 
@@ -204,53 +204,53 @@ void Cosp::run_impl (const double dt)
         PF::calculate_z_mid(team,nlev,z_int_s,z_mid_s);
         team.team_barrier();
     });
-
-    const auto T_mid_h = get_field_in("T_mid").get_view<const Real**, Host>();
-    const auto qv_h  = get_field_in("qv").get_view<const Real**, Host>();
-    const auto p_mid_h = get_field_in("p_mid").get_view<const Real**,Host>();
-    const auto qc      = get_field_in("qc").get_view<const Real**, Host>();
-    const auto qi      = get_field_in("qi").get_view<const Real**, Host>();
-    const auto sunlit  = get_field_in("sunlit").get_view<const Real*, Host>();
-    const auto skt     = get_field_in("surf_radiative_T").get_view<const Real*, Host>();
-    const auto p_int   = get_field_in("p_int").get_view<const Real**, Host>();
-    const auto cldfrac = get_field_in("cldfrac_rad").get_view<const Real**, Host>();
-    const auto reff_qc = get_field_in("eff_radius_qc").get_view<const Real**, Host>();
-    const auto reff_qi = get_field_in("eff_radius_qi").get_view<const Real**, Host>();
-    const auto dtau067 = get_field_in("dtau067").get_view<const Real**, Host>();
-    const auto dtau105 = get_field_in("dtau105").get_view<const Real**, Host>();
+    Kokkos::fence();
 
     m_z_mid.sync_to_host();
     const auto z_mid_h = m_z_mid.get_view<const Real**,Host>();
+    const auto T_mid_h   = get_field_in("T_mid").get_view<const Real**, Host>();
+    const auto qv_h      = get_field_in("qv").get_view<const Real**, Host>();
+    const auto p_mid_h   = get_field_in("p_mid").get_view<const Real**,Host>();
+    const auto qc_h      = get_field_in("qc").get_view<const Real**, Host>();
+    const auto qi_h      = get_field_in("qi").get_view<const Real**, Host>();
+    const auto sunlit_h  = get_field_in("sunlit").get_view<const Real*, Host>();
+    const auto skt_h     = get_field_in("surf_radiative_T").get_view<const Real*, Host>();
+    const auto p_int_h   = get_field_in("p_int").get_view<const Real**, Host>();
+    const auto cldfrac_h = get_field_in("cldfrac_rad").get_view<const Real**, Host>();
+    const auto reff_qc_h = get_field_in("eff_radius_qc").get_view<const Real**, Host>();
+    const auto reff_qi_h = get_field_in("eff_radius_qi").get_view<const Real**, Host>();
+    const auto dtau067_h = get_field_in("dtau067").get_view<const Real**, Host>();
+    const auto dtau105_h = get_field_in("dtau105").get_view<const Real**, Host>();
 
-    auto isccp_cldtot = get_field_out("isccp_cldtot").get_view<Real*, Host>();
-    auto isccp_ctptau = get_field_out("isccp_ctptau").get_view<Real***, Host>();
-    auto modis_ctptau = get_field_out("modis_ctptau").get_view<Real***, Host>();
-    auto misr_cthtau  = get_field_out("misr_cthtau").get_view<Real***, Host>();
-    auto cosp_sunlit  = get_field_out("cosp_sunlit").get_view<Real*, Host>();  // Copy of sunlit flag with COSP frequency for proper averaging
+    auto isccp_cldtot_h = get_field_out("isccp_cldtot").get_view<Real*, Host>();
+    auto isccp_ctptau_h = get_field_out("isccp_ctptau").get_view<Real***, Host>();
+    auto modis_ctptau_h = get_field_out("modis_ctptau").get_view<Real***, Host>();
+    auto misr_cthtau_h  = get_field_out("misr_cthtau").get_view<Real***, Host>();
+    auto cosp_sunlit_h  = get_field_out("cosp_sunlit").get_view<Real*, Host>();  // Copy of sunlit flag with COSP frequency for proper averaging
 
     Real emsfc_lw = 0.99;
-    Kokkos::deep_copy(cosp_sunlit, sunlit);
+    Kokkos::deep_copy(cosp_sunlit_h, sunlit_h);
     CospFunc::main(
-            m_num_cols, m_num_subcols, m_num_levs, m_num_tau, m_num_ctp, m_num_cth,
-            emsfc_lw, sunlit, skt, T_mid_h, p_mid_h, p_int, z_mid_h, qv_h, qc, qi,
-            cldfrac, reff_qc, reff_qi, dtau067, dtau105,
-            isccp_cldtot, isccp_ctptau, modis_ctptau, misr_cthtau
+            m_num_cols, m_num_subcols, m_num_levs, m_num_tau, m_num_ctp, m_num_cth, emsfc_lw,
+            sunlit_h, skt_h, T_mid_h, p_mid_h, p_int_h, z_mid_h, qv_h, qc_h, qi_h,
+            cldfrac_h, reff_qc_h, reff_qi_h, dtau067_h, dtau105_h,
+            isccp_cldtot_h, isccp_ctptau_h, modis_ctptau_h, misr_cthtau_h
     );
     // Remask night values to ZERO since our I/O does not know how to handle masked/missing values
     // in temporal averages; this is all host data, so we can just use host loops like its the 1980s
     for (int i = 0; i < m_num_cols; i++) {
-        if (sunlit(i) == 0) {
-            isccp_cldtot(i) = 0;
-            for (int j = 0; j < m_num_tau; j++) {
-                for (int k = 0; k < m_num_ctp; k++) {
-                    isccp_ctptau(i,j,k) = 0;
-                    modis_ctptau(i,j,k) = 0;
-                }
-                for (int k = 0; k < m_num_cth; k++) {
-                    misr_cthtau (i,j,k) = 0;
-                }
-            }
+      if (sunlit_h(i) == 0) {
+        isccp_cldtot_h(i) = 0;
+        for (int j = 0; j < m_num_tau; j++) {
+          for (int k = 0; k < m_num_ctp; k++) {
+            isccp_ctptau_h(i,j,k) = 0;
+            modis_ctptau_h(i,j,k) = 0;
+          }
+          for (int k = 0; k < m_num_cth; k++) {
+            misr_cthtau_h (i,j,k) = 0;
+          }
         }
+      }
     }
 
     // Make sure dev data is up to date
