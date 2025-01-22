@@ -18,6 +18,7 @@ void Functions<S,D>
   const MemberType&            team,
   const Int&                   nlev,
   const Real&                  dtime,
+  const bool&                  tke_1p5_closure,
   const uview_1d<const Spack>& shoc_mix,
   const uview_1d<const Spack>& wthv_sec,
   const uview_1d<const Spack>& sterm_zt,
@@ -32,7 +33,6 @@ void Functions<S,D>
   static constexpr Scalar basetemp = C::basetemp;
   static constexpr Scalar mintke   = scream::shoc::Constants<Real>::mintke;
   static constexpr Scalar maxtke   = scream::shoc::Constants<Real>::maxtke;
-  const bool tke_1p5_closure       = scream::shoc::Constants<Real>::tke_1p5_closure;
   Spack a_prod_bu;
 
   //declare some constants

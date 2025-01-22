@@ -13,6 +13,7 @@ void Functions<S,D>
   const MemberType&            team,
   const Int&                   nlev,
   const Scalar&                length_fac,
+  const bool&                  tke_1p5_closure,
   const uview_1d<const Spack>& tke,
   const uview_1d<const Spack>& brunt,
   const uview_1d<const Spack>& zt_grid,
@@ -24,7 +25,6 @@ void Functions<S,D>
   const Int nlev_pack = ekat::npack<Spack>(nlev);
   const auto maxlen = scream::shoc::Constants<Scalar>::maxlen;
   const auto vk = C::Karman;
-  const bool tke_1p5_closure = scream::shoc::Constants<bool>::tke_1p5_closure;
   
   // Eddy turnover timescale
   const Scalar tscale = 400;

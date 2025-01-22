@@ -30,6 +30,7 @@ void Functions<S,D>::shoc_tke(
   const Scalar&                lambda_thresh,
   const Scalar&                Ckh,
   const Scalar&                Ckm,
+  const bool&                  tke_1p5_closure,
   const uview_1d<const Spack>& wthv_sec,
   const uview_1d<const Spack>& shoc_mix,
   const uview_1d<const Spack>& dz_zi,
@@ -67,7 +68,7 @@ void Functions<S,D>::shoc_tke(
   linear_interp(team,zi_grid,zt_grid,sterm,sterm_zt,nlevi,nlev,0);
 
   // Advance sgs TKE
-  adv_sgs_tke(team,nlev,dtime,shoc_mix,wthv_sec,sterm_zt,tk,brunt,tke,a_diss);
+  adv_sgs_tke(team,nlev,dtime,tke_1p5_closure,shoc_mix,wthv_sec,sterm_zt,tk,brunt,tke,a_diss);
 
   // Compute isotropic time scale [s]
   isotropic_ts(team,nlev,lambda_low,lambda_high,lambda_slope,lambda_thresh,brunt_int,tke,a_diss,brunt,isotropy);

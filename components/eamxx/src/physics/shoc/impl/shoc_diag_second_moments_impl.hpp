@@ -15,7 +15,7 @@ template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>::diag_second_moments(
   const MemberType& team, const Int& nlev, const Int& nlevi,
-  const Real& thl2tune, const Real& qw2tune, const Real& qwthl2tune, const Real& w2tune,
+  const Real& thl2tune, const Real& qw2tune, const Real& qwthl2tune, const Real& w2tune, const bool& tke_1p5_closure,
   const uview_1d<const Spack>& thetal, const uview_1d<const Spack>& qw, const uview_1d<const Spack>& u_wind,
   const uview_1d<const Spack>& v_wind, const uview_1d<const Spack>& tke, const uview_1d<const Spack>& isotropy,
   const uview_1d<const Spack>& tkh, const uview_1d<const Spack>& tk, const uview_1d<const Spack>& dz_zi,
@@ -31,7 +31,6 @@ void Functions<S,D>::diag_second_moments(
   //  velocity.  In addition the vertical fluxes of thetal, qw,
   //  u, v, TKE, and tracers are computed here as well as the
   //  correlation of qw and thetal.
-  const bool tke_1p5_closure = scream::shoc::Constants<bool>::tke_1p5_closure;
 
   // Interpolate some variables from the midpoint grid to the interface grid
   linear_interp(team, zt_grid, zi_grid, isotropy, isotropy_zi, nlev, nlevi, 0);

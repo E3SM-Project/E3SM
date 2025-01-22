@@ -14,6 +14,7 @@ void Functions<S,D>
   const Int& nlev,
   const Int& nlevi,
   const Scalar& c_diag_3rd_mom,
+  const bool& tke_1p5_closure,
   const uview_1d<const Spack>& w_sec,
   const uview_1d<const Spack>& thl_sec,
   const uview_1d<const Spack>& wthl_sec,
@@ -27,7 +28,6 @@ void Functions<S,D>
   const uview_1d<Spack>& w3)
 {
   const auto ggr = C::gravit;
-  const bool tke_1p5_closure = scream::shoc::Constants<bool>::tke_1p5_closure;
 
   const Int nlev_pack = ekat::npack<Spack>(nlev);
 

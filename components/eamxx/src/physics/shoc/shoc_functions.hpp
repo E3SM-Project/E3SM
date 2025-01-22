@@ -291,6 +291,7 @@ struct Functions
     const Int& nlev,
     const Int& nlevi,
     const Scalar& c_diag_3rd_mom,
+    const bool& tke_1p5_closure,
     const uview_1d<const Spack>& w_sec,
     const uview_1d<const Spack>& thl_sec,
     const uview_1d<const Spack>& wthl_sec,
@@ -314,6 +315,7 @@ struct Functions
     const MemberType&            team,
     const Int&                   nlev,
     const Scalar&                length_fac,
+    const bool&                  tke_1p5_closure,
     const uview_1d<const Spack>& tke,
     const uview_1d<const Spack>& brunt,
     const uview_1d<const Spack>& zt_grid,
@@ -391,7 +393,7 @@ struct Functions
 
   KOKKOS_FUNCTION
   static void diag_second_moments(const MemberType& team, const Int& nlev, const Int& nlevi,
-     const Real& thl2tune, const Real& qw2tune, const Real& qwthl2tune, const Real& w2tune,
+     const Real& thl2tune, const Real& qw2tune, const Real& qwthl2tune, const Real& w2tune, const bool& tke_1p5_closure,
      const uview_1d<const Spack>& thetal, const uview_1d<const Spack>& qw, const uview_1d<const Spack>& u_wind,
      const uview_1d<const Spack>& v_wind, const uview_1d<const Spack>& tke, const uview_1d<const Spack>& isotropy,
      const uview_1d<const Spack>& tkh, const uview_1d<const Spack>& tk, const uview_1d<const Spack>& dz_zi,
@@ -403,7 +405,7 @@ struct Functions
 
   KOKKOS_FUNCTION
   static void diag_second_shoc_moments(const MemberType& team, const Int& nlev, const Int& nlevi,
-     const Scalar& thl2tune, const Scalar& qw2tune, const Scalar& qwthl2tune, const Scalar& w2tune,
+     const Scalar& thl2tune, const Scalar& qw2tune, const Scalar& qwthl2tune, const Scalar& w2tune, const bool& tke_1p5_closure,
      const uview_1d<const Spack>& thetal, const uview_1d<const Spack>& qw, const uview_1d<const Spack>& u_wind,
      const uview_1d<const Spack>& v_wind, const uview_1d<const Spack>& tke, const uview_1d<const Spack>& isotropy,
      const uview_1d<const Spack>& tkh, const uview_1d<const Spack>& tk, const uview_1d<const Spack>& dz_zi,
@@ -515,6 +517,7 @@ struct Functions
     const Int&                   nlev,
     const Int&                   nlevi,
     const Scalar&                length_fac,
+    const bool&                  tke_1p5_closure,
     const Scalar&                dx,
     const Scalar&                dy,
     const uview_1d<const Spack>& zt_grid,
@@ -689,6 +692,7 @@ struct Functions
     const Int&                   nlev,
     const Int&                   nlevi,
     const Scalar&                c_diag_3rd_mom,
+    const bool&                  tke_1p5_closure,
     const uview_1d<const Spack>& w_sec,
     const uview_1d<const Spack>& thl_sec,
     const uview_1d<const Spack>& wthl_sec,
@@ -728,6 +732,7 @@ struct Functions
     const MemberType&            team,
     const Int&                   nlev,
     const Real&                  dtime,
+    const bool&                  tke_1p5_closure,
     const uview_1d<const Spack>& shoc_mix,
     const uview_1d<const Spack>& wthv_sec,
     const uview_1d<const Spack>& sterm_zt,
@@ -1012,6 +1017,7 @@ struct Functions
     const Scalar&                c_diag_3rd_mom,
     const Scalar&                Ckh,
     const Scalar&                Ckm,
+    const bool&                  tke_1p5_closure,
     // Input Variables
     const Scalar&                host_dx,
     const Scalar&                host_dy,
@@ -1316,6 +1322,7 @@ struct Functions
     const Scalar&                lambda_thresh,
     const Scalar&                Ckh,
     const Scalar&                Ckm,
+    const bool&                  tke_1p5_closure,
     const uview_1d<const Spack>& wthv_sec,
     const uview_1d<const Spack>& shoc_mix,
     const uview_1d<const Spack>& dz_zi,
