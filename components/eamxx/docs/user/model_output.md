@@ -1,16 +1,17 @@
 # Model output
 
 EAMxx allows the user to configure the desired model output via [YAML](https://yaml.org/) files,
-with each YAML file associated to a different output file. In order to add an output stream,
+with each YAML file associated to a different output stream (i.e. a file). In order to add an output stream,
 one needs to run `atmchange output_yaml_files+=/path/to/my/output/yaml` (more information on how
 to use `atmchange` can be found [here](./model_input.md#changing-model-inputs-atmchange)).
-During the `buildnml` phase of the case management system, a copy of these YAML files will be copied
+During the `buildnml` phase of the case management system, these YAML files will be copied
 into the RUNDIR/data folder. During this process, the files will be parsed, and any CIME-related
-variable will be resolved accordingly. Therefore, it is not advised to put the original YAML files in RUNDIR/data,
-since upon `buildnml` execution, all the CIME vars will no longer be available in the YAML file,
-making it harder to tweak it, and even harder to share with other users/cases. Another consequence
-of this is that the user should not modify the YAML files in RUNDIR/data, since any modification will
-be lost on the next run of `buildnml`.
+variable will be resolved accordingly. Therefore, it is not advised to put the original YAML files
+in RUNDIR/data, since upon `buildnml` execution, all the CIME vars will no longer be present in the
+YAML file (replaced by their values), making it harder to tweak it, and even harder to share with
+other users/cases. Another consequence of this is that, much like `scream_input.yaml', the user should
+not modify the generated YAML files in RUNDIR/data, since any modification will be lost on the next
+run of `buildnml` (e.g., during `case.submit').
 
 ## Basic output
 
@@ -37,7 +38,8 @@ output_control:
 ```
 
 Notice that lists can be equivalently specified in YAML as `Field Names: [f1, f2, f3]`.
-The user can specify fields to be outputted from any of the grids used in the simulation.
+The user can specify fields to be outputted from any of the grids on which they are available
+(although most fields are only available on ONE grid).
 In the example above, we requested fields from both the Physics and Dynamics grid.
 The meaning of the other parameters is as follows:
 
@@ -47,15 +49,18 @@ The meaning of the other parameters is as follows:
     - Instant: no integration, each time frame saved corresponds to instantaneous values
       of the fields
     - Average/Max/Min: the fields undergo the corresponding operation over the time
-      interval specified in the `output_control` section. In the case above, each snapshot
-      saved to file corresponds to an average of the output fields over 6h windows.
+      interval since the last output step (as specified in the `output_control` section).
+      In the case above, each snapshot saved to file corresponds to an average of the output
+      fields over 6h windows.
 
 - `filename_prefix`: the prefix of the output file, which will be created in the run
   directory. The full filename will be `$prefix.$avgtype.$frequnits_x$freq.$timestamp.nc`,
-  where $timestamp corresponds to the first snapshot saved in the file for Instant output,
-  or the beginning of the first averaging window for the other averaging types
+  where `$timestamp` corresponds to the first snapshot saved in the file for Instant output,
+  or the beginning of the first averaging window for the other averaging types. If not set,
+  it defaults to `$casename.scream.h`.
 - `Max Snapshots Per File`: specifies how many time snapshots can be put in a file. Once
-  this number is reached, EAMxx will close the file and open a new one.
+  this number is reached, EAMxx will close the file and open a new one. If not set,
+  it defaults to `-1`, signaling "unlimited storage".
 - `Frequency`: how many units of time are between two consecutive writes to file. For
   Instant output the fields are "sampled" at this frequency, while for other averaging
   types the fields are "integrated" in time over this window
@@ -73,16 +78,17 @@ I/O interface of EAMxx. There are two types of diagnostic outputs:
   that EAMxx does not keep in persistent storage. As of May 2024, the available
   derived quantities are (case sensitive):
 
-    - `PotentialTemperature`
-    - `AtmosphereDensity`
-    - `Exner`
-    - `VirtualTemperature`
-    - `z_int`
-    - `z_mid`
-    - `geopotential_int`
-    - `geopotential_mid`
-    - `dz`
-    - `DryStaticEnergy`
+    - `Exner`: $\Pi = \left( \dfrac{p}{p_0} \right) ^\dfrac{R_d}{c_p}$
+    - `PotentialTemperature`: $\Theta = T / \Pi$
+    - `LiqPotentialTemperature`: $\Theta_\ell = \Theta - \dfrac{\Theta}{T} \dfrac{L_v}{c_p}q_c$
+    - `dz`: $dz = \dfrac{rd}{g}\dfrac{\rho_s T_v}{p}$
+    - `z_int`: vertical sum of `dz` from surface (b.c. at surface: 0 or $\phi_s/g$, depending if from surface or sealevel)
+    - `z_mid`: midpoint average of `z_int`
+    - `geopotential_int`: vertical sum of `g dz` from surface (b.c. at surface: $\phi_s$)
+    - `geopotential_mid`: midpoint average of `geopotential_int`
+    - `AtmosphereDensity`: $\rho = \dfrac{\rho_s}{dz*g}
+    - `VirtualTemperature`: $T_v = T\left(1+c_1 q_v\right)$
+    - `DryStaticEnergy`: $DSE = c_p T + gz + \phi_s$
     - `SeaLevelPressure`
     - `LiqWaterPath`
     - `IceWaterPath`
@@ -103,7 +109,14 @@ I/O interface of EAMxx. There are two types of diagnostic outputs:
     - `NumberPath`
     - `AeroComCld`
 
-  TODO: add some information about what each diagnostic is, perhaps a formula
+    Where the other symbols above are:
+
+    - $p_0$: reference pressure (100kPa in EAMxx)
+    - $R_d$: gas constant for dry air 
+    - $\rho_s$: pseudo density
+    - $c_1=-1+\frac{1}{\epsilon}$
+    - $\epsilon=\frac{M_w}{M_d}$
+    - $M_w$,$M_d$: molecular masses of water and dry air respectively
 
 - lower-dimensional slices of a field. These are hyperslices of an existing field or of
   another diagnostic output. As of August 2023, given a field X, the available options
