@@ -11,7 +11,7 @@ in RUNDIR/data, since upon `buildnml` execution, all the CIME vars will no longe
 YAML file (replaced by their values), making it harder to tweak it, and even harder to share with
 other users/cases. Another consequence of this is that, much like `scream_input.yaml', the user should
 not modify the generated YAML files in RUNDIR/data, since any modification will be lost on the next
-run of `buildnml` (e.g., during `case.submit').
+run of `buildnml` (e.g., during `case.submit`).
 
 ## Basic output
 
@@ -46,12 +46,12 @@ The meaning of the other parameters is as follows:
 - `Averaging Type`: how the fields are integrated in time before being saved. Valid
   options are
 
-    - Instant: no integration, each time frame saved corresponds to instantaneous values
-      of the fields
-    - Average/Max/Min: the fields undergo the corresponding operation over the time
-      interval since the last output step (as specified in the `output_control` section).
-      In the case above, each snapshot saved to file corresponds to an average of the output
-      fields over 6h windows.
+  - Instant: no integration, each time frame saved corresponds to instantaneous values
+    of the fields
+  - Average/Max/Min: the fields undergo the corresponding operation over the time
+    interval since the last output step (as specified in the `output_control` section).
+    In the case above, each snapshot saved to file corresponds to an average of the output
+    fields over 6h windows.
 
 - `filename_prefix`: the prefix of the output file, which will be created in the run
   directory. The full filename will be `$prefix.$avgtype.$frequnits_x$freq.$timestamp.nc`,
@@ -78,57 +78,57 @@ I/O interface of EAMxx. There are two types of diagnostic outputs:
   that EAMxx does not keep in persistent storage. As of May 2024, the available
   derived quantities are (case sensitive):
 
-    - `Exner`: $\Pi = \left( \dfrac{p}{p_0} \right) ^\dfrac{R_d}{c_p}$
-    - `PotentialTemperature`: $\Theta = T / \Pi$
-    - `LiqPotentialTemperature`: $\Theta_\ell = \Theta - \dfrac{\Theta}{T} \dfrac{L_v}{c_p}q_c$
-    - `dz`: $dz = \dfrac{rd}{g}\dfrac{\rho_s T_v}{p}$
-    - `z_int`: vertical sum of `dz` from surface (b.c. at surface: 0 or $\phi_s/g$, depending if from surface or sealevel)
-    - `z_mid`: midpoint average of `z_int`
-    - `geopotential_int`: vertical sum of `g dz` from surface (b.c. at surface: $\phi_s$)
-    - `geopotential_mid`: midpoint average of `geopotential_int`
-    - `AtmosphereDensity`: $\rho = \dfrac{\rho_s}{dz*g}
-    - `VirtualTemperature`: $T_v = T\left(1+c_1 q_v\right)$
-    - `DryStaticEnergy`: $DSE = c_p T + gz + \phi_s$
-    - `SeaLevelPressure`
-    - `LiqWaterPath`
-    - `IceWaterPath`
-    - `VapWaterPath`
-    - `RainWaterPath`
-    - `RimeWaterPath`
-    - `ShortwaveCloudForcing`
-    - `LongwaveCloudForcing`
-    - `RelativeHumidity`
-    - `ZonalVapFlux`
-    - `MeridionalVapFlux`
-    - `precip_liq_surf_mass_flux`
-    - `precip_ice_surf_mass_flux`
-    - `precip_total_surf_mass_flux`
-    - `surface_upward_latent_heat_flux`
-    - `wind_speed`
-    - `AerosolOpticalDepth550nm`
-    - `NumberPath`
-    - `AeroComCld`
+  - `Exner`: $\Pi = \left( \dfrac{p}{p_0} \right) ^\dfrac{R_d}{c_p}$
+  - `PotentialTemperature`: $\Theta = T / \Pi$
+  - `LiqPotentialTemperature`: $\Theta_\ell = \Theta - \dfrac{\Theta}{T} \dfrac{L_v}{c_p}q_c$
+  - `dz`: $dz = \dfrac{rd}{g}\dfrac{\rho_s T_v}{p}$
+  - `z_int`: vertical sum of `dz` from surface (b.c. at surface: 0 or $\phi_s/g$, depending if from surface or sealevel)
+  - `z_mid`: midpoint average of `z_int`
+  - `geopotential_int`: vertical sum of `g dz` from surface (b.c. at surface: $\phi_s$)
+  - `geopotential_mid`: midpoint average of `geopotential_int`
+  - `AtmosphereDensity`: $\rho = \dfrac{\rho_s}{dz*g}
+  - `VirtualTemperature`: $T_v = T\left(1+c_1 q_v\right)$
+  - `DryStaticEnergy`: $DSE = c_p T + gz + \phi_s$
+  - `SeaLevelPressure`
+  - `LiqWaterPath`
+  - `IceWaterPath`
+  - `VapWaterPath`
+  - `RainWaterPath`
+  - `RimeWaterPath`
+  - `ShortwaveCloudForcing`
+  - `LongwaveCloudForcing`
+  - `RelativeHumidity`
+  - `ZonalVapFlux`
+  - `MeridionalVapFlux`
+  - `precip_liq_surf_mass_flux`
+  - `precip_ice_surf_mass_flux`
+  - `precip_total_surf_mass_flux`
+  - `surface_upward_latent_heat_flux`
+  - `wind_speed`
+  - `AerosolOpticalDepth550nm`
+  - `NumberPath`
+  - `AeroComCld`
 
-    Where the other symbols above are:
+  Where the other symbols above are:
 
-    - $p_0$: reference pressure (100kPa in EAMxx)
-    - $R_d$: gas constant for dry air 
-    - $\rho_s$: pseudo density
-    - $c_1=-1+\frac{1}{\epsilon}$
-    - $\epsilon=\frac{M_w}{M_d}$
-    - $M_w$,$M_d$: molecular masses of water and dry air respectively
+  - $p_0$: reference pressure (100kPa in EAMxx)
+  - $R_d$: gas constant for dry air
+  - $\rho_s$: pseudo density
+  - $c_1=-1+\frac{1}{\epsilon}$
+  - $\epsilon=\frac{M_w}{M_d}$
+  - $M_w$,$M_d$: molecular masses of water and dry air respectively
 
 - lower-dimensional slices of a field. These are hyperslices of an existing field or of
   another diagnostic output. As of August 2023, given a field X, the available options
   are:
 
-    - `X_at_lev_N`: slice the field `X` at the N-th vertical level index. Recall that
-      in EAMxx N=0 corresponds to the model top.
-    - `X_at_model_bot`, `X_at_model_top`: special case for top and bottom of the model.
-    - `X_at_Ymb`, `X_at_YPa`, `X_at_YhPa`: interpolates the field `X` at a vertical position
-      specified by the give pressure `Y`. Available units are `mb` (millibar), `Pa`, and `hPa`.
-    - `X_at_Ym_above_Z`: interpolates the field `X` at a vertical height of `Y` meters above
-      `Z`, with `Z=surface` or `Z=sealevel`.
+  - `X_at_lev_N`: slice the field `X` at the N-th vertical level index. Recall that
+    in EAMxx N=0 corresponds to the model top.
+  - `X_at_model_bot`, `X_at_model_top`: special case for top and bottom of the model.
+  - `X_at_Ymb`, `X_at_YPa`, `X_at_YhPa`: interpolates the field `X` at a vertical position
+    specified by the give pressure `Y`. Available units are `mb` (millibar), `Pa`, and `hPa`.
+  - `X_at_Ym_above_Z`: interpolates the field `X` at a vertical height of `Y` meters above
+    `Z`, with `Z=surface` or `Z=sealevel`.
 
 ## Remapped output
 
@@ -146,7 +146,7 @@ they are computed on.
   before being saved to file. This feature is really only used to save fields on the
   dynamics grid without saving twice the DOFs at the interface of two spectral elements.
   E.g., for a scalar quantity defined only in the horizontal direction, native output
-  from the Dynamics grid would produce arrays of length `nelems*ngp*ngp`, where `ngp` 
+  from the Dynamics grid would produce arrays of length `nelems*ngp*ngp`, where `ngp`
   is the number of Gauss points along each axis in the 2d spectral element, and `nelems`
   is the number of horizontal elements. However, due to continuity, the values on the
   Gauss points on the element boundary must match the values on the neighboring element,
@@ -198,7 +198,7 @@ file and the type of the parameter value).
 - `save_grid_data` (`output_control` sublist, boolean): this option allows to specify whether grid data
   (such as `lat`/`lon`) should be added to the output stream. By default, it is `true`.
 - `iotype` (toplevel list, string): this option allows the user to request a particular format for the output
-  file. The possible values are `default`, `netcdf`, `pnetcdf, `adios`, `hdf5`, where `default` means
+  file. The possible values are 'default', 'netcdf', 'pnetcdf' 'adios', 'hdf5', where 'default' means
   "whatever is the PIO type from the case settings".
 - `skip_t0_output` (`output_control` sublist, boolean): this option is relevant only for `Instant` output,
   where fields are also outputed at the case start time (i.e., after initialization but before the beginning
