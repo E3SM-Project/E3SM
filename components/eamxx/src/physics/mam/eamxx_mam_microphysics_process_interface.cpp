@@ -916,20 +916,6 @@ void MAMMicrophysics::run_impl(const double dt) {
         const auto prain_icol        = ekat::subview(prain, icol);
         const auto work_set_het_icol = ekat::subview(work_set_het, icol);
 
-        // Surface temperature
-        const Real sfc_air_temp = atm.temperature(surface_lev);
-
-        // Surface specific humidity
-        const Real sfc_spec_hum = atm.vapor_mixing_ratio(surface_lev);
-
-        // Surface potential temperature
-        //(FIXME: We followed Fortran, compare it with MAM4xx's potential temp
-        // func)
-        const Real sfc_potential_temp = sfc_air_temp * (1.0 + sfc_spec_hum);
-
-        // Surface pressure at 10m (Followed the fortran code)
-        const Real pressure_10m = dry_atm.p_mid(icol, surface_lev);
-
         // Wind speed at the surface
         const Real wind_speed =
             haero::sqrt(u_wind(icol, surface_lev) * u_wind(icol, surface_lev) +
@@ -960,8 +946,8 @@ void MAMMicrophysics::run_impl(const double dt) {
         // Output: values are dvel, dvlx
         // Input/Output: progs::stateq, progs::qqcw
         mam4::microphysics::perform_atmospheric_chemistry_and_microphysics(
-            team, dt, rlats, month, sfc_temperature(icol), sfc_air_temp,
-            sfc_potential_temp, sfc_pressure(icol), pressure_10m, sfc_spec_hum,
+            team, dt, rlats, month, sfc_temperature(icol),
+            sfc_pressure(icol),
             wind_speed, rain, snow_height, solar_flux, cnst_offline_icol,
             forcings_in, atm, photo_table, chlorine_loading, config.setsox,
             config.amicphys, config.linoz.psc_T, zenith_angle(icol),
