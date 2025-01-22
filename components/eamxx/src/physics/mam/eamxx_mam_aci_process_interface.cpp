@@ -41,7 +41,7 @@ MAMAci::MAMAci(const ekat::Comm &comm, const ekat::ParameterList &params)
   EKAT_REQUIRE_MSG(m_params.isParameter("wsubmin"),
                    "ERROR: wsubmin is missing from mam_aci parameter list.");
   EKAT_REQUIRE_MSG(m_params.isParameter("enable_aero_vertical_mix"),
-                   "ERROR: enable_aero_vertical_mixing is missing from mam_aci "
+                   "ERROR: enable_aero_vertical_mix is missing from mam_aci "
                    "parameter list.");
   EKAT_REQUIRE_MSG(
       m_params.isParameter("top_level_mam4xx"),
