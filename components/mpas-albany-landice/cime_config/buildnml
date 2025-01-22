@@ -56,6 +56,7 @@ def buildnml(case, caseroot, compname):
     grid_prefix = ''
     decomp_date = ''
     decomp_prefix = ''
+    datamode_date = ''
 
     if glc_grid == 'mpas.aisgis20km':
         grid_date += '20190326'
@@ -70,6 +71,7 @@ def buildnml(case, caseroot, compname):
     elif glc_grid == 'mpas.ais8to30km':
         grid_date += '20221027'
         grid_prefix += 'ais_8to30km'
+        datamode_date += '20250121'
         decomp_date += '240507'
         decomp_prefix += 'mpasli.graph.info.'
     elif glc_grid == 'mpas.ais4to20km':
@@ -292,7 +294,7 @@ def buildnml(case, caseroot, compname):
             # in MALI data mode, read an input stream with ice thickness monthly
             lines.append('    <stream name="data-mode-input"')
             lines.append('            type="input"')
-            lines.append(f'            filename_template="{din_loc_root}/glc/mpasli/{glc_grid}/{grid_prefix}_datamode.nc"')
+            lines.append(f'            filename_template="{din_loc_root}/glc/mpasli/{glc_grid}/{grid_prefix}_datamode.{datamode_date}.nc"')
             lines.append('            reference_time="2000-01-01_00:00:00"')
             lines.append('            input_interval="0000-01-00_00:00:00">')
             lines.append('')
