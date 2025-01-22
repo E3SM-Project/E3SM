@@ -75,6 +75,9 @@ protected:
 
   std::shared_ptr<const AbstractGrid> m_grid;
 
+  // TODO: use atm buffer instead
+  Field m_z_mid;
+  Field m_z_int;
 }; // class Cosp
 
 } // namespace scream
