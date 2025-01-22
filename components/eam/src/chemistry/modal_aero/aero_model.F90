@@ -2814,7 +2814,10 @@ do_lphase2_conditional: &
          has_mam_mom, F_eff_out, nslt_om
     use dust_model,    only: dust_emis, dust_names, dust_indices, dust_active,dust_nbin, dust_nnum
     use physics_types, only: physics_state
-
+!<shanyp 01222025
+    use phys_grid,      only: get_rlat_all_p, get_rlon_all_p
+    use physconst,      only: pi
+!shanyp 01222025>
     ! Arguments:
 
     type(physics_state),    intent(in)    :: state   ! Physics state variables
@@ -2834,6 +2837,11 @@ do_lphase2_conditional: &
 !<shanyp 07052024
 !    real (r8), parameter :: dstemislimit=1.e-4  ! kg/m2/s dust emission upper bound
     integer :: icol,mmn
+!<shanyp 01222025
+    real(r8) :: tmp_lat(pcols),tmp_lon(pcols)
+    tmp_lat(:) =-999._r8
+    tmp_lon(:) =-999._r8
+!shanyp 01222025>
     icol=0
     mmn=0
 !shanyp 07052024>
@@ -2852,10 +2860,17 @@ do_lphase2_conditional: &
           if(dstemislimitswitch) then
            do icol=1,ncol
             if((cam_in%cflx(icol,mm).ge.dstemislimit).and.(m.le.dust_nbin)) then
+!<shanyp 01222025
+             call get_rlon_all_p(lchnk,ncol,tmp_lon)
+             call get_rlat_all_p(lchnk,ncol,tmp_lat)
+!shanyp 01222025>
              mmn=dust_indices(m+2)
              cam_in%cflx(icol,mmn)=cam_in%cflx(icol,mmn)*dstemislimit/cam_in%cflx(icol,mm)
              cam_in%cflx(icol,mm)=dstemislimit
-             write(iulog,'(a,1x,i10)') 'The dust emission cap is hit at icol=', icol
+             write(iulog,'(3(a,1x,i10))') &
+                     'The dust emission cap is hit at icol=',icol, &
+                     'Latitude=',tmp_lat(icol)*180.0/pi, &
+                     'Longitude=',tmp_lon(icol)*180.0/pi
             end if
            end do
           end if
