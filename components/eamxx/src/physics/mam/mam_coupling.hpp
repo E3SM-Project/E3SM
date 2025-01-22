@@ -776,6 +776,32 @@ void compute_wet_mixing_ratios(const Team& team,
   });
 }
 
+// Set minimum background MMR for the interstitial aerosols
+KOKKOS_INLINE_FUNCTION
+void set_min_background_mmr(const Team& team,
+                               const AerosolState& dry_aero,
+                               const int column_index) {
+
+  EKAT_KERNEL_ASSERT_MSG(column_index == team.league_rank(),
+    "Given column index does not correspond to given team!");
+
+  //Minimum background value for the interstitial aerosols
+  constexpr Real INTERSTITIAL_AERO_MIN_VAL = 1e-36;
+
+  constexpr int nlev = mam4::nlev;
+  const int icol = column_index;
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&] (const int klev) {
+    for (int imode = 0; imode < num_aero_modes(); ++imode) {
+      dry_aero.int_aero_nmr[imode](icol,klev) = haero::max(dry_aero.int_aero_nmr[imode](icol,klev), INTERSTITIAL_AERO_MIN_VAL);
+      for (int ispec = 0; ispec < num_aero_species(); ++ispec) {
+        if (dry_aero.int_aero_mmr[imode][ispec].data()) {
+          dry_aero.int_aero_mmr[imode][ispec](icol,klev) = haero::max(dry_aero.int_aero_mmr[imode][ispec](icol,klev), INTERSTITIAL_AERO_MIN_VAL);
+        }
+      }//ispec
+    }//imode
+  });
+} // set_min_background_mmr
+
 // Computes the reciprocal of pseudo density for a column
 inline
 void compute_recipical_pseudo_density(haero::ThreadTeamPolicy team_policy,
