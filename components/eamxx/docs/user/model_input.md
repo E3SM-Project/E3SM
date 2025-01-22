@@ -60,6 +60,22 @@ $ ./atmquery foo::my_param
     namelist_defaults::node1::node2::foo::my_param:   10
 ```
 
+If the input parameter is not a leaf but a node with sub-elements, the output will recursively print all
+sub-elements, properly indented:
+
+```shell
+$ ./atmquery homme
+  homme
+      Moisture: moist
+      BfbHash: 18
+      number_of_subcycles: 1
+      enable_precondition_checks: true
+      enable_postcondition_checks: true
+      repair_log_level: trace
+      internal_diagnostics_level: 0
+      compute_tendencies: None
+```
+
 It is sometimes desirable to query _all_ the nodes that have a particular name, or that contain a particular
 string. We can do that by using the `--grep` flag:
 
@@ -75,28 +91,9 @@ $ ./atmquery --grep sub
     physics::number_of_subcycles: 1
 ```
 
-TODO: This difference between basic and `--grep` is not really intuitive: as pointed out in [this
-issue](https://github.com/E3SM-Project/scream/issues/2413), we should change this. If we do, don't forget
-to update this following part of the docs.
-Using the `--grep` option has another effect: if the match is not a leaf of the XML tree, all its subelements
-are printed:
-
-```shell
-$ ./atmquery --grep homme
-  homme
-      Moisture: moist
-      BfbHash: 18
-      number_of_subcycles: 1
-      enable_precondition_checks: true
-      enable_postcondition_checks: true
-      repair_log_level: trace
-      internal_diagnostics_level: 0
-      compute_tendencies: None
-```
-
-Similarly to the CIME utility `xmlchange`, the options `--value`, `--type`, `--valid-values`, and `--full` can be
+Similarly to the CIME utility `xmlquery`, the options `--value`, `--type`, `--valid-values`, and `--full` can be
 used to respectively retrieve just the parameter value (useful for shell scripting), the parameter's type,
-a list of valid values for parameter (when applicable), or all of the above:
+a list of valid values for the parameter (when applicable), or all of the above:
 
 ```shell
 $ ./atmquery atm_log_level --value
