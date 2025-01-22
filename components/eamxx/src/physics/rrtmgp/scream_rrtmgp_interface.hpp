@@ -405,55 +405,35 @@ static void rrtmgp_main(
   check_range_k(rei        ,                         0, std::numeric_limits<RealT>::max(), "rrtmgp_main::rei");
 #endif
 
-  const int int_size1 = 2*sw_nband;
-  const int int_size2 = sw_nband;
-  const int int_size3 = 2*lw_nband;
-  const int int_size4 = lw_nband;
-  const int int_size5 = sw_ngpt;
-  const int int_size6 = lw_ngpt;
+  auto sw_band2gpt_mem = pool_t::template alloc_and_init<int>(2, sw_nband);
+  auto sw_gpt2band_mem = pool_t::template alloc_and_init<int>(   sw_nband);
+  auto lw_band2gpt_mem = pool_t::template alloc_and_init<int>(2, lw_nband);
+  auto lw_gpt2band_mem = pool_t::template alloc_and_init<int>(   lw_nband);
 
-  const int real_size1 = ncol*nlay*sw_nband;
-  const int real_size2 = ncol*nlay*lw_nband;
-  const int real_size3 = ncol*nlay*sw_ngpt;
-  const int real_size4 = ncol*nlay*lw_ngpt;
+  auto sw_cloud_band2gpt_mem = pool_t::template alloc_and_init<int>(2, sw_nband);
+  auto sw_cloud_gpt2band_mem = pool_t::template alloc_and_init<int>(   sw_nband);
+  auto lw_cloud_band2gpt_mem = pool_t::template alloc_and_init<int>(2, lw_nband);
+  auto lw_cloud_gpt2band_mem = pool_t::template alloc_and_init<int>(   lw_nband);
 
-  const int total_int_size = 2 * (int_size1 + int_size2 + int_size3 + int_size4) + (int_size1 + int_size5 + int_size3 + int_size6);
-  const int total_real_size = 2 * (3 * real_size1 + real_size2) + (3*real_size3 + real_size4);
-  auto int_data = pool_t::template alloc_and_init<int>(total_int_size); int *dcurr_int = int_data.data();
+  auto sw_subcloud_band2gpt_mem = pool_t::template alloc_and_init<int>(2, sw_nband);
+  auto sw_subcloud_gpt2band_mem = pool_t::template alloc_and_init<int>(   sw_ngpt);
+  auto lw_subcloud_band2gpt_mem = pool_t::template alloc_and_init<int>(2, lw_nband);
+  auto lw_subcloud_gpt2band_mem = pool_t::template alloc_and_init<int>(   lw_ngpt);
 
-  view_t<int**> sw_band2gpt_mem(dcurr_int, 2, sw_nband); dcurr_int += int_size1;
-  view_t<int*>  sw_gpt2band_mem(dcurr_int,    sw_nband); dcurr_int += int_size2;
-  view_t<int**> lw_band2gpt_mem(dcurr_int, 2, lw_nband); dcurr_int += int_size3;
-  view_t<int*>  lw_gpt2band_mem(dcurr_int,    lw_nband); dcurr_int += int_size4;
+  auto sw_tau_mem = pool_t::template alloc_and_init<RealT>(ncol, nlay, sw_nband);
+  auto sw_ssa_mem = pool_t::template alloc_and_init<RealT>(ncol, nlay, sw_nband);
+  auto sw_g_mem   = pool_t::template alloc_and_init<RealT>(ncol, nlay, sw_nband);
+  auto lw_tau_mem = pool_t::template alloc_and_init<RealT>(ncol, nlay, lw_nband);
 
-  view_t<int**> sw_cloud_band2gpt_mem(dcurr_int, 2, sw_nband); dcurr_int += int_size1;
-  view_t<int*>  sw_cloud_gpt2band_mem(dcurr_int,    sw_nband); dcurr_int += int_size2;
-  view_t<int**> lw_cloud_band2gpt_mem(dcurr_int, 2, lw_nband); dcurr_int += int_size3;
-  view_t<int*>  lw_cloud_gpt2band_mem(dcurr_int,    lw_nband); dcurr_int += int_size4;
+  auto sw_cloud_tau_mem = pool_t::template alloc_and_init<RealT>(ncol, nlay, sw_nband);
+  auto sw_cloud_ssa_mem = pool_t::template alloc_and_init<RealT>(ncol, nlay, sw_nband);
+  auto sw_cloud_g_mem   = pool_t::template alloc_and_init<RealT>(ncol, nlay, sw_nband);
+  auto lw_cloud_tau_mem = pool_t::template alloc_and_init<RealT>(ncol, nlay, lw_nband);
 
-  view_t<int**> sw_subcloud_band2gpt_mem(dcurr_int, 2, sw_nband); dcurr_int += int_size1;
-  view_t<int*>  sw_subcloud_gpt2band_mem(dcurr_int,    sw_ngpt);  dcurr_int += int_size5;
-  view_t<int**> lw_subcloud_band2gpt_mem(dcurr_int, 2, lw_nband); dcurr_int += int_size3;
-  view_t<int*>  lw_subcloud_gpt2band_mem(dcurr_int,    lw_ngpt);  dcurr_int += int_size6;
-  assert(dcurr_int - int_data.data() == total_int_size);
-
-  auto data = pool_t::template alloc_and_init<RealT>(total_real_size); RealT *dcurr = data.data();
-
-  view_t<RealT***> sw_tau_mem(dcurr, ncol, nlay, sw_nband); dcurr += real_size1;
-  view_t<RealT***> sw_ssa_mem(dcurr, ncol, nlay, sw_nband); dcurr += real_size1;
-  view_t<RealT***> sw_g_mem  (dcurr, ncol, nlay, sw_nband); dcurr += real_size1;
-  view_t<RealT***> lw_tau_mem(dcurr, ncol, nlay, lw_nband); dcurr += real_size2;
-
-  view_t<RealT***> sw_cloud_tau_mem(dcurr, ncol, nlay, sw_nband); dcurr += real_size1;
-  view_t<RealT***> sw_cloud_ssa_mem(dcurr, ncol, nlay, sw_nband); dcurr += real_size1;
-  view_t<RealT***> sw_cloud_g_mem  (dcurr, ncol, nlay, sw_nband); dcurr += real_size1;
-  view_t<RealT***> lw_cloud_tau_mem(dcurr, ncol, nlay, lw_nband); dcurr += real_size2;
-
-  view_t<RealT***> sw_subcloud_tau_mem(dcurr, ncol, nlay, sw_ngpt); dcurr += real_size3;
-  view_t<RealT***> sw_subcloud_ssa_mem(dcurr, ncol, nlay, sw_ngpt); dcurr += real_size3;
-  view_t<RealT***> sw_subcloud_g_mem  (dcurr, ncol, nlay, sw_ngpt); dcurr += real_size3;
-  view_t<RealT***> lw_subcloud_tau_mem(dcurr, ncol, nlay, lw_ngpt); dcurr += real_size4;
-  assert(dcurr - data.data() == total_real_size);
+  auto sw_subcloud_tau_mem = pool_t::template alloc_and_init<RealT>(ncol, nlay, sw_ngpt);
+  auto sw_subcloud_ssa_mem = pool_t::template alloc_and_init<RealT>(ncol, nlay, sw_ngpt);
+  auto sw_subcloud_g_mem   = pool_t::template alloc_and_init<RealT>(ncol, nlay, sw_ngpt);
+  auto lw_subcloud_tau_mem = pool_t::template alloc_and_init<RealT>(ncol, nlay, lw_ngpt);
 
   // Setup pointers to RRTMGP SW fluxes
   fluxes_t fluxes_sw;
@@ -584,8 +564,35 @@ static void rrtmgp_main(
     extra_clnclrsky_diag, extra_clnsky_diag
             );
 
-  pool_t::dealloc(int_data);
-  pool_t::dealloc(data);
+  pool_t::dealloc(sw_band2gpt_mem);
+  pool_t::dealloc(sw_gpt2band_mem);
+  pool_t::dealloc(lw_band2gpt_mem);
+  pool_t::dealloc(lw_gpt2band_mem);
+
+  pool_t::dealloc(sw_cloud_band2gpt_mem);
+  pool_t::dealloc(sw_cloud_gpt2band_mem);
+  pool_t::dealloc(lw_cloud_band2gpt_mem);
+  pool_t::dealloc(lw_cloud_gpt2band_mem);
+
+  pool_t::dealloc(sw_subcloud_band2gpt_mem);
+  pool_t::dealloc(sw_subcloud_gpt2band_mem);
+  pool_t::dealloc(lw_subcloud_band2gpt_mem);
+  pool_t::dealloc(lw_subcloud_gpt2band_mem);
+
+  pool_t::dealloc(sw_tau_mem);
+  pool_t::dealloc(sw_ssa_mem);
+  pool_t::dealloc(sw_g_mem);
+  pool_t::dealloc(lw_tau_mem);
+
+  pool_t::dealloc(sw_cloud_tau_mem);
+  pool_t::dealloc(sw_cloud_ssa_mem);
+  pool_t::dealloc(sw_cloud_g_mem);
+  pool_t::dealloc(lw_cloud_tau_mem);
+
+  pool_t::dealloc(sw_subcloud_tau_mem);
+  pool_t::dealloc(sw_subcloud_ssa_mem);
+  pool_t::dealloc(sw_subcloud_g_mem);
+  pool_t::dealloc(lw_subcloud_tau_mem);
 }
 
 /*
@@ -680,79 +687,57 @@ static void rrtmgp_sw(
   }
 
   // Allocate temporaries from pool
-  const int size1 = nday;
-  const int size2 = nday*nlay; // 4
-  const int size3 = nday*(nlay+1); // 5
-  const int size4 = ncol*nlay;
-  const int size5 = nbnd*nday; //2
-  const int size6 = nday*ngpt;
-  const int size7 = nday*(nlay+1)*nbnd; // 3
-  const int size8 = ncol*nlay*(k_dist.get_ngas()+1);
-  const int size9 = nday*nlay*ngas;
-  const int size10 = nday*nlay*nbnd; // 3
-  const int size11 = nday*nlay*ngpt; // 9
 
-  const int total_size = size1 + size2*4 + size3*5 + size4 + size5*2 + size6 + size7*3 + size8 + size9 + size10*3 + size11*9;
-  auto data = pool_t::template alloc_and_init<RealT>(total_size); RealT* dcurr = data.data();
+  auto mu0_day = pool_t::template alloc_and_init<RealT>(nday);
 
-  auto mu0_day             = view_t<RealT*>  (dcurr, nday); dcurr += size1;
+  auto p_lay_day = pool_t::template alloc_and_init<RealT>(nday, nlay);
+  auto t_lay_day = pool_t::template alloc_and_init<RealT>(nday, nlay);
+  auto vmr_day = pool_t::template alloc_and_init<RealT>(nday, nlay);
+  auto t_lay_limited = pool_t::template alloc_and_init<RealT>(nday, nlay);
 
-  auto p_lay_day           = view_t<RealT**> (dcurr, nday, nlay); dcurr += size2;
-  auto t_lay_day           = view_t<RealT**> (dcurr, nday, nlay); dcurr += size2;
-  auto vmr_day             = view_t<RealT**> (dcurr, nday, nlay); dcurr += size2;
-  auto t_lay_limited       = view_t<RealT**> (dcurr, nday, nlay); dcurr += size2;
+  auto p_lev_day = pool_t::template alloc_and_init<RealT>(nday, nlay+1);
+  auto t_lev_day = pool_t::template alloc_and_init<RealT>(nday, nlay+1);
+  auto flux_up_day = pool_t::template alloc_and_init<RealT>(nday, nlay+1);
+  auto flux_dn_day = pool_t::template alloc_and_init<RealT>(nday, nlay+1);
+  auto flux_dn_dir_day = pool_t::template alloc_and_init<RealT>(nday, nlay+1);
 
-  auto p_lev_day           = view_t<RealT**> (dcurr, nday, nlay+1); dcurr += size3;
-  auto t_lev_day           = view_t<RealT**> (dcurr, nday, nlay+1); dcurr += size3;
-  auto flux_up_day         = view_t<RealT**> (dcurr, nday, nlay+1); dcurr += size3;
-  auto flux_dn_day         = view_t<RealT**> (dcurr, nday, nlay+1); dcurr += size3;
-  auto flux_dn_dir_day     = view_t<RealT**> (dcurr, nday, nlay+1); dcurr += size3;
+  auto vmr = pool_t::template alloc_and_init<RealT>(ncol, nlay);
 
-  auto vmr                 = view_t<RealT**> (dcurr, ncol, nlay); dcurr += size4;
+  auto sfc_alb_dir_T = pool_t::template alloc_and_init<RealT>(nbnd, nday);
+  auto sfc_alb_dif_T = pool_t::template alloc_and_init<RealT>(nbnd, nday);
 
-  auto sfc_alb_dir_T       = view_t<RealT**> (dcurr, nbnd, nday); dcurr += size5;
-  auto sfc_alb_dif_T       = view_t<RealT**> (dcurr, nbnd, nday); dcurr += size5;
+  auto toa_flux = pool_t::template alloc_and_init<RealT>(nday, ngpt);
 
-  auto toa_flux            = view_t<RealT**> (dcurr, nday, ngpt); dcurr += size6;
+  auto bnd_flux_up_day = pool_t::template alloc_and_init<RealT>(nday, nlay+1, nbnd);
+  auto bnd_flux_dn_day = pool_t::template alloc_and_init<RealT>(nday, nlay+1, nbnd);
+  auto bnd_flux_dn_dir_day = pool_t::template alloc_and_init<RealT>(nday, nlay+1, nbnd);
 
-  auto bnd_flux_up_day     = view_t<RealT***>(dcurr, nday, nlay+1, nbnd); dcurr += size7;
-  auto bnd_flux_dn_day     = view_t<RealT***>(dcurr, nday, nlay+1, nbnd); dcurr += size7;
-  auto bnd_flux_dn_dir_day = view_t<RealT***>(dcurr, nday, nlay+1, nbnd); dcurr += size7;
+  auto col_gas = pool_t::template alloc_and_init<RealT>(ncol, nlay, k_dist.get_ngas()+1);
 
-  auto col_gas             = view_t<RealT***>(dcurr, ncol, nlay, k_dist.get_ngas()+1); dcurr += size8;
+  auto concs_mem = pool_t::template alloc_and_init<RealT>(nday, nlay, ngas);
 
-  auto concs_mem           = view_t<RealT***>(dcurr, nday, nlay, ngas); dcurr += size9;
+  auto sw_aero_tau_mem = pool_t::template alloc_and_init<RealT>(nday, nlay, nbnd);
+  auto sw_aero_ssa_mem = pool_t::template alloc_and_init<RealT>(nday, nlay, nbnd);
+  auto sw_aero_g_mem = pool_t::template alloc_and_init<RealT>(nday, nlay, nbnd);
 
-  auto sw_aero_tau_mem     = view_t<RealT***>(dcurr, nday, nlay, nbnd); dcurr += size10;
-  auto sw_aero_ssa_mem     = view_t<RealT***>(dcurr, nday, nlay, nbnd); dcurr += size10;
-  auto sw_aero_g_mem       = view_t<RealT***>(dcurr, nday, nlay, nbnd); dcurr += size10;
+  auto sw_cloud_tau_mem = pool_t::template alloc_and_init<RealT>(nday, nlay, ngpt);
+  auto sw_cloud_ssa_mem = pool_t::template alloc_and_init<RealT>(nday, nlay, ngpt);
+  auto sw_cloud_g_mem = pool_t::template alloc_and_init<RealT>(nday, nlay, ngpt);
+  auto sw_optics_tau_mem = pool_t::template alloc_and_init<RealT>(nday, nlay, ngpt);
+  auto sw_optics_ssa_mem = pool_t::template alloc_and_init<RealT>(nday, nlay, ngpt);
+  auto sw_optics_g_mem = pool_t::template alloc_and_init<RealT>(nday, nlay, ngpt);
+  auto sw_noaero_tau_mem = pool_t::template alloc_and_init<RealT>(nday, nlay, ngpt);
+  auto sw_noaero_ssa_mem = pool_t::template alloc_and_init<RealT>(nday, nlay, ngpt);
+  auto sw_noaero_g_mem = pool_t::template alloc_and_init<RealT>(nday, nlay, ngpt);
 
-  auto sw_cloud_tau_mem     = view_t<RealT***>(dcurr, nday, nlay, ngpt); dcurr += size11;
-  auto sw_cloud_ssa_mem     = view_t<RealT***>(dcurr, nday, nlay, ngpt); dcurr += size11;
-  auto sw_cloud_g_mem       = view_t<RealT***>(dcurr, nday, nlay, ngpt); dcurr += size11;
-  auto sw_optics_tau_mem     = view_t<RealT***>(dcurr, nday, nlay, ngpt); dcurr += size11;
-  auto sw_optics_ssa_mem     = view_t<RealT***>(dcurr, nday, nlay, ngpt); dcurr += size11;
-  auto sw_optics_g_mem       = view_t<RealT***>(dcurr, nday, nlay, ngpt); dcurr += size11;
-  auto sw_noaero_tau_mem     = view_t<RealT***>(dcurr, nday, nlay, ngpt); dcurr += size11;
-  auto sw_noaero_ssa_mem     = view_t<RealT***>(dcurr, nday, nlay, ngpt); dcurr += size11;
-  auto sw_noaero_g_mem       = view_t<RealT***>(dcurr, nday, nlay, ngpt); dcurr += size11;
-  assert(dcurr - data.data() == total_size);
-
-  const int int_size1 = 2*nbnd;
-  const int int_size2 = nbnd;
-  const int int_size3 = ngpt;
-  const int total_int_size = 3 * (int_size1 + int_size3) + (int_size1 + int_size2);
-  auto int_data = pool_t::template alloc_and_init<int>(total_int_size); int *dcurr_int = int_data.data();
-
-  auto sw_aero_band2gpt_mem   = view_t<int**>(dcurr_int, 2, nbnd); dcurr_int += int_size1;
-  auto sw_aero_gpt2band_mem   = view_t<int*> (dcurr_int,    nbnd); dcurr_int += int_size2;
-  auto sw_cloud_band2gpt_mem  = view_t<int**>(dcurr_int, 2, nbnd); dcurr_int += int_size1;
-  auto sw_cloud_gpt2band_mem  = view_t<int*> (dcurr_int,    ngpt); dcurr_int += int_size3;
-  auto sw_optics_band2gpt_mem = view_t<int**>(dcurr_int, 2, nbnd); dcurr_int += int_size1;
-  auto sw_optics_gpt2band_mem = view_t<int*> (dcurr_int,    ngpt); dcurr_int += int_size3;
-  auto sw_noaero_band2gpt_mem = view_t<int**>(dcurr_int, 2, nbnd); dcurr_int += int_size1;
-  auto sw_noaero_gpt2band_mem = view_t<int*> (dcurr_int,    ngpt); dcurr_int += int_size3;
-  assert(dcurr_int - int_data.data() == total_int_size);
+  auto sw_aero_band2gpt_mem = pool_t::template alloc_and_init<int>(2, nbnd);
+  auto sw_aero_gpt2band_mem = pool_t::template alloc_and_init<int>(   nbnd);
+  auto sw_cloud_band2gpt_mem = pool_t::template alloc_and_init<int>(2, nbnd);
+  auto sw_cloud_gpt2band_mem = pool_t::template alloc_and_init<int>(   ngpt);
+  auto sw_optics_band2gpt_mem = pool_t::template alloc_and_init<int>(2, nbnd);
+  auto sw_optics_gpt2band_mem = pool_t::template alloc_and_init<int>(   ngpt);
+  auto sw_noaero_band2gpt_mem = pool_t::template alloc_and_init<int>(2, nbnd);
+  auto sw_noaero_gpt2band_mem = pool_t::template alloc_and_init<int>(   ngpt);
 
   // Subset mu0
   TIMED_KERNEL(Kokkos::parallel_for(nday, KOKKOS_LAMBDA(int iday) {
@@ -917,9 +902,58 @@ static void rrtmgp_sw(
     }));
   }
 
-  pool_t::dealloc(data);
   pool_t::dealloc(dayIndices);
-  pool_t::dealloc(int_data);
+
+  pool_t::dealloc(mu0_day);
+
+  pool_t::dealloc(p_lay_day);
+  pool_t::dealloc(t_lay_day);
+  pool_t::dealloc(vmr_day);
+  pool_t::dealloc(t_lay_limited);
+
+  pool_t::dealloc(p_lev_day);
+  pool_t::dealloc(t_lev_day);
+  pool_t::dealloc(flux_up_day);
+  pool_t::dealloc(flux_dn_day);
+  pool_t::dealloc(flux_dn_dir_day);
+
+  pool_t::dealloc(vmr);
+
+  pool_t::dealloc(sfc_alb_dir_T);
+  pool_t::dealloc(sfc_alb_dif_T);
+
+  pool_t::dealloc(toa_flux);
+
+  pool_t::dealloc(bnd_flux_up_day);
+  pool_t::dealloc(bnd_flux_dn_day);
+  pool_t::dealloc(bnd_flux_dn_dir_day);
+
+  pool_t::dealloc(col_gas);
+
+  pool_t::dealloc(concs_mem);
+
+  pool_t::dealloc(sw_aero_tau_mem);
+  pool_t::dealloc(sw_aero_ssa_mem);
+  pool_t::dealloc(sw_aero_g_mem);
+
+  pool_t::dealloc(sw_cloud_tau_mem);
+  pool_t::dealloc(sw_cloud_ssa_mem);
+  pool_t::dealloc(sw_cloud_g_mem);
+  pool_t::dealloc(sw_optics_tau_mem);
+  pool_t::dealloc(sw_optics_ssa_mem);
+  pool_t::dealloc(sw_optics_g_mem);
+  pool_t::dealloc(sw_noaero_tau_mem);
+  pool_t::dealloc(sw_noaero_ssa_mem);
+  pool_t::dealloc(sw_noaero_g_mem);
+
+  pool_t::dealloc(sw_aero_band2gpt_mem);
+  pool_t::dealloc(sw_aero_gpt2band_mem);
+  pool_t::dealloc(sw_cloud_band2gpt_mem);
+  pool_t::dealloc(sw_cloud_gpt2band_mem);
+  pool_t::dealloc(sw_optics_band2gpt_mem);
+  pool_t::dealloc(sw_optics_gpt2band_mem);
+  pool_t::dealloc(sw_noaero_band2gpt_mem);
+  pool_t::dealloc(sw_noaero_gpt2band_mem);
 }
 
 /*
@@ -939,45 +973,26 @@ static void rrtmgp_lw(
   int constexpr max_gauss_pts = 4;
   const int ngpt = k_dist.get_ngpt();
 
-  const int size1 = ncol;
-  const int size2 = nbnd*ncol;
-  const int size3 = max_gauss_pts*max_gauss_pts;
-  const int size4 = ncol*nlay;
-  const int size5 = ncol*(nlay+1);
-  const int size6 = ncol*nlay*(k_dist.get_ngas()+1);
-  const int size7 = ncol*nlay*ngpt; // 5
-  const int size8 = ncol*ngpt;
+  auto t_sfc               = pool_t::template alloc_and_init<RealT>(ncol);
+  auto emis_sfc            = pool_t::template alloc_and_init<RealT>(nbnd, ncol);
+  auto gauss_Ds            = pool_t::template alloc_and_init<RealT>(max_gauss_pts, max_gauss_pts);
+  auto gauss_wts           = pool_t::template alloc_and_init<RealT>(max_gauss_pts, max_gauss_pts);
+  auto t_lay_limited       = pool_t::template alloc_and_init<RealT>(ncol, nlay);
+  auto t_lev_limited       = pool_t::template alloc_and_init<RealT>(ncol, nlay+1);
+  auto col_gas             = pool_t::template alloc_and_init<RealT>(ncol, nlay, k_dist.get_ngas()+1);
+  auto lw_optics_tau_mem   = pool_t::template alloc_and_init<RealT>(ncol, nlay, ngpt);
+  auto lw_noaero_tau_mem   = pool_t::template alloc_and_init<RealT>(ncol, nlay, ngpt);
+  auto lay_source_mem      = pool_t::template alloc_and_init<RealT>(ncol, nlay, ngpt);
+  auto lev_source_inc_mem  = pool_t::template alloc_and_init<RealT>(ncol, nlay, ngpt);
+  auto lev_source_dec_mem  = pool_t::template alloc_and_init<RealT>(ncol, nlay, ngpt);
+  auto sfc_source_mem      = pool_t::template alloc_and_init<RealT>(ncol, ngpt);
 
-  const int total_size = size1 + size2 + size3*2 + size4 + size5 + size6 + size7*5 + size8;
-  auto data = pool_t::template alloc_and_init<RealT>(total_size); RealT *dcurr = data.data();
-
-  view_t<RealT*>   t_sfc              (dcurr, ncol);                            dcurr += size1;
-  view_t<RealT**>  emis_sfc           (dcurr, nbnd, ncol);                      dcurr += size2;
-  view_t<RealT**>  gauss_Ds           (dcurr, max_gauss_pts, max_gauss_pts);    dcurr += size3;
-  view_t<RealT**>  gauss_wts          (dcurr, max_gauss_pts, max_gauss_pts);    dcurr += size3;
-  view_t<RealT**>  t_lay_limited      (dcurr, ncol, nlay);                      dcurr += size4;
-  view_t<RealT**>  t_lev_limited      (dcurr, ncol, nlay+1);                    dcurr += size5;
-  view_t<RealT***> col_gas            (dcurr, ncol, nlay, k_dist.get_ngas()+1); dcurr += size6;
-  view_t<RealT***> lw_optics_tau_mem  (dcurr, ncol, nlay, ngpt);                dcurr += size7;
-  view_t<RealT***> lw_noaero_tau_mem  (dcurr, ncol, nlay, ngpt);                dcurr += size7;
-  view_t<RealT***> lay_source_mem     (dcurr, ncol, nlay, ngpt);                dcurr += size7;
-  view_t<RealT***> lev_source_inc_mem (dcurr, ncol, nlay, ngpt);                dcurr += size7;
-  view_t<RealT***> lev_source_dec_mem (dcurr, ncol, nlay, ngpt);                dcurr += size7;
-  view_t<RealT**>  sfc_source_mem     (dcurr, ncol, ngpt);                      dcurr += size8;
-  assert(dcurr - data.data() == total_size);
-
-  const int int_size1 = 2*nbnd;
-  const int int_size2 = ngpt;
-  const int total_int_size = 3 * (int_size1 + int_size2);
-  auto int_data = pool_t::template alloc_and_init<int>(total_int_size); int *dcurr_int = int_data.data();
-
-  auto lw_optics_band2gpt_mem = view_t<int**>(dcurr_int, 2, nbnd); dcurr_int += int_size1;
-  auto lw_optics_gpt2band_mem = view_t<int*> (dcurr_int,    ngpt); dcurr_int += int_size2;
-  auto lw_noaero_band2gpt_mem = view_t<int**>(dcurr_int, 2, nbnd); dcurr_int += int_size1;
-  auto lw_noaero_gpt2band_mem = view_t<int*> (dcurr_int,    ngpt); dcurr_int += int_size2;
-  auto lw_source_band2gpt_mem = view_t<int**>(dcurr_int, 2, nbnd); dcurr_int += int_size1;
-  auto lw_source_gpt2band_mem = view_t<int*> (dcurr_int,    ngpt); dcurr_int += int_size2;
-  assert(dcurr_int - int_data.data() == total_int_size);
+  auto lw_optics_band2gpt_mem = pool_t::template alloc_and_init<int>(2, nbnd);
+  auto lw_optics_gpt2band_mem = pool_t::template alloc_and_init<int>(   ngpt);
+  auto lw_noaero_band2gpt_mem = pool_t::template alloc_and_init<int>(2, nbnd);
+  auto lw_noaero_gpt2band_mem = pool_t::template alloc_and_init<int>(   ngpt);
+  auto lw_source_band2gpt_mem = pool_t::template alloc_and_init<int>(2, nbnd);
+  auto lw_source_gpt2band_mem = pool_t::template alloc_and_init<int>(   ngpt);
 
   // Associate local pointers for fluxes
   auto &flux_up           = fluxes.flux_up;
@@ -1099,8 +1114,26 @@ static void rrtmgp_lw(
     rte_lw(max_gauss_pts, gauss_Ds, gauss_wts, optics_no_aerosols, top_at_1, lw_sources, emis_sfc, clnsky_fluxes);
   }
 
-  pool_t::dealloc(data);
-  pool_t::dealloc(int_data);
+  pool_t::dealloc(t_sfc);
+  pool_t::dealloc(emis_sfc);
+  pool_t::dealloc(gauss_Ds);
+  pool_t::dealloc(gauss_wts);
+  pool_t::dealloc(t_lay_limited);
+  pool_t::dealloc(t_lev_limited);
+  pool_t::dealloc(col_gas);
+  pool_t::dealloc(lw_optics_tau_mem);
+  pool_t::dealloc(lw_noaero_tau_mem);
+  pool_t::dealloc(lay_source_mem);
+  pool_t::dealloc(lev_source_inc_mem);
+  pool_t::dealloc(lev_source_dec_mem);
+  pool_t::dealloc(sfc_source_mem);
+
+  pool_t::dealloc(lw_optics_band2gpt_mem);
+  pool_t::dealloc(lw_optics_gpt2band_mem);
+  pool_t::dealloc(lw_noaero_band2gpt_mem);
+  pool_t::dealloc(lw_noaero_gpt2band_mem);
+  pool_t::dealloc(lw_source_band2gpt_mem);
+  pool_t::dealloc(lw_source_gpt2band_mem);
 }
 
 /*
