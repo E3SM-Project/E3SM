@@ -168,7 +168,7 @@ contains
     call mpibcast(seasalt_emis_scale, 1, mpir8,   0, mpicom)
 !<shanyp 01132025
     call mpibcast(dstemislimit, 1,                       mpir8,   0, mpicom) !dstemislimit
-    call mpibcast(dstemislimitswith, 1,                  mpilog,  0, mpicom) !dstemislimit
+    call mpibcast(dstemislimitswitch, 1,                  mpilog,  0, mpicom) !dstemislimit
 !shanyp 01130225>
 #endif
 
