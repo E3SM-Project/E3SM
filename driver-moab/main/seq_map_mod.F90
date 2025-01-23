@@ -236,7 +236,7 @@ contains
     endif
    if (seq_comm_iamroot(CPLID)) then
       write(logunit,'(2A,I6,4A)') subname,' iMOAB map app ID, maptype, mapfile = ', &
-         mbintx,' ',trim(maptype),' ',trim(mapfile)
+         mbintx,' ',trim(maptype),' ',trim(mapfile), ', identifier: ', sol_identifier
       call shr_sys_flush(logunit)
    endif
 
