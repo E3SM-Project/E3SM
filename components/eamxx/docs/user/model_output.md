@@ -9,7 +9,7 @@ into the RUNDIR/data folder. During this process, the files will be parsed, and 
 variable will be resolved accordingly. Therefore, it is not advised to put the original YAML files
 in RUNDIR/data, since upon `buildnml` execution, all the CIME vars will no longer be present in the
 YAML file (replaced by their values), making it harder to tweak it, and even harder to share with
-other users/cases. Another consequence of this is that, much like `scream_input.yaml', the user should
+other users/cases. Another consequence of this is that, much like `scream_input.yaml`, the user should
 not modify the generated YAML files in RUNDIR/data, since any modification will be lost on the next
 run of `buildnml` (e.g., during `case.submit`).
 
@@ -206,6 +206,3 @@ file and the type of the parameter value).
   - `force_new_file` (`Restart` sublist, boolean): this parameter allows to start a fresh new output file
     upon restarts. By default, is is set to `false`, so that EAMxx will attempt to resume filling the
     last produced output file (if any, and if it can accommodate more snapshots).
-
-
-

@@ -235,10 +235,10 @@ for "float", only digits are allowed, possibly with a negative sign in front and
 only the strings "true" and "false" are allowed (case insensitive). There are two additional types supported:
 "file" and "array(T)", where "T" is any of the other supported types (but not another array):
 
- - "file" is used to inform CIME of the input files that have to be download from E3SM data servers, like initial conditions files,
+- "file" is used to inform CIME of the input files that have to be download from E3SM data servers, like initial conditions files,
 or certain lookup tables.
- - "array(T)" allows to specify a list of items (of the same type), which will be parsed inside EAMxx as
-   a `std::vector<T>`.
+- "array(T)" allows to specify a list of items (of the same type), which will be parsed inside EAMxx as
+  a `std::vector<T>`.
 
 For type "string" and "array(T)", it is also possible to _append_ to the currently stored value
 
