@@ -78,17 +78,17 @@ I/O interface of EAMxx. There are two types of diagnostic outputs:
   that EAMxx does not keep in persistent storage. As of May 2024, the available
   derived quantities are (case sensitive):
 
-  - `Exner`: $\Pi = \left( \dfrac{p}{p_0} \right) ^\dfrac{R_d}{c_p}$
-  - `PotentialTemperature`: $\Theta = T / \Pi$
-  - `LiqPotentialTemperature`: $\Theta_\ell = \Theta - \dfrac{\Theta}{T} \dfrac{L_v}{c_p}q_c$
-  - `dz`: $dz = \dfrac{rd}{g}\dfrac{\rho_s T_v}{p}$
-  - `z_int`: vertical sum of `dz` from surface (b.c. at surface: 0 or $\phi_s/g$, depending if from surface or sealevel)
-  - `z_mid`: midpoint average of `z_int`
-  - `geopotential_int`: vertical sum of `g dz` from surface (b.c. at surface: $\phi_s$)
-  - `geopotential_mid`: midpoint average of `geopotential_int`
-  - `AtmosphereDensity`: $\rho = \dfrac{\rho_s}{dz*g}
-  - `VirtualTemperature`: $T_v = T\left(1+c_1 q_v\right)$
-  - `DryStaticEnergy`: $DSE = c_p T + gz + \phi_s$
+  - `Exner`
+  - `PotentialTemperature`
+  - `LiqPotentialTemperature`
+  - `dz`
+  - `z_int`
+  - `z_mid`
+  - `geopotential_int`
+  - `geopotential_mid`
+  - `AtmosphereDensity`
+  - `VirtualTemperature`
+  - `DryStaticEnergy`
   - `SeaLevelPressure`
   - `LiqWaterPath`
   - `IceWaterPath`
@@ -108,15 +108,6 @@ I/O interface of EAMxx. There are two types of diagnostic outputs:
   - `AerosolOpticalDepth550nm`
   - `NumberPath`
   - `AeroComCld`
-
-  Where the other symbols above are:
-
-  - $p_0$: reference pressure (100kPa in EAMxx)
-  - $R_d$: gas constant for dry air
-  - $\rho_s$: pseudo density
-  - $c_1=-1+\frac{1}{\epsilon}$
-  - $\epsilon=\frac{M_w}{M_d}$
-  - $M_w$,$M_d$: molecular masses of water and dry air respectively
 
 - lower-dimensional slices of a field. These are hyperslices of an existing field or of
   another diagnostic output. As of August 2023, given a field X, the available options
