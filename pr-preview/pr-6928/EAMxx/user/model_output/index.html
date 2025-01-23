@@ -3095,9 +3095,9 @@ into the RUNDIR/data folder. During this process, the files will be parsed, and 
 variable will be resolved accordingly. Therefore, it is not advised to put the original YAML files
 in RUNDIR/data, since upon <code>buildnml</code> execution, all the CIME vars will no longer be present in the
 YAML file (replaced by their values), making it harder to tweak it, and even harder to share with
-other users/cases. Another consequence of this is that, much like <code>scream_input.yaml', the user should
+other users/cases. Another consequence of this is that, much like <code>scream_input.yaml</code>, the user should
 not modify the generated YAML files in RUNDIR/data, since any modification will be lost on the next
-run of</code>buildnml<code>(e.g., during</code>case.submit`).</p>
+run of <code>buildnml</code> (e.g., during <code>case.submit</code>).</p>
 <h2 id="basic-output">Basic output</h2>
 <p>The following is a basic example of an output request.</p>
 <div class="highlight"><pre><span></span><code><span class="nt">%YAML</span><span class="w"> </span><span class="m">1.1</span>
