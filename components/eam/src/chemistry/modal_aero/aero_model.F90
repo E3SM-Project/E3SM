@@ -2867,10 +2867,10 @@ do_lphase2_conditional: &
              mmn=dust_indices(m+2)
              cam_in%cflx(icol,mmn)=cam_in%cflx(icol,mmn)*dstemislimit/cam_in%cflx(icol,mm)
              cam_in%cflx(icol,mm)=dstemislimit
-             write(iulog,'(3(a,1x,i10))') &
+             write(iulog,'((a,1x,i10,1x),2(a,1x,f7.2))') &
                      'The dust emission cap is hit at icol=',icol, &
-                     'Latitude=',tmp_lat(icol)*180.0/pi, &
-                     'Longitude=',tmp_lon(icol)*180.0/pi
+                     ' Latitude=',tmp_lat(icol)*180.0/pi, &
+                     ' Longitude=',tmp_lon(icol)*180.0/pi
             end if
            end do
           end if
