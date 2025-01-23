@@ -3166,18 +3166,18 @@ I/O interface of EAMxx. There are two types of diagnostic outputs:</p>
   derived quantities are (case sensitive):</p>
 </li>
 <li>
-<p><code>Exner</code>: <span class="arithmatex">\(\Pi = \left( \dfrac{p}{p_0} \right) ^\dfrac{R_d}{c_p}\)</span></p>
+<p><code>Exner</code></p>
 </li>
-<li><code>PotentialTemperature</code>: <span class="arithmatex">\(\Theta = T / \Pi\)</span></li>
-<li><code>LiqPotentialTemperature</code>: <span class="arithmatex">\(\Theta_\ell = \Theta - \dfrac{\Theta}{T} \dfrac{L_v}{c_p}q_c\)</span></li>
-<li><code>dz</code>: <span class="arithmatex">\(dz = \dfrac{rd}{g}\dfrac{\rho_s T_v}{p}\)</span></li>
-<li><code>z_int</code>: vertical sum of <code>dz</code> from surface (b.c. at surface: 0 or <span class="arithmatex">\(\phi_s/g\)</span>, depending if from surface or sealevel)</li>
-<li><code>z_mid</code>: midpoint average of <code>z_int</code></li>
-<li><code>geopotential_int</code>: vertical sum of <code>g dz</code> from surface (b.c. at surface: <span class="arithmatex">\(\phi_s\)</span>)</li>
-<li><code>geopotential_mid</code>: midpoint average of <code>geopotential_int</code></li>
-<li><code>AtmosphereDensity</code>: $\rho = \dfrac{\rho_s}{dz*g}</li>
-<li><code>VirtualTemperature</code>: <span class="arithmatex">\(T_v = T\left(1+c_1 q_v\right)\)</span></li>
-<li><code>DryStaticEnergy</code>: <span class="arithmatex">\(DSE = c_p T + gz + \phi_s\)</span></li>
+<li><code>PotentialTemperature</code></li>
+<li><code>LiqPotentialTemperature</code></li>
+<li><code>dz</code></li>
+<li><code>z_int</code></li>
+<li><code>z_mid</code></li>
+<li><code>geopotential_int</code></li>
+<li><code>geopotential_mid</code></li>
+<li><code>AtmosphereDensity</code></li>
+<li><code>VirtualTemperature</code></li>
+<li><code>DryStaticEnergy</code></li>
 <li><code>SeaLevelPressure</code></li>
 <li><code>LiqWaterPath</code></li>
 <li><code>IceWaterPath</code></li>
@@ -3196,17 +3196,8 @@ I/O interface of EAMxx. There are two types of diagnostic outputs:</p>
 <li><code>wind_speed</code></li>
 <li><code>AerosolOpticalDepth550nm</code></li>
 <li><code>NumberPath</code></li>
-<li><code>AeroComCld</code></li>
-</ul>
-<p>Where the other symbols above are:</p>
-<ul>
-<li><span class="arithmatex">\(p_0\)</span>: reference pressure (100kPa in EAMxx)</li>
-<li><span class="arithmatex">\(R_d\)</span>: gas constant for dry air</li>
-<li><span class="arithmatex">\(\rho_s\)</span>: pseudo density</li>
-<li><span class="arithmatex">\(c_1=-1+\frac{1}{\epsilon}\)</span></li>
-<li><span class="arithmatex">\(\epsilon=\frac{M_w}{M_d}\)</span></li>
 <li>
-<p><span class="arithmatex">\(M_w\)</span>,<span class="arithmatex">\(M_d\)</span>: molecular masses of water and dry air respectively</p>
+<p><code>AeroComCld</code></p>
 </li>
 <li>
 <p>lower-dimensional slices of a field. These are hyperslices of an existing field or of
