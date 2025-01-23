@@ -1,16 +1,17 @@
 # Model output
 
 EAMxx allows the user to configure the desired model output via [YAML](https://yaml.org/) files,
-with each YAML file associated to a different output file. In order to add an output stream,
+with each YAML file associated to a different output stream (i.e. a file). In order to add an output stream,
 one needs to run `atmchange output_yaml_files+=/path/to/my/output/yaml` (more information on how
 to use `atmchange` can be found [here](./model_input.md#changing-model-inputs-atmchange)).
-During the `buildnml` phase of the case management system, a copy of these YAML files will be copied
+During the `buildnml` phase of the case management system, these YAML files will be copied
 into the RUNDIR/data folder. During this process, the files will be parsed, and any CIME-related
-variable will be resolved accordingly. Therefore, it is not advised to put the original YAML files in RUNDIR/data,
-since upon `buildnml` execution, all the CIME vars will no longer be available in the YAML file,
-making it harder to tweak it, and even harder to share with other users/cases. Another consequence
-of this is that the user should not modify the YAML files in RUNDIR/data, since any modification will
-be lost on the next run of `buildnml`.
+variable will be resolved accordingly. Therefore, it is not advised to put the original YAML files
+in RUNDIR/data, since upon `buildnml` execution, all the CIME vars will no longer be present in the
+YAML file (replaced by their values), making it harder to tweak it, and even harder to share with
+other users/cases. Another consequence of this is that, much like `scream_input.yaml`, the user should
+not modify the generated YAML files in RUNDIR/data, since any modification will be lost on the next
+run of `buildnml` (e.g., during `case.submit`).
 
 ## Basic output
 
@@ -37,25 +38,29 @@ output_control:
 ```
 
 Notice that lists can be equivalently specified in YAML as `Field Names: [f1, f2, f3]`.
-The user can specify fields to be outputted from any of the grids used in the simulation.
+The user can specify fields to be outputted from any of the grids on which they are available
+(although most fields are only available on ONE grid).
 In the example above, we requested fields from both the Physics and Dynamics grid.
 The meaning of the other parameters is as follows:
 
 - `Averaging Type`: how the fields are integrated in time before being saved. Valid
   options are
 
-    - Instant: no integration, each time frame saved corresponds to instantaneous values
-      of the fields
-    - Average/Max/Min: the fields undergo the corresponding operation over the time
-      interval specified in the `output_control` section. In the case above, each snapshot
-      saved to file corresponds to an average of the output fields over 6h windows.
+  - Instant: no integration, each time frame saved corresponds to instantaneous values
+    of the fields
+  - Average/Max/Min: the fields undergo the corresponding operation over the time
+    interval since the last output step (as specified in the `output_control` section).
+    In the case above, each snapshot saved to file corresponds to an average of the output
+    fields over 6h windows.
 
 - `filename_prefix`: the prefix of the output file, which will be created in the run
   directory. The full filename will be `$prefix.$avgtype.$frequnits_x$freq.$timestamp.nc`,
-  where $timestamp corresponds to the first snapshot saved in the file for Instant output,
-  or the beginning of the first averaging window for the other averaging types
+  where `$timestamp` corresponds to the first snapshot saved in the file for Instant output,
+  or the beginning of the first averaging window for the other averaging types. If not set,
+  it defaults to `$casename.scream.h`.
 - `Max Snapshots Per File`: specifies how many time snapshots can be put in a file. Once
-  this number is reached, EAMxx will close the file and open a new one.
+  this number is reached, EAMxx will close the file and open a new one. If not set,
+  it defaults to `-1`, signaling "unlimited storage".
 - `Frequency`: how many units of time are between two consecutive writes to file. For
   Instant output the fields are "sampled" at this frequency, while for other averaging
   types the fields are "integrated" in time over this window
@@ -73,49 +78,48 @@ I/O interface of EAMxx. There are two types of diagnostic outputs:
   that EAMxx does not keep in persistent storage. As of May 2024, the available
   derived quantities are (case sensitive):
 
-    - `PotentialTemperature`
-    - `AtmosphereDensity`
-    - `Exner`
-    - `VirtualTemperature`
-    - `z_int`
-    - `z_mid`
-    - `geopotential_int`
-    - `geopotential_mid`
-    - `dz`
-    - `DryStaticEnergy`
-    - `SeaLevelPressure`
-    - `LiqWaterPath`
-    - `IceWaterPath`
-    - `VapWaterPath`
-    - `RainWaterPath`
-    - `RimeWaterPath`
-    - `ShortwaveCloudForcing`
-    - `LongwaveCloudForcing`
-    - `RelativeHumidity`
-    - `ZonalVapFlux`
-    - `MeridionalVapFlux`
-    - `precip_liq_surf_mass_flux`
-    - `precip_ice_surf_mass_flux`
-    - `precip_total_surf_mass_flux`
-    - `surface_upward_latent_heat_flux`
-    - `wind_speed`
-    - `AerosolOpticalDepth550nm`
-    - `NumberPath`
-    - `AeroComCld`
-
-  TODO: add some information about what each diagnostic is, perhaps a formula
+  - `Exner`
+  - `PotentialTemperature`
+  - `LiqPotentialTemperature`
+  - `dz`
+  - `z_int`
+  - `z_mid`
+  - `geopotential_int`
+  - `geopotential_mid`
+  - `AtmosphereDensity`
+  - `VirtualTemperature`
+  - `DryStaticEnergy`
+  - `SeaLevelPressure`
+  - `LiqWaterPath`
+  - `IceWaterPath`
+  - `VapWaterPath`
+  - `RainWaterPath`
+  - `RimeWaterPath`
+  - `ShortwaveCloudForcing`
+  - `LongwaveCloudForcing`
+  - `RelativeHumidity`
+  - `ZonalVapFlux`
+  - `MeridionalVapFlux`
+  - `precip_liq_surf_mass_flux`
+  - `precip_ice_surf_mass_flux`
+  - `precip_total_surf_mass_flux`
+  - `surface_upward_latent_heat_flux`
+  - `wind_speed`
+  - `AerosolOpticalDepth550nm`
+  - `NumberPath`
+  - `AeroComCld`
 
 - lower-dimensional slices of a field. These are hyperslices of an existing field or of
   another diagnostic output. As of August 2023, given a field X, the available options
   are:
 
-    - `X_at_lev_N`: slice the field `X` at the N-th vertical level index. Recall that
-      in EAMxx N=0 corresponds to the model top.
-    - `X_at_model_bot`, `X_at_model_top`: special case for top and bottom of the model.
-    - `X_at_Ymb`, `X_at_YPa`, `X_at_YhPa`: interpolates the field `X` at a vertical position
-      specified by the give pressure `Y`. Available units are `mb` (millibar), `Pa`, and `hPa`.
-    - `X_at_Ym_above_Z`: interpolates the field `X` at a vertical height of `Y` meters above
-      `Z`, with `Z=surface` or `Z=sealevel`.
+  - `X_at_lev_N`: slice the field `X` at the N-th vertical level index. Recall that
+    in EAMxx N=0 corresponds to the model top.
+  - `X_at_model_bot`, `X_at_model_top`: special case for top and bottom of the model.
+  - `X_at_Ymb`, `X_at_YPa`, `X_at_YhPa`: interpolates the field `X` at a vertical position
+    specified by the give pressure `Y`. Available units are `mb` (millibar), `Pa`, and `hPa`.
+  - `X_at_Ym_above_Z`: interpolates the field `X` at a vertical height of `Y` meters above
+    `Z`, with `Z=surface` or `Z=sealevel`.
 
 ## Remapped output
 
@@ -133,7 +137,7 @@ they are computed on.
   before being saved to file. This feature is really only used to save fields on the
   dynamics grid without saving twice the DOFs at the interface of two spectral elements.
   E.g., for a scalar quantity defined only in the horizontal direction, native output
-  from the Dynamics grid would produce arrays of length `nelems*ngp*ngp`, where `ngp` 
+  from the Dynamics grid would produce arrays of length `nelems*ngp*ngp`, where `ngp`
   is the number of Gauss points along each axis in the 2d spectral element, and `nelems`
   is the number of horizontal elements. However, due to continuity, the values on the
   Gauss points on the element boundary must match the values on the neighboring element,
@@ -185,7 +189,7 @@ file and the type of the parameter value).
 - `save_grid_data` (`output_control` sublist, boolean): this option allows to specify whether grid data
   (such as `lat`/`lon`) should be added to the output stream. By default, it is `true`.
 - `iotype` (toplevel list, string): this option allows the user to request a particular format for the output
-  file. The possible values are `default`, `netcdf`, `pnetcdf, `adios`, `hdf5`, where `default` means
+  file. The possible values are 'default', 'netcdf', 'pnetcdf' 'adios', 'hdf5', where 'default' means
   "whatever is the PIO type from the case settings".
 - `skip_t0_output` (`output_control` sublist, boolean): this option is relevant only for `Instant` output,
   where fields are also outputed at the case start time (i.e., after initialization but before the beginning
@@ -202,6 +206,3 @@ file and the type of the parameter value).
   - `force_new_file` (`Restart` sublist, boolean): this parameter allows to start a fresh new output file
     upon restarts. By default, is is set to `false`, so that EAMxx will attempt to resume filling the
     last produced output file (if any, and if it can accommodate more snapshots).
-
-
-
