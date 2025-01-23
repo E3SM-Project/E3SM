@@ -127,6 +127,7 @@
 
 <!-- Topography -->
 <bnd_topo hgrid="64x128"  >atm/cam/topo/USGS-gtopo30_64x128_c050520.nc</bnd_topo>
+
 <bnd_topo hgrid="ne4np4"   npg="0">atm/cam/topo/USGS-gtopo30_ne4np4_16x.c20160612.nc</bnd_topo>
 <bnd_topo hgrid="ne4np4"   npg="2">atm/cam/topo/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc</bnd_topo>
 <bnd_topo hgrid="ne11np4"  npg="0">atm/cam/topo/USGS-gtopo30_ne11np4_16xconsistentSGH.c20160612.nc</bnd_topo>
@@ -826,7 +827,7 @@
 <shoc_length_fac             > 0.5D0 </shoc_length_fac>
 <shoc_c_diag_3rd_mom         > 7.0D0 </shoc_c_diag_3rd_mom>
 <shoc_lambda_low             > 0.001D0 </shoc_lambda_low>
-<shoc_lambda_high            > 0.08D0 </shoc_lambda_high>
+<shoc_lambda_high            > 0.04D0 </shoc_lambda_high>
 <shoc_lambda_slope           > 2.65D0 </shoc_lambda_slope>
 <shoc_lambda_thresh          > 0.02D0 </shoc_lambda_thresh>
 <shoc_Ckh                    > 0.1D0 </shoc_Ckh>
@@ -1046,7 +1047,9 @@
 
 <dust_emis_fact dyn="se"                   phys="cam5"                  >0.55D0</dust_emis_fact>
 <dust_emis_fact dyn="fv"                   phys="cam5" clubb_sgs="1"    >0.13D0</dust_emis_fact>
-
+<!-- Dust emission cap (avoid the model crash by extremely high AOD)-->
+<dstemislimit phys="default"> 1.D-4 </dstemislimit>
+<dstemislimitswitch phys="default"> .false. </dstemislimitswitch>
 
 <!-- Sea Salt tuning option for scavenging mods by PNNL -->
 <ssalt_tuning>.false.</ssalt_tuning>
@@ -1894,9 +1897,6 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <gw_convect_plev_src_wind   phys="default">70000</gw_convect_plev_src_wind>
 <effgw_oro phys="default"> 0.375      </effgw_oro>
 <use_gw_energy_fix phys="default"> .true.      </use_gw_energy_fix>
-<od_ls_ncleff  phys="default"> 3.D0 </od_ls_ncleff>
-<od_bl_ncd     phys="default"> 3.D0 </od_bl_ncd>
-<od_ss_sncleff phys="default"> 1.D0 </od_ss_sncleff>
 <clubb_C14 phys="default"> 2.5D0      </clubb_C14>
 <clubb_tk1 phys="default"> 268.15D0   </clubb_tk1>
 <dust_emis_fact phys="default"> 13.8D0     </dust_emis_fact>
