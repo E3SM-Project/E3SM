@@ -248,7 +248,7 @@ contains
     ! MOAB stuff
    integer                  :: ierr, idintx, rank
    character*32             :: appname, outfile, wopts, lnum
-   character*32             :: dm1, dm2, dofnameS, dofnameT, wgtIdef
+   character*32             :: dm1, dm2, dofnameS, dofnameT, wgtConservIdef, wgtBilinIdef
    integer                  :: orderS, orderT, volumetric, noConserve, validate, fInverseDistanceMap
    integer                  :: fNoBubble, monotonicity
 ! will do comm graph over coupler PES, in 2-hop strategy
@@ -397,6 +397,9 @@ contains
        if (trim(ocn_gnam) /= trim(glc_gnam)) samegrid_og = .false.
 
        if (atm_present) then
+
+          wgtConservIdef = 'scalar'//C_NULL_CHAR
+          wgtBilinIdef = 'bilinear'//C_NULL_CHAR
           if (iamroot_CPLID) then
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Fa2o'
@@ -421,8 +424,7 @@ contains
             mapper_Fa2o%tgt_mbid = mboxid
             mapper_Fa2o%intx_mbid = mbintxao
             mapper_Fa2o%src_context = atm(1)%cplcompid
-            wgtIdef = 'scalar'//C_NULL_CHAR
-            mapper_Fa2o%weight_identifier = wgtIdef
+            mapper_Fa2o%weight_identifier = wgtConservIdef
             mapper_Fa2o%mbname = 'mapper_Fa2o'
 
             ! we also need to compute the comm graph for the second hop, from the atm on coupler to the
@@ -461,24 +463,10 @@ contains
                   end if
                end if
 
-               if (atm_pg_active) then
-                  type1 = 3; ! FV for ATM; CGLL does not work correctly in parallel at the moment
-               else
-                  type1 = 1 ! This projection works (CGLL to FV), but reverse does not (FV - CGLL)
-               endif
-               type2 = 3;  ! FV mesh on coupler OCN
-               ierr = iMOAB_ComputeCommGraph( mbaxid, mbintxao, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
-                                          atm(1)%cplcompid, idintx)
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error in computing comm graph for second hop, atm-ocn'
-                  call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, atm-ocn')
-               endif
                ! now take care of the mapper
-               if ( mapper_Fa2o%src_mbid .gt. -1 ) then
-                  if (iamroot_CPLID) then
-                        write(logunit,F00) 'overwriting '//trim(mapper_Fa2o%mbname) &
-                              //' mapper_Fa2o'
-                  endif
+               if (iamroot_CPLID) then
+                     write(logunit,F00) 'overwriting '//trim(mapper_Fa2o%mbname) &
+                           //' mapper_Fa2o'
                endif
 
                ! To project fields from ATM to OCN grid, we need to define
@@ -486,12 +474,11 @@ contains
                tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
                tagtype = 1 ! dense
                numco = 1 !
-               ierr = iMOAB_DefineTagStorage(mboxid, tagname, tagtype, numco,  tagindex )
+               ierr = iMOAB_DefineTagStorage(mboxid, tagname, tagtype, numco, tagindex )
                if (ierr .ne. 0) then
                   write(logunit,*) subname,' error in defining tags for seq_flds_a2x_fields on ocn cpl'
                   call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_a2x_fields on ocn cpl')
                endif
-
 
                if (.not. load_maps_from_disk) then
                   volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
@@ -519,7 +506,7 @@ contains
                         trim(dm1), orderS, trim(dofnameS), trim(dm2), orderT, trim(dofnameT), "bilinear", &
                         fNoBubble, monotonicity, volumetric, fInverseDistanceMap, noConserve, validate)
                   endif
-                  ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxao, 'bilinear'//C_NULL_CHAR, &
+                  ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxao, wgtBilinIdef, &
                                                    trim(dm1), orderS, trim(dm2), orderT, 'bilin'//C_NULL_CHAR, &
                                                    fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                    noConserve, validate, &
@@ -529,16 +516,16 @@ contains
                      call shr_sys_abort(subname//' ERROR in computing ao weights ')
                   endif
 
-                  ! ierr = iMOAB_WriteMappingWeightsToFile(mbintxao, 'bilinear'//C_NULL_CHAR, 'bilinear_a2o.nc'//C_NULL_CHAR)
+                  ! ierr = iMOAB_WriteMappingWeightsToFile(mbintxao, wgtBilinIdef, 'bilinear_a2o.nc'//C_NULL_CHAR)
 
                   ! Next compute the conservative map for projection of flux fields
                   if (iamroot_CPLID) then
-                     call print_weight_map_details(subname, mbintxao, "FV-FV", wgtIdef, &
+                     call print_weight_map_details(subname, mbintxao, "FV-FV", wgtConservIdef, &
                         trim(dm1), orderS, trim(dofnameS), trim(dm2), orderT, trim(dofnameT), "", &
                         fNoBubble, monotonicity, volumetric, fInverseDistanceMap, noConserve, validate)
                   endif
-                  ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxao, wgtIdef, &
-                                                   trim(dm1), orderS, trim(dm2), orderT, ''//C_NULL_CHAR, &
+                  ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxao, wgtConservIdef, &
+                                                   trim(dm1), orderS, trim(dm2), orderT, C_NULL_CHAR, &
                                                    fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                    noConserve, validate, &
                                                    trim(dofnameS), trim(dofnameT) )
@@ -552,15 +539,28 @@ contains
 
                   call moab_map_init_rcfile(mbaxid, mboxid, mbintxao, type1, &
                         'seq_maps.rc', 'atm2ocn_smapname:', 'atm2ocn_smaptype:',samegrid_ao, &
-                        'bilinear'//C_NULL_CHAR, 'mapper_Fa2o moab initialization', esmf_map_flag)
+                        wgtBilinIdef, 'mapper_Fa2o moab initialization', esmf_map_flag)
 
                   call moab_map_init_rcfile(mbaxid, mboxid, mbintxao, type1, &
                         'seq_maps.rc', 'atm2ocn_fmapname:', 'atm2ocn_fmaptype:',samegrid_ao, &
-                        wgtIdef, 'mapper_Fa2o moab initialization', esmf_map_flag)
+                        wgtConservIdef, 'mapper_Fa2o moab initialization', esmf_map_flag)
                end if
 
                mapper_Fa2o%intx_context = idintx
                !! All done for mapper_Fa2o --
+
+               if (atm_pg_active) then
+                  type1 = 3; ! FV for ATM; CGLL does not work correctly in parallel at the moment
+               else
+                  type1 = 1 ! This projection works (CGLL to FV), but reverse does not (FV - CGLL)
+               endif
+               type2 = 3;  ! FV mesh on coupler OCN
+               ierr = iMOAB_ComputeCommGraph( mbaxid, mbintxao, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+                                          atm(1)%cplcompid, idintx)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in computing comm graph for second hop, atm-ocn'
+                  call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, atm-ocn')
+               endif
 
 #ifdef MOABDEBUG
                wopts = C_NULL_CHAR
@@ -633,32 +633,26 @@ contains
           if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
 
             ! now take care of the 2 new mappers
-            if ( mapper_Sa2o%src_mbid .gt. -1 ) then
-                if (iamroot_CPLID) then
-                     write(logunit,F00) 'overwriting '//trim(mapper_Sa2o%mbname) &
-                             //' mapper_Sa2o'
-                endif
+            if (iamroot_CPLID) then
+               write(logunit,F00) 'overwriting mapper_Sa2o with MOAB contexts'
             endif
             mapper_Sa2o%src_mbid = mbaxid
             mapper_Sa2o%tgt_mbid = mboxid
             mapper_Sa2o%intx_mbid = mbintxao
             mapper_Sa2o%src_context = atm(1)%cplcompid
             mapper_Sa2o%intx_context = mapper_Fa2o%intx_context
-            mapper_Sa2o%weight_identifier = 'bilinear'//C_NULL_CHAR
+            mapper_Sa2o%weight_identifier = wgtBilinIdef
             mapper_Sa2o%mbname = 'mapper_Sa2o'
 
-            if ( mapper_Va2o%src_mbid .gt. -1 ) then
-                if (iamroot_CPLID) then
-                     write(logunit,F00) 'overwriting '//trim(mapper_Va2o%mbname) &
-                             //' mapper_Va2o'
-                endif
+            if (iamroot_CPLID) then
+               write(logunit,F00) 'overwriting mapper_Va2o with MOAB contexts'
             endif
             mapper_Va2o%src_mbid = mbaxid
             mapper_Va2o%tgt_mbid = mboxid
             mapper_Va2o%intx_mbid = mbintxao
             mapper_Va2o%src_context = atm(1)%cplcompid
             mapper_Va2o%intx_context = mapper_Fa2o%intx_context
-            mapper_Va2o%weight_identifier = 'bilinear'//C_NULL_CHAR
+            mapper_Va2o%weight_identifier = wgtBilinIdef
             mapper_Va2o%mbname = 'mapper_Va2o'
 
           endif ! if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0))
@@ -716,9 +710,7 @@ contains
             endif
 
          endif
-
 #endif
-
        endif ! if (ice_present)
        call shr_sys_flush(logunit)
 
@@ -758,7 +750,7 @@ contains
           ! this code was moved from prep_rof_ocn_moab, because we will do everything on coupler side, not
           ! needed to be on joint comm anymore for the second hop
 
-           
+
           type_grid = 3 ! this is type of grid, maybe should be saved on imoab app ?
           call moab_map_init_rcfile(mbrxid, mboxid, mbintxro, type_grid, &
                'seq_maps.rc', 'rof2ocn_liq_rmapname:', 'rof2ocn_liq_rmaptype:',samegrid_ro, &
