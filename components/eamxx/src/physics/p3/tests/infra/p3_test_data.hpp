@@ -688,7 +688,7 @@ struct P3MainPart1Data : public PhysicsTestData
 
 struct P3MainPart2Data : public PhysicsTestData
 {
-  static constexpr size_t NUM_ARRAYS = 64;
+  static constexpr size_t NUM_ARRAYS = 76;
 
   // Inputs
   Int kts, kte, kbot, ktop, kdir;
@@ -701,7 +701,9 @@ struct P3MainPart2Data : public PhysicsTestData
     *qv, *th_atm, *qc, *nc, *qr, *nr, *qi, *ni, *qm, *bm, *latent_heat_vapor, *latent_heat_sublim, *latent_heat_fusion, *qc_incld, *qr_incld,
     *qi_incld, *qm_incld, *nc_incld, *nr_incld, *ni_incld, *bm_incld, *mu_c, *nu, *lamc, *cdist, *cdist1,
     *cdistr, *mu_r, *lamr, *logn0r, *qv2qi_depos_tend, *precip_total_tend, *nevapr, *qr_evap_tend, *vap_liq_exchange,
-    *vap_ice_exchange, *liq_ice_exchange, *pratot, *prctot;
+    *vap_ice_exchange, *liq_ice_exchange, 
+    *P3_qr2qv_evap, *P3_qi2qv_sublim, *P3_qc2qr_accret, *P3_qc2qr_autoconv, *P3_qv2qi_vapdep, *P3_qc2qi_berg, *P3_qc2qr_ice_shed, *P3_qc2qi_collect, *P3_qr2qi_collect, *P3_qc2qi_hetero_freeze, *P3_qr2qi_immers_freeze, *P3_qi2qr_melt,
+    *pratot, *prctot;
 
   bool is_hydromet_present;
 
@@ -717,7 +719,7 @@ struct P3MainPart2Data : public PhysicsTestData
 
 struct P3MainPart3Data : public PhysicsTestData
 {
-  static constexpr size_t NUM_ARRAYS = 34;
+  static constexpr size_t NUM_ARRAYS = 47;
 
   // Inputs
   Int kts, kte, kbot, ktop, kdir;
@@ -742,7 +744,7 @@ struct P3MainPart3Data : public PhysicsTestData
 
 struct P3MainData : public PhysicsTestData
 {
-  static constexpr size_t NUM_ARRAYS = 35;
+  static constexpr size_t NUM_ARRAYS = 50;
   static constexpr size_t NUM_INPUT_ARRAYS = 24;
 
   // Inputs
@@ -759,6 +761,7 @@ struct P3MainData : public PhysicsTestData
   // Out
   Real *diag_eff_radius_qc, *diag_eff_radius_qi, *diag_eff_radius_qr, *rho_qi, *mu_c, *lamc, *qv2qi_depos_tend, *precip_total_tend, *nevapr,
        *qr_evap_tend, *liq_ice_exchange, *vap_liq_exchange, *vap_ice_exchange,
+       *P3_qr2qv_evap, *P3_qi2qv_sublim, *P3_qc2qr_accret, *P3_qc2qr_autoconv, *P3_qv2qi_vapdep, *P3_qc2qi_berg, *P3_qc2qr_ice_shed, *P3_qc2qi_collect, *P3_qr2qi_collect, *P3_qc2qi_hetero_freeze, *P3_qr2qi_immers_freeze, *P3_qi2qr_melt, *P3_qr_sed, *P3_qc_sed, *P3_qi_sed,
        *precip_liq_flux, *precip_ice_flux, *precip_liq_surf, *precip_ice_surf;
   Real elapsed_s;
 
@@ -894,7 +897,9 @@ void p3_main_part2_host(
   Real* T_atm, Real* rho, Real* inv_rho, Real* qv_sat_l, Real* qv_sat_i, Real* qv_supersat_i, Real* rhofacr, Real* rhofaci, Real* acn, Real* qv, Real* th_atm, Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni,
   Real* qm, Real* bm, Real* qc_incld, Real* qr_incld, Real* qi_incld, Real* qm_incld, Real* nc_incld, Real* nr_incld,
   Real* ni_incld, Real* bm_incld, Real* mu_c, Real* nu, Real* lamc, Real* cdist, Real* cdist1, Real* cdistr, Real* mu_r, Real* lamr, Real* logn0r, Real* qv2qi_depos_tend, Real* precip_total_tend,
-  Real* nevapr, Real* qr_evap_tend, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* liq_ice_exchange, Real* pratot,
+  Real* nevapr, Real* qr_evap_tend, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* liq_ice_exchange, 
+  Real* P3_qr2qv_evap, Real* P3_qi2qv_sublim, Real* P3_qc2qr_accret, Real* P3_qc2qr_autoconv, Real* P3_qv2qi_vapdep, Real* P3_qc2qi_berg, Real* P3_qc2qr_ice_shed, Real* P3_qc2qi_collect, Real* P3_qr2qi_collect, Real* P3_qc2qi_hetero_freeze, Real* P3_qr2qi_immers_freeze, Real* P3_qi2qr_melt,
+  Real* pratot,
   Real* prctot, bool* is_hydromet_present);
 
 void p3_main_part3_host(
@@ -911,7 +916,9 @@ Int p3_main_host(
   Real* precip_ice_surf, Int its, Int ite, Int kts, Int kte, Real* diag_eff_radius_qc,
   Real* diag_eff_radius_qi, Real* diag_eff_radius_qr, Real* rho_qi, bool do_predict_nc, bool do_prescribed_CCN, bool use_hetfrz_classnuc, Real* dpres, Real* inv_exner,
   Real* qv2qi_depos_tend, Real* precip_liq_flux, Real* precip_ice_flux, Real* cld_frac_r, Real* cld_frac_l, Real* cld_frac_i,
-  Real* liq_ice_exchange, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* qv_prev, Real* t_prev);
+  Real* liq_ice_exchange, Real* vap_liq_exchange, Real* vap_ice_exchange,
+  Real* P3_qr2qv_evap, Real* P3_qi2qv_sublim, Real* P3_qc2qr_accret, Real* P3_qc2qr_autoconv, Real* P3_qv2qi_vapdep, Real* P3_qc2qi_berg, Real* P3_qc2qr_ice_shed, Real* P3_qc2qi_collect, Real* P3_qr2qi_collect, Real* P3_qc2qi_hetero_freeze, Real* P3_qr2qi_immers_freeze, Real* P3_qi2qr_melt, Real* P3_qr_sed, Real* P3_qc_sed, Real* P3_qi_sed,
+  Real* qv_prev, Real* t_prev);
 
 }  // namespace p3
 }  // namespace scream
