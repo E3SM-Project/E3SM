@@ -37,6 +37,7 @@ struct P3Data {
          precip_liq_flux, precip_ice_flux, cld_frac_r, cld_frac_l, cld_frac_i;
   Array3 p3_tend_out;
   Array2 liq_ice_exchange,vap_liq_exchange,vap_ice_exchange;
+  Array2 P3_qr2qv_evap, P3_qi2qv_sublim, P3_qc2qr_accret, P3_qc2qr_autoconv, P3_qv2qi_vapdep, P3_qc2qi_berg, P3_qc2qr_ice_shed, P3_qc2qi_collect, P3_qr2qi_collect, P3_qc2qi_hetero_freeze, P3_qr2qi_immers_freeze, P3_qi2qr_melt, P3_qr_sed, P3_qc_sed, P3_qi_sed;
 
   P3Data(Int ncol, Int nlev);
 };

@@ -57,6 +57,21 @@ P3Data::P3Data (Int ncol_, Int nlev_)
   hetfrz_immersion_nucleation_tend  = Array2("hetfrz_immersion_nucleation_tend", ncol, nlev);
   hetfrz_contact_nucleation_tend    = Array2("hetfrz_contact_nucleation_tend", ncol, nlev);
   hetfrz_deposition_nucleation_tend = Array2("hetfrz_deposition_nucleation_tend", ncol, nlev);
+  P3_qr2qv_evap     = Array2("Rain evaporation to vapor", ncol, nlev);
+  P3_qi2qv_sublim   = Array2("Ice sublimation to vapor", ncol, nlev);
+  P3_qc2qr_accret   = Array2("Cloud water accretion to rain", ncol, nlev);
+  P3_qc2qr_autoconv = Array2("Cloud water autoconversion to rain", ncol, nlev);
+  P3_qv2qi_vapdep   = Array2("Vapor deposition to ice", ncol, nlev);
+  P3_qc2qi_berg     = Array2("Cloud water to ice (Bergeron)", ncol, nlev);
+  P3_qc2qr_ice_shed = Array2("Cloud water to rain (autoconversion)", ncol, nlev);
+  P3_qc2qi_collect  = Array2("Cloud water to ice (collection)", ncol, nlev);
+  P3_qr2qi_collect  = Array2("Rain to ice (collection)", ncol, nlev);
+  P3_qc2qi_hetero_freeze = Array2("Cloud water to ice (heterogeneous freezing)", ncol, nlev);
+  P3_qr2qi_immers_freeze = Array2("Rain to ice (immersion freezing)", ncol, nlev);
+  P3_qi2qr_melt    = Array2("Ice to rain (melting)", ncol, nlev);
+  P3_qc_sed = Array2("Cloud water sedimentation", ncol, nlev);
+  P3_qi_sed = Array2("Ice sedimentation", ncol, nlev);
+  P3_qr_sed = Array2("Rain sedimentation", ncol, nlev);
 }
 
 P3DataIterator::P3DataIterator (const P3Data::Ptr& d) {
@@ -81,6 +96,7 @@ void P3DataIterator::init (const P3Data::Ptr& dp) {
   fdipb(cld_frac_r); fdipb(cld_frac_l); fdipb(cld_frac_i);
   fdipb(liq_ice_exchange); fdipb(vap_liq_exchange);
   fdipb(vap_ice_exchange); fdipb(qv_prev); fdipb(t_prev);;
+  fdipb(P3_qr2qv_evap); fdipb(P3_qi2qv_sublim); fdipb(P3_qc2qr_accret); fdipb(P3_qc2qr_autoconv); fdipb(P3_qv2qi_vapdep); fdipb(P3_qc2qi_berg); fdipb(P3_qc2qr_ice_shed); fdipb(P3_qc2qi_collect); fdipb(P3_qr2qi_collect); fdipb(P3_qc2qi_hetero_freeze); fdipb(P3_qr2qi_immers_freeze); fdipb(P3_qi2qr_melt); fdipb(P3_qr_sed); fdipb(P3_qc_sed); fdipb(P3_qi_sed);
 #undef fdipb
 }
 
