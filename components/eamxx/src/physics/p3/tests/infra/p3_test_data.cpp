@@ -166,7 +166,9 @@ P3MainPart2Data::P3MainPart2Data(
     &qv, &th_atm, &qc, &nc, &qr, &nr, &qi, &ni, &qm, &bm, &latent_heat_vapor, &latent_heat_sublim, &latent_heat_fusion, &qc_incld, &qr_incld,
     &qi_incld, &qm_incld, &nc_incld, &nr_incld, &ni_incld, &bm_incld, &mu_c, &nu, &lamc, &cdist, &cdist1,
     &cdistr, &mu_r, &lamr, &logn0r, &qv2qi_depos_tend, &precip_total_tend, &nevapr, &qr_evap_tend, &vap_liq_exchange,
-    &vap_ice_exchange, &liq_ice_exchange, &pratot, &prctot} }),
+    &vap_ice_exchange, &liq_ice_exchange,
+    &P3_qr2qv_evap, &P3_qi2qv_sublim, &P3_qc2qr_accret, &P3_qc2qr_autoconv, &P3_qv2qi_vapdep, &P3_qc2qi_berg, &P3_qc2qr_ice_shed, &P3_qc2qi_collect, &P3_qr2qi_collect, &P3_qc2qi_hetero_freeze, &P3_qr2qi_immers_freeze, &P3_qi2qr_melt,
+    &pratot, &prctot} }),
   kts(kts_), kte(kte_), kbot(kbot_), ktop(ktop_), kdir(kdir_),
   do_predict_nc(do_predict_nc_), do_prescribed_CCN(do_prescribed_CCN_), dt(dt_), inv_dt(1 / dt)
 {}
@@ -194,7 +196,9 @@ P3MainData::P3MainData(
     &pres, &dz, &nc_nuceat_tend, &nccn_prescribed, &ni_activated, &dpres, &inv_exner, &cld_frac_i, &cld_frac_l, &cld_frac_r,
     &inv_qc_relvar, &qc, &nc, &qr, &nr, &qi, &qm, &ni, &bm, &qv, &th_atm, &qv_prev, &t_prev, 
     &diag_eff_radius_qc, &diag_eff_radius_qi, &diag_eff_radius_qr, &rho_qi, &mu_c, &lamc, &qv2qi_depos_tend, &precip_total_tend, &nevapr,
-    &qr_evap_tend, &liq_ice_exchange, &vap_liq_exchange, &vap_ice_exchange, &precip_liq_flux,
+    &qr_evap_tend, &liq_ice_exchange,
+    &P3_qr2qv_evap, &P3_qi2qv_sublim, &P3_qc2qr_accret, &P3_qc2qr_autoconv, &P3_qv2qi_vapdep, &P3_qc2qi_berg, &P3_qc2qr_ice_shed, &P3_qc2qi_collect, &P3_qr2qi_collect, &P3_qc2qi_hetero_freeze, &P3_qr2qi_immers_freeze, &P3_qi2qr_melt, &P3_qr_sed, &P3_qc_sed, &P3_qi_sed,
+    &vap_liq_exchange, &vap_ice_exchange, &precip_liq_flux,
     &precip_ice_flux},
     {&precip_liq_surf, &precip_ice_surf} }), // these two are (ni, nk+1)
   its(its_), ite(ite_), kts(kts_), kte(kte_), it(it_), dt(dt_), do_predict_nc(do_predict_nc_), do_prescribed_CCN(do_prescribed_CCN_), use_hetfrz_classnuc(false),
@@ -955,7 +959,9 @@ void p3_main_part2_host(
   Real* acn, Real* qv, Real* th_atm, Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni,
   Real* qm, Real* bm, Real* qc_incld, Real* qr_incld, Real* qi_incld, Real* qm_incld, Real* nc_incld, Real* nr_incld,
   Real* ni_incld, Real* bm_incld, Real* mu_c, Real* nu, Real* lamc, Real* cdist, Real* cdist1, Real* cdistr, Real* mu_r, Real* lamr, Real* logn0r, Real* qv2qi_depos_tend, Real* precip_total_tend,
-  Real* nevapr, Real* qr_evap_tend, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* liq_ice_exchange, Real* pratot,
+  Real* nevapr, Real* qr_evap_tend, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* liq_ice_exchange,
+  Real* P3_qr2qv_evap, Real* P3_qi2qv_sublim, Real* P3_qc2qr_accret, Real* P3_qc2qr_autoconv, Real* P3_qv2qi_vapdep, Real* P3_qc2qi_berg, Real* P3_qc2qr_ice_shed, Real* P3_qc2qi_collect, Real* P3_qr2qi_collect, Real* P3_qc2qi_hetero_freeze, Real* P3_qr2qi_immers_freeze, Real* P3_qi2qr_melt,
+  Real* pratot,
   Real* prctot, bool* is_hydromet_present)
 {
   using P3F  = Functions<Real, DefaultDevice>;
@@ -992,7 +998,9 @@ void p3_main_part2_host(
         qv, th_atm, qc, nc, qr, nr, qi, ni, qm, bm, qc_incld, qr_incld,
         qi_incld, qm_incld, nc_incld, nr_incld, ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1,
         cdistr, mu_r, lamr, logn0r, qv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend, vap_liq_exchange,
-        vap_ice_exchange, liq_ice_exchange, pratot, prctot, qv_prev, t_prev
+        vap_ice_exchange, liq_ice_exchange,
+        P3_qr2qv_evap, P3_qi2qv_sublim, P3_qc2qr_accret, P3_qc2qr_autoconv, P3_qv2qi_vapdep, P3_qc2qi_berg, P3_qc2qr_ice_shed, P3_qc2qi_collect, P3_qr2qi_collect, P3_qc2qi_hetero_freeze, P3_qr2qi_immers_freeze, P3_qi2qr_melt,
+        pratot, prctot, qv_prev, t_prev
         },
     nk, temp_d);
 
@@ -1058,6 +1066,18 @@ void p3_main_part2_host(
     vap_liq_exchange_d  (temp_d[current_index++]),
     vap_ice_exchange_d  (temp_d[current_index++]),
     liq_ice_exchange_d  (temp_d[current_index++]),
+    P3_qr2qv_evap_d     (temp_d[current_index++]),
+    P3_qi2qv_sublim_d   (temp_d[current_index++]),
+    P3_qc2qr_accret_d   (temp_d[current_index++]),
+    P3_qc2qr_autoconv_d (temp_d[current_index++]),
+    P3_qv2qi_vapdep_d   (temp_d[current_index++]),
+    P3_qc2qi_berg_d     (temp_d[current_index++]),
+    P3_qc2qr_ice_shed_d (temp_d[current_index++]),
+    P3_qc2qi_collect_d  (temp_d[current_index++]),
+    P3_qr2qi_collect_d  (temp_d[current_index++]),
+    P3_qc2qi_hetero_freeze_d (temp_d[current_index++]),
+    P3_qr2qi_immers_freeze_d (temp_d[current_index++]),
+    P3_qi2qr_melt_d     (temp_d[current_index++]),
     pratot_d            (temp_d[current_index++]),
     prctot_d            (temp_d[current_index++]),
     qv_prev_d           (temp_d[current_index++]),
@@ -1085,7 +1105,11 @@ void p3_main_part2_host(
       qm_incld_d, nc_incld_d, nr_incld_d, ni_incld_d, bm_incld_d,
       mu_c_d, nu_d, lamc_d, cdist_d, cdist1_d, cdistr_d, mu_r_d, lamr_d,
       logn0r_d, qv2qi_depos_tend_d, precip_total_tend_d, nevapr_d, qr_evap_tend_d, vap_liq_exchange_d,
-      vap_ice_exchange_d, liq_ice_exchange_d, pratot_d, prctot_d, bools_d(0),nk, P3F::P3Runtime());
+      vap_ice_exchange_d, liq_ice_exchange_d,
+      P3_qr2qv_evap_d, P3_qi2qv_sublim_d, P3_qc2qr_accret_d, P3_qc2qr_autoconv_d, P3_qv2qi_vapdep_d,
+      P3_qc2qi_berg_d, P3_qc2qr_ice_shed_d, P3_qc2qi_collect_d, P3_qr2qi_collect_d, P3_qc2qi_hetero_freeze_d,
+      P3_qr2qi_immers_freeze_d, P3_qi2qr_melt_d,
+      pratot_d, prctot_d, bools_d(0),nk, P3F::P3Runtime());
   });
 
   // Sync back to host. Skip intent in variables.
@@ -1096,7 +1120,11 @@ void p3_main_part2_host(
     nc_incld_d, nr_incld_d, ni_incld_d, bm_incld_d, mu_c_d, nu_d, lamc_d,
     cdist_d, cdist1_d, cdistr_d, mu_r_d, lamr_d, logn0r_d, qv2qi_depos_tend_d, precip_total_tend_d,
     nevapr_d, qr_evap_tend_d, vap_liq_exchange_d, vap_ice_exchange_d,
-    liq_ice_exchange_d, pratot_d, prctot_d
+    liq_ice_exchange_d, 
+    P3_qr2qv_evap_d, P3_qi2qv_sublim_d, P3_qc2qr_accret_d, P3_qc2qr_autoconv_d, P3_qv2qi_vapdep_d,
+    P3_qc2qi_berg_d, P3_qc2qr_ice_shed_d, P3_qc2qi_collect_d, P3_qr2qi_collect_d, P3_qc2qi_hetero_freeze_d,
+    P3_qr2qi_immers_freeze_d, P3_qi2qr_melt_d,
+    pratot_d, prctot_d
   };
 
   ekat::device_to_host({
@@ -1105,6 +1133,9 @@ void p3_main_part2_host(
       qi_incld, qm_incld, nc_incld, nr_incld, ni_incld, bm_incld,
       mu_c, nu, lamc, cdist, cdist1, cdistr, mu_r, lamr, logn0r, qv2qi_depos_tend, precip_total_tend,
       nevapr, qr_evap_tend, vap_liq_exchange, vap_ice_exchange, liq_ice_exchange,
+      P3_qr2qv_evap, P3_qi2qv_sublim, P3_qc2qr_accret, P3_qc2qr_autoconv, P3_qv2qi_vapdep,
+      P3_qc2qi_berg, P3_qc2qr_ice_shed, P3_qc2qi_collect, P3_qr2qi_collect, P3_qc2qi_hetero_freeze,
+      P3_qr2qi_immers_freeze, P3_qi2qr_melt,
       pratot, prctot},
     nk, inout_views);
 
@@ -1230,7 +1261,9 @@ Int p3_main_host(
   Real* precip_ice_surf, Int its, Int ite, Int kts, Int kte, Real* diag_eff_radius_qc,
   Real* diag_eff_radius_qi, Real* diag_eff_radius_qr, Real* rho_qi, bool do_predict_nc, bool do_prescribed_CCN, bool use_hetfrz_classnuc, Real* dpres, Real* inv_exner,
   Real* qv2qi_depos_tend, Real* precip_liq_flux, Real* precip_ice_flux, Real* cld_frac_r, Real* cld_frac_l, Real* cld_frac_i,
-  Real* liq_ice_exchange, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* qv_prev, Real* t_prev)
+  Real* liq_ice_exchange, Real* vap_liq_exchange, Real* vap_ice_exchange, 
+  Real* P3_qr2qv_evap, Real* P3_qi2qv_sublim, Real* P3_qc2qr_accret, Real* P3_qc2qr_autoconv, Real* P3_qv2qi_vapdep, Real* P3_qc2qi_berg, Real* P3_qc2qr_ice_shed, Real* P3_qc2qi_collect, Real* P3_qr2qi_collect, Real* P3_qc2qi_hetero_freeze, Real* P3_qr2qi_immers_freeze, Real* P3_qi2qr_melt, Real* P3_qr_sed, Real* P3_qc_sed, Real* P3_qi_sed,
+  Real* qv_prev, Real* t_prev)
 {
   using P3F  = Functions<Real, DefaultDevice>;
 
@@ -1261,6 +1294,8 @@ Int p3_main_host(
     qc, nc, qr, nr, qi, qm, ni, bm, qv, th_atm, qv_prev, t_prev, diag_eff_radius_qc, diag_eff_radius_qi, diag_eff_radius_qr,
     rho_qi, qv2qi_depos_tend,
     liq_ice_exchange, vap_liq_exchange, vap_ice_exchange, 
+    
+    P3_qr2qv_evap, P3_qi2qv_sublim, P3_qc2qr_accret, P3_qc2qr_autoconv, P3_qv2qi_vapdep, P3_qc2qi_berg, P3_qc2qr_ice_shed, P3_qc2qi_collect, P3_qr2qi_collect, P3_qc2qi_hetero_freeze, P3_qr2qi_immers_freeze, P3_qi2qr_melt, P3_qr_sed, P3_qc_sed, P3_qi_sed,
     precip_liq_flux, precip_ice_flux, 
     precip_liq_surf, precip_ice_surf
   };
@@ -1313,6 +1348,21 @@ Int p3_main_host(
     liq_ice_exchange_d     (temp_d[counter++]),
     vap_liq_exchange_d     (temp_d[counter++]),
     vap_ice_exchange_d     (temp_d[counter++]), //30
+    P3_qr2qv_evap_d           (temp_d[counter++]), //35
+    P3_qi2qv_sublim_d         (temp_d[counter++]),
+    P3_qc2qr_accret_d         (temp_d[counter++]),
+    P3_qc2qr_autoconv_d       (temp_d[counter++]),
+    P3_qv2qi_vapdep_d         (temp_d[counter++]),
+    P3_qc2qi_berg_d           (temp_d[counter++]), //40
+    P3_qc2qr_ice_shed_d       (temp_d[counter++]),
+    P3_qc2qi_collect_d        (temp_d[counter++]),
+    P3_qr2qi_collect_d        (temp_d[counter++]),
+    P3_qc2qi_hetero_freeze_d  (temp_d[counter++]),
+    P3_qr2qi_immers_freeze_d  (temp_d[counter++]), //45
+    P3_qi2qr_melt_d           (temp_d[counter++]), //46
+    P3_qr_sed_d               (temp_d[counter++]),
+    P3_qc_sed_d               (temp_d[counter++]),
+    P3_qi_sed_d               (temp_d[counter++]), //49
     precip_liq_flux_d      (temp_d[counter++]),
     precip_ice_flux_d      (temp_d[counter++]), // 35
     precip_liq_surf_temp_d (temp_d[counter++]),
@@ -1365,7 +1415,11 @@ Int p3_main_host(
   P3F::P3Infrastructure infrastructure{dt, it, its, ite, kts, kte,
                                        do_predict_nc, do_prescribed_CCN, col_location_d};
   P3F::P3HistoryOnly history_only{liq_ice_exchange_d, vap_liq_exchange_d,
-                                  vap_ice_exchange_d};
+                                  vap_ice_exchange_d,
+                                  P3_qr2qv_evap_d, P3_qi2qv_sublim_d, P3_qc2qr_accret_d, P3_qc2qr_autoconv_d, P3_qv2qi_vapdep_d,
+                                  P3_qc2qi_berg_d, P3_qc2qr_ice_shed_d, P3_qc2qi_collect_d, P3_qr2qi_collect_d, P3_qc2qi_hetero_freeze_d,
+                                  P3_qr2qi_immers_freeze_d, P3_qi2qr_melt_d, P3_qr_sed_d, P3_qc_sed_d, P3_qi_sed_d
+                                  };
 
   const Int nk_pack = ekat::npack<Spack>(nk);
 #ifdef SCREAM_P3_SMALL_KERNELS
@@ -1423,6 +1477,9 @@ Int p3_main_host(
     diag_eff_radius_qc_d, diag_eff_radius_qi_d, diag_eff_radius_qr_d, rho_qi_d,
     qv2qi_depos_tend_d,
     liq_ice_exchange_d, vap_liq_exchange_d, vap_ice_exchange_d,
+    P3_qr2qv_evap_d, P3_qi2qv_sublim_d, P3_qc2qr_accret_d, P3_qc2qr_autoconv_d, P3_qv2qi_vapdep_d,
+    P3_qc2qi_berg_d, P3_qc2qr_ice_shed_d, P3_qc2qi_collect_d, P3_qr2qi_collect_d, P3_qc2qi_hetero_freeze_d,
+    P3_qr2qi_immers_freeze_d, P3_qi2qr_melt_d, P3_qr_sed_d, P3_qc_sed_d, P3_qi_sed_d,
     precip_liq_flux_d, precip_ice_flux_d, precip_liq_surf_temp_d, precip_ice_surf_temp_d
   };
   std::vector<size_t> dim1_sizes_out(P3MainData::NUM_ARRAYS - 13, nj);
@@ -1436,7 +1493,11 @@ Int p3_main_host(
   ekat::device_to_host({
       qc, nc, qr, nr, qi, qm, ni, bm, qv, th_atm, diag_eff_radius_qc, diag_eff_radius_qi, diag_eff_radius_qr,
       rho_qi, qv2qi_depos_tend,
-      liq_ice_exchange, vap_liq_exchange, vap_ice_exchange, precip_liq_flux, precip_ice_flux, precip_liq_surf, precip_ice_surf
+      liq_ice_exchange, vap_liq_exchange, vap_ice_exchange,
+      P3_qr2qv_evap, P3_qi2qv_sublim, P3_qc2qr_accret, P3_qc2qr_autoconv, P3_qv2qi_vapdep,
+      P3_qc2qi_berg, P3_qc2qr_ice_shed, P3_qc2qi_collect, P3_qr2qi_collect, P3_qc2qi_hetero_freeze,
+      P3_qr2qi_immers_freeze, P3_qi2qr_melt, P3_qr_sed, P3_qc_sed, P3_qi_sed,
+      precip_liq_flux, precip_ice_flux, precip_liq_surf, precip_ice_surf
     },
     dim1_sizes_out, dim2_sizes_out, inout_views);
 

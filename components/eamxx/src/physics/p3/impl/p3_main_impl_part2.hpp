@@ -92,6 +92,18 @@ void Functions<S,D>
   const uview_1d<Spack>& vap_liq_exchange,
   const uview_1d<Spack>& vap_ice_exchange,
   const uview_1d<Spack>& liq_ice_exchange,
+  const uview_1d<Spack>& P3_qr2qv_evap,
+  const uview_1d<Spack>& P3_qi2qv_sublim,
+  const uview_1d<Spack>& P3_qc2qr_accret,
+  const uview_1d<Spack>& P3_qc2qr_autoconv,
+  const uview_1d<Spack>& P3_qv2qi_vapdep,
+  const uview_1d<Spack>& P3_qc2qi_berg,
+  const uview_1d<Spack>& P3_qc2qr_ice_shed,
+  const uview_1d<Spack>& P3_qc2qi_collect,
+  const uview_1d<Spack>& P3_qr2qi_collect,
+  const uview_1d<Spack>& P3_qc2qi_hetero_freeze,
+  const uview_1d<Spack>& P3_qr2qi_immers_freeze,
+  const uview_1d<Spack>& P3_qi2qr_melt,
   const uview_1d<Spack>& pratot,
   const uview_1d<Spack>& prctot,
   bool& hydrometeorsPresent, const Int& nk,
@@ -501,6 +513,20 @@ void Functions<S,D>
     vap_ice_exchange(k).set(not_skip_all, qv2qi_vapdep_tend - qi2qv_sublim_tend + qv2qi_nucleat_tend);
     vap_liq_exchange(k).set(not_skip_all, -qr2qv_evap_tend);
     liq_ice_exchange(k).set(not_skip_all, qc2qi_hetero_freeze_tend + qr2qi_immers_freeze_tend - qi2qr_melt_tend + qc2qi_berg_tend + qc2qi_collect_tend + qr2qi_collect_tend);
+
+   // set tendencies
+    P3_qr2qv_evap(k).set(not_skip_all, qr2qv_evap_tend);
+    P3_qi2qv_sublim(k).set(not_skip_all, qi2qv_sublim_tend);
+    P3_qc2qr_accret(k).set(not_skip_all, qc2qr_accret_tend);
+    P3_qc2qr_autoconv(k).set(not_skip_all, qc2qr_autoconv_tend);
+    P3_qv2qi_vapdep(k).set(not_skip_all, qv2qi_vapdep_tend);
+    P3_qc2qi_berg(k).set(not_skip_all, qc2qi_berg_tend);
+    P3_qc2qr_ice_shed(k).set(not_skip_all, qc2qr_ice_shed_tend);
+    P3_qc2qi_collect(k).set(not_skip_all, qc2qi_collect_tend);
+    P3_qr2qi_collect(k).set(not_skip_all, qr2qi_collect_tend);
+    P3_qc2qi_hetero_freeze(k).set(not_skip_all, qc2qi_hetero_freeze_tend);
+    P3_qr2qi_immers_freeze(k).set(not_skip_all, qr2qi_immers_freeze_tend);
+    P3_qi2qr_melt(k).set(not_skip_all, qi2qr_melt_tend);
 
     // clipping for small hydrometeor values
     const auto qc_small    = qc(k) < qsmall    && not_skip_all;

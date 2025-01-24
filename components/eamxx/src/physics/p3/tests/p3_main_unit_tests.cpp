@@ -223,7 +223,9 @@ void run_bfb_p3_main_part2()
       d.T_atm, d.rho, d.inv_rho, d.qv_sat_l, d.qv_sat_i, d.qv_supersat_i, d.rhofacr, d.rhofaci, d.acn, d.qv, d.th_atm, d.qc, d.nc, d.qr, d.nr, d.qi, d.ni,
       d.qm, d.bm, d.qc_incld, d.qr_incld, d.qi_incld, d.qm_incld, d.nc_incld, d.nr_incld,
       d.ni_incld, d.bm_incld, d.mu_c, d.nu, d.lamc, d.cdist, d.cdist1, d.cdistr, d.mu_r, d.lamr, d.logn0r, d.qv2qi_depos_tend, d.precip_total_tend,
-      d.nevapr, d.qr_evap_tend, d.vap_liq_exchange, d.vap_ice_exchange, d.liq_ice_exchange, d.pratot,
+      d.nevapr, d.qr_evap_tend, d.vap_liq_exchange, d.vap_ice_exchange, d.liq_ice_exchange, 
+      d.P3_qr2qv_evap, d.P3_qi2qv_sublim, d.P3_qc2qr_accret, d.P3_qc2qr_autoconv, d.P3_qv2qi_vapdep, d.P3_qc2qi_berg, d.P3_qc2qr_ice_shed, d.P3_qc2qi_collect, d.P3_qr2qi_collect, d.P3_qc2qi_hetero_freeze, d.P3_qr2qi_immers_freeze, d.P3_qi2qr_melt,
+      d.pratot,
       d.prctot, &d.is_hydromet_present);
   }
 
@@ -455,7 +457,9 @@ void run_bfb_p3_main()
       d.precip_ice_surf, d.its, d.ite, d.kts, d.kte, d.diag_eff_radius_qc, d.diag_eff_radius_qi, d.diag_eff_radius_qr,
       d.rho_qi, d.do_predict_nc, d.do_prescribed_CCN, d.use_hetfrz_classnuc, d.dpres, d.inv_exner, d.qv2qi_depos_tend,
       d.precip_liq_flux, d.precip_ice_flux, d.cld_frac_r, d.cld_frac_l, d.cld_frac_i,
-      d.liq_ice_exchange, d.vap_liq_exchange, d.vap_ice_exchange, d.qv_prev, d.t_prev);
+      d.liq_ice_exchange, d.vap_liq_exchange, d.vap_ice_exchange,
+      d.P3_qr2qv_evap, d.P3_qi2qv_sublim, d.P3_qc2qr_accret, d.P3_qc2qr_autoconv, d.P3_qv2qi_vapdep, d.P3_qc2qi_berg, d.P3_qc2qr_ice_shed, d.P3_qc2qi_collect, d.P3_qr2qi_collect, d.P3_qc2qi_hetero_freeze, d.P3_qr2qi_immers_freeze, d.P3_qi2qr_melt,d.P3_qr_sed,d.P3_qc_sed,d.P3_qi_sed,
+      d.qv_prev, d.t_prev);
   }
 
   if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
