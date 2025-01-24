@@ -46,8 +46,6 @@ module li_ocean_extrap
    ! Private module variables
    !--------------------------------------------------------------------
    
-   real (kind=RKIND), parameter :: invalid_value = 1.0e36_RKIND
-   
    ! Coefficients in Jenkins 2011 shelf melt parameterizations
    real (kind=RKIND), parameter :: gamma1 = -5.7E-2
    real (kind=RKIND), parameter :: gamma2 = 8.8E-2
@@ -93,6 +91,7 @@ contains
       ! local variables
       !-----------------------------------------------------------------
       logical, pointer :: config_ocean_data_extrapolation
+      real(kind=RKIND), pointer :: invalid_value_TF
       logical, pointer :: config_recalculate_thermal_forcing
       character (len=StrKIND), pointer :: config_TF_param_type
       real(kind=RKIND), pointer :: config_sea_level
@@ -136,6 +135,7 @@ contains
          call mpas_pool_get_config(liConfigs, 'config_ocean_data_extrap_ncells_extra', nCellsExtra)
          call mpas_pool_get_config(liConfigs, 'config_recalculate_thermal_forcing', config_recalcuate_thermal_forcing)
          call mpas_pool_get_config(liConfigs, 'config_TF_param_type', config_TF_param_type)
+         call mpas_pool_get_config(liConfigs, 'config_invalid_value_TF', invalid_value_TF)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
          call mpas_pool_get_subpool(block % structs, 'extrapOceanData', extrapOceanDataPool)
@@ -297,7 +297,7 @@ contains
          else
 
             oceanField(:,:,1) = ismip6shelfMelt_3dThermalForcing * validOceanMask(:,:)
-            oceanField(:,:,2) = invalid_value
+            oceanField(:,:,2) = invalid_value_TF
          endif
          
          ! initialize the invalid data locations with fill value
@@ -310,7 +310,7 @@ contains
                   ! zero where valid ocean data does not exist
                elseif (validOceanMask(iLayer,iCell) == 0) then
                   ! everywhere else where valid ocean data does not exist, insert invalid value outside of validOceanMask
-                  oceanField(iLayer,iCell,:) = invalid_value
+                  oceanField(iLayer,iCell,:) = invalid_value_TF
                endif
             enddo
          enddo
