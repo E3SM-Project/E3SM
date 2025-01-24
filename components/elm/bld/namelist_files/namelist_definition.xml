@@ -359,6 +359,57 @@ Toggle to turn on FATES no competition mode (only relevant if FATES is being use
 Toggle to turn on FATES satellite phenology mode (only relevant if FATES is being used).
 </entry>
 
+<entry id="fates_radiation_model" type="char*256" category="physics"
+        group="elm_inparm" valid_values="norman, twostream" value="norman">
+Set the FATES radiation model
+</entry>
+
+<entry id="fates_hydro_solver" type="char*256" category="physics"
+        group="elm_inparm" valid_values="1D_Taylor, 2D_Picard, 2D_Newton" value="1D_Taylor">
+Set the FATES hydro solver method
+</entry>
+
+<entry id="fates_regeneration_model" type="char*256" category="physics"
+        group="elm_inparm" valid_values="default, trs, trs_no_seed_dyn" value="default">
+Set the FATES seed regeneration model
+Valid values:
+  default: default scheme
+  trs: Tree Recruitment Scheme (Hanbury-Brown et al., 2022)
+  trs_no_seed_dyn: Tree Recruitment Scheme (Hanbury-Brown et al., 2022) without seed dynamics
+</entry>
+
+<entry id="fates_cstarvation_model" type="char*256" category="physics"
+        group="elm_inparm" valid_values="linear, exponential" value="linear">
+Set the FATES carbon starvation model
+</entry>
+
+<entry id="fates_leafresp_model" type="char*256" category="physics"
+        group="elm_inparm" valid_values="ryan1991, atkin2017" value="ryan1991">
+Set the FATES leaf maintenance respiration model
+</entry>
+
+<entry id="fates_stomatal_assimilation" type="char*256" category="physics"
+        group="elm_inparm" valid_values="net, gross" value="net">
+Set net or gross asslimiation for the FATES stomatal model
+</entry>
+
+<entry id="fates_stomatal_model" type="char*256" category="physics"
+        group="elm_inparm" valid_values="ballberry1987, medlyn2011" value="ballberry1987">
+Set the FATES stomatal conductance model
+</entry>
+
+<entry id="fates_photosynth_acclimation" type="char*256" category="physics"
+       group="elm_inparm" valid_values="nonacclimating, kumarathunge2019" value="nonacclimating">
+Set the FATES photosynthesis temperature acclimation model.
+(Only relevant if FATES is on)
+</entry>
+
+<entry id="use_fates_daylength_factor" type="logical" category="physics"
+       group="elm_inparm" valid_values="" value=".true.">
+If TRUE, enable FATES to utilize the day length factor from the host land model.
+(Only relevant if FATES is on)
+</entry>
+
 <entry id="use_fates_planthydro" type="logical" category="physics"
         group="elm_inparm" valid_values="" value=".false.">
 Toggle to turn on plant hydraulics (only relevant if FATES is on).
