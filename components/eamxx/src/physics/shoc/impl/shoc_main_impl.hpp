@@ -469,7 +469,7 @@ void Functions<S,D>::shoc_main_internal(
 
     // Update the turbulent length scale
     shoc_length_disp(shcol,nlev,nlevi,      // Input
-                     length_fac,            // Runtime Options
+                     length_fac,tke_1p5_closure, // Runtime Options
                      dx,dy,                 // Input
                      zt_grid,zi_grid,dz_zt, // Input
                      tke,thv,tk,            // Input
@@ -499,6 +499,7 @@ void Functions<S,D>::shoc_main_internal(
     // Diagnose the second order moments
     diag_second_shoc_moments_disp(shcol,nlev,nlevi,
                                   thl2tune, qw2tune, qwthl2tune, w2tune,     // Runtime options
+				  tke_1p5_closure,                           // Runtime options
                                   thetal,qw,u_wind,v_wind,                   // Input
                                   tke,isotropy,tkh,tk,dz_zi,zt_grid,zi_grid, // Input
                                   shoc_mix,wthl_sfc,wqw_sfc,uw_sfc,vw_sfc,   // Input

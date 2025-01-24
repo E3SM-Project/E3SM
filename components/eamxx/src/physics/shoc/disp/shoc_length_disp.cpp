@@ -12,6 +12,7 @@ void Functions<Real,DefaultDevice>
   const Int&                   nlev,
   const Int&                   nlevi,
   const Scalar&                length_fac,
+  const bool&                  tke_1p5_closure,
   const view_1d<const Scalar>& dx,
   const view_1d<const Scalar>& dy,
   const view_2d<const Spack>&  zt_grid,
@@ -33,7 +34,7 @@ void Functions<Real,DefaultDevice>
 
     auto workspace       = workspace_mgr.get_workspace(team);
 
-    shoc_length(team, nlev, nlevi, length_fac, 
+    shoc_length(team, nlev, nlevi, length_fac, tke_1p5_closure, 
                 dx(i), dy(i),
                 ekat::subview(zt_grid, i),
                 ekat::subview(zi_grid, i),

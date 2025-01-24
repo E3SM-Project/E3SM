@@ -535,6 +535,7 @@ struct Functions
     const Int&                   nlev,
     const Int&                   nlevi,
     const Scalar&                length_fac,
+    const bool&                  tke_1p5_closure,
     const view_1d<const Scalar>& dx,
     const view_1d<const Scalar>& dy,
     const view_2d<const Spack>&  zt_grid,
@@ -1092,6 +1093,7 @@ struct Functions
     const Scalar&                c_diag_3rd_mom,
     const Scalar&                Ckh,
     const Scalar&                Ckm,
+    const bool&                  tke_1p5_closure,
     // Input Variables
     const view_1d<const Scalar>& host_dx,
     const view_1d<const Scalar>& host_dy,
@@ -1352,6 +1354,7 @@ struct Functions
     const Scalar&                lambda_thresh,
     const Scalar&                Ckh,
     const Scalar&                Ckm,
+    const bool&                  tke_1p5_closure,
     const view_2d<const Spack>&  wthv_sec,
     const view_2d<const Spack>&  shoc_mix,
     const view_2d<const Spack>&  dz_zi,

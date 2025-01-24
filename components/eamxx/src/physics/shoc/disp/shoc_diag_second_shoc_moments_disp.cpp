@@ -10,6 +10,7 @@ void Functions<Real,DefaultDevice>
 ::diag_second_shoc_moments_disp(
   const Int& shcol, const Int& nlev, const Int& nlevi,
   const Real& thl2tune, const Real& qw2tune, const Real& qwthl2tune, const Real& w2tune,
+  const bool& tke_1p5_closure,
   const view_2d<const Spack>& thetal,
   const view_2d<const Spack>& qw,
   const view_2d<const Spack>& u_wind,
@@ -51,6 +52,7 @@ void Functions<Real,DefaultDevice>
     diag_second_shoc_moments(
       team, nlev, nlevi,
       thl2tune, qw2tune, qwthl2tune, w2tune,
+      tke_1p5_closure,
       ekat::subview(thetal, i),
       ekat::subview(qw, i),
       ekat::subview(u_wind, i),
