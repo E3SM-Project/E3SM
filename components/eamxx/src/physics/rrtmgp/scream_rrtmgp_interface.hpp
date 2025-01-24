@@ -1403,7 +1403,9 @@ static void limit_to_bounds_k(InT const &arr_in, T const lower, T const upper, O
 
 template<typename InT, typename T, typename OutT, typename std::enable_if<OutT::rank == 2>::type* dummy = nullptr>
 static void limit_to_bounds_k(InT const &arr_in, T const lower, T const upper, OutT &arr_out) {
-  TIMED_KERNEL(FLATTEN_MD_KERNEL2(arr_out.extent(0), arr_out.extent(1), i, j,
+  const int ex0 = (int) arr_out.extent(0);
+  const int ex1 = (int) arr_out.extent(1);
+  TIMED_KERNEL(FLATTEN_MD_KERNEL2(ex0, ex1, i, j,
     arr_out(i, j) = std::min(std::max(arr_in(i, j), lower), upper);
   ));
 }

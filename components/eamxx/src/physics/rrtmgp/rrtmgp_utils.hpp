@@ -58,8 +58,8 @@ void compute_heating_rate (
 {
   using physconst = scream::physics::Constants<Real>;
   using LayoutT = typename View1::array_layout;
-  auto ncol = flux_up.extent(0);
-  auto nlay = flux_up.extent(1)-1;
+  const int ncol = (int)flux_up.extent(0);
+  const int nlay = (int)flux_up.extent(1)-1;
   TIMED_KERNEL(FLATTEN_MD_KERNEL2(ncol, nlay, icol, ilay,
     heating_rate(icol,ilay) = (
       flux_up(icol,ilay+1) - flux_up(icol,ilay) -
