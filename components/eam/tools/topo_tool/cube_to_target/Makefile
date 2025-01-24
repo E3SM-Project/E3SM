@@ -34,7 +34,7 @@ UNAMEM := $(findstring CRAY,$(shell uname -m))
 # Default rules and macros
 #------------------------------------------------------------------------
 
-OBJS := reconstruct.o remap.o cube_to_target.o shr_kind_mod.o
+OBJS := reconstruct.o remap.o cube_to_target.o shr_kind_mod.o orographic_shape_methods.o
 
 $(EXEDIR)/$(EXENAME): $(OBJS)
 	$(FC) -o $@ $(OBJS) $(LDFLAGS)
@@ -42,6 +42,6 @@ $(EXEDIR)/$(EXENAME): $(OBJS)
 clean:
 	$(RM) -f $(OBJS)  *.mod $(EXEDIR)/$(EXENAME)
 
-cube_to_target.o: shr_kind_mod.o remap.o reconstruct.o
+cube_to_target.o: shr_kind_mod.o remap.o reconstruct.o orographic_shape_methods.o
 remap.o: 
 reconstruct.o: remap.o
