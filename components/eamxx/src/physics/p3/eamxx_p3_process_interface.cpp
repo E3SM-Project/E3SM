@@ -417,23 +417,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
     history_only.P3_qc_sed = get_field_out("P3_qc_sed").get_view<Pack**>();
     history_only.P3_qi_sed = get_field_out("P3_qi_sed").get_view<Pack**>();
   } else {
-    // if not, let's just use the buffer for the unused? field
-    // TODO: check if this is actually okay and doesn't have uintended consequences
-    // if we are not outputing these fields, we really don't care about their values
-    // but would this have side effects or memory issues? idk
-    // TODO: maybe just use more buffer and assign stuff?
-    history_only.P3_qr2qv_evap   = m_buffer.unused;
-    history_only.P3_qi2qv_sublim = m_buffer.unused;
-    history_only.P3_qc2qr_accret = m_buffer.unused;
-    history_only.P3_qc2qr_autoconv = m_buffer.unused;
-    history_only.P3_qv2qi_vapdep = m_buffer.unused;
-    history_only.P3_qc2qi_berg = m_buffer.unused;
-    history_only.P3_qc2qr_ice_shed = m_buffer.unused;
-    history_only.P3_qc2qi_collect = m_buffer.unused;
-    history_only.P3_qr2qi_collect = m_buffer.unused;
-    history_only.P3_qc2qi_hetero_freeze = m_buffer.unused;
-    history_only.P3_qr2qi_immers_freeze = m_buffer.unused;
-    history_only.P3_qi2qr_melt = m_buffer.unused;
+    // if not, let's leave all uninitialized except for the sed ones
     history_only.P3_qr_sed = m_buffer.unused;
     history_only.P3_qc_sed = m_buffer.unused;
     history_only.P3_qi_sed = m_buffer.unused;
