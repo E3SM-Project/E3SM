@@ -11,6 +11,7 @@
 
 #include <string>
 #include <memory>
+#include <regex>
 
 namespace scream
 {
@@ -82,11 +83,51 @@ util::TimeStamp read_timestamp (const std::string& filename,
                                 const std::string& ts_name,
                                 const bool read_nsteps = false);
 
+// A method to set diagnostics (mainly to organize them into single-/multi-output diags)
+void set_diagnostic(
+    const std::vector<std::string> &all_diag_list,
+    std::vector<std::string> &singleout_diag_list,
+    std::vector<std::string> &multiout_diag_list,
+    std::map<std::string, std::vector<std::string>> &diag_map);
+
 // Create a diagnostic from a string representation of it.
 // E.g., create the diag to compute fieldX_at_500hPa.
 std::shared_ptr<AtmosphereDiagnostic>
 create_diagnostic (const std::string& diag_name,
                    const std::shared_ptr<const AbstractGrid>& grid);
+std::shared_ptr<AtmosphereDiagnostic>
+create_diagnostic (const std::string& diag_name,
+                   const std::shared_ptr<const AbstractGrid>& grid,
+                   const std::vector<std::string>& multi_out_fields);
+
+class AtmosDiagUtils {
+
+public:
+  std::map<std::string, std::regex> diag_regex;
+  std::vector<std::string> multiout_diags;
+
+  AtmosDiagUtils () {
+    // Note: use grouping (the (..) syntax), so you can later query the content
+    //       of each group in the matches output var!
+    // Note: use raw string syntax R"(<string>)" to avoid having to escape the \ character
+    // Note: the number for field_at_p/h can match positive integer/floating-point numbers
+    diag_regex["FieldAtLevel"] = std::regex(R"(([A-Za-z0-9_]+)_at_(lev_(\d+)|model_(top|bot))$)");
+    diag_regex["FieldAtPressureLevel"] = std::regex(R"(([A-Za-z0-9_]+)_at_(\d+(\.\d+)?)(hPa|mb|Pa)$)");
+    diag_regex["FieldAtHeight"] = std::regex(R"(([A-Za-z0-9_]+)_at_(\d+(\.\d+)?)(m)_above_(sealevel|surface)$)");
+    diag_regex["precip_surf_mass_flux"] = std::regex("precip_(liq|ice|total)_surf_mass_flux$");
+    diag_regex["WaterPath"] = std::regex("(Ice|Liq|Rain|Rime|Vap)WaterPath$");
+    diag_regex["NumberPath"] = std::regex("(Ice|Liq|Rain)NumberPath$");
+    diag_regex["AeroComCld"] = std::regex("AeroComCld(Top|Bot)$");
+    diag_regex["VaporFlux"] = std::regex("(Meridional|Zonal)VapFlux$");
+    diag_regex["AtmBackTendDiag"] = std::regex("([A-Za-z0-9_]+)_atm_backtend$");
+    diag_regex["PotentialTemperature"] = std::regex("(Liq)?PotentialTemperature$");
+    diag_regex["VerticalLayer"] = std::regex("(z|geopotential|height)_(mid|int)$");
+    diag_regex["HorizAvgDiag"] = std::regex("([A-Za-z0-9_]+)_horiz_avg$");
+
+    // For now, we hardcore the multi-out diag candidates for ease
+    multiout_diags.push_back("NumberPath");
+  }
+};
 
 } // namespace scream
 #endif // SCREAM_IO_UTILS_HPP

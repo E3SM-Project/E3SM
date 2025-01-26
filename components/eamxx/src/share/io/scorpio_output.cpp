@@ -14,6 +14,7 @@
 
 #include <numeric>
 #include <fstream>
+#include <regex>
 
 namespace scream
 {
@@ -1313,27 +1314,37 @@ get_field(const std::string& name, const std::string& mode) const
 void AtmosphereOutput::set_diagnostics()
 {
   const auto sim_field_mgr = get_field_manager("sim");
-  // Create all diagnostics
-  for (auto& fname : m_fields_names) {
-    if (!sim_field_mgr->has_field(fname)) {
-      auto diag = create_diagnostic(fname);
-      auto diag_fname = diag->get_diagnostic(fname).name();
-      m_diagnostics[diag_fname] = diag;
-
-      // Note: the diag field may have a name different from what was used
-      //       in the input file, so update the name with the actual
-      //       diagnostic field name
-      fname = diag_fname;
+  std::vector<std::string> all_diag_list, single_diag_list, multi_diag_list;
+  std::map<std::string, std::vector<std::string>> diag_map;
+  for(const auto &name : m_fields_names) {
+    if(!sim_field_mgr->has_field(name)) {
+      all_diag_list.push_back(name);
     }
+  }
+
+  scream::set_diagnostic(all_diag_list, single_diag_list, multi_diag_list,
+                         diag_map);
+
+  for(const auto &name : single_diag_list) {
+    m_diagnostics[name] = create_diagnostic(name, diag_map[name]);
+  }
+  for(const auto &name : multi_diag_list) {
+    m_diagnostics[name] = create_diagnostic(name, diag_map[name]);
   }
 }
 
 /* ---------------------------------------------------------- */
 std::shared_ptr<AtmosphereDiagnostic>
-AtmosphereOutput::create_diagnostic (const std::string& diag_field_name)
+AtmosphereOutput::create_diagnostic(const std::string &diag_field_name)
+{
+  return create_diagnostic(diag_field_name, std::vector<std::string>());
+}
+
+std::shared_ptr<AtmosphereDiagnostic>
+AtmosphereOutput::create_diagnostic (const std::string& diag_field_name, const std::vector<std::string>& multi_out_fields)
 {
   // We need scream scope resolution, since this->create_diagnostic is hiding it
-  auto diag = scream::create_diagnostic(diag_field_name,get_field_manager("sim")->get_grid());
+  auto diag = scream::create_diagnostic(diag_field_name, get_field_manager("sim")->get_grid(), multi_out_fields);
 
   // Some diags need some extra setup or trigger extra behaviors
   std::string diag_avg_cnt_name = "";
