@@ -32,9 +32,10 @@ class NumberPathDiagnostic : public AtmosphereDiagnostic {
   int m_num_cols;
   int m_num_levs;
 
-  std::string m_qname;
-  std::string m_nname;
-  std::string m_kind;
+  // Keep track of which quantities to compute
+  std::map<std::string, std::string> m_qnames;
+  std::map<std::string, std::string> m_nnames;
+  std::vector<std::string> m_kinds;
 };  // class NumberPathDiagnostic
 
 }  // namespace scream

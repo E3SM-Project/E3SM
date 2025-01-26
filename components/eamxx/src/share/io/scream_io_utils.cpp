@@ -169,7 +169,8 @@ create_diagnostic (const std::string& diag_field_name,
     params.set<std::string>("Water Kind",matches[1].str());
   } else if (std::regex_search(diag_field_name,matches,number_path)) {
     diag_name = "NumberPath";
-    params.set<std::string>("Number Kind",matches[1].str());
+    // TODO: implement smarter way to create diags with multiple outputs
+    params.set<std::vector<std::string>>("Number Kinds",std::vector<std::string>{matches[1].str()});
   } else if (std::regex_search(diag_field_name,matches,aerocom_cld)) {
     diag_name = "AeroComCld";
     params.set<std::string>("AeroComCld Kind",matches[1].str());

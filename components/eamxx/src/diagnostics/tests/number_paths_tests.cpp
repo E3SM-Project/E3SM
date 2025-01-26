@@ -35,9 +35,9 @@ std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
 //-----------------------------------------------------------------------------------------------//
 template <typename DeviceT>
 void run(std::mt19937_64 &engine) {
-  using PC         = scream::physics::Constants<Real>;
-  using KT         = ekat::KokkosTypes<DeviceT>;
-  using view_1d    = typename KT::template view_1d<Real>;
+  using PC      = scream::physics::Constants<Real>;
+  using KT      = ekat::KokkosTypes<DeviceT>;
+  using view_1d = typename KT::template view_1d<Real>;
 
   constexpr int num_levs = 33;
   constexpr Real g       = PC::gravit;
@@ -69,26 +69,36 @@ void run(std::mt19937_64 &engine) {
   ekat::ParameterList params;
 
   REQUIRE_THROWS(
-      diag_factory.create("NumberPath", comm, params));  // No 'Number Kind'
-  params.set<std::string>("Number Kind", "Foo");
+      diag_factory.create("NumberPath", comm, params));  // No 'Number Kinds'
+  params.set<std::vector<std::string>>("Number Kinds",
+                                       std::vector<std::string>{"Foo"});
   REQUIRE_THROWS(diag_factory.create("NumberPath", comm,
-                                     params));  // Invalid 'Number Kind'
+                                     params));  // Invalid 'Number Kinds'
 
   // Liquid
-  params.set<std::string>("Number Kind", "Liq");
+  params.set<std::vector<std::string>>("Number Kinds",
+                                       std::vector<std::string>{"Liq"});
   auto diag_liq = diag_factory.create("NumberPath", comm, params);
   diag_liq->set_grids(gm);
   diags.emplace("lnp", diag_liq);
   // Ice
-  params.set<std::string>("Number Kind", "Ice");
+  params.set<std::vector<std::string>>("Number Kinds",
+                                       std::vector<std::string>{"Ice"});
   auto diag_ice = diag_factory.create("NumberPath", comm, params);
   diag_ice->set_grids(gm);
   diags.emplace("inp", diag_ice);
   // Rain
-  params.set<std::string>("Number Kind", "Rain");
+  params.set<std::vector<std::string>>("Number Kinds",
+                                       std::vector<std::string>{"Rain"});
   auto diag_rain = diag_factory.create("NumberPath", comm, params);
   diag_rain->set_grids(gm);
   diags.emplace("rnp", diag_rain);
+  // Combined
+  params.set<std::vector<std::string>>(
+      "Number Kinds", std::vector<std::string>{"Liq", "Ice", "Rain"});
+  auto diag_comb = diag_factory.create("NumberPath", comm, params);
+  diag_comb->set_grids(gm);
+  diags.emplace("cnp", diag_comb);
 
   // Set the required fields for the diagnostic.
   std::map<std::string, Field> input_fields;
@@ -150,13 +160,6 @@ void run(std::mt19937_64 &engine) {
       ekat::genRandArray(nr_sub, engine, pdf_qx);
       ekat::genRandArray(dp_sub, engine, pdf_pd);
     }
-    // Grab views for each of the number path diagnostics
-    const auto &lnp   = diags["lnp"]->get_diagnostic();
-    const auto &inp   = diags["inp"]->get_diagnostic();
-    const auto &rnp   = diags["rnp"]->get_diagnostic();
-    const auto &lnp_h = lnp.get_view<const Real *, Host>();
-    const auto &inp_h = inp.get_view<const Real *, Host>();
-    const auto &rnp_h = rnp.get_view<const Real *, Host>();
     // Sync to host
     qc_f.sync_to_host();
     nc_f.sync_to_host();
@@ -169,10 +172,22 @@ void run(std::mt19937_64 &engine) {
     for(const auto &dd : diags) {
       dd.second->compute_diagnostic();
     }
+    // Grab views for each of the number path diagnostics
+    const auto &lnp = diags["lnp"]->get_diagnostic();
+    const auto &inp = diags["inp"]->get_diagnostic();
+    // for this last one, use the other overloaded get_diagnostic method
+    const auto &rnp     = diags["rnp"]->get_diagnostic("RainNumberPath");
+    const auto &c_rnp   = diags.at("cnp")->get_diagnostic("RainNumberPath");
+    const auto &lnp_h   = lnp.get_view<const Real *, Host>();
+    const auto &inp_h   = inp.get_view<const Real *, Host>();
+    const auto &rnp_h   = rnp.get_view<const Real *, Host>();
+    const auto &c_rnp_h = c_rnp.get_view<const Real *, Host>();
+
     // Sync to host
     lnp.sync_to_host();
     inp.sync_to_host();
     rnp.sync_to_host();
+    c_rnp.sync_to_host();
     // Test manual calculation vs one provided by diags
     {
       for(int icol = 0; icol < ncols; icol++) {
@@ -195,6 +210,9 @@ void run(std::mt19937_64 &engine) {
         }
         REQUIRE(std::abs(rnp_h(icol) - qndr_prod) < macheps);
       }
+    }
+    for(int icol = 0; icol < ncols; icol++) {
+      REQUIRE(std::abs(c_rnp_h(icol) - rnp_h(icol)) < macheps);
     }
   }
 
