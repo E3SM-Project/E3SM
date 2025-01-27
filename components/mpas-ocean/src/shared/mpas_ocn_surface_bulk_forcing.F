@@ -25,6 +25,7 @@ module ocn_surface_bulk_forcing
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_timekeeping
+   use mpas_vector_operations
    use ocn_constants
    use ocn_config
    use ocn_mesh
@@ -232,16 +233,13 @@ contains
 
       integer ::         &
          iEdge, iCell,   &! loop indices for edge, cell loops
-         nCells, nEdges, &! number of cells, edges participating
-         cell1, cell2     ! neighbor cell indices across edge
-
-      real (kind=RKIND) :: &
-         meridWSEdge,      &! meridional wind stress avg to edge
-         zonalWSEdge        ! zonal wind stress averaged to edge
+         nCells, nEdges   ! number of cells, edges participating
 
       real (kind=RKIND), dimension(:), pointer :: &
          windStressZonal, &! zonal wind stress from forcing
-         windStressMerid   ! meridional wind stress from forcing
+         windStressMerid, &! meridional wind stress from forcing
+         meridWSEdge,     &! meridional wind stress avg to edge
+         zonalWSEdge       ! zonal wind stress averaged to edge
 
       ! End preamble
       !-----------------------------------------------------------------
@@ -271,28 +269,38 @@ contains
       !*** ocean model wind stress by averaging cell-centered wind
       !*** stress to edges and then rotating vectors
 
+      allocate(meridWSEdge(nEdges), &
+               zonalWSEdge(nEdges))
+
+#ifdef MPAS_OPENACC
+      !$acc enter data create(meridWSEdge, zonalWSEdge)
+#endif
+
+      if (config_bulk_wind_stress_interp_isotropic) then
+
+        call mpas_vector_cell_to_edge_isotropic(windStressZonal, windStressMerid, &
+          nEdges, vertexDegree, verticesOnEdge, cellsOnVertex, kiteAreasOnVertex, &
+          zonalWSEdge, meridWSEdge)
+
+      else
+
+        call mpas_vector_cell_to_edge_anisotropic(windStressZonal, windStressMerid, &
+          nEdges, cellsOnEdge, zonalWSEdge, meridWSEdge)
+
+      end if
+
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
-      !$acc    present(cellsOnEdge, angleEdge, sfcStress, &
-      !$acc            windStressZonal, windStressMerid) &
-      !$acc    private(cell1, cell2, zonalWSEdge, meridWSEdge)
+      !$acc    present(angleEdge, sfcStress, &
+      !$acc            zonalWSEdge, meridWSEdge)
 #else
       !$omp parallel
-      !$omp do schedule(runtime) &
-      !$omp    private(cell1, cell2, zonalWSEdge, meridWSEdge)
+      !$omp do schedule(runtime)
 #endif
       do iEdge = 1, nEdges
-        cell1 = cellsOnEdge(1, iEdge)
-        cell2 = cellsOnEdge(2, iEdge)
-
-        zonalWSEdge = 0.5_RKIND * (windStressZonal(cell1) + &
-                                   windStressZonal(cell2))
-        meridWSEdge = 0.5_RKIND * (windStressMerid(cell1) + &
-                                   windStressMerid(cell2))
-
         sfcStress(iEdge) = sfcStress(iEdge) + &
-                           cos(angleEdge(iEdge))*zonalWSEdge + &
-                           sin(angleEdge(iEdge))*meridWSEdge
+                           cos(angleEdge(iEdge))*zonalWSEdge(iEdge) + &
+                           sin(angleEdge(iEdge))*meridWSEdge(iEdge)
       end do
 #ifndef MPAS_OPENACC
       !$omp end do
@@ -316,6 +324,12 @@ contains
       !$omp end do
       !$omp end parallel
 #endif
+
+#ifdef MPAS_OPENACC
+      !$acc exit data delete(zonalWSEdge, meridWSEdge)
+#endif
+
+      deallocate(zonalWSEdge, meridWSEdge)
 
       !*** Transfer any needed data back to host and delete inputs
       !$acc exit data &
