@@ -126,7 +126,7 @@ void SCMInput::create_closest_col_info (double target_lat, double target_lon)
   m_comm.all_reduce(&min_dist_and_rank, 1, MPI_MINLOC);
 
   // Set local col idx to -1 for mpi ranks not containing minimum lat/lon distance
-  m_closest_col_info.mpi_rank = min_dist_and_rank.val;
+  m_closest_col_info.mpi_rank = min_dist_and_rank.idx;
   m_closest_col_info.col_lid  = my_rank==min_dist_and_rank.idx ? minloc.loc : -1;
 }
 
