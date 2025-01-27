@@ -52,9 +52,11 @@ set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   add_field<Required>(m_qname,          scalar3d, kg/kg, grid_name);
 
   // Construct and allocate the diagnostic field
-  FieldIdentifier fid (m_kind + "WaterPath", scalar2d, kg/m2, grid_name);
+  FieldIdentifier fid (m_kind+name(), scalar2d, kg/m2, grid_name);
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
+  // For backward compatibility, for now, just make the single output the first item in the map
+  m_diagnostic_fields[m_kind+name()] = m_diagnostic_output;
 }
 
 void WaterPathDiagnostic::compute_diagnostic_impl()

@@ -51,6 +51,8 @@ set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.get_header().get_alloc_properties().request_allocation();
   m_diagnostic_output.allocate_view();
+  // For backward compatibility, for now, just make the single output the first item in the map
+  m_diagnostic_fields[m_name] = m_diagnostic_output;
 }
 // ===============================================================================
 void PrecipSurfMassFlux::compute_diagnostic_impl()
