@@ -93,11 +93,11 @@ module element_state
     real (kind=real_kind) :: IE(np,np)
     real (kind=real_kind) :: KE(np,np)
     real (kind=real_kind) :: PEexpected(np,np)
-    !IE expected is basically IE
+    real (kind=real_kind) :: IEexpected(np,np)
     real (kind=real_kind) :: KEexpected(np,np)
-    real (kind=real_kind) :: ieterm1(np,np) 
-    real (kind=real_kind) :: keterm1(np,np)
 
+    real (kind=real_kind) :: pair1a(np,np)
+    real (kind=real_kind) :: pair1b(np,np)
     real (kind=real_kind) :: pair2a(np,np)
     real (kind=real_kind) :: pair2b(np,np)
     real (kind=real_kind) :: pair3a(np,np)
@@ -116,6 +116,7 @@ module element_state
     real (kind=real_kind) :: pair9b(np,np)
     real (kind=real_kind) :: pair10a(np,np)
     real (kind=real_kind) :: pair10b(np,np)
+    real (kind=real_kind) :: pair11a(np,np)
 
     real (kind=real_kind) :: KEu_horiz1(np,np)
     real (kind=real_kind) :: KEu_horiz2(np,np)
