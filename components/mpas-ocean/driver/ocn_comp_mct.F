@@ -1785,7 +1785,6 @@ contains
 
        block_ptr => block_ptr % next
     end do
-    write(0,*) "MPASO arrsize",n, arrsize
     tagname = "lon"//C_NULL_CHAR
     ent_type=1
     ierr = iMOAB_SetDoubleTagStorage ( mbid, tagname, arrSize , ent_type, data)
