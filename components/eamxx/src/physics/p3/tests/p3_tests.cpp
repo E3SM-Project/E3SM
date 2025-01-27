@@ -14,7 +14,7 @@ TEST_CASE("P3DataIterator", "p3") {
   using scream::p3::ic::Factory;
   const auto d = Factory::create(Factory::mixed);
   scream::p3::P3DataIterator fdi(d);
-  REQUIRE(fdi.nfield() == 35);
+  REQUIRE(fdi.nfield() == 50);
   const auto& f = fdi.getfield(0);
   REQUIRE(f.dim == 2);
   REQUIRE(f.extent[0] == 1);
