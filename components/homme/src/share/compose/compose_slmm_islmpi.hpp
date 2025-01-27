@@ -121,10 +121,17 @@ struct FixedCapList {
     reset_capacity(cap);
   }
 
-  void reset_capacity (const Int& cap, const bool also_size = false) {
+  void reset_capacity (const Int& cap, const bool also_size = false,
+                       const bool sequential_host_init = false) {
     slmm_assert(cap >= 0);
     if (d_.size() == 0) init_n();
-    ko::resize(d_, cap);
+    if (sequential_host_init) {
+      d_ = Array(ko::view_alloc(std::string("FixedCapList::d_"),
+                                ko::SequentialHostInit),
+                 cap);
+    } else {
+      ko::resize(d_, cap);
+    }
     set_n_from_host(also_size ? cap : 0);
   }
 
