@@ -112,9 +112,11 @@
 <ncdata dyn="se" hgrid="ne30np4x8arm"                     nlev="26" ocn="aquaplanet">atm/cam/inic/homme/cami_0003-01-01_arm30x8_L26_ape_c000000.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_arm_x8v3_lowcon"           nlev="30"                 >atm/cam/inic/homme/cami-mam3_0000-01-01_arm_x8v3_lowcon_np4_L30_c000000.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_arm_x8v3_lowcon"           nlev="26" ocn="aquaplanet">atm/cam/inic/homme/cami_0003-01-01_arm_x8v3_lowcon_np4_L26_ape_c000000.nc</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"         nlev="80"                 >atm/cam/inic/homme/v3.LR_mapped_conusx4v1np4-topoadj.eam.i.2010-01-01.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"         nlev="72"                 >atm/cam/inic/homme/cami_0002-01-01-00000_conusx4v1np4_L72_c160719.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"         nlev="30"                 >atm/cam/inic/homme/cami-mam3_0000-01-01_conusx4v1np4_L30_c141106.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"         nlev="30" ocn="aquaplanet">atm/cam/inic/homme/cami_0003-01-01_conusx4v1np4_L30_ape_c000000.nc</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_northamericax4v1"          nlev="80"                 >atm/cam/inic/homme/v3.LR_mapped_northamericax4v1np4-topoadj.eam.i.2010-01-01.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_northamericax4v1"          nlev="72"                 >atm/cam/inic/homme/cami_0001-01-01_northamericax4v1_c190709.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_antarcticax4v1"            nlev="72"                 >atm/cam/inic/homme/cami_mam3_Linoz_0000-01-antarcticax4v1_L72_topoadj_c20200507.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_arcticx4v1"                nlev="72"                 >atm/cam/inic/homme/eam_i_mam4_Linoz_0011-01-arcticx4v1np4_L72_c20220127.nc</ncdata>
