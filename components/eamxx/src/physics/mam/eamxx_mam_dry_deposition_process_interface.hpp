@@ -110,6 +110,7 @@ class MAMDryDep final : public scream::AtmosphereProcess {
   std::shared_ptr<AbstractRemapper> horizInterp_;
   std::shared_ptr<AtmosphereInput> dataReader_;
   const_view_2d frac_landuse_;
+  view_2d frac_landuse_fm_;
 
  public:
   using KT = ekat::KokkosTypes<DefaultDevice>;

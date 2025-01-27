@@ -49,6 +49,8 @@ void MAMDryDep::set_grids(
   constexpr int pcnst = mam4::aero_model::pcnst;
   const FieldLayout vector2d_pcnst =
       grid_->get_2d_vector_layout(pcnst, "num_phys_constants");
+  const FieldLayout vector2d_class =
+      grid_->get_2d_vector_layout(n_land_type, "class");
 
   // Layout for 4D (2d horiz X 1d vertical x number of modes) variables
   // at mid points
@@ -198,6 +200,8 @@ void MAMDryDep::set_grids(
   add_field<Computed>("deposition_flux_of_interstitial_aerosols",
                       vector2d_pcnst, 1 / m2 / s, grid_name);
 
+  // Fractional land use [fraction]
+  add_field<Computed>("fraction_landuse", vector2d_class, nondim, grid_name);
   // -------------------------------------------------------------
   // setup to enable reading fractional land use file
   // -------------------------------------------------------------
@@ -367,12 +371,15 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   //-----------------------------------------------------------------
   // Read fractional land use data
   //-----------------------------------------------------------------
+  frac_landuse_fm_ = get_field_out("fraction_landuse").get_view<Real **>();
   // This data is time-independent, we read all data here for the
   // entire simulation
   FracLandUseFunc::update_frac_land_use_data_from_file(
       dataReader_, *horizInterp_,
       frac_landuse_);  // output
 
+  // Copy fractional landuse values to a FM array to be used by other processes
+  Kokkos::deep_copy(frac_landuse_fm_, frac_landuse_);
   //-----------------------------------------------------------------
   // Setup preprocessing and post processing
   //-----------------------------------------------------------------
