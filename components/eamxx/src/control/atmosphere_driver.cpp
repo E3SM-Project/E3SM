@@ -1001,11 +1001,14 @@ void AtmosphereDriver::restart_model ()
       continue;
     }
     const auto& restart_group = it.second->get_groups_info().at("RESTART");
-    std::vector<std::string> fnames;
+    std::vector<Field> fields;
     for (const auto& fn : restart_group->m_fields_names) {
-      fnames.push_back(fn);
+      fields.push_back(it.second->get_field(fn));
     }
-    read_fields_from_file (fnames,it.second->get_grid(),filename,m_current_ts);
+    read_fields_from_file (fields,it.second->get_grid(),filename);
+    for (auto& f : fields) {
+      f.get_header().get_tracking().update_time_stamp(m_current_ts);
+    }
   }
 
   // Restart the num steps counter in the atm time stamp
@@ -1267,17 +1270,20 @@ void AtmosphereDriver::set_initial_conditions ()
     // Now loop over all grids, and load from file the needed fields on each grid (if any).
     const auto& file_name = ic_pl.get<std::string>("Filename");
     m_atm_logger->info("    [EAMxx] IC filename: " + file_name);
-    for (const auto& it : m_field_mgrs) {
-      const auto& grid_name = it.first;
+    for (const auto& [grid_name,fm] : m_field_mgrs) {
+      std::vector<Field> ic_fields;
+      for (const auto& fn : ic_fields_names[grid_name]) {
+        ic_fields.push_back(fm->get_field(fn));
+      }
       if (not m_iop_data_manager) {
-        read_fields_from_file (ic_fields_names[grid_name],it.second->get_grid(),file_name,m_current_ts);
+        read_fields_from_file (ic_fields,fm->get_grid(),file_name);
       } else {
         // For IOP enabled, we load from file and copy data from the closest
         // lat/lon column to every other column
-        m_iop_data_manager->read_fields_from_file_for_iop(file_name,
-                                             ic_fields_names[grid_name],
-                                             m_current_ts,
-                                             it.second);
+        m_iop_data_manager->read_fields_from_file_for_iop(file_name,ic_fields,fm->get_grid());
+      }
+      for (auto& f : ic_fields) {
+        f.get_header().get_tracking().update_time_stamp(m_current_ts);
       }
     }
   }
@@ -1342,29 +1348,33 @@ void AtmosphereDriver::set_initial_conditions ()
     m_atm_logger->info("    [EAMxx] Reading topography from file ...");
     const auto& file_name = ic_pl.get<std::string>("topography_filename");
     m_atm_logger->info("        filename: " + file_name);
-    for (const auto& it : m_field_mgrs) {
-      const auto& grid_name = it.first;
+    for (const auto& [grid_name,fm] : m_field_mgrs) {
+      std::vector<Field> topo_fields;
+      int nfields = topography_eamxx_fields_names[grid_name].size();
+      for (int i=0; i<nfields; ++i) {
+        auto eamxx_fname = topography_eamxx_fields_names[grid_name][i];
+        auto file_fname  = topography_file_fields_names[grid_name][i];
+        topo_fields.push_back(fm->get_field(eamxx_fname).alias(file_fname));
+      }
+
       if (not m_iop_data_manager) {
         // Topography files always use "ncol_d" for the GLL grid value of ncol.
         // To ensure we read in the correct value, we must change the name for that dimension
-        auto io_grid = it.second->get_grid();
+        auto io_grid = fm->get_grid();
         if (grid_name=="Physics GLL") {
           using namespace ShortFieldTagsNames;
           auto grid = io_grid->clone(io_grid->name(),true);
           grid->reset_field_tag_name(COL,"ncol_d");
           io_grid = grid;
         }
-        read_fields_from_file (topography_file_fields_names[grid_name],
-                               topography_eamxx_fields_names[grid_name],
-                               io_grid,file_name,m_current_ts);
+        read_fields_from_file (topo_fields,io_grid,file_name);
       } else {
         // For IOP enabled, we load from file and copy data from the closest
         // lat/lon column to every other column
-        m_iop_data_manager->read_fields_from_file_for_iop(file_name,
-                                             topography_file_fields_names[grid_name],
-                                             topography_eamxx_fields_names[grid_name],
-                                             m_current_ts,
-                                             it.second);
+        m_iop_data_manager->read_fields_from_file_for_iop(file_name,topo_fields,fm->get_grid());
+      }
+      for (auto& f : topo_fields) {
+        f.get_header().get_tracking().update_time_stamp(m_current_ts);
       }
     }
     // Store in provenance list, for later usage in output file metadata
@@ -1469,83 +1479,17 @@ void AtmosphereDriver::set_initial_conditions ()
 }
 
 void AtmosphereDriver::
-read_fields_from_file (const std::vector<std::string>& field_names_nc,
-                       const std::vector<std::string>& field_names_eamxx,
+read_fields_from_file (const std::vector<Field>& fields,
                        const std::shared_ptr<const AbstractGrid>& grid,
-                       const std::string& file_name,
-                       const util::TimeStamp& t0)
+                       const std::string& file_name)
 {
-  EKAT_REQUIRE_MSG(field_names_nc.size()==field_names_eamxx.size(),
-                   "Error! Field name arrays must have same size.\n");
-
-  if (field_names_nc.size()==0) {
+  if (fields.size()==0) {
     return;
-  }
-
-  // NOTE: we cannot pass the field_mgr and m_grids_mgr, since the input
-  //       grid may not be in the grids_manager and may not be the grid
-  //       of the field mgr. This sounds weird, but there is a precise
-  //       use case: when grid is a shallow clone of the fm grid, where
-  //       we changed the name of some field tags (e.g., we set the name
-  //       of COL to ncol_d). This is used when reading the topography,
-  //       since the topo file *always* uses ncol_d for GLL points data,
-  //       while a non-PG2 run would have the tag name be "ncol".
-  const auto& field_mgr = m_field_mgrs.at(grid->name());
-  std::vector<Field> fields;
-  for (size_t i=0; i<field_names_nc.size(); ++i) {
-    const auto& eamxx_name = field_names_eamxx[i];
-    const auto& nc_name    = field_names_nc[i];
-    fields.push_back(field_mgr->get_field(eamxx_name).alias(nc_name));
   }
 
   AtmosphereInput ic_reader(file_name,grid,fields);
   ic_reader.set_logger(m_atm_logger);
   ic_reader.read_variables();
-  ic_reader.finalize();
-
-  for (auto& f : fields) {
-    // Set the initial time stamp
-    // NOTE: f is an alias of the field from field_mgr, so it shares all
-    //       pointers to the metadata (except for the FieldIdentifier),
-    //       so changing its timestamp will also change the timestamp
-    //       of the field in field_mgr
-    f.get_header().get_tracking().update_time_stamp(t0);
-  }
-}
-
-void AtmosphereDriver::
-read_fields_from_file (const std::vector<std::string>& field_names,
-                       const std::shared_ptr<const AbstractGrid>& grid,
-                       const std::string& file_name,
-                       const util::TimeStamp& t0)
-{
-  if (field_names.size()==0) {
-    return;
-  }
-
-  // NOTE: we cannot pass the field_mgr and m_grids_mgr, since the input
-  //       grid may not be in the grids_manager and may not be the grid
-  //       of the field mgr. This sounds weird, but there is a precise
-  //       use case: when grid is a shallow clone of the fm grid, where
-  //       we changed the name of some field tags (e.g., we set the name
-  //       of COL to ncol_d). This is used when reading the topography,
-  //       since the topo file *always* uses ncol_d for GLL points data,
-  //       while a non-PG2 run would have the tag name be "ncol".
-  const auto& field_mgr = m_field_mgrs.at(grid->name());
-  std::vector<Field> fields;
-  for (const auto& fn : field_names) {
-    fields.push_back(field_mgr->get_field(fn));
-  }
-
-  AtmosphereInput ic_reader(file_name,grid,fields);
-  ic_reader.set_logger(m_atm_logger);
-  ic_reader.read_variables();
-  ic_reader.finalize();
-
-  for (auto& f : fields) {
-    // Set the initial time stamp
-    f.get_header().get_tracking().update_time_stamp(t0);
-  }
 }
 
 void AtmosphereDriver::

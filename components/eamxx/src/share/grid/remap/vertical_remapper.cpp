@@ -151,11 +151,11 @@ set_pressure (const Field& p, const std::string& src_or_tgt, const ProfileType p
       if (src) {
         m_src_pint = p;
         m_src_pmid = p;
-        m_src_mid_same_as_int = true;
+        m_src_int_same_as_mid = true;
       } else {
         m_tgt_pint = p;
         m_tgt_pmid = p;
-        m_tgt_mid_same_as_int = true;
+        m_tgt_int_same_as_mid = true;
       }
       break;
     default:
@@ -187,7 +187,7 @@ registration_ends_impl ()
       // Add mask tracking to the target field. The mask tracks location of tgt pressure levs that are outside the
       // bounds of the src pressure field, and hence cannot be recovered by interpolation
       auto& ft = m_field2type[src.name()];
-      ft.midpoints = m_src_mid_same_as_int
+      ft.midpoints = m_src_int_same_as_mid
                    ? tgt.get_header().get_identifier().get_layout().has_tag(LEV)
                    : src.get_header().get_identifier().get_layout().has_tag(LEV);
       ft.packed    = src.get_header().get_alloc_properties().is_compatible<PackT>() and
@@ -319,14 +319,14 @@ void VerticalRemapper::create_lin_interp()
 bool VerticalRemapper::
 is_valid_tgt_layout (const FieldLayout& layout) const {
   using namespace ShortFieldTagsNames;
-  return !(m_tgt_mid_same_as_int and layout.has_tag(ILEV))
+  return !(m_tgt_int_same_as_mid and layout.has_tag(ILEV))
          and AbstractRemapper::is_valid_tgt_layout(layout);
 }
 
 bool VerticalRemapper::
 is_valid_src_layout (const FieldLayout& layout) const {
   using namespace ShortFieldTagsNames;
-  return !(m_src_mid_same_as_int and layout.has_tag(ILEV))
+  return !(m_src_int_same_as_mid and layout.has_tag(ILEV))
          and AbstractRemapper::is_valid_src_layout(layout);
 }
 
@@ -346,43 +346,22 @@ compatible_layouts (const FieldLayout& src,
 }
 
 FieldLayout VerticalRemapper::
-create_src_layout (const FieldLayout& tgt_layout) const
-{
-  EKAT_REQUIRE_MSG (is_valid_tgt_layout(tgt_layout),
-      "[VerticalRemapper] Error! Input target layout is not valid for this remapper.\n"
-      " - input layout: " + tgt_layout.to_string());
-
-  EKAT_REQUIRE_MSG (not m_tgt_mid_same_as_int,
-      "[VerticalRemapper::create_src_layout] Error! Cannot deduce source layout.\n"
-      " The target layout does not distinguish between LEV and ILEV.\n");
-
-  const auto& mid_layout = m_src_pmid.get_header().get_identifier().get_layout();
-  const auto& int_layout = m_src_pint.get_header().get_identifier().get_layout();
-  return create_layout(tgt_layout,m_src_grid,mid_layout.congruent(int_layout));
-}
-
-FieldLayout VerticalRemapper::
-create_tgt_layout (const FieldLayout& src_layout) const
-{
-  EKAT_REQUIRE_MSG (is_valid_src_layout(src_layout),
-      "[VerticalRemapper::create_tgt_layout] Error! Input source layout is not valid for this remapper.\n"
-      " - input layout: " + src_layout.to_string());
-
-  EKAT_REQUIRE_MSG (not m_src_mid_same_as_int,
-      "[VerticalRemapper::create_tgt_layout] Error! Cannot deduce target layout.\n"
-      " The source layout does not distinguish between LEV and ILEV.\n");
-
-  const auto& mid_layout = m_tgt_pmid.get_header().get_identifier().get_layout();
-  const auto& int_layout = m_tgt_pint.get_header().get_identifier().get_layout();
-  return create_layout(src_layout,m_tgt_grid,mid_layout.congruent(int_layout));
-}
-
-FieldLayout VerticalRemapper::
 create_layout (const FieldLayout& from_layout,
-               const std::shared_ptr<const AbstractGrid>& to_grid,
-               const bool int_same_as_mid) const
+               const std::shared_ptr<const AbstractGrid>& to_grid) const
 {
   using namespace ShortFieldTagsNames;
+
+  // Detect if for the output grid we distinguish between midpoints and interfaces or not
+  // If we don't distinguish, we just use the LEV tag (for layout with the vertical dim)
+  auto from_grid = to_grid==m_src_grid ? m_tgt_grid : m_src_grid;
+  bool output_int_same_as_mid = to_grid==m_src_grid ? m_src_int_same_as_mid : m_tgt_int_same_as_mid;
+  bool input_int_same_as_mid  = from_grid==m_src_grid ? m_src_int_same_as_mid : m_tgt_int_same_as_mid;
+
+  // If the input layout does not distinguish between LEV/ILEV, we cannot deduce the output layout
+  EKAT_REQUIRE_MSG (not input_int_same_as_mid,
+      "[VerticalRemapper::create_layout] Error! Starting layout does not distinguish between LEV and ILEV.\n"
+      "  - from grid: " + from_grid->name() + "\n"
+      "  - to grid  : " + to_grid->name() + "\n");
 
   auto to_layout = FieldLayout::invalid();
   bool midpoints;
@@ -397,16 +376,16 @@ create_layout (const FieldLayout& from_layout,
       to_layout = from_layout;
       break;
     case LayoutType::Scalar1D:
-      midpoints = int_same_as_mid || from_layout.tags().back()==LEV;
+      midpoints = output_int_same_as_mid || from_layout.tags().back()==LEV;
       to_layout = to_grid->get_vertical_layout(midpoints);
       break;
     case LayoutType::Scalar3D:
-      midpoints = int_same_as_mid || from_layout.tags().back()==LEV;
+      midpoints = output_int_same_as_mid || from_layout.tags().back()==LEV;
       to_layout = to_grid->get_3d_scalar_layout(midpoints);
       break;
     case LayoutType::Vector3D:
       vdim_name = from_layout.name(from_layout.get_vector_component_idx());
-      midpoints = int_same_as_mid || from_layout.tags().back()==LEV;
+      midpoints = output_int_same_as_mid || from_layout.tags().back()==LEV;
       to_layout = to_grid->get_3d_vector_layout(midpoints,from_layout.get_vector_dim(),vdim_name);
       break;
     default:

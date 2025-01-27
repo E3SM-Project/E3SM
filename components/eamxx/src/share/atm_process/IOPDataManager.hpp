@@ -4,6 +4,7 @@
 #include "share/scream_types.hpp"
 #include "share/field/field_manager.hpp"
 #include "share/grid/abstract_grid.hpp"
+#include "share/grid/remap/abstract_remapper.hpp"
 #include "share/util/scream_time_stamp.hpp"
 
 #include "ekat/ekat_parameter_list.hpp"
@@ -18,7 +19,6 @@ namespace control {
  */
 class IOPDataManager
 {
-  using vos = std::vector<std::string>;
   using field_mgr_ptr = std::shared_ptr<FieldManager>;
   using grid_ptr = std::shared_ptr<const AbstractGrid>;
 
@@ -68,36 +68,10 @@ public:
   void setup_io_info (const std::string& file_name,
 	               	    const grid_ptr& grid);
 
-  // Read ICs and SPA data from file and remap to fields in field_mgr.
-  // The remap is defined by setting all columns in the given fields to the
-  // values of the column in the file with the closest lat,lon pair to
-  // the target lat,lon in the parameters.
-  // The function setup_io_info() must be called for the grids corresponding
-  // to the file data before this function can be called.
-  // Fields in the field_mgr must have the same number of levels as the file.
-  // Inputs and outputs:
-  //  - file_name: Name of the file used to load field data (IC or topo file)
-  //  - field_names_nc: Field names used by the input file
-  //  - field_names_eamxx: Field names used by eamxx
-  //  - initial_ts: Inital timestamp.
-  //  - field_mgr: Field manager containing fields that need data read from files
-  //  - time_index: Time index of read. time_index=-1 will read the latest time in file.
-  void read_fields_from_file_for_iop(const std::string& file_name,
-                                     const vos& field_names_nc,
-                                     const vos& field_names_eamxx,
-                                     const util::TimeStamp& initial_ts,
-                                     const field_mgr_ptr field_mgr,
-                                     const int time_index = -1);
 
-  // Version of above, but where nc and eamxx field names are identical
   void read_fields_from_file_for_iop(const std::string& file_name,
-                                     const vos& field_names,
-                                     const util::TimeStamp& initial_ts,
-                                     const field_mgr_ptr field_mgr,
-                                     const int time_index = -1)
-  {
-    read_fields_from_file_for_iop(file_name, field_names, field_names, initial_ts, field_mgr, time_index);
-  }
+                                     const std::vector<Field>& fields,
+                                     const std::shared_ptr<const AbstractGrid>& tgt_grid);
 
   // Set fields using data loaded from the iop file
   void set_fields_from_iop_data(const field_mgr_ptr field_mgr);
@@ -125,22 +99,6 @@ public:
   }
 
 private:
-
-  // Struct for storing info related
-  // to the closest lat,lon pair
-  struct ClosestLatLonInfo {
-    // Value for the closest lat/lon in file.
-    Real closest_lat;
-    Real closest_lon;
-    // MPI rank which owns the columns whose
-    // lat,lon pair is closest to target lat,
-    // lon parameters.
-    int mpi_rank_of_closest_column;
-    // Local column index of closest lat,lon pair.
-    // Should be set -1 on ranks not equal to the
-    // one above.
-    int local_column_index_of_closest_column;
-  };
 
   // Struct for storing relevant time information
   struct TimeInfo {
@@ -182,7 +140,6 @@ private:
   ekat::Comm m_comm;
   ekat::ParameterList m_params;
 
-  std::map<std::string,ClosestLatLonInfo> m_lat_lon_info;
   TimeInfo m_time_info;
 
   Real m_dynamics_dx_size;
