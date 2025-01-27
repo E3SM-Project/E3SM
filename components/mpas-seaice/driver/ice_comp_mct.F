@@ -779,6 +779,7 @@ contains
        call mpas_log_write('Fail to set define dom fields ',  MPAS_LOG_ERR)
     endif
 
+    call ice_domain_moab(MPSIID)
 #endif
 
 
@@ -1852,6 +1853,173 @@ contains
 
   end subroutine ice_domain_mct!}}}
 
+#ifdef HAVE_MOAB
+!***********************************************************************
+!BOP
+! !IROUTINE: ice_domain_moab
+! !INTERFACE:
+
+ subroutine ice_domain_moab( mbid )!{{{
+
+  use iso_c_binding, only : C_NULL_CHAR
+  use iMOAB, only: iMOAB_GetMeshInfo
+! !DESCRIPTION:
+!  This routine sets up the MOAB domain-related info for MPASSI
+!
+! !REVISION HISTORY:
+!  2025-01-23: initial version is copy from ice_domain_mct
+!
+! !INPUT/OUTPUT PARAMETERS:
+
+    integer        , intent(in)    :: mbid
+
+!EOP
+!BOC
+!-----------------------------------------------------------------------
+!
+!  local variables
+!
+!-----------------------------------------------------------------------
+    real(kind=RKIND), pointer :: data(:)
+    real(kind=RKIND) :: r2d
+
+    integer :: i, n, ier, ierr
+    character(CXX)           :: tagname
+
+    type (block_type), pointer :: block_ptr
+
+    type (mpas_pool_type), pointer :: meshPool, oceanCouplingPool
+
+    integer, pointer :: nCellsSolve
+
+    real (kind=RKIND), dimension(:), pointer :: lonCell, latCell, areaCell
+
+    integer, dimension(:), pointer :: landIceMask
+
+    real (kind=RKIND), pointer :: sphere_radius
+
+    integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
+    integer arrsize, ent_type
+
+    r2d = 180.0/pii
+
+!-------------------------------------------------------------------
+!
+! Determine local grid size
+!
+!-------------------------------------------------------------------
+    ierr  = iMOAB_GetMeshInfo ( mbid, nvert, nvise, nbl, nsurf, nvisBC )
+
+    arrsize = nvise(1)
+
+    allocate(data(arrsize))
+
+
+!-------------------------------------------------------------------
+!
+! Fill in correct values for domain tags
+!
+!-------------------------------------------------------------------
+
+    n = 0
+    block_ptr => domain % blocklist
+    do while(associated(block_ptr))
+       call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+
+       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+
+       call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
+
+       do i = 1, nCellsSolve
+          n = n + 1
+          data(n) = lonCell(i) * r2d
+       end do
+
+       block_ptr => block_ptr % next
+    end do
+    tagname = "lon"//C_NULL_CHAR
+    ent_type=1
+    ierr = iMOAB_SetDoubleTagStorage ( mbid, tagname, arrSize , ent_type, data)
+
+    n = 0
+    block_ptr => domain % blocklist
+    do while(associated(block_ptr))
+       call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+
+       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+
+       call mpas_pool_get_array(meshPool, 'latCell', latCell)
+
+       do i = 1, nCellsSolve
+          n = n + 1
+          data(n) = latCell(i) * r2d
+       end do
+       block_ptr => block_ptr % next
+    end do
+    tagname = "lat"//C_NULL_CHAR
+    ent_type=1
+    ierr = iMOAB_SetDoubleTagStorage ( mbid, tagname, arrSize , ent_type, data)
+
+    n = 0
+    block_ptr => domain % blocklist
+    do while(associated(block_ptr))
+       call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+
+       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+
+       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+
+       call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
+       do i = 1, nCellsSolve
+          n = n + 1
+          data(n) = areaCell(i) / (sphere_radius * sphere_radius)
+       end do
+       block_ptr => block_ptr % next
+    end do
+    tagname = "area"//C_NULL_CHAR
+    ent_type=1
+    ierr = iMOAB_SetDoubleTagStorage ( mbid, tagname, arrSize , ent_type, data)
+
+    ! Build mask and frac based on landIceMask
+    block_ptr => domain % blocklist
+    do while (associated(block_ptr))
+       call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+
+       call mpas_pool_get_subpool(block_ptr % structs, 'ocean_coupling',oceanCouplingPool)
+
+       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+
+       call mpas_pool_get_array(oceanCouplingPool, 'landIceMask',landIceMask)
+
+       if ( associated(landIceMask) ) then
+          do i = 1, nCellsSolve
+             if ( landIceMask(i) == 1 ) then
+                 data(i) = 0.0_RKIND
+             else
+                 data(i) = 1.0_RKIND
+             end if
+          end do
+       else
+          do i = 1, nCellsSolve
+             data(i) = 1.0_RKIND
+          end do
+       end if
+
+       block_ptr => block_ptr % next
+    end do
+    tagname = "mask"//C_NULL_CHAR
+    ent_type=1
+    ierr = iMOAB_SetDoubleTagStorage ( mbid, tagname, arrSize , ent_type, data)
+    tagname = "frac"//C_NULL_CHAR
+    ent_type=1
+    ierr = iMOAB_SetDoubleTagStorage ( mbid, tagname, arrSize , ent_type, data)
+
+    deallocate(data)
+
+!-----------------------------------------------------------------------
+!EOC
+  end subroutine ice_domain_moab !}}}
+#endif
 
 !***********************************************************************
 !BOP
@@ -3713,7 +3881,7 @@ contains
     call seq_timemgr_EClockGetData( EClock, stepno=cur_ice_stepno )
 #ifdef MOABDEBUG
     write(lnum,"(I0.2)")cur_ice_stepno
-    outfile = 'IceImp_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+    outfile = 'ice_import_'//trim(lnum)//'.h5m'//C_NULL_CHAR
     wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
     ierr = iMOAB_WriteMesh(MPSIID, outfile, wopts)
     if (ierr > 0 )  then

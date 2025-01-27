@@ -4102,6 +4102,7 @@ contains
 
    
     if (seq_comm_iamroot(ID)) then
+      write(logunit,*) subname//': seq_flds_dom_fields= ',trim(seq_flds_dom_fields)
       write(logunit,*) subname//': seq_flds_a2x_ext_states= ',trim(seq_flds_a2x_ext_states)
       write(logunit,*) subname//': seq_flds_a2x_ext_fluxes= ',trim(seq_flds_a2x_ext_fluxes)
       write(logunit,*) subname//': seq_flds_a2x_ext_fields= ',trim(seq_flds_a2x_ext_fields)
