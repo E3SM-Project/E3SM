@@ -414,8 +414,8 @@ def buildnml(case, caseroot, compname):
         ic_date = '20240829'
         ic_prefix = 'mpaso.SOwISC12to30E3r3'
         if ocn_ic_mode == 'spunup':
-            ic_date = '20240829'
-            ic_prefix = 'mpaso.SOwISC12to30E3r3.rstFromG-chrysalis'
+            ic_date = '20241023'
+            ic_prefix = 'mpaso.SOwISC12to30E3r3.interpFrom2p1-anvil'
         if ocn_ismf == 'data':
             data_ismf_file = 'prescribed_ismf_paolo2023.SOwISC12to30E3r3.20241017.nc'
 
