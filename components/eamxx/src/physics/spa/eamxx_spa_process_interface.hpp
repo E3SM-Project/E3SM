@@ -79,8 +79,6 @@ protected:
 
   // IO structure to read in data for standard grids (keep it around to avoid re-creating PIO decomps)
   std::shared_ptr<AtmosphereInput>   SPADataReader;
-  // Similar to above, but stores info to read data for IOP grid
-  std::shared_ptr<SPAFunc::IOPReader>  SPAIOPDataReader;
 
   // Structures to store the data used for interpolation
   std::shared_ptr<AbstractRemapper>  SPAHorizInterp;

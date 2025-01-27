@@ -60,15 +60,12 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   auto spa_data_file = m_params.get<std::string>("spa_data_file");
   auto spa_map_file  = m_params.get<std::string>("spa_remap_file","");
 
-  // IOP cases cannot have a remap file. IOP file reader is itself a remaper,
-  // where a single column of data corresponding to the closest lat/lon pair to
-  // the IOP lat/lon parameters is read from file, and that column data is mapped
-  // to all columns of the IdentityRemapper source fields.
+  // IOP cases cannot have a remap file. We will create a IOPRemapper as the horiz remapper
   EKAT_REQUIRE_MSG(spa_map_file == "" or spa_map_file == "None" or not m_iop_data_manager,
     "Error! Cannot define spa_remap_file for cases with an Intensive Observation Period defined. "
     "The IOP class defines it's own remap from file data -> model data.\n");
 
-  SPAHorizInterp = SPAFunc::create_horiz_remapper (m_grid,spa_data_file,spa_map_file, m_iop_data_manager!=nullptr);
+  SPAHorizInterp = SPAFunc::create_horiz_remapper (m_grid,spa_data_file,spa_map_file, m_iop_data_manager);
 
   // Grab a sw and lw field from the horiz interp, and check sw/lw dim against what we hardcoded in this class
   auto nswbands_data = SPAHorizInterp->get_src_field(4).get_header().get_identifier().get_layout().dim("swband");
@@ -124,15 +121,8 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
     Kokkos::deep_copy(spa_hybm,spa_hybm_h);
   }
 
-  // 4. Create reader for spa data. The reader is either an
-  //    AtmosphereInput object (for reading into standard
-  //    grids) or a SpaFunctions::IOPReader (for reading into
-  //    an IOP grid).
-  if (m_iop_data_manager) {
-    SPAIOPDataReader = SPAFunc::create_spa_data_reader(m_iop_data_manager,SPAHorizInterp,spa_data_file);
-  } else {
-    SPADataReader = SPAFunc::create_spa_data_reader(SPAHorizInterp,spa_data_file);
-  }
+  // 4. Create reader for spa data.
+  SPADataReader = SPAFunc::create_spa_data_reader(SPAHorizInterp,spa_data_file);
 }
 
 // =========================================================================================
@@ -224,7 +214,7 @@ void SPA::initialize_impl (const RunType /* run_type */)
   // Note: At the first time step, the data will be moved into spa_beg,
   //       and spa_end will be reloaded from file with the new month.
   const int curr_month = timestamp().get_month()-1; // 0-based
-  SPAFunc::update_spa_data_from_file(SPADataReader,SPAIOPDataReader,timestamp(),curr_month,*SPAHorizInterp,SPAData_end);
+  SPAFunc::update_spa_data_from_file(*SPADataReader,curr_month,*SPAHorizInterp,SPAData_end);
 
   // 6. Set property checks for fields in this process
   using Interval = FieldWithinIntervalCheck;
@@ -246,7 +236,7 @@ void SPA::run_impl (const double dt)
   /* Update the SPATimeState to reflect the current time, note the addition of dt */
   SPATimeState.t_now = ts.frac_of_year_in_days();
   /* Update time state and if the month has changed, update the data.*/
-    SPAFunc::update_spa_timestate(SPADataReader,SPAIOPDataReader,ts,*SPAHorizInterp,SPATimeState,SPAData_start,SPAData_end);
+    SPAFunc::update_spa_timestate(*SPADataReader,ts,*SPAHorizInterp,SPATimeState,SPAData_start,SPAData_end);
 
   // Call the main SPA routine to get interpolated aerosol forcings.
   const auto& pmid_tgt = get_field_in("p_mid").get_view<const Spack**>();

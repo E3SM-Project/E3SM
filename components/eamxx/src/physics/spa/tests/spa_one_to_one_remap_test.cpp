@@ -47,8 +47,6 @@ TEST_CASE("spa_one_to_one_remap","spa")
   // Create spa data reader
   auto reader = SPAFunc::create_spa_data_reader(remapper,spa_data_file);
   // TODO: We can add lat/lon to spa_data_file and test the impl for IOP
-  util::TimeStamp dummy_ts;
-  std::shared_ptr<SPAFunc::IOPReader> dummy_iop_reader;
 
   // Recall, SPA data is padded, so we initialize with 2 more levels than the source data file.
   SPAFunc::SPAInput spa_data(grid_model->get_num_local_dofs(), nlevs+2, nswbands, nlwbands);
@@ -80,7 +78,7 @@ TEST_CASE("spa_one_to_one_remap","spa")
 
   const int max_time = 3;
   for (int time_index = 0;time_index<max_time; time_index++) {
-    SPAFunc::update_spa_data_from_file(reader, dummy_iop_reader, dummy_ts, time_index, *remapper, spa_data);
+    SPAFunc::update_spa_data_from_file(*reader, time_index, *remapper, spa_data);
     Kokkos::deep_copy(ps_h,ps_d);
     Kokkos::deep_copy(ccn3_h,ccn3_d);
     Kokkos::deep_copy(aer_g_sw_h,aer_g_sw_d);
