@@ -1199,9 +1199,9 @@ contains
                write(logunit,*) subname,' error in defining tags seq_flds_dom_fields on atm on coupler '
                call shr_sys_abort(subname//' ERROR in defining tags ')
             endif
-            ! also, frac, area, aream, masks has to come from atm mphaid, not from domain file reader
+            ! also, frac, area,  masks has to come from atm mphaid, not from domain file reader
             ! this is hard to digest :(
-            tagname = 'lat:lon:area:aream:frac:mask'//C_NULL_CHAR
+            tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
             call component_exch_moab(comp, mphaid, mbaxid, 0, tagname)
 
          endif ! coupler pes
@@ -1361,9 +1361,9 @@ contains
                write(logunit,*) subname,' error in computing comm graph for data ocn model '
                call shr_sys_abort(subname//' ERROR in computing comm graph for data ocn model ')
             endif
-            ! also, frac, area, aream, masks has to come from ocean mpoid, not from domain file reader
+            ! also, frac, area,  masks has to come from ocean mpoid, not from domain file reader
             ! this is hard to digest :(
-            tagname = 'area:aream:frac:mask'//C_NULL_CHAR
+            tagname = 'area:frac:mask'//C_NULL_CHAR
             call component_exch_moab(comp, mpoid, mboxid, 0, tagname)
          endif 
 
@@ -1539,11 +1539,11 @@ contains
             call shr_sys_abort(subname//' ERROR in computing comm graph for lnd model ')
          endif
 
-         tagname = 'lat:lon:area:aream:frac:mask'//C_NULL_CHAR
+         tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
          call component_exch_moab(comp, mlnid, mblxid, 0, tagname)
 
 #ifdef MOABDEBUG
-            outfile = 'recLand.h5m'//C_NULL_CHAR
+            outfile = 'recMeshLand.h5m'//C_NULL_CHAR
             wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
       !       write out the mesh file to disk
             ierr = iMOAB_WriteMesh(mblxid, trim(outfile), trim(wopts))
@@ -1686,9 +1686,9 @@ contains
                write(logunit,*) subname,' error in computing comm graph for data ice model '
                call shr_sys_abort(subname//' ERROR in computing comm graph for data ice model ')
             endif
-            ! also, frac, area, aream, masks has to come from ice MPSIID , not from domain file reader
+            ! also, frac, area,  masks has to come from ice MPSIID , not from domain file reader
             ! this is hard to digest :(
-            tagname = 'area:aream:frac:mask'//C_NULL_CHAR
+            tagname = 'area:frac:mask'//C_NULL_CHAR
             call component_exch_moab(comp, MPSIID, mbixid, 0, tagname)
          endif 
 #ifdef MOABDEBUG
@@ -1783,7 +1783,7 @@ contains
             call shr_sys_abort(subname//' ERROR in computing comm graph for rof model ')
          endif
 
-         tagname = 'area:aream:lon:lat:frac:mask'//C_NULL_CHAR
+         tagname = 'area:lon:lat:frac:mask'//C_NULL_CHAR
          call component_exch_moab(comp, mrofid, mbrxid, 0, tagname)
 
          ! if (mrofid .ge. 0) then  ! we are on component rof  pes
