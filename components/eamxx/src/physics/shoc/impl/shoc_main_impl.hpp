@@ -511,7 +511,7 @@ void Functions<S,D>::shoc_main_internal(
     // Diagnose the third moment of vertical velocity,
     //  needed for the PDF closure
     diag_third_shoc_moments_disp(shcol,nlev,nlevi,
-                                 c_diag_3rd_mom,                         // Runtime options
+                                 c_diag_3rd_mom,tke_1p5_closure,         // Runtime options
                                  w_sec,thl_sec,wthl_sec,                 // Input
                                  isotropy,brunt,thetal,tke,dz_zt,dz_zi,  // Input
                                  zt_grid,zi_grid,                        // Input
