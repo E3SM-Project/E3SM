@@ -102,7 +102,6 @@ contains
       real (kind=RKIND), dimension(:), pointer :: ismip6shelfMelt_zOcean
       real (kind=RKIND), dimension(:), pointer :: thickness, bedTopography
       integer, dimension(:,:), pointer :: orig3dOceanMask
-      integer, dimension(:), pointer :: origOceanMaskHoriz
       integer, dimension(:,:), pointer :: validOceanMask, validOceanMaskOrig, availOceanMask !masks to pass to flood-fill routine
       integer, dimension(:), pointer :: seedOceanMaskHoriz, growOceanMaskHoriz
       real (kind=RKIND), dimension(:,:), pointer :: MPAS_3dOceanSalinity, MPAS_3dOceanTemperature
@@ -133,7 +132,7 @@ contains
         ! initialize the ocean data and mask fields
          call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
          call mpas_pool_get_config(liConfigs, 'config_ocean_data_extrap_ncells_extra', nCellsExtra)
-         call mpas_pool_get_config(liConfigs, 'config_recalculate_thermal_forcing', config_recalcuate_thermal_forcing)
+         call mpas_pool_get_config(liConfigs, 'config_recalculate_thermal_forcing', config_recalculate_thermal_forcing)
          call mpas_pool_get_config(liConfigs, 'config_TF_param_type', config_TF_param_type)
          call mpas_pool_get_config(liConfigs, 'config_invalid_value_TF', invalid_value_TF)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
@@ -153,7 +152,6 @@ contains
          call mpas_pool_get_array(extrapOceanDataPool, 'availOceanMask', availOceanMask)
          call mpas_pool_get_array(extrapOceanDataPool, 'seedOceanMaskHoriz', seedOceanMaskHoriz)
          call mpas_pool_get_array(extrapOceanDataPool, 'growOceanMaskHoriz', growOceanMaskHoriz)
-         call mpas_pool_get_array(extrapOceanDataPool, 'seedOceanMaskHorizInit', seedOceanMaskHorizInit)
          
          allocate(oceanField(nISMIP6OceanLayers,nCells+1,2))
          
@@ -336,7 +334,7 @@ contains
             endif
             ! call the horizontal extrapolation routine
             call mpas_timer_start("horizontal scheme")
-            call horizontal_extrapolation(domain, availOceanMask, validOceanMask, validOceanMaskOrig, oceanField, err_tmp)
+            call horizontal_extrapolation(domain, availOceanMask, validOceanMask, orig3dOceanMask, oceanField, err_tmp)
             err = ior(err, err_tmp)
             call mpas_timer_stop("horizontal scheme")
             ! call the vertical extrapolation routine

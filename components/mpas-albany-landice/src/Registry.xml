@@ -817,6 +817,7 @@
                         <var name="ismip6shelfMelt_3dThermalForcing" packages="ismip6ShelfMelt"/>
                         <var name="ismip6shelfMelt_deltaT" packages="ismip6ShelfMelt"/>
                         <var name="ismip6shelfMelt_zOcean" packages="ismip6ShelfMelt"/>
+                        <var name="ismip6shelfMelt_zBndsOcean" packages="ismip6ShelfMelt"/>
                         <var name="ismip6shelfMelt_offset" packages="ismip6ShelfMelt"/>
 			<!-- these variables just for ISMIP6 grounded glacier forcing -->
 			<var name="ismip6Runoff" packages="ismip6GroundedFaceMelt" />
@@ -929,14 +930,10 @@
 			<var name="forcingTimeStamp" packages="ismip6GroundedFaceMelt" />
 		        <!-- these variables are just for the ocean thermal forcing re-extrapolation scheme -->
                         <var name="orig3dOceanMask" packages="extrapOceanData" />
-                        <var name="origOceanMaskHoriz" packages="extrapOceanData" />
-                        <var name="orig3dOceanCavityMask" packages="extrapOceanData" /> <!-- CAS 8/16/2024 -->
 			<var name="validOceanMask" packages="extrapOceanData" />
-			<var name="validOceanMaskOrig" packages="extrapOceanData" />
 			<var name="availOceanMask" packages="extrapOceanData" />
 			<var name="growOceanMaskHoriz" packages="extrapOceanData" />
 			<var name="seedOceanMaskHoriz" packages="extrapOceanData" />
-			<var name="seedOceanMaskHorizInit" packages="extrapOceanData" />
 		</stream>
 
 
