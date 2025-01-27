@@ -207,6 +207,8 @@ implicit none
 !==============================================================
 !  non-hydrostatic EOS
 !==============================================================
+
+!!!!!!!!!!!!!!!!!!!! compute_pnh_and_exner
   do k=1,nlev
      p_over_exner(:,:,k) = Rgas*vtheta_dp(:,:,k)/(-dphi(:,:,k))
 
@@ -240,6 +242,8 @@ implicit none
    ! an approximation (hydrostatic) so that dpnh/dpi = 1
    ! DO NOT CHANGE this approximation.  it is required by 
    ! compute_andor_apply_rhs() where 1 is hardcoded into it.
+
+! end of compute_pnh_and_exner
 
    pnh_i(:,:,nlevp) = pnh(:,:,nlev) + dp3d(:,:,nlev)/2
 
