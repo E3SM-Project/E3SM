@@ -95,7 +95,7 @@ void run(std::mt19937_64 &engine) {
   diags.emplace("rnp", diag_rain);
   // Combined
   params.set<std::vector<std::string>>(
-      "Number Kinds", std::vector<std::string>{"Liq", "Ice", "Rain"});
+      "Number Kinds", std::vector<std::string>{"Liq", "Rain", "Ice"});
   auto diag_comb = diag_factory.create("NumberPath", comm, params);
   diag_comb->set_grids(gm);
   diags.emplace("cnp", diag_comb);
@@ -173,9 +173,8 @@ void run(std::mt19937_64 &engine) {
       dd.second->compute_diagnostic();
     }
     // Grab views for each of the number path diagnostics
-    const auto &lnp = diags["lnp"]->get_diagnostic();
-    const auto &inp = diags["inp"]->get_diagnostic();
-    // for this last one, use the other overloaded get_diagnostic method
+    const auto &lnp = diags["lnp"]->get_diagnostic("LiqNumberPath");
+    const auto &inp = diags["inp"]->get_diagnostic("IceNumberPath");
     const auto &rnp     = diags["rnp"]->get_diagnostic("RainNumberPath");
     const auto &c_rnp   = diags.at("cnp")->get_diagnostic("RainNumberPath");
     const auto &lnp_h   = lnp.get_view<const Real *, Host>();

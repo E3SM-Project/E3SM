@@ -66,10 +66,9 @@ void NumberPathDiagnostic::set_grids(
 
   // Construct and allocate the diagnostic field
   for(const auto &kind : m_kinds) {
-    FieldIdentifier fid(kind + name(), scalar2d, kg / (kg * m2), grid_name);
-    m_diagnostic_output = Field(fid);
-    m_diagnostic_output.allocate_view();
-    m_diagnostic_fields[kind + name()] = m_diagnostic_output;
+    m_diagnostic_fields[kind + name()] = Field(
+        FieldIdentifier(kind + name(), scalar2d, kg / (kg * m2), grid_name));
+    m_diagnostic_fields[kind + name()].allocate_view();
   }
 }
 
@@ -82,9 +81,10 @@ void NumberPathDiagnostic::compute_diagnostic_impl() {
   constexpr Real g = PC::gravit;
   const auto rho   = get_field_in("pseudo_density").get_view<const Real **>();
 
-  auto compute_number_path = [this](const std::string &kind,
-                                    const decltype(rho) &rho) {
-    const auto np = m_diagnostic_output.get_view<Real *>();
+  auto compute_number_path = [&](const std::string &kind,
+                                 const decltype(rho) &rho,
+                                 const decltype(g) &g) {
+    const auto np = m_diagnostic_fields[kind + name()].get_view<Real *>();
     const auto q  = get_field_in(m_qnames[kind]).get_view<const Real **>();
     const auto n  = get_field_in(m_nnames[kind]).get_view<const Real **>();
 
@@ -110,7 +110,7 @@ void NumberPathDiagnostic::compute_diagnostic_impl() {
 
   // TODO: should we parallelize over the kinds?
   for(const auto &kind : m_kinds) {
-    compute_number_path(kind, rho);
+    compute_number_path(kind, rho, g);
   }
 }
 
