@@ -22,6 +22,11 @@
   </compset>
 
   <compset>
+    <alias>F1850-SOI</alias>
+    <lname>1850SOI_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>F1950-CICE</alias>
     <lname>1950_EAM%CMIP6_ELM%CNPRDCTCBCTOP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
@@ -42,7 +47,12 @@
   </compset>
 
   <!-- Compsets for RFMIP single forcing experiments -->
-  
+
+  <compset>
+    <alias>F20TR-SOI</alias>
+    <lname>20TRSOI_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+  </compset>
+
   <compset>
     <alias>F20TR-GHG</alias>
     <lname>20TRSOI_EAM%CMIP6-GHG_ELM%CNPRDCTCBCTOP_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
@@ -91,6 +101,11 @@
   <compset>
     <alias>F2010</alias>
     <lname>2010_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>F2010-SOI</alias>
+    <lname>2010SOI_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>
 
   <compset>
