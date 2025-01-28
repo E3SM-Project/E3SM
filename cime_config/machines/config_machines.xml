@@ -3697,23 +3697,26 @@ unset MPIR_CVAR_CH4_POSIX_COLL_SELECTION_TUNING_JSON_FILE
        </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
-       <init_path lang="sh">/lus/flare/projects/CSC249ADSE15_CNDA/modules/lmod.sh</init_path>
-       <init_path lang="csh">/soft/sunspot_migrate/soft/packaging/lmod/lmod/init/csh</init_path>
-       <init_path lang="python">/soft/sunspot_migrate/soft/packaging/lmod/lmod/init/env_modules_python.py</init_path>
+       <init_path lang="sh">/usr/share/lmod/lmod/init/sh</init_path>
+       <init_path lang="csh">/usr/share/lmod/lmod/init/csh</init_path>
+       <init_path lang="python">/usr/share/lmod/lmod/init/env_modules_python.py</init_path>
        <cmd_path lang="sh">module</cmd_path>
        <cmd_path lang="csh">module</cmd_path>
-       <cmd_path lang="python">/soft/sunspot_migrate/soft/packaging/lmod/lmod/libexec/lmod python</cmd_path>
-       <modules>
+       <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
+       <!--       <modules>
           <command name="purge"></command>
           <command name="use">/soft/modulefiles</command>
 	  <command name="use">/soft/restricted/CNDA/updates/modulefiles</command>
-	  <command name="load">spack-pe-gcc/0.7.0-24.086.0 cmake</command>
-          <command name="load">python/3.10.11</command>
-        </modules>
-        <modules compiler="!gnu">
-          <command name="load">oneapi/eng-compiler/2024.07.30.002 mpich/icc-all-pmix-gpu/20240717</command>
-        </modules>
-        <modules>
+       </modules>-->
+       <modules>
+          <command name="load">cmake</command>
+       </modules>
+       <modules compiler="!gnu">
+          <command name="load">oneapi/eng-compiler/2024.07.30.002</command>
+          <command name="load">python/3.10.13</command>
+	  <!--<command name="load">cmake/3.27.9</command>-->
+       </modules>
+       <modules>
           <command name="load">cray-pals/1.4.0</command>
           <command name="load">libfabric/1.20.1</command>
         </modules>
