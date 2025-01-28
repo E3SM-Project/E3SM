@@ -24,10 +24,18 @@ set(BUILD_HOMME_PESE         OFF CACHE BOOL "")
 set(BUILD_HOMME_SWIM         OFF CACHE BOOL "")
 set(BUILD_HOMME_PRIM         OFF CACHE BOOL "")
 
-set(HOMME_ENABLE_COMPOSE     ON  CACHE BOOL "")
+message("Kokkos_ENABLE_SYCL is set to ${Kokkos_ENABLE_SYCL}-----------------------------")
+
+message("HOMME_ENABLE_COMPOSE is set to ${HOMME_ENABLE_COMPOSE}-----------------------------")
 if (Kokkos_ENABLE_SYCL)
   set(HOMME_ENABLE_COMPOSE     OFF  CACHE BOOL "")
+  message("1 HOMME_ENABLE_COMPOSE is set to ${HOMME_ENABLE_COMPOSE}-----------------------------")
+else ()
+  set(HOMME_ENABLE_COMPOSE     ON  CACHE BOOL "")
+  message("2 HOMME_ENABLE_COMPOSE is set to ${HOMME_ENABLE_COMPOSE}-----------------------------")
 endif()
+message("HOMME_ENABLE_COMPOSE is set to ${HOMME_ENABLE_COMPOSE}-----------------------------")
+
 
 set(BUILD_HOMME_TOOL         OFF CACHE BOOL "")
 
