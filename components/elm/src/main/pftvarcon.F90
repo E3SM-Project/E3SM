@@ -1260,6 +1260,7 @@ contains
     npcropmin            = ncorn                ! first prognostic crop
     if( .not. use_crop) then
        npcropmax            = nsoybeanirrig        ! last prognostic crop in list
+       nppercropmax         = 0                    ! set value for iscft test below
     else
        npcropmax            = nsugarcaneirrig      ! last prognostic crop in list
        nppercropmin         = nmiscanthus          ! first prognostic perennial crop
