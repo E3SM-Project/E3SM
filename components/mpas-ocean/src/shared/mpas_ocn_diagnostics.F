@@ -985,7 +985,30 @@ contains
 #endif
 
         end if
-
+        if (config_use_spatially_variable_upwind) then
+#ifdef MPAS_OPENACC
+            !$acc parallel loop &
+            !$acc    present(layerThickEdgeMean, layerThickEdgeFlux, &
+            !$acc            minLevelEdgeBot, maxLevelEdgeTop, &
+            !$acc            upwindFactor) &
+            !$acc    private(k, kmin, kmax)
+#else
+            !$omp parallel
+            !$omp do schedule(runtime) private(k, kmin, kmax)
+#endif
+            do iEdge = 1, nEdgesAll
+               kmin = minLevelEdgeBot(iEdge)
+               kmax = maxLevelEdgeTop(iEdge)
+               do k = kmin,kmax
+                  layerThickEdgeFlux(k,iEdge) = (1.0_RKIND - upwindFactor(iEdge)) * layerThickEdgeMean(k,iEdge) &
+                                              + upwindFactor(iEdge)* layerThickEdgeFlux(k,iEdge)
+               end do
+            end do
+#ifndef MPAS_OPENACC
+            !$omp end do
+            !$omp end parallel
+#endif
+        endif
       case (thickEdgeFluxConstant)
          ! Use linearized version H*u where H is constant in time
 

@@ -1145,6 +1145,18 @@
 					description="If 'upwind', use upwind to evaluate the edge-value for layerThickness, i.e., layerThickEdgeFlux.  The standard MPAS-O approach is 'centered'. For 'constant', uses constant thickness in time from restingThickness, for linear test problems. Note that these two flags are set together for linearized test cases: config_thickness_flux_type = 'constant' linearizes the thickness equation, and config_disable_vel_hadv = .true. linearizes the momentum equation if there is no assumed mean background velocity."
 					possible_values="'upwind', 'centered', 'constant'"
 		/>
+		<nml_option name="config_use_spatially_variable_upwind" type="logical" default_value=".false."
+					description="If true, use upwindFactor to scale layerThickEdgeFlux by centered and upwind values."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_spatially_variable_upwind_hmin" type="real" default_value="1.0"
+					description="Column thickness above which we start weighting upwind with centered advection."
+					possible_values="Any positive real"
+		/>
+		<nml_option name="config_spatially_variable_upwind_hmax" type="real" default_value="10.0"
+					description="Column thickness above which advection is no longer upwinded."
+					possible_values="Any positive real"
+		/>
 	</nml_record>
 	<nml_record name="bottom_drag" mode="forward">
 		<nml_option name="config_bottom_drag_mode" type="character" default_value="implicit"
@@ -1801,6 +1813,7 @@
 			<var name="fCell"/>
 			<var name="bed_elevation"/>
 			<var name="LTSRegion"/>
+			<var name="upwindFactor"/>
 		</stream>
 
 		<stream name="output_init"
@@ -1835,6 +1848,7 @@
 			<var name="landIceFloatingMask"/>
 			<var name="landIceFloatingFraction"/>
 			<var name="LTSRegion"/>
+			<var name="upwindFactor"/>
 		</stream>
 
 		<stream name="forcing_data_init"
@@ -3070,6 +3084,11 @@
 			 missing_value="FILLVAL" missing_value_mask="vertexMask"
 			 packages="forwardMode;analysisMode"
 		/>
+		<!-- Input fields from initial condition for spatially variable upwinding -->
+		<var name="upwindFactor" type="real" dimensions="nEdges Time" units="1"
+			description="The fraction of horizontal advection that is upwinded. Range from 0 (centered) to 1 (fully upwind)"
+		/>
+
 
 		<var name="kineticEnergyCell" type="real" dimensions="nVertLevels nCells Time" units="m^2 s^-2"
 			 description="kinetic energy of horizontal velocity on cells"
