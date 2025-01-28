@@ -172,7 +172,11 @@ module prep_ocn_mod
   integer    :: size_of_shared_values
 
   logical                  :: iamin_CPLALLICEID     ! pe associated with CPLALLICEID
-  logical :: load_maps_from_disk
+
+#ifdef HAVE_MOAB
+  logical                  :: load_maps_from_disk_a2o
+#endif
+
 contains
 
   !================================================================================================
@@ -275,7 +279,7 @@ contains
 
     !---------------------------------------------------------------
 
-    load_maps_from_disk = .true. ! Force read from disk
+    load_maps_from_disk_a2o = .true. ! Force read from disk
 
     call seq_infodata_getData(infodata , &
          ocn_present=ocn_present       , &
@@ -434,7 +438,7 @@ contains
             if (.not. samegrid_ao) then ! not a data OCN model
 
                ! for bilinear maps, we need to have a layer of ghosts on source
-               nghlay = 1  ! number of ghost layers
+               nghlay = 0  ! number of ghost layers
                ierr   = iMOAB_SetGhostLayers( mbaxid, nghlay )
                if (ierr .ne. 0) then
                   write(logunit,*) subname,' error in setting the number of ghost layers'
@@ -449,7 +453,7 @@ contains
                   call shr_sys_abort(subname//' ERROR in computing ATM-OCN coverage')
                endif
 
-               if (.not. load_maps_from_disk) then
+               if (.not. load_maps_from_disk_a2o) then
                   ! first compute the overlap mesh between mbaxid (ATM) and mboxid (OCN) on coupler PEs
                   ierr =  iMOAB_ComputeMeshIntersectionOnSphere (mbaxid, mboxid, mbintxao)
                   if (ierr .ne. 0) then
@@ -478,7 +482,7 @@ contains
                   call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_a2x_fields on ocn cpl')
                endif
 
-               if (.not. load_maps_from_disk) then
+               if (.not. load_maps_from_disk_a2o) then
                   volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
                   if (atm_pg_active) then
                      dm1 = "fv"//C_NULL_CHAR
@@ -563,7 +567,7 @@ contains
 #ifdef MOABDEBUG
                wopts = C_NULL_CHAR
                call shr_mpi_commrank( mpicom_CPLID, rank )
-               if (rank .lt. 5) then
+               if (rank .lt. 5 .and. .not. load_maps_from_disk_a2o) then
                   write(lnum,"(I0.2)")rank !
                   outfile = 'intx_ao_'//trim(lnum)// '.h5m' // C_NULL_CHAR
                   ierr = iMOAB_WriteMesh(mbintxao, outfile, wopts) ! write local intx file
@@ -672,7 +676,6 @@ contains
 
             type1 = 3
             type2 = 3 ! FV-FV graph
-
             ! iMOAB: compute the communication graph for ICE-OCN, based on the same global id
             ! it will be a simple permutation from ice mesh directly to ocean, using the comm graph computed here
             ierr = iMOAB_ComputeCommGraph( mbixid, mboxid, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, &
