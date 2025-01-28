@@ -1149,7 +1149,7 @@
 					description="If true, use upwindFactor to scale layerThickEdgeFlux by centered and upwind values."
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_spatially_variable_upwind_hmin" type="real" default_value="1.0"
+		<nml_option name="config_spatially_variable_upwind_hmin" type="real" default_value="5.0"
 					description="Column thickness above which we start weighting upwind with centered advection."
 					possible_values="Any positive real"
 		/>
