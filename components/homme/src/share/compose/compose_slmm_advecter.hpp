@@ -208,7 +208,9 @@ struct Advecter {
   {
     slmm_throw_if(cubed_sphere_map == 0 && Alg::is_cisl(alg_),
                   "When cubed_sphere_map = 0, SLMM supports only ISL methods.");
-    local_mesh_h_ = LocalMeshesH("local_mesh_h_", nelem);
+    local_mesh_h_ = LocalMeshesH(ko::view_alloc(std::string("local_mesh_h_"),
+                                                ko::SequentialHostInit),
+                                 nelem);
   }
 
   void init_plane (Real Sx, Real Sy, Real Lx, Real Ly) {
