@@ -204,16 +204,19 @@ void IceSupersatConservationData::randomize(std::mt19937_64& engine)
 {
   std::uniform_real_distribution<Real> data_dist(0.0, 1.0);
 
-  cld_frac_i         = data_dist(engine);
-  qv                 = data_dist(engine);
-  qv_sat_i           = data_dist(engine);
-  latent_heat_sublim = data_dist(engine);
-  t_atm              = data_dist(engine);
-  dt                 = data_dist(engine);
-  qi2qv_sublim_tend  = data_dist(engine);
-  qr2qv_evap_tend    = data_dist(engine);
-  qidep              = data_dist(engine);
-  qinuc              = data_dist(engine);
+  cld_frac_i          = data_dist(engine);
+  qv                  = data_dist(engine);
+  qv_sat_i            = data_dist(engine);
+  latent_heat_sublim  = data_dist(engine);
+  t_atm               = data_dist(engine);
+  dt                  = data_dist(engine);
+  qi2qv_sublim_tend   = data_dist(engine);
+  qr2qv_evap_tend     = data_dist(engine);
+  qidep               = data_dist(engine);
+  qinuc               = data_dist(engine);
+  qinuc_cnt           = data_dist(engine);
+  context             = data_dist(engine);
+  use_hetfrz_classnuc = data_dist(engine) < 0.5;
 }
 
 void NcConservationData::randomize(std::mt19937_64& engine)

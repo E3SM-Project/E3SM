@@ -29,7 +29,6 @@ struct UnitWrap::UnitTest<D>::TestIceSupersatConservation : public UnitWrap::Uni
     for (auto& d : baseline_data) {
       d.randomize(engine);
       d.dt = baseline_data[0].dt; // hold this fixed, it is not packed data
-
       // C++ impl uses constants for latent_heat values. Manually set here
       // so F90 can match
       d.latent_heat_sublim = latvap+latice;
@@ -54,19 +53,23 @@ struct UnitWrap::UnitTest<D>::TestIceSupersatConservation : public UnitWrap::Uni
       const Int offset = i * Spack::n;
 
       // Init pack inputs
-      Spack cld_frac_i, qidep, qinuc, qv, qv_sat_i, t_atm, qi2qv_sublim_tend, qr2qv_evap_tend;
+      Spack cld_frac_i, qidep, qinuc, qinuc_cnt, qv, qv_sat_i, t_atm, qi2qv_sublim_tend, qr2qv_evap_tend;
+      Spack context_s;
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
         cld_frac_i[s] = cxx_device(vs).cld_frac_i;
         qidep[s] = cxx_device(vs).qidep;
         qinuc[s] = cxx_device(vs).qinuc;
+        qinuc_cnt[s] = cxx_device(vs).qinuc_cnt;
         qv[s] = cxx_device(vs).qv;
         qv_sat_i[s] = cxx_device(vs).qv_sat_i;
         t_atm[s] = cxx_device(vs).t_atm;
         qi2qv_sublim_tend[s] = cxx_device(vs).qi2qv_sublim_tend;
         qr2qv_evap_tend[s] = cxx_device(vs).qr2qv_evap_tend;
+        context_s[s] = cxx_device(vs).context;
       }
-
-      //Functions::ice_supersat_conservation(qidep, qinuc, cld_frac_i, qv, qv_sat_i, t_atm, cxx_device(offset).dt, qi2qv_sublim_tend, qr2qv_evap_tend);
+      const bool use_hetfrz_classnuc =  cxx_device(offset).use_hetfrz_classnuc;
+      const Smask context = context_s < .5;
+      Functions::ice_supersat_conservation(qidep, qinuc, qinuc_cnt, cld_frac_i, qv, qv_sat_i, t_atm, cxx_device(offset).dt, qi2qv_sublim_tend, qr2qv_evap_tend, use_hetfrz_classnuc, context);
 
       // Copy spacks back into cxx_device view
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {

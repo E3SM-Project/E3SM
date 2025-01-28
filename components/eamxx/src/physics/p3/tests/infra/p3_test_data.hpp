@@ -758,10 +758,10 @@ struct P3MainData : public PhysicsTestData
 
 struct IceSupersatConservationData {
   // Inputs
-  Real cld_frac_i, qv, qv_sat_i, latent_heat_sublim, t_atm, dt, qi2qv_sublim_tend, qr2qv_evap_tend;
-
+  Real cld_frac_i, qv, qv_sat_i, latent_heat_sublim, t_atm, dt, qi2qv_sublim_tend, qr2qv_evap_tend, context;
+  bool use_hetfrz_classnuc;
   // Inputs/Outputs
-  Real qidep, qinuc;
+  Real qidep, qinuc, qinuc_cnt;
 
   void randomize(std::mt19937_64& engine);
 
