@@ -548,11 +548,12 @@
     </batch_system>
 
     <batch_system MACH="aurora" type="pbspro">
+      <batch_submit>/lus/flare/projects/E3SM_Dec/tools/qsub/throttle</batch_submit>
       <queues>
-        <queue walltimemax="01:00:00" jobmin="1" jobmax="2" default="true">debug</queue>
-        <queue walltimemax="01:00:00" jobmin="3" jobmax="31">debug-scaling</queue>
-        <queue walltimemax="01:00:00" jobmin="32" jobmax="2048">prod</queue>
-        <queue walltimemax="01:00:00" jobmin="2049" jobmax="10624">prod-large</queue>
+        <queue walltimemax="01:00:00" nodemin="1"    nodemax="2" default="true">debug</queue>
+        <queue walltimemax="01:00:00" nodemin="3"    nodemax="31"   >debug-scaling</queue>
+        <queue walltimemax="01:00:00" nodemin="32"   nodemax="2048" >prod</queue>
+        <queue walltimemax="01:00:00" nodemin="2049" nodemax="10624">prod-large</queue>
       </queues>
     </batch_system>
     
