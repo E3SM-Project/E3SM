@@ -533,30 +533,6 @@
       </queues>
     </batch_system>
 
-    <batch_system MACH="sunspotcpu" type="pbspro">
-      <batch_submit>/lus/gila/projects/CSC249ADSE15_CNDA/tools/qsub/throttle</batch_submit>
-      <queues>
-        <queue walltimemax="01:00:00" jobmin="1" jobmax="128" default="true">workq</queue>
-        <queue walltimemax="01:00:00" jobmin="1" jobmax="128">debug</queue>
-      </queues>
-    </batch_system>
-
-    <batch_system MACH="sunspot-pvc" type="pbspro">
-      <batch_submit>/lus/gila/projects/CSC249ADSE15_CNDA/tools/qsub/throttle</batch_submit>
-      <queues>
-        <queue walltimemax="01:00:00" jobmin="1" jobmax="128" default="true">workq</queue>
-        <queue walltimemax="01:00:00" jobmin="1" jobmax="128">debug</queue>
-      </queues>
-    </batch_system>
-
-    <batch_system MACH="sunspot-gen" type="pbspro">
-      <batch_submit>/lus/gila/projects/CSC249ADSE15_CNDA/tools/qsub/throttle</batch_submit>
-      <queues>
-        <queue walltimemax="01:00:00" jobmin="1" jobmax="128" default="true">workq</queue>
-        <queue walltimemax="01:00:00" jobmin="1" jobmax="128">debug</queue>
-      </queues>
-    </batch_system>
-
     <batch_system MACH="aurora" type="pbspro">
       <batch_submit>/lus/flare/projects/E3SM_Dec/tools/qsub/throttle</batch_submit>
       <directives>
@@ -567,15 +543,6 @@
         <queue walltimemax="01:00:00" nodemin="3"    nodemax="31"   >debug-scaling</queue>
         <queue walltimemax="01:00:00" nodemin="32"   nodemax="2048" >prod</queue>
         <queue walltimemax="01:00:00" nodemin="2049" nodemax="10624">prod-large</queue>
-      </queues>
-    </batch_system>
-
-    <batch_system MACH="auroracpu" type="pbspro">
-      <batch_submit>/lus/flare/projects/CSC249ADSE15_CNDA/tools/qsub/throttle</batch_submit>
-      <queues>
-        <queue walltimemax="00:59:00" jobmin="1" jobmax="2560" default="true">EarlyAppAccess</queue>
-        <queue walltimemax="00:59:00" jobmin="1" jobmax="10624">workq-route</queue>
-        <queue walltimemax="00:59:00" jobmin="1" jobmax="10624">workq</queue>
       </queues>
     </batch_system>
     
