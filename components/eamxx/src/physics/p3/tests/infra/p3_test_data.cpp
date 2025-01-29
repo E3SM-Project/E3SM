@@ -19,6 +19,7 @@ void BackToCellAverageData::randomize(std::mt19937_64& engine)
 {
   // Populate the struct with numbers between 0 and 1.
   std::uniform_real_distribution<Real> data_dist(0.0, 1.0);
+  std::uniform_int_distribution<int> bool_dist(0, 1);
   cld_frac_l = data_dist(engine);
   cld_frac_r = data_dist(engine);
   cld_frac_i = data_dist(engine);
@@ -53,6 +54,13 @@ void BackToCellAverageData::randomize(std::mt19937_64& engine)
   qv2qi_nucleat_tend = data_dist(engine);
   ni_nucleat_tend = data_dist(engine);
   qc2qi_berg_tend = data_dist(engine);
+  ncheti_cnt = data_dist(engine);
+  qcheti_cnt = data_dist(engine);
+  nicnt = data_dist(engine);
+  qicnt = data_dist(engine);
+  ninuc_cnt = data_dist(engine);
+  qinuc_cnt = data_dist(engine);
+  context = bool_dist(engine);
 }
 
 void CalcLiqRelaxationData::randomize(std::mt19937_64& engine)
@@ -203,6 +211,7 @@ P3MainData::P3MainData(
 void IceSupersatConservationData::randomize(std::mt19937_64& engine)
 {
   std::uniform_real_distribution<Real> data_dist(0.0, 1.0);
+  std::uniform_int_distribution<int> bool_dist(0, 1);
 
   cld_frac_i          = data_dist(engine);
   qv                  = data_dist(engine);
@@ -215,8 +224,8 @@ void IceSupersatConservationData::randomize(std::mt19937_64& engine)
   qidep               = data_dist(engine);
   qinuc               = data_dist(engine);
   qinuc_cnt           = data_dist(engine);
-  context             = data_dist(engine);
-  use_hetfrz_classnuc = data_dist(engine) < 0.5;
+  context             = bool_dist(engine);
+  use_hetfrz_classnuc = bool_dist(engine);
 }
 
 void NcConservationData::randomize(std::mt19937_64& engine)

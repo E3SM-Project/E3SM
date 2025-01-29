@@ -86,7 +86,8 @@ struct BackToCellAverageData
   Real qc2qr_accret_tend, qr2qv_evap_tend, qc2qr_autoconv_tend, nc_accret_tend, nc_selfcollect_tend, nc2nr_autoconv_tend, nr_selfcollect_tend, nr_evap_tend, ncautr, qcnuc,
        nc_nuceat_tend, qi2qv_sublim_tend, nr_ice_shed_tend, qc2qi_hetero_freeze_tend, qr2qi_collect_tend, qc2qr_ice_shed_tend, qi2qr_melt_tend, qc2qi_collect_tend, qr2qi_immers_freeze_tend, ni2nr_melt_tend,
        nc_collect_tend, ncshdc, nc2ni_immers_freeze_tend, nr_collect_tend, ni_selfcollect_tend, qv2qi_vapdep_tend, nr2ni_immers_freeze_tend, ni_sublim_tend, qv2qi_nucleat_tend, ni_nucleat_tend,
-       qc2qi_berg_tend;
+       qc2qi_berg_tend, ncheti_cnt, qcheti_cnt, nicnt, qicnt, ninuc_cnt, qinuc_cnt;
+  bool context;
 
   // This populates all fields with test data within [0,1].
   void randomize(std::mt19937_64& engine);
@@ -758,8 +759,8 @@ struct P3MainData : public PhysicsTestData
 
 struct IceSupersatConservationData {
   // Inputs
-  Real cld_frac_i, qv, qv_sat_i, latent_heat_sublim, t_atm, dt, qi2qv_sublim_tend, qr2qv_evap_tend, context;
-  bool use_hetfrz_classnuc;
+  Real cld_frac_i, qv, qv_sat_i, latent_heat_sublim, t_atm, dt, qi2qv_sublim_tend, qr2qv_evap_tend;
+  bool context, use_hetfrz_classnuc;
   // Inputs/Outputs
   Real qidep, qinuc, qinuc_cnt;
 
