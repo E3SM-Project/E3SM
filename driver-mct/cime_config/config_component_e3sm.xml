@@ -826,7 +826,21 @@
     <group>run_glc</group>
     <file>env_run.xml</file>
     <desc>Glacier model number of elevation classes, 0 implies no glacier land unit in clm
-    Used by both ELM and CISM (even if CISM is not running, and only SGLC is used).</desc>
+    Used by both ELM and MALI (even if MALI is not running, and only SGLC is used).</desc>
+  </entry>
+
+  <entry id="GLC_NZOC">
+    <type>integer</type>
+    <valid_values>0,4,30</valid_values>
+    <default_value>30</default_value>
+    <values match="last">
+      <value compset="_SGLC">0</value>
+    </values>
+    <group>run_glc</group>
+    <file>env_run.xml</file>
+    <desc>Glacier model number of z-ocean classes, 0 implies no OCN z-level coupling to GLC or
+    GLC is inactive.
+    Used by both OCN and GLC components.</desc>
   </entry>
 
   <entry id="GLC_TWO_WAY_COUPLING">
