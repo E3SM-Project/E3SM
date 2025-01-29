@@ -151,7 +151,7 @@ struct FixedCapList {
     Int n_read = -1;
     for (;;) {
       n_read = *n_vol;
-      if (ko::atomic_compare_exchange(n_vol, n_read, n_read+1))
+      if (n_read == ko::atomic_compare_exchange(n_vol, n_read, n_read+1))
         break;
     }
     return d_[n_read];
