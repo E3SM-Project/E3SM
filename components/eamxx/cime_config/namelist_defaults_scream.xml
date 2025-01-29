@@ -726,7 +726,10 @@ be lost if SCREAM_HACK_XML is not enabled.
   <!-- driver_options options for scream -->
   <driver_options>
     <atmosphere_dag_verbosity_level>0</atmosphere_dag_verbosity_level>
-    <save_field_manager_dictionary type="logical">false</save_field_manager_dictionary>
+    <save_field_manager_content type="logical"
+                                doc="Saves a dictionary of the FM fields to file">
+      false
+    </save_field_manager_content>
     <atm_log_level type="string"
                    valid_values="trace,debug,info,warn,error"
                    doc="Verbosity level for the atm logger">
