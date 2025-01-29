@@ -198,10 +198,22 @@
     <category>seq_flds</category>
     <group>seq_cplflds_inparm</group>
     <desc>
-      Number of cism elevation classes. Set by the xml variable GLC_NEC in env_run.xml
+      Number of GLC elevation classes. Set by the xml variable GLC_NEC in env_run.xml
     </desc>
     <values>
       <value>$GLC_NEC</value>
+    </values>
+  </entry>
+
+  <entry  id="glc_nzoc" modify_via_xml="GLC_NZOC">
+    <type>integer</type>
+    <category>seq_flds</category>
+    <group>seq_cplflds_inparm</group>
+    <desc>
+      Number of GLC z-ocean classes. Set by the xml variable GLC_NZOC in env_run.xml
+    </desc>
+    <values>
+      <value>$GLC_NZOC</value>
     </values>
   </entry>
 
