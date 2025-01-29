@@ -69,7 +69,7 @@ else()
   add_library(p3 ${P3_SRCS})
   # If small kernels are ON, we don't need a separate executable to test them.
   # Also, we never want to generate baselines with this separate executable
-  if (NOT SCREAM_LIBS_ONLY AND NOT SCREAM_ONLY_GENERATE_BASELINES)
+  if (NOT SCREAM_LIB_ONLY AND NOT SCREAM_ONLY_GENERATE_BASELINES)
     add_library(p3_sk ${P3_SRCS} ${P3_SK_SRCS})
     # Always build p3_sk with SCREAM_P3_SMALL_KERNELS on
     target_compile_definitions(p3_sk PUBLIC "SCREAM_P3_SMALL_KERNELS")
