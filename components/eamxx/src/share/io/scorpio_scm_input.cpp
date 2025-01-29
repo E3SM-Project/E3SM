@@ -8,6 +8,26 @@
 
 #include <memory>
 
+// Anonymous namespace, in case other TU's define the same type
+namespace {
+struct RealInt
+{
+  scream::Real val;
+  int  idx;
+};
+}
+// Specialize ekat's get_mpi_type for RealInt (needed for the all_reduce call)
+namespace ekat {
+  template<>
+  MPI_Datatype get_mpi_type<RealInt> () {
+#ifdef SCREAM_DOUBLE_PRECISION
+    return MPI_DOUBLE_INT;
+#else
+    return MPI_FLOAT_INT;
+#endif
+  }
+} // namespace ekat
+
 namespace scream
 {
 
@@ -102,12 +122,12 @@ void SCMInput::create_closest_col_info (double target_lat, double target_lon)
 
   // Find processor with closest lat/lon match
   const auto my_rank = m_comm.rank();
-  std::pair<Real, int> min_dist_and_rank = {minloc.val, my_rank};
-  m_comm.all_reduce<std::pair<Real, int>>(&min_dist_and_rank, 1, MPI_MINLOC);
+  RealInt min_dist_and_rank = {minloc.val, my_rank};
+  m_comm.all_reduce(&min_dist_and_rank, 1, MPI_MINLOC);
 
   // Set local col idx to -1 for mpi ranks not containing minimum lat/lon distance
-  m_closest_col_info.mpi_rank = min_dist_and_rank.second;
-  m_closest_col_info.col_lid  = my_rank==min_dist_and_rank.second ? minloc.loc : -1;
+  m_closest_col_info.mpi_rank = min_dist_and_rank.idx;
+  m_closest_col_info.col_lid  = my_rank==min_dist_and_rank.idx ? minloc.loc : -1;
 }
 
 void SCMInput::read_variables (const int time_index)

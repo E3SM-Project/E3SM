@@ -70,9 +70,6 @@ public:
   static std::shared_ptr<AbstractGrid>
   create_tgt_grid (const grid_ptr_type& src_grid, const std::string& map_file);
 
-  FieldLayout create_src_layout (const FieldLayout& tgt_layout) const override;
-  FieldLayout create_tgt_layout (const FieldLayout& src_layout) const override;
-
   bool compatible_layouts (const FieldLayout& src, const FieldLayout& tgt) const override;
 
   bool is_valid_tgt_layout (const FieldLayout& layout) const override;
@@ -81,8 +78,7 @@ protected:
 
   void set_pressure (const Field& p, const std::string& src_or_tgt, const ProfileType ptype);
   FieldLayout create_layout (const FieldLayout& from_layout,
-                             const std::shared_ptr<const AbstractGrid>& to_grid,
-                             const bool int_same_as_mid) const;
+                             const std::shared_ptr<const AbstractGrid>& to_grid) const override;
 
   void registration_ends_impl () override;
 
@@ -126,8 +122,8 @@ protected:
   Field                 m_tgt_pmid;
   Field                 m_tgt_pint;
 
-  bool m_src_mid_same_as_int = false;
-  bool m_tgt_mid_same_as_int = false;
+  bool m_src_int_same_as_mid = false;
+  bool m_tgt_int_same_as_mid = false;
 
   // Extrapolation settings at top/bottom. Default to P0 extrapolation
   ExtrapType            m_etype_top = P0;
