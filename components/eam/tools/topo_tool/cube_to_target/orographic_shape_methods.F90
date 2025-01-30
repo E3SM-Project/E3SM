@@ -199,9 +199,9 @@ end subroutine orographic_asymmetry_xie2020
 !===================================================================================================
 subroutine orographic_asymmetry_kim2005( terr, ntarget, ncube, n, jall, &
                                          weights_lgr_index_all, weights_eul_index_all1, &
-                                          weights_eul_index_all2, weights_eul_index_all3, &
-                                          weights_all, lon_terr, lat_terr, area_target, &
-                                          landfrac_target, oa_target)
+                                         weights_eul_index_all2, weights_eul_index_all3, &
+                                         weights_all, lon_terr, lat_terr, area_target, &
+                                         landfrac_target, oa_target)
   IMPLICIT NONE
   integer ,intent(in)  :: ncube
   integer ,intent(in)  :: ntarget
