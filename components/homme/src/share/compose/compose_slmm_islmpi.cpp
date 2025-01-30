@@ -474,7 +474,7 @@ extend_local_meshes<ko::MachineTraits>(
 // Fill in (gid, rank), the list of owning rank per gid.
 template <typename MT>
 void collect_gid_rank (IslMpi<MT>& cm, const Int* nbr_id_rank, const Int* nirptr) {
-  cm.ed_h.reset_capacity(cm.nelemd, true, true);
+  cm.ed_h.reset_capacity(cm.nelemd, true);
   for (Int i = 0; i < cm.nelemd; ++i) {
     auto& ed = cm.ed_h(i);
     const Int* nir = nbr_id_rank + nirptr[i];

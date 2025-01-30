@@ -60,11 +60,10 @@ void Advecter<MT>::check_ref2sphere (const Int ie, const Real* p_homme) {
 template <typename MT>
 ko::EnableIfDiffSpace<MT>
 deep_copy (typename Advecter<MT>::LocalMeshesD& d,
-           typename Advecter<MT>::LocalMeshesD::HostMirror& m,
            const typename Advecter<MT>::LocalMeshesH& s) {
   const Int nlm = s.extent_int(0);
   d = typename Advecter<MT>::LocalMeshesD("LocalMeshes", nlm);
-  m = ko::create_mirror_view(d);
+  const auto m = ko::create_mirror_view(d);
   for (Int i = 0; i < nlm; ++i)
     deep_copy(m(i), s(i));
   ko::deep_copy(d, m);
@@ -73,14 +72,13 @@ deep_copy (typename Advecter<MT>::LocalMeshesD& d,
 template <typename MT>
 ko::EnableIfSameSpace<MT>
 deep_copy (typename Advecter<MT>::LocalMeshesD& d,
-           typename Advecter<MT>::LocalMeshesD::HostMirror& m,
            const typename Advecter<MT>::LocalMeshesH& s) {
   d = s;
 }
 
 template <typename MT>
 void Advecter<MT>::sync_to_device() {
-  deep_copy<MT>(local_mesh_d_, local_mesh_m_, local_mesh_h_);
+  deep_copy<MT>(local_mesh_d_, local_mesh_h_);
 }
 
 template class Advecter<>;

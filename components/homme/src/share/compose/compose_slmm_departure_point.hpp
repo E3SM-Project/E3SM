@@ -45,6 +45,16 @@ struct LocalMesh {
   SLMM_KIF bool is_sphere () const { return geometry == Geometry::Type::sphere; }
 };
 
+template <typename ES>
+void nullify (LocalMesh<ES>& m) {
+  m.p = decltype(m.p)(nullptr);
+  m.nml = decltype(m.nml)(nullptr);
+  m.e = decltype(m.e)(nullptr);
+  m.en = decltype(m.en)(nullptr);
+  m.perimp = decltype(m.perimp)(nullptr);
+  m.perimnml = decltype(m.perimnml)(nullptr);
+}
+
 // Inward-oriented normal. In practice, we want to form high-quality normals
 // using information about the cubed-sphere mesh. This is a low-quality
 // brute-force calculation.
