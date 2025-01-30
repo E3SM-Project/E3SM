@@ -187,6 +187,7 @@ add_default($nl, 'config_year_digits');
 add_default($nl, 'config_output_external_velocity_solver_data');
 add_default($nl, 'config_write_albany_ascii_mesh');
 add_default($nl, 'config_create_all_logs_in_e3sm');
+add_default($nl, 'config_nISMIP6OceanLayers', 'val'=>"$GLC_NZOC");
 
 #################################
 # Namelist group: decomposition #
