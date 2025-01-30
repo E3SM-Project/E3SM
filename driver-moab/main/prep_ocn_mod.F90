@@ -203,7 +203,7 @@ contains
     use iMOAB, only: iMOAB_ComputeMeshIntersectionOnSphere, iMOAB_RegisterApplication, &
       iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_ComputeCommGraph, iMOAB_ComputeScalarProjectionWeights, &
       iMOAB_MigrateMapMesh, iMOAB_WriteLocalMesh, iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorage, &
-      iMOAB_WriteMappingWeightsToFile, iMOAB_SetGhostLayers
+      iMOAB_WriteMappingWeightsToFile, iMOAB_SetMapGhostLayers
     !---------------------------------------------------------------
     ! Description
     ! Initialize module attribute vectors and all other non-mapping
@@ -270,6 +270,7 @@ contains
     integer noflds   ! used for number of fields in allocating moab accumulated array x2oacc_om
     real (kind=R8) , allocatable :: tmparray (:) ! used to set the r2x fields to 0
     integer  nghlay ! used to set the number of ghost layers, needed for bilinear map
+    integer  nghlay_tgt
 
     !---------------------------------------------------------------
 
@@ -429,7 +430,8 @@ contains
 
                ! for bilinear maps, we need to have a layer of ghosts on source
                nghlay = 1  ! number of ghost layers
-               ierr   = iMOAB_SetGhostLayers( mbaxid, nghlay )
+               nghlay_tgt = 0
+               ierr   = iMOAB_SetMapGhostLayers( mbintxao, nghlay, nghlay_tgt )
                if (ierr .ne. 0) then
                   write(logunit,*) subname,' error in setting the number of layers'
                   call shr_sys_abort(subname//' error in setting the number of layers')
