@@ -33,7 +33,7 @@ subroutine orographic_asymmetry_xie2020( terr, ntarget, ncube, n, nvar_dir, jall
                                          weights_lgr_index_all, weights_eul_index_all1, &
                                          weights_eul_index_all2, weights_eul_index_all3, &
                                          weights_all, lon_cen, lat_cen, lon_terr, lat_terr, &
-                                         area_target, oa_target)
+                                         area_target, landfrac_target, oa_target)
   IMPLICIT NONE
   integer ,intent(in)    :: ncube,ntarget
   integer ,intent(in)    :: n
@@ -50,6 +50,7 @@ subroutine orographic_asymmetry_xie2020( terr, ntarget, ncube, n, nvar_dir, jall
   real(r8),intent(inout) :: area_target(ntarget)
   real(r8),intent(in)    :: lon_terr(n)
   real(r8),intent(in)    :: lat_terr(n)
+  real(r8),intent(in)    :: landfrac_target(ntarget)
   real(r8),intent(out)   :: oa_target(ntarget,nvar_dir)
   !local
   integer  :: count,i,ix,iy,ip,ii,ip2,ip3
@@ -158,6 +159,7 @@ subroutine orographic_asymmetry_xie2020( terr, ntarget, ncube, n, nvar_dir, jall
     call CubedSphereABPFromRLL(lon_cen(i)*rad,lat_cen(i)*rad,&
                                ix3,iy3,ip3,.true.)
     call CubedSphereXYZFromABP(ix3,iy3,ip3,xx3,yy3,zz3)
+
     !under Cartesian, the variability of the scale in the wind
     !direction is the sqrt(x^2+y^2+z^2), the scale of the orthogonal
     !3 directions
@@ -171,19 +173,7 @@ subroutine orographic_asymmetry_xie2020( terr, ntarget, ncube, n, nvar_dir, jall
     OAx1=(xx3-xbar(i))/sqrt(OAx_var(i))!OA_var(i))
     OAy1=(yy3-ybar(i))/sqrt(OAy_var(i))!OA_var(i))
     OAz1=(zz3-zbar(i))/sqrt(OAz_var(i))!OA_var(i))
-    !assuming a small change in lon_cen to lon_bar
-    !so it does not matter whether lon_cen or lon_bar
-    !thus we change onto lat-lon grid vector in target gridcell
-#if 0
-    OArad(i)= OAx1*sin(lat_cen(i)*rad)*cos(lon_cen(i)*rad)&
-             +OAy1*sin(lat_cen(i)*rad)*sin(lon_cen(i)*rad)&
-             +OAz1*cos(lat_cen(i)*rad)
-    OAlat(i)= OAx1*cos(lat_cen(i)*rad)*cos(lon_cen(i)*rad)&
-             +OAy1*cos(lat_cen(i)*rad)*sin(lon_cen(i)*rad)&
-             -OAz1*sin(lat_cen(i)*rad)
-    OAlon(i)=-OAx1*sin(lon_cen(i)*rad)&
-             +OAy1*cos(lon_cen(i)*rad)
-#endif
+
     !all lat_cen must use (90-lat_cen) since we only have 
     !latitude rather than colatitude
     !this is equivalent to using induction formula sin(90-lat)=cos(lat)
@@ -193,33 +183,25 @@ subroutine orographic_asymmetry_xie2020( terr, ntarget, ncube, n, nvar_dir, jall
               -OAz1*cos(lat_cen(i)*rad))
     OAlon(i)= -OAx1*sin(lon_cen(i)*rad)&
               +OAy1*cos(lon_cen(i)*rad)
-#if 0
-    theta1=0.
-    oa_target(i,1) = OAlon(i)*cos(theta1*rad)+OAlat(i)*sin(theta1*rad)
-    theta1=90.
-    oa_target(i,2) = OAlon(i)*cos(theta1*rad)+OAlat(i)*sin(theta1*rad)
-    theta1=45.
-    oa_target(i,3)=  OAlon(i)*cos(theta1*rad)+OAlat(i)*sin(theta1*rad)
-    theta1=360.-45.
-    oa_target(i,4)=  OAlon(i)*cos(theta1*rad)+OAlat(i)*sin(theta1*rad)
-#endif
 
     !reverse in order to be (2,ntarget),OAx,OAy
     oa_target(i,1) = OAlon(i)
     oa_target(i,2) = OAlat(i)
 
-enddo
-    !takeout abnormal values
-    where(abs(oa_target)<.001_r8.or.abs(oa_target).gt.1e+7) oa_target=0.0_r8
-    !where(abs(oa_target).gt.1) oa_target=1.0_r8
-    where(oa_target.ne.oa_target) oa_target=0.0_r8
+  enddo
+
+  !takeout abnormal values
+  where(abs(oa_target)<.001_r8.or.abs(oa_target).gt.1e+7) oa_target=0.0_r8
+  !where(abs(oa_target).gt.1) oa_target=1.0_r8
+  where(oa_target.ne.oa_target) oa_target=0.0_r8
 
 end subroutine orographic_asymmetry_xie2020
 !===================================================================================================
 subroutine orographic_asymmetry_kim2005( terr, ntarget, ncube, n, jall, &
                                          weights_lgr_index_all, weights_eul_index_all1, &
                                           weights_eul_index_all2, weights_eul_index_all3, &
-                                          weights_all, lon_terr, lat_terr, area_target, oa_target)
+                                          weights_all, lon_terr, lat_terr, area_target, &
+                                          landfrac_target, oa_target)
   IMPLICIT NONE
   integer ,intent(in)  :: ncube
   integer ,intent(in)  :: ntarget
@@ -234,6 +216,7 @@ subroutine orographic_asymmetry_kim2005( terr, ntarget, ncube, n, jall, &
   real(r8),intent(in)  :: lon_terr(n)
   real(r8),intent(in)  :: lat_terr(n)
   real(r8),intent(in)  :: area_target(ntarget)
+  real(r8),intent(in)  :: landfrac_target(ntarget)
   real(r8),intent(out) :: oa_target(ntarget,4)
   !local
   real(r8) :: xh(ntarget)
@@ -302,8 +285,8 @@ subroutine orographic_asymmetry_kim2005( terr, ntarget, ncube, n, jall, &
     varx(i)=varx(i)+(wt/area_target(i))*(lon_terr(ii)-avgx(i))**2
     vary(i)=vary(i)+(wt/area_target(i))*(lat_terr(ii)-avgy(i))**2
     !OAx,OAy
-    OAx=(avgx(i)-modexcoords(i))/sqrt(varx(i))
-    OAy=(avgy(i)-modeycoords(i))/sqrt(vary(i))
+    OAx=landfrac_target(i)*(avgx(i)-modexcoords(i))/sqrt(varx(i))
+    OAy=landfrac_target(i)*(avgy(i)-modeycoords(i))/sqrt(vary(i))
 
     rad=4.0*atan(1.0)/180.0
     theta1=0.
@@ -314,6 +297,8 @@ subroutine orographic_asymmetry_kim2005( terr, ntarget, ncube, n, jall, &
     oa_target(i,3)=  OAx*cos(theta1*rad)+OAy*sin(theta1*rad)
     theta1=360.-45.
     oa_target(i,4)=  OAx*cos(theta1*rad)+OAy*sin(theta1*rad)
+    ! apply landfrac
+    oa_target(i,:)=  oa_target(i,:)*landfrac_target(i)
   enddo
   !takeout abnormal values
   where(abs(oa_target)<.001_r8.or.abs(oa_target).gt.1e+7) oa_target=0.0
@@ -324,7 +309,8 @@ end subroutine orographic_asymmetry_kim2005
 subroutine orographic_convexity_kim2005( terr, ntarget, ncube, n, jall, &
                                          weights_lgr_index_all, weights_eul_index_all1, &
                                          weights_eul_index_all2, weights_eul_index_all3, &
-                                         weights_all, area_target, sgh_target, terr_target, oc_target)
+                                         weights_all, area_target, sgh_target, terr_target, &
+                                         landfrac_target, oc_target)
   IMPLICIT NONE
   integer ,intent(in)  :: ncube
   integer ,intent(in)  :: ntarget
@@ -339,6 +325,7 @@ subroutine orographic_convexity_kim2005( terr, ntarget, ncube, n, jall, &
   real(r8),intent(in)  :: sgh_target(ntarget)
   real(r8),intent(in)  :: terr_target(ntarget)
   real(r8),intent(in)  :: terr(n)
+  real(r8),intent(in)  :: landfrac_target(ntarget)
   real(r8),intent(out) :: oc_target(ntarget)
   !local 
   integer  :: count,i,ix,iy,ip,ii
@@ -354,6 +341,8 @@ subroutine orographic_convexity_kim2005( terr, ntarget, ncube, n, jall, &
     ii = (ip-1)*ncube*ncube+(iy-1)*ncube+ix!
     wt = weights_all(count,1)
     oc_target(i) = oc_target(i)+(wt/area_target(i))*((terr_target(i)-terr(ii))**4)/(sgh_target(i)**4)
+    ! apply landfrac
+    oc_target(i) = oc_target(i) * landfrac_target(i)
   enddo
 
   where(abs(oc_target)<.001_r8.or.abs(oc_target).gt.1e+7) oc_target=0.0_r8
@@ -366,7 +355,8 @@ subroutine orographic_efflength_kim2005( terr, ntarget, ncube, n, jall, &
                                          weights_eul_index_all2, weights_eul_index_all3, &
                                          weights_all, lon_terr, lat_terr, area_target, sgh_target, &
                                          target_center_lat, target_center_lon, &
-                                         target_corner_lat, target_corner_lon, ol_target)
+                                         target_corner_lat, target_corner_lon, &
+                                         landfrac_target, ol_target)
   IMPLICIT NONE
   integer, intent(in)  :: ncube
   integer, intent(in)  :: ntarget
@@ -386,6 +376,7 @@ subroutine orographic_efflength_kim2005( terr, ntarget, ncube, n, jall, &
   real(r8),intent(in)  :: target_center_lon(ntarget)
   real(r8),intent(in)  :: target_corner_lat(4,ntarget)
   real(r8),intent(in)  :: target_corner_lon(4,ntarget)
+  real(r8),intent(in)  :: landfrac_target(ntarget)
   real(r8),intent(out) :: ol_target(ntarget,4)
   !local 
   integer  :: count,i,ix,iy,ip,ii,j
@@ -461,6 +452,7 @@ subroutine orographic_efflength_kim2005( terr, ntarget, ncube, n, jall, &
     do j=1,4
       ol_target(i,j)=Nw(j,i)/(area_target_par(j,i)+1e-14)!Nt(i)!/2.)
     enddo
+    ol_target(i,:)=ol_target(i,:)*landfrac_target(i)
 
   end do
   where(abs(ol_target)<.001_r8.or.abs(ol_target).gt.1e+7) ol_target=0.0_r8
@@ -549,8 +541,8 @@ subroutine orographic_efflength_grid( terr, terrx, terry, wt, b, a, n, theta_in,
     c2= 0.5_r8*b*sin(theta)+0.5_r8*a*cos(theta)-sqrt(a*b*sin(2_r8*theta)/4._r8)
   else if (theta1.ge.atan2(2_r8*a,b)/rad.and.theta1.lt.90._r8.or.&
            theta2.ge.atan2(2_r8*a,b)/rad.and.theta2.lt.90._r8.or.&
-           theta1.ge.90._r8.and.theta1.lt.180._r8-atan2(2_r8*a,b)/rad&
-       .or.theta2.ge.90._r8.and.theta2.lt.180._r8-atan2(2_r8*a,b)/rad)&
+           theta1.ge.90._r8.and.theta1.lt.180._r8-atan2(2_r8*a,b)/rad.or.&
+           theta2.ge.90._r8.and.theta2.lt.180._r8-atan2(2_r8*a,b)/rad)&
   then
     interval=3
     c1=-0.25_r8*b*sin(theta)
@@ -558,17 +550,14 @@ subroutine orographic_efflength_grid( terr, terrx, terry, wt, b, a, n, theta_in,
   endif
   !determine two line functions
   cx=terrx*sin(theta_in*rad)-terry*cos(theta_in*rad)
-  !assuming rectangle grid or ladder-shape
-  !would be pretty similar
-  !since in 1.4,the max difference is of 0.02
-  !although the above expression is actually ladder-shape
-  !and use a rectangle with the same area
-  !to derive c1 and c2
+
+  !assuming rectangle grid or ladder-shape would be pretty similar since in 1.4,
+  !the max difference is of 0.02 although the above expression is actually
+  !ladder-shape and use a rectangle with the same area to derive c1 and c2
   where ( cx.ge.min(c1,c2) .and. cx.le.max(c1,c2)                ) terr_whole_count=1._r8
   where ( cx.ge.min(c1,c2) .and. cx.le.max(c1,c2) .and.terr.ge.hc) terr_count      =1._r8
 
-  !deals with noise that affects OL
-  !when there are no terrx center points
+  !deals with noise that affects OL when there are no terrx center points
   !in the two lines in the center
   if (sum(wt*terr_whole_count).eq.0._r8) then
     !enlarge about 5 times interval
@@ -587,9 +576,9 @@ subroutine orographic_efflength_grid( terr, terrx, terry, wt, b, a, n, theta_in,
   !there may be a strong 0 or 1 jump between directions
   !set to istotropic instead
   if (n.le.20) then
-  terr_whole_count=1._r8
-  where(terr.gt.hc) terr_count=1._r8
-  OLout=sum(wt*terr_count)/sum(wt*terr_whole_count)
+    terr_whole_count=1._r8
+    where(terr.gt.hc) terr_count=1._r8
+    OLout=sum(wt*terr_count)/sum(wt*terr_whole_count)
   endif
   !take out NaN
   if (OLout.ne.OLout) OLout=0.0_r8
@@ -599,8 +588,8 @@ subroutine orographic_efflength_xie2020( terr, ntarget, ncube, n, jall, nlon, nl
                                          weights_lgr_index_all, weights_eul_index_all1, &
                                          weights_eul_index_all2, weights_eul_index_all3, &
                                          weights_all, lon_cen, lat_cen, lon_cor, lat_cor, &
-                                         lon_terr, lat_terr, sgh_target, area_target, ol_target, &
-                                         terrout, dxy)
+                                         lon_terr, lat_terr, sgh_target, area_target, landfrac_target, &
+                                         ol_target, terrout, dxy)
   IMPLICIT NONE
   integer ,intent(in)  :: ncube
   integer ,intent(in)  :: ntarget
@@ -624,21 +613,23 @@ subroutine orographic_efflength_xie2020( terr, ntarget, ncube, n, jall, nlon, nl
   real(r8),intent(in)  :: lat_cor(4,ntarget)
   real(r8),intent(in)  :: sgh_target(ntarget)
   real(r8),intent(in)  :: area_target(ntarget)
+  real(r8),intent(in)  :: landfrac_target(ntarget)
   real(r8),intent(out) :: ol_target(ntarget,nvar_dir)
   real(r8),intent(out) :: terrout(4,ntarget,indexb)
   real(r8),intent(out) :: dxy(ntarget,nvar_dir)
 
-  !local
-  !1 is lb,2 is ub
+  !local variables
+  ! Note: 1 is lower bound,2 is upper bound
+  REAL(r8), PARAMETER :: pi = 3.14159265358979323846264338327
+  integer, allocatable :: indexii_b(:,:)
   integer  :: index_b(3,ntarget),index_jall(jall)
-  integer,allocatable :: indexii_b(:,:)
   integer  :: ix,iy,ip,i,count,alloc_error,j
   real(r8) :: xterr(n),yterr(n),dx(ntarget),dy(ntarget),hc(ntarget),theta1(nvar_dir)
   real(r8) :: xterr_cen(ntarget),yterr_cen(ntarget),rad
   real(r8) :: reflon_terr(n),reflat_terr(n)!,lon_terr2(n)
-  REAL(r8), PARAMETER :: pi    = 3.14159265358979323846264338327
+
   real(r8) :: terr_avg(ntarget),wt
-  integer :: ii
+  integer  :: ii
 
   logical :: verbose = .true. ! verbosity flag for debugging
 
@@ -658,7 +649,7 @@ subroutine orographic_efflength_xie2020( terr, ntarget, ncube, n, jall, nlon, nl
     i   = weights_lgr_index_all(count)
     index_b(3,i)=index_b(3,i)+1
   enddo
-  !cumsum to form upper and lower bound of index_b
+  !cumulative sum to form upper and lower bound of index_b
   !1 for lower bound, 2 for upper bound
   do i=1,ntarget
     index_b(2,i)=sum(index_b(3,1:i))
@@ -769,6 +760,7 @@ subroutine orographic_efflength_xie2020( terr, ntarget, ncube, n, jall, nlon, nl
     enddo
   enddo
   if (verbose) print*,"  oro_efflen: after orographic_efflength_grid"
+
   !get correspondent relationship for terr,terrx,terry,wt
   terrout=1.d36
   do i=1,ntarget
@@ -803,15 +795,16 @@ subroutine dxygrid( dx, dy, theta_in, dxy)
   rad = 4.0_r8*atan(1.0_r8)/180.0_r8
   theta1 = MOD(theta_in,360._r8)
   !set negative axis into 0~360
-  if (theta1.ge.-360 .and. theta1.lt.0) theta1 = theta1 + 360
+  if (theta1.ge.-360._r8 .and. theta1.lt.0._r8) theta1 = theta1 + 360._r8
   !transform of angle into first quadrant
-  if (theta1.ge.  0 .and. theta1.lt. 90) theta2 = theta1
-  if (theta1.gt. 90 .and. theta1.lt.180) theta2 = 180 - theta1
-  if (theta1.gt.180 .and. theta1.lt.270) theta2 = theta1 - 180
-  if (theta1.gt.270 .and. theta1.lt.360) theta2 = 360 - theta1
+  if (theta1.ge.  0._r8 .and. theta1.lt. 90._r8) theta2 = theta1
+  if (theta1.gt. 90._r8 .and. theta1.lt.180._r8) theta2 = 180._r8 - theta1
+  if (theta1.gt.180._r8 .and. theta1.lt.270._r8) theta2 = theta1 - 180._r8
+  if (theta1.gt.270._r8 .and. theta1.lt.360._r8) theta2 = 360._r8 - theta1
   !get dxy
-  if (theta2.ge. 0 .and. theta2.lt.atan2(dy,dx)/rad) dxy = dx/cos(theta2*rad)
-  if (theta2.le.90 .and. theta2.ge.atan2(dy,dx)/rad) dxy = dy/sin(theta2*rad)
+  if (theta2.ge. 0._r8 .and. theta2.lt.atan2(dy,dx)/rad) dxy = dx/cos(theta2*rad)
+  if (theta2.le.90._r8 .and. theta2.ge.atan2(dy,dx)/rad) dxy = dy/sin(theta2*rad)
+
 end subroutine dxygrid
 !===================================================================================================
 end module orographic_shape_methods
