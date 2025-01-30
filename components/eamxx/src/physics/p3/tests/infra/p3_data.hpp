@@ -22,6 +22,7 @@ struct P3Data {
 
   bool do_predict_nc;
   bool do_prescribed_CCN;
+  bool use_hetfrz_classnuc;
   const Int ncol, nlev;
 
   // In
@@ -29,6 +30,7 @@ struct P3Data {
   Int it;
   Array2 qv, th_atm, pres, dz, nc_nuceat_tend, nccn_prescribed, ni_activated, inv_qc_relvar, qc, nc, qr, nr,  qi,
     ni, qm, bm, dpres, inv_exner, qv_prev, t_prev;
+  Array2 hetfrz_immersion_nucleation_tend, hetfrz_contact_nucleation_tend, hetfrz_deposition_nucleation_tend;
   // Out
   Array1 precip_liq_surf, precip_ice_surf;
   Array2 diag_eff_radius_qc, diag_eff_radius_qi, diag_eff_radius_qr, rho_qi, qv2qi_depos_tend,
