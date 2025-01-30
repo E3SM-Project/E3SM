@@ -586,6 +586,9 @@ struct IslMpi {
 
   ElemDataListH ed_h; // this rank's owned cells, indexed by LID
   ElemDataListD ed_d;
+  // Host-side view of device views to retain persistent borrows of the device
+  // memory.
+  typename ElemDataListD::Mirror ed_m;
 
   const typename TracerArrays<MT>::Ptr tracer_arrays;
 
@@ -663,9 +666,8 @@ struct IslMpi {
     // version >= 4.4.
     for (int i = 0; i < ed_h.n(); ++i)
       nullify(ed_h(i));
-    const auto m = ed_d.mirror();
-    for (int i = 0; i < m.n(); ++i)
-      nullify(m(i));
+    for (int i = 0; i < ed_m.n(); ++i)
+      nullify(ed_m(i));
   }
 };
 
