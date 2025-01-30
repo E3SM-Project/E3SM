@@ -557,15 +557,28 @@ add_default($nl, 'config_temperature_profile_variability_amplitude');
 add_default($nl, 'config_temperature_profile_variability_period');
 add_default($nl, 'config_temperature_profile_variability_phase');
 add_default($nl, 'config_temperature_profile_GL_depth_fraction');
-add_default($nl, 'config_front_mass_bal_grounded');
-add_default($nl, 'config_use_3d_thermal_forcing_for_face_melt');
+
+if ($GLC_NZOC gt 0) {
+    add_default($nl, 'config_front_mass_bal_grounded');
+} else {
+    add_default($nl, 'config_front_mass_bal_grounded', 'val'=>"none");
+}
+if ($GLC_NZOC gt 0) {
+    add_default($nl, 'config_use_3d_thermal_forcing_for_face_melt');
+} else {
+    add_default($nl, 'config_use_3d_thermal_forcing_for_face_melt', 'val'=>".false.");
+}
 add_default($nl, 'config_beta_ocean_thermal_forcing');
 add_default($nl, 'config_add_ocean_thermal_forcing');
 add_default($nl, 'config_alpha_subglacial_discharge');
 add_default($nl, 'config_subglacial_discharge_coefficient');
 add_default($nl, 'config_subglacial_discharge_intercept');
 add_default($nl, 'config_uniform_face_melt_rate');
-add_default($nl, 'config_ocean_data_extrapolation');
+if ($GLC_NZOC gt 0) {
+    add_default($nl, 'config_ocean_data_extrapolation');
+} else {
+    add_default($nl, 'config_ocean_data_extrapolation', 'val'=>".false.");
+}
 add_default($nl, 'config_ocean_data_extrap_ncells_extra');
 add_default($nl, 'config_invalid_value_TF');
 add_default($nl, 'config_weight_value_cell');
