@@ -208,9 +208,15 @@ struct Advecter {
   {
     slmm_throw_if(cubed_sphere_map == 0 && Alg::is_cisl(alg_),
                   "When cubed_sphere_map = 0, SLMM supports only ISL methods.");
-    local_mesh_h_ = LocalMeshesH(ko::view_alloc(std::string("local_mesh_h_"),
-                                                ko::SequentialHostInit),
-                                 nelem);
+    local_mesh_h_ = LocalMeshesH("local_mesh_h_", nelem);
+  }
+
+  ~Advecter () {
+    for (int i = 0, n = local_mesh_h_.extent_int(0); i < n; ++i)
+      nullify(local_mesh_h_(i));
+    const auto m = ko::create_mirror_view(local_mesh_d_);
+    for (int i = 0, n = m.extent_int(0); i < n; ++i)
+      nullify(m(i));
   }
 
   void init_plane (Real Sx, Real Sy, Real Lx, Real Ly) {
@@ -290,7 +296,6 @@ private:
   Geometry::Type geometry_;
   LocalMeshesH local_mesh_h_;
   LocalMeshesD local_mesh_d_;
-  typename LocalMeshesD::HostMirror local_mesh_m_; // handle managed allocs
   // For CISL:
   const Int tq_order_;
   // For recovery from get_src_cell failure:
