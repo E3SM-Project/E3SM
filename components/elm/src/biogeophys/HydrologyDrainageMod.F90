@@ -7,7 +7,7 @@ module HydrologyDrainageMod
   use shr_kind_mod      , only : r8 => shr_kind_r8
   use shr_log_mod       , only : errMsg => shr_log_errMsg
   use decompMod         , only : bounds_type
-  use elm_varctl        , only : iulog, use_vichydro
+  use elm_varctl        , only : iulog, use_vichydro, use_firn_percolation_and_compaction
   use elm_varcon        , only : e_ice, denh2o, denice, rpi, spval
   use atm2lndType       , only : atm2lnd_type
   use glc2lndMod        , only : glc2lnd_type
@@ -238,6 +238,12 @@ contains
            qflx_glcice(c) = qflx_glcice(c) + qflx_glcice_frz(c)
            if (glc_dyn_runoff_routing(g)) qflx_snwcp_ice(c) = 0._r8
          end if
+
+         !if (lun_pp%itype(l)==istice) then
+         !      qflx_glcice_frz_diag(c) = qflx_snwcp_ice(c)
+         !      qflx_glcice_diag(c) = qflx_glcice_diag(c) + qflx_glcice_frz_diag(c)
+         !endif
+
       end do
 
       ! Determine wetland and land ice hydrology (must be placed here
@@ -270,8 +276,9 @@ contains
             ! glc_dyn_runoff_routing = true: in this case, melting ice runs off, and excess
             ! snow is sent to CISM, where it is converted to ice. These corrections are
             ! done here:
-
             if (glc_dyn_runoff_routing(g) .and. lun_pp%itype(l)==istice_mec) then
+            ! this allows GLC melt to runoff to qflx_qrgwl! 
+
                ! If glc_dyn_runoff_routing=T, add meltwater from istice_mec ice columns to the runoff.
                !    Note: The meltwater contribution is computed in PhaseChanges (part of Biogeophysics2)
                qflx_qrgwl(c) = qflx_qrgwl(c) + qflx_glcice_melt(c)

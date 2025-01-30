@@ -1016,9 +1016,11 @@ contains
      use elm_varpar       , only : nlevsoi, nlevgrnd, nlayer, nlayert
      use elm_varcon       , only : pondmx, tfrz, watmin,rpi, secspday, nlvic
      use column_varcon    , only : icol_roof, icol_road_imperv, icol_road_perv
-     use elm_varctl       , only : use_vsfm, use_var_soil_thick
+     use elm_varctl       , only : use_vsfm, use_var_soil_thick, use_firn_percolation_and_compaction
      use SoilWaterMovementMod, only : zengdecker_2009_with_var_soil_thick
      use pftvarcon        , only : rsub_top_globalmax
+     use LandunitType      , only : lun_pp
+     use landunit_varcon  , only : istice_mec, istice
      !
      ! !ARGUMENTS:
      type(bounds_type)        , intent(in)    :: bounds
@@ -1121,6 +1123,7 @@ contains
 
           qflx_snwcp_liq     =>    col_wf%qflx_snwcp_liq     , & ! Output: [real(r8) (:)   ] excess rainfall due to snow capping (mm H2O /s) [+]
           qflx_snwcp_ice     =>    col_wf%qflx_snwcp_ice     , & ! Output: [real(r8) (:)   ] excess snowfall due to snow capping (mm H2O /s) [+]
+          qflx_ice_runoff_xs =>    col_wf%qflx_ice_runoff_xs , & ! Output: solid runoff from excess ice in soil (mm H2O /s) [+]
           !qflx_dew_grnd      =>    col_wf%qflx_dew_grnd      , & ! Output: [real(r8) (:)   ] ground surface dew formation (mm H2O /s) [+]
           !qflx_dew_snow      =>    col_wf%qflx_dew_snow      , & ! Output: [real(r8) (:)   ] surface dew added to snow pack (mm H2O /s) [+]
           !qflx_sub_snow      =>    col_wf%qflx_sub_snow      , & ! Output: [real(r8) (:)   ] sublimation rate from snow pack (mm H2O /s) [+]
@@ -1559,7 +1562,11 @@ contains
           ! add in ice check
           xs1(c)          = max(max(h2osoi_ice(c,1),0._r8)-max(0._r8,(pondmx+watsat(c,1)*dzmm(c,1)-h2osoi_liq(c,1))),0._r8)
           h2osoi_ice(c,1) = min(max(0._r8,pondmx+watsat(c,1)*dzmm(c,1)-h2osoi_liq(c,1)), h2osoi_ice(c,1))
-          qflx_snwcp_ice(c) = qflx_snwcp_ice(c) + xs1(c) / dtime
+          if ( (lun_pp%itype(col_pp%landunit(c)) == istice .or. lun_pp%itype(col_pp%landunit(c)) == istice_mec) .or. (.not. use_firn_percolation_and_compaction)) then      
+                qflx_snwcp_ice(c) = qflx_snwcp_ice(c) + xs1(c) / dtime
+          else
+                qflx_ice_runoff_xs(c) = qflx_ice_runoff_xs(c) + xs1(c) / dtime
+          endif
        end do
 
        ! Limit h2osoi_liq to be greater than or equal to watmin.
