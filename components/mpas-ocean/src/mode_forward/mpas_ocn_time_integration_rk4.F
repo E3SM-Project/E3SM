@@ -655,7 +655,8 @@ module ocn_time_integration_rk4
          call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocityNew, 2)
          call mpas_pool_get_array(statePool, 'layerThickness', layerThicknessCur, 1)
          call mpas_pool_get_array(statePool, 'layerThickness', layerThicknessNew, 2)
-
+         call mpas_pool_get_array(statePool, 'ssh', sshCur, 1)
+         call mpas_pool_get_array(statePool, 'ssh', sshNew, 2)
          call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
          call mpas_pool_get_array(forcingPool, 'tidalInputMask', tidalInputMask)
          call mpas_pool_get_array(forcingPool, 'tidalBCValue', tidalBCValue)
@@ -714,7 +715,7 @@ module ocn_time_integration_rk4
                end do
 
                if ( config_use_subgrid_wetting_drying ) then
-                  call ocn_subgrid_layer_thickness_lookup( tidalBCValue(iCell), & 
+                  call ocn_subgrid_layer_thickness_lookup( tidalBCValue(iCell), &
                                          subgridWetVolumeCellTable(:,iCell), &
                                          subgridSshCellTableRange(:,iCell),&
                                          bottomDepth(iCell), &
@@ -754,6 +755,9 @@ module ocn_time_integration_rk4
             !$acc enter data copyin(landIcePressure)
             !$acc enter data copyin(landIceDraft)
          endif
+         if ( config_thickness_flux_type == 'constant' ) then
+            !$acc enter data copyin(restingThickness)
+         end if
 #endif
          call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, verticalMeshPool, scratchPool, tracersPool, 2)
 
@@ -792,6 +796,9 @@ module ocn_time_integration_rk4
             !$acc exit data delete(landIcePressure)
             !$acc exit data delete(landIceDraft)
          endif
+         if ( config_thickness_flux_type == 'constant' ) then
+            !$acc exit data delete(restingThickness)
+         end if
          !$acc exit data delete(layerThicknessNew, normalVelocityNew)
          !$acc update host(density, potentialDensity, displacedDensity)
          !$acc update host(thermExpCoeff,  &
@@ -978,6 +985,10 @@ module ocn_time_integration_rk4
          !$omp end do
          !$omp end parallel
       end if
+
+#ifdef MPAS_OPENACC
+      !$acc update device(normalTransportVelocity)
+#endif
 
       ! add submesoscale and GM contributions if requested
       call ocn_GM_add_to_transport_vel(normalTransportVelocity, nEdges, nVertLevels)
@@ -1178,6 +1189,7 @@ module ocn_time_integration_rk4
       real (kind=RKIND), dimension(:, :), pointer :: normalVelocityCur, normalVelocityProvis, normalVelocityTend
       real (kind=RKIND), dimension(:, :), pointer :: layerThicknessCur, layerThicknessProvis, layerThicknessTend
       real (kind=RKIND), dimension(:, :), pointer :: lowFreqDivergenceCur, lowFreqDivergenceProvis, lowFreqDivergenceTend
+      real (kind=RKIND), dimension(:, :), pointer :: restingThickness
 
       real (kind=RKIND), dimension(:, :, :), pointer :: tracersGroupCur, tracersGroupProvis, tracersGroupTend
 
@@ -1195,7 +1207,7 @@ module ocn_time_integration_rk4
       real (kind=RKIND), dimension(:), pointer :: &
         frazilSurfacePressure, landIcePressure, landIceDraft
 
-      real (kind=RKIND), dimension(:), pointer :: sshCur
+      real (kind=RKIND), dimension(:), pointer :: sshProvis
 
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracersCur
 
@@ -1223,7 +1235,7 @@ module ocn_time_integration_rk4
 
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocityCur, 1)
       call mpas_pool_get_array(statePool, 'layerThickness', layerThicknessCur, 1)
-      call mpas_pool_get_array(statePool, 'ssh', sshCur, 1)
+      call mpas_pool_get_array(statePool, 'ssh', sshProvis, 1)
       call mpas_pool_get_array(statePool, 'lowFreqDivergence', lowFreqDivergenceCur, 1)
 
       call mpas_pool_get_array(provisStatePool, 'normalVelocity', normalVelocityProvis, 1)
@@ -1334,8 +1346,12 @@ module ocn_time_integration_rk4
          call mpas_pool_get_array(forcingPool, 'landIceDraft', landIceDraft)
       endif
 
+      if ( config_thickness_flux_type == 'constant' ) then
+         call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
+      endif
+
 #ifdef MPAS_OPENACC
-      !$acc enter data copyin(layerThicknessCur, normalVelocityCur)
+      !$acc enter data copyin(layerThicknessProvis, normalVelocityProvis)
       !$acc update device (normalTransportVelocity)
       if (config_use_gm) then
          !$acc update device (normalGMBolusVelocity)
@@ -1344,7 +1360,7 @@ module ocn_time_integration_rk4
          !$acc update device (normalMLEvelocity)
       end if
       !$acc enter data copyin(atmosphericPressure, seaIcePressure)
-      !$acc enter data copyin(sshCur)
+      !$acc enter data copyin(sshProvis)
       !$acc enter data copyin(activeTracersCur)
       !$acc update device(tracersSurfaceValue)
       if ( associated(frazilSurfacePressure) ) then
@@ -1354,6 +1370,9 @@ module ocn_time_integration_rk4
          !$acc enter data copyin(landIcePressure)
          !$acc enter data copyin(landIceDraft)
       endif
+      if ( config_thickness_flux_type == 'constant' ) then
+         !$acc enter data copyin(restingThickness)
+      end if
 #endif
       call ocn_diagnostic_solve(dt, provisStatePool, forcingPool, meshPool, verticalMeshPool, scratchPool, tracersPool, 1)
 #ifdef MPAS_OPENACC
@@ -1375,7 +1394,7 @@ module ocn_time_integration_rk4
       !$acc             normalizedRelativeVorticityCell)
       !$acc update host (surfacePressure)
       !$acc update host(zMid, zTop)
-      !$acc exit data copyout(sshCur)
+      !$acc exit data copyout(sshProvis)
       !$acc exit data delete(activeTracersCur)
       !$acc update host(tracersSurfaceValue)
       !$acc update host(normalVelocitySurfaceLayer)
@@ -1387,7 +1406,10 @@ module ocn_time_integration_rk4
          !$acc exit data delete(landIcePressure)
          !$acc exit data delete(landIceDraft)
       endif
-      !$acc exit data delete(layerThicknessCur, normalVelocityCur)
+      if ( config_thickness_flux_type == 'constant' ) then
+         !$acc exit data delete(restingThickness)
+      end if
+      !$acc exit data delete(layerThicknessProvis, normalVelocityProvis)
       !$acc update host(density, potentialDensity, displacedDensity)
       !$acc update host(thermExpCoeff,  &
       !$acc&            salineContractCoeff)
@@ -1489,7 +1511,7 @@ module ocn_time_integration_rk4
          end do
       end do
       !$omp end do
-      
+
       ! the loop below is on all vertlevels but we used edgemask to set
       ! velocities to zero below topo (esp. edges between topo and ocean)
       !$omp do schedule(runtime) private(k)
@@ -1566,6 +1588,7 @@ module ocn_time_integration_rk4
       type (mpas_pool_type), pointer :: tracersPool
 
       real (kind=RKIND), dimension(:, :), pointer :: layerThicknessNew, normalVelocityNew
+      real (kind=RKIND), dimension(:, :), pointer :: restingThickness
       real (kind=RKIND), dimension(:, :, :), pointer :: tracersGroupNew
 
       integer, dimension(:), pointer :: minLevelCell, maxLevelCell
@@ -1618,6 +1641,9 @@ module ocn_time_integration_rk4
           call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
           call mpas_pool_get_array(forcingPool, 'landIceDraft', landIceDraft)
       endif
+      if ( config_thickness_flux_type == 'constant' ) then
+         call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
+      endif
 
       call mpas_pool_begin_iteration(tracersPool)
       do while ( mpas_pool_get_next_member(tracersPool, groupItr) )
@@ -1658,6 +1684,9 @@ module ocn_time_integration_rk4
          !$acc enter data copyin(landIcePressure)
          !$acc enter data copyin(landIceDraft)
       endif
+      if ( config_thickness_flux_type == 'constant' ) then
+         !$acc enter data copyin(restingThickness)
+      end if
 #endif
       call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, verticalMeshPool, scratchPool, tracersPool, 2)
       call mpas_dmpar_field_halo_exch(domain, 'tangentialVelocity')
@@ -1693,6 +1722,9 @@ module ocn_time_integration_rk4
          !$acc exit data delete(landIcePressure)
          !$acc exit data delete(landIceDraft)
       endif
+      if ( config_thickness_flux_type == 'constant' ) then
+         !$acc exit data delete(restingThickness)
+      end if
       !$acc exit data delete (layerThicknessNew, normalVelocityNew)
       !$acc update host(density, potentialDensity, displacedDensity)
       !$acc update host(thermExpCoeff,  &

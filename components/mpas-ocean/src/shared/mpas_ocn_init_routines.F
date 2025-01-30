@@ -105,6 +105,7 @@ contains
       integer, dimension(:,:), pointer :: boundaryCellTmp
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity
+      real (kind=RKIND), dimension(:,:), pointer :: restingThickness
 
       real (kind=RKIND), dimension(:,:,:), pointer :: tracersGroup
 
@@ -114,7 +115,7 @@ contains
         seaIcePressure, atmosphericPressure
 
       real (kind=RKIND), dimension(:), pointer :: &
-        frazilSurfacePressure
+        frazilSurfacePressure, landIcePressure, landIceDraft
 
       real (kind=RKIND), dimension(:), pointer :: ssh
 
@@ -147,6 +148,15 @@ contains
 
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
 
+      if (landIcePressureOn) then
+         call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
+         call mpas_pool_get_array(forcingPool, 'landIceDraft', landIceDraft)
+      endif
+
+      if ( config_thickness_flux_type == 'constant' ) then
+         call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
+      endif
+
       if (.not. config_do_restart) then
          do iCell=1,nCells
             boundaryLayerDepth(iCell) = layerThickness(minLevelCell(iCell), iCell) * 0.5_RKIND
@@ -169,6 +179,9 @@ contains
          !$acc enter data copyin(landIcePressure)
          !$acc enter data copyin(landIceDraft)
       endif
+      if ( config_thickness_flux_type == 'constant' ) then
+         !$acc enter data copyin(restingThickness)
+      end if
 #endif
       call ocn_diagnostic_solve(dt,  statePool, forcingPool, meshPool, verticalMeshPool, scratchPool, tracersPool)
 #ifdef MPAS_OPENACC
@@ -208,6 +221,9 @@ contains
          !$acc exit data delete(landIcePressure)
          !$acc exit data delete(landIceDraft)
       endif
+      if ( config_thickness_flux_type == 'constant' ) then
+         !$acc exit data delete(restingThickness)
+      end if
       !$acc exit data delete(layerThickness, normalVelocity)
 #endif
 
