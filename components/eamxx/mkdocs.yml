@@ -13,6 +13,7 @@ nav:
     - 'Regionally Refined EAMxx': 'user/rrm_eamxx.md'
     - 'Doubly Periodic EAMxx': 'user/dp_eamxx.md'
     - 'PySCREAM': 'user/pyscream.md'
+    - 'IO Metadata': 'user/io_metadata.md'
   - 'Developer Guide':
     - 'Overview': 'developer/index.md'
     - 'Installation': 'common/installation.md'
