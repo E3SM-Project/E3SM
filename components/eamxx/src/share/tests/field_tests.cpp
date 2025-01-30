@@ -847,6 +847,18 @@ TEST_CASE ("update") {
     f2.scale(2.0);
     REQUIRE (views_are_equal(f1, f2));
   }
+
+  SECTION ("scale_inv") {
+    Field f1 = f_real.clone();
+    Field f2 = f_real.clone();
+    Field f3 = f_real.clone();
+
+    f3.deep_copy(2.0);
+    f1.scale(f3);
+    f3.deep_copy(0.5);
+    f2.scale_inv(f3);
+    REQUIRE (views_are_equal(f1, f2));
+  }
 }
 
 
