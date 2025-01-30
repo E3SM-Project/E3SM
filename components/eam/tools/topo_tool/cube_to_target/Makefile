@@ -18,6 +18,7 @@ LDFLAGS += -L$(LIB_NETCDF) -lnetcdf -lnetcdff
 
 ifeq ($(FC),gfortran)
     FFLAGS += -fallow-argument-mismatch
+    FFLAGS += -ffree-line-length-none
 endif
 
 # Determine platform 
