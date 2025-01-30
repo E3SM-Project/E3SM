@@ -59,6 +59,8 @@ module ocn_frazil_forcing
    !--------------------------------------------------------------------
 
    logical :: frazilFormationOn
+   integer :: usePorosity   ! 1 when computing internal frazil salinity using porosity
+                            ! 0 when using config_frazil_sea_ice_reference_salinity
 
 !***********************************************************************
 
@@ -392,8 +394,6 @@ contains
       integer :: indexTemperature !< index in tracers array for temperature
       integer :: indexSalinity !< index in tracers array for salinity
       integer :: kBottomFrazil ! k index where testing for frazil begins
-      integer :: usePorosity   ! 1 when computing internal frazil salinity using porosity
-                               ! 0 when using config_frazil_sea_ice_reference_salinity
 
       logical :: underFloatingLandIce, underLandIce ! indicates if we are under land ice
 
@@ -454,10 +454,6 @@ contains
 
       ! initialize frazil salinity conservation field
       lowSalinityFrazilIce = 0.0_RKIND
-
-      ! Determine if using porosity to compute internal frazilSalinity
-      usePorosity = 0 ! use config_frazil_sea_ice_reference_salinity
-      if (config_use_frazil_ice_porosity) usePorosity = 1
 
       ! frazil fields are needed only over 0 and 1 halos
       nCells = nCellsArray( 2 )
@@ -696,6 +692,9 @@ contains
       if(config_use_frazil_ice_formation) then
         frazilFormationOn = .true.
       end if
+
+      usePorosity = 0
+      if(config_use_frazil_ice_porosity) usePorosity = 1
 
    end subroutine ocn_frazil_forcing_init!}}}
 
