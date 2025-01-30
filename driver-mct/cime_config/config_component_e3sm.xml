@@ -832,9 +832,9 @@
   <entry id="GLC_NZOC">
     <type>integer</type>
     <valid_values>0,4,30</valid_values>
-    <default_value>30</default_value>
+    <default_value>0</default_value>
     <values match="last">
-      <value compset="_SGLC">0</value>
+      <value compset="_MPASO.+_MALI">30</value>
     </values>
     <group>run_glc</group>
     <file>env_run.xml</file>
