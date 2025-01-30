@@ -20,7 +20,7 @@ module ColumnDataType
   use elm_varcon      , only : spval, ispval, zlnd, snw_rds_min, denice, denh2o, tfrz, pondmx
   use elm_varcon      , only : watmin, bdsno, bdfirn, zsoi, zisoi, dzsoi_decomp
   use elm_varcon      , only : c13ratio, c14ratio, secspday
-  use elm_varctl      , only : use_fates, use_fates_planthydro, create_glacier_mec_landunit
+  use elm_varctl      , only : use_fates, use_fates_planthydro, create_glacier_mec_landunit, use_IM2_hillslope_hydrology
   use elm_varctl      , only : use_hydrstress, use_crop
   use elm_varctl      , only : bound_h2osoi, use_cn, iulog, use_vertsoilc, spinup_state
   use elm_varctl      , only : ero_ccycle
@@ -518,6 +518,8 @@ module ColumnDataType
     real(r8), pointer :: qflx_irr_demand      (:)   => null() ! col surface irrigation demand (mm H2O /s)
     real(r8), pointer :: qflx_over_supply     (:)   => null() ! col over supplied irrigation
     real(r8), pointer :: qflx_h2orof_drain    (:)   => null() ! drainage from floodplain inundation volume (mm H2O/s))
+    real(r8), pointer :: qflx_from_uphill     (:)   => null() ! input to top soil layer from uphill topounit(s) (mm H2O/s))
+    real(r8), pointer :: qflx_to_downhill     (:)   => null() ! output from column to the downhill topounit (mm H2O/s))
 
     real(r8), pointer :: mflx_infl_1d         (:)   => null() ! infiltration source in top soil control volume (kg H2O /s)
     real(r8), pointer :: mflx_dew_1d          (:)   => null() ! liquid+snow dew source in top soil control volume (kg H2O /s)
@@ -5743,6 +5745,8 @@ contains
     allocate(this%qflx_over_supply       (begc:endc))             ; this%qflx_over_supply     (:)   = spval
     allocate(this%qflx_irr_demand        (begc:endc))             ; this%qflx_irr_demand      (:)   = spval
     allocate(this%qflx_h2orof_drain      (begc:endc))             ; this%qflx_h2orof_drain    (:)   = spval
+    allocate(this%qflx_from_uphill       (begc:endc))             ; this%qflx_from_uphill     (:)   = spval
+    allocate(this%qflx_to_downhill       (begc:endc))             ; this%qflx_to_downhill     (:)   = spval
 
     !VSFM variables
     ncells = endc - begc + 1
@@ -5848,7 +5852,17 @@ contains
      call hist_addfld1d (fname='QSNOFRZ', units='kg/m2/s', &
           avgflag='A', long_name='column-integrated snow freezing rate', &
            ptr_col=this%qflx_snofrz, set_lake=spval, c2l_scale_type='urbanf', default='inactive')
-   
+
+    if (use_IM2_hillslope_hydrology) then
+      call hist_addfld1d (fname='QFROM_UPHILL',  units='mm/s',  &
+            avgflag='A', long_name='input to top layer soil from uphill topounit(s)', &
+            ptr_col=this%qflx_from_uphill, c2l_scale_type='urbanf')
+
+      call hist_addfld1d (fname='QTO_DOWNHILL',  units='mm/s',  &
+            avgflag='A', long_name='output from column to downhill topounit', &
+            ptr_col=this%qflx_to_downhill, c2l_scale_type='urbanf')
+    endif
+
     if (create_glacier_mec_landunit) then
             this%qflx_glcice(begc:endc) = spval
              call hist_addfld1d (fname='QICE',  units='mm/s',  &
@@ -5912,6 +5926,8 @@ contains
     this%qflx_grnd_irrig(begc:endc) = 0._r8
     this%qflx_over_supply(begc:endc) = 0._r8
     this%qflx_h2orof_drain(begc:endc)= 0._r8
+    this%qflx_from_uphill(begc:endc) = 0._r8
+    this%qflx_to_downhill(begc:endc) = 0._r8
     ! needed for CNNLeaching
     do c = begc, endc
        l = col_pp%landunit(c)
