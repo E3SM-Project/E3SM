@@ -23,7 +23,7 @@ module glc_zocnclass_mod
   public :: glc_zocnclass_init            ! initialize GLC z-ocean class data
   public :: glc_zocnclass_clean           ! deallocate memory allocated here
   public :: glc_get_num_zocn_classes      ! get the number of z-ocean classes
-  public :: glc_get_zocn_class            ! get the z-ocean class index for a given z-level
+  public :: glc_get_zlevels               ! get an array of the z-ocean levels
   public :: glc_get_zocnclass_bounds      ! get the boundaries of all z-ocean classes
   public :: glc_zocnclass_as_string       ! returns a string corresponding to a given z-ocean class
   public :: glc_all_zocnclass_strings     ! returns an array of strings for all z-ocean classes
@@ -55,10 +55,13 @@ module glc_zocnclass_mod
   ! number of elevation classes
   integer :: glc_nzoc  ! number of z-ocean classes
 
-  ! upper z limit of each class (m)
-  ! indexing starts at 0, with zocnmax(0) giving the lower elevation limit of z-ocean class 1
-  ! indexing goes from ocean surface to deeper levels
-  real(r8), allocatable :: zocnmax(:)
+  ! z-level of each class.  Units are meters above sea level, so values should be <0
+  ! indexing goes from shallowest to deepest levels
+  real(r8), allocatable :: zocn_levels(:)
+  ! upper and lower z-level limit for each class (m)
+  ! first dimension: indexing goes from shallowest to deepest levels
+  ! second dimension: index 1 is upper limit, index 2 is lower limit
+  real(r8), allocatable :: zocn_bnds(:,:)
 
 
 contains
@@ -67,7 +70,7 @@ contains
   subroutine glc_zocnclass_init_default(my_glc_nzoc)
     !
     ! !DESCRIPTION:
-    ! Initialize GLC -ocean class data to default boundaries, based on given glc_nzoc
+    ! Initialize GLC z-ocean class data to default values, based on given glc_nzoc
     !
     ! !USES:
     !
@@ -77,54 +80,75 @@ contains
     ! !LOCAL VARIABLES:
 
     character(len=*), parameter :: subname = 'glc_zocnclass_init'
+    integer :: i
     !-----------------------------------------------------------------------
 
     glc_nzoc = my_glc_nzoc
-    allocate(zocnmax(0:glc_nzoc))
+    allocate(zocn_levels(glc_nzoc))
 
     select case (glc_nzoc)
     case(0)
        ! do nothing
     case(4)
-       zocnmax = [0._r8,  -500._r8,  -1000._r8, -1500._r8, -2000._r8]
+       zocn_levels = [-250._r8,  -750._r8,  -1250._r8, -1750._r8]
     case(30)
-       zocnmax = [   0._r8,   -60._r8,  -120._r8,  -180._r8,  -240._r8, &
-                  -300._r8,  -360._r8,  -420._r8,  -480._r8,  -540._r8, &
-                  -600._r8,  -660._r8,  -720._r8,  -780._r8,  -840._r8, &
-                  -900._r8,  -960._r8, -1020._r8, -1080._r8, -1140._r8, &
-                 -1200._r8, -1260._r8, -1320._r8, -1380._r8, -1440._r8, &
-                 -1500._r8, -1560._r8, -1620._r8, -1680._r8, -1740._r8]
+       zocn_levels = [ -30._r8,   -90._r8,  -150._r8,  -210._r8,  -270._r8, &
+                      -330._r8,  -390._r8,  -450._r8,  -510._r8,  -570._r8, &
+                      -630._r8,  -690._r8,  -750._r8,  -810._r8,  -870._r8, &
+                      -930._r8,  -990._r8, -1050._r8, -1110._r8, -1170._r8, &
+                     -1230._r8, -1290._r8, -1350._r8, -1410._r8, -1470._r8, &
+                     -1530._r8, -1590._r8, -1650._r8, -1710._r8, -1770._r8]
     case default
        write(logunit,*) subname,' ERROR: unknown glc_nzoc: ', glc_nzoc
        call shr_sys_abort(subname//' ERROR: unknown glc_nzoc')
     end select
 
+    call glc_zocnclass_init_bnds()
+
   end subroutine glc_zocnclass_init_default
 
   !-----------------------------------------------------------------------
-  subroutine glc_zocnclass_init_override(my_glc_nzoc, my_zocnmax)
+  subroutine glc_zocnclass_init_bnds()
+    integer :: i
+
+    allocate(zocn_bnds(2,glc_nzoc))
+    zocn_bnds(1,1) = 0._r8
+    zocn_bnds(2,1) = 0.5_r8 * (zocn_levels(1) + zocn_levels(2))
+    do i = 2, glc_nzoc - 1
+       zocn_bnds(1,i) = 0.5_r8 * (zocn_levels(i-1) + zocn_levels(i))
+       zocn_bnds(2,i) = 0.5_r8 * (zocn_levels(i) + zocn_levels(i+1))
+    enddo
+    zocn_bnds(1,glc_nzoc) = 0.5_r8 * (zocn_levels(glc_nzoc-1) + zocn_levels(glc_nzoc))
+    zocn_bnds(2,glc_nzoc) = zocn_levels(glc_nzoc) + (zocn_levels(glc_nzoc) - zocn_bnds(1,glc_nzoc))
+  end subroutine glc_zocnclass_init_bnds
+
+  !-----------------------------------------------------------------------
+  subroutine glc_zocnclass_init_override(my_glc_nzoc, my_zocn_levels)
     !
     ! !DESCRIPTION:
-    ! Initialize GLC zocn class data to the given z-ocean class boundaries.
+    ! Initialize GLC zocn class data to the given z-values
     !
-    ! The input, my_zocnmax, should have (my_glc_nzoc + 1) elements.
+    ! The input, my_zocn_levels, should have my_glc_nzoc elements.
     !
     ! !USES:
     !
     ! !ARGUMENTS:
     integer, intent(in) :: my_glc_nzoc     ! number of GLC z-ocean classes
-    real(r8), intent(in) :: my_zocnmax(0:) ! z-ocean class boundaries (m)
+    real(r8), intent(in) :: my_zocn_levels(:) ! z-ocean values (m)
     !
     ! !LOCAL VARIABLES:
 
     character(len=*), parameter :: subname = 'glc_zocnlass_init_override'
     !-----------------------------------------------------------------------
 
-    SHR_ASSERT_ALL_FL((ubound(my_zocnmax) == (/my_glc_nzoc/)), __FILE__, __LINE__)
+    SHR_ASSERT_ALL_FL((ubound(my_zocn_levels) == (/my_glc_nzoc/)), __FILE__, __LINE__)
 
     glc_nzoc = my_glc_nzoc
-    allocate(zocnmax(0:glc_nzoc))
-    zocnmax = my_zocnmax
+    allocate(zocn_levels(glc_nzoc))
+    zocn_levels = my_zocn_levels
+    allocate(zocn_bnds(2,glc_nzoc))
+
+    call glc_zocnclass_init_bnds()
 
   end subroutine glc_zocnclass_init_override
 
@@ -137,8 +161,11 @@ contains
     character(len=*), parameter :: subname = 'glc_zocnclass_clean'
     !-----------------------------------------------------------------------
 
-    if (allocated(zocnmax)) then
-       deallocate(zocnmax)
+    if (allocated(zocn_levels)) then
+       deallocate(zocn_levels)
+    end if
+    if (allocated(zocn_bnds)) then
+       deallocate(zocn_bnds)
     end if
     glc_nzoc = 0
 
@@ -163,60 +190,26 @@ contains
   end function glc_get_num_zocn_classes
 
   !-----------------------------------------------------------------------
-  subroutine glc_get_zocn_class(zlev, zocn_class, err_code)
+  function glc_get_zlevels() result(zlevs)
     !
     ! !DESCRIPTION:
-    ! Get the zocn class index associated with a given ocean z-level (depth).
+    ! Get all z-levels
     !
-    ! The returned zocn_class will be between 1 and num_zocn_classes, if this
-    ! z-level is contained in a z-ocean class. In this case, err_code will
-    ! be GLC_ZOCNCLASS_ERR_NONE (no error).
-    !
-    ! If there are no z-ocean classes defined, the returned value will be 0, and
-    ! err_code will be GLC_ZOCNCLASS_ERR_UNDEFINED
-    !
-    ! If this z-level is below the lowest zocean class, the returned value
-    ! will be 1, and err_code will be GLC_ZOCNCLASS_ERR_TOO_LOW.
-    !
-    ! If this z-level is above the highest z-ocean class, the returned value
-    ! will be (num_zocn_classes), and err_code will be GLC_ZOCNCLASS_ERR_TOO_HIGH.
+    ! This returns an array of size (glc_nzoc)
     !
     ! !USES:
     !
     ! !ARGUMENTS:
-    real(r8), intent(in) :: zlev ! z-level in ocean (depth) (m)
-    integer, intent(out) :: zocn_class  ! z-ocean class index
-    integer, intent(out) :: err_code ! error code (see above for possible codes)
+    real(r8) :: zlevs(glc_nzoc)  ! function result
     !
     ! !LOCAL VARIABLES:
-    integer :: zc  ! temporary z-ocean class
 
-    character(len=*), parameter :: subname = 'glc_get_zocn_class'
+    character(len=*), parameter :: subname = 'glc_get_zlevels'
     !-----------------------------------------------------------------------
 
-    if (glc_nzoc < 1) then
-       zocn_class = 0
-       err_code = GLC_ZOCNCLASS_ERR_UNDEFINED
-    else if (zlev < zocnmax(0)) then
-       zocn_class = 1
-       err_code = GLC_ZOCNCLASS_ERR_TOO_LOW
-    else if (zlev >= zocnmax(glc_nzoc)) then
-       zocn_class = glc_nzoc
-       err_code = GLC_ZOCNCLASS_ERR_TOO_HIGH
-    else
-       err_code = GLC_ZOCNCLASS_ERR_NONE
-       zocn_class = 0
-       do zc = 1, glc_nzoc
-          if (zlev >= zocnmax(zc - 1) .and. zlev < zocnmax(zc)) then
-             zocn_class = zc
-             exit
-          end if
-       end do
+    zlevs(:) = zocn_levels(:)
 
-       SHR_ASSERT(zocn_class > 0, subname//' z-ocean class was not assigned')
-    end if
-
-  end subroutine glc_get_zocn_class
+  end function glc_get_zlevels
 
   !-----------------------------------------------------------------------
   function glc_get_zocnclass_bounds() result(zocnclass_bounds)
@@ -224,20 +217,19 @@ contains
     ! !DESCRIPTION:
     ! Get the boundaries of all z-ocean classes.
     !
-    ! This returns an array of size glc_nzoc+1, since it contains both the lower and upper
-    ! bounds of each z-ocean class.
+    ! This returns an array of size (glc_nzoc,2)
     !
     ! !USES:
     !
     ! !ARGUMENTS:
-    real(r8) :: zocnclass_bounds(0:glc_nzoc)  ! function result
+    real(r8) :: zocnclass_bounds(2,glc_nzoc)  ! function result
     !
     ! !LOCAL VARIABLES:
 
     character(len=*), parameter :: subname = 'glc_get_zocnclass_bounds'
     !-----------------------------------------------------------------------
 
-    zocnclass_bounds(:) = zocnmax(:)
+    zocnclass_bounds(:,:) = zocn_bnds(:,:)
 
   end function glc_get_zocnclass_bounds
 
@@ -248,10 +240,6 @@ contains
     ! Returns a string corresponding to a given elevation class.
     !
     ! This string can be used as a suffix for fields in MCT attribute vectors.
-    !
-    ! ! NOTE(wjs, 2015-01-19) This function doesn't fully belong in this module, since it
-    ! doesn't refer to the data stored in this module. However, I can't think of a more
-    ! appropriate place for it.
     !
     ! !USES:
     !
