@@ -51,6 +51,8 @@ void AtmBackTendDiag::initialize_impl(const RunType /*run_type*/) {
   FieldIdentifier d_fid(name(), layout.clone(), diag_units, gn);
   m_diagnostic_output = Field(d_fid);
   m_diagnostic_output.allocate_view();
+  // For backward compatibility, for now, just make the single output the first item in the map
+  m_diagnostic_fields[name()] = m_diagnostic_output;
 
   // Let's also create the previous field
   FieldIdentifier prev_fid(name() + "_prev", layout.clone(), diag_units, gn);

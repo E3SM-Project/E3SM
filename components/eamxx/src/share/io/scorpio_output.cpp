@@ -14,6 +14,7 @@
 
 #include <numeric>
 #include <fstream>
+#include <regex>
 
 namespace scream
 {
@@ -1268,7 +1269,7 @@ compute_diagnostic(const std::string& name, const bool allow_invalid_fields)
     for (auto f : diag->get_fields_in()) {
       if (not f.get_header().get_tracking().get_time_stamp().is_valid()) {
         // Fill diag with invalid data and return
-        diag->get_diagnostic().deep_copy(m_fill_value);
+        diag->get_diagnostic(name).deep_copy(m_fill_value);
         return;
       }
     }
@@ -1280,7 +1281,7 @@ compute_diagnostic(const std::string& name, const bool allow_invalid_fields)
   // The diag may have failed to compute (e.g., t=0 output with a flux-like diag).
   // If we're allowing invalid fields, then we should simply set diag=m_fill_value
   if (allow_invalid_fields) {
-    auto d = diag->get_diagnostic();
+    auto d = diag->get_diagnostic(name);
     if (not d.get_header().get_tracking().get_time_stamp().is_valid()) {
       d.deep_copy(m_fill_value);
     }
@@ -1302,7 +1303,7 @@ get_field(const std::string& name, const std::string& mode) const
     return field_mgr->get_field(name);
   } else if (m_diagnostics.find(name) != m_diagnostics.end() && can_be_diag) {
     const auto& diag = m_diagnostics.at(name);
-    return diag->get_diagnostic();
+    return diag->get_diagnostic(name);
   } else {
     EKAT_ERROR_MSG ("ERROR::AtmosphereOutput::get_field Field " + name + " not found in " + mode + " field manager or diagnostics list.");
   }
@@ -1313,27 +1314,37 @@ get_field(const std::string& name, const std::string& mode) const
 void AtmosphereOutput::set_diagnostics()
 {
   const auto sim_field_mgr = get_field_manager("sim");
-  // Create all diagnostics
-  for (auto& fname : m_fields_names) {
-    if (!sim_field_mgr->has_field(fname)) {
-      auto diag = create_diagnostic(fname);
-      auto diag_fname = diag->get_diagnostic().name();
-      m_diagnostics[diag_fname] = diag;
-
-      // Note: the diag field may have a name different from what was used
-      //       in the input file, so update the name with the actual
-      //       diagnostic field name
-      fname = diag_fname;
+  std::vector<std::string> all_diag_list, single_diag_list, multi_diag_list;
+  std::map<std::string, std::vector<std::string>> diag_map;
+  for(const auto &name : m_fields_names) {
+    if(!sim_field_mgr->has_field(name)) {
+      all_diag_list.push_back(name);
     }
+  }
+
+  scream::set_diagnostic(all_diag_list, single_diag_list, multi_diag_list,
+                         diag_map);
+
+  for(const auto &name : single_diag_list) {
+    m_diagnostics[name] = create_diagnostic(name, diag_map[name]);
+  }
+  for(const auto &name : multi_diag_list) {
+    m_diagnostics[name] = create_diagnostic(name, diag_map[name]);
   }
 }
 
 /* ---------------------------------------------------------- */
 std::shared_ptr<AtmosphereDiagnostic>
-AtmosphereOutput::create_diagnostic (const std::string& diag_field_name)
+AtmosphereOutput::create_diagnostic(const std::string &diag_field_name)
+{
+  return create_diagnostic(diag_field_name, std::vector<std::string>());
+}
+
+std::shared_ptr<AtmosphereDiagnostic>
+AtmosphereOutput::create_diagnostic (const std::string& diag_field_name, const std::vector<std::string>& multi_out_fields)
 {
   // We need scream scope resolution, since this->create_diagnostic is hiding it
-  auto diag = scream::create_diagnostic(diag_field_name,get_field_manager("sim")->get_grid());
+  auto diag = scream::create_diagnostic(diag_field_name, get_field_manager("sim")->get_grid(), multi_out_fields);
 
   // Some diags need some extra setup or trigger extra behaviors
   std::string diag_avg_cnt_name = "";
@@ -1374,7 +1385,7 @@ AtmosphereOutput::create_diagnostic (const std::string& diag_field_name)
 
   // If specified, set avg_cnt tracking for this diagnostic.
   if (m_track_avg_cnt) {
-    const auto diag_field = diag->get_diagnostic();
+    const auto diag_field = diag->get_diagnostic(diag_field_name);
     const auto name       = diag_field.name();
     m_field_to_avg_cnt_suffix.emplace(name,diag_avg_cnt_name);
   }

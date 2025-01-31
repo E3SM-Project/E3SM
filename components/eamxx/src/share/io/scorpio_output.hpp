@@ -176,6 +176,8 @@ protected:
   void set_diagnostics();
   std::shared_ptr<AtmosphereDiagnostic>
   create_diagnostic (const std::string& diag_name);
+  std::shared_ptr<AtmosphereDiagnostic>
+  create_diagnostic (const std::string& diag_name, const std::vector<std::string>& multi_out_fields);
 
   // Tracking the averaging of any filled values:
   void set_avg_cnt_tracking(const std::string& name, const FieldLayout& layout);
