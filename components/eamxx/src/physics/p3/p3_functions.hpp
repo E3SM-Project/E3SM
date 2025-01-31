@@ -135,6 +135,7 @@ struct Functions
     bool set_cld_frac_i_to_one = false;
     bool set_cld_frac_r_to_one = false;
     bool use_hetfrz_classnuc   = false;
+    bool use_separate_ice_liq_frac = false;
 
     void load_runtime_options_from_file(ekat::ParameterList& params) {
       max_total_ni = params.get<double>("max_total_ni", max_total_ni);
@@ -161,6 +162,7 @@ struct Functions
       set_cld_frac_i_to_one = params.get<bool>("set_cld_frac_i_to_one", set_cld_frac_i_to_one);
       set_cld_frac_r_to_one = params.get<bool>("set_cld_frac_r_to_one", set_cld_frac_r_to_one);
       use_hetfrz_classnuc   = params.get<bool>("use_hetfrz_classnuc", use_hetfrz_classnuc);
+      use_separate_ice_liq_frac = params.get<bool>("use_separate_ice_liq_frac", use_separate_ice_liq_frac);
     }
 
   };
@@ -395,7 +397,7 @@ struct Functions
                                    Spack& nr2ni_immers_freeze_tend, Spack& ni_sublim_tend, Spack& qv2qi_nucleat_tend,
                                    Spack& ni_nucleat_tend, Spack& qc2qi_berg_tend, Spack& ncheti_cnt, Spack& qcheti_cnt, 
                                    Spack& nicnt, Spack& qicnt, Spack& ninuc_cnt, Spack& qinuc_cnt, 
-                                   const Smask& context = Smask(true) );
+                                   const Smask& context = Smask(true), const P3Runtime* runtime_options = nullptr );
 
   //------------------------------------------------------------------------------------------!
   // Finds indices in 3D ice (only) lookup table
@@ -696,6 +698,14 @@ struct Functions
     const uview_1d<const Scalar>& v, const Scalar& small,
     const Int& kbot, const Int& ktop, const Int& kdir,
     bool& log_present);
+
+  KOKKOS_FUNCTION
+  static void cloud_water_conservation(const Spack& qc, const Scalar dt,
+    Spack& qc2qr_autoconv_tend, Spack& qc2qr_accret_tend, Spack &qc2qi_collect_tend, Spack& qc2qi_hetero_freeze_tend,
+    Spack& qc2qr_ice_shed_tend, Spack& qc2qi_berg_tend, Spack& qi2qv_sublim_tend, Spack& qv2qi_vapdep_tend,
+    Spack& qcheti_cnt, Spack& qicnt, const bool& use_hetfrz_classnuc, 
+    const Spack& cld_frac_l, const Spack& cld_frac_i,
+    const Smask& context = Smask(true) );
 
   KOKKOS_FUNCTION
   static void cloud_water_conservation(const Spack& qc, const Scalar dt,
