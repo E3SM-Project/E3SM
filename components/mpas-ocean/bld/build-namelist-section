@@ -296,6 +296,8 @@ add_default($nl, 'config_frazil_in_open_ocean');
 add_default($nl, 'config_frazil_under_land_ice');
 add_default($nl, 'config_frazil_heat_of_fusion');
 add_default($nl, 'config_frazil_ice_density');
+add_default($nl, 'config_use_frazil_ice_porosity');
+add_default($nl, 'config_frazil_ice_porosity');
 add_default($nl, 'config_frazil_fractional_thickness_limit');
 add_default($nl, 'config_specific_heat_sea_water');
 add_default($nl, 'config_frazil_maximum_depth');
