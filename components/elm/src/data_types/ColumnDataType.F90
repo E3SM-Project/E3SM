@@ -464,6 +464,7 @@ module ColumnDataType
     real(r8), pointer :: qflx_evap_grnd       (:)   => null() ! ground surface evaporation rate (mm H2O/s) [+]
     real(r8), pointer :: qflx_snwcp_liq       (:)   => null() ! excess rainfall due to snow capping (mm H2O /s)
     real(r8), pointer :: qflx_snwcp_ice       (:)   => null() ! excess snowfall due to snow capping (mm H2O /s)
+    real(r8), pointer :: qflx_ice_runoff_xs   (:)   => null() ! solid runoff from excess ice in soil (mm H2O /s) [+]
     real(r8), pointer :: qflx_tran_veg        (:)   => null() ! vegetation transpiration (mm H2O/s) (+ = to atm)
     real(r8), pointer :: qflx_dew_snow        (:)   => null() ! surface dew added to snow pack (mm H2O /s) [+]
     real(r8), pointer :: qflx_dew_grnd        (:)   => null() ! ground surface dew formation (mm H2O /s) [+] (+ = to atm); usually eflx_bot >= 0)
@@ -492,6 +493,7 @@ module ColumnDataType
     real(r8), pointer :: qflx_sl_top_soil     (:)   => null() ! liquid water + ice from layer above soil to top soil layer or sent to qflx_qrgwl (mm H2O/s)
     real(r8), pointer :: qflx_snomelt         (:)   => null() ! snow melt (mm H2O /s)
     real(r8), pointer :: qflx_snow_melt       (:)   => null() ! snow melt (net)
+    real(r8), pointer :: qflx_snomelt_lyr     (:,:) => null() ! snow melt (net)
     real(r8), pointer :: qflx_qrgwl           (:)   => null() ! qflx_surf at glaciers, wetlands, lakes
     real(r8), pointer :: qflx_runoff          (:)   => null() ! total runoff (qflx_drain+qflx_surf+qflx_qrgwl) (mm H2O /s)
     real(r8), pointer :: qflx_runoff_r        (:)   => null() ! Rural total runoff (qflx_drain+qflx_surf+qflx_qrgwl) (mm H2O /s)
@@ -5692,6 +5694,7 @@ contains
     allocate(this%qflx_evap_grnd         (begc:endc))             ; this%qflx_evap_grnd       (:)   = spval
     allocate(this%qflx_snwcp_liq         (begc:endc))             ; this%qflx_snwcp_liq       (:)   = spval
     allocate(this%qflx_snwcp_ice         (begc:endc))             ; this%qflx_snwcp_ice       (:)   = spval
+    allocate(this%qflx_ice_runoff_xs     (begc:endc))             ; this%qflx_ice_runoff_xs   (:)   = 0._r8
     allocate(this%qflx_tran_veg          (begc:endc))             ; this%qflx_tran_veg        (:)   = spval
     allocate(this%qflx_dew_snow          (begc:endc))             ; this%qflx_dew_snow        (:)   = spval
     allocate(this%qflx_dew_grnd          (begc:endc))             ; this%qflx_dew_grnd        (:)   = spval
@@ -5719,6 +5722,7 @@ contains
     allocate(this%qflx_floodc            (begc:endc))             ; this%qflx_floodc          (:)   = spval
     allocate(this%qflx_sl_top_soil       (begc:endc))             ; this%qflx_sl_top_soil     (:)   = spval
     allocate(this%qflx_snomelt           (begc:endc))             ; this%qflx_snomelt         (:)   = spval
+    allocate(this%qflx_snomelt_lyr       (begc:endc,-nlevsno+1:0)) ; this%qflx_snomelt_lyr    (:,:) = spval
     allocate(this%qflx_snow_melt         (begc:endc))             ; this%qflx_snow_melt       (:)   = spval
     allocate(this%qflx_qrgwl             (begc:endc))             ; this%qflx_qrgwl           (:)   = spval
     allocate(this%qflx_runoff            (begc:endc))             ; this%qflx_runoff          (:)   = spval
@@ -5772,6 +5776,11 @@ contains
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of col_wf
     !-----------------------------------------------------------------------
+    this%qflx_snofrz_lyr(begc:endc,-nlevsno+1:0) = spval         
+      call hist_addfld2d (fname='QSNOFRZ_LYR', units='kg/m2/s', type2d='levsno',&
+          avgflag='I', long_name='layer snow freezing rate', &    
+           ptr_col=this%qflx_snofrz_lyr, no_snow_behavior=no_snow_normal, default='inactive')
+
     this%qflx_snwcp_ice(begc:endc) = spval
      call hist_addfld1d (fname='QSNWCPICE_NODYNLNDUSE', units='mm H2O/s', &
           avgflag='A', long_name='excess snowfall due to snow capping not including correction for land use change', &
@@ -5822,6 +5831,11 @@ contains
           avgflag='A', long_name='snow melt', &
            ptr_col=this%qflx_snow_melt, c2l_scale_type='urbanf')
 
+    this%qflx_snomelt_lyr(begc:endc,-nlevsno+1:0) = spval
+     call hist_addfld2d (fname='QSNOMELT_LYR',  units='mm/s',type2d='levsno',&
+          avgflag='A', long_name='snow melt per snow layer', &
+           ptr_col=this%qflx_snomelt_lyr,no_snow_behavior=no_snow_normal, c2l_scale_type='urbanf')
+
     this%qflx_qrgwl(begc:endc) = spval
      call hist_addfld1d (fname='QRGWL',  units='mm/s',  &
           avgflag='A', long_name='surface runoff at glaciers (liquid only), wetlands, lakes', &
@@ -5851,7 +5865,7 @@ contains
     this%qflx_snofrz(begc:endc) = spval
      call hist_addfld1d (fname='QSNOFRZ', units='kg/m2/s', &
           avgflag='A', long_name='column-integrated snow freezing rate', &
-           ptr_col=this%qflx_snofrz, set_lake=spval, c2l_scale_type='urbanf', default='inactive')
+           ptr_col=this%qflx_snofrz, set_lake=spval, c2l_scale_type='urbanf')
 
     if (use_IM2_hillslope_hydrology) then
       call hist_addfld1d (fname='QFROM_UPHILL',  units='mm/s',  &
@@ -5862,7 +5876,7 @@ contains
             avgflag='A', long_name='output from column to downhill topounit', &
             ptr_col=this%qflx_to_downhill, c2l_scale_type='urbanf')
     endif
-
+   
     if (create_glacier_mec_landunit) then
             this%qflx_glcice(begc:endc) = spval
              call hist_addfld1d (fname='QICE',  units='mm/s',  &
