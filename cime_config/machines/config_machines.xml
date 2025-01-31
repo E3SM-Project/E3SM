@@ -2034,8 +2034,12 @@
       <env name="PERL5LIB">/nfs/gce/projects/climate/software/perl5/lib/perl5</env>
     </environment_variables>
     <environment_variables compiler="gnu" mpilib="mpich">
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/adios2/2.10.1/mpich-4.1.2/gcc-12.1.0; else echo "$ADIOS2_ROOT"; fi}</env>
-      <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/c-blosc2/2.15.1/gcc-12.1.0; else echo "$BLOSC2_ROOT"; fi}</env>
+      <env name="PKG_CONFIG_PATH">$SHELL{if [ -z "$PKG_CONFIG_PATH" ]; then echo /nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/protobuf/21.6/gcc-12.1.0/lib/pkgconfig; else echo "/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/protobuf/21.6/gcc-12.1.0/lib/pkgconfig:$PKG_CONFIG_PATH"; fi}</env>
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/adios2/2.10.2/mpich-4.1.2/gcc-12.1.0; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/c-blosc2/2.15.2/gcc-12.1.0; else echo "$BLOSC2_ROOT"; fi}</env>
+      <env name="MGARD_ROOT">$SHELL{if [ -z "$MGARD_ROOT" ]; then echo /nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/mgard/1.5.2/gcc-12.1.0; else echo "$MGARD_ROOT"; fi}</env>
+      <env name="SZ_ROOT">$SHELL{if [ -z "$SZ_ROOT" ]; then echo /nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/sz/2.1.12.5/gcc-12.1.0; else echo "$SZ_ROOT"; fi}</env>
+      <env name="ZFP_ROOT">$SHELL{if [ -z "$ZFP_ROOT" ]; then echo /nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/zfp/1.0.1/gcc-12.1.0; else echo "$ZFP_ROOT"; fi}</env>
     </environment_variables>
   </machine>
 
@@ -2126,7 +2130,12 @@
       <env name="PERL5LIB">/nfs/gce/projects/climate/software/perl5/lib/perl5</env>
     </environment_variables>
     <environment_variables compiler="gnu" mpilib="mpich">
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/adios2/2.9.1/mpich-4.0/gcc-11.1.0; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="PKG_CONFIG_PATH">$SHELL{if [ -z "$PKG_CONFIG_PATH" ]; then echo /nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/protobuf/21.6/gcc-11.1.0/lib/pkgconfig; else echo "/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/protobuf/21.6/gcc-11.1.0/lib/pkgconfig:$PKG_CONFIG_PATH"; fi}</env>
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/adios2/2.10.2/mpich-4.0/gcc-11.1.0; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/c-blosc2/2.15.2/gcc-11.1.0; else echo "$BLOSC2_ROOT"; fi}</env>
+      <env name="MGARD_ROOT">$SHELL{if [ -z "$MGARD_ROOT" ]; then echo /nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/mgard/1.5.2/gcc-11.1.0; else echo "$MGARD_ROOT"; fi}</env>
+      <env name="SZ_ROOT">$SHELL{if [ -z "$SZ_ROOT" ]; then echo /nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/sz/2.1.12.5/gcc-11.1.0; else echo "$SZ_ROOT"; fi}</env>
+      <env name="ZFP_ROOT">$SHELL{if [ -z "$ZFP_ROOT" ]; then echo /nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/zfp/1.0.1/gcc-11.1.0; else echo "$ZFP_ROOT"; fi}</env>
     </environment_variables>
   </machine>
 
