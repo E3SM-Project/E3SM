@@ -1,0 +1,33 @@
+# This file may be used to create an environment for linting Omega with
+# pre-commit using:
+# $ conda create -n omega_dev --file <this file>
+# $ conda activate omega_dev
+# $ pre-commit install
+
+# linting
+pre-commit
+
+# c++ linting
+clang-format >=18.1.0,<18.2.0
+clang-tools >=18.1.0,<18.2.0
+cppcheck
+cpplint
+lizard
+include-what-you-use
+
+# python linting
+isort
+flynt
+flake8
+mypy
+
+# documentation
+sphinx
+sphinx_rtd_theme
+myst-parser
+sphinx-multiversion
+rst-to-myst
+
+# CF-compliance
+cfchecker
+udunits2
