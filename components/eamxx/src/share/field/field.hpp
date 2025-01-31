@@ -224,6 +224,10 @@ public:
   template<HostOrDevice HD = Device>
   void scale (const Field& x);
 
+  // Scale a field y as y=y/x where x is also a field
+  template<HostOrDevice HD = Device>
+  void scale_inv (const Field& x);
+
   // Returns a subview of this field, slicing at entry k along dimension idim
   // NOTES:
   //   - the output field stores *the same* 1d view as this field. In order

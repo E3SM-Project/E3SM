@@ -810,45 +810,113 @@ TEST_CASE ("update") {
   }
 
   SECTION ("deep_copy") {
-    Field f2 (fid_r);
-    f2.allocate_view();
+    SECTION ("real") {
+      Field f2 (fid_r);
+      f2.allocate_view();
 
-    // Replace f2's content with f_real's content
-    f2.update(f_real,1,0);
-    REQUIRE (views_are_equal(f2,f_real));
-  }
+      // Replace f2's content with f_real's content
+      f2.deep_copy(f_real);
+      REQUIRE (views_are_equal(f2,f_real));
+    }
+    SECTION ("int") {
+      Field f2 (fid_i);
+      f2.allocate_view();
 
-  SECTION ("update") {
-    Field f2 = f_real.clone();
-    Field f3 = f_real.clone();
-
-    // x+x == 2*x
-    f2.update(f_real,1,1);
-    f3.scale(2);
-    REQUIRE (views_are_equal(f2,f3));
-
-    // Adding 2*f_real to N*f3 should give 2*f_real (f3==0)
-    f3.deep_copy(0.0);
-    f3.update(f_real,2,10);
-    REQUIRE (views_are_equal(f3,f2));
-
-    // Same, but we discard current content of f3
-    f3.update(f_real,2,0);
-    REQUIRE (views_are_equal(f3,f2));
+      // Replace f2's content with f_int's content
+      f2.deep_copy(f_int);
+      REQUIRE (views_are_equal(f2,f_int));
+    }
   }
 
   SECTION ("scale") {
-    Field f1 = f_real.clone();
-    Field f2 = f_real.clone();
+    SECTION ("real") {
+      Field f1 = f_real.clone();
+      Field f2 = f_real.clone();
 
-    // x=2, x*y = 2*y
-    f1.deep_copy(2.0);
-    f1.scale(f2);
-    f2.scale(2.0);
-    REQUIRE (views_are_equal(f1, f2));
+      // x=2, x*y = 2*y
+      f1.deep_copy(2.0);
+      f1.scale(f2);
+      f2.scale(2.0);
+      REQUIRE (views_are_equal(f1, f2));
+    }
+
+    SECTION ("int") {
+      Field f1 = f_int.clone();
+      f1.deep_copy(4);
+      Field f2 = f_int.clone();
+      f2.deep_copy(2);
+      Field f3 = f_int.clone();
+      f3.deep_copy(2);
+
+      f2.scale(f3);
+      REQUIRE (views_are_equal(f1, f2));
+    }
+  }
+
+  SECTION ("scale_inv") {
+    SECTION ("real") {
+      Field f1 = f_real.clone();
+      Field f2 = f_real.clone();
+      Field f3 = f_real.clone();
+
+      f3.deep_copy(2.0);
+      f1.scale(f3);
+      f3.deep_copy(0.5);
+      f2.scale_inv(f3);
+      REQUIRE (views_are_equal(f1, f2));
+    }
+
+    SECTION ("int") {
+      Field f1 = f_int.clone();
+      f1.deep_copy(4);
+      Field f2 = f_int.clone();
+      f2.deep_copy(2);
+
+      f1.scale_inv(f2);
+      REQUIRE (views_are_equal(f1, f2));
+    }
+  }
+
+  SECTION ("update") {
+    SECTION ("real") {
+      Field f2 = f_real.clone();
+      Field f3 = f_real.clone();
+
+      // x+x == 2*x
+      f2.update(f_real,1,1);
+      f3.scale(2);
+      REQUIRE (views_are_equal(f2,f3));
+
+      // Adding 2*f_real to N*f3 should give 2*f_real (f3==0)
+      f3.deep_copy(0.0);
+      f3.update(f_real,2,10);
+      REQUIRE (views_are_equal(f3,f2));
+
+      // Same, but we discard current content of f3
+      f3.update(f_real,2,0);
+      REQUIRE (views_are_equal(f3,f2));
+    }
+
+    SECTION ("int") {
+      Field f2 = f_int.clone();
+      Field f3 = f_int.clone();
+
+      // x+x == 2*x
+      f2.update(f_int,1,1);
+      f3.scale(2);
+      REQUIRE (views_are_equal(f2,f3));
+
+      // Adding 2*f_int to N*f3 should give 2*f_int (f3==0)
+      f3.deep_copy(0);
+      f3.update(f_int,2,10);
+      REQUIRE (views_are_equal(f3,f2));
+
+      // Same, but we discard current content of f3
+      f3.update(f_int,2,0);
+      REQUIRE (views_are_equal(f3,f2));
+    }
   }
 }
-
 
 TEST_CASE ("sync_subfields") {
   // This test is for previously incorrect behavior, where syncing a subfield
