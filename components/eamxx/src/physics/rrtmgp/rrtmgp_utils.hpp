@@ -40,12 +40,12 @@ void compute_heating_rate (
   using physconst = scream::physics::Constants<Real>;
   auto ncol = flux_up.dimension[0];
   auto nlay = flux_up.dimension[1]-1;
-  yakl::fortran::parallel_for(yakl::fortran::SimpleBounds<2>(nlay,ncol), YAKL_LAMBDA(int ilay, int icol) {
+  TIMED_KERNEL(yakl::fortran::parallel_for(yakl::fortran::SimpleBounds<2>(nlay,ncol), YAKL_LAMBDA(int ilay, int icol) {
       heating_rate(icol,ilay) = (
         flux_up(icol,ilay+1) - flux_up(icol,ilay) -
         flux_dn(icol,ilay+1) + flux_dn(icol,ilay)
                                  ) * physconst::gravit / (physconst::Cpair * pdel(icol,ilay));
-    });
+      }));
 }
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
@@ -57,15 +57,15 @@ void compute_heating_rate (
   View4 const &heating_rate)
 {
   using physconst = scream::physics::Constants<Real>;
-  using MDRP = typename conv::MDRP<typename View1::array_layout>;
-  auto ncol = flux_up.extent(0);
-  auto nlay = flux_up.extent(1)-1;
-  Kokkos::parallel_for(MDRP::template get<2>({nlay,ncol}), KOKKOS_LAMBDA(int ilay, int icol) {
+  using LayoutT = typename View1::array_layout;
+  const int ncol = (int)flux_up.extent(0);
+  const int nlay = (int)flux_up.extent(1)-1;
+  TIMED_KERNEL(FLATTEN_MD_KERNEL2(ncol, nlay, icol, ilay,
     heating_rate(icol,ilay) = (
       flux_up(icol,ilay+1) - flux_up(icol,ilay) -
       flux_dn(icol,ilay+1) + flux_dn(icol,ilay)
                                ) * physconst::gravit / (physconst::Cpair * pdel(icol,ilay));
-  });
+                                  ));
 }
 #endif
 
