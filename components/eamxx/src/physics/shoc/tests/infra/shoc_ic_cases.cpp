@@ -225,10 +225,12 @@ FortranData::Ptr make_standard(const Int shcol, Int nlev, Int num_qtracers) {
 
 // From scream-docs/shoc-port/shocintr.py.
 FortranData::Ptr Factory::create (IC ic, Int shcol, Int nlev, Int num_qtracers) {
+  FortranData::Ptr ret;
   switch (ic) {
-    case standard: return make_standard(shcol, nlev, num_qtracers);
+    case standard: ret = make_standard(shcol, nlev, num_qtracers); break;
     default: EKAT_REQUIRE_MSG(false, "Not an IC: " << ic);
   }
+  return ret;
 }
 
 } // namespace ic
