@@ -137,7 +137,7 @@ end subroutine shr_flux_adjust_constants
 !
 !     2011-Mar-13 - J. Nusbaumer - Water Isotope ocean flux added.
 !     2019-May-16 - Jack Reeves Eyre (UA) and Kai Zhang (PNNL) - Added COARE/Fairall surface flux scheme option (ocn_surface_flux_scheme .eq. 1) based on code from Thomas Toniazzo (Bjerknes Centre, Bergen) ”
-!
+!     2024-Jul-10 - E. Thomas ethomas@lanl.gov - implementing Coare3.0 w/ Wave coupling (uses charnock paramter from WW3)
 ! !INTERFACE: ------------------------------------------------------------------
 
 SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
@@ -150,11 +150,12 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
            &               taux  ,tauy  ,tref  ,qref  ,   &
            &               ocn_surface_flux_scheme, &
            &               duu10n, u10res, ustar_sv   ,re_sv ,ssq_sv,   &
-           &               missval, wsresp, tau_est, ugust)
+           &               missval, wsresp, tau_est, ugust, charnockSeaState)
 
 ! !USES:
 
    use water_isotopes, only: wiso_flxoce !subroutine used to calculate water isotope fluxes.
+   use seq_flds_mod, only : wav_atm_coup
    implicit none
 
 ! !INPUT/OUTPUT PARAMETERS:
@@ -205,6 +206,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
    real(R8),intent(in) ,optional :: wsresp(nMax)   ! boundary layer wind response to stress (m/s/Pa)
    real(R8),intent(in) ,optional :: tau_est(nMax)  ! stress in equilibrium with boundary layer (Pa)
    real(R8),intent(in) ,optional :: ugust(nMax)    ! extra wind speed from gustiness (m/s)
+   real(R8),intent(in) ,optional :: charnockSeaState(nMax) !Charnock coeff accounting for the wave stress (Janssen 1989, 1991)
 
 ! !EOP
 
@@ -539,17 +541,26 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
             endif
          endif
         ssq    = 0.98_R8 * qsat(ts(n)) / rbot(n)   ! sea surf hum (kg/kg)
-
-        call cor30a(ubot(n),vbot(n),tbot(n),qbot(n),rbot(n) &  ! in atm params
+        if (wav_atm_coup .eq. 'two') then 
+           call cor30a(ubot(n),vbot(n),tbot(n),qbot(n),rbot(n) &  ! in atm params
                  & ,us(n),vs(n),ts(n),ssq                   &  ! in surf params
                  & ,zpbl,zbot(n),zbot(n),zref,ztref,ztref   &  ! in heights
                  & ,tau,hsb,hlb                             &  ! out: fluxes
                  & ,zo,zot,zoq,hol,ustar,tstar,qstar        &  ! out: ss scales
                  & ,rd,rh,re                                &  ! out: exch. coeffs
                  & ,trf,qrf,urf,vrf                         &  ! out: reference-height params
-                 & ,wsresp(n),tau_est(n))                      ! in: optional stress params
-
-! for the sake of maintaining same defs
+                 & ,wsresp(n),tau_est(n)                    &  ! in: optional stress params for the sake of maintaining same defs
+                 & ,charnockSeaState(n))                       ! in: optional charnock sea state
+        else 
+           call cor30a(ubot(n),vbot(n),tbot(n),qbot(n),rbot(n) &  ! in atm params
+                 & ,us(n),vs(n),ts(n),ssq                   &  ! in surf params
+                 & ,zpbl,zbot(n),zbot(n),zref,ztref,ztref   &  ! in heights
+                 & ,tau,hsb,hlb                             &  ! out: fluxes
+                 & ,zo,zot,zoq,hol,ustar,tstar,qstar        &  ! out: ss scales
+                 & ,rd,rh,re                                &  ! out: exch. coeffs
+                 & ,trf,qrf,urf,vrf                         &  ! out: reference-height params
+                 & ,wsresp(n),tau_est(n)   )                   ! in: optional stress params for the sake of maintaining same defs
+        endif
         hol=zbot(n)/hol
         rd=sqrt(rd)
         rh=sqrt(rh)
@@ -2513,10 +2524,11 @@ subroutine cor30a(ubt,vbt,tbt,qbt,rbt        &    ! in atm params
                & ,zo,zot,zoq,L,usr,tsr,qsr   &    ! out: ss scales
                & ,Cd,Ch,Ce                   &    ! out: exch. coeffs
                & ,trf,qrf,urf,vrf            &    ! out: reference-height params
-               & ,wsresp,tau_est)                 ! in: optional stress params
+               & ,wsresp,tau_est             &    ! in: optional stress params 
+               & ,charnsea)                       ! in: optional charnock sea state
 
-! !USES:
-
+!USES:
+use seq_flds_mod, only : wav_atm_coup
 IMPLICIT NONE
 
 ! !INPUT/OUTPUT PARAMETERS:
@@ -2526,6 +2538,8 @@ real(R8),intent(in) :: zbl,zbu,zbt,zrfu,zrfq,zrft
 real(R8),intent(out):: tau,hsb,hlb,zo,zot,zoq,L,usr,tsr,qsr,Cd,Ch,Ce &
                     & ,trf,qrf,urf,vrf
 real(R8),intent(in),optional:: wsresp,tau_est
+real(R8),intent(in) ,optional :: charnsea !Charnock coeff accounting for the wave stress (Janssen 1989, 1991)
+
 ! !EOP
 
 real(R8) ua,va,ta,q,rb,us,vs,ts,qs,zi,zu,zt,zq,zru,zrq,zrt ! internal vars
@@ -2632,13 +2646,17 @@ zrt=zrft ! reference height for st.diagn.T,q
     tsr = (dt-dter*jcool)*von/(log(zt/zot10)-psit_30(zt/L10))
     qsr = (dq-dqer*jcool)*von/(log(zq/zot10)-psit_30(zq/L10))
 
-! parametrisation for Charney parameter (section 3c of Fairall et al. 2003)
-    charn=0.011_R8
-    if (ut .GT. 10.0_R8) then
-      charn=0.011_R8+(ut-10.0_R8)/(18.0_R8-10.0_R8)*(0.018_R8-0.011_R8)
-    endif
-    if (ut .GT. 18.0_R8) then
-      charn=0.018_R8
+    if (wav_atm_coup .eq. 'two') then
+       charn = charnsea !use Charnock coefficient from active wave model (Janssen 1989, 1991)
+    else
+       ! parametrisation for Charney parameter (section 3c of Fairall et al. 2003)
+       charn=0.011_R8
+       if (ut .GT. 10.0_R8) then
+          charn=0.011_R8+(ut-10.0_R8)/(18.0_R8-10.0_R8)*(0.018_R8-0.011_R8)
+       endif
+       if (ut .GT. 18.0_R8) then
+         charn=0.018_R8
+       endif
     endif
 
     if (present(wsresp) .and. present(tau_est)) prev_tau = tau_est
