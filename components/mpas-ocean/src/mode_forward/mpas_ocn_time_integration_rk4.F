@@ -1235,12 +1235,12 @@ module ocn_time_integration_rk4
 
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocityCur, 1)
       call mpas_pool_get_array(statePool, 'layerThickness', layerThicknessCur, 1)
-      call mpas_pool_get_array(statePool, 'ssh', sshProvis, 1)
       call mpas_pool_get_array(statePool, 'lowFreqDivergence', lowFreqDivergenceCur, 1)
 
       call mpas_pool_get_array(provisStatePool, 'normalVelocity', normalVelocityProvis, 1)
       call mpas_pool_get_array(provisStatePool, 'layerThickness', layerThicknessProvis, 1)
       call mpas_pool_get_array(provisStatePool, 'lowFreqDivergence', lowFreqDivergenceProvis, 1)
+      call mpas_pool_get_array(provisStatePool, 'ssh', sshProvis, 1)
 
       call mpas_pool_get_array(tendPool, 'normalVelocity', normalVelocityTend)
       call mpas_pool_get_array(tendPool, 'layerThickness', layerThicknessTend)
