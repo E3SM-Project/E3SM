@@ -1739,7 +1739,8 @@ module ocn_time_integration_rk4
       !$acc             surfaceFluxAttenuationCoefficientRunoff)
 #endif
 
-      call ocn_vmix_implicit(dt, meshPool, statePool, forcingPool, scratchPool, err, 2)
+! mrp Omega-0 comparison turn off vmix:
+!     call ocn_vmix_implicit(dt, meshPool, statePool, forcingPool, scratchPool, err, 2)
 
    end subroutine ocn_time_integrator_rk4_cleanup!}}}
 
