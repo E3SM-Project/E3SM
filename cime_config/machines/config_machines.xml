@@ -3240,10 +3240,8 @@
     <BATCH_SYSTEM>pbspro</BATCH_SYSTEM>
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>208</MAX_TASKS_PER_NODE>
-    <MAX_TASKS_PER_NODE compiler="oneapi-ifx">208</MAX_TASKS_PER_NODE>
-    <MAX_TASKS_PER_NODE compiler="oneapi-ifxgpu">104</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="oneapi-ifxgpu">96</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>104</MAX_MPITASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE compiler="oneapi-ifx">104</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="oneapi-ifxgpu">48</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
@@ -3268,10 +3266,10 @@
           <command name="load">cmake</command>
         </modules>
         <modules compiler="!gnu">
-          <command name="load">oneapi/eng-compiler/2024.04.15.002</command>
+          <command name="load">oneapi/eng-compiler/2024.07.30.002</command>
         </modules>
         <modules compiler="oneapi-ifxgpu">
-          <command name="load">kokkos/git.7ff87a5-omp-sycl</command>
+          <command name="load">kokkos/4.4.01-omp-sycl</command>
         </modules>
         <modules compiler="gnu">
            <command name="unload">spack cmake</command>
@@ -3281,10 +3279,10 @@
      <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
      <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
      <environment_variables>
-        <env name="NETCDF_PATH">/lus/gila/projects/CSC249ADSE15_CNDA/software/oneAPI.2022.12.30.003/netcdf</env>
-        <env name="PNETCDF_PATH">/lus/gila/projects/CSC249ADSE15_CNDA/software/oneAPI.2022.12.30.003/pnetcdf</env>
-        <env name="LD_LIBRARY_PATH">/lus/gila/projects/CSC249ADSE15_CNDA/software/oneAPI.2022.12.30.003/netcdf/lib:$ENV{LD_LIBRARY_PATH}</env>
-        <env name="PATH">/lus/gila/projects/CSC249ADSE15_CNDA/software/oneAPI.2022.12.30.003/netcdf/bin:$ENV{PATH}</env>
+        <env name="NETCDF_PATH">/lus/gila/projects/CSC249ADSE15_CNDA/soft/netcdf/4.9.2c-4.6.1f/oneapi.eng.2024.07.30.002</env>
+        <env name="PNETCDF_PATH">/lus/gila/projects/CSC249ADSE15_CNDA/soft/pnetcdf/1.14.0/oneapi.eng.2024.07.30.002</env>
+        <env name="LD_LIBRARY_PATH">/lus/gila/projects/CSC249ADSE15_CNDA/soft/pnetcdf/1.14.0/oneapi.eng.2024.07.30.002/lib:/lus/gila/projects/CSC249ADSE15_CNDA/soft/netcdf/4.9.2c-4.6.1f/oneapi.eng.2024.07.30.002/lib:$ENV{LD_LIBRARY_PATH}</env>
+        <env name="PATH">/lus/gila/projects/CSC249ADSE15_CNDA/soft/pnetcdf/1.14.0/oneapi.eng.2024.07.30.002/bin:/lus/gila/projects/CSC249ADSE15_CNDA/soft/netcdf/4.9.2c-4.6.1f/oneapi.eng.2024.07.30.002/bin:$ENV{PATH}</env>
      </environment_variables>
      <environment_variables mpilib="mpich" DEBUG="TRUE">
         <env name="HYDRA_TOPO_DEBUG">1</env>
@@ -3303,7 +3301,7 @@
         <env name="FI_CXI_CQ_FILL_PERCENT">20</env>
         <env name="Kokkos_ROOT">$ENV{KOKKOS_ROOT}</env>
         <env name="ZES_ENABLE_SYSMAN">1</env>
-        <env name="ZEX_NUMBER_OF_CCS">0:4,1:4,2:4,3:4:4:4,5:4,6:4,7:4</env>
+        <env name="ZEX_NUMBER_OF_CCS">0:4,1:4,2:4,3:4:4:4,5:4,6:4,7:4,8:4,9:4,10:4,11:4</env>
     </environment_variables>
     <environment_variables compiler="oneapi-ifx">
         <env name="LIBOMPTARGET_DEBUG">0</env><!--default 0, max 5 -->
@@ -3332,22 +3330,22 @@
     <OS>LINUX</OS>
     <COMPILERS>oneapi-ifx,oneapi-ifxgpu,gnu</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
-    <CHARGE_ACCOUNT>CSC249ADSE15_CNDA</CHARGE_ACCOUNT>
-    <SAVE_TIMING_DIR>/lus/flare/projects/CSC249ADSE15_CNDA/performance_archive</SAVE_TIMING_DIR>
+    <PROJECT>E3SM_Dec</PROJECT>
+    <SAVE_TIMING_DIR>/lus/flare/projects/E3SM_Dec/performance_archive</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
-    <CIME_OUTPUT_ROOT>/lus/flare/projects/CSC249ADSE15_CNDA/$USER/scratch</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/lus/flare/projects/CSC249ADSE15_CNDA/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/lus/flare/projects/CSC249ADSE15_CNDA/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <CIME_OUTPUT_ROOT>/lus/flare/projects/$PROJECT/$USER/scratch</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/lus/flare/projects/E3SM_Dec/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/lus/flare/projects/E3SM_Dec/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/lus/flare/projects/CSC249ADSE15_CNDA/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/lus/flare/projects/CSC249ADSE15_CNDA/tools/cprnc/cprnc</CCSM_CPRNC>
+    <BASELINE_ROOT>/lus/flare/projects/E3SM_Dec/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/lus/flare/projects/E3SM_Dec/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>16</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
     <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
     <BATCH_SYSTEM>pbspro</BATCH_SYSTEM>
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>208</MAX_TASKS_PER_NODE>
-    <MAX_TASKS_PER_NODE compiler="oneapi-ifxgpu">104</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="oneapi-ifxgpu">96</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>104</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="oneapi-ifxgpu">48</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
@@ -3363,20 +3361,20 @@
        </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
-       <init_path lang="sh">/lus/flare/projects/CSC249ADSE15_CNDA/modules/lmod.sh</init_path>
-       <init_path lang="csh">/soft/sunspot_migrate/soft/packaging/lmod/lmod/init/csh</init_path>
-       <init_path lang="python">/soft/sunspot_migrate/soft/packaging/lmod/lmod/init/env_modules_python.py</init_path>
+       <init_path lang="sh">/usr/share/lmod/lmod/init/sh</init_path>
+       <init_path lang="csh">/usr/share/lmod/lmod/init/csh</init_path>
+       <init_path lang="python">/usr/share/lmod/lmod/init/env_modules_python.py</init_path>
        <cmd_path lang="sh">module</cmd_path>
        <cmd_path lang="csh">module</cmd_path>
-       <cmd_path lang="python">/soft/sunspot_migrate/soft/packaging/lmod/lmod/libexec/lmod python</cmd_path>
+       <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
        <modules>
           <command name="load">cmake</command>
         </modules>
         <modules compiler="!gnu">
-          <command name="load">oneapi/eng-compiler/2024.04.15.002</command>
+          <command name="load">oneapi/eng-compiler/2024.07.30.002</command>
         </modules>
         <modules compiler="oneapi-ifxgpu">
-          <command name="load">kokkos/git.7ff87a5-omp-sycl</command>
+          <command name="load">kokkos/4.4.01-omp-sycl</command>
         </modules>
         <modules compiler="gnu">
            <command name="unload">spack-pe-gcc cmake</command>
@@ -3386,11 +3384,10 @@
      <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
      <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
      <environment_variables>
-        <env name="NETCDF_C_PATH">/lus/flare/projects/CSC249ADSE15_CNDA/software/netcdf-c/4.9.2/oneapi.eng.2024.04.15.002</env>
-        <env name="NETCDF_FORTRAN_PATH">/lus/flare/projects/CSC249ADSE15_CNDA/software/netcdf-fortran/4.6.1/oneapi.eng.2024.04.15.002</env>
-        <env name="PNETCDF_PATH">/lus/flare/projects/CSC249ADSE15_CNDA/software/pnetcdf/1.12.3/oneapi.eng.2024.04.15.002</env>
-        <env name="LD_LIBRARY_PATH">/lus/flare/projects/CSC249ADSE15_CNDA/software/pnetcdf/1.12.3/oneapi.eng.2024.04.15.002/lib:/lus/flare/projects/CSC249ADSE15_CNDA/software/netcdf-fortran/4.6.1/oneapi.eng.2024.04.15.002/lib:/lus/flare/projects/CSC249ADSE15_CNDA/software/netcdf-c/4.9.2/oneapi.eng.2024.04.15.002/lib:$ENV{LD_LIBRARY_PATH}</env>
-        <env name="PATH">/lus/flare/projects/CSC249ADSE15_CNDA/software/pnetcdf/1.12.3/oneapi.eng.2024.04.15.002/bin:/lus/flare/projects/CSC249ADSE15_CNDA/software/netcdf-fortran/4.6.1/oneapi.eng.2024.04.15.002/bin:/lus/flare/projects/CSC249ADSE15_CNDA/software/netcdf-c/4.9.2/oneapi.eng.2024.04.15.002/bin:$ENV{PATH}</env>
+        <env name="NETCDF_PATH">/lus/flare/projects/E3SM_Dec/soft/netcdf/4.9.2c-4.6.1f/oneapi.eng.2024.07.30.002</env>
+        <env name="PNETCDF_PATH">/lus/flare/projects/E3SM_Dec/soft/pnetcdf/1.14.0/oneapi.eng.2024.07.30.002</env>
+        <env name="LD_LIBRARY_PATH">/lus/flare/projects/E3SM_Dec/soft/pnetcdf/1.14.0/oneapi.eng.2024.07.30.002/lib:/lus/flare/projects/E3SM_Dec/soft/netcdf/4.9.2c-4.6.1f/oneapi.eng.2024.07.30.002/lib:$ENV{LD_LIBRARY_PATH}</env>
+        <env name="PATH">/lus/flare/projects/E3SM_Dec/soft/pnetcdf/1.14.0/oneapi.eng.2024.07.30.002/bin:/lus/flare/projects/E3SM_Dec/soft/netcdf/4.9.2c-4.6.1f/oneapi.eng.2024.07.30.002/bin:$ENV{PATH}</env>
      </environment_variables>
      <environment_variables DEBUG="TRUE">
         <env name="HYDRA_TOPO_DEBUG">1</env>
@@ -3409,7 +3406,7 @@
         <env name="FI_CXI_CQ_FILL_PERCENT">20</env>
         <env name="Kokkos_ROOT">$ENV{KOKKOS_ROOT}</env>
         <env name="ZES_ENABLE_SYSMAN">1</env>
-        <env name="ZEX_NUMBER_OF_CCS">0:4,1:4,2:4,3:4:4:4,5:4,6:4,7:4</env>
+        <env name="ZEX_NUMBER_OF_CCS">0:4,1:4,2:4,3:4:4:4,5:4,6:4,7:4,8:4,9:4,10:4,11:4</env>
     </environment_variables>
     <environment_variables compiler="oneapi-ifx">
         <env name="LIBOMPTARGET_DEBUG">0</env><!--default 0, max 5 -->
