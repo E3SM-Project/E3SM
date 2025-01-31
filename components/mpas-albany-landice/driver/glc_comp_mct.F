@@ -696,6 +696,11 @@ contains
 !        block_ptr => block_ptr % next
 !    end do
 
+! initialize ocean z-levels, if necessary
+! these are used for ocean thermal forcing coupling
+    call init_ocean_z_levels(domain)
+
+
 !-----------------------------------------------------------------------
 !
 !   Calculate initial state in MALI (velocity, upperSurface, masks, etc.)
@@ -1736,6 +1741,55 @@ contains
        ctime(7:8) = time(5:6)
 
     end subroutine datetime!}}}
+
+    subroutine init_ocean_z_levels(domain, err)
+       use glc_zocnclass_mod
+
+       implicit none
+       type (domain_type), pointer, intent(inout) :: domain
+       integer, intent(out) :: err
+
+       ! local vars
+       type (block_type), pointer :: block_ptr
+       type (mpas_pool_type), pointer :: geometryPool
+       integer, pointer :: nISMIP6OceanLayers
+       real (kind=RKIND), dimension(:), pointer :: ismip6shelfMelt_zOcean
+       real (kind=RKIND), dimension(:,:), pointer :: ismip6shelfMelt_zBndsOcean
+       integer :: cpl_num_zocn
+
+       block_ptr => domain % blocklist
+       do while(associated(block_ptr))
+          call mpas_pool_get_subpool(block_ptr % structs, 'geometry', geometryPool)
+          call mpas_pool_get_dimension(geometryPool, 'nISMIP6OceanLayers', nISMIP6OceanLayers)
+          if (nISMIP6OceanLayers > 0) then
+             call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zOcean', ismip6shelfMelt_zOcean)
+             call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zBndsOcean', ismip6shelfMelt_zBndsOcean)
+
+             cpl_num_zocn = glc_get_num_zocn_classes()
+
+             ! check that the num z-levels in the coupler matches what MALI was told to use
+             if (nISMIP6OceanLayers /= cpl_num_zocn) then
+                call mpas_log_write("nISMIP6OceanLayers=$i does not match glc_get_num_zocn_classes=$i", &
+                                    MPAS_LOG_ERR, intArgs=(/nISMIP6OceanLayers, cpl_num_zocn/))
+                err = ior(err, 1)
+             endif
+
+             ismip6shelfMelt_zOcean = glc_get_zlevels()
+             ismip6shelfMelt_zBndsOcean = glc_get_zocnclass_bounds()
+
+             call mpas_log_write("Using $i levels for ismip6shelfMelt_zOcean", intArgs=(/nISMIP6OceanLayers/))
+             call mpas_log_write("-- Shallowest z-level: ind=$i, upper=$r, mid=$r, lower=$r", intArgs=(/1/), &
+                  realArgs=(/ismip6shelfMelt_zBndsOcean(1,1), ismip6shelfMelt_zOcean(1), ismip6shelfMelt_zBndsOcean(1,2)/))
+             call mpas_log_write("-- Deepest z-level: ind=$i, upper=$r, mid=$r, lower=$r", intArgs=(/nISMIP6OceanLayers/), &
+                  realArgs=(/ismip6shelfMelt_zBndsOcean(nISMIP6OceanLayers,1), &
+                             ismip6shelfMelt_zOcean(nISMIP6OceanLayers), &
+                             ismip6shelfMelt_zBndsOcean(nISMIP6OceanLayers,2)/))
+          endif
+
+          block_ptr => block_ptr % next
+       end do
+    end subroutine init_ocean_z_levels
+
 
 end module glc_comp_mct
 
