@@ -406,12 +406,9 @@ void MAMOptics::run_impl(const double dt) {
         auto odap_aer_icol = ekat::subview(aero_tau_lw, icol);
         const auto atm     = mam_coupling::atmosphere_for_column(dry_atm, icol);
 
-        // FIXME: interface pressure [Pa]
-        auto pint = ekat::subview(dry_atm.p_int, icol);
         // FIXME: dry mass pressure interval [Pa]
         auto zi      = ekat::subview(dry_atm.z_iface, icol);
         auto pdel    = ekat::subview(p_del, icol);
-        auto pdeldry = ekat::subview(dry_atm.p_del, icol);
 
         auto ssa_cmip6_sw_icol = ekat::subview(ssa_cmip6_sw, icol);
         auto af_cmip6_sw_icol  = ekat::subview(af_cmip6_sw, icol);
@@ -437,13 +434,13 @@ void MAMOptics::run_impl(const double dt) {
             mam_coupling::aerosols_for_column(dry_aero, icol);
 
         mam4::aer_rad_props::aer_rad_props_sw(
-            team, dt, progs, atm, zi, pint, pdel, pdeldry, ssa_cmip6_sw_icol,
+            team, dt, progs, atm, zi, pdel, ssa_cmip6_sw_icol,
             af_cmip6_sw_icol, ext_cmip6_sw_icol, tau_icol, tau_w_icol,
             tau_w_g_icol, tau_w_f_icol, aerosol_optics_device_data, aodvis(icol), work_icol);
 
         team.team_barrier();
         mam4::aer_rad_props::aer_rad_props_lw(
-            team, dt, progs, atm, pint, zi, pdel, pdeldry, ext_cmip6_lw_icol,
+            team, dt, progs, atm, zi, pdel, ext_cmip6_lw_icol,
             aerosol_optics_device_data, odap_aer_icol);
       });
   Kokkos::fence();
