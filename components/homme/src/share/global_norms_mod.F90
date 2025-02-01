@@ -5,7 +5,6 @@
 module global_norms_mod
 
   use kinds, only : iulog
-  use edgetype_mod, only : EdgeBuffer_t
 
   implicit none
   private
@@ -25,7 +24,6 @@ module global_norms_mod
   public :: wrap_repro_sum
 
   private :: global_maximum
-  type (EdgeBuffer_t), private :: edgebuf
 
 contains
 
@@ -111,9 +109,6 @@ contains
     use reduction_mod, only : ParallelMin,ParallelMax
     use physical_constants, only : scale_factor,dd_pi
     use parallel_mod, only : abortmp, global_shared_buf, global_shared_sum
-    use edgetype_mod, only : EdgeBuffer_t
-    use edge_mod, only :  initedgebuffer, FreeEdgeBuffer, edgeVpack, edgeVunpack
-    use bndry_mod, only : bndry_exchangeV
     use control_mod, only : geometry
 
     type(element_t)      , intent(inout) :: elem(:)
@@ -131,7 +126,7 @@ contains
     real (kind=real_kind) :: min_min_dx, max_min_dx, avg_min_dx
     real (kind=real_kind) :: min_normDinv, max_normDinv
     real (kind=real_kind) :: min_len
-    integer :: ie,corner, i, j,nlon
+    integer :: ie, i, j
 
 
     h(:,:,nets:nete)=1.0D0
@@ -261,9 +256,6 @@ contains
                             hypervis_scaling, dcmip16_mu,dcmip16_mu_s,dcmip16_mu_q
     use control_mod, only : tstep_type
     use parallel_mod, only : abortmp, global_shared_buf, global_shared_sum
-    use edgetype_mod, only : EdgeBuffer_t 
-    use edge_mod, only : initedgebuffer, FreeEdgeBuffer, edgeVpack, edgeVunpack
-    use bndry_mod, only : bndry_exchangeV
     use time_mod, only : tstep
 
     type(element_t)      , intent(inout) :: elem(:)
@@ -276,10 +268,8 @@ contains
     real (kind=real_kind) :: max_normDinv  ! used for CFL
     real (kind=real_kind) :: min_hypervis, max_hypervis, avg_hypervis, stable_hv
     real (kind=real_kind) :: normDinv_hypervis
-    real (kind=real_kind) :: x, y, noreast, nw, se, sw
-    real (kind=real_kind), dimension(np,np,nets:nete) :: zeta
     real (kind=real_kind) :: lambda_max, lambda_vis, min_gw, lambda, nu_div_actual, nu_top_actual
-    integer :: ie,corner, i, j, rowind, colind
+    integer :: ie, i, j
     type (quadrature_t)    :: gp
 
 
@@ -326,6 +316,8 @@ contains
 
     gp=gausslobatto(np)
     min_gw = minval(gp%weights)
+    deallocate(gp%points)
+    deallocate(gp%weights)
 
     max_normDinv=0
     min_max_dx=1d99
@@ -349,58 +341,6 @@ contains
        normDinv_hypervis = (lambda_vis**2) * (scale_factor_inv*max_normDinv)**4
     endif
 
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!  TENSOR, RESOLUTION-AWARE HYPERVISCOSITY
-!  The tensorVisc() array is computed in cube_mod.F90
-!  this block of code will DSS it so the tensor if C0
-!  and also make it bilinear in each element.
-!  Oksana Guba
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   if (hypervis_scaling /= 0) then
-    call initEdgeBuffer(hybrid%par,edgebuf,elem,1)
-    do rowind=1,2
-      do colind=1,2
-	do ie=nets,nete
-	  zeta(:,:,ie) = elem(ie)%tensorVisc(:,:,rowind,colind)*elem(ie)%spheremp(:,:)
-	  call edgeVpack(edgebuf,zeta(1,1,ie),1,0,ie)
-	end do
-
-	call bndry_exchangeV(hybrid,edgebuf)
-	do ie=nets,nete
-	  call edgeVunpack(edgebuf,zeta(1,1,ie),1,0,ie)
-          elem(ie)%tensorVisc(:,:,rowind,colind) = zeta(:,:,ie)*elem(ie)%rspheremp(:,:)
-	end do
-      enddo !rowind
-    enddo !colind
-    call FreeEdgeBuffer(edgebuf)
-
-!IF BILINEAR MAP OF V NEEDED
-    do rowind=1,2
-      do colind=1,2
-    ! replace hypervis w/ bilinear based on continuous corner values
-	do ie=nets,nete
-	  noreast = elem(ie)%tensorVisc(np,np,rowind,colind)
-	  nw = elem(ie)%tensorVisc(1,np,rowind,colind)
-	  se = elem(ie)%tensorVisc(np,1,rowind,colind)
-	  sw = elem(ie)%tensorVisc(1,1,rowind,colind)
-	  do i=1,np
-	    x = gp%points(i)
-	    do j=1,np
-		y = gp%points(j)
-		elem(ie)%tensorVisc(i,j,rowind,colind) = 0.25d0*( &
-					(1.0d0-x)*(1.0d0-y)*sw + &
-					(1.0d0-x)*(y+1.0d0)*nw + &
-					(x+1.0d0)*(1.0d0-y)*se + &
-					(x+1.0d0)*(y+1.0d0)*noreast)
-	    end do
-	  end do
-	end do
-      enddo !rowind
-    enddo !colind
-    endif
-    deallocate(gp%points)
-    deallocate(gp%weights)
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -462,6 +402,8 @@ contains
     end if
 
   end subroutine print_cfl
+
+
 
   ! ================================
   ! global_maximum:

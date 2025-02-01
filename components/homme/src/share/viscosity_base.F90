@@ -37,7 +37,7 @@ public :: biharmonic_wk_scalar
 public :: neighbor_minmax_start,neighbor_minmax_finish
 public :: smooth_phis
 #endif
-
+public :: dss_hvtensor
 
 !
 ! compute vorticity/divergence and then project to make continious
@@ -64,7 +64,6 @@ public :: compute_zeta_C0_contra    ! for older versions of sweq which carry
 public :: compute_div_C0_contra     ! velocity around in contra-coordinates
 public :: compute_eta_C0_contra
 
-type (EdgeBuffer_t)          :: edge1
 
 contains
 
@@ -856,8 +855,97 @@ integer :: ie,k,q
 end subroutine
 
 
-
-
-
 #endif
+
+
+  subroutine dss_hvtensor(elem,hybrid,nets,nete)
+!
+!   estimate various CFL limits
+!   also, for variable resolution viscosity coefficient, make sure
+!   worse viscosity CFL (given by dtnu) is not violated by reducing 
+!   viscosity coefficient in regions where CFL is violated
+!
+    use kinds,       only : real_kind
+    use hybrid_mod,  only : hybrid_t
+    use element_mod, only : element_t
+    use dimensions_mod, only : np,ne
+    use quadrature_mod, only : gausslobatto, quadrature_t
+
+    use control_mod, only : hypervis_scaling
+    use edgetype_mod, only : EdgeBuffer_t 
+    use edge_mod, only : initedgebuffer, FreeEdgeBuffer, edgeVpack, edgeVunpack
+    use bndry_mod, only : bndry_exchangeV
+
+
+    type(element_t)      , intent(inout) :: elem(:)
+    integer              , intent(in) :: nets,nete
+    type (hybrid_t)      , intent(in) :: hybrid
+
+
+    real (kind=real_kind) :: x, y, noreast, nw, se, sw
+    real (kind=real_kind), dimension(np,np,nets:nete) :: zeta
+    integer :: ie,corner, i, j, rowind, colind
+    type (quadrature_t)    :: gp
+    type (EdgeBuffer_t)          :: edgebuf
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!  TENSOR, RESOLUTION-AWARE HYPERVISCOSITY
+!  The tensorVisc() array is computed in cube_mod.F90
+!  this block of code will DSS it so the tensor if C0
+!  and also make it bilinear in each element.
+!  Oksana Guba
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   if (hypervis_scaling /= 0) then
+    gp=gausslobatto(np)
+    call initEdgeBuffer(hybrid%par,edgebuf,elem,1)
+    do rowind=1,2
+      do colind=1,2
+	do ie=nets,nete
+	  zeta(:,:,ie) = elem(ie)%tensorVisc(:,:,rowind,colind)*elem(ie)%spheremp(:,:)
+	  call edgeVpack(edgebuf,zeta(1,1,ie),1,0,ie)
+	end do
+
+	call bndry_exchangeV(hybrid,edgebuf)
+	do ie=nets,nete
+	  call edgeVunpack(edgebuf,zeta(1,1,ie),1,0,ie)
+          elem(ie)%tensorVisc(:,:,rowind,colind) = zeta(:,:,ie)*elem(ie)%rspheremp(:,:)
+	end do
+      enddo !rowind
+    enddo !colind
+    call FreeEdgeBuffer(edgebuf)
+
+!IF BILINEAR MAP OF V NEEDED
+    do rowind=1,2
+      do colind=1,2
+    ! replace hypervis w/ bilinear based on continuous corner values
+	do ie=nets,nete
+	  noreast = elem(ie)%tensorVisc(np,np,rowind,colind)
+	  nw = elem(ie)%tensorVisc(1,np,rowind,colind)
+	  se = elem(ie)%tensorVisc(np,1,rowind,colind)
+	  sw = elem(ie)%tensorVisc(1,1,rowind,colind)
+	  do i=1,np
+	    x = gp%points(i)
+	    do j=1,np
+		y = gp%points(j)
+		elem(ie)%tensorVisc(i,j,rowind,colind) = 0.25d0*( &
+					(1.0d0-x)*(1.0d0-y)*sw + &
+					(1.0d0-x)*(y+1.0d0)*nw + &
+					(x+1.0d0)*(1.0d0-y)*se + &
+					(x+1.0d0)*(y+1.0d0)*noreast)
+	    end do
+	  end do
+	end do
+      enddo !rowind
+    enddo !colind
+    deallocate(gp%points)
+    deallocate(gp%weights)
+    endif
+  end subroutine dss_hvtensor
+
+
+
+
+
+
+
 end module viscosity_base

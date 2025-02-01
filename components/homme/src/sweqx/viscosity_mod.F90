@@ -5,7 +5,7 @@
 module viscosity_mod
   use viscosity_base, only: compute_zeta_C0, compute_div_C0, &
     compute_zeta_C0_contra, compute_eta_C0_contra, compute_div_C0_contra, make_c0, neighbor_minmax, &
-    make_c0_vector
+    make_c0_vector, dss_hvtensor
 
 use dimensions_mod, only : np, nlev,qsize,nelemd
 use hybrid_mod, only : hybrid_t
@@ -23,6 +23,7 @@ use physical_constants, only : g
 implicit none
 
 public :: compute_pv_C0_contra
+public :: dss_hvtensor
 
 contains
 
