@@ -964,7 +964,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
        if (.not. do_clubb_sgs .and. .not. do_shoc_sgs) call macrop_driver_init(pbuf2d)
        call microp_aero_init()
        call microp_driver_init(pbuf2d)
-       call conv_water_init
+       call conv_water_init(pbuf2d)
     end if
 
     ! initiate CLUBB within CAM
