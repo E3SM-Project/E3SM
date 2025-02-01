@@ -198,15 +198,17 @@ P3MainPart3Data::P3MainPart3Data(
 ///////////////////////////////////////////////////////////////////////////////
 
 P3MainData::P3MainData(
-  Int its_, Int ite_, Int kts_, Int kte_, Int it_, Real dt_, bool do_predict_nc_, bool do_prescribed_CCN_, Real) :
+  Int its_, Int ite_, Int kts_, Int kte_, Int it_, Real dt_, bool do_predict_nc_, bool do_prescribed_CCN_, bool use_hetfrz_classnuc_, Real) :
   PhysicsTestData( { {(ite_ - its_) + 1, (kte_ - kts_) + 1}, {(ite_ - its_) + 1, (kte_ - kts_) + 2} }, { {
     &pres, &dz, &nc_nuceat_tend, &nccn_prescribed, &ni_activated, &dpres, &inv_exner, &cld_frac_i, &cld_frac_l, &cld_frac_r,
-    &inv_qc_relvar, &qc, &nc, &qr, &nr, &qi, &qm, &ni, &bm, &qv, &th_atm, &qv_prev, &t_prev,
+    &inv_qc_relvar, &qc, &nc, &qr, &nr, &qi, &qm, &ni, &bm, &qv, &th_atm, &qv_prev, &t_prev, &hetfrz_immersion_nucleation_tend,
+    &hetfrz_contact_nucleation_tend, &hetfrz_deposition_nucleation_tend,
     &diag_eff_radius_qc, &diag_eff_radius_qi, &diag_eff_radius_qr, &rho_qi, &mu_c, &lamc, &qv2qi_depos_tend, &precip_total_tend, &nevapr,
     &qr_evap_tend, &liq_ice_exchange, &vap_liq_exchange, &vap_ice_exchange, &precip_liq_flux,
     &precip_ice_flux},
     {&precip_liq_surf, &precip_ice_surf} }), // these two are (ni, nk+1)
-  its(its_), ite(ite_), kts(kts_), kte(kte_), it(it_), dt(dt_), do_predict_nc(do_predict_nc_), do_prescribed_CCN(do_prescribed_CCN_)
+  its(its_), ite(ite_), kts(kts_), kte(kte_), it(it_), dt(dt_), do_predict_nc(do_predict_nc_), do_prescribed_CCN(do_prescribed_CCN_),
+  use_hetfrz_classnuc(use_hetfrz_classnuc_)
 {}
 
 void IceSupersatConservationData::randomize(std::mt19937_64& engine)
@@ -1433,8 +1435,8 @@ Int p3_main_host(
     liq_ice_exchange_d, vap_liq_exchange_d, vap_ice_exchange_d,
     precip_liq_flux_d, precip_ice_flux_d, precip_liq_surf_temp_d, precip_ice_surf_temp_d
   };
-  std::vector<size_t> dim1_sizes_out(P3MainData::NUM_ARRAYS - 13, nj);
-  std::vector<size_t> dim2_sizes_out(P3MainData::NUM_ARRAYS - 13, nk);
+  std::vector<size_t> dim1_sizes_out(P3MainData::NUM_ARRAYS - 16, nj);
+  std::vector<size_t> dim2_sizes_out(P3MainData::NUM_ARRAYS - 16, nk);
   int dim_sizes_out_len = dim1_sizes_out.size();
   dim2_sizes_out[dim_sizes_out_len-4] = nk+1; // precip_liq_flux
   dim2_sizes_out[dim_sizes_out_len-3] = nk+1; // precip_ice_flux

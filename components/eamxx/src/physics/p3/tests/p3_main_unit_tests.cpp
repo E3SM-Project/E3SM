@@ -395,9 +395,9 @@ void run_bfb_p3_main()
   auto engine = Base::get_engine();
 
   P3MainData isds_baseline[] = {
-    //      its, ite, kts, kte,   it,        dt, do_predict_nc, do_prescribed_CCN
-    P3MainData(1, 10,   1,  72,    1, 1.800E+03, false, true),
-    P3MainData(1, 10,   1,  72,    1, 1.800E+03, true,  false),
+    //      its, ite, kts, kte,   it,        dt, do_predict_nc, do_prescribed_CCN, use_hetfrz_classnuc
+    P3MainData(1, 10,   1,  72,    1, 1.800E+03, false, true, true, 0),
+    P3MainData(1, 10,   1,  72,    1, 1.800E+03, true,  false, false, 0),
   };
 
   static constexpr Int num_runs = sizeof(isds_baseline) / sizeof(P3MainData);
