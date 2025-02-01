@@ -59,7 +59,7 @@ register_field (const Field& src, const Field& tgt)
   ++m_num_fields;
 }
 
-void AbstractRemapper::
+Field AbstractRemapper::
 register_field_from_src (const Field& src) {
   const auto& src_fid = src.get_header().get_identifier();
   const auto& tgt_fid = create_tgt_fid(src_fid);
@@ -71,9 +71,11 @@ register_field_from_src (const Field& src) {
   tgt.allocate_view();
 
   register_field(src,tgt);
+
+  return tgt;
 }
 
-void AbstractRemapper::
+Field AbstractRemapper::
 register_field_from_tgt (const Field& tgt) {
   const auto& tgt_fid = tgt.get_header().get_identifier();
   const auto& src_fid = create_src_fid(tgt_fid);
@@ -85,6 +87,8 @@ register_field_from_tgt (const Field& tgt) {
   src.allocate_view();
 
   register_field(src,tgt);
+
+  return src;
 }
 
 void AbstractRemapper::registration_ends ()

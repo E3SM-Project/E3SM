@@ -40,8 +40,8 @@ public:
   void register_field (const Field& src, const Field& tgt);
 
   // Like the above, but create tgt/src internally
-  virtual void register_field_from_src (const Field& src);
-  virtual void register_field_from_tgt (const Field& tgt);
+  virtual Field register_field_from_src (const Field& src);
+  virtual Field register_field_from_tgt (const Field& tgt);
 
   // Call this to indicate that field registration is complete.
   void registration_ends ();
