@@ -3,6 +3,7 @@
 #include "p3_test_data.hpp"
 #include "physics_constants.hpp"
 #include "p3_ic_cases.hpp"
+#include <iostream>
 
 #include "ekat/ekat_assert.hpp"
 
@@ -37,12 +38,15 @@ int test_p3_init () {
 
 int test_p3_ic () {
   using P3F = Functions<Real, DefaultDevice>;
-
+  std::cout<<"BALLI"<<std::endl;
   const auto d = ic::Factory::create(ic::Factory::mixed);
-
+  std::cout<<"BALLI2"<<std::endl;
   d->dt = 300.0;
+    std::cout<<"BALLI3"<<std::endl;
   P3F::p3_init();
+    std::cout<<"BALLI4"<<std::endl;
   p3_main_wrap(*d);
+    std::cout<<"BALLI5"<<std::endl;
   return 0;
 }
 

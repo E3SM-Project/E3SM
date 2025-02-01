@@ -28,7 +28,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation : public UnitWrap::UnitTest<D>:
 
     using KTH = KokkosTypes<HostDevice>;
 
-    CloudWaterConservationData cwdc[1] = {{sp(1e-5), sp(1.1), sp(1e-4), 0.0, 0.0, 0.0, 0.0, 0.0, sp(1.0), sp(1.0), sp(1.0), sp(1.0), true, true}};
+    CloudWaterConservationData cwdc[1] = {{sp(1e-5), sp(1.1), sp(1e-4), 0.0, 0.0, 0.0, 0.0, 0.0, sp(1.0), sp(1.0), sp(1.0), sp(1.0), false, true}};
 
     // Sync to device
     KTH::view_1d<CloudWaterConservationData> cwdc_host("cwdc_host", 1);
@@ -140,7 +140,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation : public UnitWrap::UnitTest<D>:
   void ice_water_conservation_tests_device() {
     using KTH = KokkosTypes<HostDevice>;
 
-    IceWaterConservationData iwdc[1] = {{sp(1e-5), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, sp(1.1), sp(1e-4), 0.0, 0.0, true, true}};
+    IceWaterConservationData iwdc[1] = {{sp(1e-5), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, sp(1.1), sp(1e-4), 0.0, 0.0, false, false}};
 
     // Sync to device
     KTH::view_1d<IceWaterConservationData> iwdc_host("iwdc_host", 1);

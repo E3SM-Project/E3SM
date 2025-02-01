@@ -7,7 +7,7 @@
 #include "p3_test_data.hpp"
 
 #include "p3_unit_tests_common.hpp"
-
+#include<iostream>
 #include <thread>
 #include <array>
 #include <algorithm>
@@ -395,14 +395,15 @@ void run_bfb_p3_main()
   auto engine = Base::get_engine();
 
   P3MainData isds_baseline[] = {
-    //      its, ite, kts, kte,   it,        dt, do_predict_nc, do_prescribed_CCN
-    P3MainData(1, 10,   1,  72,    1, 1.800E+03, false, true),
-    P3MainData(1, 10,   1,  72,    1, 1.800E+03, true,  false),
+    //      its, ite, kts, kte,   it,        dt, do_predict_nc, do_prescribed_CCN, use_hetfrz_classnuc
+    P3MainData(1, 10,   1,  72,    1, 1.800E+03, false, true, true, 0),
+    P3MainData(1, 10,   1,  72,    1, 1.800E+03, true,  false, false, 0),
   };
 
   static constexpr Int num_runs = sizeof(isds_baseline) / sizeof(P3MainData);
-
+  std::cout<<"BALLI_z"<<std::endl;
   for (auto& d : isds_baseline) {
+      std::cout<<"BALLI_z_in"<<std::endl;
     d.randomize(engine, {
         {d.pres           , {1.00000000E+02 , 9.87111111E+04}},
         {d.dz             , {1.22776609E+02 , 3.49039167E+04}},
@@ -427,12 +428,13 @@ void run_bfb_p3_main()
         {d.qv_prev        , {0              , 5.00000000E-02}},
         {d.th_atm         , {6.72653866E+02 , 1.07954335E+03}}, //PMC - this range seems insane
         {d.t_prev         , {1.50000000E+02 , 3.50000000E+02}},
+        {d.t_prev         , {1.50000000E+02 , 3.50000000E+02}},
         {d.hetfrz_immersion_nucleation_tend         , {1.50000000E-02 , 3.50000000E-02}},
         {d.hetfrz_contact_nucleation_tend           , {1.50000000E-02 , 3.50000000E-02}},
         {d.hetfrz_deposition_nucleation_tend        , {1.50000000E-02 , 3.50000000E-02}},
     });
   }
-
+  std::cout<<"BALLI_y"<<std::endl;
   // Create copies of data for use by cxx. Needs to happen before reads so that
   // inout data is in original state
   P3MainData isds_cxx[num_runs] = {
@@ -508,10 +510,15 @@ void run_bfb_p3_main()
 
 void run_bfb()
 {
+  std::cout<<"BALLI_a"<<std::endl;
   run_bfb_p3_main_part1();
+  std::cout<<"BALLI_b"<<std::endl;
   run_bfb_p3_main_part2();
+  std::cout<<"BALLI_c"<<std::endl;
   run_bfb_p3_main_part3();
+  std::cout<<"BALLI_d"<<std::endl;
   run_bfb_p3_main();
+  std::cout<<"BALLI_f"<<std::endl;
 }
 
 };
@@ -524,11 +531,15 @@ namespace {
 
 TEST_CASE("p3_main", "[p3_functions]")
 {
+  std::cout<<"BALLI_0"<<std::endl;
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3Main;
-
+std::cout<<"BALLI_01"<<std::endl;
   T t;
+  std::cout<<"BALLI_1"<<std::endl;
   t.run_phys();
+  std::cout<<"BALLI_2"<<std::endl;
   t.run_bfb();
+  std::cout<<"BALLI_3"<<std::endl;
 }
 
 } // namespace

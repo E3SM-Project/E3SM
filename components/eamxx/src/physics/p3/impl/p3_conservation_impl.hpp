@@ -19,8 +19,8 @@ void Functions<S,D>
   Spack sinks;
   if(use_hetfrz_classnuc){
     sinks = (qc2qr_autoconv_tend+qc2qr_accret_tend+qc2qi_collect_tend+qcheti_cnt+qc2qr_ice_shed_tend+qc2qi_berg_tend)*dt; // Sinks of cloud water
-  }
-  else{
+    }
+    else{
     sinks = (qc2qr_autoconv_tend+qc2qr_accret_tend+qc2qi_collect_tend+qc2qi_hetero_freeze_tend+qc2qr_ice_shed_tend+qc2qi_berg_tend)*dt; // Sinks of cloud water
   }
   const auto sources = qc; // Source of cloud water
@@ -41,7 +41,7 @@ void Functions<S,D>
     }
     else{
       qc2qi_hetero_freeze_tend.set(enforce_conservation, qc2qi_hetero_freeze_tend*ratio);
-    }
+       }
     qc2qr_ice_shed_tend.set(enforce_conservation, qc2qr_ice_shed_tend*ratio);
     qc2qi_berg_tend.set(enforce_conservation, qc2qi_berg_tend*ratio);
   }

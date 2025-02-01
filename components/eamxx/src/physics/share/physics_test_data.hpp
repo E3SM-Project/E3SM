@@ -345,13 +345,16 @@ class PhysicsTestData
     m_bools.randomize(engine, default_bool_dist);
 
     // override defaults if user requested something specific
+    int ib = 0;
     for (const auto& p : ranges) {
+      std::cout<<"BALLI_z_in_1:"<<ib<<std::endl;
+      ib++;
       const auto& range = p.second;
       const Real bottom_range = range.first;
       const Real top_range    = range.second;
       EKAT_REQUIRE_MSG(bottom_range <= top_range, "Expect bottom of range <= top of range");
       void* member = p.first;
-
+      //std::cout<<"BALLI_z_in_2:"<<p.first<<std::endl;
       const auto real_search = get_index(reinterpret_cast<Real*>(member));
       if (real_search.first != std::string::npos) {
         std::uniform_real_distribution<Real> real_dist(range.first, range.second);

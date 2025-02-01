@@ -2,7 +2,7 @@
 #include "p3_data.hpp"
 #include "p3_main_wrap.hpp"
 #include "p3_ic_cases.hpp"
-
+#include <iostream>
 namespace {
 
 TEST_CASE("P3Data", "p3") {
@@ -31,6 +31,7 @@ TEST_CASE("p3_init", "p3") {
 
 TEST_CASE("p3_ic_c", "p3") {
   int nerr = scream::p3::test_p3_ic();
+  std::cout<<"BALLI:"<<nerr<<std::endl;
   REQUIRE(nerr == 0);
 }
 

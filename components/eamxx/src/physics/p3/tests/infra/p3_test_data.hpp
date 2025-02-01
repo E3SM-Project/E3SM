@@ -757,9 +757,9 @@ struct P3MainData : public PhysicsTestData
        *precip_liq_flux, *precip_ice_flux, *precip_liq_surf, *precip_ice_surf;
   Real elapsed_s;
 
-  P3MainData(Int its_, Int ite_, Int kts_, Int kte_, Int it_, Real dt_, bool do_predict_nc_, bool do_prescribed_CCN_, Real=0.);
+  P3MainData(Int its_, Int ite_, Int kts_, Int kte_, Int it_, Real dt_, bool do_predict_nc_, bool do_prescribed_CCN_, bool=false, Real=0.);
 
-  PTD_STD_DEF(P3MainData, 9, its, ite, kts, kte, it, dt, do_predict_nc, do_prescribed_CCN, elapsed_s);
+  PTD_STD_DEF(P3MainData, 10, its, ite, kts, kte, it, dt, do_predict_nc, do_prescribed_CCN, use_hetfrz_classnuc, elapsed_s);
 };
 
 struct IceSupersatConservationData {
