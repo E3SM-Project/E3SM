@@ -137,7 +137,7 @@ public:
   // Main Functions
   void restart (const std::string& filename);
   void init();
-  void reset_dev_views();
+  void reset_scorpio_fields();
   void update_avg_cnt_view(const Field&, view_1d_dev& dev_view);
   void setup_output_file (const std::string& filename, const std::string& fp_precision, const scorpio::FileMode mode);
 
@@ -159,14 +159,17 @@ public:
   }
 
 protected:
+  enum Phase {
+    FromModel,
+    AfterVRemap,
+    AfterHRemap,
+    Scorpio
+  };
+
   // Internal functions
-  void set_grid (const std::shared_ptr<const AbstractGrid>& grid);
-  void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr, const std::string& mode);
-  void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr, const std::vector<std::string>& modes);
+  void set_io_grid (const std::shared_ptr<const AbstractGrid>& grid);
 
-  std::shared_ptr<const fm_type> get_field_manager (const std::string& mode) const;
-
-  void register_dimensions(const std::string& name);
+  void register_dimensions(const FieldIdentifier& fid);
   void register_variables(const std::string& filename, const std::string& fp_precision, const scorpio::FileMode mode);
   void set_decompositions(const std::string& filename);
   std::vector<scorpio::offset_t> get_var_dof_offsets (const FieldLayout& layout);
@@ -187,11 +190,11 @@ protected:
   // io_field_manager stores the fields in the layout for output
   // sim_field_manager points to the simulation field manager
   // when remapping horizontally these two field managers may be different.
-  std::map<std::string,std::shared_ptr<const fm_type>> m_field_mgrs;
+  std::map<Phase,std::shared_ptr<const fm_type>> m_field_mgrs;
+
   std::shared_ptr<const grid_type>            m_io_grid;
   std::shared_ptr<remapper_type>              m_horiz_remapper;
   std::shared_ptr<remapper_type>              m_vert_remapper;
-  std::shared_ptr<const gm_type>              m_grids_manager;
 
   // How to combine multiple snapshots in the output: Instant, Max, Min, Average
   OutputAvgType     m_avg_type;
@@ -200,7 +203,8 @@ protected:
   // Internal maps to the output fields, how the columns are distributed, the file dimensions and the global ids.
   std::vector<std::string>                              m_fields_names;
   std::vector<std::string>                              m_avg_cnt_names;
-  std::map<std::string,std::string>                     m_field_to_avg_cnt_map;
+  std::vector<Field>                                    m_avg_cnt_fields;
+  std::map<std::string,Field>                           m_field_to_avg_cnt_map;
   std::map<std::string,std::string>                     m_field_to_avg_cnt_suffix;
   std::map<std::string,FieldLayout>                     m_layouts;
   std::map<std::string,int>                             m_dims;
