@@ -331,6 +331,11 @@ deep_copy (const Field& src) const {
   EKAT_REQUIRE_MSG (not m_is_read_only,
       "Error! Cannot call deep_copy on read-only fields.\n");
 
+  if (is_aliasing(src)) {
+    // Nothing to do here, since we are two handles to the same data
+    return;
+  }
+
   EKAT_REQUIRE_MSG (data_type()==src.data_type(),
       "Error! Cannot copy fields with different data type.\n");
 
