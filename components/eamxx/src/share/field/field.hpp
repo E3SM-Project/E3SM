@@ -224,6 +224,18 @@ public:
   template<HostOrDevice HD = Device>
   void scale (const Field& x);
 
+  // Replace *this with max(*this, x)
+  template<HostOrDevice HD = Device>
+  void max (const Field& x);
+
+  // Replace *this with min(*this, x)
+  template<HostOrDevice HD = Device>
+  void min (const Field& x);
+
+  // Set *this=value but only where mask=1 (mask must have data type IntType)
+  template<HostOrDevice HD = Device, typename ST = void>
+  void mask (const ST value, const Field& mask);
+
   // Returns a subview of this field, slicing at entry k along dimension idim
   // NOTES:
   //   - the output field stores *the same* 1d view as this field. In order
