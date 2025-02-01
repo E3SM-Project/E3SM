@@ -62,6 +62,8 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
 
   // These variables are needed by the interface, but not actually passed to p3_main.
   add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name, ps);
+  add_field<Required>("cldfrac_liq", scalar3d_layout_mid, nondim, grid_name, ps);
+  add_field<Required>("cldfrac_ice", scalar3d_layout_mid, nondim, grid_name, ps);
 
 //should we use one pressure only, wet/full?
   add_field<Required>("p_mid",       scalar3d_layout_mid, Pa,     grid_name, ps);
@@ -254,7 +256,9 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   const  auto& pseudo_density = get_field_in("pseudo_density").get_view<const Pack**>();
   const  auto& pseudo_density_dry = get_field_in("pseudo_density_dry").get_view<const Pack**>();
   const  auto& T_atm          = get_field_out("T_mid").get_view<Pack**>();
-  const  auto& cld_frac_t     = get_field_in("cldfrac_tot").get_view<const Pack**>();
+  const  auto& cld_frac_t_in  = get_field_in("cldfrac_tot").get_view<const Pack**>();
+  const  auto& cld_frac_l_in  = get_field_in("cldfrac_liq").get_view<const Pack**>();
+  const  auto& cld_frac_i_in  = get_field_in("cldfrac_ice").get_view<const Pack**>();
   const  auto& qv             = get_field_out("qv").get_view<Pack**>();
   const  auto& qc             = get_field_out("qc").get_view<Pack**>();
   const  auto& nc             = get_field_out("nc").get_view<Pack**>();
@@ -278,7 +282,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
 
   // -- Set values for the pre-amble structure
   p3_preproc.set_variables(m_num_cols,nk_pack,pmid,pmid_dry,pseudo_density,pseudo_density_dry,
-                        T_atm,cld_frac_t,
+                        T_atm,cld_frac_t_in,cld_frac_l_in,cld_frac_i_in,
                         qv, qc, nc, qr, nr, qi, qm, ni, bm, qv_prev,
                         inv_exner, th_atm, cld_frac_l, cld_frac_i, cld_frac_r, dz, runtime_options);
   // --Prognostic State Variables:

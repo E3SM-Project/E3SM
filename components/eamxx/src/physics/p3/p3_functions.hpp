@@ -691,7 +691,7 @@ struct Functions
   KOKKOS_FUNCTION
   static void cloud_water_conservation(const Spack& qc, const Scalar dt,
     Spack& qc2qr_autoconv_tend, Spack& qc2qr_accret_tend, Spack &qc2qi_collect_tend, Spack& qc2qi_hetero_freeze_tend,
-    Spack& qc2qr_ice_shed_tend, Spack& qc2qi_berg_tend, Spack& qi2qv_sublim_tend, Spack& qv2qi_vapdep_tend,
+    Spack& qc2qr_ice_shed_tend, Spack& qc2qi_berg_tend, Spack& qi2qv_sublim_tend, Spack& qv2qi_vapdep_tend, Spack& cld_frac_l, Spack& cld_frac_i,
     const Smask& context = Smask(true) );
 
   KOKKOS_FUNCTION
