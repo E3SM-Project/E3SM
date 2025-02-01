@@ -33,8 +33,8 @@ public:
 
   void set_aliasing (const Aliasing aliasing);
 
-  void register_field_from_src (const Field& src) override;
-  void register_field_from_tgt (const Field& tgt) override;
+  Field register_field_from_src (const Field& src) override;
+  Field register_field_from_tgt (const Field& tgt) override;
 
 protected:
 
