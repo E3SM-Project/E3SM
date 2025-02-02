@@ -134,6 +134,7 @@ struct Functions
     bool set_cld_frac_l_to_one = false;
     bool set_cld_frac_i_to_one = false;
     bool set_cld_frac_r_to_one = false;
+    bool use_hetfrz_classnuc   = false; // Set to true to use het frz from MAM4xx-ACI
 
     void load_runtime_options_from_file(ekat::ParameterList& params) {
       max_total_ni = params.get<double>("max_total_ni", max_total_ni);
@@ -159,6 +160,7 @@ struct Functions
       set_cld_frac_l_to_one = params.get<bool>("set_cld_frac_l_to_one", set_cld_frac_l_to_one);
       set_cld_frac_i_to_one = params.get<bool>("set_cld_frac_i_to_one", set_cld_frac_i_to_one);
       set_cld_frac_r_to_one = params.get<bool>("set_cld_frac_r_to_one", set_cld_frac_r_to_one);
+      use_hetfrz_classnuc   = params.get<bool>("use_hetfrz_classnuc", use_hetfrz_classnuc);
     }
 
   };
@@ -271,8 +273,6 @@ struct Functions
     bool predictNc;
     // Set to true to use prescribed CCN
     bool prescribedCCN;
-    // Set to true to use het frz from MAM4xx-ACI
-    bool use_hetfrz_classnuc;
     // Coordinates of columns, nj x 3
     view_2d<const Scalar> col_location;
   };

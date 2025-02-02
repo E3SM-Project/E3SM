@@ -23,8 +23,12 @@ void Functions<S,D>
 {
   constexpr Scalar pi       = C::Pi;
   constexpr Scalar rho_h2o  = C::RHO_H2O;
-  constexpr Scalar qsmall   = 1.0e-18; // BAD_CONSTANT!
+
+  // TODO: Verify is qsmall can be unified with other "small" numeric literals 
+  constexpr Scalar qsmall   = 1.0e-18;
   constexpr Scalar piov3    = pi/3.0;
+
+  // TODO: Verify is 1.0e-18 can be unified with other "small" numeric literals
   constexpr Scalar  mi0     = 4.0*piov3*900.0*1.0e-18; // BAD_CONSTANT!
  
   const Spack Zero(0.0);
@@ -48,6 +52,7 @@ void Functions<S,D>
       qinuc_cnt.set(mask, ninuc_cnt*mi0, Zero);
       break;
     default:
+      EKAT_KERNEL_ERROR_MSG("Error! Unhandled case in switch statement for Iflag in p3_CNT_couple_impl.hpp .\n");
       break;
   }
 }
