@@ -216,6 +216,7 @@ int pio_iotype (IOType iotype) {
     case IOType::NetCDF:        iotype_int = static_cast<int>(PIO_IOTYPE_NETCDF);   break;
     case IOType::PnetCDF:       iotype_int = static_cast<int>(PIO_IOTYPE_PNETCDF);  break;
     case IOType::Adios:         iotype_int = static_cast<int>(PIO_IOTYPE_ADIOS);    break;
+    case IOType::Adiosc:        iotype_int = static_cast<int>(PIO_IOTYPE_ADIOSC);   break;
     case IOType::Hdf5:          iotype_int = static_cast<int>(PIO_IOTYPE_HDF5);     break;
     default:
       EKAT_ERROR_MSG ("Unrecognized/unsupported iotype.\n");
