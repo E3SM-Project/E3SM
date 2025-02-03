@@ -300,17 +300,16 @@ contains
                if (.not. load_maps_from_disk_o2a) then
                   ierr =  iMOAB_ComputeMeshIntersectionOnSphere ( mboxid, mbaxid, mbintxoa )
                   if (ierr .ne. 0) then
-                     write(logunit,*) subname,' error in computing ocn atm intx'
-                     call shr_sys_abort(subname//' ERROR in computing ocn atm intx')
+                     write(logunit,*) subname,' error in computing OCN-ATM mesh intersection'
+                     call shr_sys_abort(subname//' ERROR in computing OCN-ATM mesh intersection')
                   endif
                   if (iamroot_CPLID) then
-                     write(logunit,*) 'iMOAB intersection between ocean and atm with id:', idintx
+                     write(logunit,*) 'iMOAB mesh intersection between OCN and ATM with id:', idintx
                   endif
                endif
 
                ! we also need to compute the comm graph for the second hop, from the ocn on coupler to the
                ! ocean for the intx ocean-atm context (coverage)
-               !
                type1 = 3; !  fv for ocean and atm; fv-cgll does not work anyway
                type2 = 3;
                ! ierr      = iMOAB_ComputeCommGraph( mboxid, mbintxoa, &mpicom_CPLID, &mpigrp_CPLID, &mpigrp_CPLID, &type1, &type2,
@@ -323,13 +322,9 @@ contains
                endif
 
                ! now take care of the mapper
-               if ( mapper_So2a%src_mbid .gt. -1 ) then
-                  if (iamroot_CPLID) then
-                        write(logunit,F00) 'overwriting '//trim(mapper_So2a%mbname) &
-                              //' mapper_So2a'
-                  endif
+               if ( mapper_So2a%src_mbid .gt. -1 .and. iamroot_CPLID ) then
+                     write(logunit,F00) 'overwriting '// trim(mapper_So2a%mbname) // ' mapper_So2a'
                endif
-
                mapper_So2a%intx_context = idintx
 
                if (.not. load_maps_from_disk_o2a) then
@@ -373,7 +368,7 @@ contains
 
                   call moab_map_init_rcfile( mboxid, mbaxid, mbintxoa, type1, &
                         'seq_maps.rc', 'ocn2atm_smapname:', 'ocn2atm_smaptype:',samegrid_ao, &
-                        wgtIdo2a, 'mapper_Sof2a moab initialization', esmf_map_flag)
+                        wgtIdo2a, 'mapper_Sof2a MOAB initialization', esmf_map_flag)
 
                endif
 
@@ -427,11 +422,8 @@ contains
                call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ocnf-atm')
             endif
 
-            if ( mapper_Sof2a%src_mbid .gt. -1 ) then
-                if (iamroot_CPLID) then
-                     write(logunit,F00) 'overwriting '//trim(mapper_Sof2a%mbname) &
-                             //' mapper_Sof2a'
-                endif
+            if ( mapper_Sof2a%src_mbid .gt. -1 .and. iamroot_CPLID) then
+               write(logunit,F00) 'overwriting '// trim(mapper_Sof2a%mbname) // ' mapper_Sof2a'
             endif
             ! we identified the app mbofxid with !id_join = id_join + 1000! kind of random
             ! line 1267 in cplcomp_exchange_mod.F90
@@ -649,10 +641,9 @@ contains
 
             else
                type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
-
                call moab_map_init_rcfile(mbixid, mbaxid, mbintxia, type1, &
                      'seq_maps.rc', 'ice2atm_smapname:', 'ice2atm_smaptype:', samegrid_ao, &
-                     wgtIdi2a, 'mapper_Si2a moab initialization', esmf_map_flag)
+                     wgtIdi2a, 'mapper_Si2a MOAB initialization', esmf_map_flag)
             endif
 
 #ifdef MOABDEBUG
@@ -850,11 +841,9 @@ contains
                   endif
                else
                   type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
-
                   call moab_map_init_rcfile(mblxid, mbaxid, mbintxla, type1, &
                         'seq_maps.rc', 'lnd2atm_fmapname:', 'lnd2atm_fmaptype:', samegrid_al, &
-                        wgtIdl2a, 'mapper_Fl2a moab initialization', esmf_map_flag)
-
+                        wgtIdl2a, 'mapper_Fl2a MOAB initialization', esmf_map_flag)
                endif
 
             else  ! the same mesh , atm and lnd use the same dofs, but restricted
