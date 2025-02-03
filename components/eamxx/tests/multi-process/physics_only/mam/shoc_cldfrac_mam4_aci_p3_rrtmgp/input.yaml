@@ -68,7 +68,10 @@ initial_conditions:
   #variables required for p3
   precip_ice_surf_mass: 0.0
   precip_liq_surf_mass: 0.0
-  
+  hetfrz_immersion_nucleation_tend: 0.1
+  hetfrz_contact_nucleation_tend: 0.1
+  hetfrz_deposition_nucleation_tend: 0.1
+
   #variables required for rrtmgp
   aero_g_sw: 0.0
   aero_ssa_sw: 0.0

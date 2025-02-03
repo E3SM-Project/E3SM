@@ -17,6 +17,10 @@ initial_conditions:
   surf_sens_flux: 0.0
   precip_liq_surf_mass: 0.0
   precip_ice_surf_mass: 0.0
+  hetfrz_immersion_nucleation_tend: 0.1
+  hetfrz_contact_nucleation_tend: 0.1
+  hetfrz_deposition_nucleation_tend: 0.1
+
   #variables needed by mam4_wetscav
   #--surface fluxes
   wetdep_hydrophilic_bc: 1e-5 # wet deposition of hydrophilic black carbon [kg/m2/s]

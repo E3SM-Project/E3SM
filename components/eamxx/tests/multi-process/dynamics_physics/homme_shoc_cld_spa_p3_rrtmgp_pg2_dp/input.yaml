@@ -27,6 +27,9 @@ initial_conditions:
   surf_sens_flux: 0.0
   precip_liq_surf_mass: 0.0
   precip_ice_surf_mass: 0.0
+  hetfrz_immersion_nucleation_tend: 0.1
+  hetfrz_contact_nucleation_tend: 0.1
+  hetfrz_deposition_nucleation_tend: 0.1
   perturbed_fields: [T_mid]
   perturbation_limit: 0.001
   perturbation_minimum_pressure: 900.0 # in millibar
