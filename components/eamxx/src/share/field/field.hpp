@@ -205,7 +205,10 @@ public:
 
   // Copy the data from one field to this field (recycle update method)
   template<HostOrDevice HD = Device>
-  void deep_copy (const Field& src) { update<HD,CombineMode::Replace>(src,1,0); }
+  void deep_copy (const Field& src) {
+    if (not is_aliasing(src))
+      update<HD,CombineMode::Replace>(src,1,0);
+  }
 
   // Updates this field y as y=alpha*x+beta*y
   // NOTE: ST=void is just so we can give a default to HD,
