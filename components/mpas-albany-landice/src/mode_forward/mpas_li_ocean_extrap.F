@@ -353,6 +353,8 @@ contains
          if (config_recalculate_thermal_forcing) then
             MPAS_3dOceanTemperature(:,:) = oceanField(:,:,1)
             MPAS_3dOceanSalinity(:,:) = oceanField(:,:,2)
+
+            call recalculate_thermal_forcing(domain, err)
          else 
             ismip6shelfMelt_3dThermalForcing(:,:) = oceanField(:,:,1)
          endif
@@ -476,6 +478,7 @@ contains
                      do iNeighbor = 1, nEdgesOnCell(iCell)
                         jCell = cellsOnCell(iNeighbor, iCell)
                         if ( validOceanMaskOld(iLayer,jCell) == 1 ) then
+                                
                            if ( oceanFieldOld(iLayer,jCell,iField) > 1.0e6_RKIND) then
                               ! raise error if an invalid ocean data value is used
                               call mpas_log_write("ocean data value used for extrapolation is invalid", &
