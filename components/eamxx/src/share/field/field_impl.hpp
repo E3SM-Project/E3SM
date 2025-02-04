@@ -544,18 +544,11 @@ update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
 {
   using device_t = typename Field::get_device<HD>;
   using exec_space = typename device_t::execution_space;
-  using RangePolicy = Kokkos::RangePolicy<exec_space>;
-  auto policy = RangePolicy(0,x_l.size());
 
-  using extents_type = typename ekat::KokkosTypes<device_t>::template view_1d<int>;
-  extents_type ext;
-  if constexpr (HD==Device) {
-    ext = x_l.extents();
-  } else {
-    ext = x_l.extents_h();
-  }
 
   const auto& layout = x.get_header().get_identifier().get_layout();
+  const auto& dims = layout.dims();
+
   // Must handle the case where one of the two views is strided (or both)
   const auto contig_views = x.get_header().get_alloc_properties().contiguous() and
                               get_header().get_alloc_properties().contiguous();
@@ -564,6 +557,8 @@ update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
       if (contig_views) {
         auto xv = x.get_view<const XST,HD>();
         auto yv =   get_view<      ST,HD>();
+
+        Kokkos::RangePolicy<exec_space> policy(0,1);
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const int /*idx*/) {
           if constexpr (use_fill)
             combine_and_fill<CM>(xv(),yv(),fill_val,alpha,beta);
@@ -573,6 +568,8 @@ update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
       } else {
         auto xv = x.get_strided_view<const XST,HD>();
         auto yv =   get_strided_view<      ST,HD>();
+
+        Kokkos::RangePolicy<exec_space> policy(0,1);
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const int /*idx*/) {
           if constexpr (use_fill)
             combine_and_fill<CM>(xv(),yv(),fill_val,alpha,beta);
@@ -585,6 +582,8 @@ update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
       if (contig_views) {
         auto xv = x.get_view<const XST*,HD>();
         auto yv =   get_view<      ST*,HD>();
+
+        Kokkos::RangePolicy<exec_space> policy(0,layout.size());
         Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
           if constexpr (use_fill)
             combine_and_fill<CM>(xv(idx),yv(idx),fill_val,alpha,beta);
@@ -594,6 +593,8 @@ update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
       } else {
         auto xv = x.get_strided_view<const XST*,HD>();
         auto yv =   get_strided_view<      ST*,HD>();
+
+        Kokkos::RangePolicy<exec_space> policy(0,layout.size());
         Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
           if constexpr (use_fill)
             combine_and_fill<CM>(xv(idx),yv(idx),fill_val,alpha,beta);
@@ -606,9 +607,9 @@ update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
       if (contig_views) {
         auto xv = x.get_view<const XST**,HD>();
         auto yv =   get_view<      ST**,HD>();
-        Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-          int i,j;
-          unflatten_idx(idx,ext,i,j);
+
+        MDRange<2,HD> policy({0,0},{dims[0],dims[1]});
+        Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int i, const int j) {
           if constexpr (use_fill)
             combine_and_fill<CM>(xv(i,j),yv(i,j),fill_val,alpha,beta);
           else
@@ -617,6 +618,9 @@ update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
       } else {
         auto xv = x.get_strided_view<const XST**,HD>();
         auto yv =   get_strided_view<      ST**,HD>();
+
+        MDRange<2,HD> policy({0,0},{dims[0],dims[1]});
+        Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int i, const int j) {
           if constexpr (use_fill)
             combine_and_fill<CM>(xv(i,j),yv(i,j),fill_val,alpha,beta);
           else
@@ -628,9 +632,9 @@ update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
       if (contig_views) {
         auto xv = x.get_view<const XST***,HD>();
         auto yv =   get_view<      ST***,HD>();
-        Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-          int i,j,k;
-          unflatten_idx(idx,ext,i,j,k);
+
+        MDRange<3,HD> policy({0,0,0},{dims[0],dims[1],dims[2]});
+        Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int i, const int j, const int k) {
           if constexpr (use_fill)
             combine_and_fill<CM>(xv(i,j,k),yv(i,j,k),fill_val,alpha,beta);
           else
@@ -639,6 +643,9 @@ update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
       } else {
         auto xv = x.get_strided_view<const XST***,HD>();
         auto yv =   get_strided_view<      ST***,HD>();
+
+        MDRange<3,HD> policy({0,0,0},{dims[0],dims[1],dims[2]});
+        Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int i, const int j, const int k) {
           if constexpr (use_fill)
             combine_and_fill<CM>(xv(i,j,k),yv(i,j,k),fill_val,alpha,beta);
           else
@@ -650,9 +657,9 @@ update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
       if (contig_views) {
         auto xv = x.get_view<const XST****,HD>();
         auto yv =   get_view<      ST****,HD>();
-        Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-          int i,j,k,l;
-          unflatten_idx(idx,ext,i,j,k,l);
+
+        MDRange<4,HD> policy({0,0,0,0},{dims[0],dims[1],dims[2],dims[3]});
+        Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int i, const int j, const int k, const int l) {
           if constexpr (use_fill)
             combine_and_fill<CM>(xv(i,j,k,l),yv(i,j,k,l),fill_val,alpha,beta);
           else
@@ -661,6 +668,9 @@ update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
       } else {
         auto xv = x.get_strided_view<const XST****,HD>();
         auto yv =   get_strided_view<      ST****,HD>();
+
+        MDRange<4,HD> policy({0,0,0,0},{dims[0],dims[1],dims[2],dims[3]});
+        Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int i, const int j, const int k, const int l) {
           if constexpr (use_fill)
             combine_and_fill<CM>(xv(i,j,k,l),yv(i,j,k,l),fill_val,alpha,beta);
           else
@@ -672,9 +682,9 @@ update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
       if (contig_views) {
         auto xv = x.get_view<const XST*****,HD>();
         auto yv =   get_view<      ST*****,HD>();
-        Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-          int i,j,k,l,m;
-          unflatten_idx(idx,ext,i,j,k,l,m);
+
+        MDRange<5,HD> policy({0,0,0,0,0},{dims[0],dims[1],dims[2],dims[3],dims[4]});
+        Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int i, const int j, const int k, const int l, const int m) {
           if constexpr (use_fill)
             combine_and_fill<CM>(xv(i,j,k,l,m),yv(i,j,k,l,m),fill_val,alpha,beta);
           else
@@ -683,6 +693,9 @@ update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
       } else {
         auto xv = x.get_strided_view<const XST*****,HD>();
         auto yv =   get_strided_view<      ST*****,HD>();
+
+        MDRange<5,HD> policy({0,0,0,0,0},{dims[0],dims[1],dims[2],dims[3],dims[4]});
+        Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int i, const int j, const int k, const int l, const int m) {
           if constexpr (use_fill)
             combine_and_fill<CM>(xv(i,j,k,l,m),yv(i,j,k,l,m),fill_val,alpha,beta);
           else
@@ -694,9 +707,9 @@ update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
       if (contig_views) {
         auto xv = x.get_view<const XST******,HD>();
         auto yv =   get_view<      ST******,HD>();
-        Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-          int i,j,k,l,m,n;
-          unflatten_idx(idx,ext,i,j,k,l,m,n);
+
+        MDRange<6,HD> policy({0,0,0,0,0,0},{dims[0],dims[1],dims[2],dims[3],dims[4],dims[5]});
+        Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int i, const int j, const int k, const int l, const int m, const int n) {
           if constexpr (use_fill)
             combine_and_fill<CM>(xv(i,j,k,l,m,n),yv(i,j,k,l,m,n),fill_val,alpha,beta);
           else
@@ -705,6 +718,9 @@ update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
       } else {
         auto xv = x.get_strided_view<const XST******,HD>();
         auto yv =   get_strided_view<      ST******,HD>();
+
+        MDRange<6,HD> policy({0,0,0,0,0,0},{dims[0],dims[1],dims[2],dims[3],dims[4],dims[5]});
+        Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int i, const int j, const int k, const int l, const int m, const int n) {
           if constexpr (use_fill)
             combine_and_fill<CM>(xv(i,j,k,l,m,n),yv(i,j,k,l,m,n),fill_val,alpha,beta);
           else

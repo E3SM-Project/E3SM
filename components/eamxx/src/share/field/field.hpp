@@ -356,6 +356,14 @@ protected:
     }
   }
 
+  template<int N,HostOrDevice HD>
+  using MDRange = Kokkos::MDRangePolicy<typename get_device<HD>::execution_space,
+                                        Kokkos::Rank<N,
+                                                     Kokkos::Iterate::Right,
+                                                     Kokkos::Iterate::Right
+                                                    >
+                                       >;
+
   template<HostOrDevice HD>
   const get_view_type<char*,HD>&
   get_view_impl () const {
