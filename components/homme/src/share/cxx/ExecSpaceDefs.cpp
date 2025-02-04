@@ -189,7 +189,11 @@ team_num_threads_vectors (const int num_parallel_iterations,
 #endif
 
 #ifdef KOKKOS_ENABLE_CUDA
-  const int num_warps_device = Kokkos::Impl::cuda_internal_maximum_concurrent_block_count();
+  // No such thing sometime after Kokkos version 4.2:
+  //    Kokkos::Impl::cuda_internal_maximum_concurrent_block_count();
+  // This number is not super important as long as it's large. 3456 is the A100
+  // spec, so we'll use that.
+  const int num_warps_device = 3456;
   const int num_threads_warp = Kokkos::Impl::CudaTraits::WarpSize;
 #elif defined(KOKKOS_ENABLE_HIP)
   // Use 64 wavefronts per CU and 120 CUs.
