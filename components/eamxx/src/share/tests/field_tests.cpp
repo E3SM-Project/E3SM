@@ -908,7 +908,7 @@ TEST_CASE ("update") {
       f1.scale_inv(f2i);
       auto one = f_real.clone();
       one.deep_copy(1);
-      REQURIE (views_are_equal(one,f1));
+      REQUIRE (views_are_equal(one,f1));
     }
 
     SECTION ("int") {
