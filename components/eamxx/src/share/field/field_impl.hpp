@@ -115,7 +115,7 @@ struct CombineViewsHelper {
 
 template<CombineMode CM, bool use_fill, typename LhsView, typename RhsView, typename ST>
 void
-combineViewsHelper (LhsView lhs, RhsView rhs,
+cvh (LhsView lhs, RhsView rhs,
                ST alpha, ST beta, typename LhsView::traits::value_type fill_val,
                const std::vector<int>& dims)
 {
@@ -666,85 +666,134 @@ update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
   const auto& dims = layout.dims();
 
   // Must handle the case where one of the two views is strided (or both)
-  const auto contig_views = x.get_header().get_alloc_properties().contiguous() and
-                              get_header().get_alloc_properties().contiguous();
+  const auto x_contig = x.get_header().get_alloc_properties().contiguous();
+  const auto y_contig = get_header().get_alloc_properties().contiguous();
   switch (layout.rank()) {
     case 0:
-      if (contig_views) {
-        auto xv = x.get_view<const XST,HD>();
-        auto yv =   get_view<      ST,HD>();
-        impl::combineViewsHelper<CM,use_fill>(yv,xv,alpha,beta,fill_val,dims);
-      } else {
-        auto xv = x.get_strided_view<const XST,HD>();
-        auto yv =   get_strided_view<      ST,HD>();
-        impl::combineViewsHelper<CM,use_fill>(yv,xv,alpha,beta,fill_val,dims);
-      }
+      if (x_contig and y_contig)
+        impl::cvh<CM,use_fill>(get_view<ST,HD>(),
+                               x.get_view<const XST,HD>(),
+                               alpha,beta,fill_val,dims);
+      else if (x_contig)
+        impl::cvh<CM,use_fill>(get_strided_view<ST,HD>(),
+                               x.get_view<const XST,HD>(),
+                               alpha,beta,fill_val,dims);
+      else if (y_contig)
+        impl::cvh<CM,use_fill>(get_view<ST,HD>(),
+                               x.get_strided_view<const XST,HD>(),
+                               alpha,beta,fill_val,dims);
+      else
+        impl::cvh<CM,use_fill>(get_strided_view<ST,HD>(),
+                               x.get_strided_view<const XST,HD>(),
+                               alpha,beta,fill_val,dims);
       break;
     case 1:
-      if (contig_views) {
-        auto xv = x.get_view<const XST*,HD>();
-        auto yv =   get_view<      ST*,HD>();
-        impl::combineViewsHelper<CM,use_fill>(yv,xv,alpha,beta,fill_val,dims);
-      } else {
-        auto xv = x.get_strided_view<const XST*,HD>();
-        auto yv =   get_strided_view<      ST*,HD>();
-        impl::combineViewsHelper<CM,use_fill>(yv,xv,alpha,beta,fill_val,dims);
-      }
+      if (x_contig and y_contig)
+        impl::cvh<CM,use_fill>(get_view<ST*,HD>(),
+                               x.get_view<const XST*,HD>(),
+                               alpha,beta,fill_val,dims);
+      else if (x_contig)
+        impl::cvh<CM,use_fill>(get_strided_view<ST*,HD>(),
+                               x.get_view<const XST*,HD>(),
+                               alpha,beta,fill_val,dims);
+      else if (y_contig)
+        impl::cvh<CM,use_fill>(get_view<ST*,HD>(),
+                               x.get_strided_view<const XST*,HD>(),
+                               alpha,beta,fill_val,dims);
+      else
+        impl::cvh<CM,use_fill>(get_strided_view<ST*,HD>(),
+                               x.get_strided_view<const XST*,HD>(),
+                               alpha,beta,fill_val,dims);
       break;
     case 2:
-      if (contig_views) {
-        auto xv = x.get_view<const XST**,HD>();
-        auto yv =   get_view<      ST**,HD>();
-        impl::combineViewsHelper<CM,use_fill>(yv,xv,alpha,beta,fill_val,dims);
-      } else {
-        auto xv = x.get_strided_view<const XST**,HD>();
-        auto yv =   get_strided_view<      ST**,HD>();
-        impl::combineViewsHelper<CM,use_fill>(yv,xv,alpha,beta,fill_val,dims);
-      }
+      if (x_contig and y_contig)
+        impl::cvh<CM,use_fill>(get_view<ST**,HD>(),
+                               x.get_view<const XST**,HD>(),
+                               alpha,beta,fill_val,dims);
+      else if (x_contig)
+        impl::cvh<CM,use_fill>(get_strided_view<ST**,HD>(),
+                               x.get_view<const XST**,HD>(),
+                               alpha,beta,fill_val,dims);
+      else if (y_contig)
+        impl::cvh<CM,use_fill>(get_view<ST**,HD>(),
+                               x.get_strided_view<const XST**,HD>(),
+                               alpha,beta,fill_val,dims);
+      else
+        impl::cvh<CM,use_fill>(get_strided_view<ST**,HD>(),
+                               x.get_strided_view<const XST**,HD>(),
+                               alpha,beta,fill_val,dims);
       break;
     case 3:
-      if (contig_views) {
-        auto xv = x.get_view<const XST***,HD>();
-        auto yv =   get_view<      ST***,HD>();
-        impl::combineViewsHelper<CM,use_fill>(yv,xv,alpha,beta,fill_val,dims);
-      } else {
-        auto xv = x.get_strided_view<const XST***,HD>();
-        auto yv =   get_strided_view<      ST***,HD>();
-        impl::combineViewsHelper<CM,use_fill>(yv,xv,alpha,beta,fill_val,dims);
-      }
+      if (x_contig and y_contig)
+        impl::cvh<CM,use_fill>(get_view<ST***,HD>(),
+                               x.get_view<const XST***,HD>(),
+                               alpha,beta,fill_val,dims);
+      else if (x_contig)
+        impl::cvh<CM,use_fill>(get_strided_view<ST***,HD>(),
+                               x.get_view<const XST***,HD>(),
+                               alpha,beta,fill_val,dims);
+      else if (y_contig)
+        impl::cvh<CM,use_fill>(get_view<ST***,HD>(),
+                               x.get_strided_view<const XST***,HD>(),
+                               alpha,beta,fill_val,dims);
+      else
+        impl::cvh<CM,use_fill>(get_strided_view<ST***,HD>(),
+                               x.get_strided_view<const XST***,HD>(),
+                               alpha,beta,fill_val,dims);
       break;
     case 4:
-      if (contig_views) {
-        auto xv = x.get_view<const XST****,HD>();
-        auto yv =   get_view<      ST****,HD>();
-        impl::combineViewsHelper<CM,use_fill>(yv,xv,alpha,beta,fill_val,dims);
-      } else {
-        auto xv = x.get_strided_view<const XST****,HD>();
-        auto yv =   get_strided_view<      ST****,HD>();
-        impl::combineViewsHelper<CM,use_fill>(yv,xv,alpha,beta,fill_val,dims);
-      }
+      if (x_contig and y_contig)
+        impl::cvh<CM,use_fill>(get_view<ST****,HD>(),
+                               x.get_view<const XST****,HD>(),
+                               alpha,beta,fill_val,dims);
+      else if (x_contig)
+        impl::cvh<CM,use_fill>(get_strided_view<ST****,HD>(),
+                               x.get_view<const XST****,HD>(),
+                               alpha,beta,fill_val,dims);
+      else if (y_contig)
+        impl::cvh<CM,use_fill>(get_view<ST****,HD>(),
+                               x.get_strided_view<const XST****,HD>(),
+                               alpha,beta,fill_val,dims);
+      else
+        impl::cvh<CM,use_fill>(get_strided_view<ST****,HD>(),
+                               x.get_strided_view<const XST****,HD>(),
+                               alpha,beta,fill_val,dims);
       break;
     case 5:
-      if (contig_views) {
-        auto xv = x.get_view<const XST*****,HD>();
-        auto yv =   get_view<      ST*****,HD>();
-        impl::combineViewsHelper<CM,use_fill>(yv,xv,alpha,beta,fill_val,dims);
-      } else {
-        auto xv = x.get_strided_view<const XST*****,HD>();
-        auto yv =   get_strided_view<      ST*****,HD>();
-        impl::combineViewsHelper<CM,use_fill>(yv,xv,alpha,beta,fill_val,dims);
-      }
+      if (x_contig and y_contig)
+        impl::cvh<CM,use_fill>(get_view<ST*****,HD>(),
+                               x.get_view<const XST*****,HD>(),
+                               alpha,beta,fill_val,dims);
+      else if (x_contig)
+        impl::cvh<CM,use_fill>(get_strided_view<ST*****,HD>(),
+                               x.get_view<const XST*****,HD>(),
+                               alpha,beta,fill_val,dims);
+      else if (y_contig)
+        impl::cvh<CM,use_fill>(get_view<ST*****,HD>(),
+                               x.get_strided_view<const XST*****,HD>(),
+                               alpha,beta,fill_val,dims);
+      else
+        impl::cvh<CM,use_fill>(get_strided_view<ST*****,HD>(),
+                               x.get_strided_view<const XST*****,HD>(),
+                               alpha,beta,fill_val,dims);
       break;
     case 6:
-      if (contig_views) {
-        auto xv = x.get_view<const XST******,HD>();
-        auto yv =   get_view<      ST******,HD>();
-        impl::combineViewsHelper<CM,use_fill>(yv,xv,alpha,beta,fill_val,dims);
-      } else {
-        auto xv = x.get_strided_view<const XST******,HD>();
-        auto yv =   get_strided_view<      ST******,HD>();
-        impl::combineViewsHelper<CM,use_fill>(yv,xv,alpha,beta,fill_val,dims);
-      }
+      if (x_contig and y_contig)
+        impl::cvh<CM,use_fill>(get_view<ST******,HD>(),
+                               x.get_view<const XST******,HD>(),
+                               alpha,beta,fill_val,dims);
+      else if (x_contig)
+        impl::cvh<CM,use_fill>(get_strided_view<ST******,HD>(),
+                               x.get_view<const XST******,HD>(),
+                               alpha,beta,fill_val,dims);
+      else if (y_contig)
+        impl::cvh<CM,use_fill>(get_view<ST******,HD>(),
+                               x.get_strided_view<const XST******,HD>(),
+                               alpha,beta,fill_val,dims);
+      else
+        impl::cvh<CM,use_fill>(get_strided_view<ST******,HD>(),
+                               x.get_strided_view<const XST******,HD>(),
+                               alpha,beta,fill_val,dims);
       break;
     default:
       EKAT_ERROR_MSG ("Error! Rank not supported in update_field.\n"
