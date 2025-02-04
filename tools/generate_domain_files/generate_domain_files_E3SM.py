@@ -218,16 +218,16 @@ def main():
     ni = ds.src_grid_dims[0].values
     nj = ds.src_grid_dims[1].values
     yc_a_tmp = ds['yc_a'].values.reshape([nj,ni])
-    yc_a_tmp[ 0,:] = 90.0000000000000000000
-    yc_a_tmp[-1,:] = 90.0000000000000000000
+    yc_a_tmp[ 0,:] = -90.0000000000000000000
+    yc_a_tmp[-1,:] =  90.0000000000000000000
     ds['yc_a'][:] = yc_a_tmp.reshape([nj*ni])
 
   if opts.fix_pole and dst_grid_rank==2:
     ni = ds.dst_grid_dims[0].values
     nj = ds.dst_grid_dims[1].values
     yc_b_tmp = ds['yc_b'].values.reshape([nj,ni])
-    yc_b_tmp[ 0,:] = 90.0000000000000000000
-    yc_b_tmp[-1,:] = 90.0000000000000000000    
+    yc_b_tmp[ 0,:] = -90.0000000000000000000
+    yc_b_tmp[-1,:] =  90.0000000000000000000
     ds['yc_b'][:] = yc_b_tmp.reshape([nj*ni])
 
   #-----------------------------------------------------------------------------
