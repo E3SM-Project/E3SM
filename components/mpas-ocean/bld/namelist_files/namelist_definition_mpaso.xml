@@ -1295,6 +1295,14 @@ Valid values: Any positive integer
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_n_glc_z_levels" type="integer"
+	category="coupling" group="coupling">
+        The number of z-levels to use for passing ocean properties to GLC for indirect ice-sheet/ocean coupling.
+
+Valid values: positive values or 0
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_glc_thermal_forcing_coupling_mode" type="char*1024"
 	category="coupling" group="coupling">
 If and how MPAS-Ocean sends thermal forcing to GLC (MALI) in E3SM.  This is used for ocean coupling with a melt parameterization for grounded marine ice-cliffs in MALI.  This is primarily relevant to the Greenland Ice Sheet, but also relevant to the Antarctic Ice Sheet. 'none' means no coupling of thermal forcing.  '2d' means thermal forcing at a prescribed depth is passed to GLC.  That depth is controlled by 'config_2d_thermal_forcing_depth', and the resulting thermal forcing field is calculated in the field 'avgThermalForcingAtCritDepth'.

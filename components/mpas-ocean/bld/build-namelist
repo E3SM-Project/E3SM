@@ -72,6 +72,7 @@ OPTIONS
      -ninst_ocn            NINST_OCN for this case
      -ocn_tidal_mixing     variable for defining if to run with parameterized tidal mixing
                            Options are: false, true. Default is false
+     -glc_nzoc             number of z-ocean classes for indirect glc-ocn coupling [0 | 4 | 30]
 
 NOTE: The precedence for setting the values of namelist variables is (highest to lowest):
       1. namelist values set by specific command-line options, i.e. (none right now)
@@ -126,6 +127,7 @@ my %opts = ( help          => 0,
              ntasks_ocn    => 0,
              ninst_ocn     => 0,
              ocn_tidal_mixing => undef,
+             glc_nzoc      => 0,
            );
 
 GetOptions(
@@ -154,6 +156,7 @@ GetOptions(
     "ninst_ocn=i"     => \$opts{'ninst_ocn'},
     "preview"         => \$opts{'preview'},
     "ocn_tidal_mixing=s"   => \$opts{'ocn_tidal_mixing'},
+    "glc_nzoc=i"      => \$opts{'glc_nzoc'},
 )  or usage();
 
 # Give usage message.
@@ -196,6 +199,7 @@ my $ice_bgc       = $opts{'ice_bgc'};
 my $NINST_OCN     = $opts{'ninst_ocn'};
 my $NTASKS_OCN    = $opts{'ntasks_ocn'};
 my $OCN_TIDAL_MIXING   = $opts{'ocn_tidal_mixing'};
+my $GLC_NZOC      = $opts{'glc_nzoc'};
 $cfgdir           = $opts{'cfg_dir'};
 
 my $CIMEROOT;
@@ -463,6 +467,7 @@ my $ntasks = $NTASKS_OCN / $NINST_OCN;
 print "MPASO build-namelist: ocn_grid is $OCN_GRID \n";
 print "MPASO build-namelist: ocn_forcing is $OCN_FORCING \n";
 print "MPASO build-namelist: ocn_tidal_mixing is $OCN_TIDAL_MIXING \n";
+print "MPASO build-namelist: GLC_NZOC is $GLC_NZOC  \n";
 
 (-d $DIN_LOC_ROOT)  or mkdir $DIN_LOC_ROOT;
 if ($print>=2) { print "CIME inputdata root directory: $DIN_LOC_ROOT$eol"; }
@@ -743,6 +748,7 @@ if (($OCN_ISMF ne 'none') && ($OCN_FORCING ne 'active_atm')) {
 }
 add_default($nl, 'config_scale_dismf_by_removed_ice_runoff');
 add_default($nl, 'config_ais_ice_runoff_history_days');
+add_default($nl, 'config_n_glc_z_levels', 'val'=>"$GLC_NZOC");
 add_default($nl, 'config_glc_thermal_forcing_coupling_mode');
 add_default($nl, 'config_2d_thermal_forcing_depth');
 
