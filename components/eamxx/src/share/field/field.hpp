@@ -213,20 +213,21 @@ public:
   // NOTE: the type ST  must be such that no narrowing happens when
   //       casting the values to whatever the data type of this field is.
   //       E.g., if data_type()=IntType, you can't pass double's.
-  template<HostOrDevice HD = Device, typename ST = void>
+  // See share/util/scream_combine_ops.hpp for more details on CombineMode options
+  template<HostOrDevice HD = Device, CombineMode CM = CombineMode::ScaleUpdate, typename ST = void>
   void update (const Field& x, const ST alpha, const ST beta);
 
-  // Special case of update with alpha=0
+  // Special case of update for particular choices of the combine mode
   template<HostOrDevice HD = Device, typename ST = void>
-  void scale (const ST beta);
+  void scale (const ST beta) { update<HD,CombineMode::Rescale>(*this,ST(0),beta); }
 
   // Scale a field y as y=y*x where x is also a field
   template<HostOrDevice HD = Device>
-  void scale (const Field& x);
+  void scale (const Field& x) { update<HD,CombineMode::Multiply>(x,1,0); }
 
   // Scale a field y as y=y/x where x is also a field
   template<HostOrDevice HD = Device>
-  void scale_inv (const Field& x);
+  void scale_inv (const Field& x) { update<HD,CombineMode::Divide>(x,1,0); }
 
   // Returns a subview of this field, slicing at entry k along dimension idim
   // NOTES:
@@ -321,10 +322,30 @@ protected:
   template<HostOrDevice HD, typename ST>
   void deep_copy_impl (const Field& src) const;
 
-  template<CombineMode CM, HostOrDevice HD, typename ST>
-  void update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val);
+  // The update method calls this, with ST matching this field data type.
+  // Note: use_fill is used to determine *at compile time* whether to use
+  // the combine<CM> utility or combine_and_fill<CM>
+  template<CombineMode CM, HostOrDevice HD, bool use_fill, typename ST>
+  void update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val = 0);
 
 protected:
+
+  // This is helpful in the update method, and it can't be a lambda due to templating
+  // NOTE: if neither lsh nor rhs has "mask_value" extra data, this will throw.
+  template<typename T>
+  static T get_mask_value (const Field& lhs, const Field& rhs) {
+    if (lhs.get_header().has_extra_data("mask_value")) {
+      return lhs.get_header().get_extra_data<T>("mask_value");
+    } else if (rhs.get_header().has_extra_data("mask_value")) {
+      return rhs.get_header().get_extra_data<T>("mask_value");
+    } else {
+      EKAT_ERROR_MSG ("Error! Neither of the fields has the 'mask_value' extra data.\n"
+          " - lhs name: " + lhs.name() + "\n"
+          " - rhs name: " + rhs.name() + "\n");
+
+      return 0; // unreachable return
+    }
+  }
 
   template<HostOrDevice HD>
   const get_view_type<char*,HD>&
