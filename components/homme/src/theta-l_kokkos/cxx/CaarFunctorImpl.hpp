@@ -352,7 +352,7 @@ struct CaarFunctorImpl {
 
     GPTLstart("caar compute");
 
-#if 0
+#if 1
 
     caar_compute();
     Kokkos::fence();
