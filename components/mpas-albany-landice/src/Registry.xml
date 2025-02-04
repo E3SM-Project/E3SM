@@ -824,6 +824,7 @@
 			<var name="ismip6_2dThermalForcing" packages="ismip6GroundedFaceMelt" />
 			<!-- this variable just for ocean extrapolation -->
                         <var name="orig3dOceanMask" packages="extrapOceanData"/>
+                        <var name="icebergFjordMask" packages="extrapOceanData"/>
 		</stream>
 
 <!-- An alternate way to allow the HO variables to exist in a separate file.
@@ -933,7 +934,8 @@
 			<var name="validOceanMask" packages="extrapOceanData" />
 			<var name="availOceanMask" packages="extrapOceanData" />
 			<var name="growOceanMaskHoriz" packages="extrapOceanData" />
-			<var name="seedOceanMaskHoriz" packages="extrapOceanData" />
+                        <var name="seedOceanMaskHoriz" packages="extrapOceanData" />
+                        <var name="icebergFjordMask" packages="extrapOceanData"/>
 		</stream>
 
 
@@ -1716,6 +1718,9 @@ is the value of that variable from the *previous* time level!
                 />
                 <var name="MPAS_3dOceanSalinity" type="real" dimensions="nISMIP6OceanLayers nCells Time" units="g/kg"
                         description="MPAS-Ocean salinity to be extrapolated to all grounding lines if config_recalcuate_thermal_forcing is true."
+                />
+                <var name="icebergFjordMask" type="integer" dimensions="nCells Time" units="none" default_value="0"
+                        description="Binary mask depicting where to parameterize iceberg melt-driven cooling if using config_TF_param_type = AMfit. 1 prescribes AMberg at that cell, 0 prescribed AMmelt."
                 />
         </var_struct>
 <!-- ================ -->

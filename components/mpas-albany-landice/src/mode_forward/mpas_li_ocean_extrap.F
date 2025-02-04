@@ -708,40 +708,43 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: MPAS_3dOceanSalinity
       real (kind=RKIND), dimension(:), pointer :: ismip6shelfMelt_zOcean
       real (kind=RKIND), dimension(:,:), pointer :: ismip6shelfMelt_zBndsOcean
-      real (kind=RKIND), dimension(:), pointer :: icebergFjordMask
+      integer, dimension(:), pointer :: icebergFjordMask
       real (kind=RKIND), dimension(:), pointer :: bedTopography
       real (kind=RKIND), pointer :: dzAccumulated, dz, total, gadeSlope
-      integer, pointer :: nISMIP6OceanLayers, nCells, iCell, iLayer, counter
+      integer, pointer :: nISMIP6OceanLayers, nCells
+      integer :: iCell, iLayer, counter
       integer, dimension(:), allocatable :: icebergCellVertID
       integer, dimension(:), allocatable :: oceanCellVertID
-      real (kind=RKIND), dimension(:), pointer :: freezingTemperature
-      allocate(icebergCellVertID(nISMIP6OceanLayers))
-      allocate(oceanCellVertID(nISMIP6OceanLayers))
-      allocate(freezingTemperature(nISMIP6OceanLayers))
+      real (kind=RKIND), dimension(:), allocatable :: freezingTemperature
 
       block => domain % blocklist
       do while (associated(block))
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
       call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+      call mpas_pool_get_subpool(block % structs, 'extrapOceanData', extrapOceanDataPool)
       call mpas_pool_get_config(liConfigs, 'config_TF_param_type', config_TF_param_type)
       call mpas_pool_get_config(liConfigs, 'config_TF_iceberg_depth', config_TF_iceberg_depth)
       call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_3dThermalForcing', ismip6shelfMelt_3dThermalForcing)
       call mpas_pool_get_array(geometryPool, 'ismip6_2dThermalForcing', ismip6_2dThermalForcing)
-      call mpas_pool_get_array(geometryPool, 'MPAS_3dOceanTemperature', MPAS_3dOceanTemperature)
-      call mpas_pool_get_array(geometryPool, 'MPAS_3dOceanSalinity', MPAS_3dOceanSalinity)
+      call mpas_pool_get_array(extrapOceanDataPool, 'MPAS_3dOceanTemperature', MPAS_3dOceanTemperature)
+      call mpas_pool_get_array(extrapOceanDataPool, 'MPAS_3dOceanSalinity', MPAS_3dOceanSalinity)
       call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zOcean', ismip6shelfMelt_zOcean)
       call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zBndsOcean', ismip6shelfMelt_zBndsOcean)
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
-      call mpas_pool_get_array(geometryPool, 'icebergFjordMask', icebergFjordMask)
-      call mpas_pool_get_array(meshPool, 'nISMIP6OceanLayers', nISMIP6OceanLayers)
-      call mpas_pool_get_array(meshPool, 'nCells', nCells)
+      call mpas_pool_get_array(extrapOceanDataPool, 'icebergFjordMask', icebergFjordMask)
+      call mpas_pool_get_dimension(meshPool, 'nISMIP6OceanLayers', nISMIP6OceanLayers)
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
+      allocate(icebergCellVertID(nISMIP6OceanLayers))
+      allocate(oceanCellVertID(nISMIP6OceanLayers))
+      allocate(freezingTemperature(nISMIP6OceanLayers))
+     
       do iCell = 1, nCells
         !Main difference between these parameterization is how we collapse into 2d, which happens in mpas_li_ice_shelt_melt.F
         !Difference between '...melt' and '...retreat' parameterizations happens in main body of mpas_li_ocean_extrap.F
         if ( (config_TF_param_type == 'AMretreat') .or. (config_TF_param_type == 'ISMIP6retreat') &
                 .or. (config_TF_param_type == 'AMmelt') .or. (config_TF_param_type == 'ISMIP6melt') &
-                .or. ((config_TF_param_type == 'AMfit') .and. (icebergFjordMask(iCell)) == 1) ) then
+                .or. ((config_TF_param_type == 'AMfit') .and. (icebergFjordMask(iCell)) == 0) ) then
 
             ! From Jenkins 2011 and Slater 2020
             ismip6shelfMelt_3dThermalForcing(:,iCell) = MPAS_3dOceanTemperature(:,iCell) - (gamma1 * MPAS_3dOceanSalinity(:,iCell) + gamma2 + gamma3 * ismip6shelfMelt_zOcean)
