@@ -853,6 +853,42 @@ TEST_CASE ("update") {
     }
   }
 
+  SECTION ("max-min") {
+    SECTION ("real") {
+      Field one = f_real.clone();
+      Field two = f_real.clone();
+      one.deep_copy(1.0);
+      two.deep_copy(2.0);
+
+      Field f1 = one.clone();
+      Field f2 = two.clone();
+      f1.max(f2);
+      REQUIRE (views_are_equal(f1, f2));
+
+      Field f3 = one.clone();
+      Field f4 = two.clone();
+      f4.min(f3);
+      REQUIRE (views_are_equal(f3, f4));
+    }
+
+    SECTION ("int") {
+      Field one = f_int.clone();
+      Field two = f_int.clone();
+      one.deep_copy(1);
+      two.deep_copy(2);
+
+      Field f1 = one.clone();
+      Field f2 = two.clone();
+      f1.max(f2);
+      REQUIRE (views_are_equal(f1, f2));
+
+      Field f3 = one.clone();
+      Field f4 = two.clone();
+      f4.min(f3);
+      REQUIRE (views_are_equal(f3, f4));
+    }
+  }
+
   SECTION ("scale_inv") {
     SECTION ("real") {
       Field f1 = f_real.clone();
