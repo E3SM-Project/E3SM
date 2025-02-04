@@ -479,13 +479,13 @@ update (const Field& x, const ST alpha, const ST beta)
     }
   } else if (dt==DataType::FloatType) {
     if (use_fill) {
-      return update_impl<CM,HD,true, float>(x,alpha,beta,get_mask_value<int>(*this,x));
+      return update_impl<CM,HD,true, float>(x,alpha,beta,get_mask_value<float>(*this,x));
     } else {
       return update_impl<CM,HD,false,float>(x,alpha,beta);
     }
   } else if (dt==DataType::DoubleType) {
     if (use_fill) {
-      return update_impl<CM,HD,true,double>(x,alpha,beta,get_mask_value<int>(*this,x));
+      return update_impl<CM,HD,true,double>(x,alpha,beta,get_mask_value<double>(*this,x));
     } else {
       return update_impl<CM,HD,false,double>(x,alpha,beta);
     }
