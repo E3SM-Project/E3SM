@@ -3,10 +3,12 @@
 
 #include "share/util/eamxx_universal_constants.hpp"
 
+#include <ekat/ekat_scalar_traits.hpp>
+#include <ekat/util/ekat_math_utils.hpp>
+
 // For KOKKOS_INLINE_FUNCTION
 #include <Kokkos_Core.hpp>
 #include <type_traits>
-#include "ekat/ekat_scalar_traits.hpp"
 
 namespace scream {
 
@@ -30,7 +32,9 @@ enum class CombineMode {
   Replace,    // out = alpha*in
   Update,     // out = beta*out + alpha*in
   Multiply,   // out = (beta*out)*(alpha*in)
-  Divide      // out = (beta*out)/(alpha*in)
+  Divide,     // out = (beta*out)/(alpha*in)
+  Max,        // out = max(beta*out,alpha*in)
+  Min         // out = min(beta*out,alpha*in)
 };
 
 // Small helper functions to combine a new value with an old one.
@@ -47,6 +51,8 @@ KOKKOS_FORCEINLINE_FUNCTION
 void combine (const ScalarIn& newVal, ScalarOut& result,
               const CoeffType alpha, const CoeffType beta)
 {
+  using ekat::impl::max;
+  using ekat::impl::min;
   switch (CM) {
     case CombineMode::Replace:
       result = alpha*newVal;
@@ -60,6 +66,12 @@ void combine (const ScalarIn& newVal, ScalarOut& result,
       break;
     case CombineMode::Divide:
       result /= (alpha/beta) * newVal;
+      break;
+    case CombineMode::Max:
+      result  = max(result,static_cast<const ScalarOut&>(newVal));
+      break;
+    case CombineMode::Min:
+      result  = min(result,static_cast<const ScalarOut&>(newVal));
       break;
   }
 }
@@ -83,6 +95,11 @@ void combine_and_fill (const ScalarIn& newVal, ScalarOut& result, const ScalarOu
         combine<CM>(newVal,result,alpha,beta);
       }
       break;
+    case CombineMode::Max:
+    case CombineMode::Min:
+      if (newVal != fill_val)
+        combine<CM>(newVal,result,alpha,beta);
+        
   }
 }
 
