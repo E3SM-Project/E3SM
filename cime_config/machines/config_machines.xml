@@ -2315,6 +2315,7 @@
       <cmd_path lang="csh">module</cmd_path>
       <modules>
         <command name="purge"/>
+        <command name="load">python/3.9.16-gm6ql7v</command>
         <command name="load">cmake/3.26.3-nszudya</command>
       </modules>
       <modules compiler="intel">
@@ -2446,6 +2447,7 @@
       <cmd_path lang="csh">module</cmd_path>
       <modules>
         <command name="purge"/>
+        <command name="load">python/3.11.7-iexc6vq</command>
         <command name="load">subversion/1.14.0-e4smcy3</command>
         <command name="load">perl/5.32.0-bsnc6lt</command>
         <command name="load">cmake/3.24.2-whgdv7y</command>
@@ -3368,6 +3370,7 @@
        <cmd_path lang="csh">module</cmd_path>
        <cmd_path lang="python">/soft/sunspot_migrate/soft/packaging/lmod/lmod/libexec/lmod python</cmd_path>
        <modules>
+          <command name="load">python</command>
           <command name="load">cmake</command>
         </modules>
         <modules compiler="!gnu">
