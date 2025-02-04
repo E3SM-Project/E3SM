@@ -43,9 +43,15 @@ macro(build_model COMP_CLASS COMP_NAME)
   # Build & include dependency files
   #-------------------------------------------------------------------------------
 
-  gather_sources("${FILEPATH_DIRS}" "${CIMEROOT}")
-  set(SOURCES ${SOURCES_RESULT})
-  set(GEN_F90_SOURCES ${GEN_F90_SOURCES_RESULT})
+  if (COMP_NAME STREQUAL "ww3")
+    include(${PROJECT_SOURCE_DIR}/ww3/src/gather_ww3_sources.cmake)
+    set(SOURCES ${SOURCES_RESULT})
+    set(GEN_F90_SOURCES ${GEN_F90_SOURCES_RESULT})
+  else()
+    gather_sources("${FILEPATH_DIRS}" "${CIMEROOT}")
+    set(SOURCES ${SOURCES_RESULT})
+    set(GEN_F90_SOURCES ${GEN_F90_SOURCES_RESULT})
+  endif()
 
   foreach(ITEM IN LISTS CPP_DIRS)
     if (EXISTS ${ITEM})
@@ -311,6 +317,22 @@ macro(build_model COMP_CLASS COMP_NAME)
           target_link_libraries(${TARGET_NAME} PRIVATE "${PETSC_LIBRARIES}")
           target_include_directories(${TARGET_NAME} PRIVATE "${PETSC_INCLUDES}")
         endif()
+      endif()
+      if (COMP_NAME STREQUAL "ww3")
+        #-------------------------
+        # Determine compile definitions for wav
+        #-------------------------
+        foreach(switch ${switches})
+          target_compile_definitions("${TARGET_NAME}" PUBLIC W3_${switch})
+        endforeach()
+
+        set_property(SOURCE "${PROJECT_SOURCE_DIR}/ww3/src/WW3/model/src/w3initmd.F90" APPEND PROPERTY COMPILE_DEFINITIONS "__WW3_SWITCHES__=\'\'")
+
+        add_executable(ww3_grid "${PROJECT_SOURCE_DIR}/ww3/src/WW3/model/src/ww3_grid.F90")
+        target_link_libraries(ww3_grid PRIVATE "${TARGET_NAME}")
+
+        #add_executable(ww3_shel "${PROJECT_SOURCE_DIR}/ww3/src/WW3/model/src/ww3_shel.F90")
+        #target_link_libraries(ww3_shel PRIVATE "${TARGET_NAME}")
       endif()
       if (USE_KOKKOS)
         target_link_libraries (${TARGET_NAME} PRIVATE Kokkos::kokkos)
