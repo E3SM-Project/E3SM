@@ -20,6 +20,7 @@ Here is an example command that can be used to generate one as of NCO version 5.
 import datetime, os, numpy as np, xarray as xr, numba, itertools
 user, host = os.getenv('USER'), os.getenv('HOST')
 source_code_meta = 'generate_domain_E3SM.py'
+output_netcdf_type = 'NETCDF3_64BIT_DATA'
 #---------------------------------------------------------------------------------------------------
 class clr:END,RED,GREEN,MAGENTA,CYAN = '\033[0m','\033[31m','\033[32m','\033[35m','\033[36m'
 #---------------------------------------------------------------------------------------------------
@@ -258,7 +259,7 @@ def main():
     ds_out['frac'] = xr.DataArray( ofrac       .values.reshape([nj,ni]),   dims=['nj','ni'])
     ds_out['mask'] = xr.DataArray( omask       .values.reshape([nj,ni]),   dims=['nj','ni'])
 
-  ds_out.to_netcdf(path=domain_file_ocn_on_ocn,mode='w')
+  ds_out.to_netcdf(path=domain_file_ocn_on_ocn, mode='w', format=output_netcdf_type)
 
   print(f'successfully created domain file: {clr.MAGENTA}{domain_file_ocn_on_ocn}{clr.END}')
 
@@ -333,7 +334,7 @@ def main():
 
   add_metadata(ds_out)
 
-  ds_out.to_netcdf(path=domain_file_lnd_on_atm,mode='w')
+  ds_out.to_netcdf(path=domain_file_lnd_on_atm, mode='w', format=output_netcdf_type)
 
   print(f'successfully created domain file: {clr.MAGENTA}{domain_file_lnd_on_atm}{clr.END}')
 
@@ -364,7 +365,7 @@ def main():
 
   add_metadata(ds_out)
 
-  ds_out.to_netcdf(path=domain_file_ocn_on_atm,mode='w')
+  ds_out.to_netcdf(path=domain_file_ocn_on_atm, mode='w', format=output_netcdf_type)
 
   print(f'successfully created domain file: {clr.MAGENTA}{domain_file_ocn_on_atm}{clr.END}')
   print()
