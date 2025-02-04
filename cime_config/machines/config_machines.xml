@@ -5139,6 +5139,7 @@
       </modules>
 
       <modules compiler="gnu">
+	<command name="load">python</command>
 	<command name="load">cmake</command>
 	<command name="load">perl</command>
 	<command name="load">perl-xml-libxml</command>
