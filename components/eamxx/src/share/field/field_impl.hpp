@@ -325,33 +325,9 @@ void Field::sync_views_impl () const {
   }
 }
 
-template<HostOrDevice HD>
-void Field::
-deep_copy (const Field& src) const {
-  EKAT_REQUIRE_MSG (not m_is_read_only,
-      "Error! Cannot call deep_copy on read-only fields.\n");
-
-  EKAT_REQUIRE_MSG (data_type()==src.data_type(),
-      "Error! Cannot copy fields with different data type.\n");
-
-  switch (data_type()) {
-    case DataType::IntType:
-      deep_copy_impl<HD,int>(src);
-      break;
-    case DataType::FloatType:
-      deep_copy_impl<HD,float>(src);
-      break;
-    case DataType::DoubleType:
-      deep_copy_impl<HD,double>(src);
-      break;
-    default:
-      EKAT_ERROR_MSG ("Error! Unrecognized field data type in Field::deep_copy.\n");
-  }
-}
-
 template<typename ST, HostOrDevice HD>
 void Field::
-deep_copy (const ST value) const {
+deep_copy (const ST value) {
   EKAT_REQUIRE_MSG (not m_is_read_only,
       "Error! Cannot call deep_copy on read-only fields.\n");
 
@@ -384,155 +360,8 @@ deep_copy (const ST value) const {
 }
 
 template<HostOrDevice HD, typename ST>
-void Field::
-deep_copy_impl (const Field& src) const {
-
-  const auto& layout     =     get_header().get_identifier().get_layout();
-  const auto& layout_src = src.get_header().get_identifier().get_layout();
-  EKAT_REQUIRE_MSG(layout==layout_src,
-       "ERROR: Unable to copy field " + src.get_header().get_identifier().name() +
-          " to field " + get_header().get_identifier().name() + ".  Layouts don't match.\n");
-  const auto  rank = layout.rank();
-
-  // For rank 0 view, we only need to copy a single value and return
-  if (rank == 0) {
-    auto v     =     get_view<      ST,HD>();
-    auto v_src = src.get_view<const ST,HD>();
-    Kokkos::deep_copy(v,v_src);
-    return;
-  }
-
-  // Note: we can't just do a deep copy on get_view_impl<HD>(), since this
-  //       field might be a subfield of another. We need the reshaped view.
-  //       Also, don't call Kokkos::deep_copy if this field and src have
-  //       different pack sizes.
-  auto src_alloc_props = src.get_header().get_alloc_properties();
-  auto tgt_alloc_props =     get_header().get_alloc_properties();
-
-  using device_t = typename Field::get_device<HD>;
-  using exec_space = typename device_t::execution_space;
-  using RangePolicy = Kokkos::RangePolicy<exec_space>;
-
-  auto policy = RangePolicy(0,layout.size());
-
-  using extents_type = typename ekat::KokkosTypes<device_t>::template view_1d<int>;
-  extents_type ext;
-  if constexpr (HD==Device) {
-    ext = layout.extents();
-  } else {
-    ext = layout.extents_h();
-  }
-  switch (rank) {
-    case 1:
-      {
-        if (src_alloc_props.contiguous() and tgt_alloc_props.contiguous()) {
-          auto v     =     get_view<      ST*,HD>();
-          auto v_src = src.get_view<const ST*,HD>();
-          Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-            v(idx) = v_src(idx);
-          });
-        } else {
-          auto v     =     get_strided_view<      ST*,HD>();
-          auto v_src = src.get_strided_view<const ST*,HD>();
-          Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-            v(idx) = v_src(idx);
-          });
-        }
-      }
-      break;
-    case 2:
-      {
-        if (src_alloc_props.contiguous() and tgt_alloc_props.contiguous()) {
-          auto v     =     get_view<      ST**,HD>();
-          auto v_src = src.get_view<const ST**,HD>();
-          Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-            int i,j;
-            unflatten_idx(idx,ext,i,j);
-            v(i,j) = v_src(i,j);
-          });
-        }
-        else {
-          auto v     =     get_strided_view<      ST**,HD>();
-          auto v_src = src.get_strided_view<const ST**,HD>();
-          Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-            int i,j;
-            unflatten_idx(idx,ext,i,j);
-            v(i,j) = v_src(i,j);
-          });
-        }
-      }
-      break;
-    case 3:
-      {
-        if (src_alloc_props.contiguous() and tgt_alloc_props.contiguous()) {
-          auto v     =     get_view<      ST***,HD>();
-          auto v_src = src.get_view<const ST***,HD>();
-          Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-            int i,j,k;
-            unflatten_idx(idx,ext,i,j,k);
-            v(i,j,k) = v_src(i,j,k);
-          });
-        } else {
-          auto v     =     get_strided_view<      ST***,HD>();
-          auto v_src = src.get_strided_view<const ST***,HD>();
-          Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-            int i,j,k;
-            unflatten_idx(idx,ext,i,j,k);
-            v(i,j,k) = v_src(i,j,k);
-          });
-        }
-      }
-      break;
-    case 4:
-      {
-        if (src_alloc_props.contiguous() and tgt_alloc_props.contiguous()) {
-          auto v     =     get_view<      ST****,HD>();
-          auto v_src = src.get_view<const ST****,HD>();
-          Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-            int i,j,k,l;
-            unflatten_idx(idx,ext,i,j,k,l);
-            v(i,j,k,l) = v_src(i,j,k,l);
-          });
-        } else {
-          auto v     =     get_strided_view<      ST****,HD>();
-          auto v_src = src.get_strided_view<const ST****,HD>();
-          Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-            int i,j,k,l;
-            unflatten_idx(idx,ext,i,j,k,l);
-            v(i,j,k,l) = v_src(i,j,k,l);
-          });
-        }
-      }
-      break;
-    case 5:
-      {
-        if (src_alloc_props.contiguous() and tgt_alloc_props.contiguous()) {
-          auto v     =     get_view<      ST*****,HD>();
-          auto v_src = src.get_view<const ST*****,HD>();
-          Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-            int i,j,k,l,m;
-            unflatten_idx(idx,ext,i,j,k,l,m);
-            v(i,j,k,l,m) = v_src(i,j,k,l,m);
-          });
-        } else {
-          auto v     =     get_view<      ST*****,HD>();
-          auto v_src = src.get_view<const ST*****,HD>();
-          Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-            int i,j,k,l,m;
-            unflatten_idx(idx,ext,i,j,k,l,m);
-            v(i,j,k,l,m) = v_src(i,j,k,l,m);
-          });
-        }
-      }
-      break;
-    default:
-      EKAT_ERROR_MSG ("Error! Unsupported field rank in 'deep_copy'.\n");
-  }
-}
-
-template<HostOrDevice HD, typename ST>
-void Field::deep_copy_impl (const ST value) const {
-
+void Field::deep_copy_impl (const ST value)
+{
   // Note: we can't just do a deep copy on get_view_impl<HD>(), since this
   //       field might be a subfield of another. Instead, get the
   //       reshaped view first, based on the field rank.
@@ -621,6 +450,11 @@ template<HostOrDevice HD, CombineMode CM, typename ST>
 void Field::
 update (const Field& x, const ST alpha, const ST beta)
 {
+  // Check this field is writable
+  EKAT_REQUIRE_MSG (not is_read_only(),
+      "Error! Cannot update field, as it is read-only.\n"
+      " - field name: " + name() + "\n");
+
   const auto& dt = data_type();
 
   // Determine if there is a FillValue that requires extra treatment.
@@ -671,11 +505,6 @@ update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
   EKAT_REQUIRE_MSG (x.is_allocated(),
       "Error! Cannot update field, since source field is not allocated.\n"
       " - field name: " + x.name() + "\n");
-
-  // Check y is writable
-  EKAT_REQUIRE_MSG (not is_read_only(),
-      "Error! Cannot update field, as it is read-only.\n"
-      " - field name: " + name() + "\n");
 
   // Check compatibility between fields data type
   const auto dt_x = x.data_type();

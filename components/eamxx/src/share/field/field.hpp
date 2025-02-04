@@ -201,11 +201,11 @@ public:
 
   // Set the field to a constant value (on host or device)
   template<typename T, HostOrDevice HD = Device>
-  void deep_copy (const T value) const;
+  void deep_copy (const T value);
 
-  // Copy the data from one field to this field
+  // Copy the data from one field to this field (recycle update method)
   template<HostOrDevice HD = Device>
-  void deep_copy (const Field& src) const;
+  void deep_copy (const Field& src) { update<HD,CombineMode::Replace>(src,1,0); }
 
   // Updates this field y as y=alpha*x+beta*y
   // NOTE: ST=void is just so we can give a default to HD,
@@ -325,10 +325,7 @@ protected:
   void sync_views_impl () const;
 
   template<HostOrDevice HD, typename ST>
-  void deep_copy_impl (const ST value) const;
-
-  template<HostOrDevice HD, typename ST>
-  void deep_copy_impl (const Field& src) const;
+  void deep_copy_impl (const ST value);
 
   // The update method calls this, with ST matching this field data type.
   // Note: use_fill is used to determine *at compile time* whether to use
@@ -342,6 +339,7 @@ protected:
   // NOTE: if neither lsh nor rhs has "mask_value" extra data, this will throw.
   template<typename T>
   static T get_mask_value (const Field& lhs, const Field& rhs) {
+    // If present, prefer using the lhs native mask value.
     if (lhs.get_header().has_extra_data("mask_value")) {
       return lhs.get_header().get_extra_data<T>("mask_value");
     } else if (rhs.get_header().has_extra_data("mask_value")) {
