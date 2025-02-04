@@ -333,7 +333,7 @@ protected:
   // The update method calls this, with ST matching this field data type.
   // Note: use_fill is used to determine *at compile time* whether to use
   // the combine<CM> utility or combine_and_fill<CM>
-  template<CombineMode CM, HostOrDevice HD, bool use_fill, typename ST>
+  template<CombineMode CM, HostOrDevice HD, bool use_fill, typename ST, typename XST>
   void update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val = 0);
 
 protected:

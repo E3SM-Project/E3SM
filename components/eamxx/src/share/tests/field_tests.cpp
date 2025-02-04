@@ -900,6 +900,15 @@ TEST_CASE ("update") {
       f3.deep_copy(0.5);
       f2.scale_inv(f3);
       REQUIRE (views_are_equal(f1, f2));
+
+      // Try with int rhs
+      Field f2i = f_int.clone();
+      f1.deep_copy(2.0);
+      f2i.deep_copy(2);
+      f1.scale_inv(f2i);
+      auto one = f_real.clone();
+      one.deep_copy(1);
+      REQURIE (views_are_equal(one,f1));
     }
 
     SECTION ("int") {

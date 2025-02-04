@@ -456,12 +456,15 @@ update (const Field& x, const ST alpha, const ST beta)
       " - field name: " + name() + "\n");
 
   const auto& dt = data_type();
+  const auto& rhs_dt = x.data_type();
 
-  // Determine if there is a FillValue that requires extra treatment.
-  bool use_fill = get_header().has_extra_data("mask_value") or
-                  x.get_header().has_extra_data("mask_value");
+  // We allow to update, say, a double field with an int one, but not viceversa. The must be no narrowing.
+  EKAT_REQUIRE_MSG (not is_narrowing_conversion(rhs_dt,dt),
+      "Error! Right hand side values may be narrowed when converted to lhs data type.\n"
+      " - rhs data type: " + e2str(rhs_dt) + "\n"
+      " - lhs data type: " + e2str(dt) + "\n");
 
-  // If user passes, say, double alpha/beta for an int field, we should error out, warning about
+  // Similarly, if user passes, say, double alpha/beta for an int field, we should error out, warning about
   // a potential narrowing rounding. The other way around, otoh, is allowed (even though
   // there's an upper limit to the int values that a double can store, it is unlikely the user
   // will use such large factors).
@@ -471,30 +474,54 @@ update (const Field& x, const ST alpha, const ST beta)
       " - x/y data type  : " + e2str(dt) + "\n"
       " - coeff data type: " + e2str(dt_st) + "\n");
 
+  // Determine if there is a FillValue that requires extra treatment.
+  bool use_fill = get_header().has_extra_data("mask_value") or
+                  x.get_header().has_extra_data("mask_value");
+
   if (dt==DataType::IntType) {
     if (use_fill) {
-      return update_impl<CM,HD,true,int>(x,alpha,beta,get_mask_value<int>(*this,x));
+      return update_impl<CM,HD,true,int,int>(x,alpha,beta,get_mask_value<int>(*this,x));
     } else {
-      return update_impl<CM,HD,false,int>(x,alpha,beta);
+      return update_impl<CM,HD,false,int,int>(x,alpha,beta);
     }
   } else if (dt==DataType::FloatType) {
     if (use_fill) {
-      return update_impl<CM,HD,true, float>(x,alpha,beta,get_mask_value<float>(*this,x));
+      if (rhs_dt==DataType::FloatType) {
+        return update_impl<CM,HD,true, float,float>(x,alpha,beta,get_mask_value<float>(*this,x));
+      } else {
+        return update_impl<CM,HD,true, float,int>(x,alpha,beta,get_mask_value<float>(*this,x));
+      }
     } else {
-      return update_impl<CM,HD,false,float>(x,alpha,beta);
+      if (rhs_dt==DataType::FloatType) {
+        return update_impl<CM,HD,false, float,float>(x,alpha,beta);
+      } else {
+        return update_impl<CM,HD,false, float,int>(x,alpha,beta);
+      }
     }
   } else if (dt==DataType::DoubleType) {
     if (use_fill) {
-      return update_impl<CM,HD,true,double>(x,alpha,beta,get_mask_value<double>(*this,x));
+      if (rhs_dt==DataType::DoubleType) {
+        return update_impl<CM,HD,true, double,double>(x,alpha,beta,get_mask_value<double>(*this,x));
+      } else if (rhs_dt==DataType::FloatType) {
+        return update_impl<CM,HD,true, double,float>(x,alpha,beta,get_mask_value<double>(*this,x));
+      } else {
+        return update_impl<CM,HD,true, double,int>(x,alpha,beta,get_mask_value<double>(*this,x));
+      }
     } else {
-      return update_impl<CM,HD,false,double>(x,alpha,beta);
+      if (rhs_dt==DataType::DoubleType) {
+        return update_impl<CM,HD,false, double,double>(x,alpha,beta);
+      } else if (rhs_dt==DataType::FloatType) {
+        return update_impl<CM,HD,false, double,float>(x,alpha,beta);
+      } else {
+        return update_impl<CM,HD,false, double,int>(x,alpha,beta);
+      }
     }
   } else {
     EKAT_ERROR_MSG ("Error! Unrecognized/unsupported field data type in Field::update.\n");
   }
 }
 
-template<CombineMode CM, HostOrDevice HD, bool use_fill, typename ST>
+template<CombineMode CM, HostOrDevice HD, bool use_fill, typename ST, typename XST>
 void Field::
 update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
 {
@@ -545,7 +572,7 @@ update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
   switch (x_l.rank()) {
     case 0:
       {
-        auto xv = x.get_view<const ST,HD>();
+        auto xv = x.get_view<const XST,HD>();
         auto yv =   get_view<      ST,HD>();
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const int /*idx*/) {
           if constexpr (use_fill)
@@ -560,7 +587,7 @@ update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
         // Must handle the case where one of the two views is strided
         if (x.get_header().get_alloc_properties().contiguous() and
               get_header().get_alloc_properties().contiguous()) {
-          auto xv = x.get_view<const ST*,HD>();
+          auto xv = x.get_view<const XST*,HD>();
           auto yv =   get_view<      ST*,HD>();
           Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
             if constexpr (use_fill)
@@ -569,7 +596,7 @@ update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
               combine<CM>(xv(idx),yv(idx),alpha,beta);
           });
         } else {
-          auto xv = x.get_strided_view<const ST*,HD>();
+          auto xv = x.get_strided_view<const XST*,HD>();
           auto yv =   get_strided_view<      ST*,HD>();
           Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
             if constexpr (use_fill)
@@ -582,7 +609,7 @@ update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
       break;
     case 2:
       {
-        auto xv = x.get_view<const ST**,HD>();
+        auto xv = x.get_view<const XST**,HD>();
         auto yv =   get_view<      ST**,HD>();
         Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
           int i,j;
@@ -596,7 +623,7 @@ update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
       break;
     case 3:
       {
-        auto xv = x.get_view<const ST***,HD>();
+        auto xv = x.get_view<const XST***,HD>();
         auto yv =   get_view<      ST***,HD>();
         Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
           int i,j,k;
@@ -610,7 +637,7 @@ update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
       break;
     case 4:
       {
-        auto xv = x.get_view<const ST****,HD>();
+        auto xv = x.get_view<const XST****,HD>();
         auto yv =   get_view<      ST****,HD>();
         Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
           int i,j,k,l;
@@ -624,7 +651,7 @@ update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
       break;
     case 5:
       {
-        auto xv = x.get_view<const ST*****,HD>();
+        auto xv = x.get_view<const XST*****,HD>();
         auto yv =   get_view<      ST*****,HD>();
         Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
           int i,j,k,l,m;
@@ -638,7 +665,7 @@ update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
       break;
     case 6:
       {
-        auto xv = x.get_view<const ST******,HD>();
+        auto xv = x.get_view<const XST******,HD>();
         auto yv =   get_view<      ST******,HD>();
         Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
           int i,j,k,l,m,n;
