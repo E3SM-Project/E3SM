@@ -298,7 +298,7 @@ contains
                endif
 
                if (.not. load_maps_from_disk_o2a) then
-                  ierr =  iMOAB_ComputeMeshIntersectionOnSphere ( mboxid, mbaxid, mbintxoa )
+                  ierr = iMOAB_ComputeMeshIntersectionOnSphere( mboxid, mbaxid, mbintxoa )
                   if (ierr .ne. 0) then
                      write(logunit,*) subname,' error in computing OCN-ATM mesh intersection'
                      call shr_sys_abort(subname//' ERROR in computing OCN-ATM mesh intersection')
@@ -306,14 +306,27 @@ contains
                   if (iamroot_CPLID) then
                      write(logunit,*) 'iMOAB mesh intersection between OCN and ATM with id:', idintx
                   endif
+
+#ifdef MOABDEBUG
+               wopts = C_NULL_CHAR
+               call shr_mpi_commrank( mpicom_CPLID, rank )
+               if (rank .lt. 3) then
+                  write(lnum,"(I0.2)")rank !
+                  outfile = 'intx_oa_'//trim(lnum)// '.h5m' // C_NULL_CHAR
+                  ierr = iMOAB_WriteMesh(mbintxoa, outfile, wopts) ! write local intx file
+                  if (ierr .ne. 0) then
+                     write(logunit,*) subname,' error in writing OCN-ATM intersection file '
+                     call shr_sys_abort(subname//' ERROR in writing OCN-ATM intersection file ')
+                  endif
+               endif
+! endif for MOABDEBUG
+#endif
                endif
 
                ! we also need to compute the comm graph for the second hop, from the ocn on coupler to the
                ! ocean for the intx ocean-atm context (coverage)
                type1 = 3; !  fv for ocean and atm; fv-cgll does not work anyway
                type2 = 3;
-               ! ierr      = iMOAB_ComputeCommGraph( mboxid, mbintxoa, &mpicom_CPLID, &mpigrp_CPLID, &mpigrp_CPLID, &type1, &type2,
-               !                              &ocn_id, &idintx)
                ierr = iMOAB_ComputeCommGraph( mboxid, mbintxoa, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
                                           ocn(1)%cplcompid, idintx)
                if (ierr .ne. 0) then
@@ -369,23 +382,8 @@ contains
                   call moab_map_init_rcfile( mboxid, mbaxid, mbintxoa, type1, &
                         'seq_maps.rc', 'ocn2atm_smapname:', 'ocn2atm_smaptype:',samegrid_ao, &
                         wgtIdo2a, 'mapper_Sof2a MOAB initialization', esmf_map_flag)
-
                endif
 
-#ifdef MOABDEBUG
-               wopts = C_NULL_CHAR
-               call shr_mpi_commrank( mpicom_CPLID, rank )
-               if (rank .lt. 3 .and. .not. load_maps_from_disk_o2a) then
-                  write(lnum,"(I0.2)")rank !
-                  outfile = 'intx_oa_'//trim(lnum)// '.h5m' // C_NULL_CHAR
-                  ierr = iMOAB_WriteMesh(mbintxoa, outfile, wopts) ! write local intx file
-                  if (ierr .ne. 0) then
-                     write(logunit,*) subname,' error in writing intx file '
-                     call shr_sys_abort(subname//' ERROR in writing intx file ')
-                  endif
-               endif
-! endif for MOABDEBUG
-#endif
             else ! samegrid_ao = TRUE
 
                ! ATM and OCN components use the same mesh and DoF numbering (OCN is a subset of ATM);
