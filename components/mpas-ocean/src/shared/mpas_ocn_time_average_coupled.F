@@ -502,7 +502,7 @@ module ocn_time_average_coupled
               ! this does not account for depression due to ice shelf cavities or sea ice
               iLevelCritDepth = nVertLevels  ! default to deepest layer if we don't find the desired depth
               do iLevel = 1, nVertLevels
-                 if(refBottomDepth(iLevel) > glcZLevels(iLevel)) then
+                 if(refBottomDepth(iLevel) > glcZLevels(iLevelGlc)) then
                     iLevelCritDepth = iLevel
                     exit
                  end if
@@ -515,7 +515,7 @@ module ocn_time_average_coupled
                     ! note: assuming no LandIce cavity, but we may want to support that
                     freezingTemp = ocn_freezing_temperature(salinity=activeTracers(indexSalinity, iLevelCritDepth, iCell), &
                        pressure=pressure(iLevelCritDepth, iCell),  inLandIceCavity=.false.)
-                    avgThermalForcingAtZLevels(iCell, iLevelGlc) = ( avgThermalForcingAtCritDepth(iCell) * nAccumulatedCoupled &
+                    avgThermalForcingAtZLevels(iCell, iLevelGlc) = ( avgThermalForcingAtZLevels(iCell, iLevelGlc) * nAccumulatedCoupled &
                        + activeTracers(indexTemperature, iLevelCritDepth, iCell) - freezingTemp ) / ( nAccumulatedCoupled + 1)
                   end if
               end do
