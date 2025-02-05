@@ -167,7 +167,7 @@ P3MainPart1Data::P3MainPart1Data(
 
 P3MainPart2Data::P3MainPart2Data(
   Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
-  bool do_predict_nc_, bool do_prescribed_CCN_, Real dt_, Real, bool) :
+  bool do_predict_nc_, bool do_prescribed_CCN_, bool use_hetfrz_classnuc_, Real dt_, Real, bool) :
   PhysicsTestData( { {(kte_ - kts_) + 1} }, { {
     &hetfrz_immersion_nucleation_tend, &hetfrz_contact_nucleation_tend, &hetfrz_deposition_nucleation_tend,
     &pres, &dpres, &dz, &nc_nuceat_tend, &inv_exner, &exner, &inv_cld_frac_l, &inv_cld_frac_i, &inv_cld_frac_r, &ni_activated, &inv_qc_relvar, &cld_frac_i, &cld_frac_l, &cld_frac_r, &qv_prev, &t_prev,
@@ -177,7 +177,7 @@ P3MainPart2Data::P3MainPart2Data(
     &cdistr, &mu_r, &lamr, &logn0r, &qv2qi_depos_tend, &precip_total_tend, &nevapr, &qr_evap_tend, &vap_liq_exchange,
     &vap_ice_exchange, &liq_ice_exchange, &pratot, &prctot} }),
   kts(kts_), kte(kte_), kbot(kbot_), ktop(ktop_), kdir(kdir_),
-  do_predict_nc(do_predict_nc_), do_prescribed_CCN(do_prescribed_CCN_), dt(dt_), inv_dt(1 / dt)
+  do_predict_nc(do_predict_nc_), do_prescribed_CCN(do_prescribed_CCN_), use_hetfrz_classnuc(use_hetfrz_classnuc_), dt(dt_)
 {}
 
 ///////////////////////////////////////////////////////////////////////////////

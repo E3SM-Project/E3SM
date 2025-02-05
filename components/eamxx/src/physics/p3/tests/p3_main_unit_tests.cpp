@@ -166,7 +166,7 @@ void run_bfb_p3_main_part2()
   constexpr Scalar sup_lower = -0.1;
   constexpr Scalar latvap = C::LatVap;
   constexpr Scalar latice = C::LatIce;
-
+std::cout<<"BALLI--1"<<std::endl;
   P3MainPart2Data isds_baseline[] = {
     //            kts, kte, ktop, kbot, kdir, do_predict_nc, do_prescribed_CCN, use_hetfrz_classnuc,      dt
     P3MainPart2Data(1,  72,    1,   72,    1, false,         true,   true,  1.800E+03),
@@ -174,7 +174,7 @@ void run_bfb_p3_main_part2()
     P3MainPart2Data(1,  72,   72,    1,   -1, false,         false,  true,  1.800E+03),
     P3MainPart2Data(1,  72,   72,    1,   -1, true,          false,  false, 1.800E+03),
   };
-
+std::cout<<"BALLI--2"<<std::endl;
   static constexpr Int num_runs = sizeof(isds_baseline) / sizeof(P3MainPart2Data);
 
   for (auto& d : isds_baseline) {
@@ -509,7 +509,9 @@ void run_bfb_p3_main()
 void run_bfb()
 {
   run_bfb_p3_main_part1();
+  std::cout<<"BALLI_1"<<std::endl;
   run_bfb_p3_main_part2();
+  std::cout<<"BALLI_2"<<std::endl;
   run_bfb_p3_main_part3();
   run_bfb_p3_main();
 }

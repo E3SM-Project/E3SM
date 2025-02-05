@@ -702,7 +702,7 @@ struct P3MainPart2Data : public PhysicsTestData
   bool is_hydromet_present;
 
   P3MainPart2Data(Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
-                  bool do_predict_nc_, bool do_prescribed_CCN, Real dt_, Real=0., bool=false);
+                  bool do_predict_nc_, bool do_prescribed_CCN, bool use_hetfrz_classnuc, Real dt_, Real=0., bool=false);
 
   PTD_STD_DEF(P3MainPart2Data, 10, kts, kte, kbot, ktop, kdir, do_predict_nc, do_prescribed_CCN, dt, inv_dt, is_hydromet_present);
 
