@@ -1,0 +1,286 @@
+! Include bit-for-bit math macros.
+!#include "bfb_math.inc"
+
+module wv_sat_scream
+
+  !------------------------------------------------------------------------------------
+  !This module has functions which scream uses for computing saturation vapor pressure
+  !of ice and liquid.
+  !Note: I just copied them over from micro_p3.F90 without any cleanup as this code
+  ! not be maintained on long term basis
+  !------------------------------------------------------------------------------------
+
+  ! get real kind from utils
+  use micro_p3_utils, only: T_zerodegc
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use physics_share_f2c, only: scream_pow, scream_sqrt, scream_cbrt, scream_gamma, scream_log, &
+                               scream_log10, scream_exp, scream_tanh
+#endif
+
+
+  implicit none
+  private
+
+  public:: qv_sat_dry, qv_sat_wet, qv_sat, MurphyKoop_svp
+
+contains
+
+  
+  !===========================================================================================
+  real function qv_sat_dry(t_atm,p_atm_dry,i_wrt)
+
+    !------------------------------------------------------------------------------------
+    ! Calls MurphyKoop to obtain the saturation vapor pressure, and then computes
+    ! and returns the dry saturation mixing ratio, with respect to either liquid or ice,
+    ! depending on value of 'i_wrt'
+    !------------------------------------------------------------------------------------
+
+    use micro_p3_utils, only: ep_2
+    implicit none
+
+    !Calling parameters:
+    real, intent(in)    :: t_atm      !temperature [K]
+    real, intent(in)    :: p_atm_dry  !pressure    [Pa]
+    integer, intent(in) :: i_wrt  !index, 0 = w.r.t. liquid, 1 = w.r.t. ice
+
+    !Local variables:
+    real            :: e_pres         !saturation vapor pressure [Pa]
+
+    !e_pres    = polysvp1(t_atm,i_wrt)
+    e_pres     = MurphyKoop_svp(t_atm,i_wrt)
+    qv_sat_dry = ep_2*e_pres/max(1.e-3,p_atm_dry)
+
+    return
+
+  end function qv_sat_dry
+
+  !===========================================================================================
+  real function qv_sat(t_atm,p_atm,i_wrt)
+
+    !------------------------------------------------------------------------------------
+    ! Legacy for backwards compatibility with eam. Prefer the dry/wet versions going forward.
+    ! eamxx will use the dry/wet versions.
+    !------------------------------------------------------------------------------------
+
+    use micro_p3_utils, only: ep_2
+    implicit none
+
+    !Calling parameters:
+    real, intent(in)    :: t_atm      !temperature [K]
+    real, intent(in)    :: p_atm      !pressure    [Pa]
+    integer, intent(in) :: i_wrt  !index, 0 = w.r.t. liquid, 1 = w.r.t. ice
+
+    !Local variables:
+    real            :: e_pres         !saturation vapor pressure [Pa]
+
+    !e_pres    = polysvp1(t_atm,i_wrt)
+    e_pres = MurphyKoop_svp(t_atm,i_wrt)
+    qv_sat = ep_2*e_pres/max(1.e-3,p_atm-e_pres)
+
+    return
+
+  end function qv_sat
+
+  !===========================================================================================
+
+  real function qv_sat_wet(t_atm,p_atm_dry,i_wrt,dp_wet,dp_dry)
+
+    !------------------------------------------------------------------------------------
+    ! Calls qv_sat_dry to obtain the dry saturation mixing ratio,
+    ! with respect to either liquid or ice, depending on value of 'i_wrt', 
+    ! and converts it to wet
+    !------------------------------------------------------------------------------------
+
+    implicit none
+
+    !Calling parameters:
+    real, intent(in)    :: t_atm      !temperature [K]
+    real, intent(in)    :: p_atm_dry  !pressure    [Pa]
+    real, intent(in)    :: dp_wet     !pseudodensity     [Pa]
+    real, intent(in)    :: dp_dry     !pseudodensity_dry [Pa]
+    integer, intent(in) :: i_wrt  !index, 0 = w.r.t. liquid, 1 = w.r.t. ice
+
+    !Local variables:
+    real                :: qsatdry
+
+    qsatdry    = qv_sat_dry(t_atm,p_atm_dry,i_wrt)
+    qv_sat_wet = qsatdry * dp_dry / dp_wet
+
+    return
+
+  end function qv_sat_wet
+  !===========================================================================================
+
+
+
+  real function MurphyKoop_svp(t, i_type)
+
+    implicit none
+
+    !-------------------------------------------------------------------
+    ! Compute saturation vapor pressure (returned in units of pa)
+    ! Inputs:
+    ! "t", units [K]
+    !  i_type refers to saturation with respect to liquid (0) or ice (1)
+    ! Author: Balwinder Singh (algorithm from CAM routine)
+    !--------------------------------------------------------------------
+
+    !Murphy & Koop (2005)
+    real, intent(in) :: t
+    integer, intent(in)     :: i_type
+
+    !local vars
+    character(len=1000) :: err_msg
+    real         :: logt, tmp
+
+    !parameters for ice saturation eqn
+    real, parameter :: ic(4)  =(/9.550426, 5723.265, 3.53068, &
+         0.00728332/)
+
+    !parameters for liq saturation eqn
+    real, parameter :: lq(10) = (/54.842763, 6763.22, 4.210, &
+         0.000367, 0.0415, 218.8, 53.878, 1331.22,       &
+         9.44523, 0.014025 /)
+
+    !------------------
+    !Check if temprature is within legitimate range
+    call check_temp(t, "MurphyKoop_svp")
+
+    logt = log(t)
+
+    if (i_type .eq. 1 .and. t .lt. T_zerodegc) then
+
+       !(good down to 110 K)
+       MurphyKoop_svp = exp(ic(1) - (ic(2) / t) + (ic(3) * logt) - (ic(4) * t))
+
+    elseif (i_type .eq. 0 .or. t .ge. T_zerodegc) then
+
+       ! (good for 123 < T < 332 K)
+       !For some reason, we cannot add line breaks if we use "bfb_exp", storing experssion in "tmp"
+       tmp = lq(1) - (lq(2) / t) - (lq(3) * logt) + (lq(4) * t) + &
+            (tanh(lq(5) * (t - lq(6))) * (lq(7) - (lq(8) / t) - &
+            (lq(9) * logt) + lq(10) * t))
+       MurphyKoop_svp = exp(tmp)
+    else
+
+       write(err_msg,*)'Error: Either MurphyKoop_svp i_type is not 0 or 1 or t=NaN. itype= ', &
+            i_type,' and temperature t=',t,' in file: ',__FILE__,' at line:',__LINE__
+    endif
+
+    return
+  end function MurphyKoop_svp
+
+  !
+  real function polysvp1(t,i_type)
+
+    !-------------------------------------------
+    !  COMPUTE SATURATION VAPOR PRESSURE
+    !  POLYSVP1 RETURNED IN UNITS OF PA.
+    !  T IS INPUT IN UNITS OF K.
+    !  i_type REFERS TO SATURATION WITH RESPECT TO LIQUID (0) OR ICE (1)
+    !-------------------------------------------
+
+    implicit none
+
+    real, intent(in) :: t
+    integer, intent(in)     :: i_type
+
+    ! REPLACE GOFF-GRATCH WITH FASTER FORMULATION FROM FLATAU ET AL. 1992, TABLE 4 (RIGHT-HAND COLUMN)
+
+    !local variables
+    character(len=1000) :: err_msg
+
+    ! ice
+    real a0i,a1i,a2i,a3i,a4i,a5i,a6i,a7i,a8i
+    data a0i,a1i,a2i,a3i,a4i,a5i,a6i,a7i,a8i /&
+         6.11147274,     0.503160820,     0.188439774e-1, &
+         0.420895665e-3, 0.615021634e-5,  0.602588177e-7, &
+         0.385852041e-9, 0.146898966e-11, 0.252751365e-14/
+
+    ! liquid
+    real a0,a1,a2,a3,a4,a5,a6,a7,a8
+
+    ! V1.7
+    data a0,a1,a2,a3,a4,a5,a6,a7,a8 /&
+         6.11239921,      0.443987641,     0.142986287e-1, &
+         0.264847430e-3,  0.302950461e-5,  0.206739458e-7, &
+         0.640689451e-10,-0.952447341e-13,-0.976195544e-15/
+    real dt
+
+    !-------------------------------------------
+
+    !------------------
+    !Check if temprature is within legitimate range
+    call check_temp(t, "polysvp1")
+
+
+    if (i_type.eq.1 .and. t.lt.T_zerodegc) then
+       ! ICE
+
+       !       Flatau formulation:
+       dt       = max(-80.,t-273.15)
+       polysvp1 = a0i + dt*(a1i+dt*(a2i+dt*(a3i+dt*(a4i+dt*(a5i+dt*(a6i+dt*(a7i+       &
+            a8i*dt)))))))
+       polysvp1 = polysvp1*100.
+
+       !       Goff-Gratch formulation:
+       !        POLYSVP1 = 10.**(-9.09718*(273.16/T-1.)-3.56654*                 &
+       !          log10(273.16/T)+0.876793*(1.-T/273.16)+                        &
+       !          log10(6.1071))*100.
+
+
+    elseif (i_type.eq.0 .or. t.ge.T_zerodegc) then
+       ! LIQUID
+
+       !       Flatau formulation:
+       dt       = max(-80.,t-273.15)
+       polysvp1 = a0 + dt*(a1+dt*(a2+dt*(a3+dt*(a4+dt*(a5+dt*(a6+dt*(a7+a8*dt)))))))
+       polysvp1 = polysvp1*100.
+
+       !       Goff-Gratch formulation:
+       !        POLYSVP1 = 10.**(-7.90298*(373.16/T-1.)+                         &
+       !             5.02808*log10(373.16/T)-                                    &
+       !             1.3816E-7*(10**(11.344*(1.-T/373.16))-1.)+                  &
+       !             8.1328E-3*(10**(-3.49149*(373.16/T-1.))-1.)+                &
+       !             log10(1013.246))*100.
+
+       !PMC added error checking
+    else
+
+       write(err_msg,*)'** polysvp1 i_type must be 0 or 1 but is: ', &
+            i_type,' temperature is:',t,' in file: ',__FILE__, &
+            ' at line:',__LINE__
+    endif
+
+    return
+
+  end function polysvp1
+
+  subroutine check_temp(t, subname)
+    !Check if temprature values are in legit range
+    use ieee_arithmetic,   only : ieee_is_finite, ieee_is_nan
+
+    implicit none
+
+    real,      intent(in) :: t
+    character(len=*), intent(in) :: subname
+
+    character(len=1000) :: err_msg
+
+    if(t <= 0.0) then
+       write(err_msg,*)'Error: Called from:',trim(adjustl(subname)),'; Temperature is:',t,' which is <= 0._r8 in file:',__FILE__, &
+            ' at line:',__LINE__
+    elseif(.not. ieee_is_finite(t)) then
+       write(err_msg,*)'Error: Called from:',trim(adjustl(subname)),'; Temperature is:',t,' which is not finite in file:', &
+            __FILE__,' at line:',__LINE__
+    elseif(ieee_is_nan(t)) then
+       write(err_msg,*)'Error: Called from:',trim(adjustl(subname)),'; Temperature is:',t,' which is NaN in file:',__FILE__, &
+            'at line:',__LINE__
+    endif
+
+    return
+  end subroutine check_temp
+
+  !------------------------------------------------------------------------------------------!
+
+end module wv_sat_scream

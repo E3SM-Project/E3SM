@@ -1609,7 +1609,8 @@ contains
   sum_fq = 0
 #endif
 
-
+!disabled so that all tendencies are added in new physics code
+!or state vars are reset there
 #if 0
 
 stop

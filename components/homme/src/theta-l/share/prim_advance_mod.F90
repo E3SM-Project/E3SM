@@ -518,6 +518,9 @@ contains
   real (kind=real_kind),  intent(in)    :: dt
   type (hvcoord_t),       intent(in)    :: hvcoord
   integer,                intent(in)    :: np1,nets,nete
+
+!disabled so that all tendencies are added in new physics code
+!or state vars are reset there
 #if 0
   integer :: k,ie
   do ie=nets,nete

@@ -34,6 +34,8 @@ use dry_planar_tests,     only: planar_rising_bubble_init, planar_density_curren
 use moist_planar_tests,   only: planar_moist_rising_bubble_init, planar_moist_density_current_init, planar_moist_baroclinic_instab_init
 use moist_planar_tests,   only: planar_tropical_cyclone_init, planar_supercell_init
 
+use p3phys
+
 implicit none
 
 public :: set_prescribed_wind
@@ -91,10 +93,10 @@ subroutine set_test_initial_conditions(elem, deriv, hybrid, hvcoord, tl, nets, n
     case('planar_nonhydro_mtn_wave');
     case('planar_schar_mtn_wave');
     case('planar_rising_bubble');
-           if (bubble_moist) then 
-              call dcmip2016_init();
+           !if (bubble_moist) then 
+           !   call dcmip2016_init();
               test_with_forcing = .true. ;
-           endif
+           !endif
     case('planar_density_current');
     case('planar_baroclinic_instab');
     case('planar_moist_rising_bubble');
@@ -244,7 +246,8 @@ subroutine compute_test_forcing(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete,tl)
 
     case('planar_rising_bubble');  
             !if (bubble_moist) call dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
-            if (bubble_moist) call bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
+            !if (bubble_moist) call bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
+            call interface_to_p3(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
     case('held_suarez0');
        do ie=nets,nete
