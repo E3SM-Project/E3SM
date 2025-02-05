@@ -7,21 +7,22 @@ module zm_conv_intr
    ! January 2010 modified by J. Kay to add COSP simulator fields to pbuf
    ! July 2015 B. Singh Added code for unified convective trasport
    !----------------------------------------------------------------------------
-   use shr_kind_mod,       only: r8=>shr_kind_r8
-   use spmd_utils,         only: masterproc
-   use perf_mod,           only: t_startf, t_stopf
-   use cam_abortutils,     only: endrun
-   use cam_history,        only: outfld, addfld, horiz_only, add_default
-   use cam_logfile,        only: iulog
-   use physconst,          only: pi, cpair
-   use ppgrid,             only: pver, pcols, pverp, begchunk, endchunk
-   use rad_constituents,   only: rad_cnst_get_info, rad_cnst_get_mode_num, rad_cnst_get_aer_mmr
-   use rad_constituents,   only: rad_cnst_get_aer_props, rad_cnst_get_mode_props  
-   use ndrop_bam,          only: ndrop_bam_init
-   use zm_conv,            only: zm_conv_evap, zm_convr, convtran, momtran, trigdcape_ull, trig_dcape_only
-   use zm_conv,            only: MCSP, MCSP_heat_coeff, MCSP_moisture_coeff, MCSP_uwind_coeff, MCSP_vwind_coeff
-   use zm_conv,            only: zm_microp
-   use zm_microphysics,    only: zm_aero_t, zm_microp_st
+   use shr_kind_mod,          only: r8=>shr_kind_r8
+   use spmd_utils,            only: masterproc
+   use perf_mod,              only: t_startf, t_stopf
+   use cam_abortutils,        only: endrun
+   use cam_history,           only: outfld, addfld, horiz_only, add_default
+   use cam_logfile,           only: iulog
+   use physconst,             only: pi, cpair
+   use ppgrid,                only: pver, pcols, pverp, begchunk, endchunk
+   use rad_constituents,      only: rad_cnst_get_info, rad_cnst_get_mode_num, rad_cnst_get_aer_mmr
+   use rad_constituents,      only: rad_cnst_get_aer_props, rad_cnst_get_mode_props
+   use ndrop_bam,             only: ndrop_bam_init
+   use zm_conv,               only: zm_conv_evap, zm_convr, convtran, momtran, trigdcape_ull, trig_dcape_only
+   use zm_conv,               only: MCSP, MCSP_heat_coeff, MCSP_moisture_coeff, MCSP_uwind_coeff, MCSP_vwind_coeff
+   use zm_conv,               only: zm_microp
+   use zm_microphysics,       only: zm_aero_t
+   use zm_microphysics_state, only: zm_microp_st
 
    implicit none
    private

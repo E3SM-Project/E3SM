@@ -23,7 +23,7 @@ module zm_conv
                                     cpwv, cpliq, rh2o
   use cam_abortutils,         only: endrun
   use cam_logfile,            only: iulog
-  use zm_microphysics,        only: zm_mphy, zm_aero_t, zm_microp_st
+  use zm_microphysics,        only: zm_mphy, zm_aero_t
   use zm_microphysics_state,  only: zm_microp_st, zm_microp_st_alloc, zm_microp_st_dealloc, zm_microp_st_ini, zm_microp_st_gb
 
   implicit none

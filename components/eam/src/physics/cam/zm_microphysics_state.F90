@@ -3,15 +3,14 @@ module  zm_microphysics_state
   ! Purpose: microphysics state structure definition and methods for ZM
   ! Original Author: Xialiang Song and Guang Zhang, June 2010
   !-----------------------------------------------------------------------------
-  use ppgrid, only: pcols, pver, pverp
+  use shr_kind_mod,     only: r8=>shr_kind_r8
+  use ppgrid,           only: pcols, pver, pverp
 
   public :: zm_microp_st ! structure to hold state and tendency of ZM microphysics
   public :: zm_microp_st_alloc
   public :: zm_microp_st_dealloc
   public :: zm_microp_st_ini
   public :: zm_microp_st_gb
-
-contains
 
 !===================================================================================================
 
@@ -89,6 +88,8 @@ type :: zm_microp_st
   real(r8), allocatable, dimension(:,:) :: fhmrm    ! mass tendency due to homogeneous freezing of rain
 end type zm_microp_st
 
+!===================================================================================================
+contains
 !===================================================================================================
 
 subroutine zm_microp_st_alloc(loc_microp_st)
