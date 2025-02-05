@@ -113,15 +113,6 @@ public:
   using remapper_type = AbstractRemapper;
   using atm_diag_type = AtmosphereDiagnostic;
 
-  using KT = KokkosTypes<DefaultDevice>;
-  template<int N>
-  using view_Nd_dev  = typename KT::template view_ND<Real,N>;
-  template<int N>
-  using view_Nd_host = typename KT::template view_ND<Real,N>::HostMirror;
-
-  using view_1d_dev  = view_Nd_dev<1>;
-  using view_1d_host = view_Nd_host<1>;
-
   virtual ~AtmosphereOutput () = default;
 
   // Constructor
@@ -137,8 +128,7 @@ public:
   // Main Functions
   void restart (const std::string& filename);
   void init();
-  void reset_dev_views();
-  void update_avg_cnt_view(const Field&, view_1d_dev& dev_view);
+  void reset_scorpio_fields();
   void setup_output_file (const std::string& filename, const std::string& fp_precision, const scorpio::FileMode mode);
 
   void init_timestep (const util::TimeStamp& start_of_step);
@@ -159,19 +149,16 @@ public:
   }
 
 protected:
+  enum Phase {
+    FromModel,
+    AfterVertRemap,
+    AfterHorizRemap,
+    Scorpio
+  };
+
   // Internal functions
-  void set_grid (const std::shared_ptr<const AbstractGrid>& grid);
-  void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr, const std::string& mode);
-  void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr, const std::vector<std::string>& modes);
-
-  std::shared_ptr<const fm_type> get_field_manager (const std::string& mode) const;
-
-  void register_dimensions(const std::string& name);
   void register_variables(const std::string& filename, const std::string& fp_precision, const scorpio::FileMode mode);
   void set_decompositions(const std::string& filename);
-  std::vector<scorpio::offset_t> get_var_dof_offsets (const FieldLayout& layout);
-  void register_views();
-  Field get_field(const std::string& name, const std::string& mode) const;
   void compute_diagnostic (const std::string& name, const bool allow_invalid_fields = false);
   void set_diagnostics();
   std::shared_ptr<AtmosphereDiagnostic>
@@ -187,11 +174,11 @@ protected:
   // io_field_manager stores the fields in the layout for output
   // sim_field_manager points to the simulation field manager
   // when remapping horizontally these two field managers may be different.
-  std::map<std::string,std::shared_ptr<const fm_type>> m_field_mgrs;
+  std::map<Phase,std::shared_ptr<fm_type>> m_field_mgrs;
+
   std::shared_ptr<const grid_type>            m_io_grid;
   std::shared_ptr<remapper_type>              m_horiz_remapper;
   std::shared_ptr<remapper_type>              m_vert_remapper;
-  std::shared_ptr<const gm_type>              m_grids_manager;
 
   // How to combine multiple snapshots in the output: Instant, Max, Min, Average
   OutputAvgType     m_avg_type;
@@ -207,6 +194,7 @@ protected:
   std::map<std::string,std::shared_ptr<atm_diag_type>>  m_diagnostics;
   std::map<std::string,std::vector<std::string>>        m_diag_depends_on_diags;
   std::map<std::string,bool>                            m_diag_computed;
+
   DefaultMetadata                                       m_default_metadata;
 
   // Use float, so that if output fp_precision=float, this is a representable value.
@@ -215,10 +203,6 @@ protected:
   // Also, by default, don't pick max float, to avoid any overflow if the value
   // is used inside other calculation and/or remap.
   float m_fill_value = constants::DefaultFillValue<float>().value;
-
-  // Local views of each field to be used for "averaging" output and writing to file.
-  std::map<std::string,view_1d_host>    m_host_views_1d;
-  std::map<std::string,view_1d_dev>     m_dev_views_1d;
 
   bool m_add_time_dim;
   bool m_track_avg_cnt = false;
