@@ -707,4 +707,115 @@ TEST_CASE ("print_field_hyperslab") {
   }
 }
 
+TEST_CASE ("set_mask") {
+  using namespace scream;
+
+  using namespace ShortFieldTagsNames;
+  using RPDF = std::uniform_real_distribution<Real>;
+  using IPDF = std::uniform_int_distribution<int>;
+
+  // Setup random number generation
+  ekat::Comm comm(MPI_COMM_WORLD);
+  auto engine = setup_random_test ();
+  RPDF pdf(0,1);
+
+  const int ncols = 3*comm.size();
+  const int nlevs = 128;
+  const auto units = ekat::units::Units::nondimensional();
+
+  // Create field (if available, use packs, to ensure we don't print garbage)
+  std::vector<FieldTag> tags3d = {COL, CMP, LEV};
+  std::vector<FieldTag> tags2d = {COL, LEV};
+  std::vector<int>      dims3d = {ncols,2,nlevs};
+  std::vector<int>      dims2d = {ncols,nlevs};
+
+  FieldIdentifier fid3d_r ("foo", {tags3d,dims3d}, units, "some_grid");
+  FieldIdentifier fid2d_r ("foo", {tags2d,dims2d}, units, "some_grid");
+  FieldIdentifier fid3d_i ("foo", {tags3d,dims3d}, units, "some_grid", DataType::IntType);
+  FieldIdentifier fid2d_i ("foo", {tags2d,dims2d}, units, "some_grid", DataType::IntType);
+  SECTION ("exceptions") {
+    // Test set_mask exception handling
+    Field f (fid3d_r);
+    Field m1 (fid3d_i);
+
+    REQUIRE_THROWS(set_mask<Comparison::EQ>(f,1,m1)); // Field not allocated
+    f.allocate_view();
+    REQUIRE_THROWS(set_mask<Comparison::EQ>(f,1,m1)); // Mask not allocated
+    m1.allocate_view();
+
+    Field m2 (fid3d_r);
+    m2.allocate_view();
+    REQUIRE_THROWS(set_mask<Comparison::EQ>(f,1,m2)); // mask must have IntType data
+
+    Field m3 (fid2d_i);
+    m3.allocate_view();
+    REQUIRE_THROWS(set_mask<Comparison::EQ>(f,1,m3)); // incompatible layouts
+
+    Field f2 (fid3d_i);
+    f2.allocate_view();
+    REQUIRE_THROWS(set_mask<Comparison::EQ>(f2,1.0,m1)); // narrowing error
+  }
+
+  SECTION ("check") {
+    Field one(fid3d_i);
+    one.allocate_view();
+    one.deep_copy(1);
+
+    auto zero= one.clone();
+    zero.deep_copy(0);
+
+    Field x (fid3d_r);
+    x.allocate_view();
+    x.deep_copy(2.0);
+
+    Field m (fid3d_i);
+    m.allocate_view();
+
+    // x==1 is false
+    m.deep_copy(-1);
+    set_mask<Comparison::EQ>(x,1,m);
+    REQUIRE (fields_are_equal(m,zero));
+
+    // x!=1 is true
+    m.deep_copy(-1);
+    set_mask<Comparison::NEQ>(x,1,m);
+    REQUIRE (fields_are_equal(m,one));
+
+    // x==2 is true
+    m.deep_copy(-1);
+    set_mask<Comparison::EQ>(x,2,m);
+    REQUIRE (fields_are_equal(m,one));
+
+    // x>1 is true
+    m.deep_copy(-1);
+    set_mask<Comparison::GT>(x,1,m);
+    REQUIRE (fields_are_equal(m,one));
+
+    // x>2 is false
+    m.deep_copy(-1);
+    set_mask<Comparison::GT>(x,2,m);
+    REQUIRE (fields_are_equal(m,zero));
+
+    // x>=2 is true
+    m.deep_copy(-1);
+    set_mask<Comparison::GEQ>(x,2,m);
+    REQUIRE (fields_are_equal(m,one));
+
+    // x<3 is true
+    m.deep_copy(-1);
+    set_mask<Comparison::LT>(x,3,m);
+    REQUIRE (fields_are_equal(m,one));
+
+    // x<2 is flase
+    m.deep_copy(-1);
+    set_mask<Comparison::LT>(x,2,m);
+    REQUIRE (fields_are_equal(m,zero));
+
+    // x<=2 is true
+    m.deep_copy(-1);
+    set_mask<Comparison::LEQ>(x,2,m);
+    REQUIRE (fields_are_equal(m,one));
+  }
+}
+
 } // anonymous namespace
