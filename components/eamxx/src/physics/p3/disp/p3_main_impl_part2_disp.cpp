@@ -23,7 +23,6 @@ void Functions<Real,DefaultDevice>
   const bool& do_prescribed_CCN,
   const Scalar& dt,
   const Scalar& inv_dt,
-  const bool& use_hetfrz_classnuc,
   const uview_2d<const Spack>& hetfrz_immersion_nucleation_tend,
   const uview_2d<const Spack>& hetfrz_contact_nucleation_tend,
   const uview_2d<const Spack>& hetfrz_deposition_nucleation_tend,
