@@ -1,5 +1,5 @@
-#ifndef P3_CNT_COUPLE_IMPL_HPP
-#define P3_CNT_COUPLE_IMPL_HPP
+#ifndef P3_ICE_CLASSICAL_NUCLEATION_IMPL_HPP
+#define P3_ICE_CLASSICAL_NUCLEATION_IMPL_HPP
 
 #include "p3_functions.hpp" // for ETI only but harmless for GPU
 
@@ -12,7 +12,7 @@ namespace p3 {
 template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
-::CNT_couple(
+::ice_classical_nucleation(
   const Spack& frzimm, const Spack& frzcnt,
   const Spack& frzdep, const Spack& rho,
   const Spack& qc_incld, const Spack& nc_incld,

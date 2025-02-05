@@ -1,4 +1,4 @@
-#include "p3_CNT_couple_impl.hpp"
+#include "p3_ice_classical_nucleation_impl.hpp"
 
 namespace scream {
 namespace p3 {

@@ -26,7 +26,7 @@ if (NOT EAMXX_ENABLE_GPU OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE OR Kokkos
     eti/p3_back_to_cell_average.cpp
     eti/p3_cloud_rain_acc.cpp
     eti/p3_calc_rime_density.cpp
-    eti/p3_CNT_couple_impl.cpp
+    eti/p3_ice_classical_nucleation_impl.cpp
     eti/p3_cldliq_imm_freezing.cpp
     eti/p3_rain_imm_freezing.cpp
     eti/p3_droplet_self_coll.cpp

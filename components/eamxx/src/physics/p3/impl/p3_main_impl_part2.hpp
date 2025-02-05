@@ -332,10 +332,10 @@ void Functions<S,D>
       if(do_ice_production) {
         // contact and immersion freezing droplets
         if (use_hetfrz_classnuc){
-          CNT_couple(hetfrz_immersion_nucleation_tend(k), hetfrz_contact_nucleation_tend(k),
+          ice_classical_nucleation(hetfrz_immersion_nucleation_tend(k), hetfrz_contact_nucleation_tend(k),
                      hetfrz_deposition_nucleation_tend(k), rho(k), qc_incld(k), nc_incld(k), 1,
                      ncheti_cnt, qcheti_cnt, nicnt, qicnt, ninuc_cnt, qinuc_cnt);
-          CNT_couple(hetfrz_immersion_nucleation_tend(k), hetfrz_contact_nucleation_tend(k),
+          ice_classical_nucleation(hetfrz_immersion_nucleation_tend(k), hetfrz_contact_nucleation_tend(k),
                      hetfrz_deposition_nucleation_tend(k), rho(k), qc_incld(k), nc_incld(k), 2, 
                      ncheti_cnt, qcheti_cnt, nicnt, qicnt, ninuc_cnt, qinuc_cnt);
         }

@@ -765,7 +765,7 @@ struct Functions
 
   // 
   KOKKOS_FUNCTION
-  static void CNT_couple(const Spack& frzimm, const Spack& frzcnt,
+  static void ice_classical_nucleation(const Spack& frzimm, const Spack& frzcnt,
     const Spack& frzdep, const Spack& rho,
     const Spack& qc_incld, const Spack& nc_incld,
     const int Iflag,
@@ -1469,7 +1469,7 @@ constexpr ScalarT Functions<ScalarT, DeviceT>::P3C::lookup_table_1a_dum1_c;
 # include "p3_rain_self_collection_impl.hpp"
 # include "p3_impose_max_total_ni_impl.hpp"
 # include "p3_calc_rime_density_impl.hpp"
-# include "p3_CNT_couple_impl.hpp"
+# include "p3_ice_classical_nucleation_impl.hpp"
 # include "p3_cldliq_imm_freezing_impl.hpp"
 # include "p3_droplet_self_coll_impl.hpp"
 # include "p3_cloud_sed_impl.hpp"
