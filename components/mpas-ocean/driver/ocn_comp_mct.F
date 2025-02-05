@@ -903,6 +903,11 @@ contains
        call seq_infodata_PutData(infodata, rmean_rmv_ice_runoff=runningMeanRemovedIceRunoff)
     end if
 
+    ! initialize glc z-levels, if necessary
+    ! these are used for ocn-glc thermal forcing coupling
+    call init_glc_z_levels(domain, ierr_local)
+    ierr = ior(ierr, ierr_local)
+
 !-----------------------------------------------------------------------
 !
 !   get initial state from driver
@@ -3371,6 +3376,53 @@ contains
       ctime(7:8) = time(5:6)
 
    end subroutine datetime!}}}
+
+
+   subroutine init_glc_z_levels(domain, err)
+      use glc_zocnclass_mod
+
+      implicit none
+      type (domain_type), pointer, intent(inout) :: domain
+      integer, intent(out) :: err
+
+      ! local vars
+      type (block_type), pointer :: block_ptr
+      type (mpas_pool_type), pointer :: forcingPool
+      integer, pointer :: nGlcZLevels
+      real (kind=RKIND), dimension(:), pointer :: glcZLevels
+      integer :: cpl_num_zocn, iLev
+
+      err = 0
+
+      block_ptr => domain % blocklist
+      do while(associated(block_ptr))
+         call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+         call mpas_pool_get_dimension(forcingPool, 'nGlcZLevels', nGlcZLevels)
+         if (nGlcZLevels > 0) then
+            call mpas_pool_get_array(forcingPool, 'glcZLevels', glcZLevels)
+
+            cpl_num_zocn = glc_get_num_zocn_classes()
+
+            ! check that the num z-levels in the coupler matches what MALI was told to use
+            if (nGlcZLevels /= cpl_num_zocn) then
+               call mpas_log_write("nGlcZLevels=$i does not match glc_get_num_zocn_classes=$i", &
+                                   MPAS_LOG_ERR, intArgs=(/nGlcZLevels, cpl_num_zocn/))
+               err = ior(err, 1)
+            endif
+
+            glcZLevels = glc_get_zlevels()
+
+            call mpas_log_write("Using $i levels for glcZLevels", intArgs=(/nGlcZLevels/))
+            do iLev = 1, nGlcZLevels
+               call mpas_log_write("-- z-level $i: $r", intArgs=(/iLev/), &
+                    realArgs=(/glcZLevels(iLev)/))
+            enddo
+         endif
+
+         block_ptr => block_ptr % next
+      end do
+   end subroutine init_glc_z_levels
+
 
 #ifdef HAVE_MOAB
 
