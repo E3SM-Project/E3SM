@@ -2869,10 +2869,11 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   integer :: i, n
+   integer :: i, n, iLevel
    integer, pointer :: nCellsSolve, index_temperatureSurfaceValue, index_salinitySurfaceValue, &
                        index_avgZonalSurfaceVelocity, index_avgMeridionalSurfaceVelocity, &
-                       index_avgZonalSSHGradient, index_avgMeridionalSSHGradient
+                       index_avgZonalSSHGradient, index_avgMeridionalSSHGradient, &
+                       nGlcZLevels
 
    type (block_type), pointer :: block_ptr
 
@@ -2911,7 +2912,8 @@ contains
 
    real (kind=RKIND), dimension(:,:), pointer :: avgTracersSurfaceValue, avgSurfaceVelocity, &
                                                  avgSSHGradient, avgOceanSurfacePhytoC, &
-                                                 avgOceanSurfaceDOC, layerThickness
+                                                 avgOceanSurfaceDOC, layerThickness, &
+                                                 avgThermalForcingAtZLevels
 
    real (kind=RKIND) :: surfaceFreezingTemp
 
@@ -3000,6 +3002,9 @@ contains
      endif
      if (trim(config_glc_thermal_forcing_coupling_mode) == '2d') then
         call mpas_pool_get_array(forcingPool, 'avgThermalForcingAtCritDepth', avgThermalForcingAtCritDepth)
+     elseif (trim(config_glc_thermal_forcing_coupling_mode) == '3d') then
+        call mpas_pool_get_array(forcingPool, 'avgThermalForcingAtZLevels', avgThermalForcingAtZLevels)
+        call mpas_pool_get_dimension(forcingPool, 'nGlcZLevels', nGlcZLevels)
      endif
 
      ! BGC fields
@@ -3162,8 +3167,14 @@ contains
           o2x_o % rAttr(index_o2x_So_stv, n) = landIceTracerTransferVelocities(indexSaltTrans,i)
           o2x_o % rAttr(index_o2x_So_rhoeff, n) = 0.0_RKIND
        endif
-       if (trim(config_glc_thermal_forcing_coupling_mode) == '2d' .and. ocn_c2_glctf) then
-          o2x_o % rAttr(index_o2x_So_tf2d, n) = avgThermalForcingAtCritDepth(i)
+       if (ocn_c2_glctf) then
+          if (trim(config_glc_thermal_forcing_coupling_mode) == '2d') then
+             o2x_o % rAttr(index_o2x_So_tf2d, n) = avgThermalForcingAtCritDepth(i)
+          elseif (trim(config_glc_thermal_forcing_coupling_mode) == '3d') then
+             do iLevel = 1, nGlcZLevels
+                o2x_o % rAttr(index_o2x_So_tf3d(iLevel), n) = avgThermalForcingAtZLevels(iLevel, i)
+             enddo
+          endif
        endif
 
 
