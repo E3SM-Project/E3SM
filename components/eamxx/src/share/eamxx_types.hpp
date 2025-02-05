@@ -37,6 +37,15 @@ enum class RunType {
   Restart
 };
 
+enum class Comparison : int {
+  EQ,   // equal-to
+  NEQ,  // not-equal-to
+  GT,   // greater-than
+  GEQ,  // greater-than-or-equal-to
+  LT,   // less-than
+  LEQ   // less-than-or-equal-to
+};
+
 // We cannot expect BFB results between f90 and cxx if optimizations are on.
 // Same goes for cuda-memcheck because it makes the bfb math layer prohibitively
 // expensive and so must be turned off. SCREAM_SHORT_TESTS is a proxy
