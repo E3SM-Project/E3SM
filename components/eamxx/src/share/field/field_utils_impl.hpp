@@ -1047,6 +1047,252 @@ void print_field_hyperslab (const Field& f,
   }
 }
 
+template<Comparison CMP, typename ViewT, typename MaskT>
+struct SetMaskHelper {
+  using exec_space = typename ViewT::traits::execution_space;
+  using ST     = typename ViewT::traits::non_const_value_type;
+  using MaskST = typename MaskT::traits::non_const_value_type;
+
+  template<int M>
+  using MDRange = Kokkos::MDRangePolicy<
+                    exec_space,
+                    Kokkos::Rank<M,Kokkos::Iterate::Right,Kokkos::Iterate::Right>
+                  >;
+
+  static constexpr int N = ViewT::rank;
+
+  void run (const std::vector<int>& dims) const {
+    if constexpr (N==0) {
+      Kokkos::RangePolicy<exec_space> policy(0,1);
+      Kokkos::parallel_for(policy,*this);
+    } else if constexpr (N==1) {
+      Kokkos::RangePolicy<exec_space> policy(0,dims[0]);
+      Kokkos::parallel_for(policy,*this);
+    } else if constexpr (N==2) {
+      MDRange<2> policy({0,0},{dims[0],dims[1]});
+      Kokkos::parallel_for(policy,*this);
+    } else if constexpr (N==3) {
+      MDRange<3> policy({0,0,0},{dims[0],dims[1],dims[2]});
+      Kokkos::parallel_for(policy,*this);
+    } else if constexpr (N==4) {
+      MDRange<4> policy({0,0,0,0},{dims[0],dims[1],dims[2],dims[3]});
+      Kokkos::parallel_for(policy,*this);
+    } else if constexpr (N==5) {
+      MDRange<5> policy({0,0,0,0,0},{dims[0],dims[1],dims[2],dims[3],dims[4]});
+      Kokkos::parallel_for(policy,*this);
+    } else if constexpr (N==6) {
+      MDRange<6> policy({0,0,0,0,0,0},{dims[0],dims[1],dims[2],dims[3],dims[4],dims[5]});
+      Kokkos::parallel_for(policy,*this);
+    } else {
+      EKAT_ERROR_MSG ("Unsupported rank! Should be in [2,6].\n");
+    }
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void set_mask (const ST& x_val, MaskST& m_val) const {
+    if constexpr (CMP==Comparison::EQ)
+      m_val = x_val==val ? yes_val : no_val;
+    else if constexpr (CMP==Comparison::NE)
+      m_val = x_val!=val ? yes_val : no_val;
+    else if constexpr (CMP==Comparison::GT)
+      m_val = x_val>val ? yes_val : no_val;
+    else if constexpr (CMP==Comparison::GE)
+      m_val = x_val>=val ? yes_val : no_val;
+    else if constexpr (CMP==Comparison::LT)
+      m_val = x_val<val ? yes_val : no_val;
+    else if constexpr (CMP==Comparison::LE)
+      m_val = x_val<=val ? yes_val : no_val;
+    else
+      EKAT_KERNEL_ERROR_MSG ("Unsupported Comparison value.\n");
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void operator() (int i) const {
+    if constexpr (N==0)
+      set_mask (x(),m());
+    else
+      set_mask (x(i),m(i));
+  }
+  KOKKOS_INLINE_FUNCTION
+  void operator() (int i, int j) const {
+    set_mask (x(i,j),m(i,j));
+  }
+  KOKKOS_INLINE_FUNCTION
+  void operator() (int i, int j, int k) const {
+    set_mask (x(i,j,k),m(i,j,k));
+  }
+  KOKKOS_INLINE_FUNCTION
+  void operator() (int i, int j, int k, int l) const {
+    set_mask (x(i,j,k,l),m(i,j,k,l));
+  }
+  KOKKOS_INLINE_FUNCTION
+  void operator() (int i, int j, int k, int l, int n) const {
+    set_mask (x(i,j,k,l,n),m(i,j,k,l,n));
+  }
+  KOKKOS_INLINE_FUNCTION
+  void operator() (int i, int j, int k, int l, int n, int p) const {
+    set_mask (x(i,j,k,l,n,p),m(i,j,k,l,n,p));
+  }
+
+  ViewT x;
+  MaskT m;
+  ST    val;
+  MaskST yes_val;
+  MaskST no_val;
+};
+
+template<Comparison CMP, typename ViewT, typename MaskT>
+void setMaskHelper (const ViewT& x, const MaskT& m,
+                    const FieldHeader& mh,
+                    typename ViewT::traits::value_type val,
+                    const std::vector<int>& dims)
+{
+  using MaskST = typename SetMaskHelper<CMP,ViewT,MaskT>::MaskST;
+
+  SetMaskHelper<CMP,ViewT,MaskT> helper;
+  helper.m = m;
+  helper.x = x;
+  helper.val = val;
+  helper.yes_val = mh.get_extra_data<MaskST>("true_value");
+  helper.no_val = mh.get_extra_data<MaskST>("false_value");
+  helper.run(dims);
+}
+
+template<Comparison CMP, typename ST>
+void compute_mask (const Field& x, const ST value, Field& m)
+{
+  const auto& layout = x.get_header().get_identifier().get_layout();
+  const auto& dims = layout.dims();
+  const auto contiguous = x.get_header().get_alloc_properties().contiguous();
+  const auto m_dt = m.data_type();
+  const bool m_int = m_dt==DataType::IntType;
+  const bool m_float = m_dt==DataType::FloatType;
+  const bool m_double = m_dt==DataType::DoubleType;
+  const auto& mh = m.get_header();
+  EKAT_REQUIRE_MSG (m_int or m_float or m_double,
+      "Error! Unsupport mask field data type.\n"
+      " - mask field name: " << m.name() << "\n"
+      " - mask field data type: " << etoi(m_dt) << "\n");
+  switch (layout.rank()) {
+    case 0:
+      if (contiguous)
+        if (m_int)
+          setMaskHelper<CMP>(x.get_view<const ST>(),m.get_view<int>(),mh,value,dims);
+        else if (m_float)
+          setMaskHelper<CMP>(x.get_view<const ST>(),m.get_view<float>(),mh,value,dims);
+        else
+          setMaskHelper<CMP>(x.get_view<const ST>(),m.get_view<double>(),mh,value,dims);
+      else
+        if (m_int)
+          setMaskHelper<CMP>(x.get_strided_view<const ST>(),m.get_view<int>(),mh,value,dims);
+        else if (m_float)
+          setMaskHelper<CMP>(x.get_strided_view<const ST>(),m.get_view<float>(),mh,value,dims);
+        else
+          setMaskHelper<CMP>(x.get_strided_view<const ST>(),m.get_view<double>(),mh,value,dims);
+      break;
+    case 1:
+      if (contiguous)
+        if (m_int)
+          setMaskHelper<CMP>(x.get_view<const ST*>(),m.get_view<int*>(),mh,value,dims);
+        else if (m_float)
+          setMaskHelper<CMP>(x.get_view<const ST*>(),m.get_view<float*>(),mh,value,dims);
+        else
+          setMaskHelper<CMP>(x.get_view<const ST*>(),m.get_view<double*>(),mh,value,dims);
+      else
+        if (m_int)
+          setMaskHelper<CMP>(x.get_strided_view<const ST*>(),m.get_view<int*>(),mh,value,dims);
+        else if (m_float)
+          setMaskHelper<CMP>(x.get_strided_view<const ST*>(),m.get_view<float*>(),mh,value,dims);
+        else
+          setMaskHelper<CMP>(x.get_strided_view<const ST*>(),m.get_view<double*>(),mh,value,dims);
+      break;
+    case 2:
+      if (contiguous)
+        if (m_int)
+          setMaskHelper<CMP>(x.get_view<const ST**>(),m.get_view<int**>(),mh,value,dims);
+        else if (m_float)
+          setMaskHelper<CMP>(x.get_view<const ST**>(),m.get_view<float**>(),mh,value,dims);
+        else
+          setMaskHelper<CMP>(x.get_view<const ST**>(),m.get_view<double**>(),mh,value,dims);
+      else
+        if (m_int)
+          setMaskHelper<CMP>(x.get_strided_view<const ST**>(),m.get_view<int**>(),mh,value,dims);
+        else if (m_float)
+          setMaskHelper<CMP>(x.get_strided_view<const ST**>(),m.get_view<float**>(),mh,value,dims);
+        else
+          setMaskHelper<CMP>(x.get_strided_view<const ST**>(),m.get_view<double**>(),mh,value,dims);
+      break;
+    case 3:
+      if (contiguous)
+        if (m_int)
+          setMaskHelper<CMP>(x.get_view<const ST***>(),m.get_view<int***>(),mh,value,dims);
+        else if (m_float)
+          setMaskHelper<CMP>(x.get_view<const ST***>(),m.get_view<float***>(),mh,value,dims);
+        else
+          setMaskHelper<CMP>(x.get_view<const ST***>(),m.get_view<double***>(),mh,value,dims);
+      else
+        if (m_int)
+          setMaskHelper<CMP>(x.get_strided_view<const ST***>(),m.get_view<int***>(),mh,value,dims);
+        else if (m_float)
+          setMaskHelper<CMP>(x.get_strided_view<const ST***>(),m.get_view<float***>(),mh,value,dims);
+        else
+          setMaskHelper<CMP>(x.get_strided_view<const ST***>(),m.get_view<double***>(),mh,value,dims);
+      break;
+    case 4:
+      if (contiguous)
+        if (m_int)
+          setMaskHelper<CMP>(x.get_view<const ST****>(),m.get_view<int****>(),mh,value,dims);
+        else if (m_float)
+          setMaskHelper<CMP>(x.get_view<const ST****>(),m.get_view<float****>(),mh,value,dims);
+        else
+          setMaskHelper<CMP>(x.get_view<const ST****>(),m.get_view<double****>(),mh,value,dims);
+      else
+        if (m_int)
+          setMaskHelper<CMP>(x.get_strided_view<const ST****>(),m.get_view<int****>(),mh,value,dims);
+        else if (m_float)
+          setMaskHelper<CMP>(x.get_strided_view<const ST****>(),m.get_view<float****>(),mh,value,dims);
+        else
+          setMaskHelper<CMP>(x.get_strided_view<const ST****>(),m.get_view<double****>(),mh,value,dims);
+      break;
+    case 5:
+      if (contiguous)
+        if (m_int)
+          setMaskHelper<CMP>(x.get_view<const ST*****>(),m.get_view<int*****>(),mh,value,dims);
+        else if (m_float)
+          setMaskHelper<CMP>(x.get_view<const ST*****>(),m.get_view<float*****>(),mh,value,dims);
+        else
+          setMaskHelper<CMP>(x.get_view<const ST*****>(),m.get_view<double*****>(),mh,value,dims);
+      else
+        if (m_int)
+          setMaskHelper<CMP>(x.get_strided_view<const ST*****>(),m.get_view<int*****>(),mh,value,dims);
+        else if (m_float)
+          setMaskHelper<CMP>(x.get_strided_view<const ST*****>(),m.get_view<float*****>(),mh,value,dims);
+        else
+          setMaskHelper<CMP>(x.get_strided_view<const ST*****>(),m.get_view<double*****>(),mh,value,dims);
+      break;
+    case 6:
+      if (contiguous)
+        if (m_int)
+          setMaskHelper<CMP>(x.get_view<const ST******>(),m.get_view<int******>(),mh,value,dims);
+        else if (m_float)
+          setMaskHelper<CMP>(x.get_view<const ST******>(),m.get_view<float******>(),mh,value,dims);
+        else
+          setMaskHelper<CMP>(x.get_view<const ST******>(),m.get_view<double******>(),mh,value,dims);
+      else
+        if (m_int)
+          setMaskHelper<CMP>(x.get_strided_view<const ST******>(),m.get_view<int******>(),mh,value,dims);
+        else if (m_float)
+          setMaskHelper<CMP>(x.get_strided_view<const ST******>(),m.get_view<float******>(),mh,value,dims);
+        else
+          setMaskHelper<CMP>(x.get_strided_view<const ST******>(),m.get_view<double******>(),mh,value,dims);
+      break;
+    default:
+      EKAT_ERROR_MSG ("Unsupported field rank in compute_mask.\n"
+          " - field name: " << x.name() << "\n"
+          " - field rank: " << x.rank() << "\n");
+  }
+}
+
 } // namespace impl
 
 } // namespace scream
