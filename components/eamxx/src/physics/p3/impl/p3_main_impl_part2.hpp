@@ -26,7 +26,6 @@ void Functions<S,D>
   const bool& do_prescribed_CCN,
   const Scalar& dt,
   const Scalar& inv_dt,
-  const bool& use_hetfrz_classnuc,
   const uview_1d<const Spack>& hetfrz_immersion_nucleation_tend,
   const uview_1d<const Spack>& hetfrz_contact_nucleation_tend,
   const uview_1d<const Spack>& hetfrz_deposition_nucleation_tend,
@@ -108,7 +107,8 @@ void Functions<S,D>
   constexpr Scalar latvap       = C::LatVap;
   constexpr Scalar latice       = C::LatIce;
 
-  const bool do_ice_production = runtime_options.do_ice_production;
+  const bool do_ice_production   = runtime_options.do_ice_production;
+  const bool use_hetfrz_classnuc = runtime_options.use_hetfrz_classnuc;
 
   team.team_barrier();
   hydrometeorsPresent = false;

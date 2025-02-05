@@ -134,7 +134,7 @@ struct Functions
     bool set_cld_frac_l_to_one = false;
     bool set_cld_frac_i_to_one = false;
     bool set_cld_frac_r_to_one = false;
-    bool use_hetfrz_classnuc   = false; // Set to true to use het frz from MAM4xx-ACI
+    bool use_hetfrz_classnuc   = false;
 
     void load_runtime_options_from_file(ekat::ParameterList& params) {
       max_total_ni = params.get<double>("max_total_ni", max_total_ni);
@@ -1150,7 +1150,6 @@ struct Functions
     const bool& do_prescribed_CCN,
     const Scalar& dt,
     const Scalar& inv_dt,
-    const bool& use_hetfrz_classnuc,
     const uview_1d<const Spack>& ohetfrz_immersion_nucleation_tend,
     const uview_1d<const Spack>& ohetfrz_contact_nucleation_tend,
     const uview_1d<const Spack>& ohetfrz_deposition_nucleation_tend,

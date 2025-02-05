@@ -115,7 +115,7 @@ void Functions<Real,DefaultDevice>
     // main k-loop (for processes):
     p3_main_part2(
       team, nk_pack, max_total_ni, predictNc, do_prescribed_CCN, dt, inv_dt,
-      use_hetfrz_classnuc, ekat::subview(hetfrz_immersion_nucleation_tend, i),
+      ekat::subview(hetfrz_immersion_nucleation_tend, i),
       ekat::subview(hetfrz_contact_nucleation_tend, i),ekat::subview(hetfrz_deposition_nucleation_tend, i),
       dnu_table_vals, ice_table_vals, collect_table_vals, revap_table_vals,
       ekat::subview(pres, i), ekat::subview(dpres, i), ekat::subview(dz, i), ekat::subview(nc_nuceat_tend, i), ekat::subview(inv_exner, i),
