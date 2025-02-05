@@ -18,7 +18,7 @@ if (SCREAM_ENABLE_BASELINE_TESTS AND NOT SCREAM_ONLY_GENERATE_BASELINES)
   CreateUnitTest(${TEST_BASE_NAME}_unit rrtmgp_standalone_unit.cpp
     LABELS rrtmgp physics driver
     LIBS scream_rrtmgp rrtmgp scream_control ${YAKL_LIB_NAME} diagnostics rrtmgp_test_utils
-    EXE_ARGS "--args --inputfile ${SCREAM_DATA_DIR}/init/rrtmgp-allsky.nc --baseline ${SCREAM_BASELINES_DIR}/data/rrtmgp-allsky-baseline.nc"
+    EXE_ARGS "--args --rrtmgp_inputfile ${SCREAM_DATA_DIR}/init/rrtmgp-allsky.nc --rrtmgp_baseline ${SCREAM_BASELINES_DIR}/data/rrtmgp-allsky-baseline.nc"
   )
 endif()
 

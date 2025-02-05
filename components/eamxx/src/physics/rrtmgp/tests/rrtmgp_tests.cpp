@@ -401,7 +401,7 @@ int run_kokkos(int argc, char** argv) {
 
     // Initialize absorption coefficients
   logger->info("Initialize RRTMGP...\n");
-  interface_t::rrtmgp_initialize(gas_concs, coefficients_file_sw, coefficients_file_lw, cloud_optics_file_sw, cloud_optics_file_lw, logger);
+  interface_t::rrtmgp_initialize(gas_concs, coefficients_file_sw, coefficients_file_lw, cloud_optics_file_sw, cloud_optics_file_lw, logger, 2.0);
 
   // Setup our dummy atmosphere based on the input data we read in
   logger->info("Setup dummy atmos...\n");

@@ -636,6 +636,8 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
   m_n2vmr      = m_params.get<double>("n2vmr", 0.7906);
   m_covmr      = m_params.get<double>("covmr", 1.0e-7);
 
+  const double multiplier = m_params.get<double>("pool_size_multiplier", 1.0);
+
   // Whether or not to do MCICA subcolumn sampling
   m_do_subcol_sampling = m_params.get<bool>("do_subcol_sampling",true);
 
@@ -676,7 +678,8 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
           m_gas_concs_k,
           coefficients_file_sw, coefficients_file_lw,
           cloud_optics_file_sw, cloud_optics_file_lw,
-          m_atm_logger
+          m_atm_logger,
+          multiplier
   );
   VALIDATE_KOKKOS(m_gas_concs, m_gas_concs_k);
   VALIDATE_KOKKOS(rrtmgp::k_dist_sw, interface_t::k_dist_sw_k);

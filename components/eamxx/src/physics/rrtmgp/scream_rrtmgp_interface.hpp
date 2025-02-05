@@ -214,13 +214,14 @@ static inline cloud_optics_t cloud_optics_lw_k;
 static inline bool initialized_k = false;
 
 /*
- * Initialize data for RRTMGP driver
+ * Initialize data for RRTMGP driver. Increase multiplier to allocate more pool space.
  */
 static void rrtmgp_initialize(
   const gas_concs_t &gas_concs,
   const std::string& coefficients_file_sw, const std::string& coefficients_file_lw,
   const std::string& cloud_optics_file_sw, const std::string& cloud_optics_file_lw,
-  const std::shared_ptr<spdlog::logger>& logger)
+  const std::shared_ptr<spdlog::logger>& logger,
+  const double multiplier = 1.0)
 {
   // If we've already initialized, just exit
   if (initialized_k) {
@@ -246,7 +247,7 @@ static void rrtmgp_initialize(
   const size_t nlay = gas_concs.nlay;
   const size_t nlev = SCREAM_NUM_VERTICAL_LEV;
   const size_t my_size_ref = ncol * nlay * nlev;
-  pool_t::init(2e6 * (float(my_size_ref) / base_ref));
+  pool_t::init(2e6 * (float(my_size_ref) / base_ref) * multiplier);
 
   // We are now initialized!
   initialized_k = true;
