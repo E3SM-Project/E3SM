@@ -109,8 +109,6 @@ module ocn_comp_mct
 
    integer  :: nsend, nrecv
 
-   logical  :: ocn_c2_glctf           ! .true.  => ocn to glc thermal forcing coupling on
-
    character(len=StrKIND) :: runtype, coupleTimeStamp
 
    type(seq_infodata_type), pointer :: infodata
@@ -312,8 +310,6 @@ contains
     ! Determine coupling type
     call seq_infodata_GetData(infodata, cpl_seq_option=cpl_seq_option)
 
-    ! Determine if ocn to glc thermal forcing coupling is on
-    call seq_infodata_GetData(infodata, ocn_c2_glctf=ocn_c2_glctf)
 
 !-----------------------------------------------------------------------
 !
@@ -905,16 +901,6 @@ contains
        call MPAS_pool_get_array(forcingPool, "runningMeanRemovedIceRunoff", &
                                 runningMeanRemovedIceRunoff)
        call seq_infodata_PutData(infodata, rmean_rmv_ice_runoff=runningMeanRemovedIceRunoff)
-    end if
-
-    call mpas_pool_get_config(domain % configs, 'config_glc_thermal_forcing_coupling_mode', config_glc_thermal_forcing_coupling_mode)
-    if ( trim(config_glc_thermal_forcing_coupling_mode) == 'off' ) then
-       call seq_infodata_PutData(infodata, ocn_c2_glctf=.false.)
-    else if ( trim(config_glc_thermal_forcing_coupling_mode) == '2d' ) then
-       call seq_infodata_PutData(infodata, ocn_c2_glctf=.true.)
-    else
-       call mpas_log_write('ERROR: unknown config_glc_thermal_forcing_coupling_mode: ' // &
-               trim(config_glc_thermal_forcing_coupling_mode), MPAS_LOG_CRIT)
     end if
 
 !-----------------------------------------------------------------------
@@ -2939,6 +2925,8 @@ contains
 
    logical :: keepFrazil
 
+   logical :: ocn_c2_glctf           ! .true.  => ocn to glc thermal forcing coupling on
+
 
    ! get configure options
    call mpas_pool_get_package(domain % packages, 'frazilIceActive', frazilIceActive)
@@ -2956,6 +2944,9 @@ contains
                                                 config_use_DMSTracers_sea_ice_coupling)
    call mpas_pool_get_config(domain % configs, 'config_use_MacroMoleculesTracers_sea_ice_coupling',  &
                                                 config_use_MacroMoleculesTracers_sea_ice_coupling)
+
+   ! Determine if ocn to glc thermal forcing coupling is on
+   call seq_infodata_GetData(infodata, ocn_c2_glctf=ocn_c2_glctf)
 
    n = 0
    block_ptr => domain % blocklist
