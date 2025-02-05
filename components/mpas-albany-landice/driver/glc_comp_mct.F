@@ -1390,15 +1390,16 @@ contains
       message
 
    integer ::  &
-      i,n
+      i, n, iLev
 
    type (block_type), pointer :: block
 
    type (mpas_pool_type), pointer :: meshPool
    type (mpas_pool_type), pointer :: geometryPool
    type (mpas_pool_type), pointer :: thermalPool
+   type (mpas_pool_type), pointer :: extrapOceanDataPool
 
-   integer, pointer :: nCellsSolve
+   integer, pointer :: nCellsSolve, nISMIP6OceanLayers
 
    real (kind=RKIND), dimension(:), pointer :: sfcMassBal,&
                                                floatingBasalMassBal,&
@@ -1406,6 +1407,8 @@ contains
                                                basalOceanHeatflx,&
                                                OceanDensity, &
                                                ismip6_2dThermalForcing
+   real (kind=RKIND), dimension(:,:), pointer :: ismip6shelfMelt_3dThermalForcing
+   integer, dimension(:,:), pointer :: orig3dOceanMask
 
     errorCode = 0
 
@@ -1414,25 +1417,41 @@ contains
 
     do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
-
-         ! Get variables from pools
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
          call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
+         call mpas_pool_get_subpool(block % structs, 'extrapOceanData', extrapOceanDataPool)
 
+         ! Get dimensions
+         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+         call mpas_pool_get_dimension(geometryPool, 'nISMIP6OceanLayers', nISMIP6OceanLayers)
+
+         ! Get variables from pools
          call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
          call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal',floatingBasalMassBal)
          call mpas_pool_get_array(thermalPool, 'surfaceTemperature',surfaceTemperature)
          call mpas_pool_get_array(geometryPool, 'ismip6_2dThermalForcing', ismip6_2dThermalForcing)
+         call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_3dThermalForcing', ismip6shelfMelt_3dThermalForcing)
+         call mpas_pool_get_array(extrapOceanDataPool, 'orig3dOceanMask', orig3dOceanMask)
 !         call mpas_pool_get_array(thermalPool, 'basalOceanHeatflx',basalOceanHeatflx)
          !call mpas_pool_get_array(geometryPool, 'OceanDensity',OceanDensity)
 
+         orig3dOceanMask(:,:) = 0
          do i = 1, nCellsSolve
             n = n + 1
             sfcMassBal(i) = x2g_g % rAttr(index_x2g_Flgl_qice, n)
             floatingBasalMassBal(i) = x2g_g % rAttr(index_x2g_Fogx_qiceli, n)
-            if (ocn_c2_glctf) &
-               ismip6_2dThermalForcing(i) = x2g_g % rAttr(index_x2g_So_tf2d, n)
+            if (ocn_c2_glctf) then
+               !ismip6_2dThermalForcing(i) = x2g_g % rAttr(index_x2g_So_tf2d, n)
+               if (nISMIP6OceanLayers > 0) then
+                  do iLev = 1, nISMIP6OceanLayers
+                     ismip6shelfMelt_3dThermalForcing(iLev, i) = x2g_g % rAttr(index_x2g_So_tf3d(iLev), n)
+                     if (ismip6shelfMelt_3dThermalForcing(iLev,i) /= 0.0_RKIND) then
+                        ! todo: use a proper mask from OCN
+                        orig3dOceanMask(iLev,i) = 1
+                     endif
+                  enddo
+               endif
+            endif
 !            surfaceTemperature(i) = x2g_g % rAttr(index_x2g_Sl_tsrf, n)
 !JW            basalOceanHeatflx(i) = x2g_g % rAttr(index_x2g_Fogo_qiceh, n)
 !            basalOceanHeatflx(i) = x2g_g % rAttr(index_x2g_Fogx_qicehi, n)
