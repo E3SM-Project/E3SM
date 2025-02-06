@@ -1875,9 +1875,9 @@
         </nthrds>
       </pes>
     </mach>
-    <mach name="frontier-scream-gpu">
+    <mach name="frontier">
       <pes compset="any" pesize="any">
-        <comment>"crusher-gpu-scream ne30np4 and ne30np4.pg2"</comment>
+        <comment>"frontier-gpu-scream ne30np4 and ne30np4.pg2"</comment>
         <ntasks>
           <ntasks_atm>-2</ntasks_atm>
           <ntasks_lnd>-2</ntasks_lnd>
@@ -2539,7 +2539,7 @@
         </nthrds>
       </pes>
     </mach>
-    <mach name="frontier-scream-gpu">
+    <mach name="frontier">
       <pes compset="any" pesize="any">
         <MAX_MPITASKS_PER_NODE>8</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>56</MAX_TASKS_PER_NODE>
