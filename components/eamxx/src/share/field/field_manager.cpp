@@ -4,12 +4,22 @@ namespace scream
 {
 
 FieldManager::
-FieldManager (const grid_ptr_type& grid)
-  : m_repo_state (RepoState::Clean)
+FieldManager (const grid_ptr_type& grid,
+              const RepoState state)
+  : m_repo_state ()
   , m_grid       (grid)
 {
   EKAT_REQUIRE_MSG (m_grid!=nullptr,
       "Error! Input grid pointer is not valid.");
+
+  if (m_repo_state==RepoState::Open) {
+    registration_begins();
+  }
+
+  if (m_repo_state==RepoState::Closed) {
+    registration_begins();
+    registration_ends();
+  }
 }
 
 void FieldManager::register_field (const FieldRequest& req)

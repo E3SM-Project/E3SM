@@ -42,7 +42,7 @@ public:
   using grid_ptr_type    = std::shared_ptr<const AbstractGrid>;
 
   // Constructor(s)
-  explicit FieldManager (const grid_ptr_type& grid);
+  explicit FieldManager (const grid_ptr_type& grid, const RepoState state = RepoState::Clean);
 
   // No copies, cause the internal database is not a shared_ptr.
   // NOTE: you can change this if you find that copies are needed/useful.
