@@ -4,15 +4,18 @@ namespace scream
 {
 
 FieldManager::
-FieldManager (const std::shared_ptr<const AbstractGrid>& grid)
- : FieldManager (std::make_shared<LibraryGridsManager>(grid))
+FieldManager (const std::shared_ptr<const AbstractGrid>& grid,
+              const RepoState state)
+ : FieldManager (std::make_shared<LibraryGridsManager>(grid),state)
 {
   // Nothing else to do
 }
 
 FieldManager::
-FieldManager (const std::shared_ptr<const GridsManager>& gm)
- : m_grids_mgr (gm)
+FieldManager (const std::shared_ptr<const GridsManager>& gm,
+              const RepoState state)
+ : m_repo_state (state)
+ , m_grids_mgr  (gm)
 {
   EKAT_REQUIRE_MSG (m_grids_mgr!=nullptr,
       "Error! Input grids manager pointer is not valid.");
@@ -24,7 +27,14 @@ FieldManager (const std::shared_ptr<const GridsManager>& gm)
     m_group_requests[gname] = std::map<std::string, std::set<GroupRequest>>();
   }
 
-  m_repo_state = RepoState::Clean;
+  if (m_repo_state==RepoState::Open) {
+    registration_begins();
+  }
+
+  if (m_repo_state==RepoState::Closed) {
+    registration_begins();
+    registration_ends();
+  }
 }
 
 void FieldManager::register_field (const FieldRequest& req)
