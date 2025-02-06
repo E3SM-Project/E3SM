@@ -43,8 +43,8 @@ public:
   using group_info_map      = std::map<ci_string, std::shared_ptr<FieldGroupInfo>>;
 
   // Constructor(s)
-  explicit FieldManager (const std::shared_ptr<const AbstractGrid>& grid);
-  explicit FieldManager (const std::shared_ptr<const GridsManager>& grid);
+  explicit FieldManager (const std::shared_ptr<const AbstractGrid>& grid, const RepoState state = RepoState::Clean);
+  explicit FieldManager (const std::shared_ptr<const GridsManager>& grid, const RepoState state = RepoState::Clean);
 
   // No copies, cause the internal database is not a shared_ptr.
   // NOTE: you can change this if you find that copies are needed/useful.
