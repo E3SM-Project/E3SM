@@ -135,9 +135,16 @@ void combine_and_fill (const ScalarIn& newVal, ScalarOut& result, const ScalarOu
         combine<CM>(newVal,result,alpha,beta);
       }
       break;
+    case CombineMode::ScaleAdd:
+      if (result == fill_val or newVal == fill_val or
+          (newVal!=0 and alpha==fill_val)) {
+        result = fill_val;
+      } else {
+        combine<CM>(newVal,result,alpha,beta);
+      }
+      break;
     case CombineMode::Update:
     case CombineMode::ScaleUpdate:
-    case CombineMode::ScaleAdd:
     case CombineMode::Add:
     case CombineMode::Multiply:
     case CombineMode::Divide:
