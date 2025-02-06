@@ -125,6 +125,10 @@ target_compile_definitions(rrtmgp PUBLIC EAMXX_HAS_RRTMGP)
 EkatDisableAllWarning(rrtmgp)
 if (SCREAM_RRTMGP_ENABLE_YAKL)
   yakl_process_target(rrtmgp)
+else()
+  if (CUDA_BUILD)
+    target_compile_options(rrtmgp PUBLIC $<$<COMPILE_LANGUAGE:CXX>:--expt-relaxed-constexpr>)
+  endif()
 endif()
 
 # NOTE: cannot use 'PUBLIC' in target_link_libraries,
