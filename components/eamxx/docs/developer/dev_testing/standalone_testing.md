@@ -1,5 +1,15 @@
 # Standalone EAMxx Testing
 
+### Test-all-scream
+
+- automatically takes care of spreading out the parallel workload
+    - For speed and efficient use of resources
+- can build dbg/release at the same time
+- single-node testing script
+    - Can handle multi-process/thread
+    - Assumes everything is on the same node
+    - must be launched from where the tests will be run
+
 In this section we describe our testing methodology for standalone EAMxx
 configurations. We use several types of tests
 

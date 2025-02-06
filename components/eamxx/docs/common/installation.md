@@ -1,5 +1,9 @@
 # Installation
 
+## NOTE: potentially this is better off being moved to the QSG?
+
+$\implies$ YES
+
 Follow these simple instructions to build and test EAMxx's standalone
 configuration for yourself. This document makes use of the following paths:
 
@@ -167,4 +171,4 @@ can set the number of threads by passing it as an argument to `-j` (e.g.
 ## Running Tests
 
 You can run EAMxx's tests to make sure your build works by following the
-instructions [here](../developer/standalone_testing.md).
+instructions [here](../testing/standalone_testing.md).

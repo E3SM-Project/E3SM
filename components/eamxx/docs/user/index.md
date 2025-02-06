@@ -10,6 +10,7 @@ This user guide is still under construction. In the meantime, in case you can't 
 you may visit our public confluence [EAMxx user guide](https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/3858890786/EAMxx+User+s+Guide).
 
 ### [EAMxx case basics](eamxx_cases.md)
+### [Testing](user_testing.md)
 ### [Model input](model_input.md)
 ### [Model output](model_output.md)
 ### [Nudging](nudging.md)

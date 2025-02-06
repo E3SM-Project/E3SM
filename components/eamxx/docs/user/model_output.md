@@ -1,5 +1,7 @@
 # Model output
 
+==Move to "Model Configuration"==
+
 EAMxx allows the user to configure the desired model output via [YAML](https://yaml.org/) files,
 with each YAML file associated to a different output stream (i.e. a file). In order to add an output stream,
 one needs to run `atmchange output_yaml_files+=/path/to/my/output/yaml` (more information on how

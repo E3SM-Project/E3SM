@@ -1,8 +1,11 @@
 # Model inputs
 
+==Move to "Model Configuration"==
+
 This section explains how input parameters are passed to EAMxx, and how the user can
-change their value. The full list of the currently configuraable runtime parameters for
-EAMxx can be found [here](../common/eamxx_params.md).
+change their value. The full list of the currently configurable runtime parameters for
+EAMxx can be found [here--**<mark>MISSING</mark>**]
+<!-- (../common/eamxx_params.md). -->
 
 The infrastructure for reading inputs into EAMxx involves a few scripts/files:
 

@@ -4,7 +4,10 @@ nav:
   - 'Home': 'index.md'
   - 'User Guide':
     - 'Overview': 'user/index.md'
+    - 'Quick-start Guide': 'user/user_quickstart.md'
     - 'EAMxx case basics': 'user/eamxx_cases.md'
+    - 'Testing':
+      - 'Overview': 'user/user_testing.md'
     - 'Model input': 'user/model_input.md'
     - 'Model output': 'user/model_output.md'
     - 'Nudging': 'user/nudging.md'
@@ -15,23 +18,28 @@ nav:
     - 'PySCREAM': 'user/pyscream.md'
   - 'Developer Guide':
     - 'Overview': 'developer/index.md'
+    - 'Quick-start Guide': 'developer/dev_quickstart.md'
+    - 'Source Tree': 'developer/source_tree.md'
     - 'Installation': 'common/installation.md'
     - 'Style Guide': 'developer/style_guide.md'
+    - 'Testing':
+      - 'Overview': 'developer/dev_testing/dev_testing.md'
+      - 'Overview': 'testing/index.md'
+      - 'Full model': 'developer/dev_testing/cime_testing.md'
+      - 'CI and Nightly Testing': 'developer/dev_testing/ci_nightly.md'
+      - 'Supported Computing Platforms': 'developer/dev_testing/supported_machines.md'
+      - 'Standalone': 'developer/dev_testing/standalone_testing.md'
+      - 'Testing Locally': 'developer/dev_testing/local_test.md'
     - 'Kokkos and EKAT': 'developer/kokkos_ekat.md'
-    - 'Source Tree': 'developer/source_tree.md'
-    - 'Important Data Structures':
+    - 'Important Computational Data Structures and Concepts':
       - 'Fields': 'developer/field.md'
       - 'Grids and Remappers': 'developer/grid.md'
       - 'Atmosphere Processes': 'developer/processes.md'
-      - 'Managers': 'developer/managers.md'
-    - 'I/O': 'developer/io.md'
-    - 'Testing':
-      - 'Standalone': 'developer/standalone_testing.md'
-      - 'Full model': 'developer/cime_testing.md'
-      - 'CI and Nightly Testing': 'developer/ci_nightly.md'
+      - 'I/O': 'developer/io.md'
   - 'Technical Guide':
     - 'Overview': 'technical/index.md'
     - 'AeroCom cloud top': 'technical/aerocom_cldtop.md'
+  - 'Glossary': 'common/glossary.md'
 
 edit_uri: ""
 
@@ -57,12 +65,20 @@ theme:
 
 markdown_extensions:
   - pymdownx.highlight
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.tabbed:
       alternate_style: true
   - pymdownx.arithmatex:
       generic: true
+  - admonition
   - footnotes
+  - pymdownx.caret
+  - pymdownx.mark
+  - pymdownx.tilde
 
 extra_javascript:
   # - javascript/mathjax.js

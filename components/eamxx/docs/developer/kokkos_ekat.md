@@ -1,5 +1,42 @@
 # Kokkos and EKAT
 
+==Move to Computational Objects Section==
+
+Change name to "Important TPLs"... or something like, and split it up
+
+Also add:
+
+- Kokkos
+    - EKAT
+        - Probably just a high-level paragraph
+        - Pack-handling
+        - cmake utilities
+        - yaml parse/write
+        - spdlog interface
+        - "lib with a variety of utilities ranging from [...]"
+        - string manipulation
+        - device-independent `ASSERT()` macros
+        - CATCH main is here
+        - kokkos-based algorithms
+            - linear interp
+            - tri-diag solver
+            - workspace manager?
+                - scratch mem
+- yaml.cpp
+- scorpio
+    - This is the official E3SM parallel I/O lib
+    - SCREAM implements some wrappers b/c scorpio is mostly C
+        - This is done to handle complex C++ objects/classes
+- spdlog
+    - Used as an interface to write log files
+    - Allows control over how to sync messages
+    - Handles MPI and related race conditions well
+    - Mostly just for writing `atm_log.log`
+- catch2
+    - Test case macro
+    - this is how you create unit tests
+    - Examples of common patterns used by EAMxx in the Testing section
+
 ## Kokkos
 
 EAMxx uses Kokkos for performance portable abstractions for parallel execution

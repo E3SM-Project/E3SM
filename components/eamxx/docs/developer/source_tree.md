@@ -1,4 +1,6 @@
-# EAMxx's Source Tree
+# ~~EAMxx's Source Tree~~ Where to Find the Things--Better Name WIP
+
+### ==VERIFY CORRECTNESS==
 
 All EAMxx-specific code can be found in `components/eamxx` within the
 [EAMxx repo](https://github.com/E3SM-Project/scream). Here's how things are

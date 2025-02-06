@@ -13,7 +13,7 @@ Currently, EAMxx is only configured for km-scale convection-permitting runs. In 
 The only configuration of EAMxx that is currently implemented is the convection-permitting version, commonly known as the Simple Cloud-Resolving E3SM Atmosphere Model (SCREAM). Processes in EAMxx-SCREAM are:
 
 1. a non-hydrostatic version of the **spectral-element dynamical core** used by other E3SM Atmosphere Model versions[@Taylor_et20] with semi-Lagrangian tracer advection as described by Bradley et al. (2022)[@Bradley_et22]
-2. **turbulent mountain stress** is crudely parameterized following Fiedler and Panofsky (1072)[@Fiedler_Panofsky72] to reduce excessive winds around topography
+2. **turbulent mountain stress** is crudely parameterized following Fiedler and Panofsky (1972)[@Fiedler_Panofsky72] to reduce excessive winds around topography
 3. the **Simple Higher-Order Closure (SHOC)** parameterization from Bogenschutz and Krueger (2013)[@Bogenschutz_Krueger13], which handles turbulent diffusion, condensation/evaporation, and liquid cloud fraction
 4. an **all-or-nothing ice cloud fraction** parameterization that sets ice cloud fraction to 100% whenever cloud ice mass q<sub>i</sub> is less than a user-specified threshold set by default to 1e-5 kg/kg. This scheme also sets the total cloud fraction (used by microphysics) to the maximum of the liquid and ice cloud fraction.
 5. the effects of aerosol are prescribed via the **Simple Prescribed Aerosol (SPA)** scheme, which is very similar to MACv2-SP[@Stevens_et17]

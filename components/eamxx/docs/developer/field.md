@@ -56,3 +56,7 @@ parts:
 * Extra data: stored as a `std::map<std::string,ekat::any>`, allows to catch any
   metadata that does not fit in the above structures. This is a last resort structure,
   intended to accommodate the most peculiar corner cases, and should be used sparingly.
+
+## ==Field Manager==
+
+- **Forthcoming**
