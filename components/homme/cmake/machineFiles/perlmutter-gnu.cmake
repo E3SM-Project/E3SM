@@ -62,3 +62,5 @@ SET(USE_NUM_PROCS 4 CACHE STRING "")
 
 SET(USE_MPIEXEC "srun" CACHE STRING "")
 SET(CPRNC_DIR /global/cfs/cdirs/e3sm/tools/cprnc CACHE FILEPATH "")
+
+SET (ADD_LINKER_FLAGS " -lstdc++" CACHE STRING "")
