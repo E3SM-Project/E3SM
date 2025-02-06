@@ -89,7 +89,7 @@ void SPA::initialize_impl (const RunType /* run_type */)
   m_data_interpolation->setup_time_database ({spa_data_file},util::TimeLine::YearlyPeriodic, ref_ts);
 
   DataInterpolation::RemapData remap_data;
-  remap_data.hremap_file = spa_map_file;
+  remap_data.hremap_file = spa_map_file=="None" ? "" : spa_map_file;
   if (m_iop_data_manager!=nullptr) {
     // IOP cases cannot have a remap file. We will create a IOPRemapper as the horiz remapper
     EKAT_REQUIRE_MSG(spa_map_file == "",
