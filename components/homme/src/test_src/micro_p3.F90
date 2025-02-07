@@ -1258,7 +1258,7 @@ end function bfb_expm1
                      inv_qc_relvar, & !in  cld liq rel variance
                      it,            & !in # of tstep 
                      precip_liq_surf,precip_ice_surf, & !out
-                     its,ite,kts,kte,& !in array indices
+                     kts,kte,& !in array indices
                      diag_eff_radius_qc, diag_eff_radius_qi,rho_qi, & !out
                      do_predict_nc, do_prescribed_CCN, & !in
                      p3_autocon_coeff,p3_accret_coeff,p3_qc_autocon_expon,p3_nc_autocon_expon,p3_qc_accret_expon, & !in
@@ -1318,7 +1318,6 @@ end function bfb_expm1
     real, intent(out),   dimension(kts:kte)      :: mu_c       ! Size distribution shape parameter for radiation
     real, intent(out),   dimension(kts:kte)      :: lamc       ! Size distribution slope parameter for radiation
 
-    integer, intent(in)                                  :: its,ite    ! array bounds (horizontal)
     integer, intent(in)                                  :: kts,kte    ! array bounds (vertical)
     integer, intent(in)                                  :: it         ! time step counter NOTE: starts at 1 for first time step
 
@@ -1370,6 +1369,9 @@ end function bfb_expm1
     real, intent(in),    dimension(3)            :: col_location
     real, intent(in),    dimension(kts:kte)      :: inv_qc_relvar
     real, intent(out),   dimension(kts:kte)      :: diag_equiv_reflectivity,diag_ze_rain,diag_ze_ice  ! equivalent reflectivity [dBZ]
+
+
+#if 0
 
     !
     !----- Local variables and parameters:  -------------------------------------------------!
@@ -1669,6 +1671,8 @@ end function bfb_expm1
     ! end of main microphysics routine
 
     return
+
+#endif
 
   END SUBROUTINE p3_main
 
