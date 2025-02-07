@@ -77,9 +77,9 @@ def update_yaml_perturbation_seed(yaml_file, seed, pertout):
                 # replace perturbation_random_seed: 0 with perturbation_random_seed: <seed>
                 new_lines.append(line.replace('perturbation_random_seed: 0', f'perturbation_random_seed: {seed}'))
                 found_seed = True
-            elif 'dailyAVG_coarse.yaml' in line.strip():
-                # replace "dailyAVG_coarse.yaml" with "dailyAVG_coarse.yaml_{seed:04d}"
-                new_lines.append(line.replace('dailyAVG_coarse.yaml', f'dailyAVG_coarse.yaml_{seed:04d}'))
+            elif 'monthly_average_coarse.yaml' in line.strip():
+                # replace "monthly_average_coarse.yaml" with "monthly_average_coarse.yaml_{seed:04d}"
+                new_lines.append(line.replace('monthly_average_coarse.yaml', f'monthly_average_coarse.yaml_{seed:04d}'))
                 found_output = True
             else:
                 new_lines.append(line)
@@ -87,7 +87,7 @@ def update_yaml_perturbation_seed(yaml_file, seed, pertout):
         if not found_seed:
             raise ValueError(f"Could not find 'perturbation_random_seed' in {yaml_file}")
         if not found_output:
-            raise ValueError(f"Could not find 'dailyAVG_coarse.yaml' in {yaml_file}")
+            raise ValueError(f"Could not find 'monthly_average_coarse.yaml' in {yaml_file}")
 
         # Write back to file
         with open(yaml_file, 'w') as file:
@@ -112,7 +112,6 @@ def update_yaml_perturbation_seed(yaml_file, seed, pertout):
             raise ValueError(f"Could not find 'filename_prefix' in {yaml_file}")
 
         # Write back to file
-        
         with open(yaml_file, 'w') as file:
             file.writelines(new_lines)
 
@@ -158,12 +157,12 @@ class MVKxx(SystemTestsCommon):
             case_setup(self._case, test_mode=False, reset=True)
         
         duplicate_yaml_files("run/data/scream_input.yaml", NINST)
-        duplicate_yaml_files("run/data/dailyAVG_coarse.yaml", NINST)
+        duplicate_yaml_files("run/data/monthly_average_coarse.yaml", NINST)
 
         # before we run, let's update the perturbation seed in the YAML files
         for i in range(1, NINST + 1):
             update_yaml_perturbation_seed(f"run/data/scream_input.yaml_{i:04d}", i, "pert")
-            update_yaml_perturbation_seed(f"run/data/dailyAVG_coarse.yaml_{i:04d}", i, "out")
+            update_yaml_perturbation_seed(f"run/data/monthly_average_coarse.yaml_{i:04d}", i, "out")
 
         self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
 
