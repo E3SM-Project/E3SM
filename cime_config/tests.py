@@ -695,7 +695,7 @@ _TESTS = {
             "ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-small_kernels--eamxx-output-preset-5",
             "ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-small_kernels_p3--eamxx-output-preset-5",
             "ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-small_kernels_shoc--eamxx-output-preset-5",
-            "SMS_Ln5.ne4pg2_oQU480.WCYCLXX2010",
+            "SMS.ne30pg2_EC30to60E2r2.WCYCLXX2010",
             "SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-all_mam4xx_procs",
             )
     },
