@@ -80,7 +80,7 @@ subroutine convect_deep_register()
       call zm_conv_register
    end select 
 
-   ! Add PBUF variables related to deep convection that
+   ! Add PBUF variables related to deep convection
    call pbuf_add_field('DP_FLXPRC',  'global',  dtype_r8, (/pcols,pverp/),dp_flxprc_idx)
    call pbuf_add_field('DP_FLXSNW',  'global',  dtype_r8, (/pcols,pverp/),dp_flxsnw_idx)
    call pbuf_add_field('DP_CLDLIQ',  'global',  dtype_r8, (/pcols,pver/), dp_cldliq_idx)
