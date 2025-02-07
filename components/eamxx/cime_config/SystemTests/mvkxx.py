@@ -46,10 +46,8 @@ def duplicate_yaml_files(yaml_file, num_copies):
     if not os.path.isfile(yaml_file):
         raise FileNotFoundError(f"The file {yaml_file} does not exist.")
 
-    base_name, ext = os.path.splitext(yaml_file)
-
     for i in range(1, num_copies + 1):
-        new_file = f"{base_name}_{i:04d}{ext}"
+        new_file = f"{yaml_file}_{i:04d}"
         shutil.copyfile(yaml_file, new_file)
     
     return
@@ -71,6 +69,7 @@ def update_yaml_perturbation_seed(yaml_file, seed, pertout):
 
     if pertout == "pert":
         found_seed = False
+        found_output = False
         new_lines = []
 
         # Process each line
@@ -79,11 +78,17 @@ def update_yaml_perturbation_seed(yaml_file, seed, pertout):
                 # replace perturbation_random_seed: 0 with perturbation_random_seed: <seed>
                 new_lines.append(line.replace('perturbation_random_seed: 0', f'perturbation_random_seed: {seed}'))
                 found_seed = True
+            elif line.strip().contains('dailyAVG_coarse.yaml'):
+                # replace "dailyAVG_coarse.yaml" with "dailyAVG_coarse.yaml_{seed:04d}"
+                new_lines.append(line.replace('dailyAVG_coarse.yaml', f'dailyAVG_coarse.yaml_{seed:04d}'))
+                found_output = True
             else:
                 new_lines.append(line)
 
         if not found_seed:
             raise ValueError(f"Could not find 'perturbation_random_seed' in {yaml_file}")
+        if not found_output:
+            raise ValueError(f"Could not find 'dailyAVG_coarse.yaml' in {yaml_file}")
 
         # Write back to file
         with open(yaml_file, 'w') as file:
@@ -157,8 +162,8 @@ class MVKxx(SystemTestsCommon):
 
         # before we run, let's update the perturbation seed in the YAML files
         for i in range(1, NINST + 1):
-            update_yaml_perturbation_seed(f"run/data/scream_input_{i:04d}.yaml", i, "pert")
-            update_yaml_perturbation_seed(f"run/data/dailyAVG_coarse_{i:04d}.yaml", i, "out")
+            update_yaml_perturbation_seed(f"run/data/scream_input.yaml_{i:04d}", i, "pert")
+            update_yaml_perturbation_seed(f"run/data/dailyAVG_coarse.yaml_{i:04d}", i, "out")
 
         self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
 
