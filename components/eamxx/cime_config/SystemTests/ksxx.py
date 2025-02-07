@@ -224,7 +224,7 @@ def run(name, config):
     table_data = pd.DataFrame(details).T
     uc_rejections = (table_data["K-S test p-val"] < args.alpha).sum()
     _hdrs = [
-        "h0",
+        "h",
         "K-S test stat",
         "K-S test p-val",
         "K-S test p-val cor",
@@ -240,9 +240,9 @@ def run(name, config):
         table_data[_hdr] = table_data[_hdr].apply(col_fmt)
 
     tables = [
-        el.Table("Rejected", data=table_data[table_data["h0"] == "reject"]),
-        el.Table("Accepted", data=table_data[table_data["h0"] == "accept"]),
-        el.Table("Null", data=table_data[~table_data["h0"].isin(["accept", "reject"])]),
+        el.Table("Rejected", data=table_data[table_data["h"] == "reject"]),
+        el.Table("Accepted", data=table_data[table_data["h"] == "accept"]),
+        el.Table("Null", data=table_data[~table_data["h"].isin(["accept", "reject"])]),
     ]
 
     bib_html = bib2html(os.path.join(os.path.dirname(__file__), "ksxx.bib"))
@@ -250,7 +250,7 @@ def run(name, config):
     tabs = el.Tabs(
         {"Figures": img_gal, "Details": tables, "References": [el.RawHTML(bib_html)]}
     )
-    rejects = [var for var, dat in details.items() if dat["h0"] == "reject"]
+    rejects = [var for var, dat in details.items() if dat["h"] == "reject"]
     if args.uncorrected:
         critical = args.critical
     else:
@@ -289,8 +289,9 @@ def case_files(args):
         key2 += "2"
 
     f_sets = {
-        key1: e3sm.component_monthly_files(args.test_dir, args.component, args.ninst),
-        key2: e3sm.component_monthly_files(args.ref_dir, args.component, args.ninst),
+        # note in eamxx, we use the 'h' history file
+        key1: e3sm.component_monthly_files(args.test_dir, args.component, args.ninst, hist_name="h"),
+        key2: e3sm.component_monthly_files(args.ref_dir, args.component, args.ninst, hist_name="h"),
     }
 
     for key in f_sets:
@@ -399,25 +400,25 @@ def compute_details(annual_avgs, common_vars, args):
     # Convert to a Dataframe, transposed so that the index is the variable name
     detail_df = pd.DataFrame(details).T
     # Create a null hypothesis rejection column for un-corrected p-values
-    detail_df["h0_uc"] = detail_df["K-S test p-val"] < args.alpha
+    detail_df["h_uc"] = detail_df["K-S test p-val"] < args.alpha
 
-    (detail_df["h0_c"], detail_df["K-S test p-val cor"]) = smm.fdrcorrection(
+    (detail_df["h_c"], detail_df["K-S test p-val cor"]) = smm.fdrcorrection(
         detail_df["K-S test p-val"], alpha=args.alpha, method="p", is_sorted=False
     )
     if args.uncorrected:
-        _testkey = "h0_uc"
+        _testkey = "h_uc"
     else:
-        _testkey = "h0_c"
+        _testkey = "h_c"
 
     for var in common_vars:
         details[var]["K-S test p-val cor"] = detail_df.loc[var, "K-S test p-val cor"]
 
         if details[var]["T test stat"] is None:
-            details[var]["h0"] = "-"
+            details[var]["h"] = "-"
         elif detail_df.loc[var, _testkey]:
-            details[var]["h0"] = "reject"
+            details[var]["h"] = "reject"
         else:
-            details[var]["h0"] = "accept"
+            details[var]["h"] = "accept"
 
     return details
 
@@ -467,7 +468,7 @@ def main(args):
             img_file,
             test_name=args.test_case,
             ref_name=args.ref_case,
-            pf=details[var]["h0"],
+            pf=details[var]["h"],
             combine_hist=True,
         )
         _desc = monthly_avgs.query(
@@ -491,9 +492,9 @@ def main(args):
 
         img_link = Path(*Path(args.img_dir).parts[-2:], Path(img_file).name)
         _img = el.Image(
-            var, img_desc, img_link, relative_to="", group=details[var]["h0"]
+            var, img_desc, img_link, relative_to="", group=details[var]["h"]
         )
-        images[details[var]["h0"]].append(_img)
+        images[details[var]["h"]].append(_img)
 
     gals = []
     for group in ["reject", "accept", "-"]:

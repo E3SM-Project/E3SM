@@ -11,7 +11,6 @@ import json
 import logging
 
 import shutil
-import yaml
 
 from shutil import copytree
 
@@ -78,7 +77,7 @@ def update_yaml_perturbation_seed(yaml_file, seed, pertout):
                 # replace perturbation_random_seed: 0 with perturbation_random_seed: <seed>
                 new_lines.append(line.replace('perturbation_random_seed: 0', f'perturbation_random_seed: {seed}'))
                 found_seed = True
-            elif line.strip().contains('dailyAVG_coarse.yaml'):
+            elif 'dailyAVG_coarse.yaml' in line.strip():
                 # replace "dailyAVG_coarse.yaml" with "dailyAVG_coarse.yaml_{seed:04d}"
                 new_lines.append(line.replace('dailyAVG_coarse.yaml', f'dailyAVG_coarse.yaml_{seed:04d}'))
                 found_output = True
