@@ -54,6 +54,8 @@ env:
   # Submit to cdash only for nightlies or if the user explicitly forced a submission via workflow dispatch
   submit: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.submit) }}
   generate: ${{ github.event_name == 'workflow_dispatch' && inputs.bless }}
+  # Do EKAT testing for nightlies or (TODO: if EKAT label is present)
+  ekat: ${{ github.event_name == 'schedule' }}
 
 jobs:
   gcc-openmp:
@@ -61,7 +63,7 @@ jobs:
       ${{
         github.event_name != 'workflow_dispatch' ||
         (
-          github.event.inputs.job_to_run == 'gcc-openmp' || 
+          github.event.inputs.job_to_run == 'gcc-openmp' ||
           github.event.inputs.job_to_run == 'all'
         )
       }}
@@ -88,12 +90,13 @@ jobs:
           generate: ${{ env.generate }}
           submit: ${{ env.submit }}
           cmake-configs: Kokkos_ENABLE_OPENMP=ON
+          ekat: ${{ env.ekat }}
   gcc-cuda:
     if: |
       ${{
         github.event_name != 'workflow_dispatch' ||
         (
-          github.event.inputs.job_to_run == 'gcc-cuda' || 
+          github.event.inputs.job_to_run == 'gcc-cuda' ||
           github.event.inputs.job_to_run == 'all'
         )
       }}
@@ -149,3 +152,4 @@ jobs:
           generate: ${{ env.generate }}
           submit: ${{ env.submit }}
           cmake-configs: Kokkos_ARCH_HOPPER90=${{ env.Hopper }};Kokkos_ARCH_AMPERE80=${{ env.Ampere }};Kokkos_ARCH_VOLTA70=${{ env.Volta }};CMAKE_CUDA_ARCHITECTURES=${{ env.CUDA_ARCH }}
+          ekat: ${{ env.ekat }}
