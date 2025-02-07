@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-filename_prefix: eamxx_output.decadal.dailyAVG_coarse.h
+filename_prefix: eamxx_output.decadal.h
 iotype: pnetcdf
 Averaging Type: Average
 Max Snapshots Per File: 1
@@ -89,7 +89,7 @@ Fields:
 
 output_control:
   Frequency: 1
-  frequency_units: ndays
+  frequency_units: nmonths
   MPI Ranks in Filename: false
 Restart:
   force_new_file: true
