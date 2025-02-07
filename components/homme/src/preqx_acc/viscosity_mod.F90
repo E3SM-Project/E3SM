@@ -5,7 +5,7 @@
 
 module viscosity_mod
   use viscosity_base, only: compute_zeta_C0, compute_div_C0, compute_zeta_C0_contra, compute_div_C0_contra, make_c0, make_c0_vector
-  use viscosity_base, only: biharmonic_wk_scalar,neighbor_minmax, neighbor_minmax_start,neighbor_minmax_finish, smooth_phis, dss_hvtensor
+  use viscosity_base, only: biharmonic_wk_scalar,neighbor_minmax, neighbor_minmax_start,neighbor_minmax_finish, smooth_phis
   use viscosity_preqx_base, only: biharmonic_wk_dp3d
   use thread_mod, only : omp_get_num_threads
   use kinds, only : real_kind, iulog
@@ -55,7 +55,7 @@ contains
     ! local
     integer :: k,kptr,i,j,ie,ic,q
     logical :: var_coef1
-    !if tensor hyperviscosity with tensor V is used, then biharmonic operator is (\grad\cdot V\grad) (\grad \cdot \grad) 
+    !if tensor hyperviscosity with tensor V is used, then biharmonic operator is (\grad\cdot V\grad) (\grad \cdot \grad)
     !so tensor is only used on second call to laplace_sphere_wk
     var_coef1 = .true.
     if(hypervis_scaling > 0) var_coef1 = .false.
@@ -70,7 +70,7 @@ contains
     call t_startf('biwksc_exch')
     call bndry_exchangeV(hybrid,edgeq)
     call t_stopf('biwksc_exch')
-    
+
     !$omp barrier
     !$omp master
     call edgeVunpack_openacc(edgeq,qtens,qsize*nlev,0,qsize*nlev,nets,nete,1,1)
@@ -78,7 +78,7 @@ contains
     !$acc parallel loop gang vector collapse(5) present(qtens,elem(:))
     do ie = nets , nete
       ! apply inverse mass matrix, then apply laplace again
-      do q = 1 , qsize      
+      do q = 1 , qsize
         do k = 1 , nlev    !  Potential loop inversion (AAM)
           do j = 1 , np
             do i = 1 , np
@@ -122,7 +122,7 @@ contains
     call t_startf('nmm_exch')
     call bndry_exchangeS(hybrid,edgeMinMax)
     call t_stopf('nmm_exch')
-       
+
     !$omp barrier
     !$omp master
     call edgeSunpackMin_openacc(edgeMinMax,min_neigh,nlev*qsize,0         ,2*nlev*qsize,elem(:),nets,nete,1,1)

@@ -5,7 +5,7 @@
 module viscosity_mod
   use viscosity_base, only: compute_zeta_C0, compute_div_C0, &
     compute_zeta_C0_contra, compute_eta_C0_contra, compute_div_C0_contra, make_c0, neighbor_minmax, &
-    make_c0_vector, dss_hvtensor
+    make_c0_vector
 
 use dimensions_mod, only : np, nlev,qsize,nelemd
 use hybrid_mod, only : hybrid_t
@@ -23,7 +23,6 @@ use physical_constants, only : g
 implicit none
 
 public :: compute_pv_C0_contra
-public :: dss_hvtensor
 
 contains
 
@@ -52,7 +51,7 @@ real (kind=real_kind), dimension(np,np,2) :: v
 real (kind=real_kind) ::  nu_ratio1,nu_ratio2
 logical var_coef1
 
-   !if tensor hyperviscosity with tensor V is used, then biharmonic operator is (\grad\cdot V\grad) (\grad \cdot \grad) 
+   !if tensor hyperviscosity with tensor V is used, then biharmonic operator is (\grad\cdot V\grad) (\grad \cdot \grad)
    !so tensor is only used on second call to laplace_sphere_wk
    var_coef1 = .true.
    if(hypervis_scaling > 0)  var_coef1= .false.
@@ -85,7 +84,7 @@ logical var_coef1
                T(i,j,k)=elem(ie)%state%p(i,j,k,nt) + elem(ie)%state%ps(i,j)
             enddo
          enddo
-        
+
          ptens(:,:,k,ie)=laplace_sphere_wk(T(:,:,k),deriv,elem(ie),var_coef=var_coef1)
          vtens(:,:,:,k,ie)=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,&
               elem(ie),var_coef=var_coef1,nu_ratio=nu_ratio1)
@@ -97,17 +96,17 @@ logical var_coef1
       call edgeVpack(edge3, vtens(1,1,1,1,ie),2*nlev,kptr,ie)
 
    enddo
-   
+
    call bndry_exchangeV(hybrid,edge3)
-   
+
    do ie=nets,nete
       rspheremv     => elem(ie)%rspheremp(:,:)
-      
+
       kptr=0
       call edgeVunpack(edge3, ptens(1,1,1,ie), nlev, kptr, ie)
       kptr=nlev
       call edgeVunpack(edge3, vtens(1,1,1,1,ie), 2*nlev, kptr, ie)
-      
+
       ! apply inverse mass matrix, then apply laplace again
       do k=1,nlev
          do j=1,np

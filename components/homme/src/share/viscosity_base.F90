@@ -5,9 +5,9 @@
 module viscosity_base
 !
 !  This module should be renamed "global_deriv_mod.F90"
-! 
-!  It is a collection of derivative operators that must be applied to the field 
-!  over the sphere (as opposed to derivative operators that can be applied element 
+!
+!  It is a collection of derivative operators that must be applied to the field
+!  over the sphere (as opposed to derivative operators that can be applied element
 !  by element)
 !
 !
@@ -37,7 +37,6 @@ public :: biharmonic_wk_scalar
 public :: neighbor_minmax_start,neighbor_minmax_finish
 public :: smooth_phis
 #endif
-public :: dss_hvtensor
 
 !
 ! compute vorticity/divergence and then project to make continious
@@ -90,7 +89,7 @@ integer :: k,kptr,i,j,ie,ic,q
 real (kind=real_kind), dimension(np,np) :: lap_p
 logical var_coef1
 
-   !if tensor hyperviscosity with tensor V is used, then biharmonic operator is (\grad\cdot V\grad) (\grad \cdot \grad) 
+   !if tensor hyperviscosity with tensor V is used, then biharmonic operator is (\grad\cdot V\grad) (\grad \cdot \grad)
    !so tensor is only used on second call to laplace_sphere_wk
    var_coef1 = .true.
    if(hypervis_scaling > 0)    var_coef1 = .false.
@@ -101,7 +100,7 @@ logical var_coef1
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k, q, lap_p)
 #endif
-      do q=1,qsize      
+      do q=1,qsize
          do k=1,nlev    !  Potential loop inversion (AAM)
             lap_p(:,:)=qtens(:,:,k,q,ie)
 ! Original use of qtens on left and right hand sides caused OpenMP errors (AAM)
@@ -114,14 +113,14 @@ logical var_coef1
    call t_startf('biwksc_bexchV')
    call bndry_exchangeV(hybrid,edgeq)
    call t_stopf('biwksc_bexchV')
-   
+
    do ie=nets,nete
 
       ! apply inverse mass matrix, then apply laplace again
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k, q, lap_p)
 #endif
-      do q=1,qsize      
+      do q=1,qsize
         call edgeVunpack_nlyr(edgeq,elem(ie)%desc,qtens(:,:,:,q,ie),nlev,nlev*(q-1),qsize*nlev)
         do k=1,nlev    !  Potential loop inversion (AAM)
            lap_p(:,:)=elem(ie)%rspheremp(:,:)*qtens(:,:,k,q,ie)
@@ -183,7 +182,7 @@ end subroutine
 
 subroutine make_C0_hybrid_klev(zeta,elem,hybrid,nets,nete,klev)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! apply DSS (aka assembly procedure) to zeta.  
+! apply DSS (aka assembly procedure) to zeta.
 ! this is a low-performance routine used for I/O and analysis.
 ! no need to optimize
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -224,11 +223,11 @@ end subroutine
 
 subroutine compute_zeta_C0_contra(zeta,elem,par,nt)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! compute C0 vorticity.  That is, solve:  
+! compute C0 vorticity.  That is, solve:
 !     < PHI, zeta > = <PHI, curl(elem%state%v >
 !
 !    input:  v (stored in elem()%, in contra-variant coordinates)
-!    output: zeta(:,:,:,:)   
+!    output: zeta(:,:,:,:)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -266,7 +265,7 @@ subroutine compute_eta_C0_contra(eta,elem,par,nt)
 !     < PHI, eta > = <PHI, curl(elem%state%v) + coriolis >
 !
 !    input:  v (stored in elem()%, in contra-variant coordinates)
-!    output: zeta(:,:,:,:)   
+!    output: zeta(:,:,:,:)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -299,11 +298,11 @@ end subroutine
 
 subroutine compute_div_C0_contra(zeta,elem,par,nt)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! compute C0 divergence. That is, solve:  
+! compute C0 divergence. That is, solve:
 !     < PHI, zeta > = <PHI, div(elem%state%v >
 !
 !    input:  v (stored in elem()%, in contra-variant coordinates)
-!    output: zeta(:,:,:,:)   
+!    output: zeta(:,:,:,:)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -337,11 +336,11 @@ end subroutine
 
 subroutine compute_zeta_C0_par(zeta,elem,par,nt)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! compute C0 vorticity.  That is, solve:  
+! compute C0 vorticity.  That is, solve:
 !     < PHI, zeta > = <PHI, curl(elem%state%v >
 !
 !    input:  v (stored in elem()%, in lat-lon coordinates)
-!    output: zeta(:,:,:,:)   
+!    output: zeta(:,:,:,:)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 type (parallel_t) :: par
@@ -364,11 +363,11 @@ end subroutine
 
 subroutine compute_div_C0_par(zeta,elem,par,nt)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! compute C0 divergence. That is, solve:  
+! compute C0 divergence. That is, solve:
 !     < PHI, zeta > = <PHI, div(elem%state%v >
 !
 !    input:  v (stored in elem()%, in lat-lon coordinates)
-!    output: zeta(:,:,:,:)   
+!    output: zeta(:,:,:,:)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -393,11 +392,11 @@ end subroutine
 
 subroutine compute_zeta_C0_hybrid(zeta,elem,hybrid,nets,nete,nt)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! compute C0 vorticity.  That is, solve:  
+! compute C0 vorticity.  That is, solve:
 !     < PHI, zeta > = <PHI, curl(elem%state%v >
 !
 !    input:  v (stored in elem()%, in lat-lon coordinates)
-!    output: zeta(:,:,:,:)   
+!    output: zeta(:,:,:,:)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -429,11 +428,11 @@ end subroutine
 
 subroutine compute_div_C0_hybrid(zeta,elem,hybrid,nets,nete,nt)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! compute C0 divergence. That is, solve:  
+! compute C0 divergence. That is, solve:
 !     < PHI, zeta > = <PHI, div(elem%state%v >
 !
 !    input:  v (stored in elem()%, in lat-lon coordinates)
-!    output: zeta(:,:,:,:)   
+!    output: zeta(:,:,:,:)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -472,24 +471,24 @@ end subroutine
 #ifdef _PRIM
 
 subroutine neighbor_minmax(hybrid,edgeMinMax,nets,nete,min_neigh,max_neigh)
- 
+
    type (hybrid_t)      , intent(in) :: hybrid
    type (EdgeBuffer_t)  , intent(inout) :: edgeMinMax
    integer :: nets,nete
    real (kind=real_kind) :: min_neigh(nlev,qsize,nets:nete)
    real (kind=real_kind) :: max_neigh(nlev,qsize,nets:nete)
 
-   ! local 
+   ! local
    integer :: ie,q, k,kptr
 
-   
+
    do ie=nets,nete
       kptr = 0
       call  edgeSpack(edgeMinMax,min_neigh(:,:,ie),qsize*nlev,kptr,2*qsize*nlev,ie)
       kptr = qsize*nlev
       call  edgeSpack(edgeMinMax,max_neigh(:,:,ie),qsize*nlev,kptr,2*qsize*nlev,ie)
    enddo
-   
+
    call t_startf('nmm_bexchV')
    call bndry_exchangeS(hybrid,edgeMinMax)
    call t_stopf('nmm_bexchV')
@@ -505,7 +504,7 @@ subroutine neighbor_minmax(hybrid,edgeMinMax,nets,nete,min_neigh,max_neigh)
       enddo
       enddo
    enddo
-  
+
 end subroutine neighbor_minmax
 
 subroutine neighbor_minmax_start(hybrid,edgeMinMax,nets,nete,min_neigh,max_neigh)
@@ -516,7 +515,7 @@ subroutine neighbor_minmax_start(hybrid,edgeMinMax,nets,nete,min_neigh,max_neigh
    real (kind=real_kind) :: min_neigh(nlev,qsize,nets:nete)
    real (kind=real_kind) :: max_neigh(nlev,qsize,nets:nete)
 
-   ! local 
+   ! local
    integer :: ie,q, k,kptr
 
 
@@ -540,7 +539,7 @@ subroutine neighbor_minmax_finish(hybrid,edgeMinMax,nets,nete,min_neigh,max_neig
    real (kind=real_kind) :: min_neigh(nlev,qsize,nets:nete)
    real (kind=real_kind) :: max_neigh(nlev,qsize,nets:nete)
 
-   ! local 
+   ! local
    integer :: ie,q, k,kptr
 
    call t_startf('nmm_bexchS_fini')
@@ -581,7 +580,7 @@ subroutine smooth_phis(phis,elem,hybrid,deriv,nets,nete,minf,numcycle,p2filt,xgl
   real (kind=real_kind), dimension(nets:nete) :: pmin,pmax
   real (kind=real_kind) :: phis4(np)
   integer :: nt,ie,ic,i,j
-  integer :: minmax_halo =-1   ! -1 = disabled.  
+  integer :: minmax_halo =-1   ! -1 = disabled.
                                ! 0  = recompute each time
 
   if (p2filt>=1 .and. np/=4) then
@@ -694,7 +693,7 @@ subroutine smooth_phis(phis,elem,hybrid,deriv,nets,nete,minf,numcycle,p2filt,xgl
   enddo
 
   if (p2filt==2) then
-     ! apply final p2 filter 
+     ! apply final p2 filter
      do ie=nets,nete
         do i=1,np
            phis4=phis(i,:,ie)
@@ -708,11 +707,11 @@ subroutine smooth_phis(phis,elem,hybrid,deriv,nets,nete,minf,numcycle,p2filt,xgl
         enddo
      end do
   endif
-  
 
 
 
-  call FreeEdgeBuffer(edgebuf) 
+
+  call FreeEdgeBuffer(edgebuf)
 
   end subroutine smooth_phis
 
@@ -772,11 +771,11 @@ integer :: ie,k,q
        call edgeVpack(edge3,Qmin,nlev,nlev,ie)
        call edgeVpack(edge3,Qvar,nlev,2*nlev,ie)
     enddo
-    
+
     call t_startf('nmm_bexchV')
     call bndry_exchangeV(hybrid,edge3)
     call t_stopf('nmm_bexchV')
-       
+
     do ie=nets,nete
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
@@ -833,7 +832,7 @@ integer :: ie,k,q
           max_neigh(k,ie)=maxval(Qmax(:,:,k))
           min_neigh(k,ie)=minval(Qmin(:,:,k))
        enddo
-       
+
     end do
 
 #ifdef DEBUGOMP
@@ -856,96 +855,5 @@ end subroutine
 
 
 #endif
-
-
-  subroutine dss_hvtensor(elem,hybrid,nets,nete)
-!
-!   estimate various CFL limits
-!   also, for variable resolution viscosity coefficient, make sure
-!   worse viscosity CFL (given by dtnu) is not violated by reducing 
-!   viscosity coefficient in regions where CFL is violated
-!
-    use kinds,       only : real_kind
-    use hybrid_mod,  only : hybrid_t
-    use element_mod, only : element_t
-    use dimensions_mod, only : np,ne
-    use quadrature_mod, only : gausslobatto, quadrature_t
-
-    use control_mod, only : hypervis_scaling
-    use edgetype_mod, only : EdgeBuffer_t 
-    use edge_mod, only : initedgebuffer, FreeEdgeBuffer, edgeVpack, edgeVunpack
-    use bndry_mod, only : bndry_exchangeV
-
-
-    type(element_t)      , intent(inout) :: elem(:)
-    integer              , intent(in) :: nets,nete
-    type (hybrid_t)      , intent(in) :: hybrid
-
-
-    real (kind=real_kind) :: x, y, noreast, nw, se, sw
-    real (kind=real_kind), dimension(np,np,nets:nete) :: zeta
-    integer :: ie,corner, i, j, rowind, colind
-    type (quadrature_t)    :: gp
-    type (EdgeBuffer_t)          :: edgebuf
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!  TENSOR, RESOLUTION-AWARE HYPERVISCOSITY
-!  The tensorVisc() array is computed in cube_mod.F90
-!  this block of code will DSS it so the tensor if C0
-!  and also make it bilinear in each element.
-!  Oksana Guba
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   if (hypervis_scaling /= 0) then
-    gp=gausslobatto(np)
-    call initEdgeBuffer(hybrid%par,edgebuf,elem,1)
-    do rowind=1,2
-      do colind=1,2
-	do ie=nets,nete
-	  zeta(:,:,ie) = elem(ie)%tensorVisc(:,:,rowind,colind)*elem(ie)%spheremp(:,:)
-	  call edgeVpack(edgebuf,zeta(1,1,ie),1,0,ie)
-	end do
-
-	call bndry_exchangeV(hybrid,edgebuf)
-	do ie=nets,nete
-	  call edgeVunpack(edgebuf,zeta(1,1,ie),1,0,ie)
-          elem(ie)%tensorVisc(:,:,rowind,colind) = zeta(:,:,ie)*elem(ie)%rspheremp(:,:)
-	end do
-      enddo !rowind
-    enddo !colind
-    call FreeEdgeBuffer(edgebuf)
-
-!IF BILINEAR MAP OF V NEEDED
-    do rowind=1,2
-      do colind=1,2
-    ! replace hypervis w/ bilinear based on continuous corner values
-	do ie=nets,nete
-	  noreast = elem(ie)%tensorVisc(np,np,rowind,colind)
-	  nw = elem(ie)%tensorVisc(1,np,rowind,colind)
-	  se = elem(ie)%tensorVisc(np,1,rowind,colind)
-	  sw = elem(ie)%tensorVisc(1,1,rowind,colind)
-	  do i=1,np
-	    x = gp%points(i)
-	    do j=1,np
-		y = gp%points(j)
-		elem(ie)%tensorVisc(i,j,rowind,colind) = 0.25d0*( &
-					(1.0d0-x)*(1.0d0-y)*sw + &
-					(1.0d0-x)*(y+1.0d0)*nw + &
-					(x+1.0d0)*(1.0d0-y)*se + &
-					(x+1.0d0)*(y+1.0d0)*noreast)
-	    end do
-	  end do
-	end do
-      enddo !rowind
-    enddo !colind
-    deallocate(gp%points)
-    deallocate(gp%weights)
-    endif
-  end subroutine dss_hvtensor
-
-
-
-
-
-
 
 end module viscosity_base
