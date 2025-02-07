@@ -10,6 +10,9 @@ import os
 import json
 import logging
 
+import shutil
+import yaml
+
 from shutil import copytree
 
 import CIME.test_status
@@ -26,6 +29,58 @@ from evv4esm.__main__ import main as evv  # pylint: disable=import-error
 evv_lib_dir = os.path.abspath(os.path.dirname(evv4esm.__file__))
 logger = logging.getLogger(__name__)
 NINST = 2
+
+
+def duplicate_yaml_files(yaml_file, num_copies):
+    """
+    Duplicate a YAML file into multiple copies with four-digit suffixes.
+
+    Parameters:
+    yaml_file (str): Path to the original YAML file.
+    num_copies (int): Number of copies to create.
+
+    Returns:
+    list: List of paths to the duplicated files.
+    """
+
+    if not os.path.isfile(yaml_file):
+        raise FileNotFoundError(f"The file {yaml_file} does not exist.")
+
+    base_name, ext = os.path.splitext(yaml_file)
+
+    for i in range(1, num_copies + 1):
+        new_file = f"{base_name}_{i:04d}{ext}"
+        shutil.copyfile(yaml_file, new_file)
+
+
+def update_yaml_perturbation_seed(yaml_file, seed):
+    """
+    Update the perturbation seed in a YAML file.
+
+    Parameters:
+    yaml_file (str): Path to the YAML file.
+    seed (int): New seed value to replace the existing one.
+    """
+    if not os.path.isfile(yaml_file):
+        raise FileNotFoundError(f"The file {yaml_file} does not exist.")
+
+    
+    # Read the YAML file
+    with open(yaml_file, 'r') as file:
+        data = yaml.safe_load(file)
+    
+    # Ensure that perturbed_fields have T_mid in them; if not add it
+    if 'perturbed_fields' not in data:
+        data['perturbed_fields'] = ['T_mid']
+    elif 'T_mid' not in data['perturbed_fields']:
+        data['perturbed_fields'].append('T_mid')
+
+    # Update the seed value
+    data['perturbation_random_seed'] = seed
+    
+    # Write back to the file
+    with open(yaml_file, 'w') as file:
+        yaml.dump(data, file, default_flow_style=False)
 
 
 class MVKxx(SystemTestsCommon):
@@ -66,17 +121,20 @@ class MVKxx(SystemTestsCommon):
 
             case_setup(self._case, test_mode=False, reset=True)
         
-
-        for iinst in range(1, NINST + 1):
-            with open(
-                "user_nl_{}_{:04d}".format(self.component, iinst), "w"
-            ) as nl_atm_file:
-                # nl_atm_file.write("new_random = .true.\n")
-                # nl_atm_file.write("pertlim = 1.0e-10\n")
-                nl_atm_file.write("perturbation_random_seed = {}\n".format(iinst))
-                # nl_atm_file.write("seed_clock = .true.\n")
+        duplicate_yaml_files("run/data/scream_input.yaml", NINST)
 
         self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
+
+    def run_phase(self):
+        """Run the model."""
+        
+        # Let's copy the scream_input.yaml file again just to be safe
+        duplicate_yaml_files("run/data/scream_input.yaml", NINST)
+        # before we run, let's update the perturbation seed in the YAML files
+        for i in range(1, NINST + 1):
+            update_yaml_perturbation_seed(f"run/data/scream_input_{i:04d}.yaml", i)
+
+        self.run_indv()
 
     def _generate_baseline(self):
         """
@@ -132,7 +190,7 @@ class MVKxx(SystemTestsCommon):
             test_name = "{}".format(case_name.split(".")[-1])
             evv_config = {
                 test_name: {
-                    "module": os.path.join(evv_lib_dir, "extensions", "ks.py"),
+                    "module": os.path.join(os.path.dirname(__file__), "ksxx.py"),
                     "test-case": "Test",
                     "test-dir": run_dir,
                     "ref-case": "Baseline",
