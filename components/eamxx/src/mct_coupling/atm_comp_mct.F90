@@ -207,6 +207,8 @@ CONTAINS
     call seq_timemgr_EClockGetData(EClock, calendar=calendar, &
                                    curr_ymd=cur_ymd, curr_tod=cur_tod, &
                                    start_ymd=case_start_ymd, start_tod=case_start_tod)
+    
+    yaml_fname = trim(yaml_fname)//trim(inst_suffix)
     call string_f2c(yaml_fname,yaml_fname_c)
     call string_f2c(calendar,calendar_c)
     call string_f2c(trim(atm_log_fname),atm_log_fname_c)
