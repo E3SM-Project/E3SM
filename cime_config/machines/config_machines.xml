@@ -3203,11 +3203,15 @@
       <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
+      <modules>
+        <command name="use">/grand/E3SMinput/soft/modulefiles/polaris</command>
+        <command name="load">cmake/3.31.5</command>
+      </modules>
       <modules compiler="gnu.*">
         <command name="load">PrgEnv-gnu</command>
       </modules>
       <modules compiler="gnugpu">
-        <command name="swap">gcc/12.2.0 gcc/11.2.0</command>
+        <command name="load">nvhpc-mixed</command>
       </modules>
       <modules compiler="nvidia.*">
         <command name="load">PrgEnv-nvhpc</command>
@@ -3227,6 +3231,7 @@
     <environment_variables>
       <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
+      <env name="CRAYPE_LINK_TYPE">dynamic</env>
       <env name="MPICH_GPU_SUPPORT_ENABLED">0</env>
       <env name="CRAY_ACCEL_TARGET">host</env>
       <env name="GPU_TILE_COMPACT"> </env>
@@ -3235,6 +3240,7 @@
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /grand/E3SMinput/soft/moab/gnu; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler=".*gpu">
+      <env name="NVCC_WRAPPER_DEFAULT_COMPILER">CC</env>
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
       <env name="CRAY_ACCEL_TARGET">nvidia80</env>
       <env name="GPU_TILE_COMPACT">/grand/E3SMinput/soft/qsub/set_affinity_gpu_polaris.sh</env>
