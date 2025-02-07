@@ -51,11 +51,12 @@ def duplicate_yaml_files(yaml_file, num_copies):
     for i in range(1, num_copies + 1):
         new_file = f"{base_name}_{i:04d}{ext}"
         shutil.copyfile(yaml_file, new_file)
+    
+    return
 
-
-def update_yaml_perturbation_seed(yaml_file, seed):
+def update_yaml_perturbation_seed(yaml_file, seed, pertout):
     """
-    Update the perturbation seed in a YAML file.
+    Update the perturbation seed in a YAML file using basic text manipulation.
 
     Parameters:
     yaml_file (str): Path to the YAML file.
@@ -64,23 +65,53 @@ def update_yaml_perturbation_seed(yaml_file, seed):
     if not os.path.isfile(yaml_file):
         raise FileNotFoundError(f"The file {yaml_file} does not exist.")
 
-    
-    # Read the YAML file
+    # Read the file content
     with open(yaml_file, 'r') as file:
-        data = yaml.safe_load(file)
-    
-    # Ensure that perturbed_fields have T_mid in them; if not add it
-    if 'perturbed_fields' not in data:
-        data['perturbed_fields'] = ['T_mid']
-    elif 'T_mid' not in data['perturbed_fields']:
-        data['perturbed_fields'].append('T_mid')
+        lines = file.readlines()
 
-    # Update the seed value
-    data['perturbation_random_seed'] = seed
+    if pertout == "pert":
+        found_seed = False
+        new_lines = []
+
+        # Process each line
+        for line in lines:
+            if line.strip().startswith('perturbation_random_seed:'):
+                # replace perturbation_random_seed: 0 with perturbation_random_seed: <seed>
+                new_lines.append(line.replace('perturbation_random_seed: 0', f'perturbation_random_seed: {seed}'))
+                found_seed = True
+            else:
+                new_lines.append(line)
+
+        if not found_seed:
+            raise ValueError(f"Could not find 'perturbation_random_seed' in {yaml_file}")
+
+        # Write back to file
+        with open(yaml_file, 'w') as file:
+            file.writelines(new_lines)
     
-    # Write back to the file
-    with open(yaml_file, 'w') as file:
-        yaml.dump(data, file, default_flow_style=False)
+    elif pertout == "out":
+        # Track if we found and updated required fields
+        found_scream = False
+        new_lines = []
+
+        # Process each line
+        for line in lines:
+            if line.strip().startswith('filename_prefix:'):
+                # replace ".scream" with ".scream_{seed:04d}"
+                new_lines.append(line.replace('.scream', f'.scream_{seed:04d}'))
+                found_seed = True
+            else:
+                new_lines.append(line)
+
+        # Add missing sections if needed
+        if not found_seed:
+            raise ValueError(f"Could not find 'filename_prefix' in {yaml_file}")
+
+        # Write back to file
+        with open(yaml_file, 'w') as file:
+            file.writelines(new_lines)
+
+    return
 
 
 class MVKxx(SystemTestsCommon):
@@ -122,17 +153,19 @@ class MVKxx(SystemTestsCommon):
             case_setup(self._case, test_mode=False, reset=True)
         
         duplicate_yaml_files("run/data/scream_input.yaml", NINST)
+        duplicate_yaml_files("run/data/dailyAVG_coarse.yaml", NINST)
+
+        # before we run, let's update the perturbation seed in the YAML files
+        for i in range(1, NINST + 1):
+            update_yaml_perturbation_seed(f"run/data/scream_input_{i:04d}.yaml", i, "pert")
+            update_yaml_perturbation_seed(f"run/data/dailyAVG_coarse_{i:04d}.yaml", i, "out")
 
         self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
 
     def run_phase(self):
         """Run the model."""
-        
-        # Let's copy the scream_input.yaml file again just to be safe
-        duplicate_yaml_files("run/data/scream_input.yaml", NINST)
-        # before we run, let's update the perturbation seed in the YAML files
-        for i in range(1, NINST + 1):
-            update_yaml_perturbation_seed(f"run/data/scream_input_{i:04d}.yaml", i)
+
+        # may do more mods here if wanted?
 
         self.run_indv()
 
