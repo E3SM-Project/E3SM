@@ -481,8 +481,9 @@ contains
                                 
                            if ( oceanFieldOld(iLayer,jCell,iField) > 1.0e6_RKIND) then
                               ! raise error if an invalid ocean data value is used
-                              call mpas_log_write("ocean data value used for extrapolation is invalid", &
-                                   MPAS_LOG_ERR)
+                              call mpas_log_write("ocean data value used for extrapolation is invalid" // &
+                                      "in horizontal extrapolations: cell id=$i, iLayer=$i, iField=$i, value=$r", &
+                                      MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell), iLayer-1, iField/), realArgs=(/oceanField(iLayer-1,iCell,iField)/))
                               err = ior(err,1)
                            else
                               fieldSum = fieldSum + (oceanFieldOld(iLayer,jCell,iField) * areaCell(jCell))
@@ -626,8 +627,9 @@ contains
                   if ( validOceanMask(iLayer-1,iCell) == 1 ) then
                      if (oceanField(iLayer-1,iCell,iField) > 1.0e6_RKIND) then
                         ! raise error if an invalid ocean data value is used
-                        call mpas_log_write("ocean data value used for extrapolation is invalid", &
-                               MPAS_LOG_ERR)
+                        call mpas_log_write("ocean data value used for extrapolation is invalid" // &
+                             "in vertical extrapolations: cell id=$i, iLayer=$i, TF=$r", &
+                             MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell), iLayer-1/), realArgs=(/oceanField(iLayer-1,iCell,iField)/))
                         err = ior(err,1)
                      else
                         if (config_recalculate_thermal_forcing) then
@@ -766,8 +768,12 @@ contains
             freezingTemperature = (gamma1 * MPAS_3dOceanSalinity(:,iCell) + gamma2 + gamma3 * ismip6shelfMelt_zOcean)
          
             ! Calculate Gade slope (slope of submarine melt mixing line) using cell just above iceberg depth as reference point. Assumes ice at pressure melting temperature
-            gadeSlope = (1/MPAS_3dOceanSalinity(maxval(icebergCellVertID),iCell)) * (L/cp - (freezingTemperature(maxval(icebergCellVertID)) & 
+            if (maxval(icebergCellVertID) == 0) then
+               gadeSlope = 0.0_RKIND
+            else
+               gadeSlope = (1/MPAS_3dOceanSalinity(maxval(icebergCellVertID),iCell)) * (L/cp - (freezingTemperature(maxval(icebergCellVertID)) & 
                     - MPAS_3dOceanTemperature(maxval(icebergCellVertID),iCell)))
+            endif
 
             ! Now that we have the slope of the melt line, alter ocean temperatures along submarine melt line
             do iLayer = 1, nISMIP6OceanLayers
