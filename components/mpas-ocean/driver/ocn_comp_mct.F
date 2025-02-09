@@ -226,7 +226,6 @@ contains
     logical, pointer :: config_use_surface_salinity_monthly_restoring
     logical, pointer :: config_scale_dismf_by_removed_ice_runoff
     character (len=StrKIND), pointer :: config_land_ice_flux_mode
-    character (len=StrKIND), pointer :: config_glc_thermal_forcing_coupling_mode
 
     ! ssh coupling interval initialization
     integer, pointer :: index_avgZonalSSHGradient, index_avgMeridionalSSHGradient
@@ -3167,14 +3166,12 @@ contains
           o2x_o % rAttr(index_o2x_So_stv, n) = landIceTracerTransferVelocities(indexSaltTrans,i)
           o2x_o % rAttr(index_o2x_So_rhoeff, n) = 0.0_RKIND
        endif
-       if (ocn_c2_glctf) then
-          if (trim(config_glc_thermal_forcing_coupling_mode) == '2d') then
-             o2x_o % rAttr(index_o2x_So_tf2d, n) = avgThermalForcingAtCritDepth(i)
-          elseif (trim(config_glc_thermal_forcing_coupling_mode) == '3d') then
-             do iLevel = 1, nGlcZLevels
-                o2x_o % rAttr(index_o2x_So_tf3d(iLevel), n) = avgThermalForcingAtZLevels(iLevel, i)
-             enddo
-          endif
+       if (trim(config_glc_thermal_forcing_coupling_mode) == '2d') then
+          o2x_o % rAttr(index_o2x_So_tf2d, n) = avgThermalForcingAtCritDepth(i)
+       elseif (trim(config_glc_thermal_forcing_coupling_mode) == '3d') then
+          do iLevel = 1, nGlcZLevels
+             o2x_o % rAttr(index_o2x_So_tf3d(iLevel), n) = avgThermalForcingAtZLevels(ilevel, i)
+          enddo
        endif
 
 
