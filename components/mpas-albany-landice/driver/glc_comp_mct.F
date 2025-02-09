@@ -1435,22 +1435,22 @@ contains
 !         call mpas_pool_get_array(thermalPool, 'basalOceanHeatflx',basalOceanHeatflx)
          !call mpas_pool_get_array(geometryPool, 'OceanDensity',OceanDensity)
 
-         orig3dOceanMask(:,:) = 0
+         if (nISMIP6OceanLayers > 0) then
+            orig3dOceanMask(:,:) = 0
+            ismip6shelfMelt_3dThermalForcing(:,:) = 0.0_RKIND
+         endif
          do i = 1, nCellsSolve
             n = n + 1
             sfcMassBal(i) = x2g_g % rAttr(index_x2g_Flgl_qice, n)
             floatingBasalMassBal(i) = x2g_g % rAttr(index_x2g_Fogx_qiceli, n)
-            if (ocn_c2_glctf) then
-               !ismip6_2dThermalForcing(i) = x2g_g % rAttr(index_x2g_So_tf2d, n)
-               if (nISMIP6OceanLayers > 0) then
-                  do iLev = 1, nISMIP6OceanLayers
-                     ismip6shelfMelt_3dThermalForcing(iLev, i) = x2g_g % rAttr(index_x2g_So_tf3d(iLev), n)
-                     if (ismip6shelfMelt_3dThermalForcing(iLev,i) /= 0.0_RKIND) then
-                        ! todo: use a proper mask from OCN
-                        orig3dOceanMask(iLev,i) = 1
-                     endif
-                  enddo
-               endif
+            if (nISMIP6OceanLayers > 0) then
+               do iLev = 1, nISMIP6OceanLayers
+                  ismip6shelfMelt_3dThermalForcing(iLev, i) = x2g_g % rAttr(index_x2g_So_tf3d(iLev), n)
+                  if (ismip6shelfMelt_3dThermalForcing(iLev,i) /= 0.0_RKIND) then
+                     ! todo: use a proper mask from OCN
+                     orig3dOceanMask(iLev,i) = 1
+                  endif
+               enddo
             endif
 !            surfaceTemperature(i) = x2g_g % rAttr(index_x2g_Sl_tsrf, n)
 !JW            basalOceanHeatflx(i) = x2g_g % rAttr(index_x2g_Fogo_qiceh, n)
