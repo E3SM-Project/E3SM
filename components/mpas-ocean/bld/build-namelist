@@ -749,7 +749,11 @@ if (($OCN_ISMF ne 'none') && ($OCN_FORCING ne 'active_atm')) {
 add_default($nl, 'config_scale_dismf_by_removed_ice_runoff');
 add_default($nl, 'config_ais_ice_runoff_history_days');
 add_default($nl, 'config_n_glc_z_levels', 'val'=>"$GLC_NZOC");
-add_default($nl, 'config_glc_thermal_forcing_coupling_mode');
+if ($GLC_NZOC gt 0) {
+    add_default($nl, 'config_glc_thermal_forcing_coupling_mode', 'val'=>"3d");
+} else {
+    add_default($nl, 'config_glc_thermal_forcing_coupling_mode');
+}
 add_default($nl, 'config_2d_thermal_forcing_depth');
 
 ######################################
