@@ -1371,7 +1371,7 @@ end function bfb_expm1
     real, intent(out),   dimension(kts:kte)      :: diag_equiv_reflectivity,diag_ze_rain,diag_ze_ice  ! equivalent reflectivity [dBZ]
 
 
-#if 0
+#if 1
 
     !
     !----- Local variables and parameters:  -------------------------------------------------!
@@ -1489,7 +1489,7 @@ end function bfb_expm1
     t_atm       = th_atm    *inv_exner    !compute temperature from theta (value at beginning of microphysics step)
     qv      = max(qv,0.)        !clip water vapor to prevent negative values passed in (beginning of microphysics)
     ! AaronDonahue added this load of latent heat to be consistent with E3SM, since the inconsistentcy was causing water conservation errors.
-    call get_latent_heat(its,ite,kts,kte,latent_heat_vapor,latent_heat_sublim,latent_heat_fusion)
+    call get_latent_heat(kts,kte,latent_heat_vapor,latent_heat_sublim,latent_heat_fusion)
 
    ! initialize microphysics processes tendency output
     qc_old = qc         ! Liq. microphysics tendency, initialize

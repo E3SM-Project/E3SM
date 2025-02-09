@@ -7,7 +7,7 @@ use control_mod,          only: theta_hydrostatic_mode
 use dimensions_mod,       only: np, nlev, nlevp , qsize, qsize_d, nelemd
 use element_mod,          only: element_t
 use eos
-use element_ops,          only: get_pottemp
+use element_ops,          only: get_pottemp, get_temperature
 use element_state,        only: nt=>timelevels
 use hybrid_mod,           only: hybrid_t
 use kinds,                only: rl=>real_kind, iulog
@@ -46,7 +46,7 @@ subroutine interface_to_p3(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
   type(TimeLevel_t),  intent(in)            :: tl                       ! time level structure
 
   real(rl), dimension(np,np,nlev) :: u,v,w,T,p,dp,hommerho,zm,q1,q2,q3,q4,q5,q6,q7,q8,q9
-  real(rl), dimension(np,np,nlev) :: pottemp, pnh, hommeexner
+  real(rl), dimension(np,np,nlev) :: pottemp, pnh, hommeexner, hommetemp
   real(rl), dimension(np,np)      :: ps
   real(rl), dimension(np,np,nlevp):: zi, hommemu
 
@@ -166,7 +166,7 @@ subroutine interface_to_p3(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     logical, parameter :: do_subgrid_clouds = .false.       !use subgrid cloudiness in tendency calculations?
     logical, parameter :: do_prescribed_CCN = .false.       
     logical, parameter :: precip_off = .false.       
-    real, parameter :: micro_nccons = 1.0 ! did not find this one anywhere
+    real, parameter ::         micro_nccons = 1.0 ! did not find this one anywhere
     real, parameter ::         p3_autocon_coeff    = 30500.0  ! IN  autoconversion coefficient
     real, parameter ::         p3_accret_coeff     = 117.25   ! IN  accretion coefficient
     real, parameter ::         p3_qc_autocon_expon = 3.19     ! IN  autoconversion qc exponent
@@ -206,7 +206,6 @@ subroutine interface_to_p3(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     !col_location uninited
 
 !lets do wv=1
-!2=cldliq, 3=numliq; 4=rain; 5=numrain;6=cldice; 7=numice; 8=cldrim; 9=rimvol
 
     do ie = nets, nete
 
@@ -226,6 +225,8 @@ subroutine interface_to_p3(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     qind=8;  q8  = elem(ie)%state%Qdp(:,:,:,qind,ntQ)/dp
     qind=9;  q9  = elem(ie)%state%Qdp(:,:,:,qind,ntQ)/dp
 
+    !get_temp uses Q for Rstar, not Qdp, so does not need ntQ
+    call get_temperature(elem(ie),hommetemp,hvcoord,nt)
     call get_pottemp(elem(ie),pottemp,hvcoord,nt,ntQ)
     call pnh_and_exner_from_eos(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,nt),&
           dp,elem(ie)%state%phinh_i(:,:,:,nt),pnh,hommeexner,hommemu)
@@ -328,24 +329,34 @@ subroutine interface_to_p3(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
 
 #endif
-#if 0
-    temp(:ncol,:nlev) = th(:ncol,:nlev)/exner(:ncol,:nlev)
-    ptend%s(:ncol,:nlev)           = ( temp(:ncol,:nlev) - state%t(:ncol,:nlev) )/dtime
-    ptend%q(:ncol,:nlev,1)         = ( max(0._rtype,qv(:ncol,:nlev)     ) - state%q(:ncol,:nlev,1)         )/dtime
-    ptend%q(:ncol,:nlev,ixcldliq)  = ( max(0._rtype,cldliq(:ncol,:nlev) ) - state%q(:ncol,:nlev,ixcldliq)  )/dtime
-    ptend%q(:ncol,:nlev,ixnumliq)  = ( max(0._rtype,numliq(:ncol,:nlev) ) - state%q(:ncol,:nlev,ixnumliq)  )/dtime
-    ptend%q(:ncol,:nlev,ixrain)    = ( max(0._rtype,rain(:ncol,:nlev)   ) - state%q(:ncol,:nlev,ixrain)    )/dtime
-    ptend%q(:ncol,:nlev,ixnumrain) = ( max(0._rtype,numrain(:ncol,:nlev)) - state%q(:ncol,:nlev,ixnumrain) )/dtime
-    ptend%q(:ncol,:nlev,ixcldice)  = ( max(0._rtype,ice(:ncol,:nlev)    ) - state%q(:ncol,:nlev,ixcldice)  )/dtime
-    ptend%q(:ncol,:nlev,ixnumice)  = ( max(0._rtype,numice(:ncol,:nlev) ) - state%q(:ncol,:nlev,ixnumice)  )/dtime
-    ptend%q(:ncol,:nlev,ixcldrim)  = ( max(0._rtype,qm(:ncol,:nlev)  ) - state%q(:ncol,:nlev,ixcldrim)  )/dtime
-    ptend%q(:ncol,:nlev,ixrimvol)  = ( max(0._rtype,rimvol(:ncol,:nlev) ) - state%q(:ncol,:nlev,ixrimvol)  )/dtime
+#if 1
+    temp(:nlev) = th(:nlev)/exner(:nlev)
+    elem(ie)%derived%FT(ii,jj,:) = (temp(:) - hommetemp(ii,jj,:))/dtime
+    ! from above
+    !cldliq  = q2(ii,jj,:)
+    !numliq  = q3(ii,jj,:)
+    !rain    = q4(ii,jj,:)
+    !numrain = q5(ii,jj,:)
+    !qv      = q1(ii,jj,:)  ! <!!!!! ---
+    !ice     = q6(ii,jj,:)
+    !qm      = q7(ii,jj,:)
+    !numice  = q8(ii,jj,:)
+    !rimvol  = q9(ii,jj,:)
+    qind=1; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( max(0.0,qv(:))      - q1(ii,jj,:) )/dtime
+    qind=2; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( max(0.0,cldliq(:))  - q2(ii,jj,:) )/dtime
+    qind=3; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( max(0.0,numliq(:))  - q3(ii,jj,:) )/dtime
+    qind=4; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( max(0.0,rain(:))    - q4(ii,jj,:) )/dtime
+    qind=5; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( max(0.0,numrain(:)) - q5(ii,jj,:) )/dtime
+    qind=6; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( max(0.0,ice(:))     - q6(ii,jj,:) )/dtime
+    qind=7; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( max(0.0,qm(:))      - q7(ii,jj,:) )/dtime
+    qind=8; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( max(0.0,numice(:))  - q8(ii,jj,:) )/dtime
+    qind=9; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( max(0.0,rimvol(:))  - q9(ii,jj,:) )/dtime
 
-
-!disable everything
 #endif
 
     enddo; enddo; ! ii, jj
+    elem(ie)%derived%FM(:,:,:,:) = 0.0
+    elem(ie)%derived%FQps(:,:) = 0.0
 
     enddo ! ie
 

@@ -211,15 +211,15 @@ module micro_p3_utils
 !__________________________________________________________________________________________!
 !                                                                                          !
 !__________________________________________________________________________________________!
-    subroutine get_latent_heat(its,ite,kts,kte,v,s,f)
+    subroutine get_latent_heat(kts,kte,v,s,f)
 
-       integer,intent(in) :: its,ite,kts,kte
-       real,dimension(its:ite,kts:kte),intent(out) :: v,s,f
+       integer,intent(in) :: kts,kte
+       real,dimension(kts:kte),intent(out) :: v,s,f
 
 
-       v(:,:) = latent_heat_vapor !latvap           ! latent heat of vaporization
-       s(:,:) = latent_heat_sublim !latvap + latice  ! latent heat of sublimation
-       f(:,:) = latent_heat_fusion  !latice           ! latent heat of fusion
+       v(:) = latent_heat_vapor !latvap           ! latent heat of vaporization
+       s(:) = latent_heat_sublim !latvap + latice  ! latent heat of sublimation
+       f(:) = latent_heat_fusion  !latice           ! latent heat of fusion
  
 ! Original P3 definition of latent heats:   
 !       do i = its,ite
