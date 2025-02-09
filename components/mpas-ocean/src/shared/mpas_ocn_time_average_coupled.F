@@ -181,7 +181,7 @@ module ocn_time_average_coupled
            !$omp parallel
            !$omp do schedule(runtime)
            do iCell = 1, nCells
-              avgThermalForcingAtZLevels(iCell, :) = 0.0_RKIND
+              avgThermalForcingAtZLevels(:, iCell) = 0.0_RKIND
            end do
            !$omp end do
            !$omp end parallel
@@ -516,7 +516,7 @@ module ocn_time_average_coupled
                     ! note: assuming no LandIce cavity, but we may want to support that
                     freezingTemp = ocn_freezing_temperature(salinity=activeTracers(indexSalinity, iLevelCritDepth, iCell), &
                        pressure=pressure(iLevelCritDepth, iCell),  inLandIceCavity=.false.)
-                    avgThermalForcingAtZLevels(iCell, iLevelGlc) = ( avgThermalForcingAtZLevels(iCell, iLevelGlc) * nAccumulatedCoupled &
+                    avgThermalForcingAtZLevels(iLevelGlc, iCell) = ( avgThermalForcingAtZLevels(iLevelGlc, iCell) * nAccumulatedCoupled &
                        + activeTracers(indexTemperature, iLevelCritDepth, iCell) - freezingTemp ) / ( nAccumulatedCoupled + 1)
                   end if
               end do
