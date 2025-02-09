@@ -507,6 +507,7 @@ module ocn_time_average_coupled
                     exit
                  end if
               end do
+              call mpas_log_write("iLevelGlc=$i, iLevelCritDepth=$i", intArgs=(/iLevelGlc, iLevelCritDepth/))
               ! calculate thermal forcing at identified level for each cell
               do iCell = 1, nCells
                  ! ignore cells that are too shallow
