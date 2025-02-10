@@ -77,8 +77,12 @@ runs:
         cmd="./scripts/test-all-scream -m ${{ inputs.machine }} -t ${{inputs.build_type}} --baseline-dir AUTO -c EKAT_DISABLE_TPL_WARNINGS=ON"
         if [ "${{ inputs.generate }}" = "true" ]; then
           cmd+=" -g"
-        elif [ "${{ inputs.submit }}" = "true" ]; then 
+        elif [ "${{ inputs.submit }}" = "true" ]; then
           cmd+=" -s"
+        fi
+
+        if [ "${{ inputs.ekat }}" = "true" ]; then
+           cmd+= " -c EKAT_ENABLE_TESTS=ON"
         fi
 
         # If cmake-configs is non-empty, add tokens to test-all-scream via "-c key=val"
