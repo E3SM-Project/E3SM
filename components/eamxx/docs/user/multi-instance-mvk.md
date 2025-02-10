@@ -15,7 +15,11 @@ For some background, see DOIs:
 
 ## Multi-instance testing
 
-See this [link](https://esmci.github.io/cime/versions/master/html/users_guide/multi-instance.html) for background on the multi-instance capability in CIME.
+See following link for background on the multi-instance capability in CIME.
+
+[Link][cime-multi-instance]
+
+[cime-multi-instance]: https://esmci.github.io/cime/versions/master/html/users_guide/multi-instance.html
 
 In SCREAM/EAMxx, it works in exactly the same except that
 the namelist file has a different name and location.

@@ -193,15 +193,17 @@ class MVKxx(SystemTestsCommon):
                 self._case.get_value("CASE"), self.component, rundir, ref_case=ref_case
             )
             # for eamxx, we need to get all files that have *scream_????.h.*.nc added to this list
-            hists += glob.glob(os.path.join(rundir, "*scream_????.h.AVERAGE.*.nc"))
+            more_hists = glob.glob(os.path.join(rundir, "*scream_????.h.AVERAGE.*.nc"))
             # before copying, let's also rename some files
             # current pattern is scream_????.h.AVERAGE.nmonths_x1.????-??.nc
             # desired pattern is scream_????.h.????-??.nc
-            for hist in hists:
+            for hist in more_hists:
                 if "scream" in hist:
                     # get rid of the AVERAGE.nmonths_x1.
                     new_hist = hist.replace("AVERAGE.nmonths_x1.", "")
                     os.rename(hist, new_hist)
+                    # add it to hists
+                    hists.append(new_hist)
             logger.debug("MVKxx additional baseline files: {}".format(hists))
             hists = [os.path.join(rundir, hist) for hist in hists]
             for hist in hists:
