@@ -452,7 +452,7 @@ contains
           write(iulog,*) 'nstep = ',get_nstep(),' month = ',kmo,' day = ',kda
        end if
        call t_startf('readMonthlyVeg')
-       call readMonthlyVegetation (bounds, fsurdat, months, canopystate_vars)
+       call readMonthlyVegetation (bounds, fsurdat, months, kyr, canopystate_vars)
        InterpMonths1 = months(1)
        call t_stopf('readMonthlyVeg')
     end if
@@ -563,7 +563,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine readMonthlyVegetation (bounds, &
-       fveg, months, canopystate_vars)
+       fveg, months, kyr, canopystate_vars)
     !
     ! !DESCRIPTION:
     ! Read monthly vegetation data for two consec. months.
@@ -581,6 +581,7 @@ contains
     type(bounds_type) , intent(in) :: bounds
     character(len=*)  , intent(in) :: fveg      ! file with monthly vegetation data
     integer           , intent(in) :: months(2) ! months to be interpolated (1 to 12)
+    integer           , intent(in) :: kyr       ! current year  
     type(canopystate_type), intent(inout) :: canopystate_vars
     !
     ! !LOCAL VARIABLES:
@@ -596,8 +597,8 @@ contains
     integer :: closelatidx,closelonidx
     real(r8):: closelat,closelon
     logical :: readvar
-    real(r8), pointer :: mlai(:,:,:)        ! lai read from input files
-    real(r8), pointer :: msai(:,:,:)        ! sai read from input files
+    real(r8), pointer :: mlai(:,:,:,:)        ! lai read from input files
+    real(r8), pointer :: msai(:,:,:,:)        ! sai read from input files
     real(r8), pointer :: mhgtt(:,:,:)       ! top vegetation height
     real(r8), pointer :: mhgtb(:,:,:)       ! bottom vegetation height
     character(len=32) :: subname = 'readMonthlyVegetation'
@@ -606,8 +607,8 @@ contains
     ! Determine necessary indices
 
     allocate(&
-         mlai(bounds%begg:bounds%endg,1:max_topounits,0:numpft), &
-         msai(bounds%begg:bounds%endg,1:max_topounits,0:numpft), &
+         mlai(0:100,bounds%begg:bounds%endg,1:max_topounits,0:numpft), &
+         msai(0:100,bounds%begg:bounds%endg,1:max_topounits,0:numpft), &  
          mhgtt(bounds%begg:bounds%endg,1:max_topounits,0:numpft), &
          mhgtb(bounds%begg:bounds%endg,1:max_topounits,0:numpft), &
          stat=ier)
@@ -659,8 +660,8 @@ contains
           if (veg_pp%itype(p) /= noveg) then     ! vegetated pft
              do l = 0, numpft
                 if (l == veg_pp%itype(p)) then
-                   mlai2t(p,k) = mlai(g,ti,l)
-                   msai2t(p,k) = msai(g,ti,l)
+                   mlai2t(p,k) = mlai(kyr,g,ti,l)
+                   msai2t(p,k) = msai(kyr,g,ti,l)
                    mhvt2t(p,k) = mhgtt(g,ti,l)
                    mhvb2t(p,k) = mhgtb(g,ti,l)
                 end if
