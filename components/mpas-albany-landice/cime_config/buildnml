@@ -266,6 +266,7 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="dHdt"/>')
         lines.append('    <var name="ismip6_2dThermalForcing"/>')
         lines.append('    <var name="ismip6shelfMelt_3dThermalForcing"/>')
+        lines.append('    <var name="orig3dOceanMask"/>')
         lines.append('    <var name="ismip6shelfMelt_TFdraft"/>')
         lines.append('    <var name="ismip6shelfMelt_zOcean"/>')
         lines.append('    <var name="ismip6shelfMelt_zBndsOcean"/>')
