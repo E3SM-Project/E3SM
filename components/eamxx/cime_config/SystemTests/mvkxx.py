@@ -192,8 +192,16 @@ class MVKxx(SystemTestsCommon):
             hists = env_archive.get_all_hist_files(
                 self._case.get_value("CASE"), self.component, rundir, ref_case=ref_case
             )
-            # for eamxx, we need to get all files that have scream_????.h.*.nc added to this list
-            hists += glob.glob(os.path.join(rundir, "scream_????.h.*.nc"))
+            # for eamxx, we need to get all files that have *scream_????.h.*.nc added to this list
+            hists += glob.glob(os.path.join(rundir, "*scream_????.h.AVERAGE.*.nc"))
+            # before copying, let's also rename some files
+            # current pattern is scream_????.h.AVERAGE.nmonths_x1.????-??.nc
+            # desired pattern is scream_????.h.????-??.nc
+            for hist in hists:
+                if "scream" in hist:
+                    # get rid of the AVERAGE.nmonths_x1.
+                    new_hist = hist.replace("AVERAGE.nmonths_x1.", "")
+                    os.rename(hist, new_hist)
             logger.debug("MVKxx additional baseline files: {}".format(hists))
             hists = [os.path.join(rundir, hist) for hist in hists]
             for hist in hists:
@@ -204,14 +212,6 @@ class MVKxx(SystemTestsCommon):
 
                 CIME.utils.safe_copy(hist, baseline, preserve_meta=False)
 
-            # before leaving, let's also rename some files
-            
-            # current pattern is scream_????.h.AVERAGE.nmonths_x1.????-??.nc
-            # desired pattern is scream_????.h.????-??.nc
-            for hist in hists:
-                if "scream" in hist:
-                    new_hist = hist.replace("AVERAGE.nmonths_x1.", "")
-                    os.rename(hist, new_hist)
 
     def _compare_baseline(self):
         with self._test_status:
@@ -238,7 +238,8 @@ class MVKxx(SystemTestsCommon):
             test_name = "{}".format(case_name.split(".")[-1])
 
             # before running, make sure to rename output files:
-            for some_file in glob.glob(os.path.join(run_dir, "scream_????.h.*.nc")):
+            for some_file in glob.glob(os.path.join(run_dir, "*scream_????.h.*.nc")):
+                # get rid of the AVERAGE.nmonths_x1.
                 new_hist = some_file.replace("AVERAGE.nmonths_x1.", "")
                 os.rename(some_file, new_hist)
 
