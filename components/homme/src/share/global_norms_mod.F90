@@ -248,16 +248,14 @@ contains
 #ifdef MODEL_THETA_L
     use element_state, only : nu_scale_top
 #endif
-    use dimensions_mod, only : np,ne,nelem,nelemd,qsize
+    use dimensions_mod, only : np
     use quadrature_mod, only : gausslobatto, quadrature_t
 
     use reduction_mod, only : ParallelMin,ParallelMax
-    use physical_constants, only : scale_factor_inv, scale_factor,dd_pi
+    use physical_constants, only : scale_factor_inv
     use control_mod, only : nu, nu_q, nu_div, hypervis_order, nu_top,  &
-                            hypervis_scaling, dcmip16_mu,dcmip16_mu_s,dcmip16_mu_q
+                            hypervis_scaling, dcmip16_mu,dcmip16_mu_s
     use control_mod, only : tstep_type
-    use parallel_mod, only : abortmp, global_shared_buf, global_shared_sum
-    use time_mod, only : tstep
 
     type(element_t)      , intent(inout) :: elem(:)
     integer              , intent(in) :: nets,nete
@@ -265,9 +263,8 @@ contains
     real (kind=real_kind), intent(in) :: dtnu
 
     ! Element statisics
-    real (kind=real_kind) :: min_max_dx,max_unif_dx   ! used for normalizing scalar HV
+    real (kind=real_kind) :: min_max_dx   ! used for normalizing scalar HV
     real (kind=real_kind) :: max_normDinv  ! used for CFL
-    real (kind=real_kind) :: min_hypervis, max_hypervis, avg_hypervis, stable_hv
     real (kind=real_kind) :: normDinv_hypervis
     real (kind=real_kind) :: lambda_max, lambda_vis, min_gw, lambda, nu_div_actual, nu_top_actual
     integer :: ie, i, j
@@ -317,7 +314,6 @@ contains
 
     gp=gausslobatto(np)
     min_gw = minval(gp%weights)
-    deallocate(gp%points)
     deallocate(gp%weights)
 
     max_normDinv=0
@@ -406,10 +402,7 @@ contains
 
   subroutine dss_hvtensor(elem,hybrid,nets,nete)
    !
-   !   estimate various CFL limits
-   !   also, for variable resolution viscosity coefficient, make sure
-   !   worse viscosity CFL (given by dtnu) is not violated by reducing
-   !   viscosity coefficient in regions where CFL is violated
+   ! apply dss and bilinear projection to tensor coefficients
    !
        use kinds,       only : real_kind
        use hybrid_mod,  only : hybrid_t
