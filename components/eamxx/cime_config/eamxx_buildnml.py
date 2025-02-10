@@ -169,6 +169,7 @@ def perform_consistency_checks(case, xml):
     # of a rad superstep
     rrtmgp = find_node(xml,"rrtmgp")
     rest_opt = case.get_value("REST_OPTION")
+    is_test = case.get_value("TEST")
     if rrtmgp is not None and rest_opt is not None and rest_opt not in ["never","none"]:
         rest_n = int(case.get_value("REST_N"))
         rad_freq = int(find_node(rrtmgp,"rad_frequency").text)
@@ -177,7 +178,9 @@ def perform_consistency_checks(case, xml):
         rad_tstep = atm_tstep * rad_freq
 
 
-        if rad_freq==1:
+        # Some tests (ERS) make late (run-phase) changes, so we cannot validate restart
+        # settings here.
+        if rad_freq==1 or is_test:
             pass
         elif rest_opt in ["nsteps", "nstep"]:
             expect (rest_n % rad_freq == 0,
