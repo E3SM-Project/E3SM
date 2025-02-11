@@ -3204,8 +3204,9 @@
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <modules>
+        <command name="reset"></command>
         <command name="use">/grand/E3SMinput/soft/modulefiles/polaris</command>
-        <command name="load">cmake/3.31.5</command>
+        <command name="load">cmake/3.27.9</command>
       </modules>
       <modules compiler="gnu.*">
         <command name="load">PrgEnv-gnu</command>
