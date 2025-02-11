@@ -150,7 +150,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
            &               taux  ,tauy  ,tref  ,qref  ,   &
            &               ocn_surface_flux_scheme, &
            &               duu10n, u10res, ustar_sv   ,re_sv ,ssq_sv,   &
-           &               missval, wsresp, tau_est, ugust, charnockSeaState)
+           &               missval, wsresp, tau_est, ugust, z0_wav, ustar_wav, charnockSeaState)
 
 ! !USES:
 
@@ -206,6 +206,8 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
    real(R8),intent(in) ,optional :: wsresp(nMax)   ! boundary layer wind response to stress (m/s/Pa)
    real(R8),intent(in) ,optional :: tau_est(nMax)  ! stress in equilibrium with boundary layer (Pa)
    real(R8),intent(in) ,optional :: ugust(nMax)    ! extra wind speed from gustiness (m/s)
+   real(R8),intent(in) ,optional :: z0_wav(nMax) !surface roughness length from WW3
+   real(R8),intent(in) ,optional :: ustar_wav(nMax) !friction velocity from WW3
    real(R8),intent(in) ,optional :: charnockSeaState(nMax) !Charnock coeff accounting for the wave stress (Janssen 1989, 1991)
 
 ! !EOP
@@ -257,6 +259,8 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
    real(R8)    :: tau_diff ! difference in tau across iterations (Pa)
    real(R8)    :: prev_tau_diff ! previous value of tau_diff (Pa)
    real(R8)    :: wind_adj ! iteration-adjusted wind speed (m/s)
+!!++ Large with waves
+   real(R8)    :: cdn_wav
 !!++ COARE only
    real(R8)    :: zo,zot,zoq      ! roughness lengths
    real(R8)    :: hsb,hlb         ! sens & lat heat flxs at zbot
@@ -277,12 +281,11 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
    real(R8)    :: tdiff(nMax)               ! tbot - ts
    real(R8)    :: vscl
 
-
    qsat(Tk)   = 640380.0_R8 / exp(5107.4_R8/Tk)
    cdn(Umps)  =   0.0027_R8 / Umps + 0.000142_R8 + 0.0000764_R8 * Umps
    psimhu(xd) = log((1.0_R8+xd*(2.0_R8+xd))*(1.0_R8+xd*xd)/8.0_R8) - 2.0_R8*atan(xd) + 1.571_R8
    psixhu(xd) = 2.0_R8 * log((1.0_R8 + xd*xd)/2.0_R8)
-
+ 
    !--- formats ----------------------------------------
    character(*),parameter :: subName = '(shr_flux_atmOcn) '
    character(*),parameter ::   F00 = "('(shr_flux_atmOcn) ',4a)"
@@ -364,16 +367,31 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
         !------------------------------------------------------------
         !--- neutral coefficients, z/L = 0.0 ---
         stable = 0.5_R8 + sign(0.5_R8 , delt)
-        rdn    = sqrt(cdn(vmag))
+        if (wav_atm_coup .eq. 'two') then
+           cdn_wav = cdn_wave(loc_karman,zref,z0_wav)
+           rdn = sqrt(cdn_wav)
+           ! rdn calculated from Z0 will be constant
+        else
+          rdn    = sqrt(cdn(vmag))
+        endif
         rhn    = (1.0_R8-stable) * 0.0327_R8 + stable * 0.018_R8
                  !(1.0_R8-stable) * chxcdu + stable * chxcds
         ren    = 0.0346_R8 !cexcd
 
         !--- ustar, tstar, qstar ---
-        ustar = rdn * vmag
+        write(s_logunit,*) 'ET EDIT: ustar first', ustar
+        if (wav_atm_coup .eq. 'two') then
+           ustar = ustar_wav
+        else
+           ustar = rdn * vmag
+        endif
         tstar = rhn * delt
         qstar = ren * delq
         ustar_prev = ustar*2.0_R8
+        write(s_logunit,*) 'ET EDIT: z0', z0_wav
+        write(s_logunit,*) 'ET EDIT: cdn_wav:', cdn_wav
+        write(s_logunit,*) 'ET EDIT: rdn:', rdn
+        write(s_logunit,*) 'ET EDIT: ustar first', ustar
         if (present(wsresp) .and. present(tau_est)) prev_tau = tau_est(n)
         tau_diff = 1.e100_R8
         wind_adj = wind0
@@ -406,16 +424,18 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
            xqq    = sqrt(xsq)
            psimh  = -5.0_R8*hol*stable + (1.0_R8-stable)*psimhu(xqq)
            psixh  = -5.0_R8*hol*stable + (1.0_R8-stable)*psixhu(xqq)
+ 
+           if (wav_atm_coup .ne. 'two') then
+              !--- shift wind speed using old coefficient ---
+              rd   = rdn / max(1.0_R8 + rdn/loc_karman*(alz-psimh), 1.e-3_r8)
+              u10n = vmag * rd / rdn
 
-           !--- shift wind speed using old coefficient ---
-           rd   = rdn / max(1.0_R8 + rdn/loc_karman*(alz-psimh), 1.e-3_r8)
-           u10n = vmag * rd / rdn
-
-           !--- update transfer coeffs at 10m and neutral stability ---
-           rdn = sqrt(cdn(u10n))
-           ren = 0.0346_R8 !cexcd
-           rhn = (1.0_R8-stable)*0.0327_R8 + stable * 0.018_R8
-                 !(1.0_R8-stable) * chxcdu + stable * chxcds
+              !--- update transfer coeffs at 10m and neutral stability ---
+              rdn = sqrt(cdn(u10n))
+              ren = 0.0346_R8 !cexcd
+              rhn = (1.0_R8-stable)*0.0327_R8 + stable * 0.018_R8
+                    !(1.0_R8-stable) * chxcdu + stable * chxcds
+           endif
 
            !--- shift all coeffs to measurement height and stability ---
            rd = rdn / max(1.0_R8 + rdn/loc_karman*(alz-psimh), 1.e-3_r8)
@@ -1134,13 +1154,48 @@ SUBROUTINE shr_flux_atmOcn_UA(   &
 END subroutine shr_flux_atmOcn_UA
 
 !===============================================================================
+! Functions used by default surface flux scheme for Wave Coupling
+!===============================================================================
+function z0_wave(charn, us, g) result(z0_wav)
+       implicit none
+
+       ! input variables
+       real(R8), intent(in) :: charn ! charcnock parameter
+       real(R8), intent(in) :: us ! u star
+       real(R8), intent(in) :: g ! gravity
+
+       ! local variables
+       real(R8) :: z0_wav
+
+       z0_wav = charn * (us**2) / g
+
+end function zo_wave
+
+function cdn_wave(kappa,zr,z0) result(cdn_wav)
+       implicit none
+       
+       ! input variables
+       real(R8), intent(in) :: kappa !von Karmen constant
+       real(R8), intent(in) :: zr ! reference height (10m)
+       real(R8), intent(in) :: z0 ! roughness length based on wave state
+
+       ! local variables
+       real(R8) :: a, b 
+       real(R8) :: cdn_wav
+
+       a = zr / z0 
+       b = log(a)
+       cdn_wav = (kappa**2) / (b**2)  
+
+end function cdn_wave
+!===============================================================================
 ! Functions/subroutines used by UA surface flux scheme.
 !===============================================================================
 
    ! Stability function for rb < 0
 
 real(R8) function psi_ua(k,zeta)
-
+        
        implicit none
 
        !-----Input variables.----------
