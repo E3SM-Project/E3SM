@@ -641,7 +641,7 @@ CONTAINS
        o2x%rAttr(kdhdx,n) = 0.0_R8
        o2x%rAttr(kdhdy,n) = 0.0_R8
        o2x%rAttr(kq   ,n) = 0.0_R8
-! make sure frazil is 0. MPASICE will still use it.
+! make sure frazil is 0. MPAS-seaice will still use it.
        o2x%rAttr(kfraz,n) = 0.0_R8
        if (kswp /= 0) then
           o2x%rAttr(kswp ,n) = swp
