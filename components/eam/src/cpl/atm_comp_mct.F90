@@ -399,9 +399,6 @@ CONTAINS
        call mct_aVect_init(x2a_a, rList=seq_flds_x2a_fields, lsize=lsize)
        call mct_aVect_zero(x2a_a)
        !
-       ! Create initial atm export state
-       !
-       call atm_export( cam_out, a2x_a%rattr )
 
 #ifdef HAVE_MOAB
        ! Initialize MOAB physgrid mesh and add coordinate,mask data
@@ -447,26 +444,7 @@ CONTAINS
 
        call shr_file_setLogUnit (shrlogunit)
        call shr_file_setLogLevel(shrloglev)
-       ! when called first time, initialize MOAB atm phis grid, and create the mesh
-       ! on the atm
-#ifdef HAVE_MOAB
-       call init_moab_atm_phys( cdata_a )
-       mblsize = lsize
-       nsend = mct_avect_nRattr(a2x_a)
-       totalmbls = mblsize * nsend   ! size of the double array
-       allocate (a2x_am(mblsize, nsend) )
-       a2x_am = 0.0
-
-       nrecv = mct_avect_nRattr(x2a_a)
-       totalmbls_r = mblsize * nrecv   ! size of the double array used to receive
-       allocate (x2a_am(mblsize, nrecv) ) ! these will be received by moab tags, then used to set cam in surf data
-       x2a_am = 0.0
-       !
-       ! Create initial atm export state inside moab
-       !
-       call atm_export_moab(Eclock, cam_out )
-
-#endif
+      
 
        first_time = .false.
 
