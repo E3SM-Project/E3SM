@@ -2238,6 +2238,168 @@
     </environment_variables>
   </machine>
 
+  <machine MACH="boca">
+    <DESC>SNL clust</DESC>
+    <NODENAME_REGEX>(boca)</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <PROXY>proxy.sandia.gov:80</PROXY>
+    <COMPILERS>intel</COMPILERS>
+    <MPILIBS>openmpi</MPILIBS>
+    <PROJECT>fy210162</PROJECT>
+    <SAVE_TIMING_DIR>/projects/ccsm/timings</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
+    <CIME_OUTPUT_ROOT>/gpfs/$USER/acme_scratch/boca</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/projects/ccsm/ccsm_baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/projects/ccsm/cprnc/build.toss3/cprnc</CCSM_CPRNC>
+    <GMAKE_J>32</GMAKE_J>
+    <TESTS>e3sm_integration</TESTS>
+    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+    <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>36</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>36</MAX_MPITASKS_PER_NODE>
+    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+    <mpirun mpilib="default">
+      <executable>mpiexec</executable>
+      <arguments>
+        <arg name="num_tasks"> --n {{ total_tasks }}</arg>
+        <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket:PE=$ENV{OMP_NUM_THREADS} --bind-to core</arg>
+      </arguments>
+    </mpirun>
+    <mpirun mpilib="mpi-serial">
+      <executable/>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="python">/usr/share/lmod/lmod/init/python.py</init_path>
+      <init_path lang="perl">/usr/share/lmod/lmod/init/perl.pm</init_path>
+      <init_path lang="sh">/usr/share/lmod/lmod/init/sh</init_path>
+      <init_path lang="csh">/usr/share/lmod/lmod/init/csh</init_path>
+      <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
+      <cmd_path lang="perl">/usr/share/lmod/lmod/libexec/lmod perl</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <modules>
+        <command name="purge"/>
+        <command name="use">/projects/sems/acme-boca-modulefiles/env-module</command>
+        <command name="load">acme-boca-env</command>
+        <command name="load">sems-archive-git</command>
+        <command name="load">sems-archive-cmake/3.19.1</command>
+        <command name="load">gnu/10.2</command>
+        <command name="load">sems-archive-intel/21.3.0</command>
+      </modules>
+      <modules mpilib="!mpi-serial">
+        <command name="load">sems-archive-openmpi/4.1.4</command>
+        <command name="load">acme-netcdf/4.7.4/acme</command>
+      </modules>
+      <modules mpilib="mpi-serial">
+        <command name="load">sems-archive-netcdf/4.4.1/exo</command>
+      </modules>
+    </module_system>
+    <RUNDIR>/nscratch/$USER/acme_scratch/boca/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <!-- complete path to a short term archiving directory -->
+    <!-- path to the cprnc tool used to compare netcdf history files in testing -->
+    <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
+
+    <environment_variables>
+      <env name="NETCDF_PATH">$ENV{SEMS_NETCDF_ROOT}</env>
+      <env name="PNETCDF_PATH">$ENV{SEMS_NETCDF_ROOT}</env>
+      <env name="NETCDF_INCLUDES">$ENV{SEMS_NETCDF_ROOT}/include</env>
+      <env name="NETCDF_LIBS">$ENV{SEMS_NETCDF_ROOT}/lib</env>
+      <env name="OMP_STACKSIZE">64M</env>
+    </environment_variables>
+    <environment_variables mpilib="!mpi-serial">
+      <env name="PNETCDF_PATH">$ENV{SEMS_NETCDF_ROOT}</env>
+    </environment_variables>
+    <environment_variables compiler="intel">
+      <env name="CLDERA_PATH">/projects/cldera/cldera-tools/install-master/intel</env>
+    </environment_variables>
+  </machine>
+
+
+  <machine MACH="flight">
+    <DESC>SNL clust</DESC>
+    <NODENAME_REGEX>(flight)</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <PROXY>proxy.sandia.gov:80</PROXY>
+    <COMPILERS>intel</COMPILERS>
+    <MPILIBS>openmpi</MPILIBS>
+    <PROJECT>fy210162</PROJECT>
+    <SAVE_TIMING_DIR>/projects/ccsm/timings</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
+    <CIME_OUTPUT_ROOT>/gpfs/$USER/acme_scratch/flight</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/projects/ccsm/ccsm_baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/projects/ccsm/cprnc/build.toss3/cprnc</CCSM_CPRNC>
+    <GMAKE_J>56</GMAKE_J>
+    <TESTS>e3sm_integration</TESTS>
+    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+    <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>112</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>112</MAX_MPITASKS_PER_NODE>
+    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+    <mpirun mpilib="default">
+      <executable>mpiexec</executable>
+      <arguments>
+        <arg name="num_tasks"> --n {{ total_tasks }}</arg>
+        <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket:PE=$ENV{OMP_NUM_THREADS} --bind-to core</arg>
+      </arguments>
+    </mpirun>
+    <mpirun mpilib="mpi-serial">
+      <executable/>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="python">/usr/share/lmod/lmod/init/python.py</init_path>
+      <init_path lang="perl">/usr/share/lmod/lmod/init/perl.pm</init_path>
+      <init_path lang="sh">/usr/share/lmod/lmod/init/sh</init_path>
+      <init_path lang="csh">/usr/share/lmod/lmod/init/csh</init_path>
+      <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
+      <cmd_path lang="perl">/usr/share/lmod/lmod/libexec/lmod perl</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <modules>
+        <command name="purge"/>
+        <command name="use">/projects/sems/acme-boca-modulefiles/env-module</command>
+        <command name="load">acme-boca-env</command>
+        <command name="load">sems-archive-git</command>
+        <command name="load">sems-archive-cmake/3.19.1</command>
+        <command name="load">gnu/10.3.1</command>
+        <command name="load">sems-archive-intel/21.3.0</command>
+      </modules>
+      <modules mpilib="!mpi-serial">
+        <command name="load">sems-archive-openmpi/4.1.4</command>
+        <command name="load">acme-netcdf/4.7.4/acme</command>
+      </modules>
+      <modules mpilib="mpi-serial">
+        <command name="load">sems-archive-netcdf/4.4.1/exo</command>
+      </modules>
+    </module_system>
+    <RUNDIR>/nscratch/$USER/acme_scratch/flight/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <!-- complete path to a short term archiving directory -->
+    <!-- path to the cprnc tool used to compare netcdf history files in testing -->
+    <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
+
+    <environment_variables>
+      <env name="NETCDF_PATH">$ENV{SEMS_NETCDF_ROOT}</env>
+      <env name="PNETCDF_PATH">$ENV{SEMS_NETCDF_ROOT}</env>
+      <env name="NETCDF_INCLUDES">$ENV{SEMS_NETCDF_ROOT}/include</env>
+      <env name="NETCDF_LIBS">$ENV{SEMS_NETCDF_ROOT}/lib</env>
+      <env name="OMP_STACKSIZE">64M</env>
+    </environment_variables>
+    <environment_variables mpilib="!mpi-serial">
+      <env name="PNETCDF_PATH">$ENV{SEMS_NETCDF_ROOT}</env>
+    </environment_variables>
+    <environment_variables compiler="intel">
+      <env name="CLDERA_PATH">/projects/cldera/cldera-tools/install-master/intel</env>
+    </environment_variables>
+  </machine>
+
+
   <machine MACH="ghost">
     <DESC>SNL clust</DESC>
     <NODENAME_REGEX>ghost-login</NODENAME_REGEX>
