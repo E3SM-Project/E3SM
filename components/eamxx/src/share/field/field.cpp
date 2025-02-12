@@ -185,7 +185,8 @@ Field Field::subfield(const std::string& sf_name,
       "Error! Input field must be allocated in order to subview it.\n");
 
   auto sf_layout = lt.clone();
-  sf_layout.reset_dim(idim, index_end+1 - index_beg);
+  sf_layout.reset_dim(idim, index_end - index_beg);
+
   // Create identifier for subfield
   FieldIdentifier sf_id(sf_name, sf_layout, sf_units, id.get_grid_name(), id.data_type());
 
