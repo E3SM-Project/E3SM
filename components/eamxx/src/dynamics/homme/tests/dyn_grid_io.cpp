@@ -160,7 +160,12 @@ TEST_CASE("dyn_grid_io")
   ekat::ParameterList in_params;
   in_params.set<std::string>("Filename",filename);
   in_params.set<std::vector<std::string>>("Field Names",fnames);
-  AtmosphereInput input (in_params,fm,phys_grid->name());
+
+  auto fm_phys = std::make_shared<FieldManager>(phys_grid);
+  for (auto& f_it : fm_phys->get_repo(phys_grid->name())) {
+    fm_phys->add_field(*f_it.second);
+  }
+  AtmosphereInput input (in_params,fm_phys);
   input.read_variables();
   input.finalize();
 

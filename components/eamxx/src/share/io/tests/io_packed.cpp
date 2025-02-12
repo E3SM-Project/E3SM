@@ -107,7 +107,7 @@ void write (const int freq, const int seed, const int ps, const ekat::Comm& comm
   // Create some fields
   auto fm = get_fm(grid,t0,seed,ps);
   std::vector<std::string> fnames;
-  for (auto it : fm->get_repo(grid->name())) {
+  for (auto it : fm->get_repo()) {
     fnames.push_back(it.second->name());
   }
 
@@ -148,7 +148,7 @@ void read (const int freq, const int seed, const int ps_write, const int ps_read
   auto fm0 = get_fm(grid,t0,seed,ps_read);
   auto fm  = get_fm(grid,t0,-seed-1,ps_read);
   std::vector<std::string> fnames;
-  for (auto it : fm->get_repo(grid->name())) {
+  for (auto it : fm->get_repo()) {
     fnames.push_back(it.second->name());
   }
 
@@ -163,12 +163,12 @@ void read (const int freq, const int seed, const int ps_write, const int ps_read
     + ".nc";
   reader_pl.set("Filename",filename);
   reader_pl.set("Field Names",fnames);
-  AtmosphereInput reader(reader_pl,fm,grid->name());
+  AtmosphereInput reader(reader_pl,fm);
 
   reader.read_variables();
   for (const auto& fn : fnames) {
-    auto f0 = fm0->get_field(fn,grid->name());
-    auto f  = fm->get_field(fn,grid->name());
+    auto f0 = fm0->get_field(fn);
+    auto f  = fm->get_field(fn);
     if (not views_are_equal(f,f0)) {
       print_field_hyperslab(f,{},{},std::cout);
       print_field_hyperslab(f0,{},{},std::cout);

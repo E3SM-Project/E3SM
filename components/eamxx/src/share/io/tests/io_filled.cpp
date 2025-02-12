@@ -122,7 +122,7 @@ void write (const std::string& avg_type, const std::string& freq_units,
   // Create some fields
   auto fm = get_fm(grid,t0,seed);
   std::vector<std::string> fnames;
-  for (auto it : fm->get_repo(grid->name())) {
+  for (auto it : fm->get_repo()) {
     fnames.push_back(it.second->name());
   }
 
@@ -155,7 +155,7 @@ void write (const std::string& avg_type, const std::string& freq_units,
     // Set fields to n or the FillValue, depending on timesnap
     Real setval = ((n+1) % 2 == 0) ? 1.0*(n+1) : FillValue;
     for (const auto& n : fnames) {
-      auto f = fm->get_field(n,grid->name());
+      auto f = fm->get_field(n);
       set(f,setval);
     }
 
@@ -186,7 +186,7 @@ void read (const std::string& avg_type, const std::string& freq_units,
   auto fm0 = get_fm(grid,t0,seed);
   auto fm  = get_fm(grid,t0,-seed-1);
   std::vector<std::string> fnames;
-  for (auto it : fm->get_repo(grid->name())) {
+  for (auto it : fm->get_repo()) {
     fnames.push_back(it.second->name());
   }
 
@@ -202,7 +202,7 @@ void read (const std::string& avg_type, const std::string& freq_units,
     + ".nc";
   reader_pl.set("Filename",filename);
   reader_pl.set("Field Names",fnames);
-  AtmosphereInput reader(reader_pl,fm,grid->name());
+  AtmosphereInput reader(reader_pl,fm);
 
   // We set the value n to each input field for each odd valued timestep and FillValue for each even valued timestep
   // Hence, at output step N = snap*freq, we should get
@@ -219,8 +219,8 @@ void read (const std::string& avg_type, const std::string& freq_units,
   for (int n=0; n<num_writes; ++n) {
     reader.read_variables(n);
     for (const auto& fn : fnames) {
-      auto f0 = fm0->get_field(fn,grid->name()).clone();
-      auto f  = fm->get_field(fn,grid->name());
+      auto f0 = fm0->get_field(fn).clone();
+      auto f  = fm->get_field(fn);
       if (avg_type=="MIN") {
         Real test_val = ((n+1)*freq%2==0) ? n*freq+1 : n*freq+2;
         set(f0,test_val);

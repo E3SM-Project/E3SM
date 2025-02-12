@@ -53,7 +53,6 @@ TEST_CASE("se_grid_io")
   // First set up a field manager and grids manager to interact with the output functions
   auto gm = get_test_gm(io_comm,num_my_elems,np,num_levs);
   auto grid = gm->get_grid("SE Grid");
-  const auto gn = grid->name();
 
   // Construct a timestamp
   util::TimeStamp t0 ({2000,1,1},{0,0,0});
@@ -80,18 +79,18 @@ TEST_CASE("se_grid_io")
   auto fm1 = get_test_fm(grid,t0,false);
   const auto fnames = {"field_1", "field_2", "field_3", "field_packed"};
   for (const auto& fname : fnames) {
-    auto f = fm1->get_field(fname,gn);
+    auto f = fm1->get_field(fname);
     f.deep_copy(ekat::ScalarTraits<Real>::invalid());
   }
 
   // Check fields were written correctly
   auto in_params = get_in_params(io_comm,t0);
-  AtmosphereInput ins_input(in_params,fm1,gn);
+  AtmosphereInput ins_input(in_params,fm1);
   ins_input.read_variables();
 
   for (const auto& fname : fnames) {
-    auto f0 = fm0->get_field(fname,gn);
-    auto f1 = fm1->get_field(fname,gn);
+    auto f0 = fm0->get_field(fname);
+    auto f1 = fm1->get_field(fname);
     REQUIRE (views_are_equal(f0,f1));
   }
   ins_input.finalize();
@@ -139,20 +138,20 @@ get_test_fm(const std::shared_ptr<const AbstractGrid>& grid,
     RPDF pdf(0.01,0.99);
 
     for (const auto& fname : fnames) {
-      auto f = fm->get_field(fname,gn);
+      auto f = fm->get_field(fname);
       randomize(f,engine,pdf);
       f.get_header().get_tracking().update_time_stamp(t0);
     }
   } else {
     for (const auto& fname : fnames) {
-      auto f = fm->get_field(fname,gn);
+      auto f = fm->get_field(fname);
       f.deep_copy(-1);
       f.get_header().get_tracking().update_time_stamp(t0);
     }
   }
 
   // field_2 is not partitioned, so let's sync it across ranks
-  auto f2 = fm->get_field("field_2",gn);
+  auto f2 = fm->get_field("field_2");
   auto v2 = f2.get_view<Real*,Host>();
   comm.all_reduce(v2.data(),nlevs,MPI_MAX);
   f2.sync_to_dev();

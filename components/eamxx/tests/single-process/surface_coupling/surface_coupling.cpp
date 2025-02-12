@@ -107,7 +107,7 @@ std::vector<std::string> create_from_file_test_data(const ekat::Comm& comm, cons
   auto tw = t0;
   const int dt = 3600;
   for (auto name : fnames) {
-    auto field = fm->get_field(name,grid->name());
+    auto field = fm->get_field(name);
     // Note we only care about surface values so we only need to generate data over nlcols.
     auto f_view_h = field.get_view<Real*,Host>();
     for (int ii=0; ii<nlcols; ii++) {
@@ -211,43 +211,42 @@ void setup_import_and_export_data(
 }
 
 void test_imports(const FieldManager& fm,
-                  const std::string& gn,
                   const KokkosTypes<HostDevice>::view_2d<Real> import_data_view,
                   const KokkosTypes<HostDevice>::view_1d<int>  import_cpl_indices_view,
                   const KokkosTypes<HostDevice>::view_1d<Real> import_constant_multiple_view,
                   const bool called_directly_after_init = false)
 {
   // Sync to host for comparing to import data
-  fm.get_field("sfc_alb_dir_vis", gn).sync_to_host();
-  fm.get_field("sfc_alb_dir_nir", gn).sync_to_host();
-  fm.get_field("sfc_alb_dif_vis", gn).sync_to_host();
-  fm.get_field("sfc_alb_dif_nir", gn).sync_to_host();
-  fm.get_field("surf_radiative_T",gn).sync_to_host();
-  fm.get_field("T_2m",            gn).sync_to_host();
-  fm.get_field("qv_2m",           gn).sync_to_host();
-  fm.get_field("wind_speed_10m",  gn).sync_to_host();
-  fm.get_field("snow_depth_land", gn).sync_to_host();
-  fm.get_field("surf_lw_flux_up", gn).sync_to_host();
-  fm.get_field("surf_mom_flux",   gn).sync_to_host();
-  fm.get_field("surf_sens_flux",  gn).sync_to_host();
-  fm.get_field("surf_evap",       gn).sync_to_host();
-  fm.get_field("ocnfrac",         gn).sync_to_host();
-  fm.get_field("landfrac",        gn).sync_to_host();
-  const auto sfc_alb_dir_vis  = fm.get_field("sfc_alb_dir_vis", gn).get_view<const Real*,  Host>();
-  const auto sfc_alb_dir_nir  = fm.get_field("sfc_alb_dir_nir", gn).get_view<const Real*,  Host>();
-  const auto sfc_alb_dif_vis  = fm.get_field("sfc_alb_dif_vis", gn).get_view<const Real*,  Host>();
-  const auto sfc_alb_dif_nir  = fm.get_field("sfc_alb_dif_nir", gn).get_view<const Real*,  Host>();
-  const auto surf_radiative_T = fm.get_field("surf_radiative_T",gn).get_view<const Real*,  Host>();
-  const auto T_2m             = fm.get_field("T_2m",            gn).get_view<const Real*,  Host>();
-  const auto qv_2m            = fm.get_field("qv_2m",           gn).get_view<const Real*,  Host>();
-  const auto wind_speed_10m   = fm.get_field("wind_speed_10m",  gn).get_view<const Real*,  Host>();
-  const auto snow_depth_land  = fm.get_field("snow_depth_land", gn).get_view<const Real*,  Host>();
-  const auto surf_lw_flux_up  = fm.get_field("surf_lw_flux_up", gn).get_view<const Real*,  Host>();
-  const auto surf_mom_flux    = fm.get_field("surf_mom_flux",   gn).get_view<const Real**, Host>();
-  const auto surf_sens_flux   = fm.get_field("surf_sens_flux",  gn).get_view<const Real*,  Host>();
-  const auto surf_evap        = fm.get_field("surf_evap",       gn).get_view<const Real*,  Host>();
-  const auto ocnfrac          = fm.get_field("ocnfrac",         gn).get_view<const Real*,  Host>();
-  const auto landfrac         = fm.get_field("landfrac",        gn).get_view<const Real*,  Host>();
+  fm.get_field("sfc_alb_dir_vis" ).sync_to_host();
+  fm.get_field("sfc_alb_dir_nir" ).sync_to_host();
+  fm.get_field("sfc_alb_dif_vis" ).sync_to_host();
+  fm.get_field("sfc_alb_dif_nir" ).sync_to_host();
+  fm.get_field("surf_radiative_T").sync_to_host();
+  fm.get_field("T_2m"            ).sync_to_host();
+  fm.get_field("qv_2m"           ).sync_to_host();
+  fm.get_field("wind_speed_10m"  ).sync_to_host();
+  fm.get_field("snow_depth_land" ).sync_to_host();
+  fm.get_field("surf_lw_flux_up" ).sync_to_host();
+  fm.get_field("surf_mom_flux"   ).sync_to_host();
+  fm.get_field("surf_sens_flux"  ).sync_to_host();
+  fm.get_field("surf_evap"       ).sync_to_host();
+  fm.get_field("ocnfrac"         ).sync_to_host();
+  fm.get_field("landfrac"        ).sync_to_host();
+  const auto sfc_alb_dir_vis  = fm.get_field("sfc_alb_dir_vis" ).get_view<const Real*,  Host>();
+  const auto sfc_alb_dir_nir  = fm.get_field("sfc_alb_dir_nir" ).get_view<const Real*,  Host>();
+  const auto sfc_alb_dif_vis  = fm.get_field("sfc_alb_dif_vis" ).get_view<const Real*,  Host>();
+  const auto sfc_alb_dif_nir  = fm.get_field("sfc_alb_dif_nir" ).get_view<const Real*,  Host>();
+  const auto surf_radiative_T = fm.get_field("surf_radiative_T").get_view<const Real*,  Host>();
+  const auto T_2m             = fm.get_field("T_2m"            ).get_view<const Real*,  Host>();
+  const auto qv_2m            = fm.get_field("qv_2m"           ).get_view<const Real*,  Host>();
+  const auto wind_speed_10m   = fm.get_field("wind_speed_10m"  ).get_view<const Real*,  Host>();
+  const auto snow_depth_land  = fm.get_field("snow_depth_land" ).get_view<const Real*,  Host>();
+  const auto surf_lw_flux_up  = fm.get_field("surf_lw_flux_up" ).get_view<const Real*,  Host>();
+  const auto surf_mom_flux    = fm.get_field("surf_mom_flux"   ).get_view<const Real**, Host>();
+  const auto surf_sens_flux   = fm.get_field("surf_sens_flux"  ).get_view<const Real*,  Host>();
+  const auto surf_evap        = fm.get_field("surf_evap"       ).get_view<const Real*,  Host>();
+  const auto ocnfrac          = fm.get_field("ocnfrac"         ).get_view<const Real*,  Host>();
+  const auto landfrac         = fm.get_field("landfrac"        ).get_view<const Real*,  Host>();
 
   const int ncols = surf_evap.extent(0);
 
@@ -299,7 +298,6 @@ void test_imports(const FieldManager& fm,
 }
 
 void test_exports(const FieldManager& fm,
-                  const std::string& gn,
                   const KokkosTypes<HostDevice>::view_2d<Real> export_data_view,
                   const KokkosTypes<HostDevice>::view_1d<int>  export_cpl_indices_view,
                   const KokkosTypes<HostDevice>::view_1d<Real> export_constant_multiple_view,
@@ -312,17 +310,17 @@ void test_exports(const FieldManager& fm,
 
   // Some computed fields rely on calculations that are done in the AD.
   // Recompute here and verify that they were exported correctly.
-  const auto pseudo_density       = fm.get_field("pseudo_density",gn).get_view<const Real**>();
-  const auto p_mid                = fm.get_field("p_mid",gn).get_view<const Real**>();
-  const auto p_int                = fm.get_field("p_int",gn).get_view<const Real**>();
-  const auto T_mid                = fm.get_field("T_mid",gn).get_view<const Real**>();
-  const auto qv                   = fm.get_field("qv",gn).get_view<const Real**>();
-  const auto phis                 = fm.get_field("phis",gn).get_view<const Real*>();
-  const auto precip_liq_surf_mass = fm.get_field("precip_liq_surf_mass",gn).get_view<const Real*>();
-  const auto precip_ice_surf_mass = fm.get_field("precip_ice_surf_mass",gn).get_view<const Real*>();
+  const auto pseudo_density       = fm.get_field("pseudo_density").get_view<const Real**>();
+  const auto p_mid                = fm.get_field("p_mid").get_view<const Real**>();
+  const auto p_int                = fm.get_field("p_int").get_view<const Real**>();
+  const auto T_mid                = fm.get_field("T_mid").get_view<const Real**>();
+  const auto qv                   = fm.get_field("qv").get_view<const Real**>();
+  const auto phis                 = fm.get_field("phis").get_view<const Real*>();
+  const auto precip_liq_surf_mass = fm.get_field("precip_liq_surf_mass").get_view<const Real*>();
+  const auto precip_ice_surf_mass = fm.get_field("precip_ice_surf_mass").get_view<const Real*>();
 
-  const int ncols = fm.get_grids_manager()->get_grid(gn)->get_num_local_dofs();
-  const int nlevs = fm.get_grids_manager()->get_grid(gn)->get_num_vertical_levels();
+  const int ncols = fm.get_grid()->get_num_local_dofs();
+  const int nlevs = fm.get_grid()->get_num_vertical_levels();
 
   KokkosTypes<DefaultDevice>::view_2d<Real> dz   ("dz   ", ncols, nlevs);
   KokkosTypes<DefaultDevice>::view_2d<Real> z_mid("z_mid", ncols, nlevs);
@@ -376,26 +374,26 @@ void test_exports(const FieldManager& fm,
   });
 
   // Sync to host for comparing to export data
-  fm.get_field("p_mid",           gn).sync_to_host();
-  fm.get_field("T_mid",           gn).sync_to_host();
-  fm.get_field("qv",              gn).sync_to_host();
-  fm.get_field("horiz_winds",     gn).sync_to_host();
-  fm.get_field("sfc_flux_dir_nir",gn).sync_to_host();
-  fm.get_field("sfc_flux_dir_vis",gn).sync_to_host();
-  fm.get_field("sfc_flux_dif_nir",gn).sync_to_host();
-  fm.get_field("sfc_flux_dif_vis",gn).sync_to_host();
-  fm.get_field("sfc_flux_sw_net", gn).sync_to_host();
-  fm.get_field("sfc_flux_lw_dn",  gn).sync_to_host();
-  const auto p_mid_h            = fm.get_field("p_mid",           gn).get_view<const Real**,  Host>();
-  const auto T_mid_h            = fm.get_field("T_mid",           gn).get_view<const Real**,  Host>();
-  const auto qv_h               = fm.get_field("qv",              gn).get_view<const Real**,  Host>();
-  const auto horiz_winds_h      = fm.get_field("horiz_winds",     gn).get_view<const Real***, Host>();
-  const auto sfc_flux_dir_nir_h = fm.get_field("sfc_flux_dir_nir",gn).get_view<const Real*,   Host>();
-  const auto sfc_flux_dir_vis_h = fm.get_field("sfc_flux_dir_vis",gn).get_view<const Real*,   Host>();
-  const auto sfc_flux_dif_nir_h = fm.get_field("sfc_flux_dif_nir",gn).get_view<const Real*,   Host>();
-  const auto sfc_flux_dif_vis_h = fm.get_field("sfc_flux_dif_vis",gn).get_view<const Real*,   Host>();
-  const auto sfc_flux_sw_net_h  = fm.get_field("sfc_flux_sw_net", gn).get_view<const Real*,   Host>();
-  const auto sfc_flux_lw_dn_h   = fm.get_field("sfc_flux_lw_dn",  gn).get_view<const Real*,   Host>();
+  fm.get_field("p_mid"           ).sync_to_host();
+  fm.get_field("T_mid"           ).sync_to_host();
+  fm.get_field("qv"              ).sync_to_host();
+  fm.get_field("horiz_winds"     ).sync_to_host();
+  fm.get_field("sfc_flux_dir_nir").sync_to_host();
+  fm.get_field("sfc_flux_dir_vis").sync_to_host();
+  fm.get_field("sfc_flux_dif_nir").sync_to_host();
+  fm.get_field("sfc_flux_dif_vis").sync_to_host();
+  fm.get_field("sfc_flux_sw_net" ).sync_to_host();
+  fm.get_field("sfc_flux_lw_dn"  ).sync_to_host();
+  const auto p_mid_h            = fm.get_field("p_mid"           ).get_view<const Real**,  Host>();
+  const auto T_mid_h            = fm.get_field("T_mid"           ).get_view<const Real**,  Host>();
+  const auto qv_h               = fm.get_field("qv"              ).get_view<const Real**,  Host>();
+  const auto horiz_winds_h      = fm.get_field("horiz_winds"     ).get_view<const Real***, Host>();
+  const auto sfc_flux_dir_nir_h = fm.get_field("sfc_flux_dir_nir").get_view<const Real*,   Host>();
+  const auto sfc_flux_dir_vis_h = fm.get_field("sfc_flux_dir_vis").get_view<const Real*,   Host>();
+  const auto sfc_flux_dif_nir_h = fm.get_field("sfc_flux_dif_nir").get_view<const Real*,   Host>();
+  const auto sfc_flux_dif_vis_h = fm.get_field("sfc_flux_dif_vis").get_view<const Real*,   Host>();
+  const auto sfc_flux_sw_net_h  = fm.get_field("sfc_flux_sw_net" ).get_view<const Real*,   Host>();
+  const auto sfc_flux_lw_dn_h   = fm.get_field("sfc_flux_lw_dn"  ).get_view<const Real*,   Host>();
   const auto Sa_z_h       = Kokkos::create_mirror_view_and_copy(HostDevice(), Sa_z);
   const auto Sa_ptem_h    = Kokkos::create_mirror_view_and_copy(HostDevice(), Sa_ptem);
   const auto Sa_dens_h    = Kokkos::create_mirror_view_and_copy(HostDevice(), Sa_dens);
@@ -627,21 +625,20 @@ TEST_CASE("surface-coupling", "") {
   ad.initialize_atm_procs ();
 
   const auto fm = ad.get_field_mgr();
-  const auto gn = ad.get_grids_manager()->get_grid("Physics")->name();
 
   // Verify any initial imports/exports were done as expected
-  test_imports(*fm, gn, import_data_view, import_cpl_indices_view,
+  test_imports(*fm, import_data_view, import_cpl_indices_view,
                import_constant_multiple_view, true);
-  test_exports(*fm, gn, export_data_view, export_cpl_indices_view,
+  test_exports(*fm, export_data_view, export_cpl_indices_view,
                export_constant_multiple_view,  exp_const_params, dt, true);
 
   // Run the AD
   ad.run(dt);
 
   // Verify all imports/exports were done as expected
-  test_imports(*fm, gn, import_data_view, import_cpl_indices_view,
+  test_imports(*fm, import_data_view, import_cpl_indices_view,
                import_constant_multiple_view);
-  test_exports(*fm, gn, export_data_view, export_cpl_indices_view,
+  test_exports(*fm, export_data_view, export_cpl_indices_view,
                export_constant_multiple_view, exp_const_params, dt);
 
   // Finalize  the AD

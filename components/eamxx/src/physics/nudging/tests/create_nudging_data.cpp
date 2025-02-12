@@ -25,15 +25,14 @@ TEST_CASE("create_nudging_data") {
   // Create a grids manager
   const auto gm = create_gm(comm,ngcols,nlevs);
   const auto grid = gm->get_grid("Point Grid");
-  const auto gn = grid->name();
 
   // Create a field manager, and init fields (since OM's need t0 values)
   const auto fm1 = create_fm(grid);
   const auto fm2 = create_fm(grid);
   const auto fm3 = create_fm(grid);
-  compute_fields(fm1,gn,t0,comm,0);
-  compute_fields(fm2,gn,t0,comm,nlevs_filled);
-  compute_fields(fm3,gn,t0,comm,0);
+  compute_fields(fm1,t0,comm,0);
+  compute_fields(fm2,t0,comm,nlevs_filled);
+  compute_fields(fm3,t0,comm,0);
 
   // Create output manager
   const auto om1 = create_om("nudging_data",fm1,gm,t0,comm);
@@ -45,9 +44,9 @@ TEST_CASE("create_nudging_data") {
     time += dt;
 
     // Compute fields, but keep p_mid constnat in fm1 and fm2, to avoid vinterp
-    compute_fields(fm1,gn,time,comm,0,false);
-    compute_fields(fm2,gn,time,comm,nlevs_filled,false);
-    compute_fields(fm3,gn,time,comm,0);
+    compute_fields(fm1,time,comm,0,false);
+    compute_fields(fm2,time,comm,nlevs_filled,false);
+    compute_fields(fm3,time,comm,0);
 
     om1->run(time);
     om2->run(time);
