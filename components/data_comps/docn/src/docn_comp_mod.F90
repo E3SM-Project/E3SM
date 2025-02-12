@@ -71,7 +71,7 @@ module docn_comp_mod
 
   integer(IN)   :: kt,ks,ku,kv,kdhdx,kdhdy,kq,kswp  ! field indices
   integer(IN)   :: kswnet,klwup,klwdn,ksen,klat,kmelth,ksnow,krofi
-  integer(IN)   :: kh,kqbot
+  integer(IN)   :: kh,kqbot,kfraz
   integer(IN)   :: k10uu           ! index for u10
   integer(IN)   :: kRSO_bckgrd_sst ! index for background SST (relaxed slab ocean)
   integer(IN)   :: index_lat, index_lon
@@ -286,6 +286,7 @@ CONTAINS
     kdhdy = mct_aVect_indexRA(o2x,'So_dhdy')
     kswp  = mct_aVect_indexRA(o2x,'So_fswpen', perrwith='quiet')
     kq    = mct_aVect_indexRA(o2x,'Fioo_q') ! ocn freezing melting potential
+    kfraz = mct_aVect_indexRA(o2x,'Fioo_frazil') ! ocn frazil
 
     call mct_aVect_init(x2o, rList=seq_flds_x2o_fields, lsize=lsize)
     call mct_aVect_zero(x2o)
@@ -640,6 +641,8 @@ CONTAINS
        o2x%rAttr(kdhdx,n) = 0.0_R8
        o2x%rAttr(kdhdy,n) = 0.0_R8
        o2x%rAttr(kq   ,n) = 0.0_R8
+! make sure frazil is 0. MPAS-seaice will still use it.
+       o2x%rAttr(kfraz,n) = 0.0_R8
        if (kswp /= 0) then
           o2x%rAttr(kswp ,n) = swp
        end if
@@ -906,6 +909,8 @@ CONTAINS
    call moab_set_tag_from_av( 'So_dhdy'//C_NULL_CHAR, o2x, kdhdy, mpoid, data, lsize)
 
    call moab_set_tag_from_av( 'Fioo_q'//C_NULL_CHAR, o2x, kq, mpoid, data, lsize)
+
+   call moab_set_tag_from_av( 'Fioo_frazil'//C_NULL_CHAR, o2x, kq, mpoid, data, lsize)
 
    if (kswp /= 0) then
       call moab_set_tag_from_av( 'So_fswpen'//C_NULL_CHAR, o2x, kswp, mpoid, data, lsize)
