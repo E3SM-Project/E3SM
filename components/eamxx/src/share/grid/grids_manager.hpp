@@ -57,6 +57,9 @@ public:
   std::set<std::string> get_grid_names () const;
   std::string print_available_grids () const;
 
+  // Return number of grids in the GridsManager
+  int size() const { return m_grids.size(); }
+
 protected:
 
   void add_nonconst_grid (nonconstgrid_ptr_type grid);

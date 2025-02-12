@@ -18,11 +18,11 @@ create_nudging (const ekat::Comm& comm,
   auto nudging = std::make_shared<Nudging>(comm,params);
   nudging->set_grids(gm);
   for (const auto& req : nudging->get_required_field_requests()) {
-    auto f = fm->get_field(req.fid);
+    auto f = fm->get_field(req.fid.name());
     nudging->set_required_field(f);
   }
   for (const auto& req : nudging->get_computed_field_requests()) {
-    auto f = fm->get_field(req.fid);
+    auto f = fm->get_field(req.fid.name());
     nudging->set_computed_field(f);
   }
   nudging->initialize(t0,RunType::Initial);
@@ -68,7 +68,7 @@ TEST_CASE("nudging_tests") {
   auto grid_fine_h = gm_fine_h->get_grid("Point Grid");
   auto grid_fine_v = gm_fine_v->get_grid("Point Grid");
   auto grid_fine   = gm_fine->get_grid("Point Grid");
-
+  
   const int ncols_data = grid_data->get_num_local_dofs();
 
   // First section tests nudging when there is no horiz-vert interp
@@ -81,9 +81,9 @@ TEST_CASE("nudging_tests") {
 
     // Create fm. Init p_mid, since it's constant in this file
     auto fm = create_fm(grid_data);
-    compute_field(fm->get_field("p_mid",grid_data->name()),get_t0(),comm,0);
+    compute_field(fm->get_field("p_mid"),get_t0(),comm,0);
 
-    auto U = fm->get_field("U",grid_data->name());
+    auto U = fm->get_field("U");
     SECTION ("same-time") {
       std::string msg = " -> Testing same time/horiz/vert grid as data ...........";
       root_print (msg + "\n");
@@ -204,8 +204,8 @@ TEST_CASE("nudging_tests") {
 
       // Create fm
       auto fm = create_fm(grid_fine_v);
-      auto U = fm->get_field("U",grid_fine_v->name());
-      auto p_mid = fm->get_field("p_mid",grid_fine_v->name());
+      auto U = fm->get_field("U");
+      auto p_mid = fm->get_field("p_mid");
 
       // Create and init nudging process
       auto nudging = create_nudging(comm,params,fm,gm_fine_v,get_t0());
@@ -244,8 +244,8 @@ TEST_CASE("nudging_tests") {
 
       // Create fm
       auto fm = create_fm(grid_fine_v);
-      auto U = fm->get_field("U",grid_fine_v->name());
-      auto p_mid = fm->get_field("p_mid",grid_fine_v->name());
+      auto U = fm->get_field("U");
+      auto p_mid = fm->get_field("p_mid");
 
       // Create and init nudging process
       auto nudging = create_nudging(comm,params,fm,gm_fine_v,get_t0());
@@ -373,8 +373,8 @@ TEST_CASE("nudging_tests") {
 
     // Create fm
     auto fm = create_fm(grid_fine_h);
-    auto U = fm->get_field("U",grid_fine_h->name());
-    auto p_mid = fm->get_field("p_mid",grid_fine_h->name());
+    auto U = fm->get_field("U");
+    auto p_mid = fm->get_field("p_mid");
 
     // Create and init nudging process
     auto nudging = create_nudging(comm,params,fm,gm_fine_h,get_t0());
@@ -437,8 +437,8 @@ TEST_CASE("nudging_tests") {
 
     // Create fm. Init p_mid, since it's constant in this file
     auto fm = create_fm(grid_data);
-    auto U = fm->get_field("U",grid_data->name());
-    auto p_mid = fm->get_field("p_mid",grid_data->name());
+    auto U = fm->get_field("U");
+    auto p_mid = fm->get_field("p_mid");
     compute_field(p_mid,get_t0(),comm,0);
 
     // Create and init nudging process

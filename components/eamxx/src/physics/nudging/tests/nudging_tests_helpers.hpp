@@ -60,8 +60,8 @@ create_fm (const std::shared_ptr<const AbstractGrid>& grid)
   fm->register_field(FR(fid2));
   fm->registration_ends();
 
-  auto U = fm->get_field("horiz_winds",gn).subfield("U",1,0);
-  auto V = fm->get_field("horiz_winds",gn).subfield("V",1,1);
+  auto U = fm->get_field("horiz_winds").subfield("U",1,0);
+  auto V = fm->get_field("horiz_winds").subfield("V",1,1);
   fm->add_field(U);
   fm->add_field(V);
 
@@ -119,7 +119,6 @@ void compute_field (Field f,
 }
 
 void compute_fields (const std::shared_ptr<FieldManager>& fm,
-                     const std::string& grid_name,
                      const util::TimeStamp& time,
                      const ekat::Comm& comm,
                      const int num_masked_levs = 0,
@@ -127,13 +126,13 @@ void compute_fields (const std::shared_ptr<FieldManager>& fm,
 {
   if (update_p_mid) {
     // Don't mask pressure
-    compute_field(fm->get_field("p_mid",grid_name),time,comm,0);
+    compute_field(fm->get_field("p_mid"),time,comm,0);
   }
-  compute_field(fm->get_field("U",grid_name),time,comm,num_masked_levs);
-  compute_field(fm->get_field("V",grid_name),time,comm,num_masked_levs);
+  compute_field(fm->get_field("U"),time,comm,num_masked_levs);
+  compute_field(fm->get_field("V"),time,comm,num_masked_levs);
 
   // Not sure if we need it, since we don't handle horiz_winds directly, I think
-  fm->get_field("horiz_winds", grid_name).get_header().get_tracking().update_time_stamp(time);
+  fm->get_field("horiz_winds").get_header().get_tracking().update_time_stamp(time);
 }
 
 std::shared_ptr<OutputManager>
