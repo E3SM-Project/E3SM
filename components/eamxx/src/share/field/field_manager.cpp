@@ -253,7 +253,7 @@ get_field_group (const std::string& group_name, const std::string& grid_name) co
         parent_field->subfield(
           group_name, parent_header->get_identifier().get_units(),
           group.m_info->m_subview_dim,
-          ordered_subview_indices.front(), ordered_subview_indices.back()));
+          ordered_subview_indices.front(), ordered_subview_indices.back()+1));
 
     }
   }
