@@ -1,2 +1,2 @@
 dstemislimitswitch = .true.
-dstemislimit = 1.D-5
+dstemislimit = 1.D-4

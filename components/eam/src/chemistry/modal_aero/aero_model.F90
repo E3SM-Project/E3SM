@@ -102,7 +102,7 @@ module aero_model
   real(r8)          :: sol_factic_interstitial = 0.4_r8
   real(r8)          :: seasalt_emis_scale
   real(r8)          :: small = 1.e-36
-  real(r8)          :: dstemislimit = 1.e-5_r8
+  real(r8)          :: dstemislimit = 1.e-4_r8
   logical           :: dstemislimitswitch = .false.
 
   integer :: ndrydep = 0
