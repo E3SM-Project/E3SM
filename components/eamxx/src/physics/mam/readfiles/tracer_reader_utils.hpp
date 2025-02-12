@@ -456,7 +456,11 @@ inline std::shared_ptr<AtmosphereInput> create_tracer_data_reader(
     // of lev, we must rename this tag. We need to perform a shallow clone of
     // io_grid because tags are const in this object.
     auto horiz_interp_src_grid =
+<<<<<<< HEAD
         io_grid->clone(io_grid->name(), true);
+=======
+        io_grid->clone("tracer_horiz_interp_src_grid", true);
+>>>>>>> 3cf3c162f1 (No need to change name on grid clone)
     horiz_interp_src_grid->reset_field_tag_name(LEV, "altitude");
     horiz_interp_src_grid->reset_field_tag_name(ILEV, "altitude_int");
     return std::make_shared<AtmosphereInput>(
