@@ -77,7 +77,6 @@ protected:
   void check_and_update_data(const TimeStamp& ts_in);
 
   // Local field managers used to store two time snaps of data for interpolation
-  std::string m_grid_name;
   fm_type  m_fm_time0;
   fm_type  m_fm_time1;
   vos_type m_field_names;

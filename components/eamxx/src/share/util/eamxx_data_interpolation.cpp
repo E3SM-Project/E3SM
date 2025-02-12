@@ -411,13 +411,13 @@ setup_remappers (const std::string& hremap_filename,
   m_horiz_remapper_end->registration_begins();
   for (int i=0; i<m_nfields; ++i) {
     const auto& f = m_vert_remapper->get_src_field(i);
-    m_horiz_remapper_beg->register_field_from_tgt(f.clone(f.name(), grid_after_hremap->name()));
-    m_horiz_remapper_end->register_field_from_tgt(f.clone(f.name(), grid_after_hremap->name()));
+    m_horiz_remapper_beg->register_field_from_tgt(f.clone());
+    m_horiz_remapper_end->register_field_from_tgt(f.clone());
   }
   if (vr_type==Dynamic3D or vr_type==Dynamic3DRef) {
     const auto& data_p = m_helper_pressure_fields["p_data"];
-    m_horiz_remapper_beg->register_field_from_tgt(data_p.clone(data_pname, grid_after_hremap->name()));
-    m_horiz_remapper_end->register_field_from_tgt(data_p.clone(data_pname, grid_after_hremap->name()));
+    m_horiz_remapper_beg->register_field_from_tgt(data_p.clone(data_pname));
+    m_horiz_remapper_end->register_field_from_tgt(data_p.clone(data_pname));
   }
   m_horiz_remapper_beg->registration_ends();
   m_horiz_remapper_end->registration_ends();
