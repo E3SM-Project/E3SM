@@ -24,6 +24,15 @@ Field::clone() const {
 }
 
 Field
+Field::alias (const std::string& name) const {
+  Field f;
+  f.m_header = get_header().alias(name);
+  f.m_data = m_data;
+  f.m_is_read_only = m_is_read_only;
+  return f;
+}
+
+Field
 Field::clone(const std::string& name) const {
   // Create new field
   const auto& my_fid = get_header().get_identifier();
@@ -47,15 +56,6 @@ Field::clone(const std::string& name) const {
   f.deep_copy<Device>(*this);
   f.deep_copy<Host>(*this);
 
-  return f;
-}
-
-Field
-Field::alias (const std::string& name) const {
-  Field f;
-  f.m_header = get_header().alias(name);
-  f.m_data = m_data;
-  f.m_is_read_only = m_is_read_only;
   return f;
 }
 
