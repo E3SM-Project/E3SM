@@ -140,19 +140,19 @@ AbstractGrid::equivalent_layout (const FieldLayout& template_layout) const
       ret_layout = get_2d_scalar_layout();
       break;
     case LayoutType::Vector2D:
-      ret_layout = get_2d_vector_layout(vec_dim, template_layout.get_dim_names()[vec_cmp]);
+      ret_layout = get_2d_vector_layout(vec_dim, template_layout.names()[vec_cmp]);
       break;
     case LayoutType::Tensor2D:
-      ret_layout = get_2d_tensor_layout(template_layout.get_tensor_dims(), template_layout.get_dim_names());
+      ret_layout = get_2d_tensor_layout(template_layout.get_tensor_dims(), template_layout.names());
       break;
     case LayoutType::Scalar3D:
       ret_layout = get_3d_scalar_layout(midpoints);
       break;
     case LayoutType::Vector3D:
-      ret_layout = get_3d_vector_layout(midpoints, vec_dim, template_layout.get_dim_names()[vec_cmp]);
+      ret_layout = get_3d_vector_layout(midpoints, vec_dim, template_layout.names()[vec_cmp]);
       break;
     case LayoutType::Tensor3D:
-      ret_layout = get_3d_tensor_layout(midpoints, template_layout.get_tensor_dims(), template_layout.get_dim_names());
+      ret_layout = get_3d_tensor_layout(midpoints, template_layout.get_tensor_dims(), template_layout.names());
       break;
     default:
       EKAT_ERROR_MSG("Error! Unknown FieldLayout type.\n");
