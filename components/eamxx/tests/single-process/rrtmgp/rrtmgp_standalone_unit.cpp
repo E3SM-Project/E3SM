@@ -93,7 +93,7 @@ TEST_CASE("rrtmgp_scream_standalone", "") {
 
   // Get dimension sizes from the field manager
   const auto& grid = ad.get_grids_manager()->get_grid("Point Grid");
-  const auto& field_mgr = *ad.get_field_mgr(grid->name());
+  const auto& field_mgr = *ad.get_field_mgr();
   int ncol  = grid->get_num_local_dofs();
   int nlay  = grid->get_num_vertical_levels();
 
@@ -234,30 +234,30 @@ TEST_CASE("rrtmgp_scream_standalone", "") {
   // copies is necessary since the yakl::Array take in data arranged with ncol
   // as the fastest index, but the field manager expects the 2nd dimension as
   // the fastest index.
-  auto d_pmid = field_mgr.get_field("p_mid").get_view<Real**>();
-  auto d_tmid = field_mgr.get_field("T_mid").get_view<Real**>();
-  auto d_pint = field_mgr.get_field("p_int").get_view<Real**>();
-  auto d_pdel = field_mgr.get_field("pseudo_density").get_view<Real**>();
-  auto d_sfc_alb_dir_vis = field_mgr.get_field("sfc_alb_dir_vis").get_view<Real*>();
-  auto d_sfc_alb_dir_nir = field_mgr.get_field("sfc_alb_dir_nir").get_view<Real*>();
-  auto d_sfc_alb_dif_vis = field_mgr.get_field("sfc_alb_dif_vis").get_view<Real*>();
-  auto d_sfc_alb_dif_nir = field_mgr.get_field("sfc_alb_dif_nir").get_view<Real*>();
-  auto d_surf_lw_flux_up = field_mgr.get_field("surf_lw_flux_up").get_view<Real*>();
-  auto d_qc = field_mgr.get_field("qc").get_view<Real**>();
-  auto d_nc = field_mgr.get_field("nc").get_view<Real**>();
-  auto d_qi = field_mgr.get_field("qi").get_view<Real**>();
-  auto d_rel = field_mgr.get_field("eff_radius_qc").get_view<Real**>();
-  auto d_rei = field_mgr.get_field("eff_radius_qi").get_view<Real**>();
-  auto d_cld = field_mgr.get_field("cldfrac_tot").get_view<Real**>();
+  auto d_pmid = field_mgr.get_field("p_mid", grid->name()).get_view<Real**>();
+  auto d_tmid = field_mgr.get_field("T_mid", grid->name()).get_view<Real**>();
+  auto d_pint = field_mgr.get_field("p_int", grid->name()).get_view<Real**>();
+  auto d_pdel = field_mgr.get_field("pseudo_density", grid->name()).get_view<Real**>();
+  auto d_sfc_alb_dir_vis = field_mgr.get_field("sfc_alb_dir_vis", grid->name()).get_view<Real*>();
+  auto d_sfc_alb_dir_nir = field_mgr.get_field("sfc_alb_dir_nir", grid->name()).get_view<Real*>();
+  auto d_sfc_alb_dif_vis = field_mgr.get_field("sfc_alb_dif_vis", grid->name()).get_view<Real*>();
+  auto d_sfc_alb_dif_nir = field_mgr.get_field("sfc_alb_dif_nir", grid->name()).get_view<Real*>();
+  auto d_surf_lw_flux_up = field_mgr.get_field("surf_lw_flux_up", grid->name()).get_view<Real*>();
+  auto d_qc = field_mgr.get_field("qc", grid->name()).get_view<Real**>();
+  auto d_nc = field_mgr.get_field("nc", grid->name()).get_view<Real**>();
+  auto d_qi = field_mgr.get_field("qi", grid->name()).get_view<Real**>();
+  auto d_rel = field_mgr.get_field("eff_radius_qc", grid->name()).get_view<Real**>();
+  auto d_rei = field_mgr.get_field("eff_radius_qi", grid->name()).get_view<Real**>();
+  auto d_cld = field_mgr.get_field("cldfrac_tot", grid->name()).get_view<Real**>();
 
-  auto d_qv  = field_mgr.get_field("qv").get_view<Real**>();
-  auto d_co2 = field_mgr.get_field("co2_volume_mix_ratio").get_view<Real**>();
-  auto d_o3  = field_mgr.get_field("o3_volume_mix_ratio").get_view<Real**>();
-  auto d_n2o = field_mgr.get_field("n2o_volume_mix_ratio").get_view<Real**>();
-  auto d_co  = field_mgr.get_field("co_volume_mix_ratio").get_view<Real**>();
-  auto d_ch4 = field_mgr.get_field("ch4_volume_mix_ratio").get_view<Real**>();
-  auto d_o2  = field_mgr.get_field("o2_volume_mix_ratio").get_view<Real**>();
-  auto d_n2  = field_mgr.get_field("n2_volume_mix_ratio").get_view<Real**>();
+  auto d_qv  = field_mgr.get_field("qv", grid->name()).get_view<Real**>();
+  auto d_co2 = field_mgr.get_field("co2_volume_mix_ratio", grid->name()).get_view<Real**>();
+  auto d_o3  = field_mgr.get_field("o3_volume_mix_ratio", grid->name()).get_view<Real**>();
+  auto d_n2o = field_mgr.get_field("n2o_volume_mix_ratio", grid->name()).get_view<Real**>();
+  auto d_co  = field_mgr.get_field("co_volume_mix_ratio", grid->name()).get_view<Real**>();
+  auto d_ch4 = field_mgr.get_field("ch4_volume_mix_ratio", grid->name()).get_view<Real**>();
+  auto d_o2  = field_mgr.get_field("o2_volume_mix_ratio", grid->name()).get_view<Real**>();
+  auto d_n2  = field_mgr.get_field("n2_volume_mix_ratio", grid->name()).get_view<Real**>();
 
   // Gather molecular weights of all the active gases in the test for conversion
   // to mass-mixing-ratio.
@@ -316,11 +316,11 @@ TEST_CASE("rrtmgp_scream_standalone", "") {
 
   // Check values; The correct values have been stored in the field manager, we need to
   // copy back to YAKL::Array.
-  auto d_sw_flux_up = field_mgr.get_field("sw_flux_up").get_view<Real**>();
-  auto d_sw_flux_dn = field_mgr.get_field("sw_flux_dn").get_view<Real**>();
-  auto d_sw_flux_dn_dir = field_mgr.get_field("sw_flux_dn_dir").get_view<Real**>();
-  auto d_lw_flux_up = field_mgr.get_field("lw_flux_up").get_view<Real**>();
-  auto d_lw_flux_dn = field_mgr.get_field("lw_flux_dn").get_view<Real**>();
+  auto d_sw_flux_up = field_mgr.get_field("sw_flux_up", grid->name()).get_view<Real**>();
+  auto d_sw_flux_dn = field_mgr.get_field("sw_flux_dn", grid->name()).get_view<Real**>();
+  auto d_sw_flux_dn_dir = field_mgr.get_field("sw_flux_dn_dir", grid->name()).get_view<Real**>();
+  auto d_lw_flux_up = field_mgr.get_field("lw_flux_up", grid->name()).get_view<Real**>();
+  auto d_lw_flux_dn = field_mgr.get_field("lw_flux_dn", grid->name()).get_view<Real**>();
   auto sw_flux_up_test = real2d("sw_flux_up_test", ncol, nlay+1);
   auto sw_flux_dn_test = real2d("sw_flux_dn_test", ncol, nlay+1);
   auto sw_flux_dn_dir_test = real2d("sw_flux_dn_dir_test",  ncol, nlay+1);
@@ -479,7 +479,7 @@ TEST_CASE("rrtmgp_scream_standalone_k", "") {
 
   // Get dimension sizes from the field manager
   const auto& grid = ad.get_grids_manager()->get_grid("Point Grid");
-  const auto& field_mgr = *ad.get_field_mgr(grid->name());
+  const auto& field_mgr = *ad.get_field_mgr();
   int ncol  = grid->get_num_local_dofs();
   int nlay  = grid->get_num_vertical_levels();
 
@@ -605,30 +605,30 @@ TEST_CASE("rrtmgp_scream_standalone_k", "") {
   // copies is necessary since the yakl::Array take in data arranged with ncol
   // as the fastest index, but the field manager expects the 2nd dimension as
   // the fastest index.
-  auto d_pmid = field_mgr.get_field("p_mid").get_view<Real**>();
-  auto d_tmid = field_mgr.get_field("T_mid").get_view<Real**>();
-  auto d_pint = field_mgr.get_field("p_int").get_view<Real**>();
-  auto d_pdel = field_mgr.get_field("pseudo_density").get_view<Real**>();
-  auto d_sfc_alb_dir_vis = field_mgr.get_field("sfc_alb_dir_vis").get_view<Real*>();
-  auto d_sfc_alb_dir_nir = field_mgr.get_field("sfc_alb_dir_nir").get_view<Real*>();
-  auto d_sfc_alb_dif_vis = field_mgr.get_field("sfc_alb_dif_vis").get_view<Real*>();
-  auto d_sfc_alb_dif_nir = field_mgr.get_field("sfc_alb_dif_nir").get_view<Real*>();
-  auto d_surf_lw_flux_up = field_mgr.get_field("surf_lw_flux_up").get_view<Real*>();
-  auto d_qc = field_mgr.get_field("qc").get_view<Real**>();
-  auto d_nc = field_mgr.get_field("nc").get_view<Real**>();
-  auto d_qi = field_mgr.get_field("qi").get_view<Real**>();
-  auto d_rel = field_mgr.get_field("eff_radius_qc").get_view<Real**>();
-  auto d_rei = field_mgr.get_field("eff_radius_qi").get_view<Real**>();
-  auto d_cld = field_mgr.get_field("cldfrac_tot").get_view<Real**>();
+  auto d_pmid = field_mgr.get_field("p_mid", grid->name()).get_view<Real**>();
+  auto d_tmid = field_mgr.get_field("T_mid", grid->name()).get_view<Real**>();
+  auto d_pint = field_mgr.get_field("p_int", grid->name()).get_view<Real**>();
+  auto d_pdel = field_mgr.get_field("pseudo_density", grid->name()).get_view<Real**>();
+  auto d_sfc_alb_dir_vis = field_mgr.get_field("sfc_alb_dir_vis", grid->name()).get_view<Real*>();
+  auto d_sfc_alb_dir_nir = field_mgr.get_field("sfc_alb_dir_nir", grid->name()).get_view<Real*>();
+  auto d_sfc_alb_dif_vis = field_mgr.get_field("sfc_alb_dif_vis", grid->name()).get_view<Real*>();
+  auto d_sfc_alb_dif_nir = field_mgr.get_field("sfc_alb_dif_nir", grid->name()).get_view<Real*>();
+  auto d_surf_lw_flux_up = field_mgr.get_field("surf_lw_flux_up", grid->name()).get_view<Real*>();
+  auto d_qc = field_mgr.get_field("qc", grid->name()).get_view<Real**>();
+  auto d_nc = field_mgr.get_field("nc", grid->name()).get_view<Real**>();
+  auto d_qi = field_mgr.get_field("qi", grid->name()).get_view<Real**>();
+  auto d_rel = field_mgr.get_field("eff_radius_qc", grid->name()).get_view<Real**>();
+  auto d_rei = field_mgr.get_field("eff_radius_qi", grid->name()).get_view<Real**>();
+  auto d_cld = field_mgr.get_field("cldfrac_tot", grid->name()).get_view<Real**>();
 
-  auto d_qv  = field_mgr.get_field("qv").get_view<Real**>();
-  auto d_co2 = field_mgr.get_field("co2_volume_mix_ratio").get_view<Real**>();
-  auto d_o3  = field_mgr.get_field("o3_volume_mix_ratio").get_view<Real**>();
-  auto d_n2o = field_mgr.get_field("n2o_volume_mix_ratio").get_view<Real**>();
-  auto d_co  = field_mgr.get_field("co_volume_mix_ratio").get_view<Real**>();
-  auto d_ch4 = field_mgr.get_field("ch4_volume_mix_ratio").get_view<Real**>();
-  auto d_o2  = field_mgr.get_field("o2_volume_mix_ratio").get_view<Real**>();
-  auto d_n2  = field_mgr.get_field("n2_volume_mix_ratio").get_view<Real**>();
+  auto d_qv  = field_mgr.get_field("qv", grid->name()).get_view<Real**>();
+  auto d_co2 = field_mgr.get_field("co2_volume_mix_ratio", grid->name()).get_view<Real**>();
+  auto d_o3  = field_mgr.get_field("o3_volume_mix_ratio", grid->name()).get_view<Real**>();
+  auto d_n2o = field_mgr.get_field("n2o_volume_mix_ratio", grid->name()).get_view<Real**>();
+  auto d_co  = field_mgr.get_field("co_volume_mix_ratio", grid->name()).get_view<Real**>();
+  auto d_ch4 = field_mgr.get_field("ch4_volume_mix_ratio", grid->name()).get_view<Real**>();
+  auto d_o2  = field_mgr.get_field("o2_volume_mix_ratio", grid->name()).get_view<Real**>();
+  auto d_n2  = field_mgr.get_field("n2_volume_mix_ratio", grid->name()).get_view<Real**>();
 
   // Gather molecular weights of all the active gases in the test for conversion
   // to mass-mixing-ratio.
@@ -687,11 +687,11 @@ TEST_CASE("rrtmgp_scream_standalone_k", "") {
 
   // Check values; The correct values have been stored in the field manager, we need to
   // copy back to YAKL::Array.
-  auto d_sw_flux_up = field_mgr.get_field("sw_flux_up").get_view<Real**>();
-  auto d_sw_flux_dn = field_mgr.get_field("sw_flux_dn").get_view<Real**>();
-  auto d_sw_flux_dn_dir = field_mgr.get_field("sw_flux_dn_dir").get_view<Real**>();
-  auto d_lw_flux_up = field_mgr.get_field("lw_flux_up").get_view<Real**>();
-  auto d_lw_flux_dn = field_mgr.get_field("lw_flux_dn").get_view<Real**>();
+  auto d_sw_flux_up = field_mgr.get_field("sw_flux_up", grid->name()).get_view<Real**>();
+  auto d_sw_flux_dn = field_mgr.get_field("sw_flux_dn", grid->name()).get_view<Real**>();
+  auto d_sw_flux_dn_dir = field_mgr.get_field("sw_flux_dn_dir", grid->name()).get_view<Real**>();
+  auto d_lw_flux_up = field_mgr.get_field("lw_flux_up", grid->name()).get_view<Real**>();
+  auto d_lw_flux_dn = field_mgr.get_field("lw_flux_dn", grid->name()).get_view<Real**>();
   auto sw_flux_up_test = real2dk("sw_flux_up_test", ncol, nlay+1);
   auto sw_flux_dn_test = real2dk("sw_flux_dn_test", ncol, nlay+1);
   auto sw_flux_dn_dir_test = real2dk("sw_flux_dn_dir_test",  ncol, nlay+1);
