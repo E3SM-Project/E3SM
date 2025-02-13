@@ -161,8 +161,10 @@ TEST_CASE("dyn_grid_io")
   in_params.set<std::string>("Filename",filename);
   in_params.set<std::vector<std::string>>("Field Names",fnames);
 
+  // AtmosphereInput expects a FM on a single grid, create
+  // a phys FM and add fields.
   auto fm_phys = std::make_shared<FieldManager>(phys_grid);
-  for (auto& f_it : fm_phys->get_repo(phys_grid->name())) {
+  for (auto& f_it : fm->get_repo(phys_grid->name())) {
     fm_phys->add_field(*f_it.second);
   }
   AtmosphereInput input (in_params,fm_phys);
