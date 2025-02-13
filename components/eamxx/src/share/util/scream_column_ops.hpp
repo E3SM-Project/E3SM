@@ -52,7 +52,7 @@ namespace scream {
  *     penalization. The only requirement is that both branches must compile.
  *   - some methods accept a non-type template argument of type CombineMode.
  *     This argument can be used to specify how the result of the calculation
- *     should be written in the output view. E.g., if CM=ScaleUpdate, the output
+ *     should be written in the output view. E.g., if CM=Update, the output
  *     view y will be updated as y = beta*y + alpha*f(x). The values alpha
  *     and beta are used only if CM needs them, and an error is thrown if the
  *     user specifies non-trivial alpha/beta when they are not needed.
