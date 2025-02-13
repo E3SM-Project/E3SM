@@ -135,6 +135,45 @@ pgi:
 	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DCPRPGI" )
 
+nvidia-cray:
+	( $(MAKE) all \
+	"FC_PARALLEL = ftn" \
+	"CC_PARALLEL = cc" \
+	"CXX_PARALLEL = CC" \
+	"FC_SERIAL = nvfortran" \
+	"CC_SERIAL = nvc" \
+	"CXX_SERIAL = nvc++" \
+	"FFLAGS_FPIEEE = -Kieee" \
+	"FFLAGS_PROMOTION = -r8" \
+	"FFLAGS_OPT = -g -O3 -byteswapio -Mfree" \
+	"CFLAGS_OPT = -O3 " \
+	"CXXFLAGS_OPT = -O3 " \
+	"LDFLAGS_OPT = -O3 " \
+	"FFLAGS_ACC = -gpu=deepcopy -Minfo=accel " \
+	"CFLAGS_ACC = -gpu=deepcopy -Minfo=accel "  \
+	"FFLAGS_DEBUG = -O0 -g -byteswapio -Mfree -Ktrap=divz,fp,inv,ovf -traceback" \
+	"CFLAGS_DEBUG = -O0 -g -traceback" \
+	"CXXFLAGS_DEBUG = -O0 -g -traceback" \
+	"LDFLAGS_DEBUG = -O0 -g -Ktrap=divz,fp,inv,ovf -traceback" \
+	"FFLAGS_OMP = -mp" \
+	"CFLAGS_OMP = -mp" \
+	"PICFLAG = -fpic" \
+	"BUILD_TARGET = $(@)" \
+	"CORE = $(CORE)" \
+	"DEBUG = $(DEBUG)" \
+	"USE_PAPI = $(USE_PAPI)" \
+	"USE_MAGMA = $(USE_MAGMA)" \
+	"USE_CUBLAS = $(USE_CUBLAS)" \
+	"USE_GPU_AWARE_MPI = $(USE_GPU_AWARE_MPI)" \
+	"OPENMP = $(OPENMP)" \
+	"OPENACC = $(OPENACC)" \
+	"USE_SHTNS = $(USE_SHTNS)" \
+	"CPPFLAGS = -DpgiFortran -D_MPI -DUNDERSCORE" )
+
+#        "LDFLAGS_OPT = -Wl,--relax -Wl,--allow-multiple-definition -qsmp -qoffload -lcudart -L$(CUDA_DIR)/lib64" \
+#        "FFLAGS_GPU = -qsmp -qoffload" \
+#        "LDFLAGS_GPU = -qsmp -qoffload -lcudart -L$(CUDA_DIR)/lib64" \
+
 pgi-summit:
 	( $(MAKE) all \
 	"FC_PARALLEL = mpif90" \
@@ -785,9 +824,9 @@ endif # USE_PIO2 IF
 
 ifneq "$(MOAB_PATH)" ""
        MOAB_MESSAGE="Using MOAB library"
-else # 
+else #
        MOAB_MESSAGE="Not using MOAB library"
-endif 
+endif
 
 ifdef TIMER_LIB
 ifeq "$(TIMER_LIB)" "tau"
