@@ -27,31 +27,11 @@ namespace scream {
  */
 
 enum class CombineMode {
-  ScaleUpdate,  // out = beta*out + alpha*in (most generic case)
-  Update,       // out = beta*out + in (special case of ScaleUpdate wiht alpha=1)
-  ScaleAdd,     // out = out + alpha*in (special case of ScaleUpdate with beta=1)
-  ScaleReplace, // out = alpha*in (special case of ScaleUpdate with beta=0)
-  Add,          // out = out + in (special case of ScaleUpdate with alpha=beta=1)
-  Rescale,      // out = beta*out
-  Replace,      // out = in
-  Multiply,     // out = out*in
-  Divide        // out = out/in
+  Replace,    // out = alpha*in
+  Update,     // out = beta*out + alpha*in
+  Multiply,   // out = out*in
+  Divide      // out = out/in
 };
-
-// Functions mostly used for debug purposes. They check whether a combine mode
-// requires valid alpha or beta coefficients.
-template<CombineMode CM>
-KOKKOS_INLINE_FUNCTION
-static constexpr bool needsAlpha () {
-  return CM==CombineMode::ScaleReplace || CM==CombineMode::ScaleAdd || CM==CombineMode::ScaleUpdate;
-}
-
-template<CombineMode CM>
-KOKKOS_INLINE_FUNCTION
-static constexpr bool needsBeta () {
-  return CM==CombineMode::Update || CM==CombineMode::ScaleUpdate || CM==CombineMode::Rescale;
-}
-
 
 // Small helper functions to combine a new value with an old one.
 // The template argument help reducing the number of operations
@@ -70,27 +50,11 @@ void combine (const ScalarIn& newVal, ScalarOut& result,
 {
   switch (CM) {
     case CombineMode::Replace:
-      result = newVal;
-      break;
-    case CombineMode::Rescale:
-      result *= beta;
-      break;
-    case CombineMode::ScaleReplace:
       result = alpha*newVal;
       break;
     case CombineMode::Update:
       result *= beta;
-      result += newVal;
-      break;
-    case CombineMode::ScaleUpdate:
-      result *= beta;
       result += alpha*newVal;
-      break;
-    case CombineMode::ScaleAdd:
-      result += alpha*newVal;
-      break;
-    case CombineMode::Add:
-      result += newVal;
       break;
     case CombineMode::Multiply:
       result *= newVal;
@@ -112,22 +76,7 @@ void combine_and_fill (const ScalarIn& newVal, ScalarOut& result, const ScalarOu
     case CombineMode::Replace:
       combine<CM>(newVal,result,alpha,beta);
       break;
-    case CombineMode::Rescale:
-      if (result != fill_val) {
-        combine<CM>(newVal,result,alpha,beta);
-      }
-      break;
-    case CombineMode::ScaleReplace:
-      if (newVal == fill_val) {
-        result = fill_val;
-      } else {
-        combine<CM>(newVal,result,alpha,beta);
-      }
-      break;
     case CombineMode::Update:
-    case CombineMode::ScaleUpdate:
-    case CombineMode::ScaleAdd:
-    case CombineMode::Add:
     case CombineMode::Multiply:
     case CombineMode::Divide:
       if (result == fill_val || newVal == fill_val) {

@@ -214,12 +214,12 @@ public:
   // NOTE: the type ST  must be such that no narrowing happens when
   //       casting the values to whatever the data type of this field is.
   //       E.g., if data_type()=IntType, you can't pass double's.
-  template<HostOrDevice HD = Device, CombineMode CM = CombineMode::ScaleUpdate, typename ST = void>
+  template<HostOrDevice HD = Device, CombineMode CM = CombineMode::Update, typename ST = void>
   void update (const Field& x, const ST alpha, const ST beta);
 
   // Special case of update for particular choices of the combine mode
   template<HostOrDevice HD = Device, typename ST = void>
-  void scale (const ST beta) { update<HD,CombineMode::Rescale>(*this,ST(0),beta); }
+  void scale (const ST beta) { update<HD,CombineMode::Update>(*this,ST(0),beta); }
 
   // Scale a field y as y=y*x where x is also a field
   template<HostOrDevice HD = Device>
