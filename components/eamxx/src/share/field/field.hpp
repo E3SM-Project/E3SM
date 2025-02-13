@@ -388,6 +388,59 @@ inline bool operator== (const Field& lhs, const Field& rhs) {
   return lhs.get_header().get_identifier() == rhs.get_header().get_identifier();
 }
 
+// Inform the compiler that we will instantiate some template methods in some translation unit (TU).
+// This prevents the decl in field_impl.hpp from being compiled for every TU.
+// NOTE: field_impl.hpp is still included, so you can call other specializations (e.g., update for CM=Max)
+//       and the compiler will implicitly instantiate. However, these are the most common use cases,
+//       so it helps to do ETI for those.
+// NOTE: for update, we only specialize for CM being Update, Multiply, and Divide,
+#define EAMXX_FIELD_ETI_DECL_UPDATE(S,T) \
+extern template void Field::update<S, CombineMode::Update, T>(const Field&, const T, const T);              \
+extern template void Field::update<S, CombineMode::Multiply, T>(const Field&, const T, const T);            \
+extern template void Field::update<S, CombineMode::Divide, T>(const Field&, const T, const T);              \
+extern template void Field::update_impl<CombineMode::Update,  S, true, T>(const Field&, const T, const T);  \
+extern template void Field::update_impl<CombineMode::Multiply,S, true, T>(const Field&, const T, const T);  \
+extern template void Field::update_impl<CombineMode::Divide,  S, true, T>(const Field&, const T, const T);  \
+extern template void Field::update_impl<CombineMode::Update,  S, false, T>(const Field&, const T, const T); \
+extern template void Field::update_impl<CombineMode::Multiply,S, false, T>(const Field&, const T, const T); \
+extern template void Field::update_impl<CombineMode::Divide,  S, false, T>(const Field&, const T, const T)
+
+#define EAMXX_FIELD_ETI_DECL_DEEP_COPY(S,T) \
+extern template void Field::deep_copy_impl<S,T>(const T)
+
+#define EAMXX_FIELD_ETI_DECL_GET_VIEW(S,T) \
+extern template Field::get_view_type<T,S> Field::get_view<T,S> () const; \
+extern template Field::get_view_type<T*,S> Field::get_view<T*,S> () const; \
+extern template Field::get_view_type<T**,S> Field::get_view<T**,S> () const; \
+extern template Field::get_view_type<T***,S> Field::get_view<T***,S> () const; \
+extern template Field::get_view_type<T****,S> Field::get_view<T****,S> () const; \
+extern template Field::get_view_type<T*****,S> Field::get_view<T*****,S> () const; \
+extern template Field::get_view_type<T******,S> Field::get_view<T******,S> () const; \
+extern template Field::get_strided_view_type<T,S> Field::get_strided_view<T,S> () const; \
+extern template Field::get_strided_view_type<T*,S> Field::get_strided_view<T*,S> () const; \
+extern template Field::get_strided_view_type<T**,S> Field::get_strided_view<T**,S> () const; \
+extern template Field::get_strided_view_type<T***,S> Field::get_strided_view<T***,S> () const; \
+extern template Field::get_strided_view_type<T****,S> Field::get_strided_view<T****,S> () const; \
+extern template Field::get_strided_view_type<T*****,S> Field::get_strided_view<T*****,S> () const; \
+extern template Field::get_strided_view_type<T******,S> Field::get_strided_view<T******,S> () const
+
+#define EAMXX_FIELD_ETI_DECL_FOR_TYPE(T) \
+EAMXX_FIELD_ETI_DECL_UPDATE(Device,T);          \
+EAMXX_FIELD_ETI_DECL_UPDATE(Host,T);            \
+EAMXX_FIELD_ETI_DECL_DEEP_COPY(Device,T);       \
+EAMXX_FIELD_ETI_DECL_DEEP_COPY(Host,T);         \
+EAMXX_FIELD_ETI_DECL_GET_VIEW(Device,T);        \
+EAMXX_FIELD_ETI_DECL_GET_VIEW(Host,T);          \
+EAMXX_FIELD_ETI_DECL_GET_VIEW(Device,const T);  \
+EAMXX_FIELD_ETI_DECL_GET_VIEW(Host,const T);
+
+// TODO: should we ETI other scalar types too? E.g. Pack<Real,SCREAM_PACK_SIZE??
+//       Real is by far the most common, so it'd be nice to just to that. But
+//       all the update/update_impl methods use get_view for all 3 types, so just ETI all of them
+EAMXX_FIELD_ETI_DECL_FOR_TYPE(double);
+EAMXX_FIELD_ETI_DECL_FOR_TYPE(float);
+EAMXX_FIELD_ETI_DECL_FOR_TYPE(int);
+
 } // namespace scream
 
 // Include template methods implementation
