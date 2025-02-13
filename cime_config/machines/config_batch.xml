@@ -620,6 +620,26 @@
     </queues>
   </batch_system>
 
+  <batch_system MACH="boca" type="slurm" >
+    <submit_args>
+      <arg flag="--reservation=boca-cldera"/>
+    </submit_args>
+    <queues>
+      <queue nodemax="20" walltimemax="04:00:00" strict="true" default="true">batch</queue>
+      <queue walltimemax="48:00:00">batch</queue>
+    </queues>
+  </batch_system>
+
+  <batch_system MACH="flight" type="slurm" >
+    <submit_args>
+      <arg flag="--reservation=flight-cldera"/>
+    </submit_args>
+    <queues>
+      <queue nodemax="20" walltimemax="04:00:00" strict="true" default="true">batch</queue>
+      <queue walltimemax="48:00:00">batch</queue>
+    </queues>
+  </batch_system>
+
   <batch_system MACH="ghost" type="slurm" >
     <queues>
       <queue nodemax="12" walltimemax="04:00:00" strict="true" default="true">short,batch</queue>
