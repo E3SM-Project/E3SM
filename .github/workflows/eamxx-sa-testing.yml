@@ -8,6 +8,7 @@ on:
     paths:
       # first, yes to these
       - '.github/workflows/eamxx-sa-testing.yml'
+      - '.github/actions/test-all-scream/**'
       - 'cime_config/machine/config_machines.xml'
       - 'components/eamxx/**'
       - 'components/homme/**'
