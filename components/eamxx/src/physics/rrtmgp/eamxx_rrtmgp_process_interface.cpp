@@ -682,10 +682,10 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
           multiplier
   );
   VALIDATE_KOKKOS(m_gas_concs, m_gas_concs_k);
-  VALIDATE_KOKKOS(rrtmgp::k_dist_sw, interface_t::k_dist_sw_k);
-  VALIDATE_KOKKOS(rrtmgp::k_dist_lw, interface_t::k_dist_lw_k);
-  VALIDATE_KOKKOS(rrtmgp::cloud_optics_sw, interface_t::cloud_optics_sw_k);
-  VALIDATE_KOKKOS(rrtmgp::cloud_optics_lw, interface_t::cloud_optics_lw_k);
+  VALIDATE_KOKKOS(rrtmgp::k_dist_sw, *interface_t::k_dist_sw_k);
+  VALIDATE_KOKKOS(rrtmgp::k_dist_lw, *interface_t::k_dist_lw_k);
+  VALIDATE_KOKKOS(rrtmgp::cloud_optics_sw, *interface_t::cloud_optics_sw_k);
+  VALIDATE_KOKKOS(rrtmgp::cloud_optics_lw, *interface_t::cloud_optics_lw_k);
 #endif
 
   // Set property checks for fields in this process

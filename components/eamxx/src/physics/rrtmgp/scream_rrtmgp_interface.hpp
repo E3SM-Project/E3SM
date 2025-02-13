@@ -197,16 +197,16 @@ using source_func_t = SourceFuncLWK<RealT, LayoutT, DeviceT>;
  * once and then persist throughout the life of the program, so we
  * declare them here within the rrtmgp namespace.
  */
-static inline gas_optics_t k_dist_sw_k;
-static inline gas_optics_t k_dist_lw_k;
+static inline std::unique_ptr<gas_optics_t> k_dist_sw_k;
+static inline std::unique_ptr<gas_optics_t> k_dist_lw_k;
 
 /*
  * Objects containing cloud optical property look-up table information.
  * We want to initialize these once and use throughout the life of the
  * program, so declare here and read data in during rrtmgp_initialize().
  */
-static inline cloud_optics_t cloud_optics_sw_k;
-static inline cloud_optics_t cloud_optics_lw_k;
+static inline std::unique_ptr<cloud_optics_t> cloud_optics_sw_k;
+static inline std::unique_ptr<cloud_optics_t> cloud_optics_lw_k;
 
 /*
  * Flag to indicate whether or not we have initialized RRTMGP
@@ -233,13 +233,19 @@ static void rrtmgp_initialize(
   // Initialize Kokkos
   if (!Kokkos::is_initialized()) {  Kokkos::initialize(); }
 
+  // Create objects for static ptrs
+  k_dist_sw_k = std::make_unique<gas_optics_t>();
+  k_dist_lw_k = std::make_unique<gas_optics_t>();
+  cloud_optics_sw_k = std::make_unique<cloud_optics_t>();
+  cloud_optics_lw_k = std::make_unique<cloud_optics_t>();
+
   // Load and initialize absorption coefficient data
-  load_and_init(k_dist_sw_k, coefficients_file_sw, gas_concs);
-  load_and_init(k_dist_lw_k, coefficients_file_lw, gas_concs);
+  load_and_init(*k_dist_sw_k, coefficients_file_sw, gas_concs);
+  load_and_init(*k_dist_lw_k, coefficients_file_lw, gas_concs);
 
   // Load and initialize cloud optical property look-up table information
-  load_cld_lutcoeff(cloud_optics_sw_k, cloud_optics_file_sw);
-  load_cld_lutcoeff(cloud_optics_lw_k, cloud_optics_file_lw);
+  load_cld_lutcoeff(*cloud_optics_sw_k, cloud_optics_file_sw);
+  load_cld_lutcoeff(*cloud_optics_lw_k, cloud_optics_file_lw);
 
   // initialize kokkos rrtmgp pool allocator
   const size_t base_ref = 40000;
@@ -263,7 +269,7 @@ static void compute_band_by_band_surface_albedos(
   const real2dk &sfc_alb_dir,     const real2dk &sfc_alb_dif)
 {
   EKAT_ASSERT_MSG(initialized_k, "Error! rrtmgp_initialize must be called before GasOpticsRRTMGP object can be used.");
-  auto wavenumber_limits = k_dist_sw_k.get_band_lims_wavenumber();
+  auto wavenumber_limits = k_dist_sw_k->get_band_lims_wavenumber();
 
   EKAT_ASSERT_MSG(wavenumber_limits.extent(0) == 2,
                   "Error! 1st dimension for wavenumber_limits should be 2. It's " << wavenumber_limits.extent(0));
@@ -327,7 +333,7 @@ static void compute_broadband_surface_fluxes(
 
   // Threshold between visible and infrared is 0.7 micron, or 14286 cm^-1.
   const RealT visible_wavenumber_threshold = 14286;
-  auto wavenumber_limits = k_dist_sw_k.get_band_lims_wavenumber();
+  auto wavenumber_limits = k_dist_sw_k->get_band_lims_wavenumber();
   TIMED_KERNEL(Kokkos::parallel_for(ncol, KOKKOS_LAMBDA(const int icol) {
     for (int ibnd = 0; ibnd < nswbands; ++ibnd) {
       // Wavenumber is in the visible if it is above the visible wavenumber
@@ -385,17 +391,17 @@ static void rrtmgp_main(
   const std::shared_ptr<spdlog::logger>& logger,
   const bool extra_clnclrsky_diag = false, const bool extra_clnsky_diag = false)
 {
-  const int sw_nband = k_dist_sw_k.get_nband();
-  const int lw_nband = k_dist_lw_k.get_nband();
-  const int sw_ngpt = k_dist_sw_k.get_ngpt();
-  const int lw_ngpt = k_dist_lw_k.get_ngpt();
+  const int sw_nband = k_dist_sw_k->get_nband();
+  const int lw_nband = k_dist_lw_k->get_nband();
+  const int sw_ngpt = k_dist_sw_k->get_ngpt();
+  const int lw_ngpt = k_dist_lw_k->get_ngpt();
 
 #ifdef SCREAM_RRTMGP_DEBUG
   // Sanity check inputs, and possibly repair
-  check_range_k(t_lay      ,  k_dist_sw_k.get_temp_min(),         k_dist_sw_k.get_temp_max(), "rrtmgp_main::t_lay");
-  check_range_k(t_lev      ,  k_dist_sw_k.get_temp_min(),         k_dist_sw_k.get_temp_max(), "rrtmgp_main::t_lev");
-  check_range_k(p_lay      , k_dist_sw_k.get_press_min(),        k_dist_sw_k.get_press_max(), "rrtmgp_main::p_lay");
-  check_range_k(p_lev      , k_dist_sw_k.get_press_min(),        k_dist_sw_k.get_press_max(), "rrtmgp_main::p_lev");
+  check_range_k(t_lay      ,  k_dist_sw_k->get_temp_min(),         k_dist_sw_k->get_temp_max(), "rrtmgp_main::t_lay");
+  check_range_k(t_lev      ,  k_dist_sw_k->get_temp_min(),         k_dist_sw_k->get_temp_max(), "rrtmgp_main::t_lev");
+  check_range_k(p_lay      , k_dist_sw_k->get_press_min(),        k_dist_sw_k->get_press_max(), "rrtmgp_main::p_lay");
+  check_range_k(p_lev      , k_dist_sw_k->get_press_min(),        k_dist_sw_k->get_press_max(), "rrtmgp_main::p_lev");
   check_range_k(sfc_alb_dir,                         0,                                1, "rrtmgp_main::sfc_alb_dir");
   check_range_k(sfc_alb_dif,                         0,                                1, "rrtmgp_main::sfc_alb_dif");
   check_range_k(mu0        ,                         0,                                1, "rrtmgp_main::mu0");
@@ -478,20 +484,20 @@ static void rrtmgp_main(
   clnsky_fluxes_lw.flux_up = lw_clnsky_flux_up;
   clnsky_fluxes_lw.flux_dn = lw_clnsky_flux_dn;
 
-  auto nswbands = k_dist_sw_k.get_nband();
-  auto nlwbands = k_dist_lw_k.get_nband();
+  auto nswbands = k_dist_sw_k->get_nband();
+  auto nlwbands = k_dist_lw_k->get_nband();
 
   // Setup aerosol optical properties
   optical_props2_t aerosol_sw;
   optical_props1_t aerosol_lw;
-  aerosol_sw.init_no_alloc(k_dist_sw_k.get_band_lims_wavenumber(), sw_band2gpt_mem, sw_gpt2band_mem);
+  aerosol_sw.init_no_alloc(k_dist_sw_k->get_band_lims_wavenumber(), sw_band2gpt_mem, sw_gpt2band_mem);
   aerosol_sw.alloc_2str_no_alloc(ncol, nlay, sw_tau_mem, sw_ssa_mem, sw_g_mem);
   TIMED_KERNEL(FLATTEN_MD_KERNEL3(ncol,nlay,nswbands, icol, ilay, ibnd,
     aerosol_sw.tau(icol,ilay,ibnd) = aer_tau_sw(icol,ilay,ibnd);
     aerosol_sw.ssa(icol,ilay,ibnd) = aer_ssa_sw(icol,ilay,ibnd);
     aerosol_sw.g  (icol,ilay,ibnd) = aer_asm_sw(icol,ilay,ibnd);
   ));
-  aerosol_lw.init_no_alloc(k_dist_lw_k.get_band_lims_wavenumber(), lw_band2gpt_mem, lw_gpt2band_mem);
+  aerosol_lw.init_no_alloc(k_dist_lw_k->get_band_lims_wavenumber(), lw_band2gpt_mem, lw_gpt2band_mem);
   aerosol_lw.alloc_1scl_no_alloc(ncol, nlay, lw_tau_mem);
   TIMED_KERNEL(FLATTEN_MD_KERNEL3(ncol,nlay,nlwbands, icol, ilay, ibnd,
     aerosol_lw.tau(icol,ilay,ibnd) = aer_tau_lw(icol,ilay,ibnd);
@@ -508,20 +514,20 @@ static void rrtmgp_main(
 #endif
 
   // Convert cloud physical properties to optical properties for input to RRTMGP
-  optical_props2_t clouds_sw = get_cloud_optics_sw(ncol, nlay, cloud_optics_sw_k, k_dist_sw_k, lwp, iwp, rel, rei, sw_cloud_band2gpt_mem, sw_cloud_gpt2band_mem, sw_cloud_tau_mem, sw_cloud_ssa_mem, sw_cloud_g_mem);
-  optical_props1_t clouds_lw = get_cloud_optics_lw(ncol, nlay, cloud_optics_lw_k, k_dist_lw_k, lwp, iwp, rel, rei, lw_cloud_band2gpt_mem, lw_cloud_gpt2band_mem, lw_cloud_tau_mem);
+  optical_props2_t clouds_sw = get_cloud_optics_sw(ncol, nlay, *cloud_optics_sw_k, *k_dist_sw_k, lwp, iwp, rel, rei, sw_cloud_band2gpt_mem, sw_cloud_gpt2band_mem, sw_cloud_tau_mem, sw_cloud_ssa_mem, sw_cloud_g_mem);
+  optical_props1_t clouds_lw = get_cloud_optics_lw(ncol, nlay, *cloud_optics_lw_k, *k_dist_lw_k, lwp, iwp, rel, rei, lw_cloud_band2gpt_mem, lw_cloud_gpt2band_mem, lw_cloud_tau_mem);
   Kokkos::deep_copy(cld_tau_sw_bnd, clouds_sw.tau);
   Kokkos::deep_copy(cld_tau_lw_bnd, clouds_lw.tau);
 
   // Do subcolumn sampling to map bands -> gpoints based on cloud fraction and overlap assumption;
   // This implements the Monte Carlo Independing Column Approximation by mapping only a single
   // subcolumn (cloud state) to each gpoint.
-  auto nswgpts = k_dist_sw_k.get_ngpt();
-  auto clouds_sw_gpt = get_subsampled_clouds(ncol, nlay, nswbands, nswgpts, clouds_sw, k_dist_sw_k, cldfrac, p_lay, sw_subcloud_band2gpt_mem, sw_subcloud_gpt2band_mem, sw_subcloud_tau_mem, sw_subcloud_ssa_mem, sw_subcloud_g_mem);
+  auto nswgpts = k_dist_sw_k->get_ngpt();
+  auto clouds_sw_gpt = get_subsampled_clouds(ncol, nlay, nswbands, nswgpts, clouds_sw, *k_dist_sw_k, cldfrac, p_lay, sw_subcloud_band2gpt_mem, sw_subcloud_gpt2band_mem, sw_subcloud_tau_mem, sw_subcloud_ssa_mem, sw_subcloud_g_mem);
 
   // Longwave
-  auto nlwgpts = k_dist_lw_k.get_ngpt();
-  auto clouds_lw_gpt = get_subsampled_clouds(ncol, nlay, nlwbands, nlwgpts, clouds_lw, k_dist_lw_k, cldfrac, p_lay, lw_subcloud_band2gpt_mem, lw_subcloud_gpt2band_mem, lw_subcloud_tau_mem);
+  auto nlwgpts = k_dist_lw_k->get_ngpt();
+  auto clouds_lw_gpt = get_subsampled_clouds(ncol, nlay, nlwbands, nlwgpts, clouds_lw, *k_dist_lw_k, cldfrac, p_lay, lw_subcloud_band2gpt_mem, lw_subcloud_gpt2band_mem, lw_subcloud_tau_mem);
 
   // Copy cloud properties to outputs (is this needed, or can we just use pointers?)
   // Alternatively, just compute and output a subcolumn cloud mask
@@ -548,7 +554,7 @@ static void rrtmgp_main(
   // Do shortwave
   rrtmgp_sw(
     ncol, nlay,
-    k_dist_sw_k, p_lay, t_lay, p_lev, t_lev, gas_concs,
+    *k_dist_sw_k, p_lay, t_lay, p_lev, t_lev, gas_concs,
     sfc_alb_dir, sfc_alb_dif, mu0, aerosol_sw, clouds_sw_gpt,
     fluxes_sw, clnclrsky_fluxes_sw, clrsky_fluxes_sw, clnsky_fluxes_sw,
     tsi_scaling, logger,
@@ -558,7 +564,7 @@ static void rrtmgp_main(
   // Do longwave
   rrtmgp_lw(
     ncol, nlay,
-    k_dist_lw_k, p_lay, t_lay, p_lev, t_lev, gas_concs,
+    *k_dist_lw_k, p_lay, t_lay, p_lev, t_lev, gas_concs,
     aerosol_lw, clouds_lw_gpt,
     fluxes_lw, clnclrsky_fluxes_lw, clrsky_fluxes_lw, clnsky_fluxes_lw,
     extra_clnclrsky_diag, extra_clnsky_diag
@@ -601,10 +607,14 @@ static void rrtmgp_main(
 static void rrtmgp_finalize()
 {
   initialized_k = false;
-  k_dist_sw_k.finalize();
-  k_dist_lw_k.finalize();
-  cloud_optics_sw_k.finalize(); //~CloudOptics();
-  cloud_optics_lw_k.finalize(); //~CloudOptics();
+  k_dist_sw_k->finalize();
+  k_dist_lw_k->finalize();
+  cloud_optics_sw_k->finalize(); //~CloudOptics();
+  cloud_optics_lw_k->finalize(); //~CloudOptics();
+  k_dist_sw_k = nullptr;
+  k_dist_lw_k = nullptr;
+  cloud_optics_sw_k = nullptr;
+  cloud_optics_lw_k = nullptr;
   pool_t::finalize();
 }
 
@@ -815,7 +825,7 @@ static void rrtmgp_sw(
   }
 
   // Limit temperatures for gas optics look-up tables
-  limit_to_bounds_k(t_lay_day, k_dist_sw_k.get_temp_min(), k_dist_sw_k.get_temp_max(), t_lay_limited);
+  limit_to_bounds_k(t_lay_day, k_dist_sw_k->get_temp_min(), k_dist_sw_k->get_temp_max(), t_lay_limited);
 
   // Do gas optics
   bool top_at_1 = false;
@@ -1073,8 +1083,8 @@ static void rrtmgp_lw(
   Kokkos::deep_copy(gauss_wts, gauss_wts_host);
 
   // Limit temperatures for gas optics look-up tables
-  limit_to_bounds_k(t_lay, k_dist_lw_k.get_temp_min(), k_dist_lw_k.get_temp_max(), t_lay_limited);
-  limit_to_bounds_k(t_lev, k_dist_lw_k.get_temp_min(), k_dist_lw_k.get_temp_max(), t_lev_limited);
+  limit_to_bounds_k(t_lay, k_dist_lw_k->get_temp_min(), k_dist_lw_k->get_temp_max(), t_lay_limited);
+  limit_to_bounds_k(t_lev, k_dist_lw_k->get_temp_min(), k_dist_lw_k->get_temp_max(), t_lev_limited);
 
   // Do gas optics
   k_dist.gas_optics(ncol, nlay, top_at_1, p_lay, p_lev, t_lay_limited, t_sfc, gas_concs, col_gas, optics, lw_sources, view_t<RealT**>(), t_lev_limited);
@@ -1441,12 +1451,12 @@ static int get_wavelength_index(optical_props_t &kdist, RealT wavelength)
 
 static inline int get_wavelength_index_sw_k(RealT wavelength)
 {
-  return get_wavelength_index(k_dist_sw_k, wavelength);
+  return get_wavelength_index(*k_dist_sw_k, wavelength);
 }
 
 static inline int get_wavelength_index_lw_k(RealT wavelength)
 {
-  return get_wavelength_index(k_dist_lw_k, wavelength);
+  return get_wavelength_index(*k_dist_lw_k, wavelength);
 }
 
 static optical_props2_t get_cloud_optics_sw(

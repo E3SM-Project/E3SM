@@ -428,8 +428,8 @@ int run_kokkos(int argc, char** argv) {
   // we would just have to setup the pointers to them in the
   // FluxesBroadband object
   logger->info("Setup fluxes...\n");
-  const auto nswbands = interface_t::k_dist_sw_k.get_nband();
-  const auto nlwbands = interface_t::k_dist_lw_k.get_nband();
+  const auto nswbands = interface_t::k_dist_sw_k->get_nband();
+  const auto nlwbands = interface_t::k_dist_lw_k->get_nband();
   real2dk sw_flux_up ("sw_flux_up" , ncol, nlay+1);
   real2dk sw_flux_dn ("sw_flux_dn" , ncol, nlay+1);
   real2dk sw_flux_dir("sw_flux_dir", ncol, nlay+1);
@@ -481,8 +481,8 @@ int run_kokkos(int argc, char** argv) {
 
   // These are returned as outputs now from rrtmgp_main
   // TODO: provide as inputs consistent with how aerosol is treated?
-  const auto nswgpts = interface_t::k_dist_sw_k.get_ngpt();
-  const auto nlwgpts = interface_t::k_dist_lw_k.get_ngpt();
+  const auto nswgpts = interface_t::k_dist_sw_k->get_ngpt();
+  const auto nlwgpts = interface_t::k_dist_lw_k->get_ngpt();
   auto cld_tau_sw_bnd = real3dk("cld_tau_sw_bnd", ncol, nlay, nswbands);
   auto cld_tau_lw_bnd = real3dk("cld_tau_lw_bnd", ncol, nlay, nlwbands);
   auto cld_tau_sw = real3dk("cld_tau_sw", ncol, nlay, nswgpts);

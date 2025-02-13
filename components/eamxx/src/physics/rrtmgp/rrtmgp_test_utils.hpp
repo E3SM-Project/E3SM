@@ -123,7 +123,7 @@ static void dummy_atmos(
   // needs the CloudOptics object only because it uses the min and max
   // valid values from the lookup tables for liquid and ice water path to
   // create a dummy atmosphere.
-  dummy_clouds(interface_t::cloud_optics_sw_k, p_lay, t_lay, lwp, iwp, rel, rei, cld);
+  dummy_clouds(*interface_t::cloud_optics_sw_k, p_lay, t_lay, lwp, iwp, rel, rei, cld);
 }
 
 static void read_fluxes(
