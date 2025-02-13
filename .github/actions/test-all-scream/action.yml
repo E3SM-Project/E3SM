@@ -30,6 +30,13 @@ inputs:
     valid_values:
       - 'true'
       - 'false'
+  ekat:
+    description: 'Whether to enable tests for EKAT as well'
+    required: true
+    default: 'false'
+    valid_values:
+      - 'true'
+      - 'false'
   cmake-configs:
     description: 'Semicolon-separated list of key=value pairs for CMake to pass to test-all-scream'
     required: false
@@ -82,7 +89,7 @@ runs:
         fi
 
         if [ "${{ inputs.ekat }}" = "true" ]; then
-           cmd+= " -c EKAT_ENABLE_TESTS=ON"
+         cmd+=" -c EKAT_ENABLE_TESTS=ON"
         fi
 
         # If cmake-configs is non-empty, add tokens to test-all-scream via "-c key=val"
