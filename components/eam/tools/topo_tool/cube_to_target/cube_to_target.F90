@@ -10,6 +10,7 @@
 program convterr
   use shr_kind_mod, only: r8 => shr_kind_r8
   use reconstruct
+  use orographic_shape_methods
   implicit none
 #include <netcdf.inc>
 
@@ -18,7 +19,9 @@ program convterr
   ! USER SETTINGS BELOW
   !
   !**************************************
-  !
+  ! 
+  ! flag to enable calculation of orographic shape parameters
+  logical :: calc_orographic_shape_params = .FALSE.
   !
   ! If smoothed PHIS is available SGH needs to be recomputed to account for the 
   ! sub-grid-scale variability introduced by the smoothing; This will be set
@@ -61,6 +64,7 @@ program convterr
   
   real(r8),  allocatable, dimension(:) :: terr, sgh30
   real(r8),  allocatable, dimension(:) :: terr_coarse !for internal smoothing
+  real(r8),  allocatable, dimension(:) :: landfrac
   
   integer :: alloc_error,dealloc_error
   integer :: i,j,n,k,index                               
@@ -82,6 +86,7 @@ program convterr
   REAL    (r8), PARAMETER :: piq       = 0.25*pi
   REAL    (r8), PARAMETER :: pih       = 0.50*pi
   REAL    (r8), PARAMETER :: deg2rad   = pi/180.0
+  REAL    (r8), PARAMETER :: rad2deg   = 180.0/pi
   
   real(r8) :: wt,dlat
   integer  :: ipanel,icube,jcube
@@ -100,7 +105,10 @@ program convterr
   integer :: src_grid_dim  ! for netCDF weight file
   integer :: n_a,n_b,n_s,n_aid,n_bid,n_sid
   integer :: count
-  real(r8), allocatable, dimension(:) :: terr_target, sgh30_target, sgh_target
+  real(r8), allocatable, dimension(:) :: terr_target
+  real(r8), allocatable, dimension(:) :: sgh30_target
+  real(r8), allocatable, dimension(:) :: sgh_target
+  real(r8), allocatable, dimension(:) :: landfrac_target
   real(r8), allocatable, dimension(:) :: area_target
   !
   ! this is only used if target grid is a lat-lon grid
@@ -115,8 +123,13 @@ program convterr
   !
   integer :: ntarget, ntarget_id, ncorner, ncorner_id, nrank, nrank_id
   integer :: ntarget_smooth
-  real(r8), allocatable, dimension(:,:):: target_corner_lon, target_corner_lat
-  real(r8), allocatable, dimension(:)  :: target_center_lon, target_center_lat, target_area
+  real(r8), allocatable, dimension(:,:):: target_corner_lon_rad
+  real(r8), allocatable, dimension(:,:):: target_corner_lat_rad
+  real(r8), allocatable, dimension(:,:):: target_corner_lon_deg
+  real(r8), allocatable, dimension(:,:):: target_corner_lat_deg
+  real(r8), allocatable, dimension(:)  :: target_center_lon_deg
+  real(r8), allocatable, dimension(:)  :: target_center_lat_deg
+  real(r8), allocatable, dimension(:)  :: target_area
   integer :: ii,ip,jx,jy,jp
   real(r8), dimension(:), allocatable  :: xcell, ycell, xgno, ygno
   real(r8), dimension(:), allocatable  :: gauss_weights,abscissae
@@ -155,6 +168,20 @@ program convterr
   character(len=512) :: input_topography_file
   character(len=512) :: output_topography_file
   character(len=512) :: smoothed_topography_file
+
+  ! variables for orographic shape parameters
+  real(r8), allocatable, dimension(:)     :: terr_target_alt ! modified according to landfrac
+  real(r8), allocatable, dimension(:)     :: sgh_target_alt  ! modified according to landfrac
+  real(r8), allocatable, dimension(:,:)   :: oa_target
+  real(r8), allocatable, dimension(:)     :: oc_target
+  real(r8), allocatable, dimension(:,:)   :: ol_target
+  integer,  allocatable, dimension(:)     :: indexb !max indice dimension
+  real(r8), allocatable, dimension(:,:,:) :: terrout
+  real(r8), allocatable, dimension(:,:)   :: dxy
+  real(r8), allocatable, dimension(:)     :: lat_terr
+  real(r8), allocatable, dimension(:)     :: lon_terr
+  integer :: nvar_dirOA
+  integer :: nvar_dirOL
   
   !
   ! turn extra debugging on/off
@@ -165,7 +192,29 @@ program convterr
 
   call parse_arguments(target_grid_file      , input_topography_file   , &
                        output_topography_file, smoothed_topography_file, &
-                       lsmooth_terr                                      )
+                       lsmooth_terr, calc_orographic_shape_params        )
+
+  
+  !
+  !*********************************************************
+  !
+  ! check that options are compatible
+  !
+  !*********************************************************
+  !
+
+  if (ltarget_latlon.and.calc_orographic_shape_params) then
+    print *, 'ERROR: calc_orographic_shape_params not supported for lat/lon grids.'
+    stop
+  end if
+
+  !
+  !*********************************************************
+  !
+  ! check input files
+  !
+  !*********************************************************
+  !
 
   if (lsmooth_terr) then
      status = nf_open(trim(smoothed_topography_file), 0, ncid)
@@ -215,28 +264,48 @@ program convterr
     STOP
   ENDIF
   
-  allocate ( target_corner_lon(ncorner,ntarget),stat=alloc_error)
-  allocate ( target_corner_lat(ncorner,ntarget),stat=alloc_error)
+  allocate ( target_corner_lon_deg(ncorner,ntarget),stat=alloc_error)
+  allocate ( target_corner_lat_deg(ncorner,ntarget),stat=alloc_error)
+  allocate ( target_corner_lon_rad(ncorner,ntarget),stat=alloc_error)
+  allocate ( target_corner_lat_rad(ncorner,ntarget),stat=alloc_error)
   
   status = NF_INQ_VARID(ncid, 'grid_corner_lon', lonid)
-  status = NF_GET_VAR_DOUBLE(ncid, lonid,target_corner_lon)
-  IF (maxval(target_corner_lon)>10.0) target_corner_lon = deg2rad*target_corner_lon
+  status = NF_GET_VAR_DOUBLE(ncid, lonid,target_corner_lon_deg)
   
   status = NF_INQ_VARID(ncid, 'grid_corner_lat', latid)
-  status = NF_GET_VAR_DOUBLE(ncid, latid,target_corner_lat)
-  IF (maxval(target_corner_lat)>10.0) target_corner_lat = deg2rad*target_corner_lat
+  status = NF_GET_VAR_DOUBLE(ncid, latid,target_corner_lat_deg)
+
+  ! make sure corner lat/lon are in radian/degrees
+  if (maxval(target_corner_lon_deg)>10.0) then
+    target_corner_lon_rad = deg2rad*target_corner_lon_deg
+  else
+    target_corner_lon_rad = target_corner_lon_deg
+    target_corner_lon_deg = rad2deg*target_corner_lon_rad
+  end if
+
+  if (maxval(target_corner_lat_deg)>10.0) then
+    target_corner_lat_rad = deg2rad*target_corner_lat_deg
+  else
+    target_corner_lat_rad = target_corner_lat_deg
+    target_corner_lat_deg = rad2deg*target_corner_lat_rad
+  end if
+
   !
   ! for writing remapped data on file at the end of the program
   !
-  allocate ( target_center_lon(ntarget),stat=alloc_error)
-  allocate ( target_center_lat(ntarget),stat=alloc_error)
+  allocate ( target_center_lon_deg(ntarget),stat=alloc_error)
+  allocate ( target_center_lat_deg(ntarget),stat=alloc_error)
   allocate ( target_area      (ntarget),stat=alloc_error)!dbg
   
   status = NF_INQ_VARID(ncid, 'grid_center_lon', lonid)
-  status = NF_GET_VAR_DOUBLE(ncid, lonid,target_center_lon)
+  status = NF_GET_VAR_DOUBLE(ncid, lonid,target_center_lon_deg)
   
   status = NF_INQ_VARID(ncid, 'grid_center_lat', latid)
-  status = NF_GET_VAR_DOUBLE(ncid, latid,target_center_lat)
+  status = NF_GET_VAR_DOUBLE(ncid, latid,target_center_lat_deg)
+
+  ! ensure center coordinates are in degrees
+  if (maxval(target_center_lon_deg)<10.0) target_center_lon_deg = rad2deg*target_center_lon_deg
+  if (maxval(target_corner_lat_deg)<10.0) target_corner_lat_deg = rad2deg*target_corner_lat_deg
   
   status = NF_INQ_VARID(ncid, 'grid_area', latid)
   status = NF_GET_VAR_DOUBLE(ncid, latid,target_area)
@@ -280,7 +349,8 @@ program convterr
   allocate (weights_lgr_index_all(jall),stat=alloc_error )
   
   CALL overlap_weights(weights_lgr_index_all,weights_eul_index_all,weights_all,&
-       jall,ncube,ngauss,ntarget,ncorner,jmax_segments,target_corner_lon,target_corner_lat,nreconstruction)
+       jall,ncube,ngauss,ntarget,ncorner,jmax_segments,&
+       target_corner_lon_rad,target_corner_lat_rad,nreconstruction)
   !
   !****************************************************
   !
@@ -299,7 +369,7 @@ program convterr
   
   ncube = INT(SQRT(DBLE(n/6)))
   WRITE(*,*) "cubed-sphere dimension, ncube: ",ncube
-  
+
   !
   ! read terr
   !
@@ -315,8 +385,57 @@ program convterr
   status = NF_GET_VAR_DOUBLE(ncid, landid,terr)
   IF (status .NE. NF_NOERR) CALL HANDLE_ERR(status)
   WRITE(*,*) "min/max of terr",MINVAL(terr),MAXVAL(terr)
+
   !
+  ! read LANDFRAC
   !
+  allocate ( landfrac(n),stat=alloc_error )
+  if( alloc_error /= 0 ) then
+    print*,'Program could not allocate space for landfrac'
+    stop
+  end if
+
+  status = NF_INQ_VARID(ncid, 'LANDFRAC', landid)
+  IF (status .NE. NF_NOERR) CALL HANDLE_ERR(status)
+
+  status = NF_GET_VAR_DOUBLE(ncid, landid,landfrac)
+  IF (status .NE. NF_NOERR) CALL HANDLE_ERR(status)
+  WRITE(*,*) "min/max of landfrac",MINVAL(landfrac),MAXVAL(landfrac)
+
+  !
+  ! read lat/lon coordinates from topo file if shape parameters are requested
+  !
+  if (calc_orographic_shape_params) then
+    
+    ! read latitude coordinate
+    allocate ( lat_terr(n),stat=alloc_error )
+    if( alloc_error /= 0 ) then
+      print*,'Program could not allocate space for lat_terr'
+      stop
+    end if
+
+    status = NF_INQ_VARID(ncid, 'lat', landid)
+    IF (status .NE. NF_NOERR) CALL HANDLE_ERR(status)
+
+    status = NF_GET_VAR_DOUBLE(ncid, landid,lat_terr)
+    IF (status .NE. NF_NOERR) CALL HANDLE_ERR(status)
+
+    ! read longitude coordinate
+    allocate ( lon_terr(n),stat=alloc_error )
+    if( alloc_error /= 0 ) then
+      print*,'Program could not allocate space for lon_terr'
+      stop
+    end if
+
+    status = NF_INQ_VARID(ncid, 'lon', landid)
+    IF (status .NE. NF_NOERR) CALL HANDLE_ERR(status)
+
+    status = NF_GET_VAR_DOUBLE(ncid, landid,lon_terr)
+    IF (status .NE. NF_NOERR) CALL HANDLE_ERR(status)
+
+  end if
+  !
+  ! read SGH30
   !
   allocate ( sgh30(n),stat=alloc_error )
   if( alloc_error /= 0 ) then
@@ -352,10 +471,16 @@ program convterr
     print*,'Program could not allocate space for sgh30_target'
     stop
   end if
+  allocate (landfrac_target(ntarget),stat=alloc_error )
+  if( alloc_error /= 0 ) then
+    print*,'Program could not allocate space for landfrac_target'
+    stop
+  end if
   allocate (area_target(ntarget),stat=alloc_error )
   terr_target     = 0.0
   sgh30_target    = 0.0
-  area_target = 0.0
+  landfrac_target = 0.0
+  area_target     = 0.0
   
   tmp = 0.0
   do count=1,jall
@@ -379,6 +504,7 @@ program convterr
     
     terr_target        (i) = terr_target        (i) + wt*terr        (ii)/area_target(i)
     sgh30_target       (i) = sgh30_target       (i) + wt*sgh30       (ii)/area_target(i)
+    landfrac_target    (i) = landfrac_target    (i) + wt*landfrac    (ii)/area_target(i)
     
     tmp = tmp+wt*terr(ii)
   end do
@@ -397,7 +523,7 @@ program convterr
       write(*,*) "terr_target",count,terr_target(count)
       write(*,*) "(lon,lat) locations of vertices of cell with excessive max height::"
       do i=1,ncorner
-        write(*,*) target_corner_lon(i,count),target_corner_lat(i,count)
+        write(*,*) target_corner_lon_rad(i,count),target_corner_lat_rad(i,count)
       end do
       STOP
     else if (terr_target(count)<-423.0) then
@@ -408,7 +534,7 @@ program convterr
       write(*,*) "terr_target",count,terr_target(count)
       write(*,*) "(lon,lat) locations of vertices of cell with excessive min height::"
       do i=1,ncorner
-        write(*,*) target_corner_lon(i,count),target_corner_lat(i,count)
+        write(*,*) target_corner_lon_rad(i,count),target_corner_lat_rad(i,count)
       end do
       STOP
     else 
@@ -469,7 +595,7 @@ program convterr
       WRITE(*,*) "using externally generated smoothed topography"
       
       status = nf_open(trim(smoothed_topography_file), 0, ncid)
-      IF (STATUS .NE. NF_NOERR) CALL HANDLE_ERR(STATUS)           
+      IF (STATUS .NE. NF_NOERR) CALL HANDLE_ERR(STATUS)
       !
       IF (.NOT.ltarget_latlon) THEN
         !
@@ -480,7 +606,13 @@ program convterr
         !*********************************************************
         !
         status = NF_INQ_DIMID (ncid, 'ncol', ntarget_id    )
+        IF (STATUS .NE. NF_NOERR) CALL HANDLE_ERR(STATUS)
         status = NF_INQ_DIMLEN(ncid, ntarget_id , ntarget_smooth)
+        IF (STATUS .NE. NF_NOERR) CALL HANDLE_ERR(STATUS)
+        WRITE(*,*) ""
+        WRITE(*,*) "ntarget_id:     ",ntarget_id
+        WRITE(*,*) "ntarget_smooth: ",ntarget_smooth
+        WRITE(*,*) ""
         IF (ntarget.NE.ntarget_smooth) THEN
           WRITE(*,*) "mismatch in smoothed data-set and target grid specification"
           WRITE(*,*) ntarget, ntarget_smooth
@@ -533,7 +665,7 @@ program convterr
       !*****************************************************
       !
       WRITE(*,*) "internally smoothing orography"
-      !            CALL smooth(terr_target,ntarget,target_corner_lon,target_corner_lat)
+      !            CALL smooth(terr_target,ntarget,target_corner_lon_rad,target_corner_lat_rad)
       !
       ! smooth topography internally
       !            
@@ -612,8 +744,8 @@ program convterr
       !
       !
       CALL overlap_weights(weights_lgr_index_all_coarse,weights_eul_index_all_coarse,weights_all_coarse,&
-           jall_coarse,ncube_coarse,ngauss,ntarget,ncorner,jmax_segments_coarse,target_corner_lon,&
-           target_corner_lat,nreconstruction)            
+           jall_coarse,ncube_coarse,ngauss,ntarget,ncorner,jmax_segments_coarse,target_corner_lon_rad,&
+           target_corner_lat_rad,nreconstruction)
       WRITE(*,*) "MIN/MAX of area-weight [0:1]: ",&
            MINVAL(weights_all_coarse(:,1)),MAXVAL(weights_all_coarse(:,1))
       !
@@ -809,7 +941,24 @@ program convterr
   ! Done internal smoothing
   !
   WRITE(*,*) "min/max of terr_target     : ",MINVAL(terr_target),MAXVAL(terr_target)
-  
+
+  if (calc_orographic_shape_params) then
+    ! allocate the alternate version of terr_target
+    allocate (terr_target_alt(ntarget),stat=alloc_error )
+    if( alloc_error /= 0 ) then
+      print*,'Program could not allocate space for terr_target_alt'
+      stop
+    end if
+    ! allocate the alternate version of sgh_target
+    allocate (sgh_target_alt(ntarget),stat=alloc_error )
+    if( alloc_error /= 0 ) then
+      print*,'Program could not allocate space for sgh_target_alt'
+      stop
+    end if
+    ! initialize
+    sgh_target_alt=0.0
+    terr_target_alt = terr_target
+  end if
   
   sgh_target=0.0
   do count=1,jall
@@ -824,35 +973,113 @@ program convterr
     ii = (ip-1)*ncube*ncube+(iy-1)*ncube+ix!
     
     wt = weights_all(count,1)
+
+    if (calc_orographic_shape_params) then
+      ! these modified versions of terr_target and sgh_target
+      ! are from the old version of cube_to_target, and were added back
+      ! to facilitate the orographic shape parameter calculation
+      if (landfrac_target(i).lt.0.01_r8) terr_target_alt(i) = 0.0_r8
+      sgh_target_alt(i) = sgh_target_alt(i)+wt*((terr_target_alt(i)-terr(ii))**2)/area_target(i)
+    end if
     
     sgh_target(i) = sgh_target(i)+wt*((terr_target(i)-terr(ii))**2)/area_target(i)
+
   end do
-  
-  
-  
+
   !
   ! zero out small values
   !
   DO i=1,ntarget
-    IF (sgh_target(i)<0.5) sgh_target(i) = 0.0
-    IF (sgh30_target(i)<0.5) sgh30_target(i) = 0.0
+    IF (landfrac_target(i)<.001_r8) landfrac_target(i) = 0.0
+    IF (sgh_target(i)     <0.5)     sgh_target(i)      = 0.0
+    IF (sgh30_target(i)   <0.5)     sgh30_target(i)    = 0.0
+    if (calc_orographic_shape_params) then
+      IF (sgh_target_alt(i)<0.5)    sgh_target_alt(i)  = 0.0
+    end if
   END DO
   sgh_target = SQRT(sgh_target)
   sgh30_target = SQRT(sgh30_target)
+  if (calc_orographic_shape_params) sgh_target_alt = SQRT(sgh_target_alt)
   WRITE(*,*) "min/max of sgh_target     : ",MINVAL(sgh_target),MAXVAL(sgh_target)
   WRITE(*,*) "min/max of sgh30_target   : ",MINVAL(sgh30_target),MAXVAL(sgh30_target)
+
+  !-----------------------------------------------------------------------------
+  ! Orographic shape parameters
+  if (calc_orographic_shape_params) then
+
+    nvar_dirOA = 2   ! only 2 directions needed for asymmetry (i.e. lat/lon)
+    nvar_dirOL = 180 ! 180 => 2 degree angular resolution for effective length
+
+    ! allocate variable for orographic shape calcualtions
+    allocate(oa_target(ntarget,nvar_dirOA),     stat=alloc_error)
+    allocate(oc_target(ntarget),                stat=alloc_error)
+    allocate(ol_target(ntarget,nvar_dirOL),     stat=alloc_error)
+    allocate(indexb(ntarget),                   stat=alloc_error)
+
+    ! initialize allocated vairables
+    oa_target = 0.0_r8
+    oc_target = 0.0_r8
+    ol_target = 0.0_r8
+    indexb    = 0.0_r8
+
+    ! Orographic asymmetry
+    print*,"calculating orographic asymmetry..."
+    call orographic_asymmetry_xie2020(terr, ntarget, ncube, n, nvar_dirOA, jall, &
+                                      weights_lgr_index_all, weights_eul_index_all(:,1), &
+                                      weights_eul_index_all(:,2), weights_eul_index_all(:,3), &
+                                      weights_all, target_center_lon_deg, target_center_lat_deg, &
+                                      lon_terr, lat_terr, area_target, landfrac_target, oa_target)
+    
+    ! Orographic convexity
+    print*,"calculating orographic convexity..."
+    call orographic_convexity_kim2005(terr, ntarget, ncube, n, jall, &
+                                      weights_lgr_index_all, weights_eul_index_all(:,1), &
+                                      weights_eul_index_all(:,2), weights_eul_index_all(:,3), &
+                                      weights_all, area_target, sgh_target_alt, terr_target_alt, &
+                                      landfrac_target, oc_target)
+
+    ! Orographic effective length
+    print*,"calculating orographic effective length..."
+    do count=1,jall
+      i = weights_lgr_index_all(count)
+      indexb(i) = indexb(i)+1
+    enddo
+    allocate(terrout(4,ntarget,maxval(indexb)), stat=alloc_error)
+    allocate(dxy(ntarget,nvar_dirOL),           stat=alloc_error)
+
+    call orographic_efflength_xie2020(terr, ntarget, ncube, n, jall, nlon, nlat, maxval(indexb), &
+                                      nvar_dirOL, weights_lgr_index_all, weights_eul_index_all(:,1), &
+                                      weights_eul_index_all(:,2), weights_eul_index_all(:,3), weights_all, &
+                                      target_center_lon_deg, target_center_lat_deg, &
+                                      target_corner_lon_deg, target_corner_lat_deg, &
+                                      lon_terr, lat_terr, sgh_target_alt, area_target, landfrac_target, &
+                                      ol_target, terrout, dxy)
+
+  end if
+  !-----------------------------------------------------------------------------
   
   DEALLOCATE(terr,weights_all,weights_eul_index_all)
   
   
-  IF (ltarget_latlon) THEN
-    CALL wrtncdf_rll(nlon,nlat,lpole,ntarget,terr_target,sgh_target,sgh30_target,&
-         target_center_lon,target_center_lat,.true.,output_topography_file)
-  ELSE
-    CALL wrtncdf_unstructured(ntarget,terr_target,sgh_target,sgh30_target,&
-         target_center_lon,target_center_lat,output_topography_file)
-  END IF
+  if (ltarget_latlon) then
+    call wrtncdf_rll( nlon, nlat, lpole, ntarget, &
+                      terr_target, sgh_target, sgh30_target, &
+                      target_center_lon_deg, target_center_lat_deg, .true., output_topography_file )
+  else
+    call wrtncdf_unstructured( ntarget, terr_target, sgh_target, sgh30_target, &
+                               calc_orographic_shape_params, &
+                               nvar_dirOA, nvar_dirOL, &
+                               oc_target, oa_target, ol_target, &
+                               target_center_lon_deg, target_center_lat_deg, output_topography_file)
+  end if
+
   DEALLOCATE(terr_target,sgh30_target,sgh_target)
+
+  if (calc_orographic_shape_params) then
+    deallocate( oa_target, oc_target, ol_target, &
+                indexb, terrout, dxy, &
+                terr_target_alt, sgh_target_alt)
+  end if
   
 end program convterr
 
@@ -862,13 +1089,14 @@ end program convterr
 !
 subroutine parse_arguments(target_grid_file      , input_topography_file   , &
                            output_topography_file, smoothed_topography_file, &
-                           lsmooth_terr                                      )
+                           lsmooth_terr, calc_orographic_shape_params        )
    implicit none
    character(len=*), intent(inout) :: target_grid_file
    character(len=*), intent(inout) :: input_topography_file
    character(len=*), intent(inout) :: output_topography_file
    character(len=*), intent(inout) :: smoothed_topography_file
-   logical, intent(inout) :: lsmooth_terr
+   logical,          intent(inout) :: lsmooth_terr
+   logical,          intent(inout) :: calc_orographic_shape_params
 
    integer :: n, nargs
    character(len=512) :: arg
@@ -879,6 +1107,7 @@ subroutine parse_arguments(target_grid_file      , input_topography_file   , &
    output_topography_file = ''
    smoothed_topography_file = ''
    lsmooth_terr = .false.
+   calc_orographic_shape_params = .false.
 
    ! Get number of arguments and make sure at least some arguments were passed
    nargs = iargc()
@@ -916,6 +1145,10 @@ subroutine parse_arguments(target_grid_file      , input_topography_file   , &
         call getarg(n, arg)
         smoothed_topography_file = trim(arg)
         lsmooth_terr = .true.
+        n = n + 1
+     case ('--add-oro-shape')
+        ! if flag is present then calculate the orographic shape parameters
+        calc_orographic_shape_params = .true.
         n = n + 1
      case ('--help')
         call usage()
@@ -966,6 +1199,12 @@ subroutine usage()
    print *, '                                      3km grid (SGH30) is also downscaled,   '
    print *, '                                      but does not depend on the smoothing.  '
    print *, '                                                                             '
+   print *, '  --add-oro-shape                     Enable the calculation of orographic   '
+   print *, '                                      shape parameters needed for certain    '
+   print *, '                                      orographic drag schemes. The parameters'
+   print *, '                                      are convexivity, asymmetry, and eff.   ' 
+   print *, '                                      length.                                '
+   print *, '                                                                             '
    print *, 'DESCRIPTION:                                                                 '
    print *, 'This code performs rigorous remapping of topography variables on a cubed-    '
    print *, 'sphere grid to any target grid. The code is documented in:                   '
@@ -981,17 +1220,31 @@ end subroutine usage
 !
 !
 !
-subroutine wrtncdf_unstructured(n,terr,sgh,sgh30,lon,lat,fout)
+subroutine wrtncdf_unstructured(n, terr, sgh, sgh30, &
+                                calc_orographic_shape_params, &
+                                nvar_dirOA, nvar_dirOL, &
+                                orographic_convexity, &
+                                orographic_asymmetry, &
+                                orographic_efflength, &
+                                lon, lat, fout)
   use shr_kind_mod, only: r8 => shr_kind_r8
   implicit none
-  
-#     include         <netcdf.inc>
-  
+#include         <netcdf.inc>
   !
-  ! Dummy arguments
+  ! Arguments
   !
-  integer, intent(in) :: n
-  real(r8),dimension(n)  , intent(in) :: terr, sgh,sgh30,lon, lat
+  integer,                          intent(in) :: n
+  real(r8),dimension(n),            intent(in) :: terr
+  real(r8),dimension(n),            intent(in) :: sgh
+  real(r8),dimension(n),            intent(in) :: sgh30
+  logical,                          intent(in) :: calc_orographic_shape_params
+  integer,                          intent(in) :: nvar_dirOA
+  integer,                          intent(in) :: nvar_dirOL
+  real(r8),dimension(n),            intent(in) :: orographic_convexity
+  real(r8),dimension(n,nvar_dirOA), intent(in) :: orographic_asymmetry
+  real(r8),dimension(n,nvar_dirOL), intent(in) :: orographic_efflength
+  real(r8),dimension(n),            intent(in) :: lon
+  real(r8),dimension(n),            intent(in) :: lat
   !
   ! Local variables
   !
@@ -1008,6 +1261,14 @@ subroutine wrtncdf_unstructured(n,terr,sgh,sgh30,lon,lat,fout)
   integer :: nc_gridcorn_id, lat_vid, lon_vid
   
   real(r8), parameter :: fillvalue = 1.d36
+
+  integer               :: nvar_dirOA_id
+  integer               :: nvar_dirOL_id
+  integer               :: ocid
+  integer               :: oaid
+  integer               :: olid 
+  integer, dimension(3) :: oadim
+  integer, dimension(3) :: oldim
   
   !
   !  Create NetCDF file for output
@@ -1019,6 +1280,10 @@ subroutine wrtncdf_unstructured(n,terr,sgh,sgh30,lon,lat,fout)
   ! Create dimensions for output
   !
   status = nf_def_dim (foutid, 'ncol', n, nid)
+  if (status .ne. NF_NOERR) call handle_err(status)
+  status = nf_def_dim (foutid, 'nvar_dirOA', nvar_dirOA, nvar_dirOA_id)
+  if (status .ne. NF_NOERR) call handle_err(status)
+  status = nf_def_dim (foutid, 'nvar_dirOL', nvar_dirOL, nvar_dirOL_id)
   if (status .ne. NF_NOERR) call handle_err(status)
   !
   ! Create variable for output
@@ -1038,6 +1303,23 @@ subroutine wrtncdf_unstructured(n,terr,sgh,sgh30,lon,lat,fout)
   
   status = nf_def_var (foutid,'lon', NF_DOUBLE, 1, nid, lonvid)
   if (status .ne. NF_NOERR) call handle_err(status)
+
+  if (calc_orographic_shape_params) then
+    
+    status = nf_def_var (foutid,'OC', NF_DOUBLE,  1, nid, ocid)
+    if (status .ne. NF_NOERR) call handle_err(status)
+
+    oadim(1) = nid
+    oadim(2) = nvar_dirOA_id
+    status = nf_def_var (foutid,'OA', NF_DOUBLE, 2, oadim, oaid)
+    if (status .ne. NF_NOERR) call handle_err(status)
+
+    oldim(1) = nid
+    oldim(2) = nvar_dirOL_id
+    status = nf_def_var (foutid,'OL', NF_DOUBLE, 2, oldim, olid)
+    if (status .ne. NF_NOERR) call handle_err(status)
+
+  end if
   
   !
   ! Create attributes for output variables
@@ -1084,6 +1366,13 @@ subroutine wrtncdf_unstructured(n,terr,sgh,sgh30,lon,lat,fout)
   call DATE_AND_TIME(DATE=datestring)
   status = nf_put_att_text (foutid,NF_GLOBAL,'history',25, 'Written on date: ' // datestring )
   if (status .ne. NF_NOERR) call handle_err(status)
+
+  if (calc_orographic_shape_params) then
+
+    status = nf_put_att_text (foutid,oaid,'note', 40, '(2)+1 in nvar_dirOA to avoid bug in io')
+    if (status .ne. NF_NOERR) call handle_err(status)
+
+  end if
   
   !
   ! End define mode for output file
@@ -1117,6 +1406,23 @@ subroutine wrtncdf_unstructured(n,terr,sgh,sgh30,lon,lat,fout)
   status = nf_put_var_double (foutid, lonvid, lon)
   if (status .ne. NF_NOERR) call handle_err(status)
   print*,"done writing lon data"
+
+  if (calc_orographic_shape_params) then
+
+    status = nf_put_var_double (foutid, ocid, orographic_convexity)
+    if (status .ne. NF_NOERR) call handle_err(status)
+    print*,"done writing orographic convexity data"
+
+    status = nf_put_var_double (foutid, oaid, orographic_asymmetry)
+    if (status .ne. NF_NOERR) call handle_err(status)
+    print*,"done writing orographic asymmetry data"
+    
+    status = nf_put_var_double (foutid, olid, orographic_efflength)
+    if (status .ne. NF_NOERR) call handle_err(status)
+    print*,"done writing orographic eff length data"
+  
+  end if
+
   !
   ! Close output file
   !
@@ -1502,10 +1808,9 @@ SUBROUTINE overlap_weights(weights_lgr_index_all,weights_eul_index_all,weights_a
   REAL    (r8), PARAMETER :: pi    = 3.14159265358979323846264338327
   REAL    (r8), PARAMETER :: piq   = 0.25*pi
   REAL    (r8), PARAMETER :: pih   = 0.50*pi
+  REAL    (r8), PARAMETER :: rad2deg   = 180.0/pi
   INTEGER :: i, j,ncorner_this_cell,k,ip,ipanel,ii,jx,jy,jcollect
   integer :: alloc_error
-  
-  REAL    (r8), PARAMETER :: rad2deg   = 180.0/pi
   
   real(r8), allocatable, dimension(:,:) :: weights
   integer , allocatable, dimension(:,:) :: weights_eul_index
