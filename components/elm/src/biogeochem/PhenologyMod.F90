@@ -2300,7 +2300,9 @@ contains
     type(crop_type)        , intent(inout) :: crop_vars
     !
     ! LOCAL VARAIBLES:
-    real(r8) vtmin, vtopt, vtmax        ! vernalization minimum, optimum, maximum temperature
+    real(r8), parameter :: vtmin = -1.3_r8 ! vernalization minimum temp based on Lu et al., 2017
+    real(r8), parameter :: vtopt = 4.9_r8  ! vernalization optimum temp based on Lu et al., 2017
+    real(r8), parameter :: vtmax = 15.7_r8 ! vernalization maximum temp based on Lu et al., 2017
     real(r8) alpha                      ! parameter in calculating vernalization rate
     real(r8) tc                         ! t_ref2m in degree C
     integer  c                          ! indices
@@ -2332,7 +2334,7 @@ contains
       ! if vf(p) = 1.  then plant is fully vernalized - and thermal time
       ! accumulation in phase 1 will be unaffected
       ! refers to gddtsoi & gddplant, defined in the accumulation routines (slevis)
-      ! reset vf, cumvd, and hdidx to 0 at planting of crop (slevis)
+      ! reset vf and cumvd to 0 at planting of crop (slevis)
       !-----------------------------------------------------------------------------
       !-----------------------------------------------------------------------------
       ! Modifications based on Yaqiong Lu et al., 2017 in Geosci. Model Dev.
@@ -2341,10 +2343,6 @@ contains
       ! Streck, N.A., Weiss, A., Baenziger, P.S., 2003. A generalized
       ! vernalization response &
       ! function for winter wheat. Agron. J. 95
-
-      vtmin = -1.3_r8
-      vtopt = 4.9_r8
-      vtmax = 15.7_r8
 
       dt_hr = dtime_mod/3600.0_r8  ! dt_hr is the time step in hour
 

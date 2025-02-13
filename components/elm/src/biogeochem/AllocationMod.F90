@@ -423,6 +423,8 @@ contains
     !! Local P variables
     real(r8):: cpl,cpfr,cplw,cpdw,cpg                                    !C:N ratios for leaf, fine root, and wood
     real(r8):: puptake_prof(bounds%begc:bounds%endc, 1:nlevdecomp)
+    integer, parameter :: cphase_gf = 3                                  !Crop phenology phase grain fill
+    integer, parameter :: max_lai   = 1                                  !Maximum allowed lai
 
 
   !-----------------------------------------------------------------------
@@ -691,7 +693,7 @@ contains
                   ! allocation rules for crops based on maturity and linear decrease
                   ! of amount allocated to roots over course of the growing season
 
-                  if (peaklai(p) == 1) then ! lai at maximum allowed
+                  if (peaklai(p) == max_lai) then ! lai at maximum allowed
                      arepr(p) = 0._r8
                      aleaf(p) = 1.e-5_r8
                      aroot(p) = max(0._r8, min(1._r8, arooti(ivt(p)) -   &
@@ -722,7 +724,7 @@ contains
                   ! Added based on Yaqiong Lu et al., 2017 in Geosci. Model Dev.
                   ! when peaklai==1, astem=0 and then astemi=0, so the astem in phase 3 will
                   ! equal to 0 and therefore resulted a very large arepr and grainc
-                  if(peaklai(p)==1 .and. (ivt(p) == nwcereal .or. ivt(p) == nwcerealirrig)) then
+                  if(peaklai(p)==max_lai .and. (ivt(p) == nwcereal .or. ivt(p) == nwcerealirrig)) then
                     astemi(p)=0.8_r8
                   end if
 
@@ -766,7 +768,7 @@ contains
                   !would be bypassed altogether, not the intended outcome. I checked several of my output files and
                   !they all seemed to be going through the retranslocation loop for soybean - good news.
 
-                  if (ivt(p) /= nsoybean .or. astem(p) == astemf(ivt(p)) .or. peaklai(p) == 1._r8) then
+                  if (ivt(p) /= nsoybean .or. astem(p) == astemf(ivt(p)) .or. peaklai(p) == max_lai) then
                      if (grain_flag(p) == 0._r8) then
                         t1 = 1 / dt
                         leafn_to_retransn(p) = t1 * ((leafc(p) / leafcn(ivt(p))) - (leafc(p) / &
@@ -785,7 +787,7 @@ contains
                   arepr(p) = 1._r8 - aroot(p) - astem(p) - aleaf(p)
 
                   ! Added based on Yaqiong Lu et al., 2017 in Geosci. Model Dev.
-                  if(cphase(p) == 3 .and. (ivt(p) == nwcereal .or. ivt(p) == nwcerealirrig)) then
+                  if(cphase(p) == cphase_gf .and. (ivt(p) == nwcereal .or. ivt(p) == nwcerealirrig)) then
                      arepr(p) = arepr(p) * vf(p)
                      aroot(p) = 1._r8 - aleaf(p) - astem(p) - arepr(p)
                   end if

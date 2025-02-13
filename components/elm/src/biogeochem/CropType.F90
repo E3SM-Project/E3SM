@@ -690,7 +690,6 @@ contains
                veg_es%t_ref2m(p)-(SHR_CONST_TKFRZ + baset(ivt)))) &
                * dtime/SHR_CONST_CDAY
           ! Modified based on Yaqiong Lu et al., 2017 in Geosci. Model Dev.
-          !if (ivt == nwcereal .or. ivt == nwcerealirrig) then
           if ((ivt == nwcereal .or. ivt == nwcerealirrig) .and. this%cphase_patch(p) > 1) then
              rbufslp(p) = rbufslp(p)*this%vf_patch(p)
           end if
@@ -713,12 +712,9 @@ contains
                ((col_es%t_soisno(c,1)*col_pp%dz(c,1) + &
                col_es%t_soisno(c,2)*col_pp%dz(c,2))/(col_pp%dz(c,1)+col_pp%dz(c,2))) - &
                (SHR_CONST_TKFRZ + baset(ivt)))) * dtime/SHR_CONST_CDAY
-          ! Modified based on Yaqiong Lu et al., 2017 in Geosci. Model Dev.
+          ! Removed rbufslp modification based on Yaqiong Lu et al., 2017 in Geosci. Model Dev.
           ! Removed the vf control on gddtsoil, because the vernalization
           ! occurs after leaf emerge and end at flowering
-          !if (ivt == nwcereal .or. ivt == nwcerealirrig) then
-          !   rbufslp(p) = rbufslp(p)*this%vf_patch(p)
-          !end if
        else
           rbufslp(p) = accumResetVal
        end if
