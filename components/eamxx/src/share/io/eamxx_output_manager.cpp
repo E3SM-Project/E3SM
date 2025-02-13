@@ -125,9 +125,9 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
           continue;
         }
         if (use_suffix) {
-          fields.push_back(f.clone(f.name()+"_"+grid.second->m_short_name));
+          fields.push_back(f.clone(f.name()+"_"+grid.second->m_short_name, grid.first));
         } else {
-          fields.push_back(f.clone(f.name()));
+          fields.push_back(f.clone(f.name(), grid.first));
         }
       }
 
