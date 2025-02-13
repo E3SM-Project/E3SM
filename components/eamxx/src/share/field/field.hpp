@@ -201,13 +201,14 @@ public:
 
   // Set the field to a constant value (on host or device)
   template<typename T, HostOrDevice HD = Device>
-  void deep_copy (const T value) const;
+  void deep_copy (const T value);
 
-  // Copy the data from one field to this field
+  // Copy the data from one field to this field (recycle update method)
   template<HostOrDevice HD = Device>
-  void deep_copy (const Field& src) const;
+  void deep_copy (const Field& src) { update<HD,CombineMode::Replace>(src,1,0); }
 
-  // Updates this field y as y=alpha*x+beta*y
+  // Updates this field y as y=combine(x,y,alpha,beta)
+  // See share/util/scream_combine_ops.hpp for more details on CombineMode options
   // NOTE: ST=void is just so we can give a default to HD,
   //       but ST will *always* be deduced from input arguments.
   // NOTE: the type ST  must be such that no narrowing happens when
@@ -216,17 +217,17 @@ public:
   template<HostOrDevice HD = Device, CombineMode CM = CombineMode::ScaleUpdate, typename ST = void>
   void update (const Field& x, const ST alpha, const ST beta);
 
-  // Special case of update with alpha=0
+  // Special case of update for particular choices of the combine mode
   template<HostOrDevice HD = Device, typename ST = void>
-  void scale (const ST beta);
+  void scale (const ST beta) { update<HD,CombineMode::Rescale>(*this,ST(0),beta); }
 
   // Scale a field y as y=y*x where x is also a field
   template<HostOrDevice HD = Device>
-  void scale (const Field& x);
+  void scale (const Field& x) { update<HD,CombineMode::Multiply>(x,1,0); }
 
   // Scale a field y as y=y/x where x is also a field
   template<HostOrDevice HD = Device>
-  void scale_inv (const Field& x);
+  void scale_inv (const Field& x) { update<HD,CombineMode::Divide>(x,1,0); }
 
   // Returns a subview of this field, slicing at entry k along dimension idim
   // NOTES:
@@ -316,10 +317,7 @@ protected:
   void sync_views_impl () const;
 
   template<HostOrDevice HD, typename ST>
-  void deep_copy_impl (const ST value) const;
-
-  template<HostOrDevice HD, typename ST>
-  void deep_copy_impl (const Field& src) const;
+  void deep_copy_impl (const ST value);
 
   template<CombineMode CM, HostOrDevice HD, typename ST>
   void update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val);
