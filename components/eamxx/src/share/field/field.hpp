@@ -213,7 +213,7 @@ public:
   // NOTE: the type ST  must be such that no narrowing happens when
   //       casting the values to whatever the data type of this field is.
   //       E.g., if data_type()=IntType, you can't pass double's.
-  template<HostOrDevice HD = Device, typename ST = void>
+  template<HostOrDevice HD = Device, CombineMode CM = CombineMode::ScaleUpdate, typename ST = void>
   void update (const Field& x, const ST alpha, const ST beta);
 
   // Special case of update with alpha=0
