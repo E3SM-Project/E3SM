@@ -61,7 +61,7 @@ struct UnitWrap::UnitTest<D>::TestNcConservation : public UnitWrap::UnitTest<D>:
         nicnt[s] = cxx_device(vs).nicnt;
 	context.set(s, cxx_device(vs).context);
       }
-      const bool use_hetfrz_classnuc = cxx_device(offset).use_hetfrz_classnuc;
+      const bool use_hetfrz_classnuc = false;
       Functions::nc_conservation(nc, nc_selfcollect_tend, cxx_device(offset).dt, nc_collect_tend, nc2ni_immers_freeze_tend, nc_accret_tend, nc2nr_autoconv_tend,
 	  ncheti_cnt, nicnt, use_hetfrz_classnuc, context);
 

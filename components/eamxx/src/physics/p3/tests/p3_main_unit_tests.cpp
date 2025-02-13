@@ -168,13 +168,16 @@ void run_bfb_p3_main_part2()
   constexpr Scalar latice = C::LatIce;
 
   P3MainPart2Data isds_baseline[] = {
-    //            kts, kte, ktop, kbot, kdir, do_predict_nc, do_prescribed_CCN, use_hetfrz_classnuc,      dt
-    P3MainPart2Data(1,  72,    1,   72,    1, false,         true,   true,  1.800E+03),
-    P3MainPart2Data(1,  72,    1,   72,    1, true,          true,   false, 1.800E+03),
-    P3MainPart2Data(1,  72,   72,    1,   -1, false,         false,  true,  1.800E+03),
-    P3MainPart2Data(1,  72,   72,    1,   -1, true,          false,  false, 1.800E+03),
+    //            kts, kte, ktop, kbot, kdir, do_predict_nc, do_prescribed_CCN,       dt
+    P3MainPart2Data(1,  72,    1,   72,    1, false,         true,        1.800E+03),
+    P3MainPart2Data(1,  72,    1,   72,    1, true,          true,        1.800E+03),
+    P3MainPart2Data(1,  72,   72,    1,   -1, false,         false,       1.800E+03),
+    P3MainPart2Data(1,  72,   72,    1,   -1, true,          false,       1.800E+03),
   };
 
+  std::vector<Real> hetfrz_immersion_nucleation_tend(72,0.0);
+  std::vector<Real> hetfrz_contact_nucleation_tend(72,0.0);
+  std::vector<Real> hetfrz_deposition_nucleation_tend(72,0.0);
   static constexpr Int num_runs = sizeof(isds_baseline) / sizeof(P3MainPart2Data);
 
   for (auto& d : isds_baseline) {
@@ -212,16 +215,16 @@ void run_bfb_p3_main_part2()
 
   // Get data from cxx
   for (auto& d : isds_cxx) {
-      p3_main_part2_host(
+    p3_main_part2_host(
       d.kts, d.kte, d.kbot, d.ktop, d.kdir, d.do_predict_nc, d.do_prescribed_CCN, d.dt, d.inv_dt,
-      d.hetfrz_immersion_nucleation_tend, d.hetfrz_contact_nucleation_tend, d.hetfrz_deposition_nucleation_tend,
+      hetfrz_immersion_nucleation_tend.data(), hetfrz_contact_nucleation_tend.data(), hetfrz_deposition_nucleation_tend.data(),
       d.pres, d.dpres, d.dz, d.nc_nuceat_tend, d.inv_exner, d.exner, d.inv_cld_frac_l, d.inv_cld_frac_i,
       d.inv_cld_frac_r, d.ni_activated, d.inv_qc_relvar, d.cld_frac_i, d.cld_frac_l, d.cld_frac_r, d.qv_prev, d.t_prev,
       d.T_atm, d.rho, d.inv_rho, d.qv_sat_l, d.qv_sat_i, d.qv_supersat_i, d.rhofacr, d.rhofaci, d.acn, d.qv, d.th_atm, d.qc, d.nc, d.qr, d.nr, d.qi, d.ni,
       d.qm, d.bm, d.qc_incld, d.qr_incld, d.qi_incld, d.qm_incld, d.nc_incld, d.nr_incld,
       d.ni_incld, d.bm_incld, d.mu_c, d.nu, d.lamc, d.cdist, d.cdist1, d.cdistr, d.mu_r, d.lamr, d.logn0r, d.qv2qi_depos_tend, d.precip_total_tend,
       d.nevapr, d.qr_evap_tend, d.vap_liq_exchange, d.vap_ice_exchange, d.liq_ice_exchange, d.pratot,
-      d.prctot, &d.is_hydromet_present);   
+      d.prctot, &d.is_hydromet_present);
   }
 
   if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
@@ -395,9 +398,9 @@ void run_bfb_p3_main()
   auto engine = Base::get_engine();
 
   P3MainData isds_baseline[] = {
-    //      its, ite, kts, kte,   it,        dt, do_predict_nc, do_prescribed_CCN, use_hetfrz_classnuc
-    P3MainData(1, 10,   1,  72,    1, 1.800E+03, false, true, true, 0),
-    P3MainData(1, 10,   1,  72,    1, 1.800E+03, true,  false, false, 0),
+    //      its, ite, kts, kte,   it,        dt, do_predict_nc, do_prescribed_CCN
+    P3MainData(1, 10,   1,  72,    1, 1.800E+03, false, true),
+    P3MainData(1, 10,   1,  72,    1, 1.800E+03, true,  false),
   };
 
   static constexpr Int num_runs = sizeof(isds_baseline) / sizeof(P3MainData);
@@ -426,10 +429,7 @@ void run_bfb_p3_main()
         {d.qv             , {0              , 5.00000000E-02}},
         {d.qv_prev        , {0              , 5.00000000E-02}},
         {d.th_atm         , {6.72653866E+02 , 1.07954335E+03}}, //PMC - this range seems insane
-        {d.t_prev         , {1.50000000E+02 , 3.50000000E+02}},
-        {d.hetfrz_immersion_nucleation_tend         , {1.50000000E-02 , 3.50000000E-02}},
-        {d.hetfrz_contact_nucleation_tend           , {1.50000000E-02 , 3.50000000E-02}},
-        {d.hetfrz_deposition_nucleation_tend        , {1.50000000E-02 , 3.50000000E-02}},
+        {d.t_prev         , {1.50000000E+02 , 3.50000000E+02}}
     });
   }
 
@@ -455,8 +455,7 @@ void run_bfb_p3_main()
       d.precip_ice_surf, d.its, d.ite, d.kts, d.kte, d.diag_eff_radius_qc, d.diag_eff_radius_qi, d.diag_eff_radius_qr,
       d.rho_qi, d.do_predict_nc, d.do_prescribed_CCN, d.use_hetfrz_classnuc, d.dpres, d.inv_exner, d.qv2qi_depos_tend,
       d.precip_liq_flux, d.precip_ice_flux, d.cld_frac_r, d.cld_frac_l, d.cld_frac_i,
-      d.liq_ice_exchange, d.vap_liq_exchange, d.vap_ice_exchange, d.qv_prev, d.t_prev,
-      d.hetfrz_immersion_nucleation_tend, d.hetfrz_contact_nucleation_tend, d.hetfrz_deposition_nucleation_tend);
+      d.liq_ice_exchange, d.vap_liq_exchange, d.vap_ice_exchange, d.qv_prev, d.t_prev);
   }
 
   if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {

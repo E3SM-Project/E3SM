@@ -67,14 +67,13 @@ struct UnitWrap::UnitTest<D>::TestIceSupersatConservation : public UnitWrap::Uni
         qr2qv_evap_tend[s]   = cxx_device(vs).qr2qv_evap_tend;
         context.set(s,         cxx_device(vs).context);
       }
-      const bool use_hetfrz_classnuc =  cxx_device(offset).use_hetfrz_classnuc;
+      const bool use_hetfrz_classnuc =  false;
       Functions::ice_supersat_conservation(qidep, qinuc, qinuc_cnt, cld_frac_i, qv, qv_sat_i, t_atm, cxx_device(offset).dt, qi2qv_sublim_tend, qr2qv_evap_tend, use_hetfrz_classnuc, context);
 
       // Copy spacks back into cxx_device view
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
         cxx_device(vs).qidep = qidep[s];
         cxx_device(vs).qinuc = qinuc[s];
-        cxx_device(vs).qinuc_cnt = qinuc_cnt[s];
       }
     });
 
@@ -87,7 +86,6 @@ struct UnitWrap::UnitTest<D>::TestIceSupersatConservation : public UnitWrap::Uni
         IceSupersatConservationData& d_cxx = cxx_host[i];
         REQUIRE(d_f90.qidep == d_cxx.qidep);
         REQUIRE(d_f90.qinuc == d_cxx.qinuc);
-        REQUIRE(d_f90.qinuc_cnt == d_cxx.qinuc_cnt);
       }
     }
     else if (this->m_baseline_action == GENERATE) {

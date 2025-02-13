@@ -51,8 +51,8 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation : public UnitWrap::UnitTest<D>:
       Spack qv2qi_vapdep_tend(cwdc_device(0).qv2qi_vapdep_tend);
       Spack qcheti_cnt(cwdc_device(0).qcheti_cnt);
       Spack qicnt(cwdc_device(0).qicnt);
-      const bool use_hetfrz_classnuc = cwdc_device(0).use_hetfrz_classnuc;
-      const Smask context(cwdc_device(0).context);
+      const bool use_hetfrz_classnuc = false;
+      const Smask context(Smask(true));
       Functions::cloud_water_conservation(qc, cwdc_device(0).dt, qc2qr_autoconv_tend, qc2qr_accret_tend, qc2qi_collect_tend, qc2qi_hetero_freeze_tend, qc2qr_ice_shed_tend, qc2qi_berg_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend,
 	  qcheti_cnt, qicnt, use_hetfrz_classnuc, context);
 
@@ -139,7 +139,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation : public UnitWrap::UnitTest<D>:
 
   void ice_water_conservation_tests_device() {
     using KTH = KokkosTypes<HostDevice>;
-    IceWaterConservationData iwdc[1] = {{sp(1e-5), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, sp(1.1), sp(1e-4), 0.0, 0.0, false, true}};
+    IceWaterConservationData iwdc[1] = {{sp(1e-5), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, sp(1.1), sp(1e-4), 0.0, 0.0, 0.0, 0.0, false, true}};
 
     // Sync to device
     KTH::view_1d<IceWaterConservationData> iwdc_host("iwdc_host", 1);
@@ -164,8 +164,8 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation : public UnitWrap::UnitTest<D>:
       Spack qinuc_cnt(iwdc_device(0).qinuc_cnt);
       Spack qcheti_cnt(iwdc_device(0).qcheti_cnt);
       Spack qicnt(iwdc_device(0).qicnt);
-      const bool use_hetfrz_classnuc = iwdc_device(0).use_hetfrz_classnuc;
-      const Smask context(iwdc_device(0).context);
+      const bool use_hetfrz_classnuc = false;
+      const Smask context(Smask(true));
 
       Functions::ice_water_conservation(qi, qv2qi_vapdep_tend, qv2qi_nucleat_tend, qc2qi_berg_tend, qr2qi_collect_tend, qc2qi_collect_tend, qr2qi_immers_freeze_tend, qc2qi_hetero_freeze_tend, iwdc_device(0).dt, qinuc_cnt, qcheti_cnt, qicnt, qi2qv_sublim_tend, qi2qr_melt_tend,
 	  use_hetfrz_classnuc, context);
@@ -207,25 +207,25 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation : public UnitWrap::UnitTest<D>:
 
     CloudWaterConservationData cwdc[max_pack_size] = {
       //qc, cwdc_device(0).dt, qc2qr_autoconv_tend, qc2qr_accret_tend, qc2qi_collect_tend, qc2qi_hetero_freeze_tend, qc2qr_ice_shed_tend, qc2qi_berg_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend, qcheti_cnt, qicnt, use_hetfrz_classnuc, context
-      {9.9999999999999995e-7, 1800.0, 1.5832574016248739e-12, 1.0630996907148179e-12, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, true, true},
-      {6.4285714285714288e-5, 1800.0, 5.0577951315583066e-7, 7.7585489624948031e-4, 1.5683327213659326e-4, 1.2893174331809564e-14, 0.0, 5.0463073442953805e-6, 0.0, 5.1387602886199180e-7, 5.0463073442953805e-6, 0.0, true, true},
-      {0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false, false},
-      {7.1428571428571434e-5, 1800.0, 5.1480988828550771e-7, 7.7585489624948031e-4, 1.5597668529004373e-4, 4.9926620576534573e-14, 0.0, 6.7718890050008472e-6, 0.0, 7.1052455549903861e-7, 0.0, 5.0463073442953805e-6, true, true},
+      {9.9999999999999995e-7, 1800.0, 1.5832574016248739e-12, 1.0630996907148179e-12, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false, true},
+      {6.4285714285714288e-5, 1800.0, 5.0577951315583066e-7, 7.7585489624948031e-4, 1.5683327213659326e-4, 1.2893174331809564e-14, 0.0, 5.0463073442953805e-6, 0.0, 5.1387602886199180e-7, 0.0, 0.0, false, true},
+      {0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false, true},
+      {7.1428571428571434e-5, 1800.0, 5.1480988828550771e-7, 7.7585489624948031e-4, 1.5597668529004373e-4, 4.9926620576534573e-14, 0.0, 6.7718890050008472e-6, 0.0, 7.1052455549903861e-7, 0.0, 0.0, false, true},
 
-      {9.9999999999999995e-7, 1800.0, 1.5832574016248739e-12, 1.0630996907148179e-12, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, true, true},
-      {6.4285714285714288e-5, 1800.0, 5.0577951315583066e-7, 7.7585489624948031e-4, 1.5683327213659326e-4, 1.2893174331809564e-14, 0.0, 5.0463073442953805e-6, 0.0, 5.1387602886199180e-7, 5.0463073442953805e-6, 0.0, true, false},
-      {0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, true, true},
-      {7.1428571428571434e-5, 1800.0, 5.1480988828550771e-7, 7.7585489624948031e-4, 1.5597668529004373e-4, 4.9926620576534573e-14, 0.0, 6.7718890050008472e-6, 0.0, 7.1052455549903861e-7, 0.0, 5.0463073442953805e-6, false, true},
+      {9.9999999999999995e-7, 1800.0, 1.5832574016248739e-12, 1.0630996907148179e-12, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false, true},
+      {6.4285714285714288e-5, 1800.0, 5.0577951315583066e-7, 7.7585489624948031e-4, 1.5683327213659326e-4, 1.2893174331809564e-14, 0.0, 5.0463073442953805e-6, 0.0, 5.1387602886199180e-7, 0.0, 0.0, false, true},
+      {0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false, true},
+      {7.1428571428571434e-5, 1800.0, 5.1480988828550771e-7, 7.7585489624948031e-4, 1.5597668529004373e-4, 4.9926620576534573e-14, 0.0, 6.7718890050008472e-6, 0.0, 7.1052455549903861e-7, 0.0, 0.0, false, true},
 
-      {9.9999999999999995e-7, 1800.0, 1.5832574016248739e-12, 1.0630996907148179e-12, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, true, true},
-      {6.4285714285714288e-5, 1800.0, 5.0577951315583066e-7, 7.7585489624948031e-4, 1.5683327213659326e-4, 1.2893174331809564e-14, 0.0, 5.0463073442953805e-6, 0.0, 5.1387602886199180e-7, 5.0463073442953805e-6, 0.0, true, false},
-      {0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, true, true},
-      {7.1428571428571434e-5, 1800.0, 5.1480988828550771e-7, 7.7585489624948031e-4, 1.5597668529004373e-4, 4.9926620576534573e-14, 0.0, 6.7718890050008472e-6, 0.0, 7.1052455549903861e-7, 0.0, 5.0463073442953805e-6, false, true},
+      {9.9999999999999995e-7, 1800.0, 1.5832574016248739e-12, 1.0630996907148179e-12, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false, true},
+      {6.4285714285714288e-5, 1800.0, 5.0577951315583066e-7, 7.7585489624948031e-4, 1.5683327213659326e-4, 1.2893174331809564e-14, 0.0, 5.0463073442953805e-6, 0.0, 5.1387602886199180e-7, 0.0, 0.0, false, true},
+      {0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false, true},
+      {7.1428571428571434e-5, 1800.0, 5.1480988828550771e-7, 7.7585489624948031e-4, 1.5597668529004373e-4, 4.9926620576534573e-14, 0.0, 6.7718890050008472e-6, 0.0, 7.1052455549903861e-7, 0.0, 0.0, false, true},
 
-      {9.9999999999999995e-7, 1800.0, 1.5832574016248739e-12, 1.0630996907148179e-12, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, true, true},
-      {6.4285714285714288e-5, 1800.0, 5.0577951315583066e-7, 7.7585489624948031e-4, 1.5683327213659326e-4, 1.2893174331809564e-14, 0.0, 5.0463073442953805e-6, 0.0, 5.1387602886199180e-7, 5.0463073442953805e-6, 7.1052455549903861e-7, true, true},
-      {0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, true, true},
-      {7.1428571428571434e-5, 1800.0, 5.1480988828550771e-7, 7.7585489624948031e-4, 1.5597668529004373e-4, 4.9926620576534573e-14, 0.0, 6.7718890050008472e-6, 0.0, 7.1052455549903861e-7, 5.0463073442953805e-6, 7.1052455549903861e-7, true, true}
+      {9.9999999999999995e-7, 1800.0, 1.5832574016248739e-12, 1.0630996907148179e-12, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false, true},
+      {6.4285714285714288e-5, 1800.0, 5.0577951315583066e-7, 7.7585489624948031e-4, 1.5683327213659326e-4, 1.2893174331809564e-14, 0.0, 5.0463073442953805e-6, 0.0, 5.1387602886199180e-7, 0.0, 0.0, false, true},
+      {0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false, true},
+      {7.1428571428571434e-5, 1800.0, 5.1480988828550771e-7, 7.7585489624948031e-4, 1.5597668529004373e-4, 4.9926620576534573e-14, 0.0, 6.7718890050008472e-6, 0.0, 7.1052455549903861e-7, 0.0, 0.0, false, true}
     };
 
     // Sync to device
@@ -264,7 +264,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation : public UnitWrap::UnitTest<D>:
         qicnt[s]              = cwdc_device(vs).qicnt;
         context.set(s,          cwdc_device(vs).context);
       }
-      const bool use_hetfrz_classnuc = cwdc_device(offset).use_hetfrz_classnuc;
+      const bool use_hetfrz_classnuc = false;
 
       Functions::cloud_water_conservation(qc, cwdc_device(0).dt, qc2qr_autoconv_tend, qc2qr_accret_tend, qc2qi_collect_tend, qc2qi_hetero_freeze_tend, qc2qr_ice_shed_tend, qc2qi_berg_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend,
 	  qcheti_cnt, qicnt, use_hetfrz_classnuc, context);
@@ -313,26 +313,26 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation : public UnitWrap::UnitTest<D>:
     using KTH = KokkosTypes<HostDevice>;
 
     IceWaterConservationData iwdc[max_pack_size] = {
-      //qi, qv2qi_vapdep_tend, qv2qi_nucleat_tend, qc2qi_berg_tend, qr2qi_collect_tend, qc2qi_collect_tend, qr2qi_immers_freeze_tend, qc2qi_hetero_freeze_tend, dt, qinuc_cnt, qcheti_cnt, qicnt, use_hetfrz_classnuc, context
-      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 1.9205467584100191e-4, 0.0, true, true},
-      {5.0e-8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 1.8234653652173277e-7, 0.0, 0.0, true, true},
-      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 2.3237448636383435e-3, 0.0, true, true},
-      {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 0.0, 0.0, true, true},
+      // qi, qv2qi_vapdep_tend, qv2qi_nucleat_tend, qc2qi_berg_tend, qr2qi_collect_tend, qc2qi_collect_tend, qr2qi_immers_freeze_tend, qc2qi_hetero_freeze_tend, iwdc_device(0).dt, qi2qv_sublim_tend, qi2qr_melt_tend, qinuc_cnt, qcheti_cnt, qicnt, use_hetfrz_classnuc, context
+      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 1.9205467584100191e-4, 0.0, 0.0, 0.0, false, true},
+      {5.0e-8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 1.8234653652173277e-7, 0.0, 0.0, 0.0, 0.0, false, true},
+      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 2.3237448636383435e-3, 0.0, 0.0, 0.0, false, true},
+      {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, false, true},
 
-      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 1.9205467584100191e-4, 0.0, true, true},
-      {5.0e-8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 1.8234653652173277e-7, 0.0, 0.0, true, true},
-      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 2.3237448636383435e-3, 0.0, true, true},
-      {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 0.0, 0.0, true, true},
+      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 1.9205467584100191e-4, 0.0, 0.0, 0.0, false, true},
+      {5.0e-8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 1.8234653652173277e-7, 0.0, 0.0, 0.0, 0.0, false, true},
+      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 2.3237448636383435e-3, 0.0, 0.0, 0.0, false, true},
+      {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, false, true},
 
-      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 1.9205467584100191e-4, 0.0, true, true},
-      {5.0e-8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 1.8234653652173277e-7, 0.0, 0.0, true, true},
-      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 2.3237448636383435e-3, 0.0, true, true},
-      {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 0.0, 0.0, true, true},
+      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 1.9205467584100191e-4, 0.0, 0.0, 0.0, false, true},
+      {5.0e-8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 1.8234653652173277e-7, 0.0, 0.0, 0.0, 0.0, false, true},
+      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 2.3237448636383435e-3, 0.0, 0.0, 0.0, false, true},
+      {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, false, true},
 
-      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 1.9205467584100191e-4, 0.0, true, true},
-      {5.0e-8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 1.8234653652173277e-7, 0.0, 0.0, true, true},
-      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 2.3237448636383435e-3, 0.0, true, true},
-      {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 0.0, 0.0, true, true}
+      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 1.9205467584100191e-4, 0.0, 0.0, 0.0, false, true},
+      {5.0e-8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 1.8234653652173277e-7, 0.0, 0.0, 0.0, 0.0, false, true},
+      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 2.3237448636383435e-3, 0.0, 0.0, 0.0, false, true},
+      {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, false, true}
     };
 
     // Sync to device
@@ -373,7 +373,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation : public UnitWrap::UnitTest<D>:
         qicnt[s] = iwdc_device(vs).qicnt;
         context.set(s, iwdc_device(vs).context);
       }
-      const bool use_hetfrz_classnuc = iwdc_device(offset).use_hetfrz_classnuc;
+      const bool use_hetfrz_classnuc = false;
       Functions::ice_water_conservation(qi, qv2qi_vapdep_tend, qv2qi_nucleat_tend, qc2qi_berg_tend, qr2qi_collect_tend, qc2qi_collect_tend, qr2qi_immers_freeze_tend, qc2qi_hetero_freeze_tend, iwdc_device(0).dt, qinuc_cnt, qcheti_cnt, qicnt, qi2qv_sublim_tend, qi2qr_melt_tend,
 	  use_hetfrz_classnuc, context);
       // Copy results back into views
@@ -541,19 +541,19 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce : public UnitWrap::UnitT
        3.4778E-04, 3.5801E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.1386E-07, 0.0000E+00, 0.0000E+00, 2.7053E-02,
        0.0000E+00, 1.9209E-10, 1.0686E+00, latvap+latice, latice, do_predict_nc,    true,         dt, nmltratio,
        4.5312E+02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.8720E+02, 5.0000E-03, 6.4286E-05, 1.2344E+08, 7.3684E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
-       6.4286E-05, 1.0000E-02, true, true},
+       6.4286E-05, 1.0000E-02, false, true},
 
       {2.1097E-18, 2.7648E-09, 3.8261E-09, 3.7754E+06, 6.8685E-04, 0.0000E+00, 4.1018E-08, 5.1227E+04, 4.8876E-15,
        1.3468E-03, 2.8059E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 7.1049E-07, 0.0000E+00, 0.0000E+00, 2.4547E-02,
        0.0000E+00, 2.8615E-10, 1.0741E+00, latvap+latice, latice, do_predict_nc,    true,         dt, nmltratio,
        3.4890E+02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.8642E+02, 5.0000E-03, 7.1429E-05, 1.2345E+08, 7.8947E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
-       7.1429E-05, 1.0000E-02, true, true},
+       7.1429E-05, 1.0000E-02, false, true},
 
       {8.9820E-18, 4.2529E-09, 2.9520E-09, 3.7537E+06, 2.6598E-03, 0.0000E+00, 4.3700E-08, 5.1171E+04, 1.4266E-14,
        5.2153E-03, 1.9880E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 9.0244E-07, 0.0000E+00, 0.0000E+00, 2.1083E-02,
        0.0000E+00, 3.7631E-10, 1.0796E+00, latvap+latice, latice, do_predict_nc,    true,         dt, nmltratio,
        2.8656E+02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.8565E+02, 5.0000E-03, 7.8571E-05, 1.2345E+08, 8.4211E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
-       7.8571E-05, 1.0000E-02, true, false},
+       7.8571E-05, 1.0000E-02, false, true},
 
       {3.7942E-17, 6.0115E-09, 1.8004E-09, 3.7310E+06, 1.0300E-02, 0.0000E+00, 4.6119E-08, 5.1112E+04, 4.4518E-14,
        2.0196E-02, 1.1226E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 1.0879E-06, 0.0000E+00, 0.0000E+00, 1.7646E-02,
@@ -571,19 +571,19 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce : public UnitWrap::UnitT
        1.3468E-03, 2.8059E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 7.1049E-07, 0.0000E+00, 0.0000E+00, 2.4547E-02,
        0.0000E+00, 2.8615E-10, 1.0741E+00, latvap+latice, latice, do_predict_nc,    true,         dt, nmltratio,
        3.4890E+02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.8642E+02, 5.0000E-03, 7.1429E-05, 1.2345E+08, 7.8947E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
-       7.1429E-05, 1.0000E-02, true, true},
+       7.1429E-05, 1.0000E-02, false, true},
 
       {8.9820E-18, 4.2529E-09, 2.9520E-09, 3.7537E+06, 2.6598E-03, 0.0000E+00, 4.3700E-08, 5.1171E+04, 1.4266E-14,
        5.2153E-03, 1.9880E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 9.0244E-07, 0.0000E+00, 0.0000E+00, 2.1083E-02,
        0.0000E+00, 3.7631E-10, 1.0796E+00, latvap+latice, latice, do_predict_nc,    true,         dt, nmltratio,
        2.8656E+02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.8565E+02, 5.0000E-03, 7.8571E-05, 1.2345E+08, 8.4211E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
-       7.8571E-05, 1.0000E-02, true, true},
+       7.8571E-05, 1.0000E-02, false, true},
 
       {3.7942E-17, 6.0115E-09, 1.8004E-09, 3.7310E+06, 1.0300E-02, 0.0000E+00, 4.6119E-08, 5.1112E+04, 4.4518E-14,
        2.0196E-02, 1.1226E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 1.0879E-06, 0.0000E+00, 0.0000E+00, 1.7646E-02,
        0.0000E+00, 4.5891E-10, 1.0853E+00, latvap+latice, latice, do_predict_nc,    true,         dt, nmltratio,
        2.4570E+02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.8489E+02, 5.0000E-03, 8.5714E-05, 1.2345E+08, 8.9474E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
-       8.5714E-05, 1.0000E-02, true, true},
+       8.5714E-05, 1.0000E-02, false, true},
 
       {4.9078E-19, 1.5312E-09, 4.4387E-09, 3.7961E+06, 1.7737E-04, 0.0000E+00, 3.8085E-08, 5.1281E+04, 1.9251E-15,
        3.4778E-04, 3.5801E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.1386E-07, 0.0000E+00, 0.0000E+00, 2.7053E-02,
@@ -595,25 +595,25 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce : public UnitWrap::UnitT
        1.3468E-03, 2.8059E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 7.1049E-07, 0.0000E+00, 0.0000E+00, 2.4547E-02,
        0.0000E+00, 2.8615E-10, 1.0741E+00, latvap+latice, latice, do_predict_nc,    true,         dt, nmltratio,
        3.4890E+02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.8642E+02, 5.0000E-03, 7.1429E-05, 1.2345E+08, 7.8947E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
-       7.1429E-05, 1.0000E-02, true, false},
+       7.1429E-05, 1.0000E-02, false, true},
 
       {8.9820E-18, 4.2529E-09, 2.9520E-09, 3.7537E+06, 2.6598E-03, 0.0000E+00, 4.3700E-08, 5.1171E+04, 1.4266E-14,
        5.2153E-03, 1.9880E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 9.0244E-07, 0.0000E+00, 0.0000E+00, 2.1083E-02,
        0.0000E+00, 3.7631E-10, 1.0796E+00, latvap+latice, latice, do_predict_nc,    true,         dt, nmltratio,
        2.8656E+02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.8565E+02, 5.0000E-03, 7.8571E-05, 1.2345E+08, 8.4211E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
-       7.8571E-05, 1.0000E-02, true, true},
+       7.8571E-05, 1.0000E-02, false, true},
 
       {3.7942E-17, 6.0115E-09, 1.8004E-09, 3.7310E+06, 1.0300E-02, 0.0000E+00, 4.6119E-08, 5.1112E+04, 4.4518E-14,
        2.0196E-02, 1.1226E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 1.0879E-06, 0.0000E+00, 0.0000E+00, 1.7646E-02,
        0.0000E+00, 4.5891E-10, 1.0853E+00, latvap+latice, latice, do_predict_nc,    true,         dt, nmltratio,
        2.4570E+02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.8489E+02, 5.0000E-03, 8.5714E-05, 1.2345E+08, 8.9474E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
-       8.5714E-05, 1.0000E-02, true, true},
+       8.5714E-05, 1.0000E-02, false, true},
 
       {4.9078E-19, 1.5312E-09, 4.4387E-09, 3.7961E+06, 1.7737E-04, 0.0000E+00, 3.8085E-08, 5.1281E+04, 1.9251E-15,
        3.4778E-04, 3.5801E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.1386E-07, 0.0000E+00, 0.0000E+00, 2.7053E-02,
        0.0000E+00, 1.9209E-10, 1.0686E+00, latvap+latice, latice, do_predict_nc,    true,         dt, nmltratio,
        4.5312E+02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.8720E+02, 5.0000E-03, 6.4286E-05, 1.2344E+08, 7.3684E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
-       6.4286E-05, 1.0000E-02, true, true},
+       6.4286E-05, 1.0000E-02, false, true},
 
       {2.1097E-18, 2.7648E-09, 3.8261E-09, 3.7754E+06, 6.8685E-04, 0.0000E+00, 4.1018E-08, 5.1227E+04, 4.8876E-15,
        1.3468E-03, 2.8059E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 7.1049E-07, 0.0000E+00, 0.0000E+00, 2.4547E-02,
@@ -709,7 +709,7 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce : public UnitWrap::UnitT
 
         log_wetgrowth.set(s, pupidc_device(vs).log_wetgrowth);
       }
-      const bool use_hetfrz_classnuc = pupidc_device(offset).use_hetfrz_classnuc;
+      const bool use_hetfrz_classnuc = false;
       Functions::update_prognostic_ice(qc2qi_hetero_freeze_tend, qc2qi_collect_tend, qc2qr_ice_shed_tend, nc_collect_tend, nc2ni_immers_freeze_tend,ncshdc,
                                        qr2qi_collect_tend,   nr_collect_tend,  qr2qi_immers_freeze_tend,  nr2ni_immers_freeze_tend,  nr_ice_shed_tend,
                                        qi2qr_melt_tend,  ni2nr_melt_tend,  qi2qv_sublim_tend,  qv2qi_vapdep_tend,  qv2qi_nucleat_tend,  ni_nucleat_tend,

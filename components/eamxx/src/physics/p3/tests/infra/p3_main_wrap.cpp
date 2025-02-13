@@ -24,8 +24,7 @@ Int p3_main_wrap(const P3Data& d) {
                       d.precip_liq_flux.data(), d.precip_ice_flux.data(),
                       d.cld_frac_r.data(), d.cld_frac_l.data(), d.cld_frac_i.data(),
                       d.liq_ice_exchange.data(), d.vap_liq_exchange.data(),
-                      d.vap_ice_exchange.data(),d.qv_prev.data(),d.t_prev.data(),
-		      d.hetfrz_immersion_nucleation_tend.data(), d.hetfrz_contact_nucleation_tend.data(), d.hetfrz_deposition_nucleation_tend.data());
+                      d.vap_ice_exchange.data(),d.qv_prev.data(),d.t_prev.data());
 }
 
 int test_p3_init () {
