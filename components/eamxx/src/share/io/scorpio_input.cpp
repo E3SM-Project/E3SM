@@ -69,6 +69,8 @@ void AtmosphereInput::
 init (const ekat::ParameterList& params,
       const std::shared_ptr<const fm_type>& field_mgr)
 {
+  EKAT_REQUIRE_MSG (field_mgr->get_grids_manager()->size()==1,
+      "Error! AtmosphereInput expects FieldManager defined only on a single grid.\n");
   EKAT_REQUIRE_MSG (not m_inited_with_views,
       "Error! Input class was already inited (with user-provided views).\n");
   EKAT_REQUIRE_MSG (not m_inited_with_fields,
