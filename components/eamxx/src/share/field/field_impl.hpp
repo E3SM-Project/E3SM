@@ -617,7 +617,7 @@ void Field::deep_copy_impl (const ST value) const {
   }
 }
 
-template<HostOrDevice HD, typename ST>
+template<HostOrDevice HD, CombineMode CM, typename ST>
 void Field::
 update (const Field& x, const ST alpha, const ST beta)
 {
@@ -650,11 +650,11 @@ update (const Field& x, const ST alpha, const ST beta)
       " - coeff data type: " + e2str(dt_st) + "\n");
 
   if (dt==DataType::IntType) {
-    return update_impl<CombineMode::ScaleUpdate,HD,int>(x,alpha,beta,fill_val);
+    return update_impl<CM,HD,int>(x,alpha,beta,fill_val);
   } else if (dt==DataType::FloatType) {
-    return update_impl<CombineMode::ScaleUpdate,HD,float>(x,alpha,beta,fill_val);
+    return update_impl<CM,HD,float>(x,alpha,beta,fill_val);
   } else if (dt==DataType::DoubleType) {
-    return update_impl<CombineMode::ScaleUpdate,HD,double>(x,alpha,beta,fill_val);
+    return update_impl<CM,HD,double>(x,alpha,beta,fill_val);
   } else {
     EKAT_ERROR_MSG ("Error! Unrecognized/unsupported field data type in Field::update.\n");
   }
