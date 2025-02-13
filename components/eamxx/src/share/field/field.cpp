@@ -34,10 +34,15 @@ Field::alias (const std::string& name) const {
 
 Field
 Field::clone(const std::string& name) const {
+  return clone(name, get_header().get_identifier().get_grid_name());
+}
+
+Field
+Field::clone(const std::string& name, const std::string& grid_name) const {
   // Create new field
   const auto& my_fid = get_header().get_identifier();
   FieldIdentifier fid(name,my_fid.get_layout(),my_fid.get_units(),
-                      my_fid.get_grid_name(),my_fid.data_type());
+                      grid_name,my_fid.data_type());
   Field f(fid);
 
   // Ensure alloc props match
