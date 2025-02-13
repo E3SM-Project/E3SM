@@ -118,6 +118,8 @@ public:
   // It is created with a pristine header (no providers/customers)
   Field clone () const;
   Field clone (const std::string& name) const;
+  Field clone (const std::string& name, const std::string& grid_name) const;
+
   Field alias (const std::string& name) const;
 
   // Allows to get the underlying view, reshaped for a different data type.
