@@ -1501,7 +1501,7 @@ module li_iceshelf_melt
             call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_3dThermalForcing', ismip6shelfMelt_3dThermalForcing)
             call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zOcean', zOcean)
             call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_deltaT', ismip6shelfMelt_deltaT)
-            call mpas_pool_get_array(geometryPool, 'ismip6shelfmelt_zBndsOcean', zBndsOcean)
+            call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zBndsOcean', zBndsOcean)
 
                !Consolidate 3d profile to 2d depending on parameterization type
                if ( (config_recalculate_thermal_forcing) .and. ( (config_TF_param_type == 'AMretreat') &
