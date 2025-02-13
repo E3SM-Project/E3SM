@@ -37,7 +37,8 @@ module prep_lnd_mod
 #ifdef  HAVE_MOAB
   use iMOAB , only: iMOAB_ComputeCommGraph, iMOAB_ComputeMeshIntersectionOnSphere, &
     iMOAB_ComputeScalarProjectionWeights, iMOAB_DefineTagStorage, iMOAB_RegisterApplication, &
-    iMOAB_WriteMesh, iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorage, iMOAB_ComputeCoverageMesh
+    iMOAB_WriteMesh, iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorage, iMOAB_ComputeCoverageMesh, &
+    iMOAB_SetMapGhostLayers
   use seq_comm_mct,     only : num_moab_exports
 #endif
 
@@ -148,7 +149,7 @@ contains
    ! MOAB stuff
     integer                  :: ierr, idintx, rank
     character*32             :: appname, outfile, wopts, lnum
-    character*32             :: dm1, dm2, dofnameS, dofnameT, wgtIdr2l, wgtIda2l
+    character*32             :: dm1, dm2, dofnameS, dofnameT, wgtIdr2l, wgtIda2l, wgtIda2l_bilinear
     integer                  :: orderS, orderT, volumetric, noConserve, validate, fInverseDistanceMap
     integer                  :: fNoBubble, monotonicity
     ! will do comm graph over coupler PES, in 2-hop strategy
@@ -165,6 +166,9 @@ contains
     integer ent_type ! for setting tags
     real (kind=R8) , allocatable :: tmparray (:) ! used to set the r2x fields to 0
     logical :: load_maps_from_disk_r2l, load_maps_from_disk_a2l
+
+    integer  nghlay ! used to set the number of ghost layers, needed for bilinear map
+    integer  nghlay_tgt
 
 #endif
     character(*), parameter  :: subname = '(prep_lnd_init)'
@@ -188,6 +192,7 @@ contains
 #ifdef HAVE_MOAB
       wgtIdr2l = 'conservative_r2l'//C_NULL_CHAR
       wgtIda2l = 'conservative_a2l'//C_NULL_CHAR
+      wgtIda2l_bilinear = 'bilinear_a2l'//C_NULL_CHAR
       load_maps_from_disk_r2l = .true. ! Force read from disk
       load_maps_from_disk_a2l = .true. ! Force read from disk
       ! load_maps_from_disk_a2l = .false. ! Force online computation
@@ -458,6 +463,15 @@ contains
             call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)
             if (.not. samegrid_al) then ! tri grid case
 
+               ! for bilinear maps, we need to have a layer of ghosts on source
+               nghlay = 1  ! number of ghost layers
+               nghlay_tgt = 0
+               ierr   = iMOAB_SetMapGhostLayers( mbintxal, nghlay, nghlay_tgt )
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in setting the number of ghost layers'
+                  call shr_sys_abort(subname//' error in setting the number of ghost layers')
+               endif
+
                ! compute the ATM coverage mesh here on coupler pes
                ! ATM mesh was redistributed to cover target (LND) partition
                ierr = iMOAB_ComputeCoverageMesh( mbaxid, mblxid, mbintxal )
@@ -527,14 +541,15 @@ contains
                   validate = 0 ! less verbose
                   fInverseDistanceMap = 0
                   if (iamroot_CPLID) then
-                      write(logunit,*) subname, 'launch iMOAB weights with args ', 'mbintxal=', mbintxal, ' wgtIdef=', wgtIda2l, &
+                      write(logunit,*) subname, 'launch iMOAB weights with args ', 'mbintxal=', mbintxal, ' wgtIdef=', wgtIda2l_bilinear, &
                           'dm1=', trim(dm1), ' orderS=',  orderS, 'dm2=', trim(dm2), ' orderT=', orderT, &
                                                       fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                       noConserve, validate, &
                                                       trim(dofnameS), trim(dofnameT)
                   endif
+                  mapper_Sa2l%weight_identifier = wgtIda2l_bilinear 
                   ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxal, wgtIda2l, &
-                                                      trim(dm1), orderS, trim(dm2), orderT, ''//C_NULL_CHAR, &
+                                                      trim(dm1), orderS, trim(dm2), orderT, 'bilinear'//C_NULL_CHAR, &
                                                       fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                       noConserve, validate, &
                                                       trim(dofnameS), trim(dofnameT) )
@@ -543,12 +558,30 @@ contains
                       call shr_sys_abort(subname//' ERROR in computing weights for atm-lnd ')
                   endif
 
+
+                  ! Next compute the conservative map for projection of flux fields
+                  ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxal, wgtIda2l, &
+                                                  trim(dm1), orderS, trim(dm2), orderT, C_NULL_CHAR, &
+                                                  fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
+                                                  noConserve, validate, &
+                                                  trim(dofnameS), trim(dofnameT) )
+                  if (ierr .ne. 0) then
+                     write(logunit,*) subname,' error in computing ATM-LND weights '
+                     call shr_sys_abort(subname//' ERROR in computing ATM-LND weights ')
+                  endif
+
               else
                   type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
 
-                  call moab_map_init_rcfile( mbrxid, mblxid, mbintxrl, type1, &
+                  call moab_map_init_rcfile( mbaxid, mblxid, mbintxal, type1, &
                         'seq_maps.rc', 'atm2lnd_smapname:', 'atm2lnd_smaptype:',samegrid_al, &
                         wgtIda2l, 'mapper_Sa2l MOAB initialization', esmf_map_flag)
+                  
+                  ! read as the second one the f map, this one has the aream for land correct, so it should be fine
+                  ! the area_b for the bilinear map above is 0 ! which caused grief 
+                  call moab_map_init_rcfile( mbaxid, mblxid, mbintxal, type1, &
+                        'seq_maps.rc', 'atm2lnd_fmapname:', 'atm2lnd_fmaptype:',samegrid_al, &
+                        wgtIda2l, 'mapper_Fa2l MOAB initialization', esmf_map_flag)
               endif
 
             else  ! the same mesh , atm and lnd use the same dofs, but lnd is a subset of atm
