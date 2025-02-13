@@ -10,6 +10,126 @@
 namespace scream
 {
 
+namespace impl {
+
+template<CombineMode CM, bool use_fill, typename LhsView, typename RhsView, typename ST>
+struct CombineViewsHelper {
+
+  using exec_space = typename LhsView::traits::execution_space;
+
+  static constexpr int N = LhsView::rank();
+
+  template<int M>
+  using MDRange = Kokkos::MDRangePolicy<
+                    exec_space,
+                    Kokkos::Rank<M,Kokkos::Iterate::Right,Kokkos::Iterate::Right>
+                  >;
+
+  void run (const std::vector<int>& dims) const {
+    if constexpr (N==0) {
+      Kokkos::RangePolicy<exec_space> policy(0,1);
+      Kokkos::parallel_for(policy,*this);
+    } else if constexpr (N==1) {
+      Kokkos::RangePolicy<exec_space> policy(0,dims[0]);
+      Kokkos::parallel_for(policy,*this);
+    } else if constexpr (N==2) {
+      MDRange<2> policy({0,0},{dims[0],dims[1]});
+      Kokkos::parallel_for(policy,*this);
+    } else if constexpr (N==3) {
+      MDRange<3> policy({0,0,0},{dims[0],dims[1],dims[2]});
+      Kokkos::parallel_for(policy,*this);
+    } else if constexpr (N==4) {
+      MDRange<4> policy({0,0,0,0},{dims[0],dims[1],dims[2],dims[3]});
+      Kokkos::parallel_for(policy,*this);
+    } else if constexpr (N==5) {
+      MDRange<5> policy({0,0,0,0,0},{dims[0],dims[1],dims[2],dims[3],dims[4]});
+      Kokkos::parallel_for(policy,*this);
+    } else if constexpr (N==6) {
+      MDRange<6> policy({0,0,0,0,0,0},{dims[0],dims[1],dims[2],dims[3],dims[4],dims[5]});
+      Kokkos::parallel_for(policy,*this);
+    } else {
+      EKAT_ERROR_MSG ("Unsupported rank! Should be in [2,6].\n");
+    }
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void operator() (int i) const {
+    if constexpr (use_fill)
+      if constexpr (N==0)
+        combine_and_fill<CM>(rhs(),lhs(),fill_val,alpha,beta);
+      else
+        combine_and_fill<CM>(rhs(i),lhs(i),fill_val,alpha,beta);
+    else
+      if constexpr (N==0)
+        combine<CM>(rhs(),lhs(),alpha,beta);
+      else
+        combine<CM>(rhs(i),lhs(i),alpha,beta);
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void operator() (int i, int j) const {
+    if constexpr (use_fill)
+      combine_and_fill<CM>(rhs(i,j),lhs(i,j),fill_val,alpha,beta);
+    else
+      combine<CM>(rhs(i,j),lhs(i,j),alpha,beta);
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void operator() (int i, int j, int k) const {
+    if constexpr (use_fill)
+      combine_and_fill<CM>(rhs(i,j,k),lhs(i,j,k),fill_val,alpha,beta);
+    else
+      combine<CM>(rhs(i,j,k),lhs(i,j,k),alpha,beta);
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void operator() (int i, int j, int k, int l) const {
+    if constexpr (use_fill)
+      combine_and_fill<CM>(rhs(i,j,k,l),lhs(i,j,k,l),fill_val,alpha,beta);
+    else
+      combine<CM>(rhs(i,j,k,l),lhs(i,j,k,l),alpha,beta);
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void operator() (int i, int j, int k, int l, int m) const {
+    if constexpr (use_fill)
+      combine_and_fill<CM>(rhs(i,j,k,l,m),lhs(i,j,k,l,m),fill_val,alpha,beta);
+    else
+      combine<CM>(rhs(i,j,k,l,m),lhs(i,j,k,l,m),alpha,beta);
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void operator() (int i, int j, int k, int l, int m, int n) const {
+    if constexpr (use_fill)
+      combine_and_fill<CM>(rhs(i,j,k,l,m,n),lhs(i,j,k,l,m,n),fill_val,alpha,beta);
+    else
+      combine<CM>(rhs(i,j,k,l,m,n),lhs(i,j,k,l,m,n),alpha,beta);
+  }
+
+  ST alpha;
+  ST beta;
+  LhsView lhs;
+  RhsView rhs;
+  typename LhsView::traits::value_type fill_val;
+};
+
+template<CombineMode CM, bool use_fill, typename LhsView, typename RhsView, typename ST>
+void
+cvh (LhsView lhs, RhsView rhs,
+     ST alpha, ST beta, typename LhsView::traits::value_type fill_val,
+     const std::vector<int>& dims)
+{
+  CombineViewsHelper <CM, use_fill, LhsView, RhsView,  ST> helper;
+  helper.lhs = lhs;
+  helper.rhs = rhs;
+  helper.alpha = alpha;
+  helper.beta = beta;
+  helper.fill_val = fill_val;
+  helper.run(dims);
+}
+
+} // namespace impl
+
 template<typename ViewT, typename>
 Field::
 Field (const identifier_type& id,
@@ -450,23 +570,20 @@ template<HostOrDevice HD, CombineMode CM, typename ST>
 void Field::
 update (const Field& x, const ST alpha, const ST beta)
 {
+  // Check this field is writable
+  EKAT_REQUIRE_MSG (not is_read_only(),
+      "Error! Cannot update field, as it is read-only.\n"
+      " - field name: " + name() + "\n");
+
   const auto& dt = data_type();
+  const auto& rhs_dt = x.data_type();
 
-  // Determine if there is a FillValue that requires extra treatment.
-  ST fill_val = constants::DefaultFillValue<ST>().value;
-
-  if (x.get_header().has_extra_data("mask_value")) {
-
-    if (dt==DataType::IntType) {
-      fill_val = x.get_header().get_extra_data<int>("mask_value");
-    } else if (dt==DataType::FloatType) {
-      fill_val = x.get_header().get_extra_data<float>("mask_value");
-    } else if (dt==DataType::DoubleType) {
-      fill_val = x.get_header().get_extra_data<double>("mask_value");
-    } else {
-      EKAT_ERROR_MSG ("Error! Unrecognized/unsupported field data type in Field::update.\n");
-    }
-  }
+  // We would like to allow to update, say, a double field with an int one,
+  // but the ramification of template instantiations are just too many.
+  EKAT_REQUIRE_MSG (rhs_dt == dt,
+      "Error! Right hand side data type must match the lhs data type.\n"
+      " - rhs data type: " + e2str(rhs_dt) + "\n"
+      " - lhs data type: " + e2str(dt) + "\n");
 
   // If user passes, say, double alpha/beta for an int field, we should error out, warning about
   // a potential narrowing rounding. The other way around, otoh, is allowed (even though
@@ -478,21 +595,6 @@ update (const Field& x, const ST alpha, const ST beta)
       " - x/y data type  : " + e2str(dt) + "\n"
       " - coeff data type: " + e2str(dt_st) + "\n");
 
-  if (dt==DataType::IntType) {
-    return update_impl<CM,HD,int>(x,alpha,beta,fill_val);
-  } else if (dt==DataType::FloatType) {
-    return update_impl<CM,HD,float>(x,alpha,beta,fill_val);
-  } else if (dt==DataType::DoubleType) {
-    return update_impl<CM,HD,double>(x,alpha,beta,fill_val);
-  } else {
-    EKAT_ERROR_MSG ("Error! Unrecognized/unsupported field data type in Field::update.\n");
-  }
-}
-
-template<CombineMode CM, HostOrDevice HD,typename ST>
-void Field::
-update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
-{
   // Check x/y are allocated
   EKAT_REQUIRE_MSG (is_allocated(),
       "Error! Cannot update field, since it is not allocated.\n"
@@ -500,25 +602,6 @@ update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
   EKAT_REQUIRE_MSG (x.is_allocated(),
       "Error! Cannot update field, since source field is not allocated.\n"
       " - field name: " + x.name() + "\n");
-
-  // Check y is writable
-  EKAT_REQUIRE_MSG (not is_read_only(),
-      "Error! Cannot update field, as it is read-only.\n"
-      " - field name: " + name() + "\n");
-
-  // Check compatibility between fields data type
-  const auto dt_x = x.data_type();
-  const auto dt_y = data_type();
-
-  // We could be more general, and do
-  //   EKAT_REQUIRE_MSG (not is_narrowing_conversion(dt_x,dt_y),"");
-  // but then we'd need N*N template instantiations of the impl function
-  EKAT_REQUIRE_MSG (dt_x==dt_y,
-      "Error! X and Y field must have the same data type.\n"
-      " - x name: " + x.name() + "\n"
-      " - y name: " + name() + "\n"
-      " - x data type: " + e2str(dt_x) + "\n"
-      " - y data type: " + e2str(dt_y) + "\n");
 
   const auto& y_l = get_header().get_identifier().get_layout();
   const auto& x_l = x.get_header().get_identifier().get_layout();
@@ -529,102 +612,183 @@ update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
       " - x layout: " + x_l.to_string() + "\n"
       " - y layout: " + y_l.to_string() + "\n");
 
-  using device_t = typename Field::get_device<HD>;
-  using exec_space = typename device_t::execution_space;
-  using RangePolicy = Kokkos::RangePolicy<exec_space>;
-  auto policy = RangePolicy(0,x_l.size());
+  // Determine if there is a FillValue that requires extra treatment.
+  bool use_fill = get_header().has_extra_data("mask_value") or
+                  x.get_header().has_extra_data("mask_value");
 
-  using extents_type = typename ekat::KokkosTypes<device_t>::template view_1d<int>;
-  extents_type ext;
-  if constexpr (HD==Device) {
-    ext = x_l.extents();
+  if (dt==DataType::IntType) {
+    if (use_fill) {
+      return update_impl<CM,HD,true,int>(x,alpha,beta);
+    } else {
+      return update_impl<CM,HD,false,int>(x,alpha,beta);
+    }
+  } else if (dt==DataType::FloatType) {
+    if (use_fill) {
+      return update_impl<CM,HD,true, float>(x,alpha,beta);
+    } else {
+      return update_impl<CM,HD,false, float>(x,alpha,beta);
+    }
+  } else if (dt==DataType::DoubleType) {
+    if (use_fill) {
+      return update_impl<CM,HD,true, double>(x,alpha,beta);
+    } else {
+      return update_impl<CM,HD,false, double>(x,alpha,beta);
+    }
   } else {
-    ext = x_l.extents_h();
+    EKAT_ERROR_MSG ("Error! Unrecognized/unsupported field data type in Field::update.\n");
+  }
+}
+
+template<CombineMode CM, HostOrDevice HD, bool use_fill, typename ST>
+void Field::
+update_impl (const Field& x, const ST alpha, const ST beta)
+{
+  const auto& layout = x.get_header().get_identifier().get_layout();
+  const auto& dims = layout.dims();
+
+  ST fill_val = 0;
+  if constexpr (use_fill) {
+    if (get_header().has_extra_data("mask_value")) {
+      fill_val = get_header().get_extra_data<ST>("mask_value");
+    } else if (x.get_header().has_extra_data("mask_value")) {
+      fill_val = x.get_header().get_extra_data<ST>("mask_value");
+    } else {
+      EKAT_ERROR_MSG ("Error! Field::update_impl called with use_fill,\n"
+                      "       but neither *this nor x has mask_value extra data.\n"
+                      " - *this name: " + name() + "\n"
+                      " - x name: " + x.name() + "\n");
+    }
   }
 
-  switch (x_l.rank()) {
+  // Must handle the case where one of the two views is strided (or both)
+  const auto x_contig = x.get_header().get_alloc_properties().contiguous();
+  const auto y_contig = get_header().get_alloc_properties().contiguous();
+  switch (layout.rank()) {
     case 0:
-      {
-        auto xv = x.get_view<const ST,HD>();
-        auto yv =   get_view<      ST,HD>();
-        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const int /*idx*/) {
-          combine_and_fill<CM>(xv(),yv(),fill_val,alpha,beta);
-        });
-      }
+      if (x_contig and y_contig)
+        impl::cvh<CM,use_fill>(get_view<ST,HD>(),
+                               x.get_view<const ST,HD>(),
+                               alpha,beta,fill_val,dims);
+      else if (x_contig)
+        impl::cvh<CM,use_fill>(get_strided_view<ST,HD>(),
+                               x.get_view<const ST,HD>(),
+                               alpha,beta,fill_val,dims);
+      else if (y_contig)
+        impl::cvh<CM,use_fill>(get_view<ST,HD>(),
+                               x.get_strided_view<const ST,HD>(),
+                               alpha,beta,fill_val,dims);
+      else
+        impl::cvh<CM,use_fill>(get_strided_view<ST,HD>(),
+                               x.get_strided_view<const ST,HD>(),
+                               alpha,beta,fill_val,dims);
       break;
     case 1:
-      {
-        // Must handle the case where one of the two views is strided
-        if (x.get_header().get_alloc_properties().contiguous() and
-              get_header().get_alloc_properties().contiguous()) {
-          auto xv = x.get_view<const ST*,HD>();
-          auto yv =   get_view<      ST*,HD>();
-          Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-            combine_and_fill<CM>(xv(idx),yv(idx),fill_val,alpha,beta);
-          });
-        } else {
-          auto xv = x.get_strided_view<const ST*,HD>();
-          auto yv =   get_strided_view<      ST*,HD>();
-          Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-            combine_and_fill<CM>(xv(idx),yv(idx),fill_val,alpha,beta);
-          });
-        }
-      }
+      if (x_contig and y_contig)
+        impl::cvh<CM,use_fill>(get_view<ST*,HD>(),
+                               x.get_view<const ST*,HD>(),
+                               alpha,beta,fill_val,dims);
+      else if (x_contig)
+        impl::cvh<CM,use_fill>(get_strided_view<ST*,HD>(),
+                               x.get_view<const ST*,HD>(),
+                               alpha,beta,fill_val,dims);
+      else if (y_contig)
+        impl::cvh<CM,use_fill>(get_view<ST*,HD>(),
+                               x.get_strided_view<const ST*,HD>(),
+                               alpha,beta,fill_val,dims);
+      else
+        impl::cvh<CM,use_fill>(get_strided_view<ST*,HD>(),
+                               x.get_strided_view<const ST*,HD>(),
+                               alpha,beta,fill_val,dims);
       break;
     case 2:
-      {
-        auto xv = x.get_view<const ST**,HD>();
-        auto yv =   get_view<      ST**,HD>();
-        Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-          int i,j;
-          unflatten_idx(idx,ext,i,j);
-          combine_and_fill<CM>(xv(i,j),yv(i,j),fill_val,alpha,beta);
-        });
-      }
+      if (x_contig and y_contig)
+        impl::cvh<CM,use_fill>(get_view<ST**,HD>(),
+                               x.get_view<const ST**,HD>(),
+                               alpha,beta,fill_val,dims);
+      else if (x_contig)
+        impl::cvh<CM,use_fill>(get_strided_view<ST**,HD>(),
+                               x.get_view<const ST**,HD>(),
+                               alpha,beta,fill_val,dims);
+      else if (y_contig)
+        impl::cvh<CM,use_fill>(get_view<ST**,HD>(),
+                               x.get_strided_view<const ST**,HD>(),
+                               alpha,beta,fill_val,dims);
+      else
+        impl::cvh<CM,use_fill>(get_strided_view<ST**,HD>(),
+                               x.get_strided_view<const ST**,HD>(),
+                               alpha,beta,fill_val,dims);
       break;
     case 3:
-      {
-        auto xv = x.get_view<const ST***,HD>();
-        auto yv =   get_view<      ST***,HD>();
-        Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-          int i,j,k;
-          unflatten_idx(idx,ext,i,j,k);
-          combine_and_fill<CM>(xv(i,j,k),yv(i,j,k),fill_val,alpha,beta);
-        });
-      }
+      if (x_contig and y_contig)
+        impl::cvh<CM,use_fill>(get_view<ST***,HD>(),
+                               x.get_view<const ST***,HD>(),
+                               alpha,beta,fill_val,dims);
+      else if (x_contig)
+        impl::cvh<CM,use_fill>(get_strided_view<ST***,HD>(),
+                               x.get_view<const ST***,HD>(),
+                               alpha,beta,fill_val,dims);
+      else if (y_contig)
+        impl::cvh<CM,use_fill>(get_view<ST***,HD>(),
+                               x.get_strided_view<const ST***,HD>(),
+                               alpha,beta,fill_val,dims);
+      else
+        impl::cvh<CM,use_fill>(get_strided_view<ST***,HD>(),
+                               x.get_strided_view<const ST***,HD>(),
+                               alpha,beta,fill_val,dims);
       break;
     case 4:
-      {
-        auto xv = x.get_view<const ST****,HD>();
-        auto yv =   get_view<      ST****,HD>();
-        Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-          int i,j,k,l;
-          unflatten_idx(idx,ext,i,j,k,l);
-          combine_and_fill<CM>(xv(i,j,k,l),yv(i,j,k,l),fill_val,alpha,beta);
-        });
-      }
+      if (x_contig and y_contig)
+        impl::cvh<CM,use_fill>(get_view<ST****,HD>(),
+                               x.get_view<const ST****,HD>(),
+                               alpha,beta,fill_val,dims);
+      else if (x_contig)
+        impl::cvh<CM,use_fill>(get_strided_view<ST****,HD>(),
+                               x.get_view<const ST****,HD>(),
+                               alpha,beta,fill_val,dims);
+      else if (y_contig)
+        impl::cvh<CM,use_fill>(get_view<ST****,HD>(),
+                               x.get_strided_view<const ST****,HD>(),
+                               alpha,beta,fill_val,dims);
+      else
+        impl::cvh<CM,use_fill>(get_strided_view<ST****,HD>(),
+                               x.get_strided_view<const ST****,HD>(),
+                               alpha,beta,fill_val,dims);
       break;
     case 5:
-      {
-        auto xv = x.get_view<const ST*****,HD>();
-        auto yv =   get_view<      ST*****,HD>();
-        Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-          int i,j,k,l,m;
-          unflatten_idx(idx,ext,i,j,k,l,m);
-          combine_and_fill<CM>(xv(i,j,k,l,m),yv(i,j,k,l,m),fill_val,alpha,beta);
-        });
-      }
+      if (x_contig and y_contig)
+        impl::cvh<CM,use_fill>(get_view<ST*****,HD>(),
+                               x.get_view<const ST*****,HD>(),
+                               alpha,beta,fill_val,dims);
+      else if (x_contig)
+        impl::cvh<CM,use_fill>(get_strided_view<ST*****,HD>(),
+                               x.get_view<const ST*****,HD>(),
+                               alpha,beta,fill_val,dims);
+      else if (y_contig)
+        impl::cvh<CM,use_fill>(get_view<ST*****,HD>(),
+                               x.get_strided_view<const ST*****,HD>(),
+                               alpha,beta,fill_val,dims);
+      else
+        impl::cvh<CM,use_fill>(get_strided_view<ST*****,HD>(),
+                               x.get_strided_view<const ST*****,HD>(),
+                               alpha,beta,fill_val,dims);
       break;
     case 6:
-      {
-        auto xv = x.get_view<const ST******,HD>();
-        auto yv =   get_view<      ST******,HD>();
-        Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-          int i,j,k,l,m,n;
-          unflatten_idx(idx,ext,i,j,k,l,m,n);
-          combine_and_fill<CM>(xv(i,j,k,l,m,n),yv(i,j,k,l,m,n),fill_val,alpha,beta);
-        });
-      }
+      if (x_contig and y_contig)
+        impl::cvh<CM,use_fill>(get_view<ST******,HD>(),
+                               x.get_view<const ST******,HD>(),
+                               alpha,beta,fill_val,dims);
+      else if (x_contig)
+        impl::cvh<CM,use_fill>(get_strided_view<ST******,HD>(),
+                               x.get_view<const ST******,HD>(),
+                               alpha,beta,fill_val,dims);
+      else if (y_contig)
+        impl::cvh<CM,use_fill>(get_view<ST******,HD>(),
+                               x.get_strided_view<const ST******,HD>(),
+                               alpha,beta,fill_val,dims);
+      else
+        impl::cvh<CM,use_fill>(get_strided_view<ST******,HD>(),
+                               x.get_strided_view<const ST******,HD>(),
+                               alpha,beta,fill_val,dims);
       break;
     default:
       EKAT_ERROR_MSG ("Error! Rank not supported in update_field.\n"
