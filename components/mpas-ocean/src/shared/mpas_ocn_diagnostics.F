@@ -930,7 +930,7 @@ contains
             !$omp end parallel
 #endif
 
-         end if  
+         end if
 
       case (thickEdgeFluxUpwind)
          ! Use upwind thickness as the edge flux value
@@ -2730,11 +2730,11 @@ contains
                                            subgridWetVolumeCellTable(:,iCell), &
                                            subgridSshCellTableRange(:,iCell), &
                                            bottomDepth(iCell), &
-                                           subgridCellBathymetryMin(iCell), & 
+                                           subgridCellBathymetryMin(iCell), &
                                            ssh(iCell))
 
                zTop(1,iCell) = ssh(iCell)
-               zMid(1,iCell) = -bottomDepth(iCell) + 0.5_RKIND*layerThickness(1,iCell)         
+               zMid(1,iCell) = -bottomDepth(iCell) + 0.5_RKIND*layerThickness(1,iCell)
          end do
 #ifdef MPAS_OPENACC
       !$acc update device(zTop, zMid, ssh)
