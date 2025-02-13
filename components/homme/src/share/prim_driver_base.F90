@@ -1611,9 +1611,7 @@ contains
 
 !disabled so that all tendencies are added in new physics code
 !or state vars are reset there
-#if 0
-
-stop
+#if 1
 
   call t_startf("ApplyCAMForcing_tracers")
 

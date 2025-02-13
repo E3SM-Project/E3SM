@@ -661,7 +661,7 @@ contains
                 call nf_put_var(ncdf(ios),var3d,start, count, name='ke')
              end if
 
-             do qindex=1,min(qsize,4)
+             do qindex=1,min(qsize,9)
                 write(vname,'(a1,i1)') 'Q',qindex
                 if (qindex==1) vname='Q'
                 if(nf_selectedvar(vname, output_varnames)) then

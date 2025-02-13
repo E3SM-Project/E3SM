@@ -521,7 +521,7 @@ contains
 
 !disabled so that all tendencies are added in new physics code
 !or state vars are reset there
-#if 0
+#if 1
   integer :: k,ie
   do ie=nets,nete
 

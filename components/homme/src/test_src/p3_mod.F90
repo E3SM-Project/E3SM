@@ -173,7 +173,7 @@ subroutine interface_to_p3(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     real, parameter ::         p3_nc_autocon_expon = -1.1     ! IN  autoconversion nc exponent
     real, parameter ::         p3_qc_accret_expon  = 1.15     ! IN  autoconversion coefficient
     real, parameter ::         p3_wbf_coeff        = 1.0      ! IN  WBF process coefficient
-    real, parameter ::         p3_mincdnc          = 20.0     ! IN  imposing minimal Nc 
+    real, parameter ::         p3_mincdnc          = 20000000.0     ! IN  imposing minimal Nc 
     real, parameter ::         p3_max_mean_rain_size  = 0.005 ! IN  max mean rain size
     real, parameter ::         p3_embryonic_rain_size = 0.000025 ! IN  embryonic rain size for autoconversion
 
@@ -201,7 +201,7 @@ subroutine interface_to_p3(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
 !this may be wrong counter, do we call forcing only at remap?
     it = tl%nstep;
-    dtime = 1.0; ! figure it later
+    dtime = 300.0; ! figure it later
 
     !col_location uninited
 

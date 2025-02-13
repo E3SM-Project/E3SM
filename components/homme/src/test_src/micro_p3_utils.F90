@@ -1,3 +1,9 @@
+!replaced 
+!<     !integer, parameter :: limiter_off = int(Z'7FF1111111111111', itype) !????
+!with
+!<     integer, parameter :: limiter_off = 1
+
+
 module micro_p3_utils
 
   use physical_constants,     only: pi => dd_pi
