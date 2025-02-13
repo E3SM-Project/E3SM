@@ -26,6 +26,7 @@ enum IOType {
   NetCDF,
   PnetCDF,
   Adios,
+  Adiosc,
   Hdf5,
   Invalid
 };
