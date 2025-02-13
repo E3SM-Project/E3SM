@@ -23,6 +23,9 @@
 #ifdef EAMXX_HAS_NUDGING
 #include "physics/nudging/eamxx_nudging_process_interface.hpp"
 #endif
+#ifdef EAMXX_HAS_POMPEI
+#include "physics/pompei/eamxx_pompei_process_interface.hpp"
+#endif
 #ifdef EAMXX_HAS_MAM
 #include "physics/mam/eamxx_mam_microphysics_process_interface.hpp"
 #include "physics/mam/eamxx_mam_optics_process_interface.hpp"
@@ -66,6 +69,9 @@ inline void register_physics () {
 #endif
 #ifdef EAMXX_HAS_NUDGING
   proc_factory.register_product("Nudging",&create_atmosphere_process<Nudging>);
+#endif
+#ifdef EAMXX_HAS_POMPEI
+  proc_factory.register_product("pompei",&create_atmosphere_process<PompeiEruption>);
 #endif
 #ifdef EAMXX_HAS_MAM
   proc_factory.register_product("mam4_aero_microphys",&create_atmosphere_process<MAMMicrophysics>);

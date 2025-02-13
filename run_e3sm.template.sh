@@ -13,7 +13,7 @@ main() {
 # --- Configuration flags ----
 
 # Machine and project
-readonly MACHINE=pm-cpu
+readonly MACHINE=pm-gpu
 # NOTE: The command below will return your default project on SLURM-based systems. 
 # If you are not using SLURM or need a different project, remove the command and set it directly
 readonly PROJECT="$(sacctmgr show user $USER format=DefaultAccount | tail -n1 | tr -d ' ')"
@@ -56,7 +56,7 @@ readonly CASE_ARCHIVE_DIR=${CASE_ROOT}/archive
 #               'M_1x10_ndays', 'M2_1x10_ndays', 'M80_1x10_ndays', 'L_1x10_ndays'
 #               * can replace XS, M, etc. with custom-XY with XY being the node count
 #  or 'production' for full simulation
-readonly run='XS_2x5_ndays'
+readonly run='4x1_1x6_ndays'
 if [ "${run}" != "production" ]; then
   echo "setting up Short test simulations: ${run}"
   # Short test simulations
@@ -146,66 +146,100 @@ echo $'\n----- All done -----\n'
 
 user_nl() {
 
-cat << EOF >> user_nl_eam
- cosp_lite = .true.
+# increase SCREAM_NUM_TRACERS from 10 to 11 (note that scream supports both 128 and 72 levels for low-res)
+./xmlchange SCREAM_CMAKE_OPTIONS="SCREAM_NP 4 SCREAM_NUM_VERTICAL_LEV 128 SCREAM_NUM_TRACERS 11"
 
- empty_htapes = .true.
+# add pompei to the list of aerosol processes
+./atmchange mac_aero_mic::atm_procs_list+=pompei
+# if you want to change the eruption date, you can do so with the following command
+./atmchange atmosphere_processes::physics::mac_aero_mic::pompei::eruption_date="0001-01-02-00000"
+# if you want to change the eruption radius, you can do so with the following command
+./atmchange atmosphere_processes::physics::mac_aero_mic::pompei::plume_radius_in_km=1000.0
 
- avgflag_pertape = 'A','A','A','A','I','I'
- nhtfrq = 0,-24,-6,-3,-1,0
- mfilt  = 1,30,120,240,720,1
-
- fincl1 = 'AODALL','AODBC','AODDUST','AODPOM','AODSO4','AODSOA','AODSS','AODVIS',
-          'CLDLOW','CLDMED','CLDHGH','CLDTOT',
-          'CLDHGH_CAL','CLDLOW_CAL','CLDMED_CAL','CLD_MISR','CLDTOT_CAL',
-          'CLMODIS','FISCCP1_COSP','FLDS','FLNS','FLNSC','FLNT','FLUT',
-          'FLUTC','FSDS','FSDSC','FSNS','FSNSC','FSNT','FSNTOA','FSNTOAC','FSNTC',
-          'ICEFRAC','LANDFRAC','LWCF','OCNFRAC','OMEGA','PRECC','PRECL','PRECSC','PRECSL','PS','PSL','Q',
-          'QFLX','QREFHT','RELHUM','SCO','SHFLX','SOLIN','SWCF','T','TAUX','TAUY','TCO',
-          'TGCLDLWP','TMQ','TREFHT','TREFMNAV','TREFMXAV','TS','U','U10','V','Z3',
-          'O3','LHFLX',
-          'O3_2DTDA_trop','O3_2DTDB_trop','O3_2DTDD_trop','O3_2DTDE_trop','O3_2DTDI_trop','O3_2DTDL_trop',
-          'O3_2DTDN_trop','O3_2DTDO_trop','O3_2DTDS_trop','O3_2DTDU_trop','O3_2DTRE_trop','O3_2DTRI_trop',
-          'O3_SRF','NO_2DTDS','NO_TDLgt','NO2_2DTDD','NO2_2DTDS','NO2_TDAcf','CO_SRF','TROPE3D_P','TROP_P',
-          'CDNUMC','SFDMS','so4_a1_sfgaex1','so4_a2_sfgaex1','so4_a3_sfgaex1','so4_a5_sfgaex1','soa_a1_sfgaex1',
-          'soa_a2_sfgaex1','soa_a3_sfgaex1','GS_soa_a1','GS_soa_a2','GS_soa_a3','AQSO4_H2O2','AQSO4_O3',
-          'SFSO2','SO2_CLXF','SO2','DF_SO2','AQ_SO2','GS_SO2','WD_SO2','ABURDENSO4_STR','ABURDENSO4_TRO',
-          'ABURDENSO4','ABURDENBC','ABURDENDUST','ABURDENMOM','ABURDENPOM','ABURDENSEASALT',
-          'ABURDENSOA','AODSO4_STR','AODSO4_TRO',
-          'EXTINCT','AODABS','AODABSBC','CLDICE','CLDLIQ','CLD_CAL_TMPLIQ','CLD_CAL_TMPICE','Mass_bc_srf',
-          'Mass_dst_srf','Mass_mom_srf','Mass_ncl_srf','Mass_pom_srf','Mass_so4_srf','Mass_soa_srf','Mass_bc_850',
-          'Mass_dst_850','Mass_mom_850','Mass_ncl_850','Mass_pom_850','Mass_so4_850','Mass_soa_850','Mass_bc_500',
-          'Mass_dst_500','Mass_mom_500','Mass_ncl_500','Mass_pom_500','Mass_so4_500','Mass_soa_500','Mass_bc_330',
-          'Mass_dst_330','Mass_mom_330','Mass_ncl_330','Mass_pom_330','Mass_so4_330','Mass_soa_330','Mass_bc_200',
-          'Mass_dst_200','Mass_mom_200','Mass_ncl_200','Mass_pom_200','Mass_so4_200','Mass_soa_200',
-          'O3_2DTDD','O3_2DCIP','O3_2DCIL','CO_2DTDS','CO_2DTDD','CO_2DCEP','CO_2DCEL','NO_2DTDD',
-          'FLNTC','SAODVIS',
-          'H2OLNZ',
-          'dst_a1SF','dst_a3SF',
-          'PHIS','CLOUD','TGCLDIWP','TGCLDCWP','AREL',
-          'CLDTOT_ISCCP','MEANCLDALB_ISCCP','MEANPTOP_ISCCP','CLD_CAL',
-          'CLDTOT_CAL_LIQ','CLDTOT_CAL_ICE','CLDTOT_CAL_UN',
-          'CLDHGH_CAL_LIQ','CLDHGH_CAL_ICE','CLDHGH_CAL_UN',
-          'CLDMED_CAL_LIQ','CLDMED_CAL_ICE','CLDMED_CAL_UN',
-          'CLDLOW_CAL_LIQ','CLDLOW_CAL_ICE','CLDLOW_CAL_UN',
-          'CLWMODIS','CLIMODIS'
-
- fincl2 = 'PS', 'FLUT','PRECT','U200','V200','U850','V850',
-          'TCO','SCO','TREFHTMN','TREFHTMX','TREFHT','QREFHT'
- fincl3 = 'PS', 'PSL','PRECT','TUQ','TVQ','UBOT','VBOT','TREFHT','FLUT','OMEGA500','TBOT','U850','V850','U200','V200','T200','T500','Z700'
- fincl4 = 'PRECT'
- fincl5 = 'O3_SRF'
- fincl6 = 'CO_2DMSD','NO2_2DMSD','NO_2DMSD','O3_2DMSD','O3_2DMSD_trop'
-
- ! -- chemUCI settings ------------------
- history_chemdyg_summary = .true.
- history_gaschmbudget_2D = .false.
- history_gaschmbudget_2D_levels = .false.
- history_gaschmbudget_num = 6 !! no impact if  history_gaschmbudget_2D = .false.
-
- ! -- MAM5 settings ------------------
- is_output_interactive_volc = .true.
+# create yaml file (or save it elsewhere)
+cat << EOF >> output_file.yaml
+%YAML 1.1
+---
+filename_prefix: tutorial_output.eamxx.h
+Averaging Type: Average
+Max Snapshots Per File: 1
+track_fill: true
+Fields:
+  Physics PG2:
+    Field Names:
+    # 3D vars
+    - ash
+    - T_mid
+    - qv
+    - RelativeHumidity
+    - qc
+    - qi
+    - qr
+    - qm
+    - nc
+    - ni
+    - nr
+    - cldfrac_tot_for_analysis
+    - cldfrac_ice_for_analysis
+    - cldfrac_liq
+    - omega
+    - U
+    - V
+    - z_mid
+    - p_mid
+    - tke
+    # 2D vars
+    - ash_at_model_top
+    - ash_at_model_bot
+    - ash_at_400hPa
+    - ash_at_700hPa
+    - ash_at_800hPa
+    - ash_at_900hPa
+    - ash_at_990hPa
+    - SW_flux_up_at_model_top
+    - SW_flux_dn_at_model_top
+    - LW_flux_up_at_model_top
+    - SW_clrsky_flux_up_at_model_top
+    - LW_clrsky_flux_up_at_model_top
+    - SW_flux_dn_at_model_bot
+    - SW_clrsky_flux_dn_at_model_bot
+    - SW_flux_up_at_model_bot
+    - SW_clrsky_flux_up_at_model_bot
+    - LW_flux_dn_at_model_bot
+    - LW_clrsky_flux_dn_at_model_bot
+    - LW_flux_up_at_model_bot
+    - LongwaveCloudForcing
+    - ShortwaveCloudForcing
+    - ps
+    - SeaLevelPressure
+    - T_2m
+    - qv_2m
+    - surf_radiative_T
+    - VapWaterPath
+    - IceWaterPath
+    - LiqWaterPath
+    - RainWaterPath
+    - ZonalVapFlux
+    - MeridionalVapFlux
+    - surf_evap
+    - surf_sens_flux
+    - surface_upward_latent_heat_flux
+    - precip_liq_surf_mass_flux
+    - precip_ice_surf_mass_flux
+    - landfrac
+    - ocnfrac
+    - PotentialTemperature_at_700hPa
+    - PotentialTemperature_at_1000hPa
+    - omega_at_500hPa
+    - RelativeHumidity_at_700hPa
+output_control:
+  Frequency: 1
+  frequency_units: ndays
+  MPI Ranks in Filename: false
 EOF
+
+# add the output file to the list of output streams
+./atmchange output_yaml_files="./output_file.yaml"
 
 cat << EOF >> user_nl_elm
 finidat = ''
@@ -348,7 +382,8 @@ case_setup() {
 
     # Build with COSP, except for a data atmosphere (datm) or "scream"
     if [ `./xmlquery --value COMP_ATM` == "datm" ] || [ `./xmlquery --value COMP_ATM` == "scream" ]; then
-      echo $'\nThe specified configuration uses a data atmosphere or SCREAM, so cannot activate COSP simulator\n'
+      echo $'\nThe specified configuration uses a data atmosphere or SCREAM, so will not add COSP to CAM_CONFIG_OPTS'
+      echo $'If you want to use the COSP simulator in EAMxx, you can add it via atmchange as a process.\n'
     else
       echo $'\nConfiguring E3SM to use the COSP simulator\n'
       ./xmlchange --id CAM_CONFIG_OPTS --append --val='-cosp'
@@ -357,11 +392,11 @@ case_setup() {
     # Extracts input_data_dir in case it is needed for user edits to the namelist later
     local input_data_dir=`./xmlquery DIN_LOC_ROOT --value`
 
-    # Custom user_nl
-    user_nl
-
     # Finally, run CIME case.setup
     ./case.setup --reset
+
+    # Custom user_nl (if we use atmchange inside user_nl, we need to call it after case.setup?)
+    user_nl
 
     popd
 }

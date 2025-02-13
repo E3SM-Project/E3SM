@@ -423,6 +423,12 @@ be lost if SCREAM_HACK_XML is not enabled.
       </nudging_refine_remap_vert_cutoff>
     </nudging>
 
+    <!-- POMPEI  -->
+    <pompei inherit="atm_proc_base" >
+      <eruption_date type="string" doc="Date of volcanic eruption start">0001-01-02-00000</eruption_date>
+      <plume_radius_in_km type="real" doc="Radius in km of plume generation">1000.0</plume_radius_in_km>
+    </pompei>
+
     <!-- ML correction -->
     <mlcorrection inherit="atm_proc_base">
       <ML_model_path_tq type="string" doc="Path to pre-trained ML model for temperature and specific humidity"/>
@@ -633,6 +639,8 @@ be lost if SCREAM_HACK_XML is not enabled.
     <bm                >0.0</bm>
     <ni_activated      >0.0</ni_activated>
     <nc_nuceat_tend    >0.0</nc_nuceat_tend>
+    <!-- Initialize pompei fields not on ICE to zero -->
+    <ash               >0.0</ash>
     <!-- SHOC internally inits TKE; just set to 0 here to signal it's not in the IC file -->
     <tke               >0.0</tke>
     <!-- Note: these should be provided by surface models, but we init here to keep AD from reading from file -->

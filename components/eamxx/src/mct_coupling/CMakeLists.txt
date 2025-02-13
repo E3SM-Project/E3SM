@@ -40,6 +40,7 @@ set (SCREAM_LIBS
      spa
      iop_forcing
      nudging
+     pompei
      diagnostics
      tms
 )
