@@ -1177,7 +1177,7 @@ CONTAINS
          IY  = MAPSF(ISEA,2)
          if (MAPSTA(IY,IX) .eq. 1) then
 
-             if (wav_ocn_coup .eq. 'two') then
+             if (wav_ocn_coup .eq. 'twoway') then
                 w2x_w%rattr(index_w2x_Sw_Hs,jsea) = HS(jsea)
                 w2x_w%rattr(index_w2x_Sw_Fp,jsea) = FP0(jsea)
                 w2x_w%rattr(index_w2x_Sw_Dp,jsea) = THP0(jsea)
@@ -1201,7 +1201,7 @@ CONTAINS
                 w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_6,jsea) = USSP(jsea,nk+6)
              endif
           else
-             if (wav_ocn_coup .eq. 'two') then
+             if (wav_ocn_coup .eq. 'twoway') then
                 w2x_w%rattr(index_w2x_Sw_Hs,jsea) = 0.0
                 w2x_w%rattr(index_w2x_Sw_Fp,jsea) = 0.0
                 w2x_w%rattr(index_w2x_Sw_Dp,jsea) = 0.0

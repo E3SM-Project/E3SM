@@ -75,9 +75,9 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
     if case.get_value('COMP_WAV') == 'ww3':
         config['WAVSPEC'] = case.get_value('WAV_SPEC')
         if case.get_value('COMP_OCN') == 'mpaso':
-            config['WAV_OCN_COUP'] = 'two'
+            config['WAV_OCN_COUP'] = 'twoway'
         elif case.get_value('COMP_OCN') == 'docn': 
-            config['WAV_OCN_COUP'] = 'one'
+            config['WAV_OCN_COUP'] = 'oneway'
     elif case.get_value('COMP_WAV') == 'dwav':
         config['WAVSPEC'] = 'sp36x36'
     else:

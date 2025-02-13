@@ -310,8 +310,8 @@
     <desc>One- or Two-way coupling between Wave and Ocn.</desc>
     <values>
       <value>none</value>
-      <value WAV_OCN_COUP="one">one</value>
-      <value WAV_OCN_COUP="two">two</value>
+      <value WAV_OCN_COUP="oneway">oneway</value>
+      <value WAV_OCN_COUP="twoway">twoway</value>
     </values>
   </entry>
   <!-- =========================== -->

@@ -63,7 +63,7 @@ contains
     index_x2w_So_bldepth = mct_avect_indexra(x2w,'So_bldepth') ! Boundary layer depth
     index_x2w_So_ssh     = mct_avect_indexra(x2w,'So_ssh')     ! Sea surface height 
 
-    if (wav_ocn_coup .eq. 'two') then
+    if (wav_ocn_coup .eq. 'twoway') then
        index_w2x_Sw_Hs = mct_avect_indexra(w2x,'Sw_Hs') ! Significant wave height
        index_w2x_Sw_Fp = mct_avect_indexra(w2x,'Sw_Fp') ! Peak wave freqency  
        index_w2x_Sw_Dp = mct_avect_indexra(w2x,'Sw_Dp') ! Peak wave direction

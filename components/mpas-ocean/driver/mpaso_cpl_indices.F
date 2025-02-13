@@ -319,7 +319,7 @@ contains
     index_x2o_Sg_icemask = mct_avect_indexra(x2o,'Sg_icemask_grounded')
     index_x2o_Sg_icemask = mct_avect_indexra(x2o,'Sg_icemask_floating')
 
-    if (wav_ocn_coup == 'two') then
+    if (wav_ocn_coup == 'twoway') then
        index_x2o_Sw_ustokes_wavenumber_1 = mct_avect_indexra(x2o,'Sw_ustokes_wavenumber_1')
        index_x2o_Sw_vstokes_wavenumber_1 = mct_avect_indexra(x2o,'Sw_vstokes_wavenumber_1')
        index_x2o_Sw_ustokes_wavenumber_2 = mct_avect_indexra(x2o,'Sw_ustokes_wavenumber_2')

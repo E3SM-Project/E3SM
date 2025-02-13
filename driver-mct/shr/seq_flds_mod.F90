@@ -162,7 +162,7 @@ module seq_flds_mod
   logical            :: ocn_rof_two_way     ! .true. if river-ocean two-way coupling turned on
   logical            :: rof_sed             ! .true. if river model includes sediment
 
-  character(len=CS)  :: wav_ocn_coup     ! 'two' if wave-ocean two-way coupling turned on
+  character(len=CS)  :: wav_ocn_coup     ! 'twoway' if wave-ocean two-way coupling turned on
 
   !----------------------------------------------------------------------------
   ! metadata
@@ -2523,7 +2523,7 @@ contains
     !-----------------------------
     ! wav->ocn and ocn->wav
     !-----------------------------
-    if (wav_ocn_coup == 'two') then
+    if (wav_ocn_coup == 'twoway') then
        call seq_flds_add(w2x_states,'Sw_ustokes_wavenumber_1')
        call seq_flds_add(x2o_states,'Sw_ustokes_wavenumber_1')
        longname = 'Partitioned Stokes drift u component, wavenumber 1'
