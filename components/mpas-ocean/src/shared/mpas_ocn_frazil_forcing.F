@@ -605,6 +605,10 @@ contains
                                                  * config_frazil_ice_density ) / (config_specific_heat_sea_water * rho_sw) &
                                                  / dt
 
+              ! ocean fluid temperature is modified due to mixing of existing water with meltwater at the freezing point
+              frazilTemperatureTendency(k,iCell) = frazilTemperatureTendency(k,iCell) + &
+                   meltedFrazilIceThickness * oceanFreezingTemperature / dt
+
               ! keep track of new frazil ice
               sumNewThicknessWeightedSaltContent = max(0.0_RKIND,sumNewThicknessWeightedSaltContent - meltedThicknessWeightedSaltContent)
               sumNewFrazilIceThickness = max(0.0_RKIND,sumNewFrazilIceThickness - meltedFrazilIceThickness)
