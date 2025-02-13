@@ -123,11 +123,9 @@ public:
   compute_midpoint_values (const TeamMember& team,
                            const int num_mid_levels,
                            const InputProvider& x_i,
-                           const view_1d<ScalarT,MT>& x_m,
-                           const scalar_type alpha = one(),
-                           const scalar_type beta = zero())
+                           const view_1d<ScalarT,MT>& x_m)
   {
-    compute_midpoint_values<CombineMode::Replace>(team,num_mid_levels,x_i,x_m,alpha,beta);
+    compute_midpoint_values<CombineMode::Replace>(team,num_mid_levels,x_i,x_m,1,0);
   }
   // Compute X at level midpoints, given X at level interfaces
   template<CombineMode CM, typename InputProvider, typename ScalarT, typename MT>
