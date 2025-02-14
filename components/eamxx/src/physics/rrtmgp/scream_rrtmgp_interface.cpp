@@ -122,11 +122,11 @@ OpticalProps2str get_subsampled_clouds(
   // randomly overlapped.
   auto cldfrac_rad = real2d("cldfrac_rad", ncol, nlay);
   memset(cldfrac_rad, 0.0);  // Start with all zeros
-  parallel_for(SimpleBounds<3>(nbnd,nlay,ncol), YAKL_LAMBDA (int ibnd, int ilay, int icol) {
+  TIMED_KERNEL(parallel_for(SimpleBounds<3>(nbnd,nlay,ncol), YAKL_LAMBDA (int ibnd, int ilay, int icol) {
       if (cloud_optics.tau(icol,ilay,ibnd) > 0) {
         cldfrac_rad(icol,ilay) = cld(icol,ilay);
       }
-    });
+    }));
   // Get subcolumn cloud mask; note that get_subcolumn_mask exposes overlap assumption as an option,
   // but the only currently supported options are 0 (trivial all-or-nothing cloud) or 1 (max-rand),
   // so overlap has not been exposed as an option beyond this subcolumn. In the future, we should
@@ -136,14 +136,14 @@ OpticalProps2str get_subsampled_clouds(
   // Get unique seeds for each column that are reproducible across different MPI rank layouts;
   // use decimal part of pressure for this, consistent with the implementation in EAM
   auto seeds = int1d("seeds", ncol);
-  parallel_for(SimpleBounds<1>(ncol), YAKL_LAMBDA(int icol) {
+  TIMED_KERNEL(parallel_for(SimpleBounds<1>(ncol), YAKL_LAMBDA(int icol) {
       seeds(icol) = 1e9 * (p_lay(icol,nlay) - int(p_lay(icol,nlay)));
-    });
+    }));
   auto cldmask = get_subcolumn_mask(ncol, nlay, ngpt, cldfrac_rad, overlap, seeds);
 
   // Assign optical properties to subcolumns (note this implements MCICA)
   auto gpoint_bands = kdist.get_gpoint_bands();
-  parallel_for(SimpleBounds<3>(ngpt,nlay,ncol), YAKL_LAMBDA(int igpt, int ilay, int icol) {
+  TIMED_KERNEL(parallel_for(SimpleBounds<3>(ngpt,nlay,ncol), YAKL_LAMBDA(int igpt, int ilay, int icol) {
       auto ibnd = gpoint_bands(igpt);
       if (cldmask(icol,ilay,igpt) == 1) {
         subsampled_optics.tau(icol,ilay,igpt) = cloud_optics.tau(icol,ilay,ibnd);
@@ -154,7 +154,7 @@ OpticalProps2str get_subsampled_clouds(
         subsampled_optics.ssa(icol,ilay,igpt) = 0;
         subsampled_optics.g  (icol,ilay,igpt) = 0;
       }
-    });
+    }));
   return subsampled_optics;
 }
 
@@ -174,31 +174,31 @@ OpticalProps1scl get_subsampled_clouds(
   // randomly overlapped.
   auto cldfrac_rad = real2d("cldfrac_rad", ncol, nlay);
   memset(cldfrac_rad, 0.0);  // Start with all zeros
-  parallel_for(SimpleBounds<3>(nbnd,nlay,ncol), YAKL_LAMBDA (int ibnd, int ilay, int icol) {
+  TIMED_KERNEL(parallel_for(SimpleBounds<3>(nbnd,nlay,ncol), YAKL_LAMBDA (int ibnd, int ilay, int icol) {
       if (cloud_optics.tau(icol,ilay,ibnd) > 0) {
         cldfrac_rad(icol,ilay) = cld(icol,ilay);
       }
-    });
+    }));
   // Get subcolumn cloud mask
   int overlap = 1;
   // Get unique seeds for each column that are reproducible across different MPI rank layouts;
   // use decimal part of pressure for this, consistent with the implementation in EAM; use different
   // seed values for longwave and shortwave
   auto seeds = int1d("seeds", ncol);
-  parallel_for(SimpleBounds<1>(ncol), YAKL_LAMBDA(int icol) {
+  TIMED_KERNEL(parallel_for(SimpleBounds<1>(ncol), YAKL_LAMBDA(int icol) {
       seeds(icol) = 1e9 * (p_lay(icol,nlay-1) - int(p_lay(icol,nlay-1)));
-    });
+    }));
   auto cldmask = get_subcolumn_mask(ncol, nlay, ngpt, cldfrac_rad, overlap, seeds);
   // Assign optical properties to subcolumns (note this implements MCICA)
   auto gpoint_bands = kdist.get_gpoint_bands();
-  parallel_for(SimpleBounds<3>(ngpt,nlay,ncol), YAKL_LAMBDA(int igpt, int ilay, int icol) {
+  TIMED_KERNEL(parallel_for(SimpleBounds<3>(ngpt,nlay,ncol), YAKL_LAMBDA(int igpt, int ilay, int icol) {
       auto ibnd = gpoint_bands(igpt);
       if (cldmask(icol,ilay,igpt) == 1) {
         subsampled_optics.tau(icol,ilay,igpt) = cloud_optics.tau(icol,ilay,ibnd);
       } else {
         subsampled_optics.tau(icol,ilay,igpt) = 0;
       }
-    });
+    }));
   return subsampled_optics;
 }
 
@@ -260,7 +260,7 @@ void compute_band_by_band_surface_albedos(
 
   // Loop over bands, and determine for each band whether it is broadly in the
   // visible or infrared part of the spectrum (visible or "not visible")
-  parallel_for(SimpleBounds<2>(nswbands, ncol), YAKL_LAMBDA(const int ibnd, const int icol) {
+  TIMED_KERNEL(parallel_for(SimpleBounds<2>(nswbands, ncol), YAKL_LAMBDA(const int ibnd, const int icol) {
 
       // Threshold between visible and infrared is 0.7 micron, or 14286 cm^-1.
       const real visible_wavenumber_threshold = 14286;
@@ -291,7 +291,7 @@ void compute_band_by_band_surface_albedos(
         sfc_alb_dif(icol,ibnd) = 0.5*(sfc_alb_dif_vis(icol) + sfc_alb_dif_nir(icol));
 
       }
-    });
+    }));
 }
 
 void compute_broadband_surface_fluxes(
@@ -317,7 +317,7 @@ void compute_broadband_surface_fluxes(
   // Threshold between visible and infrared is 0.7 micron, or 14286 cm^-1.
   const real visible_wavenumber_threshold = 14286;
   auto wavenumber_limits = k_dist_sw.get_band_lims_wavenumber();
-  parallel_for(SimpleBounds<1>(ncol), YAKL_LAMBDA(const int icol) {
+  TIMED_KERNEL(parallel_for(SimpleBounds<1>(ncol), YAKL_LAMBDA(const int icol) {
       for (int ibnd = 1; ibnd <= nswbands; ++ibnd) {
         // Wavenumber is in the visible if it is above the visible wavenumber
         // threshold, and in the infrared if it is below the threshold
@@ -346,7 +346,7 @@ void compute_broadband_surface_fluxes(
           sfc_flux_dif_nir(icol) += 0.5 * sw_bnd_flux_dif(icol,ktop,ibnd);
         }
       }
-    });
+    }));
 }
 
 void rrtmgp_main(
@@ -439,16 +439,16 @@ void rrtmgp_main(
   OpticalProps1scl aerosol_lw;
   aerosol_sw.init(k_dist_sw.get_band_lims_wavenumber());
   aerosol_sw.alloc_2str(ncol, nlay);
-  parallel_for(SimpleBounds<3>(nswbands,nlay,ncol) , YAKL_LAMBDA (int ibnd, int ilay, int icol) {
+  TIMED_KERNEL(parallel_for(SimpleBounds<3>(nswbands,nlay,ncol) , YAKL_LAMBDA (int ibnd, int ilay, int icol) {
       aerosol_sw.tau(icol,ilay,ibnd) = aer_tau_sw(icol,ilay,ibnd);
       aerosol_sw.ssa(icol,ilay,ibnd) = aer_ssa_sw(icol,ilay,ibnd);
       aerosol_sw.g  (icol,ilay,ibnd) = aer_asm_sw(icol,ilay,ibnd);
-    });
+    }));
   aerosol_lw.init(k_dist_lw.get_band_lims_wavenumber());
   aerosol_lw.alloc_1scl(ncol, nlay);
-  parallel_for(SimpleBounds<3>(nlwbands,nlay,ncol) , YAKL_LAMBDA (int ibnd, int ilay, int icol) {
+  TIMED_KERNEL(parallel_for(SimpleBounds<3>(nlwbands,nlay,ncol) , YAKL_LAMBDA (int ibnd, int ilay, int icol) {
       aerosol_lw.tau(icol,ilay,ibnd) = aer_tau_lw(icol,ilay,ibnd);
-    });
+    }));
 
 #ifdef SCREAM_RRTMGP_DEBUG
   // Check aerosol optical properties
@@ -477,12 +477,12 @@ void rrtmgp_main(
 
   // Copy cloud properties to outputs (is this needed, or can we just use pointers?)
   // Alternatively, just compute and output a subcolumn cloud mask
-  parallel_for(SimpleBounds<3>(nswgpts, nlay, ncol), YAKL_LAMBDA (int igpt, int ilay, int icol) {
+  TIMED_KERNEL(parallel_for(SimpleBounds<3>(nswgpts, nlay, ncol), YAKL_LAMBDA (int igpt, int ilay, int icol) {
       cld_tau_sw_gpt(icol,ilay,igpt) = clouds_sw_gpt.tau(icol,ilay,igpt);
-    });
-  parallel_for(SimpleBounds<3>(nlwgpts, nlay, ncol), YAKL_LAMBDA (int igpt, int ilay, int icol) {
+    }));
+  TIMED_KERNEL(parallel_for(SimpleBounds<3>(nlwgpts, nlay, ncol), YAKL_LAMBDA (int igpt, int ilay, int icol) {
       cld_tau_lw_gpt(icol,ilay,igpt) = clouds_lw_gpt.tau(icol,ilay,igpt);
-    });
+    }));
 
 #ifdef SCREAM_RRTMGP_DEBUG
   // Perform checks on optics; these would be caught by RRTMGP_EXPENSIVE_CHECKS in the RRTMGP code,
@@ -542,16 +542,16 @@ int3d get_subcolumn_mask(const int ncol, const int nlay, const int ngpt, real2d 
     // https://github.com/AER-RC/RRTMG_SW/blob/master/src/mcica_subcol_gen_sw.f90)
     //
     // First, fill cldx with random numbers. Need to use a unique seed for each column!
-    parallel_for(SimpleBounds<1>(ncol), YAKL_LAMBDA(int icol) {
+    TIMED_KERNEL(parallel_for(SimpleBounds<1>(ncol), YAKL_LAMBDA(int icol) {
         yakl::Random rand(seeds(icol));
         for (int igpt = 1; igpt <= ngpt; igpt++) {
           for (int ilay = 1; ilay <= nlay; ilay++) {
             cldx(icol,ilay,igpt) = rand.genFP<Real>();
           }
         }
-      });
+      }));
     // Step down columns and apply algorithm from eq (14)
-    parallel_for(SimpleBounds<2>(ngpt,ncol), YAKL_LAMBDA(int igpt, int icol) {
+    TIMED_KERNEL(parallel_for(SimpleBounds<2>(ngpt,ncol), YAKL_LAMBDA(int igpt, int icol) {
         for (int ilay = 2; ilay <= nlay; ilay++) {
           // Check cldx in level above and see if it satisfies conditions to create a cloudy subcolumn
           if (cldx(icol,ilay-1,igpt) > 1.0 - cldf(icol,ilay-1)) {
@@ -567,17 +567,17 @@ int3d get_subcolumn_mask(const int ncol, const int nlay, const int ngpt, real2d 
             cldx(icol,ilay,igpt) = cldx(icol,ilay  ,igpt) * (1.0 - cldf(icol,ilay-1));
           }
         }
-      });
+      }));
   }
 
   // Use cldx array to create subcolumn mask
-  parallel_for(SimpleBounds<3>(ngpt,nlay,ncol), YAKL_LAMBDA(int igpt, int ilay, int icol) {
+  TIMED_KERNEL(parallel_for(SimpleBounds<3>(ngpt,nlay,ncol), YAKL_LAMBDA(int igpt, int ilay, int icol) {
       if (cldx(icol,ilay,igpt) > 1.0 - cldf(icol,ilay)) {
         subcolumn_mask(icol,ilay,igpt) = 1;
       } else {
         subcolumn_mask(icol,ilay,igpt) = 0;
       }
-    });
+    }));
   return subcolumn_mask;
 }
 
@@ -616,7 +616,7 @@ void rrtmgp_sw(
   auto &clnsky_flux_dn_dir = clnsky_fluxes.flux_dn_dir;
 
   // Reset fluxes to zero
-  parallel_for(SimpleBounds<2>(nlay+1,ncol), YAKL_LAMBDA(int ilev, int icol) {
+  TIMED_KERNEL(parallel_for(SimpleBounds<2>(nlay+1,ncol), YAKL_LAMBDA(int ilev, int icol) {
       flux_up    (icol,ilev) = 0;
       flux_dn    (icol,ilev) = 0;
       flux_dn_dir(icol,ilev) = 0;
@@ -629,12 +629,12 @@ void rrtmgp_sw(
       clnsky_flux_up    (icol,ilev) = 0;
       clnsky_flux_dn    (icol,ilev) = 0;
       clnsky_flux_dn_dir(icol,ilev) = 0;
-    });
-  parallel_for(SimpleBounds<3>(nbnd,nlay+1,ncol), YAKL_LAMBDA(int ibnd, int ilev, int icol) {
+    }));
+  TIMED_KERNEL(parallel_for(SimpleBounds<3>(nbnd,nlay+1,ncol), YAKL_LAMBDA(int ibnd, int ilev, int icol) {
       bnd_flux_up    (icol,ilev,ibnd) = 0;
       bnd_flux_dn    (icol,ilev,ibnd) = 0;
       bnd_flux_dn_dir(icol,ilev,ibnd) = 0;
-    });
+    }));
 
   // Get daytime indices
   auto dayIndices = int1d("dayIndices", ncol);
@@ -660,23 +660,23 @@ void rrtmgp_sw(
 
   // Subset mu0
   auto mu0_day = real1d("mu0_day", nday);
-  parallel_for(SimpleBounds<1>(nday), YAKL_LAMBDA(int iday) {
+  TIMED_KERNEL(parallel_for(SimpleBounds<1>(nday), YAKL_LAMBDA(int iday) {
       mu0_day(iday) = mu0(dayIndices(iday));
-    });
+    }));
 
   // subset state variables
   auto p_lay_day = real2d("p_lay_day", nday, nlay);
   auto t_lay_day = real2d("t_lay_day", nday, nlay);
-  parallel_for(SimpleBounds<2>(nlay,nday), YAKL_LAMBDA(int ilay, int iday) {
+  TIMED_KERNEL(parallel_for(SimpleBounds<2>(nlay,nday), YAKL_LAMBDA(int ilay, int iday) {
       p_lay_day(iday,ilay) = p_lay(dayIndices(iday),ilay);
       t_lay_day(iday,ilay) = t_lay(dayIndices(iday),ilay);
-    });
+    }));
   auto p_lev_day = real2d("p_lev_day", nday, nlay+1);
   auto t_lev_day = real2d("t_lev_day", nday, nlay+1);
-  parallel_for(SimpleBounds<2>(nlay+1,nday), YAKL_LAMBDA(int ilev, int iday) {
+  TIMED_KERNEL(parallel_for(SimpleBounds<2>(nlay+1,nday), YAKL_LAMBDA(int ilev, int iday) {
       p_lev_day(iday,ilev) = p_lev(dayIndices(iday),ilev);
       t_lev_day(iday,ilev) = t_lev(dayIndices(iday),ilev);
-    });
+    }));
 
   // Subset gases
   auto gas_names = gas_concs.get_gas_names();
@@ -686,9 +686,9 @@ void rrtmgp_sw(
     auto vmr_day = real2d("vmr_day", nday, nlay);
     auto vmr     = real2d("vmr"    , ncol, nlay);
     gas_concs.get_vmr(gas_names[igas], vmr);
-    parallel_for(SimpleBounds<2>(nlay,nday), YAKL_LAMBDA(int ilay, int iday) {
+    TIMED_KERNEL(parallel_for(SimpleBounds<2>(nlay,nday), YAKL_LAMBDA(int ilay, int iday) {
         vmr_day(iday,ilay) = vmr(dayIndices(iday),ilay);
-      });
+      }));
     gas_concs_day.set_vmr(gas_names[igas], vmr_day);
   }
 
@@ -696,32 +696,32 @@ void rrtmgp_sw(
   OpticalProps2str aerosol_day;
   aerosol_day.init(k_dist.get_band_lims_wavenumber());
   aerosol_day.alloc_2str(nday, nlay);
-  parallel_for(SimpleBounds<3>(nbnd,nlay,nday), YAKL_LAMBDA(int ibnd, int ilay, int iday) {
+  TIMED_KERNEL(parallel_for(SimpleBounds<3>(nbnd,nlay,nday), YAKL_LAMBDA(int ibnd, int ilay, int iday) {
       aerosol_day.tau(iday,ilay,ibnd) = aerosol.tau(dayIndices(iday),ilay,ibnd);
       aerosol_day.ssa(iday,ilay,ibnd) = aerosol.ssa(dayIndices(iday),ilay,ibnd);
       aerosol_day.g  (iday,ilay,ibnd) = aerosol.g  (dayIndices(iday),ilay,ibnd);
-    });
+    }));
 
   // Subset cloud optics
   // TODO: nbnd -> ngpt once we pass sub-sampled cloud state
   OpticalProps2str clouds_day;
   clouds_day.init(k_dist.get_band_lims_wavenumber(), k_dist.get_band_lims_gpoint());
   clouds_day.alloc_2str(nday, nlay);
-  parallel_for(SimpleBounds<3>(ngpt,nlay,nday), YAKL_LAMBDA(int igpt, int ilay, int iday) {
+  TIMED_KERNEL(parallel_for(SimpleBounds<3>(ngpt,nlay,nday), YAKL_LAMBDA(int igpt, int ilay, int iday) {
       clouds_day.tau(iday,ilay,igpt) = clouds.tau(dayIndices(iday),ilay,igpt);
       clouds_day.ssa(iday,ilay,igpt) = clouds.ssa(dayIndices(iday),ilay,igpt);
       clouds_day.g  (iday,ilay,igpt) = clouds.g  (dayIndices(iday),ilay,igpt);
-    });
+    }));
 
   // RRTMGP assumes surface albedos have a screwy dimension ordering
   // for some strange reason, so we need to transpose these; also do
   // daytime subsetting in the same kernel
   real2d sfc_alb_dir_T("sfc_alb_dir", nbnd, nday);
   real2d sfc_alb_dif_T("sfc_alb_dif", nbnd, nday);
-  parallel_for(SimpleBounds<2>(nbnd,nday), YAKL_LAMBDA(int ibnd, int icol) {
+  TIMED_KERNEL(parallel_for(SimpleBounds<2>(nbnd,nday), YAKL_LAMBDA(int ibnd, int icol) {
       sfc_alb_dir_T(ibnd,icol) = sfc_alb_dir(dayIndices(icol),ibnd);
       sfc_alb_dif_T(ibnd,icol) = sfc_alb_dif(dayIndices(icol),ibnd);
-    });
+    }));
 
   // Temporaries we need for daytime-only fluxes
   auto flux_up_day = real2d("flux_up_day", nday, nlay+1);
@@ -770,20 +770,20 @@ void rrtmgp_sw(
 #endif
 
   // Apply tsi_scaling
-  parallel_for(SimpleBounds<2>(ngpt,nday), YAKL_LAMBDA(int igpt, int iday) {
+  TIMED_KERNEL(parallel_for(SimpleBounds<2>(ngpt,nday), YAKL_LAMBDA(int igpt, int iday) {
       toa_flux(iday,igpt) = tsi_scaling * toa_flux(iday,igpt);
-    });
+    }));
 
   if (extra_clnclrsky_diag) {
     // Compute clear-clean-sky (just gas) fluxes on daytime columns
     rte_sw(optics, top_at_1, mu0_day, toa_flux, sfc_alb_dir_T, sfc_alb_dif_T, fluxes_day);
     // Expand daytime fluxes to all columns
-    parallel_for(SimpleBounds<2>(nlay+1,nday), YAKL_LAMBDA(int ilev, int iday) {
+    TIMED_KERNEL(parallel_for(SimpleBounds<2>(nlay+1,nday), YAKL_LAMBDA(int ilev, int iday) {
         int icol = dayIndices(iday);
         clnclrsky_flux_up    (icol,ilev) = flux_up_day    (iday,ilev);
         clnclrsky_flux_dn    (icol,ilev) = flux_dn_day    (iday,ilev);
         clnclrsky_flux_dn_dir(icol,ilev) = flux_dn_dir_day(iday,ilev);
-      });
+      }));
   }
 
   // Combine gas and aerosol optics
@@ -794,12 +794,12 @@ void rrtmgp_sw(
   rte_sw(optics, top_at_1, mu0_day, toa_flux, sfc_alb_dir_T, sfc_alb_dif_T, fluxes_day);
 
   // Expand daytime fluxes to all columns
-  parallel_for(SimpleBounds<2>(nlay+1,nday), YAKL_LAMBDA(int ilev, int iday) {
+  TIMED_KERNEL(parallel_for(SimpleBounds<2>(nlay+1,nday), YAKL_LAMBDA(int ilev, int iday) {
       int icol = dayIndices(iday);
       clrsky_flux_up    (icol,ilev) = flux_up_day    (iday,ilev);
       clrsky_flux_dn    (icol,ilev) = flux_dn_day    (iday,ilev);
       clrsky_flux_dn_dir(icol,ilev) = flux_dn_dir_day(iday,ilev);
-    });
+    }));
 
   // Now merge in cloud optics and do allsky calculations
 
@@ -809,18 +809,18 @@ void rrtmgp_sw(
   // Compute fluxes on daytime columns
   rte_sw(optics, top_at_1, mu0_day, toa_flux, sfc_alb_dir_T, sfc_alb_dif_T, fluxes_day);
   // Expand daytime fluxes to all columns
-  parallel_for(SimpleBounds<2>(nlay+1,nday), YAKL_LAMBDA(int ilev, int iday) {
+  TIMED_KERNEL(parallel_for(SimpleBounds<2>(nlay+1,nday), YAKL_LAMBDA(int ilev, int iday) {
       int icol = dayIndices(iday);
       flux_up    (icol,ilev) = flux_up_day    (iday,ilev);
       flux_dn    (icol,ilev) = flux_dn_day    (iday,ilev);
       flux_dn_dir(icol,ilev) = flux_dn_dir_day(iday,ilev);
-    });
-  parallel_for(SimpleBounds<3>(nbnd,nlay+1,nday), YAKL_LAMBDA(int ibnd, int ilev, int iday) {
+    }));
+  TIMED_KERNEL(parallel_for(SimpleBounds<3>(nbnd,nlay+1,nday), YAKL_LAMBDA(int ibnd, int ilev, int iday) {
       int icol = dayIndices(iday);
       bnd_flux_up    (icol,ilev,ibnd) = bnd_flux_up_day    (iday,ilev,ibnd);
       bnd_flux_dn    (icol,ilev,ibnd) = bnd_flux_dn_day    (iday,ilev,ibnd);
       bnd_flux_dn_dir(icol,ilev,ibnd) = bnd_flux_dn_dir_day(iday,ilev,ibnd);
-    });
+    }));
 
   if (extra_clnsky_diag) {
     // First increment clouds in optics_no_aerosols
@@ -828,12 +828,12 @@ void rrtmgp_sw(
     // Compute cleansky (gas + clouds) fluxes on daytime columns
     rte_sw(optics_no_aerosols, top_at_1, mu0_day, toa_flux, sfc_alb_dir_T, sfc_alb_dif_T, fluxes_day);
     // Expand daytime fluxes to all columns
-    parallel_for(SimpleBounds<2>(nlay+1,nday), YAKL_LAMBDA(int ilev, int iday) {
+    TIMED_KERNEL(parallel_for(SimpleBounds<2>(nlay+1,nday), YAKL_LAMBDA(int ilev, int iday) {
         int icol = dayIndices(iday);
         clnsky_flux_up    (icol,ilev) = flux_up_day    (iday,ilev);
         clnsky_flux_dn    (icol,ilev) = flux_dn_day    (iday,ilev);
         clnsky_flux_dn_dir(icol,ilev) = flux_dn_dir_day(iday,ilev);
-      });
+      }));
   }
 }
 
@@ -863,7 +863,7 @@ void rrtmgp_lw(
   auto &clnsky_flux_dn    = clnsky_fluxes.flux_dn;
 
   // Reset fluxes to zero
-  parallel_for(
+  TIMED_KERNEL(parallel_for(
     SimpleBounds<2>(nlay + 1, ncol), YAKL_LAMBDA(int ilev, int icol) {
       flux_up(icol, ilev)           = 0;
       flux_dn(icol, ilev)           = 0;
@@ -873,13 +873,13 @@ void rrtmgp_lw(
       clrsky_flux_dn(icol, ilev)    = 0;
       clnsky_flux_up(icol, ilev)    = 0;
       clnsky_flux_dn(icol, ilev)    = 0;
-    });
-  parallel_for(
+    }));
+  TIMED_KERNEL(parallel_for(
     SimpleBounds<3>(nbnd, nlay + 1, ncol),
     YAKL_LAMBDA(int ibnd, int ilev, int icol) {
       bnd_flux_up(icol, ilev, ibnd) = 0;
       bnd_flux_dn(icol, ilev, ibnd) = 0;
-    });
+    }));
 
   // Allocate space for optical properties
   OpticalProps1scl optics;
@@ -899,9 +899,9 @@ void rrtmgp_lw(
   // Surface temperature
   auto p_lay_host = p_lay.createHostCopy();
   bool top_at_1 = p_lay_host(1, 1) < p_lay_host(1, nlay);
-  parallel_for(SimpleBounds<1>(ncol), YAKL_LAMBDA(int icol) {
+  TIMED_KERNEL(parallel_for(SimpleBounds<1>(ncol), YAKL_LAMBDA(int icol) {
       t_sfc(icol) = t_lev(icol, merge(nlay+1, 1, top_at_1));
-    });
+    }));
   memset(emis_sfc , 0.98_wp);
 
   // Get Gaussian quadrature weights
@@ -977,22 +977,22 @@ void compute_cloud_area(
   // then 2d subcol mask is 1, otherwise it is 0
   auto subcol_mask = real2d("subcol_mask", ncol, ngpt);
   memset(subcol_mask, 0);
-  yakl::fortran::parallel_for(SimpleBounds<3>(ngpt, nlay, ncol), YAKL_LAMBDA(int igpt, int ilay, int icol) {
+  TIMED_KERNEL(yakl::fortran::parallel_for(SimpleBounds<3>(ngpt, nlay, ncol), YAKL_LAMBDA(int igpt, int ilay, int icol) {
       // NOTE: using plev would need to assume level ordering (top to bottom or bottom to top), but
       // using play/pmid does not
       if (cld_tau_gpt(icol,ilay,igpt) > 0 && pmid(icol,ilay) >= pmin && pmid(icol,ilay) < pmax) {
         subcol_mask(icol,igpt) = 1;
       }
-    });
+    }));
   // Compute average over subcols to get cloud area
   auto ngpt_inv = 1.0 / ngpt;
   memset(cld_area, 0);
-  yakl::fortran::parallel_for(SimpleBounds<1>(ncol), YAKL_LAMBDA(int icol) {
+  TIMED_KERNEL(yakl::fortran::parallel_for(SimpleBounds<1>(ncol), YAKL_LAMBDA(int icol) {
       // This loop needs to be serial because of the atomic reduction
       for (int igpt = 1; igpt <= ngpt; ++igpt) {
         cld_area(icol) += subcol_mask(icol,igpt) * ngpt_inv;
       }
-    });
+    }));
 }
 
 int get_wavelength_index_sw(double wavelength) { return get_wavelength_index(k_dist_sw, wavelength); }
@@ -1008,7 +1008,7 @@ int get_wavelength_index(OpticalProps &kdist, double wavelength) {
   // in units of meters, we need a conversion factor of 10^2
   int nbnds = kdist.get_nband();
   yakl::ScalarLiveOut<int> band_index(-1);
-  yakl::fortran::parallel_for(SimpleBounds<1>(nbnds), YAKL_LAMBDA(int ibnd) {
+  TIMED_KERNEL(yakl::fortran::parallel_for(SimpleBounds<1>(nbnds), YAKL_LAMBDA(int ibnd) {
       if (wavelength_bounds(1,ibnd) < wavelength_bounds(2,ibnd)) {
         if (wavelength_bounds(1,ibnd) <= wavelength * 1e2 && wavelength * 1e2 <= wavelength_bounds(2,ibnd)) {
           band_index = ibnd;
@@ -1018,7 +1018,7 @@ int get_wavelength_index(OpticalProps &kdist, double wavelength) {
           band_index = ibnd;
         }
       }
-    });
+    }));
   return band_index.hostRead();
 }
 
@@ -1056,7 +1056,7 @@ void compute_aerocom_cloudtop(
   // TODO: move tunable constant to namelist
   constexpr real cldfrac_tot_threshold = 0.001;  // BAD_CONSTANT!
   // Loop over all columns in parallel
-  yakl::fortran::parallel_for(
+  TIMED_KERNEL(yakl::fortran::parallel_for(
     SimpleBounds<1>(ncol), YAKL_LAMBDA(int icol) {
       // Loop over all layers in serial (due to accumulative
       // product), starting at 2 (second highest) layer because the
@@ -1116,7 +1116,7 @@ void compute_aerocom_cloudtop(
       // aerocom_clr is the result of accumulative probabilities
       // (their products)
       cldfrac_tot_at_cldtop(icol) = 1.0 - aerocom_clr(icol);
-    });
+    }));
 }
 
 }  // namespace rrtmgp

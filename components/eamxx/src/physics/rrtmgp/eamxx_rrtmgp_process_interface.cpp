@@ -636,6 +636,8 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
   m_n2vmr      = m_params.get<double>("n2vmr", 0.7906);
   m_covmr      = m_params.get<double>("covmr", 1.0e-7);
 
+  const double multiplier = m_params.get<double>("pool_size_multiplier", 1.0);
+
   // Whether or not to do MCICA subcolumn sampling
   m_do_subcol_sampling = m_params.get<bool>("do_subcol_sampling",true);
 
@@ -676,13 +678,14 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
           m_gas_concs_k,
           coefficients_file_sw, coefficients_file_lw,
           cloud_optics_file_sw, cloud_optics_file_lw,
-          m_atm_logger
+          m_atm_logger,
+          multiplier
   );
   VALIDATE_KOKKOS(m_gas_concs, m_gas_concs_k);
-  VALIDATE_KOKKOS(rrtmgp::k_dist_sw, interface_t::k_dist_sw_k);
-  VALIDATE_KOKKOS(rrtmgp::k_dist_lw, interface_t::k_dist_lw_k);
-  VALIDATE_KOKKOS(rrtmgp::cloud_optics_sw, interface_t::cloud_optics_sw_k);
-  VALIDATE_KOKKOS(rrtmgp::cloud_optics_lw, interface_t::cloud_optics_lw_k);
+  VALIDATE_KOKKOS(rrtmgp::k_dist_sw, *interface_t::k_dist_sw_k);
+  VALIDATE_KOKKOS(rrtmgp::k_dist_lw, *interface_t::k_dist_lw_k);
+  VALIDATE_KOKKOS(rrtmgp::cloud_optics_sw, *interface_t::cloud_optics_sw_k);
+  VALIDATE_KOKKOS(rrtmgp::cloud_optics_lw, *interface_t::cloud_optics_lw_k);
 #endif
 
   // Set property checks for fields in this process
@@ -907,6 +910,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
       ulrreal2dk d_dz   = ulrreal2dk(m_buffer.d_dz.data(), m_col_chunk_size, m_nlay);
       auto d_mu0 = m_buffer.cosine_zenith;
 #ifdef RRTMGP_ENABLE_YAKL
+      TIMED_INLINE_KERNEL(init_views,
       // Create YAKL arrays. RRTMGP expects YAKL arrays with styleFortran, i.e., data has ncol
       // as the fastest index. For this reason we must copy the data.
       auto subview_1d = [&](const real1d v) -> real1d {
@@ -976,9 +980,11 @@ void RRTMGPRadiation::run_impl (const double dt) {
       auto cld_tau_lw_bnd  = subview_3d(m_buffer.cld_tau_lw_bnd);
       auto cld_tau_sw_gpt  = subview_3d(m_buffer.cld_tau_sw_gpt);
       auto cld_tau_lw_gpt  = subview_3d(m_buffer.cld_tau_lw_gpt);
+                   );
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
       ConvertToRrtmgpSubview conv = {beg, ncol};
+      TIMED_INLINE_KERNEL(init_views,
 
       // Note, ncol will not necessary be m_col_chunk_size because the number of cols
       // will not always be evenly divided by m_col_chunk_size. In most cases, the
@@ -1039,6 +1045,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
       auto cld_tau_lw_bnd_k  = conv.subview3d(m_buffer.cld_tau_lw_bnd_k);
       auto cld_tau_sw_gpt_k  = conv.subview3d(m_buffer.cld_tau_sw_gpt_k);
       auto cld_tau_lw_gpt_k  = conv.subview3d(m_buffer.cld_tau_lw_gpt_k);
+                   );
 #endif
 
       // Set gas concs to "view" only the first ncol columns
@@ -1072,6 +1079,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
         Kokkos::deep_copy(d_mu0,h_mu0);
 
         const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
+        TIMED_KERNEL(
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
           const int i = team.league_rank();
           const int icol = i+beg;
@@ -1215,6 +1223,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
           }
 #endif
         });
+                     );
       }
       Kokkos::fence();
 #ifdef RRTMGP_ENABLE_KOKKOS
@@ -1362,18 +1371,22 @@ void RRTMGPRadiation::run_impl (const double dt) {
       // Compute band-by-band surface_albedos. This is needed since
       // the AD passes broadband albedos, but rrtmgp require band-by-band.
 #ifdef RRTMGP_ENABLE_YAKL
+      TIMED_KERNEL(
       rrtmgp::compute_band_by_band_surface_albedos(
         ncol, nswbands,
         sfc_alb_dir_vis, sfc_alb_dir_nir,
         sfc_alb_dif_vis, sfc_alb_dif_nir,
         sfc_alb_dir, sfc_alb_dif);
+                   );
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
+      TIMED_KERNEL(
       interface_t::compute_band_by_band_surface_albedos(
         ncol, nswbands,
         sfc_alb_dir_vis_k, sfc_alb_dir_nir_k,
         sfc_alb_dif_vis_k, sfc_alb_dif_nir_k,
         sfc_alb_dir_k, sfc_alb_dif_k);
+                   );
       COMPARE_ALL_WRAP(std::vector<real2d>({sfc_alb_dir, sfc_alb_dif}),
                        std::vector<real2dk>({sfc_alb_dir_k, sfc_alb_dif_k}));
 #endif
@@ -1381,6 +1394,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
 
       // Run RRTMGP driver
 #ifdef RRTMGP_ENABLE_YAKL
+      TIMED_KERNEL(
       rrtmgp::rrtmgp_main(
         ncol, m_nlay,
         p_lay, t_lay, p_lev, t_lev,
@@ -1401,8 +1415,10 @@ void RRTMGPRadiation::run_impl (const double dt) {
         eccf, m_atm_logger,
         m_extra_clnclrsky_diag, m_extra_clnsky_diag
       );
+                   );
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
+      TIMED_KERNEL(
       interface_t::rrtmgp_main(
         ncol, m_nlay,
         p_lay_k, t_lay_k, p_lev_k, t_lev_k,
@@ -1423,6 +1439,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
         eccf, m_atm_logger,
         m_extra_clnclrsky_diag, m_extra_clnsky_diag
       );
+                   );
       COMPARE_ALL_WRAP(std::vector<real2d>({
         sw_flux_up, sw_flux_dn, sw_flux_dn_dir, lw_flux_up, lw_flux_dn,
         sw_clnclrsky_flux_up, sw_clnclrsky_flux_dn, sw_clnclrsky_flux_dn_dir,
@@ -1445,6 +1462,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
 
       // Update heating tendency
 #ifdef RRTMGP_ENABLE_YAKL
+      TIMED_INLINE_KERNEL(heating_tendency,
       auto sw_heating  = m_buffer.sw_heating;
       auto lw_heating  = m_buffer.lw_heating;
       rrtmgp::compute_heating_rate(
@@ -1466,8 +1484,10 @@ void RRTMGPRadiation::run_impl (const double dt) {
         });
       }
       Kokkos::fence();
+                   );
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
+      TIMED_INLINE_KERNEL(heating_tendency,
       auto sw_heating_k  = m_buffer.sw_heating_k;
       auto lw_heating_k  = m_buffer.lw_heating_k;
       rrtmgp::compute_heating_rate(
@@ -1489,6 +1509,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
         });
       }
       Kokkos::fence();
+                   );
       COMPARE_ALL_WRAP(std::vector<real2d>({sw_heating, lw_heating}),
                        std::vector<real2dk>({sw_heating_k, lw_heating_k}));
 #endif
@@ -1497,6 +1518,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
 #ifdef RRTMGP_ENABLE_YAKL
       const int kbot = nlay+1;
 
+      TIMED_KERNEL(
       // Compute diffuse flux as difference between total and direct
       Kokkos::parallel_for(Kokkos::RangePolicy<ExeSpace>(0,nswbands*(nlay+1)*ncol),
                            KOKKOS_LAMBDA (const int idx) {
@@ -1513,10 +1535,12 @@ void RRTMGPRadiation::run_impl (const double dt) {
           sfc_flux_dir_vis, sfc_flux_dir_nir,
           sfc_flux_dif_vis, sfc_flux_dif_nir
       );
+                   );
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
       const int kbot_k = nlay;
 
+      TIMED_KERNEL(
       // Compute diffuse flux as difference between total and direct
       Kokkos::parallel_for(Kokkos::RangePolicy<ExeSpace>(0,nswbands*(nlay+1)*ncol),
                            KOKKOS_LAMBDA (const int idx) {
@@ -1533,12 +1557,14 @@ void RRTMGPRadiation::run_impl (const double dt) {
           sfc_flux_dir_vis_k, sfc_flux_dir_nir_k,
           sfc_flux_dif_vis_k, sfc_flux_dif_nir_k
       );
+                   );
       COMPARE_ALL_WRAP(std::vector<real1d>({sfc_flux_dir_vis, sfc_flux_dir_nir, sfc_flux_dif_vis, sfc_flux_dif_nir}),
                        std::vector<real1dk>({sfc_flux_dir_vis_k, sfc_flux_dir_nir_k, sfc_flux_dif_vis_k, sfc_flux_dif_nir_k}));
 #endif
 
       // Compute diagnostic total cloud area (vertically-projected cloud cover)
 #ifdef RRTMGP_ENABLE_YAKL
+      TIMED_KERNEL(
       real1d cldlow ("cldlow", d_cldlow.data() + m_col_chunk_beg[ic], ncol);
       real1d cldmed ("cldmed", d_cldmed.data() + m_col_chunk_beg[ic], ncol);
       real1d cldhgh ("cldhgh", d_cldhgh.data() + m_col_chunk_beg[ic], ncol);
@@ -1553,8 +1579,10 @@ void RRTMGPRadiation::run_impl (const double dt) {
       rrtmgp::compute_cloud_area(ncol, nlay, nlwgpts, 400e2,                            700e2, p_lay, cld_tau_lw_gpt, cldmed);
       rrtmgp::compute_cloud_area(ncol, nlay, nlwgpts,     0,                            400e2, p_lay, cld_tau_lw_gpt, cldhgh);
       rrtmgp::compute_cloud_area(ncol, nlay, nlwgpts,     0, std::numeric_limits<Real>::max(), p_lay, cld_tau_lw_gpt, cldtot);
+                   );
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
+      TIMED_KERNEL(
       real1dk cldlow_k (d_cldlow.data() + m_col_chunk_beg[ic], ncol);
       real1dk cldmed_k (d_cldmed.data() + m_col_chunk_beg[ic], ncol);
       real1dk cldhgh_k (d_cldhgh.data() + m_col_chunk_beg[ic], ncol);
@@ -1569,12 +1597,15 @@ void RRTMGPRadiation::run_impl (const double dt) {
       interface_t::compute_cloud_area(ncol, nlay, nlwgpts, 400e2,                            700e2, p_lay_k, cld_tau_lw_gpt_k, cldmed_k);
       interface_t::compute_cloud_area(ncol, nlay, nlwgpts,     0,                            400e2, p_lay_k, cld_tau_lw_gpt_k, cldhgh_k);
       interface_t::compute_cloud_area(ncol, nlay, nlwgpts,     0, std::numeric_limits<Real>::max(), p_lay_k, cld_tau_lw_gpt_k, cldtot_k);
+                   );
       COMPARE_ALL_WRAP(std::vector<real1d>({cldlow, cldmed, cldhgh, cldtot}),
                        std::vector<real1dk>({cldlow_k, cldmed_k, cldhgh_k, cldtot_k}));
 #endif
 
       // Compute cloud-top diagnostics following AeroCOM recommendation
 #ifdef RRTMGP_ENABLE_YAKL
+      TIMED_INLINE_KERNEL(cloud_top,
+
       // Get visible 0.67 micron band for COSP
       auto idx_067 = rrtmgp::get_wavelength_index_sw(0.67e-6);
       // Get IR 10.5 micron band for COSP
@@ -1595,8 +1626,10 @@ void RRTMGPRadiation::run_impl (const double dt) {
           nc, T_mid_at_cldtop, p_mid_at_cldtop, cldfrac_ice_at_cldtop,
           cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop, cdnc_at_cldtop,
           eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
+                          );
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
+      TIMED_INLINE_KERNEL(cloud_top,
       // Get visible 0.67 micron band for COSP
       auto idx_067_k = interface_t::get_wavelength_index_sw_k(0.67e-6);
       // Get IR 10.5 micron band for COSP
@@ -1616,6 +1649,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
           nc_k, T_mid_at_cldtop_k, p_mid_at_cldtop_k, cldfrac_ice_at_cldtop_k,
           cldfrac_liq_at_cldtop_k, cldfrac_tot_at_cldtop_k, cdnc_at_cldtop_k,
           eff_radius_qc_at_cldtop_k, eff_radius_qi_at_cldtop_k);
+                          );
       COMPARE_ALL_WRAP(std::vector<real1d>({
             T_mid_at_cldtop, p_mid_at_cldtop, cldfrac_ice_at_cldtop,
             cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop, cdnc_at_cldtop,
@@ -1629,6 +1663,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
       // Copy output data back to FieldManager
       const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
 #ifdef RRTMGP_ENABLE_YAKL
+      TIMED_KERNEL(
       Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
         const int i = team.league_rank();
         const int icol = i + beg;
@@ -1671,8 +1706,10 @@ void RRTMGPRadiation::run_impl (const double dt) {
             d_sunlit(icol) = 0.0;
         }
       });
+                   );
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
+      TIMED_KERNEL(
       Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
         const int i = team.league_rank();
         const int icol = i + beg;
@@ -1714,6 +1751,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
             d_sunlit(icol) = 0.0;
         }
       });
+                   );
 #ifdef RRTMGP_ENABLE_YAKL
       // Sync back to gas_concs_k
       real3dk temp(gas_concs_k, std::make_pair(0, ncol), Kokkos::ALL, Kokkos::ALL);

@@ -21,6 +21,7 @@ atmosphere_processes:
     rrtmgp_coefficients_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-data-lw-g256-2018-12-04.nc
     rrtmgp_cloud_optics_file_sw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-sw.nc
     rrtmgp_cloud_optics_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-lw.nc
+    pool_size_multiplier: 2.0
 
 grids_manager:
   Type: Mesh Free
