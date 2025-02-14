@@ -223,11 +223,11 @@ public:
 
   // Scale a field y as y=y*x where x is also a field
   template<HostOrDevice HD = Device>
-  void scale (const Field& x) { update<CombineMode::Multiply,HD>(x,1,0); }
+  void scale (const Field& x) { update<CombineMode::Multiply,HD>(x,1,1); }
 
   // Scale a field y as y=y/x where x is also a field
   template<HostOrDevice HD = Device>
-  void scale_inv (const Field& x) { update<CombineMode::Divide,HD>(x,1,0); }
+  void scale_inv (const Field& x) { update<CombineMode::Divide,HD>(x,1,1); }
 
   // Returns a subview of this field, slicing at entry k along dimension idim
   // NOTES:
