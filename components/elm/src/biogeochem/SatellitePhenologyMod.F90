@@ -607,8 +607,8 @@ contains
     ! Determine necessary indices
 
     allocate(&
-         mlai(0:100,bounds%begg:bounds%endg,1:max_topounits,0:numpft), &
-         msai(0:100,bounds%begg:bounds%endg,1:max_topounits,0:numpft), &  
+         mlai(bounds%begg:bounds%endg,1:max_topounits,0:numpft,0:100), &
+         msai(bounds%begg:bounds%endg,1:max_topounits,0:numpft,0:100), &  
          mhgtt(bounds%begg:bounds%endg,1:max_topounits,0:numpft), &
          mhgtb(bounds%begg:bounds%endg,1:max_topounits,0:numpft), &
          stat=ier)
@@ -629,6 +629,7 @@ contains
        call shr_scam_getCloseLatLon (ncid, scmlat, scmlon, closelat, closelon,&
             closelatidx, closelonidx)
     endif
+    write(iulog,*) 'grlnd = ',grlnd
 
     do k=1,2   !loop over months and read vegetated data
 
@@ -660,8 +661,8 @@ contains
           if (veg_pp%itype(p) /= noveg) then     ! vegetated pft
              do l = 0, numpft
                 if (l == veg_pp%itype(p)) then
-                   mlai2t(p,k) = mlai(kyr,g,ti,l)
-                   msai2t(p,k) = msai(kyr,g,ti,l)
+                   mlai2t(p,k) = mlai(g,ti,l,kyr)
+                   msai2t(p,k) = msai(g,ti,l,kyr)
                    mhvt2t(p,k) = mhgtt(g,ti,l)
                    mhvb2t(p,k) = mhgtb(g,ti,l)
                 end if
