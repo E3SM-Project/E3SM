@@ -135,6 +135,8 @@ _TESTS = {
             "ERS_Ld5.T62_oQU240wLI.GMPAS-DIB-IAF-DISMF",
             "PEM_Ln5.T62_oQU240wLI.GMPAS-DIB-IAF-DISMF",
             "PET_Ln5.T62_oQU240wLI.GMPAS-DIB-IAF-DISMF",
+            "ERS_Ld5.TL319_oQU240wLI_ais8to30.GMPAS-JRA1p5-DIB-PISMF-DIS.mpaso-ocn_glcshelf",
+            "ERS_Ld5.TL319_oQU240wLI_ais8to30.GMPAS-JRA1p5-DIB-PISMF-SIS.mpaso-ocn_glcshelf",
             )
         },
 
@@ -190,7 +192,7 @@ _TESTS = {
             "ERS.ne4pg2_oQU480.F2010.eam-p3"
             )
         },
-	
+
 	"e3sm_orodrag_developer" : {
         "tests"   : (
             "ERP.ne4pg2_oQU480.F2010.eam-orodrag_ne4pg2",

@@ -43,16 +43,19 @@
       Albany.</desc>
   </entry>
 
-  <entry id="MALI_DYNAMIC">
-    <type>logical</type>
-    <valid_values>TRUE,FALSE</valid_values>
-    <default_value>TRUE</default_value>
+  <entry id="MALI_PROGNOSTIC_MODE">
+    <type>char</type>
+    <valid_values>PROGNOSTIC,STATIC,DATA</valid_values>
+    <default_value>PROGNOSTIC</default_value>
     <values>
-       <value compset="_MALI%.*STATIC">FALSE</value>
+       <value compset="_MALI%.*STATIC">STATIC</value>
+       <value compset="_MALI%.*DATA">DATA</value>
     </values>
     <group>case_comp</group>
     <file>env_case.xml</file>
-    <desc>FALSE implies MALI will be run in a static mode </desc>
+    <desc>PROGNOSTIC runs the prognostic MALI model.
+      STATIC maintains the initial MALI state over time.
+      DATA updates ice thickness from an input file at a specified frequency.</desc>
   </entry>
 
   <entry id="GLC_SMB">
