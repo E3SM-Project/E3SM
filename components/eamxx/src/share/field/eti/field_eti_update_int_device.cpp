@@ -2,8 +2,8 @@
 
 namespace scream {
 
-template void Field::update<Device, CombineMode::Update,  int>(const Field&, const int, const int);
-template void Field::update<Device, CombineMode::Multiply,int>(const Field&, const int, const int);
-template void Field::update<Device, CombineMode::Divide,  int>(const Field&, const int, const int);
+template void Field::update<CombineMode::Update,  Device, int>(const Field&, const int, const int);
+template void Field::update<CombineMode::Multiply,Device, int>(const Field&, const int, const int);
+template void Field::update<CombineMode::Divide,  Device, int>(const Field&, const int, const int);
 
 } // namespace scream
