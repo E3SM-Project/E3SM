@@ -25,9 +25,9 @@ get_test_team_policy (const int nelem, const int nlev, const int ncol=NP*NP) {
 }
 
 struct TestData {
+  const ComposeTransportImpl& cti;
   std::mt19937_64 engine;
   static const Real eps;
-  const ComposeTransportImpl& cti;
 
   TestData (const CTI& cti_, const int seed = 0)
     : cti(cti_), engine(seed == 0 ? std::random_device()() : seed)
@@ -103,7 +103,7 @@ void fillcols (const int n, const Real* const h, const RelnV::HostMirror& a) {
   assert(n <= a.extent_int(2));
   for (int i = 0; i < a.extent_int(0); ++i)
     for (int j = 0; j < a.extent_int(1); ++j)
-      for (size_t k = 0; k < n; ++k)
+      for (int k = 0; k < n; ++k)
         a(i,j,k) = h[k];  
 }
 

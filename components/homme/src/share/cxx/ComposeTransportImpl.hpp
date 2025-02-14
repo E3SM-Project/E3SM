@@ -356,9 +356,6 @@ struct ComposeTransportImpl {
     RNlev yp(pack2real(yps));
     const auto f = [&] (const int i, const int j, const int k) {
       if (k == 0) return;
-      const auto& xkm1 = x(i,j,k-1);
-      const auto& xk   = x(i,j,k  ); // also the interpolation point
-      const auto& xkp1 = x(i,j,k+1);
       yp(i,j,k) = approx_derivative(x(i,j,k-1), x(i,j,k), x(i,j,k+1),
                                     y(i,j,k-1), y(i,j,k), y(i,j,k+1));
     };
@@ -377,7 +374,7 @@ struct ComposeTransportImpl {
   {
     const auto ttr = Kokkos::TeamThreadRange(kv.team, NP*NP);
     const auto tvr = Kokkos::ThreadVectorRange(kv.team, NUM_LEV);
-    const auto f = [&] (const int idx) {
+    const auto f1 = [&] (const int idx) {
       const int i = idx / NP, j = idx % NP;
       const auto r = [&] (const int k, Real& dps, const bool final) {
         assert(k != 0 || dps == 0);
@@ -385,6 +382,11 @@ struct ComposeTransportImpl {
         dps += divdps(i,j,k);
       };
       Dispatch<>::parallel_scan(kv.team, num_phys_lev, r);
+    };
+    Kokkos::parallel_for(ttr, f1);
+    kv.team_barrier();
+    const auto f2 = [&] (const int idx) {
+      const int i = idx / NP, j = idx % NP;
       const int kend = num_phys_lev - 1;
       const Real dps = edds(i,j,kend) + divdps(i,j,kend);
       assert(hybrid_bi(0)[0] == 0);
@@ -393,11 +395,15 @@ struct ComposeTransportImpl {
         if (kp == 0) edd(i,j,kp)[0] = 0;
       };
       Kokkos::parallel_for(tvr, s);
-      assert(edds(i,j,0) == 0);
-      const int bottom = num_phys_lev;
-      edds(i,j,bottom) = 0; // benign write race
     };
-    Kokkos::parallel_for(ttr, f);
+    Kokkos::parallel_for(ttr, f2);
+    kv.team_barrier();
+    const int bottom = num_phys_lev;
+    const auto f3 = [&] (const int idx) {
+      const int i = idx / NP, j = idx % NP;
+      Kokkos::single(Kokkos::PerThread(kv.team), [&] () { edds(i,j,bottom) = 0; });
+    };
+    Kokkos::parallel_for(ttr, f3);
   }
 };
 
