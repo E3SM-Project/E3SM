@@ -6,15 +6,11 @@ module seq_flux_mct
   use shr_orb_mod,       only: shr_orb_params, shr_orb_cosz, shr_orb_decl
   use shr_mct_mod,       only: shr_mct_queryConfigFile, shr_mct_sMatReaddnc
 
-  use seq_comm_mct,     only : mboxid ! iMOAB app id for ocn on cpl pes
-  use seq_comm_mct,     only : mbofxid ! iMOAB id for mpas ocean migrated mesh to coupler pes, just for xao flux calculations
-  use seq_comm_mct,     only : mbaxid ! iMOAB app id for atm phys grid on cpl pes
 
   use prep_aoflux_mod,   only: prep_aoflux_get_xao_omct, prep_aoflux_get_xao_amct
 
   use iMOAB, only :  iMOAB_SetDoubleTagStorageWithGid, iMOAB_WriteMesh, iMOAB_SetDoubleTagStorage, iMOAB_GetDoubleTagStorage
   use iMOAB, only : iMOAB_GetMeshInfo
-  use seq_comm_mct, only :  num_moab_exports ! for debugging
 
   use mct_mod
   use seq_flds_mod
@@ -33,13 +29,12 @@ module seq_flux_mct
   ! Public interfaces
   !--------------------------------------------------------------------------
 
-  public seq_flux_init_mct
+  public seq_flux_init
   public seq_flux_readnl_mct
   public seq_flux_initexch_mct
 
-  public seq_flux_ocnalb_mct
+  public seq_flux_ocnalb
 
-  public seq_flux_atmocn_mct
   public seq_flux_atmocn_moab
   
   public seq_flux_atmocnexch_mct
@@ -50,8 +45,22 @@ module seq_flux_mct
 
   real(r8), pointer       :: lats(:)  ! latitudes  (degrees)
   real(r8), pointer       :: lons(:)  ! longitudes (degrees)
+  real(r8), pointer       :: olats(:)  ! latitudes  (degrees) for ocean
+  real(r8), pointer       :: olons(:)  ! longitudes (degrees) for ocean
   integer(in),allocatable :: mask(:)  ! ocn domain mask: 0 <=> inactive cell
   integer(in),allocatable :: emask(:) ! ocn mask on exchange grid decomp
+
+  real(r8), allocatable ::  avsdr(:)  ! albedo visible direct
+  real(r8), allocatable ::  anidr(:)  ! abledo near infrared direct
+  real(r8), allocatable ::  avsdf(:)  ! albedo visible diffuse
+  real(r8), allocatable ::  anidf(:)  ! albedo near infrared diffuse
+
+  real(r8), allocatable ::  swupc (:) !
+  real(r8), allocatable ::  swdnc (:) !
+  real(r8), allocatable ::  swndr (:) !
+  real(r8), allocatable ::  swndf (:) !
+  real(r8), allocatable ::  swvdr (:) !
+  real(r8), allocatable ::  swvdf (:) !
 
   real(r8), allocatable ::  uocn (:)  ! ocn velocity, zonal
   real(r8), allocatable ::  vocn (:)  ! ocn velocity, meridional
@@ -59,6 +68,13 @@ module seq_flux_mct
   real(r8), allocatable ::  zbot (:)  ! atm level height
   real(r8), allocatable ::  ubot (:)  ! atm velocity, zonal
   real(r8), allocatable ::  vbot (:)  ! atm velocity, meridional
+
+  real(r8), allocatable ::  rainc (:)  ! convective rain
+  real(r8), allocatable ::  rainl (:)  ! large scale rain
+  real(r8), allocatable ::  snowc (:)  ! convective snow
+  real(r8), allocatable ::  snowl (:)  ! large scale snow
+
+
   real(r8), allocatable ::  wsresp(:) ! atm response to surface stress
   real(r8), allocatable ::  tau_est(:)! estimation of tau in equilibrium with wind
   real(r8), allocatable ::  ugust_atm(:)  ! atm gustiness
@@ -225,7 +241,9 @@ module seq_flux_mct
 contains
   !===============================================================================
 
-  subroutine seq_flux_init_mct(comp, fractions)
+  subroutine seq_flux_init(comp, fractions, mbid)
+
+    use shr_moab_mod,     only: mbGetnCells
 
     !-----------------------------------------------------------------------
     !
@@ -233,22 +251,29 @@ contains
     !
     type(component_type), intent(in) :: comp
     type(mct_aVect), intent(in)  :: fractions
+    integer, intent(in)  :: mbid
     !
     ! Local variables
     !
     type(mct_gsMap), pointer :: gsMap
     type(mct_gGrid), pointer :: dom
-    integer(in)              :: nloc
+    integer                  :: nloc
     integer                  :: ko,ki     ! fractions indices
     integer                  :: ier
+    integer                  :: ent_type
+    integer                  :: iam_CPLID
     real(r8), pointer        :: rmask(:)  ! ocn domain mask
-    character(*),parameter   :: subName =   '(seq_flux_init_mct) '
+    real(r8), pointer        :: ofrac(:)  ! ocn domain mask
+    real(r8), pointer        :: ifrac(:)  ! ocn domain mask
+    character(CXX)           :: tagname
+    character(*),parameter   :: subName =   '(seq_flux_init) '
     !-----------------------------------------------------------------------
 
-    gsmap => component_get_gsmap_cx(comp)
+    call seq_comm_setptrs(CPLID,iam=iam_CPLID)
+
     dom   => component_get_dom_cx(comp)
 
-    nloc = mct_avect_lsize(dom%data)
+    nloc = mbGetnCells(mbid)
 
     ! Input fields atm
     allocate( zbot(nloc),stat=ier)
@@ -273,6 +298,20 @@ contains
        if(ier/=0) call mct_die(subName,'allocate ugust_atm',ier)
        ugust_atm = 0.0_r8
     end if
+
+    allocate( rainc(nloc))
+    if(ier/=0) call mct_die(subName,'allocate rainc',ier)
+    rainc = 0.0_r8
+    allocate( rainl(nloc))
+    if(ier/=0) call mct_die(subName,'allocate rainl',ier)
+    rainl = 0.0_r8
+    allocate( snowc(nloc))
+    if(ier/=0) call mct_die(subName,'allocate snowc',ier)
+    snowc = 0.0_r8
+    allocate( snowl(nloc))
+    if(ier/=0) call mct_die(subName,'allocate snowl',ier)
+    snowl = 0.0_r8
+
     allocate(thbot(nloc),stat=ier)
     if(ier/=0) call mct_die(subName,'allocate thbot',ier)
     thbot = 0.0_r8
@@ -463,8 +502,12 @@ contains
     ! Get lat, lon, mask, which is time-invariant
     allocate(rmask(nloc),stat=ier)
     if(ier/=0) call mct_die(subName,'allocate rmask',ier)
-    call mct_gGrid_exportRAttr(dom, 'lat' , lats , nloc)
-    call mct_gGrid_exportRAttr(dom, 'lon' , lons , nloc)
+
+    ent_type = 1
+    tagname = "lat"//C_NULL_CHAR
+    ier = iMOAB_GetDoubleTagStorage (mbid, tagname, nloc , ent_type, lats)
+    tagname = "lon"//C_NULL_CHAR
+    ier = iMOAB_GetDoubleTagStorage (mbid, tagname, nloc , ent_type, lons)
 
     ! setup the compute mask.
     ! prefer to compute just where ocean exists, so setup a mask here.
@@ -481,20 +524,30 @@ contains
     mask = 1
 
     ! use domain mask first
-    call mct_gGrid_exportRAttr(dom, 'mask', rmask, nloc)
+    tagname = "mask"//C_NULL_CHAR
+    ier = iMOAB_GetDoubleTagStorage (mbid, tagname, nloc , ent_type, rmask)
     where (rmask < 0.5_r8) mask = 0   ! like nint
     deallocate(rmask)
 
+    allocate(ofrac(nloc),stat=ier)
+    if(ier/=0) call mct_die(subName,'allocate ofrac',ier)
+
+    allocate(ifrac(nloc),stat=ier)
+    if(ier/=0) call mct_die(subName,'allocate ifrac',ier)
+    tagname = "ofrac"//C_NULL_CHAR
+    ier = iMOAB_GetDoubleTagStorage (mbid, tagname, nloc , ent_type, ofrac)
+    tagname = "ifrac"//C_NULL_CHAR
+    ier = iMOAB_GetDoubleTagStorage (mbid, tagname, nloc , ent_type, ifrac)
+
     ! then check ofrac + ifrac
-    ko = mct_aVect_indexRA(fractions,"ofrac")
-    ki = mct_aVect_indexRA(fractions,"ifrac")
-    where (fractions%rAttr(ko,:)+fractions%rAttr(ki,:) <= 0.0_r8) mask(:) = 0
+    where (ofrac(:)+ifrac(:) <= 0.0_r8) mask(:) = 0
+    deallocate(ofrac,ifrac)
 
     emask = mask
 
     fluxsetting = trim(fluxsetting_atmocn)
 
-  end subroutine seq_flux_init_mct
+  end subroutine seq_flux_init
 
   !===============================================================================
 
@@ -787,8 +840,9 @@ contains
 
   !===============================================================================
 
-  subroutine seq_flux_ocnalb_mct( infodata, ocn, a2x_o, fractions_o, xao_o )
+  subroutine seq_flux_ocnalb( infodata, ocn, a2x_o, fractions_o, xao_o )
 
+    use shr_moab_mod,     only: mbGetnCells,mbGetTagVals,mbSetTagVals
     !-----------------------------------------------------------------------
     !
     ! Arguments
@@ -816,12 +870,6 @@ contains
     real(r8)            :: eccf                 ! Earth orbit eccentricity factor
     real(r8)            :: calday               ! calendar day including fraction, at 0e
     real(r8)            :: nextsw_cday          ! calendar day of next atm shortwave
-    real(r8)            :: anidr                ! albedo: near infrared, direct
-    real(r8)            :: avsdr                ! albedo: visible      , direct
-    real(r8)            :: anidf                ! albedo: near infrared, diffuse
-    real(r8)            :: avsdf                ! albedo: visible      , diffuse
-    real(r8)            :: swdnc                ! temporary swdn
-    real(r8)            :: swupc                ! temporary swup
     integer(in)         :: ier                  ! error code
     integer(in)         :: kx,kr                ! fractions indices
     integer(in)         :: klat,klon       ! field indices
@@ -838,12 +886,12 @@ contains
     integer mpicom   ! just to get the global ids from gsmap
     integer my_task  ! again, just for global ids
     logical,save        :: first_call = .true.
-    integer, save       :: lSize
+    integer, save       :: lSize, nloc_of
     
 #ifdef MOABDEBUG
     character*100 outfile, wopts, lnum
 #endif
-    character(*),parameter :: subName =   '(seq_flux_ocnalb_mct) '
+    character(*),parameter :: subName =   '(seq_flux_ocnalb) '
     !
     !-----------------------------------------------------------------------
 
@@ -872,42 +920,70 @@ contains
        index_a2x_Faxa_swvdr = mct_aVect_indexRA(a2x_o,'Faxa_swvdr')
        index_a2x_Faxa_swvdf = mct_aVect_indexRA(a2x_o,'Faxa_swvdf')
 
-       nloc_o  = mct_ggrid_lsize(dom_o)
-       klat = mct_gGrid_indexRA(dom_o,"lat" ,dieWith=subName)
-       klon = mct_gGrid_indexRA(dom_o,"lon" ,dieWith=subName)
-       allocate( lats(nloc_o),stat=ier )
-       if(ier/=0) call mct_die(subName,'allocate lats',ier)
-       allocate( lons(nloc_o),stat=ier )
-       if(ier/=0) call mct_die(subName,'allocate lons',ier)
-       do n = 1,nloc_o
-          lats(n) = dom_o%data%rAttr(klat,n)
-          lons(n) = dom_o%data%rAttr(klon,n)
-       enddo
-      
+       !nloc_o  = mct_ggrid_lsize(dom_o)
+
        if (mboxid .ge. 0) then
-          ! allocate a local small array to copy a tag from another 
-          ierr  = iMOAB_GetMeshInfo ( mboxid, nvert, nvise, nbl, nsurf, nvisBC );
-          arrSize = nvise(1) * 2 !  we have ifrac and ofrac to copy to ifrad, ofrad
+          ! allocate a local small array to copy 2 tags
+          lSize = mbGetnCells(mboxid)
+          arrSize = lsize * 2 !  we have ifrac and ofrac to copy to ifrad, ofrad
           allocate(tagValues(arrSize) )
        endif
-
        if (mbofxid .ge. 0) then
-          lSize = mct_aVect_lSize(xao_o)
-          allocate(tagValues2(lSize) )
-          allocate(GlobalIds(lSize) )
-          ! use gsmap instead of domain; for data models, it seems to be not initialized
-          ! same problem during data ocean init
-          gsmap => component_get_gsmap_cx( ocn )
-          ! get list of global IDs for Dofs
-          call seq_comm_setptrs(CPLID, mpicom=mpicom)
-          ! Determine communicator task
-          call mpi_comm_rank(mpicom, my_task, ierr)
-          call mct_gsMap_orderedPoints(gsMap, my_task, idata)
-          do n = 1, lSize
-             GlobalIds (n) = idata (n)
-          enddo
-          !kgg = mct_aVect_indexIA(dom_o%data ,"GlobGridNum" ,perrWith=subName)
-          !GlobalIds = dom_o%data%iAttr(kgg,:)
+          nloc_of = mbGetnCells(mbofxid)
+
+          allocate( olats(nloc_of))
+          if(ier/=0) call mct_die(subName,'allocate olats',ier)
+          olats = 0.0_r8
+
+          allocate( olons(nloc_of))
+          if(ier/=0) call mct_die(subName,'allocate olons',ier)
+          olons = 0.0_r8
+
+          allocate( avsdr(nloc_of))
+          if(ier/=0) call mct_die(subName,'allocate avsdr',ier)
+          avsdr = 0.0_r8
+
+          allocate( anidr(nloc_of))
+          if(ier/=0) call mct_die(subName,'allocate anidr',ier)
+          anidr = 0.0_r8
+
+          allocate( anidf(nloc_of))
+          if(ier/=0) call mct_die(subName,'allocate anidf',ier)
+          anidf = 0.0_r8
+
+          allocate( avsdf(nloc_of))
+          if(ier/=0) call mct_die(subName,'allocate avsdf',ier)
+          avsdf = 0.0_r8
+
+          allocate( swupc(nloc_of))
+          if(ier/=0) call mct_die(subName,'allocate swupc',ier)
+          swupc = 0.0_r8
+
+          allocate( swdnc(nloc_of))
+          if(ier/=0) call mct_die(subName,'allocate swdnc',ier)
+          swdnc = 0.0_r8
+
+          allocate( swndr(nloc_of))
+          if(ier/=0) call mct_die(subName,'allocate swndr',ier)
+          swndr = 0.0_r8
+
+          allocate( swvdr(nloc_of))
+          if(ier/=0) call mct_die(subName,'allocate swvdr',ier)
+          swvdr = 0.0_r8
+
+          allocate( swvdf(nloc_of))
+          if(ier/=0) call mct_die(subName,'allocate swvdf',ier)
+          swvdf = 0.0_r8
+
+          allocate( swndf(nloc_of))
+          if(ier/=0) call mct_die(subName,'allocate swndf',ier)
+          swndf = 0.0_r8
+
+          ! allocate a local small array to copy 1 tag
+          allocate(tagValues2(nloc_of) )
+
+          call mbGetTagVals(mbofxid, 'lat', olats, nloc_of)
+          call mbGetTagVals(mbofxid, 'lon', olons, nloc_of)
        endif
 
        first_call = .false.
@@ -916,50 +992,58 @@ contains
 
     if (flux_albav) then
 
-       do n=1,nloc_o
-          anidr = seq_flux_mct_albdir
-          avsdr = seq_flux_mct_albdir
-          anidf = seq_flux_mct_albdif
-          avsdf = seq_flux_mct_albdif
+       anidr = seq_flux_mct_albdir
+       avsdr = seq_flux_mct_albdir
+       anidf = seq_flux_mct_albdif
+       avsdf = seq_flux_mct_albdif
 
-          ! Albedo is now function of latitude (will be new implementation)
-          !rlat = const_deg2rad * lats(n)
-          !anidr = 0.069_r8 - 0.011_r8 * cos(2._r8 * rlat)
-          !avsdr = anidr
-          !anidf = anidr
-          !avsdf = anidr
+       ! Albedo is now function of latitude (will be new implementation)
+       !rlat = const_deg2rad * lats(n)
+       !anidr = 0.069_r8 - 0.011_r8 * cos(2._r8 * rlat)
+       !avsdr = anidr
+       !anidf = anidr
+       !avsdf = anidr
 
-          xao_o%rAttr(index_xao_So_avsdr,n) = avsdr
-          xao_o%rAttr(index_xao_So_anidr,n) = anidr
-          xao_o%rAttr(index_xao_So_avsdf,n) = avsdf
-          xao_o%rAttr(index_xao_So_anidf,n) = anidf
-       end do
+       if (mbofxid .ge. 0) then
+          call mbSetTagVals(mbofxid, 'So_avsdr', avsdr, nloc_of)
+          call mbSetTagVals(mbofxid, 'So_anidr', anidr, nloc_of)
+          call mbSetTagVals(mbofxid, 'So_avsdf', avsdf, nloc_of)
+          call mbSetTagVals(mbofxid, 'So_anidf', anidf, nloc_of)
+       endif
+
        update_alb = .true.
 
     else
 
        !--- flux_atmocn needs swdn & swup = swdn*(-albedo)
        !--- swdn & albedos are time-aligned  BEFORE albedos get updated below ---
-       do n=1,nloc_o
-          avsdr = xao_o%rAttr(index_xao_So_avsdr,n)
-          anidr = xao_o%rAttr(index_xao_So_anidr,n)
-          avsdf = xao_o%rAttr(index_xao_So_avsdf,n)
-          anidf = xao_o%rAttr(index_xao_So_anidf,n)
-          swupc = a2x_o%rAttr(index_a2x_Faxa_swndr,n)*(-anidr) &
-               & + a2x_o%rAttr(index_a2x_Faxa_swndf,n)*(-anidf) &
-               & + a2x_o%rAttr(index_a2x_Faxa_swvdr,n)*(-avsdr) &
-               & + a2x_o%rAttr(index_a2x_Faxa_swvdf,n)*(-avsdf)
-          swdnc = a2x_o%rAttr(index_a2x_Faxa_swndr,n) &
-               & + a2x_o%rAttr(index_a2x_Faxa_swndf,n) &
-               & + a2x_o%rAttr(index_a2x_Faxa_swvdr,n) &
-               & + a2x_o%rAttr(index_a2x_Faxa_swvdf,n)
-          if ( anidr == 1.0_r8 ) then ! dark side of earth
-             swupc = 0.0_r8
-             swdnc = 0.0_r8
-          end if
-          xao_o%rAttr(index_xao_Faox_swdn,n) = swdnc
-          xao_o%rAttr(index_xao_Faox_swup,n) = swupc
-       end do
+       if (mbofxid .ge. 0) then
+          call mbGetTagVals(mbofxid, 'So_avsdr', avsdr, nloc_of)
+          call mbGetTagVals(mbofxid, 'So_anidr', anidr, nloc_of)
+          call mbGetTagVals(mbofxid, 'So_avsdf', avsdf, nloc_of)
+          call mbGetTagVals(mbofxid, 'So_anidf', anidf, nloc_of)
+
+          call mbGetTagVals(mboxid, 'Faxa_swndr', swndr, nloc_of)
+          call mbGetTagVals(mboxid, 'Faxa_swndf', swndf, nloc_of)
+          call mbGetTagVals(mboxid, 'Faxa_swvdr', swndr, nloc_of)
+          call mbGetTagVals(mboxid, 'Faxa_swvdf', swvdf, nloc_of)
+          do n=1,nloc_of
+             swupc(n) = swndr(n)*(-anidr(n)) &
+                  & + swndf(n)*(-anidf(n)) &
+                  & + swvdr(n)*(-avsdr(n)) &
+                  & + swvdf(n)*(-avsdf(n))
+             swdnc(n) = swndr(n) &
+                  & + swndf(n) &
+                  & + swvdr(n) &
+                  & + swvdf(n)
+             if ( anidr(n) == 1.0_r8 ) then ! dark side of earth
+                 swupc(n) = 0.0_r8
+                 swdnc(n) = 0.0_r8
+              end if
+          end do
+          call mbSetTagVals(mbofxid, 'Faox_swdn', swdnc, nloc_of)
+          call mbSetTagVals(mbofxid, 'Faox_swup', swupc, nloc_of)
+        endif
 
        ! Solar declination
        ! Will only do albedo calculation if nextsw_cday is not -1.
@@ -970,79 +1054,38 @@ contains
           calday = nextsw_cday
           call shr_orb_decl(calday, eccen, mvelpp,lambm0, obliqr, delta, eccf)
           ! Compute albedos
-          do n=1,nloc_o
-             rlat = const_deg2rad * lats(n)
-             rlon = const_deg2rad * lons(n)
+          do n=1,nloc_of
+             rlat = const_deg2rad * olats(n)
+             rlon = const_deg2rad * olons(n)
              cosz = shr_orb_cosz( calday, rlat, rlon, delta )
              if (cosz  >  0.0_r8) then !--- sun hit --
-                anidr = (.026_r8/(cosz**1.7_r8 + 0.065_r8)) +   &
+                anidr(n) = (.026_r8/(cosz**1.7_r8 + 0.065_r8)) +   &
                      (.150_r8*(cosz         - 0.100_r8 ) *   &
                      (cosz         - 0.500_r8 ) *   &
                      (cosz         - 1.000_r8 )  )
-                avsdr = anidr
-                anidf = seq_flux_mct_albdif
-                avsdf = seq_flux_mct_albdif
+                avsdr(n) = anidr(n)
+                anidf(n) = seq_flux_mct_albdif
+                avsdf(n) = seq_flux_mct_albdif
              else !--- dark side of earth ---
-                anidr = 1.0_r8
-                avsdr = 1.0_r8
-                anidf = 1.0_r8
-                avsdf = 1.0_r8
+                anidr(n) = 1.0_r8
+                avsdr(n) = 1.0_r8
+                anidf(n) = 1.0_r8
+                avsdf(n) = 1.0_r8
              end if
-
-             xao_o%rAttr(index_xao_So_avsdr,n) = avsdr
-             xao_o%rAttr(index_xao_So_anidr,n) = anidr
-             xao_o%rAttr(index_xao_So_avsdf,n) = avsdf
-             xao_o%rAttr(index_xao_So_anidf,n) = anidf
-
           end do   ! nloc_o
+          if (mbofxid .ge. 0) then
+             call mbSetTagVals(mbofxid, 'So_avsdr', avsdr, nloc_of)
+             call mbSetTagVals(mbofxid, 'So_anidr', anidr, nloc_of)
+             call mbSetTagVals(mbofxid, 'So_avsdf', avsdf, nloc_of)
+             call mbSetTagVals(mbofxid, 'So_anidf', anidf, nloc_of)
+          endif
+
           update_alb = .true.
        endif    ! nextsw_cday
     end if   ! flux_albav
 
-! update MOAB versions
-    if (mbofxid > 0 ) then
-       tagname = 'So_avsdr'//C_NULL_CHAR
-       tagValues2 = xao_o%rAttr(index_xao_So_avsdr,:)
-       ierr = iMOAB_SetDoubleTagStorageWithGid ( mbofxid, tagname, lSize , ent_type, tagValues2, GlobalIds )
-       if (ierr .ne. 0) then
-          write(logunit,*) subname,' error in setting avsdr on ocnf moab instance  '
-          call shr_sys_abort(subname//' ERROR in setting avsdr on ocnf moab instance ')
-       endif
-
-       tagname = 'So_anidr'//C_NULL_CHAR
-       tagValues2 = xao_o%rAttr(index_xao_So_anidr,:)
-       ierr = iMOAB_SetDoubleTagStorageWithGid ( mbofxid, tagname, lSize , ent_type, tagValues2, GlobalIds )
-       if (ierr .ne. 0) then
-          write(logunit,*) subname,' error in setting anidr on ocnf moab instance  '
-          call shr_sys_abort(subname//' ERROR in setting anidr on ocnf moab instance ')
-       endif
-
-       tagname = 'So_avsdf'//C_NULL_CHAR
-       tagValues2 = xao_o%rAttr(index_xao_So_avsdf,:)
-       ierr = iMOAB_SetDoubleTagStorageWithGid ( mbofxid, tagname, lSize , ent_type, tagValues2, GlobalIds )
-       if (ierr .ne. 0) then
-          write(logunit,*) subname,' error in setting avsdf on ocnf moab instance  '
-          call shr_sys_abort(subname//' ERROR in setting avsdf on ocnf moab instance ')
-       endif
-
-       tagname = 'So_anidf'//C_NULL_CHAR
-       tagValues2 = xao_o%rAttr(index_xao_So_anidf,:)
-       ierr = iMOAB_SetDoubleTagStorageWithGid ( mbofxid, tagname, lSize , ent_type, tagValues2, GlobalIds )
-       if (ierr .ne. 0) then
-          write(logunit,*) subname,' error in setting anidf on ocnf moab instance  '
-          call shr_sys_abort(subname//' ERROR in setting anidf on ocnf moab instance ')
-       endif
-    endif
-
     !--- update current ifrad/ofrad values if albedo was updated
     if (update_alb) then
-       kx = mct_aVect_indexRA(fractions_o,"ifrac")
-       kr = mct_aVect_indexRA(fractions_o,"ifrad")
-       fractions_o%rAttr(kr,:) = fractions_o%rAttr(kx,:)
-
-       kx = mct_aVect_indexRA(fractions_o,"ofrac")
-       kr = mct_aVect_indexRA(fractions_o,"ofrad")
-       fractions_o%rAttr(kr,:) = fractions_o%rAttr(kx,:)
 
        ! copy here fractions ifrad and ofrad to moab tags
        if (mboxid > 0 ) then
@@ -1089,7 +1132,7 @@ contains
 #endif
 
 
-  end subroutine seq_flux_ocnalb_mct
+  end subroutine seq_flux_ocnalb
 
   !===============================================================================
 
@@ -1443,7 +1486,8 @@ contains
 
   !===============================================================================
 
-  subroutine seq_flux_atmocn_mct(infodata, tod, dt, a2x, o2x, xao)
+  subroutine seq_flux_atmocn_moab(infodata, tod, dt, a2x, o2x, xao, mbid, mbfid)
+    use shr_moab_mod,     only: mbGetnCells,mbGetTagVals,mbSetTagVals
 
     !-----------------------------------------------------------------------
     !
@@ -1454,24 +1498,32 @@ contains
     type(mct_aVect)         , intent(in)         :: a2x  ! a2x_ax or a2x_ox
     type(mct_aVect)         , intent(in)         :: o2x  ! o2x_ax or o2x_ox
     type(mct_aVect)         , intent(inout)      :: xao
+    integer(in)             , intent(in)         :: mbid ! input atm moab app
+    integer(in)             , intent(in)         :: mbfid ! flux moab app
     !
     ! Local variables
     !
     logical     :: flux_albav   ! flux avg option
     logical     :: dead_comps   ! .true.  => dead components are used
-    integer(in) :: n            ! indices
-    integer(in) :: nloc, nloca, nloco    ! number of gridcells
+    integer     :: n            ! indices
+    integer     :: nloc, nloca, nloco    ! number of gridcells
     logical,save:: first_call = .true.
     logical     :: cold_start      ! .true. to initialize internal fields in shr_flux diurnal
     logical     :: read_restart    ! .true. => continue run
     logical     :: ocn_prognostic  ! .true. => ocn is prognostic
     logical     :: flux_diurnal    ! .true. => turn on diurnal cycle in atm/ocn fluxes
     integer     :: ocn_surface_flux_scheme ! 0: E3SMv1  1: COARE  2: UA
+    integer     :: nlocf
     real(r8)    :: flux_convergence ! convergence criteria for imlicit flux computation
     integer(in) :: flux_max_iteration ! maximum number of iterations for convergence
     logical :: coldair_outbreak_mod !  cold air outbreak adjustment  (Mahrt & Sun 1995,MWR)
+
+#ifdef MOABDEBUG
+    character*100 outfile, wopts, lnum
+    integer ierr
+#endif
     !
-    character(*),parameter :: subName =   '(seq_flux_atmocn_mct) '
+    character(*),parameter :: subName =   '(seq_flux_atmocn_moab) '
     !
     !-----------------------------------------------------------------------
 
@@ -1584,11 +1636,12 @@ contains
        call shr_sys_abort(trim(subname)//' ERROR wrong fluxsetting')
     endif
 
-    nloc = mct_aVect_lsize(xao)
-    nloca = mct_aVect_lsize(a2x)
-    nloco = mct_aVect_lsize(o2x)
+    
+    nloc = mbGetnCells(mbid)
 
-    if (nloc /= nloca .or. nloc /= nloco) then
+    nlocf = mbGetnCells(mbfid)
+
+    if (nloc /= nlocf) then
        call shr_sys_abort(trim(subname)//' ERROR nloc sizes do not match')
     endif
 
@@ -1652,74 +1705,114 @@ contains
           swdn       (n) = 0.0_r8
           swup       (n) = 0.0_r8
        enddo
-    else
+    else  ! not dead comps
+
+       call mbGetTagVals(mbid, 'Sa_z', zbot, nloc) 
+       call mbGetTagVals(mbid, 'Sa_u', ubot, nloc) 
+       call mbGetTagVals(mbid, 'Sa_v', vbot, nloc) 
+       if (atm_flux_method == 'implicit_stress') then
+          call mbGetTagVals(mbid, 'Sa_wsresp', wsresp, nloc) 
+          call mbGetTagVals(mbid, 'Sa_tau_est', tau_est, nloc) 
+       endif
+       if (atm_gustiness) then
+          call mbGetTagVals(mbid, 'Sa_ugust', ugust_atm, nloc) 
+       endif
+       call mbGetTagVals(mbid, 'Sa_ptem', thbot, nloc) 
+       call mbGetTagVals(mbid, 'Sa_shum', shum, nloc) 
+       if ( index_a2x_Sa_shum_16O /= 0 ) then
+          call mbGetTagVals(mbid, 'Sa_shum_16O', shum_16O, nloc) 
+       endif
+       if ( index_a2x_Sa_shum_HDO /= 0 ) then
+          call mbGetTagVals(mbid, 'Sa_shum_HDO', shum_HDO, nloc) 
+       endif
+       if ( index_a2x_Sa_shum_18O /= 0 ) then
+          call mbGetTagVals(mbid, 'Sa_shum_18O', shum_18O, nloc) 
+       endif
+       call mbGetTagVals(mbid, 'Sa_dens', dens, nloc) 
+       call mbGetTagVals(mbid, 'Sa_tbot', tbot, nloc) 
+       call mbGetTagVals(mbid, 'Sa_pslv', pslv, nloc) 
+
+       call mbGetTagVals(mbid, 'So_t', tocn, nloc) 
+       call mbGetTagVals(mbid, 'So_u', uocn, nloc) 
+       call mbGetTagVals(mbid, 'So_v', vocn, nloc) 
+
+       if ( index_o2x_So_roce_16O /= 0 ) then
+          call mbGetTagVals(mbid, 'So_roce_16O', roce_16O, nloc)
+       endif
+       if ( index_o2x_So_roce_HDO /= 0 ) then
+          call mbGetTagVals(mbid, 'So_roce_HDO', roce_HDO, nloc)
+       endif
+       if ( index_o2x_So_roce_18O /= 0 ) then
+          call mbGetTagVals(mbid, 'So_roce_18O', roce_18O, nloc)
+       endif
+       call mbGetTagVals(mbid, 'Faxa_lwdn', lwdn, nloc) 
+       call mbGetTagVals(mbid, 'Faxa_rainc', rainc, nloc) 
+       call mbGetTagVals(mbid, 'Faxa_rainl', rainl, nloc) 
+       call mbGetTagVals(mbid, 'Faxa_snowc', snowc, nloc) 
+       call mbGetTagVals(mbid, 'Faxa_snowl', snowl, nloc) 
+
+       call mbGetTagVals(mbid, 'So_fswpen', fswpen, nloc) 
+       call mbGetTagVals(mbid, 'So_s', ocnsal, nloc) 
+
+       if (flux_diurnal) then
+         call mbGetTagVals(mbfid, 'So_warm_diurn', warm, nloc) 
+         call mbGetTagVals(mbfid, 'So_salt_diurn', salt, nloc) 
+         call mbGetTagVals(mbfid, 'So_speed_diurn', speed, nloc) 
+         ! TODO:  Finish
+       endif
+
        do n = 1,nloc
           nInc(n) = 0._r8 ! needed for minval/maxval calculation
+          ! set some values that are needed but not a tag.
           if (mask(n) /= 0) then
-             zbot(n) = a2x%rAttr(index_a2x_Sa_z   ,n)
-             ubot(n) = a2x%rAttr(index_a2x_Sa_u   ,n)
-             vbot(n) = a2x%rAttr(index_a2x_Sa_v   ,n)
+             uGust(n) = 0.0_r8
+             prec(n)  = rainc(n)+rainl(n)+snowc(n)+snowl(n)
+          endif
+          ! make sure values are 0 where mask is 0
+          if (mask(n) == 0) then
+             zbot(n) = 0.0_r8
+             ubot(n) = 0.0_r8
+             vbot(n) = 0.0_r8
              if (atm_flux_method == 'implicit_stress') then
-                wsresp(n) = a2x%rAttr(index_a2x_Sa_wsresp,n)
-                tau_est(n) = a2x%rAttr(index_a2x_Sa_tau_est,n)
+                wsresp(n) = 0.0_r8
+                tau_est(n) = 0.0_r8
              end if
              if (atm_gustiness) then
-                ugust_atm(n) = a2x%rAttr(index_a2x_Sa_ugust,n)
+                ugust_atm(n) = 0.0_r8
              end if
-             thbot(n)= a2x%rAttr(index_a2x_Sa_ptem,n)
-             shum(n) = a2x%rAttr(index_a2x_Sa_shum,n)
-             if ( index_a2x_Sa_shum_16O /= 0 ) shum_16O(n) = a2x%rAttr(index_a2x_Sa_shum_16O,n)
-             if ( index_a2x_Sa_shum_HDO /= 0 ) shum_HDO(n) = a2x%rAttr(index_a2x_Sa_shum_HDO,n)
-             if ( index_a2x_Sa_shum_18O /= 0 ) shum_18O(n) = a2x%rAttr(index_a2x_Sa_shum_18O,n)
-             dens(n) = a2x%rAttr(index_a2x_Sa_dens,n)
-             tbot(n) = a2x%rAttr(index_a2x_Sa_tbot,n)
-             pslv(n) = a2x%rAttr(index_a2x_Sa_pslv,n)
-             tocn(n) = o2x%rAttr(index_o2x_So_t   ,n)
-             uocn(n) = o2x%rAttr(index_o2x_So_u   ,n)
-             vocn(n) = o2x%rAttr(index_o2x_So_v   ,n)
-             if ( index_o2x_So_roce_16O /= 0 ) roce_16O(n) = o2x%rAttr(index_o2x_So_roce_16O, n)
-             if ( index_o2x_So_roce_HDO /= 0 ) roce_HDO(n) = o2x%rAttr(index_o2x_So_roce_HDO, n)
-             if ( index_o2x_So_roce_18O /= 0 ) roce_18O(n) = o2x%rAttr(index_o2x_So_roce_18O, n)
+             thbot(n)= 0.0_r8
+             shum(n) = 0.0_r8
+             if ( index_a2x_Sa_shum_16O /= 0 ) shum_16O(n) = 0.0_r8
+             if ( index_a2x_Sa_shum_HDO /= 0 ) shum_HDO(n) = 0.0_r8
+             if ( index_a2x_Sa_shum_18O /= 0 ) shum_18O(n) = 0.0_r8
+             dens(n) = 0.0_r8
+             tbot(n) = 0.0_r8
+             pslv(n) = 0.0_r8
+
+             tocn(n) = 0.0_r8
+             uocn(n) = 0.0_r8
+             vocn(n) = 0.0_r8
+             if ( index_o2x_So_roce_16O /= 0 ) roce_16O(n) = 0.0_r8
+             if ( index_o2x_So_roce_HDO /= 0 ) roce_HDO(n) = 0.0_r8
+             if ( index_o2x_So_roce_18O /= 0 ) roce_18O(n) = 0.0_r8
+
              !--- mask missing atm or ocn data if found
              if (dens(n) < 1.0e-12 .or. tocn(n) < 1.0) then
                 emask(n) = 0
-                !write(logunit,*) 'aoflux tcx1',n,dens(n),tocn(n)
              endif
              !           !!uGust(n) = 1.5_r8*sqrt(uocn(n)**2 + vocn(n)**2) ! there is no wind gust data from ocn
-             uGust(n) = 0.0_r8
-             lwdn (n) = a2x%rAttr(index_a2x_Faxa_lwdn ,n)
-             prec (n) = a2x%rAttr(index_a2x_Faxa_rainc,n) &
-                  & + a2x%rAttr(index_a2x_Faxa_rainl,n) &
-                  & + a2x%rAttr(index_a2x_Faxa_snowc,n) &
-                  & + a2x%rAttr(index_a2x_Faxa_snowl,n)
-             fswpen(n)= o2x%rAttr(index_o2x_So_fswpen ,n)
-             ocnsal(n)= o2x%rAttr(index_o2x_So_s      ,n)
+             lwdn (n) = 0.0_r8
 
-             warm       (n) = xao%rAttr(index_xao_So_warm_diurn      ,n)
-             salt       (n) = xao%rAttr(index_xao_So_salt_diurn      ,n)
-             speed      (n) = xao%rAttr(index_xao_So_speed_diurn     ,n)
-             regime     (n) = xao%rAttr(index_xao_So_regime_diurn    ,n)
-             warmMax    (n) = xao%rAttr(index_xao_So_warmMax_diurn   ,n)
-             windMax    (n) = xao%rAttr(index_xao_So_windMax_diurn   ,n)
-             qSolAvg    (n) = xao%rAttr(index_xao_So_qsolavg_diurn   ,n)
-             windAvg    (n) = xao%rAttr(index_xao_So_windavg_diurn   ,n)
-             warmMaxInc (n) = xao%rAttr(index_xao_So_warmMaxInc_diurn,n)
-             windMaxInc (n) = xao%rAttr(index_xao_So_windMaxInc_diurn,n)
-             qSolInc    (n) = xao%rAttr(index_xao_So_qSolInc_diurn   ,n)
-             windInc    (n) = xao%rAttr(index_xao_So_windInc_diurn   ,n)
-             nInc       (n) = xao%rAttr(index_xao_So_nInc_diurn      ,n)
-             tbulk      (n) = xao%rAttr(index_xao_So_tbulk_diurn     ,n)
-             tskin      (n) = xao%rAttr(index_xao_So_tskin_diurn     ,n)
-             tskin_day  (n) = xao%rAttr(index_xao_So_tskin_day_diurn ,n)
-             tskin_night(n) = xao%rAttr(index_xao_So_tskin_night_diurn,n)
-             cskin      (n) = xao%rAttr(index_xao_So_cskin_diurn     ,n)
-             cskin_night(n) = xao%rAttr(index_xao_So_cskin_night_diurn,n)
-             ! set in flux_ocnalb using data from previous timestep
-             swdn       (n) = xao%rAttr(index_xao_Faox_swdn          ,n)
-             swup       (n) = xao%rAttr(index_xao_Faox_swup          ,n)
+             prec (n) = 0.0_r8
+             fswpen(n)= 0.0_r8
+             ocnsal(n)= 0.0_r8
+
+             warm       (n) = 0.0_r8
+             salt       (n) = 0.0_r8
+             speed      (n) = 0.0_r8
           end if
        enddo
-    end if
+    end if  ! end of if else for dead or live components
 
     if (flux_diurnal) then
        if (ocn_surface_flux_scheme.eq.2) then
@@ -1767,125 +1860,83 @@ contains
        !duu10n,ustar, re  , ssq, missval = 0.0_r8 )
     endif
 
+    call mbSetTagVals(mbfid, 'Faox_sen', sen, nloc) 
+    call mbSetTagVals(mbfid, 'Faox_lat', lat, nloc) 
+    call mbSetTagVals(mbfid, 'Faox_taux', taux, nloc) 
+    call mbSetTagVals(mbfid, 'Faox_tauy', tauy, nloc) 
+    call mbSetTagVals(mbfid, 'Faox_evap', evap, nloc) 
+    ! TODO:  evap isotopes
+    call mbSetTagVals(mbfid, 'So_tref', tref, nloc) 
+    call mbSetTagVals(mbfid, 'So_qref', qref, nloc) 
+    call mbSetTagVals(mbfid, 'So_ustar', ustar, nloc) 
+    call mbSetTagVals(mbfid, 'So_re', re, nloc) 
+    call mbSetTagVals(mbfid, 'So_ssq', ssq, nloc) 
+    call mbSetTagVals(mbfid, 'Faox_lwup', lwup, nloc) 
+    call mbSetTagVals(mbfid, 'So_duu10n', duu10n, nloc) 
+    duu10n= sqrt(duu10n)
+    call mbSetTagVals(mbfid, 'So_u10', duu10n, nloc) 
+    !TODO find better way for above
+
     do n = 1,nloc
-       if (mask(n) /= 0) then
-          xao%rAttr(index_xao_Faox_sen ,n) = sen(n)
-          xao%rAttr(index_xao_Faox_lat ,n) = lat(n)
-          xao%rAttr(index_xao_Faox_taux,n) = taux(n)
-          xao%rAttr(index_xao_Faox_tauy,n) = tauy(n)
-          xao%rAttr(index_xao_Faox_evap,n) = evap(n)
+       if (mask(n) == 0) then
+          xao%rAttr(index_xao_Faox_sen ,n) = 0.0_r8
+          xao%rAttr(index_xao_Faox_lat ,n) = 0.0_r8
+          xao%rAttr(index_xao_Faox_taux,n) = 0.0_r8
+          xao%rAttr(index_xao_Faox_tauy,n) = 0.0_r8
+          xao%rAttr(index_xao_Faox_evap,n) = 0.0_r8
           if ( index_xao_Faox_evap_16O /= 0 ) xao%rAttr(index_xao_Faox_evap_16O,n) = evap_16O(n)
           if ( index_xao_Faox_evap_HDO /= 0 ) xao%rAttr(index_xao_Faox_evap_HDO,n) = evap_HDO(n)
           if ( index_xao_Faox_evap_18O /= 0 ) xao%rAttr(index_xao_Faox_evap_18O,n) = evap_18O(n)
-          xao%rAttr(index_xao_So_tref  ,n) = tref(n)
-          xao%rAttr(index_xao_So_qref  ,n) = qref(n)
-          xao%rAttr(index_xao_So_ustar ,n) = ustar(n)  ! friction velocity
-          xao%rAttr(index_xao_So_re    ,n) = re(n)     ! reynolds number
-          xao%rAttr(index_xao_So_ssq   ,n) = ssq(n)    ! s.hum. saturation at Ts
-          xao%rAttr(index_xao_Faox_lwup,n) = lwup(n)
-          xao%rAttr(index_xao_So_duu10n,n) = duu10n(n)
-          xao%rAttr(index_xao_So_u10   ,n) = sqrt(duu10n(n))
-          xao%rAttr(index_xao_So_warm_diurn       ,n) = warm(n)
-          xao%rAttr(index_xao_So_salt_diurn       ,n) = salt(n)
-          xao%rAttr(index_xao_So_speed_diurn      ,n) = speed(n)
-          xao%rAttr(index_xao_So_regime_diurn     ,n) = regime(n)
-          xao%rAttr(index_xao_So_warmMax_diurn    ,n) = warmMax(n)
-          xao%rAttr(index_xao_So_windMax_diurn    ,n) = windMax(n)
-          xao%rAttr(index_xao_So_qSolAvg_diurn    ,n) = qSolAvg(n)
-          xao%rAttr(index_xao_So_windAvg_diurn    ,n) = windAvg(n)
-          xao%rAttr(index_xao_So_warmMaxInc_diurn ,n) = warmMaxInc(n)
-          xao%rAttr(index_xao_So_windMaxInc_diurn ,n) = windMaxInc(n)
-          xao%rAttr(index_xao_So_qSolInc_diurn    ,n) = qSolInc(n)
-          xao%rAttr(index_xao_So_windInc_diurn    ,n) = windInc(n)
-          xao%rAttr(index_xao_So_nInc_diurn       ,n) = nInc(n)
-          xao%rAttr(index_xao_So_tbulk_diurn      ,n) = tbulk(n)
-          xao%rAttr(index_xao_So_tskin_diurn      ,n) = tskin(n)
-          xao%rAttr(index_xao_So_tskin_day_diurn  ,n) = tskin_day(n)
-          xao%rAttr(index_xao_So_tskin_night_diurn,n) = tskin_night(n)
-          xao%rAttr(index_xao_So_cskin_diurn      ,n) = cskin(n)
-          xao%rAttr(index_xao_So_cskin_night_diurn,n) = cskin_night(n)
-          xao%rAttr(index_xao_So_fswpen           ,n) = fswpen(n)
+          xao%rAttr(index_xao_So_tref  ,n) = 0.0_r8
+          xao%rAttr(index_xao_So_qref  ,n) = 0.0_r8
+          xao%rAttr(index_xao_So_ustar ,n) = 0.0_r8  ! friction velocity
+          xao%rAttr(index_xao_So_re    ,n) = 0.0_r8     ! reynolds number
+          xao%rAttr(index_xao_So_ssq   ,n) = 0.0_r8    ! s.hum. saturation at Ts
+          xao%rAttr(index_xao_Faox_lwup,n) = 0.0_r8 
+          xao%rAttr(index_xao_So_duu10n,n) = 0.0_r8
+          xao%rAttr(index_xao_So_u10   ,n) = 0.0_r8
+          if (flux_diurnal) then
+           xao%rAttr(index_xao_So_warm_diurn       ,n) = warm(n)
+           xao%rAttr(index_xao_So_salt_diurn       ,n) = salt(n)
+           xao%rAttr(index_xao_So_speed_diurn      ,n) = speed(n)
+           xao%rAttr(index_xao_So_regime_diurn     ,n) = regime(n)
+           xao%rAttr(index_xao_So_warmMax_diurn    ,n) = warmMax(n)
+           xao%rAttr(index_xao_So_windMax_diurn    ,n) = windMax(n)
+           xao%rAttr(index_xao_So_qSolAvg_diurn    ,n) = qSolAvg(n)
+           xao%rAttr(index_xao_So_windAvg_diurn    ,n) = windAvg(n)
+           xao%rAttr(index_xao_So_warmMaxInc_diurn ,n) = warmMaxInc(n)
+           xao%rAttr(index_xao_So_windMaxInc_diurn ,n) = windMaxInc(n)
+           xao%rAttr(index_xao_So_qSolInc_diurn    ,n) = qSolInc(n)
+           xao%rAttr(index_xao_So_windInc_diurn    ,n) = windInc(n)
+           xao%rAttr(index_xao_So_nInc_diurn       ,n) = nInc(n)
+           xao%rAttr(index_xao_So_tbulk_diurn      ,n) = tbulk(n)
+           xao%rAttr(index_xao_So_tskin_diurn      ,n) = tskin(n)
+           xao%rAttr(index_xao_So_tskin_day_diurn  ,n) = tskin_day(n)
+           xao%rAttr(index_xao_So_tskin_night_diurn,n) = tskin_night(n)
+           xao%rAttr(index_xao_So_cskin_diurn      ,n) = cskin(n)
+           xao%rAttr(index_xao_So_cskin_night_diurn,n) = cskin_night(n)
+           xao%rAttr(index_xao_So_fswpen           ,n) = fswpen(n)
+          endif
        end if
     enddo
-
-    ! transpose xao to xao_omct, to 
-  end subroutine seq_flux_atmocn_mct
-
-  subroutine seq_flux_atmocn_moab(comp, xao)
-     type(component_type), intent(inout) :: comp
-     type(mct_aVect)       , intent(inout)      :: xao
-
-     real(r8) , pointer :: local_xao_mct(:,:) ! atm-ocn fluxes, transpose, mct local sizes
-     integer  appId ! moab app id
-     integer i,j
-     integer nloc, listSize
-
-     ! moab
-     integer                  :: tagtype, numco,  tagindex, ent_type, ierr, arrSize
-     character(CXX)           :: tagname
-     character*100 outfile, wopts, lnum
-
-     character(*),parameter   :: subName =   '(seq_flux_atmocn_moab) '
-
-     if (comp%oneletterid == 'a' ) then
-        appId = mbaxid ! atm on coupler
-        local_xao_mct => prep_aoflux_get_xao_amct()
-     else if (comp%oneletterid == 'o') then
-        appId = mbofxid  ! atm phys
-        local_xao_mct => prep_aoflux_get_xao_omct()
-     else
-        call mct_die(subName,'call for either ocean or atm',1)
-     endif
-     ! transpose into moab double array, then set with global id 
-     nloc = mct_avect_lsize(xao)
-     listSize = mct_aVect_nRAttr(xao)
-
-     do j = 1, listSize
-       local_xao_mct(:, j) = xao%rAttr(j, :)
-     enddo
-
-     tagname = trim(seq_flds_xao_fields)//C_NULL_CHAR
-     arrSize = nloc * listSize
-     ent_type = 1 ! cells
-     ! global ids are retrieved by albedo first call; it is a local module variable 
-     ierr = iMOAB_SetDoubleTagStorageWithGid ( appId, tagname, arrSize , ent_type, local_xao_mct, GlobalIds )
-     if (ierr .ne. 0) then
-       write(logunit,*) subname,' error in setting atm-ocn fluxes  '
-       call shr_sys_abort(subname//' ERROR in setting atm-ocn fluxes')
-     endif
 
 #ifdef MOABDEBUG
         ! debug out file
       write(lnum,"(I0.2)")num_moab_exports
-      outfile = comp%oneletterid//'_flux_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+      !outfile = comp%oneletterid//'_flux_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+      outfile = 'o_flux_'//trim(lnum)//'.h5m'//C_NULL_CHAR
       wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
-      ierr = iMOAB_WriteMesh(appId, outfile, wopts)
+      ierr = iMOAB_WriteMesh(mbfid, outfile, wopts)
  
       if (ierr .ne. 0) then
          write(logunit,*) subname,' error in writing mesh '
          call shr_sys_abort(subname//' ERROR in writing mesh ')
       endif
 
-      if (comp%oneletterid == 'o') then ! for debugging, set the mct ocn grid values, to see if they are the same
-        appId = mbox2id  ! ocn on mct point cloud
-        ent_type = 0! vertices, it is point cloud
-        ierr = iMOAB_SetDoubleTagStorage( appId, tagname, arrSize , ent_type, local_xao_mct)
-        if (ierr .ne. 0) then
-         write(logunit,*) subname,' error in setting local_xao_mct fluxes on mct grid for debugging  '
-         call shr_sys_abort(subname//' ERROR in setting local_xao_mct fluxes on mct grid for debugging')
-        endif
-        outfile = 'o_flux_mct_'//trim(lnum)//'.h5m'//C_NULL_CHAR
-        ierr = iMOAB_WriteMesh(appId, outfile, wopts)
- 
-        if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in writing mesh '
-            call shr_sys_abort(subname//' ERROR in writing mesh ')
-        endif
-     endif
 #endif
-     
 
   end subroutine seq_flux_atmocn_moab
+
   !===============================================================================
 
 end module seq_flux_mct
