@@ -205,7 +205,7 @@ public:
 
   // Copy the data from one field to this field (recycle update method)
   template<HostOrDevice HD = Device>
-  void deep_copy (const Field& src) { update<HD,CombineMode::Replace>(src,1,0); }
+  void deep_copy (const Field& src) { update<CombineMode::Replace,HD>(src,1,0); }
 
   // Updates this field y as y=combine(x,y,alpha,beta)
   // See share/util/scream_combine_ops.hpp for more details on CombineMode options
@@ -214,20 +214,20 @@ public:
   // NOTE: the type ST  must be such that no narrowing happens when
   //       casting the values to whatever the data type of this field is.
   //       E.g., if data_type()=IntType, you can't pass double's.
-  template<HostOrDevice HD = Device, CombineMode CM = CombineMode::Update, typename ST = void>
+  template<CombineMode CM = CombineMode::Update, HostOrDevice HD = Device, typename ST = void>
   void update (const Field& x, const ST alpha, const ST beta);
 
   // Special case of update for particular choices of the combine mode
   template<HostOrDevice HD = Device, typename ST = void>
-  void scale (const ST beta) { update<HD,CombineMode::Update>(*this,ST(0),beta); }
+  void scale (const ST beta) { update<CombineMode::Update,HD>(*this,ST(0),beta); }
 
   // Scale a field y as y=y*x where x is also a field
   template<HostOrDevice HD = Device>
-  void scale (const Field& x) { update<HD,CombineMode::Multiply>(x,1,0); }
+  void scale (const Field& x) { update<CombineMode::Multiply,HD>(x,1,0); }
 
   // Scale a field y as y=y/x where x is also a field
   template<HostOrDevice HD = Device>
-  void scale_inv (const Field& x) { update<HD,CombineMode::Divide>(x,1,0); }
+  void scale_inv (const Field& x) { update<CombineMode::Divide,HD>(x,1,0); }
 
   // Returns a subview of this field, slicing at entry k along dimension idim
   // NOTES:
@@ -395,9 +395,9 @@ inline bool operator== (const Field& lhs, const Field& rhs) {
 //       so it helps to do ETI for those.
 // NOTE: for update, we only specialize for CM being Update, Multiply, and Divide,
 #define EAMXX_FIELD_ETI_DECL_UPDATE(S,T) \
-extern template void Field::update<S, CombineMode::Update, T>(const Field&, const T, const T);              \
-extern template void Field::update<S, CombineMode::Multiply, T>(const Field&, const T, const T);            \
-extern template void Field::update<S, CombineMode::Divide, T>(const Field&, const T, const T);              \
+extern template void Field::update<CombineMode::Update, S, T>(const Field&, const T, const T);              \
+extern template void Field::update<CombineMode::Multiply, S, T>(const Field&, const T, const T);            \
+extern template void Field::update<CombineMode::Divide, S, T>(const Field&, const T, const T);              \
 extern template void Field::update_impl<CombineMode::Update,  S, true, T>(const Field&, const T, const T);  \
 extern template void Field::update_impl<CombineMode::Multiply,S, true, T>(const Field&, const T, const T);  \
 extern template void Field::update_impl<CombineMode::Divide,  S, true, T>(const Field&, const T, const T);  \
