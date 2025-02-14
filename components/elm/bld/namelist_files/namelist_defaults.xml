@@ -2226,6 +2226,15 @@ this mask will have smb calculated over the entire global land surface
 <use_fates_sp                  use_fates=".true.">.false.</use_fates_sp>
 <use_fates_lupft               use_fates=".true.">.false.</use_fates_lupft>
 <use_fates_potentialveg        use_fates=".true.">.false.</use_fates_potentialveg>
+<use_fates_daylength_factor    use_fates=".true.">.true.</use_fates_daylength_factor>
+<fates_photosynth_acclimation  use_fates=".true.">nonacclimating</fates_photosynth_acclimation>
+<fates_stomatal_model          use_fates=".true.">ballberry1987</fates_stomatal_model>
+<fates_stomatal_assimilation   use_fates=".true.">net</fates_stomatal_assimilation>
+<fates_leafresp_model          use_fates=".true.">ryan1991</fates_leafresp_model>
+<fates_cstarvation_model       use_fates=".true.">linear</fates_cstarvation_model>
+<fates_regeneration_model      use_fates=".true.">default</fates_regeneration_model>
+<fates_hydro_solver            use_fates=".true.">1D_Taylor</fates_hydro_solver>
+<fates_radiation_model         use_fates=".true.">norman</fates_radiation_model>
 <use_fates_luh                 use_fates=".true." fates_harvest_mode="luhdata_area"  >.true.</use_fates_luh>
 <use_fates_luh                 use_fates=".true." fates_harvest_mode="luhdata_mass"  >.true.</use_fates_luh>
 <use_fates_luh                 use_fates=".true." use_fates_lupft=".true.">.true.</use_fates_luh>
