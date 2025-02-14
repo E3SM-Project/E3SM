@@ -863,6 +863,9 @@ template<HostOrDevice HD,typename T,int N>
 auto Field::get_ND_view () const
   -> if_t<N==MaxRank,get_view_type<data_nd_t<T,N>,HD>>
 {
+  static_assert(HD==Host or HD==Device,
+      "Invalid value for non-type template argument HD.\n");
+
   const auto& fl = m_header->get_identifier().get_layout();
   EKAT_REQUIRE_MSG (N==1 || N==fl.rank(),
       "Error! Input Rank must either be 1 (flat array) or the actual field rank.\n");
