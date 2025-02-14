@@ -26,13 +26,13 @@ TEST_CASE ("grid_import_export") {
   auto engine = setup_random_test(&comm);
 
   bool ok;
-  const int overlap    = 5;
-  const int nldofs_src = 10;
-  const int ngdofs     = nldofs_src*comm.size();;
+  const int overlap = 5;
+  const int nldofs  = 10;
+  const int ngdofs  = nldofs*comm.size();;
 
   // Create the unique grid
-  auto src_grid = create_point_grid("src",ngdofs,0,comm);
-  auto src_gids = src_grid->get_dofs_gids().get_view<const gid_type*, Host>();
+  auto grid = create_point_grid("src",ngdofs,0,comm);
+  auto gids = grid->get_dofs_gids().get_view<const gid_type*, Host>();
 
   // For the dst grid, shuffle dofs around randomly. Then,
   // have each rank grab a few extra dofs
@@ -45,20 +45,20 @@ TEST_CASE ("grid_import_export") {
 
   const bool first = comm.rank()==0;
   const bool last  = comm.rank()==(comm.size()-1);
-  auto start = all_dofs.data() + nldofs_src*comm.rank();
-  auto end   = start + nldofs_src;
+  auto start = all_dofs.data() + nldofs*comm.rank();
+  auto end   = start + nldofs;
   end   += last ? 0 : overlap;
   start -= first ? 0 : overlap;
-  const int ndofs_dst = nldofs_src + (first ? 0 : overlap) + (last ? 0 : overlap);
+  const int nldofs_ov = nldofs + (first ? 0 : overlap) + (last ? 0 : overlap);
 
-  auto dst_grid = std::make_shared<PointGrid>("grid",ndofs_dst,0,comm);
-  auto dst_gids_field = dst_grid->get_dofs_gids();
-  auto dst_gids = dst_gids_field.get_view<gid_type*,Host>();
+  auto ov_grid = std::make_shared<PointGrid>("grid",nldofs_ov,0,comm);
+  auto ov_gids_field = ov_grid->get_dofs_gids();
+  auto ov_gids = ov_gids_field.get_view<gid_type*,Host>();
 
-  std::copy (start,end,dst_gids.data());
-  dst_gids_field.sync_to_dev();
+  std::copy (start,end,ov_gids.data());
+  ov_gids_field.sync_to_dev();
 
-  GridImportExport imp_exp(src_grid,dst_grid);
+  GridImportExport imp_exp(grid,ov_grid);
 
   // Test import views
   if (comm.am_i_root()) {
@@ -70,8 +70,8 @@ TEST_CASE ("grid_import_export") {
   std::set<int> all_imp_lids;
   for (size_t i=0; i<imp_pids.size(); ++i) {
     auto lid = imp_lids[i];
-    auto gid = dst_gids[lid];
-    auto pid = gid / nldofs_src;
+    auto gid = ov_gids[lid];
+    auto pid = gid / nldofs;
     CHECK (imp_pids[i]==pid);
     ok &= catch_capture.lastAssertionPassed();
     all_imp_lids.insert(lid);
@@ -90,11 +90,11 @@ TEST_CASE ("grid_import_export") {
   auto exp_pids = imp_exp.export_pids_h();
   auto exp_lids = imp_exp.export_lids_h();
   std::map<int,std::vector<int>> pid2lid;
-  auto src_gid2lid = src_grid->get_gid2lid_map();
+  auto gid2lid = grid->get_gid2lid_map();
   for (int pid=0; pid<comm.size(); ++pid) {
     pid2lid[pid].resize(0);
-    int pid_start = pid*nldofs_src;
-    int pid_end   = pid_start+nldofs_src;
+    int pid_start = pid*nldofs;
+    int pid_end   = pid_start+nldofs;
     if (pid!=0) {
       pid_start -= overlap;
     }
@@ -103,8 +103,8 @@ TEST_CASE ("grid_import_export") {
     }
     for (int i=pid_start;i<pid_end; ++i) {
       auto gid = all_dofs[i];
-      if (src_gid2lid.count(gid)==1) {
-        pid2lid[pid].push_back(src_gid2lid.at(gid));
+      if (gid2lid.count(gid)==1) {
+        pid2lid[pid].push_back(gid2lid.at(gid));
       }
     }
     std::sort(pid2lid[pid].begin(),pid2lid[pid].end());
@@ -124,39 +124,76 @@ TEST_CASE ("grid_import_export") {
     printf(" -> Testing export views ...... %s\n",ok ? "PASS" : "FAIL");
   }
 
+  // Later, we design the tests in such a way that, serially, the data stored for
+  // gid N is [0,...,N-1]. We want this to also be the case in parallel, but the
+  // same GID may be owned by 2+ processors in the ov grid. For the gather ops,
+  // we will fill the overlapped data in a way that, after gather is called, we
+  // obtain the same serial data. To do so, we need to know what GIDs that we own
+  // are also owned by others.
+  std::map<gid_type,std::vector<int>> gid2pids;
+  for (int pid=0; pid<comm.size(); ++pid) {
+    std::vector<gid_type> pid_gids;
+    int n = ov_gids.size();
+    comm.broadcast(&n,1,pid);
+    pid_gids.resize(n);
+    if (pid==comm.rank()) {
+      for (int i=0; i<n; ++i) {
+        pid_gids[i] = ov_gids[i];
+      }
+    }
+    comm.broadcast(pid_gids.data(),n,pid);
+
+    for (auto g : pid_gids) {
+      gid2pids[g].push_back(pid);
+    }
+  }
+
   // Test gather
   if (comm.am_i_root()) {
     printf(" -> Testing gather routine ....\n");
   }
   ok  = true;
-  std::map<int,std::vector<Real>> src_data;
-  for (int i=0; i<dst_grid->get_num_local_dofs(); ++i) {
-    auto& v = src_data[i];
-    auto gid = dst_gids[i];
-    v.resize(gid);
-    std::iota(v.begin(),v.end(),0);
-  }
-  std::map<int,std::vector<Real>> dst_data;
-  imp_exp.gather(ekat::get_mpi_type<Real>(),src_data,dst_data);
 
-  std::vector<size_t> num_imp_per_lid (nldofs_src,0);
-  for (size_t i=0; i<exp_lids.size(); ++i) {
-    ++num_imp_per_lid[exp_lids[i]];
+  std::map<int,std::vector<Real>> ov_data;
+  for (int i=0; i<ov_grid->get_num_local_dofs(); ++i) {
+    auto& v = ov_data[i];
+    auto gid = ov_gids[i];
+    // Serially, the data should contain N for N in [0,...,gid-1]
+    // We make the ov data array be such that when patched together they give the
+    // same array (albeit possibly permuted). We do this by distributing the
+    auto& pids = gid2pids[gid];
+    if (pids.size()==1) {
+      // I own this gid, and don't share it with any other rank. Fill [0,..,gid-1]
+      for (int k=0; k<=gid; ++k) {
+        v.push_back(k);
+      }
+    } else {
+      for (int k=0,p=0; k<=gid; ++k) {
+        if (comm.rank()==pids[p]) {
+          v.push_back(k);
+        }
+        ++p;
+        p = p % pids.size();
+      }
+    }
   }
-  // std::cout << "num imp per lid: " << ekat::join(num_imp_per_lid," ") << "\n";
-  for (const auto& it : dst_data) {
-    auto lid = it.first;
-    auto gid = src_gids[lid];
-    const auto& v = it.second;
-    CHECK (v.size()==gid*num_imp_per_lid[lid]);
+
+  std::map<int,std::vector<Real>> data;
+  imp_exp.gather(ekat::get_mpi_type<Real>(),ov_data,data);
+
+  for (auto [lid,v] : data) {
+    auto gid = gids[lid];
+    CHECK (static_cast<int>(v.size())==(gid+1));
     ok &= catch_capture.lastAssertionPassed();
 
-    std::vector<Real> expected(gid);
+    std::vector<Real> expected(gid+1);
     std::iota(expected.begin(),expected.end(),0);
-    for (size_t imp=0; imp<num_imp_per_lid[lid]; ++imp) {
-      CHECK (std::equal(expected.begin(),expected.end(),v.begin()+gid*imp));
-      ok &= catch_capture.lastAssertionPassed();
-    }
+
+    // Values may be gathered in a way that is just a permutation
+    // of what we'd get serially, which is [0,...,gid-1]
+    std::sort(v.begin(),v.end());
+    CHECK (std::equal(expected.begin(),expected.end(),v.begin()));
+    ok &= catch_capture.lastAssertionPassed();
   }
   if (comm.am_i_root()) {
     printf(" -> Testing gather routine .... %s\n",ok ? "PASS" : "FAIL");
@@ -167,28 +204,22 @@ TEST_CASE ("grid_import_export") {
     printf(" -> Testing scatter routine ...\n");
   }
   ok = true;
-  src_data.clear();
-  // std::cout << "src_data:\n";
-  for (int i=0; i<src_grid->get_num_local_dofs(); ++i) {
-    auto& v = src_data[i];
-    auto gid = src_gids[i];
-    v.resize(gid);
+  data.clear();
+  for (int i=0; i<grid->get_num_local_dofs(); ++i) {
+    auto& v = data[i];
+    auto gid = gids[i];
+    v.resize(gid+1);
     std::iota(v.begin(),v.end(),0);
-    // std::cout << " " << gid << ":" << ekat::join(v," ") << "\n";
   }
-  dst_data.clear();
-  imp_exp.scatter(ekat::get_mpi_type<Real>(),src_data,dst_data);
+  ov_data.clear();
+  imp_exp.scatter(ekat::get_mpi_type<Real>(),data,ov_data);
 
-  // std::cout << "dst_data:\n";
-  for (const auto& it : dst_data) {
-    auto lid = it.first;
-    auto gid = dst_gids[lid];
-    const auto& v = it.second;
-    CHECK (static_cast<int>(v.size())==gid);
+  for (const auto& [lid,v] : ov_data) {
+    auto gid = ov_gids[lid];
+    CHECK (static_cast<int>(v.size())==(gid+1));
     ok &= catch_capture.lastAssertionPassed();
-    // std::cout << " " << gid << ":" << ekat::join(v," ") << "\n";
 
-    std::vector<Real> expected(gid);
+    std::vector<Real> expected(gid+1);
     std::iota(expected.begin(),expected.end(),0);
     CHECK (std::equal(expected.begin(),expected.end(),v.begin()));
     ok &= catch_capture.lastAssertionPassed();

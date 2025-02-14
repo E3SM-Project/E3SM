@@ -11,6 +11,7 @@
 #include <map>
 #include <list>
 #include <memory>
+#include <mutex>
 
 namespace scream
 {
@@ -205,7 +206,7 @@ public:
 
   int get_unique_grid_id () const { return m_unique_grid_id; }
 
-  std::map<gid_type,int> get_gid2lid_map () const;
+  const std::map<gid_type,int>& get_gid2lid_map () const;
 
 protected:
 
@@ -251,6 +252,12 @@ protected:
   Field     m_lid_to_idx;
 
   mutable std::map<std::string,Field>  m_geo_fields;
+
+  // Mutable, for lazy calculation
+  mutable std::map<gid_type,int> m_gid2lid;
+
+  // For thread safety in modifying mutable items (just in case someone ever runs this code in threaded regions)
+  mutable std::mutex m_mutex;
 
   // The MPI comm containing the ranks across which the global mesh is partitioned
   ekat::Comm            m_comm;
