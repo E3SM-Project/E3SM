@@ -105,6 +105,7 @@ void Functions<S,D>
   constexpr Scalar latice       = C::LatIce;
 
   const bool do_ice_production = runtime_options.do_ice_production;
+  const bool use_separate_ice_liq_frac = runtime_options.use_separate_ice_liq_frac;
 
   team.team_barrier();
   hydrometeorsPresent = false;
@@ -411,10 +412,19 @@ void Functions<S,D>
     // check qv because it is typically much greater than zero so seldom goes negative (and if it does
     // catastrophic failure is appropriate)]
 
-    // cloud
-    cloud_water_conservation(
-      qc(k), dt,
-      qc2qr_autoconv_tend, qc2qr_accret_tend, qc2qi_collect_tend, qc2qi_hetero_freeze_tend, qc2qr_ice_shed_tend, qc2qi_berg_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend, not_skip_all);
+    if (use_separate_ice_liq_frac) {
+      // cloud
+      cloud_water_conservation(
+        qc(k), dt,
+        qc2qr_autoconv_tend, qc2qr_accret_tend, qc2qi_collect_tend, qc2qi_hetero_freeze_tend, qc2qr_ice_shed_tend, qc2qi_berg_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend,
+        cld_frac_l(k), cld_frac_i(k), not_skip_all);
+    } else {
+      // cloud
+      cloud_water_conservation(
+        qc(k), dt,
+        qc2qr_autoconv_tend, qc2qr_accret_tend, qc2qi_collect_tend, qc2qi_hetero_freeze_tend, qc2qr_ice_shed_tend, qc2qi_berg_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend,
+        not_skip_all);
+    }
 
     // rain
     rain_water_conservation(

@@ -13,6 +13,54 @@ void Functions<S,D>
 ::cloud_water_conservation(const Spack& qc, const Scalar dt,
   Spack& qc2qr_autoconv_tend, Spack& qc2qr_accret_tend, Spack &qc2qi_collect_tend, Spack& qc2qi_hetero_freeze_tend, 
   Spack& qc2qr_ice_shed_tend, Spack& qc2qi_berg_tend, Spack& qi2qv_sublim_tend, Spack& qv2qi_vapdep_tend,
+  const Spack& cld_frac_l, const Spack& cld_frac_i,
+  const Smask& context)
+{
+  const auto sinks = (qc2qr_autoconv_tend+qc2qr_accret_tend+qc2qi_collect_tend+qc2qi_hetero_freeze_tend+qc2qr_ice_shed_tend+qc2qi_berg_tend)*dt; // Sinks of cloud water
+  const auto sources = qc; // Source of cloud water
+  const auto il_cldm = min(cld_frac_i,cld_frac_l); 
+  Spack ratio;
+
+  constexpr Scalar qtendsmall = C::QTENDSMALL;
+  Smask enforce_conservation  = sinks > sources && sinks >= qtendsmall && context;  // determine if  conservation corrction is necessary
+  Smask nothing_todo = !enforce_conservation && context;
+
+  if (enforce_conservation.any()){
+    ratio.set(enforce_conservation, sources/sinks);
+    qc2qr_autoconv_tend.set(enforce_conservation, qc2qr_autoconv_tend*ratio);
+    qc2qr_accret_tend.set(enforce_conservation, qc2qr_accret_tend*ratio);
+    qc2qi_collect_tend.set(enforce_conservation, qc2qi_collect_tend*ratio);
+    qc2qi_hetero_freeze_tend.set(enforce_conservation, qc2qi_hetero_freeze_tend*ratio);
+    qc2qr_ice_shed_tend.set(enforce_conservation, qc2qr_ice_shed_tend*ratio);
+    qc2qi_berg_tend.set(enforce_conservation, qc2qi_berg_tend*ratio);
+  }
+
+  if(nothing_todo.any()){
+    ratio.set(nothing_todo, 1); // If not limiting sinks on qc then most likely did not run out of qc
+  }
+
+  //PMC: ratio is also frac of step w/ liq. thus we apply qc2qi_berg_tend for
+  //"ratio" of timestep and vapor deposition and sublimation  for the
+  //remaining frac of the timestep.  Only limit if there will be cloud
+  // water to begin with.
+  // in instances where ratio < 1 and we have qc, qidep needs to take over
+   //but this is an in addition to the qidep we computed outside the mixed
+   //phase cloud. qidep*(1._rtype-ratio)*(il_cldm/(cld_frac_i-il_cldm)) is the additional
+   // vapor depositional growth rate that takes place within the mixed phase cloud
+   // after qc is depleted
+  enforce_conservation = sources > qtendsmall && context;
+  if (enforce_conservation.any()){
+    qv2qi_vapdep_tend.set(enforce_conservation, qv2qi_vapdep_tend + qv2qi_vapdep_tend*(1-ratio)*(il_cldm/(cld_frac_i-il_cldm)));
+    qi2qv_sublim_tend.set(enforce_conservation, qi2qv_sublim_tend*(1-ratio));
+  }
+}
+
+template<typename S, typename D>
+KOKKOS_FUNCTION
+void Functions<S,D>
+::cloud_water_conservation(const Spack& qc, const Scalar dt,
+  Spack& qc2qr_autoconv_tend, Spack& qc2qr_accret_tend, Spack &qc2qi_collect_tend, Spack& qc2qi_hetero_freeze_tend, 
+  Spack& qc2qr_ice_shed_tend, Spack& qc2qi_berg_tend, Spack& qi2qv_sublim_tend, Spack& qv2qi_vapdep_tend,
   const Smask& context)
 {
   const auto sinks = (qc2qr_autoconv_tend+qc2qr_accret_tend+qc2qi_collect_tend+qc2qi_hetero_freeze_tend+qc2qr_ice_shed_tend+qc2qi_berg_tend)*dt; // Sinks of cloud water
