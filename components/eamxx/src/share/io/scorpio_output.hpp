@@ -127,7 +127,7 @@ public:
   // Constructor
   AtmosphereOutput(const ekat::Comm& comm, const ekat::ParameterList& params,
                    const std::shared_ptr<const fm_type>& field_mgr,
-                   const std::shared_ptr<const gm_type>& grids_mgr);
+                   const std::string& grid_name);
 
   // Short version for outputing a list of fields (no remapping supported)
   AtmosphereOutput(const ekat::Comm& comm,
@@ -161,8 +161,12 @@ public:
 protected:
   // Internal functions
   void set_grid (const std::shared_ptr<const AbstractGrid>& grid);
-  void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr, const std::string& mode);
-  void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr, const std::vector<std::string>& modes);
+  void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr,
+                          const std::string& grid_name,
+                          const std::string& mode);
+  void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr,
+                          const std::string& grid_name,
+                          const std::vector<std::string>& modes);
 
   std::shared_ptr<const fm_type> get_field_manager (const std::string& mode) const;
 
@@ -188,10 +192,14 @@ protected:
   // sim_field_manager points to the simulation field manager
   // when remapping horizontally these two field managers may be different.
   std::map<std::string,std::shared_ptr<const fm_type>> m_field_mgrs;
+
+  // Field managers can have multiple grids associated with it,
+  // for each FM store which grid we intend to use
+  std::map<std::string,std::string> m_fm_grid_name;
+
   std::shared_ptr<const grid_type>            m_io_grid;
   std::shared_ptr<remapper_type>              m_horiz_remapper;
   std::shared_ptr<remapper_type>              m_vert_remapper;
-  std::shared_ptr<const gm_type>              m_grids_manager;
 
   // How to combine multiple snapshots in the output: Instant, Max, Min, Average
   OutputAvgType     m_avg_type;
