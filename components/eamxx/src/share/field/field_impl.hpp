@@ -566,7 +566,7 @@ void Field::deep_copy_impl (const ST value)
   }
 }
 
-template<HostOrDevice HD, CombineMode CM, typename ST>
+template<CombineMode CM, HostOrDevice HD, typename ST>
 void Field::
 update (const Field& x, const ST alpha, const ST beta)
 {
