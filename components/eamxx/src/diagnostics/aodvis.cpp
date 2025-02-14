@@ -34,10 +34,12 @@ void AODVis::set_grids(
   add_field<Required>("sunlit", scalar1d_layout, nondim, grid_name);
 
   // Construct and allocate the aodvis field
-  FieldIdentifier fid("AerosolOpticalDepth550nm", scalar1d_layout, nondim,
+  FieldIdentifier fid(name(), scalar1d_layout, nondim,
                       grid_name);
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
+  // For backward compatibility, for now, just make the single output the first item in the map
+  m_diagnostic_fields[name()] = m_diagnostic_output;
 }
 
 void AODVis::compute_diagnostic_impl() {

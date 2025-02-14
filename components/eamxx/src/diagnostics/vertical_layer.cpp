@@ -104,6 +104,8 @@ initialize_impl (const RunType /*run_type*/)
   }
   diag_fap.request_allocation(ps);
   m_diagnostic_output.allocate_view();
+  // For backward compatibility, for now, just make the single output the first item in the map
+  m_diagnostic_fields[m_diag_name] = m_diagnostic_output;
 
   using stratts_t = std::map<std::string,std::string>;
   auto& io_atts = m_diagnostic_output.get_header().get_extra_data<stratts_t>("io: string attributes");

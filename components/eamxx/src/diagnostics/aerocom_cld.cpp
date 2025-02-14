@@ -75,9 +75,11 @@ void AeroComCld::set_grids(
 
   // Construct and allocate the output field
 
-  FieldIdentifier fid("AeroComCld"+m_topbot, vector1d_layout, nondim, grid_name);
+  FieldIdentifier fid(name()+m_topbot, vector1d_layout, nondim, grid_name);
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
+  // For backward compatibility, for now, just make the single output the first item in the map
+  m_diagnostic_fields[name()+m_topbot] = m_diagnostic_output;
 
   // Self-document the outputs to parse in post-processing
   using stratt_t = std::map<std::string, std::string>;

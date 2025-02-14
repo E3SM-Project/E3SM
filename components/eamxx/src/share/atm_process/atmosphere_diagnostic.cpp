@@ -15,7 +15,20 @@ Field AtmosphereDiagnostic::get_diagnostic () const {
   EKAT_REQUIRE_MSG (m_diagnostic_output.is_allocated(),
       "Error! Getting a diagnostic field before it is allocated is suspicious at best.\n"
       "       We chose to throw an error, but if this is a legit use, please, contact developers.\n");
+  // check the number of members in m_diagnostic_fields map
+  EKAT_REQUIRE_MSG (m_diagnostic_fields.size() == 1,
+      "Error! Getting a diagnostic field when there are multiple fields in the diagnostic is not allowed.\n"
+      "       Use the get_diagnostic(std::string) method to get a specific field.\n");
   return m_diagnostic_output;
+}
+// For backward compatibility, we overload with a string
+// Function to retrieve the diagnostic outputs which are stored in m_diagnostic_fields
+// This should work for all diagnostics, regardless if they are single- or multi-output
+Field AtmosphereDiagnostic::get_diagnostic (const std::string &output_name) const {
+  EKAT_REQUIRE_MSG (m_diagnostic_fields.at(output_name).is_allocated(),
+      "Error! Getting a diagnostic field before it is allocated is suspicious at best.\n"
+      "       We chose to throw an error, but if this is a legit use, please, contact developers.\n");
+  return m_diagnostic_fields.at(output_name);
 }
 
 void AtmosphereDiagnostic::compute_diagnostic (const double dt) {
@@ -38,7 +51,10 @@ void AtmosphereDiagnostic::compute_diagnostic (const double dt) {
       "Error! All inputs to diagnostic have invalid timestamp.\n"
       "  - Diag name: " + name() + "\n");
 
-  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
+  // iterate over names in map m_diagnostics_fields and update_time_stamp
+  for (auto& it : m_diagnostic_fields) {
+    it.second.get_header().get_tracking().update_time_stamp(ts);
+  }
 
   // Note: call the impl method *after* setting the diag time stamp.
   // Some derived classes may "refuse" to compute the diag, due to some
@@ -67,7 +83,7 @@ set_required_field_impl (const Field& f) {
       const auto& fap = f.get_header().get_alloc_properties();
       EKAT_REQUIRE_MSG (fap.get_largest_pack_size()>=it.pack_size,
           "Error! Diagnostic input field cannot accommodate the needed pack size.\n"
-          "  - diag field: " + m_diagnostic_output.name() + "\n"
+          "  - diag field: " + name() + "\n"
           "  - input field: " + f.name() + "\n"
           "  - requested pack size: " + std::to_string(it.pack_size) + "\n"
           "  - field max pack size: " + std::to_string(fap.get_largest_pack_size()) + "\n");
