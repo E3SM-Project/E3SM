@@ -18,8 +18,8 @@ namespace scream {
  * the result with the value of the variable were we want
  * to store it:
  *    y = alpha*f(x) + beta*y
- *    y = y*f(x)
- *    y = y/f(x)
+ *    y = alpha*f(x) * beta*y
+ *    y = beta*y / (alpha*f(x))
  * This enum can be used as template arg in some general functions,
  * so that we can write a single f(x), and then combine:
  *    combine<CM>(f(x),y,alpha,beta);
@@ -31,10 +31,10 @@ namespace scream {
 enum class CombineMode {
   Replace,    // out = alpha*in
   Update,     // out = beta*out + alpha*in
-  Multiply,   // out = out*in
-  Divide,     // out = out/in
-  Max,        // out = max(out,in)
-  Min         // out = min(out,in)
+  Multiply,   // out = (beta*out)*(alpha*in)
+  Divide,     // out = (beta*out)/(alpha*in)
+  Max,        // out = max(beta*out,alpha*in)
+  Min         // out = min(beta*out,alpha*in)
 };
 
 // Small helper functions to combine a new value with an old one.
@@ -63,16 +63,16 @@ void combine (const ScalarIn& newVal, ScalarOut& result,
       result += alpha*newVal;
       break;
     case CombineMode::Multiply:
-      result *= newVal;
+      result *= (alpha*beta)*newVal;
       break;
     case CombineMode::Divide:
-      result /= newVal;
+      result /= (alpha/beta) * newVal;
       break;
     case CombineMode::Max:
-      result  = max(result,static_cast<const ScalarOut&>(newVal));
+      result  = max(beta*result,alpha*static_cast<const ScalarOut&>(newVal));
       break;
     case CombineMode::Min:
-      result  = min(result,static_cast<const ScalarOut&>(newVal));
+      result  = min(beta*result,alpha*static_cast<const ScalarOut&>(newVal));
       break;
   }
 }
@@ -100,7 +100,7 @@ void combine_and_fill (const ScalarIn& newVal, ScalarOut& result, const ScalarOu
     case CombineMode::Max:
     case CombineMode::Min:
       if (newVal != fill_val)
-        combine<CM>(newVal,result);
+        combine<CM>(newVal,result,alpha,beta);
         
   }
 }
