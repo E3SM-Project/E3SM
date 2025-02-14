@@ -444,7 +444,7 @@ CONTAINS
 
        call shr_file_setLogUnit (shrlogunit)
        call shr_file_setLogLevel(shrloglev)
-      
+
 
        first_time = .false.
 
@@ -1603,9 +1603,12 @@ CONTAINS
 
     call phys_getopts(linearize_pbl_winds_out=linearize_pbl_winds)
 
+    ! initialize/reset all export data to zero
+    a2x_am = 0.0D0
+
     ! Copy from component arrays into chunk array data structure
     ! Rearrange data from chunk structure into lat-lon buffer and subsequently
-    ! create double array for moab tags
+    ! Create double array for MOAB tags
     ig=1
     do c=begchunk, endchunk
        ncols = get_ncols_p(c)
