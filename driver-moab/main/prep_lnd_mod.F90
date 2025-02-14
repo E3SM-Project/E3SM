@@ -149,7 +149,7 @@ contains
    ! MOAB stuff
     integer                  :: ierr, idintx, rank
     character*32             :: appname, outfile, wopts, lnum
-    character*32             :: dm1, dm2, dofnameS, dofnameT, wgtIdr2l, wgtIda2l, wgtIda2l_bilinear
+    character*32             :: dm1, dm2, dofnameS, dofnameT, wgtIdr2l, wgtIda2l_conservative, wgtIda2l_bilinear
     integer                  :: orderS, orderT, volumetric, noConserve, validate, fInverseDistanceMap
     integer                  :: fNoBubble, monotonicity
     ! will do comm graph over coupler PES, in 2-hop strategy
@@ -191,7 +191,7 @@ contains
 
 #ifdef HAVE_MOAB
       wgtIdr2l = 'conservative_r2l'//C_NULL_CHAR
-      wgtIda2l = 'conservative_a2l'//C_NULL_CHAR
+      wgtIda2l_conservative = 'conservative_a2l'//C_NULL_CHAR
       wgtIda2l_bilinear = 'bilinear_a2l'//C_NULL_CHAR
       load_maps_from_disk_r2l = .true. ! Force read from disk
       load_maps_from_disk_a2l = .true. ! Force read from disk
@@ -457,7 +457,7 @@ contains
             mapper_Sa2l%intx_mbid = mbintxal
             mapper_Sa2l%src_context = atm(1)%cplcompid
             mapper_Sa2l%intx_context = idintx
-            mapper_Sa2l%weight_identifier = wgtIda2l
+            mapper_Sa2l%weight_identifier = wgtIda2l_bilinear
             mapper_Sa2l%mbname = 'mapper_Sa2l'
 
             call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)
@@ -547,9 +547,9 @@ contains
                                                       noConserve, validate, &
                                                       trim(dofnameS), trim(dofnameT)
                   endif
-                  mapper_Sa2l%weight_identifier = wgtIda2l_bilinear 
-                  ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxal, wgtIda2l, &
-                                                      trim(dm1), orderS, trim(dm2), orderT, 'bilinear'//C_NULL_CHAR, &
+
+                  ierr = iMOAB_ComputeScalarProjectionWeights( mbintxal, wgtIda2l_bilinear, &
+                                                      trim(dm1), orderS, trim(dm2), orderT, 'bilin'//C_NULL_CHAR, &
                                                       fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                       noConserve, validate, &
                                                       trim(dofnameS), trim(dofnameT) )
@@ -558,9 +558,8 @@ contains
                       call shr_sys_abort(subname//' ERROR in computing weights for atm-lnd ')
                   endif
 
-
                   ! Next compute the conservative map for projection of flux fields
-                  ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxal, wgtIda2l, &
+                  ierr = iMOAB_ComputeScalarProjectionWeights( mbintxal, wgtIda2l_conservative, &
                                                   trim(dm1), orderS, trim(dm2), orderT, C_NULL_CHAR, &
                                                   fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                   noConserve, validate, &
@@ -575,20 +574,19 @@ contains
 
                   call moab_map_init_rcfile( mbaxid, mblxid, mbintxal, type1, &
                         'seq_maps.rc', 'atm2lnd_smapname:', 'atm2lnd_smaptype:',samegrid_al, &
-                        wgtIda2l, 'mapper_Sa2l MOAB initialization', esmf_map_flag)
-                  
+                        wgtIda2l_bilinear, 'mapper_Sa2l MOAB initialization', esmf_map_flag)
+
                   ! read as the second one the f map, this one has the aream for land correct, so it should be fine
-                  ! the area_b for the bilinear map above is 0 ! which caused grief 
+                  ! the area_b for the bilinear map above is 0 ! which caused grief
                   call moab_map_init_rcfile( mbaxid, mblxid, mbintxal, type1, &
                         'seq_maps.rc', 'atm2lnd_fmapname:', 'atm2lnd_fmaptype:',samegrid_al, &
-                        wgtIda2l, 'mapper_Fa2l MOAB initialization', esmf_map_flag)
+                        wgtIda2l_conservative, 'mapper_Fa2l MOAB initialization', esmf_map_flag)
               endif
 
-            else  ! the same mesh , atm and lnd use the same dofs, but lnd is a subset of atm
-                ! we do not compute intersection, so we will have to just send data from atm to land and viceversa, by GLOBAL_ID matching
-                ! so we compute just a comm graph, between atm and lnd dofs, on the coupler; target is lnd
-              ! land is point cloud in this case, type1 = 2
-
+            else
+              ! This is the case where ATM and LND use the same mesh and describe same DoFs. However, LND is a subset of ATM;
+              ! So, we do not need to compute an intersection, as we will just send the data from ATM to LND and vice-versa,
+              ! using GLOBAL_ID matching with point-to-point communication enabled through a communication graph.
               if (atm_pg_active) then
                   type1 = 3; !  fv for atm; cgll does not work anyway
               else
@@ -617,7 +615,7 @@ contains
             mapper_Fa2l%intx_mbid = mbintxal
             mapper_Fa2l%src_context = atm(1)%cplcompid
             mapper_Fa2l%intx_context = mapper_Sa2l%intx_context
-            mapper_Fa2l%weight_identifier = wgtIda2l
+            mapper_Fa2l%weight_identifier = wgtIda2l_conservative
             mapper_Fa2l%mbname = 'mapper_Fa2l'
 
             ! in any case, we need to define the tags on landx from the phys atm seq_flds_a2x_fields
