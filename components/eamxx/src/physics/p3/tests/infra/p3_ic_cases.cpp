@@ -114,6 +114,11 @@ P3Data::Ptr make_mixed (const Int ncol, const Int nlev) {
       const auto dpres = phi - plo;
       d.dz(i,k) = consts::RD*T_atm(k)/(g*d.pres(i,k))*dpres;
     }
+    for (k = 0; k < nk; ++k) {
+      d.hetfrz_immersion_nucleation_tend(i,k) = 0.01;
+      d.hetfrz_contact_nucleation_tend(i,k) = 0.02;
+      d.hetfrz_deposition_nucleation_tend(i,k) = 0.03;
+    }
   }
 
   return dp;

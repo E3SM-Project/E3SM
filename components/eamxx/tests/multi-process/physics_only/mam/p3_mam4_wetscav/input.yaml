@@ -50,6 +50,9 @@ initial_conditions:
   #variable required for p3
   precip_ice_surf_mass: 0.0
   precip_liq_surf_mass: 0.0
+  hetfrz_immersion_nucleation_tend: 0.1
+  hetfrz_contact_nucleation_tend: 0.1
+  hetfrz_deposition_nucleation_tend: 0.1
 
 # The parameters for I/O control
 Scorpio:

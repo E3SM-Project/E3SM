@@ -19,6 +19,9 @@ initial_conditions:
   surf_sens_flux: 0.0
   precip_liq_surf_mass: 0.0
   precip_ice_surf_mass: 0.0
+  hetfrz_immersion_nucleation_tend: 0.1
+  hetfrz_contact_nucleation_tend: 0.1
+  hetfrz_deposition_nucleation_tend: 0.1
   pbl_height : 1.0
   phis : 1.0
 
