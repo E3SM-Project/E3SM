@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+
+<!--
+This defines any EAMxx specific CIME tests
+-->
+
+<config_test>
+
+  <test NAME="MVKxx">
+    <DESC>climate reproducibility test using the multivariate K-S test</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <DOUT_S>FALSE</DOUT_S>
+    <CONTINUE_RUN>FALSE</CONTINUE_RUN>
+    <STOP_OPTION>nmonths</STOP_OPTION>
+    <STOP_N>24</STOP_N>
+    <REST_OPTION>$STOP_OPTION</REST_OPTION>
+    <REST_N>$STOP_N</REST_N>
+    <HIST_OPTION>$STOP_OPTION</HIST_OPTION>
+    <HIST_N>$STOP_N</HIST_N>
+    <RESUBMIT>0</RESUBMIT>
+  </test>
+
+</config_test>

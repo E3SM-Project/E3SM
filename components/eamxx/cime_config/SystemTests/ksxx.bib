@@ -1,0 +1,27 @@
+@article{MAHAJAN2017,
+title = "Exploring an Ensemble-Based Approach to Atmospheric Climate Modeling and Testing at Scale",
+journal = "Procedia Computer Science",
+volume = "108",
+pages = "735 - 744",
+year = "2017",
+note = "International Conference on Computational Science, ICCS 2017, 12-14 June 2017, Zurich, Switzerland",
+issn = "1877-0509",
+doi = "https://doi.org/10.1016/j.procs.2017.05.259",
+url = "http://www.sciencedirect.com/science/article/pii/S1877050917308906",
+author = "Salil Mahajan and Abigail L. Gaddis and Katherine J. Evans and Matthew R. Norman",
+keywords = "reproducibility, climate simulation, ensemble testing",
+abstract = "A strict throughput requirement has placed a cap on the degree to which we can depend on the execution of single, long, fine spatial grid simulations to explore global atmospheric climate behavior. Alternatively, running an ensemble of short simulations is computationally more efficient. We test the null hypothesis that the climate statistics of a full-complexity atmospheric model derived from an ensemble of independent short simulation is equivalent to that from an equilibrated long simulation. The climate of short simulation ensembles is statistically distinguishable from that of a long simulation in terms of the distribution of global annual means, largely due to the presence of low-frequency atmospheric intrinsic variability in the long simulation. We also find that model climate statistics of the simulation ensemble are sensitive to the choice of compiler optimizations. While some answer-changing optimization choices do not effect the climate state in terms of mean, variability and extremes, aggressive optimizations can result in significantly different climate states."
+}
+@article{MAHAJAN2019,
+author = {Salil Mahajan and Katherine J Evans and Joseph H Kennedy and Min Xu and Mathew R Norman and Marcia L Branstetter},
+title ={Ongoing solution reproducibility of earth system models as they progress toward exascale computing},
+journal = {The International Journal of High Performance Computing Applications},
+volume = {0},
+number = {0},
+pages = {1094342019837341},
+year = {0},
+doi = {10.1177/1094342019837341},
+URL = {https://doi.org/10.1177/1094342019837341},
+eprint = {https://doi.org/10.1177/1094342019837341},
+abstract = {We present a methodology for solution reproducibility for the Energy Exascale Earth System Model during its ongoing software infrastructure development to prepare for exascale computers. The nonlinear chaotic nature of climate system simulations precludes traditional model verification approaches since machine precision differences—resulting from code refactoring, changes in software environment, and so on—grow exponentially to a different weather state. Here, we leverage the nature of climate as a statistical description of the atmosphere in order to establish model reproducibility. We evaluate the degree to which two-sample equality of distribution tests can confidently detect the change in climate from minor tuning parameter changes on model output variables in order to establish the level of difference that indicates a new climate. To apply this (baselined test), we target a section of the model’s development cycle wherein no intentional science changes have been applied to its source code. We compare an ensemble of short simulations that were conducted using a verified model configuration against a new ensemble with the same configuration but with the latest software infrastructure (Common Infrastructure for Modeling the Earth, CIME5.0), compiler versions, and software libraries. We also compare these against ensemble simulations conducted using the original version of the software infrastructure (CIME4.0) of the earlier model configuration, but with the latest compilers and software libraries, to test the impact of new compilers and libraries in isolation from additional software infrastructure. The two-sample equality of distribution tests indicates that these ensembles indeed represent the same climate.}
+}

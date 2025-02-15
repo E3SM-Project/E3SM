@@ -1,0 +1,3 @@
+! or change line 35 to have char_len_long in components/cice/src/source/ice_history_fields.F90
+histfreq = 'x','x','x','x','x'
+histfreq_n = 0,0,0,0,0
