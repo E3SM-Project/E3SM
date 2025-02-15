@@ -134,8 +134,8 @@ module cime_comp_mod
 #endif
 
   ! flux calc routines
-  use seq_flux_mct, only: seq_flux_init_mct, seq_flux_initexch_mct, seq_flux_ocnalb_mct
-  use seq_flux_mct, only: seq_flux_atmocn_mct, seq_flux_atmocnexch_mct, seq_flux_readnl_mct
+  use seq_flux_mct, only: seq_flux_init, seq_flux_initexch_mct, seq_flux_ocnalb
+  use seq_flux_mct, only: seq_flux_atmocnexch_mct, seq_flux_readnl_mct
 
   use seq_flux_mct, only: seq_flux_atmocn_moab ! will set the ao fluxes on atm or ocn coupler mesh
 
@@ -2356,14 +2356,16 @@ contains
 
           if (trim(aoflux_grid) == 'ocn') then
 
-             call seq_flux_init_mct(ocn(ens1), fractions_ox(ens1))
+             call seq_flux_init(ocn(ens1), fractions_ox(ens1),mboxid)
 
           elseif (trim(aoflux_grid) == 'atm') then
 
-             call seq_flux_init_mct(atm(ens1), fractions_ax(ens1))
+          !TODO check that atm works
+             call seq_flux_init(atm(ens1), fractions_ax(ens1),mbaxid)
 
           elseif (trim(aoflux_grid) == 'exch') then
 
+          !TODO  could use intersection mesh for exchange grid
              call shr_sys_abort(subname//' aoflux_grid = exch not validated')
              call seq_flux_initexch_mct(atm(ens1), ocn(ens1), mpicom_cplid, cplid)
 
@@ -2383,7 +2385,7 @@ contains
              eai = mod((exi-1),num_inst_atm) + 1
              xao_ox => prep_aoflux_get_xao_ox()        ! array over all instances
              a2x_ox => prep_ocn_get_a2x_ox()
-             call seq_flux_ocnalb_mct(infodata, ocn(1), a2x_ox(eai), fractions_ox(efi), xao_ox(exi))
+             call seq_flux_ocnalb(infodata, ocn(1), a2x_ox(eai), fractions_ox(efi), xao_ox(exi))
 
           enddo
 
@@ -3967,6 +3969,7 @@ contains
   !===============================================================================
 
   subroutine cime_run_atmocn_fluxes(hashint)
+    use seq_comm_mct , only :  mbaxid, mboxid, mbofxid 
     integer, intent(inout) :: hashint(:)
 
     !----------------------------------------------------------
@@ -3985,8 +3988,8 @@ contains
           a2x_ax => component_get_c2x_cx(atm(eai))
           o2x_ax => prep_atm_get_o2x_ax()    ! array over all instances
           xao_ax => prep_aoflux_get_xao_ax() ! array over all instances
-          call seq_flux_atmocn_mct(infodata, tod, dtime, a2x_ax, o2x_ax(eoi), xao_ax(exi))
-          !call seq_flux_atmocn_moab( atm(eai), xao_ax(exi) ) ! should be only one ensemble probably
+          ! TODO:  Fix this so it works with fluxes on atm mesh.  Need mbafxid
+          call seq_flux_atmocn_moab(infodata, tod, dtime, a2x_ax, o2x_ax(eoi), xao_ax(exi), mbaxid, mbofxid)
        enddo
        call t_drvstopf  ('CPL:atmocna_fluxa',hashint=hashint(6))
 
@@ -4005,8 +4008,7 @@ contains
           a2x_ox => prep_ocn_get_a2x_ox()
           o2x_ox => component_get_c2x_cx(ocn(eoi))
           xao_ox => prep_aoflux_get_xao_ox()
-          call seq_flux_atmocn_mct(infodata, tod, dtime, a2x_ox(eai), o2x_ox, xao_ox(exi))
-          call seq_flux_atmocn_moab( ocn(eoi), xao_ox(exi) )
+          call seq_flux_atmocn_moab(infodata, tod, dtime, a2x_ox(eai), o2x_ox, xao_ox(exi), mboxid, mbofxid)
        enddo
        call t_drvstopf  ('CPL:atmocnp_fluxo',hashint=hashint(6))
     endif  ! aoflux_grid
@@ -4024,7 +4026,7 @@ contains
        eai = mod((exi-1),num_inst_atm) + 1
        xao_ox => prep_aoflux_get_xao_ox()        ! array over all instances
        a2x_ox => prep_ocn_get_a2x_ox()
-       call seq_flux_ocnalb_mct(infodata, ocn(1), a2x_ox(eai), fractions_ox(efi), xao_ox(exi))
+       call seq_flux_ocnalb(infodata, ocn(1), a2x_ox(eai), fractions_ox(efi), xao_ox(exi))
     enddo
     call t_drvstopf  ('CPL:atmocnp_ocnalb', hashint=hashint(5))
 
