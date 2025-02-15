@@ -356,9 +356,6 @@ struct ComposeTransportImpl {
     RNlev yp(pack2real(yps));
     const auto f = [&] (const int i, const int j, const int k) {
       if (k == 0) return;
-      const auto& xkm1 = x(i,j,k-1);
-      const auto& xk   = x(i,j,k  ); // also the interpolation point
-      const auto& xkp1 = x(i,j,k+1);
       yp(i,j,k) = approx_derivative(x(i,j,k-1), x(i,j,k), x(i,j,k+1),
                                     y(i,j,k-1), y(i,j,k), y(i,j,k+1));
     };

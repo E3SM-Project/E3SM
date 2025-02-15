@@ -3554,7 +3554,7 @@
        <arguments>
           <arg name="total_num_tasks">-np {{ total_tasks }} --label</arg>
           <arg name="ranks_per_node">-ppn {{ tasks_per_node }}</arg>
-          <arg name="ranks_bind">-envall</arg>
+          <arg name="ranks_bind">--no-vni --cpu-bind $ENV{RANKS_BIND} -envall</arg>
           <arg name="threads_per_rank">-d $ENV{OMP_NUM_THREADS}</arg>
           <arg name="gpu_maps">$ENV{GPU_TILE_COMPACT}</arg>
        </arguments>
@@ -3573,9 +3573,9 @@
         <modules compiler="!gnu">
           <command name="load">oneapi/eng-compiler/2024.07.30.002</command>
         </modules>
-        <modules compiler="oneapi-ifxgpu">
-          <command name="load">kokkos/4.4.01-omp-sycl</command>
-        </modules>
+	<!--<modules compiler="oneapi-ifxgpu"> -->
+	<!--          <command name="load">kokkos/4.4.01-omp-sycl</command> -->
+        <!--</modules> -->
         <modules compiler="gnu">
            <command name="unload">spack-pe-gcc cmake</command>
            <command name="load">gcc/10.3.0</command>
@@ -3588,14 +3588,29 @@
         <env name="PNETCDF_PATH">/lus/flare/projects/E3SM_Dec/soft/pnetcdf/1.14.0/oneapi.eng.2024.07.30.002</env>
         <env name="LD_LIBRARY_PATH">/lus/flare/projects/E3SM_Dec/soft/pnetcdf/1.14.0/oneapi.eng.2024.07.30.002/lib:/lus/flare/projects/E3SM_Dec/soft/netcdf/4.9.2c-4.6.1f/oneapi.eng.2024.07.30.002/lib:$ENV{LD_LIBRARY_PATH}</env>
         <env name="PATH">/lus/flare/projects/E3SM_Dec/soft/pnetcdf/1.14.0/oneapi.eng.2024.07.30.002/bin:/lus/flare/projects/E3SM_Dec/soft/netcdf/4.9.2c-4.6.1f/oneapi.eng.2024.07.30.002/bin:$ENV{PATH}</env>
+        <env name="RANKS_BIND">list:0-7,104-111:8-15,112-119:16-23,120-127:24-31,128-135:32-39,136-143:40-47,144-151:52-59,156-163:60-67,164-171:68-75,172-179:76-83,180-187:84-91,188-195:92-99,196-203</env>
      </environment_variables>
      <environment_variables DEBUG="TRUE">
         <env name="HYDRA_TOPO_DEBUG">1</env>
      </environment_variables>
      <environment_variables compiler="oneapi-ifxgpu">
         <env name="ONEAPI_DEVICE_SELECTOR">level_zero:gpu</env>
-        <env name="ONEAPI_MPICH_GPU">NO_GPU</env>
-        <env name="MPIR_CVAR_ENABLE_GPU">0</env>
+
+	<!--        <env name="ONEAPI_MPICH_GPU">NO_GPU</env> -->
+
+	<env name="MPIR_CVAR_CH4_COLL_SELECTION_TUNING_JSON_FILE"></env>
+        <env name="MPIR_CVAR_COLL_SELECTION_TUNING_JSON_FILE"></env>
+        <env name="MPIR_CVAR_CH4_POSIX_COLL_SELECTION_TUNING_JSON_FILE"></env>
+        <env name="UR_L0_USE_DRIVER_INORDER_LISTS">1</env>
+        <env name="UR_L0_ENABLE_RELAXED_ALLOCATION_LIMITS">1</env>
+        <env name="UR_L0_USE_COPY_ENGINE_FOR_IN_ORDER_QUEUE">1</env>
+	<env name="FI_PROVIDER">cxi</env>
+	<env name="FI_MR_CACHE_MONITOR">disabled</env>
+        <env name="FI_CXI_OVFLOW_BUF_SIZE">8388608</env>
+        <env name="PALS_PING_PERIOD">240</env>
+        <env name="PALS_RPC_TIMEOUT">240</env>
+
+	<env name="MPIR_CVAR_ENABLE_GPU">0</env>
         <env name="romio_cb_read">disable</env>
         <env name="romio_cb_write">disable</env>
         <env name="SYCL_CACHE_PERSISTENT">1</env>
@@ -3604,9 +3619,9 @@
         <env name="GPU_TILE_COMPACT">/soft/tools/mpi_wrapper_utils/gpu_tile_compact.sh</env>
         <env name="FI_CXI_DEFAULT_CQ_SIZE">131072</env>
         <env name="FI_CXI_CQ_FILL_PERCENT">20</env>
-        <env name="Kokkos_ROOT">$ENV{KOKKOS_ROOT}</env>
+	<!--<env name="Kokkos_ROOT">$ENV{KOKKOS_ROOT}</env>-->
         <env name="ZES_ENABLE_SYSMAN">1</env>
-        <env name="ZEX_NUMBER_OF_CCS">0:4,1:4,2:4,3:4:4:4,5:4,6:4,7:4,8:4,9:4,10:4,11:4</env>
+	<!--<env name="ZEX_NUMBER_OF_CCS">0:4,1:4,2:4,3:4:4:4,5:4,6:4,7:4,8:4,9:4,10:4,11:4</env>-->
     </environment_variables>
     <environment_variables compiler="oneapi-ifx">
         <env name="LIBOMPTARGET_DEBUG">0</env><!--default 0, max 5 -->
