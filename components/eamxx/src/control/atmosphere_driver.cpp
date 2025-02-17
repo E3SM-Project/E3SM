@@ -1230,7 +1230,7 @@ void AtmosphereDriver::set_initial_conditions ()
       for (auto it2=names.begin(); it2!=names.end(); ++it2) {
         const auto& fname = *it2;
         auto f = fm->get_field(fname);
-        auto p = f.get_header().get_parent().lock();
+        auto p = f.get_header().get_parent();
         if (p) {
           const auto& pname = p->get_identifier().name();
           if (ekat::contains(m_fields_inited[grid_name],pname)) {

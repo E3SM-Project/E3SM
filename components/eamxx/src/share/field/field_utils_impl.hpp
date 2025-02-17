@@ -867,7 +867,7 @@ void print_field_hyperslab (const Field& f,
   auto get_orig_header = [&]() -> std::shared_ptr<const FieldHeader> {
     auto fh = f.get_header_ptr();
     while (fh->get_identifier().get_layout().rank()<orig_rank) {
-      fh = fh->get_parent().lock();
+      fh = fh->get_parent();
     }
     return fh;
   };
