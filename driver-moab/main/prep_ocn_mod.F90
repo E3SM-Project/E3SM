@@ -281,7 +281,7 @@ contains
     !---------------------------------------------------------------
 
 #ifdef HAVE_MOAB
-    load_maps_from_disk_a2o = .true. ! Force read from disk
+    load_maps_from_disk_a2o = .false. ! Force read from disk
     wgtIda2o_conservative = 'conservative_a2o'//C_NULL_CHAR
     wgtIda2o_bilinear = 'bilinear_a2o'//C_NULL_CHAR
     wgtIdr2o_conservative = 'bilinear_a2o'//C_NULL_CHAR

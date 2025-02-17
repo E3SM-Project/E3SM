@@ -225,9 +225,8 @@ contains
 #ifdef HAVE_MOAB
       wgtIdl2r = 'conservative_l2r'//C_NULL_CHAR
       wgtIda2r = 'conservative_a2r'//C_NULL_CHAR
-      ! load_maps_from_disk_l2r = .false. ! Force online computation
-      load_maps_from_disk_l2r = .true. ! Force read from disk
-      load_maps_from_disk_a2r = .true. ! Force read from disk
+      load_maps_from_disk_l2r = .false. ! Force read from disk
+      load_maps_from_disk_a2r = .false. ! Force read from disk
 #endif
 
     call seq_infodata_getData(infodata , &

@@ -192,9 +192,8 @@ contains
       wgtIdr2l = 'conservative_r2l'//C_NULL_CHAR
       wgtIda2l_conservative = 'conservative_a2l'//C_NULL_CHAR
       wgtIda2l_bilinear = 'bilinear_a2l'//C_NULL_CHAR
-      load_maps_from_disk_r2l = .true. ! Force read from disk
-      load_maps_from_disk_a2l = .true. ! Force read from disk
-      ! load_maps_from_disk_a2l = .false. ! Force online computation
+      load_maps_from_disk_r2l = .false. ! Force read from disk
+      load_maps_from_disk_a2l = .false. ! Force read from disk
 #endif
 
     if (lnd_present) then
