@@ -115,6 +115,8 @@ contains
 
   real function MurphyKoop_svp(t, i_type)
 
+    !use scream_abortutils, only : endscreamrun
+
     implicit none
 
     !-------------------------------------------------------------------
@@ -165,6 +167,7 @@ contains
 
        write(err_msg,*)'Error: Either MurphyKoop_svp i_type is not 0 or 1 or t=NaN. itype= ', &
             i_type,' and temperature t=',t,' in file: ',__FILE__,' at line:',__LINE__
+       !call endscreamrun(err_msg)
     endif
 
     return
@@ -180,6 +183,9 @@ contains
     !  i_type REFERS TO SATURATION WITH RESPECT TO LIQUID (0) OR ICE (1)
     !-------------------------------------------
 
+    !use scream_abortutils, only : endscreamrun
+
+    !use debug_info, only: report_error_info
     implicit none
 
     real, intent(in) :: t
@@ -247,9 +253,11 @@ contains
        !PMC added error checking
     else
 
+       !call report_error_info('Something went wrong', 'polysvp1')
        write(err_msg,*)'** polysvp1 i_type must be 0 or 1 but is: ', &
             i_type,' temperature is:',t,' in file: ',__FILE__, &
             ' at line:',__LINE__
+       !call endscreamrun(err_msg)
     endif
 
     return
@@ -258,6 +266,7 @@ contains
 
   subroutine check_temp(t, subname)
     !Check if temprature values are in legit range
+    !use scream_abortutils, only : endscreamrun
     use ieee_arithmetic,   only : ieee_is_finite, ieee_is_nan
 
     implicit none
@@ -270,12 +279,15 @@ contains
     if(t <= 0.0) then
        write(err_msg,*)'Error: Called from:',trim(adjustl(subname)),'; Temperature is:',t,' which is <= 0._r8 in file:',__FILE__, &
             ' at line:',__LINE__
+       !call endscreamrun(err_msg)
     elseif(.not. ieee_is_finite(t)) then
        write(err_msg,*)'Error: Called from:',trim(adjustl(subname)),'; Temperature is:',t,' which is not finite in file:', &
             __FILE__,' at line:',__LINE__
+       !call endscreamrun(err_msg)
     elseif(ieee_is_nan(t)) then
        write(err_msg,*)'Error: Called from:',trim(adjustl(subname)),'; Temperature is:',t,' which is NaN in file:',__FILE__, &
             'at line:',__LINE__
+       !call endscreamrun(err_msg)
     endif
 
     return
