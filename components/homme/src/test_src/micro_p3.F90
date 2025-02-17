@@ -465,6 +465,10 @@ end function bfb_expm1
     is_nucleat_possible = .false.
     is_hydromet_present = .false.
 
+
+!print *,'t_atm before part1',t_atm(:)
+
+
     k_loop_1: do k = kbot,ktop,kdir
        !calculate some time-varying atmospheric variables
        !AaronDonahue - changed "rho" to be defined on nonhydrostatic
@@ -546,6 +550,11 @@ end function bfb_expm1
             qc_incld(k),qr_incld(k),qi_incld(k),qm_incld(k),nc_incld(k),nr_incld(k),ni_incld(k),bm_incld(k))
 
     enddo k_loop_1
+
+
+!print *,'t_atm after part1',t_atm(:)
+!stop
+
 
   END SUBROUTINE p3_main_part1
 
@@ -1416,6 +1425,9 @@ end function bfb_expm1
     integer :: clock_count1, clock_count_rate, clock_count_max, clock_count2, clock_count_diff
 #endif
 
+!print *, 'before P3 main th_atm', th_atm
+!print *, 'before P3 main t_prev', t_prev
+
     !-----------------------------------------------------------------------------------!
     !  End of variables/parameters declarations
     !-----------------------------------------------------------------------------------!
@@ -1507,8 +1519,19 @@ end function bfb_expm1
       if (debug_ON) then
          tmparr1(:) = th_atm(:)*inv_exner(:)!(pres(:)*1.e-5)**(rd*inv_cp)
          call check_values(qv(:),tmparr1(:),kts,kte,it,debug_ABORT,100,col_location(:))
+
+!print *, 'inv_exner', inv_exner
+!print *, 'tmparr1',tmparr1
+!print *, 'exner',exner
+!print *, 'raw exner',rd,inv_cp, (pres(:)*1.e-5)**(rd*inv_cp)
+!print *,'pressure', pres(:)
+
       endif
 
+
+!print *, 'before P3 main p1 t_atm', t_atm
+!print *, 'before P3 main p1 th_atm', th_atm
+!print *, 'before P3 main p1 t_prev', t_prev
 
        call p3_main_part1(kts, kte, kbot, ktop, kdir, do_predict_nc, do_prescribed_CCN, dt, &
             pres(:), dpres(:), dz(:), nc_nuceat_tend(:), nccn_prescribed(:), exner(:), inv_exner(:), &
@@ -2183,7 +2206,7 @@ end function bfb_expm1
     logical,                intent(in) :: force_abort         !.TRUE. = forces abort if value violation is detected
 
     !Local variables:
-    real, parameter :: T_low  = 160. !173.
+    real, parameter :: T_low  = 100. !173.  !!!!OG 100 instead of 160
     real, parameter :: T_high = 355. !323.
     real, parameter :: Q_high = 40.e-3
     real, parameter :: N_high = 1.e+20

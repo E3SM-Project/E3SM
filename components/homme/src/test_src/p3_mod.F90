@@ -7,7 +7,7 @@ use control_mod,          only: theta_hydrostatic_mode
 use dimensions_mod,       only: np, nlev, nlevp , qsize, qsize_d, nelemd
 use element_mod,          only: element_t
 use eos
-use element_ops,          only: get_pottemp, get_temperature
+use element_ops,          only: get_pottemp, get_temperature, get_hydro_pressure
 use element_state,        only: nt=>timelevels
 use hybrid_mod,           only: hybrid_t
 use kinds,                only: rl=>real_kind, iulog
@@ -17,7 +17,7 @@ use reduction_mod,        only: parallelmax, parallelmin
 use physical_constants,   only: latvap, latice, &
                                 gravit=>g, p0, &
                                 rdry=>rgas, cpdry=>cp, cpv=>cpwater_vapor, cl, cvdry, cvv, &
-                                rvapor=>rwater_vapor, rhow
+                                rvapor=>rwater_vapor, rhow, pi => dd_pi
 use hybvcoord_mod,        only: hvcoord_t
 use time_mod,             only: time_at, TimeLevel_t
 
@@ -35,7 +35,7 @@ subroutine interface_to_p3(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
                             rho_h2os, &
                             qsmall, &
                             mincld, &
-                            inv_cp
+                            inv_cp, micro_p3_utils_init
 
   type(element_t),    intent(inout), target :: elem(:)                  ! element array
   type(hybrid_t),     intent(in)            :: hybrid                   ! hybrid parallel structure
@@ -46,7 +46,7 @@ subroutine interface_to_p3(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
   type(TimeLevel_t),  intent(in)            :: tl                       ! time level structure
 
   real(rl), dimension(np,np,nlev) :: u,v,w,T,p,dp,hommerho,zm,q1,q2,q3,q4,q5,q6,q7,q8,q9
-  real(rl), dimension(np,np,nlev) :: pottemp, pnh, hommeexner, hommetemp
+  real(rl), dimension(np,np,nlev) :: pottemp, pnh, hommeexner, hommetemp, hommepres
   real(rl), dimension(np,np)      :: ps
   real(rl), dimension(np,np,nlevp):: zi, hommemu
 
@@ -205,7 +205,17 @@ subroutine interface_to_p3(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
     !col_location uninited
 
-!lets do wv=1
+!move it somewhere appropr
+!    rho_h2o   = rhoh2o ! Density of liquid water (STP) !997.
+!    ep_2   = mwh2o/mwdry  ! ratio of molecular mass of water to the molecular mass of dry air !0.622
+
+!micro_p3_utils_init(cpair,rair,rh2o,rhoh2o,mwh2o,mwdry,gravit,latvap,latice, &
+!                   cpliq,tmelt,pi,iulog,masterproc)
+
+!pi type was incompatible
+call micro_p3_utils_init(1005.,287.04,461.50,997.0,18.016,28.966,9.80616,2.501e6,3.337e5, &
+                   4188.0,273.0,3.14159265,0,hybrid%par%masterproc)
+
 
     do ie = nets, nete
 
@@ -227,7 +237,9 @@ subroutine interface_to_p3(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
     !get_temp uses Q for Rstar, not Qdp, so does not need ntQ
     call get_temperature(elem(ie),hommetemp,hvcoord,nt)
+
     call get_pottemp(elem(ie),pottemp,hvcoord,nt,ntQ)
+    call get_hydro_pressure(hommepres,dp,hvcoord)
     call pnh_and_exner_from_eos(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,nt),&
           dp,elem(ie)%state%phinh_i(:,:,:,nt),pnh,hommeexner,hommemu)
 
@@ -251,12 +263,19 @@ subroutine interface_to_p3(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     !this is only virtual pottemp
     !th = elem(ie)%state%vtheta_dp(ii,jj,:,nt)/dp(ii,jj,:)
     th = pottemp(ii,jj,:)
-    exner = hommeexner(ii,jj,:)
+!beyond me
+    exner = 1./hommeexner(ii,jj,:)
     pdel = dp(ii,jj,:)
+    pres = hommepres(ii,jj,:)
 
 !temporary, set 'previous' vars to the current ones
     qv_prev = qv
-    T_prev = T(ii,jj,:)
+    T_prev = hommetemp(ii,jj,:)
+
+!print *, 'before p3 T_prev', T_prev
+!print *, 'before p3 th', th
+!print *, 'before p3 exner', exner
+!stop
 
     call p3_main( &
          cldliq(kts:kte),     & ! INOUT  cloud, mass mixing ratio         kg kg-1
@@ -343,28 +362,31 @@ subroutine interface_to_p3(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     !numice  = q8(ii,jj,:)
     !rimvol  = q9(ii,jj,:)
 
+    qind=1; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( qv(:)      - q1(ii,jj,:) )/dtime
+    qind=2; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( cldliq(:)  - q2(ii,jj,:) )/dtime
+    qind=3; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( numliq(:)  - q3(ii,jj,:) )/dtime
+    qind=4; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( rain(:)    - q4(ii,jj,:) )/dtime
+    qind=5; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( numrain(:) - q5(ii,jj,:) )/dtime
+    qind=6; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( ice(:)     - q6(ii,jj,:) )/dtime
+    qind=7; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( qm(:)      - q7(ii,jj,:) )/dtime
+    qind=8; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( numice(:)  - q8(ii,jj,:) )/dtime
+    qind=9; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( rimvol(:)  - q9(ii,jj,:) )/dtime
+
+#if 0
 !if (ie == 1) then
+print *, 'precip', precip_liq_surf, precip_ice_surf
+print *, 'FT', elem(ie)%derived%FT(ii,jj,:)
 do qind = 1, 9
 !if(maxval(abs( elem(ie)%derived%FQ(ii,jj,:,qind) ),1)> 0.0)then
 print *, qind, maxval(abs(elem(ie)%derived%FQ(ii,jj,:,qind)),1)
-print *, qind, precip_liq_surf, precip_ice_surf
-print *, qind, temp(:) - hommetemp(ii,jj,:)
-print *, qind, hommetemp(ii,jj,:)
-print *, qind, temp(:)
 !endif
 enddo
 !endif
 stop
+#endif
 
-    qind=1; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( max(0.0,qv(:))      - q1(ii,jj,:) )/dtime
-    qind=2; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( max(0.0,cldliq(:))  - q2(ii,jj,:) )/dtime
-    qind=3; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( max(0.0,numliq(:))  - q3(ii,jj,:) )/dtime
-    qind=4; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( max(0.0,rain(:))    - q4(ii,jj,:) )/dtime
-    qind=5; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( max(0.0,numrain(:)) - q5(ii,jj,:) )/dtime
-    qind=6; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( max(0.0,ice(:))     - q6(ii,jj,:) )/dtime
-    qind=7; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( max(0.0,qm(:))      - q7(ii,jj,:) )/dtime
-    qind=8; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( max(0.0,numice(:))  - q8(ii,jj,:) )/dtime
-    qind=9; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( max(0.0,rimvol(:))  - q9(ii,jj,:) )/dtime
+
+
 
 #endif
 
