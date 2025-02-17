@@ -226,10 +226,9 @@ contains
       wgtIdo2a = 'conservative_o2a'//C_NULL_CHAR
       wgtIdi2a = 'conservative_i2a'//C_NULL_CHAR
       wgtIdl2a = 'conservative_l2a'//C_NULL_CHAR
-      load_maps_from_disk_o2a = .true. ! Force read from disk
-      load_maps_from_disk_i2a = .true. ! Force read from disk
-      ! load_maps_from_disk_l2a = .false. ! Force online computation
-      load_maps_from_disk_l2a = .true. ! Force read from disk
+      load_maps_from_disk_o2a = .false. ! Force read from disk
+      load_maps_from_disk_i2a = .false. ! Force read from disk
+      load_maps_from_disk_l2a = .false. ! Force read from disk
 #endif
 
       if (ocn_c2_atm) then
