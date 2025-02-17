@@ -521,7 +521,6 @@ TEST_CASE("column_ops_ps_N") {
     // Test both the case where num_mid_packs==num_int_packs, and
     // the case where num_int_packs=num_mid_packs+1.
     for (int num_levs : {2*ps, 2*ps+1} ) {
-      std::cout << "num_levs: " << num_levs << "\n";
       const int num_mid_packs = ekat::PackInfo<ps>::num_packs(num_levs);
       const int num_int_packs = ekat::PackInfo<ps>::num_packs(num_levs+1);
 
