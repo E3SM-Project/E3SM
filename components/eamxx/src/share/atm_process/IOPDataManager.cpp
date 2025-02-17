@@ -323,10 +323,8 @@ read_fields_from_file_for_iop (const std::string& file_name,
                                const std::vector<Field>& fields,
                                const std::shared_ptr<const AbstractGrid>& grid)
 {
-  if (fields.size()==0) {
-    // Does this ever happen?
-    return;
-  }
+  EKAT_REQUIRE_MSG (fields.size()>0,
+      "[IOPDataManager::read_fields_from_file_for_iop] Error! Input fields list is empty.\n");
 
   auto io_grid = m_io_grids[grid->name()];
   EKAT_REQUIRE_MSG(io_grid!=nullptr,

@@ -1271,6 +1271,9 @@ void AtmosphereDriver::set_initial_conditions ()
     const auto& file_name = ic_pl.get<std::string>("Filename");
     m_atm_logger->info("    [EAMxx] IC filename: " + file_name);
     for (const auto& [grid_name,fm] : m_field_mgrs) {
+      if (ic_fields_names[grid_name].size()==0)
+        continue;
+
       std::vector<Field> ic_fields;
       for (const auto& fn : ic_fields_names[grid_name]) {
         ic_fields.push_back(fm->get_field(fn));
@@ -1349,8 +1352,11 @@ void AtmosphereDriver::set_initial_conditions ()
     const auto& file_name = ic_pl.get<std::string>("topography_filename");
     m_atm_logger->info("        filename: " + file_name);
     for (const auto& [grid_name,fm] : m_field_mgrs) {
-      std::vector<Field> topo_fields;
       int nfields = topography_eamxx_fields_names[grid_name].size();
+      if (nfields==0)
+        continue;
+
+      std::vector<Field> topo_fields;
       for (int i=0; i<nfields; ++i) {
         auto eamxx_fname = topography_eamxx_fields_names[grid_name][i];
         auto file_fname  = topography_file_fields_names[grid_name][i];

@@ -5,12 +5,11 @@
 #include "share/grid/remap/abstract_remapper.hpp"
 #include "share/util/scream_time_stamp.hpp"
 #include "share/field/field.hpp"
-#include "share/io/scorpio_input.hpp"
-#include "share/util/scream_time_stamp.hpp"
 
-namespace scream{
+namespace scream
+{
 
-class VerticalRemapper;
+class AtmosphereInput;
 
 class DataInterpolation
 {
@@ -18,9 +17,24 @@ public:
   using strvec_t = std::vector<std::string>;
   enum VRemapType {
     None,
-    Static1D,     // USes a constant 1d (vertical) pressure from input data
+    Static1D,     // Uses a constant 1d (vertical) pressure from input data
     Dynamic3D,    // Uses a time-dep 3d pressure from input data
     Dynamic3DRef, // Reconstructs a reference 3d pressure from time-dep PS in input data
+  };
+
+  struct RemapData {
+    // Horiz remap options. Mutually exclusive
+    std::string hremap_file = "";
+    Real iop_lat = std::numeric_limits<Real>::quiet_NaN();
+    Real iop_lon = std::numeric_limits<Real>::quiet_NaN();
+
+    // Vert remap options
+    VRemapType vr_type;
+    std::string extrap_top = "P0";
+    std::string extrap_bot = "P0";
+    Real mask_value = std::numeric_limits<Real>::quiet_NaN(); // Unused for P0 extrapolation
+    std::string pname; // What we need to load from nc file
+    Field pmid, pint;
   };
 
   // Constructor(s) & Destructor
@@ -31,22 +45,11 @@ public:
 
   void toggle_debug_output (bool enable_dbg_output) { m_dbg_output = enable_dbg_output; }
 
-  void setup_time_database (const strvec_t& input_files, const util::TimeLine timeline);
+  void setup_time_database (const strvec_t& input_files,
+                            const util::TimeLine timeline,
+                            const util::TimeStamp& ref_ts = util::TimeStamp());
 
-  void setup_remappers (const std::string& hremap_filename,
-                        const VRemapType vr_type,
-                        const std::string& data_pname,
-                        const Field& model_pmid,
-                        const Field& model_pint);
-
-  void setup_remappers (const std::string& hremap_filename,
-                        const VRemapType vr_type,
-                        const std::string& extrap_type_top,
-                        const std::string& extrap_type_bot,
-                        const Real mask_value,
-                        const std::string& data_pname,
-                        const Field& model_pmid,
-                        const Field& model_pint);
+  void setup_remappers (const RemapData& data);
 
   void init_data_interval (const util::TimeStamp& t0);
 
@@ -54,6 +57,10 @@ public:
 
 protected:
 
+  void setup_horiz_remappers (const RemapData& data);
+  void setup_vert_remapper   (const RemapData& data);
+
+  void register_fields_in_remappers ();
   void shift_data_interval ();
   void update_end_fields ();
 
@@ -84,6 +91,7 @@ protected:
   std::shared_ptr<AtmosphereInput> m_reader;
 
   std::shared_ptr<const AbstractGrid> m_model_grid;
+  std::shared_ptr<AbstractGrid>       m_grid_after_hremap; // nonconst b/c we may need to set some geo data
 
   std::vector<Field>                  m_fields;
 
