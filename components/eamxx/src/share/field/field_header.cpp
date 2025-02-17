@@ -50,8 +50,8 @@ bool FieldHeader::is_aliasing (const FieldHeader& rhs) const
       m_extra_data==rhs.m_extra_data)
     return true;
 
-  auto p = get_parent().lock();
-  auto rhs_p = rhs.get_parent().lock();
+  auto p = get_parent();
+  auto rhs_p = rhs.get_parent();
   if (p!=nullptr and rhs_p!=nullptr) {
     return p->is_aliasing(*rhs_p) and
            m_alloc_prop->get_subview_info()==rhs.m_alloc_prop->get_subview_info();

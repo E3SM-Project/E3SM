@@ -38,7 +38,7 @@ public:
       const auto& fap = fh.get_alloc_properties();
       const auto col_alloc_size = fap.get_num_scalars() / fl.dim(COL);
       REQUIRE (m_col_size[i]==fl.clone().strip_dim(COL).size());
-      if (fh.get_parent().lock()) {
+      if (fh.get_parent()) {
         REQUIRE (m_col_stride[i]==col_alloc_size*fap.get_subview_info().dim_extent);
         REQUIRE (m_col_offset[i]==col_alloc_size*fap.get_subview_info().slice_idx);
       } else {

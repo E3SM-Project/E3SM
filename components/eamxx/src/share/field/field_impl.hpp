@@ -289,7 +289,7 @@ get_strided_view_type<DT, HD> {
                     "requested value type.\n");
 
     // Check if this field is a subview of another field
-    const auto parent = m_header->get_parent().lock();
+    const auto parent = m_header->get_parent();
     if (parent != nullptr) {
       // Parent field has correct layout to reinterpret the view into N+1-dim view,
       // for single-slice subfield, and N-dim view for multi-slice subfield.
@@ -807,7 +807,7 @@ auto Field::get_ND_view () const
       "Error! Input Rank must either be 1 (flat array) or the actual field rank.\n");
 
   // Check if this field is a subview of another field
-  const auto parent = m_header->get_parent().lock();
+  const auto parent = m_header->get_parent();
   if (parent!=nullptr) {
     // Parent field has correct layout to reinterpret the view into N+1-dim view
     // So create the parent field on the fly, use it to get the N+1-dim view, then subview it.
@@ -871,7 +871,7 @@ auto Field::get_ND_view () const
       "Error! Input Rank must either be 1 (flat array) or the actual field rank.\n");
 
   // Given that N==MaxRank, this field cannot be a subview of another field
-  EKAT_REQUIRE_MSG (m_header->get_parent().expired(),
+  EKAT_REQUIRE_MSG (m_header->get_parent()==nullptr,
       "Error! A view of rank " + std::to_string(MaxRank) + " should not be the subview of another field.\n");
 
   // Compute extents from FieldLayout

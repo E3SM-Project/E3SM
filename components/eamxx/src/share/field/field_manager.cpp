@@ -196,7 +196,7 @@ get_field_group (const std::string& group_name) const
   if (group.m_info->m_bundled) {
     if (allocate_subfields) {
       // We can get the parent from any of the fields in the group.
-      auto p = group.m_fields.begin()->second->get_header().get_parent().lock();
+      auto p = group.m_fields.begin()->second->get_header().get_parent();
       EKAT_REQUIRE_MSG(p!=nullptr,
           "Error! A field belonging to a bundled field group is missing its 'parent'.\n");
 

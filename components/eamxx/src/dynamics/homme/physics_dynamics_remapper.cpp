@@ -22,7 +22,7 @@ namespace {
 template<typename DataType>
 ::Homme::ExecViewUnmanaged<DataType>
 getHommeView(const scream::Field& f) {
-  auto p = f.get_header().get_parent().lock();
+  auto p = f.get_header().get_parent();
   auto scream_view = f.template get_view<DataType>();
   using homme_view_t = ::Homme::ExecViewUnmanaged<DataType>;
   if (p!=nullptr) {
@@ -127,13 +127,13 @@ initialize_device_variables()
     // A dynamic subfield will need some special treatment at runtime
     // Namely, we'll need to re-extract the view every time,
     // since the subview info may have changed
-    if (ph.get_parent().lock()) {
-      EKAT_REQUIRE_MSG (ph.get_parent().lock()->get_parent().lock()==nullptr,
+    if (ph.get_parent()) {
+      EKAT_REQUIRE_MSG (ph.get_parent()->get_parent()==nullptr,
           "Error! We do not support remapping of subfields of other subfields.\n");
       m_subfield_info_phys[i] = ph.get_alloc_properties().get_subview_info();
     }
-    if (dh.get_parent().lock()) {
-      EKAT_REQUIRE_MSG (dh.get_parent().lock()->get_parent().lock()==nullptr,
+    if (dh.get_parent()) {
+      EKAT_REQUIRE_MSG (dh.get_parent()->get_parent()==nullptr,
           "Error! We do not support remapping of subfields of other subfields.\n");
       m_subfield_info_dyn[i] = dh.get_alloc_properties().get_subview_info();
     }
