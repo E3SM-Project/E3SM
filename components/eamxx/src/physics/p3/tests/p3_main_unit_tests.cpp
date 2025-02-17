@@ -175,6 +175,9 @@ void run_bfb_p3_main_part2()
     P3MainPart2Data(1,  72,   72,    1,   -1, true,          false,       1.800E+03),
   };
 
+  std::vector<Real> hetfrz_immersion_nucleation_tend(72,0.0);
+  std::vector<Real> hetfrz_contact_nucleation_tend(72,0.0);
+  std::vector<Real> hetfrz_deposition_nucleation_tend(72,0.0);
   static constexpr Int num_runs = sizeof(isds_baseline) / sizeof(P3MainPart2Data);
 
   for (auto& d : isds_baseline) {
@@ -214,6 +217,7 @@ void run_bfb_p3_main_part2()
   for (auto& d : isds_cxx) {
     p3_main_part2_host(
       d.kts, d.kte, d.kbot, d.ktop, d.kdir, d.do_predict_nc, d.do_prescribed_CCN, d.dt, d.inv_dt,
+      hetfrz_immersion_nucleation_tend.data(), hetfrz_contact_nucleation_tend.data(), hetfrz_deposition_nucleation_tend.data(),
       d.pres, d.dpres, d.dz, d.nc_nuceat_tend, d.inv_exner, d.exner, d.inv_cld_frac_l, d.inv_cld_frac_i,
       d.inv_cld_frac_r, d.ni_activated, d.inv_qc_relvar, d.cld_frac_i, d.cld_frac_l, d.cld_frac_r, d.qv_prev, d.t_prev,
       d.T_atm, d.rho, d.inv_rho, d.qv_sat_l, d.qv_sat_i, d.qv_supersat_i, d.rhofacr, d.rhofaci, d.acn, d.qv, d.th_atm, d.qc, d.nc, d.qr, d.nr, d.qi, d.ni,
@@ -425,7 +429,7 @@ void run_bfb_p3_main()
         {d.qv             , {0              , 5.00000000E-02}},
         {d.qv_prev        , {0              , 5.00000000E-02}},
         {d.th_atm         , {6.72653866E+02 , 1.07954335E+03}}, //PMC - this range seems insane
-        {d.t_prev         , {1.50000000E+02 , 3.50000000E+02}},
+        {d.t_prev         , {1.50000000E+02 , 3.50000000E+02}}
     });
   }
 
@@ -449,7 +453,7 @@ void run_bfb_p3_main()
       d.qc, d.nc, d.qr, d.nr, d.th_atm, d.qv, d.dt, d.qi, d.qm, d.ni,
       d.bm, d.pres, d.dz, d.nc_nuceat_tend, d.nccn_prescribed, d.ni_activated, d.inv_qc_relvar, d.it, d.precip_liq_surf,
       d.precip_ice_surf, d.its, d.ite, d.kts, d.kte, d.diag_eff_radius_qc, d.diag_eff_radius_qi, d.diag_eff_radius_qr,
-      d.rho_qi, d.do_predict_nc, d.do_prescribed_CCN, d.dpres, d.inv_exner, d.qv2qi_depos_tend,
+      d.rho_qi, d.do_predict_nc, d.do_prescribed_CCN, d.use_hetfrz_classnuc, d.dpres, d.inv_exner, d.qv2qi_depos_tend,
       d.precip_liq_flux, d.precip_ice_flux, d.cld_frac_r, d.cld_frac_l, d.cld_frac_i,
       d.liq_ice_exchange, d.vap_liq_exchange, d.vap_ice_exchange, d.qv_prev, d.t_prev);
   }

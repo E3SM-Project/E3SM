@@ -15,6 +15,9 @@ initial_conditions:
   surf_sens_flux: 0.0
   precip_liq_surf_mass: 0.0
   precip_ice_surf_mass: 0.0
+  hetfrz_immersion_nucleation_tend: 0.1
+  hetfrz_contact_nucleation_tend: 0.1
+  hetfrz_deposition_nucleation_tend: 0.1
   surf_lw_flux_up: 400.0
   eddy_diff_mom: 0.02
   sgs_buoy_flux: -0.001

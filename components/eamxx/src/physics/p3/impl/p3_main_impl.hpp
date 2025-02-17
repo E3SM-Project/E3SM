@@ -201,6 +201,11 @@ Int Functions<S,D>
     const auto oqv_prev            = ekat::subview(diagnostic_inputs.qv_prev, i);
     const auto ot_prev             = ekat::subview(diagnostic_inputs.t_prev, i);
 
+    // Inputs for the heteogeneous freezing
+    const auto ohetfrz_immersion_nucleation_tend  = ekat::subview(diagnostic_inputs.hetfrz_immersion_nucleation_tend, i);
+    const auto ohetfrz_contact_nucleation_tend    = ekat::subview(diagnostic_inputs.hetfrz_contact_nucleation_tend, i);
+    const auto ohetfrz_deposition_nucleation_tend = ekat::subview(diagnostic_inputs.hetfrz_deposition_nucleation_tend, i);
+
     // Use Kokkos' scratch pad for allocating 2 bools
     // per team to determine early exits
     ScratchViewType bools(team.team_scratch(0), 2);
@@ -243,6 +248,7 @@ Int Functions<S,D>
 
     p3_main_part2(
       team, nk_pack, runtime_options.max_total_ni, infrastructure.predictNc, infrastructure.prescribedCCN, infrastructure.dt, inv_dt,
+      ohetfrz_immersion_nucleation_tend, ohetfrz_contact_nucleation_tend, ohetfrz_deposition_nucleation_tend,
       lookup_tables.dnu_table_vals, lookup_tables.ice_table_vals, lookup_tables.collect_table_vals, lookup_tables.revap_table_vals, opres, odpres, odz, onc_nuceat_tend, oinv_exner,
       exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, oni_activated, oinv_qc_relvar, ocld_frac_i,
       ocld_frac_l, ocld_frac_r, oqv_prev, ot_prev, T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn,

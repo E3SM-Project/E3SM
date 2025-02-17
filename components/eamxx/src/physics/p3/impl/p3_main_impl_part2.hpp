@@ -26,6 +26,9 @@ void Functions<S,D>
   const bool& do_prescribed_CCN,
   const Scalar& dt,
   const Scalar& inv_dt,
+  const uview_1d<const Spack>& hetfrz_immersion_nucleation_tend,
+  const uview_1d<const Spack>& hetfrz_contact_nucleation_tend,
+  const uview_1d<const Spack>& hetfrz_deposition_nucleation_tend,
   const view_dnu_table& dnu,
   const view_ice_table& ice_table_vals,
   const view_collect_table& collect_table_vals,
@@ -104,7 +107,8 @@ void Functions<S,D>
   constexpr Scalar latvap       = C::LatVap;
   constexpr Scalar latice       = C::LatIce;
 
-  const bool do_ice_production = runtime_options.do_ice_production;
+  const bool do_ice_production   = runtime_options.do_ice_production;
+  const bool use_hetfrz_classnuc = runtime_options.use_hetfrz_classnuc;
 
   team.team_barrier();
   hydrometeorsPresent = false;
@@ -174,6 +178,9 @@ void Functions<S,D>
       abi     (0), // TODO(doc)
       kap     (0), // TODO(doc)
       eii     (0), // temperature dependent aggregation efficiency
+
+      //Hetreogeneous freezing
+      ncheti_cnt(0), qcheti_cnt(0), nicnt(0), qicnt(0), ninuc_cnt(0), qinuc_cnt(0),
 
       // quantities related to process rates/parameters, interpolated from lookup tables:
       // For a more in depth reference to where these came from consult the file
@@ -324,10 +331,20 @@ void Functions<S,D>
 
       if(do_ice_production) {
         // contact and immersion freezing droplets
-        cldliq_immersion_freezing(
-            T_atm(k), lamc(k), mu_c(k), cdist1(k), qc_incld(k),
-            inv_qc_relvar(k), qc2qi_hetero_freeze_tend,
-            nc2ni_immers_freeze_tend, runtime_options, not_skip_micro);
+        if (use_hetfrz_classnuc){
+          ice_classical_nucleation(hetfrz_immersion_nucleation_tend(k), hetfrz_contact_nucleation_tend(k),
+                     hetfrz_deposition_nucleation_tend(k), rho(k), qc_incld(k), nc_incld(k), 1,
+                     ncheti_cnt, qcheti_cnt, nicnt, qicnt, ninuc_cnt, qinuc_cnt);
+          ice_classical_nucleation(hetfrz_immersion_nucleation_tend(k), hetfrz_contact_nucleation_tend(k),
+                     hetfrz_deposition_nucleation_tend(k), rho(k), qc_incld(k), nc_incld(k), 2, 
+                     ncheti_cnt, qcheti_cnt, nicnt, qicnt, ninuc_cnt, qinuc_cnt);
+        }
+        else{
+          cldliq_immersion_freezing(
+              T_atm(k), lamc(k), mu_c(k), cdist1(k), qc_incld(k),
+              inv_qc_relvar(k), qc2qi_hetero_freeze_tend,
+              nc2ni_immers_freeze_tend, runtime_options, not_skip_micro);
+        }
 
         // for future: get rid of log statements below for rain freezing
         rain_immersion_freezing(T_atm(k), lamr(k), mu_r(k), cdistr(k),
@@ -400,7 +417,8 @@ void Functions<S,D>
       nc_accret_tend, nc_selfcollect_tend, nc2nr_autoconv_tend, nr_selfcollect_tend, nr_evap_tend, ncautr, qi2qv_sublim_tend, nr_ice_shed_tend, qc2qi_hetero_freeze_tend,
       qr2qi_collect_tend, qc2qr_ice_shed_tend, qi2qr_melt_tend, qc2qi_collect_tend, qr2qi_immers_freeze_tend, ni2nr_melt_tend, nc_collect_tend,
       ncshdc, nc2ni_immers_freeze_tend, nr_collect_tend, ni_selfcollect_tend,
-      qv2qi_vapdep_tend, nr2ni_immers_freeze_tend, ni_sublim_tend, qv2qi_nucleat_tend, ni_nucleat_tend, qc2qi_berg_tend, not_skip_all);
+      qv2qi_vapdep_tend, nr2ni_immers_freeze_tend, ni_sublim_tend, qv2qi_nucleat_tend, ni_nucleat_tend, qc2qi_berg_tend, 
+      ncheti_cnt, qcheti_cnt, nicnt, qicnt, ninuc_cnt, qinuc_cnt, not_skip_all);
 
     //
     // conservation of water
@@ -414,7 +432,7 @@ void Functions<S,D>
     // cloud
     cloud_water_conservation(
       qc(k), dt,
-      qc2qr_autoconv_tend, qc2qr_accret_tend, qc2qi_collect_tend, qc2qi_hetero_freeze_tend, qc2qr_ice_shed_tend, qc2qi_berg_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend, not_skip_all);
+      qc2qr_autoconv_tend, qc2qr_accret_tend, qc2qi_collect_tend, qc2qi_hetero_freeze_tend, qc2qr_ice_shed_tend, qc2qi_berg_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend, qcheti_cnt, qicnt, use_hetfrz_classnuc, not_skip_all);
 
     // rain
     rain_water_conservation(
@@ -425,18 +443,19 @@ void Functions<S,D>
     ice_water_conservation(
       qi(k), qv2qi_vapdep_tend, qv2qi_nucleat_tend, qc2qi_berg_tend, qr2qi_collect_tend,
       qc2qi_collect_tend, qr2qi_immers_freeze_tend, qc2qi_hetero_freeze_tend, dt,
-      qi2qv_sublim_tend, qi2qr_melt_tend, not_skip_all);
+      qinuc_cnt, qcheti_cnt, qicnt,
+      qi2qv_sublim_tend, qi2qr_melt_tend, use_hetfrz_classnuc, not_skip_all);
 
     nc_conservation(nc(k), nc_selfcollect_tend, dt, nc_collect_tend, nc2ni_immers_freeze_tend,
-                    nc_accret_tend, nc2nr_autoconv_tend, not_skip_all);
+                    nc_accret_tend, nc2nr_autoconv_tend, ncheti_cnt, nicnt, use_hetfrz_classnuc, not_skip_all);
     nr_conservation(nr(k),ni2nr_melt_tend,nr_ice_shed_tend,ncshdc,nc2nr_autoconv_tend,dt,nmltratio,nr_collect_tend,
                     nr2ni_immers_freeze_tend,nr_selfcollect_tend,nr_evap_tend, not_skip_all);
-    ni_conservation(ni(k),ni_nucleat_tend,nr2ni_immers_freeze_tend,nc2ni_immers_freeze_tend,dt,ni2nr_melt_tend,
-                    ni_sublim_tend,ni_selfcollect_tend, not_skip_all);
+    ni_conservation(ni(k),ni_nucleat_tend,nr2ni_immers_freeze_tend,nc2ni_immers_freeze_tend, ncheti_cnt, nicnt, ninuc_cnt, dt,ni2nr_melt_tend,
+                    ni_sublim_tend,ni_selfcollect_tend, use_hetfrz_classnuc, not_skip_all);
 
     // make sure procs don't inappropriately push qv beyond ice saturation
-    ice_supersat_conservation(qv2qi_vapdep_tend,qv2qi_nucleat_tend,cld_frac_i(k),qv(k),qv_sat_i(k),
-			                        th_atm(k)/inv_exner(k),dt,qi2qv_sublim_tend,qr2qv_evap_tend, not_skip_all);
+    ice_supersat_conservation(qv2qi_vapdep_tend,qv2qi_nucleat_tend,qinuc_cnt,cld_frac_i(k),qv(k),qv_sat_i(k),
+			                        th_atm(k)/inv_exner(k),dt,qi2qv_sublim_tend,qr2qv_evap_tend, use_hetfrz_classnuc, not_skip_all);
     // make sure procs don't inappropriately push qv beyond liquid saturation
     prevent_liq_supersaturation(pres(k), T_atm(k), qv(k), dt,
 				qv2qi_vapdep_tend, qv2qi_nucleat_tend, qi2qv_sublim_tend,qr2qv_evap_tend,
@@ -451,8 +470,8 @@ void Functions<S,D>
       qc2qi_hetero_freeze_tend, qc2qi_collect_tend, qc2qr_ice_shed_tend, nc_collect_tend, nc2ni_immers_freeze_tend, ncshdc, qr2qi_collect_tend, nr_collect_tend,  qr2qi_immers_freeze_tend,
       nr2ni_immers_freeze_tend, nr_ice_shed_tend, qi2qr_melt_tend, ni2nr_melt_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend, qv2qi_nucleat_tend, ni_nucleat_tend, ni_selfcollect_tend, ni_sublim_tend,
       qc2qi_berg_tend, inv_exner(k), predictNc, wetgrowth, dt, nmltratio,
-      rho_qm_cloud, th_atm(k), qv(k), qi(k), ni(k), qm(k), bm(k), qc(k),
-      nc(k), qr(k), nr(k), not_skip_all);
+      rho_qm_cloud, ncheti_cnt, nicnt, ninuc_cnt, qcheti_cnt, qicnt, qinuc_cnt,  th_atm(k), qv(k), qi(k), ni(k), qm(k), bm(k), qc(k),
+      nc(k), qr(k), nr(k), use_hetfrz_classnuc, not_skip_all);
 
     //-- warm-phase only processes:
     update_prognostic_liquid(
@@ -461,7 +480,12 @@ void Functions<S,D>
       qr(k), nr(k), not_skip_all);
 
     // AaronDonahue - Add extra variables needed from microphysics by E3SM:
-    qv2qi_depos_tend(k)         .set(not_skip_all, qv2qi_vapdep_tend - qi2qv_sublim_tend + qv2qi_nucleat_tend);
+    if(use_hetfrz_classnuc){
+      qv2qi_depos_tend(k)         .set(not_skip_all, qv2qi_vapdep_tend - qi2qv_sublim_tend + qv2qi_nucleat_tend  + qinuc_cnt);
+    }
+    else{
+      qv2qi_depos_tend(k)         .set(not_skip_all, qv2qi_vapdep_tend - qi2qv_sublim_tend + qv2qi_nucleat_tend);
+    }
     precip_total_tend(k)           .set(not_skip_all, qc2qr_accret_tend + qc2qr_autoconv_tend + qc2qr_ice_shed_tend + qc2qi_collect_tend);
     nevapr(k)          .set(not_skip_all, qi2qv_sublim_tend + qr2qv_evap_tend);
     qr_evap_tend(k)       .set(not_skip_all, qr2qv_evap_tend);
