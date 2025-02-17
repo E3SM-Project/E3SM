@@ -231,7 +231,7 @@ void randomize (const Field& f, Engine& engine, PDF&& pdf)
 }
 
 template<typename ST, typename Engine, typename PDF, typename MaskType>
-void perturb (const Field& f,
+void perturb (Field& f,
               Engine& engine,
               PDF&& pdf,
               const unsigned int base_seed,
@@ -243,6 +243,7 @@ void perturb (const Field& f,
   // Check to see if field has a column dimension
   using namespace ShortFieldTagsNames;
   const bool has_column_dim = fl.has_tag(COL);
+  const bool has_lev_dim = fl.has_tag(LEV);
 
   if (has_column_dim) {
     // Because Column is the partitioned dimension, we must reset the
@@ -253,7 +254,7 @@ void perturb (const Field& f,
 
     // Create a field to store perturbation values with layout
     // the same as f, but stripped of column and level dimension.
-    auto perturb_fl = fl.clone().strip_dim(COL).strip_dim(LEV);
+    auto perturb_fl = fl.clone().strip_dims({COL,LEV});
     FieldIdentifier perturb_fid("perturb_field", perturb_fl, ekat::units::Units::nondimensional(), "");
     Field perturb_f(perturb_fid);
     perturb_f.allocate_view();
@@ -263,13 +264,18 @@ void perturb (const Field& f,
       const auto new_seed = base_seed+gids(icol);
       engine.seed(new_seed);
 
-      // Loop through levels. For each that satisfy the level_mask,
-      // apply a random perturbation to f.
-      for (auto ilev=0; ilev<fl.dims().back(); ++ilev) {
-        if (level_mask(ilev)) {
-          randomize(perturb_f, engine, pdf);
-          f.subfield(0, icol).subfield(f.rank()-2, ilev).scale(perturb_f);
+      if (has_lev_dim) {
+        // Loop through levels. For each that satisfy the level_mask,
+        // apply a random perturbation to f.
+        for (auto ilev=0; ilev<fl.dims().back(); ++ilev) {
+          if (level_mask(ilev)) {
+            randomize(perturb_f, engine, pdf);
+            f.subfield(COL, icol).subfield(LEV, ilev).scale(perturb_f);
+          }
         }
+      } else {
+        randomize(perturb_f, engine, pdf);
+        f.subfield(COL, icol).scale(perturb_f);
       }
     }
   } else {
@@ -284,13 +290,18 @@ void perturb (const Field& f,
     Field perturb_f(perturb_fid);
     perturb_f.allocate_view();
 
-    // Loop through levels. For each that satisfy the level_mask,
-    // apply a random perturbation to f.
-    for (auto ilev=0; ilev<fl.dims().back(); ++ilev) {
-      if (level_mask(ilev)) {
-        randomize(perturb_f, engine, pdf);
-        f.subfield(f.rank()-1, ilev).scale(perturb_f);
+    if (has_lev_dim) {
+      // Loop through levels. For each that satisfy the level_mask,
+      // apply a random perturbation to f.
+      for (auto ilev=0; ilev<fl.dims().back(); ++ilev) {
+        if (level_mask(ilev)) {
+          randomize(perturb_f, engine, pdf);
+          f.subfield(LEV, ilev).scale(perturb_f);
+        }
       }
+    } else {
+      randomize(perturb_f, engine, pdf);
+      f.scale(perturb_f);
     }
   }
 }

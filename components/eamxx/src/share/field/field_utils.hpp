@@ -59,7 +59,7 @@ void randomize (const Field& f, Engine& engine, PDF&& pdf)
 //                         perturbed if level_mask(k)=true
 //   - dof_gids:           Field containing global DoF IDs for columns of f (if applicable)
 template<typename Engine, typename PDF, typename MaskType>
-void perturb (const Field& f,
+void perturb (Field& f,
               Engine& engine,
               PDF&& pdf,
               const int base_seed,
