@@ -93,6 +93,10 @@ void FieldManager::register_field (const FieldRequest& req)
       group_info->m_fields_names.push_back(id.name());
     }
 
+    // Ensure that each group in m_field_groups also appears in the m_group_requests map by
+    // adding a "trivial" GroupRequest for this group, meaning no bundling and pack size 1.
+    register_group(GroupRequest(group_name, grid_name));
+
     // Store which grid is registering this group field.
     m_field_group_grids[id.name()].push_back(grid_name);
   }
