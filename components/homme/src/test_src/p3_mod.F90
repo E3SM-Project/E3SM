@@ -342,6 +342,20 @@ subroutine interface_to_p3(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     !qm      = q7(ii,jj,:)
     !numice  = q8(ii,jj,:)
     !rimvol  = q9(ii,jj,:)
+
+!if (ie == 1) then
+do qind = 1, 9
+!if(maxval(abs( elem(ie)%derived%FQ(ii,jj,:,qind) ),1)> 0.0)then
+print *, qind, maxval(abs(elem(ie)%derived%FQ(ii,jj,:,qind)),1)
+print *, qind, precip_liq_surf, precip_ice_surf
+print *, qind, temp(:) - hommetemp(ii,jj,:)
+print *, qind, hommetemp(ii,jj,:)
+print *, qind, temp(:)
+!endif
+enddo
+!endif
+stop
+
     qind=1; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( max(0.0,qv(:))      - q1(ii,jj,:) )/dtime
     qind=2; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( max(0.0,cldliq(:))  - q2(ii,jj,:) )/dtime
     qind=3; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( max(0.0,numliq(:))  - q3(ii,jj,:) )/dtime
