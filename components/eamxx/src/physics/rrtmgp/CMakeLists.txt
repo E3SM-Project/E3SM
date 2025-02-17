@@ -50,6 +50,11 @@ endmacro()
 #             YAKL               #
 ##################################
 
+# TODO: The generate_baselines.cpp in tests needs to be ported to not use YAKL
+if (SCREAM_ONLY_GENERATE_BASELINES)
+  set (SCREAM_RRTMGP_ENABLE_YAKL ON)
+endif()
+
 # RRTMGP++ requires YAKL
 if (SCREAM_RRTMGP_ENABLE_YAKL)
   string(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_ci)
