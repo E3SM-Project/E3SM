@@ -124,12 +124,19 @@ TEST_CASE ("grid_import_export") {
     printf(" -> Testing export views ...... %s\n",ok ? "PASS" : "FAIL");
   }
 
-  // Later, we design the tests in such a way that, serially, the data stored for
-  // gid N is [0,...,N-1]. We want this to also be the case in parallel, but the
-  // same GID may be owned by 2+ processors in the ov grid. For the gather ops,
-  // we will fill the overlapped data in a way that, after gather is called, we
-  // obtain the same serial data. To do so, we need to know what GIDs that we own
-  // are also owned by others.
+  // Test gather
+  if (comm.am_i_root()) {
+    printf(" -> Testing gather routine ....\n");
+  }
+  ok  = true;
+
+  // We design the tests in such a way that, serially, the data stored for
+  // gid N is [0,...,N]. We want this to also be the case in parallel, but the
+  // same GID may be owned by 2+ processors in the ov grid. This would cause duplicate
+  // entries upon gather completion, making checking the results harder.
+  // To avoid this, we store a map gid->pids so that all ranks know how many ranks
+  // have a give gid in the ov grid. When filling up the ov_data for gather,
+  // rank P will only fill data for gid N if it is the smallest gid owning it.
   std::map<gid_type,std::vector<int>> gid2pids;
   for (int pid=0; pid<comm.size(); ++pid) {
     std::vector<gid_type> pid_gids;
@@ -147,33 +154,17 @@ TEST_CASE ("grid_import_export") {
       gid2pids[g].push_back(pid);
     }
   }
-
-  // Test gather
-  if (comm.am_i_root()) {
-    printf(" -> Testing gather routine ....\n");
+  for (auto& [gid,pids] : gid2pids) {
+    std::sort(pids.begin(),pids.end());
   }
-  ok  = true;
 
   std::map<int,std::vector<Real>> ov_data;
   for (int i=0; i<ov_grid->get_num_local_dofs(); ++i) {
     auto& v = ov_data[i];
     auto gid = ov_gids[i];
-    // Serially, the data should contain N for N in [0,...,gid-1]
-    // We make the ov data array be such that when patched together they give the
-    // same array (albeit possibly permuted). We do this by distributing the
-    auto& pids = gid2pids[gid];
-    if (pids.size()==1) {
-      // I own this gid, and don't share it with any other rank. Fill [0,..,gid-1]
+    if (comm.rank()==gid2pids[gid][0]) {
       for (int k=0; k<=gid; ++k) {
         v.push_back(k);
-      }
-    } else {
-      for (int k=0,p=0; k<=gid; ++k) {
-        if (comm.rank()==pids[p]) {
-          v.push_back(k);
-        }
-        ++p;
-        p = p % pids.size();
       }
     }
   }
