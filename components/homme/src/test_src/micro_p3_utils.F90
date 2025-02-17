@@ -1,9 +1,3 @@
-!replaced 
-!<     !integer, parameter :: limiter_off = int(Z'7FF1111111111111', itype) !????
-!with
-!<     integer, parameter :: limiter_off = 1
-
-
 module micro_p3_utils
 
   use physical_constants,     only: pi => dd_pi
@@ -19,8 +13,8 @@ module micro_p3_utils
     logical, public :: masterproc_e3sm
 
     ! Signaling NaN bit pattern that represents a limiter that's turned off.
-    !integer, parameter :: limiter_off = int(Z'7FF1111111111111', itype) !????
-    integer, parameter :: limiter_off = 1
+    !integer(itype), parameter :: limiter_off = int(Z'7FF1111111111111', itype)
+    integer, parameter :: limiter_off = 0
 
     real, public, parameter :: qsmall = 1.e-14
     real, public, parameter :: nsmall = 1.e-16
