@@ -1,18 +1,3 @@
-
-!deleted these fromt the original file
-!>       if (debug_ON) then
-!>          tmparr1(i,:) = th_atm(i,:)*inv_exner(i,:)!(pres(i,:)*1.e-5)**(rd*inv_cp)
-!>          call check_values(qv(i,:),tmparr1(i,:),kts,kte,it,debug_ABORT,100,col_location(i,:))
-!>       endif
-!>       if (debug_ON) then
-!>          tmparr1(i,:) = th_atm(i,:)*inv_exner(i,:)!(pres(i,:)*1.e-5)**(rd*inv_cp)
-!>          call check_values(qv(i,:),tmparr1(i,:),kts,kte,it,debug_ABORT,200,col_location(i,:))
-!>       endif
-!>        if (debug_ON) then
-!>           tmparr1(i,:) = th_atm(i,:)*inv_exner(i,:)!(pres(i,:)*1.e-5)**(rd*inv_cp)
-!>           call check_values(qv(i,:),tmparr1(i,:),kts,kte,it,debug_ABORT,900,col_location(i,:))
-!>        endif
-
 !__________________________________________________________________________________________
 ! This module contains the Predicted Particle Property (P3) bulk microphysics scheme.      !
 !                                                                                          !
@@ -90,8 +75,8 @@ module micro_p3
 
   implicit none
   save
- 
-  logical, public, parameter :: use_hetfrz_classnuc = .true.
+
+  logical, parameter :: use_hetfrz_classnuc = .false.
 
   public  :: p3_init,p3_main
 
@@ -258,6 +243,7 @@ end function bfb_expm1
        print*, '               -- ABORTING -- '
        print*, '************************************************'
        print*
+       !call endscreamrun()
     end if
 
     ice_table_vals(:,:,:,:) = 0.
@@ -1264,27 +1250,16 @@ end function bfb_expm1
 
   !==========================================================================================!
 
-  SUBROUTINE p3_main(qc,nc,qr,nr,th_atm,qv, & !inout 4 tracers, theta, qv
-                     dt,                    & !in   dtime
-                     qi,qm,ni,bm,           & !inout ice forms
-                     pres,dz,               & !in pressure, dz
-                     nc_nuceat_tend,nccn_prescribed,ni_activated, & !in   smthing nucleation
-                     frzimm,frzcnt,frzdep, & !in  ???
-                     inv_qc_relvar, & !in  cld liq rel variance
-                     it,            & !in # of tstep 
-                     precip_liq_surf,precip_ice_surf, & !out
-                     kts,kte,& !in array indices
-                     diag_eff_radius_qc, diag_eff_radius_qi,rho_qi, & !out
-                     do_predict_nc, do_prescribed_CCN, & !in
-                     p3_autocon_coeff,p3_accret_coeff,p3_qc_autocon_expon,p3_nc_autocon_expon,p3_qc_accret_expon, & !in
-                     p3_wbf_coeff,p3_mincdnc,p3_max_mean_rain_size,p3_embryonic_rain_size,                        & !in
-                     dpres,exner,& !in
-                     qv2qi_depos_tend,precip_total_tend,nevapr,qr_evap_tend,precip_liq_flux,precip_ice_flux, &!out
-                     rflx,sflx,cflx,& !out
-                     cld_frac_r,cld_frac_l,cld_frac_i,    & !in
-       p3_tend_out,mu_c,lamc,liq_ice_exchange,vap_liq_exchange,vap_ice_exchange, & !out
-       qv_prev,t_prev,col_location,do_precip_off,nccnst,& !in
-       diag_equiv_reflectivity,diag_ze_rain,diag_ze_ice    & ! out
+  SUBROUTINE p3_main(qc,nc,qr,nr,th_atm,qv,dt,qi,qm,ni,bm,                                                                                                               &
+       pres,dz,nc_nuceat_tend,nccn_prescribed,ni_activated,frzimm,frzcnt,frzdep,inv_qc_relvar,it,precip_liq_surf,precip_ice_surf,kts,kte,diag_eff_radius_qc,     &
+       diag_eff_radius_qi,rho_qi,do_predict_nc, do_prescribed_CCN,p3_autocon_coeff,p3_accret_coeff,p3_qc_autocon_expon,p3_nc_autocon_expon,p3_qc_accret_expon,           &
+       p3_wbf_coeff,p3_mincdnc,p3_max_mean_rain_size,p3_embryonic_rain_size,                                                                                             &
+       dpres,exner,qv2qi_depos_tend,precip_total_tend,nevapr,qr_evap_tend,precip_liq_flux,precip_ice_flux,rflx,sflx,cflx,cld_frac_r,cld_frac_l,cld_frac_i,               &
+       p3_tend_out,mu_c,lamc,liq_ice_exchange,vap_liq_exchange,                                                                                                          &
+       vap_ice_exchange,qv_prev,t_prev,col_location,do_precip_off,nccnst,diag_equiv_reflectivity,diag_ze_rain,diag_ze_ice                                                                     &
+#ifdef SCREAM_CONFIG_IS_CMAKE
+       ,elapsed_s &
+#endif
       )
 
     !----------------------------------------------------------------------------------------!
@@ -1325,8 +1300,8 @@ end function bfb_expm1
     real, intent(in),    dimension(kts:kte)      :: frzimm,frzcnt,frzdep ! From macrophysics aerop (CNT scheme) [#/cm3]
     real, intent(in)                                     :: dt         ! model time step                  s
 
-    real, intent(out)              :: precip_liq_surf    ! precipitation rate, liquid       m s-1
-    real, intent(out)              :: precip_ice_surf    ! precipitation rate, solid        m s-1
+    real, intent(out)               :: precip_liq_surf    ! precipitation rate, liquid       m s-1
+    real, intent(out)               :: precip_ice_surf    ! precipitation rate, solid        m s-1
     real, intent(out),   dimension(kts:kte)      :: diag_eff_radius_qc  ! effective radius, cloud          m
     real, intent(out),   dimension(kts:kte)      :: diag_eff_radius_qi  ! effective radius, ice            m
     real, intent(out),   dimension(kts:kte)      :: rho_qi  ! bulk density of ice              kg m-3
@@ -1385,8 +1360,9 @@ end function bfb_expm1
     real, intent(in),    dimension(kts:kte)      :: inv_qc_relvar
     real, intent(out),   dimension(kts:kte)      :: diag_equiv_reflectivity,diag_ze_rain,diag_ze_ice  ! equivalent reflectivity [dBZ]
 
-
-#if 1
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    real, optional, intent(out) :: elapsed_s ! duration of main loop in seconds
+#endif
 
     !
     !----- Local variables and parameters:  -------------------------------------------------!
@@ -1498,7 +1474,7 @@ end function bfb_expm1
 
     mu_c = 0.0
     lamc = 0.0
-    ! AaronDonahue added exner term to replace all instances of th_atm(i,k)/t(i,k), since th_atm(i,k) is updated but t_atm(i,k) is not, and this was
+    ! AaronDonahue added exner term to replace all instances of th_atm(k)/t(k), since th_atm(k) is updated but t_atm(k) is not, and this was
     ! causing energy conservation errors.
     inv_exner = 1./exner        !inverse of Exner expression, used when converting potential temp to temp
     t_atm       = th_atm    *inv_exner    !compute temperature from theta (value at beginning of microphysics step)
@@ -1516,11 +1492,23 @@ end function bfb_expm1
     qv_old = qv         ! Vapor  microphysics tendency, initialize
     th_atm_old = th_atm         ! Pot. Temp. microphysics tendency, initialize
     mincdnc = p3_mincdnc
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    call system_clock(clock_count1, clock_count_rate, clock_count_max)
+#endif
 
-!here was col loop
+    !==
+    !-----------------------------------------------------------------------------------!
+!    i_loop_main: do i = its,ite  ! main i-loop (around the entire scheme)
+
       ! ... update column in the debug_info module
       ! call get_debug_column_id(i)
       ! if (debug_ON) call check_values(qv,T,i,it,debug_ABORT,100,col_location)
+
+      if (debug_ON) then
+         tmparr1(:) = th_atm(:)*inv_exner(:)!(pres(:)*1.e-5)**(rd*inv_cp)
+         call check_values(qv(:),tmparr1(:),kts,kte,it,debug_ABORT,100,col_location(:))
+      endif
+
 
        call p3_main_part1(kts, kte, kbot, ktop, kdir, do_predict_nc, do_prescribed_CCN, dt, &
             pres(:), dpres(:), dz(:), nc_nuceat_tend(:), nccn_prescribed(:), exner(:), inv_exner(:), &
@@ -1530,6 +1518,11 @@ end function bfb_expm1
             qi(:), ni(:), qm(:), bm(:), qc_incld(:), qr_incld(:), &
             qi_incld(:), qm_incld(:), nc_incld(:), nr_incld(:), &
             ni_incld(:), bm_incld(:), is_nucleat_possible, is_hydromet_present, nccnst)
+
+      if (debug_ON) then
+         tmparr1(:) = th_atm(:)*inv_exner(:)!(pres(:)*1.e-5)**(rd*inv_cp)
+         call check_values(qv(:),tmparr1(:),kts,kte,it,debug_ABORT,200,col_location(:))
+      endif
 
        !jump to end of i-loop if is_nucleat_possible=.false.  (i.e. skip everything)
        if (.not. (is_nucleat_possible .or. is_hydromet_present)) goto 333
@@ -1666,9 +1659,14 @@ end function bfb_expm1
 
 333    continue
 
+       if (debug_ON) then
+          tmparr1(:) = th_atm(:)*inv_exner(:)!(pres(:)*1.e-5)**(rd*inv_cp)
+          call check_values(qv(:),tmparr1(:),kts,kte,it,debug_ABORT,900,col_location(:))
+       endif
+
        !.....................................................
 
-! end col loop  enddo i_loop_main
+!    enddo i_loop_main
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
     call system_clock(clock_count2, clock_count_rate, clock_count_max)
@@ -1686,8 +1684,6 @@ end function bfb_expm1
     ! end of main microphysics routine
 
     return
-
-#endif
 
   END SUBROUTINE p3_main
 
@@ -2230,6 +2226,7 @@ end function bfb_expm1
                source_ind,' in file:',&
                __FILE__,&
                ' at line:',__LINE__
+          !call endscreamrun(err_msg)
        endif
     endif
 
@@ -2636,7 +2633,7 @@ table_val_qi_fallspd,acn,lamc, mu_c,qc_incld,qccol,    &
    V_impact = 0.0
    Ri = 0.0
 
-   ! if (qi_incld(i,k).ge.qsmall .and. t_atm(i,k).lt.T_zerodegc) then
+   ! if (qi_incld(k).ge.qsmall .and. t_atm(k).lt.T_zerodegc) then
    !  NOTE:  condition applicable for cloud only; modify when rain is added back
    if (qccol.ge.qsmall .and. t_atm.lt.T_zerodegc) then
       ! get mass-weighted mean ice fallspeed
@@ -2784,7 +2781,7 @@ subroutine ice_nucleation(t_atm,inv_rho,ni,ni_activated,qv_supersat_i,inv_dt,do_
 
    if ( t_atm .lt.T_icenuc .and. qv_supersat_i.ge.0.05 ) then
       if(.not. do_predict_nc .or. do_prescribed_CCN) then
-!         ! dum = exp(-0.639+0.1296*100.*qv_supersat_i(i,k))*1000.*inv_rho(i,k)  !Meyers et al. (1992)
+!         ! dum = exp(-0.639+0.1296*100.*qv_supersat_i(k))*1000.*inv_rho(k)  !Meyers et al. (1992)
          dum = 0.005*bfb_exp(0.304*(T_zerodegc-t_atm))*1000.*inv_rho   !Cooper (1986)
          dum = min(dum,100.e3*inv_rho)
          N_nuc = max(0.,(dum-ni)*inv_dt)
@@ -4134,7 +4131,7 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,                           
             endif qr_notsmall_r1
 
             Co_max = max(Co_max, V_qr(k)*dt_left*inv_dz(k))
-            !            Co_max = max(Co_max, max(V_nr(k),V_qr(k))*dt_left*inv_dz(i,k))
+            !            Co_max = max(Co_max, max(V_nr(k),V_qr(k))*dt_left*inv_dz(k))
 
          enddo kloop_sedi_r1
 
@@ -4317,7 +4314,7 @@ subroutine ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
                qm(k)=qm_incld(k)*cld_frac_i(k)
                bm(k)=bm_incld(k)*cld_frac_i(k)
 
-               !if (.not. tripleMoment_on) zitot(i,k) = diag_mom6(qi(i,k),ni(i,k),rho(i,k))
+               !if (.not. tripleMoment_on) zitot(k) = diag_mom6(qi(k),ni(k),rho(k))
                call find_lookupTable_indices_1a(dumi,dumjj,dumii,dumzz,dum1,dum4,      &
                     dum5,dum6,isize,rimsize,densize,                                   &
                     qi_incld(k),ni_incld(k),qm_incld(k),                               &
@@ -4331,8 +4328,8 @@ subroutine ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
                ni_incld(k) = min(ni_incld(k),table_val_ni_lammax*ni_incld(k))
                ni_incld(k) = max(ni_incld(k),table_val_ni_lammin*ni_incld(k))
                ni(k) = ni_incld(k)*cld_frac_i(k)
-               !zitot(i,k) = min(zitot(i,k),table_val_qi_fallspd0)  !adjust Zi if needed to make sure mu_i is in bounds
-               !zitot(i,k) = max(zitot(i,k),table_val_qi_fallspd1)
+               !zitot(k) = min(zitot(k),table_val_qi_fallspd0)  !adjust Zi if needed to make sure mu_i is in bounds
+               !zitot(k) = max(zitot(k),table_val_qi_fallspd1)
                V_qit(k) = table_val_qi_fallspd*rhofaci(k)     !mass-weighted  fall speed (with density factor)
                V_nit(k) = table_val_ni_fallspd*rhofaci(k)     !number-weighted    fall speed (with density factor)
                !==
