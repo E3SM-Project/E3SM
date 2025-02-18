@@ -1113,7 +1113,7 @@
 
       <modules compiler="^(?!craygnu).*">
         <command name="load">libunwind/1.5.0</command>
-        <command name="load">libfabric/1.15.2.0</command>
+        <command name="load">libfabric/1.20.1</command>
         <command name="load">cray-mpich/8.1.26</command>
         <command name="load">cray-python/3.9.13.1</command>
         <command name="load">subversion/1.14.1</command>
