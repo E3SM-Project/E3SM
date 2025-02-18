@@ -394,12 +394,12 @@
       </modules>
 
       <modules compiler="gnugpu">
-        <command name="load">cudatoolkit/12.2</command>
+        <command name="load">cudatoolkit/12.4</command>
         <command name="load">craype-accel-nvidia80</command>
       </modules>
 
       <modules compiler="nvidiagpu">
-        <command name="load">cudatoolkit/12.2</command>
+        <command name="load">cudatoolkit/12.4</command>
         <command name="load">craype-accel-nvidia80</command>
         <command name="load">gcc-native-mixed/12.3</command>
       </modules>
