@@ -61,5 +61,7 @@ target_link_libraries(mam PUBLIC physics_share csm_share scream_share mam4xx hae
 #  add_subdirectory(tests)
 #endif()
 
-# Add this library to eamxx_physics
-target_link_libraries(eamxx_physics INTERFACE mam)
+if (TARGET eamxx_physics)
+  # Add this library to eamxx_physics
+  target_link_libraries(eamxx_physics INTERFACE mam)
+endif()
