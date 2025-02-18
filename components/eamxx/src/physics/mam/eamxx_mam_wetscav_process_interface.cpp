@@ -49,7 +49,7 @@ void MAMWetscav::set_grids(
 
   // layout for 3D (ncol, nmodes, nlevs)
   FieldLayout scalar3d_mid_nmodes =
-      m_grid->get_3d_vector_layout(true, nmodes, "nmodes");
+      m_grid->get_3d_vector_layout(true, nmodes, mam_coupling::num_modes_tag_name());
 
   // layout for 2D (ncol, pcnst)
   FieldLayout scalar2d_pconst =

@@ -154,7 +154,7 @@ void MAMMicrophysics::set_grids(
 
   // layout for 3D (ncol, nmodes, nlevs)
   FieldLayout scalar3d_mid_nmodes =
-      grid_->get_3d_vector_layout(true, nmodes, "nmodes");
+      grid_->get_3d_vector_layout(true, nmodes, mam_coupling::num_modes_tag_name());
 
   // Geometric mean dry diameter for number distribution [m]
   add_field<Required>("dgnum", scalar3d_mid_nmodes, m, grid_name);

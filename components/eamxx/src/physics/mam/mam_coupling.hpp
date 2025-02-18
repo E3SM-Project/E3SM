@@ -44,6 +44,8 @@ constexpr int gas_pcnst() {
   return gas_pcnst_;
 }
 
+constexpr const char* num_modes_tag_name () { return "nmodes"; }
+
 // number of aerosol/gas species tendencies
 KOKKOS_INLINE_FUNCTION
 constexpr int nqtendbb() { return 4; }
