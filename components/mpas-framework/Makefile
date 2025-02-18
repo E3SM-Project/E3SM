@@ -490,8 +490,8 @@ nvidia-cray:
 	"CFLAGS_OPT = -O3 " \
 	"CXXFLAGS_OPT = -O3 " \
 	"LDFLAGS_OPT = -O3 " \
-	"FFLAGS_ACC = -acc -Minfo=accel" \
-	"CFLAGS_ACC = -acc -Minfo=accel"  \
+	"FFLAGS_ACC = -acc -Minfo=accel -gpu=deepcopy" \
+	"CFLAGS_ACC = -acc -Minfo=accel -gpu=deepcopy"  \
 	"FFLAGS_DEBUG = -O0 -g -byteswapio -Mfree -Ktrap=divz,fp,inv,ovf -traceback" \
 	"CFLAGS_DEBUG = -O0 -g -traceback" \
 	"CXXFLAGS_DEBUG = -O0 -g -traceback" \
