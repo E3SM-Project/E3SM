@@ -149,6 +149,7 @@ contains
    logical                          :: ocn_present    ! .true.  => ocn is present
    logical                          :: ice_present    ! .true.  => ice is present
    logical                          :: lnd_present    ! .true.  => lnd is prsent
+   logical                          :: cpl_compute_maps_online    ! .true.  => maps are computed online 
    character(CL)                    :: ocn_gnam       ! ocn grid
    character(CL)                    :: atm_gnam       ! atm grid
    character(CL)                    :: lnd_gnam       ! lnd grid
@@ -182,6 +183,7 @@ contains
       atm_gnam=atm_gnam,             &
       ocn_gnam=ocn_gnam,             &
       lnd_gnam=lnd_gnam,             &
+      cpl_compute_maps_online=cpl_compute_maps_online, &
       esmf_map_flag=esmf_map_flag)
 
    allocate(mapper_So2a)
@@ -226,10 +228,10 @@ contains
       wgtIdo2a = 'conservative_o2a'//C_NULL_CHAR
       wgtIdi2a = 'conservative_i2a'//C_NULL_CHAR
       wgtIdl2a = 'conservative_l2a'//C_NULL_CHAR
-      load_maps_from_disk_o2a = .true. ! Force read from disk
-      load_maps_from_disk_i2a = .true. ! Force read from disk
-      ! load_maps_from_disk_l2a = .false. ! Force online computation
-      load_maps_from_disk_l2a = .true. ! Force read from disk
+      load_maps_from_disk_o2a = not(cpl_compute_maps_online) ! read from disk or compute online
+      load_maps_from_disk_i2a = not(cpl_compute_maps_online) ! read from disk or compute online
+      load_maps_from_disk_l2a = not(cpl_compute_maps_online) ! read from disk or compute online
+      ! load_maps_from_disk_l2a = .false. ! Explicitly force online computation
 #endif
 
       if (ocn_c2_atm) then
