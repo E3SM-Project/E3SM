@@ -43,7 +43,7 @@ have the following software installed:
 First, make sure you've cloned the [EAMxx repo (including all submodules)](https://github.com/E3SM-Project/scream)
 to `EAMXX_SRC_DIR` using the following command:
 
-```
+```{ .shell .copy }
 git clone --recurse-submodules https://github.com/E3SM-Project/scream
 ```
 
@@ -51,13 +51,13 @@ If you have already cloned the project and forgot to type `--recurse-submodules`
 you can change to `$EAMXX_SRC_DIR` and using the following command to initialize,
 fetch and checkout all submodules:
 
-```
+```{ .shell .copy }
 git submodule update --init --recursive
 ```
 
 If you're running a branch that's not `master`, check out this branch with
 
-```
+```{ .shell .copy }
 git checkout <branch>
 ```
 
@@ -72,7 +72,7 @@ and see whether your favorite machine has one.
 
 For example, to configure SCREAM on the Quartz machine at LLNL:
 
-```
+```{ .shell .copy }
 cd $RUN_ROOT_DIR
 cmake \
     -DCMAKE_CXX_COMPILER=$(which mpicxx) \
@@ -85,7 +85,7 @@ If you're building on a machine that doesn't have a ready-made machine file,
 you can try configuring your build by manually passing options to CMake. This
 usually looks something like the following, which configures EAMxx to compile
 CPU code using Kokkos's OpenMP backend:
-```
+```{ .shell .copy }
 cd $RUN_ROOT_DIR
 cmake \
     -D CMAKE_BUILD_TYPE=Debug \
@@ -160,7 +160,7 @@ other options, depending on your architecture.
 
 Now you can build SCREAM from that same directory:
 
-```
+```{ .shell .copy }
 make -j
 ```
 
@@ -170,5 +170,5 @@ can set the number of threads by passing it as an argument to `-j` (e.g.
 
 ## Running Tests
 
-You can run EAMxx's tests to make sure your build works by following the
-instructions [here](../testing/standalone_testing.md).
+<!-- You can run EAMxx's tests to make sure your build works by following the
+instructions [here](../testing/standalone_testing.md). -->

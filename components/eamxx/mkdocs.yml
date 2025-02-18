@@ -19,16 +19,15 @@ nav:
   - 'Developer Guide':
     - 'Overview': 'developer/index.md'
     - 'Quick-start Guide': 'developer/dev_quickstart.md'
-    - 'Source Tree': 'developer/source_tree.md'
+    - 'Code Structure and Organization': 'developer/code_structure.md'
     - 'Installation': 'common/installation.md'
     - 'Style Guide': 'developer/style_guide.md'
     - 'Testing':
-      - 'Overview': 'developer/dev_testing/dev_testing.md'
-      - 'Overview': 'testing/index.md'
-      - 'Full model': 'developer/dev_testing/cime_testing.md'
+      - 'Overview': 'developer/dev_testing/index.md'
+      - 'Full model': 'developer/dev_testing/full_model_testing.md'
       - 'CI and Nightly Testing': 'developer/dev_testing/ci_nightly.md'
       - 'Supported Computing Platforms': 'developer/dev_testing/supported_machines.md'
-      - 'Standalone': 'developer/dev_testing/standalone_testing.md'
+      - 'Automated Standalone Testing': 'developer/dev_testing/test_all_scream.md'
       - 'Testing Locally': 'developer/dev_testing/local_test.md'
     - 'Kokkos and EKAT': 'developer/kokkos_ekat.md'
     - 'Important Computational Data Structures and Concepts':
@@ -58,7 +57,8 @@ theme:
       icon: material/weather-night
       name: Switch to light mode
   features:
-    - navigation.indices
+    - toc.integrate
+    - navigation.indexes
     - navigation.instant
     - navigation.top
 #    - navigation.tabs
@@ -79,6 +79,8 @@ markdown_extensions:
   - pymdownx.caret
   - pymdownx.mark
   - pymdownx.tilde
+  - attr_list
+  - md_in_html
 
 extra_javascript:
   # - javascript/mathjax.js

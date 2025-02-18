@@ -11,22 +11,18 @@ Currently only the km-scale explicit-convection version called SCREAM[^eamxx_v_s
 
 ## Trail Map
 
-Like the documentation for other component models, EAMxx documentation is divided into:
+Like the documentation for other component models, EAMxx documentation is divided into the following sections:
 
-* The [User Guide](user/index.md) - info about running EAMxx and all options for modifying a simulation
-* The [Developer Guide](developer/index.md) - information needed to contribute to EAMxx development
-* The [Technical Guide](technical/index.md) - equations and numerical methods used in EAMxx
-* [Testing](testing/index.md) - a detailed description of the testing philosophy and practices tied to EAMxx development and maintenance
-    * A focused treatment of testing, specifically tailored to **Users** or **Developers** appears in the respective guides.
-    * ==Move this back to Dev Guide==
+* [User Guide](user/index.md) - info about running EAMxx and all options for modifying a simulation
+* [Developer Guide](developer/index.md) - information needed to contribute to EAMxx development
+* [Technical Guide](technical/index.md) - equations and numerical methods used in EAMxx
 
-### Details
-
-Put another way, all information about how to customize runs without changing code is included in the User Guide, general information about software design required to intelligently modify code goes in the Developer Guide, and details about the specific process implementations in the current model version are included in the Technical Guide.
-Finally, we devote a section to detailing our rigorous verification and validation testing because this was integral to our approach of moving quickly and embracing bleeding-edge software practices to design a novel, high-resolution model of Earth's atmosphere.
+Put another way, the ***User Guide*** provides information about how to successfully run a model that includes EAMxx and how to customize runs without changing source code.
+The ***Developer Guide*** includes information about EAMxx software design that will assist those who wish to intelligently modify source code.
+Scientific and modeling details about the specific process implementations in the current model version are provided in the ***Technical Guide***.
 
 !!! info "Super cool eamxx figure goes here"
 
 
 [^perf-port_def]: ***Performance Portability:*** A software-design practice focused on providing the ability to run the same model on differing architectures (cpu, gpu, ...) without modifying the source code and, ideally, without sacrificing performance.
-[^eamxx_v_scream]: ***Note:*** Before **EAMxx** version 1, the project, software library, and atmosphere driver were generally referred to as **SCREAM**. However, at this point, we wish to make the distinction between **EAMxx**, the next-gen atmosphere driver and C++ software library, and **SCREAM**, the particular high-resolution configuration of **EAMxx**.
+[^eamxx_v_scream]: ***Note:*** Prior to **EAMxx** version 1, this project, software library, and atmosphere driver were generally referred to as **SCREAM**. However, at this point, we wish to make the distinction between **EAMxx**, the next-gen atmosphere driver and C++ software library, and **SCREAM**, the particular high-resolution configuration of **EAMxx**.

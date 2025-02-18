@@ -56,7 +56,7 @@ defines a default "device" space, given by
 
 ```cpp
 Kokkos::Device<Kokkos::DefaultExecutionSpace,
-         Kokkos::DefaultExecutionSpace::memory_space>
+               Kokkos::DefaultExecutionSpace::memory_space>
 ```
 
 where all performance critical code should be executed (e.g., on an NVIDIA
@@ -65,7 +65,7 @@ given by
 
 ```c++
 Kokkos::Device<Kokkos::DefaultHostExecutionSpace,
-         Kokkos::DefaultHostExecutionSpace::memory_space>
+               Kokkos::DefaultHostExecutionSpace::memory_space>
 ```
 
 where data can be accessed by the CPU cores and is necessary for I/O
@@ -83,9 +83,9 @@ device.
 Views are constructed in EAMxx most commonly with the following template and
 input arguments
 
-```cpp
+```{ .cpp .copy }
 Kokkos::View<DataType, LayoutType, DeviceType>(const std::string& label,
-                         int dim0, int dim1, ...)
+                                               int dim0, int dim1, ...)
 ```
 
 where
@@ -93,9 +93,7 @@ where
 - `DataType`: scalar type of the view, given as `ScalarType`+`*`(x's number of
   run-time dimensions). E.g., a 2D view of doubles will have `DataType =
   double**`. There is also an ability to define compile-time dimensions by
-  using `[]`, see
-  [Kokkos wiki section on views]
-  (<https://kokkos.org/kokkos-core-wiki/API/core/view/view.html).
+  using `[]`, see [Kokkos wiki section on views](https://kokkos.org/kokkos-core-wiki/API/core/view/view.html).
 - `LayoutType`: mapping of indices into the underlying 1D memory storage. Types
   are:
   - `LayoutRight` (used in EAMxx): strides increase from the right most to the
@@ -108,9 +106,9 @@ where
 The following example defines a view "temperature" which has dimensions columns
 and levels:
 
-```cpp
-Kokkos::View<double**, Kokkos::LayoutRight, Kokkos::DefaultDevice> temperature(
-  "temperature", ncols, nlevs);
+```{ .cpp .copy }
+Kokkos::View<double**, Kokkos::LayoutRight,
+             Kokkos::DefaultDevice> temperature("temperature", ncols, nlevs);
 ```
 
 ### Deep Copy
@@ -118,9 +116,9 @@ Kokkos::View<double**, Kokkos::LayoutRight, Kokkos::DefaultDevice> temperature(
 Kokkos provides `Kokkos::deep_copy(dst, src)` which copies data between views
 of the same dimensions, or a scalar values into a view. Common uses
 
-```cpp
+```{ .cpp .copy }
 Kokkos::deep_copy(view0, view1); // Copy all data from view1 into view0
-Kokkos::deep_copy(view0, 5); // Set all values of view0 to 5
+Kokkos::deep_copy(view0, 5);     // Set all values of view0 to 5
 ```
 
 As seen in the next section, we can use `deep_copy()` to copy data between host
@@ -135,9 +133,8 @@ device and vice versa.
 
 Here is an example using the device view `temperature` from above
 
-```cpp
-// Allocate view on host that exactly mirrors the size of layout of the device
-view
+```{ .cpp .copy }
+// Allocate view on host that exactly mirrors the size of layout of the device view
 auto host_temperature = Kokkos::create_mirror_view(temperature);
 
 // Copy all data from device to host
@@ -146,10 +143,10 @@ Kokkos::deep_copy(host_temperature, temperature);
 
 Kokkos also offers an all-in-one option
 
-```cpp
+```{ .cpp .copy }
 // Note: must hand the host device instance as first argument
 auto host_temperature = Kokkos::create_mirror_view_and_copy(
-  Kokkos::DefaultHostDevice(), temperature);
+    Kokkos::DefaultHostDevice(), temperature);
 ```
 
 ### Parallel Execution
@@ -178,31 +175,32 @@ based on architecture.
 
 Example using `RangePolicy` to initialize a view
 
-```cpp
-Kokkos::View<double**, Kokkos::LayoutRight> temperature("temperature", ncols,
-                            nlevs);
-Kokkos::parallel_for("Init_temp",
-           Kokkos::RangePolicy(0, ncols*nlevs),
-           KOKKOS_LAMBDA (const int idx) {
-  int icol = idx/nlevs;
-  int ilev = idx%nlevs;
+```{ .cpp .copy }
+Kokkos::View<double **, Kokkos::LayoutRight> temperature("temperature", ncols,
+                                                         nlevs);
+Kokkos::parallel_for(
+    "Init_temp", Kokkos::RangePolicy(0, ncols *nlevs),
+    KOKKOS_LAMBDA(const int idx) {
+      int icol = idx / nlevs;
+      int ilev = idx % nlevs;
 
-  temperature(icol, ilev) = 0;
-});
+      temperature(icol, ilev) = 0;
+    });
+
 ```
 
 Same example with `TeamPolicy`
 
-```cpp
-Kokkos::parallel_for("Init_temp",
-           Kokkos::TeamPolicy(ncols*nlevs, Kokkos::AUTO, Kokkos::AUTO),
-           KOKKOS_LAMBDA (const TeamPolicy::member_type& team) {
-  // league_rank() gives the index for this team
-  int icol = team.league_rank()/nlevs;
-  int ilev = team.league_rank()%nlevs;
+```{ .cpp .copy }
+Kokkos::parallel_for(
+    "Init_temp", Kokkos::TeamPolicy(ncols*nlevs, Kokkos::AUTO, Kokkos::AUTO),
+    KOKKOS_LAMBDA(const TeamPolicy::member_type &team) {
+      // league_rank() gives the index for this team
+      int icol = team.league_rank() / nlevs;
+      int ilev = team.league_rank() % nlevs;
 
-  temperature(icol, ilev) = 0;
-});
+      temperature(icol, ilev) = 0;
+    });
 ```
 
 ### Hierarchical Parallelism
@@ -218,28 +216,27 @@ be called within the lambda body using the following execution policies
 
 An example of using these policies
 
-```cpp
+```{ .cpp .copy }
 Kokkos::View<double***> Q("tracers", ncols, ntracers, nlevs);
-Kokkos::parallel_for(Kokkos::TeamPolicy(ncols, Kokkos::AUTO),
-           KOKKOS_LAMBDA (TeamPolicy::member_type& team) {
-  int icol = team.league_rank();
-  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlevs), [&](int ilev) {
-  temperature(icol, ilev) = 0;
-  });
+Kokkos::parallel_for(
+    Kokkos::TeamPolicy(ncols, Kokkos::AUTO),
+    KOKKOS_LAMBDA(TeamPolicy::member_type &team) {
+      int icol = team.league_rank();
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlevs),
+                           [&](int ilev) { temperature(icol, ilev) = 0; });
 
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlevs), [&](int ilev) {
-  Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, ntracers), [&](int iq) {
-    Q(icol, iq, ilev) = 0;
-  });
-  });
-});
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlevs), [&](int ilev) {
+        Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, ntracers),
+                             [&](int iq) { Q(icol, iq, ilev) = 0; });
+      });
+    });
 ```
 
 IMPORTANT! Nested policies cannot be used in arbitrary order. `ThreadVectorRange`
 must be used inside a `TeamThreadRange`, and `TeamVectorRange` must be the only
 level of nested parallelism.
 
-```cpp
+```{ .cpp .copy }
 Kokkos::parallel_for(TeamPolicy(...), ... {
    // OK
    Kokkos::parallel_for(TeamThreadRange, ... {

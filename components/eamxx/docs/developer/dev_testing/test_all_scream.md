@@ -1,6 +1,6 @@
-# Standalone EAMxx Testing
+# EAMxx Automated Standalone Testing (`test-all-scream`)
 
-### Test-all-scream
+## Local Configuration Files
 
 - automatically takes care of spreading out the parallel workload
     - For speed and efficient use of resources

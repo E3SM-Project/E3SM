@@ -1,11 +1,11 @@
 # EAMxx Developer Guide
 
-==Consider nix-ing this==
+==Add descriptive blurb==
 
 ### [Installation](../common/installation.md)
 ### [Style Guide](style_guide.md)
 ### [Kokkos and EKAT](kokkos_ekat.md)
-### [Source Tree](source_tree.md)
+### [Code Structure and Organization](code_structure.md)
 ### Important Data Structures
   * [Fields](field.md)
   * [Grids and Remappers](grid.md)
