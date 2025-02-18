@@ -53,6 +53,8 @@ module lnd_comp_mct
 
   integer  :: mpicom_lnd_moab ! used also for mpi-reducing the difference between moab tags and mct avs
   integer :: rank2
+  logical :: samegrid_al
+  logical :: full_land_mesh! true if land is full mesh (on the river mesh)
 
 #endif
   !---------------------------------------------------------------------------
@@ -318,6 +320,13 @@ contains
 
     call lnd_domain_mct( bounds, lsz, gsMap_lnd, dom_l )
 #ifdef HAVE_MOAB
+    ! find out LND uses a full mesh (trigrid) from infodata
+    full_land_mesh = .false.
+    call seq_infodata_GetData(infodata, &
+                   atm_gnam=atm_gnam  , &
+                   lnd_gnam=lnd_gnam  )
+    if (trim(atm_gnam) /= trim(lnd_gnam)) full_land_mesh = .true.
+
     call init_moab_land(bounds, LNDID)
 #endif
     call mct_aVect_init(x2l_l, rList=seq_flds_x2l_fields, lsize=lsz)
@@ -554,7 +563,7 @@ contains
     call mct_list_init(temp_list ,seq_flds_x2l_fields)
     size_list=mct_list_nitem (temp_list)
     entity_type = 0 ! entity type is vertex for land, usually (bigrid case)
-    if (.not.samegrid_al) entity_type = 1  ! trigrid usually means we have a full LND mesh
+    if (full_land_mesh) entity_type = 1  ! trigrid usually means we have a full LND mesh
     if (rank2 .eq. 0) print *, num_moab_exports, trim(seq_flds_x2l_fields), ' lnd import check'
 
     do index_list = 1, size_list
@@ -1022,7 +1031,7 @@ contains
 
     ! Case where land and river share mesh (tri-grid)
     ! This is the case of a "true" mesh.
-    if (ldomain%nv .ge. 3 .and.  .not.samegrid_al) then
+    if (ldomain%nv .ge. 3 .and. full_land_mesh) then
         ! number of vertices is nv * lsz !
         allocate(moab_vert_coords(lsz*dims*ldomain%nv))
         allocate(vgids(lsz*ldomain%nv)) !
@@ -1470,8 +1479,8 @@ contains
     if (ierr > 0 )  &
       call endrun('Error: fail to retrieve GLOBAL_ID tag ')
 
-    ent_type = 0 ! vertex type
-    ierr = iMOAB_SetIntTagStorage ( mlnid, tagname, lsz, ent_type, vgids)
+    entity_type = 0 ! vertex type
+    ierr = iMOAB_SetIntTagStorage ( mlnid, tagname, lsz, entity_type, vgids)
     if (ierr > 0 )  &
       call endrun('Error: fail to set GLOBAL_ID tag ')
 
@@ -1487,7 +1496,7 @@ contains
       call endrun('Error: fail to create new partition tag ')
 
     vgids = iam
-    ierr = iMOAB_SetIntTagStorage ( mlnid, tagname, lsz, ent_type, vgids)
+    ierr = iMOAB_SetIntTagStorage ( mlnid, tagname, lsz, entity_type, vgids)
     if (ierr > 0 )  &
       call endrun('Error: fail to set partition tag ')
 
@@ -1503,7 +1512,7 @@ contains
       n = i-1 + bounds%begg
       moab_vert_coords(i) = ldomain%frac(n)
     enddo
-    ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz, ent_type, moab_vert_coords)
+    ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz, entity_type, moab_vert_coords)
     if (ierr > 0 )  &
       call endrun('Error: fail to set frac tag ')
 
@@ -1516,7 +1525,7 @@ contains
       moab_vert_coords(i) = ldomain%area(n)/(re*re) ! use the same doubles for second tag :)
     enddo
 
-    ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz, ent_type, moab_vert_coords )
+    ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz, entity_type, moab_vert_coords )
     if (ierr > 0 )  &
       call endrun('Error: fail to set area tag ')
 
@@ -1525,7 +1534,7 @@ contains
     ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco, tagindex )
     if (ierr > 0 )  &
       call endrun('Error: fail to create aream tag ')
-    ! ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz, ent_type, moab_vert_coords )
+    ! ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz, entity_type, moab_vert_coords )
     ! if (ierr > 0 )  &
     !   call endrun('Error: fail to set aream tag ')
     ierr = iMOAB_UpdateMeshInfo( mlnid )
@@ -1550,7 +1559,7 @@ contains
     tagname = 'lat:lon:mask'//C_NULL_CHAR
 
     entity_type = 0 ! point cloud usually
-    if (ldomain%nv .ge. 3 .and.  .not.samegrid_al) then
+    if (ldomain%nv .ge. 3 .and. full_land_mesh) then
       entity_type = 1 ! cell in tri-grid case
     endif
     ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz*3 , entity_type, moab_vert_coords)
@@ -1701,10 +1710,10 @@ contains
     end do
 
     tagname=trim(seq_flds_l2x_fields)//C_NULL_CHAR
-    if (samegrid_al) then
-      entity_type = 0 ! vertices only if samegrid_al true
+    if (full_land_mesh) then
+      entity_type = 1 ! cells only if full_land_mesh = .true.
     else
-      entity_type = 1
+      entity_type = 0
     endif
     ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, totalmbls , entity_type, l2x_lm(1,1) )
     if (ierr > 0 )  &
@@ -1899,10 +1908,10 @@ contains
 #endif
     
     tagname=trim(seq_flds_x2l_fields)//C_NULL_CHAR
-    if (samegrid_al) then
-      entity_type = 0 ! vertices only if samegrid_al true
+    if (full_land_mesh) then
+      entity_type = 1 ! cells only if full_land_mesh = .true.
     else
-      entity_type = 1
+      entity_type = 0 ! vertices = point cloud otherwise
     endif
     ierr = iMOAB_GetDoubleTagStorage ( mlnid, tagname, totalmblsimp, entity_type, x2l_lm(1,1) )
     if ( ierr > 0) then
