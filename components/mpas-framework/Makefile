@@ -481,17 +481,17 @@ nvidia-cray:
 	"FC_PARALLEL = ftn" \
 	"CC_PARALLEL = cc" \
 	"CXX_PARALLEL = CC" \
-	"FC_SERIAL = nvfortran" \
-	"CC_SERIAL = nvc" \
-	"CXX_SERIAL = nvc++" \
+	"FC_SERIAL = pgf90" \
+	"CC_SERIAL = pgcc" \
+	"CXX_SERIAL = pgc++" \
 	"FFLAGS_FPIEEE = -Kieee" \
 	"FFLAGS_PROMOTION = -r8" \
 	"FFLAGS_OPT = -g -O3 -byteswapio -Mfree" \
 	"CFLAGS_OPT = -O3 " \
 	"CXXFLAGS_OPT = -O3 " \
 	"LDFLAGS_OPT = -O3 " \
-	"FFLAGS_ACC = -acc -Minfo=accel -gpu=deepcopy" \
-	"CFLAGS_ACC = -acc -Minfo=accel -gpu=deepcopy"  \
+	"FFLAGS_ACC = -acc -Minfo=accel" \
+	"CFLAGS_ACC = -acc -Minfo=accel"  \
 	"FFLAGS_DEBUG = -O0 -g -byteswapio -Mfree -Ktrap=divz,fp,inv,ovf -traceback" \
 	"CFLAGS_DEBUG = -O0 -g -traceback" \
 	"CXXFLAGS_DEBUG = -O0 -g -traceback" \
