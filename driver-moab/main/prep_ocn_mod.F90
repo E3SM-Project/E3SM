@@ -230,6 +230,7 @@ contains
     logical                  :: ocn_present    ! .true.  => ocn is present
     logical                  :: atm_present    ! .true.  => atm is present
     logical                  :: ice_present    ! .true.  => ice is present
+    logical                  :: cpl_compute_maps_online    ! .true.  => maps are computed online 
     logical                  :: samegrid_ao    ! samegrid atm and ocean
     logical                  :: samegrid_og    ! samegrid glc and ocean
     logical                  :: samegrid_ow    ! samegrid ocean and wave
@@ -280,13 +281,6 @@ contains
 
     !---------------------------------------------------------------
 
-#ifdef HAVE_MOAB
-    load_maps_from_disk_a2o = .true. ! Force read from disk
-    wgtIda2o_conservative = 'conservative_a2o'//C_NULL_CHAR
-    wgtIda2o_bilinear = 'bilinear_a2o'//C_NULL_CHAR
-    wgtIdr2o_conservative = 'bilinear_a2o'//C_NULL_CHAR
-#endif
-
     call seq_infodata_getData(infodata , &
          ocn_present=ocn_present       , &
          atm_present=atm_present       , &
@@ -300,7 +294,15 @@ contains
          atm_nx=atm_nx                 , &
          atm_ny=atm_ny                 , &
          glc_gnam=glc_gnam             , &
+         cpl_compute_maps_online=cpl_compute_maps_online, &
          esmf_map_flag=esmf_map_flag   )
+
+#ifdef HAVE_MOAB
+    load_maps_from_disk_a2o = not(cpl_compute_maps_online) ! read from disk or compute online
+    wgtIda2o_conservative = 'conservative_a2o'//C_NULL_CHAR
+    wgtIda2o_bilinear = 'bilinear_a2o'//C_NULL_CHAR
+    wgtIdr2o_conservative = 'conservative_r2o'//C_NULL_CHAR
+#endif
 
     allocate(mapper_Sa2o)
     allocate(mapper_Va2o)

@@ -138,6 +138,7 @@ contains
     logical                  :: samegrid_lg   ! samegrid land and glc
     logical                  :: esmf_map_flag ! .true. => use esmf for mapping
     logical                  :: lnd_present   ! .true. => land is present
+    logical                  :: cpl_compute_maps_online    ! .true.  => maps are computed online 
     logical                  :: iamroot_CPLID ! .true. => CPLID masterproc
     character(CL)            :: atm_gnam      ! atm grid
     character(CL)            :: lnd_gnam      ! lnd grid
@@ -180,7 +181,8 @@ contains
          atm_gnam=atm_gnam,             &
          lnd_gnam=lnd_gnam,             &
          rof_gnam=rof_gnam,             &
-         glc_gnam=glc_gnam)
+         glc_gnam=glc_gnam,             &
+         cpl_compute_maps_online=cpl_compute_maps_online )
 
     allocate(mapper_Sa2l)
     allocate(mapper_Fa2l)
@@ -192,9 +194,9 @@ contains
       wgtIdr2l = 'conservative_r2l'//C_NULL_CHAR
       wgtIda2l_conservative = 'conservative_a2l'//C_NULL_CHAR
       wgtIda2l_bilinear = 'bilinear_a2l'//C_NULL_CHAR
-      load_maps_from_disk_r2l = .true. ! Force read from disk
-      load_maps_from_disk_a2l = .true. ! Force read from disk
-      ! load_maps_from_disk_a2l = .false. ! Force online computation
+      load_maps_from_disk_r2l = not(cpl_compute_maps_online) ! read from disk or compute online
+      load_maps_from_disk_a2l = not(cpl_compute_maps_online) ! read from disk or compute online
+      ! load_maps_from_disk_a2l = .false. ! Explicitly force online computation
 #endif
 
     if (lnd_present) then

@@ -192,6 +192,7 @@ contains
     logical                     :: lnd_present   ! .true.  => lnd is present
     logical                     :: atm_present   ! .true.  => atm is present
     logical                     :: ocn_present   ! .true.  => ocn is present
+    logical                     :: cpl_compute_maps_online    ! .true.  => maps are computed online 
     logical                     :: iamroot_CPLID ! .true. => CPLID masterproc
     character(CL)               :: atm_gnam      ! atm grid
     character(CL)               :: lnd_gnam      ! lnd grid
@@ -222,14 +223,6 @@ contains
 
     !---------------------------------------------------------------
 
-#ifdef HAVE_MOAB
-      wgtIdl2r = 'conservative_l2r'//C_NULL_CHAR
-      wgtIda2r = 'conservative_a2r'//C_NULL_CHAR
-      ! load_maps_from_disk_l2r = .false. ! Force online computation
-      load_maps_from_disk_l2r = .true. ! Force read from disk
-      load_maps_from_disk_a2r = .true. ! Force read from disk
-#endif
-
     call seq_infodata_getData(infodata , &
          esmf_map_flag=esmf_map_flag   , &
          rof_present=rof_present       , &
@@ -238,7 +231,16 @@ contains
          ocn_present=ocn_present       , &
          lnd_gnam=lnd_gnam             , &
          atm_gnam=atm_gnam             , &
-         rof_gnam=rof_gnam             )
+         rof_gnam=rof_gnam             , &
+         cpl_compute_maps_online=cpl_compute_maps_online )
+
+#ifdef HAVE_MOAB
+      wgtIdl2r = 'conservative_l2r'//C_NULL_CHAR
+      wgtIda2r = 'conservative_a2r'//C_NULL_CHAR
+      load_maps_from_disk_l2r = not(cpl_compute_maps_online) ! read from disk or compute online
+      load_maps_from_disk_a2r = not(cpl_compute_maps_online) ! read from disk or compute online
+      ! load_maps_from_disk_l2r = .false. ! Explicitly force online computation
+#endif
 
     allocate(mapper_Sa2r)
     allocate(mapper_Fa2r)
@@ -329,8 +331,8 @@ contains
             idintx = 100*lnd(1)%cplcompid + rof(1)%cplcompid ! something different, to differentiate it
             ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, idintx, mbintxlr)
             if (ierr .ne. 0) then
-              write(logunit,*) subname,' error in registering lnd rof intx'
-              call shr_sys_abort(subname//' ERROR in registering lnd rof intx')
+              write(logunit,*) subname,' error in registering LND-ROF intersection'
+              call shr_sys_abort(subname//' ERROR in registering LND-ROF intersection')
             endif
             tagname = trim(seq_flds_l2x_fluxes_to_rof)//C_NULL_CHAR
             tagtype = 1 ! dense
@@ -351,8 +353,8 @@ contains
                ierr = iMOAB_ComputeCommGraph( mblxid, mbrxid, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
                                         lnd(1)%cplcompid, rof(1)%cplcompid)
                if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error in computing comm graph , lnd-rof'
-                  call shr_sys_abort(subname//' ERROR in computing comm graph , lnd-rof')
+                  write(logunit,*) subname,' error in computing comm graph , LND-ROF'
+                  call shr_sys_abort(subname//' ERROR in computing comm graph , LND-ROF')
                endif
                ! context for rearrange is target in this case
                if ( mapper_Fl2r%src_mbid .gt. -1 ) then
@@ -402,7 +404,7 @@ contains
                end if
 
                ! we also need to compute the comm graph for the second hop, from the lnd on coupler to the
-               ! lnd for the intx lnd-rof context (coverage)
+               ! lnd for the intx LND-ROF context (coverage)
                type1 = 3 ! land is FV now on coupler side
                type2 = 3;
                ierr = iMOAB_ComputeCommGraph( mblxid, mbintxlr, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
@@ -455,8 +457,8 @@ contains
                                                    noConserve, validate, &
                                                    trim(dofnameS), trim(dofnameT) )
                   if (ierr .ne. 0) then
-                     write(logunit,*) subname,' error in computing lr weights '
-                     call shr_sys_abort(subname//' ERROR in computing lr weights ')
+                     write(logunit,*) subname,' error in computing LND-ROF weights'
+                     call shr_sys_abort(subname//' ERROR in computing LND-ROF weights')
                   endif
                else
                   type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
