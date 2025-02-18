@@ -40,10 +40,10 @@ OR
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Test scream on all platforms \033[0m
-    > {0} './scripts/test-all-scream -m $machine'
+    > {0} './scripts/test-all-eamxx -m $machine'
 
     \033[1;32m# Do correctness testing locally for SCREAM (expects ./scream and ./scream-docs) \033[0m
-    > {0} './scripts/test-all-scream -m $machine' -l -m $machine
+    > {0} './scripts/test-all-eamxx -m $machine' -l -m $machine
 
     \033[1;32m# Do correctness testing for scream-docs micro apps \033[0m
     > {0} './test-all $cxx_compiler $kokkos' -o

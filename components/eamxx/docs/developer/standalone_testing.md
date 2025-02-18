@@ -20,40 +20,40 @@ configurations. We use several types of tests
 * **Test Suites** are named collections of tests that can be run on demand using
   the [ctest](https://cmake.org/cmake/help/latest/manual/ctest.1.html) command.
 
-We also support a `test-all-scream` configuration that runs all of the
+We also support a `test-all-eamxx` configuration that runs all of the
 standalone tests for an EAMxx configuration. Note, your current machine
-must be known to EAMxx before `test-all-scream` will work. A machine can
+must be known to EAMxx before `test-all-eamxx` will work. A machine can
 be made known to EAMxx by editing the eamxx/scripts/machines_specs.py files.
 There are some instructions on what to do at the top of this file.
 
-`test-all-scream` has a good help dump
+`test-all-eamxx` has a good help dump
 
 ```shell
 cd $scream_repo/components/eamxx
-./scripts/test-all-scream -h
+./scripts/test-all-eamxx -h
 ```
 
 If you are unsure of the cmake configuration for you development cycle, one
-trick you can use is to run `test-all-scream` for the `dbg` test and just
+trick you can use is to run `test-all-eamxx` for the `dbg` test and just
 copy the cmake command it prints (then ctrl-C the process).
 
 ```shell
 cd $scream_repo/components/eamxx
-./scripts/test-all-scream -t dbg -m $machine
+./scripts/test-all-eamxx -t dbg -m $machine
 # wait for a few seconds*
 # Ctrl-C *
 # Copy the contents of DCMAKE_COMMAND that was passed to ctest *
 # Add "cmake" to beginning of contents and path to eamxx at the end. *
 ```
 
-Considerations for using `test-all-scream`:
+Considerations for using `test-all-eamxx`:
 
 * Your machine must be known to our scripts, see above.
-* If you try to run commands by-hand (outside of test-all-scream;
+* If you try to run commands by-hand (outside of test-all-eamxx;
   cmake, make, ctest, etc), you'll need to remember to
   load the eamxx-env into your shell, which can be done like this:
   `cd eamxx/scripts; eval $(./scripts/eamxx-env-cmd $machine)`
-* test-all-scream expects to be run from a compute node if you
+* test-all-eamxx expects to be run from a compute node if you
   are on a batch machine.
 * You'll need to think about your baseline situation, as many of our
   tests rely on pre-existing baselines. The -b option controls the baseline

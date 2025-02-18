@@ -5,7 +5,7 @@
 EAMxx using github actions and a Sandia product called Autotester 2
 to run CI testing on a CPU and GPU machine for every github pull
 request. By default, we run the e3sm_scream_v1_at suite and the
-standalone eamxx tests (test-all-scream).
+standalone eamxx tests (test-all-eamxx).
 
 ## Nightly overview, CDash
 

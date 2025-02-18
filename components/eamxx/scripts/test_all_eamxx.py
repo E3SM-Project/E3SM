@@ -35,7 +35,7 @@ class TestAllScream(object):
                  extra_verbose=False, limit_test_regex=None, test_level="at", test_size=None):
     ###########################################################################
 
-        # When using scripts-tests, we can't pass "-l" to test-all-scream,
+        # When using scripts-tests, we can't pass "-l" to test-all-eamxx,
         # but we can pass "-m local". So if machine="local", reset things
         # as if local=True and machine=None
         if machine=="local":
@@ -84,7 +84,7 @@ class TestAllScream(object):
                 self._machine = get_machine(os.environ["SCREAM_MACHINE"])
             else:
                 expect(local,
-                       "test-all-scream requires either the machine arg (-m $machine) or the -l flag,"
+                       "test-all-eamxx requires either the machine arg (-m $machine) or the -l flag,"
                        "which makes it look for machine specs in '~/.cime/scream_mach_specs.py'.")
                 self._machine = get_machine("local")
 
@@ -161,7 +161,7 @@ class TestAllScream(object):
             # if we try to oversubscribe. We would need to implement some kind of wrap-around
             # mechanism
             if make_jobs_per_test == 0 or ctest_jobs_per_test == 0:
-                expect(False, "test-all-scream does not currently support oversubscription. "
+                expect(False, "test-all-eamxx does not currently support oversubscription. "
                               "Either run fewer test types or turn off parallel testing")
 
             for test in self._tests:
@@ -612,7 +612,7 @@ class TestAllScream(object):
             if self._quick_rerun_failed:
                 ctest_config += "--rerun-failed "
         else:
-            # This directory might have been used before during another test-all-scream run.
+            # This directory might have been used before during another test-all-eamxx run.
             # Although it's ok to build in the same dir, we MUST make sure to erase cmake's cache
             # and internal files from the previous build (CMakeCache.txt and CMakeFiles folder),
             # Otherwise, we may not pick up changes in certain cmake vars that are already cached.
@@ -713,7 +713,7 @@ class TestAllScream(object):
         return ret
 
     ###############################################################################
-    def test_all_scream(self):
+    def test_all_eamxx(self):
     ###############################################################################
 
         # Add any override the user may have requested

@@ -1,11 +1,11 @@
 name: EAMxx standalone testing
 description: |
   Run EAMxx standalone testing with required configuration inputs.
-  More precisely, it launches test-all-scream with the proper flags.
-  See components/eamxx/scripts/test-all-scream for more details.
+  More precisely, it launches test-all-eamxx with the proper flags.
+  See components/eamxx/scripts/test-all-eamxx for more details.
   The configuration inputs are:
-    - build_type: the type of build to pass to test-all-scream.
-    - machine: the name of the machine to pass to test-all-scream
+    - build_type: the type of build to pass to test-all-eamxx.
+    - machine: the name of the machine to pass to test-all-eamxx
     - generate: whether to generate baselines
     - submit: whether to submit to cdash (unused if generate is 'true')
 
@@ -14,7 +14,7 @@ inputs:
     description: 'Build type to run'
     required: true
   machine:
-    description: 'Machine name for test-all-scream'
+    description: 'Machine name for test-all-eamxx'
     required: true
   generate:
     description: 'Generate baselines instead of running tests'
@@ -38,7 +38,7 @@ inputs:
       - 'true'
       - 'false'
   cmake-configs:
-    description: 'Semicolon-separated list of key=value pairs for CMake to pass to test-all-scream'
+    description: 'Semicolon-separated list of key=value pairs for CMake to pass to test-all-eamxx'
     required: false
     default: ''
 
@@ -78,10 +78,10 @@ runs:
         echo "  submit       : ${{ inputs.submit }}"
         echo "  cmake-configs: ${{ inputs.cmake-configs }}"
       shell: sh
-    - name: Run test-all-scream
+    - name: Run test-all-eamxx
       working-directory: components/eamxx
       run: |
-        cmd="./scripts/test-all-scream -m ${{ inputs.machine }} -t ${{inputs.build_type}} --baseline-dir AUTO -c EKAT_DISABLE_TPL_WARNINGS=ON"
+        cmd="./scripts/test-all-eamxx -m ${{ inputs.machine }} -t ${{inputs.build_type}} --baseline-dir AUTO -c EKAT_DISABLE_TPL_WARNINGS=ON"
         if [ "${{ inputs.generate }}" = "true" ]; then
           cmd+=" -g"
         elif [ "${{ inputs.submit }}" = "true" ]; then
@@ -92,14 +92,14 @@ runs:
          cmd+=" -c EKAT_ENABLE_TESTS=ON"
         fi
 
-        # If cmake-configs is non-empty, add tokens to test-all-scream via "-c key=val"
+        # If cmake-configs is non-empty, add tokens to test-all-eamxx via "-c key=val"
         IFS=';' read -ra configs <<< "${{ inputs.cmake-configs }}"
         for config in "${configs[@]}"; do
           cmd+=" -c $config"
         done
 
         # Print the full command, then run it
-        echo "test-all-scream call: $cmd"
+        echo "test-all-eamxx call: $cmd"
         $cmd
       shell: sh
     - name: Upload ctest logs

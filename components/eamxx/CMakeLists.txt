@@ -401,7 +401,7 @@ if (NOT SCREAM_LIB_ONLY)
 
   # All baselines tests will add a line to the baseline_list file,
   # specifyiing the full name of the baseline they generated.
-  # When test-all-scream has to generate new baselines, it will run
+  # When test-all-eamxx has to generate new baselines, it will run
   # ctest -L baseline_gen, and then read this file to find out all the
   # baseline files to copy into the baseline directory
   set (SCREAM_TEST_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/data)
@@ -559,7 +559,7 @@ endif()
 # whether to include scream_config.h.
 add_definitions(-DSCREAM_CONFIG_IS_CMAKE)
 
-# Hooks for testing test-all-scream within test-scripts
+# Hooks for testing test-all-eamxx within test-scripts
 if ($ENV{SCREAM_FORCE_BUILD_FAIL})
   add_definitions(-DSCREAM_FORCE_BUILD_FAIL)
 endif()

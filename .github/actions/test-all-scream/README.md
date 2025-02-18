@@ -1,4 +1,4 @@
-# Composite action to call test-all-scream inside a workflow
+# Composite action to call test-all-eamxx inside a workflow
 
 This action is meant to be used inside a workflow. E.g.,
 
@@ -7,8 +7,8 @@ jobs:
   my-testing:
     steps:
       ...
-      - name: run-test-all-scream
-        uses: ./.github/actions/eamxx-test-all-scream
+      - name: run-test-all-eamxx
+        uses: ./.github/actions/eamxx-test-all-eamxx
         with:
           build_type: <build-type>
           machine: <machine>
@@ -23,7 +23,7 @@ As such, this action checks that its value is one of the following.
 - bless: runs tests and copy output files to baselines folder
 
 As for build_type and machine, we do not prescribe a list of
-valid values, as that will be handled by components/eamxx/scripts/test-all-scream.
+valid values, as that will be handled by components/eamxx/scripts/test-all-eamxx.
 If their values are not supported, it is up to test-all-scram to handle the error.
 As a guideline, however, you may have to ensure that the following exist:
 
