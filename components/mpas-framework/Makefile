@@ -482,7 +482,7 @@ nvidia-cray:
 	"CC_PARALLEL = cc" \
 	"CXX_PARALLEL = CC" \
 	"FC_SERIAL = nvfortran" \
-	"CC_SERIAL = nvcc" \
+	"CC_SERIAL = nvc" \
 	"CXX_SERIAL = nvc++" \
 	"FFLAGS_FPIEEE = -Kieee" \
 	"FFLAGS_PROMOTION = -r8" \
