@@ -941,18 +941,14 @@ contains
 #endif
 #endif
 
-    call ocn_import_mct(x2o_o, errorCode)
-    if (errorCode /= 0) then
-       call mpas_log_write('Error in ocn_import_mct', MPAS_LOG_CRIT)
-    endif
-
 #ifdef HAVE_MOAB
-
     call ocn_import_moab(Eclock, errorCode)
-    if (errorCode /= 0) then
-       call mpas_log_write('Error in ocn_import_moab', MPAS_LOG_CRIT)
-    endif
+#else
+    call ocn_import_mct(x2o_o, errorCode)
 #endif
+    if (errorCode /= 0) then
+       call mpas_log_write('Error in ocn_import', MPAS_LOG_CRIT)
+    endif
 
 
     itimestep = 0
@@ -1091,16 +1087,16 @@ contains
 #endif
 #endif
 
+#ifdef HAVE_MOAB
+      ! Import state from moab coupler
+      call ocn_import_moab(Eclock, ierr)
+#else
       ! Import state from coupler
       call ocn_import_mct(x2o_o, ierr)
-      ! Import state from moab coupler
-#ifdef HAVE_MOAB
-
-      call ocn_import_moab(Eclock, ierr)
-      if (ierr /= 0) then
-         call mpas_log_write('Error in ocn_import_moab', MPAS_LOG_CRIT)
-      endif
 #endif
+      if (ierr /= 0) then
+         call mpas_log_write('Error in ocn_import', MPAS_LOG_CRIT)
+      endif
 
 
       ! Ensures MPAS AM write/compute startup steps are performed
