@@ -1,10 +1,8 @@
 #ifndef SCREAM_SCORPIO_INPUT_HPP
 #define SCREAM_SCORPIO_INPUT_HPP
 
-#include "share/io/scream_scorpio_interface.hpp"
 #include "share/field/field_manager.hpp"
 #include "share/grid/abstract_grid.hpp"
-#include "share/grid/grids_manager.hpp"
 
 #include "ekat/ekat_parameter_list.hpp"
 #include "ekat/logging/ekat_logger.hpp"
@@ -23,22 +21,11 @@
  *  -----
  *  Input Parameters
  *    Filename: STRING
- *    Fields:   ARRAY OF STRINGS
+ *    Field Names:   ARRAY OF STRINGS
  *  -----
  *  The meaning of these parameters is the following:
  *   - Filename: the name of the input file to be read.
- *   - Fields: list of names of fields to load from file. Should match the name in the file and the name in the field manager.
- *  Note: you can specify lists (such as the 'Fields' list above) with either of the two syntaxes
- *    Fields: [field_name1, field_name2, ... , field_name_N]
- *    Fields:
- *      - field_name_1
- *      - field_name_2
- *        ...
- *      - field_name_N
- *  Note: an alternative way of specifying Fields names is to have
- *    Grid: STRING
- *    Fields:
- *      $GRID: [field_name1,...,field_name_N]
+ *   - Field Names: list of names of fields to load from file. Should match the name in the file and the name in the field manager.
  *
  *  TODO: add a rename option if variable names differ in file and field manager.
  *
@@ -55,8 +42,6 @@ class AtmosphereInput
 public:
   using fm_type       = FieldManager;
   using grid_type     = AbstractGrid;
-  using gm_type       = GridsManager;
-  using remapper_type = AbstractRemapper;
 
   using KT = KokkosTypes<DefaultDevice>;
   template<int N>
@@ -76,6 +61,10 @@ public:
                    const std::shared_ptr<const grid_type>& grid,
                    const std::vector<Field>& fields,
                    const bool skip_grid_checks = false);
+  // This constructor only sets the minimal info, deferring initialization
+  // to when set_field_manager/reset_fields and reset_filename are called
+  AtmosphereInput (const std::vector<std::string>& fields_names,
+                   const std::shared_ptr<const grid_type>& grid);
 
   // Due to resource acquisition (in scorpio), avoid copies
   AtmosphereInput (const AtmosphereInput&) = delete;
@@ -113,9 +102,11 @@ public:
   // Getters
   std::string get_filename() { return m_filename; } // Simple getter to query the filename for this stream.
 
-  // Expose the ability to set field manager for cases like time_interpolation where we swap fields
-  // between field managers to avoid deep_copy.
+  // Expose the ability to set/reset fields/field_manager for cases like data interpolation,
+  // where we swap pointers but all the scorpio data structures are unchanged.
   void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr);
+  void set_fields (const std::vector<Field>& fields);
+  void reset_filename (const std::string& filename);
 
   // Option to add a logger
   void set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger) {

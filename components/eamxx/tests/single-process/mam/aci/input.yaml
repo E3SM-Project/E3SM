@@ -12,6 +12,7 @@ atmosphere_processes:
   atm_procs_list: [mam4_aci]
   mam4_aci:
     wsubmin: 0.001
+    enable_aero_vertical_mix: true
     top_level_mam4xx: 6
 
 grids_manager:

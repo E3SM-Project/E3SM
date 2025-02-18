@@ -6,7 +6,7 @@ This can be used with a bash function or the source_to_load_scream_env.sh
 script to conveniently load the SCREAM-approved env into your current shell.
 """
 
-from utils import check_minimum_python_version
+from utils import check_minimum_python_version, GoodFormatter
 check_minimum_python_version(3, 4)
 
 from machines_specs import get_mach_env_setup_command
@@ -41,7 +41,7 @@ OR
 
 """.format(pathlib.Path(args[0]).name),
         description=description,
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        formatter_class=GoodFormatter
     )
 
     parser.add_argument("mach", help="The machine name for which you want the scream env")

@@ -194,7 +194,9 @@ contains
     type (MPAS_TimeInterval_Type) :: alarmTimeStep
     type (block_type), pointer :: block
 
-    type (MPAS_Pool_Type), pointer :: shortwave
+    type (MPAS_Pool_Type), pointer :: &
+         shortwave, &
+         berg_forcing
 
     logical :: exists
     logical :: verbose_taskmap_output                ! true then use verbose task-to-node mapping format
@@ -241,15 +243,18 @@ contains
     integer :: size_list, index_list
     type(mct_string)    :: mctOStr  !
     character(CXX) :: mct_field, modelStr
-#endif 
+#endif
 
 #endif
-    logical, pointer :: tempLogicalConfig
+    logical, pointer :: &
+         tempLogicalConfig, &
+         config_scale_dib_by_removed_ice_runoff
     character(len=StrKIND), pointer :: tempCharConfig
     real (kind=RKIND), pointer :: tempRealConfig
 
     real(kind=RKIND), pointer :: &
-         dayOfNextShortwaveCalculation ! needed for CESM like coupled simulations
+         dayOfNextShortwaveCalculation, & ! needed for CESM like coupled simulations
+         runningMeanRemovedIceRunoff ! the area integrated, running mean of removed ice runoff from the ocean
 
     interface
        subroutine xml_stream_parser(xmlname, mgr_p, comm, ierr) bind(c)
@@ -505,6 +510,9 @@ contains
 
     end if
 
+    call MPAS_pool_get_config(domain % configs, "config_scale_dib_by_removed_ice_runoff", &
+                              config_scale_dib_by_removed_ice_runoff)
+
     ! Setup MPASSI simulation clock
     ierr = domain % core % setup_clock(domain % clock, domain % configs)
     if ( ierr /= 0 ) then
@@ -636,6 +644,15 @@ contains
     ! Determine coupling type
     call seq_infodata_GetData(infodata, cpl_seq_option=cpl_seq_option)
 
+    if (config_scale_dib_by_removed_ice_runoff) then
+       ! independent of space so should be no need to loop over blocks
+       block => domain % blocklist
+       call MPAS_pool_get_subpool(block % structs, "berg_forcing", berg_forcing)
+       call MPAS_pool_get_array(berg_forcing, "runningMeanRemovedIceRunoff", &
+                                runningMeanRemovedIceRunoff)
+       call seq_infodata_GetData(infodata, rmean_rmv_ice_runoff=runningMeanRemovedIceRunoff )
+    end if
+
     ! Determine time of next atmospheric shortwave calculation
     block => domain % blocklist
     do while (associated(block))
@@ -730,7 +747,7 @@ contains
     allocate (x2i_im(lsize, nrecv) )
     i2x_im = 0._r8
     x2i_im = 0._r8
-    ! define tags according to the seq_flds_i2x_fields 
+    ! define tags according to the seq_flds_i2x_fields
     ! also zero them out
     tagtype = 1  ! dense, double
     numco = 1 !  one value per cell / entity
@@ -762,8 +779,9 @@ contains
        call mpas_log_write('Fail to set define dom fields ',  MPAS_LOG_ERR)
     endif
 
+    call ice_domain_moab(MPSIID)
 #endif
-    
+
 
 !-----------------------------------------------------------------------
 !
@@ -827,10 +845,10 @@ contains
     else if (trim(tempCharConfig) == "column_package") then
       call seaice_column_coupling_prep(domain)
     endif ! config_column_physics_type
-    
+
     call MPAS_pool_get_config(domain % configs, "config_use_floe_size_distribution", tempLogicalConfig)
     if (tempLogicalConfig) then
-      call mpas_log_write('FloeSizeDistribution coming online soon. Turn FSD off for now.', MPAS_LOG_CRIT)    
+      call mpas_log_write('FloeSizeDistribution coming online soon. Turn FSD off for now.', MPAS_LOG_CRIT)
     endif
 !-----------------------------------------------------------------------
 !
@@ -854,7 +872,7 @@ contains
 !
 !   get intial state from driver
 !
-    call ice_import_mct(x2i_i, errorCode)  
+    call ice_import_mct(x2i_i, errorCode)
     if (errorCode /= 0) then
        call mpas_log_write('Error in ice_import_mct', MPAS_LOG_CRIT)
     endif
@@ -862,7 +880,7 @@ contains
 #ifdef HAVE_MOAB
 
 #ifdef MOABCOMP
-    mpicom_moab = mpicom_i ! save it for run method 
+    mpicom_moab = mpicom_i ! save it for run method
     ! loop over all fields in seq_flds_x2i_fields
     call mct_list_init(temp_list ,seq_flds_x2i_fields)
     size_list=mct_list_nitem (temp_list)
@@ -879,8 +897,8 @@ contains
 #endif
 
     call ice_import_moab(Eclock)
-#endif 
-    
+#endif
+
 
     currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
     call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
@@ -1151,7 +1169,8 @@ contains
 ! Variable related to MPASSI
       type (block_type), pointer :: block
       type (MPAS_Pool_type), pointer :: &
-            shortwave
+            shortwave, &
+            berg_forcing
 
       real (kind=RKIND) :: current_wallclock_time
       type (MPAS_Time_Type) :: currTime
@@ -1159,13 +1178,16 @@ contains
       type (MPAS_timeInterval_type) :: timeStep
       integer :: ierr, streamDirection, iam
       logical :: streamActive, debugOn
-      logical, pointer :: config_write_output_on_startup
+      logical, pointer :: &
+            config_write_output_on_startup, &
+            config_scale_dib_by_removed_ice_runoff
       logical, save :: first=.true.
       character (len=StrKIND), pointer :: &
             config_restart_timestamp_name, &
             config_column_physics_type
       real(kind=RKIND), pointer :: &
-            dayOfNextShortwaveCalculation ! needed for CESM like coupled simulations
+            dayOfNextShortwaveCalculation, & ! needed for CESM like coupled simulations
+            runningMeanRemovedIceRunoff ! the area integrated, running mean of removed ice runoff from the ocean
 
 #ifdef MOABCOMP
       real(r8)                 :: difference
@@ -1173,7 +1195,7 @@ contains
       integer :: size_list, index_list, ent_type
       type(mct_string)    :: mctOStr  !
       character(CXX) :: mct_field, modelStr, tagname
-#endif 
+#endif
 
 
       iam = domain % dminfo % my_proc_id
@@ -1187,8 +1209,10 @@ contains
       mpas_log_info => domain % logInfo
       if (debugOn) call mpas_log_write("=== Beginning ice_run_mct ===")
 
-      call mpas_pool_get_config(domain % configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
+      call MPAS_pool_get_config(domain % configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
       call MPAS_pool_get_config(domain % configs, "config_column_physics_type", config_column_physics_type)
+      call MPAS_pool_get_config(domain % configs, "config_scale_dib_by_removed_ice_runoff", &
+                                config_scale_dib_by_removed_ice_runoff)
 
       ! Setup log information.
       call shr_file_getLogUnit (shrlogunit)
@@ -1225,6 +1249,15 @@ contains
 
       ! Post coupling calls
       block => domain % blocklist
+
+      if (config_scale_dib_by_removed_ice_runoff) then
+         ! independent of space so should be no need to loop over blocks
+         call MPAS_pool_get_subpool(block % structs, "berg_forcing", berg_forcing)
+         call MPAS_pool_get_array(berg_forcing, "runningMeanRemovedIceRunoff", &
+                                  runningMeanRemovedIceRunoff)
+         call seq_infodata_GetData(infodata, rmean_rmv_ice_runoff=runningMeanRemovedIceRunoff )
+      end if
+
       do while (associated(block))
 
          ! Determine time of next atmospheric shortwave calculation
@@ -1820,6 +1853,173 @@ contains
 
   end subroutine ice_domain_mct!}}}
 
+#ifdef HAVE_MOAB
+!***********************************************************************
+!BOP
+! !IROUTINE: ice_domain_moab
+! !INTERFACE:
+
+ subroutine ice_domain_moab( mbid )!{{{
+
+  use iso_c_binding, only : C_NULL_CHAR
+  use iMOAB, only: iMOAB_GetMeshInfo
+! !DESCRIPTION:
+!  This routine sets up the MOAB domain-related info for MPASSI
+!
+! !REVISION HISTORY:
+!  2025-01-23: initial version is copy from ice_domain_mct
+!
+! !INPUT/OUTPUT PARAMETERS:
+
+    integer        , intent(in)    :: mbid
+
+!EOP
+!BOC
+!-----------------------------------------------------------------------
+!
+!  local variables
+!
+!-----------------------------------------------------------------------
+    real(kind=RKIND), pointer :: data(:)
+    real(kind=RKIND) :: r2d
+
+    integer :: i, n, ier, ierr
+    character(CXX)           :: tagname
+
+    type (block_type), pointer :: block_ptr
+
+    type (mpas_pool_type), pointer :: meshPool, oceanCouplingPool
+
+    integer, pointer :: nCellsSolve
+
+    real (kind=RKIND), dimension(:), pointer :: lonCell, latCell, areaCell
+
+    integer, dimension(:), pointer :: landIceMask
+
+    real (kind=RKIND), pointer :: sphere_radius
+
+    integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
+    integer arrsize, ent_type
+
+    r2d = 180.0/pii
+
+!-------------------------------------------------------------------
+!
+! Determine local grid size
+!
+!-------------------------------------------------------------------
+    ierr  = iMOAB_GetMeshInfo ( mbid, nvert, nvise, nbl, nsurf, nvisBC )
+
+    arrsize = nvise(1)
+
+    allocate(data(arrsize))
+
+
+!-------------------------------------------------------------------
+!
+! Fill in correct values for domain tags
+!
+!-------------------------------------------------------------------
+
+    n = 0
+    block_ptr => domain % blocklist
+    do while(associated(block_ptr))
+       call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+
+       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+
+       call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
+
+       do i = 1, nCellsSolve
+          n = n + 1
+          data(n) = lonCell(i) * r2d
+       end do
+
+       block_ptr => block_ptr % next
+    end do
+    tagname = "lon"//C_NULL_CHAR
+    ent_type=1
+    ierr = iMOAB_SetDoubleTagStorage ( mbid, tagname, arrSize , ent_type, data)
+
+    n = 0
+    block_ptr => domain % blocklist
+    do while(associated(block_ptr))
+       call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+
+       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+
+       call mpas_pool_get_array(meshPool, 'latCell', latCell)
+
+       do i = 1, nCellsSolve
+          n = n + 1
+          data(n) = latCell(i) * r2d
+       end do
+       block_ptr => block_ptr % next
+    end do
+    tagname = "lat"//C_NULL_CHAR
+    ent_type=1
+    ierr = iMOAB_SetDoubleTagStorage ( mbid, tagname, arrSize , ent_type, data)
+
+    n = 0
+    block_ptr => domain % blocklist
+    do while(associated(block_ptr))
+       call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+
+       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+
+       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+
+       call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
+       do i = 1, nCellsSolve
+          n = n + 1
+          data(n) = areaCell(i) / (sphere_radius * sphere_radius)
+       end do
+       block_ptr => block_ptr % next
+    end do
+    tagname = "area"//C_NULL_CHAR
+    ent_type=1
+    ierr = iMOAB_SetDoubleTagStorage ( mbid, tagname, arrSize , ent_type, data)
+
+    ! Build mask and frac based on landIceMask
+    block_ptr => domain % blocklist
+    do while (associated(block_ptr))
+       call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+
+       call mpas_pool_get_subpool(block_ptr % structs, 'ocean_coupling',oceanCouplingPool)
+
+       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+
+       call mpas_pool_get_array(oceanCouplingPool, 'landIceMask',landIceMask)
+
+       if ( associated(landIceMask) ) then
+          do i = 1, nCellsSolve
+             if ( landIceMask(i) == 1 ) then
+                 data(i) = 0.0_RKIND
+             else
+                 data(i) = 1.0_RKIND
+             end if
+          end do
+       else
+          do i = 1, nCellsSolve
+             data(i) = 1.0_RKIND
+          end do
+       end if
+
+       block_ptr => block_ptr % next
+    end do
+    tagname = "mask"//C_NULL_CHAR
+    ent_type=1
+    ierr = iMOAB_SetDoubleTagStorage ( mbid, tagname, arrSize , ent_type, data)
+    tagname = "frac"//C_NULL_CHAR
+    ent_type=1
+    ierr = iMOAB_SetDoubleTagStorage ( mbid, tagname, arrSize , ent_type, data)
+
+    deallocate(data)
+
+!-----------------------------------------------------------------------
+!EOC
+  end subroutine ice_domain_moab !}}}
+#endif
 
 !***********************************************************************
 !BOP
@@ -2998,8 +3198,8 @@ contains
       qi0new,          &
       vi0new
 
-   call MPAS_pool_get_config(domain % configs, "config_thermodynamics_type", config_thermodynamics_type)             
-   call MPAS_pool_get_config(domain % configs, "config_column_physics_type", config_column_physics_type)             
+   call MPAS_pool_get_config(domain % configs, "config_thermodynamics_type", config_thermodynamics_type)
+   call MPAS_pool_get_config(domain % configs, "config_column_physics_type", config_column_physics_type)
 
    if (freezingPotential > 0.0_RKIND) then
 
@@ -3479,15 +3679,15 @@ contains
 !    o  dhdx     -- ocn surface slope, zonal
 !    o  dhdy     -- ocn surface slope, meridional
 !    o  lwdn     -- downward lw heat flux
-!    o  rain     -- prec: liquid 
-!    o  snow     -- prec: frozen 
+!    o  rain     -- prec: liquid
+!    o  snow     -- prec: frozen
 !    o  swndr    -- sw: nir direct  downward
 !    o  swvdr    -- sw: vis direct  downward
 !    o  swndf    -- sw: nir diffuse downward
 !    o  swvdf    -- sw: vis diffuse downward
 !    o  swnet    -- sw: net
 !    o  q        -- ocn frazil heat flux(+) / melt potential(-)
-!    o  frazil   -- ocn frazil mass flux 
+!    o  frazil   -- ocn frazil mass flux
 !    o  bcphidry -- Black Carbon hydrophilic dry deposition flux
 !    o  bcphodry -- Black Carbon hydrophobic dry deposition flux
 !    o  bcphiwet -- Black Carbon hydrophilic wet deposition flux
@@ -3502,10 +3702,10 @@ contains
 !    o  dstdry2  -- Size 2 dust -- dry deposition flux
 !    o  dstdry3  -- Size 3 dust -- dry deposition flux
 !    o  dstdry4  -- Size 4 dust -- dry deposition flux
-! 
+!
 !    The following fields are sometimes received from the coupler,
 !      depending on model options:
-! 
+!
 !    o  algae1   --
 !    o  algae2   --
 !    o  algae3   --
@@ -3530,7 +3730,7 @@ contains
 !    o  zaer4    --
 !    o  zaer5    --
 !    o  zaer6    --
-! 
+!
 !-----------------------------------------------------------------------
 !
 ! !REVISION HISTORY:
@@ -3550,7 +3750,7 @@ contains
    character (len=StrKIND) :: &
       label,                  &
       message
- 
+
    integer ::  &
       i,n
 
@@ -3681,16 +3881,16 @@ contains
     call seq_timemgr_EClockGetData( EClock, stepno=cur_ice_stepno )
 #ifdef MOABDEBUG
     write(lnum,"(I0.2)")cur_ice_stepno
-    outfile = 'IceImp_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+    outfile = 'ice_import_'//trim(lnum)//'.h5m'//C_NULL_CHAR
     wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
     ierr = iMOAB_WriteMesh(MPSIID, outfile, wopts)
     if (ierr > 0 )  then
        write(iceLogUnit,*) 'Fail to write ice state '
     endif
-#endif   
-!----------------------------------------------------------------------- 
+#endif
+!-----------------------------------------------------------------------
 !
-!  zero out padded cells 
+!  zero out padded cells
 !
 !-----------------------------------------------------------------------
 

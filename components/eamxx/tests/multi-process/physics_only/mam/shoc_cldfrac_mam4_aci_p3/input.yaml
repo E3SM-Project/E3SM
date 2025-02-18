@@ -21,7 +21,7 @@ atmosphere_processes:
       do_prescribed_ccn: false
     shoc:
       lambda_low: 0.001
-      lambda_high: 0.04
+      lambda_high: 0.08
       lambda_slope: 2.65
       lambda_thresh: 0.02
       thl2tune: 1.0
@@ -35,6 +35,7 @@ atmosphere_processes:
     mam4_aci:
       wsubmin: 0.001
       top_level_mam4xx: 6
+      enable_aero_vertical_mix: true
 
 grids_manager:
   Type: Mesh Free
@@ -50,7 +51,7 @@ initial_conditions:
   # The name of the file containing the initial conditions for this test.
   Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_MAM4xx_72lev}
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
-  
+
   #variable required for shoc
   surf_sens_flux: 0.0
   surf_evap: 0.0
@@ -58,6 +59,9 @@ initial_conditions:
   #variable required for p3
   precip_ice_surf_mass: 0.0
   precip_liq_surf_mass: 0.0
+  hetfrz_immersion_nucleation_tend: 0.1
+  hetfrz_contact_nucleation_tend: 0.1
+  hetfrz_deposition_nucleation_tend: 0.1
 
   #variables required for mam4_aci
   dgnum: 1e-3

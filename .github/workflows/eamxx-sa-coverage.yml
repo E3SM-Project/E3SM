@@ -1,0 +1,93 @@
+name: eamxx-sa-coverage
+
+on:
+  workflow_dispatch:
+    inputs:
+      submit:
+        description: 'Force cdash submission'
+        required: true
+        type: boolean
+
+  # Add schedule trigger for nightly runs at midnight MT (Standard Time)
+  schedule:
+    - cron: '0 7 * * *'  # Runs at 7 AM UTC, which is midnight MT during Standard Time
+
+concurrency:
+  # Two runs are in the same group if they are testing the same git ref
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Submit to cdash only for nightlies or if the user explicitly forced a submission via workflow dispatch
+  submit: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.submit) }}
+
+jobs:
+  gcc-openmp:
+    runs-on:  [self-hosted, ghci-snl-cpu, gcc]
+    name: gcc-openmp / cov
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          show-progress: false
+          submodules: recursive
+      - name: Show action trigger
+        uses: ./.github/actions/show-workflow-trigger
+      - name: Run tests
+        uses: ./.github/actions/test-all-scream
+        with:
+          build_type: cov
+          machine: ghci-snl-cpu
+          generate: false
+          submit: ${{ env.submit }}
+          cmake-configs: Kokkos_ENABLE_OPENMP=ON
+  gcc-cuda:
+    runs-on:  [self-hosted, ghci-snl-cuda, cuda, gcc]
+    name: gcc-cuda / cov
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          show-progress: false
+          submodules: recursive
+      - name: Show action trigger
+        uses: ./.github/actions/show-workflow-trigger
+      - name: Get CUDA Arch
+        run: |
+          # Ensure nvidia-smi is available
+          if ! command -v nvidia-smi &> /dev/null; then
+              echo "nvidia-smi could not be found. Please ensure you have Nvidia drivers installed."
+              exit 1
+          fi
+
+          # Get the GPU model from nvidia-smi, and set env for next step
+          gpu_model=$(nvidia-smi --query-gpu=name --format=csv,noheader | head -n 1)
+          case "$gpu_model" in
+              *"H100"*)
+                  echo "Hopper=ON" >> $GITHUB_ENV
+                  echo "CUDA_ARCH=90" >> $GITHUB_ENV
+                  ARCH=90
+                  ;;
+              *"A100"*)
+                  echo "Ampere=ON" >> $GITHUB_ENV
+                  echo "CUDA_ARCH=80" >> $GITHUB_ENV
+                  ;;
+              *"V100"*)
+                  echo "Volta=ON" >> $GITHUB_ENV
+                  echo "CUDA_ARCH=70" >> $GITHUB_ENV
+                  ;;
+              *)
+                  echo "Unsupported GPU model: $gpu_model"
+                  exit 1
+                  ;;
+          esac
+      - name: Run tests
+        uses: ./.github/actions/test-all-scream
+        with:
+          build_type: cov
+          machine: ghci-snl-cuda
+          generate: false
+          submit: ${{ env.submit }}
+          cmake-configs: Kokkos_ARCH_HOPPER90=${{ env.Hopper }};Kokkos_ARCH_AMPERE80=${{ env.Ampere }};Kokkos_ARCH_VOLTA70=${{ env.Volta }};CMAKE_CUDA_ARCHITECTURES=${{ env.CUDA_ARCH }}

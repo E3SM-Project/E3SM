@@ -51,11 +51,9 @@ public:
 
 protected:
 
-  void do_bind_field (const int ifield, const field_type& src, const field_type& tgt) override;
+  void registration_ends_impl () override;
 
-  void do_remap_fwd () override;
-
-protected:
+  void remap_fwd_impl () override;
 
   template<typename T>
   using view_2d = typename KT::template view_2d<T>;
@@ -98,7 +96,6 @@ protected:
 
   // Mask fields, if needed
   bool                  m_track_mask;
-  std::map<int,int>     m_field_idx_to_mask_idx;
 
   // ------- MPI data structures -------- //
 

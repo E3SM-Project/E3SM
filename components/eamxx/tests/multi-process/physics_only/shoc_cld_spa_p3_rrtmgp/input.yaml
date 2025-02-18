@@ -22,7 +22,7 @@ atmosphere_processes:
       max_total_ni: 740.0e3
     shoc:
       lambda_low: 0.001
-      lambda_high: 0.04
+      lambda_high: 0.08
       lambda_slope: 2.65
       lambda_thresh: 0.02
       thl2tune: 1.0
@@ -60,6 +60,9 @@ initial_conditions:
   surf_sens_flux: 0.0
   precip_liq_surf_mass: 0.0
   precip_ice_surf_mass: 0.0
+  hetfrz_immersion_nucleation_tend: 0.1
+  hetfrz_contact_nucleation_tend: 0.1
+  hetfrz_deposition_nucleation_tend: 0.1
 
 # The parameters for I/O control
 Scorpio:

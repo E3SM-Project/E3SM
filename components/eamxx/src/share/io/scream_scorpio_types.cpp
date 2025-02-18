@@ -32,6 +32,8 @@ IOType str2iotype(const std::string &str)
     return IOType::PnetCDF;
   } else if(str == "adios") {
     return IOType::Adios;
+  } else if (str == "adiosc") {
+    return IOType::Adiosc;
   } else if(str == "hdf5") {
     return IOType::Hdf5;
   } else {
@@ -47,6 +49,7 @@ std::string iotype2str(const IOType iotype)
     case IOType::NetCDF:        s = "netcdf";   break;
     case IOType::PnetCDF:       s = "pnetcdf";  break;
     case IOType::Adios:         s = "adios";    break;
+    case IOType::Adiosc:        s = "adiosc";   break;
     case IOType::Hdf5:          s = "hdf5";     break;
     case IOType::Invalid:       s = "invalid";  break;
     default:

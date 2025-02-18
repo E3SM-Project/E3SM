@@ -51,7 +51,7 @@ TEST_CASE("nudging_tests") {
   const int nlevs_fine  = 2*nlevs_data -1;
 
   // Files names
-  auto postfix = ".INSTANT.nsteps_x1." + get_t0().to_string() + ".nc";
+  auto postfix = ".INSTANT.nsteps_x1.np*." + get_t0().to_string() + ".nc";
   auto nudging_data        = "nudging_data" + postfix;
   auto nudging_data_filled = "nudging_data_filled" + postfix;
   auto map_file = "map_ncol" + std::to_string(ngcols_data)

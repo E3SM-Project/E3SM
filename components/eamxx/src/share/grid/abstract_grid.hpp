@@ -11,6 +11,7 @@
 #include <map>
 #include <list>
 #include <memory>
+#include <mutex>
 
 namespace scream
 {
@@ -91,7 +92,6 @@ public:
   FieldLayout get_2d_vector_layout (const int vector_dim) const;
   FieldLayout get_2d_tensor_layout (const std::vector<int>& cmp_dims) const;
 
-  FieldLayout get_3d_vector_layout (const bool midpoints) const;
   FieldLayout get_3d_vector_layout (const bool midpoints, const int vector_dim) const;
   FieldLayout get_3d_tensor_layout (const bool midpoints, const std::vector<int>& cmp_dims) const;
 
@@ -137,11 +137,12 @@ public:
   Field get_geometry_data (const std::string& name) const;
 
   // Create geometry data, throws if already existing. Returns writable field
-  Field create_geometry_data (const FieldIdentifier& fid);
+  Field create_geometry_data (const FieldIdentifier& fid, const int pack_size = 1);
   Field create_geometry_data (const std::string& name, const FieldLayout& layout,
                               const ekat::units::Units& units = ekat::units::Units::invalid(),
-                              const DataType data_type = DataType::RealType) {
-    return create_geometry_data(FieldIdentifier(name,layout,units,this->name(),data_type));
+                              const DataType data_type = DataType::RealType,
+                              const int pack_size = 1) {
+    return create_geometry_data(FieldIdentifier(name,layout,units,this->name(),data_type),pack_size);
   }
 
   // Sets pre-existing field as geometry data.
@@ -205,7 +206,7 @@ public:
 
   int get_unique_grid_id () const { return m_unique_grid_id; }
 
-  std::map<gid_type,int> get_gid2lid_map () const;
+  const std::map<gid_type,int>& get_gid2lid_map () const;
 
 protected:
 
@@ -251,6 +252,12 @@ protected:
   Field     m_lid_to_idx;
 
   mutable std::map<std::string,Field>  m_geo_fields;
+
+  // Mutable, for lazy calculation
+  mutable std::map<gid_type,int> m_gid2lid;
+
+  // For thread safety in modifying mutable items (just in case someone ever runs this code in threaded regions)
+  mutable std::mutex m_mutex;
 
   // The MPI comm containing the ranks across which the global mesh is partitioned
   ekat::Comm            m_comm;

@@ -141,6 +141,7 @@ int nctype (const std::string& type) {
   } else {
     EKAT_ERROR_MSG ("Error! Unrecognized/unsupported data type '" + type + "'.\n");
   }
+  return -1;
 }
 
 template<typename T>
@@ -205,6 +206,22 @@ size_t dtype_size (const std::string& dtype) {
     EKAT_ERROR_MSG ("Error! Unrecognized/unsupported data type '" + dtype + "'.\n");
   }
   return 0;
+}
+
+int pio_iotype (IOType iotype) {
+  int iotype_int;
+  auto& s = ScorpioSession::instance();
+  switch(iotype){
+    case IOType::DefaultIOType: iotype_int = s.pio_type_default;                    break;
+    case IOType::NetCDF:        iotype_int = static_cast<int>(PIO_IOTYPE_NETCDF);   break;
+    case IOType::PnetCDF:       iotype_int = static_cast<int>(PIO_IOTYPE_PNETCDF);  break;
+    case IOType::Adios:         iotype_int = static_cast<int>(PIO_IOTYPE_ADIOS);    break;
+    case IOType::Adiosc:        iotype_int = static_cast<int>(PIO_IOTYPE_ADIOSC);   break;
+    case IOType::Hdf5:          iotype_int = static_cast<int>(PIO_IOTYPE_HDF5);     break;
+    default:
+      EKAT_ERROR_MSG ("Unrecognized/unsupported iotype.\n");
+  }
+  return iotype_int;
 }
 
 // ====================== Local utilities ========================== //
@@ -313,9 +330,9 @@ void init_subsystem(const ekat::Comm& comm, const int atm_id)
   s.pio_rearranger = PIO_REARR_SUBSET;
   s.pio_format     = PIO_64BIT_DATA;
 #if PIO_USE_PNETCDF
-  s.pio_type_default = PIO_IOTYPE_PNETCDF;
+  s.pio_type_default = pio_iotype(IOType::PnetCDF);
 #elif PIO_USE_NETCDF
-  s.pio_type_default = PIO_IOTYPE_NETCDF;
+  s.pio_type_default = pio_iotype(IOType::NetCDF);
 #else
 #error "Standalone EAMxx requires either PNETCDF or NETCDF iotype to be available in Scorpio"
 #endif
@@ -395,9 +412,7 @@ void register_file (const std::string& filename,
   if (f.mode == Unset) {
     // First time we ask for this file. Call PIO open routine(s)
     int err;
-    int iotype_int = iotype==IOType::DefaultIOType
-                   ? s.pio_type_default
-                   : static_cast<int>(iotype);
+    int iotype_int = pio_iotype(iotype);
     if (mode & Read) {
       auto write = mode & Write ? PIO_WRITE : PIO_NOWRITE;
       err = PIOc_openfile(s.pio_sysid,&f.ncid,&iotype_int,filename.c_str(),write);
@@ -702,6 +717,30 @@ std::string get_time_name (const std::string& filename)
       " - filename: " + filename + "\n");
 
   return pf.file->time_dim->name;
+}
+
+void reset_unlimited_dim_len(const std::string& filename, const int new_length)
+{
+  auto& f = impl::get_file(filename,"scorpio::reset_unlimited_dim_len");
+
+  // Reset dim length
+  EKAT_REQUIRE_MSG (f.time_dim!=nullptr,
+      "Error! Cannot reset unlimited dim length. No unlimited dim stored.\n"
+      "  - file name: " + filename + "\n");
+  EKAT_REQUIRE_MSG (new_length<f.time_dim->length,
+      "Error! New time dimension length must be shorter than the current one.\n"
+      "  - file name: " + filename + "\n"
+      "  - curr len : " + std::to_string(f.time_dim->length) + "\n"
+      "  - new len  : " + std::to_string(new_length) + "\n");
+  f.time_dim->length = new_length;
+
+  // Reset number of records counter for each time dep var
+  for (auto it : f.vars) {
+    auto& v = *it.second;
+    if (v.time_dep) {
+      v.num_records = new_length;
+    }
+  }
 }
 
 // =================== Decompositions operations ==================== //
@@ -1166,19 +1205,6 @@ void read_var (const std::string &filename, const std::string &varname, T* buf, 
         " - time len: " + std::to_string(f.time_dim->length));
     err = PIOc_setframe(f.ncid,var.ncid,frame);
     check_scorpio_noerr (err,f.name,"variable",varname,"read_var","setframe");
-  } else if (time_index>=0) {
-    // This is a bit of a hacky usage. We want to read a time index of a var,
-    // but the time dim is NOT unlimited in the input file. Apparently, SCORPIO
-    // supports this, and some E3SM input files are indeed like this, so we
-    // need to support it here too, hacky as it may be.
-    frame = time_index;
-
-    EKAT_REQUIRE_MSG (frame<var.dims[0]->length,
-        "Error! First dim index out of bounds.\n"
-        " - filename     : " + filename + "\n"
-        " - varname      : " + varname + "\n"
-        " - first dim idx: " + std::to_string(time_index) + "\n"
-        " - first dim len: " + std::to_string(var.dims[0]->length) + "\n");
   }
 
   std::string pioc_func;

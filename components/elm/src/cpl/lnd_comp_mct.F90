@@ -17,10 +17,8 @@ module lnd_comp_mct
   use esmf, only: ESMF_clock
 
 #ifdef HAVE_MOAB
-#include "moab/MOABConfig.h"
 ! #define BUILD_LNDGHOST_MESH
   use seq_comm_mct,       only: mlnid! id of moab land app
-  use seq_comm_mct,       only: mb_land_mesh! true if land is full mesh (on the river mesh)
   use seq_comm_mct,       only: num_moab_exports
 #ifdef MOABCOMP
   use seq_comm_mct , only: seq_comm_compare_mb_mct
@@ -55,7 +53,6 @@ module lnd_comp_mct
 
   integer  :: mpicom_lnd_moab ! used also for mpi-reducing the difference between moab tags and mct avs
   integer :: rank2
-  logical :: samegrid_al !
 
 #endif
   !---------------------------------------------------------------------------
@@ -102,6 +99,9 @@ contains
     use perf_mod         , only : t_startf, t_stopf
     use mct_mod
     use ESMF
+#ifdef MOABDEBUG
+    use iMOAB        , only: iMOAB_WriteMesh
+#endif
 
     !
     ! !ARGUMENTS:
@@ -152,10 +152,10 @@ contains
     character(len=*),  parameter :: format = "('("//trim(sub)//") :',A)"
 
 #ifdef HAVE_MOAB
+    character*100 outfile, wopts, localmeshfile
     integer :: ierr, nsend,n
     character(len=SHR_KIND_CL) :: atm_gnam          ! atm grid
     character(len=SHR_KIND_CL) :: lnd_gnam          ! lnd grid
-    integer :: entity_type, tag_type
 #endif
     !-----------------------------------------------------------------------
 
@@ -318,13 +318,6 @@ contains
 
     call lnd_domain_mct( bounds, lsz, gsMap_lnd, dom_l )
 #ifdef HAVE_MOAB
-!   find out samegrid_al or not; from infodata
-    samegrid_al = .true.
-    call seq_infodata_GetData(infodata         , &
-                   atm_gnam=atm_gnam           , &
-                   lnd_gnam=lnd_gnam           )
-    if (trim(atm_gnam) /= trim(lnd_gnam)) samegrid_al = .false.
-    mb_land_mesh = .not. samegrid_al ! global variable, saved in seq_comm
     call init_moab_land(bounds, LNDID)
 #endif
     call mct_aVect_init(x2l_l, rList=seq_flds_x2l_fields, lsize=lsz)
@@ -411,6 +404,14 @@ contains
        call memmon_reset_addr()
     endif
 #endif
+#ifdef MOABDEBUG
+    !     write out the mesh file to disk, in parallel
+    outfile = 'wholeLnd.h5m'//C_NULL_CHAR
+    wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+    ierr = iMOAB_WriteMesh(mlnid, outfile, wopts)
+    if (ierr > 0 )  &
+      call endrun('Error: fail to write the land mesh file')
+#endif
 
   end subroutine lnd_init_mct
 
@@ -480,7 +481,8 @@ contains
     real(r8)     :: declin               ! solar declination angle in radians for nstep
     real(r8)     :: declinp1             ! solar declination angle in radians for nstep+1
     real(r8)     :: eccf                 ! earth orbit eccentricity factor
-    real(r8)     :: recip                ! reciprical
+  
+        real(r8)     :: recip                ! reciprical
     logical,save :: first_call = .true.  ! first call work
     logical      :: atm_present
     type(seq_infodata_type),pointer :: infodata             ! CESM information from the driver
@@ -552,8 +554,9 @@ contains
     call mct_list_init(temp_list ,seq_flds_x2l_fields)
     size_list=mct_list_nitem (temp_list)
     entity_type = 0 ! entity type is vertex for land, usually (bigrid case)
-    if (mb_land_mesh) entity_type = 1
+    if (.not.samegrid_al) entity_type = 1  ! trigrid usually means we have a full LND mesh
     if (rank2 .eq. 0) print *, num_moab_exports, trim(seq_flds_x2l_fields), ' lnd import check'
+
     do index_list = 1, size_list
       call mct_list_get(mctOStr,index_list,temp_list)
       mct_field = mct_string_toChar(mctOStr)
@@ -564,7 +567,7 @@ contains
     call mct_list_clean(temp_list)
 
 #endif
-! calling MOAB's import last means this is what the model will use.
+    ! calling MOAB's import last means this is what the model will use.
     call lnd_import_moab( EClock, bounds, atm2lnd_vars, glc2lnd_vars)
 #endif
 
@@ -1080,7 +1083,7 @@ contains
         tagtype = 0  ! dense, integer
         numco = 1
         tagname='GLOBAL_ID'//C_NULL_CHAR
-        ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
+        ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco, tagindex )
         if (ierr > 0 )  &
           call endrun('Error: fail to retrieve GLOBAL_ID tag ')
 #ifdef BUILD_LNDGHOST_MESH
@@ -1089,14 +1092,14 @@ contains
           call endrun('Error: fail to retrieve GLOBAL_ID tag ')
 #endif
 
-        ! load the integer data on the mesh from the egids array
+        ! set the integer data on the mesh from the egids array
         entity_type = 1 ! element type
-        ierr = iMOAB_SetIntTagStorage ( mlnid, tagname, lsz , entity_type, egids)
+        ierr = iMOAB_SetIntTagStorage ( mlnid, tagname, lsz, entity_type, egids)
         if (ierr > 0 )  &
           call endrun('Error: fail to set GLOBAL_ID tag ')
 
 #ifdef BUILD_LNDGHOST_MESH
-        ierr = iMOAB_SetIntTagStorage ( mlnghid, tagname, lsz , entity_type, egids)
+        ierr = iMOAB_SetIntTagStorage ( mlnghid, tagname, lsz, entity_type, egids)
         if (ierr > 0 )  &
           call endrun('Error: fail to set GLOBAL_ID tag ')
 #endif
@@ -1105,7 +1108,7 @@ contains
         !  Define and Set Fraction on each mesh
         tagname='frac'//C_NULL_CHAR
         tagtype = 1 ! dense, double
-        ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
+        ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco, tagindex )
         if (ierr > 0 )  &
           call endrun('Error: fail to create frac tag ')
 
@@ -1123,13 +1126,13 @@ contains
         enddo
 
         ! set the values on the coupling mesh
-        ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz , entity_type, moab_vert_coords)
+        ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz, entity_type, moab_vert_coords)
         if (ierr > 0 )  &
           call endrun('Error: fail to set frac tag ')
 
 #ifdef BUILD_LNDGHOST_MESH
         ! set the values on the internal mesh, halo values aren't set
-        ierr = iMOAB_SetDoubleTagStorage ( mlnghid, tagname, lsz , entity_type, moab_vert_coords)
+        ierr = iMOAB_SetDoubleTagStorage ( mlnghid, tagname, lsz, entity_type, moab_vert_coords)
         if (ierr > 0 )  &
           call endrun('Error: fail to set frac tag ')
 #endif
@@ -1137,7 +1140,7 @@ contains
         !  Define and Set area
         tagname='area'//C_NULL_CHAR
         ! define the values on the coupling mesh
-        ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
+        ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco, tagindex )
         if (ierr > 0 )  &
           call endrun('Error: fail to create area tag ')
 
@@ -1154,12 +1157,12 @@ contains
         enddo
 
         ! set the values on the coupling mesh
-        ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz , entity_type, moab_vert_coords )
+        ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz, entity_type, moab_vert_coords )
         if (ierr > 0 )  &
           call endrun('Error: fail to set area tag ')
 #ifdef BUILD_LNDGHOST_MESH
         ! set the values on the internal mesh
-        ierr = iMOAB_SetDoubleTagStorage ( mlnghid, tagname, lsz , entity_type, moab_vert_coords )
+        ierr = iMOAB_SetDoubleTagStorage ( mlnghid, tagname, lsz, entity_type, moab_vert_coords )
         if (ierr > 0 )  &
           call endrun('Error: fail to set area tag ')
 #endif
@@ -1167,7 +1170,7 @@ contains
         !  Define aream
         ! but don't set any values yet. Coupler will send them
         tagname='aream'//C_NULL_CHAR
-        ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
+        ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco, tagindex )
         if (ierr > 0 )  &
           call endrun('Error: fail to create aream tag ')
 #ifdef BUILD_LNDGHOST_MESH
@@ -1391,12 +1394,12 @@ contains
         tagtype = 0  ! dense, integer
         numco = 1
         tagname='GLOBAL_ID'//C_NULL_CHAR
-        ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
+        ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco, tagindex )
         if (ierr > 0 )  &
           call endrun('Error: fail to retrieve GLOBAL_ID tag ')
 
         entity_type = 0 ! vertex type
-        ierr = iMOAB_SetIntTagStorage ( mlnid, tagname, lsz , entity_type, vgids)
+        ierr = iMOAB_SetIntTagStorage ( mlnid, tagname, lsz, entity_type, vgids)
         if (ierr > 0 )  &
           call endrun('Error: fail to set GLOBAL_ID tag ')
 
@@ -1407,12 +1410,12 @@ contains
         !there are no shared entities, but we will set a special partition tag, in order to see the
         ! partitions ; it will be visible with a Pseudocolor plot in VisIt
         tagname='partition'//C_NULL_CHAR
-        ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
+        ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco, tagindex )
         if (ierr > 0 )  &
           call endrun('Error: fail to create new partition tag ')
 
         vgids = iam
-        ierr = iMOAB_SetIntTagStorage ( mlnid, tagname, lsz , entity_type, vgids)
+        ierr = iMOAB_SetIntTagStorage ( mlnid, tagname, lsz, entity_type, vgids)
         if (ierr > 0 )  &
           call endrun('Error: fail to set partition tag ')
 
@@ -1420,7 +1423,7 @@ contains
         !   on the vertices; do not allocate other data array
         tagname='frac'//C_NULL_CHAR
         tagtype = 1 ! dense, double
-        ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
+        ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco, tagindex )
         if (ierr > 0 )  &
           call endrun('Error: fail to create frac tag ')
 
@@ -1428,12 +1431,12 @@ contains
           n = i-1 + bounds%begg
           moab_vert_coords(i) = ldomain%frac(n)
         enddo
-        ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz , entity_type, moab_vert_coords)
+        ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz, entity_type, moab_vert_coords)
         if (ierr > 0 )  &
           call endrun('Error: fail to set frac tag ')
 
         tagname='area'//C_NULL_CHAR
-        ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
+        ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco, tagindex )
         if (ierr > 0 )  &
           call endrun('Error: fail to create area tag ')
         do i = 1, lsz
@@ -1441,16 +1444,16 @@ contains
           moab_vert_coords(i) = ldomain%area(n)/(re*re) ! use the same doubles for second tag :)
         enddo
 
-        ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz , entity_type, moab_vert_coords )
+        ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz, entity_type, moab_vert_coords )
         if (ierr > 0 )  &
           call endrun('Error: fail to set area tag ')
 
         ! aream needed in cime_init for now.
         tagname='aream'//C_NULL_CHAR
-        ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
+        ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco, tagindex )
         if (ierr > 0 )  &
           call endrun('Error: fail to create aream tag ')
-        ! ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz , entity_type, moab_vert_coords )
+        ! ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz, entity_type, moab_vert_coords )
         ! if (ierr > 0 )  &
         !   call endrun('Error: fail to set aream tag ')
         ierr = iMOAB_UpdateMeshInfo( mlnid )
@@ -1462,11 +1465,82 @@ contains
     tagname = 'lat:lon:mask:hgt'//C_NULL_CHAR
     tagtype = 1 ! dense, double
     numco = 1
-    ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
+    tagname='GLOBAL_ID'//C_NULL_CHAR
+    ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco, tagindex )
+    if (ierr > 0 )  &
+      call endrun('Error: fail to retrieve GLOBAL_ID tag ')
+
+    ent_type = 0 ! vertex type
+    ierr = iMOAB_SetIntTagStorage ( mlnid, tagname, lsz, ent_type, vgids)
+    if (ierr > 0 )  &
+      call endrun('Error: fail to set GLOBAL_ID tag ')
+
+    ierr = iMOAB_ResolveSharedEntities( mlnid, lsz, vgids );
+    if (ierr > 0 )  &
+      call endrun('Error: fail to resolve shared entities')
+
+    !there are no shared entities, but we will set a special partition tag, in order to see the
+    ! partitions ; it will be visible with a Pseudocolor plot in VisIt
+    tagname='partition'//C_NULL_CHAR
+    ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco, tagindex )
+    if (ierr > 0 )  &
+      call endrun('Error: fail to create new partition tag ')
+
+    vgids = iam
+    ierr = iMOAB_SetIntTagStorage ( mlnid, tagname, lsz, ent_type, vgids)
+    if (ierr > 0 )  &
+      call endrun('Error: fail to set partition tag ')
+
+    ! use moab_vert_coords as a data holder for a frac tag and area tag that we will create
+    !   on the vertices; do not allocate other data array
+    tagname='frac'//C_NULL_CHAR
+    tagtype = 1 ! dense, double
+    ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco, tagindex )
+    if (ierr > 0 )  &
+      call endrun('Error: fail to create frac tag ')
+
+    do i = 1, lsz
+      n = i-1 + bounds%begg
+      moab_vert_coords(i) = ldomain%frac(n)
+    enddo
+    ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz, ent_type, moab_vert_coords)
+    if (ierr > 0 )  &
+      call endrun('Error: fail to set frac tag ')
+
+    tagname='area'//C_NULL_CHAR
+    ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco, tagindex )
+    if (ierr > 0 )  &
+      call endrun('Error: fail to create area tag ')
+    do i = 1, lsz
+      n = i-1 + bounds%begg
+      moab_vert_coords(i) = ldomain%area(n)/(re*re) ! use the same doubles for second tag :)
+    enddo
+
+    ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz, ent_type, moab_vert_coords )
+    if (ierr > 0 )  &
+      call endrun('Error: fail to set area tag ')
+
+    ! aream needed in cime_init for now.
+    tagname='aream'//C_NULL_CHAR
+    ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco, tagindex )
+    if (ierr > 0 )  &
+      call endrun('Error: fail to create aream tag ')
+    ! ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz, ent_type, moab_vert_coords )
+    ! if (ierr > 0 )  &
+    !   call endrun('Error: fail to set aream tag ')
+    ierr = iMOAB_UpdateMeshInfo( mlnid )
+    if (ierr > 0 )  &
+      call endrun('Error: fail to update mesh info ')
+
+    ! add more domain fields that are missing from domain fields: lat, lon, mask, hgt
+    tagname = 'lat:lon:mask:hgt'//C_NULL_CHAR
+    tagtype = 1 ! dense, double
+    numco = 1
+    ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco, tagindex )
     if (ierr > 0 )  &
       call endrun('Error: fail to create lat:lon:mask:hgt tags ')
 
- ! moab_vert_coords is big enough in both case to hold enough data for us: lat, lon, mask
+    ! moab_vert_coords is big enough in both case to hold enough data for us: lat, lon, mask
     do i = 1, lsz
       n = i-1 + bounds%begg
       moab_vert_coords(i) = ldomain%latc(n)  ! lat
@@ -1484,27 +1558,20 @@ contains
       call endrun('Error: fail to set lat lon mask tag ')
     deallocate(moab_vert_coords)
     deallocate(vgids)
-#ifdef MOABDEBUG
-    !     write out the mesh file to disk, in parallel
-    outfile = 'wholeLnd.h5m'//C_NULL_CHAR
-    wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
-    ierr = iMOAB_WriteMesh(mlnid, outfile, wopts)
-    if (ierr > 0 )  &
-      call endrun('Error: fail to write the land mesh file')
-#endif
+
   ! define all tags from seq_flds_l2x_fields
   ! define tags according to the seq_flds_l2x_fields
     tagtype = 1  ! dense, double
     numco = 1 !  one value per cell / entity
 
     tagname = trim(seq_flds_l2x_fields)//C_NULL_CHAR
-    ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
+    ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco, tagindex )
     if ( ierr > 0) then
         call endrun('Error: fail to define seq_flds_l2x_fields for land moab mesh')
     endif
 
     tagname = trim(seq_flds_x2l_fields)//C_NULL_CHAR
-    ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
+    ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco, tagindex )
     if ( ierr > 0) then
         call endrun('Error: fail to define seq_flds_x2l_fields for land moab mesh')
     endif
@@ -1632,9 +1699,10 @@ contains
        end if
 
     end do
+
     tagname=trim(seq_flds_l2x_fields)//C_NULL_CHAR
     if (samegrid_al) then
-      entity_type = 0 ! vertices, cells only if samegrid_al false
+      entity_type = 0 ! vertices only if samegrid_al true
     else
       entity_type = 1
     endif
@@ -1823,19 +1891,20 @@ contains
     call seq_timemgr_EClockGetData( EClock, stepno=cur_lnd_stepno )
 #ifdef MOABDEBUG
     write(lnum,"(I0.2)")cur_lnd_stepno
-    outfile = 'LndImp_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+    outfile = 'lnd_import_'//trim(lnum)//'.h5m'//C_NULL_CHAR
     wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
     ierr = iMOAB_WriteMesh(mlnid, outfile, wopts)
     if (ierr > 0 )  &
       call endrun('Error: fail to write the moab lnd mesh before import ')
 #endif
+    
     tagname=trim(seq_flds_x2l_fields)//C_NULL_CHAR
     if (samegrid_al) then
-      entity_type = 0 ! vertices, cells only if samegrid_al false
+      entity_type = 0 ! vertices only if samegrid_al true
     else
       entity_type = 1
     endif
-    ierr = iMOAB_GetDoubleTagStorage ( mlnid, tagname, totalmblsimp , entity_type, x2l_lm(1,1) )
+    ierr = iMOAB_GetDoubleTagStorage ( mlnid, tagname, totalmblsimp, entity_type, x2l_lm(1,1) )
     if ( ierr > 0) then
       call endrun('Error: fail to get seq_flds_x2l_fields for land moab instance on component')
     endif

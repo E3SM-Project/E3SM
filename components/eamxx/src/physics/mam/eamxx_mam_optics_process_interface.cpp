@@ -55,13 +55,13 @@ void MAMOptics::set_grids(
   add_field<Required>("p_int",              scalar3d_int, Pa,     grid_name);  // total pressure
   add_field<Required>("pseudo_density",     scalar3d_mid, Pa,     grid_name);
   add_field<Required>("pseudo_density_dry", scalar3d_mid, Pa,     grid_name);
-  add_field<Required>("qv",                 scalar3d_mid, kg/kg,  grid_name,"tracers");  // specific humidity
-  add_field<Required>("qi",                 scalar3d_mid, kg/kg,  grid_name,"tracers");  // ice wet mixing ratio
-  add_field<Required>("ni",                 scalar3d_mid, n_unit, grid_name,"tracers");  // ice number mixing ratio
+  add_tracer<Required>("qv",                grid_, kg/kg);                     // specific humidity
+  add_tracer<Required>("qi",                grid_, kg/kg);                     // ice wet mixing ratio
+  add_tracer<Required>("ni",                grid_, n_unit);                    // ice number mixing ratio
 
   // droplet activation can alter cloud liquid and number mixing ratios
-  add_field<Required>("qc", scalar3d_mid, kg/kg, grid_name,"tracers");  // cloud liquid wet mixing ratio
-  add_field<Required>("nc", scalar3d_mid, n_unit, grid_name,"tracers");  // cloud liquid wet number mixing ratio
+  add_tracer<Required>("qc", grid_, kg/kg);  // cloud liquid wet mixing ratio
+  add_tracer<Required>("nc", grid_, n_unit);  // cloud liquid wet number mixing ratio
 
   add_field<Required>("phis", scalar2d, m2 / s2, grid_name);
   add_field<Required>("cldfrac_tot", scalar3d_mid, nondim,grid_name);  // cloud fraction
@@ -86,12 +86,12 @@ void MAMOptics::set_grids(
   for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
     const char *int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
 
-    add_field<Updated>(int_nmr_field_name, scalar3d_mid, n_unit,grid_name, "tracers");
+    add_tracer<Updated>(int_nmr_field_name, grid_, n_unit);
     for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
       const char *int_mmr_field_name = mam_coupling::int_aero_mmr_field_name(m, a);
 
       if(strlen(int_mmr_field_name) > 0) {
-        add_field<Updated>(int_mmr_field_name, scalar3d_mid, kg/kg,grid_name, "tracers");
+        add_tracer<Updated>(int_mmr_field_name, grid_, kg/kg);
       }
     }
   }
@@ -113,7 +113,7 @@ void MAMOptics::set_grids(
   // aerosol-related gases: mass mixing ratios
   for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
     const char *gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
-    add_field<Updated>(gas_mmr_field_name, scalar3d_mid, kg/kg, grid_name, "tracers");
+    add_tracer<Updated>(gas_mmr_field_name, grid_, kg/kg);
   }
 }
 
@@ -140,7 +140,7 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   wet_atm_.nc    = get_field_in("nc").get_view<const Real **>();
   wet_atm_.qi    = get_field_in("qi").get_view<const Real **>();
   wet_atm_.ni    = get_field_in("ni").get_view<const Real **>();
-  
+
 
   constexpr int ntot_amode = mam4::AeroConfig::num_modes();
 
@@ -406,12 +406,9 @@ void MAMOptics::run_impl(const double dt) {
         auto odap_aer_icol = ekat::subview(aero_tau_lw, icol);
         const auto atm     = mam_coupling::atmosphere_for_column(dry_atm, icol);
 
-        // FIXME: interface pressure [Pa]
-        auto pint = ekat::subview(dry_atm.p_int, icol);
         // FIXME: dry mass pressure interval [Pa]
         auto zi      = ekat::subview(dry_atm.z_iface, icol);
         auto pdel    = ekat::subview(p_del, icol);
-        auto pdeldry = ekat::subview(dry_atm.p_del, icol);
 
         auto ssa_cmip6_sw_icol = ekat::subview(ssa_cmip6_sw, icol);
         auto af_cmip6_sw_icol  = ekat::subview(af_cmip6_sw, icol);
@@ -437,13 +434,13 @@ void MAMOptics::run_impl(const double dt) {
             mam_coupling::aerosols_for_column(dry_aero, icol);
 
         mam4::aer_rad_props::aer_rad_props_sw(
-            team, dt, progs, atm, zi, pint, pdel, pdeldry, ssa_cmip6_sw_icol,
+            team, dt, progs, atm, zi, pdel, ssa_cmip6_sw_icol,
             af_cmip6_sw_icol, ext_cmip6_sw_icol, tau_icol, tau_w_icol,
             tau_w_g_icol, tau_w_f_icol, aerosol_optics_device_data, aodvis(icol), work_icol);
 
         team.team_barrier();
         mam4::aer_rad_props::aer_rad_props_lw(
-            team, dt, progs, atm, pint, zi, pdel, pdeldry, ext_cmip6_lw_icol,
+            team, dt, progs, atm, zi, pdel, ext_cmip6_lw_icol,
             aerosol_optics_device_data, odap_aer_icol);
       });
   Kokkos::fence();

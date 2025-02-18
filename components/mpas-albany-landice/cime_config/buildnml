@@ -40,7 +40,7 @@ def buildnml(case, caseroot, compname):
     run_refdate       = case.get_value("RUN_REFDATE")
     run_reftod        = case.get_value("RUN_REFTOD")
     mali_use_albany   = case.get_value("MALI_USE_ALBANY")
-    mali_dynamic      = case.get_value("MALI_DYNAMIC")
+    mali_prognostic_mode = case.get_value("MALI_PROGNOSTIC_MODE")
     stream_name       = 'streams.landice'
     albany_input_name = 'albany_input.yaml'
 
@@ -56,6 +56,7 @@ def buildnml(case, caseroot, compname):
     grid_prefix = ''
     decomp_date = ''
     decomp_prefix = ''
+    datamode_date = ''
 
     if glc_grid == 'mpas.aisgis20km':
         grid_date += '20190326'
@@ -70,10 +71,11 @@ def buildnml(case, caseroot, compname):
     elif glc_grid == 'mpas.ais8to30km':
         grid_date += '20221027'
         grid_prefix += 'ais_8to30km'
+        datamode_date += '20250121'
         decomp_date += '240507'
         decomp_prefix += 'mpasli.graph.info.'
     elif glc_grid == 'mpas.ais4to20km':
-        grid_date += '20240708'
+        grid_date += '20241224'
         grid_prefix += 'ais_4to20km'
         decomp_date += '240507'
         decomp_prefix += 'mpasli.graph.info.'
@@ -88,7 +90,7 @@ def buildnml(case, caseroot, compname):
         decomp_date += '051920'
         decomp_prefix += 'mpasli.graph.info.'
     elif glc_grid == 'mpas.gis1to10kmR2':
-        grid_date += '20230202'
+        grid_date += '20240513'
         grid_prefix += 'gis_1to10km_r02'
         decomp_date += '020223'
         decomp_prefix += 'mpasli.graph.info.'
@@ -108,12 +110,20 @@ def buildnml(case, caseroot, compname):
         if not os.path.exists(restart_file):
             safe_copy(input_file, restart_file)
 
+    #------------------------
+    # Set the datamode file if needed
+    #------------------------
+    if mali_prognostic_mode == 'DATA':
+        datamode_file = f"{din_loc_root}/glc/mpasli/{glc_grid}/{grid_prefix}_datamode.{datamode_date}.nc"
+
     #--------------------------------------------------------------------
     # Generate input data file with stream-specified files
     #--------------------------------------------------------------------
 
     with open(os.path.join(casebuild, "mali.input_data_list"), "w") as input_list:
         input_list.write("mesh = {}/glc/mpasli/{}/{}.{}.nc\n".format(din_loc_root, glc_grid, grid_prefix, grid_date))
+        if mali_prognostic_mode == 'DATA':
+            input_list.write(f"datamode = {datamode_file}\n")
 
     #--------------------------------------------------------------------
     # Invoke mpas build-namelist - output will go in $CASEBUILD/maliconf
@@ -160,7 +170,7 @@ def buildnml(case, caseroot, compname):
         sysmod += " -glc_grid '{}'".format(glc_grid)
         sysmod += " -ntasks_glc '{}'".format(ntasks_glc)
         sysmod += " -ninst_glc '{}'".format(ninst_glc_real)
-        sysmod += " -mali_dynamic '{}'".format(mali_dynamic)
+        sysmod += " -mali_prognostic_mode '{}'".format(mali_prognostic_mode)
 
         run_cmd_no_fail(sysmod, from_dir=maliconf_dir)
 
@@ -247,6 +257,9 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="calvingThickness"/>')
         lines.append('    <var name="restoreThickness"/>')
         lines.append('    <var name="dHdt"/>')
+        lines.append('    <var name="ismip6_2dThermalForcing"/>')
+        lines.append('    <var name="faceMeltSpeed"/>')
+        lines.append('    <var name="faceMeltingThickness"/>')
         lines.append('    <var name="deltat"/>')
         lines.append('    <var name="daysSinceStart"/>')
         lines.append('    <var name="simulationStartTime"/>')
@@ -284,6 +297,18 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="albanyVelocityError"/>')
 
         lines.append('</stream>')
+        lines.append('')
+        if mali_prognostic_mode == 'DATA':
+            # in MALI data mode, read an input stream with ice thickness monthly
+            lines.append('    <stream name="data-mode-input"')
+            lines.append('            type="input"')
+            lines.append(f'            filename_template="{datamode_file}"')
+            lines.append('            reference_time="2000-01-01_00:00:00"')
+            lines.append('            input_interval="0000-01-00_00:00:00">')
+            lines.append('')
+            lines.append('    <var name="thickness"/>')
+            lines.append('')
+            lines.append('</stream>')
         lines.append('')
         lines.append('<!--')
         lines.append('All streams below this line are auxiliary streams. They are provided as')

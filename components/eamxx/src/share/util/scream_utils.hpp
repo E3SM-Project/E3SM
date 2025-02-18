@@ -12,6 +12,8 @@
 #include <algorithm>
 #include <map>
 #include <iostream>
+#include <fstream>
+#include <sstream>
 
 namespace scream {
 
@@ -367,6 +369,79 @@ constexpr int eamxx_vis_swband_idx() {
   // This index (10) corresponds to the band that has wavelength 550 nm.
   return 10;
 }
+
+struct DefaultMetadata {
+  // struct to store default metadata for variables output
+  // See the io_metadata folder for the file of interest
+
+  // Default string to fill in missing metadata
+  std::string fill_str = "MISSING";
+
+  std::map<std::string, std::string> name_2_standardname, name_2_longname;
+
+  DefaultMetadata() {
+    // Ensure to resolve the path to the io_metadata.csv file
+    std::string fpath     = __FILE__;
+    std::string directory = fpath.substr(0, fpath.find_last_of("/\\"));
+    std::string csv_path  = directory + "/io_metadata/io_metadata.csv";
+    read_csv_file_to_maps(csv_path, name_2_standardname, name_2_longname);
+  }
+
+  std::string get_standardname(const std::string &name) const {
+    auto it = name_2_standardname.find(name);
+    if(it != name_2_standardname.end()) {
+      return it->second;
+    } else {
+      return fill_str;
+    }
+  }
+
+  std::string get_longname(const std::string &name) const {
+    auto it = name_2_longname.find(name);
+    if(it != name_2_longname.end()) {
+      return it->second;
+    } else {
+      return fill_str;
+    }
+  }
+
+  void read_csv_file_to_maps(
+      const std::string &filename,
+      std::map<std::string, std::string> &name_2_standardname,
+      std::map<std::string, std::string> &name_2_longname) {
+    std::ifstream file(filename);
+    EKAT_REQUIRE_MSG(file.is_open(), "Could not open the file: " + filename);
+
+    std::string line;
+    bool isFirstLine = true;
+    while(std::getline(file, line)) {
+      // Skip empty lines
+      if(line.empty()) {
+        continue;
+      }
+
+      std::stringstream ss(line);
+      std::string column1, column2, column3;
+      std::getline(ss, column1, ',');
+      std::getline(ss, column2, ',');
+      std::getline(ss, column3, ',');
+
+      if(isFirstLine) {
+        // Sanity check: the first line contains the required headers
+        EKAT_REQUIRE_MSG(column1 == "variable" && column2 == "standard_name" && column3 == "long_name",
+            "CSV file does not contain the required headers: variable, standard_name, long_name. Found: "
+            + column1 + ", " + column2 + ", and " + column3 + " respectively in file " + filename);
+        isFirstLine = false;
+        continue;
+      }
+
+      // Store the values to the maps, if they are not empty
+      name_2_standardname[column1] = column2.empty() ? fill_str : column2;
+      name_2_longname[column1]     = column3.empty() ? fill_str : column3;
+    }
+    file.close();
+  }
+};
 
 } // namespace scream
 

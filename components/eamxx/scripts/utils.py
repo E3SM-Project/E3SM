@@ -2,11 +2,9 @@
 Utilities
 """
 
-import os, sys, re, signal, subprocess, site, time, shutil
+import os, sys, re, signal, subprocess, site, time, argparse
 from importlib import import_module
-import stat as statlib
 from pathlib import Path
-from distutils import file_util # pylint: disable=deprecated-module
 
 ###############################################################################
 def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
@@ -419,79 +417,12 @@ def ensure_psutil(): _ensure_pylib_impl("psutil")
 def ensure_netcdf4(): _ensure_pylib_impl("netCDF4")
 
 ###############################################################################
-def safe_copy(src_path, tgt_path, preserve_meta=True):
+class GoodFormatter(
+    argparse.ArgumentDefaultsHelpFormatter,
+    argparse.RawDescriptionHelpFormatter
+):
 ###############################################################################
     """
-    A flexbile and safe copy routine. Will try to copy file and metadata, but this
-    can fail if the current user doesn't own the tgt file. A fallback data-only copy is
-    attempted in this case. Works even if overwriting a read-only file.
-
-    tgt_path can be a directory, src_path must be a file
-
-    most of the complexity here is handling the case where the tgt_path file already
-    exists. This problem does not exist for the tree operations so we don't need to wrap those.
-
-    preserve_meta toggles if file meta-data, like permissions, should be preserved. If you are
-    copying baseline files, you should be within a SharedArea context manager and preserve_meta
-    should be false so that the umask set up by SharedArea can take affect regardless of the
-    permissions of the src files.
+    We want argument default info to be added but we also want to
+    preserve formatting in the description string.
     """
-
-    # Only works for str paths for now
-    src_path = str(src_path)
-    tgt_path = str(tgt_path)
-
-    tgt_path = (
-        os.path.join(tgt_path, os.path.basename(src_path))
-        if os.path.isdir(tgt_path)
-        else tgt_path
-    )
-
-    # Handle pre-existing file
-    if os.path.isfile(tgt_path):
-        st = os.stat(tgt_path)
-        owner_uid = st.st_uid
-
-        # Handle read-only files if possible
-        if not os.access(tgt_path, os.W_OK):
-            if owner_uid == os.getuid():
-                # I am the owner, make writeable
-                os.chmod(tgt_path, st.st_mode | statlib.S_IWRITE)
-            else:
-                # I won't be able to copy this file
-                raise OSError(
-                    "Cannot copy over file {}, it is readonly and you are not the owner".format(
-                        tgt_path
-                    )
-                )
-
-        if owner_uid == os.getuid():
-            # I am the owner, copy file contents, permissions, and metadata
-            file_util.copy_file(
-                src_path,
-                tgt_path,
-                preserve_mode=preserve_meta,
-                preserve_times=preserve_meta,
-                verbose=0,
-            )
-        else:
-            # I am not the owner, just copy file contents
-            shutil.copyfile(src_path, tgt_path)
-
-    else:
-        # We are making a new file, copy file contents, permissions, and metadata.
-        # This can fail if the underlying directory is not writable by current user.
-        file_util.copy_file(
-            src_path,
-            tgt_path,
-            preserve_mode=preserve_meta,
-            preserve_times=preserve_meta,
-            verbose=0,
-        )
-
-    # If src file was executable, then the tgt file should be too
-    st = os.stat(tgt_path)
-    if os.access(src_path, os.X_OK) and st.st_uid == os.getuid():
-        os.chmod(
-            tgt_path, st.st_mode | statlib.S_IXUSR | statlib.S_IXGRP | statlib.S_IXOTH
-        )

@@ -19,9 +19,10 @@ atmosphere_processes:
     mam4_aci:
       wsubmin: 0.001
       top_level_mam4xx: 6
+      enable_aero_vertical_mix: true
     shoc:
       lambda_low: 0.001
-      lambda_high: 0.04
+      lambda_high: 0.08
       lambda_slope: 2.65
       lambda_thresh: 0.02
       thl2tune: 1.0

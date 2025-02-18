@@ -1162,6 +1162,8 @@ module li_iceshelf_melt
 
     subroutine iceshelf_melt_ismip6(domain, err)
 
+      use li_constants, only: oceanFreezingTempDepthDependence
+
       !-----------------------------------------------------------------
       ! input/output variables
       !-----------------------------------------------------------------
@@ -1182,6 +1184,7 @@ module li_iceshelf_melt
       integer :: ksup, kk, kinf
       integer, pointer :: nCellsSolve
       real(kind=RKIND), pointer :: rhoi, rhosw
+      real (kind=RKIND), pointer :: invalid_value_TF
       real(kind=RKIND) :: cste
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: geometryPool, meshPool
@@ -1206,6 +1209,7 @@ module li_iceshelf_melt
 
       call mpas_pool_get_config(liConfigs, 'config_ice_density', rhoi)
       call mpas_pool_get_config(liConfigs, 'config_ocean_density', rhosw)
+      call mpas_pool_get_config(liConfigs, 'config_invalid_value_TF', invalid_value_TF)
       cste = (rhosw*cp_seawater/(rhoi*latent_heat_ice))**2  ! in K^(-2)
 
       allocate(mean_TF(maxNumBasins))
@@ -1247,28 +1251,65 @@ module li_iceshelf_melt
          mean_TF(:) = 0.d0
          IS_area(:) = 0.d0
 
+         ! Check zOcean for valid values
+         if (minval(zOcean) >= 0.0_RKIND) then
+            call mpas_log_write("Invalid value for zOcean. It should have negative values but min value >= 0.0 was found", &
+                                MPAS_LOG_ERR)
+            err = ior(err, 1)
+         endif
+         if (maxval(zOcean) > 0.0_RKIND) then
+            call mpas_log_write("Invalid value for zOcean. It should have non-positive values but max value greater than 0.0 was found", &
+                                MPAS_LOG_ERR)
+            err = ior(err, 1)
+         endif
+
          do iCell = 1, nCellsSolve
 
             if ( li_mask_is_floating_ice(cellMask(iCell)) ) then
                ! 1 -  Linear interpolation of the thermal forcing on the ice draft depth :
-               ksup=1
-               do kk=2,nOceanLayers-1
+               ksup=0
+               do kk=1,nOceanLayers
                   if ( zOcean(kk) >= lowerSurface(iCell) )  ksup = kk
                enddo
                kinf = ksup + 1
-               if ((zOcean(ksup)-zOcean(kinf)) == 0) then
-                  call mpas_log_write("iceshelf_melt_ismip6: Invalid value for zOcean. " // &
-                       "ksup=$i kinf=$i zOcean(ksup)=$r zOcean(kinf)=$r indexToCellID=$i lowerSurface=$r", MPAS_LOG_ERR, &
-                       intArgs=(/ksup, kinf, indexToCellID(iCell)/), &
-                       realArgs=(/zOcean(ksup), zOcean(kinf), lowerSurface(iCell) /) )
-                  err = ior(err, 1)
-               endif
+
                !call mpas_log_write("kinf=$i, zOcean(kinf)=$r, TFocean=$r",realArgs=(/zOcean(kinf),TFocean(kinf,iCell)/), &
                !        intArgs=(/kinf/))
                !call mpas_log_write("ksup=$i, zOcean(ksup)=$r, TFocean=$r",realArgs=(/zOcean(ksup),TFocean(ksup,iCell)/), &
                !        intArgs=(/ksup/))
-               TFdraft(iCell) = ( (zOcean(ksup)-lowerSurface(iCell)) * TFocean(kinf, iCell) &
-                  + (lowerSurface(iCell)-zOcean(kinf)) * TFocean(ksup, iCell) ) / (zOcean(ksup)-zOcean(kinf))
+
+               ! check if any invalid TFocean value is used for calculating TF at the draft
+               if (ksup >= 1) then
+                  if (TFocean(ksup, iCell) == invalid_value_TF) then
+                     call mpas_log_write("iceshelf_melt_ismip6: Invalid value for TFocean. " // &
+                        "ksup=$i TFocean(ksup, iCell)=$r indexToCellID=$i", MPAS_LOG_ERR, &
+                        intArgs=(/ksup,  indexToCellID(iCell)/), &
+                        realArgs=(/TFocean(ksup, iCell) /) )
+                     err = ior(err, 1)
+                  endif
+               endif
+               if (kinf <= nOceanLayers) then
+                  if (TFocean(kinf, iCell) == invalid_value_TF) then
+                     call mpas_log_write("iceshelf_melt_ismip6: Invalid value for TFocean. " // &
+                        "kinf=$i TFocean(kinf,iCell)=$r indexToCellID=$i", MPAS_LOG_ERR, &
+                        intArgs=(/kinf, indexToCellID(iCell)/), &
+                        realArgs=(/TFocean(kinf, iCell) /) )
+                     err = ior(err, 1)
+                  endif
+               endif
+
+               if (ksup == 0) then
+                  ! For depths shallower than shallowest layer center, use shallowest layer
+                  TFdraft(iCell) = TFocean(1, iCell)
+               elseif (ksup == nOceanLayers) then
+                  ! for depths below the deepest layer center, use deepest layer corrected for Tfreeze
+                  TFdraft(iCell) = TFocean(nOceanLayers, iCell) - &
+                     (zOcean(nOceanLayers) - lowerSurface(iCell)) * oceanFreezingTempDepthDependence
+               else
+                  ! for depths between the first and last layer centers, linearly interpolate
+                  TFdraft(iCell) = ( (zOcean(ksup)-lowerSurface(iCell)) * TFocean(kinf, iCell) &
+                     + (lowerSurface(iCell)-zOcean(kinf)) * TFocean(ksup, iCell) ) / (zOcean(ksup)-zOcean(kinf))
+               endif
 
                ! 2 -  Mean Thermal forcing in individual basins (NB: fortran norm while basins start at zero):
                mean_TF(basinNumber(iCell)+1) = mean_TF(basinNumber(iCell)+1) + areaCell(iCell) * TFdraft(iCell)

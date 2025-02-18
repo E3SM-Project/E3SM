@@ -18,7 +18,7 @@ inline int get_random_test_seed(const ekat::Comm* comm=nullptr)
 
   std::random_device rdev;
   const int catchRngSeed = Catch::rngSeed();
-  int seed = catchRngSeed==0 ? rdev() : catchRngSeed;
+  int seed = catchRngSeed==0 ? rdev()/2 : catchRngSeed;
 
   if (comm == nullptr || comm->am_i_root()) {
     // Print seed to screen to trace tests that fail.
@@ -41,9 +41,13 @@ inline int get_random_test_seed(const ekat::Comm* comm=nullptr)
 }
 
 template <typename Engine=std::mt19937_64>
-Engine setup_random_test(const ekat::Comm* comm=nullptr)
+Engine setup_random_test(const ekat::Comm* comm=nullptr, int* return_seed=nullptr)
 {
-  return Engine (get_random_test_seed(comm));
+  int seed = get_random_test_seed(comm);
+  if (return_seed != nullptr) {
+    *return_seed = seed;
+  }
+  return Engine (seed);
 }
 
 template <typename Engine=std::mt19937_64>

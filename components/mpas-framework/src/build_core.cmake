@@ -62,6 +62,13 @@ function(build_core CORE)
     endforeach()
   endif()
 
+  # Disable optimizations on some files that would take too long to compile, expect these to all be fortran files
+  foreach (SOURCE_FILE IN LISTS NOOPT_FILES)
+    get_filename_component(SOURCE_EXT ${SOURCE_FILE} EXT)
+    string(REPLACE "${SOURCE_EXT}" ".f90" SOURCE_F90 ${SOURCE_FILE})
+    e3sm_deoptimize_file(${CMAKE_BINARY_DIR}/${SOURCE_F90})
+  endforeach()
+
   genf90_targets("${RAW_SOURCES}" "${INCLUDES}" "${CPPDEFS}" "${NO_PREPROCESS}" "${INC_DIR}")
   target_sources(${COMPONENT} PRIVATE ${SOURCES})
 

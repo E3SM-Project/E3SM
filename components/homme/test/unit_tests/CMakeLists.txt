@@ -22,14 +22,17 @@ macro(cxx_unit_test target_name target_f90_srcs target_cxx_srcs include_dirs con
   cxx_unit_test_add_test(${target_name}_test ${target_name} ${NUM_CPUS})
 
   TARGET_LINK_LIBRARIES(${target_name} timing ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
-  target_link_libraries(${target_name} Kokkos::kokkos)
+  TARGET_LINK_LIBRARIES(${target_name} Kokkos::kokkos)
   IF (HOMME_USE_MKL)
-    TARGET_COMPILE_OPTIONS (${target_name} PUBLIC -mkl)
-    TARGET_LINK_LIBRARIES (${target_name} -mkl)
+    IF (MKL_TYPE STREQUAL "oneMKL")
+      TARGET_LINK_LIBRARIES(${target_name} -qmkl)
+    ELSEIF (MKL_TYPE STREQUAL "Intel MKL")
+      TARGET_LINK_LIBRARIES(${target_name} -mkl)
+    ENDIF ()
   ENDIF()
 
   # Link csm_share lib
-  target_link_libraries(${target_name} csm_share)
+  TARGET_LINK_LIBRARIES(${target_name} csm_share)
 
   STRING(TOUPPER "${PERFORMANCE_PROFILE}" PERF_PROF_UPPER)
   IF ("${PERF_PROF_UPPER}" STREQUAL "VTUNE")

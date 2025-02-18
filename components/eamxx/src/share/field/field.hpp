@@ -193,16 +193,19 @@ public:
   // Note: this class takes no responsibility in keeping track of whether
   //       a sync is required in either direction. Mainly because we expect
   //       host views to be seldom used, and even less frequently modified.
-  void sync_to_host () const;
-  void sync_to_dev () const;
+  // The fence input controls whether a fence is done at the end of the sync.
+  // If multiple syncs are performed in a row on different data, the user may
+  // want to run them asynchronously and fence the final sync_to call.
+  void sync_to_host (const bool fence = true) const;
+  void sync_to_dev (const bool fence = true) const;
 
   // Set the field to a constant value (on host or device)
   template<typename T, HostOrDevice HD = Device>
-  void deep_copy (const T value);
+  void deep_copy (const T value) const;
 
   // Copy the data from one field to this field
   template<HostOrDevice HD = Device>
-  void deep_copy (const Field& src);
+  void deep_copy (const Field& src) const;
 
   // Updates this field y as y=alpha*x+beta*y
   // NOTE: ST=void is just so we can give a default to HD,
@@ -220,6 +223,10 @@ public:
   // Scale a field y as y=y*x where x is also a field
   template<HostOrDevice HD = Device>
   void scale (const Field& x);
+
+  // Scale a field y as y=y/x where x is also a field
+  template<HostOrDevice HD = Device>
+  void scale_inv (const Field& x);
 
   // Returns a subview of this field, slicing at entry k along dimension idim
   // NOTES:
@@ -242,6 +249,7 @@ public:
   Field subfield (const std::string& sf_name, const int idim,
                   const int index, const bool dynamic = false) const;
   Field subfield (const int idim, const int k, const bool dynamic = false) const;
+  Field subfield (const FieldTag tag, const int k, const bool dynamic = false) const;
   // extracts a subfield composed of multiple slices in a continuous range of indices
   // e.g., (in matlab syntax) subf = f.subfield(:, 1:3, :)
   // but NOT subf = f.subfield(:, [1, 3, 4], :)
@@ -260,33 +268,58 @@ public:
   // Checks whether the underlying view has been already allocated.
   bool is_allocated () const { return m_data.d_view.data()!=nullptr; }
 
-  // Whether this field is equivalent to the rhs. To be equivalent is
-  // less strict than to have all the members equal. In particular,
-  // this method returns true if and only if:
-  //  - this==&rhs OR all the following apply
-  //    - both views are allocated (if not, allocating one won't be reflected on the other)
-  //    - both fields have the same header
-  //    - both fields have the same views
-  // We need to SFINAE on RhsRT, cause this==&rhs only works if the
-  // two are the same. And we do want to check this==&rhs for the
-  // same type, since if we didn't, f.equivalent(f) would return false
-  // if f is not allocated...
-  bool equivalent (const Field& rhs) const;
+  // Whether this field is an alias to the same field as rhs.
+  // To return true, one of the following must hold
+  //  - this==&rhs
+  //  - the fields are NOT subfield, and point to the same data
+  //  - the fields are subfield of fields aliasing each other, with same subfield info
+  bool is_aliasing (const Field& rhs) const;
 
   // ---- Setters and non-const methods ---- //
 
   // Allocate the actual view
   void allocate_view ();
 
+  // Create contiguous helper field for running sync_to_host
+  // and sync_to_device with non-contiguous fields
+  void initialize_contiguous_helper_field () {
+    EKAT_REQUIRE_MSG(not m_header->get_alloc_properties().contiguous(),
+                     "Error! We should not setup contiguous helper field "
+                     "for an already contiguous field.\n");
+    EKAT_REQUIRE_MSG(not host_and_device_share_memory_space(),
+                     "Error! We should not setup contiguous helper field for a field "
+                     "when host and device share a memory space.\n");
+
+    auto id = m_header->get_identifier();
+    Field contig(id.alias(name()+std::string("_contiguous")));
+    contig.allocate_view();
+
+    // Sanity check
+    EKAT_REQUIRE_MSG(contig.get_header().get_alloc_properties().contiguous(),
+                     "Error! Contiguous helper field must be contiguous.\n");
+
+    m_contiguous_field = std::make_shared<Field>(contig);
+  }
+
+  inline bool host_and_device_share_memory_space() const {
+    EKAT_REQUIRE_MSG(is_allocated(),
+                     "Error! Must allocate view before querying "
+                     "host_and_device_share_memory_space().\n");
+    return m_data.h_view.data() == m_data.d_view.data();
+  }
+
 #ifndef KOKKOS_ENABLE_CUDA
   // Cuda requires methods enclosing __device__ lambda's to be public
 protected:
 #endif
-  template<HostOrDevice HD, typename ST>
-  void deep_copy_impl (const ST value);
+  template<typename ST, HostOrDevice From, HostOrDevice To>
+  void sync_views_impl () const;
 
   template<HostOrDevice HD, typename ST>
-  void deep_copy_impl (const Field& src);
+  void deep_copy_impl (const ST value) const;
+
+  template<HostOrDevice HD, typename ST>
+  void deep_copy_impl (const Field& src) const;
 
   template<CombineMode CM, HostOrDevice HD, typename ST>
   void update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val);
@@ -315,6 +348,7 @@ protected:
   get_subview_1 (const get_view_type<data_nd_t<T,N>,HD>&, const int) const {
     EKAT_ERROR_MSG ("Error! Cannot subview a rank2 view along the second "
                     "dimension without losing LayoutRight.\n");
+    return get_view_type<data_nd_t<T,N-1>,HD>();
   }
 
   template<HostOrDevice HD,typename T,int N>
@@ -337,8 +371,14 @@ protected:
   // Actual data.
   dual_view_t<char*> m_data;
 
-  // Whether this field is read-only
-  bool m_is_read_only = false;
+  // Field needed for sync host/device in case of non-contiguous
+  // field when host and device do not share a memory space.
+  std::shared_ptr<Field> m_contiguous_field;
+
+  // Whether this field is read-only. This is given
+  // mutable keyword since it needs to be turned off/on
+  // to allow sync_to_host for constant, read-only fields.
+  mutable bool m_is_read_only = false;
 };
 
 // We use this to find a Field in a std container.

@@ -5,6 +5,7 @@
 #include <map>
 #include <vector>
 #include <memory>
+#include <cstdint>
 
 namespace scream {
 namespace scorpio {
@@ -25,6 +26,7 @@ enum IOType {
   NetCDF,
   PnetCDF,
   Adios,
+  Adiosc,
   Hdf5,
   Invalid
 };

@@ -1316,7 +1316,7 @@ contains
     use elm_varctl       , only : iulog
     use elm_varcon       , only : tfrz, hfus, grav
     use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv
-    use landunit_varcon  , only : istsoil, istcrop, istice_mec
+    use landunit_varcon  , only : istsoil, istcrop, istice_mec,istice
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
@@ -1369,7 +1369,10 @@ contains
          qflx_snofrz_col  =>    col_wf%qflx_snofrz      , & ! Output: [real(r8) (:)   ] column-integrated snow freezing rate (positive definite) [kg m-2 s-1]
          qflx_glcice      =>    col_wf%qflx_glcice      , & ! Output: [real(r8) (:)   ] flux of new glacier ice (mm H2O/s) [+ = ice grows]
          qflx_glcice_melt =>    col_wf%qflx_glcice_melt , & ! Output: [real(r8) (:)   ] ice melt (positive definite) (mm H2O/s)
+         qflx_glcice_diag      =>    col_wf%qflx_glcice_diag      , & ! Output: [real(r8) (:)   ] flux of new glacier ice (mm H2O/s) [+ = ice grows]
+         qflx_glcice_melt_diag =>    col_wf%qflx_glcice_melt_diag , & ! Output: [real(r8) (:)   ] ice melt (positive definite) (mm H2O/s)
          qflx_snomelt     =>    col_wf%qflx_snomelt     , & ! Output: [real(r8) (:)   ] snow melt (mm H2O /s)
+         qflx_snomelt_lyr     =>    col_wf%qflx_snomelt_lyr     , & ! Output: [real(r8) (:)   ] snow melt (mm H2O /s)
 
          eflx_snomelt     =>    col_ef%eflx_snomelt    , & ! Output: [real(r8) (:)   ] snow melt heat flux (W/m**2)
          eflx_snomelt_r   =>    col_ef%eflx_snomelt_r  , & ! Output: [real(r8) (:)   ] rural snow melt heat flux (W/m**2)
@@ -1389,10 +1392,12 @@ contains
          l = col_pp%landunit(c)
 
          qflx_snomelt(c) = 0._r8
+         qflx_snomelt_lyr(c,-nlevsno+1:0) = 0._r8
          xmf(c) = 0._r8
          qflx_snofrz_lyr(c,-nlevsno+1:0) = 0._r8
          qflx_snofrz_col(c) = 0._r8
          qflx_glcice_melt(c) = 0._r8
+         qflx_glcice_melt_diag(c) = 0._r8
          qflx_snow_melt(c) = 0._r8
       end do
 
@@ -1623,7 +1628,7 @@ contains
 
                      if (imelt(c,j) == 1 .AND. j < 1) then
                         qflx_snomelt(c) = qflx_snomelt(c) + max(0._r8,(wice0(c,j)-h2osoi_ice(c,j)))/dtime
-
+                        qflx_snomelt_lyr(c,j) = max(0._r8,(wice0(c,j)-h2osoi_ice(c,j)))/dtime 
 
                      endif
 
@@ -1643,8 +1648,7 @@ contains
             ! as computed in HydrologyDrainageMod.F90.
 
             l = col_pp%landunit(c)
-            if (lun_pp%itype(l)==istice_mec) then
-
+            if ( lun_pp%itype(l)==istice_mec) then
                if (j>=1 .and. h2osoi_liq(c,j) > 0._r8) then   ! ice layer with meltwater
                   ! melting corresponds to a negative ice flux
                   qflx_glcice_melt(c) = qflx_glcice_melt(c) + h2osoi_liq(c,j)/dtime
@@ -1656,6 +1660,16 @@ contains
 
                endif  ! liquid water is present
             endif     ! istice_mec
+            ! for diagnostic QICE SMB output only - 
+            ! these are to calculate SMB even without MECs 
+            if ( lun_pp%itype(l)==istice) then
+               if (j>=1 .and. h2osoi_liq(c,j) > 0._r8) then   ! ice layer with meltwater
+                  ! melting corresponds to a negative ice flux
+                  qflx_glcice_melt_diag(c) = qflx_glcice_melt_diag(c) + h2osoi_liq(c,j)/dtime
+                  qflx_glcice_diag(c) = qflx_glcice_diag(c) - h2osoi_liq(c,j)/dtime
+               endif  ! liquid water is present
+            endif     ! istice_mec
+
 
          end do   ! end of column-loop
       enddo   ! end of level-loop

@@ -139,14 +139,13 @@ TEST_CASE("dyn_grid_io")
     fp.deep_copy(-1.0);
   }
   dyn2ctrl->registration_ends();
-  dyn2ctrl->remap(true);
+  dyn2ctrl->remap_fwd();
 
   // Now try to write all fields to file from the dyn grid fm
   // Note: add MPI ranks to filename, to allow MPI tests to run in parallel
   ekat::ParameterList out_params;
   out_params.set<std::string>("Averaging Type","Instant");
   out_params.set<std::string>("filename_prefix","dyn_grid_io");
-  out_params.set<bool>("MPI Ranks in Filename",true);
   out_params.sublist("Fields").sublist("Dynamics").set<std::vector<std::string>>("Field Names",fnames);
   out_params.sublist("Fields").sublist("Dynamics").set<std::string>("IO Grid Name","Physics GLL");
 
@@ -155,7 +154,8 @@ TEST_CASE("dyn_grid_io")
   out_params.set<std::string>("Floating Point Precision","real");
 
   OutputManager output;
-  output.setup (comm, out_params, fm_dyn, gm, t0, t0, false);
+  output.initialize(comm, out_params, t0, false);
+  output.setup (fm_dyn, gm);
   output.run(t0);
   output.finalize();
 

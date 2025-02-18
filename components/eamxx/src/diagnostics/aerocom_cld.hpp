@@ -15,7 +15,7 @@ class AeroComCld : public AtmosphereDiagnostic {
   AeroComCld(const ekat::Comm &comm, const ekat::ParameterList &params);
 
   // The name of the diagnostic
-  std::string name() const override;
+  std::string name() const override { return "AeroComCld"; }
 
   // Set the grid
   void set_grids(

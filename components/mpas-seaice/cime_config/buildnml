@@ -61,6 +61,8 @@ def buildnml(case, caseroot, compname):
         ice_ic_mode = 'spunup'
     if ice_bgc == 'ice_bgc':
         ice_ic_mode = 'spunup'
+    if run_type == 'hybrid' or run_type == 'branch':
+        ice_ic_mode = 'spunup'
 
     #--------------------------------------------------------------------
     # Determine date stamp, from grid names
@@ -300,7 +302,7 @@ def buildnml(case, caseroot, compname):
         grid_prefix = 'mpassi.IcoswISC30E3r5'
         decomp_date = '20231120'
         decomp_prefix = 'partitions/mpas-seaice.graph.info.'
-        data_iceberg_file = 'Iceberg_Climatology_Merino.IcoswISC30E3r5.20231120.nc'
+        data_iceberg_file = 'Iceberg_Climatology_Merino.IcoswISC30E3r5.20240805.nc'
         dust_iron_file = 'ecoForcingSurfaceMonthly+WetDryDustSolFrac.IcoswISC30E3r5.20240511.nc'
         if ice_ic_mode == 'spunup':
             if iceberg_mode == 'data':
@@ -329,6 +331,16 @@ def buildnml(case, caseroot, compname):
         if ice_ic_mode == 'spunup':
             logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
             logger.warning("         But no file available for this grid.")
+
+    elif ice_grid == 'SOwISC12to30E3r3':
+        grid_date = '20240829'
+        grid_prefix = 'mpassi.SOwISC12to30E3r3'
+        decomp_date = '20240829'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
+        data_iceberg_file = 'Iceberg_Climatology_Merino.SOwISC12to30E3r3.20241017.nc'
+        if ice_ic_mode == 'spunup':
+            grid_date = '20240829'
+            grid_prefix = 'mpassi.SOwISC12to30E3r3.rstFromG-chrysalis'
 
     elif ice_grid == 'ICOS10':
         grid_date = '211015'
@@ -658,6 +670,7 @@ def buildnml(case, caseroot, compname):
                 lines.append('                  input_interval="none" >')
                 lines.append('')
                 lines.append('    <var name="bergFreshwaterFluxData"/>')
+                lines.append('    <var name="areaIntegAnnMeanDataIcebergIceShelfFreshwaterFlux"/>')
                 lines.append('    <var name="xtime"/>')
                 lines.append('</stream>')
                 lines.append('')
@@ -924,22 +937,41 @@ def buildnml(case, caseroot, compname):
                 lines.append('    <var name="bergLatentHeatFlux"/>')
 
             if ice_bgc == 'ice_bgc':
-                lines.append('    <var name="totalVerticalBiologyIce"/>')
                 lines.append('    <var name="totalChlorophyll"/>')
                 lines.append('    <var name="primaryProduction"/>')
                 lines.append('    <var name="bioShortwaveFlux"/>')
                 lines.append('    <var name="netBrineHeight"/>')
                 lines.append('    <var name="newlyFormedIce"/>')
                 lines.append('    <var name="snowThicknessChange"/>')
-                lines.append('    <var name="verticalAlgaeIceCell"/>')
+                lines.append('    <var name="totalVerticalDiatomIce"/>')
+                lines.append('    <var name="totalVerticalSmallPlanktonIce"/>')
+                lines.append('    <var name="totalVerticalAlgaeCarbonIce"/>')
+                lines.append('    <var name="totalVerticalNitrateIce"/>')
+                lines.append('    <var name="totalVerticalAmmoniumIce"/>')
+                lines.append('    <var name="totalVerticalSilicateIce"/>')
+                lines.append('    <var name="totalVerticalProteinsIce"/>')
+                lines.append('    <var name="totalVerticalDOCLabileIce"/>')
+                lines.append('    <var name="totalVerticalHumicsIce"/>')
+                lines.append('    <var name="totalVerticalDissolvedIronIce"/>')
+                lines.append('    <var name="totalVerticalParticulateIronIce"/>')
+                lines.append('    <var name="totalVerticalBCIce"/>')
+                lines.append('    <var name="totalVerticalBCSnow"/>')
+                lines.append('    <var name="totalVerticalDustIce"/>')
+                lines.append('    <var name="totalVerticalDustSnow"/>')
+                lines.append('    <var name="totalVerticalDissolvedIronSnow"/>')
+                lines.append('    <var name="verticalAlgaeTotalCarbonIceCell"/>')
+                lines.append('    <var name="verticalDOCLabileIceCell"/>')
+                lines.append('    <var name="verticalDONIceCell"/>')
+                lines.append('    <var name="verticalDICIceCell"/>')
                 lines.append('    <var name="verticalNitrateIceCell"/>')
                 lines.append('    <var name="verticalSilicateIceCell"/>')
                 lines.append('    <var name="verticalAmmoniumIceCell"/>')
-                lines.append('    <var name="verticalDMSIceCell"/>')
-                lines.append('    <var name="verticalDMSPdIceCell"/>')
-                lines.append('    <var name="verticalNonreactiveIceCell"/>')
                 lines.append('    <var name="verticalHumicsIceCell"/>')
                 lines.append('    <var name="verticalDissolvedIronIceCell"/>')
+                lines.append('    <var name="verticalBCTotalIceCell"/>')
+                lines.append('    <var name="verticalDustTotalIceCell"/>')
+                lines.append('    <var name="verticalBCTotalSnowCell"/>')
+                lines.append('    <var name="verticalDustTotalSnowCell"/>')
                 lines.append('    <var name="iceEnthalpyCell"/>')
                 lines.append('    <var name="iceSalinityCell"/>')
                 lines.append('    <var name="oceanBioFluxes"/>')
@@ -999,15 +1031,35 @@ def buildnml(case, caseroot, compname):
                 lines.append('    <var name="snowAlbedoCell"/>')
                 lines.append('    <var name="bareIceAlbedoCell"/>')
                 lines.append('    <var name="pondAlbedoCell"/>')
-                lines.append('    <var name="verticalAlgaeIceCell"/>')
+                lines.append('    <var name="totalVerticalDiatomIce"/>')
+                lines.append('    <var name="totalVerticalSmallPlanktonIce"/>')
+                lines.append('    <var name="totalVerticalAlgaeCarbonIce"/>')
+                lines.append('    <var name="totalVerticalNitrateIce"/>')
+                lines.append('    <var name="totalVerticalAmmoniumIce"/>')
+                lines.append('    <var name="totalVerticalSilicateIce"/>')
+                lines.append('    <var name="totalVerticalProteinsIce"/>')
+                lines.append('    <var name="totalVerticalDOCLabileIce"/>')
+                lines.append('    <var name="totalVerticalHumicsIce"/>')
+                lines.append('    <var name="totalVerticalDissolvedIronIce"/>')
+                lines.append('    <var name="totalVerticalParticulateIronIce"/>')
+                lines.append('    <var name="totalVerticalBCIce"/>')
+                lines.append('    <var name="totalVerticalBCSnow"/>')
+                lines.append('    <var name="totalVerticalDustIce"/>')
+                lines.append('    <var name="totalVerticalDustSnow"/>')
+                lines.append('    <var name="totalVerticalDissolvedIronSnow"/>')
+                lines.append('    <var name="verticalAlgaeTotalCarbonIceCell"/>')
+                lines.append('    <var name="verticalDOCLabileIceCell"/>')
+                lines.append('    <var name="verticalDONIceCell"/>')
+                lines.append('    <var name="verticalDICIceCell"/>')
                 lines.append('    <var name="verticalNitrateIceCell"/>')
                 lines.append('    <var name="verticalSilicateIceCell"/>')
                 lines.append('    <var name="verticalAmmoniumIceCell"/>')
-                lines.append('    <var name="verticalDMSIceCell"/>')
-                lines.append('    <var name="verticalDMSPdIceCell"/>')
-                lines.append('    <var name="verticalNonreactiveIceCell"/>')
                 lines.append('    <var name="verticalHumicsIceCell"/>')
                 lines.append('    <var name="verticalDissolvedIronIceCell"/>')
+                lines.append('    <var name="verticalBCTotalIceCell"/>')
+                lines.append('    <var name="verticalDustTotalIceCell"/>')
+                lines.append('    <var name="verticalBCTotalSnowCell"/>')
+                lines.append('    <var name="verticalDustTotalSnowCell"/>')
                 lines.append('    <var name="iceEnthalpyCell"/>')
                 lines.append('    <var name="iceSalinityCell"/>')
                 lines.append('    <var name="oceanBioFluxes"/>')

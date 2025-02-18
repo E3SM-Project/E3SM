@@ -198,23 +198,6 @@ void store_liquid_cloud_fraction(
       });
 }
 
-void compute_recipical_pseudo_density(haero::ThreadTeamPolicy team_policy,
-                                      MAMAci::const_view_2d pdel,
-                                      const int nlev,
-                                      // output
-                                      MAMAci::view_2d rpdel) {
-  Kokkos::parallel_for(
-      team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
-        const int icol = team.league_rank();
-        Kokkos::parallel_for(
-            Kokkos::TeamVectorRange(team, 0, nlev), [&](int kk) {
-              EKAT_KERNEL_ASSERT_MSG(0 < pdel(icol, kk),
-                                     "Error: pdel should be > 0.\n");
-              rpdel(icol, kk) = 1 / pdel(icol, kk);
-            });
-      });
-}
-
 void call_function_dropmixnuc(
     haero::ThreadTeamPolicy team_policy, const Real dt,
     mam_coupling::DryAtmosphere &dry_atmosphere, const MAMAci::view_2d rpdel,
@@ -222,6 +205,7 @@ void call_function_dropmixnuc(
     const MAMAci::view_2d wsub,
     const MAMAci::view_2d cloud_frac, const MAMAci::view_2d cloud_frac_prev,
     const mam_coupling::AerosolState &dry_aero, const int nlev,
+    const bool &enable_aero_vertical_mix,
 
     // Following outputs are all diagnostics
     MAMAci::view_2d coltend[mam4::ndrop::ncnst_tot],
@@ -335,7 +319,7 @@ void call_function_dropmixnuc(
                           num2vol_ratio_max_nmodes);
   //---------------------------------------------------------------------------
   //---------------------------------------------------------------------------
-
+  const bool local_enable_aero_vertical_mix = enable_aero_vertical_mix;
   Kokkos::parallel_for(
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
         const int icol = team.league_rank();
@@ -397,7 +381,7 @@ void call_function_dropmixnuc(
                   progs_at_col, haero_atm, state_q_at_lev_col, klev);
 
               // get the start index for aerosols species in the state_q array
-              int istart = mam4::aero_model::pcnst - mam4::ndrop::ncnst_tot;
+              int istart = mam4::utils::aero_start_ind();
 
               // create colum views of state_q
               for(int icnst = istart; icnst < mam4::aero_model::pcnst;
@@ -434,10 +418,10 @@ void call_function_dropmixnuc(
             spechygro, lmassptr_amode, num2vol_ratio_min_nmodes,
             num2vol_ratio_max_nmodes, numptr_amode, nspec_amode, exp45logsig,
             alogsig, aten, mam_idx, mam_cnst_idx,
-            ekat::subview(qcld, icol),             // out
-            ekat::subview(wsub, icol),             // in
-            ekat::subview(cloud_frac_prev, icol),  // in
-            qqcw_view,                             // inout
+            local_enable_aero_vertical_mix, ekat::subview(qcld, icol),  // out
+            ekat::subview(wsub, icol),                                  // in
+            ekat::subview(cloud_frac_prev, icol),                       // in
+            qqcw_view,                                                  // inout
             ptend_q_view, ekat::subview(tendnd, icol),
             ekat::subview(factnum, icol), ekat::subview(ndropcol, icol),
             ekat::subview(ndropmix, icol), ekat::subview(nsource, icol),
@@ -546,6 +530,7 @@ void call_hetfrz_compute_tendencies(
         haero::Atmosphere haero_atm =
             atmosphere_for_column(dry_atmosphere, icol);
         haero::Surface surf{};
+        set_min_background_mmr(team, dry_aero,icol);
         mam4::Prognostics progs =
             mam_coupling::aerosols_for_column(dry_aero, icol);
 

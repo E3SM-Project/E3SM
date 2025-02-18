@@ -4,7 +4,7 @@
 Query the SCREAM machines_specs.py file
 """
 
-from utils import check_minimum_python_version
+from utils import check_minimum_python_version, GoodFormatter
 check_minimum_python_version(3, 4)
 
 import argparse, sys, pathlib
@@ -24,7 +24,7 @@ OR
     > {0} mappy cxx_compiler
 """.format(pathlib.Path(args[0]).name),
         description=description,
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        formatter_class=GoodFormatter
     )
 
     parser.add_argument("machine", help="The name of the machine")

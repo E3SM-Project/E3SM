@@ -6,20 +6,25 @@ set (FIXTURES_BASE_NAME ${TEST_BASE_NAME}_generate_output_nc_files)
 # Ensure test input files are present in the data dir
 GetInputFile(scream/init/${EAMxx_tests_IC_FILE_72lev})
 
+set(YAKL_LIB_NAME "")
+if (SCREAM_RRTMGP_ENABLE_YAKL)
+  set(YAKL_LIB_NAME "yakl")
+endif()
+
 if (SCREAM_ENABLE_BASELINE_TESTS AND NOT SCREAM_ONLY_GENERATE_BASELINES)
   # Unit test to compare against raw rrtmgp output
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input_unit.yaml
                  ${CMAKE_CURRENT_BINARY_DIR}/input_unit.yaml)
   CreateUnitTest(${TEST_BASE_NAME}_unit rrtmgp_standalone_unit.cpp
     LABELS rrtmgp physics driver
-    LIBS scream_rrtmgp rrtmgp scream_control yakl diagnostics rrtmgp_test_utils
-    EXE_ARGS "--ekat-test-params rrtmgp_inputfile=${SCREAM_DATA_DIR}/init/rrtmgp-allsky.nc,rrtmgp_baseline=${SCREAM_BASELINES_DIR}/data/rrtmgp-allsky-baseline.nc"
+    LIBS scream_rrtmgp rrtmgp scream_control ${YAKL_LIB_NAME} diagnostics rrtmgp_test_utils
+    EXE_ARGS "--args --rrtmgp_inputfile ${SCREAM_DATA_DIR}/init/rrtmgp-allsky.nc --rrtmgp_baseline ${SCREAM_BASELINES_DIR}/data/rrtmgp-allsky-baseline.nc"
   )
 endif()
 
 ## Create rrtmgp stand alone executable
 CreateUnitTestExec(${TEST_BASE_NAME} "rrtmgp_standalone.cpp"
-  LIBS scream_rrtmgp rrtmgp scream_control yakl diagnostics
+  LIBS scream_rrtmgp rrtmgp scream_control ${YAKL_LIB_NAME} diagnostics
 )
 
 # The RRTMGP stand-alone test that runs multi-step
@@ -39,7 +44,7 @@ CreateUnitTestFromExec(
   ${TEST_BASE_NAME}_not_chunked ${TEST_BASE_NAME}
   LABELS rrtmgp physics driver
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
-  EXE_ARGS "--ekat-test-params inputfile=input_not_chunked.yaml"
+  EXE_ARGS "--args -inputfile input_not_chunked.yaml"
   FIXTURES_SETUP_INDIVIDUAL ${FIXTURES_BASE_NAME}_not_chunked
 )
 
@@ -70,7 +75,7 @@ CreateUnitTestFromExec(
     ${TEST_BASE_NAME}_chunked ${TEST_BASE_NAME}
     LABELS rrtmgp physics driver
     MPI_RANKS ${TEST_RANK_END}
-    EXE_ARGS "--ekat-test-params inputfile=input_chunked.yaml"
+    EXE_ARGS "--args --inputfile=input_chunked.yaml"
     FIXTURES_SETUP_INDIVIDUAL ${FIXTURES_BASE_NAME}_chunked
     PROPERTIES PASS_REGULAR_EXPRESSION "(beg.end: 0, ${COL_CHUNK_SIZE})"
 )

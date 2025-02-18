@@ -417,6 +417,7 @@ contains
     top_pp%aspect(ti) = asp
     top_pp%topo_grc_ind(ti) = topo_ind    
     top_pp%active(ti) = is_tpu_active
+    top_pp%downhill_ti(ti) = -1   ! initialized to no downhill neighbor state (-1)
     
   end subroutine add_topounit
 

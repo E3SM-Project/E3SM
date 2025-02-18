@@ -638,7 +638,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
   if (co2_transport()) call co2_init()
   call co2_diags_init(phys_state)
 
-  call gw_init()
+  call gw_init(pbuf2d)
 
   call rayleigh_friction_init()
 
@@ -660,7 +660,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
   call nucleate_ice_cam_init(mincld, bulk_scale)
   call hetfrz_classnuc_cam_init(mincld)
 
-  call conv_water_init
+  call conv_water_init(pbuf2d)
 
   call crm_physics_init(phys_state, pbuf2d, species_class)
 

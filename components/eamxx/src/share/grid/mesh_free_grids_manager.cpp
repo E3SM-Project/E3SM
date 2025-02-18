@@ -1,9 +1,9 @@
 #include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/grid/se_grid.hpp"
-#include "share/grid/remap/do_nothing_remapper.hpp"
 #include "share/property_checks/field_nan_check.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
+#include "share/io/scream_scorpio_interface.hpp"
 #include "share/io/scorpio_input.hpp"
 
 #include "physics/share/physics_constants.hpp"
@@ -25,10 +25,11 @@ MeshFreeGridsManager (const ekat::Comm& comm, const ekat::ParameterList& p)
 
 MeshFreeGridsManager::remapper_ptr_type
 MeshFreeGridsManager::
-do_create_remapper (const grid_ptr_type from_grid,
-                    const grid_ptr_type to_grid) const
+do_create_remapper (const grid_ptr_type /* from_grid */,
+                    const grid_ptr_type /* to_grid */) const
 {
-  return std::make_shared<DoNothingRemapper>(from_grid,to_grid);
+  EKAT_ERROR_MSG ("Error! MeshFreeGridsManager does not offer any remapper.\n");
+  return nullptr;
 }
 
 void MeshFreeGridsManager::
@@ -105,7 +106,7 @@ build_se_grid (const std::string& name, ekat::ParameterList& params)
   se_grid->m_short_name = "se";
   add_geo_data(se_grid);
 
-  add_grid(se_grid);
+  add_nonconst_grid(se_grid);
 }
 
 void MeshFreeGridsManager::
@@ -131,7 +132,7 @@ build_point_grid (const std::string& name, ekat::ParameterList& params)
   add_geo_data(pt_grid);
   pt_grid->m_short_name = "pt";
 
-  add_grid(pt_grid);
+  add_nonconst_grid(pt_grid);
 }
 
 void MeshFreeGridsManager::
@@ -146,24 +147,30 @@ add_geo_data (const nonconstgrid_ptr_type& grid) const
   if (geo_data_source=="CREATE_EMPTY_DATA") {
     using namespace ShortFieldTagsNames;
     FieldLayout layout_mid ({LEV},{grid->get_num_vertical_levels()});
+    FieldLayout layout_int ({ILEV},{grid->get_num_vertical_levels()+1});
     const auto units = ekat::units::Units::nondimensional();
 
     auto lat  = grid->create_geometry_data("lat" ,  grid->get_2d_scalar_layout(), units);
     auto lon  = grid->create_geometry_data("lon" ,  grid->get_2d_scalar_layout(), units);
     auto hyam = grid->create_geometry_data("hyam" , layout_mid, units);
     auto hybm = grid->create_geometry_data("hybm" , layout_mid, units);
+    auto hyai = grid->create_geometry_data("hyai" , layout_int, units);
+    auto hybi = grid->create_geometry_data("hybi" , layout_int, units);
     auto lev  = grid->create_geometry_data("lev" ,  layout_mid, units);
+    auto ilev = grid->create_geometry_data("ilev" , layout_int, units);
 
     lat.deep_copy(ekat::ScalarTraits<Real>::invalid());
     lon.deep_copy(ekat::ScalarTraits<Real>::invalid());
     hyam.deep_copy(ekat::ScalarTraits<Real>::invalid());
     hybm.deep_copy(ekat::ScalarTraits<Real>::invalid());
     lev.deep_copy(ekat::ScalarTraits<Real>::invalid());
+    ilev.deep_copy(ekat::ScalarTraits<Real>::invalid());
     lat.sync_to_dev();
     lon.sync_to_dev();
     hyam.sync_to_dev();
     hybm.sync_to_dev();
     lev.sync_to_dev();
+    ilev.sync_to_dev();
   } else if (geo_data_source=="IC_FILE"){
     const auto& filename = m_params.get<std::string>("ic_filename");
     if (scorpio::has_var(filename,"lat") &&
@@ -172,7 +179,9 @@ add_geo_data (const nonconstgrid_ptr_type& grid) const
     }
 
     if (scorpio::has_var(filename,"hyam") &&
-        scorpio::has_var(filename,"hybm")) {
+        scorpio::has_var(filename,"hybm") &&
+        scorpio::has_var(filename,"hyai") &&
+        scorpio::has_var(filename,"hybi") ) {
       load_vertical_coordinates(grid,filename);
     }
   }
@@ -233,53 +242,71 @@ load_vertical_coordinates (const nonconstgrid_ptr_type& grid, const std::string&
   using namespace ekat::units;
 
   FieldLayout layout_mid ({LEV},{grid->get_num_vertical_levels()});
+  FieldLayout layout_int ({ILEV},{grid->get_num_vertical_levels()+1});
   Units nondim = Units::nondimensional();
   Units mbar (100*Pa,"mb");
 
   auto hyam = grid->create_geometry_data("hyam", layout_mid, nondim);
   auto hybm = grid->create_geometry_data("hybm", layout_mid, nondim);
+  auto hyai = grid->create_geometry_data("hyai", layout_int, nondim);
+  auto hybi = grid->create_geometry_data("hybi", layout_int, nondim);
   auto lev  = grid->create_geometry_data("lev",  layout_mid, mbar);
+  auto ilev = grid->create_geometry_data("ilev", layout_int, mbar);
 
   // Create host mirrors for reading in data
   std::map<std::string,geo_view_host> host_views = {
     { "hyam", hyam.get_view<Real*,Host>() },
-    { "hybm", hybm.get_view<Real*,Host>() }
+    { "hybm", hybm.get_view<Real*,Host>() },
+    { "hyai", hyai.get_view<Real*,Host>() },
+    { "hybi", hybi.get_view<Real*,Host>() }
   };
 
   // Store view layouts
   using namespace ShortFieldTagsNames;
   std::map<std::string,FieldLayout> layouts = {
     { "hyam", hyam.get_header().get_identifier().get_layout() },
-    { "hybm", hybm.get_header().get_identifier().get_layout() }
+    { "hybm", hybm.get_header().get_identifier().get_layout() },
+    { "hyai", hyai.get_header().get_identifier().get_layout() },
+    { "hybi", hybi.get_header().get_identifier().get_layout() }
   };
 
   // Read hyam/hybm into host views
   ekat::ParameterList vcoord_reader_pl;
   vcoord_reader_pl.set("Filename",filename);
-  vcoord_reader_pl.set<std::vector<std::string>>("Field Names",{"hyam","hybm"});
+  vcoord_reader_pl.set<std::vector<std::string>>("Field Names",{"hyam","hybm","hyai","hybi"});
 
   AtmosphereInput vcoord_reader(vcoord_reader_pl,grid, host_views, layouts);
   vcoord_reader.read_variables();
   vcoord_reader.finalize();
 
-  // Build lev from hyam and hybm
+  // Build lev and ilev from hyam and hybm, and ilev from hyai and hybi
   using PC             = scream::physics::Constants<Real>;
   const Real ps0        = PC::P0;
 
-  auto hya_v = hyam.get_view<const Real*,Host>();
-  auto hyb_v = hybm.get_view<const Real*,Host>();
-  auto lev_v = lev.get_view<Real*,Host>();
-  for (int ii=0;ii<grid->get_num_vertical_levels();ii++) {
-    lev_v(ii) = 0.01*ps0*(hya_v(ii)+hyb_v(ii));
+  auto hyam_v  = hyam.get_view<const Real*,Host>();
+  auto hybm_v  = hybm.get_view<const Real*,Host>();
+  auto lev_v   = lev.get_view<Real*,Host>();
+  auto hyai_v  = hyai.get_view<const Real*,Host>();
+  auto hybi_v  = hybi.get_view<const Real*,Host>();
+  auto ilev_v  = ilev.get_view<Real*,Host>();
+  auto num_lev = grid->get_num_vertical_levels();
+  for (int ii=0;ii<num_lev;ii++) {
+    lev_v(ii)  = 0.01*ps0*(hyam_v(ii)+hybm_v(ii));
+    ilev_v(ii) = 0.01*ps0*(hyai_v(ii)+hybi_v(ii));
   }
+  // Note, ilev is just 1 more level than the number of midpoint levs
+  ilev_v(num_lev) = 0.01*ps0*(hyai_v(num_lev)+hybi_v(num_lev));
 
   // Sync to dev
   hyam.sync_to_dev();
   hybm.sync_to_dev();
+  hyai.sync_to_dev();
+  hybi.sync_to_dev();
   lev.sync_to_dev();
+  ilev.sync_to_dev();
 
 #ifndef NDEBUG
-  for (auto f : {hyam, hybm}) {
+  for (auto f : {hyam, hybm, hyai, hybi}) {
     auto nan_check = std::make_shared<FieldNaNCheck>(f,grid)->check();
     EKAT_REQUIRE_MSG (nan_check.result==CheckResult::Pass,
         "ERROR! NaN values detected in " + f.name() + " field.\n" + nan_check.msg);

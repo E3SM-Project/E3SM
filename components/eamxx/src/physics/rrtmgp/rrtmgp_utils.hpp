@@ -40,12 +40,12 @@ void compute_heating_rate (
   using physconst = scream::physics::Constants<Real>;
   auto ncol = flux_up.dimension[0];
   auto nlay = flux_up.dimension[1]-1;
-  yakl::fortran::parallel_for(yakl::fortran::SimpleBounds<2>(nlay,ncol), YAKL_LAMBDA(int ilay, int icol) {
+  TIMED_KERNEL(yakl::fortran::parallel_for(yakl::fortran::SimpleBounds<2>(nlay,ncol), YAKL_LAMBDA(int ilay, int icol) {
       heating_rate(icol,ilay) = (
         flux_up(icol,ilay+1) - flux_up(icol,ilay) -
         flux_dn(icol,ilay+1) + flux_dn(icol,ilay)
                                  ) * physconst::gravit / (physconst::Cpair * pdel(icol,ilay));
-    });
+      }));
 }
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
@@ -57,14 +57,15 @@ void compute_heating_rate (
   View4 const &heating_rate)
 {
   using physconst = scream::physics::Constants<Real>;
-  auto ncol = flux_up.extent(0);
-  auto nlay = flux_up.extent(1)-1;
-  Kokkos::parallel_for(conv::get_mdrp<2>({nlay,ncol}), KOKKOS_LAMBDA(int ilay, int icol) {
+  using LayoutT = typename View1::array_layout;
+  const int ncol = (int)flux_up.extent(0);
+  const int nlay = (int)flux_up.extent(1)-1;
+  TIMED_KERNEL(FLATTEN_MD_KERNEL2(ncol, nlay, icol, ilay,
     heating_rate(icol,ilay) = (
       flux_up(icol,ilay+1) - flux_up(icol,ilay) -
       flux_dn(icol,ilay+1) + flux_dn(icol,ilay)
                                ) * physconst::gravit / (physconst::Cpair * pdel(icol,ilay));
-  });
+                                  ));
 }
 #endif
 
@@ -98,28 +99,31 @@ bool check_range(T x, Real xmin, Real xmax, std::string msg, std::ostream& out=s
         }
       });
     auto num_bad = sum(bad_mask);
-    pass = false;
-    out << msg << ": "
-        << num_bad << " values outside range "
-        << "[" << xmin << "," << xmax << "]"
-        << "; minval = " << _xmin
-        << "; maxval = " << _xmax << "\n";
+    if (num_bad > 0) {
+      pass = false;
+      out << msg << ": "
+          << num_bad << " values outside range "
+          << "[" << xmin << "," << xmax << "]"
+          << "; minval = " << _xmin
+          << "; maxval = " << _xmax << "\n";
+    }
   }
   return pass;
 }
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
-template <class T>
-bool check_range_k(T x, Real xmin, Real xmax, std::string msg, std::ostream& out=std::cout) {
+template <class T, typename std::enable_if<T::rank == 1>::type* dummy = nullptr>
+bool check_range_k(T x, typename T::const_value_type xmin, typename T::const_value_type xmax,
+                   std::string msg, std::ostream& out=std::cout) {
   bool pass = true;
   auto _xmin = conv::minval(x);
   auto _xmax = conv::maxval(x);
   if (_xmin < xmin or _xmax > xmax) {
     // How many outside range?
-    bool1dk bad_mask("bad_mask", x.size());
-    Kokkos::parallel_for(x.size(), KOKKOS_LAMBDA (int i) {
-      if (x.data()[i] < xmin or x.data()[i] > xmax) {
-        bad_mask.data()[i] = true;
+    Kokkos::View<bool*> bad_mask("bad_mask", x.extent(0));
+    Kokkos::parallel_for(x.extent(0), KOKKOS_LAMBDA (int i) {
+      if (x(i) < xmin or x(i) > xmax) {
+        bad_mask(i) = true;
       }
     });
     auto num_bad = conv::sum(bad_mask);
@@ -132,6 +136,68 @@ bool check_range_k(T x, Real xmin, Real xmax, std::string msg, std::ostream& out
   }
   return pass;
 }
+
+template <class T, typename std::enable_if<T::rank == 2>::type* dummy = nullptr>
+bool check_range_k(T x, typename T::const_value_type xmin, typename T::const_value_type xmax,
+                   std::string msg, std::ostream& out=std::cout) {
+  bool pass = true;
+  auto _xmin = conv::minval(x);
+  auto _xmax = conv::maxval(x);
+  if (_xmin < xmin or _xmax > xmax) {
+    // How many outside range?
+    Kokkos::View<bool**> bad_mask("bad_mask", x.extent(0), x.extent(1));
+    Kokkos::parallel_for(x.extent(0), KOKKOS_LAMBDA (int i) {
+      for (size_t j = 0; j < x.extent(1); ++j) {
+        if (x(i, j) < xmin or x(i, j) > xmax) {
+          bad_mask(i, j) = true;
+        }
+      }
+    });
+    auto num_bad = conv::sum(bad_mask);
+    if (num_bad > 0) {
+      pass = false;
+      out << msg << ": "
+          << num_bad << " values outside range "
+          << "[" << xmin << "," << xmax << "]"
+          << "; minval = " << _xmin
+          << "; maxval = " << _xmax << "\n";
+    }
+  }
+  return pass;
+}
+
+template <class T, typename std::enable_if<T::rank == 3>::type* dummy = nullptr>
+bool check_range_k(T x, typename T::const_value_type xmin, typename T::const_value_type xmax,
+                   std::string msg, std::ostream& out=std::cout) {
+  bool pass = true;
+  auto _xmin = conv::minval(x);
+  auto _xmax = conv::maxval(x);
+  if (_xmin < xmin or _xmax > xmax) {
+    // How many outside range?
+    Kokkos::View<bool***> bad_mask("bad_mask", x.extent(0), x.extent(1), x.extent(2));
+    Kokkos::parallel_for(x.extent(0), KOKKOS_LAMBDA (int i) {
+      for (size_t j = 0; j < x.extent(1); ++j) {
+        for (size_t k = 0; k < x.extent(2); ++k) {
+          if (x(i, j, k) < xmin or x(i, j, k) > xmax) {
+            bad_mask(i, j, k) = true;
+          }
+        }
+      }
+    });
+    auto num_bad = conv::sum(bad_mask);
+    if (num_bad > 0) {
+      pass = false;
+      out << msg << ": "
+          << num_bad << " values outside range "
+          << "[" << xmin << "," << xmax << "]"
+          << "; minval = " << _xmin
+          << "; maxval = " << _xmax << "\n";
+    }
+  }
+  return pass;
+}
+
+
 #endif
 
 } // namespace rrtmgp

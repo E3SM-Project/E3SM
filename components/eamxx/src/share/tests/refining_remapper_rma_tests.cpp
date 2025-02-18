@@ -253,7 +253,8 @@ TEST_CASE ("refining_remapper") {
     CHECK_THROWS (r->register_field(bad_src,bad_tgt)); // not allocated
     bad_src.allocate_view();
     bad_tgt.allocate_view();
-    CHECK_THROWS (r->register_field(bad_src,bad_tgt)); // bad data type (must be real)
+    r->register_field(bad_src,bad_tgt);
+    CHECK_THROWS (r->registration_ends()); // bad data type (must be real)
   }
 
   auto r = std::make_shared<RefiningRemapperRMATester>(tgt_grid,filename);

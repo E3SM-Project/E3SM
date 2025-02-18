@@ -10,7 +10,7 @@ a doc string and its type, as well as, if present, constraints and valid values.
 
 import argparse, sys, os, pathlib
 
-from utils import _ensure_pylib_impl
+from utils import _ensure_pylib_impl, GoodFormatter
 
 _ensure_pylib_impl("mdutils")
 
@@ -29,7 +29,7 @@ def parse_command_line(args, description):
         usage="""{0}
 """.format(pathlib.Path(args[0]).name),
         description=description,
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        formatter_class=GoodFormatter
     )
 
     return parser.parse_args(args[1:])

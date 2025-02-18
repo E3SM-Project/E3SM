@@ -203,7 +203,7 @@ contains
     use iMOAB, only: iMOAB_ComputeMeshIntersectionOnSphere, iMOAB_RegisterApplication, &
       iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_ComputeCommGraph, iMOAB_ComputeScalarProjectionWeights, &
       iMOAB_MigrateMapMesh, iMOAB_WriteLocalMesh, iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorage, &
-      iMOAB_WriteMappingWeightsToFile
+      iMOAB_WriteMappingWeightsToFile, iMOAB_SetMapGhostLayers
     !---------------------------------------------------------------
     ! Description
     ! Initialize module attribute vectors and all other non-mapping
@@ -269,6 +269,8 @@ contains
     integer ent_type ! for setting tags
     integer noflds   ! used for number of fields in allocating moab accumulated array x2oacc_om
     real (kind=R8) , allocatable :: tmparray (:) ! used to set the r2x fields to 0
+    integer  nghlay ! used to set the number of ghost layers, needed for bilinear map
+    integer  nghlay_tgt
 
     !---------------------------------------------------------------
 
@@ -426,6 +428,14 @@ contains
             ! next, let us compute the ATM and OCN data transfer
             if (.not. samegrid_ao) then ! not a data OCN model
 
+               ! for bilinear maps, we need to have a layer of ghosts on source
+               nghlay = 1  ! number of ghost layers
+               nghlay_tgt = 0
+               ierr   = iMOAB_SetMapGhostLayers( mbintxao, nghlay, nghlay_tgt )
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in setting the number of layers'
+                  call shr_sys_abort(subname//' error in setting the number of layers')
+               endif
                ! first compute the overlap mesh between mbaxid (ATM) and mboxid (OCN) on coupler PEs
                ierr =  iMOAB_ComputeMeshIntersectionOnSphere (mbaxid, mboxid, mbintxao)
                if (ierr .ne. 0) then
@@ -1043,6 +1053,7 @@ subroutine prep_ocn_accum_avg_moab()
     use iMOAB, only : iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
     ! Local Variables
     integer   :: ent_type, ierr
+    integer noflds, lsize ! used for restart case only?
     character(CXX)  :: tagname
     character(*), parameter  :: subname = '(prep_ocn_accum_avg_moab)'
 #ifdef MOABDEBUG
@@ -1056,7 +1067,18 @@ subroutine prep_ocn_accum_avg_moab()
           x2oacc_om = 1./x2oacc_om_cnt * x2oacc_om
        end if
 
+       if (.not. allocated(x2o_om)) then
+          ! we could come here in the restart case; not sure why only for 
+          ! the case ERS_Vmoab_T62_oQU120.CMPASO-NYF
+          lsize = size(x2oacc_om, 1)
+          noflds = size(x2oacc_om, 2)
+          allocate (x2o_om(lsize, noflds))
+          arrSize_x2o_om = noflds * lsize
+          
+       endif
+
        ! ***NOTE***THE FOLLOWING ACTUALLY MODIFIES x2o_om
+
        x2o_om   = x2oacc_om
        !call mct_avect_copy(x2oacc_ox(eoi), x2o_ox)
        ! modify the tags
@@ -1339,9 +1361,11 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
    !nwflds = mct_aVect_nRattr(w2x_o)
       nxflds = mct_aVect_nRattr(xao_o)
 
-       !ngflds = mct_aVect_nRattr(g2x_o)
-       allocate(x2o_om (lsize, noflds))
-       arrSize_x2o_om = lsize * noflds ! this willbe used to set/get x2o_om tags
+      if (.not. allocated(x2o_om)) then
+         !ngflds = mct_aVect_nRattr(g2x_o)
+         allocate(x2o_om (lsize, noflds))
+         arrSize_x2o_om = lsize * noflds ! this willbe used to set/get x2o_om tags
+      endif
        allocate(a2x_om (lsize, naflds))
        allocate(i2x_om (lsize, niflds))
        allocate(r2x_om (lsize, nrflds))

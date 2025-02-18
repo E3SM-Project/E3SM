@@ -172,13 +172,14 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   add_field<Computed>("pseudo_density",     pg_scalar3d_mid, Pa,    pgn,N);
   add_field<Computed>("pseudo_density_dry", pg_scalar3d_mid, Pa,    pgn,N);
   add_field<Updated> ("ps",                 pg_scalar2d    , Pa,    pgn);
-  add_field<Updated >("qv",                 pg_scalar3d_mid, kg/kg, pgn,"tracers",N);
   add_field<Updated >("phis",               pg_scalar2d    , m2/s2, pgn);
   add_field<Computed>("p_int",              pg_scalar3d_int, Pa,    pgn,N);
   add_field<Computed>("p_mid",              pg_scalar3d_mid, Pa,    pgn,N);
   add_field<Computed>("p_dry_int",          pg_scalar3d_int, Pa,    pgn,N);
   add_field<Computed>("p_dry_mid",          pg_scalar3d_mid, Pa,    pgn,N);
   add_field<Computed>("omega",              pg_scalar3d_mid, Pa/s,  pgn,N);
+
+  add_tracer<Updated >("qv", m_phys_grid, kg/kg, N);
   add_group<Updated>("tracers",pgn,N, Bundling::Required);
 
   if (fv_phys_active()) {
@@ -425,11 +426,6 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   if (run_type==RunType::Initial) {
     initialize_homme_state ();
   } else {
-    if (m_iop) {
-      // We need to reload IOP data after restarting
-      m_iop->read_iop_file_data(timestamp());
-    }
-
     restart_homme_state ();
   }
 
@@ -443,7 +439,7 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   prim_init_model_f90 ();
 
   if (fv_phys_active()) {
-    fv_phys_dyn_to_fv_phys(run_type != RunType::Initial);
+    fv_phys_dyn_to_fv_phys(run_type == RunType::Restart);
     // [CGLL ICs in pg2] Remove the CGLL fields from the process. The AD has a
     // separate fvphyshack-based line to remove the whole CGLL FM. The intention
     // is to clear the view memory on the device, but I don't know if these two
@@ -456,7 +452,7 @@ void HommeDynamics::initialize_impl (const RunType run_type)
     for (const auto& f : {"horiz_winds", "T_mid", "ps", "phis", "pseudo_density"})
       remove_field(f, rgn);
     remove_group("tracers", rgn);
-    fv_phys_rrtmgp_active_gases_remap();
+    fv_phys_rrtmgp_active_gases_remap(run_type);
   }
 
   // Set up field property checks
@@ -604,7 +600,7 @@ void HommeDynamics::homme_pre_process (const double dt) {
     fv_phys_pre_process();
   } else {
     // Remap FT, FM, and Q->FQ
-    m_p2d_remapper->remap(true);
+    m_p2d_remapper->remap_fwd();
   }
 
   auto& tl = c.get<TimeLevel>();
@@ -668,10 +664,6 @@ void HommeDynamics::homme_post_process (const double dt) {
     get_internal_field("w_int_dyn").get_header().get_alloc_properties().reset_subview_idx(tl.n0);
   }
 
-  if (m_iop) {
-    apply_iop_forcing(dt);
-  }
-
   if (fv_phys_active()) {
     fv_phys_post_process();
     // Apply Rayleigh friction to update temperature and horiz_winds
@@ -681,7 +673,7 @@ void HommeDynamics::homme_post_process (const double dt) {
   }
 
   // Remap outputs to ref grid
-  m_d2p_remapper->remap(true);
+  m_d2p_remapper->remap_fwd();
 
   using ColOps = ColumnOps<DefaultDevice,Real>;
   using PF = PhysicsFunctions<DefaultDevice>;
@@ -1027,7 +1019,7 @@ void HommeDynamics::restart_homme_state () {
     *qv_prev_ref = m_helper_fields.at("qv_prev_phys");
   }
   m_ic_remapper->registration_ends();
-  m_ic_remapper->remap(/*forward = */false);
+  m_ic_remapper->remap_bwd();
   m_ic_remapper = nullptr; // Can clean up the IC remapper now.
 
   // Now that we have dp_ref, we can recompute pressure
@@ -1116,7 +1108,7 @@ void HommeDynamics::initialize_homme_state () {
   m_ic_remapper->register_field(get_field_in("T_mid",rgn),get_internal_field("vtheta_dp_dyn"));
   m_ic_remapper->register_field(*get_group_in("tracers",rgn).m_bundle,m_helper_fields.at("Q_dyn"));
   m_ic_remapper->registration_ends();
-  m_ic_remapper->remap(true);
+  m_ic_remapper->remap_fwd();
 
   // Wheter w_int is computed or not, Homme still does some global reduction on w_int when
   // printing the state, so we need to make sure it doesn't contain NaNs

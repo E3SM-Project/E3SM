@@ -10,7 +10,7 @@ module TopounitDataType
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use abortutils     , only : endrun
   use elm_varcon     , only : spval, ispval
-  use elm_varctl     , only : iulog, use_cn, use_fates, use_lch4
+  use elm_varctl     , only : iulog, use_cn, use_fates, use_lch4, use_IM2_hillslope_hydrology
   use elm_varpar     , only : numrad
   use histFileMod    , only : hist_addfld1d, hist_addfld2d
   use ncdio_pio      , only : file_desc_t, ncd_double
@@ -93,14 +93,29 @@ module TopounitDataType
   end type topounit_energy_state
 
   !-----------------------------------------------------------------------
+  ! Define the data structure that holds water state information for land at the level of topographic unit.
+  type, public :: topounit_water_state
+    real(r8), pointer :: from_uphill      (:) => null() ! water received from uphill topounit(s) (kg/m^2)
+
+  contains
+    procedure, public :: Init  => init_top_ws
+    procedure, public :: Restart => restart_top_ws
+    procedure, public :: Clean => clean_top_ws
+  end type topounit_water_state
+
+
+
+  !-----------------------------------------------------------------------
   ! declare the public instances of topounit data types
   type(topounit_atmospheric_state),    public, target :: top_as
   type(topounit_atmospheric_flux),     public, target :: top_af
   type(topounit_energy_state),         public, target :: top_es
+  type(topounit_water_state),          public, target :: top_ws
 
   !$acc declare create(top_as)
   !$acc declare create(top_af)
   !$acc declare create(top_es)
+  !$acc declare create(top_ws)
 
   contains
 
@@ -636,5 +651,53 @@ module TopounitDataType
     deallocate(this%t_grnd   )
   end subroutine clean_top_es
 
+  !-----------------------------------------------------------------------
+  subroutine init_top_ws(this, begt, endt)
+    class(topounit_water_state) :: this
+    integer, intent(in) :: begt   ! beginning topographic unit index
+    integer, intent(in) :: endt   ! ending topographic unit index
+
+    allocate(this%from_uphill   (begt:endt)) ; this%from_uphill   (:) = spval
+    !-----------------------------------------------------------------------
+    ! initialize history fields for members of top_ws
+    !-----------------------------------------------------------------------
+    if (use_IM2_hillslope_hydrology) then
+      call hist_addfld1d (fname='WATER_FROM_UPHILL',  units='mm',  &
+          avgflag='A', long_name='water received from uphill topounit(s)', &
+          ptr_topo=this%from_uphill, t2g_scale_type='unity')
+    endif
+
+    !-----------------------------------------------------------------------
+    ! set cold-start initial values for top_ws
+    !-----------------------------------------------------------------------
+    this%from_uphill(begt:endt) = 0._r8
+  end subroutine init_top_ws
+
+  !-----------------------------------------------------------------------
+  subroutine restart_top_ws(this, bounds, ncid, flag)
+    class(topounit_water_state) :: this
+    type(bounds_type), intent(in) :: bounds
+    type(file_desc_t), intent(inout) :: ncid
+    character(len=*), intent(in) :: flag
+
+    logical :: readvar ! determine if variable is on initial file
+
+    call restartvar(ncid=ncid, flag=flag, varname='FROM_UPHILL', xtype=ncd_double, &
+        dim1name='topounit', long_name='water received from uphill topounit(s)', &
+        units='kg/m2', interpinic_flag='interp', readvar=readvar, data=this%from_uphill)
+    if (flag=='read' .and. .not. readvar) then
+       this%from_uphill(bounds%begt:bounds%endt) = 0.0_r8
+    end if
+
+  end subroutine restart_top_ws
+  
+  !-----------------------------------------------------------------------
+  subroutine clean_top_ws(this, begt, endt)
+    class(topounit_water_state) :: this
+    integer, intent(in) :: begt   ! beginning topographic unit index
+    integer, intent(in) :: endt   ! ending topographic unit index
+
+    deallocate(this%from_uphill)
+  end subroutine clean_top_ws
 
 end module TopounitDataType

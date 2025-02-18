@@ -43,8 +43,8 @@ void SurfaceCouplingExporter::set_grids(const std::shared_ptr<const GridsManager
   add_field<Required>("pseudo_density",       scalar3d_layout_mid,  Pa,     grid_name, ps);
   add_field<Required>("phis",                 scalar2d_layout,      m2/s2,  grid_name);
   add_field<Required>("p_mid",                scalar3d_layout_mid,  Pa,     grid_name, ps);
-  add_field<Required>("qv",                   scalar3d_layout_mid,  kg/kg,  grid_name, "tracers", ps);
   add_field<Required>("T_mid",                scalar3d_layout_mid,  K,      grid_name, ps);
+  add_tracer<Required>("qv", m_grid,  kg/kg, ps);
   // TODO: Switch horiz_winds to using U and V, note right now there is an issue with when the subfields are created, so can't switch yet.
   add_field<Required>("horiz_winds",          vector3d_layout,      m/s,    grid_name);
   add_field<Required>("sfc_flux_dir_nir",     scalar2d_layout,      W/m2,   grid_name);
@@ -136,6 +136,13 @@ void SurfaceCouplingExporter::setup_surface_coupling_data(const SCDataManager &s
   m_cpl_exports_view_h = decltype(m_cpl_exports_view_h) (sc_data_manager.get_field_data_ptr(),
                                                          m_num_cols, m_num_cpl_exports);
   m_cpl_exports_view_d = Kokkos::create_mirror_view(DefaultDevice(), m_cpl_exports_view_h);
+
+#ifdef HAVE_MOAB
+  // The export data is of size num_cpl_exports,ncols. All other data is of size num_scream_exports
+  m_moab_cpl_exports_view_h = decltype(m_moab_cpl_exports_view_h) (sc_data_manager.get_field_data_moab_ptr(),
+                                                         m_num_cpl_exports, m_num_cols);
+  m_moab_cpl_exports_view_d = Kokkos::create_mirror_view(DefaultDevice(), m_moab_cpl_exports_view_h);
+#endif
 
   m_export_field_names = new name_t[m_num_scream_exports];
   std::memcpy(m_export_field_names, sc_data_manager.get_field_name_ptr(), m_num_scream_exports*32*sizeof(char));
@@ -536,6 +543,12 @@ void SurfaceCouplingExporter::do_export_to_cpl(const bool called_during_initiali
   // Any field not exported by scream, or not exported
   // during initialization, is set to 0.0
   Kokkos::deep_copy(m_cpl_exports_view_d, 0.0);
+#ifdef HAVE_MOAB
+  // Any field not exported by scream, or not exported
+  // during initialization, is set to 0.0
+  Kokkos::deep_copy(m_moab_cpl_exports_view_d, 0.0);
+  const auto moab_cpl_exports_view_d = m_moab_cpl_exports_view_d;
+#endif
   const auto cpl_exports_view_d = m_cpl_exports_view_d;
   const int  num_exports        = m_num_scream_exports;
   const int  num_cols           = m_num_cols;
@@ -554,9 +567,27 @@ void SurfaceCouplingExporter::do_export_to_cpl(const bool called_during_initiali
       cpl_exports_view_d(icol,info.cpl_indx) = info.constant_multiple*info.data[offset];
     }
   });
+#ifdef HAVE_MOAB
+  Kokkos::parallel_for(export_policy, KOKKOS_LAMBDA(const int& i) {
+    const int ifield = i / num_cols;
+    const int icol   = i % num_cols;
+    const auto& info = col_info(ifield);
+    const auto offset = icol*info.col_stride + info.col_offset;
 
+    // if this is during initialization, check whether or not the field should be exported
+    bool do_export = (not called_during_initialization || info.transfer_during_initialization);
+    if (do_export) {
+      moab_cpl_exports_view_d(info.cpl_indx, icol) = info.constant_multiple*info.data[offset];
+    }
+  });
+#endif
   // Deep copy fields from device to cpl host array
   Kokkos::deep_copy(m_cpl_exports_view_h,m_cpl_exports_view_d);
+#ifdef HAVE_MOAB
+  // Deep copy fields from device to cpl host array
+  Kokkos::deep_copy(m_moab_cpl_exports_view_h,m_moab_cpl_exports_view_d);
+#endif
+
 }
 // =========================================================================================
 void SurfaceCouplingExporter::finalize_impl()
