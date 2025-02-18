@@ -23,18 +23,18 @@ TEST_CASE ("combine_ops") {
   pack_type x;
 
   x = two;
-  combine<Replace>(two,x);
+  combine<Replace>(two,x,1,0);
   REQUIRE ( (x==two).all() );
 
   combine<Update>(two,x,2.0,1.0);
   REQUIRE ( (x==six).all() );
 
   x = two;
-  combine<Multiply>(two,x);
+  combine<Multiply>(two,x,1,1);
   REQUIRE ( (x==four).all() );
 
   x = four;
-  combine<Divide>(two,x);
+  combine<Divide>(two,x,1,1);
   REQUIRE ( (x==two).all() );
 }
 
