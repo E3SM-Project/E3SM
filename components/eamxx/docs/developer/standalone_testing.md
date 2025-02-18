@@ -51,8 +51,8 @@ Considerations for using `test-all-scream`:
 * Your machine must be known to our scripts, see above.
 * If you try to run commands by-hand (outside of test-all-scream;
   cmake, make, ctest, etc), you'll need to remember to
-  load the scream-env into your shell, which can be done like this:
-  `cd eamxx/scripts; eval $(./scripts/scream-env-cmd $machine)`
+  load the eamxx-env into your shell, which can be done like this:
+  `cd eamxx/scripts; eval $(./scripts/eamxx-env-cmd $machine)`
 * test-all-scream expects to be run from a compute node if you
   are on a batch machine.
 * You'll need to think about your baseline situation, as many of our

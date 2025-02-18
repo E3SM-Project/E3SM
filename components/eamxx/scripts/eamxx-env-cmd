@@ -2,7 +2,7 @@
 
 """
 Dump the SCREAM-approved environment setup commands for a machine.
-This can be used with a bash function or the source_to_load_scream_env.sh
+This can be used with a bash function or the source_to_load_eamxx_env.sh
 script to conveniently load the SCREAM-approved env into your current shell.
 """
 
@@ -37,7 +37,7 @@ OR
     > load_scream mappy
 
     \033[1;32m# Use the provided shell script to load env \033[0m
-    > SCREAM_MACHINE=mappy . scream/scripts/source_to_load_scream_env.sh
+    > SCREAM_MACHINE=mappy . scream/scripts/source_to_load_eamxx_env.sh
 
 """.format(pathlib.Path(args[0]).name),
         description=description,

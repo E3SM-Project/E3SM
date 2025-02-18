@@ -15,7 +15,7 @@ CHOICES = (
 )
 
 ###############################################################################
-def query_scream(machine, param):
+def query_eamxx(machine, param):
 ###############################################################################
     assert_machine_supported(machine)
     expect(param in CHOICES, f"Unknown param {param}")

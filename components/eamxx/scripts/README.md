@@ -35,9 +35,9 @@ to remember to run this.
 Because this testsuite is used in developing our core test scripts, you should always expect this testsuite to pass
 and have up-to-date documentation.
 
-## scream-env-cmd
+## eamxx-env-cmd
 
-A scream analog for modulecmd, a tool for dumping shell commands that would load the SCREAM approved env for
+An eamxx analog for modulecmd, a tool for dumping shell commands that would load the EAMXX approved env for
 your machine. Designed for easy integration with bash functions for easy loading of env.
 
 This tool is not used in our core testing tools, but it is simple and actively used by some of our developers
