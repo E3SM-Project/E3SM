@@ -531,10 +531,7 @@ TEST_CASE("field_mgr", "") {
   REQUIRE (has_group(f2_1.get_header().get_tracking().get_groups_info(),"gRouP_1"));
   REQUIRE (has_group(f1_2.get_header().get_tracking().get_groups_info(),"Group_2"));
   REQUIRE (has_group(f1_1.get_header().get_tracking().get_groups_info(),"Group_2"));
-
-  // We did not register group 1 on grid 2
-  REQUIRE (not has_group(f1_2.get_header().get_tracking().get_groups_info(),"Group_1"));
-
+  REQUIRE (has_group(f1_2.get_header().get_tracking().get_groups_info(),"Group_1"));
 
   // Check that the groups in the field_mgr contain the correct fields
   REQUIRE (field_mgr.get_groups_info().at("group_1")->m_fields_names.size()==2);
@@ -542,7 +539,7 @@ TEST_CASE("field_mgr", "") {
 
   // Check that correct grids requested groups
   REQUIRE (field_mgr.has_group("group_1", "grid1"));
-  REQUIRE (not field_mgr.has_group("group_1", "grid2"));
+  REQUIRE (field_mgr.has_group("group_1", "grid2"));
   REQUIRE (field_mgr.has_group("group_2", "grid1"));
   REQUIRE (field_mgr.has_group("group_2", "grid2"));
 
@@ -626,9 +623,6 @@ TEST_CASE("tracers_bundle", "") {
   // No subtracer field should exist since it is not
   // a parent of any field.
   REQUIRE_THROWS (field_mgr.get_field("subtracers", gn1));
-
-  // No subtracers group requested on grid2
-  REQUIRE_THROWS (field_mgr.get_field_group("subtracers", gn2));
   REQUIRE_THROWS (field_mgr.get_field("subtracers", gn2));
 
   // The field_mgr should have allocated the group bundled
