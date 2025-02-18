@@ -45,8 +45,7 @@ template<CombineMode CM, typename ScalarIn, typename ScalarOut,
          typename CoeffType = typename ekat::ScalarTraits<ScalarIn>::scalar_type>
 KOKKOS_FORCEINLINE_FUNCTION
 void combine (const ScalarIn& newVal, ScalarOut& result,
-              const CoeffType alpha = CoeffType(1),
-              const CoeffType beta  = CoeffType(0))
+              const CoeffType alpha, const CoeffType beta)
 {
   switch (CM) {
     case CombineMode::Replace:
@@ -69,8 +68,7 @@ template<CombineMode CM, typename ScalarIn, typename ScalarOut,
          typename CoeffType = typename ekat::ScalarTraits<ScalarIn>::scalar_type>
 KOKKOS_FORCEINLINE_FUNCTION
 void combine_and_fill (const ScalarIn& newVal, ScalarOut& result, const ScalarOut fill_val,
-              const CoeffType alpha = CoeffType(1),
-              const CoeffType beta  = CoeffType(0))
+              const CoeffType alpha, const CoeffType beta)
 {
   switch (CM) {
     case CombineMode::Replace:
