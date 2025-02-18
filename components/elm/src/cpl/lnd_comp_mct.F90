@@ -839,6 +839,50 @@ contains
   end subroutine lnd_domain_mct
 
 #ifdef HAVE_MOAB
+  integer function compute_integer_hash(xyz)
+    use iso_fortran_env
+    implicit none
+    ! Declare variables
+    integer :: a, b, c, m
+    real(8), intent(in) :: xyz(3)
+    integer(8) :: hash_value, raw_hash
+    real(8) :: scale_factor
+
+    ! use large prime numbers to compute the hash to avoid collisions
+    !a = 73856093
+    !b = 19349663
+    !c = 83492791
+    m = huge(m)-1
+
+    a = 99999989
+    !b = 20211203
+    b = 51012961
+    !c = 479001599
+    c = 962734081
+
+    ! let us now define a scale factor to handle floating point
+    ! precision conversion to integer
+    !if (.not. present(scale_factor)) then
+      scale_factor = 1.0d6
+    !end if
+
+    ! now let us compute the unique hash value
+    raw_hash = 1 + int(xyz(1) * scale_factor) * a + int(xyz(2) * scale_factor) * b + int(xyz(3) * scale_factor) * c
+    ! ensure that the computed hash value is non-negative using modulus
+    hash_value = mod(raw_hash, m)
+    if (hash_value < 0) then
+        hash_value = hash_value + m
+    end if
+
+    ! Output the hash value
+    ! print *, "Hash value for point (", xyz(1), ",", xyz(2), ",", xyz(3), ") is ", hash_value
+
+    ! final hash value is \in [1, m]
+    compute_integer_hash = hash_value
+    return
+
+  end function
+
   subroutine init_moab_land(bounds, LNDID)
     use seq_flds_mod     , only :  seq_flds_l2x_fields, seq_flds_x2l_fields
     use shr_kind_mod     , only : CXX => SHR_KIND_CXX
@@ -868,6 +912,7 @@ contains
     integer gsize ! global size, that we do not need, actually
     integer n, nghostlayers ! number of ghost layer regions
     ! local variables to fill in data
+    integer, dimension(:), allocatable :: egids
     integer, dimension(:), allocatable :: vgids
     !  retrieve everything we need from land domain mct_ldom
     ! number of vertices is the size of land domain
@@ -930,7 +975,9 @@ contains
        write(iulog,*) " "
     endif
 
-    write(iulog,*) "MOAB is going to read the domain file:", trim(fatmlndfrc)
+    if(masterproc) then
+        write(iulog,*) "MOAB is going to read the domain file:", trim(fatmlndfrc)
+    endif
     ierr = iMOAB_LoadMesh( mlndghostid, trim(fatmlndfrc)//C_NULL_CHAR, &
                           "PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;REPARTITION"//C_NULL_CHAR, &
                           nghostlayers )
@@ -963,10 +1010,10 @@ contains
     ! number the local grid
     lsz = bounds%endg - bounds%begg + 1
 
-    allocate(vgids(lsz)) ! use it for global ids, for elements in full mesh or vertices in point cloud
+    allocate(egids(lsz)) ! use it for global ids, for elements in full mesh or vertices in point cloud
 
     do n = 1, lsz
-       vgids(n) = ldecomp%gdc2glo(bounds%begg+n-1) ! local to global !
+       egids(n) = ldecomp%gdc2glo(bounds%begg+n-1) ! local to global !
     end do
     gsize = ldomain%ni * ldomain%nj ! size of the total grid
 
@@ -975,6 +1022,7 @@ contains
     if (ldomain%nv .ge. 3 .and.  .not.samegrid_al) then
         ! number of vertices is nv * lsz !
         allocate(moab_vert_coords(lsz*dims*ldomain%nv))
+        allocate(vgids(lsz*ldomain%nv)) !
         ! loop over ldomain
         allocate(moabconn(ldomain%nv * lsz))
         do n = bounds%begg, bounds%endg
@@ -988,8 +1036,17 @@ contains
                moab_vert_coords(3*i-1)=COS(latv)*SIN(lonv)
                moab_vert_coords(3*i  )=SIN(latv)
                moabconn(i) = i
+               vgids( i ) = compute_integer_hash(moab_vert_coords(3*i-2))
             enddo
         enddo
+
+        ! Now do the verticies
+        !do n = 1, lsz
+        !  do i=1,ldomain%nv
+        !    vgids( (n-1)*ldomain%nv+i ) = (ldecomp%gdc2glo(bounds%begg+n-1)-1)*ldomain%nv+i ! local to global !
+        !  end do
+        !end do
+
         ! create the mesh verticies for ELM to coupler app
         ierr = iMOAB_CreateVertices(mlnid, lsz * 3 * ldomain%nv, dims, moab_vert_coords)
         if (ierr > 0 )  &
@@ -1032,17 +1089,18 @@ contains
           call endrun('Error: fail to retrieve GLOBAL_ID tag ')
 #endif
 
-        ! load the integer data on the mesh from the vgids array
+        ! load the integer data on the mesh from the egids array
         entity_type = 1 ! element type
-        ierr = iMOAB_SetIntTagStorage ( mlnid, tagname, lsz , entity_type, vgids)
+        ierr = iMOAB_SetIntTagStorage ( mlnid, tagname, lsz , entity_type, egids)
         if (ierr > 0 )  &
           call endrun('Error: fail to set GLOBAL_ID tag ')
 
 #ifdef BUILD_LNDGHOST_MESH
-        ierr = iMOAB_SetIntTagStorage ( mlnghid, tagname, lsz , entity_type, vgids)
+        ierr = iMOAB_SetIntTagStorage ( mlnghid, tagname, lsz , entity_type, egids)
         if (ierr > 0 )  &
           call endrun('Error: fail to set GLOBAL_ID tag ')
 #endif
+        deallocate(egids)
 
         !  Define and Set Fraction on each mesh
         tagname='frac'//C_NULL_CHAR
@@ -1119,15 +1177,6 @@ contains
 #endif
 
         deallocate(moabconn)
-        deallocate(vgids)
-
-        ! Now do the verticies
-        allocate(vgids(lsz*ldomain%nv)) !
-        do n = 1, lsz
-          do i=1,ldomain%nv
-            vgids( (n-1)*ldomain%nv+i ) = (ldecomp%gdc2glo(bounds%begg+n-1)-1)*ldomain%nv+i ! local to global !
-          end do
-        end do
 
         entity_type = 0 ! vertices now
         tagname = 'GLOBAL_ID'//C_NULL_CHAR
@@ -1140,17 +1189,17 @@ contains
         if (ierr > 0 )  &
           call endrun('Error: fail to update mesh info ')
 
-        ierr = iMOAB_ResolveSharedEntities( mlnid, lsz*ldomain%nv, vgids )
-        if (ierr > 0 )  &
-          call endrun('Error: fail to resolve shared entities in land mesh ')
+        ! ierr = iMOAB_ResolveSharedEntities( mlnid, lsz*ldomain%nv, vgids )
+        ! if (ierr > 0 )  &
+        !   call endrun('Error: fail to resolve shared entities in land mesh ')
 
-        ierr = iMOAB_MergeVertices(mlnid)
-        if (ierr > 0 )  &
-          call endrun('Error: fail to merge vertices in land mesh ')
+        !ierr = iMOAB_MergeVertices(mlnid)
+        !if (ierr > 0 )  &
+        !  call endrun('Error: fail to merge vertices in land mesh ')
 
-        ierr = iMOAB_UpdateMeshInfo( mlnid )
-        if (ierr > 0 )  &
-          call endrun('Error: fail to update mesh info ')
+        !ierr = iMOAB_UpdateMeshInfo( mlnid )
+        !if (ierr > 0 )  &
+        !  call endrun('Error: fail to update mesh info ')
 
 #ifdef BUILD_LNDGHOST_MESH
         ! the internal mesh
@@ -1169,6 +1218,10 @@ contains
         ierr = iMOAB_UpdateMeshInfo( mlnghid )
         if (ierr > 0 )  &
           call endrun('Error: fail to update mesh info ')
+
+        ierr = iMOAB_MergeVertices(mlnid)
+        if (ierr > 0 )  &
+         call endrun('Error: fail to merge vertices in land mesh ')
 
         ! Define halo (ghost) region
         ! set a default of one ghost layers
@@ -1196,7 +1249,7 @@ contains
 #endif
       !! read domain file directly: trim(fatmlndfrc)
 
-#ifndef BUILD_LNDGHOST_MESH
+#if !defined(BUILD_LNDGHOST_MESH) && FALSE
         !!!!!!!!
         !!! Repartition using trivial or Zoltan partitioner
         !!!!!!!!
@@ -1204,7 +1257,7 @@ contains
 #ifdef MOAB_HAVE_ZOLTAN
         partMethod = 2 ! it is better to use RCB for land mesh
 #endif
-#define VERBOSE
+! #define VERBOSE
         ! partMethod = 2 ! force RCB for land mesh
         call mpi_comm_group(mpicom_lnd_moab, mpigrp_lndcmp, ierr)
         if (masterproc) &
@@ -1225,13 +1278,31 @@ contains
         if (masterproc) &
           write(iulog, *) 'ELM-MOAB: ELM-Mesh successfully repartitioned...'
         !!!!!!!!!!!!
-#undef VERBOSE
+! #undef VERBOSE
         ! ierr = iMOAB_SendElementTag( mlnid, 'GLOBAL_ID'//C_NULL_CHAR, mpicom_lnd_moab, LNDGHID )
         ! ierr = iMOAB_ReceiveElementTag( mlnghid, 'GLOBAL_ID'//C_NULL_CHAR, mpicom_lnd_moab, LNDID )
 
-        ! ierr = iMOAB_MergeVertices(mlnghid)
-        ! if (ierr > 0 )  &
-        !   call endrun('Error: fail to resolve shared entities in land mesh ')
+        ierr = iMOAB_MergeVertices(mlnghid)
+        if (ierr > 0 )  &
+          call endrun('Error: fail to resolve shared entities in land mesh ')
+
+        ierr = iMOAB_UpdateMeshInfo( mlnghid )
+        if (ierr > 0 )  &
+          call endrun('Error: fail to update mesh info ')
+
+        ! let us get some information about the partitioned mesh and print
+        ierr = iMOAB_GetMeshInfo(mlnghid, nverts, nelem, nblocks, nsbc, ndbc)
+        if (ierr > 0 )  &
+          call endrun('Error: failed to get mesh info ')
+
+        entity_type = 0
+        ierr = iMOAB_GetIntTagStorage ( mlnghid, 'GLOBAL_ID'//C_NULL_CHAR, nverts(3), entity_type, vgids )
+        if (ierr > 0 )  &
+          call endrun('Error: fail to set global ID tag on vertices in land mesh ')
+
+        ierr = iMOAB_ResolveSharedEntities( mlnghid, nverts(3), vgids )
+        if (ierr > 0 )  &
+          call endrun('Error: fail to resolve shared entities in land mesh ')
 
         ! Define halo (ghost) region
         ! set a default of one ghost layers
@@ -1263,14 +1334,14 @@ contains
       ! let us get some information about the partitioned mesh and print
       ierr = iMOAB_GetMeshInfo(mlnghid, nverts, nelem, nblocks, nsbc, ndbc)
       if (ierr > 0 )  &
-        call endrun('Error: failed to get mesh info ')
+       call endrun('Error: failed to get mesh info ')
       call MPI_Reduce(nverts, nverts, 3, MPI_INTEGER, MPI_SUM, 0, mpicom_lnd_moab, ierr)
       call MPI_Reduce(nelem, nelem, 3, MPI_INTEGER, MPI_SUM, 0, mpicom_lnd_moab, ierr)
       if (masterproc) then
-        write(iulog, *)  "ELM-MOAB (ghosted) vertices: owned=", nverts(1), &
-                          ", ghosted=", nverts(2), ", total=", nverts(3)
-        write(iulog, *)  "ELM-MOAB (ghosted) elements: owned=", nelem(1), &
-                          ", ghosted=", nelem(2), ", total=", nelem(3)
+       write(iulog, *)  "ELM-MOAB (ghosted) vertices: owned=", nverts(1), &
+                         ", ghosted=", nverts(2), ", total=", nverts(3)
+       write(iulog, *)  "ELM-MOAB (ghosted) elements: owned=", nelem(1), &
+                         ", ghosted=", nelem(2), ", total=", nelem(3)
       endif
 
       ! let us get some information about the partitioned mesh and print
@@ -1300,8 +1371,6 @@ contains
         if (ierr > 0 )  &
           call endrun('Error: fail to write the land mesh file')
 #endif
-
-        call endrun('Quitting after writing ELM details')
 
     ! Case where land and atmosphere share mesh
     ! mesh is a "point cloud" without connectivity
