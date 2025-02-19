@@ -1277,7 +1277,6 @@ void AtmosphereDriver::set_initial_conditions ()
       const auto& grid = it.second;
       const auto& grid_name = grid->name();
 
-      std::vector<Field> topo_fields;
       int nfields = topography_eamxx_fields_names[grid_name].size();
       if (nfields==0)
         continue;
