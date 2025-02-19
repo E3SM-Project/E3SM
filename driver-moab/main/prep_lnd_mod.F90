@@ -194,8 +194,8 @@ contains
       wgtIdr2l = 'conservative_r2l'//C_NULL_CHAR
       wgtIda2l_conservative = 'conservative_a2l'//C_NULL_CHAR
       wgtIda2l_bilinear = 'bilinear_a2l'//C_NULL_CHAR
-      load_maps_from_disk_r2l = not(cpl_compute_maps_online) ! read from disk or compute online
-      load_maps_from_disk_a2l = not(cpl_compute_maps_online) ! read from disk or compute online
+      load_maps_from_disk_r2l = .not. cpl_compute_maps_online ! read from disk or compute online
+      load_maps_from_disk_a2l = .not. cpl_compute_maps_online ! read from disk or compute online
       ! load_maps_from_disk_a2l = .false. ! Explicitly force online computation
 #endif
 

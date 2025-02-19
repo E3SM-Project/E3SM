@@ -228,9 +228,9 @@ contains
       wgtIdo2a = 'conservative_o2a'//C_NULL_CHAR
       wgtIdi2a = 'conservative_i2a'//C_NULL_CHAR
       wgtIdl2a = 'conservative_l2a'//C_NULL_CHAR
-      load_maps_from_disk_o2a = not(cpl_compute_maps_online) ! read from disk or compute online
-      load_maps_from_disk_i2a = not(cpl_compute_maps_online) ! read from disk or compute online
-      load_maps_from_disk_l2a = not(cpl_compute_maps_online) ! read from disk or compute online
+      load_maps_from_disk_o2a = .not. cpl_compute_maps_online ! read from disk or compute online
+      load_maps_from_disk_i2a = .not. cpl_compute_maps_online ! read from disk or compute online
+      load_maps_from_disk_l2a = .not. cpl_compute_maps_online ! read from disk or compute online
       ! load_maps_from_disk_l2a = .false. ! Explicitly force online computation
 #endif
 

@@ -298,7 +298,7 @@ contains
          esmf_map_flag=esmf_map_flag   )
 
 #ifdef HAVE_MOAB
-    load_maps_from_disk_a2o = not(cpl_compute_maps_online) ! read from disk or compute online
+    load_maps_from_disk_a2o = .not. cpl_compute_maps_online  ! read from disk or compute online
     wgtIda2o_conservative = 'conservative_a2o'//C_NULL_CHAR
     wgtIda2o_bilinear = 'bilinear_a2o'//C_NULL_CHAR
     wgtIdr2o_conservative = 'conservative_r2o'//C_NULL_CHAR
