@@ -825,6 +825,39 @@ TEST_CASE ("update") {
     }
   }
 
+  SECTION ("masked_deep_copy") {
+    auto f1 = f_real.clone();
+    auto f2 = f_real.clone();
+    auto f3 = f_real.clone();
+    f3.deep_copy(0);
+    for (int icol=0; icol<ncol; ++ icol) {
+      auto val = icol % 2 == 0 ? 1 : -1;
+      f1.subfield(0,icol).deep_copy(val);
+    }
+
+    // Compute mask where f1>0 (should be all even cols)
+    auto mask = f_int.clone("mask");
+    compute_mask<Comparison::GT>(f1,0,mask);
+
+    // Set f3=1 where mask=1
+    f3.deep_copy(1,mask);
+
+    auto one = f1.subfield(0,0).clone("one");
+    auto zero = f1.subfield(0,0).clone("zero");
+    one.deep_copy(1);
+    zero.deep_copy(0);
+
+    // Check
+    for (int icol=0; icol<ncol; ++ icol) {
+      auto f3i = f3.subfield(0,icol);
+      if (icol % 2 == 0) {
+        REQUIRE (views_are_equal(f3i,one));
+      } else {
+        REQUIRE (views_are_equal(f3i,zero));
+      }
+    }
+  }
+
   SECTION ("scale") {
     SECTION ("real") {
       Field f1 = f_real.clone();

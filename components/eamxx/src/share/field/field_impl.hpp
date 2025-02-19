@@ -339,21 +339,21 @@ deep_copy (const ST value) {
           "Error! Input value type is not convertible to field data type.\n"
           "   - Input value type: " + ekat::ScalarTraits<ST>::name() + "\n"
           "   - Field data type : " + e2str(my_data_type) + "\n");
-      deep_copy_impl<HD,int>(value);
+      deep_copy_impl<HD,false,int>(value,*this); // 2nd arg unused
       break;
     case DataType::FloatType:
       EKAT_REQUIRE_MSG( (std::is_convertible<ST,float>::value),
           "Error! Input value type is not convertible to field data type.\n"
           "   - Input value type: " + ekat::ScalarTraits<ST>::name() + "\n"
           "   - Field data type : " + e2str(my_data_type) + "\n");
-      deep_copy_impl<HD,float>(value);
+      deep_copy_impl<HD,false,float>(value,*this); // 2nd arg unused
       break;
     case DataType::DoubleType:
       EKAT_REQUIRE_MSG( (std::is_convertible<ST,double>::value),
           "Error! Input value type is not convertible to field data type.\n"
           "   - Input value type: " + ekat::ScalarTraits<ST>::name() + "\n"
           "   - Field data type : " + e2str(my_data_type) + "\n");
-      deep_copy_impl<HD,double>(value);
+      deep_copy_impl<HD,false,double>(value,*this); // 2nd arg unused
       break;
     default:
       EKAT_ERROR_MSG ("Error! Unrecognized field data type in Field::deep_copy.\n");
@@ -361,85 +361,152 @@ deep_copy (const ST value) {
 }
 
 template<HostOrDevice HD, typename ST>
-void Field::deep_copy_impl (const ST value)
+void Field::
+deep_copy (const ST value, const Field& mask)
 {
-  // Note: we can't just do a deep copy on get_view_impl<HD>(), since this
-  //       field might be a subfield of another. Instead, get the
-  //       reshaped view first, based on the field rank.
+  EKAT_REQUIRE_MSG (not m_is_read_only,
+      "Error! Cannot call deep_copy on read-only fields.\n");
 
+  const auto my_data_type = data_type();
+  switch (my_data_type) {
+    case DataType::IntType:
+      EKAT_REQUIRE_MSG( (std::is_convertible<ST,int>::value),
+          "Error! Input value type is not convertible to field data type.\n"
+          "   - Input value type: " + ekat::ScalarTraits<ST>::name() + "\n"
+          "   - Field data type : " + e2str(my_data_type) + "\n");
+      deep_copy_impl<HD,true,int>(value,mask);
+      break;
+    case DataType::FloatType:
+      EKAT_REQUIRE_MSG( (std::is_convertible<ST,float>::value),
+          "Error! Input value type is not convertible to field data type.\n"
+          "   - Input value type: " + ekat::ScalarTraits<ST>::name() + "\n"
+          "   - Field data type : " + e2str(my_data_type) + "\n");
+      deep_copy_impl<HD,true,float>(value,mask);
+      break;
+    case DataType::DoubleType:
+      EKAT_REQUIRE_MSG( (std::is_convertible<ST,double>::value),
+          "Error! Input value type is not convertible to field data type.\n"
+          "   - Input value type: " + ekat::ScalarTraits<ST>::name() + "\n"
+          "   - Field data type : " + e2str(my_data_type) + "\n");
+      deep_copy_impl<HD,true,double>(value,mask);
+      break;
+    default:
+      EKAT_ERROR_MSG ("Error! Unrecognized field data type in Field::deep_copy.\n");
+  }
+}
+
+template<HostOrDevice HD, bool use_mask, typename ST>
+void Field::deep_copy_impl (const ST value, const Field& mask)
+{
   const auto& layout = get_header().get_identifier().get_layout();
   const auto  rank   = layout.rank();
+  const auto& dims   = layout.dims();
+  const auto contig = get_header().get_alloc_properties().contiguous();
+
   switch (rank) {
     case 0:
-      {
-        auto v = get_view<ST,HD>();
-        Kokkos::deep_copy(v,value);
+      if constexpr (use_mask) {
+        if (contig)
+          details::svm<use_mask>(get_view<ST,HD>(),value,dims,
+                                 mask.get_view<const int,HD>());
+        else
+          details::svm<use_mask>(get_strided_view<ST,HD>(),value,dims,
+                                 mask.get_view<const int,HD>());
+      } else {
+        if (contig)
+          details::svm<use_mask>(get_view<ST,HD>(),value,dims);
+        else
+          details::svm<use_mask>(get_strided_view<ST,HD>(),value,dims);
       }
       break;
     case 1:
-      {
-        if (m_header->get_alloc_properties().contiguous()) {
-          auto v = get_view<ST*,HD>();
-          Kokkos::deep_copy(v,value);
-        } else {
-          auto v = get_strided_view<ST*,HD>();
-          Kokkos::deep_copy(v,value);
-        }
+      if constexpr (use_mask) {
+        if (contig)
+          details::svm<use_mask>(get_view<ST*,HD>(),value,dims,
+                                 mask.get_view<const int*,HD>());
+        else
+          details::svm<use_mask>(get_strided_view<ST*,HD>(),value,dims,
+                                 mask.get_view<const int*,HD>());
+      } else {
+        if (contig)
+          details::svm<use_mask>(get_view<ST*,HD>(),value,dims);
+        else
+          details::svm<use_mask>(get_strided_view<ST*,HD>(),value,dims);
       }
       break;
     case 2:
-      {
-        if (m_header->get_alloc_properties().contiguous()) {
-          auto v = get_view<ST**,HD>();
-          Kokkos::deep_copy(v,value);
-        } else {
-          auto v = get_strided_view<ST**,HD>();
-          Kokkos::deep_copy(v,value);
-        }
+      if constexpr (use_mask) {
+        if (contig)
+          details::svm<use_mask>(get_view<ST**,HD>(),value,dims,
+                                 mask.get_view<const int**,HD>());
+        else
+          details::svm<use_mask>(get_strided_view<ST**,HD>(),value,dims,
+                                 mask.get_view<const int**,HD>());
+      } else {
+        if (contig)
+          details::svm<use_mask>(get_view<ST**,HD>(),value,dims);
+        else
+          details::svm<use_mask>(get_strided_view<ST**,HD>(),value,dims);
       }
       break;
     case 3:
-      {
-        if (m_header->get_alloc_properties().contiguous()) {
-          auto v = get_view<ST***,HD>();
-          Kokkos::deep_copy(v,value);
-        } else {
-          auto v = get_strided_view<ST***,HD>();
-          Kokkos::deep_copy(v,value);
-        }
+      if constexpr (use_mask) {
+        if (contig)
+          details::svm<use_mask>(get_view<ST***,HD>(),value,dims,
+                                 mask.get_view<const int***,HD>());
+        else
+          details::svm<use_mask>(get_strided_view<ST***,HD>(),value,dims,
+                                 mask.get_view<const int***,HD>());
+      } else {
+        if (contig)
+          details::svm<use_mask>(get_view<ST***,HD>(),value,dims);
+        else
+          details::svm<use_mask>(get_strided_view<ST***,HD>(),value,dims);
       }
       break;
     case 4:
-      {
-        if (m_header->get_alloc_properties().contiguous()) {
-          auto v = get_view<ST****,HD>();
-          Kokkos::deep_copy(v,value);
-        } else {
-          auto v = get_strided_view<ST****,HD>();
-          Kokkos::deep_copy(v,value);
-        }
+      if constexpr (use_mask) {
+        if (contig)
+          details::svm<use_mask>(get_view<ST****,HD>(),value,dims,
+                                 mask.get_view<const int****,HD>());
+        else
+          details::svm<use_mask>(get_strided_view<ST****,HD>(),value,dims,
+                                 mask.get_view<const int****,HD>());
+      } else {
+        if (contig)
+          details::svm<use_mask>(get_view<ST****,HD>(),value,dims);
+        else
+          details::svm<use_mask>(get_strided_view<ST****,HD>(),value,dims);
       }
       break;
     case 5:
-      {
-        if (m_header->get_alloc_properties().contiguous()) {
-          auto v = get_view<ST*****,HD>();
-          Kokkos::deep_copy(v,value);
-        } else {
-          auto v = get_strided_view<ST*****,HD>();
-          Kokkos::deep_copy(v,value);
-        }
+      if constexpr (use_mask) {
+        if (contig)
+          details::svm<use_mask>(get_view<ST*****,HD>(),value,dims,
+                                 mask.get_view<const int*****,HD>());
+        else
+          details::svm<use_mask>(get_strided_view<ST*****,HD>(),value,dims,
+                                 mask.get_view<const int*****,HD>());
+      } else {
+        if (contig)
+          details::svm<use_mask>(get_view<ST*****,HD>(),value,dims);
+        else
+          details::svm<use_mask>(get_strided_view<ST*****,HD>(),value,dims);
       }
       break;
     case 6:
-      {
-        if (m_header->get_alloc_properties().contiguous()) {
-          auto v = get_view<ST******,HD>();
-          Kokkos::deep_copy(v,value);
-        } else {
-          auto v = get_strided_view<ST******,HD>();
-          Kokkos::deep_copy(v,value);
-        }
+      if constexpr (use_mask) {
+        if (contig)
+          details::svm<use_mask>(get_view<ST******,HD>(),value,dims,
+                                 mask.get_view<const int******,HD>());
+        else
+          details::svm<use_mask>(get_strided_view<ST******,HD>(),value,dims,
+                                 mask.get_view<const int******,HD>());
+      } else {
+        if (contig)
+          details::svm<use_mask>(get_view<ST******,HD>(),value,dims);
+        else
+          details::svm<use_mask>(get_strided_view<ST******,HD>(),value,dims);
       }
       break;
     default:
