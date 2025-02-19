@@ -49,9 +49,9 @@ public:
   FamilyTracking& operator= (const tracking_type&) = default;
   ~FamilyTracking ();
 
-  void create_parent_child_link (const std::weak_ptr<derived_type>& parent);
+  void create_parent_child_link (const std::shared_ptr<derived_type>& parent);
 
-  std::weak_ptr<derived_type> get_parent () const { return m_parent; }
+  std::shared_ptr<derived_type> get_parent () const { return m_parent; }
 
   const std::list<std::weak_ptr<derived_type>>& get_children () const { return m_children; }
 protected:
@@ -59,7 +59,7 @@ protected:
   // Check if a weak_ptr points to the same object as this class
   bool is_same (const std::weak_ptr<derived_type>& src) const;
 
-  std::weak_ptr<derived_type>              m_parent;
+  std::shared_ptr<derived_type>            m_parent;
   std::list<std::weak_ptr<derived_type>>   m_children;
 };
 
@@ -83,8 +83,7 @@ FamilyTracking<DerivedType>::~FamilyTracking ()
 
   // Since derived_type inherits from tracking_type, the pointer
   // returned by lock(), can be assigned to a ptr to tracking_type.
-  std::shared_ptr<tracking_type> parent = m_parent.lock();
-  if (parent) {
+  if (m_parent) {
     // Scan the children of my parent, then remove myself.
     // NOTE: since we're in the dtor, the counter of the shared ptr
     //       has reached 0, so we cannot call shared_from_this.
@@ -93,7 +92,7 @@ FamilyTracking<DerivedType>::~FamilyTracking ()
     //       a symmetric version of owner_before. In particular,
     //       a==b if !a.owner_before(b) and !b.owner_before(a).
     auto me = this->weak_from_this();
-    auto& siblings = parent->m_children;
+    auto& siblings = m_parent->m_children;
     bool found = false;
     for (auto it=siblings.begin(); it!=siblings.end(); ++it) {
       if (is_same(*it)) {
@@ -128,18 +127,13 @@ FamilyTracking<DerivedType>::~FamilyTracking ()
 
 template<typename DerivedType>
 void FamilyTracking<DerivedType>::
-create_parent_child_link (const std::weak_ptr<derived_type>& parent)
+create_parent_child_link (const std::shared_ptr<derived_type>& parent)
 {
   // Sanity checks
   EKAT_REQUIRE_MSG (this->shared_from_this(),
       "Error! Failure to get a shared object from *this.\n");
-  EKAT_REQUIRE_MSG (m_parent.expired(),
+  EKAT_REQUIRE_MSG (m_parent==nullptr,
       "Error! This object already stores a parent.\n");
-
-  // Since derived_type inherits from tracking_type, the pointer
-  // returned by lock(), can be assigned to a ptr to tracking_type.
-  std::shared_ptr<tracking_type> p = parent.lock();
-  EKAT_REQUIRE_MSG (p, "Error! Input parent pointer is expired (or was never inited).\n");
 
   auto me = this->weak_from_this ();
   EKAT_REQUIRE_MSG (me.lock(),"Error! Unable to aquire a shared_ptr to this object.\n");
@@ -148,13 +142,13 @@ create_parent_child_link (const std::weak_ptr<derived_type>& parent)
   m_parent = parent;
 
   // Safety check. This should never happen, but just in case
-  for (auto it : p->get_children()) {
+  for (auto it : parent->get_children()) {
     EKAT_REQUIRE_MSG (not is_same(it),
         "Error! This object is already in the list of children of the input parent.\n");
   }
 
   // Add myself as child in my parent's list
-  p->m_children.push_back(me);
+  parent->m_children.push_back(me);
 }
 
 template<typename DerivedType>
