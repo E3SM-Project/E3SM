@@ -933,56 +933,57 @@ contains
        if (mbofxid .ge. 0) then
           nloc_of = mbGetnCells(mbofxid)
 
-          allocate( olats(nloc_of))
+          allocate( olats(nloc_of), stat=ier)
           if(ier/=0) call mct_die(subName,'allocate olats',ier)
           olats = 0.0_r8
 
-          allocate( olons(nloc_of))
+          allocate( olons(nloc_of), stat=ier)
           if(ier/=0) call mct_die(subName,'allocate olons',ier)
           olons = 0.0_r8
 
-          allocate( avsdr(nloc_of))
+          allocate( avsdr(nloc_of), stat=ier)
           if(ier/=0) call mct_die(subName,'allocate avsdr',ier)
           avsdr = 0.0_r8
 
-          allocate( anidr(nloc_of))
+          allocate( anidr(nloc_of), stat=ier)
           if(ier/=0) call mct_die(subName,'allocate anidr',ier)
           anidr = 0.0_r8
 
-          allocate( anidf(nloc_of))
+          allocate( anidf(nloc_of), stat=ier)
           if(ier/=0) call mct_die(subName,'allocate anidf',ier)
           anidf = 0.0_r8
 
-          allocate( avsdf(nloc_of))
+          allocate( avsdf(nloc_of), stat=ier)
           if(ier/=0) call mct_die(subName,'allocate avsdf',ier)
           avsdf = 0.0_r8
 
-          allocate( swupc(nloc_of))
+          allocate( swupc(nloc_of), stat=ier)
           if(ier/=0) call mct_die(subName,'allocate swupc',ier)
           swupc = 0.0_r8
 
-          allocate( swdnc(nloc_of))
+          allocate( swdnc(nloc_of), stat=ier)
           if(ier/=0) call mct_die(subName,'allocate swdnc',ier)
           swdnc = 0.0_r8
 
-          allocate( swndr(nloc_of))
+          allocate( swndr(nloc_of), stat=ier)
           if(ier/=0) call mct_die(subName,'allocate swndr',ier)
           swndr = 0.0_r8
 
-          allocate( swvdr(nloc_of))
+          allocate( swvdr(nloc_of), stat=ier)
           if(ier/=0) call mct_die(subName,'allocate swvdr',ier)
           swvdr = 0.0_r8
 
-          allocate( swvdf(nloc_of))
+          allocate( swvdf(nloc_of), stat=ier)
           if(ier/=0) call mct_die(subName,'allocate swvdf',ier)
           swvdf = 0.0_r8
 
-          allocate( swndf(nloc_of))
+          allocate( swndf(nloc_of), stat=ier)
           if(ier/=0) call mct_die(subName,'allocate swndf',ier)
           swndf = 0.0_r8
 
           ! allocate a local small array to copy 1 tag
-          allocate(tagValues2(nloc_of) )
+          allocate(tagValues2(nloc_of), stat=ier )
+          if(ier/=0) call mct_die(subName,'allocate tagValues2',ier)
 
           call mbGetTagVals(mbofxid, 'lat', olats, nloc_of)
           call mbGetTagVals(mbofxid, 'lon', olons, nloc_of)
@@ -1880,7 +1881,7 @@ contains
     call mbSetTagVals(mbfid, 'So_u10', duu10n, nloc) 
     !TODO find better way for above
 
-    
+
 #ifdef MOABDEBUG
         ! debug out file
       write(lnum,"(I0.2)")num_moab_exports
