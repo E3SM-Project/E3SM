@@ -340,7 +340,7 @@ protected:
   // The update method calls this, with ST matching this field data type.
   // Note: use_fill is used to determine *at compile time* whether to use
   // the combine<CM> utility or combine_and_fill<CM>
-  template<CombineMode CM, HostOrDevice HD, bool use_fill, typename ST>
+  template<CombineMode CM, HostOrDevice HD, bool use_fill, typename ST, typename STX>
   void update_impl (const Field& x, const ST alpha, const ST beta);
 
 protected:
@@ -415,13 +415,15 @@ inline bool operator== (const Field& lhs, const Field& rhs) {
 #define EAMXX_FIELD_ETI_DECL_UPDATE(S,T) \
 extern template void Field::update<CombineMode::Update, S, T>(const Field&, const T, const T);              \
 extern template void Field::update<CombineMode::Multiply, S, T>(const Field&, const T, const T);            \
-extern template void Field::update<CombineMode::Divide, S, T>(const Field&, const T, const T);              \
-extern template void Field::update_impl<CombineMode::Update,  S, true, T>(const Field&, const T, const T);  \
-extern template void Field::update_impl<CombineMode::Multiply,S, true, T>(const Field&, const T, const T);  \
-extern template void Field::update_impl<CombineMode::Divide,  S, true, T>(const Field&, const T, const T);  \
-extern template void Field::update_impl<CombineMode::Update,  S, false, T>(const Field&, const T, const T); \
-extern template void Field::update_impl<CombineMode::Multiply,S, false, T>(const Field&, const T, const T); \
-extern template void Field::update_impl<CombineMode::Divide,  S, false, T>(const Field&, const T, const T)
+extern template void Field::update<CombineMode::Divide, S, T>(const Field&, const T, const T)
+
+#define EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(S,T1,T2) \
+extern template void Field::update_impl<CombineMode::Update,  S, true, T1, T2>(const Field&, const T1, const T1);  \
+extern template void Field::update_impl<CombineMode::Multiply,S, true, T1, T2>(const Field&, const T1, const T1);  \
+extern template void Field::update_impl<CombineMode::Divide,  S, true, T1, T2>(const Field&, const T1, const T1);  \
+extern template void Field::update_impl<CombineMode::Update,  S, false, T1, T2>(const Field&, const T1, const T1); \
+extern template void Field::update_impl<CombineMode::Multiply,S, false, T1, T2>(const Field&, const T1, const T1); \
+extern template void Field::update_impl<CombineMode::Divide,  S, false, T1, T2>(const Field&, const T1, const T1)
 
 #define EAMXX_FIELD_ETI_DECL_DEEP_COPY(S,T) \
 extern template void Field::deep_copy_impl<S,T>(const T)
@@ -442,7 +444,7 @@ extern template Field::get_strided_view_type<T****,S> Field::get_strided_view<T*
 extern template Field::get_strided_view_type<T*****,S> Field::get_strided_view<T*****,S> () const; \
 extern template Field::get_strided_view_type<T******,S> Field::get_strided_view<T******,S> () const
 
-#define EAMXX_FIELD_ETI_DECL_FOR_TYPE(T) \
+#define EAMXX_FIELD_ETI_DECL_FOR_ONE_TYPE(T) \
 EAMXX_FIELD_ETI_DECL_UPDATE(Device,T);          \
 EAMXX_FIELD_ETI_DECL_UPDATE(Host,T);            \
 EAMXX_FIELD_ETI_DECL_DEEP_COPY(Device,T);       \
@@ -450,15 +452,25 @@ EAMXX_FIELD_ETI_DECL_DEEP_COPY(Host,T);         \
 EAMXX_FIELD_ETI_DECL_GET_VIEW(Device,T);        \
 EAMXX_FIELD_ETI_DECL_GET_VIEW(Host,T);          \
 EAMXX_FIELD_ETI_DECL_GET_VIEW(Device,const T);  \
-EAMXX_FIELD_ETI_DECL_GET_VIEW(Host,const T);
+EAMXX_FIELD_ETI_DECL_GET_VIEW(Host,const T)
+
+#define EAMXX_FIELD_ETI_DECL_FOR_TWO_TYPES(T1,T2) \
+EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(Device,T1,T2);   \
+EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(Host,T1,T2)
 
 // TODO: should we ETI other scalar types too? E.g. Pack<Real,SCREAM_PACK_SIZE??
 //       Real is by far the most common, so it'd be nice to just to that. But
 //       all the update/update_impl methods use get_view for all 3 types, so just ETI all of them
-EAMXX_FIELD_ETI_DECL_FOR_TYPE(double);
-EAMXX_FIELD_ETI_DECL_FOR_TYPE(float);
-EAMXX_FIELD_ETI_DECL_FOR_TYPE(int);
+EAMXX_FIELD_ETI_DECL_FOR_ONE_TYPE(double);
+EAMXX_FIELD_ETI_DECL_FOR_ONE_TYPE(float);
+EAMXX_FIELD_ETI_DECL_FOR_ONE_TYPE(int);
 
+EAMXX_FIELD_ETI_DECL_FOR_TWO_TYPES(double,double);
+EAMXX_FIELD_ETI_DECL_FOR_TWO_TYPES(double,float);
+EAMXX_FIELD_ETI_DECL_FOR_TWO_TYPES(double,int);
+EAMXX_FIELD_ETI_DECL_FOR_TWO_TYPES(float,float);
+EAMXX_FIELD_ETI_DECL_FOR_TWO_TYPES(float,int);
+EAMXX_FIELD_ETI_DECL_FOR_TWO_TYPES(int,int);
 } // namespace scream
 
 // Include template methods implementation
