@@ -237,8 +237,8 @@ contains
 #ifdef HAVE_MOAB
       wgtIdl2r = 'conservative_l2r'//C_NULL_CHAR
       wgtIda2r = 'conservative_a2r'//C_NULL_CHAR
-      load_maps_from_disk_l2r = not(cpl_compute_maps_online) ! read from disk or compute online
-      load_maps_from_disk_a2r = not(cpl_compute_maps_online) ! read from disk or compute online
+      load_maps_from_disk_l2r = .not. cpl_compute_maps_online ! read from disk or compute online
+      load_maps_from_disk_a2r = .not. cpl_compute_maps_online ! read from disk or compute online
       ! load_maps_from_disk_l2r = .false. ! Explicitly force online computation
 #endif
 
