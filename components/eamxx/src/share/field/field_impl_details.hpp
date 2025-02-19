@@ -243,18 +243,22 @@ struct SetValueMasked
   MaskView mask;
 };
 
-template<bool use_mask, typename LhsView, typename MaskView>
+template<bool use_mask, typename LhsView, typename MaskView = LhsView>
 void
-svm (LhsView lhs, MaskView mask,
+svm (LhsView lhs,
      typename LhsView::traits::value_type value,
-     typename MaskView::traits::value_type mask_value,
-     const std::vector<int>& dims)
+     const std::vector<int>& dims,
+     MaskView mask = MaskView(),
+     typename MaskView::traits::value_type mask_value = 0)
 {
   SetValueMasked <LhsView, MaskView, use_mask> helper;
   helper.lhs = lhs;
   helper.mask = mask;
   helper.value = value;
   helper.mask_value = mask_value;
+
+  EKAT_REQUIRE_MSG (not use_mask or mask.size()>0,
+      "Error! Calling scream::details::svm with use_mask=true, but input mask view is invalid.\n");
   helper.run(dims);
 }
 

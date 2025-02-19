@@ -2,6 +2,7 @@
 
 namespace scream {
 
-template void Field::deep_copy_impl<Device,double>(const double);
+template void Field::deep_copy_impl<Device,true,double>(const double, const Field&);
+template void Field::deep_copy_impl<Device,false,double>(const double, const Field&);
 
 } // namespace scream
