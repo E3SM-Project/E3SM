@@ -8,9 +8,6 @@ module prep_aoflux_mod
   use seq_comm_mct,     only: num_inst_xao, num_inst_frc, num_inst_ocn
   use seq_comm_mct,     only: CPLID, logunit
   use seq_comm_mct,     only : mbofxid ! iMOAB id for mpas ocean migrated mesh to coupler pes, just for xao flux calculations
-#ifdef MOABDEBUG
-  use seq_comm_mct,     only : mbox2id ! used only for debugging ocn and mct
-#endif
   use seq_comm_mct,     only : mbaxid ! iMOAB app id for atm on cpl pes
   use seq_comm_mct,     only: seq_comm_getData=>seq_comm_setptrs
   use seq_comm_mct, only : num_moab_exports
@@ -175,36 +172,14 @@ contains
        allocate(xao_omct(lsize_o, size_list)) ! the transpose of xao_ox(size_list, lsize_o) 
        xao_omct = 0._r8
 #ifdef MOABDEBUG
-       ! create for debugging the tags on mbox2id (mct grid on coupler)
-       ierr = iMOAB_DefineTagStorage(mbox2id, tagname, tagtype, numco, tagindex )
-       if (ierr .ne. 0) then
-          write(logunit,*) subname,' error in defining tags on ocn mct mesh on cpl '
-          call shr_sys_abort(subname//' ERROR in defining tags on ocn mct mesh on cpl')
-       endif
-       ent_type = 0 ! cell type, this is point cloud mct
-       arrSize = lsize_o * size_list
-       ierr = iMOAB_SetDoubleTagStorage ( mbox2id, tagname, arrSize , ent_type, xao_omct )
-       if (ierr .ne. 0) then
-         write(logunit,*) subname,' error in zeroing out xao_fields on mct instance ocn '
-         call shr_sys_abort(subname//' ERROR in zeroing out xao_fields on mct instance ocn ')
-       endif
-       !deallocate(xao_omct)
-        ! debug out file
+
       outfile = 'o_flux.h5m'//C_NULL_CHAR
       wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
       ierr = iMOAB_WriteMesh(mbofxid, outfile, wopts)
- 
+
       if (ierr .ne. 0) then
          write(logunit,*) subname,' error in writing o_flux mesh '
          call shr_sys_abort(subname//' ERROR in writing o_flux mesh ')
-      endif
-       ! debug out file
-      outfile = 'ox_mct.h5m'//C_NULL_CHAR
-      ierr = iMOAB_WriteMesh(mbox2id, outfile, wopts)
- 
-      if (ierr .ne. 0) then
-         write(logunit,*) subname,' error in writing ox_mct mesh with 0 values '
-         call shr_sys_abort(subname//' ERROR in writing ox_mct mesh ')
       endif
 #endif
     endif

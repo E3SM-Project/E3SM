@@ -167,7 +167,6 @@ module seq_frac_mct
   use seq_comm_mct, only : mblxid !            iMOAB app id for lnd on cpl pes
 #ifdef MOABDEBUG
   use seq_comm_mct, only : mblx2id !           iMOAB id for land mesh instanced from MCT on coupler pes
-  use seq_comm_mct, only : mbox2id !           iMOAB id for ocn mesh instanced from MCT on coupler pes
 #endif
   use seq_comm_mct, only : mboxid !            iMOAB app id for ocn on cpl pes
   use seq_comm_mct, only : mbofxid !           iMOAB id for mpas ocean migrated mesh to coupler pes, just for xao flux calculations
@@ -617,10 +616,6 @@ contains
        lSize = mct_aVect_lSize(dom_o%data)
        call mct_aVect_init(fractions_o,rList=fraclist_o,lsize=lsize)
        call mct_aVect_zero(fractions_o)
-#ifdef MOABDEBUG
-       ! initialize ocn imoab app on mct grid 
-       call expose_mct_grid_moab(ocn, mbox2id) ! will use then to set the data on it , for debugging
-#endif
        if (mboxid .ge. 0  ) then ! // 
          tagname = trim(fraclist_o)//C_NULL_CHAR ! 'afrac:ifrac:ofrac:ifrad:ofrad'
          tagtype = 1  ! dense, double
