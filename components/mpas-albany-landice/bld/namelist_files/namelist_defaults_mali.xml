@@ -80,7 +80,7 @@
 <config_max_water_fraction>1.0e-2</config_max_water_fraction>
 
 <!-- iceshelf_melt -->
-<config_basal_mass_bal_float>'none'</config_basal_mass_bal_float>
+<config_basal_mass_bal_float>'ismip6'</config_basal_mass_bal_float>
 <config_bmlt_float_flux>0.0</config_bmlt_float_flux>
 <config_bmlt_float_xlimit>0.0</config_bmlt_float_xlimit>
 <config_basal_mass_bal_seroussi_amplitude>0.0</config_basal_mass_bal_seroussi_amplitude>
@@ -98,7 +98,7 @@
 <config_temperature_profile_variability_period>1.0</config_temperature_profile_variability_period>
 <config_temperature_profile_variability_phase>0.0</config_temperature_profile_variability_phase>
 <config_temperature_profile_GL_depth_fraction>0.25</config_temperature_profile_GL_depth_fraction>
-<config_front_mass_bal_grounded>'none'</config_front_mass_bal_grounded>
+<config_front_mass_bal_grounded>'ismip6'</config_front_mass_bal_grounded>
 <config_use_3d_thermal_forcing_for_face_melt>.true.</config_use_3d_thermal_forcing_for_face_melt>
 <config_beta_ocean_thermal_forcing>1.18</config_beta_ocean_thermal_forcing>
 <config_add_ocean_thermal_forcing>0.0</config_add_ocean_thermal_forcing>
