@@ -46,7 +46,6 @@ module lnd_comp_mct
   integer , private :: mblsize, totalmbls
   real (r8) , allocatable, private :: l2x_lm(:,:) ! for tags to be set in MOAB
 
-  integer :: mlnghid ! id of the moab temporary land app with ghost cell regions
   integer :: mlndghostid ! id of the moab land app with ghost cell regions
   integer :: nrecv, totalmblsimp
   real (r8) , allocatable, private :: x2l_lm(:,:) ! for tags from MOAB
@@ -854,49 +853,6 @@ contains
   end subroutine lnd_domain_mct
 
 #ifdef HAVE_MOAB
-  integer function compute_integer_hash(xyz)
-    use iso_fortran_env
-    implicit none
-    ! Declare variables
-    integer :: a, b, c, m
-    real(8), intent(in) :: xyz(3)
-    integer(8) :: hash_value, raw_hash
-    real(8) :: scale_factor
-
-    ! use large prime numbers to compute the hash to avoid collisions
-    !a = 73856093
-    !b = 19349663
-    !c = 83492791
-    m = huge(m)-1
-
-    a = 99999989
-    !b = 20211203
-    b = 51012961
-    !c = 479001599
-    c = 962734081
-
-    ! let us now define a scale factor to handle floating point
-    ! precision conversion to integer
-    !if (.not. present(scale_factor)) then
-      scale_factor = 1.0d6
-    !end if
-
-    ! now let us compute the unique hash value
-    raw_hash = 1 + int(xyz(1) * scale_factor) * a + int(xyz(2) * scale_factor) * b + int(xyz(3) * scale_factor) * c
-    ! ensure that the computed hash value is non-negative using modulus
-    hash_value = mod(raw_hash, m)
-    if (hash_value < 0) then
-        hash_value = hash_value + m
-    end if
-
-    ! Output the hash value
-    ! print *, "Hash value for point (", xyz(1), ",", xyz(2), ",", xyz(3), ") is ", hash_value
-
-    ! final hash value is \in [1, m]
-    compute_integer_hash = hash_value
-    return
-
-  end function
 
     subroutine init_moab_land(bounds, LNDID)
     use seq_flds_mod     , only :  seq_flds_l2x_fields, seq_flds_x2l_fields
@@ -1105,20 +1061,16 @@ contains
     integer :: mpigrp_lndcmp ! coupler pes
     integer :: partMethod ! partition method
 
-    integer,allocatable :: gindex(:)  ! Number the local grid points; used for global ID
     integer lsz !  keep local size
     integer gsize ! global size, that we do not need, actually
     integer n, nghostlayers ! number of ghost layer regions
     ! local variables to fill in data
-    integer, dimension(:), allocatable :: egids
-    integer, dimension(:), allocatable :: vgids
     !  retrieve everything we need from land domain mct_ldom
     ! number of vertices is the size of land domain
-    real(r8), dimension(:), allocatable :: moab_vert_coords  ! temporary
     real(r8), pointer :: data(:)  ! temporary
     real(r8)   :: latv, lonv
     integer   dims, i, iv, ilat, ilon, igdx, ierr, tagindex
-    integer tagtype, numco, entity_type, mbtype, block_ID
+    integer tagtype, numco, mbtype, block_ID
     character*100 outfile, wopts
     character(CXX) ::  tagname ! hold all fields
     character*32  appname
@@ -1132,30 +1084,20 @@ contains
     integer, allocatable :: moabconn(:) ! will have the connectivity in terms of local index in verts
     INCLUDE 'mpif.h'
 
+    if (ldomain%nv < 3)  &
+        call endrun('Error: cannot create ELM-MOAB mesh when ldomain%nv < 3.')
+
     topodim = 2 ! topological dimension = 2: manifold mesh on the sphere
     bridgedim = 0 ! use vertices = 0 as the bridge (other options: edges = 1)
     nghostlayers = 1 ! TODO: change to what ELM needs
 
     ! next define MOAB app for the ghosted one
     ! We do this so that coupling does not have to deal with halos
-    appname="LNDMBGH"//C_NULL_CHAR
-    LNDGHID = (LNDID*5)
-    ierr = iMOAB_RegisterApplication(appname, mpicom_lnd_moab, LNDGHID, mlnghid)
-    if (ierr > 0 )  &
-       call endrun('Error: cannot register MOAB halo app')
-    if(masterproc) then
-       write(iulog,*) " "
-       write(iulog,*) "register MOAB app:", trim(appname), "  mlnghid=", mlnghid
-       write(iulog,*) " "
-    endif
-
-    ! next define MOAB app for the ghosted one
-    ! We do this so that coupling does not have to deal with halos
     appname="LNDMBGHOST"//C_NULL_CHAR
-    LNDGHOSTID = (LNDID*7)
+    LNDGHOSTID = (LNDID*10)
     ierr = iMOAB_RegisterApplication(appname, mpicom_lnd_moab, LNDGHOSTID, mlndghostid)
     if (ierr > 0 )  &
-       call endrun('Error: cannot register MOAB halo app')
+       call endrun('Error: cannot register ELM-MOAB halo app')
     if(masterproc) then
        write(iulog,*) " "
        write(iulog,*) "register MOAB app:", trim(appname), "  mlndghostid=", mlndghostid
@@ -1180,488 +1122,118 @@ contains
     ierr = iMOAB_DetermineGhostEntities(mlndghostid, topodim, & ! topological dimension
                                         nghostlayers, &     ! number of ghost layers
                                         bridgedim )         ! bridge dimension (vertex=0)
-    if (ierr > 0 )  &
+    if (ierr > 0)  &
         call endrun('Error: failed to generate the ghost layer entities')
 
 ! #ifdef MOABDEBUG
-        ! write out the full repartitioned mesh file to disk, in parallel
-        outfile = 'wholeLndGhost.h5m'//C_NULL_CHAR
-        wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
-        ierr = iMOAB_WriteMesh(mlndghostid, outfile, wopts)
-        if (ierr > 0 )  &
-          call endrun('Error: fail to write the land mesh file')
+      ! write out the full repartitioned mesh file to disk, in parallel
+      outfile = 'wholeLndGhost.h5m'//C_NULL_CHAR
+      wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+      ierr = iMOAB_WriteMesh(mlndghostid, outfile, wopts)
+      if (ierr > 0 )  &
+        call endrun('Error: fail to write the land mesh file')
 ! #endif
 
-    return
-
-    ! start describing the mesh to MOAB using ELMs existing description
-
-    dims = 3 ! store as 3d mesh
-    ! number the local grid
-    lsz = bounds%endg - bounds%begg + 1
-    allocate(egids(lsz)) ! use it for global ids, for elements in full mesh or vertices in point cloud
-    do n = 1, lsz
-       egids(n) = ldecomp%gdc2glo(bounds%begg+n-1) ! local to global !
-    end do
-    gsize = ldomain%ni * ldomain%nj ! size of the total grid
-
-    ! Case where LND and ROF share mesh (tri-grid)
-    ! This is the case of a "true" mesh.
-    ! if (ldomain%nv .ge. 3 .and. full_land_mesh) then
-    if (ldomain%nv .ge. 3) then
-        ! number of vertices is nv * lsz !
-        allocate(moab_vert_coords(lsz*dims*ldomain%nv))
-        allocate(vgids(lsz*ldomain%nv)) !
-        ! loop over ldomain
-        allocate(moabconn(ldomain%nv * lsz))
-        do n = bounds%begg, bounds%endg
-            i = (n - bounds%begg) * ldomain%nv
-            do iv = 1, ldomain%nv
-               lonv = ldomain%mblonv(n, iv) * SHR_CONST_PI/180.
-               latv = ldomain%mblatv(n, iv) * SHR_CONST_PI/180.
-
-               i = i + 1 ! iv-th vertex of cell n; i starts at 1
-               moab_vert_coords(3*i-2)=COS(latv)*COS(lonv)
-               moab_vert_coords(3*i-1)=COS(latv)*SIN(lonv)
-               moab_vert_coords(3*i  )=SIN(latv)
-               moabconn(i) = i
-               vgids(i) = compute_integer_hash(moab_vert_coords(3*i-2))
-            enddo
-        enddo
-
-        ! Now do the verticies
-        !do n = 1, lsz
-        !  do i=1,ldomain%nv
-        !    vgids( (n-1)*ldomain%nv+i ) = (ldecomp%gdc2glo(bounds%begg+n-1)-1)*ldomain%nv+i ! local to global !
-        !  end do
-        !end do
-
-        ! create the mesh vertices for internal ELM app which will have halos
-        ierr = iMOAB_CreateVertices( mlnghid, lsz * dims * ldomain%nv, dims, moab_vert_coords )
-        if (ierr > 0 )  &
-            call endrun('Error: fail to create MOAB vertices in land model')
-
-        mbtype = 2 ! triangle
-        if (ldomain%nv .eq. 4) mbtype = 3 ! quad
-        if (ldomain%nv .gt. 4) mbtype = 4 ! polygon
-        block_ID = iam ! set block value = current rank (blocks = partitions)
-
-        ! create the mesh elements for internal ELM app which will have halos
-        ierr = iMOAB_CreateElements( mlnghid, lsz, mbtype, ldomain%nv, moabconn, block_ID )
-        if (ierr > 0 )  &
-            call endrun('Error: fail to create MOAB elements in land model')
-
-        ! deallocate connectivity array
-        deallocate(moabconn)
-
-        ! define some useful tags on cells
-        tagtype = 0  ! dense, integer
-        numco = 1
-        tagname='GLOBAL_ID'//C_NULL_CHAR
-        ierr = iMOAB_DefineTagStorage( mlnghid, tagname, tagtype, numco, tag_indices(1) )
-        if (ierr > 0 )  &
-          call endrun('Error: fail to retrieve GLOBAL_ID tag')
-
-        entity_type = 0 ! vertices now
-        ! the coupling mesh
-        ierr = iMOAB_SetIntTagStorage ( mlnghid, tagname, lsz*ldomain%nv, entity_type, vgids )
-        if (ierr > 0 )  &
-          call endrun('Error: fail to set global ID tag on vertices in land mesh')
-
-        ! set the integer data on the mesh from the egids array
-        entity_type = 1 ! element type
-        ierr = iMOAB_SetIntTagStorage( mlnghid, tagname, lsz, entity_type, egids )
-        if (ierr > 0 )  &
-          call endrun('Error: fail to set GLOBAL_ID tag on elements in land mesh')
-
-        deallocate(egids)
-
-        ! ierr = iMOAB_UpdateMeshInfo( mlnghid )
-        ! if (ierr > 0 )  &
-        !   call endrun('Error: fail to update mesh info ')
-
-        if (masterproc) &
-          write(iulog, *) 'ELM-MOAB: Resolving shared entities now...'
-
-        ! now let us resolve the shared entities and remove duplicates
-        ierr = iMOAB_ResolveSharedEntities( mlnghid, lsz*ldomain%nv, vgids )
-        if (ierr > 0 )  &
-          call endrun('Error: fail to resolve shared entities in land mesh ')
-
-        if (masterproc) &
-          write(iulog, *) 'ELM-MOAB: Merging vertices now...'
-
-        ierr = iMOAB_MergeVertices(mlnghid)
-        if (ierr > 0 )  &
-         call endrun('Error: fail to merge vertices in land mesh ')
-
-        ierr = iMOAB_UpdateMeshInfo( mlnghid )
-        if (ierr > 0 )  &
-          call endrun('Error: fail to update mesh info ')
-
-        if (masterproc) &
-          write(iulog, *) 'ELM-MOAB: ELM-Mesh successfully updated...'
-
-      !! read domain file directly: trim(fatmlndfrc)
-#ifdef BUILD_LNDGHOST_MESH_REPARTITION
-        !!!!!!!!
-        !!! Repartition using trivial or Zoltan partitioner
-        !!!!!!!!
-        partMethod = 0 ! trivial partitioning
-#ifdef MOAB_HAVE_ZOLTAN
-        partMethod = 2 ! it is better to use RCB for land mesh
-#endif
-! #define VERBOSE
-        ! partMethod = 2 ! force RCB for land mesh
-        call mpi_comm_group(mpicom_lnd_moab, mpigrp_lndcmp, ierr)
-        if (masterproc) &
-          write(iulog, *) 'ELM-MOAB: Sending mesh from ELM->ELMGH; group = ', mpigrp_lndcmp
-        ierr = iMOAB_SendMesh(mlnid, mpicom_lnd_moab, mpigrp_lndcmp, LNDGHID, partMethod)
-        if (ierr > 0 )  &
-          call endrun('Error: failed to send mesh on ELM')
-        if (masterproc) &
-          write(iulog, *) 'ELM-MOAB: Receiving mesh from ELMGH<-ELM'
-        ierr = iMOAB_ReceiveMesh(mlnghid, mpicom_lnd_moab, mpigrp_lndcmp, LNDID)
-        if (ierr > 0 )  &
-          call endrun('Error: failed to receive mesh on ELM')
-        if (masterproc) &
-          write(iulog, *) 'ELM-MOAB: Freeing mesh send-recv buffers'
-        ierr = iMOAB_FreeSenderBuffers(mlnghid, LNDID)
-        if (ierr > 0 )  &
-          call endrun('Error: failed to free send buffers on ELM')
-        if (masterproc) &
-          write(iulog, *) 'ELM-MOAB: ELM-Mesh successfully repartitioned...'
-        !!!!!!!!!!!!
-
-! #undef VERBOSE
-        ! ierr = iMOAB_SendElementTag( mlnid, 'GLOBAL_ID'//C_NULL_CHAR, mpicom_lnd_moab, LNDGHID )
-        ! ierr = iMOAB_ReceiveElementTag( mlnghid, 'GLOBAL_ID'//C_NULL_CHAR, mpicom_lnd_moab, LNDID )
-
-        ierr = iMOAB_MergeVertices(mlnghid)
-        if (ierr > 0 )  &
-          call endrun('Error: fail to resolve shared entities in land mesh ')
-
-        ierr = iMOAB_UpdateMeshInfo( mlnghid )
-        if (ierr > 0 )  &
-          call endrun('Error: fail to update mesh info ')
-
-        ! let us get some information about the partitioned mesh and print
-        ierr = iMOAB_GetMeshInfo(mlnghid, nverts, nelem, nblocks, nsbc, ndbc)
-        if (ierr > 0 )  &
-          call endrun('Error: failed to get mesh info ')
-
-        entity_type = 0
-        ierr = iMOAB_GetIntTagStorage ( mlnghid, 'GLOBAL_ID'//C_NULL_CHAR, nverts(3), entity_type, vgids )
-        if (ierr > 0 )  &
-          call endrun('Error: fail to set global ID tag on vertices in land mesh ')
-
-        ierr = iMOAB_ResolveSharedEntities( mlnghid, nverts(3), vgids )
-        if (ierr > 0 )  &
-          call endrun('Error: fail to resolve shared entities in land mesh ')
-
-        ! Define halo (ghost) region
-        ! set a default of one ghost layers
-        if (masterproc) &
-            write(iulog,*) "ELM-MOAB: generating ", nghostlayers, " ghost layers"
-        ! After the ghost cell exchange, the halo regions are computed and
-        ! mesh info gets updated anyway
-        ierr = iMOAB_DetermineGhostEntities(mlnghid, topodim, & ! topological dimension
-                                            nghostlayers, &     ! number of ghost layers
-                                            bridgedim )         ! bridge dimension (vertex=0)
-        if (ierr > 0 )  &
-            call endrun('Error: failed to generate the ghost layer entities')
-
-#endif
-
-        ! ! Define halo (ghost) region
-        ! ! set a default of one ghost layers
-        ! if (masterproc) &
-        !     write(iulog,*) "ELM-MOAB: generating ", nghostlayers, " ghost layers"
-        ! ! After the ghost cell exchange, the halo regions are computed and
-        ! ! mesh info gets updated anyway
-        ! ierr = iMOAB_DetermineGhostEntities(mlnghid, topodim, & ! topological dimension
-        !                                     nghostlayers, &     ! number of ghost layers
-        !                                     bridgedim )         ! bridge dimension (vertex=0)
-        ! if (ierr > 0 )  &
-        !     call endrun('Error: failed to generate the ghost layer entities')
-
-      ! let us get some information about the partitioned mesh and print
-      ierr = iMOAB_GetMeshInfo(mlnghid, nverts, nelem, nblocks, nsbc, ndbc)
-      if (ierr > 0 )  &
-       call endrun('Error: failed to get mesh info ')
-      call MPI_Reduce(nverts, nverts, 3, MPI_INTEGER, MPI_SUM, 0, mpicom_lnd_moab, ierr)
-      call MPI_Reduce(nelem, nelem, 3, MPI_INTEGER, MPI_SUM, 0, mpicom_lnd_moab, ierr)
-      if (masterproc) then
-       write(iulog, *)  "ELM-MOAB (ghosted) vertices: owned=", nverts(1), &
-                         ", ghosted=", nverts(2), ", total=", nverts(3)
-       write(iulog, *)  "ELM-MOAB (ghosted) elements: owned=", nelem(1), &
-                         ", ghosted=", nelem(2), ", total=", nelem(3)
-      endif
-
-      ! let us get some information about the partitioned mesh and print
-      ierr = iMOAB_GetMeshInfo(mlndghostid, nverts, nelem, nblocks, nsbc, ndbc)
-      if (ierr > 0 )  &
-        call endrun('Error: failed to get mesh info ')
-      call MPI_Reduce(nverts, nverts, 3, MPI_INTEGER, MPI_SUM, 0, mpicom_lnd_moab, ierr)
-      call MPI_Reduce(nelem, nelem, 3, MPI_INTEGER, MPI_SUM, 0, mpicom_lnd_moab, ierr)
-      if (masterproc) then
-        write(iulog, *)  "ELM-MOAB (domain-gh) vertices: owned=", nverts(1), &
-                          ", ghosted=", nverts(2), ", total=", nverts(3)
-        write(iulog, *)  "ELM-MOAB (domain-gh) elements: owned=", nelem(1), &
-                          ", ghosted=", nelem(2), ", total=", nelem(3)
-      endif
-
-      !  Define and Set Fraction on each mesh
-      tagname='frac:area:aream'//C_NULL_CHAR
-      tagtype = 1 ! dense, double
-      ierr = iMOAB_DefineTagStorage( mlnghid, tagname, tagtype, numco,  tag_indices(2) )
-      if (ierr > 0 )  &
-        call endrun('Error: fail to create frac:area:aream tags')
-
-      ! use moab_vert_coords as a data holder
-      ! Note that loop bounds are typical for locally owned points
-      allocate(data(lsz*3))
-      do i = 1, lsz
-        n = i-1 + bounds%begg
-        data(i) = ldomain%frac(n)               ! frac = area fractions
-        data(i+lsz) = ldomain%area(n)/(re*re)   ! area = element area
-        data(i+2*lsz) = data(i+lsz) ! aream = model area
-      enddo
-
-      ! set the values on the internal mesh, halo values aren't set
-      ierr = iMOAB_SetDoubleTagStorage( mlnghid, tagname, lsz, entity_type, data )
-      if (ierr > 0 )  &
-        call endrun('Error: fail to set frac:area:aream tag ')
-
-      ! synchronize: GLOBAL_ID on vertices in the mesh with ghost layers
-      entity_types(:) = 1 ! default: Element-based tags
-      entity_types(1) = 0 ! Vertex-based tags
-      ierr = iMOAB_SynchronizeTags(mlnghid, 1, tag_indices, entity_types)
-      if (ierr > 0 )  &
-        call endrun('Error: fail to synchronize vertex tags for ELM ')
-
-      ! synchronize: GLOBAL_ID, frac, area, aream tags defined on elements
-      ! in the ghost layers
-      entity_types(1) = 1 ! Element-based tags
-      ierr = iMOAB_SynchronizeTags(mlnghid, 4, tag_indices, entity_types)
-      if (ierr > 0 )  &
-        call endrun('Error: fail to synchronize element tags for ELM ')
-
-#ifdef MOABDEBUG
-        ! write out the local mesh file to disk (np tasks produce np files)
-        outfile = 'elm_local_mesh'//CHAR(0)
-        ierr = iMOAB_WriteLocalMesh(mlnghid, trim(outfile))
-        if (ierr > 0 )  &
-          call endrun('Error: fail to write ELM local meshes in h5m format')
-
-        ! write out the full repartitioned mesh file to disk, in parallel
-        outfile = 'wholeLndGH.h5m'//C_NULL_CHAR
-        wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
-        ierr = iMOAB_WriteMesh(mlnghid, outfile, wopts)
-        if (ierr > 0 )  &
-          call endrun('Error: fail to write the land mesh file')
-#endif
-
-    ! Case where land and atmosphere share mesh
-    ! mesh is a "point cloud" without connectivity
-    else ! old point cloud mesh
-        allocate(moab_vert_coords(lsz*dims))
-        do i = 1, lsz
-          n = i-1 + bounds%begg
-          lonv = ldomain%lonc(n) *SHR_CONST_PI/180.
-          latv = ldomain%latc(n) *SHR_CONST_PI/180.
-          moab_vert_coords(3*i-2)=COS(latv)*COS(lonv)
-          moab_vert_coords(3*i-1)=COS(latv)*SIN(lonv)
-          moab_vert_coords(3*i  )=SIN(latv)
-        enddo
-        ierr = iMOAB_CreateVertices(mlnid, lsz*3, dims, moab_vert_coords)
-        if (ierr > 0 )  &
-          call endrun('Error: fail to create MOAB vertices in land model')
-
-        tagtype = 0  ! dense, integer
-        numco = 1
-        tagname='GLOBAL_ID'//C_NULL_CHAR
-        ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco, tagindex )
-        if (ierr > 0 )  &
-          call endrun('Error: fail to retrieve GLOBAL_ID tag ')
-
-        entity_type = 0 ! vertex type
-        ierr = iMOAB_SetIntTagStorage ( mlnid, tagname, lsz, entity_type, vgids)
-        if (ierr > 0 )  &
-          call endrun('Error: fail to set GLOBAL_ID tag ')
-
-        ierr = iMOAB_ResolveSharedEntities( mlnid, lsz, vgids );
-        if (ierr > 0 )  &
-          call endrun('Error: fail to resolve shared entities')
-
-        !there are no shared entities, but we will set a special partition tag, in order to see the
-        ! partitions ; it will be visible with a Pseudocolor plot in VisIt
-        tagname='partition'//C_NULL_CHAR
-        ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco, tagindex )
-        if (ierr > 0 )  &
-          call endrun('Error: fail to create new partition tag ')
-
-        vgids = iam
-        ierr = iMOAB_SetIntTagStorage ( mlnid, tagname, lsz, entity_type, vgids)
-        if (ierr > 0 )  &
-          call endrun('Error: fail to set partition tag ')
-
-        ! use moab_vert_coords as a data holder for a frac tag and area tag that we will create
-        !   on the vertices; do not allocate other data array
-        tagname='frac'//C_NULL_CHAR
-        tagtype = 1 ! dense, double
-        ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco, tagindex )
-        if (ierr > 0 )  &
-          call endrun('Error: fail to create frac tag ')
-
-        do i = 1, lsz
-          n = i-1 + bounds%begg
-          moab_vert_coords(i) = ldomain%frac(n)
-        enddo
-        ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz, entity_type, moab_vert_coords)
-        if (ierr > 0 )  &
-          call endrun('Error: fail to set frac tag ')
-
-        tagname='area'//C_NULL_CHAR
-        ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco, tagindex )
-        if (ierr > 0 )  &
-          call endrun('Error: fail to create area tag ')
-        do i = 1, lsz
-          n = i-1 + bounds%begg
-          moab_vert_coords(i) = ldomain%area(n)/(re*re) ! use the same doubles for second tag :)
-        enddo
-
-        ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz, entity_type, moab_vert_coords )
-        if (ierr > 0 )  &
-          call endrun('Error: fail to set area tag ')
-
-        ! aream needed in cime_init for now.
-        tagname='aream'//C_NULL_CHAR
-        ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco, tagindex )
-        if (ierr > 0 )  &
-          call endrun('Error: fail to create aream tag ')
-        ! ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz, entity_type, moab_vert_coords )
-        ! if (ierr > 0 )  &
-        !   call endrun('Error: fail to set aream tag ')
-        ierr = iMOAB_UpdateMeshInfo( mlnid )
-        if (ierr > 0 )  &
-          call endrun('Error: fail to update mesh info ')
+    ! let us get some information about the partitioned mesh and print
+    ierr = iMOAB_GetMeshInfo(mlndghostid, nverts, nelem, nblocks, nsbc, ndbc)
+    if (ierr > 0 )  &
+      call endrun('Error: failed to get mesh info ')
+    call MPI_Reduce(nverts, nverts, 3, MPI_INTEGER, MPI_SUM, 0, mpicom_lnd_moab, ierr)
+    call MPI_Reduce(nelem, nelem, 3, MPI_INTEGER, MPI_SUM, 0, mpicom_lnd_moab, ierr)
+    if (masterproc) then
+      write(iulog, *)  "ELM-MOAB (domain-gh) vertices: owned=", nverts(1), &
+                        ", ghosted=", nverts(2), ", total=", nverts(3)
+      write(iulog, *)  "ELM-MOAB (domain-gh) elements: owned=", nelem(1), &
+                        ", ghosted=", nelem(2), ", total=", nelem(3)
     endif
 
     ! add more domain fields that are missing from domain fields: lat, lon, mask, hgt
     !tagname = 'lat:lon:mask:hgt'//C_NULL_CHAR
     tagtype = 0 ! dense, integer
     numco = 1
-    tagname='GLOBAL_ID'//C_NULL_CHAR
-    ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco, tagindex )
+    tagname='GLOBAL_ID:partition'//C_NULL_CHAR
+    ierr = iMOAB_DefineTagStorage(mlndghostid, tagname, tagtype, numco, tag_indices(1) )
     if (ierr > 0 )  &
-      call endrun('Error: fail to retrieve GLOBAL_ID tag ')
+      call endrun('Error: fail to retrieve GLOBAL_ID:partition tag ')
 
-    entity_type = 0 ! vertex type
-    ierr = iMOAB_SetIntTagStorage ( mlnid, tagname, lsz, entity_type, vgids)
-    if (ierr > 0 )  &
-      call endrun('Error: fail to set GLOBAL_ID tag ')
-
-    ierr = iMOAB_ResolveSharedEntities( mlnid, lsz, vgids );
-    if (ierr > 0 )  &
-      call endrun('Error: fail to resolve shared entities')
-
-    !there are no shared entities, but we will set a special partition tag, in order to see the
-    ! partitions ; it will be visible with a Pseudocolor plot in VisIt
-    tagname='partition'//C_NULL_CHAR
-    ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco, tagindex )
-    if (ierr > 0 )  &
-      call endrun('Error: fail to create new partition tag ')
-
-    vgids = iam
-    ierr = iMOAB_SetIntTagStorage ( mlnid, tagname, lsz, entity_type, vgids)
-    if (ierr > 0 )  &
-      call endrun('Error: fail to set partition tag ')
-
-    ! use moab_vert_coords as a data holder for a frac tag and area tag that we will create
-    !   on the vertices; do not allocate other data array
-    tagname='frac'//C_NULL_CHAR
+    !  Define and Set Fraction on each mesh
+    tagname='frac:area:aream'//C_NULL_CHAR
     tagtype = 1 ! dense, double
-    ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco, tagindex )
+    ierr = iMOAB_DefineTagStorage( mlndghostid, tagname, tagtype, numco,  tag_indices(3) )
     if (ierr > 0 )  &
-      call endrun('Error: fail to create frac tag ')
+      call endrun('Error: fail to create frac:area:aream tags')
 
+    ! use data array as a data holder
+    ! Note that loop bounds are typical for locally owned points
+    allocate(data(lsz*3))
     do i = 1, lsz
       n = i-1 + bounds%begg
-      moab_vert_coords(i) = ldomain%frac(n)
-    enddo
-    ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz, entity_type, moab_vert_coords)
-    if (ierr > 0 )  &
-      call endrun('Error: fail to set frac tag ')
-
-    tagname='area'//C_NULL_CHAR
-    ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco, tagindex )
-    if (ierr > 0 )  &
-      call endrun('Error: fail to create area tag ')
-    do i = 1, lsz
-      n = i-1 + bounds%begg
-      moab_vert_coords(i) = ldomain%area(n)/(re*re) ! use the same doubles for second tag :)
+      data(i) = ldomain%frac(n)               ! frac = area fractions
+      data(i+lsz) = ldomain%area(n)/(re*re)   ! area = element area
+      data(i+2*lsz) = data(i+lsz)             ! aream = model area
     enddo
 
-    ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz, entity_type, moab_vert_coords )
-    if (ierr > 0 )  &
-      call endrun('Error: fail to set area tag ')
+    entity_types(:) = 1 ! default: Element-based tags
 
-    ! aream needed in cime_init for now.
-    tagname='aream'//C_NULL_CHAR
-    ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco, tagindex )
-    if (ierr > 0 )  &
-      call endrun('Error: fail to create aream tag ')
-    ! ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz, entity_type, moab_vert_coords )
+    ! set the values on the internal mesh, halo values aren't set
+    ! ierr = iMOAB_SetDoubleTagStorage( mlndghostid, tagname, lsz*3, entity_types(1), data )
     ! if (ierr > 0 )  &
-    !   call endrun('Error: fail to set aream tag ')
-    ierr = iMOAB_UpdateMeshInfo( mlnid )
-    if (ierr > 0 )  &
-      call endrun('Error: fail to update mesh info ')
+    !   call endrun('Error: fail to set frac:area:aream tag ')
 
     ! add more domain fields that are missing from domain fields: lat, lon, mask, hgt
-    tagname = 'lat:lon:mask:hgt'//C_NULL_CHAR
+    tagname = 'lat:lon:mask'//C_NULL_CHAR
     tagtype = 1 ! dense, double
     numco = 1
-    ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco, tagindex )
+    ierr = iMOAB_DefineTagStorage(mlndghostid, tagname, tagtype, numco, tag_indices(6) )
     if (ierr > 0 )  &
       call endrun('Error: fail to create lat:lon:mask:hgt tags ')
 
-    ! moab_vert_coords is big enough in both case to hold enough data for us: lat, lon, mask
+    ! data array is big enough in both case to hold enough data for us: lat, lon, mask
     do i = 1, lsz
       n = i-1 + bounds%begg
-      moab_vert_coords(i) = ldomain%latc(n)  ! lat
-      moab_vert_coords(lsz + i) = ldomain%lonc(n) ! lon
-      moab_vert_coords(2*lsz + i) = ldomain%mask(n) ! mask
+      data(i) = ldomain%latc(n)  ! lat
+      data(lsz + i) = ldomain%lonc(n) ! lon
+      data(2*lsz + i) = ldomain%mask(n) ! mask
     enddo
-    tagname = 'lat:lon:mask'//C_NULL_CHAR
 
-    entity_type = 0 ! point cloud usually
-    if (ldomain%nv .ge. 3 .and. full_land_mesh) then
-      entity_type = 1 ! cell in tri-grid case
-    endif
-    ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz*3 , entity_type, moab_vert_coords)
+    ! ierr = iMOAB_SetDoubleTagStorage ( mlndghostid, tagname, lsz*3 , entity_types(1), data)
+    ! if (ierr > 0 )  &
+    !   call endrun('Error: fail to set lat:lon:mask tag ')
+
+    ierr = iMOAB_UpdateMeshInfo( mlndghostid )
     if (ierr > 0 )  &
-      call endrun('Error: fail to set lat lon mask tag ')
-    deallocate(moab_vert_coords)
-    deallocate(vgids)
+      call endrun('Error: fail to update mesh info ')
 
-  ! define all tags from seq_flds_l2x_fields
-  ! define tags according to the seq_flds_l2x_fields
-    tagtype = 1  ! dense, double
-    numco = 1 !  one value per cell / entity
+    ! synchronize: GLOBAL_ID on vertices in the mesh with ghost layers
+    ! entity_types(:) = 1 ! default: Element-based tags
+    ! entity_types(1) = 0 ! Vertex-based tags
+    ! ierr = iMOAB_SynchronizeTags(mlndghostid, 1, tag_indices, entity_types)
+    ! if (ierr > 0 )  &
+    !   call endrun('Error: fail to synchronize vertex tags for ELM ')
 
-    tagname = trim(seq_flds_l2x_fields)//C_NULL_CHAR
-    ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco, tagindex )
-    if ( ierr > 0) then
-        call endrun('Error: fail to define seq_flds_l2x_fields for land moab mesh')
-    endif
+    ! ! synchronize: GLOBAL_ID, frac, area, aream tags defined on elements
+    ! ! in the ghost layers
+    ! entity_types(1) = 1 ! Element-based tags
+    ! ierr = iMOAB_SynchronizeTags(mlndghostid, 8, tag_indices, entity_types)
+    ! if (ierr > 0 )  &
+    !   call endrun('Error: fail to synchronize element tags for ELM ')
 
-    tagname = trim(seq_flds_x2l_fields)//C_NULL_CHAR
-    ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco, tagindex )
-    if ( ierr > 0) then
-        call endrun('Error: fail to define seq_flds_x2l_fields for land moab mesh')
-    endif
+    deallocate(data)
+
+! #ifdef MOABDEBUG
+      ! write out the local mesh file to disk (np tasks produce np files)
+      outfile = 'elm_local_mesh'//CHAR(0)
+      ierr = iMOAB_WriteLocalMesh(mlndghostid, trim(outfile))
+      if (ierr > 0 )  &
+        call endrun('Error: fail to write ELM local meshes in h5m format')
+
+      ! write out the full repartitioned mesh file to disk, in parallel
+      outfile = 'wholeLndGH.h5m'//C_NULL_CHAR
+      wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+      ierr = iMOAB_WriteMesh(mlndghostid, outfile, wopts)
+      if (ierr > 0 )  &
+        call endrun('Error: fail to write the land mesh file')
+! #endif
 
   end subroutine init_moab_land_internal
 
