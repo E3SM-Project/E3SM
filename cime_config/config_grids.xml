@@ -5949,7 +5949,7 @@
     <gridmap glc_grid="mpas.gis4to40km" ocn_grid="IcoswISC30E3r5">
       <map name="OCN2GLC_SHELF_FMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_gis4to40_esmfaave.20250218.nc</map>
       <map name="OCN2GLC_SHELF_SMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_gis4to40_esmfbilin.20250218.nc</map>
-      <map name="OCN2GLC_TF_SMAPNAME">cpl/gridmaps/IcoswISC30E3r5/XXX</map>
+      <map name="OCN2GLC_TF_SMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_gis4to40_esmfaave.20250218.nc</map>
       <map name="GLC2ICE_FMAPNAME">cpl/gridmaps/mpas.gis4to40km/map_gis4to40_to_IcoswISC30E3r5_esmfaave.20250218.nc</map>
       <map name="GLC2ICE_SMAPNAME">cpl/gridmaps/mpas.gis4to40km/map_gis4to40_to_IcoswISC30E3r5_esmfaave.20250218.nc</map>
       <map name="GLC2OCN_FMAPNAME">cpl/gridmaps/mpas.gis4to40km/map_gis4to40_to_IcoswISC30E3r5_esmfaave.20250218.nc</map>
