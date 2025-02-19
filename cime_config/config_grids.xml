@@ -6140,8 +6140,8 @@
       <map name="GLC2ICE_SMAPNAME">cpl/gridmaps/mpas.ais8to30km/map_ais8to30_to_oQU240wLI-nomask_esmfbilin.20240701.nc</map>
       <map name="GLC2OCN_FMAPNAME">cpl/gridmaps/mpas.ais8to30km/map_ais8to30_to_oQU240wLI-nomask_esmfaave.20240701.nc</map>
       <map name="GLC2OCN_SMAPNAME">cpl/gridmaps/mpas.ais8to30km/map_ais8to30_to_oQU240wLI-nomask_esmfbilin.20240701.nc</map>
-      <map name="GLC2OCN_LIQ_RMAPNAME">cpl/gridmaps/mpas.ais8to30km/map_ais8to30_to_oQU240wLI-nomask_esmfnearestdtos.20240701.nc</map>
-      <map name="GLC2OCN_ICE_RMAPNAME">cpl/gridmaps/mpas.ais8to30km/map_ais8to30_to_oQU240wLI_esmfnearestdtos.20240701.nc</map>
+      <map name="GLC2OCN_LIQ_RMAPNAME">cpl/gridmaps/mpas.ais8to30km/map_ais8to30_to_oQU240wLI-nomask_nn.20250218.nc</map>
+      <map name="GLC2OCN_ICE_RMAPNAME">cpl/gridmaps/mpas.ais8to30km/map_ais8to30_to_oQU240wLI-nomask_nn.20250218.nc</map>
     </gridmap>
 
     <gridmap glc_grid="mpas.ais8to30km" ocn_grid="IcoswISC30E3r5">
