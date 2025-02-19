@@ -1543,15 +1543,18 @@ contains
          do i = 1, nCellsSolve
             n = n + 1
 
-            g2x_g % rAttr(index_g2x_Fogg_rofi,n) = avgCalvingFlux(i) 
-            g2x_g % rAttr(index_g2x_Figg_rofi,n) = 0.0 ! placeholder
+            ! Fogg_rofl
             g2x_g % rAttr(index_g2x_Fogg_rofl,n) = avgBareIceAblationApplied(i) 
-            g2x_g % rAttr(index_g2x_Fogg_rofl,n) = g2x_g % rAttr(index_g2x_Fogg_rofl,n) + &
+            ! Figg_rofi
+            g2x_g % rAttr(index_g2x_Figg_rofi,n) = 0.0 ! placeholder
+            ! Fogg_rofi
+            g2x_g % rAttr(index_g2x_Fogg_rofi,n) = avgCalvingFlux(i) 
+            g2x_g % rAttr(index_g2x_Fogg_rofi,n) = g2x_g % rAttr(index_g2x_Fogg_rofi,n) + &
                     faceMeltingThickness(i) * config_ice_density / deltat  ! units: kg/m2/s
             if (trim(config_basal_mass_bal_float) == 'ismip6') then
                ! if MALI is calculating ISMF, add that to rofl
                ! In some configurations, ISMF will be calculated in coupler or MPAS-Ocean
-               g2x_g % rAttr(index_g2x_Fogg_rofl,n) = g2x_g % rAttr(index_g2x_Fogg_rofl,n) + &
+               g2x_g % rAttr(index_g2x_Fogg_rofi,n) = g2x_g % rAttr(index_g2x_Fogg_rofi,n) + &
                   floatingBasalMassBalApplied(i)  ! units: kg/m2/s
             endif
 
