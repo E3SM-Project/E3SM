@@ -479,7 +479,7 @@ TEST_CASE("rrtmgp_scream_standalone_k", "") {
 
   // Get dimension sizes from the field manager
   const auto& grid = ad.get_grids_manager()->get_grid("Point Grid");
-  const auto& field_mgr = *ad.get_field_mgr(grid->name());
+  const auto& field_mgr = *ad.get_field_mgr();
   int ncol  = grid->get_num_local_dofs();
   int nlay  = grid->get_num_vertical_levels();
 
