@@ -445,7 +445,7 @@ void Field::sync_views_impl () const {
   }
 }
 
-template<typename ST, HostOrDevice HD>
+template<HostOrDevice HD, typename ST>
 void Field::
 deep_copy (const ST value) {
   EKAT_REQUIRE_MSG (not m_is_read_only,
