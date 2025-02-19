@@ -73,8 +73,8 @@ jobs:
             short_name: ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-small_kernels--eamxx-output-preset-5
           - full_name: SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.ghci-snl-cpu_gnu.eamxx-mam4xx-all_mam4xx_procs
             short_name: SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-all_mam4xx_procs
-          - full_name: SMS_Ln3_P4.ne4pg2_oQU480.F2010-MMF2.ghci-snl-cpu_gnu
-            short_name: SMS_Ln3_P4.ne4pg2_oQU480.F2010-MMF2
+          - full_name: SMS_Ln3.ne4pg2_oQU480.F2010-MMF2.ghci-snl-cpu_gnu
+            short_name: SMS_Ln3.ne4pg2_oQU480.F2010-MMF2
       fail-fast: false
     name: cpu-gcc / ${{ matrix.test.short_name }}
     steps:
