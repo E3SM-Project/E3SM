@@ -25,16 +25,7 @@ if (${USE_CUDA})
                        )
 endif()
 
-string(FIND "${CAM_CONFIG_OPTS}" "-pam_dycor awfl" USE_AWFL)
-string(FIND "${CAM_CONFIG_OPTS}" "-pam_dycor spam" USE_SPAM)
-
-if (NOT USE_AWFL EQUAL -1) 
-  set(PAM_DYCORE  awfl)
-endif()
-
-if (NOT USE_SPAM EQUAL -1) 
-  set(PAM_DYCORE  spam)
-endif()
+set(PAM_DYCORE  spam)
 
 set(PAM_MICRO   p3)
 set(PAM_SGS     shoc)

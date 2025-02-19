@@ -210,15 +210,11 @@ extern "C" void pam_driver() {
 
   // dycor initialization
   bool do_density_save_recall = false;
-  #if defined(MMF_PAM_DYCOR_SPAM)
-    // The PAM-C anelastic dycor can dramatically change the dry density due to the assumption that
-    // the total density does not change, so we will save it here and recall after the dycor
-    do_density_save_recall = true;
-    pam_state_set_reference_state(coupler);
-    dycore.pre_time_loop(coupler);
-  #elif defined(MMF_PAM_DYCOR_AWFL)
-    dycore.declare_current_profile_as_hydrostatic(coupler,/*use_gcm_data=*/true);
-  #endif
+  // The PAM-C anelastic dycor can dramatically change the dry density due to the assumption that
+  // the total density does not change, so we will save it here and recall after the dycor
+  do_density_save_recall = true;
+  pam_state_set_reference_state(coupler);
+  dycore.pre_time_loop(coupler);
 
   #ifdef MMF_DISABLE_DENSITY_RECALL
     do_density_save_recall = false;

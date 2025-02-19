@@ -1147,12 +1147,9 @@
 <crm_accel_factor use_MMF="1" crm="samxx">2</crm_accel_factor>
 <use_crm_accel    use_MMF="1" crm="samxx">.true.</use_crm_accel>
 <crm_accel_uv     use_MMF="1" crm="samxx">.true.</crm_accel_uv>
-<crm_accel_factor use_MMF="1" crm="pam" pam_dycor="spam" >2</crm_accel_factor>
-<use_crm_accel    use_MMF="1" crm="pam" pam_dycor="spam" >.true.</use_crm_accel>
-<crm_accel_uv     use_MMF="1" crm="pam" pam_dycor="spam" >.true.</crm_accel_uv>
-<crm_accel_factor use_MMF="1" crm="pam" pam_dycor="awfl" >0</crm_accel_factor>
-<use_crm_accel    use_MMF="1" crm="pam" pam_dycor="awfl" >.false.</use_crm_accel>
-<crm_accel_uv     use_MMF="1" crm="pam" pam_dycor="awfl" >.false.</crm_accel_uv>
+<crm_accel_factor use_MMF="1" crm="pam"  >2</crm_accel_factor>
+<use_crm_accel    use_MMF="1" crm="pam"  >.true.</use_crm_accel>
+<crm_accel_uv     use_MMF="1" crm="pam"  >.true.</crm_accel_uv>
 
 <!-- Cloud fraction -->
 <cldfrc_freeze_dry             >.true.</cldfrc_freeze_dry>
