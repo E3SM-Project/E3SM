@@ -41,6 +41,7 @@ module mpaso_cpl_indices
   integer :: index_o2x_So_rhoeff !ocean effective density
   integer :: index_o2x_So_tf2d !ocean thermal forcing at predefined critical depth
   integer :: index_o2x_So_tf3d(glc_nzoc_max) !ocean thermal forcing at predefined z-levels
+  integer :: index_o2x_So_tf3d_mask(glc_nzoc_max) !mask ofocean thermal forcing at predefined z-levels
 
 
 
@@ -228,6 +229,9 @@ contains
           cnum = glc_zocnclass_as_string(iLev)
           varname = 'So_tf3d' // cnum
           index_o2x_So_tf3d(iLev) = mct_avect_indexra(o2x, trim(varname))
+
+          varname = 'So_tf3d_mask' // cnum
+          index_o2x_So_tf3d_mask(iLev) = mct_avect_indexra(o2x, trim(varname))
        enddo
     endif
 
