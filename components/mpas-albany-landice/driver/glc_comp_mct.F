@@ -1543,13 +1543,13 @@ contains
             !call route_ice_runoff(0.0_RKIND, & 
             !                      rofi_to_ocn=Fogg_rofi, &
             !                      rofi_to_ice=Figg_rofi)
-            g2x_g % rAttr(index_g2x_Fogg_rofi,n)=0.0!...and remove these placeholders
+            g2x_g % rAttr(index_g2x_Fogg_rofl,n)=0.0!...and remove these placeholders
             g2x_g % rAttr(index_g2x_Figg_rofi,n)=0.0 !...and remove these placeholders
-            g2x_g % rAttr(index_g2x_Fogg_rofl,n) = faceMeltingThickness(i) * config_ice_density / deltat  ! units: kg/m2/s
+            g2x_g % rAttr(index_g2x_Fogg_rofi,n) = faceMeltingThickness(i) * config_ice_density / deltat  ! units: kg/m2/s
             if (trim(config_basal_mass_bal_float) == 'ismip6') then
                ! if MALI is calculating ISMF, add that to rofl
                ! In some configurations, ISMF will be calculated in coupler or MPAS-Ocean
-               g2x_g % rAttr(index_g2x_Fogg_rofl,n) = g2x_g % rAttr(index_g2x_Fogg_rofl,n) + &
+               g2x_g % rAttr(index_g2x_Fogg_rofi,n) = g2x_g % rAttr(index_g2x_Fogg_rofi,n) + &
                   floatingBasalMassBalApplied(i)  ! units: kg/m2/s
             endif
 
