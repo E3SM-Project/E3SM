@@ -209,8 +209,11 @@ public:
   void sync_to_dev (const bool fence = true) const;
 
   // Set the field to a constant value (on host or device)
-  template<typename T, HostOrDevice HD = Device>
-  void deep_copy (const T value);
+  // Note: as done below in 'update', the default for ST is only to allow
+  //       giving a default for HD. In practice, ST will ALWAYS be
+  //       deduced from the type of 'value'
+  template<HostOrDevice HD = Device, typename ST = void>
+  void deep_copy (const ST value);
 
   // Copy the data from one field to this field (recycle update method)
   template<HostOrDevice HD = Device>
