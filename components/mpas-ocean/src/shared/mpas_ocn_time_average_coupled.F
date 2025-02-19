@@ -62,6 +62,7 @@ module ocn_time_average_coupled
 
         real (kind=RKIND), dimension(:), pointer :: avgThermalForcingAtCritDepth
         real (kind=RKIND), dimension(:,:), pointer :: avgThermalForcingAtZLevels
+        real (kind=RKIND), dimension(:,:), pointer :: avgThermalForcingAtZLevelsMask
 
         integer :: iCell
         integer, pointer :: nAccumulatedCoupled, nCells
@@ -177,11 +178,13 @@ module ocn_time_average_coupled
            !$omp end parallel
         elseif (trim(config_glc_thermal_forcing_coupling_mode) == '3d') then
            call mpas_pool_get_array(forcingPool, 'avgThermalForcingAtZLevels', avgThermalForcingAtZLevels)
+           call mpas_pool_get_array(forcingPool, 'avgThermalForcingAtZLevelsMask', avgThermalForcingAtZLevelsMask)
 
            !$omp parallel
            !$omp do schedule(runtime)
            do iCell = 1, nCells
               avgThermalForcingAtZLevels(:, iCell) = 0.0_RKIND
+              avgThermalForcingAtZLevelsMask(:, iCell) = 0.0_RKIND
            end do
            !$omp end do
            !$omp end parallel
@@ -297,6 +300,7 @@ module ocn_time_average_coupled
                                                     avgRemovedIceRunoffHeatFlux, &
                                                     avgThermalForcingAtCritDepth
         real (kind=RKIND), dimension(:,:), pointer :: avgThermalForcingAtZLevels
+        real (kind=RKIND), dimension(:,:), pointer :: avgThermalForcingAtZLevelsMask
         real (kind=RKIND), dimension(:), pointer :: glcZLevels
 
         type (mpas_pool_type), pointer :: tracersPool
@@ -488,6 +492,7 @@ module ocn_time_average_coupled
            !$omp end parallel
         elseif (trim(config_glc_thermal_forcing_coupling_mode) == '3d') then
            call mpas_pool_get_array(forcingPool, 'avgThermalForcingAtZLevels', avgThermalForcingAtZLevels)
+           call mpas_pool_get_array(forcingPool, 'avgThermalForcingAtZLevelsMask', avgThermalForcingAtZLevelsMask)
            call mpas_pool_get_array(forcingPool, 'glcZLevels', glcZLevels)
            call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
            call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 2)
@@ -518,6 +523,13 @@ module ocn_time_average_coupled
                        pressure=pressure(iLevelCritDepth, iCell),  inLandIceCavity=.false.)
                     avgThermalForcingAtZLevels(iLevelGlc, iCell) = ( avgThermalForcingAtZLevels(iLevelGlc, iCell) * nAccumulatedCoupled &
                        + activeTracers(indexTemperature, iLevelCritDepth, iCell) - freezingTemp ) / ( nAccumulatedCoupled + 1)
+                    avgThermalForcingAtZLevelsMask(iLevelGlc, iCell) = ( avgThermalForcingAtZLevelsMask(iLevelGlc, iCell) * nAccumulatedCoupled &
+                       + 1.0_RKIND) / ( nAccumulatedCoupled + 1)
+                  else
+                    avgThermalForcingAtZLevels(iLevelGlc, iCell) = ( avgThermalForcingAtZLevels(iLevelGlc, iCell) * nAccumulatedCoupled &
+                       + 0.0_RKIND) / (nAccumulatedCoupled + 1)
+                    avgThermalForcingAtZLevelsMask(iLevelGlc, iCell) = ( avgThermalForcingAtZLevelsMask(iLevelGlc, iCell) * nAccumulatedCoupled &
+                       + 0.0_RKIND) / ( nAccumulatedCoupled + 1)
                   end if
               end do
            enddo
