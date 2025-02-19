@@ -1410,10 +1410,13 @@ contains
    real (kind=RKIND), dimension(:,:), pointer :: ismip6shelfMelt_3dThermalForcing
    integer, dimension(:,:), pointer :: orig3dOceanMask
    real(kind=RKIND), pointer :: config_ice_density
+   real(kind=RKIND), pointer :: config_invalid_value_TF
+   real(kind=RKIND) :: fractionalMaskVal
 
     errorCode = 0
 
     call mpas_pool_get_config(domain % configs, 'config_ice_density', config_ice_density)
+    call mpas_pool_get_config(domain % configs, 'config_invalid_value_TF', config_invalid_value_TF)
 
     n = 0
     block => domain % blocklist
@@ -1448,10 +1451,16 @@ contains
             floatingBasalMassBal(i) = x2g_g % rAttr(index_x2g_Fogx_qiceli, n)
             if (nISMIP6OceanLayers > 0) then
                do iLev = 1, nISMIP6OceanLayers
-                  ismip6shelfMelt_3dThermalForcing(iLev, i) = x2g_g % rAttr(index_x2g_So_tf3d(iLev), n)
-                  if (ismip6shelfMelt_3dThermalForcing(iLev,i) /= 0.0_RKIND) then
-                     ! todo: use a proper mask from OCN
+                  fractionalMaskVal = x2g_g % rAttr(index_x2g_So_tf3d_mask(iLev), n)
+                  if (fractionalMaskVal > 0.5_RKIND) then
+                     ! Only use MALI grid cells that have at least 50% overlap with MPAS-Ocean cells
+                     ! if valid, mark our integer mask as 1 and scale the TF value by the fractional mask
                      orig3dOceanMask(iLev,i) = 1
+                     ismip6shelfMelt_3dThermalForcing(iLev, i) = x2g_g % rAttr(index_x2g_So_tf3d(iLev), n) / fractionalMaskVal
+                  else
+                     ! if not using, insert 0 in mask and bad val in TF field
+                     orig3dOceanMask(iLev,i) = 0
+                     ismip6shelfMelt_3dThermalForcing(iLev, i) = config_invalid_value_TF
                   endif
                enddo
             endif
