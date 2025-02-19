@@ -5918,7 +5918,7 @@
     <!-- GLC: mpas.gis4to40km    -->
     <!-- ====================    -->
 
-    <gridmap glc_grid="mpas.gis4to40kmR2" lnd_grid="r05">
+    <gridmap glc_grid="mpas.gis4to40km" lnd_grid="r05">
       <map name="LND2GLC_FMAPNAME">cpl/gridmaps/r05/map_r05_to_gis4to40_traave.20250218.nc</map>
       <map name="LND2GLC_SMAPNAME">cpl/gridmaps/r05/map_r05_to_gis4to40_trbilin.20250218.nc</map>
       <map name="GLC2LND_FMAPNAME">cpl/gridmaps/mpas.gis4to40km/map_gis4to40_to_r05_traave.20250218.nc</map>
