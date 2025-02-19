@@ -213,6 +213,12 @@ public:
   template<HostOrDevice HD = Device, typename ST = void>
   void deep_copy (const ST value);
 
+  // Like the above one, but only sets the value where the mask is active
+  // NOTE: mask field must have data type IntType, and hold the extra data
+  // "true_value", to specify where the mask is active
+  template<HostOrDevice HD = Device, typename ST = void>
+  void deep_copy (const ST value, const Field& mask);
+
   // Copy the data from one field to this field (recycle update method)
   template<HostOrDevice HD = Device>
   void deep_copy (const Field& src) { update<CombineMode::Replace,HD>(src,1,0); }
@@ -334,8 +340,8 @@ protected:
   template<typename ST, HostOrDevice From, HostOrDevice To>
   void sync_views_impl () const;
 
-  template<HostOrDevice HD, typename ST>
-  void deep_copy_impl (const ST value);
+  template<HostOrDevice HD, bool use_mask, typename ST>
+  void deep_copy_impl (const ST value, const Field& mask);
 
   // The update method calls this, with ST matching this field data type.
   // Note: use_fill is used to determine *at compile time* whether to use
@@ -426,7 +432,8 @@ extern template void Field::update_impl<CombineMode::Multiply,S, false, T1, T2>(
 extern template void Field::update_impl<CombineMode::Divide,  S, false, T1, T2>(const Field&, const T1, const T1)
 
 #define EAMXX_FIELD_ETI_DECL_DEEP_COPY(S,T) \
-extern template void Field::deep_copy_impl<S,T>(const T)
+extern template void Field::deep_copy_impl<S,true,T>(const T, const Field&); \
+extern template void Field::deep_copy_impl<S,false,T>(const T, const Field&)
 
 #define EAMXX_FIELD_ETI_DECL_GET_VIEW(S,T) \
 extern template Field::get_view_type<T,S> Field::get_view<T,S> () const; \
