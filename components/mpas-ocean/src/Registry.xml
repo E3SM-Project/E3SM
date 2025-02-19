@@ -4085,6 +4085,9 @@
 		<var name="avgThermalForcingAtZLevels" type="real" dimensions="nGlcZLevels nCells Time" units="C"
 			description="The time-averaged thermal forcing at predefined z-levels used for indirect OCN-GLC coupling in E3SM"
 		/>
+		<var name="avgThermalForcingAtZLevelsMask" type="real" dimensions="nGlcZLevels nCells Time" units="none"
+                        description="0/1 mask of valid locations for avgThermalForcingAtZLevels.  Type is real because this is time-averaged so can take on values between 0 and 1."
+		/>
 		<var name="glcZLevels" type="real" dimensions="nGlcZLevels" units="m"
 			description="Z-levels at which ocean properties should be evaluated for indirect OCN-GLC coupling. This array will generally be provided by the E3SM coupler."
 		/>

@@ -2912,7 +2912,8 @@ contains
    real (kind=RKIND), dimension(:,:), pointer :: avgTracersSurfaceValue, avgSurfaceVelocity, &
                                                  avgSSHGradient, avgOceanSurfacePhytoC, &
                                                  avgOceanSurfaceDOC, layerThickness, &
-                                                 avgThermalForcingAtZLevels
+                                                 avgThermalForcingAtZLevels, &
+                                                 avgThermalForcingAtZLevelsMask
 
    real (kind=RKIND) :: surfaceFreezingTemp
 
@@ -3003,6 +3004,7 @@ contains
         call mpas_pool_get_array(forcingPool, 'avgThermalForcingAtCritDepth', avgThermalForcingAtCritDepth)
      elseif (trim(config_glc_thermal_forcing_coupling_mode) == '3d') then
         call mpas_pool_get_array(forcingPool, 'avgThermalForcingAtZLevels', avgThermalForcingAtZLevels)
+        call mpas_pool_get_array(forcingPool, 'avgThermalForcingAtZLevelsMask', avgThermalForcingAtZLevelsMask)
         call mpas_pool_get_dimension(forcingPool, 'nGlcZLevels', nGlcZLevels)
      endif
 
@@ -3170,7 +3172,18 @@ contains
           o2x_o % rAttr(index_o2x_So_tf2d, n) = avgThermalForcingAtCritDepth(i)
        elseif (trim(config_glc_thermal_forcing_coupling_mode) == '3d') then
           do iLevel = 1, nGlcZLevels
-             o2x_o % rAttr(index_o2x_So_tf3d(iLevel), n) = avgThermalForcingAtZLevels(ilevel, i)
+             if (avgThermalForcingAtZLevelsMask(ilevel, i) > 0.9_RKIND) then
+                ! Only use this time average if it is available almost all the time
+                ! Otherwise the time average is not representative.
+                o2x_o % rAttr(index_o2x_So_tf3d(iLevel), n) = avgThermalForcingAtZLevels(ilevel, i) / &
+                        avgThermalForcingAtZLevelsMask(ilevel, i)
+                ! Consider this ocean cell valid (no need to continue carrying the time averaging fraction)
+                o2x_o % rAttr(index_o2x_So_tf3d_mask(iLevel), n) = 1.0_RKIND
+             else
+                ! If we're not using this location, set value and mask to zero
+                o2x_o % rAttr(index_o2x_So_tf3d(iLevel), n) = 0.0_RKIND
+                o2x_o % rAttr(index_o2x_So_tf3d_mask(iLevel), n) = 0.0_RKIND
+             endif
           enddo
        endif
 

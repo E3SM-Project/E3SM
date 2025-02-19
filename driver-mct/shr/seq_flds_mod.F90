@@ -3002,8 +3002,8 @@ contains
           ! and cpl->ocn (which differs from glc_nec variables)
 
           name = 'So_tf3d'
-          longname = 'ocean thermal forcing at predefined critical depth'
-          stdname  = 'ocean_thermal_forcing_at_critical_depth'
+          longname = 'ocean thermal forcing at z-level'
+          stdname  = 'ocean_thermal_forcing_at_z_level'
           units    = 'C'
           attname  = name
           call set_glc_zocnclass_field(name, attname, longname, stdname, units, o2x_states)
@@ -3012,7 +3012,19 @@ contains
           call set_glc_zocnclass_field(name, attname, longname, stdname, units, x2g_tf_states_from_ocn, &
                additional_list = .true.)
           call metadata_set(attname, longname, stdname, units)
-       end if
+
+          name = 'So_tf3d_mask'
+          longname = 'mask of valid ocean thermal forcing at z-level'
+          stdname  = 'mask_ocean_thermal_forcing_at_z_level'
+          units    = 'none'
+          attname  = name
+          call set_glc_zocnclass_field(name, attname, longname, stdname, units, o2x_states)
+          call set_glc_zocnclass_field(name, attname, longname, stdname, units, x2g_states, &
+               additional_list = .true.)
+          call set_glc_zocnclass_field(name, attname, longname, stdname, units, x2g_tf_states_from_ocn, &
+               additional_list = .true.)
+          call metadata_set(attname, longname, stdname, units)
+      end if
 
        name = 'Fogx_qicelo'
        call seq_flds_add(g2x_fluxes,trim(name))
