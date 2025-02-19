@@ -610,9 +610,9 @@ TEST_CASE("tracers_bundle", "") {
   REQUIRE (Q.is_aliasing(*group.m_bundle));
 
   // Check that Q is set as parent for all q's.
-  auto qvp = qv.get_header().get_parent().lock();
-  auto qcp = qc.get_header().get_parent().lock();
-  auto qrp = qr.get_header().get_parent().lock();
+  auto qvp = qv.get_header().get_parent();
+  auto qcp = qc.get_header().get_parent();
+  auto qrp = qr.get_header().get_parent();
   REQUIRE ((qvp!=nullptr && qvp.get()==&Q.get_header()));
   REQUIRE ((qcp!=nullptr && qvp.get()==&Q.get_header()));
   REQUIRE ((qrp!=nullptr && qvp.get()==&Q.get_header()));

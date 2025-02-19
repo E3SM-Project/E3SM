@@ -169,7 +169,7 @@ set_field_manager (const std::shared_ptr<const fm_type>& field_mgr)
 
     // If we can alias the field's host view, do it.
     // Otherwise, create a temporary.
-    bool can_alias_field_view = fh.get_parent().expired() && fap.get_padding()==0;
+    bool can_alias_field_view = fh.get_parent()==nullptr && fap.get_padding()==0;
     if (can_alias_field_view) {
       auto data = f.get_internal_view_data<Real,Host>();
       m_host_views_1d[name] = view_1d_host(data,fl.size());
@@ -263,7 +263,7 @@ void AtmosphereInput::read_variables (const int time_index)
       const auto& fap = fh.get_alloc_properties();
 
       // Check if the stored 1d view is sharing the data ptr with the field
-      const bool can_alias_field_view = fh.get_parent().expired() && fap.get_padding()==0;
+      const bool can_alias_field_view = fh.get_parent()==nullptr && fap.get_padding()==0;
 
       // If the 1d view is a simple reshape of the field's Host view data,
       // then we're already done. Otherwise, we need to manually copy.

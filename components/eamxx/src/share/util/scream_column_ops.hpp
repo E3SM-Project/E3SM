@@ -52,7 +52,7 @@ namespace scream {
  *     penalization. The only requirement is that both branches must compile.
  *   - some methods accept a non-type template argument of type CombineMode.
  *     This argument can be used to specify how the result of the calculation
- *     should be written in the output view. E.g., if CM=ScaleUpdate, the output
+ *     should be written in the output view. E.g., if CM=Update, the output
  *     view y will be updated as y = beta*y + alpha*f(x). The values alpha
  *     and beta are used only if CM needs them, and an error is thrown if the
  *     user specifies non-trivial alpha/beta when they are not needed.
@@ -123,11 +123,9 @@ public:
   compute_midpoint_values (const TeamMember& team,
                            const int num_mid_levels,
                            const InputProvider& x_i,
-                           const view_1d<ScalarT,MT>& x_m,
-                           const scalar_type alpha = one(),
-                           const scalar_type beta = zero())
+                           const view_1d<ScalarT,MT>& x_m)
   {
-    compute_midpoint_values<CombineMode::Replace>(team,num_mid_levels,x_i,x_m,alpha,beta);
+    compute_midpoint_values<CombineMode::Replace>(team,num_mid_levels,x_i,x_m,1,0);
   }
   // Compute X at level midpoints, given X at level interfaces
   template<CombineMode CM, typename InputProvider, typename ScalarT, typename MT>

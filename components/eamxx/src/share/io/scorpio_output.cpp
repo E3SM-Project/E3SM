@@ -483,7 +483,7 @@ run (const std::string& filename,
     const bool is_aliasing_field_view =
         m_avg_type==OutputAvgType::Instant &&
         field.get_header().get_alloc_properties().get_padding()==0 &&
-        field.get_header().get_parent().expired() &&
+        field.get_header().get_parent()==nullptr &&
         not is_diagnostic;
 
     // Manually update the 'running-tally' views with data from the field,
@@ -693,7 +693,7 @@ res_dep_memory_footprint () const {
     bool can_alias_field_view =
         m_avg_type==OutputAvgType::Instant && not is_diagnostic &&
         io_field_mgr->get_field(fn).get_header().get_alloc_properties().get_padding()==0 &&
-        io_field_mgr->get_field(fn).get_header().get_parent().expired();
+        io_field_mgr->get_field(fn).get_header().get_parent()==nullptr;
 
     if (not can_alias_field_view) {
       rdmf += m_dev_views_1d.size()*sizeof(Real);
@@ -820,7 +820,7 @@ void AtmosphereOutput::register_views()
     bool can_alias_field_view =
         m_avg_type==OutputAvgType::Instant &&
         field.get_header().get_alloc_properties().get_padding()==0 &&
-        field.get_header().get_parent().expired() &&
+        field.get_header().get_parent()==nullptr &&
         not is_diagnostic;
 
     const auto layout = m_layouts.at(field.name());
