@@ -1,7 +1,7 @@
 #ifndef SCREAM_IO_UTILS_HPP
 #define SCREAM_IO_UTILS_HPP
 
-#include "scream_io_control.hpp"
+#include "eamxx_io_control.hpp"
 #include "share/util/scream_time_stamp.hpp"
 #include "share/atm_process/atmosphere_diagnostic.hpp"
 #include "share/grid/abstract_grid.hpp"

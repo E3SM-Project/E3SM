@@ -5,7 +5,7 @@
 #include "physics_unit_tests_common.hpp"
 
 #include "share/scream_types.hpp"
-#include "share/scream_session.hpp"
+#include "share/eamxx_session.hpp"
 #include "share/util/scream_utils.hpp"
 
 #include "ekat/ekat_pack.hpp"
@@ -317,7 +317,7 @@ int main (int argc, char** argv) {
     args.push_back(argv[i]);
   }
 
-  scream::initialize_scream_session(args.size(), args.data()); {
+  scream::initialize_eamxx_session(args.size(), args.data()); {
     TestSaturation bln;
     if (generate) {
       std::cout << "Generating to " << baseline_fn << "\n";
@@ -326,7 +326,7 @@ int main (int argc, char** argv) {
       printf("Comparing with %s at tol %1.1e\n", baseline_fn.c_str(), tol);
       nerr += bln.run_and_cmp(baseline_fn, tol);
     }
-  } scream::finalize_scream_session();
+  } scream::finalize_eamxx_session();
 
   return nerr != 0 ? 1 : 0;
 }

@@ -3,7 +3,7 @@
 
 #include "share/atm_process/atmosphere_process.hpp"
 #include "share/io/scorpio_input.hpp"
-#include "share/io/scream_output_manager.hpp"
+#include "share/io/eamxx_output_manager.hpp"
 
 #include "pygrid.hpp"
 #include "pyfield.hpp"

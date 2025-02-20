@@ -11,7 +11,7 @@
 
 #include "mct_coupling/ScreamContext.hpp"
 #include "share/grid/point_grid.hpp"
-#include "share/scream_session.hpp"
+#include "share/eamxx_session.hpp"
 #include "share/eamxx_config.hpp"
 #include "share/scream_types.hpp"
 
@@ -126,7 +126,7 @@ void scream_create_atm_instance (const MPI_Fint f_comm, const int atm_id,
     auto& atm_comm = c.create<ekat::Comm>(mpi_comm_c);
 
     // Initialize the scream session.
-    scream::initialize_scream_session(atm_comm.am_i_root());
+    scream::initialize_eamxx_session(atm_comm.am_i_root());
 
     std::string cal = calendar_name;
     if (cal=="NO_LEAP") {
@@ -290,7 +290,7 @@ void scream_finalize (/* args ? */) {
     scream::cleanup_singleton();
 
     // Finalize scream session
-    scream::finalize_scream_session();
+    scream::finalize_eamxx_session();
   });
 }
 

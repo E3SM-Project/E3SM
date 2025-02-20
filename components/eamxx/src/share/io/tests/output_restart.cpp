@@ -1,6 +1,6 @@
 #include <catch2/catch.hpp>
 
-#include "share/io/scream_output_manager.hpp"
+#include "share/io/eamxx_output_manager.hpp"
 #include "share/io/scorpio_output.hpp"
 #include "share/io/scorpio_input.hpp"
 #include "share/io/eamxx_scorpio_interface.hpp"

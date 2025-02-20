@@ -10,7 +10,7 @@
 #include "share/util/scream_setup_random_test.hpp"
 #include "share/util/scream_time_stamp.hpp"
 
-#include "share/io/scream_output_manager.hpp"
+#include "share/io/eamxx_output_manager.hpp"
 
 #include "ekat/ekat_parameter_list.hpp"
 /*-----------------------------------------------------------------------------------------------

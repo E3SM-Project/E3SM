@@ -5,7 +5,7 @@
 #include "share/io/eamxx_scorpio_interface.hpp"
 #include "share/io/eamxx_io_utils.hpp"
 #include "share/io/eamxx_io_file_specs.hpp"
-#include "share/io/scream_io_control.hpp"
+#include "share/io/eamxx_io_control.hpp"
 
 #include "share/field/field_manager.hpp"
 #include "share/grid/grids_manager.hpp"

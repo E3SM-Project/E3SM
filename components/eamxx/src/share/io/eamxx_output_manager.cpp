@@ -1,4 +1,4 @@
-#include "scream_output_manager.hpp"
+#include "eamxx_output_manager.hpp"
 
 #include "share/io/scorpio_input.hpp"
 #include "share/io/eamxx_scorpio_interface.hpp"

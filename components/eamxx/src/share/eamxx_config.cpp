@@ -1,5 +1,5 @@
 #include "eamxx_config.hpp"
-#include "scream_session.hpp"
+#include "eamxx_session.hpp"
 #include "scream_types.hpp"
 
 #include "ekat/util/ekat_arch.hpp"

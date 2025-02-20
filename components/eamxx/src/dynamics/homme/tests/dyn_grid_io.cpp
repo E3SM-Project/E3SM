@@ -7,7 +7,7 @@
 #include "dynamics/homme/interface/eamxx_homme_interface.hpp"
 
 #include "share/io/scorpio_input.hpp"
-#include "share/io/scream_output_manager.hpp"
+#include "share/io/eamxx_output_manager.hpp"
 
 #include "share/field/field_utils.hpp"
 #include "share/field/field_manager.hpp"

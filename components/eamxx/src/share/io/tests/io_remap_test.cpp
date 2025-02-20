@@ -3,7 +3,7 @@
 
 #include "diagnostics/register_diagnostics.hpp"
 
-#include "share/io/scream_output_manager.hpp"
+#include "share/io/eamxx_output_manager.hpp"
 #include "share/io/scorpio_input.hpp"
 #include "share/io/eamxx_scorpio_interface.hpp"
 

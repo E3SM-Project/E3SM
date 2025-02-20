@@ -1,4 +1,4 @@
-#include <share/scream_session.hpp>
+#include <share/eamxx_session.hpp>
 #include "pyfield.hpp"
 #include "pygrid.hpp"
 #include "pyatmproc.hpp"
@@ -17,7 +17,7 @@ namespace scream {
 
 void initialize (MPI_Comm mpi_comm) {
   ekat::Comm comm(mpi_comm);
-  initialize_scream_session(comm.am_i_root());
+  initialize_eamxx_session(comm.am_i_root());
   scorpio::init_subsystem(comm);
 
   // Register everything in the eamxx factories
@@ -42,7 +42,7 @@ void finalize () {
   s.inited = false;
 
   scorpio::finalize_subsystem();
-  finalize_scream_session();
+  finalize_eamxx_session();
 }
 
 NB_MODULE (pyeamxx_ext,m) {

@@ -2,7 +2,7 @@ include (EkatSetCompilerFlags)
 
 set(SHARE_SRC
   eamxx_config.cpp
-  scream_session.cpp
+  eamxx_session.cpp
   atm_process/atmosphere_process.cpp
   atm_process/atmosphere_process_hash.cpp
   atm_process/atmosphere_process_group.cpp

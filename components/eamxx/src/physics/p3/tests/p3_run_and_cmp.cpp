@@ -1,5 +1,5 @@
 #include "share/scream_types.hpp"
-#include "share/scream_session.hpp"
+#include "share/eamxx_session.hpp"
 #include "share/util/scream_utils.hpp"
 
 #include "p3_main_wrap.hpp"
@@ -321,7 +321,7 @@ int main (int argc, char** argv) {
   // Compute full baseline file name with precision.
   baseline_fn += "/p3_run_and_cmp.baseline" + std::to_string(sizeof(scream::Real));
 
-  scream::initialize_scream_session(argc, argv);
+  scream::initialize_eamxx_session(argc, argv);
   {
     Baseline bln(timesteps, static_cast<Real>(dt), ncol, nlev, repeat, predict_nc, prescribed_ccn);
     if (generate) {
@@ -336,7 +336,7 @@ int main (int argc, char** argv) {
       nerr += bln.run_and_cmp(baseline_fn, tol, no_baseline);
     }
   }
-  scream::finalize_scream_session();
+  scream::finalize_eamxx_session();
 
   return nerr != 0 ? 1 : 0;
 }

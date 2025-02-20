@@ -13,7 +13,7 @@
 #include "ekat/ekat_parameter_list.hpp"
 #include "ekat/mpi/ekat_comm.hpp"
 /*  The AtmosphereOutput class handles an output stream in SCREAM.
- *  Typical usage is to register an AtmosphereOutput object with the OutputManager (see scream_output_manager.hpp
+ *  Typical usage is to register an AtmosphereOutput object with the OutputManager (see eamxx_output_manager.hpp
  *
  *  Similar to other SCREAM classes, output streams have a init, run and finalize routines.
  *  These routines are called during the homonymous steps of the AD.

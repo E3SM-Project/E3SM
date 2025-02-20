@@ -91,7 +91,7 @@ namespace control {
  *  - for atm proc             -> src/share/atm_process/atmosphere_process.hpp
  *  - for atm proc group       -> src/share/atm_process/atmosphere_process_group.hpp
  *  - for scorpio input/output -> src/share/io/scorpio_[input|output].hpp
- *  - for output manager       -> src/share/io/scream_output_manager.hpp
+ *  - for output manager       -> src/share/io/eamxx_output_manager.hpp
  */
 
 AtmosphereDriver::
