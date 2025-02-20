@@ -1049,7 +1049,6 @@ contains
     integer :: mpigrp_lndcmp ! coupler pes
 
     integer lsz !  keep local size
-    integer gsize ! global size, that we do not need, actually
     integer n, nghostlayers ! number of ghost layer regions
     ! local variables to fill in data
     ! retrieve everything we need from land domain mct_ldom
@@ -1074,7 +1073,7 @@ contains
 
     topodim = 2 ! topological dimension = 2: manifold mesh on the sphere
     bridgedim = 0 ! use vertices = 0 as the bridge (other options: edges = 1)
-    nghostlayers = 1 ! TODO: change to what ELM needs
+    nghostlayers = 0 ! initialize to zero (default)
 
     ! next define MOAB app for the ghosted one
     ! We do this so that coupling does not have to deal with halos
@@ -1099,11 +1098,12 @@ contains
     if (ierr > 0 )  &
         call endrun('Error: fail to load the domain file for land model')
 
+    nghostlayers = 1 ! TODO: if more than 1-halo layers are needed in ELM, change this value
     if (masterproc) &
         write(iulog,*) "ELM-MOAB: generating ", nghostlayers, " ghost layers"
 
     ! After the ghost cell exchange, the halo regions are computed and
-    ! mesh info gets updated anyway
+    ! mesh info will get updated correctly so that we can query the data
     ierr = iMOAB_DetermineGhostEntities(mlndghostid, topodim, & ! topological dimension
                                         nghostlayers, &     ! number of ghost layers
                                         bridgedim )         ! bridge dimension (vertex=0)
@@ -1123,6 +1123,12 @@ contains
     ierr = iMOAB_GetMeshInfo(mlndghostid, nverts, nelem, nblocks, nsbc, ndbc)
     if (ierr > 0 )  &
       call endrun('Error: failed to get mesh info ')
+
+    ! set the local size to the total elements
+    lsz = nelem(3)
+
+    ! now consolidate/reduce data to root and print information
+    ! not really necessary for actual code -- for verbose info only
     call MPI_Reduce(nverts, nverts, 3, MPI_INTEGER, MPI_SUM, 0, mpicom_lnd_moab, ierr)
     call MPI_Reduce(nelem, nelem, 3, MPI_INTEGER, MPI_SUM, 0, mpicom_lnd_moab, ierr)
     if (masterproc) then
@@ -1132,14 +1138,11 @@ contains
                         ", ghosted=", nelem(2), ", total=", nelem(3)
     endif
 
-    ! set the local size to the total elements
-    lsz = nverts(3)
-
     ! add more domain fields that are missing from domain fields: lat, lon, mask, hgt
     !tagname = 'lat:lon:mask:hgt'//C_NULL_CHAR
     tagtype = 0 ! dense, integer
     numco = 1
-    tagname='GLOBAL_ID:partition'//C_NULL_CHAR
+    tagname='GLOBAL_ID:partition:mask'//C_NULL_CHAR
     ierr = iMOAB_DefineTagStorage(mlndghostid, tagname, tagtype, numco, tag_indices(1) )
     if (ierr > 0 )  &
       call endrun('Error: fail to retrieve GLOBAL_ID:partition tag ')
@@ -1147,50 +1150,30 @@ contains
     !  Define and Set Fraction on each mesh
     tagname='frac:area:aream'//C_NULL_CHAR
     tagtype = 1 ! dense, double
-    ierr = iMOAB_DefineTagStorage( mlndghostid, tagname, tagtype, numco,  tag_indices(3) )
+    ierr = iMOAB_DefineTagStorage( mlndghostid, tagname, tagtype, numco,  tag_indices(4) )
     if (ierr > 0 )  &
       call endrun('Error: fail to create frac:area:aream tags')
 
     ! use data array as a data holder
     ! Note that loop bounds are typical for locally owned points
-    allocate(data(lsz*3))
-    do i = 1, lsz
-      n = i-1 + bounds%begg
-      data(i) = ldomain%frac(n)               ! frac = area fractions
-      data(i+lsz) = ldomain%area(n)/(re*re)   ! area = element area
-      data(i+2*lsz) = data(i+lsz)             ! aream = model area
-    enddo
+    ! allocate(data(lsz*3))
+    ! do i = 1, lsz
+    !   n = i-1 + bounds%begg
+    !   data(i) = ldomain%frac(n)               ! frac = area fractions
+    !   data(i+lsz) = ldomain%area(n)/(re*re)   ! area = element area
+    !   data(i+2*lsz) = data(i+lsz)             ! aream = model area
+    ! enddo
 
     entity_types(:) = 1 ! default: Element-based tags
 
     ! set the values on the internal mesh, halo values aren't set
-    ierr = iMOAB_SetDoubleTagStorage( mlndghostid, tagname, lsz*3, entity_types(1), data )
-    if (ierr > 0 )  &
-      call endrun('Error: fail to set frac:area:aream tag ')
+    ! ierr = iMOAB_SetDoubleTagStorage( mlndghostid, tagname, lsz*3, entity_types(1), data )
+    ! if (ierr > 0 )  &
+    !   call endrun('Error: fail to set frac:area:aream tag ')
 
-    ! add more domain fields that are missing from domain fields: lat, lon, mask, hgt
-    tagname = 'lat:lon:mask'//C_NULL_CHAR
-    tagtype = 1 ! dense, double
-    numco = 1
-    ierr = iMOAB_DefineTagStorage(mlndghostid, tagname, tagtype, numco, tag_indices(6) )
-    if (ierr > 0 )  &
-      call endrun('Error: fail to create lat:lon:mask:hgt tags ')
-
-    ! data array is big enough in both case to hold enough data for us: lat, lon, mask
-    do i = 1, lsz
-      n = i-1 + bounds%begg
-      data(i) = ldomain%latc(n)  ! lat
-      data(lsz + i) = ldomain%lonc(n) ! lon
-      data(2*lsz + i) = ldomain%mask(n) ! mask
-    enddo
-
-    ierr = iMOAB_SetDoubleTagStorage ( mlndghostid, tagname, lsz*3 , entity_types(1), data)
-    if (ierr > 0 )  &
-      call endrun('Error: fail to set lat:lon:mask tag ')
-
-    ierr = iMOAB_UpdateMeshInfo( mlndghostid )
-    if (ierr > 0 )  &
-      call endrun('Error: fail to update mesh info ')
+    ! ierr = iMOAB_UpdateMeshInfo( mlndghostid )
+    ! if (ierr > 0 )  &
+    !   call endrun('Error: fail to update mesh info ')
 
     ! synchronize: GLOBAL_ID on vertices in the mesh with ghost layers
     ! entity_types(:) = 1 ! default: Element-based tags
@@ -1206,7 +1189,7 @@ contains
     ! if (ierr > 0 )  &
     !   call endrun('Error: fail to synchronize element tags for ELM ')
 
-    deallocate(data)
+    ! deallocate(data)
 
 #ifdef MOABDEBUG
       ! write out the local mesh file to disk (np tasks produce np files)
@@ -1214,13 +1197,6 @@ contains
       ierr = iMOAB_WriteLocalMesh(mlndghostid, trim(outfile))
       if (ierr > 0 )  &
         call endrun('Error: fail to write ELM local meshes in h5m format')
-
-      ! write out the full repartitioned mesh file to disk, in parallel
-      outfile = 'wholeLndGH.h5m'//C_NULL_CHAR
-      wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
-      ierr = iMOAB_WriteMesh(mlndghostid, outfile, wopts)
-      if (ierr > 0 )  &
-        call endrun('Error: fail to write the land mesh file')
 #endif
 
   end subroutine init_moab_land_internal
