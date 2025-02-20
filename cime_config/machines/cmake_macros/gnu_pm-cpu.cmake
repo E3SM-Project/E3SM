@@ -11,5 +11,5 @@ set(SCC "gcc")
 set(SCXX "g++")
 set(SFC "gfortran")
 
-string(APPEND CMAKE_EXE_LINKER_FLAGS " -static-libstdc++")
+#string(APPEND CMAKE_EXE_LINKER_FLAGS " -static-libstdc++") # was causing link error after Feb 18/19 maintenance
 
