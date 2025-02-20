@@ -1,4 +1,4 @@
-module scream_f2c_mod
+module eamxx_f2c_mod
 
   implicit none
 
@@ -137,4 +137,4 @@ interface
   end subroutine scream_get_local_cols_gids
 end interface
 
-end module scream_f2c_mod
+end module eamxx_f2c_mod
