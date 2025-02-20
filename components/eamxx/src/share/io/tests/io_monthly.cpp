@@ -12,7 +12,7 @@
 #include "share/util/eamxx_universal_constants.hpp"
 #include "share/util/eamxx_setup_random_test.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
-#include "share/scream_types.hpp"
+#include "share/eamxx_types.hpp"
 
 #include "ekat/util/ekat_units.hpp"
 #include "ekat/ekat_parameter_list.hpp"

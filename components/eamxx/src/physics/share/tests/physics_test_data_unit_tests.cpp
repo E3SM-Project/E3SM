@@ -1,7 +1,7 @@
 #include "catch2/catch.hpp"
 
 #include "physics/share/physics_test_data.hpp"
-#include "share/scream_types.hpp"
+#include "share/eamxx_types.hpp"
 #include "physics_unit_tests_common.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "share/util/eamxx_setup_random_test.hpp"

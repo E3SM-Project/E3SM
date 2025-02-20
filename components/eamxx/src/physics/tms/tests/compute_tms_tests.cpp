@@ -2,7 +2,7 @@
 
 #include "tms_unit_tests_common.hpp"
 
-#include "share/scream_types.hpp"
+#include "share/eamxx_types.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "tms_functions.hpp"

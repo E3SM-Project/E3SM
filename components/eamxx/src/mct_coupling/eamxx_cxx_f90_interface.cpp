@@ -13,7 +13,7 @@
 #include "share/grid/point_grid.hpp"
 #include "share/eamxx_session.hpp"
 #include "share/eamxx_config.hpp"
-#include "share/scream_types.hpp"
+#include "share/eamxx_types.hpp"
 
 #include "ekat/ekat_parse_yaml_file.hpp"
 #include "ekat/logging/ekat_logger.hpp"

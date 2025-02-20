@@ -5,7 +5,7 @@
 #include "share/field/field_manager.hpp"
 #include "share/grid/grids_manager.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
-#include "share/scream_types.hpp"
+#include "share/eamxx_types.hpp"
 #include "share/io/eamxx_output_manager.hpp"
 #include "share/io/scorpio_input.hpp"
 #include "share/atm_process/ATMBufferManager.hpp"

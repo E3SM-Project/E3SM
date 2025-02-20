@@ -14,7 +14,7 @@ FILE_TEMPLATES = {
     "cxx_bfb_unit_impl": lambda phys, sub, gen_code:
 f"""#include "catch2/catch.hpp"
 
-#include "share/scream_types.hpp"
+#include "share/eamxx_types.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "physics/{phys}/{phys}_functions.hpp"

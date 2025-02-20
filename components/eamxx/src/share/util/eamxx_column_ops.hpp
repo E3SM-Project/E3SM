@@ -2,7 +2,7 @@
 #define SCREAM_COLUMN_OPS_HPP
 
 #include "share/util/eamxx_combine_ops.hpp"
-#include "share/scream_types.hpp"
+#include "share/eamxx_types.hpp"
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_pack_math.hpp"

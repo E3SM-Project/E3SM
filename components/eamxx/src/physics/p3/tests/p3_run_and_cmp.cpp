@@ -1,4 +1,4 @@
-#include "share/scream_types.hpp"
+#include "share/eamxx_types.hpp"
 #include "share/eamxx_session.hpp"
 #include "share/util/eamxx_utils.hpp"
 

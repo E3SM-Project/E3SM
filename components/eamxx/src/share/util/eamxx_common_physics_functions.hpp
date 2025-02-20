@@ -1,7 +1,7 @@
 #ifndef SCREAM_COMMON_PHYSICS_FUNCTIONS_HPP
 #define SCREAM_COMMON_PHYSICS_FUNCTIONS_HPP
 
-#include "share/scream_types.hpp"
+#include "share/eamxx_types.hpp"
 
 namespace scream {
 

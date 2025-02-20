@@ -1,7 +1,7 @@
 #ifndef P3_UNIT_TESTS_COMMON_HPP
 #define P3_UNIT_TESTS_COMMON_HPP
 
-#include "share/scream_types.hpp"
+#include "share/eamxx_types.hpp"
 #include "share/util/eamxx_setup_random_test.hpp"
 #include "p3_functions.hpp"
 #include "p3_data.hpp"

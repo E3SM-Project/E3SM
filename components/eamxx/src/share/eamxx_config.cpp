@@ -1,6 +1,6 @@
 #include "eamxx_config.hpp"
 #include "eamxx_session.hpp"
-#include "scream_types.hpp"
+#include "eamxx_types.hpp"
 
 #include "ekat/util/ekat_arch.hpp"
 #include "ekat/ekat_assert.hpp"
