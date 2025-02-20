@@ -20,7 +20,7 @@ if ("${SCREAM_DYNAMICS_DYCORE}" STREQUAL "HOMME")
 endif()
 
 set(ATM_SRC
-  scream_cxx_f90_interface.cpp
+  eamxx_cxx_f90_interface.cpp
   atm_comp_mct.F90
   ekat_string_utils.F90
   scream_f2c_mod.F90
