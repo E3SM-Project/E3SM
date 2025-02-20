@@ -454,31 +454,14 @@ contains
          curr_ymd=ymd, curr_tod=tod_sync,  &
          curr_yr=yr_sync, curr_mon=mon_sync, curr_day=day_sync)
 
-    ! Map MCT to land data type (output is totrunin, subrunin)
+    ! Map cpl7 to land data type (output is totrunin, subrunin)
     call t_startf ('lc_rof_import')
-    call rof_import_mct( x2r_r)
-    call t_stopf ('lc_rof_import')
 #ifdef HAVE_MOAB
-
-#ifdef MOABCOMP
-    ! loop over all fields in seq_flds_x2r_fields
-    call mct_list_init(temp_list ,seq_flds_x2r_fields)
-    size_list=mct_list_nitem (temp_list)
-    ent_type = 0 ! entity type is vertex for phys atm
-    if (masterproc) print *, num_moab_exports, trim(seq_flds_x2r_fields), ' rof import check'
-    modelStr='rof run'
-    do index_list = 1, size_list
-      call mct_list_get(mctOStr,index_list,temp_list)
-      mct_field = mct_string_toChar(mctOStr)
-      tagname= trim(mct_field)//C_NULL_CHAR
-      call seq_comm_compare_mb_mct(modelStr, mpicom_rof, x2r_r, mct_field,  mrofid, tagname, ent_type, difference)
-    enddo
-    call mct_list_clean(temp_list)
-
-#endif
-
     call rof_import_moab(EClock )
+#else
+    call rof_import_mct( x2r_r)
 #endif
+    call t_stopf ('lc_rof_import')
     
 
     ! Run mosart (input is *runin, output is rtmCTL%runoff)

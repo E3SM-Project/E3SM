@@ -470,27 +470,11 @@ CONTAINS
 
        call seq_timemgr_EClockGetData(EClock,curr_ymd=CurrentYMD, StepNo=StepNo, dtime=DTime_Sync )
        if (StepNo == 0) then
-#ifdef MOABCOMP
-         ! loop over all fields in seq_flds_x2a_fields
-          call mct_list_init(temp_list ,seq_flds_x2a_fields)
-          size_list=mct_list_nitem (temp_list)
-          ent_type = 0 ! entity type is vertex for phys atm
-          if (rank2 .eq. 0) print *, num_moab_exports, trim(seq_flds_x2a_fields), ' atm import check'
-          modelStr='atm init2'
-          do index_list = 1, size_list
-            call mct_list_get(mctOStr,index_list,temp_list)
-            mct_field = mct_string_toChar(mctOStr)
-            tagname= trim(mct_field)//C_NULL_CHAR
-            call seq_comm_compare_mb_mct(modelStr, mpicom_atm_moab, x2a_a, mct_field,  mphaid, tagname, ent_type, difference)
-          enddo
-          call mct_list_clean(temp_list)
 
-#endif
-       ! so the cam import is before moab
-          call atm_import( x2a_a%rattr, cam_in )
 #ifdef HAVE_MOAB
-       ! move moab import after cam import, so moab takes precedence
           call atm_import_moab(Eclock, cam_in)
+#else
+          call atm_import( x2a_a%rattr, cam_in )
 #endif
 
 
@@ -513,10 +497,11 @@ CONTAINS
 #endif
 
           ! Sent .true. as an optional argument so that restart_init is set to .true.  in atm_import
-	      ! This will ensure BFB restarts whenever qneg4 updates fluxes on the restart time step
-          call atm_import( x2a_a%rattr, cam_in, .true. )
+          ! This will ensure BFB restarts whenever qneg4 updates fluxes on the restart time step
 #ifdef HAVE_MOAB
           call atm_import_moab(Eclock, cam_in, .true. )
+#else
+          call atm_import( x2a_a%rattr, cam_in, .true. )
 #endif
 
           call t_startf('cam_run1')
@@ -648,27 +633,10 @@ CONTAINS
     ! Map input from mct to cam data structure
 
     call t_startf ('CAM_import')
-! move moab import after regular atm import, so it would be in charge
-    call atm_import( x2a_a%rattr, cam_in )
 #ifdef HAVE_MOAB
-
-#ifdef MOABCOMP
-    ! loop over all fields in seq_flds_x2a_fields
-    call mct_list_init(temp_list ,seq_flds_x2a_fields)
-    size_list=mct_list_nitem (temp_list)
-    ent_type = 0 ! entity type is vertex for phys atm
-    if (rank2 .eq. 0) print *, num_moab_exports, trim(seq_flds_x2a_fields)
-    modelStr ='atm run'
-    do index_list = 1, size_list
-      call mct_list_get(mctOStr,index_list,temp_list)
-      mct_field = mct_string_toChar(mctOStr)
-      tagname= trim(mct_field)//C_NULL_CHAR
-      call seq_comm_compare_mb_mct(modelStr, mpicom_atm_moab, x2a_a, mct_field,  mphaid, tagname, ent_type, difference)
-    enddo
-    call mct_list_clean(temp_list)
-#endif
-
      call atm_import_moab(Eclock, cam_in)
+#else
+    call atm_import( x2a_a%rattr, cam_in )
 #endif
 
     call t_stopf  ('CAM_import')

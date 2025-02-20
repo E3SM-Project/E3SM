@@ -872,32 +872,15 @@ contains
 !
 !   get intial state from driver
 !
+#ifdef HAVE_MOAB
+    call ice_import_moab(Eclock)
+#else
     call ice_import_mct(x2i_i, errorCode)
     if (errorCode /= 0) then
        call mpas_log_write('Error in ice_import_mct', MPAS_LOG_CRIT)
     endif
+#endif
 !-----------------------------------------------------------------------
-#ifdef HAVE_MOAB
-
-#ifdef MOABCOMP
-    mpicom_moab = mpicom_i ! save it for run method
-    ! loop over all fields in seq_flds_x2i_fields
-    call mct_list_init(temp_list ,seq_flds_x2i_fields)
-    size_list=mct_list_nitem (temp_list)
-    ent_type = 1 ! entity type is cell for ice
-    modelStr='ice init'
-
-    do index_list = 1, size_list
-      call mct_list_get(mctOStr,index_list,temp_list)
-      mct_field = mct_string_toChar(mctOStr)
-      tagname= trim(mct_field)//C_NULL_CHAR
-      call seq_comm_compare_mb_mct(modelStr, mpicom_moab, x2i_i, mct_field,  MPSIID, tagname, ent_type, difference)
-    enddo
-    call mct_list_clean(temp_list)
-#endif
-
-    call ice_import_moab(Eclock)
-#endif
 
 
     currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
@@ -1227,24 +1210,10 @@ contains
       endif ! config_column_physics_type
 
       ! Import state from coupler
-      call ice_import_mct(x2i_i, ierr)
 #ifdef HAVE_MOAB
-#ifdef MOABCOMP
-    ! loop over all fields in seq_flds_x2i_fields
-    call mct_list_init(temp_list ,seq_flds_x2i_fields)
-    size_list=mct_list_nitem (temp_list)
-    ent_type = 1 ! entity type is cell for ice
-    modelStr='ice run'
-
-    do index_list = 1, size_list
-      call mct_list_get(mctOStr,index_list,temp_list)
-      mct_field = mct_string_toChar(mctOStr)
-      tagname= trim(mct_field)//C_NULL_CHAR
-      call seq_comm_compare_mb_mct(modelStr, mpicom_moab, x2i_i, mct_field,  MPSIID, tagname, ent_type, difference)
-    enddo
-    call mct_list_clean(temp_list)
-#endif
       call ice_import_moab(Eclock)
+#else
+      call ice_import_mct(x2i_i, ierr)
 #endif
 
       ! Post coupling calls
