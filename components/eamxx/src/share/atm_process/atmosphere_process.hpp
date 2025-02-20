@@ -357,19 +357,19 @@ protected:
 
   // Group requests
   template<RequestType RT>
-  void add_group (const std::string& name, const std::string& grid, const int ps, const Bundling b,
+  void add_group (const std::string& name, const std::string& grid, const int ps, const bool bundled,
                   const bool imported, const std::string& src_name, const std::string& src_grid)
-  { add_group<RT>(GroupRequest(name,grid,ps,b,imported,src_name,src_grid)); }
+  { add_group<RT>(GroupRequest(name,grid,ps,bundled,imported,src_name,src_grid)); }
 
   template<RequestType RT>
   void add_group (const std::string& name, const std::string& grid_name,
-                  const Bundling b = Bundling::NotNeeded)
-  { add_group<RT> (GroupRequest(name,grid_name,b)); }
+                  const bool bundled = false)
+  { add_group<RT> (GroupRequest(name,grid_name,bundled)); }
 
   template<RequestType RT>
   void add_group (const std::string& name, const std::string& grid_name,
-                  const int pack_size, const Bundling b = Bundling::NotNeeded)
-  { add_group<RT> (GroupRequest(name,grid_name,pack_size,b)); }
+                  const int pack_size, const bool bundled = false)
+  { add_group<RT> (GroupRequest(name,grid_name,pack_size,bundled)); }
 
   template<RequestType RT>
   void add_field (const FieldRequest& req)
