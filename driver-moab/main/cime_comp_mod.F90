@@ -4123,10 +4123,8 @@ contains
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
        if (atm_c2_rof) then
-          call prep_rof_accum_atm(timer='CPL:atmpost_acca2r')
-#ifdef HAVE_MOAB
-          call prep_rof_accum_atm_moab()
-#endif
+          !call prep_rof_accum_atm(timer='CPL:atmpost_acca2r')
+          call prep_rof_accum_atm_moab(timer='CPL:atmpost_acca2r')
        endif
 
        call component_diag(infodata, atm, flow='c2x', comment= 'recv atm', &
@@ -4183,8 +4181,8 @@ contains
 
        ! finish accumulating ocean inputs
        ! reset the value of x2o_ox with the value in x2oacc_ox (module variable in prep_ocn_mod)
-       call prep_ocn_accum_avg(timer_accum='CPL:ocnprep_avg')
-       call prep_ocn_accum_avg_moab()
+       !call prep_ocn_accum_avg(timer_accum='CPL:ocnprep_avg')
+       call prep_ocn_accum_avg_moab(timer_accum='CPL:ocnprep_avg')
 
        call component_diag(infodata, ocn, flow='x2c', comment= 'send ocn', &
             info_debug=info_debug, timer_diag='CPL:ocnprep_diagav')
@@ -4241,8 +4239,8 @@ contains
        call component_diag(infodata, ocn, flow='c2x', comment= 'recv ocn', &
             info_debug=info_debug, timer_diag='CPL:ocnpost_diagav')
 
-       if (ocn_c2_rof) call prep_rof_accum_ocn(timer='CPL:ocnpost_acco2r')
-       if (ocn_c2_rof) call prep_rof_accum_ocn_moab()
+       !if (ocn_c2_rof) call prep_rof_accum_ocn(timer='CPL:ocnpost_acco2r')
+       if (ocn_c2_rof) call prep_rof_accum_ocn_moab(timer='CPL:ocnpost_acco2r')
 
        call cime_run_ocnglc_coupling()
 
@@ -4380,7 +4378,7 @@ contains
 !             call prep_ocn_mrg(infodata, fractions_ox, xao_ox=xao_ox, timer_mrg='CPL:atmocnp_mrgx2o')
 
              ! Accumulate ocn inputs - form partial sum of tavg ocn inputs (virtual "send" to ocn)
-             call prep_ocn_accum(timer='CPL:atmocnp_accum')
+             !call prep_ocn_accum(timer='CPL:atmocnp_accum')
           end if
 #else
           ! ocn prep-merge
@@ -4391,8 +4389,8 @@ contains
           call prep_ocn_mrg_moab(infodata, xao_ox)
 
           ! Accumulate ocn inputs - form partial sum of tavg ocn inputs (virtual "send" to ocn)
-          call prep_ocn_accum(timer='CPL:atmocnp_accum')
-          call prep_ocn_accum_moab()
+          !call prep_ocn_accum(timer='CPL:atmocnp_accum')
+          call prep_ocn_accum_moab(timer='CPL:atmocnp_accum')
 #endif
        end if
 
@@ -4539,10 +4537,8 @@ contains
             info_debug=info_debug, timer_diag='CPL:lndpost_diagav')
 
        ! Accumulate rof and glc inputs (module variables in prep_rof_mod and prep_glc_mod)
-       if (lnd_c2_rof) call prep_rof_accum_lnd(timer='CPL:lndpost_accl2r')
-#ifdef HAVE_MOAB
-       if (lnd_c2_rof) call prep_rof_accum_lnd_moab()
-#endif
+       !if (lnd_c2_rof) call prep_rof_accum_lnd(timer='CPL:lndpost_accl2r')
+       if (lnd_c2_rof) call prep_rof_accum_lnd_moab(timer='CPL:lndpost_accl2r')
        if (lnd_c2_glc .or. do_hist_l2x1yrg) call prep_glc_accum_lnd(timer='CPL:lndpost_accl2g' )
        if (lnd_c2_iac) call prep_iac_accum(timer='CPL:lndpost_accl2z')
 
@@ -4688,10 +4684,9 @@ contains
        call t_drvstartf ('CPL:ROFPREP', cplrun=.true., barrier=mpicom_CPLID)
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
-       call prep_rof_accum_avg(timer='CPL:rofprep_l2xavg')
-#ifdef HAVE_MOAB
-       call prep_rof_accum_avg_moab()
-#endif
+       !call prep_rof_accum_avg(timer='CPL:rofprep_l2xavg')
+       call prep_rof_accum_avg_moab(timer='CPL:rofprep_l2xavg')
+
        if (lnd_c2_rof) call prep_rof_calc_l2r_rx(fractions_lx, timer='CPL:rofprep_lnd2rof')
 
        if (atm_c2_rof) call prep_rof_calc_a2r_rx(timer='CPL:rofprep_atm2rof')
