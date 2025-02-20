@@ -8,7 +8,7 @@
 # allows to perform sanity checks and print more helpful messages
 
 add_library(eamxx_scorpio_interface
-  scream_scorpio_types.cpp
+  eamxx_scorpio_types.cpp
   eamxx_scorpio_interface.cpp
 )
 target_link_libraries(eamxx_scorpio_interface PUBLIC ekat)

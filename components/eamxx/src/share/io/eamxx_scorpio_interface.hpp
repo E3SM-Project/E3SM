@@ -1,7 +1,7 @@
 #ifndef SCREAM_SCORPIO_INTERFACE_HPP
 #define SCREAM_SCORPIO_INTERFACE_HPP
 
-#include "scream_scorpio_types.hpp"
+#include "eamxx_scorpio_types.hpp"
 
 #include <ekat/mpi/ekat_comm.hpp>
 #include <ekat/ekat_assert.hpp>

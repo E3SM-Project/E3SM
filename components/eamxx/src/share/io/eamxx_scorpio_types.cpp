@@ -1,4 +1,4 @@
-#include "scream_scorpio_types.hpp"
+#include "eamxx_scorpio_types.hpp"
 
 #include <ekat/ekat_assert.hpp>
 
