@@ -297,7 +297,7 @@ private:
   SphereOperators       m_sphere_ops;
 
   // Policies
-#ifndef NDEBUG
+#if defined(KOKKOS__ENABLE_CUDA) && !defined(NDEBUG)
   template<typename Tag>
   using TeamPolicyType = Kokkos::TeamPolicy<ExecSpace,Kokkos::LaunchBounds<512,1>,Tag>;
 #else
