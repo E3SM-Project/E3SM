@@ -2,7 +2,7 @@
 #define RRTMGP_TEST_UTILS_HPP
 
 #include "cpp/extensions/cloud_optics/mo_cloud_optics.h"
-#include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
+#include "physics/rrtmgp/eamxx_rrtmgp_interface.hpp"
 #include "cpp/rrtmgp/mo_gas_concentrations.h"
 #include "cpp/rte/mo_fluxes.h"
 #include "cpp/extensions/cloud_optics/mo_cloud_optics.h"
