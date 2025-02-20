@@ -390,7 +390,11 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
      elem(ie)%fcor(:,:) = f
 
      !all but vapor
-     elem(ie)%state%Q(:,:,:,ii:qsize) = 0.0
+     !elem(ie)%state%Q(:,:,:,ii:qsize) = 0.0
+
+do ii=2,2
+elem(ie)%state%Q(:,:,:,ii) = elem(ie)%state%Q(:,:,:,1)
+enddo
 
      !sets hydro phi from (perturbed) theta and pressure, checks for hydrostatic balance after that, saves a state
      call tests_finalize(elem(ie),hvcoord)

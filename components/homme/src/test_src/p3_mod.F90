@@ -20,6 +20,8 @@ use physical_constants,   only: latvap, latice, &
                                 rvapor=>rwater_vapor, rhow, pi => dd_pi
 use hybvcoord_mod,        only: hvcoord_t
 use time_mod,             only: time_at, TimeLevel_t
+use micro_p3,             only: p3_main, p3_init
+use micro_p3_utils,       only: micro_p3_utils_init
 
 implicit none
 
@@ -29,7 +31,6 @@ contains
 
 subroutine interface_to_p3(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
-  use micro_p3,       only: p3_main
   use micro_p3_utils, only: avg_diameter, &
                             rho_h2o, &
                             rho_h2os, &
@@ -115,6 +116,7 @@ subroutine interface_to_p3(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     real :: npccn(nlev)    ! liquid activation number tendency
     
 !in, set to 0
+!actually it is used as gamma(relvar), so it cannot be zero
     real :: relvar(nlev)    ! cloud liquid relative variance [-]
 
 !out
@@ -164,7 +166,7 @@ subroutine interface_to_p3(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 !most of them are here https://docs.e3sm.org/E3SM/EAM/user-guide/namelist_parameters/#predicted-particle-properties 
     logical, parameter :: do_predict_nc     = .true.        !prognostic droplet concentration or not?
     logical, parameter :: do_subgrid_clouds = .false.       !use subgrid cloudiness in tendency calculations?
-    logical, parameter :: do_prescribed_CCN = .false.       
+    logical, parameter :: do_prescribed_CCN = .false.       !see eam and micro_p3_init when this variable is true, there is a lot of init
     logical, parameter :: precip_off = .false.       
     real, parameter ::         micro_nccons = 1.0 ! did not find this one anywhere
     real, parameter ::         p3_autocon_coeff    = 30500.0  ! IN  autoconversion coefficient
@@ -184,7 +186,7 @@ subroutine interface_to_p3(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     nccn_prescribed = 0.0
     ni_activated = 0.0
     npccn = 0.0 
-    relvar = 0.0
+    relvar = 0.1
     cld_frac_i = 1.0
     cld_frac_l = 1.0
     cld_frac_r = 1.0
@@ -201,7 +203,7 @@ subroutine interface_to_p3(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
 !this may be wrong counter, do we call forcing only at remap?
     it = tl%nstep;
-    dtime = 300.0; ! figure it later
+    dtime = 1.0; ! figure it later
 
     !col_location uninited
 
@@ -213,8 +215,8 @@ subroutine interface_to_p3(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 !                   cpliq,tmelt,pi,iulog,masterproc)
 
 !pi type was incompatible
-call micro_p3_utils_init(1005.,287.04,461.50,997.0,18.016,28.966,9.80616,2.501e6,3.337e5, &
-                   4188.0,273.0,3.14159265,0,hybrid%par%masterproc)
+!call micro_p3_utils_init(1005.,287.04,461.50,997.0,18.016,28.966,9.80616,2.501e6,3.337e5, &
+!                   4188.0,273.0,3.14159265,0,hybrid%par%masterproc)
 
 
     do ie = nets, nete
@@ -274,7 +276,7 @@ call micro_p3_utils_init(1005.,287.04,461.50,997.0,18.016,28.966,9.80616,2.501e6
 
 !print *, 'before p3 T_prev', T_prev
 !print *, 'before p3 th', th
-!print *, 'before p3 exner', exner
+!print *, 'before p3 t_atm', T_atm
 !stop
 
     call p3_main( &
@@ -346,6 +348,7 @@ call micro_p3_utils_init(1005.,287.04,461.50,997.0,18.016,28.966,9.80616,2.501e6
          diag_equiv_reflectivity(kts:kte), & !OUT equivalent reflectivity (rain + ice) [dBz]
          diag_ze_rain(kts:kte),diag_ze_ice(kts:kte)) !OUT equivalent reflectivity for rain and ice [dBz]
 
+!print *, 'after th', th
 
 #endif
 #if 1
