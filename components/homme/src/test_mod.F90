@@ -97,6 +97,8 @@ subroutine set_test_initial_conditions(elem, deriv, hybrid, hvcoord, tl, nets, n
        !   call dcmip2016_init();
        test_with_forcing = .true. ;
        !pi type was incompatible
+!    rho_h2o   = rhoh2o ! Density of liquid water (STP) !997.
+!    ep_2   = mwh2o/mwdry  ! ratio of molecular mass of water to the molecular mass of dry air !0.622
        call micro_p3_utils_init(1005.,287.04,461.50,997.0,18.016,28.966,9.80616,2.501e6,3.337e5, &
                                 4188.0,273.0,3.14159265,0,hybrid%par%masterproc)
        call p3_init('.','4.1.1');

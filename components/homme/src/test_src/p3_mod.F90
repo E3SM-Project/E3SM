@@ -207,18 +207,6 @@ subroutine interface_to_p3(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
     !col_location uninited
 
-!move it somewhere appropr
-!    rho_h2o   = rhoh2o ! Density of liquid water (STP) !997.
-!    ep_2   = mwh2o/mwdry  ! ratio of molecular mass of water to the molecular mass of dry air !0.622
-
-!micro_p3_utils_init(cpair,rair,rh2o,rhoh2o,mwh2o,mwdry,gravit,latvap,latice, &
-!                   cpliq,tmelt,pi,iulog,masterproc)
-
-!pi type was incompatible
-!call micro_p3_utils_init(1005.,287.04,461.50,997.0,18.016,28.966,9.80616,2.501e6,3.337e5, &
-!                   4188.0,273.0,3.14159265,0,hybrid%par%masterproc)
-
-
     do ie = nets, nete
 
     !call get_state(u,v,w,T,p,dp,ps,hommerho,zm,zi,gravit,elem(ie),hvcoord,nt,ntQ)

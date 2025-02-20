@@ -116,11 +116,10 @@ pure function bfb_cbrt(base) result(res)
    res = base**loc_thrd
 end function bfb_cbrt
 
-function bfb_gamma(val) result(res)
+pure function bfb_gamma(val) result(res)
    implicit none
    real, intent(in) :: val
    real :: res
-!print **, 'GAMMA ', val 
    res = gamma(val)
 end function bfb_gamma
 
@@ -236,15 +235,14 @@ end function bfb_expm1
 
     read(10,*) dumstr, version_header_table_1
     if (trim(version_p3) /= trim(version_header_table_1)) then
-       !print **
-       !print **, '***********   WARNING in P3_INIT   *************'
-       !print **, ' Loading lookupTable_1: v',trim(version_header_table_1)
-       !print **, ' P3 is intended to use lookupTable_1: v', trim(version_p3)
-       !print **, '               -- ABORTING -- '
-       !print **, '************************************************'
-       !print **
+       print *
+       print *, '***********   WARNING in P3_INIT   *************'
+       print *, ' Loading lookupTable_1: v',trim(version_header_table_1)
+       print *, ' P3 is intended to use lookupTable_1: v', trim(version_p3)
+       print *, '               -- ABORTING -- '
+       print *, '************************************************'
+       print *
        !call endscreamrun()
-       stop
     end if
 
     ice_table_vals(:,:,:,:) = 0.
@@ -261,7 +259,6 @@ end function bfb_expm1
           do i = 1,isize
              do j = 1,rcollsize
                 read(10,*) dumi,dumi,dum,dum,dum,dumk1,dumk2,dum
-!print **, dumk1, dumk2
                 collect_table_vals(jj,ii,i,j,1) = dlog10(real(dumk1,8))
                 collect_table_vals(jj,ii,i,j,2) = dlog10(real(dumk2,8))
              enddo
@@ -464,15 +461,8 @@ end function bfb_expm1
     integer :: k
     real :: dum
 
-    real, dimension(kts:kte) :: th_before
-
     is_nucleat_possible = .false.
     is_hydromet_present = .false.
-
-
-th_before= t_atm
-!!print **,'t_atm before part1',t_atm(:)
-
 
     k_loop_1: do k = kbot,ktop,kdir
        !calculate some time-varying atmospheric variables
@@ -499,7 +489,6 @@ th_before= t_atm
       !--- apply mass clipping if mass is sufficiently small
       !    (implying all mass is expected to evaporate/sublimate in one time step)
           qv(k) = qv(k) + qc(k)
-!!print **, 'part1 1', qc(k), exner(k)*qc(k)*latent_heat_vapor(k)*inv_cp
           th_atm(k) = th_atm(k) - exner(k)*qc(k)*latent_heat_vapor(k)*inv_cp
           qc(k) = 0.
           nc(k) = 0.
@@ -521,7 +510,6 @@ th_before= t_atm
        if (qr(k).lt.qsmall) then
           qv(k) = qv(k) + qr(k)
           th_atm(k) = th_atm(k) - exner(k)*qr(k)*latent_heat_vapor(k)*inv_cp
-!!print **, 'part1 2', qr(k), exner(k)*qr(k)*latent_heat_vapor(k)*inv_cp
           qr(k) = 0.
           nr(k) = 0.
        else
@@ -532,7 +520,6 @@ th_before= t_atm
             qv_supersat_i(k).lt.-0.1)) then
           qv(k) = qv(k) + qi(k)
           th_atm(k) = th_atm(k) - exner(k)*qi(k)*latent_heat_sublim(k)*inv_cp
-!!print **, 'part1 3', qi(k), exner(k)*qi(k)*latent_heat_sublim(k)*inv_cp
           qi(k) = 0.
           ni(k) = 0.
           qm(k) = 0.
@@ -549,24 +536,13 @@ th_before= t_atm
           ni(k) = 0.
           qm(k) = 0.
           bm(k) = 0.
-!!print **, 'part1 4'
        endif
 
-
-!!print **, 'TH change', t_atm-th_before
-
        t_atm(k) = th_atm(k) * inv_exner(k)
-#if 1
        call calculate_incloud_mixingratios(qc(k),qr(k),qi(k),qm(k),nc(k),nr(k),ni(k),bm(k), &
             inv_cld_frac_l(k),inv_cld_frac_i(k),inv_cld_frac_r(k), &
             qc_incld(k),qr_incld(k),qi_incld(k),qm_incld(k),nc_incld(k),nr_incld(k),ni_incld(k),bm_incld(k))
-#endif
     enddo k_loop_1
-
-
-!!print **,'t_atm after part1',t_atm(:)
-!stop
-
 
   END SUBROUTINE p3_main_part1
 
@@ -680,8 +656,6 @@ th_before= t_atm
    !   main k-loop (for processes):
    k_loop_main: do k = kbot,ktop,kdir
 
-!!print **, 'before PART 2 ----- k, qc(k)',k, qc(k)
-
       ! if relatively dry and no hydrometeors at this level, skip to end of k-loop (i.e. skip this level)
       log_exitlevel = .true.
       if (qc(k).ge.qsmall .or. qr(k).ge.qsmall) log_exitlevel = .false.
@@ -735,7 +709,6 @@ th_before= t_atm
            cdistr(k),logn0r(k))
       nr(k) = nr_incld(k)*cld_frac_r(k)
 
-!print **, '111 PART 2 ----- k, qc(k)',k, qc(k)
       ! initialize inverse supersaturation relaxation timescale for combined ice categories
       epsi_tot = 0.
 
@@ -827,7 +800,6 @@ th_before= t_atm
            qv(k),qc_incld(k),qi_incld(k),ni_incld(k),qr_incld(k),log_wetgrowth,&
            qrcol,qccol,qwgrth,nr_ice_shed_tend,qc2qr_ice_shed_tend)
 
-!print **, '222 PART 2 ----- k, qc(k)',k, qc(k)
       !-----------------------------
       ! calcualte total inverse ice relaxation timescale combined for all ice categories
       ! note 'f1pr' values are normalized, so we need to multiply by N
@@ -911,7 +883,6 @@ th_before= t_atm
            p3_accret_coeff,p3_qc_accret_expon,&
            qc2qr_accret_tend, nc_accret_tend)
 
-!print **, '333 PART 2 ----- k, qc(k)',k, qc(k)
       !.....................................
       ! self-collection and breakup of rain
       ! (breakup following modified Verlinde and Cotton scheme)
@@ -970,25 +941,20 @@ th_before= t_atm
       call nc_conservation(nc(k), nc_selfcollect_tend, dt, nc_collect_tend, nc2ni_immers_freeze_tend, &
            nc_accret_tend, nc2nr_autoconv_tend, ncheti_cnt, nicnt)
 
-!print **, '444 PART 2 ----- k, qc(k)',k, qc(k)
       ! rain number     
       call nr_conservation(nr(k),ni2nr_melt_tend,nr_ice_shed_tend,ncshdc,nc2nr_autoconv_tend,dt,nr_collect_tend,nmltratio, &
            nr2ni_immers_freeze_tend,nr_selfcollect_tend,nr_evap_tend)
       
-!print **, 'aaa PART 2 ----- k, qc(k)',k, qc(k)
       ! ice number     
       call ni_conservation(ni(k),ni_nucleat_tend,nr2ni_immers_freeze_tend,nc2ni_immers_freeze_tend,ncheti_cnt,nicnt,ninuc_cnt,dt,ni2nr_melt_tend,&
            ni_sublim_tend,ni_selfcollect_tend)
 
-!print **, 'bbb PART 2 ----- k, qc(k)',k, qc(k)
       call prevent_ice_overdepletion(pres(k), t_atm(k), qv(k), latent_heat_vapor(k), latent_heat_sublim(k), inv_dt, dt, qidep, qinuc, qinuc_cnt, qi2qv_sublim_tend, qr2qv_evap_tend)
 
-!print **, 'ccc PART 2 ----- k, qc(k)',k, qc(k)
       !call water_vapor_conservation(qv(k), qidep, qinuc, qi2qv_sublim_tend, qr2qv_evap_tend, qinuc_cnt, dt)
            
       call ice_supersat_conservation(qidep, qinuc, qi2qv_sublim_tend, qr2qv_evap_tend, qinuc_cnt, cld_frac_i(k), qv(k), qv_sat_i(k), latent_heat_sublim(k), th_atm(k)/exner(k), dt)
 
-!print **, 'ddd PART 2 ----- k, qc(k)',k, qc(k)
       !---------------------------------------------------------------------------------
       ! update prognostic microphysics and thermodynamics variables
       !---------------------------------------------------------------------------------
@@ -1003,14 +969,12 @@ th_before= t_atm
            ncheti_cnt, nicnt, ninuc_cnt, qcheti_cnt, qicnt, qinuc_cnt,                       &
            th_atm(k), qv(k), qi(k), ni(k), qm(k), bm(k), qc(k), nc(k), qr(k), nr(k), qi_wetDepos)
 
-!print **, 'eee PART 2 ----- k, qc(k)',k, qc(k)
       !-- warm-phase only processes:
       call update_prognostic_liquid(qc2qr_accret_tend, nc_accret_tend, qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr, &
            nc_selfcollect_tend, qr2qv_evap_tend, nr_evap_tend, nr_selfcollect_tend,           &
            do_predict_nc, nccnst, do_prescribed_CCN, inv_rho(k), exner(k), latent_heat_vapor(k), dt,                     &
            th_atm(k), qv(k), qc(k), nc(k), qr(k), nr(k))
 
-!print **, '555 PART 2 ----- k, qc(k)',k, qc(k)
       !==
       ! AaronDonahue - Add extra variables needed from microphysics by E3SM:
       if(.not. use_hetfrz_classnuc)then     
@@ -1107,7 +1071,6 @@ th_before= t_atm
 
 555   continue
 
-!print **, 'after PART 2 ----- k, qc(k)',k, qc(k)
    enddo k_loop_main
 
  END SUBROUTINE p3_main_part2
@@ -1156,10 +1119,6 @@ th_before= t_atm
    real    :: qm_incld     !in-cloud qm
    real    :: bm_incld     !in-cloud bm
 
-
-!!print **, 'BEFORE part 3 qc', qc
-
-
    k_loop_final_diagnostics:  do k = kbot,ktop,kdir
 
       ! cloud:
@@ -1174,13 +1133,7 @@ th_before= t_atm
       else
          diag_eff_radius_qc(k) = 0.0
          qv(k) = qv(k)+qc(k)
-
-!!print **, 'th_atm(k), exner(k), qc(k), latent_heat_vapor(k), inv_cp',th_atm(k), exner(k), qc(k), latent_heat_vapor(k), inv_cp
-
          th_atm(k) = th_atm(k)-exner(k)*qc(k)*latent_heat_vapor(k)*inv_cp
-
-!!print **, 'lll 1',k,th_atm(k)
-
          vap_liq_exchange(k) = vap_liq_exchange(k) - qc(k)
          qc(k) = 0.
          nc(k) = 0.
@@ -1203,9 +1156,6 @@ th_before= t_atm
       else
          qv(k) = qv(k)+qr(k)
          th_atm(k) = th_atm(k)-exner(k)*qr(k)*latent_heat_vapor(k)*inv_cp
-
-!!print **, 'lll 2',th_atm(k)
-
          vap_liq_exchange(k) = vap_liq_exchange(k) - qr(k)
          qr(k) = 0.
          nr(k) = 0.
@@ -1272,9 +1222,6 @@ th_before= t_atm
 
          qv(k) = qv(k) + qi(k)
          th_atm(k) = th_atm(k) - exner(k)*qi(k)*latent_heat_sublim(k)*inv_cp
-
-!!print **, 'lll 3',th_atm(k)
-
          qi(k) = 0.
          ni(k) = 0.
          qm(k) = 0.
@@ -1466,9 +1413,6 @@ th_before= t_atm
     integer :: clock_count1, clock_count_rate, clock_count_max, clock_count2, clock_count_diff
 #endif
 
-!!print **, 'before P3 main th_atm', th_atm
-!!print **, 'before P3 main t_prev', t_prev
-
     !-----------------------------------------------------------------------------------!
     !  End of variables/parameters declarations
     !-----------------------------------------------------------------------------------!
@@ -1560,19 +1504,7 @@ th_before= t_atm
       if (debug_ON) then
          tmparr1(:) = th_atm(:)*inv_exner(:)!(pres(:)*1.e-5)**(rd*inv_cp)
          call check_values(qv(:),tmparr1(:),kts,kte,it,debug_ABORT,100,col_location(:))
-
-!!print **, 'label -1'
-!!print **, 'tmparr1',tmparr1
-!!print **, 'exner',exner
-!!print **, 'raw exner',rd,inv_cp, (pres(:)*1.e-5)**(rd*inv_cp)
-!!print **,'pressure', pres(:)
-
       endif
-
-
-!!print **, 'before P3 main p1 t_atm', t_atm
-!print **, 'before P3 main p1 th_atm', th_atm
-!print **, 'before P3 main p1 t_prev', t_prev
 
        call p3_main_part1(kts, kte, kbot, ktop, kdir, do_predict_nc, do_prescribed_CCN, dt, &
             pres(:), dpres(:), dz(:), nc_nuceat_tend(:), nccn_prescribed(:), exner(:), inv_exner(:), &
@@ -1584,19 +1516,12 @@ th_before= t_atm
             ni_incld(:), bm_incld(:), is_nucleat_possible, is_hydromet_present, nccnst)
 
       if (debug_ON) then
-!print *, 'before label 0'
          tmparr1(:) = th_atm(:)*inv_exner(:)!(pres(:)*1.e-5)**(rd*inv_cp)
          call check_values(qv(:),tmparr1(:),kts,kte,it,debug_ABORT,200,col_location(:))
-!print *, 'label 0'
       endif
-
-!#if 0
 
        !jump to end of i-loop if is_nucleat_possible=.false.  (i.e. skip everything)
        if (.not. (is_nucleat_possible .or. is_hydromet_present)) goto 333
-
-
-!!print **,'BEFORE PART2 CALL', qc
 
        call p3_main_part2(kts, kte, kbot, ktop, kdir, do_predict_nc, do_prescribed_CCN, dt, inv_dt, &
             p3_autocon_coeff,p3_accret_coeff,p3_qc_autocon_expon,p3_nc_autocon_expon,p3_qc_accret_expon, &
@@ -1614,8 +1539,6 @@ th_before= t_atm
             nevapr(:), qr_evap_tend(:), vap_liq_exchange(:), vap_ice_exchange(:), &
             liq_ice_exchange(:), pratot(:), prctot(:), frzimm(:), frzcnt(:), frzdep(:), p3_tend_out(:,:), is_hydromet_present, &
 	    do_precip_off, nccnst)
-
-!!print **,'AFTERi PART2 CALL', qc
 
        ! measure microphysics processes tendency output
        p3_tend_out(:,42) = ( qc(:)      - qc_old(:) ) * inv_dt       ! Liq. microphysics tendency, measure
@@ -1638,12 +1561,9 @@ th_before= t_atm
        if (debug_ON) then
          tmparr1(:) = th_atm(:)*inv_exner(:)!(pres(:)*1.e-5)**(rd*inv_cp)
          call check_values(qv(:),tmparr1(:),kts,kte,it,debug_ABORT,300,col_location(:))
-!!print **, 'label 1'
        endif
 
        if (.not. is_hydromet_present) goto 333
-
-#if 1
 
        !------------------------------------------------------------------------------------------!
        ! End of main microphysical processes section
@@ -1665,7 +1585,6 @@ th_before= t_atm
        if (debug_ON) then
          tmparr1(:) = th_atm(:)*inv_exner(:)!(pres(:)*1.e-5)**(rd*inv_cp)
          call check_values(qv(:),tmparr1(:),kts,kte,it,debug_ABORT,300,col_location(:))
-!!print **, 'label 2'
        endif
 
        !------------------------------------------------------------------------------------------!
@@ -1681,7 +1600,6 @@ th_before= t_atm
        if (debug_ON) then
          tmparr1(:) = th_atm(:)*inv_exner(:)!(pres(:)*1.e-5)**(rd*inv_cp)
          call check_values(qv(:),tmparr1(:),kts,kte,it,debug_ABORT,300,col_location(:))
-!!print **, 'label 3'
        endif
 
 
@@ -1699,7 +1617,6 @@ th_before= t_atm
        if (debug_ON) then
          tmparr1(:) = th_atm(:)*inv_exner(:)!(pres(:)*1.e-5)**(rd*inv_cp)
          call check_values(qv(:),tmparr1(:),kts,kte,it,debug_ABORT,300,col_location(:))
-!!print **, 'label 4'
        endif
 
 
@@ -1721,7 +1638,6 @@ th_before= t_atm
        if (debug_ON) then
          tmparr1(:) = th_atm(:)*inv_exner(:)!(pres(:)*1.e-5)**(rd*inv_cp)
          call check_values(qv(:),tmparr1(:),kts,kte,it,debug_ABORT,300,col_location(:))
-!!print **, 'label 5'
        endif
 
 
@@ -1733,23 +1649,18 @@ th_before= t_atm
        if (debug_ON) then
          tmparr1(:) = th_atm(:)*inv_exner(:)!(pres(:)*1.e-5)**(rd*inv_cp)
          call check_values(qv(:),tmparr1(:),kts,kte,it,debug_ABORT,300,col_location(:))
-!!print **, 'label 6'
        endif
 
-#if 1
          do knc=kbot,ktop,kdir
           if ((mincdnc.gt.0.).and.(qc(knc).ge.qsmall)) then
            nc(knc) = max(nc(knc),mincdnc*cld_frac_l(knc)/rho(knc))
            nc_incld(knc) = max(nc_incld(knc),mincdnc/rho(knc))
           end if
          end do 
-#endif
 
        if (debug_ON) then
-!!print **, 'label 6A before'
          tmparr1(:) = th_atm(:)*inv_exner(:)!(pres(:)*1.e-5)**(rd*inv_cp)
          call check_values(qv(:),tmparr1(:),kts,kte,it,debug_ABORT,300,col_location(:))
-!!print **, 'label 6A'
        endif
 
 
@@ -1779,12 +1690,9 @@ th_before= t_atm
 333    continue
 
        if (debug_ON) then
-!!print **, 'label 7 before'
           tmparr1(:) = th_atm(:)*inv_exner(:)!(pres(:)*1.e-5)**(rd*inv_cp)
           call check_values(qv(:),tmparr1(:),kts,kte,it,debug_ABORT,900,col_location(:))
-!!print **, 'lavel 7'
        endif
-#endif
        !.....................................................
 
 !    enddo i_loop_main
@@ -2339,9 +2247,9 @@ th_before= t_atm
     enddo k_loop
 
     if (trap .and. force_abort) then
-       !print **
-       !print **,'** DEBUG TRAP IN P3_MAIN, s/r CHECK_VALUES -- source: ',source_ind
-       !print **
+       print *
+       print *,'** DEBUG TRAP IN P3_MAIN, s/r CHECK_VALUES -- source: ',source_ind
+       print *
        if (source_ind/=100) then
           write(err_msg,*)'Source_ind should be 100, source_ind is:', &
                source_ind,' in file:',&
