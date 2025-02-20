@@ -3692,7 +3692,7 @@ This means that, if you have an account on one of these machines, EAMxx tests ca
 However, many of the standalone EAMxx tests are able to be run on a reasonably-equipped laptop or personal workstation.<sup id="fnref:but-mac"><a class="footnote-ref" href="#fn:but-mac">2</a></sup>
 This second choice requires some extra configurations but the effort required may be worth the potential speedup in development.</p>
 <h2 id="lets-get-started-quickly">Let's Get Started (Quickly)</h2>
-<p>For the purposes of this quick-start guide, we will employ the working example of adding a new <a href="../../common/glossary/#atmospheric-process">processes</a> to the MAM4xx aerosol library, specifically the not-real, example process "<strong>Aerosolve</strong>."
+<p>For the purposes of this quick-start guide, we will employ the working example of adding a new <a href="../../common/glossary/#atmospheric-process">processes</a> to the MAM4xx aerosol library, specifically the not-real, example process "<strong>AshInjection</strong>."
 The source files for this process will be found at <code>src/physics/mam/</code>.
 Note that here, and for the remainder of this guide, we will denote all paths relative to the EAMxx root directory <code>E3SM/components/eamxx/</code> (see <a href="../code_structure/">Code Structure</a> for additional details on how EAMxx code is organized).</p>
 <div class="admonition warning">
@@ -3704,61 +3704,65 @@ If you should take the time to debug these examples, feel free to submit a PR wi
 <h3 id="modifying-source-code">Modifying Source Code</h3>
 <p>The minimum files required for a new process will be those defining the interface to EAMxx.
 For our case, and following the current informal naming standard, these will be the <code>eamxx_aerosolve_process_interface.&lt;x&gt;pp</code> files, located at <code>src/physics/mam/</code>, and trivial skeleton examples are provided below.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">eamxx_aerosolve_process_interface.hpp</label><label for="__tabbed_1_2">eamxx_aerosolve_process_interface.cpp</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">eamxx_inject_ash_process_interface.hpp</label><label for="__tabbed_1_2">eamxx_inject_ash_process_interface.cpp</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><span class="cp">#ifndef EAMXX_MAM_AEROSOLVE_HPP</span>
-<span class="cp">#define EAMXX_MAM_AEROSOLVE_HPP</span>
+<div class="highlight"><pre><span></span><code><span class="cp">#ifndef EAMXX_MAM_INJECT_ASH_HPP</span>
+<span class="cp">#define EAMXX_MAM_INJECT_ASH_HPP</span>
 
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;src/physics/mam/all_the_headers.hpp&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;share/atm_process/atmosphere_process.hpp&quot;</span>
 
 <span class="k">namespace</span><span class="w"> </span><span class="nn">scream</span><span class="w"> </span><span class="p">{</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">MAM_Aerosolve</span><span class="w"> </span><span class="k">final</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">scream</span><span class="o">::</span><span class="n">AtmosphereProcess</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">KT</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ekat</span><span class="o">::</span><span class="n">KokkosTypes</span><span class="o">&lt;</span><span class="n">DefaultDevice</span><span class="o">&gt;</span><span class="p">;</span>
-<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">view_1d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">KT</span><span class="o">::</span><span class="k">template</span><span class="w"> </span><span class="n">view_1d</span><span class="o">&lt;</span><span class="n">Real</span><span class="o">&gt;</span><span class="p">;</span>
-<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">view_2d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">KT</span><span class="o">::</span><span class="k">template</span><span class="w"> </span><span class="n">view_2d</span><span class="o">&lt;</span><span class="n">Real</span><span class="o">&gt;</span><span class="p">;</span>
-
-<span class="w">  </span><span class="n">view_1d</span><span class="w"> </span><span class="n">answer</span><span class="p">(</span><span class="s">&quot;answer&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">nlevels</span><span class="p">,</span><span class="w"> </span><span class="n">nthings</span><span class="p">);</span>
-<span class="w">  </span><span class="n">view_2d</span><span class="w"> </span><span class="n">input</span><span class="p">(</span><span class="s">&quot;input&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">nthings</span><span class="p">);</span>
-
-<span class="k">private</span><span class="o">:</span>
-<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">aerosolver</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">view_2d</span><span class="w"> </span><span class="n">input</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">indicator</span><span class="p">,</span><span class="w"> </span><span class="n">view_1d</span><span class="w"> </span><span class="o">&amp;</span><span class="n">sol</span><span class="p">);</span>
-
+<span class="k">class</span><span class="w"> </span><span class="nc">MAMInjectAsh</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">AtmosphereProcess</span>
+<span class="p">{</span>
 <span class="k">public</span><span class="o">:</span>
-<span class="w">  </span><span class="c1">// Initialize variables</span>
-<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">initialize_impl</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">view_2d</span><span class="w"> </span><span class="n">inmat</span><span class="p">)</span><span class="w"> </span><span class="k">override</span><span class="p">;</span>
-<span class="w">  </span><span class="c1">// Run the process by one time step</span>
-<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">run_impl</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="n">dt</span><span class="p">)</span><span class="w"> </span><span class="k">override</span><span class="p">;</span>
-<span class="w">  </span><span class="c1">// Finalize--cleanup anything that needs to be manually released</span>
-<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">finalize_impl</span><span class="p">(){};</span>
+<span class="w">  </span><span class="n">MAMInjectAsh</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">ekat</span><span class="o">::</span><span class="n">Comm</span><span class="o">&amp;</span><span class="w"> </span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">ekat</span><span class="o">::</span><span class="n">ParameterList</span><span class="o">&amp;</span><span class="w"> </span><span class="n">params</span><span class="p">);</span>
+<span class="w">  </span><span class="n">AtmosphereProcessType</span><span class="w"> </span><span class="nf">type</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">AtmosphereProcessType</span><span class="o">::</span><span class="n">Physics</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="nf">name</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="s">&quot;MAMInjectAsh&quot;</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">set_grids</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="k">const</span><span class="w"> </span><span class="n">GridsManager</span><span class="o">&gt;</span><span class="w"> </span><span class="n">grids_manager</span><span class="p">)</span><span class="w"> </span><span class="k">override</span><span class="p">;</span>
+<span class="k">protected</span><span class="o">:</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">initialize_impl</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">RunType</span><span class="w"> </span><span class="n">run_type</span><span class="p">)</span><span class="w"> </span><span class="k">override</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">run_impl</span><span class="w">        </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="n">dt</span><span class="p">)</span><span class="w"> </span><span class="k">override</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">finalize_impl</span><span class="w">   </span><span class="p">()</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="cm">/* Nothing to do */</span><span class="w"> </span><span class="p">}</span>
+
+<span class="w">  </span><span class="n">Field</span><span class="w"> </span><span class="n">source_mask</span><span class="p">;</span>
+<span class="w">  </span><span class="n">Field</span><span class="w"> </span><span class="n">lat</span><span class="p">;</span>
+<span class="w">  </span><span class="n">Field</span><span class="w"> </span><span class="n">lon</span><span class="p">;</span>
 <span class="p">}</span>
-<span class="p">}</span>
+<span class="p">}</span><span class="w"> </span><span class="c1">// namespace scream</span>
 
 <span class="cp">#endif  </span><span class="c1">// EAMXX_MAM_AEROSOLVE_HPP</span>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;src/physics/mam/eamxx_aerosolve_process_interface.hpp&gt;</span>
+<div class="highlight"><pre><span></span><code><span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;eamxx_inject_ash_process_interface.hpp&quot;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;ash_source_calculation.hpp&quot;</span>
 
 <span class="k">namespace</span><span class="w"> </span><span class="nn">scream</span><span class="w"> </span><span class="p">{</span>
-<span class="kt">void</span><span class="w"> </span><span class="nf">MAM_Aerosolve::initialize_impl</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">view_2d</span><span class="w"> </span><span class="n">inmat</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+
+<span class="n">MAMInjectAsh</span><span class="o">::</span><span class="n">MAMInjectAsh</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">ekat</span><span class="o">::</span><span class="n">Comm</span><span class="o">&amp;</span><span class="w"> </span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">ekat</span><span class="o">::</span><span class="n">ParameterList</span><span class="o">&amp;</span><span class="w"> </span><span class="n">params</span><span class="p">)</span>
+<span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">AtmosphereProcess</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span><span class="n">params</span><span class="p">)</span>
+<span class="p">{</span>
 <span class="w">  </span><span class="p">[...]</span>
 <span class="p">}</span>
-<span class="kt">void</span><span class="w"> </span><span class="nf">MAM_Aerosolve::run_impl</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="n">dt</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="p">[...]</span>
-<span class="w">  </span><span class="n">aerosolver</span><span class="p">(</span><span class="n">input</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">answer</span><span class="p">);</span>
+<span class="kt">void</span><span class="w"> </span><span class="n">MAMInjectAsh</span><span class="o">::</span><span class="n">set_grids</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="k">const</span><span class="w"> </span><span class="n">GridsManager</span><span class="o">&gt;</span><span class="w"> </span><span class="n">grids_manager</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">constexpr</span><span class="w"> </span><span class="k">auto</span><span class="w"> </span><span class="n">kg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ekat</span><span class="o">::</span><span class="n">units</span><span class="o">::</span><span class="n">kg</span><span class="p">;</span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">grid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">grids_manager</span><span class="o">-&gt;</span><span class="n">get_grid</span><span class="p">(</span><span class="s">&quot;Physics&quot;</span><span class="p">);</span>
+<span class="w">  </span><span class="n">add_field</span><span class="o">&lt;</span><span class="n">Updated</span><span class="o">&gt;</span><span class="p">(</span><span class="s">&quot;ash&quot;</span><span class="p">,</span><span class="n">grid</span><span class="o">-&gt;</span><span class="n">get_3d_scalar_layout</span><span class="p">(</span><span class="nb">true</span><span class="p">),</span><span class="n">kg</span><span class="o">/</span><span class="n">kg</span><span class="p">,</span><span class="n">grid</span><span class="o">-&gt;</span><span class="n">name</span><span class="p">());</span>
+<span class="w">  </span><span class="n">lat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">grid</span><span class="o">-&gt;</span><span class="n">get_geometry_data</span><span class="p">(</span><span class="s">&quot;lat&quot;</span><span class="p">);</span>
+<span class="w">  </span><span class="n">lon</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">grid</span><span class="o">-&gt;</span><span class="n">get_geometry_data</span><span class="p">(</span><span class="s">&quot;lon&quot;</span><span class="p">);</span>
 <span class="p">}</span>
-<span class="kt">void</span><span class="w"> </span><span class="nf">MAM_Aerosolve::aerosolver</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">view_2d</span><span class="w"> </span><span class="n">input</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">indicator</span><span class="p">,</span>
-<span class="w">                               </span><span class="n">view_1d</span><span class="w"> </span><span class="o">&amp;</span><span class="n">ans</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">indicator</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">42</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="n">ans</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Kokkos</span><span class="o">::</span><span class="n">subview</span><span class="p">(</span><span class="n">input</span><span class="p">,</span><span class="w"> </span><span class="n">indicator</span><span class="p">,</span><span class="w"> </span><span class="n">Kokkos</span><span class="o">::</span><span class="n">ALL</span><span class="p">());</span>
-<span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="n">Kokkos</span><span class="o">::</span><span class="n">parallel_for</span><span class="p">(</span>
-<span class="w">        </span><span class="n">Kokkos</span><span class="o">::</span><span class="n">TeamVectorRange</span><span class="p">(</span><span class="n">team</span><span class="p">,</span><span class="w"> </span><span class="n">nthings</span><span class="p">),</span><span class="w"> </span><span class="p">[</span><span class="o">&amp;</span><span class="p">](</span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">          </span><span class="n">ans</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">input</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">);</span>
-<span class="w">    </span><span class="p">});</span>
-<span class="w">  </span><span class="p">}</span>
+<span class="kt">void</span><span class="w"> </span><span class="n">MAM_AshInjection</span><span class="o">::</span><span class="n">initialize_impl</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">RunType</span><span class="w"> </span><span class="n">run_type</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">source_mask</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_field_out</span><span class="p">(</span><span class="s">&quot;ash&quot;</span><span class="p">).</span><span class="n">clone</span><span class="p">(</span><span class="s">&quot;source_mask&quot;</span><span class="p">);</span>
+<span class="w">  </span><span class="p">[...]</span><span class="w"> </span><span class="c1">// set source_mask=1 only on area of interest, using lat/lon field</span>
 <span class="p">}</span>
+<span class="kt">void</span><span class="w"> </span><span class="n">MAM_AshInjection</span><span class="o">::</span><span class="n">run_impl</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="n">dt</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">timestamp</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">dt</span><span class="p">;</span><span class="w"> </span><span class="c1">// timestamp() is the START of step time</span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">ash</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_field_out</span><span class="p">(</span><span class="s">&quot;ash&quot;</span><span class="p">);</span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">rate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">compute_ash_injection_rate</span><span class="p">(</span><span class="n">t</span><span class="p">);</span><span class="w"> </span><span class="c1">// defined in ash_source_calculation.hpp header</span>
+<span class="w">  </span><span class="n">ash</span><span class="p">.</span><span class="n">update</span><span class="p">(</span><span class="n">source_mask</span><span class="p">,</span><span class="n">rate</span><span class="o">*</span><span class="n">dt</span><span class="p">,</span><span class="n">decay</span><span class="p">);</span><span class="w"> </span><span class="c1">// ash = decay*ash + rate*dt*source_mask</span>
+<span class="p">}</span>
+<span class="p">}</span><span class="w"> </span><span class="c1">// namespace scream</span>
 </code></pre></div>
 </div>
 </div>
@@ -3922,11 +3926,11 @@ Defining the test behavior and pass/fail criteria requires 3 files:</p>
 </div>
 </div>
 <h4 id="function-level-verification-tests">Function-level Verification Tests</h4>
-<p>Next, because of the highly-technical nature of our new <code>MAM_Aerosolve::aerosolver()</code> function, we add a verification test to the 'tests/' subdirectory, co-located with the source code (<code>src/physics/mam/</code>).
+<p>Next, because of the highly-technical nature of our new <code>compute_ash_injection_rate</code> function, we add a verification test to the 'tests/' subdirectory, co-located with the source code (<code>src/physics/mam/</code>).
 This subdirectory contains a <code>CMakeLists.txt</code> that we modify to add our new test to the build system.
 Any required data files should be placed here, and the preferred format for data is <a href="https://yaml.org">yaml</a>, though <a href="https://www.unidata.ucar.edu/software/netcdf/">NetCDF</a> can also be used.</p>
-<div class="highlight"><span class="filename">src/physics/mam/aerosolver_test.cpp</span><pre><span></span><code><span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;catch2/catch.hpp&quot;</span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;physics/mam/eamxx_aerosolve_process_interface.hpp&quot;</span>
+<div class="highlight"><span class="filename">src/physics/mam/tests/ash_injection.cpp</span><pre><span></span><code><span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;catch2/catch.hpp&quot;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;ash_source_calculation.hpp&quot;</span>
 
 <span class="k">namespace</span><span class="w"> </span><span class="p">{</span>
 <span class="k">using</span><span class="w"> </span><span class="k">namespace</span><span class="w"> </span><span class="nn">scream</span><span class="p">;</span>
@@ -3934,19 +3938,23 @@ Any required data files should be placed here, and the preferred format for data
 <span class="p">{</span>
 <span class="w">  </span><span class="c1">// initialize the data and test variables</span>
 <span class="w">  </span><span class="n">tol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0e-12</span><span class="p">;</span>
-<span class="w">  </span><span class="n">input</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[...]</span>
-<span class="w">  </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[...]</span>
+<span class="w">  </span><span class="n">util</span><span class="o">::</span><span class="n">TimeStamp</span><span class="w"> </span><span class="n">t1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">...</span>
+<span class="w">  </span><span class="n">util</span><span class="o">::</span><span class="n">TimeStamp</span><span class="w"> </span><span class="n">t2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">t1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">86400</span><span class="o">*</span><span class="mi">100</span><span class="p">;</span><span class="w"> </span><span class="c1">// 100 days later</span>
 <span class="w">  </span><span class="p">[...]</span>
 <span class="w">  </span><span class="c1">// call the function we are testing</span>
-<span class="w">  </span><span class="n">MAM_Aerosolveaerosolver</span><span class="p">(</span><span class="n">input</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">test_answer</span><span class="p">);</span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">rate1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">compute_ash_injection_rate</span><span class="p">(</span><span class="n">t1</span><span class="p">);</span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">rate2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">compute_ash_injection_rate</span><span class="p">(</span><span class="n">t2</span><span class="p">);</span>
 <span class="w">  </span><span class="c1">// apply the REQUIRE() function from catch2/catch.hpp to test</span>
 <span class="w">  </span><span class="c1">// whether the resulting test answer is within a set error tolerance</span>
-<span class="w">  </span><span class="c1">// from the reference answer</span>
-<span class="w">  </span><span class="n">REQUIRE</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">abs</span><span class="p">(</span><span class="n">test_answer</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">reference_answer</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">tol</span><span class="p">);</span>
+<span class="w">  </span><span class="c1">// from the reference answer. Check all properties that are meaningful</span>
+<span class="w">  </span><span class="n">REQUIRE</span><span class="w"> </span><span class="p">(</span><span class="n">rate1</span><span class="o">&gt;=</span><span class="mi">0</span><span class="p">);</span>
+<span class="w">  </span><span class="n">REQUIRE</span><span class="w"> </span><span class="p">(</span><span class="n">rate2</span><span class="o">&gt;=</span><span class="mi">0</span><span class="p">);</span>
+<span class="w">  </span><span class="n">REQUIRE</span><span class="w"> </span><span class="p">(</span><span class="n">rate2</span><span class="o">&lt;</span><span class="n">rate1</span><span class="p">);</span>
+<span class="w">  </span><span class="p">[...]</span>
 <span class="p">}</span>
 </code></pre></div>
 <h4 id="multi-process-validation-tests">Multi-process Validation Tests</h4>
-<p>Finally, because the <strong>Aerosolve</strong> process is not called in isolation, we must validate the results generated when <strong>Aerosolve</strong> is called in combination with other processes.
+<p>Finally, because the <strong>AshInjection</strong> process is not called in isolation, we must validate the results generated when <strong>AshInjection</strong> is called in combination with other processes.
 At time of writing, these tests are divided into the self-describing directories <code>physics_only</code> and <code>dynamics_physics</code>.
 The subdirectories and test directories are named according to the convention of listing the names of included processes and potentially relevant grid information.
 Generally speaking, these tests are configured in the same manner as the single-process tests, via the 3 files <code>CMakeLists.txt</code>, <code>input.yaml</code>, <code>output.yaml</code>, and for this reason we omit further details</p>
@@ -4004,8 +4012,8 @@ $<span class="w"> </span>./scripts/test-all-scream<span class="w"> </span>&lt;re
 <details class="success">
 <summary>Baseline Tests</summary>
 <p><a href="../dev_testing/test_all_scream/#baseline-tests">Baseline tests</a> compare the current state of the code to some "baseline" value to ensure that the modifications do not negatively impact the current solutions provided by the model.
-An example of this, provided below, is focused on testing the code with our new <strong>Aerosolve</strong>-related modifications as compared to the code before we started working.</p>
-<p><strong><em>Note</em></strong>, however, that any new <strong>Aerosolve</strong>-specific tests or tests involving processes that interact with <strong>Aerosolve</strong> may give different answers for perfectly good reasons.
+An example of this, provided below, is focused on testing the code with our new <strong>AshInjection</strong>-related modifications as compared to the code before we started working.</p>
+<p><strong><em>Note</em></strong>, however, that any new <strong>AshInjection</strong>-specific tests or tests involving processes that interact with <strong>AshInjection</strong> may give different answers for perfectly good reasons.
 Regardless, we would like to establish that our modifications do not cause any unexpected interactions, so all remaining baseline tests should pass.</p>
 <div class="copy highlight"><pre><span></span><code><span class="c1"># For simplicity, we&#39;ll assume we begin at the most up-to-date</span>
 <span class="c1"># commit on origin/master</span>
@@ -4131,7 +4139,7 @@ $<span class="w"> </span>./scripts/test-all-scream<span class="w"> </span>--mach
 <p>Requires <code>-l, --local</code> flag and correctly-configured files in <code>~/.cime</code>.
 See <a href="../dev_testing/test_all_scream/#local-configuration-files">Local Configuration Files</a>.</p>
 <h4 id="suggested-very-thorough-and-conservative-testing-progression">Suggested (Very Thorough and Conservative) Testing Progression</h4>
-<p>To fully cover all the potential interactions of the <strong>Aerosolve</strong> process, a reasonable series of tests is provided in the example script below.</p>
+<p>To fully cover all the potential interactions of the <strong>AshInjection</strong> process, a reasonable series of tests is provided in the example script below.</p>
 <p><strong>Note:</strong> There is no reason all of this could not be done at once, but we write the script in favor of being clear and explicit.</p>
 <details class="abstract">
 <summary>Thorough and Careful Testing Script</summary>
@@ -4203,7 +4211,7 @@ git<span class="w"> </span>submodule<span class="w"> </span>sync<span class="w">
 <span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;TEST FLAGS = </span><span class="si">${</span><span class="nv">gpu_test_flags</span><span class="si">}</span><span class="s2">&quot;</span>
 ./scripts/test-all-scream<span class="w"> </span><span class="si">${</span><span class="nv">gpu_test_flags</span><span class="si">}</span><span class="w"> </span><span class="p">|&amp;</span><span class="w"> </span>tee<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">ofile_gpu</span><span class="si">}</span><span class="s2">&quot;</span>
 
-<span class="c1"># Validate the Aerosolve process generates the solutions we expect</span>
+<span class="c1"># Validate the AshInjection process generates the solutions we expect</span>
 <span class="nv">test_choice</span><span class="o">=</span><span class="s2">&quot;[^\s]*mam4_aerosolve_standalone[^\s]*&quot;</span>
 <span class="nv">test_base_flags</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">base_flags</span><span class="si">}</span><span class="s2"> --limit-test-regex </span><span class="si">${</span><span class="nv">test_choice</span><span class="si">}</span><span class="s2">&quot;</span>
 <span class="nv">cpu_test_flags</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">test_base_flags</span><span class="si">}</span><span class="s2"> </span><span class="si">${</span><span class="nv">cpu_flags</span><span class="si">}</span><span class="s2">&quot;</span>
@@ -4238,7 +4246,7 @@ git<span class="w"> </span>submodule<span class="w"> </span>sync<span class="w">
 <span class="c1"># NOTE: just setting &#39;test_choice=&quot;[^\s]*_mam4_aerosolve^\s]*&quot;&#39; would also do</span>
 <span class="c1">#       the trick in this case</span>
 
-<span class="c1"># run full eamxx test suite against pre-Aerosolve baselines for all</span>
+<span class="c1"># run full eamxx test suite against pre-AshInjection baselines for all</span>
 <span class="c1"># test configurations (not just &#39;dbg&#39;)</span>
 <span class="nv">base_flags</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">pbuild</span><span class="si">}</span><span class="s2"> </span><span class="si">${</span><span class="nv">vflag</span><span class="si">}</span><span class="s2"> --baseline-dir </span><span class="si">${</span><span class="nv">bl_loc</span><span class="si">}</span><span class="s2">&quot;</span>
 <span class="nv">cpu_test_flags</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">base_flags</span><span class="si">}</span><span class="s2"> </span><span class="si">${</span><span class="nv">cpu_flags</span><span class="si">}</span><span class="s2">&quot;</span>
