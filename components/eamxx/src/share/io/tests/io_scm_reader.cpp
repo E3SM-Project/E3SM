@@ -1,7 +1,7 @@
 #include <catch2/catch.hpp>
 
 #include "share/io/scorpio_scm_input.hpp"
-#include "share/io/scream_scorpio_interface.hpp"
+#include "share/io/eamxx_scorpio_interface.hpp"
 
 #include "share/grid/point_grid.hpp"
 #include "share/field/field.hpp"

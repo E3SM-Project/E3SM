@@ -1,5 +1,5 @@
 #include "share/util/eamxx_time_interpolation.hpp"
-#include "share/io/scream_scorpio_interface.hpp"
+#include "share/io/eamxx_scorpio_interface.hpp"
 #include "share/io/scream_io_utils.hpp"
 
 namespace scream{

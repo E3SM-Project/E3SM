@@ -2,7 +2,7 @@
 
 #include "share/grid/remap/refining_remapper_rma.hpp"
 #include "share/grid/point_grid.hpp"
-#include "share/io/scream_scorpio_interface.hpp"
+#include "share/io/eamxx_scorpio_interface.hpp"
 #include "share/util/scream_setup_random_test.hpp"
 #include "share/util/scream_utils.hpp"
 #include "share/field/field_utils.hpp"

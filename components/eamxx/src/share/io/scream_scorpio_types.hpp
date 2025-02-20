@@ -46,7 +46,7 @@ using offset_t = std::int64_t;
  * of scream_io will never be able to get any object of these types out
  * of the internal database. In particular, all data is stored in a
  * ScorpioSession singleton class, whose declaration is hidden inside
- * scream_scorpio_interface.cpp.
+ * eamxx_scorpio_interface.cpp.
  */
 
 // The basic common data of any PIO entity

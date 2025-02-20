@@ -1,7 +1,7 @@
 #include "scream_output_manager.hpp"
 
 #include "share/io/scorpio_input.hpp"
-#include "share/io/scream_scorpio_interface.hpp"
+#include "share/io/eamxx_scorpio_interface.hpp"
 #include "share/util/scream_timing.hpp"
 #include "share/eamxx_config.hpp"
 

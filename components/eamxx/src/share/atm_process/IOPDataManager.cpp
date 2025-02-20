@@ -1,7 +1,7 @@
 #include "share/grid/point_grid.hpp"
 #include "share/grid/remap/iop_remapper.hpp"
 #include "share/io/scorpio_input.hpp"
-#include "share/io/scream_scorpio_interface.hpp"
+#include "share/io/eamxx_scorpio_interface.hpp"
 #include "share/atm_process/IOPDataManager.hpp"
 
 #include "ekat/ekat_assert.hpp"

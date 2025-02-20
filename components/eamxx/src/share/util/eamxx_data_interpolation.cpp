@@ -5,7 +5,7 @@
 #include "share/grid/remap/refining_remapper_p2p.hpp"
 #include "share/grid/remap/iop_remapper.hpp"
 #include "share/grid/point_grid.hpp"
-#include "share/io/scream_scorpio_interface.hpp"
+#include "share/io/eamxx_scorpio_interface.hpp"
 #include "share/io/scorpio_input.hpp"
 #include "share/io/scream_io_utils.hpp"
 #include "share/util/scream_universal_constants.hpp"

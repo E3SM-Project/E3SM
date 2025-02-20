@@ -4,7 +4,7 @@
 #include "physics/rrtmgp/shr_orb_mod_c2f.hpp"
 #include "physics/share/eamxx_trcmix.hpp"
 
-#include "share/io/scream_scorpio_interface.hpp"
+#include "share/io/eamxx_scorpio_interface.hpp"
 #include "share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
