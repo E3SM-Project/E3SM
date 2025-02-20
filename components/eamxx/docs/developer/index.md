@@ -1,5 +1,7 @@
 # EAMxx Developer Guide
 
+==MAJOR REWORK==
+
 ==Add descriptive blurb==
 
 ### [Installation](../common/installation.md)
@@ -11,4 +13,4 @@
   * [Grids and Remappers](grid.md)
   * [Atmosphere Processes](processes.md)
 ### [I/O](io.md)
-### Testing [dev_testing.md]
+### [Testing](dev_testing/index.md)

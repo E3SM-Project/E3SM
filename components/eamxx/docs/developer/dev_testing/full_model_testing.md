@@ -1,6 +1,4 @@
-# Full Model Testing
-
-Full model system testing of EAMxx is done through CIME test cases
+gitFull model system testing of EAMxx is done through CIME test cases
 (much like the rest of E3SM).
 
 We offer a number of test suites, including:

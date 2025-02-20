@@ -2,6 +2,7 @@ site_name: EAMxx
 
 nav:
   - 'Home': 'index.md'
+  - 'WIP Sandbox': 'WIP.md'
   - 'User Guide':
     - 'Overview': 'user/index.md'
     - 'Quick-start Guide': 'user/user_quickstart.md'
@@ -57,14 +58,25 @@ theme:
       icon: material/weather-night
       name: Switch to light mode
   features:
-    - toc.integrate
+    # Integrates (RHS) Table of Contents into the (LHS) Navigation
+    # NOTE: can't decide whether this is good or bad--gives some extra space
+    # to the main body but can look a little cluttered
+    # however, setting "toc_depth: 2" below improves matters
+    # - toc.integrate
+    # allows adding an index page to sections (e.g., "Overview")
     - navigation.indexes
+    # prefetches page on link-hover
     - navigation.instant
+    # back-to-top button
     - navigation.top
-#    - navigation.tabs
+    # only render pages visible in the navigation
+    - navigation.prune
 
 markdown_extensions:
+  # FIXME: remove--currently using to flag TODOs
   - pymdownx.highlight
+  # for mermaid.js diagrams
+  # FIXME: maybe lose in favor of a procedurally-generated static image?
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid
@@ -74,6 +86,10 @@ markdown_extensions:
       alternate_style: true
   - pymdownx.arithmatex:
       generic: true
+  - toc:
+      toc_depth: 3
+  # provides collapsible blocks
+  - pymdownx.details
   - admonition
   - footnotes
   - pymdownx.caret
@@ -81,6 +97,9 @@ markdown_extensions:
   - pymdownx.tilde
   - attr_list
   - md_in_html
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
 
 extra_javascript:
   # - javascript/mathjax.js
