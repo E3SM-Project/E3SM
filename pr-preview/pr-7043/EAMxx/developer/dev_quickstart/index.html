@@ -3695,6 +3695,12 @@ This second choice requires some extra configurations but the effort required ma
 <p>For the purposes of this quick-start guide, we will employ the working example of adding a new <a href="../../common/glossary/#atmospheric-process">processes</a> to the MAM4xx aerosol library, specifically the not-real, example process "<strong>Aerosolve</strong>."
 The source files for this process will be found at <code>src/physics/mam/</code>.
 Note that here, and for the remainder of this guide, we will denote all paths relative to the EAMxx root directory <code>E3SM/components/eamxx/</code> (see <a href="../code_structure/">Code Structure</a> for additional details on how EAMxx code is organized).</p>
+<div class="admonition warning">
+<p class="admonition-title">Disclaimer</p>
+<p>We make use of many code snippets below for <strong><em>demonstrative purposes</em></strong>.
+As such, we provide no guarantee that any of these are working code, and the author would be quite surprised if more than a couple of them run without edits.
+If you should take the time to debug these examples, feel free to submit a PR with a working version, and we are sure some future developer will appreciate it!</p>
+</div>
 <h3 id="modifying-source-code">Modifying Source Code</h3>
 <p>The minimum files required for a new process will be those defining the interface to EAMxx.
 For our case, and following the current informal naming standard, these will be the <code>eamxx_aerosolve_process_interface.&lt;x&gt;pp</code> files, located at <code>src/physics/mam/</code>, and trivial skeleton examples are provided below.</p>
