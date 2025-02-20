@@ -1643,8 +1643,8 @@ end function bfb_expm1
 
        !.........................................................
        ! Instantenous melting of ice/snow at T = t_snow_melt = 2c    
-!       call ice_complete_melting(kts,kte,ktop,kbot,kdir,qi(:),ni(:),qm(:),latent_heat_fusion(:),exner(:),th_atm(:), & 
-!            qr(:),nr(:),qc(:),nc(:))
+       call ice_complete_melting(kts,kte,ktop,kbot,kdir,qi(:),ni(:),qm(:),latent_heat_fusion(:),exner(:),th_atm(:), & 
+            qr(:),nr(:),qc(:),nc(:))
 
        if (debug_ON) then
          tmparr1(:) = th_atm(:)*inv_exner(:)!(pres(:)*1.e-5)**(rd*inv_cp)
@@ -2918,7 +2918,6 @@ subroutine cloud_rain_accretion(rho,inv_rho,qc_incld,nc_incld,qr_incld,inv_qc_re
              1.e+6*inv_rho
      elseif (iparam.eq.3) then
         !Khroutdinov and Kogan (2000)
-        !!print **,'p3_qc_accret_expon = ',p3_qc_accret_expon
         sbgrd_var_coef = subgrid_variance_scaling(inv_qc_relvar, p3_qc_accret_expon)
         qc2qr_accret_tend = sbgrd_var_coef*p3_accret_coeff*bfb_pow(qc_incld*qr_incld, p3_qc_accret_expon)
         nc_accret_tend = qc2qr_accret_tend*nc_incld/qc_incld
@@ -3002,12 +3001,6 @@ subroutine cloud_water_autoconversion(rho,qc_incld,nc_incld,inv_qc_relvar,      
    qc_not_small: if (qc_incld.ge.1.e-8) then
 
       !Khroutdinov and Kogan (2000)
-      !!print **,'p3_qc_autocon_expon = ',p3_qc_autocon_expon
-
-
-!print **, 'inv_qc_relvar, p3_qc_autocon_expon',inv_qc_relvar, p3_qc_autocon_expon
-
-
       sbgrd_var_coef = subgrid_variance_scaling(inv_qc_relvar, p3_qc_autocon_expon)
       qc2qr_autoconv_tend = sbgrd_var_coef*p3_autocon_coeff*bfb_pow(qc_incld,p3_qc_autocon_expon)*bfb_pow(nc_incld*1.e-6*rho,p3_nc_autocon_expon)
       
@@ -3568,10 +3561,7 @@ subroutine update_prognostic_liquid(qc2qr_accret_tend,nc_accret_tend,qc2qr_autoc
    real, intent(inout) :: qr
    real, intent(inout) :: nr
 
-!print **, '1 in update_prognostic_l', qc, qc2qr_accret_tend,qc2qr_autoconv_tend
-
    qc = qc + (-qc2qr_accret_tend-qc2qr_autoconv_tend)*dt
-!print **, '2 in update_prognostic_l', qc
    qr = qr + (qc2qr_accret_tend+qc2qr_autoconv_tend-qr2qv_evap_tend)*dt
 
    if (do_predict_nc .or. do_prescribed_CCN) then
