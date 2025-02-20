@@ -11,7 +11,7 @@
 #include "share/util/scream_time_stamp.hpp"
 #include "share/util/scream_timing.hpp"
 #include "share/util/scream_utils.hpp"
-#include "share/io/scream_io_utils.hpp"
+#include "share/io/eamxx_io_utils.hpp"
 #include "share/property_checks/mass_and_energy_column_conservation_check.hpp"
 
 #include "ekat/ekat_assert.hpp"

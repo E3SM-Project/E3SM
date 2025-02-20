@@ -32,7 +32,7 @@ endif ()
 if (SCREAM_CIME_BUILD)
   # Add interface to E3SM shr lib (to retrieve PIO subsystem info)
   target_sources (eamxx_scorpio_interface PRIVATE
-    scream_shr_interface_c2f.F90
+    eamxx_shr_interface_c2f.F90
   )
   target_compile_definitions (eamxx_scorpio_interface PRIVATE SCREAM_CIME_BUILD)
   set_target_properties(eamxx_scorpio_interface PROPERTIES
@@ -56,7 +56,7 @@ add_library(scream_io
   scorpio_input.cpp
   scorpio_scm_input.cpp
   scorpio_output.cpp
-  scream_io_utils.cpp
+  eamxx_io_utils.cpp
 )
 
 target_link_libraries(scream_io PUBLIC scream_share eamxx_scorpio_interface diagnostics)

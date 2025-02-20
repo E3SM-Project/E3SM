@@ -7,7 +7,7 @@
 #include "share/grid/point_grid.hpp"
 #include "share/io/eamxx_scorpio_interface.hpp"
 #include "share/io/scorpio_input.hpp"
-#include "share/io/scream_io_utils.hpp"
+#include "share/io/eamxx_io_utils.hpp"
 #include "share/util/scream_universal_constants.hpp"
 #include "physics/share/physics_constants.hpp"
 

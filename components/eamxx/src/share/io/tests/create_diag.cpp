@@ -2,7 +2,7 @@
 
 #include "diagnostics/register_diagnostics.hpp"
 
-#include "share/io/scream_io_utils.hpp"
+#include "share/io/eamxx_io_utils.hpp"
 #include "share/grid/point_grid.hpp"
 
 namespace scream {

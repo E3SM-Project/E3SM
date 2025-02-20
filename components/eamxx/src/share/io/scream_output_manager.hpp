@@ -3,7 +3,7 @@
 
 #include "share/io/scorpio_output.hpp"
 #include "share/io/eamxx_scorpio_interface.hpp"
-#include "share/io/scream_io_utils.hpp"
+#include "share/io/eamxx_io_utils.hpp"
 #include "share/io/scream_io_file_specs.hpp"
 #include "share/io/scream_io_control.hpp"
 
@@ -167,12 +167,12 @@ protected:
   bool m_is_model_restart_output;
 
   // Frequency of output and checkpointing
-  // See scream_io_utils.hpp for details.
+  // See eamxx_io_utils.hpp for details.
   IOControl m_output_control;
   IOControl m_checkpoint_control;
 
   // The specs (name, capacity, size) of output and checkpoint file.
-  // See scream_io_utils.hpp for details.
+  // See eamxx_io_utils.hpp for details.
   IOFileSpecs m_output_file_specs;
   IOFileSpecs m_checkpoint_file_specs;
 
