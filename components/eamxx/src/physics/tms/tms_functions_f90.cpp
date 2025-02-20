@@ -5,7 +5,7 @@
 #include "ekat/ekat_pack_kokkos.hpp"
 #include "ekat/kokkos/ekat_subview_utils.hpp"
 
-#include "share/util/scream_deep_copy.hpp"
+#include "share/util/eamxx_deep_copy.hpp"
 
 #include <random>
 

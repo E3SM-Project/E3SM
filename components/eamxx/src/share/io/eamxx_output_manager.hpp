@@ -9,7 +9,7 @@
 
 #include "share/field/field_manager.hpp"
 #include "share/grid/grids_manager.hpp"
-#include "share/util/scream_time_stamp.hpp"
+#include "share/util/eamxx_time_stamp.hpp"
 
 #include "ekat/logging/ekat_logger.hpp"
 #include "ekat/mpi/ekat_comm.hpp"

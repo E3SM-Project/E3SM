@@ -1,10 +1,10 @@
 #include <catch2/catch.hpp>
 
 #include "share/util/scream_array_utils.hpp"
-#include "share/util/scream_universal_constants.hpp"
-#include "share/util/scream_utils.hpp"
-#include "share/util/scream_time_stamp.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "share/util/eamxx_universal_constants.hpp"
+#include "share/util/eamxx_utils.hpp"
+#include "share/util/eamxx_time_stamp.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 #include "share/eamxx_config.hpp"
 
 TEST_CASE("contiguous_superset") {

@@ -37,10 +37,10 @@ set(SHARE_SRC
   util/eamxx_data_interpolation.cpp
   util/eamxx_fv_phys_rrtmgp_active_gases_workaround.cpp
   util/eamxx_time_interpolation.cpp
-  util/scream_time_stamp.cpp
-  util/scream_timing.cpp
-  util/scream_utils.cpp
-  util/scream_bfbhash.cpp
+  util/eamxx_time_stamp.cpp
+  util/eamxx_timing.cpp
+  util/eamxx_utils.cpp
+  util/eamxx_bfbhash.cpp
 )
 
 # Append ETI sources (I didn't do it above for clarity of reading)
@@ -151,7 +151,7 @@ if (NOT SCREAM_LIB_ONLY)
   # Create test_support lib
   add_library(scream_test_support
     grid/mesh_free_grids_manager.cpp
-    util/scream_test_session.cpp
+    util/eamxx_test_session.cpp
   )
   target_link_libraries(scream_test_support PUBLIC scream_share scream_io)
 

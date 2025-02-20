@@ -1,7 +1,7 @@
 #ifndef SCREAM_COLUMN_OPS_HPP
 #define SCREAM_COLUMN_OPS_HPP
 
-#include "share/util/scream_combine_ops.hpp"
+#include "share/util/eamxx_combine_ops.hpp"
 #include "share/scream_types.hpp"
 
 #include "ekat/ekat_pack.hpp"
@@ -56,7 +56,7 @@ namespace scream {
  *     view y will be updated as y = beta*y + alpha*f(x). The values alpha
  *     and beta are used only if CM needs them, and an error is thrown if the
  *     user specifies non-trivial alpha/beta when they are not needed.
- *     See scream_combine_ops.hpp for more details.
+ *     See eamxx_combine_ops.hpp for more details.
  *
  *  RECALL: k=0 is the model top, while k=num_mid_levels+1 is the surface!
  */

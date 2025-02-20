@@ -8,9 +8,9 @@
 #include "share/atm_process/atmosphere_process_group.hpp"
 #include "share/atm_process/atmosphere_process_dag.hpp"
 #include "share/field/field_utils.hpp"
-#include "share/util/scream_time_stamp.hpp"
-#include "share/util/scream_timing.hpp"
-#include "share/util/scream_utils.hpp"
+#include "share/util/eamxx_time_stamp.hpp"
+#include "share/util/eamxx_timing.hpp"
+#include "share/util/eamxx_utils.hpp"
 #include "share/io/eamxx_io_utils.hpp"
 #include "share/property_checks/mass_and_energy_column_conservation_check.hpp"
 
@@ -1783,7 +1783,7 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
 
   // Write all timers to file, and possibly finalize gptl
   if (not m_gptl_externally_handled) {
-    write_timers_to_file (m_atm_comm,"scream_timing.txt");
+    write_timers_to_file (m_atm_comm,"eamxx_timing.txt");
     finalize_gptl();
   }
 

@@ -5,7 +5,7 @@
 #include "share/field/field.hpp"
 #include "share/field/field_group.hpp"
 #include "share/field/field_request.hpp"
-#include "share/util/scream_utils.hpp"
+#include "share/util/eamxx_utils.hpp"
 #include "share/scream_types.hpp"
 
 #include <map>

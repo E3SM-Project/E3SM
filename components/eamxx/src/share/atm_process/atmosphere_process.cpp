@@ -1,5 +1,5 @@
 #include "share/atm_process/atmosphere_process.hpp"
-#include "share/util/scream_timing.hpp"
+#include "share/util/eamxx_timing.hpp"
 #include "share/property_checks/mass_and_energy_column_conservation_check.hpp"
 #include "share/field/field_utils.hpp"
 

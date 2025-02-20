@@ -1,6 +1,6 @@
 #include "share/scream_types.hpp"
 #include "share/eamxx_session.hpp"
-#include "share/util/scream_utils.hpp"
+#include "share/util/eamxx_utils.hpp"
 
 #include "p3_main_wrap.hpp"
 #include "p3_test_data.hpp"

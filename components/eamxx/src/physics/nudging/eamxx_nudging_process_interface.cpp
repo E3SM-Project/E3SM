@@ -1,8 +1,8 @@
 #include "eamxx_nudging_process_interface.hpp"
 
-#include "share/util/scream_universal_constants.hpp"
+#include "share/util/eamxx_universal_constants.hpp"
 #include "share/grid/remap/refining_remapper_p2p.hpp"
-#include "share/util/scream_utils.hpp"
+#include "share/util/eamxx_utils.hpp"
 #include "share/io/eamxx_scorpio_interface.hpp"
 
 #include <ekat/util/ekat_lin_interp.hpp>

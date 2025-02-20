@@ -1,4 +1,4 @@
-#include "share/util/scream_timing.hpp"
+#include "share/util/eamxx_timing.hpp"
 
 #include <gptl.h>
 

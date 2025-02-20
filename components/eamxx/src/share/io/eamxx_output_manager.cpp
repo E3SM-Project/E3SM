@@ -2,7 +2,7 @@
 
 #include "share/io/scorpio_input.hpp"
 #include "share/io/eamxx_scorpio_interface.hpp"
-#include "share/util/scream_timing.hpp"
+#include "share/util/eamxx_timing.hpp"
 #include "share/eamxx_config.hpp"
 
 #include "ekat/ekat_parameter_list.hpp"

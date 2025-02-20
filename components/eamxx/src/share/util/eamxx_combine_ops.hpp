@@ -1,7 +1,7 @@
 #ifndef SCREAM_COMBINE_OPS_HPP
 #define SCREAM_COMBINE_OPS_HPP
 
-#include "share/util/scream_universal_constants.hpp"
+#include "share/util/eamxx_universal_constants.hpp"
 
 // For KOKKOS_INLINE_FUNCTION
 #include <Kokkos_Core.hpp>

@@ -2,7 +2,7 @@
 
 #include "share/io/eamxx_scorpio_interface.hpp"
 #include "share/grid/library_grids_manager.hpp"
-#include "share/util/scream_utils.hpp"
+#include "share/util/eamxx_utils.hpp"
 #include "share/eamxx_config.hpp"
 
 #include <fstream>

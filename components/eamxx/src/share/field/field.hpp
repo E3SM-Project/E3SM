@@ -2,7 +2,7 @@
 #define SCREAM_FIELD_HPP
 
 #include "share/field/field_header.hpp"
-#include "share/util/scream_combine_ops.hpp"
+#include "share/util/eamxx_combine_ops.hpp"
 #include "share/scream_types.hpp"
 
 #include "ekat/std_meta/ekat_std_type_traits.hpp"
@@ -208,7 +208,7 @@ public:
   void deep_copy (const Field& src) { update<CombineMode::Replace,HD>(src,1,0); }
 
   // Updates this field y as y=combine(x,y,alpha,beta)
-  // See share/util/scream_combine_ops.hpp for more details on CombineMode options
+  // See share/util/eamxx_combine_ops.hpp for more details on CombineMode options
   // NOTE: ST=void is just so we can give a default to HD,
   //       but ST will *always* be deduced from input arguments.
   // NOTE: the type ST  must be such that no narrowing happens when

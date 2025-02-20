@@ -1,7 +1,7 @@
 #ifndef SCREAM_IO_CONTROL_HPP
 #define SCREAM_IO_CONTROL_HPP
 
-#include "share/util/scream_time_stamp.hpp"
+#include "share/util/eamxx_time_stamp.hpp"
 
 #include <ekat/ekat_assert.hpp>
 

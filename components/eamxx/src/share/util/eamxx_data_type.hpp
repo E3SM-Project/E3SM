@@ -1,7 +1,7 @@
 #ifndef SCREAM_DATA_TYPE_HPP
 #define SCREAM_DATA_TYPE_HPP
 
-#include "share/util/scream_utils.hpp"
+#include "share/util/eamxx_utils.hpp"
 
 #include <ekat/ekat_assert.hpp>
 

@@ -2,7 +2,7 @@
 #define EAMXX_POTENTIAL_TEMP_DIAGNOSTIC_HPP
 
 #include "share/atm_process/atmosphere_diagnostic.hpp"
-#include "share/util/scream_common_physics_functions.hpp"
+#include "share/util/eamxx_common_physics_functions.hpp"
 
 namespace scream
 {

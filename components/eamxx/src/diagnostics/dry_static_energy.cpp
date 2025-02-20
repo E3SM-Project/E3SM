@@ -1,5 +1,5 @@
 #include "diagnostics/dry_static_energy.hpp"
-#include "share/util/scream_common_physics_functions.hpp"
+#include "share/util/eamxx_common_physics_functions.hpp"
 
 #include <ekat/kokkos/ekat_kokkos_utils.hpp>
 

@@ -2,7 +2,7 @@
 #define P3_UNIT_TESTS_COMMON_HPP
 
 #include "share/scream_types.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 #include "p3_functions.hpp"
 #include "p3_data.hpp"
 #include "ekat/util/ekat_test_utils.hpp"

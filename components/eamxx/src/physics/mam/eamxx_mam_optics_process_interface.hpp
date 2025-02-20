@@ -8,7 +8,7 @@
 #include <physics/mam/mam_coupling.hpp>
 #include <share/atm_process/ATMBufferManager.hpp>
 #include <share/atm_process/atmosphere_process.hpp>
-#include <share/util/scream_common_physics_functions.hpp>
+#include <share/util/eamxx_common_physics_functions.hpp>
 #include <string>
 
 #ifndef KOKKOS_ENABLE_CUDA

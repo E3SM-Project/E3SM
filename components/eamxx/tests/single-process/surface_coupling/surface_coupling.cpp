@@ -8,7 +8,7 @@
 #include "share/field/field_manager.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
 #include "share/scream_types.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 
 #include <ekat/ekat_parse_yaml_file.hpp>
 #include <ekat/util/ekat_test_utils.hpp>

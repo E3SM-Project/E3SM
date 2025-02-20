@@ -4,7 +4,7 @@
 #include "shoc_functions.hpp"
 #include "share/scream_types.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 #include "ekat/util/ekat_file_utils.hpp"
 #include "ekat/util/ekat_test_utils.hpp"
 

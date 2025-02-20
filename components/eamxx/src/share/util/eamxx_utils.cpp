@@ -1,4 +1,4 @@
-#include "share/util/scream_utils.hpp"
+#include "share/util/eamxx_utils.hpp"
 #include <glob.h>
 
 #if defined(SCREAM_ENABLE_STATM)

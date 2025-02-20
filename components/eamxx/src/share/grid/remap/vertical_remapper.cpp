@@ -4,7 +4,7 @@
 #include "share/io/scorpio_input.hpp"
 #include "share/field/field_tag.hpp"
 #include "share/field/field_identifier.hpp"
-#include "share/util/scream_universal_constants.hpp"
+#include "share/util/eamxx_universal_constants.hpp"
 #include "share/io/eamxx_scorpio_interface.hpp"
 
 #include <ekat/util/ekat_units.hpp>

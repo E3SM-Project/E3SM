@@ -556,4 +556,4 @@ struct PhysicsFunctions
 // E.g., we don't know InputProvider, or ScalarT (although we could
 // ETI the "common" cases, where the provider is a view_1d, and
 // Scalar=Real or Scalar=Pack<Real,SCREAM_PACK_SIZE>).
-# include "scream_common_physics_functions_impl.hpp"
+# include "eamxx_common_physics_functions_impl.hpp"

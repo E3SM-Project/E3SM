@@ -7,8 +7,8 @@
 #include "share/io/eamxx_scorpio_interface.hpp"
 #include "share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
-#include "share/util/scream_common_physics_functions.hpp"
-#include "share/util/scream_column_ops.hpp"
+#include "share/util/eamxx_common_physics_functions.hpp"
+#include "share/util/eamxx_column_ops.hpp"
 
 #include "ekat/ekat_assert.hpp"
 
