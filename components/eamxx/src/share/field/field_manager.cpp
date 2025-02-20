@@ -149,7 +149,9 @@ add_to_group (const std::string& field_name, const std::string& grid_name, const
       "   grid name:  " + grid_name + "\n"
       "   group name: " + group_name + "\n");
 
-  group->m_fields_names.push_back(field_name);
+  if (not ekat::contains(group->m_fields_names, field_name)) {
+    group->m_fields_names.push_back(field_name);
+  }
   if (not ekat::contains(group->m_grid_registered[field_name], grid_name)) {
     group->m_grid_registered[field_name].push_back(grid_name);
   }
