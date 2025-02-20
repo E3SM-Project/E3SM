@@ -1013,7 +1013,7 @@ contains
 
   end subroutine prep_ocn_accum
 
-  subroutine prep_ocn_accum_moab()
+  subroutine prep_ocn_accum_moab(timer)
     !---------------------------------------------------------------
     ! Description
     ! Accumulate ocn inputs
@@ -1021,12 +1021,14 @@ contains
     ! NOTE: this is done AFTER the call to the merge in prep_ocn_mrg
     use iMOAB, only : iMOAB_GetDoubleTagStorage
     ! Arguments
+    character(len=*)        , intent(in) :: timer
     !
     ! Local Variables
     integer   :: ent_type, ierr
     character(CXX)  :: tagname
     character(*)    , parameter :: subname = '(prep_ocn_accum_moab)'
     !---------------------------------------------------------------
+    call t_drvstartf (trim(timer), barrier=mpicom_CPLID)
 
     ! this method is called after merge, so it is not really necessary, because
     ! x2o_om should be saved between these calls
@@ -1045,6 +1047,8 @@ contains
     endif
 
     x2oacc_om_cnt = x2oacc_om_cnt + 1
+
+    call t_drvstopf  (trim(timer))
 
   end subroutine prep_ocn_accum_moab
 
@@ -1081,13 +1085,14 @@ contains
 
   end subroutine prep_ocn_accum_avg
 
-subroutine prep_ocn_accum_avg_moab()
+subroutine prep_ocn_accum_avg_moab(timer_accum)
     !---------------------------------------------------------------
     ! Description
     ! Finish accumulation ocn inputs
+    use iMOAB, only : iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
     !
     ! Arguments
-    use iMOAB, only : iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
+    character(len=*), intent(in)    :: timer_accum
     ! Local Variables
     integer   :: ent_type, ierr
     integer noflds, lsize ! used for restart case only?
@@ -1097,6 +1102,7 @@ subroutine prep_ocn_accum_avg_moab()
     character*32             :: outfile, wopts, lnum
 #endif
     !---------------------------------------------------------------
+    call t_drvstartf (trim(timer_accum), barrier=mpicom_CPLID)
 
        ! temporary formation of average
        if (x2oacc_om_cnt > 1) then
@@ -1134,6 +1140,7 @@ subroutine prep_ocn_accum_avg_moab()
 #endif
 
     x2oacc_om_cnt = 0
+    call t_drvstopf (trim(timer_accum))
 
   end subroutine prep_ocn_accum_avg_moab
 
