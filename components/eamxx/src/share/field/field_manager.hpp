@@ -40,8 +40,7 @@ public:
   using ci_string           = typename identifier_type::ci_string;
   using repo_type           = std::map<ci_string,std::map<ci_string,std::shared_ptr<Field>>>;
   using grids_mgr_type      = std::shared_ptr<const GridsManager>;
-  using group_info_type     = FieldGroupInfo;
-  using group_info_map      = std::map<ci_string, std::shared_ptr<group_info_type>>;
+  using group_info_map      = std::map<ci_string, std::shared_ptr<FieldGroupInfo>>;
 
   // Constructor(s)
   explicit FieldManager (const std::shared_ptr<const AbstractGrid>& grid);
@@ -76,12 +75,6 @@ public:
     return m_fields.at(grid_name).size();
   }
 
-  // Get the group_name->group_info map of all stored groups on a grid
-  const std::map<ci_string,std::shared_ptr<group_info_type>>&
-  get_groups_info () const {
-    return m_field_groups;
-  }
-
   // Adds $field_name on $grid_name to group $group_name (creating the group, if necessary).
   // NOTE: if $group_name is allocated as a bundled field, this throws.
   // NOTE: must be called after registration ends
@@ -97,13 +90,13 @@ public:
       "  - Grids in FM: " + m_grids_mgr->print_available_grids() + "\n");
     return has_field(field_name, m_grids_mgr->get_repo().begin()->second->name());
   }
-  bool has_group (const std::string& name, const std::string& grid_name) const;
-  bool has_group (const std::string& name) const {
+  bool has_group (const std::string& group_name, const std::string& grid_name) const;
+  bool has_group (const std::string& group_name) const {
     EKAT_ASSERT_MSG(m_grids_mgr->size() == 1,
       "Error! More than one grid exists for FieldManager, must specify grid name to query for group.\n"
-      "  - Group name: " + name + "\n"
+      "  - Group name: " + group_name + "\n"
       "  - Grids in FM: " + m_grids_mgr->print_available_grids() + "\n");
-    return has_group(name, m_grids_mgr->get_repo().begin()->second->name());
+    return has_group(group_name, m_grids_mgr->get_repo().begin()->second->name());
   }
 
   const FieldIdentifier& get_field_id (const std::string& name, const std::string& grid_name) const;
@@ -127,6 +120,15 @@ public:
       "  - Grids in FM: " + m_grids_mgr->print_available_grids() + "\n");
     return get_field(name, m_grids_mgr->get_repo().begin()->second->name());
   }
+
+  FieldGroupInfo get_groups_info (const std::string& group_name) const {
+    EKAT_ASSERT_MSG(m_grids_mgr->size() == 1,
+      "Error! More than one grid exists for FieldManager, must specify grid name to query for FieldGroupInfo.\n"
+      "  - Group name: " + group_name + "\n"
+      "  - Grids in FM: " + m_grids_mgr->print_available_grids() + "\n");
+    return get_groups_info(group_name, m_grids_mgr->get_repo().begin()->second->name());
+  }
+  FieldGroupInfo get_groups_info (const std::string& group_name, const std::string& grid_name) const;
 
   FieldGroup get_field_group (const std::string& name, const std::string& grid_name) const;
 
@@ -170,7 +172,7 @@ protected:
   std::shared_ptr<Field> get_field_ptr(const std::string& name, const std::string& grid_name) const;
   std::shared_ptr<Field> get_field_ptr(const identifier_type& id) const;
 
-  void pre_process_group_requests ();
+  void pre_process_bundled_group_requests ();
 
   // The state of the repository
   RepoState m_repo_state;
@@ -180,9 +182,6 @@ protected:
 
   // The map group_name -> FieldGroupInfo
   group_info_map      m_field_groups;
-
-  // Map desribing which grid a group's field is registered on
-  std::map<std::string, std::list<std::string>> m_field_group_grids;
 
   // Groups need to be created after all fields have been registered,
   // since we may need to rearrange fields inside them. Also, we

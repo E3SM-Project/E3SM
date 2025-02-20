@@ -920,9 +920,9 @@ void AtmosphereDriver::restart_model ()
       // No field needs to be restarted on this grid.
       continue;
     }
-    const auto& restart_group = m_field_mgr->get_groups_info().at("RESTART");
+    const auto& restart_group = m_field_mgr->get_groups_info("RESTART", gn);
     std::vector<Field> fields;
-    for (const auto& fn : restart_group->m_fields_names) {
+    for (const auto& fn : restart_group.m_fields_names) {
       fields.push_back(m_field_mgr->get_field(fn,gn));
     }
     read_fields_from_file (fields,m_grids_manager->get_grid(gn),filename);
