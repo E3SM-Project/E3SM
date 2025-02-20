@@ -428,7 +428,6 @@ TEST_CASE("field_mgr", "") {
   using namespace ShortFieldTagsNames;
   using FID = FieldIdentifier;
   using FR  = FieldRequest;
-  using GR = GroupRequest;
   using SL  = std::list<std::string>;
   using Pack1 = ekat::Pack<Real,8>;
   using Pack2 = ekat::Pack<Real,16>;
@@ -485,11 +484,6 @@ TEST_CASE("field_mgr", "") {
   // Cannot add external fields while registration is happening
   REQUIRE_THROWS(field_mgr.add_field(Field(fid1_1)));
 
-  // Register groups
-  field_mgr.register_group(GR("group_1","grid1",Bundling::NotNeeded));
-  field_mgr.register_group(GR{"group_2","grid1",Bundling::NotNeeded});
-  field_mgr.register_group(GR{"group_2","grid2",Bundling::NotNeeded});
-
   field_mgr.registration_ends();
 
   // Should not be able to register fields anymore
@@ -530,24 +524,24 @@ TEST_CASE("field_mgr", "") {
   };
   REQUIRE (has_group(f2_1.get_header().get_tracking().get_groups_info(),"gRouP_1"));
   REQUIRE (has_group(f1_2.get_header().get_tracking().get_groups_info(),"Group_2"));
-  REQUIRE (has_group(f1_1.get_header().get_tracking().get_groups_info(),"Group_2"));
   REQUIRE (has_group(f1_2.get_header().get_tracking().get_groups_info(),"Group_1"));
-
-  // Check that the groups in the field_mgr contain the correct fields
-  REQUIRE (field_mgr.get_groups_info().at("group_1")->m_fields_names.size()==2);
-  REQUIRE (field_mgr.get_groups_info().at("group_2")->m_fields_names.size()==1);
 
   // Check that correct grids requested groups
   REQUIRE (field_mgr.has_group("group_1", "grid1"));
   REQUIRE (field_mgr.has_group("group_1", "grid2"));
-  REQUIRE (field_mgr.has_group("group_2", "grid1"));
+  REQUIRE (not field_mgr.has_group("group_2", "grid1"));
   REQUIRE (field_mgr.has_group("group_2", "grid2"));
 
-  auto gr1 = field_mgr.get_groups_info().at("group_1");
-  auto gr2 = field_mgr.get_groups_info().at("group_2");
-  REQUIRE (ekat::contains(gr1->m_fields_names,"Field1"));
-  REQUIRE (ekat::contains(gr1->m_fields_names,"Field2"));
-  REQUIRE (ekat::contains(gr2->m_fields_names,"Field1"));
+  // Check that the groups in the field_mgr contain the correct fields
+  auto gr1_1 = field_mgr.get_groups_info("group_1", "grid1");
+  auto gr1_2 = field_mgr.get_groups_info("group_1", "grid2");
+  auto gr2_2 = field_mgr.get_groups_info("group_2", "grid2");
+  REQUIRE (gr1_1.m_fields_names.size()==1);
+  REQUIRE (gr1_2.m_fields_names.size()==1);
+  REQUIRE (gr2_2.m_fields_names.size()==1);
+  REQUIRE (ekat::contains(gr1_1.m_fields_names,"Field2"));
+  REQUIRE (ekat::contains(gr1_2.m_fields_names,"Field1"));
+  REQUIRE (ekat::contains(gr2_2.m_fields_names,"Field1"));
 
   // Check alloc props for f1 and f2 (which requested pack size > 1)
   auto f1_1_padding = f1_1.get_header().get_alloc_properties().get_padding();
