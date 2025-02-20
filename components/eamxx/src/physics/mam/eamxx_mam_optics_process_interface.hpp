@@ -175,8 +175,8 @@ class MAMOptics final : public scream::AtmosphereProcess {
   std::shared_ptr<const AbstractGrid> grid_;
   mam_coupling::view_2d work_;
   mam_coupling::view_3d tau_ssa_g_sw_, tau_ssa_sw_, tau_sw_, tau_f_sw_;
-  //Mapping from old RRTMG sw bands to new band ordering in RRTMGP
-  // given old index swband (RRTMG) return new index swband RRTMGP
+  // Mapping from old RRTMG sw bands to new band ordering in RRTMGP
+  //  given old index swband (RRTMG) return new index swband RRTMGP
   mam_coupling::view_int_1d get_idx_rrtmgp_from_rrtmg_swbands_;
 
   mam_coupling::Buffer buffer_;

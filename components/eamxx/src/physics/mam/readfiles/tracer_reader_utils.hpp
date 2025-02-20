@@ -87,7 +87,7 @@ enum TracerDataIndex { BEG = 0, END = 1, OUT = 2 };
  Note: We are not allocating memory for MAX_NVARS_TRACER tracers.
  Therefore, if a file contains more than this number, it is acceptable to
  increase this limit. Currently, Linoz files have 8 fields. */
-constexpr int MAX_NVARS_TRACER             = 10;
+constexpr int MAX_NVARS_TRACER                  = 10;
 constexpr int MAX_NUM_ELEVATED_EMISSIONS_FIELDS = 25;
 
 // Linoz structures to help manage all of the variables:
@@ -208,7 +208,7 @@ inline util::TimeStamp convert_date(const int date) {
 // FIXME: Assumes 365 days/year, 30 days/month;
 // NOTE: that this assumption is mainly used for plotting.
 // NOTE: This is not a direct port from EAM.
-//We only use this routine for chlorine.
+// We only use this routine for chlorine.
 inline int compute_number_days_from_zero(const util::TimeStamp &ts) {
   return ts.get_year() * 365 + ts.get_month() * 30 + ts.get_day();
 }
@@ -219,8 +219,8 @@ inline void create_linoz_chlorine_reader(
     std::vector<Real> &values, std::vector<int> &time_secs) {
   auto time_stamp_beg = convert_date(chlorine_loading_ymd);
 
-  const int offset_time =
-      compute_number_days_from_zero(time_stamp_beg) - compute_number_days_from_zero(model_time);
+  const int offset_time = compute_number_days_from_zero(time_stamp_beg) -
+                          compute_number_days_from_zero(model_time);
   scorpio::register_file(linoz_chlorine_file, scorpio::Read);
   const int nlevs_time = scorpio::get_time_len(linoz_chlorine_file);
   for(int itime = 0; itime < nlevs_time; ++itime) {
@@ -231,7 +231,8 @@ inline void create_linoz_chlorine_reader(
       scorpio::read_var(linoz_chlorine_file, "chlorine_loading", &value, itime);
       values.push_back(value);
       auto time_stamp = convert_date(date);
-      time_secs.push_back(compute_number_days_from_zero(time_stamp) - offset_time);
+      time_secs.push_back(compute_number_days_from_zero(time_stamp) -
+                          offset_time);
     }
   }  // end itime
   scorpio::release_file(linoz_chlorine_file);
@@ -295,7 +296,7 @@ inline void setup_tracer_data(TracerData &tracer_data,             // out
                               const int cyclical_ymd)              // in
 {
   scorpio::register_file(trace_data_file, scorpio::Read);
-  scorpio::pretend_dim_is_unlimited(trace_data_file,"time");
+  scorpio::pretend_dim_is_unlimited(trace_data_file, "time");
   // by default, I am assuming a zonal file.
   TracerFileType tracer_file_type = ZONAL;
 
@@ -442,29 +443,28 @@ inline std::shared_ptr<AbstractRemapper> create_horiz_remapper(
 inline std::shared_ptr<AtmosphereInput> create_tracer_data_reader(
     const std::shared_ptr<AbstractRemapper> &horiz_remapper,
     const std::string &tracer_data_file,
-    const TracerFileType file_type = NONE)
-{
+    const TracerFileType file_type = NONE) {
   std::vector<Field> io_fields;
   for(int i = 0; i < horiz_remapper->get_num_fields(); ++i) {
     io_fields.push_back(horiz_remapper->get_src_field(i));
   }
   const auto io_grid = horiz_remapper->get_src_grid();
-  if(file_type == ELEVATED_EMISSIONS ){
-    // NOTE: If we are using a vertical emission nc file with altitude instead of lev,
-    // we must rename this tag.
-    // We need to perform a shallow clone of io_grid because tags are const in this object.
+  if(file_type == ELEVATED_EMISSIONS) {
+    // NOTE: If we are using a vertical emission nc file with altitude instead
+    // of lev, we must rename this tag. We need to perform a shallow clone of
+    // io_grid because tags are const in this object.
     auto horiz_interp_src_grid =
-      io_grid->clone("tracer_horiz_interp_src_grid", true);
+        io_grid->clone("tracer_horiz_interp_src_grid", true);
     horiz_interp_src_grid->reset_field_tag_name(LEV, "altitude");
     horiz_interp_src_grid->reset_field_tag_name(ILEV, "altitude_int");
-      return std::make_shared<AtmosphereInput>(tracer_data_file, horiz_interp_src_grid, io_fields,
-                                           true);
-  } else{
-    // We do not need to rename tags in or clone io_grid for other types of files.
-    return std::make_shared<AtmosphereInput>(tracer_data_file, io_grid, io_fields,
-                                           true);
+    return std::make_shared<AtmosphereInput>(
+        tracer_data_file, horiz_interp_src_grid, io_fields, true);
+  } else {
+    // We do not need to rename tags in or clone io_grid for other types of
+    // files.
+    return std::make_shared<AtmosphereInput>(tracer_data_file, io_grid,
+                                             io_fields, true);
   }
-
 
 }  // create_tracer_data_reader
 
@@ -508,8 +508,8 @@ inline void update_tracer_timestate(
     const auto ps          = data_tracer.ps;
 
     // Update the tracer external forcing time state information
-    time_state.current_month = month;
-    time_state.t_beg_month = ts.curr_month_beg().frac_of_year_in_days();
+    time_state.current_month   = month;
+    time_state.t_beg_month     = ts.curr_month_beg().frac_of_year_in_days();
     time_state.days_this_month = ts.days_in_curr_month();
 
     // Copy spa_end'data into spa_beg'data, and read in the new spa_end
@@ -551,10 +551,10 @@ inline void perform_time_interpolation(const TracerTimeState &time_state,
   auto &delta_t = time_state.days_this_month;
 
   // We can ||ize over columns as well as over variables and bands
-  const auto& data      = data_tracer.data;
-  const auto& file_type = data_tracer.file_type;
+  const auto &data      = data_tracer.data;
+  const auto &file_type = data_tracer.file_type;
 
-  const auto& ps      = data_tracer.ps;
+  const auto &ps     = data_tracer.ps;
   const int num_vars = data_tracer.nvars_;
 
   const int ncol     = data_tracer.ncol_;
@@ -635,17 +635,16 @@ inline void perform_vertical_interpolation(const view_2d &p_src_c,
   // make a local copy of output
   view_2d output_local[MAX_NVARS_TRACER];
   EKAT_REQUIRE_MSG(
-        num_vars <= int(MAX_NVARS_TRACER),
-        "Error! Number of variables is bigger than NVARS_MAXTRACER. \n");
-  for (int ivar = 0; ivar < num_vars; ++ivar)
-  {
+      num_vars <= int(MAX_NVARS_TRACER),
+      "Error! Number of variables is bigger than NVARS_MAXTRACER. \n");
+  for(int ivar = 0; ivar < num_vars; ++ivar) {
     // At this stage, begin/end must have the same horiz dimensions
     EKAT_REQUIRE(input.ncol_ == output[ivar].extent_int(0));
     output_local[ivar] = output[ivar];
   }
   const int outer_iters   = ncol * num_vars;
   const auto policy_setup = ESU::get_default_team_policy(outer_iters, pver);
-  const auto& data         = input.data;
+  const auto &data        = input.data;
 
   Kokkos::parallel_for(
       "vert_interp", policy_setup,
@@ -655,9 +654,9 @@ inline void perform_vertical_interpolation(const view_2d &p_src_c,
         const int ivar             = team.league_rank() % num_vars;
         const auto pin_at_icol     = ekat::subview(p_src_c, icol);
         const auto pmid_at_icol    = ekat::subview(p_tgt_c, icol);
-        const auto& datain          = data[TracerDataIndex::OUT][ivar];
+        const auto &datain         = data[TracerDataIndex::OUT][ivar];
         const auto datain_at_icol  = ekat::subview(datain, icol);
-        const auto dataout = output_local[ivar];
+        const auto dataout         = output_local[ivar];
         const auto dataout_at_icol = ekat::subview(dataout, icol);
 
         mam4::vertical_interpolation::vert_interp(
@@ -686,15 +685,14 @@ inline void perform_vertical_interpolation(const const_view_1d &altitude_int,
   const int nsrc     = input.nlev_;
   constexpr int pver = mam4::nlev;
   const int pverp    = pver + 1;
-  const auto& data    = input.data;
+  const auto &data   = input.data;
 
   // make a local copy of output
   view_2d output_local[MAX_NVARS_TRACER];
   EKAT_REQUIRE_MSG(
-        num_vars <= int(MAX_NVARS_TRACER),
-        "Error! Number of variables is bigger than NVARS_MAXTRACER. \n");
-  for (int ivar = 0; ivar < num_vars; ++ivar)
-  {
+      num_vars <= int(MAX_NVARS_TRACER),
+      "Error! Number of variables is bigger than NVARS_MAXTRACER. \n");
+  for(int ivar = 0; ivar < num_vars; ++ivar) {
     // At this stage, begin/end must have the same horiz dimensions
     EKAT_REQUIRE(input.ncol_ == output[ivar].extent_int(0));
     output_local[ivar] = output[ivar];
