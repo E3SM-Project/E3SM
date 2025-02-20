@@ -450,48 +450,15 @@ end subroutine moab_map_init_rcfile
        ! COPY data
        !-------------------------------------------
        if (present(fldlist)) then
-          call mct_aVect_copy(aVin=av_s,aVout=av_d,rList=fldlist,vector=mct_usevector)
+         call mct_aVect_copy(aVin=av_s,aVout=av_d,rList=fldlist,vector=mct_usevector)
        else
-          call mct_aVect_copy(aVin=av_s,aVout=av_d,vector=mct_usevector)
-       endif
-
-    else if (mapper%rearrange_only) then
-       !-------------------------------------------
-       ! REARRANGE data
-       !-------------------------------------------
-       if (present(fldlist)) then
-          call mct_rearr_rearrange_fldlist(av_s, av_d, mapper%rearr, tag=ltag, VECTOR=mct_usevector, &
-               ALLTOALL=mct_usealltoall, fldlist=fldlist)
-       else
-          call mct_rearr_rearrange(av_s, av_d, mapper%rearr, tag=ltag, VECTOR=mct_usevector, &
-               ALLTOALL=mct_usealltoall)
-       endif
-
-    else
-       !-------------------------------------------
-       ! MAP data
-       !-------------------------------------------
-       if (present(avwts_s)) then
-          if (present(fldlist)) then
-             call seq_map_avNorm(mapper, av_s, av_d, avwts_s, trim(avwtsfld_s), &
-                  rList=fldlist, norm=lnorm)
-          else
-             call seq_map_avNorm(mapper, av_s, av_d, avwts_s, trim(avwtsfld_s), &
-                  norm=lnorm)
-          endif
-       else
-          if (present(fldlist)) then
-             call seq_map_avNorm(mapper, av_s, av_d, rList=fldlist, norm=lnorm)
-          else
-             call seq_map_avNorm(mapper, av_s, av_d, norm=lnorm)
-          endif
+         call mct_aVect_copy(aVin=av_s,aVout=av_d,vector=mct_usevector)
        endif
 
     endif
 
     if (mapper%copy_only .or. mapper%rearrange_only) then
 
-#ifdef HAVE_MOAB
        if ( valid_moab_context ) then
 #ifdef MOABDEBUG
          if (seq_comm_iamroot(CPLID)) then
@@ -521,11 +488,9 @@ end subroutine moab_map_init_rcfile
          endif
        endif ! if (valid_moab_context)
 
-#endif
 
-      else
+      else  ! its a real map, not just copy or rearrange
 
-#ifdef HAVE_MOAB
        if ( valid_moab_context ) then
        ! NORMALIZATION
          if (mbnorm .or. mbpresent) then
@@ -708,7 +673,6 @@ end subroutine moab_map_init_rcfile
          endif ! end normalization
 
        endif
-#endif
 
       endif ! end of mapping type if else
 
