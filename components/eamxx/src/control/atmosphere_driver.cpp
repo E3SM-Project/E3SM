@@ -1148,7 +1148,7 @@ void AtmosphereDriver::set_initial_conditions ()
       auto& names = it1.second;
       for (auto it2=names.begin(); it2!=names.end(); ++it2) {
         const auto& fname = *it2;
-        auto f = fm->get_field(fname, grid_name);
+        auto f = m_field_mgr->get_field(fname, grid_name);
         auto p = f.get_header().get_parent();
         if (p) {
           const auto& pname = p->get_identifier().name();
