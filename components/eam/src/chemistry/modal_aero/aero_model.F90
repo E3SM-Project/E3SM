@@ -2848,23 +2848,26 @@ do_lphase2_conditional: &
           if (m<=dust_nbin) sflx(:ncol)=sflx(:ncol)+cam_in%cflx(:ncol,mm)
 !          call outfld(trim(dust_names(m))//'SF',cam_in%cflx(:,mm),pcols, lchnk)
        enddo
-       
-       do icol=1,ncol
-        if(sflx(icol).ge.dstemislimit) then
-         call get_rlon_all_p(lchnk,ncol,tmp_lon)
-         call get_rlat_all_p(lchnk,ncol,tmp_lat)
-         do m=1,dust_nbin+dust_nnum
-          mm = dust_indices(m)
-          cam_in%cflx(icol,mm)=cam_in%cflx(icol,mm)*dstemislimit/sflx(icol)
-         end do
-         write(iulog,'((a,1x,i10,1x),2(a,1x,f8.2),(a,1x,e15.5e2))') &
-                 'The dust emission cap is hit at icol= ',icol, &
-                 ' Latitude=',tmp_lat(icol)*180.0/pi, &
-                 ' Longitude=',tmp_lon(icol)*180.0/pi-180., &
-                 ' emission flux before imposing (kg/m2/s): ',sflx(icol)
-         sflx(icol)=dstemislimit
-        end if
-       end do
+
+       if(dstemislimitswitch) then       
+        do icol=1,ncol
+         if(sflx(icol).ge.dstemislimit) then
+          call get_rlon_all_p(lchnk,ncol,tmp_lon)
+          call get_rlat_all_p(lchnk,ncol,tmp_lat)
+          do m=1,dust_nbin+dust_nnum
+           mm = dust_indices(m)
+           cam_in%cflx(icol,mm)=cam_in%cflx(icol,mm)*dstemislimit/sflx(icol)
+          end do
+          write(iulog,'((a,1x,i10,1x),2(a,1x,f8.2),(a,1x,e15.5e2))') &
+                  'The dust emission cap is hit at icol= ',icol, &
+                  ' Latitude=',tmp_lat(icol)*180.0/pi, &
+                  ' Longitude=',tmp_lon(icol)*180.0/pi-180., &
+                  ' emission flux before imposing (kg/m2/s): ',sflx(icol)
+          sflx(icol)=dstemislimit
+         end if
+        end do
+       end if
+
        do m=1,dust_nbin+dust_nnum
         mm = dust_indices(m)
         call outfld(trim(dust_names(m))//'SF',cam_in%cflx(:,mm),pcols, lchnk)

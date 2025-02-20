@@ -202,7 +202,7 @@ _TESTS = {
             )
         },
 
-#tests for the dust emission cap shanyp
+#tests for the dust emission cap
         "e3sm_dustemissioncap" : {
         "tests"   : (
             "ERP.ne4pg2_oQU480.F2010.eam-dustemissioncap",
