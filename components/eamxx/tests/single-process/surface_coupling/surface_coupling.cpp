@@ -600,7 +600,7 @@ TEST_CASE("surface-coupling", "") {
   std::strcpy(export_names[16], "Faxa_lwdn"  );
 
   // Setup the import/export data. This is meant to replicate the structures coming
-  // from mct_coupling/scream_cpl_indices.F90
+  // from mct_coupling/eamxx_cpl_indices.F90
   setup_import_and_export_data(engine, atm_comm,
                                num_cpl_imports, num_scream_imports,
                                import_cpl_indices_view, import_vec_comps_view,

@@ -1,4 +1,4 @@
-module scream_cpl_indices
+module eamxx_cpl_indices
 
   use iso_c_binding, only: c_int, c_double, c_char, c_bool
 
@@ -225,4 +225,4 @@ module scream_cpl_indices
 
   end subroutine scream_set_cpl_indices
 
-end module scream_cpl_indices
+end module eamxx_cpl_indices

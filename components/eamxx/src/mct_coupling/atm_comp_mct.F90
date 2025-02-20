@@ -83,7 +83,7 @@ CONTAINS
     use iso_c_binding,      only: c_ptr, c_loc, c_int, c_char, c_bool
     use scream_f2c_mod,     only: scream_create_atm_instance, scream_setup_surface_coupling, &
                                   scream_init_atm
-    use scream_cpl_indices, only: scream_set_cpl_indices, &
+    use eamxx_cpl_indices, only: scream_set_cpl_indices, &
                                   num_cpl_imports,          num_scream_imports, &
                                   num_cpl_exports,          num_scream_exports, &
                                   import_field_size,        export_field_size, &

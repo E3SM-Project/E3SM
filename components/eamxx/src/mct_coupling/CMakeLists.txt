@@ -24,7 +24,7 @@ set(ATM_SRC
   atm_comp_mct.F90
   ekat_string_utils.F90
   scream_f2c_mod.F90
-  scream_cpl_indices.F90
+  eamxx_cpl_indices.F90
   ${SCREAM_BASE_DIR}/../eam/src/physics/cam/physics_utils.F90
 )
 
