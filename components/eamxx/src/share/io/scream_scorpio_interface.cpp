@@ -1,7 +1,7 @@
 #include "scream_scorpio_interface.hpp"
 #include "scream_shr_interface_c2f.hpp"
 
-#include "scream_config.h"
+#include "eamxx_config.h"
 
 #include <ekat/ekat_assert.hpp>
 #include <ekat/util/ekat_string_utils.hpp>

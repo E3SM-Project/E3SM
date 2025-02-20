@@ -1,4 +1,4 @@
-#include "scream_config.h"
+#include "eamxx_config.h"
 
 #include "share/atm_process/atmosphere_process.hpp"
 #include "control/atmosphere_driver.hpp"
@@ -12,7 +12,7 @@
 #include "mct_coupling/ScreamContext.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/scream_session.hpp"
-#include "share/scream_config.hpp"
+#include "share/eamxx_config.hpp"
 #include "share/scream_types.hpp"
 
 #include "ekat/ekat_parse_yaml_file.hpp"

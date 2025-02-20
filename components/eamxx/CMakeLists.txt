@@ -208,7 +208,7 @@ endif()
 # Add RRTMGP settings. Note, we might consider also adding RRTMGP_EXPENSIVE_CHECKS
 # to turn on the RRTMGP internal checks here as well, via
 #     option (RRTMGP_EXPENSIVE_CHECKS "Turn on internal RRTMGP error checking" ${SCREAM_DEBUG})
-# and then adding to scream_config.h:
+# and then adding to eamxx_config.h:
 #     #cmakedefine RRTMGP_EXPENSIVE_CHECKS
 option (SCREAM_RRTMGP_DEBUG "Turn on extra debug checks in RRTMGP" ${SCREAM_DEBUG})
 
@@ -556,7 +556,7 @@ if (SCREAM_DOUBLE_PRECISION)
 endif()
 
 # This must be done using add_definitions because it is used to determine
-# whether to include scream_config.h.
+# whether to include eamxx_config.h.
 add_definitions(-DSCREAM_CONFIG_IS_CMAKE)
 
 # Hooks for testing test-all-eamxx within test-scripts
@@ -578,17 +578,17 @@ if (NOT DEFINED ENV{SCREAM_FAKE_ONLY})
     add_subdirectory(tests)
   endif()
 
-  # Generate scream_config.h and scream_config.f
+  # Generate eamxx_config.h and eamxx_config.f
   include (EkatUtils)
-  EkatConfigFile(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.h.in
-                 ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.h
-                 F90_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.f)
+  EkatConfigFile(${CMAKE_CURRENT_SOURCE_DIR}/src/eamxx_config.h.in
+                 ${CMAKE_CURRENT_BINARY_DIR}/src/eamxx_config.h
+                 F90_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/eamxx_config.f)
 
-  # Generate scream_config.h and scream_config.f
+  # Generate eamxx_config.h and eamxx_config.f
   include (EkatUtils)
-  EkatConfigFile(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.h.in
-                 ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.h
-                 F90_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.f)
+  EkatConfigFile(${CMAKE_CURRENT_SOURCE_DIR}/src/eamxx_config.h.in
+                 ${CMAKE_CURRENT_BINARY_DIR}/src/eamxx_config.h
+                 F90_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/eamxx_config.f)
 else()
   # This is a "fake" build of scream, to stress test the testing scripts.
   # We only need to build something in our tests folder

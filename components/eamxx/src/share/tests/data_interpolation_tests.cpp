@@ -6,7 +6,7 @@
 #include "share/util/eamxx_data_interpolation.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/field/field_utils.hpp"
-#include "share/scream_config.hpp"
+#include "share/eamxx_config.hpp"
 
 namespace scream {
 

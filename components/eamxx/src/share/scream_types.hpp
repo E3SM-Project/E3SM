@@ -3,7 +3,7 @@
 
 #include "ekat/ekat.hpp"
 #include "ekat/kokkos/ekat_kokkos_types.hpp"
-#include "scream_config.h"
+#include "eamxx_config.h"
 
 namespace scream
 {

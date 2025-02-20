@@ -3,7 +3,7 @@
 
 #include "share/grid/remap/abstract_remapper.hpp"
 #include "share/grid/remap/horiz_interp_remapper_base.hpp"
-#include "scream_config.h"
+#include "eamxx_config.h"
 
 #include "ekat/ekat_pack.hpp"
 

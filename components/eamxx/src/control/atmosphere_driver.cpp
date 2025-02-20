@@ -4,7 +4,7 @@
 
 #include "physics/share/physics_constants.hpp"
 
-#include "share/scream_config.hpp"
+#include "share/eamxx_config.hpp"
 #include "share/atm_process/atmosphere_process_group.hpp"
 #include "share/atm_process/atmosphere_process_dag.hpp"
 #include "share/field/field_utils.hpp"

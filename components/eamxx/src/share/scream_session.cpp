@@ -1,5 +1,5 @@
 #include "scream_session.hpp"
-#include "scream_config.hpp"
+#include "eamxx_config.hpp"
 
 #include "ekat/ekat_assert.hpp"
 #include "ekat/ekat_session.hpp"
@@ -27,7 +27,7 @@ void initialize_scream_session (bool print_config) {
   ekat::enable_fpes(get_default_fpes());
 
   if (print_config) 
-    std::cout << scream_config_string() << "\n";
+    std::cout << eamxx_config_string() << "\n";
 }
 
 void initialize_scream_session (int argc, char **argv, bool print_config) {
@@ -38,7 +38,7 @@ void initialize_scream_session (int argc, char **argv, bool print_config) {
   ekat::enable_fpes(get_default_fpes());
 
   if (print_config) 
-    std::cout << scream_config_string() << "\n";
+    std::cout << eamxx_config_string() << "\n";
 }
 
 extern "C" {

@@ -14,7 +14,7 @@ add_library(scream_scorpio_interface
 target_link_libraries(scream_scorpio_interface PUBLIC ekat)
 target_link_libraries(scream_scorpio_interface PRIVATE pioc)
 target_include_directories(scream_scorpio_interface PUBLIC
-  ${SCREAM_BIN_DIR}/src   # For scream_config.h
+  ${SCREAM_BIN_DIR}/src   # For eamxx_config.h
 )
 
 if (DEFINED ENV{ADIOS2_ROOT})

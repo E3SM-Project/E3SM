@@ -4,7 +4,7 @@
 #include "share/property_checks/field_lower_bound_check.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 
-#include "scream_config.h" // for SCREAM_CIME_BUILD
+#include "eamxx_config.h" // for SCREAM_CIME_BUILD
 
 namespace scream
 {

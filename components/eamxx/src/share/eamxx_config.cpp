@@ -1,4 +1,4 @@
-#include "scream_config.hpp"
+#include "eamxx_config.hpp"
 #include "scream_session.hpp"
 #include "scream_types.hpp"
 
@@ -7,7 +7,7 @@
 
 namespace scream {
 
-std::string scream_config_string() {
+std::string eamxx_config_string() {
   std::string config = "\n-------- EKAT CONFIGS --------\n\n";
   config += ekat::ekat_config_string();
   config += "\n-------- SCREAM CONFIGS --------\n\n";

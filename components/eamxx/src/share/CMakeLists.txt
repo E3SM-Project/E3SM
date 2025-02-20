@@ -1,7 +1,7 @@
 include (EkatSetCompilerFlags)
 
 set(SHARE_SRC
-  scream_config.cpp
+  eamxx_config.cpp
   scream_session.cpp
   atm_process/atmosphere_process.cpp
   atm_process/atmosphere_process_hash.cpp
@@ -111,7 +111,7 @@ target_compile_options(scream_share PUBLIC
   $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>
 )
 
-# This used to be in `scream_config.h/scream_config.f`, but we did accidentally remove
+# This used to be in `eamxx_config.h/eamxx_config.f`, but we did accidentally remove
 # the includes at least twice. To avoid this from happening again, we add this crucial
 # macro as a compile definition of the scream_share, which is linked to all other
 # scream libraries.

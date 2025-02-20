@@ -5,7 +5,7 @@
 #include "share/util/scream_utils.hpp"
 #include "share/util/scream_time_stamp.hpp"
 #include "share/util/scream_setup_random_test.hpp"
-#include "share/scream_config.hpp"
+#include "share/eamxx_config.hpp"
 
 TEST_CASE("contiguous_superset") {
   using namespace scream;

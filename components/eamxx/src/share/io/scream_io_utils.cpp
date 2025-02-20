@@ -3,7 +3,7 @@
 #include "share/io/scream_scorpio_interface.hpp"
 #include "share/grid/library_grids_manager.hpp"
 #include "share/util/scream_utils.hpp"
-#include "share/scream_config.hpp"
+#include "share/eamxx_config.hpp"
 
 #include <fstream>
 #include <regex>
