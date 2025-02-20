@@ -8,7 +8,7 @@
 #include "pygrid.hpp"
 #include "pyfield.hpp"
 #include "pyparamlist.hpp"
-#include "pyscream_ext.hpp"
+#include "pyeamxx_ext.hpp"
 
 #include <ekat/io/ekat_yaml.hpp>
 

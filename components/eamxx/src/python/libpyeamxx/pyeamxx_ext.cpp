@@ -45,7 +45,7 @@ void finalize () {
   finalize_scream_session();
 }
 
-NB_MODULE (pyscream_ext,m) {
+NB_MODULE (pyeamxx_ext,m) {
 
   m.doc() = "Python interfaces to certain EAMxx infrastructure code";
 

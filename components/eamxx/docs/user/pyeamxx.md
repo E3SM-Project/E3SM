@@ -10,15 +10,15 @@ please post them on the
 
 ## Quick Start
 
-For now, the only way to use pyscream is to either build it on your own
+For now, the only way to use pyeamxx is to either build it on your own
 or use our prebuilt conda binaries. We prefer for you to use the latter.
 In a conda environment, please use the following command to install it:
 
 ```bash
-conda install -c mahf708 pyscream=0.0.2
+conda install -c mahf708 pyeamxx=0.0.2
 ```
 
-It is recommended to use the latest version of pyscream, wich is
+It is recommended to use the latest version of pyeamxx, wich is
 currently 0.0.2. As you can see, it is a young package with a lot of
 potential. We do not guarantee that the API will remain stable, but we
 will try to document any changes as frequently as we could.
@@ -33,9 +33,9 @@ please feel free to submit a PR.
 
 ```python
 from mpi4py import MPI
-import pyscream
+import pyeamxx
 
-pyscream.init()
+pyeamxx.init()
 
 dt = 1800
 t0_str = "2020-10-10-00000"
@@ -43,7 +43,7 @@ t0_str = "2020-10-10-00000"
 ic_file = "/lcrc/group/e3sm/public_html/inputdata/atm/scream/init/screami_unit_tests_ne2np4L72_20220822.nc"
 ncols = 218
 nlevs = 72
-pyscream.create_grids_manager(ncols,nlevs, ic_file)
+pyeamxx.create_grids_manager(ncols,nlevs, ic_file)
 
 rad_dict = {
     "column_chunk_size": 123,
@@ -57,7 +57,7 @@ rad_dict = {
     "rrtmgp_cloud_optics_file_lw": "/lcrc/group/e3sm/data/inputdata/atm/scream/init/rrtmgp-cloud-optics-coeffs-lw.nc",
 }
 
-rad = pyscream.AtmProc(rad_dict, 'RRTMGP')
+rad = pyeamxx.AtmProc(rad_dict, 'RRTMGP')
 rad.read_ic(ic_file)
 rad.initialize(t0_str)
 

@@ -1,4 +1,4 @@
-#include "scream_trcmix.hpp"
+#include "eamxx_trcmix.hpp"
 #include "physics_constants.hpp"
 
 #include "ekat/util/ekat_math_utils.hpp"

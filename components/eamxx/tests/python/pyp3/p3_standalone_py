@@ -5,7 +5,7 @@ import sys
 # Add path to scream libs
 sys.path.append('@SCREAM_BASE_DIR@/scripts')
 
-# Add path to pyscream libs
+# Add path to pyeamxx libs
 sys.path.append('@CMAKE_BINARY_DIR@/src/python')
 
 # Without these, and manual init/finalize, on my laptop I get
@@ -15,7 +15,7 @@ mpi4py.rc.initialize = False  # do not initialize MPI automatically
 mpi4py.rc.finalize = False    # do not finalize MPI automatically
 
 from mpi4py import MPI
-import pyscream
+import pyeamxx
 from pathlib import Path
 
 from utils import ensure_yaml
@@ -38,9 +38,9 @@ def main ():
     # Create the grid
     ncols = 218
     nlevs = 72
-    pyscream.create_grids_manager(ncols,nlevs,str(ic_file))
+    pyeamxx.create_grids_manager(ncols,nlevs,str(ic_file))
 
-    p3 = pyscream.AtmProc(yaml_input['atmosphere_processes']['p3'],'p3')
+    p3 = pyeamxx.AtmProc(yaml_input['atmosphere_processes']['p3'],'p3')
     params = p3.get_params()
     old = params.get_dbl('max_total_ni')
     print (f"max_total_ni: {params.get_dbl('max_total_ni')}")
@@ -64,7 +64,7 @@ if  __name__  == "__main__":
     # This level of indirection ensures all pybind structs are destroyed
     # before we finalize eamxx (and hence kokkos)
     MPI.Init()
-    pyscream.init()
+    pyeamxx.init()
     main ()
-    pyscream.finalize()
+    pyeamxx.finalize()
     MPI.Finalize()
