@@ -153,8 +153,8 @@ void MAMMicrophysics::set_grids(
   constexpr int nmodes = mam4::AeroConfig::num_modes();
 
   // layout for 3D (ncol, nmodes, nlevs)
-  FieldLayout scalar3d_mid_nmodes =
-      grid_->get_3d_vector_layout(true, nmodes, mam_coupling::num_modes_tag_name());
+  FieldLayout scalar3d_mid_nmodes = grid_->get_3d_vector_layout(
+      true, nmodes, mam_coupling::num_modes_tag_name());
 
   // Geometric mean dry diameter for number distribution [m]
   add_field<Required>("dgnum", scalar3d_mid_nmodes, m, grid_name);
@@ -821,9 +821,9 @@ void MAMMicrophysics::run_impl(const double dt) {
   constexpr int gas_pcnst = mam_coupling::gas_pcnst();
 
   const auto &elevated_emis_output = elevated_emis_output_;
-  const auto &extfrc              = extfrc_;
-  const auto &forcings            = forcings_;
-  constexpr int extcnt            = mam4::gas_chemistry::extcnt;
+  const auto &extfrc               = extfrc_;
+  const auto &forcings             = forcings_;
+  constexpr int extcnt             = mam4::gas_chemistry::extcnt;
 
   const int offset_aerosol = mam4::utils::gasses_start_ind();
   Real adv_mass_kg_per_moles[gas_pcnst];
@@ -842,10 +842,10 @@ void MAMMicrophysics::run_impl(const double dt) {
   const auto &work_set_het = work_set_het_;
   const mam4::seq_drydep::Data drydep_data =
       mam4::seq_drydep::set_gas_drydep_data();
-  const auto qv         = wet_atm_.qv;
-  const int month       = timestamp().get_month();  // 1-based
-  const int surface_lev = nlev - 1;                 // Surface level
-  const auto & index_season_lai= index_season_lai_;
+  const auto qv                = wet_atm_.qv;
+  const int month              = timestamp().get_month();  // 1-based
+  const int surface_lev        = nlev - 1;                 // Surface level
+  const auto &index_season_lai = index_season_lai_;
 
   // loop over atmosphere columns and compute aerosol microphyscs
   Kokkos::parallel_for(
@@ -923,8 +923,8 @@ void MAMMicrophysics::run_impl(const double dt) {
                         v_wind(icol, surface_lev) * v_wind(icol, surface_lev));
 
         // Total rain at the surface
-        const Real rain = precip_liq_surf_mass(icol) +
-                          precip_ice_surf_mass(icol);
+        const Real rain =
+            precip_liq_surf_mass(icol) + precip_ice_surf_mass(icol);
 
         // Snow depth on land [m]
         const Real snow_height = snow_depth_land(icol);
@@ -936,30 +936,28 @@ void MAMMicrophysics::run_impl(const double dt) {
         for(int i = 0; i < mam4::mo_drydep::n_land_type; ++i) {
           fraction_landuse_icol[i] = fraction_landuse(icol, i);
         }
-    int index_season[mam4::mo_drydep::n_land_type];
-  {
+        int index_season[mam4::mo_drydep::n_land_type];
+        {
+          //-------------------------------------------------------------------------------------
+          // define which season (relative to Northern hemisphere climate)
+          //-------------------------------------------------------------------------------------
 
-       //-------------------------------------------------------------------------------------
-  // define which season (relative to Northern hemisphere climate)
-  //-------------------------------------------------------------------------------------
+          //-------------------------------------------------------------------------------------
+          // define season index based on fixed LAI
+          //-------------------------------------------------------------------------------------
+          for(int lt = 0; lt < mam4::mo_drydep::n_land_type; ++lt) {
+            index_season[lt] = index_season_lai(icol, month - 1);
+          }
 
-  //-------------------------------------------------------------------------------------
-  // define season index based on fixed LAI
-  //-------------------------------------------------------------------------------------
-  for (int lt = 0; lt < mam4::mo_drydep::n_land_type; ++lt) {
-    index_season[lt] = index_season_lai(icol, month - 1);
-  }
-
-  //-------------------------------------------------------------------------------------
-  // special case for snow covered terrain
-  //-------------------------------------------------------------------------------------
-  if (snow_height > 0.01) { // BAD_CONSTANT
-    for (int lt = 0; lt < mam4::mo_drydep::n_land_type; ++lt) {
-      index_season[lt] = 3;
-    }
-  }
-
-    }
+          //-------------------------------------------------------------------------------------
+          // special case for snow covered terrain
+          //-------------------------------------------------------------------------------------
+          if(snow_height > 0.01) {  // BAD_CONSTANT
+            for(int lt = 0; lt < mam4::mo_drydep::n_land_type; ++lt) {
+              index_season[lt] = 3;
+            }
+          }
+        }
         // These output values need to be put somewhere:
         Real dvel[gas_pcnst] = {};  // deposition velocity [1/cm/s]
         Real dflx[gas_pcnst] = {};  // deposition flux [1/cm^2/s]
@@ -967,24 +965,20 @@ void MAMMicrophysics::run_impl(const double dt) {
         // Output: values are dvel, dvlx
         // Input/Output: progs::stateq, progs::qqcw
         mam4::microphysics::perform_atmospheric_chemistry_and_microphysics(
-            team, dt, rlats, sfc_temperature(icol),
-            sfc_pressure(icol),
-            wind_speed, rain,
-            solar_flux, cnst_offline_icol,
-            forcings_in, atm, photo_table, chlorine_loading, config.setsox,
-            config.amicphys, config.linoz.psc_T, zenith_angle(icol),
-            d_sfc_alb_dir_vis(icol), o3_col_dens_i, photo_rates_icol,
-            extfrc_icol, invariants_icol, work_photo_table_icol,
-            linoz_o3_clim_icol, linoz_t_clim_icol, linoz_o3col_clim_icol,
-            linoz_PmL_clim_icol, linoz_dPmL_dO3_icol, linoz_dPmL_dT_icol,
-            linoz_dPmL_dO3col_icol, linoz_cariolle_pscs_icol, eccf,
-            adv_mass_kg_per_moles, fraction_landuse_icol,
-            index_season,
-            clsmap_4, permute_4, offset_aerosol, config.linoz.o3_sfc,
-            config.linoz.o3_tau, config.linoz.o3_lbl, dry_diameter_icol,
-            wet_diameter_icol, wetdens_icol, dry_atm.phis(icol), cmfdqr,
-            prain_icol, nevapr_icol, work_set_het_icol, drydep_data, dvel, dflx,
-            progs);
+            team, dt, rlats, sfc_temperature(icol), sfc_pressure(icol),
+            wind_speed, rain, solar_flux, cnst_offline_icol, forcings_in, atm,
+            photo_table, chlorine_loading, config.setsox, config.amicphys,
+            config.linoz.psc_T, zenith_angle(icol), d_sfc_alb_dir_vis(icol),
+            o3_col_dens_i, photo_rates_icol, extfrc_icol, invariants_icol,
+            work_photo_table_icol, linoz_o3_clim_icol, linoz_t_clim_icol,
+            linoz_o3col_clim_icol, linoz_PmL_clim_icol, linoz_dPmL_dO3_icol,
+            linoz_dPmL_dT_icol, linoz_dPmL_dO3col_icol,
+            linoz_cariolle_pscs_icol, eccf, adv_mass_kg_per_moles,
+            fraction_landuse_icol, index_season, clsmap_4, permute_4,
+            offset_aerosol, config.linoz.o3_sfc, config.linoz.o3_tau,
+            config.linoz.o3_lbl, dry_diameter_icol, wet_diameter_icol,
+            wetdens_icol, dry_atm.phis(icol), cmfdqr, prain_icol, nevapr_icol,
+            work_set_het_icol, drydep_data, dvel, dflx, progs);
 
         // Update constituent fluxes with gas drydep fluxes (dflx)
         // FIXME: Possible units mismatch (dflx is in kg/cm2/s but
