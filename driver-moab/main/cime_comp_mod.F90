@@ -3266,9 +3266,9 @@ contains
        !----------------------------------------------------------
        !| Budget with old fractions
        !----------------------------------------------------------
-       if (do_budgets) then
-          call cime_run_calc_budgets1()
-       endif
+!       if (do_budgets) then
+!          call cime_run_calc_budgets1()
+!       endif
 
        !----------------------------------------------------------
        !| ICE RECV-POST
@@ -3375,9 +3375,9 @@ contains
        !----------------------------------------------------------
        !| Budget with new fractions
        !----------------------------------------------------------
-       if (do_budgets) then
-          call cime_run_calc_budgets2()
-       endif
+!       if (do_budgets) then
+!          call cime_run_calc_budgets2()
+!       endif
 
        !----------------------------------------------------------
        !| OCN RECV-POST (NOT cesm1_mod_tight or nuopc_tight)
@@ -4404,7 +4404,7 @@ contains
        ! ocn budget
        !----------------------------------------------------------
        if (do_budgets) then
-          call cime_run_calc_budgets3(in_cplrun=.true.)
+       !   call cime_run_calc_budgets3(in_cplrun=.true.)
        endif
 
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
