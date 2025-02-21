@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.4">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.5">
     
     
       
@@ -1696,7 +1696,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../pyscream/" class="md-nav__link">
+      <a href="../pyeamxx/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3198,7 +3198,7 @@ EAMxx can be found <a href="../../common/eamxx_params/">here</a>.</p>
 <li><code>namelist_scream.xml</code>: this XML file is located in the case directory, and contains all the runtime parameters that EAMxx
   will read in at runtime. <code>buildnml</code> uses this XML file as an intermediate file during the generation of
   <code>scream_input.yaml</code> and <code>namelist.nl</code>. More specifically, <code>buildnml</code> generates this file using case information to select the
-  proper configurations from the file <code>namelist_defaults_scream.xml</code>, located in <code>SRCDIR/components/eamxx/cime_config</code>.
+  proper configurations from the file <code>namelist_defaults_eamxx.xml</code>, located in <code>SRCDIR/components/eamxx/cime_config</code>.
   Despite the fact that the only files that are needed at runtime are <code>scream_input.yaml</code> and <code>namelist.nl</code>,
   we generate and keep this XML file around to make the implementation of <code>atmquery</code> easier.</li>
 </ul>
@@ -3390,7 +3390,7 @@ or certain lookup tables.</li>
 <h3 id="modifying-the-list-of-atmosphere-processes">Modifying the list of atmosphere processes</h3>
 <p>The <code>atmchange</code> script can be used to change any of the runtime parameters of EAMxx. In particular, it can
 be used to add, remove, or reorder atmosphere processes. When adding an atmosphere process, we must first
-make sure that the defaults for that process are present in <code>namelist_defaults_scream.xml</code>. For instance,
+make sure that the defaults for that process are present in <code>namelist_defaults_eamxx.xml</code>. For instance,
 the default settings for the "physics" atmosphere process group include the following:</p>
 <div class="highlight"><pre><span></span><code>&gt;<span class="w"> </span>./atmquery<span class="w"> </span>physics::atm_procs_list
 <span class="w">    </span>namelist_defaults::atmosphere_processes::physics::atm_procs_list:<span class="w"> </span>mac_aero_mic,rrtmgp
@@ -3412,7 +3412,7 @@ in specifying a process name that begins and ends with an underscore:</p>
 an atmosphere process group. Hence, we can then do</p>
 <div class="highlight"><pre><span></span><code>&gt;<span class="w"> </span>./atmchange<span class="w"> </span>_my_group_::atm_procs_list+<span class="o">=</span>A,B
 </code></pre></div>
-<p>where A and B must be valid atmosphere process names (i.e., present in <code>namelist_defaults_scream.xml</code>)
+<p>where A and B must be valid atmosphere process names (i.e., present in <code>namelist_defaults_eamxx.xml</code>)
 or be themselves new atmosphere process groups (i.e., beginning/ending with an underscore)</p>
 <p><code>atmchange</code> can also be used to completely change a list of atmosphere processes:</p>
 <div class="highlight"><pre><span></span><code>&gt;<span class="w"> </span>./atmchange<span class="w"> </span>physics::atm_procs_list<span class="o">=</span>A,B,C

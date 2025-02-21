@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.4">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.5">
     
     
       
@@ -1620,7 +1620,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../user/pyscream/" class="md-nav__link">
+      <a href="../../user/pyeamxx/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3222,33 +3222,33 @@ configurations. We use several types of tests</p>
 <li><strong>Test Suites</strong> are named collections of tests that can be run on demand using
   the <a href="https://cmake.org/cmake/help/latest/manual/ctest.1.html">ctest</a> command.</li>
 </ul>
-<p>We also support a <code>test-all-scream</code> configuration that runs all of the
+<p>We also support a <code>test-all-eamxx</code> configuration that runs all of the
 standalone tests for an EAMxx configuration. Note, your current machine
-must be known to EAMxx before <code>test-all-scream</code> will work. A machine can
+must be known to EAMxx before <code>test-all-eamxx</code> will work. A machine can
 be made known to EAMxx by editing the eamxx/scripts/machines_specs.py files.
 There are some instructions on what to do at the top of this file.</p>
-<p><code>test-all-scream</code> has a good help dump</p>
+<p><code>test-all-eamxx</code> has a good help dump</p>
 <div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span><span class="nv">$scream_repo</span>/components/eamxx
-./scripts/test-all-scream<span class="w"> </span>-h
+./scripts/test-all-eamxx<span class="w"> </span>-h
 </code></pre></div>
 <p>If you are unsure of the cmake configuration for you development cycle, one
-trick you can use is to run <code>test-all-scream</code> for the <code>dbg</code> test and just
+trick you can use is to run <code>test-all-eamxx</code> for the <code>dbg</code> test and just
 copy the cmake command it prints (then ctrl-C the process).</p>
 <div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span><span class="nv">$scream_repo</span>/components/eamxx
-./scripts/test-all-scream<span class="w"> </span>-t<span class="w"> </span>dbg<span class="w"> </span>-m<span class="w"> </span><span class="nv">$machine</span>
+./scripts/test-all-eamxx<span class="w"> </span>-t<span class="w"> </span>dbg<span class="w"> </span>-m<span class="w"> </span><span class="nv">$machine</span>
 <span class="c1"># wait for a few seconds*</span>
 <span class="c1"># Ctrl-C *</span>
 <span class="c1"># Copy the contents of DCMAKE_COMMAND that was passed to ctest *</span>
 <span class="c1"># Add &quot;cmake&quot; to beginning of contents and path to eamxx at the end. *</span>
 </code></pre></div>
-<p>Considerations for using <code>test-all-scream</code>:</p>
+<p>Considerations for using <code>test-all-eamxx</code>:</p>
 <ul>
 <li>Your machine must be known to our scripts, see above.</li>
-<li>If you try to run commands by-hand (outside of test-all-scream;
+<li>If you try to run commands by-hand (outside of test-all-eamxx;
   cmake, make, ctest, etc), you'll need to remember to
-  load the scream-env into your shell, which can be done like this:
-  <code>cd eamxx/scripts; eval $(./scripts/scream-env-cmd $machine)</code></li>
-<li>test-all-scream expects to be run from a compute node if you
+  load the eamxx-env into your shell, which can be done like this:
+  <code>cd eamxx/scripts; eval $(./scripts/eamxx-env-cmd $machine)</code></li>
+<li>test-all-eamxx expects to be run from a compute node if you
   are on a batch machine.</li>
 <li>You'll need to think about your baseline situation, as many of our
   tests rely on pre-existing baselines. The -b option controls the baseline
