@@ -492,8 +492,8 @@ TEST_CASE("field_mgr", "") {
   FID new_fid("new_field", {tags1, dims1},  m/s, "grid1");
   REQUIRE_THROWS (field_mgr.add_field(Field(new_fid))); // Not allocated
 
-  REQUIRE (field_mgr.size("grid1")==2);
-  REQUIRE (field_mgr.size("grid2")==2);
+  REQUIRE (field_mgr.get_repo("grid1").size()==2);
+  REQUIRE (field_mgr.get_repo("grid2").size()==2);
 
   // Get all fields
   auto f1_1 = field_mgr.get_field(fid1_1);
@@ -552,7 +552,7 @@ TEST_CASE("field_mgr", "") {
 
   // Try to subview a field and set the subfield back in the FM
   field_mgr.add_field(f2_1.subfield("field2_1_sf",subview_dim,subview_slice,true));
-  REQUIRE (field_mgr.size("grid1")==3);
+  REQUIRE (field_mgr.get_repo("grid1").size()==3);
 
   auto f2_1_sf = field_mgr.get_field("field2_1_sf", "grid1");
   REQUIRE_THROWS (field_mgr.add_field(f2_1_sf)); // Cannot have duplicates

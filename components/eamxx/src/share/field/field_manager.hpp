@@ -67,13 +67,6 @@ public:
   //       store a field with the same name.
   void add_field (const Field& f);
 
-  // Get number of registered fields on particular grid
-  int size (const std::string& grid_name) const {
-    EKAT_REQUIRE_MSG(m_grids_mgr->has_grid(grid_name),
-      "Error! This field manager does not contain data on grid \""+grid_name+"\"\n");
-    return m_fields.at(grid_name).size();
-  }
-
   // Adds $field_name on $grid_name to group $group_name (creating the group, if necessary).
   // NOTE: if $group_name is allocated as a bundled field, this throws.
   // NOTE: must be called after registration ends
