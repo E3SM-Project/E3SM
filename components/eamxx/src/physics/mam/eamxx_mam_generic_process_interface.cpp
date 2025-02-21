@@ -122,4 +122,23 @@ void MAMGenericInterface::add_aerosol_tracers(/*const AbstractGrid> grid_*/)
     add_tracer<Updated>(gas_mmr_field_name, grid_, q_unit);
   }  // end for loop num gases
 }
+// ================================================================
+void MAMGenericInterface::add_interval_check_for_wet_dry_variables()
+{
+  for(const auto &var_name : wet_atm_names_) {
+    const auto min_value = mam_coupling::physical_min(var_name);
+    const auto max_value = mam_coupling::physical_max(var_name);
+    add_precondition_check<FieldWithinIntervalCheck>(
+      get_field_in(var_name),grid_,min_value,max_value,false);
+  }
+
+  for(const auto &var_name : dry_atm_names_) {
+    const auto min_value = mam_coupling::physical_min(var_name);
+    const auto max_value = mam_coupling::physical_max(var_name);
+    add_precondition_check<FieldWithinIntervalCheck>(
+      get_field_in(var_name),grid_,min_value,max_value,false);
+  }
+
+
+}
 }  // namespace scream
