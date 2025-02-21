@@ -1507,34 +1507,65 @@ module li_iceshelf_melt
                if ( (config_recalculate_thermal_forcing) .and. ( (config_TF_param_type == 'AMretreat') &
                        .or. (config_TF_param_type == 'AMmelt') .or. (config_TF_param_type == 'AMberg') &
                        .or. (config_TF_param_type == 'AMfit') ) ) then
+                  
                   ! Depth weighted average
                   TFocean(:) = 0.0_RKIND
                   do iCell = 1, nCells
-                     dzAccumulated = 0.0_RKIND
-                     do iLayer = 1, nISMIP6OceanLayers
-                       if (bedTopography(iCell) >= zOcean(iLayer)) then
-                           dz = abs(zBndsOcean(2,iLayer) - zBndsOcean(1,iLayer))
-                           TFocean(iCell) = (TFocean(iCell) * dzAccumulated + ismip6shelfMelt_3dThermalForcing(iLayer,iCell) * dz) &
-                                   / (dzAccumulated + dz) + ismip6shelfMelt_deltaT(iCell)
-                           dzAccumulated = dzAccumulated + dz
+                     if (bedTopography(iCell) < 0.0_RKIND) then
+                        kk = 1
+                        ! Find deepest zOcean above ocean floor
+                        do while ( (zOcean(kk) >= bedTopography(iCell)) .and. (kk < nISMIP6OceanLayers) )
+                           kk = kk + 1
+                        enddo
+                        ! If bed is shallower than first layer, use TF from the first layer.
+                        if (kk == 1) then
+                           TFocean(iCell) = ismip6shelfMelt_3dThermalForcing(kk, iCell) + ismip6shelfMelt_deltaT(iCell)
+                          
+                        ! For all other bed depths, average between surface and layer just above bed depth.
+                        else
+                           dzAccumulated = 0.0_RKIND
+                           do iLayer = 1, kk
+                              if (zOcean(iLayer) >= bedTopography(iCell)) then
+                                dz = abs(zBndsOcean(2,iLayer) - zBndsOcean(1,iLayer))
+                                TFocean(iCell) = (TFocean(iCell) * dzAccumulated + ismip6shelfMelt_3dThermalForcing(iLayer,iCell) * dz) &
+                                        / (dzAccumulated + dz) + ismip6shelfMelt_deltaT(iCell)
+                                dzAccumulated = dzAccumulated + dz
+                              endif
+                           enddo
                         endif
-                     enddo
+                     endif
                   enddo
 
                elseif ( (config_recalculate_thermal_forcing) .and. (config_TF_param_type == 'ISMIP6retreat') ) then
-                  ! simple average between 200-500m
+                  ! Depth-weighted average between 200-500m
                   TFocean(:) = 0.0_RKIND
                   do iCell = 1, nCells
                      total = 0.0_RKIND
                      counter = 0
-                     do iLayer = 1, nISMIP6OceanLayers
-                        if ( (zOcean(iLayer) >= 200.0_RKIND) .and. (zOcean(iLayer) <= 500.0_RKIND) &
-                              .and. (bedTopography(iCell) >= zOcean(iLayer))) then
-                           total = ismip6shelfMelt_3dThermalForcing(iLayer,iCell) + total
-                           counter = counter + 1
-                        endif
+                     
+                     kk = 1
+                     ! Find deepest zOcean above ocean floor
+                     do while ( (zOcean(kk) >= bedTopography(iCell)) .and. (kk < nISMIP6OceanLayers) )
+                        kk = kk + 1
                      enddo
-                     TFocean(iCell) = total/counter + ismip6shelfMelt_deltaT(iCell)
+                     
+                     ! if bed topography is shallower than 200 m, then throw out TF in cell
+                     if (bedTopography(iCell) > -200.0_RKIND) then
+                        TFocean(iCell) = 0.0_RKIND
+                     ! Otherwise average TF between 200 and 500 m depth
+                     else 
+                        dzAccumulated = 0.0_RKIND
+                        do iLayer = 1, kk
+                           if ( (zOcean(iLayer) <= -200.0_RKIND) .and. (zOcean(iLayer) >= -500.0_RKIND) &
+                                 .and. (bedTopography(iCell) <= zOcean(iLayer))) then
+
+                              dz = abs(zBndsOcean(2,iLayer) - zBndsOcean(1,iLayer))
+                              TFocean(iCell) = (TFocean(iCell) * dzAccumulated + ismip6shelfMelt_3dThermalForcing(iLayer,iCell) * dz) &
+                                   / (dzAccumulated + dz) + ismip6shelfMelt_deltaT(iCell)
+                              dzAccumulated = dzAccumulated + dz
+                           endif
+                        enddo
+                     endif
                   enddo
 
                elseif ( (config_TF_param_type == 'ISMIP6melt') .or. (.not. config_recalculate_thermal_forcing) ) then
@@ -1548,7 +1579,7 @@ module li_iceshelf_melt
                            kk = kk + 1
                         enddo
                         ! If bed is shallower than first layer, use TF from the first layer.
-                        ! If bed is deeper than the bottomg ocean layer, use TF from the bottom layer.
+                        ! If bed is deeper than the bottom ocean layer, use TF from the bottom layer.
                         if ( (kk == 1) .or. ( (kk == nISMIP6OceanLayers) .and. (zOcean(kk) >= bedTopography(iCell)) ) ) then
                            TFocean(iCell) = ismip6shelfMelt_3dThermalForcing(kk, iCell) + ismip6shelfMelt_deltaT(iCell)
                            ! For all other bed depths, interpolate linearly between layers above and below bed depth.
