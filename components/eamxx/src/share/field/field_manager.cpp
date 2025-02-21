@@ -43,38 +43,38 @@ void FieldManager::register_field (const FieldRequest& req)
     "  - FieldRequest grid: " + grid_name + "\n"
     "  - Grids stored by FM: " + m_grids_mgr->print_available_grids() + "\n");
 
+  // FieldManager does not allow incomplete requests
+  EKAT_REQUIRE_MSG(not req.incomplete,
+    "Error! FieldManager does not allow registering incomplete FieldRequest.\n");
+
   // Get or create the new field
-  if (req.incomplete) {
-    m_incomplete_requests.emplace_back(id.name(),grid_name);
+  if (!has_field(id.name(), grid_name)) {
+
+    EKAT_REQUIRE_MSG (id.data_type()==field_valid_data_types().at<Real>(),
+        "Error! While refactoring, we only allow the Field data type to be Real.\n"
+        "       If you're done with refactoring, go back and fix things.\n");
+    m_fields[grid_name][id.name()] = std::make_shared<Field>(id);
   } else {
-    if (!has_field(id.name(), grid_name)) {
+    // Make sure the input field has the same layout and units as the field already stored.
+    // TODO: this is the easiest way to ensure everyone uses the same units.
+    //       However, in the future, we *may* allow different units, providing
+    //       the users with conversion routines perhaps.
+    const auto id0 = m_fields[grid_name][id.name()]->get_header().get_identifier();
+    EKAT_REQUIRE_MSG(id.get_units()==id0.get_units(),
+        "Error! Field '" + id.name() + "' already registered with different units:\n"
+        "         - input field units:  " + id.get_units().to_string() + "\n"
+        "         - stored field units: " + id0.get_units().to_string() + "\n"
+        "       Please, check and make sure all atmosphere processes use the same units.\n");
 
-      EKAT_REQUIRE_MSG (id.data_type()==field_valid_data_types().at<Real>(),
-          "Error! While refactoring, we only allow the Field data type to be Real.\n"
-          "       If you're done with refactoring, go back and fix things.\n");
-      m_fields[grid_name][id.name()] = std::make_shared<Field>(id);
-    } else {
-      // Make sure the input field has the same layout and units as the field already stored.
-      // TODO: this is the easiest way to ensure everyone uses the same units.
-      //       However, in the future, we *may* allow different units, providing
-      //       the users with conversion routines perhaps.
-      const auto id0 = m_fields[grid_name][id.name()]->get_header().get_identifier();
-      EKAT_REQUIRE_MSG(id.get_units()==id0.get_units(),
-          "Error! Field '" + id.name() + "' already registered with different units:\n"
-          "         - input field units:  " + id.get_units().to_string() + "\n"
-          "         - stored field units: " + id0.get_units().to_string() + "\n"
-          "       Please, check and make sure all atmosphere processes use the same units.\n");
-
-      EKAT_REQUIRE_MSG(id.get_layout()==id0.get_layout(),
-          "Error! Field '" + id.name() + "' already registered with different layout:\n"
-          "         - input id:  " + id.get_id_string() + "\n"
-          "         - stored id: " + id0.get_id_string() + "\n"
-          "       Please, check and make sure all atmosphere processes use the same layout for a given field.\n");
-    }
-
-    // Make sure the field can accommodate the requested value type
-    m_fields[grid_name][id.name()]->get_header().get_alloc_properties().request_allocation(req.pack_size);
+    EKAT_REQUIRE_MSG(id.get_layout()==id0.get_layout(),
+        "Error! Field '" + id.name() + "' already registered with different layout:\n"
+        "         - input id:  " + id.get_id_string() + "\n"
+        "         - stored id: " + id0.get_id_string() + "\n"
+        "       Please, check and make sure all atmosphere processes use the same layout for a given field.\n");
   }
+
+  // Make sure the field can accommodate the requested value type
+  m_fields[grid_name][id.name()]->get_header().get_alloc_properties().request_allocation(req.pack_size);
 
   // Finally, add the field to the given groups
   // Note: we do *not* set the group info struct in the field header yet.
@@ -348,17 +348,6 @@ void FieldManager::registration_begins ()
 
 void FieldManager::registration_ends ()
 {
-  // Before doing anything, ensure that for each incomplete requests the field has
-  // been registered with a complete FID.
-  for (const auto& [field_name, grid_name] : m_incomplete_requests) {
-    EKAT_REQUIRE_MSG (has_field(field_name, grid_name),
-        "Error! Found an incomplete FieldRequest for a field not registered with a valid identifier.\n"
-        "  - field name: " + field_name + "\n"
-        "  - grid  name: " + grid_name + "\n");
-  }
-  // We no longer need this
-  m_incomplete_requests.clear();
-
   // This method is responsible of allocating the fields in the repo. The most delicate part is
   // the allocation of fields group, in the case where bundling is required. If we are not able
   // to honor requests for bundling, we will error out. An example of a scenario where we can't
@@ -377,7 +366,7 @@ void FieldManager::registration_ends ()
 
   // This is the sequence of operations that allows us to establish if (and how) we can honor
   // all the requests:
-  //  1) ensure all groups contain the desired members. This means that we need to
+  //  1) ensure all bundled groups contain the desired members. This means that we need to
   //     loop over GroupRequest (GR), and make sure there are fields registered in those
   //     groups (querying m_field_groups info structs).
   //  2) Focus only on GR that require a bundled group, discarding others.
@@ -401,7 +390,7 @@ void FieldManager::registration_ends ()
   //     Otherwise it will return the ordering of all fields in the cluster that allows all
   //     groups of the cluster to be a contiguous subset of C.
   //  Note: this can be done independent of grid since each grid will contain that same fields
-  //        in a group.
+  //        in a bundled group.
 
   // Start by processing group request. This function checks that all group fields are properly
   // registered on the appropriate grid and the FieldGroupInfo is up to date. If group G is
