@@ -139,18 +139,7 @@ void MAMConstituentFluxes::initialize_impl(const RunType run_type) {
   // Input fields read in from IC file, namelist or other processes
   // ---------------------------------------------------------------
   //NOTE: These variables are Required. Thus, I will check them before computations.
-  std::map<std::string, bool> pre_check={{"T_mid", false},
-                                         {"p_mid", false},
-                                         {"qv", false},
-                                         {"qc", false},
-                                         {"qi", false},
-                                         {"nc", false},
-                                         {"ni", false},
-                                         {"omega", false},
-                                         {"p_int", false},
-                                         {"pseudo_density", false},
-                                         {"pbl_height", false},
-                                         {"cldfrac_tot", false},
+  std::map<std::string, bool> pre_check={{"cldfrac_tot", false},
                                          {"constituent_fluxes", false},
                                          {"phis", false}
                                          };
@@ -161,6 +150,9 @@ void MAMConstituentFluxes::initialize_impl(const RunType run_type) {
     add_precondition_check<FieldWithinIntervalCheck>(
       get_field_in(item.first),grid_,min_value,max_value,item.second);
   }
+  // check pre condition for wet and dry variables
+  add_interval_check_for_wet_dry_variables();
+
   // checks pre/post condition intervals of aerosols and gases
   add_invariant_check_for_aerosol();
 
