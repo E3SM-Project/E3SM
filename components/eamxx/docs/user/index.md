@@ -29,3 +29,5 @@ you may visit our public confluence [EAMxx user guide](https://acme-climate.atla
 ### [PySCREAM](pyeamxx.md)
 
 ### [IO Metadata](io_metadata.md)
+
+### [Multi-instance and NBFB testing capabilities](multi-instance-mvk.md)

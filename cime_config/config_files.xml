@@ -99,6 +99,7 @@
     <values>
       <value>$CIMEROOT/CIME/data/config/config_tests.xml</value>
       <value component="mpaso">$COMP_ROOT_DIR_OCN/cime_config/config_tests.xml</value>
+      <value component="scream">$COMP_ROOT_DIR_ATM/cime_config/config_tests.xml</value>
     </values>
     <group>test</group>
     <file>env_test.xml</file>
@@ -323,6 +324,7 @@
     <values>
       <value component="any">$CIMEROOT/CIME/SystemTests</value>
       <value component="mpaso">$COMP_ROOT_DIR_OCN/cime_config/SystemTests</value>
+      <value component="scream">$COMP_ROOT_DIR_ATM/cime_config/SystemTests</value>
     </values>
     <group>test</group>
     <file>env_test.xml</file>
