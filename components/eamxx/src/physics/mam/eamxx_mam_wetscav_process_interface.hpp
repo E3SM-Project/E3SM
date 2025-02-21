@@ -32,7 +32,9 @@ class MAMWetscav : public scream::AtmosphereProcess {
   MAMWetscav(const ekat::Comm &comm, const ekat::ParameterList &params);
 
   // The type of subcomponent
-  AtmosphereProcessType type() const override { return AtmosphereProcessType::Physics; }
+  AtmosphereProcessType type() const override {
+    return AtmosphereProcessType::Physics;
+  }
 
   // The name of the subcomponent
   std::string name() const override { return "mam4_wetscav"; }
@@ -56,7 +58,7 @@ class MAMWetscav : public scream::AtmosphereProcess {
   void run_impl(const double dt) override;
 
   // Finalize
-  void finalize_impl() override {/*Do nothing*/};
+  void finalize_impl() override{/*Do nothing*/};
 
   // Atmosphere processes often have a pre-processing step that constructs
   // required variables from the set of fields stored in the field manager.
@@ -162,7 +164,7 @@ class MAMWetscav : public scream::AtmosphereProcess {
 
   // TODO: Following variables are from convective parameterization (not
   // implemented yet in EAMxx), so should be zero for now
-      
+
   view_2d sh_frac_;
 
   // Deep convective cloud fraction [fraction]

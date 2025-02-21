@@ -160,7 +160,9 @@ class MAMAci final : public scream::AtmosphereProcess {
   MAMAci(const ekat::Comm &comm, const ekat::ParameterList &params);
 
   // Process metadata: Return type of the process
-  AtmosphereProcessType type() const override { return AtmosphereProcessType::Physics; }
+  AtmosphereProcessType type() const override {
+    return AtmosphereProcessType::Physics;
+  }
 
   // Return name of the process
   std::string name() const override { return "mam4_aci"; }
@@ -179,7 +181,7 @@ class MAMAci final : public scream::AtmosphereProcess {
   // process behavior
   void initialize_impl(const RunType run_type) override;
   void run_impl(const double dt) override;
-  void finalize_impl() override {/*DO NOTHING*/};
+  void finalize_impl() override{/*DO NOTHING*/};
 
   // Atmosphere processes often have a pre-processing step that constructs
   // required variables from the set of fields stored in the field manager.
