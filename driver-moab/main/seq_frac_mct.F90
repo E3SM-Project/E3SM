@@ -835,7 +835,7 @@ contains
     logical, save :: first_time = .true.
 ! moab
     integer                  ::   ierr, kgg
-    integer                  ::   arrSize
+    integer                  ::   arrSize, arrSize_i, arrSize_o
     integer , save           ::   lSize, ent_type
     character(CXX)           :: tagname
 #ifdef MOABDEBUG
@@ -865,11 +865,16 @@ contains
     dom_i => component_get_dom_cx(ice)
 
     dom_o => component_get_dom_cx(ocn) ! 
+    if (mbixid .ge. 0) arrSize_i = mbGetnCells(mbixid)
+    if (mboxid .ge. 0) arrSize_o = mbGetnCells(mboxid)
+    print *, 'arrSize_i=' , arrSize_i, "arrSize_o=" , arrSize_o
+    arrSize = arrSize_i
+    if (arrSize_o .gt. arrSize) arrSize = arrSize_o
 
     ! Entire update depends on if ice_present
     if (ice_present) then
 
-       arrSize = mbGetnCells(mbixid)
+       !arrSize = mbGetnCells(mbixid)
        allocate(tagValues(arrSize) )  
        allocate(tagValues2(arrSize) )
        allocate(tagValues3(arrSize) )
@@ -912,7 +917,7 @@ contains
 
 !          call seq_frac_check(fractions_o, 'ocn set')
           ! set the ofrac artificially on mbofxid instance, because it is needed for prep_aoxflux
-           arrSize = mbGetnCells(mboxid)
+          ! arrSize = mbGetnCells(mboxid)
           call mbGetTagVals(mboxid, 'ofrac',tagValues,arrSize)
           call mbSetTagVals(mbofxid, 'ofrac',tagValues,arrSize)
 
