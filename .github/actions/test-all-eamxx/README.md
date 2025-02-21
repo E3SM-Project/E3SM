@@ -8,7 +8,7 @@ jobs:
     steps:
       ...
       - name: run-test-all-eamxx
-        uses: ./.github/actions/eamxx-test-all-eamxx
+        uses: ./.github/actions/test-all-eamxx
         with:
           build_type: <build-type>
           machine: <machine>
