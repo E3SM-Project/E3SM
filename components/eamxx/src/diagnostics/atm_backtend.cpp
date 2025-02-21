@@ -16,8 +16,6 @@ AtmBackTendDiag::AtmBackTendDiag(const ekat::Comm &comm,
   m_name = m_params.get<std::string>("Tendency Name");
 }
 
-std::string AtmBackTendDiag::name() const { return m_name + "_atm_tend"; }
-
 void AtmBackTendDiag::set_grids(
     const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;

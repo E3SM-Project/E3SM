@@ -74,8 +74,7 @@ void AeroComCld::set_grids(
   m_dz.allocate_view();
 
   // Construct and allocate the output field
-
-  FieldIdentifier fid("AeroComCld"+m_topbot, vector1d_layout, nondim, grid_name);
+  FieldIdentifier fid(name(), vector1d_layout, nondim, grid_name);
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
 
