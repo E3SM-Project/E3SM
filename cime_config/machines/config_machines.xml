@@ -1051,8 +1051,10 @@
       <executable>srun</executable>
       <arguments>
         <arg name="num_tasks"> -l -K -n {{ total_tasks }} -N {{ num_nodes }} </arg>
-        <arg name="binding">--gpus-per-node=8 --gpu-bind=closest</arg>
         <arg name="thread_count">-c $ENV{OMP_NUM_THREADS}</arg>
+        <arg name="gpus_per_node">$ENV{GPUS_PER_NODE}</arg>
+        <arg name="ntasks_per_gpu">$ENV{NTASKS_PER_GPU}</arg>
+        <arg name="gpu_bind">$ENV{GPU_BIND_ARGS}</arg>
       </arguments>
     </mpirun>
 
@@ -1138,10 +1140,16 @@
       <env name="MPICH_OFI_CXI_COUNTER_REPORT">2</env>
       <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env>
       <env name="SKIP_BLAS">True</env> <!-- find_package(blas) doesn't work well with Cray LibSci-->
+      <env name="GPUS_PER_NODE"> </env>
+      <env name="NTASKS_PER_GPU"> </env>
+      <env name="GPU_BIND_ARGS"> </env>
     </environment_variables>
     <environment_variables compiler=".*hipcc">
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
       <env name="MPICH_CXX">$SHELL{which hipcc}</env>
+      <env name="GPUS_PER_NODE">--gpus-per-node=8</env>
+      <env name="NTASKS_PER_GPU">--ntasks-per-gpu=$SHELL{echo "`./xmlquery --value MAX_MPITASKS_PER_NODE`/8"|bc}</env>
+      <env name="GPU_BIND_ARGS">--gpu-bind=closest</env>
     </environment_variables>
 
     <environment_variables BUILD_THREADED="TRUE">
