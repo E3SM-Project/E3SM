@@ -1,6 +1,6 @@
-# PySCREAM
+# PyEAMxx
 
-PySCREAM is currently under heavy development and may contain some
+PyEAMxx is currently under heavy development and may contain some
 rough edges. If you encounter any issues, please report them on the
 team on
 [github discussions](https://github.com/E3SM-Project/E3SM/labels/eamxx).
@@ -10,7 +10,7 @@ please post them on the
 
 ## Quick Start
 
-For now, the only way to use pyeamxx is to either build it on your own
+For now, the only way to use PyEAMxx is to either build it on your own
 or use our prebuilt conda binaries. We prefer for you to use the latter.
 In a conda environment, please use the following command to install it:
 
@@ -18,7 +18,7 @@ In a conda environment, please use the following command to install it:
 conda install -c mahf708 pyeamxx=0.0.2
 ```
 
-It is recommended to use the latest version of pyeamxx, wich is
+It is recommended to use the latest version of PyEAMxx, which is
 currently 0.0.2. As you can see, it is a young package with a lot of
 potential. We do not guarantee that the API will remain stable, but we
 will try to document any changes as frequently as we could.
