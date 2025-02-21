@@ -2,11 +2,13 @@ site_name: EAMxx
 
 nav:
   - 'Home': 'index.md'
+  # - 'WIP Sandbox': 'WIP.md'
   - 'User Guide':
     - 'Overview': 'user/index.md'
+    # - 'Quick-start Guide': 'user/user_quickstart.md'
     - 'EAMxx case basics': 'user/eamxx_cases.md'
-    - 'Model input': 'user/model_input.md'
-    - 'Model output': 'user/model_output.md'
+    # - 'Testing': 'user/user_testing.md'
+    - 'Model Configuration': 'user/model_configuration.md'
     - 'Nudging': 'user/nudging.md'
     - 'Extra radiation calls': 'user/clean_clear_sky.md'
     - 'COSP': 'user/cosp.md'
@@ -16,24 +18,29 @@ nav:
     - 'IO Metadata': 'user/io_metadata.md'
     - 'Multi-Instance and NBFB': 'user/multi-instance-mvk.md'
   - 'Developer Guide':
-    - 'Overview': 'developer/index.md'
-    - 'Installation': 'common/installation.md'
+    # - 'Overview': 'developer/index.md'
+    - 'Quick-start Guide': 'developer/dev_quickstart.md'
+    - 'Code Structure and Organization': 'developer/code_structure.md'
+    # - 'Installation': 'common/installation.md'
     - 'Style Guide': 'developer/style_guide.md'
-    - 'Kokkos and EKAT': 'developer/kokkos_ekat.md'
-    - 'Source Tree': 'developer/source_tree.md'
-    - 'Important Data Structures':
+    - 'Testing':
+      - 'Overview': 'developer/dev_testing/index.md'
+      - 'Testing for Development': 'developer/dev_testing/testing_for_development.md'
+      - 'Automated Standalone Testing': 'developer/dev_testing/test_all_scream.md'
+      - 'Full model (CIME)': 'developer/dev_testing/full_model_testing.md'
+      - 'CI and Nightly Testing': 'developer/dev_testing/ci_nightly.md'
+      # - 'Supported Computing Platforms': 'developer/dev_testing/supported_machines.md'
+      # - 'Testing Locally': 'developer/dev_testing/local_test.md'
+    - 'Important Tools and Objects':
+      - 'Kokkos and EKAT': 'developer/kokkos_ekat.md'
       - 'Fields': 'developer/field.md'
       - 'Grids and Remappers': 'developer/grid.md'
       - 'Atmosphere Processes': 'developer/processes.md'
-      - 'Managers': 'developer/managers.md'
-    - 'I/O': 'developer/io.md'
-    - 'Testing':
-      - 'Standalone': 'developer/standalone_testing.md'
-      - 'Full model': 'developer/cime_testing.md'
-      - 'CI and Nightly Testing': 'developer/ci_nightly.md'
+      - 'I/O': 'developer/io.md'
   - 'Technical Guide':
     - 'Overview': 'technical/index.md'
     - 'AeroCom cloud top': 'technical/aerocom_cldtop.md'
+  - 'Glossary': 'common/glossary.md'
 
 edit_uri: ""
 
@@ -52,19 +59,51 @@ theme:
       icon: material/weather-night
       name: Switch to light mode
   features:
-    - navigation.indices
+    # Integrates (RHS) Table of Contents into the (LHS) Navigation
+    # NOTE: can't decide whether this is good or bad--gives some extra space
+    # to the main body but can look a little cluttered
+    # however, setting "toc_depth: 2" below improves matters
+    # - toc.integrate
+    # allows adding an index page to sections (e.g., "Overview")
+    - navigation.indexes
+    # prefetches page on link-hover
     - navigation.instant
+    # back-to-top button
     - navigation.top
-#    - navigation.tabs
+    # only render pages visible in the navigation
+    - navigation.prune
 
 markdown_extensions:
+  # FIXME: remove--currently using to flag TODOs
   - pymdownx.highlight
-  - pymdownx.superfences
+  # for mermaid.js diagrams
+  # FIXME: maybe lose in favor of a procedurally-generated static image?
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.tabbed:
       alternate_style: true
   - pymdownx.arithmatex:
       generic: true
+  - toc:
+      toc_depth: 3
+  # provides collapsible blocks
+  - pymdownx.details
+  - admonition
   - footnotes
+  - pymdownx.caret
+  - pymdownx.mark
+  - pymdownx.tilde
+  # ============================================================================
+  # for gridded sections
+  - attr_list
+  - md_in_html
+  # ============================================================================
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
 
 extra_javascript:
   # - javascript/mathjax.js
