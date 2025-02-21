@@ -14,7 +14,7 @@ MAMGenericInterface::MAMGenericInterface(const ekat::Comm &comm,
 }
 // ================================================================
 void MAMGenericInterface::add_invariant_check_for_aerosol(
-  //std::shared_ptr<const AbstractGrid> grid_
+ /*const AbstractGrid> grid_*/
   )
 {
 // NOTE: Using only one range for all num variables.
@@ -68,4 +68,58 @@ void MAMGenericInterface::add_invariant_check_for_aerosol(
    }  // end for loop num gases
 }
 // ================================================================
+void MAMGenericInterface::add_aerosol_tracers(/*const AbstractGrid> grid_*/)
+{
+
+  using namespace ekat::units;
+  auto q_unit = kg / kg;  // units of mass mixing ratios of tracers
+  auto n_unit = 1 / kg;   // units of number mixing ratios of tracers
+  const auto &grid_name = grid_->name();
+  std::cout << "grid_name" << grid_name << "\n";
+  FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(true);
+
+    // ---------------------------------------------------------------------
+  // These variables are "Updated" or inputs/outputs for the process
+  // ---------------------------------------------------------------------
+  // NOTE: Cloud borne aerosols are not updated in this process but are included
+  // to create data structures.
+
+  // interstitial and cloudborne aerosol tracers of interest: mass (q) and
+  // number (n) mixing ratios
+  for(int mode = 0; mode < mam_coupling::num_aero_modes(); ++mode) {
+    // interstitial aerosol tracers of interest: number (n) mixing ratios
+    const std::string int_nmr_field_name =
+        mam_coupling::int_aero_nmr_field_name(mode);
+    add_tracer<Updated>(int_nmr_field_name, grid_, n_unit);
+
+    // cloudborne aerosol tracers of interest: number (n) mixing ratios
+    // NOTE: DO NOT add cld borne aerosols to the "tracer" group as these are
+    // NOT advected
+    const std::string cld_nmr_field_name =
+        mam_coupling::cld_aero_nmr_field_name(mode);
+    add_field<Updated>(cld_nmr_field_name, scalar3d_mid, n_unit, grid_name);
+
+    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+      // (interstitial) aerosol tracers of interest: mass (q) mixing ratios
+      const std::string int_mmr_field_name =
+          mam_coupling::int_aero_mmr_field_name(mode, a);
+      if(not int_mmr_field_name.empty()) {
+        add_tracer<Updated>(int_mmr_field_name, grid_, q_unit);
+      }
+      // (cloudborne) aerosol tracers of interest: mass (q) mixing ratios
+      // NOTE: DO NOT add cld borne aerosols to the "tracer" group as these are
+      // NOT advected
+      const std::string cld_mmr_field_name =
+          mam_coupling::cld_aero_mmr_field_name(mode, a);
+      if(not cld_mmr_field_name.empty()) {
+        add_field<Updated>(cld_mmr_field_name, scalar3d_mid, q_unit, grid_name);
+      }
+    }  // end for loop num species
+  }    // end for loop for num modes
+
+  for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
+    const std::string gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
+    add_tracer<Updated>(gas_mmr_field_name, grid_, q_unit);
+  }  // end for loop num gases
+}
 }  // namespace scream
