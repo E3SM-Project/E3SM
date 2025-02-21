@@ -4,7 +4,6 @@
 #include "share/atm_process/atmosphere_diagnostic.hpp"
 
 #include "share/eamxx_types.hpp"
-#include <ekat/ekat_pack.hpp>
 
 namespace scream
 {
@@ -12,9 +11,8 @@ namespace scream
 class DryStaticEnergyDiagnostic : public AtmosphereDiagnostic
 {
 public:
-  using Pack          = ekat::Pack<Real,SCREAM_PACK_SIZE>;
   using KT            = KokkosTypes<DefaultDevice>;
-  using view_2d       = typename KT::template view_2d<Pack>;
+  using view_2d       = typename KT::template view_2d<Real>;
 
   // Constructors
   DryStaticEnergyDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params);
