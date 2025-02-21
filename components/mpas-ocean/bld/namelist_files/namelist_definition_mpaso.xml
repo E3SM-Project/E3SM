@@ -204,7 +204,7 @@ Default: Defined in namelist_defaults.xml
 	category="time_integration" group="time_integration">
 Time integration method. These options are only supported in standalone, not E3SM: 'LTS', 'FB_LTS'.
 
-Valid values: 'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit', 'split_explicit_ab2', 'LTS', 'FB_LTS'
+Valid values: 'split_explicit', 'RK4', 'unsplit_explicit', 'unsplit_explicit_ab2', 'split_implicit', 'split_explicit_ab2', 'LTS', 'FB_LTS'
 Default: Defined in namelist_defaults.xml
 </entry>
 

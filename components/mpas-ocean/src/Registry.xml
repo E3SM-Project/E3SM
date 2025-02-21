@@ -208,7 +208,7 @@
 		/>
 		<nml_option name="config_time_integrator" type="character" default_value="split_explicit_ab2"
 					description="Time integration method. These options are only supported in standalone, not E3SM: 'LTS', 'FB_LTS'."
-					possible_values="'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit', 'split_explicit_ab2', 'LTS', 'FB_LTS'"
+					possible_values="'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit', 'split_explicit_ab2', 'unsplit_explicit_ab2', 'LTS', 'FB_LTS'"
 		/>
 		<nml_option name="config_number_of_time_levels" type="integer" default_value="2"
 					description="The number of time levels in the time-stepping scheme. This is used for array allocation."
@@ -1721,7 +1721,7 @@
 		<package name="variableShortwave" description="This package includes variables required to compute spatially variable shortwave extinction coefficients"/>
 
 		<package name="splitTimeIntegrator" description="This package includes variables required for either the split or unsplit explicit time integrators."/>
-		<package name="splitAB2TimeIntegrator" description="This package includes variables required for the split explicit AB2 time integrators."/>
+		<package name="splitAB2TimeIntegrator" description="This package includes variables required for the split or unsplit explicit AB2 time integrators."/>
 		<package name="semiImplicitTimePKG" description="This package includes variables required for split-implicit time integrators."/>
 		<package name="thicknessFilter" description="This package includes variables required for frequency filtered thickness."/>
 		<package name="windStressBulkPKG" description="This package includes varibles required for bulk wind stress forcing."/>
@@ -2449,19 +2449,19 @@
 		<!-- FIELDS FOR SPLIT EXPLICIT TIME INTEGRATOR -->
 		<var name="normalBarotropicVelocity" type="real" dimensions="nEdges Time" units="m s^-1"
 			 description="barotropic velocity, used in split-explicit time-stepping"
-			 packages="splitTimeIntegrator"
+			 packages="splitTimeIntegrator;splitAB2TimeIntegrator"
 		/>
 		<var name="normalBarotropicVelocitySubcycle" type="real" dimensions="nEdges Time" units="m s^-1"
 			 description="barotropic velocity, used in subcycling in stage 2 of split-explicit time-stepping"
-			 packages="splitTimeIntegrator"
+			 packages="splitTimeIntegrator;splitAB2TimeIntegrator"
 		/>
 		<var name="sshSubcycle" type="real" dimensions="nCells Time" units="m"
 			 description="sea surface height, used in subcycling in stage 2 of split-explicit time-stepping"
-			 packages="splitTimeIntegrator"
+			 packages="splitTimeIntegrator;splitAB2TimeIntegrator"
 		/>
 		<var name="normalBaroclinicVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^-1"
 			 description="baroclinic velocity, used in split-explicit time-stepping"
-			 packages="splitTimeIntegrator"
+			 packages="splitTimeIntegrator;splitAB2TimeIntegrator"
 		/>
 
 		<!-- FIELD FOR LAND-ICE COUPLING -->

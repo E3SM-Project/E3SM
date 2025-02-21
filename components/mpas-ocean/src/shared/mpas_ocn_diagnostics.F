@@ -4659,9 +4659,10 @@ contains
            .or. (trim(config_time_integrator) == 'FB_LTS') ) then
          ! For RK4, LTS, or FB_LTS, PV includes f: PV = (eta+f)/h.
          fCoef = 1
-      elseif (trim(config_time_integrator) == 'split_explicit' &
-        .or.trim(config_time_integrator) == 'unsplit_explicit' &
-        .or.trim(config_time_integrator) == 'split_implicit'   &
+      elseif (trim(config_time_integrator) == 'split_explicit'     &
+        .or.trim(config_time_integrator) == 'unsplit_explicit'     &
+        .or.trim(config_time_integrator) == 'split_implicit'       &
+        .or.trim(config_time_integrator) == 'unsplit_explicit_ab2' &
         .or.trim(config_time_integrator) == 'split_explicit_ab2') then
           ! For split explicit, PV is eta/h because the Coriolis term
           ! is added separately to the momentum tendencies.

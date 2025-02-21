@@ -74,9 +74,9 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:), pointer :: pressureAdjustedSSH
    real (kind=RKIND), dimension(:), pointer :: pgf_sal
    real (kind=RKIND), dimension(:), pointer :: temp_twd
-   real (kind=RKIND), dimension(:), pointer :: normalCoeffTWD 
-   real (kind=RKIND), dimension(:), pointer :: tangentialCoeffTWD 
-   real (kind=RKIND), dimension(:), pointer :: topographicWaveDrag 
+   real (kind=RKIND), dimension(:), pointer :: normalCoeffTWD
+   real (kind=RKIND), dimension(:), pointer :: tangentialCoeffTWD
+   real (kind=RKIND), dimension(:), pointer :: topographicWaveDrag
 
    real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceValue
    real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceLayerValue
@@ -738,7 +738,8 @@ contains
          call mpas_pool_get_array(diagnosticsPool, 'SIvec_zh1', SIvec_zh1)
       end if
 
-      if (trim(config_time_integrator) == 'split_explicit_ab2') then
+      if (     trim(config_time_integrator) == 'split_explicit_ab2' &
+          .or. trim(config_time_integrator) == 'unsplit_explicit_ab2') then
          call mpas_pool_get_array(diagnosticsPool, 'normalVelocityTendOld', normalVelocityTendOld)
          call mpas_pool_get_array(diagnosticsPool, 'CoriolisTermOld', CoriolisTermOld)
       end if
