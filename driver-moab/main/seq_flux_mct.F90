@@ -29,13 +29,12 @@ module seq_flux_mct
   ! Public interfaces
   !--------------------------------------------------------------------------
 
-  public seq_flux_init_mct
+  public seq_flux_init
   public seq_flux_readnl_mct
   public seq_flux_initexch_mct
 
   public seq_flux_ocnalb_mct
 
-  public seq_flux_atmocn_mct
   public seq_flux_atmocn_moab
 
   public seq_flux_atmocnexch_mct
@@ -229,7 +228,7 @@ module seq_flux_mct
 contains
   !===============================================================================
 
-  subroutine seq_flux_init_mct(comp, fractions, mbid)
+  subroutine seq_flux_init(comp, fractions, mbid)
 
     use shr_moab_mod,     only: mbGetnCells
 
@@ -255,7 +254,7 @@ contains
     real(r8), pointer        :: ofrac(:)  ! ocn domain mask
     real(r8), pointer        :: ifrac(:)  ! ocn domain mask
     character(CXX)           :: tagname
-    character(*),parameter   :: subName =   '(seq_flux_init_mct) '
+    character(*),parameter   :: subName =   '(seq_flux_init) '
     !-----------------------------------------------------------------------
 
     call seq_comm_setptrs(CPLID,iam=iam_CPLID)
@@ -541,7 +540,7 @@ contains
 
     fluxsetting = trim(fluxsetting_atmocn)
 
-  end subroutine seq_flux_init_mct
+  end subroutine seq_flux_init
 
   !===============================================================================
 
@@ -1490,7 +1489,7 @@ contains
 
   !===============================================================================
 
-  subroutine seq_flux_atmocn_mct(infodata, tod, dt, a2x, o2x, xao, mbid, mbfid)
+  subroutine seq_flux_atmocn_moab(infodata, tod, dt, a2x, o2x, xao, mbid, mbfid)
     use shr_moab_mod,     only: mbGetnCells,mbGetTagVals,mbSetTagVals
 
     !-----------------------------------------------------------------------
@@ -1522,8 +1521,13 @@ contains
     real(r8)    :: flux_convergence ! convergence criteria for imlicit flux computation
     integer(in) :: flux_max_iteration ! maximum number of iterations for convergence
     logical :: coldair_outbreak_mod !  cold air outbreak adjustment  (Mahrt & Sun 1995,MWR)
+
+#ifdef MOABDEBUG
+    character*100 outfile, wopts, lnum
+    integer ierr
+#endif
     !
-    character(*),parameter :: subName =   '(seq_flux_atmocn_mct) '
+    character(*),parameter :: subName =   '(seq_flux_atmocn_moab) '
     !
     !-----------------------------------------------------------------------
 
@@ -1941,83 +1945,23 @@ contains
        end if
     enddo
 
-  end subroutine seq_flux_atmocn_mct
-
-  subroutine seq_flux_atmocn_moab(comp, xao)
-     type(component_type), intent(inout) :: comp
-     type(mct_aVect)       , intent(inout)      :: xao
-
-     real(r8) , pointer :: local_xao_mct(:,:) ! atm-ocn fluxes, transpose, mct local sizes
-     integer  appId ! moab app id
-     integer i,j
-     integer nloc, listSize
-
-     ! moab
-     integer                  :: tagtype, numco,  tagindex, ent_type, ierr, arrSize
-     character(CXX)           :: tagname
-     character*100 outfile, wopts, lnum
-
-     character(*),parameter   :: subName =   '(seq_flux_atmocn_moab) '
-
-     if (comp%oneletterid == 'a' ) then
-        appId = mbaxid ! atm on coupler
-        local_xao_mct => prep_aoflux_get_xao_amct()
-     else if (comp%oneletterid == 'o') then
-        appId = mbofxid  ! atm phys
-        local_xao_mct => prep_aoflux_get_xao_omct()
-     else
-        call mct_die(subName,'call for either ocean or atm',1)
-     endif
-     ! transpose into moab double array, then set with global id
-     nloc = mct_avect_lsize(xao)
-     listSize = mct_aVect_nRAttr(xao)
-
-     do j = 1, listSize
-       local_xao_mct(:, j) = xao%rAttr(j, :)
-     enddo
-
-     tagname = trim(seq_flds_xao_fields)//C_NULL_CHAR
-     arrSize = nloc * listSize
-     ent_type = 1 ! cells
-     ! global ids are retrieved by albedo first call; it is a local module variable 
-     !ierr = iMOAB_SetDoubleTagStorageWithGid ( appId, tagname, arrSize , ent_type, local_xao_mct, GlobalIds )
-     if (ierr .ne. 0) then
-       write(logunit,*) subname,' error in setting atm-ocn fluxes  '
-       call shr_sys_abort(subname//' ERROR in setting atm-ocn fluxes')
-     endif
-
 #ifdef MOABDEBUG
         ! debug out file
       write(lnum,"(I0.2)")num_moab_exports
-      outfile = comp%oneletterid//'_flux_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+      !outfile = comp%oneletterid//'_flux_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+      outfile = 'o_flux_'//trim(lnum)//'.h5m'//C_NULL_CHAR
       wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
-      ierr = iMOAB_WriteMesh(appId, outfile, wopts)
-
+      ierr = iMOAB_WriteMesh(mbfid, outfile, wopts)
+ 
       if (ierr .ne. 0) then
          write(logunit,*) subname,' error in writing mesh '
          call shr_sys_abort(subname//' ERROR in writing mesh ')
       endif
 
-      if (comp%oneletterid == 'o') then ! for debugging, set the mct ocn grid values, to see if they are the same
-        appId = mbox2id  ! ocn on mct point cloud
-        ent_type = 0! vertices, it is point cloud
-        ierr = iMOAB_SetDoubleTagStorage( appId, tagname, arrSize , ent_type, local_xao_mct)
-        if (ierr .ne. 0) then
-         write(logunit,*) subname,' error in setting local_xao_mct fluxes on mct grid for debugging  '
-         call shr_sys_abort(subname//' ERROR in setting local_xao_mct fluxes on mct grid for debugging')
-        endif
-        outfile = 'o_flux_mct_'//trim(lnum)//'.h5m'//C_NULL_CHAR
-        ierr = iMOAB_WriteMesh(appId, outfile, wopts)
-
-        if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in writing mesh '
-            call shr_sys_abort(subname//' ERROR in writing mesh ')
-        endif
-     endif
 #endif
 
-
   end subroutine seq_flux_atmocn_moab
+
   !===============================================================================
 
 end module seq_flux_mct
