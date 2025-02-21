@@ -1,5 +1,7 @@
 #include <physics/mam/eamxx_mam_constituent_fluxes_functions.hpp>
 #include <physics/mam/eamxx_mam_constituent_fluxes_interface.hpp>
+#include <physics/mam/physical_limits.hpp>
+#include <share/property_checks/field_within_interval_check.hpp>
 namespace scream {
 
 // ================================================================
@@ -7,7 +9,7 @@ namespace scream {
 // ================================================================
 MAMConstituentFluxes::MAMConstituentFluxes(const ekat::Comm &comm,
                                            const ekat::ParameterList &params)
-    : AtmosphereProcess(comm, params) {
+    : MAMGenericInterface(comm, params) {
   /* Anything that can be initialized without grid information can be
    * initialized here. Like universal constants, mam wetscav options.
    */
@@ -171,6 +173,31 @@ void MAMConstituentFluxes::initialize_impl(const RunType run_type) {
   // ---------------------------------------------------------------
   // Input fields read in from IC file, namelist or other processes
   // ---------------------------------------------------------------
+  //NOTE: These variables are Required. Thus, I will check them before computations.
+  std::map<std::string, bool> pre_check={{"T_mid", false},
+                                         {"p_mid", false},
+                                         {"qv", false},
+                                         {"qc", false},
+                                         {"qi", false},
+                                         {"nc", false},
+                                         {"ni", false},
+                                         {"omega", false},
+                                         {"p_int", false},
+                                         {"pseudo_density", false},
+                                         {"pbl_height", false},
+                                         {"cldfrac_tot", false},
+                                         {"constituent_fluxes", false},
+                                         {"phis", false}
+                                         };
+
+  for(const auto &item : pre_check) {
+    const auto min_value = mam_coupling::physical_min(item.first);
+    const auto max_value = mam_coupling::physical_max(item.first);
+    add_precondition_check<FieldWithinIntervalCheck>(
+      get_field_in(item.first),grid_,min_value,max_value,item.second);
+  }
+  // checks pre/post condition intervals of aerosols and gases
+  add_invariant_check_for_aerosol();
 
   // Populate the wet atmosphere state with views from fields
   // FIMXE: specifically look which among these are actually used by the process
