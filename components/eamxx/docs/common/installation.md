@@ -1,10 +1,14 @@
 # Installation
 
+## NOTE: potentially this is better off being moved to the QSG?
+
+$\implies$ YES
+
 Follow these simple instructions to build and test EAMxx's standalone
 configuration for yourself. This document makes use of the following paths:
 
-+ `${RUN_ROOT_DIR}`: the root directory where EAMxx is built and run
-+ `${EAMXX_SRC_DIR}`: the directory into which you've cloned the `scream` repo
+- `${RUN_ROOT_DIR}`: the root directory where EAMxx is built and run
+- `${EAMXX_SRC_DIR}`: the directory into which you've cloned the `scream` repo
 
 EAMxx's configuration and build system is based on [CMake](https://cmake.org/).
 CMake has been around a while and has gained a lot of traction in recent years,
@@ -22,11 +26,11 @@ CMake's testing tool.
 First, make sure you're on one of the machines supported by EAMxx, or that you
 have the following software installed:
 
-* A working MPI installation (typically [MPICH]() or [Open-MPI]())
-* [CMake](https://cmake.org) and [GNU Make](https://www.gnu.org/software/make/)
-* A working set of C, C++, and Fortran compilers
-* A recent version of [Git](https://git-scm.com/)
-* A working installation of [NetCDF](https://www.unidata.ucar.edu/software/netcdf/),
+- A working MPI installation (typically [MPICH](https://www.mpich.org) or [Open-MPI](https://www.open-mpi.org))
+- [CMake](https://cmake.org) and [GNU Make](https://www.gnu.org/software/make/)
+- A working set of C, C++, and Fortran compilers
+- A recent version of [Git](https://git-scm.com/)
+- A working installation of [NetCDF](https://www.unidata.ucar.edu/software/netcdf/),
   including both [C](https://github.com/Unidata/netcdf-c) and
   [Fortran](https://github.com/Unidata/netcdf-fortran) libraries.
 
@@ -39,7 +43,7 @@ have the following software installed:
 First, make sure you've cloned the [EAMxx repo (including all submodules)](https://github.com/E3SM-Project/scream)
 to `EAMXX_SRC_DIR` using the following command:
 
-```
+```{ .shell .copy }
 git clone --recurse-submodules https://github.com/E3SM-Project/scream
 ```
 
@@ -47,13 +51,13 @@ If you have already cloned the project and forgot to type `--recurse-submodules`
 you can change to `$EAMXX_SRC_DIR` and using the following command to initialize,
 fetch and checkout all submodules:
 
-```
+```{ .shell .copy }
 git submodule update --init --recursive
 ```
 
 If you're running a branch that's not `master`, check out this branch with
 
-```
+```{ .shell .copy }
 git checkout <branch>
 ```
 
@@ -68,7 +72,7 @@ and see whether your favorite machine has one.
 
 For example, to configure SCREAM on the Quartz machine at LLNL:
 
-```
+```{ .shell .copy }
 cd $RUN_ROOT_DIR
 cmake \
     -DCMAKE_CXX_COMPILER=$(which mpicxx) \
@@ -81,7 +85,8 @@ If you're building on a machine that doesn't have a ready-made machine file,
 you can try configuring your build by manually passing options to CMake. This
 usually looks something like the following, which configures EAMxx to compile
 CPU code using Kokkos's OpenMP backend:
-```
+
+```{ .shell .copy }
 cd $RUN_ROOT_DIR
 cmake \
     -D CMAKE_BUILD_TYPE=Debug \
@@ -112,41 +117,57 @@ In either case, EAMxx requires MPI-aware compilers. Let's examine these
 options (only some of which are required on any given machine) to make sure we
 know what they do:
 
-* `CMAKE_BUILD_TYPE`: specifies whether you are building EAMxx in a
-  developer-friendly configuration (`Debug`), for a production run (`Release`)
-  or for performance profiling or some other specialized purpose. Typically,
-  you'll set this option to `Debug` or `Release`.
-* `CMAKE_{C,CXX,Fortran}_COMPILER`: the name of the command used to invoke an
-  MPI-enabled C, C++, or Fortran compiler to build EAMxx
-* `MPIEXEC_EXECUTABLE`: the name of the command used to run EAMxx using MPI,
-  typically `mpiexec` or `mpirun`, but possibly different depending on your
-  desired machine
-* `EKAT_MPI_NP_FLAG`: the flag passed to `MPIEXEC_EXECUTABLE` that you use to
-  specify the number of desired MPI processes. This is typically `-n` for
-  `mpiexec` and `-np` for `mpirun`.
-* `SCREAM_DYNAMICS_DYCORE`: specifies the dycore used for configuring EAMxx,
-  which is `NONE` if you are not configuring EAMxx to run its dycore-related
-  tests, or `HOMME` if you want to use HOMMExx
-* `SCREAM_DOUBLE_PRECISION`: indicates whether EAMxx's `Real` type is a
-  double-precision (`ON`) or single-precision (`OFF`) floating point type
-* `SCREAM_INPUT_ROOT`: specifies the location of the top-level folder that
-  stores input data files for EAMxx. This folder is populated with input files
-  which are downloaded automatically during EAMxx's build process.
-* The Kokkos-related build options (most of which begin with `Kokkos_`) are
-  described [in the Kokkos Wiki](https://kokkos.github.io/kokkos-core-wiki/keywords.html)
-* `NetCDF_C_PATHS`: specifies one or more folders in which the NetCDF C library
-  and headers are installed. In the simplest configuration, the headers should
-  be located in `${NetCDF_C_PATHS}/include` and the library should live in
-  `${NetCDF_C_PATHS}/lib`.
-* `NetCDF_Fortran_PATHS`: specifies one or more folders in which the NetCDF
-  Fortran library and modules are installed. Analogous to `${NetCDF_C_PATHS}`,
-  `.mod` files should be in `${NetCDF_Fortran_PATHS}/include`, and the library
-  should be installed in `${NetCDF_Fortran_PATHS}/lib`.
-* `PnetCDF_C_PATHS`: specifies one or more folders in which the pNetCDF C
-  library and headers are installed, analogous to `NetCDF_C_PATHS`.
-* `PnetCDF_Fortran_PATHS`: specifies one or more folders in which the pNetCDF
-  Fortran library and modules are installed, analogous to
-  `NetCDF_Fortran_PATHS`.
+- `CMAKE_BUILD_TYPE`:
+      - Specifies whether you are building EAMxx in a developer-friendly
+      configuration (`Debug`), for a production run (`Release`) or for
+      performance profiling or some other specialized purpose.
+      - Typically, you'll set this option to `Debug` or `Release`.
+- `CMAKE_{C,CXX,Fortran}_COMPILER`:
+      - The name of the command used to invoke an MPI-enabled C, C++, or Fortran
+      compiler to build EAMxx
+- `MPIEXEC_EXECUTABLE`:
+      - The name of the command used to run EAMxx using MPI.
+      - This is typically `mpiexec` or `mpirun`, but possibly different
+      depending on your desired machine
+- `EKAT_MPI_NP_FLAG`:
+      - The flag passed to `MPIEXEC_EXECUTABLE` that you use to specify the
+      number of desired MPI processes.
+      - This is typically `-n` for `mpiexec` and `-np` for `mpirun`.
+- `SCREAM_DYNAMICS_DYCORE`:
+      - Specifies the dycore used for configuring EAMxx, which is `NONE` if
+      you are not configuring EAMxx to run its dycore-related tests, or
+      `HOMME` if you want to use HOMMExx
+- `SCREAM_DOUBLE_PRECISION`:
+      - Indicates whether EAMxx's `Real` floating-point type is
+      double-precision (`ON`) or single-precision (`OFF`).
+- `SCREAM_INPUT_ROOT`:
+      - Specifies the location of the top-level folder that stores input
+      data files for EAMxx.
+      - This folder is populated with input files which are downloaded
+      automatically during EAMxx's build process.
+- **Kokkos-related build options:**
+      - Most of these which begin with `Kokkos_`, and they are described in the
+      [Kokkos Wiki](https://kokkos.github.io/kokkos-core-wiki/keywords.html)
+- `NetCDF_C_PATHS`:
+      - Specifies one or more folders in which the NetCDF C library and headers
+      are installed.
+      - In the simplest configuration, the headers should be located in
+      `${NetCDF_C_PATHS}/include` and the library should live in
+      `${NetCDF_C_PATHS}/lib`.
+- `NetCDF_Fortran_PATHS`:
+      - Specifies one or more folders in which the NetCDF Fortran library and
+      modules are installed.
+      - Analogous to `${NetCDF_C_PATHS}`, `.mod` files should be in
+      `${NetCDF_Fortran_PATHS}/include`, and the library should be installed in
+      `${NetCDF_Fortran_PATHS}/lib`.
+- `PnetCDF_C_PATHS`:
+      - Specifies one or more folders in which the pNetCDF C library and
+      headers are installed.
+      - Analogous to `NetCDF_C_PATHS`.
+- `PnetCDF_Fortran_PATHS`:
+      - Specifies one or more folders in which the pNetCDF Fortran library and
+      modules are installed.
+      - Analogous to `NetCDF_Fortran_PATHS`.
 
 Above, we've configured `Debug` builds to make it easier to find and fix errors.
 For performance testing, you should configure a `Release` build and make use of
@@ -156,15 +177,16 @@ other options, depending on your architecture.
 
 Now you can build SCREAM from that same directory:
 
-```
+```{ .shell .copy }
 make -j
 ```
 
-The `-j` flag tells Make to use threads to compile in parallel. If you like, you
-can set the number of threads by passing it as an argument to `-j` (e.g.
-`make -j8`).
+The `-j` flag instructs Make to use what it deems to be the maximum, sensible
+number of  threads to compile in parallel.
+If you like, you can set the number of threads explicitly by passing it as an
+argument to `-j` (e.g., `make -j8`).
 
-## Running Tests
+<!-- ## Running Tests -->
 
-You can run EAMxx's tests to make sure your build works by following the
-instructions [here](../developer/standalone_testing.md).
+<!-- You can run EAMxx's tests to make sure your build works by following the
+instructions [here](../testing/standalone_testing.md). -->
