@@ -32,9 +32,6 @@ class MAMConstituentFluxes final : public scream::MAMGenericInterface {
   // buffer for sotring temporary variables
   mam_coupling::Buffer buffer_;
 
-  // physics grid for column information
-  std::shared_ptr<const AbstractGrid> grid_;
-
   const_view_2d constituent_fluxes_;
 
  public:

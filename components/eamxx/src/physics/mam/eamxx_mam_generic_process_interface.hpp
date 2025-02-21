@@ -16,17 +16,19 @@ class MAMGenericInterface : public scream::AtmosphereProcess {
   MAMGenericInterface(const ekat::Comm &comm,
                        const ekat::ParameterList &params);
 
-  void add_invariant_check_for_aerosol(
-    // std::shared_ptr<const AbstractGrid> grid_
-    );
+  void add_invariant_check_for_aerosol();
+  void add_aerosol_tracers();
+    // physics grid for column information
+  std::shared_ptr<const AbstractGrid> grid_;
+
  private:
    // The type of subcomponent
   // --------------------------------------------------------------------------
   // AtmosphereProcess overrides (see share/atm_process/atmosphere_process.hpp)
   // --------------------------------------------------------------------------
   AtmosphereProcessType type() const { return AtmosphereProcessType::Physics; }
-  // physics grid for column information
-  std::shared_ptr<const AbstractGrid> grid_;
+
+
 
 };  // MAMGenericInterface
 }  // namespace scream
