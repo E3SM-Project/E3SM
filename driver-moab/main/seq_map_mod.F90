@@ -401,7 +401,6 @@ end subroutine moab_map_init_rcfile
        call shr_sys_abort(subname//' ERROR: avwtsfld present')
     endif
 
-#ifdef HAVE_MOAB
        ! check whether the application ID is defined on the current process
        if ( mapper%src_mbid .lt. 0 .or. mapper%tgt_mbid .lt. 0 ) then
          valid_moab_context = .FALSE.
@@ -443,19 +442,6 @@ end subroutine moab_map_init_rcfile
          endif
 #endif
        endif ! valid_moab_context
-#endif
-
-    if (mapper%copy_only) then
-       !-------------------------------------------
-       ! COPY data
-       !-------------------------------------------
-       if (present(fldlist)) then
-         call mct_aVect_copy(aVin=av_s,aVout=av_d,rList=fldlist,vector=mct_usevector)
-       else
-         call mct_aVect_copy(aVin=av_s,aVout=av_d,vector=mct_usevector)
-       endif
-
-    endif
 
     if (mapper%copy_only .or. mapper%rearrange_only) then
 
