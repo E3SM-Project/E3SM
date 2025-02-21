@@ -3232,7 +3232,7 @@
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <MAX_GB_OLD_TEST_DATA>0</MAX_GB_OLD_TEST_DATA>
     <environment_variables>
-      <env name="PERL5LIB">/eagle/E3SM_RRM/soft/perl5/lib/perl5</env>
+      <env name="PERL5LIB">/grand/E3SMinput/soft/perl5/lib/perl5</env>
       <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
       <env name="CRAYPE_LINK_TYPE">dynamic</env>
