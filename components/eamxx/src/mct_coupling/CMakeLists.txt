@@ -42,6 +42,7 @@ set (SCREAM_LIBS
      nudging
      diagnostics
      tms
+     pompei
 )
 if (SCREAM_ENABLE_ML_CORRECTION)
   list (APPEND SCREAM_LIBS ml_correction)

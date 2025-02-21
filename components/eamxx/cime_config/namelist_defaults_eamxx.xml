@@ -189,6 +189,12 @@ be lost if SCREAM_HACK_XML is not enabled.
       <BfbHash type="integer">18</BfbHash>
     </homme>
 
+    <!-- Pompei -->
+    <pompei inherit="atm_proc_base">
+      <eruption_date type="string" doc="Start date/time in YYYY-MM-DD-SSSSS format for the eruption">${RUN_REFDATE}-${RUN_REFTOD}</eruption_date>
+      <plume_radius_in_km type="real" doc="Radius of eruption plume, in km">100</plume_radius_in_km>
+    </pompei>
+
     <!-- P3 microphysics -->
     <p3 inherit="atm_proc_base">
       <do_prescribed_ccn>true</do_prescribed_ccn>
@@ -637,6 +643,8 @@ be lost if SCREAM_HACK_XML is not enabled.
     <nc_nuceat_tend    >0.0</nc_nuceat_tend>
     <!-- SHOC internally inits TKE; just set to 0 here to signal it's not in the IC file -->
     <tke               >0.0</tke>
+    <!-- Ash initial condition to 0.0 -->
+    <ash               >0.0</ash>
     <!-- Note: these should be provided by surface models, but we init here to keep AD from reading from file -->
     <sfc_alb_dir_vis   >0.0</sfc_alb_dir_vis>
     <sfc_alb_dir_nir   >0.0</sfc_alb_dir_nir>
