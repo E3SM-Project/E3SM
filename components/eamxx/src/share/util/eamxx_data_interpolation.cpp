@@ -379,13 +379,7 @@ get_input_files_dimlen (const std::string& dimname) const
 void DataInterpolation::
 setup_horiz_remappers (const RemapData& data)
 {
-  const bool has_iop_lat = not ekat::is_invalid(data.iop_lat);
-  const bool has_iop_lon = not ekat::is_invalid(data.iop_lon);
-  EKAT_REQUIRE_MSG (has_iop_lat==has_iop_lon,
-      "Error! Only one between iop_lat and iop_lon appears to be valid in RemapData.\n"
-      "  - iop_lat: " << data.iop_lat << "\n"
-      "  - iop_lon: " << data.iop_lon << "\n");
-  EKAT_REQUIRE_MSG (data.hremap_file=="" or not has_iop_lat,
+  EKAT_REQUIRE_MSG (data.hremap_file=="" or not data.has_iop,
       "Error! Cannot both use a hremap file and set iop lat/lon coordinates.\n");
 
   // Create hremap tgt grid
@@ -394,7 +388,11 @@ setup_horiz_remappers (const RemapData& data)
   m_grid_after_hremap = m_model_grid->clone("after_hremap",true);
   m_grid_after_hremap->reset_num_vertical_lev(nlevs_data);
 
-  if (has_iop_lat) {
+  if (data.has_iop) {
+    EKAT_REQUIRE_MSG (not ekat::is_invalid(data.iop_lat) and not ekat::is_invalid(data.iop_lon),
+        "Error! At least one between iop_lat and iop_lon appears to be valid in RemapData.\n"
+        "  - iop_lat: " << data.iop_lat << "\n"
+        "  - iop_lon: " << data.iop_lon << "\n");
     // Create grid for IO and load lat/lon field in IO grid from any data file
     auto data_grid = create_point_grid("data",ncols_data,nlevs_data,m_model_grid->get_comm());
     auto lat_f = data_grid->create_geometry_data("lat",data_grid->get_2d_scalar_layout());
