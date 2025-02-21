@@ -2,7 +2,7 @@
 
 #include "share/grid/point_grid.hpp"
 #include "share/grid/grid_import_export.hpp"
-#include "share/io/scream_scorpio_interface.hpp"
+#include "share/io/eamxx_scorpio_interface.hpp"
 
 #include <numeric>
 

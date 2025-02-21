@@ -1,7 +1,7 @@
 #include "share/atm_process/atmosphere_process.hpp"
 #include "share/field/field_utils.hpp"
-#include "share/util/scream_array_utils.hpp"
-#include "share/util/scream_bfbhash.hpp"
+#include "share/util/eamxx_array_utils.hpp"
+#include "share/util/eamxx_bfbhash.hpp"
 #include "ekat/ekat_assert.hpp"
 
 #include <cstdint>

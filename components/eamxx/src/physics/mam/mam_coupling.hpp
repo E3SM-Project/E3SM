@@ -5,7 +5,7 @@
 #include <mam4xx/conversions.hpp>
 #include <ekat/kokkos/ekat_subview_utils.hpp>
 #include <share/atm_process/ATMBufferManager.hpp>
-#include <share/util/scream_common_physics_functions.hpp>
+#include <share/util/eamxx_common_physics_functions.hpp>
 
 // These data structures and functions are used to move data between EAMxx
 // and mam4xx. This file must be adjusted whenever the aerosol modes and

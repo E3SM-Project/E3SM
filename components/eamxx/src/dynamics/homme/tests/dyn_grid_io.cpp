@@ -4,23 +4,23 @@
 
 #include "dynamics/homme/homme_grids_manager.hpp"
 #include "dynamics/homme/homme_dimensions.hpp"
-#include "dynamics/homme/interface/scream_homme_interface.hpp"
+#include "dynamics/homme/interface/eamxx_homme_interface.hpp"
 
 #include "share/io/scorpio_input.hpp"
-#include "share/io/scream_output_manager.hpp"
+#include "share/io/eamxx_output_manager.hpp"
 
 #include "share/field/field_utils.hpp"
 #include "share/field/field_manager.hpp"
 #include "share/grid/grids_manager.hpp"
-#include "share/util/scream_setup_random_test.hpp"
-#include "share/util/scream_time_stamp.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/util/eamxx_time_stamp.hpp"
 
 #include "ekat/util/ekat_units.hpp"
 #include "ekat/ekat_parameter_list.hpp"
 #include "ekat/mpi/ekat_comm.hpp"
 
 extern "C" {
-// These are specific C/F calls for these tests (i.e., not part of scream_homme_interface.hpp)
+// These are specific C/F calls for these tests (i.e., not part of eamxx_homme_interface.hpp)
 void init_test_params_f90 ();
 void cleanup_test_f90 ();
 }

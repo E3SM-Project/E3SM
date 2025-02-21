@@ -2,7 +2,7 @@
 
 #include <ekat/kokkos/ekat_kokkos_utils.hpp>
 
-#include "share/util/scream_universal_constants.hpp"
+#include "share/util/eamxx_universal_constants.hpp"
 
 namespace scream {
 

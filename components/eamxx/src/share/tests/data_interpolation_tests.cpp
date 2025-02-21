@@ -2,11 +2,11 @@
 
 #include "data_interpolation_tests.hpp"
 
-#include "share/io/scream_scorpio_interface.hpp"
+#include "share/io/eamxx_scorpio_interface.hpp"
 #include "share/util/eamxx_data_interpolation.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/field/field_utils.hpp"
-#include "share/scream_config.hpp"
+#include "share/eamxx_config.hpp"
 
 namespace scream {
 

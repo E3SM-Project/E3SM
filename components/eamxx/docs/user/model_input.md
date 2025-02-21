@@ -27,7 +27,7 @@ The infrastructure for reading inputs into EAMxx involves a few scripts/files:
     - `namelist_scream.xml`: this XML file is located in the case directory, and contains all the runtime parameters that EAMxx
       will read in at runtime. `buildnml` uses this XML file as an intermediate file during the generation of
       `scream_input.yaml` and `namelist.nl`. More specifically, `buildnml` generates this file using case information to select the
-      proper configurations from the file `namelist_defaults_scream.xml`, located in `SRCDIR/components/eamxx/cime_config`.
+      proper configurations from the file `namelist_defaults_eamxx.xml`, located in `SRCDIR/components/eamxx/cime_config`.
       Despite the fact that the only files that are needed at runtime are `scream_input.yaml` and `namelist.nl`,
       we generate and keep this XML file around to make the implementation of `atmquery` easier.
 
@@ -260,7 +260,7 @@ For type "string" and "array(T)", it is also possible to _append_ to the current
 
 The `atmchange` script can be used to change any of the runtime parameters of EAMxx. In particular, it can
 be used to add, remove, or reorder atmosphere processes. When adding an atmosphere process, we must first
-make sure that the defaults for that process are present in `namelist_defaults_scream.xml`. For instance,
+make sure that the defaults for that process are present in `namelist_defaults_eamxx.xml`. For instance,
 the default settings for the "physics" atmosphere process group include the following:
 
 ```shell
@@ -295,7 +295,7 @@ an atmosphere process group. Hence, we can then do
 > ./atmchange _my_group_::atm_procs_list+=A,B
 ```
 
-where A and B must be valid atmosphere process names (i.e., present in `namelist_defaults_scream.xml`)
+where A and B must be valid atmosphere process names (i.e., present in `namelist_defaults_eamxx.xml`)
 or be themselves new atmosphere process groups (i.e., beginning/ending with an underscore)
 
 `atmchange` can also be used to completely change a list of atmosphere processes:

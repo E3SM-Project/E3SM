@@ -3,8 +3,8 @@
 #include "share/grid/remap/vertical_remapper.hpp"
 #include "share/grid/remap/coarsening_remapper.hpp"
 #include "share/grid/point_grid.hpp"
-#include "share/io/scream_scorpio_interface.hpp"
-#include "share/util/scream_timing.hpp"
+#include "share/io/eamxx_scorpio_interface.hpp"
+#include "share/util/eamxx_timing.hpp"
 #include "share/field/field_utils.hpp"
 
 namespace scream {

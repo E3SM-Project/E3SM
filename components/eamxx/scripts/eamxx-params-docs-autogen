@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-This script parses the file `cime_config/namelist_defaults_scream.xml'
+This script parses the file `cime_config/namelist_defaults_eamxx.xml'
 and generates the markdown file `docs/common/eamxx_params.md`,
 containing all the runtime parameters that can be configured via calls
 to `atmchange` (in the case folder). For each parameter, we also report
@@ -90,7 +90,7 @@ def generate_params_docs():
 ###########################################################################
 
     eamxx = pathlib.Path(__file__).parent.parent.resolve()
-    xml_defaults_file = eamxx / "cime_config" / "namelist_defaults_scream.xml"
+    xml_defaults_file = eamxx / "cime_config" / "namelist_defaults_eamxx.xml"
     output_file = eamxx / "docs" / "common" / "eamxx_params.md"
 
     print("Generating eamxx params documentation...")

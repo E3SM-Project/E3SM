@@ -11,7 +11,7 @@
 #include "dynamics/homme/homme_dynamics_helpers.hpp"
 #include "dynamics/homme/homme_dimensions.hpp"
 #include "share/grid/se_grid.hpp"
-#include "share/util/scream_utils.hpp"
+#include "share/util/eamxx_utils.hpp"
 
 #include "ekat/ekat_pack_utils.hpp"
 #include "ekat/ekat_assert.hpp"

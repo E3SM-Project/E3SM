@@ -1,5 +1,5 @@
 #include "diagnostics/field_at_pressure_level.hpp"
-#include "share/util/scream_universal_constants.hpp"
+#include "share/util/eamxx_universal_constants.hpp"
 
 #include "ekat/std_meta/ekat_std_utils.hpp"
 #include "ekat/util/ekat_upper_bound.hpp"

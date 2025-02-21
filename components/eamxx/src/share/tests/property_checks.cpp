@@ -5,7 +5,7 @@
 #include "share/property_checks/field_lower_bound_check.hpp"
 #include "share/property_checks/field_upper_bound_check.hpp"
 #include "share/property_checks/field_nan_check.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/field/field_utils.hpp"
 

@@ -2,7 +2,7 @@ module physics_share_f2c
   use iso_c_binding
   implicit none
 
-#include "scream_config.f"
+#include "eamxx_config.f"
 #ifdef SCREAM_DOUBLE_PRECISION
 # define c_real c_double
 #else

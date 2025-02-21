@@ -3,7 +3,7 @@
 #include "ekat/kokkos/ekat_kokkos_types.hpp"
 #include "ekat/kokkos/ekat_subview_utils.hpp"
 #include "ekat/util/ekat_arch.hpp"
-#include "share/util/scream_column_ops.hpp"
+#include "share/util/eamxx_column_ops.hpp"
 
 namespace {
 

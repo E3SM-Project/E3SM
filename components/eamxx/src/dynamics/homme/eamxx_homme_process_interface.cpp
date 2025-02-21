@@ -27,10 +27,10 @@
 #include "dynamics/homme/physics_dynamics_remapper.hpp"
 #include "dynamics/homme/homme_dimensions.hpp"
 #include "dynamics/homme/homme_dynamics_helpers.hpp"
-#include "dynamics/homme/interface/scream_homme_interface.hpp"
+#include "dynamics/homme/interface/eamxx_homme_interface.hpp"
 #include "physics/share/physics_constants.hpp"
-#include "share/util/scream_common_physics_functions.hpp"
-#include "share/util/scream_column_ops.hpp"
+#include "share/util/eamxx_common_physics_functions.hpp"
+#include "share/util/eamxx_column_ops.hpp"
 #include "share/property_checks/field_lower_bound_check.hpp"
 
 // Ekat includes

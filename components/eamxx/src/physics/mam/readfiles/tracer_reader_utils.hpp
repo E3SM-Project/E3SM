@@ -9,7 +9,7 @@
 #include "share/grid/remap/identity_remapper.hpp"
 #include "share/grid/remap/refining_remapper_p2p.hpp"
 #include "share/io/scorpio_input.hpp"
-#include "share/io/scream_scorpio_interface.hpp"
+#include "share/io/eamxx_scorpio_interface.hpp"
 
 namespace scream::mam_coupling {
 
@@ -96,7 +96,7 @@ struct TracerTimeState {
   // The current month
   int current_month = -1;
   // Julian Date for the beginning of the month, as defined in
-  //           /src/share/util/scream_time_stamp.hpp
+  //           /src/share/util/eamxx_time_stamp.hpp
   // See this file for definition of Julian Date.
   Real t_beg_month;
   // Current simulation Julian Date

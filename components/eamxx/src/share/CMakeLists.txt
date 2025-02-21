@@ -1,8 +1,8 @@
 include (EkatSetCompilerFlags)
 
 set(SHARE_SRC
-  scream_config.cpp
-  scream_session.cpp
+  eamxx_config.cpp
+  eamxx_session.cpp
   atm_process/atmosphere_process.cpp
   atm_process/atmosphere_process_hash.cpp
   atm_process/atmosphere_process_group.cpp
@@ -37,10 +37,10 @@ set(SHARE_SRC
   util/eamxx_data_interpolation.cpp
   util/eamxx_fv_phys_rrtmgp_active_gases_workaround.cpp
   util/eamxx_time_interpolation.cpp
-  util/scream_time_stamp.cpp
-  util/scream_timing.cpp
-  util/scream_utils.cpp
-  util/scream_bfbhash.cpp
+  util/eamxx_time_stamp.cpp
+  util/eamxx_timing.cpp
+  util/eamxx_utils.cpp
+  util/eamxx_bfbhash.cpp
 )
 
 # Append ETI sources (I didn't do it above for clarity of reading)
@@ -111,7 +111,7 @@ target_compile_options(scream_share PUBLIC
   $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>
 )
 
-# This used to be in `scream_config.h/scream_config.f`, but we did accidentally remove
+# This used to be in `eamxx_config.h/eamxx_config.f`, but we did accidentally remove
 # the includes at least twice. To avoid this from happening again, we add this crucial
 # macro as a compile definition of the scream_share, which is linked to all other
 # scream libraries.
@@ -151,7 +151,7 @@ if (NOT SCREAM_LIB_ONLY)
   # Create test_support lib
   add_library(scream_test_support
     grid/mesh_free_grids_manager.cpp
-    util/scream_test_session.cpp
+    util/eamxx_test_session.cpp
   )
   target_link_libraries(scream_test_support PUBLIC scream_share scream_io)
 

@@ -7,7 +7,7 @@
 #include "share/grid/abstract_grid.hpp"
 #include "share/grid/grids_manager.hpp"
 #include "share/io/scorpio_input.hpp"
-#include "share/io/scream_scorpio_interface.hpp"
+#include "share/io/eamxx_scorpio_interface.hpp"
 
 // later to mam_coupling.hpp
 namespace scream::mam_coupling {

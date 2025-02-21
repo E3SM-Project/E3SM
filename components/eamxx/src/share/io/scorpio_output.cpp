@@ -1,9 +1,9 @@
 #include "share/io/scorpio_output.hpp"
 #include "share/io/scorpio_input.hpp"
-#include "share/util/scream_array_utils.hpp"
+#include "share/util/eamxx_array_utils.hpp"
 #include "share/grid/remap/coarsening_remapper.hpp"
 #include "share/grid/remap/vertical_remapper.hpp"
-#include "share/util/scream_timing.hpp"
+#include "share/util/eamxx_timing.hpp"
 #include "share/field/field_utils.hpp"
 
 #include "diagnostics/register_diagnostics.hpp"

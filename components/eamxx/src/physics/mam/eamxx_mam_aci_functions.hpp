@@ -3,7 +3,7 @@
 
 #include <ekat/kokkos/ekat_subview_utils.hpp>
 #include <mam4xx/mam4.hpp>
-#include <share/util/scream_common_physics_functions.hpp>
+#include <share/util/eamxx_common_physics_functions.hpp>
 
 namespace scream {
 

@@ -8,7 +8,7 @@ on:
     paths:
       # first, yes to these
       - '.github/workflows/eamxx-sa-testing.yml'
-      - '.github/actions/test-all-scream/**'
+      - '.github/actions/test-all-eamxx/**'
       - 'cime_config/machine/config_machines.xml'
       - 'components/eamxx/**'
       - 'components/homme/**'
@@ -84,7 +84,7 @@ jobs:
       - name: Show action trigger
         uses: ./.github/actions/show-workflow-trigger
       - name: Run tests
-        uses: ./.github/actions/test-all-scream
+        uses: ./.github/actions/test-all-eamxx
         with:
           build_type: ${{ matrix.build_type }}
           machine: ghci-snl-cpu
@@ -146,7 +146,7 @@ jobs:
                   ;;
           esac
       - name: Run tests
-        uses: ./.github/actions/test-all-scream
+        uses: ./.github/actions/test-all-eamxx
         with:
           build_type: ${{ matrix.build_type }}
           machine: ghci-snl-cuda

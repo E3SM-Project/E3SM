@@ -4,7 +4,7 @@
 #include <string>
 
 #include "diagnostics/aerocom_cld_util.hpp"
-#include "share/util/scream_common_physics_functions.hpp"
+#include "share/util/eamxx_common_physics_functions.hpp"
 
 namespace scream {
 

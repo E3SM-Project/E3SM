@@ -4,8 +4,8 @@
 #include "physics/share/physics_constants.hpp"
 #include "shoc_functions.hpp"
 #include "shoc_test_data.hpp"
-#include "share/scream_types.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "share/eamxx_types.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/util/ekat_arch.hpp"

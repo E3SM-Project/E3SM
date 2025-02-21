@@ -170,22 +170,22 @@ target_include_directories(rrtmgp PUBLIC
 ##################################
 
 set(SCREAM_RRTMGP_SOURCES_INTERFACE
-  scream_rrtmgp_interface.cpp
+  eamxx_rrtmgp_interface.cpp
 )
 
-add_library(scream_rrtmgp_interface ${SCREAM_RRTMGP_SOURCES_INTERFACE})
+add_library(eamxx_rrtmgp_interface ${SCREAM_RRTMGP_SOURCES_INTERFACE})
 if (SCREAM_RRTMGP_ENABLE_YAKL)
-  yakl_process_target(scream_rrtmgp_interface)
+  yakl_process_target(eamxx_rrtmgp_interface)
 endif()
 
 # NOTE: cannot use 'PUBLIC' in target_link_libraries,
 #       since yakl_process_target already used it
 #       with the "plain" signature
 find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATH}/lib)
-target_link_libraries(scream_rrtmgp_interface ${NETCDF_C} rrtmgp scream_share Kokkos::kokkos)
-target_include_directories(scream_rrtmgp_interface PUBLIC
+target_link_libraries(eamxx_rrtmgp_interface ${NETCDF_C} rrtmgp scream_share Kokkos::kokkos)
+target_include_directories(eamxx_rrtmgp_interface PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(scream_rrtmgp_interface SYSTEM PUBLIC
+target_include_directories(eamxx_rrtmgp_interface SYSTEM PUBLIC
     ${NetCDF_C_PATH}/include
     ${EAM_RRTMGP_DIR}/external)
 
@@ -199,7 +199,7 @@ set(SCREAM_RRTMGP_SOURCES
 )
 
 add_library(scream_rrtmgp ${SCREAM_RRTMGP_SOURCES})
-target_link_libraries(scream_rrtmgp PUBLIC scream_share physics_share csm_share scream_rrtmgp_interface Kokkos::kokkos)
+target_link_libraries(scream_rrtmgp PUBLIC scream_share physics_share csm_share eamxx_rrtmgp_interface Kokkos::kokkos)
 set_target_properties(scream_rrtmgp PROPERTIES
   Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules
 )

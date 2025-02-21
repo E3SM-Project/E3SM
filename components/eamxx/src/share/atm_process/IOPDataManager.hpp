@@ -1,11 +1,11 @@
 #ifndef SCREAM_IOP_HPP
 #define SCREAM_IOP_HPP
 
-#include "share/scream_types.hpp"
+#include "share/eamxx_types.hpp"
 #include "share/field/field_manager.hpp"
 #include "share/grid/abstract_grid.hpp"
 #include "share/grid/remap/abstract_remapper.hpp"
-#include "share/util/scream_time_stamp.hpp"
+#include "share/util/eamxx_time_stamp.hpp"
 
 #include "ekat/ekat_parameter_list.hpp"
 #include "ekat/ekat_pack.hpp"

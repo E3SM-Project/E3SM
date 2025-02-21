@@ -2,8 +2,8 @@
 #define SCREAM_FIELD_IMPL_HPP
 
 #include "share/field/field.hpp"
-#include "share/util/scream_array_utils.hpp"
-#include "share/util/scream_universal_constants.hpp"
+#include "share/util/eamxx_array_utils.hpp"
+#include "share/util/eamxx_universal_constants.hpp"
 
 #include <ekat/ekat_type_traits.hpp>
 

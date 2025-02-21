@@ -2,7 +2,7 @@
 #define SCREAM_COARSENING_REMAPPER_HPP
 
 #include "share/grid/remap/horiz_interp_remapper_base.hpp"
-#include "scream_config.h"
+#include "eamxx_config.h"
 
 #include <mpi.h>
 

@@ -3,7 +3,7 @@
 
 #include <physics/mam/mam_coupling.hpp>
 #include <share/atm_process/atmosphere_process.hpp>
-#include <share/util/scream_common_physics_functions.hpp>
+#include <share/util/eamxx_common_physics_functions.hpp>
 #include "readfiles/tracer_reader_utils.hpp"
 // For calling MAM4 processes
 #include <mam4xx/mam4.hpp>

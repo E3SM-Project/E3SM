@@ -1,7 +1,7 @@
 #ifndef SCREAM_PHYSICS_TEST_DATA_HPP
 #define SCREAM_PHYSICS_TEST_DATA_HPP
 
-#include "share/scream_types.hpp"
+#include "share/eamxx_types.hpp"
 
 #include "ekat/util/ekat_math_utils.hpp"
 #include "ekat/ekat_assert.hpp"

@@ -7,8 +7,8 @@
 #include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/field/field_manager.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
-#include "share/scream_types.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "share/eamxx_types.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 
 #include <ekat/ekat_parse_yaml_file.hpp>
 #include <ekat/util/ekat_test_utils.hpp>
@@ -600,7 +600,7 @@ TEST_CASE("surface-coupling", "") {
   std::strcpy(export_names[16], "Faxa_lwdn"  );
 
   // Setup the import/export data. This is meant to replicate the structures coming
-  // from mct_coupling/scream_cpl_indices.F90
+  // from mct_coupling/eamxx_cpl_indices.F90
   setup_import_and_export_data(engine, atm_comm,
                                num_cpl_imports, num_scream_imports,
                                import_cpl_indices_view, import_vec_comps_view,

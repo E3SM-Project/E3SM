@@ -2,7 +2,7 @@
 #define EAMXX_ATM_BACKTEND_DIAG_HPP
 
 #include "share/atm_process/atmosphere_diagnostic.hpp"
-#include "share/util/scream_time_stamp.hpp"
+#include "share/util/eamxx_time_stamp.hpp"
 
 namespace scream {
 

@@ -4,14 +4,14 @@
 
 #include "physics/share/physics_constants.hpp"
 
-#include "share/scream_config.hpp"
+#include "share/eamxx_config.hpp"
 #include "share/atm_process/atmosphere_process_group.hpp"
 #include "share/atm_process/atmosphere_process_dag.hpp"
 #include "share/field/field_utils.hpp"
-#include "share/util/scream_time_stamp.hpp"
-#include "share/util/scream_timing.hpp"
-#include "share/util/scream_utils.hpp"
-#include "share/io/scream_io_utils.hpp"
+#include "share/util/eamxx_time_stamp.hpp"
+#include "share/util/eamxx_timing.hpp"
+#include "share/util/eamxx_utils.hpp"
+#include "share/io/eamxx_io_utils.hpp"
 #include "share/property_checks/mass_and_energy_column_conservation_check.hpp"
 
 #include "ekat/ekat_assert.hpp"
@@ -91,7 +91,7 @@ namespace control {
  *  - for atm proc             -> src/share/atm_process/atmosphere_process.hpp
  *  - for atm proc group       -> src/share/atm_process/atmosphere_process_group.hpp
  *  - for scorpio input/output -> src/share/io/scorpio_[input|output].hpp
- *  - for output manager       -> src/share/io/scream_output_manager.hpp
+ *  - for output manager       -> src/share/io/eamxx_output_manager.hpp
  */
 
 AtmosphereDriver::
@@ -1783,7 +1783,7 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
 
   // Write all timers to file, and possibly finalize gptl
   if (not m_gptl_externally_handled) {
-    write_timers_to_file (m_atm_comm,"scream_timing.txt");
+    write_timers_to_file (m_atm_comm,"eamxx_timing.txt");
     finalize_gptl();
   }
 

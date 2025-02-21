@@ -3,7 +3,7 @@
 
 #include "share/grid/abstract_grid.hpp"
 #include "share/grid/remap/abstract_remapper.hpp"
-#include "share/util/scream_time_stamp.hpp"
+#include "share/util/eamxx_time_stamp.hpp"
 #include "share/field/field.hpp"
 
 namespace scream
