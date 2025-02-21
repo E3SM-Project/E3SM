@@ -39,7 +39,6 @@ public:
   using identifier_type     = typename Field::identifier_type;
   using ci_string           = typename identifier_type::ci_string;
   using repo_type           = std::map<ci_string,std::map<ci_string,std::shared_ptr<Field>>>;
-  using grids_mgr_type      = std::shared_ptr<const GridsManager>;
   using group_info_map      = std::map<ci_string, std::shared_ptr<FieldGroupInfo>>;
 
   // Constructor(s)
@@ -152,7 +151,9 @@ public:
       "  - Grids in FM: " + m_grids_mgr->print_available_grids() + "\n");
     return m_grids_mgr->get_repo().begin()->second;
   }
-  const grids_mgr_type& get_grids_manager () const { return m_grids_mgr; }
+
+  const std::shared_ptr<const GridsManager>&
+  get_grids_manager () const { return m_grids_mgr; }
 
   // Set the time stamp of all fields on given grid
   // TODO: I think I want to remove this. We don't want to blanket-init
