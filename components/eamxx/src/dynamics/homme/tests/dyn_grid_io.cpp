@@ -111,9 +111,8 @@ TEST_CASE("dyn_grid_io")
 
   fm->registration_ends();
   fm_ctrl->registration_ends();
-  fm->init_fields_time_stamp(t0,dyn_grid->name());
-  fm->init_fields_time_stamp(t0, phys_grid->name());
-  fm_ctrl->init_fields_time_stamp(t0, phys_grid->name());
+  fm->init_fields_time_stamp(t0);
+  fm_ctrl->init_fields_time_stamp(t0);
 
   std::vector<std::string> fnames = {"field_1", "field_2", "field_3"};
 

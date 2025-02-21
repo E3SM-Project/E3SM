@@ -330,13 +330,15 @@ get_field_group (const std::string& group_name, const std::string& grid_name) co
 }
 
 void FieldManager::
-init_fields_time_stamp (const util::TimeStamp& t0, const std::string& grid_name)
+init_fields_time_stamp (const util::TimeStamp& t0)
 {
   EKAT_REQUIRE_MSG(m_repo_state==RepoState::Closed,
-      "Error! Cannot set initial time stamp on grid \"" + grid_name + "\" until registration has completed.\n");
+      "Error! Cannot set initial time stamp until registration has completed.\n");
 
-  for (auto field_it : m_fields[grid_name]) {
-    field_it.second->get_header().get_tracking().update_time_stamp(t0);
+  for (auto& [grid_name, field_repo] : m_fields) {
+    for (auto& field_it : field_repo) {
+      field_it.second->get_header().get_tracking().update_time_stamp(t0);
+    }
   }
 }
 

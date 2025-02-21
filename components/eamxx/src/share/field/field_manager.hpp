@@ -152,13 +152,7 @@ public:
   // TODO: I think I want to remove this. We don't want to blanket-init
   //       the time stamp. IC reader can init the ts of IC fields, then
   //       let the different atm procs update ts when needed.
-  void init_fields_time_stamp (const util::TimeStamp& t0, const std::string& grid_name);
-  void init_fields_time_stamp (const util::TimeStamp& t0) {
-    EKAT_ASSERT_MSG(m_grids_mgr->size() == 1,
-      "Error! More than one grid exists for FieldManager, must access grid through grids manager.\n"
-      "  - Grids in FM: " + m_grids_mgr->print_available_grids() + "\n");
-    init_fields_time_stamp(t0, m_grids_mgr->get_repo().begin()->second->name());
-  }
+  void init_fields_time_stamp (const util::TimeStamp& t0);
 
 protected:
 
