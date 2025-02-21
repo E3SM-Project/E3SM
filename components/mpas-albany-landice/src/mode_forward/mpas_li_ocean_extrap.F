@@ -780,7 +780,6 @@ contains
                if ( (ismip6shelfMelt_zOcean(iLayer) >= config_TF_iceberg_depth) & 
                        .and. (ismip6shelfMelt_zOcean(iLayer) >= bedTopography(iCell)) ) then
                   icebergCellVertID = iLayer
-
                endif
 
                ! calculate freezing temperature. 
@@ -805,15 +804,16 @@ contains
 
             ! Now that we have the slope of the melt line, alter ocean temperatures along submarine melt line
             do iLayer = 1, nISMIP6OceanLayers
-               if (icebergCellVertID /= 0) then
+               if ( (iLayer <= icebergCellVertID) .and. (icebergCellVertID /= 0) ) then
                   saltDiff = MPAS_3dOceanSalinity(iLayer,iCell) - MPAS_3dOceanSalinity(icebergCellVertID,iCell)     
-                  MPAS_3dOceanTemperature(iLayer, iCell) = (gadeSlope * saltDiff) + MPAS_3dOceanTemperature(iLayer, iCell)
+                  MPAS_3dOceanTemperature(iLayer, iCell) = (gadeSlope * saltDiff) + MPAS_3dOceanTemperature(icebergCellVertID, iCell)
+                  
+                  ! Ensure no artificially adjusted temperatures fall below the freezing temperature
+                  if (MPAS_3dOceanTemperature(iLayer, iCell) < freezingTemperature(iLayer)) then
+                     MPAS_3dOceanTemperature(iLayer, iCell) = freezingTemperature(iLayer)
+                  endif
                endif
-               ! Ensure no artificially adjusted temperatures fall below the freezing temperature
-               if (MPAS_3dOceanTemperature(iLayer, iCell) < freezingTemperature(iLayer)) then
-                  MPAS_3dOceanTemperature(iLayer, iCell) = freezingTemperature(iLayer)
-               endif
-
+                  
                ismip6shelfMelt_3dThermalForcing(iLayer, iCell) = MPAS_3dOceanTemperature(iLayer, iCell) - freezingTemperature(iLayer)
             enddo
         endif
