@@ -3,7 +3,7 @@
 
 // For declaring contituent fluxes class derived from atm process
 // class
-#include <share/atm_process/atmosphere_process.hpp>
+#include <physics/mam/eamxx_mam_generic_process_interface.hpp>
 
 // For MAM4 aerosol configuration
 #include <physics/mam/mam_coupling.hpp>
@@ -13,7 +13,7 @@ namespace scream {
 
 // The process responsible for applying MAM4 constituent fluxes. The
 // AD stores exactly ONE instance of this class in its list of subcomponents.
-class MAMConstituentFluxes final : public scream::AtmosphereProcess {
+class MAMConstituentFluxes final : public scream::MAMGenericInterface {
  public:
   using KT            = ekat::KokkosTypes<DefaultDevice>;
   using const_view_2d = Field::view_dev_t<const Real **>;
