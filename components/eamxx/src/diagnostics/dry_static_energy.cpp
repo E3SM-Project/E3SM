@@ -18,7 +18,6 @@ DryStaticEnergyDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& pa
 void DryStaticEnergyDiagnostic::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
   using namespace ekat::units;
-  using namespace ShortFieldTagsNames;
 
   auto m2  = pow(m,2);
   auto s2  = pow(s,2);
@@ -28,18 +27,18 @@ void DryStaticEnergyDiagnostic::set_grids(const std::shared_ptr<const GridsManag
   m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
 
-  FieldLayout scalar2d_layout_col{ {COL}, {m_num_cols} };
-  FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols,m_num_levs} };
+  auto scalar2d = grid->get_2d_scalar_layout();
+  auto scalar3d = grid->get_3d_scalar_layout(true);
 
   // The fields required for this diagnostic to be computed
-  add_field<Required>("T_mid",          scalar3d_layout_mid, K,      grid_name);
-  add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa,     grid_name);
-  add_field<Required>("p_mid",          scalar3d_layout_mid, Pa,     grid_name);
-  add_field<Required>("qv",             scalar3d_layout_mid, kg/kg,  grid_name);
-  add_field<Required>("phis",           scalar2d_layout_col, m2/s2,  grid_name);
+  add_field<Required>("T_mid",          scalar3d, K,      grid_name);
+  add_field<Required>("pseudo_density", scalar3d, Pa,     grid_name);
+  add_field<Required>("p_mid",          scalar3d, Pa,     grid_name);
+  add_field<Required>("qv",             scalar3d, kg/kg,  grid_name);
+  add_field<Required>("phis",           scalar2d, m2/s2,  grid_name);
 
   // Construct and allocate the diagnostic field
-  FieldIdentifier fid (name(), scalar3d_layout_mid, m2/s2, grid_name);
+  FieldIdentifier fid (name(), scalar3d, m2/s2, grid_name);
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
 

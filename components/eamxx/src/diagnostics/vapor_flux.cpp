@@ -30,7 +30,6 @@ VaporFluxDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
 void VaporFluxDiagnostic::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
   using namespace ekat::units;
-  using namespace ShortFieldTagsNames;
 
   auto grid  = grids_manager->get_grid("Physics");
   const auto& grid_name = grid->name();

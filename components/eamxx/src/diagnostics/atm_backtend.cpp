@@ -6,9 +6,11 @@
 
 namespace scream {
 
-AtmBackTendDiag::AtmBackTendDiag(const ekat::Comm &comm,
-                                 const ekat::ParameterList &params)
-    : AtmosphereDiagnostic(comm, params) {
+AtmBackTendDiag::
+AtmBackTendDiag(const ekat::Comm &comm,
+                const ekat::ParameterList &params)
+ : AtmosphereDiagnostic(comm, params)
+{
   EKAT_REQUIRE_MSG(params.isParameter("Tendency Name"),
                    "Error! AtmBackTendDiag requires 'Tendency Name' in its "
                    "input parameters.\n");
@@ -16,10 +18,9 @@ AtmBackTendDiag::AtmBackTendDiag(const ekat::Comm &comm,
   m_name = m_params.get<std::string>("Tendency Name");
 }
 
-void AtmBackTendDiag::set_grids(
-    const std::shared_ptr<const GridsManager> grids_manager) {
-  using namespace ekat::units;
-
+void AtmBackTendDiag::
+set_grids(const std::shared_ptr<const GridsManager> grids_manager)
+{
   const auto &gname = m_params.get<std::string>("grid_name");
   add_field<Required>(m_name, gname);
 }
@@ -30,7 +31,6 @@ void AtmBackTendDiag::initialize_impl(const RunType /*run_type*/) {
   const auto &gn  = fid.get_grid_name();
 
   // Sanity checks
-  using namespace ShortFieldTagsNames;
   const auto &layout = fid.get_layout();
   EKAT_REQUIRE_MSG(
       f.data_type() == DataType::RealType,
