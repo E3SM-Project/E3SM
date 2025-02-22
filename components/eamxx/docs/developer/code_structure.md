@@ -1,11 +1,4 @@
-
 # EAMxx Source Code Structure
-
-<!-- <div class="grid" markdown> -->
-<!-- === "Source Tree Diagram" -->
-<!-- this comes from a nice little web app that turns a markdown bullet list
-into a file tree
-(bullet list used to generate diagram is at the bottom of this file) -->
 
 !!! Info inline "E3SM/components/eamxx/"
 
@@ -69,7 +62,6 @@ into a file tree
     - `cime_config`: Tools and XML files for integrating EAMxx with E3SM via the
       CIME framework.
     - `cmake`: CMake functions and macros used by the configuration/build system.
-    <!-- - `data`: Data files used by our tests. -->
     - `docs`: Documentation for the EAMxx project, including design documents,
       instructions for building and testing EAMxx, and this document.
     - `scripts`: Miscellaneous scripts that implement workflows for running tests

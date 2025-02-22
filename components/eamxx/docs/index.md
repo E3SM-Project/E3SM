@@ -21,7 +21,7 @@ divided into the following sections:
 
 - [User Guide](user/index.md) - info about running EAMxx and all options
 for modifying a simulation
-- [Developer Guide](developer/index.md) - information needed to contribute
+- [Developer Guide](developer/dev_quickstart.md) - information needed to contribute
 to EAMxx development
 - [Technical Guide](technical/index.md) - equations and numerical methods used
 in EAMxx
