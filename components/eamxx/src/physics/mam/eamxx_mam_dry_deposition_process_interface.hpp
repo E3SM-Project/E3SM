@@ -42,12 +42,6 @@ class MAMDryDep final : public MAMGenericInterface  {
   mam_coupling::WetAtmosphere wet_atm_;
   mam_coupling::DryAtmosphere dry_atm_;
 
-  // aerosol state variables
-  mam_coupling::AerosolState wet_aero_, dry_aero_;
-
-  // buffer for sotring temporary variables
-  mam_coupling::Buffer buffer_;
-
   /* Note on mam4::DryDeposition::aerosol_categories = 4
      used in deposition velocity dimension defined below. These
      correspond to the two attachment states and two moments:

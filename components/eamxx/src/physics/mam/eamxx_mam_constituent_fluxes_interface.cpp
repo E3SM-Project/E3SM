@@ -183,43 +183,7 @@ void MAMConstituentFluxes::initialize_impl(const RunType run_type) {
 
   // interstitial and cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
-  for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
-    // interstitial aerosol tracers of interest: number (n) mixing ratios
-    const std::string int_nmr_field_name =
-        mam_coupling::int_aero_nmr_field_name(m);
-    wet_aero_.int_aero_nmr[m] =
-        get_field_out(int_nmr_field_name).get_view<Real **>();
-
-    // cloudborne aerosol tracers of interest: number (n) mixing ratios
-    const std::string cld_nmr_field_name =
-        mam_coupling::cld_aero_nmr_field_name(m);
-    wet_aero_.cld_aero_nmr[m] =
-        get_field_out(cld_nmr_field_name).get_view<Real **>();
-
-    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
-      // (interstitial) aerosol tracers of interest: mass (q) mixing ratios
-      const std::string int_mmr_field_name =
-          mam_coupling::int_aero_mmr_field_name(m, a);
-
-      if(not int_mmr_field_name.empty()) {
-        wet_aero_.int_aero_mmr[m][a] =
-            get_field_out(int_mmr_field_name).get_view<Real **>();
-      }
-
-      // (cloudborne) aerosol tracers of interest: mass (q) mixing ratios
-      const std::string cld_mmr_field_name =
-          mam_coupling::cld_aero_mmr_field_name(m, a);
-      if(not cld_mmr_field_name.empty()) {
-        wet_aero_.cld_aero_mmr[m][a] =
-            get_field_out(cld_mmr_field_name).get_view<Real **>();
-      }
-    }
-  }
-  for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
-    const std::string gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
-    wet_aero_.gas_mmr[g] =
-        get_field_out(gas_mmr_field_name).get_view<Real **>();
-  }
+  populate_wet_and_dry_aero();
 
 }  // end initialize_impl()
 

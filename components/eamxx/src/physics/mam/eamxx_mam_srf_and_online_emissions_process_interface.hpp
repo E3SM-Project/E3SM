@@ -35,9 +35,6 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
   mam_coupling::WetAtmosphere wet_atm_;
   mam_coupling::DryAtmosphere dry_atm_;
 
-  // buffer for sotring temporary variables
-  mam_coupling::Buffer buffer_;
-
   // Sea surface temoerature [K]
   const_view_1d sst_;
 

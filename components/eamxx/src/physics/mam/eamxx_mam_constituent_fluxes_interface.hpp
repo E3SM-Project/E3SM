@@ -26,12 +26,6 @@ class MAMConstituentFluxes final : public MAMGenericInterface {
   mam_coupling::WetAtmosphere wet_atm_;
   mam_coupling::DryAtmosphere dry_atm_;
 
-  // aerosol state variables
-  mam_coupling::AerosolState wet_aero_;
-
-  // buffer for sotring temporary variables
-  mam_coupling::Buffer buffer_;
-
   const_view_2d constituent_fluxes_;
 
  public:

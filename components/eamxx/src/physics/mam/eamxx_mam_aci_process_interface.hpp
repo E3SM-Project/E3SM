@@ -141,12 +141,6 @@ class MAMAci final : public MAMGenericInterface {
   // number of horizontal columns and vertical levels
   int ncol_, nlev_;
 
-  // aerosol state variables
-  mam_coupling::AerosolState wet_aero_, dry_aero_;
-
-  // workspace manager for internal local variables
-  mam_coupling::Buffer buffer_;
-
   // A view array to carry cloud borne aerosol mmrs/nmrs
   view_2d qqcw_fld_work_[mam4::ndrop::ncnst_tot];
 

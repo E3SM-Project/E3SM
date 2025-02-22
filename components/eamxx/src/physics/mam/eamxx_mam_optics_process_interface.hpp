@@ -163,10 +163,8 @@ class MAMOptics final : public MAMGenericInterface {
   mam4::AeroConfig aero_config_;
 
   // atmospheric and aerosol state variables
-  // atmospheric and aerosol state variables
   mam_coupling::WetAtmosphere wet_atm_;
   mam_coupling::DryAtmosphere dry_atm_;
-  mam_coupling::AerosolState wet_aero_, dry_aero_;
 
   mam_coupling::view_3d ssa_cmip6_sw_, af_cmip6_sw_, ext_cmip6_sw_;
   // long wave extinction in the units of [1/km]
@@ -178,8 +176,6 @@ class MAMOptics final : public MAMGenericInterface {
   // Mapping from old RRTMG sw bands to new band ordering in RRTMGP
   //  given old index swband (RRTMG) return new index swband RRTMGP
   mam_coupling::view_int_1d get_idx_rrtmgp_from_rrtmg_swbands_;
-
-  mam_coupling::Buffer buffer_;
 };  // MAMOptics
 
 }  // namespace scream

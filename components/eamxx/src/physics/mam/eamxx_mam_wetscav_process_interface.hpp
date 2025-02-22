@@ -193,11 +193,8 @@ class MAMWetscav : public MAMGenericInterface {
   view_2d dlf_;
 
   // Aerosol states
-  mam_coupling::AerosolState wet_aero_, dry_aero_, dry_aero_tends_;
+  mam_coupling::AerosolState  dry_aero_tends_;
 
-  mam_coupling::Buffer buffer_;
-
-  std::shared_ptr<const AbstractGrid> m_grid;
 };  // class MAMWetscav
 
 }  // namespace scream

@@ -33,29 +33,29 @@ void MAMWetscav::set_grids(
   auto q_unit = kg / kg;
   auto n_unit = 1 / kg;  // units of number mixing ratios of tracers
 
-  m_grid                = grids_manager->get_grid("Physics");
-  const auto &grid_name = m_grid->name();
+  grid_                = grids_manager->get_grid("Physics");
+  const auto &grid_name = grid_->name();
 
-  ncol_ = m_grid->get_num_local_dofs();       // Number of columns on this rank
-  nlev_ = m_grid->get_num_vertical_levels();  // Number of levels per column
+  ncol_ = grid_->get_num_local_dofs();       // Number of columns on this rank
+  nlev_ = grid_->get_num_vertical_levels();  // Number of levels per column
   const int nmodes    = mam4::AeroConfig::num_modes();  // Number of modes
   constexpr int pcnst = mam4::aero_model::pcnst;
 
   // layout for 3D (2d horiz X 1d vertical) variables at level
   // midpoints/interfaces
-  FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout(true);
-  FieldLayout scalar3d_int = m_grid->get_3d_scalar_layout(false);
+  FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(true);
+  FieldLayout scalar3d_int = grid_->get_3d_scalar_layout(false);
 
   // layout for 2D (1d horiz X 1d vertical) variables
-  FieldLayout scalar2d = m_grid->get_2d_scalar_layout();
+  FieldLayout scalar2d = grid_->get_2d_scalar_layout();
 
   // layout for 3D (ncol, nmodes, nlevs)
-  FieldLayout scalar3d_mid_nmodes = m_grid->get_3d_vector_layout(
-      true, nmodes, mam_coupling::num_modes_tag_name());
+  FieldLayout scalar3d_mid_nmodes =
+      grid_->get_3d_vector_layout(true, nmodes, mam_coupling::num_modes_tag_name());
 
   // layout for 2D (ncol, pcnst)
   FieldLayout scalar2d_pconst =
-      m_grid->get_2d_vector_layout(pcnst, "num_phys_constants");
+      grid_->get_2d_vector_layout(pcnst, "num_phys_constants");
 
   // --------------------------------------------------------------------------
   // These variables are "required" or pure inputs for the process
@@ -63,19 +63,19 @@ void MAMWetscav::set_grids(
 
   // ----------- Atmospheric quantities -------------
   // Specific humidity [kg/kg]
-  add_tracer<Required>("qv", m_grid, q_unit);
+  add_tracer<Required>("qv", grid_, q_unit);
 
   // cloud liquid mass mixing ratio [kg/kg]
-  add_tracer<Required>("qc", m_grid, q_unit);
+  add_tracer<Required>("qc", grid_, q_unit);
 
   // cloud ice mass mixing ratio [kg/kg]
-  add_tracer<Required>("qi", m_grid, q_unit);
+  add_tracer<Required>("qi", grid_, q_unit);
 
   // cloud liquid number mixing ratio [1/kg]
-  add_tracer<Required>("nc", m_grid, n_unit);
+  add_tracer<Required>("nc", grid_, n_unit);
 
   // cloud ice number mixing ratio [1/kg]
-  add_tracer<Required>("ni", m_grid, n_unit);
+  add_tracer<Required>("ni", grid_, n_unit);
 
   // Temperature[K] at midpoints
   add_field<Required>("T_mid", scalar3d_mid, K, grid_name);
@@ -252,47 +252,9 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
   dry_atm_.z_iface   = buffer_.z_iface;
   dry_atm_.w_updraft = buffer_.w_updraft;
 
-  // ---- set wet/dry aerosol-related gas state data
-  for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
-    const char *mmr_field_name = mam_coupling::gas_mmr_field_name(g);
-    wet_aero_.gas_mmr[g] = get_field_out(mmr_field_name).get_view<Real **>();
-    dry_aero_.gas_mmr[g] = buffer_.dry_gas_mmr[g];
-  }
-
-  // set wet/dry aerosol state data (interstitial aerosols only)
-  for(int imode = 0; imode < mam_coupling::num_aero_modes(); ++imode) {
-    const char *int_nmr_field_name =
-        mam_coupling::int_aero_nmr_field_name(imode);
-    wet_aero_.int_aero_nmr[imode] =
-        get_field_out(int_nmr_field_name).get_view<Real **>();
-    dry_aero_.int_aero_nmr[imode] = buffer_.dry_int_aero_nmr[imode];
-
-    const char *cld_nmr_field_name =
-        mam_coupling::cld_aero_nmr_field_name(imode);
-    wet_aero_.cld_aero_nmr[imode] =
-        get_field_out(cld_nmr_field_name).get_view<Real **>();
-    dry_aero_.cld_aero_nmr[imode] = wet_aero_.cld_aero_nmr[imode];
-
-    for(int ispec = 0; ispec < mam_coupling::num_aero_species(); ++ispec) {
-      const char *int_mmr_field_name =
-          mam_coupling::int_aero_mmr_field_name(imode, ispec);
-      if(strlen(int_mmr_field_name) > 0) {
-        wet_aero_.int_aero_mmr[imode][ispec] =
-            get_field_out(int_mmr_field_name).get_view<Real **>();
-        dry_aero_.int_aero_mmr[imode][ispec] =
-            buffer_.dry_int_aero_mmr[imode][ispec];
-      }
-
-      const char *cld_mmr_field_name =
-          mam_coupling::cld_aero_mmr_field_name(imode, ispec);
-      if(strlen(cld_mmr_field_name) > 0) {
-        wet_aero_.cld_aero_mmr[imode][ispec] =
-            get_field_out(cld_mmr_field_name).get_view<Real **>();
-        dry_aero_.cld_aero_mmr[imode][ispec] =
-            buffer_.dry_cld_aero_mmr[imode][ispec];
-      }
-    }
-  }
+  // interstitial and cloudborne aerosol tracers of interest: mass (q) and
+  // number (n) mixing ratios
+  populate_wet_and_dry_aero();
 
   //---------------------------------------------------------------------------------
   // Allocate memory
