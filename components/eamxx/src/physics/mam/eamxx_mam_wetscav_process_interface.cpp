@@ -158,48 +158,7 @@ void MAMWetscav::set_grids(
 
   // NOTE: Interstitial aerosols are updated in the interface using the
   // "tendencies" from the wetscavenging process
-
-  for(int imode = 0; imode < mam_coupling::num_aero_modes(); ++imode) {
-    // interstitial aerosol tracers of interest: number (n) mixing ratios
-    const char *int_nmr_field_name =
-        mam_coupling::int_aero_nmr_field_name(imode);
-    add_tracer<Updated>(int_nmr_field_name, m_grid, n_unit);
-
-    // cloudborne aerosol tracers of interest: number (n) mixing ratios
-    // Note: Do *not* add cld borne aerosols to the "tracer" group as these are
-    // not advected
-    const char *cld_nmr_field_name =
-        mam_coupling::cld_aero_nmr_field_name(imode);
-
-    add_field<Updated>(cld_nmr_field_name, scalar3d_mid, n_unit, grid_name);
-
-    for(int ispec = 0; ispec < mam_coupling::num_aero_species(); ++ispec) {
-      // (interstitial) aerosol tracers of interest: mass (q) mixing ratios
-      const char *int_mmr_field_name =
-          mam_coupling::int_aero_mmr_field_name(imode, ispec);
-      if(strlen(int_mmr_field_name) > 0) {
-        add_tracer<Updated>(int_mmr_field_name, m_grid, q_unit);
-      }
-
-      // (cloudborne) aerosol tracers of interest: mass (q) mixing ratios
-      // Note: Do *not* add cld borne aerosols to the "tracer" group as these
-      // are not advected
-      const char *cld_mmr_field_name =
-          mam_coupling::cld_aero_mmr_field_name(imode, ispec);
-      if(strlen(cld_mmr_field_name) > 0) {
-        add_field<Updated>(cld_mmr_field_name, scalar3d_mid, q_unit, grid_name);
-      }
-    }
-  }
-
-  // The following fields are not needed by this process but we define them so
-  //  that we can create MAM4xx class objects like atmosphere, prognostics etc.
-
-  // aerosol-related gases: mass mixing ratios
-  for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
-    const char *gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
-    add_tracer<Updated>(gas_mmr_field_name, m_grid, q_unit);
-  }
+  add_aerosol_tracers();
 
   // -------------------------------------------------------------
   // These variables are "Computed" or outputs for the process
