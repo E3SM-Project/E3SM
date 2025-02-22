@@ -162,10 +162,6 @@ class MAMOptics final : public MAMGenericInterface {
   // MAM4 aerosol particle size description
   mam4::AeroConfig aero_config_;
 
-  // atmospheric and aerosol state variables
-  mam_coupling::WetAtmosphere wet_atm_;
-  mam_coupling::DryAtmosphere dry_atm_;
-
   mam_coupling::view_3d ssa_cmip6_sw_, af_cmip6_sw_, ext_cmip6_sw_;
   // long wave extinction in the units of [1/km]
   mam_coupling::view_3d ext_cmip6_lw_;
