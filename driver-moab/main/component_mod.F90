@@ -263,7 +263,7 @@ contains
           ! only done in second phase of atm init
           ! multiple by area ratio
           if (present(seq_flds_x2c_fluxes)) then
-             call mct_avect_vecmult(comp(eci)%x2c_cc, comp(eci)%drv2mdl, seq_flds_x2c_fluxes, mask_spval=.true.)
+!             call mct_avect_vecmult(comp(eci)%x2c_cc, comp(eci)%drv2mdl, seq_flds_x2c_fluxes, mask_spval=.true.)
 #ifdef HAVE_MOAB
              call factor_moab_comp(comp(eci), 'drv2mdl', seq_flds_x2c_fluxes)
 #endif
@@ -282,7 +282,7 @@ contains
 
           ! only done in second phase of atm init
           if (present(seq_flds_c2x_fluxes)) then
-             call mct_avect_vecmult(comp(eci)%c2x_cc, comp(eci)%mdl2drv, seq_flds_c2x_fluxes, mask_spval=.true.)
+ !            call mct_avect_vecmult(comp(eci)%c2x_cc, comp(eci)%mdl2drv, seq_flds_c2x_fluxes, mask_spval=.true.)
 #ifdef HAVE_MOAB
              call factor_moab_comp(comp(eci), 'mdl2drv', seq_flds_c2x_fluxes)
 #endif
@@ -950,7 +950,7 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
              if (drv_threading) call seq_comm_setnthreads(comp(1)%nthreads_compid)
 
              if (comp_prognostic .and. firstloop .and. present(seq_flds_x2c_fluxes)) then
-                call mct_avect_vecmult(comp(eci)%x2c_cc, comp(eci)%drv2mdl, seq_flds_x2c_fluxes, mask_spval=.true.)
+!                call mct_avect_vecmult(comp(eci)%x2c_cc, comp(eci)%drv2mdl, seq_flds_x2c_fluxes, mask_spval=.true.)
 #ifdef HAVE_MOAB
                call factor_moab_comp(comp(eci), 'drv2mdl', seq_flds_x2c_fluxes)
 #endif
@@ -966,7 +966,7 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
              call t_unset_prefixf()
 
              if ((phase == 1) .and. present(seq_flds_c2x_fluxes)) then
-                call mct_avect_vecmult(comp(eci)%c2x_cc, comp(eci)%mdl2drv, seq_flds_c2x_fluxes, mask_spval=.true.)
+ !               call mct_avect_vecmult(comp(eci)%c2x_cc, comp(eci)%mdl2drv, seq_flds_c2x_fluxes, mask_spval=.true.)
 #ifdef HAVE_MOAB
                call factor_moab_comp(comp(eci), 'mdl2drv', seq_flds_c2x_fluxes)
 #endif
