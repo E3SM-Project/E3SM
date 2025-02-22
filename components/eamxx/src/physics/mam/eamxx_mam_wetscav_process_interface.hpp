@@ -157,10 +157,6 @@ class MAMWetscav : public MAMGenericInterface {
   // Number of aerosol modes
   static constexpr int ntot_amode_ = mam4::AeroConfig::num_modes();
 
-  // Atmospheric variables
-  mam_coupling::WetAtmosphere wet_atm_;
-  mam_coupling::DryAtmosphere dry_atm_;
-
   // Work arrays
   view_2d work_;
 

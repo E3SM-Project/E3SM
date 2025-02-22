@@ -28,11 +28,6 @@ void MAMWetscav::set_grids(
     const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
 
-  // The units of mixing ratio Q are technically non-dimensional.
-  // Nevertheless, for output reasons, we like to see 'kg/kg'.
-  auto q_unit = kg / kg;
-  auto n_unit = 1 / kg;  // units of number mixing ratios of tracers
-
   grid_                = grids_manager->get_grid("Physics");
   const auto &grid_name = grid_->name();
 
@@ -63,37 +58,7 @@ void MAMWetscav::set_grids(
 
   // ----------- Atmospheric quantities -------------
   // Specific humidity [kg/kg]
-  add_tracer<Required>("qv", grid_, q_unit);
-
-  // cloud liquid mass mixing ratio [kg/kg]
-  add_tracer<Required>("qc", grid_, q_unit);
-
-  // cloud ice mass mixing ratio [kg/kg]
-  add_tracer<Required>("qi", grid_, q_unit);
-
-  // cloud liquid number mixing ratio [1/kg]
-  add_tracer<Required>("nc", grid_, n_unit);
-
-  // cloud ice number mixing ratio [1/kg]
-  add_tracer<Required>("ni", grid_, n_unit);
-
-  // Temperature[K] at midpoints
-  add_field<Required>("T_mid", scalar3d_mid, K, grid_name);
-
-  // Vertical pressure velocity [Pa/s] at midpoints
-  add_field<Required>("omega", scalar3d_mid, Pa / s, grid_name);
-
-  // Total pressure [Pa] at midpoints
-  add_field<Required>("p_mid", scalar3d_mid, Pa, grid_name);
-
-  // Total pressure [Pa] at interfaces
-  add_field<Required>("p_int", scalar3d_int, Pa, grid_name);
-
-  // Layer thickness(pdel) [Pa] at midpoints
-  add_field<Required>("pseudo_density", scalar3d_mid, Pa, grid_name);
-
-  // planetary boundary layer height [m]
-  add_field<Required>("pbl_height", scalar2d, m, grid_name);
+  add_tracer_for_wet_and_dry_atm();
 
   static constexpr auto m2 = m * m;
   static constexpr auto s2 = s * s;
@@ -214,31 +179,7 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
   // print_fields_names();
   add_interval_checks();
 
-  // store fields only to be converted to dry mmrs in wet_atm_
-  wet_atm_.qc = get_field_in("qc").get_view<const Real **>();
-  wet_atm_.qi = get_field_in("qi").get_view<const Real **>();
-
-  // Following wet atm variables are NOT used by the process but we still
-  // need them to create atmosphere object
-  wet_atm_.qv = get_field_in("qv").get_view<const Real **>();
-  wet_atm_.nc = get_field_in("nc").get_view<const Real **>();
-  wet_atm_.ni = get_field_in("ni").get_view<const Real **>();
-
-  // Populate the dry atmosphere state with views from fields
-  // (NOTE: dry atmosphere has everything that wet
-  // atmosphere has along with z_surf, T_mid, p_mid, z_mid, z_iface,
-  // dz, p_del, cldfrac, w_updraft, pblh, phis and omega)
-  dry_atm_.z_surf  = 0;
-  dry_atm_.T_mid   = get_field_in("T_mid").get_view<const Real **>();
-  dry_atm_.p_mid   = get_field_in("p_mid").get_view<const Real **>();
-  dry_atm_.p_del   = get_field_in("pseudo_density").get_view<const Real **>();
-  dry_atm_.p_int   = get_field_in("p_int").get_view<const Real **>();
-  dry_atm_.cldfrac = get_field_in("cldfrac_liq").get_view<const Real **>();
-
-  // The following dry_atm_ members  *may* not be used by the process but they
-  // are needed for creating MAM4xx class objects like Atmosphere
-  dry_atm_.omega = get_field_in("omega").get_view<const Real **>();
-  dry_atm_.pblh  = get_field_in("pbl_height").get_view<const Real *>();
+  populate_wet_and_dry_atm();
   dry_atm_.phis  = get_field_in("phis").get_view<const Real *>();
 
   // store fields converted to dry mmr from wet mmr in dry_atm_

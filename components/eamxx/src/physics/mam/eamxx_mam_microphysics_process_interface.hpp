@@ -185,10 +185,6 @@ class MAMMicrophysics final : public MAMGenericInterface {
   Preprocess preprocess_;
   Postprocess postprocess_;
 
-  // atmospheric and aerosol state variables
-  mam_coupling::WetAtmosphere wet_atm_;
-  mam_coupling::DryAtmosphere dry_atm_;
-
   // photolysis rate table (column-independent)
   mam4::mo_photo::PhotoTableData photo_table_;
 

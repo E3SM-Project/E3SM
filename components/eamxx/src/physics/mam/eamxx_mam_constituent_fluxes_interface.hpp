@@ -22,10 +22,6 @@ class MAMConstituentFluxes final : public MAMGenericInterface {
   // number of horizontal columns
   int ncol_, nlev_;
 
-  // Wet and dry states of atmosphere
-  mam_coupling::WetAtmosphere wet_atm_;
-  mam_coupling::DryAtmosphere dry_atm_;
-
   const_view_2d constituent_fluxes_;
 
  public:

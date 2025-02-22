@@ -29,60 +29,12 @@ void MAMConstituentFluxes::set_grids(
   nlev_ = grid_->get_num_vertical_levels();  // Number of levels per column
 
   using namespace ekat::units;
-  auto q_unit = kg / kg;  // units of mass mixing ratios of tracers
-  auto n_unit = 1 / kg;   // units of number mixing ratios of tracers
-  auto nondim = ekat::units::Units::nondimensional();
-
-  FieldLayout scalar2d     = grid_->get_2d_scalar_layout();
-  FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(true);
-  FieldLayout scalar3d_int = grid_->get_3d_scalar_layout(false);
-
   static constexpr int pcnst = mam4::aero_model::pcnst;
 
   const FieldLayout scalar2d_pcnct =
       grid_->get_2d_vector_layout(pcnst, "num_phys_constituents");
 
-  // --------------------------------------------------------------------------
-  // These variables are "Required" or pure inputs for the process
-  // --------------------------------------------------------------------------
-  // ----------- Atmospheric quantities -------------
-  // Specific humidity [kg/kg](Require only for building DS)
-  add_tracer<Required>("qv", grid_, q_unit);
-
-  // Cloud liquid mass mixing ratio [kg/kg](Require only for building DS)
-  add_tracer<Required>("qc", grid_, q_unit);
-
-  // Cloud ice mass mixing ratio [kg/kg](Require only for building DS)
-  add_tracer<Required>("qi", grid_, q_unit);
-
-  // Cloud liquid number mixing ratio [1/kg](Require only for building DS)
-  add_tracer<Required>("nc", grid_, n_unit);
-
-  // Cloud ice number mixing ratio [1/kg](Require only for building DS)
-  add_tracer<Required>("ni", grid_, n_unit);
-
-  // Temperature[K] at midpoints
-  add_field<Required>("T_mid", scalar3d_mid, K, grid_name);
-
-  // Vertical pressure velocity [Pa/s] at midpoints (Require only for building
-  // DS)
-  add_field<Required>("omega", scalar3d_mid, Pa / s, grid_name);
-
-  // Total pressure [Pa] at midpoints
-  add_field<Required>("p_mid", scalar3d_mid, Pa, grid_name);
-
-  // Total pressure [Pa] at interfaces
-  add_field<Required>("p_int", scalar3d_int, Pa, grid_name);
-
-  // Layer thickness(pdel) [Pa] at midpoints
-  add_field<Required>("pseudo_density", scalar3d_mid, Pa, grid_name);
-
-  // Planetary boundary layer height [m] (Require only for building DS)
-  add_field<Required>("pbl_height", scalar2d, m, grid_name);
-
-  // cloud fraction [nondimensional] computed by eamxx_cld_fraction_process
-  add_field<Required>("cldfrac_tot", scalar3d_mid, nondim, grid_name);
-
+  add_tracer_for_wet_and_dry_atm();
   static constexpr Units m2(m * m, "m2");
   static constexpr Units s2(s * s, "s2");
   // FIXME: do we need phi?
@@ -145,37 +97,8 @@ void MAMConstituentFluxes::initialize_impl(const RunType run_type) {
 
   // Populate the wet atmosphere state with views from fields
   // FIMXE: specifically look which among these are actually used by the process
-  wet_atm_.qv = get_field_in("qv").get_view<const Real **>();
-
-  // Following wet_atm vars are required only for building DS
-  wet_atm_.qc = get_field_in("qc").get_view<const Real **>();
-  wet_atm_.nc = get_field_in("nc").get_view<const Real **>();
-  wet_atm_.qi = get_field_in("qi").get_view<const Real **>();
-  wet_atm_.ni = get_field_in("ni").get_view<const Real **>();
-
-  // Populate the dry atmosphere state with views from fields
-  dry_atm_.T_mid = get_field_in("T_mid").get_view<const Real **>();
-  dry_atm_.p_mid = get_field_in("p_mid").get_view<const Real **>();
-  dry_atm_.p_del = get_field_in("pseudo_density").get_view<const Real **>();
-  dry_atm_.p_int = get_field_in("p_int").get_view<const Real **>();
-
-  // Following dry_atm vars are required only for building DS
-  dry_atm_.cldfrac = get_field_in("cldfrac_tot").get_view<const Real **>();
-  dry_atm_.pblh    = get_field_in("pbl_height").get_view<const Real *>();
-  dry_atm_.omega   = get_field_in("omega").get_view<const Real **>();
-  dry_atm_.p_del   = get_field_in("pseudo_density").get_view<const Real **>();
-
-  // store fields converted to dry mmr from wet mmr in dry_atm_
-  dry_atm_.z_mid     = buffer_.z_mid;
-  dry_atm_.z_iface   = buffer_.z_iface;
-  dry_atm_.dz        = buffer_.dz;
-  dry_atm_.qv        = buffer_.qv_dry;
-  dry_atm_.qc        = buffer_.qc_dry;
-  dry_atm_.nc        = buffer_.nc_dry;
-  dry_atm_.qi        = buffer_.qi_dry;
-  dry_atm_.ni        = buffer_.ni_dry;
-  dry_atm_.w_updraft = buffer_.w_updraft;
-  dry_atm_.z_surf    = 0.0;  // FIXME: for now
+  // wet_atm_.qv = get_field_in("qv").get_view<const Real **>();
+  populate_wet_and_dry_atm();
 
   // Constituent fluxes at the surface (gasses and aerosols) [kg/m2/s]
   constituent_fluxes_ =

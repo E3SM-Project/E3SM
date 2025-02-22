@@ -62,12 +62,6 @@ class MAMAci final : public MAMGenericInterface {
   // Dry diameter of the aitken mode (for ice nucleation)
   view_2d aitken_dry_dia_;
 
-  // wet mixing ratios (water species)
-  mam_coupling::WetAtmosphere wet_atm_;
-
-  // dry mixing ratios (water species)
-  mam_coupling::DryAtmosphere dry_atm_;
-
   // aerosol dry diameter
   const_view_3d dgnum_;
 

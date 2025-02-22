@@ -38,10 +38,6 @@ class MAMDryDep final : public MAMGenericInterface  {
   // number of horizontal columns and vertical levels
   int ncol_, nlev_;
 
-  // Wet and dry states of atmosphere
-  mam_coupling::WetAtmosphere wet_atm_;
-  mam_coupling::DryAtmosphere dry_atm_;
-
   /* Note on mam4::DryDeposition::aerosol_categories = 4
      used in deposition velocity dimension defined below. These
      correspond to the two attachment states and two moments:

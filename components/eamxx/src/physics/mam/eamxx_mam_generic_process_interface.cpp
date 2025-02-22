@@ -73,7 +73,7 @@ void MAMGenericInterface::add_aerosol_tracers()
   auto q_unit = kg / kg;  // units of mass mixing ratios of tracers
   auto n_unit = 1 / kg;   // units of number mixing ratios of tracers
   const auto &grid_name = grid_->name();
-  std::cout << "grid_name" << grid_name << "\n";
+
   FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(true);
 
     // ---------------------------------------------------------------------
@@ -166,8 +166,104 @@ void MAMGenericInterface::populate_wet_and_dry_aero()
         get_field_out(gas_mmr_field_name).get_view<Real **>();
     dry_aero_.gas_mmr[g] = buffer_.dry_gas_mmr[g];
   }
+}
+void MAMGenericInterface::populate_wet_and_dry_atm()
+{
 
+  // store fields only to be converted to dry mmrs in wet_atm_
+  wet_atm_.qv = get_field_in("qv").get_view<const Real **>();
+  wet_atm_.qc = get_field_in("qc").get_view<const Real **>();
+  wet_atm_.nc = get_field_in("nc").get_view<const Real **>();
+  wet_atm_.qi = get_field_in("qi").get_view<const Real **>();
+  wet_atm_.ni = get_field_in("ni").get_view<const Real **>();
 
+  // store rest fo the atm fields in dry_atm_in
+  dry_atm_.z_surf = 0;
+  dry_atm_.T_mid  = get_field_in("T_mid").get_view<const Real **>();
+  dry_atm_.p_mid  = get_field_in("p_mid").get_view<const Real **>();
+  dry_atm_.p_int  = get_field_in("p_int").get_view<const Real **>();
+  dry_atm_.p_del  = get_field_in("pseudo_density").get_view<const Real **>();
+  dry_atm_.omega  = get_field_in("omega").get_view<const Real **>();
+
+  // store fields converted to dry mmr from wet mmr in dry_atm_
+  dry_atm_.qv = buffer_.qv_dry;
+  dry_atm_.qc = buffer_.qc_dry;
+  dry_atm_.nc = buffer_.nc_dry;
+  dry_atm_.qi = buffer_.qi_dry;
+  dry_atm_.ni = buffer_.ni_dry;
+
+  // pbl_height
+  dry_atm_.pblh = get_field_in("pbl_height").get_view<const Real *>();
+
+  // geometric thickness of layers (m)
+  dry_atm_.dz = buffer_.dz;
+
+  // geopotential height above surface at interface levels (m)
+  dry_atm_.z_iface = buffer_.z_iface;
+
+  // geopotential height above surface at mid levels (m)
+  dry_atm_.z_mid = buffer_.z_mid;
+
+  // total cloud fraction
+  dry_atm_.cldfrac = get_field_in("cldfrac_tot").get_view<const Real **>();
+
+  // computed updraft velocity
+  dry_atm_.w_updraft = buffer_.w_updraft;
+}
+void MAMGenericInterface::add_tracer_for_wet_and_dry_atm()
+{
+   // Define the different field layouts that will be used for this process
+  using namespace ShortFieldTagsNames;
+  // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and
+  // interfaces
+  const auto &grid_name = grid_->name();
+  const int ncol = grid_->get_num_local_dofs();       // Number of columns on this rank
+  const FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(true);
+  const FieldLayout scalar3d_int = grid_->get_3d_scalar_layout(false);
+    // layout for 2D (1d horiz X 1d vertical) variable
+  FieldLayout scalar2d_layout_col{{COL}, {ncol}};
+  using namespace ekat::units;
+  constexpr auto q_unit = kg / kg;  // units of mass mixing ratios of tracers
+  constexpr auto n_unit = 1 / kg;   // units of number mixing ratios of tracers
+
+  constexpr auto nondim = ekat::units::Units::nondimensional();
+
+  // atmospheric quantities
+  // specific humidity [kg/kg]
+  add_tracer<Required>("qv", grid_, q_unit);
+
+  // cloud liquid mass mixing ratio [kg/kg]
+  add_tracer<Required>("qc", grid_, q_unit);
+
+  // cloud ice mass mixing ratio [kg/kg]
+  add_tracer<Required>("qi", grid_, q_unit);
+
+  // cloud liquid number mixing ratio [1/kg]
+  add_tracer<Required>("nc", grid_, n_unit);
+
+  // cloud ice number mixing ratio [1/kg]
+  add_tracer<Required>("ni", grid_, n_unit);
+
+  // Temperature[K] at midpoints
+  add_field<Required>("T_mid", scalar3d_mid, K, grid_name);
+
+  // Vertical pressure velocity [Pa/s] at midpoints
+  add_field<Required>("omega", scalar3d_mid, Pa / s, grid_name);
+
+  // Total pressure [Pa] at midpoints
+  add_field<Required>("p_mid", scalar3d_mid, Pa, grid_name);
+
+  // Total pressure [Pa] at interfaces
+  add_field<Required>("p_int", scalar3d_int, Pa, grid_name);
+
+  // Layer thickness(pdel) [Pa] at midpoints
+  add_field<Required>("pseudo_density", scalar3d_mid, Pa, grid_name);
+
+  // planetary boundary layer height
+  add_field<Required>("pbl_height", scalar2d_layout_col, m, grid_name);
+
+  // cloud fraction [nondimensional] computed by eamxx_cld_fraction_process
+  add_field<Required>("cldfrac_tot", scalar3d_mid, nondim, grid_name);
 }
 
 void MAMGenericInterface::print_fields_names()
