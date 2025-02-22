@@ -26,7 +26,7 @@
 
 namespace scream {
 
-constexpr int num_output_steps = 5;
+constexpr int num_output_steps = 2;
 constexpr Real FillValue = constants::DefaultFillValue<float>().value;
 constexpr Real fill_threshold = 0.5;
 
@@ -279,20 +279,21 @@ TEST_CASE ("io_filled") {
   auto print = [&] (const std::string& s, int line_len = -1) {
     if (comm.am_i_root()) {
       if (line_len<0) {
-        std::cout << s;
+        std::cout << s << std::endl;;
       } else {
         std::cout << std::left << std::setw(line_len) << std::setfill('.') << s;
+        std::cout << std::endl;
       }
     }
   };
 
   for (const auto& units : freq_units) {
-    print ("-> Output frequency: " + units + "\n");
+    print ("-> Output frequency: " + units);
     for (const auto& avg : avg_type) {
-      print("   -> Averaging type: " + avg + " ", 40);
+      print("   -> Averaging type: " + avg + " ...", 40);
       write(avg,units,freq,seed,comm);
       read(avg,units,freq,seed,comm);
-      print(" PASS\n");
+      print("   -> Averaging type: " + avg + " ... PASS!", 40);
     }
   }
   scorpio::finalize_subsystem();

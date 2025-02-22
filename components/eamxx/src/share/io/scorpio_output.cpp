@@ -134,30 +134,26 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
 
   // For simplicity, we create a "copy" of the input fm, so we can stuff also diags in it
   fm_model = std::make_shared<FieldManager>(field_mgr->get_grid(),RepoState::Closed);
-  for (auto& fname : m_fields_names) {
+
+  // First, add fields in the model FM...
+  for (const auto& fname : m_fields_names) {
     if (field_mgr->has_field(fname)) {
       fm_model->add_field(field_mgr->get_field(fname));
-    } else {
-      // This must be a diagnostic field. Crate the diag, and set the diag_field
-      // in the "FromModel" field manager
-      auto diag = create_diagnostic(fname);
-      const auto& diag_fname = diag->get_diagnostic().name();
-      m_diagnostics[diag_fname] = diag;
-
-      // Note: some diag fields have a name different from what was used
-      //       in the yaml file, so update the name with the actual
-      //       diagnostic field name.
-      // TODO: we should change this. The name used in the yaml file should
-      //       MATCH the diag field name. This is confusing.
-      fname = diag_fname;
-
-      fm_model->add_field(m_diagnostics.at(fname)->get_diagnostic());
+    }
+  }
+ 
+  // ... then add diagnostic fields
+  for (auto& fname : m_fields_names) {
+    if (not fm_model->has_field(fname)) {
+      // The diag field name may differ from what is used in the YAML file
+      // TODO: FIX this, cause it is HIGHLY confusing
+      auto d = scream::create_diagnostic(fname,fm_model->get_grid());
+      fname = d->get_diagnostic().name();
+      m_diagnostics[fname] = d;
     }
   }
 
-  // Register any diagnostics needed by this output stream
-  set_diagnostics();
-
+  init_diagnostics (field_mgr);
   // Avg count only makes sense if we have
   //  - non-instant output
   //  - we have one between:
@@ -434,7 +430,7 @@ run (const std::string& filename,
         // If count<=threshold, we set count=fill_value, so that fill_val propagates
         // to the output fields when we divide by count later
         if (output_step and m_avg_type==OutputAvgType::Average) {
-          int min_count = m_avg_coeff_threshold*nsteps_since_last_output;
+          int min_count = static_cast<int>(std::ceil(m_avg_coeff_threshold*nsteps_since_last_output));
 
           // Recycle mask to find where count<thresh
           compute_mask<Comparison::LT>(count,min_count,mask);
@@ -605,15 +601,13 @@ reset_scorpio_fields()
   Real value;
   switch (m_avg_type) {
     case OutputAvgType::Instant:
-      // No averaging, no reset to do
-      return;
+      value = m_fill_value;                           break;
     case OutputAvgType::Max:
       value = -std::numeric_limits<Real>::infinity(); break;
     case OutputAvgType::Min:
       value =  std::numeric_limits<Real>::infinity(); break;
     case OutputAvgType::Average:
-      value =  m_track_avg_cnt ? m_fill_value : 0.0;  break;
-      break;
+      value =  0.0;                                   break;
     default:
       EKAT_ERROR_MSG ("Unrecognized averaging type.\n");
   }
@@ -921,11 +915,60 @@ void AtmosphereOutput::set_diagnostics()
 
 /* ---------------------------------------------------------- */
 std::shared_ptr<AtmosphereDiagnostic>
-AtmosphereOutput::create_diagnostic (const std::string& diag_field_name)
+AtmosphereOutput::
+create_diagnostic (      std::string& diag_field_name,
+                   const std::shared_ptr<const FieldManager>& fm_model)
 {
   // We need scream scope resolution, since this->create_diagnostic is hiding it
-  auto fm_model = m_field_mgrs[FromModel];
   auto diag = scream::create_diagnostic(diag_field_name,fm_model->get_grid());
+
+  // This is the copy of fm_model with just the fields we need in I/O
+  auto fm_model_internal = m_field_mgrs[FromModel];
+
+  // Ensure there's an entry in the map for this diag, so .at(diag_name) always works later
+  auto& deps = m_diag_depends_on_diags[diag_field_name];
+
+  // Initialize the diagnostic
+  for (const auto& freq : diag->get_required_field_requests()) {
+    const auto& fname = freq.fid.name();
+    if (not fm_model_internal->has_field(fname)) {
+      if (fm_model->has_field(fname)) {
+        // Either a) in fm_model but not an output or b) another diag we created
+        fm_model_internal->add_field(fm_model->get_field(fname));
+      } else {
+        // It's a new diag
+        create_diagnostic(fname,fm_model);
+      }
+    }
+
+    // Whether it was in fm_model_internal, fm_model, or a new diag, fname now IS in fm_model_internal
+    diag->set_required_field (fm_model_internal->get_field(fname));
+  }
+
+  diag->initialize(util::TimeStamp(),RunType::Initial);
+  m_diagnostics[diag_field_name]
+}
+
+void AtmosphereOutput::
+init_diagnostics (const std::shared_ptr<const FieldManager>& fm_model)
+{
+  // First, a diag may depend on another diag, so build any additional diag we may need
+  strmap_t<diag_ptr_type> extra_diags;
+
+  auto create_dep_diags = [&](const diag_ptr_type& diag) {
+    for (const auto& freq : diag->get_required_field_requests()) {
+      const auto& dep_name = freq.fid.name();
+      if (not m_field_mgrs[FromModel]->has_field(dep_name) and
+          not m_diagnostics.count(dep_name) and
+          not fm_model
+    }
+  };
+
+  // We need scream scope resolution, since this->create_diagnostic is hiding it
+  auto diag = scream::create_diagnostic(diag_field_name,fm_model->get_grid());
+
+  // This is the copy of fm_model with just the fields we need in I/O
+  auto fm_model_internal = m_field_mgrs[FromModel];
 
   // Some diags need some extra setup or trigger extra behaviors
   std::string diag_avg_cnt_name = "";
@@ -945,32 +988,40 @@ AtmosphereOutput::create_diagnostic (const std::string& diag_field_name)
     }
   }
 
-  // Ensure there's an entry in the map for this diag, so .at(diag_name) always works
+  // Ensure there's an entry in the map for this diag, so .at(diag_name) always works later
   auto& deps = m_diag_depends_on_diags[diag_field_name];
 
   // Initialize the diagnostic
   for (const auto& freq : diag->get_required_field_requests()) {
     const auto& fname = freq.fid.name();
-    if (not fm_model->has_field(fname)) {
-      // This diag depends on another diag. Create and init the dependency
-      if (m_diagnostics.count(fname)==0) {
-        m_diagnostics[fname] = create_diagnostic(fname);
+    if (not fm_model_internal->has_field(fname)) {
+      if (fm_model->has_field(fname)) {
+        // Either a) in fm_model but not an output or b) another diag we created
+        fm_model_internal->add_field(fm_model->get_field(fname));
+      } else {
+        // It's a new diag
+        create_diagnostic(fname,fm_model);
       }
+    }
+
+    // Store as a dep, if it's another diag
+    if (m_diagnostics.count(fname)) {
       deps.push_back(fname);
     }
-    diag->set_required_field (fm_model->get_field(fname));
+
+    // Whether it was in fm_model_internal, fm_model, or a new diag, fname now IS in fm_model_internal
+    diag->set_required_field (fm_model_internal->get_field(fname));
   }
 
   diag->initialize(util::TimeStamp(),RunType::Initial);
 
+  // Update the name we stored
+  diag_field_name = diag->get_diagnostic().name();
+
   // If specified, set avg_cnt tracking for this diagnostic.
   if (m_track_avg_cnt) {
-    const auto diag_field = diag->get_diagnostic();
-    const auto name       = diag_field.name();
-    m_field_to_avg_cnt_suffix.emplace(name,diag_avg_cnt_name);
+    m_field_to_avg_cnt_suffix.emplace(diag_field_name,diag_avg_cnt_name);
   }
-
-  return diag;
 }
 
 } // namespace scream

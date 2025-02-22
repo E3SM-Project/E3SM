@@ -80,6 +80,8 @@ public:
   const T& get_extra_data (const std::string& key) const;
   template<typename T>
         T& get_extra_data (const std::string& key);
+  template<typename T>
+        T& get_extra_data (const std::string& key, const T default_value);
   bool  has_extra_data (const std::string& key) const;
 
   std::shared_ptr<FieldHeader> alias (const std::string& name) const;
@@ -155,6 +157,16 @@ get_extra_data (const std::string& key)
       "  - requested type: " + std::string(typeid(T).name()) + ".\n");
 
   return ekat::any_cast<T>(a);
+}
+
+template<typename T>
+T& FieldHeader::
+get_extra_data (const std::string& key, const T default_value)
+{
+  if (not has_extra_data(key)) {
+    set_extra_data(key,default_value);
+  }
+  return get_extra_data<T>(key);
 }
 
 inline bool FieldHeader::
