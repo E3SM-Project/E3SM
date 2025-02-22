@@ -9,12 +9,13 @@
 // For calling MAM4 processes
 #include <mam4xx/mam4.hpp>
 #include <string>
+#include <physics/mam/eamxx_mam_generic_process_interface.hpp>
 
 namespace scream {
 
 // The process responsible for handling MAM4 aerosol microphysics. The AD
 // stores exactly ONE instance of this class in its list of subcomponents.
-class MAMMicrophysics final : public scream::AtmosphereProcess {
+class MAMMicrophysics final : public MAMGenericInterface {
   using PF = scream::PhysicsFunctions<DefaultDevice>;
   using KT = ekat::KokkosTypes<DefaultDevice>;
 
@@ -202,9 +203,6 @@ class MAMMicrophysics final : public scream::AtmosphereProcess {
   // ekat::WorkspaceManager<Real, KT::Device> workspace_mgr_;
   mam_coupling::Buffer buffer_;
 
-  // physics grid for column information
-  std::shared_ptr<const AbstractGrid> grid_;
-
   mam_coupling::TracerTimeState linoz_time_state_;
   view_2d work_photo_table_;
   std::vector<Real> chlorine_values_;
@@ -247,6 +245,7 @@ class MAMMicrophysics final : public scream::AtmosphereProcess {
   // // dq/dt for convection [kg/kg/s]
   view_1d cmfdqr_;
   view_2d work_set_het_;
+
 
 };  // MAMMicrophysics
 

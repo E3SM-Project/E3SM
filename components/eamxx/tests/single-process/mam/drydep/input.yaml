@@ -14,6 +14,7 @@ atmosphere_processes:
     # Fractional land use file
     drydep_remap_file: ""
     fractional_land_use_file: ${SCREAM_DATA_DIR}/mam4xx/drydep/ne2np4/atmsrf_ne2np4_c20241017.nc
+    mam4_check_fields_intervals: true
 
 grids_manager:
   Type: Mesh Free

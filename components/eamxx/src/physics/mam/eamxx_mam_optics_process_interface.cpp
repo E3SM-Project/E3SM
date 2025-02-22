@@ -10,7 +10,10 @@
 namespace scream {
 
 MAMOptics::MAMOptics(const ekat::Comm &comm, const ekat::ParameterList &params)
-    : AtmosphereProcess(comm, params), aero_config_() {}
+    : MAMGenericInterface(comm, params), aero_config_() {
+  check_fields_intervals_   = m_params.get<bool>("mam4_check_fields_intervals", false);
+
+ }
 
 AtmosphereProcessType MAMOptics::type() const {
   return AtmosphereProcessType::Physics;
@@ -142,6 +145,8 @@ void MAMOptics::init_buffers(const ATMBufferManager &buffer_manager) {
 }
 
 void MAMOptics::initialize_impl(const RunType run_type) {
+  // print_fields_names();
+  add_interval_checks();
   // populate the wet and dry atmosphere states with views from fields and
   // the buffer
   wet_atm_.qv = get_field_in("qv").get_view<const Real **>();

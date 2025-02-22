@@ -11,10 +11,12 @@ namespace scream {
 using FracLandUseFunc = frac_landuse::fracLandUseFunctions<Real, DefaultDevice>;
 
 MAMDryDep::MAMDryDep(const ekat::Comm &comm, const ekat::ParameterList &params)
-    : AtmosphereProcess(comm, params) {
+    : MAMGenericInterface(comm, params) {
   /* Anything that can be initialized without grid information can be
    * initialized here. Like universal constants, mam wetscav options.
    */
+  check_fields_intervals_   = m_params.get<bool>("mam4_check_fields_intervals", false);
+
 }
 
 // ================================================================
@@ -259,7 +261,9 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   // ---------------------------------------------------------------
   // Input fields read in from IC file, namelist or other processes
   // ---------------------------------------------------------------
-
+  // print_fields_names();
+  // Check pre/post condition interval values for all fields employed by this interface
+  add_interval_checks();
   // Populate the wet atmosphere state with views from fields
   // FIMXE: specifically look which among these are actually used by the process
   wet_atm_.qv = get_field_in("qv").get_view<const Real **>();

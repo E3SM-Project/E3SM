@@ -14,13 +14,14 @@
 // For declaring surface and online emission class derived from atm process
 // class
 #include <share/atm_process/atmosphere_process.hpp>
+#include <physics/mam/eamxx_mam_generic_process_interface.hpp>
 #include <string>
 
 namespace scream {
 
 // The process responsible for handling MAM4 surface and online emissions. The
 // AD stores exactly ONE instance of this class in its list of subcomponents.
-class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
+class MAMSrfOnlineEmiss final : public MAMGenericInterface {
   using KT            = ekat::KokkosTypes<DefaultDevice>;
   using view_1d       = typename KT::template view_1d<Real>;
   using view_2d       = typename KT::template view_2d<Real>;
@@ -36,9 +37,6 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
 
   // buffer for sotring temporary variables
   mam_coupling::Buffer buffer_;
-
-  // physics grid for column information
-  std::shared_ptr<const AbstractGrid> grid_;
 
   // Sea surface temoerature [K]
   const_view_1d sst_;

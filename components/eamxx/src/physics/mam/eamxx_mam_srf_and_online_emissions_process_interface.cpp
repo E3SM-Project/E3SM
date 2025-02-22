@@ -17,11 +17,13 @@ using soilErodibilityFunc =
 // ================================================================
 MAMSrfOnlineEmiss::MAMSrfOnlineEmiss(const ekat::Comm &comm,
                                      const ekat::ParameterList &params)
-    : AtmosphereProcess(comm, params) {
+    : MAMGenericInterface(comm, params) {
   // FIXME: Do we want to read dust emiss factor from the namelist??
   /* Anything that can be initialized without grid information can be
    * initialized here. Like universal constants.
    */
+  check_fields_intervals_   = m_params.get<bool>("mam4_check_fields_intervals", false);
+
 }
 
 // ================================================================
@@ -317,6 +319,8 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   // ---------------------------------------------------------------
   // Input fields read in from IC file, namelist or other processes
   // ---------------------------------------------------------------
+  // print_fields_names();
+  add_interval_checks();
 
   // Populate the wet atmosphere state with views from fields
   wet_atm_.qv = get_field_in("qv").get_view<const Real **>();

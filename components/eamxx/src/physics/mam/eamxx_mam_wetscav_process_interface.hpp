@@ -7,6 +7,8 @@
 // For declaring wetscav class derived from atm process class
 #include "share/atm_process/atmosphere_process.hpp"
 
+#include <physics/mam/eamxx_mam_generic_process_interface.hpp>
+
 // For component name
 #include <string>
 
@@ -20,7 +22,7 @@ namespace scream {
  *
  */
 
-class MAMWetscav : public scream::AtmosphereProcess {
+class MAMWetscav : public MAMGenericInterface {
   using KT      = ekat::KokkosTypes<DefaultDevice>;
   using view_2d = typename KT::template view_2d<Real>;
 

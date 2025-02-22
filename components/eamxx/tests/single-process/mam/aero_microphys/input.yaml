@@ -38,6 +38,7 @@ atmosphere_processes:
    mam4_num_a4_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_num_a4_elev_ne2np4_2010_clim_c20240823.nc
    mam4_soag_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_soag_elev_ne2np4_2010_clim_c20240823.nc
    mam4_season_wes_file : ${SCREAM_DATA_DIR}/mam4xx/drydep/season_wes.nc
+   mam4_check_fields_intervals: true
 grids_manager:
   Type: Mesh Free
   geo_data_source: IC_FILE
@@ -59,7 +60,7 @@ initial_conditions:
   dgnumwet: [2.367209731605067E-007, 6.780643470563889E-008, 3.028011448344027E-006, 1.000000096285154E-007]
   wetdens: [1038.67760516297, 1046.20002003441, 1031.74623165457, 1086.79731859184]
   nevapr: 0.0
-  precip_total_tend: 0.0  
+  precip_total_tend: 0.0
   surf_radiative_T: 288.0
   ps: 105000.0
   horiz_winds: [-0.24988988196194634E+000, -0.23959782871450760E+000]

@@ -12,6 +12,7 @@ atmosphere_processes:
   atm_procs_list: [mam4_srf_online_emiss]
   mam4_srf_online_emiss:
     # MAM4xx-Surface-Emissions
+    mam4_check_fields_intervals: true
     srf_remap_file: ""
     srf_emis_specifier_for_DMS: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/surface/DMSflux.2010.ne2np4_conserv.POPmonthlyClimFromACES4BGC_c20240726.nc
     srf_emis_specifier_for_SO2: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/surface/cmip6_mam4_so2_surf_ne2np4_2010_clim_c20240723.nc
@@ -40,7 +41,7 @@ initial_conditions:
   Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_MAM4xx_72lev}
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
   phis : 1.0
-  
+
   # we should get the following variables from other processes
   pbl_height : 1.0
   dstflx : 0.0

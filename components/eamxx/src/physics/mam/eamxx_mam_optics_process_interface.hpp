@@ -10,6 +10,7 @@
 #include <share/atm_process/atmosphere_process.hpp>
 #include <share/util/eamxx_common_physics_functions.hpp>
 #include <string>
+#include <physics/mam/eamxx_mam_generic_process_interface.hpp>
 
 #ifndef KOKKOS_ENABLE_CUDA
 #define protected_except_cuda public
@@ -23,7 +24,7 @@ namespace scream {
 
 // The process responsible for handling MAM4 aerosol optical properties. The AD
 // stores exactly ONE instance of this class in its list of subcomponents.
-class MAMOptics final : public scream::AtmosphereProcess {
+class MAMOptics final : public MAMGenericInterface {
   using PF = scream::PhysicsFunctions<DefaultDevice>;
   using KT = ekat::KokkosTypes<DefaultDevice>;
 
@@ -172,7 +173,6 @@ class MAMOptics final : public scream::AtmosphereProcess {
   mam_coupling::view_3d ext_cmip6_lw_;
   mam4::modal_aer_opt::AerosolOpticsDeviceData aerosol_optics_device_data_;
   // physics grid for column information
-  std::shared_ptr<const AbstractGrid> grid_;
   mam_coupling::view_2d work_;
   mam_coupling::view_3d tau_ssa_g_sw_, tau_ssa_sw_, tau_sw_, tau_f_sw_;
   // Mapping from old RRTMG sw bands to new band ordering in RRTMGP

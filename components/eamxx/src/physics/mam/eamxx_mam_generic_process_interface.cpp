@@ -13,62 +13,60 @@ MAMGenericInterface::MAMGenericInterface(const ekat::Comm &comm,
    */
 }
 // ================================================================
-void MAMGenericInterface::add_invariant_check_for_aerosol(
- /*const AbstractGrid> grid_*/
-  )
+void MAMGenericInterface::get_aerosol_gas_map()
 {
 // NOTE: Using only one range for all num variables.
+  // std::map<std::string, std::pair<Real, Real>> limits_aerosol_gas_tracers_;
+
   const std::string nmr_label="nmr";
-  const auto min_nmr = mam_coupling::physical_min(nmr_label);
-  const auto max_nmr = mam_coupling::physical_max(nmr_label);
   const std::string mmr_label="mmr";
-  const auto min_mmr = mam_coupling::physical_min(mmr_label);
-  const auto max_mmr = mam_coupling::physical_max(mmr_label);
 
   for(int mode = 0; mode < mam_coupling::num_aero_modes(); ++mode) {
     const std::string int_nmr_field_name =
         mam_coupling::int_aero_nmr_field_name(mode);
+    limits_aerosol_gas_tracers_[int_nmr_field_name]=mam_coupling::physical_min_max(nmr_label);
 
-    // NOTE: invariant_check checks both add_precondition_check and add_postcondition_check
-    // Because these variables are updated, we will check them before and after computations.
-    add_invariant_check<FieldWithinIntervalCheck>(
-    get_field_out(int_nmr_field_name),grid_,min_nmr,max_nmr,false);
-
-   const std::string cld_nmr_field_name =
+    const std::string cld_nmr_field_name =
         mam_coupling::cld_aero_nmr_field_name(mode);
-    add_invariant_check<FieldWithinIntervalCheck>(
-     get_field_out(cld_nmr_field_name),grid_,min_nmr,max_nmr,false);
+    limits_aerosol_gas_tracers_[cld_nmr_field_name]=mam_coupling::physical_min_max(nmr_label);
 
-   //
    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
-      // (interstitial) aerosol tracers of interest: mass (q) mixing ratios
-
       const std::string int_mmr_field_name =
           mam_coupling::int_aero_mmr_field_name(mode, a);
       if(not int_mmr_field_name.empty()) {
-         add_invariant_check<FieldWithinIntervalCheck>(
-         get_field_out(int_mmr_field_name),grid_,min_mmr,max_mmr,false);
+        limits_aerosol_gas_tracers_[int_mmr_field_name]=mam_coupling::physical_min_max(mmr_label);
       }
-      // (cloudborne) aerosol tracers of interest: mass (q) mixing ratios
-      // NOTE: DO NOT add cld borne aerosols to the "tracer" group as these are
-      // NOT advected
       const std::string cld_mmr_field_name =
           mam_coupling::cld_aero_mmr_field_name(mode, a);
       if(not cld_mmr_field_name.empty()) {
-        add_invariant_check<FieldWithinIntervalCheck>(
-        get_field_out(cld_mmr_field_name),grid_,min_mmr,max_mmr,false);
+        limits_aerosol_gas_tracers_[cld_mmr_field_name]=mam_coupling::physical_min_max(mmr_label);
       }
     }  // end for loop num species
   }
 
   for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
     const std::string gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
-    add_invariant_check<FieldWithinIntervalCheck>(
-    get_field_out(gas_mmr_field_name),grid_,min_mmr,max_mmr,false);
+    limits_aerosol_gas_tracers_[gas_mmr_field_name]=mam_coupling::physical_min_max(mmr_label);
    }  // end for loop num gases
 }
+
+const std::pair<Real, Real> MAMGenericInterface::get_range(const std::string &field_name)
+{
+  get_aerosol_gas_map();
+  std::pair<Real, Real> min_max;
+
+  auto it = limits_aerosol_gas_tracers_.find(field_name);
+  if (it != limits_aerosol_gas_tracers_.end()) {
+        min_max = it->second;
+  } else {
+        min_max = mam_coupling::physical_min_max(field_name);
+        // std::cout << "Key not found" << std::endl;
+  }
+  return min_max;
+}
+
 // ================================================================
-void MAMGenericInterface::add_aerosol_tracers(/*const AbstractGrid> grid_*/)
+void MAMGenericInterface::add_aerosol_tracers()
 {
 
   using namespace ekat::units;
@@ -122,23 +120,51 @@ void MAMGenericInterface::add_aerosol_tracers(/*const AbstractGrid> grid_*/)
     add_tracer<Updated>(gas_mmr_field_name, grid_, q_unit);
   }  // end for loop num gases
 }
-// ================================================================
-void MAMGenericInterface::add_interval_check_for_wet_dry_variables()
+
+void MAMGenericInterface::print_fields_names()
 {
-  for(const auto &var_name : wet_atm_names_) {
-    const auto min_value = mam_coupling::physical_min(var_name);
-    const auto max_value = mam_coupling::physical_max(var_name);
+  const auto& in_fields = get_fields_in();
+  std::cout << "Checking interval pre for..." << "\n";
+  for(const auto &item : in_fields) {
+    auto& field_name = item.name();
+    std::cout << field_name << "\n";
+  }
+  std::cout << "Checking interval post for..." << "\n";
+  const auto& out_fields = get_fields_out();
+  for(const auto &item : out_fields) {
+    auto& field_name = item.name();
+    std::cout << field_name << "\n";
+  }
+}
+// ================================================================
+void MAMGenericInterface::add_interval_checks()
+{
+  if (check_fields_intervals_) {
+  const auto& in_fields = get_fields_in();
+  // std::cout << "Checking interval pre for..." << "\n";
+  for(const auto &item : in_fields) {
+    auto& field_name = item.name();
+    // std::cout << field_name<< "\n";
+    const auto ranges = get_range(field_name);
+    const auto min_value = ranges.first;
+    const auto max_value = ranges.second;
     add_precondition_check<FieldWithinIntervalCheck>(
-      get_field_in(var_name),grid_,min_value,max_value,false);
+      get_field_in(field_name),grid_,min_value,max_value,false);
   }
 
-  for(const auto &var_name : dry_atm_names_) {
-    const auto min_value = mam_coupling::physical_min(var_name);
-    const auto max_value = mam_coupling::physical_max(var_name);
-    add_precondition_check<FieldWithinIntervalCheck>(
-      get_field_in(var_name),grid_,min_value,max_value,false);
+  const auto& out_fields = get_fields_out();
+  // std::cout << "Checking interval post for..." << "\n";
+  for(const auto &item : out_fields) {
+    auto& field_name = item.name();
+    //  std::cout << field_name<< "\n";
+    const auto ranges = get_range(field_name);
+    const auto min_value = ranges.first;
+    const auto max_value = ranges.second;
+    add_postcondition_check<FieldWithinIntervalCheck>(
+      get_field_out(field_name),grid_,min_value,max_value,false);
   }
-
+  }
 
 }
+
 }  // namespace scream
