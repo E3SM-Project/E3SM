@@ -13,6 +13,8 @@ MAMConstituentFluxes::MAMConstituentFluxes(const ekat::Comm &comm,
   /* Anything that can be initialized without grid information can be
    * initialized here. Like universal constants, mam wetscav options.
    */
+  check_fields_intervals_   = m_params.get<bool>("mam4_check_fields_intervals", false);
+
 }
 
 // ================================================================
@@ -83,9 +85,9 @@ void MAMConstituentFluxes::set_grids(
 
   static constexpr Units m2(m * m, "m2");
   static constexpr Units s2(s * s, "s2");
-
+  // FIXME: do we need phi?
   // Surface geopotential [m2/s2] (Require only for building DS)
-  add_field<Required>("phis", scalar2d, m2 / s2, grid_name);
+  // add_field<Required>("phis", scalar2d, m2 / s2, grid_name);
 
   // Constituent fluxes at the surface (gasses and aerosols)
   //[units: kg/m2/s (mass) or #/m2/s (number)]
@@ -138,23 +140,8 @@ void MAMConstituentFluxes::initialize_impl(const RunType run_type) {
   // ---------------------------------------------------------------
   // Input fields read in from IC file, namelist or other processes
   // ---------------------------------------------------------------
-  //NOTE: These variables are Required. Thus, I will check them before computations.
-  std::map<std::string, bool> pre_check={{"cldfrac_tot", false},
-                                         {"constituent_fluxes", false},
-                                         {"phis", false}
-                                         };
-
-  for(const auto &item : pre_check) {
-    const auto min_value = mam_coupling::physical_min(item.first);
-    const auto max_value = mam_coupling::physical_max(item.first);
-    add_precondition_check<FieldWithinIntervalCheck>(
-      get_field_in(item.first),grid_,min_value,max_value,item.second);
-  }
-  // check pre condition for wet and dry variables
-  add_interval_check_for_wet_dry_variables();
-
-  // checks pre/post condition intervals of aerosols and gases
-  add_invariant_check_for_aerosol();
+  // Check pre/post condition interval values for all fields employed by this interface
+  add_interval_checks();
 
   // Populate the wet atmosphere state with views from fields
   // FIMXE: specifically look which among these are actually used by the process

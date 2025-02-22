@@ -10,6 +10,8 @@
 // For AtmosphereInput
 #include "share/io/scorpio_input.hpp"
 
+#include <physics/mam/eamxx_mam_generic_process_interface.hpp>
+
 // For component name
 #include <string>
 
@@ -17,7 +19,7 @@ namespace scream {
 
 // The process responsible for handling MAM4 dry deposition. The AD
 // stores exactly ONE instance of this class in its list of subcomponents.
-class MAMDryDep final : public scream::AtmosphereProcess {
+class MAMDryDep final : public MAMGenericInterface  {
  public:
   static constexpr int num_aero_modes = mam_coupling::num_aero_modes();
   static constexpr int aerosol_categories_ =
@@ -45,9 +47,6 @@ class MAMDryDep final : public scream::AtmosphereProcess {
 
   // buffer for sotring temporary variables
   mam_coupling::Buffer buffer_;
-
-  // physics grid for column information
-  std::shared_ptr<const AbstractGrid> grid_;
 
   /* Note on mam4::DryDeposition::aerosol_categories = 4
      used in deposition velocity dimension defined below. These

@@ -13,10 +13,12 @@ namespace scream {
 // =========================================================================================
 MAMWetscav::MAMWetscav(const ekat::Comm &comm,
                        const ekat::ParameterList &params)
-    : AtmosphereProcess(comm, params) {
+    : MAMGenericInterface(comm, params) {
   /* Anything that can be initialized without grid information can be
    * initialized here. Like universal constants, mam wetscav options.
    */
+    check_fields_intervals_   = m_params.get<bool>("mam4_check_fields_intervals", false);
+
 }
 
 // ================================================================
@@ -250,6 +252,8 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
   // ---------------------------------------------------------------
   // Input fields read in from IC file, namelist or other processes
   // ---------------------------------------------------------------
+  // print_fields_names();
+  add_interval_checks();
 
   // store fields only to be converted to dry mmrs in wet_atm_
   wet_atm_.qc = get_field_in("qc").get_view<const Real **>();

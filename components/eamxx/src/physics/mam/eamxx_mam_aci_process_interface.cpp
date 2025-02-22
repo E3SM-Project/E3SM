@@ -5,7 +5,7 @@
 
 // For EKAT units package
 #include "ekat/util/ekat_units.hpp"
-
+#include <physics/mam/physical_limits.hpp>
 /*
 -----------------------------------------------------------------
 NOTES:
@@ -36,7 +36,7 @@ directly
 
 namespace scream {
 MAMAci::MAMAci(const ekat::Comm &comm, const ekat::ParameterList &params)
-    : AtmosphereProcess(comm, params) {
+    : MAMGenericInterface(comm, params) {
   // Asserts for the runtime or namelist options
   EKAT_REQUIRE_MSG(m_params.isParameter("wsubmin"),
                    "ERROR: wsubmin is missing from mam_aci parameter list.");
@@ -46,6 +46,8 @@ MAMAci::MAMAci(const ekat::Comm &comm, const ekat::ParameterList &params)
   EKAT_REQUIRE_MSG(
       m_params.isParameter("top_level_mam4xx"),
       "ERROR: top_level_mam4xx is missing from mam_aci parameter list.");
+  check_fields_intervals_   = m_params.get<bool>("mam4_check_fields_intervals", false);
+
 }
 
 // ================================================================
@@ -160,41 +162,7 @@ void MAMAci::set_grids(
 
   // interstitial and cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
-  for(int mode = 0; mode < mam_coupling::num_aero_modes(); ++mode) {
-    // interstitial aerosol tracers of interest: number (n) mixing ratios
-    const char *int_nmr_field_name =
-        mam_coupling::int_aero_nmr_field_name(mode);
-    add_tracer<Updated>(int_nmr_field_name, grid_, n_unit);
-
-    // cloudborne aerosol tracers of interest: number (n) mixing ratios
-    // NOTE: DO NOT add cld borne aerosols to the "tracer" group as these are
-    // NOT advected
-    const char *cld_nmr_field_name =
-        mam_coupling::cld_aero_nmr_field_name(mode);
-    add_field<Updated>(cld_nmr_field_name, scalar3d_mid, n_unit, grid_name);
-
-    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
-      // (interstitial) aerosol tracers of interest: mass (q) mixing ratios
-      const char *int_mmr_field_name =
-          mam_coupling::int_aero_mmr_field_name(mode, a);
-      if(strlen(int_mmr_field_name) > 0) {
-        add_tracer<Updated>(int_mmr_field_name, grid_, q_unit);
-      }
-      // (cloudborne) aerosol tracers of interest: mass (q) mixing ratios
-      // NOTE: DO NOT add cld borne aerosols to the "tracer" group as these are
-      // NOT advected
-      const char *cld_mmr_field_name =
-          mam_coupling::cld_aero_mmr_field_name(mode, a);
-      if(strlen(cld_mmr_field_name) > 0) {
-        add_field<Updated>(cld_mmr_field_name, scalar3d_mid, q_unit, grid_name);
-      }
-    }  // end for loop num species
-  }    // end for loop for num modes
-
-  for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
-    const char *gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
-    add_tracer<Updated>(gas_mmr_field_name, grid_, q_unit);
-  }  // end for loop num gases
+  add_aerosol_tracers();
 
   // ------------------------------------------------------------------------
   // Output from ice nucleation process
@@ -273,7 +241,8 @@ void MAMAci::initialize_impl(const RunType run_type) {
   // ------------------------------------------------------------------------
   // ## Runtime options
   // ------------------------------------------------------------------------
-
+  // Check pre/post condition interval values for all fields employed by this interface
+  add_interval_checks();
   wsubmin_                  = m_params.get<double>("wsubmin");
   enable_aero_vertical_mix_ = m_params.get<bool>("enable_aero_vertical_mix");
   top_lev_                  = m_params.get<int>("top_level_mam4xx");

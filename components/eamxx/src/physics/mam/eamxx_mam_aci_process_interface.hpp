@@ -7,6 +7,7 @@
 // For declaring ACI class derived from atm process class
 #include <share/atm_process/atmosphere_process.hpp>
 
+#include <physics/mam/eamxx_mam_generic_process_interface.hpp>
 // For aerosol configuration
 #include "mam4xx/aero_config.hpp"
 
@@ -15,7 +16,7 @@
 
 namespace scream {
 
-class MAMAci final : public scream::AtmosphereProcess {
+class MAMAci final : public MAMGenericInterface {
  public:
   // declare some constant scratch space lengths
   static constexpr int hetro_scratch_   = 43;
@@ -145,9 +146,6 @@ class MAMAci final : public scream::AtmosphereProcess {
 
   // workspace manager for internal local variables
   mam_coupling::Buffer buffer_;
-
-  // physics grid for column information
-  std::shared_ptr<const AbstractGrid> grid_;
 
   // A view array to carry cloud borne aerosol mmrs/nmrs
   view_2d qqcw_fld_work_[mam4::ndrop::ncnst_tot];
