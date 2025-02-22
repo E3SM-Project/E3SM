@@ -100,6 +100,7 @@ void SPA::initialize_impl (const RunType /* run_type */)
     // of its param list structure in other places
     remap_data.iop_lat = m_iop_data_manager->get_params().get<Real>("target_latitude");
     remap_data.iop_lon = m_iop_data_manager->get_params().get<Real>("target_longitude");
+    remap_data.has_iop = true;
   }
   remap_data.vr_type = DataInterpolation::Dynamic3DRef;
   remap_data.pname = "PS";

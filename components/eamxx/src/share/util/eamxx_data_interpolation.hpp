@@ -27,6 +27,7 @@ public:
     std::string hremap_file = "";
     Real iop_lat = std::numeric_limits<Real>::quiet_NaN();
     Real iop_lon = std::numeric_limits<Real>::quiet_NaN();
+    bool has_iop = false;
 
     // Vert remap options
     VRemapType vr_type;
