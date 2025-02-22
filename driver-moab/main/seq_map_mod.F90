@@ -134,7 +134,7 @@ contains
           mapper%gsmap_s => component_get_gsmap_cx(comp_s)
           mapper%gsmap_d => component_get_gsmap_cx(comp_d)
           call seq_map_gsmapcheck(gsmap_s, gsmap_d)
-          call mct_rearr_init(gsmap_s, gsmap_d, mpicom, mapper%rearr)
+          !call mct_rearr_init(gsmap_s, gsmap_d, mpicom, mapper%rearr)
        endif
 
     else
@@ -156,7 +156,7 @@ contains
           mapper%gsmap_s => component_get_gsmap_cx(comp_s)
           mapper%gsmap_d => component_get_gsmap_cx(comp_d)
 
-          call shr_mct_sMatPInitnc(mapper%sMatp, mapper%gsMap_s, mapper%gsMap_d, trim(mapfile),trim(maptype),mpicom)
+          !call shr_mct_sMatPInitnc(mapper%sMatp, mapper%gsMap_s, mapper%gsMap_d, trim(mapfile),trim(maptype),mpicom)
           if (present(esmf_map)) mapper%esmf_map = esmf_map
 
           if (mapper%esmf_map) then
