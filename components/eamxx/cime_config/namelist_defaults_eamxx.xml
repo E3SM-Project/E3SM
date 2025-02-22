@@ -192,7 +192,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- Pompei -->
     <pompei inherit="atm_proc_base">
       <eruption_date type="string" doc="Start date/time in YYYY-MM-DD-SSSSS format for the eruption">${RUN_REFDATE}-${RUN_REFTOD}</eruption_date>
-      <plume_radius_in_km type="real" doc="Radius of eruption plume, in km">100</plume_radius_in_km>
+      <plume_radius_in_km type="real" doc="Radius of eruption plume, in km" constraints="gt 0; le 100">100</plume_radius_in_km>
     </pompei>
 
     <!-- P3 microphysics -->
