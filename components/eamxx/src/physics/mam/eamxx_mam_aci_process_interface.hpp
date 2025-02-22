@@ -172,6 +172,7 @@ class MAMAci final : public MAMGenericInterface {
   // Atmosphere processes often have a pre-processing step that constructs
   // required variables from the set of fields stored in the field manager.
   // This functor implements this step, which is called during run_impl.
+  // FIXME: Preprocess is different from MAMGenericInterface::Preprocess.
   struct Preprocess {
     Preprocess() = default;
     // on host: initializes preprocess functor with necessary state data
@@ -201,6 +202,7 @@ class MAMAci final : public MAMGenericInterface {
       // for atmosphere
       compute_vertical_layer_heights(team, dry_atm_pre_, i);
       compute_updraft_velocities(team, wet_atm_pre_, dry_atm_pre_, i);
+      //FIXME: we only set_min_background_mmr in aci.
       set_min_background_mmr(team, dry_aero_pre_,
                              i);  // dry_atm_pre_ is the output
     }                             // operator()
@@ -215,43 +217,6 @@ class MAMAci final : public MAMGenericInterface {
     mam_coupling::AerosolState wet_aero_pre_, dry_aero_pre_;
   };  // MAMAci::Preprocess
 
-  // Atmosphere processes often have a post-processing step prepares output
-  // from this process for the Field Manager. This functor implements this
-  // step, which is called during run_impl.
-  // Postprocessing functor
-  struct Postprocess {
-    Postprocess() = default;
-
-    // on host: initializes postprocess functor with necessary state data
-    void initialize(const int ncol, const int nlev,
-                    const mam_coupling::WetAtmosphere &wet_atm,
-                    const mam_coupling::AerosolState &wet_aero,
-                    const mam_coupling::DryAtmosphere &dry_atm,
-                    const mam_coupling::AerosolState &dry_aero) {
-      ncol_post_     = ncol;
-      nlev_post_     = nlev;
-      wet_atm_post_  = wet_atm;
-      wet_aero_post_ = wet_aero;
-      dry_atm_post_  = dry_atm;
-      dry_aero_post_ = dry_aero;
-    }
-
-    KOKKOS_INLINE_FUNCTION
-    void operator()(
-        const Kokkos::TeamPolicy<KT::ExeSpace>::member_type &team) const {
-      const int i = team.league_rank();  // column index
-      compute_wet_mixing_ratios(team, dry_atm_post_, dry_aero_post_,
-                                wet_aero_post_, i);
-    }  // operator()
-
-    // number of horizontal columns and vertical levels
-    int ncol_post_, nlev_post_;
-
-    // local atmospheric and aerosol state data
-    mam_coupling::WetAtmosphere wet_atm_post_;
-    mam_coupling::DryAtmosphere dry_atm_post_;
-    mam_coupling::AerosolState wet_aero_post_, dry_aero_post_;
-  };  // Postprocess
 
  private:
   // pre- and postprocessing scratch pads
