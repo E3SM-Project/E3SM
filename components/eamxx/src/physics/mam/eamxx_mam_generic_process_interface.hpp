@@ -20,8 +20,13 @@ class MAMGenericInterface : public scream::AtmosphereProcess {
   void add_aerosol_tracers();
   void add_interval_checks();
   void print_fields_names();
-    // physics grid for column information
+  void populate_wet_and_dry_aero();
+  // physics grid for column information
   std::shared_ptr<const AbstractGrid> grid_;
+  // aerosol state variables
+  mam_coupling::AerosolState wet_aero_, dry_aero_;
+  // workspace manager for internal local variables
+  mam_coupling::Buffer buffer_;
   std::vector<std::string> wet_atm_names_ = {"qv", "qc", "nc", "qi", "ni"};
   std::vector<std::string> dry_atm_names_ = {
         "T_mid",

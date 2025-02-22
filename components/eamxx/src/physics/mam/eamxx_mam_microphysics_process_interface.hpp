@@ -188,7 +188,6 @@ class MAMMicrophysics final : public MAMGenericInterface {
   // atmospheric and aerosol state variables
   mam_coupling::WetAtmosphere wet_atm_;
   mam_coupling::DryAtmosphere dry_atm_;
-  mam_coupling::AerosolState wet_aero_, dry_aero_;
 
   // photolysis rate table (column-independent)
   mam4::mo_photo::PhotoTableData photo_table_;
@@ -198,10 +197,6 @@ class MAMMicrophysics final : public MAMGenericInterface {
 
   // surface albedo: shortwave, direct
   const_view_1d d_sfc_alb_dir_vis_;
-
-  // workspace manager for internal local variables
-  // ekat::WorkspaceManager<Real, KT::Device> workspace_mgr_;
-  mam_coupling::Buffer buffer_;
 
   mam_coupling::TracerTimeState linoz_time_state_;
   view_2d work_photo_table_;
