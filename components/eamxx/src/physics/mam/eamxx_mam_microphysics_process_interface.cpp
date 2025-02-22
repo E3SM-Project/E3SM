@@ -377,7 +377,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   // Input fields read in from IC file, namelist or other processes
   // ---------------------------------------------------------------
   populate_wet_and_dry_atm();
-  // FIXME:
+  // FIXME: we are using cldfrac_tot in other mam4xx process.
   dry_atm_.cldfrac = get_field_in("cldfrac_liq").get_view<const Real **>();
   // FIXME: phis is not populated by populate_wet_and_dry_atm.
   dry_atm_.phis      = get_field_in("phis").get_view<const Real *>();
