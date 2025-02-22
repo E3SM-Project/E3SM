@@ -157,39 +157,7 @@ void MAMDryDep::set_grids(
 
   // (interstitial) aerosol tracers of interest: mass (q) and number (n) mixing
   // ratios
-  for(int m = 0; m < num_aero_modes; ++m) {
-    const char *int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
-
-    add_tracer<Updated>(int_nmr_field_name, grid_, n_unit);
-    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
-      const char *int_mmr_field_name =
-          mam_coupling::int_aero_mmr_field_name(m, a);
-
-      if(strlen(int_mmr_field_name) > 0) {
-        add_tracer<Updated>(int_mmr_field_name, grid_, q_unit);
-      }
-    }
-  }
-  // (cloud) aerosol tracers of interest: mass (q) and number (n) mixing ratios
-  for(int m = 0; m < num_aero_modes; ++m) {
-    const char *cld_nmr_field_name = mam_coupling::cld_aero_nmr_field_name(m);
-
-    add_field<Updated>(cld_nmr_field_name, scalar3d_mid, n_unit, grid_name);
-    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
-      const char *cld_mmr_field_name =
-          mam_coupling::cld_aero_mmr_field_name(m, a);
-
-      if(strlen(cld_mmr_field_name) > 0) {
-        add_field<Updated>(cld_mmr_field_name, scalar3d_mid, q_unit, grid_name);
-      }
-    }
-  }
-
-  // aerosol-related gases: mass mixing ratios
-  for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
-    const char *gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
-    add_tracer<Updated>(gas_mmr_field_name, grid_, q_unit);
-  }
+  add_aerosol_tracers();
 
   // -------------------------------------------------------------
   // These variables are "Computed" or outputs for the process
