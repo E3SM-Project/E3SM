@@ -25,7 +25,7 @@ read to load its runtime parameters.
 Users should not have to modify this script,
 nor should they have to manually call it, but it is useful to know what it does.
 When `buildnml` runs, it creates a few files, containing EAMxx input parameters:
-    - `scream_input.yaml`: this [YAML](https://yaml.org/spec/1.2.2)
+    - `eamxx_input.yaml`: this [YAML](https://yaml.org/spec/1.2.2)
     file is located in the `RUNDIR/data` folder, and will be read by EAMxx at
     runtime to load all of its configuration parameters.
     More precisely, this file contains parameters that need to be used inside
@@ -36,16 +36,16 @@ When `buildnml` runs, it creates a few files, containing EAMxx input parameters:
     to get all the parameters for the HOMME dycore (ADD REF).
     This file only contains dycore-specific parameters that are only recognized
     inside HOMME, and does not contain any parameter pertaining EAMxx infrastructure.
-    - `namelist_scream.xml`: this XML file is located in the case directory,
+    - `namelist_eamxx.xml`: this XML file is located in the case directory,
     and contains all the runtime parameters that EAMxx will read in at runtime.
     `buildnml` uses this XML file as an intermediate file during the generation
-    of `scream_input.yaml` and `namelist.nl`.
+    of `eamxx_input.yaml` and `namelist.nl`.
     More specifically, `buildnml` generates this file using case information to
     select the proper configurations from the file
     `namelist_defaults_eamxx.xml`, located in
     `SRCDIR/components/eamxx/cime_config`.
     Despite the fact that the only files that are needed at runtime are
-    `scream_input.yaml` and `namelist.nl`, we generate and keep this XML file
+    `eamxx_input.yaml` and `namelist.nl`, we generate and keep this XML file
     around to make the implementation of `atmquery` easier.
 
     Since these files are automatically generated when `buildnml` runs, users
@@ -64,7 +64,7 @@ A basic usage of the script is
 ```
 
 which will retrieve the value of the parameter called `my_param`, by locating
-the XML node "my_param" in the file `namelist_scream.xml` in the RUNDIR folder.
+the XML node "my_param" in the file `namelist_eamxx.xml` in the RUNDIR folder.
 Obviously, an XML file can have multiple nodes with the same tag,
 and the script is implemented to error out if multiple matches are found.
 In such a scenario, the user needs to provide also the parents nodes names,
@@ -157,7 +157,7 @@ $ ./atmquery --listall
 
 When `buildnml` runs, the model inputs are deduced from the case configuration
 settings (e.g., the grid, the compset, etc.) and the
-`namelist_scream_defaults.xml` file, located in the eamxx source tree.
+`namelist_eamxx_defaults.xml` file, located in the eamxx source tree.
 The user can change any of these parameters using the `atmchange` script.
 A basic usage of the script is
 
@@ -188,7 +188,7 @@ allow multiple matches. Matches:
     namelist_defaults::atmosphere_processes::physics::rrtmgp::number_of_subcycles
     namelist_defaults::atmosphere_processes::sc_export::number_of_subcycles
 $ ./atmchange homme::number_of_subcycles=10
-Regenerating /path/to/namelist_scream.xml. Manual edits will be lost.
+Regenerating /path/to/namelist_eamxx.xml. Manual edits will be lost.
 $ ./atmquery homme::number_of_subcycles
     namelist_defaults::atmosphere_processes::homme::number_of_subcycles: 10
 ```
@@ -212,7 +212,7 @@ $ ./atmquery --grep number_of_subcycles
     rrtmgp::number_of_subcycles: 1
     sc_export::number_of_subcycles: 1
 $ ./atmchange ANY::number_of_subcycles=3
-Regenerating /path/to/namelist_scream.xml. Manual edits will be lost.
+Regenerating /path/to/namelist_eamxx.xml. Manual edits will be lost.
 $ ./atmquery --grep number_of_subcycles
     atmosphere_processes::number_of_subcycles: 3
     sc_import::number_of_subcycles: 3
@@ -232,7 +232,7 @@ In addition, "ANY" can be used in a "scoped" string, to limit the set of matches
 
 ``` {.shell .copy}
 $ ./atmchange mac_aero_mic::ANY::number_of_subcycles=1
-Regenerating /path/to/namelist_scream.xml. Manual edits will be lost.
+Regenerating /path/to/namelist_eamxx.xml. Manual edits will be lost.
 $ ./atmquery --grep number_of_subcycles
     atmosphere_processes::number_of_subcycles: 3
     sc_import::number_of_subcycles: 3
@@ -352,7 +352,7 @@ Notice that we used "=" instead of "+=", which means we will be overwriting the
 value, rather than appending.
 Any atmosphere process that was previously in the list but is no longer in it
 will be removed from the generated `namelist_defaults.xml`
-(and `scream_input.yaml`) files, along with all their nested parameters.
+(and `eamxx_input.yaml`) files, along with all their nested parameters.
 
 ## Model Output
 
@@ -370,7 +370,7 @@ Therefore, it is not advised to put the original YAML files
 in RUNDIR/data, since upon `buildnml` execution, all the CIME vars will no
 longer be present in the YAML file (replaced by their values),
 making it harder to tweak it, and even harder to share with other users/cases.
-Another consequence of this is that, much like `scream_input.yaml`,
+Another consequence of this is that, much like `eamxx_input.yaml`,
 the user should not modify the generated YAML files in RUNDIR/data,
 since any modification will be lost on the next run of `buildnml`
 (e.g., during `case.submit`).
@@ -421,7 +421,7 @@ in the run directory.
       where `$timestamp` corresponds to the first snapshot saved in the file for
       `Instant` output, or the beginning of the first averaging window for the other
       averaging types.
-      - If not set, it defaults to `$casename.scream.h`.
+      - If not set, it defaults to `$casename.eamxx.h`.
 - `Max Snapshots Per File`: specifies how many time snapshots can be put in a file.
       - Once this number is reached, EAMxx will close the file and open a new one.
       - If not set, it defaults to `-1`, signaling "unlimited storage".
@@ -561,7 +561,7 @@ of the parameter value).
       - By default, EAMxx uses single precision.
       - Valid values are `single`, `float`, `double`, and `real`.
           - The first two are synonyms, while the latter resolves to `single`
-          or `double` depending on EAMxx CMake configuration parameter `SCREAM_DOUBLE_PRECISION`.
+          or `double` depending on EAMxx CMake configuration parameter `EAMXX_DOUBLE_PRECISION`.
 - `file_max_storage_type` (top-level list, `string`):
       - This parameter determines how the capacity of the file is specified.
         - By default, it is set to `num_snapshots`, which makes EAMxx read

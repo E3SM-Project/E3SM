@@ -5,7 +5,7 @@
 The intention of this guide is to provide a new developer with the most
 straightforward path toward productively building, running, and testing EAMxx.
 Specifically, we will discuss building and testing in the EAMxx "standalone"
-configuration using the `test-all-scream` workflow.
+configuration using the `test-all-eamxx` workflow.
 Note that tests related to running the full E3SM model are discussed in
 [Full Model Testing](dev_testing/full_model_testing.md).
 
@@ -19,16 +19,16 @@ CMake/[CTest](https://cmake.org/cmake/help/latest/manual/ctest.1.html) setup.
 However, we would strongly advise against doing this unless you know what
 you're doing and have good reasons for choosing this option.
 
-Instead, we recommend using the EAMxx-designed `test-all-scream` workflow that
+Instead, we recommend using the EAMxx-designed `test-all-eamxx` workflow that
 employs a variety of shell and python scripts to automate the series of tasks
 common to development.
 More details on this are provided below in the section on
-[Running EAMxx](#running-eamxx-via-test-all-scream).
+[Running EAMxx](#running-eamxx-via-test-all-eamxx).
 
 A detailed, example-based walk-through of modifying and testing new code
 may be found in [Testing for Development](dev_testing/testing_for_development.md)
 and comprehensive details about the standalone testing tools are located in
-[EAMxx Automated Standalone Testing](dev_testing/test_all_scream.md)
+[EAMxx Automated Standalone Testing](dev_testing/test_all_eamxx.md)
 
 ### Note on Computing Platforms
 
@@ -54,15 +54,15 @@ may be worth the potential speedup in development.
     PR with a working version, and we are sure some future developer will
     appreciate it!
 
-### Running EAMxx via `test-all-scream`
+### Running EAMxx via `test-all-eamxx`
 
 The quickest method for a new developer to get EAMxx up and running is to use
-the automated configure/build/test workflow provided by `scripts/test-all-scream`.
+the automated configure/build/test workflow provided by `scripts/test-all-eamxx`.
 This is a good "smoke test"[^smoke-test-def] to confirm that your development
 environment is configured properly and that there are no glaring run-time
 errors preventing successful running and testing.
 
-Running via `test-all-scream` requires ***at minimum*** 1 to 2 command-line
+Running via `test-all-eamxx` requires ***at minimum*** 1 to 2 command-line
 arguments to work correctly and likely more if your goals are more than modest.
 In the following sections, we present the configurations a new developer is most
 likely to require.
@@ -70,8 +70,8 @@ likely to require.
 #### Selected Useful Testing Options
 
 We give an overview of common basic use cases here, and we provide full details
-on the various capabilities and options of `test-all-scream` in
-[EAMxx Automated Standalone Testing](dev_testing/test_all_scream.md).
+on the various capabilities and options of `test-all-eamxx` in
+[EAMxx Automated Standalone Testing](dev_testing/test_all_eamxx.md).
 
 ??? Example "Configure Only Without Build or Test"
 
@@ -80,7 +80,7 @@ on the various capabilities and options of `test-all-scream` in
     TPL availability, etc.
 
     ``` {.shell .copy}
-    $ ./scripts/test-all-scream <required-args> [optional-args] --config-only
+    $ ./scripts/test-all-eamxx <required-args> [optional-args] --config-only
     ```
 
 ??? Tip "Parallel Build and Test Execution"
@@ -90,7 +90,7 @@ on the various capabilities and options of `test-all-scream` in
     - This is unnecessary when running on
     [supported
     machines](https://e3sm.org/model/running-e3sm/supported-machines/) because
-    efficient defaults are already set within `test-all-scream`.
+    efficient defaults are already set within `test-all-eamxx`.
     - If you are testing locally or on an otherwise unsupported machine, it is
     recommended to set these values manually.
         - The reason for this is that the default value for each case is `0`,
@@ -99,7 +99,7 @@ on the various capabilities and options of `test-all-scream` in
         or that it will not bog down your system.
 
     ``` {.shell .copy}
-    $ ./scripts/test-all-scream <required-args> [optional-args] \
+    $ ./scripts/test-all-eamxx <required-args> [optional-args] \
         # if running multiple test configurations, this will launch those build
         # stacks in parallel \
         --parallel \
@@ -122,13 +122,13 @@ on the various capabilities and options of `test-all-scream` in
     # "ash_in_jection_test" or "ash_injector_test".
 
     $ test_choice="[^\s]*ash_injection[^\s]*"
-    $ ./scripts/test-all-scream <required-args> [optional-args] \
+    $ ./scripts/test-all-eamxx <required-args> [optional-args] \
         --limit-test-regex "${test_choice}"
     ```
 
 ??? Success "Baseline Tests"
 
-    [Baseline tests](dev_testing/test_all_scream.md#baseline-tests) compare the
+    [Baseline tests](dev_testing/test_all_eamxx.md#baseline-tests) compare the
     current state of the code to some "baseline" value to ensure that the
     modifications do not negatively impact the current solutions provided by
     the model.
@@ -148,7 +148,7 @@ on the various capabilities and options of `test-all-scream` in
     $ cd "${eamxx_root}"
     $ git checkout master
     $ export bl_loc="${HOME}/eamxx-baselines"
-    $ ./scripts/test-all-scream <required-args> [optional-args] \
+    $ ./scripts/test-all-eamxx <required-args> [optional-args] \
         # set the location where we will save the baseline files we are about
         # to generate \
         --baseline-dir "${bl_loc}" \
@@ -160,7 +160,7 @@ on the various capabilities and options of `test-all-scream` in
     ["write all the code..."]
     # Note: the presence of the '--baseline-dir' flag indicates we will
     # compare test results to the latest baselines found in that directory
-    $ ./scripts/test-all-scream <required-args> [optional-args] \
+    $ ./scripts/test-all-eamxx <required-args> [optional-args] \
         # set the location where we saved the previous baselines \
         --baseline-dir "${bl_loc}"
     ["mam4_ash_injection_standalone test fails... no baseline! (so do the others)"]
@@ -169,7 +169,7 @@ on the various capabilities and options of `test-all-scream` in
 
 ??? Tip ""Quick-rerunning" Tests"
 
-    Rebuilding EAMxx can take quite some time, so `test-all-scream` has a couple
+    Rebuilding EAMxx can take quite some time, so `test-all-eamxx` has a couple
     of options to rerun tests quickly and avoid configure or build costs.
 
     `--quick-rerun`
@@ -182,12 +182,12 @@ on the various capabilities and options of `test-all-scream` in
 
     ``` {.shell .copy}
     $ test_choice="[^\s]*ash_injection[^\s]*"
-    $ ./scripts/test-all-scream <required-args> [optional-args] \
+    $ ./scripts/test-all-eamxx <required-args> [optional-args] \
         --limit-test-regex "${test_choice}"
     ["tests run..."]
     ["modify ash_injection_test.cpp..."]
     # no need to reconfigure--let's be quick!
-    $ ./scripts/test-all-scream <required-args> [optional-args] \
+    $ ./scripts/test-all-eamxx <required-args> [optional-args] \
         --quick-rerun
     ```
 
@@ -202,17 +202,17 @@ on the various capabilities and options of `test-all-scream` in
 
     ``` {.shell .copy}
     # run all of the eamxx tests
-    $ ./scripts/test-all-scream <required-args> [optional-args]
+    $ ./scripts/test-all-eamxx <required-args> [optional-args]
     ["tests run..."]
     ["ash_injection-related tests fail... so much output, though :("]
     # no need to reconfigure or rebuild--rerun to make the output easier to parse.
-    $ ./scripts/test-all-scream <required-args> [optional-args] \
+    $ ./scripts/test-all-eamxx <required-args> [optional-args] \
         --quick-rerun
     ```
 
 ??? Example "Efficiently Building for Multiple Architectures"
 
-    The default build directory employed by `test-all-scream` is
+    The default build directory employed by `test-all-eamxx` is
     `${eamxx_root}/ctest-build/<test-configuration>`, where `test-configuration`
     can be `full_debug`, `release`, etc.
     The implication of this is that if we are testing for both CPU and GPU on
@@ -237,13 +237,13 @@ on the various capabilities and options of `test-all-scream` in
     $ build_threads_gpu=40
 
     # Launch the cpu build/test
-    $ ./scripts/test-all-scream <required-args> [optional-args] \
+    $ ./scripts/test-all-eamxx <required-args> [optional-args] \
         --work-dir "${build_loc_cpu}" \
         --make-parallel-level "${build_threads_cpu}" \
         --ctest-parallel-level "${test_threads_cpu}"
 
     # launch the gpu build/test
-    $ ./scripts/test-all-scream <required-args> [optional-args] \
+    $ ./scripts/test-all-eamxx <required-args> [optional-args] \
         --work-dir "${build_loc_gpu}" \
         --make-parallel-level "${build_threads_gpu}"
     ```
@@ -253,7 +253,7 @@ on the various capabilities and options of `test-all-scream` in
 When testing on a supported E3SM machine, the only configuration required is to
 set the proper "machine ID" flag that indicates the machine name and potentially
 the desired device to run with (CPU, GPU).
-This is because `test-all-scream` configures the run according to a
+This is because `test-all-eamxx` configures the run according to a
 "machine file" that sets an environment known to build and test successfully
 and efficiently[^mach-file].
 
@@ -262,16 +262,16 @@ and efficiently[^mach-file].
     ``` {.shell .copy}
     # run tests on cpu
     ["start interactive session on cpu node (see below)..."]
-    $ ./scripts/test-all-scream --machine pm-cpu
+    $ ./scripts/test-all-eamxx --machine pm-cpu
     ["test runs..."]
     ["logout from cpu node..."]
     ["start interactive session on gpu node..."]
-    $ ./scripts/test-all-scream --machine pm-gpu
+    $ ./scripts/test-all-eamxx --machine pm-gpu
     ```
 
-??? Warning "`test-all-scream` must be run on a `compute` node"
+??? Warning "`test-all-eamxx` must be run on a `compute` node"
 
-    The `test-all-scream` script assumes it is being run on a compute node
+    The `test-all-eamxx` script assumes it is being run on a compute node
     (i.e., not the `login` or `head` node).
 
     This can be handled most easily by launching the job manually from an
@@ -283,7 +283,7 @@ and efficiently[^mach-file].
     $ salloc --nodes 1 --qos interactive --time 02:00:00 [...]
     <response indicating interactive node name>
     $ ssh <node-id>
-    $ ./scripts/test-all-scream --machine <machine-id>
+    $ ./scripts/test-all-eamxx --machine <machine-id>
     ```
 
 #### Testing Locally
@@ -296,12 +296,12 @@ setup involved in making your life easier.
 Testing on a local, or otherwise unknown, machine requires the `--local`
 (or `-l`) flag and correctly-configured files in the `~/.cime/` directory.
 For a full explanation of how to configure your own machine,
-see [Local Configuration Files](dev_testing/test_all_scream.md#local-
+see [Local Configuration Files](dev_testing/test_all_eamxx.md#local-
 configuration-files), but we will briefly summarize here.
 
 ??? Example "Example `scream_mach_specs.py` Configuration File"
 
-    The `test-all-scream` workflow expects to find a file called
+    The `test-all-eamxx` workflow expects to find a file called
     `scream_mach_specs.py` in the directory `~/.cime/`.
     This file is imported using the utility function `get_all_machines()`
     located in `scripts/machine_specs.py`, and it is used to setup the
@@ -386,7 +386,7 @@ configuration-files), but we will briefly summarize here.
                              ". ~/.bashrc",
                              # source a custom script to setup my eamxx
                              # environment
-                             "source ${HOME}/.cime/scream-setup.sh"
+                             "source ${HOME}/.cime/eamxx-setup.sh"
                              ]
 
             # define the python-variable home directory for use below
@@ -396,14 +396,14 @@ configuration-files), but we will briefly summarize here.
             #       "formatted string literals" or more commonly "f-strings"
 
             # provide the path to my baselines directory
-            cls.baselines_dir = f"{home_dir}/scream-baselines"
+            cls.baselines_dir = f"{home_dir}/eamxx-baselines"
 
             # provide the path to a custom cmake file, used to pass build
             # variables directly to cmake
-            cls.mach_file = f"{home_dir}/.cime/scream_mach_file.cmake"
+            cls.mach_file = f"{home_dir}/.cime/eamxx_mach_file.cmake"
 
             # set a couple of environment variables that are used in the
-            # setup script and/or scream_mach_file.cmake
+            # setup script and/or eamxx_mach_file.cmake
             # path to directory containing personally-built libraries
             tpl_path = f"{home_dir}/TPLs"
             # path to personally-built openmpi compilers
@@ -439,5 +439,5 @@ Also, no promises the standard configuration is perfectly efficient.
 <!-- doesn't like the separation between footnote and text reference appears
 to be triggered by the admonition environment -->
 <!-- markdownlint-disable-next-line MD053 -->
-[^tas-compute-node]: While probably not time-efficient, there is no reason `test-all-scream` cannot also be run by submitting to the batch scheduler.
+[^tas-compute-node]: While probably not time-efficient, there is no reason `test-all-eamxx` cannot also be run by submitting to the batch scheduler.
 If this is your goal, the exercise is left to the reader.

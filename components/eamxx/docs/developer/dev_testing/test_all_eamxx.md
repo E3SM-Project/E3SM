@@ -1,6 +1,6 @@
 <!-- Line break seems necessary for aesthetic's sake -->
 <!-- markdownlint-disable-next-line MD033 -->
-# EAMxx Automated Standalone Testing <br> (`test-all-scream`)
+# EAMxx Automated Standalone Testing <br> (`test-all-eamxx`)
 
 ## Local Configuration Files
 
@@ -15,72 +15,72 @@
 In this section we describe our testing methodology for standalone EAMxx
 configurations. We use several types of tests
 
-* **Unit tests** are individual test programs that demonstrate that a small set
+- **Unit tests** are individual test programs that demonstrate that a small set
   of code performs a single function or a set of related functions. We use
   a C++ unit testing framework called [Catch2](https://catch2-temp.readthedocs.io/en/latest/index.html)
   to implement unit tests.
-* **Property (verification) tests** are test programs that configure code that
+- **Property (verification) tests** are test programs that configure code that
   demonstrates that a part of EAMxx (for example, an atmospheric physics
   parameterization or the dynamical core) is able to produce an answer that
   satisfies some physical constraint or matches a known solution under specific
   circumstances.
-* **Fortran-C++ "bit-for-bit" (BFB) tests** are test programs, often implemented
+- **Fortran-C++ "bit-for-bit" (BFB) tests** are test programs, often implemented
   as unit tests, that demonstrate that a set of C++ code ported from Fortran
   produces bit-for-bit identical results to its Fortran counterpart, provided
   certain compiler options are enabled (such as "strict" floating-point
   arithmetic).
-* **Test Suites** are named collections of tests that can be run on demand using
+- **Test Suites** are named collections of tests that can be run on demand using
   the [ctest](https://cmake.org/cmake/help/latest/manual/ctest.1.html) command.
 
-We also support a `test-all-scream` configuration that runs all of the
+We also support a `test-all-eamxx` configuration that runs all of the
 standalone tests for an EAMxx configuration. Note, your current machine
-must be known to EAMxx before `test-all-scream` will work. A machine can
+must be known to EAMxx before `test-all-eamxx` will work. A machine can
 be made known to EAMxx by editing the eamxx/scripts/machines_specs.py files.
 There are some instructions on what to do at the top of this file.
 
-`test-all-scream` has an informative help dump, displaying some examples,
+`test-all-eamxx` has an informative help dump, displaying some examples,
 important information, and options flags/descriptions
 (provided below in the collapsed text box).
 
 ``` {.shell .copy}
 cd ${e3sm_root}/components/eamxx
-./scripts/test-all-scream --help
+./scripts/test-all-eamxx --help
 ```
 <!-- disable long-line warnings since this is the actual output and -->
 <!-- doesn't look bad on the page -->
 <!-- markdownlint-disable MD013 -->
-??? note "Output from `test-all-scream --help`"
+??? note "Output from `test-all-eamxx --help`"
 
     <!-- markdownlint-disable-line MD046 -->
     ```shell
     usage: 
-    test-all-scream <ARGS> [--verbose]
+    test-all-eamxx <ARGS> [--verbose]
     OR
-    test-all-scream --help
+    test-all-eamxx --help
 
     EXAMPLES (assumes user is on machine mappy):
-        # Run all tests on current machine using the SCREAM-approved
+        # Run all tests on current machine using the EAMxx-approved
         env for this machine 
-        > cd $scream_repo/components/eamxx
-        > ./scripts/test-all-scream -m mappy
+        > cd $eamxx_repo/components/eamxx
+        > ./scripts/test-all-eamxx -m mappy
 
         # Run all tests on current machine with default behavior except using your current shell env 
-        > cd $scream_repo/components/eamxx
-        > ./scripts/test-all-scream --preserve-env -m mappy
+        > cd $eamxx_repo/components/eamxx
+        > ./scripts/test-all-eamxx --preserve-env -m mappy
 
         # Run all tests on current machine with default behavior except using non-default baselines 
-        > cd $scream_repo/components/eamxx
-        > ./scripts/test-all-scream -m mappy --baseline-dir=PATH_TO_BASELINES
+        > cd $eamxx_repo/components/eamxx
+        > ./scripts/test-all-eamxx -m mappy --baseline-dir=PATH_TO_BASELINES
 
         # Run all tests on current machine with default behavior except using local baselines 
-        > cd $scream_repo/components/eamxx
-        > ./scripts/test-all-scream -m mappy --baseline-dir=LOCAL
+        > cd $eamxx_repo/components/eamxx
+        > ./scripts/test-all-eamxx -m mappy --baseline-dir=LOCAL
 
         # Run only the dbg test on current machine with default behavior otherwise
-        > cd $scream_repo/components/eamxx
-        > ./scripts/test-all-scream -m mappy -t dbg
+        > cd $eamxx_repo/components/eamxx
+        > ./scripts/test-all-eamxx -m mappy -t dbg
 
-    Drive ctest testing of scream for a complete set of tests. This will be our
+    Drive `ctest` testing of EAMxx for a complete set of tests. This will be our
     gold standard to determine if the code is working or not on the current platform.
     For batch machines, this script expects to already be on a compute node;
     it does not do batch submissions.
@@ -89,12 +89,12 @@ cd ${e3sm_root}/components/eamxx
                by loading machine-specific modules and setting machine-specific
                env vars. To prevent this behavior, use --preserve-env flag.
 
-    Baselines: By default, test-all-scream will not run baseline tests. If you set
+    Baselines: By default, test-all-eamxx will not run baseline tests. If you set
     -b AUTO, baseline tests will be done with the pre-existing public baselines in
     the location specified by the machine spec. You can regenerate
     baselines any time by using the -g flag, but be aware this will impact everyone
     if you regenerate the public baselines. You can change the target baseline area
-    using -b $path. You can also use the magic word "LOCAL" to have test-all-scream
+    using -b $path. You can also use the magic word "LOCAL" to have test-all-eamxx
     pick a local directory for you if you want to manage your own baselines within
     the current repo. If -g is provided, no tests will be run; -g means generate only.
 
@@ -108,8 +108,8 @@ cd ${e3sm_root}/components/eamxx
     likely that your branch has fallen out of date. You should upstream merge or rebase
     your branch.
 
-    To sum up, the baseline handling for test-all-scream should basically match what we
-    do for create_test tests, the only difference is that test-all-scream does baseline
+    To sum up, the baseline handling for test-all-eamxx should basically match what we
+    do for create_test tests, the only difference is that test-all-eamxx does baseline
     comparison tests by default.
 
     options:
@@ -123,7 +123,7 @@ cd ${e3sm_root}/components/eamxx
       -s, --submit          Submit results to dashboard (default: False)
       -p, --parallel        Launch the different build types stacks in parallel
                             (default: False)
-      -g, --generate        Instruct test-all-scream to generate baselines from
+      -g, --generate        Instruct test-all-eamxx to generate baselines from
                             current commit. Skips tests (default: False)
       -b, --baseline-dir BASELINE_DIR
                             Directory where baselines should be read from (or
@@ -134,11 +134,11 @@ cd ${e3sm_root}/components/eamxx
                             here as well. (default: None)
       -m, --machine MACHINE
                             Provide machine name. This is *always* required. It
-                            can, but does nothave to, match SCREAM_MACHINE. You
-                            can decorate this with compilerinfo if a machine
+                            can, but does not have to, match EAMXX_MACHINE. You
+                            can decorate this with compiler info if a machine
                             supports multiple compiler types. This value will
-                            beused as the CTEST_SITE for cdash if the tests are
-                            submitted. It isexpected that a scream machine file
+                            be used as the CTEST_SITE for cdash if the tests are
+                            submitted. It is expected that an EAMxx machine file
                             exists for this value. (default: None)
       --config-only         In the testing phase, only run config step, skip build
                             and tests (default: False)
@@ -149,7 +149,7 @@ cd ${e3sm_root}/components/eamxx
       -e, --custom-env-vars CUSTOM_ENV_VARS
                             Extra custom environment variables to be used. These
                             will override(if applicable) whatever was found in
-                            machine_specs. Each -e flagsupports a single env var,
+                            machine_specs. Each -e flag supports a single env var,
                             so to pass multiple env var, do -e 'KEY1=VALUE1' -e
                             'KEY2=VALUE2' (default: [])
       --preserve-env        Whether to skip machine env setup, and preserve the
@@ -165,11 +165,11 @@ cd ${e3sm_root}/components/eamxx
                             compute sanitizer initcheck), 'css' (debug with
                             compute sanitizer synccheck) (default: [])
       -l, --local           Allow to not specify a machine name, and have test-
-                            all-scream to look for '~/.cime/scream_mach_specs.py'
+                            all-eamxx to look for '~/.cime/scream_mach_specs.py'
                             for machine specifications. (default: False)
       -r, --root-dir ROOT_DIR
-                            The root directory of the scream src you want to test.
-                            Default will be the scream src containing this script.
+                            The root directory of the EAMxx src you want to test.
+                            Default will be the EAMxx src containing this script.
                             (default: None)
       -w, --work-dir WORK_DIR
                             The work directory where all the building/testing will
@@ -203,39 +203,36 @@ cd ${e3sm_root}/components/eamxx
     ```
 <!-- markdownlint-enable MD013 -->
 
-If you are unsure of the cmake configuration for you development cycle, one
-trick you can use is to run `test-all-scream` for the `dbg` test and just
-copy the cmake command it prints (then ctrl-C the process).
+If you are unsure of the CMake configuration for you development cycle, one
+trick you can use is to run `test-all-eamxx --config-only`
+for the `dbg` test and then copy the `cmake` commands from the resulting output.
 
 ```shell
-cd $scream_repo/components/eamxx
-./scripts/test-all-scream -t dbg -m $machine
+cd $eamxx_repo/components/eamxx
+./scripts/test-all-eamxx -t dbg -m $machine
 # wait for a few seconds*
 # Ctrl-C *
 # Copy the contents of DCMAKE_COMMAND that was passed to ctest *
 # Add "cmake" to beginning of contents and path to eamxx at the end. *
 ```
 
-Considerations for using `test-all-scream`:
+Considerations for using `test-all-eamxx`:
 
-* Your machine must be known to our scripts, see above.
-* If you try to run commands by-hand (i.e., outside of `test-all-scream`,
-`cmake`, `make`, `ctest`, etc), you'll need to
-load the scream-env into your shell, which can be achieved by running
-`cd eamxx/scripts; eval $(./scream-env-cmd $machine)`
-* `test-all-scream` expects to be run from a compute node if you
+- Your machine must be known to our scripts, see above.
+- If you try to run commands by-hand (i.e., outside of `test-all-eamxx`,
+`cmake`, `make`, `ctest`, etc.), you'll need to
+load the eamxx-env into your shell, which can be achieved by running
+`cd eamxx/scripts; eval $(./eamxx-env-cmd $machine)`
+- `test-all-eamxx` expects to be run from a compute node if you
 are on a batch machine.
-* You'll need to think about your baseline situation, as many of our
+- You'll need to think about your baseline situation, as many of our
   tests rely on pre-existing baselines. The `-b` option controls the baseline
-  location and can have the following values:
-  * `AUTO`
-      * A common public baseline area shared by all developers
-  * `LOCAL`
-      * A private baseline area for the current developer in the current repo
-  * `$path`
-      * A specific arbitrary path
-  * `None`
-      * If there is no `-b` at all, no baseline testing will be done
+  location and can have the following values (**Note:** If no `-b` flag is
+  passed at all, no baseline testing will be done):
+      - `AUTO`
+          - A common public baseline area shared by all developers
+      - `$path`
+          - A specific arbitrary path
 
 ## Baseline Tests
 
@@ -253,12 +250,12 @@ make baseline
 ```
 
 The tests will run, automatically using the baseline file, which is located in
-the CMake-configurable path `${SCREAM_BASELINES_DIR}`.
+the CMake-configurable path `${EAMXX_BASELINES_DIR}`.
 By default, this path is set to an invalid string.
 If baselines tests are enabled, we check that a valid
 path has been provided.
 
-To run all of SCREAM's tests, make sure you're in `$RUN_ROOT_DIR` and type
+To run all of EAMxx's tests, make sure you're in `$RUN_ROOT_DIR` and type
 
 ```shell
 ctest -VV
@@ -266,7 +263,7 @@ ctest -VV
 
 This runs everything and reports results in an extra-verbose (`-VV`) manner.
 
-You can also run subsets of the SCREAM tests. For example, to run only the
+You can also run subsets of the EAMxx tests. For example, to run only the
 P3 regression tests (again, from the `$RUN_ROOT_DIR` directory), use
 
 ```shell
@@ -276,7 +273,7 @@ ctest -R p3_regression
 <!-- ### Grouping Tests with Labels
 
 We can create groupings of tests by using **labels**. For example, we have a
-`driver` label that runs tests for SCREAM's standalone driver. You can see a
+`driver` label that runs tests for EAMxx's standalone driver. You can see a
 list of available labels by typing
 
 ```shell
@@ -297,8 +294,8 @@ ctest -L driver -N
 implementations with our P3 Fortran reference implementation. If you're working
 on the C++/Kokkos implementation, you can invoke any new tests to the function
 `Baseline::run_and_cmp` in
-`${SCREAM_SRC_DIR}/components/eamxx/p3/tests/p3_run_and_cmp.cpp`.
+`${EAMxx_SRC_DIR}/components/eamxx/p3/tests/p3_run_and_cmp.cpp`.
 
 If the reference Fortran implementation changes enough that a new baseline file
-is required, make sure to let other SCREAM team members know, in order to
+is required, make sure to let other EAMxx team members know, in order to
 minimize disruptions.

@@ -15,10 +15,9 @@
     ├── scripts/
     │   ├── atmchange
     │   ├── atmquery
-    │   └── test-all-scream
+    │   └── test-all-eamxx
     ├── src/
     │   ├── control/
-    │   │   └── atmosphere_driver.<x>pp
     │   ├── diagnostics/
     │   ├── dynamics/
     │   │   └── homme/
@@ -31,16 +30,13 @@
     │   │   ├── ml_correction/
     │   │   ├── nudging/
     │   │   ├── p3/
-    │   │   ├── register_physics.hpp
     │   │   ├── rrtmgp/
     │   │   ├── share/
-    │   │   │   ├── physics_constants.hpp
-    │   │   │   └── physics_functions.hpp
     │   │   ├── shoc/
     │   │   ├── spa/
     │   │   └── tms/
     │   ├── python/
-    │   ├── scream_config.h.in
+    │   ├── eamxx_config.h.in
     │   └── share/
     ├── tests/
     │   ├── generic/
@@ -94,8 +90,9 @@
     - `control`: Contains the atmosphere driver and basic tests for it.
     - `diagnostics`: A collection of simple classes used to compute diagnostic
       quantities.
-    - `dynamics`: Here's where HOMME lives within EAMxx, along with code for
-      interfacing with it using EAMxx's data structures.
+    - `dynamics`: Home the files implementing the necessary interfaces between
+      EAMxx and the HOMME non-hydrostatic dycore.
+        - ***Note:*** HOMME itself is in components/homme
     - `mct_coupling`: Glue code for embedding EAMxx within E3SM as an atmosphere
       component using the MCT coupler.
     - `physics`: Source code for physics-related atmospheric processes, including
@@ -125,7 +122,7 @@
         - `share`: Utilities and data structures common to these processes.
         - `shoc`: The C++/Kokkos implementation of SHOC macrophysics within EAMxx.
     - `python`: Source code for the experimental ***PyEAMxx*** package that
-    enables building and running a SCREAM model using python/[conda](https://docs.conda.io/en/latest/).
+    enables building and running an individual EAMxx atmosphere process using python/[conda](https://docs.conda.io/en/latest/).
         - As of time of writing, this feature is still in development and should
         e considered a prototype.
             - See the [pyEAMxx](../user/pyeamxx.md) page in the User Guide for
@@ -140,7 +137,7 @@
     
     You'll also see some other files in the `src/` directory itself, such as
     
-    - `scream_config.h.in`: A template for generating a C++ header file with
+    - `eamxx_config.h.in`: A template for generating a C++ header file with
       EAMxx configuration information.
 
 === "`tests/` Directory"

@@ -13,21 +13,3 @@ In the meantime, in case you do not find the information you need,
 we suggest visiting our public
 [EAMxx user guide](https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/3858890786/EAMxx+User+s+Guide)
 on Confluence.
-
-<!-- ## [EAMxx Case Basics](eamxx_cases.md)
-
-## [Testing](user_testing.md)
-
-## [Model Configuration](model_input.md)
-
-## [Nudging](nudging.md)
-
-## [Extra Radiation Calls](clean_clear_sky.md)
-
-## [COSP](cosp.md)
-
-## [Regionally Refined EAMxx](rrm_eamxx.md)
-
-## [Doubly Periodic EAMxx](dp_eamxx.md)
-
-## [PySCREAM](pyscream.md) -->

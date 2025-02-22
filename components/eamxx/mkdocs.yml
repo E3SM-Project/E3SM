@@ -14,9 +14,10 @@ nav:
     - 'COSP': 'user/cosp.md'
     - 'Regionally Refined EAMxx': 'user/rrm_eamxx.md'
     - 'Doubly Periodic EAMxx': 'user/dp_eamxx.md'
-    - 'PySCREAM': 'user/pyeamxx.md'
+    - 'PyEAMxx': 'user/pyeamxx.md'
     - 'IO Metadata': 'user/io_metadata.md'
     - 'Multi-Instance and NBFB': 'user/multi-instance-mvk.md'
+    - 'EAMxx runtime parameters': 'user/eamxx_params.md'
   - 'Developer Guide':
     # - 'Overview': 'developer/index.md'
     - 'Quick-start Guide': 'developer/dev_quickstart.md'
@@ -26,7 +27,7 @@ nav:
     - 'Testing':
       - 'Overview': 'developer/dev_testing/index.md'
       - 'Testing for Development': 'developer/dev_testing/testing_for_development.md'
-      - 'Automated Standalone Testing': 'developer/dev_testing/test_all_scream.md'
+      - 'Automated Standalone Testing': 'developer/dev_testing/test_all_eamxx.md'
       - 'Full model (CIME)': 'developer/dev_testing/full_model_testing.md'
       - 'CI and Nightly Testing': 'developer/dev_testing/ci_nightly.md'
       # - 'Supported Computing Platforms': 'developer/dev_testing/supported_machines.md'
@@ -40,7 +41,7 @@ nav:
   - 'Technical Guide':
     - 'Overview': 'technical/index.md'
     - 'AeroCom cloud top': 'technical/aerocom_cldtop.md'
-  - 'Glossary': 'common/glossary.md'
+  # - 'Glossary': 'common/glossary.md'
 
 edit_uri: ""
 
@@ -116,3 +117,7 @@ plugins:
   - search
   - bibtex:
       bib_dir: docs/refs
+      # this disables picking up any '@' character as a false-positive reference
+      # i.e., disables @ref-name (inline citation) in contrast to a
+      # standard-style reference that has the syntax [@ref-name]
+      enable_inline_citations: false

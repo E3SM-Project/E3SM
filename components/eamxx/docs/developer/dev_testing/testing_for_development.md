@@ -141,7 +141,7 @@ Defining the test behavior and pass/fail criteria requires 3 files:
 === "CMakeLists.txt"
 
     ```cmake
-    include (ScreamUtils)
+    include (EAMxxUtils)
 
     set (TEST_BASE_NAME mam4_inject_ash_standalone)
     set (FIXTURES_BASE_NAME ${TEST_BASE_NAME}_generate_output_nc_files)
@@ -166,9 +166,9 @@ Defining the test behavior and pass/fail criteria requires 3 files:
 
     # Ensure test input files are present in the data dir
     set (TEST_INPUT_FILES
-      scream/init/${inject_ash_IC_file}
-      scream/mam4xx/.../inject_ash_input_data_file_ABC.nc
-      scream/mam4xx/.../inject_ash_input_data_file_XYZ.nc
+      eamxx/init/${inject_ash_IC_file}
+      eamxx/mam4xx/.../inject_ash_input_data_file_ABC.nc
+      eamxx/mam4xx/.../inject_ash_input_data_file_XYZ.nc
       [...]
       <path-to-required-input-file>
     )
@@ -188,7 +188,7 @@ Defining the test behavior and pass/fail criteria requires 3 files:
     )
     # Compare one of the output files with the baselines.
     # Note: one is enough, since we already check that np1 is BFB with npX
-    if (SCREAM_ENABLE_BASELINE_TESTS)
+    if (EAMXX_ENABLE_BASELINE_TESTS)
       set (OUT_FILE ${TEST_BASE_NAME}_output.INSTANT.nsteps_x1.np${TEST_RANK_END}.${RUN_T0}.nc)
       CreateBaselineTest(${TEST_BASE_NAME} ${TEST_RANK_END} ${OUT_FILE} ${FIXTURES_BASE_NAME})
     endif()
@@ -208,8 +208,8 @@ Defining the test behavior and pass/fail criteria requires 3 files:
     atmosphere_processes:
       atm_procs_list: [mam4_inject_ash]
       mam4_inject_ash:
-        inject_ash_ABC_data: ${SCREAM_DATA_DIR}/mam4xx/.../inject_ash_input_data_file_ABC.nc
-        inject_ash_XYZ_data: ${SCREAM_DATA_DIR}/mam4xx/.../inject_ash_input_data_file_XYZ.nc
+        inject_ash_ABC_data: ${EAMXX_DATA_DIR}/mam4xx/.../inject_ash_input_data_file_ABC.nc
+        inject_ash_XYZ_data: ${EAMXX_DATA_DIR}/mam4xx/.../inject_ash_input_data_file_XYZ.nc
         <identifying-string-used-by-inject_ash_xyz.xpp>: /path/to/.../data_file.nc
     grids_manager:
       Type: Mesh Free
@@ -222,7 +222,7 @@ Defining the test behavior and pass/fail criteria requires 3 files:
         number_of_vertical_levels:  72
     initial_conditions:
       # The name of the file containing the initial conditions for this test.
-      Filename: ${SCREAM_DATA_DIR}/init/${inject_ash_IC_file}
+      Filename: ${EAMXX_DATA_DIR}/init/${inject_ash_IC_file}
       topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
 
       # other variables to pass as input
@@ -313,7 +313,7 @@ we build EAMxx, run our tests, and watch them pass with flying colors.
 However, for those of us that are mere mortals, we may need to iterate on this
 process a bit until everything works perfectly.
 In this case, the automated build and test workflow provided by
-`scripts/test-all-scream` is designed to make this cycle as painless as
+`scripts/test-all-eamxx` is designed to make this cycle as painless as
 possible.
 
 #### Suggested (Very Thorough and Conservative) Testing Progression
@@ -380,9 +380,9 @@ the script in favor of being clear and explicit.
 
     # generate baselines for cpu and gpu
     echo "TEST FLAGS = ${cpu_test_flags}"
-    ./scripts/test-all-scream ${cpu_test_flags}
+    ./scripts/test-all-eamxx ${cpu_test_flags}
     echo "TEST FLAGS = ${gpu_test_flags}"
-    ./scripts/test-all-scream ${gpu_test_flags}
+    ./scripts/test-all-eamxx ${gpu_test_flags}
 
     # Verify the 'compute_ash_injection_rate()' function works as expected by
     running only that test
@@ -395,9 +395,9 @@ the script in favor of being clear and explicit.
     echo "TEST FLAGS = ${cpu_test_flags}"
     # now that we're running tests that may fail, use 'tee' to
     # duplicate stdout and stderr to file so debugging is slightly easier
-    ./scripts/test-all-scream ${cpu_test_flags} |& tee "${ofile_cpu}"
+    ./scripts/test-all-eamxx ${cpu_test_flags} |& tee "${ofile_cpu}"
     echo "TEST FLAGS = ${gpu_test_flags}"
-    ./scripts/test-all-scream ${gpu_test_flags} |& tee "${ofile_gpu}"
+    ./scripts/test-all-eamxx ${gpu_test_flags} |& tee "${ofile_gpu}"
 
     # Validate the Ash-Injection process generates the solutions we expect
     test_choice="[^\s]*mam4_ash_injection_standalone[^\s]*"
@@ -406,9 +406,9 @@ the script in favor of being clear and explicit.
     gpu_test_flags="${test_base_flags} ${gpu_flags}"
     # run single-process verification tests
     echo "TEST FLAGS = ${cpu_test_flags}"
-    ./scripts/test-all-scream ${cpu_test_flags} |& tee "${ofile_cpu}"
+    ./scripts/test-all-eamxx ${cpu_test_flags} |& tee "${ofile_cpu}"
     echo "TEST FLAGS = ${gpu_test_flags}"
-    ./scripts/test-all-scream ${gpu_test_flags} |& tee "${ofile_gpu}"
+    ./scripts/test-all-eamxx ${gpu_test_flags} |& tee "${ofile_gpu}"
 
     # validate all the processes that interact with ash_injection generate
     # expected solutions
@@ -427,9 +427,9 @@ the script in favor of being clear and explicit.
       gpu_test_flags="${test_base_flags} ${gpu_flags}"
       # run single-process verification tests
       echo "TEST FLAGS = ${cpu_test_flags}"
-      ./scripts/test-all-scream ${cpu_test_flags} |& tee "${ofile_cpu}"
+      ./scripts/test-all-eamxx ${cpu_test_flags} |& tee "${ofile_cpu}"
       echo "TEST FLAGS = ${gpu_test_flags}"
-      ./scripts/test-all-scream ${gpu_test_flags} |& tee "${ofile_gpu}"
+      ./scripts/test-all-eamxx ${gpu_test_flags} |& tee "${ofile_gpu}"
     done
     # NOTE: just setting 'test_choice="[^\s]*_mam4_ash_injection^\s]*"' would
     #       also do the trick in this case
@@ -441,9 +441,9 @@ the script in favor of being clear and explicit.
     gpu_test_flags="${base_flags} ${gpu_flags}"
     # run the full suite of eamxx baseline tests
     echo "TEST FLAGS = ${cpu_test_flags}"
-    ./scripts/test-all-scream ${cpu_test_flags} |& tee "${ofile_cpu}"
+    ./scripts/test-all-eamxx ${cpu_test_flags} |& tee "${ofile_cpu}"
     echo "TEST FLAGS = ${gpu_test_flags}"
-    ./scripts/test-all-scream ${gpu_test_flags} |& tee "${ofile_gpu}"
+    ./scripts/test-all-eamxx ${gpu_test_flags} |& tee "${ofile_gpu}"
     ```
 
 ### Testing Modifications to Existing Code

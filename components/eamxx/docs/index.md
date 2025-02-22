@@ -4,7 +4,7 @@
 
 EAMxx was designed and built from the ground up employing modern C++ in order to
 embrace leading-edge software practices and enable
-"[performance portability](common/glossary.md#performance-portability)"
+"performance portability"
 [^perf-port_def] across various
 leadership-class supercomputers.
 The latter goal is achieved by using the Kokkos library.

@@ -5,11 +5,25 @@ Full model system testing of EAMxx is done via CIME test cases
 
 We offer a number of test suites, including:
 
-- `e3sm_scream_v0`: Test the full set of V0 (pre-C++) tests
-- `e3sm_scream_v1`: Test the full set of V1 (C++) tests
-- `e3sm_scream_v1_at`: A smaller and quicker set of tests for autotesting (AT)
-- `e3sm_scream_hires`: A small number of bigger, longer-running
-(high-resolution) tests to measure performance
+- `e3sm_eamxx_v1_lowres`
+      - A handful of reasonably quickly-running tests run at
+        ultra-low-resolution (`ne4` grid).
+- `e3sm_eamxx_mam4xx_v1_lowres`
+      - Tests designed for the MAM4xx aerosol library and are separate from
+        the above (mostly `ne4`, though also includes `ne30`).
+- `e3sm_eamxx_v1_dp-eamxx`[^dpxx]
+      - A quickly-running test that employs the doubly-periodic (dp)
+        configuration of EAMxx at low-resolution (`ne30)`.
+- `e3sm_eamxx_v1_medres`
+      - Tests intended to be a middle-ground (`ne30`) between the
+        `_lowres` and `_hires` in that it is a more comprehensive test of
+        capabilities than low-resolution but runs more quickly than high-resolution.
+- `e3sm_eamxx_v1_hires`
+      - A small number of larger, longer-running (high-resolution) tests
+        to measure performance.
+
+***Note:*** See the collapsed section "Lists of Test Cases and Suites..." below
+for more information on these test suite configurations.
 
 ```{ .shell .copy title="Running a Test Suite"}
 cd $repo/cime/scripts
@@ -36,17 +50,16 @@ The main model-level configuration options for EAMxx are:
 
 ### Common EAMxx Grids[^grid_nomenclature]
 
-- `ne4_ne4`: low resolution
-- `ne4pg2_ne4pg2`: low resolution with phys grid
-- `ne30_ne30`: medium resolution
-- `ne30pg2_ne30pg2`: medium resolution with phys grid
-- `ne1024pg2_ne1024pg2`: ultra-high with phys grid
+- `ne4_ne4`:[^ne4-testing-only] ultra-low-resolution
+- `ne4pg2_ne4pg2`:[^ne4-testing-only] ultra-low-resolution with phys grid
+- `ne30_ne30`: low-resolution
+- `ne30pg2_ne30pg2`: low-resolution with phys grid
+- `ne1024pg2_ne1024pg2`: ultra-high-resolution with phys grid
 
 More information about grids may be found on this [Confluence Page](https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/933986549/ATM+Grid+Resolution+Summary).
 
 ### Common EAMxx Compsets
 
-- `F2010-SCREAM-LR`: V0 low res compset with EAMxx V0 atmosphere
 - `F2010-SCREAMv1`: V1 standard compset with EAMxx V1 atmosphere
 - `FIOP-SCREAMv1-DP`: V1 with `dpxx`[^dpxx]
 - `F2010-SCREAMv1-noAero`: V1 without aerosol forcing
@@ -73,90 +86,70 @@ source file.
     Additional information about running EAMxx may be found at
     [this webpage](https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/3386015745/How+To+Run+EAMxx+SCREAMv1).
 
-??? Info "Lists of Test Cases and Suites from `cime_config/tests.py`"
+<!-- false-positive spaces in code fence marker -->
+<!-- markdownlint-disable MD038 -->
+??? Info "List of Selected Test Cases and Suites from `cime_config/tests.py`"
     ```{.python .copy}
-    "e3sm_atm_developer" : {
-        "inherit" : ("eam_theta_pg2"),
-        "tests"   : (
-            "ERP_Ld3.ne4pg2_oQU480.F2010",
-            "SMS_Ln9.ne4pg2_oQU480.F2010.eam-outfrq9s",
-            "SMS.ne4pg2_oQU480.F2010.eam-cosplite",
-            "SMS_R_Ld5.ne4_ne4.FSCM-ARM97.eam-scm",
-            "SMS_D_Ln5.ne4pg2_oQU480.F2010",
-            "SMS_Ln5.ne4pg2_oQU480.F2010",
-            "ERS_D.ne4pg2_oQU480.F2010.eam-hommexx",
-            "SMS_Ln9_P24x1.ne4_ne4.FDPSCREAM-ARM97",
-        )
-    },
-    "e3sm_atm_stealth" : {
-        "tests"   : (
-            "ERP_Ln18.ne4_oQU240.F2010.eam-cflx_cpl_2",
-            "SMS_D_Ln5.ne4_oQU240.F2010.eam-cflx_cpl_2",
-            "ERS.ne4pg2_oQU480.F2010.eam-p3",
-            "SMS_D_Ln5.ne4pg2_oQU480.F2010.eam-p3",
-        )
-    },
-    "e3sm_atm_integration" : {
-        "inherit" : ("eam_preqx", "eam_theta"),
-        "tests" : (
-            "ERP_Ln9.ne4pg2_ne4pg2.FAQP",
-            "SMS_Ld1.ne4pg2_ne4pg2.FAQP.eam-clubb_only",
-            "ERP_Ln9.ne4pg2_ne4pg2.FRCE",
-            "PET_Ln5.ne4pg2_oQU480.F2010.allactive-mach-pet",
-            "PEM_Ln5.ne4pg2_oQU480.F2010",
-            "SMS_D_Ln5.ne4pg2_oQU480.F2010.eam-cosplite_nhtfrq5",
-            "SMS_Ln1.ne4pg2_oQU480.F2010.eam-chem_pp",
-            "SMS_Ln5.ne30pg2_r05_IcoswISC30E3r5.BGCEXP_LNDATM_CNPRDCTC_20TR",
-            "SMS_Ln5.ne30pg2_r05_IcoswISC30E3r5.BGCEXP_LNDATM_CNPRDCTC_1850",
-            "SMS_D_Ln5.ne4pg2_oQU480.F2010.eam-clubb_sp",
-            "ERS_Ld5.ne4pg2_oQU480.F2010.eam-rrtmgp",
-            "ERS_Ld5.ne4pg2_oQU480.F2010.eam-rrtmgpxx",
-            "REP_Ln5.ne4pg2_oQU480.F2010",
-            "SMS_Ld3.ne4pg2_oQU480.F2010.eam-thetahy_sl_pg2_mass",
-            "ERP_Ld3.ne4pg2_ne4pg2.FIDEAL.allactive-pioroot1",
-            "ERS_Ld5.ne4pg2_oQU480.F2010.eam-sathist_F2010",
-        )
-    },
-    #atmopheric tests for extra coverage
-    "e3sm_atm_extra_coverage" : {
-        "tests" : (
-            "SMS_Lm1.ne4pg2_oQU480.F2010",
-            "ERS_Ld31.ne4pg2_oQU480.F2010",
-            "ERP_Lm3.ne4pg2_oQU480.F2010",
-            "SMS_D_Ln5.ne30pg2_r05_IcoswISC30E3r5.F2010",
-            "ERP_Ld3.ne30pg2_r05_IcoswISC30E3r5.F2010.allactive-pioroot1",
-            "SMS_Ly1.ne4pg2_oQU480.F2010",
-        "SMS_D_Ln5.ne45pg2_ne45pg2.FAQP",
-            "SMS_D_Ln5.ne4pg2_oQU480.F2010.eam-implicit_stress",
-            "ERS_Ld5.ne30pg2_r05_IcoswISC30E3r5.F2010.eam-implicit_stress",
-            "ERP_Ld3.ne4pg2_oQU480.F2010.eam-condidiag_dcape",
-            "ERP_Ld3.ne4pg2_oQU480.F2010.eam-condidiag_rhi",
-        )
-    },
-    #atmopheric tests for hi-res
-    "e3sm_atm_hi_res" : {
-        "time" : "01:30:00",
-        "tests" : "SMS.ne120pg2_r025_RRSwISC6to18E3r5.F2010"
+    "e3sm_eamxx_v1_lowres" : {
+            "time"  : "01:00:00",
+            "inherit" : ("e3sm_eamxx_mam4xx_v1_lowres"),
+            "tests" : (
+                "ERP_D_Lh4.ne4_ne4.F2010-SCREAMv1.eamxx-output-preset-1",
+                "ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1.eamxx-output-preset-2",
+                "SMS_D_Ln9.ne4_ne4.F2010-SCREAMv1-noAero.eamxx-output-preset-3",
+                "ERP_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-output-preset-4",
+                "ERS_D_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-rad_frequency_2--eamxx-output-preset-5",
+                "ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-small_kernels--eamxx-output-preset-5",
+                "ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-small_kernels_p3--eamxx-output-preset-5",
+                "ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-small_kernels_shoc--eamxx-output-preset-5",
+                "SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-all_mam4xx_procs",
+                )
         },
-    #atmopheric tests to mimic low res production runs
-    "e3sm_atm_prod" : {
+    "e3sm_eamxx_mam4xx_v1_lowres" : {
+            "time"  : "01:00:00",
+            "tests" : (
+                "SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-optics",
+                "SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-aci",
+                "SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-wetscav",
+                "SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-drydep",
+                "SMS_D_Ln5.ne30pg2_oECv3.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-remap_emiss_ne4_ne30"
+            )
+        },
+    "e3sm_eamxx_v1_dp-eamxx" : {
+        "time"  : "01:00:00",
+        # each test runs with 225 dynamics and 100 physics columns,
+        # roughly size of ne2
         "tests" : (
-            "SMS_Ln5.ne30pg2_r05_IcoswISC30E3r5.F2010.eam-wcprod_F2010",
-            "SMS_Ld1.ne30pg2_r05_IcoswISC30E3r5.F20TR.eam-wcprod_F20TR",
-        )
+            "ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.eamxx-dpxx-dycomsrf01",
+            "ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.eamxx-dpxx-arm97",
+            "ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.eamxx-dpxx-comble",
+            "ERS_P16_Ln22.ne30pg2_ne30pg2.FRCE-SCREAMv1-DP",
+            )
     },
-    #atmopheric nbfb tests
-    "e3sm_atm_nbfb" : {
+    "e3sm_eamxx_v1_medres" : {
+        "time"  : "02:00:00",
         "tests" : (
-            "PGN_P1x1.ne4pg2_oQU480.F2010",
-            "TSC_PS.ne4pg2_oQU480.F2010",
-            "MVK_PS.ne4pg2_oQU480.F2010",
-        )
+            "ERS_Ln22.ne30_ne30.F2010-SCREAMv1.eamxx-internal_diagnostics_level--eamxx-output-preset-3",
+            "PEM_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-spa_remap--eamxx-output-preset-4",
+            "ERS_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-small_kernels--eamxx-output-preset-5",
+            "ERP_Ln22.conusx4v1pg2_r05_oECv3.F2010-SCREAMv1-noAero.eamxx-bfbhash--eamxx-output-preset-6",
+            "ERS_Ln22.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-L128--eamxx-output-preset-4",
+            "REP_Ld5.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-L128--eamxx-output-preset-6",
+            "SMS.ne30pg2_EC30to60E2r2.WCYCLXX2010",
+            "ERS_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-L128--eamxx-sl_nsubstep2",
+            )
+    },
+    # Used to track performance
+    "e3sm_eamxx_v1_hires" : {
+        "time"  : "01:00:00",
+        "tests" : (
+            "SMS_Ln300.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-perf_test--eamxx-output-preset-1"
+            )
     }
-    <!-- false-positive spaces in code fence marker -->
-    <!-- markdownlint-disable-next-line MD038 -->
     ```
+<!-- markdownlint-enable MD038 -->
 
+[^dpxx]: An EAMxx compset configuration employing doubly-periodic lateral boundary conditions.
 [^grid_nomenclature]:
     See below for some additional details about ***Grid Nomenclature***
     ??? Note "Notes on Grid Nomenclature"
@@ -185,7 +178,8 @@ source file.
             $N_{\text{points}} = N_{\text{elements}}$
             $\times \left([\text{np}] - 1\right)^2 + 2$
 
-[^dpxx]: An EAMxx compset configuration employing doubly-periodic lateral boundary conditions.
+[^ne4-testing-only]: ***Note:*** The `ne4` (ultra-low resolution) grid is
+intended to only be used for unit testing or debugging.
 
 <!-- markdownlint-disable MD033 -->
 <!-- html error--I'm not aware of another way to make a figure and feel like

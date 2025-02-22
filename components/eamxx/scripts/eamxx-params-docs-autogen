@@ -2,7 +2,7 @@
 
 """
 This script parses the file `cime_config/namelist_defaults_eamxx.xml'
-and generates the markdown file `docs/common/eamxx_params.md`,
+and generates the markdown file `docs/user/eamxx_params.md`,
 containing all the runtime parameters that can be configured via calls
 to `atmchange` (in the case folder). For each parameter, we also report
 a doc string and its type, as well as, if present, constraints and valid values.
@@ -91,7 +91,7 @@ def generate_params_docs():
 
     eamxx = pathlib.Path(__file__).parent.parent.resolve()
     xml_defaults_file = eamxx / "cime_config" / "namelist_defaults_eamxx.xml"
-    output_file = eamxx / "docs" / "common" / "eamxx_params.md"
+    output_file = eamxx / "docs" / "user" / "eamxx_params.md"
 
     print("Generating eamxx params documentation...")
     print(f"  output file: {output_file}")
