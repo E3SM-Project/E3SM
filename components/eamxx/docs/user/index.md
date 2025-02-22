@@ -30,4 +30,4 @@ on Confluence.
 
 ## [Doubly Periodic EAMxx](dp_eamxx.md)
 
-## [PySCREAM](pyscream.md) -->
+## [PyEAMxx](pyeamxx.md) -->

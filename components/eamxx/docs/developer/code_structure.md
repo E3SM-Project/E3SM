@@ -15,7 +15,7 @@
     ├── scripts/
     │   ├── atmchange
     │   ├── atmquery
-    │   └── test-all-scream
+    │   └── test-all-eamxx
     ├── src/
     │   ├── control/
     │   │   └── atmosphere_driver.<x>pp
@@ -40,7 +40,7 @@
     │   │   ├── spa/
     │   │   └── tms/
     │   ├── python/
-    │   ├── scream_config.h.in
+    │   ├── eamxx_config.h.in
     │   └── share/
     ├── tests/
     │   ├── generic/
@@ -125,7 +125,7 @@
         - `share`: Utilities and data structures common to these processes.
         - `shoc`: The C++/Kokkos implementation of SHOC macrophysics within EAMxx.
     - `python`: Source code for the experimental ***PyEAMxx*** package that
-    enables building and running a SCREAM model using python/[conda](https://docs.conda.io/en/latest/).
+    enables building and running a EAMxx model using python/[conda](https://docs.conda.io/en/latest/).
         - As of time of writing, this feature is still in development and should
         e considered a prototype.
             - See the [pyEAMxx](../user/pyeamxx.md) page in the User Guide for
@@ -140,7 +140,7 @@
     
     You'll also see some other files in the `src/` directory itself, such as
     
-    - `scream_config.h.in`: A template for generating a C++ header file with
+    - `eamxx_config.h.in`: A template for generating a C++ header file with
       EAMxx configuration information.
 
 === "`tests/` Directory"
