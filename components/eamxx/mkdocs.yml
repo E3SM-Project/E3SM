@@ -17,6 +17,7 @@ nav:
     - 'PyEAMxx': 'user/pyeamxx.md'
     - 'IO Metadata': 'user/io_metadata.md'
     - 'Multi-Instance and NBFB': 'user/multi-instance-mvk.md'
+    - 'EAMxx runtime parameters': 'user/eamxx_params.md'
   - 'Developer Guide':
     # - 'Overview': 'developer/index.md'
     - 'Quick-start Guide': 'developer/dev_quickstart.md'
@@ -40,7 +41,7 @@ nav:
   - 'Technical Guide':
     - 'Overview': 'technical/index.md'
     - 'AeroCom cloud top': 'technical/aerocom_cldtop.md'
-  - 'Glossary': 'common/glossary.md'
+  # - 'Glossary': 'common/glossary.md'
 
 edit_uri: ""
 
