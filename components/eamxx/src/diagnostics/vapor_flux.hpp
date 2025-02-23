@@ -17,7 +17,7 @@ public:
   VaporFluxDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params);
 
   // The name of the diagnostic
-  std::string name () const override { return "VaporFlux"; }
+  std::string name () const override { return m_name; }
 
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
@@ -34,6 +34,8 @@ protected:
   int m_num_levs;
 
   int m_component;
+
+  std::string m_name;
 };
 
 } //namespace scream

@@ -17,7 +17,7 @@ public:
   WaterPathDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params);
 
   // The name of the diagnostic
-  std::string name () const override { return "WaterPath"; }
+  std::string name () const override { return m_kind + "WaterPath"; }
 
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
