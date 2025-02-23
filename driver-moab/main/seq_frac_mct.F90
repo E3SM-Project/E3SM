@@ -867,7 +867,7 @@ contains
     dom_o => component_get_dom_cx(ocn) ! 
     if (mbixid .ge. 0) arrSize_i = mbGetnCells(mbixid)
     if (mboxid .ge. 0) arrSize_o = mbGetnCells(mboxid)
-    print *, 'arrSize_i=' , arrSize_i, "arrSize_o=" , arrSize_o
+    !print *, 'arrSize_i=' , arrSize_i, "arrSize_o=" , arrSize_o
     arrSize = arrSize_i
     if (arrSize_o .gt. arrSize) arrSize = arrSize_o
 
