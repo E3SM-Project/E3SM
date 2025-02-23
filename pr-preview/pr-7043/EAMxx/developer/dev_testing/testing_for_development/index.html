@@ -3388,7 +3388,7 @@ be the <code>eamxx_inject_ash_process_interface.&lt;x&gt;pp</code> files, locate
 
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;share/atm_process/atmosphere_process.hpp&quot;</span>
 
-<span class="k">namespace</span><span class="w"> </span><span class="nn">eamxx</span><span class="w"> </span><span class="p">{</span>
+<span class="k">namespace</span><span class="w"> </span><span class="nn">scream</span><span class="w"> </span><span class="p">{</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">MAMInjectAsh</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">AtmosphereProcess</span><span class="w"> </span><span class="p">{</span>
 <span class="k">public</span><span class="o">:</span>
 <span class="w">  </span><span class="n">MAMInjectAsh</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">ekat</span><span class="o">::</span><span class="n">Comm</span><span class="w"> </span><span class="o">&amp;</span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">ekat</span><span class="o">::</span><span class="n">ParameterList</span><span class="w"> </span><span class="o">&amp;</span><span class="n">params</span><span class="p">);</span>
@@ -3408,7 +3408,7 @@ be the <code>eamxx_inject_ash_process_interface.&lt;x&gt;pp</code> files, locate
 <span class="w">  </span><span class="n">Field</span><span class="w"> </span><span class="n">lat</span><span class="p">;</span>
 <span class="w">  </span><span class="n">Field</span><span class="w"> </span><span class="n">lon</span><span class="p">;</span>
 <span class="p">}</span>
-<span class="p">}</span><span class="w"> </span><span class="c1">// namespace eamxx</span>
+<span class="p">}</span><span class="w"> </span><span class="c1">// namespace scream</span>
 
 <span class="cp">#endif </span><span class="c1">// EAMXX_MAM_INJECT_ASH_HPP</span>
 </code></pre></div>
@@ -3417,7 +3417,7 @@ be the <code>eamxx_inject_ash_process_interface.&lt;x&gt;pp</code> files, locate
 <div class="highlight"><pre><span></span><code><span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;ash_source_calculation.hpp&quot;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;eamxx_inject_ash_process_interface.hpp&quot;</span>
 
-<span class="k">namespace</span><span class="w"> </span><span class="nn">eamxx</span><span class="w"> </span><span class="p">{</span>
+<span class="k">namespace</span><span class="w"> </span><span class="nn">scream</span><span class="w"> </span><span class="p">{</span>
 
 <span class="n">MAMInjectAsh</span><span class="o">::</span><span class="n">MAMInjectAsh</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">ekat</span><span class="o">::</span><span class="n">Comm</span><span class="w"> </span><span class="o">&amp;</span><span class="n">comm</span><span class="p">,</span>
 <span class="w">                           </span><span class="k">const</span><span class="w"> </span><span class="n">ekat</span><span class="o">::</span><span class="n">ParameterList</span><span class="w"> </span><span class="o">&amp;</span><span class="n">params</span><span class="p">)</span>
@@ -3444,7 +3444,7 @@ be the <code>eamxx_inject_ash_process_interface.&lt;x&gt;pp</code> files, locate
 <span class="w">  </span><span class="n">ash</span><span class="p">.</span><span class="n">update</span><span class="p">(</span><span class="n">source_mask</span><span class="p">,</span><span class="w"> </span><span class="n">rate</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">dt</span><span class="p">,</span>
 <span class="w">             </span><span class="n">decay</span><span class="p">);</span><span class="w"> </span><span class="c1">// ash = decay*ash + rate*dt*source_mask</span>
 <span class="p">}</span>
-<span class="p">}</span><span class="w"> </span><span class="c1">// namespace eamxx</span>
+<span class="p">}</span><span class="w"> </span><span class="c1">// namespace scream</span>
 </code></pre></div>
 </div>
 </div>
@@ -3634,7 +3634,7 @@ though <a href="https://www.unidata.ucar.edu/software/netcdf/">NetCDF</a> can al
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;ash_source_calculation.hpp&quot;</span>
 
 <span class="k">namespace</span><span class="w"> </span><span class="p">{</span>
-<span class="k">using</span><span class="w"> </span><span class="k">namespace</span><span class="w"> </span><span class="nn">eamxx</span><span class="p">;</span>
+<span class="k">using</span><span class="w"> </span><span class="k">namespace</span><span class="w"> </span><span class="nn">scream</span><span class="p">;</span>
 <span class="n">TEST_CASE</span><span class="p">(</span><span class="s">&quot;verify compute_ash_injection_rate&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;mam&quot;</span><span class="p">)</span>
 <span class="p">{</span>
 <span class="w">  </span><span class="c1">// initialize the data and test variables</span>

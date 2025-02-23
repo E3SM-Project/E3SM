@@ -3412,9 +3412,9 @@ options:
 </details>
 <!-- markdownlint-enable MD013 -->
 
-<p>If you are unsure of the cmake configuration for you development cycle, one
-trick you can use is to run <code>test-all-eamxx</code> for the <code>dbg</code> test and just
-copy the cmake command it prints (then ctrl-C the process).</p>
+<p>If you are unsure of the CMake configuration for you development cycle, one
+trick you can use is to run <code>test-all-eamxx --config-only</code>
+for the <code>dbg</code> test and then copy the <code>cmake</code> commands from the resulting output.</p>
 <div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span><span class="nv">$eamxx_repo</span>/components/eamxx
 ./scripts/test-all-eamxx<span class="w"> </span>-t<span class="w"> </span>dbg<span class="w"> </span>-m<span class="w"> </span><span class="nv">$machine</span>
 <span class="c1"># wait for a few seconds*</span>
@@ -3426,7 +3426,7 @@ copy the cmake command it prints (then ctrl-C the process).</p>
 <ul>
 <li>Your machine must be known to our scripts, see above.</li>
 <li>If you try to run commands by-hand (i.e., outside of <code>test-all-eamxx</code>,
-<code>cmake</code>, <code>make</code>, <code>ctest</code>, etc), you'll need to
+<code>cmake</code>, <code>make</code>, <code>ctest</code>, etc.), you'll need to
 load the eamxx-env into your shell, which can be achieved by running
 <code>cd eamxx/scripts; eval $(./eamxx-env-cmd $machine)</code></li>
 <li><code>test-all-eamxx</code> expects to be run from a compute node if you
