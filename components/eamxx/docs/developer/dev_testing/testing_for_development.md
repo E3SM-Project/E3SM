@@ -27,7 +27,7 @@ be the `eamxx_inject_ash_process_interface.<x>pp` files, located at
 
     #include "share/atm_process/atmosphere_process.hpp"
 
-    namespace eamxx {
+    namespace scream {
     class MAMInjectAsh : public AtmosphereProcess {
     public:
       MAMInjectAsh(const ekat::Comm &comm, const ekat::ParameterList &params);
@@ -47,7 +47,7 @@ be the `eamxx_inject_ash_process_interface.<x>pp` files, located at
       Field lat;
       Field lon;
     }
-    } // namespace eamxx
+    } // namespace scream
 
     #endif // EAMXX_MAM_INJECT_ASH_HPP
     ```
@@ -56,7 +56,7 @@ be the `eamxx_inject_ash_process_interface.<x>pp` files, located at
     #include "ash_source_calculation.hpp"
     #include "eamxx_inject_ash_process_interface.hpp"
 
-    namespace eamxx {
+    namespace scream {
 
     MAMInjectAsh::MAMInjectAsh(const ekat::Comm &comm,
                                const ekat::ParameterList &params)
@@ -83,7 +83,7 @@ be the `eamxx_inject_ash_process_interface.<x>pp` files, located at
       ash.update(source_mask, rate * dt,
                  decay); // ash = decay*ash + rate*dt*source_mask
     }
-    } // namespace eamxx
+    } // namespace scream
     ```
 
 ### Add the New Process to CMake Build
@@ -270,7 +270,7 @@ though [NetCDF](https://www.unidata.ucar.edu/software/netcdf/) can also be used.
     #include "ash_source_calculation.hpp"
     
     namespace {
-    using namespace eamxx;
+    using namespace scream;
     TEST_CASE("verify compute_ash_injection_rate", "mam")
     {
       // initialize the data and test variables

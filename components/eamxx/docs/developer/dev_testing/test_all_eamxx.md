@@ -203,9 +203,9 @@ cd ${e3sm_root}/components/eamxx
     ```
 <!-- markdownlint-enable MD013 -->
 
-If you are unsure of the cmake configuration for you development cycle, one
-trick you can use is to run `test-all-eamxx` for the `dbg` test and just
-copy the cmake command it prints (then ctrl-C the process).
+If you are unsure of the CMake configuration for you development cycle, one
+trick you can use is to run `test-all-eamxx --config-only`
+for the `dbg` test and then copy the `cmake` commands from the resulting output.
 
 ```shell
 cd $eamxx_repo/components/eamxx
@@ -220,7 +220,7 @@ Considerations for using `test-all-eamxx`:
 
 - Your machine must be known to our scripts, see above.
 - If you try to run commands by-hand (i.e., outside of `test-all-eamxx`,
-`cmake`, `make`, `ctest`, etc), you'll need to
+`cmake`, `make`, `ctest`, etc.), you'll need to
 load the eamxx-env into your shell, which can be achieved by running
 `cd eamxx/scripts; eval $(./eamxx-env-cmd $machine)`
 - `test-all-eamxx` expects to be run from a compute node if you
