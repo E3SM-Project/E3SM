@@ -153,7 +153,7 @@ void MyProcess::set_grids (const std::shared_ptr<GridsManager>& gm)
   //  - Updated: 'input'+'output'
   // Tell the AD we need 'velocity' to accommodate a Pack scalar type
   add_field<Required>("coeff_2d",scalar2d,nondim,grid->name);
-  add_field<Updated>("velocity",vector3d,m/s,grid->name,SCREAM_PACK_SIZE);
+  add_field<Updated>("velocity",vector3d,m/s,grid->name,EAMXX_PACK_SIZE);
 }
 
 size_t MyProcess::requested_buffer_size_in_bytes ()
@@ -192,7 +192,7 @@ void MyProcess:run_impl (const double dt)
 {
   using Policy = typename KokkosTypes<DefaultDevice>::TeamPolicy
   using Member = typename KokkosTypes<DefaultDevice>::MemberType
-  using PackT  = ekat::Pack<Real,SCREAM_PACK_SIZE>;
+  using PackT  = ekat::Pack<Real,EAMXX_PACK_SIZE>;
 
   // Create team policy
   Policy policy(m_ncols,m_nlevs,1);
@@ -208,7 +208,7 @@ void MyProcess:run_impl (const double dt)
 
   // Since we process velocity with a Pack scalar type, find out how many packs
   // we have in each column
-  auto nlevs_packs = ekat::PackInfo<SCREAM_PACK_SIZE>::num_packs(m_nlevs);
+  auto nlevs_packs = ekat::PackInfo<EAMXX_PACK_SIZE>::num_packs(m_nlevs);
 
   // Call some function in the background pkg
   do_some_work (coeff_2d,velocity,temp1,temp2,do_blah);
