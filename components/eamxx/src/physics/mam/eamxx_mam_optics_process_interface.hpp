@@ -10,6 +10,7 @@
 #include <share/atm_process/atmosphere_process.hpp>
 #include <share/util/eamxx_common_physics_functions.hpp>
 #include <string>
+#include <physics/mam/eamxx_mam_generic_process_interface.hpp>
 
 #ifndef KOKKOS_ENABLE_CUDA
 #define protected_except_cuda public
@@ -23,7 +24,7 @@ namespace scream {
 
 // The process responsible for handling MAM4 aerosol optical properties. The AD
 // stores exactly ONE instance of this class in its list of subcomponents.
-class MAMOptics final : public scream::AtmosphereProcess {
+class MAMOptics final : public MAMGenericInterface {
   using PF = scream::PhysicsFunctions<DefaultDevice>;
   using KT = ekat::KokkosTypes<DefaultDevice>;
 
@@ -161,25 +162,16 @@ class MAMOptics final : public scream::AtmosphereProcess {
   // MAM4 aerosol particle size description
   mam4::AeroConfig aero_config_;
 
-  // atmospheric and aerosol state variables
-  // atmospheric and aerosol state variables
-  mam_coupling::WetAtmosphere wet_atm_;
-  mam_coupling::DryAtmosphere dry_atm_;
-  mam_coupling::AerosolState wet_aero_, dry_aero_;
-
   mam_coupling::view_3d ssa_cmip6_sw_, af_cmip6_sw_, ext_cmip6_sw_;
   // long wave extinction in the units of [1/km]
   mam_coupling::view_3d ext_cmip6_lw_;
   mam4::modal_aer_opt::AerosolOpticsDeviceData aerosol_optics_device_data_;
   // physics grid for column information
-  std::shared_ptr<const AbstractGrid> grid_;
   mam_coupling::view_2d work_;
   mam_coupling::view_3d tau_ssa_g_sw_, tau_ssa_sw_, tau_sw_, tau_f_sw_;
   //Mapping from old RRTMG sw bands to new band ordering in RRTMGP
   // given old index swband (RRTMG) return new index swband RRTMGP
   mam_coupling::view_int_1d get_idx_rrtmgp_from_rrtmg_swbands_;
-
-  mam_coupling::Buffer buffer_;
 };  // MAMOptics
 
 }  // namespace scream

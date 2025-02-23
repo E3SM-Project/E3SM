@@ -11,10 +11,12 @@ namespace scream {
 using FracLandUseFunc = frac_landuse::fracLandUseFunctions<Real, DefaultDevice>;
 
 MAMDryDep::MAMDryDep(const ekat::Comm &comm, const ekat::ParameterList &params)
-    : AtmosphereProcess(comm, params) {
+    : MAMGenericInterface(comm, params) {
   /* Anything that can be initialized without grid information can be
    * initialized here. Like universal constants, mam wetscav options.
    */
+  check_fields_intervals_   = m_params.get<bool>("mam4_check_fields_intervals", false);
+
 }
 
 // ================================================================
@@ -59,10 +61,6 @@ void MAMDryDep::set_grids(
       grid_->get_3d_vector_layout(true, num_aero_modes, mam_coupling::num_modes_tag_name());
 
   using namespace ekat::units;
-
-  auto q_unit = kg / kg;  // units of mass mixing ratios of tracers
-  auto n_unit = 1 / kg;   // units of number mixing ratios of tracers
-
   auto nondim = ekat::units::Units::nondimensional();
 
   auto m3 = m * m * m;  // meter cubed
@@ -71,40 +69,7 @@ void MAMDryDep::set_grids(
   // These variables are "Required" or pure inputs for the process
   // --------------------------------------------------------------------------
 
-  // ----------- Atmospheric quantities -------------
-  // Specific humidity [kg/kg](Require only for building DS)
-  add_tracer<Required>("qv", grid_, q_unit);
-
-  // Cloud liquid mass mixing ratio [kg/kg](Require only for building DS)
-  add_tracer<Required>("qc", grid_, q_unit);
-
-  // Cloud ice mass mixing ratio [kg/kg](Require only for building DS)
-  add_tracer<Required>("qi", grid_, q_unit);
-
-  // Cloud liquid number mixing ratio [1/kg](Require only for building DS)
-  add_tracer<Required>("nc", grid_, n_unit);
-
-  // Cloud ice number mixing ratio [1/kg](Require only for building DS)
-  add_tracer<Required>("ni", grid_, n_unit);
-
-  // Temperature[K] at midpoints
-  add_field<Required>("T_mid", scalar3d_mid, K, grid_name);
-
-  // Vertical pressure velocity [Pa/s] at midpoints (Require only for building
-  // DS)
-  add_field<Required>("omega", scalar3d_mid, Pa / s, grid_name);
-
-  // Total pressure [Pa] at midpoints
-  add_field<Required>("p_mid", scalar3d_mid, Pa, grid_name);
-
-  // Total pressure [Pa] at interfaces
-  add_field<Required>("p_int", scalar3d_int, Pa, grid_name);
-
-  // Layer thickness(pdel) [Pa] at midpoints
-  add_field<Required>("pseudo_density", scalar3d_mid, Pa, grid_name);
-
-  // Planetary boundary layer height [m] (Require only for building DS)
-  add_field<Required>("pbl_height", scalar2d, m, grid_name);
+  add_tracer_for_wet_and_dry_atm();
 
   static constexpr auto m2 = m * m;
   static constexpr auto s2 = s * s;
@@ -155,39 +120,7 @@ void MAMDryDep::set_grids(
 
   // (interstitial) aerosol tracers of interest: mass (q) and number (n) mixing
   // ratios
-  for(int m = 0; m < num_aero_modes; ++m) {
-    const char *int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
-
-    add_tracer<Updated>(int_nmr_field_name, grid_, n_unit);
-    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
-      const char *int_mmr_field_name =
-          mam_coupling::int_aero_mmr_field_name(m, a);
-
-      if(strlen(int_mmr_field_name) > 0) {
-        add_tracer<Updated>(int_mmr_field_name, grid_, q_unit);
-      }
-    }
-  }
-  // (cloud) aerosol tracers of interest: mass (q) and number (n) mixing ratios
-  for(int m = 0; m < num_aero_modes; ++m) {
-    const char *cld_nmr_field_name = mam_coupling::cld_aero_nmr_field_name(m);
-
-    add_field<Updated>(cld_nmr_field_name, scalar3d_mid, n_unit, grid_name);
-    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
-      const char *cld_mmr_field_name =
-          mam_coupling::cld_aero_mmr_field_name(m, a);
-
-      if(strlen(cld_mmr_field_name) > 0) {
-        add_field<Updated>(cld_mmr_field_name, scalar3d_mid, q_unit, grid_name);
-      }
-    }
-  }
-
-  // aerosol-related gases: mass mixing ratios
-  for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
-    const char *gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
-    add_tracer<Updated>(gas_mmr_field_name, grid_, q_unit);
-  }
+  add_aerosol_tracers();
 
   // -------------------------------------------------------------
   // These variables are "Computed" or outputs for the process
@@ -259,80 +192,14 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   // ---------------------------------------------------------------
   // Input fields read in from IC file, namelist or other processes
   // ---------------------------------------------------------------
+  // print_fields_names();
+  // Check pre/post condition interval values for all fields employed by this interface
+  add_interval_checks();
 
-  // Populate the wet atmosphere state with views from fields
-  // FIMXE: specifically look which among these are actually used by the process
-  wet_atm_.qv = get_field_in("qv").get_view<const Real **>();
-
-  // Following wet_atm vars are required only for building DS
-  wet_atm_.qc = get_field_in("qc").get_view<const Real **>();
-  wet_atm_.nc = get_field_in("nc").get_view<const Real **>();
-  wet_atm_.qi = get_field_in("qi").get_view<const Real **>();
-  wet_atm_.ni = get_field_in("ni").get_view<const Real **>();
-
-  // Populate the dry atmosphere state with views from fields
-  dry_atm_.T_mid = get_field_in("T_mid").get_view<const Real **>();
-  dry_atm_.p_mid = get_field_in("p_mid").get_view<const Real **>();
-  dry_atm_.p_del = get_field_in("pseudo_density").get_view<const Real **>();
-  dry_atm_.p_int = get_field_in("p_int").get_view<const Real **>();
-
-  // Following dry_atm vars are required only for building DS
-  dry_atm_.cldfrac = get_field_in("cldfrac_tot").get_view<const Real **>();
-  dry_atm_.pblh    = get_field_in("pbl_height").get_view<const Real *>();
-  dry_atm_.omega   = get_field_in("omega").get_view<const Real **>();
-
-  // store fields converted to dry mmr from wet mmr in dry_atm_
-  dry_atm_.z_mid     = buffer_.z_mid;
-  dry_atm_.z_iface   = buffer_.z_iface;
-  dry_atm_.dz        = buffer_.dz;
-  dry_atm_.qv        = buffer_.qv_dry;
-  dry_atm_.qc        = buffer_.qc_dry;
-  dry_atm_.nc        = buffer_.nc_dry;
-  dry_atm_.qi        = buffer_.qi_dry;
-  dry_atm_.ni        = buffer_.ni_dry;
-  dry_atm_.w_updraft = buffer_.w_updraft;
-  dry_atm_.z_surf    = 0.0;  // FIXME: for now
-
-  // ---- set wet/dry aerosol-related gas state data
-  for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
-    // interstitial aerosol tracers of interest: number (n) mixing ratios
-    const char *int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
-    wet_aero_.int_aero_nmr[m] =
-        get_field_out(int_nmr_field_name).get_view<Real **>();
-    dry_aero_.int_aero_nmr[m] = buffer_.dry_int_aero_nmr[m];
-
-    // cloudborne aerosol tracers of interest: number (n) mixing ratios
-    const char *cld_nmr_field_name = mam_coupling::cld_aero_nmr_field_name(m);
-    wet_aero_.cld_aero_nmr[m] =
-        get_field_out(cld_nmr_field_name).get_view<Real **>();
-    dry_aero_.cld_aero_nmr[m] = buffer_.dry_cld_aero_nmr[m];
-
-    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
-      // (interstitial) aerosol tracers of interest: mass (q) mixing ratios
-      const char *int_mmr_field_name =
-          mam_coupling::int_aero_mmr_field_name(m, a);
-      if(strlen(int_mmr_field_name) > 0) {
-        wet_aero_.int_aero_mmr[m][a] =
-            get_field_out(int_mmr_field_name).get_view<Real **>();
-        dry_aero_.int_aero_mmr[m][a] = buffer_.dry_int_aero_mmr[m][a];
-      }
-
-      // (cloudborne) aerosol tracers of interest: mass (q) mixing ratios
-      const char *cld_mmr_field_name =
-          mam_coupling::cld_aero_mmr_field_name(m, a);
-      if(strlen(cld_mmr_field_name) > 0) {
-        wet_aero_.cld_aero_mmr[m][a] =
-            get_field_out(cld_mmr_field_name).get_view<Real **>();
-        dry_aero_.cld_aero_mmr[m][a] = buffer_.dry_cld_aero_mmr[m][a];
-      }
-    }
-  }
-  for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
-    const char *gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
-    wet_aero_.gas_mmr[g] =
-        get_field_out(gas_mmr_field_name).get_view<Real **>();
-    dry_aero_.gas_mmr[g] = buffer_.dry_gas_mmr[g];
-  }
+  populate_wet_and_dry_atm();
+  // interstitial and cloudborne aerosol tracers of interest: mass (q) and
+  // number (n) mixing ratios
+  populate_wet_and_dry_aero();
 
   //-----------------------------------------------------------------
   // Allocate memory

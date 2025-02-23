@@ -10,7 +10,9 @@
 namespace scream {
 
 MAMOptics::MAMOptics(const ekat::Comm &comm, const ekat::ParameterList &params)
-    : AtmosphereProcess(comm, params), aero_config_() {
+    : MAMGenericInterface(comm, params), aero_config_() {
+  check_fields_intervals_   = m_params.get<bool>("mam4_check_fields_intervals", false);
+
  }
 
 AtmosphereProcessType MAMOptics::type() const {
@@ -45,27 +47,14 @@ void MAMOptics::set_grids(
   // layout for 3D (2d horiz X 1d vertical) variables at level midpoints/interfaces
   FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(true);
   FieldLayout scalar3d_int = grid_->get_3d_scalar_layout(false);
+  add_tracer_for_wet_and_dry_atm();
 
   // layout for 2D (1d horiz X 1d vertical) variables
   FieldLayout scalar2d = grid_->get_2d_scalar_layout();
 
-  add_field<Required>("omega",              scalar3d_mid, Pa / s, grid_name);  // vertical pressure velocity
-  add_field<Required>("T_mid",              scalar3d_mid, K,      grid_name);  // Temperature
-  add_field<Required>("p_mid",              scalar3d_mid, Pa,     grid_name);  // total pressure
-  add_field<Required>("p_int",              scalar3d_int, Pa,     grid_name);  // total pressure
-  add_field<Required>("pseudo_density",     scalar3d_mid, Pa,     grid_name);
   add_field<Required>("pseudo_density_dry", scalar3d_mid, Pa,     grid_name);
-  add_tracer<Required>("qv",                grid_, kg/kg);                     // specific humidity
-  add_tracer<Required>("qi",                grid_, kg/kg);                     // ice wet mixing ratio
-  add_tracer<Required>("ni",                grid_, n_unit);                    // ice number mixing ratio
-
-  // droplet activation can alter cloud liquid and number mixing ratios
-  add_tracer<Required>("qc", grid_, kg/kg);  // cloud liquid wet mixing ratio
-  add_tracer<Required>("nc", grid_, n_unit);  // cloud liquid wet number mixing ratio
 
   add_field<Required>("phis", scalar2d, m2 / s2, grid_name);
-  add_field<Required>("cldfrac_tot", scalar3d_mid, nondim,grid_name);  // cloud fraction
-  add_field<Required>("pbl_height", scalar2d, m,grid_name);  // planetary boundary layer height
 
   // shortwave aerosol scattering asymmetry parameter [unitless]
   add_field<Computed>("aero_g_sw", scalar3d_swband, nondim, grid_name);
@@ -81,34 +70,10 @@ void MAMOptics::set_grids(
 
   add_field<Computed>("aodvis", scalar2d, nondim, grid_name);
 
+
   // (interstitial) aerosol tracers of interest: mass (q) and number (n) mixing
   // ratios
-  for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
-    const char *int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
-
-    add_tracer<Updated>(int_nmr_field_name, grid_, n_unit);
-    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
-      const char *int_mmr_field_name = mam_coupling::int_aero_mmr_field_name(m, a);
-
-      if(strlen(int_mmr_field_name) > 0) {
-        add_tracer<Updated>(int_mmr_field_name, grid_, kg/kg);
-      }
-    }
-  }
-  // (cloud) aerosol tracers of interest: mass (q) and number (n) mixing ratios
-  for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
-    const char *cld_nmr_field_name = mam_coupling::cld_aero_nmr_field_name(m);
-
-    add_field<Updated>(cld_nmr_field_name, scalar3d_mid, n_unit, grid_name);
-    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
-      const char *cld_mmr_field_name =
-          mam_coupling::cld_aero_mmr_field_name(m, a);
-
-      if(strlen(cld_mmr_field_name) > 0) {
-        add_field<Updated>(cld_mmr_field_name, scalar3d_mid, kg/kg, grid_name);
-      }
-    }
-  }
+  add_aerosol_tracers();
 
   // aerosol-related gases: mass mixing ratios
   for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
@@ -133,82 +98,23 @@ void MAMOptics::init_buffers(const ATMBufferManager &buffer_manager) {
 }
 
 void MAMOptics::initialize_impl(const RunType run_type) {
+  // print_fields_names();
+  add_interval_checks();
   // populate the wet and dry atmosphere states with views from fields and
   // the buffer
-  wet_atm_.qv    = get_field_in("qv").get_view<const Real **>();
-  wet_atm_.qc    = get_field_in("qc").get_view<const Real **>();
-  wet_atm_.nc    = get_field_in("nc").get_view<const Real **>();
-  wet_atm_.qi    = get_field_in("qi").get_view<const Real **>();
-  wet_atm_.ni    = get_field_in("ni").get_view<const Real **>();
-
-
   constexpr int ntot_amode = mam4::AeroConfig::num_modes();
 
-  dry_atm_.T_mid = get_field_in("T_mid").get_view<const Real **>();
-  dry_atm_.p_mid = get_field_in("p_mid").get_view<const Real **>();
-  dry_atm_.p_int = get_field_in("p_int").get_view<const Real **>();
+  populate_wet_and_dry_atm();
+  // FIXME: In other MAM4xx processes,
+  // we are using pseudo_density instead of pseudo_density_dry to set
+  // dry_atm_.p_del.
+  dry_atm_.phis = get_field_in("phis").get_view<const Real *>();
   dry_atm_.p_del = get_field_in("pseudo_density_dry").get_view<const Real **>();
   p_del_         = get_field_in("pseudo_density").get_view<const Real **>();
-  dry_atm_.cldfrac = get_field_in("cldfrac_tot")
-                         .get_view<const Real **>();  // FIXME: tot or liq?
-  dry_atm_.pblh = get_field_in("pbl_height").get_view<const Real *>();
-  dry_atm_.phis = get_field_in("phis").get_view<const Real *>();
-  dry_atm_.omega = get_field_in("omega").get_view<const Real **>();
 
-  dry_atm_.z_mid     = buffer_.z_mid;
-  dry_atm_.dz        = buffer_.dz;
-  dry_atm_.z_iface   = buffer_.z_iface;
-  dry_atm_.qv        = buffer_.qv_dry;
-  dry_atm_.qc        = buffer_.qc_dry;
-  dry_atm_.nc        = buffer_.nc_dry;
-  dry_atm_.qi        = buffer_.qi_dry;
-  dry_atm_.ni        = buffer_.ni_dry;
-  dry_atm_.w_updraft = buffer_.w_updraft;
-  // The surface height is zero by definition.
-  // see eam/src/physics/cam/geopotential.F90
-  dry_atm_.z_surf    = 0.0;
-
-  // set wet/dry aerosol state data (interstitial aerosols only)
-  for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
-    const char *int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
-    wet_aero_.int_aero_nmr[m] =
-        get_field_out(int_nmr_field_name).get_view<Real **>();
-    dry_aero_.int_aero_nmr[m] = buffer_.dry_int_aero_nmr[m];
-    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
-      const char *int_mmr_field_name =
-          mam_coupling::int_aero_mmr_field_name(m, a);
-      if(strlen(int_mmr_field_name) > 0) {
-        wet_aero_.int_aero_mmr[m][a] =
-            get_field_out(int_mmr_field_name).get_view<Real **>();
-        dry_aero_.int_aero_mmr[m][a] = buffer_.dry_int_aero_mmr[m][a];
-      }
-    }
-  }
-
-  // set wet/dry aerosol state data (cloud aerosols only)
-  for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
-    const char *cld_nmr_field_name = mam_coupling::cld_aero_nmr_field_name(m);
-    wet_aero_.cld_aero_nmr[m] =
-        get_field_out(cld_nmr_field_name).get_view<Real **>();
-    dry_aero_.cld_aero_nmr[m] = buffer_.dry_cld_aero_nmr[m];
-    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
-      const char *cld_mmr_field_name =
-          mam_coupling::cld_aero_mmr_field_name(m, a);
-      if(strlen(cld_mmr_field_name) > 0) {
-        wet_aero_.cld_aero_mmr[m][a] =
-            get_field_out(cld_mmr_field_name).get_view<Real **>();
-        dry_aero_.cld_aero_mmr[m][a] = buffer_.dry_cld_aero_mmr[m][a];
-      }
-    }
-  }
-
-  // set wet/dry aerosol-related gas state data
-  for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
-    const char *mmr_field_name = mam_coupling::gas_mmr_field_name(g);
-    wet_aero_.gas_mmr[g] = get_field_out(mmr_field_name).get_view<Real **>();
-    dry_aero_.gas_mmr[g] = buffer_.dry_gas_mmr[g];
-  }
-
+  // interstitial and cloudborne aerosol tracers of interest: mass (q) and
+  // number (n) mixing ratios
+  populate_wet_and_dry_aero();
   // prescribed volcanic aerosols.
   ssa_cmip6_sw_ =
       mam_coupling::view_3d("ssa_cmip6_sw", ncol_, nlev_, nswbands_);
