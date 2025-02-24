@@ -23,4 +23,5 @@ add_subdirectory(nudging)
 if (SCREAM_ENABLE_MAM)
   add_subdirectory(mam)
 endif()
+add_subdirectory(pompei)
 
