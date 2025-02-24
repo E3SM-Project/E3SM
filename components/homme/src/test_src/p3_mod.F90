@@ -363,6 +363,9 @@ subroutine interface_to_p3(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     qind=8; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( numice(:)  - q8(ii,jj,:) )/dtime
     qind=9; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( rimvol(:)  - q9(ii,jj,:) )/dtime
 
+if( (precip_liq_surf > 0.0) .or. (precip_ice_surf > 0.0) ) then
+print *, 'precip', precip_liq_surf, precip_ice_surf
+end if
 #if 0
 !if (ie == 1) then
 print *, 'precip', precip_liq_surf, precip_ice_surf
