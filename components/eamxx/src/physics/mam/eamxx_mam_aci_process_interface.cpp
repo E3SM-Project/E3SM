@@ -80,7 +80,7 @@ void MAMAci::set_grids(
 
   constexpr auto nondim = ekat::units::Units::nondimensional();
 
-  add_tracer_for_wet_and_dry_atm();
+  add_tracers_wet_and_dry_atm();
 
   constexpr auto m2 = pow(m, 2);
   constexpr auto s2 = pow(s, 2);
@@ -122,7 +122,7 @@ void MAMAci::set_grids(
 
   // interstitial and cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
-  add_aerosol_tracers();
+  add_tracers_aerosol_and_gases();
 
   // ------------------------------------------------------------------------
   // Output from ice nucleation process

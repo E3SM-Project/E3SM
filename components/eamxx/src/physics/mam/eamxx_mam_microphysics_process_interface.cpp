@@ -80,7 +80,7 @@ void MAMMicrophysics::set_grids(
   // These variables are "Required" or pure inputs for the process
   // --------------------------------------------------------------------------
 
-  add_tracer_for_wet_and_dry_atm();
+  add_tracers_wet_and_dry_atm();
 
   constexpr auto m2 = pow(m, 2);
   constexpr auto s2 = pow(s, 2);
@@ -156,7 +156,7 @@ void MAMMicrophysics::set_grids(
 
   // (interstitial) aerosol tracers of interest: mass (q) and number (n) mixing
   // ratios
-  add_aerosol_tracers();
+  add_tracers_aerosol_and_gases();
   //----------- Updated variables from other mam4xx processes ------------
   // layout for Constituent fluxes
   FieldLayout scalar2d_pcnst =

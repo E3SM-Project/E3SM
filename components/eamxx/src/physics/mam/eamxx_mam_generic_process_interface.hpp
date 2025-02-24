@@ -8,46 +8,44 @@
 #include <physics/mam/mam_coupling.hpp>
 #include <physics/mam/physical_limits.hpp>
 #include <string>
+/* We implemented the MAMGenericInterface class to eliminate duplicate code in
+the MAM4xx processes. Consequently, all MAM4xx processes must derive from this
+class.
+*/
 
 namespace scream {
 class MAMGenericInterface : public scream::AtmosphereProcess {
  public:
-   using KT = ekat::KokkosTypes<DefaultDevice>;
+  using KT = ekat::KokkosTypes<DefaultDevice>;
 
-   // Constructor
+  // Constructor
   MAMGenericInterface(const ekat::Comm &comm,
-                       const ekat::ParameterList &params);
-
-  // void add_invariant_check_for_aerosol();
-  void add_aerosol_tracers();
+                      const ekat::ParameterList &params);
+  // Add tracers needed for aerosols and gases."
+  void add_tracers_aerosol_and_gases();
+  // Perform interval checks for all MAM4xx fields.
+  // The limits are declared in physical_limits.
   void add_interval_checks();
+  // Print all fields that are added in a MAM4xx process.
   void print_fields_names();
+  // Populate the wet_aero and dry_aero structs.
   void populate_wet_and_dry_aero();
+  // Populate the wet_atm and dry_atm struct.
   void populate_wet_and_dry_atm();
-  void add_tracer_for_wet_and_dry_atm();
-  // physics grid for column information
+  // Add tracers that are needed by the wet_atm and dry_atm.
+  void add_tracers_wet_and_dry_atm();
+  // Physics grid for column information.
   std::shared_ptr<const AbstractGrid> grid_;
   // aerosol state variables
   mam_coupling::AerosolState wet_aero_, dry_aero_;
-    // wet mixing ratios (water species)
+  // wet mixing ratios (water species)
   mam_coupling::WetAtmosphere wet_atm_;
-
   // dry mixing ratios (water species)
   mam_coupling::DryAtmosphere dry_atm_;
   // workspace manager for internal local variables
   mam_coupling::Buffer buffer_;
-  std::vector<std::string> wet_atm_names_ = {"qv", "qc", "nc", "qi", "ni"};
-  std::vector<std::string> dry_atm_names_ = {
-        "T_mid",
-        "p_mid",
-        "p_int",
-        "pseudo_density",
-        "omega",
-        "pbl_height",
-        "cldfrac_tot"
-    };
   bool check_fields_intervals_{false};
-    // Atmosphere processes often have a pre-processing step that constructs
+  // Atmosphere processes often have a pre-processing step that constructs
   // required variables from the set of fields stored in the field manager.
   // This functor implements this step, which is called during run_impl.
   struct Preprocess {
@@ -83,7 +81,7 @@ class MAMGenericInterface : public scream::AtmosphereProcess {
       team.team_barrier();
       // set_min_background_mmr(team, dry_aero_pre_,
       //                        i);  // dry_atm_pre_ is the output
-    }                             // operator()
+    }  // operator()
 
     // local variables for preprocess struct
     // number of horizontal columns and vertical levels
@@ -134,12 +132,12 @@ class MAMGenericInterface : public scream::AtmosphereProcess {
   };  // Postprocess
 
  private:
-   // The type of subcomponent
+  // The type of subcomponent
   // --------------------------------------------------------------------------
   // AtmosphereProcess overrides (see share/atm_process/atmosphere_process.hpp)
   // --------------------------------------------------------------------------
   AtmosphereProcessType type() const { return AtmosphereProcessType::Physics; }
-  std::map<std::string, std::pair<Real, Real>>  limits_aerosol_gas_tracers_;
+  std::map<std::string, std::pair<Real, Real>> limits_aerosol_gas_tracers_;
   void get_aerosol_gas_map();
   const std::pair<Real, Real> get_range(const std::string &field_name);
 

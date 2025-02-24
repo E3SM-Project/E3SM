@@ -34,7 +34,7 @@ void MAMConstituentFluxes::set_grids(
   const FieldLayout scalar2d_pcnct =
       grid_->get_2d_vector_layout(pcnst, "num_phys_constituents");
 
-  add_tracer_for_wet_and_dry_atm();
+  add_tracers_wet_and_dry_atm();
   static constexpr Units m2(m * m, "m2");
   static constexpr Units s2(s * s, "s2");
   // FIXME: do we need phi?
@@ -54,7 +54,7 @@ void MAMConstituentFluxes::set_grids(
 
   // interstitial and cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
-  add_aerosol_tracers();
+  add_tracers_aerosol_and_gases();
 }  // set_grid
 
 // ================================================================

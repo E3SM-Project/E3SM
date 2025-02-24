@@ -58,7 +58,7 @@ void MAMWetscav::set_grids(
 
   // ----------- Atmospheric quantities -------------
   // Specific humidity [kg/kg]
-  add_tracer_for_wet_and_dry_atm();
+  add_tracers_wet_and_dry_atm();
 
   static constexpr auto m2 = m * m;
   static constexpr auto s2 = s * s;
@@ -123,7 +123,7 @@ void MAMWetscav::set_grids(
 
   // NOTE: Interstitial aerosols are updated in the interface using the
   // "tendencies" from the wetscavenging process
-  add_aerosol_tracers();
+  add_tracers_aerosol_and_gases();
 
   // -------------------------------------------------------------
   // These variables are "Computed" or outputs for the process

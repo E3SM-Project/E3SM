@@ -51,7 +51,7 @@ void MAMOptics::set_grids(
   // midpoints/interfaces
   FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(true);
   FieldLayout scalar3d_int = grid_->get_3d_scalar_layout(false);
-  add_tracer_for_wet_and_dry_atm();
+  add_tracers_wet_and_dry_atm();
 
   // layout for 2D (1d horiz X 1d vertical) variables
   FieldLayout scalar2d = grid_->get_2d_scalar_layout();
@@ -77,7 +77,7 @@ void MAMOptics::set_grids(
 
   // (interstitial) aerosol tracers of interest: mass (q) and number (n) mixing
   // ratios
-  add_aerosol_tracers();
+  add_tracers_aerosol_and_gases();
 
   // aerosol-related gases: mass mixing ratios
   for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {

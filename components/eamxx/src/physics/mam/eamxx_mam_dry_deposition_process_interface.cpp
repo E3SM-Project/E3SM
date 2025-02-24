@@ -69,7 +69,7 @@ void MAMDryDep::set_grids(
   // These variables are "Required" or pure inputs for the process
   // --------------------------------------------------------------------------
 
-  add_tracer_for_wet_and_dry_atm();
+  add_tracers_wet_and_dry_atm();
 
   static constexpr auto m2 = m * m;
   static constexpr auto s2 = s * s;
@@ -120,7 +120,7 @@ void MAMDryDep::set_grids(
 
   // (interstitial) aerosol tracers of interest: mass (q) and number (n) mixing
   // ratios
-  add_aerosol_tracers();
+  add_tracers_aerosol_and_gases();
 
   // -------------------------------------------------------------
   // These variables are "Computed" or outputs for the process
