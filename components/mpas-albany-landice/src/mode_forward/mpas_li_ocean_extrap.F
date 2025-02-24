@@ -304,12 +304,7 @@ contains
          ! initialize the invalid data locations with fill value
          do iCell = 1, nCellsSolve
             do iLayer = 1, nISMIP6OceanLayers
-               if ((connectedMarineMask(iCell) == 0) .and. (bedTopography(iCell) < config_sea_level)) then
-                  ! Don't assign invalid value to lakes/inland seas disconnected from global ocean
-                  ! Let them retain the existing value:
-                  ! This will take on the valid ocean data value where it exists or
-                  ! zero where valid ocean data does not exist
-               elseif (validOceanMask(iLayer,iCell) == 0) then
+               if (validOceanMask(iLayer,iCell) == 0) then
                   ! everywhere else where valid ocean data does not exist, insert invalid value outside of validOceanMask
                   oceanField(iLayer,iCell,:) = invalid_value_TF
                endif
@@ -370,6 +365,16 @@ contains
             ismip6shelfMelt_3dThermalForcing(:,:) = oceanField(:,:,1)
          endif
 
+         ! As final step, zero out thermal forcing in inland seas/lakes. Otherwise these cells will assume invalid TF value 
+         ! and could cause runaway melting at lake-terminating glaciers. Best to ignore thermal forcing in these cells.
+         do iCell = 1, nCells 
+            if ((connectedMarineMask(iCell) == 0) .and. (bedTopography(iCell) < config_sea_level)) then
+               do iLayer = 1, nISMIP6OceanLayers               
+                  ismip6shelfMelt_3dThermalForcing(iLayer,iCell) = 0.0_RKIND
+               enddo
+            endif
+         enddo
+         
          deallocate(oceanField)
 
       endif
