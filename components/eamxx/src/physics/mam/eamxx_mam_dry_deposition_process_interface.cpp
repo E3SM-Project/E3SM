@@ -54,9 +54,9 @@ void MAMDryDep::set_grids(
 
   // Layout for 4D (2d horiz X 1d vertical x number of modes) variables
   // at mid points
-  const int num_aero_modes = mam_coupling::num_aero_modes();
-  const FieldLayout vector3d_mid =
-      grid_->get_3d_vector_layout(true, num_aero_modes, mam_coupling::num_modes_tag_name());
+  const int num_aero_modes       = mam_coupling::num_aero_modes();
+  const FieldLayout vector3d_mid = grid_->get_3d_vector_layout(
+      true, num_aero_modes, mam_coupling::num_modes_tag_name());
 
   using namespace ekat::units;
 
