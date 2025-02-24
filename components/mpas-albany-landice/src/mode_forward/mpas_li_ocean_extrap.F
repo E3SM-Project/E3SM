@@ -222,7 +222,7 @@ contains
                enddo
             endif
             ! growMask - all marine cells
-            if (bedTopography(iCell) < config_sea_level) then
+            if ( (bedTopography(iCell) < config_sea_level) .and. (thickness(iCell) == 0.0_RKIND) ) then
                growMask(iCell) = 1
             endif
          enddo
