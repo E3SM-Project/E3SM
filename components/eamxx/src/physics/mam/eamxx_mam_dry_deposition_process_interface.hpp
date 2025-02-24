@@ -2,7 +2,7 @@
 #define EAMXX_MAM_DRYDEP_HPP
 
 // For declaring dry deposition class derived from atm process class
-#include <share/atm_process/atmosphere_process.hpp>
+#include <physics/mam/eamxx_mam_generic_process_interface.hpp>
 
 // For MAM4 aerosol configuration
 #include <physics/mam/mam_coupling.hpp>
@@ -10,7 +10,7 @@
 // For AtmosphereInput
 #include "share/io/scorpio_input.hpp"
 
-#include <physics/mam/eamxx_mam_generic_process_interface.hpp>
+
 
 // For component name
 #include <string>

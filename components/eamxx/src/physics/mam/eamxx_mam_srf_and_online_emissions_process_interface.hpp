@@ -13,8 +13,8 @@
 
 // For declaring surface and online emission class derived from atm process
 // class
-#include <share/atm_process/atmosphere_process.hpp>
 #include <physics/mam/eamxx_mam_generic_process_interface.hpp>
+
 #include <string>
 
 namespace scream {

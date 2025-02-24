@@ -7,10 +7,10 @@
 #include <physics/mam/mam_aerosol_optics_read_tables.hpp>
 #include <physics/mam/mam_coupling.hpp>
 #include <share/atm_process/ATMBufferManager.hpp>
-#include <share/atm_process/atmosphere_process.hpp>
+#include <physics/mam/eamxx_mam_generic_process_interface.hpp>
 #include <share/util/eamxx_common_physics_functions.hpp>
 #include <string>
-#include <physics/mam/eamxx_mam_generic_process_interface.hpp>
+
 
 #ifndef KOKKOS_ENABLE_CUDA
 #define protected_except_cuda public

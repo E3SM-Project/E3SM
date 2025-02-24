@@ -2,14 +2,14 @@
 #define EAMXX_MAM_MICROPHYSICS_HPP
 
 #include <physics/mam/mam_coupling.hpp>
-#include <share/atm_process/atmosphere_process.hpp>
+#include <physics/mam/eamxx_mam_generic_process_interface.hpp>
 #include <share/util/eamxx_common_physics_functions.hpp>
 
 #include "readfiles/tracer_reader_utils.hpp"
 // For calling MAM4 processes
 #include <mam4xx/mam4.hpp>
 #include <string>
-#include <physics/mam/eamxx_mam_generic_process_interface.hpp>
+
 
 namespace scream {
 

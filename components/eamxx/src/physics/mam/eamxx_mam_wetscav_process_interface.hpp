@@ -5,8 +5,6 @@
 #include <physics/mam/mam_coupling.hpp>
 
 // For declaring wetscav class derived from atm process class
-#include "share/atm_process/atmosphere_process.hpp"
-
 #include <physics/mam/eamxx_mam_generic_process_interface.hpp>
 
 // For component name
