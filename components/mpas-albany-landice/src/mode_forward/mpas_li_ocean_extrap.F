@@ -155,6 +155,7 @@ contains
          call mpas_pool_get_array(extrapOceanDataPool, 'availOceanMask', availOceanMask)
          call mpas_pool_get_array(extrapOceanDataPool, 'seedOceanMaskHoriz', seedOceanMaskHoriz)
          call mpas_pool_get_array(extrapOceanDataPool, 'growOceanMaskHoriz', growOceanMaskHoriz)
+         call mpas_pool_get_array(extrapOceanDataPool, 'connectedMarineMask', connectedMarineMask)
          
          allocate(oceanField(nISMIP6OceanLayers,nCells+1,2))
          
@@ -203,7 +204,7 @@ contains
          call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
          call mpas_pool_get_field(scratchPool, 'seedMask', seedMaskField)
          call mpas_allocate_scratch_field(seedMaskField, single_block_in = .true.)
-         connectedMarineMask => seedMaskField % array
+         ! connectedMarineMask => seedMaskField % array
          connectedMarineMask(:) = 0
          call mpas_pool_get_field(scratchPool, 'growMask', growMaskField)
          call mpas_allocate_scratch_field(growMaskField, single_block_in = .true.)
@@ -304,7 +305,12 @@ contains
          ! initialize the invalid data locations with fill value
          do iCell = 1, nCellsSolve
             do iLayer = 1, nISMIP6OceanLayers
-               if (validOceanMask(iLayer,iCell) == 0) then
+               if ((connectedMarineMask(iCell) == 0) .and. (bedTopography(iCell) < config_sea_level)) then
+                  ! Don't assign invalid value to lakes/inland seas disconnected from global ocean
+                  ! Let them retain the existing value:
+                  ! This will take on the valid ocean data value where it exists or
+                  ! zero where valid ocean data does not exist
+               elseif (validOceanMask(iLayer,iCell) == 0) then
                   ! everywhere else where valid ocean data does not exist, insert invalid value outside of validOceanMask
                   oceanField(iLayer,iCell,:) = invalid_value_TF
                endif
