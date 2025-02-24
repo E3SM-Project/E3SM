@@ -310,6 +310,9 @@ macro (copyDirFiles testDir)
     FILE(COPY ${singleFile} DESTINATION ${testDir})
   ENDFOREACH ()
 
+  FOREACH (singleFile ${P3_FILES})
+    FILE(COPY ${singleFile} DESTINATION ${testDir})
+  ENDFOREACH ()
 
 
 
@@ -648,6 +651,8 @@ macro(createTest testFile)
   FILE(GLOB MESH_FILES ${MESH_FILES})
   FILE(GLOB OMP_NAMELIST_FILES ${OMP_NAMELIST_FILES})
   FILE(GLOB TRILINOS_XML_FILE ${TRILINOS_XML_FILE})
+
+  FILE(GLOB P3_FILES ${P3_FILES})
 
   # Determine if the executable this tests depeds upon is built
   LIST(FIND EXEC_LIST ${EXEC_NAME} FIND_INDEX)

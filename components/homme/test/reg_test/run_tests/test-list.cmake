@@ -40,6 +40,8 @@ SET(HOMME_TESTS
   sweqx-dbvor.cmake
   thetanh-moist-bubble.cmake
   thetanh-dry-bubble.cmake
+  thetaplanar-nlev20.cmake
+  thetaplanar-nlev128.cmake
 )
 
 IF (${HOMME_ENABLE_COMPOSE})
