@@ -371,16 +371,6 @@ contains
             ismip6shelfMelt_3dThermalForcing(:,:) = oceanField(:,:,1)
          endif
 
-         ! As final step, zero out thermal forcing in inland seas/lakes. Otherwise these cells will assume invalid TF value 
-         ! and could cause runaway melting at lake-terminating glaciers. Best to ignore thermal forcing in these cells.
-         do iCell = 1, nCells 
-            if ((connectedMarineMask(iCell) == 0) .and. (bedTopography(iCell) < config_sea_level)) then
-               do iLayer = 1, nISMIP6OceanLayers               
-                  ismip6shelfMelt_3dThermalForcing(iLayer,iCell) = 0.0_RKIND
-               enddo
-            endif
-         enddo
-         
          deallocate(oceanField)
 
       endif
