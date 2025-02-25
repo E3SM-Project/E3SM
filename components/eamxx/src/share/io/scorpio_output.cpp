@@ -137,36 +137,23 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
 
   // For simplicity, we create a "copy" of the input fm, so we can stuff also diags in it
   fm_model = std::make_shared<FieldManager>(field_mgr->get_grids_manager(),RepoState::Closed);
-  for (auto& fname : m_fields_names) {
+
+  // First, add fields in the model FM...
+  for (const auto& fname : m_fields_names) {
     if (field_mgr->has_field(fname)) {
       fm_model->add_field(field_mgr->get_field(fname));
-    } else {
-      // This must be a diagnostic field. Crate the diag, and set the diag_field
-      // in the "FromModel" field manager
-      auto diag = create_diagnostic(fname);
-      const auto& diag_fname = diag->get_diagnostic().name();
-      m_diagnostics[diag_fname] = diag;
-
-      // Note: some diag fields have a name different from what was used
-      //       in the yaml file, so update the name with the actual
-      //       diagnostic field name.
-      // TODO: we should change this. The name used in the yaml file should
-      //       MATCH the diag field name. This is confusing.
-      fname = diag_fname;
-
-      fm_model->add_field(m_diagnostics.at(fname)->get_diagnostic());
     }
   }
 
-  // Register any diagnostics needed by this output stream
-  set_diagnostics();
+  // ... then add diagnostic fields
+  init_diagnostics (field_mgr);
 
   // Avg count only makes sense if we have
   //  - non-instant output
   //  - we have one between:
   //    - vertically remapped output
   //    - field_at_XhPa diagnostic
-  // We already set m_track_avg_cnt to true if field_at_XhPa is found in set_diagnostics.
+  // We already set m_track_avg_cnt to true if field_at_XhPa is found in init_diagnostics.
   // Hence, here we only check if vert remap is active
 
   if (params.isParameter("track_avg_cnt")) {
@@ -342,7 +329,7 @@ void AtmosphereOutput::init()
 void AtmosphereOutput::
 init_timestep (const util::TimeStamp& start_of_step)
 {
-  for (auto& [name,diag] : m_diagnostics) {
+  for (auto diag : m_diagnostics) {
     diag->init_timestep(start_of_step);
   }
 }
@@ -367,15 +354,9 @@ run (const std::string& filename,
     }
   }
 
-  using namespace scream::scorpio;
-
   // Update all diagnostics, we need to do this before applying the remapper
   // to make sure that the remapped fields are the most up to date.
-  // First we reset the diag computed map so that all diags are recomputed.
-  m_diag_computed.clear();
-  for (auto& [name,diag] : m_diagnostics) {
-    compute_diagnostic(name,allow_invalid_fields);
-  }
+  compute_diagnostics(allow_invalid_fields);
 
   auto apply_remap = [&](AbstractRemapper& remapper)
   {
@@ -445,7 +426,7 @@ run (const std::string& filename,
         // If count<=threshold, we set count=fill_value, so that fill_val propagates
         // to the output fields when we divide by count later
         if (output_step and m_avg_type==OutputAvgType::Average) {
-          int min_count = m_avg_coeff_threshold*nsteps_since_last_output;
+          int min_count = static_cast<int>(std::ceil(m_avg_coeff_threshold*nsteps_since_last_output));
 
           // Recycle mask to find where count<thresh
           compute_mask<Comparison::LT>(count,min_count,mask);
@@ -523,7 +504,17 @@ res_dep_memory_footprint () const
   // Loop over ALL field mgr, and ALL fields in each of them.
   // Keep track of Field obj we parse, so we don't count them twice
   std::set<Field*> fields;
+
   for (const auto& [phase,fm] : m_field_mgrs) {
+    auto gn = fm->get_grid()->name();
+    auto is_diag = [&](const std::string& name) {
+      auto group = fm->get_field_group("diagnostic",gn);
+      for (const auto& fn : group.m_info->m_fields_names) {
+        if (name==fn)
+          return true;
+      }
+      return false;
+    };
     for (const auto& [fname,f_ptr] : fm->get_repo()) {
       auto [it, inserted] = fields.insert(f_ptr.get());
       if (not inserted) {
@@ -535,7 +526,7 @@ res_dep_memory_footprint () const
         // We don't count subfields
         continue;
       }
-      if (phase==FromModel and m_diagnostics.count(fname)==0) {
+      if (phase==FromModel and not is_diag(f_ptr->name())) {
         // We don't count fields from the model
         continue;
       }
@@ -620,8 +611,7 @@ reset_scorpio_fields()
     case OutputAvgType::Min:
       value =  std::numeric_limits<Real>::infinity(); break;
     case OutputAvgType::Average:
-      value =  m_track_avg_cnt ? m_fill_value : 0.0;  break;
-      break;
+      value =  0.0;                                   break;
     default:
       EKAT_ERROR_MSG ("Unrecognized/unexpected averaging type.\n");
   }
@@ -872,118 +862,135 @@ setup_output_file(const std::string& filename,
   // Set the offsets of the local dofs in the global vector.
   set_decompositions(filename);
 }
-/* ---------------------------------------------------------- */
-// This routine will evaluate the diagnostics stored in this
-// output instance.
-void AtmosphereOutput::
-compute_diagnostic(const std::string& name, const bool allow_invalid_fields)
-{
-  auto skip_diag = m_diag_computed[name];
-  if (skip_diag) {
-    // Diagnostic already computed, just return
-    return;
-  }
-  const auto& diag = m_diagnostics.at(name);
-  // Check if the diagnostics has any dependencies, if so, evaluate
-  // them as well.  Needed if a diagnostic relies on another
-  // diagnostic.
-  for (const auto& dep : m_diag_depends_on_diags.at(name)) {
-    compute_diagnostic(dep,allow_invalid_fields);
-  }
 
-  m_diag_computed[name] = true;
-  if (allow_invalid_fields) {
-    // If any input is invalid, fill the diagnostic with invalid data
-    for (auto f : diag->get_fields_in()) {
+void AtmosphereOutput::
+compute_diagnostics(const bool allow_invalid_fields)
+{
+  for (auto diag : m_diagnostics) {
+    // Check if all inputs are valid
+    bool computable = true;
+    bool computed = false;
+    std::string dep_name;
+    for (const auto& f : diag->get_fields_in()) {
       if (not f.get_header().get_tracking().get_time_stamp().is_valid()) {
         // Fill diag with invalid data and return
-        diag->get_diagnostic().deep_copy(m_fill_value);
-        return;
+        computable = false;
+        dep_name = f.name();
+        break;
       }
     }
-  }
 
-  // Either allow_invalid_fields=false, or all inputs are valid. Proceed.
-  diag->compute_diagnostic();
+    EKAT_REQUIRE_MSG (computable or allow_invalid_fields,
+        "Error! Cannot compute a diagnostic. One dependency has an invalid timestamp.\n"
+        " - diag name: " + diag->get_diagnostic().name() + "\n"
+        " - dep  name: " + dep_name + "\n");
 
-  // The diag may have failed to compute (e.g., t=0 output with a flux-like diag).
-  // If we're allowing invalid fields, then we should simply set diag=m_fill_value
-  if (allow_invalid_fields) {
     auto d = diag->get_diagnostic();
-    if (not d.get_header().get_tracking().get_time_stamp().is_valid()) {
+    if (computable) {
+      computed = true;
+      diag->compute_diagnostic();
+      if (not d.get_header().get_tracking().get_time_stamp().is_valid()) {
+        computed = false;
+      }
+    }
+
+    if (not computed) {
+      // The diag was either not computable or it may have failed to compute
+      // (e.g., t=0 output with a flux-like diag).
+      // If we're allowing invalid fields, then we should simply set diag=m_fill_value
+      EKAT_REQUIRE_MSG (allow_invalid_fields,
+        "Error! Failed to compute diagnostic.\n"
+        " - diag name: " + diag->get_diagnostic().name() + "\n");
       d.deep_copy(m_fill_value);
     }
   }
 }
-/* ---------------------------------------------------------- */
-void AtmosphereOutput::set_diagnostics()
+
+void AtmosphereOutput::
+init_diagnostics (const std::shared_ptr<const FieldManager>& fm_model)
 {
-  auto fm_model = m_field_mgrs[FromModel];
-  // Create all diagnostics
-  for (const auto& fname : m_fields_names) {
-    if (fm_model->has_field(fname)) {
-      m_diagnostics[fname] = create_diagnostic(fname);
-    }
-  }
-}
+  // So far, all output fields that ARE in the model FM have been added
+  // to the FM stored in this class for the FromModel phase. Anything missing
+  // must be a diagnostic.
 
-/* ---------------------------------------------------------- */
-std::shared_ptr<AtmosphereDiagnostic>
-AtmosphereOutput::create_diagnostic (const std::string& diag_field_name)
-{
-  // We need scream scope resolution, since this->create_diagnostic is hiding it
-  auto fm_model = m_field_mgrs[FromModel];
-  auto diag = scream::create_diagnostic(diag_field_name,fm_model->get_grid());
+  // Temp map to quickly check if a diag has been built already
+  strmap_t<diag_ptr_type> all_diags;
 
-  // Some diags need some extra setup or trigger extra behaviors
-  // TODO: move this to the diag class itself, then query bool + string
-  std::string diag_avg_cnt_name = "";
-  auto& params = diag->get_params();
-  if (diag->name()=="FieldAtPressureLevel") {
-    params.set<double>("mask_value",m_fill_value);
-    diag_avg_cnt_name = "_"
-                      + params.get<std::string>("pressure_value")
-                      + params.get<std::string>("pressure_units");
-    m_track_avg_cnt = m_track_avg_cnt || m_avg_type!=OutputAvgType::Instant;
-  } else if (diag->name()=="FieldAtHeight") {
-    if (params.get<std::string>("surface_reference")=="sealevel") {
-      diag_avg_cnt_name = "_"
-                        + params.get<std::string>("height_value")
-                        + params.get<std::string>("height_units") + "_above_sealevel";
-      m_track_avg_cnt = m_track_avg_cnt || m_avg_type!=OutputAvgType::Instant;
-    }
-  } else if (diag->name()=="AerosolOpticalDepth550nm") {
-    params.set<double>("mask_value", m_fill_value);
-    m_track_avg_cnt = m_track_avg_cnt || m_avg_type!=OutputAvgType::Instant;
-    diag_avg_cnt_name = "_" + diag->name();
-  }
+  // NOTE: lambda's cannot call themselves recursively. So store the lambda
+  //       inside a std::function, so that the lambda body CAN call create_diag.
+  std::function<void(const std::string&)> create_diag;
+  create_diag = [&](const std::string& name) {
+    auto diag = create_diagnostic(name,fm_model->get_grid());
 
-  // Ensure there's an entry in the map for this diag, so .at(diag_name) always works
-  auto& deps = m_diag_depends_on_diags[diag_field_name];
+    for (const auto& freq : diag->get_required_field_requests()) {
+      const auto& dep_name = freq.fid.name();
 
-  // Initialize the diagnostic
-  for (const auto& freq : diag->get_required_field_requests()) {
-    const auto& fname = freq.fid.name();
-    if (not fm_model->has_field(fname)) {
-      // This diag depends on another diag. Create and init the dependency
-      if (m_diagnostics.count(fname)==0) {
-        m_diagnostics[fname] = create_diagnostic(fname);
+      if (m_field_mgrs[FromModel]->has_field(dep_name) or
+          all_diags.count(dep_name)==1)
+        continue;
+
+      if (fm_model->has_field(dep_name)) {
+        m_field_mgrs[FromModel]->add_field(fm_model->get_field(dep_name));
+      } else {
+        create_diag(dep_name);
       }
-      deps.push_back(fname);
     }
-    diag->set_required_field (fm_model->get_field(fname));
+
+    m_diagnostics.push_back(diag);
+    all_diags[name] = diag;
+  };
+
+  for (const auto& fname : m_fields_names) {
+    if (not m_field_mgrs[FromModel]->has_field(fname))
+      create_diag(fname);
   }
 
-  diag->initialize(util::TimeStamp(),RunType::Initial);
+  // Now, all diags are built, and can be initialied. Notice that the order
+  // in which they appear in m_diagnostics follows the "evaluation order",
+  // meaning that if diag A depends on diag B, then B appears *before* A.
+  // This ensusre that:
+  //   1. here, we can fully init diags in order
+  //   2. at run time, we can evaluate diags in order
+  for (auto diag : m_diagnostics) {
+    for (const auto& freq : diag->get_required_field_requests()) {
+      const auto& fname = freq.fid.name();
+      auto f = m_field_mgrs[FromModel]->get_field(fname);
+      diag->set_required_field(f);
+    }
+    diag->initialize(util::TimeStamp(),RunType::Initial);
 
-  // If specified, set avg_cnt tracking for this diagnostic.
-  if (m_track_avg_cnt) {
-    const auto diag_field = diag->get_diagnostic();
-    const auto name       = diag_field.name();
-    m_field_to_avg_cnt_suffix.emplace(name,diag_avg_cnt_name);
+    const auto& diag_field_name = diag->get_diagnostic().name();
+
+    m_field_mgrs[FromModel]->add_field(diag->get_diagnostic());
+    m_field_mgrs[FromModel]->add_to_group(diag_field_name,"diagnostic");
+
+    // Some diags need some extra setup or trigger extra behaviors
+    std::string diag_avg_cnt_name = "";
+    auto& params = diag->get_params();
+    if (diag->name()=="FieldAtPressureLevel") {
+      params.set<double>("mask_value",m_fill_value);
+      diag_avg_cnt_name = "_"
+                        + params.get<std::string>("pressure_value")
+                        + params.get<std::string>("pressure_units");
+      m_track_avg_cnt = m_track_avg_cnt || m_avg_type!=OutputAvgType::Instant;
+    } else if (diag->name()=="FieldAtHeight") {
+      if (params.get<std::string>("surface_reference")=="sealevel") {
+        diag_avg_cnt_name = "_"
+                          + params.get<std::string>("height_value")
+                          + params.get<std::string>("height_units") + "_above_sealevel";
+        m_track_avg_cnt = m_track_avg_cnt || m_avg_type!=OutputAvgType::Instant;
+      }
+    } else if (diag->name()=="AerosolOpticalDepth550nm") {
+      params.set<double>("mask_value", m_fill_value);
+      m_track_avg_cnt = m_track_avg_cnt || m_avg_type!=OutputAvgType::Instant;
+      diag_avg_cnt_name = "_" + diag->name();
+    }
+
+    // If specified, set avg_cnt tracking for this diagnostic.
+    if (m_track_avg_cnt) {
+      m_field_to_avg_cnt_suffix.emplace(diag_field_name,diag_avg_cnt_name);
+    }
   }
-
-  return diag;
 }
 
 } // namespace scream
