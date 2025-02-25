@@ -111,7 +111,7 @@ public:
   using grid_type     = AbstractGrid;
   using gm_type       = GridsManager;
   using remapper_type = AbstractRemapper;
-  using atm_diag_type = AtmosphereDiagnostic;
+  using diag_ptr_type = std::shared_ptr<AtmosphereDiagnostic>;
 
   virtual ~AtmosphereOutput () = default;
 
@@ -150,13 +150,14 @@ public:
 
 protected:
 
+  template<typename T>
+  using strmap_t = std::map<std::string,T>;
+
   // Internal functions
   void register_variables(const std::string& filename, const std::string& fp_precision, const scorpio::FileMode mode);
   void set_decompositions(const std::string& filename);
-  void compute_diagnostic (const std::string& name, const bool allow_invalid_fields = false);
-  void set_diagnostics();
-  std::shared_ptr<AtmosphereDiagnostic>
-  create_diagnostic (const std::string& diag_name);
+  void compute_diagnostics (const bool allow_invalid_fields);
+  void init_diagnostics (const std::shared_ptr<const FieldManager>& fm_model);
 
   // Tracking the averaging of any filled values:
   void set_avg_cnt_tracking(const std::string& name, const FieldLayout& layout);
@@ -182,17 +183,15 @@ protected:
   Real              m_avg_coeff_threshold = 0.5; // % of unfilled values required to not just assign value as FillValue
 
   // Internal maps to the output fields, how the columns are distributed, the file dimensions and the global ids.
-  std::vector<std::string>                              m_fields_names;
-  std::vector<std::string>                              m_avg_cnt_names;
-  std::map<std::string,std::string>                     m_field_to_avg_cnt_map;
-  std::map<std::string,std::string>                     m_field_to_avg_cnt_suffix;
-  std::map<std::string,FieldLayout>                     m_layouts;
-  std::map<std::string,int>                             m_dims;
-  std::map<std::string,std::shared_ptr<atm_diag_type>>  m_diagnostics;
-  std::map<std::string,std::vector<std::string>>        m_diag_depends_on_diags;
-  std::map<std::string,bool>                            m_diag_computed;
+  std::vector<std::string>              m_fields_names;
+  std::vector<std::string>              m_avg_cnt_names;
+  strmap_t<std::string>                 m_field_to_avg_cnt_map;
+  strmap_t<std::string>                 m_field_to_avg_cnt_suffix;
+  strmap_t<FieldLayout>                 m_layouts;
+  strmap_t<int>                         m_dims;
+  std::list<diag_ptr_type>              m_diagnostics;
 
-  DefaultMetadata                                       m_default_metadata;
+  DefaultMetadata                       m_default_metadata;
 
   // Use float, so that if output fp_precision=float, this is a representable value.
   // Otherwise, you would get an error from Netcdf, like
