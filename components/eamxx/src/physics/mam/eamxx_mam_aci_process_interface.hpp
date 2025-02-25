@@ -130,9 +130,6 @@ class MAMAci final : public MAMGenericInterface {
   const_view_2d w_sec_mid_;  // Vertical velocity variance at midpoints
   view_2d w_sec_int_;        // Vertical velocity variance at interfaces
 
-  // number of horizontal columns and vertical levels
-  int ncol_, nlev_;
-
   // A view array to carry cloud borne aerosol mmrs/nmrs
   view_2d qqcw_fld_work_[mam4::ndrop::ncnst_tot];
 
@@ -219,7 +216,6 @@ class MAMAci final : public MAMGenericInterface {
  private:
   // pre- and postprocessing scratch pads
   Preprocess preprocess_;
-  Postprocess postprocess_;
 
 };  // MAMAci
 

@@ -383,9 +383,6 @@ void MAMAci::initialize_impl(const RunType run_type) {
   preprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_,
                          dry_aero_);
 
-  postprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_,
-                          dry_aero_);
-
 }  // end function initialize_impl
 
 // ================================================================
@@ -509,7 +506,7 @@ void MAMAci::run_impl(const double dt) {
                                dry_aero_);
 
   // call post processing to convert dry mixing ratios to wet mixing ratios
-  Kokkos::parallel_for("postprocess", scan_policy, postprocess_);
+  post_process();
   Kokkos::fence();  // wait before returning to calling function
 }
 

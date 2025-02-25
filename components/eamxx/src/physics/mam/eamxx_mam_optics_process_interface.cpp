@@ -137,12 +137,6 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   Kokkos::deep_copy(ext_cmip6_sw_, 0.0);
   Kokkos::deep_copy(ext_cmip6_lw_, 0.0);
 
-  // set up our preprocess/postprocess functors
-  preprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_,
-                         dry_aero_);
-  postprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_,
-                          dry_aero_);
-
   const int work_len = mam4::modal_aer_opt::get_work_len_aerosol_optics();
   work_              = mam_coupling::view_2d("work", ncol_, work_len);
 
@@ -281,7 +275,7 @@ void MAMOptics::run_impl(const double dt) {
       KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
   // preprocess input -- needs a scan for the calculation of atm height
-  Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
+  pre_process();
   Kokkos::fence();
 
   // tau_w_g : aerosol asymmetry parameter * tau * w
@@ -372,7 +366,7 @@ void MAMOptics::run_impl(const double dt) {
   const auto &get_idx_rrtmgp_from_rrtmg_swbands =
       get_idx_rrtmgp_from_rrtmg_swbands_;
   // postprocess output
-  Kokkos::parallel_for("postprocess", policy, postprocess_);
+  post_process();
   Kokkos::fence();
 
   // nswbands loop is using rrtmg indexing.

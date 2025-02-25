@@ -308,4 +308,43 @@ void MAMGenericInterface::add_interval_checks() {
   }
 }
 
+void MAMGenericInterface::pre_process()
+{
+  const auto scan_policy = ekat::ExeSpaceUtils<
+      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+
+     Kokkos::parallel_for(
+      scan_policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
+      const int i = team.league_rank();  // column index
+
+      mam_coupling::compute_dry_mixing_ratios(team, wet_atm_, dry_atm_, i);
+      mam_coupling::compute_dry_mixing_ratios(team, wet_atm_, wet_aero_,
+                                dry_aero_, i);
+      team.team_barrier();
+      // vertical heights has to be computed after computing dry mixing ratios
+      // for atmosphere
+      mam_coupling::compute_vertical_layer_heights(team, dry_atm_, i);
+      mam_coupling::compute_updraft_velocities(team, wet_atm_, dry_atm_, i);
+      // allows kernels below to use layer heights operator()
+      team.team_barrier();
+      // set_min_background_mmr(team, dry_aero_pre_,
+      //                        i);  // dry_atm_pre_ is the output
+    });
+
+}
+
+void MAMGenericInterface::post_process()
+{
+
+  const auto scan_policy = ekat::ExeSpaceUtils<
+      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+
+     Kokkos::parallel_for(
+      scan_policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
+      const int i = team.league_rank();  // column index
+      compute_wet_mixing_ratios(team, dry_atm_, dry_aero_,
+                                wet_aero_, i);
+      });
+
+}
 }  // namespace scream

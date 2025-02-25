@@ -19,8 +19,6 @@ class MAMConstituentFluxes final : public MAMGenericInterface {
   using const_view_2d = Field::view_dev_t<const Real **>;
 
  private:
-  // number of horizontal columns
-  int ncol_, nlev_;
 
   const_view_2d constituent_fluxes_;
 

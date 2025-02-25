@@ -35,9 +35,6 @@ class MAMDryDep final : public MAMGenericInterface  {
   using const_view_3d = Field::view_dev_t<const Real ***>;
 
  private:
-  // number of horizontal columns and vertical levels
-  int ncol_, nlev_;
-
   /* Note on mam4::DryDeposition::aerosol_categories = 4
      used in deposition velocity dimension defined below. These
      correspond to the two attachment states and two moments:
@@ -138,8 +135,6 @@ class MAMDryDep final : public MAMGenericInterface  {
 
  private:
   // pre- and postprocessing scratch pads
-  Preprocess preprocess_;
-  Postprocess postprocess_;
 };  // MAMDryDep
 
 }  // namespace scream

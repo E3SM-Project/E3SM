@@ -247,13 +247,6 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
 
   // Copy fractional landuse values to a FM array to be used by other processes
   Kokkos::deep_copy(frac_landuse_fm_, frac_landuse_);
-  //-----------------------------------------------------------------
-  // Setup preprocessing and post processing
-  //-----------------------------------------------------------------
-  preprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_,
-                         dry_aero_);
-  postprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_,
-                          dry_aero_);
 }  // initialize_impl
 
 // =========================================================================================
@@ -262,7 +255,7 @@ void MAMDryDep::run_impl(const double dt) {
       KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
   // preprocess input -- needs a scan for the calculation of atm height
-  Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
+  pre_process();
   Kokkos::fence();
 
   // -------------------------------------------------------------
@@ -326,7 +319,7 @@ void MAMDryDep::run_impl(const double dt) {
 
   // call post processing to convert dry mixing ratios to wet mixing ratios
   // and update the state
-  Kokkos::parallel_for("postprocess", scan_policy, postprocess_);
+  post_process();
   Kokkos::fence();  // wait before returning to calling function
 }  // run_impl
 }  // namespace scream

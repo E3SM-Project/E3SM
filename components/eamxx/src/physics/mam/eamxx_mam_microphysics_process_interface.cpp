@@ -467,14 +467,6 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   acos_cosine_zenith_host_ = view_1d_host("host_acos(cosine_zenith)", ncol_);
   acos_cosine_zenith_      = view_1d("device_acos(cosine_zenith)", ncol_);
 
-  //-----------------------------------------------------------------
-  // Setup preprocessing and post processing
-  //-----------------------------------------------------------------
-  preprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_,
-                         dry_aero_);
-  postprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_,
-                          dry_aero_);
-
 }  // initialize_impl
 
 // ================================================================
@@ -483,13 +475,11 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
 void MAMMicrophysics::run_impl(const double dt) {
   const int ncol         = ncol_;
   const int nlev         = nlev_;
-  const auto scan_policy = ekat::ExeSpaceUtils<
-      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol, nlev);
   const auto policy =
       ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol, nlev);
 
   // preprocess input -- needs a scan for the calculation of atm height
-  Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
+  pre_process();
   Kokkos::fence();
 
   //----------- Variables from microphysics scheme -------------
@@ -863,7 +853,7 @@ void MAMMicrophysics::run_impl(const double dt) {
   Kokkos::fence();
 
   // postprocess output
-  Kokkos::parallel_for("postprocess", policy, postprocess_);
+  post_process();
   Kokkos::fence();
 
 }  // MAMMicrophysics::run_impl

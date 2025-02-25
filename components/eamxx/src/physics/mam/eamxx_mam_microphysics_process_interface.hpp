@@ -65,9 +65,6 @@ class MAMMicrophysics final : public MAMGenericInterface {
   void finalize_impl(){/*Do nothing*/};
 
  private:
-  // number of horizontal columns and vertical levels
-  int ncol_, nlev_;
-
   // The orbital year, used for zenith angle calculations:
   // If > 0, use constant orbital year for duration of simulation
   // If < 0, use year from timestamp for orbital parameters
@@ -99,10 +96,6 @@ class MAMMicrophysics final : public MAMGenericInterface {
   Config config_;
   // MAM4 aerosol particle size description
   mam4::AeroConfig aero_config_;
-
-  // pre- and postprocessing scratch pads (for wet <-> dry conversions)
-  Preprocess preprocess_;
-  Postprocess postprocess_;
 
   // photolysis rate table (column-independent)
   mam4::mo_photo::PhotoTableData photo_table_;

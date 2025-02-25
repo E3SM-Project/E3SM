@@ -64,12 +64,6 @@ class MAMWetscav : public MAMGenericInterface {
   // -----------------------------------------------
   // Local variables
   // ------------------------------------------------
-  // pre- and postprocessing scratch pads (for wet <-> dry conversions)
-  Preprocess preprocess_;
-  Postprocess postprocess_;
-
-  // Number of horizontal columns and vertical levels
-  int ncol_, nlev_;
 
   // Number of aerosol modes
   static constexpr int ntot_amode_ = mam4::AeroConfig::num_modes();
