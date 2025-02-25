@@ -16,3 +16,8 @@ if (compile_threaded)
   string(APPEND CMAKE_Fortran_FLAGS " -mp")
   string(APPEND CMAKE_EXE_LINKER_FLAGS " -mp")
 endif()
+
+# https://github.com/E3SM-Project/E3SM/issues/7049
+if (DEBUG)
+  string(APPEND CMAKE_EXE_LINKER_FLAGS " /opt/cray/pe/lib64/libhdf5_hl_parallel_aocc.so.200")
+endif()

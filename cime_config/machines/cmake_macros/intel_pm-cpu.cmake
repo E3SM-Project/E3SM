@@ -25,7 +25,12 @@ string(APPEND CMAKE_CXX_FLAGS " -fp-model=precise") # and manually add precise
 #message(STATUS "ndk CXXFLAGS=${CXXFLAGS}")
 
 string(APPEND CMAKE_Fortran_FLAGS " -fp-model=consistent -fimf-use-svml")
-   #  string(APPEND FFLAGS " -qno-opt-dynamic-align")
- string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -g -traceback")
+#string(APPEND FFLAGS " -qno-opt-dynamic-align")
+string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -g -traceback")
 string(APPEND CMAKE_Fortran_FLAGS " -DHAVE_ERF_INTRINSICS")
 string(APPEND CMAKE_CXX_FLAGS " -fp-model=consistent")
+
+# https://github.com/E3SM-Project/E3SM/issues/7049
+if (DEBUG)
+  string(APPEND CMAKE_EXE_LINKER_FLAGS " /opt/cray/pe/lib64/libhdf5_hl_parallel_intel.so.200")
+endif()
