@@ -3218,12 +3218,35 @@
 (much like the rest of E3SM).</p>
 <p>We offer a number of test suites, including:</p>
 <ul>
-<li><code>e3sm_scream_v0</code>: Test the full set of V0 (pre-C++) tests</li>
-<li><code>e3sm_scream_v1</code>: Test the full set of V1 (C++) tests</li>
-<li><code>e3sm_scream_v1_at</code>: A smaller and quicker set of tests for autotesting (AT)</li>
-<li><code>e3sm_scream_hires</code>: A small number of bigger, longer-running
-(high-resolution) tests to measure performance</li>
+<li><code>e3sm_eamxx_v1_lowres</code><ul>
+<li>A handful of reasonably quickly-running tests run at
+    ultra-low-resolution (<code>ne4</code> grid).</li>
 </ul>
+</li>
+<li><code>e3sm_eamxx_mam4xx_v1_lowres</code><ul>
+<li>Tests designed for the MAM4xx aerosol library and are separate from
+    the above (mostly <code>ne4</code>, though also includes <code>ne30</code>).</li>
+</ul>
+</li>
+<li><code>e3sm_eamxx_v1_dp-eamxx</code><sup id="fnref2:dpxx"><a class="footnote-ref" href="#fn:dpxx">1</a></sup><ul>
+<li>A quickly-running test that employs the doubly-periodic (dp)
+    configuration of EAMxx at low-resolution (<code>ne30)</code>.</li>
+</ul>
+</li>
+<li><code>e3sm_eamxx_v1_medres</code><ul>
+<li>Tests intended to be a middle-ground (<code>ne30</code>) between the
+    <code>_lowres</code> and <code>_hires</code> in that it is a more comprehensive test of
+    capabilities than low-resolution but runs more quickly than high-resolution.</li>
+</ul>
+</li>
+<li><code>e3sm_eamxx_v1_hires</code><ul>
+<li>A small number of larger, longer-running (high-resolution) tests
+    to measure performance.</li>
+</ul>
+</li>
+</ul>
+<p><strong><em>Note:</em></strong> See the collapsed section "Lists of Test Cases and Suites..." below
+for more information on these test suite configurations.</p>
 <div class="copy highlight"><span class="filename">Running a Test Suite</span><pre><span></span><code><span class="nb">cd</span><span class="w"> </span><span class="nv">$repo</span>/cime/scripts
 ./create_test<span class="w"> </span>e3sm_scream_v1_at<span class="w"> </span>--wait
 </code></pre></div>
@@ -3245,19 +3268,19 @@ changing the run length, test type, etc.<ul>
 <li><strong><em>compsets</em></strong></li>
 <li><strong><em>testmods</em></strong></li>
 </ol>
-<h3 id="common-eamxx-grids">Common EAMxx Grids<sup id="fnref:grid_nomenclature"><a class="footnote-ref" href="#fn:grid_nomenclature">1</a></sup></h3>
+<h3 id="common-eamxx-grids">Common EAMxx Grids<sup id="fnref:grid_nomenclature"><a class="footnote-ref" href="#fn:grid_nomenclature">2</a></sup></h3>
 <ul>
-<li><code>ne4_ne4</code>:<sup id="fnref:ne4-testing-only"><a class="footnote-ref" href="#fn:ne4-testing-only">2</a></sup> ultra-low resolution</li>
-<li><code>ne4pg2_ne4pg2</code>:<sup id="fnref2:ne4-testing-only"><a class="footnote-ref" href="#fn:ne4-testing-only">2</a></sup> ultra-low resolution with phys grid</li>
-<li><code>ne30_ne30</code>: low resolution</li>
-<li><code>ne30pg2_ne30pg2</code>: low resolution with phys grid</li>
-<li><code>ne1024pg2_ne1024pg2</code>: ultra-high with phys grid</li>
+<li><code>ne4_ne4</code>:<sup id="fnref:ne4-testing-only"><a class="footnote-ref" href="#fn:ne4-testing-only">3</a></sup> ultra-low-resolution</li>
+<li><code>ne4pg2_ne4pg2</code>:<sup id="fnref2:ne4-testing-only"><a class="footnote-ref" href="#fn:ne4-testing-only">3</a></sup> ultra-low-resolution with phys grid</li>
+<li><code>ne30_ne30</code>: low-resolution</li>
+<li><code>ne30pg2_ne30pg2</code>: low-resolution with phys grid</li>
+<li><code>ne1024pg2_ne1024pg2</code>: ultra-high-resolution with phys grid</li>
 </ul>
 <p>More information about grids may be found on this <a href="https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/933986549/ATM+Grid+Resolution+Summary">Confluence Page</a>.</p>
 <h3 id="common-eamxx-compsets">Common EAMxx Compsets</h3>
 <ul>
 <li><code>F2010-SCREAMv1</code>: V1 standard compset with EAMxx V1 atmosphere</li>
-<li><code>FIOP-SCREAMv1-DP</code>: V1 with <code>dpxx</code><sup id="fnref:dpxx"><a class="footnote-ref" href="#fn:dpxx">3</a></sup></li>
+<li><code>FIOP-SCREAMv1-DP</code>: V1 with <code>dpxx</code><sup id="fnref:dpxx"><a class="footnote-ref" href="#fn:dpxx">1</a></sup></li>
 <li><code>F2010-SCREAMv1-noAero</code>: V1 without aerosol forcing</li>
 </ul>
 <p>Full info on supported compsets may be found by taking a look at the EAMxx
@@ -3288,90 +3311,70 @@ source file.</p>
 <p>Additional information about running EAMxx may be found at
 <a href="https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/3386015745/How+To+Run+EAMxx+SCREAMv1">this webpage</a>.</p>
 </div>
+<!-- false-positive spaces in code fence marker -->
+<!-- markdownlint-disable MD038 -->
 <details class="info">
-<summary>Lists of Test Cases and Suites from <code>cime_config/tests.py</code></summary>
-<div class="copy highlight"><pre><span></span><code><span class="s2">&quot;e3sm_atm_developer&quot;</span> <span class="p">:</span> <span class="p">{</span>
-    <span class="s2">&quot;inherit&quot;</span> <span class="p">:</span> <span class="p">(</span><span class="s2">&quot;eam_theta_pg2&quot;</span><span class="p">),</span>
-    <span class="s2">&quot;tests&quot;</span>   <span class="p">:</span> <span class="p">(</span>
-        <span class="s2">&quot;ERP_Ld3.ne4pg2_oQU480.F2010&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;SMS_Ln9.ne4pg2_oQU480.F2010.eam-outfrq9s&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;SMS.ne4pg2_oQU480.F2010.eam-cosplite&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;SMS_R_Ld5.ne4_ne4.FSCM-ARM97.eam-scm&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;SMS_D_Ln5.ne4pg2_oQU480.F2010&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;SMS_Ln5.ne4pg2_oQU480.F2010&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;ERS_D.ne4pg2_oQU480.F2010.eam-hommexx&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;SMS_Ln9_P24x1.ne4_ne4.FDPSCREAM-ARM97&quot;</span><span class="p">,</span>
-    <span class="p">)</span>
-<span class="p">},</span>
-<span class="s2">&quot;e3sm_atm_stealth&quot;</span> <span class="p">:</span> <span class="p">{</span>
-    <span class="s2">&quot;tests&quot;</span>   <span class="p">:</span> <span class="p">(</span>
-        <span class="s2">&quot;ERP_Ln18.ne4_oQU240.F2010.eam-cflx_cpl_2&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;SMS_D_Ln5.ne4_oQU240.F2010.eam-cflx_cpl_2&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;ERS.ne4pg2_oQU480.F2010.eam-p3&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;SMS_D_Ln5.ne4pg2_oQU480.F2010.eam-p3&quot;</span><span class="p">,</span>
-    <span class="p">)</span>
-<span class="p">},</span>
-<span class="s2">&quot;e3sm_atm_integration&quot;</span> <span class="p">:</span> <span class="p">{</span>
-    <span class="s2">&quot;inherit&quot;</span> <span class="p">:</span> <span class="p">(</span><span class="s2">&quot;eam_preqx&quot;</span><span class="p">,</span> <span class="s2">&quot;eam_theta&quot;</span><span class="p">),</span>
-    <span class="s2">&quot;tests&quot;</span> <span class="p">:</span> <span class="p">(</span>
-        <span class="s2">&quot;ERP_Ln9.ne4pg2_ne4pg2.FAQP&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;SMS_Ld1.ne4pg2_ne4pg2.FAQP.eam-clubb_only&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;ERP_Ln9.ne4pg2_ne4pg2.FRCE&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;PET_Ln5.ne4pg2_oQU480.F2010.allactive-mach-pet&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;PEM_Ln5.ne4pg2_oQU480.F2010&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;SMS_D_Ln5.ne4pg2_oQU480.F2010.eam-cosplite_nhtfrq5&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;SMS_Ln1.ne4pg2_oQU480.F2010.eam-chem_pp&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;SMS_Ln5.ne30pg2_r05_IcoswISC30E3r5.BGCEXP_LNDATM_CNPRDCTC_20TR&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;SMS_Ln5.ne30pg2_r05_IcoswISC30E3r5.BGCEXP_LNDATM_CNPRDCTC_1850&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;SMS_D_Ln5.ne4pg2_oQU480.F2010.eam-clubb_sp&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;ERS_Ld5.ne4pg2_oQU480.F2010.eam-rrtmgp&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;ERS_Ld5.ne4pg2_oQU480.F2010.eam-rrtmgpxx&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;REP_Ln5.ne4pg2_oQU480.F2010&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;SMS_Ld3.ne4pg2_oQU480.F2010.eam-thetahy_sl_pg2_mass&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;ERP_Ld3.ne4pg2_ne4pg2.FIDEAL.allactive-pioroot1&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;ERS_Ld5.ne4pg2_oQU480.F2010.eam-sathist_F2010&quot;</span><span class="p">,</span>
-    <span class="p">)</span>
-<span class="p">},</span>
-<span class="c1">#atmopheric tests for extra coverage</span>
-<span class="s2">&quot;e3sm_atm_extra_coverage&quot;</span> <span class="p">:</span> <span class="p">{</span>
-    <span class="s2">&quot;tests&quot;</span> <span class="p">:</span> <span class="p">(</span>
-        <span class="s2">&quot;SMS_Lm1.ne4pg2_oQU480.F2010&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;ERS_Ld31.ne4pg2_oQU480.F2010&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;ERP_Lm3.ne4pg2_oQU480.F2010&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;SMS_D_Ln5.ne30pg2_r05_IcoswISC30E3r5.F2010&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;ERP_Ld3.ne30pg2_r05_IcoswISC30E3r5.F2010.allactive-pioroot1&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;SMS_Ly1.ne4pg2_oQU480.F2010&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;SMS_D_Ln5.ne45pg2_ne45pg2.FAQP&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;SMS_D_Ln5.ne4pg2_oQU480.F2010.eam-implicit_stress&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;ERS_Ld5.ne30pg2_r05_IcoswISC30E3r5.F2010.eam-implicit_stress&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;ERP_Ld3.ne4pg2_oQU480.F2010.eam-condidiag_dcape&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;ERP_Ld3.ne4pg2_oQU480.F2010.eam-condidiag_rhi&quot;</span><span class="p">,</span>
-    <span class="p">)</span>
-<span class="p">},</span>
-<span class="c1">#atmopheric tests for hi-res</span>
-<span class="s2">&quot;e3sm_atm_hi_res&quot;</span> <span class="p">:</span> <span class="p">{</span>
-    <span class="s2">&quot;time&quot;</span> <span class="p">:</span> <span class="s2">&quot;01:30:00&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;tests&quot;</span> <span class="p">:</span> <span class="s2">&quot;SMS.ne120pg2_r025_RRSwISC6to18E3r5.F2010&quot;</span>
+<summary>List of Selected Test Cases and Suites from <code>cime_config/tests.py</code></summary>
+<div class="copy highlight"><pre><span></span><code><span class="s2">&quot;e3sm_eamxx_v1_lowres&quot;</span> <span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;time&quot;</span>  <span class="p">:</span> <span class="s2">&quot;01:00:00&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;inherit&quot;</span> <span class="p">:</span> <span class="p">(</span><span class="s2">&quot;e3sm_eamxx_mam4xx_v1_lowres&quot;</span><span class="p">),</span>
+        <span class="s2">&quot;tests&quot;</span> <span class="p">:</span> <span class="p">(</span>
+            <span class="s2">&quot;ERP_D_Lh4.ne4_ne4.F2010-SCREAMv1.eamxx-output-preset-1&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1.eamxx-output-preset-2&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;SMS_D_Ln9.ne4_ne4.F2010-SCREAMv1-noAero.eamxx-output-preset-3&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;ERP_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-output-preset-4&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;ERS_D_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-rad_frequency_2--eamxx-output-preset-5&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-small_kernels--eamxx-output-preset-5&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-small_kernels_p3--eamxx-output-preset-5&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-small_kernels_shoc--eamxx-output-preset-5&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-all_mam4xx_procs&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
     <span class="p">},</span>
-<span class="c1">#atmopheric tests to mimic low res production runs</span>
-<span class="s2">&quot;e3sm_atm_prod&quot;</span> <span class="p">:</span> <span class="p">{</span>
+<span class="s2">&quot;e3sm_eamxx_mam4xx_v1_lowres&quot;</span> <span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;time&quot;</span>  <span class="p">:</span> <span class="s2">&quot;01:00:00&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;tests&quot;</span> <span class="p">:</span> <span class="p">(</span>
+            <span class="s2">&quot;SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-optics&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-aci&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-wetscav&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-drydep&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;SMS_D_Ln5.ne30pg2_oECv3.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-remap_emiss_ne4_ne30&quot;</span>
+        <span class="p">)</span>
+    <span class="p">},</span>
+<span class="s2">&quot;e3sm_eamxx_v1_dp-eamxx&quot;</span> <span class="p">:</span> <span class="p">{</span>
+    <span class="s2">&quot;time&quot;</span>  <span class="p">:</span> <span class="s2">&quot;01:00:00&quot;</span><span class="p">,</span>
+    <span class="c1"># each test runs with 225 dynamics and 100 physics columns,</span>
+    <span class="c1"># roughly size of ne2</span>
     <span class="s2">&quot;tests&quot;</span> <span class="p">:</span> <span class="p">(</span>
-        <span class="s2">&quot;SMS_Ln5.ne30pg2_r05_IcoswISC30E3r5.F2010.eam-wcprod_F2010&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;SMS_Ld1.ne30pg2_r05_IcoswISC30E3r5.F20TR.eam-wcprod_F20TR&quot;</span><span class="p">,</span>
-    <span class="p">)</span>
+        <span class="s2">&quot;ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.eamxx-dpxx-dycomsrf01&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.eamxx-dpxx-arm97&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.eamxx-dpxx-comble&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;ERS_P16_Ln22.ne30pg2_ne30pg2.FRCE-SCREAMv1-DP&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
 <span class="p">},</span>
-<span class="c1">#atmopheric nbfb tests</span>
-<span class="s2">&quot;e3sm_atm_nbfb&quot;</span> <span class="p">:</span> <span class="p">{</span>
+<span class="s2">&quot;e3sm_eamxx_v1_medres&quot;</span> <span class="p">:</span> <span class="p">{</span>
+    <span class="s2">&quot;time&quot;</span>  <span class="p">:</span> <span class="s2">&quot;02:00:00&quot;</span><span class="p">,</span>
     <span class="s2">&quot;tests&quot;</span> <span class="p">:</span> <span class="p">(</span>
-        <span class="s2">&quot;PGN_P1x1.ne4pg2_oQU480.F2010&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;TSC_PS.ne4pg2_oQU480.F2010&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;MVK_PS.ne4pg2_oQU480.F2010&quot;</span><span class="p">,</span>
-    <span class="p">)</span>
+        <span class="s2">&quot;ERS_Ln22.ne30_ne30.F2010-SCREAMv1.eamxx-internal_diagnostics_level--eamxx-output-preset-3&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;PEM_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-spa_remap--eamxx-output-preset-4&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;ERS_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-small_kernels--eamxx-output-preset-5&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;ERP_Ln22.conusx4v1pg2_r05_oECv3.F2010-SCREAMv1-noAero.eamxx-bfbhash--eamxx-output-preset-6&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;ERS_Ln22.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-L128--eamxx-output-preset-4&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;REP_Ld5.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-L128--eamxx-output-preset-6&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;SMS.ne30pg2_EC30to60E2r2.WCYCLXX2010&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;ERS_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-L128--eamxx-sl_nsubstep2&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+<span class="p">},</span>
+<span class="c1"># Used to track performance</span>
+<span class="s2">&quot;e3sm_eamxx_v1_hires&quot;</span> <span class="p">:</span> <span class="p">{</span>
+    <span class="s2">&quot;time&quot;</span>  <span class="p">:</span> <span class="s2">&quot;01:00:00&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;tests&quot;</span> <span class="p">:</span> <span class="p">(</span>
+        <span class="s2">&quot;SMS_Ln300.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-perf_test--eamxx-output-preset-1&quot;</span>
+        <span class="p">)</span>
 <span class="p">}</span>
-<span class="o">&lt;</span><span class="err">!</span><span class="o">--</span> <span class="n">false</span><span class="o">-</span><span class="n">positive</span> <span class="n">spaces</span> <span class="ow">in</span> <span class="n">code</span> <span class="n">fence</span> <span class="n">marker</span> <span class="o">--&gt;</span>
-<span class="o">&lt;</span><span class="err">!</span><span class="o">--</span> <span class="n">markdownlint</span><span class="o">-</span><span class="n">disable</span><span class="o">-</span><span class="nb">next</span><span class="o">-</span><span class="n">line</span> <span class="n">MD038</span> <span class="o">--&gt;</span>
 </code></pre></div>
 </details>
+<!-- markdownlint-enable MD038 -->
+
 <!-- markdownlint-disable MD033 -->
 <!-- html error--I'm not aware of another way to make a figure and feel like
 this is helpful to have -->
@@ -3386,6 +3389,9 @@ this is helpful to have -->
 <div class="footnote">
 <hr />
 <ol>
+<li id="fn:dpxx">
+<p>An EAMxx compset configuration employing doubly-periodic lateral boundary conditions.&#160;<a class="footnote-backref" href="#fnref:dpxx" title="Jump back to footnote 1 in the text">&#8617;</a><a class="footnote-backref" href="#fnref2:dpxx" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+</li>
 <li id="fn:grid_nomenclature">
 <p>See below for some additional details about <strong><em>Grid Nomenclature</em></strong></p>
 <details class="note">
@@ -3417,14 +3423,11 @@ cubed sphere is
 </li>
 </ul>
 </details>
-<p><a class="footnote-backref" href="#fnref:grid_nomenclature" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+<p><a class="footnote-backref" href="#fnref:grid_nomenclature" title="Jump back to footnote 2 in the text">&#8617;</a></p>
 </li>
 <li id="fn:ne4-testing-only">
 <p><strong><em>Note:</em></strong> The <code>ne4</code> (ultra-low resolution) grid is
-intended to only be used for unit testing or debugging.&#160;<a class="footnote-backref" href="#fnref:ne4-testing-only" title="Jump back to footnote 2 in the text">&#8617;</a><a class="footnote-backref" href="#fnref2:ne4-testing-only" title="Jump back to footnote 2 in the text">&#8617;</a></p>
-</li>
-<li id="fn:dpxx">
-<p>An EAMxx compset configuration employing doubly-periodic lateral boundary conditions.&#160;<a class="footnote-backref" href="#fnref:dpxx" title="Jump back to footnote 3 in the text">&#8617;</a></p>
+intended to only be used for unit testing or debugging.&#160;<a class="footnote-backref" href="#fnref:ne4-testing-only" title="Jump back to footnote 3 in the text">&#8617;</a><a class="footnote-backref" href="#fnref2:ne4-testing-only" title="Jump back to footnote 3 in the text">&#8617;</a></p>
 </li>
 </ol>
 </div>
