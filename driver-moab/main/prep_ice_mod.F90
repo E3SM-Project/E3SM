@@ -542,7 +542,7 @@ contains
 
   end subroutine prep_ice_merge
 
-  subroutine prep_ice_mrg_moab(infodata, rof_c2_ice)
+  subroutine prep_ice_mrg_moab(infodata, rof_c2_ice, timer_mrg)
     use iMOAB , only : iMOAB_GetDoubleTagStorage, &
     iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh, iMOAB_GetMeshInfo
 
@@ -551,6 +551,7 @@ contains
     ! Arguments
     type(seq_infodata_type) , intent(in)    :: infodata
     logical,                   intent(in)    :: rof_c2_ice ! .true.  => rof to ice coupling on
+    character(len=*)        , intent(in)    :: timer_mrg
     !
     ! Local variables
     real(r8)        :: flux_epbalfact
@@ -619,6 +620,8 @@ contains
     !-----------------------------------------------------------------------
     call seq_infodata_GetData(infodata, &
          flux_epbalfact=flux_epbalfact)
+
+    call t_drvstartf (trim(timer_mrg),barrier=mpicom_CPLID)
 
     call seq_comm_getdata(CPLID, iamroot=iamroot)
 
@@ -879,6 +882,7 @@ contains
     endif
 #endif
 
+    call t_drvstopf (trim(timer_mrg))
 
   end subroutine prep_ice_mrg_moab
 

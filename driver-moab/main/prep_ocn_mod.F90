@@ -1220,7 +1220,7 @@ subroutine prep_ocn_accum_avg_moab(timer_accum)
 
   end subroutine prep_ocn_mrg
 
-subroutine prep_ocn_mrg_moab(infodata, xao_ox)
+subroutine prep_ocn_mrg_moab(infodata, xao_ox, timer_mrg)
 
     use iMOAB , only : iMOAB_GetMeshInfo, iMOAB_GetDoubleTagStorage, &
      iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
@@ -1232,6 +1232,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     ! Arguments
     type(seq_infodata_type) , intent(in)    :: infodata
     type(mct_aVect)        , pointer , intent(in)    :: xao_ox(:) ! Atm-ocn fluxes, ocn grid, cpl pes; used here just for indexing
+    character(len=*)        , intent(in)    :: timer_mrg
 
     ! temporary, to compile
     ! type(mct_aVect)      :: fractions_o
@@ -1379,6 +1380,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     call seq_infodata_GetData(infodata, &
          flux_epbalfact=flux_epbalfact)
 
+    call t_drvstartf (trim(timer_mrg), barrier=mpicom_CPLID)
     call seq_comm_setptrs(CPLID, iamroot=iamroot)
 
  ! find out the number of local elements in moab mesh ocean instance on coupler
@@ -2099,6 +2101,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
        !Sdeallocate(field_wav,itemc_wav)
        deallocate(field_xao,itemc_xao)
     endif
+    call t_drvstopf (trim(timer_mrg))
 
     first_time = .false.
 

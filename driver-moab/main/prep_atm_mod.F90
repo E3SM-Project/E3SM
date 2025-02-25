@@ -939,7 +939,7 @@ contains
 
   end subroutine prep_atm_mrg
 
-  subroutine prep_atm_mrg_moab(infodata, xao_ax)
+  subroutine prep_atm_mrg_moab(infodata, xao_ax,  timer_mrg)
     use iMOAB , only : iMOAB_GetMeshInfo, iMOAB_GetDoubleTagStorage, &
      iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
    ! use seq_comm_mct , only : mbaxid, mbofxid ! ocean and atm-ocean flux instances
@@ -950,6 +950,7 @@ contains
     ! Arguments
     type(seq_infodata_type) , intent(in)    :: infodata
     type(mct_aVect)        , pointer , intent(in)    :: xao_ax(:) ! Atm-ocn fluxes, atm grid, cpl pes; used here just for indexing
+    character(len=*)        , intent(in)    :: timer_mrg
 
     ! Arguments
     type(mct_aVect), pointer    :: l2x_a !   needed just for indexing
@@ -1010,6 +1011,8 @@ contains
     character(*), parameter   :: subname = '(prep_atm_mrg_moab) '
     !-----------------------------------------------------------------------
     !
+    call t_drvstartf (trim(timer_mrg),barrier=mpicom_CPLID)
+
     call seq_comm_getdata(CPLID, iamroot=iamroot)
 
 
@@ -1485,6 +1488,7 @@ contains
     endif
 
     first_time = .false.
+    call t_drvstopf  (trim(timer_mrg))
     ! end copy from prep_atm_merge
   end subroutine prep_atm_mrg_moab
   !================================================================================================

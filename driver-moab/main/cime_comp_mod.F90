@@ -2445,7 +2445,7 @@ contains
                 !call  prep_atm_mrg(infodata, &
                 !     fractions_ax=fractions_ax, xao_ax=xao_ax, timer_mrg='CPL:init_atminit')
                      ! MOAB
-                call  prep_atm_mrg_moab(infodata, xao_ax)
+                call  prep_atm_mrg_moab(infodata, xao_ax,timer_mrg='CPL:init_atminit')
              endif
           endif
 
@@ -4073,7 +4073,7 @@ contains
        if (associated(xao_ax)) then
          ! call prep_atm_mrg(infodata, fractions_ax, xao_ax=xao_ax, timer_mrg='CPL:atmprep_mrgx2a')
           ! call moab atm merge too
-          call  prep_atm_mrg_moab(infodata, xao_ax)
+          call  prep_atm_mrg_moab(infodata, xao_ax, timer_mrg='CPL:atmprep_mrgx2a')
        endif
 
        call component_diag(infodata, atm, flow='x2c', comment= 'send atm', info_debug=info_debug, &
@@ -4388,7 +4388,7 @@ contains
 !          call prep_ocn_mrg(infodata, fractions_ox, xao_ox=xao_ox, timer_mrg='CPL:atmocnp_mrgx2o')
 
           ! moab version
-          call prep_ocn_mrg_moab(infodata, xao_ox)
+          call prep_ocn_mrg_moab(infodata, xao_ox, timer_mrg='CPL:atmocnp_mrgx2o')
 
           ! Accumulate ocn inputs - form partial sum of tavg ocn inputs (virtual "send" to ocn)
           !call prep_ocn_accum(timer='CPL:atmocnp_accum')
@@ -4485,7 +4485,7 @@ contains
 
        if (lnd_prognostic) then
 !          call prep_lnd_mrg(infodata, timer_mrg='CPL:lndprep_mrgx2l')
-          call prep_lnd_mrg_moab(infodata)
+          call prep_lnd_mrg_moab(infodata, timer_mrg='CPL:lndprep_mrgx2l')
 
           call component_diag(infodata, lnd, flow='x2c', comment= 'send lnd', &
                info_debug=info_debug, timer_diag='CPL:lndprep_diagav')
@@ -4696,7 +4696,7 @@ contains
        if (ocn_c2_rof) call prep_rof_calc_o2r_rx(timer='CPL:rofprep_ocn2rof')
 !       call prep_rof_mrg(infodata, fractions_rx, timer_mrg='CPL:rofprep_mrgx2r', cime_model=cime_model)
        !moab version
-       call prep_rof_mrg_moab(infodata, cime_model=cime_model)
+       call prep_rof_mrg_moab(infodata, timer_mrg='CPL:rofprep_mrgx2r', cime_model=cime_model)
 
        call component_diag(infodata, rof, flow='x2c', comment= 'send rof', &
             info_debug=info_debug, timer_diag='CPL:rofprep_diagav')
@@ -4800,7 +4800,7 @@ contains
 
     !   call prep_ice_mrg(infodata, timer_mrg='CPL:iceprep_mrgx2i')
 
-       call prep_ice_mrg_moab(infodata,rof_c2_ice)
+       call prep_ice_mrg_moab(infodata,rof_c2_ice, timer_mrg='CPL:iceprep_mrgx2i')
 
        call component_diag(infodata, ice, flow='x2c', comment= 'send ice', &
             info_debug=info_debug, timer_diag='CPL:iceprep_diagav')

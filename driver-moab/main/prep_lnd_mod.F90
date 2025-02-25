@@ -733,8 +733,9 @@ contains
   end subroutine prep_lnd_mrg
 
 ! this does almost nothing now, except documenting
-  subroutine prep_lnd_mrg_moab (infodata)
+  subroutine prep_lnd_mrg_moab (infodata, timer_mrg)
     type(seq_infodata_type) , intent(in) :: infodata
+    character(len=*)     , intent(in)    :: timer_mrg
 
 
     type(mct_avect) , pointer   :: a2x_l  ! used just for indexing
@@ -773,6 +774,7 @@ contains
 #endif
     !-----------------------------------------------------------------------
 
+    call t_drvstartf (trim(timer_mrg),barrier=mpicom_CPLID)
     call seq_comm_getdata(CPLID, iamroot=iamroot)
 
     if (first_time) then
@@ -826,6 +828,8 @@ contains
        endif
        deallocate(mrgstr)
     endif
+
+    call t_drvstopf (trim(timer_mrg))
 
 #ifdef MOABCOMP
   ! land does not do any merge for moab, all fields are directly projected, from atm, river, glacier

@@ -1473,7 +1473,7 @@ subroutine prep_rof_accum_ocn_moab(timer)
 
   end subroutine prep_rof_merge
 #ifdef HAVE_MOAB
-  subroutine prep_rof_mrg_moab  (infodata, cime_model)
+  subroutine prep_rof_mrg_moab  (infodata, timer_mrg, cime_model)
    use iMOAB , only : iMOAB_GetMeshInfo, iMOAB_GetDoubleTagStorage, &
      iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
      use seq_comm_mct, only : num_moab_exports ! for debug
@@ -1481,6 +1481,7 @@ subroutine prep_rof_accum_ocn_moab(timer)
     type(seq_infodata_type) , intent(in)    :: infodata
 
     ! type(mct_aVect)         , intent(in)    :: fractions_rx(:) they should have been saved as tags on rof coupler component
+    character(len=*)        , intent(in)    :: timer_mrg
     character(len=*)        , intent(in)    :: cime_model
     !-----------------------------------------------------------------------
     ! Description
@@ -1577,6 +1578,8 @@ subroutine prep_rof_accum_ocn_moab(timer)
     !-----------------------------------------------------------------------
 
     call seq_comm_getdata(CPLID, iamroot=iamroot)
+
+    call t_drvstartf (trim(timer_mrg), barrier=mpicom_CPLID)
 
 ! character(*),parameter :: fraclist_r = 'lfrac:lfrin:rfrac'
     if (first_time) then
@@ -1859,6 +1862,7 @@ subroutine prep_rof_accum_ocn_moab(timer)
      ierr = iMOAB_WriteMesh(mbrxid, trim(outfile), trim(wopts))
    endif
 #endif
+    call t_drvstopf (trim(timer_mrg))
 
   end subroutine prep_rof_mrg_moab
 #endif
