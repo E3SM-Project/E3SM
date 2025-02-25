@@ -10,7 +10,9 @@ namespace scream
 
 namespace details {
 
-template<CombineMode CM, bool use_fill, typename LhsView, typename RhsView, typename ST>
+// This helper struct combines a RHS view with a LHS view, according to the combine mode CM.
+// If check_fill is true, the operation is performed only if the RHS is NOT equal to the fill value
+template<CombineMode CM, bool check_fill, typename LhsView, typename RhsView, typename ST>
 struct CombineViewsHelper {
 
   using exec_space = typename LhsView::traits::execution_space;
@@ -52,55 +54,56 @@ struct CombineViewsHelper {
 
   KOKKOS_INLINE_FUNCTION
   void operator() (int i) const {
-    if constexpr (use_fill)
-      if constexpr (N==0)
-        combine_and_fill<CM>(rhs(),lhs(),fill_val,alpha,beta);
-      else
-        combine_and_fill<CM>(rhs(i),lhs(i),fill_val,alpha,beta);
-    else
-      if constexpr (N==0)
+    if constexpr (N==0) {
+      if constexpr (not check_fill)
         combine<CM>(rhs(),lhs(),alpha,beta);
-      else
+      else if (rhs()!=fill_val)
+        combine<CM>(rhs(),lhs(),alpha,beta);
+    } else {
+      if constexpr (not check_fill)
         combine<CM>(rhs(i),lhs(i),alpha,beta);
+      else if (rhs(i)!=fill_val)
+        combine<CM>(rhs(i),lhs(i),alpha,beta);
+    }
   }
 
   KOKKOS_INLINE_FUNCTION
   void operator() (int i, int j) const {
-    if constexpr (use_fill)
-      combine_and_fill<CM>(rhs(i,j),lhs(i,j),fill_val,alpha,beta);
-    else
+    if constexpr (not check_fill)
+      combine<CM>(rhs(i,j),lhs(i,j),alpha,beta);
+    else if (rhs(i,j)!=fill_val)
       combine<CM>(rhs(i,j),lhs(i,j),alpha,beta);
   }
 
   KOKKOS_INLINE_FUNCTION
   void operator() (int i, int j, int k) const {
-    if constexpr (use_fill)
-      combine_and_fill<CM>(rhs(i,j,k),lhs(i,j,k),fill_val,alpha,beta);
-    else
+    if constexpr (not check_fill)
+      combine<CM>(rhs(i,j,k),lhs(i,j,k),alpha,beta);
+    else if (rhs(i,j,k)!=fill_val)
       combine<CM>(rhs(i,j,k),lhs(i,j,k),alpha,beta);
   }
 
   KOKKOS_INLINE_FUNCTION
   void operator() (int i, int j, int k, int l) const {
-    if constexpr (use_fill)
-      combine_and_fill<CM>(rhs(i,j,k,l),lhs(i,j,k,l),fill_val,alpha,beta);
-    else
+    if constexpr (not check_fill)
+      combine<CM>(rhs(i,j,k,l),lhs(i,j,k,l),alpha,beta);
+    else if (rhs(i,j,k,l)!=fill_val)
       combine<CM>(rhs(i,j,k,l),lhs(i,j,k,l),alpha,beta);
   }
 
   KOKKOS_INLINE_FUNCTION
   void operator() (int i, int j, int k, int l, int m) const {
-    if constexpr (use_fill)
-      combine_and_fill<CM>(rhs(i,j,k,l,m),lhs(i,j,k,l,m),fill_val,alpha,beta);
-    else
+    if constexpr (not check_fill)
+      combine<CM>(rhs(i,j,k,l,m),lhs(i,j,k,l,m),alpha,beta);
+    else if (rhs(i,j,k,l,m)!=fill_val)
       combine<CM>(rhs(i,j,k,l,m),lhs(i,j,k,l,m),alpha,beta);
   }
 
   KOKKOS_INLINE_FUNCTION
   void operator() (int i, int j, int k, int l, int m, int n) const {
-    if constexpr (use_fill)
-      combine_and_fill<CM>(rhs(i,j,k,l,m,n),lhs(i,j,k,l,m,n),fill_val,alpha,beta);
-    else
+    if constexpr (not check_fill)
+      combine<CM>(rhs(i,j,k,l,m,n),lhs(i,j,k,l,m,n),alpha,beta);
+    else if (rhs(i,j,k,l,m,n)!=fill_val)
       combine<CM>(rhs(i,j,k,l,m,n),lhs(i,j,k,l,m,n),alpha,beta);
   }
 
@@ -111,13 +114,13 @@ struct CombineViewsHelper {
   typename LhsView::traits::value_type fill_val;
 };
 
-template<CombineMode CM, bool use_fill, typename LhsView, typename RhsView, typename ST>
+template<CombineMode CM, bool check_fill, typename LhsView, typename RhsView, typename ST>
 void
 cvh (LhsView lhs, RhsView rhs,
      ST alpha, ST beta, typename LhsView::traits::value_type fill_val,
      const std::vector<int>& dims)
 {
-  CombineViewsHelper <CM, use_fill, LhsView, RhsView,  ST> helper;
+  CombineViewsHelper <CM, check_fill, LhsView, RhsView,  ST> helper;
   helper.lhs = lhs;
   helper.rhs = rhs;
   helper.alpha = alpha;
