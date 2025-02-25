@@ -3152,7 +3152,7 @@
 of the atmosphere timestep algorithm. In simple terms, an AP is an object that
 given certain input fields performs some calculations to compute some output
 fields. The concrete AP classes allow to create a buffer layer between
-particular packages (e.g., dynamics dycore, physics parametrizations) and the
+particular packages (e.g., dynamics dycore, physics parameterizations) and the
 atmosphere driver (AD), allowing separation of concerns, so that the AD does
 not need to know details about the package, and the package does not need to
 know about the EAMxx infrastructure.</p>
@@ -3169,7 +3169,7 @@ and to be completely agnostic to what processes are run, and in which order.
 This design allows to have a code base that is cleaner, self-container, and
 easy to test via a battery of targeted unit tests.</p>
 <p>In EAMxx, we already have a few concrete AP's, interfacing the AD to the
-Hommexx non-hydrostatic dycore as well as some physics parametrizations (P3,
+Hommexx non-hydrostatic dycore as well as some physics parameterizations (P3,
 SHOC, RRMTPG, etc). In the next section we describe the interfaces of an AP
 class, and we show an example of how to write a new concrete AP class.</p>
 <h2 id="atmosphere-process-interfaces">Atmosphere process interfaces</h2>
@@ -3292,7 +3292,7 @@ explain</p>
 <span class="w">  </span><span class="c1">//  - Updated: &#39;input&#39;+&#39;output&#39;</span>
 <span class="w">  </span><span class="c1">// Tell the AD we need &#39;velocity&#39; to accommodate a Pack scalar type</span>
 <span class="w">  </span><span class="n">add_field</span><span class="o">&lt;</span><span class="n">Required</span><span class="o">&gt;</span><span class="p">(</span><span class="s">&quot;coeff_2d&quot;</span><span class="p">,</span><span class="n">scalar2d</span><span class="p">,</span><span class="n">nondim</span><span class="p">,</span><span class="n">grid</span><span class="o">-&gt;</span><span class="n">name</span><span class="p">);</span>
-<span class="w">  </span><span class="n">add_field</span><span class="o">&lt;</span><span class="n">Updated</span><span class="o">&gt;</span><span class="p">(</span><span class="s">&quot;velocity&quot;</span><span class="p">,</span><span class="n">vector3d</span><span class="p">,</span><span class="n">m</span><span class="o">/</span><span class="n">s</span><span class="p">,</span><span class="n">grid</span><span class="o">-&gt;</span><span class="n">name</span><span class="p">,</span><span class="n">EAMXX_PACK_SIZE</span><span class="p">);</span>
+<span class="w">  </span><span class="n">add_field</span><span class="o">&lt;</span><span class="n">Updated</span><span class="o">&gt;</span><span class="p">(</span><span class="s">&quot;velocity&quot;</span><span class="p">,</span><span class="n">vector3d</span><span class="p">,</span><span class="n">m</span><span class="o">/</span><span class="n">s</span><span class="p">,</span><span class="n">grid</span><span class="o">-&gt;</span><span class="n">name</span><span class="p">,</span><span class="n">SCREAM_PACK_SIZE</span><span class="p">);</span>
 <span class="p">}</span>
 
 <span class="kt">size_t</span><span class="w"> </span><span class="n">MyProcess</span><span class="o">::</span><span class="n">requested_buffer_size_in_bytes</span><span class="w"> </span><span class="p">()</span>
@@ -3331,7 +3331,7 @@ explain</p>
 <span class="p">{</span>
 <span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">Policy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">KokkosTypes</span><span class="o">&lt;</span><span class="n">DefaultDevice</span><span class="o">&gt;::</span><span class="n">TeamPolicy</span>
 <span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">Member</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">KokkosTypes</span><span class="o">&lt;</span><span class="n">DefaultDevice</span><span class="o">&gt;::</span><span class="n">MemberType</span>
-<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">PackT</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">ekat</span><span class="o">::</span><span class="n">Pack</span><span class="o">&lt;</span><span class="n">Real</span><span class="p">,</span><span class="n">EAMXX_PACK_SIZE</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">PackT</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">ekat</span><span class="o">::</span><span class="n">Pack</span><span class="o">&lt;</span><span class="n">Real</span><span class="p">,</span><span class="n">SCREAM_PACK_SIZE</span><span class="o">&gt;</span><span class="p">;</span>
 
 <span class="w">  </span><span class="c1">// Create team policy</span>
 <span class="w">  </span><span class="n">Policy</span><span class="w"> </span><span class="nf">policy</span><span class="p">(</span><span class="n">m_ncols</span><span class="p">,</span><span class="n">m_nlevs</span><span class="p">,</span><span class="mi">1</span><span class="p">);</span>
@@ -3347,7 +3347,7 @@ explain</p>
 
 <span class="w">  </span><span class="c1">// Since we process velocity with a Pack scalar type, find out how many packs</span>
 <span class="w">  </span><span class="c1">// we have in each column</span>
-<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">nlevs_packs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ekat</span><span class="o">::</span><span class="n">PackInfo</span><span class="o">&lt;</span><span class="n">EAMXX_PACK_SIZE</span><span class="o">&gt;::</span><span class="n">num_packs</span><span class="p">(</span><span class="n">m_nlevs</span><span class="p">);</span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">nlevs_packs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ekat</span><span class="o">::</span><span class="n">PackInfo</span><span class="o">&lt;</span><span class="n">SCREAM_PACK_SIZE</span><span class="o">&gt;::</span><span class="n">num_packs</span><span class="p">(</span><span class="n">m_nlevs</span><span class="p">);</span>
 
 <span class="w">  </span><span class="c1">// Call some function in the background pkg</span>
 <span class="w">  </span><span class="n">do_some_work</span><span class="w"> </span><span class="p">(</span><span class="n">coeff_2d</span><span class="p">,</span><span class="n">velocity</span><span class="p">,</span><span class="n">temp1</span><span class="p">,</span><span class="n">temp2</span><span class="p">,</span><span class="n">do_blah</span><span class="p">);</span>

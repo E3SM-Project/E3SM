@@ -3247,18 +3247,17 @@ changing the run length, test type, etc.<ul>
 </ol>
 <h3 id="common-eamxx-grids">Common EAMxx Grids<sup id="fnref:grid_nomenclature"><a class="footnote-ref" href="#fn:grid_nomenclature">1</a></sup></h3>
 <ul>
-<li><code>ne4_ne4</code>: low resolution</li>
-<li><code>ne4pg2_ne4pg2</code>: low resolution with phys grid</li>
-<li><code>ne30_ne30</code>: medium resolution</li>
-<li><code>ne30pg2_ne30pg2</code>: medium resolution with phys grid</li>
+<li><code>ne4_ne4</code>:<sup id="fnref:ne4-testing-only"><a class="footnote-ref" href="#fn:ne4-testing-only">2</a></sup> ultra-low resolution</li>
+<li><code>ne4pg2_ne4pg2</code>:<sup id="fnref2:ne4-testing-only"><a class="footnote-ref" href="#fn:ne4-testing-only">2</a></sup> ultra-low resolution with phys grid</li>
+<li><code>ne30_ne30</code>: low resolution</li>
+<li><code>ne30pg2_ne30pg2</code>: low resolution with phys grid</li>
 <li><code>ne1024pg2_ne1024pg2</code>: ultra-high with phys grid</li>
 </ul>
 <p>More information about grids may be found on this <a href="https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/933986549/ATM+Grid+Resolution+Summary">Confluence Page</a>.</p>
 <h3 id="common-eamxx-compsets">Common EAMxx Compsets</h3>
 <ul>
-<li><code>F2010-SCREAM-LR</code>: V0 low res compset with EAMxx V0 atmosphere</li>
 <li><code>F2010-SCREAMv1</code>: V1 standard compset with EAMxx V1 atmosphere</li>
-<li><code>FIOP-SCREAMv1-DP</code>: V1 with <code>dpxx</code><sup id="fnref:dpxx"><a class="footnote-ref" href="#fn:dpxx">2</a></sup></li>
+<li><code>FIOP-SCREAMv1-DP</code>: V1 with <code>dpxx</code><sup id="fnref:dpxx"><a class="footnote-ref" href="#fn:dpxx">3</a></sup></li>
 <li><code>F2010-SCREAMv1-noAero</code>: V1 without aerosol forcing</li>
 </ul>
 <p>Full info on supported compsets may be found by taking a look at the EAMxx
@@ -3420,8 +3419,12 @@ cubed sphere is
 </details>
 <p><a class="footnote-backref" href="#fnref:grid_nomenclature" title="Jump back to footnote 1 in the text">&#8617;</a></p>
 </li>
+<li id="fn:ne4-testing-only">
+<p><strong><em>Note:</em></strong> The <code>ne4</code> (ultra-low resolution) grid is
+intended to only be used for unit testing or debugging.&#160;<a class="footnote-backref" href="#fnref:ne4-testing-only" title="Jump back to footnote 2 in the text">&#8617;</a><a class="footnote-backref" href="#fnref2:ne4-testing-only" title="Jump back to footnote 2 in the text">&#8617;</a></p>
+</li>
 <li id="fn:dpxx">
-<p>An EAMxx compset configuration employing doubly-periodic lateral boundary conditions.&#160;<a class="footnote-backref" href="#fnref:dpxx" title="Jump back to footnote 2 in the text">&#8617;</a></p>
+<p>An EAMxx compset configuration employing doubly-periodic lateral boundary conditions.&#160;<a class="footnote-backref" href="#fnref:dpxx" title="Jump back to footnote 3 in the text">&#8617;</a></p>
 </li>
 </ol>
 </div>

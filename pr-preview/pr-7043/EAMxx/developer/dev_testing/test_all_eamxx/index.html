@@ -3433,21 +3433,14 @@ load the eamxx-env into your shell, which can be achieved by running
 are on a batch machine.</li>
 <li>You'll need to think about your baseline situation, as many of our
   tests rely on pre-existing baselines. The <code>-b</code> option controls the baseline
-  location and can have the following values:<ul>
+  location and can have the following values (<strong>Note:</strong> If no <code>-b</code> flag is
+  passed at all, no baseline testing will be done):<ul>
 <li><code>AUTO</code><ul>
 <li>A common public baseline area shared by all developers</li>
 </ul>
 </li>
-<li><code>LOCAL</code><ul>
-<li>A private baseline area for the current developer in the current repo</li>
-</ul>
-</li>
 <li><code>$path</code><ul>
 <li>A specific arbitrary path</li>
-</ul>
-</li>
-<li><code>None</code><ul>
-<li>If there is no <code>-b</code> at all, no baseline testing will be done</li>
 </ul>
 </li>
 </ul>

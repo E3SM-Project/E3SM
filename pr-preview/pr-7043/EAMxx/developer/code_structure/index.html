@@ -3106,7 +3106,6 @@
 │   └── test-all-eamxx
 ├── src/
 │   ├── control/
-│   │   └── atmosphere_driver.&lt;x&gt;pp
 │   ├── diagnostics/
 │   ├── dynamics/
 │   │   └── homme/
@@ -3119,11 +3118,8 @@
 │   │   ├── ml_correction/
 │   │   ├── nudging/
 │   │   ├── p3/
-│   │   ├── register_physics.hpp
 │   │   ├── rrtmgp/
 │   │   ├── share/
-│   │   │   ├── physics_constants.hpp
-│   │   │   └── physics_functions.hpp
 │   │   ├── shoc/
 │   │   ├── spa/
 │   │   └── tms/
@@ -3181,8 +3177,11 @@ Broadly, here's where things are located:</p>
 <li><code>control</code>: Contains the atmosphere driver and basic tests for it.</li>
 <li><code>diagnostics</code>: A collection of simple classes used to compute diagnostic
   quantities.</li>
-<li><code>dynamics</code>: Here's where HOMME lives within EAMxx, along with code for
-  interfacing with it using EAMxx's data structures.</li>
+<li><code>dynamics</code>: Home the files implementing the necessary interfaces between
+  EAMxx and the HOMME non-hydrostatic dycore.<ul>
+<li><strong><em>Note:</em></strong> HOMME itself is in components/homme</li>
+</ul>
+</li>
 <li><code>mct_coupling</code>: Glue code for embedding EAMxx within E3SM as an atmosphere
   component using the MCT coupler.</li>
 <li><code>physics</code>: Source code for physics-related atmospheric processes, including<ul>
@@ -3215,7 +3214,7 @@ User Guide for further details.</li>
 </ul>
 </li>
 <li><code>python</code>: Source code for the experimental <strong><em>PyEAMxx</em></strong> package that
-enables building and running a EAMxx model using python/<a href="https://docs.conda.io/en/latest/">conda</a>.<ul>
+enables building and running an individual EAMxx atmosphere process using python/<a href="https://docs.conda.io/en/latest/">conda</a>.<ul>
 <li>As of time of writing, this feature is still in development and should
 e considered a prototype.<ul>
 <li>See the <a href="../../user/pyeamxx/">pyEAMxx</a> page in the User Guide for
