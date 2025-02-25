@@ -26,7 +26,7 @@ inline const std::pair<Real, Real> &physical_min_max(
       {"nr", {0, 0.1e10}},
       {"ni", {0, 0.1e10}},
       {"nmr", {0, 1e13}},
-      {"mmr", {-1e-20, 1e-2}},
+      {"mmr", {-1e-10, 1e-2}},
       {"omega", {-1e10, 1e10}},       // FIXME
       {"p_int", {0, 1e10}},           // FIXME
       {"pseudo_density", {0, 1e10}},  // FIXME
