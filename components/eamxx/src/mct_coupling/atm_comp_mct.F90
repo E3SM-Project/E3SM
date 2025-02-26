@@ -197,7 +197,7 @@ CONTAINS
     else if (trim(run_type) == trim(seq_infodata_start_type_cont) ) then
       run_type_c = 1
     else if (trim(run_type) == trim(seq_infodata_start_type_brnch) ) then
-      run_type_c = 1
+      run_type_c = 2
     else
       print *, "[eamxx] ERROR! Unsupported run type: "//trim(run_type)
       call mpi_abort(mpicom_atm,ierr,mpi_ierr)

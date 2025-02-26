@@ -165,7 +165,8 @@ setup (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs,
   // Note: the user might decide *not* to restart the output, so give the option
   //       of disabling the restart. Also, the user might want to change the
   //       filename_prefix, so allow to specify a different filename_prefix for the restart file.
-  if (m_run_type==RunType::Restart and not m_is_model_restart_output) {
+  bool branch_run = m_params.sublist("Restart").get("branch_run",false);
+  if (m_run_type==RunType::Restart and not m_is_model_restart_output and not branch_run) {
     // Allow to skip history restart, or to specify a filename_prefix for the restart file
     // that is different from the filename_prefix of the current output.
     auto& restart_pl = m_params.sublist("Restart");
