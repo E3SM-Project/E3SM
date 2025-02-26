@@ -67,6 +67,7 @@ module ELMFatesInterfaceMod
    use elm_varctl        , only : fates_regeneration_model
    use elm_varctl        , only : fates_hydro_solver
    use elm_varctl        , only : fates_radiation_model
+   use elm_varctl        , only : fates_electron_transport_model
    use elm_varctl        , only : flandusepftdat
    use elm_varctl        , only : use_fates_tree_damage
    use elm_varctl        , only : nsrest, nsrBranch
@@ -436,7 +437,8 @@ contains
      integer                                        :: pass_regeneration_model
      integer                                        :: pass_hydro_solver
      integer                                        :: pass_radiation_model
-
+     integer                                        :: pass_electron_transfer_model
+     
      ! ----------------------------------------------------------------------------------
      ! FATES lightning definitions
      ! 1 : use a global constant lightning rate found in fates_params.
@@ -620,11 +622,19 @@ contains
 
         if (trim(fates_radiation_model) == 'norman') then
            pass_radiation_model = 1
-        else if (trim(fates_hydro_solver) == 'twostream') then
+        else if (trim(fates_radiation_model) == 'twostream') then
            pass_radiation_model = 2
         end if
         call set_fates_ctrlparms('radiation_model',ival=pass_radiation_model)
 
+        if (trim(fates_electron_transport_model) == 'FvCB') then
+           pass_electron_transport_model = 1
+        else if (trim(fates_electron_transport_model) == 'JB') then
+           pass_electron_transport_model = 2
+        end if
+        call set_fates_ctrlparms('electron_transport_model',ival=pass_radiation_model)
+
+        
         if (trim(fates_hydro_solver) == '1D_Taylor') then
            pass_hydro_solver = 1
         else if (trim(fates_hydro_solver) == '2D_Picard') then
