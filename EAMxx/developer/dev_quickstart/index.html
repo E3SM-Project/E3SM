@@ -9,10 +9,10 @@
       
       
       
-        <link rel="prev" href="../../developer/">
+        <link rel="prev" href="../../user/eamxx_params/">
       
       
-        <link rel="next" href="../../developer/style_guide/">
+        <link rel="next" href="../code_structure/">
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
@@ -20,7 +20,7 @@
     
     
       
-        <title>Installation - E3SM</title>
+        <title>Quick-start Guide - E3SM</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#installation" class="md-skip">
+        <a href="#quick-start-guide-for-developers" class="md-skip">
           Skip to content
         </a>
       
@@ -116,7 +116,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Installation
+              Quick-start Guide
             
           </span>
         </div>
@@ -1468,33 +1468,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../../user/model_input/" class="md-nav__link">
+      <a href="../../user/model_configuration/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Model input
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../user/model_output/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Model output
+    Model Configuration
     
   </span>
   
@@ -1626,7 +1604,7 @@
         
   
   <span class="md-ellipsis">
-    PySCREAM
+    PyEAMxx
     
   </span>
   
@@ -1681,6 +1659,28 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user/eamxx_params/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    EAMxx runtime parameters
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1699,14 +1699,6 @@
   
     
     
-      
-        
-          
-        
-      
-        
-      
-        
       
         
       
@@ -1730,10 +1722,8 @@
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_3" checked>
         
           
-          
-          <div class="md-nav__link md-nav__container">
-            <a href="../../developer/" class="md-nav__link ">
-              
+          <label class="md-nav__link" for="__nav_3_3_3" id="__nav_3_3_3_label" tabindex="0">
+            
   
   <span class="md-ellipsis">
     Developer Guide
@@ -1741,14 +1731,8 @@
   </span>
   
 
-            </a>
-            
-              
-              <label class="md-nav__link " for="__nav_3_3_3" id="__nav_3_3_3_label" tabindex="0">
-                <span class="md-nav__icon md-icon"></span>
-              </label>
-            
-          </div>
+            <span class="md-nav__icon md-icon"></span>
+          </label>
         
         <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3_3_3">
@@ -1756,8 +1740,6 @@
             Developer Guide
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
-            
-              
             
               
                 
@@ -1779,7 +1761,7 @@
           
   
   <span class="md-ellipsis">
-    Installation
+    Quick-start Guide
     
   </span>
   
@@ -1791,7 +1773,7 @@
         
   
   <span class="md-ellipsis">
-    Installation
+    Quick-start Guide
     
   </span>
   
@@ -1814,55 +1796,28 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#prerequisites" class="md-nav__link">
+  <a href="#motivation" class="md-nav__link">
     <span class="md-ellipsis">
-      Prerequisites
+      Motivation
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#setting-up-your-environment" class="md-nav__link">
+  <a href="#stratosphere-level-overview" class="md-nav__link">
     <span class="md-ellipsis">
-      Setting Up Your Environment
+      Stratosphere-level Overview
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#configuring-and-building-scream" class="md-nav__link">
-    <span class="md-ellipsis">
-      Configuring and Building Scream
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Configuring and Building Scream">
+    <nav class="md-nav" aria-label="Stratosphere-level Overview">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-start-from-a-trustworthy-commit" class="md-nav__link">
+  <a href="#note-on-computing-platforms" class="md-nav__link">
     <span class="md-ellipsis">
-      1. Start From a Trustworthy Commit
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-configure-your-eamxx-build" class="md-nav__link">
-    <span class="md-ellipsis">
-      2. Configure Your EAMxx Build
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-build-scream" class="md-nav__link">
-    <span class="md-ellipsis">
-      3. Build SCREAM
+      Note on Computing Platforms
     </span>
   </a>
   
@@ -1874,11 +1829,59 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#running-tests" class="md-nav__link">
+  <a href="#lets-get-started-quickly" class="md-nav__link">
     <span class="md-ellipsis">
-      Running Tests
+      Let's Get Started (Quickly)
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Let's Get Started (Quickly)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#running-eamxx-via-test-all-eamxx" class="md-nav__link">
+    <span class="md-ellipsis">
+      Running EAMxx via test-all-eamxx
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Running EAMxx via test-all-eamxx">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#selected-useful-testing-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      Selected Useful Testing Options
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing-on-supported-machines" class="md-nav__link">
+    <span class="md-ellipsis">
+      Testing on Supported Machines
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing-locally" class="md-nav__link">
+    <span class="md-ellipsis">
+      Testing Locally
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1898,7 +1901,29 @@
   
   
     <li class="md-nav__item">
-      <a href="../../developer/style_guide/" class="md-nav__link">
+      <a href="../code_structure/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Code Structure and Organization
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../style_guide/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1919,52 +1944,12 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../../developer/kokkos_ekat/" class="md-nav__link">
+    
+    
+      
         
-  
-  <span class="md-ellipsis">
-    Kokkos and EKAT
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../developer/source_tree/" class="md-nav__link">
+          
         
-  
-  <span class="md-ellipsis">
-    Source Tree
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    
-    
       
         
       
@@ -1983,40 +1968,50 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_3_6" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_3_4" >
         
           
-          <label class="md-nav__link" for="__nav_3_3_3_6" id="__nav_3_3_3_6_label" tabindex="0">
-            
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../dev_testing/" class="md-nav__link ">
+              
   
   <span class="md-ellipsis">
-    Important Data Structures
+    Testing
     
   </span>
   
 
-            <span class="md-nav__icon md-icon"></span>
-          </label>
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_3_3_4" id="__nav_3_3_3_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
         
-        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_3_3_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_3_3_6">
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_3_3_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3_3_4">
             <span class="md-nav__icon md-icon"></span>
-            Important Data Structures
+            Testing
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
               
+            
+              
                 
   
   
   
   
     <li class="md-nav__item">
-      <a href="../../developer/field/" class="md-nav__link">
+      <a href="../dev_testing/testing_for_development/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Fields
+    Testing for Development
     
   </span>
   
@@ -2034,11 +2029,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../../developer/grid/" class="md-nav__link">
+      <a href="../dev_testing/test_all_eamxx/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Grids and Remappers
+    Automated Standalone Testing
     
   </span>
   
@@ -2056,11 +2051,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../../developer/processes/" class="md-nav__link">
+      <a href="../dev_testing/full_model_testing/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Atmosphere Processes
+    Full model (CIME)
     
   </span>
   
@@ -2078,11 +2073,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../../developer/managers/" class="md-nav__link">
+      <a href="../dev_testing/ci_nightly/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Managers
+    CI and Nightly Testing
     
   </span>
   
@@ -2107,30 +2102,12 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../../developer/io/" class="md-nav__link">
+    
+    
+      
         
-  
-  <span class="md-ellipsis">
-    I/O
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    
-    
+      
+        
       
         
       
@@ -2147,14 +2124,14 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_3_8" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_3_5" >
         
           
-          <label class="md-nav__link" for="__nav_3_3_3_8" id="__nav_3_3_3_8_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_3_3_5" id="__nav_3_3_3_5_label" tabindex="0">
             
   
   <span class="md-ellipsis">
-    Testing
+    Important Tools and Objects
     
   </span>
   
@@ -2162,10 +2139,10 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_3_3_8_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_3_3_8">
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_3_3_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3_3_5">
             <span class="md-nav__icon md-icon"></span>
-            Testing
+            Important Tools and Objects
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
@@ -2176,11 +2153,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../../developer/standalone_testing/" class="md-nav__link">
+      <a href="../kokkos_ekat/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Standalone
+    Kokkos and EKAT
     
   </span>
   
@@ -2198,11 +2175,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../../developer/cime_testing/" class="md-nav__link">
+      <a href="../field/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Full model
+    Fields
     
   </span>
   
@@ -2220,11 +2197,55 @@
   
   
     <li class="md-nav__item">
-      <a href="../../developer/ci_nightly/" class="md-nav__link">
+      <a href="../grid/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    CI and Nightly Testing
+    Grids and Remappers
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../processes/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Atmosphere Processes
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../io/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    I/O
     
   </span>
   
@@ -3170,55 +3191,28 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#prerequisites" class="md-nav__link">
+  <a href="#motivation" class="md-nav__link">
     <span class="md-ellipsis">
-      Prerequisites
+      Motivation
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#setting-up-your-environment" class="md-nav__link">
+  <a href="#stratosphere-level-overview" class="md-nav__link">
     <span class="md-ellipsis">
-      Setting Up Your Environment
+      Stratosphere-level Overview
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#configuring-and-building-scream" class="md-nav__link">
-    <span class="md-ellipsis">
-      Configuring and Building Scream
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Configuring and Building Scream">
+    <nav class="md-nav" aria-label="Stratosphere-level Overview">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-start-from-a-trustworthy-commit" class="md-nav__link">
+  <a href="#note-on-computing-platforms" class="md-nav__link">
     <span class="md-ellipsis">
-      1. Start From a Trustworthy Commit
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-configure-your-eamxx-build" class="md-nav__link">
-    <span class="md-ellipsis">
-      2. Configure Your EAMxx Build
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-build-scream" class="md-nav__link">
-    <span class="md-ellipsis">
-      3. Build SCREAM
+      Note on Computing Platforms
     </span>
   </a>
   
@@ -3230,11 +3224,59 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#running-tests" class="md-nav__link">
+  <a href="#lets-get-started-quickly" class="md-nav__link">
     <span class="md-ellipsis">
-      Running Tests
+      Let's Get Started (Quickly)
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Let's Get Started (Quickly)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#running-eamxx-via-test-all-eamxx" class="md-nav__link">
+    <span class="md-ellipsis">
+      Running EAMxx via test-all-eamxx
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Running EAMxx via test-all-eamxx">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#selected-useful-testing-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      Selected Useful Testing Options
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing-on-supported-machines" class="md-nav__link">
+    <span class="md-ellipsis">
+      Testing on Supported Machines
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing-locally" class="md-nav__link">
+    <span class="md-ellipsis">
+      Testing Locally
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -3258,152 +3300,439 @@
     
       
     
-    <a href="https://github.com/E3SM-Project/screamcommon/installation.md" title="View source of this page" class="md-content__button md-icon">
+    <a href="https://github.com/E3SM-Project/screamdeveloper/dev_quickstart.md" title="View source of this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.2 8.2 0 0 1-1.23-2"/></svg>
     </a>
   
 
 
-<h1 id="installation">Installation</h1>
-<p>Follow these simple instructions to build and test EAMxx's standalone
-configuration for yourself. This document makes use of the following paths:</p>
+<h1 id="quick-start-guide-for-developers">Quick-start Guide for Developers</h1>
+<h2 id="motivation">Motivation</h2>
+<p>The intention of this guide is to provide a new developer with the most
+straightforward path toward productively building, running, and testing EAMxx.
+Specifically, we will discuss building and testing in the EAMxx "standalone"
+configuration using the <code>test-all-eamxx</code> workflow.
+Note that tests related to running the full E3SM model are discussed in
+<a href="../dev_testing/full_model_testing/">Full Model Testing</a>.</p>
+<h2 id="stratosphere-level-overview">Stratosphere-level Overview</h2>
+<p>At the most basic level, EAMxx is built and run using
+<a href="https://cmake.org">CMake</a>, a widely-used tool to "automatically"<sup id="fnref:automagic-cmake"><a class="footnote-ref" href="#fn:automagic-cmake">1</a></sup>
+configure, build, and test a project on any arbitrary computing platform.
+Thus, one can certainly build and test EAMxx with their own customized
+CMake/<a href="https://cmake.org/cmake/help/latest/manual/ctest.1.html">CTest</a> setup.
+However, we would strongly advise against doing this unless you know what
+you're doing and have good reasons for choosing this option.</p>
+<p>Instead, we recommend using the EAMxx-designed <code>test-all-eamxx</code> workflow that
+employs a variety of shell and python scripts to automate the series of tasks
+common to development.
+More details on this are provided below in the section on
+<a href="#running-eamxx-via-test-all-eamxx">Running EAMxx</a>.</p>
+<p>A detailed, example-based walk-through of modifying and testing new code
+may be found in <a href="../dev_testing/testing_for_development/">Testing for Development</a>
+and comprehensive details about the standalone testing tools are located in
+<a href="../dev_testing/test_all_eamxx/">EAMxx Automated Standalone Testing</a></p>
+<h3 id="note-on-computing-platforms">Note on Computing Platforms</h3>
+<p>EAMxx is tested and supported on the
+<a href="https://e3sm.org/model/running-e3sm/supported-machines/">E3SM-supported machines</a>,
+as well as a handful of other machines.<sup id="fnref:supported-machines"><a class="footnote-ref" href="#fn:supported-machines">2</a></sup>
+This means that, if you have an account on one of these machines, EAMxx tests
+can be run with no extra configuration required.
+However, many of the standalone EAMxx tests are able to be run on a
+reasonably-equipped laptop or personal workstation.<sup id="fnref:but-mac"><a class="footnote-ref" href="#fn:but-mac">3</a></sup>
+This second choice requires some extra configurations but the effort required
+may be worth the potential speedup in development.</p>
+<h2 id="lets-get-started-quickly">Let's Get Started (Quickly)</h2>
+<div class="admonition warning">
+<p class="admonition-title">Disclaimer</p>
+<p>We make use of many code snippets below for <strong><em>demonstrative purposes</em></strong>.
+As such, we provide no guarantee that any of these are working code, and
+the author would be quite surprised if more than a couple of them run
+without edits.
+If you should take the time to debug these examples, feel free to submit a
+PR with a working version, and we are sure some future developer will
+appreciate it!</p>
+</div>
+<h3 id="running-eamxx-via-test-all-eamxx">Running EAMxx via <code>test-all-eamxx</code></h3>
+<p>The quickest method for a new developer to get EAMxx up and running is to use
+the automated configure/build/test workflow provided by <code>scripts/test-all-eamxx</code>.
+This is a good "smoke test"<sup id="fnref:smoke-test-def"><a class="footnote-ref" href="#fn:smoke-test-def">4</a></sup> to confirm that your development
+environment is configured properly and that there are no glaring run-time
+errors preventing successful running and testing.</p>
+<p>Running via <code>test-all-eamxx</code> requires <strong><em>at minimum</em></strong> 1 to 2 command-line
+arguments to work correctly and likely more if your goals are more than modest.
+In the following sections, we present the configurations a new developer is most
+likely to require.</p>
+<h4 id="selected-useful-testing-options">Selected Useful Testing Options</h4>
+<p>We give an overview of common basic use cases here, and we provide full details
+on the various capabilities and options of <code>test-all-eamxx</code> in
+<a href="../dev_testing/test_all_eamxx/">EAMxx Automated Standalone Testing</a>.</p>
+<details class="example">
+<summary>Configure Only Without Build or Test</summary>
+<p><strong>Useful for:</strong> Mid-development testing when debugging compilation, and it
+may be useful to confirm/debug changes to CMakeLists.txt, file dependencies,
+TPL availability, etc.</p>
+<div class="copy highlight"><pre><span></span><code>$<span class="w"> </span>./scripts/test-all-eamxx<span class="w"> </span>&lt;required-args&gt;<span class="w"> </span><span class="o">[</span>optional-args<span class="o">]</span><span class="w"> </span>--config-only
+</code></pre></div>
+</details>
+<details class="tip">
+<summary>Parallel Build and Test Execution</summary>
+<p><strong>Note:</strong></p>
 <ul>
-<li><code>${RUN_ROOT_DIR}</code>: the root directory where EAMxx is built and run</li>
-<li><code>${EAMXX_SRC_DIR}</code>: the directory into which you've cloned the <code>scream</code> repo</li>
+<li>This is unnecessary when running on
+<a href="https://e3sm.org/model/running-e3sm/supported-machines/">supported
+machines</a> because
+efficient defaults are already set within <code>test-all-eamxx</code>.</li>
+<li>If you are testing locally or on an otherwise unsupported machine, it is
+recommended to set these values manually.<ul>
+<li>The reason for this is that the default value for each case is <code>0</code>,
+which should theoretically choose the optimal number of threads on
+modern systems, but there is no guarantee this will behave as expected
+or that it will not bog down your system.</li>
 </ul>
-<p>EAMxx's configuration and build system is based on <a href="https://cmake.org/">CMake</a>.
-CMake has been around a while and has gained a lot of traction in recent years,
-especially in the HPC community. It has good <a href="https://cmake.org/cmake/help/latest/index.html">reference documentation</a>,
-but it can be tricky to use if you've never encountered it. Ask a EAMxx team
-member for help if you're stuck on something CMake-related.</p>
-<p>If you see a <code>CMakeLists.txt</code> files or a file with a <code>.cmake</code> suffix, that's
-just part of the build system. You might also see files with <code>CTest</code> as part of
-their name. These files are related to <a href="https://cmake.org/cmake/help/latest/manual/ctest.1.html">CTest</a>,
-CMake's testing tool.</p>
-<h2 id="prerequisites">Prerequisites</h2>
-<p>First, make sure you're on one of the machines supported by EAMxx, or that you
-have the following software installed:</p>
+</li>
+</ul>
+<div class="copy highlight"><pre><span></span><code>$<span class="w"> </span>./scripts/test-all-eamxx<span class="w"> </span>&lt;required-args&gt;<span class="w"> </span><span class="o">[</span>optional-args<span class="o">]</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="c1"># if running multiple test configurations, this will launch those build</span>
+<span class="w">    </span><span class="c1"># stacks in parallel \</span>
+<span class="w">    </span>--parallel<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="c1"># will compile using M threads (equivalent to a manual &#39;make -jM&#39;) \</span>
+<span class="w">    </span>--make-parallel-level<span class="w"> </span>&lt;M&gt;<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="c1"># will run tests of the same configuration using N threads \</span>
+<span class="w">    </span>--ctest-parallel-level<span class="w"> </span>&lt;N&gt;<span class="w"> </span><span class="se">\</span>
+</code></pre></div>
+</details>
+<details class="quote">
+<summary>Only Run Requested Test Cases</summary>
+<p>As a first step, you are likely to only be concerned with testing your
+specific modifications, so there is no need to run the full suite of EAMxx tests.
+So, we may restrict the tests that will be run by using an appropriate
+<a href="https://en.wikipedia.org/wiki/Regular_expression">regular expression</a> ("regex").<sup id="fnref:regex-tool"><a class="footnote-ref" href="#fn:regex-tool">5</a></sup></p>
+<div class="copy highlight"><pre><span></span><code><span class="c1"># This example regex will match the exact substring &quot;ash_injection&quot;.</span>
+<span class="c1"># That is, it will match &quot;ash_injection_validate_test&quot;,</span>
+<span class="c1"># &quot;test_suite_ash_injection&quot;, and &quot;test_ash_injection_quick&quot; but not</span>
+<span class="c1"># &quot;ash_in_jection_test&quot; or &quot;ash_injector_test&quot;.</span>
+
+$<span class="w"> </span><span class="nv">test_choice</span><span class="o">=</span><span class="s2">&quot;[^\s]*ash_injection[^\s]*&quot;</span>
+$<span class="w"> </span>./scripts/test-all-eamxx<span class="w"> </span>&lt;required-args&gt;<span class="w"> </span><span class="o">[</span>optional-args<span class="o">]</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--limit-test-regex<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">test_choice</span><span class="si">}</span><span class="s2">&quot;</span>
+</code></pre></div>
+</details>
+<details class="success">
+<summary>Baseline Tests</summary>
+<p><a href="../dev_testing/test_all_eamxx/#baseline-tests">Baseline tests</a> compare the
+current state of the code to some "baseline" value to ensure that the
+modifications do not negatively impact the current solutions provided by
+the model.
+An example of this, provided below, is focused on testing the code with our
+new <strong>Ash-Injection</strong>-related modifications as compared to the code before
+we started working.</p>
+<p><strong><em>Note</em></strong>, however, that any new <strong>Ash-Injection</strong>-specific tests or tests
+involving processes that interact with <strong>Ash-Injection</strong> may give different
+answers for perfectly good reasons.
+Regardless, we would like to establish that our modifications do not cause
+any unexpected interactions, so all remaining baseline tests should pass.</p>
+<div class="copy highlight"><pre><span></span><code><span class="c1"># For simplicity, we&#39;ll assume we begin at the most up-to-date</span>
+<span class="c1"># commit on origin/master</span>
+$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">eamxx_root</span><span class="si">}</span><span class="s2">&quot;</span>
+$<span class="w"> </span>git<span class="w"> </span>checkout<span class="w"> </span>master
+$<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">bl_loc</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">HOME</span><span class="si">}</span><span class="s2">/eamxx-baselines&quot;</span>
+$<span class="w"> </span>./scripts/test-all-eamxx<span class="w"> </span>&lt;required-args&gt;<span class="w"> </span><span class="o">[</span>optional-args<span class="o">]</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="c1"># set the location where we will save the baseline files we are about</span>
+<span class="w">    </span><span class="c1"># to generate \</span>
+<span class="w">    </span>--baseline-dir<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">bl_loc</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="c1"># this flag indicates we will generate new baselines \</span>
+<span class="w">    </span>--generate
+<span class="o">[</span><span class="s2">&quot;one eternity later...&quot;</span><span class="o">]</span>
+<span class="c1"># create a new branch to develop from</span>
+$<span class="w"> </span>git<span class="w"> </span>checkout<span class="w"> </span>-b<span class="w"> </span>jane_dev/eamxx/ash_injection_proc
+<span class="o">[</span><span class="s2">&quot;write all the code...&quot;</span><span class="o">]</span>
+<span class="c1"># Note: the presence of the &#39;--baseline-dir&#39; flag indicates we will</span>
+<span class="c1"># compare test results to the latest baselines found in that directory</span>
+$<span class="w"> </span>./scripts/test-all-eamxx<span class="w"> </span>&lt;required-args&gt;<span class="w"> </span><span class="o">[</span>optional-args<span class="o">]</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="c1"># set the location where we saved the previous baselines \</span>
+<span class="w">    </span>--baseline-dir<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">bl_loc</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="o">[</span><span class="s2">&quot;mam4_ash_injection_standalone test fails... no baseline! (so do the others)&quot;</span><span class="o">]</span>
+<span class="o">[</span><span class="s2">&quot;homme_standalone test passes! (so do other non-associated tests)&quot;</span><span class="o">]</span>
+</code></pre></div>
+</details>
+<details class="tip">
+<summary>"Quick-rerunning" Tests</summary>
+<p>Rebuilding EAMxx can take quite some time, so <code>test-all-eamxx</code> has a couple
+of options to rerun tests quickly and avoid configure or build costs.</p>
+<p><code>--quick-rerun</code></p>
 <ul>
-<li>A working MPI installation (typically <a href="">MPICH</a> or <a href="">Open-MPI</a>)</li>
-<li><a href="https://cmake.org">CMake</a> and <a href="https://www.gnu.org/software/make/">GNU Make</a></li>
-<li>A working set of C, C++, and Fortran compilers</li>
-<li>A recent version of <a href="https://git-scm.com/">Git</a></li>
-<li>A working installation of <a href="https://www.unidata.ucar.edu/software/netcdf/">NetCDF</a>,
-  including both <a href="https://github.com/Unidata/netcdf-c">C</a> and
-  <a href="https://github.com/Unidata/netcdf-fortran">Fortran</a> libraries.</li>
+<li><strong>Useful for:</strong> rerunning when there's no need to reconfigure.<ul>
+<li>No edits made to any <code>CMakeLists.txt</code> files.</li>
+<li>No relevant files renamed or moved to a different directory.</li>
+<li>You plan to re-run tests that did not necessarily fail on the
+  previous run.</li>
 </ul>
-<h2 id="setting-up-your-environment">Setting Up Your Environment</h2>
-<h2 id="configuring-and-building-scream">Configuring and Building Scream</h2>
-<h3 id="1-start-from-a-trustworthy-commit">1. Start From a Trustworthy Commit</h3>
-<p>First, make sure you've cloned the <a href="https://github.com/E3SM-Project/scream">EAMxx repo (including all submodules)</a>
-to <code>EAMXX_SRC_DIR</code> using the following command:</p>
-<div class="highlight"><pre><span></span><code>git clone --recurse-submodules https://github.com/E3SM-Project/scream
+</li>
+</ul>
+<div class="copy highlight"><pre><span></span><code>$<span class="w"> </span><span class="nv">test_choice</span><span class="o">=</span><span class="s2">&quot;[^\s]*ash_injection[^\s]*&quot;</span>
+$<span class="w"> </span>./scripts/test-all-eamxx<span class="w"> </span>&lt;required-args&gt;<span class="w"> </span><span class="o">[</span>optional-args<span class="o">]</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--limit-test-regex<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">test_choice</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="o">[</span><span class="s2">&quot;tests run...&quot;</span><span class="o">]</span>
+<span class="o">[</span><span class="s2">&quot;modify ash_injection_test.cpp...&quot;</span><span class="o">]</span>
+<span class="c1"># no need to reconfigure--let&#39;s be quick!</span>
+$<span class="w"> </span>./scripts/test-all-eamxx<span class="w"> </span>&lt;required-args&gt;<span class="w"> </span><span class="o">[</span>optional-args<span class="o">]</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--quick-rerun
 </code></pre></div>
-<p>If you have already cloned the project and forgot to type <code>--recurse-submodules</code>,
-you can change to <code>$EAMXX_SRC_DIR</code> and using the following command to initialize,
-fetch and checkout all submodules:</p>
-<div class="highlight"><pre><span></span><code>git submodule update --init --recursive
-</code></pre></div>
-<p>If you're running a branch that's not <code>master</code>, check out this branch with</p>
-<div class="highlight"><pre><span></span><code>git checkout &lt;branch&gt;
-</code></pre></div>
-<h3 id="2-configure-your-eamxx-build">2. Configure Your EAMxx Build</h3>
-<p>Change to your <code>$RUN_ROOT_DIR</code> directory and use CMake to configure your build.</p>
-<p>If you're building SCREAM on one of our supported platforms, you can tell CMake
-to use the appropriate machine file using the <code>-C</code> flag. Machine files are
-located in <code>$EAMXX_SRC_DIR/components/eamxx/cmake/machine-files</code>. Take a look
-and see whether your favorite machine has one.</p>
-<p>For example, to configure SCREAM on the Quartz machine at LLNL:</p>
-<div class="highlight"><pre><span></span><code>cd $RUN_ROOT_DIR
-cmake \
-    -DCMAKE_CXX_COMPILER=$(which mpicxx) \
-    -DCMAKE_BUILD_TYPE=Debug \
-    -C ${EAMXX_SRC_DIR}/components/eamxx/cmake/machine-files/quartz.cmake \
-    ${EAMXX_SRC_DIR}/components/eamxx
-</code></pre></div>
-<p>If you're building on a machine that doesn't have a ready-made machine file,
-you can try configuring your build by manually passing options to CMake. This
-usually looks something like the following, which configures EAMxx to compile
-CPU code using Kokkos's OpenMP backend:
-<div class="highlight"><pre><span></span><code>cd $RUN_ROOT_DIR
-cmake \
-    -D CMAKE_BUILD_TYPE=Debug \
-    -D CMAKE_C_COMPILER=mpicc \
-    -D CMAKE_CXX_COMPILER=mpicxx \
-    -D CMAKE_Fortran_COMPILER=mpif90 \
-    -D MPIEXEC_EXECUTABLE=`which mpiexec` \
-    -D EKAT_MPI_NP_FLAG:STRING=-n \
-    -D SCREAM_DYNAMICS_DYCORE=HOMME \
-    -D SCREAM_DOUBLE_PRECISION:BOOL=ON \
-    -D SCREAM_INPUT_ROOT:PATH=/path/to/scream-input \
-    -D Kokkos_ENABLE_DEBUG=TRUE \
-    -D Kokkos_ENABLE_AGGRESSIVE_VECTORIZATION=OFF \
-    -D Kokkos_ENABLE_SERIAL=ON \
-    -D Kokkos_ENABLE_OPENMP=ON \
-    -D Kokkos_ENABLE_LIBDL=OFF \
-    -D Kokkos_ENABLE_PROFILING=OFF \
-    -D Kokkos_ENABLE_DEPRECATED_CODE=OFF \
-    -D KOKKOS_ENABLE_ETI:BOOL=OFF \
-    -D NetCDF_C_PATHS=/path/to/netcdf-c-dir \
-    -D NetCDF_Fortran_PATHS=/path/to/netcdf-f90-dir \
-    -D PnetCDF_C_PATHS=/path/to/pnetcdf-dir \
-    -D PnetCDF_Fortran_PATHS=/path/to/pnetcdf-f90-dir \
-    ${EAMXX_SRC_DIR}/components/eamxx
-</code></pre></div></p>
-<p>In either case, EAMxx requires MPI-aware compilers. Let's examine these
-options (only some of which are required on any given machine) to make sure we
-know what they do:</p>
+<p><code>--quick-rerun-failed</code></p>
 <ul>
-<li><code>CMAKE_BUILD_TYPE</code>: specifies whether you are building EAMxx in a
-  developer-friendly configuration (<code>Debug</code>), for a production run (<code>Release</code>)
-  or for performance profiling or some other specialized purpose. Typically,
-  you'll set this option to <code>Debug</code> or <code>Release</code>.</li>
-<li><code>CMAKE_{C,CXX,Fortran}_COMPILER</code>: the name of the command used to invoke an
-  MPI-enabled C, C++, or Fortran compiler to build EAMxx</li>
-<li><code>MPIEXEC_EXECUTABLE</code>: the name of the command used to run EAMxx using MPI,
-  typically <code>mpiexec</code> or <code>mpirun</code>, but possibly different depending on your
-  desired machine</li>
-<li><code>EKAT_MPI_NP_FLAG</code>: the flag passed to <code>MPIEXEC_EXECUTABLE</code> that you use to
-  specify the number of desired MPI processes. This is typically <code>-n</code> for
-  <code>mpiexec</code> and <code>-np</code> for <code>mpirun</code>.</li>
-<li><code>SCREAM_DYNAMICS_DYCORE</code>: specifies the dycore used for configuring EAMxx,
-  which is <code>NONE</code> if you are not configuring EAMxx to run its dycore-related
-  tests, or <code>HOMME</code> if you want to use HOMMExx</li>
-<li><code>SCREAM_DOUBLE_PRECISION</code>: indicates whether EAMxx's <code>Real</code> type is a
-  double-precision (<code>ON</code>) or single-precision (<code>OFF</code>) floating point type</li>
-<li><code>SCREAM_INPUT_ROOT</code>: specifies the location of the top-level folder that
-  stores input data files for EAMxx. This folder is populated with input files
-  which are downloaded automatically during EAMxx's build process.</li>
-<li>The Kokkos-related build options (most of which begin with <code>Kokkos_</code>) are
-  described <a href="https://kokkos.github.io/kokkos-core-wiki/keywords.html">in the Kokkos Wiki</a></li>
-<li><code>NetCDF_C_PATHS</code>: specifies one or more folders in which the NetCDF C library
-  and headers are installed. In the simplest configuration, the headers should
-  be located in <code>${NetCDF_C_PATHS}/include</code> and the library should live in
-  <code>${NetCDF_C_PATHS}/lib</code>.</li>
-<li><code>NetCDF_Fortran_PATHS</code>: specifies one or more folders in which the NetCDF
-  Fortran library and modules are installed. Analogous to <code>${NetCDF_C_PATHS}</code>,
-  <code>.mod</code> files should be in <code>${NetCDF_Fortran_PATHS}/include</code>, and the library
-  should be installed in <code>${NetCDF_Fortran_PATHS}/lib</code>.</li>
-<li><code>PnetCDF_C_PATHS</code>: specifies one or more folders in which the pNetCDF C
-  library and headers are installed, analogous to <code>NetCDF_C_PATHS</code>.</li>
-<li><code>PnetCDF_Fortran_PATHS</code>: specifies one or more folders in which the pNetCDF
-  Fortran library and modules are installed, analogous to
-  <code>NetCDF_Fortran_PATHS</code>.</li>
+<li><strong>Useful for:</strong> rerunning only failed tests when there's no need to
+  reconfigure or, potentially, no need to rebuild.<ul>
+<li>No edits made to any <code>CMakeLists.txt</code> files.</li>
+<li>No relevant files renamed or moved to a different directory.</li>
+<li>In contrast to above, you only wish to rerun tests that failed the
+  previous run.</li>
 </ul>
-<p>Above, we've configured <code>Debug</code> builds to make it easier to find and fix errors.
-For performance testing, you should configure a <code>Release</code> build and make use of
-other options, depending on your architecture.</p>
-<h3 id="3-build-scream">3. Build SCREAM</h3>
-<p>Now you can build SCREAM from that same directory:</p>
-<div class="highlight"><pre><span></span><code>make -j
+</li>
+</ul>
+<div class="copy highlight"><pre><span></span><code><span class="c1"># run all of the eamxx tests</span>
+$<span class="w"> </span>./scripts/test-all-eamxx<span class="w"> </span>&lt;required-args&gt;<span class="w"> </span><span class="o">[</span>optional-args<span class="o">]</span>
+<span class="o">[</span><span class="s2">&quot;tests run...&quot;</span><span class="o">]</span>
+<span class="o">[</span><span class="s2">&quot;ash_injection-related tests fail... so much output, though :(&quot;</span><span class="o">]</span>
+<span class="c1"># no need to reconfigure or rebuild--rerun to make the output easier to parse.</span>
+$<span class="w"> </span>./scripts/test-all-eamxx<span class="w"> </span>&lt;required-args&gt;<span class="w"> </span><span class="o">[</span>optional-args<span class="o">]</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--quick-rerun
 </code></pre></div>
-<p>The <code>-j</code> flag tells Make to use threads to compile in parallel. If you like, you
-can set the number of threads by passing it as an argument to <code>-j</code> (e.g.
-<code>make -j8</code>).</p>
-<h2 id="running-tests">Running Tests</h2>
-<p>You can run EAMxx's tests to make sure your build works by following the
-instructions <a href="../../developer/standalone_testing/">here</a>.</p>
+</details>
+<details class="example">
+<summary>Efficiently Building for Multiple Architectures</summary>
+<p>The default build directory employed by <code>test-all-eamxx</code> is
+<code>${eamxx_root}/ctest-build/&lt;test-configuration&gt;</code>, where <code>test-configuration</code>
+can be <code>full_debug</code>, <code>release</code>, etc.
+The implication of this is that if we are testing for both CPU and GPU on
+the same machine, the default configuration will result in a GPU build
+overwriting the previous CPU build, or vice-versa.
+This will result in long build times and make testing on both architectures inefficient.</p>
+<p>For this reason, it is recommended to use the <code>--work-dir</code> flag to set
+separate build directories for each architecture.</p>
+<div class="copy highlight"><pre><span></span><code><span class="c1"># we are on a machine with lots of cpu cores, so we will be extra clever</span>
+<span class="c1"># and run simultaneously by using only a portion of cores for each build</span>
+
+$<span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="si">${</span><span class="nv">total_cores</span><span class="si">}</span>
+<span class="m">100</span>
+
+$<span class="w"> </span><span class="nv">build_loc_cpu</span><span class="o">=</span><span class="s2">&quot;ctest-cpu-build&quot;</span>
+$<span class="w"> </span><span class="nv">build_threads_cpu</span><span class="o">=</span><span class="m">20</span>
+$<span class="w"> </span><span class="nv">test_threads_cpu</span><span class="o">=</span><span class="m">20</span>
+$<span class="w"> </span><span class="nv">build_loc_gpu</span><span class="o">=</span><span class="s2">&quot;ctest-gpu-build&quot;</span>
+$<span class="w"> </span><span class="nv">build_threads_gpu</span><span class="o">=</span><span class="m">40</span>
+
+<span class="c1"># Launch the cpu build/test</span>
+$<span class="w"> </span>./scripts/test-all-eamxx<span class="w"> </span>&lt;required-args&gt;<span class="w"> </span><span class="o">[</span>optional-args<span class="o">]</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--work-dir<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">build_loc_cpu</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--make-parallel-level<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">build_threads_cpu</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--ctest-parallel-level<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">test_threads_cpu</span><span class="si">}</span><span class="s2">&quot;</span>
+
+<span class="c1"># launch the gpu build/test</span>
+$<span class="w"> </span>./scripts/test-all-eamxx<span class="w"> </span>&lt;required-args&gt;<span class="w"> </span><span class="o">[</span>optional-args<span class="o">]</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--work-dir<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">build_loc_gpu</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--make-parallel-level<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">build_threads_gpu</span><span class="si">}</span><span class="s2">&quot;</span>
+</code></pre></div>
+</details>
+<h4 id="testing-on-supported-machines">Testing on Supported Machines</h4>
+<p>When testing on a supported E3SM machine, the only configuration required is to
+set the proper "machine ID" flag that indicates the machine name and potentially
+the desired device to run with (CPU, GPU).
+This is because <code>test-all-eamxx</code> configures the run according to a
+"machine file" that sets an environment known to build and test successfully
+and efficiently<sup id="fnref:mach-file"><a class="footnote-ref" href="#fn:mach-file">6</a></sup>.</p>
+<details class="example">
+<summary>Example: Running on Perlmutter</summary>
+<div class="copy highlight"><pre><span></span><code><span class="c1"># run tests on cpu</span>
+<span class="o">[</span><span class="s2">&quot;start interactive session on cpu node (see below)...&quot;</span><span class="o">]</span>
+$<span class="w"> </span>./scripts/test-all-eamxx<span class="w"> </span>--machine<span class="w"> </span>pm-cpu
+<span class="o">[</span><span class="s2">&quot;test runs...&quot;</span><span class="o">]</span>
+<span class="o">[</span><span class="s2">&quot;logout from cpu node...&quot;</span><span class="o">]</span>
+<span class="o">[</span><span class="s2">&quot;start interactive session on gpu node...&quot;</span><span class="o">]</span>
+$<span class="w"> </span>./scripts/test-all-eamxx<span class="w"> </span>--machine<span class="w"> </span>pm-gpu
+</code></pre></div>
+</details>
+<details class="warning">
+<summary><code>test-all-eamxx</code> must be run on a <code>compute</code> node</summary>
+<p>The <code>test-all-eamxx</code> script assumes it is being run on a compute node
+(i.e., not the <code>login</code> or <code>head</code> node).</p>
+<p>This can be handled most easily by launching the job manually from an
+interactive session.<sup id="fnref:tas-compute-node"><a class="footnote-ref" href="#fn:tas-compute-node">7</a></sup></p>
+<p>To illustrate, if the platform's batch scheduler is <code>slurm</code>, we could do</p>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>salloc<span class="w"> </span>--nodes<span class="w"> </span><span class="m">1</span><span class="w"> </span>--qos<span class="w"> </span>interactive<span class="w"> </span>--time<span class="w"> </span><span class="m">02</span>:00:00<span class="w"> </span><span class="o">[</span>...<span class="o">]</span>
+&lt;response<span class="w"> </span>indicating<span class="w"> </span>interactive<span class="w"> </span>node<span class="w"> </span>name&gt;
+$<span class="w"> </span>ssh<span class="w"> </span>&lt;node-id&gt;
+$<span class="w"> </span>./scripts/test-all-eamxx<span class="w"> </span>--machine<span class="w"> </span>&lt;machine-id&gt;
+</code></pre></div>
+</details>
+<h4 id="testing-locally">Testing Locally</h4>
+<p>Running EAMxx on your local workstation, laptop, or less-trafficked cluster
+machine can potentially make your development quicker and less complicated.
+However, following the <strong><em>No Free Lunches</em></strong> principle, there is some fiddly
+setup involved in making your life easier.</p>
+<p>Testing on a local, or otherwise unknown, machine requires the <code>--local</code>
+(or <code>-l</code>) flag and correctly-configured files in the <code>~/.cime/</code> directory.
+For a full explanation of how to configure your own machine,
+see <a href="../dev_testing/test_all_eamxx/#local-configuration-files">Local Configuration Files</a>, but we will briefly summarize here.</p>
+<details class="example">
+<summary>Example <code>scream_mach_specs.py</code> Configuration File</summary>
+<p>The <code>test-all-eamxx</code> workflow expects to find a file called
+<code>scream_mach_specs.py</code> in the directory <code>~/.cime/</code>.
+This file is imported using the utility function <code>get_all_machines()</code>
+located in <code>scripts/machine_specs.py</code>, and it is used to setup the
+required build environment for your machine. </p>
+<p>Your local <code>scream_mach_specs.py</code> configuration file must be a valid python
+module that defines a <code>Local</code> specialization of the <code>Machine</code> class,
+that is defined in <code>machine_specs.py</code>.
+The parent <code>Machine</code> class definition is included below, and we also provide
+a bare-bones example of a local <code>scream_mach_specs.py</code> defining the
+<code>Local</code> version of the <code>Machine</code> class.</p>
+<p>Your local <code>scream_mach_specs.py</code> configuration file should specify such
+things as:</p>
+<ul>
+<li>Compiler paths and/or binary name</li>
+<li>The number of resources (CPU threads) to be used for building or running<ul>
+<li><code>num_bld_res</code> and <code>num_run_res</code></li>
+</ul>
+</li>
+<li>Baselines directory location</li>
+<li>Commands required to setup the build environment<ul>
+<li>E.g., the paths to the requisite third-party libraries (TPLs).</li>
+</ul>
+</li>
+<li>GPU architecture</li>
+<li>Etc.</li>
+</ul>
+<p>We recommend setting as many of the class variables as you can, because
+(mostly) more information is better than less.</p>
+<div class="copy highlight"><span class="filename">${eamxx_root}/scripts/machine_specs.py:[L58-L88]</span><pre><span></span><code>from<span class="w"> </span>machines_specs<span class="w"> </span>import<span class="w"> </span>Machine
+
+<span class="c1">###############################################################################</span>
+class<span class="w"> </span>Machine<span class="o">(</span>object<span class="o">)</span>:
+<span class="c1">###############################################################################</span>
+<span class="w">    </span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    Parent class for objects describing a machine to use for EAMxx</span>
+<span class="s2">    standalone testing.</span>
+<span class="s2">    &quot;&quot;&quot;</span>
+<span class="w">    </span><span class="nv">concrete</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>False
+<span class="w">    </span><span class="nv">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+<span class="w">    </span><span class="nv">mach_file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+<span class="w">    </span><span class="nv">env_setup</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">[]</span>
+<span class="w">    </span><span class="nv">gpu_arch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;none&quot;</span>
+<span class="w">    </span><span class="nv">num_bld_res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>-1
+<span class="w">    </span><span class="nv">num_run_res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>-1
+<span class="w">    </span><span class="nv">batch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+<span class="w">    </span><span class="nv">cxx_compiler</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;mpicxx&quot;</span>
+<span class="w">    </span><span class="nv">c_compiler</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;mpicc&quot;</span>
+<span class="w">    </span><span class="nv">ftn_compiler</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;mpifort&quot;</span>
+<span class="w">    </span><span class="nv">baselines_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+
+<span class="w">    </span>@classmethod
+<span class="w">    </span>def<span class="w"> </span>setup_base<span class="o">(</span>cls,name,num_bld_res<span class="o">=</span>-1,num_run_res<span class="o">=</span>-1<span class="o">)</span>:
+<span class="w">        </span>cls.name<span class="w"> </span><span class="o">=</span><span class="w"> </span>name
+<span class="w">        </span>cls.mach_file<span class="w"> </span><span class="o">=</span><span class="w"> </span>pathlib.Path<span class="o">(</span>EAMXX_DIR<span class="o">)</span><span class="w"> </span>/<span class="w"> </span><span class="s2">&quot;cmake&quot;</span><span class="w"> </span>/
+<span class="w">                        </span><span class="s2">&quot;machine-files&quot;</span><span class="w"> </span>/<span class="w"> </span><span class="o">(</span>cls.name<span class="w"> </span>+<span class="w"> </span><span class="s2">&quot;.cmake&quot;</span><span class="o">)</span>
+<span class="w">        </span>cls.num_bld_res<span class="w"> </span><span class="o">=</span><span class="w"> </span>num_bld_res<span class="w"> </span><span class="k">if</span><span class="w"> </span>num_bld_res<span class="w"> </span>&gt;<span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="k">else</span><span class="w"> </span>get_available_cpu_count<span class="o">()</span>
+<span class="w">        </span>cls.num_run_res<span class="w"> </span><span class="o">=</span><span class="w"> </span>num_run_res<span class="w"> </span><span class="k">if</span><span class="w"> </span>num_run_res<span class="w"> </span>&gt;<span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="k">else</span><span class="w"> </span>get_available_cpu_count<span class="o">()</span>
+
+<span class="w">    </span>@classmethod
+<span class="w">    </span>def<span class="w"> </span>uses_gpu<span class="w"> </span><span class="o">(</span>cls<span class="o">)</span>:
+<span class="w">        </span><span class="k">return</span><span class="w"> </span>cls.gpu_arch!<span class="o">=</span><span class="s2">&quot;none&quot;</span>
+
+<span class="c1">###############################################################################</span>
+</code></pre></div>
+<div class="copy highlight"><span class="filename">~/.cime/scream_mach_specs.py</span><pre><span></span><code>from<span class="w"> </span>machines_specs<span class="w"> </span>import<span class="w"> </span>Machine
+
+<span class="c1">###############################################################################</span>
+class<span class="w"> </span>Local<span class="o">(</span>Machine<span class="o">)</span>:
+<span class="c1">###############################################################################</span>
+<span class="w">    </span><span class="nv">concrete</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>True
+<span class="w">    </span>@classmethod
+<span class="w">    </span>def<span class="w"> </span>setup<span class="o">(</span>cls<span class="o">)</span>:
+<span class="w">        </span>super<span class="o">()</span>.setup_base<span class="o">(</span><span class="s2">&quot;local&quot;</span><span class="o">)</span>
+
+<span class="w">        </span><span class="c1"># NOTE: these are run by the shell (likely bash), so must have</span>
+<span class="w">        </span><span class="c1">#       shell syntax, and can use shell environment variables</span>
+<span class="w">        </span><span class="c1">#       (e.g, $HOME or ~)</span>
+<span class="w">        </span>cls.env_setup<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">[</span>
+<span class="w">                         </span><span class="c1"># source my personal .bashrc </span>
+<span class="w">                         </span><span class="s2">&quot;. ~/.bashrc&quot;</span>,
+<span class="w">                         </span><span class="c1"># source a custom script to setup my eamxx</span>
+<span class="w">                         </span><span class="c1"># environment</span>
+<span class="w">                         </span><span class="s2">&quot;source </span><span class="si">${</span><span class="nv">HOME</span><span class="si">}</span><span class="s2">/.cime/eamxx-setup.sh&quot;</span>
+<span class="w">                         </span><span class="o">]</span>
+
+<span class="w">        </span><span class="c1"># define the python-variable home directory for use below</span>
+<span class="w">        </span><span class="nv">home_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/home/arthur_dent&quot;</span>
+
+<span class="w">        </span><span class="c1"># NOTE: the syntax used in the python strings below is called</span>
+<span class="w">        </span><span class="c1">#       &quot;formatted string literals&quot; or more commonly &quot;f-strings&quot;</span>
+
+<span class="w">        </span><span class="c1"># provide the path to my baselines directory</span>
+<span class="w">        </span>cls.baselines_dir<span class="w"> </span><span class="o">=</span><span class="w"> </span>f<span class="s2">&quot;{home_dir}/eamxx-baselines&quot;</span>
+
+<span class="w">        </span><span class="c1"># provide the path to a custom cmake file, used to pass build</span>
+<span class="w">        </span><span class="c1"># variables directly to cmake</span>
+<span class="w">        </span>cls.mach_file<span class="w"> </span><span class="o">=</span><span class="w"> </span>f<span class="s2">&quot;{home_dir}/.cime/eamxx_mach_file.cmake&quot;</span>
+
+<span class="w">        </span><span class="c1"># set a couple of environment variables that are used in the</span>
+<span class="w">        </span><span class="c1"># setup script and/or eamxx_mach_file.cmake</span>
+<span class="w">        </span><span class="c1"># path to directory containing personally-built libraries</span>
+<span class="w">        </span><span class="nv">tpl_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>f<span class="s2">&quot;{home_dir}/TPLs&quot;</span>
+<span class="w">        </span><span class="c1"># path to personally-built openmpi compilers</span>
+<span class="w">        </span><span class="nv">mpi_bindir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>f<span class="s2">&quot;{tpl_path}/openmpi-4.1.2/install/bin&quot;</span>
+
+<span class="w">        </span><span class="c1"># specific paths to </span>
+<span class="w">        </span>cls.cxx_compiler<span class="w"> </span><span class="o">=</span><span class="w"> </span>f<span class="s2">&quot;{mpi_bindir}/mpicxx&quot;</span>
+<span class="w">        </span>cls.c_compiler<span class="w"> </span><span class="o">=</span><span class="w"> </span>f<span class="s2">&quot;{mpi_bindir}/mpicc&quot;</span>
+<span class="w">        </span>cls.ftn_compiler<span class="w"> </span><span class="o">=</span><span class="w"> </span>f<span class="s2">&quot;{mpi_bindir}/mpifort&quot;</span>
+
+<span class="c1">###############################################################################</span>
+</code></pre></div>
+</details>
+<!-- ## To-do
+
+    - Mention full-model, but don't go into detail
+    - Discuss catch2 (add to comp. structures section)
+        - `create_unit_test()`
+    - Please use labels for tests -->
+
+<!-- ======================================================================= -->
+
+<!-- doesn't like the separation between footnote and text reference appears
+to be triggered by the admonition environment -->
+<!-- markdownlint-disable-next-line MD053 -->
+<!-- doesn't like the separation between footnote and text reference appears
+to be triggered by the admonition environment -->
+<!-- markdownlint-disable-next-line MD053 -->
+<div class="footnote">
+<hr />
+<ol>
+<li id="fn:automagic-cmake">
+<p>In reality, significant effort is involved in designing a project to build "automagically," but the idea is to take that process out of the user's hands.&#160;<a class="footnote-backref" href="#fnref:automagic-cmake" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+</li>
+<li id="fn:supported-machines">
+<p>If you're feeling brave and want to read some python, you can find details about supported machines and their configurations in <a href="https://github.com/E3SM-Project/E3SM/blob/master/components/eamxx/scripts/machines_specs.py">machine_specs.py</a> in the <code>scripts/</code> directory. Or, for general machine files for E3SM, you can take a look at <code>E3SM/cime_config/machines/</code>&#160;<a class="footnote-backref" href="#fnref:supported-machines" title="Jump back to footnote 2 in the text">&#8617;</a></p>
+</li>
+<li id="fn:but-mac">
+<p>Mac computers with an Apple silicon CPU (e.g., M1, M2...) are not officially supported and present challenges related to handling floating-point exceptions. However, some have had success building on this architecture, and if you achieve a robust build configuration for Mac please reach out to the development team!&#160;<a class="footnote-backref" href="#fnref:but-mac" title="Jump back to footnote 3 in the text">&#8617;</a></p>
+</li>
+<li id="fn:smoke-test-def">
+<p><strong><em>Smoke Test</em></strong> is a term used by software developers to describe a type of test that initially indicates whether something is working properly--as in, "flip the switch and see if anything starts smoking." :fingers_crossed:&#160;<a class="footnote-backref" href="#fnref:smoke-test-def" title="Jump back to footnote 4 in the text">&#8617;</a></p>
+</li>
+<li id="fn:regex-tool">
+<p>For those that are not regex ninjas (yet), there are useful tools only to construct or decode regex strings--e.g., <a href="https://regexr.com">RegExr</a>.&#160;<a class="footnote-backref" href="#fnref:regex-tool" title="Jump back to footnote 5 in the text">&#8617;</a></p>
+</li>
+<li id="fn:mach-file">
+<p>If you discover that a supported machine does not successfully build and test, please file an <a href="https://github.com/E3SM-Project/E3SM/issues">Issue</a> with the tag <strong><em>Machine Files</em></strong>.
+Also, no promises the standard configuration is perfectly efficient.&#160;<a class="footnote-backref" href="#fnref:mach-file" title="Jump back to footnote 6 in the text">&#8617;</a></p>
+</li>
+<li id="fn:tas-compute-node">
+<p>While probably not time-efficient, there is no reason <code>test-all-eamxx</code> cannot also be run by submitting to the batch scheduler.
+If this is your goal, the exercise is left to the reader.&#160;<a class="footnote-backref" href="#fnref:tas-compute-node" title="Jump back to footnote 7 in the text">&#8617;</a></p>
+</li>
+</ol>
+</div>
 
 
 

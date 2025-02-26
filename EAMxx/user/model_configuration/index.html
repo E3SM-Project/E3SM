@@ -9,7 +9,7 @@
       
       
       
-        <link rel="prev" href="../model_input/">
+        <link rel="prev" href="../eamxx_cases/">
       
       
         <link rel="next" href="../nudging/">
@@ -20,7 +20,7 @@
     
     
       
-        <title>Model output - E3SM</title>
+        <title>Model Configuration - E3SM</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#model-output" class="md-skip">
+        <a href="#model-configuration" class="md-skip">
           Skip to content
         </a>
       
@@ -116,7 +116,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Model output
+              Model Configuration
             
           </span>
         </div>
@@ -1467,28 +1467,6 @@
                 
   
   
-  
-  
-    <li class="md-nav__item">
-      <a href="../model_input/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Model input
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
     
   
   
@@ -1505,7 +1483,7 @@
           
   
   <span class="md-ellipsis">
-    Model output
+    Model Configuration
     
   </span>
   
@@ -1517,7 +1495,7 @@
         
   
   <span class="md-ellipsis">
-    Model output
+    Model Configuration
     
   </span>
   
@@ -1538,6 +1516,57 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#model-inputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      Model Inputs
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#querying-model-inputs-atmquery" class="md-nav__link">
+    <span class="md-ellipsis">
+      Querying model inputs: atmquery
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#changing-model-inputs-atmchange" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changing model inputs: atmchange
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Changing model inputs: atmchange">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#modifying-the-list-of-atmosphere-processes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Modifying the list of atmosphere processes
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#model-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      Model Output
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#basic-output" class="md-nav__link">
@@ -1714,7 +1743,7 @@
         
   
   <span class="md-ellipsis">
-    PySCREAM
+    PyEAMxx
     
   </span>
   
@@ -1769,6 +1798,28 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../eamxx_params/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    EAMxx runtime parameters
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1785,14 +1836,6 @@
   
     
     
-      
-        
-          
-        
-      
-        
-      
-        
       
         
       
@@ -1816,10 +1859,8 @@
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_3" >
         
           
-          
-          <div class="md-nav__link md-nav__container">
-            <a href="../../developer/" class="md-nav__link ">
-              
+          <label class="md-nav__link" for="__nav_3_3_3" id="__nav_3_3_3_label" tabindex="0">
+            
   
   <span class="md-ellipsis">
     Developer Guide
@@ -1827,14 +1868,8 @@
   </span>
   
 
-            </a>
-            
-              
-              <label class="md-nav__link " for="__nav_3_3_3" id="__nav_3_3_3_label" tabindex="0">
-                <span class="md-nav__icon md-icon"></span>
-              </label>
-            
-          </div>
+            <span class="md-nav__icon md-icon"></span>
+          </label>
         
         <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3_3_3">
@@ -1844,6 +1879,26 @@
           <ul class="md-nav__list" data-md-scrollfix>
             
               
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../developer/dev_quickstart/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Quick-start Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -1852,11 +1907,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../../common/installation/" class="md-nav__link">
+      <a href="../../developer/code_structure/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Installation
+    Code Structure and Organization
     
   </span>
   
@@ -1895,52 +1950,12 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../../developer/kokkos_ekat/" class="md-nav__link">
+    
+    
+      
         
-  
-  <span class="md-ellipsis">
-    Kokkos and EKAT
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../developer/source_tree/" class="md-nav__link">
+          
         
-  
-  <span class="md-ellipsis">
-    Source Tree
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    
-    
       
         
       
@@ -1959,14 +1974,170 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_3_6" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_3_4" >
         
           
-          <label class="md-nav__link" for="__nav_3_3_3_6" id="__nav_3_3_3_6_label" tabindex="0">
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../developer/dev_testing/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    Testing
+    
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_3_3_4" id="__nav_3_3_3_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_3_3_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3_3_4">
+            <span class="md-nav__icon md-icon"></span>
+            Testing
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../developer/dev_testing/testing_for_development/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Testing for Development
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../developer/dev_testing/test_all_eamxx/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Automated Standalone Testing
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../developer/dev_testing/full_model_testing/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Full model (CIME)
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../developer/dev_testing/ci_nightly/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    CI and Nightly Testing
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_3_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3_3_5" id="__nav_3_3_3_5_label" tabindex="0">
             
   
   <span class="md-ellipsis">
-    Important Data Structures
+    Important Tools and Objects
     
   </span>
   
@@ -1974,12 +2145,34 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_3_3_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_3_3_6">
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_3_3_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3_3_5">
             <span class="md-nav__icon md-icon"></span>
-            Important Data Structures
+            Important Tools and Objects
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../developer/kokkos_ekat/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Kokkos and EKAT
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -2054,153 +2247,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../../developer/managers/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Managers
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../developer/io/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
     I/O
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    
-    
-      
-        
-      
-        
-      
-        
-      
-    
-    
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_3_8" >
-        
-          
-          <label class="md-nav__link" for="__nav_3_3_3_8" id="__nav_3_3_3_8_label" tabindex="0">
-            
-  
-  <span class="md-ellipsis">
-    Testing
-    
-  </span>
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_3_3_8_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_3_3_8">
-            <span class="md-nav__icon md-icon"></span>
-            Testing
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../developer/standalone_testing/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Standalone
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../developer/cime_testing/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Full model
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../developer/ci_nightly/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    CI and Nightly Testing
     
   </span>
   
@@ -3146,6 +3197,57 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#model-inputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      Model Inputs
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#querying-model-inputs-atmquery" class="md-nav__link">
+    <span class="md-ellipsis">
+      Querying model inputs: atmquery
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#changing-model-inputs-atmchange" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changing model inputs: atmchange
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Changing model inputs: atmchange">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#modifying-the-list-of-atmosphere-processes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Modifying the list of atmosphere processes
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#model-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      Model Output
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#basic-output" class="md-nav__link">
     <span class="md-ellipsis">
       Basic output
@@ -3210,26 +3312,331 @@
     
       
     
-    <a href="https://github.com/E3SM-Project/screamuser/model_output.md" title="View source of this page" class="md-content__button md-icon">
+    <a href="https://github.com/E3SM-Project/screamuser/model_configuration.md" title="View source of this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.2 8.2 0 0 1-1.23-2"/></svg>
     </a>
   
 
 
-<h1 id="model-output">Model output</h1>
-<p>EAMxx allows the user to configure the desired model output via <a href="https://yaml.org/">YAML</a> files,
-with each YAML file associated to a different output stream (i.e. a file). In order to add an output stream,
-one needs to run <code>atmchange output_yaml_files+=/path/to/my/output/yaml</code> (more information on how
-to use <code>atmchange</code> can be found <a href="../model_input/#changing-model-inputs-atmchange">here</a>).
-During the <code>buildnml</code> phase of the case management system, these YAML files will be copied
-into the RUNDIR/data folder. During this process, the files will be parsed, and any CIME-related
-variable will be resolved accordingly. Therefore, it is not advised to put the original YAML files
-in RUNDIR/data, since upon <code>buildnml</code> execution, all the CIME vars will no longer be present in the
-YAML file (replaced by their values), making it harder to tweak it, and even harder to share with
-other users/cases. Another consequence of this is that, much like <code>scream_input.yaml</code>, the user should
-not modify the generated YAML files in RUNDIR/data, since any modification will be lost on the next
-run of <code>buildnml</code> (e.g., during <code>case.submit</code>).</p>
+<h1 id="model-configuration">Model Configuration</h1>
+<h2 id="model-inputs">Model Inputs</h2>
+<p>This section explains how input parameters are passed to EAMxx, and how the
+user can change their value.</p>
+<!-- The full list of the currently configurable runtime parameters for
+EAMxx can be found [here](../common/eamxx_params.md). -->
+
+<p>The infrastructure for reading inputs into EAMxx involves a few scripts/files:</p>
+<ol>
+<li><code>atmchange</code> and <code>atmquery</code>: these scripts are located in
+<code>SRCDIR/components/eamxx/scripts</code>, and are soft-linked in the case folder.
+As their names suggest, they can be used to query and change the runtime
+configuration parameter of EAMxx.
+Since these two scripts are the only scripts that the average user needs to
+know and interact with, in the next sections we give a brief overview of how
+they can be used and how their output can be interpreted.
+Additionally, for both of the scripts a short help can also be obtained
+using the <code>-h</code> flag.</li>
+<li>
+<p><code>buildnml</code>: this script, located in <code>SRCDIR/components/eamxx/cime_config</code>,
+is called by CIME's case management scripts (<code>case.setup</code>, <code>case.build</code>, and
+<code>case.submit</code>), and is responsible for creating the input files that EAMxx will
+read to load its runtime parameters.
+Users should not have to modify this script,
+nor should they have to manually call it, but it is useful to know what it does.
+When <code>buildnml</code> runs, it creates a few files, containing EAMxx input parameters:</p>
+<ul>
+<li><code>eamxx_input.yaml</code>: this <a href="https://yaml.org/spec/1.2.2">YAML</a>
+file is located in the <code>RUNDIR/data</code> folder, and will be read by EAMxx at
+runtime to load all of its configuration parameters.
+More precisely, this file contains parameters that need to be used inside
+the EAMxx interfaces.</li>
+<li><code>namelist.nl</code>: this
+<a href="https://docs.oracle.com/cd/E19957-01/805-4939/6j4m0vnad/index.html">namelist</a>
+file is located in the <code>RUNDIR/data</code> folder, and will be parsed at runtime
+to get all the parameters for the HOMME dycore (ADD REF).
+This file only contains dycore-specific parameters that are only recognized
+inside HOMME, and does not contain any parameter pertaining EAMxx infrastructure.</li>
+<li><code>namelist_eamxx.xml</code>: this XML file is located in the case directory,
+and contains all the runtime parameters that EAMxx will read in at runtime.
+<code>buildnml</code> uses this XML file as an intermediate file during the generation
+of <code>eamxx_input.yaml</code> and <code>namelist.nl</code>.
+More specifically, <code>buildnml</code> generates this file using case information to
+select the proper configurations from the file
+<code>namelist_defaults_eamxx.xml</code>, located in
+<code>SRCDIR/components/eamxx/cime_config</code>.
+Despite the fact that the only files that are needed at runtime are
+<code>eamxx_input.yaml</code> and <code>namelist.nl</code>, we generate and keep this XML file
+around to make the implementation of <code>atmquery</code> easier.</li>
+</ul>
+<p>Since these files are automatically generated when <code>buildnml</code> runs, users
+should not manually modify them.
+Any manual modification will be lost the next time <code>buildnml</code> runs
+(e.g., at <code>case.submit</code> time).</p>
+</li>
+</ol>
+<h2 id="querying-model-inputs-atmquery">Querying model inputs: <code>atmquery</code></h2>
+<p>This script is the simplest way for the user to check the value and properties
+of EAMxx input parameters.
+A basic usage of the script is</p>
+<div class="copy highlight"><pre><span></span><code>./atmquery<span class="w"> </span>my_param
+</code></pre></div>
+<p>which will retrieve the value of the parameter called <code>my_param</code>, by locating
+the XML node "my_param" in the file <code>namelist_eamxx.xml</code> in the RUNDIR folder.
+Obviously, an XML file can have multiple nodes with the same tag,
+and the script is implemented to error out if multiple matches are found.
+In such a scenario, the user needs to provide also the parents nodes names,
+using enough parents to uniquely identify the node (in most cases,
+one parent is enough).
+To specify a parent, the user can prepend the parent name and <code>::</code> to the node name:</p>
+<div class="copy highlight"><pre><span></span><code>./atmquery<span class="w"> </span>foo::my_param
+</code></pre></div>
+<p>The output will contain the fully scoped parameter name, along with the value. E.g.,</p>
+<div class="copy highlight"><pre><span></span><code>$<span class="w"> </span>./atmquery<span class="w"> </span>foo::my_param
+<span class="w">    </span>namelist_defaults::node1::node2::foo::my_param:<span class="w">   </span><span class="m">10</span>
+</code></pre></div>
+<p>If the input parameter is not a leaf but a node with sub-elements, the output
+will recursively print all sub-elements, properly indented:</p>
+<div class="copy highlight"><pre><span></span><code>$<span class="w"> </span>./atmquery<span class="w"> </span>homme
+<span class="w">    </span>homme
+<span class="w">        </span>Moisture:<span class="w"> </span>moist
+<span class="w">        </span>BfbHash:<span class="w"> </span><span class="m">18</span>
+<span class="w">        </span>number_of_subcycles:<span class="w"> </span><span class="m">1</span>
+<span class="w">        </span>enable_precondition_checks:<span class="w"> </span><span class="nb">true</span>
+<span class="w">        </span>enable_postcondition_checks:<span class="w"> </span><span class="nb">true</span>
+<span class="w">        </span>repair_log_level:<span class="w"> </span>trace
+<span class="w">        </span>internal_diagnostics_level:<span class="w"> </span><span class="m">0</span>
+<span class="w">        </span>compute_tendencies:<span class="w"> </span>None
+</code></pre></div>
+<p>It is sometimes desirable to query <em>all</em> the nodes that have a particular name,
+or that contain a particular string.
+We can do that by using the <code>--grep</code> flag:</p>
+<div class="copy highlight"><pre><span></span><code>$<span class="w"> </span>./atmquery<span class="w"> </span>--grep<span class="w"> </span>sub
+<span class="w">    </span>iop_options::iop_dosubsidence:<span class="w"> </span><span class="nb">false</span>
+<span class="w">    </span>ctl_nl::hypervis_subcycle:<span class="w"> </span><span class="m">1</span>
+<span class="w">    </span>ctl_nl::hypervis_subcycle_tom:<span class="w"> </span><span class="m">1</span>
+<span class="w">    </span>ctl_nl::hypervis_subcycle_q:<span class="w"> </span><span class="m">6</span>
+<span class="w">    </span>atmosphere_processes::number_of_subcycles:<span class="w"> </span><span class="m">1</span>
+<span class="w">    </span>sc_import::number_of_subcycles:<span class="w"> </span><span class="m">1</span>
+<span class="w">    </span>homme::number_of_subcycles:<span class="w"> </span><span class="m">1</span>
+<span class="w">    </span>physics::number_of_subcycles:<span class="w"> </span><span class="m">1</span>
+</code></pre></div>
+<p>Similarly to the CIME utility <code>xmlquery</code>, the options <code>--value</code>, <code>--type</code>,
+<code>--valid-values</code>, and <code>--full</code> can be used to respectively retrieve just the
+parameter value (useful for shell scripting), the parameter's type,
+a list of valid values for the parameter (when applicable), or all of the above:</p>
+<div class="copy highlight"><pre><span></span><code>$<span class="w"> </span>./atmquery<span class="w"> </span>atm_log_level<span class="w"> </span>--value
+<span class="w">    </span>info
+$<span class="w"> </span>./atmquery<span class="w"> </span>atm_log_level<span class="w"> </span>--type
+<span class="w">    </span>namelist_defaults::driver_options::atm_log_level:<span class="w"> </span>string
+$<span class="w"> </span>./atmquery<span class="w"> </span>atm_log_level<span class="w"> </span>--valid-values
+<span class="w">    </span>namelist_defaults::driver_options::atm_log_level:<span class="w"> </span><span class="o">[</span><span class="s1">&#39;trace&#39;</span>,<span class="w"> </span><span class="s1">&#39;debug&#39;</span>,<span class="w"> </span><span class="s1">&#39;info&#39;</span>,
+<span class="w">                                                       </span><span class="s1">&#39;warn&#39;</span>,<span class="w"> </span><span class="s1">&#39;error&#39;</span><span class="o">]</span>
+$<span class="w"> </span>./atmquery<span class="w"> </span>atm_log_level<span class="w"> </span>--full
+<span class="w">    </span>namelist_defaults::driver_options::atm_log_level
+<span class="w">        </span>value:<span class="w"> </span>info
+<span class="w">        </span>type:<span class="w"> </span>string
+<span class="w">        </span>valid<span class="w"> </span>values:<span class="w"> </span><span class="o">[</span><span class="s1">&#39;trace&#39;</span>,<span class="w"> </span><span class="s1">&#39;debug&#39;</span>,<span class="w"> </span><span class="s1">&#39;info&#39;</span>,<span class="w"> </span><span class="s1">&#39;warn&#39;</span>,<span class="w"> </span><span class="s1">&#39;error&#39;</span><span class="o">]</span>
+</code></pre></div>
+<p>Finally, the option <code>--listall</code> can be used to list the whole content of the
+XML file, which will be displayed with each node indented in its parent scope:</p>
+<div class="copy highlight"><pre><span></span><code>$<span class="w"> </span>./atmquery<span class="w"> </span>--listall
+<span class="w">    </span>namelist_defaults
+<span class="w">        </span>grids_manager
+<span class="w">            </span>Type:<span class="w"> </span>Homme
+<span class="w">            </span>physics_grid_type:<span class="w"> </span>PG2
+<span class="w">            </span>physics_grid_rebalance:<span class="w"> </span>None
+<span class="w">            </span>dynamics_namelist_file_name:<span class="w"> </span>./data/namelist.nl
+<span class="w">            </span>vertical_coordinate_filename:<span class="w"> </span>/some/path/to/coords/file.nc
+<span class="w">        </span>initial_conditions
+<span class="w">            </span>Filename:<span class="w"> </span>/some/path/to/ic/file.nc
+<span class="w">            </span>topography_filename:<span class="w"> </span>/some/path/to/topo/file.nc
+<span class="w">    </span><span class="o">[</span>...<span class="o">]</span>
+</code></pre></div>
+<h2 id="changing-model-inputs-atmchange">Changing model inputs: <code>atmchange</code></h2>
+<p>When <code>buildnml</code> runs, the model inputs are deduced from the case configuration
+settings (e.g., the grid, the compset, etc.) and the
+<code>namelist_eamxx_defaults.xml</code> file, located in the eamxx source tree.
+The user can change any of these parameters using the <code>atmchange</code> script.
+A basic usage of the script is</p>
+<div class="copy highlight"><pre><span></span><code>./atmchange<span class="w"> </span><span class="nv">my_param</span><span class="o">=</span><span class="m">10</span>
+</code></pre></div>
+<p>As for <code>atmquery</code>, if there are multiple matches for a given parameter name,
+the user must specify a unique scoped name, which allows <code>atmchange</code> to
+uniquely identify the XML node to modify:</p>
+<div class="copy highlight"><pre><span></span><code>$<span class="w"> </span>./atmquery<span class="w"> </span>homme::number_of_subcycles
+<span class="w">    </span>namelist_defaults::atmosphere_processes::homme::number_of_subcycles:<span class="w"> </span><span class="m">1</span>
+$<span class="w"> </span>./atmchange<span class="w"> </span><span class="nv">number_of_subcycles</span><span class="o">=</span><span class="m">10</span>
+ERROR:<span class="w"> </span>internal_diagnostics_level<span class="w"> </span>is<span class="w"> </span>ambiguous.<span class="w"> </span>Use<span class="w"> </span>ANY<span class="w"> </span><span class="k">in</span><span class="w"> </span>the<span class="w"> </span>node<span class="w"> </span>path<span class="w"> </span>to
+allow<span class="w"> </span>multiple<span class="w"> </span>matches.<span class="w"> </span>Matches:
+<span class="w">    </span>namelist_defaults::atmosphere_processes::number_of_subcycles
+<span class="w">    </span>namelist_defaults::atmosphere_processes::sc_import::number_of_subcycles
+<span class="w">    </span>namelist_defaults::atmosphere_processes::homme::number_of_subcycles
+<span class="w">    </span>namelist_defaults::atmosphere_processes::physics::number_of_subcycles
+<span class="w">    </span>namelist_defaults::atmosphere_processes::physics::mac_aero_mic::number_of_subcycles
+<span class="w">    </span>namelist_defaults::atmosphere_processes::physics::mac_aero_mic::tms::number_of_subcycles
+<span class="w">    </span>namelist_defaults::atmosphere_processes::physics::mac_aero_mic::shoc::number_of_subcycles
+<span class="w">    </span>namelist_defaults::atmosphere_processes::physics::mac_aero_mic::cldFraction::number_of_subcycles
+<span class="w">    </span>namelist_defaults::atmosphere_processes::physics::mac_aero_mic::spa::internal_diagnostics_level
+<span class="w">    </span>namelist_defaults::atmosphere_processes::physics::mac_aero_mic::p3::number_of_subcycles
+<span class="w">    </span>namelist_defaults::atmosphere_processes::physics::rrtmgp::number_of_subcycles
+<span class="w">    </span>namelist_defaults::atmosphere_processes::sc_export::number_of_subcycles
+$<span class="w"> </span>./atmchange<span class="w"> </span>homme::number_of_subcycles<span class="o">=</span><span class="m">10</span>
+Regenerating<span class="w"> </span>/path/to/namelist_eamxx.xml.<span class="w"> </span>Manual<span class="w"> </span>edits<span class="w"> </span>will<span class="w"> </span>be<span class="w"> </span>lost.
+$<span class="w"> </span>./atmquery<span class="w"> </span>homme::number_of_subcycles
+<span class="w">    </span>namelist_defaults::atmosphere_processes::homme::number_of_subcycles:<span class="w"> </span><span class="m">10</span>
+</code></pre></div>
+<p>In some cases, the user may be interested in changing <em>all</em> nodes with a
+given name.
+In that case, you can use 'ANY' as a node name:</p>
+<div class="copy highlight"><pre><span></span><code>$<span class="w"> </span>./atmquery<span class="w"> </span>--grep<span class="w"> </span>number_of_subcycles
+<span class="w">    </span>atmosphere_processes::number_of_subcycles:<span class="w"> </span><span class="m">1</span>
+<span class="w">    </span>sc_import::number_of_subcycles:<span class="w"> </span><span class="m">1</span>
+<span class="w">    </span>homme::number_of_subcycles:<span class="w"> </span><span class="m">1</span>
+<span class="w">    </span>physics::number_of_subcycles:<span class="w"> </span><span class="m">1</span>
+<span class="w">    </span>mac_aero_mic::number_of_subcycles:<span class="w"> </span><span class="m">24</span>
+<span class="w">    </span>tms::number_of_subcycles:<span class="w"> </span><span class="m">1</span>
+<span class="w">    </span>shoc::number_of_subcycles:<span class="w"> </span><span class="m">1</span>
+<span class="w">    </span>cldFraction::number_of_subcycles:<span class="w"> </span><span class="m">1</span>
+<span class="w">    </span>spa::number_of_subcycles:<span class="w"> </span><span class="m">1</span>
+<span class="w">    </span>p3::number_of_subcycles:<span class="w"> </span><span class="m">1</span>
+<span class="w">    </span>rrtmgp::number_of_subcycles:<span class="w"> </span><span class="m">1</span>
+<span class="w">    </span>sc_export::number_of_subcycles:<span class="w"> </span><span class="m">1</span>
+$<span class="w"> </span>./atmchange<span class="w"> </span>ANY::number_of_subcycles<span class="o">=</span><span class="m">3</span>
+Regenerating<span class="w"> </span>/path/to/namelist_eamxx.xml.<span class="w"> </span>Manual<span class="w"> </span>edits<span class="w"> </span>will<span class="w"> </span>be<span class="w"> </span>lost.
+$<span class="w"> </span>./atmquery<span class="w"> </span>--grep<span class="w"> </span>number_of_subcycles
+<span class="w">    </span>atmosphere_processes::number_of_subcycles:<span class="w"> </span><span class="m">3</span>
+<span class="w">    </span>sc_import::number_of_subcycles:<span class="w"> </span><span class="m">3</span>
+<span class="w">    </span>homme::number_of_subcycles:<span class="w"> </span><span class="m">3</span>
+<span class="w">    </span>physics::number_of_subcycles:<span class="w"> </span><span class="m">3</span>
+<span class="w">    </span>mac_aero_mic::number_of_subcycles:<span class="w"> </span><span class="m">3</span>
+<span class="w">    </span>tms::number_of_subcycles:<span class="w"> </span><span class="m">3</span>
+<span class="w">    </span>shoc::number_of_subcycles:<span class="w"> </span><span class="m">3</span>
+<span class="w">    </span>cldFraction::number_of_subcycles:<span class="w"> </span><span class="m">3</span>
+<span class="w">    </span>spa::number_of_subcycles:<span class="w"> </span><span class="m">3</span>
+<span class="w">    </span>p3::number_of_subcycles:<span class="w"> </span><span class="m">3</span>
+<span class="w">    </span>rrtmgp::number_of_subcycles:<span class="w"> </span><span class="m">3</span>
+<span class="w">    </span>sc_export::number_of_subcycles:<span class="w"> </span><span class="m">3</span>
+</code></pre></div>
+<p>In addition, "ANY" can be used in a "scoped" string, to limit the set of matches:</p>
+<div class="copy highlight"><pre><span></span><code>$<span class="w"> </span>./atmchange<span class="w"> </span>mac_aero_mic::ANY::number_of_subcycles<span class="o">=</span><span class="m">1</span>
+Regenerating<span class="w"> </span>/path/to/namelist_eamxx.xml.<span class="w"> </span>Manual<span class="w"> </span>edits<span class="w"> </span>will<span class="w"> </span>be<span class="w"> </span>lost.
+$<span class="w"> </span>./atmquery<span class="w"> </span>--grep<span class="w"> </span>number_of_subcycles
+<span class="w">    </span>atmosphere_processes::number_of_subcycles:<span class="w"> </span><span class="m">3</span>
+<span class="w">    </span>sc_import::number_of_subcycles:<span class="w"> </span><span class="m">3</span>
+<span class="w">    </span>homme::number_of_subcycles:<span class="w"> </span><span class="m">3</span>
+<span class="w">    </span>physics::number_of_subcycles:<span class="w"> </span><span class="m">3</span>
+<span class="w">    </span>mac_aero_mic::number_of_subcycles:<span class="w"> </span><span class="m">1</span>
+<span class="w">    </span>tms::number_of_subcycles:<span class="w"> </span><span class="m">1</span>
+<span class="w">    </span>shoc::number_of_subcycles:<span class="w"> </span><span class="m">1</span>
+<span class="w">    </span>cldFraction::number_of_subcycles:<span class="w"> </span><span class="m">1</span>
+<span class="w">    </span>spa::number_of_subcycles:<span class="w"> </span><span class="m">1</span>
+<span class="w">    </span>p3::number_of_subcycles:<span class="w"> </span><span class="m">1</span>
+<span class="w">    </span>rrtmgp::number_of_subcycles:<span class="w"> </span><span class="m">3</span>
+<span class="w">    </span>sc_export::number_of_subcycles:<span class="w"> </span><span class="m">3</span>
+</code></pre></div>
+<p>Since the XML file stores constraints on the parameter value
+(like its type or valid values), attempting to use the wrong type will cause an error:</p>
+<div class="copy highlight"><pre><span></span><code>$<span class="w"> </span>./atmquery<span class="w"> </span>--type<span class="w"> </span>se_ne
+<span class="w">    </span>namelist_defaults::ctl_nl::se_ne:<span class="w"> </span>integer
+$<span class="w"> </span>./atmchange<span class="w"> </span><span class="nv">se_ne</span><span class="o">=</span>hello
+ERROR:<span class="w"> </span>Could<span class="w"> </span>not<span class="w"> </span>refine<span class="w"> </span><span class="s1">&#39;hello&#39;</span><span class="w"> </span>as<span class="w"> </span><span class="nb">type</span><span class="w"> </span><span class="s1">&#39;integer&#39;</span>:
+</code></pre></div>
+<p>There are three main types supported: integer, float, string, logical.
+When passing a string to <code>atmchange</code>, the script will try to interpret it
+according to the parameter type, and throw an error if that's not possible:</p>
+<ul>
+<li>For "string", anything works.</li>
+<li>For "integer", only digits are allowed, possibly with a negative sign in front;</li>
+<li>For "float", only digits are allowed, possibly with a negative sign in front
+and a decimal point;</li>
+<li>For "logical", only the strings "true" and "false" are allowed (case insensitive).
+There are two additional types supported: "file" and "array(T)", where "T" is
+any of the other supported types (but not another array):<ul>
+<li>"file" is used to inform CIME of the input files that have to be download
+  from E3SM data servers, like initial conditions files, or certain lookup tables.</li>
+<li>"array(T)" allows to specify a list of items (of the same type),
+  which will be parsed inside EAMxx as a <code>std::vector&lt;T&gt;</code>.</li>
+</ul>
+</li>
+</ul>
+<p>For type "string" and "array(T)", it is also possible to <em>append</em> to the
+currently stored value.</p>
+<div class="copy highlight"><pre><span></span><code>$<span class="w"> </span>./atmquery<span class="w"> </span>homme::compute_tendencies
+<span class="w">    </span>namelist_defaults::atmosphere_processes::homme::compute_tendencies:
+<span class="w">        </span>value:<span class="w"> </span>a,<span class="w"> </span>b
+<span class="w">        </span>type:<span class="w"> </span>array<span class="o">(</span>string<span class="o">)</span>
+<span class="w">        </span>valid<span class="w"> </span>values:<span class="w"> </span><span class="o">[]</span>
+$<span class="w"> </span>./atmchange<span class="w"> </span>homme::compute_tendencies+<span class="o">=</span>c
+$<span class="w"> </span>./atmquery<span class="w"> </span>homme::compute_tendencies<span class="w"> </span>--full
+<span class="w">    </span>namelist_defaults::atmosphere_processes::homme::compute_tendencies
+<span class="w">        </span>value:<span class="w"> </span>a,<span class="w"> </span>b,<span class="w"> </span>c
+<span class="w">        </span>type:<span class="w"> </span>array<span class="o">(</span>string<span class="o">)</span>
+<span class="w">        </span>valid<span class="w"> </span>values:<span class="w"> </span><span class="o">[]</span>
+</code></pre></div>
+<h3 id="modifying-the-list-of-atmosphere-processes">Modifying the list of atmosphere processes</h3>
+<p>The <code>atmchange</code> script can be used to change any of the runtime parameters of EAMxx.
+In particular, it can
+be used to add, remove, or reorder atmosphere processes.
+When adding an atmosphere process, we must first make sure that the defaults
+for that process are present in <code>namelist_defaults_eamxx.xml</code>.
+For instance, the default settings for the "physics" atmosphere process group
+include the following:</p>
+<div class="copy highlight"><pre><span></span><code>$<span class="w"> </span>./atmquery<span class="w"> </span>physics::atm_procs_list
+<span class="w">    </span>namelist_defaults::atmosphere_processes::physics::atm_procs_list:<span class="w"> </span>mac_aero_mic,rrtmgp
+</code></pre></div>
+<p>where "mac_aero_mic" is itself an atmosphere process group, consisting of
+macrophysics, aerosols, and microphysics processes.
+If one wanted to add the "cosp" atmosphere process to this list, and change the
+number of its subcycles, it could do so via</p>
+<div class="copy highlight"><pre><span></span><code>$<span class="w"> </span>./atmchange<span class="w"> </span>physics::atm_procs_list+<span class="o">=</span>cosp
+<span class="o">[</span>...<span class="o">]</span>
+$<span class="w"> </span>./atmchange<span class="w"> </span>cosp::number_of_subcycles<span class="o">=</span><span class="m">3</span>
+</code></pre></div>
+<p>Notice that if we swapped the two commands, we would get an error,
+since the node "cosp" is not present in the XML generated from the defaults
+until we decide to add it.</p>
+<p>It is also possible to declare a new (empty) atmosphere process group,
+which can then be filled with valid atmosphere processes via subsequent calls
+to <code>atmchange</code>.
+The syntax to trigger this behavior consists in specifying a process name that
+begins and ends with an underscore:</p>
+<div class="copy highlight"><pre><span></span><code>./atmchange<span class="w"> </span>physics::atm_procs_list+<span class="o">=</span>_my_group_
+</code></pre></div>
+<p>This adds a new process to the list of processes in "physics",
+called "_my_group_", and which is itself an atmosphere process group.
+Hence, we can then do</p>
+<div class="copy highlight"><pre><span></span><code>./atmchange<span class="w"> </span>_my_group_::atm_procs_list+<span class="o">=</span>A,B
+</code></pre></div>
+<p>where A and B must be valid atmosphere process names (i.e., present in <code>namelist_defaults_eamxx.xml</code>)
+or be themselves new atmosphere process groups (i.e., beginning/ending with an underscore)</p>
+<p><code>atmchange</code> can also be used to completely change a list of atmosphere processes:</p>
+<div class="copy highlight"><pre><span></span><code>./atmchange<span class="w"> </span>physics::atm_procs_list<span class="o">=</span>A,B,C
+</code></pre></div>
+<p>Notice that we used "=" instead of "+=", which means we will be overwriting the
+value, rather than appending.
+Any atmosphere process that was previously in the list but is no longer in it
+will be removed from the generated <code>namelist_defaults.xml</code>
+(and <code>eamxx_input.yaml</code>) files, along with all their nested parameters.</p>
+<h2 id="model-output">Model Output</h2>
+<p>EAMxx allows the user to configure the desired model output via
+<a href="https://yaml.org/">YAML</a> files,
+with each YAML file associated to a different output stream (i.e., a file).
+In order to add an output stream,
+one needs to run <code>atmchange output_yaml_files+=/path/to/my/output/yaml</code>
+(more information on how to use <code>atmchange</code> can be found <a href="#changing-model-inputs-atmchange">here</a>).
+During the <code>buildnml</code> phase of the case management system, these YAML files
+will be copied into the RUNDIR/data folder.
+During this process, the files will be parsed, and any CIME-related
+variable will be resolved accordingly.
+Therefore, it is not advised to put the original YAML files
+in RUNDIR/data, since upon <code>buildnml</code> execution, all the CIME vars will no
+longer be present in the YAML file (replaced by their values),
+making it harder to tweak it, and even harder to share with other users/cases.
+Another consequence of this is that, much like <code>eamxx_input.yaml</code>,
+the user should not modify the generated YAML files in RUNDIR/data,
+since any modification will be lost on the next run of <code>buildnml</code>
+(e.g., during <code>case.submit</code>).</p>
 <h2 id="basic-output">Basic output</h2>
 <p>The following is a basic example of an output request.</p>
 <div class="highlight"><pre><span></span><code><span class="nt">%YAML</span><span class="w"> </span><span class="m">1.1</span>
@@ -3250,42 +3657,49 @@ run of <code>buildnml</code> (e.g., during <code>case.submit</code>).</p>
 <span class="w">  </span><span class="nt">Frequency</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6</span>
 <span class="w">  </span><span class="nt">frequency_units</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nhours</span>
 </code></pre></div>
-<p>Notice that lists can be equivalently specified in YAML as <code>Field Names: [f1, f2, f3]</code>.
-The user can specify fields to be outputted from any of the grids on which they are available
-(although most fields are only available on ONE grid).
+<p>Notice that lists can be equivalently specified in YAML as
+<code>Field Names: [f1, f2, f3]</code>.
+The user can specify fields to be outputted from any of the grids on which
+they are available (although most fields are only available on ONE grid).
 In the example above, we requested fields from both the Physics and Dynamics grid.
 The meaning of the other parameters is as follows:</p>
 <ul>
-<li>
-<p><code>Averaging Type</code>: how the fields are integrated in time before being saved. Valid
-  options are</p>
+<li><code>Averaging Type</code>: how the fields are integrated in time before being saved.
+Valid options are:<ul>
+<li><code>Instant</code>: no integration, each time frame saved corresponds to
+  instantaneous values of the fields.</li>
+<li><code>Average</code>/<code>Max</code>/<code>Min</code>: the fields undergo the corresponding operation
+  over the time interval since the last output step (as specified in the
+  <code>output_control</code> section).
+  In the case above, each snapshot saved to file corresponds to an average
+  of the output fields over 6h windows.</li>
+</ul>
 </li>
-<li>
-<p>Instant: no integration, each time frame saved corresponds to instantaneous values
-    of the fields</p>
+<li><code>filename_prefix</code>: the prefix of the output file, which will be created
+in the run directory.<ul>
+<li>The full filename will be <code>$prefix.$avgtype.$frequnits_x$freq.$timestamp.nc</code>,
+  where <code>$timestamp</code> corresponds to the first snapshot saved in the file for
+  <code>Instant</code> output, or the beginning of the first averaging window for the other
+  averaging types.</li>
+<li>If not set, it defaults to <code>$casename.eamxx.h</code>.</li>
+</ul>
 </li>
-<li>
-<p>Average/Max/Min: the fields undergo the corresponding operation over the time
-    interval since the last output step (as specified in the <code>output_control</code> section).
-    In the case above, each snapshot saved to file corresponds to an average of the output
-    fields over 6h windows.</p>
+<li><code>Max Snapshots Per File</code>: specifies how many time snapshots can be put in a file.<ul>
+<li>Once this number is reached, EAMxx will close the file and open a new one.</li>
+<li>If not set, it defaults to <code>-1</code>, signaling "unlimited storage".</li>
+</ul>
 </li>
-<li>
-<p><code>filename_prefix</code>: the prefix of the output file, which will be created in the run
-  directory. The full filename will be <code>$prefix.$avgtype.$frequnits_x$freq.$timestamp.nc</code>,
-  where <code>$timestamp</code> corresponds to the first snapshot saved in the file for Instant output,
-  or the beginning of the first averaging window for the other averaging types. If not set,
-  it defaults to <code>$casename.scream.h</code>.</p>
+<li><code>Frequency</code>: how many units of time are between two consecutive writes to file.<ul>
+<li>For <code>Instant</code> output the fields are "sampled" at this frequency,
+  while for other averaging types the fields are "integrated"
+  in time over this window</li>
+</ul>
 </li>
-<li><code>Max Snapshots Per File</code>: specifies how many time snapshots can be put in a file. Once
-  this number is reached, EAMxx will close the file and open a new one. If not set,
-  it defaults to <code>-1</code>, signaling "unlimited storage".</li>
-<li><code>Frequency</code>: how many units of time are between two consecutive writes to file. For
-  Instant output the fields are "sampled" at this frequency, while for other averaging
-  types the fields are "integrated" in time over this window</li>
-<li><code>frequency_units</code>: units of the output frequency. Valid options are <code>nsteps</code> (the
-  number of atmosphere time steps), <code>nsecs</code>, <code>nmins</code>, <code>nhours</code>, <code>ndays</code>, <code>nmonths</code>,
-  <code>nyears</code>.</li>
+<li><code>frequency_units</code>: units of the output frequency.<ul>
+<li>Valid options are <code>nsteps</code> (the number of atmosphere time steps),
+  <code>nsecs</code>, <code>nmins</code>, <code>nhours</code>, <code>ndays</code>, <code>nmonths</code>, <code>nyears</code>.</li>
+</ul>
+</li>
 </ul>
 <h2 id="diagnostic-output">Diagnostic output</h2>
 <p>In addition to the fields computed by EAMxx as part of the timestep, the user can
@@ -3293,13 +3707,12 @@ request to output derived quantities, which will be computed on the fly by the
 I/O interface of EAMxx. There are two types of diagnostic outputs:</p>
 <ul>
 <li>
-<p>quantities computed as a function of EAMxx fields. These are simply physical quantities
-  that EAMxx does not keep in persistent storage. As of May 2024, the available
-  derived quantities are (case sensitive):</p>
-</li>
-<li>
-<p><code>Exner</code></p>
-</li>
+<p><strong>Quantities computed as a function of EAMxx fields</strong></p>
+<ul>
+<li>These are simply physical quantities that EAMxx does not keep in
+  persistent storage.</li>
+<li>As of May 2024, the available derived quantities are (case sensitive):<ul>
+<li><code>Exner</code></li>
 <li><code>PotentialTemperature</code></li>
 <li><code>LiqPotentialTemperature</code></li>
 <li><code>dz</code></li>
@@ -3328,105 +3741,195 @@ I/O interface of EAMxx. There are two types of diagnostic outputs:</p>
 <li><code>wind_speed</code></li>
 <li><code>AerosolOpticalDepth550nm</code></li>
 <li><code>NumberPath</code></li>
-<li>
-<p><code>AeroComCld</code></p>
+<li><code>AeroComCld</code></li>
+</ul>
+</li>
+</ul>
 </li>
 <li>
-<p>lower-dimensional slices of a field. These are hyperslices of an existing field or of
-  another diagnostic output. As of August 2023, given a field X, the available options
-  are:</p>
+<p><strong>Lower-dimensional slices of a field</strong></p>
+<ul>
+<li>These are hyperslices of an existing field or of another diagnostic output.</li>
+<li>As of August 2023, given a field <code>X</code>, the available options are:<ul>
+<li><code>X_at_lev_N</code>: slice the field <code>X</code> at the <code>N</code>-th vertical level index.<ul>
+<li>Recall that in EAMxx <code>N = 0</code> corresponds to the model top.</li>
+</ul>
 </li>
-<li>
-<p><code>X_at_lev_N</code>: slice the field <code>X</code> at the N-th vertical level index. Recall that
-    in EAMxx N=0 corresponds to the model top.</p>
+<li><code>X_at_model_bot</code>, <code>X_at_model_top</code>:
+  special case for top and bottom of the model.</li>
+<li><code>X_at_Ymb</code>, <code>X_at_YPa</code>, <code>X_at_YhPa</code>:
+  interpolates the field <code>X</code> at a vertical position specified by the
+  given pressure <code>Y</code>.<ul>
+<li>Available units are <code>mb</code> (millibar), <code>Pa</code>, and <code>hPa</code>.</li>
+</ul>
 </li>
-<li><code>X_at_model_bot</code>, <code>X_at_model_top</code>: special case for top and bottom of the model.</li>
-<li><code>X_at_Ymb</code>, <code>X_at_YPa</code>, <code>X_at_YhPa</code>: interpolates the field <code>X</code> at a vertical position
-    specified by the give pressure <code>Y</code>. Available units are <code>mb</code> (millibar), <code>Pa</code>, and <code>hPa</code>.</li>
-<li><code>X_at_Ym_above_Z</code>: interpolates the field <code>X</code> at a vertical height of <code>Y</code> meters above
-    <code>Z</code>, with <code>Z=surface</code> or <code>Z=sealevel</code>.</li>
+<li><code>X_at_Ym_above_Z</code>:
+  interpolates the field <code>X</code> at a vertical height of <code>Y</code> meters above
+  <code>Z</code>, with <code>Z = surface</code> or <code>Z = sealevel</code>.</li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 <h2 id="remapped-output">Remapped output</h2>
-<p>The following options can be used to to save fields on a different grid from the one
-they are computed on.</p>
+<p>The following options can be used to to save fields on a different grid from
+the one they are computed on.</p>
 <ul>
-<li><code>horiz_remap_file</code>: a path to a map file (as produced by <code>ncremap</code>) between the grid
-  where the fields are defined and a coarser grid. EAMxx will use this to remap fields
-  on the fly, allowing to reduce the size of the output file. Note: with this feature,
-  the user can only specify fields from a single grid.</li>
+<li><code>horiz_remap_file</code>: a path to a map file (as produced by <code>ncremap</code>) between
+the grid where the fields are defined and a coarser grid.<ul>
+<li>EAMxx will use this to remap fields on the fly, allowing to reduce
+  the size of the output file.<ul>
+<li><strong>Note:</strong> with this feature, the user can only specify fields
+  from a single grid.</li>
+</ul>
+</li>
+</ul>
+</li>
 <li><code>vertical_remap_file</code>: similar to the previous option, this map file is used to
-  refine/coarsen fields in the vertical direction.</li>
-<li><code>IOGrid</code>: this parameter can be specified inside one of the grids sections, and will
-  denote the grid (which must exist in the simulation) where the fields must be remapped
-  before being saved to file. This feature is really only used to save fields on the
-  dynamics grid without saving twice the DOFs at the interface of two spectral elements.
-  E.g., for a scalar quantity defined only in the horizontal direction, native output
-  from the Dynamics grid would produce arrays of length <code>nelems*ngp*ngp</code>, where <code>ngp</code>
-  is the number of Gauss points along each axis in the 2d spectral element, and <code>nelems</code>
-  is the number of horizontal elements. However, due to continuity, the values on the
-  Gauss points on the element boundary must match the values on the neighboring element,
-  resulting in duplicated data. By remapping to a "unique" version of the dynamics grid
-  (which in EAMxx is referred to as "Physics GLL"), we can save roughly 45% of storage.
-  Note: this feature cannot be used along with the horizontal/vertical remap.</li>
+refine/coarsen fields in the vertical direction.</li>
+<li><code>IOGrid</code>: this parameter can be specified inside one of the grids sections,
+and will denote the grid (which must exist in the simulation) where the fields
+must be remapped before being saved to file.<ul>
+<li>This feature is really only used to save fields on the dynamics grid
+  without saving twice the DOFs at the interface of two spectral elements.</li>
+<li>E.g., for a scalar quantity defined only in the horizontal direction,
+  native output from the Dynamics grid would produce arrays of length
+  <code>nelems * ngp * ngp</code>, where <code>ngp</code> is the number of Gauss points along
+  each axis in the 2D spectral element, and <code>nelems</code> is the number of
+  horizontal elements.</li>
+<li>However, due to continuity, the values on the Gauss points on the
+  element boundary must match the values on the neighboring element,
+  resulting in duplicated data.</li>
+<li>By remapping to a "unique" version of the dynamics grid
+  (which in EAMxx is referred to as "Physics GLL"), we can save roughly
+  45% of storage.</li>
+<li><strong>Note:</strong> this feature cannot be used along with the
+  horizontal/vertical remap.</li>
+</ul>
+</li>
 </ul>
 <h2 id="tendencies-output">Tendencies output</h2>
-<p>It is also possible to request tendencies of fields that are updated by atmosphere processes,
-on a per-process basis (here, "updated" means that the field is both an input as well as an output
-of the atmosphere process). Since the term "tendency" can be used with slightly different connotations,
-we clarify what we mean by that when it comes to model output: if process P updates field A,
-by the tendency of A from process P we mean <code>(A_after_P - A_before_P) / dt</code>, where <code>dt</code> is
-the atmosphere timestep.</p>
-<p>As of May 2024, the user needs two things in order to get tendencies from a process. E.g., to get
-the tendencies of <code>T_mid</code> and <code>horiz_winds</code> from the process <code>shoc</code>, one needs:</p>
+<p>It is also possible to request tendencies of fields that are updated by
+atmosphere processes, on a per-process basis (here, "updated" means that the
+field is both an input as well as an output of the atmosphere process).
+Since the term "tendency" can be used with slightly different connotations,
+we clarify what we mean by that when it comes to model output:
+if process P updates field A, by the tendency of A from process P we mean
+<code>(A_after_P - A_before_P) / dt</code>, where <code>dt</code> is the atmosphere timestep.</p>
+<p>As of May 2024, the user needs two things in order to get tendencies from a
+process. E.g., to get the tendencies of <code>T_mid</code> and <code>horiz_winds</code> from the
+process <code>shoc</code>, one needs to:</p>
 <ul>
-<li><code>atmchange shoc::compute_tendencies=T_mid,horiz_winds</code>;</li>
-<li>add <code>shoc_T_mid_tend</code> and <code>shoc_horiz_winds_tend</code> to the list of fields in the desired output YAML file.</li>
+<li>Set <code>atmchange shoc::compute_tendencies=T_mid,horiz_winds</code>.</li>
+<li>Add <code>shoc_T_mid_tend</code> and <code>shoc_horiz_winds_tend</code> to the list of fields in
+the desired output YAML file.</li>
 </ul>
 <h2 id="additional-options">Additional options</h2>
-<p>The YAML file shown at the top of this section, together with the remap options in the following
-section, covers most of the options used in a typical run. There are however particular use cases
-that require some less common options, which we list here (in parentheses, the location in the YAML
-file and the type of the parameter value).</p>
+<p>The YAML file shown at the top of this section, together with the remap options
+in the following section, covers most of the options used in a typical run.
+There are, however, particular use cases that require some less common options,
+which we list here (in parentheses, the location in the YAML file and the type
+of the parameter value).</p>
 <ul>
-<li><code>flush_frequency</code> (toplevel list, integer): this parameter  can be used to specify how often the IO
-  library should sync the in-memory data to file. If not specified, the IO library is free to decide
-  when it should flush the data. This option can be helpful for debugging, in case a crash is occurring
-  after a certain number of steps, but before the IO library would automatically flush to file.</li>
-<li><code>Floating Point Precision</code> (toplevel list, string): this parameter specifies the precision to be used for floating
-  point variables in the output file. By default, EAMxx uses single precision. Valid values are
-  <code>single</code>, <code>float</code>, <code>double</code>, and <code>real</code>. The first two are synonyms, while the latter resolves
-  to <code>single</code> or <code>double</code> depending on EAMxx cmake configuration parameter <code>SCREAM_DOUBLE_PRECISION</code>.</li>
-<li><code>file_max_storage_type</code> (toplevel list, string): this parameter determines how the capacity of the file is specified.
-  By default, it is set to <code>num_snapshots</code>, which makes EAMxx read <code>Max Snapshots Per File</code> (explained
-  in the first section). However, the user can specify <code>one_year</code> or <code>one_month</code>, which will make
-  EAMxx create one output file per year/month of simulation, fitting however many snapshots are needed
-  in each file (depending on the output frequency). If <code>one_year</code> or <code>one_month</code> are used, the option
-  <code>Max Snapshots Per File</code> is ignored.</li>
-<li><code>MPI Ranks in Filename</code> (toplevel list, boolean): this option specifies whether the number of MPI ranks in the atm
-  communicator should be put inside the output file name. By default, this is <code>false</code>, since it is
-  usually not important. This option is mostly important for standalone unit testing, where several
-  versions of the same test (corresponding to different numbers of MPI ranks) are running concurrently,
-  so that different file names are needed to avoid resource contention.</li>
-<li><code>save_grid_data</code> (<code>output_control</code> sublist, boolean): this option allows to specify whether grid data
-  (such as <code>lat</code>/<code>lon</code>) should be added to the output stream. By default, it is <code>true</code>.</li>
-<li><code>iotype</code> (toplevel list, string): this option allows the user to request a particular format for the output
-  file. The possible values are 'default', 'netcdf', 'pnetcdf' 'adios', 'hdf5', where 'default' means
-  "whatever is the PIO type from the case settings".</li>
-<li><code>skip_t0_output</code> (<code>output_control</code> sublist, boolean): this option is relevant only for <code>Instant</code> output,
-  where fields are also outputed at the case start time (i.e., after initialization but before the beginning
-  of the first timestep). By default it is set to <code>false</code>.</li>
-<li>restart options: when performing a restart, EAMxx attempts to restart every output stream listed in
-  the <code>output_yaml_files</code> atm option (which can be queried via <code>atmquery output_yaml_files</code>). The user
-  can specify a few options, in order to tweak the restart behavior:</li>
-<li><code>Perform Restart</code> (<code>Restart</code> sublist, boolean): this parameter is <code>true</code> by default, but can be set
-    to <code>false</code> to force the model to ignore any history restart files, and start the output stream from
-    scratch, as if this was an initial run.</li>
-<li><code>filename_prefix</code> (<code>Restart</code> sublist, string): by default, this parameter is set to match the value
-    of <code>filename_prefix</code> from the toplevel list. It can be set to something else in case we want to
-    restart a previous simulation that was using a different filename prefix.</li>
-<li><code>force_new_file</code> (<code>Restart</code> sublist, boolean): this parameter allows to start a fresh new output file
-    upon restarts. By default, is is set to <code>false</code>, so that EAMxx will attempt to resume filling the
-    last produced output file (if any, and if it can accommodate more snapshots).</li>
+<li><code>flush_frequency</code> (top-level list, <code>integer</code>)<ul>
+<li>This parameter can be used to specify how often the IO library
+  should sync the in-memory data to file.</li>
+<li>If not specified, the IO library is free to decide when it should flush
+  the data.</li>
+<li>This option can be helpful for debugging, in case a crash is occurring
+  after a certain number of steps, but before the IO library would
+  automatically flush to file.</li>
+</ul>
+</li>
+<li><code>Floating Point Precision</code> (top-level list, <code>string</code>):<ul>
+<li>This parameter specifies the precision to be used for floating point
+  variables in the output file.</li>
+<li>By default, EAMxx uses single precision.</li>
+<li>Valid values are <code>single</code>, <code>float</code>, <code>double</code>, and <code>real</code>.<ul>
+<li>The first two are synonyms, while the latter resolves to <code>single</code>
+  or <code>double</code> depending on EAMxx CMake configuration parameter <code>EAMXX_DOUBLE_PRECISION</code>.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><code>file_max_storage_type</code> (top-level list, <code>string</code>):<ul>
+<li>This parameter determines how the capacity of the file is specified.<ul>
+<li>By default, it is set to <code>num_snapshots</code>, which makes EAMxx read
+<code>Max Snapshots Per File</code> (explained in the first section).</li>
+<li>However, the user can specify <code>one_year</code> or <code>one_month</code>,
+which will make EAMxx create one output file per year/month of simulation,
+fitting however many snapshots are needed in each file
+(depending on the output frequency).<ul>
+<li>If <code>one_year</code> or <code>one_month</code> are used, the option
+<code>Max Snapshots Per File</code> is ignored.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><code>MPI Ranks in Filename</code> (top-level list, <code>boolean</code>):<ul>
+<li>This option specifies whether the number of MPI ranks in the atmosphere
+  communicator should be put inside the output file name.</li>
+<li>By default, this is <code>false</code>, since it is usually not important.</li>
+<li>This option is mostly important for standalone unit testing, where several
+  versions of the same test (corresponding to different numbers of MPI ranks)
+  are running concurrently, so that different file names are needed to
+  avoid resource contention.</li>
+</ul>
+</li>
+<li><code>iotype</code> (top-level list, <code>string</code>):<ul>
+<li>This option allows the user to request a particular format for the
+  output file.</li>
+<li>The possible values are 'default', 'netcdf', 'pnetcdf' 'adios',
+  'hdf5', where 'default' means "whatever is the PIO type from the case settings".</li>
+</ul>
+</li>
+<li><code>save_grid_data</code> (<code>output_control</code> sub-list, <code>boolean</code>):<ul>
+<li>This option allows to specify whether grid data (such as <code>lat</code>/<code>lon</code>)
+  should be added to the output stream.</li>
+<li>By default, it is <code>true</code>.</li>
+</ul>
+</li>
+<li><code>skip_t0_output</code> (<code>output_control</code> sub-list, <code>boolean</code>):<ul>
+<li>This option is relevant only for <code>Instant</code> output, for which fields are
+  also output at the case start time<ul>
+<li>I.e., after initialization but before the beginning of the first timestep).</li>
+</ul>
+</li>
+<li>By default it is set to <code>false</code>.</li>
+</ul>
+</li>
+<li><strong>Restart Options:</strong><ul>
+<li>When performing a restart, EAMxx attempts to restart every output
+  stream listed in the <code>output_yaml_files</code> atmosphere option
+  (which can be queried via <code>atmquery output_yaml_files</code>).</li>
+<li>The user can specify a few options, in order to tweak the restart behavior:<ul>
+<li><code>Perform Restart</code> (<code>Restart</code> sub-list, <code>boolean</code>):<ul>
+<li>This parameter is <code>true</code> by default, but can be set
+  to <code>false</code> to force the model to ignore any history restart files,
+  and start the output stream from
+scratch, as if this was an initial run.</li>
+</ul>
+</li>
+<li><code>filename_prefix</code> (<code>Restart</code> sub-list, <code>string</code>):<ul>
+<li>By default, this parameter is set to match the value of
+  <code>filename_prefix</code> from the top-level list.</li>
+<li>This can be set to a different value in case we want to restart
+  a previous simulation that was using a different filename prefix.</li>
+</ul>
+</li>
+<li><code>force_new_file</code> (<code>Restart</code> sub-list, <code>boolean</code>):<ul>
+<li>This parameter allows to start a fresh new output file upon restarts.</li>
+<li>By default, is is set to <code>false</code>, so that EAMxx will attempt to
+  resume filling the last produced output file (if any, and if it
+  can accommodate more snapshots).</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 
 

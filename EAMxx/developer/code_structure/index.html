@@ -9,10 +9,10 @@
       
       
       
-        <link rel="prev" href="../processes/">
+        <link rel="prev" href="../dev_quickstart/">
       
       
-        <link rel="next" href="../io/">
+        <link rel="next" href="../style_guide/">
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
@@ -20,7 +20,7 @@
     
     
       
-        <title>Managers - E3SM</title>
+        <title>Code Structure and Organization - E3SM</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#fieldmanager-and-gridsmanager" class="md-skip">
+        <a href="#eamxx-source-code-structure" class="md-skip">
           Skip to content
         </a>
       
@@ -116,7 +116,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Managers
+              Code Structure and Organization
             
           </span>
         </div>
@@ -1468,33 +1468,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../../user/model_input/" class="md-nav__link">
+      <a href="../../user/model_configuration/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Model input
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../user/model_output/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Model output
+    Model Configuration
     
   </span>
   
@@ -1626,7 +1604,7 @@
         
   
   <span class="md-ellipsis">
-    PySCREAM
+    PyEAMxx
     
   </span>
   
@@ -1681,6 +1659,28 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user/eamxx_params/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    EAMxx runtime parameters
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1699,14 +1699,6 @@
   
     
     
-      
-        
-          
-        
-      
-        
-      
-        
       
         
       
@@ -1730,10 +1722,8 @@
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_3" checked>
         
           
-          
-          <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
-              
+          <label class="md-nav__link" for="__nav_3_3_3" id="__nav_3_3_3_label" tabindex="0">
+            
   
   <span class="md-ellipsis">
     Developer Guide
@@ -1741,14 +1731,8 @@
   </span>
   
 
-            </a>
-            
-              
-              <label class="md-nav__link " for="__nav_3_3_3" id="__nav_3_3_3_label" tabindex="0">
-                <span class="md-nav__icon md-icon"></span>
-              </label>
-            
-          </div>
+            <span class="md-nav__icon md-icon"></span>
+          </label>
         
         <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3_3_3">
@@ -1758,24 +1742,54 @@
           <ul class="md-nav__list" data-md-scrollfix>
             
               
-            
-              
                 
   
   
   
   
     <li class="md-nav__item">
-      <a href="../../common/installation/" class="md-nav__link">
+      <a href="../dev_quickstart/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Installation
+    Quick-start Guide
     
   </span>
   
 
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Code Structure and Organization
+    
+  </span>
+  
+
+      </a>
+      
     </li>
   
 
@@ -1809,6 +1823,214 @@
   
   
   
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_3_4" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../dev_testing/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    Testing
+    
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_3_3_4" id="__nav_3_3_3_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_3_3_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3_3_4">
+            <span class="md-nav__icon md-icon"></span>
+            Testing
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev_testing/testing_for_development/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Testing for Development
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev_testing/test_all_eamxx/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Automated Standalone Testing
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev_testing/full_model_testing/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Full model (CIME)
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev_testing/ci_nightly/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    CI and Nightly Testing
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_3_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3_3_5" id="__nav_3_3_3_5_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Important Tools and Objects
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_3_3_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3_3_5">
+            <span class="md-nav__icon md-icon"></span>
+            Important Tools and Objects
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
     <li class="md-nav__item">
       <a href="../kokkos_ekat/" class="md-nav__link">
         
@@ -1824,78 +2046,6 @@
   
 
               
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../source_tree/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Source Tree
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-    
-  
-  
-  
-    
-    
-      
-        
-      
-        
-      
-        
-      
-        
-      
-    
-    
-      
-    
-    
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_3_6" checked>
-        
-          
-          <label class="md-nav__link" for="__nav_3_3_3_6" id="__nav_3_3_3_6_label" tabindex="0">
-            
-  
-  <span class="md-ellipsis">
-    Important Data Structures
-    
-  </span>
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_3_3_6_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_3_3_3_6">
-            <span class="md-nav__icon md-icon"></span>
-            Important Data Structures
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
             
               
                 
@@ -1967,46 +2117,6 @@
                 
   
   
-    
-  
-  
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
-        
-  
-  <span class="md-ellipsis">
-    Managers
-    
-  </span>
-  
-
-      </a>
-      
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
   
   
     <li class="md-nav__item">
@@ -2015,118 +2125,6 @@
   
   <span class="md-ellipsis">
     I/O
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    
-    
-      
-        
-      
-        
-      
-        
-      
-    
-    
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_3_8" >
-        
-          
-          <label class="md-nav__link" for="__nav_3_3_3_8" id="__nav_3_3_3_8_label" tabindex="0">
-            
-  
-  <span class="md-ellipsis">
-    Testing
-    
-  </span>
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_3_3_8_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_3_3_8">
-            <span class="md-nav__icon md-icon"></span>
-            Testing
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../standalone_testing/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Standalone
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../cime_testing/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Full model
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../ci_nightly/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    CI and Nightly Testing
     
   </span>
   
@@ -3083,14 +3081,191 @@
     
       
     
-    <a href="https://github.com/E3SM-Project/screamdeveloper/managers.md" title="View source of this page" class="md-content__button md-icon">
+    <a href="https://github.com/E3SM-Project/screamdeveloper/code_structure.md" title="View source of this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.2 8.2 0 0 1-1.23-2"/></svg>
     </a>
   
 
 
-<h1 id="fieldmanager-and-gridsmanager">FieldManager and GridsManager</h1>
+<h1 id="eamxx-source-code-structure">EAMxx Source Code Structure</h1>
+<div class="admonition info inline">
+<p class="admonition-title">E3SM/components/eamxx/</p>
+<div class="highlight"><pre><span></span><code>.
+├── cime_config/
+├── cmake/
+│   └── machine-files/
+│── CMakeLists.txt
+│── CTestConfig.cmake
+├── docs/
+├── mkdocs.yml
+├── README.md
+├── scripts/
+│   ├── atmchange
+│   ├── atmquery
+│   └── test-all-eamxx
+├── src/
+│   ├── control/
+│   ├── diagnostics/
+│   ├── dynamics/
+│   │   └── homme/
+│   ├── mct_coupling/
+│   ├── physics/
+│   │   ├── cld_fraction/
+│   │   ├── cosp/
+│   │   ├── iop_forcing/
+│   │   ├── mam/
+│   │   ├── ml_correction/
+│   │   ├── nudging/
+│   │   ├── p3/
+│   │   ├── rrtmgp/
+│   │   ├── share/
+│   │   ├── shoc/
+│   │   ├── spa/
+│   │   └── tms/
+│   ├── python/
+│   ├── eamxx_config.h.in
+│   └── share/
+├── tests/
+│   ├── generic/
+│   ├── meta-tests/
+│   ├── multi-process/
+│   │   ├── dynamics_physics/
+│   │   └── physics_only/
+│   ├── python/
+│   └── single-process/
+└── tpls/
+</code></pre></div>
+</div>
+<!-- <div class="grid" markdown> -->
+<div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">EAMxx Root Directory</label><label for="__tabbed_1_2"><code>src/</code> Directory</label><label for="__tabbed_1_3"><code>tests/</code> Directory</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p>All EAMxx-specific code can be found in <code>components/eamxx</code> within the
+<a href="https://github.com/E3SM-Project/E3SM">E3SM repo</a>.
+Here's how things are organized:</p>
+<ul>
+<li><code>cime_config</code>: Tools and XML files for integrating EAMxx with E3SM via the
+  CIME framework.</li>
+<li><code>cmake</code>: CMake functions and macros used by the configuration/build system.</li>
+<li><code>docs</code>: Documentation for the EAMxx project, including design documents,
+  instructions for building and testing EAMxx, and this document.</li>
+<li><code>scripts</code>: Miscellaneous scripts that implement workflows for running tests
+  and analyzing performance.</li>
+<li><code>src</code>: All C++ source code (and any bridges to Fortran) for EAMxx are stored
+  here. We describe the contents of this directory in greater detail below.</li>
+<li><code>tests</code>: Implements standalone, end-to-end tests for various EAMxx
+  components (RRTMG, HOMME, P3, SHOC, etc).</li>
+<li><code>tpls</code>: Utilities for building EAMxx-specific third-party libraries.<sup id="fnref:arcane"><a class="footnote-ref" href="#fn:arcane">1</a></sup></li>
+</ul>
+<p>In addition, you'll notice the following files in <code>components/eamxx</code>:</p>
+<ul>
+<li><code>CMakeLists.txt</code>: The CMake file that defines EAMxx's configuration/build
+  system.</li>
+<li><code>CTestConfig.cmake</code>: This CTest file contains parameters that determine how
+  our test results are reported to the <a href="http://my.cdash.org/submit.php?project=E3SM">E3SM CDash Site</a>.</li>
+<li><code>README.md</code>: EAMxx's top-level README file, which describes the project and
+  its purpose.</li>
+<li><code>mkdocs.yml</code>: The configuration file for <a href="https://www.mkdocs.org/">mkdocs</a>,
+  the tool we currently use to build and publish our documentation.</li>
+</ul>
+</div>
+<div class="tabbed-block">
+<p>Herein lies the source code for EAMxx.
+Broadly, here's where things are located:</p>
+<ul>
+<li><code>control</code>: Contains the atmosphere driver and basic tests for it.</li>
+<li><code>diagnostics</code>: A collection of simple classes used to compute diagnostic
+  quantities.</li>
+<li><code>dynamics</code>: Home the files implementing the necessary interfaces between
+  EAMxx and the HOMME non-hydrostatic dycore.<ul>
+<li><strong><em>Note:</em></strong> HOMME itself is in components/homme</li>
+</ul>
+</li>
+<li><code>mct_coupling</code>: Glue code for embedding EAMxx within E3SM as an atmosphere
+  component using the MCT coupler.</li>
+<li><code>physics</code>: Source code for physics-related atmospheric processes, including<ul>
+<li><code>cosp</code>: Diagnostic-only<sup id="fnref:diag"><a class="footnote-ref" href="#fn:diag">2</a></sup> package used for computing
+radiation-related quantities.</li>
+<li><code>iop_forcing</code>: "Intensive Observation Period" package that can be used
+in conjunction with the Doubly-Periodic (DP) configuration of SCREAM.</li>
+<li><code>mam</code>: Contains the high-performance <strong>M</strong>odal <strong>A</strong>erosol <strong>M</strong>odel,
+parameterized with <strong>4</strong> size modes known as <strong>MAM4xx</strong>.</li>
+<li><code>ml_correction</code>: This is a product developed as a part of a Lawrence
+Livermore National Laboratory LDRD project in which the goal was to
+improve the results of low-resolution SCREAM runs by employing
+machine-learning algorithms to analyze the output of nudged
+high-resolution runs.<ul>
+<li>This code is not actively supported but may be useful/or
+interesting to some.</li>
+</ul>
+</li>
+<li><code>nudging</code>: Contains machinery that can be applied to "nudge"
+quantities in EAMxx toward desired values, typically coming from
+previous model runs or reanalysis data.<ul>
+<li>See the <a href="../../user/nudging/">Nudging in EAMxx</a> page in the
+User Guide for further details.</li>
+</ul>
+</li>
+<li><code>p3</code>: The C++/Kokkos implementation of P3 microphysics within EAMxx.</li>
+<li><code>rrtmgp</code>: A stub for the radiation processes as represented in EAMxx.</li>
+<li><code>share</code>: Utilities and data structures common to these processes.</li>
+<li><code>shoc</code>: The C++/Kokkos implementation of SHOC macrophysics within EAMxx.</li>
+</ul>
+</li>
+<li><code>python</code>: Source code for the experimental <strong><em>PyEAMxx</em></strong> package that
+enables building and running an individual EAMxx atmosphere process using python/<a href="https://docs.conda.io/en/latest/">conda</a>.<ul>
+<li>As of time of writing, this feature is still in development and should
+e considered a prototype.<ul>
+<li>See the <a href="../../user/pyeamxx/">pyEAMxx</a> page in the User Guide for
+a more detailed description.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><code>share</code>: Utilities used by various components within EAMxx. Of note:<ul>
+<li><code>io</code>: EAMxx's interface to the <a href="https://e3sm.org/scorpio-parallel-io-library/">SCORPIO</a>
+library.</li>
+</ul>
+</li>
+</ul>
+<p>Each of these directories contains a <code>CMakeLists.txt</code> file for defining how
+EAMxx is configured and built, and a <code>tests/</code> subdirectory that houses relevant
+unit and verification tests.</p>
+<p>You'll also see some other files in the <code>src/</code> directory itself, such as</p>
+<ul>
+<li><code>eamxx_config.h.in</code>: A template for generating a C++ header file with
+  EAMxx configuration information.</li>
+</ul>
+</div>
+<div class="tabbed-block">
+<ul>
+<li><code>generic/</code>:</li>
+<li><code>meta-tests/</code>: </li>
+<li><code>multi-process/</code>: <ul>
+<li><code>dynamics_physics/</code>: </li>
+<li><code>physics_only/</code>: </li>
+</ul>
+</li>
+<li><code>python/</code>: </li>
+<li><code>single-process/</code>: </li>
+</ul>
+</div>
+</div>
+</div>
+<div class="footnote">
+<hr />
+<ol>
+<li id="fn:arcane">
+<p><em>Here there be dragons...</em> These are some of the more arcane EAMxx
+features that even the bravest of developers may never lay eyes on.&#160;<a class="footnote-backref" href="#fnref:arcane" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+</li>
+<li id="fn:diag">
+<p><strong><em>Diagnostic:</em></strong> Refers to quantities or variables that are not
+inputs to any part of the model but capture useful descriptive data.&#160;<a class="footnote-backref" href="#fnref:diag" title="Jump back to footnote 2 in the text">&#8617;</a></p>
+</li>
+</ol>
+</div>
 
 
 
