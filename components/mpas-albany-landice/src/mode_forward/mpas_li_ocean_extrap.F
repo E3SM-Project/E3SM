@@ -114,6 +114,7 @@ contains
       type (field1dInteger), pointer :: seedMaskField
       type (field1dInteger), pointer :: growMaskField
       integer, dimension(:), pointer :: connectedMarineMask, growMask !masks to pass to flood-fill routine
+      integer, dimension(:), pointer :: altConnectedMarineMask, altGrowMask
       real (kind=RKIND), dimension(:,:,:), allocatable :: oceanField
 
       !debugg:
@@ -205,11 +206,15 @@ contains
          call mpas_pool_get_field(scratchPool, 'seedMask', seedMaskField)
          call mpas_allocate_scratch_field(seedMaskField, single_block_in = .true.)
          ! connectedMarineMask => seedMaskField % array
+         altConnectedMarineMask => seedMaskField % array
+         altConnectedMarineMask(:) = 0
          connectedMarineMask(:) = 0
          call mpas_pool_get_field(scratchPool, 'growMask', growMaskField)
          call mpas_allocate_scratch_field(growMaskField, single_block_in = .true.)
          growMask => growMaskField % array
          growMask(:) = 0
+         altGrowMask => growMaskField % array
+         altGrowMask(:) = 0
 
          do iCell = 1, nCells
             ! seedMask = open ocean cells in contact with the domain boundary
@@ -217,17 +222,27 @@ contains
                do iNeighbor = 1, nEdgesOnCell(iCell)
                   if (cellsOnCell(iNeighbor, iCell) == nCells + 1) then
                      connectedMarineMask(iCell) = 1
+                     altConnectedMarineMask(iCell) = 1
                      exit  ! no need to keep checking neighbors
                   endif
                enddo
             endif
             ! growMask - all marine cells
-            if ( (bedTopography(iCell) < config_sea_level) .and. (thickness(iCell) == 0.0_RKIND) ) then
+            if (bedTopography(iCell) < config_sea_level) then
                growMask(iCell) = 1
+
+               if (thickness(iCell) == 0.0_RKIND) then
+                  altGrowMask(iCell) = 1
+               endif
             endif
          enddo
          ! now create mask of all marine locations connected to open ocean - to be used below to screen out lakes
          call li_flood_fill(connectedMarineMask, growMask, domain)
+         call li_flood_fill(altConnectedMarineMask, altGrowMask, domain)
+
+         where ( (altConnectedMarineMask /= connectedMarineMask) .and. (thickness == 0.0_RKIND) )
+               connectedMarineMask = 0
+         end where
 
          ! make it a 3D mask based on the topography (loop through nISMIP6OceanLayers)
          call mpas_pool_get_dimension(meshPool, 'nISMIP6OceanLayers', nISMIP6OceanLayers)
