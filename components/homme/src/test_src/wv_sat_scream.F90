@@ -17,6 +17,7 @@ module wv_sat_scream
                                scream_log10, scream_exp, scream_tanh
 #endif
 
+  use kinds,          only: real_kind, rl => real_kind
 
   implicit none
   private
@@ -27,7 +28,7 @@ contains
 
   
   !===========================================================================================
-  real function qv_sat_dry(t_atm,p_atm_dry,i_wrt)
+  real(rl) function qv_sat_dry(t_atm,p_atm_dry,i_wrt)
 
     !------------------------------------------------------------------------------------
     ! Calls MurphyKoop to obtain the saturation vapor pressure, and then computes
@@ -39,12 +40,12 @@ contains
     implicit none
 
     !Calling parameters:
-    real, intent(in)    :: t_atm      !temperature [K]
-    real, intent(in)    :: p_atm_dry  !pressure    [Pa]
+    real(rl), intent(in)    :: t_atm      !temperature [K]
+    real(rl), intent(in)    :: p_atm_dry  !pressure    [Pa]
     integer, intent(in) :: i_wrt  !index, 0 = w.r.t. liquid, 1 = w.r.t. ice
 
     !Local variables:
-    real            :: e_pres         !saturation vapor pressure [Pa]
+    real(rl)            :: e_pres         !saturation vapor pressure [Pa]
 
     !e_pres    = polysvp1(t_atm,i_wrt)
     e_pres     = MurphyKoop_svp(t_atm,i_wrt)
@@ -55,7 +56,7 @@ contains
   end function qv_sat_dry
 
   !===========================================================================================
-  real function qv_sat(t_atm,p_atm,i_wrt)
+  real(rl) function qv_sat(t_atm,p_atm,i_wrt)
 
     !------------------------------------------------------------------------------------
     ! Legacy for backwards compatibility with eam. Prefer the dry/wet versions going forward.
@@ -66,12 +67,12 @@ contains
     implicit none
 
     !Calling parameters:
-    real, intent(in)    :: t_atm      !temperature [K]
-    real, intent(in)    :: p_atm      !pressure    [Pa]
+    real(rl), intent(in)    :: t_atm      !temperature [K]
+    real(rl), intent(in)    :: p_atm      !pressure    [Pa]
     integer, intent(in) :: i_wrt  !index, 0 = w.r.t. liquid, 1 = w.r.t. ice
 
     !Local variables:
-    real            :: e_pres         !saturation vapor pressure [Pa]
+    real(rl)            :: e_pres         !saturation vapor pressure [Pa]
 
     !e_pres    = polysvp1(t_atm,i_wrt)
     e_pres = MurphyKoop_svp(t_atm,i_wrt)
@@ -83,7 +84,7 @@ contains
 
   !===========================================================================================
 
-  real function qv_sat_wet(t_atm,p_atm_dry,i_wrt,dp_wet,dp_dry)
+  real(rl) function qv_sat_wet(t_atm,p_atm_dry,i_wrt,dp_wet,dp_dry)
 
     !------------------------------------------------------------------------------------
     ! Calls qv_sat_dry to obtain the dry saturation mixing ratio,
@@ -94,14 +95,14 @@ contains
     implicit none
 
     !Calling parameters:
-    real, intent(in)    :: t_atm      !temperature [K]
-    real, intent(in)    :: p_atm_dry  !pressure    [Pa]
-    real, intent(in)    :: dp_wet     !pseudodensity     [Pa]
-    real, intent(in)    :: dp_dry     !pseudodensity_dry [Pa]
+    real(rl), intent(in)    :: t_atm      !temperature [K]
+    real(rl), intent(in)    :: p_atm_dry  !pressure    [Pa]
+    real(rl), intent(in)    :: dp_wet     !pseudodensity     [Pa]
+    real(rl), intent(in)    :: dp_dry     !pseudodensity_dry [Pa]
     integer, intent(in) :: i_wrt  !index, 0 = w.r.t. liquid, 1 = w.r.t. ice
 
     !Local variables:
-    real                :: qsatdry
+    real(rl)                :: qsatdry
 
     qsatdry    = qv_sat_dry(t_atm,p_atm_dry,i_wrt)
     qv_sat_wet = qsatdry * dp_dry / dp_wet
@@ -113,7 +114,7 @@ contains
 
 
 
-  real function MurphyKoop_svp(t, i_type)
+  real(rl) function MurphyKoop_svp(t, i_type)
 
     !use scream_abortutils, only : endscreamrun
 
@@ -128,19 +129,19 @@ contains
     !--------------------------------------------------------------------
 
     !Murphy & Koop (2005)
-    real, intent(in) :: t
+    real(rl), intent(in) :: t
     integer, intent(in)     :: i_type
 
     !local vars
     character(len=1000) :: err_msg
-    real         :: logt, tmp
+    real(rl)         :: logt, tmp
 
     !parameters for ice saturation eqn
-    real, parameter :: ic(4)  =(/9.550426, 5723.265, 3.53068, &
+    real(rl), parameter :: ic(4)  =(/9.550426, 5723.265, 3.53068, &
          0.00728332/)
 
     !parameters for liq saturation eqn
-    real, parameter :: lq(10) = (/54.842763, 6763.22, 4.210, &
+    real(rl), parameter :: lq(10) = (/54.842763, 6763.22, 4.210, &
          0.000367, 0.0415, 218.8, 53.878, 1331.22,       &
          9.44523, 0.014025 /)
 
@@ -174,7 +175,7 @@ contains
   end function MurphyKoop_svp
 
   !
-  real function polysvp1(t,i_type)
+  real(rl) function polysvp1(t,i_type)
 
     !-------------------------------------------
     !  COMPUTE SATURATION VAPOR PRESSURE
@@ -188,7 +189,7 @@ contains
     !use debug_info, only: report_error_info
     implicit none
 
-    real, intent(in) :: t
+    real(rl), intent(in) :: t
     integer, intent(in)     :: i_type
 
     ! REPLACE GOFF-GRATCH WITH FASTER FORMULATION FROM FLATAU ET AL. 1992, TABLE 4 (RIGHT-HAND COLUMN)
@@ -197,21 +198,21 @@ contains
     character(len=1000) :: err_msg
 
     ! ice
-    real a0i,a1i,a2i,a3i,a4i,a5i,a6i,a7i,a8i
+    real(rl) a0i,a1i,a2i,a3i,a4i,a5i,a6i,a7i,a8i
     data a0i,a1i,a2i,a3i,a4i,a5i,a6i,a7i,a8i /&
          6.11147274,     0.503160820,     0.188439774e-1, &
          0.420895665e-3, 0.615021634e-5,  0.602588177e-7, &
          0.385852041e-9, 0.146898966e-11, 0.252751365e-14/
 
     ! liquid
-    real a0,a1,a2,a3,a4,a5,a6,a7,a8
+    real(rl) a0,a1,a2,a3,a4,a5,a6,a7,a8
 
     ! V1.7
     data a0,a1,a2,a3,a4,a5,a6,a7,a8 /&
          6.11239921,      0.443987641,     0.142986287e-1, &
          0.264847430e-3,  0.302950461e-5,  0.206739458e-7, &
          0.640689451e-10,-0.952447341e-13,-0.976195544e-15/
-    real dt
+    real(rl) dt
 
     !-------------------------------------------
 
@@ -271,7 +272,7 @@ contains
 
     implicit none
 
-    real,      intent(in) :: t
+    real(rl),      intent(in) :: t
     character(len=*), intent(in) :: subname
 
     character(len=1000) :: err_msg

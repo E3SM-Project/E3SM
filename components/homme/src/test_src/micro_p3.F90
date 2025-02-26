@@ -67,6 +67,8 @@ module micro_p3
 
    use wv_sat_scream, only:qv_sat
 
+   use kinds,          only: real_kind, rl => real_kind
+
   ! Bit-for-bit math functions.
 #ifdef SCREAM_CONFIG_IS_CMAKE
   use physics_share_f2c, only: scream_pow, scream_sqrt, scream_cbrt, scream_gamma, scream_log, &
@@ -82,35 +84,35 @@ module micro_p3
 
   ! protected items should be treated as private for everyone except tests
 
-  real, protected, dimension(densize,rimsize,isize,ice_table_size) :: ice_table_vals   !ice lookup table values
+  real(rl), protected, dimension(densize,rimsize,isize,ice_table_size) :: ice_table_vals   !ice lookup table values
 
   !ice lookup table values for ice-rain collision/collection
-  real, protected, dimension(densize,rimsize,isize,rcollsize,collect_table_size) :: collect_table_vals
+  real(rl), protected, dimension(densize,rimsize,isize,rcollsize,collect_table_size) :: collect_table_vals
 
   ! lookup table values for rain shape parameter mu_r
-  real, protected, dimension(150) :: mu_r_table_vals
+  real(rl), protected, dimension(150) :: mu_r_table_vals
 
   ! lookup table values for rain number- and mass-weighted fallspeeds and ventilation parameters
-  real, protected, dimension(300,10) :: vn_table_vals,vm_table_vals,revap_table_vals
+  real(rl), protected, dimension(300,10) :: vn_table_vals,vm_table_vals,revap_table_vals
 
   type realptr
-     real, dimension(:), pointer :: p
+     real(rl), dimension(:), pointer :: p
   end type realptr
 
 contains
 
 pure function bfb_pow(base, exp) result(res)
    implicit none
-   real, intent(in) :: base, exp
-   real :: res
+   real(rl), intent(in) :: base, exp
+   real(rl) :: res
 
    res = base**exp
 end function bfb_pow
 
 pure function bfb_cbrt(base) result(res)
    implicit none
-   real, intent(in) :: base
-   real :: res, loc_thrd
+   real(rl), intent(in) :: base
+   real(rl) :: res, loc_thrd
    
    loc_thrd = 1./3.
    res = base**loc_thrd
@@ -118,63 +120,63 @@ end function bfb_cbrt
 
 pure function bfb_gamma(val) result(res)
    implicit none
-   real, intent(in) :: val
-   real :: res
+   real(rl), intent(in) :: val
+   real(rl) :: res
    res = gamma(val)
 end function bfb_gamma
 
 pure function bfb_log(val) result(res)
    implicit none
-   real, intent(in) :: val
-   real :: res
+   real(rl), intent(in) :: val
+   real(rl) :: res
    
    res = log(val)
 end function bfb_log
 
 pure function bfb_log10(val) result(res)
    implicit none
-   real, intent(in) :: val
-   real :: res
+   real(rl), intent(in) :: val
+   real(rl) :: res
    
    res = log10(val)
 end function bfb_log10
 
 pure function bfb_exp(val) result(res)
    implicit none
-   real, intent(in) :: val
-   real :: res
+   real(rl), intent(in) :: val
+   real(rl) :: res
    
    res = exp(val)
 end function bfb_exp
 
 pure function bfb_sqrt(val) result(res)
    implicit none
-   real, intent(in) :: val
-   real :: res
+   real(rl), intent(in) :: val
+   real(rl) :: res
    
    res = sqrt(val)
 end function bfb_sqrt
 
 pure function bfb_square(val) result(res)
    implicit none
-   real, intent(in) :: val
-   real :: res
+   real(rl), intent(in) :: val
+   real(rl) :: res
    
    res = val*val
 end function bfb_square
 
 pure function bfb_cube(val) result(res)
    implicit none
-   real, intent(in) :: val
-   real :: res
+   real(rl), intent(in) :: val
+   real(rl) :: res
    
    res = val*val*val
 end function bfb_cube
 
 pure function bfb_expm1(val) result(res)
    implicit none
-   real, intent(in) :: val
-   real :: res
+   real(rl), intent(in) :: val
+   real(rl) :: res
    
    res = exp(val) - 1.0
 end function bfb_expm1
@@ -213,11 +215,11 @@ end function bfb_expm1
     character(len=1024)           :: version_header_table_1             !version number read from header, table 1
     integer                       :: i,j,ii,jj
 #ifdef SCREAM_CONFIG_IS_CMAKE
-    real                  :: dum,dumk1,dumk2
-    real, dimension(12)   :: dumk
+    real(rl)                  :: dum,dumk1,dumk2
+    real(rl), dimension(12)   :: dumk
 #else
-    real                   :: dum,dumk1,dumk2
-    real, dimension(12)    :: dumk
+    real(rl)                   :: dum,dumk1,dumk2
+    real(rl), dimension(12)    :: dumk
 #endif
     integer                       :: dumi
     character(len=1024)           :: dumstr
@@ -279,8 +281,8 @@ end function bfb_expm1
   subroutine p3_get_tables(mu_r_user, revap_user, vn_user, vm_user)
     ! This can be called after p3_init_b.
     implicit none
-    real, dimension(150), intent(out) :: mu_r_user
-    real, dimension(300,10), intent(out) :: vn_user, vm_user, revap_user
+    real(rl), dimension(150), intent(out) :: mu_r_user
+    real(rl), dimension(300,10), intent(out) :: vn_user, vm_user, revap_user
     mu_r_user(:) = mu_r_table_vals(:)
     revap_user(:,:) = revap_table_vals(:,:)
     vn_user(:,:) = vn_table_vals(:,:)
@@ -293,8 +295,8 @@ end function bfb_expm1
   subroutine p3_set_tables(mu_r_user, revap_user, vn_user, vm_user)
     ! This can be called instead of p3_init_b.
     implicit none
-    real, dimension(150), intent(in) :: mu_r_user
-    real, dimension(300,10), intent(in) :: vn_user, vm_user, revap_user
+    real(rl), dimension(150), intent(in) :: mu_r_user
+    real(rl), dimension(300,10), intent(in) :: vn_user, vm_user, revap_user
     mu_r_table_vals(:) = mu_r_user(:)
     revap_table_vals(:,:) = revap_user(:,:)
     vn_table_vals(:,:) = vn_user(:,:)
@@ -307,7 +309,7 @@ end function bfb_expm1
   SUBROUTINE p3_init_b()
     implicit none
     integer                      :: i,ii,jj,kk
-    real                         :: lamr,mu_r,dm,dum1,dum2,dum3,dum4,dum5,  &
+    real(rl)                         :: lamr,mu_r,dm,dum1,dum2,dum3,dum4,dum5,  &
          dd,amg,vt,dia
 
     !------------------------------------------------------------------------------------------!
@@ -322,7 +324,7 @@ end function bfb_expm1
     ! AaronDonahue: Switching to table ver 4 means switching to a constand mu_r,
     ! so this section is commented out.
     do i = 1,150              ! loop over lookup table values
-!       initlamr = 1./((real(i)*2.)*1.e-6 + 250.e-6)
+!       initlamr = 1./((real(rl)(i)*2.)*1.e-6 + 250.e-6)
 !
 !       ! iterate to get mu_r
 !       ! mu_r-lambda relationship is from Cao et al. (2008), eq. (7)
@@ -364,16 +366,16 @@ end function bfb_expm1
     mu_r_loop: do ii = 1,10   !** change 10 to 9, since range of mu_r is 0-8  CONFIRM
        !mu_r_loop: do ii = 1,9   !** change 10 to 9, since range of mu_r is 0-8
 
-!       mu_r = real(ii-1)  ! values of mu
+!       mu_r = real(rl)(ii-1)  ! values of mu
        mu_r = mu_r_constant
 
        ! loop over number-weighted mean size
        meansize_loop: do jj = 1,300
 
           if (jj.le.20) then
-             dm = (real(jj)*10.-5.)*1.e-6      ! mean size [m]
+             dm = (real(jj,8)*10.-5.)*1.e-6      ! mean size [m]
           elseif (jj.gt.20) then
-             dm = (real(jj-20)*30.+195.)*1.e-6 ! mean size [m]
+             dm = (real(jj-20,8)*30.+195.)*1.e-6 ! mean size [m]
           endif
 
           lamr = (mu_r+1.)/dm
@@ -390,7 +392,7 @@ end function bfb_expm1
           ! loop over PSD to numerically integrate number and mass-weighted mean fallspeeds
           do kk = 1,10000
 
-             dia = (real(kk)*dd-dd*0.5)*1.e-6  ! size bin [m]
+             dia = (real(kk,8)*dd-dd*0.5)*1.e-6  ! size bin [m]
              amg = piov6*997.*dia**3           ! mass [kg]
              amg = amg*1000.                   ! convert [kg] to [g]
 
@@ -445,12 +447,12 @@ end function bfb_expm1
 
     integer, intent(in) :: kts, kte, kbot, ktop, kdir
     logical, intent(in) :: do_predict_nc
-    real, intent(in) :: dt, nccnst
+    real(rl), intent(in) :: dt, nccnst
 
-    real, intent(in), dimension(kts:kte) :: pres, dpres, dz, nc_nuceat_tend, exner, inv_exner, &
+    real(rl), intent(in), dimension(kts:kte) :: pres, dpres, dz, nc_nuceat_tend, exner, inv_exner, &
          inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, latent_heat_vapor, latent_heat_sublim, latent_heat_fusion, nccn_prescribed
 
-    real, intent(inout), dimension(kts:kte) :: t_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, &
+    real(rl), intent(inout), dimension(kts:kte) :: t_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, &
          acn, qv, th_atm, qc, nc, qr, nr, qi, ni, qm, bm, qc_incld, qr_incld, qi_incld, &
          qm_incld, nc_incld, nr_incld, ni_incld, bm_incld
 
@@ -459,7 +461,7 @@ end function bfb_expm1
 
     ! locals
     integer :: k
-    real :: dum
+    real(rl) :: dum
 
     is_nucleat_possible = .false.
     is_hydromet_present = .false.
@@ -478,12 +480,12 @@ end function bfb_expm1
 
        qv_supersat_i(k)    = qv(k)/qv_sat_i(k)-1.
 
-       rhofacr(k) = bfb_pow(rho_1000mb*inv_rho(k), 0.54)
-       rhofaci(k) = bfb_pow(rho_600mb*inv_rho(k), 0.54)
-       dum        = 1.496e-6 * bfb_pow(t_atm(k), 1.5) / (t_atm(k)+120.)  ! this is mu
+       rhofacr(k) = bfb_pow(rho_1000mb*inv_rho(k), 0.54d0)
+       rhofaci(k) = bfb_pow(rho_600mb*inv_rho(k), 0.54d0)
+       dum        = 1.496e-6 * bfb_pow(t_atm(k), 1.5d0) / (t_atm(k)+120.d0)  ! this is mu
        acn(k)     = g*rho_h2o/(18.*dum)  ! 'a' parameter for droplet fallspeed (Stokes' law)
 
-       if ((t_atm(k).lt.T_zerodegc .and. qv_supersat_i(k).ge.-0.05)) is_nucleat_possible = .true.
+       if ((t_atm(k).lt.T_zerodegc .and. qv_supersat_i(k).ge.-0.05d0)) is_nucleat_possible = .true.
 
        if (qc(k).lt.qsmall) then
       !--- apply mass clipping if mass is sufficiently small
@@ -563,21 +565,21 @@ end function bfb_expm1
 
     integer, intent(in) :: kts, kte, kbot, ktop, kdir
     logical, intent(in) :: do_predict_nc, do_prescribed_CCN, do_precip_off
-    real, intent(in) :: dt, inv_dt, nccnst
-    real, intent(in) :: p3_autocon_coeff, p3_accret_coeff, p3_qc_autocon_expon, p3_nc_autocon_expon, p3_qc_accret_expon, &
+    real(rl), intent(in) :: dt, inv_dt, nccnst
+    real(rl), intent(in) :: p3_autocon_coeff, p3_accret_coeff, p3_qc_autocon_expon, p3_nc_autocon_expon, p3_qc_accret_expon, &
          p3_wbf_coeff, p3_embryonic_rain_size, p3_max_mean_rain_size
 
-    real, intent(in), dimension(kts:kte) :: pres, dpres, dz, nc_nuceat_tend, exner, inv_exner, inv_cld_frac_l,      &
+    real(rl), intent(in), dimension(kts:kte) :: pres, dpres, dz, nc_nuceat_tend, exner, inv_exner, inv_cld_frac_l,      &
          inv_cld_frac_i, inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i, cld_frac_l, cld_frac_r, qv_prev, t_prev, &
          frzimm, frzcnt, frzdep
 
-    real, intent(inout), dimension(kts:kte) :: t_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn,   &
+    real(rl), intent(inout), dimension(kts:kte) :: t_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn,   &
          qv, th_atm, qc, nc, qr, nr, qi, ni, qm, bm, latent_heat_vapor, latent_heat_sublim, latent_heat_fusion, qc_incld, qr_incld,    &
          qi_incld, qm_incld, nc_incld, nr_incld, ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1,                                    &
          cdistr, mu_r, lamr, logn0r, qv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend, vap_liq_exchange,                      &
          vap_ice_exchange, liq_ice_exchange, pratot, prctot
 
-    real, intent(inout), dimension(kts:kte,49) :: p3_tend_out ! micro physics tendencies
+    real(rl), intent(inout), dimension(kts:kte,49) :: p3_tend_out ! micro physics tendencies
 
     logical, intent(out) :: is_hydromet_present
 
@@ -587,63 +589,63 @@ end function bfb_expm1
     !  (all Q process rates in kg kg-1 s-1)
     !  (all N process rates in # kg-1)
 
-    real :: qc2qr_accret_tend   ! cloud droplet accretion by rain
-    real :: qc2qr_autoconv_tend   ! cloud droplet autoconversion to rain
-    real :: nc_accret_tend   ! change in cloud droplet number from accretion by rain
-    real :: nc2nr_autoconv_tend  ! change in cloud droplet number from autoconversion
-    real :: nc_selfcollect_tend   ! change in cloud droplet number from self-collection  (Not in paper?)
-    real :: nr_selfcollect_tend   ! change in rain number from self-collection  (Not in paper?)
-    real :: qr2qv_evap_tend   ! rain evaporation
-    real :: nr_evap_tend   ! change in rain number from evaporation
-    real :: ncautr  ! change in rain number from autoconversion of cloud water
+    real(rl) :: qc2qr_accret_tend   ! cloud droplet accretion by rain
+    real(rl) :: qc2qr_autoconv_tend   ! cloud droplet autoconversion to rain
+    real(rl) :: nc_accret_tend   ! change in cloud droplet number from accretion by rain
+    real(rl) :: nc2nr_autoconv_tend  ! change in cloud droplet number from autoconversion
+    real(rl) :: nc_selfcollect_tend   ! change in cloud droplet number from self-collection  (Not in paper?)
+    real(rl) :: nr_selfcollect_tend   ! change in rain number from self-collection  (Not in paper?)
+    real(rl) :: qr2qv_evap_tend   ! rain evaporation
+    real(rl) :: nr_evap_tend   ! change in rain number from evaporation
+    real(rl) :: ncautr  ! change in rain number from autoconversion of cloud water
 ! Is is assumed that macrophysics handles condensation/evaporation of qc and
 ! that there is no condensation of rain. Thus qccon, qrcon and qcevp have
 ! been removed from the original P3-WRF for P3-SCREAM.
-!    real :: qrcon   ! rain condensation   (Not in paper?)
-!    real :: qccon   ! cloud droplet condensation
-!    real :: qcevp   ! cloud droplet evaporation
+!    real(rl) :: qrcon   ! rain condensation   (Not in paper?)
+!    real(rl) :: qccon   ! cloud droplet condensation
+!    real(rl) :: qcevp   ! cloud droplet evaporation
 
     ! ice-phase microphysical process rates:
     !  (all Q process rates in kg kg-1 s-1)
     !  (all N process rates in # kg-1 s-1)
 
-    real :: qccol     ! collection of cloud water by ice
-    real :: qwgrth    ! wet growth rate
-    real :: qidep     ! vapor deposition
-    real :: qrcol     ! collection rain mass by ice
-    real :: qinuc     ! deposition/condensation freezing nuc
-    real :: nc_collect_tend     ! change in cloud droplet number from collection by ice
-    real :: nr_collect_tend     ! change in rain number from collection by ice
-    real :: ni_nucleat_tend     ! change in ice number from deposition/cond-freezing nucleation
-    real :: qi2qv_sublim_tend     ! sublimation of ice
-    real :: qi2qr_melt_tend     ! melting of ice
-    real :: ni2nr_melt_tend     ! melting of ice
-    real :: ni_sublim_tend     ! change in ice number from sublimation
-    real :: ni_selfcollect_tend     ! change in ice number from collection within a category (Not in paper?)
-    real :: qc2qi_hetero_freeze_tend    ! immersion freezing droplets
-    real :: qr2qi_immers_freeze_tend    ! immersion freezing rain
-    real :: nc2ni_immers_freeze_tend    ! immersion freezing droplets
-    real :: nr2ni_immers_freeze_tend    ! immersion freezing rain
-    real :: nr_ice_shed_tend    ! source for rain number from collision of rain/ice above freezing and shedding
-    real :: qc2qr_ice_shed_tend     ! source for rain mass due to cloud water/ice collision above freezing and shedding or wet growth and shedding
-    real :: rho_qm_cloud ! density of rime (from cloud)
-    real :: ncshdc    ! source for rain number due to cloud water/ice collision above freezing  and shedding (combined with NRSHD in the paper)
-    real :: qiberg    ! Bergeron process
+    real(rl) :: qccol     ! collection of cloud water by ice
+    real(rl) :: qwgrth    ! wet growth rate
+    real(rl) :: qidep     ! vapor deposition
+    real(rl) :: qrcol     ! collection rain mass by ice
+    real(rl) :: qinuc     ! deposition/condensation freezing nuc
+    real(rl) :: nc_collect_tend     ! change in cloud droplet number from collection by ice
+    real(rl) :: nr_collect_tend     ! change in rain number from collection by ice
+    real(rl) :: ni_nucleat_tend     ! change in ice number from deposition/cond-freezing nucleation
+    real(rl) :: qi2qv_sublim_tend     ! sublimation of ice
+    real(rl) :: qi2qr_melt_tend     ! melting of ice
+    real(rl) :: ni2nr_melt_tend     ! melting of ice
+    real(rl) :: ni_sublim_tend     ! change in ice number from sublimation
+    real(rl) :: ni_selfcollect_tend     ! change in ice number from collection within a category (Not in paper?)
+    real(rl) :: qc2qi_hetero_freeze_tend    ! immersion freezing droplets
+    real(rl) :: qr2qi_immers_freeze_tend    ! immersion freezing rain
+    real(rl) :: nc2ni_immers_freeze_tend    ! immersion freezing droplets
+    real(rl) :: nr2ni_immers_freeze_tend    ! immersion freezing rain
+    real(rl) :: nr_ice_shed_tend    ! source for rain number from collision of rain/ice above freezing and shedding
+    real(rl) :: qc2qr_ice_shed_tend     ! source for rain mass due to cloud water/ice collision above freezing and shedding or wet growth and shedding
+    real(rl) :: rho_qm_cloud ! density of rime (from cloud)
+    real(rl) :: ncshdc    ! source for rain number due to cloud water/ice collision above freezing  and shedding (combined with NRSHD in the paper)
+    real(rl) :: qiberg    ! Bergeron process
 
-    real    :: table_val_qi_fallspd   ! mass-weighted fallspeed              See lines  731 -  808  ums
-    real    :: table_val_ni_self_collect   ! ice collection within a category     See lines  809 -  928  nagg
-    real    :: table_val_qc2qi_collect   ! collection of cloud water by ice     See lines  929 - 1009  nrwat
-    real    :: table_val_qi2qr_melting   ! melting                              See lines 1212 - 1279  vdep
-    real    :: table_val_nr_collect   ! collection of rain number by ice     See lines 1010 - 1209  nrrain
-    real    :: table_val_qr2qi_collect   ! collection of rain mass by ice       See lines 1010 - 1209  qrrain
-    real    :: table_val_ni_lammax   ! minimum ice number (lambda limiter)  See lines  704 -  705  nlarge
-    real    :: table_val_ni_lammin   ! maximum ice number (lambda limiter)  See lines  704 -  705  nsmall
-    real    :: table_val_qi2qr_vent_melt   ! melting (ventilation term)           See lines 1212 - 1279  vdep1
+    real(rl)    :: table_val_qi_fallspd   ! mass-weighted fallspeed              See lines  731 -  808  ums
+    real(rl)    :: table_val_ni_self_collect   ! ice collection within a category     See lines  809 -  928  nagg
+    real(rl)    :: table_val_qc2qi_collect   ! collection of cloud water by ice     See lines  929 - 1009  nrwat
+    real(rl)    :: table_val_qi2qr_melting   ! melting                              See lines 1212 - 1279  vdep
+    real(rl)    :: table_val_nr_collect   ! collection of rain number by ice     See lines 1010 - 1209  nrrain
+    real(rl)    :: table_val_qr2qi_collect   ! collection of rain mass by ice       See lines 1010 - 1209  qrrain
+    real(rl)    :: table_val_ni_lammax   ! minimum ice number (lambda limiter)  See lines  704 -  705  nlarge
+    real(rl)    :: table_val_ni_lammin   ! maximum ice number (lambda limiter)  See lines  704 -  705  nsmall
+    real(rl)    :: table_val_qi2qr_vent_melt   ! melting (ventilation term)           See lines 1212 - 1279  vdep1
 
-    real    :: mu,dv,sc,dqsdt,ab,kap,epsr,epsc,epsi,epsi_tot, &
+    real(rl)    :: mu,dv,sc,dqsdt,ab,kap,epsr,epsc,epsi,epsi_tot, &
          dum1,dum3,dum4,dum5,dum6,dqsidt,abi,rhop,vtrmi1,eii
       
-    real :: ncheti_cnt,qcheti_cnt,nicnt,qicnt,ninuc_cnt,qinuc_cnt,qi_wetDepos     
+    real(rl) :: ncheti_cnt,qcheti_cnt,nicnt,qicnt,ninuc_cnt,qinuc_cnt,qi_wetDepos     
 
     integer :: dumi,k,dumj,dumii,dumjj,dumzz
 
@@ -1088,11 +1090,11 @@ end function bfb_expm1
 
    integer, intent(in) :: kts, kte, kbot, ktop, kdir
 
-   real, intent(in) :: p3_max_mean_rain_size
-   real, intent(in) :: mincdnc 
-   real, intent(in), dimension(kts:kte) :: exner, cld_frac_l, cld_frac_r, cld_frac_i
+   real(rl), intent(in) :: p3_max_mean_rain_size
+   real(rl), intent(in) :: mincdnc 
+   real(rl), intent(in), dimension(kts:kte) :: exner, cld_frac_l, cld_frac_r, cld_frac_i
 
-   real, intent(inout), dimension(kts:kte) :: rho, inv_rho, rhofaci, &
+   real(rl), intent(inout), dimension(kts:kte) :: rho, inv_rho, rhofaci, &
         qv, th_atm, qc, nc, qr, nr, qi, ni, qm, bm, latent_heat_vapor, latent_heat_sublim, &
         mu_c, nu, lamc, mu_r, &
         lamr, vap_liq_exchange, &
@@ -1101,23 +1103,23 @@ end function bfb_expm1
 
    ! locals
    integer :: k, dumi, dumii, dumjj, dumzz
-   real :: tmp1, tmp2, dum1, dum4, dum5, dum6, rhop
-   real    :: table_val_qi_fallspd   ! mass-weighted fallspeed              See lines  731 -  808  ums
-   real    :: table_val_ice_eff_radius   ! effective radius                     See lines 1281 - 1356  eff
-   real    :: table_val_ni_lammax   ! minimum ice number (lambda limiter)  See lines  704 -  705  nlarge
-   real    :: table_val_ni_lammin   ! maximum ice number (lambda limiter)  See lines  704 -  705  nsmall
-   real    :: table_val_ice_reflectivity   ! reflectivity                         See lines  731 -  808  refl
-   real    :: table_val_ice_mean_diam   ! mass-weighted mean diameter          See lines 1212 - 1279  dmm
-   real    :: table_val_ice_bulk_dens   ! mass-weighted mean particle density  See lines 1212 - 1279  rhomm
+   real(rl) :: tmp1, tmp2, dum1, dum4, dum5, dum6, rhop
+   real(rl)    :: table_val_qi_fallspd   ! mass-weighted fallspeed              See lines  731 -  808  ums
+   real(rl)    :: table_val_ice_eff_radius   ! effective radius                     See lines 1281 - 1356  eff
+   real(rl)    :: table_val_ni_lammax   ! minimum ice number (lambda limiter)  See lines  704 -  705  nlarge
+   real(rl)    :: table_val_ni_lammin   ! maximum ice number (lambda limiter)  See lines  704 -  705  nsmall
+   real(rl)    :: table_val_ice_reflectivity   ! reflectivity                         See lines  731 -  808  refl
+   real(rl)    :: table_val_ice_mean_diam   ! mass-weighted mean diameter          See lines 1212 - 1279  dmm
+   real(rl)    :: table_val_ice_bulk_dens   ! mass-weighted mean particle density  See lines 1212 - 1279  rhomm
 
-   real    :: qc_incld     !in-cloud qi
-   real    :: nc_incld     !in-cloud ni
-   real    :: qr_incld     !in-cloud qi
-   real    :: nr_incld     !in-cloud ni
-   real    :: qi_incld     !in-cloud qi
-   real    :: ni_incld     !in-cloud ni
-   real    :: qm_incld     !in-cloud qm
-   real    :: bm_incld     !in-cloud bm
+   real(rl)    :: qc_incld     !in-cloud qi
+   real(rl)    :: nc_incld     !in-cloud ni
+   real(rl)    :: qr_incld     !in-cloud qi
+   real(rl)    :: nr_incld     !in-cloud ni
+   real(rl)    :: qi_incld     !in-cloud qi
+   real(rl)    :: ni_incld     !in-cloud ni
+   real(rl)    :: qm_incld     !in-cloud qm
+   real(rl)    :: bm_incld     !in-cloud bm
 
    k_loop_final_diagnostics:  do k = kbot,ktop,kdir
 
@@ -1148,9 +1150,9 @@ end function bfb_expm1
 
          !Note that integrating over the drop-size PDF as done here should only be done to in-cloud
          !quantities but radar reflectivity is likely meant to be a cell ave. Thus nr in the next line
-         !really should be cld_frac_r * nr/cld_frac_r. Not doing that since cld_frac_r cancels out.
-         ze_rain(k) = nr(k)*(mu_r(k)+6.)*(mu_r(k)+5.)*(mu_r(k)+4.)*           &
-              (mu_r(k)+3.)*(mu_r(k)+2.)*(mu_r(k)+1.)/bfb_pow(lamr(k), 6.)
+         !real(rl)ly should be cld_frac_r * nr/cld_frac_r. Not doing that since cld_frac_r cancels out.
+         ze_rain(k) = nr(k)*(mu_r(k)+6.d0)*(mu_r(k)+5.d0)*(mu_r(k)+4.d0)*           &
+              (mu_r(k)+3.)*(mu_r(k)+2.d0)*(mu_r(k)+1.d0)/bfb_pow(lamr(k), 6.d0)
          ze_rain(k) = max(ze_rain(k),1.e-22)
          diag_ze_rain(k) = 10.*bfb_log10(ze_rain(k)*1.e18)
       else
@@ -1277,88 +1279,88 @@ end function bfb_expm1
 
     !----- Input/ouput arguments:  ----------------------------------------------------------!
 
-    real, intent(inout), dimension(kts:kte)      :: qc         ! cloud, mass mixing ratio         kg kg-1
+    real(rl), intent(inout), dimension(kts:kte)      :: qc         ! cloud, mass mixing ratio         kg kg-1
     ! note: Nc may be specified or predicted (set by do_predict_nc)
-    real, intent(inout), dimension(kts:kte)      :: nc         ! cloud, number mixing ratio       #  kg-1
-    real, intent(inout), dimension(kts:kte)      :: qr         ! rain, mass mixing ratio          kg kg-1
-    real, intent(inout), dimension(kts:kte)      :: nr         ! rain, number mixing ratio        #  kg-1
-    real, intent(inout), dimension(kts:kte)      :: qi      ! ice, total mass mixing ratio     kg kg-1
-    real, intent(inout), dimension(kts:kte)      :: qm      ! ice, rime mass mixing ratio      kg kg-1
-    real, intent(inout), dimension(kts:kte)      :: ni      ! ice, total number mixing ratio   #  kg-1
-    real, intent(inout), dimension(kts:kte)      :: bm      ! ice, rime volume mixing ratio    m3 kg-1
+    real(rl), intent(inout), dimension(kts:kte)      :: nc         ! cloud, number mixing ratio       #  kg-1
+    real(rl), intent(inout), dimension(kts:kte)      :: qr         ! rain, mass mixing ratio          kg kg-1
+    real(rl), intent(inout), dimension(kts:kte)      :: nr         ! rain, number mixing ratio        #  kg-1
+    real(rl), intent(inout), dimension(kts:kte)      :: qi      ! ice, total mass mixing ratio     kg kg-1
+    real(rl), intent(inout), dimension(kts:kte)      :: qm      ! ice, rime mass mixing ratio      kg kg-1
+    real(rl), intent(inout), dimension(kts:kte)      :: ni      ! ice, total number mixing ratio   #  kg-1
+    real(rl), intent(inout), dimension(kts:kte)      :: bm      ! ice, rime volume mixing ratio    m3 kg-1
 
-    real, intent(inout), dimension(kts:kte)      :: qv         ! water vapor mixing ratio         kg kg-1
-    real, intent(inout), dimension(kts:kte)      :: th_atm         ! potential temperature            K
-    real, intent(in),    dimension(kts:kte)      :: pres       ! pressure                         Pa
-    real, intent(in),    dimension(kts:kte)      :: dz        ! vertical grid spacing            m
-    real, intent(in),    dimension(kts:kte)      :: nc_nuceat_tend      ! IN ccn activated number tendency kg-1 s-1
-    real, intent(in),    dimension(kts:kte)      :: nccn_prescribed
-    real, intent(in),    dimension(kts:kte)      :: ni_activated       ! IN actived ice nuclei concentration  1/kg
-    real, intent(in),    dimension(kts:kte)      :: frzimm,frzcnt,frzdep ! From macrophysics aerop (CNT scheme) [#/cm3]
-    real, intent(in)                                     :: dt         ! model time step                  s
+    real(rl), intent(inout), dimension(kts:kte)      :: qv         ! water vapor mixing ratio         kg kg-1
+    real(rl), intent(inout), dimension(kts:kte)      :: th_atm         ! potential temperature            K
+    real(rl), intent(in),    dimension(kts:kte)      :: pres       ! pressure                         Pa
+    real(rl), intent(in),    dimension(kts:kte)      :: dz        ! vertical grid spacing            m
+    real(rl), intent(in),    dimension(kts:kte)      :: nc_nuceat_tend      ! IN ccn activated number tendency kg-1 s-1
+    real(rl), intent(in),    dimension(kts:kte)      :: nccn_prescribed
+    real(rl), intent(in),    dimension(kts:kte)      :: ni_activated       ! IN actived ice nuclei concentration  1/kg
+    real(rl), intent(in),    dimension(kts:kte)      :: frzimm,frzcnt,frzdep ! From macrophysics aerop (CNT scheme) [#/cm3]
+    real(rl), intent(in)                                     :: dt         ! model time step                  s
 
-    real, intent(out)               :: precip_liq_surf    ! precipitation rate, liquid       m s-1
-    real, intent(out)               :: precip_ice_surf    ! precipitation rate, solid        m s-1
-    real, intent(out),   dimension(kts:kte)      :: diag_eff_radius_qc  ! effective radius, cloud          m
-    real, intent(out),   dimension(kts:kte)      :: diag_eff_radius_qi  ! effective radius, ice            m
-    real, intent(out),   dimension(kts:kte)      :: rho_qi  ! bulk density of ice              kg m-3
-    real, intent(out),   dimension(kts:kte)      :: mu_c       ! Size distribution shape parameter for radiation
-    real, intent(out),   dimension(kts:kte)      :: lamc       ! Size distribution slope parameter for radiation
+    real(rl), intent(out)               :: precip_liq_surf    ! precipitation rate, liquid       m s-1
+    real(rl), intent(out)               :: precip_ice_surf    ! precipitation rate, solid        m s-1
+    real(rl), intent(out),   dimension(kts:kte)      :: diag_eff_radius_qc  ! effective radius, cloud          m
+    real(rl), intent(out),   dimension(kts:kte)      :: diag_eff_radius_qi  ! effective radius, ice            m
+    real(rl), intent(out),   dimension(kts:kte)      :: rho_qi  ! bulk density of ice              kg m-3
+    real(rl), intent(out),   dimension(kts:kte)      :: mu_c       ! Size distribution shape parameter for radiation
+    real(rl), intent(out),   dimension(kts:kte)      :: lamc       ! Size distribution slope parameter for radiation
 
     integer, intent(in)                                  :: kts,kte    ! array bounds (vertical)
     integer, intent(in)                                  :: it         ! time step counter NOTE: starts at 1 for first time step
 
     logical, intent(in)                           :: do_predict_nc ! .T. (.F.) for prediction (specification) of Nc
 
-    real, intent(in),    dimension(kts:kte)      :: dpres       ! pressure thickness               Pa
-    real, intent(in),    dimension(kts:kte)      :: exner      ! Exner expression
+    real(rl), intent(in),    dimension(kts:kte)      :: dpres       ! pressure thickness               Pa
+    real(rl), intent(in),    dimension(kts:kte)      :: exner      ! Exner expression
 
     ! OUTPUT for PBUF variables used by other parameterizations
-    real, intent(out),   dimension(kts:kte)      :: qv2qi_depos_tend    ! qitend due to deposition/sublimation
-    real, intent(out),   dimension(kts:kte)      :: precip_total_tend      ! Total precipitation (rain + snow)
-    real, intent(out),   dimension(kts:kte)      :: nevapr     ! evaporation of total precipitation (rain + snow)
-    real, intent(out),   dimension(kts:kte)      :: qr_evap_tend  ! evaporation of rain
-    real, intent(out),   dimension(kts:kte+1)    :: precip_liq_flux       ! grid-box average rain flux (kg m^-2 s^-1) pverp
-    real, intent(out),   dimension(kts:kte+1)    :: precip_ice_flux       ! grid-box average ice/snow flux (kg m^-2 s^-1) pverp
-    real, intent(out),   dimension(kts:kte+1)    :: rflx       ! grid-box average rain flux (kg m^-2 s^-1) pverp
-    real, intent(out),   dimension(kts:kte+1)    :: sflx       ! grid-box average ice/snow flux (kg m^-2 s^-1) pverp
-    real, intent(out),   dimension(kts:kte+1)    :: cflx       ! grid-box average cloud droplets flux (kg m^-2 s^-1) pverp
-    real, intent(out),   dimension(kts:kte)      :: liq_ice_exchange ! sum of liq-ice phase change tendenices
-    real, intent(out),   dimension(kts:kte)      :: vap_liq_exchange ! sum of vap-liq phase change tendenices
-    real, intent(out),   dimension(kts:kte)      :: vap_ice_exchange ! sum of vap-ice phase change tendenices
+    real(rl), intent(out),   dimension(kts:kte)      :: qv2qi_depos_tend    ! qitend due to deposition/sublimation
+    real(rl), intent(out),   dimension(kts:kte)      :: precip_total_tend      ! Total precipitation (rain + snow)
+    real(rl), intent(out),   dimension(kts:kte)      :: nevapr     ! evaporation of total precipitation (rain + snow)
+    real(rl), intent(out),   dimension(kts:kte)      :: qr_evap_tend  ! evaporation of rain
+    real(rl), intent(out),   dimension(kts:kte+1)    :: precip_liq_flux       ! grid-box average rain flux (kg m^-2 s^-1) pverp
+    real(rl), intent(out),   dimension(kts:kte+1)    :: precip_ice_flux       ! grid-box average ice/snow flux (kg m^-2 s^-1) pverp
+    real(rl), intent(out),   dimension(kts:kte+1)    :: rflx       ! grid-box average rain flux (kg m^-2 s^-1) pverp
+    real(rl), intent(out),   dimension(kts:kte+1)    :: sflx       ! grid-box average ice/snow flux (kg m^-2 s^-1) pverp
+    real(rl), intent(out),   dimension(kts:kte+1)    :: cflx       ! grid-box average cloud droplets flux (kg m^-2 s^-1) pverp
+    real(rl), intent(out),   dimension(kts:kte)      :: liq_ice_exchange ! sum of liq-ice phase change tendenices
+    real(rl), intent(out),   dimension(kts:kte)      :: vap_liq_exchange ! sum of vap-liq phase change tendenices
+    real(rl), intent(out),   dimension(kts:kte)      :: vap_ice_exchange ! sum of vap-ice phase change tendenices
 
     ! INPUT for prescribed CCN option
     logical, intent(in)                                  :: do_prescribed_CCN
 
     ! INPUT for idealization options
     logical, intent(in)                                  :: do_precip_off
-    real, intent(in)                                     :: nccnst
+    real(rl), intent(in)                                     :: nccnst
 
     ! INPUT for p3 tuning parameters
-    real, intent(in)                                     :: p3_autocon_coeff         ! autconversion coefficient
-    real, intent(in)                                     :: p3_accret_coeff          ! accretion coefficient
-    real, intent(in)                                     :: p3_qc_autocon_expon      ! autconversion qc exponent
-    real, intent(in)                                     :: p3_nc_autocon_expon      ! autconversion nc exponent
-    real, intent(in)                                     :: p3_qc_accret_expon       ! accretion qc and qr exponent
-    real, intent(in)                                     :: p3_wbf_coeff             ! WBF coefficient
-    real, intent(in)                                     :: p3_mincdnc               ! Lower bound of Nc
-    real, intent(in)                                     :: p3_max_mean_rain_size    ! max mean rain size allowed
-    real, intent(in)                                     :: p3_embryonic_rain_size   ! embryonic rain size from autoconversion
+    real(rl), intent(in)                                     :: p3_autocon_coeff         ! autconversion coefficient
+    real(rl), intent(in)                                     :: p3_accret_coeff          ! accretion coefficient
+    real(rl), intent(in)                                     :: p3_qc_autocon_expon      ! autconversion qc exponent
+    real(rl), intent(in)                                     :: p3_nc_autocon_expon      ! autconversion nc exponent
+    real(rl), intent(in)                                     :: p3_qc_accret_expon       ! accretion qc and qr exponent
+    real(rl), intent(in)                                     :: p3_wbf_coeff             ! WBF coefficient
+    real(rl), intent(in)                                     :: p3_mincdnc               ! Lower bound of Nc
+    real(rl), intent(in)                                     :: p3_max_mean_rain_size    ! max mean rain size allowed
+    real(rl), intent(in)                                     :: p3_embryonic_rain_size   ! embryonic rain size from autoconversion
 
     ! INPUT needed for PBUF variables used by other parameterizations
 
-    real, intent(in),    dimension(kts:kte)      :: cld_frac_i, cld_frac_l, cld_frac_r ! Ice, Liquid and Rain cloud fraction
-    real, intent(in),    dimension(kts:kte)      :: qv_prev, t_prev                    ! qv and t from previous p3_main call
+    real(rl), intent(in),    dimension(kts:kte)      :: cld_frac_i, cld_frac_l, cld_frac_r ! Ice, Liquid and Rain cloud fraction
+    real(rl), intent(in),    dimension(kts:kte)      :: qv_prev, t_prev                    ! qv and t from previous p3_main call
     ! AaronDonahue, the following variable (p3_tend_out) is a catch-all for passing P3-specific variables outside of p3_main
     ! so that they can be written as ouput.  NOTE TO C++ PORT: This variable is entirely optional and doesn't need to be
     ! included in the port to C++, or can be changed if desired.
-    real, intent(out),   dimension(kts:kte,49)   :: p3_tend_out ! micro physics tendencies
-    real, intent(in),    dimension(3)            :: col_location
-    real, intent(in),    dimension(kts:kte)      :: inv_qc_relvar
-    real, intent(out),   dimension(kts:kte)      :: diag_equiv_reflectivity,diag_ze_rain,diag_ze_ice  ! equivalent reflectivity [dBZ]
+    real(rl), intent(out),   dimension(kts:kte,49)   :: p3_tend_out ! micro physics tendencies
+    real(rl), intent(in),    dimension(3)            :: col_location
+    real(rl), intent(in),    dimension(kts:kte)      :: inv_qc_relvar
+    real(rl), intent(out),   dimension(kts:kte)      :: diag_equiv_reflectivity,diag_ze_rain,diag_ze_ice  ! equivalent reflectivity [dBZ]
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-    real, optional, intent(out) :: elapsed_s ! duration of main loop in seconds
+    real(rl), optional, intent(out) :: elapsed_s ! duration of main loop in seconds
 #endif
 
     !
@@ -1366,36 +1368,36 @@ end function bfb_expm1
     !
 
     ! These outputs are no longer provided by p3_main.
-    real, dimension(kts:kte) :: diag_vm_qi ! mass-weighted fall speed of ice  m s-1
-    real, dimension(kts:kte) :: diag_diam_qi  ! mean diameter of ice             m
-    real, dimension(kts:kte) :: pratot   ! accretion of cloud by rain
-    real, dimension(kts:kte) :: prctot   ! autoconversion of cloud to rain
+    real(rl), dimension(kts:kte) :: diag_vm_qi ! mass-weighted fall speed of ice  m s-1
+    real(rl), dimension(kts:kte) :: diag_diam_qi  ! mean diameter of ice             m
+    real(rl), dimension(kts:kte) :: pratot   ! accretion of cloud by rain
+    real(rl), dimension(kts:kte) :: prctot   ! autoconversion of cloud to rain
 
-    real, dimension(kts:kte) :: mu_r  ! shape parameter of rain
-    real, dimension(kts:kte) :: t_atm     ! temperature at the beginning of the microhpysics step [K]
+    real(rl), dimension(kts:kte) :: mu_r  ! shape parameter of rain
+    real(rl), dimension(kts:kte) :: t_atm     ! temperature at the beginning of the microhpysics step [K]
 
     ! 2D size distribution and fallspeed parameters:
 
-    real, dimension(kts:kte) :: lamr
-    real, dimension(kts:kte) :: logn0r
+    real(rl), dimension(kts:kte) :: lamr
+    real(rl), dimension(kts:kte) :: logn0r
 
-    real, dimension(kts:kte) :: nu
-    real, dimension(kts:kte) :: cdist
-    real, dimension(kts:kte) :: cdist1
-    real, dimension(kts:kte) :: cdistr
+    real(rl), dimension(kts:kte) :: nu
+    real(rl), dimension(kts:kte) :: cdist
+    real(rl), dimension(kts:kte) :: cdist1
+    real(rl), dimension(kts:kte) :: cdistr
 
     ! Variables needed for in-cloud calculations
-    real, dimension(kts:kte) :: inv_cld_frac_i, inv_cld_frac_l, inv_cld_frac_r ! Inverse cloud fractions (1/cld)
-    real, dimension(kts:kte) :: qc_incld, qr_incld, qi_incld, qm_incld ! In cloud mass-mixing ratios
-    real, dimension(kts:kte) :: nc_incld, nr_incld, ni_incld, bm_incld ! In cloud number concentrations
+    real(rl), dimension(kts:kte) :: inv_cld_frac_i, inv_cld_frac_l, inv_cld_frac_r ! Inverse cloud fractions (1/cld)
+    real(rl), dimension(kts:kte) :: qc_incld, qr_incld, qi_incld, qm_incld ! In cloud mass-mixing ratios
+    real(rl), dimension(kts:kte) :: nc_incld, nr_incld, ni_incld, bm_incld ! In cloud number concentrations
 
-    real, dimension(kts:kte)      :: inv_dz,inv_rho,ze_ice,ze_rain,prec,rho,       &
+    real(rl), dimension(kts:kte)      :: inv_dz,inv_rho,ze_ice,ze_rain,prec,rho,       &
          rhofacr,rhofaci,acn,latent_heat_sublim,latent_heat_vapor,latent_heat_fusion,qv_sat_l,qv_sat_i,qv_supersat_i,       &
          tmparr1,inv_exner
 
     ! -- scalar locals -- !
 
-    real :: inv_dt, timeScaleFactor
+    real(rl) :: inv_dt, timeScaleFactor
 
     integer :: ktop,kbot,kdir,i
 
@@ -1405,9 +1407,9 @@ end function bfb_expm1
     logical, parameter :: debug_ON     = .false.  !.true. to switch on debugging checks/traps throughout code  TODO: Turn this back off as default once the tlay error is found.
     logical, parameter :: debug_ABORT  = .false.  !.true. will result in forced abort in s/r 'check_values'
 
-    real,dimension(kts:kte) :: qc_old, nc_old, qr_old, nr_old, qi_old, ni_old, qv_old, th_atm_old
+    real(rl),dimension(kts:kte) :: qc_old, nc_old, qr_old, nr_old, qi_old, ni_old, qv_old, th_atm_old
     integer :: knc
-    real :: mincdnc
+    real(rl) :: mincdnc
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
     integer :: clock_count1, clock_count_rate, clock_count_max, clock_count2, clock_count_diff
@@ -1701,7 +1703,7 @@ end function bfb_expm1
     call system_clock(clock_count2, clock_count_rate, clock_count_max)
     clock_count_diff = clock_count2 - clock_count1
     if (present(elapsed_s)) then
-      elapsed_s = real(clock_count_diff) / real(clock_count_rate)
+      elapsed_s = real(clock_count_diff,8) / real(clock_count_rate,8)
     endif
 #endif
 
@@ -1722,38 +1724,38 @@ end function bfb_expm1
 
     implicit none
 
-    real    :: dum1,dum4,dum5,proc,iproc1,gproc1,tmp1,tmp2
+    real(rl)    :: dum1,dum4,dum5,proc,iproc1,gproc1,tmp1,tmp2
     integer :: dumjj,dumii,dumi,index
 
     ! get value at current density index
 
     ! first interpolate for current rimed fraction index
-    iproc1 = ice_table_vals(dumjj,dumii,dumi,index)+(dum1-real(dumi))*(ice_table_vals(dumjj,dumii,       &
+    iproc1 = ice_table_vals(dumjj,dumii,dumi,index)+(dum1-real(dumi,8))*(ice_table_vals(dumjj,dumii,       &
          dumi+1,index)-ice_table_vals(dumjj,dumii,dumi,index))
 
     ! linearly interpolate to get process rates for rimed fraction index + 1
 
-    gproc1 = ice_table_vals(dumjj,dumii+1,dumi,index)+(dum1-real(dumi))*(ice_table_vals(dumjj,dumii+1,   &
+    gproc1 = ice_table_vals(dumjj,dumii+1,dumi,index)+(dum1-real(dumi,8))*(ice_table_vals(dumjj,dumii+1,   &
          dumi+1,index)-ice_table_vals(dumjj,dumii+1,dumi,index))
 
-    tmp1   = iproc1+(dum4-real(dumii))*(gproc1-iproc1)
+    tmp1   = iproc1+(dum4-real(dumii,8))*(gproc1-iproc1)
 
     ! get value at density index + 1
 
     ! first interpolate for current rimed fraction index
 
-    iproc1 = ice_table_vals(dumjj+1,dumii,dumi,index)+(dum1-real(dumi))*(ice_table_vals(dumjj+1,dumii,   &
+    iproc1 = ice_table_vals(dumjj+1,dumii,dumi,index)+(dum1-real(dumi,8))*(ice_table_vals(dumjj+1,dumii,   &
          dumi+1,index)-ice_table_vals(dumjj+1,dumii,dumi,index))
 
     ! linearly interpolate to get process rates for rimed fraction index + 1
 
-    gproc1 = ice_table_vals(dumjj+1,dumii+1,dumi,index)+(dum1-real(dumi))*(ice_table_vals(dumjj+1,       &
+    gproc1 = ice_table_vals(dumjj+1,dumii+1,dumi,index)+(dum1-real(dumi,8))*(ice_table_vals(dumjj+1,       &
          dumii+1,dumi+1,index)-ice_table_vals(dumjj+1,dumii+1,dumi,index))
 
-    tmp2   = iproc1+(dum4-real(dumii))*(gproc1-iproc1)
+    tmp2   = iproc1+(dum4-real(dumii,8))*(gproc1-iproc1)
 
     ! get final process rate
-    proc   = tmp1+(dum5-real(dumjj))*(tmp2-tmp1)
+    proc   = tmp1+(dum5-real(dumjj,8))*(tmp2-tmp1)
     return
   END SUBROUTINE access_lookup_table
 
@@ -1763,7 +1765,7 @@ end function bfb_expm1
 
     implicit none
 
-    real    :: dum1,dum3,dum4,dum5,proc,dproc1,dproc2,iproc1,gproc1,tmp1,tmp2
+    real(rl)    :: dum1,dum3,dum4,dum5,proc,dproc1,dproc2,iproc1,gproc1,tmp1,tmp2
     integer :: dumjj,dumii,dumj,dumi,index
 
     ! This subroutine interpolates lookup table values for rain/ice collection processes
@@ -1771,58 +1773,58 @@ end function bfb_expm1
     ! current density index
 
     ! current rime fraction index
-    dproc1  = collect_table_vals(dumjj,dumii,dumi,dumj,index)+(dum1-real(dumi))*                &
+    dproc1  = collect_table_vals(dumjj,dumii,dumi,dumj,index)+(dum1-real(dumi,8))*                &
          (collect_table_vals(dumjj,dumii,dumi+1,dumj,index)-collect_table_vals(dumjj,dumii,dumi,    &
          dumj,index))
 
-    dproc2  = collect_table_vals(dumjj,dumii,dumi,dumj+1,index)+(dum1-real(dumi))*             &
+    dproc2  = collect_table_vals(dumjj,dumii,dumi,dumj+1,index)+(dum1-real(dumi,8))*             &
          (collect_table_vals(dumjj,dumii,dumi+1,dumj+1,index)-collect_table_vals(dumjj,dumii,dumi,  &
          dumj+1,index))
 
-    iproc1  = dproc1+(dum3-real(dumj))*(dproc2-dproc1)
+    iproc1  = dproc1+(dum3-real(dumj,8))*(dproc2-dproc1)
 
     ! rime fraction index + 1
 
-    dproc1  = collect_table_vals(dumjj,dumii+1,dumi,dumj,index)+(dum1-real(dumi))*             &
+    dproc1  = collect_table_vals(dumjj,dumii+1,dumi,dumj,index)+(dum1-real(dumi,8))*             &
          (collect_table_vals(dumjj,dumii+1,dumi+1,dumj,index)-collect_table_vals(dumjj,dumii+1,     &
          dumi,dumj,index))
 
-    dproc2  = collect_table_vals(dumjj,dumii+1,dumi,dumj+1,index)+(dum1-real(dumi))*           &
+    dproc2  = collect_table_vals(dumjj,dumii+1,dumi,dumj+1,index)+(dum1-real(dumi,8))*           &
          (collect_table_vals(dumjj,dumii+1,dumi+1,dumj+1,index)-collect_table_vals(dumjj,dumii+1,   &
          dumi,dumj+1,index))
 
-    gproc1  = dproc1+(dum3-real(dumj))*(dproc2-dproc1)
-    tmp1    = iproc1+(dum4-real(dumii))*(gproc1-iproc1)
+    gproc1  = dproc1+(dum3-real(dumj,8))*(dproc2-dproc1)
+    tmp1    = iproc1+(dum4-real(dumii,8))*(gproc1-iproc1)
 
     ! density index + 1
 
     ! current rime fraction index
 
-    dproc1  = collect_table_vals(dumjj+1,dumii,dumi,dumj,index)+(dum1-real(dumi))*             &
+    dproc1  = collect_table_vals(dumjj+1,dumii,dumi,dumj,index)+(dum1-real(dumi,8))*             &
          (collect_table_vals(dumjj+1,dumii,dumi+1,dumj,index)-collect_table_vals(dumjj+1,dumii,     &
          dumi,dumj,index))
 
-    dproc2  = collect_table_vals(dumjj+1,dumii,dumi,dumj+1,index)+(dum1-real(dumi))*           &
+    dproc2  = collect_table_vals(dumjj+1,dumii,dumi,dumj+1,index)+(dum1-real(dumi,8))*           &
          (collect_table_vals(dumjj+1,dumii,dumi+1,dumj+1,index)-collect_table_vals(dumjj+1,dumii,   &
          dumi,dumj+1,index))
 
-    iproc1  = dproc1+(dum3-real(dumj))*(dproc2-dproc1)
+    iproc1  = dproc1+(dum3-real(dumj,8))*(dproc2-dproc1)
 
     ! rime fraction index + 1
 
-    dproc1  = collect_table_vals(dumjj+1,dumii+1,dumi,dumj,index)+(dum1-real(dumi))*           &
+    dproc1  = collect_table_vals(dumjj+1,dumii+1,dumi,dumj,index)+(dum1-real(dumi,8))*           &
          (collect_table_vals(dumjj+1,dumii+1,dumi+1,dumj,index)-collect_table_vals(dumjj+1,dumii+1, &
          dumi,dumj,index))
 
-    dproc2  = collect_table_vals(dumjj+1,dumii+1,dumi,dumj+1,index)+(dum1-real(dumi))*         &
+    dproc2  = collect_table_vals(dumjj+1,dumii+1,dumi,dumj+1,index)+(dum1-real(dumi,8))*         &
          (collect_table_vals(dumjj+1,dumii+1,dumi+1,dumj+1,index)-collect_table_vals(dumjj+1,       &
          dumii+1,dumi,dumj+1,index))
 
-    gproc1  = dproc1+(dum3-real(dumj))*(dproc2-dproc1)
-    tmp2    = iproc1+(dum4-real(dumii))*(gproc1-iproc1)
+    gproc1  = dproc1+(dum3-real(dumj,8))*(dproc2-dproc1)
+    tmp2    = iproc1+(dum4-real(dumii,8))*(gproc1-iproc1)
 
     ! interpolate over density to get final values
-    proc    = tmp1+(dum5-real(dumjj))*(tmp2-tmp1)
+    proc    = tmp1+(dum5-real(dumjj,8))*(tmp2-tmp1)
 
     return
   END SUBROUTINE access_lookup_table_coll
@@ -1842,9 +1844,9 @@ end function bfb_expm1
 
     ! arguments:
     integer, intent(out) :: dumi,dumjj,dumii,dumzz
-    real,    intent(out) :: dum1,dum4,dum5,dum6
+    real(rl),    intent(out) :: dum1,dum4,dum5,dum6
     integer, intent(in)  :: isize,rimsize,densize
-    real,    intent(in)  :: qi,ni,qm,rhop
+    real(rl),    intent(in)  :: qi,ni,qm,rhop
 
     !------------------------------------------------------------------------------------------!
     ! find index for qi (normalized ice mass mixing ratio = qi/ni)
@@ -1855,7 +1857,7 @@ end function bfb_expm1
     dum1 = (bfb_log10(qi/ni)+18.)*lookup_table_1a_dum1_c-10. ! For computational efficiency
     dumi = int(dum1)
     ! set limits (to make sure the calculated index doesn't exceed range of lookup table)
-    dum1 = min(dum1,real(isize))
+    dum1 = min(dum1,real(isize,8))
     dum1 = max(dum1,1.)
     dumi = max(1,dumi)
     dumi = min(isize-1,dumi)
@@ -1864,7 +1866,7 @@ end function bfb_expm1
     dum4  = (qm/qi)*3. + 1.
     dumii = int(dum4)
     ! set limits
-    dum4  = min(dum4,real(rimsize))
+    dum4  = min(dum4,real(rimsize,8))
     dum4  = max(dum4,1.)
     dumii = max(1,dumii)
     dumii = min(rimsize-1,dumii)
@@ -1878,7 +1880,7 @@ end function bfb_expm1
     endif
     dumjj = int(dum5)
     ! set limits
-    dum5  = min(dum5,real(densize))
+    dum5  = min(dum5,real(densize,8))
     dum5  = max(dum5,1.)
     dumjj = max(1,dumjj)
     dumjj = min(densize-1,dumjj)
@@ -1901,16 +1903,16 @@ end function bfb_expm1
 
     ! arguments:
     integer, intent(out) :: dumj
-    real,    intent(out) :: dum3
+    real(rl),    intent(out) :: dum3
     integer, intent(in)  :: rcollsize
-    real,    intent(in)  :: qr,nr
+    real(rl),    intent(in)  :: qr,nr
 
     ! local variables:
-    real                 :: dumlr
-    real                 :: real_rcollsize
+    real(rl)                 :: dumlr
+    real(rl)                 :: real_rcollsize
 
     !------------------------------------------------------------------------------------------!
-    real_rcollsize = real(rcollsize)
+    real_rcollsize = real(rcollsize,8)
     ! find index for scaled mean rain size
     ! if no rain, then just choose dumj = 1 and do not calculate rain-ice collection processes
     if (qr.ge.qsmall .and. nr.gt.0.) then
@@ -1945,8 +1947,8 @@ end function bfb_expm1
 
     ! arguments:
     integer, intent(out) :: dumii,dumjj
-    real,    intent(out) :: dum1,rdumii,rdumjj,inv_dum3
-    real,    intent(in)  :: mu_r,lamr
+    real(rl),    intent(out) :: dum1,rdumii,rdumjj,inv_dum3
+    real(rl),    intent(in)  :: mu_r,lamr
 
     !------------------------------------------------------------------------------------------!
 
@@ -1989,13 +1991,13 @@ end function bfb_expm1
     implicit none
 
     !arguments:
-    real, dimension(:), intent(in)  :: dnu
-    real,     intent(in)            :: qc,rho
-    real,     intent(inout)         :: nc
-    real,     intent(out)           :: mu_c,nu,lamc,cdist,cdist1
+    real(rl), dimension(:), intent(in)  :: dnu
+    real(rl),     intent(in)            :: qc,rho
+    real(rl),     intent(inout)         :: nc
+    real(rl),     intent(out)           :: mu_c,nu,lamc,cdist,cdist1
 
     !local variables
-    real                            :: lammin,lammax
+    real(rl)                            :: lammin,lammax
     integer                         :: dumi
 
     !--------------------------------------------------------------------------
@@ -2056,13 +2058,13 @@ end function bfb_expm1
     implicit none
 
     !arguments:
-    real,     intent(in)            :: qr
-    real,     intent(in)            :: p3_max_mean_rain_size
-    real,     intent(inout)         :: nr
-    real,     intent(out)           :: lamr,mu_r,cdistr,logn0r
+    real(rl),     intent(in)            :: qr
+    real(rl),     intent(in)            :: p3_max_mean_rain_size
+    real(rl),     intent(inout)         :: nr
+    real(rl),     intent(out)           :: lamr,mu_r,cdistr,logn0r
 
     !local variables:
-    real                            :: inv_dum,lammax,lammin
+    real(rl)                            :: inv_dum,lammax,lammin
 
     !--------------------------------------------------------------------------
 
@@ -2118,9 +2120,9 @@ end function bfb_expm1
     implicit none
 
     !arguments:
-    real, intent(in)    :: qi_tot
-    real, intent(inout) :: qi_rim,bi_rim
-    real, intent(out)   :: rho_rime
+    real(rl), intent(in)    :: qi_tot
+    real(rl), intent(inout) :: qi_rim,bi_rim
+    real(rl), intent(out)   :: rho_rime
 
     !--------------------------------------------------------------------------
 
@@ -2169,11 +2171,11 @@ end function bfb_expm1
     implicit none
 
     !arguments:
-    real, intent(inout)               :: ni_local      !PMC - scalar now that nCat deleted.
-    real, intent(in)                  :: max_total_ni,inv_rho_local
+    real(rl), intent(inout)               :: ni_local      !PMC - scalar now that nCat deleted.
+    real(rl), intent(in)                  :: max_total_ni,inv_rho_local
 
     !local variables:
-    real                              :: dum
+    real(rl)                              :: dum
 
     if (ni_local.ge.1.e-20) then
        dum = max_total_ni*inv_rho_local/ni_local
@@ -2206,19 +2208,19 @@ end function bfb_expm1
     implicit none
 
     !Calling parameters:
-    real, dimension(kts:kte), intent(in) :: Qv, T
-    real, dimension(3), intent(in) :: col_loc
+    real(rl), dimension(kts:kte), intent(in) :: Qv, T
+    real(rl), dimension(3), intent(in) :: col_loc
     integer,                intent(in) :: source_ind,timestepcount,kts,kte
     logical,                intent(in) :: force_abort         !.TRUE. = forces abort if value violation is detected
 
     !Local variables:
-    real, parameter :: T_low  = 100. !173.  !!!!OG 100 instead of 160
-    real, parameter :: T_high = 355. !323.
-    real, parameter :: Q_high = 40.e-3
-    real, parameter :: N_high = 1.e+20
-    real, parameter :: B_high = Q_high*1.e-3
-    real, parameter :: x_high = 1.e+30
-    real, parameter :: x_low  = 0.
+    real(rl), parameter :: T_low  = 100. !173.  !!!!OG 100 instead of 160
+    real(rl), parameter :: T_high = 355. !323.
+    real(rl), parameter :: Q_high = 40.e-3
+    real(rl), parameter :: N_high = 1.e+20
+    real(rl), parameter :: B_high = Q_high*1.e-3
+    real(rl), parameter :: x_high = 1.e+30
+    real(rl), parameter :: x_low  = 0.
     integer         :: k
     logical         :: trap,badvalue_found
     character(len=1000)    :: err_msg
@@ -2227,7 +2229,7 @@ end function bfb_expm1
 
     k_loop: do k = kts, kte
 
-       ! check unrealistic values or NANs for T and Qv
+       ! check unreal(rl)istic values or NANs for T and Qv
        if (.not.(T(k)>T_low .and. T(k)<T_high)) then
           write(iulog,'(a60,i5,a2,i8,a2,f8.4,a2,f8.4,a2,i4,a2,i8,a2,e16.8)') &
                '** WARNING IN P3_MAIN -- src, gcol, lon, lat, lvl, tstep, T:',source_ind,', ', &
@@ -2278,20 +2280,20 @@ end function bfb_expm1
 
    implicit none
 
-   real, intent(in) :: rho
-   real, intent(in) :: t_atm
-   real, intent(in) :: rhofaci
-   real, intent(in) :: table_val_qc2qi_collect  ! collection of cloud water by ice
-   real, intent(in) :: qi_incld
-   real, intent(in) :: qc_incld
-   real, intent(in) :: ni_incld
-   real, intent(in) :: nc_incld
+   real(rl), intent(in) :: rho
+   real(rl), intent(in) :: t_atm
+   real(rl), intent(in) :: rhofaci
+   real(rl), intent(in) :: table_val_qc2qi_collect  ! collection of cloud water by ice
+   real(rl), intent(in) :: qi_incld
+   real(rl), intent(in) :: qc_incld
+   real(rl), intent(in) :: ni_incld
+   real(rl), intent(in) :: nc_incld
 
 
-   real, intent(out) :: qccol
-   real, intent(out) :: nc_collect_tend
-   real, intent(out) :: qc2qr_ice_shed_tend
-   real, intent(out) :: ncshdc
+   real(rl), intent(out) :: qccol
+   real(rl), intent(out) :: nc_collect_tend
+   real(rl), intent(out) :: qc2qr_ice_shed_tend
+   real(rl), intent(out) :: ncshdc
 
    if (qi_incld .ge.qsmall .and. qc_incld .ge.qsmall) then
       if  (t_atm .le.T_zerodegc) then
@@ -2331,24 +2333,24 @@ end function bfb_expm1
 
    implicit none
 
-   real, intent(in) :: rho
-   real, intent(in) :: t_atm
-   real, intent(in) :: rhofaci
-   real, intent(in) :: logn0r
-   real, intent(in) :: table_val_nr_collect !collection of rain number by ice
-   real, intent(in) :: table_val_qr2qi_collect !collection of rain mass by ice
-   real, intent(in) :: qi_incld
-   real, intent(in) :: ni_incld
-   real, intent(in) :: qr_incld
+   real(rl), intent(in) :: rho
+   real(rl), intent(in) :: t_atm
+   real(rl), intent(in) :: rhofaci
+   real(rl), intent(in) :: logn0r
+   real(rl), intent(in) :: table_val_nr_collect !collection of rain number by ice
+   real(rl), intent(in) :: table_val_qr2qi_collect !collection of rain mass by ice
+   real(rl), intent(in) :: qi_incld
+   real(rl), intent(in) :: ni_incld
+   real(rl), intent(in) :: qr_incld
 
-   real, intent(out) :: qrcol
-   real, intent(out) :: nr_collect_tend
+   real(rl), intent(out) :: qrcol
+   real(rl), intent(out) :: nr_collect_tend
 
    if (qi_incld.ge.qsmall .and. qr_incld.ge.qsmall) then
       if (t_atm.le.T_zerodegc) then
          ! note: table_val_qr2qi_collect and logn0r are already calculated as log_10
-         qrcol = bfb_pow(10.,(table_val_qr2qi_collect+logn0r))*rho*rhofaci*eri*ni_incld
-         nr_collect_tend = bfb_pow(10.,(table_val_nr_collect+logn0r))*rho*rhofaci*eri*ni_incld
+         qrcol = bfb_pow(10.d0,(table_val_qr2qi_collect+logn0r))*rho*rhofaci*eri*ni_incld
+         nr_collect_tend = bfb_pow(10.d0,(table_val_nr_collect+logn0r))*rho*rhofaci*eri*ni_incld
       else if (t_atm .gt. T_zerodegc) then
          ! rain number sink due to collection
          ! for T > 273.15, assume collected rain number is shed as
@@ -2356,7 +2358,7 @@ end function bfb_expm1
          ! note that melting of ice number is scaled to the loss
          ! rate of ice mass due to melting
          ! collection of rain above freezing does not impact total rain mass
-         nr_collect_tend  = bfb_pow(10.,(table_val_nr_collect + logn0r))*rho*rhofaci*eri*ni_incld
+         nr_collect_tend  = bfb_pow(10.d0,(table_val_nr_collect + logn0r))*rho*rhofaci*eri*ni_incld
          ! for now neglect shedding of ice collecting rain above freezing, since snow is
          ! not expected to shed in these conditions (though more hevaily rimed ice would be
          ! expected to lead to shedding)
@@ -2380,17 +2382,17 @@ end function bfb_expm1
 
    implicit none
 
-   real, intent(in) :: rho
-   real, intent(in) :: rhofaci
-   real, intent(in) :: table_val_ni_self_collect ! ice collection within a category
-   real, intent(in) :: eii
-   real, intent(in) :: qm_incld
-   real, intent(in) :: qi_incld
-   real, intent(in) :: ni_incld
+   real(rl), intent(in) :: rho
+   real(rl), intent(in) :: rhofaci
+   real(rl), intent(in) :: table_val_ni_self_collect ! ice collection within a category
+   real(rl), intent(in) :: eii
+   real(rl), intent(in) :: qm_incld
+   real(rl), intent(in) :: qi_incld
+   real(rl), intent(in) :: ni_incld
 
-   real, intent(out) :: ni_selfcollect_tend
+   real(rl), intent(out) :: ni_selfcollect_tend
 
-   real :: tmp1, Eii_fact
+   real(rl) :: tmp1, Eii_fact
 
    if (qi_incld.ge.qsmall) then
       ! Determine additional collection efficiency factor to be applied to ice-ice collection.
@@ -2431,26 +2433,26 @@ table_val_qi2qr_melting,table_val_qi2qr_vent_melt,latent_heat_vapor,latent_heat_
 
    implicit none
 
-   real, intent(in) :: rho
-   real, intent(in) :: t_atm
-   real, intent(in) :: pres
-   real, intent(in) :: rhofaci
-   real, intent(in) :: table_val_qi2qr_melting ! melting
-   real, intent(in) :: table_val_qi2qr_vent_melt ! melting (ventilation term)
-   real, intent(in) :: latent_heat_vapor
-   real, intent(in) :: latent_heat_fusion
-   real, intent(in) :: dv
-   real, intent(in) :: sc
-   real, intent(in) :: mu
-   real, intent(in) :: kap
-   real, intent(in) :: qv
-   real, intent(in) :: qi_incld
-   real, intent(in) :: ni_incld
+   real(rl), intent(in) :: rho
+   real(rl), intent(in) :: t_atm
+   real(rl), intent(in) :: pres
+   real(rl), intent(in) :: rhofaci
+   real(rl), intent(in) :: table_val_qi2qr_melting ! melting
+   real(rl), intent(in) :: table_val_qi2qr_vent_melt ! melting (ventilation term)
+   real(rl), intent(in) :: latent_heat_vapor
+   real(rl), intent(in) :: latent_heat_fusion
+   real(rl), intent(in) :: dv
+   real(rl), intent(in) :: sc
+   real(rl), intent(in) :: mu
+   real(rl), intent(in) :: kap
+   real(rl), intent(in) :: qv
+   real(rl), intent(in) :: qi_incld
+   real(rl), intent(in) :: ni_incld
 
-   real, intent(out) :: qi2qr_melt_tend
-   real, intent(out) :: ni2nr_melt_tend
+   real(rl), intent(out) :: qi2qr_melt_tend
+   real(rl), intent(out) :: ni2nr_melt_tend
 
-   real :: qsat0
+   real(rl) :: qsat0
 
    if (qi_incld .ge.qsmall .and. t_atm.gt.T_zerodegc) then
       qsat0 = qv_sat( T_zerodegc,pres,0 )
@@ -2475,32 +2477,32 @@ qv,qc_incld,qi_incld,ni_incld,qr_incld,    &
 
    implicit none
 
-   real, intent(in) :: rho
-   real, intent(in) :: t_atm
-   real, intent(in) :: pres
-   real, intent(in) :: rhofaci
-   real, intent(in) :: table_val_qi2qr_melting ! melting
-   real, intent(in) :: table_val_qi2qr_vent_melt ! melting (ventilation term)
-   real, intent(in) :: latent_heat_vapor
-   real, intent(in) :: latent_heat_fusion
-   real, intent(in) :: dv
-   real, intent(in) :: kap
-   real, intent(in) :: mu
-   real, intent(in) :: sc
-   real, intent(in) :: qv
-   real, intent(in) :: qc_incld
-   real, intent(in) :: qi_incld
-   real, intent(in) :: ni_incld
-   real, intent(in) :: qr_incld
+   real(rl), intent(in) :: rho
+   real(rl), intent(in) :: t_atm
+   real(rl), intent(in) :: pres
+   real(rl), intent(in) :: rhofaci
+   real(rl), intent(in) :: table_val_qi2qr_melting ! melting
+   real(rl), intent(in) :: table_val_qi2qr_vent_melt ! melting (ventilation term)
+   real(rl), intent(in) :: latent_heat_vapor
+   real(rl), intent(in) :: latent_heat_fusion
+   real(rl), intent(in) :: dv
+   real(rl), intent(in) :: kap
+   real(rl), intent(in) :: mu
+   real(rl), intent(in) :: sc
+   real(rl), intent(in) :: qv
+   real(rl), intent(in) :: qc_incld
+   real(rl), intent(in) :: qi_incld
+   real(rl), intent(in) :: ni_incld
+   real(rl), intent(in) :: qr_incld
 
    logical, intent(inout) :: log_wetgrowth
-   real, intent(inout) :: qrcol
-   real, intent(inout) :: qccol
-   real, intent(inout) :: qwgrth
-   real, intent(inout) :: nr_ice_shed_tend
-   real, intent(inout) :: qc2qr_ice_shed_tend
+   real(rl), intent(inout) :: qrcol
+   real(rl), intent(inout) :: qccol
+   real(rl), intent(inout) :: qwgrth
+   real(rl), intent(inout) :: nr_ice_shed_tend
+   real(rl), intent(inout) :: qc2qr_ice_shed_tend
 
-   real :: qsat0, dum, dum1
+   real(rl) :: qsat0, dum, dum1
 
    if (qi_incld.ge.qsmall .and. qc_incld+qr_incld.ge.1.e-6 .and. t_atm.lt.T_zerodegc) then
       qsat0=qv_sat( T_zerodegc,pres,0 )
@@ -2540,19 +2542,19 @@ epsi,epsi_tot)
    ! note 'f1pr' values are normalized, so we need to multiply by N
    implicit none
 
-   real, intent(in) :: rho
-   real, intent(in) :: t_atm
-   real, intent(in) :: rhofaci
-   real, intent(in) :: table_val_qi2qr_melting ! melting
-   real, intent(in) :: table_val_qi2qr_vent_melt ! melting (ventilation term)
-   real, intent(in) :: dv
-   real, intent(in) :: mu
-   real, intent(in) :: sc
-   real, intent(in) :: qi_incld
-   real, intent(in) :: ni_incld
+   real(rl), intent(in) :: rho
+   real(rl), intent(in) :: t_atm
+   real(rl), intent(in) :: rhofaci
+   real(rl), intent(in) :: table_val_qi2qr_melting ! melting
+   real(rl), intent(in) :: table_val_qi2qr_vent_melt ! melting (ventilation term)
+   real(rl), intent(in) :: dv
+   real(rl), intent(in) :: mu
+   real(rl), intent(in) :: sc
+   real(rl), intent(in) :: qi_incld
+   real(rl), intent(in) :: ni_incld
 
-   real, intent(out) :: epsi
-   real, intent(inout) :: epsi_tot
+   real(rl), intent(out) :: epsi
+   real(rl), intent(inout) :: epsi_tot
 
    if (qi_incld.ge.qsmall .and. t_atm.lt.T_zerodegc) then
       epsi = ((table_val_qi2qr_melting+table_val_qi2qr_vent_melt*bfb_cbrt(sc)*bfb_sqrt(rhofaci*rho/mu))*2.*pi* &
@@ -2573,36 +2575,36 @@ epsr,epsc)
 
    implicit none
 
-   real, intent(in)  :: rho
-   real, intent(in)  :: f1r
-   real, intent(in)  :: f2r
-   real, intent(in)  :: dv
-   real, intent(in)  :: mu
-   real, intent(in)  :: sc
-   real, intent(in)  :: mu_r
-   real, intent(in)  :: lamr
-   real, intent(in)  :: cdistr
-   real, intent(in)  :: cdist
-   real, intent(in)  :: qr_incld
-   real, intent(in)  :: qc_incld
-   real, intent(out) :: epsr
-   real, intent(out) :: epsc
+   real(rl), intent(in)  :: rho
+   real(rl), intent(in)  :: f1r
+   real(rl), intent(in)  :: f2r
+   real(rl), intent(in)  :: dv
+   real(rl), intent(in)  :: mu
+   real(rl), intent(in)  :: sc
+   real(rl), intent(in)  :: mu_r
+   real(rl), intent(in)  :: lamr
+   real(rl), intent(in)  :: cdistr
+   real(rl), intent(in)  :: cdist
+   real(rl), intent(in)  :: qr_incld
+   real(rl), intent(in)  :: qc_incld
+   real(rl), intent(out) :: epsr
+   real(rl), intent(out) :: epsc
 
    integer     :: dumii, dumjj
-   real :: rdumii, rdumjj
-   real :: dum, dum1, dum2, inv_dum3
+   real(rl) :: rdumii, rdumjj
+   real(rl) :: dum, dum1, dum2, inv_dum3
 
    if (qr_incld.ge.qsmall) then
       call find_lookupTable_indices_3(dumii,dumjj,dum1,rdumii,rdumjj,inv_dum3,mu_r,lamr)
       !interpolate value at mu_r
-      dum1 = revap_table_vals(dumii,dumjj)+(rdumii-real(dumii))*                            &
+      dum1 = revap_table_vals(dumii,dumjj)+(rdumii-real(dumii,8))*                            &
              (revap_table_vals(dumii+1,dumjj)-revap_table_vals(dumii,dumjj))
 
       !interoplate value at mu_r+1
-      dum2 = revap_table_vals(dumii,dumjj+1)+(rdumii-real(dumii))*                          &
+      dum2 = revap_table_vals(dumii,dumjj+1)+(rdumii-real(dumii,8))*                          &
              (revap_table_vals(dumii+1,dumjj+1)-revap_table_vals(dumii,dumjj+1))
       !final interpolation
-      dum  = dum1+(rdumjj-real(dumjj))*(dum2-dum1)
+      dum  = dum1+(rdumjj-real(dumjj,8))*(dum2-dum1)
 
       epsr = 2.*pi*cdistr*rho*dv*                                                &
              (f1r*bfb_gamma(mu_r+2.)/lamr +                                    &
@@ -2642,19 +2644,19 @@ table_val_qi_fallspd,acn,lamc, mu_c,qc_incld,qccol,    &
 
    implicit none
 
-   real, intent(in) :: t_atm
-   real, intent(in) :: rhofaci
-   real, intent(in) :: table_val_qi_fallspd !mass-weighted fallspeed
-   real, intent(in) :: acn
-   real, intent(in) :: lamc
-   real, intent(in) :: mu_c
-   real, intent(in) :: qc_incld
-   real, intent(in) :: qccol
+   real(rl), intent(in) :: t_atm
+   real(rl), intent(in) :: rhofaci
+   real(rl), intent(in) :: table_val_qi_fallspd !mass-weighted fallspeed
+   real(rl), intent(in) :: acn
+   real(rl), intent(in) :: lamc
+   real(rl), intent(in) :: mu_c
+   real(rl), intent(in) :: qc_incld
+   real(rl), intent(in) :: qccol
 
-   real, intent(out) :: vtrmi1
-   real, intent(out) :: rho_qm_cloud
+   real(rl), intent(out) :: vtrmi1
+   real(rl), intent(out) :: rho_qm_cloud
 
-   real :: iTc, Vt_qc,  D_c, V_impact, Ri
+   real(rl) :: iTc, Vt_qc,  D_c, V_impact, Ri
 
    iTc = 0.0
    Vt_qc = 0.0
@@ -2705,9 +2707,9 @@ function subgrid_variance_scaling(relvar, expon) result(res)
   ! Finds a coefficient for process rates based on the inverse relative variance
   ! of cloud water.
 
-  real, intent(in) :: relvar
-  real, intent(in) :: expon
-  real :: res
+  real(rl), intent(in) :: relvar
+  real(rl), intent(in) :: expon
+  real(rl) :: res
 
   res = bfb_gamma(relvar+expon)/(bfb_gamma(relvar)*bfb_pow(relvar,expon))
 
@@ -2721,25 +2723,34 @@ subroutine cldliq_immersion_freezing(t_atm,lamc,mu_c,cdist1,qc_incld,inv_qc_relv
 
    implicit none
 
-   real, intent(in) :: t_atm
-   real, intent(in) :: lamc
-   real, intent(in) :: mu_c
-   real, intent(in) :: cdist1
-   real, intent(in) :: qc_incld
-   real, intent(in) :: inv_qc_relvar
+   real(rl), intent(in) :: t_atm
+   real(rl), intent(in) :: lamc
+   real(rl), intent(in) :: mu_c
+   real(rl), intent(in) :: cdist1
+   real(rl), intent(in) :: qc_incld
+   real(rl), intent(in) :: inv_qc_relvar
 
-   real, intent(out) :: qc2qi_hetero_freeze_tend
-   real, intent(out) :: nc2ni_immers_freeze_tend
+   real(rl), intent(out) :: qc2qi_hetero_freeze_tend
+   real(rl), intent(out) :: nc2ni_immers_freeze_tend
 
-   real :: dum1, dum2, Q_nuc, N_nuc, sbgrd_var_coef
+   real(rl) :: dum1, dum2, Q_nuc, N_nuc, sbgrd_var_coef
 
    if (qc_incld.ge.qsmall .and. t_atm.le.T_rainfrz) then
       ! for future: calculate gamma(mu_c+4) in one place since its used multiple times  !AaronDonahue, TODO
       dum1 = bfb_exp(aimm*(T_zerodegc-t_atm))
       dum2 = bfb_cube(1./lamc)
-      sbgrd_var_coef = subgrid_variance_scaling(inv_qc_relvar, 2.)
-      Q_nuc = sbgrd_var_coef*cons6*cdist1*bfb_gamma(7.+mu_c)*dum1*bfb_square(dum2)
-      N_nuc = cons5*cdist1*bfb_gamma(mu_c+4.)*dum1*dum2
+      sbgrd_var_coef = subgrid_variance_scaling(inv_qc_relvar, 2.d0)
+
+!print *, 'sbgrd_var_coef',sbgrd_var_coef
+!print *, 'cons6', cons6
+!print *, 'cdist1', cdist1
+!print *, 'bfb_gamma(7.+mu_c)', bfb_gamma(7.+mu_c)
+!print *, 'dum1', dum1
+!print *, 'bfb_square(dum2)', bfb_square(dum2)
+!print *, 'dum2', dum2
+
+      Q_nuc = sbgrd_var_coef*cons6*(cdist1*bfb_gamma(7.+mu_c))*(dum1*bfb_square(dum2))
+      N_nuc = cons5*cdist1*bfb_gamma(mu_c+4.)*(dum1*dum2)
       qc2qi_hetero_freeze_tend = Q_nuc
       nc2ni_immers_freeze_tend = N_nuc
    endif
@@ -2758,16 +2769,16 @@ qr2qi_immers_freeze_tend, nr2ni_immers_freeze_tend)
 
    implicit none
 
-   real, intent(in) :: t_atm
-   real, intent(in) :: mu_r
-   real, intent(in) :: lamr
-   real, intent(in) :: cdistr
-   real, intent(in) :: qr_incld
+   real(rl), intent(in) :: t_atm
+   real(rl), intent(in) :: mu_r
+   real(rl), intent(in) :: lamr
+   real(rl), intent(in) :: cdistr
+   real(rl), intent(in) :: qr_incld
 
-   real, intent(out) :: qr2qi_immers_freeze_tend
-   real, intent(out) :: nr2ni_immers_freeze_tend
+   real(rl), intent(out) :: qr2qi_immers_freeze_tend
+   real(rl), intent(out) :: nr2ni_immers_freeze_tend
 
-   real :: Q_nuc, N_nuc
+   real(rl) :: Q_nuc, N_nuc
 
    if (qr_incld.ge.qsmall .and. t_atm.le.T_rainfrz) then
 
@@ -2794,19 +2805,19 @@ subroutine ice_nucleation(t_atm,inv_rho,ni,ni_activated,qv_supersat_i,inv_dt,do_
 
    implicit none
 
-   real, intent(in) :: t_atm
-   real, intent(in) :: inv_rho
-   real, intent(in) :: ni
-   real, intent(in) :: ni_activated
-   real, intent(in) :: qv_supersat_i
-   real, intent(in) :: inv_dt
+   real(rl), intent(in) :: t_atm
+   real(rl), intent(in) :: inv_rho
+   real(rl), intent(in) :: ni
+   real(rl), intent(in) :: ni_activated
+   real(rl), intent(in) :: qv_supersat_i
+   real(rl), intent(in) :: inv_dt
    logical, intent(in) :: do_predict_nc, do_prescribed_CCN
 
-   real, intent(inout) :: qinuc
-   real, intent(inout) :: ni_nucleat_tend
+   real(rl), intent(inout) :: qinuc
+   real(rl), intent(inout) :: ni_nucleat_tend
 
 
-   real :: dum, N_nuc, Q_nuc
+   real(rl) :: dum, N_nuc, Q_nuc
 
    if ( t_atm .lt.T_icenuc .and. qv_supersat_i.ge.0.05 ) then
       if(.not. do_predict_nc .or. do_prescribed_CCN) then
@@ -2852,14 +2863,14 @@ subroutine droplet_self_collection(rho,inv_rho,qc_incld,mu_c,nu,nc2nr_autoconv_t
 
    implicit none
 
-   real, intent(in) :: rho
-   real, intent(in) :: inv_rho
-   real, intent(in) :: qc_incld
-   real, intent(in) :: mu_c
-   real, intent(in) :: nu
-   real, intent(in) :: nc2nr_autoconv_tend
+   real(rl), intent(in) :: rho
+   real(rl), intent(in) :: inv_rho
+   real(rl), intent(in) :: qc_incld
+   real(rl), intent(in) :: mu_c
+   real(rl), intent(in) :: nu
+   real(rl), intent(in) :: nc2nr_autoconv_tend
 
-   real, intent(out) :: nc_selfcollect_tend
+   real(rl), intent(out) :: nc_selfcollect_tend
 
    if (qc_incld.ge.qsmall) then
 
@@ -2888,19 +2899,19 @@ subroutine cloud_rain_accretion(rho,inv_rho,qc_incld,nc_incld,qr_incld,inv_qc_re
 
   implicit none
 
-  real, intent(in) :: rho
-  real, intent(in) :: inv_rho
-  real, intent(in) :: qc_incld
-  real, intent(in) :: nc_incld
-  real, intent(in) :: qr_incld
-  real, intent(in) :: inv_qc_relvar
-  real, intent(in) :: p3_accret_coeff
-  real, intent(in) :: p3_qc_accret_expon
+  real(rl), intent(in) :: rho
+  real(rl), intent(in) :: inv_rho
+  real(rl), intent(in) :: qc_incld
+  real(rl), intent(in) :: nc_incld
+  real(rl), intent(in) :: qr_incld
+  real(rl), intent(in) :: inv_qc_relvar
+  real(rl), intent(in) :: p3_accret_coeff
+  real(rl), intent(in) :: p3_qc_accret_expon
 
-  real, intent(out) :: qc2qr_accret_tend
-  real, intent(out) :: nc_accret_tend
+  real(rl), intent(out) :: qc2qr_accret_tend
+  real(rl), intent(out) :: nc_accret_tend
 
-  real :: dum, dum1, sbgrd_var_coef
+  real(rl) :: dum, dum1, sbgrd_var_coef
 
   if (qr_incld.ge.qsmall .and. qc_incld.ge.qsmall) then
 
@@ -2939,12 +2950,12 @@ subroutine rain_self_collection(rho,qr_incld,nr_incld,    &
 
    implicit none
 
-   real, intent(in) :: rho
-   real, intent(in) :: qr_incld
-   real, intent(in) :: nr_incld
-   real, intent(out) :: nr_selfcollect_tend
+   real(rl), intent(in) :: rho
+   real(rl), intent(in) :: qr_incld
+   real(rl), intent(in) :: nr_incld
+   real(rl), intent(out) :: nr_selfcollect_tend
 
-   real :: dum, dum1, dum2
+   real(rl) :: dum, dum1, dum2
 
    if (qr_incld.ge.qsmall) then
 
@@ -2981,22 +2992,22 @@ subroutine cloud_water_autoconversion(rho,qc_incld,nc_incld,inv_qc_relvar,      
 
    implicit none
 
-   real, intent(in) :: rho
-   real, intent(in) :: qc_incld
-   real, intent(in) :: nc_incld
-   real, intent(in) :: inv_qc_relvar
-   real, intent(in) :: p3_autocon_coeff
-   real, intent(in) :: p3_qc_autocon_expon
-   real, intent(in) :: p3_nc_autocon_expon
-   real, intent(in) :: p3_embryonic_rain_size
+   real(rl), intent(in) :: rho
+   real(rl), intent(in) :: qc_incld
+   real(rl), intent(in) :: nc_incld
+   real(rl), intent(in) :: inv_qc_relvar
+   real(rl), intent(in) :: p3_autocon_coeff
+   real(rl), intent(in) :: p3_qc_autocon_expon
+   real(rl), intent(in) :: p3_nc_autocon_expon
+   real(rl), intent(in) :: p3_embryonic_rain_size
 
    logical, intent(in) :: do_precip_off
 
-   real, intent(out) :: qc2qr_autoconv_tend
-   real, intent(out) :: nc2nr_autoconv_tend
-   real, intent(out) :: ncautr
+   real(rl), intent(out) :: qc2qr_autoconv_tend
+   real(rl), intent(out) :: nc2nr_autoconv_tend
+   real(rl), intent(out) :: ncautr
 
-   real :: sbgrd_var_coef
+   real(rl) :: sbgrd_var_coef
 
    qc_not_small: if (qc_incld.ge.1.e-8) then
 
@@ -3005,7 +3016,7 @@ subroutine cloud_water_autoconversion(rho,qc_incld,nc_incld,inv_qc_relvar,      
       qc2qr_autoconv_tend = sbgrd_var_coef*p3_autocon_coeff*bfb_pow(qc_incld,p3_qc_autocon_expon)*bfb_pow(nc_incld*1.e-6*rho,p3_nc_autocon_expon)
       
       ! Note: ncautr is change in Nr; nc2nr_autoconv_tend is change in Nc
-      ncautr = qc2qr_autoconv_tend*cons3*(1./bfb_pow(p3_embryonic_rain_size,3.))
+      ncautr = qc2qr_autoconv_tend*cons3*(1./bfb_pow(p3_embryonic_rain_size,3.d0))
       nc2nr_autoconv_tend = qc2qr_autoconv_tend*nc_incld/qc_incld
 
       if (qc2qr_autoconv_tend .eq.0. .or. do_precip_off) nc2nr_autoconv_tend = 0.
@@ -3030,19 +3041,19 @@ subroutine back_to_cell_average(cld_frac_l,cld_frac_r,cld_frac_i,               
    implicit none
 
    ! Intersection of cloud fractions for combination of ice (i), rain (r) and liquid (l)
-   real, intent(in) :: cld_frac_l
-   real, intent(in) :: cld_frac_r
-   real, intent(in) :: cld_frac_i
+   real(rl), intent(in) :: cld_frac_l
+   real(rl), intent(in) :: cld_frac_r
+   real(rl), intent(in) :: cld_frac_i
 
-   real, intent(inout) :: qc2qr_accret_tend, qr2qv_evap_tend, qc2qr_autoconv_tend, nc_accret_tend, &
+   real(rl), intent(inout) :: qc2qr_accret_tend, qr2qv_evap_tend, qc2qr_autoconv_tend, nc_accret_tend, &
         nc_selfcollect_tend, nc2nr_autoconv_tend, nr_selfcollect_tend, nr_evap_tend, ncautr
-   real, intent(inout) :: qi2qv_sublim_tend, nr_ice_shed_tend, qc2qi_hetero_freeze_tend, qrcol, qc2qr_ice_shed_tend, &
+   real(rl), intent(inout) :: qi2qv_sublim_tend, nr_ice_shed_tend, qc2qi_hetero_freeze_tend, qrcol, qc2qr_ice_shed_tend, &
         qi2qr_melt_tend, qccol, qr2qi_immers_freeze_tend, ni2nr_melt_tend, &
         nc_collect_tend, ncshdc, nc2ni_immers_freeze_tend, nr_collect_tend, ni_selfcollect_tend, qidep
-   real, intent(inout) :: nr2ni_immers_freeze_tend, ni_sublim_tend, qinuc, ni_nucleat_tend, qiberg
-   real, intent(inout) :: ncheti_cnt,qcheti_cnt,nicnt,qicnt,ninuc_cnt,qinuc_cnt
+   real(rl), intent(inout) :: nr2ni_immers_freeze_tend, ni_sublim_tend, qinuc, ni_nucleat_tend, qiberg
+   real(rl), intent(inout) :: ncheti_cnt,qcheti_cnt,nicnt,qicnt,ninuc_cnt,qinuc_cnt
 
-   real :: ir_cldm, il_cldm, lr_cldm
+   real(rl) :: ir_cldm, il_cldm, lr_cldm
 
    ir_cldm = min(cld_frac_i,cld_frac_r)  ! Intersection of ICE and RAIN cloud
    il_cldm = min(cld_frac_i,cld_frac_l)  ! Intersection of ICE and LIQUID cloud
@@ -3107,17 +3118,17 @@ subroutine prevent_ice_overdepletion(pres,t_atm,qv,latent_heat_vapor,latent_heat
 
    implicit none
 
-   real, intent(in) :: pres
-   real, intent(in) :: t_atm
-   real, intent(in) :: qv
-   real, intent(in) :: latent_heat_sublim,latent_heat_vapor
-   real, intent(in) :: inv_dt,dt
-   real, intent(in) :: qidep,qinuc,qinuc_cnt
+   real(rl), intent(in) :: pres
+   real(rl), intent(in) :: t_atm
+   real(rl), intent(in) :: qv
+   real(rl), intent(in) :: latent_heat_sublim,latent_heat_vapor
+   real(rl), intent(in) :: inv_dt,dt
+   real(rl), intent(in) :: qidep,qinuc,qinuc_cnt
 
-   real, intent(inout) :: qi2qv_sublim_tend,qr2qv_evap_tend
+   real(rl), intent(inout) :: qi2qv_sublim_tend,qr2qv_evap_tend
 
-   real :: dumqv_sat_i, qdep_satadj, qrevp_satadj
-   real :: qtmp_all,ttmp_all,qv_sat_l,q_sink,t_sink,dumqv_sat_l,qv_source_evp,qi2qv_sublim_satadj
+   real(rl) :: dumqv_sat_i, qdep_satadj, qrevp_satadj
+   real(rl) :: qtmp_all,ttmp_all,qv_sat_l,q_sink,t_sink,dumqv_sat_l,qv_source_evp,qi2qv_sublim_satadj
 
 
    qtmp_all = qv - (qidep + qinuc + qinuc_cnt)*dt + (qi2qv_sublim_tend + qr2qv_evap_tend)*dt 
@@ -3151,9 +3162,9 @@ subroutine water_vapor_conservation(qv,qidep,qinuc,qi2qv_sublim_tend,qr2qv_evap_
 
   implicit none
 
-  real, intent(in)     :: qv,qi2qv_sublim_tend,qr2qv_evap_tend,dt
-  real, intent(inout) :: qidep,qinuc,qinuc_cnt
-  real                :: qv_avail, qv_sink, ratio
+  real(rl), intent(in)     :: qv,qi2qv_sublim_tend,qr2qv_evap_tend,dt
+  real(rl), intent(inout) :: qidep,qinuc,qinuc_cnt
+  real(rl)                :: qv_avail, qv_sink, ratio
 
   qv_avail = qv + (qi2qv_sublim_tend+qr2qv_evap_tend)*dt
   if(use_hetfrz_classnuc)then
@@ -3179,10 +3190,10 @@ subroutine ice_supersat_conservation(qidep,qinuc,qi2qv_sublim_tend,qr2qv_evap_te
 
   implicit none
 
-  real, intent(in) :: cld_frac_i,qv,qv_sat_i,latent_heat_sublim,T_atm,dt,qi2qv_sublim_tend,qr2qv_evap_tend
-  real, intent(inout) :: qidep,qinuc,qinuc_cnt
+  real(rl), intent(in) :: cld_frac_i,qv,qv_sat_i,latent_heat_sublim,T_atm,dt,qi2qv_sublim_tend,qr2qv_evap_tend
+  real(rl), intent(inout) :: qidep,qinuc,qinuc_cnt
 
-  real :: qv_sink, qv_avail, fract
+  real(rl) :: qv_sink, qv_avail, fract
 
    if(use_hetfrz_classnuc)then
       qv_sink = qidep + qinuc + qinuc_cnt   ! in [kg/kg] cell-avg values
@@ -3217,10 +3228,10 @@ subroutine nc_conservation(nc, nc_selfcollect_tend, dt, nc_collect_tend, nc2ni_i
 
   implicit none
 
-  real, intent(in) :: nc,nc_selfcollect_tend,dt
-  real, intent(inout) :: nc_collect_tend,nc2ni_immers_freeze_tend,&
+  real(rl), intent(in) :: nc,nc_selfcollect_tend,dt
+  real(rl), intent(inout) :: nc_collect_tend,nc2ni_immers_freeze_tend,&
                                 nc_accret_tend,nc2nr_autoconv_tend,ncheti_cnt,nicnt
-  real :: sink_nc, source_nc, ratio
+  real(rl) :: sink_nc, source_nc, ratio
 
   if(use_hetfrz_classnuc)then
       sink_nc = (nc_collect_tend + ncheti_cnt + nc_accret_tend + nc2nr_autoconv_tend + nicnt)*dt
@@ -3251,9 +3262,9 @@ subroutine nr_conservation(nr,ni2nr_melt_tend,nr_ice_shed_tend,ncshdc,nc2nr_auto
 
   implicit none
 
-  real, intent(in) :: nr,ni2nr_melt_tend,nr_ice_shed_tend,ncshdc,nc2nr_autoconv_tend,dt,nmltratio
-  real, intent(inout) :: nr_collect_tend,nr2ni_immers_freeze_tend,nr_selfcollect_tend,nr_evap_tend
-  real :: sink_nr, source_nr, ratio
+  real(rl), intent(in) :: nr,ni2nr_melt_tend,nr_ice_shed_tend,ncshdc,nc2nr_autoconv_tend,dt,nmltratio
+  real(rl), intent(inout) :: nr_collect_tend,nr2ni_immers_freeze_tend,nr_selfcollect_tend,nr_evap_tend
+  real(rl) :: sink_nr, source_nr, ratio
 
   sink_nr = (nr_collect_tend + nr2ni_immers_freeze_tend + nr_selfcollect_tend + nr_evap_tend)*dt
   source_nr = nr + (ni2nr_melt_tend*nmltratio + nr_ice_shed_tend + ncshdc + nc2nr_autoconv_tend)*dt
@@ -3274,10 +3285,10 @@ subroutine ni_conservation(ni, ni_nucleat_tend, nr2ni_immers_freeze_tend, nc2ni_
 
   implicit none
 
-  real, intent(in) :: ni,ni_nucleat_tend,nr2ni_immers_freeze_tend,nc2ni_immers_freeze_tend,dt, &
+  real(rl), intent(in) :: ni,ni_nucleat_tend,nr2ni_immers_freeze_tend,nc2ni_immers_freeze_tend,dt, &
                              ncheti_cnt,nicnt,ninuc_cnt
-  real, intent(inout) :: ni2nr_melt_tend,ni_sublim_tend,ni_selfcollect_tend
-  real :: sink_ni, source_ni, ratio
+  real(rl), intent(inout) :: ni2nr_melt_tend,ni_sublim_tend,ni_selfcollect_tend
+  real(rl) :: sink_ni, source_ni, ratio
 
   sink_ni = (ni2nr_melt_tend + ni_sublim_tend + ni_selfcollect_tend)*dt
   if(use_hetfrz_classnuc)then
@@ -3301,10 +3312,10 @@ subroutine cloud_water_conservation(qc,dt,    &
 
    implicit none
 
-   real, intent(in) :: qc, dt
-   real, intent(inout) :: qc2qr_autoconv_tend, qc2qr_accret_tend, qccol, qc2qi_hetero_freeze_tend, qc2qr_ice_shed_tend, &
+   real(rl), intent(in) :: qc, dt
+   real(rl), intent(inout) :: qc2qr_autoconv_tend, qc2qr_accret_tend, qccol, qc2qi_hetero_freeze_tend, qc2qr_ice_shed_tend, &
                                  qiberg, qi2qv_sublim_tend, qidep, qcheti_cnt, qicnt
-   real :: sinks, ratio
+   real(rl) :: sinks, ratio
 
    if(use_hetfrz_classnuc)then
       sinks = (qc2qr_autoconv_tend+qc2qr_accret_tend+qccol+qcheti_cnt+qc2qr_ice_shed_tend+qiberg+qicnt)*dt
@@ -3346,10 +3357,10 @@ subroutine rain_water_conservation(qr,qc2qr_autoconv_tend,qc2qr_accret_tend,qi2q
 
    implicit none
 
-   real, intent(in) :: qr, qc2qr_autoconv_tend, qc2qr_accret_tend, qi2qr_melt_tend, qc2qr_ice_shed_tend, dt
-   real, intent(inout) :: qr2qv_evap_tend, qrcol, qr2qi_immers_freeze_tend
+   real(rl), intent(in) :: qr, qc2qr_autoconv_tend, qc2qr_accret_tend, qi2qr_melt_tend, qc2qr_ice_shed_tend, dt
+   real(rl), intent(inout) :: qr2qv_evap_tend, qrcol, qr2qi_immers_freeze_tend
 
-   real :: sinks, sources, ratio
+   real(rl) :: sinks, sources, ratio
 
    sinks   = (qr2qv_evap_tend+qrcol+qr2qi_immers_freeze_tend)*dt
    sources = qr + (qc2qr_autoconv_tend+qc2qr_accret_tend+qi2qr_melt_tend+qc2qr_ice_shed_tend)*dt
@@ -3367,10 +3378,10 @@ subroutine ice_water_conservation(qi,qidep,qinuc,qiberg,qrcol,qccol,qr2qi_immers
 
    implicit none
 
-   real, intent(in) :: qi, qidep, qinuc, qrcol, qccol, qr2qi_immers_freeze_tend, qc2qi_hetero_freeze_tend, qiberg, dt, &
+   real(rl), intent(in) :: qi, qidep, qinuc, qrcol, qccol, qr2qi_immers_freeze_tend, qc2qi_hetero_freeze_tend, qiberg, dt, &
                               qinuc_cnt, qcheti_cnt,qicnt
-   real, intent(inout) :: qi2qv_sublim_tend, qi2qr_melt_tend
-   real :: sinks, sources, ratio
+   real(rl), intent(inout) :: qi2qv_sublim_tend, qi2qr_melt_tend
+   real(rl) :: sinks, sources, ratio
 
    sinks   = (qi2qv_sublim_tend+qi2qr_melt_tend)*dt
 
@@ -3401,51 +3412,51 @@ subroutine update_prognostic_ice(qc2qi_hetero_freeze_tend,qccol,qc2qr_ice_shed_t
    !-- ice-phase dependent processes:
    implicit none
 
-   real, intent(in) :: qc2qi_hetero_freeze_tend
-   real, intent(in) :: qccol
-   real, intent(in) :: qc2qr_ice_shed_tend
-   real, intent(in) :: nc_collect_tend
-   real, intent(in) :: nc2ni_immers_freeze_tend
-   real, intent(in) :: ncshdc
+   real(rl), intent(in) :: qc2qi_hetero_freeze_tend
+   real(rl), intent(in) :: qccol
+   real(rl), intent(in) :: qc2qr_ice_shed_tend
+   real(rl), intent(in) :: nc_collect_tend
+   real(rl), intent(in) :: nc2ni_immers_freeze_tend
+   real(rl), intent(in) :: ncshdc
 
-   real, intent(in) :: qrcol
-   real, intent(in) :: nr_collect_tend
-   real, intent(in) :: qr2qi_immers_freeze_tend
-   real, intent(in) :: nr2ni_immers_freeze_tend
-   real, intent(in) :: nr_ice_shed_tend
+   real(rl), intent(in) :: qrcol
+   real(rl), intent(in) :: nr_collect_tend
+   real(rl), intent(in) :: qr2qi_immers_freeze_tend
+   real(rl), intent(in) :: nr2ni_immers_freeze_tend
+   real(rl), intent(in) :: nr_ice_shed_tend
 
-   real, intent(in) :: qi2qr_melt_tend
-   real, intent(in) :: ni2nr_melt_tend
-   real, intent(in) :: qi2qv_sublim_tend
-   real, intent(in) :: qidep
-   real, intent(in) :: qinuc
-   real, intent(in) :: ni_nucleat_tend
-   real, intent(in) :: ni_selfcollect_tend
-   real, intent(in) :: ni_sublim_tend
-   real, intent(in) :: qiberg
-   real, intent(in) :: exner
-   real, intent(in) :: latent_heat_fusion
-   real, intent(in) :: latent_heat_sublim
+   real(rl), intent(in) :: qi2qr_melt_tend
+   real(rl), intent(in) :: ni2nr_melt_tend
+   real(rl), intent(in) :: qi2qv_sublim_tend
+   real(rl), intent(in) :: qidep
+   real(rl), intent(in) :: qinuc
+   real(rl), intent(in) :: ni_nucleat_tend
+   real(rl), intent(in) :: ni_selfcollect_tend
+   real(rl), intent(in) :: ni_sublim_tend
+   real(rl), intent(in) :: qiberg
+   real(rl), intent(in) :: exner
+   real(rl), intent(in) :: latent_heat_fusion
+   real(rl), intent(in) :: latent_heat_sublim
 
    logical, intent(in) :: do_predict_nc
    logical, intent(in) :: log_wetgrowth
-   real, intent(in) :: dt
-   real, intent(in) :: nmltratio
-   real, intent(in) :: rho_qm_cloud
-   real, intent(in) :: ncheti_cnt, nicnt, ninuc_cnt, qcheti_cnt, qicnt, qinuc_cnt
+   real(rl), intent(in) :: dt
+   real(rl), intent(in) :: nmltratio
+   real(rl), intent(in) :: rho_qm_cloud
+   real(rl), intent(in) :: ncheti_cnt, nicnt, ninuc_cnt, qcheti_cnt, qicnt, qinuc_cnt
 
-   real, intent(inout) :: th_atm,qi_wetDepos
-   real, intent(inout) :: qv
-   real, intent(inout) :: qc
-   real, intent(inout) :: nc
-   real, intent(inout) :: qr
-   real, intent(inout) :: nr
-   real, intent(inout) :: qi
-   real, intent(inout) :: ni
-   real, intent(inout) :: qm
-   real, intent(inout) :: bm
+   real(rl), intent(inout) :: th_atm,qi_wetDepos
+   real(rl), intent(inout) :: qv
+   real(rl), intent(inout) :: qc
+   real(rl), intent(inout) :: nc
+   real(rl), intent(inout) :: qr
+   real(rl), intent(inout) :: nr
+   real(rl), intent(inout) :: qi
+   real(rl), intent(inout) :: ni
+   real(rl), intent(inout) :: qm
+   real(rl), intent(inout) :: bm
 
-   real :: dum
+   real(rl) :: dum
 
    if(.not. use_hetfrz_classnuc)then
       qc = qc + (-qc2qi_hetero_freeze_tend-qccol-qc2qr_ice_shed_tend-qiberg)*dt
@@ -3536,30 +3547,30 @@ subroutine update_prognostic_liquid(qc2qr_accret_tend,nc_accret_tend,qc2qr_autoc
    !-- warm-phase only processes:
    implicit none
 
-   real, intent(in) :: qc2qr_accret_tend
-   real, intent(in) :: nc_accret_tend
-   real, intent(in) :: qc2qr_autoconv_tend
-   real, intent(in) :: nc2nr_autoconv_tend
-   real, intent(in) :: ncautr
-   real, intent(in) :: nc_selfcollect_tend
-   real, intent(in) :: qr2qv_evap_tend
-   real, intent(in) :: nr_evap_tend
-   real, intent(in) :: nr_selfcollect_tend
+   real(rl), intent(in) :: qc2qr_accret_tend
+   real(rl), intent(in) :: nc_accret_tend
+   real(rl), intent(in) :: qc2qr_autoconv_tend
+   real(rl), intent(in) :: nc2nr_autoconv_tend
+   real(rl), intent(in) :: ncautr
+   real(rl), intent(in) :: nc_selfcollect_tend
+   real(rl), intent(in) :: qr2qv_evap_tend
+   real(rl), intent(in) :: nr_evap_tend
+   real(rl), intent(in) :: nr_selfcollect_tend
 
 
    logical, intent(in) :: do_predict_nc, do_prescribed_CCN
-   real, intent(in) :: nccnst
-   real, intent(in) :: inv_rho
-   real, intent(in) :: exner
-   real, intent(in) :: latent_heat_vapor
-   real, intent(in) :: dt
+   real(rl), intent(in) :: nccnst
+   real(rl), intent(in) :: inv_rho
+   real(rl), intent(in) :: exner
+   real(rl), intent(in) :: latent_heat_vapor
+   real(rl), intent(in) :: dt
 
-   real, intent(inout) :: th_atm
-   real, intent(inout) :: qv
-   real, intent(inout) :: qc
-   real, intent(inout) :: nc
-   real, intent(inout) :: qr
-   real, intent(inout) :: nr
+   real(rl), intent(inout) :: th_atm
+   real(rl), intent(inout) :: qv
+   real(rl), intent(inout) :: qc
+   real(rl), intent(inout) :: nc
+   real(rl), intent(inout) :: qr
+   real(rl), intent(inout) :: nr
 
    qc = qc + (-qc2qr_accret_tend-qc2qr_autoconv_tend)*dt
    qr = qr + (qc2qr_accret_tend+qc2qr_autoconv_tend-qr2qv_evap_tend)*dt
@@ -3589,21 +3600,21 @@ qidep,qi2qv_sublim_tend,ni_sublim_tend,qiberg)
 
    implicit none
 
-   real, intent(in)  :: qi_incld
-   real, intent(in)  :: ni_incld
-   real, intent(in)  :: t_atm
-   real, intent(in)  :: qv_sat_l
-   real, intent(in)  :: qv_sat_i
-   real, intent(in)  :: epsi
-   real, intent(in)  :: abi
-   real, intent(in)  :: qv
-   real, intent(in)  :: p3_wbf_coeff
-   real, intent(out) :: qidep
-   real, intent(out) :: qi2qv_sublim_tend
-   real, intent(out) :: ni_sublim_tend
-   real, intent(out) :: qiberg
+   real(rl), intent(in)  :: qi_incld
+   real(rl), intent(in)  :: ni_incld
+   real(rl), intent(in)  :: t_atm
+   real(rl), intent(in)  :: qv_sat_l
+   real(rl), intent(in)  :: qv_sat_i
+   real(rl), intent(in)  :: epsi
+   real(rl), intent(in)  :: abi
+   real(rl), intent(in)  :: qv
+   real(rl), intent(in)  :: p3_wbf_coeff
+   real(rl), intent(out) :: qidep
+   real(rl), intent(out) :: qi2qv_sublim_tend
+   real(rl), intent(out) :: ni_sublim_tend
+   real(rl), intent(out) :: qiberg
 
-   real :: oabi
+   real(rl) :: oabi
 
    oabi = 1./abi
    if (qi_incld>=qsmall) then
@@ -3642,8 +3653,8 @@ subroutine rain_evap_tscale_weight(dt_over_tau,weight)
   !evaporation rate and how much of the equilibrium evaporation rate to
   !blend to get the timestep-average rain evaporation rate
 
-  real, intent(in) :: dt_over_tau  !microphysics timestep divided by effective evap timescale
-  real, intent(out) :: weight
+  real(rl), intent(in) :: dt_over_tau  !microphysics timestep divided by effective evap timescale
+  real(rl), intent(out) :: weight
 
   !expm1 is exp(x)-1. This impl is more accurate than exp near x=0.
   weight= -bfb_expm1(-dt_over_tau)/dt_over_tau
@@ -3657,8 +3668,8 @@ subroutine rain_evap_equilib_tend(A_c,ab,tau_eff,tau_r, tend)
   !of the total tendency and ab corrects for saturation changes due to evaporative
   !cooling.
 
-  real, intent(in) :: A_c, ab, tau_eff, tau_r
-  real, intent(out) :: tend
+  real(rl), intent(in) :: A_c, ab, tau_eff, tau_r
+  real(rl), intent(out) :: tend
 
   !sign convention: Negative A_c causes a supersaturation deficit which needs to be removed
   !by evaporation (which is signed positive when active) to maintain equilibrium. Thus need
@@ -3673,8 +3684,8 @@ subroutine rain_evap_instant_tend(ssat_r, ab, tau_r,tend)
   !ssat_r divided by the supersaturation removal timescale for rain tau_r
   !corrected for the effect of evaporative cooling on saturation ab.
 
-  real, intent(in) :: ssat_r, ab, tau_r
-  real, intent(out) :: tend
+  real(rl), intent(in) :: ssat_r, ab, tau_r
+  real(rl), intent(out) :: tend
 
   !sign convention: ssat_r must be <0 for evap, other terms are always positive,
   !and we want evap rate positive... so put a minus sign in front.
@@ -3704,21 +3715,21 @@ qr2qv_evap_tend,nr_evap_tend)
 
    implicit none
 
-   real, intent(in)  :: qr_incld
-   real, intent(in)  :: qc_incld
-   real, intent(in)  :: nr_incld
-   real, intent(in)  :: qi_incld
-   real, intent(in)  :: cld_frac_l
-   real, intent(in)  :: cld_frac_r
-   real, intent(in)  :: qv_sat_l,qv_sat_i
-   real, intent(in)  :: ab,abi
-   real, intent(in)  :: epsr,epsi_tot
-   real, intent(in)  :: qv,qv_prev
-   real, intent(in)  :: t,t_prev,latent_heat_sublim,dqsdt,dt
-   real, intent(out) :: qr2qv_evap_tend
-   real, intent(out) :: nr_evap_tend
-   real :: cld_frac, eps_eff, tau_eff, tau_r, ssat_r, A_c, sup_r,inv_dt
-   real :: equilib_evap_tend, tscale_weight, instant_evap_tend
+   real(rl), intent(in)  :: qr_incld
+   real(rl), intent(in)  :: qc_incld
+   real(rl), intent(in)  :: nr_incld
+   real(rl), intent(in)  :: qi_incld
+   real(rl), intent(in)  :: cld_frac_l
+   real(rl), intent(in)  :: cld_frac_r
+   real(rl), intent(in)  :: qv_sat_l,qv_sat_i
+   real(rl), intent(in)  :: ab,abi
+   real(rl), intent(in)  :: epsr,epsi_tot
+   real(rl), intent(in)  :: qv,qv_prev
+   real(rl), intent(in)  :: t,t_prev,latent_heat_sublim,dqsdt,dt
+   real(rl), intent(out) :: qr2qv_evap_tend
+   real(rl), intent(out) :: nr_evap_tend
+   real(rl) :: cld_frac, eps_eff, tau_eff, tau_r, ssat_r, A_c, sup_r,inv_dt
+   real(rl) :: equilib_evap_tend, tscale_weight, instant_evap_tend
 
    !Initialize variables
    qr2qv_evap_tend = 0.0
@@ -3847,28 +3858,28 @@ mu,dv,sc,dqsdt,dqsidt,ab,abi,kap,eii)
 
    implicit none
 
-   real, intent(in)  :: t_atm
-   real, intent(in)  :: pres
-   real, intent(in)  :: rho
-   real, intent(in)  :: latent_heat_vapor
-   real, intent(in)  :: latent_heat_sublim
-   real, intent(in)  :: qv_sat_l
-   real, intent(in)  :: qv_sat_i
-   real, intent(out) :: mu
-   real, intent(out) :: dv
-   real, intent(out) :: sc
-   real, intent(out) :: dqsdt
-   real, intent(out) :: dqsidt
-   real, intent(out) :: ab
-   real, intent(out) :: abi
-   real, intent(out) :: kap
-   real, intent(out) :: eii
+   real(rl), intent(in)  :: t_atm
+   real(rl), intent(in)  :: pres
+   real(rl), intent(in)  :: rho
+   real(rl), intent(in)  :: latent_heat_vapor
+   real(rl), intent(in)  :: latent_heat_sublim
+   real(rl), intent(in)  :: qv_sat_l
+   real(rl), intent(in)  :: qv_sat_i
+   real(rl), intent(out) :: mu
+   real(rl), intent(out) :: dv
+   real(rl), intent(out) :: sc
+   real(rl), intent(out) :: dqsdt
+   real(rl), intent(out) :: dqsidt
+   real(rl), intent(out) :: ab
+   real(rl), intent(out) :: abi
+   real(rl), intent(out) :: kap
+   real(rl), intent(out) :: eii
 
-   real :: dum
+   real(rl) :: dum
 
    !time/space varying physical variables
-   mu     = 1.496e-6*bfb_pow(t_atm,1.5)/(t_atm+120.)
-   dv     = 8.794e-5*bfb_pow(t_atm,1.81)/pres
+   mu     = 1.496e-6*bfb_pow(t_atm,1.5d0)/(t_atm+120.)
+   dv     = 8.794e-5*bfb_pow(t_atm,1.81d0)/pres
    sc     = mu/(rho*dv)
    dum    = 1./(rv*bfb_square(t_atm))
    dqsdt  = latent_heat_vapor*qv_sat_l*dum
@@ -3899,26 +3910,26 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
    integer, intent(in) :: kts, kte
    integer, intent(in) :: ktop, kbot, kdir
 
-   real, intent(in), dimension(kts:kte) :: rho
-   real, intent(in), dimension(kts:kte) :: inv_rho
-   real, intent(in), dimension(kts:kte) :: cld_frac_l
-   real, intent(in), dimension(kts:kte) :: acn
-   real, intent(in), dimension(kts:kte) :: inv_dz
-   real, intent(in) :: dt
-   real, intent(in) :: inv_dt
-   real, dimension(:), intent(in) :: dnu
+   real(rl), intent(in), dimension(kts:kte) :: rho
+   real(rl), intent(in), dimension(kts:kte) :: inv_rho
+   real(rl), intent(in), dimension(kts:kte) :: cld_frac_l
+   real(rl), intent(in), dimension(kts:kte) :: acn
+   real(rl), intent(in), dimension(kts:kte) :: inv_dz
+   real(rl), intent(in) :: dt
+   real(rl), intent(in) :: inv_dt
+   real(rl), dimension(:), intent(in) :: dnu
    logical, intent(in) :: do_predict_nc
 
-   real, intent(inout), dimension(kts:kte), target :: qc
-   real, intent(inout), dimension(kts:kte), target :: nc
-   real, intent(inout), dimension(kts:kte) :: qc_incld
-   real, intent(inout), dimension(kts:kte) :: nc_incld
-   real, intent(inout), dimension(kts:kte) :: mu_c
-   real, intent(inout), dimension(kts:kte) :: lamc
-   real, intent(inout) :: precip_liq_surf
-   real, intent(inout), dimension(kts:kte+1) :: cflx
-   real, intent(inout), dimension(kts:kte) :: qc_tend
-   real, intent(inout), dimension(kts:kte) :: nc_tend
+   real(rl), intent(inout), dimension(kts:kte), target :: qc
+   real(rl), intent(inout), dimension(kts:kte), target :: nc
+   real(rl), intent(inout), dimension(kts:kte) :: qc_incld
+   real(rl), intent(inout), dimension(kts:kte) :: nc_incld
+   real(rl), intent(inout), dimension(kts:kte) :: mu_c
+   real(rl), intent(inout), dimension(kts:kte) :: lamc
+   real(rl), intent(inout) :: precip_liq_surf
+   real(rl), intent(inout), dimension(kts:kte+1) :: cflx
+   real(rl), intent(inout), dimension(kts:kte) :: qc_tend
+   real(rl), intent(inout), dimension(kts:kte) :: nc_tend
 
    logical :: log_qxpresent
    integer :: k
@@ -3926,17 +3937,17 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
    integer, parameter :: num_arrays = 2
    type(realptr), dimension(num_arrays) :: vs, fluxes, qnr
 
-   real :: dt_left
-   real :: dt_sub
-   real :: prt_accum
-   real :: Co_max
-   real :: nu
-   real, dimension(kts:kte), target :: V_qc
-   real, dimension(kts:kte), target :: V_nc
-   real, dimension(kts:kte), target :: flux_qx
-   real, dimension(kts:kte), target :: flux_nx
+   real(rl) :: dt_left
+   real(rl) :: dt_sub
+   real(rl) :: prt_accum
+   real(rl) :: Co_max
+   real(rl) :: nu
+   real(rl), dimension(kts:kte), target :: V_qc
+   real(rl), dimension(kts:kte), target :: V_nc
+   real(rl), dimension(kts:kte), target :: flux_qx
+   real(rl), dimension(kts:kte), target :: flux_nx
 
-   real :: tmp1, tmp2, dum
+   real(rl) :: tmp1, tmp2, dum
 
    k_qxtop = kbot
    log_qxpresent = .false.
@@ -4067,26 +4078,26 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,                           
    integer, intent(in) :: kts, kte
    integer, intent(in) :: ktop, kbot, kdir
 
-   real, intent(in), dimension(kts:kte) :: rho
-   real, intent(in), dimension(kts:kte) :: inv_rho
-   real, intent(in), dimension(kts:kte) :: rhofacr
-   real, intent(in), dimension(kts:kte) :: cld_frac_r
-   real, intent(in), dimension(kts:kte) :: inv_dz
-   real, intent(in) :: dt
-   real, intent(in) :: inv_dt
-   real, intent(in) :: p3_max_mean_rain_size
+   real(rl), intent(in), dimension(kts:kte) :: rho
+   real(rl), intent(in), dimension(kts:kte) :: inv_rho
+   real(rl), intent(in), dimension(kts:kte) :: rhofacr
+   real(rl), intent(in), dimension(kts:kte) :: cld_frac_r
+   real(rl), intent(in), dimension(kts:kte) :: inv_dz
+   real(rl), intent(in) :: dt
+   real(rl), intent(in) :: inv_dt
+   real(rl), intent(in) :: p3_max_mean_rain_size
 
-   real, intent(inout), target, dimension(kts:kte) :: qr
-   real, intent(inout), target, dimension(kts:kte) :: nr
-   real, intent(inout), dimension(kts:kte) :: qr_incld
-   real, intent(inout), dimension(kts:kte) :: nr_incld
-   real, intent(inout), dimension(kts:kte) :: mu_r
-   real, intent(inout), dimension(kts:kte) :: lamr
-   real, intent(inout) :: precip_liq_surf
-   real, intent(inout), dimension(kts:kte+1) :: precip_liq_flux
-   real, intent(inout), dimension(kts:kte+1) :: rflx
-   real, intent(inout), dimension(kts:kte) :: qr_tend
-   real, intent(inout), dimension(kts:kte) :: nr_tend
+   real(rl), intent(inout), target, dimension(kts:kte) :: qr
+   real(rl), intent(inout), target, dimension(kts:kte) :: nr
+   real(rl), intent(inout), dimension(kts:kte) :: qr_incld
+   real(rl), intent(inout), dimension(kts:kte) :: nr_incld
+   real(rl), intent(inout), dimension(kts:kte) :: mu_r
+   real(rl), intent(inout), dimension(kts:kte) :: lamr
+   real(rl), intent(inout) :: precip_liq_surf
+   real(rl), intent(inout), dimension(kts:kte+1) :: precip_liq_flux
+   real(rl), intent(inout), dimension(kts:kte+1) :: rflx
+   real(rl), intent(inout), dimension(kts:kte) :: qr_tend
+   real(rl), intent(inout), dimension(kts:kte) :: nr_tend
 
    logical :: log_qxpresent
    integer :: k
@@ -4094,14 +4105,14 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,                           
    integer, parameter :: num_arrays = 2
    type(realptr), dimension(num_arrays) :: vs, fluxes, qnr
 
-   real :: dt_left
-   real :: dt_sub
-   real :: prt_accum
-   real :: Co_max
-   real, dimension(kts:kte), target :: V_qr
-   real, dimension(kts:kte), target :: V_nr
-   real, dimension(kts:kte), target :: flux_qx
-   real, dimension(kts:kte), target :: flux_nx
+   real(rl) :: dt_left
+   real(rl) :: dt_sub
+   real(rl) :: prt_accum
+   real(rl) :: Co_max
+   real(rl), dimension(kts:kte), target :: V_qr
+   real(rl), dimension(kts:kte), target :: V_nr
+   real(rl), dimension(kts:kte), target :: flux_qx
+   real(rl), dimension(kts:kte), target :: flux_nx
 
    vs(1)%p => V_qr
    vs(2)%p => V_nr
@@ -4190,16 +4201,16 @@ end subroutine rain_sedimentation
 
 subroutine compute_rain_fall_velocity(qr_incld, rhofacr, p3_max_mean_rain_size, nr_incld, mu_r, lamr, V_qr, V_nr)
 
-   real, intent(in) :: qr_incld
-   real, intent(in) :: rhofacr
-   real, intent(in) :: p3_max_mean_rain_size
-   real, intent(inout) :: nr_incld
-   real, intent(out) :: mu_r
-   real, intent(out) :: lamr
-   real, intent(out) :: V_qr
-   real, intent(out) :: V_nr
+   real(rl), intent(in) :: qr_incld
+   real(rl), intent(in) :: rhofacr
+   real(rl), intent(in) :: p3_max_mean_rain_size
+   real(rl), intent(inout) :: nr_incld
+   real(rl), intent(out) :: mu_r
+   real(rl), intent(out) :: lamr
+   real(rl), intent(out) :: V_qr
+   real(rl), intent(out) :: V_nr
 
-   real :: tmp1, tmp2, dum1, dum2, inv_dum3, rdumii, rdumjj
+   real(rl) :: tmp1, tmp2, dum1, dum2, inv_dum3, rdumii, rdumjj
    integer :: dumii, dumjj
 
    !Compute Vq, Vn:
@@ -4210,21 +4221,21 @@ subroutine compute_rain_fall_velocity(qr_incld, rhofacr, p3_max_mean_rain_size, 
 
    !mass-weighted fall speed:
 
-   dum1 = vm_table_vals(dumii,dumjj)+(rdumii-real(dumii))*                       &
+   dum1 = vm_table_vals(dumii,dumjj)+(rdumii-real(dumii,8))*                       &
       (vm_table_vals(dumii+1,dumjj)-vm_table_vals(dumii,dumjj))       !at mu_r
-   dum2 = vm_table_vals(dumii,dumjj+1)+(rdumii-real(dumii))*                     &
+   dum2 = vm_table_vals(dumii,dumjj+1)+(rdumii-real(dumii,8))*                     &
       (vm_table_vals(dumii+1,dumjj+1)-vm_table_vals(dumii,dumjj+1))   !at mu_r+1
 
-   V_qr = dum1 + (rdumjj-real(dumjj))*(dum2-dum1)         !interpolated
+   V_qr = dum1 + (rdumjj-real(dumjj,8))*(dum2-dum1)         !interpolated
    V_qr = V_qr*rhofacr                                    !corrected for air density
 
    ! number-weighted fall speed:
-   dum1 = vn_table_vals(dumii,dumjj)+(rdumii-real(dumii))*                       &
+   dum1 = vn_table_vals(dumii,dumjj)+(rdumii-real(dumii,8))*                       &
       (vn_table_vals(dumii+1,dumjj)-vn_table_vals(dumii,dumjj))       !at mu_r
-   dum2 = vn_table_vals(dumii,dumjj+1)+(rdumii-real(dumii))*                     &
+   dum2 = vn_table_vals(dumii,dumjj+1)+(rdumii-real(dumii,8))*                     &
       (vn_table_vals(dumii+1,dumjj+1)-vn_table_vals(dumii,dumjj+1))   !at mu_r+1
 
-   V_nr = dum1+(rdumjj-real(dumjj))*(dum2-dum1)            !interpolated
+   V_nr = dum1+(rdumjj-real(dumjj,8))*(dum2-dum1)            !interpolated
    V_nr = V_nr*rhofacr               !corrected for air density
 end subroutine compute_rain_fall_velocity
 
@@ -4236,52 +4247,52 @@ subroutine ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
    integer, intent(in) :: kts, kte
    integer, intent(in) :: ktop, kbot, kdir
 
-   real, intent(in), dimension(kts:kte) :: rho
-   real, intent(in), dimension(kts:kte) :: inv_rho
-   real, intent(in), dimension(kts:kte) :: rhofaci
-   real, intent(in), dimension(kts:kte) :: cld_frac_i
-   real, intent(in), dimension(kts:kte) :: inv_dz
-   real, intent(in) :: dt
-   real, intent(in) :: inv_dt
+   real(rl), intent(in), dimension(kts:kte) :: rho
+   real(rl), intent(in), dimension(kts:kte) :: inv_rho
+   real(rl), intent(in), dimension(kts:kte) :: rhofaci
+   real(rl), intent(in), dimension(kts:kte) :: cld_frac_i
+   real(rl), intent(in), dimension(kts:kte) :: inv_dz
+   real(rl), intent(in) :: dt
+   real(rl), intent(in) :: inv_dt
 
-   real, intent(inout), dimension(kts:kte), target :: qi
-   real, intent(inout), dimension(kts:kte) :: qi_incld
-   real, intent(inout), dimension(kts:kte), target :: ni
-   real, intent(inout), dimension(kts:kte) :: ni_incld
-   real, intent(inout), dimension(kts:kte), target :: qm
-   real, intent(inout), dimension(kts:kte) :: qm_incld
-   real, intent(inout), dimension(kts:kte), target :: bm
-   real, intent(inout), dimension(kts:kte) :: bm_incld
+   real(rl), intent(inout), dimension(kts:kte), target :: qi
+   real(rl), intent(inout), dimension(kts:kte) :: qi_incld
+   real(rl), intent(inout), dimension(kts:kte), target :: ni
+   real(rl), intent(inout), dimension(kts:kte) :: ni_incld
+   real(rl), intent(inout), dimension(kts:kte), target :: qm
+   real(rl), intent(inout), dimension(kts:kte) :: qm_incld
+   real(rl), intent(inout), dimension(kts:kte), target :: bm
+   real(rl), intent(inout), dimension(kts:kte) :: bm_incld
 
-   real, intent(inout) :: precip_ice_surf
-   real, intent(inout), dimension(kts:kte+1) :: precip_ice_flux
-   real, intent(inout), dimension(kts:kte+1) :: sflx
-   real, intent(inout), dimension(kts:kte) :: qi_tend
-   real, intent(inout), dimension(kts:kte) :: ni_tend
+   real(rl), intent(inout) :: precip_ice_surf
+   real(rl), intent(inout), dimension(kts:kte+1) :: precip_ice_flux
+   real(rl), intent(inout), dimension(kts:kte+1) :: sflx
+   real(rl), intent(inout), dimension(kts:kte) :: qi_tend
+   real(rl), intent(inout), dimension(kts:kte) :: ni_tend
 
-   real :: dt_sub
+   real(rl) :: dt_sub
    logical :: log_qxpresent
    integer :: k
    integer :: k_qxtop, k_qxbot
    integer, parameter :: num_arrays = 4
    type(realptr), dimension(num_arrays) :: vs, fluxes, qnr
 
-   real :: dt_left
-   real :: prt_accum
-   real :: Co_max
-   real :: rhop
-   real, dimension(kts:kte), target :: V_qit
-   real, dimension(kts:kte), target :: V_nit
-   real, dimension(kts:kte), target :: flux_nit
-   real, dimension(kts:kte), target :: flux_bir
-   real, dimension(kts:kte), target :: flux_qir
-   real, dimension(kts:kte), target :: flux_qit
-   real :: table_val_ni_fallspd ! number-weighted fallspeed            See lines  731 -  808  uns
-   real :: table_val_qi_fallspd ! mass-weighted fallspeed              See lines  731 -  808  ums
-   real :: table_val_ni_lammax ! minimum ice number (lambda limiter)  See lines  704 -  705  nlarge
-   real :: table_val_ni_lammin ! maximum ice number (lambda limiter)  See lines  704 -  705  nsmall
+   real(rl) :: dt_left
+   real(rl) :: prt_accum
+   real(rl) :: Co_max
+   real(rl) :: rhop
+   real(rl), dimension(kts:kte), target :: V_qit
+   real(rl), dimension(kts:kte), target :: V_nit
+   real(rl), dimension(kts:kte), target :: flux_nit
+   real(rl), dimension(kts:kte), target :: flux_bir
+   real(rl), dimension(kts:kte), target :: flux_qir
+   real(rl), dimension(kts:kte), target :: flux_qit
+   real(rl) :: table_val_ni_fallspd ! number-weighted fallspeed            See lines  731 -  808  uns
+   real(rl) :: table_val_qi_fallspd ! mass-weighted fallspeed              See lines  731 -  808  ums
+   real(rl) :: table_val_ni_lammax ! minimum ice number (lambda limiter)  See lines  704 -  705  nlarge
+   real(rl) :: table_val_ni_lammin ! maximum ice number (lambda limiter)  See lines  704 -  705  nsmall
 
-   real :: dum1, dum4, dum5, dum6
+   real(rl) :: dum1, dum4, dum5, dum6
    integer dumi, dumii, dumjj, dumzz
 
    log_qxpresent = .false.  !note: this applies to ice category 'iice' only
@@ -4399,16 +4410,16 @@ subroutine generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_
 
    integer, intent(in) :: kts, kte, kdir, k_qxtop, kbot, num_arrays
    integer, intent(inout) :: k_qxbot
-   real, intent(in) :: Co_max
-   real, intent(inout) :: dt_left, prt_accum
-   real, dimension(kts:kte), intent(in) :: inv_dz
-   real, dimension(kts:kte), intent(in) :: inv_rho
-   real, dimension(kts:kte), intent(in) :: rho
+   real(rl), intent(in) :: Co_max
+   real(rl), intent(inout) :: dt_left, prt_accum
+   real(rl), dimension(kts:kte), intent(in) :: inv_dz
+   real(rl), dimension(kts:kte), intent(in) :: inv_rho
+   real(rl), dimension(kts:kte), intent(in) :: rho
 
    type(realptr), intent(in), dimension(num_arrays), target :: vs, fluxes, qnx
 
    integer :: tmpint1, k_temp, i
-   real,intent(inout) :: dt_sub
+   real(rl),intent(inout) :: dt_sub
 
    !-- compute dt_sub
    tmpint1 = int(Co_max+1.)    !number of substeps remaining if dt_sub were constant
@@ -4436,12 +4447,12 @@ subroutine calc_first_order_upwind_step(kts, kte, kdir, kbot, k_qxtop, dt_sub, r
   implicit none
 
   integer, intent(in) :: kts, kte, kdir, kbot, k_qxtop, num_arrays
-  real, intent(in) :: dt_sub
-  real, dimension(kts:kte), intent(in) :: rho, inv_rho, inv_dz
+  real(rl), intent(in) :: dt_sub
+  real(rl), dimension(kts:kte), intent(in) :: rho, inv_rho, inv_dz
   type(realptr), intent(in), dimension(num_arrays), target :: fluxes, vs, qnx
 
   integer :: i, k
-  real :: fluxdiv
+  real(rl) :: fluxdiv
 
   !-- calculate fluxes
   do k = kbot,k_qxtop,kdir
@@ -4479,23 +4490,23 @@ subroutine homogeneous_freezing(kts,kte,ktop,kbot,kdir,t_atm,exner,latent_heat_f
    implicit none
    integer, intent(in) :: kts, kte
    integer, intent(in) :: ktop, kbot, kdir
-   real, intent(in), dimension(kts:kte) :: t_atm
-   real, intent(in), dimension(kts:kte) :: exner
-   real, intent(in), dimension(kts:kte) :: latent_heat_fusion
+   real(rl), intent(in), dimension(kts:kte) :: t_atm
+   real(rl), intent(in), dimension(kts:kte) :: exner
+   real(rl), intent(in), dimension(kts:kte) :: latent_heat_fusion
 
-   real, intent(inout), dimension(kts:kte) :: qc
-   real, intent(inout), dimension(kts:kte) :: nc
-   real, intent(inout), dimension(kts:kte) :: qr
-   real, intent(inout), dimension(kts:kte) :: nr
+   real(rl), intent(inout), dimension(kts:kte) :: qc
+   real(rl), intent(inout), dimension(kts:kte) :: nc
+   real(rl), intent(inout), dimension(kts:kte) :: qr
+   real(rl), intent(inout), dimension(kts:kte) :: nr
 
-   real, intent(inout), dimension(kts:kte) :: qi
-   real, intent(inout), dimension(kts:kte) :: ni
-   real, intent(inout), dimension(kts:kte) :: qm
-   real, intent(inout), dimension(kts:kte) :: bm
-   real, intent(inout), dimension(kts:kte) :: th_atm
+   real(rl), intent(inout), dimension(kts:kte) :: qi
+   real(rl), intent(inout), dimension(kts:kte) :: ni
+   real(rl), intent(inout), dimension(kts:kte) :: qm
+   real(rl), intent(inout), dimension(kts:kte) :: bm
+   real(rl), intent(inout), dimension(kts:kte) :: th_atm
 
-   real :: Q_nuc
-   real :: N_nuc
+   real(rl) :: Q_nuc
+   real(rl) :: N_nuc
    integer :: k
 
    k_loop_fz:  do k = kbot,ktop,kdir
@@ -4537,10 +4548,10 @@ subroutine ice_complete_melting(kts,kte,ktop,kbot,kdir,qi,ni,qm,latent_heat_fusi
    
    integer, intent(in) :: kts, kte
    integer, intent(in) :: ktop, kbot, kdir
-   real, intent(in), dimension(kts:kte) :: exner,latent_heat_fusion
-   real, intent(inout), dimension(kts:kte) :: qi, ni, qc, nc, qr, nr, qm, th_atm
+   real(rl), intent(in), dimension(kts:kte) :: exner,latent_heat_fusion
+   real(rl), intent(inout), dimension(kts:kte) :: qi, ni, qc, nc, qr, nr, qm, th_atm
    
-   real :: t_snow_melt,del_mass,del_num,rv_tmp,rv,frac_mlt,equiv_mass 
+   real(rl) :: t_snow_melt,del_mass,del_num,rv_tmp,rv,frac_mlt,equiv_mass 
    integer :: k
 
    ! ... For now we take the uper limit for complete melting to be like in MG2 2c
@@ -4596,15 +4607,15 @@ subroutine CNT_couple (frzimm,frzcnt,frzdep,rho,qc_incld,nc_incld,Iflag, &
 implicit none
 
 integer, intent(in) :: Iflag
-real, intent(in) :: frzimm,frzcnt,frzdep
-real, intent(in) :: rho,qc_incld,nc_incld,odt
-real, intent(inout) :: ncheti_cnt,qcheti_cnt,nicnt,qicnt,ninuc_cnt,qinuc_cnt
+real(rl), intent(in) :: frzimm,frzcnt,frzdep
+real(rl), intent(in) :: rho,qc_incld,nc_incld,odt
+real(rl), intent(inout) :: ncheti_cnt,qcheti_cnt,nicnt,qicnt,ninuc_cnt,qinuc_cnt
 
-real :: mi0l
+real(rl) :: mi0l
 
 ! minimum mass of new crystal due to freezing of cloud droplets done
 ! externally (kg)
-real :: mi0l_min
+real(rl) :: mi0l_min
 
 mi0l_min = 4.0/3.0*pi*rho_h2o*(4.e-6)**3.0
 mi0l = qc_incld/max(nc_incld,1.0e6/rho)

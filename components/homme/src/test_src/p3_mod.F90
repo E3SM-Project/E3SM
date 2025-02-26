@@ -54,113 +54,113 @@ subroutine interface_to_p3(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 #if 1
 
     !INTERNAL VARIABLES
-    real :: dz(nlev)        !geometric layer thickness              m
-    real :: cldliq(nlev)     !cloud liquid water mixing ratio        kg/kg
-    real :: numliq(nlev)     !cloud liquid water drop concentraiton  #/kg
-    real :: rain(nlev)       !rain water mixing ratio                kg/kg
-    real :: numrain(nlev)    !rain water number concentration        #/kg
-    real :: qv(nlev)         !water vapor mixing ratio               kg/kg
-    real :: ice(nlev)        !total ice water mixing ratio           kg/kg
-    real :: qm(nlev)      !rime ice mixing ratio                  kg/kg
-    real :: numice(nlev)     !total ice crystal number concentration #/kg
-    real :: rimvol(nlev)     !rime volume mixing ratio               m3/kg
-    real :: temp(nlev)       !temperature copy needed for tendency   K
-    real :: th(nlev)         !potential temperature                  K
+    real(rl) :: dz(nlev)        !geometric layer thickness              m
+    real(rl) :: cldliq(nlev)     !cloud liquid water mixing ratio        kg/kg
+    real(rl) :: numliq(nlev)     !cloud liquid water drop concentraiton  #/kg
+    real(rl) :: rain(nlev)       !rain water mixing ratio                kg/kg
+    real(rl) :: numrain(nlev)    !rain water number concentration        #/kg
+    real(rl) :: qv(nlev)         !water vapor mixing ratio               kg/kg
+    real(rl) :: ice(nlev)        !total ice water mixing ratio           kg/kg
+    real(rl) :: qm(nlev)      !rime ice mixing ratio                  kg/kg
+    real(rl) :: numice(nlev)     !total ice crystal number concentration #/kg
+    real(rl) :: rimvol(nlev)     !rime volume mixing ratio               m3/kg
+    real(rl) :: temp(nlev)       !temperature copy needed for tendency   K
+    real(rl) :: th(nlev)         !potential temperature                  K
 
-    real :: precip_liq_surf         !precipitation rate, liquid             m s-1
-    real :: precip_ice_surf         !precipitation rate, solid              m s-1
-
-!out
-    real :: rho_qi(nlev)  !bulk density of ice                    kg m-1
-
-    real :: pres(nlev)       !pressure at midlevel                   hPa
-    real :: pdel(nlev)
+    real(rl) :: precip_liq_surf         !precipitation rate, liquid             m s-1
+    real(rl) :: precip_ice_surf         !precipitation rate, solid              m s-1
 
 !out
-    real :: qv2qi_depos_tend(nlev)
+    real(rl) :: rho_qi(nlev)  !bulk density of ice                    kg m-1
+
+    real(rl) :: pres(nlev)       !pressure at midlevel                   hPa
+    real(rl) :: pdel(nlev)
 
 !out
-    real :: precip_liq_flux(nlev+1)     !grid-box average rain flux (kg m^-2s^-1) nlevp
-    real :: precip_ice_flux(nlev+1)     !grid-box average ice/snow flux (kg m^-2s^-1) nlevp
+    real(rl) :: qv2qi_depos_tend(nlev)
 
 !out
-    real :: rflx(nlev+1)     !grid-box average rain flux (kg m^-2s^-1) nlevp
-    real :: sflx(nlev+1)     !grid-box average ice/snow flux (kg m^-2s^-1) nlevp
-    real :: cflx(nlev+1)     !grid-box average cloud flux (kg m^-2s^-1) nlevp
+    real(rl) :: precip_liq_flux(nlev+1)     !grid-box average rain flux (kg m^-2s^-1) nlevp
+    real(rl) :: precip_ice_flux(nlev+1)     !grid-box average ice/snow flux (kg m^-2s^-1) nlevp
 
-    real :: exner(nlev)      !exner formula for converting between potential and normal temp
+!out
+    real(rl) :: rflx(nlev+1)     !grid-box average rain flux (kg m^-2s^-1) nlevp
+    real(rl) :: sflx(nlev+1)     !grid-box average ice/snow flux (kg m^-2s^-1) nlevp
+    real(rl) :: cflx(nlev+1)     !grid-box average cloud flux (kg m^-2s^-1) nlevp
+
+    real(rl) :: exner(nlev)      !exner formula for converting between potential and normal temp
 
 !in, set to 0
-    real :: cld_frac_r(nlev)      !rain cloud fraction
-    real :: cld_frac_l(nlev)      !liquid cloud fraction
-    real :: cld_frac_i(nlev)      !ice cloud fraction
+    real(rl) :: cld_frac_r(nlev)      !rain cloud fraction
+    real(rl) :: cld_frac_l(nlev)      !liquid cloud fraction
+    real(rl) :: cld_frac_i(nlev)      !ice cloud fraction
 
 !out
-    real :: tend_out(nlev,49) !microphysical tendencies
+    real(rl) :: tend_out(nlev,49) !microphysical tendencies
 
 !out
-    real, dimension(nlev) :: liq_ice_exchange ! sum of liq-ice phase change tendenices
-    real, dimension(nlev) :: vap_liq_exchange ! sum of vap-liq phase change tendenices
-    real, dimension(nlev) :: vap_ice_exchange ! sum of vap-ice phase change tendenices
+    real(rl), dimension(nlev) :: liq_ice_exchange ! sum of liq-ice phase change tendenices
+    real(rl), dimension(nlev) :: vap_liq_exchange ! sum of vap-liq phase change tendenices
+    real(rl), dimension(nlev) :: vap_ice_exchange ! sum of vap-ice phase change tendenices
 
 !out
-    real, dimension(nlev) :: diag_equiv_reflectivity,diag_ze_rain,diag_ze_ice ! equivalent reflectivity [dBz]
+    real(rl), dimension(nlev) :: diag_equiv_reflectivity,diag_ze_rain,diag_ze_ice ! equivalent reflectivity [dBz]
 
     !Prescribed CCN concentration
 !in, set to 0
-    real, dimension(nlev) :: nccn_prescribed
+    real(rl), dimension(nlev) :: nccn_prescribed
 
     ! PBUF Variables
 !in set to 0
-    real :: ni_activated(nlev)     ! ice nucleation number
-    real :: npccn(nlev)    ! liquid activation number tendency
+    real(rl) :: ni_activated(nlev)     ! ice nucleation number
+    real(rl) :: npccn(nlev)    ! liquid activation number tendency
     
 !in, set to 0
 !actually it is used as gamma(relvar), so it cannot be zero
-    real :: relvar(nlev)    ! cloud liquid relative variance [-]
+    real(rl) :: relvar(nlev)    ! cloud liquid relative variance [-]
 
 !out
-    real :: qr_evap_tend(nlev) ! precipitation evaporation rate
+    real(rl) :: qr_evap_tend(nlev) ! precipitation evaporation rate
 
 !in, put into state, set to qv for now
-    real :: qv_prev(nlev)   ! qv from previous p3_main call
-    real :: t_prev(nlev)    ! t from previous p3_main call
+    real(rl) :: qv_prev(nlev)   ! qv from previous p3_main call
+    real(rl) :: t_prev(nlev)    ! t from previous p3_main call
 
     !! wetdep 
 !out
-    real :: precip_total_tend(nlev)        ! Total precipitation (rain + snow)
-    real :: nevapr(nlev)       ! Evaporation of total precipitation (rain + snow)
+    real(rl) :: precip_total_tend(nlev)        ! Total precipitation (rain + snow)
+    real(rl) :: nevapr(nlev)       ! Evaporation of total precipitation (rain + snow)
 
     !! COSP simulator
 !out
-    real :: rel(nlev)          ! Liquid effective drop radius (microns)
-    real :: rei(nlev)          ! Ice effective drop size (microns)
+    real(rl) :: rel(nlev)          ! Liquid effective drop radius (microns)
+    real(rl) :: rei(nlev)          ! Ice effective drop size (microns)
 
     !! radiation 
 !not used?
-    real :: dei(nlev)          ! Ice effective diameter (um)
+    real(rl) :: dei(nlev)          ! Ice effective diameter (um)
 !out
-    real :: mu(nlev)           ! Size distribution shape parameter for radiation
-    real :: lambdac(nlev)      ! Size distribution slope parameter for radiation
+    real(rl) :: mu(nlev)           ! Size distribution shape parameter for radiation
+    real(rl) :: lambdac(nlev)      ! Size distribution slope parameter for radiation
 
     ! Derived Variables
 !in
-    real :: col_location(3)  ! Array of column lon (index 1) and lat (index 2)
+    real(rl) :: col_location(3)  ! Array of column lon (index 1) and lat (index 2)
 
     ! variables for the CNT primary / heterogeneous freezing
-    !real, pointer :: frzimm(nlev)
-    !real, pointer :: frzcnt(nlev)
-    !real, pointer :: frzdep(nlev)
+    !real(rl), pointer :: frzimm(nlev)
+    !real(rl), pointer :: frzcnt(nlev)
+    !real(rl), pointer :: frzdep(nlev)
 !in, set to 0
-    real :: frzimm_in(nlev)
-    real :: frzcnt_in(nlev)
-    real :: frzdep_in(nlev)
+    real(rl) :: frzimm_in(nlev)
+    real(rl) :: frzcnt_in(nlev)
+    real(rl) :: frzdep_in(nlev)
 
     integer :: it                      !timestep counter    
     integer :: kts                     !closest level to TOM                   -
     integer :: kte                     !near surface level                     -
     integer :: ii, jj, ie, qind
-    real :: dtime
+    real(rl) :: dtime
 
 !OPTIONS, remove them out later
 !most of them are here https://docs.e3sm.org/E3SM/EAM/user-guide/namelist_parameters/#predicted-particle-properties 
@@ -168,16 +168,16 @@ subroutine interface_to_p3(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     logical, parameter :: do_subgrid_clouds = .false.       !use subgrid cloudiness in tendency calculations?
     logical, parameter :: do_prescribed_CCN = .false.       !see eam and micro_p3_init when this variable is true, there is a lot of init
     logical, parameter :: precip_off = .false.       
-    real, parameter ::         micro_nccons = 1.0 ! did not find this one anywhere
-    real, parameter ::         p3_autocon_coeff    = 30500.0  ! IN  autoconversion coefficient
-    real, parameter ::         p3_accret_coeff     = 117.25   ! IN  accretion coefficient
-    real, parameter ::         p3_qc_autocon_expon = 3.19     ! IN  autoconversion qc exponent
-    real, parameter ::         p3_nc_autocon_expon = -1.1     ! IN  autoconversion nc exponent
-    real, parameter ::         p3_qc_accret_expon  = 1.15     ! IN  autoconversion coefficient
-    real, parameter ::         p3_wbf_coeff        = 1.0      ! IN  WBF process coefficient
-    real, parameter ::         p3_mincdnc          = 20000000.0     ! IN  imposing minimal Nc 
-    real, parameter ::         p3_max_mean_rain_size  = 0.005 ! IN  max mean rain size
-    real, parameter ::         p3_embryonic_rain_size = 0.000025 ! IN  embryonic rain size for autoconversion
+    real(rl), parameter ::         micro_nccons = 1.0 ! did not find this one anywhere
+    real(rl), parameter ::         p3_autocon_coeff    = 30500.0  ! IN  autoconversion coefficient
+    real(rl), parameter ::         p3_accret_coeff     = 117.25   ! IN  accretion coefficient
+    real(rl), parameter ::         p3_qc_autocon_expon = 3.19     ! IN  autoconversion qc exponent
+    real(rl), parameter ::         p3_nc_autocon_expon = -1.1     ! IN  autoconversion nc exponent
+    real(rl), parameter ::         p3_qc_accret_expon  = 1.15     ! IN  autoconversion coefficient
+    real(rl), parameter ::         p3_wbf_coeff        = 1.0      ! IN  WBF process coefficient
+    real(rl), parameter ::         p3_mincdnc          = 20000000.0     ! IN  imposing minimal Nc 
+    real(rl), parameter ::         p3_max_mean_rain_size  = 0.005 ! IN  max mean rain size
+    real(rl), parameter ::         p3_embryonic_rain_size = 0.000025 ! IN  embryonic rain size for autoconversion
 
 !should depend on a column, but we set to 0 for all of colns
     frzimm_in = 0.0
@@ -368,15 +368,15 @@ print *, 'precip', precip_liq_surf, precip_ice_surf
 end if
 #if 0
 !if (ie == 1) then
-print *, 'precip', precip_liq_surf, precip_ice_surf
+!print *, 'precip', precip_liq_surf, precip_ice_surf
 print *, 'FT', elem(ie)%derived%FT(ii,jj,:)
-do qind = 1, 9
-!if(maxval(abs( elem(ie)%derived%FQ(ii,jj,:,qind) ),1)> 0.0)then
-print *, qind, maxval(abs(elem(ie)%derived%FQ(ii,jj,:,qind)),1)
+!do qind = 1, 9
+!!if(maxval(abs( elem(ie)%derived%FQ(ii,jj,:,qind) ),1)> 0.0)then
+!print *, qind, maxval(abs(elem(ie)%derived%FQ(ii,jj,:,qind)),1)
+!!endif
+!enddo
 !endif
-enddo
-!endif
-stop
+!stop
 #endif
 
 

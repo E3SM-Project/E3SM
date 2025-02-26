@@ -39,7 +39,7 @@ use newphysics
 implicit none
 
 ! this cannot be made stack variable, nelemd is not compile option
-real(rl),dimension(:,:,:), allocatable :: precl ! storage for column precip
+real(rl),dimension(:,:,:), allocatable :: precl, preci ! storage for column precip liquid and ice
 real(rl):: zi(nlevp), zm(nlev)                                          ! z coordinates
 real(rl):: ddn_hyai(nlevp), ddn_hybi(nlevp)                             ! vertical derivativess of hybrid coefficients
 real(rl):: tau
@@ -68,6 +68,14 @@ subroutine dcmip2016_init()
   else
     call abortmp('ERROR: in dcmip2016_init() precl has already been allocated') 
   endif
+
+  if (.not.allocated(preci)) then
+    allocate(preci(np,np,nelemd))
+    preci(:,:,:) = 0.0
+  else
+    call abortmp('ERROR: in dcmip2016_init() precl has already been allocated')
+  endif
+
 !$OMP END MASTER
 !$OMP BARRIER
 
@@ -414,17 +422,18 @@ subroutine dcmip2016_append_measurements2(elem,prect_mass_forint,prect_en_forint
 
 
 !_______________________________________________________________________
-subroutine dcmip2016_append_measurements(max_w,max_precl,min_ps,tl,hybrid)
-  real(rl),           intent(in) :: max_w, max_precl, min_ps
+subroutine dcmip2016_append_measurements(max_w,max_precl,max_preci,min_ps,tl,hybrid)
+  real(rl),           intent(in) :: max_w, max_precl, max_preci, min_ps
   type(TimeLevel_t),  intent(in) :: tl
   type(hybrid_t),     intent(in) :: hybrid                   ! hybrid parallel structure
 
   character(len=*), parameter :: w_filename     = "measurement_wmax.txt"
-  character(len=*), parameter :: precl_filename = "measurement_prect_rate.txt"
+  character(len=*), parameter :: precl_filename = "measurement_precl_rate.txt"
+  character(len=*), parameter :: preci_filename = "measurement_preci_rate.txt"
   character(len=*), parameter :: time_filename  = "measurement_time.txt"
   character(len=*), parameter :: ps_filename    = "measurement_psmin.txt"
 
-  real(rl) :: pmax_w, pmax_precl, pmin_ps, time
+  real(rl) :: pmax_w, pmax_precl, pmax_preci, pmin_ps, time
   real(rl) :: next_sample_time = 0.0
 
   time = time_at(tl%nstep)
@@ -439,8 +448,11 @@ subroutine dcmip2016_append_measurements(max_w,max_precl,min_ps,tl,hybrid)
     open(unit=12,file=time_filename, form="formatted",status="UNKNOWN")
     close(12)
 
-    open(unit=12,file=ps_filename, form="formatted",status="UNKNOWN")
+    open(unit=13,file=ps_filename, form="formatted",status="UNKNOWN")
     close(13)
+
+    open(unit=14,file=preci_filename,form="formatted",status="UNKNOWN")
+    close(14)
   endif
   ! append measurements at regular intervals
   if(time .ge. next_sample_time) then
@@ -451,11 +463,13 @@ subroutine dcmip2016_append_measurements(max_w,max_precl,min_ps,tl,hybrid)
 !$OMP BARRIER
     pmax_w     = parallelMax(max_w,    hybrid)
     pmax_precl = parallelMax(max_precl,hybrid)
+    pmax_preci = parallelMax(max_preci,hybrid)
     pmin_ps    = parallelMin(min_ps,   hybrid)
 
     if (hybrid%masterthread) then
       print *,"time=",time_at(tl%nstep)," pmax_w (m/s)=",pmax_w
       print *,"time=",time_at(tl%nstep)," pmax_precl (mm/day)=",pmax_precl*(1000.0)*(24.0*3600)
+      print *,"time=",time_at(tl%nstep)," pmax_preci (mm/day)=",pmax_preci*(1000.0)*(24.0*3600)
       print *,"time=",time_at(tl%nstep)," pmin_ps (Pa)=",pmin_ps
 
       open(unit=10,file=w_filename,form="formatted",position="append")
@@ -473,6 +487,10 @@ subroutine dcmip2016_append_measurements(max_w,max_precl,min_ps,tl,hybrid)
       open(unit=13,file=ps_filename,form="formatted",position="append")
         write(13,'(99E24.15)') pmin_ps
       close(13)
+
+      open(unit=14,file=preci_filename,form="formatted",position="append")
+        write(14,'(99E24.15)') pmax_preci
+      close(14)
 
     endif
   endif
@@ -497,7 +515,7 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
   real(rl), dimension(np,np,nlev) :: rho_dry,rho_new,Rstar,p_pk
   real(rl), dimension(nlev)       :: u_c,v_c,p_c,qv_c,qc_c,qr_c,rho_c,z_c, th_c
   real(rl), dimension(np,np)      :: delta_ps(np,np)
-  real(rl) :: max_w, max_precl, min_ps
+  real(rl) :: max_w, max_precl, max_preci, min_ps
   real(rl) :: lat, lon, dz_top(np,np), zi(np,np,nlevp),zi_c(nlevp), ps(np,np)
 
   integer :: pbl_type, prec_type, qi
@@ -631,7 +649,7 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
   enddo
 
-  call dcmip2016_append_measurements(max_w,max_precl,min_ps,tl,hybrid)
+  call dcmip2016_append_measurements(max_w,max_precl,max_preci,min_ps,tl,hybrid)
 
 end subroutine dcmip2016_test1_forcing
 
@@ -660,7 +678,7 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
   real(rl), dimension(np,np)      :: ps 
   real(rl), dimension(nlev)       :: p_c,qv_c,qc_c,qr_c,dp_c,T_c,ppi,dz_c, pprime
   real(rl), dimension(nlev)       :: dpdry_c, massd_c
-  real(rl) :: max_w, max_precl, min_ps
+  real(rl) :: max_w, max_precl, max_preci, min_ps
 
   real(rl) :: ptop
   real(rl) :: loc_mass_p, mass_prect, loc_energy_p, energy_prect
@@ -678,6 +696,7 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
   max_w     = -huge(rl)
   max_precl = -huge(rl)
+  max_preci = -huge(rl)
   min_ps    = +huge(rl)
 
   prect_mass_forint = 0; prect_en_forint = 0; cl_en_forint = 0; en_leak_forint = 0; mass_leak_forint = 0;
@@ -686,6 +705,7 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
   do ie = nets,nete
 
     precl(:,:,ie) = 0.0d0
+    preci(:,:,ie) = 0.0d0
     ttend = 0.0
 
     ! get current element state
@@ -886,6 +906,7 @@ endif
     ! perform measurements of max w, and max prect
     max_w     = max( max_w    , maxval(w    ) )
     max_precl = max( max_precl, maxval(precl(:,:,ie)) )
+    max_preci = max( max_preci, maxval(preci(:,:,ie)) )
     min_ps    = min( min_ps,    minval(ps) )
 
   enddo !ie loop
@@ -960,7 +981,7 @@ subroutine dcmip2016_test1_pg_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl
   real(rl), dimension(np,np,nlev) :: u,v,w,T,p,dp,rho,rho_dry,z,exner_kess,theta_kess
   real(rl), dimension(np,np,nlev) :: rho_new,p_pk
   real(rl), dimension(nlev)       :: u_c,v_c,p_c,qv_c,qc_c,qr_c,rho_c,z_c, th_c
-  real(rl) :: max_w, max_precl, min_ps
+  real(rl) :: max_w, max_precl, max_preci, min_ps
   real(rl) :: lat, lon, dz_top(np,np),zi(np,np,nlevp),zi_c(nlevp), ps(np,np), &
        wrk(np,np), rd, wrk3(np,np,nlev), wrk4(np,np,nlev,2), wf(np*np,1)
 
@@ -984,6 +1005,7 @@ subroutine dcmip2016_test1_pg_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl
 
   max_w     = -huge(rl)
   max_precl = -huge(rl)
+  max_preci = -huge(rl)
   min_ps    = +huge(rl)
 
   call t_startf('gfr_dyn_to_fv_phys')
@@ -1158,7 +1180,7 @@ subroutine dcmip2016_test1_pg_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl
      max_precl = max( max_precl, maxval(precl(:,:,ie)) )
   end do
 
-  call dcmip2016_append_measurements(max_w,max_precl,min_ps,tl,hybrid)
+  call dcmip2016_append_measurements(max_w,max_precl,max_preci,min_ps,tl,hybrid)
 end subroutine dcmip2016_test1_pg_forcing
 
 !_______________________________________________________________________
@@ -1179,7 +1201,7 @@ subroutine dcmip2016_test2_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, t
   real(rl), dimension(np,np,nlev) :: rho_dry,rho_new,Rstar,p_pk
   real(rl), dimension(np,np)      :: delta_ps(np,np)
   real(rl), dimension(nlev)       :: u_c,v_c,p_c,qv_c,qc_c,qr_c,rho_c,z_c, th_c
-  real(rl) :: max_w, max_precl, min_ps
+  real(rl) :: max_w, max_precl, max_preci, min_ps
   real(rl) :: lat, dz_top(np,np), zi(np,np,nlevp),zi_c(nlevp), ps(np,np)
 
   integer :: pbl_type, prec_type
@@ -1191,11 +1213,13 @@ subroutine dcmip2016_test2_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, t
 
   max_w     = -huge(rl)
   max_precl = -huge(rl)
+  max_preci = -huge(rl)
   min_ps    = +huge(rl)
 
   do ie = nets,nete
 
     precl(:,:,ie) = -1.0d0
+    preci(:,:,ie) = -1.0d0
 
     ! get current element state
     call get_state(u,v,w,T,p,dp,ps,rho,z,zi,g,elem(ie),hvcoord,nt,ntQ)
@@ -1286,7 +1310,7 @@ subroutine dcmip2016_test2_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, t
 
   enddo
 
-  call dcmip2016_append_measurements(max_w,max_precl,min_ps,tl,hybrid)
+  call dcmip2016_append_measurements(max_w,max_precl,max_preci,min_ps,tl,hybrid)
 
 end subroutine dcmip2016_test2_forcing
 
@@ -1309,10 +1333,11 @@ subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
   real(rl), dimension(np,np,nlev) :: theta_inv,qv_inv,qc_inv,qr_inv,rho_inv,exner_inv,z_inv ! inverted columns
   real(rl), dimension(np,np,nlevp):: zi
   real(rl), dimension(np,np)      :: ps,delta_ps(np,np)
-  real(rl) :: max_w, max_precl, min_ps
+  real(rl) :: max_w, max_precl, max_preci, min_ps
 
   max_w     = -huge(rl)
   max_precl = -huge(rl)
+  max_preci = -huge(rl)
   min_ps    = +huge(rl)
 
   do ie = nets,nete
@@ -1412,7 +1437,7 @@ subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
   enddo
 
-  call dcmip2016_append_measurements(max_w,max_precl,min_ps,tl,hybrid)
+  call dcmip2016_append_measurements(max_w,max_precl,max_preci,min_ps,tl,hybrid)
 
 end subroutine
 

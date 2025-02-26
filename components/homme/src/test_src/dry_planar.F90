@@ -390,10 +390,10 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
      elem(ie)%fcor(:,:) = f
 
      !all but vapor
-     elem(ie)%state%Q(:,:,:,ii:qsize) = 0.0
+     elem(ie)%state%Q(:,:,:,2:qsize) = 0.0
 
-     !for p3 runs
-     do ii=2,qsize
+   !  !for p3 runs
+     do ii=2,2
        elem(ie)%state%Q(:,:,:,ii) = elem(ie)%state%Q(:,:,:,1)
      enddo
 
