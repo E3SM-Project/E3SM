@@ -629,7 +629,7 @@ contains
 
         if (trim(fates_electron_transport_model) == 'FvCB') then
            pass_electron_transport_model = 1
-        else if (trim(fates_electron_transport_model) == 'JB') then
+        else if (trim(fates_electron_transport_model) == 'JohnsonBerry2021') then
            pass_electron_transport_model = 2
         end if
         call set_fates_ctrlparms('electron_transport_model',ival=pass_electron_transport_model)
