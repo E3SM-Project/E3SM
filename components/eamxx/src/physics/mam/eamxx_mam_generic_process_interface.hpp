@@ -24,12 +24,17 @@ class MAMGenericInterface : public scream::AtmosphereProcess {
   MAMGenericInterface(const ekat::Comm &comm,
                       const ekat::ParameterList &params);
   // Add tracers needed for aerosols and gases."
+  void add_tracers_interstitial_aerosol_and_gases();
+  void add_tracers_cloudborne_aerosol();
   void add_tracers_aerosol_and_gases();
   // Perform interval checks for all MAM4xx fields.
   // The limits are declared in physical_limits.
   void add_interval_checks();
   // Print all fields that are added in a MAM4xx process.
   void print_fields_names();
+  //
+  void populate_interstitial_wet_and_dry_aero();
+  void populate_cloudborne_wet_and_dry_aero();
   // Populate the wet_aero and dry_aero structs.
   void populate_wet_and_dry_aero();
   // Populate the wet_atm and dry_atm struct.

@@ -70,7 +70,44 @@ const std::pair<Real, Real> MAMGenericInterface::get_range(
 }
 
 // ================================================================
-void MAMGenericInterface::add_tracers_aerosol_and_gases() {
+void MAMGenericInterface::add_tracers_cloudborne_aerosol() {
+  using namespace ekat::units;
+  auto q_unit           = kg / kg;  // units of mass mixing ratios of tracers
+  auto n_unit           = 1 / kg;   // units of number mixing ratios of tracers
+  const auto &grid_name = grid_->name();
+
+  FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(true);
+
+  // ---------------------------------------------------------------------
+  // These variables are "Updated" or inputs/outputs for the process
+  // ---------------------------------------------------------------------
+  // NOTE: Cloud borne aerosols are not updated in this process but are included
+  // to create data structures.
+
+  // interstitial and cloudborne aerosol tracers of interest: mass (q) and
+  // number (n) mixing ratios
+  for(int mode = 0; mode < mam_coupling::num_aero_modes(); ++mode) {
+    // cloudborne aerosol tracers of interest: number (n) mixing ratios
+    // NOTE: DO NOT add cld borne aerosols to the "tracer" group as these are
+    // NOT advected
+    const std::string cld_nmr_field_name =
+        mam_coupling::cld_aero_nmr_field_name(mode);
+    add_field<Updated>(cld_nmr_field_name, scalar3d_mid, n_unit, grid_name);
+
+    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+      // (cloudborne) aerosol tracers of interest: mass (q) mixing ratios
+      // NOTE: DO NOT add cld borne aerosols to the "tracer" group as these are
+      // NOT advected
+      const std::string cld_mmr_field_name =
+          mam_coupling::cld_aero_mmr_field_name(mode, a);
+      if(not cld_mmr_field_name.empty()) {
+        add_field<Updated>(cld_mmr_field_name, scalar3d_mid, q_unit, grid_name);
+      }
+    }  // end for loop num species
+  }    // end for loop for num modes
+}
+
+void MAMGenericInterface::add_tracers_interstitial_aerosol_and_gases() {
   using namespace ekat::units;
   auto q_unit           = kg / kg;  // units of mass mixing ratios of tracers
   auto n_unit           = 1 / kg;   // units of number mixing ratios of tracers
@@ -91,28 +128,12 @@ void MAMGenericInterface::add_tracers_aerosol_and_gases() {
     const std::string int_nmr_field_name =
         mam_coupling::int_aero_nmr_field_name(mode);
     add_tracer<Updated>(int_nmr_field_name, grid_, n_unit);
-
-    // cloudborne aerosol tracers of interest: number (n) mixing ratios
-    // NOTE: DO NOT add cld borne aerosols to the "tracer" group as these are
-    // NOT advected
-    const std::string cld_nmr_field_name =
-        mam_coupling::cld_aero_nmr_field_name(mode);
-    add_field<Updated>(cld_nmr_field_name, scalar3d_mid, n_unit, grid_name);
-
     for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
       // (interstitial) aerosol tracers of interest: mass (q) mixing ratios
       const std::string int_mmr_field_name =
           mam_coupling::int_aero_mmr_field_name(mode, a);
       if(not int_mmr_field_name.empty()) {
         add_tracer<Updated>(int_mmr_field_name, grid_, q_unit);
-      }
-      // (cloudborne) aerosol tracers of interest: mass (q) mixing ratios
-      // NOTE: DO NOT add cld borne aerosols to the "tracer" group as these are
-      // NOT advected
-      const std::string cld_mmr_field_name =
-          mam_coupling::cld_aero_mmr_field_name(mode, a);
-      if(not cld_mmr_field_name.empty()) {
-        add_field<Updated>(cld_mmr_field_name, scalar3d_mid, q_unit, grid_name);
       }
     }  // end for loop num species
   }    // end for loop for num modes
@@ -124,8 +145,39 @@ void MAMGenericInterface::add_tracers_aerosol_and_gases() {
 }
 
 // ================================================================
-void MAMGenericInterface::populate_wet_and_dry_aero() {
-  // interstitial and cloudborne aerosol tracers of interest: mass (q) and
+void MAMGenericInterface::add_tracers_aerosol_and_gases() {
+  add_tracers_interstitial_aerosol_and_gases();
+  add_tracers_cloudborne_aerosol();
+}
+
+// ================================================================
+void MAMGenericInterface::populate_cloudborne_wet_and_dry_aero() {
+  // cloudborne aerosol tracers of interest: mass (q) and
+  // number (n) mixing ratios
+  for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+
+    // cloudborne aerosol tracers of interest: number (n) mixing ratios
+    const std::string cld_nmr_field_name =
+        mam_coupling::cld_aero_nmr_field_name(m);
+    wet_aero_.cld_aero_nmr[m] =
+        get_field_out(cld_nmr_field_name).get_view<Real **>();
+    dry_aero_.cld_aero_nmr[m] = buffer_.dry_cld_aero_nmr[m];
+
+    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+      // (cloudborne) aerosol tracers of interest: mass (q) mixing ratios
+      const std::string cld_mmr_field_name =
+          mam_coupling::cld_aero_mmr_field_name(m, a);
+      if(not cld_mmr_field_name.empty()) {
+        wet_aero_.cld_aero_mmr[m][a] =
+            get_field_out(cld_mmr_field_name).get_view<Real **>();
+        dry_aero_.cld_aero_mmr[m][a] = buffer_.dry_cld_aero_mmr[m][a];
+      }
+    }
+  }
+}
+// ================================================================
+void MAMGenericInterface::populate_interstitial_wet_and_dry_aero() {
+  // interstitial aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
   for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
     // interstitial aerosol tracers of interest: number (n) mixing ratios
@@ -134,13 +186,6 @@ void MAMGenericInterface::populate_wet_and_dry_aero() {
     wet_aero_.int_aero_nmr[m] =
         get_field_out(int_nmr_field_name).get_view<Real **>();
     dry_aero_.int_aero_nmr[m] = buffer_.dry_int_aero_nmr[m];
-
-    // cloudborne aerosol tracers of interest: number (n) mixing ratios
-    const std::string cld_nmr_field_name =
-        mam_coupling::cld_aero_nmr_field_name(m);
-    wet_aero_.cld_aero_nmr[m] =
-        get_field_out(cld_nmr_field_name).get_view<Real **>();
-    dry_aero_.cld_aero_nmr[m] = buffer_.dry_cld_aero_nmr[m];
 
     for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
       // (interstitial) aerosol tracers of interest: mass (q) mixing ratios
@@ -152,15 +197,6 @@ void MAMGenericInterface::populate_wet_and_dry_aero() {
             get_field_out(int_mmr_field_name).get_view<Real **>();
         dry_aero_.int_aero_mmr[m][a] = buffer_.dry_int_aero_mmr[m][a];
       }
-
-      // (cloudborne) aerosol tracers of interest: mass (q) mixing ratios
-      const std::string cld_mmr_field_name =
-          mam_coupling::cld_aero_mmr_field_name(m, a);
-      if(not cld_mmr_field_name.empty()) {
-        wet_aero_.cld_aero_mmr[m][a] =
-            get_field_out(cld_mmr_field_name).get_view<Real **>();
-        dry_aero_.cld_aero_mmr[m][a] = buffer_.dry_cld_aero_mmr[m][a];
-      }
     }
   }
   for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
@@ -169,6 +205,13 @@ void MAMGenericInterface::populate_wet_and_dry_aero() {
         get_field_out(gas_mmr_field_name).get_view<Real **>();
     dry_aero_.gas_mmr[g] = buffer_.dry_gas_mmr[g];
   }
+}
+
+
+// ================================================================
+void MAMGenericInterface::populate_wet_and_dry_aero() {
+    populate_interstitial_wet_and_dry_aero();
+    populate_cloudborne_wet_and_dry_aero();
 }
 void MAMGenericInterface::populate_wet_and_dry_atm() {
   // store fields only to be converted to dry mmrs in wet_atm_
@@ -313,18 +356,22 @@ void MAMGenericInterface::pre_process()
   const auto scan_policy = ekat::ExeSpaceUtils<
       KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
+     const auto & wet_atm = wet_atm_;
+     const auto & dry_atm = dry_atm_;
+     const auto & wet_aero = wet_aero_;
+     const auto & dry_aero  = dry_aero_;
      Kokkos::parallel_for(
       scan_policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
       const int i = team.league_rank();  // column index
 
-      mam_coupling::compute_dry_mixing_ratios(team, wet_atm_, dry_atm_, i);
-      mam_coupling::compute_dry_mixing_ratios(team, wet_atm_, wet_aero_,
-                                dry_aero_, i);
+      mam_coupling::compute_dry_mixing_ratios(team, wet_atm, dry_atm, i);
+      mam_coupling::compute_dry_mixing_ratios(team, wet_atm, wet_aero,
+                                dry_aero, i);
       team.team_barrier();
       // vertical heights has to be computed after computing dry mixing ratios
       // for atmosphere
-      mam_coupling::compute_vertical_layer_heights(team, dry_atm_, i);
-      mam_coupling::compute_updraft_velocities(team, wet_atm_, dry_atm_, i);
+      mam_coupling::compute_vertical_layer_heights(team, dry_atm, i);
+      mam_coupling::compute_updraft_velocities(team, wet_atm, dry_atm, i);
       // allows kernels below to use layer heights operator()
       team.team_barrier();
       // set_min_background_mmr(team, dry_aero_pre_,
@@ -339,11 +386,14 @@ void MAMGenericInterface::post_process()
   const auto scan_policy = ekat::ExeSpaceUtils<
       KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
+     const auto & dry_atm = dry_atm_;
+     const auto & dry_aero  = dry_aero_;
+     const auto & wet_aero = wet_aero_;
      Kokkos::parallel_for(
       scan_policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
       const int i = team.league_rank();  // column index
-      compute_wet_mixing_ratios(team, dry_atm_, dry_aero_,
-                                wet_aero_, i);
+      compute_wet_mixing_ratios(team, dry_atm, dry_aero,
+                                wet_aero, i);
       });
 
 }

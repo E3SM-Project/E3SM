@@ -36,7 +36,6 @@ void MAMConstituentFluxes::set_grids(
 
   add_tracers_wet_and_dry_atm();
   static constexpr Units m2(m * m, "m2");
-  static constexpr Units s2(s * s, "s2");
   // FIXME: do we need phi?
   // Surface geopotential [m2/s2] (Require only for building DS)
   // add_field<Required>("phis", scalar2d, m2 / s2, grid_name);
