@@ -59,7 +59,7 @@ module element_ops
   use kinds,          only: real_kind, iulog
   use perf_mod,       only: t_startf, t_stopf, t_barrierf, t_adj_detailf ! _EXTERNAL
   use parallel_mod,   only: abortmp
-  use physical_constants, only : p0, Cp, Rgas, Rwater_vapor, Cpwater_vapor, kappa, g, dd_pi, TREF
+  use physical_constants, only : p0, Cp, Rgas, Rwater_vapor, Cpwater_vapor, kappa, g, dd_pi, TREF, rearth
   use control_mod,    only: use_moisture, theta_hydrostatic_mode, hv_ref_profiles
   use eos,            only: pnh_and_exner_from_eos, phi_from_eos
   implicit none
@@ -222,6 +222,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,nt),&
           dp,elem%state%phinh_i(:,:,:,nt),pnh,exner,dpnh_dp_i)
 
+!modify this for DA EOS?
   do k=1,nlev
      temperature(:,:,k)= Rgas*elem%state%vtheta_dp(:,:,k,nt)*exner(:,:,k)&
           /(Rstar(:,:,k)*dp(:,:,k))
@@ -433,7 +434,9 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   subroutine set_thermostate(elem,ps,temperature,hvcoord,qv)
   !
   ! Assuming a hydrostatic intital state and given surface pressure,
-  ! and no moisture, compute theta and phi
+  ! and no moisture, compute theta and phi from p given by dp using SA EOS
+  !
+  ! Code does not do DA EOS
   !
   ! input:  ps_v, temperature
   ! ouput:  state variables:   vtheta_dp, phi
@@ -460,7 +463,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*ps(:,:)
   enddo
 
-! recompute pressure using same algrebra as EOS:
+! recompute pressure using same algebra as EOS:
 ! improves precision for initial T/theta conversion
   pi_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
   do k=1,nlev
@@ -488,7 +491,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   !set phi, copy from 1st timelevel to all
   call tests_finalize(elem,hvcoord)
 
-
+#ifndef HOMMEDA
   ! verify T
   call get_temperature(elem,p,hvcoord,nt)
 
@@ -500,6 +503,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
         write(iulog,*) 'T,Tnew',temperature(1,1,k),p(1,1,k)
      endif
   enddo
+#endif
 
   end subroutine set_thermostate
 
@@ -704,11 +708,19 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   type(element_t),     intent(inout):: elem
   integer, optional,   intent(in)   :: ie ! optional element index, to save initial state
 
-  integer :: k,tl
-  real(real_kind), dimension(np,np,nlev) :: pi
-
-  real(real_kind), dimension(np,np,nlev) :: pnh,exner
+  integer :: k,tl,ii
+  real(real_kind), dimension(np,np,nlev)  :: pi
+  real(real_kind), dimension(np,np,nlev)  :: pnh, exner
   real(real_kind), dimension(np,np,nlevp) :: dpnh_dp_i,phi_i
+
+#ifdef HOMMEDA
+  real(real_kind), dimension(np,np,nlevp) :: dp3d_i, phiSA, phiDA, r3int, dpnh,&
+                                             rinter, rhat, munew, muu
+  real(real_kind), dimension(np,np,nlev)  :: dp3d, vtheta, pmid
+  real(real_kind), dimension(np,np)       :: ptop
+  real(real_kind), dimension(np,np,2,nlevp) :: v_i
+  real(real_kind)                         :: r0
+#endif
 
   tl=1
 
@@ -717,6 +729,8 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
 
   ! Disable the following check in CUDA bfb builds,
   ! since the calls to pow are inexact
+
+#ifndef HOMMEDA
 #if !(defined(HOMMEXX_BFB_TESTING) && defined(HOMMEXX_ENABLE_GPU_F90))
   ! verify discrete hydrostatic balance
   call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,tl),&
@@ -730,13 +744,86 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
      endif
   enddo
 #endif
+#endif
+
+#ifdef HOMMEDA
+
+  r0=rearth
+  dp3d = elem%state%dp3d(:,:,:,tl)
+  vtheta = elem%state%vtheta_dp(:,:,:,tl)
+
+  call pnh_and_exner_from_eos(hvcoord,vtheta,&
+      dp3d(:,:,:),elem%state%phinh_i(:,:,:,tl),pnh,exner,munew,caller='NEW MU')
+
+  !if (elem%globalid==1)    print *,'OLD MU', munew(1,1,1:10)
+
+  !how many times we iterate explicitly to get mu close to 1
+  do ii=1,12
+     phiSA = elem%state%phinh_i(:,:,:,tl)
+
+     rinter = phiSA(:,:,:)/g + r0
+     rhat = rinter/r0 ! r/r0
+
+     ptop(:,:) = hvcoord%hyai(1)*hvcoord%ps0/rhat(:,:,1)/rhat(:,:,1)  ! hydrostatic ptop/rhat^2
+
+     !now compute dp_int like in eos:
+     dp3d_i(:,:,1) = dp3d(:,:,1)
+     dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
+     do k=2,nlev
+        dp3d_i(:,:,k)=(dp3d(:,:,k)+dp3d(:,:,k-1))/2
+     end do
+
+#if 0
+!for with u calculations, QHPE
+     ! special averaging for velocity for energy conservation
+     v_i(:,:,1:2,1) = elem%state%v(:,:,1:2,1,tl)
+     v_i(:,:,1:2,nlevp) = elem%state%v(:,:,1:2,nlev,tl)
+     do k=2,nlev
+        v_i(:,:,1,k) = (dp3d(:,:,k)*elem%state%v(:,:,1,k,tl) + &
+             dp3d(:,:,k-1)*elem%state%v(:,:,1,k-1,tl) ) / (2*dp3d_i(:,:,k))
+        v_i(:,:,2,k) = (dp3d(:,:,k)*elem%state%v(:,:,2,k,tl) + &
+             dp3d(:,:,k-1)*elem%state%v(:,:,2,k-1,tl) ) / (2*dp3d_i(:,:,k))
+     end do
+
+     do k=1,nlevp
+        muu(:,:,k) = -(v_i(:,:,1,k)*v_i(:,:,1,k)+v_i(:,:,2,k)*v_i(:,:,2,k))/rinter(:,:,k)/g &
+                     -elem%fcorcosine(:,:)*v_i(:,:,1,k)/g + 1.0
+     enddo
+#else
+     muu(:,:,:) = 1.0
+#endif
+
+     dpnh = dp3d_i / rhat / rhat * muu
+     pmid(:,:,1) = ptop(:,:) + dpnh(:,:,1)/2
+
+     do k=2,nlev
+        pmid(:,:,k) = pmid(:,:,k-1) + dpnh(:,:,k)
+     enddo
+
+     !reconstruct (r/r0)^3
+     r3int(:,:,nlevp) = (rinter(:,:,nlevp) / r0)**3
+     do k=nlev,1,-1
+        r3int(:,:,k) = r3int(:,:,k+1) + 3.0 * rgas * vtheta(:,:,k) * (pmid(:,:,k)/p0)**kappa / pmid(:,:,k) / g / r0
+     enddo
+     phiDA(:,:,1:nlev) = g*(r3int(:,:,1:nlev)**(1.0/3.0)-1)*r0
+     phiDA(:,:,nlevp) = phiSA(:,:,nlevp)
+
+     call pnh_and_exner_from_eos(hvcoord,vtheta,&
+         dp3d(:,:,:),phiDA,pnh,exner,munew,caller='NEW MU')
+
+     !if (elem%globalid==1)   print *,'NEW MU', ii, munew(1,1,1:10)
+
+     elem%state%phinh_i(:,:,:,tl) = phiDA
+
+  enddo
+!endif HOMMEDA
+#endif
 
   do tl = 2,timelevels
     call copy_state(elem,1,tl)
   enddo
 
   if(present(ie)) call save_initial_state(elem%state,ie)
-
 
   end subroutine tests_finalize
 

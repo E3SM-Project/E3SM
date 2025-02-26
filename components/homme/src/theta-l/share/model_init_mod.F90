@@ -25,7 +25,7 @@ module model_init_mod
   use control_mod,        only: qsplit,theta_hydrostatic_mode, hv_ref_profiles, &
        hv_theta_correction, tom_sponge_start
   use time_mod,           only: timelevel_qdp, timelevel_t
-  use physical_constants, only: g, TREF, Rgas, kappa
+  use physical_constants, only: g, TREF, Rgas, kappa, rearth
   use imex_mod,           only: test_imex_jacobian
   use eos,                only: phi_from_eos
 
@@ -47,11 +47,30 @@ contains
     real (kind=real_kind) :: gradtemp(np,np,2,nets:nete)
     real (kind=real_kind) :: temp(np,np,nlev),ps_ref(np,np)
     real (kind=real_kind) :: ptop_over_press
+#ifdef HOMMEDA
+    real (kind=real_kind) ::  rhati(np,np,nlevp), invrhati(np,np,nlevp), rheighti(np,np,nlevp), r0
+#endif
 
+#ifdef HOMMEDA
+    r0=rearth
+#endif
 
     ! other theta specific model initialization should go here
     do ie=nets,nete
-       gradtemp(:,:,:,ie) = gradient_sphere( elem(ie)%state%phis(:,:), deriv, elem(ie)%Dinv)
+
+!repeated code
+#ifdef HOMMEDA
+     rheighti =  elem(ie)%state%phinh_i(:,:,:,1)/g + r0
+     rhati = rheighti/r0 ! r/r0
+     invrhati = 1.0/rhati
+#endif
+
+     gradtemp(:,:,:,ie) = gradient_sphere( elem(ie)%state%phis(:,:), deriv, elem(ie)%Dinv)
+
+#ifdef HOMMEDA
+     gradtemp(:,:,1,ie) = gradtemp(:,:,1,ie)*invrhati(:,:,nlevp)
+     gradtemp(:,:,2,ie) = gradtemp(:,:,2,ie)*invrhati(:,:,nlevp)
+#endif
     enddo
     call make_C0_vector(gradtemp,elem,hybrid,nets,nete)
 
@@ -91,10 +110,12 @@ contains
 
     enddo
 
-
+#ifndef HOMMEDA
+    ! this test won't work for DA yet
     ! unit test for analytic jacobian and tri-diag solve used by IMEX methods
     if (.not. theta_hydrostatic_mode) &
          call test_imex_jacobian(elem,hybrid,hvcoord,tl,nets,nete)
+#endif
 
     !$omp master
     !
