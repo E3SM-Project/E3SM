@@ -632,7 +632,7 @@ contains
         else if (trim(fates_electron_transport_model) == 'JB') then
            pass_electron_transport_model = 2
         end if
-        call set_fates_ctrlparms('electron_transport_model',ival=pass_radiation_model)
+        call set_fates_ctrlparms('electron_transport_model',ival=pass_electron_transport_model)
 
         
         if (trim(fates_hydro_solver) == '1D_Taylor') then
