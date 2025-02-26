@@ -67,6 +67,11 @@ setup (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs,
   // Read input parameters and setup internal data
   setup_internals(field_mgrs);
 
+  if (not m_output_control.output_enabled()) {
+    // If output is not enabled, there's no point in continuing
+    return;
+  }
+
   // Here, store if PG2 fields will be present in output streams.
   // Will be useful if multiple grids are defined (see below).
   bool pg2_grid_in_io_streams = false;
@@ -736,7 +741,7 @@ setup_internals (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgr
   m_output_control.set_frequency_units(out_control_pl.get<std::string>("frequency_units"));
 
   // In case output is disabled, no point in doing anything else
-  if (m_output_control.frequency_units=="none" || m_output_control.frequency_units=="never") {
+  if (not m_output_control.output_enabled()) {
     return;
   }
   m_output_control.frequency = out_control_pl.get<int>("Frequency");
