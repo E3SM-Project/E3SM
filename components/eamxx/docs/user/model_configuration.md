@@ -599,12 +599,16 @@ of the parameter value).
       stream listed in the `output_yaml_files` atmosphere option
       (which can be queried via `atmquery output_yaml_files`).
       - The user can specify a few options, in order to tweak the restart behavior:
-          - `skip_restart_if_rhist_not_found` (`Restart` sublist, boolean): this parameter is `false` by default, but can be set
-            to `true` to make the model start the output stream anew (as if this was an initial run) if the proper rhist
-            file name is not found in rpointer.atm. This allows to add a new output stream after a restart.
-            NOTE: this option is more precisely needed when other streams MUST be restarted, but the current one should
-                  be started from scratch. If ALL streams should be started anew, you should set RUN_TYPE=branch in
-                  the case XML settings instead.
+          - `skip_restart_if_rhist_not_found` (`Restart` sublist, boolean):
+            this parameter is `false` by default, but can be set
+            to `true` to make the model start the output stream anew
+            (as if this was an initial run) if the proper rhist
+            file name is not found in rpointer.atm. This allows to add
+            a new output stream after a restart.
+            NOTE: this option is more precisely needed when other streams MUST
+                  be restarted, but the current one should be started from
+                  scratch. If ALL streams should be started anew, you should
+                  set RUN_TYPE=branch in the case XML settings instead.
             scratch, as if this was an initial run.
           - `filename_prefix` (`Restart` sub-list, `string`):
               - By default, this parameter is set to match the value of
