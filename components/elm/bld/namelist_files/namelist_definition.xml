@@ -366,7 +366,7 @@ Set the FATES radiation model
 </entry>
 
 <entry id="fates_electron_transport_model" type="char*256" category="physics"
-        group="elm_inparm" valid_values="FvCB, JB" value="FvCB">
+        group="elm_inparm" valid_values="FvCB1980, JohnsonBerry2021" value="FvCB1980">
 Set the FATES electron transport model
 </entry>
 
