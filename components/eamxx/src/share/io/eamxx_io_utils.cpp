@@ -15,6 +15,7 @@ std::string find_filename_in_rpointer (
     const bool model_restart,
     const ekat::Comm& comm,
     const util::TimeStamp& run_t0,
+    const bool allow_not_found,
     const OutputAvgType avg_type,
     const IOControl& control)
 {
@@ -64,7 +65,10 @@ std::string find_filename_in_rpointer (
   comm.broadcast(&ifound,1,0);
   found = bool(ifound);
 
-  if (not found) {
+  if (found) {
+    // Have the root rank communicate the nc filename
+    broadcast_string(filename,comm,comm.root_rank());
+  } else if (not allow_not_found) {
     broadcast_string(content,comm,comm.root_rank());
 
     if (model_restart) {
@@ -91,9 +95,6 @@ std::string find_filename_in_rpointer (
           " please rename it, so that the avg-type, freq, and freq_option reflect those of the output stream.\n");
     }
   }
-
-  // Have the root rank communicate the nc filename
-  broadcast_string(filename,comm,comm.root_rank());
 
   return filename;
 }
