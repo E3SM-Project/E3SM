@@ -13,3 +13,7 @@ set(SFC "gfortran")
 
 #string(APPEND CMAKE_EXE_LINKER_FLAGS " -static-libstdc++") # was causing link error after Feb 18/19 maintenance
 
+# https://github.com/E3SM-Project/E3SM/issues/7049
+if (DEBUG)
+  string(APPEND CMAKE_EXE_LINKER_FLAGS " /opt/cray/pe/lib64/libhdf5_hl_parallel_gnu_91.so.200")
+endif()
