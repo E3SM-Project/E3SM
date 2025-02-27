@@ -157,6 +157,9 @@ contains
          call mpas_pool_get_array(extrapOceanDataPool, 'seedOceanMaskHoriz', seedOceanMaskHoriz)
          call mpas_pool_get_array(extrapOceanDataPool, 'growOceanMaskHoriz', growOceanMaskHoriz)
          call mpas_pool_get_array(extrapOceanDataPool, 'connectedMarineMask', connectedMarineMask)
+         call mpas_pool_get_array(extrapOceanDataPool, 'altConnectedMarineMask', altConnectedMarineMask)
+         call mpas_pool_get_array(extrapOceanDataPool, 'origGrowMask', growMask)
+         call mpas_pool_get_array(extrapOceanDataPool, 'altGrowMask', altGrowMask)
          
          allocate(oceanField(nISMIP6OceanLayers,nCells+1,2))
          
@@ -206,14 +209,14 @@ contains
          call mpas_pool_get_field(scratchPool, 'seedMask', seedMaskField)
          call mpas_allocate_scratch_field(seedMaskField, single_block_in = .true.)
          ! connectedMarineMask => seedMaskField % array
-         altConnectedMarineMask => seedMaskField % array
+         !altConnectedMarineMask => seedMaskField % array
          altConnectedMarineMask(:) = 0
          connectedMarineMask(:) = 0
          call mpas_pool_get_field(scratchPool, 'growMask', growMaskField)
          call mpas_allocate_scratch_field(growMaskField, single_block_in = .true.)
-         growMask => growMaskField % array
+         !growMask => growMaskField % array
          growMask(:) = 0
-         altGrowMask => growMaskField % array
+         !altGrowMask => growMaskField % array
          altGrowMask(:) = 0
 
          do iCell = 1, nCells
@@ -240,9 +243,11 @@ contains
          call li_flood_fill(connectedMarineMask, growMask, domain)
          call li_flood_fill(altConnectedMarineMask, altGrowMask, domain)
 
-         where ( (altConnectedMarineMask /= connectedMarineMask) .and. (thickness == 0.0_RKIND) )
-               connectedMarineMask = 0
-         end where
+         do iCell = 1, nCells
+            if ( (altConnectedMarineMask(iCell) /= connectedMarineMask(iCell)) .and. (thickness(iCell) == 0.0_RKIND) ) then
+               connectedMarineMask(iCell) = 0
+            endif
+         enddo
 
          ! make it a 3D mask based on the topography (loop through nISMIP6OceanLayers)
          call mpas_pool_get_dimension(meshPool, 'nISMIP6OceanLayers', nISMIP6OceanLayers)
