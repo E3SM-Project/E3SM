@@ -104,11 +104,23 @@ int get_dimlen_local (const std::string& filename, const std::string& dimname);
 bool is_dim_unlimited (const std::string& filename,
                        const std::string& dimname);
 
+bool has_time_dim (const std::string& filename);
+// When we read a file, we interpret "time" as a "record" dimension, and we read only
+// ONE time slice at a time. If the time dim is unlimited, this is already set up when
+// the file is opened. But on some files, the time dim has a FIXED length (rather than
+// UNLIMITED), which prevents this logic to automatically kick in. To overcome this
+// issue, users can call this function to mark any existing dim as the time dim.
+// This function throws if a time dim is already set.
+void mark_dim_as_time (const std::string& filename, const std::string& dimname);
+
+// This is used by I/O when restarting a simulation after a crash: the existing file
+// may contain some snapshots after the rest time, but we may want to overwrite them.
+void reset_time_dim_len(const std::string& filename, const int new_length);
+
 // Get len/name of the time dimension (i.e., the unlimited one)
 // NOTE: these throw if time dim is not present. Use has_dim to check first.
 int get_time_len (const std::string& filename);
 std::string get_time_name (const std::string& filename);
-void reset_unlimited_dim_len(const std::string& filename, const int new_length);
 
 // =================== Decompositions operations ==================== //
 
@@ -176,11 +188,6 @@ const PIOVar& get_var (const std::string& filename,
 // Defines both a time dimension and a time variable
 void define_time (const std::string& filename, const std::string& units,
                   const std::string& time_name = default_time_name());
-
-// When we read a file, and there is a "time" dimension that is FIXED rather than UNLIMITED,
-// we may have some issues with our read/write logics. Hence, we can use mark a dimension
-// as if it was the UNLIMITED time dim.
-void pretend_dim_is_unlimited (const std::string& filename, const std::string& dimname);
 
 // Update value of time variable, increasing time dim length
 void update_time(const std::string &filename, const double time);

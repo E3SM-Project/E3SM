@@ -235,7 +235,7 @@ initialize_iop_file(const util::TimeStamp& run_t0,
 
   // When we read vars, "time" must be treated as unlimited, to avoid issues
   if (not scorpio::is_dim_unlimited(iop_file,time_dimname)) {
-    scorpio::pretend_dim_is_unlimited(iop_file,time_dimname);
+    scorpio::mark_dim_as_time(iop_file,time_dimname);
   }
 
   const auto ntimes = scorpio::get_dimlen(iop_file, time_dimname);
