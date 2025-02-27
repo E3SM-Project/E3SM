@@ -75,7 +75,6 @@ reconstruct_and_limit_dp (const KernelVariables& kv, const CSNlev& dprefp, const
     };
     Kokkos::Real2 sums;
     Dispatch<>::parallel_reduce(kv.team, tvr, g1, sums);
-    kv.team_barrier();
     const Real nmass = sums.v[0];
     if (nmass == 0) return;
     // Compensate for clipping.
@@ -157,7 +156,6 @@ KOKKOS_FUNCTION static void calc_vertically_lagrangian_levels (
   assert(hybrid_bi(0)[0] == 0);
 
   const auto ttr = TeamThreadRange(kv.team, NP*NP);
-  const auto tvr = ThreadVectorRange(kv.team, NUM_LEV);
   
   // Reconstruct an approximation to endpoint eta_dot_dpdn on Eulerian levels.
   const auto& divdp = wrk1a;
@@ -183,6 +181,7 @@ KOKKOS_FUNCTION static void calc_vertically_lagrangian_levels (
     kv.team_barrier();
     RNlevp edds(cti::pack2real(edd)), divdps(cti::pack2real(divdp));
     cti::calc_eta_dot_dpdn(kv, hybrid_bi, divdps, edd, edds);
+    kv.team_barrier();
   }
   
   // Use p0 as the reference coordinate system. p0 differs from p1 by B(eta)
@@ -203,6 +202,7 @@ KOKKOS_FUNCTION static void calc_vertically_lagrangian_levels (
   // time.
   const auto& ptp0 = dprecon;
   cti::approx_derivative(kv, pref, *eta_dot_dpdn[1], ptp0);
+  kv.team_barrier();
 
   {
     const auto& edd = *eta_dot_dpdn[0];
@@ -240,14 +240,16 @@ KOKKOS_FUNCTION static void calc_vertically_lagrangian_levels (
     if (static_cast<int>(cti::num_lev_pack) ==
         static_cast<int>(cti::max_num_lev_pack)) {
       // Re-zero eta_dot_dpdn at bottom.
+      kv.team_barrier();
       RNlevp edds(cti::pack2real(edd));
       const auto f = [&] (const int idx) {
         const int i = idx / NP, j = idx % NP;
         const int bottom = cti::num_phys_lev;
-        edds(i,j,bottom) = 0;
+        Kokkos::single(Kokkos::PerThread(kv.team), [&] () { edds(i,j,bottom) = 0; });
       };
       parallel_for(ttr, f);
     }
+    kv.team_barrier();
   }
 
   reconstruct_and_limit_dp(kv, dp3d, dt, dp_tol, *eta_dot_dpdn[0], dprecon);
