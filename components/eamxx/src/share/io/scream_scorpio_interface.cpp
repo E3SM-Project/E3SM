@@ -695,14 +695,22 @@ bool is_dim_unlimited (const std::string& filename,
   return pf.file->dims.at(dimname)->unlimited;
 }
 
-int get_time_len (const std::string& filename)
+bool has_time_dim (const std::string& filename)
 {
   // If file wasn't open, open it on the fly. See comment in PeekFile class above.
   impl::PeekFile pf(filename);
 
-  EKAT_REQUIRE_MSG (pf.file->time_dim!=nullptr,
+  return pf.file->time_dim!=nullptr;
+}
+
+int get_time_len (const std::string& filename)
+{
+  EKAT_REQUIRE_MSG (has_time_dim(filename),
       "Error! Could not inquire time dimension length. The time dimension is not in the file.\n"
       " - filename: " + filename + "\n");
+
+  // If file wasn't open, open it on the fly. See comment in PeekFile class above.
+  impl::PeekFile pf(filename);
 
   return pf.file->time_dim->length;
 }
@@ -719,14 +727,15 @@ std::string get_time_name (const std::string& filename)
   return pf.file->time_dim->name;
 }
 
-void reset_unlimited_dim_len(const std::string& filename, const int new_length)
+void reset_time_dim_len (const std::string& filename, const int new_length)
 {
-  auto& f = impl::get_file(filename,"scorpio::reset_unlimited_dim_len");
+  EKAT_REQUIRE_MSG (has_time_dim(filename),
+      "Error! Could not reset time dimension length. The time dimension is not in the file.\n"
+      " - filename: " + filename + "\n");
+
+  auto& f = impl::get_file(filename,"scorpio::reset_time_dim_len");
 
   // Reset dim length
-  EKAT_REQUIRE_MSG (f.time_dim!=nullptr,
-      "Error! Cannot reset unlimited dim length. No unlimited dim stored.\n"
-      "  - file name: " + filename + "\n");
   EKAT_REQUIRE_MSG (new_length<f.time_dim->length,
       "Error! New time dimension length must be shorter than the current one.\n"
       "  - file name: " + filename + "\n"
@@ -1105,9 +1114,16 @@ void define_time (const std::string& filename, const std::string& units, const s
   define_var(filename,time_name,units,{},"double","double",true);
 }
 
-void pretend_dim_is_unlimited (const std::string& filename, const std::string& dimname)
+void mark_dim_as_time (const std::string& filename, const std::string& dimname)
 {
   auto& f = impl::get_file(filename,"scorpio::mark_dim_as_time");
+
+  EKAT_REQUIRE_MSG (not has_time_dim(filename),
+      "Error! Resetting the time dimension is not allowed once set (even if it's the same).\n"
+      " - filename: " + filename + "\n"
+      " - old time dim name: " + f.time_dim->name + "\n"
+      " - new time dim name: " + dimname + "\n");
+
   EKAT_REQUIRE_MSG (f.mode==Read,
       "Error! Cannot interpret dimension as 'time' dim. File not in Read mode.\n"
       " - filename : " + filename + "\n"

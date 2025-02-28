@@ -803,7 +803,7 @@ setup_file (      IOFileSpecs& filespecs,
       }
     }
     if (ngood<ntimes) {
-      scorpio::reset_unlimited_dim_len(filename,ngood);
+      scorpio::reset_time_dim_len(filename,ngood);
     }
     scorpio::redef(filename);
   } else {

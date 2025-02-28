@@ -43,10 +43,11 @@ SCMInput (const std::string& filename,
   scorpio::register_file(m_filename,scorpio::Read,iotype);
 
   // Some input files have the "time" dimension as non-unlimited. This messes up our
-  // scorpio interface. To avoid trouble, if a dim called 'time' is present we
-  // treat it as unlimited, even though it isn't.
-  if (scorpio::has_dim(m_filename,"time") and not scorpio::is_dim_unlimited(m_filename,"time")) {
-    scorpio::pretend_dim_is_unlimited(m_filename,"time");
+  // scorpio interface, which stores a pointer to a "time" dim to be used to read/write
+  // slices. This ptr is automatically inited to the unlimited dim in the file. If there is
+  // no unlim dim, this ptr remains inited.
+  if (not scorpio::has_time_dim(m_filename) and scorpio::has_dim(m_filename,"time")) {
+    scorpio::mark_dim_as_time(m_filename,"time");
   }
 
   create_io_grid ();
