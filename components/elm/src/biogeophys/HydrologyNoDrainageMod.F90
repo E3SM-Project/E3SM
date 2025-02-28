@@ -74,8 +74,6 @@ contains
     use SoilHydrologyMod     , only : ELMVICMap, SurfaceRunoff, Infiltration, WaterTable
     use SoilWaterMovementMod , only : SoilWater
     use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
-    use elm_varctl           , only : use_vsfm
-    use SoilHydrologyMod     , only : DrainageVSFM
     use SoilWaterMovementMod , only : Compute_EffecRootFrac_And_VertTranSink
     !
     ! !ARGUMENTS:
@@ -215,12 +213,6 @@ contains
         call ep_betr%PreDiagSoilColWaterFlux(num_hydrologyc, filter_hydrologyc)
       endif
 #endif
-
-      if (use_vsfm) then
-         call DrainageVSFM(bounds, num_hydrologyc, filter_hydrologyc, &
-              num_urbanc, filter_urbanc,&
-              soilhydrology_vars, soilstate_vars, dtime)
-      endif
 
       call Compute_EffecRootFrac_And_VertTranSink(bounds, num_hydrologyc, &
            filter_hydrologyc, soilstate_vars, canopystate_vars, energyflux_vars)

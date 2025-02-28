@@ -303,10 +303,6 @@ contains
 
     namelist /elm_inparm/ use_var_soil_thick, use_lake_wat_storage
 
-    namelist /elm_inparm/ &
-         use_vsfm, vsfm_satfunc_type, vsfm_use_dynamic_linesearch, &
-         vsfm_lateral_model_type, vsfm_include_seepage_bc
-
     namelist /elm_inparm/ use_hydrstress
 
     namelist /elm_inparm/ &
@@ -642,37 +638,8 @@ contains
        end if
     end if
 
-    ! Consistency settings for vsfm settings
-    if (use_vsfm .and. use_var_soil_thick) then
-       call endrun(msg=' ERROR:: use_vsfm and use_var_soil_thick cannot both be set to true.'//&
-            errMsg(__FILE__, __LINE__))
-    end if
-
-    if (vsfm_satfunc_type /= 'brooks_corey'             .and. &
-        vsfm_satfunc_type /= 'smooth_brooks_corey_bz2'  .and. &
-        vsfm_satfunc_type /= 'smooth_brooks_corey_bz3'  .and. &
-        vsfm_satfunc_type /= 'van_genuchten') then
-       write(iulog,*)'vsfm_satfunc_type = ',vsfm_satfunc_type,' is not supported'
-       call endrun(msg=' ERROR:: choices are brooks_corey, smooth_brooks_corey_bz2, '//&
-            'smooth_brooks_corey_bz3 or van_genuchten'//&
-            errMsg(__FILE__, __LINE__))
-    end if
-
-    if (vsfm_lateral_model_type /= 'none'        .and. &
-        vsfm_lateral_model_type /= 'source_sink' .and. &
-        vsfm_lateral_model_type /= 'three_dimensional' ) then
-       write(iulog,*)'vsfm_lateral_model_type = ',trim(vsfm_lateral_model_type), ' is not supported'
-       call endrun(msg=' ERROR:: choices are source_sink or three_dimensional ' // &
-            errMsg(__FILE__, __LINE__))
-    endif
-
     ! Lateral connectivity
     if (.not.lateral_connectivity) then
-
-       if (vsfm_lateral_model_type /= 'none') then
-          call endrun(msg=' ERROR:: Lateral flow in VSFM requires lateral_connectivity to be true '// &
-               errMsg(__FILE__, __LINE__))
-       endif
 
        if (trim(domain_decomp_type) == 'graph_partitioning') then
           call endrun(msg=' ERROR: domain_decomp_type = graph_partitioning requires ' // &
@@ -964,15 +931,6 @@ contains
     ! plant hydraulics
     call mpi_bcast (use_hydrstress, 1, MPI_LOGICAL, 0, mpicom, ier)
 
-    ! VSFM variable
-
-    call mpi_bcast (use_vsfm                   , 1, MPI_LOGICAL, 0, mpicom, ier)
-    call mpi_bcast (vsfm_use_dynamic_linesearch, 1, MPI_LOGICAL, 0, mpicom, ier)
-    call mpi_bcast (vsfm_include_seepage_bc    , 1, MPI_LOGICAL, 0, mpicom, ier)
-
-    call mpi_bcast (vsfm_satfunc_type      , len(vsfm_satfunc_type)      , MPI_CHARACTER, 0, mpicom, ier)
-    call mpi_bcast (vsfm_lateral_model_type, len(vsfm_lateral_model_type), MPI_CHARACTER, 0, mpicom, ier)
-
     ! PETSc-based thermal model
     call mpi_bcast (use_petsc_thermal_model, 1, MPI_LOGICAL, 0, mpicom, ier)
     
@@ -1262,15 +1220,6 @@ contains
        write(iulog, *) '    fates_seeddisp_cadence = ', fates_seeddisp_cadence
        write(iulog, *) '    fates_seeddisp_cadence: 0, 1, 2, 3 => off, daily, monthly, or yearly dispersal'
     end if
-
-    ! VSFM
-    if (use_vsfm) then
-       write(iulog,*)
-       write(iulog,*) 'VSFM Namelists:'
-       write(iulog, *) '  vsfm_satfunc_type                                      : ', vsfm_satfunc_type
-       write(iulog, *) '  vsfm_use_dynamic_linesearch                            : ', vsfm_use_dynamic_linesearch
-       write(iulog,*) '  vsfm_lateral_model_type                                 : ', vsfm_lateral_model_type
-    endif
 
     ! land river two way coupling
     write(iulog,*) '    use_lnd_rof_two_way    = ', use_lnd_rof_two_way

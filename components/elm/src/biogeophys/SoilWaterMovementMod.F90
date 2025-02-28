@@ -51,7 +51,7 @@ contains
     !DESCRIPTION
     !specify method for doing soil&root water interactions
     !
-    use elm_varctl, only : use_vsfm, use_var_soil_thick, use_hydrstress
+    use elm_varctl, only : use_var_soil_thick, use_hydrstress
     use spmdMod,    only : mpicom, MPI_LOGICAL
     use shr_sys_mod,only : shr_sys_abort
     ! !ARGUMENTS:
@@ -63,9 +63,6 @@ contains
 
     ! GB-FIX-ME: The call to control_spmd() [in subroutine control_init()] before
     !            call to init_hydrology() would avoid the mpi broadcast
-
-    call mpi_bcast (use_vsfm, 1, MPI_LOGICAL, 0, mpicom, ier)
-    if (use_vsfm) soilroot_water_method = vsfm
 
     call mpi_bcast (use_var_soil_thick, 1, MPI_LOGICAL, 0, mpicom, ier)
     if (use_var_soil_thick .and. soilroot_water_method .eq. zengdecker_2009) then

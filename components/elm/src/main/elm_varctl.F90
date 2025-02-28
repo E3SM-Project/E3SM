@@ -399,7 +399,6 @@ module elm_varctl
   !----------------------------------------------------------
   ! VSFM switches
   !----------------------------------------------------------
-  logical          , public :: use_vsfm                    = .false.
   logical          , public :: vsfm_use_dynamic_linesearch = .false.
   logical          , public :: vsfm_include_seepage_bc     = .false.
   character(len=32), public :: vsfm_satfunc_type           = 'smooth_brooks_corey_bz3'
@@ -526,11 +525,6 @@ module elm_varctl
   !$acc declare copyin(use_noio           )
   !$acc declare copyin(use_var_soil_thick )
   !$acc declare copyin(tw_irr)
-  !$acc declare copyin(use_vsfm                   )
-  !$acc declare copyin(vsfm_use_dynamic_linesearch)
-  !$acc declare copyin(vsfm_include_seepage_bc    )
-  !$acc declare copyin(vsfm_satfunc_type          )
-  !$acc declare copyin(vsfm_lateral_model_type    )
 
 
   !----------------------------------------------------------

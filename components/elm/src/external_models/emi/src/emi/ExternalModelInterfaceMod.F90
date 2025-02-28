@@ -13,7 +13,6 @@ module ExternalModelInterfaceMod
   use EMI_DataMod         , only : emi_data_list, emi_data
   use EMI_DataDimensionMod , only : emi_data_dimension_list_type
 #ifdef USE_PETSC_LIB
-  use ExternalModelVSFMMod                  , only : em_vsfm_type
   use ExternalModelPTMMod                   , only : em_ptm_type
 #endif
   use ExternalModelFATESMod                 , only : em_fates_type
@@ -48,14 +47,12 @@ module ExternalModelInterfaceMod
   integer :: index_em_fates
   integer :: index_em_pflotran
   integer :: index_em_stub
-  integer :: index_em_vsfm
   integer :: index_em_ptm
 
   class(emi_data_list)               , pointer :: l2e_driver_list(:)
   class(emi_data_list)               , pointer :: e2l_driver_list(:)
   class(emi_data_dimension_list_type), pointer :: emid_dim_list
 #ifdef USE_PETSC_LIB
-  class(em_vsfm_type)                , pointer :: em_vsfm(:)
   class(em_ptm_type)                 , pointer :: em_ptm(:)
 #endif
   class(em_fates_type)               , pointer :: em_fates
@@ -78,7 +75,6 @@ contains
 #ifndef FATES_VIA_EMI
     use elm_varctl, only : use_betr
     use elm_varctl, only : use_pflotran
-    use elm_varctl, only : use_vsfm
 #endif
     use elm_varctl, only : use_petsc_thermal_model
     use elm_varctl, only : use_em_stub
@@ -94,7 +90,6 @@ contains
     index_em_fates       = 0
     index_em_pflotran    = 0
     index_em_stub        = 0
-    index_em_vsfm        = 0
 
     nclumps = get_proc_clumps()
 
@@ -116,15 +111,6 @@ contains
     if (use_pflotran) then
        num_em            = num_em + 1
        index_em_pflotran = num_em
-    endif
-
-    ! Is VSFM active?
-    if (use_vsfm) then
-       num_em            = num_em + 1
-       index_em_vsfm     = num_em
-#ifdef USE_PETSC_LIB
-       allocate(em_vsfm(nclumps))
-#endif
     endif
 
     ! Is PETSc based Thermal Model active?
@@ -152,7 +138,6 @@ contains
        write(iulog,*) '  Is PFLOTRAN present? ',(index_em_pflotran >0)
        write(iulog,*) '  Is PTM present?      ',(index_em_ptm      >0)
        write(iulog,*) '  Is Stub EM present?  ',(index_em_stub     >0)
-       write(iulog,*) '  Is VSFM present?     ',(index_em_vsfm     >0)
     endif
 
     if (num_em > 1) then
@@ -183,7 +168,6 @@ contains
     use ExternalModelConstants, only : EM_ID_BETR
     use ExternalModelConstants, only : EM_ID_FATES
     use ExternalModelConstants, only : EM_ID_PFLOTRAN
-    use ExternalModelConstants, only : EM_ID_VSFM
     use ExternalModelConstants, only : EM_ID_PTM
     use ExternalModelConstants, only : EM_ID_STUB
 #ifndef FATES_VIA_EMI
@@ -281,140 +265,6 @@ contains
        !$OMP END PARALLEL DO
 
     case (EM_ID_PFLOTRAN)
-
-    case (EM_ID_VSFM)
-
-#ifdef USE_PETSC_LIB
-       ! Initialize EM
-
-       ! Initialize lists of data to be exchanged between ALM and VSFM
-       ! during initialization step
-       allocate(l2e_init_list(nclumps))
-       allocate(e2l_init_list(nclumps))
-
-       do clump_rank = 1, nclumps
-          iem = (index_em_vsfm-1)*nclumps + clump_rank
-
-          call l2e_init_list(clump_rank)%Init()
-          call e2l_init_list(clump_rank)%Init()
-
-          ! Fill the data list:
-          !  - Data need during the initialization
-          call em_vsfm(clump_rank)%Populate_L2E_Init_List(l2e_init_list(clump_rank))
-          call em_vsfm(clump_rank)%Populate_E2L_Init_List(e2l_init_list(clump_rank))
-
-          !  - Data need during timestepping
-          call em_vsfm(clump_rank)%Populate_L2E_List(l2e_driver_list(iem))
-          call em_vsfm(clump_rank)%Populate_E2L_List(e2l_driver_list(iem))
-       enddo
-
-       !$OMP PARALLEL DO PRIVATE (clump_rank, iem, bounds_clump)
-       do clump_rank = 1, nclumps
-
-          call get_clump_bounds(clump_rank, bounds_clump)
-          iem = (index_em_vsfm-1)*nclumps + clump_rank
-
-          ! Allocate memory for data
-          call EMI_Setup_Data_List(l2e_init_list(clump_rank), bounds_clump)
-          call EMI_Setup_Data_List(e2l_init_list(clump_rank), bounds_clump)
-          call EMI_Setup_Data_List(l2e_driver_list(iem)     , bounds_clump)
-          call EMI_Setup_Data_List(e2l_driver_list(iem)     , bounds_clump)
-
-          ! GB_FIX_ME: Create a temporary filter
-          num_filter_col = bounds_clump%endc - bounds_clump%begc + 1
-          num_filter_lun = bounds_clump%endl - bounds_clump%begl + 1
-
-          allocate(filter_col(num_filter_col))
-          allocate(filter_lun(num_filter_lun))
-
-          do ii = 1, num_filter_col
-             filter_col(ii) = bounds_clump%begc + ii - 1
-          enddo
-
-          do ii = 1, num_filter_lun
-             filter_lun(ii) = bounds_clump%begl + ii - 1
-          enddo
-
-          ! Reset values in the data list
-          call EMID_Reset_Data_for_EM(l2e_init_list(clump_rank), em_stage)
-          call EMID_Reset_Data_for_EM(e2l_init_list(clump_rank), em_stage)
-
-          ! Pack all ALM data needed by the external model
-          call EMI_Pack_WaterStateType_at_Column_Level_for_EM(l2e_init_list(clump_rank), em_stage, &
-               num_filter_col, filter_col, waterstate_vars)
-          call EMI_Pack_WaterFluxType_at_Column_Level_for_EM(l2e_init_list(clump_rank), em_stage, &
-               num_filter_col, filter_col, waterflux_vars)
-          call EMI_Pack_SoilHydrologyType_at_Column_Level_for_EM(l2e_init_list(clump_rank), em_stage, &
-               num_filter_col, filter_col, soilhydrology_vars)
-          call EMI_Pack_SoilStateType_at_Column_Level_for_EM(l2e_init_list(clump_rank), em_stage, &
-               num_filter_col, filter_col, soilstate_vars)
-          call EMI_Pack_ColumnType_for_EM(l2e_init_list(clump_rank), em_stage, &
-               num_filter_col, filter_col)
-          call EMI_Pack_Landunit_for_EM(l2e_init_list(clump_rank), em_stage, &
-               num_filter_lun, filter_lun)
-
-          ! Ensure all data needed by external model is packed
-          call EMID_Verify_All_Data_Is_Set(l2e_init_list(clump_rank), em_stage)
-
-          ! Initialize the external model
-          call em_vsfm(clump_rank)%Init(l2e_init_list(clump_rank), e2l_init_list(clump_rank), &
-               iam, bounds_clump)
-
-          ! Build a column level filter on which VSFM is active.
-          ! This new filter would be used during the initialization to
-          ! unpack data from the EM into ALM's data structure.
-          allocate(tmp_col(bounds_clump%begc:bounds_clump%endc))
-
-          tmp_col(bounds_clump%begc:bounds_clump%endc) = 0
-
-          num_e2l_filter_col = 0
-          do c = bounds_clump%begc,bounds_clump%endc
-             if (col_pp%active(c)) then
-                l = col_pp%landunit(c)
-                if (lun_pp%itype(l) == istsoil .or. col_pp%itype(c) == icol_road_perv .or. &
-                    lun_pp%itype(l) == istcrop) then
-                   num_e2l_filter_col = num_e2l_filter_col + 1
-                   tmp_col(c) = 1
-                end if
-             end if
-          end do
-
-          allocate(e2l_filter_col(num_e2l_filter_col))
-
-          num_e2l_filter_col = 0
-          do c = bounds_clump%begc,bounds_clump%endc
-             if (tmp_col(c) == 1) then
-                num_e2l_filter_col = num_e2l_filter_col + 1
-                e2l_filter_col(num_e2l_filter_col) = c
-             endif
-          enddo
-
-          ! Unpack all data sent from the external model
-          call EMI_Unpack_SoilStateType_at_Column_Level_from_EM(e2l_init_list(clump_rank), em_stage, &
-               num_e2l_filter_col, e2l_filter_col, soilstate_vars)
-          call EMI_Unpack_WaterStateType_at_Column_Level_from_EM(e2l_init_list(clump_rank), em_stage, &
-               num_e2l_filter_col, e2l_filter_col, waterstate_vars)
-          call EMI_Unpack_WaterFluxType_at_Column_Level_from_EM(e2l_init_list(clump_rank), em_stage, &
-               num_e2l_filter_col, e2l_filter_col, waterflux_vars)
-          call EMI_Unpack_SoilHydrologyType_at_Column_Level_from_EM(e2l_init_list(clump_rank), em_stage, &
-               num_e2l_filter_col, e2l_filter_col, soilhydrology_vars)
-
-          ! Ensure all data sent by external model is unpacked
-          call EMID_Verify_All_Data_Is_Set(e2l_init_list(clump_rank), em_stage)
-
-          ! Clean up memory
-          call l2e_init_list(clump_rank)%Destroy()
-          call e2l_init_list(clump_rank)%Destroy()
-
-          deallocate(e2l_filter_col)
-          deallocate(tmp_col)
-
-       enddo
-       !$OMP END PARALLEL DO
-
-#else
-       call endrun('VSFM is on but code was not compiled with -DUSE_PETSC_LIB')
-#endif
 
     case (EM_ID_PTM)
 
@@ -712,7 +562,6 @@ contains
     use ExternalModelConstants , only : EM_ID_BETR
     use ExternalModelConstants , only : EM_ID_FATES
     use ExternalModelConstants , only : EM_ID_PFLOTRAN
-    use ExternalModelConstants , only : EM_ID_VSFM
     use ExternalModelConstants , only : EM_ID_PTM
     use ExternalModelConstants , only : EM_ID_STUB
     use SoilStateType          , only : soilstate_type
@@ -773,8 +622,6 @@ contains
        index_em = index_em_fates
     case (EM_ID_PFLOTRAN)
        index_em = index_em_pflotran
-    case (EM_ID_VSFM)
-       index_em = index_em_vsfm
     case (EM_ID_PTM)
        index_em = index_em_ptm
     case (EM_ID_STUB)
@@ -962,14 +809,6 @@ contains
             e2l_driver_list(iem), bounds_clump)
 
     case (EM_ID_PFLOTRAN)
-
-    case (EM_ID_VSFM)
-#ifdef USE_PETSC_LIB
-       call em_vsfm(clump_rank)%Solve(em_stage, dtime, nstep, clump_rank, &
-            l2e_driver_list(iem), e2l_driver_list(iem), bounds_clump)
-#else
-       call endrun('VSFM is on but code was not compiled with -DUSE_PETSC_LIB')
-#endif
 
     case (EM_ID_PTM)
 #ifdef USE_PETSC_LIB

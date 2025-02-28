@@ -27,7 +27,6 @@ contains
 #include <petsc/finclude/petsc.h>
 #endif
     ! !USES:
-    use elm_varctl             , only : use_vsfm
 #ifdef USE_PETSC_LIB
     use petscsys
 #endif
@@ -39,9 +38,6 @@ contains
 #ifdef USE_PETSC_LIB
     PetscErrorCode        :: ierr
 
-    if (use_vsfm) then
-       call PetscFinalize(ierr)
-    endif
 #endif
 
   end subroutine final

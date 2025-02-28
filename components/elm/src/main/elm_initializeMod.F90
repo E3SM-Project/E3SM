@@ -1098,7 +1098,6 @@ contains
 #endif
     ! !USES:
     use spmdMod    , only : mpicom
-    use elm_varctl , only : use_vsfm
     use elm_varctl , only : lateral_connectivity
     use elm_varctl , only : use_petsc_thermal_model
 #ifdef USE_PETSC_LIB
@@ -1112,8 +1111,7 @@ contains
     PetscErrorCode        :: ierr                  ! get error code from PETSc
 #endif
 
-    if ( (.not. use_vsfm)               .and. &
-         (.not. lateral_connectivity)   .and. &
+    if ( (.not. lateral_connectivity)   .and. &
          (.not. use_petsc_thermal_model) ) return
 
 #ifdef USE_PETSC_LIB
