@@ -1205,30 +1205,30 @@
     </mpirun>
 
     <module_system type="module" allow_error="true">
-      <init_path lang="sh">/usr/share/lmod/lmod/init/sh</init_path>
-      <init_path lang="csh">/usr/share/lmod/lmod/init/csh</init_path>
-      <init_path lang="perl">/usr/share/lmod/lmod/init/perl</init_path>
-      <init_path lang="python">/usr/share/lmod/lmod/init/env_modules_python.py</init_path>
-      <cmd_path lang="perl">/usr/share/lmod/lmod/libexec/lmod perl</cmd_path>
+      <init_path lang="sh">/opt/cray/pe/lmod/lmod/init/sh</init_path>
+      <init_path lang="csh">/opt/cray/pe/lmod/lmod/init/csh</init_path>
+      <init_path lang="perl">/opt/cray/pe/lmod/lmod/init/perl</init_path>
+      <init_path lang="python">/opt/cray/pe/lmod/lmod/init/env_modules_python.py</init_path>
+      <cmd_path lang="perl">/opt/cray/pe/lmod/lmod/libexec/lmod perl</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
-      <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
+      <cmd_path lang="python">/opt/cray/pe/lmod/lmod/libexec/lmod python</cmd_path>
       <modules compiler="craygnuamdgpu">
         <command name="reset"></command>
         <!-- PrgEnv-gnu before cpe, or cray-mpich module doesn't update correctly -->
         <command name="load">PrgEnv-gnu</command>
         <command name="load">cpe/24.07</command>
-        <command name="load">libfabric/1.15.2.0</command>
+        <command name="load">libfabric/1.20.1</command>
         <command name="load">craype-accel-amd-gfx90a</command>
-        <command name="load">rocm/6.2.0</command>
-        <command name="load">libunwind</command>
-        <command name="load">cray-python</command>
-        <command name="load">subversion</command>
-        <command name="load">git</command>
-        <command name="load">cmake</command>
-        <command name="load">cray-hdf5-parallel</command>
-        <command name="load">cray-netcdf-hdf5parallel</command>
-        <command name="load">cray-parallel-netcdf</command>
+        <command name="load">rocm/6.1.3</command>
+        <command name="load">libunwind/1.6.2</command>
+        <command name="load">cray-python/3.11.7</command>
+        <command name="load">subversion/1.14.2</command>
+        <command name="load">git/2.45.1</command>
+        <command name="load">cmake/3.27.9</command>
+        <command name="load">cray-hdf5-parallel/1.14.3.1</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.0.13</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.13</command>
         <command name="unload">darshan-runtime</command>
       </modules>
       <modules compiler="crayclang-scream">
@@ -1239,7 +1239,7 @@
         <command name="load">rocm/5.4.0</command>
         <command name="load">libunwind/1.5.0</command>
         <command name="load">cce/15.0.1</command>
-        <command name="load">libfabric/1.15.2.0</command>
+        <command name="load">libfabric/1.20.1</command>
         <command name="load">craype/2.7.20</command>
         <command name="load">cray-mpich/8.1.26</command>
         <command name="load">cray-python/3.9.13.1</command>
