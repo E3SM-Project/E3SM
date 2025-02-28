@@ -68,7 +68,7 @@ contains
     use abortutils       , only : endrun
     use shr_kind_mod     , only : SHR_KIND_CL
     use elm_time_manager , only : get_nstep, get_step_size, set_timemgr_init, set_nextsw_cday
-    use elm_initializeMod, only : initialize1, initialize2, initialize3
+    use elm_initializeMod, only : initialize1, initialize2
     use elm_instMod      , only : lnd2atm_vars, lnd2glc_vars
     use elm_instance     , only : elm_instance_init
     use elm_varctl       , only : finidat,single_column, elm_varctl_set, iulog, noland, fatmlndfrc, &
@@ -340,7 +340,6 @@ contains
     ! Finish initializing elm
 
     call initialize2()
-    call initialize3()
 
     ! Check that elm internal dtime aligns with elm coupling interval
 
