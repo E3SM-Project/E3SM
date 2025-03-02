@@ -1697,7 +1697,7 @@
   <grid name="a%ne4np4.pg.">
     <mach name="compy">
       <pes compset="any" pesize="any">
-        <comment>allactive: ne4pg2 grid, 1 nodes x MAX_MPITASKS_PER_NODE mpi x 1 omp @ root 0</comment>
+        <comment>allactive: ne4pg2 grid, 3 nodes x 1 omp @ root 0</comment>
         <ntasks>
           <ntasks_atm>96</ntasks_atm>
           <ntasks_lnd>96</ntasks_lnd>
