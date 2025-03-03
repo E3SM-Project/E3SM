@@ -406,6 +406,7 @@ void FieldManager::registration_ends ()
         if (r.bundled) {
           // There's at least one request for this group to be bundled.
           groups_to_bundle.push_back(greqs.first);
+          break;
         }
       }
     }
