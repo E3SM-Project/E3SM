@@ -411,6 +411,7 @@ void FieldManager::registration_ends ()
       }
     }
   }
+  // TODO: Is this still needed? Probably no.
   ::scream::sort(groups_to_bundle);
   groups_to_bundle.unique();
 
