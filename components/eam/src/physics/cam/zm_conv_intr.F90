@@ -1149,7 +1149,9 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    ! update physics state type state1 with ptend_loc
    call physics_update(state1, ptend_loc, ztodt)
 
-   ! Momentum Transport
+   !----------------------------------------------------------------------------
+   ! convective momentum transport
+
    call physics_ptend_init(ptend_loc, state1%psetcols, 'zm_transport_momentum', ls=.true., lu=.true., lv=.true.)
 
    winds(1:ncol,1:pver,1) = state1%u(1:ncol,1:pver)
@@ -1157,8 +1159,8 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
 
    call t_startf ('zm_transport_momentum')
    call zm_transport_momentum( lchnk, ncol, winds, 2, &
-                               mu, md, du, eu, ed, dp, dsubcld, &
-                               jt, maxg, ideep, 1, lengath, nstep, &
+                               mu, md, du, eu, ed, dp, &
+                               jt, maxg, ideep, 1, lengath, &
                                wind_tends, pguall, pgdall, icwu, icwd, ztodt, seten )
    call t_stopf ('zm_transport_momentum')
 
@@ -1192,6 +1194,9 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    call cnst_get_ind('CLDLIQ', ixcldliq)
    call cnst_get_ind('CLDICE', ixcldice)
 
+   !----------------------------------------------------------------------------
+   ! convective tracer transport
+
    lq(:)  = .FALSE.
    lq(2:) = cnst_is_convtran1(2:)
    call physics_ptend_init(ptend_loc, state1%psetcols, 'zm_transport_tracer_1', lq=lq)
@@ -1201,8 +1206,8 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
 
    call t_startf ('zm_transport_tracer_1')
    call zm_transport_tracer( lchnk, ptend_loc%lq, state1%q, pcnst, &
-                             mu, md, du, eu, ed, dp, dsubcld, &
-                             jt, maxg, ideep, 1, lengath, nstep, &
+                             mu, md, du, eu, ed, dp, &
+                             jt, maxg, ideep, 1, lengath, &
                              fracis, ptend_loc%q, fake_dpdry, ztodt)  
    call t_stopf ('zm_transport_tracer_1')
 
@@ -1211,6 +1216,9 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
 
    ! add tendency from this process to tendency from other processes
    call physics_ptend_sum( ptend_loc, ptend_all, ncol )
+
+   !----------------------------------------------------------------------------
+   ! deallocate local copies
 
    call physics_state_dealloc(state1)
    call physics_ptend_dealloc(ptend_loc)
@@ -1338,6 +1346,9 @@ subroutine zm_conv_tend_2( state,  ptend,  ztodt, pbuf, mu, eu, du, md, ed, dp, 
    ncol  = state%ncol
    nstep = get_nstep()
 
+   !----------------------------------------------------------------------------
+   ! convective tracer transport
+
    lq(:) = .FALSE.
    lq(:) = .not. cnst_is_convtran1(:)
    call physics_ptend_init(ptend, state%psetcols, 'zm_transport_tracer_2', lq=lq )
@@ -1364,8 +1375,8 @@ subroutine zm_conv_tend_2( state,  ptend,  ztodt, pbuf, mu, eu, du, md, ed, dp, 
       end do
       call t_startf ('zm_transport_tracer_2')
       call zm_transport_tracer( lchnk, ptend%lq, state%q, pcnst,  &
-                                mu, md, du, eu, ed, dp, dsubcld,  &
-                                jt, maxg, ideep, 1, lengath, nstep, &
+                                mu, md, du, eu, ed, dp,  &
+                                jt, maxg, ideep, 1, lengath, &
                                 fracis, ptend%q, dpdry, ztodt)
       call t_stopf ('zm_transport_tracer_2')
    end if

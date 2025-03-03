@@ -8,6 +8,8 @@ module zm_transport
    use ppgrid
    use cam_abortutils,  only: endrun
    use constituents,    only: cnst_get_type_byind
+   use zm_conv,         only: zm_microp
+   use cam_logfile,     only: iulog
 
    implicit none
 
@@ -17,7 +19,6 @@ module zm_transport
 
    private
 
-   real(r8), parameter :: small = 1.e-36_r8  ! a small number to avoid division by zero
    real(r8), parameter :: mbsth = 1.e-15_r8  ! threshold below which we treat the mass fluxes as zero (in mb/s)
    
 contains
@@ -25,8 +26,8 @@ contains
 !===================================================================================================
 
 subroutine zm_transport_tracer( lchnk, doconvtran, q, ncnst, &
-                                mu, md, du, eu, ed, dp, dsubcld, &
-                                jt, mx, ideep, il1g, il2g, nstep, &
+                                mu, md, du, eu, ed, dp, &
+                                jt, mx, ideep, il1g, il2g, &
                                 fracis, dqdt, dpdry, dt ) 
    !---------------------------------------------------------------------------- 
    ! Purpose: Convective transport of tracer species
@@ -44,14 +45,12 @@ subroutine zm_transport_tracer( lchnk, doconvtran, q, ncnst, &
    real(r8), dimension(pcols,pver),       intent(in)  :: eu          ! mass entraining from updraft
    real(r8), dimension(pcols,pver),       intent(in)  :: ed          ! mass entraining from downdraft
    real(r8), dimension(pcols,pver),       intent(in)  :: dp          ! delta pressure between interfaces
-   real(r8), dimension(pcols),            intent(in)  :: dsubcld     ! delta pressure from cloud base to sfc
    real(r8), dimension(pcols,pver,ncnst), intent(in)  :: fracis      ! fraction of tracer that is insoluble
    integer,  dimension(pcols),            intent(in)  :: jt          ! index of cloud top for each column
    integer,  dimension(pcols),            intent(in)  :: mx          ! index of cloud top for each column
    integer,  dimension(pcols),            intent(in)  :: ideep       ! gathering array
-   integer,                               intent(in)  :: il1g        ! gathered min lon indices over which to operate
-   integer,                               intent(in)  :: il2g        ! gathered max lon indices over which to operate
-   integer,                               intent(in)  :: nstep       ! time step index
+   integer,                               intent(in)  :: il1g        ! gathered min ncol index
+   integer,                               intent(in)  :: il2g        ! gathered max ncol index
    real(r8), dimension(pcols,pver),       intent(in)  :: dpdry       ! delta pressure between interfaces
    real(r8),                              intent(in)  :: dt          ! model time increment
    real(r8), dimension(pcols,pver,ncnst), intent(out) :: dqdt        ! output tendency array
@@ -87,6 +86,7 @@ subroutine zm_transport_tracer( lchnk, doconvtran, q, ncnst, &
    real(r8) :: negadt               ! for Conservation check
    real(r8) :: qtmp                 ! for Conservation check
    ! constants
+   real(r8), parameter :: small = 1.e-36_r8        ! a small number to avoid division by zero
    real(r8), parameter :: cdifr_min    = 1.e-6_r8  ! minimum layer difference for geometric averaging
    real(r8), parameter :: maxc_factor  = 1.e-12_r8
    real(r8), parameter :: flux_factor  = 1.e-12_r8
@@ -295,14 +295,14 @@ subroutine zm_transport_tracer( lchnk, doconvtran, q, ncnst, &
 
    return
 
-end subroutine convtran
+end subroutine zm_transport_tracer
 
 !===================================================================================================
 
-subroutine zm_transport_momentum( lchnk, ncol, q, ncnst, &
-                                  mu, md, du, eu, ed, dp, dsubcld, &
-                                  jt, mx, ideep, il1g, il2g, nstep, &
-                                  dqdt, pguall, pgdall, icwu, icwd, dt, seten )
+subroutine zm_transport_momentum( lchnk, ncol, wind_in, nwind, &
+                                  mu, md, du, eu, ed, dp, &
+                                  jt, mx, ideep, il1g, il2g, &
+                                  wind_tend, pguall, pgdall, icwu, icwd, dt, seten )
    !---------------------------------------------------------------------------- 
    ! Purpose: Convective transport of momentum
    !----------------------------------------------------------------------------
@@ -312,30 +312,28 @@ subroutine zm_transport_momentum( lchnk, ncol, q, ncnst, &
    integer,                               intent(in)  :: lchnk       ! chunk identifier
    integer,                               intent(in)  :: ncol        ! number of atmospheric columns
    integer,                               intent(in)  :: nwind       ! number of tracers to transport
-   real(r8), dimension(pcols,pver,nwind), intent(in)  :: q           ! Input Momentum array
-   real(r8), dimension(pcols,pver),       intent(in)  :: mu          ! Mass flux up
-   real(r8), dimension(pcols,pver),       intent(in)  :: md          ! Mass flux down
-   real(r8), dimension(pcols,pver),       intent(in)  :: du          ! Mass detraining from updraft
-   real(r8), dimension(pcols,pver),       intent(in)  :: eu          ! Mass entraining from updraft
-   real(r8), dimension(pcols,pver),       intent(in)  :: ed          ! Mass entraining from downdraft
-   real(r8), dimension(pcols,pver),       intent(in)  :: dp          ! Delta pressure between interfaces
-   real(r8), dimension(pcols),            intent(in)  :: dsubcld     ! Delta pressure from cloud base to sfc
-   real(r8),                              intent(in)  :: dt          !  time step in seconds : 2*delta_t
-   integer,  dimension(pcols),            intent(in)  :: jt          ! Index of cloud top for each column
-   integer,  dimension(pcols),            intent(in)  :: mx          ! Index of cloud top for each column
-   integer,  dimension(pcols),            intent(in)  :: ideep       ! Gathering array
-   integer,                               intent(in)  :: il1g        ! Gathered min lon indices over which to operate
-   integer,                               intent(in)  :: il2g        ! Gathered max lon indices over which to operate
-   integer,                               intent(in)  :: nstep       ! Time step index
-   real(r8), dimension(pcols,pver,nwind), intent(out) :: wind_tend   ! Output momentum tendency
-   real(r8), dimension(pcols,pver,nwind), intent(out) :: pguall      ! Apparent force from  updraft PG
-   real(r8), dimension(pcols,pver,nwind), intent(out) :: pgdall      ! Apparent force from  downdraft PG
-   real(r8), dimension(pcols,pver,nwind), intent(out) :: icwu        ! In-cloud winds in updraft
-   real(r8), dimension(pcols,pver,nwind), intent(out) :: icwd        ! In-cloud winds in downdraft
-   real(r8), dimension(pcols,pver),       intent(out) :: seten       ! Dry static energy tendency
+   real(r8), dimension(pcols,pver,nwind), intent(in)  :: wind_in     ! input Momentum array
+   real(r8), dimension(pcols,pver),       intent(in)  :: mu          ! mass flux up
+   real(r8), dimension(pcols,pver),       intent(in)  :: md          ! mass flux down
+   real(r8), dimension(pcols,pver),       intent(in)  :: du          ! mass detraining from updraft
+   real(r8), dimension(pcols,pver),       intent(in)  :: eu          ! mass entraining from updraft
+   real(r8), dimension(pcols,pver),       intent(in)  :: ed          ! mass entraining from downdraft
+   real(r8), dimension(pcols,pver),       intent(in)  :: dp          ! gathered pressure delta between interfaces
+   real(r8),                              intent(in)  :: dt          ! time step in seconds : 2*delta_t
+   integer,  dimension(pcols),            intent(in)  :: jt          ! index of cloud top for each column
+   integer,  dimension(pcols),            intent(in)  :: mx          ! index of cloud top for each column
+   integer,  dimension(pcols),            intent(in)  :: ideep       ! gathering array
+   integer,                               intent(in)  :: il1g        ! gathered min ncol index
+   integer,                               intent(in)  :: il2g        ! gathered max ncol index
+   real(r8), dimension(pcols,pver,nwind), intent(out) :: wind_tend   ! output momentum tendency
+   real(r8), dimension(pcols,pver,nwind), intent(out) :: pguall      ! apparent force from  updraft PG
+   real(r8), dimension(pcols,pver,nwind), intent(out) :: pgdall      ! apparent force from  downdraft PG
+   real(r8), dimension(pcols,pver,nwind), intent(out) :: icwu        ! in-cloud winds in updraft
+   real(r8), dimension(pcols,pver,nwind), intent(out) :: icwd        ! in-cloud winds in downdraft
+   real(r8), dimension(pcols,pver),       intent(out) :: seten       ! dry static energy tendency
    !----------------------------------------------------------------------------
    ! Local variables
-   integer  :: i,k                        ! loop indices
+   integer  :: i,k,m                      ! loop indices
    integer  :: kbm                        ! Highest altitude index of cloud base
    integer  :: kk                         ! Work index
    integer  :: kkp1                       ! Work index
@@ -369,17 +367,17 @@ subroutine zm_transport_momentum( lchnk, ncol, q, ncnst, &
    !----------------------------------------------------------------------------
    
    ! Initialize variables
-   pguall(1:ncol,1:pver,1:nwind) = 0.0_r8
-   pgdall(1:ncol,1:pver,1:nwind) = 0.0_r8
-   mflux (1:ncol,1:pver,1:nwind) = 0.0_r8
-   wind0 (1:ncol,1:pver,1:nwind) = 0.0_r8
-   windf (1:ncol,1:pver,1:nwind) = 0.0_r8
-   seten (1:ncol,1:pver)         = 0.0_r8
-   gseten(1:ncol,1:pver)         = 0.0_r8
+   pguall(1:ncol,1:pver, 1:nwind) = 0.0_r8
+   pgdall(1:ncol,1:pver, 1:nwind) = 0.0_r8
+   mflux (1:ncol,1:pverp,1:nwind) = 0.0_r8
+   wind0 (1:ncol,1:pver, 1:nwind) = 0.0_r8
+   windf (1:ncol,1:pver, 1:nwind) = 0.0_r8
+   seten (1:ncol,1:pver)          = 0.0_r8
+   gseten(1:ncol,1:pver)          = 0.0_r8
 
    ! Initialize in-cloud winds to environmental wind
-   icwu(1:ncol,1:pver,1:nwind)   = q(1:ncol,1:pver,1:nwind)
-   icwd(1:ncol,1:pver,1:nwind)   = q(1:ncol,1:pver,1:nwind)
+   icwu(1:ncol,1:pver,1:nwind) = wind_in(1:ncol,1:pver,1:nwind)
+   icwd(1:ncol,1:pver,1:nwind) = wind_in(1:ncol,1:pver,1:nwind)
 
    ! Find the highest level top and bottom levels of convection
    ktm = pver
@@ -389,13 +387,15 @@ subroutine zm_transport_momentum( lchnk, ncol, q, ncnst, &
       kbm = min(kbm,mx(i))
    end do
 
+   write(iulog,*) 'WHDEBUG - zm_transport_momentum - ktm: ',ktm
+
    ! Loop ever each wind component
    do m = 1, nwind
 
       ! Gather up the winds and set tend to zero
       do k = 1,pver
          do i =il1g,il2g
-            const(i,k) = q(ideep(i),k,m)
+            wind_mid(i,k) = wind_in(ideep(i),k,m)
             wind0(i,k,m) = wind_mid(i,k)
          end do
       end do
@@ -585,7 +585,7 @@ subroutine zm_transport_momentum( lchnk, ncol, q, ncnst, &
 
    return
 
-end subroutine momtran
+end subroutine zm_transport_momentum
 
 !===================================================================================================
 
