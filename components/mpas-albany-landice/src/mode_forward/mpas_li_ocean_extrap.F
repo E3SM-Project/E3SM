@@ -160,6 +160,11 @@ contains
          call mpas_pool_get_array(extrapOceanDataPool, 'altConnectedMarineMask', altConnectedMarineMask)
          call mpas_pool_get_array(extrapOceanDataPool, 'origGrowMask', growMask)
          call mpas_pool_get_array(extrapOceanDataPool, 'altGrowMask', altGrowMask)
+        
+         if (config_recalculate_thermal_forcing) then
+            call mpas_pool_get_array(extrapOceanDataPool, 'MPAS_3dOceanTemperature', MPAS_3dOceanTemperature)
+            call mpas_pool_get_array(extrapOceanDataPool, 'MPAS_3dOceanSalinity', MPAS_3dOceanSalinity)
+         endif
          
          allocate(oceanField(nISMIP6OceanLayers,nCells+1,2))
          
@@ -245,7 +250,16 @@ contains
 
          do iCell = 1, nCells
             if ( (altConnectedMarineMask(iCell) /= connectedMarineMask(iCell)) .and. (thickness(iCell) == 0.0_RKIND) ) then
+               if (config_recalculate_thermal_forcing) then
+                  MPAS_3dOceanTemperature(:,iCell) = 0.0_RKIND
+                  MPAS_3dOceanSalinity(:,iCell) = 0.0_RKIND
+               endif
+               
+               ismip6shelfMelt_3dThermalForcing(:,iCell) = 0.0_RKIND
+               orig3dOceanMask(:,iCell) = 1
                connectedMarineMask(iCell) = 0
+
+               call mpas_log_write("WARNING: orig3dOceanMask altered to include ice-dammed inland seas.")
             endif
          enddo
 
@@ -310,9 +324,6 @@ contains
          ! initialize the extrapolated fields
          if (config_recalculate_thermal_forcing) then
             
-            call mpas_pool_get_array(extrapOceanDataPool, 'MPAS_3dOceanTemperature', MPAS_3dOceanTemperature)
-            call mpas_pool_get_array(extrapOceanDataPool, 'MPAS_3dOceanSalinity', MPAS_3dOceanSalinity)
-
             !combine fields into one variable to expedite extrapolation
             oceanField(:,:,1) = MPAS_3dOceanTemperature(:,:) * validOceanMask(:,:)
             oceanField(:,:,2) = MPAS_3dOceanSalinity(:,:) * validOceanMask(:,:)
@@ -387,6 +398,15 @@ contains
             enddo
 
             call recalculate_thermal_forcing(domain, err)
+
+            ! Ensure zero thermal forcing where temp and salt are zero
+            do iCell = 1, nCells
+               do iLayer = 1, nISMIP6OceanLayers
+                  if ( (MPAS_3dOceanTemperature(iLayer,iCell) == 0.0_RKIND) .and. (MPAS_3dOceanSalinity(iLayer,iCell) == 0.0_RKIND) ) then
+                     ismip6shelfMelt_3dThermalForcing(iLayer,iCell) = 0.0_RKIND
+                  endif
+               enddo
+            enddo
          else 
             ismip6shelfMelt_3dThermalForcing(:,:) = oceanField(:,:,1)
          endif

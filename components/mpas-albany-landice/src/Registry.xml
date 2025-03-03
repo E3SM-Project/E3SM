@@ -1699,7 +1699,7 @@ is the value of that variable from the *previous* time level!
     <!-- Variables related to the ocean-forcing re-extrapolation -->
         <var_struct name="extrapOceanData" time_levs="1" packages="extrapOceanData">
                 <var name="orig3dOceanMask" type="integer" dimensions="nISMIP6OceanLayers nCells Time" units="none"
-                     description="3D mask of original valid ocean data.  Because it is 3d, it can include the ocean domain inside ice-shelf cavities."
+                     description="3D mask of original valid ocean data.  Because it is 3d, it can include the ocean domain inside ice-shelf cavities. orig3dOceanMask is altered online to include ice-dammed inland seas"
                 />
                 <var name="validOceanMask" type="integer" dimensions="nISMIP6OceanLayers nCells Time" units="none"
                      description="3D mask for indicating where ocean data is present (i.e., seed mask).  Initially this is equal to orig3dOceanMask but it grows as the ocean extrapolation scheme iterates.  It indicates anywhere that valid ocean data is present, whether that is the original ocean data or where it has been extrapolated."
