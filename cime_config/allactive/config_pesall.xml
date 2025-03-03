@@ -1694,6 +1694,23 @@
       </pes>
     </mach>
   </grid>
+  <grid name="a%ne4np4.pg.">
+    <mach name="compy">
+      <pes compset="any" pesize="any">
+        <comment>allactive: ne4pg2 grid, 3 nodes x 1 omp @ root 0</comment>
+        <ntasks>
+          <ntasks_atm>96</ntasks_atm>
+          <ntasks_lnd>96</ntasks_lnd>
+          <ntasks_rof>96</ntasks_rof>
+          <ntasks_ice>96</ntasks_ice>
+          <ntasks_ocn>96</ntasks_ocn>
+          <ntasks_glc>96</ntasks_glc>
+          <ntasks_wav>96</ntasks_wav>
+          <ntasks_cpl>96</ntasks_cpl>
+        </ntasks>
+      </pes>
+    </mach>
+  </grid>
   <grid name="a%ne4np4_l%ne4np4_oi%oQU240_r%r05_m%oQU240_g%null_w%null">
     <mach name="sandiatoss3">
       <pes compset="EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV"  pesize="M">
