@@ -312,10 +312,9 @@ get_field_group (const std::string& group_name, const std::string& grid_name) co
       std::sort(ordered_subview_indices.begin(),ordered_subview_indices.end());
 
       // Check that all subview indices are contiguous
-      for (size_t i=0; i<ordered_subview_indices.size()-1; ++i) {
-        EKAT_REQUIRE_MSG(ordered_subview_indices[i]+1==ordered_subview_indices[i+1],
-          "Error! Non-contiguous subview indices found in group \""+group_name+"\"\n");
-      }
+      size_t span = ordered_subview_indices.back() - ordered_subview_indices.front() + 1;
+      EKAT_REQUIRE_MSG (ordered_subview_indices.size()==span,
+        "Error! Non-contiguous subview indices found in group \""+group_name+"\"\n");
 
       group.m_bundle = std::make_shared<Field>(
         parent_field->subfield(
