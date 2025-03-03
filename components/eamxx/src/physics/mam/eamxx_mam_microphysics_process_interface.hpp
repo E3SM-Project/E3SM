@@ -41,9 +41,6 @@ class MAMMicrophysics final : public MAMGenericInterface {
   // AtmosphereProcess overrides (see share/atm_process/atmosphere_process.hpp)
   // --------------------------------------------------------------------------
 
-  // process metadata
-  AtmosphereProcessType type() const override;
-
   // The name of the subcomponent
   std::string name() const { return "mam_aero_microphysics"; }
 

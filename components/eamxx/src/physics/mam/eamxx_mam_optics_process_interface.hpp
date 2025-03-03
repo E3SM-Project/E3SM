@@ -44,10 +44,6 @@ class MAMOptics final : public MAMGenericInterface {
       // AtmosphereProcess overrides (see
       // share/atm_process/atmosphere_process.hpp)
       // --------------------------------------------------------------------------
-
-      // process metadata
-      AtmosphereProcessType
-      type() const override;
   std::string name() const override;
 
   // grid

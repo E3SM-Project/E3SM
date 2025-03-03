@@ -140,11 +140,6 @@ class MAMAci final : public MAMGenericInterface {
   // Constructor
   MAMAci(const ekat::Comm &comm, const ekat::ParameterList &params);
 
-  // Process metadata: Return type of the process
-  AtmosphereProcessType type() const override {
-    return AtmosphereProcessType::Physics;
-  }
-
   // Return name of the process
   std::string name() const override { return "mam4_aci"; }
 

@@ -46,7 +46,7 @@ MAMAci::MAMAci(const ekat::Comm &comm, const ekat::ParameterList &params)
   EKAT_REQUIRE_MSG(
       m_params.isParameter("top_level_mam4xx"),
       "ERROR: top_level_mam4xx is missing from mam_aci parameter list.");
-  check_fields_intervals_   = m_params.get<bool>("mam4_check_fields_intervals", false);
+  check_fields_intervals_   = m_params.get<bool>("create_fields_interval_checks", false);
 
 }
 

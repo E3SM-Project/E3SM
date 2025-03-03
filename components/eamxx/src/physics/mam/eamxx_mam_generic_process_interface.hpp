@@ -3,10 +3,9 @@
 // For declaring contituent fluxes class derived from atm process
 // class
 #include <share/atm_process/atmosphere_process.hpp>
-#include <share/property_checks/field_within_interval_check.hpp>
 // For MAM4 aerosol configuration
 #include <physics/mam/mam_coupling.hpp>
-#include <physics/mam/physical_limits.hpp>
+
 #include <string>
 /* We implemented the MAMGenericInterface class to eliminate duplicate code in
 the MAM4xx processes. Consequently, all MAM4xx processes must derive from this
@@ -16,13 +15,18 @@ class.
 namespace scream {
 class MAMGenericInterface : public scream::AtmosphereProcess {
  public:
-  using KT = ekat::KokkosTypes<DefaultDevice>;
-  // a thread team dispatched to a single vertical column
-  using ThreadTeam = mam4::ThreadTeam;
+
 
   // Constructor
   MAMGenericInterface(const ekat::Comm &comm,
                       const ekat::ParameterList &params);
+
+ AtmosphereProcessType type() const { return AtmosphereProcessType::Physics; }
+
+  protected:
+  using KT = ekat::KokkosTypes<DefaultDevice>;
+  // a thread team dispatched to a single vertical column
+  using ThreadTeam = mam4::ThreadTeam;
   // Add tracers needed for aerosols and gases."
   void add_tracers_interstitial_aerosol_and_gases();
   void add_tracers_cloudborne_aerosol();
@@ -30,8 +34,6 @@ class MAMGenericInterface : public scream::AtmosphereProcess {
   // Perform interval checks for all MAM4xx fields.
   // The limits are declared in physical_limits.
   void add_interval_checks();
-  // Print all fields that are added in a MAM4xx process.
-  void print_fields_names();
   //
   void populate_interstitial_wet_and_dry_aero();
   void populate_cloudborne_wet_and_dry_aero();
@@ -69,10 +71,9 @@ class MAMGenericInterface : public scream::AtmosphereProcess {
   // --------------------------------------------------------------------------
   // AtmosphereProcess overrides (see share/atm_process/atmosphere_process.hpp)
   // --------------------------------------------------------------------------
-  AtmosphereProcessType type() const { return AtmosphereProcessType::Physics; }
   std::map<std::string, std::pair<Real, Real>> limits_aerosol_gas_tracers_;
-  void get_aerosol_gas_map();
-  const std::pair<Real, Real> get_range(const std::string &field_name);
+  void set_aerosol_and_gas_ranges();
+  const std::pair<Real, Real> get_ranges(const std::string &field_name);
 
 };  // MAMGenericInterface
 }  // namespace scream

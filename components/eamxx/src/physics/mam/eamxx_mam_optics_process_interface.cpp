@@ -11,13 +11,13 @@ namespace scream {
 
 MAMOptics::MAMOptics(const ekat::Comm &comm, const ekat::ParameterList &params)
     : MAMGenericInterface(comm, params), aero_config_() {
-  check_fields_intervals_   = m_params.get<bool>("mam4_check_fields_intervals", false);
+  check_fields_intervals_   = m_params.get<bool>("create_fields_interval_checks", false);
 
  }
 
-AtmosphereProcessType MAMOptics::type() const {
-  return AtmosphereProcessType::Physics;
-}
+// AtmosphereProcessType MAMOptics::type() const {
+//   return AtmosphereProcessType::Physics;
+// }
 
 std::string MAMOptics::name() const { return "mam4_optics"; }
 

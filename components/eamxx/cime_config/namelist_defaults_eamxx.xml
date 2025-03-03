@@ -255,6 +255,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <enable_aero_vertical_mix type="logical" doc="Enable vertical mixing of interstitial aerosols and liquid number during activation">true</enable_aero_vertical_mix>
       <top_level_mam4xx type="integer" doc="Level corresponding to the top of troposphere clouds" nlev="72"  >6</top_level_mam4xx>
       <top_level_mam4xx type="integer" doc="level corresponding to the top of troposphere clouds" nlev="128" >0</top_level_mam4xx>
+      <create_fields_interval_checks type="logical" doc="Create field interval checks for all fields that are computed and requested in mam4xx." >false</create_fields_interval_checks>
     </mam4_aci>
 
     <!-- MAM4xx-Dry Deposition -->
@@ -268,6 +269,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <drydep_remap_file hgrid="ne256np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne256pg2_20231201.nc</drydep_remap_file>
     <drydep_remap_file hgrid="ne512np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne512pg2_20231201.nc</drydep_remap_file>
     <drydep_remap_file hgrid="ne1024np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne1024pg2_20231201.nc</drydep_remap_file>
+    <create_fields_interval_checks type="logical" doc="Create field interval checks for all fields that are computed and requested in mam4xx." >false</create_fields_interval_checks>
     </mam4_drydep>
 
     <!-- CLD fraction -->
@@ -331,7 +333,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <aero_microphys_remap_file hgrid="ne256np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne256pg2_20231201.nc</aero_microphys_remap_file>
       <aero_microphys_remap_file hgrid="ne512np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne512pg2_20231201.nc</aero_microphys_remap_file>
       <aero_microphys_remap_file hgrid="ne1024np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne1024pg2_20231201.nc</aero_microphys_remap_file>
-
+      <create_fields_interval_checks type="logical" doc="Create field interval checks for all fields that are computed and requested in mam4xx." >false</create_fields_interval_checks>
     </mam4_aero_microphys>
 
     <!-- MAM4xx-Optics -->
@@ -348,10 +350,13 @@ be lost if SCREAM_HACK_XML is not enabled.
       <mam4_pom_physical_properties_file type="file" doc="File containing optical properties for primary organic aerosol">${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/ocpho_rrtmg_c20240206.nc</mam4_pom_physical_properties_file>
       <mam4_bc_physical_properties_file type="file" doc="File containing optical properties for black carbon">${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/bcpho_rrtmg_c20240206.nc</mam4_bc_physical_properties_file>
       <mam4_mom_physical_properties_file type="file" doc="File containing optical properties for marine organic aerosol">${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/poly_rrtmg_c20240206.nc</mam4_mom_physical_properties_file>
+      <create_fields_interval_checks type="logical" doc="Create field interval checks for all fields that are computed and requested in mam4xx." >false</create_fields_interval_checks>
     </mam4_optics>
 
     <!-- MAM4xx-Wetscav -->
-    <mam4_wetscav inherit="atm_proc_base" />
+    <mam4_wetscav inherit="atm_proc_base" >
+      <create_fields_interval_checks type="logical" doc="Create field interval checks for all fields that are computed and requested in mam4xx." >false</create_fields_interval_checks>
+    </mam4_wetscav>
 
     <!-- MAM4xx-Surface-Emissions -->
     <mam4_srf_online_emiss inherit="atm_proc_base">
@@ -390,10 +395,13 @@ be lost if SCREAM_HACK_XML is not enabled.
       <srf_remap_file hgrid="ne256np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne256pg2_20231201.nc</srf_remap_file>
       <srf_remap_file hgrid="ne512np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne512pg2_20231201.nc</srf_remap_file>
       <srf_remap_file hgrid="ne1024np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne1024pg2_20231201.nc</srf_remap_file>
+      <create_fields_interval_checks type="logical" doc="Create field interval checks for all fields that are computed and requested in mam4xx." >false</create_fields_interval_checks>
     </mam4_srf_online_emiss>
 
     <!-- MAM4xx-constituent fluxes -->
-    <mam4_constituent_fluxes inherit="atm_proc_base" />
+    <mam4_constituent_fluxes inherit="atm_proc_base" >
+      <create_fields_interval_checks type="logical" doc="Create field interval checks for all fields that are computed and requested in mam4xx." >false</create_fields_interval_checks>
+    </mam4_constituent_fluxes>
 
     <!-- nudging -->
     <nudging inherit="atm_proc_base">

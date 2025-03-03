@@ -108,11 +108,6 @@ class MAMDryDep final : public MAMGenericInterface  {
   // AtmosphereProcess overrides (see share/atm_process/atmosphere_process.hpp)
   // --------------------------------------------------------------------------
 
-  // The type of subcomponent
-  AtmosphereProcessType type() const override {
-    return AtmosphereProcessType::Physics;
-  }
-
   // The name of the subcomponent
   std::string name() const override { return "mam_dry_deposition"; }
 

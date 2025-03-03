@@ -1,4 +1,6 @@
 #include <physics/mam/eamxx_mam_generic_process_interface.hpp>
+#include <share/property_checks/field_within_interval_check.hpp>
+#include <physics/mam/physical_limits.hpp>
 
 namespace scream {
 // ================================================================
@@ -13,7 +15,7 @@ MAMGenericInterface::MAMGenericInterface(const ekat::Comm &comm,
    */
 }
 // ================================================================
-void MAMGenericInterface::get_aerosol_gas_map() {
+void MAMGenericInterface::set_aerosol_and_gas_ranges() {
   // NOTE: Using only one range for all num variables.
   // std::map<std::string, std::pair<Real, Real>> limits_aerosol_gas_tracers_;
 
@@ -54,9 +56,11 @@ void MAMGenericInterface::get_aerosol_gas_map() {
   }  // end for loop num gases
 }
 
-const std::pair<Real, Real> MAMGenericInterface::get_range(
+const std::pair<Real, Real> MAMGenericInterface::get_ranges(
     const std::string &field_name) {
-  get_aerosol_gas_map();
+  // NOTE: We are using the same range (mmr) for all aerosols and gases.
+  // And aerosol numbers (nmr).
+  set_aerosol_and_gas_ranges();
   std::pair<Real, Real> min_max;
 
   auto it = limits_aerosol_gas_tracers_.find(field_name);
@@ -70,7 +74,8 @@ const std::pair<Real, Real> MAMGenericInterface::get_range(
 }
 
 // ================================================================
-void MAMGenericInterface::add_tracers_cloudborne_aerosol() {
+void MAMGenericInterface::add_tracers_cloudborne_aerosol()
+{
   using namespace ekat::units;
   auto q_unit           = kg / kg;  // units of mass mixing ratios of tracers
   auto n_unit           = 1 / kg;   // units of number mixing ratios of tracers
@@ -111,7 +116,6 @@ void MAMGenericInterface::add_tracers_interstitial_aerosol_and_gases() {
   using namespace ekat::units;
   auto q_unit           = kg / kg;  // units of mass mixing ratios of tracers
   auto n_unit           = 1 / kg;   // units of number mixing ratios of tracers
-  const auto &grid_name = grid_->name();
 
   FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(true);
 
@@ -309,44 +313,25 @@ void MAMGenericInterface::add_tracers_wet_and_dry_atm() {
   // cloud fraction [nondimensional] computed by eamxx_cld_fraction_process
   add_field<Required>("cldfrac_tot", scalar3d_mid, nondim, grid_name);
 }
-
-void MAMGenericInterface::print_fields_names() {
-  const auto &in_fields = get_fields_in();
-  std::cout << "Checking interval pre for..."
-            << "\n";
-  for(const auto &item : in_fields) {
-    auto &field_name = item.name();
-    std::cout << field_name << "\n";
-  }
-  std::cout << "Checking interval post for..."
-            << "\n";
-  const auto &out_fields = get_fields_out();
-  for(const auto &item : out_fields) {
-    auto &field_name = item.name();
-    std::cout << field_name << "\n";
-  }
-}
 // ================================================================
 void MAMGenericInterface::add_interval_checks() {
   if(check_fields_intervals_) {
     const auto &in_fields = get_fields_in();
-    for(const auto &item : in_fields) {
-      auto &field_name     = item.name();
-      const auto ranges    = get_range(field_name);
+    for(const auto &field : in_fields) {
+      const auto ranges    = get_ranges(field.name());
       const auto min_value = ranges.first;
       const auto max_value = ranges.second;
       add_precondition_check<FieldWithinIntervalCheck>(
-          get_field_in(field_name), grid_, min_value, max_value, false);
+          field, grid_, min_value, max_value, false);
     }
 
     const auto &out_fields = get_fields_out();
-    for(const auto &item : out_fields) {
-      auto &field_name     = item.name();
-      const auto ranges    = get_range(field_name);
+    for(const auto &field : out_fields) {
+      const auto ranges    = get_ranges(field.name());
       const auto min_value = ranges.first;
       const auto max_value = ranges.second;
       add_postcondition_check<FieldWithinIntervalCheck>(
-          get_field_out(field_name), grid_, min_value, max_value, false);
+          field, grid_, min_value, max_value, false);
     }
   }
 }

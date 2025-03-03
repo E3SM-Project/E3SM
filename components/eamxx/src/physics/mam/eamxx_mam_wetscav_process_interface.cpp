@@ -17,7 +17,7 @@ MAMWetscav::MAMWetscav(const ekat::Comm &comm,
   /* Anything that can be initialized without grid information can be
    * initialized here. Like universal constants, mam wetscav options.
    */
-    check_fields_intervals_   = m_params.get<bool>("mam4_check_fields_intervals", false);
+    check_fields_intervals_   = m_params.get<bool>("create_fields_interval_checks", false);
 
 }
 

@@ -15,7 +15,7 @@ MAMMicrophysics::MAMMicrophysics(const ekat::Comm &comm,
   config_.amicphys.do_rename = m_params.get<bool>("mam4_do_rename");
   config_.amicphys.do_newnuc = m_params.get<bool>("mam4_do_newnuc");
   config_.amicphys.do_coag   = m_params.get<bool>("mam4_do_coag");
-  check_fields_intervals_   = m_params.get<bool>("mam4_check_fields_intervals", false);
+  check_fields_intervals_   = m_params.get<bool>("create_fields_interval_checks", false);
 
 
   // these parameters guide the coupling between parameterizations
@@ -40,11 +40,6 @@ MAMMicrophysics::MAMMicrophysics(const ekat::Comm &comm,
   config_.linoz.o3_sfc = m_params.get<double>("mam4_o3_sfc");
   config_.linoz.psc_T  = m_params.get<double>("mam4_psc_T");
 }
-
-AtmosphereProcessType MAMMicrophysics::type() const {
-  return AtmosphereProcessType::Physics;
-}
-
 // ================================================================
 //  SET_GRIDS
 // ================================================================
@@ -364,7 +359,6 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   // from timestamp for orbital year; if positive, use provided orbital year
   // for duration of simulation.
   // Check pre/post condition interval values for all fields employed by this interface
-  // print_fields_names();
   add_interval_checks();
   m_orbital_year = m_params.get<int>("orbital_year", -9999);
 

@@ -31,11 +31,6 @@ class MAMWetscav : public MAMGenericInterface {
   // Constructor
   MAMWetscav(const ekat::Comm &comm, const ekat::ParameterList &params);
 
-  // The type of subcomponent
-  AtmosphereProcessType type() const override {
-    return AtmosphereProcessType::Physics;
-  }
-
   // The name of the subcomponent
   std::string name() const override { return "mam4_wetscav"; }
 
