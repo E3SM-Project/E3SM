@@ -16,6 +16,8 @@
                          MPAS_IO_ADIOS    = 7, &
                          MPAS_IO_ADIOSC   = 8
 
+  integer, parameter :: PIO_IOTYPE_ADIOSC= 6
+
    ! Field and attribute types
    integer, parameter :: MPAS_IO_REAL     =  9,  &
                          MPAS_IO_DOUBLE   = 10,  &
