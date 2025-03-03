@@ -14,4 +14,3 @@ target_link_libraries(pompei physics_share scream_share)
 
 # Add this library to eamxx_physics
 target_link_libraries(eamxx_physics INTERFACE pompei)
-
