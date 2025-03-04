@@ -234,7 +234,7 @@ initialize_iop_file(const util::TimeStamp& run_t0,
   else EKAT_ERROR_MSG("Error! No valid dimension for tsec in "+iop_file+".\n");
 
   // When we read vars, "time" must be treated as unlimited, to avoid issues
-  if (not scorpio::is_dim_unlimited(iop_file,time_dimname)) {
+  if (not scorpio::has_time_dim(iop_file)) {
     scorpio::mark_dim_as_time(iop_file,time_dimname);
   }
 

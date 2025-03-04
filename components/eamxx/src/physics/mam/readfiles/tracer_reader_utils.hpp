@@ -296,7 +296,9 @@ inline void setup_tracer_data(TracerData &tracer_data,             // out
                               const int cyclical_ymd)              // in
 {
   scorpio::register_file(trace_data_file, scorpio::Read);
-  scorpio::mark_dim_as_time(trace_data_file, "time");
+  if (not scorpio::has_time_dim(trace_data_file)) {
+    scorpio::mark_dim_as_time(trace_data_file, "time");
+  }
   // by default, I am assuming a zonal file.
   TracerFileType tracer_file_type = ZONAL;
 
