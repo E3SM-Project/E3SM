@@ -105,11 +105,11 @@ jobs:
       - name: Run test
         run: |
           ./cime/scripts/create_test ${{ matrix.test.full_name }} ${{ env.flags }} --wait
-      - name: Upload case files
+      - name: Upload log files
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.test.full_name }}
+          name: logs.${{ matrix.test.short_name }}
           path: |
             /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/TestStatus.log
             /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/bld/*.bldlog.*
@@ -118,6 +118,14 @@ jobs:
             /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/run/case2run/*.log.*
             /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/run/*.cprnc.out
             /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/run/case2run/*.cprnc.out
+        env:
+          NODE_EXTRA_CA_CERTS: ${{ env.NODE_EXTRA_CA_CERTS }}
+      - name: Upload nc files
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: outputs.${{ matrix.test.short_name }}
+          path: |
             /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/run/*.nc*
             /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/run/case2run/*.nc*
         env:
