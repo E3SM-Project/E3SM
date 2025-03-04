@@ -86,7 +86,7 @@ subroutine zm_transport_tracer( lchnk, doconvtran, q, ncnst, &
    real(r8) :: negadt               ! for Conservation check
    real(r8) :: qtmp                 ! for Conservation check
    ! constants
-   real(r8), parameter :: small = 1.e-36_r8        ! a small number to avoid division by zero
+   real(r8), parameter :: small        = 1.e-36_r8 ! a small number to avoid division by zero
    real(r8), parameter :: cdifr_min    = 1.e-6_r8  ! minimum layer difference for geometric averaging
    real(r8), parameter :: maxc_factor  = 1.e-12_r8
    real(r8), parameter :: flux_factor  = 1.e-12_r8
@@ -341,7 +341,6 @@ subroutine zm_transport_momentum( lchnk, ncol, wind_in, nwind, &
    integer  :: km1                        ! Work index
    integer  :: kp1                        ! Work index
    integer  :: ktm                        ! Highest altitude index of cloud top
-   integer  :: ii                         ! ideep index
    real(r8) :: wind0(pcols,pver,nwind)    ! gathered initial wind
    real(r8) :: windf(pcols,pver,nwind)    ! gathered final wind
    real(r8) :: wind_mid(pcols,pver)       ! gathered momentum in environment at mid-points
@@ -407,7 +406,7 @@ subroutine zm_transport_momentum( lchnk, ncol, wind_in, nwind, &
          km1 = max(1,k-1)
          do i = il1g, il2g
             ! use arithmetic mean
-            wind_int(i,k) = 0.5_r8* (wind_mid(i,k)+wind_mid(i,km1))
+            wind_int(i,k) = 0.5_r8*( wind_mid(i,k) + wind_mid(i,km1) )
             ! Provisional up and down draft values
             wind_int_u(i,k) = wind_int(i,k)
             wind_int_d(i,k) = wind_int(i,k)
@@ -512,7 +511,7 @@ subroutine zm_transport_momentum( lchnk, ncol, wind_in, nwind, &
          do i = il1g,il2g
             if (k==mx(i)) then
                wind_tend_tmp(i,k) = (-mu(i,k)*(wind_int_u(i,k)-wind_int(i,k)) &
-                                     -md(i,k)*(wind_int_d(i,k)-wind_int(i,k)) )/dp(i,k)
+                                     -md(i,k)*(wind_int_d(i,k)-wind_int(i,k)) )*(1._r8/dp(i,k))
             end if
          end do
       end do
@@ -522,13 +521,12 @@ subroutine zm_transport_momentum( lchnk, ncol, wind_in, nwind, &
 
       do k = 1,pver
          do i = il1g,il2g
-            ii = ideep(i)
-            wind_tend(ii,k,m) = wind_tend_tmp(i,k)
+            wind_tend(ideep(i),k,m) = wind_tend_tmp(i,k)
             ! Output apparent force on the mean flow from pressure gradient
-            pguall(ii,k,m) = -pgu(i,k)
-            pgdall(ii,k,m) = -pgd(i,k)
-            icwu  (ii,k,m) =  wind_int_u(i,k)
-            icwd  (ii,k,m) =  wind_int_d(i,k)
+            pguall(ideep(i),k,m) = -pgu(i,k)
+            pgdall(ideep(i),k,m) = -pgd(i,k)
+            icwu  (ideep(i),k,m) =  wind_int_u(i,k)
+            icwd  (ideep(i),k,m) =  wind_int_d(i,k)
          end do
       end do
 
@@ -560,10 +558,10 @@ subroutine zm_transport_momentum( lchnk, ncol, wind_in, nwind, &
       do i = il1g,il2g
          ! calculate the KE fluxes at top and bot of layer 
          ! based on a discrete approximation to b&b eq(35) F_KE = u*F_u + v*F_v at interface
-         utop = (wind0(i,k  ,1)+wind0(i,km1,1))/2._r8
-         vtop = (wind0(i,k  ,2)+wind0(i,km1,2))/2._r8
-         ubot = (wind0(i,kp1,1)+wind0(i,k,1))/2._r8
-         vbot = (wind0(i,kp1,2)+wind0(i,k,2))/2._r8
+         utop = ( wind0(i,k  ,1) + wind0(i,km1,1) )/2._r8
+         vtop = ( wind0(i,k  ,2) + wind0(i,km1,2) )/2._r8
+         ubot = ( wind0(i,kp1,1) + wind0(i,k,  1) )/2._r8
+         vbot = ( wind0(i,kp1,2) + wind0(i,k,  2) )/2._r8
          fket = utop*mflux(i,k  ,1) + vtop*mflux(i,k  ,2) ! top of layer
          fkeb = ubot*mflux(i,k+1,1) + vbot*mflux(i,k+1,2) ! bot of layer
          ! divergence of these fluxes should give a conservative redistribution of KE
@@ -578,8 +576,7 @@ subroutine zm_transport_momentum( lchnk, ncol, wind_in, nwind, &
    ! Scatter dry static energy to full array
    do k = 1,pver
       do i = il1g,il2g
-         ii = ideep(i)
-         seten(ii,k) = gseten(i,k)
+         seten(ideep(i),k) = gseten(i,k)
       end do
    end do
 
