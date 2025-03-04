@@ -118,6 +118,8 @@ jobs:
             /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/run/case2run/*.log.*
             /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/run/*.cprnc.out
             /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/run/case2run/*.cprnc.out
+            /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/run/*.nc*
+            /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/run/case2run/*.nc*
         env:
           NODE_EXTRA_CA_CERTS: ${{ env.NODE_EXTRA_CA_CERTS }}
       - name: Clean up
