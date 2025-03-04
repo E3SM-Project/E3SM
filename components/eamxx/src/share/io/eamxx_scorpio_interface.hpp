@@ -100,15 +100,23 @@ bool has_dim (const std::string& filename,
 int get_dimlen (const std::string& filename, const std::string& dimname);
 int get_dimlen_local (const std::string& filename, const std::string& dimname);
 
-// Checks if the dimension is unlimited
-bool is_dim_unlimited (const std::string& filename,
-                       const std::string& dimname);
+// When we read/write a var, we may want to only process one slice of the var,
+// orresponding to a particular time index. In this case, the time dim is a
+// "record" dimension. When we open a file, if there is an unlimited dim, it is
+// automatically marked as the "time" dim (regardless of its name). But if there
+// is no unlimited dim, we may need to tell the interface to interpret one of the
+// dims as the record dimension (which in the interface we refer to as "time" dim).
+void mark_dim_as_time (const std::string& filename, const std::string& dimname);
+bool has_time_dim (const std::string& filename);
 
-// Get len/name of the time dimension (i.e., the unlimited one)
+// This is used by I/O when restarting a simulation after a crash: the existing file
+// may contain some snapshots after the rest time, but we may want to overwrite them.
+void reset_time_dim_len(const std::string& filename, const int new_length);
+
+// Get len/name of the time dimension
 // NOTE: these throw if time dim is not present. Use has_dim to check first.
 int get_time_len (const std::string& filename);
 std::string get_time_name (const std::string& filename);
-void reset_unlimited_dim_len(const std::string& filename, const int new_length);
 
 // =================== Decompositions operations ==================== //
 
@@ -176,11 +184,6 @@ const PIOVar& get_var (const std::string& filename,
 // Defines both a time dimension and a time variable
 void define_time (const std::string& filename, const std::string& units,
                   const std::string& time_name = default_time_name());
-
-// When we read a file, and there is a "time" dimension that is FIXED rather than UNLIMITED,
-// we may have some issues with our read/write logics. Hence, we can use mark a dimension
-// as if it was the UNLIMITED time dim.
-void pretend_dim_is_unlimited (const std::string& filename, const std::string& dimname);
 
 // Update value of time variable, increasing time dim length
 void update_time(const std::string &filename, const double time);

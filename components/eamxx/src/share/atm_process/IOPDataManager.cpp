@@ -233,9 +233,11 @@ initialize_iop_file(const util::TimeStamp& run_t0,
   else if (scorpio::has_dim(iop_file, "tsec")) time_dimname = "tsec";
   else EKAT_ERROR_MSG("Error! No valid dimension for tsec in "+iop_file+".\n");
 
-  // When we read vars, "time" must be treated as unlimited, to avoid issues
-  if (not scorpio::is_dim_unlimited(iop_file,time_dimname)) {
-    scorpio::pretend_dim_is_unlimited(iop_file,time_dimname);
+  // When we read vars, we need time to be a "record" dimension, so that buffers
+  // are only filled with one time slice at a time. In our scorpio interfaces,
+  // we call the record dimension "time" (since that's what it virtually always is)
+  if (not scorpio::has_time_dim(iop_file)) {
+    scorpio::mark_dim_as_time(iop_file,time_dimname);
   }
 
   const auto ntimes = scorpio::get_dimlen(iop_file, time_dimname);
