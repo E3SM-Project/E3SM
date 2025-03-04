@@ -681,20 +681,6 @@ int get_dimlen_local (const std::string& filename, const std::string& dimname)
   return dim->offsets==nullptr ? dim->length : dim->offsets->size();
 }
 
-bool is_dim_unlimited (const std::string& filename,
-                       const std::string& dimname)
-{
-  // If file wasn't open, open it on the fly. See comment in PeekFile class above.
-  impl::PeekFile pf(filename);
-
-  EKAT_REQUIRE_MSG (has_dim(filename,dimname),
-      "Error! Could not inquire if dimension is unlimited. The dimension is not in the file.\n"
-      " - filename: " + filename + "\n"
-      " - dimname : " + dimname + "\n");
-
-  return pf.file->dims.at(dimname)->unlimited;
-}
-
 bool has_time_dim (const std::string& filename)
 {
   // If file wasn't open, open it on the fly. See comment in PeekFile class above.

@@ -100,24 +100,20 @@ bool has_dim (const std::string& filename,
 int get_dimlen (const std::string& filename, const std::string& dimname);
 int get_dimlen_local (const std::string& filename, const std::string& dimname);
 
-// Checks if the dimension is unlimited
-bool is_dim_unlimited (const std::string& filename,
-                       const std::string& dimname);
-
-bool has_time_dim (const std::string& filename);
-// When we read a file, we interpret "time" as a "record" dimension, and we read only
-// ONE time slice at a time. If the time dim is unlimited, this is already set up when
-// the file is opened. But on some files, the time dim has a FIXED length (rather than
-// UNLIMITED), which prevents this logic to automatically kick in. To overcome this
-// issue, users can call this function to mark any existing dim as the time dim.
-// This function throws if a time dim is already set.
+// When we read/write a var, we may want to only process one slice of the var,
+// orresponding to a particular time index. In this case, the time dim is a
+// "record" dimension. When we open a file, if there is an unlimited dim, it is
+// automatically marked as the "time" dim (regardless of its name). But if there
+// is no unlimited dim, we may need to tell the interface to interpret one of the
+// dims as the record dimension (which in the interface we refer to as "time" dim).
 void mark_dim_as_time (const std::string& filename, const std::string& dimname);
+bool has_time_dim (const std::string& filename);
 
 // This is used by I/O when restarting a simulation after a crash: the existing file
 // may contain some snapshots after the rest time, but we may want to overwrite them.
 void reset_time_dim_len(const std::string& filename, const int new_length);
 
-// Get len/name of the time dimension (i.e., the unlimited one)
+// Get len/name of the time dimension
 // NOTE: these throw if time dim is not present. Use has_dim to check first.
 int get_time_len (const std::string& filename);
 std::string get_time_name (const std::string& filename);
