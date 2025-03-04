@@ -684,6 +684,8 @@ be lost if SCREAM_HACK_XML is not enabled.
     <wetdep_dust_bin2 type="real">1e-5</wetdep_dust_bin2>
     <wetdep_dust_bin3 type="real">1e-5</wetdep_dust_bin3>
     <wetdep_dust_bin4 type="real">1e-5</wetdep_dust_bin4>
+
+    <fraction_landuse type="real" doc="Fractional land use for drydeposition of gasses and aerosols [fraction]">0.0</fraction_landuse>
     <!-- default ne1024 initial condition files do not have these, so init to zero here -->
     <!-- TODO: delete this once we can tell the AD that some fields can be inited by procs -->
     <qc hgrid="ne256np4|ne512np4|ne1024np4">0.0</qc>
