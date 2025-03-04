@@ -36,16 +36,12 @@ void MAMConstituentFluxes::set_grids(
 
   add_tracers_wet_and_dry_atm();
   static constexpr Units m2(m * m, "m2");
-  // FIXME: do we need phi?
-  // Surface geopotential [m2/s2] (Require only for building DS)
-  // add_field<Required>("phis", scalar2d, m2 / s2, grid_name);
-
   // Constituent fluxes at the surface (gasses and aerosols)
   //[units: kg/m2/s (mass) or #/m2/s (number)]
   add_field<Required>("constituent_fluxes", scalar2d_pcnct, kg / m2 / s,
                       grid_name);
 
-    // ---------------------------------------------------------------------
+  // ---------------------------------------------------------------------
   // These variables are "Updated" or inputs/outputs for the process
   // ---------------------------------------------------------------------
   // NOTE: Cloud borne aerosols are not updated in this process but are included
@@ -95,8 +91,6 @@ void MAMConstituentFluxes::initialize_impl(const RunType run_type) {
   add_interval_checks();
 
   // Populate the wet atmosphere state with views from fields
-  // FIMXE: specifically look which among these are actually used by the process
-  // wet_atm_.qv = get_field_in("qv").get_view<const Real **>();
   populate_wet_and_dry_atm();
 
   // Constituent fluxes at the surface (gasses and aerosols) [kg/m2/s]

@@ -359,8 +359,6 @@ void MAMGenericInterface::pre_process()
       mam_coupling::compute_updraft_velocities(team, wet_atm, dry_atm, i);
       // allows kernels below to use layer heights operator()
       team.team_barrier();
-      // set_min_background_mmr(team, dry_aero_pre_,
-      //                        i);  // dry_atm_pre_ is the output
     });
 
 }

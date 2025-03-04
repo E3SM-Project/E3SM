@@ -15,10 +15,6 @@ MAMOptics::MAMOptics(const ekat::Comm &comm, const ekat::ParameterList &params)
 
  }
 
-// AtmosphereProcessType MAMOptics::type() const {
-//   return AtmosphereProcessType::Physics;
-// }
-
 std::string MAMOptics::name() const { return "mam4_optics"; }
 
 void MAMOptics::set_grids(
