@@ -305,6 +305,13 @@ add_default($nl, 'config_frazil_sea_ice_reference_salinity');
 add_default($nl, 'config_frazil_maximum_freezing_temperature');
 add_default($nl, 'config_frazil_use_surface_pressure');
 
+##################################
+# Namelist group: iceberg_fluxes #
+##################################
+
+add_default($nl, 'config_iceberg_flux_cp_ice');
+add_default($nl, 'config_iceberg_flux_temperature_ice');
+
 ###################################
 # Namelist group: land_ice_fluxes #
 ###################################
