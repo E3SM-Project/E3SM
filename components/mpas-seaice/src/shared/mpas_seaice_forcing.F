@@ -3339,12 +3339,6 @@ contains
     real(kind=RKIND) :: &
          scaling
 
-    ! dc including as parameters here so as not to create new namelist options
-    real(kind=RKIND), parameter :: &
-         specificHeatFreshIce = 2106.0_RKIND, & ! specific heat of fresh ice J * kg^-1 * K^-1
-         bergTemperature = -4.0_RKIND           ! iceberg temperature, assumed constant
-
-
     call MPAS_pool_get_config(domain % configs, "config_scale_dib_by_removed_ice_runoff", &
                               config_scale_dib_by_removed_ice_runoff)
 
@@ -3374,10 +3368,8 @@ contains
 
        do iCell = 1, nCellsSolve
 
-          bergFreshwaterFlux(iCell) = scaling * bergFreshwaterFluxData(iCell)
-          bergLatentHeatFlux(iCell) = -scaling * bergFreshwaterFluxData(iCell) * &
-                                     (seaiceLatentHeatMelting - specificHeatFreshIce*bergTemperature)
-
+          bergFreshwaterFlux(iCell) = bergFreshwaterFluxData(iCell)
+          bergLatentHeatFlux(iCell) = -bergFreshwaterFluxData(iCell) * seaiceLatentHeatMelting
        enddo
 
        block => block % next
