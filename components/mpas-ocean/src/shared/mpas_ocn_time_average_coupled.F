@@ -287,7 +287,7 @@ module ocn_time_average_coupled
         real (kind=RKIND), dimension(:,:), pointer :: avgSSHGradient
         integer :: iCell
         integer, pointer :: index_temperaturePtr, index_SSHzonalPtr, &
-                 index_SSHmeridionalPtr, nAccumulatedCoupled, nCells, nVertLevels, nGlcZLevels
+                 index_SSHmeridionalPtr, nAccumulatedCoupled, nCells, nVertLevels
         integer :: index_temperature, index_SSHzonal, index_SSHmeridional
         real (kind=RKIND), dimension(:,:), pointer :: &
                                                       avgLandIceBoundaryLayerTracers, avgLandIceTracerTransferVelocities
@@ -299,15 +299,12 @@ module ocn_time_average_coupled
                                                     removedIceRunoffFlux, avgRemovedIceRunoffFlux, &
                                                     avgRemovedIceRunoffHeatFlux, &
                                                     avgThermalForcingAtCritDepth
-        real (kind=RKIND), dimension(:,:), pointer :: avgThermalForcingAtZLevels
-        real (kind=RKIND), dimension(:,:), pointer :: avgThermalForcingAtZLevelsMask
-        real (kind=RKIND), dimension(:), pointer :: glcZLevels
 
         type (mpas_pool_type), pointer :: tracersPool
 
         real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
         integer, pointer :: indexTemperature, indexSalinity
-        integer :: iLevelCritDepth, iLevel, iLevelGlc
+        integer :: iLevelCritDepth, iLevel
         real (kind=RKIND) :: freezingTemp
 
         real (kind=RKIND), dimension(:,:,:), pointer :: &
@@ -491,50 +488,7 @@ module ocn_time_average_coupled
            !$omp end do
            !$omp end parallel
         elseif (trim(config_glc_thermal_forcing_coupling_mode) == '3d') then
-           call mpas_pool_get_array(forcingPool, 'avgThermalForcingAtZLevels', avgThermalForcingAtZLevels)
-           call mpas_pool_get_array(forcingPool, 'avgThermalForcingAtZLevelsMask', avgThermalForcingAtZLevelsMask)
-           call mpas_pool_get_array(forcingPool, 'glcZLevels', glcZLevels)
-           call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
-           call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 2)
-           call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
-           call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
-           call mpas_pool_get_dimension(tracersPool, 'nGlcZLevels', nGlcZLevels)
-
-           !$omp parallel
-           !$omp do schedule(runtime)
-           do iLevelGlc = 1, nGlcZLevels
-              ! find vertical level that is just above the critical depth reference level
-              ! this does not account for depression due to ice shelf cavities or sea ice
-              iLevelCritDepth = nVertLevels  ! default to deepest layer if we don't find the desired depth
-              do iLevel = 1, nVertLevels
-                 if(refBottomDepth(iLevel) > glcZLevels(iLevelGlc)) then
-                    iLevelCritDepth = iLevel
-                    exit
-                 end if
-              end do
-              call mpas_log_write("iLevelGlc=$i, iLevelCritDepth=$i", intArgs=(/iLevelGlc, iLevelCritDepth/))
-              ! calculate thermal forcing at identified level for each cell
-              do iCell = 1, nCells
-                 ! ignore cells that are too shallow
-                 if (iLevelCritDepth <= maxLevelCell(iCell)) then
-                    ! this uses the level shallower than the reference level.  could interpolate instead
-                    ! note: assuming no LandIce cavity, but we may want to support that
-                    freezingTemp = ocn_freezing_temperature(salinity=activeTracers(indexSalinity, iLevelCritDepth, iCell), &
-                       pressure=pressure(iLevelCritDepth, iCell),  inLandIceCavity=.false.)
-                    avgThermalForcingAtZLevels(iLevelGlc, iCell) = ( avgThermalForcingAtZLevels(iLevelGlc, iCell) * nAccumulatedCoupled &
-                       + activeTracers(indexTemperature, iLevelCritDepth, iCell) - freezingTemp ) / ( nAccumulatedCoupled + 1)
-                    avgThermalForcingAtZLevelsMask(iLevelGlc, iCell) = ( avgThermalForcingAtZLevelsMask(iLevelGlc, iCell) * nAccumulatedCoupled &
-                       + 1.0_RKIND) / ( nAccumulatedCoupled + 1)
-                  else
-                    avgThermalForcingAtZLevels(iLevelGlc, iCell) = ( avgThermalForcingAtZLevels(iLevelGlc, iCell) * nAccumulatedCoupled &
-                       + 0.0_RKIND) / (nAccumulatedCoupled + 1)
-                    avgThermalForcingAtZLevelsMask(iLevelGlc, iCell) = ( avgThermalForcingAtZLevelsMask(iLevelGlc, iCell) * nAccumulatedCoupled &
-                       + 0.0_RKIND) / ( nAccumulatedCoupled + 1)
-                  end if
-              end do
-           enddo
-           !$omp end do
-           !$omp end parallel
+           call accumulate_glc_3d_thermal_forcing(statePool, forcingPool, timeLevel)
        endif
 
         !  accumulate BGC coupling fields if necessary
@@ -645,5 +599,131 @@ module ocn_time_average_coupled
         nAccumulatedCoupled = nAccumulatedCoupled + 1
 
     end subroutine ocn_time_average_coupled_accumulate!}}}
+
+
+!***********************************************************************
+!
+!  routine accumulate_glc_3d_thermal_forcing
+!
+!> \brief   Coupled time averager accumulation for 3D thermal forcing
+!> \author  Xylar Asay-Davis
+!> \date    03/05/2025
+!> \details
+!>  This routine accumulated the coupled time average of the 3D thermal
+!>  forcing
+!
+!-----------------------------------------------------------------------
+    subroutine accumulate_glc_3d_thermal_forcing(statePool, forcingPool, timeLevel)!{{{
+        use ocn_constants, only: &
+             latent_heat_fusion_mks
+
+        type (mpas_pool_type), intent(in) :: statePool
+        type (mpas_pool_type), intent(inout) :: forcingPool
+        integer, intent(in) :: timeLevel
+
+        integer :: iCell
+        real (kind=RKIND), dimension(:), pointer :: avgThermalForcingAtCritDepth
+        real (kind=RKIND), dimension(:,:), pointer :: avgThermalForcingAtZLevels
+        real (kind=RKIND), dimension(:,:), pointer :: avgThermalForcingAtZLevelsMask
+        real (kind=RKIND), dimension(:), pointer :: glcZLevels
+        real (kind=RKIND), dimension(:), pointer :: ssh
+
+        type (mpas_pool_type), pointer :: tracersPool
+
+        real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
+        integer, pointer :: indexTemperature, indexSalinity, nGlcZLevels, &
+                            nCells, nAccumulatedCoupled
+        integer :: iLevel, iLevelGlc, iLevelAbove, iLevelBelow
+
+        real (kind=RKIND) :: freezingTemp, glcz, zMin, zMax, zAbove, zBelow, &
+                             alpha, salin, temp, press
+
+        call mpas_pool_get_dimension(forcingPool, 'nCells', nCells)
+        call mpas_pool_get_dimension(forcingPool, 'nGlcZLevels', nGlcZLevels)
+
+        call mpas_pool_get_array(forcingPool, 'nAccumulatedCoupled', nAccumulatedCoupled)
+
+        call mpas_pool_get_array(forcingPool, 'glcZLevels', glcZLevels)
+        call mpas_pool_get_array(statePool, 'ssh', ssh, timeLevel)
+
+        call mpas_pool_get_array(forcingPool, 'avgThermalForcingAtZLevels', avgThermalForcingAtZLevels)
+        call mpas_pool_get_array(forcingPool, 'avgThermalForcingAtZLevelsMask', avgThermalForcingAtZLevelsMask)
+        call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+        call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, timeLevel)
+        call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
+        call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
+
+        !$omp parallel
+        !$omp do schedule(runtime)
+        do iLevelGlc = 1, nGlcZLevels
+            ! calculate thermal forcing at identified level for each cell
+            glcz = glcZLevels(iLevelGlc)
+
+            do iCell = 1, nCells
+
+                if (glcz > ssh(iCell) .or. glcz < -bottomDepth(iCell)) then
+                    ! mask out glc levels that are too shallow or too deep
+                    avgThermalForcingAtZLevels(iLevelGlc, iCell) = &
+                        ( avgThermalForcingAtZLevels(iLevelGlc, iCell) * nAccumulatedCoupled &
+                          + 0.0_RKIND) / (nAccumulatedCoupled + 1)
+                    avgThermalForcingAtZLevelsMask(iLevelGlc, iCell) = &
+                        ( avgThermalForcingAtZLevelsMask(iLevelGlc, iCell) * nAccumulatedCoupled &
+                          + 0.0_RKIND) / ( nAccumulatedCoupled + 1)
+                    cycle
+                end if
+
+                ! find which zMid values glcz lies between and the linear
+                ! interpolation factor alpha between them
+
+                zMin = zMid(minLevelCell(iCell), iCell)
+                zMax = zMid(maxLevelCell(iCell), iCell)
+                if (glcz > zMin) then
+                    ! above the middle of the top level so no interpolation
+                    iLevelAbove = minLevelCell(iCell)
+                    iLevelBelow = minLevelCell(iCell)
+                    alpha = 0.0_RKIND
+                else if (glcz > zMax) then
+                    ! below the middle of the bottom level so no interpolation
+                    iLevelAbove = maxLevelCell(iCell)
+                    iLevelBelow = maxLevelCell(iCell)
+                    alpha = 0.0_RKIND
+                else
+                    do iLevel = minLevelCell(iCell), maxLevelCell(iCell) - 1
+                        iLevelAbove = iLevel
+                        iLevelBelow = iLevel + 1
+                        zAbove = zMid(iLevelAbove, iCell)
+                        zBelow = zMid(iLevelBelow, iCell)
+                        if (glcz >= zBelow) then
+                            exit
+                        end if
+                    end do
+                    alpha = (glcz - zAbove) / (zBelow - zAbove)
+                end if
+
+                ! linearly interpolate salinity, temperature, and pressure
+                salin = activeTracers(indexSalinity, iLevelAbove, iCell) * (1.0_RKIND - alpha) &
+                      + activeTracers(indexSalinity, iLevelBelow, iCell) * alpha
+
+                temp = activeTracers(indexTemperature, iLevelAbove, iCell) * (1.0_RKIND - alpha) &
+                     + activeTracers(indexTemperature, iLevelBelow, iCell) * alpha
+
+                press = pressure(iLevelAbove, iCell) * (1.0_RKIND - alpha) &
+                      + pressure(iLevelBelow, iCell) * alpha
+
+                freezingTemp = ocn_freezing_temperature(salinity=salin, pressure=press, &
+                                                        inLandIceCavity=.true.)
+
+                avgThermalForcingAtZLevels(iLevelGlc, iCell) = &
+                    ( avgThermalForcingAtZLevels(iLevelGlc, iCell) * nAccumulatedCoupled &
+                      + temp - freezingTemp ) / ( nAccumulatedCoupled + 1)
+                avgThermalForcingAtZLevelsMask(iLevelGlc, iCell) = &
+                    ( avgThermalForcingAtZLevelsMask(iLevelGlc, iCell) * nAccumulatedCoupled &
+                     + 1.0_RKIND) / ( nAccumulatedCoupled + 1)
+            end do
+        end do
+        !$omp end do
+        !$omp end parallel
+
+    end subroutine accumulate_glc_3d_thermal_forcing!}}}
 
 end module ocn_time_average_coupled
