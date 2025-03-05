@@ -703,15 +703,8 @@ struct Functions
   static void cloud_water_conservation(const Spack& qc, const Scalar dt,
     Spack& qc2qr_autoconv_tend, Spack& qc2qr_accret_tend, Spack &qc2qi_collect_tend, Spack& qc2qi_hetero_freeze_tend,
     Spack& qc2qr_ice_shed_tend, Spack& qc2qi_berg_tend, Spack& qi2qv_sublim_tend, Spack& qv2qi_vapdep_tend,
-    Spack& qcheti_cnt, Spack& qicnt, const bool& use_hetfrz_classnuc, 
-    const Spack& cld_frac_l, const Spack& cld_frac_i,
-    const Smask& context = Smask(true) );
-
-  KOKKOS_FUNCTION
-  static void cloud_water_conservation(const Spack& qc, const Scalar dt,
-    Spack& qc2qr_autoconv_tend, Spack& qc2qr_accret_tend, Spack &qc2qi_collect_tend, Spack& qc2qi_hetero_freeze_tend,
-    Spack& qc2qr_ice_shed_tend, Spack& qc2qi_berg_tend, Spack& qi2qv_sublim_tend, Spack& qv2qi_vapdep_tend,
-    Spack& qcheti_cnt, Spack& qicnt, const bool& use_hetfrz_classnuc, const Smask& context = Smask(true) );
+    Spack& qcheti_cnt, Spack& qicnt, const bool& use_hetfrz_classnuc, const Smask& context = Smask(true),
+    const Spack& cld_frac_l = Spack(), const Spack& cld_frac_i = Spack(), const P3Runtime& runtime_options = {} );
 
   KOKKOS_FUNCTION
   static void rain_water_conservation(
