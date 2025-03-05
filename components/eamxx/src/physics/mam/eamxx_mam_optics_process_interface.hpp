@@ -78,6 +78,14 @@ class MAMOptics final : public MAMGenericInterface {
   // Mapping from old RRTMG sw bands to new band ordering in RRTMGP
   //  given old index swband (RRTMG) return new index swband RRTMGP
   mam_coupling::view_int_1d get_idx_rrtmgp_from_rrtmg_swbands_;
+    // aerosol state variables
+  mam_coupling::AerosolState wet_aero_, dry_aero_;
+  // wet mixing ratios (water species)
+  mam_coupling::WetAtmosphere wet_atm_;
+  // dry mixing ratios (water species)
+  mam_coupling::DryAtmosphere dry_atm_;
+  // workspace manager for internal local variables
+  mam_coupling::Buffer buffer_;
 };  // MAMOptics
 
 }  // namespace scream

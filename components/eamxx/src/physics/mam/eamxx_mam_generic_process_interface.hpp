@@ -35,34 +35,38 @@ class MAMGenericInterface : public scream::AtmosphereProcess {
   // The limits are declared in physical_limits.
   void add_interval_checks();
   //
-  void populate_interstitial_wet_and_dry_aero();
-  void populate_cloudborne_wet_and_dry_aero();
+  void populate_interstitial_wet_and_dry_aero(mam_coupling::AerosolState& wet_aero,
+   mam_coupling::AerosolState& dry_aero,
+   mam_coupling::Buffer& buffer);
+  void populate_cloudborne_wet_and_dry_aero(mam_coupling::AerosolState& wet_aero,
+                                            mam_coupling::AerosolState& dry_aero,
+                                            mam_coupling::Buffer& buffer);
   // Populate the wet_aero and dry_aero structs.
-  void populate_wet_and_dry_aero();
+  void populate_wet_and_dry_aero(mam_coupling::AerosolState& wet_aero,
+                                 mam_coupling::AerosolState& dry_aero,
+                                 mam_coupling::Buffer& buffer);
   // Populate the wet_atm and dry_atm struct.
-  void populate_wet_and_dry_atm();
+  void populate_wet_and_dry_atm(mam_coupling::WetAtmosphere& wet_atm,
+                                mam_coupling::DryAtmosphere& dry_atm,
+                                mam_coupling::Buffer& buffer);
   // Add tracers that are needed by the wet_atm and dry_atm.
   void add_tracers_wet_and_dry_atm();
 
   // Atmosphere processes often have a pre-processing step that constructs
   // required variables from the set of fields stored in the field manager.
   // This functor implements this step, which is called during run_impl.
-  void pre_process();
+  void pre_process(mam_coupling::AerosolState& wet_aero,
+                   mam_coupling::AerosolState& dry_aero,
+                   mam_coupling::WetAtmosphere& wet_atm,
+                   mam_coupling::DryAtmosphere& dry_atm);
   // Atmosphere processes often have a post-processing step prepares output
   // from this process for the Field Manager. This functor implements this
   // step, which is called during run_impl.
   // Postprocessing functor
-  void post_process();
+  void post_process(mam_coupling::AerosolState& wet_aero, mam_coupling::AerosolState& dry_aero,
+                    mam_coupling::DryAtmosphere& dry_atm);
   // Physics grid for column information.
   std::shared_ptr<const AbstractGrid> grid_;
-  // aerosol state variables
-  mam_coupling::AerosolState wet_aero_, dry_aero_;
-  // wet mixing ratios (water species)
-  mam_coupling::WetAtmosphere wet_atm_;
-  // dry mixing ratios (water species)
-  mam_coupling::DryAtmosphere dry_atm_;
-  // workspace manager for internal local variables
-  mam_coupling::Buffer buffer_;
   bool check_fields_intervals_{false};
     // number of horizontal columns and vertical levels
   int ncol_, nlev_;

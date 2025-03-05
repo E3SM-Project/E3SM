@@ -167,7 +167,10 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
 
   // offset for converting pcnst index to gas_pcnst index
   static constexpr int offset_ =
-      mam4::aero_model::pcnst - mam4::gas_chemistry::gas_pcnst;
+
+  mam4::aero_model::pcnst - mam4::gas_chemistry::gas_pcnst;
+  // workspace manager for internal local variables
+  mam_coupling::Buffer buffer_;
 
 };  // MAMSrfOnlineEmiss
 

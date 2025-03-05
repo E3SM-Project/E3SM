@@ -104,7 +104,7 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   // the buffer
   constexpr int ntot_amode = mam4::AeroConfig::num_modes();
 
-  populate_wet_and_dry_atm();
+  populate_wet_and_dry_atm(wet_atm_,dry_atm_,buffer_);
   // FIXME: In other MAM4xx processes,
   // we are using pseudo_density instead of pseudo_density_dry to set
   // dry_atm_.p_del.
@@ -114,7 +114,7 @@ void MAMOptics::initialize_impl(const RunType run_type) {
 
   // interstitial and cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
-  populate_wet_and_dry_aero();
+  populate_wet_and_dry_aero(wet_aero_, dry_aero_, buffer_);
   // prescribed volcanic aerosols.
   ssa_cmip6_sw_ =
       mam_coupling::view_3d("ssa_cmip6_sw", ncol_, nlev_, nswbands_);
@@ -271,7 +271,7 @@ void MAMOptics::run_impl(const double dt) {
       KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
   // preprocess input -- needs a scan for the calculation of atm height
-  pre_process();
+  pre_process(wet_aero_, dry_aero_, wet_atm_,dry_atm_);
   Kokkos::fence();
 
   // tau_w_g : aerosol asymmetry parameter * tau * w
@@ -362,7 +362,7 @@ void MAMOptics::run_impl(const double dt) {
   const auto &get_idx_rrtmgp_from_rrtmg_swbands =
       get_idx_rrtmgp_from_rrtmg_swbands_;
   // postprocess output
-  post_process();
+  post_process(wet_aero_, dry_aero_, dry_atm_);
   Kokkos::fence();
 
   // nswbands loop is using rrtmg indexing.

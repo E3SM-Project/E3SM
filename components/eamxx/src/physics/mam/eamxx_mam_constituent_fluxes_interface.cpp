@@ -91,7 +91,7 @@ void MAMConstituentFluxes::initialize_impl(const RunType run_type) {
   add_interval_checks();
 
   // Populate the wet atmosphere state with views from fields
-  populate_wet_and_dry_atm();
+  populate_wet_and_dry_atm(wet_atm_,dry_atm_,buffer_);
 
   // Constituent fluxes at the surface (gasses and aerosols) [kg/m2/s]
   constituent_fluxes_ =
@@ -99,7 +99,7 @@ void MAMConstituentFluxes::initialize_impl(const RunType run_type) {
 
   // interstitial and cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
-  populate_wet_and_dry_aero();
+  populate_wet_and_dry_aero(wet_aero_, dry_aero_, buffer_);
 
 }  // end initialize_impl()
 

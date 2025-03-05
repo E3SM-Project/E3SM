@@ -216,7 +216,7 @@ void MAMAci::initialize_impl(const RunType run_type) {
   liqcldf_prev_ = get_field_in("cldfrac_liq_prev").get_view<const Real **>();
   kvh_mid_      = get_field_in("eddy_diff_heat").get_view<const Real **>();
 
-  populate_wet_and_dry_atm();
+  populate_wet_and_dry_atm(wet_atm_, dry_atm_, buffer_);
 
   // ------------------------------------------------------------------------
   // Output fields to be used by other processes
@@ -229,7 +229,7 @@ void MAMAci::initialize_impl(const RunType run_type) {
 
   // interstitial and cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
-  populate_wet_and_dry_aero();
+  populate_wet_and_dry_aero(wet_aero_, dry_aero_, buffer_);
 
   // hetrozenous freezing outputs
   hetfrz_immersion_nucleation_tend_ =
@@ -506,7 +506,8 @@ void MAMAci::run_impl(const double dt) {
                                dry_aero_);
 
   // call post processing to convert dry mixing ratios to wet mixing ratios
-  post_process();
+
+  post_process(wet_aero_, dry_aero_, dry_atm_);
   Kokkos::fence();  // wait before returning to calling function
 }
 

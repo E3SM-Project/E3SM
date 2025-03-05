@@ -97,6 +97,14 @@ class MAMDryDep final : public MAMGenericInterface  {
   std::shared_ptr<AtmosphereInput> dataReader_;
   const_view_2d frac_landuse_;
   view_2d frac_landuse_fm_;
+    // aerosol state variables
+  mam_coupling::AerosolState wet_aero_, dry_aero_;
+  // wet mixing ratios (water species)
+  mam_coupling::WetAtmosphere wet_atm_;
+  // dry mixing ratios (water species)
+  mam_coupling::DryAtmosphere dry_atm_;
+  // workspace manager for internal local variables
+  mam_coupling::Buffer buffer_;
 
  public:
   using KT = ekat::KokkosTypes<DefaultDevice>;

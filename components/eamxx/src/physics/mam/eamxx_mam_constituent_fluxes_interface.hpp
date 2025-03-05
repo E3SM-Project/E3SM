@@ -21,6 +21,14 @@ class MAMConstituentFluxes final : public MAMGenericInterface {
  private:
 
   const_view_2d constituent_fluxes_;
+  // aerosol state variables
+  mam_coupling::AerosolState wet_aero_, dry_aero_;
+  // wet mixing ratios (water species)
+  mam_coupling::WetAtmosphere wet_atm_;
+  // dry mixing ratios (water species)
+  mam_coupling::DryAtmosphere dry_atm_;
+  // workspace manager for internal local variables
+  mam_coupling::Buffer buffer_;
 
  public:
   // Constructor

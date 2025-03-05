@@ -155,7 +155,10 @@ void MAMGenericInterface::add_tracers_aerosol_and_gases() {
 }
 
 // ================================================================
-void MAMGenericInterface::populate_cloudborne_wet_and_dry_aero() {
+void MAMGenericInterface::populate_cloudborne_wet_and_dry_aero(
+  mam_coupling::AerosolState& wet_aero,
+   mam_coupling::AerosolState& dry_aero,
+   mam_coupling::Buffer& buffer) {
   // cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
   for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
@@ -163,33 +166,36 @@ void MAMGenericInterface::populate_cloudborne_wet_and_dry_aero() {
     // cloudborne aerosol tracers of interest: number (n) mixing ratios
     const std::string cld_nmr_field_name =
         mam_coupling::cld_aero_nmr_field_name(m);
-    wet_aero_.cld_aero_nmr[m] =
+    wet_aero.cld_aero_nmr[m] =
         get_field_out(cld_nmr_field_name).get_view<Real **>();
-    dry_aero_.cld_aero_nmr[m] = buffer_.dry_cld_aero_nmr[m];
+    dry_aero.cld_aero_nmr[m] = buffer.dry_cld_aero_nmr[m];
 
     for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
       // (cloudborne) aerosol tracers of interest: mass (q) mixing ratios
       const std::string cld_mmr_field_name =
           mam_coupling::cld_aero_mmr_field_name(m, a);
       if(not cld_mmr_field_name.empty()) {
-        wet_aero_.cld_aero_mmr[m][a] =
+        wet_aero.cld_aero_mmr[m][a] =
             get_field_out(cld_mmr_field_name).get_view<Real **>();
-        dry_aero_.cld_aero_mmr[m][a] = buffer_.dry_cld_aero_mmr[m][a];
+        dry_aero.cld_aero_mmr[m][a] = buffer.dry_cld_aero_mmr[m][a];
       }
     }
   }
 }
 // ================================================================
-void MAMGenericInterface::populate_interstitial_wet_and_dry_aero() {
+void MAMGenericInterface::populate_interstitial_wet_and_dry_aero(
+  mam_coupling::AerosolState& wet_aero,
+  mam_coupling::AerosolState& dry_aero,
+  mam_coupling::Buffer& buffer) {
   // interstitial aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
   for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
     // interstitial aerosol tracers of interest: number (n) mixing ratios
     const std::string int_nmr_field_name =
         mam_coupling::int_aero_nmr_field_name(m);
-    wet_aero_.int_aero_nmr[m] =
+    wet_aero.int_aero_nmr[m] =
         get_field_out(int_nmr_field_name).get_view<Real **>();
-    dry_aero_.int_aero_nmr[m] = buffer_.dry_int_aero_nmr[m];
+    dry_aero.int_aero_nmr[m] = buffer.dry_int_aero_nmr[m];
 
     for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
       // (interstitial) aerosol tracers of interest: mass (q) mixing ratios
@@ -197,66 +203,69 @@ void MAMGenericInterface::populate_interstitial_wet_and_dry_aero() {
           mam_coupling::int_aero_mmr_field_name(m, a);
 
       if(not int_mmr_field_name.empty()) {
-        wet_aero_.int_aero_mmr[m][a] =
+        wet_aero.int_aero_mmr[m][a] =
             get_field_out(int_mmr_field_name).get_view<Real **>();
-        dry_aero_.int_aero_mmr[m][a] = buffer_.dry_int_aero_mmr[m][a];
+        dry_aero.int_aero_mmr[m][a] = buffer.dry_int_aero_mmr[m][a];
       }
     }
   }
   for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
     const std::string gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
-    wet_aero_.gas_mmr[g] =
+    wet_aero.gas_mmr[g] =
         get_field_out(gas_mmr_field_name).get_view<Real **>();
-    dry_aero_.gas_mmr[g] = buffer_.dry_gas_mmr[g];
+    dry_aero.gas_mmr[g] = buffer.dry_gas_mmr[g];
   }
 }
 
 
 // ================================================================
-void MAMGenericInterface::populate_wet_and_dry_aero() {
-    populate_interstitial_wet_and_dry_aero();
-    populate_cloudborne_wet_and_dry_aero();
+void MAMGenericInterface::populate_wet_and_dry_aero(mam_coupling::AerosolState& wet_aero,
+ mam_coupling::AerosolState& dry_aero,
+ mam_coupling::Buffer& buffer) {
+    populate_interstitial_wet_and_dry_aero(wet_aero, dry_aero, buffer);
+    populate_cloudborne_wet_and_dry_aero(wet_aero, dry_aero, buffer);
 }
-void MAMGenericInterface::populate_wet_and_dry_atm() {
+void MAMGenericInterface::populate_wet_and_dry_atm(mam_coupling::WetAtmosphere& wet_atm,
+mam_coupling::DryAtmosphere& dry_atm, mam_coupling::Buffer& buffer) {
   // store fields only to be converted to dry mmrs in wet_atm_
-  wet_atm_.qv = get_field_in("qv").get_view<const Real **>();
-  wet_atm_.qc = get_field_in("qc").get_view<const Real **>();
-  wet_atm_.nc = get_field_in("nc").get_view<const Real **>();
-  wet_atm_.qi = get_field_in("qi").get_view<const Real **>();
-  wet_atm_.ni = get_field_in("ni").get_view<const Real **>();
+  wet_atm.qv = get_field_in("qv").get_view<const Real **>();
+  wet_atm.qc = get_field_in("qc").get_view<const Real **>();
+  wet_atm.nc = get_field_in("nc").get_view<const Real **>();
+  wet_atm.qi = get_field_in("qi").get_view<const Real **>();
+  wet_atm.ni = get_field_in("ni").get_view<const Real **>();
 
   // store rest fo the atm fields in dry_atm_in
-  dry_atm_.z_surf = 0;
-  dry_atm_.T_mid  = get_field_in("T_mid").get_view<const Real **>();
-  dry_atm_.p_mid  = get_field_in("p_mid").get_view<const Real **>();
-  dry_atm_.p_int  = get_field_in("p_int").get_view<const Real **>();
-  dry_atm_.p_del  = get_field_in("pseudo_density").get_view<const Real **>();
-  dry_atm_.omega  = get_field_in("omega").get_view<const Real **>();
+  dry_atm.z_surf = 0;
+  dry_atm.T_mid  = get_field_in("T_mid").get_view<const Real **>();
+  dry_atm.p_mid  = get_field_in("p_mid").get_view<const Real **>();
+  dry_atm.p_int  = get_field_in("p_int").get_view<const Real **>();
+  dry_atm.p_del  = get_field_in("pseudo_density").get_view<const Real **>();
+  dry_atm.omega  = get_field_in("omega").get_view<const Real **>();
 
-  // store fields converted to dry mmr from wet mmr in dry_atm_
-  dry_atm_.qv = buffer_.qv_dry;
-  dry_atm_.qc = buffer_.qc_dry;
-  dry_atm_.nc = buffer_.nc_dry;
-  dry_atm_.qi = buffer_.qi_dry;
-  dry_atm_.ni = buffer_.ni_dry;
+  // store fields converted to dry mmr from wet mmr in dry_atm
+  dry_atm.qv = buffer.qv_dry;
+  dry_atm.qc = buffer.qc_dry;
+  dry_atm.nc = buffer.nc_dry;
+  dry_atm.qi = buffer.qi_dry;
+  dry_atm.ni = buffer.ni_dry;
 
   // pbl_height
-  dry_atm_.pblh = get_field_in("pbl_height").get_view<const Real *>();
+  dry_atm.pblh = get_field_in("pbl_height").get_view<const Real *>();
 
   // geometric thickness of layers (m)
-  dry_atm_.dz = buffer_.dz;
+  dry_atm.dz = buffer.dz;
 
   // geopotential height above surface at interface levels (m)
-  dry_atm_.z_iface = buffer_.z_iface;
+  dry_atm.z_iface = buffer.z_iface;
 
   // geopotential height above surface at mid levels (m)
-  dry_atm_.z_mid = buffer_.z_mid;
+  dry_atm.z_mid = buffer.z_mid;
 
   // total cloud fraction
-  dry_atm_.cldfrac = get_field_in("cldfrac_tot").get_view<const Real **>();
+  dry_atm.cldfrac = get_field_in("cldfrac_tot").get_view<const Real **>();
 
   // computed updraft velocity
-  dry_atm_.w_updraft = buffer_.w_updraft;
+  dry_atm.w_updraft = buffer.w_updraft;
 }
 void MAMGenericInterface::add_tracers_wet_and_dry_atm() {
   // Define the different field layouts that will be used for this process
@@ -336,15 +345,13 @@ void MAMGenericInterface::add_interval_checks() {
   }
 }
 
-void MAMGenericInterface::pre_process()
+void MAMGenericInterface::pre_process(mam_coupling::AerosolState& wet_aero,
+ mam_coupling::AerosolState& dry_aero,
+ mam_coupling::WetAtmosphere& wet_atm,
+ mam_coupling::DryAtmosphere& dry_atm)
 {
   const auto scan_policy = ekat::ExeSpaceUtils<
       KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
-
-     const auto & wet_atm = wet_atm_;
-     const auto & dry_atm = dry_atm_;
-     const auto & wet_aero = wet_aero_;
-     const auto & dry_aero  = dry_aero_;
      Kokkos::parallel_for(
       scan_policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
       const int i = team.league_rank();  // column index
@@ -363,15 +370,13 @@ void MAMGenericInterface::pre_process()
 
 }
 
-void MAMGenericInterface::post_process()
+void MAMGenericInterface::post_process(mam_coupling::AerosolState& wet_aero,
+ mam_coupling::AerosolState& dry_aero,
+mam_coupling::DryAtmosphere& dry_atm)
 {
 
   const auto scan_policy = ekat::ExeSpaceUtils<
       KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
-
-     const auto & dry_atm = dry_atm_;
-     const auto & dry_aero  = dry_aero_;
-     const auto & wet_aero = wet_aero_;
      Kokkos::parallel_for(
       scan_policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
       const int i = team.league_rank();  // column index

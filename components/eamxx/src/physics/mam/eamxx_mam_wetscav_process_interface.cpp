@@ -179,23 +179,12 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
   // print_fields_names();
   add_interval_checks();
 
-  populate_wet_and_dry_atm();
+  populate_wet_and_dry_atm(wet_atm_,dry_atm_,buffer_);
   dry_atm_.phis  = get_field_in("phis").get_view<const Real *>();
-
-  // store fields converted to dry mmr from wet mmr in dry_atm_
-  dry_atm_.qv        = buffer_.qv_dry;
-  dry_atm_.qc        = buffer_.qc_dry;
-  dry_atm_.nc        = buffer_.nc_dry;
-  dry_atm_.qi        = buffer_.qi_dry;
-  dry_atm_.ni        = buffer_.ni_dry;
-  dry_atm_.z_mid     = buffer_.z_mid;
-  dry_atm_.dz        = buffer_.dz;
-  dry_atm_.z_iface   = buffer_.z_iface;
-  dry_atm_.w_updraft = buffer_.w_updraft;
 
   // interstitial and cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
-  populate_wet_and_dry_aero();
+  populate_wet_and_dry_aero(wet_aero_, dry_aero_, buffer_);
 
   //---------------------------------------------------------------------------------
   // Allocate memory
@@ -267,7 +256,7 @@ void MAMWetscav::run_impl(const double dt) {
 
   // preprocess input -- needs a scan for the calculation of all variables
   // needed by this process or setting up MAM4xx classes and their objects
-  pre_process();
+  pre_process(wet_aero_, dry_aero_, wet_atm_,dry_atm_);
   Kokkos::fence();
 
   const mam_coupling::DryAtmosphere &dry_atm = dry_atm_;
@@ -429,7 +418,7 @@ void MAMWetscav::run_impl(const double dt) {
 
   // call post processing to convert dry mixing ratios to wet mixing ratios
   // and update the state
-  post_process();
+  post_process(wet_aero_, dry_aero_, dry_atm_);
   Kokkos::fence();  // wait before returning to calling function
 }
 

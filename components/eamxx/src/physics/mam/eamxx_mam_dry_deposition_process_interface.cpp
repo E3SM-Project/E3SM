@@ -196,10 +196,10 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   // Check pre/post condition interval values for all fields employed by this interface
   add_interval_checks();
 
-  populate_wet_and_dry_atm();
+  populate_wet_and_dry_atm(wet_atm_,dry_atm_,buffer_);
   // interstitial and cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
-  populate_wet_and_dry_aero();
+  populate_wet_and_dry_aero(wet_aero_, dry_aero_, buffer_);
 
   //-----------------------------------------------------------------
   // Allocate memory
@@ -255,7 +255,7 @@ void MAMDryDep::run_impl(const double dt) {
       KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
   // preprocess input -- needs a scan for the calculation of atm height
-  pre_process();
+  pre_process(wet_aero_, dry_aero_, wet_atm_,dry_atm_);
   Kokkos::fence();
 
   // -------------------------------------------------------------
@@ -319,7 +319,7 @@ void MAMDryDep::run_impl(const double dt) {
 
   // call post processing to convert dry mixing ratios to wet mixing ratios
   // and update the state
-  post_process();
+  post_process(wet_aero_, dry_aero_, dry_atm_);
   Kokkos::fence();  // wait before returning to calling function
 }  // run_impl
 }  // namespace scream

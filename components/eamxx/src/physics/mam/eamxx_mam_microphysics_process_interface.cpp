@@ -370,7 +370,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   // ---------------------------------------------------------------
   // Input fields read in from IC file, namelist or other processes
   // ---------------------------------------------------------------
-  populate_wet_and_dry_atm();
+  populate_wet_and_dry_atm(wet_atm_,dry_atm_,buffer_);
   // FIXME: we are using cldfrac_tot in other mam4xx process.
   dry_atm_.cldfrac = get_field_in("cldfrac_liq").get_view<const Real **>();
   // FIXME: phis is not populated by populate_wet_and_dry_atm.
@@ -380,7 +380,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
 
   // interstitial and cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
-  populate_wet_and_dry_aero();
+  populate_wet_and_dry_aero(wet_aero_, dry_aero_, buffer_);
 
   // create our photolysis rate calculation table
   const std::string rsf_file = m_params.get<std::string>("mam4_rsf_file");
@@ -473,7 +473,7 @@ void MAMMicrophysics::run_impl(const double dt) {
       ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol, nlev);
 
   // preprocess input -- needs a scan for the calculation of atm height
-  pre_process();
+  pre_process(wet_aero_, dry_aero_, wet_atm_,dry_atm_);
   Kokkos::fence();
 
   //----------- Variables from microphysics scheme -------------
@@ -847,7 +847,7 @@ void MAMMicrophysics::run_impl(const double dt) {
   Kokkos::fence();
 
   // postprocess output
-  post_process();
+  post_process(wet_aero_, dry_aero_, dry_atm_);
   Kokkos::fence();
 
 }  // MAMMicrophysics::run_impl

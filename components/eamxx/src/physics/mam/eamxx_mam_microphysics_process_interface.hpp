@@ -145,6 +145,14 @@ class MAMMicrophysics final : public MAMGenericInterface {
   // // dq/dt for convection [kg/kg/s]
   view_1d cmfdqr_;
   view_2d work_set_het_;
+    // aerosol state variables
+  mam_coupling::AerosolState wet_aero_, dry_aero_;
+  // wet mixing ratios (water species)
+  mam_coupling::WetAtmosphere wet_atm_;
+  // dry mixing ratios (water species)
+  mam_coupling::DryAtmosphere dry_atm_;
+  // workspace manager for internal local variables
+  mam_coupling::Buffer buffer_;
 
 
 };  // MAMMicrophysics
