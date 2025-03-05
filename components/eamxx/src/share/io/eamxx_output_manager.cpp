@@ -653,7 +653,7 @@ setup_internals (const std::shared_ptr<fm_type>& field_mgr,
       vos_t fnames;
       // There may be no RESTART group on this grid
       if (field_mgr->has_group("RESTART", gname)) {
-        auto restart_group = field_mgr->get_groups_info("RESTART", gname);
+        auto restart_group = field_mgr->get_group_info("RESTART", gname);
         EKAT_REQUIRE_MSG (not fields_pl.isParameter(gname),
           "Error! For restart output, don't specify the fields names. We will create this info internally.\n");
         for (const auto& n : restart_group.m_fields_names) {
