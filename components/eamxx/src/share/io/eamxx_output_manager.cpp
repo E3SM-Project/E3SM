@@ -61,23 +61,32 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
     if (*it == "Physics PG2") pg2_grid_in_io_streams = true;
   }
 
-  // For each grid, create a separate output stream.
-  if (grid_names.size()==1) {
+  if (m_params.isParameter("Field Names")) {
+    // This is the simple case where the output parameters do not
+    // list fields on grids, but just a list of fields.
+    // Simply create an output stream using the gridname given.
+
+    // TODO: This is only used for unit tests, we should remove
+    //       and keep the "Fields: Grid: Field Name:" structure
+
+    // In this case, require a single grid passed here
+    EKAT_REQUIRE_MSG(grid_names.size()==1,
+      "Error! Output requested on multiple grids but no grid information exists in output params.\n");
+
     auto output = std::make_shared<output_type>(m_io_comm,m_params,field_mgr,*grid_names.begin());
     output->set_logger(m_atm_logger);
     m_output_streams.push_back(output);
   } else {
+    // Loop over all grids, creating an output stream for each
     for (auto it=fields_pl.sublists_names_cbegin(); it!=fields_pl.sublists_names_cend(); ++it) {
-      const auto& gname = *it;
-
       // If this is a GLL grid (or IO Grid is GLL) and PG2 fields
       // were found above, we must reset the grid COL tag name to
       // be "ncol_d" to avoid conflicting lengths with ncol on
       // the PG2 grid.
       if (pg2_grid_in_io_streams) {
-        const auto& grid_pl = fields_pl.sublist(gname);
+        const auto& grid_pl = fields_pl.sublist(*it);
         bool reset_ncol_naming = false;
-        if (gname == "Physics GLL") reset_ncol_naming = true;
+        if (*it == "Physics GLL") reset_ncol_naming = true;
         if (grid_pl.isParameter("IO Grid Name")) {
           if (grid_pl.get<std::string>("IO Grid Name") == "Physics GLL") {
             reset_ncol_naming = true;
@@ -90,14 +99,20 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
 	      }
       }
 
-      EKAT_REQUIRE_MSG (field_mgr->get_grids_manager()->has_grid(gname),
-          "Error! Output requested on grid '" + gname + "', but the field manager does not store such grid.\n");
+      // Verify this grid exists in FM
+      EKAT_REQUIRE_MSG (field_mgr->get_grids_manager()->has_grid(*it),
+          "Error! Output requested on grid '" + *it + "', but the field manager does not store such grid.\n");
+
+      // This grid could be an alias. Get the grid name from the grid itself
+      // as this is what the FieldManager expects.
+      const auto& gname = field_mgr->get_grids_manager()->get_grid(*it)->name();
 
       auto output = std::make_shared<output_type>(m_io_comm,m_params,field_mgr,gname);
       output->set_logger(m_atm_logger);
       m_output_streams.push_back(output);
     }
   }
+
 
   // For normal output, setup the geometry data streams, which we used to write the
   // geo data in the output file when we create it.
