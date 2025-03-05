@@ -180,30 +180,22 @@ has_group (const std::string& group_name, const std::string& grid_name) const {
   return false;
 }
 
-const FieldIdentifier& FieldManager::
-get_field_id (const std::string& name, const std::string& grid_name) const {
-  auto ptr = get_field_ptr(name, grid_name);
-  EKAT_REQUIRE_MSG(ptr!=nullptr,
-    "Error! Field '" + name + "' on grid '" + grid_name + "' not found.\n");
-  return ptr->get_header().get_identifier();
-}
-
 Field FieldManager::get_field (const std::string& name, const std::string& grid_name) const {
-
   EKAT_REQUIRE_MSG(m_repo_state==RepoState::Closed,
-      "Error! Cannot get fields from the repo while registration has not yet completed.\n");
-  auto ptr = get_field_ptr(name, grid_name);
-  EKAT_REQUIRE_MSG(ptr!=nullptr, "Error! Field " + name + " on grid " + grid_name + " not found.\n");
-  return *ptr;
+    "Error! Cannot get fields from the repo while registration has not yet completed.\n");
+  EKAT_REQUIRE_MSG(has_field(name, grid_name),
+    "Error! Field " + name + " on grid " + grid_name + " not found.\n");
+
+  return *m_fields.at(grid_name).at(name);
 }
 
 Field& FieldManager::get_field (const std::string& name, const std::string& grid_name) {
-
   EKAT_REQUIRE_MSG(m_repo_state==RepoState::Closed,
-      "Error! Cannot get fields from the repo while registration has not yet completed.\n");
-      auto ptr = get_field_ptr(name, grid_name);
-      EKAT_REQUIRE_MSG(ptr!=nullptr, "Error! Field " + name + " on grid " + grid_name + " not found.\n");
-      return *ptr;
+    "Error! Cannot get fields from the repo while registration has not yet completed.\n");
+  EKAT_REQUIRE_MSG(has_field(name, grid_name),
+    "Error! Field " + name + " on grid " + grid_name + " not found.\n");
+
+  return *m_fields.at(grid_name).at(name);
 }
 
 FieldGroupInfo FieldManager::
@@ -264,19 +256,26 @@ get_field_group (const std::string& group_name, const std::string& grid_name) co
 
   // Find all the fields registered on given grid and set them in the group
   for (const auto& fname : group.m_info->m_fields_names) {
-    auto f = get_field_ptr(fname, grid_name);
-    group.m_fields[fname] = f;
+    group.m_fields[fname] = m_fields.at(grid_name).at(fname);
   }
 
   // Fetch the bundle field (if bundled)
   if (group.m_info->m_bundled) {
     // All fields in a group have the same parent, get the parent from the 1st one
     const auto& parent_header = group.m_fields.begin()->second->get_header().get_parent();
-    const auto& parent_id = parent_header->get_identifier();
-    const auto& parent_field = get_field_ptr(parent_id);
 
     EKAT_REQUIRE_MSG(parent_header!=nullptr,
       "Error! A field belonging to a bundled field group is missing its 'parent'.\n");
+
+    const auto& parent_id = parent_header->get_identifier();
+
+    EKAT_REQUIRE_MSG(has_field(parent_id.name(), grid_name),
+      "Internal FieldManager Error! Bundled field must exist in the FieldManager:\n"
+      "  - Group: " + group_name + "\n"
+      "  - Bundeled field: " + parent_id.name() + "\n"
+      "  - Grid:  " + grid_name + "\n");
+
+    const auto& parent_field = m_fields.at(grid_name).at(parent_id.name());
 
     // Get the parent field of one of the group fields and check if
     // all it's children are in the group.
@@ -795,22 +794,6 @@ void FieldManager::add_field (const Field& f) {
   if (m_repo_state==RepoState::Clean) m_repo_state = RepoState::Closed;
 }
 
-std::shared_ptr<Field>
-FieldManager::get_field_ptr (const identifier_type& id) const {
-  const auto grid_name = id.get_grid_name();
-  auto it = m_fields.at(grid_name).find(id.name());
-  if (it!=m_fields.at(grid_name).end() && it->second->get_header().get_identifier()==id) {
-    return it->second;
-  }
-  return nullptr;
-}
-
-std::shared_ptr<Field>
-FieldManager::get_field_ptr (const std::string& name, const std::string& grid_name) const {
-  auto it = m_fields.at(grid_name).find(name);
-  return it==m_fields.at(grid_name).end() ? nullptr : it->second;
-}
-
 void FieldManager::pre_process_bundled_group_requests () {
   // For each bundled group, loop over all fields in the group and register
   // on to each grid the group is requested on (if necessary)
@@ -853,7 +836,7 @@ void FieldManager::pre_process_bundled_group_requests () {
 
         // Get a FID for this grid by asking for an equivalent layout
         // to the layout on the src grid
-        const auto src_fid = get_field_id(field_name, registered_grid);
+        const auto src_fid = m_fields.at(registered_grid).at(field_name)->get_header().get_identifier();
         const auto fl = m_grids_mgr->get_grid(grid_name)->equivalent_layout(src_fid.get_layout());
         FieldIdentifier fid(field_name, fl, src_fid.get_units(), grid_name);
 
