@@ -3485,6 +3485,34 @@ h_{10} &amp;=&amp; \dfrac{-s_1(u_2 - \bar{\mu}h)}{d_2} \\[0.5em]
 \end{eqnarray}
 \]</div>
 <h3 id="radiation-absorbed-by-sunlit-and-shaded-leaves">Radiation Absorbed by Sunlit and Shaded Leaves</h3>
+<p>It is assumed that the shaded leaves only receive diffuse radiation, including scattered direct and diffuse radiation. In contrast, the sunlit leaves receive unscattered direct radiation, scattered direct radiation, and diffuse radiation.
+Given these assumptions, the radiation absorbed by shaded and sunlit leaves per unit shaded and sunlit leaf area at the cumulative leaf area index <span class="arithmatex">\(kappa\)</span> is given as:</p>
+<div class="arithmatex">\[
+\begin{eqnarray}
+\overrightarrow{I}_{\ell}^{sha} (\kappa) &amp;=&amp; \overrightarrow{I}_{\ell b}(\kappa) + \overrightarrow{I}_{\ell d}(\kappa) \label{eqn_sha_net_rad} \\[0.5em]
+\overrightarrow{I}_{\ell}^{sun} (\kappa) &amp;=&amp; (1 - \omega)K_b e^{-K_b\kappa}I_{sky,b}^{\downarrow} +  \overrightarrow{I}_{\ell b}(\kappa) + \overrightarrow{I}_{\ell d}(\kappa) \label{eqn_sun_net_rad}
+\end{eqnarray}
+\]</div>
+<p>where <span class="arithmatex">\(\overrightarrow{I}_{\ell b}(\kappa)\)</span> is the net absorbed beam radiation and <span class="arithmatex">\(\overrightarrow{I}_{\ell d}(\kappa)\)</span> is the net absorbed diffuse radiation. These net absorbed beam and diffuse radiation fluxes at the cumulative leaf area index <span class="arithmatex">\(kappa\)</span> are given as:</p>
+<div class="arithmatex">\[
+\begin{eqnarray}
+\overrightarrow{I}_{\ell b}(\kappa) &amp;=&amp; \left[ \omega K_b e^{-K_b \kappa} + \dfrac{d(I_{b}^{\uparrow} - I_b^{\downarrow})}{d\kappa} \right] I_{sky,b}^\downarrow\\[0.5em]
+\overrightarrow{I}_{\ell d}(\kappa) &amp;=&amp; \dfrac{d(I_d^\uparrow - I_d^\downarrow)}{d\kappa} I_{d0}^\downarrow
+\end{eqnarray}
+\]</div>
+<p>The canopy level net absorbed beam and diffused fluxes are obtained by integrating equations \eqnref{eqn_sha_net_rad} - \eqnref{eqn_sun_net_rad} over the canopy while accounting for sunlit and shaded leaf fraction as</p>
+<div class="arithmatex">\[
+\begin{eqnarray}
+\overrightarrow{I}_c^{sha} &amp;=&amp; \int_0^{L+S} \overrightarrow{I}_{\ell}^{sha}(\kappa) \left[ 1 - f_{sun}(\kappa)\right] d\kappa \\[0.5em]
+\overrightarrow{I}_c^{sun} &amp;=&amp; \int_0^{L+S} \overrightarrow{I}_{\ell}^{sun}(\kappa) f_{sun}(\kappa) d\kappa
+\end{eqnarray}
+\]</div>
+<p>where the sunlit fraction of canopy is given by</p>
+<div class="arithmatex">\[
+\begin{equation}
+f_{sun}(\kappa) = e^{-K_b \kappa}
+\end{equation}
+\]</div>
 <h2 id="single-layer-canopy-model-with-the-two-stream-approximation">Single-Layer Canopy Model With the Two-Stream Approximation</h2>
 <p>ELM represents the canopy as a single layer with a sunlit and shaded leaf. The scattered beam and diffuse upward (or downward) radiation fluxes at the canopy top (or bottom) are given by substituting <span class="arithmatex">\(\kappa = 0\)</span> (or <span class="arithmatex">\(\kappa = L + S\)</span>) in equations \eqnref{two_str_dir_up_eqn} -- \eqnref{two_str_dir_dn_eqn} as</p>
 <div class="arithmatex">\[
