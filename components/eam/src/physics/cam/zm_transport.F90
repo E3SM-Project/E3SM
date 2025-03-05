@@ -25,7 +25,7 @@ contains
 
 !===================================================================================================
 
-subroutine zm_transport_tracer( lchnk, doconvtran, q, ncnst, &
+subroutine zm_transport_tracer( doconvtran, q, ncnst, &
                                 mu, md, du, eu, ed, dp, &
                                 jt, mx, ideep, il1g, il2g, &
                                 fracis, dqdt, dpdry, dt ) 
@@ -35,7 +35,6 @@ subroutine zm_transport_tracer( lchnk, doconvtran, q, ncnst, &
    implicit none
    !----------------------------------------------------------------------------
    ! Arguments
-   integer,                               intent(in)  :: lchnk       ! chunk identifier
    integer,                               intent(in)  :: ncnst       ! number of tracers to transport
    logical,  dimension(ncnst),            intent(in)  :: doconvtran  ! flag for doing convective transport
    real(r8), dimension(pcols,pver,ncnst), intent(in)  :: q           ! tracer array (including water vapor)
@@ -299,7 +298,7 @@ end subroutine zm_transport_tracer
 
 !===================================================================================================
 
-subroutine zm_transport_momentum( lchnk, ncol, wind_in, nwind, &
+subroutine zm_transport_momentum( ncol, wind_in, nwind, &
                                   mu, md, du, eu, ed, dp, &
                                   jt, mx, ideep, il1g, il2g, &
                                   wind_tend, pguall, pgdall, icwu, icwd, dt, seten )
@@ -309,7 +308,6 @@ subroutine zm_transport_momentum( lchnk, ncol, wind_in, nwind, &
    implicit none
    !----------------------------------------------------------------------------
    ! Arguments
-   integer,                               intent(in)  :: lchnk       ! chunk identifier
    integer,                               intent(in)  :: ncol        ! number of atmospheric columns
    integer,                               intent(in)  :: nwind       ! number of tracers to transport
    real(r8), dimension(pcols,pver,nwind), intent(in)  :: wind_in     ! input Momentum array
