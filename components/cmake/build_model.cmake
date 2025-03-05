@@ -43,15 +43,9 @@ macro(build_model COMP_CLASS COMP_NAME)
   # Build & include dependency files
   #-------------------------------------------------------------------------------
 
-  if (COMP_NAME STREQUAL "ww3")
-    include(${PROJECT_SOURCE_DIR}/ww3/src/gather_ww3_sources.cmake)
-    set(SOURCES ${SOURCES_RESULT})
-    set(GEN_F90_SOURCES ${GEN_F90_SOURCES_RESULT})
-  else()
-    gather_sources("${FILEPATH_DIRS}" "${CIMEROOT}")
-    set(SOURCES ${SOURCES_RESULT})
-    set(GEN_F90_SOURCES ${GEN_F90_SOURCES_RESULT})
-  endif()
+  gather_sources("${FILEPATH_DIRS}" "${CIMEROOT}")
+  set(SOURCES ${SOURCES_RESULT})
+  set(GEN_F90_SOURCES ${GEN_F90_SOURCES_RESULT})
 
   foreach(ITEM IN LISTS CPP_DIRS)
     if (EXISTS ${ITEM})
@@ -168,6 +162,20 @@ macro(build_model COMP_CLASS COMP_NAME)
       set(RRTMGPXX_F90 cmake/atm/../../eam/src/physics/rrtmgp/cpp/rrtmgp_interface.F90)
       set(SOURCES ${SOURCES} ${RRTMGPXX_F90})
     endif()
+  endif()
+
+  #-------------------------------------------------------------------------------
+  # WW3 needs some special handling of files based on the switches provided
+  #-------------------------------------------------------------------------------
+  if (COMP_NAME STREQUAL "ww3")
+    include(${PROJECT_SOURCE_DIR}/ww3/src/ww3_utils.cmake)
+    # cull the sources lists based on switches
+    cull_sources_from_switches("${SOURCES}" "${GEN_F90_SOURCES}")
+    # reset the local variables based on the culled lists
+    set(SOURCES ${SOURCES_CULLED})
+
+    list(LENGTH SOURCES ORIGINAL_LENGTH)
+    #message(FATAL_ERROR "ORIGINAL_LENGTH=${ORIGINAL_LENGTH}")
   endif()
 
   #-------------------------------------------------------------------------------
@@ -319,6 +327,9 @@ macro(build_model COMP_CLASS COMP_NAME)
         endif()
       endif()
       if (COMP_NAME STREQUAL "ww3")
+
+        set(WW3_SRC_DIR "${PROJECT_SOURCE_DIR}/ww3/src/WW3/model/src")
+
         #-------------------------
         # Determine compile definitions for wav
         #-------------------------
@@ -326,12 +337,12 @@ macro(build_model COMP_CLASS COMP_NAME)
           target_compile_definitions("${TARGET_NAME}" PUBLIC W3_${switch})
         endforeach()
 
-        set_property(SOURCE "${PROJECT_SOURCE_DIR}/ww3/src/WW3/model/src/w3initmd.F90" APPEND PROPERTY COMPILE_DEFINITIONS "__WW3_SWITCHES__=\'\'")
+        set_property(SOURCE "${WW3_SRC_DIR}/w3initmd.F90" APPEND PROPERTY COMPILE_DEFINITIONS "__WW3_SWITCHES__=\'\'")
 
-        add_executable(ww3_grid "${PROJECT_SOURCE_DIR}/ww3/src/WW3/model/src/ww3_grid.F90")
-        target_link_libraries(ww3_grid PRIVATE "${TARGET_NAME}")
+        #add_executable(ww3_grid "${WW3_SRC_DIR}/ww3_grid.F90")
+        #target_link_libraries(ww3_grid PRIVATE ${TARGET_NAME})
 
-        #add_executable(ww3_shel "${PROJECT_SOURCE_DIR}/ww3/src/WW3/model/src/ww3_shel.F90")
+        #add_executable(ww3_shel "${WW3_SRC_DIR}/ww3_shel.F90")
         #target_link_libraries(ww3_shel PRIVATE "${TARGET_NAME}")
       endif()
       if (USE_KOKKOS)

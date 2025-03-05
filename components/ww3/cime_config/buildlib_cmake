@@ -16,8 +16,6 @@ sys.path.append(_LIBDIR)
 from standard_script_setup import *
 from CIME.buildlib         import parse_input
 from CIME.case             import Case
-from CIME.build            import get_standard_makefile_args
-from CIME.utils            import expect, run_bld_cmd_ensure_logging, safe_copy, run_cmd_no_fail
 
 logger = logging.getLogger(__name__)
 
@@ -28,12 +26,10 @@ def buildlib(bldroot, installpath, case):
     caseroot = case.get_value("CASEROOT")
     casebuild = case.get_value("CASEBUILD")
 
-    # this isn't used b/c we have a custom depencency scanning cmake file
-    # even if we wanted to use this we couldn't, b/c of the switches we can't
-    # just blindly include all the source code as it will cause conflicts
     with open(os.path.join(casebuild, "ww3conf", "Filepath"), "w") as fd:
         fd.write(f"{caseroot}/SourceMods/src.ww3\n")
         fd.write(f"{srcroot}/components/ww3/src/WW3/model/src\n")
+        fd.write(f"{srcroot}/components/ww3/src/WW3/model/src/SCRIP\n")
         fd.write(f"{srcroot}/components/ww3/src/cpl\n")
 
     cmake_args = " -DSWITCH=E3SM"
