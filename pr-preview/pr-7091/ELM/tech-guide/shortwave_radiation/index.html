@@ -3297,16 +3297,14 @@
 
 <h1 id="overview">Overview</h1>
 <ul>
-<li>The shortwave radiation model in ELM computes the beam (or direct) and diffuse radiation absorbed by the canopy (i.e. sunlit and shaded leaves) and the ground, and the radiation
-reflected to the atmosphere. </li>
+<li>The shortwave radiation model in ELM computes the beam (or direct) and diffuse radiation absorbed by the canopy (i.e. sunlit and shaded leaves) and the ground, and the radiation reflected to the atmosphere. </li>
 <li>The model accounts for radiation in two bands: visible (<span class="arithmatex">\(&lt; 0.7\mu\)</span>m) and near-infrared (<span class="arithmatex">\(\ge 0.7 \mu\)</span>m).</li>
 <li>The model uses the two-stream approximation of Dickenson (1983) [@dickinson1983land] and Sellers (1985) [@sellers1985canopy].</li>
 <li>The model is a single-layer canopy model.</li>
 <li>Sunlit leaf absorbs unscattered direct radiation, scattered direct radiation, and diffuse radiation.</li>
 <li>Shaded leaf absorbs scattered direct radiation and diffuse radiation.</li>
 </ul>
-<p>First, the governing equations of the two-stream approximation of the radiative model are presented.
-Next, the analytical solutions for the upward and downward diffuse radiation using the two-stream approximation are given. Then, the analytical solutions are used for the single-layer canopy configuration to compute the radiation absorbed by the canopy and ground. Lastly, the radiation absorbed by the canopy is split into sunlit and shaded leaves.</p>
+<p>First, the governing equations of the two-stream approximation of the radiative model are presented. Next, the analytical solutions for the upward and downward diffuse radiation using the two-stream approximation are given. Then, the analytical solutions are used for the single-layer canopy configuration to compute the radiation absorbed by the canopy and ground. Lastly, the radiation absorbed by the canopy is split into sunlit and shaded leaves.</p>
 <h2 id="two-stream-approximation-radiative-transfer-model">Two-Stream Approximation Radiative Transfer Model</h2>
 <p>At any level within the canopy, the upward/downward direct/diffuse radiation is transmitted and intercepted by the canopy. The intercepted radiation is scattered backward, scattered forward, and absorbed by the canopy.
 The <strong><em>diffuse</em></strong> radiative fluxes via the two-stream approximation is given
@@ -3318,17 +3316,8 @@ as</p>
 \end{eqnarray}
 \]</div>
 <p>where 
-<span class="arithmatex">\(I^{\uparrow}\)</span> is the upward diffuse radiative flux per unit incident flux,
-<span class="arithmatex">\(I^{\downarrow}\)</span> is the downward diffuse radiative flux per unit incident flux,
-<span class="arithmatex">\(K_b \left( = G(\mu)/\mu \right)\)</span> is the optical depth of direct radiation per unit leaf and stem area,
-<span class="arithmatex">\(G(\mu)\)</span> is the relative projected area of leaf and stem in the direction of <span class="arithmatex">\(\cos^{-1}(\mu)\)</span>, 
-<span class="arithmatex">\(\mu\)</span> is the solar zenith angle,
-<span class="arithmatex">\(\bar{\mu} \left( = 1/K_d \right)\)</span> is the inverse of the optical depth of diffuse radiation per unit leaf and stem area,
-<span class="arithmatex">\(\omega\)</span> is the scattering coefficient,
-<span class="arithmatex">\(\beta\)</span> is the upscatter parameter for diffuse radiation,
-<span class="arithmatex">\(\beta_0\)</span> is the upscatter parameter for direct radiation,
-<span class="arithmatex">\(L\)</span> is leaf area index, and
-<span class="arithmatex">\(S\)</span> is stem area index.</p>
+<span class="arithmatex">\(I^{\uparrow}\)</span> is the upward diffuse radiative flux per unit incident flux, <span class="arithmatex">\(I^{\downarrow}\)</span> is the downward diffuse radiative flux per unit incident flux, <span class="arithmatex">\(K_b \left( = G(\mu)/\mu \right)\)</span> is the optical depth of direct radiation per unit leaf and stem area, <span class="arithmatex">\(G(\mu)\)</span> is the relative projected area of leaf and stem in the direction of <span class="arithmatex">\(\cos^{-1}(\mu)\)</span>, <span class="arithmatex">\(\mu\)</span> is the solar zenith angle,
+<span class="arithmatex">\(\bar{\mu} \left( = 1/K_d \right)\)</span> is the inverse of the optical depth of diffuse radiation per unit leaf and stem area, <span class="arithmatex">\(\omega\)</span> is the scattering coefficient, <span class="arithmatex">\(\beta\)</span> is the upscatter parameter for diffuse radiation, <span class="arithmatex">\(\beta_0\)</span> is the upscatter parameter for direct radiation, <span class="arithmatex">\(L\)</span> is leaf area index, and <span class="arithmatex">\(S\)</span> is stem area index.</p>
 <p>The equations \eqref{eqn:dif_up}-\eqref{eqn:dif_dn} includes the five optical parameters: <span class="arithmatex">\(G(\mu)\)</span>, <span class="arithmatex">\(\bar{\mu}\)</span>, <span class="arithmatex">\(\omega\)</span>, <span class="arithmatex">\(\beta\)</span>, and <span class="arithmatex">\(\beta_0\)</span>. The optical parameters dependent on wavelength band (<span class="arithmatex">\(\Lambda\)</span>) are <span class="arithmatex">\(\omega\)</span>, <span class="arithmatex">\(\beta\)</span>, and <span class="arithmatex">\(\beta_0\)</span>. Next, we describe the computation of these optical parameters.</p>
 <figure>
 <p><img alt="Image title" src="../../figures/two_stream_approximation.png" />
@@ -3340,16 +3329,13 @@ as</p>
   </figcaption>
 </figure>
 <h3 id="projected-leaf-and-stem-area">Projected leaf and stem area</h3>
-<p>ELM uses the Ross-Gourdriaan function to compute the projection of leaf area in the direction of the solar radiation via
-$$
+<p>ELM uses the Ross-Gourdriaan function to compute the projection of leaf area in the direction of the solar radiation as:</p>
+<div class="arithmatex">\[
 \begin{equation}
 G(\mu) = \phi_1 + \phi_2 \mu
 \end{equation}
-$$
-with <span class="arithmatex">\(\phi_1 = 0.5 - 0.633 \chi_\ell - 0.366 \chi^2_\ell\)</span> and
-<span class="arithmatex">\(\phi_2 = 0.877 (1 - 2 \phi_2)\)</span>.
-The <span class="arithmatex">\(\chi_\ell\)</span> is the Ross index or leaf/stem orientation index that
-is restricted to <span class="arithmatex">\(-0.4 \lt \chi_\ell \lt 0.6\)</span>.</p>
+\]</div>
+<p>with <span class="arithmatex">\(\phi_1 = 0.5 - 0.633 \chi_\ell - 0.366 \chi^2_\ell\)</span> and <span class="arithmatex">\(\phi_2 = 0.877 (1 - 2 \phi_2)\)</span>. The <span class="arithmatex">\(\chi_\ell\)</span> is the Ross index or leaf/stem orientation index that is restricted to <span class="arithmatex">\(-0.4 \lt \chi_\ell \lt 0.6\)</span>.</p>
 <h3 id="optical-depths">Optical depths</h3>
 <p>The optical depth of direct radiation per unit leaf and stem area is given by</p>
 <div class="arithmatex">\[
@@ -3357,12 +3343,12 @@ is restricted to <span class="arithmatex">\(-0.4 \lt \chi_\ell \lt 0.6\)</span>.
 K_b = \dfrac{G(\mu)}{\mu}
 \end{equation}
 \]</div>
-<p>The optical depth of diffuse radiation per unit leaf and stem area is given by
-$$
+<p>The optical depth of diffuse radiation per unit leaf and stem area is given by</p>
+<div class="arithmatex">\[
 \begin{eqnarray}
 \bar{\mu} = \int_0^1 \dfrac{\mu'}{G(\mu')} d\mu' = \dfrac{1}{\phi_1} \left[ 1 - \dfrac{\phi_1}{\phi_2}\ln \left( \dfrac{\phi_1 + \phi_2}{\phi_1} \right) \right]
 \end{eqnarray}
-$$</p>
+\]</div>
 <h3 id="scattering-coefficient">Scattering coefficient</h3>
 <p>The scattering coefficient accounts for the presence or absence of snow on vegetation as</p>
 <div class="arithmatex">\[
@@ -3373,17 +3359,17 @@ $$</p>
     \omega_\Lambda^{veg}, &amp; \text{otherwise}
     \end{cases}
 \end{equation}
-$$
-where the vegetation scattering coefficient, $\omega_\Lambda^{veg}$, is the sum of reflectances and transmittances, each of which is given as weighted averages of leaf and stem values as
+\]</div>
+<p>where the vegetation scattering coefficient, <span class="arithmatex">\(\omega_\Lambda^{veg}\)</span>, is the sum of reflectances and transmittances, each of which is given as weighted averages of leaf and stem values as
 $$
 \begin{eqnarray}
-\omega_\Lambda^{veg} &amp;=&amp; \alpha_\Lambda + \tau_\Lambda \\[0.5em]
+\omega_\Lambda^{veg} &amp;=&amp; \alpha_\Lambda + \tau_\Lambda \[0.5em]
                      &amp;=&amp; \alpha_\Lambda^{leaf} w_{leaf} + \alpha_\Lambda^{stem} w_{stem} 
-                     + \tau_\Lambda^{leaf} w_{leaf} + \tau_\Lambda^{stem} w_{stem} \\[0.5em]
+                     + \tau_\Lambda^{leaf} w_{leaf} + \tau_\Lambda^{stem} w_{stem} \[0.5em]
                      &amp;=&amp; \alpha_\Lambda^{leaf} \left( \dfrac{L}{L+S} \right) + \alpha_\Lambda^{stem} \left( \dfrac{S}{L+S} \right) 
                      + \tau_\Lambda^{leaf} \left( \dfrac{L}{L+S} \right) + \tau_\Lambda^{stem} \left( \dfrac{S}{L+S} \right)
 \end{eqnarray}
-\]</div>
+$$</p>
 <h3 id="upscatter-for-diffuse-radiation">Upscatter for diffuse radiation</h3>
 <p>The upscatter for diffuse radiation also accounts for the presence of snow on vegetation as</p>
 <div class="arithmatex">\[
@@ -3394,9 +3380,9 @@ $$
     \omega_\Lambda^{veg} \beta_\Lambda^{veg}, &amp; \text{otherwise}
     \end{cases}
 \end{equation}
-$$
-where
-$$
+\]</div>
+<p>where</p>
+<div class="arithmatex">\[
 \begin{eqnarray}
 \omega_\Lambda^{veg} \beta_\Lambda^{veg} &amp;=&amp; \dfrac{1}{2} \left[ \alpha_\Lambda + \tau_\Lambda + (\alpha_\Lambda - \tau_\Lambda) \cos^2\bar{\theta}\right] \\[0.5em]
 &amp;=&amp; \dfrac{1}{2} \left[ \alpha_\Lambda + \tau_\Lambda + (\alpha_\Lambda - \tau_\Lambda) \left( \dfrac{1 + \chi_\ell}{2} \right)^2\right]
@@ -3412,9 +3398,9 @@ $$
     \omega_\Lambda^{veg} \beta_{0,\Lambda}^{veg}, &amp; \text{otherwise}
     \end{cases}
 \end{equation}
-$$
-where
-$$
+\]</div>
+<p>where</p>
+<div class="arithmatex">\[
 \begin{eqnarray}
 \omega_\Lambda^{veg} \beta_{0,\Lambda}^{veg} &amp;=&amp; \left(\dfrac{1 + \bar{\mu}K}{\bar{\mu}K} \right) a_s(\mu)_\Lambda \\[0.5em]
 &amp;=&amp; \left(\dfrac{1 + \bar{\mu}K}{\bar{\mu}K}\right) 
@@ -3425,13 +3411,13 @@ $$
 <h2 id="analytical-solutions-of-the-two-stream-approximation-radiative-transfer-model">Analytical Solutions of the Two-Stream Approximation Radiative Transfer Model</h2>
 <p>The analytical solutions for upward and downward radiation at a depth equal to the cumulative leaf and stem area index, <span class="arithmatex">\(\kappa\)</span>, were derived by Sellers (1985) for the two-stream approximation model given by equations \eqref{eqn:dif_up}-\eqref{eqn:dif_dn} under a set of prescribed boundary conditions. </p>
 <h3 id="scattered-beam-radiation">Scattered Beam Radiation</h3>
-<p>The following boundary conditions are used for the values of downward diffuse radiation per unit incident direct radiation at the top of the canopy (i.e., <span class="arithmatex">\(\kappa = 0\)</span>) and upward diffuse per unit incident direct radiation at the bottom of the canopy (i.e., <span class="arithmatex">\(\kappa = L + S\)</span>):
-$$
+<p>The following boundary conditions are used for the values of downward diffuse radiation per unit incident direct radiation at the top of the canopy (i.e., <span class="arithmatex">\(\kappa = 0\)</span>) and upward diffuse per unit incident direct radiation at the bottom of the canopy (i.e., <span class="arithmatex">\(\kappa = L + S\)</span>):</p>
+<div class="arithmatex">\[
 \begin{eqnarray}
-I^{\downarrow}<em>{b,\Lambda}(\kappa = 0) &amp;=&amp; 0 \[0.5em]
-I^{\uparrow}</em>{b,\Lambda}(\kappa = L + S) &amp;=&amp; \alpha_{gb,\Lambda} \exp(-K(L+S)) + \alpha_{gd}I^{\downarrow}_{b,\Lambda}
+I^{\downarrow}_{b,\Lambda}(\kappa = 0) &amp;=&amp; 0 \\[0.5em]
+I^{\uparrow}_{b,\Lambda}(\kappa = L + S) &amp;=&amp; \alpha_{gb,\Lambda} \exp(-K(L+S)) + \alpha_{gd}I^{\downarrow}_{b,\Lambda}
 \end{eqnarray}
-$$</p>
+\]</div>
 <p>Under such boundary conditions, the analytical solution of upward and downward diffuse radiation per unit incident direct radiation is then given as</p>
 <div class="arithmatex">\[
 \begin{eqnarray}
@@ -3441,13 +3427,13 @@ I^{\downarrow}_{b,\Lambda}(\kappa) &amp;=&amp; \dfrac{h_4 \exp{\left(-K \kappa\r
 \]</div>
 <p>It should be noted that <span class="arithmatex">\(I^{\uparrow}_{b,\Lambda}(\kappa = 0)\)</span> can be interpreted as surface albedo for the diffuse (or scattered) flux of beam radiation.</p>
 <h3 id="diffuse-radiation">Diffuse Radiation</h3>
-<p>The following boundary conditions are used for the values of downward diffuse radiation per unit incident diffuse radiation at the top of the canopy (i.e., <span class="arithmatex">\(\kappa = 0\)</span>) and upward diffuse per unit incident diffuse radiation at the bottom of the canopy (i.e., <span class="arithmatex">\(\kappa = L + S\)</span>):
-$$
+<p>The following boundary conditions are used for the values of downward diffuse radiation per unit incident diffuse radiation at the top of the canopy (i.e., <span class="arithmatex">\(\kappa = 0\)</span>) and upward diffuse per unit incident diffuse radiation at the bottom of the canopy (i.e., <span class="arithmatex">\(\kappa = L + S\)</span>):</p>
+<div class="arithmatex">\[
 \begin{eqnarray}
-I^{\downarrow}<em>{d,\Lambda}(\kappa = 0) &amp;=&amp; 1 \[0.5em]
-I^{\uparrow}</em>{d,\Lambda}(\kappa = L + S) &amp;=&amp; \alpha_{gd}I^{\downarrow}_{d,\Lambda}
+I^{\downarrow}_{d,\Lambda}(\kappa = 0) &amp;=&amp; 1 \\[0.5em]
+I^{\uparrow}_{d,\Lambda}(\kappa = L + S) &amp;=&amp; \alpha_{gd}I^{\downarrow}_{d,\Lambda}
 \end{eqnarray}
-$$</p>
+\]</div>
 <p>Under such boundary conditions, the analytical solution of upward and downward diffuse radiation per unit incident diffuse radiation is then given as</p>
 <div class="arithmatex">\[
 \begin{eqnarray}
@@ -3532,7 +3518,7 @@ I^{\downarrow}_{d,\Lambda}(\kappa = L+S) &amp;=&amp; h_9 \exp( -h (L+S)) + h_{10
 <p>The upward and downward fluxes in the above equations are for <span class="arithmatex">\(\kappa = 0\)</span> and <span class="arithmatex">\(\kappa = L + S\)</span>, respectively, and to simplify the notation, <span class="arithmatex">\(\kappa\)</span> has been omitted from the equations.</p>
 <h3 id="radiation-absorbed-by-sunlit-and-shaded-leaves_1">Radiation Absorbed By Sunlit and Shaded Leaves</h3>
 <h3 id="radiation-absorbed-by-ground">Radiation Absorbed By Ground</h3>
-<p>The beam and diffuse radiation absorbed by the ground can be similarly computed as the difference of incoming and outgoing radiation</p>
+<p>The beam and diffuse radiation absorbed by the ground can be similarly computed as the difference of incoming and outgoing radiation.</p>
 <div class="arithmatex">\[
 \begin{eqnarray}
 \overrightarrow{I}_{gb,\Lambda} &amp;=&amp; \left( 1 - \alpha_{gd,\Lambda}\right)I_{b,\Lambda}^\downarrow + \left( 1 - \alpha_{gb,\Lambda}\right)e^{-K(L+S)} \\[0.5em]
