@@ -15,7 +15,6 @@ ShortwaveCloudForcingDiagnostic (const ekat::Comm& comm, const ekat::ParameterLi
 void ShortwaveCloudForcingDiagnostic::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
   using namespace ekat::units;
-  using namespace ShortFieldTagsNames;
 
   Units m2 (m*m,"m2");
 
@@ -24,20 +23,18 @@ void ShortwaveCloudForcingDiagnostic::set_grids(const std::shared_ptr<const Grid
   m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
 
-  FieldLayout scalar2d_layout_col{ {COL}, {m_num_cols} };
-  FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols,m_num_levs} };
+  auto scalar2d = grid->get_2d_scalar_layout();
+  auto scalar3d = grid->get_3d_scalar_layout(true);
 
   // The fields required for this diagnostic to be computed
-  add_field<Required>("SW_flux_dn",        scalar3d_layout_mid, W/m2, grid_name);
-  add_field<Required>("SW_flux_up",        scalar3d_layout_mid, W/m2, grid_name);
-  add_field<Required>("SW_clrsky_flux_dn", scalar3d_layout_mid, W/m2, grid_name);
-  add_field<Required>("SW_clrsky_flux_up", scalar3d_layout_mid, W/m2, grid_name);
+  add_field<Required>("SW_flux_dn",        scalar3d, W/m2, grid_name);
+  add_field<Required>("SW_flux_up",        scalar3d, W/m2, grid_name);
+  add_field<Required>("SW_clrsky_flux_dn", scalar3d, W/m2, grid_name);
+  add_field<Required>("SW_clrsky_flux_up", scalar3d, W/m2, grid_name);
 
   // Construct and allocate the diagnostic field
-  FieldIdentifier fid (name(), scalar2d_layout_col, W/m2, grid_name);
+  FieldIdentifier fid (name(), scalar2d, W/m2, grid_name);
   m_diagnostic_output = Field(fid);
-  auto& C_ap = m_diagnostic_output.get_header().get_alloc_properties();
-  C_ap.request_allocation();
   m_diagnostic_output.allocate_view();
 }
 

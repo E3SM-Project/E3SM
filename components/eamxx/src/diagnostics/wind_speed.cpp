@@ -16,7 +16,6 @@ void WindSpeed::
 set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
   using namespace ekat::units;
-  using namespace ShortFieldTagsNames;
 
   auto grid  = grids_manager->get_grid("Physics");
   const auto& grid_name = grid->name();
@@ -31,7 +30,7 @@ set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   add_field<Required>("horiz_winds", vector3d, Pa, grid_name);
 
   // Construct and allocate the 3d wind_speed field
-  FieldIdentifier fid ("wind_speed", scalar3d, m/s, grid_name);
+  FieldIdentifier fid (name(), scalar3d, m/s, grid_name);
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
 }
