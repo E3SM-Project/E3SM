@@ -28,19 +28,24 @@ class MAMGenericInterface : public scream::AtmosphereProcess {
   // a thread team dispatched to a single vertical column
   using ThreadTeam = mam4::ThreadTeam;
   // Add tracers needed for aerosols and gases."
-  void add_tracers_interstitial_aerosol_and_gases();
-  void add_tracers_cloudborne_aerosol();
+  void add_tracers_interstitial_aerosol();
+  void add_tracers_gases();
+  void add_fields_cloudborne_aerosol();
   void add_tracers_aerosol_and_gases();
   // Perform interval checks for all MAM4xx fields.
   // The limits are declared in physical_limits.
   void add_interval_checks();
-  //
-  void populate_interstitial_wet_and_dry_aero(mam_coupling::AerosolState& wet_aero,
-   mam_coupling::AerosolState& dry_aero,
-   mam_coupling::Buffer& buffer);
-  void populate_cloudborne_wet_and_dry_aero(mam_coupling::AerosolState& wet_aero,
-                                            mam_coupling::AerosolState& dry_aero,
-                                            mam_coupling::Buffer& buffer);
+
+  void populate_interstitial_wet_aero(mam_coupling::AerosolState& wet_aero);
+  void populate_interstitial_dry_aero(mam_coupling::AerosolState& dry_aero, mam_coupling::Buffer& buffer);
+  void populate_gases_dry_aero(mam_coupling::AerosolState& dry_aero, mam_coupling::Buffer& buffer);
+  void populate_gases_wet_aero(mam_coupling::AerosolState& wet_aero);
+
+
+  void populate_cloudborne_wet_aero( mam_coupling::AerosolState& wet_aero);
+  void populate_cloudborne_dry_aero( mam_coupling::AerosolState& dry_aero,
+                                     mam_coupling::Buffer& buffer);
+
   // Populate the wet_aero and dry_aero structs.
   void populate_wet_and_dry_aero(mam_coupling::AerosolState& wet_aero,
                                  mam_coupling::AerosolState& dry_aero,
@@ -49,8 +54,13 @@ class MAMGenericInterface : public scream::AtmosphereProcess {
   void populate_wet_and_dry_atm(mam_coupling::WetAtmosphere& wet_atm,
                                 mam_coupling::DryAtmosphere& dry_atm,
                                 mam_coupling::Buffer& buffer);
+  void populate_dry_atm( mam_coupling::DryAtmosphere& dry_atm,
+                         mam_coupling::Buffer& buffer);
+  void populate_wet_atm(mam_coupling::WetAtmosphere& wet_atm);
   // Add tracers that are needed by the wet_atm and dry_atm.
   void add_tracers_wet_and_dry_atm();
+  void add_fields_dry_atm();
+  void add_tracers_wet_atm();
 
   // Atmosphere processes often have a pre-processing step that constructs
   // required variables from the set of fields stored in the field manager.
