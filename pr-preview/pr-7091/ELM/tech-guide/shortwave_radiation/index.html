@@ -3351,11 +3351,11 @@ K_b = \dfrac{G(\mu)}{\mu}
 <p>The scattering coefficient accounts for the presence or absence of snow on vegetation as</p>
 <div class="arithmatex">\[
 \begin{equation}
-\omega_\Lambda = 
-    \begin{cases}
-    \omega_\Lambda^{veg} \left( 1 - f_{wet}\right) + \omega_\Lambda^{sno}f_{wet}, &amp; \text{if snow is on the canopy}\\[0.5em]
-    \omega_\Lambda^{veg}, &amp; \text{otherwise}
-    \end{cases}
+\omega_\Lambda =
+\begin{cases}
+\omega_\Lambda^{veg} \left( 1 - f_{wet}\right) + \omega_\Lambda^{sno}f_{wet}, &amp; \text{if snow is on the canopy}\\[0.5em]
+\omega_\Lambda^{veg}, &amp; \text{otherwise}
+\end{cases}
 \end{equation}
 \]</div>
 <p>where the vegetation scattering coefficient, <span class="arithmatex">\(\omega_\Lambda^{veg}\)</span>, is the sum of reflectances and transmittances, each of which is given as weighted averages of leaf and stem values as</p>
@@ -3372,11 +3372,11 @@ K_b = \dfrac{G(\mu)}{\mu}
 <p>The upscatter for diffuse radiation also accounts for the presence of snow on vegetation as</p>
 <div class="arithmatex">\[
 \begin{equation}
-\omega_\Lambda \beta_\Lambda = 
-    \begin{cases}
-    \omega_\Lambda^{veg} \beta_\Lambda^{veg} \left( 1 - f_{wet}\right) + \omega_\Lambda^{sno} \beta_\Lambda^{sno} f_{wet}, &amp; \text{if snow is on the canopy}\\[0.5em]
-    \omega_\Lambda^{veg} \beta_\Lambda^{veg}, &amp; \text{otherwise}
-    \end{cases}
+\omega_\Lambda \beta_\Lambda =
+\begin{cases}
+\omega_\Lambda^{veg} \beta_\Lambda^{veg} \left( 1 - f_{wet}\right) + \omega_\Lambda^{sno} \beta_\Lambda^{sno} f_{wet}, &amp; \text{if snow is on the canopy}\\[0.5em]
+\omega_\Lambda^{veg} \beta_\Lambda^{veg}, &amp; \text{otherwise}
+\end{cases}
 \end{equation}
 \]</div>
 <p>where</p>
@@ -3390,11 +3390,11 @@ K_b = \dfrac{G(\mu)}{\mu}
 <p>The upscatter for direct radiation accounts for the presence of snow on vegetation as</p>
 <div class="arithmatex">\[
 \begin{equation}
-\omega_\Lambda \beta_{0,\Lambda} = 
-    \begin{cases}
-    \omega_\Lambda^{veg} \beta_{0,\Lambda}^{veg} \left( 1 - f_{wet}\right) + \omega_\Lambda^{sno} \beta_{0,\Lambda}^{sno} f_{wet}, &amp; \text{if snow is on the canopy}\\[0.5em]
-    \omega_\Lambda^{veg} \beta_{0,\Lambda}^{veg}, &amp; \text{otherwise}
-    \end{cases}
+\omega_\Lambda \beta_{0,\Lambda} =
+\begin{cases}
+\omega_\Lambda^{veg} \beta_{0,\Lambda}^{veg} \left( 1 - f_{wet}\right) + \omega_\Lambda^{sno} \beta_{0,\Lambda}^{sno} f_{wet}, &amp; \text{if snow is on the canopy}\\[0.5em]
+\omega_\Lambda^{veg} \beta_{0,\Lambda}^{veg}, &amp; \text{otherwise}
+\end{cases}
 \end{equation}
 \]</div>
 <p>where</p>
@@ -3492,7 +3492,7 @@ h_{10} &amp;=&amp; \dfrac{-s_1(u_2 - \bar{\mu}h)}{d_2} \\[0.5em]
 \begin{eqnarray}
 I^{\uparrow}_{b,\Lambda}(\kappa = 0) &amp;=&amp; \dfrac{h_1 }{\sigma} + h_2 + h_3 \\[0.5em]
 I^{\downarrow}_{b,\Lambda}(\kappa = L+S) &amp;=&amp; \dfrac{h_4 \exp{\left(-K (L+S)\right)}}{\sigma} + h_5 \exp( -h (L+S)) + h_6 \exp(h (L+S)) \\
-                                                 &amp;=&amp; \dfrac{h_4 \exp{\left(-K (L+S)\right)}}{\sigma} + h_5 s_1 + \dfrac{h_6}{s_1} \\
+&amp;=&amp; \dfrac{h_4 \exp{\left(-K (L+S)\right)}}{\sigma} + h_5 s_1 + \dfrac{h_6}{s_1} \\
 I^{\uparrow}_{d,\Lambda}(\kappa = 0) &amp;=&amp; h_7 + h_8  \\[0.5em]
 I^{\downarrow}_{d,\Lambda}(\kappa = L+S) &amp;=&amp; h_9 \exp( -h (L+S)) + h_{10} \exp(h (L+S)) \\[0.5em]
 &amp;=&amp; h_9 s_1 + \dfrac{h_{10}}{s_1}
