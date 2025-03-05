@@ -397,7 +397,7 @@ struct Functions
                                    Spack& nr2ni_immers_freeze_tend, Spack& ni_sublim_tend, Spack& qv2qi_nucleat_tend,
                                    Spack& ni_nucleat_tend, Spack& qc2qi_berg_tend, Spack& ncheti_cnt, Spack& qcheti_cnt, 
                                    Spack& nicnt, Spack& qicnt, Spack& ninuc_cnt, Spack& qinuc_cnt, 
-                                   const Smask& context = Smask(true), const P3Runtime* runtime_options = nullptr );
+                                   const Smask& context = Smask(true), const P3Runtime& runtime_options = {} );
 
   //------------------------------------------------------------------------------------------!
   // Finds indices in 3D ice (only) lookup table

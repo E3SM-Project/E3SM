@@ -28,15 +28,8 @@ void Functions<S,D>
   Spack& nr2ni_immers_freeze_tend, Spack& ni_sublim_tend, Spack& qv2qi_nucleat_tend,
   Spack& ni_nucleat_tend, Spack& qc2qi_berg_tend,
   Spack& ncheti_cnt, Spack& qcheti_cnt, Spack& nicnt, Spack& qicnt, Spack& ninuc_cnt,
-  Spack& qinuc_cnt, const Smask& context, const P3Runtime* runtime_options)
+  Spack& qinuc_cnt, const Smask& context, const P3Runtime& runtime_options)
 {
-  bool use_separate_ice_liq_frac;
-  if (runtime_options) {
-    use_separate_ice_liq_frac = runtime_options->use_separate_ice_liq_frac;
-  } else {
-    use_separate_ice_liq_frac = false;
-  }
-
   Spack ir_cldm, il_cldm, lr_cldm;
   ir_cldm = min(cld_frac_i,cld_frac_r); // Intersection of ICE and RAIN cloud
   il_cldm = min(cld_frac_i,cld_frac_l); // Intersection of ICE and LIQUID cloud
@@ -73,7 +66,7 @@ void Functions<S,D>
   nc2ni_immers_freeze_tend.set(context, nc2ni_immers_freeze_tend * cld_frac_l);   // Number change associated with freexzing of cld drops
   nr_collect_tend.set(context, nr_collect_tend * ir_cldm);  // Rain number change due to collection from ice
   ni_selfcollect_tend.set(context, ni_selfcollect_tend * cld_frac_i);    // Ice self collection
-  if (use_separate_ice_liq_frac) {
+  if (runtime_options.use_separate_ice_liq_frac) {
     qv2qi_vapdep_tend.set(context, qv2qi_vapdep_tend * (cld_frac_i-il_cldm));    // Vapor deposition to ice phase
   } else {
     qv2qi_vapdep_tend.set(context, qv2qi_vapdep_tend * cld_frac_i);    // Vapor deposition to ice phase
