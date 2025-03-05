@@ -91,8 +91,6 @@ public:
     return has_group(group_name, m_grids_mgr->get_repo().begin()->second->name());
   }
 
-  const FieldIdentifier& get_field_id (const std::string& name, const std::string& grid_name) const;
-
   Field get_field (const std::string& name, const std::string& grid_name) const;
   Field get_field (const identifier_type& id) const { return get_field(id.name(), id.get_grid_name()); }
   Field get_field (const std::string& name) const {
@@ -155,10 +153,6 @@ public:
   void init_fields_time_stamp (const util::TimeStamp& t0);
 
 protected:
-
-  // These are allowed even if registration is ongoing
-  std::shared_ptr<Field> get_field_ptr(const std::string& name, const std::string& grid_name) const;
-  std::shared_ptr<Field> get_field_ptr(const identifier_type& id) const;
 
   void pre_process_bundled_group_requests ();
 
