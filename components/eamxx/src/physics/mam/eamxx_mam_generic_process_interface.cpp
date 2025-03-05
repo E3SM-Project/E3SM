@@ -156,16 +156,6 @@ void MAMGenericInterface::add_tracers_gases()
   }  // end for loop num gases
 }
 // ================================================================
-void MAMGenericInterface::add_tracers_aerosol_and_gases() {
-  // add tracers, e.g., num_a1, soa_a1
-  add_tracers_interstitial_aerosol();
-  // add tracer gases, e.g., O3
-  add_tracers_gases();
-  // add fields e.g., num_c1, soa_c1
-  add_fields_cloudborne_aerosol();
-}
-
-// ================================================================
 void MAMGenericInterface::populate_cloudborne_wet_aero(
   mam_coupling::AerosolState& wet_aero) {
   // cloudborne aerosol tracers of interest: mass (q) and
@@ -275,28 +265,6 @@ void MAMGenericInterface::populate_interstitial_wet_aero(
   }
   }
 
-// ================================================================
-void MAMGenericInterface::populate_wet_and_dry_aero(mam_coupling::AerosolState& wet_aero,
- mam_coupling::AerosolState& dry_aero,
- mam_coupling::Buffer& buffer) {
-
-    // It populates wet_aero struct (wet_aero_) with:
-    // interstitial aerosol, e.g., soa_a_1
-    populate_interstitial_wet_aero(wet_aero);
-    // gases, e.g., O3
-    populate_gases_wet_aero(wet_aero);
-    // cloudborne aerosol, e.g., soa_c_1
-    populate_cloudborne_wet_aero(wet_aero);
-
-    // It populates dry_aero struct (dry_aero_) with:
-    // interstitial aerosol, e.g., soa_a_1
-    populate_interstitial_dry_aero(dry_aero, buffer);
-     // gases, e.g., O3
-    populate_gases_dry_aero(dry_aero, buffer);
-    // cloudborne aerosol, e.g., soa_c_1
-    populate_cloudborne_dry_aero(dry_aero,buffer);
-}
-
 void MAMGenericInterface::populate_wet_atm(mam_coupling::WetAtmosphere& wet_atm) {
   // store fields only to be converted to dry mmrs in wet_atm_
   wet_atm.qv = get_field_in("qv").get_view<const Real **>();
@@ -339,14 +307,6 @@ void MAMGenericInterface::populate_dry_atm( mam_coupling::DryAtmosphere& dry_atm
 
   // computed updraft velocity
   dry_atm.w_updraft = buffer.w_updraft;
-}
-
-void MAMGenericInterface::populate_wet_and_dry_atm(mam_coupling::WetAtmosphere& wet_atm,
-mam_coupling::DryAtmosphere& dry_atm, mam_coupling::Buffer& buffer) {
-
-  populate_wet_atm(wet_atm);
-  populate_dry_atm(dry_atm, buffer);
-
 }
 
 void MAMGenericInterface::add_tracers_wet_atm() {
@@ -411,12 +371,7 @@ void MAMGenericInterface::add_fields_dry_atm() {
   // cloud fraction [nondimensional] computed by eamxx_cld_fraction_process
   add_field<Required>("cldfrac_tot", scalar3d_mid, nondim, grid_name);
 }
-// ================================================================
-void MAMGenericInterface::add_tracers_wet_and_dry_atm()
-{
-  add_tracers_wet_atm();
-  add_fields_dry_atm();
-}
+
 // ================================================================
 void MAMGenericInterface::add_interval_checks() {
   if(check_fields_intervals_) {

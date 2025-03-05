@@ -75,7 +75,8 @@ void MAMMicrophysics::set_grids(
   // These variables are "Required" or pure inputs for the process
   // --------------------------------------------------------------------------
 
-  add_tracers_wet_and_dry_atm();
+  add_tracers_wet_atm();
+  add_fields_dry_atm();
 
   constexpr auto m2 = pow(m, 2);
   constexpr auto s2 = pow(s, 2);
@@ -151,7 +152,12 @@ void MAMMicrophysics::set_grids(
 
   // (interstitial) aerosol tracers of interest: mass (q) and number (n) mixing
   // ratios
-  add_tracers_aerosol_and_gases();
+  // add tracers, e.g., num_a1, soa_a1
+  add_tracers_interstitial_aerosol();
+  // add tracer gases, e.g., O3
+  add_tracers_gases();
+  // add fields e.g., num_c1, soa_c1
+  add_fields_cloudborne_aerosol();
   //----------- Updated variables from other mam4xx processes ------------
   // layout for Constituent fluxes
   FieldLayout scalar2d_pcnst =
@@ -370,7 +376,8 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   // ---------------------------------------------------------------
   // Input fields read in from IC file, namelist or other processes
   // ---------------------------------------------------------------
-  populate_wet_and_dry_atm(wet_atm_,dry_atm_,buffer_);
+  populate_wet_atm(wet_atm_);
+  populate_dry_atm(dry_atm_, buffer_);
   // FIXME: we are using cldfrac_tot in other mam4xx process.
   dry_atm_.cldfrac = get_field_in("cldfrac_liq").get_view<const Real **>();
   // FIXME: phis is not populated by populate_wet_and_dry_atm.
@@ -380,7 +387,20 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
 
   // interstitial and cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
-  populate_wet_and_dry_aero(wet_aero_, dry_aero_, buffer_);
+  // It populates wet_aero struct (wet_aero_) with:
+  // interstitial aerosol, e.g., soa_a_1
+  populate_interstitial_wet_aero(wet_aero_);
+  // gases, e.g., O3
+  populate_gases_wet_aero(wet_aero_);
+  // cloudborne aerosol, e.g., soa_c_1
+  populate_cloudborne_wet_aero(wet_aero_);
+  // It populates dry_aero struct (dry_aero_) with:
+  // interstitial aerosol, e.g., soa_a_1
+  populate_interstitial_dry_aero(dry_aero_, buffer_);
+  // gases, e.g., O3
+  populate_gases_dry_aero(dry_aero_, buffer_);
+  // cloudborne aerosol, e.g., soa_c_1
+  populate_cloudborne_dry_aero(dry_aero_,buffer_);
 
   // create our photolysis rate calculation table
   const std::string rsf_file = m_params.get<std::string>("mam4_rsf_file");

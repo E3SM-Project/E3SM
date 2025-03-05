@@ -47,7 +47,8 @@ void MAMOptics::set_grids(
   // midpoints/interfaces
   FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(true);
   FieldLayout scalar3d_int = grid_->get_3d_scalar_layout(false);
-  add_tracers_wet_and_dry_atm();
+  add_tracers_wet_atm();
+  add_fields_dry_atm();
 
   // layout for 2D (1d horiz X 1d vertical) variables
   FieldLayout scalar2d = grid_->get_2d_scalar_layout();
@@ -73,7 +74,12 @@ void MAMOptics::set_grids(
 
   // (interstitial) aerosol tracers of interest: mass (q) and number (n) mixing
   // ratios
-  add_tracers_aerosol_and_gases();
+  // add tracers, e.g., num_a1, soa_a1
+  add_tracers_interstitial_aerosol();
+  // add tracer gases, e.g., O3
+  add_tracers_gases();
+  // add fields e.g., num_c1, soa_c1
+  add_fields_cloudborne_aerosol();
 
   // aerosol-related gases: mass mixing ratios
   for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
@@ -104,17 +110,33 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   // the buffer
   constexpr int ntot_amode = mam4::AeroConfig::num_modes();
 
-  populate_wet_and_dry_atm(wet_atm_,dry_atm_,buffer_);
+  populate_wet_atm(wet_atm_);
+  populate_dry_atm(dry_atm_, buffer_);
+  p_del_         = get_field_in("pseudo_density").get_view<const Real **>();
+
+  // interstitial and cloudborne aerosol tracers of interest: mass (q) and
+  // number (n) mixing ratios
+  // It populates wet_aero struct (wet_aero_) with:
+  // interstitial aerosol, e.g., soa_a_1
+  populate_interstitial_wet_aero(wet_aero_);
+  // gases, e.g., O3
+  populate_gases_wet_aero(wet_aero_);
+  // cloudborne aerosol, e.g., soa_c_1
+  populate_cloudborne_wet_aero(wet_aero_);
+  // It populates dry_aero struct (dry_aero_) with:
+  // interstitial aerosol, e.g., soa_a_1
+  populate_interstitial_dry_aero(dry_aero_, buffer_);
+  // gases, e.g., O3
+  populate_gases_dry_aero(dry_aero_, buffer_);
+  // cloudborne aerosol, e.g., soa_c_1
+  populate_cloudborne_dry_aero(dry_aero_,buffer_);
+
   // FIXME: In other MAM4xx processes,
   // we are using pseudo_density instead of pseudo_density_dry to set
   // dry_atm_.p_del.
   dry_atm_.phis = get_field_in("phis").get_view<const Real *>();
   dry_atm_.p_del = get_field_in("pseudo_density_dry").get_view<const Real **>();
-  p_del_         = get_field_in("pseudo_density").get_view<const Real **>();
 
-  // interstitial and cloudborne aerosol tracers of interest: mass (q) and
-  // number (n) mixing ratios
-  populate_wet_and_dry_aero(wet_aero_, dry_aero_, buffer_);
   // prescribed volcanic aerosols.
   ssa_cmip6_sw_ =
       mam_coupling::view_3d("ssa_cmip6_sw", ncol_, nlev_, nswbands_);

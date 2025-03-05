@@ -69,7 +69,8 @@ void MAMDryDep::set_grids(
   // These variables are "Required" or pure inputs for the process
   // --------------------------------------------------------------------------
 
-  add_tracers_wet_and_dry_atm();
+  add_tracers_wet_atm();
+  add_fields_dry_atm();
 
   static constexpr auto m2 = m * m;
   static constexpr auto s2 = s * s;
@@ -120,7 +121,12 @@ void MAMDryDep::set_grids(
 
   // (interstitial) aerosol tracers of interest: mass (q) and number (n) mixing
   // ratios
-  add_tracers_aerosol_and_gases();
+  // add tracers, e.g., num_a1, soa_a1
+  add_tracers_interstitial_aerosol();
+  // add tracer gases, e.g., O3
+  add_tracers_gases();
+  // add fields e.g., num_c1, soa_c1
+  add_fields_cloudborne_aerosol();
 
   // -------------------------------------------------------------
   // These variables are "Computed" or outputs for the process
@@ -196,10 +202,24 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   // Check pre/post condition interval values for all fields employed by this interface
   add_interval_checks();
 
-  populate_wet_and_dry_atm(wet_atm_,dry_atm_,buffer_);
+  populate_wet_atm(wet_atm_);
+  populate_dry_atm(dry_atm_, buffer_);
   // interstitial and cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
-  populate_wet_and_dry_aero(wet_aero_, dry_aero_, buffer_);
+  // It populates wet_aero struct (wet_aero_) with:
+  // interstitial aerosol, e.g., soa_a_1
+  populate_interstitial_wet_aero(wet_aero_);
+  // gases, e.g., O3
+  populate_gases_wet_aero(wet_aero_);
+  // cloudborne aerosol, e.g., soa_c_1
+  populate_cloudborne_wet_aero(wet_aero_);
+  // It populates dry_aero struct (dry_aero_) with:
+  // interstitial aerosol, e.g., soa_a_1
+  populate_interstitial_dry_aero(dry_aero_, buffer_);
+  // gases, e.g., O3
+  populate_gases_dry_aero(dry_aero_, buffer_);
+  // cloudborne aerosol, e.g., soa_c_1
+  populate_cloudborne_dry_aero(dry_aero_,buffer_);
 
   //-----------------------------------------------------------------
   // Allocate memory
