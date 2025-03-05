@@ -22,12 +22,112 @@ use hybvcoord_mod,        only: hvcoord_t
 use time_mod,             only: time_at, TimeLevel_t
 use micro_p3,             only: p3_main, p3_init
 use micro_p3_utils,       only: micro_p3_utils_init
+use wv_sat_scream,        only: qv_sat
 
 implicit none
 
 public :: interface_to_p3
 
 contains
+
+subroutine simple_saturation_adjustment(qv, qc, qcn, theta, p, exner)
+  ! Adjusts air parcels in a column to account for evaporation / condensation of 
+  ! water vapor from / into cloud liquid.  In Eam/Eamxx, this is handled by
+  ! macrophysics.  To use p3 with idealized tests, we need a method
+  ! to compute phase transitions between water vapor and cloud liquid.
+  !
+  ! On input, saturation is defined as qv > qsat.   For saturated parcels, excess
+  ! water vapor is converted to cloud liquid, and potential temperature is updated 
+  ! to account for latent heat release.  For unsaturated parcels, if cloud liquid is present
+  ! it evaporates and potential temperature is updated to account for latent heat uptake. 
+  !
+  ! SIMPLE APPROXIMATION: Note that on output, for a true pseudoadiabatic process, the parcel should be 
+  ! saturated, i.e., qv = qsat.   This "simple" subroutine does not satisfy this constraint. 
+  ! Saturation mixing ratio is temperature-dependent, and here is not updated following the 
+  ! adjustment of potential temperature for latent heat release/uptake.  
+  !
+  ! For future development: Klemp and Willhelmson 1978 and Soong and Ogura 1973 
+  ! define a 2-step process that conserves water mass and satisfies the qv = qsat output 
+  ! constraint by linearizing the saturation mixing ratio formula about the input state. 
+  ! Other techniques, such as iterative methods, could also be used.
+  !
+  ! SIMPLE APPROXIMATION : For new droplet formulation, we assume a constant droplet size
+  ! and determine number based on that size.  All new droplets will have this size; they
+  ! will not be representative of a more realistic droplet size distribution, and
+  ! do not account for aerosols.  The methods from P3's original implementation
+  ! (removed by Eam/Eamxx in favor of macrophysics) can be found in Morrison and Grabowski 2008.
+  !
+  ! TODO: new droplet volume should be a namelist parameter
+  !
+  real(rl), dimension(np, np, nlev), intent(inout) :: qv ! specific humidity [kg water vapor / kg air]
+  real(rl), dimension(np, np, nlev), intent(inout) :: qc ! cloud liquid concentration [ kg liq. water / kg air]
+  real(rl), dimension(np, np, nlev), intent(inout) :: qcn ! cloud droplet number concentration [ # / kg air]
+  real(rl), dimension(np, np, nlev), intent(inout) :: theta ! potential temperature [K]
+  real(rl), dimension(np, np, nlev), intent(in) :: p ! pressure [Pa]
+  real(rl), dimension(np, np, nlev), intent(in) :: exner ! Exner function [1]
+  !
+  ! local variables
+  !
+  integer, parameter :: liquid_or_ice_switch = 0 ! required by qv_sat (0 -> liquid), otherwise unused
+  real(rl) :: qsat ! saturation mixing ratio for water vapor
+  real(rl) :: delta_qv ! specific humidity change amount [kg water / kg air]
+  real(rl) :: delta_qcn ! cloud liquid number change amount [# / kg air]
+  real(rl) :: delta_theta ! potential temperature change amount [K]
+  real(rl) :: gamma ! coefficient for latent heat computation, gamma = Lvap / (Cp * exner)
+  real(rl) :: liq_volume ! volume of liquid water condensed
+  real(rl) :: T ! temperature [K]
+  logical :: is_saturated 
+  integer :: ii, jj
+  real(rl), parameter :: new_droplet_volume = 4.2e-6_rl ! volume of a newly formed droplet [micron^3]
+  real(rl), parameter :: cubic_micron_to_cubic_meter = 1e18_rl ! multiplier to convert from cubic micron to cubic meters
+  
+  
+  do ii=1,np; do jj=1,np;
+    do kk=1,nlev
+      T = theta(ii,jj,kk) * exner(ii,jj,kk)
+      gamma = latvap / (cp * exner(ii,jj,kk))
+      qsat = qv_sat(T, p(ii,jj,kk), liquid_or_ice_switch)
+      is_saturated = (qv(ii,jj,kk) > qsat)
+      delta_qv = qv(ii,jj,kk) - qsat
+      if (is_saturated) then
+        ! delta_qv is positive
+        delta_qcn = delta_qv / rhow * cubic_micron_to_cubic_meter / new_droplet_volume
+        delta_theta = gamma * delta_qv
+        
+        qv(ii,jj,kk) = qv(ii,jj,kk) - delta_qv
+        qc(ii,jj,kk) = qc(ii,jj,kk) + delta_qv
+        qcn(ii,jj,kk) = qcn(ii,jj,kk) + delta_qcn
+        theta(ii,jj,kk) = theta(ii,jj,kk) + delta_theta
+      else
+        ! delta_qv is <= zero; multiply by -1 to work with positive changes
+        delta_qv = -delta_qv
+        if (qc(ii,jj,kk) > 0) then
+          if (qc(ii,jj,kk) < delta_qv) then
+            ! all cloud liquid evaporates, parcel is still unsaturated
+            delta_qv = qc(ii,jj,kk)
+            delta_qcn = qcn(ii,jj,kk)
+          else
+            ! parcel becomes saturated, cloud persists
+            ! define the evaporated number amount to be proportional to the evaporated mass
+            delta_qcn = delta_qv / qc(ii,jj,kk) * qcn(ii,jj,kk)    
+          endif
+          
+          delta_theta = gamma * delta_qv
+          
+          qv(ii,jj,kk) = qv(ii,jj,kk) + delta_qv
+          qcn(ii,jj,kk) = qcn(ii,jj,kk) - delta_qcn
+          qc(ii,jj,kk) = qc(ii,jj,kk) - delta_qv
+          theta(ii,jj,kk) = theta(ii,jj,kk) - delta_theta
+        else
+          ! there wasn't a cloud before, and there still isn't one.
+          qc(ii,jj,kk) = 0
+          qcn(ii,jj,kk) = 0
+        endif
+      endif ! is_saturated
+    enddo ! kk
+  enddo; enddo; ! ii; jj;
+end subroutine 
+
 
 subroutine interface_to_p3(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
@@ -233,9 +333,12 @@ subroutine interface_to_p3(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     call pnh_and_exner_from_eos(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,nt),&
           dp,elem(ie)%state%phinh_i(:,:,:,nt),pnh,hommeexner,hommemu)
 
+    call simple_saturation_adjustment(q1, q2, q3, pottemp, hommepres, hommeexner)
+
     ! ensure positivity
     ! do we need this?
     where(q1<0); q1=0; endwhere
+    where(q3<0); q3=0; endwhere
 
     do ii=1,np; do jj=1,np;
 
