@@ -97,7 +97,7 @@ contains
       real(kind=RKIND), pointer :: config_sea_level
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: scratchPool, geometryPool, meshPool, extrapOceanDataPool
-      real (kind=RKIND) :: layerTop
+      real (kind=RKIND) :: layerCenter
       real (kind=RKIND), dimension(:,:), pointer :: ismip6shelfMelt_3dThermalForcing, ismip6shelfMelt_zBndsOcean
       real (kind=RKIND), dimension(:), pointer :: ismip6shelfMelt_zOcean
       real (kind=RKIND), dimension(:), pointer :: thickness, bedTopography
@@ -296,23 +296,20 @@ contains
          availOceanMask(:,:) = 0
          do iCell = 1, nCells
             do iLayer = 1, nISMIP6OceanLayers
-               layerTop = ismip6shelfMelt_zBndsOcean(1, iLayer)
+               layerCenter = ismip6shelfMelt_zOcean(iLayer)
                if ( (seedOceanMaskHoriz(iCell) == 1) .and. (connectedMarineMask(iCell) == 1)) then
-                  if (bedTopography(iCell) < layerTop) then
+                  ! For now, only assign surface cells and other ocean cells with cell centers above bed topography
+                  ! to availOceanMask. Partial ocean cells with cell centers below bed topography will be accounted for in the
+                  ! vertical extrapolation routine 
+                  if ( (bedTopography(iCell) < layerCenter) .or. ((iLayer == 1) .and. (bedTopography(iCell) < 0.0_RKIND)) )then
                      availOceanMask(iLayer,iCell) = 1
-                  else
-                     ! If recalculating thermal forcing with ISMIP6retreat or AMretreat methods, then ignore
-                     ! topography and allow for translation of water properties directly to glacier face. Otherwise,
-                     ! cut off availOceanMask at first cell below seaflooor; this cell is necessary to keep in
-                     ! order to ensure interpolation between cells directly above and below sea level is possible 
-                    
-                     if ((config_recalculate_thermal_forcing) .and. &
+                     
+                  elseif ((config_recalculate_thermal_forcing) .and. &
                             ( (config_TF_param_type == 'ISMIP6retreat') .or. (config_TF_param_type == 'AMretreat'))) then
+                        
+                        ! If recalculating thermal forcing with ISMIP6retreat or AMretreat methods, then ignore
+                        ! topography and allow for translation of water properties directly to glacier face.
                         availOceanMask(iLayer,iCell) = 1
-                     else
-                        availOceanMask(iLayer,iCell) = 1
-                        exit
-                     endif
                   endif
                endif
             enddo
@@ -713,6 +710,31 @@ contains
                   validOceanMask(iLayer,iCell) = 1
                   newMaskCountLocalAccum = newMaskCountLocalAccum + 1
                endif
+            
+            ! Extrapolate water properties 1 layer below bed topography without updating validOceanMask. This ensures partial cells with 
+            ! cell centers below bed topography are accounted for.
+            elseif ( (availOceanMask(iLayer,iCell) == 0) .and. (validOceanMask(iLayer,iCell) == 0) .and. &
+                    (validOceanMask(iLayer-1,iCell) == 1) .and. (availOceanMask(iLayer-1,iCell) == 1) ) then
+               do iField = 1, 2
+                  if (oceanField(iLayer-1,iCell,iField) > 1.0e6_RKIND) then
+                     ! raise error if an invalid ocean data value is used
+                     call mpas_log_write("ocean data value used for extrapolation is invalid" // &
+                        "in vertical extrapolations: cell id=$i, iLayer=$i, TF=$r", &
+                        MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell), iLayer-1/), realArgs=(/oceanField(iLayer-1,iCell,iField)/))
+                     err = ior(err,1)
+                  else
+                     if (config_recalculate_thermal_forcing) then
+                        !if extrapolating temp/salt, assign value equal to overlying cell
+                        oceanField(iLayer,iCell,iField) = oceanField(iLayer-1,iCell,iField)
+                     else
+                        !if extrapolating thermal forcing, need to account for depth-dependent difference in freezing temp
+                        oceanField(iLayer,iCell,iField) = oceanField(iLayer-1,iCell,iField) - &
+                           (ismip6shelfMelt_zOcean(iLayer-1) - ismip6shelfMelt_zOcean(iLayer)) * &
+                           oceanFreezingTempDepthDependence
+                        exit
+                     endif
+                  endif
+               enddo
             endif
          enddo
       enddo

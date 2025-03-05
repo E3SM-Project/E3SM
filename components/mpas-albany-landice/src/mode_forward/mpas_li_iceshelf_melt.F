@@ -1196,6 +1196,7 @@ module li_iceshelf_melt
       integer, dimension(:), pointer :: basinNumber
       real (kind=RKIND), dimension(:), pointer :: lowerSurface
       real (kind=RKIND), dimension(:), pointer :: areaCell
+      real (kind=RKIND), dimension(:), pointer :: bedTopography
       real (kind=RKIND), dimension(:), allocatable :: mean_TF, IS_area
       integer, parameter :: maxNumBasins = 32
       integer, dimension(:), pointer :: cellMask, indexToCellID
@@ -1219,7 +1220,8 @@ module li_iceshelf_melt
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-
+         
+         call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
          call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
          call mpas_pool_get_dimension(meshPool, 'nISMIP6OceanLayers', nOceanLayers)
          call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
@@ -1271,8 +1273,13 @@ module li_iceshelf_melt
                do kk=1,nOceanLayers
                   if ( zOcean(kk) >= lowerSurface(iCell) )  ksup = kk
                enddo
-               kinf = ksup + 1
 
+               if (zOcean(ksup + 1) >= bedTopography(iCell)) then
+                  kinf = ksup + 1
+               else ! Do not interpolate if bottom of cell is below bed topography
+                  kinf = ksup
+               endif
+                
                !call mpas_log_write("kinf=$i, zOcean(kinf)=$r, TFocean=$r",realArgs=(/zOcean(kinf),TFocean(kinf,iCell)/), &
                !        intArgs=(/kinf/))
                !call mpas_log_write("ksup=$i, zOcean(ksup)=$r, TFocean=$r",realArgs=(/zOcean(ksup),TFocean(ksup,iCell)/), &
@@ -1305,6 +1312,9 @@ module li_iceshelf_melt
                   ! for depths below the deepest layer center, use deepest layer corrected for Tfreeze
                   TFdraft(iCell) = TFocean(nOceanLayers, iCell) - &
                      (zOcean(nOceanLayers) - lowerSurface(iCell)) * oceanFreezingTempDepthDependence
+               elseif (kinf == ksup) then
+                  !only use TF from just above bed topography if on deepest ocean layer
+                  TFdraft(iCell) = TFocean(ksup,iCell)
                else
                   ! for depths between the first and last layer centers, linearly interpolate
                   TFdraft(iCell) = ( (zOcean(ksup)-lowerSurface(iCell)) * TFocean(kinf, iCell) &
@@ -1582,7 +1592,8 @@ module li_iceshelf_melt
                         ! If bed is deeper than the bottom ocean layer, use TF from the bottom layer.
                         if ( (kk == 1) .or. ( (kk == nISMIP6OceanLayers) .and. (zOcean(kk) >= bedTopography(iCell)) ) ) then
                            TFocean(iCell) = ismip6shelfMelt_3dThermalForcing(kk, iCell) + ismip6shelfMelt_deltaT(iCell)
-                           ! For all other bed depths, interpolate linearly between layers above and below bed depth.
+                        
+                        ! For all other bed depths, interpolate linearly between layers above and below bed depth.
                         else
                            TFocean(iCell) = ( (zOcean(kk-1) - bedTopography(iCell)) * ismip6shelfMelt_3dThermalForcing(kk, iCell) + &
                                            (bedTopography(iCell) - zOcean(kk)) * ismip6shelfMelt_3dThermalForcing(kk-1, iCell) ) / &
