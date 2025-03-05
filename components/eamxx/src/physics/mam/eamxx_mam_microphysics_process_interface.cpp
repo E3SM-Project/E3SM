@@ -985,7 +985,7 @@ void MAMMicrophysics::run_impl(const double dt) {
         // constituent_fluxes is kg/m2/s) (Following mimics Fortran code
         // behavior but we should look into it)
         for(int ispc = offset_aerosol; ispc < mam4::pcnst; ++ispc) {
-          constituent_fluxes(icol, ispc) = dflx[ispc - offset_aerosol];
+          constituent_fluxes(icol, ispc) -= dflx[ispc - offset_aerosol];
         }
       });  // parallel_for for the column loop
   Kokkos::fence();
