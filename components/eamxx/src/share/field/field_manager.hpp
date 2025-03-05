@@ -113,14 +113,14 @@ public:
     return get_field(name, m_grids_mgr->get_repo().begin()->second->name());
   }
 
-  FieldGroupInfo get_groups_info (const std::string& group_name) const {
+  FieldGroupInfo get_group_info (const std::string& group_name) const {
     EKAT_ASSERT_MSG(m_grids_mgr->size() == 1,
       "Error! More than one grid exists for FieldManager, must specify grid name to query for FieldGroupInfo.\n"
       "  - Group name: " + group_name + "\n"
       "  - Grids in FM: " + m_grids_mgr->print_available_grids() + "\n");
-    return get_groups_info(group_name, m_grids_mgr->get_repo().begin()->second->name());
+    return get_group_info(group_name, m_grids_mgr->get_repo().begin()->second->name());
   }
-  FieldGroupInfo get_groups_info (const std::string& group_name, const std::string& grid_name) const;
+  FieldGroupInfo get_group_info (const std::string& group_name, const std::string& grid_name) const;
 
   FieldGroup get_field_group (const std::string& name, const std::string& grid_name) const;
 

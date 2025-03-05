@@ -522,9 +522,9 @@ TEST_CASE("field_mgr", "") {
     }
     return false;
   };
-  REQUIRE (has_group(f2_1.get_header().get_tracking().get_groups_info(),"gRouP_1"));
-  REQUIRE (has_group(f1_2.get_header().get_tracking().get_groups_info(),"Group_2"));
-  REQUIRE (has_group(f1_2.get_header().get_tracking().get_groups_info(),"Group_1"));
+  REQUIRE (has_group(f2_1.get_header().get_tracking().get_group_info(),"gRouP_1"));
+  REQUIRE (has_group(f1_2.get_header().get_tracking().get_group_info(),"Group_2"));
+  REQUIRE (has_group(f1_2.get_header().get_tracking().get_group_info(),"Group_1"));
 
   // Check that correct grids requested groups
   REQUIRE (field_mgr.has_group("group_1", "grid1"));
@@ -533,9 +533,9 @@ TEST_CASE("field_mgr", "") {
   REQUIRE (field_mgr.has_group("group_2", "grid2"));
 
   // Check that the groups in the field_mgr contain the correct fields
-  auto gr1_1 = field_mgr.get_groups_info("group_1", "grid1");
-  auto gr1_2 = field_mgr.get_groups_info("group_1", "grid2");
-  auto gr2_2 = field_mgr.get_groups_info("group_2", "grid2");
+  auto gr1_1 = field_mgr.get_group_info("group_1", "grid1");
+  auto gr1_2 = field_mgr.get_group_info("group_1", "grid2");
+  auto gr2_2 = field_mgr.get_group_info("group_2", "grid2");
   REQUIRE (gr1_1.m_fields_names.size()==1);
   REQUIRE (gr1_2.m_fields_names.size()==1);
   REQUIRE (gr2_2.m_fields_names.size()==1);

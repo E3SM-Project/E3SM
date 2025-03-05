@@ -65,7 +65,7 @@ TEST_CASE("output_restart","io")
   auto fm0 = get_test_fm(grid);
   randomize_fields(*fm0,engine);
 
-  const auto& out_fields = fm0->get_groups_info("output").m_fields_names;
+  const auto& out_fields = fm0->get_group_info("output").m_fields_names;
 
   // Initialize the pio_subsystem for this test:
   scorpio::init_subsystem(comm);

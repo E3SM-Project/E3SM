@@ -207,7 +207,7 @@ Field& FieldManager::get_field (const std::string& name, const std::string& grid
 }
 
 FieldGroupInfo FieldManager::
-get_groups_info (const std::string& group_name, const std::string& grid_name) const
+get_group_info (const std::string& group_name, const std::string& grid_name) const
 {
   // Sanity checks
   EKAT_REQUIRE_MSG(m_repo_state==RepoState::Closed,
@@ -260,7 +260,7 @@ get_field_group (const std::string& group_name, const std::string& grid_name) co
   FieldGroup group(group_name);
 
   // Set the info in the group
-  group.m_info = std::make_shared<FieldGroupInfo>(get_groups_info(group_name, grid_name));
+  group.m_info = std::make_shared<FieldGroupInfo>(get_group_info(group_name, grid_name));
 
   // Find all the fields registered on given grid and set them in the group
   for (const auto& fname : group.m_info->m_fields_names) {
@@ -781,7 +781,7 @@ void FieldManager::add_field (const Field& f) {
   EKAT_REQUIRE_MSG (not has_field(f.name(), grid_name),
       "Error! The method 'add_field' requires the input field to not be already existing.\n"
       "  - field name: " + f.get_header().get_identifier().name() + "\n");
-  EKAT_REQUIRE_MSG (f.get_header().get_tracking().get_groups_info().size()==0 ||
+  EKAT_REQUIRE_MSG (f.get_header().get_tracking().get_group_info().size()==0 ||
                     m_group_requests.at(grid_name).size()==0,
       "Error! When calling 'add_field', one of the following must be true:\n"
       "  - the input field is not be part of any group,\n"
