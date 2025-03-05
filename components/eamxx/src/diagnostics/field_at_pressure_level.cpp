@@ -88,7 +88,7 @@ initialize_impl (const RunType /*run_type*/)
   m_mask_val = m_params.get<double>("mask_value",Real(constants::DefaultFillValue<float>::value));
 
 
-  std::string mask_name = name() + " mask";
+  std::string mask_name = m_diag_name + " mask";
   FieldLayout mask_layout( {COL}, {num_cols});
   FieldIdentifier mask_fid (mask_name,mask_layout, nondim, gname);
   Field diag_mask(mask_fid);

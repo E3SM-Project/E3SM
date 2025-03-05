@@ -1314,16 +1314,9 @@ void AtmosphereOutput::set_diagnostics()
 {
   const auto sim_field_mgr = get_field_manager("sim");
   // Create all diagnostics
-  for (auto& fname : m_fields_names) {
+  for (const auto& fname : m_fields_names) {
     if (!sim_field_mgr->has_field(fname)) {
-      auto diag = create_diagnostic(fname);
-      auto diag_fname = diag->get_diagnostic().name();
-      m_diagnostics[diag_fname] = diag;
-
-      // Note: the diag field may have a name different from what was used
-      //       in the input file, so update the name with the actual
-      //       diagnostic field name
-      fname = diag_fname;
+      m_diagnostics[fname] = create_diagnostic(fname);
     }
   }
 }

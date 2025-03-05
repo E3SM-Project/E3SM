@@ -15,7 +15,7 @@ class AODVis : public AtmosphereDiagnostic {
   // Constructors
   AODVis(const ekat::Comm &comm, const ekat::ParameterList &params);
 
-  // The name of the diagnostic
+  // The name of the diagnostic CLASS (not the computed field)
   std::string name() const override { return "AerosolOpticalDepth550nm"; }
 
   // Set the grid
