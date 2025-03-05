@@ -46,7 +46,7 @@ void VaporFluxDiagnostic::set_grids(const std::shared_ptr<const GridsManager> gr
   add_field<Required>("horiz_winds",    vector3d, m/s,   grid_name);
 
   // Construct and allocate the diagnostic field
-  FieldIdentifier fid (name(), scalar2d, kg/m/s, grid_name);
+  FieldIdentifier fid (m_name, scalar2d, kg/m/s, grid_name);
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
 }
@@ -67,7 +67,7 @@ void VaporFluxDiagnostic::compute_diagnostic_impl()
 
   const auto num_levs = m_num_levs;
   const auto policy = ESU::get_default_team_policy(m_num_cols, m_num_levs);
-  Kokkos::parallel_for("Compute " + name(), policy,
+  Kokkos::parallel_for("Compute " + m_name, policy,
                        KOKKOS_LAMBDA(const MT& team) {
     const int icol = team.league_rank();
 

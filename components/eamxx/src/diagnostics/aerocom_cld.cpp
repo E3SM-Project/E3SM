@@ -73,7 +73,7 @@ set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
   m_dz.allocate_view();
 
   // Construct and allocate the output field
-  FieldIdentifier fid(name(), vector2d, nondim, grid_name);
+  FieldIdentifier fid(name() + m_topbot, vector2d, nondim, grid_name);
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
 
@@ -147,7 +147,7 @@ void AeroComCld::compute_diagnostic_impl() {
   auto o_cldfrac_tot   = ekat::subview_1(out, m_index_map["cldfrac_tot"]);
 
   Kokkos::parallel_for(
-      "Compute " + name(), policy, KOKKOS_LAMBDA(const MT &team) {
+      "Compute " + m_diagnostic_output.name(), policy, KOKKOS_LAMBDA(const MT &team) {
         const int icol = team.league_rank();
         // Subview the inputs at icol
         auto tmid_icol = ekat::subview(tmid, icol);

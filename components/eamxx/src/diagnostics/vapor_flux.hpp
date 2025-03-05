@@ -16,8 +16,8 @@ public:
   // Constructors
   VaporFluxDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params);
 
-  // The name of the diagnostic
-  std::string name () const override { return m_name; }
+  // The name of the diagnostic CLASS (not the computed field)
+  std::string name () const override { return "VaporFlux"; }
 
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);

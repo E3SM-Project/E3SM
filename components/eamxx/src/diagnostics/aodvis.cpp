@@ -54,7 +54,7 @@ void AODVis::compute_diagnostic_impl() {
   const auto num_levs = m_nlevs;
   const auto policy   = ESU::get_default_team_policy(m_ncols, m_nlevs);
   Kokkos::parallel_for(
-      "Compute " + name(), policy, KOKKOS_LAMBDA(const MT &team) {
+      "Compute " + m_diagnostic_output.name(), policy, KOKKOS_LAMBDA(const MT &team) {
         const int icol = team.league_rank();
         if(sunlit(icol) == 0.0) {
           aod(icol) = var_fill_value;

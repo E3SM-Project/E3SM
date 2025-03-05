@@ -46,12 +46,12 @@ void AtmBackTendDiag::initialize_impl(const RunType /*run_type*/) {
   auto diag_units = fid.get_units() / s;
 
   // All good, create the diag output
-  FieldIdentifier d_fid(name(), layout.clone(), diag_units, gn);
+  FieldIdentifier d_fid(m_name + "_atm_backtend", layout.clone(), diag_units, gn);
   m_diagnostic_output = Field(d_fid);
   m_diagnostic_output.allocate_view();
 
   // Let's also create the previous field
-  FieldIdentifier prev_fid(name() + "_prev", layout.clone(), diag_units, gn);
+  FieldIdentifier prev_fid(m_name + "_atm_backtend_prev", layout.clone(), diag_units, gn);
   m_f_prev = Field(prev_fid);
   m_f_prev.allocate_view();
 }
