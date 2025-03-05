@@ -74,18 +74,16 @@ subroutine simple_saturation_adjustment(qv, qc, qcn, theta, p, exner)
   real(rl) :: delta_qcn ! cloud liquid number change amount [# / kg air]
   real(rl) :: delta_theta ! potential temperature change amount [K]
   real(rl) :: gamma ! coefficient for latent heat computation, gamma = Lvap / (Cp * exner)
-  real(rl) :: liq_volume ! volume of liquid water condensed
   real(rl) :: T ! temperature [K]
   logical :: is_saturated 
-  integer :: ii, jj
+  integer :: ii, jj, kk
   real(rl), parameter :: new_droplet_volume = 4.2e-6_rl ! volume of a newly formed droplet [micron^3]
   real(rl), parameter :: cubic_micron_to_cubic_meter = 1e18_rl ! multiplier to convert from cubic micron to cubic meters
   
   
-  do ii=1,np; do jj=1,np;
-    do kk=1,nlev
+  do ii=1,np; do jj=1,np; do kk=1,nlev;
       T = theta(ii,jj,kk) * exner(ii,jj,kk)
-      gamma = latvap / (cp * exner(ii,jj,kk))
+      gamma = latvap / (cpdry * exner(ii,jj,kk))
       qsat = qv_sat(T, p(ii,jj,kk), liquid_or_ice_switch)
       is_saturated = (qv(ii,jj,kk) > qsat)
       delta_qv = qv(ii,jj,kk) - qsat
@@ -124,8 +122,7 @@ subroutine simple_saturation_adjustment(qv, qc, qcn, theta, p, exner)
           qcn(ii,jj,kk) = 0
         endif
       endif ! is_saturated
-    enddo ! kk
-  enddo; enddo; ! ii; jj;
+  enddo; enddo; enddo ! ii; jj; kk;
 end subroutine 
 
 
