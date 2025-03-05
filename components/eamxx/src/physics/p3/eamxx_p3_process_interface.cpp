@@ -279,14 +279,14 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   const  auto& pseudo_density_dry = get_field_in("pseudo_density_dry").get_view<const Pack**>();
   const  auto& T_atm          = get_field_out("T_mid").get_view<Pack**>();
   const  auto& cld_frac_t_in  = get_field_in("cldfrac_tot").get_view<const Pack**>();
-  // FIXME: This is hack to get things going, these fields should be strictly const
-  // But to get around bfb testing and needing to declare these fields elsewhere,
-  // We will just use this workaround ...
-         auto  cld_frac_l_in  = cld_frac_t_in;
-         auto  cld_frac_i_in  = cld_frac_t_in;
-  if (runtime_options.use_separate_ice_liq_frac) {
-               cld_frac_l_in  = get_field_in("cldfrac_liq").get_view<const Pack**>();
-               cld_frac_i_in  = get_field_in("cldfrac_ice").get_view<const Pack**>();
+  // FIXME: This is hack to get things going, these fields should be strictly
+  // const But to get around bfb testing and needing to declare these fields
+  // elsewhere, We will just use this workaround ...
+  auto cld_frac_l_in = cld_frac_t_in;
+  auto cld_frac_i_in = cld_frac_t_in;
+  if(runtime_options.use_separate_ice_liq_frac) {
+    cld_frac_l_in = get_field_in("cldfrac_liq").get_view<const Pack **>();
+    cld_frac_i_in = get_field_in("cldfrac_ice").get_view<const Pack **>();
   }
   const  auto& qv             = get_field_out("qv").get_view<Pack**>();
   const  auto& qc             = get_field_out("qc").get_view<Pack**>();
