@@ -1217,78 +1217,7 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    call physics_ptend_dealloc(ptend_loc)
 
    if (zm_microp) then
-      deallocate( &
-         microp_st%wu,       &
-         microp_st%qliq,     &
-         microp_st%qice,     &
-         microp_st%qrain,    &
-         microp_st%qsnow,    &
-         microp_st%qgraupel, &
-         microp_st%qnl,      &
-         microp_st%qni,      &
-         microp_st%qnr,      &
-         microp_st%qns,      &
-         microp_st%qng,      &
-         microp_st%autolm,   &
-         microp_st%accrlm,   &
-         microp_st%bergnm,   &
-         microp_st%fhtimm,   &
-         microp_st%fhtctm,   &
-         microp_st%fhmlm ,   &
-         microp_st%hmpim ,   &
-         microp_st%accslm,   &
-         microp_st%dlfm  ,   &
-         microp_st%autoln,   &
-         microp_st%accrln,   &
-         microp_st%bergnn,   &
-         microp_st%fhtimn,   &
-         microp_st%fhtctn,   &
-         microp_st%fhmln ,   &
-         microp_st%accsln,   &
-         microp_st%activn,   &
-         microp_st%dlfn  ,   &
-         microp_st%autoim,   &
-         microp_st%accsim,   &
-         microp_st%difm  ,   &
-         microp_st%nuclin,   &
-         microp_st%autoin,   &
-         microp_st%accsin,   &
-         microp_st%hmpin ,   &
-         microp_st%difn  ,   &
-         microp_st%cmel  ,   &
-         microp_st%cmei  ,   &
-         microp_st%trspcm,   &
-         microp_st%trspcn,   &
-         microp_st%trspim,   &
-         microp_st%trspin,   &
-         microp_st%accgrm,   &
-         microp_st%accglm,   &
-         microp_st%accgslm,  &
-         microp_st%accgsrm,  &
-         microp_st%accgirm,  &
-         microp_st%accgrim,  &
-         microp_st%accgrsm,  &
-         microp_st%accgsln,  &
-         microp_st%accgsrn,  &
-         microp_st%accgirn,  &
-         microp_st%accsrim,  &
-         microp_st%acciglm,  &
-         microp_st%accigrm,  &
-         microp_st%accsirm,  &
-         microp_st%accigln,  &
-         microp_st%accigrn,  &
-         microp_st%accsirn,  &
-         microp_st%accgln,   &
-         microp_st%accgrn,   &
-         microp_st%accilm,   &
-         microp_st%acciln,   &
-         microp_st%fallrm,   &
-         microp_st%fallsm,   &
-         microp_st%fallgm,   &
-         microp_st%fallrn,   &
-         microp_st%fallsn,   &
-         microp_st%fallgn,   &
-         microp_st%fhmrm     )
+      call zm_microp_st_dealloc(microp_st)
    else
       deallocate(dnlf, dnif, dsf, dnsf)
    end if
