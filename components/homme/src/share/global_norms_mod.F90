@@ -5,7 +5,6 @@
 module global_norms_mod
 
   use kinds, only : iulog
-  use edgetype_mod, only : EdgeBuffer_t
 
   implicit none
   private
@@ -19,13 +18,13 @@ module global_norms_mod
   public :: l2_vnorm
   public :: linf_vnorm
 
+  public :: dss_hvtensor
   public :: print_cfl
   public :: test_global_integral
   public :: global_integral
   public :: wrap_repro_sum
 
   private :: global_maximum
-  type (EdgeBuffer_t), private :: edgebuf
 
 contains
 
@@ -78,7 +77,7 @@ contains
                 J_tmp(ie) = J_tmp(ie) + da*h(i,j,ie)
              end do
           end do
-       end do       
+       end do
     do ie=nets,nete
       global_shared_buf(ie,1) = J_tmp(ie)
     enddo
@@ -96,7 +95,7 @@ contains
   ! ================================
   ! test_global_integral:
   !
-  ! test that the global integral of 
+  ! test that the global integral of
   ! the area of the sphere is 1.
   !
   ! ================================
@@ -106,14 +105,11 @@ contains
     use hybrid_mod,  only : hybrid_t
     use element_mod, only : element_t
     use dimensions_mod, only : np,ne, nelem, nelemd
-    use mesh_mod,     only : MeshUseMeshFile          
+    use mesh_mod,     only : MeshUseMeshFile
 
     use reduction_mod, only : ParallelMin,ParallelMax
     use physical_constants, only : scale_factor,dd_pi
     use parallel_mod, only : abortmp, global_shared_buf, global_shared_sum
-    use edgetype_mod, only : EdgeBuffer_t
-    use edge_mod, only :  initedgebuffer, FreeEdgeBuffer, edgeVpack, edgeVunpack
-    use bndry_mod, only : bndry_exchangeV
     use control_mod, only : geometry
 
     type(element_t)      , intent(inout) :: elem(:)
@@ -131,7 +127,7 @@ contains
     real (kind=real_kind) :: min_min_dx, max_min_dx, avg_min_dx
     real (kind=real_kind) :: min_normDinv, max_normDinv
     real (kind=real_kind) :: min_len
-    integer :: ie,corner, i, j,nlon
+    integer :: ie, i, j
 
 
     h(:,:,nets:nete)=1.0D0
@@ -154,7 +150,7 @@ contains
     avg_min_dx=0_real_kind
 
     do ie=nets,nete
-       
+
        elem(ie)%area = sum(elem(ie)%spheremp(:,:))
        min_area=min(min_area,elem(ie)%area)
        max_area=max(max_area,elem(ie)%area)
@@ -197,8 +193,8 @@ contains
 
 
     ! for an equation du/dt = i c u, leapfrog is stable for |c u dt| < 1
-    ! Consider a gravity wave at the equator, c=340m/s  
-    ! u = exp(i kmax x/ a ) with x = longitude,  and kmax =  pi a / dx, 
+    ! Consider a gravity wave at the equator, c=340m/s
+    ! u = exp(i kmax x/ a ) with x = longitude,  and kmax =  pi a / dx,
     ! u = exp(i pi x / dx ),   so du/dt = c du/dx becomes du/dt = i c pi/dx u
     ! stable for dt < dx/(c*pi)
     ! CAM 26 level AMIP simulation: max gravity wave speed 341.75 m/s
@@ -243,7 +239,7 @@ contains
 !
 !   estimate various CFL limits
 !   also, for variable resolution viscosity coefficient, make sure
-!   worse viscosity CFL (given by dtnu) is not violated by reducing 
+!   worse viscosity CFL (given by dtnu) is not violated by reducing
 !   viscosity coefficient in regions where CFL is violated
 !
     use kinds,       only : real_kind
@@ -252,34 +248,26 @@ contains
 #ifdef MODEL_THETA_L
     use element_state, only : nu_scale_top
 #endif
-    use dimensions_mod, only : np,ne,nelem,nelemd,qsize
+    use dimensions_mod, only : np
     use quadrature_mod, only : gausslobatto, quadrature_t
 
     use reduction_mod, only : ParallelMin,ParallelMax
-    use physical_constants, only : scale_factor_inv, scale_factor,dd_pi
+    use physical_constants, only : scale_factor_inv
     use control_mod, only : nu, nu_q, nu_div, hypervis_order, nu_top,  &
-                            hypervis_scaling, dcmip16_mu,dcmip16_mu_s,dcmip16_mu_q
+                            hypervis_scaling, dcmip16_mu,dcmip16_mu_s
     use control_mod, only : tstep_type
-    use parallel_mod, only : abortmp, global_shared_buf, global_shared_sum
-    use edgetype_mod, only : EdgeBuffer_t 
-    use edge_mod, only : initedgebuffer, FreeEdgeBuffer, edgeVpack, edgeVunpack
-    use bndry_mod, only : bndry_exchangeV
-    use time_mod, only : tstep
 
     type(element_t)      , intent(inout) :: elem(:)
     integer              , intent(in) :: nets,nete
     type (hybrid_t)      , intent(in) :: hybrid
-    real (kind=real_kind), intent(in) :: dtnu  
+    real (kind=real_kind), intent(in) :: dtnu
 
     ! Element statisics
-    real (kind=real_kind) :: min_max_dx,max_unif_dx   ! used for normalizing scalar HV
+    real (kind=real_kind) :: min_max_dx   ! used for normalizing scalar HV
     real (kind=real_kind) :: max_normDinv  ! used for CFL
-    real (kind=real_kind) :: min_hypervis, max_hypervis, avg_hypervis, stable_hv
     real (kind=real_kind) :: normDinv_hypervis
-    real (kind=real_kind) :: x, y, noreast, nw, se, sw
-    real (kind=real_kind), dimension(np,np,nets:nete) :: zeta
     real (kind=real_kind) :: lambda_max, lambda_vis, min_gw, lambda, nu_div_actual, nu_top_actual
-    integer :: ie,corner, i, j, rowind, colind
+    integer :: ie, i, j
     type (quadrature_t)    :: gp
 
 
@@ -326,6 +314,7 @@ contains
 
     gp=gausslobatto(np)
     min_gw = minval(gp%weights)
+    deallocate(gp%weights)
 
     max_normDinv=0
     min_max_dx=1d99
@@ -350,61 +339,9 @@ contains
     endif
 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!  TENSOR, RESOLUTION-AWARE HYPERVISCOSITY
-!  The tensorVisc() array is computed in cube_mod.F90
-!  this block of code will DSS it so the tensor if C0
-!  and also make it bilinear in each element.
-!  Oksana Guba
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   if (hypervis_scaling /= 0) then
-    call initEdgeBuffer(hybrid%par,edgebuf,elem,1)
-    do rowind=1,2
-      do colind=1,2
-	do ie=nets,nete
-	  zeta(:,:,ie) = elem(ie)%tensorVisc(:,:,rowind,colind)*elem(ie)%spheremp(:,:)
-	  call edgeVpack(edgebuf,zeta(1,1,ie),1,0,ie)
-	end do
-
-	call bndry_exchangeV(hybrid,edgebuf)
-	do ie=nets,nete
-	  call edgeVunpack(edgebuf,zeta(1,1,ie),1,0,ie)
-          elem(ie)%tensorVisc(:,:,rowind,colind) = zeta(:,:,ie)*elem(ie)%rspheremp(:,:)
-	end do
-      enddo !rowind
-    enddo !colind
-    call FreeEdgeBuffer(edgebuf)
-
-!IF BILINEAR MAP OF V NEEDED
-    do rowind=1,2
-      do colind=1,2
-    ! replace hypervis w/ bilinear based on continuous corner values
-	do ie=nets,nete
-	  noreast = elem(ie)%tensorVisc(np,np,rowind,colind)
-	  nw = elem(ie)%tensorVisc(1,np,rowind,colind)
-	  se = elem(ie)%tensorVisc(np,1,rowind,colind)
-	  sw = elem(ie)%tensorVisc(1,1,rowind,colind)
-	  do i=1,np
-	    x = gp%points(i)
-	    do j=1,np
-		y = gp%points(j)
-		elem(ie)%tensorVisc(i,j,rowind,colind) = 0.25d0*( &
-					(1.0d0-x)*(1.0d0-y)*sw + &
-					(1.0d0-x)*(y+1.0d0)*nw + &
-					(x+1.0d0)*(1.0d0-y)*se + &
-					(x+1.0d0)*(y+1.0d0)*noreast)
-	    end do
-	  end do
-	end do
-      enddo !rowind
-    enddo !colind
-    endif
-    deallocate(gp%points)
-    deallocate(gp%weights)
-
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!    
+!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
      if (hybrid%masterthread) then
@@ -430,11 +367,11 @@ contains
              write(iulog,'(a,f10.2,a)') "Stability: nu_vor hyperviscosity dt < S *", 1/(nu*normDinv_hypervis),'s'
 #ifdef MODEL_THETA_L
              nu_div_actual = nu_div
-#else             
+#else
              ! bug in preqx nu_div implimentation:
              ! we apply nu_ration=(nu_div/nu) in laplace, so it is applied 2x
-             ! making the effective nu_div = nu * (nu_div/nu)**2 
-             ! should be fixed - but need all CAM defaults adjusted, 
+             ! making the effective nu_div = nu * (nu_div/nu)**2
+             ! should be fixed - but need all CAM defaults adjusted,
              nu_div_actual = nu_div**2/nu
 #endif
              write(iulog,'(a,f10.2,a)') "Stability: nu_div hyperviscosity dt < S *",&
@@ -463,6 +400,87 @@ contains
 
   end subroutine print_cfl
 
+  subroutine dss_hvtensor(elem,hybrid,nets,nete)
+   !
+   ! apply dss and bilinear projection to tensor coefficients
+   !
+       use kinds,       only : real_kind
+       use hybrid_mod,  only : hybrid_t
+       use element_mod, only : element_t
+       use dimensions_mod, only : np,ne
+       use quadrature_mod, only : gausslobatto, quadrature_t
+
+       use control_mod, only : hypervis_scaling
+       use edgetype_mod, only : EdgeBuffer_t
+       use edge_mod, only : initedgebuffer, FreeEdgeBuffer, edgeVpack, edgeVunpack
+       use bndry_mod, only : bndry_exchangeV
+
+
+       type(element_t)      , intent(inout) :: elem(:)
+       integer              , intent(in) :: nets,nete
+       type (hybrid_t)      , intent(in) :: hybrid
+
+
+       real (kind=real_kind) :: x, y, noreast, nw, se, sw
+       real (kind=real_kind), dimension(np,np,nets:nete) :: zeta
+       integer :: ie,corner, i, j, rowind, colind
+       type (quadrature_t)    :: gp
+       type (EdgeBuffer_t)          :: edgebuf
+
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   !  TENSOR, RESOLUTION-AWARE HYPERVISCOSITY
+   !  The tensorVisc() array is computed in cube_mod.F90
+   !  this block of code will DSS it so the tensor if C0
+   !  and also make it bilinear in each element.
+   !  Oksana Guba
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      if (hypervis_scaling /= 0) then
+       gp=gausslobatto(np)
+       call initEdgeBuffer(hybrid%par,edgebuf,elem,1)
+       do rowind=1,2
+         do colind=1,2
+      do ie=nets,nete
+        zeta(:,:,ie) = elem(ie)%tensorVisc(:,:,rowind,colind)*elem(ie)%spheremp(:,:)
+        call edgeVpack(edgebuf,zeta(1,1,ie),1,0,ie)
+      end do
+
+      call bndry_exchangeV(hybrid,edgebuf)
+      do ie=nets,nete
+        call edgeVunpack(edgebuf,zeta(1,1,ie),1,0,ie)
+             elem(ie)%tensorVisc(:,:,rowind,colind) = zeta(:,:,ie)*elem(ie)%rspheremp(:,:)
+      end do
+         enddo !rowind
+       enddo !colind
+       call FreeEdgeBuffer(edgebuf)
+
+   !IF BILINEAR MAP OF V NEEDED
+       do rowind=1,2
+         do colind=1,2
+       ! replace hypervis w/ bilinear based on continuous corner values
+      do ie=nets,nete
+        noreast = elem(ie)%tensorVisc(np,np,rowind,colind)
+        nw = elem(ie)%tensorVisc(1,np,rowind,colind)
+        se = elem(ie)%tensorVisc(np,1,rowind,colind)
+        sw = elem(ie)%tensorVisc(1,1,rowind,colind)
+        do i=1,np
+          x = gp%points(i)
+          do j=1,np
+         y = gp%points(j)
+         elem(ie)%tensorVisc(i,j,rowind,colind) = 0.25d0*( &
+                  (1.0d0-x)*(1.0d0-y)*sw + &
+                  (1.0d0-x)*(y+1.0d0)*nw + &
+                  (x+1.0d0)*(1.0d0-y)*se + &
+                  (x+1.0d0)*(y+1.0d0)*noreast)
+          end do
+        end do
+      end do
+         enddo !rowind
+       enddo !colind
+       deallocate(gp%points)
+       deallocate(gp%weights)
+       endif
+     end subroutine dss_hvtensor
+
   ! ================================
   ! global_maximum:
   !
@@ -476,7 +494,7 @@ contains
     use hybrid_mod, only : hybrid_t
     use reduction_mod, only : red_max, pmax_mt
 
-    integer              , intent(in) :: npts,nets,nete     
+    integer              , intent(in) :: npts,nets,nete
     real (kind=real_kind), intent(in) :: h(npts,npts,nets:nete)
     type (hybrid_t)      , intent(in) :: hybrid
 
@@ -512,7 +530,7 @@ contains
     real (kind=real_kind), intent(in) :: h(npts,npts,nets:nete)  ! computed soln
     real (kind=real_kind), intent(in) :: ht(npts,npts,nets:nete) ! true soln
     type (hybrid_t)      , intent(in) :: hybrid
-    real (kind=real_kind)             :: l1     
+    real (kind=real_kind)             :: l1
 
     ! Local variables
 
@@ -556,7 +574,7 @@ contains
     real (kind=real_kind), intent(in) :: v(npts,npts,2,nets:nete)  ! computed soln
     real (kind=real_kind), intent(in) :: vt(npts,npts,2,nets:nete) ! true soln
     type (hybrid_t)      , intent(in) :: hybrid
-    real (kind=real_kind)             :: l1     
+    real (kind=real_kind)             :: l1
 
     ! Local variables
 
@@ -616,12 +634,12 @@ contains
     use element_mod, only : element_t
     use hybrid_mod, only : hybrid_t
 
-    type(element_t), intent(in) :: elem(:)	
+    type(element_t), intent(in) :: elem(:)
     integer              , intent(in) :: npts,nets,nete
     real (kind=real_kind), intent(in) :: h(npts,npts,nets:nete)  ! computed soln
     real (kind=real_kind), intent(in) :: ht(npts,npts,nets:nete) ! true soln
     type (hybrid_t)      , intent(in) :: hybrid
-    real (kind=real_kind)             :: l2   
+    real (kind=real_kind)             :: l2
 
     ! Local variables
 
@@ -726,7 +744,7 @@ contains
     real (kind=real_kind), intent(in) :: h(npts,npts,nets:nete)  ! computed soln
     real (kind=real_kind), intent(in) :: ht(npts,npts,nets:nete) ! true soln
     type (hybrid_t)      , intent(in) :: hybrid
-    real (kind=real_kind)             :: linf    
+    real (kind=real_kind)             :: linf
 
     ! Local variables
 
@@ -766,12 +784,12 @@ contains
     use hybrid_mod, only : hybrid_t
     use element_mod, only : element_t
 
-    type(element_t)      , intent(in), target :: elem(:) 
+    type(element_t)      , intent(in), target :: elem(:)
     integer              , intent(in) :: npts,nets,nete
     real (kind=real_kind), intent(in) :: v(npts,npts,2,nets:nete)  ! computed soln
     real (kind=real_kind), intent(in) :: vt(npts,npts,2,nets:nete) ! true soln
     type (hybrid_t)      , intent(in) :: hybrid
-    real (kind=real_kind)             :: linf     
+    real (kind=real_kind)             :: linf
 
     ! Local variables
 
@@ -858,7 +876,7 @@ contains
           endif
        enddo
     enddo
-#endif    
+#endif
 
 ! Repro_sum contains its own OpenMP, so only one thread should call it (AAM)
     call repro_sum(global_shared_buf, global_shared_sum, nsize_use, nelemd, nvars, commid=comm)
