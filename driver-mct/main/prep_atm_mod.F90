@@ -104,6 +104,7 @@ contains
     character(CL)                    :: ocn_gnam       ! ocn grid
     character(CL)                    :: atm_gnam       ! atm grid
     character(CL)                    :: lnd_gnam       ! lnd grid
+    logical                          :: no_match ! used to force a new mapper
     type(mct_avect), pointer         :: a2x_ax
     character(*), parameter          :: subname = '(prep_atm_init)'
     character(*), parameter          :: F00 = "('"//subname//" : ', 4A )"
@@ -182,9 +183,10 @@ contains
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Si2a'
           end if
+          no_match = .true.
           call seq_map_init_rcfile(mapper_Si2a, ice(1), atm(1), &
                'seq_maps.rc','ice2atm_smapname:','ice2atm_smaptype:',samegrid_ao, &
-               'mapper_Si2a initialization',esmf_map_flag)
+               'mapper_Si2a initialization',esmf_map_flag, no_match)
        end if
 
        ! needed for domain checking
@@ -193,9 +195,10 @@ contains
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Fi2a'
           end if
+          no_match=.true.
           call seq_map_init_rcfile(mapper_Fi2a, ice(1), atm(1), &
                'seq_maps.rc','ice2atm_fmapname:','ice2atm_fmaptype:',samegrid_ao, &
-               'mapper_Fi2a initialization',esmf_map_flag)
+               'mapper_Fi2a initialization',esmf_map_flag, no_match)
        endif
        call shr_sys_flush(logunit)
 

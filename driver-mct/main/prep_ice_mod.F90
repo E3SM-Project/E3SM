@@ -104,6 +104,7 @@ contains
     character(CL)                    :: rof_gnam      ! rof grid
     type(mct_avect), pointer         :: i2x_ix
     character(*), parameter          :: subname = '(prep_ice_init)'
+    logical                          :: no_match
     character(*), parameter          :: F00 = "('"//subname//" : ', 4A )"
     !---------------------------------------------------------------
 
@@ -160,7 +161,8 @@ contains
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_SFo2i'
           end if
-          call seq_map_init_rearrolap(mapper_SFo2i, ocn(1), ice(1), 'mapper_SFo2i')
+          no_match=.true.
+          call seq_map_init_rearrolap(mapper_SFo2i, ocn(1), ice(1), 'mapper_SFo2i',no_match)
        endif
 
        if (glc_c2_ice) then

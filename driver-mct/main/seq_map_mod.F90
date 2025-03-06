@@ -60,7 +60,7 @@ contains
   !=======================================================================
 
   subroutine seq_map_init_rcfile( mapper, comp_s, comp_d, &
-       maprcfile, maprcname, maprctype, samegrid, string, esmf_map)
+       maprcfile, maprcname, maprctype, samegrid, string, esmf_map, no_match)
 
     implicit none
     !-----------------------------------------------------
@@ -76,6 +76,7 @@ contains
     logical              ,intent(in)            :: samegrid
     character(len=*)     ,intent(in),optional   :: string
     logical              ,intent(in),optional   :: esmf_map
+    logical              ,intent(in),optional   :: no_match
     !
     ! Local Variables
     !
@@ -85,6 +86,7 @@ contains
     character(CX)               :: mapfile, nl_mapfile
     character(CL)               :: maptype
     integer(IN)                 :: mapid
+    logical                     :: skip_match
     character(len=128)          :: nl_label
     logical                     :: nl_found, nl_conservative
     character(len=*),parameter  :: nl_strategy = 'X'
@@ -95,6 +97,11 @@ contains
        write(logunit,'(A)') subname//' called for '//trim(string)
     endif
 
+    skip_match = .false.
+    if (present(no_match)) then
+       if (no_match) skip_match = .true.
+    endif
+
     call seq_comm_setptrs(CPLID, mpicom=mpicom)
 
     gsmap_s => component_get_gsmap_cx(comp_s)
@@ -103,9 +110,12 @@ contains
     if (mct_gsmap_Identical(gsmap_s,gsmap_d)) then
        call seq_map_mapmatch(mapid,gsmap_s=gsmap_s,gsmap_d=gsmap_d,strategy="copy")
 
-       if (mapid > 0) then
+       if (mapid > 0 .and. .not.skip_match) then
           call seq_map_mappoint(mapid,mapper)
        else
+          if(skip_match .and. seq_comm_iamroot(CPLID)) then
+             write(logunit,'(A)') subname, 'skip_match true, force new copy map'
+          endif
           call seq_map_mapinit(mapper,mpicom)
           mapper%copy_only = .true.
           mapper%strategy = "copy"
@@ -117,9 +127,12 @@ contains
     elseif (samegrid) then
        call seq_map_mapmatch(mapid,gsmap_s=gsmap_s,gsmap_d=gsmap_d,strategy="rearrange")
 
-       if (mapid > 0) then
+       if (mapid > 0 .and. .not.skip_match) then
           call seq_map_mappoint(mapid,mapper)
        else
+          if(skip_match .and. seq_comm_iamroot(CPLID)) then
+             write(logunit,'(A)') subname, 'skip_match true, force new rearranger'
+          endif
           ! --- Initialize rearranger
           call seq_map_mapinit(mapper,mpicom)
           mapper%rearrange_only = .true.
@@ -146,9 +159,12 @@ contains
        call seq_map_mapmatch(mapid,gsMap_s=gsMap_s,gsMap_d=gsMap_d,mapfile=mapfile,strategy=maptype, &
             nl_available=nl_found,nl_mapfile=nl_mapfile,nl_conservative=nl_conservative)
 
-       if (mapid > 0) then
+       if (mapid > 0 .and. .not.skip_match) then
           call seq_map_mappoint(mapid,mapper)
        else
+          if(skip_match .and. seq_comm_iamroot(CPLID)) then
+             write(logunit,'(A)') subname, 'skip_match true, force new full map'
+          endif
           call seq_map_mapinit(mapper,mpicom)
           mapper%mapfile = trim(mapfile)
           mapper%strategy= trim(maptype)
@@ -196,7 +212,7 @@ contains
 
   !=======================================================================
 
-  subroutine seq_map_init_rearrolap(mapper, comp_s, comp_d, string)
+  subroutine seq_map_init_rearrolap(mapper, comp_s, comp_d, string, no_match)
 
     implicit none
     !-----------------------------------------------------
@@ -207,6 +223,7 @@ contains
     type(component_type) ,intent(inout)         :: comp_s
     type(component_type) ,intent(inout)         :: comp_d
     character(len=*)     ,intent(in),optional   :: string
+    logical              ,intent(in),optional   :: no_match
     !
     ! Local Variables
     !
@@ -214,6 +231,7 @@ contains
     type(mct_gsmap), pointer   :: gsmap_s
     type(mct_gsmap), pointer   :: gsmap_d
     integer(IN)                :: mpicom
+    logical                    :: skip_match
     character(len=*),parameter :: subname = "(seq_map_init_rearrolap) "
     !-----------------------------------------------------
 
@@ -226,7 +244,12 @@ contains
     gsmap_s => component_get_gsmap_cx(comp_s)
     gsmap_d => component_get_gsmap_cx(comp_d)
 
-    if (mct_gsmap_Identical(gsmap_s,gsmap_d)) then
+    skip_match = .false.
+    if (present(no_match)) then
+       if (no_match) skip_match = .true.
+    endif
+
+    if (mct_gsmap_Identical(gsmap_s,gsmap_d) .and. .not.skip_match) then
        call seq_map_mapmatch(mapid,gsmap_s=gsmap_s,gsmap_d=gsmap_d,strategy="copy")
 
        if (mapid > 0) then
