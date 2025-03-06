@@ -227,7 +227,7 @@ setup (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs,
       // Check if the prev run wrote any output file (it may have not, if the restart was written
       // before the 1st output step). If there is a file, check if there's still room in it.
       const auto& last_output_filename = get_attribute<std::string>(rhist_file,"GLOBAL","last_output_filename");
-      m_resume_output_file = last_output_filename!="" and not restart_pl.get("force_new_file",false);
+      m_resume_output_file = last_output_filename!="" and not restart_pl.get("force_new_file",true);
       if (m_resume_output_file) {
         m_output_file_specs.storage.num_snapshots_in_file = scorpio::get_attribute<int>(rhist_file,"GLOBAL","last_output_file_num_snaps");
 
@@ -705,7 +705,7 @@ setup_internals (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgr
       EKAT_ERROR_MSG ("Error! Unrecognized/unsupported file storage type.\n");
     }
     m_filename_prefix = m_params.get<std::string>("filename_prefix");
-    m_output_file_specs.flush_frequency = m_params.get("flush_frequency",large_int);
+    m_output_file_specs.flush_frequency = m_params.get("flush_frequency",1);
 
     // Allow user to ask for higher precision for normal model output,
     // but default to single to save on storage
