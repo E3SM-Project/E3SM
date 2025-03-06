@@ -3166,9 +3166,9 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#parameters-for-diffused-radiation" class="md-nav__link">
+  <a href="#parameters-for-diffuse-radiation" class="md-nav__link">
     <span class="md-ellipsis">
-      Parameters For Diffused Radiation
+      Parameters For Diffuse Radiation
     </span>
   </a>
   
@@ -3320,6 +3320,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#parameterization-for-sub-grid-effect-of-topographic-on-solar-radiation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Parameterization for Sub-Grid Effect of Topographic on Solar radiation
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3353,6 +3362,7 @@
 
 
 <h1 id="overview">Overview</h1>
+<p>The main features of ELM shortwave radiation model are as follows:</p>
 <ul>
 <li>The shortwave radiation model in ELM computes the beam (or direct) and diffuse radiation absorbed by the canopy (i.e. sunlit and shaded leaves) and the ground, and the radiation reflected to the atmosphere.</li>
 <li>The model accounts for radiation in two bands: visible (<span class="arithmatex">\(&lt; 0.7\mu\)</span>m) and near-infrared (<span class="arithmatex">\(\ge 0.7 \mu\)</span>m).</li>
@@ -3360,12 +3370,13 @@
 <li>The model is a single-layer canopy model.</li>
 <li>Sunlit leaf absorbs unscattered direct radiation, scattered direct radiation, and diffuse radiation.</li>
 <li>Shaded leaf absorbs scattered direct radiation and diffuse radiation.</li>
+<li>Snow albedo is modeled using the hybrid SNICAR-AD model of Dang et al. (2019) [@dang2019intercomparison].</li>
+<li>The sub-grid impacts of topography on solar radiation are parameterized using the approach of Hao et al. <sup id="fnref2:4"><a class="footnote-ref" href="#fn:4">3</a></sup>.</li>
 </ul>
-<p>First, the governing equations of the two-stream approximation of the radiative model are presented. Next, the analytical solutions for the upward and downward diffuse radiation using the two-stream approximation are given. Then, the analytical solutions are used for the single-layer canopy configuration to compute the radiation absorbed by the canopy and ground. Lastly, the radiation absorbed by the canopy is split into sunlit and shaded leaves.</p>
+<p>ELM's shortwave radiation model is similar to CLM4.5 <sup id="fnref:5"><a class="footnote-ref" href="#fn:5">4</a></sup>, and its new features include the hybrid SCINAR-AD model for snow albedo and a parameterization for the sub-grid effects of topography on solar radiation. </p>
+<p>The outline of this chapter is as follows. First, the governing equations of the two-stream approximation of the radiative model are presented. Second, the analytical solutions for the upward and downward diffuse radiation using the two-stream approximation are given. Third, the analytical solutions are used for the single-layer canopy configuration to compute the radiation absorbed by the canopy and ground and the radiation absorbed by the canopy for sunlit and shaded leaves. Fourth, the treatment of surface albedo is described.</p>
 <h2 id="two-stream-approximation-radiative-transfer-model">Two-Stream Approximation Radiative Transfer Model</h2>
-<p>At any level within the canopy, the upward/downward direct/diffuse radiation is transmitted and intercepted by the canopy. The intercepted radiation is scattered backward, scattered forward, and absorbed by the canopy.
-The <strong><em>diffuse</em></strong> radiative fluxes via the two-stream approximation is given
-as</p>
+<p>At any level within the canopy, the upward/downward direct/diffuse radiation is transmitted and intercepted by the canopy. The intercepted radiation is scattered backward, scattered forward, and absorbed by the canopy. The diffuse radiative fluxes via the two-stream approximation is given as</p>
 <div class="arithmatex">\[
 \begin{eqnarray}
 - \dfrac{dI^{\uparrow}}{d(L+S)} + [ 1 - (1 - \beta)\omega ] \dfrac{1}{\bar{\mu}}I^{\uparrow} - \omega \beta \dfrac{1}{\bar{\mu}} I^{\downarrow} = \omega K_b \beta_0 e^{-K(L+S)} \label{eqn:dif_up} \\[0.5em]
@@ -3497,7 +3508,9 @@ I^{\downarrow}_{d,\Lambda}(\kappa) &amp;=&amp; h_9 e^{ -h \kappa} + h_{10} e^{h\
 \]</div>
 <p>It should be noted that <span class="arithmatex">\(I^{\uparrow}_{d,\Lambda}(\kappa = 0)\)</span> can be interpreted as surface albedo for the diffuse (or scattered) flux of diffuse radiation.</p>
 <h3 id="parameters-in-the-analytical-solutions">Parameters in the Analytical Solutions</h3>
+<p>The parameters for the analytical equations \eqref{two_str_dir_up_eqn}, \eqref{two_str_dir_dn_eqn}, \eqref{two_str_dif_up_eqn}, and \eqref{two_str_dif_dn_eqn} are presented here.</p>
 <h4 id="common-parameters">Common Parameters</h4>
+<p>The parameters common to both the beam and diffuse radiation are as follows:</p>
 <div class="arithmatex">\[
 \begin{eqnarray}
 b &amp;=&amp; 1 - \omega_\Lambda + \omega_\Lambda \beta_\Lambda \\[0.5em]
@@ -3511,6 +3524,7 @@ s_2 &amp;=&amp; e^{-K(L+S)} \\[0.5em]
 \end{eqnarray}
 \]</div>
 <h4 id="parameters-for-scattered-beam-radiation">Parameters For Scattered Beam Radiation</h4>
+<p>The parameters for the beam radiation equations \eqref{two_str_dir_up_eqn} - \eqref{two_str_dir_dn_eqn} are as follows:</p>
 <div class="arithmatex">\[
 \begin{eqnarray}
 u_1 &amp;=&amp; b - c/\alpha_{gb,\Lambda} \\[0.5em]
@@ -3530,7 +3544,8 @@ h_5 &amp;=&amp; \dfrac{-1}{d_2} \left[ \left( \dfrac{h_4(u_2 + \bar{\mu}h)}{\sig
 h_6 &amp;=&amp; \dfrac{1}{d_2} \left[ \dfrac{h_4(u_2 + \bar{\mu}h)}{\sigma}s_1 + \left( u_3 - \dfrac{h_4}{\sigma} (u_2 - \bar{\mu}K) \right)s_2 \right]
 \end{eqnarray}
 \]</div>
-<h4 id="parameters-for-diffused-radiation">Parameters For Diffused Radiation</h4>
+<h4 id="parameters-for-diffuse-radiation">Parameters For Diffuse Radiation</h4>
+<p>The parameters for the diffuse radiation equations \eqref{two_str_dif_up_eqn} - \eqref{two_str_dif_dn_eqn} are as follows:</p>
 <div class="arithmatex">\[
 \begin{eqnarray}
 u_1 &amp;=&amp; b - c/\alpha_{gd,\Lambda} \\[0.5em]
@@ -3606,7 +3621,7 @@ I^{\downarrow}_{d,\Lambda}(\kappa = L+S) &amp;=&amp; h_9 e^{ -h (L+S)} + h_{10} 
 \]</div>
 <p>The upward and downward fluxes in the above equations are for <span class="arithmatex">\(\kappa = 0\)</span> and <span class="arithmatex">\(\kappa = L + S\)</span>, respectively, and to simplify the notation, <span class="arithmatex">\(\kappa\)</span> has been omitted from the equations.</p>
 <h4 id="radiation-absorbed-by-sunlit-and-shaded-leaves_1">Radiation Absorbed By Sunlit and Shaded Leaves</h4>
-<p>Using analytical solutions of the two-stream approximation, Dai et al. (2004) <sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup> provided analytical solutions for the radiation absorbed by sunlit and shaded leaves presented below.</p>
+<p>Using analytical solutions of the two-stream approximation, Dai et al. (2004) <sup id="fnref:6"><a class="footnote-ref" href="#fn:6">5</a></sup> provided analytical solutions for the radiation absorbed by sunlit and shaded leaves presented below.</p>
 <h4 id="sunlit-leaves">Sunlit leaves</h4>
 <p>The analytical solution of the beam radiation absorbed by sunlit leaves is given as</p>
 <div class="arithmatex">\[
@@ -3661,13 +3676,13 @@ a_2 &amp;=&amp; h_9 \left[ \dfrac{1 - s_1 s_2}{K + h} \right] + h_{10} \left[ \d
 <p>The direct beam ground albedo, <span class="arithmatex">\(\alpha_{gb,\Lambda}\)</span>, and diffuse ground albedo, <span class="arithmatex">\(\alpha_{gd,\Lambda}\)</span>, are weighted combinationof "soil" and snow albedo as</p>
 <div class="arithmatex">\[
 \begin{eqnarray}
-\alpha_{gb,\Lambda} &amp;=&amp; \alpha_{b,\Lambda}^{soi} (1 - f_{sno})  + \alpha_{b,\Lambda}^{sno} f_{sno} \\[0.5em]
-\alpha_{gd,\Lambda} &amp;=&amp; \alpha_{d,\Lambda}^{soi} (1 - f_{sno})  + \alpha_{d,\Lambda}^{sno} f_{sno}
+\alpha_{gb,\Lambda} &amp;=&amp; \alpha_{b,\Lambda}^{soi} (1 - f_{sno})  + \alpha_{b,\Lambda}^{sno} f_{sno} \label{eqn_g_dir} \\[0.5em]
+\alpha_{gd,\Lambda} &amp;=&amp; \alpha_{d,\Lambda}^{soi} (1 - f_{sno})  + \alpha_{d,\Lambda}^{sno} f_{sno} \label{eqn_g_dif}
 \end{eqnarray}
 \]</div>
 <p>where <span class="arithmatex">\(f_{sno}\)</span> is the snow fraction.</p>
 <h3 id="soil-albedo">Soil Albedo</h3>
-<p>The soil albedo for the various ELM landunits remains the same as in CLM4.5 <sup id="fnref:4"><a class="footnote-ref" href="#fn:4">4</a></sup> are as follows:</p>
+<p>The soil albedo for the various ELM landunits remains the same as in CLM4.5 <sup id="fnref2:5"><a class="footnote-ref" href="#fn:5">4</a></sup> are as follows:</p>
 <h4 id="glacier-albedo">Glacier Albedo</h4>
 <div class="arithmatex">\[
 \begin{eqnarray}
@@ -3698,6 +3713,9 @@ a_2 &amp;=&amp; h_9 \left[ \dfrac{1 - s_1 s_2}{K + h} \right] + h_{10} \left[ \d
 \]</div>
 <p>where <span class="arithmatex">\(\Delta\)</span> depends on the volumetric water content of the first soil layer, <span class="arithmatex">\(\theta_1\)</span>, as <span class="arithmatex">\(\Delta = 0.11 - 0.4\theta_1\)</span>, and <span class="arithmatex">\(\alpha_{sat,\Lambda}\)</span> and <span class="arithmatex">\(\alpha_{dry,\Lambda}\)</span> are albedos for saturated and dry soil color classes.</p>
 <h3 id="snow-albedo">Snow Albedo</h3>
+<p>The hybrid SNICAR-AD model of Dang et al. (2019) [@dang2019intercomparison] is used to compute snow albedo.</p>
+<h3 id="parameterization-for-sub-grid-effect-of-topographic-on-solar-radiation">Parameterization for Sub-Grid Effect of Topographic on Solar radiation</h3>
+<p>The surface abedos given by equation \eqnref{eqn_g_dir} - \eqn{eqn_g_dif} neglect topography by assuming a plane-parallel Earth. Hao et al. (2021) <sup id="fnref:4"><a class="footnote-ref" href="#fn:4">3</a></sup> developed a parameterization for sub-grid topographic effects on solar radiation that essentially modifies the surface albedo by equation \eqnref{eqn_g_dir} - \eqn{eqn_g_dif}. The section <a href="../top_solar_parameterization/">TOP Parameterization</a> presents a detailed description of the parameterization.</p>
 <div class="footnote">
 <hr />
 <ol>
@@ -3707,11 +3725,14 @@ a_2 &amp;=&amp; h_9 \left[ \dfrac{1 - s_1 s_2}{K + h} \right] + h_{10} \left[ \d
 <li id="fn:2">
 <p>Piers J Sellers. Canopy reflectance, photosynthesis and transpiration. <em>International journal of remote sensing</em>, 6(8):1335–1372, 1985.&#160;<a class="footnote-backref" href="#fnref:2" title="Jump back to footnote 2 in the text">&#8617;</a></p>
 </li>
-<li id="fn:3">
-<p>Yongjiu Dai, Robert E Dickinson, and Ying-Ping Wang. A two-big-leaf model for canopy temperature, photosynthesis, and stomatal conductance. <em>Journal of climate</em>, 17(12):2281–2299, 2004.&#160;<a class="footnote-backref" href="#fnref:3" title="Jump back to footnote 3 in the text">&#8617;</a></p>
-</li>
 <li id="fn:4">
-<p>K. Oleson, D. Lawrence, G. Bonan, B. Drewniak, M. Huang, C. Koven, Z. M. Subin, and S. C. Swenson. Technical description of version 4.5 of the community land model (clm), ncar technical note. Technical Report NCAR/TN-503+ STR, National Center for Atmospheric Research (NCAR), Boulder, CO, USA, 2013. <a href="https://doi.org/https://doi.org/10.5065/D6RR1W7M">doi:https://doi.org/10.5065/D6RR1W7M</a>.&#160;<a class="footnote-backref" href="#fnref:4" title="Jump back to footnote 4 in the text">&#8617;</a></p>
+<p>Dalei Hao, Gautam Bisht, Yu Gu, Wei-Liang Lee, Kuo-Nan Liou, and L Ruby Leung. A parameterization of sub-grid topographical effects on solar radiation in the e3sm land model (version 1.0): implementation and evaluation over the tibetan plateau. <em>Geoscientific Model Development</em>, 14(10):6273–6289, 2021. <a href="https://doi.org/https://doi.org/10.5194/gmd-14-6273-2021">doi:https://doi.org/10.5194/gmd-14-6273-2021</a>.&#160;<a class="footnote-backref" href="#fnref:4" title="Jump back to footnote 3 in the text">&#8617;</a><a class="footnote-backref" href="#fnref2:4" title="Jump back to footnote 3 in the text">&#8617;</a></p>
+</li>
+<li id="fn:5">
+<p>K. Oleson, D. Lawrence, G. Bonan, B. Drewniak, M. Huang, C. Koven, Z. M. Subin, and S. C. Swenson. Technical description of version 4.5 of the community land model (clm), ncar technical note. Technical Report NCAR/TN-503+ STR, National Center for Atmospheric Research (NCAR), Boulder, CO, USA, 2013. <a href="https://doi.org/https://doi.org/10.5065/D6RR1W7M">doi:https://doi.org/10.5065/D6RR1W7M</a>.&#160;<a class="footnote-backref" href="#fnref:5" title="Jump back to footnote 4 in the text">&#8617;</a><a class="footnote-backref" href="#fnref2:5" title="Jump back to footnote 4 in the text">&#8617;</a></p>
+</li>
+<li id="fn:6">
+<p>Yongjiu Dai, Robert E Dickinson, and Ying-Ping Wang. A two-big-leaf model for canopy temperature, photosynthesis, and stomatal conductance. <em>Journal of climate</em>, 17(12):2281–2299, 2004.&#160;<a class="footnote-backref" href="#fnref:6" title="Jump back to footnote 5 in the text">&#8617;</a></p>
 </li>
 </ol>
 </div>
