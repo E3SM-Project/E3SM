@@ -3529,6 +3529,46 @@
 </ul>
 </li>
 </ul>
+<h2 id="mam4_atm_proc_base">mam4_atm_proc_base</h2>
+<ul>
+<li>mam4_atm_proc_base::create_fields_interval_checks:  <ul>
+<li>description: Create field interval checks for all fields that are computed and requested in mam4xx.  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>mam4_atm_proc_base::number_of_subcycles:  <ul>
+<li>description: how many times to subcycle this atm process  </li>
+<li>type: <strong>MISSING</strong>  </li>
+<li>constraints: gt 0  </li>
+</ul>
+</li>
+<li>mam4_atm_proc_base::enable_precondition_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>mam4_atm_proc_base::enable_postcondition_checks:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: logical  </li>
+</ul>
+</li>
+<li>mam4_atm_proc_base::repair_log_level:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: string  </li>
+<li>valid values: trace,debug,info,warn  </li>
+</ul>
+</li>
+<li>mam4_atm_proc_base::internal_diagnostics_level:  <ul>
+<li>description: <strong>MISSING</strong>  </li>
+<li>type: integer  </li>
+</ul>
+</li>
+<li>mam4_atm_proc_base::compute_tendencies:  <ul>
+<li>description: list of computed fields for which this process will back out tendencies  </li>
+<li>type: array(string)  </li>
+</ul>
+</li>
+</ul>
 <h2 id="mam4_aci">mam4_aci</h2>
 <ul>
 <li>mam4_aci::wsubmin:  <ul>
@@ -3544,6 +3584,11 @@
 <li>mam4_aci::top_level_mam4xx:  <ul>
 <li>description: Level corresponding to the top of troposphere clouds  </li>
 <li>type: integer  </li>
+</ul>
+</li>
+<li>mam4_aci::create_fields_interval_checks:  <ul>
+<li>description: Create field interval checks for all fields that are computed and requested in mam4xx.  </li>
+<li>type: logical  </li>
 </ul>
 </li>
 <li>mam4_aci::number_of_subcycles:  <ul>
@@ -3589,6 +3634,11 @@
 <li>mam4_drydep::drydep_remap_file:  <ul>
 <li>description: File containing mapping data from the grid of frac land use files to the model grid. Unused if the grid is the same.  </li>
 <li>type: file  </li>
+</ul>
+</li>
+<li>mam4_drydep::create_fields_interval_checks:  <ul>
+<li>description: Create field interval checks for all fields that are computed and requested in mam4xx.  </li>
+<li>type: logical  </li>
 </ul>
 </li>
 <li>mam4_drydep::number_of_subcycles:  <ul>
@@ -3801,6 +3851,11 @@
 <li>type: file  </li>
 </ul>
 </li>
+<li>mam4_aero_microphys::create_fields_interval_checks:  <ul>
+<li>description: Create field interval checks for all fields that are computed and requested in mam4xx.  </li>
+<li>type: logical  </li>
+</ul>
+</li>
 <li>mam4_aero_microphys::number_of_subcycles:  <ul>
 <li>description: how many times to subcycle this atm process  </li>
 <li>type: <strong>MISSING</strong>  </li>
@@ -3896,6 +3951,11 @@
 <li>type: file  </li>
 </ul>
 </li>
+<li>mam4_optics::create_fields_interval_checks:  <ul>
+<li>description: Create field interval checks for all fields that are computed and requested in mam4xx.  </li>
+<li>type: logical  </li>
+</ul>
+</li>
 <li>mam4_optics::number_of_subcycles:  <ul>
 <li>description: how many times to subcycle this atm process  </li>
 <li>type: <strong>MISSING</strong>  </li>
@@ -3931,6 +3991,11 @@
 </ul>
 <h2 id="mam4_wetscav">mam4_wetscav</h2>
 <ul>
+<li>mam4_wetscav::create_fields_interval_checks:  <ul>
+<li>description: Create field interval checks for all fields that are computed and requested in mam4xx.  </li>
+<li>type: logical  </li>
+</ul>
+</li>
 <li>mam4_wetscav::number_of_subcycles:  <ul>
 <li>description: how many times to subcycle this atm process  </li>
 <li>type: <strong>MISSING</strong>  </li>
@@ -4026,6 +4091,11 @@
 <li>type: file  </li>
 </ul>
 </li>
+<li>mam4_srf_online_emiss::create_fields_interval_checks:  <ul>
+<li>description: Create field interval checks for all fields that are computed and requested in mam4xx.  </li>
+<li>type: logical  </li>
+</ul>
+</li>
 <li>mam4_srf_online_emiss::number_of_subcycles:  <ul>
 <li>description: how many times to subcycle this atm process  </li>
 <li>type: <strong>MISSING</strong>  </li>
@@ -4061,6 +4131,11 @@
 </ul>
 <h2 id="mam4_constituent_fluxes">mam4_constituent_fluxes</h2>
 <ul>
+<li>mam4_constituent_fluxes::create_fields_interval_checks:  <ul>
+<li>description: Create field interval checks for all fields that are computed and requested in mam4xx.  </li>
+<li>type: logical  </li>
+</ul>
+</li>
 <li>mam4_constituent_fluxes::number_of_subcycles:  <ul>
 <li>description: how many times to subcycle this atm process  </li>
 <li>type: <strong>MISSING</strong>  </li>

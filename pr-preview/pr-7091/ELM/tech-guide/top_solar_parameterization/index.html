@@ -16,7 +16,7 @@
     
     
       
-        <title>Top solar parameterization - E3SM</title>
+        <title>TOP solar radiation parameterization - E3SM</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#overview" class="md-skip">
+        <a href="#top-solar-radiation-parameterization" class="md-skip">
           Skip to content
         </a>
       
@@ -112,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Top solar parameterization
+              TOP solar radiation parameterization
             
           </span>
         </div>
@@ -3040,6 +3040,8 @@
   
   
   
+    
+  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -3092,36 +3094,66 @@
   
 
 
-  <h1>Top solar parameterization</h1>
-
-<p>The TOP solar radiation parameterization in ELM accounts for the effects of sub-grid topography on solar radiation flux, including the shadow effects and multi-scattering between adjacent terrain<sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup>.</p>
+<h1 id="top-solar-radiation-parameterization">TOP solar radiation parameterization</h1>
+<p>The TOP solar radiation parameterization in ELM accounts for the effects of
+sub-grid topography on solar radiation flux, including the shadow effects and
+multi-scattering between adjacent terrain<sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup>.</p>
 <h2 id="overview">Overview</h2>
-<p>The incoming solar radiation for a flat surface is composed of direct radiation (<span class="arithmatex">\(F_{dir}^{PP}\)</span>) from sun, diffuse radiation (<span class="arithmatex">\(F_{dif}^{PP}\)</span>) from sky, and coupled radiation (<span class="arithmatex">\(F_{couple}^{PP}\)</span>) that represents surface reflected radiation that is further reflected or scattered by atmospheric particles. ELM v1.0 and ELM v2.0 assume flat surfaces and accounts for <span class="arithmatex">\(F_{dir}^{PP}\)</span> and <span class="arithmatex">\(F_{dif}^{PP}\)</span>, while neglecting <span class="arithmatex">\(F_{couple}^{PP}\)</span>. The solar radiation scheme of ELM v1.0 and  ELM v2.0 uses the two-stream approximations<sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup>. In contrast, the incoming solar radiation parametrization of Lee et al. (2011)<sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup> over mountainous regions includes five components (illustrated in Fig. 1): </p>
+<p>The incoming solar radiation for a flat surface is composed of direct radiation
+(<span class="arithmatex">\(F_{dir}^{PP}\)</span>) from sun, diffuse radiation (<span class="arithmatex">\(F_{dif}^{PP}\)</span>) from sky, and
+coupled radiation (<span class="arithmatex">\(F_{couple}^{PP}\)</span>) that represents surface reflected
+radiation that is further reflected or scattered by atmospheric particles.
+ELM v1.0 and ELM v2.0 assume flat surfaces and account for <span class="arithmatex">\(F_{dir}^{PP}\)</span>
+and <span class="arithmatex">\(F_{dif}^{PP}\)</span>, while neglecting <span class="arithmatex">\(F_{couple}^{PP}\)</span>. The solar radiation
+scheme of ELM v1.0 and ELM v2.0 uses the two-stream
+approximations<sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup>. In contrast, the incoming solar radiation
+parametrization of Lee et al. 2011<sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup> over mountainous
+regions includes five components (illustrated in Fig. 1):</p>
 <ol>
-<li>direct flux (<span class="arithmatex">\(F_{dir}^{TOP}\)</span>) represents photons that are transmitted from the sun to the ground surface without encountering any reflection or scattering, </li>
-<li>the direct-reflected flux (<span class="arithmatex">\(F_{rdir}^{TOP}\)</span>) represents photons that are not scattered photons reflected by surrounding terrain, </li>
-<li>diffuse flux (<span class="arithmatex">\(F_{dif}^{TOP}\)</span>) represents photons that are scattered by atmospheric particles but are not reflected by the ground surface, </li>
-<li>diffuse-reflected flux (<span class="arithmatex">\(F_{rdif}^{TOP}\)</span>) represents scattered photons reflected by surrounding terrain, and </li>
-<li>coupled flux (<span class="arithmatex">\(F_{couple}^{TOP}\)</span>) represents remaining photons that are reflected multiple times or scattered by ground surface and atmospheric particles.</li>
+<li>direct flux (<span class="arithmatex">\(F_{dir}^{TOP}\)</span>) represents photons that are
+transmitted from the sun to the ground surface without
+encountering any reflection or scattering,</li>
+<li>the direct-reflected flux (<span class="arithmatex">\(F_{rdir}^{TOP}\)</span>) represents photons that are
+not scattered photons reflected by surrounding terrain,</li>
+<li>diffuse flux (<span class="arithmatex">\(F_{dif}^{TOP}\)</span>) represents photons that are scattered by
+atmospheric particles but are not reflected by the ground surface,</li>
+<li>diffuse-reflected flux (<span class="arithmatex">\(F_{rdif}^{TOP}\)</span>) represents scattered photons
+reflected by surrounding terrain, and</li>
+<li>coupled flux (<span class="arithmatex">\(F_{couple}^{TOP}\)</span>) represents remaining photons that are
+reflected multiple times or scattered by ground surface and atmospheric
+particles.</li>
 </ol>
-<figure>
-<p><img alt="Image title" src="../../figures/TOP_schematic.jpg" />
-  </p>
-<figcaption>
-  Fig 1.: A schematic diagram of the five components of incoming solar radiation over mountains adapted from Lee et al. (2011)[^3]. The components of incoming solar radiation included are (1) direct flux, (2) diffuse flux, (3) direct-reflected flux, (4) diffuse-reflected flux, and (5) coupled flux. Local solar zenith angle (θ), sky view factor (V<sub>d</sub>), and terrain configuration factor (C<sub>T</sub>) are also marked.
-  </figcaption>
-</figure>
-<p><span class="arithmatex">\(F_{dir}^{TOP}\)</span> is different from <span class="arithmatex">\(F_{dir}^{PP}\)</span> because of the adjustment of solar illumination geometry and shadowing effects. <span class="arithmatex">\(F_{dif}^{PP}\)</span> is different from <span class="arithmatex">\(F_{dif}^{TOP}\)</span> because the sky hemisphere is occluded by adjacent terrain. Lee et al. (2011)<sup id="fnref2:3"><a class="footnote-ref" href="#fn:3">3</a></sup> used the radiation fluxes over flat surfaces (i.e., <span class="arithmatex">\(F_{dir}^{PP}\)</span> and <span class="arithmatex">\(F_{dif}^{PP}\)</span>) to calculate the radiation fluxes over mountainous terrain based on sub-grid topographic factors. The relative deviation (<span class="arithmatex">\(f_{dir}\)</span>) of direct flux between flat surfaces and mountains under the same atmospheric condition is defined as follows</p>
+<p><img alt="Image title" src="../../figures/TOP_schematic.jpg" /></p>
+<p>Fig 1.: A schematic diagram of the five components of
+incoming solar radiation over mountains adapted from
+Lee et al. 2011<sup id="fnref2:3"><a class="footnote-ref" href="#fn:3">3</a></sup>.
+The components of incoming solar radiation
+included are (1) direct flux, (2) diffuse flux,
+(3) direct-reflected flux, (4) diffuse-reflected flux,
+and (5) coupled flux. Local solar zenith angle (θ),
+sky view factor (<span class="arithmatex">\(V_d\)</span>),
+and terrain configuration factor (<span class="arithmatex">\(C_T\)</span>) are also marked.</p>
+<p><span class="arithmatex">\(F_{dir}^{TOP}\)</span> is different from <span class="arithmatex">\(F_{dir}^{PP}\)</span> because of the adjustment
+of solar illumination geometry and shadowing effects. <span class="arithmatex">\(F_{dif}^{PP}\)</span>
+is different from <span class="arithmatex">\(F_{dif}^{TOP}\)</span> because the sky hemisphere is
+occluded by adjacent terrain. Lee et al. 2011<sup id="fnref3:3"><a class="footnote-ref" href="#fn:3">3</a></sup>
+used the radiation fluxes over flat surfaces (i.e., <span class="arithmatex">\(F_{dir}^{PP}\)</span>
+and <span class="arithmatex">\(F_{dif}^{PP}\)</span>) to calculate the radiation fluxes over mountainous
+terrain based on sub-grid topographic factors. The relative deviation
+(<span class="arithmatex">\(f_{dir}\)</span>) of direct flux between flat surfaces and mountains under
+the same atmospheric condition is defined as follows</p>
 <div class="arithmatex">\[
 \label{eqn_fdir}
 f_{dir} = \frac{F_{dir}^{TOP} - F_{dir}^{PP}}{F_{dir}^{PP}}
 \]</div>
-<p>The relative deviation (<span class="arithmatex">\(f_{rdir}\)</span>) of direct-reflected flux over mountains to direct flux over flat surfaces is defined as follows:</p>
+<p>The relative deviation (<span class="arithmatex">\(f_{rdir}\)</span>) of direct-reflected flux
+over mountains to direct flux over flat surfaces is defined as follows:</p>
 <div class="arithmatex">\[
 \label{eqn_frdir}
 f_{rdir} = \frac{F_{rdir}^{TOP}}{F_{dir}^{PP}}
 \]</div>
-<p>Similarly, the relative deviations (<span class="arithmatex">\(f_{dif}\)</span> and <span class="arithmatex">\(f_{rdif}\)</span>) of diffuse and diffuse-reflected fluxes are expressed as follows:</p>
+<p>Similarly, the relative deviations (<span class="arithmatex">\(f_{dif}\)</span> and <span class="arithmatex">\(f_{rdif}\)</span>)
+of diffuse and diffuse-reflected fluxes are expressed as follows:</p>
 <div class="arithmatex">\[
 \label{eqn_fdif}
 f_{dif} = \frac{F_{dif}^{TOP} - F_{dif}^{PP}}{F_{dir}^{PP}}
@@ -3131,14 +3163,25 @@ f_{dif} = \frac{F_{dif}^{TOP} - F_{dif}^{PP}}{F_{dir}^{PP}}
 f_{rdif} = \frac{F_{rdif}^{TOP}}{F_{dif}^{PP}}
 \]</div>
 <h2 id="multiple-linear-regression-model-of-lee-et-al-2011">Multiple Linear Regression Model of Lee et al. (2011)</h2>
-<p>In theory, these four relative deviations (i.e., <span class="arithmatex">\(f_{dir}\)</span>, <span class="arithmatex">\(f_{rdir}\)</span>, <span class="arithmatex">\(f_{dif}\)</span> and <span class="arithmatex">\(f_{rdif}\)</span>) depend on solar illumination geometry and sub-grid topographic distribution. Based on a series of 3D Monte Carlo photon tracing simulations, Lee et al. (2011)<sup id="fnref3:3"><a class="footnote-ref" href="#fn:3">3</a></sup> built a multiple linear regression parameterization to predict these four relative deviations well. The parameterization of Lee et al. (2011)<sup id="fnref4:3"><a class="footnote-ref" href="#fn:3">3</a></sup> uses four variables that include the standard deviation of elevation (<span class="arithmatex">\(\sigma_h\)</span>) within a grid cell, grid-averaged values of cosine of the local solar incident angle (<span class="arithmatex">\(\mu\)</span>), sky view factor (<span class="arithmatex">\(\overline{V_d}\)</span>), and terrain configuration factor (<span class="arithmatex">\(\overline{C_T}\)</span>). Lee et al. (2011)<sup id="fnref5:3"><a class="footnote-ref" href="#fn:3">3</a></sup> parameterization is given as follows:</p>
+<p>In theory, these four relative deviations (i.e., <span class="arithmatex">\(f_{dir}\)</span>,
+<span class="arithmatex">\(f_{rdir}\)</span>, <span class="arithmatex">\(f_{dif}\)</span> and <span class="arithmatex">\(f_{rdif}\)</span>) depend on solar
+illumination geometry and sub-grid topographic distribution.
+Based on a series of 3D Monte Carlo photon tracing simulations,
+Lee et al. 2011(@lee2011parameterization) built a multiple linear
+regression parameterization to predict these four relative deviations well.
+The parameterization of Lee et al. 2011(@lee2011parameterization)
+uses four variables that include the standard deviation of elevation
+(<span class="arithmatex">\(\sigma_h\)</span>) within a grid cell, grid-averaged values of cosine of
+the local solar incident angle (<span class="arithmatex">\(\mu\)</span>), sky view factor (<span class="arithmatex">\(\overline{V_d}\)</span>),
+and terrain configuration factor (<span class="arithmatex">\(\overline{C_T}\)</span>).
+Lee et al. 2011<sup id="fnref4:3"><a class="footnote-ref" href="#fn:3">3</a></sup> parameterization is given as follows:</p>
 <div class="arithmatex">\[\begin{bmatrix}
 f_{dir} \\
 f_{dif} \\
 f_{rdir} \\
 f_{rdif}
 \end{bmatrix}
-= \mathbf{A} \cdot 
+= \mathbf{A} \cdot
 \begin{bmatrix}
 \overline{\mu} \\
 \sigma_h \\
@@ -3148,36 +3191,72 @@ f_{rdif}
 \end{bmatrix}
 \label{eqn_linear_reg}
 \]</div>
-<p>where <span class="arithmatex">\(\mathbf{A}\)</span> represents the fitted parameter matrix, which was obtained based on the data generated by the 3D Monte Carlo simulations. The sky view factor (<span class="arithmatex">\(V_d\)</span>) represents the portion of visible sky limited by surrounding terrain<sup id="fnref:4"><a class="footnote-ref" href="#fn:4">4</a></sup>, while the terrain configuration factor (<span class="arithmatex">\(C_T\)</span>), the counterpart of the sky view factor, represents the portion of surrounding terrain which is visible to the ground target<sup id="fnref:5"><a class="footnote-ref" href="#fn:5">5</a></sup>. For an unobstructed infinite slope with the slope of <span class="arithmatex">\(\alpha\)</span> and aspect of <span class="arithmatex">\(\beta\)</span> and a given solar illumination geometry (i.e., solar zenith angle, <span class="arithmatex">\(SZA\)</span>, and solar azimuth angle, <span class="arithmatex">\(SAA\)</span>), the cosine of the local solar incident angle (<span class="arithmatex">\(\mu\)</span>) can be calculated by</p>
+<p>where <span class="arithmatex">\(\mathbf{A}\)</span> represents the fitted parameter matrix,
+which was obtained based on the data generated by the 3D
+Monte Carlo simulations. The sky view factor (<span class="arithmatex">\(V_d\)</span>)
+represents the portion of visible sky limited by
+surrounding terrain<sup id="fnref:4"><a class="footnote-ref" href="#fn:4">4</a></sup>, while the terrain
+configuration factor (<span class="arithmatex">\(C_T\)</span>), the counterpart of the sky viewfactor,
+represents the portion of surrounding terrain which is visible
+to the ground target<sup id="fnref:5"><a class="footnote-ref" href="#fn:5">5</a></sup>. For an unobstructed
+infinite slope with the slope of <span class="arithmatex">\(\alpha\)</span> and aspect of <span class="arithmatex">\(\beta\)</span>
+and a given solar illumination geometry (i.e., solar zenith angle,
+<span class="arithmatex">\(SZA\)</span>, and solar azimuth angle, <span class="arithmatex">\(SAA\)</span>), the cosine of the
+local solar incident angle (<span class="arithmatex">\(\mu\)</span>) can be calculated by</p>
 <div class="arithmatex">\[
 \mu = \cos(SZA) \cos(\alpha) + \sin(SZA) \sin(\alpha) \cos(SAA-\beta)
 \]</div>
-<p>The <span class="arithmatex">\(SZA\)</span> and <span class="arithmatex">\(SAA\)</span> are assumed to be constant within a grid cell, but <span class="arithmatex">\(\alpha\)</span> and <span class="arithmatex">\(\beta\)</span> vary within a grid cell. The grid cell average solar incident angle, , can be expressed as follows:</p>
+<p>The <span class="arithmatex">\(SZA\)</span> and <span class="arithmatex">\(SAA\)</span> are assumed to be constant within a grid cell,
+but <span class="arithmatex">\(\alpha\)</span> and <span class="arithmatex">\(\beta\)</span> vary within a grid cell.
+The grid cell average solar incident angle, <span class="arithmatex">\(\overline{\mu}\)</span>,
+can be expressed as follows:</p>
 <div class="arithmatex">\[
 \begin{eqnarray}
-\overline{\mu} &amp;=&amp; \overline{\cos(SZA) \cos(\alpha)} + \overline{\sin(SZA) \sin(\alpha) \cos(SAA-\beta)} \nonumber \\
-&amp;=&amp; \cos(SZA)  \overline{\cos(\alpha)} + 
+\overline{\mu} &amp;=&amp; \overline{\cos(SZA) \cos(\alpha)} +
+\overline{\sin(SZA) \sin(\alpha) \cos(SAA-\beta)} \nonumber \\
+&amp;=&amp; \cos(SZA)  \overline{\cos(\alpha)} +
 \sin(SZA) \cos(SAA) +
 \overline{\sin(\alpha) \cos(\beta)} + \nonumber \\
 &amp; &amp; \sin(SZA) \sin(SAA) +
 \overline{\sin(\alpha) \sin(\beta)}
 \end{eqnarray}
 \]</div>
-<p>where overlines represent grid-averaged values. To further improve the regression parameterization, <span class="arithmatex">\(\mu\)</span>, <span class="arithmatex">\(V_d\)</span>, and <span class="arithmatex">\(C_T\)</span> are normalized by <span class="arithmatex">\(\cos(\alpha)\)</span>. The land surface albedo is adjusted, instead of modifying incoming solar radiation, to maintain the surface energy conservation and the consistency between the surface and the first levels of atmosphere above the surface (Lee et al., 2015). Specifically, to keep the absorbed solar radiation of the ground surface unchanged, Lee et al. (2015) built the relationship between direct (<span class="arithmatex">\(\alpha_{dir}^{TOP}\)</span>) and diffuse (<span class="arithmatex">\(\alpha_{dif}^{TOP}\)</span>) albedo over mountains and those (<span class="arithmatex">\(\alpha_{dir}^{PP}\)</span> and <span class="arithmatex">\(\alpha_{dif}^{PP}\)</span>) over flat surfaces as follows:</p>
+<p>where overlines represent grid-averaged values.
+To further improve the regression parameterization,
+<span class="arithmatex">\(\mu\)</span>, <span class="arithmatex">\(V_d\)</span>, and <span class="arithmatex">\(C_T\)</span> are normalized by <span class="arithmatex">\(\cos(\alpha)\)</span>.
+The land surface albedo is adjusted, instead of modifying
+incoming solar radiation, to maintain the surface energy
+conservation and the consistency between the surface
+and the first levels of atmosphere above the surface
+(Lee et al., 2015). Specifically, to keep the absorbed
+solar radiation of the ground surface unchanged,
+Lee et al. (2015) built the relationship between direct
+(<span class="arithmatex">\(\alpha_{dir}^{TOP}\)</span>) and diffuse (<span class="arithmatex">\(\alpha_{dif}^{TOP}\)</span>)
+albedo over mountains and those (<span class="arithmatex">\(\alpha_{dir}^{PP}\)</span>
+and <span class="arithmatex">\(\alpha_{dif}^{PP}\)</span>) over flat surfaces as follows:</p>
 <div class="arithmatex">\[
 \begin{eqnarray}
-F_{dir}^{PP} (1 - \alpha_{dir}^{TOP}) &amp;=&amp; (F_{dir}^{TOP} + F_{rdir}^{TOP})(1 - \alpha_{dir}^{PP}) \label{eqn_fdir_pp} \\
-F_{dif}^{PP} (1 - \alpha_{dif}^{TOP}) &amp;=&amp; (F_{dif}^{TOP} + F_{rdif}^{TOP})(1 - \alpha_{dif}^{PP}) \label{eqn_fdif_pp}
+F_{dir}^{PP} (1 - \alpha_{dir}^{TOP}) &amp;=&amp; (F_{dir}^{TOP} +
+F_{rdir}^{TOP})(1 - \alpha_{dir}^{PP}) \label{eqn_fdir_pp} \\
+F_{dif}^{PP} (1 - \alpha_{dif}^{TOP}) &amp;=&amp; (F_{dif}^{TOP} +
+F_{rdif}^{TOP})(1 - \alpha_{dif}^{PP}) \label{eqn_fdif_pp}
 \end{eqnarray}
 \]</div>
-<p>Substituting Eqns \eqref{eqn_fdir}-\eqref{eqn_frdif} into Eqs \eqref{eqn_fdir_pp}-\eqref{eqn_fdif_pp} leads to</p>
+<p>Substituting Eqns \eqref{eqn_fdir}-\eqref{eqn_frdif}
+into Eqs \eqref{eqn_fdir_pp}-\eqref{eqn_fdif_pp} leads to</p>
 <div class="arithmatex">\[
 \begin{eqnarray}
-\alpha_{dir}^{TOP} &amp;=&amp; 1 - (1 + f_{dir} + f_{rdir}) (1 - \alpha_{dir}^{PP}) \label{eqn_alb_dir_top} \\
-\alpha_{dif}^{TOP} &amp;=&amp; 1 - (1 + f_{dif} + f_{rdif}) (1 - \alpha_{dif}^{PP}) \label{eqn_alb_dif_top}
+\alpha_{dir}^{TOP} &amp;=&amp; 1 - (1 + f_{dir} + f_{rdir})
+(1 - \alpha_{dir}^{PP}) \label{eqn_alb_dir_top} \\
+\alpha_{dif}^{TOP} &amp;=&amp; 1 - (1 + f_{dif} + f_{rdif})
+(1 - \alpha_{dif}^{PP}) \label{eqn_alb_dif_top}
 \end{eqnarray}
 \]</div>
-<p>The parameterizations represented by Eqs. \eqref{eqn_linear_reg}, \eqref{eqn_alb_dir_top}, and \eqref{eqn_alb_dif_top} are implemented in ELM to account for the sub-grid topographic effects on solar radiation fluxes.</p>
+<p>The parameterizations represented by Eqs.
+\eqref{eqn_linear_reg}, \eqref{eqn_alb_dir_top},
+and \eqref{eqn_alb_dif_top} are implemented in ELM
+to account for the sub-grid topographic effects on
+solar radiation fluxes.</p>
 <div class="footnote">
 <hr />
 <ol>
@@ -3188,7 +3267,7 @@ F_{dif}^{PP} (1 - \alpha_{dif}^{TOP}) &amp;=&amp; (F_{dif}^{TOP} + F_{rdif}^{TOP
 <p>K. Oleson, D. Lawrence, G. Bonan, B. Drewniak, M. Huang, C. Koven, Z. M. Subin, and S. C. Swenson. Technical description of version 4.5 of the community land model (clm), ncar technical note. Technical Report NCAR/TN-503+ STR, National Center for Atmospheric Research (NCAR), Boulder, CO, USA, 2013. <a href="https://doi.org/https://doi.org/10.5065/D6RR1W7M">doi:https://doi.org/10.5065/D6RR1W7M</a>.&#160;<a class="footnote-backref" href="#fnref:2" title="Jump back to footnote 2 in the text">&#8617;</a></p>
 </li>
 <li id="fn:3">
-<p>Wei-Liang Lee, KN Liou, and Alex Hall. Parameterization of solar fluxes over mountain surfaces for application to climate models. <em>Journal of Geophysical Research: Atmospheres</em>, 2011. <a href="https://doi.org/https://doi.org/10.1029/2010JD014722">doi:https://doi.org/10.1029/2010JD014722</a>.&#160;<a class="footnote-backref" href="#fnref:3" title="Jump back to footnote 3 in the text">&#8617;</a><a class="footnote-backref" href="#fnref2:3" title="Jump back to footnote 3 in the text">&#8617;</a><a class="footnote-backref" href="#fnref3:3" title="Jump back to footnote 3 in the text">&#8617;</a><a class="footnote-backref" href="#fnref4:3" title="Jump back to footnote 3 in the text">&#8617;</a><a class="footnote-backref" href="#fnref5:3" title="Jump back to footnote 3 in the text">&#8617;</a></p>
+<p>Wei-Liang Lee, KN Liou, and Alex Hall. Parameterization of solar fluxes over mountain surfaces for application to climate models. <em>Journal of Geophysical Research: Atmospheres</em>, 2011. <a href="https://doi.org/https://doi.org/10.1029/2010JD014722">doi:https://doi.org/10.1029/2010JD014722</a>.&#160;<a class="footnote-backref" href="#fnref:3" title="Jump back to footnote 3 in the text">&#8617;</a><a class="footnote-backref" href="#fnref2:3" title="Jump back to footnote 3 in the text">&#8617;</a><a class="footnote-backref" href="#fnref3:3" title="Jump back to footnote 3 in the text">&#8617;</a><a class="footnote-backref" href="#fnref4:3" title="Jump back to footnote 3 in the text">&#8617;</a></p>
 </li>
 <li id="fn:4">
 <p>Klemen Zakšek, Kristof Oštir, and Žiga Kokalj. Sky-view factor as a relief visualization technique. <em>Remote sensing</em>, 3(2):398–415, 2011. <a href="https://doi.org/https://doi.org/10.3390/rs3020398">doi:https://doi.org/10.3390/rs3020398</a>.&#160;<a class="footnote-backref" href="#fnref:4" title="Jump back to footnote 4 in the text">&#8617;</a></p>
