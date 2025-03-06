@@ -39,21 +39,15 @@ module  zm_microphysics
    integer, public :: wuc_idx    = -1 ! vertical velocity in deep convection
 
    ! constants
-   real(r8) :: g      ! gravity
-   real(r8) :: mw     ! molecular weight of water
-   real(r8) :: r      ! Dry air Gas constant
-   real(r8) :: rv     ! water vapor gas contstant
-   real(r8) :: rr     ! universal gas constant
-   real(r8) :: cpp    ! specific heat of dry air
+   real(r8), parameter :: pi = 3.14159265358979323846_r8
+
    real(r8) :: xlf    ! latent heat of freezing
 
    ! parameters below from Reisner et al. (1998)
-   real(r8), parameter :: rhow  =  100._r8 ! density of liquid water [kg/m3]
-   real(r8), parameter :: rhosn =  500._r8 ! bulk density snow       [kg/m3]
-   real(r8), parameter :: rhoi  = 1000._r8 ! bulk density ice        [kg/m3]
+   real(r8), parameter :: rhow  = 1000._r8 ! density of liquid water [kg/m3]
+   real(r8), parameter :: rhoi  =  500._r8 ! bulk density ice        [kg/m3]
    real(r8), parameter :: rhog  =  400._r8 ! bulk density graupel    [kg/m3]
-
-   real(r8), parameter :: pi = 3.14159265358979323846_r8
+   real(r8), parameter :: rhosn =  100._r8 ! bulk density snow       [kg/m3]
 
    ! fall speed parameters, V = aD^b [m/s]
    real(r8), parameter :: ac = 3.e7_r8       ! droplets
