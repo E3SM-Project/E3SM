@@ -3436,14 +3436,14 @@ K_b = \dfrac{G(\mu)}{\mu}
 <div class="arithmatex">\[
 \begin{eqnarray}
 I^{\downarrow}_{b,\Lambda}(\kappa = 0) &amp;=&amp; 0 \\[0.5em]
-I^{\uparrow}_{b,\Lambda}(\kappa = L + S) &amp;=&amp; \alpha_{gb,\Lambda} \exp(-K(L+S)) + \alpha_{gd}I^{\downarrow}_{b,\Lambda}
+I^{\uparrow}_{b,\Lambda}(\kappa = L + S) &amp;=&amp; \alpha_{gb,\Lambda} e^{-K(L+S)} + \alpha_{gd}I^{\downarrow}_{b,\Lambda}
 \end{eqnarray}
 \]</div>
-<p>Under such boundary conditions, the analytical solution of upward and downward diffuse radiation per unit incident direct radiation is then given as</p>
+<p>with <span class="arithmatex">\(\alpha_{gb,\Lambda}\)</span>  and <span class="arithmatex">\(\alpha_{gd,\Lambda}\)</span> are the ground albedo for direct and diffuse radiation, respectively. Under such boundary conditions, the analytical solution of upward and downward diffuse radiation per unit incident direct radiation is then given as</p>
 <div class="arithmatex">\[
 \begin{eqnarray}
-I^{\uparrow}_{b,\Lambda}(\kappa) &amp;=&amp; \dfrac{h_1 \exp{\left(-K \kappa\right)}}{\sigma} + h_2 \exp( -h \kappa) + h_3 \exp(h\kappa) \label{two_str_dir_up_eqn} \\[0.5em]
-I^{\downarrow}_{b,\Lambda}(\kappa) &amp;=&amp; \dfrac{h_4 \exp{\left(-K \kappa\right)}}{\sigma} + h_5 \exp( -h \kappa) + h_6 \exp(h\kappa) \label{two_str_dir_dn_eqn}
+I^{\uparrow}_{b,\Lambda}(\kappa) &amp;=&amp; \dfrac{h_1 e^{-K \kappa}}{\sigma} + h_2 e^{ -h \kappa} + h_3 e^{h\kappa} \label{two_str_dir_up_eqn} \\[0.5em]
+I^{\downarrow}_{b,\Lambda}(\kappa) &amp;=&amp; \dfrac{h_4 e^{-K \kappa}}{\sigma} + h_5 e^{-h \kappa} + h_6 e^{h\kappa} \label{two_str_dir_dn_eqn}
 \end{eqnarray}
 \]</div>
 <p>It should be noted that <span class="arithmatex">\(I^{\uparrow}_{b,\Lambda}(\kappa = 0)\)</span> can be interpreted as surface albedo for the diffuse (or scattered) flux of beam radiation.</p>
@@ -3458,8 +3458,8 @@ I^{\uparrow}_{d,\Lambda}(\kappa = L + S) &amp;=&amp; \alpha_{gd}I^{\downarrow}_{
 <p>Under such boundary conditions, the analytical solution of upward and downward diffuse radiation per unit incident diffuse radiation is then given as</p>
 <div class="arithmatex">\[
 \begin{eqnarray}
-I^{\uparrow}_{d,\Lambda}(\kappa) &amp;=&amp; h_7 \exp( -h \kappa) + h_8 \exp(h\kappa) \label{two_str_dif_up_eqn} \\
-I^{\downarrow}_{d,\Lambda}(\kappa) &amp;=&amp; h_9 \exp( -h \kappa) + h_{10} \exp(h\kappa) \label{two_str_dif_dn_eqn}
+I^{\uparrow}_{d,\Lambda}(\kappa) &amp;=&amp; h_7 e^{ -h \kappa} + h_8 e^{h\kappa} \label{two_str_dif_up_eqn} \\
+I^{\downarrow}_{d,\Lambda}(\kappa) &amp;=&amp; h_9 e^{ -h \kappa} + h_{10} e^{h\kappa} \label{two_str_dif_dn_eqn}
 \end{eqnarray}
 \]</div>
 <p>It should be noted that <span class="arithmatex">\(I^{\uparrow}_{d,\Lambda}(\kappa = 0)\)</span> can be interpreted as surface albedo for the diffuse (or scattered) flux of diffuse radiation.</p>
@@ -3473,8 +3473,8 @@ d &amp;=&amp; \omega_\Lambda \bar{\mu} K \beta_{0,\Lambda} \\[0.5em]
 f &amp;=&amp; \omega_\Lambda \bar{\mu} K (1 - \beta_{0,\Lambda}) \\[0.5em]
 h &amp;=&amp; \dfrac{\sqrt{b^2 - c^2}}{\bar{\mu}} \\[0.5em]
 \sigma &amp;=&amp; (\bar{\mu} K)^2 + c^2 - b^2 \\[0.5em]
-s_1 &amp;=&amp; \exp{-h(L+S)} \\[0.5em]
-s_2 &amp;=&amp; \exp{-K(L+S)} \\[0.5em]
+s_1 &amp;=&amp; e^{-h(L+S)} \\[0.5em]
+s_2 &amp;=&amp; e^{-K(L+S)} \\[0.5em]
 \end{eqnarray}
 \]</div>
 <h4 id="parameters-for-scattered-beam-radiation">Parameters For Scattered Beam Radiation</h4>
@@ -3549,10 +3549,10 @@ f_{sun}(\kappa) = e^{-K_b \kappa}
 <div class="arithmatex">\[
 \begin{eqnarray}
 I^{\uparrow}_{b,\Lambda}(\kappa = 0) &amp;=&amp; \dfrac{h_1 }{\sigma} + h_2 + h_3 \\[0.5em]
-I^{\downarrow}_{b,\Lambda}(\kappa = L+S) &amp;=&amp; \dfrac{h_4 \exp{\left(-K (L+S)\right)}}{\sigma} + h_5 \exp( -h (L+S)) + h_6 \exp(h (L+S)) \\
-&amp;=&amp; \dfrac{h_4 \exp{\left(-K (L+S)\right)}}{\sigma} + h_5 s_1 + \dfrac{h_6}{s_1} \\
+I^{\downarrow}_{b,\Lambda}(\kappa = L+S) &amp;=&amp; \dfrac{h_4 e^{-K (L+S)}}{\sigma} + h_5 e^{ -h (L+S)} + h_6 e^{h (L+S)} \\
+&amp;=&amp; \dfrac{h_4 e^{-K (L+S)}}{\sigma} + h_5 s_1 + \dfrac{h_6}{s_1} \\
 I^{\uparrow}_{d,\Lambda}(\kappa = 0) &amp;=&amp; h_7 + h_8  \\[0.5em]
-I^{\downarrow}_{d,\Lambda}(\kappa = L+S) &amp;=&amp; h_9 \exp( -h (L+S)) + h_{10} \exp(h (L+S)) \\[0.5em]
+I^{\downarrow}_{d,\Lambda}(\kappa = L+S) &amp;=&amp; h_9 e^{ -h (L+S)} + h_{10} e^{h (L+S)} \\[0.5em]
 &amp;=&amp; h_9 s_1 + \dfrac{h_{10}}{s_1}
 \end{eqnarray}
 \]</div>
@@ -3617,7 +3617,7 @@ a_2 &amp;=&amp; h_9 \left[ \dfrac{1 - s_1 s_2}{K + h} \right] + h_{10} \left[ \d
 \]</div>
 <p>where the first term on the right hand side is given by equation \eqref{eqn_can_d_absorb}.</p>
 <h3 id="radiation-absorbed-by-ground">Radiation Absorbed By Ground</h3>
-<p>The beam and diffuse radiation absorbed by the ground can be similarly computed as the difference of incoming and outgoing radiation.</p>
+<p>The beam and diffuse radiation absorbed by the ground are computed as the difference of incoming and outgoing radiation.</p>
 <div class="arithmatex">\[
 \begin{eqnarray}
 \overrightarrow{I}_{gb,\Lambda} &amp;=&amp; \left( 1 - \alpha_{gd,\Lambda}\right)I_{b,\Lambda}^\downarrow + \left( 1 - \alpha_{gb,\Lambda}\right)e^{-K(L+S)} \\[0.5em]
