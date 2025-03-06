@@ -373,7 +373,7 @@ module elm_varctl
   logical, public :: use_cndv            = .false.
   logical, public :: use_crop            = .false.
   logical, public :: use_snicar_frc      = .false.
-  logical, public :: use_snicar_ad       = .false.
+  logical, public :: use_snicar_ad       = .true.
   logical, public :: use_extrasnowlayers = .false.
   logical, public :: use_firn_percolation_and_compaction  = .false.
   logical, public :: use_vancouver       = .false.
