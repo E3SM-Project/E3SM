@@ -13,8 +13,8 @@ MAMConstituentFluxes::MAMConstituentFluxes(const ekat::Comm &comm,
   /* Anything that can be initialized without grid information can be
    * initialized here. Like universal constants, mam wetscav options.
    */
-  check_fields_intervals_   = m_params.get<bool>("create_fields_interval_checks", false);
-
+  check_fields_intervals_ =
+      m_params.get<bool>("create_fields_interval_checks", false);
 }
 
 // ================================================================
@@ -96,8 +96,8 @@ void MAMConstituentFluxes::initialize_impl(const RunType run_type) {
   // Check the interval values for the following fields used by this interface.
   // NOTE: We do not include aerosol and gas species, e.g., soa_a1, num_a1,
   // because we automatically added these fields.
-  const std::map<std::string, std::pair<Real, Real>> ranges_cons_fluxes=
-  {{"constituent_fluxes", {0, 1e10}} // FIXME
+  const std::map<std::string, std::pair<Real, Real>> ranges_cons_fluxes = {
+      {"constituent_fluxes", {0, 1e10}}  // FIXME
   };
   set_ranges_process(ranges_cons_fluxes);
   add_interval_checks();
@@ -125,7 +125,7 @@ void MAMConstituentFluxes::initialize_impl(const RunType run_type) {
   // gases, e.g., O3
   populate_gases_dry_aero(dry_aero_, buffer_);
   // cloudborne aerosol, e.g., soa_c_1
-  populate_cloudborne_dry_aero(dry_aero_,buffer_);
+  populate_cloudborne_dry_aero(dry_aero_, buffer_);
 
 }  // end initialize_impl()
 

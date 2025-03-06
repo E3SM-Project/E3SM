@@ -22,8 +22,8 @@ MAMSrfOnlineEmiss::MAMSrfOnlineEmiss(const ekat::Comm &comm,
   /* Anything that can be initialized without grid information can be
    * initialized here. Like universal constants.
    */
-  check_fields_intervals_   = m_params.get<bool>("create_fields_interval_checks", false);
-
+  check_fields_intervals_ =
+      m_params.get<bool>("create_fields_interval_checks", false);
 }
 
 // ================================================================
@@ -316,14 +316,12 @@ void MAMSrfOnlineEmiss::init_buffers(const ATMBufferManager &buffer_manager) {
 //  INITIALIZE_IMPL
 // ================================================================
 void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
-
   // Check the interval values for the following fields used by this interface.
   // NOTE: We do not include aerosol and gas species, e.g., soa_a1, num_a1,
   // because we automatically added these fields.
-   const std::map<std::string, std::pair<Real, Real>> ranges_emissions= {
-  {"sst", {-1e10, 1e10}},                 // FIXME
-  {"dstflx", {-1e10, 1e10}}
-   };
+  const std::map<std::string, std::pair<Real, Real>> ranges_emissions = {
+      {"sst", {-1e10, 1e10}},  // FIXME
+      {"dstflx", {-1e10, 1e10}}};
   set_ranges_process(ranges_emissions);
   add_interval_checks();
 

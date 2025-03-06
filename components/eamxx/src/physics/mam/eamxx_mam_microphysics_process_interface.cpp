@@ -15,8 +15,8 @@ MAMMicrophysics::MAMMicrophysics(const ekat::Comm &comm,
   config_.amicphys.do_rename = m_params.get<bool>("mam4_do_rename");
   config_.amicphys.do_newnuc = m_params.get<bool>("mam4_do_newnuc");
   config_.amicphys.do_coag   = m_params.get<bool>("mam4_do_coag");
-  check_fields_intervals_   = m_params.get<bool>("create_fields_interval_checks", false);
-
+  check_fields_intervals_ =
+      m_params.get<bool>("create_fields_interval_checks", false);
 
   // these parameters guide the coupling between parameterizations
   // NOTE: mam4xx was ported with these parameters fixed, so it's probably not
@@ -367,7 +367,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   // Check the interval values for the following fields used by this interface.
   // NOTE: We do not include aerosol and gas species, e.g., soa_a1, num_a1,
   // because we automatically added these fields.
-  const std::map<std::string, std::pair<Real, Real>> ranges_microphysics= {
+  const std::map<std::string, std::pair<Real, Real>> ranges_microphysics = {
       {"SW_flux_dn", {-1e10, 1e10}},            // FIXME
       {"horiz_winds", {-1e10, 1e10}},           // FIXME
       {"nevapr", {-1e10, 1e10}},                // FIXME
@@ -377,7 +377,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
       {"ps", {-1e10, 1e10}},                    // FIXME
       {"sfc_alb_dir_vis", {-1e10, 1e10}},       // FIXME
       {"snow_depth_land", {-1e10, 1e10}},       // FIXME
-      {"surf_radiative_T", {-1e10, 1e10}}      // FIXME
+      {"surf_radiative_T", {-1e10, 1e10}}       // FIXME
   };
   set_ranges_process(ranges_microphysics);
   add_interval_checks();
@@ -396,7 +396,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   // FIXME: we are using cldfrac_tot in other mam4xx process.
   dry_atm_.cldfrac = get_field_in("cldfrac_liq").get_view<const Real **>();
   // FIXME: phis is not populated by populate_wet_and_dry_atm.
-  dry_atm_.phis      = get_field_in("phis").get_view<const Real *>();
+  dry_atm_.phis = get_field_in("phis").get_view<const Real *>();
   // get surface albedo: shortwave, direct
   d_sfc_alb_dir_vis_ = get_field_in("sfc_alb_dir_vis").get_view<const Real *>();
 
@@ -415,7 +415,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   // gases, e.g., O3
   populate_gases_dry_aero(dry_aero_, buffer_);
   // cloudborne aerosol, e.g., soa_c_1
-  populate_cloudborne_dry_aero(dry_aero_,buffer_);
+  populate_cloudborne_dry_aero(dry_aero_, buffer_);
 
   // create our photolysis rate calculation table
   const std::string rsf_file = m_params.get<std::string>("mam4_rsf_file");
@@ -502,13 +502,13 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
 //  RUN_IMPL
 // ================================================================
 void MAMMicrophysics::run_impl(const double dt) {
-  const int ncol         = ncol_;
-  const int nlev         = nlev_;
+  const int ncol = ncol_;
+  const int nlev = nlev_;
   const auto policy =
       ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol, nlev);
 
   // preprocess input -- needs a scan for the calculation of atm height
-  pre_process(wet_aero_, dry_aero_, wet_atm_,dry_atm_);
+  pre_process(wet_aero_, dry_aero_, wet_atm_, dry_atm_);
   Kokkos::fence();
 
   //----------- Variables from microphysics scheme -------------

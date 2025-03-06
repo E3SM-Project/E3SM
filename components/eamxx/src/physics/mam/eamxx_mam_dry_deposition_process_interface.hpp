@@ -10,8 +10,6 @@
 // For AtmosphereInput
 #include "share/io/scorpio_input.hpp"
 
-
-
 // For component name
 #include <string>
 
@@ -19,7 +17,7 @@ namespace scream {
 
 // The process responsible for handling MAM4 dry deposition. The AD
 // stores exactly ONE instance of this class in its list of subcomponents.
-class MAMDryDep final : public MAMGenericInterface  {
+class MAMDryDep final : public MAMGenericInterface {
  public:
   static constexpr int num_aero_modes = mam_coupling::num_aero_modes();
   static constexpr int aerosol_categories_ =
@@ -97,7 +95,7 @@ class MAMDryDep final : public MAMGenericInterface  {
   std::shared_ptr<AtmosphereInput> dataReader_;
   const_view_2d frac_landuse_;
   view_2d frac_landuse_fm_;
-    // aerosol state variables
+  // aerosol state variables
   mam_coupling::AerosolState wet_aero_, dry_aero_;
   // wet mixing ratios (water species)
   mam_coupling::WetAtmosphere wet_atm_;

@@ -4,13 +4,12 @@
 #include <ekat/ekat_parameter_list.hpp>
 #include <ekat/ekat_workspace.hpp>
 #include <mam4xx/mam4.hpp>
+#include <physics/mam/eamxx_mam_generic_process_interface.hpp>
 #include <physics/mam/mam_aerosol_optics_read_tables.hpp>
 #include <physics/mam/mam_coupling.hpp>
 #include <share/atm_process/ATMBufferManager.hpp>
-#include <physics/mam/eamxx_mam_generic_process_interface.hpp>
 #include <share/util/eamxx_common_physics_functions.hpp>
 #include <string>
-
 
 #ifndef KOKKOS_ENABLE_CUDA
 #define protected_except_cuda public
@@ -44,7 +43,8 @@ class MAMOptics final : public MAMGenericInterface {
       // AtmosphereProcess overrides (see
       // share/atm_process/atmosphere_process.hpp)
       // --------------------------------------------------------------------------
-  std::string name() const override;
+      std::string
+      name() const override;
 
   // grid
   void set_grids(
@@ -78,7 +78,7 @@ class MAMOptics final : public MAMGenericInterface {
   // Mapping from old RRTMG sw bands to new band ordering in RRTMGP
   //  given old index swband (RRTMG) return new index swband RRTMGP
   mam_coupling::view_int_1d get_idx_rrtmgp_from_rrtmg_swbands_;
-    // aerosol state variables
+  // aerosol state variables
   mam_coupling::AerosolState wet_aero_, dry_aero_;
   // wet mixing ratios (water species)
   mam_coupling::WetAtmosphere wet_atm_;

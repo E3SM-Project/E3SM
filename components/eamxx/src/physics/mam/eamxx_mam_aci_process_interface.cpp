@@ -4,8 +4,9 @@
 #include <physics/mam/eamxx_mam_aci_functions.hpp>
 
 // For EKAT units package
-#include "ekat/util/ekat_units.hpp"
 #include <physics/mam/physical_limits.hpp>
+
+#include "ekat/util/ekat_units.hpp"
 /*
 -----------------------------------------------------------------
 NOTES:
@@ -46,8 +47,8 @@ MAMAci::MAMAci(const ekat::Comm &comm, const ekat::ParameterList &params)
   EKAT_REQUIRE_MSG(
       m_params.isParameter("top_level_mam4xx"),
       "ERROR: top_level_mam4xx is missing from mam_aci parameter list.");
-  check_fields_intervals_   = m_params.get<bool>("create_fields_interval_checks", false);
-
+  check_fields_intervals_ =
+      m_params.get<bool>("create_fields_interval_checks", false);
 }
 
 // ================================================================
@@ -76,7 +77,7 @@ void MAMAci::set_grids(
   const FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(true);
 
   using namespace ekat::units;
-  constexpr auto n_unit = 1 / kg;   // units of number mixing ratios of tracers
+  constexpr auto n_unit = 1 / kg;  // units of number mixing ratios of tracers
 
   constexpr auto nondim = ekat::units::Units::nondimensional();
 
@@ -211,7 +212,7 @@ void MAMAci::initialize_impl(const RunType run_type) {
   // NOTE: We do not include aerosol and gas species, e.g., soa_a1, num_a1,
   // because we automatically added these fields.
   const std::map<std::string, std::pair<Real, Real>> ranges_aci = {
-        // aci compute
+      // aci compute
       {"ni_activated", {-1e100, 1e100}},                     // FIXME
       {"nc_nuceat_tend", {-1e100, 1e100}},                   // FIXME
       {"nsource", {-1e10, 1e10}},                            // FIXME
@@ -276,7 +277,7 @@ void MAMAci::initialize_impl(const RunType run_type) {
   // gases, e.g., O3
   populate_gases_dry_aero(dry_aero_, buffer_);
   // cloudborne aerosol, e.g., soa_c_1
-  populate_cloudborne_dry_aero(dry_aero_,buffer_);
+  populate_cloudborne_dry_aero(dry_aero_, buffer_);
 
   // hetrozenous freezing outputs
   hetfrz_immersion_nucleation_tend_ =

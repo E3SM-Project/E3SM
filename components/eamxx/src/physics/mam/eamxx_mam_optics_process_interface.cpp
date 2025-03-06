@@ -11,9 +11,9 @@ namespace scream {
 
 MAMOptics::MAMOptics(const ekat::Comm &comm, const ekat::ParameterList &params)
     : MAMGenericInterface(comm, params), aero_config_() {
-  check_fields_intervals_   = m_params.get<bool>("create_fields_interval_checks", false);
-
- }
+  check_fields_intervals_ =
+      m_params.get<bool>("create_fields_interval_checks", false);
+}
 
 std::string MAMOptics::name() const { return "mam4_optics"; }
 
@@ -53,7 +53,7 @@ void MAMOptics::set_grids(
   // layout for 2D (1d horiz X 1d vertical) variables
   FieldLayout scalar2d = grid_->get_2d_scalar_layout();
 
-  add_field<Required>("pseudo_density_dry", scalar3d_mid, Pa,     grid_name);
+  add_field<Required>("pseudo_density_dry", scalar3d_mid, Pa, grid_name);
 
   add_field<Required>("phis", scalar2d, m2 / s2, grid_name);
 
@@ -70,7 +70,6 @@ void MAMOptics::set_grids(
   add_field<Computed>("aero_tau_lw", scalar3d_lwband, nondim, grid_name);
 
   add_field<Computed>("aodvis", scalar2d, nondim, grid_name);
-
 
   // (interstitial) aerosol tracers of interest: mass (q) and number (n) mixing
   // ratios
@@ -104,18 +103,17 @@ void MAMOptics::init_buffers(const ATMBufferManager &buffer_manager) {
 }
 
 void MAMOptics::initialize_impl(const RunType run_type) {
-
   // Check the interval values for the following fields used by this interface.
   // NOTE: We do not include aerosol and gas species, e.g., soa_a1, num_a1,
   // because we automatically added these fields.
-  const std::map<std::string, std::pair<Real, Real>> ranges_optics= {
-        // optics
+  const std::map<std::string, std::pair<Real, Real>> ranges_optics = {
+      // optics
       {"pseudo_density_dry", {-1e10, 1e10}},  // FIXME
       {"aero_g_sw", {-1e10, 1e10}},           // FIXME
       {"aero_ssa_sw", {-1e10, 1e10}},         // FIXME
       {"aero_tau_lw", {-1e10, 1e10}},         // FIXME
       {"aero_tau_sw", {-1e10, 1e10}},         // FIXME
-      {"aodvis", {-1e10, 1e10}}              // FIXME
+      {"aodvis", {-1e10, 1e10}}               // FIXME
   };
   set_ranges_process(ranges_optics);
   add_interval_checks();
@@ -125,7 +123,7 @@ void MAMOptics::initialize_impl(const RunType run_type) {
 
   populate_wet_atm(wet_atm_);
   populate_dry_atm(dry_atm_, buffer_);
-  p_del_         = get_field_in("pseudo_density").get_view<const Real **>();
+  p_del_ = get_field_in("pseudo_density").get_view<const Real **>();
 
   // interstitial and cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
@@ -142,12 +140,12 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   // gases, e.g., O3
   populate_gases_dry_aero(dry_aero_, buffer_);
   // cloudborne aerosol, e.g., soa_c_1
-  populate_cloudborne_dry_aero(dry_aero_,buffer_);
+  populate_cloudborne_dry_aero(dry_aero_, buffer_);
 
   // FIXME: In other MAM4xx processes,
   // we are using pseudo_density instead of pseudo_density_dry to set
   // dry_atm_.p_del.
-  dry_atm_.phis = get_field_in("phis").get_view<const Real *>();
+  dry_atm_.phis  = get_field_in("phis").get_view<const Real *>();
   dry_atm_.p_del = get_field_in("pseudo_density_dry").get_view<const Real **>();
 
   // prescribed volcanic aerosols.
@@ -306,7 +304,7 @@ void MAMOptics::run_impl(const double dt) {
       KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
   // preprocess input -- needs a scan for the calculation of atm height
-  pre_process(wet_aero_, dry_aero_, wet_atm_,dry_atm_);
+  pre_process(wet_aero_, dry_aero_, wet_atm_, dry_atm_);
   Kokkos::fence();
 
   // tau_w_g : aerosol asymmetry parameter * tau * w
@@ -403,8 +401,8 @@ void MAMOptics::run_impl(const double dt) {
   // nswbands loop is using rrtmg indexing.
   Kokkos::parallel_for(
       "copying data from mam4xx to eamxx",
-      Kokkos::MDRangePolicy<Kokkos::Rank<3> >({0, 0, 0},
-                                              {ncol_, nswbands_, nlev_}),
+      Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0},
+                                             {ncol_, nswbands_, nlev_}),
       KOKKOS_LAMBDA(const int icol, const int iswband, const int kk) {
         // Extract single scattering albedo from the product-defined fields
         if(tau_sw(icol, iswband, kk + 1) > zero) {

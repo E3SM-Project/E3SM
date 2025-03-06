@@ -1,6 +1,6 @@
 #include <physics/mam/eamxx_mam_generic_process_interface.hpp>
-#include <share/property_checks/field_within_interval_check.hpp>
 #include <physics/mam/physical_limits.hpp>
+#include <share/property_checks/field_within_interval_check.hpp>
 
 namespace scream {
 // ================================================================
@@ -55,23 +55,23 @@ void MAMGenericInterface::set_aerosol_and_gas_ranges() {
         mam_coupling::physical_min_max(mmr_label);
   }  // end for loop num gases
 }
- void MAMGenericInterface::set_ranges_process(
-  const std::map<std::string, std::pair<Real, Real>>& max_min_process)
- {
-   // NOTE: We are using the same range (mmr) for all aerosols and gases.
-   // And aerosol numbers (nmr).
-   // set ranges for aerosol and gases
-   // populates limits_aerosol_gas_tracers_
-   set_aerosol_and_gas_ranges();
-   // set ranges for other variables
-   max_min_process_=max_min_process;
-   // Ensure that we populate the maps.
-   set_ranges_=true;
- }
+void MAMGenericInterface::set_ranges_process(
+    const std::map<std::string, std::pair<Real, Real>> &max_min_process) {
+  // NOTE: We are using the same range (mmr) for all aerosols and gases.
+  // And aerosol numbers (nmr).
+  // set ranges for aerosol and gases
+  // populates limits_aerosol_gas_tracers_
+  set_aerosol_and_gas_ranges();
+  // set ranges for other variables
+  max_min_process_ = max_min_process;
+  // Ensure that we populate the maps.
+  set_ranges_ = true;
+}
 const std::pair<Real, Real> MAMGenericInterface::get_ranges(
     const std::string &field_name) {
-
-  EKAT_ASSERT_MSG(set_ranges_, "Error: min_max ranges are not set. Please invoke set_ranges_process.");
+  EKAT_ASSERT_MSG(
+      set_ranges_,
+      "Error: min_max ranges are not set. Please invoke set_ranges_process.");
 
   std::pair<Real, Real> min_max;
   // We obtain the minimum and maximum values for aerosol and gas species.
@@ -86,16 +86,14 @@ const std::pair<Real, Real> MAMGenericInterface::get_ranges(
     } else {
       // If we do not find a variable name in the previous maps,
       // we return a pair (-1, -1) that will bypass the interval check.
-      min_max = std::make_pair(-1,-1);
+      min_max = std::make_pair(-1, -1);
     }
-
   }
   return min_max;
 }
 
 // ================================================================
-void MAMGenericInterface::add_fields_cloudborne_aerosol()
-{
+void MAMGenericInterface::add_fields_cloudborne_aerosol() {
   using namespace ekat::units;
   auto q_unit           = kg / kg;  // units of mass mixing ratios of tracers
   auto n_unit           = 1 / kg;   // units of number mixing ratios of tracers
@@ -134,8 +132,8 @@ void MAMGenericInterface::add_fields_cloudborne_aerosol()
 
 void MAMGenericInterface::add_tracers_interstitial_aerosol() {
   using namespace ekat::units;
-  auto q_unit           = kg / kg;  // units of mass mixing ratios of tracers
-  auto n_unit           = 1 / kg;   // units of number mixing ratios of tracers
+  auto q_unit = kg / kg;  // units of mass mixing ratios of tracers
+  auto n_unit = 1 / kg;   // units of number mixing ratios of tracers
 
   FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(true);
 
@@ -161,15 +159,12 @@ void MAMGenericInterface::add_tracers_interstitial_aerosol() {
       }
     }  // end for loop num species
   }    // end for loop for num modes
-
-
 }
 // ================================================================
 
-void MAMGenericInterface::add_tracers_gases()
-{
+void MAMGenericInterface::add_tracers_gases() {
   using namespace ekat::units;
-  auto q_unit           = kg / kg;  // units of mass mixing ratios of tracers
+  auto q_unit = kg / kg;  // units of mass mixing ratios of tracers
   for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
     const std::string gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
     add_tracer<Updated>(gas_mmr_field_name, grid_, q_unit);
@@ -177,7 +172,7 @@ void MAMGenericInterface::add_tracers_gases()
 }
 // ================================================================
 void MAMGenericInterface::populate_cloudborne_wet_aero(
-  mam_coupling::AerosolState& wet_aero) {
+    mam_coupling::AerosolState &wet_aero) {
   // cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
   for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
@@ -201,12 +196,10 @@ void MAMGenericInterface::populate_cloudborne_wet_aero(
 
 // ================================================================
 void MAMGenericInterface::populate_cloudborne_dry_aero(
-   mam_coupling::AerosolState& dry_aero,
-   mam_coupling::Buffer& buffer) {
+    mam_coupling::AerosolState &dry_aero, mam_coupling::Buffer &buffer) {
   // cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
   for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
-
     // cloudborne aerosol tracers of interest: number (n) mixing ratios
     dry_aero.cld_aero_nmr[m] = buffer.dry_cld_aero_nmr[m];
 
@@ -222,8 +215,7 @@ void MAMGenericInterface::populate_cloudborne_dry_aero(
 }
 // ================================================================
 void MAMGenericInterface::populate_gases_dry_aero(
-  mam_coupling::AerosolState& dry_aero,
-  mam_coupling::Buffer& buffer) {
+    mam_coupling::AerosolState &dry_aero, mam_coupling::Buffer &buffer) {
   for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
     dry_aero.gas_mmr[g] = buffer.dry_gas_mmr[g];
   }
@@ -231,18 +223,16 @@ void MAMGenericInterface::populate_gases_dry_aero(
 
 // ================================================================
 void MAMGenericInterface::populate_gases_wet_aero(
-  mam_coupling::AerosolState& wet_aero) {
+    mam_coupling::AerosolState &wet_aero) {
   for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
     const std::string gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
-    wet_aero.gas_mmr[g] =
-        get_field_out(gas_mmr_field_name).get_view<Real **>();
+    wet_aero.gas_mmr[g] = get_field_out(gas_mmr_field_name).get_view<Real **>();
   }
 }
 
 // ================================================================
 void MAMGenericInterface::populate_interstitial_dry_aero(
-  mam_coupling::AerosolState& dry_aero,
-  mam_coupling::Buffer& buffer) {
+    mam_coupling::AerosolState &dry_aero, mam_coupling::Buffer &buffer) {
   // interstitial aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
   for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
@@ -263,7 +253,7 @@ void MAMGenericInterface::populate_interstitial_dry_aero(
 
 // ================================================================
 void MAMGenericInterface::populate_interstitial_wet_aero(
-  mam_coupling::AerosolState& wet_aero) {
+    mam_coupling::AerosolState &wet_aero) {
   // interstitial aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
   for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
@@ -283,9 +273,10 @@ void MAMGenericInterface::populate_interstitial_wet_aero(
       }
     }
   }
-  }
+}
 
-void MAMGenericInterface::populate_wet_atm(mam_coupling::WetAtmosphere& wet_atm) {
+void MAMGenericInterface::populate_wet_atm(
+    mam_coupling::WetAtmosphere &wet_atm) {
   // store fields only to be converted to dry mmrs in wet_atm_
   wet_atm.qv = get_field_in("qv").get_view<const Real **>();
   wet_atm.qc = get_field_in("qc").get_view<const Real **>();
@@ -293,8 +284,8 @@ void MAMGenericInterface::populate_wet_atm(mam_coupling::WetAtmosphere& wet_atm)
   wet_atm.qi = get_field_in("qi").get_view<const Real **>();
   wet_atm.ni = get_field_in("ni").get_view<const Real **>();
 }
-void MAMGenericInterface::populate_dry_atm( mam_coupling::DryAtmosphere& dry_atm,
-                                            mam_coupling::Buffer& buffer) {
+void MAMGenericInterface::populate_dry_atm(mam_coupling::DryAtmosphere &dry_atm,
+                                           mam_coupling::Buffer &buffer) {
   // store rest fo the atm fields in dry_atm_in
   dry_atm.z_surf = 0;
   dry_atm.T_mid  = get_field_in("T_mid").get_view<const Real **>();
@@ -356,7 +347,7 @@ void MAMGenericInterface::add_tracers_wet_atm() {
 }
 
 void MAMGenericInterface::add_fields_dry_atm() {
-    // Define the different field layouts that will be used for this process
+  // Define the different field layouts that will be used for this process
   using namespace ShortFieldTagsNames;
   // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and
   // interfaces
@@ -400,11 +391,12 @@ void MAMGenericInterface::add_interval_checks() {
       const auto ranges    = get_ranges(field.name());
       const auto min_value = ranges.first;
       const auto max_value = ranges.second;
-      // Only check the range for variables that are specified in physical_limits.hpp.
-      // Some variables from get_fields_in may not be part of physical_min_max.
-      if ( min_value !=-1 && max_value !=-1)
+      // Only check the range for variables that are specified in
+      // physical_limits.hpp. Some variables from get_fields_in may not be part
+      // of physical_min_max.
+      if(min_value != -1 && max_value != -1)
         add_precondition_check<FieldWithinIntervalCheck>(
-          field, grid_, min_value, max_value, false);
+            field, grid_, min_value, max_value, false);
     }
 
     const auto &out_fields = get_fields_out();
@@ -412,53 +404,48 @@ void MAMGenericInterface::add_interval_checks() {
       const auto ranges    = get_ranges(field.name());
       const auto min_value = ranges.first;
       const auto max_value = ranges.second;
-      // Only check the range for variables that are specified in physical_limits.hpp.
-      // Some variables from get_fields_out may not be part of physical_min_max.
-      if ( min_value !=-1 && max_value !=-1)
+      // Only check the range for variables that are specified in
+      // physical_limits.hpp. Some variables from get_fields_out may not be part
+      // of physical_min_max.
+      if(min_value != -1 && max_value != -1)
         add_postcondition_check<FieldWithinIntervalCheck>(
-          field, grid_, min_value, max_value, false);
+            field, grid_, min_value, max_value, false);
     }
   }
 }
 
-void MAMGenericInterface::pre_process(mam_coupling::AerosolState& wet_aero,
- mam_coupling::AerosolState& dry_aero,
- mam_coupling::WetAtmosphere& wet_atm,
- mam_coupling::DryAtmosphere& dry_atm)
-{
+void MAMGenericInterface::pre_process(mam_coupling::AerosolState &wet_aero,
+                                      mam_coupling::AerosolState &dry_aero,
+                                      mam_coupling::WetAtmosphere &wet_atm,
+                                      mam_coupling::DryAtmosphere &dry_atm) {
   const auto scan_policy = ekat::ExeSpaceUtils<
       KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
-     Kokkos::parallel_for(
+  Kokkos::parallel_for(
       scan_policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
-      const int i = team.league_rank();  // column index
+        const int i = team.league_rank();  // column index
 
-      mam_coupling::compute_dry_mixing_ratios(team, wet_atm, dry_atm, i);
-      mam_coupling::compute_dry_mixing_ratios(team, wet_atm, wet_aero,
-                                dry_aero, i);
-      team.team_barrier();
-      // vertical heights has to be computed after computing dry mixing ratios
-      // for atmosphere
-      mam_coupling::compute_vertical_layer_heights(team, dry_atm, i);
-      mam_coupling::compute_updraft_velocities(team, wet_atm, dry_atm, i);
-      // allows kernels below to use layer heights operator()
-      team.team_barrier();
-    });
-
+        mam_coupling::compute_dry_mixing_ratios(team, wet_atm, dry_atm, i);
+        mam_coupling::compute_dry_mixing_ratios(team, wet_atm, wet_aero,
+                                                dry_aero, i);
+        team.team_barrier();
+        // vertical heights has to be computed after computing dry mixing ratios
+        // for atmosphere
+        mam_coupling::compute_vertical_layer_heights(team, dry_atm, i);
+        mam_coupling::compute_updraft_velocities(team, wet_atm, dry_atm, i);
+        // allows kernels below to use layer heights operator()
+        team.team_barrier();
+      });
 }
 
-void MAMGenericInterface::post_process(mam_coupling::AerosolState& wet_aero,
- mam_coupling::AerosolState& dry_aero,
-mam_coupling::DryAtmosphere& dry_atm)
-{
-
+void MAMGenericInterface::post_process(mam_coupling::AerosolState &wet_aero,
+                                       mam_coupling::AerosolState &dry_aero,
+                                       mam_coupling::DryAtmosphere &dry_atm) {
   const auto scan_policy = ekat::ExeSpaceUtils<
       KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
-     Kokkos::parallel_for(
+  Kokkos::parallel_for(
       scan_policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
-      const int i = team.league_rank();  // column index
-      compute_wet_mixing_ratios(team, dry_atm, dry_aero,
-                                wet_aero, i);
+        const int i = team.league_rank();  // column index
+        compute_wet_mixing_ratios(team, dry_atm, dry_aero, wet_aero, i);
       });
-
 }
 }  // namespace scream

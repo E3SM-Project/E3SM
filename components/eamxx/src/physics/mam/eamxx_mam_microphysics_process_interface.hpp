@@ -1,15 +1,14 @@
 #ifndef EAMXX_MAM_MICROPHYSICS_HPP
 #define EAMXX_MAM_MICROPHYSICS_HPP
 
-#include <physics/mam/mam_coupling.hpp>
 #include <physics/mam/eamxx_mam_generic_process_interface.hpp>
+#include <physics/mam/mam_coupling.hpp>
 #include <share/util/eamxx_common_physics_functions.hpp>
 
 #include "readfiles/tracer_reader_utils.hpp"
 // For calling MAM4 processes
 #include <mam4xx/mam4.hpp>
 #include <string>
-
 
 namespace scream {
 
@@ -145,7 +144,7 @@ class MAMMicrophysics final : public MAMGenericInterface {
   // // dq/dt for convection [kg/kg/s]
   view_1d cmfdqr_;
   view_2d work_set_het_;
-    // aerosol state variables
+  // aerosol state variables
   mam_coupling::AerosolState wet_aero_, dry_aero_;
   // wet mixing ratios (water species)
   mam_coupling::WetAtmosphere wet_atm_;
@@ -153,7 +152,6 @@ class MAMMicrophysics final : public MAMGenericInterface {
   mam_coupling::DryAtmosphere dry_atm_;
   // workspace manager for internal local variables
   mam_coupling::Buffer buffer_;
-
 
 };  // MAMMicrophysics
 

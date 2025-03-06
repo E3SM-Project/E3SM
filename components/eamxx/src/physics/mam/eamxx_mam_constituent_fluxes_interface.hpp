@@ -19,7 +19,6 @@ class MAMConstituentFluxes final : public MAMGenericInterface {
   using const_view_2d = Field::view_dev_t<const Real **>;
 
  private:
-
   const_view_2d constituent_fluxes_;
   // aerosol state variables
   mam_coupling::AerosolState wet_aero_, dry_aero_;

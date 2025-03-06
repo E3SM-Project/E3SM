@@ -17,8 +17,8 @@ MAMWetscav::MAMWetscav(const ekat::Comm &comm,
   /* Anything that can be initialized without grid information can be
    * initialized here. Like universal constants, mam wetscav options.
    */
-    check_fields_intervals_   = m_params.get<bool>("create_fields_interval_checks", false);
-
+  check_fields_intervals_ =
+      m_params.get<bool>("create_fields_interval_checks", false);
 }
 
 // ================================================================
@@ -28,7 +28,7 @@ void MAMWetscav::set_grids(
     const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
 
-  grid_                = grids_manager->get_grid("Physics");
+  grid_                 = grids_manager->get_grid("Physics");
   const auto &grid_name = grid_->name();
 
   ncol_ = grid_->get_num_local_dofs();       // Number of columns on this rank
@@ -45,8 +45,8 @@ void MAMWetscav::set_grids(
   FieldLayout scalar2d = grid_->get_2d_scalar_layout();
 
   // layout for 3D (ncol, nmodes, nlevs)
-  FieldLayout scalar3d_mid_nmodes =
-      grid_->get_3d_vector_layout(true, nmodes, mam_coupling::num_modes_tag_name());
+  FieldLayout scalar3d_mid_nmodes = grid_->get_3d_vector_layout(
+      true, nmodes, mam_coupling::num_modes_tag_name());
 
   // layout for 2D (ncol, pcnst)
   FieldLayout scalar2d_pconst =
@@ -183,7 +183,7 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
   // NOTE: We do not include aerosol and gas species, e.g., soa_a1, num_a1,
   // because we automatically added these fields.
   const std::map<std::string, std::pair<Real, Real>> ranges_wetscav = {
-        // wetscav
+      // wetscav
       {"drydep_hydrophilic_bc", {-1e10, 1e10}},  // FIXME
       {"drydep_hydrophilic_oc", {-1e10, 1e10}},  // FIXME
       {"wetdep_dust_bin1", {-1e10, 1e10}},       // FIXME
@@ -222,9 +222,11 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
   // gases, e.g., O3
   populate_gases_dry_aero(dry_aero_, buffer_);
   // cloudborne aerosol, e.g., soa_c_1
-  populate_cloudborne_dry_aero(dry_aero_,buffer_);
+  populate_cloudborne_dry_aero(dry_aero_, buffer_);
 
-  dry_atm_.phis  = get_field_in("phis").get_view<const Real *>();
+  dry_atm_.phis = get_field_in("phis").get_view<const Real *>();
+  // NOTE: In populate_dry_atm we use cldfrac_tot
+  dry_atm_.cldfrac = get_field_in("cldfrac_liq").get_view<const Real **>();
 
   //---------------------------------------------------------------------------------
   // Allocate memory
@@ -285,7 +287,7 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
   // Detraining cld H20 from deep convection [kg/kg/s]
   dlf_ = view_2d("dlf", ncol_, nlev_);
   Kokkos::deep_copy(dlf_, 0);
-  }
+}
 
 // ================================================================
 //  RUN_IMPL
@@ -296,7 +298,7 @@ void MAMWetscav::run_impl(const double dt) {
 
   // preprocess input -- needs a scan for the calculation of all variables
   // needed by this process or setting up MAM4xx classes and their objects
-  pre_process(wet_aero_, dry_aero_, wet_atm_,dry_atm_);
+  pre_process(wet_aero_, dry_aero_, wet_atm_, dry_atm_);
   Kokkos::fence();
 
   const mam_coupling::DryAtmosphere &dry_atm = dry_atm_;

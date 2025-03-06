@@ -192,7 +192,7 @@ class MAMAci final : public MAMGenericInterface {
       // for atmosphere
       compute_vertical_layer_heights(team, dry_atm_pre_, i);
       compute_updraft_velocities(team, wet_atm_pre_, dry_atm_pre_, i);
-      //FIXME: we only set_min_background_mmr in aci.
+      // FIXME: we only set_min_background_mmr in aci.
       set_min_background_mmr(team, dry_aero_pre_,
                              i);  // dry_atm_pre_ is the output
     }                             // operator()
@@ -206,7 +206,6 @@ class MAMAci final : public MAMGenericInterface {
     mam_coupling::DryAtmosphere dry_atm_pre_;
     mam_coupling::AerosolState wet_aero_pre_, dry_aero_pre_;
   };  // MAMAci::Preprocess
-
 
  private:
   // pre- and postprocessing scratch pads

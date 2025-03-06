@@ -15,8 +15,8 @@ MAMDryDep::MAMDryDep(const ekat::Comm &comm, const ekat::ParameterList &params)
   /* Anything that can be initialized without grid information can be
    * initialized here. Like universal constants, mam wetscav options.
    */
-  check_fields_intervals_   = m_params.get<bool>("create_fields_interval_checks", false);
-
+  check_fields_intervals_ =
+      m_params.get<bool>("create_fields_interval_checks", false);
 }
 
 // ================================================================
@@ -202,7 +202,7 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   // NOTE: We do not include aerosol and gas species, e.g., soa_a1, num_a1,
   // because we automatically added these fields.
   const std::map<std::string, std::pair<Real, Real>> ranges_dry_deposition = {
-        // dry deposition
+      // dry deposition
       {"dgnumwet", {-1e10, 1e10}},                                    // FIXME
       {"fv", {-1e10, 1e10}},                                          // FIXME
       {"icefrac", {-1e10, 1e10}},                                     // FIXME
@@ -217,7 +217,8 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
       {"fraction_landuse", {-1e100, 1e100}},                          // FIXME
   };
   set_ranges_process(ranges_dry_deposition);
-  // Check pre/post condition interval values for all fields employed by this interface
+  // Check pre/post condition interval values for all fields employed by this
+  // interface
   add_interval_checks();
 
   populate_wet_atm(wet_atm_);
@@ -237,7 +238,7 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   // gases, e.g., O3
   populate_gases_dry_aero(dry_aero_, buffer_);
   // cloudborne aerosol, e.g., soa_c_1
-  populate_cloudborne_dry_aero(dry_aero_,buffer_);
+  populate_cloudborne_dry_aero(dry_aero_, buffer_);
 
   //-----------------------------------------------------------------
   // Allocate memory
@@ -293,7 +294,7 @@ void MAMDryDep::run_impl(const double dt) {
       KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
   // preprocess input -- needs a scan for the calculation of atm height
-  pre_process(wet_aero_, dry_aero_, wet_atm_,dry_atm_);
+  pre_process(wet_aero_, dry_aero_, wet_atm_, dry_atm_);
   Kokkos::fence();
 
   // -------------------------------------------------------------

@@ -14,7 +14,6 @@
 // For declaring surface and online emission class derived from atm process
 // class
 #include <physics/mam/eamxx_mam_generic_process_interface.hpp>
-
 #include <string>
 
 namespace scream {
@@ -168,7 +167,7 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
   // offset for converting pcnst index to gas_pcnst index
   static constexpr int offset_ =
 
-  mam4::aero_model::pcnst - mam4::gas_chemistry::gas_pcnst;
+      mam4::aero_model::pcnst - mam4::gas_chemistry::gas_pcnst;
   // workspace manager for internal local variables
   mam_coupling::Buffer buffer_;
 
