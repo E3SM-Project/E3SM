@@ -79,8 +79,9 @@ subroutine zm_conv_register
    !----------------------------------------------------------------------------
    ! Purpose: register fields with the physics buffer
    !----------------------------------------------------------------------------
-   use physics_buffer, only : pbuf_add_field, dtype_r8
+   use physics_buffer,  only: pbuf_add_field, dtype_r8
    use misc_diagnostics,only: dcape_diags_register
+   use zm_microphysics, only: zm_microphysics_register
    implicit none
 
    integer idx
@@ -797,7 +798,7 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    call outfld('PRECCDZM', prec,               pcols, lchnk )
    call outfld('PRECZ   ', prec,               pcols, lchnk )
 
-   if (zm_microp) call zm_microphysics_history_out( microp_st, prec, dlf, dif, dnlf, dnif, frz, lchnk, ncol )
+   if (zm_microp) call zm_microphysics_history_out( lchnk, ncol, microp_st, prec, dlf, dif, dnlf, dnif, frz )
 
    ! add tendency from this process to tend from other processes here
    call physics_ptend_sum(ptend_loc,ptend_all, ncol)

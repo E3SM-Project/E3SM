@@ -55,8 +55,6 @@ module  zm_microphysics
 
    real(r8), parameter :: pi = 3.14159265358979323846_r8
 
-   real(r8) :: ac,bc,as,bs,ai,bi,ar,br,ag,bg  ! fall speed parameters
-
    ! fall speed parameters, V = aD^b [m/s]
    real(r8), parameter :: ac = 3.e7_r8       ! droplets
    real(r8), parameter :: bc = 2._r8         ! droplets
