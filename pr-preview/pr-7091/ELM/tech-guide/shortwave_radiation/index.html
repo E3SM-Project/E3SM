@@ -3524,7 +3524,7 @@ Given these assumptions, the radiation absorbed by shaded and sunlit leaves per 
 \overrightarrow{I}_{\ell d}(\kappa) &amp;=&amp; \dfrac{d(I_d^\uparrow - I_d^\downarrow)}{d\kappa} I_{d0}^\downarrow
 \end{eqnarray}
 \]</div>
-<p>The canopy level net absorbed beam and diffused fluxes (per unit ground area) are obtained by integrating equations \eqnref{eqn_sha_net_rad} - \eqnref{eqn_sun_net_rad} over the canopy profile while accounting for sunlit and shaded leaf fraction as</p>
+<p>The canopy level net absorbed beam and diffused fluxes (per unit ground area) are obtained by integrating equations \eqref{eqn_sha_net_rad} - \eqref{eqn_sun_net_rad} over the canopy profile while accounting for sunlit and shaded leaf fraction as</p>
 <div class="arithmatex">\[
 \begin{eqnarray}
 \overrightarrow{I}_c^{sha} &amp;=&amp; \int_0^{L+S} \overrightarrow{I}_{\ell}^{sha}(\kappa) \left[ 1 - f_{sun}(\kappa)\right] d\kappa = \overrightarrow{I}_{cb}^{sha} + \overrightarrow{I}_{cd}^{sha} \\[0.5em]
@@ -3545,7 +3545,7 @@ f_{sun}(\kappa) = e^{-K_b \kappa}
 \end{equation}
 \]</div>
 <h2 id="single-layer-canopy-model-with-the-two-stream-approximation">Single-Layer Canopy Model With the Two-Stream Approximation</h2>
-<p>ELM represents the canopy as a single layer with a sunlit and shaded leaf. The scattered beam and diffuse upward (or downward) radiation fluxes at the canopy top (or bottom) are given by substituting <span class="arithmatex">\(\kappa = 0\)</span> (or <span class="arithmatex">\(\kappa = L + S\)</span>) in equations \eqnref{two_str_dir_up_eqn} -- \eqnref{two_str_dir_dn_eqn} as</p>
+<p>ELM represents the canopy as a single layer with a sunlit and shaded leaf. The scattered beam and diffuse upward (or downward) radiation fluxes at the canopy top (or bottom) are given by substituting <span class="arithmatex">\(\kappa = 0\)</span> (or <span class="arithmatex">\(\kappa = L + S\)</span>) in equations \eqref{two_str_dir_up_eqn} -- \eqref{two_str_dir_dn_eqn} as</p>
 <div class="arithmatex">\[
 \begin{eqnarray}
 I^{\uparrow}_{b,\Lambda}(\kappa = 0) &amp;=&amp; \dfrac{h_1 }{\sigma} + h_2 + h_3 \\[0.5em]
@@ -3588,13 +3588,13 @@ a_1 &amp;=&amp; \dfrac{h_1}{\sigma} \left[ \dfrac{1 - s_2^2}{2K}\right] + h_2 \l
 a_2 &amp;=&amp; \dfrac{h_4}{\sigma} \left[ \dfrac{1 - s_2^2}{2K}\right] + h_5 \left[ \dfrac{1 - s_1 s_2}{K + h} \right] + h_6 \left[ \dfrac{1 - s_2/s_1}{K - h} \right]
 \end{eqnarray}
 \]</div>
-<p>Using equation \eqnref{eqn_can_b_conservation}, the beam radiation absorbed by shaded leaves is computed as</p>
+<p>Using equation \eqref{eqn_can_b_conservation}, the beam radiation absorbed by shaded leaves is computed as</p>
 <div class="arithmatex">\[
 \begin{equation}
 \overrightarrow{I}_{cb, \Lambda}^{sha} = \overrightarrow{I}_{cb, \Lambda} - \overrightarrow{I}_{cb, \Lambda}^{sun}
 \end{equation}
 \]</div>
-<p>where the first term on the right hand side is given by equation \eqnref{eqn_can_b_absorb}.</p>
+<p>where the first term on the right hand side is given by equation \eqref{eqn_can_b_absorb}.</p>
 <h4 id="shaded-leaves">Shaded leaves</h4>
 <p>The analytical solution of the beam radiation absorbed by shaded leaves is given as</p>
 <div class="arithmatex">\[
@@ -3609,13 +3609,13 @@ a_1 &amp;=&amp; h_7 \left[ \dfrac{1 - s_1 s_2}{K + h} \right] + h_8 \left[ \dfra
 a_2 &amp;=&amp; h_9 \left[ \dfrac{1 - s_1 s_2}{K + h} \right] + h_{10} \left[ \dfrac{1 - s_2/s_1}{K - h} \right]
 \end{eqnarray}
 \]</div>
-<p>Using equation \eqnref{eqn_can_b_conservation}, the beam radiation absorbed by shaded leaves is computed as</p>
+<p>Using equation \eqref{eqn_can_b_conservation}, the beam radiation absorbed by shaded leaves is computed as</p>
 <div class="arithmatex">\[
 \begin{equation}
 \overrightarrow{I}_{cd, \Lambda}^{sha} = \overrightarrow{I}_{cd, \Lambda} - \overrightarrow{I}_{cd, \Lambda}^{sun}
 \end{equation}
 \]</div>
-<p>where the first term on the right hand side is given by equation \eqnref{eqn_can_d_absorb}.</p>
+<p>where the first term on the right hand side is given by equation \eqref{eqn_can_d_absorb}.</p>
 <h3 id="radiation-absorbed-by-ground">Radiation Absorbed By Ground</h3>
 <p>The beam and diffuse radiation absorbed by the ground can be similarly computed as the difference of incoming and outgoing radiation.</p>
 <div class="arithmatex">\[
