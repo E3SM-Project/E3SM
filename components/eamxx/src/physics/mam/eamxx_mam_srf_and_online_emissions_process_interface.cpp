@@ -40,8 +40,6 @@ void MAMSrfOnlineEmiss::set_grids(
   using namespace ekat::units;
   constexpr auto m2     = pow(m, 2);
   constexpr auto s2     = pow(s, 2);
-  constexpr auto q_unit = kg / kg;  // units of mass mixing ratios of tracers
-  constexpr auto n_unit = 1 / kg;   // units of number mixing ratios of tracers
   constexpr auto nondim = ekat::units::Units::nondimensional();
 
   const FieldLayout scalar2d   = grid_->get_2d_scalar_layout();
@@ -62,46 +60,13 @@ void MAMSrfOnlineEmiss::set_grids(
 
   // -- Variables required for building DS to compute z_mid --
   // Specific humidity [kg/kg]
-  // FIXME: Comply with add_tracer calls
-  add_field<Required>("qv", scalar3d_m, q_unit, grid_name, "tracers");
-
-  // Cloud liquid mass mixing ratio [kg/kg]
-  add_field<Required>("qc", scalar3d_m, q_unit, grid_name, "tracers");
-
-  // Cloud ice mass mixing ratio [kg/kg]
-  add_field<Required>("qi", scalar3d_m, q_unit, grid_name, "tracers");
-
-  // Cloud liquid number mixing ratio [1/kg]
-  add_field<Required>("nc", scalar3d_m, n_unit, grid_name, "tracers");
-
-  // Cloud ice number mixing ratio [1/kg]
-  add_field<Required>("ni", scalar3d_m, n_unit, grid_name, "tracers");
-
-  // Temperature[K] at midpoints
-  add_field<Required>("T_mid", scalar3d_m, K, grid_name);
-
-  // Vertical pressure velocity [Pa/s] at midpoints
-  add_field<Required>("omega", scalar3d_m, Pa / s, grid_name);
-
-  // Total pressure [Pa] at midpoints
-  add_field<Required>("p_mid", scalar3d_m, Pa, grid_name);
-
-  // Total pressure [Pa] at interfaces
-  add_field<Required>("p_int", scalar3d_i, Pa, grid_name);
-
-  // Layer thickness(pdel) [Pa] at midpoints
-  add_field<Required>("pseudo_density", scalar3d_m, Pa, grid_name);
-
-  // Planetary boundary layer height [m]
-  add_field<Required>("pbl_height", scalar2d, m, grid_name);
-
-  // Surface geopotential [m2/s2]
-  add_field<Required>("phis", scalar2d, m2 / s2, grid_name);
+  add_tracers_wet_atm();
+  add_fields_dry_atm();
 
   //----------- Variables from microphysics scheme -------------
 
-  // Total cloud fraction [fraction] (Require only for building DS)
-  add_field<Required>("cldfrac_tot", scalar3d_m, nondim, grid_name);
+  // Surface geopotential [m2/s2]
+  add_field<Required>("phis", scalar2d, m2 / s2, grid_name);
 
   // -- Variables required for online dust and sea salt emissions --
 
@@ -328,37 +293,8 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   // ---------------------------------------------------------------
   // Input fields read in from IC file, namelist or other processes
   // ---------------------------------------------------------------
-  // Populate the wet atmosphere state with views from fields
-  wet_atm_.qv = get_field_in("qv").get_view<const Real **>();
-
-  // Following wet_atm vars are required only for building DS
-  wet_atm_.qc = get_field_in("qc").get_view<const Real **>();
-  wet_atm_.nc = get_field_in("nc").get_view<const Real **>();
-  wet_atm_.qi = get_field_in("qi").get_view<const Real **>();
-  wet_atm_.ni = get_field_in("ni").get_view<const Real **>();
-
-  // Populate the dry atmosphere state with views from fields
-  dry_atm_.T_mid = get_field_in("T_mid").get_view<const Real **>();
-  dry_atm_.p_mid = get_field_in("p_mid").get_view<const Real **>();
-  dry_atm_.p_del = get_field_in("pseudo_density").get_view<const Real **>();
-  dry_atm_.p_int = get_field_in("p_int").get_view<const Real **>();
-
-  // Following dry_atm vars are required only for building DS
-  dry_atm_.cldfrac = get_field_in("cldfrac_tot").get_view<const Real **>();
-  dry_atm_.pblh    = get_field_in("pbl_height").get_view<const Real *>();
-  dry_atm_.omega   = get_field_in("omega").get_view<const Real **>();
-
-  // store fields converted to dry mmr from wet mmr in dry_atm_
-  dry_atm_.z_mid     = buffer_.z_mid;
-  dry_atm_.z_iface   = buffer_.z_iface;
-  dry_atm_.dz        = buffer_.dz;
-  dry_atm_.qv        = buffer_.qv_dry;
-  dry_atm_.qc        = buffer_.qc_dry;
-  dry_atm_.nc        = buffer_.nc_dry;
-  dry_atm_.qi        = buffer_.qi_dry;
-  dry_atm_.ni        = buffer_.ni_dry;
-  dry_atm_.w_updraft = buffer_.w_updraft;
-  dry_atm_.z_surf    = 0.0;  // FIXME: for now
+  populate_wet_atm(wet_atm_);
+  populate_dry_atm(dry_atm_, buffer_);
 
   // ---------------------------------------------------------------
   // Output fields
