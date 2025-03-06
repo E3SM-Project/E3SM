@@ -1,16 +1,24 @@
-module  zm_aero
+module zm_aero
    !-----------------------------------------------------------------------------
    ! Purpose: microphysics state structure definition and methods for ZM
    ! Original Author: Xialiang Song and Guang Zhang, June 2010
    !-----------------------------------------------------------------------------
    use shr_kind_mod,     only: r8=>shr_kind_r8
    use ppgrid,           only: pcols, pver, pverp
+   use cam_abortutils,   only: endrun
+   use cam_logfile,      only: iulog
 
    public :: zm_aero_t     ! structure to hold aerosol state information for ZM microphysics
    public :: zm_aero_init  ! aerosol stype initialization
 
 !===================================================================================================
 
+! generic 2D pointer type for zm_aero_t
+type, public :: ptr2d
+   real(r8), pointer :: val(:,:)
+end type ptr2d
+
+! structure to hold aerosol state information for ZM microphysics
 type :: zm_aero_t
 
    ! Aerosol treatment
@@ -59,13 +67,19 @@ contains
 !===================================================================================================
 
 subroutine zm_aero_init(nmodes, nbulk, aero)
-   !-------------------------------------------------------------------------
+   !----------------------------------------------------------------------------
    ! Purpose: Initialize the zm_aero_t object for modal aerosols
-   !-------------------------------------------------------------------------
-   integer,         intent(in ) :: nmodes
-   integer,         intent(in ) :: nbulk
-   type(zm_aero_t), intent(out) :: aero
-   !-------------------------------------------------------------------------
+   !----------------------------------------------------------------------------
+   use rad_constituents, only: rad_cnst_get_info, rad_cnst_get_mode_props, rad_cnst_get_aer_props
+   use physconst,        only: pi
+   !----------------------------------------------------------------------------
+   ! Arguments
+   integer,         intent(in   ) :: nmodes
+   integer,         intent(in   ) :: nbulk
+   type(zm_aero_t), intent(inout) :: aero
+   !----------------------------------------------------------------------------
+   ! Local variables
+   character(len=*), parameter :: routine = 'zm_aero_init'
    character(len=20), allocatable :: aername(:)
    character(len=32) :: str32
    integer  :: iaer, l, m
@@ -74,12 +88,12 @@ subroutine zm_aero_init(nmodes, nbulk, aero)
    real(r8) :: dgnumlo
    real(r8) :: dgnumhi
    real(r8) :: alnsg
-   !-------------------------------------------------------------------------
+   !----------------------------------------------------------------------------
    aero%nmodes = nmodes
    aero%nbulk  = nbulk
 
    if (nmodes > 0) then
-      
+
       ! Initialize the modal aerosol information
       aero%scheme = 'modal'
 
@@ -165,7 +179,7 @@ subroutine zm_aero_init(nmodes, nbulk, aero)
          aername(nbulk),                   &
          aero%num_to_mass_aer(nbulk),      &
          aero%mmr_bulk(nbulk),             &
-         aero%mmrg_bulk(pcols,plev,nbulk)  )
+         aero%mmrg_bulk(pcols,pver,nbulk)  )
 
       do iaer = 1, aero%nbulk
          call rad_cnst_get_aer_props(0, iaer, &
@@ -186,4 +200,4 @@ end subroutine zm_aero_init
 
 !===================================================================================================
 
-end module zm_microphysics_state
+end module zm_aero

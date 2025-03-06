@@ -440,6 +440,7 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    use physconst,               only: gravit
    use time_manager,            only: get_curr_date
    use interpolate_data,        only: vertinterp
+   use zm_microphysics_state,   only: zm_microp_st_alloc, zm_microp_st_dealloc
    use zm_microphysics_history, only: zm_microphysics_history_out
    !----------------------------------------------------------------------------
    ! Arguments
@@ -576,7 +577,7 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
 
    !----------------------------------------------------------------------------
 
-   if (zm_microp) zm_microp_st_alloc(microp_st)
+   if (zm_microp) call zm_microp_st_alloc(microp_st)
 
    doslop          = .false.
    doslop_heat     = .false.

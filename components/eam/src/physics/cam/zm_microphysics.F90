@@ -81,21 +81,13 @@ real(r8) :: droplet_mass_25um
 
 ! contact freezing due to dust
 ! dust number mean radius (m), Zender et al JGR 2003 assuming number mode radius of 0.6 micron, sigma=2
-real(r8), parameter :: rn_dst1 = 0.258e-6_r8
-real(r8), parameter :: rn_dst2 = 0.717e-6_r8
-real(r8), parameter :: rn_dst3 = 1.576e-6_r8
-real(r8), parameter :: rn_dst4 = 3.026e-6_r8
-
-! smallest mixing ratio considered in microphysics
-real(r8), parameter :: qsmall = 1.e-18_r8
-
-
-type, public :: ptr2d
-   real(r8), pointer :: val(:,:)
-end type ptr2d
-
-real(r8), parameter :: dcon  = 25.e-6_r8
-real(r8), parameter :: mucon = 5.3_r8
+real(r8), parameter :: rn_dst1    = 0.258e-6_r8
+real(r8), parameter :: rn_dst2    = 0.717e-6_r8
+real(r8), parameter :: rn_dst3    = 1.576e-6_r8
+real(r8), parameter :: rn_dst4    = 3.026e-6_r8
+real(r8), parameter :: qsmall     = 1.e-18_r8 ! smallest mixing ratio considered in microphysics
+real(r8), parameter :: dcon       = 25.e-6_r8
+real(r8), parameter :: mucon      = 5.3_r8
 real(r8), parameter :: lambdadpcu = (mucon + 1._r8)/dcon
 
 !===============================================================================

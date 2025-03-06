@@ -3,13 +3,21 @@ module  zm_microphysics_history
    ! Purpose: microphysics state structure definition and methods for ZM
    ! Original Author: Xialiang Song and Guang Zhang, June 2010
    !-----------------------------------------------------------------------------
-   use shr_kind_mod,     only: r8=>shr_kind_r8
-   use ppgrid,           only: pcols, pver, pverp
+   use shr_kind_mod,          only: r8=>shr_kind_r8
+   use ppgrid,                only: pcols, pver, pverp
+   use zm_microphysics_state, only: zm_microp_st
+   use cam_history,           only: outfld, addfld, horiz_only
 
    public :: zm_microphysics_history_out ! write history output related to ZM microphysics
   
 !===================================================================================================
 contains
+!===================================================================================================
+
+! subroutine zm_microphysics_history_init()
+!    !----------------------------------------------------------------------------
+! end subroutine zm_microphysics_history_init
+
 !===================================================================================================
 
 subroutine zm_microphysics_history_out(microp_st, dlf, dif, dnlf, dnif, frz, lchnk, ncol)

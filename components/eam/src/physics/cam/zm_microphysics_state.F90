@@ -1,4 +1,4 @@
-module  zm_microphysics_state
+module zm_microphysics_state
    !----------------------------------------------------------------------------
    ! Purpose: microphysics state structure definition and methods for ZM
    ! Original Author: Xialiang Song and Guang Zhang, June 2010
