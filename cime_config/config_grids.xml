@@ -1999,6 +1999,16 @@
       <mask>IcoswISC30E3r5</mask>
     </model_grid>
 
+    <model_grid alias="TL319_oQU240wLI_gis4to40" compset="_MALI">
+      <grid name="atm">TL319</grid>
+      <grid name="lnd">TL319</grid>
+      <grid name="ocnice">oQU240wLI</grid>
+      <grid name="rof">JRA025</grid>
+      <grid name="glc">mpas.gis4to40km</grid>
+      <grid name="wav">null</grid>
+      <mask>oQU240wLI</mask>
+    </model_grid>
+
     <model_grid alias="TL319_IcoswISC30E3r5_gis4to40" compset="_MALI">
       <grid name="atm">TL319</grid>
       <grid name="lnd">TL319</grid>
@@ -5944,6 +5954,18 @@
       <map name="LND2GLC_SMAPNAME">cpl/gridmaps/TL319/map_TL319_to_gis4to40_trbilin.20250218.nc</map>
       <map name="GLC2LND_FMAPNAME">cpl/gridmaps/mpas.gis4to40km/map_gis4to40_to_TL319_traave.20250218.nc</map>
       <map name="GLC2LND_SMAPNAME">cpl/gridmaps/mpas.gis4to40km/map_gis4to40_to_TL319_traave.20250218.nc</map>
+    </gridmap>
+
+    <gridmap glc_grid="mpas.gis4to40km" ocn_grid="oQU240wLI">
+      <map name="OCN2GLC_SHELF_FMAPNAME">cpl/gridmaps/oQU240wLI/map_oQU240wLI_to_gis4to40_esmfaave.20250303.nc</map>
+      <map name="OCN2GLC_SHELF_SMAPNAME">cpl/gridmaps/oQU240wLI/map_oQU240wLI_to_gis4to40_esmfbilin.20250303.nc</map>
+      <map name="OCN2GLC_TF_SMAPNAME">cpl/gridmaps/oQU240wLI/XXX</map>
+      <map name="GLC2ICE_FMAPNAME">cpl/gridmaps/mpas.gis4to40km/map_gis4to40_to_oQU240wLI_esmfaave.20250303.nc</map>
+      <map name="GLC2ICE_SMAPNAME">cpl/gridmaps/mpas.gis4to40km/map_gis4to40_to_oQU240wLI_esmfaave.20250303.nc</map>
+      <map name="GLC2OCN_FMAPNAME">cpl/gridmaps/mpas.gis4to40km/map_gis4to40_to_oQU240wLI_esmfaave.20250303.nc</map>
+      <map name="GLC2OCN_SMAPNAME">cpl/gridmaps/mpas.gis4to40km/map_gis4to40_to_oQU240wLI_esmfaave.20250303.nc</map>
+      <map name="GLC2OCN_LIQ_RMAPNAME">cpl/gridmaps/mpas.gis4to40km/map_gis4to40_to_oQU240wLI_nn.20250303.nc</map>
+      <map name="GLC2OCN_ICE_RMAPNAME">cpl/gridmaps/mpas.gis4to40km/map_gis4to40_to_oQU240wLI_nn.20250303.nc</map>
     </gridmap>
 
     <gridmap glc_grid="mpas.gis4to40km" ocn_grid="IcoswISC30E3r5">
