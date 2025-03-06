@@ -139,15 +139,16 @@ subroutine zm_conv_init(pref_edge)
    !----------------------------------------------------------------------------
    ! Purpose: declare output fields, initialize variables needed by convection
    !----------------------------------------------------------------------------
-   use zm_conv,            only: zm_convi
-   use pmgrid,             only: plev,plevp
-   use spmd_utils,         only: masterproc
-   use error_messages,     only: alloc_err
-   use phys_control,       only: phys_deepconv_pbl, phys_getopts
-   use physics_buffer,     only: pbuf_get_index
-   use rad_constituents,   only: rad_cnst_get_info
-   use zm_microphysics,    only: zm_mphyi
-   use zm_aero,            only: zm_aero_init
+   use zm_conv,                 only: zm_convi
+   use pmgrid,                  only: plev,plevp
+   use spmd_utils,              only: masterproc
+   use error_messages,          only: alloc_err
+   use phys_control,            only: phys_deepconv_pbl, phys_getopts
+   use physics_buffer,          only: pbuf_get_index
+   use rad_constituents,        only: rad_cnst_get_info
+   use zm_microphysics,         only: zm_mphyi
+   use zm_aero,                 only: zm_aero_init
+   use zm_microphysics_history, only: zm_microphysics_history_init
    implicit none
    !----------------------------------------------------------------------------
    ! Arguments
@@ -214,129 +215,6 @@ subroutine zm_conv_init(pref_edge)
       call addfld('ZM_depth',  horiz_only, 'A', 'Pa',       'ZM convection depth')
    end if
 
-   if (zm_microp) then
-
-      call addfld ('CLDLIQZM',(/ 'lev' /), 'A', 'g/m3',     'ZM cloud liq water')
-      call addfld ('CLDICEZM',(/ 'lev' /), 'A', 'g/m3',     'ZM cloud ice water')
-      call addfld ('CLIQSNUM',(/ 'lev' /), 'A', '1',        'ZM cloud liq water sample number')
-      call addfld ('CICESNUM',(/ 'lev' /), 'A', '1',        'ZM cloud ice water sample number')
-      call addfld ('QRAINZM' ,(/ 'lev' /), 'A', 'g/m3',     'ZM rain water')
-      call addfld ('QSNOWZM' ,(/ 'lev' /), 'A', 'g/m3',     'ZM snow')
-      call addfld ('QGRAPZM' ,(/ 'lev' /), 'A', 'g/m3',     'ZM graupel')
-      call addfld ('CRAINNUM',(/ 'lev' /), 'A', '1',        'ZM cloud rain water sample number')
-      call addfld ('CSNOWNUM',(/ 'lev' /), 'A', '1',        'ZM cloud snow sample number')
-      call addfld ('CGRAPNUM',(/ 'lev' /), 'A', '1',        'ZM cloud graupel sample number')
-
-      call addfld ('DIFZM',   (/ 'lev' /), 'A', 'kg/kg/s ', 'ZM detrained ice water')
-      call addfld ('DLFZM',   (/ 'lev' /), 'A', 'kg/kg/s ', 'ZM detrained liq water')
-      call addfld ('DNIFZM',  (/ 'lev' /), 'A', '1/kg/s ',  'ZM detrained ice water num concen')
-      call addfld ('DNLFZM',  (/ 'lev' /), 'A', '1/kg/s ',  'ZM detrained liquid water num concen')
-      call addfld ('WUZM',    (/ 'lev' /), 'A', 'm/s',      'ZM vertical velocity')
-      call addfld ('WUZMSNUM',(/ 'lev' /), 'A', '1',        'ZM vertical velocity sample number')
-
-      call addfld ('QNLZM',   (/ 'lev' /), 'A', '1/m3',     'ZM cloud liq water number concen')
-      call addfld ('QNIZM',   (/ 'lev' /), 'A', '1/m3',     'ZM cloud ice number concen')
-      call addfld ('QNRZM',   (/ 'lev' /), 'A', '1/m3',     'ZM cloud rain water number concen')
-      call addfld ('QNSZM',   (/ 'lev' /), 'A', '1/m3',     'ZM cloud snow number concen')
-      call addfld ('QNGZM',   (/ 'lev' /), 'A', '1/m3',     'ZM cloud graupel number concen')
-
-      call addfld ('FRZZM',   (/ 'lev' /), 'A', 'K/s',      'ZM heating tendency due to freezing')
-
-      call addfld ('AUTOL_M', (/ 'lev' /), 'A', 'kg/kg/m',  'ZM mass tendency due to autoconversion of droplets to rain')
-      call addfld ('ACCRL_M', (/ 'lev' /), 'A', 'kg/kg/m',  'ZM mass tendency due to accretion of droplets by rain')
-      call addfld ('BERGN_M', (/ 'lev' /), 'A', 'kg/kg/m',  'ZM mass tendency due to Bergeron process')
-      call addfld ('FHTIM_M', (/ 'lev' /), 'A', 'kg/kg/m',  'ZM mass tendency due to immersion freezing')
-      call addfld ('FHTCT_M', (/ 'lev' /), 'A', 'kg/kg/m',  'ZM mass tendency due to contact freezing')
-      call addfld ('FHML_M',  (/ 'lev' /), 'A', 'kg/kg/m',  'ZM mass tendency due to homogeneous freezing of droplet')
-      call addfld ('HMPI_M',  (/ 'lev' /), 'A', 'kg/kg/m',  'ZM mass tendency due to HM process')
-      call addfld ('ACCSL_M', (/ 'lev' /), 'A', 'kg/kg/m',  'ZM mass tendency due to accretion of droplet by snow')
-      call addfld ('DLF_M',   (/ 'lev' /), 'A', 'kg/kg/m',  'ZM mass tendency due to detrainment of droplet')
-      call addfld ('COND_M',  (/ 'lev' /), 'A', 'kg/kg/m',  'ZM mass tendency due to condensation')
-
-      call addfld ('AUTOL_N', (/ 'lev' /), 'A', '1/kg/m',   'ZM num tendency due to autoconversion of droplets to rain')
-      call addfld ('ACCRL_N', (/ 'lev' /), 'A', '1/kg/m',   'ZM num tendency due to accretion of droplets by rain')
-      call addfld ('BERGN_N', (/ 'lev' /), 'A', '1/kg/m',   'ZM num tendency due to Bergeron process')
-      call addfld ('FHTIM_N', (/ 'lev' /), 'A', '1/kg/m',   'ZM num tendency due to immersion freezing')
-      call addfld ('FHTCT_N', (/ 'lev' /), 'A', '1/kg/m',   'ZM num tendency due to contact freezing')
-      call addfld ('FHML_N',  (/ 'lev' /), 'A', '1/kg/m',   'ZM num tendency due to homogeneous freezing of droplet')
-      call addfld ('ACCSL_N', (/ 'lev' /), 'A', '1/kg/m',   'ZM num tendency due to accretion of droplet by snow')
-      call addfld ('ACTIV_N', (/ 'lev' /), 'A', '1/kg/m',   'ZM num tendency due to droplets activation')
-      call addfld ('DLF_N',   (/ 'lev' /), 'A', '1/kg/m',   'ZM num tendency due to detrainment of droplet')
-
-      call addfld ('AUTOI_M', (/ 'lev' /), 'A', 'kg/kg/m',  'ZM mass tendency due to autoconversion of ice to snow')
-      call addfld ('ACCSI_M', (/ 'lev' /), 'A', 'kg/kg/m',  'ZM mass tendency due to accretion of ice by snow')
-      call addfld ('DIF_M',   (/ 'lev' /), 'A', 'kg/kg/m',  'ZM mass tendency due to detrainment of cloud ice')
-      call addfld ('DEPOS_M', (/ 'lev' /), 'A', 'kg/kg/m',  'ZM mass tendency due to deposition')
-
-      call addfld ('NUCLI_N', (/ 'lev' /), 'A', '1/kg/m' ,  'ZM num tendency due to ice nucleation')
-      call addfld ('AUTOI_N', (/ 'lev' /), 'A', '1/kg/m' ,  'ZM num tendency due to autoconversion of ice to snow')
-      call addfld ('ACCSI_N', (/ 'lev' /), 'A', '1/kg/m' ,  'ZM num tendency due to accretion of ice by snow')
-      call addfld ('HMPI_N',  (/ 'lev' /), 'A', '1/kg/s' ,  'ZM num tendency due to HM process')
-      call addfld ('DIF_N',   (/ 'lev' /), 'A', '1/kg/m' ,  'ZM num tendency due to detrainment of cloud ice')
-      call addfld ('TRSPC_M', (/ 'lev' /), 'A', 'kg/kg/m',  'ZM mass tendency of droplets due to convective transport')
-      call addfld ('TRSPC_N', (/ 'lev' /), 'A', '1/kg/m' ,  'ZM num tendency of droplets due to convective transport')
-      call addfld ('TRSPI_M', (/ 'lev' /), 'A', 'kg/kg/m',  'ZM mass tendency of ice crystal due to convective transport')
-      call addfld ('TRSPI_N', (/ 'lev' /), 'A', '1/kg/m' ,  'ZM num tendency of ice crystal due to convective transport')
-
-      call addfld ('ACCGR_M', (/ 'lev' /), 'A', 'kg/kg/m',  'ZM mass tendency due to collection of rain by graupel')
-      call addfld ('ACCGL_M', (/ 'lev' /), 'A', 'kg/kg/m',  'ZM mass tendency due to collection of droplets by graupel')
-      call addfld ('ACCGSL_M',(/ 'lev' /), 'A', 'kg/kg/m',  'ZM mass tendency of graupel due to collection of droplets by snow')
-      call addfld ('ACCGSR_M',(/ 'lev' /), 'A', 'kg/kg/m',  'ZM mass tendency of graupel due to collection of rain by snow')
-      call addfld ('ACCGIR_M',(/ 'lev' /), 'A', 'kg/kg/m',  'ZM mass tendency of graupel due to collection of rain by ice')
-      call addfld ('ACCGRI_M',(/ 'lev' /), 'A', 'kg/kg/m',  'ZM mass tendency of graupel due to collection of ice by rain')
-      call addfld ('ACCGRS_M',(/ 'lev' /), 'A', 'kg/kg/m',  'ZM mass tendency of graupel due to collection of snow by rain')
-
-      call addfld ('ACCGSL_N',(/ 'lev' /), 'A', '1/kg/m' ,  'ZM num tendency of graupel due to collection of droplets by snow')
-      call addfld ('ACCGSR_N',(/ 'lev' /), 'A', '1/kg/m' ,  'ZM num tendency of graupel due to collection of rain by snow')
-      call addfld ('ACCGIR_N',(/ 'lev' /), 'A', '1/kg/m' ,  'ZM num tendency of graupel due to collection of rain by ice')
-
-      call addfld ('ACCSRI_M',(/ 'lev' /), 'A', 'kg/kg/m',  'ZM mass tendency of snow due to collection of ice by rain')
-      call addfld ('ACCIGL_M',(/ 'lev' /), 'A', 'kg/kg/m',  'ZM mass tendency of ice mult(splintering) due to acc droplets by graupel')
-      call addfld ('ACCIGR_M',(/ 'lev' /), 'A', 'kg/kg/m',  'ZM mass tendency of ice mult(splintering) due to acc rain by graupel')
-      call addfld ('ACCSIR_M',(/ 'lev' /), 'A', 'kg/kg/m',  'ZM mass tendency of snow due to collection of rain by ice')
-
-      call addfld ('ACCIGL_N',(/ 'lev' /), 'A', '1/kg/m' ,  'ZM num tendency of ice mult(splintering) due to acc droplets by graupel')
-      call addfld ('ACCIGR_N',(/ 'lev' /), 'A', '1/kg/m' ,  'ZM num tendency of ice mult(splintering) due to acc rain by graupel')
-      call addfld ('ACCSIR_N',(/ 'lev' /), 'A', '1/kg/m' ,  'ZM num tendency of snow due to collection of rain by ice')
-      call addfld ('ACCGL_N', (/ 'lev' /), 'A', '1/kg/m' ,  'ZM num tendency due to collection of droplets by graupel')
-      call addfld ('ACCGR_N', (/ 'lev' /), 'A', '1/kg/m' ,  'ZM num tendency due to collection of rain by graupel')
-      call addfld ('ACCIL_M', (/ 'lev' /), 'A', 'kg/kg/m',  'ZM mass tendency of cloud ice due to collection of droplet by cloud ice')
-      call addfld ('ACCIL_N', (/ 'lev' /), 'A', '1/kg/m' ,  'ZM num tendency of cloud ice due to collection of droplet by cloud ice')
-
-      call addfld ('FALLR_M', (/ 'lev' /), 'A', 'kg/kg/m',  'ZM mass tendency of rain fallout')
-      call addfld ('FALLS_M', (/ 'lev' /), 'A', 'kg/kg/m',  'ZM mass tendency of snow fallout')
-      call addfld ('FALLG_M', (/ 'lev' /), 'A', 'kg/kg/m',  'ZM mass tendency of graupel fallout')
-      call addfld ('FALLR_N', (/ 'lev' /), 'A', '1/kg/m' ,  'ZM num tendency of rain fallout')
-      call addfld ('FALLS_N', (/ 'lev' /), 'A', '1/kg/m' ,  'ZM num tendency of snow fallout')
-      call addfld ('FALLG_N', (/ 'lev' /), 'A', '1/kg/m' ,  'ZM num tendency of graupel fallout')
-      call addfld ('FHMR_M',  (/ 'lev' /), 'A', 'kg/kg/m',  'ZM mass tendency due to homogeneous freezing of rain')
-
-      call addfld ('PRECZ_SN',horiz_only , 'A', '#',        'ZM sample num of convective precipitation rate')
-
-      call add_default ('CLDLIQZM', 1, ' ')
-      call add_default ('CLDICEZM', 1, ' ')
-      call add_default ('CLIQSNUM', 1, ' ')
-      call add_default ('CICESNUM', 1, ' ')
-      call add_default ('DIFZM',    1, ' ')
-      call add_default ('DLFZM',    1, ' ')
-      call add_default ('DNIFZM',   1, ' ')
-      call add_default ('DNLFZM',   1, ' ')
-      call add_default ('WUZM',     1, ' ')
-      call add_default ('QRAINZM',  1, ' ')
-      call add_default ('QSNOWZM',  1, ' ')
-      call add_default ('QGRAPZM',  1, ' ')
-      call add_default ('CRAINNUM', 1, ' ')
-      call add_default ('CSNOWNUM', 1, ' ')
-      call add_default ('CGRAPNUM', 1, ' ')
-      call add_default ('QNLZM',    1, ' ')
-      call add_default ('QNIZM',    1, ' ')
-      call add_default ('QNRZM',    1, ' ')
-      call add_default ('QNSZM',    1, ' ')
-      call add_default ('QNGZM',    1, ' ')
-      call add_default ('FRZZM',    1, ' ')
-
-   end if
-
    call phys_getopts( history_budget_out = history_budget, &
                       history_budget_histfile_num_out = history_budget_histfile_num, &
                       convproc_do_aer_out = convproc_do_aer, &
@@ -395,6 +273,8 @@ subroutine zm_conv_init(pref_edge)
 
    ! Initialization for the microphysics
    if (zm_microp) then
+
+      call zm_microphysics_history_init()
 
       call zm_mphyi()
 
@@ -545,7 +425,6 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
 
    real(r8), dimension(pcols,pver) :: sprd
    real(r8), dimension(pcols,pver) :: frz
-   real(r8), dimension(pcols)      :: precz_snum
 
    ! MCSP
    logical  :: doslop
@@ -870,8 +749,6 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    call outfld('ZMDT    ', ftem, pcols, lchnk )
    call outfld('ZMDQ    ', ptend_loc%q(1,1,1), pcols, lchnk )
 
-   if (zm_microp) call zm_microphysics_history_out( microp_st, dlf, dif, dnlf, dnif, frz, lchnk, ncol )
-
    maxgsav(1:ncol) = 0 ! zero if no convection. true mean to be MAXI/FREQZM
    pcont(1:ncol) = state%ps(1:ncol)
    pconb(1:ncol) = state%ps(1:ncol)
@@ -937,16 +814,7 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    call outfld('PRECCDZM', prec,               pcols, lchnk )
    call outfld('PRECZ   ', prec,               pcols, lchnk )
 
-   if (zm_microp) then
-      do i = 1,ncol
-         if (prec(i) .gt. 0) then
-            precz_snum(i) = 1
-         else
-            precz_snum(i) = 0
-         end if
-      end do
-      call outfld('PRECZ_SN', precz_snum, pcols, lchnk )
-   end if
+   if (zm_microp) call zm_microphysics_history_out( microp_st, prec, dlf, dif, dnlf, dnif, frz, lchnk, ncol )
 
    ! add tendency from this process to tend from other processes here
    call physics_ptend_sum(ptend_loc,ptend_all, ncol)
