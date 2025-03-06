@@ -45,7 +45,7 @@ public:
   const atm_proc_set_type& get_customers () const { return m_customers; }
 
   // List of field groups that this field belongs to
-  const ekat::WeakPtrSet<const FieldGroupInfo>& get_group_info () const { return m_groups; }
+  const ekat::WeakPtrSet<const FieldGroupInfo>& get_groups_info () const { return m_groups; }
 
   // ----- Setters ----- //
 
