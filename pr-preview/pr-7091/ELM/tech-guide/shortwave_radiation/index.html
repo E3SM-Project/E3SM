@@ -3210,7 +3210,8 @@
     </span>
   </a>
   
-</li>
+    <nav class="md-nav" aria-label="Radiation Absorbed By Canopy">
+      <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#radiation-absorbed-by-sunlit-and-shaded-leaves_1" class="md-nav__link">
@@ -3218,6 +3219,29 @@
       Radiation Absorbed By Sunlit and Shaded Leaves
     </span>
   </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sunlit-leaves" class="md-nav__link">
+    <span class="md-ellipsis">
+      Sunlit leaves
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shaded-leaves" class="md-nav__link">
+    <span class="md-ellipsis">
+      Shaded leaves
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -3486,28 +3510,35 @@ h_{10} &amp;=&amp; \dfrac{-s_1(u_2 - \bar{\mu}h)}{d_2} \\[0.5em]
 \]</div>
 <h3 id="radiation-absorbed-by-sunlit-and-shaded-leaves">Radiation Absorbed by Sunlit and Shaded Leaves</h3>
 <p>It is assumed that the shaded leaves only receive diffuse radiation, including scattered direct and diffuse radiation. In contrast, the sunlit leaves receive unscattered direct radiation, scattered direct radiation, and diffuse radiation.
-Given these assumptions, the radiation absorbed by shaded and sunlit leaves per unit shaded and sunlit leaf area at the cumulative leaf area index <span class="arithmatex">\(kappa\)</span> is given as:</p>
+Given these assumptions, the radiation absorbed by shaded and sunlit leaves per unit shaded and sunlit leaf area at the cumulative leaf area index <span class="arithmatex">\(\kappa\)</span> is given as:</p>
 <div class="arithmatex">\[
 \begin{eqnarray}
 \overrightarrow{I}_{\ell}^{sha} (\kappa) &amp;=&amp; \overrightarrow{I}_{\ell b}(\kappa) + \overrightarrow{I}_{\ell d}(\kappa) \label{eqn_sha_net_rad} \\[0.5em]
 \overrightarrow{I}_{\ell}^{sun} (\kappa) &amp;=&amp; (1 - \omega)K_b e^{-K_b\kappa}I_{sky,b}^{\downarrow} +  \overrightarrow{I}_{\ell b}(\kappa) + \overrightarrow{I}_{\ell d}(\kappa) \label{eqn_sun_net_rad}
 \end{eqnarray}
 \]</div>
-<p>where <span class="arithmatex">\(\overrightarrow{I}_{\ell b}(\kappa)\)</span> is the net absorbed beam radiation and <span class="arithmatex">\(\overrightarrow{I}_{\ell d}(\kappa)\)</span> is the net absorbed diffuse radiation. These net absorbed beam and diffuse radiation fluxes at the cumulative leaf area index <span class="arithmatex">\(kappa\)</span> are given as:</p>
+<p>where <span class="arithmatex">\(\overrightarrow{I}_{\ell b}(\kappa)\)</span> is the net absorbed beam radiation and <span class="arithmatex">\(\overrightarrow{I}_{\ell d}(\kappa)\)</span> is the net absorbed diffuse radiation. These net absorbed beam and diffuse radiation fluxes at the cumulative leaf area index <span class="arithmatex">\(\kappa\)</span> are given as:</p>
 <div class="arithmatex">\[
 \begin{eqnarray}
 \overrightarrow{I}_{\ell b}(\kappa) &amp;=&amp; \left[ \omega K_b e^{-K_b \kappa} + \dfrac{d(I_{b}^{\uparrow} - I_b^{\downarrow})}{d\kappa} \right] I_{sky,b}^\downarrow\\[0.5em]
 \overrightarrow{I}_{\ell d}(\kappa) &amp;=&amp; \dfrac{d(I_d^\uparrow - I_d^\downarrow)}{d\kappa} I_{d0}^\downarrow
 \end{eqnarray}
 \]</div>
-<p>The canopy level net absorbed beam and diffused fluxes are obtained by integrating equations \eqnref{eqn_sha_net_rad} - \eqnref{eqn_sun_net_rad} over the canopy while accounting for sunlit and shaded leaf fraction as</p>
+<p>The canopy level net absorbed beam and diffused fluxes (per unit ground area) are obtained by integrating equations \eqnref{eqn_sha_net_rad} - \eqnref{eqn_sun_net_rad} over the canopy profile while accounting for sunlit and shaded leaf fraction as</p>
 <div class="arithmatex">\[
 \begin{eqnarray}
-\overrightarrow{I}_c^{sha} &amp;=&amp; \int_0^{L+S} \overrightarrow{I}_{\ell}^{sha}(\kappa) \left[ 1 - f_{sun}(\kappa)\right] d\kappa \\[0.5em]
-\overrightarrow{I}_c^{sun} &amp;=&amp; \int_0^{L+S} \overrightarrow{I}_{\ell}^{sun}(\kappa) f_{sun}(\kappa) d\kappa
+\overrightarrow{I}_c^{sha} &amp;=&amp; \int_0^{L+S} \overrightarrow{I}_{\ell}^{sha}(\kappa) \left[ 1 - f_{sun}(\kappa)\right] d\kappa = \overrightarrow{I}_{cb}^{sha} + \overrightarrow{I}_{cd}^{sha} \\[0.5em]
+\overrightarrow{I}_c^{sun} &amp;=&amp; \int_0^{L+S} \overrightarrow{I}_{\ell}^{sun}(\kappa) f_{sun}(\kappa) d\kappa = \overrightarrow{I}_{cb}^{sun} + \overrightarrow{I}_{cd}^{sun}
 \end{eqnarray}
 \]</div>
-<p>where the sunlit fraction of canopy is given by</p>
+<p>where <span class="arithmatex">\(\overrightarrow{I}_{cb}^{sha}\)</span> is the canopy level absorbed beam radiation by shaded leaves, <span class="arithmatex">\(\overrightarrow{I}_{cd}^{sha}\)</span> is the canopy level absorbed diffuse radiation by shaded leaves, <span class="arithmatex">\(\overrightarrow{I}_{cb}^{sun}\)</span> is the canopy level absorbed beam radiation by sunlit leaves, and <span class="arithmatex">\(\overrightarrow{I}_{cd}^{sun}\)</span> is the canopy level absorbed diffuse radiation by sunlit leaves. Furthermore, the total absorbed beam (or diffuse) radiation by the canopy must be the sum of absorbed beam (or diffuse) radiation by sunlit and shaded leaves as:</p>
+<div class="arithmatex">\[
+\begin{eqnarray}
+\overrightarrow{I}_{cb} &amp;=&amp; \overrightarrow{I}_{cb}^{sha} + \overrightarrow{I}_{cb}^{sun} \label{eqn_can_b_conservation} \\[0.5em]
+\overrightarrow{I}_{cd} &amp;=&amp; \overrightarrow{I}_{cd}^{sha} + \overrightarrow{I}_{cd}^{sun} \label{eqn_can_d_conservation}
+\end{eqnarray}
+\]</div>
+<p>The sunlit fraction of canopy, <span class="arithmatex">\(f_{sun}\)</span>, is given by</p>
 <div class="arithmatex">\[
 \begin{equation}
 f_{sun}(\kappa) = e^{-K_b \kappa}
@@ -3536,12 +3567,55 @@ I^{\downarrow}_{d,\Lambda}(\kappa = L+S) &amp;=&amp; h_9 \exp( -h (L+S)) + h_{10
 <p>The amount of beam and diffuse radiation absorbed per unit incident flux by the canopy can be computed as the difference between the incoming and outgoing radiation as</p>
 <div class="arithmatex">\[
 \begin{eqnarray}
-\overrightarrow{I}_{cb,\Lambda} &amp;=&amp; 1 - I_{b,\Lambda}^{\uparrow} - \left( 1 - \alpha_{gd,\Lambda}\right) I_{b,\Lambda}^{\downarrow} - (1 - \alpha_{gb,\Lambda})e^{-K(L+S)} \\[0.5em]
+\overrightarrow{I}_{cb,\Lambda} &amp;=&amp; 1 - I_{b,\Lambda}^{\uparrow} - \left( 1 - \alpha_{gd,\Lambda}\right) I_{b,\Lambda}^{\downarrow} - (1 - \alpha_{gb,\Lambda})e^{-K(L+S)} \label{eqn_can_b_absorb} \\[0.5em]
 \overrightarrow{I}_{cd,\Lambda} &amp;=&amp; 1 - I_{d,\Lambda}^\uparrow - \left( 1 - \alpha_{gd,\Lambda}\right) I_{d,\Lambda}^\downarrow
-\end{eqnarray}
+\end{eqnarray} \label{eqn_can_d_absorb}
 \]</div>
 <p>The upward and downward fluxes in the above equations are for <span class="arithmatex">\(\kappa = 0\)</span> and <span class="arithmatex">\(\kappa = L + S\)</span>, respectively, and to simplify the notation, <span class="arithmatex">\(\kappa\)</span> has been omitted from the equations.</p>
-<h3 id="radiation-absorbed-by-sunlit-and-shaded-leaves_1">Radiation Absorbed By Sunlit and Shaded Leaves</h3>
+<h4 id="radiation-absorbed-by-sunlit-and-shaded-leaves_1">Radiation Absorbed By Sunlit and Shaded Leaves</h4>
+<p>Using analytical solutions of the two-stream approximation, Dai et al. (2004) provided analytical solutions for the radiation absorbed by sunlit and shaded leaves presented below.</p>
+<h4 id="sunlit-leaves">Sunlit leaves</h4>
+<p>The analytical solution of the beam radiation absorbed by sunlit leaves is given as</p>
+<div class="arithmatex">\[
+\begin{equation}
+\overrightarrow{I}_{cb, \Lambda}^{sun} = \left(1 - \omega_\Lambda \right) \left[ 1 - s_2 + \dfrac{(a_1 + a_2)}{\mu}\right]
+\end{equation}
+\]</div>
+<p>where the parameters are given as follows</p>
+<div class="arithmatex">\[
+\begin{eqnarray}
+a_1 &amp;=&amp; \dfrac{h_1}{\sigma} \left[ \dfrac{1 - s_2^2}{2K}\right] + h_2 \left[ \dfrac{1 - s_1 s_2}{K + h} \right] + h_3 \left[ \dfrac{1 - s_2/s_1}{K - h} \right] \\[0.5em]
+a_2 &amp;=&amp; \dfrac{h_4}{\sigma} \left[ \dfrac{1 - s_2^2}{2K}\right] + h_5 \left[ \dfrac{1 - s_1 s_2}{K + h} \right] + h_6 \left[ \dfrac{1 - s_2/s_1}{K - h} \right]
+\end{eqnarray}
+\]</div>
+<p>Using equation \eqnref{eqn_can_b_conservation}, the beam radiation absorbed by shaded leaves is computed as</p>
+<div class="arithmatex">\[
+\begin{equation}
+\overrightarrow{I}_{cb, \Lambda}^{sha} = \overrightarrow{I}_{cb, \Lambda} - \overrightarrow{I}_{cb, \Lambda}^{sun}
+\end{equation}
+\]</div>
+<p>where the first term on the right hand side is given by equation \eqnref{eqn_can_b_absorb}.</p>
+<h4 id="shaded-leaves">Shaded leaves</h4>
+<p>The analytical solution of the beam radiation absorbed by shaded leaves is given as</p>
+<div class="arithmatex">\[
+\begin{equation}
+\overrightarrow{I}_{cd, \Lambda}^{sun} = \left[ \dfrac{1 - \omega_\Lambda}{\mu} \right] (a_1 + a_2)
+\end{equation}
+\]</div>
+<p>where the parameters are given as follows</p>
+<div class="arithmatex">\[
+\begin{eqnarray}
+a_1 &amp;=&amp; h_7 \left[ \dfrac{1 - s_1 s_2}{K + h} \right] + h_8 \left[ \dfrac{1 - s_2/s_1}{K - h} \right] \\[0.5em]
+a_2 &amp;=&amp; h_9 \left[ \dfrac{1 - s_1 s_2}{K + h} \right] + h_{10} \left[ \dfrac{1 - s_2/s_1}{K - h} \right]
+\end{eqnarray}
+\]</div>
+<p>Using equation \eqnref{eqn_can_b_conservation}, the beam radiation absorbed by shaded leaves is computed as</p>
+<div class="arithmatex">\[
+\begin{equation}
+\overrightarrow{I}_{cd, \Lambda}^{sha} = \overrightarrow{I}_{cd, \Lambda} - \overrightarrow{I}_{cd, \Lambda}^{sun}
+\end{equation}
+\]</div>
+<p>where the first term on the right hand side is given by equation \eqnref{eqn_can_d_absorb}.</p>
 <h3 id="radiation-absorbed-by-ground">Radiation Absorbed By Ground</h3>
 <p>The beam and diffuse radiation absorbed by the ground can be similarly computed as the difference of incoming and outgoing radiation.</p>
 <div class="arithmatex">\[
