@@ -1853,8 +1853,8 @@
           <nthrds_cpl>8</nthrds_cpl>
         </nthrds>
       </pes>
-      <pes compset=".*2010_SCREAM_ELM.*" pesize="any">
-        <comment>"pm-gpu ne30 with WCYCLXX2010 4 nodes, 4x16"</comment>
+      <pes compset=".*2010_SCREAM_ELM.*MPASSI_MPASO.*" pesize="any">
+        <comment>"pm-gpu ne30 for fully coupled cases with ATM on GPU, MPAS on CPU -- WCYCLXX2010 4 nodes, 4x16"</comment>
         <ntasks>
           <ntasks_atm>-4</ntasks_atm>
           <ntasks_lnd>-4</ntasks_lnd>
