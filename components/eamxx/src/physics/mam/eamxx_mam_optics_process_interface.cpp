@@ -104,7 +104,20 @@ void MAMOptics::init_buffers(const ATMBufferManager &buffer_manager) {
 }
 
 void MAMOptics::initialize_impl(const RunType run_type) {
-  // print_fields_names();
+
+  // Check the interval values for the following fields used by this interface.
+  // NOTE: We do not include aerosol and gas species, e.g., soa_a1, num_a1,
+  // because we automatically added these fields.
+  const std::map<std::string, std::pair<Real, Real>> ranges_optics= {
+        // optics
+      {"pseudo_density_dry", {-1e10, 1e10}},  // FIXME
+      {"aero_g_sw", {-1e10, 1e10}},           // FIXME
+      {"aero_ssa_sw", {-1e10, 1e10}},         // FIXME
+      {"aero_tau_lw", {-1e10, 1e10}},         // FIXME
+      {"aero_tau_sw", {-1e10, 1e10}},         // FIXME
+      {"aodvis", {-1e10, 1e10}}              // FIXME
+  };
+  set_ranges_process(ranges_optics);
   add_interval_checks();
   // populate the wet and dry atmosphere states with views from fields and
   // the buffer

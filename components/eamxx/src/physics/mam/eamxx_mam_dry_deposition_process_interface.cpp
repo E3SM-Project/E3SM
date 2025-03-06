@@ -198,7 +198,25 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   // ---------------------------------------------------------------
   // Input fields read in from IC file, namelist or other processes
   // ---------------------------------------------------------------
-  // print_fields_names();
+  // Check the interval values for the following fields used by this interface.
+  // NOTE: We do not include aerosol and gas species, e.g., soa_a1, num_a1,
+  // because we automatically added these fields.
+  const std::map<std::string, std::pair<Real, Real>> ranges_dry_deposition = {
+        // dry deposition
+      {"dgnumwet", {-1e10, 1e10}},                                    // FIXME
+      {"fv", {-1e10, 1e10}},                                          // FIXME
+      {"icefrac", {-1e10, 1e10}},                                     // FIXME
+      {"landfrac", {-1e10, 1e10}},                                    // FIXME
+      {"obklen", {-1e10, 1e10}},                                      // FIXME
+      {"ocnfrac", {-1e10, 1e10}},                                     // FIXME
+      {"ram1", {-1e10, 1e10}},                                        // FIXME
+      {"ustar", {-1e10, 1e10}},                                       // FIXME
+      {"wetdens", {-1e10, 1e10}},                                     // FIXME
+      {"deposition_flux_of_cloud_borne_aerosols", {-1e100, 1e100}},   // FIXME
+      {"deposition_flux_of_interstitial_aerosols", {-1e100, 1e100}},  // FIXME
+      {"fraction_landuse", {-1e100, 1e100}},                          // FIXME
+  };
+  set_ranges_process(ranges_dry_deposition);
   // Check pre/post condition interval values for all fields employed by this interface
   add_interval_checks();
 

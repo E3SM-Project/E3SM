@@ -179,16 +179,34 @@ void MAMWetscav::init_buffers(const ATMBufferManager &buffer_manager) {
 //  INITIALIZE_IMPL
 // ================================================================
 void MAMWetscav::initialize_impl(const RunType run_type) {
+  // Check the interval values for the following fields used by this interface.
+  // NOTE: We do not include aerosol and gas species, e.g., soa_a1, num_a1,
+  // because we automatically added these fields.
+  const std::map<std::string, std::pair<Real, Real>> ranges_wetscav = {
+        // wetscav
+      {"drydep_hydrophilic_bc", {-1e10, 1e10}},  // FIXME
+      {"drydep_hydrophilic_oc", {-1e10, 1e10}},  // FIXME
+      {"wetdep_dust_bin1", {-1e10, 1e10}},       // FIXME
+      {"wetdep_dust_bin2", {-1e10, 1e10}},       // FIXME
+      {"wetdep_dust_bin3", {-1e10, 1e10}},       // FIXME
+      {"wetdep_dust_bin4", {-1e10, 1e10}},       // FIXME
+      {"wetdep_hydrophilic_bc", {-1e10, 1e10}},  // FIXME
+      {"wetdep_hydrophilic_oc", {-1e10, 1e10}},  // FIXME
+      {"precip_total_tend", {-1e10, 1e10}},      // FIXME
+      {"aerdepwetcw", {-1e10, 1e10}},            // FIXME
+      {"aerdepwetis", {-1e10, 1e10}},            // FIXME
+      {"fracis", {-1e10, 1e10}},                 // FIXME
+      {"qaerwat", {-1e10, 1e10}}                 // FIXME
+  };
+
+  set_ranges_process(ranges_wetscav);
+  add_interval_checks();
   // ---------------------------------------------------------------
   // Input fields read in from IC file, namelist or other processes
   // ---------------------------------------------------------------
-  // print_fields_names();
-  add_interval_checks();
 
   populate_wet_atm(wet_atm_);
   populate_dry_atm(dry_atm_, buffer_);
-
-
   // interstitial and cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
   // It populates wet_aero struct (wet_aero_) with:

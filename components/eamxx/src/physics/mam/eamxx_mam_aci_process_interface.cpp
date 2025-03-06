@@ -207,7 +207,34 @@ void MAMAci::initialize_impl(const RunType run_type) {
   // ------------------------------------------------------------------------
   // ## Runtime options
   // ------------------------------------------------------------------------
-  // Check pre/post condition interval values for all fields employed by this interface
+  // Check the interval values for the following fields used by this interface.
+  // NOTE: We do not include aerosol and gas species, e.g., soa_a1, num_a1,
+  // because we automatically added these fields.
+  const std::map<std::string, std::pair<Real, Real>> ranges_aci = {
+        // aci compute
+      {"ni_activated", {-1e100, 1e100}},                     // FIXME
+      {"nc_nuceat_tend", {-1e100, 1e100}},                   // FIXME
+      {"nsource", {-1e10, 1e10}},                            // FIXME
+      {"ndropmix", {-1e10, 1e10}},                           // FIXME
+      {"nc_inp_to_aci", {-1e10, 1e10}},                      // FIXME
+      {"ccn_0p02", {-1e10, 1e10}},                           // FIXME
+      {"ccn_0p05", {-1e10, 1e10}},                           // FIXME
+      {"ccn_0p1", {-1e10, 1e10}},                            // FIXME
+      {"ccn_0p2", {-1e10, 1e10}},                            // FIXME
+      {"ccn_0p5", {-1e10, 1e10}},                            // FIXME
+      {"ccn_1p0", {-1e10, 1e10}},                            // FIXME
+      {"hetfrz_immersion_nucleation_tend", {-1e10, 1e10}},   // FIXME
+      {"hetfrz_contact_nucleation_tend", {-1e10, 1e10}},     // FIXME
+      {"hetfrz_deposition_nucleation_tend", {-1e10, 1e10}},  // FIXME
+      // aci required
+      {"w_variance", {-1e10, 1e10}},        // FIXME
+      {"cldfrac_liq", {-1e10, 1e10}},       // FIXME
+      {"cldfrac_liq_prev", {-1e10, 1e10}},  // FIXME
+      {"eddy_diff_heat", {-1e10, 1e10}},    // FIXME
+      {"dgnum", {-1e10, 1e10}},             // FIXME
+  };
+
+  set_ranges_process(ranges_aci);
   add_interval_checks();
   wsubmin_                  = m_params.get<double>("wsubmin");
   enable_aero_vertical_mix_ = m_params.get<bool>("enable_aero_vertical_mix");

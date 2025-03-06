@@ -55,19 +55,40 @@ void MAMGenericInterface::set_aerosol_and_gas_ranges() {
         mam_coupling::physical_min_max(mmr_label);
   }  // end for loop num gases
 }
-
+ void MAMGenericInterface::set_ranges_process(
+  const std::map<std::string, std::pair<Real, Real>>& max_min_process)
+ {
+   // NOTE: We are using the same range (mmr) for all aerosols and gases.
+   // And aerosol numbers (nmr).
+   // set ranges for aerosol and gases
+   // populates limits_aerosol_gas_tracers_
+   set_aerosol_and_gas_ranges();
+   // set ranges for other variables
+   max_min_process_=max_min_process;
+   // Ensure that we populate the maps.
+   set_ranges_=true;
+ }
 const std::pair<Real, Real> MAMGenericInterface::get_ranges(
     const std::string &field_name) {
-  // NOTE: We are using the same range (mmr) for all aerosols and gases.
-  // And aerosol numbers (nmr).
-  set_aerosol_and_gas_ranges();
-  std::pair<Real, Real> min_max;
 
+  EKAT_ASSERT_MSG(set_ranges_, "Error: min_max ranges are not set. Please invoke set_ranges_process.");
+
+  std::pair<Real, Real> min_max;
+  // We obtain the minimum and maximum values for aerosol and gas species.
   auto it = limits_aerosol_gas_tracers_.find(field_name);
   if(it != limits_aerosol_gas_tracers_.end()) {
     min_max = it->second;
   } else {
-    min_max = mam_coupling::physical_min_max(field_name);
+    // Next, we proceed to check the other variables.
+    auto it_process = max_min_process_.find(field_name);
+    if(it_process != max_min_process_.end()) {
+      min_max = it_process->second;
+    } else {
+      // If we do not find a variable name in the previous maps,
+      // we return a pair (-1, -1) that will bypass the interval check.
+      min_max = std::make_pair(-1,-1);
+    }
+
   }
   return min_max;
 }

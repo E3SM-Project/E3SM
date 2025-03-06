@@ -69,6 +69,8 @@ class MAMGenericInterface : public scream::AtmosphereProcess {
   bool check_fields_intervals_{false};
     // number of horizontal columns and vertical levels
   int ncol_, nlev_;
+  void set_ranges_process(const std::map<std::string, std::pair<Real, Real>>& max_min_process);
+
  private:
   // The type of subcomponent
   // --------------------------------------------------------------------------
@@ -77,6 +79,8 @@ class MAMGenericInterface : public scream::AtmosphereProcess {
   std::map<std::string, std::pair<Real, Real>> limits_aerosol_gas_tracers_;
   void set_aerosol_and_gas_ranges();
   const std::pair<Real, Real> get_ranges(const std::string &field_name);
+  std::map<std::string, std::pair<Real, Real>> max_min_process_;
+  bool set_ranges_{false};
 
 };  // MAMGenericInterface
 }  // namespace scream

@@ -364,7 +364,22 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   // Determine orbital year. If orbital_year is negative, use current year
   // from timestamp for orbital year; if positive, use provided orbital year
   // for duration of simulation.
-  // Check pre/post condition interval values for all fields employed by this interface
+  // Check the interval values for the following fields used by this interface.
+  // NOTE: We do not include aerosol and gas species, e.g., soa_a1, num_a1,
+  // because we automatically added these fields.
+  const std::map<std::string, std::pair<Real, Real>> ranges_microphysics= {
+      {"SW_flux_dn", {-1e10, 1e10}},            // FIXME
+      {"horiz_winds", {-1e10, 1e10}},           // FIXME
+      {"nevapr", {-1e10, 1e10}},                // FIXME
+      {"precip_ice_surf_mass", {-1e10, 1e10}},  // FIXME
+      {"precip_liq_surf_mass", {-1e10, 1e10}},  // FIXME
+      {"precip_total_tend", {-1e10, 1e10}},     // FIXME
+      {"ps", {-1e10, 1e10}},                    // FIXME
+      {"sfc_alb_dir_vis", {-1e10, 1e10}},       // FIXME
+      {"snow_depth_land", {-1e10, 1e10}},       // FIXME
+      {"surf_radiative_T", {-1e10, 1e10}}      // FIXME
+  };
+  set_ranges_process(ranges_microphysics);
   add_interval_checks();
   m_orbital_year = m_params.get<int>("orbital_year", -9999);
 

@@ -93,7 +93,13 @@ void MAMConstituentFluxes::initialize_impl(const RunType run_type) {
   // ---------------------------------------------------------------
   // Input fields read in from IC file, namelist or other processes
   // ---------------------------------------------------------------
-  // Check pre/post condition interval values for all fields employed by this interface
+  // Check the interval values for the following fields used by this interface.
+  // NOTE: We do not include aerosol and gas species, e.g., soa_a1, num_a1,
+  // because we automatically added these fields.
+  const std::map<std::string, std::pair<Real, Real>> ranges_cons_fluxes=
+  {{"constituent_fluxes", {0, 1e10}} // FIXME
+  };
+  set_ranges_process(ranges_cons_fluxes);
   add_interval_checks();
 
   // Populate the wet atmosphere state with views from fields
