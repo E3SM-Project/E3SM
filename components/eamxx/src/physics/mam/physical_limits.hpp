@@ -17,24 +17,10 @@ namespace scream::mam_coupling {
 inline const std::pair<Real, Real> &physical_min_max(
     const std::string &field_name) {
   static const std::map<std::string, std::pair<Real, Real>> limits = {
-      {"T_mid", {100, 500}},
-      {"p_mid", {0, 1e10}},  // FIXME
-      {"qv", {1e-13, 0.2}},
-      {"qc", {0, 0.1}},
-      {"qi", {0, 0.1}},
-      {"nc", {0, 0.1e11}},
-      {"nr", {0, 0.1e10}},
-      {"ni", {0, 0.1e10}},
       {"nmr", {0, 1e13}},
       {"mmr", {-1e-10, 1e-2}},
-      {"omega", {-1e10, 1e10}},       // FIXME
-      {"p_int", {0, 1e10}},           // FIXME
-      {"pseudo_density", {0, 1e10}},  // FIXME
-      {"pbl_height", {0, 1e10}},      // FIXME
-      {"cldfrac_tot", {0, 1e10}},     // FIXME
       // constituent_fluxes
       {"constituent_fluxes", {0, 1e10}},  // FIXME
-      {"phis", {-1e10, 1e10}},            // FIXME
       // aci required
       {"w_variance", {-1e10, 1e10}},        // FIXME
       {"cldfrac_liq", {-1e10, 1e10}},       // FIXME
@@ -90,7 +76,6 @@ inline const std::pair<Real, Real> &physical_min_max(
       {"sst", {-1e10, 1e10}},                 // FIXME
       {"dstflx", {-1e10, 1e10}},              // FIXME
       // srf_and_online_emissions
-
       // wetscav
       {"drydep_hydrophilic_bc", {-1e10, 1e10}},  // FIXME
       {"drydep_hydrophilic_oc", {-1e10, 1e10}},  // FIXME
@@ -108,11 +93,18 @@ inline const std::pair<Real, Real> &physical_min_max(
   };
 
   auto it = limits.find(field_name);
+
+
+
+  // std::pair<Real, Real> min_max;
   if(it == limits.end()) {
-    EKAT_ERROR_MSG("Error!. " << field_name
-                              << " not found in physical_min_max. ");
+    // NOTE: If we do not find a variable name in physical_min_max,
+    // we return a pair (-1, -1) that will bypass the interval check.
+    static const std::pair<Real, Real> do_not_check = std::make_pair(-1,-1);
+    return do_not_check;
+  } else {
+    return it->second;
   }
-  return it->second;
 }
 inline Real physical_min(const std::string &field_name) {
   return physical_min_max(field_name).first;

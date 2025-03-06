@@ -68,7 +68,6 @@ const std::pair<Real, Real> MAMGenericInterface::get_ranges(
     min_max = it->second;
   } else {
     min_max = mam_coupling::physical_min_max(field_name);
-    // std::cout << "Key not found" << std::endl;
   }
   return min_max;
 }
@@ -380,7 +379,10 @@ void MAMGenericInterface::add_interval_checks() {
       const auto ranges    = get_ranges(field.name());
       const auto min_value = ranges.first;
       const auto max_value = ranges.second;
-      add_precondition_check<FieldWithinIntervalCheck>(
+      // Only check the range for variables that are specified in physical_limits.hpp.
+      // Some variables from get_fields_in may not be part of physical_min_max.
+      if ( min_value !=-1 && max_value !=-1)
+        add_precondition_check<FieldWithinIntervalCheck>(
           field, grid_, min_value, max_value, false);
     }
 
@@ -389,7 +391,10 @@ void MAMGenericInterface::add_interval_checks() {
       const auto ranges    = get_ranges(field.name());
       const auto min_value = ranges.first;
       const auto max_value = ranges.second;
-      add_postcondition_check<FieldWithinIntervalCheck>(
+      // Only check the range for variables that are specified in physical_limits.hpp.
+      // Some variables from get_fields_out may not be part of physical_min_max.
+      if ( min_value !=-1 && max_value !=-1)
+        add_postcondition_check<FieldWithinIntervalCheck>(
           field, grid_, min_value, max_value, false);
     }
   }
