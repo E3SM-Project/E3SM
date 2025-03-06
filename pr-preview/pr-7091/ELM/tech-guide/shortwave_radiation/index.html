@@ -3334,6 +3334,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#solar-radiation-fluxes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Solar Radiation Fluxes
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3562,13 +3571,13 @@ Given these assumptions, the radiation absorbed by shaded and sunlit leaves per 
 <div class="arithmatex">\[
 \begin{eqnarray}
 \overrightarrow{I}_{\ell}^{sha} (\kappa) &amp;=&amp; \overrightarrow{I}_{\ell b}(\kappa) + \overrightarrow{I}_{\ell d}(\kappa) \label{eqn_sha_net_rad} \\[0.5em]
-\overrightarrow{I}_{\ell}^{sun} (\kappa) &amp;=&amp; (1 - \omega)K_b e^{-K_b\kappa}I_{sky,b}^{\downarrow} +  \overrightarrow{I}_{\ell b}(\kappa) + \overrightarrow{I}_{\ell d}(\kappa) \label{eqn_sun_net_rad}
+\overrightarrow{I}_{\ell}^{sun} (\kappa) &amp;=&amp; (1 - \omega)K_b e^{-K_b\kappa}I_{atm,b}^{\downarrow} +  \overrightarrow{I}_{\ell b}(\kappa) + \overrightarrow{I}_{\ell d}(\kappa) \label{eqn_sun_net_rad}
 \end{eqnarray}
 \]</div>
 <p>where <span class="arithmatex">\(\overrightarrow{I}_{\ell b}(\kappa)\)</span> is the net absorbed beam radiation and <span class="arithmatex">\(\overrightarrow{I}_{\ell d}(\kappa)\)</span> is the net absorbed diffuse radiation. These net absorbed beam and diffuse radiation fluxes at the cumulative leaf area index <span class="arithmatex">\(\kappa\)</span> are given as:</p>
 <div class="arithmatex">\[
 \begin{eqnarray}
-\overrightarrow{I}_{\ell b}(\kappa) &amp;=&amp; \left[ \omega K_b e^{-K_b \kappa} + \dfrac{d(I_{b}^{\uparrow} - I_b^{\downarrow})}{d\kappa} \right] I_{sky,b}^\downarrow\\[0.5em]
+\overrightarrow{I}_{\ell b}(\kappa) &amp;=&amp; \left[ \omega K_b e^{-K_b \kappa} + \dfrac{d(I_{b}^{\uparrow} - I_b^{\downarrow})}{d\kappa} \right] I_{atm,b}^\downarrow\\[0.5em]
 \overrightarrow{I}_{\ell d}(\kappa) &amp;=&amp; \dfrac{d(I_d^\uparrow - I_d^\downarrow)}{d\kappa} I_{d0}^\downarrow
 \end{eqnarray}
 \]</div>
@@ -3589,7 +3598,7 @@ Given these assumptions, the radiation absorbed by shaded and sunlit leaves per 
 <p>The sunlit fraction of canopy, <span class="arithmatex">\(f_{sun}\)</span>, is given by</p>
 <div class="arithmatex">\[
 \begin{equation}
-f_{sun}(\kappa) = e^{-K_b \kappa}
+f_{sun}(\kappa) = e^{-K_b \kappa} \label{eqn_sun}
 \end{equation}
 \]</div>
 <h2 id="single-layer-canopy-model-with-the-two-stream-approximation">Single-Layer Canopy Model With the Two-Stream Approximation</h2>
@@ -3626,7 +3635,7 @@ I^{\downarrow}_{d,\Lambda}(\kappa = L+S) &amp;=&amp; h_9 e^{ -h (L+S)} + h_{10} 
 <p>The analytical solution of the beam radiation absorbed by sunlit leaves is given as</p>
 <div class="arithmatex">\[
 \begin{equation}
-\overrightarrow{I}_{cb, \Lambda}^{sun} = \left(1 - \omega_\Lambda \right) \left[ 1 - s_2 + \dfrac{(a_1 + a_2)}{\mu}\right]
+\overrightarrow{I}_{b, \Lambda}^{sun} = \left(1 - \omega_\Lambda \right) \left[ 1 - s_2 + \dfrac{(a_1 + a_2)}{\mu}\right]
 \end{equation}
 \]</div>
 <p>where the parameters are given as follows</p>
@@ -3639,7 +3648,7 @@ a_2 &amp;=&amp; \dfrac{h_4}{\sigma} \left[ \dfrac{1 - s_2^2}{2K}\right] + h_5 \l
 <p>Using equation \eqref{eqn_can_b_conservation}, the beam radiation absorbed by shaded leaves is computed as</p>
 <div class="arithmatex">\[
 \begin{equation}
-\overrightarrow{I}_{cb, \Lambda}^{sha} = \overrightarrow{I}_{cb, \Lambda} - \overrightarrow{I}_{cb, \Lambda}^{sun}
+\overrightarrow{I}_{b, \Lambda}^{sha} = \overrightarrow{I}_{cb, \Lambda} - \overrightarrow{I}_{b, \Lambda}^{sun}
 \end{equation}
 \]</div>
 <p>where the first term on the right hand side is given by equation \eqref{eqn_can_b_absorb}.</p>
@@ -3647,7 +3656,7 @@ a_2 &amp;=&amp; \dfrac{h_4}{\sigma} \left[ \dfrac{1 - s_2^2}{2K}\right] + h_5 \l
 <p>The analytical solution of the beam radiation absorbed by shaded leaves is given as</p>
 <div class="arithmatex">\[
 \begin{equation}
-\overrightarrow{I}_{cd, \Lambda}^{sun} = \left[ \dfrac{1 - \omega_\Lambda}{\mu} \right] (a_1 + a_2)
+\overrightarrow{I}_{d, \Lambda}^{sun} = \left[ \dfrac{1 - \omega_\Lambda}{\mu} \right] (a_1 + a_2)
 \end{equation}
 \]</div>
 <p>where the parameters are given as follows</p>
@@ -3660,7 +3669,7 @@ a_2 &amp;=&amp; h_9 \left[ \dfrac{1 - s_1 s_2}{K + h} \right] + h_{10} \left[ \d
 <p>Using equation \eqref{eqn_can_b_conservation}, the beam radiation absorbed by shaded leaves is computed as</p>
 <div class="arithmatex">\[
 \begin{equation}
-\overrightarrow{I}_{cd, \Lambda}^{sha} = \overrightarrow{I}_{cd, \Lambda} - \overrightarrow{I}_{cd, \Lambda}^{sun}
+\overrightarrow{I}_{d, \Lambda}^{sha} = \overrightarrow{I}_{cd, \Lambda} - \overrightarrow{I}_{d, \Lambda}^{sha}
 \end{equation}
 \]</div>
 <p>where the first term on the right hand side is given by equation \eqref{eqn_can_d_absorb}.</p>
@@ -3668,8 +3677,8 @@ a_2 &amp;=&amp; h_9 \left[ \dfrac{1 - s_1 s_2}{K + h} \right] + h_{10} \left[ \d
 <p>The beam and diffuse radiation absorbed by the ground are computed as the difference of incoming and outgoing radiation.</p>
 <div class="arithmatex">\[
 \begin{eqnarray}
-\overrightarrow{I}_{gb,\Lambda} &amp;=&amp; \left( 1 - \alpha_{gd,\Lambda}\right)I_{b,\Lambda}^\downarrow + \left( 1 - \alpha_{gb,\Lambda}\right)e^{-K(L+S)} \\[0.5em]
-\overrightarrow{I}_{gd,\Lambda} &amp;=&amp; \left( 1 - \alpha_{gd,\Lambda}\right)I_{d,\Lambda}^\downarrow
+\overrightarrow{I}_{gb,\Lambda} &amp;=&amp; \left( 1 - \alpha_{gd,\Lambda}\right)I_{b,\Lambda}^\downarrow + \left( 1 - \alpha_{gb,\Lambda}\right)e^{-K(L+S)} \label{eqn_g_b_absorb} \\[0.5em]
+\overrightarrow{I}_{gd,\Lambda} &amp;=&amp; \left( 1 - \alpha_{gd,\Lambda}\right)I_{d,\Lambda}^\downarrow \label{eqn_g_d_absorb}
 \end{eqnarray}
 \]</div>
 <h2 id="ground-albedos">Ground Albedos</h2>
@@ -3716,6 +3725,38 @@ a_2 &amp;=&amp; h_9 \left[ \dfrac{1 - s_1 s_2}{K + h} \right] + h_{10} \left[ \d
 <p>The hybrid SNICAR-AD model of Dang et al. (2019) [@dang2019intercomparison] is used to compute snow albedo.</p>
 <h3 id="parameterization-for-sub-grid-effect-of-topographic-on-solar-radiation">Parameterization for Sub-Grid Effect of Topographic on Solar radiation</h3>
 <p>The surface abedos given by equation \eqnref{eqn_g_dir} - \eqn{eqn_g_dif} neglect topography by assuming a plane-parallel Earth. Hao et al. (2021) <sup id="fnref:4"><a class="footnote-ref" href="#fn:4">3</a></sup> developed a parameterization for sub-grid topographic effects on solar radiation that essentially modifies the surface albedo by equation \eqnref{eqn_g_dir} - \eqn{eqn_g_dif}. The section <a href="../top_solar_parameterization/">TOP Parameterization</a> presents a detailed description of the parameterization.</p>
+<h2 id="solar-radiation-fluxes">Solar Radiation Fluxes</h2>
+<p>Using the equations describing beam and diffuse radiation absorbed by the canopy (equations \eqref{eqn_can_b_absorb} and \eqref{eqn_can_b_absorb}) and ground (equations \eqref{eqn_g_b_absorb} - \eqref{eqn_g_d_absorb}) per unit incoming flux, the total absorbed radiation by canopy and ground is given by</p>
+<div class="arithmatex">\[
+\begin{eqnarray}
+\overrightarrow{S}_{c} &amp;=&amp; \sum_\Lambda \left( S_{b,\Lambda}^{atm, \downarrow} \overrightarrow{I}_{cb,\Lambda} + S_{d,\Lambda}^{atm\downarrow} \overrightarrow{I}_{cd,\Lambda} \right) \\[0.5em]
+\overrightarrow{S}_{g} &amp;=&amp; S_{b,\Lambda}^{atm, \downarrow} e^{-K(L+S)} \left( 1 - \alpha_{gd,\Lambda} \right) +  \sum_\Lambda \left( S_{b,\Lambda}^{atm, \downarrow} {I}_{cb,\Lambda}^\downarrow + S_{d,\Lambda}^{atm\downarrow} {I}_{cd,\Lambda}^{\downarrow} \right) \left(1 - \alpha_{g,\Lambda}\right)
+\end{eqnarray}
+\]</div>
+<p>where <span class="arithmatex">\(S_{b,\Lambda}^{atm, \downarrow}\)</span> and <span class="arithmatex">\(S_{d,\Lambda}^{atm, \downarrow}\)</span>  are the downward beam direct and downward diffuse atmospheric flux, respectively.</p>
+<p>Additionally, the conservation of solar radiation in ELM is ensured by the following equation:</p>
+<div class="arithmatex">\[
+\begin{equation}
+\sum_\Lambda \left( S_{b,\Lambda}^{sky,\downarrow} + S_{b,\Lambda}^{sky,\downarrow}\right) =
+\overrightarrow{S}_{c} + \overrightarrow{S}_{g}
++ \sum_\Lambda \left( S_{b,\Lambda}^{sky,\downarrow} I_{b,\Lambda}^\uparrow + S_{d,\Lambda}^{sky,\downarrow} I_{d,\Lambda}^\uparrow \right)
+\end{equation}
+\]</div>
+<p>where the third term on the right hand side represents the reflected solar radiation to the atmosphere.</p>
+<p>The photosynthesis and transpiration processes of sunlit and shaded leaves depend on the solar radiation they absorbed in the visible waveband. The absorbed photosynthetically active (visible waveband) radiation per unit leaf area is given as:</p>
+<div class="arithmatex">\[
+\begin{eqnarray}
+\phi^{sun} &amp;=&amp; \dfrac{S_{b,vis}^{atm, \downarrow} \overrightarrow{I}_{b,vis}^{sun} + S_{d,vis}^{atm, \downarrow} \overrightarrow{I}_{d,vis}^{sun} }{L_{sun}} \\[0.5em]
+\phi^{sha} &amp;=&amp; \dfrac{S_{b,vis}^{atm, \downarrow} \overrightarrow{I}_{b,vis}^{sha} + S_{d,vis}^{atm, \downarrow} \overrightarrow{I}_{d,vis}^{sha} }{L_{sha}}
+\end{eqnarray}
+\]</div>
+<p>where <span class="arithmatex">\(L^{sun}\)</span> and <span class="arithmatex">\(L^{sha}\)</span> are the sunlit and shaded fraction of the canopy, respectively, and are computed using equation \eqnref{eqn_sun} as</p>
+<div class="arithmatex">\[
+\begin{eqnarray}
+L^{sun} &amp;=&amp; \dfrac{1 - e^{K(L+S}}{K_b} \\[0.5em]
+L^{sha} &amp;=&amp; (L+S) - L^{sun}
+\end{eqnarray}
+\]</div>
 <div class="footnote">
 <hr />
 <ol>
