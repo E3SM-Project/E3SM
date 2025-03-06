@@ -3276,6 +3276,39 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Soil Albedo">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#glacier-albedo" class="md-nav__link">
+    <span class="md-ellipsis">
+      Glacier Albedo
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lake-and-wetland-albedo" class="md-nav__link">
+    <span class="md-ellipsis">
+      Lake and Wetland Albedo
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bare-soil-albedo" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bare Soil Albedo
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -3573,7 +3606,7 @@ I^{\downarrow}_{d,\Lambda}(\kappa = L+S) &amp;=&amp; h_9 e^{ -h (L+S)} + h_{10} 
 \]</div>
 <p>The upward and downward fluxes in the above equations are for <span class="arithmatex">\(\kappa = 0\)</span> and <span class="arithmatex">\(\kappa = L + S\)</span>, respectively, and to simplify the notation, <span class="arithmatex">\(\kappa\)</span> has been omitted from the equations.</p>
 <h4 id="radiation-absorbed-by-sunlit-and-shaded-leaves_1">Radiation Absorbed By Sunlit and Shaded Leaves</h4>
-<p>Using analytical solutions of the two-stream approximation, Dai et al. (2004) provided analytical solutions for the radiation absorbed by sunlit and shaded leaves presented below.</p>
+<p>Using analytical solutions of the two-stream approximation, Dai et al. (2004) <sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup> provided analytical solutions for the radiation absorbed by sunlit and shaded leaves presented below.</p>
 <h4 id="sunlit-leaves">Sunlit leaves</h4>
 <p>The analytical solution of the beam radiation absorbed by sunlit leaves is given as</p>
 <div class="arithmatex">\[
@@ -3634,17 +3667,36 @@ a_2 &amp;=&amp; h_9 \left[ \dfrac{1 - s_1 s_2}{K + h} \right] + h_{10} \left[ \d
 \]</div>
 <p>where <span class="arithmatex">\(f_{sno}\)</span> is the snow fraction.</p>
 <h3 id="soil-albedo">Soil Albedo</h3>
-<ul>
-<li>
-<p>Glacier Albedo</p>
-</li>
-<li>
-<p>Lake and Wetland Albedo</p>
-</li>
-<li>
-<p>Bare Soil Albedo</p>
-</li>
-</ul>
+<p>The soil albedo for the various ELM landunits remains the same as in CLM4.5 <sup id="fnref:4"><a class="footnote-ref" href="#fn:4">4</a></sup> are as follows:</p>
+<h4 id="glacier-albedo">Glacier Albedo</h4>
+<div class="arithmatex">\[
+\begin{eqnarray}
+\alpha_{b,vis}^{soi} = \alpha_{d,vis}^{soi} = 0.6 \\[0.5em]
+\alpha_{b,nir}^{soi} = \alpha_{d,nir}^{soi} = 0.4
+\end{eqnarray}
+\]</div>
+<h4 id="lake-and-wetland-albedo">Lake and Wetland Albedo</h4>
+<p>Under frozen conditions, the albedos are a function of the solar zenith angle <span class="arithmatex">\(\mu\)</span>.</p>
+<div class="arithmatex">\[
+\begin{equation}
+\alpha_{b,\Lambda}^{soi} = \alpha_{d,\Lambda}^{soi} = 0.05(\mu + 0.15)^{-1}
+\end{equation}
+\]</div>
+<p>Otherwise, the albedos are constant.</p>
+<div class="arithmatex">\[
+\begin{eqnarray}
+\alpha_{b,vis}^{soi} = \alpha_{d,vis}^{soi} = 0.6 \\[0.5em]
+\alpha_{b,nir}^{soi} = \alpha_{d,nir}^{soi} = 0.4
+\end{eqnarray}
+\]</div>
+<h4 id="bare-soil-albedo">Bare Soil Albedo</h4>
+<p>Soil albedo varies with color class</p>
+<div class="arithmatex">\[
+\begin{equation}
+\alpha_{b,\Lambda}^{soi} = \alpha_{d,\Lambda}^{soi} = (\alpha_{sat,\Lambda} + \Delta) \leq \alpha_{dry,\Lambda}
+\end{equation}
+\]</div>
+<p>where <span class="arithmatex">\(\Delta\)</span> depends on the volumetric water content of the first soil layer, <span class="arithmatex">\(\theta_1\)</span>, as <span class="arithmatex">\(\Delta = 0.11 - 0.4\theta_1\)</span>, and <span class="arithmatex">\(\alpha_{sat,\Lambda}\)</span> and <span class="arithmatex">\(\alpha_{dry,\Lambda}\)</span> are albedos for saturated and dry soil color classes.</p>
 <h3 id="snow-albedo">Snow Albedo</h3>
 <div class="footnote">
 <hr />
@@ -3654,6 +3706,12 @@ a_2 &amp;=&amp; h_9 \left[ \dfrac{1 - s_1 s_2}{K + h} \right] + h_{10} \left[ \d
 </li>
 <li id="fn:2">
 <p>Piers J Sellers. Canopy reflectance, photosynthesis and transpiration. <em>International journal of remote sensing</em>, 6(8):1335–1372, 1985.&#160;<a class="footnote-backref" href="#fnref:2" title="Jump back to footnote 2 in the text">&#8617;</a></p>
+</li>
+<li id="fn:3">
+<p>Yongjiu Dai, Robert E Dickinson, and Ying-Ping Wang. A two-big-leaf model for canopy temperature, photosynthesis, and stomatal conductance. <em>Journal of climate</em>, 17(12):2281–2299, 2004.&#160;<a class="footnote-backref" href="#fnref:3" title="Jump back to footnote 3 in the text">&#8617;</a></p>
+</li>
+<li id="fn:4">
+<p>K. Oleson, D. Lawrence, G. Bonan, B. Drewniak, M. Huang, C. Koven, Z. M. Subin, and S. C. Swenson. Technical description of version 4.5 of the community land model (clm), ncar technical note. Technical Report NCAR/TN-503+ STR, National Center for Atmospheric Research (NCAR), Boulder, CO, USA, 2013. <a href="https://doi.org/https://doi.org/10.5065/D6RR1W7M">doi:https://doi.org/10.5065/D6RR1W7M</a>.&#160;<a class="footnote-backref" href="#fnref:4" title="Jump back to footnote 4 in the text">&#8617;</a></p>
 </li>
 </ol>
 </div>
