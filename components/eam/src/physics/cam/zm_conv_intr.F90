@@ -41,13 +41,8 @@ module zm_conv_intr
    integer :: dp_cldice_idx    ! deep conv cloud ice water (kg/kg)
    integer :: dlfzm_idx        ! detrained convective cloud water mixing ratio
    integer :: difzm_idx        ! detrained convective cloud ice mixing ratio
-   integer :: dsfzm_idx        ! detrained convective snow mixing ratio
-   integer :: dnlfzm_idx       ! detrained convective cloud water num concen
-   integer :: dnifzm_idx       ! detrained convective cloud ice num concen
-   integer :: dnsfzm_idx       ! detrained convective snow num concen
    integer :: prec_dp_idx      ! total surface precipitation rate from deep conv
    integer :: snow_dp_idx      ! frozen surface precipitation rate from deep conv
-   integer :: wuc_idx          ! vertical velocity in deep convection
    integer :: t_star_idx       ! DCAPE temperature from previous time step
    integer :: q_star_idx       ! DCAPE water vapor from previous time step
    integer :: cld_idx          ! cloud fraction
@@ -76,8 +71,8 @@ module zm_conv_intr
    real(r8), parameter :: MCSP_shear_min        = 3.0_r8   ! min shear value for MCSP to be active
    real(r8), parameter :: MCSP_shear_max        = 200.0_r8 ! max shear value for MCSP to be active
 
+!===================================================================================================
 contains
-
 !===================================================================================================
 
 subroutine zm_conv_register
@@ -102,9 +97,6 @@ subroutine zm_conv_register
    ! deep conv cloud liquid water (kg/kg)
    call pbuf_add_field('DP_CLDICE','global',dtype_r8,(/pcols,pver/), dp_cldice_idx)
 
-   ! vertical velocity (m/s)
-   call pbuf_add_field('WUC','global',dtype_r8,(/pcols,pver/), wuc_idx)
-
    ! previous time step data for DCAPE calculation
    if (trigdcape_ull .or. trig_dcape_only) then
       call pbuf_add_field('T_STAR','global',dtype_r8,(/pcols,pver/), t_star_idx)
@@ -117,16 +109,7 @@ subroutine zm_conv_register
    call pbuf_add_field('DIFZM', 'physpkg', dtype_r8, (/pcols,pver/), difzm_idx)
 
    ! Only add the number conc fields if the microphysics is active.
-   if (zm_microp) then
-      ! detrained convective cloud water num concen.
-      call pbuf_add_field('DNLFZM', 'physpkg', dtype_r8, (/pcols,pver/), dnlfzm_idx)
-      ! detrained convective cloud ice num concen.
-      call pbuf_add_field('DNIFZM', 'physpkg', dtype_r8, (/pcols,pver/), dnifzm_idx)
-      ! detrained convective snow num concen.
-      call pbuf_add_field('DNSFZM', 'physpkg', dtype_r8, (/pcols,pver/), dnsfzm_idx)
-      ! detrained convective snow mixing ratio.
-      call pbuf_add_field('DSFZM',  'physpkg', dtype_r8, (/pcols,pver/), dsfzm_idx)
-   end if
+   if (zm_microp) call zm_microphysics_register()
 
    ! Register variables for dCAPE diagnosis and decomposition
    call dcape_diags_register( pcols )
@@ -266,12 +249,11 @@ subroutine zm_conv_init(pref_edge)
    nevapr_dpcu_idx = pbuf_get_index('NEVAPR_DPCU')
    prec_dp_idx     = pbuf_get_index('PREC_DP')
    snow_dp_idx     = pbuf_get_index('SNOW_DP')
-   wuc_idx         = pbuf_get_index('WUC')
    lambdadpcu_idx  = pbuf_get_index('LAMBDADPCU')
    mudpcu_idx      = pbuf_get_index('MUDPCU')
    icimrdp_idx     = pbuf_get_index('ICIMRDP')
 
-   ! Initialization for the microphysics
+   ! Initialization for convective microphysics
    if (zm_microp) then
 
       call zm_microphysics_history_init()
@@ -320,6 +302,7 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    use physconst,               only: gravit
    use time_manager,            only: get_curr_date
    use interpolate_data,        only: vertinterp
+   use zm_microphysics,         only: dnlfzm_idx, dnifzm_idx, dsfzm_idx, dnsfzm_idx, wuc_idx
    use zm_microphysics_state,   only: zm_microp_st_alloc, zm_microp_st_dealloc
    use zm_microphysics_history, only: zm_microphysics_history_out
    !----------------------------------------------------------------------------
