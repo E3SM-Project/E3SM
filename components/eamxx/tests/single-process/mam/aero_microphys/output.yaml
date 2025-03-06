@@ -62,6 +62,7 @@ Fields:
       - num_c2
       - num_c3
       - num_c4
+      - constituent_fluxes
       # To save these fields make sure to turn on
       # OUTPUT_TRACER_FIELDS
       #- oxi_fields
