@@ -39,6 +39,7 @@ public:
   using identifier_type     = typename Field::identifier_type;
   using ci_string           = typename identifier_type::ci_string;
   using repo_type           = std::map<ci_string,std::map<ci_string,std::shared_ptr<Field>>>;
+  using field_group_type    = std::map<ci_string,std::map<ci_string,std::shared_ptr<FieldGroup>>>;
   using group_info_map      = std::map<ci_string, std::shared_ptr<FieldGroupInfo>>;
 
   // Constructor(s)
@@ -120,7 +121,7 @@ public:
   }
   FieldGroupInfo get_group_info (const std::string& group_name, const std::string& grid_name) const;
 
-  FieldGroup get_field_group (const std::string& name, const std::string& grid_name) const;
+  FieldGroup get_field_group (const std::string& name, const std::string& grid_name);
 
   const std::map<ci_string,std::shared_ptr<Field>>&
   get_repo () const {
@@ -162,8 +163,11 @@ protected:
   // The actual repo.
   repo_type           m_fields;
 
+  // Preprocessed field groups
+  field_group_type    m_field_groups;
+
   // The map group_name -> FieldGroupInfo
-  group_info_map      m_field_groups;
+  group_info_map      m_field_group_info;
 
   // Groups need to be created after all fields have been registered,
   // since we may need to rearrange fields inside them. Also, we
