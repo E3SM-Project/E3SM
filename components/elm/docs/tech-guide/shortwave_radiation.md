@@ -5,8 +5,9 @@ follows:
 
 - The shortwave radiation model in ELM computes the beam
   (or direct) and diffuse radiation absorbed by the canopy
-  (i.e. sunlit and shaded leaves) and the ground, and
-  the radiation reflected to the atmosphere.
+  (i.e. sunlit and shaded leaves) and the ground,
+  the radiation reflected to the atmosphere, and surface
+  albedo.
 - The model accounts for radiation in two bands: visible
   ($< 0.7\mu$m) and near-infrared ($\ge 0.7 \mu$m).
 - The model uses the two-stream approximation of
@@ -17,7 +18,8 @@ follows:
   scattered direct radiation, and diffuse radiation.
 - Shaded leaf absorbs scattered direct radiation and
   diffuse radiation.
-- Snow albedo is modeled using the hybrid SNICAR-AD model
+- Snow albedo and the shortwave radiative heating of each snowpack layer is modeled
+  is modeled using the hybrid SNICAR-AD model
   of Dang et al. 2019[@dang2019intercomparison].
 - The sub-grid impacts of topography on solar radiation
   are parameterized using the approach of Hao et al. 2021
@@ -31,7 +33,7 @@ on solar radiation.
 
 The outline of this chapter is as follows. First, the
 governing equations of the two-stream approximation of
-the radiative model are presented. Second, the analytical
+the radiative transfer model are presented. Second, the analytical
 solutions for the upward and downward diffuse radiation
 using the two-stream approximation are given. Third, the
 analytical solutions are used for the single-layer canopy
@@ -93,8 +95,8 @@ downward direct radiation.
 
 ### Projected leaf and stem area
 
-ELM uses the Ross-Gourdriaan function to compute the
-projection of leaf area in the direction of the solar
+ELM uses the Ross-Gourdriaan[@ross1975radiative, @goudriaan1977crop]
+function to compute the projection of leaf area in the direction of the solar
 radiation as:
 
 $$
@@ -107,6 +109,10 @@ with $\phi_1 = 0.5 - 0.633 \chi_\ell - 0.366 \chi^2_\ell$
 and $\phi_2 = 0.877 (1 - 2 \phi_2)$. The $\chi_\ell$ is
 the Ross index or leaf/stem orientation index that is
 restricted to $-0.4 \lt \chi_\ell \lt 0.6$.
+For vertical leaves, $\chi_\ell = -1$ and $\bar{\theta} = 90^0$.
+For horizontal leaves, $\chi_\ell = 1$ and $\bar{\theta} = 0^0$.
+For randomly spherically distributed leaves, $\chi_\ell = 0$
+and $\bar{\theta} = 60^0$.
 
 ### Optical depths
 
@@ -269,8 +275,7 @@ with $\alpha_{gb,\Lambda}$  and $\alpha_{gd,\Lambda}$ are
 the ground albedo for direct and diffuse radiation,
 respectively. Under such boundary conditions, the
 analytical solution of upward and downward diffuse
-radiation per unit incident direct radiation is then given
-as
+radiation per unit incident direct radiation is
 
 $$
 \begin{eqnarray}
@@ -305,7 +310,7 @@ $$
 
 Under such boundary conditions, the analytical solution of
 upward and downward diffuse radiation per unit incident
-diffuse radiation is then given as
+diffuse radiation is
 
 $$
 \begin{eqnarray}
@@ -330,7 +335,7 @@ are presented here.
 #### Common Parameters
 
 The parameters common to both the beam and diffuse
-radiation are as follows:
+radiation are:
 
 $$
 \begin{eqnarray}
@@ -352,7 +357,7 @@ $$
 
 The parameters for the beam radiation equations
 \eqref{two_str_dir_up_eqn} - \eqref{two_str_dir_dn_eqn}
-are as follows:
+are:
 
 $$
 \begin{eqnarray}
@@ -391,7 +396,7 @@ $$
 
 The parameters for the diffuse radiation equations
 \eqref{two_str_dif_up_eqn} - \eqref{two_str_dif_dn_eqn}
-are as follows:
+are:
 
 $$
 \begin{eqnarray}
@@ -673,7 +678,7 @@ where $f_{sno}$ is the snow fraction.
 ### Soil Albedo
 
 The soil albedo for the various ELM landunits remains the
-same as in CLM4.5[@oleson2013clm45] are as follows:
+same as in CLM4.5[@oleson2013clm45] are:
 
 #### Glacier Albedo
 
@@ -728,7 +733,7 @@ soil color classes.
 
 The hybrid SNICAR-AD model of Dang et al.
 (2019)[@dang2019intercomparison] is used to compute snow
-albedo.
+albedo and the contribution of solar absorption to the heating of each snow layer.
 
 ### Parameterization for Sub-Grid Effect of Topographic on Solar radiation
 
