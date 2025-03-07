@@ -1484,7 +1484,10 @@ is the value of that variable from the *previous* time level!
                 <var name="nAccumulatedCoupled" type="integer" dimensions="Time" units="none"
                      description="Number of accumulation in time averaging of coupler fields"
                 />
-                <var name="avgCalvingThickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
+                <var name="timeAccumulatedCoupled" type="real" dimensions="Time" units="s"
+                     description="accumulated time for use in averaging of coupler fields"
+                />
+                <var name="avgCalvingThickness" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
                      description="time averaged thickness of ice that calves"
                 />
                 <var name="avgBareIceAblation" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}" 

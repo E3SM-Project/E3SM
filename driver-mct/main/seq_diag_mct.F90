@@ -195,9 +195,7 @@ module seq_diag_mct
 
        (/'        area','     hfreeze','       hmelt','      hnetsw','       hlwdn', &
        '       hlwup','     hlatvap','     hlatfus','      hiroff','        hsen', &
-!       '      hpolar','    hh2otemp','     wfreeze','       wmelt','       wrain', &
        '      hpolar','    hh2otemp','       hgsmb','     wfreeze','       wmelt','       wrain', &
-!       '       wsnow','      wpolar','       wevap','     wrunoff','     wfrzrof', &
        '       wsnow','      wpolar','       wgsmb','       wevap','     wrunoff','     wfrzrof', &
        '      wirrig',                                                             &
        ' wfreeze_16O','   wmelt_16O','   wrain_16O','   wsnow_16O',                &
@@ -1340,8 +1338,6 @@ contains
     real(r8)                 :: ca_g            ! area of a grid cell
     logical,save             :: first_time = .true.
 
-    integer,save             :: smb_vector_length,calving_vector_length
-
     !----- formats -----
     character(*),parameter :: subName = '(seq_diag_glc_mct) '
 
@@ -1362,8 +1358,6 @@ contains
     if( present(do_g2x))then  ! do fields from glc to coupler (g2x_)
 
        if (first_time) then
-
-          calving_vector_length = 0
 
           index_g2x_Fogg_rofl   = mct_aVect_indexRA(g2x_g,'Fogg_rofl')
           index_g2x_Fogg_rofi   = mct_aVect_indexRA(g2x_g,'Fogg_rofi')
@@ -1408,8 +1402,6 @@ contains
        budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) * l2gacc_lx_cnt_avg
 
        budg_dataL(f_hgsmb,ic,ip) = budg_dataL(f_wgsmb,ic,ip)*shr_const_latice 
-
-       smb_vector_length = smb_vector_length +lSize
 
     end if ! end do fields from coupler to glc (x2g_)
 

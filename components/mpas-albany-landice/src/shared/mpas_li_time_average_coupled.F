@@ -53,12 +53,16 @@ module li_time_average_coupled
 
         real (kind=RKIND), dimension(:), pointer :: avgBareIceAblation, avgCalvingThickness !, &
 
+        integer, pointer :: nAccumulatedCoupled, nCells !SFP: eventually remove nAcum (when averaging done using time steps)
+
+        real (kind=RKIND), pointer :: timeAccumulatedCoupled 
+
         integer :: iCell
-        integer, pointer :: nAccumulatedCoupled, nCells
 
         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
         call mpas_pool_get_array(timeAveragingPool, 'nAccumulatedCoupled', nAccumulatedCoupled)
+        call mpas_pool_get_array(timeAveragingPool, 'timeAccumulatedCoupled', timeAccumulatedCoupled)
         call mpas_pool_get_array(timeAveragingPool, 'avgBareIceAblation', avgBareIceAblation)
         call mpas_pool_get_array(timeAveragingPool, 'avgCalvingThickness', avgCalvingThickness)
 
@@ -68,6 +72,7 @@ module li_time_average_coupled
         end do
 
         nAccumulatedCoupled = 0
+        timeAccumulatedCoupled = 0.0_RKIND
 
     end subroutine li_time_average_coupled_init
 
@@ -84,35 +89,46 @@ module li_time_average_coupled
 !-----------------------------------------------------------------------
     subroutine li_time_average_coupled_accumulate(timeAveragingPool, geometryPool, meshPool)
             
-!        use li_constants, only: &
-!             constants-list-here   
-
         type (mpas_pool_type), intent(inout) :: timeAveragingPool
         type (mpas_pool_type), intent(in) :: geometryPool
         type (mpas_pool_type), intent(in) :: meshPool
 
-        real (kind=RKIND), dimension(:), pointer :: avgBareIceAblation, avgCalvingThickness, &
-                                                    bareIceAblation, calvingThickness
+        real (kind=RKIND), dimension(:), pointer :: bareIceAblation, avgBareIceAblation, &
+                                                    calvingThickness, avgCalvingThickness
+        integer, pointer :: nAccumulatedCoupled, nCells !SFP: remove nAccumulated when working w/ deltat
+
+!        real (kind=RKIND), pointer :: timeAccumulatedCoupled, deltat!, config_ice_density
 
         integer :: iCell
-        integer, pointer :: nAccumulatedCoupled, nCells
+
+!        call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density) !SFP: trouble getting this to work
 
         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
-        call mpas_pool_get_array(timeAveragingPool, 'bareIceAblation', bareIceAblation)
-        call mpas_pool_get_array(timeAveragingPool, 'calvingThickness', calvingThickness)
+!        call mpas_pool_get_array(meshPool, 'deltat', deltat)
+        call mpas_pool_get_array(timeAveragingPool, 'nAccumulatedCoupled', nAccumulatedCoupled)
+!        call mpas_pool_get_array(timeAveragingPool, 'timeAccumulatedCoupled', timeAccumulatedCoupled)
+        call mpas_pool_get_array(geometryPool, 'bareIceAblation', bareIceAblation)
+        call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
         call mpas_pool_get_array(timeAveragingPool, 'avgBareIceAblation', avgBareIceAblation)
         call mpas_pool_get_array(timeAveragingPool, 'avgCalvingThickness', avgCalvingThickness)
-        call mpas_pool_get_array(timeAveragingPool, 'nAccumulatedCoupled', nAccumulatedCoupled)
-
 
         do iCell = 1, nCells
 
            avgBareIceAblation(iCell) = ( avgBareIceAblation(iCell) * nAccumulatedCoupled &
                                                + bareIceAblation(iCell) ) / ( nAccumulatedCoupled + 1 )
+!           avgBareIceAblation(iCell) = ( avgBareIceAblation(iCell) * timeAccumulatedCoupled &
+!                                               + bareIceAblation(iCell) * deltat ) / ( timeAccumulatedCoupled + deltat )
+
+           avgCalvingThickness(iCell) = ( avgCalvingThickness(iCell) * nAccumulatedCoupled + calvingThickness(iCell) ) &
+                                         / ( nAccumulatedCoupled + 1 ) * 910.0 / 86400.0   !SFP: replace later w/ config_ice_density and deltat 
+!           avgCalvingThickness(iCell) = ( avgCalvingThickness(iCell) * timeAccumulatedCoupled &
+!                                                + calvingThickness(iCell) * deltat ) / ( nAccumulatedCoupled + 1 ) &
+!                                                * 910.0 / deltat
 
         end do
 
+!        timeAccumulatedCoupled = timeAccumulatedCoupled + deltat
         nAccumulatedCoupled = nAccumulatedCoupled + 1
 
     end subroutine li_time_average_coupled_accumulate
