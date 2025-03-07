@@ -1186,6 +1186,19 @@ if ($ice_bgc eq 'ice_bgc' ) {
 }
 add_default($nl, 'config_use_ecosysTracers_river_inputs_from_coupler');
 
+####################################################
+# Namelist group: tracer_forcing_freshwaterTracers #
+####################################################
+
+add_default($nl, 'config_use_freshwaterTracers');
+add_default($nl, 'config_use_freshwaterTracers_surface_bulk_forcing');
+add_default($nl, 'config_use_freshwaterTracers_surface_restoring');
+add_default($nl, 'config_use_freshwaterTracers_interior_restoring');
+add_default($nl, 'config_use_freshwaterTracers_exponential_decay');
+add_default($nl, 'config_use_freshwaterTracers_idealAge_forcing');
+add_default($nl, 'config_use_freshwaterTracers_ttd_forcing');
+add_default($nl, 'config_use_freshwaterTracers_surface_value');
+
 #############################################
 # Namelist group: tracer_forcing_DMSTracers #
 #############################################
@@ -1855,6 +1868,7 @@ my @groups = qw(run_modes
                 tracer_forcing_dmstracers
                 tracer_forcing_macromoleculestracers
                 tracer_forcing_idealagetracers
+                tracer_forcing_freshwatertracers
                 tracer_forcing_cfctracers
                 am_globalstats
                 am_surfaceareaweightedaverages

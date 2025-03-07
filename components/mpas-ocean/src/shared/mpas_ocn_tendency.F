@@ -800,7 +800,19 @@ contains
          modifiedConfigName = configBase // '_ttd_forcing'
          call mpas_pool_get_config(ocnConfigs, modifiedConfigName, &
                             config_use_tracerGroup_ttd_forcing)
-
+         if ( groupName == 'freshwaterTracers' ) then
+           if (config_use_tracerGroup_surface_restoring) &
+             call mpas_log_write('surface restoring not supported for freshwaterTracers group')
+           if (config_use_tracerGroup_interior_restoring) &
+             call mpas_log_write('interior restoring not supported for freshwaterTracers group')
+           if (config_use_tracerGroup_exponential_decay) &
+             call mpas_log_write('exponential decay not supported for freshwaterTracers group')
+           if (config_use_tracerGroup_idealAge_forcing) &
+             ! TODO support this
+             call mpas_log_write('idealAge forcing not supported for freshwaterTracers group')
+           if (config_use_tracerGroup_ttd_forcing) &
+             call mpas_log_write('TTD forcing not supported for freshwaterTracers group')
+         endif
          ! Get tracers from pool, determine number of tracers in group
          call mpas_pool_get_array(tracersPool, groupName, &
                                   tracerGroup, timeLevel)
@@ -834,13 +846,13 @@ contains
 
          if (trim(config_subglacial_runoff_mode) == 'data') then
              ! Get surface flux due to subglacial runoff array
-             ! only active tracers have subglacial runoff flux for now,
-             ! but we still need to associate for ALL tracers
              modifiedGroupName = groupName // "SurfaceFluxSubglacialRunoff"
              call mpas_pool_get_array(tracersSurfaceFluxPool, &
                                       modifiedGroupName, &
                                       tracerGroupSurfaceFluxSubglacialRunoff)
          end if
+
+         !call mpas_pool_print_summary(tracersSurfaceFluxPool, MPAS_POOL_FIELD, .true.)
 
          ! Get surface flux removed array to keep track of how much
          ! flux is ignored
@@ -890,7 +902,7 @@ contains
          ! compute surface tracer flux from bulk forcing
          !
          if (config_use_tracerGroup_surface_bulk_forcing) then
-
+            ! This applies surface fluxes if groupName is activeTracers
             call ocn_surface_bulk_forcing_tracers(meshPool, groupName, &
                                   forcingPool, tracerGroup, &
                                   tracerGroupSurfaceFlux, &
