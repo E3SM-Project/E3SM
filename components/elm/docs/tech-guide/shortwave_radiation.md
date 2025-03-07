@@ -10,18 +10,18 @@ follows:
 - The model accounts for radiation in two bands: visible
   ($< 0.7\mu$m) and near-infrared ($\ge 0.7 \mu$m).
 - The model uses the two-stream approximation of
-  Dickenson 1983(@dickinson1983land) and
-  Sellers 1985(@sellers1985canopy).
+  Dickenson 1983[@dickinson1983land] and
+  Sellers 1985[@sellers1985canopy].
 - The model is a single-layer canopy model.
 - Sunlit leaf absorbs unscattered direct radiation,
   scattered direct radiation, and diffuse radiation.
 - Shaded leaf absorbs scattered direct radiation and
   diffuse radiation.
 - Snow albedo is modeled using the hybrid SNICAR-AD model
-  of Dang et al. 2019 (@dang2019intercomparison).
+  of Dang et al. 2019[@dang2019intercomparison].
 - The sub-grid impacts of topography on solar radiation
   are parameterized using the approach of Hao et al. 2021
-  (@hao2021parameterization).
+  [@hao2021parameterization].
 
 ELM's shortwave radiation model is similar to
 CLM4.5[@oleson2013clm45], and its new features include
@@ -553,7 +553,7 @@ the equations.
 #### Radiation Absorbed By Sunlit and Shaded Leaves
 
 Using analytical solutions of the two-stream
-approximation, Dai et al. 2004(@dai2004two) provided
+approximation, Dai et al. 2004[@dai2004two] provided
 analytical solutions for the radiation absorbed by sunlit
 and shaded leaves presented below.
 
@@ -727,14 +727,14 @@ soil color classes.
 ### Snow Albedo
 
 The hybrid SNICAR-AD model of Dang et al.
-[2019](@dang2019intercomparison) is used to compute snow
+(2019)[@dang2019intercomparison] is used to compute snow
 albedo.
 
 ### Parameterization for Sub-Grid Effect of Topographic on Solar radiation
 
 The surface abedos given by equation \eqref{eqn_g_dir} -
 \eqn{eqn_g_dif} neglect topography by assuming a
-plane-parallel Earth. Hao et al. [2021](@hao2021parameterization)
+plane-parallel Earth. Hao et al. (2021)[@hao2021parameterization]
 developed a parameterization for sub-grid topographic
 effects on solar radiation that essentially modifies the
 surface albedo by equation \eqref{eqn_g_dir} -
