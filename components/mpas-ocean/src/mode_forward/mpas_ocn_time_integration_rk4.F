@@ -612,28 +612,29 @@ module ocn_time_integration_rk4
         block => block % next
       end do
 
-      call mpas_timer_start("RK4-implicit vert mix")
-      ! Update halo on u and tracers, which were just updated for implicit vertical mixing.  If not done,
-      ! this leads to lack of volume conservation.  It is required because halo updates in RK4 are only
-      ! conducted on tendencies, not on the velocity and tracer fields.  So this update is required to
-      ! communicate the change due to implicit vertical mixing across the boundary.
-      call mpas_timer_start("RK4-implicit vert mix halos")
+!hgk Block here for performance comaprison with Omega
+!     call mpas_timer_start("RK4-implicit vert mix")
+!     ! Update halo on u and tracers, which were just updated for implicit vertical mixing.  If not done,
+!     ! this leads to lack of volume conservation.  It is required because halo updates in RK4 are only
+!     ! conducted on tendencies, not on the velocity and tracer fields.  So this update is required to
+!     ! communicate the change due to implicit vertical mixing across the boundary.
+!     call mpas_timer_start("RK4-implicit vert mix halos")
 
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
-      call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+!     call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
+!     call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
-      call mpas_dmpar_field_halo_exch(domain, 'normalVelocity', timeLevel=2)
+!     call mpas_dmpar_field_halo_exch(domain, 'normalVelocity', timeLevel=2)
 
-      call mpas_pool_begin_iteration(tracersPool)
-      do while ( mpas_pool_get_next_member(tracersPool, groupItr) )
-         if ( groupItr % memberType == MPAS_POOL_FIELD ) then
-            call mpas_dmpar_field_halo_exch(domain, groupItr % memberName, timeLevel=2)
-         end if
-      end do
+!     call mpas_pool_begin_iteration(tracersPool)
+!     do while ( mpas_pool_get_next_member(tracersPool, groupItr) )
+!        if ( groupItr % memberType == MPAS_POOL_FIELD ) then
+!           call mpas_dmpar_field_halo_exch(domain, groupItr % memberName, timeLevel=2)
+!        end if
+!     end do
 
-      call mpas_timer_stop("RK4-implicit vert mix halos")
+!     call mpas_timer_stop("RK4-implicit vert mix halos")
 
-      call mpas_timer_stop("RK4-implicit vert mix")
+!     call mpas_timer_stop("RK4-implicit vert mix")
 
       block => domain % blocklist
       do while (associated(block))
@@ -832,27 +833,28 @@ module ocn_time_integration_rk4
          ! End: Accumulating various parameterizations of the transport velocity
          ! ------------------------------------------------------------------
 
-         call mpas_reconstruct(meshPool,  normalVelocityNew, &
-                          velocityX, velocityY, velocityZ,   &
-                          velocityZonal, velocityMeridional, &
-                          includeHalos = .true.)
+!hgk Block here for performance comaprison with Omega
+!        call mpas_reconstruct(meshPool,  normalVelocityNew, &
+!                         velocityX, velocityY, velocityZ,   &
+!                         velocityZonal, velocityMeridional, &
+!                         includeHalos = .true.)
 
-         call mpas_reconstruct(meshPool, gradSSH,          &
-                          gradSSHX, gradSSHY, gradSSHZ,    &
-                          gradSSHZonal, gradSSHMeridional, &
-                          includeHalos = .true.)
+!        call mpas_reconstruct(meshPool, gradSSH,          &
+!                         gradSSHX, gradSSHY, gradSSHZ,    &
+!                         gradSSHZonal, gradSSHMeridional, &
+!                         includeHalos = .true.)
 
-         !$omp parallel
-         !$omp do schedule(runtime)
-         do iCell = 1, nCells
-            surfaceVelocity(indexSurfaceVelocityZonal, iCell) = velocityZonal(minLevelCell(iCell), iCell)
-            surfaceVelocity(indexSurfaceVelocityMeridional, iCell) = velocityMeridional(minLevelCell(iCell), iCell)
+!        !$omp parallel
+!        !$omp do schedule(runtime)
+!        do iCell = 1, nCells
+!           surfaceVelocity(indexSurfaceVelocityZonal, iCell) = velocityZonal(minLevelCell(iCell), iCell)
+!           surfaceVelocity(indexSurfaceVelocityMeridional, iCell) = velocityMeridional(minLevelCell(iCell), iCell)
 
-            SSHGradient(indexSSHGradientZonal, iCell) = gradSSHZonal(iCell)
-            SSHGradient(indexSSHGradientMeridional, iCell) = gradSSHMeridional(iCell)
-         end do
-         !$omp end do
-         !$omp end parallel
+!           SSHGradient(indexSSHGradientZonal, iCell) = gradSSHZonal(iCell)
+!           SSHGradient(indexSSHGradientMeridional, iCell) = gradSSHMeridional(iCell)
+!        end do
+!        !$omp end do
+!        !$omp end parallel
 
          call ocn_time_average_coupled_accumulate(statePool, forcingPool, 2)
 

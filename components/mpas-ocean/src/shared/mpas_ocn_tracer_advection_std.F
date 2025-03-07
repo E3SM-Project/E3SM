@@ -117,11 +117,13 @@ module ocn_tracer_advection_std
 
       ! Allocate some arrays
       allocate(tracerCur       (nVertLevels  , nCellsAll), &
-               highOrderFlxHorz(nVertLevels  , nEdgesAll), &
-               highOrderFlxVert(nVertLevels+1, nCellsAll))
+               highOrderFlxHorz(nVertLevels  , nEdgesAll))
+               !highOrderFlxVert(nVertLevels+1, nCellsAll))
 
       !$acc enter data &
-      !$acc    create(tracerCur, highOrderFlxHorz, highOrderFlxVert)
+      !$acc    create(tracerCur, highOrderFlxHorz)
+
+      !!$acc    create(tracerCur, highOrderFlxHorz, highOrderFlxVert)
 
       ! Loop over tracers. One tracer is advected at a time. It is
       ! copied into a temporary array in order to improve locality
@@ -161,8 +163,9 @@ module ocn_tracer_advection_std
 
         ! Compute the high order vertical flux.
 
-        call ocn_tracer_advection_vert_flx(tracerCur, w, &
-                           layerThickness, highOrderFlxVert)
+!hgk Block here for performance comaprison with Omega
+!       call ocn_tracer_advection_vert_flx(tracerCur, w, &
+!                          layerThickness, highOrderFlxVert)
 
         ! Compute the high order horizontal flux
 
@@ -174,10 +177,10 @@ module ocn_tracer_advection_std
         !$acc            advMaskHighOrder, advCoefs, advCoefs3rd, &
         !$acc            normalThicknessFlux, highOrderFlxHorz, &
         !$acc            tracerCur) &
-        !$acc    private(i,iCell,cell1,cell2, k, kmin, kmax, tracerWgt) 
+        !$acc    private(i,iCell,cell1,cell2, k, kmin, kmax, tracerWgt)
 #else
         !$omp do schedule(runtime) &
-        !$omp    private(i,iCell,cell1,cell2, k, kmin, kmax, tracerWgt) 
+        !$omp    private(i,iCell,cell1,cell2, k, kmin, kmax, tracerWgt)
 #endif
         do iEdge = 1, nEdgesAll
           cell1 = cellsOnEdge(1, iEdge)
@@ -196,24 +199,26 @@ module ocn_tracer_advection_std
                                                   + tracerCur(k,cell2))
           end do ! k loop
 
-          ! Compute 3rd or 4th fluxes where requested.
-          do i = 1, nAdvCellsForEdge(iEdge)
-            iCell = advCellsForEdge(i,iEdge)
-            kmin = minLevelCell(iCell)
-            kmax = maxLevelCell(iCell)
+!hgk Block here for performance comaprison with Omega
+!          ! Compute 3rd or 4th fluxes where requested.
+!          do i = 1, nAdvCellsForEdge(iEdge)
+!            iCell = advCellsForEdge(i,iEdge)
+!            kmin = minLevelCell(iCell)
+!            kmax = maxLevelCell(iCell)
+!
+!            do k = kmin,kmax
+!              tracerWgt = advMaskHighOrder(k,iEdge) &
+!                        * (advCoefs(i,iEdge) + coef3rdOrder &
+!                        * sign(1.0_RKIND,normalThicknessFlux(k,iEdge)) &
+!                        * advCoefs3rd(i,iEdge))
+!
+!              tracerWgt = normalThicknessFlux(k,iEdge)*tracerWgt
+!              highOrderFlxHorz(k,iEdge) = highOrderFlxHorz(k,iEdge) &
+!                                        + tracerWgt*tracerCur(k,iCell)
+!            end do ! k loop
+!          end do ! i loop over nAdvCellsForEdge
 
-            do k = kmin,kmax
-              tracerWgt = advMaskHighOrder(k,iEdge) &
-                        * (advCoefs(i,iEdge) + coef3rdOrder &
-                        * sign(1.0_RKIND,normalThicknessFlux(k,iEdge)) &
-                        * advCoefs3rd(i,iEdge))
-
-              tracerWgt = normalThicknessFlux(k,iEdge)*tracerWgt
-              highOrderFlxHorz(k,iEdge) = highOrderFlxHorz(k,iEdge) &
-                                        + tracerWgt*tracerCur(k,iCell)
-            end do ! k loop
-          end do ! i loop over nAdvCellsForEdge
-        end do ! iEdge loop
+         end do ! iEdge loop
 #ifndef MPAS_OPENACC
         !$omp end do
 #endif
@@ -248,37 +253,40 @@ module ocn_tracer_advection_std
         !$omp end do
 #endif
 
-        ! Accumulate the scaled high order vertical tendencies.
-        vertDivFactor = 1.0_RKIND
+!hgk Block here for performance comaprison with Omega
+!        ! Accumulate the scaled high order vertical tendencies.
+!        vertDivFactor = 1.0_RKIND
+!
+!#ifdef MPAS_OPENACC
+!        !$acc parallel loop &
+!        !$acc    present(minLevelCell, maxLevelCell, tend, &
+!        !$acc            highOrderFlxVert) &
+!        !$acc    private(k, kmin, kmax)
+!#else
+!        !$omp do schedule(runtime) private(k, kmin, kmax)
+!#endif
+!        do iCell = 1, nCellsOwned
+!           kmin = minLevelCell(iCell)
+!           kmax = maxLevelCell(iCell)
+!
+!           do k = kmin,kmax
+!              tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + &
+!                         vertDivFactor*(highOrderFlxVert(k+1, iCell) &
+!                                      - highOrderFlxVert(k, iCell))
+!           end do ! k loop
+!        end do ! iCell loop
+!#ifndef MPAS_OPENACC
+!        !$omp end do
+!        !$omp end parallel
+!#endif
 
-#ifdef MPAS_OPENACC
-        !$acc parallel loop &
-        !$acc    present(minLevelCell, maxLevelCell, tend, &
-        !$acc            highOrderFlxVert) &
-        !$acc    private(k, kmin, kmax)
-#else
-        !$omp do schedule(runtime) private(k, kmin, kmax)
-#endif
-        do iCell = 1, nCellsOwned
-           kmin = minLevelCell(iCell)
-           kmax = maxLevelCell(iCell)
-
-           do k = kmin,kmax
-              tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + &
-                         vertDivFactor*(highOrderFlxVert(k+1, iCell) &
-                                      - highOrderFlxVert(k, iCell))
-           end do ! k loop
-        end do ! iCell loop
-#ifndef MPAS_OPENACC
-        !$omp end do
-        !$omp end parallel
-#endif
       end do ! iTracer loop
 
       !$acc exit data &
-      !$acc    delete(tracerCur, highOrderFlxHorz, highOrderFlxVert)
+      !$acc    delete(tracerCur, highOrderFlxHorz)
+      !!$acc    delete(tracerCur, highOrderFlxHorz, highOrderFlxVert)
 
-      deallocate(tracerCur, highOrderFlxHorz, highOrderFlxVert)
+      deallocate(tracerCur, highOrderFlxHorz)
 
    end subroutine ocn_tracer_advection_std_tend!}}}
 
