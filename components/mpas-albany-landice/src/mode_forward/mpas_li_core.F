@@ -74,6 +74,7 @@ module li_core
       use li_subglacial_hydro
       use li_bedtopo
       use li_advection
+      use li_time_average_coupled
 !!!      use mpas_tracer_advection
 !!!      use li_global_diagnostics
 
@@ -323,6 +324,9 @@ module li_core
       ! initialize analysis driver
       call li_analysis_init(domain, err_tmp)
       err = ior(err, err_tmp)
+
+      ! initialize time averaging of fields sent to coupler
+!      call li_time_average_coupled_init(meshPool,timeAveragingPool)      
 
       ! halo update for reconstruction coefficients
       ! Note: Results on multiple processors may be incorrect without this update

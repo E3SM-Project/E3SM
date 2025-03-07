@@ -29,6 +29,7 @@ module li_time_integration
    use li_time_integration_fe_rk
    use li_setup
    use li_constants
+   use li_time_average_coupled
 
    implicit none
    private
@@ -175,6 +176,8 @@ module li_time_integration
       end select
       err = ior(err,err_tmp)
 
+      ! accumulate fluxes for time averaging of fields sent to coupler
+!      call li_time_average_coupled_accumulate(timeAveragingPool, geometryPool, meshPool)
 
       ! === error check
       if (err > 0) then
