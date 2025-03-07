@@ -20,6 +20,7 @@ FieldManager (const std::shared_ptr<const GridsManager>& gm)
   // For each grid, initialize maps
   for (auto gname : m_grids_mgr->get_grid_names()) {
     m_fields[gname] = std::map<ci_string,std::shared_ptr<Field>>();
+    m_field_groups[gname] = std::map<ci_string, std::shared_ptr<FieldGroup>>();
     m_group_requests[gname] = std::map<std::string, std::set<GroupRequest>>();
   }
 
@@ -83,7 +84,7 @@ void FieldManager::register_field (const FieldRequest& req)
   //       that each field belongs to.
   for (const auto& group_name : req.groups) {
     // Get group (and init ptr, if necessary)
-    auto& group_info = m_field_groups[group_name];
+    auto& group_info = m_field_group_info[group_name];
     if (not group_info) {
       group_info = std::make_shared<FieldGroupInfo>(group_name);
     }
@@ -98,7 +99,7 @@ void FieldManager::register_field (const FieldRequest& req)
       group_info->m_grid_registered[id.name()].push_back(grid_name);
     }
 
-    // Ensure that each group in m_field_groups also appears in the m_group_requests map by
+    // Ensure that each group in m_field_group_info also appears in the m_group_requests map by
     // adding a "trivial" GroupRequest for this group, meaning no bundling and pack size 1.
     register_group(GroupRequest(group_name, grid_name));
   }
@@ -116,7 +117,7 @@ void FieldManager::register_group (const GroupRequest& req)
   // and create an empty group info (if it does not already exist)
   m_group_requests[req.grid][req.name].insert(req);
 
-  auto& group_info = m_field_groups[req.name];
+  auto& group_info = m_field_group_info[req.name];
   if (not group_info) {
     group_info = std::make_shared<FieldGroupInfo>(req.name);
     group_info->m_bundled = (req.bundled);
@@ -134,7 +135,7 @@ add_to_group (const std::string& field_name, const std::string& grid_name, const
 {
   EKAT_REQUIRE_MSG (m_repo_state==RepoState::Closed,
       "Error! You cannot call 'add_to_group' until after 'registration_ends' has been called.\n");
-  auto& group = m_field_groups[group_name];
+  auto& group = m_field_group_info[group_name];
   if (not group) {
     group = std::make_shared<FieldGroupInfo>(group_name);
   }
@@ -169,8 +170,8 @@ bool FieldManager::
 has_group (const std::string& group_name, const std::string& grid_name) const {
   // Return true if there exists a group "name" and group
   // "name" has at least one field registered on "grid_name"
-  if (m_field_groups.count(group_name)>0) {
-    auto& group_info = m_field_groups.at(group_name);
+  if (m_field_group_info.count(group_name)>0) {
+    auto& group_info = m_field_group_info.at(group_name);
     for (auto& fname : group_info->m_fields_names) {
       if (ekat::contains(group_info->m_grid_registered.at(fname), grid_name)) {
         return true;
@@ -207,7 +208,7 @@ get_group_info (const std::string& group_name, const std::string& grid_name) con
   EKAT_REQUIRE_MSG (has_group(group_name, grid_name),
     "Error! Field group '" + group_name + "' on grid '" + grid_name + "' not found.\n");
 
-  auto info = *m_field_groups.at(group_name);
+  auto info = *m_field_group_info.at(group_name);
 
   if (info.m_bundled) {
     // All fields in a bundled group should exist on any grid in that group
@@ -240,7 +241,7 @@ get_group_info (const std::string& group_name, const std::string& grid_name) con
 }
 
 FieldGroup FieldManager::
-get_field_group (const std::string& group_name, const std::string& grid_name) const
+get_field_group (const std::string& group_name, const std::string& grid_name)
 {
   // Sanity checks
   EKAT_REQUIRE_MSG(m_repo_state==RepoState::Closed,
@@ -248,21 +249,27 @@ get_field_group (const std::string& group_name, const std::string& grid_name) co
   EKAT_REQUIRE_MSG (has_group(group_name, grid_name),
       "Error! Field group '" + group_name + "' on grid '" + grid_name + "' not found.\n");
 
-  // Create an empty group
-  FieldGroup group(group_name);
+  // If FieldGroup has already been built, return that
+  if (m_field_groups.at(grid_name).find(group_name) != m_field_groups.at(grid_name).end()) {
+    return *m_field_groups.at(grid_name).at(group_name);
+  }
+
+  // FieldGroup does not yet exist, create entry in m_field_groups
+  auto& group = m_field_groups[grid_name][group_name];
+  group = std::make_shared<FieldGroup>(group_name);
 
   // Set the info in the group
-  group.m_info = std::make_shared<FieldGroupInfo>(get_group_info(group_name, grid_name));
+  group->m_info = std::make_shared<FieldGroupInfo>(get_group_info(group_name, grid_name));
 
   // Find all the fields registered on given grid and set them in the group
-  for (const auto& fname : group.m_info->m_fields_names) {
-    group.m_fields[fname] = m_fields.at(grid_name).at(fname);
+  for (const auto& fname : group->m_info->m_fields_names) {
+    group->m_fields[fname] = m_fields.at(grid_name).at(fname);
   }
 
   // Fetch the bundle field (if bundled)
-  if (group.m_info->m_bundled) {
+  if (group->m_info->m_bundled) {
     // All fields in a group have the same parent, get the parent from the 1st one
-    const auto& parent_header = group.m_fields.begin()->second->get_header().get_parent();
+    const auto& parent_header = group->m_fields.begin()->second->get_header().get_parent();
 
     EKAT_REQUIRE_MSG(parent_header!=nullptr,
       "Error! A field belonging to a bundled field group is missing its 'parent'.\n");
@@ -282,7 +289,7 @@ get_field_group (const std::string& group_name, const std::string& grid_name) co
     bool all_children_in_group = true;
     for (auto child : parent_header->get_children()) {
       bool in_group = false;
-      for (auto f : group.m_fields) {
+      for (auto f : group->m_fields) {
         if (child.lock()->get_identifier() == f.second->get_header().get_identifier()) {
           in_group = true;
           break;
@@ -298,14 +305,14 @@ get_field_group (const std::string& group_name, const std::string& grid_name) co
     if (all_children_in_group) {
       // If all children are in the group, this is the parent group and
       // we can just query the bundle and set here
-      group.m_bundle = parent_field;
+      group->m_bundle = parent_field;
     } else {
       // If children exist that aren't in this group, we need to get a
       // subfield of the parent group containing indices of group fields
       std::vector<int> ordered_subview_indices;
-      for (auto fn : group.m_info->m_fields_names) {
+      for (auto fn : group->m_info->m_fields_names) {
         const auto parent_child_index =
-          m_field_groups.at(parent_field->name())->m_subview_idx.at(fn);
+          m_field_group_info.at(parent_field->name())->m_subview_idx.at(fn);
         ordered_subview_indices.push_back(parent_child_index);
       }
       std::sort(ordered_subview_indices.begin(),ordered_subview_indices.end());
@@ -315,16 +322,16 @@ get_field_group (const std::string& group_name, const std::string& grid_name) co
       EKAT_REQUIRE_MSG (ordered_subview_indices.size()==span,
         "Error! Non-contiguous subview indices found in group \""+group_name+"\"\n");
 
-      group.m_bundle = std::make_shared<Field>(
+      group->m_bundle = std::make_shared<Field>(
         parent_field->subfield(
           group_name, parent_header->get_identifier().get_units(),
-          group.m_info->m_subview_dim,
+          group->m_info->m_subview_dim,
           ordered_subview_indices.front(), ordered_subview_indices.back()+1));
 
     }
   }
 
-  return group;
+  return *group;
 }
 
 void FieldManager::
@@ -368,7 +375,7 @@ void FieldManager::registration_ends ()
   // all the requests:
   //  1) ensure all bundled groups contain the desired members. This means that we need to
   //     loop over GroupRequest (GR), and make sure there are fields registered in those
-  //     groups (querying m_field_groups info structs).
+  //     groups (querying m_field_group_info info structs).
   //  2) Focus only on GR that require a bundled group, discarding others.
   //     All the remaining group can simply "grab" individual fields later (and they
   //     can even grab some "individual" fields, and some fields that are slices of
@@ -427,7 +434,7 @@ void FieldManager::registration_ends ()
   bool qv_must_come_first = false;
   if (ekat::contains(groups_to_bundle,"tracers")
       and
-      ekat::contains(m_field_groups["tracers"]->m_fields_names, "qv")) {
+      ekat::contains(m_field_group_info["tracers"]->m_fields_names, "qv")) {
     // Bring tracers to the front, so it will be processed first
     auto it = ekat::find(groups_to_bundle,"tracers");
     std::swap(*it,groups_to_bundle.front());
@@ -437,8 +444,8 @@ void FieldManager::registration_ends ()
     // with a real group name. Later, after having found an global ordering for the tracers fields,
     // we will remove this group.
     groups_to_bundle.push_front("__qv__");
-    m_field_groups.emplace("__qv__",std::make_shared<FieldGroupInfo>("__qv__"));
-    m_field_groups.at("__qv__")->m_fields_names.push_back("qv");
+    m_field_group_info.emplace("__qv__",std::make_shared<FieldGroupInfo>("__qv__"));
+    m_field_group_info.at("__qv__")->m_fields_names.push_back("qv");
     qv_must_come_first = true;
   }
 
@@ -475,9 +482,9 @@ void FieldManager::registration_ends ()
         }
 
         // Get the fields of this group
-        const auto& fnames = m_field_groups.at(gn)->m_fields_names;
+        const auto& fnames = m_field_group_info.at(gn)->m_fields_names;
         for (const auto& c_gn : c) {
-          const auto& c_fnames = m_field_groups.at(c_gn)->m_fields_names;
+          const auto& c_fnames = m_field_group_info.at(c_gn)->m_fields_names;
           if (intersect(fnames,c_fnames)) {
             // Ok, group gn intersects the cluser in at least one group (c_gn).
             // We add gn to the cluster, then break
@@ -498,7 +505,7 @@ void FieldManager::registration_ends ()
 
       LOL_t groups_fields;
       for (const auto& gn : cluster) {
-        groups_fields.push_back(m_field_groups.at(gn)->m_fields_names);
+        groups_fields.push_back(m_field_group_info.at(gn)->m_fields_names);
         ::scream::sort(groups_fields.back());
       }
 
@@ -562,7 +569,7 @@ void FieldManager::registration_ends ()
           cluster_name += " | " + gn;
         }
 
-        const auto& fnames = m_field_groups.at(gn)->m_fields_names;
+        const auto& fnames = m_field_group_info.at(gn)->m_fields_names;
         if (fnames.size()==cluster_ordered_fields.size()) {
           // Found a group in the cluster that contains all fields.
           cluster_name = gn;
@@ -669,13 +676,13 @@ void FieldManager::registration_ends ()
 
       if (ekat::contains(cluster,"__qv__")) {
         // Erase the 'fake group' we added (to guarantee qv would be first/last in the tracers)
-        m_field_groups.erase(m_field_groups.find("__qv__"));
+        m_field_group_info.erase(m_field_group_info.find("__qv__"));
         cluster.erase(ekat::find(cluster,"__qv__"));
       }
 
       // Now, update the group info of all the field groups in the cluster
       for (const auto& gn : cluster) {
-        auto& info = *m_field_groups.at(gn);
+        auto& info = *m_field_group_info.at(gn);
         const auto n = info.size();
 
         // Find the first field of this group in the ordered cluster names.
@@ -731,7 +738,7 @@ void FieldManager::registration_ends ()
       it.second->allocate_view();
     }
 
-    for (const auto& it : m_field_groups) {
+    for (const auto& it : m_field_group_info) {
       if (m_group_requests.at(grid_name).find(it.first)!=m_group_requests.at(grid_name).end()) {
         // Get fields in this group
         auto group_info = it.second;
@@ -753,7 +760,7 @@ void FieldManager::clean_up() {
   m_fields.clear();
 
   // Clean group info
-  m_field_groups.clear();
+  m_field_group_info.clear();
 
   // Reset repo state
   m_repo_state = RepoState::Clean;
@@ -802,7 +809,7 @@ void FieldManager::add_field (const Field& f) {
 void FieldManager::pre_process_bundled_group_requests () {
   // For each bundled group, loop over all fields in the group and register
   // on to each grid the group is requested on (if necessary)
-  for (auto [group_name, group_info] : m_field_groups) {
+  for (auto [group_name, group_info] : m_field_group_info) {
     if (not group_info->m_bundled) continue;
     // Gather all grids in this bundled group. We need to check
     // both grids that already exist in the group and grids that
