@@ -127,7 +127,6 @@ contains
       call mpas_pool_get_config(liConfigs, 'config_ocean_data_extrapolation', config_ocean_data_extrapolation)
 
       if ( config_ocean_data_extrapolation ) then
-              ! << TO DO >>: If using "retreat" athermal forcing paramterization, then need to translate T/S instead of extrap routine
 
          ! call the extrapolation scheme
          call mpas_log_write('ocean data will be extrapolated into the MALI ice draft')
@@ -385,14 +384,6 @@ contains
          if (config_recalculate_thermal_forcing) then
             MPAS_3dOceanTemperature(:,:) = oceanField(:,:,1)
             MPAS_3dOceanSalinity(:,:) = oceanField(:,:,2)
-
-            do i = 1, 2
-                saltDimSize = SIZE(MPAS_3dOceanTemperature, i)
-                tempDimSize = SIZE(MPAS_3dOceanSalinity, i)
-
-                call mpas_log_write("Salt Dim $i size: $i", intArgs=(/i, saltDimSize/))
-                call mpas_log_write("Temp Dim $i size: $i", intArgs=(/i, tempDimSize/))
-            enddo
 
             call recalculate_thermal_forcing(domain, err)
 
