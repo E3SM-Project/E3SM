@@ -221,9 +221,10 @@ Normally this is ONLY used when running CESM with the active glacier model.
 </entry>
 
 <entry id="glc_grid" type="char*10" category="elm_physics"
-        group="elm_inparm" valid_values="mpas.gis20km,mpas.gis1to10km,mpas.gis1to10kmR2" >
+        group="elm_inparm" valid_values="mpas.gis20km,mpas.gis4to40km,mpas.gis1to10km,mpas.gis1to10kmR2" >
 Glacier model grid
     mpas.gis20km  = Greenland at 20km resolution
+    mpas.gis4to40km = Greenland at 4-to-40km variable resolution
     mpas.gis1to10km = Greenland at 1-to-10km variable resolution (v1, kept for backwards compatibility)
     mpas.gis1to10kmR2 = Greenland at 1-to-10km variable resolution (v2, improved init. cond., fewer total grid cells)
 </entry>
