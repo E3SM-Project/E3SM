@@ -716,7 +716,7 @@ contains
   subroutine cime_pre_init1(esmf_log_option)
     use shr_pio_mod, only : shr_pio_init1, shr_pio_init2
     use seq_comm_mct, only: num_inst_driver
-#if defined(SCREAM_SYSTEM_WORKAROUND) && (SCREAM_SYSTEM_WORKAROUND == 1)
+#if defined(MPINIT_WORKAROUND) && (MPINIT_WORKAROUND == 1)
     use atm_comp_mct, only: atm_init_hip_mct
 #endif
     !----------------------------------------------------------
@@ -741,7 +741,7 @@ contains
     
     beg_count = shr_sys_irtc(irtc_rate)
     
-#if defined(SCREAM_SYSTEM_WORKAROUND) && (SCREAM_SYSTEM_WORKAROUND == 1)
+#if defined(MPINIT_WORKAROUND) && (MPINIT_WORKAROUND == 1)
     call atm_init_hip_mct()
 #endif
     call mpi_init(ierr)
