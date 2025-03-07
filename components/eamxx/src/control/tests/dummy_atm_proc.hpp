@@ -49,7 +49,7 @@ public:
 
     if (m_dummy_type==A2G) {
       // Check request by field/grid name only works
-      add_field<Required>("A",m_grid->name());
+      add_field<Required>("A",layout,ekat::units::m,m_grid->name());
       add_field<Computed>("B",layout,ekat::units::m,m_grid->name(),"The Group");
       add_field<Computed>("C",layout,ekat::units::m,m_grid->name(),"The Group");
       // These are not used at run time, but we use them to test
