@@ -28,6 +28,7 @@ module ocn_tracer_advection_std
    use ocn_mesh
    use ocn_tracer_advection_shared
    use ocn_tracer_advection_vert
+   use mpas_timer
 
    implicit none
    private
@@ -146,20 +147,21 @@ module ocn_tracer_advection_std
         !$omp end do
 #endif
 
-#ifdef MPAS_OPENACC
-        !$acc parallel loop collapse(2) &
-        !$acc    present(highOrderFlxHorz)
-#else
-        !$omp do schedule(runtime) private(k)
-#endif
-        do iEdge = 1, nEdgesAll
-        do k=1,nVertLevels
-           highOrderFlxHorz(k, iEdge) = 0.0_RKIND
-        end do
-        end do
-#ifndef MPAS_OPENACC
-        !$omp end do
-#endif
+!hgk Block here for performance comaprison with Omega
+!#ifdef MPAS_OPENACC
+!        !$acc parallel loop collapse(2) &
+!        !$acc    present(highOrderFlxHorz)
+!#else
+!        !$omp do schedule(runtime) private(k)
+!#endif
+!        do iEdge = 1, nEdgesAll
+!        do k=1,nVertLevels
+!           highOrderFlxHorz(k, iEdge) = 0.0_RKIND
+!        end do
+!        end do
+!#ifndef MPAS_OPENACC
+!        !$omp end do
+!#endif
 
         ! Compute the high order vertical flux.
 
@@ -169,83 +171,99 @@ module ocn_tracer_advection_std
 
         ! Compute the high order horizontal flux
 
-#ifdef MPAS_OPENACC
-        !$acc parallel loop &
-        !$acc    present(minLevelEdgeBot, maxLevelEdgeTop, &
-        !$acc            minLevelCell, maxLevelCell, cellsOnEdge, &
-        !$acc            nAdvCellsForEdge, advCellsForEdge, dvEdge, &
-        !$acc            advMaskHighOrder, advCoefs, advCoefs3rd, &
-        !$acc            normalThicknessFlux, highOrderFlxHorz, &
-        !$acc            tracerCur) &
-        !$acc    private(i,iCell,cell1,cell2, k, kmin, kmax, tracerWgt)
-#else
-        !$omp do schedule(runtime) &
-        !$omp    private(i,iCell,cell1,cell2, k, kmin, kmax, tracerWgt)
-#endif
-        do iEdge = 1, nEdgesAll
-          cell1 = cellsOnEdge(1, iEdge)
-          cell2 = cellsOnEdge(2, iEdge)
-          kmin = minLevelEdgeBot(iEdge)
-          kmax = maxLevelEdgeTop(iEdge)
-
-          ! Compute 2nd order fluxes where needed.
-          do k = kmin, kmax
-            tracerWgt = (1.0_RKIND - advMaskHighOrder(k,iEdge)) &
-                      * (dvEdge(iEdge) * 0.5_RKIND) &
-                      * normalThicknessFlux(k, iEdge)
-
-            highOrderFlxHorz(k, iEdge) = highOrderFlxHorz(k, iedge) &
-                                       + tracerWgt*(tracerCur(k,cell1) &
-                                                  + tracerCur(k,cell2))
-          end do ! k loop
-
 !hgk Block here for performance comaprison with Omega
-!          ! Compute 3rd or 4th fluxes where requested.
-!          do i = 1, nAdvCellsForEdge(iEdge)
-!            iCell = advCellsForEdge(i,iEdge)
-!            kmin = minLevelCell(iCell)
-!            kmax = maxLevelCell(iCell)
+!#ifdef MPAS_OPENACC
+!        !$acc parallel loop &
+!        !$acc    present(minLevelEdgeBot, maxLevelEdgeTop, &
+!        !$acc            minLevelCell, maxLevelCell, cellsOnEdge, &
+!        !$acc            nAdvCellsForEdge, advCellsForEdge, dvEdge, &
+!        !$acc            advMaskHighOrder, advCoefs, advCoefs3rd, &
+!        !$acc            normalThicknessFlux, highOrderFlxHorz, &
+!        !$acc            tracerCur) &
+!        !$acc    private(i,iCell,cell1,cell2, k, kmin, kmax, tracerWgt)
+!#else
+!        !$omp do schedule(runtime) &
+!        !$omp    private(i,iCell,cell1,cell2, k, kmin, kmax, tracerWgt)
+!#endif
+!        do iEdge = 1, nEdgesAll
+!          cell1 = cellsOnEdge(1, iEdge)
+!          cell2 = cellsOnEdge(2, iEdge)
+!          kmin = minLevelEdgeBot(iEdge)
+!          kmax = maxLevelEdgeTop(iEdge)
 !
-!            do k = kmin,kmax
-!              tracerWgt = advMaskHighOrder(k,iEdge) &
-!                        * (advCoefs(i,iEdge) + coef3rdOrder &
-!                        * sign(1.0_RKIND,normalThicknessFlux(k,iEdge)) &
-!                        * advCoefs3rd(i,iEdge))
+!          ! Compute 2nd order fluxes where needed.
+!          do k = kmin, kmax
+!            tracerWgt = (1.0_RKIND - advMaskHighOrder(k,iEdge)) &
+!                      * (dvEdge(iEdge) * 0.5_RKIND) &
+!                      * normalThicknessFlux(k, iEdge)
 !
-!              tracerWgt = normalThicknessFlux(k,iEdge)*tracerWgt
-!              highOrderFlxHorz(k,iEdge) = highOrderFlxHorz(k,iEdge) &
-!                                        + tracerWgt*tracerCur(k,iCell)
-!            end do ! k loop
-!          end do ! i loop over nAdvCellsForEdge
+!            highOrderFlxHorz(k, iEdge) = highOrderFlxHorz(k, iedge) &
+!                                       + tracerWgt*(tracerCur(k,cell1) &
+!                                                  + tracerCur(k,cell2))
+!          end do ! k loop
+!
+!!hgk Block here for performance comaprison with Omega
+!!          ! Compute 3rd or 4th fluxes where requested.
+!!          do i = 1, nAdvCellsForEdge(iEdge)
+!!            iCell = advCellsForEdge(i,iEdge)
+!!            kmin = minLevelCell(iCell)
+!!            kmax = maxLevelCell(iCell)
+!!
+!!            do k = kmin,kmax
+!!              tracerWgt = advMaskHighOrder(k,iEdge) &
+!!                        * (advCoefs(i,iEdge) + coef3rdOrder &
+!!                        * sign(1.0_RKIND,normalThicknessFlux(k,iEdge)) &
+!!                        * advCoefs3rd(i,iEdge))
+!!
+!!              tracerWgt = normalThicknessFlux(k,iEdge)*tracerWgt
+!!              highOrderFlxHorz(k,iEdge) = highOrderFlxHorz(k,iEdge) &
+!!                                        + tracerWgt*tracerCur(k,iCell)
+!!            end do ! k loop
+!!          end do ! i loop over nAdvCellsForEdge
+!
+!         end do ! iEdge loop
+!#ifndef MPAS_OPENACC
+!        !$omp end do
+!#endif
 
-         end do ! iEdge loop
-#ifndef MPAS_OPENACC
-        !$omp end do
-#endif
 
         ! Accumulate the scaled high order horizontal tendencies
 #ifdef MPAS_OPENACC
         !$acc parallel loop &
         !$acc    present(minLevelEdgeBot, maxLevelEdgeTop, &
         !$acc            nEdgesOnCell, edgesOnCell, edgeSignOnCell, &
-        !$acc            areaCell, tend, highOrderFlxHorz) &
-        !$acc    private(i, iEdge, k, kmin, kmax, invAreaCell1)
+        !$acc            areaCell, tend, highOrderFlxHorz,dvEdge,advMaskHighOrder, &
+        !$acc            normalThicknessFlux,tracerCur) &
+        !$acc    private(i, iEdge, k, kmin, kmax, invAreaCell1, cell1, cell2, tracerWgt)
 #else
         !$omp do schedule(runtime) &
-        !$omp    private(i, iEdge, k, kmin, kmax, invAreaCell1)
+        !$omp    private(i, iEdge, k, kmin, kmax, invAreaCell1, cell1, cell2, tracerWgt)
 #endif
         do iCell = 1, nCellsAll
           invAreaCell1 = 1.0_RKIND / areaCell(iCell)
           do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
+            cell1 = cellsOnEdge(1, iEdge)
+            cell2 = cellsOnEdge(2, iEdge)
             kmin = minLevelEdgeBot(iEdge)
             kmax = maxLevelEdgeTop(iEdge)
 
             do k = kmin,kmax
-              tend(iTracer, k, iCell) = tend(iTracer, k, iCell) &
-                                      + edgeSignOnCell(i, iCell) &
-                                      * highOrderFlxHorz(k, iEdge) &
-                                      * invAreaCell1
+!hgk make the computation simpler here for performance comaprison with Omega
+
+!              tend(iTracer, k, iCell) = tend(iTracer, k, iCell) &
+!                                      + edgeSignOnCell(i, iCell) &
+!                                      * highOrderFlxHorz(k, iEdge) &
+!                                      * invAreaCell1
+
+               tracerWgt = (1.0_RKIND - advMaskHighOrder(k,iEdge)) &
+                         * (dvEdge(iEdge) * 0.5_RKIND) &
+                         * normalThicknessFlux(k, iEdge)
+               tend(iTracer, k, iCell) = tend(iTracer, k, iCell) &
+                                       + edgeSignOnCell(i, iCell) &
+                                       * (tracerWgt*(tracerCur(k,cell1) &
+                                                   + tracerCur(k,cell2))) &
+                                       * invAreaCell1
             end do
           end do
         end do
