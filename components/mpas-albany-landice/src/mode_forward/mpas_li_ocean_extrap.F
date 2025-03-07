@@ -685,8 +685,11 @@ contains
       newMaskCountLocalAccum = 0
       do iCell = 1, nCellsSolve
          do iLayer = 2, nISMIP6OceanLayers
-            if ( (availOceanMask(iLayer,iCell) == 1) .and. (validOceanMask(iLayer,iCell) == 0) ) then
-               if ( validOceanMask(iLayer-1,iCell) == 1 ) then
+         ! Extrapolate water properties downward and stop 1 layer below bed topography. Don't update validOceanMask if cell is below bedTopography.
+         ! This ensures partial cells with cell centers below bed topography are accounted for. 
+
+            if ( (validOceanMask(iLayer,iCell) == 0) .and. (validOceanMask(iLayer-1,iCell) == 1) &
+                    .and. (availOceanMask(iLayer-1,iCell) == 1) ) then
                   do iField = 1, 2
                      if (oceanField(iLayer-1,iCell,iField) > 1.0e6_RKIND) then
                         ! raise error if an invalid ocean data value is used
@@ -707,34 +710,11 @@ contains
                         endif
                      endif
                   enddo
-                  validOceanMask(iLayer,iCell) = 1
-                  newMaskCountLocalAccum = newMaskCountLocalAccum + 1
-               endif
-            
-            ! Extrapolate water properties 1 layer below bed topography without updating validOceanMask. This ensures partial cells with 
-            ! cell centers below bed topography are accounted for.
-            elseif ( (availOceanMask(iLayer,iCell) == 0) .and. (validOceanMask(iLayer,iCell) == 0) .and. &
-                    (validOceanMask(iLayer-1,iCell) == 1) .and. (availOceanMask(iLayer-1,iCell) == 1) ) then
-               do iField = 1, 2
-                  if (oceanField(iLayer-1,iCell,iField) > 1.0e6_RKIND) then
-                     ! raise error if an invalid ocean data value is used
-                     call mpas_log_write("ocean data value used for extrapolation is invalid" // &
-                        "in vertical extrapolations: cell id=$i, iLayer=$i, TF=$r", &
-                        MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell), iLayer-1/), realArgs=(/oceanField(iLayer-1,iCell,iField)/))
-                     err = ior(err,1)
-                  else
-                     if (config_recalculate_thermal_forcing) then
-                        !if extrapolating temp/salt, assign value equal to overlying cell
-                        oceanField(iLayer,iCell,iField) = oceanField(iLayer-1,iCell,iField)
-                     else
-                        !if extrapolating thermal forcing, need to account for depth-dependent difference in freezing temp
-                        oceanField(iLayer,iCell,iField) = oceanField(iLayer-1,iCell,iField) - &
-                           (ismip6shelfMelt_zOcean(iLayer-1) - ismip6shelfMelt_zOcean(iLayer)) * &
-                           oceanFreezingTempDepthDependence
-                        exit
-                     endif
+                  !Only update validOceanMask if cell is defined in availOceanMask
+                  if (availOceanMask(iLayer,iCell) == 1) then
+                     validOceanMask(iLayer,iCell) = 1
+                     newMaskCountLocalAccum = newMaskCountLocalAccum + 1
                   endif
-               enddo
             endif
          enddo
       enddo
