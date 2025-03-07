@@ -269,7 +269,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   const auto& surf_sens_flux      = get_field_in("surf_sens_flux").get_view<const Real*>();
   const auto& surf_evap           = get_field_in("surf_evap").get_view<const Real*>();
   const auto& surf_mom_flux       = get_field_in("surf_mom_flux").get_view<const Real**>();
-  const auto& qtracers            = get_group_out("turbulence_advected_tracers").m_bundle->get_view<Spack***>();
+  const auto& qtracers            = get_group_out("turbulence_advected_tracers").m_bundle->get_strided_view<Spack***>();
   const auto& qc                  = get_field_out("qc").get_view<Spack**>();
   const auto& qv                  = get_field_out("qv").get_view<Spack**>();
   const auto& tke                 = get_field_out("tke").get_view<Spack**>();
