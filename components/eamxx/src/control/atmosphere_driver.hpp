@@ -217,6 +217,7 @@ protected:
   util::TimeStamp                           m_run_t0;
   util::TimeStamp                           m_case_t0;
   RunType                                   m_run_type;
+  bool                                      m_branch_run = false;
 
   // This is the comm containing all (and only) the processes assigned to the atmosphere
   ekat::Comm                                m_atm_comm;

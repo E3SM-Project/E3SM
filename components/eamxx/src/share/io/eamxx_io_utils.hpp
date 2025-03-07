@@ -72,6 +72,7 @@ std::string find_filename_in_rpointer (
     const bool model_restart,
     const ekat::Comm& comm,
     const util::TimeStamp& run_t0,
+    const bool allow_not_found = false,
     const OutputAvgType avg_type = OutputAvgType::Instant,
     const IOControl& control = {});
 
