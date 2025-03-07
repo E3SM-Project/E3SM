@@ -41,6 +41,7 @@ class SHOCMacrophysics : public scream::AtmosphereProcess
   using sview_2d_const       = typename KokkosTypes<DefaultDevice>::template view_2d<const Real>;
   using view_3d              = typename SHF::view_3d<Spack>;
   using view_3d_const        = typename SHF::view_3d<const Spack>;
+  using view_3d_strided       = typename SHF::view_3d_strided<Spack>;
 
   using WSM = ekat::WorkspaceManager<Spack, KT::Device>;
 
@@ -176,7 +177,7 @@ public:
     view_1d_const  surf_sens_flux;
     view_1d_const  surf_evap;
     sview_2d_const surf_mom_flux;
-    view_3d        qtracers;
+    view_3d_strided qtracers;
     view_2d        qv;
     view_2d_const  qc;
     view_2d        qc_copy;
@@ -211,7 +212,7 @@ public:
                        const view_2d_const& omega_,
                        const view_1d_const& phis_, const view_1d_const& surf_sens_flux_, const view_1d_const& surf_evap_,
                        const sview_2d_const& surf_mom_flux_,
-                       const view_3d& qtracers_,
+                       const view_3d_strided& qtracers_,
                        const view_2d& qv_, const view_2d_const& qc_, const view_2d& qc_copy_,
                        const view_2d& tke_, const view_2d& tke_copy_,
                        const view_2d& z_mid_, const view_2d& z_int_,
@@ -323,7 +324,7 @@ public:
     view_2d_const rrho;
     view_2d qv, qc, tke;
     view_2d_const tke_copy, qc_copy, qw;
-    view_3d qtracers;
+    view_3d_strided qtracers;
     view_2d_const qc2;
     view_2d cldfrac_liq;
     view_2d inv_qc_relvar;
@@ -342,7 +343,7 @@ public:
     void set_variables(const int ncol_, const int nlev_, const int num_qtracers_,
                        const view_2d_const& rrho_,
                        const view_2d& qv_, const view_2d_const& qw_, const view_2d& qc_, const view_2d_const& qc_copy_,
-                       const view_2d& tke_, const view_2d_const& tke_copy_, const view_3d& qtracers_, const view_2d_const& qc2_,
+                       const view_2d& tke_, const view_2d_const& tke_copy_, const view_3d_strided& qtracers_, const view_2d_const& qc2_,
                        const view_2d& cldfrac_liq_, const view_2d& inv_qc_relvar_,
                        const view_2d& T_mid_, const view_2d_const& dse_, const view_2d_const& z_mid_, const view_1d_const phis_)
     {

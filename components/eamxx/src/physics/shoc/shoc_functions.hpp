@@ -55,6 +55,9 @@ struct Functions
   template <typename S>
   using view_3d = typename KT::template view_3d<S>;
 
+  template <typename S>
+  using view_3d_strided = typename KT::template sview<S***>;
+
   template <typename S, int N>
   using view_1d_ptr_array = typename KT::template view_1d_ptr_carray<S, N>;
 
@@ -144,7 +147,7 @@ struct Functions
     // buoyancy flux [K m/s]
     view_2d<Spack>  wthv_sec;
     // tracers [varies]
-    view_3d<Spack>  qtracers;
+    view_3d_strided<Spack>  qtracers;
     // eddy coefficient for momentum [m2/s]
     view_2d<Spack>  tk;
     // Cloud fraction [-]
