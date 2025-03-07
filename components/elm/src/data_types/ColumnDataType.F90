@@ -6318,6 +6318,11 @@ contains
                //' harvest, and hrv_xsmrpool flux, positive for source', &
                 ptr_col=this%nee)
 
+          this%product_closs(begc:endc) = spval
+          call hist_addfld1d (fname='PRODUCT_CLOSS', units='gC/m^2/s', &
+               avgflag='A', long_name='total carbon loss from wood product pools', &
+               ptr_col=this%product_closs, default='inactive')
+
        end if
        ! end of use_fates (C12) block
 

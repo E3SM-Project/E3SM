@@ -270,6 +270,7 @@ module ELMFatesInterfaceMod
       procedure, public :: prep_canopyfluxes
       procedure, public :: wrap_canopy_radiation
       procedure, public :: wrap_WoodProducts
+      procedure, public :: wrap_FatesAtmosphericCarbonFluxes
       procedure, public :: wrap_update_hifrq_hist
       procedure, public :: TransferZ0mDisp
       procedure, public :: InterpFileInputs  ! Interpolate inputs from files
@@ -2752,8 +2753,6 @@ contains
    integer                                        :: nc
 
    associate(&
-         gpp     => col_cf%gpp    , &
-         ar     => col_cf%ar    , &
          hrv_deadstemc_to_prod10c     => col_cf%hrv_deadstemc_to_prod10c    , &
          hrv_deadstemc_to_prod100c    => col_cf%hrv_deadstemc_to_prod100c)
  
@@ -2767,15 +2766,60 @@ contains
        hrv_deadstemc_to_prod10c(c)  = this%fates(nc)%bc_out(s)%hrv_deadstemc_to_prod10c
        hrv_deadstemc_to_prod100c(c) = this%fates(nc)%bc_out(s)%hrv_deadstemc_to_prod100c
 
-       ! Pass LUC related C fluxes which are calculated in FATES [gC m-2 s-1]
-       gpp(c) = this%fates(nc)%bc_out(s)%gpp_site*g_per_kg
-       ar(c) = this%fates(nc)%bc_out(s)%ar_site*g_per_kg
-
     end do
 
     end associate
     return
  end subroutine wrap_WoodProducts
+
+ ! ======================================================================================
+
+ subroutine wrap_FatesAtmosphericCarbonFluxes(this, bounds_clump, fc, filterc)
+
+   ! summarize the high-level fluxes that integrate information from both
+   ! FATES and outside-of-FATES decomposition and product decay code.
+   
+   use FatesConstantsMod     , only : g_per_kg
+
+   ! !ARGUMENTS:
+   class(hlm_fates_interface_type), intent(inout) :: this
+   type(bounds_type)              , intent(in)    :: bounds_clump
+   integer                        , intent(in)    :: fc                   ! size of column filter
+   integer                        , intent(in)    :: filterc(fc)          ! column filter
+   
+   ! Locacs
+   integer                                        :: s,c,icc
+   integer                                        :: nc
+
+   associate(&
+        nep     => col_cf%nep    , &
+        nee     => col_cf%nee    , &
+        nbp     => col_cf%nbp    , &
+        product_closs => col_cf%product_closs ,  &
+        hr     => col_cf%hr)
+ 
+    nc = bounds_clump%clump_index
+    ! Loop over columns
+    do icc = 1,fc
+       c = filterc(icc)
+       s = this%f2hmap(nc)%hsites(c)
+
+       nep(c) = this%fates(nc)%bc_out(s)%gpp_site*g_per_kg &
+            - this%fates(nc)%bc_out(s)%ar_site*g_per_kg &
+            - hr(c)
+
+       nbp(c) = nep(c) &
+            - this%fates(nc)%bc_out(s)%grazing_closs_to_atm_si*g_per_kg &
+            - this%fates(nc)%bc_out(s)%fire_closs_to_atm_si*g_per_kg &
+            - product_closs(c)
+
+       nee(c) = -nbp(c)
+
+    end do
+
+    end associate
+    return
+ end subroutine wrap_FatesAtmosphericCarbonFluxes
 
  ! ======================================================================================
  
