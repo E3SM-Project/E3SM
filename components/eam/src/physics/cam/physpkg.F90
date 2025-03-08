@@ -3247,15 +3247,14 @@ subroutine add_fld_default_calls()
   implicit none
 
   !Add all existing ptend names for the addfld calls
-  character(len=21), parameter :: vlist(30) = (/       'topphysbc            '                       ,&
+  character(len=21), parameter :: vlist(28) = (/       'topphysbc            '                       ,&
        'chkenergyfix         ','dadadj               ','zm_convr             ','zm_conv_evap         ',&
-       'momtran              ','zm_conv_tend         ','UWSHCU               ','convect_shallow      ',&
+       'zm_transport_momentum','zm_conv_tend         ','UWSHCU               ','convect_shallow      ',&
        'pcwdetrain_mac       ','macro_park           ','macrop               ','micro_mg             ',&
-       'cldwat_mic           ','aero_model_wetdep_ma ','convtran2            ','cam_radheat          ',&
+       'cldwat_mic           ','aero_model_wetdep_ma ','zm_transport_tracer_2','cam_radheat          ',&
        'chemistry            ','vdiff                ','rayleigh_friction    ','aero_model_drydep_ma ',&
        'Grav_wave_drag       ','convect_shallow_off  ','clubb_ice1           ','clubb_det            ',&
-       'clubb_ice4           ','clubb_srf            ','micro_p3             ','zm_transport_momentum',&
-       'zm_transport_tracer_2' /)
+       'clubb_ice4           ','clubb_srf            ','micro_p3             '/)
 
 
 
