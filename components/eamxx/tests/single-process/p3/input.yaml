@@ -14,6 +14,7 @@ atmosphere_processes:
     max_total_ni: 740.0e3
     compute_tendencies: [T_mid,qc]
     do_prescribed_ccn: false
+    use_hetfrz_classnuc: false
 
 grids_manager:
   Type: Mesh Free
@@ -28,6 +29,9 @@ initial_conditions:
   Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
   precip_liq_surf_mass: 0.0
   precip_ice_surf_mass: 0.0
+  hetfrz_immersion_nucleation_tend: 0.1
+  hetfrz_contact_nucleation_tend: 0.1
+  hetfrz_deposition_nucleation_tend: 0.1
 
 # The parameters for I/O control
 Scorpio:

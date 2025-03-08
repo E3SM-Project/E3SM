@@ -423,6 +423,7 @@
 <config_slow_mode_drainage_strength>-5.0e-8</config_slow_mode_drainage_strength>
 <config_slow_mode_critical_porosity>0.05</config_slow_mode_critical_porosity>
 <config_macro_drainage_timescale>10.</config_macro_drainage_timescale>
+<config_congelation_freezing_method>'two-step'</config_congelation_freezing_method>
 <config_congelation_ice_porosity>0.85</config_congelation_ice_porosity>
 
 <!-- itd -->
@@ -456,6 +457,7 @@
 <config_sea_freezing_temperature_type>'mushy'</config_sea_freezing_temperature_type>
 <config_ocean_surface_type>'free'</config_ocean_surface_type>
 <config_use_data_icebergs>false</config_use_data_icebergs>
+<config_scale_dib_by_removed_ice_runoff>false</config_scale_dib_by_removed_ice_runoff>
 <config_salt_flux_coupling_type>'constant'</config_salt_flux_coupling_type>
 <config_ice_ocean_drag_coefficient>0.00536</config_ice_ocean_drag_coefficient>
 

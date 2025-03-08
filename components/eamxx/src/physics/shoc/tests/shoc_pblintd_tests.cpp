@@ -1,11 +1,11 @@
 #include "catch2/catch.hpp"
 
-#include "share/scream_types.hpp"
+#include "share/eamxx_types.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "shoc_functions.hpp"
-#include "shoc_functions_f90.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "shoc_test_data.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 
 #include "shoc_unit_tests_common.hpp"
 
@@ -14,9 +14,9 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestPblintd {
+struct UnitWrap::UnitTest<D>::TestPblintd : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_property()
+  void run_property()
   {
     static constexpr auto ustar_min = scream::shoc::Constants<Scalar>::ustar_min;
     static constexpr Int shcol = 5;
@@ -122,11 +122,7 @@ struct UnitWrap::UnitTest<D>::TestPblintd {
     }
 
     // Call the C++ implementation
-    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-    pblintd_f(SDS.shcol, SDS.nlev, SDS.nlevi, SDS.npbl, SDS.z, SDS.zi,
-              SDS.thl, SDS.ql, SDS.q, SDS.u, SDS.v, SDS.ustar, SDS.obklen,
-              SDS.kbfs, SDS.cldn, SDS.pblh);
-    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+    pblintd(SDS);
 
     // Make sure PBL height is reasonable
     // Should be larger than second lowest zi level and lower
@@ -140,13 +136,13 @@ struct UnitWrap::UnitTest<D>::TestPblintd {
 
   }
 
-  static void run_bfb()
+  void run_bfb()
   {
-    auto engine = setup_random_test();
+    auto engine = Base::get_engine();
 
     Int npbl_rand = rand()%71 + 1;
 
-    PblintdData f90_data[] = {
+    PblintdData baseline_data[] = {
       PblintdData(10, 71, 72, 71),
       PblintdData(10, 71, 72, 1),
       PblintdData(10, 71, 72, npbl_rand),
@@ -156,46 +152,50 @@ struct UnitWrap::UnitTest<D>::TestPblintd {
     };
 
     // Generate random input data
-    // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
-    for (auto& d : f90_data) {
+    // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
+    for (auto& d : baseline_data) {
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // Create copies of data for use by cxx. Needs to happen before reads so that
     // inout data is in original state
     PblintdData cxx_data[] = {
-      PblintdData(f90_data[0]),
-      PblintdData(f90_data[1]),
-      PblintdData(f90_data[2]),
-      PblintdData(f90_data[3]),
-      PblintdData(f90_data[4]),
-      PblintdData(f90_data[5]),
+      PblintdData(baseline_data[0]),
+      PblintdData(baseline_data[1]),
+      PblintdData(baseline_data[2]),
+      PblintdData(baseline_data[3]),
+      PblintdData(baseline_data[4]),
+      PblintdData(baseline_data[5]),
     };
 
     // Assume all data is in C layout
 
-    // Get data from fortran
-    for (auto& d : f90_data) {
-      // expects data in C layout
-      pblintd(d);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (auto& d : baseline_data) {
+        d.read(Base::m_fid);
+      }
     }
 
     // Get data from cxx
     for (auto& d : cxx_data) {
-      d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-      pblintd_f(d.shcol, d.nlev, d.nlevi, d.npbl, d.z, d.zi, d.thl, d.ql, d.q, d.u, d.v, d.ustar, d.obklen, d.kbfs, d.cldn, d.pblh);
-      d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+      pblintd(d);
     }
 
     // Verify BFB results, all data should be in C layout
-    if (SCREAM_BFB_TESTING) {
-      static constexpr Int num_runs = sizeof(f90_data) / sizeof(PblintdData);
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
+      static constexpr Int num_runs = sizeof(baseline_data) / sizeof(PblintdData);
       for (Int i = 0; i < num_runs; ++i) {
-        PblintdData& d_f90 = f90_data[i];
+        PblintdData& d_baseline = baseline_data[i];
         PblintdData& d_cxx = cxx_data[i];
-        for (Int k = 0; k < d_f90.total(d_f90.pblh); ++k) {
-          REQUIRE(d_f90.pblh[k] == d_cxx.pblh[k]);
+        for (Int k = 0; k < d_baseline.total(d_baseline.pblh); ++k) {
+          REQUIRE(d_baseline.pblh[k] == d_cxx.pblh[k]);
         }
+      }
+    } // SCREAM_BFB_TESTING
+    else if (this->m_baseline_action == GENERATE) {
+      for (auto& d : cxx_data) {
+        d.write(Base::m_fid);
       }
     }
   } // run_bfb
@@ -212,14 +212,14 @@ TEST_CASE("pblintd_property", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPblintd;
 
-  TestStruct::run_property();
+  TestStruct().run_property();
 }
 
 TEST_CASE("pblintd_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPblintd;
 
-  TestStruct::run_bfb();
+  TestStruct().run_bfb();
 }
 
 } // empty namespace

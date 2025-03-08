@@ -23,5 +23,7 @@ target_compile_definitions(ml_correction PRIVATE -DML_CORRECTION_CUSTOM_PATH="${
 target_include_directories(ml_correction SYSTEM PUBLIC ${PYTHON_INCLUDE_DIRS})
 target_link_libraries(ml_correction physics_share scream_share pybind11::pybind11 Python::Python)
 
-# Add this library to eamxx_physics
-target_link_libraries(eamxx_physics INTERFACE ml_correction)
+if (TARGET eamxx_physics)
+  # Add this library to eamxx_physics
+  target_link_libraries(eamxx_physics INTERFACE ml_correction)
+endif()

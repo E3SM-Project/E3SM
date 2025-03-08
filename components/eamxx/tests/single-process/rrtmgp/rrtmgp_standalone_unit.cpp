@@ -5,14 +5,14 @@
 
 // Other rrtmgp specific code needed specifically for this test
 #include "physics/rrtmgp/rrtmgp_test_utils.hpp"
-#include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
+#include "physics/rrtmgp/eamxx_rrtmgp_interface.hpp"
 #include "physics/rrtmgp/eamxx_rrtmgp_process_interface.hpp"
 #include "physics/register_physics.hpp"
 #include "physics/share/physics_constants.hpp"
 
 // scream share headers
 #include "share/grid/mesh_free_grids_manager.hpp"
-#include "share/util/scream_common_physics_functions.hpp"
+#include "share/util/eamxx_common_physics_functions.hpp"
 
 // EKAT headers
 #include <ekat/ekat_parse_yaml_file.hpp>
@@ -49,8 +49,8 @@ using PC = scream::physics::Constants<Real>;
 #ifdef RRTMGP_ENABLE_YAKL
 TEST_CASE("rrtmgp_scream_standalone", "") {
   // Get baseline name (needs to be passed as an arg)
-  std::string inputfile = ekat::TestSession::get().params.at("rrtmgp_inputfile");
-  std::string baseline = ekat::TestSession::get().params.at("rrtmgp_baseline");
+  std::string inputfile = ekat::TestSession::get().params.at("inputfile");
+  std::string baseline = ekat::TestSession::get().params.at("baseline");
 
   // Check if files exists
   REQUIRE(rrtmgpTest::file_exists(inputfile.c_str()));

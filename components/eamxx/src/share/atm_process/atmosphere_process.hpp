@@ -1,10 +1,10 @@
 #ifndef SCREAM_ATMOSPHERE_PROCESS_HPP
 #define SCREAM_ATMOSPHERE_PROCESS_HPP
 
-#include "share/iop/intensive_observation_period.hpp"
 #include "share/atm_process/atmosphere_process_utils.hpp"
 #include "share/atm_process/ATMBufferManager.hpp"
 #include "share/atm_process/SCDataManager.hpp"
+#include "share/atm_process/IOPDataManager.hpp"
 #include "share/field/field_identifier.hpp"
 #include "share/field/field_manager.hpp"
 #include "share/property_checks/property_check.hpp"
@@ -83,7 +83,7 @@ public:
 
   using prop_check_ptr = std::shared_ptr<PropertyCheck>;
 
-  using iop_ptr = std::shared_ptr<control::IntensiveObservationPeriod>;
+  using iop_data_ptr = std::shared_ptr<control::IOPDataManager>;
 
   // Base constructor to set MPI communicator and params
   AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params);
@@ -274,13 +274,14 @@ public:
 
   // For internal diagnostics and debugging.
   void print_global_state_hash(const std::string& label, const bool in = true,
-                               const bool out = true, const bool internal = true) const;
+                               const bool out = true, const bool internal = true,
+                               const Real* mem = nullptr, const int nmem = 0) const;
   // For BFB tracking in production simulations.
   void print_fast_global_state_hash(const std::string& label) const;
 
   // Set IOP object
-  virtual void set_iop(const iop_ptr& iop) {
-    m_iop = iop;
+  virtual void set_iop_data_manager(const iop_data_ptr& iop_data_manager) {
+    m_iop_data_manager = iop_data_manager;
   }
 
   std::shared_ptr<logger_t> get_logger () const {
@@ -347,6 +348,12 @@ protected:
   template<RequestType RT>
   void add_field (const FieldIdentifier& fid, const std::list<std::string>& groups, const int ps)
   { add_field<RT>(FieldRequest(fid,groups,ps)); }
+
+  // Specialization for add_field to tracer group
+  template<RequestType RT>
+  void add_tracer (const std::string& name, std::shared_ptr<const AbstractGrid> grid,
+                   const ekat::units::Units& u, const int ps = 1)
+  { add_field<RT>(name, grid->get_3d_scalar_layout(true), u, grid->name(), "tracers", ps); }
 
   // Group requests
   template<RequestType RT>
@@ -590,7 +597,7 @@ private:
 protected:
 
   // IOP object
-  iop_ptr m_iop;
+  iop_data_ptr m_iop_data_manager;
 };
 
 // ================= IMPLEMENTATION ================== //

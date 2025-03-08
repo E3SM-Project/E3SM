@@ -2,10 +2,10 @@
 
 #include "shoc_unit_tests_common.hpp"
 #include "shoc_functions.hpp"
-#include "shoc_functions_f90.hpp"
+#include "shoc_test_data.hpp"
 #include "physics/share/physics_constants.hpp"
-#include "share/scream_types.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "share/eamxx_types.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/util/ekat_arch.hpp"
@@ -21,9 +21,9 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocDiagThird {
+struct UnitWrap::UnitTest<D>::TestShocDiagThird : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_property()
+  void run_property()
   {
     static constexpr Int shcol    = 2;
     static constexpr Int nlev     = 5;
@@ -143,13 +143,7 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
     }
 
     // Call the C++ implementation
-    SDS.transpose<ekat::TransposeDirection::c2f>();
-    // expects data in fortran layout
-    diag_third_shoc_moments_f(SDS.shcol,SDS.nlev,SDS.nlevi,SDS.w_sec,SDS.thl_sec,
-                              SDS.wthl_sec,SDS.isotropy,SDS.brunt,SDS.thetal,
-                              SDS.tke,SDS.dz_zt,SDS.dz_zi,SDS.zt_grid,SDS.zi_grid,
-                              SDS.w3);
-    SDS.transpose<ekat::TransposeDirection::f2c>();
+    diag_third_shoc_moments(SDS);
 
     // Check to make sure there is at least one
     //  positive w3 value for convective boundary layer
@@ -193,13 +187,7 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
     }
 
     // Call the C++ implementation
-    SDS.transpose<ekat::TransposeDirection::c2f>();
-    // expects data in fortran layout
-    diag_third_shoc_moments_f(SDS.shcol,SDS.nlev,SDS.nlevi,SDS.w_sec,SDS.thl_sec,
-                              SDS.wthl_sec,SDS.isotropy,SDS.brunt,SDS.thetal,
-                              SDS.tke,SDS.dz_zt,SDS.dz_zi,SDS.zt_grid,SDS.zi_grid,
-                              SDS.w3);
-    SDS.transpose<ekat::TransposeDirection::f2c>();
+    diag_third_shoc_moments(SDS);
 
     // Verify that new result is greater or equal in magnitude
     //  that the result from test one
@@ -214,11 +202,11 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
 
   }
 
-  static void run_bfb()
+  void run_bfb()
   {
-    auto engine = setup_random_test();
+    auto engine = Base::get_engine();
 
-    DiagThirdShocMomentsData SDS_f90[] = {
+    DiagThirdShocMomentsData SDS_baseline[] = {
       //               shcol, nlev, nlevi
       DiagThirdShocMomentsData(10, 71, 72),
       DiagThirdShocMomentsData(10, 12, 13),
@@ -227,47 +215,48 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
     };
 
     // Generate random input data
-    for (auto& d : SDS_f90) {
+    for (auto& d : SDS_baseline) {
       d.randomize(engine, {{d.thetal, {300, 301}}});
     }
 
-    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // Create copies of data for use by cxx. Needs to happen before reads so that
     // inout data is in original state
     DiagThirdShocMomentsData SDS_cxx[] = {
-      DiagThirdShocMomentsData(SDS_f90[0]),
-      DiagThirdShocMomentsData(SDS_f90[1]),
-      DiagThirdShocMomentsData(SDS_f90[2]),
-      DiagThirdShocMomentsData(SDS_f90[3]),
+      DiagThirdShocMomentsData(SDS_baseline[0]),
+      DiagThirdShocMomentsData(SDS_baseline[1]),
+      DiagThirdShocMomentsData(SDS_baseline[2]),
+      DiagThirdShocMomentsData(SDS_baseline[3]),
     };
+
+    static constexpr Int num_runs = sizeof(SDS_baseline) / sizeof(DiagThirdShocMomentsData);
 
     // Assume all data is in C layout
 
-    // Get data from fortran
-    for (auto& d : SDS_f90) {
-      // expects data in C layout
-      diag_third_shoc_moments(d);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (auto& d : SDS_baseline) {
+        d.read(Base::m_fid);
+      }
     }
 
     // Get data from cxx
     for (auto& d : SDS_cxx) {
-      d.transpose<ekat::TransposeDirection::c2f>();
-      // expects data in fortran layout
-      diag_third_shoc_moments_f(d.shcol,d.nlev,d.nlevi,d.w_sec,d.thl_sec,
-                                d.wthl_sec,d.isotropy,d.brunt,d.thetal,
-                                d.tke,d.dz_zt,d.dz_zi,d.zt_grid,d.zi_grid,
-                                d.w3);
-      d.transpose<ekat::TransposeDirection::f2c>();
+      diag_third_shoc_moments(d);
     }
 
     // Verify BFB results, all data should be in C layout
-    if (SCREAM_BFB_TESTING) {
-      static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(DiagThirdShocMomentsData);
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < num_runs; ++i) {
-        DiagThirdShocMomentsData& d_f90 = SDS_f90[i];
+        DiagThirdShocMomentsData& d_baseline = SDS_baseline[i];
         DiagThirdShocMomentsData& d_cxx = SDS_cxx[i];
-        for (Int k = 0; k < d_f90.total(d_f90.w3); ++k) {
-          REQUIRE(d_f90.w3[k] == d_cxx.w3[k]);
+        for (Int k = 0; k < d_baseline.total(d_baseline.w3); ++k) {
+          REQUIRE(d_baseline.w3[k] == d_cxx.w3[k]);
         }
+      }
+    } // SCREAM_BFB_TESTING
+    else if (this->m_baseline_action == GENERATE) {
+      for (Int i = 0; i < num_runs; ++i) {
+        SDS_cxx[i].write(Base::m_fid);
       }
     }
   }
@@ -283,14 +272,14 @@ TEST_CASE("shoc_diag_third_property", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocDiagThird;
 
-  TestStruct::run_property();
+  TestStruct().run_property();
 }
 
 TEST_CASE("shoc_diag_third_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocDiagThird;
 
-  TestStruct::run_bfb();
+  TestStruct().run_bfb();
 }
 
 } // namespace

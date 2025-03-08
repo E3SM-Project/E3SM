@@ -5,7 +5,7 @@
 
 #include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/field/field_utils.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 
 namespace scream {
 
@@ -104,12 +104,13 @@ TEST_CASE("field_at_height")
 
   // Lambda to create and run a diag, and return output
   auto run_diag = [&](const Field& f, const Field& z,
-                      const std::string& loc, const std::string& surf_ref) {
+                      const double h, const std::string& surf_ref) {
     util::TimeStamp t0 ({2022,1,1},{0,0,0});
     auto& factory = AtmosphereDiagnosticFactory::instance();
     ekat::ParameterList pl;
     pl.set("surface_reference",surf_ref);
-    pl.set("vertical_location",loc);
+    pl.set("height_value",std::to_string(h));
+    pl.set("height_units",std::string("m"));
     pl.set("field_name",f.name());
     pl.set("grid_name",grid->name());
     auto diag = factory.create("FieldAtheight",comm,pl);
@@ -173,13 +174,12 @@ TEST_CASE("field_at_height")
   // Make sure that an unsupported reference height throws an error.
   print(" -> Testing throws error with unsupported reference height...\n");
   {
-    REQUIRE_THROWS(run_diag (s_mid,h_mid,"1m","foobar"));
+    REQUIRE_THROWS(run_diag (s_mid,h_mid,1.0,"foobar"));
   }
   print(" -> Testing throws error with unsupported reference height... OK\n");
 
   // Run many times
   int z_tgt;
-  std::string loc;
   for (std::string surf_ref : {"sealevel","surface"}) {
     printf(" -> Testing for a reference height above %s...\n",surf_ref.c_str());
     const auto mid_src = surf_ref == "sealevel" ? z_mid : h_mid;
@@ -197,32 +197,31 @@ TEST_CASE("field_at_height")
 
       // Set target z-slice for testing to a random value.
       z_tgt = pdf_levs(engine)+max_surf_4test;
-      loc = std::to_string(z_tgt) + "m";
-      printf("  -> test at height of %s.............\n",loc.c_str());
+      printf("  -> test at height of %dm............\n",z_tgt);
       {
         print("    -> scalar midpoint field...............\n");
-        auto d = run_diag(s_mid,mid_src,loc,surf_ref);
+        auto d = run_diag(s_mid,mid_src,z_tgt,surf_ref);
         f_z_tgt(inter,slope,z_tgt,mid_src,s_tgt);
         REQUIRE (views_are_approx_equal(d,s_tgt,tol));
         print("    -> scalar midpoint field............... OK!\n");
       }
       {
         print("    -> scalar interface field...............\n");
-        auto d = run_diag (s_int,int_src,loc,surf_ref);
+        auto d = run_diag (s_int,int_src,z_tgt,surf_ref);
         f_z_tgt(inter,slope,z_tgt,int_src,s_tgt);
         REQUIRE (views_are_approx_equal(d,s_tgt,tol));
         print("    -> scalar interface field............... OK!\n");
       }
       {
         print("    -> vector midpoint field...............\n");
-        auto d = run_diag (v_mid,mid_src,loc,surf_ref);
+        auto d = run_diag (v_mid,mid_src,z_tgt,surf_ref);
         f_z_tgt(inter,slope,z_tgt,mid_src,v_tgt);
         REQUIRE (views_are_approx_equal(d,v_tgt,tol));
         print("    -> vector midpoint field............... OK!\n");
       }
       {
         print("    -> vector interface field...............\n");
-        auto d = run_diag (v_int,int_src,loc,surf_ref);
+        auto d = run_diag (v_int,int_src,z_tgt,surf_ref);
         f_z_tgt(inter,slope,z_tgt,int_src,v_tgt);
         REQUIRE (views_are_approx_equal(d,v_tgt,tol));
         print("    -> vector interface field............... OK!\n");
@@ -230,8 +229,7 @@ TEST_CASE("field_at_height")
       {
         print("    -> Forced fail, give incorrect location...............\n");
         const int z_tgt_adj = (z_tgt+max_surf_4test)/2;
-        std::string loc_err = std::to_string(z_tgt_adj) + "m";
-        auto d = run_diag(s_int,int_src,loc_err,surf_ref);
+        auto d = run_diag(s_int,int_src,z_tgt_adj,surf_ref);
         f_z_tgt(inter,slope,z_tgt,int_src,s_tgt);
         REQUIRE (!views_are_approx_equal(d,s_tgt,tol,false));
         print("    -> Forced fail, give incorrect location............... OK!\n");
@@ -243,15 +241,13 @@ TEST_CASE("field_at_height")
       auto inter = pdf_y0(engine);
       f_z_src(inter, slope, int_src, s_int);
       z_tgt = 2*z_top;
-      std::string loc = std::to_string(z_tgt) + "m";
-      auto dtop = run_diag(s_int,int_src,loc,surf_ref);
+      auto dtop = run_diag(s_int,int_src,z_tgt,surf_ref);
       f_z_tgt(inter,slope,z_tgt,int_src,s_tgt);
       REQUIRE (views_are_approx_equal(dtop,s_tgt,tol));
       print("    -> Forced extrapolation at top............... OK!\n");
       print("    -> Forced extrapolation at bot...............\n");
       z_tgt = 0;
-      loc = std::to_string(z_tgt) + "m";
-      auto dbot = run_diag(s_int,int_src,loc,surf_ref);
+      auto dbot = run_diag(s_int,int_src,z_tgt,surf_ref);
       f_z_tgt(inter,slope,z_tgt,int_src,s_tgt);
       REQUIRE (views_are_approx_equal(dbot,s_tgt,tol));
       print("    -> Forced extrapolation at bot............... OK!\n");

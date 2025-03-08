@@ -4,10 +4,10 @@
 
 #include "physics/share/physics_constants.hpp"
 #include "shoc_functions.hpp"
-#include "shoc_functions_f90.hpp"
+#include "shoc_test_data.hpp"
 
-#include "share/scream_types.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "share/eamxx_types.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/util/ekat_arch.hpp"
@@ -23,9 +23,9 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocGrid {
+struct UnitWrap::UnitTest<D>::TestShocGrid : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_property()
+  void run_property()
   {
     static constexpr Real gravit  = scream::physics::Constants<Real>::gravit;
     static constexpr Int shcol    = 2;
@@ -80,9 +80,7 @@ struct UnitWrap::UnitTest<D>::TestShocGrid {
     }
 
     // Call the C++ implementation
-    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-    shoc_grid_f(SDS.shcol, SDS.nlev, SDS.nlevi, SDS.zt_grid, SDS.zi_grid, SDS.pdel, SDS.dz_zt, SDS.dz_zi, SDS.rho_zt);
-    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+    shoc_grid(SDS);
 
     // First check that dz is correct
     for(Int s = 0; s < shcol; ++s) {
@@ -129,60 +127,65 @@ struct UnitWrap::UnitTest<D>::TestShocGrid {
     }
   }
 
-  static void run_bfb()
+  void run_bfb()
   {
-    auto engine = setup_random_test();
+    auto engine = Base::get_engine();
 
-    ShocGridData f90_data[] = {
+    ShocGridData baseline_data[] = {
       ShocGridData(10, 71, 72),
       ShocGridData(10, 12, 13),
       ShocGridData(7,  16, 17),
       ShocGridData(2, 7, 8),
     };
 
+    static constexpr Int num_runs = sizeof(baseline_data) / sizeof(ShocGridData);
+
     // Generate random input data
-    // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
-    for (auto& d : f90_data) {
+    // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
+    for (auto& d : baseline_data) {
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // Create copies of data for use by cxx. Needs to happen before reads so that
     // inout data is in original state
     ShocGridData cxx_data[] = {
-      ShocGridData(f90_data[0]),
-      ShocGridData(f90_data[1]),
-      ShocGridData(f90_data[2]),
-      ShocGridData(f90_data[3]),
+      ShocGridData(baseline_data[0]),
+      ShocGridData(baseline_data[1]),
+      ShocGridData(baseline_data[2]),
+      ShocGridData(baseline_data[3]),
     };
 
     // Assume all data is in C layout
 
-    // Get data from fortran
-    for (auto& d : f90_data) {
-      // expects data in C layout
-      shoc_grid(d);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (auto& d : baseline_data) {
+        d.read(Base::m_fid);
+      }
     }
 
     // Get data from cxx
     for (auto& d : cxx_data) {
-      d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-      shoc_grid_f(d.shcol, d.nlev, d.nlevi, d.zt_grid, d.zi_grid, d.pdel, d.dz_zt, d.dz_zi, d.rho_zt);
-      d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+      shoc_grid(d);
     }
 
     // Verify BFB results, all data should be in C layout
-    if (SCREAM_BFB_TESTING) {
-      static constexpr Int num_runs = sizeof(f90_data) / sizeof(ShocGridData);
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < num_runs; ++i) {
-        ShocGridData& d_f90 = f90_data[i];
+        ShocGridData& d_baseline = baseline_data[i];
         ShocGridData& d_cxx = cxx_data[i];
-        for (Int k = 0; k < d_f90.total(d_f90.dz_zt); ++k) {
-          REQUIRE(d_f90.dz_zt[k] == d_cxx.dz_zt[k]);
-          REQUIRE(d_f90.rho_zt[k] == d_cxx.rho_zt[k]);
+        for (Int k = 0; k < d_baseline.total(d_baseline.dz_zt); ++k) {
+          REQUIRE(d_baseline.dz_zt[k] == d_cxx.dz_zt[k]);
+          REQUIRE(d_baseline.rho_zt[k] == d_cxx.rho_zt[k]);
         }
-        for (Int k = 0; k < d_f90.total(d_f90.dz_zi); ++k) {
-          REQUIRE(d_f90.dz_zi[k] == d_cxx.dz_zi[k]);
+        for (Int k = 0; k < d_baseline.total(d_baseline.dz_zi); ++k) {
+          REQUIRE(d_baseline.dz_zi[k] == d_cxx.dz_zi[k]);
         }
+      }
+    } // SCREAM_BFB_TESTING
+    else if (this->m_baseline_action == GENERATE) {
+      for (Int i = 0; i < num_runs; ++i) {
+        cxx_data[i].write(Base::m_fid);
       }
     }
   } // run_bfb
@@ -198,14 +201,14 @@ TEST_CASE("shoc_grid_property", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocGrid;
 
-  TestStruct::run_property();
+  TestStruct().run_property();
 }
 
 TEST_CASE("shoc_grid_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocGrid;
 
-  TestStruct::run_bfb();
+  TestStruct().run_bfb();
 }
 
 } // namespace

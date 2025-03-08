@@ -6,7 +6,7 @@
 
 #include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/field/field_utils.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 
 namespace scream {
 
@@ -224,7 +224,8 @@ get_test_diag(const ekat::Comm& comm, std::shared_ptr<const FieldManager> fm, st
     ekat::ParameterList params;
     params.set("field_name",field.name());
     params.set("grid_name",fm->get_grid()->name());
-    params.set("vertical_location",std::to_string(plevel) + "Pa");
+    params.set("pressure_value",std::to_string(plevel));
+    params.set("pressure_units",std::string("Pa"));
     auto diag = std::make_shared<FieldAtPressureLevel>(comm,params);
     diag->set_grids(gm);
     for (const auto& req : diag->get_required_field_requests()) {

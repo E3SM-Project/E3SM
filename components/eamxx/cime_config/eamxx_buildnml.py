@@ -169,6 +169,7 @@ def perform_consistency_checks(case, xml):
     # of a rad superstep
     rrtmgp = find_node(xml,"rrtmgp")
     rest_opt = case.get_value("REST_OPTION")
+    is_test = case.get_value("TEST")
     if rrtmgp is not None and rest_opt is not None and rest_opt not in ["never","none"]:
         rest_n = int(case.get_value("REST_N"))
         rad_freq = int(find_node(rrtmgp,"rad_frequency").text)
@@ -177,7 +178,9 @@ def perform_consistency_checks(case, xml):
         rad_tstep = atm_tstep * rad_freq
 
 
-        if rad_freq==1:
+        # Some tests (ERS) make late (run-phase) changes, so we cannot validate restart
+        # settings here.
+        if rad_freq==1 or is_test:
             pass
         elif rest_opt in ["nsteps", "nstep"]:
             expect (rest_n % rad_freq == 0,
@@ -480,7 +483,7 @@ def write_pretty_xml(filepath, xml):
 def _create_raw_xml_file_impl(case, xml, filepath=None):
 ###############################################################################
     """
-    On input, xml contains the parsed content of namelist_defaults_scream.xml.
+    On input, xml contains the parsed content of namelist_defaults_eamxx.xml.
     On output, it contains the input parameters for this case.
 
     >>> from eamxx_buildnml_impl import MockCase
@@ -680,7 +683,7 @@ def create_raw_xml_file(case, caseroot):
     else:
         print("Regenerating {}. Manual edits will be lost.".format(raw_xml_file))
 
-        src = os.path.join(case.get_value("SRCROOT"), "components/eamxx/cime_config/namelist_defaults_scream.xml")
+        src = os.path.join(case.get_value("SRCROOT"), "components/eamxx/cime_config/namelist_defaults_eamxx.xml")
 
         # Some atmchanges will require structural changes to the XML file and must
         # be processed early by treating them as if they were made to the defaults file.
@@ -836,7 +839,7 @@ def create_input_files(caseroot, screamroot, rundir):
         tree = ET.parse(fd)
         raw_xml = tree.getroot()
 
-    def_xml_file = os.path.join(screamroot, "cime_config/namelist_defaults_scream.xml")
+    def_xml_file = os.path.join(screamroot, "cime_config/namelist_defaults_eamxx.xml")
     with open(def_xml_file, "r") as fd:
         tree = ET.parse(fd)
         generated_files = get_child(tree.getroot(),"generated_files")

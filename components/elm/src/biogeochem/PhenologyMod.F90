@@ -1469,6 +1469,15 @@ contains
          huigrain           =>    cnstate_vars%huigrain_patch                  , & ! Output: [real(r8) (:) ]  same to reach vegetative maturity
          cumvd              =>    cnstate_vars%cumvd_patch                     , & ! Output: [real(r8) (:) ]  cumulative vernalization d?ependence?
          hdidx              =>    cnstate_vars%hdidx_patch                     , & ! Output: [real(r8) (:) ]  cold hardening index?
+         lt50               =>    crop_vars%lt50_patch                         , & ! Output: [integer  (:) ]  the lethal temperature at which 50% of the individuals are damaged
+         wdd                =>    crop_vars%wdd_patch                          , & ! Output: [integer  (:) ]  winter wheat weighted cumulated degree days
+         rateh              =>    crop_vars%rateh_patch                        , & ! Output: [integer  (:) ]  increase of tolerance caused by cold hardening index
+         rated              =>    crop_vars%rated_patch                        , & ! Output: [integer  (:) ]  loss of tolerance caused by dehardening
+         rates              =>    crop_vars%rates_patch                        , & ! Output: [integer  (:) ]  loss of tolerance caused by low temperature
+         rater              =>    crop_vars%rater_patch                        , & ! Output: [integer  (:) ]  loss of tolerance caused by respiration under snow
+         fsurv              =>    crop_vars%fsurv_patch                        , & ! Output: [integer  (:) ]  winter wheat survival rate
+         accfsurv           =>    crop_vars%accfsurv_patch                     , & ! Output: [integer  (:) ]  accumulated winter wheat survival rate
+         countfsurv         =>    crop_vars%countfsurv_patch                   , & ! Output: [integer  (:) ]  count of accumulated winter wheat survival rate
          vf                 =>    crop_vars%vf_patch                           , & ! Output: [real(r8) (:) ]  vernalization factor
          bglfr_leaf         =>    cnstate_vars%bglfr_leaf_patch                , & ! Output: [real(r8) (:) ]  background leaf litterfall rate (1/s)
          bglfr_froot        =>    cnstate_vars%bglfr_froot_patch               , & ! Output: [real(r8) (:) ]  background fine root litterfall rate (1/s)
@@ -1501,6 +1510,7 @@ contains
          plantmonth         =>    crop_vars%plantmonth_patch              , & ! Output:  [real(r8) ):)]  plant month
          plantday           =>    crop_vars%plantday_patch                , & ! Output:  [real(r8) ):)]  plant day
          harvday            =>    crop_vars%harvday_patch                 , & ! Ouptut:  [real(r8) ):)]  harvest day
+         cphase             =>    crop_vars%cphase_patch                  , & ! Output:  [real(r8) (:)]  phenology phase
          forc_rain          =>    top_af%rain                             , & ! Input:   [real(r8) (:)]  rainfall rate
          wf2                =>    col_ws%wf2                                & ! Output:  [real(r8) (:)]  soil water as frac. of whc for top 0.17 m
          )
@@ -1615,6 +1625,15 @@ contains
 
                   cumvd(p)       = 0._r8
                   hdidx(p)       = 0._r8
+                  lt50(p)        = -5._r8
+                  wdd(p)         = 0._r8
+                  rateh(p)       = 0._r8
+                  rated(p)       = 0._r8
+                  rater(p)       = 0._r8
+                  rates(p)       = 0._r8
+                  fsurv(p)       = 1._r8
+                  accfsurv(p)    = 1._r8
+                  countfsurv(p)  = 1._r8
                   vf(p)          = 0._r8
                   croplive(p)    = .true.
                   cropplant(p)   = .true.
@@ -1640,6 +1659,15 @@ contains
 
                   cumvd(p)       = 0._r8
                   hdidx(p)       = 0._r8
+                  lt50(p)        = -5._r8
+                  wdd(p)         = 0._r8
+                  rateh(p)       = 0._r8
+                  rated(p)       = 0._r8
+                  rater(p)       = 0._r8
+                  rates(p)       = 0._r8
+                  fsurv(p)       = 1._r8
+                  accfsurv(p)    = 1._r8
+                  countfsurv(p)  = 1._r8
                   vf(p)          = 0._r8
                   croplive(p)    = .true.
                   cropplant(p)   = .true.
@@ -1838,13 +1866,19 @@ contains
          offset_flag(p) = 0._r8 ! carbon and nitrogen transfers
 
          if (croplive(p)) then
+            cphase(p) = 1._r8
 
             ! call vernalization if winter temperate cereal planted, living, and the
             ! vernalization factor is not 1;
             ! vf affects the calculation of gddtsoi & gddplant
 
-            if (t_ref2m_min(p) < 1.e30_r8 .and. vf(p) /= 1._r8 .and. (ivt(p) == nwcereal .or. ivt(p) == nwcerealirrig)) then
-               call vernalization(p,canopystate_vars, cnstate_vars, crop_vars)
+            ! Modifications based on Yaqiong Lu et al., 2017 in Geosci. Model Dev.
+            if (vf(p) /= 1._r8 .and. (ivt(p) == nwcereal .or. ivt(p) == nwcerealirrig) .and. hui(p) < 0.7_r8*huigrain(p)) then
+               call vernalization(p, cnstate_vars, crop_vars)
+            end if
+
+            if (ivt(p) == nwcereal .or. ivt(p) == nwcerealirrig) then
+               call coldtolerance(p, cnstate_vars, crop_vars)
             end if
 
             ! days past planting may determine harvest
@@ -1864,6 +1898,7 @@ contains
             ! transfer seed carbon to leaf emergence
 
             if (leafout(p) >= huileaf(p) .and. hui(p) < huigrain(p) .and. idpp < mxmat(ivt(p))) then
+               cphase(p) = 2._r8
                if (abs(onset_counter(p)) > 1.e-6_r8) then
                   onset_flag(p)    = 1._r8
                   onset_counter(p) = dt
@@ -1895,6 +1930,7 @@ contains
                if (harvdate(p) >= NOT_Harvested) harvdate(p) = jday
                if (harvday(p) >= NOT_Harvested) harvday(p) = jday
                croplive(p) = .false.     ! no re-entry in greater if-block
+               cphase(p) = 4._r8
                if (tlai(p) > 0._r8) then ! plant had emerged before harvest
                   offset_flag(p) = 1._r8
                   offset_counter(p) = dt
@@ -1914,6 +1950,7 @@ contains
                ! Use CN's simple formula at least as a place holder (slevis)
 
             else if (hui(p) >= huigrain(p)) then
+               cphase(p) = 3._r8
                bglfr_leaf(p)  = 1._r8/(leaf_long(ivt(p))*dayspyr*secspday)
                bglfr_froot(p) = 1._r8/(froot_long(ivt(p))*dayspyr*secspday)
             end if
@@ -2244,9 +2281,7 @@ contains
   end subroutine CropPhenologyInit
 
   !-----------------------------------------------------------------------
-  subroutine vernalization(p, &
-       canopystate_vars,cnstate_vars, &
-       crop_vars)
+  subroutine vernalization(p, cnstate_vars, crop_vars)
     !
     ! !DESCRIPTION:
     !
@@ -2260,32 +2295,26 @@ contains
     !
     ! !ARGUMENTS:
       !$acc routine seq
-    integer                , intent(in) :: p    ! PATCH index running over
-    type(canopystate_type) , intent(in) :: canopystate_vars
+    integer                , intent(in)    :: p    ! PATCH index running over
     type(cnstate_type)     , intent(inout) :: cnstate_vars
     type(crop_type)        , intent(inout) :: crop_vars
     !
     ! LOCAL VARAIBLES:
-    real(r8) tcrown                     ! ?
-    real(r8) vd, vd1, vd2               ! vernalization dependence
-    real(r8) tkil                       ! Freeze kill threshold
-    integer  c,g                        ! indices
+    real(r8), parameter :: vtmin = -1.3_r8 ! vernalization minimum temp based on Lu et al., 2017
+    real(r8), parameter :: vtopt = 4.9_r8  ! vernalization optimum temp based on Lu et al., 2017
+    real(r8), parameter :: vtmax = 15.7_r8 ! vernalization maximum temp based on Lu et al., 2017
+    real(r8) alpha                      ! parameter in calculating vernalization rate
+    real(r8) tc                         ! t_ref2m in degree C
+    integer  c                          ! indices
+    real(r8) dt_hr                      ! convert dt from sec to hour
     !------------------------------------------------------------------------
 
     associate(                                               &
-         tlai        => canopystate_vars%tlai_patch        , & ! Input:  [real(r8) (:) ]  one-sided leaf area index, no burying by snow
-
-         t_ref2m     => veg_es%t_ref2m     , & ! Input:  [real(r8) (:) ]  2 m height surface air temperature (K)
-         t_ref2m_min => veg_es%t_ref2m_min , & ! Input:  [real(r8) (:) ] daily minimum of average 2 m height surface air temperature (K)
-         t_ref2m_max => veg_es%t_ref2m_max , & ! Input:  [real(r8) (:) ] daily maximum of average 2 m height surface air temperature (K)
-
-         snow_depth  => col_ws%snow_depth     , & ! Input:  [real(r8) (:) ]  snow height (m)
-
-         hdidx       => cnstate_vars%hdidx_patch           , & ! Output: [real(r8) (:) ]  cold hardening index?
+         tcrown      => crop_vars%tcrown_patch             , & ! Output: [integer  (:) ]  crown temperature
+         t_ref2m     => veg_es%t_ref2m                     , & ! Input:  [real(r8) (:) ]  2 m height surface air temperature (K)
+         snow_depth  => col_ws%snow_depth                  , & ! Input:  [real(r8) (:) ]  snow height (m)
          cumvd       => cnstate_vars%cumvd_patch           , & ! Output: [real(r8) (:) ]  cumulative vernalization d?ependence?
-         vf          => crop_vars%vf_patch              , & ! Output: [real(r8) (:) ]  vernalization factor for cereal
-         gddmaturity => cnstate_vars%gddmaturity_patch     , & ! Output: [real(r8) (:) ]  gdd needed to harvest
-         huigrain    => cnstate_vars%huigrain_patch          & ! Output: [real(r8) (:) ]  heat unit index needed to reach vegetative maturity
+         vf          => crop_vars%vf_patch                   & ! Output: [real(r8) (:) ]  vernalization factor for cereal
          )
 
       c = veg_pp%column(p)
@@ -2305,85 +2334,161 @@ contains
       ! if vf(p) = 1.  then plant is fully vernalized - and thermal time
       ! accumulation in phase 1 will be unaffected
       ! refers to gddtsoi & gddplant, defined in the accumulation routines (slevis)
-      ! reset vf, cumvd, and hdidx to 0 at planting of crop (slevis)
+      ! reset vf and cumvd to 0 at planting of crop (slevis)
+      !-----------------------------------------------------------------------------
+      !-----------------------------------------------------------------------------
+      ! Modifications based on Yaqiong Lu et al., 2017 in Geosci. Model Dev.
+      ! A generalized vernalization response function for winter wheat (Streck
+      ! et al.,2003) was used here
+      ! Streck, N.A., Weiss, A., Baenziger, P.S., 2003. A generalized
+      ! vernalization response &
+      ! function for winter wheat. Agron. J. 95
 
-      if (t_ref2m_max(p) > tfrz) then
-         if (t_ref2m_min(p) <= tfrz+15._r8) then
-            vd1      = 1.4_r8 - 0.0778_r8 * tcrown
-            vd2      = 0.5_r8 + 13.44_r8 / ((t_ref2m_max(p)-t_ref2m_min(p)+3._r8)**2) * tcrown
-            vd       = max(0._r8, min(1._r8, vd1, vd2))
-            cumvd(p) = cumvd(p) + vd
-         end if
+      dt_hr = dtime_mod/3600.0_r8  ! dt_hr is the time step in hour
 
-         if (cumvd(p) < 10._r8 .and. t_ref2m_max(p) > tfrz+30._r8) then
-            cumvd(p) = cumvd(p) - 0.5_r8 * (t_ref2m_max(p) - tfrz - 30._r8)
-         end if
-         cumvd(p) = max(0._r8, cumvd(p))       ! must be > 0
+      alpha = log(2._r8)/log((vtmax - vtmin)/(vtopt - vtmin))
 
-         vf(p) = 1._r8 - p1v * (50._r8 - cumvd(p))
-         vf(p) = max(0._r8, min(vf(p), 1._r8)) ! must be between 0 - 1
+      tc = t_ref2m(p) - tfrz
+      if(tc >= vtmin .and. tc <= vtmax) then
+         ! Fixes minor typo in Yaqiong Lu et al., 2017 code
+         cumvd(p) = cumvd(p) + ((2._r8 * ((tc - vtmin)**alpha)*(vtopt - vtmin)**alpha) &
+                 - (tc - vtmin)**(2._r8 * alpha))/(vtopt - vtmin)**(2._r8 * alpha) * (dt_hr/24._r8)
       end if
 
-      ! calculate cold hardening of plant
-      ! determines for winter cereal varieties whether the plant has completed
-      ! a period of cold hardening to protect it from freezing temperatures. If
-      ! not, then exposure could result in death or killing of plants.
-
-      ! there are two distinct phases of hardening
-
-      if (t_ref2m_min(p) <= tfrz-3._r8 .or. hdidx(p) /= 0._r8) then
-         if (hdidx(p) >= hti) then   ! done with phase 1
-            hdidx(p) = hdidx(p) + 0.083_r8
-            hdidx(p) = min(hdidx(p), hti*2._r8)
-         end if
-
-         if (t_ref2m_max(p) >= tbase + tfrz + 10._r8) then
-            hdidx(p) = hdidx(p) - 0.02_r8 * (t_ref2m_max(p)-tbase-tfrz-10._r8)
-            if (hdidx(p) > hti) hdidx(p) = hdidx(p) - 0.02_r8 * (t_ref2m_max(p)-tbase-tfrz-10._r8)
-            hdidx(p) = max(0._r8, hdidx(p))
-         end if
-
-      else if (tcrown >= tbase-1._r8) then
-         if (tcrown <= tbase+8._r8) then
-            hdidx(p) = hdidx(p) + 0.1_r8 - (tcrown-tbase+3.5_r8)**2 / 506._r8
-            if (hdidx(p) >= hti .and. tcrown <= tbase + 0._r8) then
-               hdidx(p) = hdidx(p) + 0.083_r8
-               hdidx(p) = min(hdidx(p), hti*2._r8)
-            end if
-         end if
-
-         if (t_ref2m_max(p) >= tbase + tfrz + 10._r8) then
-            hdidx(p) = hdidx(p) - 0.02_r8 * (t_ref2m_max(p)-tbase-tfrz-10._r8)
-            if (hdidx(p) > hti) hdidx(p) = hdidx(p) - 0.02_r8 * (t_ref2m_max(p)-tbase-tfrz-10._r8)
-            hdidx(p) = max(0._r8, hdidx(p))
-         end if
-      end if
-
-      ! calculate what the cereal killing temperature
-      ! there is a linear inverse relationship between
-      ! hardening of the plant and the killing temperature or
-      ! threshold that the plant can withstand
-      ! when plant is fully-hardened (hdidx = 2), the killing threshold is -18 C
-
-      ! will have to develop some type of relationship that reduces LAI and
-      ! biomass pools in response to cold damaged crop
-
-      if (t_ref2m_min(p) <= tfrz - 6._r8) then
-         tkil = (tbase - 6._r8) - 6._r8 * hdidx(p)
-         if (tkil >= tcrown) then
-            if ((0.95_r8 - 0.02_r8 * (tcrown - tkil)**2) >= 0.02_r8) then
-               write (iulog,*)  'crop damaged by cold temperatures at p,c =', p,c
-            else if (tlai(p) > 0._r8) then ! slevis: kill if past phase1
-               gddmaturity(p) = 0._r8      !         by forcing through
-               huigrain(p)    = 0._r8      !         harvest
-               write (iulog,*)  '95% of crop killed by cold temperatures at p,c =', p,c
-            end if
-         end if
-      end if
+      vf(p) = (cumvd(p)**5._r8)/(22.5_r8**5._r8 + cumvd(p)**5._r8)
 
     end associate
 
   end subroutine vernalization
+
+  !-----------------------------------------------------------------------
+  ! Added based on Yaqiong Lu et al., 2017 in Geosci. Model Dev.
+  subroutine coldtolerance(p, cnstate_vars, crop_vars)
+    !
+    ! !DESCRIPTION:
+    !
+    ! * * * only call for winter temperate cereal * * *
+    !
+    !the subroutine calculates the lethal temperature at 50% of crop alive,
+    !survival rate, winter degree days
+    ! !USES:
+    use elm_time_manager, only: get_step_size,get_curr_date
+    !
+    ! !ARGUMENTS:
+    implicit none
+    integer                , intent(in)    :: p    ! PATCH index running over
+    type(cnstate_type)     , intent(inout) :: cnstate_vars
+    type(crop_type)        , intent(inout) :: crop_vars
+    !
+    ! LOCAL VARAIBLES:
+    logical :: end_cd               ! temporary for is_end_curr_day() value
+    real(r8) tc                     ! t_ref2m in degree C
+    real(r8) prevleafc              ! previous step leafc
+    real(r8) tempfsurv              ! averaged survival rate
+    integer  c,g                    ! indices
+    integer kyr                     ! current year
+    integer kmo                     ! month of year  (1, ..., 12)
+    integer kda                     ! day of month   (1, ..., 31)
+    integer mcsec                   ! seconds of day (0, ..., seconds/day)
+    real(r8) :: dt
+    real(r8) dt_hr                  ! convert dt from sec to hour
+    real(r8), parameter :: Hparam=0.0093 ! based on Lu et al., 2017 which was based on Bergjord et al. (2008)
+    real(r8), parameter :: Dparam=2.7e-5 ! based on Lu et al., 2017 which was based on Bergjord et al. (2008)
+    real(r8), parameter :: Sparam=1.9
+    real(r8), parameter :: Rparam=0.54
+    real(r8), parameter :: T_S_max=12.5
+    real(r8), parameter :: lt50max=-23
+
+    !the calculation of frost tolerance is based on Bergjord et
+    !al.,(2008), Europ. J. Agronomy
+    !the calculation of survival rate and WDD is based on Vico et al.,(2014),Agri
+    !and Forest Metero.
+
+    !------------------------------------------------------------------------
+
+    associate(                                                &
+         ivt             => veg_pp%itype                    , & ! Input:  [integer  (:) ]  pft vegetation type
+         rateh           => crop_vars%rateh_patch           , & ! Output: [integer  (:) ]  increase of tolerance caused by cold hardening index
+         rated           => crop_vars%rated_patch           , & ! Output: [integer  (:) ]  loss of tolerance caused by dehardening
+         rates           => crop_vars%rates_patch           , & ! Output: [integer  (:) ]  loss of tolerance caused by low temperature
+         rater           => crop_vars%rater_patch           , & ! Output: [integer  (:) ]  loss of tolerance caused by respiration under snow
+         lt50            => crop_vars%lt50_patch            , & ! Output: [integer  (:) ]  the lethal temperature at which 50% of the individuals are damaged
+         fsurv           => crop_vars%fsurv_patch           , & ! Output: [integer  (:) ]  winter wheat survival rate
+         accfsurv        => crop_vars%accfsurv_patch        , & ! Output: [integer  (:) ]  accumulated winter wheat survival rate
+         countfsurv      => crop_vars%countfsurv_patch      , & ! Output: [integer  (:) ]  count of accumulated winter wheat survival rate
+         wdd             => crop_vars%wdd_patch             , & ! Output: [integer  (:) ]  winter wheat weighted cumulated degree days
+         tcrown          => crop_vars%tcrown_patch          , & ! Output: [integer  (:) ]  crown temperature
+         vf              => crop_vars%vf_patch              , & ! Output: [real(r8) (:) ]  vernalization factor
+         leafc_to_litter => veg_cf%leafc_to_litter          , & ! Input:  [real(r8) (:) ]  leaf C litterfall (gC/m2/s)
+         leafn_to_litter => veg_nf%leafn_to_litter          , & ! Output: [real(r8) (:) ]  leaf N litterfall (gN/m2/s)
+         leafc           => veg_cs%leafc                    , & ! Input:  [real(r8) (:) ]  (gC/m2) leaf C
+         leafn           => veg_ns%leafn                    , & ! Input:  [real(r8) (:) ]  (gN/m2) leaf N
+         lflitcn         => veg_vp%lflitcn                  , & ! Input:  [real(r8) (:) ]  leaf litter C:N (gC/gN)
+         t_ref2m         => veg_es%t_ref2m                  , & ! Input:  [real(r8) (:) ]  2m air temperature (K)
+         snow_depth      => col_ws%snow_depth                 & ! Input:  [real(r8) (:) ]  snow height (m)
+         )
+
+      dt = dtime_mod
+      dt_hr = dt/3600.0_r8  ! dt_hr is the time step in hour
+
+      c = veg_pp%column(p)
+
+      ! for all equations - temperatures must be in degrees (C)
+      ! calculate temperature of crown of crop (e.g., 3 cm soil temperature)
+      ! snow depth in centimeters
+
+      if (t_ref2m(p) < tfrz) then !slevis: t_ref2m inst of td=daily avg (K)
+         tcrown = 2._r8 + (t_ref2m(p) - tfrz) * (0.4_r8 + 0.0018_r8 * &
+              (min(snow_depth(c)*100._r8, 15._r8) - 15._r8)**2)
+      else !slevis: snow_depth inst of adsnod=daily average (m)
+         tcrown = t_ref2m(p) - tfrz
+      end if
+
+      ! frost tolerance and survival rate calculation
+
+      if(tcrown(p) < 10._r8) then
+         ! Fixes minor typo in Yaqiong Lu et al., 2017 code
+         rateh(p) = Hparam * (10._r8 - max(tcrown(p), 0._r8)) * (lt50(p) - lt50max)
+      end if
+
+      if((tcrown(p) >= -4._r8 .and. vf(p) == 1._r8) .or. (tcrown(p) >= 10._r8 .and. vf(p) < 1._r8)) then
+         rated(p) = Dparam * (-0.6_r8 + 0.142_r8 * lt50max - lt50(p)) * (tcrown(p) + 4._r8)**3._r8
+      end if
+
+      ! Fixes minor typo in Yaqiong Lu et al., 2017 code
+      rater(p) = Rparam * (exp(0.84 + 0.051 * tcrown(p)) - 2._r8)/1.85_r8 * (min(snow_depth(c)*100._r8, 12.5_r8))/12.5
+      rates(p) = (lt50(p) - tcrown(p))/exp(-Sparam * (lt50(p) - tcrown(p)) - 3.74_r8)
+      lt50(p) = lt50(p) + (rated(p) + rates(p) + rater(p) - rateh(p)) * (dt_hr/24._r8)
+
+      fsurv(p) = 2._r8**(-(abs(tcrown(p))/abs(lt50(p)))**4._r8)
+      wdd(p) = wdd(p) + (max(tbase - tcrown(p), 0._r8) * (1._r8 - fsurv(p))) * (dt_hr/24._r8)
+
+      if(wdd(p) > 0._r8) then
+         accfsurv(p) = accfsurv(p) + fsurv(p)
+         countfsurv(p) = countfsurv(p) + 1._r8
+      end if
+
+      call get_curr_date(kyr, kmo, kda, mcsec)
+
+      end_cd = (mcsec == 0)
+      if(end_cd .and. wdd(p) > 0._r8 .and. vf(p) < 0.9_r8 .and. leafc(p) > 10._r8 ) then
+         leafc_to_litter(p) = leafc_to_litter(p) + 5._r8 * (1._r8 - fsurv(p))/dt
+         leafn_to_litter(p) = leafn_to_litter(p) + (5._r8 * (1._r8 - fsurv(p)))/(dt * lflitcn(ivt(p)))
+      end if
+
+      if(end_cd .and. wdd(p) > 1.0_r8 .and. vf(p) > 0.9_r8 ) then
+         tempfsurv = accfsurv(p)/countfsurv(p)
+         prevleafc = leafc(p)
+         leafc_to_litter(p) = leafc_to_litter(p) + prevleafc * (1._r8 - tempfsurv)/dt
+         leafn_to_litter(p) = leafn_to_litter(p) + (prevleafc * (1._r8 - tempfsurv))/(dt * lflitcn(ivt(p)))
+         accfsurv(p) = 1._r8
+         countfsurv(p) = 1._r8
+         wdd(p) = 0._r8
+      end if
+
+    end associate
+
+  end subroutine coldtolerance
 
   !-----------------------------------------------------------------------
   subroutine CropPlantDate (num_soilp, filter_soilp, num_pcropp, filter_pcropp, &

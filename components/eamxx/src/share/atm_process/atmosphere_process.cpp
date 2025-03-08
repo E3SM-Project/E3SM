@@ -1,5 +1,5 @@
 #include "share/atm_process/atmosphere_process.hpp"
-#include "share/util/scream_timing.hpp"
+#include "share/util/eamxx_timing.hpp"
 #include "share/property_checks/mass_and_energy_column_conservation_check.hpp"
 #include "share/field/field_utils.hpp"
 
@@ -896,6 +896,8 @@ get_field_in_impl(const std::string& field_name, const std::string& grid_name) c
         "   field name: " + field_name + "\n"
         "   grid name: " + grid_name + "\n");
   }
+  static Field f;
+  return f;
 }
 
 Field& AtmosphereProcess::
@@ -917,6 +919,8 @@ get_field_in_impl(const std::string& field_name) const {
         "   atm proc name: " + this->name() + "\n"
         "   field name: " + field_name + "\n");
   }
+  static Field f;
+  return f;
 }
 
 Field& AtmosphereProcess::
@@ -932,6 +936,8 @@ get_field_out_impl(const std::string& field_name, const std::string& grid_name) 
         "   field name: " + field_name + "\n"
         "   grid name: " + grid_name + "\n");
   }
+  static Field f;
+  return f;
 }
 
 Field& AtmosphereProcess::
@@ -953,6 +959,8 @@ get_field_out_impl(const std::string& field_name) const {
         "   atm proc name: " + this->name() + "\n"
         "   field name: " + field_name + "\n");
   }
+  static Field f;
+  return f;
 }
 
 FieldGroup& AtmosphereProcess::
@@ -968,6 +976,8 @@ get_group_in_impl(const std::string& group_name, const std::string& grid_name) c
         "   group name: " + group_name + "\n"
         "   grid name: " + grid_name + "\n");
   }
+  static FieldGroup g("");
+  return g;
 }
 
 FieldGroup& AtmosphereProcess::
@@ -989,6 +999,8 @@ get_group_in_impl(const std::string& group_name) const {
         "   atm proc name: " + this->name() + "\n"
         "   group name: " + group_name + "\n");
   }
+  static FieldGroup g("");
+  return g;
 }
 
 FieldGroup& AtmosphereProcess::
@@ -1004,6 +1016,8 @@ get_group_out_impl(const std::string& group_name, const std::string& grid_name) 
         "   group name: " + group_name + "\n"
         "   grid name: " + grid_name + "\n");
   }
+  static FieldGroup g("");
+  return g;
 }
 
 FieldGroup& AtmosphereProcess::
@@ -1025,6 +1039,8 @@ get_group_out_impl(const std::string& group_name) const {
         "   atm proc name: " + this->name() + "\n"
         "   group name: " + group_name + "\n");
   }
+  static FieldGroup g("");
+  return g;
 }
 
 Field& AtmosphereProcess::
@@ -1040,6 +1056,8 @@ get_internal_field_impl(const std::string& field_name, const std::string& grid_n
         "   field name: " + field_name + "\n"
         "   grid name: " + grid_name + "\n");
   }
+  static Field f;
+  return f;
 }
 
 Field& AtmosphereProcess::
@@ -1061,6 +1079,8 @@ get_internal_field_impl(const std::string& field_name) const {
         "   atm proc name: " + this->name() + "\n"
         "   field name: " + field_name + "\n");
   }
+  static Field f;
+  return f;
 }
 
 void AtmosphereProcess

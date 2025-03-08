@@ -43,8 +43,8 @@ void SurfaceCouplingExporter::set_grids(const std::shared_ptr<const GridsManager
   add_field<Required>("pseudo_density",       scalar3d_layout_mid,  Pa,     grid_name, ps);
   add_field<Required>("phis",                 scalar2d_layout,      m2/s2,  grid_name);
   add_field<Required>("p_mid",                scalar3d_layout_mid,  Pa,     grid_name, ps);
-  add_field<Required>("qv",                   scalar3d_layout_mid,  kg/kg,  grid_name, "tracers", ps);
   add_field<Required>("T_mid",                scalar3d_layout_mid,  K,      grid_name, ps);
+  add_tracer<Required>("qv", m_grid,  kg/kg, ps);
   // TODO: Switch horiz_winds to using U and V, note right now there is an issue with when the subfields are created, so can't switch yet.
   add_field<Required>("horiz_winds",          vector3d_layout,      m/s,    grid_name);
   add_field<Required>("sfc_flux_dir_nir",     scalar2d_layout,      W/m2,   grid_name);
@@ -363,7 +363,7 @@ void SurfaceCouplingExporter::set_from_file_exports(const int dt)
 // =========================================================================================
 // This compute_eamxx_exports routine  handles all export variables that are derived from the EAMxx state.
 // Important! This setup assumes the numerical order of export_cpl_indices as listed in
-// /src/mct_coupling/scream_cpl_indices.F90
+// /src/mct_coupling/eamxx_cpl_indices.F90
 //
 // If this order is changed or a new variable is added it is important to update the corresponding
 // index query in the below.

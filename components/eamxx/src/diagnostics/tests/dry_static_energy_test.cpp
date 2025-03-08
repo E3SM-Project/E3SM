@@ -6,8 +6,8 @@
 
 #include "physics/share/physics_constants.hpp"
 
-#include "share/util/scream_setup_random_test.hpp"
-#include "share/util/scream_common_physics_functions.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/util/eamxx_common_physics_functions.hpp"
 #include "share/field/field_utils.hpp"
 
 #include "ekat/ekat_pack.hpp"
@@ -44,17 +44,13 @@ void run(std::mt19937_64& engine)
 {
   using PF         = scream::PhysicsFunctions<DeviceT>;
   using PC         = scream::physics::Constants<Real>;
-  using Pack       = ekat::Pack<Real,SCREAM_PACK_SIZE>;
   using KT         = ekat::KokkosTypes<DeviceT>;
   using ExecSpace  = typename KT::ExeSpace;
   using MemberType = typename KT::MemberType;
-  using view_1d    = typename KT::template view_1d<Pack>;
-  using rview_1d   = typename KT::template view_1d<Real>;
+  using view_1d    = typename KT::template view_1d<Real>;
 
   const     int packsize = SCREAM_PACK_SIZE;
   constexpr int num_levs = packsize*2 + 1; // Number of levels to use for tests, make sure the last pack can also have some empty slots (packsize>1).
-  const     int num_mid_packs    = ekat::npack<Pack>(num_levs);
-  const     int num_mid_packs_p1 = ekat::npack<Pack>(num_levs+1);
 
   // A world comm
   ekat::Comm comm(MPI_COMM_WORLD);
@@ -64,17 +60,7 @@ void run(std::mt19937_64& engine)
   auto gm = create_gm(comm,ncols,num_levs);
 
   // Kokkos Policy
-  auto policy = ekat::ExeSpaceUtils<ExecSpace>::get_default_team_policy(ncols, num_mid_packs);
-
-  // Input (randomized) views
-  view_1d temperature("temperature",num_mid_packs),
-          pseudodensity("pseudodensity",num_mid_packs),
-          pressure("pressure",num_mid_packs),
-          watervapor("watervapor",num_mid_packs);
-
-  auto dview_as_real = [&] (const view_1d& v) -> rview_1d {
-    return rview_1d(reinterpret_cast<Real*>(v.data()),v.size()*packsize);
-  };
+  auto policy = ekat::ExeSpaceUtils<ExecSpace>::get_default_team_policy(ncols, num_levs);
 
   // Construct random input data
   using RPDF = std::uniform_real_distribution<Real>;
@@ -117,13 +103,13 @@ void run(std::mt19937_64& engine)
     // Construct random data to use for test
     // Get views of input data and set to random values
     const auto& T_mid_f       = input_fields["T_mid"];
-    const auto& T_mid_v       = T_mid_f.get_view<Pack**>();
+    const auto& T_mid_v       = T_mid_f.get_view<Real**>();
     const auto& pseudo_dens_f = input_fields["pseudo_density"];
-    const auto& pseudo_dens_v = pseudo_dens_f.get_view<Pack**>();
+    const auto& pseudo_dens_v = pseudo_dens_f.get_view<Real**>();
     const auto& p_mid_f       = input_fields["p_mid"];
-    const auto& p_mid_v       = p_mid_f.get_view<Pack**>();
+    const auto& p_mid_v       = p_mid_f.get_view<Real**>();
     const auto& qv_mid_f      = input_fields["qv"];
-    const auto& qv_mid_v      = qv_mid_f.get_view<Pack**>();
+    const auto& qv_mid_v      = qv_mid_f.get_view<Real**>();
     const auto& phis_f        = input_fields["phis"];
     const auto& phis_v        = phis_f.get_view<Real*>();
     for (int icol=0;icol<ncols;icol++) {
@@ -131,14 +117,10 @@ void run(std::mt19937_64& engine)
       const auto& pseudo_sub = ekat::subview(pseudo_dens_v,icol);
       const auto& p_sub      = ekat::subview(p_mid_v,icol);
       const auto& qv_sub     = ekat::subview(qv_mid_v,icol);
-      ekat::genRandArray(dview_as_real(temperature),   engine, pdf_temp);
-      ekat::genRandArray(dview_as_real(pseudodensity), engine, pdf_pseudodens);
-      ekat::genRandArray(dview_as_real(pressure),      engine, pdf_pres);
-      ekat::genRandArray(dview_as_real(watervapor),    engine, pdf_qv);
-      Kokkos::deep_copy(T_sub,temperature);
-      Kokkos::deep_copy(pseudo_sub,pseudodensity);
-      Kokkos::deep_copy(p_sub,pressure);
-      Kokkos::deep_copy(qv_sub,watervapor);
+      ekat::genRandArray(T_sub,      engine, pdf_temp);
+      ekat::genRandArray(pseudo_sub, engine, pdf_pseudodens);
+      ekat::genRandArray(p_sub,      engine, pdf_pres);
+      ekat::genRandArray(qv_sub,     engine, pdf_qv);
     }
     ekat::genRandArray(phis_v, engine, pdf_surface);
 
@@ -146,17 +128,16 @@ void run(std::mt19937_64& engine)
     diag->compute_diagnostic();
     const auto& diag_out = diag->get_diagnostic();
     Field dse_f = diag_out.clone();
-    dse_f.deep_copy<double,Host>(0.0);
-    dse_f.sync_to_dev();
-    const auto& dse_v = dse_f.get_view<Pack**>();
+    dse_f.deep_copy(0);
+    const auto& dse_v = dse_f.get_view<Real**>();
     // We need some temporary views
-    const auto& z_int_v = view_1d("",num_mid_packs_p1);
-    const auto& dz_v    = view_1d("",num_mid_packs);
-    const auto& z_mid_v = view_1d("",num_mid_packs);
+    const auto& z_int_v = view_1d("",num_levs+1);
+    const auto& dz_v    = view_1d("",num_levs);
+    const auto& z_mid_v = view_1d("",num_levs);
     Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int icol = team.league_rank();
-      Kokkos::parallel_for(Kokkos::TeamVectorRange(team,num_mid_packs), [&] (const Int& jpack) {
-        dz_v(jpack) = PF::calculate_dz(pseudo_dens_v(icol,jpack),p_mid_v(icol,jpack),T_mid_v(icol,jpack),qv_mid_v(icol,jpack));
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team,num_levs), [&] (const Int& ilev) {
+        dz_v(ilev) = PF::calculate_dz(pseudo_dens_v(icol,ilev),p_mid_v(icol,ilev),T_mid_v(icol,ilev),qv_mid_v(icol,ilev));
       });
       team.team_barrier();
       const auto& dse_sub = ekat::subview(dse_v,icol);
@@ -164,8 +145,8 @@ void run(std::mt19937_64& engine)
       team.team_barrier();
       PF::calculate_z_mid(team,num_levs,z_int_v,z_mid_v);
       team.team_barrier();
-      Kokkos::parallel_for(Kokkos::TeamVectorRange(team,num_mid_packs), [&] (const Int& jpack) {
-        dse_sub(jpack) = PF::calculate_dse(T_mid_v(icol,jpack),z_mid_v(jpack),phis_v(icol));
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team,num_levs), [&] (const Int& ilev) {
+        dse_sub(ilev) = PF::calculate_dse(T_mid_v(icol,ilev),z_mid_v(ilev),phis_v(icol));
       });
       team.team_barrier();
     });

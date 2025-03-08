@@ -2,7 +2,7 @@
 #define SCREAM_RRTMGP_RADIATION_HPP
 
 #include "cpp/rrtmgp/mo_gas_concentrations.h"
-#include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
+#include "physics/rrtmgp/eamxx_rrtmgp_interface.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
 #include "ekat/ekat_parameter_list.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
@@ -94,6 +94,11 @@ public:
   Real m_orbital_eccen;  // Eccentricity
   Real m_orbital_obliq;  // Obliquity
   Real m_orbital_mvelp;  // Vernal Equinox Mean Longitude of Perihelion
+
+  // Value for prescribing an invariant solar constant (i.e. total solar irradiance
+  // at TOA).  Used for idealized experiments such as RCE. This is only used when a
+  // positive value is supplied.
+  Real m_fixed_total_solar_irradiance;
 
   // Fixed solar zenith angle to use for shortwave calculations
   // This is only used if a positive value is supplied

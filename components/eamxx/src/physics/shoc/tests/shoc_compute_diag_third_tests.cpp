@@ -2,10 +2,10 @@
 
 #include "shoc_unit_tests_common.hpp"
 #include "shoc_functions.hpp"
-#include "shoc_functions_f90.hpp"
+#include "shoc_test_data.hpp"
 #include "physics/share/physics_constants.hpp"
-#include "share/scream_types.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "share/eamxx_types.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/util/ekat_arch.hpp"
@@ -21,9 +21,9 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocCompDiagThird {
+struct UnitWrap::UnitTest<D>::TestShocCompDiagThird : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_property()
+  void run_property()
   {
     static constexpr Int shcol    = 2;
     static constexpr Int nlev     = 5;
@@ -146,14 +146,7 @@ struct UnitWrap::UnitTest<D>::TestShocCompDiagThird {
     }
 
     // Call the C++ implementation
-    SDS.transpose<ekat::TransposeDirection::c2f>();
-    // expects data in fortran layout
-    compute_diag_third_shoc_moment_f(SDS.shcol,SDS.nlev,SDS.nlevi,SDS.w_sec,SDS.thl_sec,
-                                     SDS.wthl_sec,SDS.tke,SDS.dz_zt,
-                                     SDS.dz_zi,SDS.isotropy_zi,
-                                     SDS.brunt_zi,SDS.w_sec_zi,SDS.thetal_zi,
-                                     SDS.w3);
-    SDS.transpose<ekat::TransposeDirection::f2c>();
+    compute_diag_third_shoc_moment(SDS);
 
     // Check the result
 
@@ -193,11 +186,11 @@ struct UnitWrap::UnitTest<D>::TestShocCompDiagThird {
 
   }
 
-  static void run_bfb()
+  void run_bfb()
   {
-    auto engine = setup_random_test();
+    auto engine = Base::get_engine();
 
-    ComputeDiagThirdShocMomentData SDS_f90[] = {
+    ComputeDiagThirdShocMomentData SDS_baseline[] = {
       //               shcol, nlev, nlevi
       ComputeDiagThirdShocMomentData(10, 71, 72),
       ComputeDiagThirdShocMomentData(10, 12, 13),
@@ -206,48 +199,48 @@ struct UnitWrap::UnitTest<D>::TestShocCompDiagThird {
     };
 
     // Generate random input data
-    for (auto& d : SDS_f90) {
+    for (auto& d : SDS_baseline) {
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // Create copies of data for use by cxx. Needs to happen before reads so that
     // inout data is in original state
     ComputeDiagThirdShocMomentData SDS_cxx[] = {
-      ComputeDiagThirdShocMomentData(SDS_f90[0]),
-      ComputeDiagThirdShocMomentData(SDS_f90[1]),
-      ComputeDiagThirdShocMomentData(SDS_f90[2]),
-      ComputeDiagThirdShocMomentData(SDS_f90[3]),
+      ComputeDiagThirdShocMomentData(SDS_baseline[0]),
+      ComputeDiagThirdShocMomentData(SDS_baseline[1]),
+      ComputeDiagThirdShocMomentData(SDS_baseline[2]),
+      ComputeDiagThirdShocMomentData(SDS_baseline[3]),
     };
+
+    static constexpr Int num_runs = sizeof(SDS_baseline) / sizeof(ComputeDiagThirdShocMomentData);
 
     // Assume all data is in C layout
 
-    // Get data from fortran
-    for (auto& d : SDS_f90) {
-      // expects data in C layout
-      compute_diag_third_shoc_moment(d);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (auto& d : SDS_baseline) {
+        d.read(Base::m_fid);
+      }
     }
 
     // Get data from cxx
     for (auto& d : SDS_cxx) {
-      d.transpose<ekat::TransposeDirection::c2f>();
-      // expects data in fortran layout
-      compute_diag_third_shoc_moment_f(d.shcol,d.nlev,d.nlevi,d.w_sec,d.thl_sec,
-                                       d.wthl_sec,d.tke,d.dz_zt,
-                                       d.dz_zi,d.isotropy_zi,
-                                       d.brunt_zi,d.w_sec_zi,d.thetal_zi,
-                                       d.w3);
-      d.transpose<ekat::TransposeDirection::f2c>();
+      compute_diag_third_shoc_moment(d);
     }
 
     // Verify BFB results, all data should be in C layout
-    if (SCREAM_BFB_TESTING) {
-      static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(ComputeDiagThirdShocMomentData);
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < num_runs; ++i) {
-        ComputeDiagThirdShocMomentData& d_f90 = SDS_f90[i];
+        ComputeDiagThirdShocMomentData& d_baseline = SDS_baseline[i];
         ComputeDiagThirdShocMomentData& d_cxx = SDS_cxx[i];
-        for (Int k = 0; k < d_f90.total(d_f90.w3); ++k) {
-          REQUIRE(d_f90.w3[k] == d_cxx.w3[k]);
+        for (Int k = 0; k < d_baseline.total(d_baseline.w3); ++k) {
+          REQUIRE(d_baseline.w3[k] == d_cxx.w3[k]);
         }
+      }
+    } // SCREAM_BFB_TESTING
+    else if (this->m_baseline_action == GENERATE) {
+      for (Int i = 0; i < num_runs; ++i) {
+        SDS_cxx[i].write(Base::m_fid);
       }
     }
   }
@@ -263,14 +256,14 @@ TEST_CASE("shoc_comp_diag_third_property", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocCompDiagThird;
 
-  TestStruct::run_property();
+  TestStruct().run_property();
 }
 
 TEST_CASE("shoc_comp_diag_third_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocCompDiagThird;
 
-  TestStruct::run_bfb();
+  TestStruct().run_bfb();
 }
 
 } // namespace

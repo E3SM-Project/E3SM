@@ -2,10 +2,10 @@
 
 #include "shoc_unit_tests_common.hpp"
 #include "shoc_functions.hpp"
-#include "shoc_functions_f90.hpp"
+#include "shoc_test_data.hpp"
 #include "physics/share/physics_constants.hpp"
-#include "share/scream_types.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "share/eamxx_types.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/util/ekat_arch.hpp"
@@ -21,9 +21,9 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestComputeShocTemp {
+struct UnitWrap::UnitTest<D>::TestComputeShocTemp : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_property()
+  void run_property()
   {
     static constexpr Int shcol    = 1;
     static constexpr Int nlev     = 3;
@@ -68,9 +68,7 @@ struct UnitWrap::UnitTest<D>::TestComputeShocTemp {
     }
 
     // Call the C++ implementation
-    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-    compute_shoc_temperature_f(SDS.shcol, SDS.nlev, SDS.thetal, SDS.ql, SDS.inv_exner, SDS.tabs);
-    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+    compute_shoc_temperature(SDS);
 
     // Require that absolute temperature is equal to thetal
     for(Int s = 0; s < shcol; ++s) {
@@ -116,9 +114,7 @@ struct UnitWrap::UnitTest<D>::TestComputeShocTemp {
     }
 
     // Call the C++ implementation
-    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-    compute_shoc_temperature_f(SDS.shcol, SDS.nlev, SDS.thetal, SDS.ql, SDS.inv_exner, SDS.tabs);
-    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+    compute_shoc_temperature(SDS);
 
     // Require that absolute temperature is greather than thetal
     for(Int s = 0; s < shcol; ++s) {
@@ -177,9 +173,7 @@ struct UnitWrap::UnitTest<D>::TestComputeShocTemp {
     }
 
     // Call the C++ implementation
-    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-    compute_shoc_temperature_f(SDS.shcol, SDS.nlev, SDS.thetal, SDS.ql, SDS.inv_exner, SDS.tabs);
-    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+    compute_shoc_temperature(SDS);
 
     // Require that absolute temperature be less than thetal
     for(Int s = 0; s < shcol; ++s) {
@@ -202,11 +196,11 @@ struct UnitWrap::UnitTest<D>::TestComputeShocTemp {
 
   }
 
-  static void run_bfb()
+  void run_bfb()
   {
-    auto engine = setup_random_test();
+    auto engine = Base::get_engine();
 
-    ComputeShocTempData f90_data[] = {
+    ComputeShocTempData baseline_data[] = {
       //            shcol, nlev
       ComputeShocTempData(10, 71),
       ComputeShocTempData(10, 12),
@@ -215,43 +209,47 @@ struct UnitWrap::UnitTest<D>::TestComputeShocTemp {
     };
 
     // Generate random input data
-    for (auto& d : f90_data) {
+    for (auto& d : baseline_data) {
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // Create copies of data for use by cxx. Needs to happen before reads so that
     // inout data is in original state
     ComputeShocTempData cxx_data[] = {
-      ComputeShocTempData(f90_data[0]),
-      ComputeShocTempData(f90_data[1]),
-      ComputeShocTempData(f90_data[2]),
-      ComputeShocTempData(f90_data[3]),
+      ComputeShocTempData(baseline_data[0]),
+      ComputeShocTempData(baseline_data[1]),
+      ComputeShocTempData(baseline_data[2]),
+      ComputeShocTempData(baseline_data[3]),
     };
 
     // Assume all data is in C layout
 
-    // Get data from fortran
-    for (auto& d : f90_data) {
-      // expects data in C layout
-      compute_shoc_temperature(d);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (auto& d : baseline_data) {
+        d.read(Base::m_fid);
+      }
     }
 
     // Get data from cxx
     for (auto& d : cxx_data) {
-      d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-      compute_shoc_temperature_f(d.shcol, d.nlev, d.thetal, d.ql, d.inv_exner, d.tabs);
-      d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+      compute_shoc_temperature(d);
     }
 
     // Verify BFB results, all data should be in C layout
-    if (SCREAM_BFB_TESTING) {
-      static constexpr Int num_runs = sizeof(f90_data) / sizeof(ComputeShocTempData);
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
+      static constexpr Int num_runs = sizeof(baseline_data) / sizeof(ComputeShocTempData);
       for (Int i = 0; i < num_runs; ++i) {
-        ComputeShocTempData& d_f90 = f90_data[i];
+        ComputeShocTempData& d_baseline = baseline_data[i];
         ComputeShocTempData& d_cxx = cxx_data[i];
-        for (Int k = 0; k < d_f90.total(d_f90.tabs); ++k) {
-          REQUIRE(d_f90.tabs[k] == d_cxx.tabs[k]);
+        for (Int k = 0; k < d_baseline.total(d_baseline.tabs); ++k) {
+          REQUIRE(d_baseline.tabs[k] == d_cxx.tabs[k]);
         }
+      }
+    } // SCREAM_BFB_TESTING
+    else if (this->m_baseline_action == GENERATE) {
+      for (auto& d : cxx_data) {
+        d.write(Base::m_fid);
       }
     }
   }
@@ -267,14 +265,14 @@ TEST_CASE("shoc_compute_shoc_temperature_property", "shoc")
  {
    using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestComputeShocTemp;
 
-   TestStruct::run_property();
+   TestStruct().run_property();
  }
 
 TEST_CASE("shoc_compute_shoc_temperature_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestComputeShocTemp;
 
-  TestStruct::run_bfb();
+  TestStruct().run_bfb();
 }
 
 } // namespace

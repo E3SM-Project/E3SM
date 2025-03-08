@@ -6,15 +6,15 @@
 #include "share/field/field_manager.hpp"
 #include "share/grid/abstract_grid.hpp"
 #include "share/grid/grids_manager.hpp"
+#include "share/io/eamxx_scorpio_interface.hpp"
 #include "share/io/scorpio_input.hpp"
-#include "share/io/scream_scorpio_interface.hpp"
 
 // later to mam_coupling.hpp
 namespace scream::mam_coupling {
 
 using view_1d_host    = typename KT::view_1d<Real>::HostMirror;
 using view_2d_host    = typename KT::view_2d<Real>::HostMirror;
-using view_5d_host    = typename KT::view_ND<Real,5>::HostMirror;
+using view_5d_host    = typename KT::view_ND<Real, 5>::HostMirror;
 using complex_view_1d = typename KT::view_1d<Kokkos::complex<Real>>;
 
 constexpr int nlwbands = mam4::modal_aer_opt::nlwbands;
@@ -48,11 +48,10 @@ inline void set_parameters_table(
   constexpr int refindex_im   = mam4::modal_aer_opt::refindex_im;
   constexpr int coef_number   = mam4::modal_aer_opt::coef_number;
 
-  auto make_layout = [](const std::vector<int>& extents,
-                        const std::vector<std::string>& names)
-  {
-    std::vector<FieldTag> tags(extents.size(),CMP);
-    return FieldLayout(tags,extents,names);
+  auto make_layout = [](const std::vector<int> &extents,
+                        const std::vector<std::string> &names) {
+    std::vector<FieldTag> tags(extents.size(), CMP);
+    return FieldLayout(tags, extents, names);
   };
 
   auto refindex_real_lw_host =
@@ -85,21 +84,21 @@ inline void set_parameters_table(
   aerosol_optics_host_data.extpsw_host           = extpsw_host;
   aerosol_optics_host_data.abspsw_host           = abspsw_host;
 
-  auto refindex_real_lw_layout = make_layout({nlwbands, refindex_real},
-                                             {"lwband","refindex_real"});
-  auto refindex_im_lw_layout   = make_layout({nlwbands, refindex_im},
-                                             {"lwband","refindex_im"});
-  auto refindex_real_sw_layout = make_layout({nswbands, refindex_real},
-                                             {"swband","refindex_real"});
-  auto refindex_im_sw_layout   = make_layout({nswbands, refindex_im},
-                                             {"swband","refindex_im"});
-  auto absplw_layout =
-    make_layout({nlwbands, 1, refindex_im, refindex_real, coef_number},
-                {"lwband","mode","refindex_im","refindex_real","coef_number"});
+  auto refindex_real_lw_layout =
+      make_layout({nlwbands, refindex_real}, {"lwband", "refindex_real"});
+  auto refindex_im_lw_layout =
+      make_layout({nlwbands, refindex_im}, {"lwband", "refindex_im"});
+  auto refindex_real_sw_layout =
+      make_layout({nswbands, refindex_real}, {"swband", "refindex_real"});
+  auto refindex_im_sw_layout =
+      make_layout({nswbands, refindex_im}, {"swband", "refindex_im"});
+  auto absplw_layout = make_layout(
+      {nlwbands, 1, refindex_im, refindex_real, coef_number},
+      {"lwband", "mode", "refindex_im", "refindex_real", "coef_number"});
   // use also for extpsw, abspsw
-  auto asmpsw_layout =
-    make_layout({nswbands, 1, refindex_im, refindex_real, coef_number},
-                {"swband","mode","refindex_im","refindex_real","coef_number"});
+  auto asmpsw_layout = make_layout(
+      {nswbands, 1, refindex_im, refindex_real, coef_number},
+      {"swband", "mode", "refindex_im", "refindex_real", "coef_number"});
 
   rrtmg_params.set<strvec_t>(
       "Field Names",
@@ -164,22 +163,22 @@ inline void read_rrtmg_table(
   // copy data from host to device for mode 1
   int d1 = imode;
   for(int d3 = 0; d3 < nswbands; ++d3) {
-    auto real_host_d3 = ekat::subview(
-        aerosol_optics_host_data.refindex_real_sw_host, d3);
+    auto real_host_d3 =
+        ekat::subview(aerosol_optics_host_data.refindex_real_sw_host, d3);
     Kokkos::deep_copy(aerosol_optics_device_data.refrtabsw[d1][d3],
                       real_host_d3);
-    auto im_host_d3 = ekat::subview(
-        aerosol_optics_host_data.refindex_im_sw_host, d3);
+    auto im_host_d3 =
+        ekat::subview(aerosol_optics_host_data.refindex_im_sw_host, d3);
     Kokkos::deep_copy(aerosol_optics_device_data.refitabsw[d1][d3], im_host_d3);
   }  // d3
 
   for(int d3 = 0; d3 < nlwbands; ++d3) {
-    auto real_host_d3 = ekat::subview(
-        aerosol_optics_host_data.refindex_real_lw_host, d3);
+    auto real_host_d3 =
+        ekat::subview(aerosol_optics_host_data.refindex_real_lw_host, d3);
     Kokkos::deep_copy(aerosol_optics_device_data.refrtablw[d1][d3],
                       real_host_d3);
-    auto im_host_d3 = ekat::subview(
-        aerosol_optics_host_data.refindex_im_lw_host, d3);
+    auto im_host_d3 =
+        ekat::subview(aerosol_optics_host_data.refindex_im_lw_host, d3);
     Kokkos::deep_copy(aerosol_optics_device_data.refitablw[d1][d3], im_host_d3);
   }  // d3
 
@@ -191,13 +190,14 @@ inline void read_rrtmg_table(
   for(int d5 = 0; d5 < nlwbands; ++d5) {
     // reshape data:
     Kokkos::parallel_for(
-      "reshaping absplw",
-      Kokkos::MDRangePolicy<Kokkos::Rank<3>,Kokkos::DefaultHostExecutionSpace >({0, 0, 0},
-                                              {coef_number, refindex_real, refindex_im}),
-      [&](const int d2, const int d3, const int d4) {
+        "reshaping absplw",
+        Kokkos::MDRangePolicy<Kokkos::Rank<3>,
+                              Kokkos::DefaultHostExecutionSpace>(
+            {0, 0, 0}, {coef_number, refindex_real, refindex_im}),
+        [&](const int d2, const int d3, const int d4) {
           temp_lw_3d_host(d2, d3, d4) =
               aerosol_optics_host_data.absplw_host(d5, 0, d4, d3, d2);
-      });
+        });
     Kokkos::fence();
 
     // syn data to device
@@ -211,39 +211,42 @@ inline void read_rrtmg_table(
   for(int d5 = 0; d5 < nswbands; ++d5) {
     // reshape data
     Kokkos::parallel_for(
-      "reshaping asmpsw",
-      Kokkos::MDRangePolicy<Kokkos::Rank<3>,Kokkos::DefaultHostExecutionSpace >({0, 0, 0},
-                                              {coef_number, refindex_real, refindex_im}),
-      [&](const int d2, const int d3, const int d4) {
-       temp_lw_3d_host(d2, d3, d4) =
+        "reshaping asmpsw",
+        Kokkos::MDRangePolicy<Kokkos::Rank<3>,
+                              Kokkos::DefaultHostExecutionSpace>(
+            {0, 0, 0}, {coef_number, refindex_real, refindex_im}),
+        [&](const int d2, const int d3, const int d4) {
+          temp_lw_3d_host(d2, d3, d4) =
               aerosol_optics_host_data.asmpsw_host(d5, 0, d4, d3, d2);
-      });
+        });
     Kokkos::fence();
     // syn data to device
     Kokkos::deep_copy(aerosol_optics_device_data.asmpsw[d1][d5],
                       temp_lw_3d_host);
     // reshape data
     Kokkos::parallel_for(
-      "reshaping abspsw",
-      Kokkos::MDRangePolicy<Kokkos::Rank<3>,Kokkos::DefaultHostExecutionSpace >({0, 0, 0},
-                                              {coef_number, refindex_real, refindex_im}),
-      [&](const int d2, const int d3, const int d4) {
-       temp_lw_3d_host(d2, d3, d4) =
+        "reshaping abspsw",
+        Kokkos::MDRangePolicy<Kokkos::Rank<3>,
+                              Kokkos::DefaultHostExecutionSpace>(
+            {0, 0, 0}, {coef_number, refindex_real, refindex_im}),
+        [&](const int d2, const int d3, const int d4) {
+          temp_lw_3d_host(d2, d3, d4) =
               aerosol_optics_host_data.abspsw_host(d5, 0, d4, d3, d2);
-      });
-     Kokkos::fence();
+        });
+    Kokkos::fence();
     // syn data to device
     Kokkos::deep_copy(aerosol_optics_device_data.abspsw[d1][d5],
                       temp_lw_3d_host);
     // reshape data
     Kokkos::parallel_for(
-      "reshaping extpsw",
-      Kokkos::MDRangePolicy<Kokkos::Rank<3>,Kokkos::DefaultHostExecutionSpace >({0, 0, 0},
-                                              {coef_number, refindex_real, refindex_im}),
-      [&](const int d2, const int d3, const int d4) {
-       temp_lw_3d_host(d2, d3, d4) =
+        "reshaping extpsw",
+        Kokkos::MDRangePolicy<Kokkos::Rank<3>,
+                              Kokkos::DefaultHostExecutionSpace>(
+            {0, 0, 0}, {coef_number, refindex_real, refindex_im}),
+        [&](const int d2, const int d3, const int d4) {
+          temp_lw_3d_host(d2, d3, d4) =
               aerosol_optics_host_data.extpsw_host(d5, 0, d4, d3, d2);
-      });
+        });
 
     Kokkos::fence();
     // syn data to device
@@ -294,10 +297,10 @@ inline void read_water_refindex(const std::string &table_filename,
   FieldLayout refindex_water_sw_layout{{CMP}, {nswbands}, {"swband"}};
   FieldLayout refindex_water_lw_layout{{CMP}, {nlwbands}, {"lwband"}};
 
-  layouts_water.emplace("refindex_im_water_sw",  refindex_water_sw_layout);
-  layouts_water.emplace("refindex_real_water_sw",refindex_water_sw_layout);
-  layouts_water.emplace("refindex_im_water_lw",  refindex_water_lw_layout);
-  layouts_water.emplace("refindex_real_water_lw",refindex_water_lw_layout);
+  layouts_water.emplace("refindex_im_water_sw", refindex_water_sw_layout);
+  layouts_water.emplace("refindex_real_water_sw", refindex_water_sw_layout);
+  layouts_water.emplace("refindex_im_water_lw", refindex_water_lw_layout);
+  layouts_water.emplace("refindex_real_water_lw", refindex_water_lw_layout);
 
   // create a object to read data
   AtmosphereInput refindex_water(params, grid, host_views_water, layouts_water);
@@ -324,8 +327,8 @@ inline void read_water_refindex(const std::string &table_filename,
 // read_refindex_aero
 
 inline void set_refindex_names(std::string surname, ekat::ParameterList &params,
-                         std::map<std::string, view_1d_host> &host_views,
-                         std::map<std::string, FieldLayout> &layouts) {
+                               std::map<std::string, view_1d_host> &host_views,
+                               std::map<std::string, FieldLayout> &layouts) {
   // set variables names
   using view_1d_host = typename KT::view_1d<Real>::HostMirror;
   using strvec_t     = std::vector<std::string>;

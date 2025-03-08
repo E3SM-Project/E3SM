@@ -6,8 +6,8 @@
 
 #include "physics/share/physics_constants.hpp"
 
-#include "share/util/scream_setup_random_test.hpp"
-#include "share/util/scream_common_physics_functions.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/util/eamxx_common_physics_functions.hpp"
 #include "share/field/field_utils.hpp"
 
 #include "ekat/ekat_pack.hpp"
@@ -43,16 +43,12 @@ template<typename DeviceT>
 void run(std::mt19937_64& engine)
 {
   using PF         = scream::PhysicsFunctions<DeviceT>;
-  using Pack       = ekat::Pack<Real,SCREAM_PACK_SIZE>;
   using KT         = ekat::KokkosTypes<DeviceT>;
   using ExecSpace  = typename KT::ExeSpace;
   using MemberType = typename KT::MemberType;
-  using view_1d    = typename KT::template view_1d<Pack>;
-  using rview_1d   = typename KT::template view_1d<Real>;
 
   const     int packsize = SCREAM_PACK_SIZE;
   constexpr int num_levs = packsize*2 + 1; // Number of levels to use for tests, make sure the last pack can also have some empty slots (packsize>1).
-  const     int num_mid_packs = ekat::npack<Pack>(num_levs);
 
   // A world comm
   ekat::Comm comm(MPI_COMM_WORLD);
@@ -62,15 +58,7 @@ void run(std::mt19937_64& engine)
   auto gm = create_gm(comm,ncols,num_levs);
 
   // Kokkos Policy
-  auto policy = ekat::ExeSpaceUtils<ExecSpace>::get_default_team_policy(ncols, num_mid_packs);
-
-  // Input (randomized) views
-  view_1d temperature("temperature",num_mid_packs),
-          watervapor("watervapor",num_mid_packs);
-
-  auto dview_as_real = [&] (const view_1d& v) -> rview_1d {
-    return rview_1d(reinterpret_cast<Real*>(v.data()),v.size()*packsize);
-  };
+  auto policy = ekat::ExeSpaceUtils<ExecSpace>::get_default_team_policy(ncols, num_levs);
 
   // Construct random input data
   using RPDF = std::uniform_real_distribution<Real>;
@@ -110,29 +98,26 @@ void run(std::mt19937_64& engine)
     // Construct random data to use for test
     // Get views of input data and set to random values
     const auto& T_mid_f = input_fields["T_mid"];
-    const auto& T_mid_v = T_mid_f.get_view<Pack**>();
+    const auto& T_mid_v = T_mid_f.get_view<Real**>();
     const auto& qv_mid_f = input_fields["qv"];
-    const auto& qv_mid_v = qv_mid_f.get_view<Pack**>();
+    const auto& qv_mid_v = qv_mid_f.get_view<Real**>();
     for (int icol=0;icol<ncols;icol++) {
       const auto& T_sub = ekat::subview(T_mid_v,icol);
       const auto& qv_sub = ekat::subview(qv_mid_v,icol);
-      ekat::genRandArray(dview_as_real(temperature), engine, pdf_temp);
-      ekat::genRandArray(dview_as_real(watervapor),  engine, pdf_qv);
-      Kokkos::deep_copy(T_sub,temperature);
-      Kokkos::deep_copy(qv_sub,watervapor);
+      ekat::genRandArray(T_sub,  engine, pdf_temp);
+      ekat::genRandArray(qv_sub, engine, pdf_qv);
     }
 
     // Run diagnostic and compare with manual calculation
     diag->compute_diagnostic();
     const auto& diag_out = diag->get_diagnostic();
     Field virtualT_f = diag_out.clone();
-    virtualT_f.deep_copy<double,Host>(0.0);
-    virtualT_f.sync_to_dev();
-    const auto& virtualT_v = virtualT_f.get_view<Pack**>();
+    virtualT_f.deep_copy(0);
+    const auto& virtualT_v = virtualT_f.get_view<Real**>();
     Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int icol = team.league_rank();
-      Kokkos::parallel_for(Kokkos::TeamVectorRange(team,num_mid_packs), [&] (const Int& jpack) {
-        virtualT_v(icol,jpack) = PF::calculate_virtual_temperature(T_mid_v(icol,jpack),qv_mid_v(icol,jpack));
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team,num_levs), [&] (const Int& ilev) {
+        virtualT_v(icol,ilev) = PF::calculate_virtual_temperature(T_mid_v(icol,ilev),qv_mid_v(icol,ilev));
       });
       team.team_barrier();
     });

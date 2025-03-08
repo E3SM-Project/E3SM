@@ -117,6 +117,9 @@ contains
     !
     ! !ARGUMENTS:
 #ifdef HAVE_MOAB
+#ifdef MOABDEBUG
+    use iMOAB,  only       : iMOAB_WriteMesh
+#endif
     integer :: nsend ! number of fields in seq_flds_r2x_fields
     integer :: nrecv ! number of fields in seq_flds_x2r_fields
 #endif
@@ -163,6 +166,7 @@ contains
     character(len=*),  parameter :: format = "('("//trim(sub)//") :',A)"
 
 #ifdef HAVE_MOAB
+    character*100 outfile, wopts
     integer :: ierr, tagtype, numco,  tagindex 
     character(CXX) ::  tagname ! for fields 
     integer ::  ent_type
@@ -314,6 +318,7 @@ contains
        nsend = mct_avect_nRattr(r2x_r)
        totalmbls = mblsize * nsend ! size of the double array
        allocate (r2x_rm(lsize, nsend) )
+
       ! define tags according to the seq_flds_r2x_fields 
        tagtype = 1  ! dense, double
        numco = 1 !  one value per cell / entity
@@ -322,12 +327,14 @@ contains
        if ( ierr == 1 ) then
            call shr_sys_abort( sub//' ERROR: cannot define tags fro seq_flds_r2x_fields in moab' )
        end if
+
        ! set those fields to 0 in moab
        r2x_rm = 0._r8
        ent_type = 0 ! rof is point cloud on this side
        ierr = iMOAB_SetDoubleTagStorage ( mrofid, tagname, totalmbls , ent_type, r2x_rm(1,1))
        if (ierr > 0 )  &
           call shr_sys_abort( sub//' Error: fail to set to 0 seq_flds_x2r_fields ')
+
        ! allocate now the import from coupler array
        nrecv = mct_avect_nRattr(x2r_r)
        totalmbls_r = mblsize * nrecv ! size of the double array
@@ -340,6 +347,7 @@ contains
        if ( ierr == 1 ) then
            call shr_sys_abort( sub//' ERROR: cannot define tags for seq_flds_x2r_fields in moab' )
        end if
+
        ! set those fields to 0 in moab
        x2r_rm = 0._r8
        ierr = iMOAB_SetDoubleTagStorage ( mrofid, tagname, totalmbls_r , ent_type, x2r_rm(1,1))
@@ -374,6 +382,15 @@ contains
        call memmon_dump_fort('memmon.out','rof_int_mct:end::',lbnum)
        call memmon_reset_addr()
     endif
+#endif
+
+#ifdef MOABDEBUG
+    !     write out the mesh file to disk, in parallel
+    outfile = 'wholeRof.h5m'//C_NULL_CHAR
+    wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+    ierr = iMOAB_WriteMesh(mrofid, outfile, wopts)
+    if (ierr > 0 )  &
+      call shr_sys_abort( sub//' Error: fail to write the moab runoff mesh file')
 #endif
 
   end subroutine rof_init_mct
@@ -946,7 +963,7 @@ contains
     ! use rtmCTL that has all we need
     use seq_comm_mct,      only: mrofid  ! id of moab rof app
     use shr_const_mod, only: SHR_CONST_PI
-    use iMOAB,  only       : iMOAB_RegisterApplication, iMOAB_CreateVertices, iMOAB_WriteMesh, &
+    use iMOAB,  only       : iMOAB_RegisterApplication, iMOAB_CreateVertices, &
     iMOAB_SetIntTagStorage, &
     iMOAB_ResolveSharedEntities, iMOAB_CreateElements, iMOAB_MergeVertices, iMOAB_UpdateMeshInfo
 
@@ -1066,8 +1083,31 @@ contains
     if (ierr > 0 )  &
       call shr_sys_abort(sub//' Error: fail to set area tag ')
 
-    tagname='aream'//C_NULL_CHAR
+    ni = 0
+    do n = rtmCTL%begr,rtmCTL%endr
+       ni = ni + 1
+       coords(ni) = rtmCTL%latc(n)
+    end do
 
+    tagname='lat'//C_NULL_CHAR
+
+    ierr = iMOAB_SetDoubleTagStorage ( mrofid, tagname, lsz , ent_type, coords)
+    if (ierr > 0 )  &
+      call shr_sys_abort(sub//' Error: fail to set lat tag ')
+
+    ni = 0
+    do n = rtmCTL%begr,rtmCTL%endr
+       ni = ni + 1
+       coords(ni) = rtmCTL%lonc(n)
+    end do
+
+    tagname='lon'//C_NULL_CHAR
+
+    ierr = iMOAB_SetDoubleTagStorage ( mrofid, tagname, lsz , ent_type, coords)
+    if (ierr > 0 )  &
+      call shr_sys_abort(sub//' Error: fail to set lat tag ')
+
+   !  tagname='aream'//C_NULL_CHAR
    !  ierr = iMOAB_SetDoubleTagStorage ( mrofid, tagname, lsz , ent_type, coords)
    !  if (ierr > 0 )  &
    !    call shr_sys_abort(sub//' Error: fail to set aream tag ')
@@ -1075,17 +1115,11 @@ contains
     ierr = iMOAB_UpdateMeshInfo ( mrofid )
     if (ierr > 0 )  &
       call shr_sys_abort(sub//' Error: fail to update mesh info ')
+
     deallocate(moab_vert_coords)
     deallocate(vgids)
     deallocate(coords)
-#ifdef MOABDEBUG
-    !     write out the mesh file to disk, in parallel
-    outfile = 'wholeRof.h5m'//C_NULL_CHAR
-    wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
-    ierr = iMOAB_WriteMesh(mrofid, outfile, wopts)
-    if (ierr > 0 )  &
-      call shr_sys_abort( sub//' Error: fail to write the moab runoff mesh file')
-#endif
+
   end subroutine init_moab_rof
 
 
@@ -1200,7 +1234,7 @@ subroutine rof_export_moab(EClock)
    call seq_timemgr_EClockGetData( EClock, stepno=cur_rof_stepno )
 #ifdef MOABDEBUG
       write(lnum,"(I0.2)")cur_rof_stepno
-      outfile = 'wholeRof_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+      outfile = 'rof_export_'//trim(lnum)//'.h5m'//C_NULL_CHAR
       wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
       ierr = iMOAB_WriteMesh(mrofid, outfile, wopts)
       if (ierr > 0 )  &
@@ -1242,7 +1276,7 @@ end subroutine rof_export_moab
     call seq_timemgr_EClockGetData( EClock, stepno=cur_rof_stepno )
 #ifdef MOABDEBUG
     write(lnum,"(I0.2)")cur_rof_stepno
-    outfile = 'RofImp_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+    outfile = 'rof_import_'//trim(lnum)//'.h5m'//C_NULL_CHAR
     wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
     ierr = iMOAB_WriteMesh(mrofid, outfile, wopts)
     if (ierr > 0 )  then

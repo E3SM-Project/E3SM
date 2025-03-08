@@ -200,9 +200,6 @@ option(SCREAM_MPI_ON_DEVICE "Whether to use device pointers for MPI calls" ON)
 option(SCREAM_ENABLE_MAM "Whether to enable MAM aerosol support" ON)
 set(SCREAM_SMALL_KERNELS ${DEFAULT_SMALL_KERNELS} CACHE STRING "Use small, non-monolothic kokkos kernels for ALL components that support them")
 set(SCREAM_P3_SMALL_KERNELS ${SCREAM_SMALL_KERNELS} CACHE STRING "Use small, non-monolothic kokkos kernels for P3 only")
-message("JGF DEFAUL_SMALL_KERNELS is ${DEFAULT_SMALL_KERNELS}")
-message("JGF SCREAM_SMALL_KERNELS is ${SCREAM_SMALL_KERNELS}")
-message("JGF SCREAM_P3_SMALL_KERNELS is ${SCREAM_P3_SMALL_KERNELS}")
 set(SCREAM_SHOC_SMALL_KERNELS ${SCREAM_SMALL_KERNELS} CACHE STRING "Use small, non-monolothic kokkos kernels for SHOC only")
 if (NOT SCREAM_P3_SMALL_KERNELS AND NOT SCREAM_SHOC_SMALL_KERNELS)
   set(EKAT_DISABLE_WORKSPACE_SHARING TRUE CACHE STRING "")
@@ -211,12 +208,12 @@ endif()
 # Add RRTMGP settings. Note, we might consider also adding RRTMGP_EXPENSIVE_CHECKS
 # to turn on the RRTMGP internal checks here as well, via
 #     option (RRTMGP_EXPENSIVE_CHECKS "Turn on internal RRTMGP error checking" ${SCREAM_DEBUG})
-# and then adding to scream_config.h:
+# and then adding to eamxx_config.h:
 #     #cmakedefine RRTMGP_EXPENSIVE_CHECKS
 option (SCREAM_RRTMGP_DEBUG "Turn on extra debug checks in RRTMGP" ${SCREAM_DEBUG})
 
-option(SCREAM_RRTMGP_ENABLE_YAKL "Use YAKL under rrtmgp" TRUE)
-option(SCREAM_RRTMGP_ENABLE_KOKKOS "Use Kokkos under rrtmgp" FALSE)
+option(SCREAM_RRTMGP_ENABLE_YAKL "Use YAKL under rrtmgp" FALSE)
+option(SCREAM_RRTMGP_ENABLE_KOKKOS "Use Kokkos under rrtmgp" TRUE)
 if (SCREAM_RRTMGP_ENABLE_YAKL)
   add_definitions("-DRRTMGP_ENABLE_YAKL")
 endif()
@@ -404,7 +401,7 @@ if (NOT SCREAM_LIB_ONLY)
 
   # All baselines tests will add a line to the baseline_list file,
   # specifyiing the full name of the baseline they generated.
-  # When test-all-scream has to generate new baselines, it will run
+  # When test-all-eamxx has to generate new baselines, it will run
   # ctest -L baseline_gen, and then read this file to find out all the
   # baseline files to copy into the baseline directory
   set (SCREAM_TEST_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/data)
@@ -456,10 +453,6 @@ if (NOT SCREAM_LIB_ONLY)
   # for LONG use 100. It is *completely* up to the test to decide what short, medium, and long mean.
   if (EKAT_ENABLE_COVERAGE OR EKAT_ENABLE_CUDA_MEMCHECK OR EKAT_ENABLE_VALGRIND OR EKAT_ENABLE_COMPUTE_SANITIZER)
     set (SCREAM_TEST_SIZE_DEFAULT SHORT)
-    # also set thread_ing=$max_thread - 1, so we test at most 2 threading configurations
-    if (SCREAM_TEST_MAX_THREADS GREATER 1)
-      math (EXPR SCREAM_TEST_THREAD_INC ${SCREAM_TEST_MAX_THREADS}-1)
-    endif()
   else()
     set (SCREAM_TEST_SIZE_DEFAULT MEDIUM)
   endif()
@@ -563,10 +556,10 @@ if (SCREAM_DOUBLE_PRECISION)
 endif()
 
 # This must be done using add_definitions because it is used to determine
-# whether to include scream_config.h.
+# whether to include eamxx_config.h.
 add_definitions(-DSCREAM_CONFIG_IS_CMAKE)
 
-# Hooks for testing test-all-scream within test-scripts
+# Hooks for testing test-all-eamxx within test-scripts
 if ($ENV{SCREAM_FORCE_BUILD_FAIL})
   add_definitions(-DSCREAM_FORCE_BUILD_FAIL)
 endif()
@@ -585,20 +578,17 @@ if (NOT DEFINED ENV{SCREAM_FAKE_ONLY})
     add_subdirectory(tests)
   endif()
 
-  # Generate scream_config.h and scream_config.f
+  # Generate eamxx_config.h and eamxx_config.f
   include (EkatUtils)
-  EkatConfigFile(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.h.in
-                 ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.h
-                 F90_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.f)
+  EkatConfigFile(${CMAKE_CURRENT_SOURCE_DIR}/src/eamxx_config.h.in
+                 ${CMAKE_CURRENT_BINARY_DIR}/src/eamxx_config.h
+                 F90_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/eamxx_config.f)
 
-  # Build any tools in the scripts/ dir.
-  add_subdirectory(scripts)
-
-  # Generate scream_config.h and scream_config.f
+  # Generate eamxx_config.h and eamxx_config.f
   include (EkatUtils)
-  EkatConfigFile(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.h.in
-                 ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.h
-                 F90_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.f)
+  EkatConfigFile(${CMAKE_CURRENT_SOURCE_DIR}/src/eamxx_config.h.in
+                 ${CMAKE_CURRENT_BINARY_DIR}/src/eamxx_config.h
+                 F90_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/eamxx_config.f)
 else()
   # This is a "fake" build of scream, to stress test the testing scripts.
   # We only need to build something in our tests folder

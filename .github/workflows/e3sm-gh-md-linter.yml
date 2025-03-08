@@ -7,8 +7,6 @@ on:
     branches: ["master"]
     paths:
         - '**/*.md'
-        # for now let's not lint files in eamxx
-        - '!components/eamxx/**/*.md'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
@@ -27,7 +25,7 @@ jobs:
       with:
         files: '**/*.md'
         separator: ","
-    - uses: DavidAnson/markdownlint-cli2-action@v17
+    - uses: DavidAnson/markdownlint-cli2-action@v19
       if: steps.changed-files.outputs.any_changed == 'true'
       with:
         config: 'docs/.markdownlint.json'

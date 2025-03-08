@@ -3,10 +3,10 @@
 #include "shoc_unit_tests_common.hpp"
 
 #include "shoc_functions.hpp"
-#include "shoc_functions_f90.hpp"
+#include "shoc_test_data.hpp"
 #include "physics/share/physics_constants.hpp"
-#include "share/scream_types.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "share/eamxx_types.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/util/ekat_arch.hpp"
@@ -22,9 +22,9 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestPblintdInitPot {
+struct UnitWrap::UnitTest<D>::TestPblintdInitPot : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_property()
+  void run_property()
   {
     static constexpr Int shcol    = 2;
     static constexpr Int nlev     = 1;
@@ -77,7 +77,7 @@ struct UnitWrap::UnitTest<D>::TestPblintdInitPot {
     }
 
     // call the C++ implementation
-    shoc_pblintd_init_pot_f(SDS.shcol, SDS.nlev, SDS.thl, SDS.ql, SDS.q, SDS.thv);
+    pblintd_init_pot(SDS);
 
     // Check the result.
     // Verify that virtual potential temperature is idential
@@ -126,7 +126,7 @@ struct UnitWrap::UnitTest<D>::TestPblintdInitPot {
     }
 
     // Call the C++ implementation
-    shoc_pblintd_init_pot_f(SDS.shcol, SDS.nlev, SDS.thl, SDS.ql, SDS.q, SDS.thv);
+    pblintd_init_pot(SDS);
 
     // Check test
     // Verify that column with condensate loading
@@ -149,11 +149,11 @@ struct UnitWrap::UnitTest<D>::TestPblintdInitPot {
 
   } // run_property
 
-  static void run_bfb()
+  void run_bfb()
   {
-    auto engine = setup_random_test();
+    auto engine = Base::get_engine();
 
-    PblintdInitPotData pblintd_init_pot_data_f90[] = {
+    PblintdInitPotData pblintd_init_pot_data_baseline[] = {
       //                     shcol, nlev
       PblintdInitPotData(36,  72),
       PblintdInitPotData(72,  72),
@@ -161,36 +161,43 @@ struct UnitWrap::UnitTest<D>::TestPblintdInitPot {
       PblintdInitPotData(256, 72),
     };
 
-    for (auto& d : pblintd_init_pot_data_f90) {
+    for (auto& d : pblintd_init_pot_data_baseline) {
       d.randomize(engine);
     }
 
     PblintdInitPotData pblintd_init_pot_data_cxx[] = {
-      PblintdInitPotData(pblintd_init_pot_data_f90[0]),
-      PblintdInitPotData(pblintd_init_pot_data_f90[1]),
-      PblintdInitPotData(pblintd_init_pot_data_f90[2]),
-      PblintdInitPotData(pblintd_init_pot_data_f90[3]),
+      PblintdInitPotData(pblintd_init_pot_data_baseline[0]),
+      PblintdInitPotData(pblintd_init_pot_data_baseline[1]),
+      PblintdInitPotData(pblintd_init_pot_data_baseline[2]),
+      PblintdInitPotData(pblintd_init_pot_data_baseline[3]),
     };
 
-    for (auto& d : pblintd_init_pot_data_f90) {
-      // expects data in C layout
-      pblintd_init_pot(d);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (auto& d : pblintd_init_pot_data_baseline) {
+        d.read(Base::m_fid);
+      }
     }
 
     for (auto& d : pblintd_init_pot_data_cxx) {
-      shoc_pblintd_init_pot_f(d.shcol, d.nlev, d.thl, d.ql, d.q, d.thv);
+      pblintd_init_pot(d);
     }
 
-    if (SCREAM_BFB_TESTING) {
-      static constexpr Int num_runs = sizeof(pblintd_init_pot_data_f90) / sizeof(PblintdInitPotData);
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
+      static constexpr Int num_runs = sizeof(pblintd_init_pot_data_baseline) / sizeof(PblintdInitPotData);
       for (Int i = 0; i < num_runs; ++i) {
         Int shcol = pblintd_init_pot_data_cxx[i].shcol;
         Int nlev  = pblintd_init_pot_data_cxx[i].nlev;
         for (Int j = 0; j < shcol; ++j ) {
           for (Int k = 0; k < nlev; ++k) {
-            REQUIRE(pblintd_init_pot_data_f90[i].thv[j*k] == pblintd_init_pot_data_cxx[i].thv[j*k]);
+            REQUIRE(pblintd_init_pot_data_baseline[i].thv[j*k] == pblintd_init_pot_data_cxx[i].thv[j*k]);
           }
         }
+      }
+    } // SCREAM_BFB_TESTING
+    else if (this->m_baseline_action == GENERATE) {
+      for (auto& d : pblintd_init_pot_data_cxx) {
+        d.write(Base::m_fid);
       }
     }
   }
@@ -207,14 +214,14 @@ TEST_CASE("shoc_pblintd_init_pot_property", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPblintdInitPot;
 
-  TestStruct::run_property();
+  TestStruct().run_property();
 }
 
 TEST_CASE("shoc_pblintd_init_pot_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPblintdInitPot;
 
-  TestStruct::run_bfb();
+  TestStruct().run_bfb();
 }
 
 }  // namespace

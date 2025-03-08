@@ -58,6 +58,7 @@ module ocn_manufactured_solution
    real (kind=RKIND) :: kx, ky
    real (kind=RKIND) :: ang_freq
    real (kind=RKIND) :: eta0
+   real (kind=RKIND) :: viscDel2, viscDel4
    real (kind=RKIND) :: H0
 
 !***********************************************************************
@@ -76,7 +77,13 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_manufactured_solution_tend_thick(tend, err)!{{{
+   subroutine ocn_manufactured_solution_tend_thick(forcingPool, tend, err)!{{{
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      type (mpas_pool_type), intent(in) :: forcingPool
 
       !-----------------------------------------------------------------
       ! input/output variables
@@ -97,6 +104,7 @@ contains
 
       integer :: iCell, kmin, kmax, k
       real (kind=RKIND) :: phase, time
+      real (kind=RKIND), pointer :: forcingTimeIncrement
 
       ! End preamble
       !-------------
@@ -104,7 +112,9 @@ contains
 
       if (.not. config_use_manufactured_solution) return
 
-      time = daysSinceStartOfSim*86400.0_RKIND
+      call mpas_pool_get_array(forcingPool, 'forcingTimeIncrement', forcingTimeIncrement) 
+
+      time = daysSinceStartOfSim*86400.0_RKIND + forcingTimeIncrement 
 
       do iCell = 1,nCellsOwned
 
@@ -137,7 +147,13 @@ contains
 !>  This routine computes the velocity tendency for the manufactured solution
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_manufactured_solution_tend_vel(tend, err)!{{{
+   subroutine ocn_manufactured_solution_tend_vel(forcingPool, tend, err)!{{{
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      type (mpas_pool_type), intent(in) :: forcingPool
 
       !-----------------------------------------------------------------
       ! input/output variables
@@ -158,6 +174,7 @@ contains
 
       integer :: iEdge, kmin, kmax, k
       real (kind=RKIND) :: phase, u, v, time
+      real (kind=RKIND), pointer :: forcingTimeIncrement
 
       ! End preamble
       !-----------------------------------------------------------------
@@ -165,7 +182,9 @@ contains
 
       if (.not. config_use_manufactured_solution) return
 
-      time = daysSinceStartOfSim*86400.0_RKIND
+      call mpas_pool_get_array(forcingPool, 'forcingTimeIncrement', forcingTimeIncrement) 
+
+      time = daysSinceStartOfSim*86400.0_RKIND + forcingTimeIncrement 
 
       do iEdge = 1, nEdgesOwned
 
@@ -182,6 +201,17 @@ contains
             v = eta0*((fEdge(iEdge) + gravity*ky)*cos(phase) &
                       + ang_freq*sin(phase) &
                       - 0.5_RKIND*eta0*(kx + ky)*sin(2.0_RKIND*(phase))) 
+
+            if (.not. config_disable_vel_hmix) then
+               if (config_use_mom_del2) then 
+                  u = u + viscDel2 * eta0 * (kx**2 + ky**2) * cos(phase)
+                  v = v + viscDel2 * eta0 * (kx**2 + ky**2) * cos(phase)
+               endif
+               if (config_use_mom_del4) then 
+                  u = u - viscDel4 * eta0 * ((kx**4 + ky**4 + kx**2 * ky**2) * cos(phase))
+                  v = v - viscDel4 * eta0 * ((kx**4 + ky**4 + kx**2 * ky**2) * cos(phase))
+               endif
+            endif
 
             tend(k,iEdge) = tend(k,iEdge) + u*cos(angleEdge(iEdge)) + v*sin(angleEdge(iEdge))
          enddo
@@ -216,6 +246,9 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: restingThickness
 
       if (.not. config_use_manufactured_solution) return
+
+      viscDel2 = config_mom_del2
+      viscDel4 = config_mom_del4
 
       kx = 2.0_RKIND*pi / config_manufactured_solution_wavelength_x
       ky = 2.0_RKIND*pi / config_manufactured_solution_wavelength_y

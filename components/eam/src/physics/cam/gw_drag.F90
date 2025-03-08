@@ -25,18 +25,21 @@ module gw_drag
 
   use shr_kind_mod,  only: r8 => shr_kind_r8
   use ppgrid,        only: pcols, pver
+  use hycoef,        only: hyai, hybi, hyam, hybm, etamid
   use constituents,  only: pcnst
   use physics_types, only: physics_state, physics_ptend, physics_ptend_init
   use spmd_utils,    only: masterproc
   use cam_history,   only: outfld, hist_fld_active
   use cam_logfile,   only: iulog
-  use cam_abortutils,    only: endrun
+  use cam_abortutils,only: endrun
 
   use ref_pres,      only: do_molec_diff, ntop_molec, nbot_molec
-  use physconst,     only: cpair
+  use physconst,     only: cpair, rh2o, zvir, pi, rearth, r_universal!zvir is the ep1 in wrf,rearth is the radius of earth(m),r_universal is the gas constant
 
   ! These are the actual switches for different gravity wave sources.
-  use phys_control,  only: use_gw_oro, use_gw_front, use_gw_convect, use_gw_energy_fix
+  ! The orographic control switches are also here
+  use phys_control,  only: use_gw_oro, use_gw_front, use_gw_convect, use_gw_energy_fix, use_od_ls, use_od_bl, use_od_ss
+  use od_common,     only: od_ls_ncleff, od_bl_ncd, od_ss_sncleff
 
 ! Typical module header
   implicit none
@@ -47,6 +50,7 @@ module gw_drag
 ! PUBLIC: interfaces
 !
   public :: gw_drag_readnl           ! Read namelist
+  public :: gw_register              ! Register pbuf variables
   public :: gw_init                  ! Initialization
   public :: gw_tend                  ! interface to actual parameterization
 
@@ -118,6 +122,11 @@ module gw_drag
   ! namelist 
   logical          :: history_amwg                   ! output the variables used by the AMWG diag package
 
+  logical  :: use_gw_convect_old          ! switch to enable legacy behavior
+  real(r8) :: gw_convect_plev_src_wind    ! reference pressure level for source wind for convective GWD [Pa]
+  real(r8) :: gw_convect_hdepth_min       ! minimum hdepth for for convective GWD spectrum lookup table [km]
+  real(r8) :: gw_convect_storm_speed_min  ! minimum convective storm speed for convective GWD           [m/s]
+  
 !==========================================================================
 contains
 !==========================================================================
@@ -141,7 +150,9 @@ subroutine gw_drag_readnl(nlfile)
 
   namelist /gw_drag_nl/ pgwv, gw_dc, tau_0_ubc, effgw_beres, effgw_cm, &
       effgw_oro, fcrit2, frontgfc, gw_drag_file, taubgnd, gw_convect_hcf, &
-      hdepth_scaling_factor
+      hdepth_scaling_factor, gw_convect_hdepth_min, &
+      gw_convect_storm_speed_min, gw_convect_plev_src_wind, &
+      use_gw_convect_old
   !----------------------------------------------------------------------
 
   if (masterproc) then
@@ -170,8 +181,12 @@ subroutine gw_drag_readnl(nlfile)
   call mpibcast(frontgfc,    1, mpir8,  0, mpicom)
   call mpibcast(taubgnd,     1, mpir8,  0, mpicom)
   call mpibcast(gw_drag_file, len(gw_drag_file), mpichar, 0, mpicom)
-  call mpibcast(gw_convect_hcf, 1, mpir8,  0, mpicom)
-  call mpibcast(hdepth_scaling_factor, 1, mpir8,  0, mpicom)
+  call mpibcast(gw_convect_hcf,             1, mpir8,  0, mpicom)
+  call mpibcast(hdepth_scaling_factor,      1, mpir8,  0, mpicom)
+  call mpibcast(gw_convect_hdepth_min,      1, mpir8,  0, mpicom)
+  call mpibcast(gw_convect_storm_speed_min, 1, mpir8,  0, mpicom)
+  call mpibcast(gw_convect_plev_src_wind,   1, mpir8,  0, mpicom)
+  call mpibcast(use_gw_convect_old,         1, mpilog, 0, mpicom)
 #endif
 
   dc = gw_dc
@@ -196,7 +211,16 @@ end subroutine gw_drag_readnl
 
 !==========================================================================
 
-subroutine gw_init()
+subroutine gw_register()
+  use od_common,  only: oro_drag_register
+
+  call oro_drag_register()
+
+end subroutine gw_register
+
+!==========================================================================
+
+subroutine gw_init(pbuf2d)
   !-----------------------------------------------------------------------
   ! Time independent initialization for multiple gravity wave
   ! parameterization.
@@ -205,7 +229,7 @@ subroutine gw_init()
   use cam_history,      only: addfld, horiz_only, add_default
   use interpolate_data, only: lininterp
   use phys_control,     only: phys_getopts
-  use physics_buffer,   only: pbuf_get_index
+  use physics_buffer,   only: pbuf_get_index, physics_buffer_desc
 
   use ref_pres,   only: pref_edge
   use physconst,  only: gravit, rair
@@ -215,6 +239,9 @@ subroutine gw_init()
   use gw_front,   only: gw_front_init
   use gw_convect, only: gw_convect_init
 
+  use od_common,  only: oro_drag_init
+  !------------------------------Arguments--------------------------------
+  type(physics_buffer_desc), pointer :: pbuf2d(:,:)
   !---------------------------Local storage-------------------------------
 
   integer :: l, k
@@ -224,7 +251,6 @@ subroutine gw_init()
 
   ! Index for levels at specific pressures.
   integer :: kfront
-  integer :: k700
 
   ! output tendencies and state variables for CAM4 temperature,
   ! water vapor, cloud ice and cloud liquid budgets.
@@ -287,6 +313,8 @@ subroutine gw_init()
   character(len=128) :: errstring
 
   !-----------------------------------------------------------------------
+
+  call oro_drag_init(pbuf2d)
 
   ! Set model flags.
   do_spectral_waves = (pgwv > 0 .and. (use_gw_front .or. use_gw_convect))
@@ -362,13 +390,21 @@ subroutine gw_init()
        errstring)
   if (trim(errstring) /= "") call endrun("gw_common_init: "//errstring)
 
-  if (use_gw_oro) then
-
-     if (effgw_oro == unset_r8) then
+  if (use_gw_oro.or.&
+      use_od_ls.or.&
+      use_od_bl.or.&
+      use_od_ss) then
+     !
+     if (use_gw_oro.and.effgw_oro == unset_r8) then
         call endrun("gw_drag_init: Orographic gravity waves enabled, &
              &but effgw_oro was not set.")
      end if
-
+     !
+     if (use_gw_oro.and.use_od_ls) then
+        call endrun("gw_drag_init: Both orographic gravity waves schemes are turned on, &
+                             &please turn one off by setting use_gw_oro or use_od_ls as .false.")
+     end if
+     !
      call gw_oro_init(errstring)
      if (trim(errstring) /= "") call endrun("gw_oro_init: "//errstring)
 
@@ -383,6 +419,36 @@ subroutine gw_init()
           'Zonal gravity wave surface stress')
      call addfld ('TAUGWY',horiz_only,    'A','N/m2', &
           'Meridional gravity wave surface stress')
+    if (use_od_ls.or.&
+        use_od_bl.or.&
+        use_od_ss) then
+    !added for orographic drag
+    call addfld ('DTAUX3_LS',(/'lev'/),'A','m/s2','U tendency - ls orographic drag')
+    call addfld ('DTAUY3_LS',(/'lev'/),'A','m/s2','V tendency - ls orographic drag')
+    call addfld ('DTAUX3_BL',(/'lev'/),'A','m/s2','U tendency - bl orographic drag')
+    call addfld ('DTAUY3_BL',(/'lev'/),'A','m/s2','V tendency - bl orographic drag')
+    call addfld ('DTAUX3_SS',(/'lev'/),'A','m/s2','U tendency - ss orographic drag')
+    call addfld ('DTAUY3_SS',(/'lev'/),'A','m/s2','V tendency - ss orographic drag')
+    call addfld ('DUSFC_LS',horiz_only,'A', 'N/m2', 'ls zonal oro surface stress')
+    call addfld ('DVSFC_LS',horiz_only,'A', 'N/m2', 'ls merio oro surface stress')
+    call addfld ('DUSFC_BL',horiz_only,'A', 'N/m2', 'bl zonal oro surface stress')
+    call addfld ('DVSFC_BL',horiz_only,'A', 'N/m2', 'bl merio oro surface stress')
+    call addfld ('DUSFC_SS',horiz_only,'A', 'N/m2', 'ss zonal oro surface stress')
+    call addfld ('DVSFC_SS',horiz_only,'A', 'N/m2', 'ss merio oro surface stress')
+    call add_default('DTAUX3_LS      ',    1,' ')
+    call add_default('DTAUY3_LS      ',    1,' ')
+    call add_default('DTAUX3_BL      ',    1,' ')
+    call add_default('DTAUY3_BL      ',    1,' ')
+    call add_default('DTAUX3_SS      ',    1,' ')
+    call add_default('DTAUY3_SS      ',    1,' ')
+    call add_default ('DUSFC_LS      ',    1,' ')
+    call add_default ('DVSFC_LS      ',    1,' ')
+    call add_default ('DUSFC_BL      ',    1,' ')
+    call add_default ('DVSFC_BL      ',    1,' ')
+    call add_default ('DUSFC_SS      ',    1,' ')
+    call add_default ('DVSFC_SS      ',    1,' ')
+    !added for orographic drag output
+    endif
 
      if (history_amwg) then
         call add_default('TAUGWX  ', 1, ' ')
@@ -451,20 +517,10 @@ subroutine gw_init()
 
         ttend_dp_idx    = pbuf_get_index('TTEND_DP')
 
-        do k = 0, pver
-           ! 700 hPa index
-           if (pref_edge(k+1) < 70000._r8) k700 = k+1
-        end do
-
-        if (masterproc) then
-           write (iulog,*) 'K700    =',k700
-        end if
-
         ! Initialization of Beres' parameterization parameters
         call gw_init_beres(mfcc)
-        call gw_convect_init(k700, mfcc, errstring)
-        if (trim(errstring) /= "") &
-             call endrun("gw_convect_init: "//errstring)
+        call gw_convect_init(gw_convect_plev_src_wind, mfcc, errstring)
+        if (trim(errstring) /= "") call endrun("gw_convect_init: "//errstring)
 
         ! Output for gravity waves from the Beres scheme.
         call gw_spec_addflds(prefix=beres_pf, scheme="Beres", &
@@ -583,12 +639,15 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
   use camsrfexch, only: cam_in_t
   ! Location-dependent cpair
   use physconst,  only: cpairv
+  use od_common,  only: oro_drag_interface
   use gw_common,  only: gw_prof, momentum_energy_conservation, &
        gw_drag_prof
   use gw_oro,     only: gw_oro_src
   use gw_front,   only: gw_cm_src
   use gw_convect, only: gw_beres_src
   use dycore,     only: dycore_is
+  use phys_grid,  only: get_rlat_all_p
+  use physconst,  only: gravit,rair
   !------------------------------Arguments--------------------------------
   type(physics_state), intent(in) :: state      ! physics state structure
   ! Standard deviation of orography.
@@ -598,6 +657,26 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
   ! Parameterization net tendencies.
   type(physics_ptend), intent(out):: ptend
   type(cam_in_t), intent(in) :: cam_in
+  !locally added gw and bl drag
+  real(r8) :: dtaux3_ls(pcols,pver)
+  real(r8) :: dtauy3_ls(pcols,pver)
+  real(r8) :: dtaux3_bl(pcols,pver)
+  real(r8) :: dtauy3_bl(pcols,pver)
+  real(r8) :: dtaux3_ss(pcols,pver)
+  real(r8) :: dtauy3_ss(pcols,pver)
+  real(r8) :: dummx3_fd(pcols,pver)
+  real(r8) :: dummy3_fd(pcols,pver)
+  !
+  real(r8) :: dusfc_ls(pcols)
+  real(r8) :: dvsfc_ls(pcols)
+  real(r8) :: dusfc_bl(pcols)
+  real(r8) :: dvsfc_bl(pcols)
+  real(r8) :: dusfc_ss(pcols)
+  real(r8) :: dvsfc_ss(pcols)
+  real(r8) :: dummx_fd(pcols)
+  real(r8) :: dummy_fd(pcols)
+  !
+  real(r8) :: dx(pcols),dy(pcols)
 
   !---------------------------Local storage-------------------------------
 
@@ -765,7 +844,9 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         ! Determine wave sources for Beres04 scheme
         call gw_beres_src(ncol, pgwv, state1%lat(:ncol), u, v, ttend_dp, &
              zm, src_level, tend_level, tau, ubm, ubi, xv, yv, c, &
-             hdepth, maxq0, gw_convect_hcf, hdepth_scaling_factor)
+             hdepth, maxq0, gw_convect_hcf, hdepth_scaling_factor, &
+             gw_convect_hdepth_min, gw_convect_storm_speed_min, &
+             use_gw_convect_old)
 
         do_latitude_taper = .false.
 
@@ -879,7 +960,6 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
      !---------------------------------------------------------------------
      ! Orographic stationary gravity waves
      !---------------------------------------------------------------------
-
      ! Determine the orographic wave source
      call gw_oro_src(ncol, &
           u, v, t, sgh(:ncol), pmid, pint, dpm, zm, nm, &
@@ -893,11 +973,35 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
           piln, rhoi,       nm,   ni, ubm,  ubi,  xv,    yv,   &
           effgw_oro,   c,   kvtt, q,  dse,  tau,  utgw,  vtgw, &
           ttgw, qtgw,  taucd,     egwdffi,  gwut(:,:,0:0), dttdf, dttke)
-
-     ! Add the orographic tendencies to the spectrum tendencies
-     ! Compute the temperature tendency from energy conservation
-     ! (includes spectrum).
-
+  endif
+  !
+  if ( use_od_ls .or. use_od_bl .or. use_od_ss) then
+     utgw=0.0_r8
+     vtgw=0.0_r8
+     ttgw=0.0_r8
+     call oro_drag_interface(state,cam_in,sgh,pbuf,dt,nm,&
+                             use_od_ls,use_od_bl,use_od_ss,.false.,&
+                             od_ls_ncleff,od_bl_ncd,od_ss_sncleff,&
+                             utgw,vtgw,ttgw,&
+                             dtaux3_ls=dtaux3_ls,dtauy3_ls=dtauy3_ls,&
+                             dtaux3_bl=dtaux3_bl,dtauy3_bl=dtauy3_bl,&
+                             dtaux3_ss=dtaux3_ss,dtauy3_ss=dtauy3_ss,&
+                             dtaux3_fd=dummx3_fd,dtauy3_fd=dummy3_fd,&
+                             dusfc_ls=dusfc_ls,dvsfc_ls=dvsfc_ls,&
+                             dusfc_bl=dusfc_bl,dvsfc_bl=dvsfc_bl,&
+                             dusfc_ss=dusfc_ss,dvsfc_ss=dvsfc_ss,&
+                             dusfc_fd=dummx_fd,dvsfc_fd=dummy_fd)
+  endif
+  !
+  ! Add the orographic tendencies to the spectrum tendencies
+  ! Compute the temperature tendency from energy conservation
+  ! (includes spectrum).
+  ! both old and new gwd scheme will add the tendency to circulation
+  !
+  if (use_gw_oro.or.&
+      use_od_ls .or.&
+      use_od_bl .or.&
+      use_od_ss) then
      if(.not. use_gw_energy_fix) then
         !original
         do k = 1, pver
@@ -906,11 +1010,11 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
            vtgw(:,k) = vtgw(:,k) * cam_in%landfrac(:ncol)
            ptend%v(:ncol,k) = ptend%v(:ncol,k) + vtgw(:,k)
            ptend%s(:ncol,k) = ptend%s(:ncol,k) + ttgw(:,k) &
-             -(ptend%u(:ncol,k) * (u(:,k) + ptend%u(:ncol,k)*0.5_r8*dt) &
-             +ptend%v(:ncol,k) * (v(:,k) + ptend%v(:ncol,k)*0.5_r8*dt))
+                            -(ptend%u(:ncol,k) * (u(:,k) + ptend%u(:ncol,k)*0.5_r8*dt) &
+                             +ptend%v(:ncol,k) * (v(:,k) + ptend%v(:ncol,k)*0.5_r8*dt))
            ttgw(:,k) = ttgw(:,k) &
-             -(ptend%u(:ncol,k) * (u(:,k) + ptend%u(:ncol,k)*0.5_r8*dt) &
-             +ptend%v(:ncol,k) * (v(:,k) + ptend%v(:ncol,k)*0.5_r8*dt))
+                            -(ptend%u(:ncol,k) * (u(:,k) + ptend%u(:ncol,k)*0.5_r8*dt) &
+                             +ptend%v(:ncol,k) * (v(:,k) + ptend%v(:ncol,k)*0.5_r8*dt))
            ttgw(:,k) = ttgw(:,k) / cpairv(:ncol, k, lchnk)
         end do
     else
@@ -947,12 +1051,34 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
      call outfld('UTGWORO', utgw,  ncol, lchnk)
      call outfld('VTGWORO', vtgw,  ncol, lchnk)
      call outfld('TTGWORO', ttgw,  ncol, lchnk)
+     !
+     if (use_gw_oro) then
+     !old gwd scheme
      tau0x = tau(:,0,pver) * xv * effgw_oro
      tau0y = tau(:,0,pver) * yv * effgw_oro
      call outfld('TAUGWX', tau0x, ncol, lchnk)
      call outfld('TAUGWY', tau0y, ncol, lchnk)
+     endif
+     !
      call outfld('SGH   ',   sgh,pcols, lchnk)
-
+     !
+     if (use_od_ls.or.&
+         use_od_bl.or.&
+         use_od_ss) then
+     call outfld ('DTAUX3_LS', dtaux3_ls,  pcols, lchnk)
+     call outfld ('DTAUY3_LS', dtauy3_ls,  pcols, lchnk)
+     call outfld ('DTAUX3_BL', dtaux3_bl,  pcols, lchnk)
+     call outfld ('DTAUY3_BL', dtauy3_bl,  pcols, lchnk)
+     call outfld ('DTAUX3_SS', dtaux3_ss,  pcols, lchnk)
+     call outfld ('DTAUY3_SS', dtauy3_ss,  pcols, lchnk)
+     call outfld ('DUSFC_LS', dusfc_ls,  pcols, lchnk)
+     call outfld ('DVSFC_LS', dvsfc_ls,  pcols, lchnk)
+     call outfld ('DUSFC_BL', dusfc_bl,  pcols, lchnk)
+     call outfld ('DVSFC_BL', dvsfc_bl,  pcols, lchnk)
+     call outfld ('DUSFC_SS', dusfc_ss,  pcols, lchnk)
+     call outfld ('DVSFC_SS', dvsfc_ss,  pcols, lchnk)
+     endif
+     !
   end if
 
   ! Convert the tendencies for the dry constituents to dry air basis.

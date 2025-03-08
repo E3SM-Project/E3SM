@@ -1,0 +1,95 @@
+%YAML 1.1
+---
+filename_prefix: eamxx_output.decadal.h
+iotype: pnetcdf
+Averaging Type: Average
+file_max_storage_type: one_month
+horiz_remap_file: ${DIN_LOC_ROOT}/atm/scream/maps/map_ne1024pg2_to_ne30pg2_mono.20230901.nc 
+Fields:
+  Physics PG2:
+    Field Names:
+    # 3D fields
+    - T_mid
+    - qv
+    - RelativeHumidity
+    - qc
+    - qi
+    - qr
+    - qm
+    - nc
+    - ni
+    - nr
+    - cldfrac_tot_for_analysis
+    - cldfrac_ice_for_analysis
+    - cldfrac_liq
+    - omega
+    - U
+    - V
+    - z_mid
+    - p_mid
+    - tke
+    # 2D fields
+    - SW_flux_up_at_model_top
+    - SW_flux_dn_at_model_top
+    - LW_flux_up_at_model_top
+    - SW_clrsky_flux_up_at_model_top
+    - SW_clrsky_flux_dn_at_model_top
+    - LW_clrsky_flux_up_at_model_top
+    - SW_flux_up_at_model_bot
+    - SW_flux_dn_at_model_bot
+    - LW_flux_up_at_model_bot
+    - LW_flux_dn_at_model_bot
+    - SW_clrsky_flux_up_at_model_bot
+    - SW_clrsky_flux_dn_at_model_bot
+    - LW_clrsky_flux_dn_at_model_bot
+    - ShortwaveCloudForcing
+    - LongwaveCloudForcing
+    - ps
+    - SeaLevelPressure
+    - T_2m
+    - qv_2m
+    - surf_radiative_T
+    - VapWaterPath
+    - IceWaterPath
+    - LiqWaterPath
+    - RainWaterPath
+    - ZonalVapFlux
+    - MeridionalVapFlux
+    - surf_evap
+    - surf_sens_flux
+    - surface_upward_latent_heat_flux
+    - precip_liq_surf_mass_flux
+    - precip_ice_surf_mass_flux
+    - landfrac
+    - ocnfrac
+    - PotentialTemperature_at_700hPa
+    - PotentialTemperature_at_850hPa
+    - PotentialTemperature_at_1000hPa
+    - PotentialTemperature_at_2m_above_surface
+    - omega_at_500hPa
+    - omega_at_700hPa
+    - omega_at_850hPa
+    - RelativeHumidity_at_700hPa
+    - RelativeHumidity_at_1000hPa
+    - RelativeHumidity_at_2m_above_surface
+    - wind_speed_10m
+    - z_mid_at_700hPa
+    - z_mid_at_1000hPa
+    - T_mid_at_850hPa
+    - T_mid_at_700hPa
+    # For SST advection
+    - U_at_10m_above_surface
+    - V_at_10m_above_surface
+    # COSP
+    - isccp_ctptau
+    - modis_ctptau
+    - misr_cthtau
+    - cosp_sunlit
+    - isccp_cldtot
+
+output_control:
+  Frequency: 1
+  frequency_units: nmonths
+  MPI Ranks in Filename: false
+Restart:
+  force_new_file: true

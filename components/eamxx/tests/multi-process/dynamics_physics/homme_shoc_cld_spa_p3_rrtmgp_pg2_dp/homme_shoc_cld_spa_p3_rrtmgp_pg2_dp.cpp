@@ -54,6 +54,7 @@ TEST_CASE("scream_homme_physics", "scream_homme_physics") {
   ad.set_params(ad_params);
   ad.init_scorpio ();
   ad.init_time_stamps (t0, t0);
+  ad.create_output_managers ();
   ad.create_atm_processes ();
   ad.create_grids ();
   ad.create_fields ();

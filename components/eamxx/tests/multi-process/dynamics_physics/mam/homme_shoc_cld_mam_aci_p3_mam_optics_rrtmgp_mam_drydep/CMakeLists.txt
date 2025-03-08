@@ -79,6 +79,7 @@ set (TEST_INPUT_FILES
   scream/mam4xx/physprops/ocpho_rrtmg_c20240206.nc
   scream/mam4xx/physprops/bcpho_rrtmg_c20240206.nc
   scream/mam4xx/physprops/poly_rrtmg_c20240206.nc
+  scream/mam4xx/drydep/ne2np4/atmsrf_ne2np4_c20241017.nc
 )
 
 foreach (file IN ITEMS ${TEST_INPUT_FILES})

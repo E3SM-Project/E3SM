@@ -1,11 +1,11 @@
 #include "catch2/catch.hpp"
 
-#include "share/scream_types.hpp"
+#include "share/eamxx_types.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "shoc_functions.hpp"
-#include "shoc_functions_f90.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "shoc_test_data.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 
 #include "shoc_unit_tests_common.hpp"
 
@@ -14,9 +14,9 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestPblintdSurfTemp {
+struct UnitWrap::UnitTest<D>::TestPblintdSurfTemp : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_property()
+  void run_property()
   {
     static constexpr auto ustar_min = scream::shoc::Constants<Scalar>::ustar_min;
     static constexpr Int shcol = 4;
@@ -84,10 +84,7 @@ struct UnitWrap::UnitTest<D>::TestPblintdSurfTemp {
     }
 
     // Call the C++ implementation
-    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-    pblintd_surf_temp_f(SDS.shcol, SDS.nlev, SDS.nlevi, SDS.z, SDS.ustar, SDS.obklen,
-                        SDS.kbfs, SDS.thv, SDS.tlv, SDS.pblh, SDS.check, SDS.rino);
-    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+    pblintd_surf_temp(SDS);
 
     // Check the result
     for(Int s = 0; s < shcol; ++s) {
@@ -112,11 +109,11 @@ struct UnitWrap::UnitTest<D>::TestPblintdSurfTemp {
 
   } // run_property
 
-  static void run_bfb()
+  void run_bfb()
   {
-    auto engine = setup_random_test();
+    auto engine = Base::get_engine();
 
-    PblintdSurfTempData f90_data[] = {
+    PblintdSurfTempData baseline_data[] = {
       PblintdSurfTempData(6, 7, 8),
       PblintdSurfTempData(64, 72, 73),
       PblintdSurfTempData(128, 72, 73),
@@ -124,53 +121,57 @@ struct UnitWrap::UnitTest<D>::TestPblintdSurfTemp {
     };
 
     // Generate random input data
-    // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
-    for (auto& d : f90_data) {
+    // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
+    for (auto& d : baseline_data) {
       d.randomize(engine, { {d.obklen, {100., 200.}} });
     }
 
-    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // Create copies of data for use by cxx. Needs to happen before reads so that
     // inout data is in original state
     PblintdSurfTempData cxx_data[] = {
-      PblintdSurfTempData(f90_data[0]),
-      PblintdSurfTempData(f90_data[1]),
-      PblintdSurfTempData(f90_data[2]),
-      PblintdSurfTempData(f90_data[3]),
+      PblintdSurfTempData(baseline_data[0]),
+      PblintdSurfTempData(baseline_data[1]),
+      PblintdSurfTempData(baseline_data[2]),
+      PblintdSurfTempData(baseline_data[3]),
     };
 
     // Assume all data is in C layout
 
-    // Get data from fortran
-    for (auto& d : f90_data) {
-      // expects data in C layout
-      pblintd_surf_temp(d);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (auto& d : baseline_data) {
+        d.read(Base::m_fid);
+      }
     }
 
     // Get data from cxx
     for (auto& d : cxx_data) {
-      d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-      pblintd_surf_temp_f(d.shcol, d.nlev, d.nlevi, d.z, d.ustar, d.obklen, d.kbfs, d.thv, d.tlv, d.pblh, d.check, d.rino);
-      d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+      pblintd_surf_temp(d);
     }
 
     // Verify BFB results, all data should be in C layout
-    if (SCREAM_BFB_TESTING) {
-      static constexpr Int num_runs = sizeof(f90_data) / sizeof(PblintdSurfTempData);
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
+      static constexpr Int num_runs = sizeof(baseline_data) / sizeof(PblintdSurfTempData);
       for (Int i = 0; i < num_runs; ++i) {
-        PblintdSurfTempData& d_f90 = f90_data[i];
+        PblintdSurfTempData& d_baseline = baseline_data[i];
         PblintdSurfTempData& d_cxx = cxx_data[i];
-        for (Int k = 0; k < d_f90.total(d_f90.tlv); ++k) {
-          REQUIRE(d_f90.total(d_f90.tlv) == d_cxx.total(d_cxx.tlv));
-          REQUIRE(d_f90.tlv[k] == d_cxx.tlv[k]);
-          REQUIRE(d_f90.total(d_f90.tlv) == d_cxx.total(d_cxx.pblh));
-          REQUIRE(d_f90.pblh[k] == d_cxx.pblh[k]);
-          REQUIRE(d_f90.total(d_f90.tlv) == d_cxx.total(d_cxx.check));
-          REQUIRE(d_f90.check[k] == d_cxx.check[k]);
+        for (Int k = 0; k < d_baseline.total(d_baseline.tlv); ++k) {
+          REQUIRE(d_baseline.total(d_baseline.tlv) == d_cxx.total(d_cxx.tlv));
+          REQUIRE(d_baseline.tlv[k] == d_cxx.tlv[k]);
+          REQUIRE(d_baseline.total(d_baseline.tlv) == d_cxx.total(d_cxx.pblh));
+          REQUIRE(d_baseline.pblh[k] == d_cxx.pblh[k]);
+          REQUIRE(d_baseline.total(d_baseline.tlv) == d_cxx.total(d_cxx.check));
+          REQUIRE(d_baseline.check[k] == d_cxx.check[k]);
         }
-        for (Int k = 0; k < d_f90.total(d_f90.rino); ++k) {
-          REQUIRE(d_f90.total(d_f90.rino) == d_cxx.total(d_cxx.rino));
-          REQUIRE(d_f90.rino[k] == d_cxx.rino[k]);
+        for (Int k = 0; k < d_baseline.total(d_baseline.rino); ++k) {
+          REQUIRE(d_baseline.total(d_baseline.rino) == d_cxx.total(d_cxx.rino));
+          REQUIRE(d_baseline.rino[k] == d_cxx.rino[k]);
         }
+      }
+    } // SCREAM_BFB_TESTING
+    else if (this->m_baseline_action == GENERATE) {
+      for (auto& d : cxx_data) {
+        d.write(Base::m_fid);
       }
     }
   } // run_bfb
@@ -187,14 +188,14 @@ TEST_CASE("pblintd_surf_temp_property", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPblintdSurfTemp;
 
-  TestStruct::run_property();
+  TestStruct().run_property();
 }
 
 TEST_CASE("pblintd_surf_temp_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPblintdSurfTemp;
 
-  TestStruct::run_bfb();
+  TestStruct().run_bfb();
 }
 
 } // empty namespace

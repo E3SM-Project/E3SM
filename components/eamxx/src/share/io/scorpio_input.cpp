@@ -1,6 +1,6 @@
 #include "share/io/scorpio_input.hpp"
 
-#include "share/io/scream_scorpio_interface.hpp"
+#include "share/io/eamxx_scorpio_interface.hpp"
 
 #include <ekat/util/ekat_string_utils.hpp>
 
@@ -47,6 +47,14 @@ AtmosphereInput (const std::string& filename,
 }
 
 AtmosphereInput::
+AtmosphereInput (const std::vector<std::string>& fields_names,
+                 const std::shared_ptr<const grid_type>& grid)
+{
+  set_grid(grid);
+  m_fields_names = fields_names;
+}
+
+AtmosphereInput::
 ~AtmosphereInput ()
 {
   // In practice, this should always be true, but since we have a do-nothing default ctor,
@@ -73,10 +81,10 @@ init (const ekat::ParameterList& params,
   // Sets the internal field mgr, and possibly sets up the remapper
   set_field_manager(field_mgr);
 
+  m_inited_with_fields = true;
+
   // Init scorpio internal structures
   init_scorpio_structures ();
-
-  m_inited_with_fields = true;
 }
 
 void AtmosphereInput::
@@ -113,10 +121,10 @@ init (const ekat::ParameterList& params,
 	"    layout = " + it.first);
   }
 
+  m_inited_with_views = true;
+
   // Init scorpio internal structures
   init_scorpio_structures ();
-
-  m_inited_with_views = true;
 }
 
 /* ---------------------------------------------------------- */
@@ -161,7 +169,7 @@ set_field_manager (const std::shared_ptr<const fm_type>& field_mgr)
 
     // If we can alias the field's host view, do it.
     // Otherwise, create a temporary.
-    bool can_alias_field_view = fh.get_parent().expired() && fap.get_padding()==0;
+    bool can_alias_field_view = fh.get_parent()==nullptr && fap.get_padding()==0;
     if (can_alias_field_view) {
       auto data = f.get_internal_view_data<Real,Host>();
       m_host_views_1d[name] = view_1d_host(data,fl.size());
@@ -173,6 +181,28 @@ set_field_manager (const std::shared_ptr<const fm_type>& field_mgr)
   }
 }
 
+void AtmosphereInput::
+set_fields (const std::vector<Field>& fields) {
+  auto fm = std::make_shared<fm_type>(m_io_grid);
+  m_fields_names.clear();
+  for (const auto& f : fields) {
+    fm->add_field(f);
+    m_fields_names.push_back(f.name());
+  }
+  set_field_manager(fm);
+  m_inited_with_fields = true;
+}
+
+void AtmosphereInput::
+reset_filename (const std::string& filename)
+{
+  if (m_filename!="") {
+    scorpio::release_file(m_filename);
+  }
+  m_params.set("Filename",filename);
+  m_filename = filename;
+  init_scorpio_structures();
+}
 
 /* ---------------------------------------------------------- */
 void AtmosphereInput::
@@ -220,6 +250,7 @@ void AtmosphereInput::read_variables (const int time_index)
 
     // Read the data
     auto v1d = m_host_views_1d.at(name);
+
     scorpio::read_var(m_filename,name,v1d.data(),time_index);
 
     // If we have a field manager, make sure the data is correctly
@@ -232,7 +263,7 @@ void AtmosphereInput::read_variables (const int time_index)
       const auto& fap = fh.get_alloc_properties();
 
       // Check if the stored 1d view is sharing the data ptr with the field
-      const bool can_alias_field_view = fh.get_parent().expired() && fap.get_padding()==0;
+      const bool can_alias_field_view = fh.get_parent()==nullptr && fap.get_padding()==0;
 
       // If the 1d view is a simple reshape of the field's Host view data,
       // then we're already done. Otherwise, we need to manually copy.
@@ -350,16 +381,20 @@ void AtmosphereInput::finalize()
 /* ---------------------------------------------------------- */
 void AtmosphereInput::init_scorpio_structures() 
 {
+  EKAT_REQUIRE_MSG (m_inited_with_views or m_inited_with_fields,
+      "Error! Cannot init scorpio structures until fields/views have been set.\n");
+
   std::string iotype_str = m_params.get<std::string>("iotype", "default");
   auto iotype = scorpio::str2iotype(iotype_str);
 
   scorpio::register_file(m_filename,scorpio::Read,iotype);
 
   // Some input files have the "time" dimension as non-unlimited. This messes up our
-  // scorpio interface. To avoid trouble, if a dim called 'time' is present we
-  // treat it as unlimited, even though it isn't.
-  if (scorpio::has_dim(m_filename,"time") and not scorpio::is_dim_unlimited(m_filename,"time")) {
-    scorpio::pretend_dim_is_unlimited(m_filename,"time");
+  // scorpio interface, which stores a pointer to a "time" dim to be used to read/write
+  // slices. This ptr is automatically inited to the unlimited dim in the file. If there is
+  // no unlim dim, this ptr remains inited.
+  if (not scorpio::has_time_dim(m_filename) and scorpio::has_dim(m_filename,"time")) {
+    scorpio::mark_dim_as_time(m_filename,"time");
   }
 
   // Check variables are in the input file

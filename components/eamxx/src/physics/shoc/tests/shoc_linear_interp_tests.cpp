@@ -3,10 +3,10 @@
 #include "shoc_unit_tests_common.hpp"
 
 #include "shoc_functions.hpp"
-#include "shoc_functions_f90.hpp"
+#include "shoc_test_data.hpp"
 #include "physics/share/physics_constants.hpp"
-#include "share/scream_types.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "share/eamxx_types.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/util/ekat_arch.hpp"
@@ -22,9 +22,9 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocLinearInt {
+struct UnitWrap::UnitTest<D>::TestShocLinearInt : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_property_fixed()
+  void run_property_fixed()
   {
     static constexpr Int shcol    = 2;
     static constexpr Int km1     = 5;
@@ -100,9 +100,7 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
     }
 
     // Call the C++ implementation
-    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-    linear_interp_f(SDS.x1, SDS.x2, SDS.y1, SDS.y2, SDS.km1, SDS.km2, SDS.ncol, SDS.minthresh);
-    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+    linear_interp(SDS);
 
     // First check that all output temperatures are greater than zero
 
@@ -194,9 +192,7 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
     }
 
     // Call the C++ implementation
-    SDS2.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-    linear_interp_f(SDS2.x1, SDS2.x2, SDS2.y1, SDS2.y2, SDS2.km1, SDS2.km2, SDS2.ncol, SDS2.minthresh);
-    SDS2.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+    linear_interp(SDS2);
 
     // Check the result, make sure output is bounded correctly
 
@@ -223,7 +219,7 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
     }
   }
 
-  static void run_property_random(bool km1_bigger)
+  void run_property_random(bool km1_bigger)
   {
     std::default_random_engine generator;
     std::pair<Int, Int> km1_range = {13, 25};
@@ -281,9 +277,7 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
     }
 
     // Call the C++ implementation
-    d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-    linear_interp_f(d.x1, d.x2, d.y1, d.y2, d.km1, d.km2, d.ncol, d.minthresh);
-    d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+    linear_interp(d);
 
     // The combination of single-precision and randomness generating points
     // close together can result in larger error margins.
@@ -333,18 +327,18 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
     }
   }
 
-  static void run_property()
+  void run_property()
   {
     run_property_fixed();
     run_property_random(true);
     run_property_random(false);
   }
 
-  static void run_bfb()
+  void run_bfb()
   {
-    auto engine = setup_random_test();
+    auto engine = Base::get_engine();
 
-    LinearInterpData f90_data[] = {
+    LinearInterpData baseline_data[] = {
       //                   shcol, nlev(km1), nlevi(km2), minthresh
       LinearInterpData(10, 72, 71, 1e-15),
       LinearInterpData(10, 71, 72, 1e-15),
@@ -355,45 +349,49 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
     };
 
     // Generate random input data
-    for (auto& d : f90_data) {
+    for (auto& d : baseline_data) {
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // Create copies of data for use by cxx. Needs to happen before reads so that
     // inout data is in original state
     LinearInterpData cxx_data[] = {
-      LinearInterpData(f90_data[0]),
-      LinearInterpData(f90_data[1]),
-      LinearInterpData(f90_data[2]),
-      LinearInterpData(f90_data[3]),
-      LinearInterpData(f90_data[4]),
-      LinearInterpData(f90_data[5]),
+      LinearInterpData(baseline_data[0]),
+      LinearInterpData(baseline_data[1]),
+      LinearInterpData(baseline_data[2]),
+      LinearInterpData(baseline_data[3]),
+      LinearInterpData(baseline_data[4]),
+      LinearInterpData(baseline_data[5]),
     };
 
     // Assume all data is in C layout
 
-    // Get data from fortran
-    for (auto& d : f90_data) {
-      // expects data in C layout
-      linear_interp(d);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (auto& d : baseline_data) {
+        d.read(Base::m_fid);
+      }
     }
 
     // Get data from cxx
     for (auto& d : cxx_data) {
-      d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-      linear_interp_f(d.x1, d.x2, d.y1, d.y2, d.km1, d.km2, d.ncol, d.minthresh);
-      d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+      linear_interp(d);
     }
 
     // Verify BFB results, all data should be in C layout
-    if (SCREAM_BFB_TESTING) {
-      static constexpr Int num_runs = sizeof(f90_data) / sizeof(LinearInterpData);
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
+      static constexpr Int num_runs = sizeof(baseline_data) / sizeof(LinearInterpData);
       for (Int i = 0; i < num_runs; ++i) {
-        LinearInterpData& d_f90 = f90_data[i];
+        LinearInterpData& d_baseline = baseline_data[i];
         LinearInterpData& d_cxx = cxx_data[i];
-        for (Int k = 0; k < d_f90.total(d_f90.y2); ++k) {
-          REQUIRE(d_f90.y2[k] == d_cxx.y2[k]);
+        for (Int k = 0; k < d_baseline.total(d_baseline.y2); ++k) {
+          REQUIRE(d_baseline.y2[k] == d_cxx.y2[k]);
         }
+      }
+    } // SCREAM_BFB_TESTING
+    else if (this->m_baseline_action == GENERATE) {
+      for (auto& d : cxx_data) {
+        d.write(Base::m_fid);
       }
     }
   } // run_bfb
@@ -410,14 +408,14 @@ TEST_CASE("shoc_linear_interp_property", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocLinearInt;
 
-  TestStruct::run_property();
+  TestStruct().run_property();
 }
 
 TEST_CASE("shoc_linear_interp_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocLinearInt;
 
-  TestStruct::run_bfb();
+  TestStruct().run_bfb();
 }
 
 } // namespace

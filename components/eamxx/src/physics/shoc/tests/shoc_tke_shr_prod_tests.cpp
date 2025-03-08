@@ -2,10 +2,10 @@
 
 #include "shoc_unit_tests_common.hpp"
 #include "shoc_functions.hpp"
-#include "shoc_functions_f90.hpp"
+#include "shoc_test_data.hpp"
 #include "physics/share/physics_constants.hpp"
-#include "share/scream_types.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "share/eamxx_types.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/util/ekat_arch.hpp"
@@ -21,9 +21,9 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocShearProd {
+struct UnitWrap::UnitTest<D>::TestShocShearProd : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_property()
+  void run_property()
   {
     static constexpr Int shcol    = 2;
     static constexpr Int nlev     = 5;
@@ -94,9 +94,7 @@ struct UnitWrap::UnitTest<D>::TestShocShearProd {
     }
 
     // Call the C++ implementation
-    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-    compute_shr_prod_f(SDS.nlevi, SDS.nlev, SDS.shcol, SDS.dz_zi, SDS.u_wind, SDS.v_wind, SDS.sterm);
-    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+    compute_shr_prod(SDS);
 
     // Check test
     for(Int s = 0; s < shcol; ++s) {
@@ -145,9 +143,7 @@ struct UnitWrap::UnitTest<D>::TestShocShearProd {
     }
 
     // Call the C++ implementation
-    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-    compute_shr_prod_f(SDS.nlevi, SDS.nlev, SDS.shcol, SDS.dz_zi, SDS.u_wind, SDS.v_wind, SDS.sterm);
-    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+    compute_shr_prod(SDS);
 
     // Check test
     // Verify that shear term is zero everywhere
@@ -159,11 +155,11 @@ struct UnitWrap::UnitTest<D>::TestShocShearProd {
     }
   }
 
-  static void run_bfb()
+  void run_bfb()
   {
-    auto engine = setup_random_test();
+    auto engine = Base::get_engine();
 
-    ComputeShrProdData f90_data[] = {
+    ComputeShrProdData baseline_data[] = {
       //            shcol, nlev
       ComputeShrProdData(10, 71, 72),
       ComputeShrProdData(10, 12, 13),
@@ -172,43 +168,47 @@ struct UnitWrap::UnitTest<D>::TestShocShearProd {
     };
 
     // Generate random input data
-    for (auto& d : f90_data) {
+    for (auto& d : baseline_data) {
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // Create copies of data for use by cxx. Needs to happen before reads so that
     // inout data is in original state
     ComputeShrProdData cxx_data[] = {
-      ComputeShrProdData(f90_data[0]),
-      ComputeShrProdData(f90_data[1]),
-      ComputeShrProdData(f90_data[2]),
-      ComputeShrProdData(f90_data[3]),
+      ComputeShrProdData(baseline_data[0]),
+      ComputeShrProdData(baseline_data[1]),
+      ComputeShrProdData(baseline_data[2]),
+      ComputeShrProdData(baseline_data[3]),
     };
 
     // Assume all data is in C layout
 
-    // Get data from fortran
-    for (auto& d : f90_data) {
-      // expects data in C layout
-      compute_shr_prod(d);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (auto& d : baseline_data) {
+        d.read(Base::m_fid);
+      }
     }
 
     // Get data from cxx
     for (auto& d : cxx_data) {
-      d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-      compute_shr_prod_f(d.nlevi, d.nlev, d.shcol, d.dz_zi, d.u_wind, d.v_wind, d.sterm);
-      d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+      compute_shr_prod(d);
     }
 
     // Verify BFB results, all data should be in C layout
-    if (SCREAM_BFB_TESTING) {
-      static constexpr Int num_runs = sizeof(f90_data) / sizeof(ComputeShrProdData);
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
+      static constexpr Int num_runs = sizeof(baseline_data) / sizeof(ComputeShrProdData);
       for (Int i = 0; i < num_runs; ++i) {
-        ComputeShrProdData& d_f90 = f90_data[i];
+        ComputeShrProdData& d_baseline = baseline_data[i];
         ComputeShrProdData& d_cxx = cxx_data[i];
-        for (Int k = 0; k < d_f90.total(d_f90.sterm); ++k) {
-          REQUIRE(d_f90.sterm[k] == d_cxx.sterm[k]);
+        for (Int k = 0; k < d_baseline.total(d_baseline.sterm); ++k) {
+          REQUIRE(d_baseline.sterm[k] == d_cxx.sterm[k]);
         }
+      }
+    } // SCREAM_BFB_TESTING
+    else if (this->m_baseline_action == GENERATE) {
+      for (auto& d : cxx_data) {
+        d.write(Base::m_fid);
       }
     }
   } //run_bfb
@@ -224,14 +224,14 @@ TEST_CASE("shoc_tke_shr_prod_property", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocShearProd;
 
-  TestStruct::run_property();
+  TestStruct().run_property();
 }
 
 TEST_CASE("shoc_tke_shr_prod_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocShearProd;
 
-  TestStruct::run_bfb();
+  TestStruct().run_bfb();
 }
 
 } // namespace

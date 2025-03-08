@@ -670,7 +670,7 @@ contains
                       if (bi > dm) ddz1 = ddz1*exp(-46.0e-3_r8*(bi-dm))
                    else
                       ddz1_fresh = (-grav * (burden(c) + wx/2._r8)) / &
-                                   (0.007_r8 * bi**(4.75_r8 + td/40._r8))
+                                   (0.007_r8 * min(max(bi,dm),denice)**(4.75_r8 + min(td,0._r8)/40._r8))
                       snw_ssa = 3.e6_r8 / (denice * snw_rds(c,j))
                       if (snw_ssa < 50._r8) then
                           ddz1_fresh = ddz1_fresh * exp(-46.e-2_r8 * (50._r8 - snw_ssa))
@@ -2273,6 +2273,7 @@ contains
      associate( &
          qflx_snwcp_ice     => col_wf%qflx_snwcp_ice               , & ! Output: [real(r8) (:)   ]  excess solid h2o due to snow capping (outgoing) (mm H2O /s) [+]
          qflx_snwcp_liq     => col_wf%qflx_snwcp_liq               , & ! Output: [real(r8) (:)   ]  excess liquid h2o due to snow capping (outgoing) (mm H2O /s) [+]
+         qflx_ice_runoff_xs =>    col_wf%qflx_ice_runoff_xs        , & ! Input:  [real(r8) (:)   ] 
          h2osoi_ice         => col_ws%h2osoi_ice                   , & ! In/Out: [real(r8) (:,:) ] ice lens (kg/m2)                       
          h2osoi_liq         => col_ws%h2osoi_liq                   , & ! In/Out: [real(r8) (:,:) ] liquid water (kg/m2)                   
          h2osno             => col_ws%h2osno                       , & ! Input:  [real(r8) (:)   ] snow water (mm H2O)
@@ -2294,6 +2295,7 @@ contains
         c = filter_initc(fc)
         qflx_snwcp_ice(c) = 0.0_r8
         qflx_snwcp_liq(c) = 0.0_r8
+        qflx_ice_runoff_xs(c) = 0.0_r8
      end do
 
      loop_columns: do fc = 1, num_snowc

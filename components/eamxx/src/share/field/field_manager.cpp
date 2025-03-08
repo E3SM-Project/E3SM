@@ -196,7 +196,7 @@ get_field_group (const std::string& group_name) const
   if (group.m_info->m_bundled) {
     if (allocate_subfields) {
       // We can get the parent from any of the fields in the group.
-      auto p = group.m_fields.begin()->second->get_header().get_parent().lock();
+      auto p = group.m_fields.begin()->second->get_header().get_parent();
       EKAT_REQUIRE_MSG(p!=nullptr,
           "Error! A field belonging to a bundled field group is missing its 'parent'.\n");
 
@@ -278,7 +278,7 @@ void FieldManager::registration_ends ()
   //  4) If there is no group in the cluster that contains all the fields of the cluster,
   //     create the cluster group C. In order to accommodate all requests for bundled groups,
   //     we must be able to allocate C bundled.
-  //  5) For each cluster, call the function contiguous_superset from scream_utils.hpp
+  //  5) For each cluster, call the function contiguous_superset from eamxx_utils.hpp
   //     (see that file for details). If the fcn fails to find an ordering of the cluster's
   //     field that accommodate all bundled requests, it will return an empty list.
   //     Otherwise it will return the ordering of all fields in the cluster that allows all

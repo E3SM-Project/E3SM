@@ -4,10 +4,10 @@
 
 #include "physics/share/physics_constants.hpp"
 #include "shoc_functions.hpp"
-#include "shoc_functions_f90.hpp"
+#include "shoc_test_data.hpp"
 
-#include "share/scream_types.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "share/eamxx_types.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/util/ekat_arch.hpp"
@@ -23,9 +23,9 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocVarorCovar {
+struct UnitWrap::UnitTest<D>::TestShocVarorCovar : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_property()
+  void run_property()
   {
     static constexpr Int shcol    = 2;
     static constexpr Int nlev     = 4;
@@ -116,13 +116,7 @@ struct UnitWrap::UnitTest<D>::TestShocVarorCovar {
     }
 
     // Call the C++ implementation for variance
-    SDS.transpose<ekat::TransposeDirection::c2f>();
-    // expects data in fortran layout
-    calc_shoc_varorcovar_f(SDS.shcol, SDS.nlev, SDS.nlevi,
-                           SDS.tunefac, SDS.isotropy_zi,
-                           SDS.tkh_zi, SDS.dz_zi,
-                           SDS.invar1, SDS.invar2, SDS.varorcovar);
-    SDS.transpose<ekat::TransposeDirection::f2c>();
+    calc_shoc_varorcovar(SDS);
 
     // Check the results
     for(Int s = 0; s < shcol; ++s) {
@@ -179,13 +173,7 @@ struct UnitWrap::UnitTest<D>::TestShocVarorCovar {
     }
 
     // Call the C++ implementation for covariance
-    SDS.transpose<ekat::TransposeDirection::c2f>();
-    // expects data in fortran layout
-    calc_shoc_varorcovar_f(SDS.shcol, SDS.nlev, SDS.nlevi,
-                           SDS.tunefac, SDS.isotropy_zi,
-                           SDS.tkh_zi, SDS.dz_zi,
-                           SDS.invar1, SDS.invar2, SDS.varorcovar);
-    SDS.transpose<ekat::TransposeDirection::f2c>();
+    calc_shoc_varorcovar(SDS);
 
     // Check the results
     for(Int s = 0; s < shcol; ++s) {
@@ -263,13 +251,7 @@ struct UnitWrap::UnitTest<D>::TestShocVarorCovar {
     }
 
     // Call the C++ implementation for variance
-    SDS.transpose<ekat::TransposeDirection::c2f>();
-    // expects data in fortran layout
-    calc_shoc_varorcovar_f(SDS.shcol, SDS.nlev, SDS.nlevi,
-                           SDS.tunefac, SDS.isotropy_zi,
-                           SDS.tkh_zi, SDS.dz_zi,
-                           SDS.invar1, SDS.invar2, SDS.varorcovar);
-    SDS.transpose<ekat::TransposeDirection::f2c>();
+    calc_shoc_varorcovar(SDS);
 
     // Check the results
     for(Int s = 0; s < shcol; ++s) {
@@ -284,11 +266,11 @@ struct UnitWrap::UnitTest<D>::TestShocVarorCovar {
     }
   }
 
-static void run_bfb()
+void run_bfb()
   {
-    auto engine = setup_random_test();
+    auto engine = Base::get_engine();
 
-    CalcShocVarorcovarData SDS_f90[] = {
+    CalcShocVarorcovarData SDS_baseline[] = {
       //               shcol, nlev, nlevi, tunefac
       CalcShocVarorcovarData(10, 71, 72, 1),
       CalcShocVarorcovarData(10, 12, 13, 1),
@@ -297,47 +279,48 @@ static void run_bfb()
     };
 
     // Generate random input data
-    for (auto& d : SDS_f90) {
+    for (auto& d : SDS_baseline) {
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // Create copies of data for use by cxx. Needs to happen before reads so that
     // inout data is in original state
     CalcShocVarorcovarData SDS_cxx[] = {
-      CalcShocVarorcovarData(SDS_f90[0]),
-      CalcShocVarorcovarData(SDS_f90[1]),
-      CalcShocVarorcovarData(SDS_f90[2]),
-      CalcShocVarorcovarData(SDS_f90[3]),
+      CalcShocVarorcovarData(SDS_baseline[0]),
+      CalcShocVarorcovarData(SDS_baseline[1]),
+      CalcShocVarorcovarData(SDS_baseline[2]),
+      CalcShocVarorcovarData(SDS_baseline[3]),
     };
+
+    static constexpr Int num_runs = sizeof(SDS_baseline) / sizeof(CalcShocVarorcovarData);
 
     // Assume all data is in C layout
 
-    // Get data from fortran
-    for (auto& d : SDS_f90) {
-      // expects data in C layout
-      calc_shoc_varorcovar(d);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (auto& d : SDS_baseline) {
+        d.read(Base::m_fid);
+      }
     }
 
     // Get data from cxx
     for (auto& d : SDS_cxx) {
-      d.transpose<ekat::TransposeDirection::c2f>();
-      // expects data in fortran layout
-      calc_shoc_varorcovar_f(d.shcol, d.nlev, d.nlevi,
-                             d.tunefac, d.isotropy_zi,
-                             d.tkh_zi, d.dz_zi,
-                             d.invar1, d.invar2, d.varorcovar);
-      d.transpose<ekat::TransposeDirection::f2c>();
+      calc_shoc_varorcovar(d);
     }
 
     // Verify BFB results, all data should be in C layout
-    if (SCREAM_BFB_TESTING) {
-      static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(CalcShocVarorcovarData);
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < num_runs; ++i) {
-        CalcShocVarorcovarData& d_f90 = SDS_f90[i];
+        CalcShocVarorcovarData& d_baseline = SDS_baseline[i];
         CalcShocVarorcovarData& d_cxx = SDS_cxx[i];
-        for (Int k = 0; k < d_f90.total(d_f90.varorcovar); ++k) {
-          REQUIRE(d_f90.varorcovar[k] == d_cxx.varorcovar[k]);
+        for (Int k = 0; k < d_baseline.total(d_baseline.varorcovar); ++k) {
+          REQUIRE(d_baseline.varorcovar[k] == d_cxx.varorcovar[k]);
         }
+      }
+    } // SCREAM_BFB_TESTING
+    else if (this->m_baseline_action == GENERATE) {
+      for (Int i = 0; i < num_runs; ++i) {
+        SDS_cxx[i].write(Base::m_fid);
       }
     }
   }
@@ -353,14 +336,14 @@ TEST_CASE("shoc_varorcovar_property", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocVarorCovar;
 
-  TestStruct::run_property();
+  TestStruct().run_property();
 }
 
 TEST_CASE("shoc_varorcovar_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocVarorCovar;
 
-  TestStruct::run_bfb();
+  TestStruct().run_bfb();
 }
 
 } // namespace

@@ -221,7 +221,7 @@ module elm_varctl
 
   logical, public            :: use_fates = .false.                     ! true => use  ED
   integer, public            :: fates_spitfire_mode = 0                 ! 0 for no fire; 1 for constant ignitions
-  character(len=13), public  :: fates_harvest_mode = ''                 ! five different harvest modes; see namelist_definitions
+  character(len=256), public :: fates_harvest_mode = ''                 ! five different harvest modes; see namelist_definitions
   logical, public            :: use_fates_fixed_biogeog = .false.       ! true => use fixed biogeography mode
   logical, public            :: use_fates_planthydro = .false.          ! true => turn on fates hydro
   logical, public            :: use_fates_cohort_age_tracking = .false. ! true => turn on cohort age tracking
@@ -454,6 +454,11 @@ module elm_varctl
   logical, public            :: lateral_connectivity  = .false.
   character(len=256), public :: domain_decomp_type    = 'round_robin'
 
+  !-----------------------------------------------------------------------
+  ! Subgrid hillslope hydrologic connectivity (through topounits)
+  !-----------------------------------------------------------------------
+  logical, public            :: use_IM2_hillslope_hydrology  = .false.
+ 
   !-----------------------------------------------------------------------
   ! flux limiter for phenology flux calculation
   logical, public :: use_pheno_flux_limiter = .false.

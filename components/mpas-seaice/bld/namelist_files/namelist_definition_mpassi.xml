@@ -2487,6 +2487,14 @@ Valid values: Any positive real number.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_congelation_freezing_method" type="char*1024"
+	category="thermodynamics" group="thermodynamics">
+Method used for congelation freezing.
+
+Valid values: 'one-step', 'two-step'
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_congelation_ice_porosity" type="real"
 	category="thermodynamics" group="thermodynamics">
 Liquid fraction of congelation ice.
@@ -2681,6 +2689,14 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_use_data_icebergs" type="logical"
 	category="ocean" group="ocean">
 Use data iceberg meltwater forcing
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_scale_dib_by_removed_ice_runoff" type="logical"
+	category="ocean" group="ocean">
+Whether to scale data iceberg fluxes by the running mean of removed ice runoff
 
 Valid values: true or false
 Default: Defined in namelist_defaults.xml

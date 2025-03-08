@@ -7,8 +7,8 @@
 #include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/field/field_manager.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
-#include "share/scream_types.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "share/eamxx_types.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 
 #include <ekat/ekat_parse_yaml_file.hpp>
 #include <ekat/util/ekat_test_utils.hpp>
@@ -49,7 +49,7 @@ private:
 };
 
 std::vector<std::string> create_from_file_test_data(const ekat::Comm& comm, const util::TimeStamp& t0, const int ncols )
-{ 
+{
   // Create a grids manager on the fly
   ekat::ParameterList gm_params;
   gm_params.set("grids_names",vos_type{"Point Grid"});
@@ -100,7 +100,8 @@ std::vector<std::string> create_from_file_test_data(const ekat::Comm& comm, cons
   ctrl_pl.set("Frequency",1);
   ctrl_pl.set("save_grid_data",false);
   OutputManager4Test om;
-  om.setup(comm,om_pl,fm,gm,t0,false);
+  om.initialize(comm,om_pl,t0,false);
+  om.setup(fm,gm);
   // Create output data:
   // T=3600, well above the max timestep for the test.
   auto tw = t0;
@@ -403,13 +404,13 @@ void test_exports(const FieldManager& fm,
   // Recall that two fields have been set to export to a constant value, so we load those constants from the parameter list here:
   using vor_type = std::vector<Real>;
   const auto prescribed_const_values = prescribed_constants.get<vor_type>("values");
-  const Real Faxa_swndf_const = prescribed_const_values[0]; 
-  const Real Faxa_swndv_const = prescribed_const_values[1]; 
+  const Real Faxa_swndf_const = prescribed_const_values[0];
+  const Real Faxa_swndv_const = prescribed_const_values[1];
 
 
   // Check cpl data to scream fields
   for (int i=0; i<ncols; ++i) {
-    const Real Faxa_lwdn_file = test_func(i,dt); 
+    const Real Faxa_lwdn_file = test_func(i,dt);
 
     // The following are exported both during initialization and run phase
     EKAT_REQUIRE(export_constant_multiple_view(0)*Sa_z_h(i)                  == export_data_view(i, export_cpl_indices_view(0)));
@@ -506,6 +507,7 @@ TEST_CASE("surface-coupling", "") {
   ad.set_params(ad_params);
   ad.init_scorpio ();
   ad.init_time_stamps (t0, t0);
+  ad.create_output_managers ();
   ad.create_atm_processes ();
   ad.create_grids ();
   ad.create_fields ();
@@ -538,7 +540,7 @@ TEST_CASE("surface-coupling", "") {
                                                                        num_scream_imports);
   KokkosTypes<HostDevice>::view_1d<int>  import_vec_comps_view        ("import_vec_comps",
                                                                        num_scream_imports);
-  KokkosTypes<HostDevice>::view_1d<Real> import_constant_multiple_view("import_constant_multiple_view", 
+  KokkosTypes<HostDevice>::view_1d<Real> import_constant_multiple_view("import_constant_multiple_view",
                                                                        num_scream_imports);
   KokkosTypes<HostDevice>::view_1d<bool> do_import_during_init_view   ("do_import_during_init_view",
                                                                        num_scream_imports);
@@ -569,9 +571,9 @@ TEST_CASE("surface-coupling", "") {
                                                                        ncols, num_cpl_exports);
   KokkosTypes<HostDevice>::view_1d<int>  export_cpl_indices_view      ("export_vec_comps",
                                                                        num_scream_exports);
-  KokkosTypes<HostDevice>::view_1d<int>  export_vec_comps_view        ("export_vec_comps", 
+  KokkosTypes<HostDevice>::view_1d<int>  export_vec_comps_view        ("export_vec_comps",
                                                                        num_scream_exports);
-  KokkosTypes<HostDevice>::view_1d<Real> export_constant_multiple_view("export_constant_multiple_view", 
+  KokkosTypes<HostDevice>::view_1d<Real> export_constant_multiple_view("export_constant_multiple_view",
                                                                        num_scream_exports);
   KokkosTypes<HostDevice>::view_1d<bool> do_export_during_init_view   ("do_export_during_init_view",
                                                                        num_scream_exports);
@@ -598,7 +600,7 @@ TEST_CASE("surface-coupling", "") {
   std::strcpy(export_names[16], "Faxa_lwdn"  );
 
   // Setup the import/export data. This is meant to replicate the structures coming
-  // from mct_coupling/scream_cpl_indices.F90
+  // from mct_coupling/eamxx_cpl_indices.F90
   setup_import_and_export_data(engine, atm_comm,
                                num_cpl_imports, num_scream_imports,
                                import_cpl_indices_view, import_vec_comps_view,

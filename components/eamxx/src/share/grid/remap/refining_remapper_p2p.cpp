@@ -3,7 +3,7 @@
 #include "share/grid/point_grid.hpp"
 #include "share/grid/grid_import_export.hpp"
 #include "share/io/scorpio_input.hpp"
-#include "share/util/scream_utils.hpp"
+#include "share/util/eamxx_utils.hpp"
 
 #include <ekat/kokkos/ekat_kokkos_utils.hpp>
 #include <ekat/ekat_pack_utils.hpp>
@@ -27,7 +27,7 @@ RefiningRemapperP2P::
   clean_up();
 }
 
-void RefiningRemapperP2P::do_remap_fwd ()
+void RefiningRemapperP2P::remap_fwd_impl ()
 {
   // Fire the recv requests right away, so that if some other ranks
   // is done packing before us, we can start receiving their data
@@ -52,7 +52,7 @@ void RefiningRemapperP2P::do_remap_fwd ()
   for (int i=0; i<m_num_fields; ++i) {
     auto& f_tgt = m_tgt_fields[i];
 
-    // Allow to register fields that do not have the COL tag
+    // It's ok to register fields that do not have the COL tag
     // These fields are simply copied from src to tgt.
     if (not f_tgt.get_header().get_identifier().get_layout().has_tag(COL)) {
       f_tgt.deep_copy(m_src_fields[i]);
@@ -89,7 +89,9 @@ void RefiningRemapperP2P::setup_mpi_data_structures ()
   for (int i=0; i<m_num_fields; ++i) {
     const auto& f = m_src_fields[i];
     const auto& fl = f.get_header().get_identifier().get_layout();
-    const auto& col_size = fl.clone().strip_dim(COL).size();
+
+    // Fields without COL tag are nor remapped, so consider their col size as 0
+    auto col_size = fl.has_tag(COL) ? fl.clone().strip_dim(COL).size() : 0;
     m_fields_col_sizes_scan_sum[i+1] = m_fields_col_sizes_scan_sum[i] + col_size;
   }
   auto total_col_size = m_fields_col_sizes_scan_sum.back();
@@ -164,6 +166,8 @@ void RefiningRemapperP2P::pack_and_send ()
   using TeamMember  = typename KT::MemberType;
   using ESU         = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
 
+  constexpr auto COL = ShortFieldTagsNames::COL;
+
   auto export_pids = m_imp_exp->export_pids();
   auto export_lids = m_imp_exp->export_lids();
   auto ncols_send  = m_imp_exp->num_exports_per_pid();
@@ -174,6 +178,10 @@ void RefiningRemapperP2P::pack_and_send ()
   for (int ifield=0; ifield<m_num_fields; ++ifield) {
     const auto& f = m_src_fields[ifield];
     const auto& fl = f.get_header().get_identifier().get_layout();
+    if (not fl.has_tag(COL)) {
+      // No need to process this field. We'll deep copy src->tgt later
+      continue;
+    }
     const auto f_col_sizes_scan_sum = m_fields_col_sizes_scan_sum[ifield];
     switch (fl.rank()) {
       case 1:
@@ -308,6 +316,8 @@ void RefiningRemapperP2P::recv_and_unpack ()
   using TeamMember  = typename KT::MemberType;
   using ESU         = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
 
+  constexpr auto COL = ShortFieldTagsNames::COL;
+
   auto import_pids = m_imp_exp->import_pids();
   auto import_lids = m_imp_exp->import_lids();
   auto ncols_recv  = m_imp_exp->num_imports_per_pid();
@@ -318,6 +328,10 @@ void RefiningRemapperP2P::recv_and_unpack ()
   for (int ifield=0; ifield<m_num_fields; ++ifield) {
           auto& f  = m_ov_fields[ifield];
     const auto& fl = f.get_header().get_identifier().get_layout();
+    if (not fl.has_tag(COL)) {
+      // No need to process this field. We'll deep copy src->tgt later
+      continue;
+    }
     const auto f_col_sizes_scan_sum = m_fields_col_sizes_scan_sum[ifield];
     switch (fl.rank()) {
       case 1:

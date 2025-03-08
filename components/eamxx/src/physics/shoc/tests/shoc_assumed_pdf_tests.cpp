@@ -2,10 +2,10 @@
 
 #include "shoc_unit_tests_common.hpp"
 #include "shoc_functions.hpp"
-#include "shoc_functions_f90.hpp"
+#include "shoc_test_data.hpp"
 #include "physics/share/physics_constants.hpp"
-#include "share/scream_types.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "share/eamxx_types.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/util/ekat_arch.hpp"
@@ -21,9 +21,9 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
+struct UnitWrap::UnitTest<D>::TestShocAssumedPdf : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_property()
+  void run_property()
   {
     static constexpr Int shcol    = 2;
     static constexpr Int nlev     = 5;
@@ -141,13 +141,7 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
     REQUIRE(SDS.shcol == 2);
 
     // Call the C++ implementation.
-    SDS.transpose<ekat::TransposeDirection::c2f>();
-    // expects data in fortran layout
-    shoc_assumed_pdf_f(SDS.shcol, SDS.nlev, SDS.nlevi, SDS.thetal, SDS.qw, SDS.w_field,
-                       SDS.thl_sec, SDS.qw_sec, SDS.wthl_sec, SDS.w_sec, SDS.wqw_sec,
-                       SDS.qwthl_sec, SDS.w3, SDS.pres, SDS.zt_grid, SDS.zi_grid,
-                       SDS.shoc_cldfrac, SDS.shoc_ql, SDS.wqls, SDS.wthv_sec, SDS.shoc_ql2);
-    SDS.transpose<ekat::TransposeDirection::f2c>();
+    shoc_assumed_pdf(SDS);
 
     // Verify the result
     // Make sure cloud fraction is either 1 or 0 and all
@@ -186,13 +180,7 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
     }
 
     // Call the C++ implementation.
-    SDS.transpose<ekat::TransposeDirection::c2f>();
-    // expects data in fortran layout
-    shoc_assumed_pdf_f(SDS.shcol, SDS.nlev, SDS.nlevi, SDS.thetal, SDS.qw, SDS.w_field,
-                       SDS.thl_sec, SDS.qw_sec, SDS.wthl_sec, SDS.w_sec, SDS.wqw_sec,
-                       SDS.qwthl_sec, SDS.w3, SDS.pres, SDS.zt_grid, SDS.zi_grid,
-                       SDS.shoc_cldfrac, SDS.shoc_ql, SDS.wqls, SDS.wthv_sec, SDS.shoc_ql2);
-    SDS.transpose<ekat::TransposeDirection::f2c>();
+    shoc_assumed_pdf(SDS);
 
     // Verify the result
     // Make sure cloud fraction is either 1 or 0 and all
@@ -250,13 +238,7 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
     }
 
     // Call the C++ implementation.
-    SDS.transpose<ekat::TransposeDirection::c2f>();
-    // expects data in fortran layout
-    shoc_assumed_pdf_f(SDS.shcol, SDS.nlev, SDS.nlevi, SDS.thetal, SDS.qw, SDS.w_field,
-                       SDS.thl_sec, SDS.qw_sec, SDS.wthl_sec, SDS.w_sec, SDS.wqw_sec,
-                       SDS.qwthl_sec, SDS.w3, SDS.pres, SDS.zt_grid, SDS.zi_grid,
-                       SDS.shoc_cldfrac, SDS.shoc_ql, SDS.wqls, SDS.wthv_sec, SDS.shoc_ql2);
-    SDS.transpose<ekat::TransposeDirection::f2c>();
+    shoc_assumed_pdf(SDS);
 
     // Check the result
 
@@ -340,13 +322,7 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
     }
 
     // Call the C++ implementation.
-    SDS.transpose<ekat::TransposeDirection::c2f>();
-    // expects data in fortran layout
-    shoc_assumed_pdf_f(SDS.shcol, SDS.nlev, SDS.nlevi, SDS.thetal, SDS.qw, SDS.w_field,
-                       SDS.thl_sec, SDS.qw_sec, SDS.wthl_sec, SDS.w_sec, SDS.wqw_sec,
-                       SDS.qwthl_sec, SDS.w3, SDS.pres, SDS.zt_grid, SDS.zi_grid,
-                       SDS.shoc_cldfrac, SDS.shoc_ql, SDS.wqls, SDS.wthv_sec, SDS.shoc_ql2);
-    SDS.transpose<ekat::TransposeDirection::f2c>();
+    shoc_assumed_pdf(SDS);
 
     // Check the result
 
@@ -415,11 +391,11 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
 
   }
 
-  static void run_bfb()
+  void run_bfb()
   {
-    auto engine = setup_random_test();
+    auto engine = Base::get_engine();
 
-    ShocAssumedPdfData SDS_f90[] = {
+    ShocAssumedPdfData SDS_baseline[] = {
       //              shcol, nlev, nlevi
       ShocAssumedPdfData(10, 71, 72),
       ShocAssumedPdfData(10, 12, 13),
@@ -428,54 +404,55 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
     };
 
     // Generate random input data
-    for (auto& d : SDS_f90) {
+    for (auto& d : SDS_baseline) {
       d.randomize(engine, {
           {d.thetal, {500, 700}},
           {d.zi_grid, {0, 100}},
             });
     }
 
-    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // Create copies of data for use by cxx. Needs to happen before reads so that
     // inout data is in original state
     ShocAssumedPdfData SDS_cxx[] = {
-      ShocAssumedPdfData(SDS_f90[0]),
-      ShocAssumedPdfData(SDS_f90[1]),
-      ShocAssumedPdfData(SDS_f90[2]),
-      ShocAssumedPdfData(SDS_f90[3]),
+      ShocAssumedPdfData(SDS_baseline[0]),
+      ShocAssumedPdfData(SDS_baseline[1]),
+      ShocAssumedPdfData(SDS_baseline[2]),
+      ShocAssumedPdfData(SDS_baseline[3]),
     };
+
+    static constexpr Int num_runs = sizeof(SDS_baseline) / sizeof(ShocAssumedPdfData);
 
     // Assume all data is in C layout
 
-    // Get data from fortran
-    for (auto& d : SDS_f90) {
-      // expects data in C layout
-      shoc_assumed_pdf(d);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (auto& d : SDS_baseline) {
+        d.read(Base::m_fid);
+      }
     }
 
     // Get data from cxx
     for (auto& d : SDS_cxx) {
-      d.transpose<ekat::TransposeDirection::c2f>();
-      // expects data in fortran layout
-      shoc_assumed_pdf_f(d.shcol, d.nlev, d.nlevi, d.thetal, d.qw, d.w_field,
-                         d.thl_sec, d.qw_sec, d.wthl_sec, d.w_sec, d.wqw_sec,
-                         d.qwthl_sec, d.w3, d.pres, d.zt_grid, d.zi_grid,
-                         d.shoc_cldfrac, d.shoc_ql, d.wqls, d.wthv_sec, d.shoc_ql2);
-      d.transpose<ekat::TransposeDirection::f2c>();
+      shoc_assumed_pdf(d);
     }
 
     // Verify BFB results, all data should be in C layout
-    if (SCREAM_BFB_TESTING) {
-      static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(ShocAssumedPdfData);
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < num_runs; ++i) {
-        ShocAssumedPdfData& d_f90 = SDS_f90[i];
+        ShocAssumedPdfData& d_baseline = SDS_baseline[i];
         ShocAssumedPdfData& d_cxx = SDS_cxx[i];
-        for (Int k = 0; k < d_f90.total(d_f90.wqls); ++k) {
-          REQUIRE(d_f90.shoc_cldfrac[k] == d_cxx.shoc_cldfrac[k]);
-          REQUIRE(d_f90.shoc_ql[k] == d_cxx.shoc_ql[k]);
-          REQUIRE(d_f90.wqls[k] == d_cxx.wqls[k]);
-          REQUIRE(d_f90.wthv_sec[k] == d_cxx.wthv_sec[k]);
-          REQUIRE(d_f90.shoc_ql2[k] == d_cxx.shoc_ql2[k]);
+        for (Int k = 0; k < d_baseline.total(d_baseline.wqls); ++k) {
+          REQUIRE(d_baseline.shoc_cldfrac[k] == d_cxx.shoc_cldfrac[k]);
+          REQUIRE(d_baseline.shoc_ql[k] == d_cxx.shoc_ql[k]);
+          REQUIRE(d_baseline.wqls[k] == d_cxx.wqls[k]);
+          REQUIRE(d_baseline.wthv_sec[k] == d_cxx.wthv_sec[k]);
+          REQUIRE(d_baseline.shoc_ql2[k] == d_cxx.shoc_ql2[k]);
         }
+      }
+    } // SCREAM_BFB_TESTING
+    else if (this->m_baseline_action == GENERATE) {
+      for (Int i = 0; i < num_runs; ++i) {
+        SDS_cxx[i].write(Base::m_fid);
       }
     }
   }
@@ -491,14 +468,14 @@ TEST_CASE("shoc_assumed_pdf_property", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocAssumedPdf;
 
-  TestStruct::run_property();
+  TestStruct().run_property();
 }
 
 TEST_CASE("shoc_assumed_pdf_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocAssumedPdf;
 
-  TestStruct::run_bfb();
+  TestStruct().run_bfb();
 }
 
 } // namespace

@@ -10,18 +10,21 @@ namespace scream
 class InverseRemapper : public AbstractRemapper
 {
 public:
-  using base_type       = AbstractRemapper;
-
-  InverseRemapper (std::shared_ptr<base_type> remapper) :
-    base_type(remapper->get_tgt_grid(),remapper->get_src_grid())
+  InverseRemapper (std::shared_ptr<AbstractRemapper> remapper)
   {
-    ekat::error::runtime_check(static_cast<bool>(remapper), "Error! Null pointer for inner remapper.\n");
+    EKAT_REQUIRE_MSG (remapper!=nullptr, "Error! Null pointer for inner remapper.\n");
+
+    set_grids(remapper->get_tgt_grid(),remapper->get_src_grid());
 
     m_remapper = remapper;
+
+    m_fwd_allowed = m_remapper->bwd_allowed();
+    m_bwd_allowed = m_remapper->fwd_allowed();
   }
 
   ~InverseRemapper () = default;
 
+  // Target and src are flipped
   FieldLayout create_src_layout (const FieldLayout& tgt_layout) const override {
     return m_remapper->create_tgt_layout(tgt_layout);
   }
@@ -29,49 +32,35 @@ public:
     return m_remapper->create_src_layout(src_layout);
   }
 
-  bool compatible_layouts (const layout_type& src,
-                           const layout_type& tgt) const override {
+  bool compatible_layouts (const FieldLayout& src,
+                           const FieldLayout& tgt) const override {
     return m_remapper->compatible_layouts(tgt,src);
+  }
+  virtual bool is_valid_src_layout (const FieldLayout& layout) const {
+    return m_remapper->is_valid_tgt_layout(layout);
+  }
+  virtual bool is_valid_tgt_layout (const FieldLayout& layout) const {
+    return m_remapper->is_valid_src_layout(layout);
   }
 
 protected:
 
-  const identifier_type& do_get_src_field_id (const int ifield) const override {
-    return m_remapper->get_tgt_field_id(ifield);
+  void remap_fwd_impl () override {
+    m_remapper->remap_bwd();
   }
-  const identifier_type& do_get_tgt_field_id (const int ifield) const override {
-    return m_remapper->get_src_field_id(ifield);
-  }
-  const field_type& do_get_src_field (const int ifield) const override {
-    return m_remapper->get_tgt_field(ifield);
-  }
-  const field_type& do_get_tgt_field (const int ifield) const override {
-    return m_remapper->get_src_field(ifield);
+  void remap_bwd_impl () override {
+    m_remapper->remap_fwd();
   }
 
-  void do_remap_fwd () override {
-    m_remapper->remap(false);
-  }
-  void do_remap_bwd () override {
-    m_remapper->remap(true);
-  }
-
-  void do_registration_begins () override {
+  void registration_ends_impl () override {
     m_remapper->registration_begins();
-  }
-  void do_register_field (const identifier_type& src, const identifier_type& tgt) override {
-    m_remapper->register_field(tgt,src);
-  }
-  void do_bind_field (const int /* ifield */,
-                      const field_type& src,
-                      const field_type& tgt) override {
-    m_remapper->bind_field(tgt,src);
-  }
-  void do_registration_ends () override {
+    for (int i=0; i<m_num_fields; ++i) {
+      m_remapper->register_field(m_tgt_fields[i],m_src_fields[i]);
+    }
     m_remapper->registration_ends();
   }
 
-  std::shared_ptr<base_type>  m_remapper;
+  std::shared_ptr<AbstractRemapper>  m_remapper;
 };
 
 } // namespace scream

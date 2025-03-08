@@ -1,11 +1,11 @@
 #include "catch2/catch.hpp"
 
-#include "share/scream_types.hpp"
+#include "share/eamxx_types.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "shoc_functions.hpp"
-#include "shoc_functions_f90.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "shoc_test_data.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 
 #include "shoc_unit_tests_common.hpp"
 
@@ -14,9 +14,9 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
+struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_property()
+  void run_property()
   {
     static constexpr Int shcol    = 5;
     static constexpr Int nlev     = 5;
@@ -259,17 +259,10 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
     }
 
     // Call the C++ implementation
-    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-    update_prognostics_implicit_f(SDS.shcol, SDS.nlev, SDS.nlevi, SDS.num_tracer, SDS.dtime,
-                                  SDS.dz_zt, SDS.dz_zi, SDS.rho_zt, SDS.zt_grid, SDS.zi_grid,
-                                  SDS.tk, SDS.tkh, SDS.uw_sfc, SDS.vw_sfc, SDS.wthl_sfc, SDS.wqw_sfc,
-                                  SDS.wtracer_sfc, SDS.thetal, SDS.qw, SDS.tracer, SDS.tke, SDS.u_wind, SDS.v_wind);
-    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+    update_prognostics_implicit(SDS);
 
     // Call linear interp to get rho value at surface for checking
-    SDSL.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-    linear_interp_f(SDSL.x1, SDSL.x2, SDSL.y1, SDSL.y2, SDSL.km1, SDSL.km2, SDSL.ncol, SDSL.minthresh);
-    SDSL.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+    linear_interp(SDSL);
 
     // Check the result
 
@@ -341,11 +334,11 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
 
   } // run_property
 
-  static void run_bfb()
+  void run_bfb()
   {
-    auto engine = setup_random_test();
+    auto engine = Base::get_engine();
 
-    UpdatePrognosticsImplicitData f90_data[] = {
+    UpdatePrognosticsImplicitData baseline_data[] = {
       UpdatePrognosticsImplicitData(10, 71, 72, 19, .5),
       UpdatePrognosticsImplicitData(10, 12, 13, 7, .25),
       UpdatePrognosticsImplicitData(7, 16, 17, 2, .1),
@@ -353,61 +346,62 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
     };
 
     // Generate random input data
-    for (auto& d : f90_data) {
+    for (auto& d : baseline_data) {
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // Create copies of data for use by cxx. Needs to happen before reads so that
     // inout data is in original state
     UpdatePrognosticsImplicitData cxx_data[] = {
-      UpdatePrognosticsImplicitData(f90_data[0]),
-      UpdatePrognosticsImplicitData(f90_data[1]),
-      UpdatePrognosticsImplicitData(f90_data[2]),
-      UpdatePrognosticsImplicitData(f90_data[3]),
+      UpdatePrognosticsImplicitData(baseline_data[0]),
+      UpdatePrognosticsImplicitData(baseline_data[1]),
+      UpdatePrognosticsImplicitData(baseline_data[2]),
+      UpdatePrognosticsImplicitData(baseline_data[3]),
     };
 
     // Assume all data is in C layout
 
-    // Get data from fortran
-    for (auto& d : f90_data) {
-      // expects data in C layout
-      update_prognostics_implicit(d);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (auto& d : baseline_data) {
+        d.read(Base::m_fid);
+      }
     }
 
     // Get data from cxx
     for (auto& d : cxx_data) {
-      d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-      update_prognostics_implicit_f(d.shcol, d.nlev, d.nlevi, d.num_tracer, d.dtime,
-                                    d.dz_zt, d.dz_zi, d.rho_zt, d.zt_grid, d.zi_grid,
-                                    d.tk, d.tkh, d.uw_sfc, d.vw_sfc, d.wthl_sfc, d.wqw_sfc,
-                                    d.wtracer_sfc, d.thetal, d.qw, d.tracer, d.tke, d.u_wind, d.v_wind);
-      d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+      update_prognostics_implicit(d);
     }
 
     // Verify BFB results, all data should be in C layout
-    if (SCREAM_BFB_TESTING) {
-      static constexpr Int num_runs = sizeof(f90_data) / sizeof(UpdatePrognosticsImplicitData);
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
+      static constexpr Int num_runs = sizeof(baseline_data) / sizeof(UpdatePrognosticsImplicitData);
       for (Int i = 0; i < num_runs; ++i) {
-        UpdatePrognosticsImplicitData& d_f90 = f90_data[i];
+        UpdatePrognosticsImplicitData& d_baseline = baseline_data[i];
         UpdatePrognosticsImplicitData& d_cxx = cxx_data[i];
 
-        REQUIRE(d_f90.total(d_f90.thetal) == d_cxx.total(d_cxx.thetal));
-        REQUIRE(d_f90.total(d_f90.qw) == d_cxx.total(d_cxx.qw));
-        REQUIRE(d_f90.total(d_f90.tke) == d_cxx.total(d_cxx.tke));
-        REQUIRE(d_f90.total(d_f90.u_wind) == d_cxx.total(d_cxx.u_wind));
-        REQUIRE(d_f90.total(d_f90.v_wind) == d_cxx.total(d_cxx.v_wind));
-        for (Int k = 0; k < d_f90.total(d_f90.thetal); ++k) {
-          REQUIRE(d_f90.thetal[k] == d_cxx.thetal[k]);
-          REQUIRE(d_f90.qw[k] == d_cxx.qw[k]);
-          REQUIRE(d_f90.tke[k] == d_cxx.tke[k]);
-          REQUIRE(d_f90.u_wind[k] == d_cxx.u_wind[k]);
-          REQUIRE(d_f90.v_wind[k] == d_cxx.v_wind[k]);
+        REQUIRE(d_baseline.total(d_baseline.thetal) == d_cxx.total(d_cxx.thetal));
+        REQUIRE(d_baseline.total(d_baseline.qw) == d_cxx.total(d_cxx.qw));
+        REQUIRE(d_baseline.total(d_baseline.tke) == d_cxx.total(d_cxx.tke));
+        REQUIRE(d_baseline.total(d_baseline.u_wind) == d_cxx.total(d_cxx.u_wind));
+        REQUIRE(d_baseline.total(d_baseline.v_wind) == d_cxx.total(d_cxx.v_wind));
+        for (Int k = 0; k < d_baseline.total(d_baseline.thetal); ++k) {
+          REQUIRE(d_baseline.thetal[k] == d_cxx.thetal[k]);
+          REQUIRE(d_baseline.qw[k] == d_cxx.qw[k]);
+          REQUIRE(d_baseline.tke[k] == d_cxx.tke[k]);
+          REQUIRE(d_baseline.u_wind[k] == d_cxx.u_wind[k]);
+          REQUIRE(d_baseline.v_wind[k] == d_cxx.v_wind[k]);
         }
 
-        REQUIRE(d_f90.total(d_f90.tracer) == d_cxx.total(d_cxx.tracer));
-        for (Int k = 0; k < d_f90.total(d_f90.tracer); ++k) {
-          REQUIRE(d_f90.tracer[k] == d_cxx.tracer[k]);
+        REQUIRE(d_baseline.total(d_baseline.tracer) == d_cxx.total(d_cxx.tracer));
+        for (Int k = 0; k < d_baseline.total(d_baseline.tracer); ++k) {
+          REQUIRE(d_baseline.tracer[k] == d_cxx.tracer[k]);
         }
+      }
+    } // SCREAM_BFB_TESTING
+    else if (this->m_baseline_action == GENERATE) {
+      for (auto& d : cxx_data) {
+        d.write(Base::m_fid);
       }
     }
   } // run_bfb
@@ -424,14 +418,14 @@ TEST_CASE("update_prognostics_implicit_property", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestUpdatePrognosticsImplicit;
 
-  TestStruct::run_property();
+  TestStruct().run_property();
 }
 
 TEST_CASE("update_prognostics_implicit_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestUpdatePrognosticsImplicit;
 
-  TestStruct::run_bfb();
+  TestStruct().run_bfb();
 }
 
 } // empty namespace

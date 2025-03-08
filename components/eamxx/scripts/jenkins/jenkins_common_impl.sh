@@ -17,11 +17,11 @@ if [ ${#labels[@]} -gt 0 ]; then
   # We do have some labels. Look for some supported ones.
   for label in "${labels[@]}"
   do
-    if [ "$label" == "AT: Integrate Without Testing" ]; then
+    if [ "$label" == "AT: skip eamxx-all" ]; then
       skip_testing=1
-    elif [ "$label" == "AT: Skip Stand-Alone Testing" ]; then
+    elif [ "$label" == "AT: skip eamxx-sa" ]; then
       test_SA=0
-    elif [ "$label" == "AT: Skip v1 Testing" ]; then
+    elif [ "$label" == "AT: skip eamxx-v1" ]; then
       test_v1=0
     elif [ "$label" == "scripts" ]; then
       test_scripts=1
@@ -68,7 +68,7 @@ if [ $skip_testing -eq 0 ]; then
   fi
 
   declare -i fails=0
-  # The special string "AUTO" makes test-all-scream look for a baseline dir in the machine_specs.py file.
+  # The special string "AUTO" makes test-all-eamxx look for a baseline dir in the machine_specs.py file.
   # IF such dir is not found, then the default (ctest-build/baselines) is used
   BASELINES_DIR=AUTO
 
@@ -96,7 +96,7 @@ if [ $skip_testing -eq 0 ]; then
   SA_FAILURES_DETAILS=""
   # Run scream stand-alone tests (SA)
   if [ $test_SA -eq 1 ]; then
-    this_output=$(./scripts/gather-all-data "./scripts/test-all-scream ${TAS_ARGS}" -l -m $SCREAM_MACHINE)
+    this_output=$(./scripts/gather-all-data "./scripts/test-all-eamxx ${TAS_ARGS}" -l -m $SCREAM_MACHINE)
     if [[ $? != 0 ]]; then
       fails=$fails+1;
       sa_fail=1
@@ -109,7 +109,7 @@ if [ $skip_testing -eq 0 ]; then
     # Add memcheck and coverage tests for nightlies on specific machines
     if [[ $is_at_run == 0 ]]; then
       if [[ "$SCREAM_MACHINE" == "mappy" ]]; then
-        ./scripts/gather-all-data "./scripts/test-all-scream -t cov ${TAS_ARGS}" -l -m $SCREAM_MACHINE
+        ./scripts/gather-all-data "./scripts/test-all-eamxx -t cov ${TAS_ARGS}" -l -m $SCREAM_MACHINE
         if [[ $? != 0 ]]; then
           fails=$fails+1;
           cov_fail=1
@@ -118,7 +118,7 @@ if [ $skip_testing -eq 0 ]; then
 
       # Add a memcheck test for mappy for nightlies
       if [[ "$SCREAM_MACHINE" == "mappy" ]]; then
-        ./scripts/gather-all-data "./scripts/test-all-scream -t mem ${TAS_ARGS}" -l -m $SCREAM_MACHINE
+        ./scripts/gather-all-data "./scripts/test-all-eamxx -t mem ${TAS_ARGS}" -l -m $SCREAM_MACHINE
         if [[ $? != 0 ]]; then
           fails=$fails+1;
           memcheck_fail=1
@@ -128,7 +128,7 @@ if [ $skip_testing -eq 0 ]; then
       if [[ -z "$SCREAM_FAKE_ONLY" && "$SCREAM_MACHINE" == "weaver" ]]; then
         # The fake-only tests don't launch any kernels which will cause all
         # the compute-sanitizer runs to fail.
-        ./scripts/gather-all-data "./scripts/test-all-scream -t csm -t csr -t csi -t css ${TAS_ARGS}" -l -m $SCREAM_MACHINE
+        ./scripts/gather-all-data "./scripts/test-all-eamxx -t csm -t csr -t csi -t css ${TAS_ARGS}" -l -m $SCREAM_MACHINE
         if [[ $? != 0 ]]; then
           fails=$fails+1;
           memcheck_fail=1
@@ -137,7 +137,7 @@ if [ $skip_testing -eq 0 ]; then
 
     fi
   else
-    echo "SCREAM Stand-Alone tests were skipped, since the Github label 'AT: Skip Stand-Alone Testing' was found.\n"
+    echo "SCREAM Stand-Alone tests were skipped, since the Github label 'AT: skip eamxx-sa' was found.\n"
   fi
 
   # Run expensive tests on mappy only

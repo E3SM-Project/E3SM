@@ -14,7 +14,7 @@ FILE_TEMPLATES = {
     "cxx_bfb_unit_impl": lambda phys, sub, gen_code:
 f"""#include "catch2/catch.hpp"
 
-#include "share/scream_types.hpp"
+#include "share/eamxx_types.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "physics/{phys}/{phys}_functions.hpp"
@@ -138,21 +138,21 @@ PIECES = OrderedDict([
     )),
 
     ("cxx_f2c_bind_decl"  , (
-        lambda phys, sub, gb: f"{phys}_functions_f90.hpp",
+        lambda phys, sub, gb: f"tests/infra/{phys}_test_data.hpp",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_f2c_bind_decl"),
-        lambda phys, sub, gb: get_cxx_close_block_regex(comment="end _f function decls"), # reqs special comment
-        lambda phys, sub, gb: get_cxx_function_begin_regex(sub + "_f"), # cxx_f decl
+        lambda phys, sub, gb: get_plain_comment_regex(comment="end _host function decls"), # reqs special comment
+        lambda phys, sub, gb: get_cxx_function_begin_regex(sub + "_host"), # cxx_host decl
         lambda phys, sub, gb: re.compile(r".*;\s*$"),                   # ;
-        lambda *x           : "The f90 to cxx function declaration(<name>_f)"
+        lambda *x           : "The f90 to cxx function declaration(<name>_host)"
     )),
 
     ("cxx_f2c_bind_impl"  , (
-        lambda phys, sub, gb: f"{phys}_functions_f90.cpp",
+        lambda phys, sub, gb: f"tests/infra/{phys}_test_data.cpp",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_f2c_bind_impl"),
         lambda phys, sub, gb: get_namespace_close_regex(phys),          # insert at end of namespace
-        lambda phys, sub, gb: get_cxx_function_begin_regex(sub + "_f"),      # cxx_f
+        lambda phys, sub, gb: get_cxx_function_begin_regex(sub + "_host"),      # cxx_f
         lambda phys, sub, gb: get_cxx_close_block_regex(at_line_start=True), # terminating }
-        lambda *x           : "The f90 to cxx function implementation(<name>_f)"
+        lambda *x           : "The f90 to cxx function implementation(<name>_host)"
     )),
 
     ("cxx_func_decl", (
@@ -454,6 +454,12 @@ def get_cxx_struct_begin_regex(struct):
     """
     struct_regex_str = fr"^\s*struct\s+{struct}([\W]|$)"
     return re.compile(struct_regex_str)
+
+###############################################################################
+def get_plain_comment_regex(comment):
+###############################################################################
+    comment_regex_str   = fr"^\s*//\s*{comment}"
+    return re.compile(comment_regex_str)
 
 ###############################################################################
 def get_data_struct_name(sub):
@@ -1170,6 +1176,21 @@ def split_by_type(arg_data):
     return reals, ints, logicals
 
 ###############################################################################
+def split_by_scalar_vs_view(arg_data):
+###############################################################################
+    """
+    Take arg data and split into two lists of names based on scalar/not-scalar: [scalars] [non-scalars]
+    """
+    scalars, non_scalars = [], []
+    for name, _, _, dims in arg_data:
+        if dims is not None:
+            non_scalars.append(name)
+        else:
+            scalars.append(name)
+
+    return scalars, non_scalars
+
+###############################################################################
 def gen_cxx_data_args(physics, arg_data):
 ###############################################################################
     """
@@ -1441,6 +1462,30 @@ def check_existing_piece(lines, begin_regex, end_regex):
 
     return None if begin_idx is None else (begin_idx, end_idx+1)
 
+###############################################################################
+def get_data_by_name(arg_data, arg_name, data_idx):
+###############################################################################
+    for name, a, b, c in arg_data:
+        if name == arg_name:
+            return [name, a, b, c][data_idx]
+
+    expect(False, f"Name {arg_name} not found")
+
+###############################################################################
+def get_rank_map(arg_data, arg_names):
+###############################################################################
+    # Create map of rank -> [args]
+    rank_map = {}
+    for arg in arg_names:
+        dims = get_data_by_name(arg_data, arg, ARG_DIMS)
+        rank = len(dims)
+        if rank in rank_map:
+            rank_map[rank].append(arg)
+        else:
+            rank_map[rank] = [arg]
+
+    return rank_map
+
 #
 # Main classes
 #
@@ -1505,10 +1550,10 @@ class GenBoiler(object):
                 db = parse_origin(origin_file.open(encoding="utf-8").read(), self._subs)
                 self._db[phys].update(db)
                 if self._verbose:
-                    print("For physics {}, found:")
+                    print(f"For physics {phys}, found:")
                     for sub in self._subs:
                         if sub in db:
-                            print("  For subroutine {}, found args:")
+                            print(f"  For subroutine {sub}, found args:")
                             for name, argtype, intent, dims in db[sub]:
                                 print("    name:{} type:{} intent:{} dims:({})".\
                                       format(name, argtype, intent, ",".join(dims) if dims else "scalar"))
@@ -1729,7 +1774,7 @@ f"""struct {struct_name}{inheritance} {{
         arg_data  = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
         arg_decls = gen_arg_cxx_decls(arg_data)
 
-        return f"void {sub}_f({', '.join(arg_decls)});"
+        return f"void {sub}_host({', '.join(arg_decls)});"
 
     ###########################################################################
     def gen_cxx_f2c_bind_impl(self, phys, sub, force_arg_data=None):
@@ -1809,8 +1854,166 @@ f"""struct {struct_name}{inheritance} {{
 
         impl = ""
         if has_arrays(arg_data):
-            # TODO
-            impl += "  // TODO"
+            #
+            # Steps:
+            # 1) Set up typedefs
+            # 2) Sync to device
+            # 3) Unpack view array
+            # 4) Get nk_pack and policy
+            # 5) Get subviews
+            # 6) Call fn
+            # 7) Sync back to host
+            #
+            inputs, inouts, outputs = split_by_intent(arg_data)
+            reals, ints, bools   = split_by_type(arg_data)
+            scalars, views = split_by_scalar_vs_view(arg_data)
+            all_inputs = inputs + inouts
+            all_outputs = inouts + outputs
+
+            vreals = list(sorted(set(reals) & set(views)))
+            vints  = list(sorted(set(ints)  & set(views)))
+            vbools = list(sorted(set(bools) & set(views)))
+
+            sreals = list(sorted(set(reals) & set(scalars)))
+            sints  = list(sorted(set(ints)  & set(scalars)))
+            sbools = list(sorted(set(bools) & set(scalars)))
+
+            ivreals = list(sorted(set(vreals) & set(all_inputs)))
+            ivints  = list(sorted(set(vints)  & set(all_inputs)))
+            ivbools = list(sorted(set(vbools) & set(all_inputs)))
+
+            ovreals = list(sorted(set(vreals) & set(all_outputs)))
+            ovints  = list(sorted(set(vints)  & set(all_outputs)))
+            ovbools = list(sorted(set(vbools) & set(all_outputs)))
+
+            isreals = list(sorted(set(sreals) & set(all_inputs)))
+            isints  = list(sorted(set(sints)  & set(all_inputs)))
+            isbools = list(sorted(set(sbools) & set(all_inputs)))
+
+            osreals = list(sorted(set(sreals) & set(all_outputs)))
+            osints  = list(sorted(set(sints)  & set(all_outputs)))
+            osbools = list(sorted(set(sbools) & set(all_outputs)))
+
+            #
+            # 1) Set up typedefs
+            #
+
+            # set up basics
+            impl += "#if 0\n" # There's no way to guarantee this code compiles
+            impl += "  using SHF        = Functions<Real, DefaultDevice>;\n"
+            impl += "  using Scalar     = typename SHF::Scalar;\n"
+            impl += "  using Spack      = typename SHF::Spack;\n"
+            impl += "  using KT         = typename SHF::KT;\n"
+            impl += "  using ExeSpace   = typename KT::ExeSpace;\n"
+            impl += "  using MemberType = typename SHF::MemberType;\n\n"
+
+            prefix_list  = ["", "i", "b"]
+            type_list    = ["Real", "Int", "bool"]
+            ktype_list   = ["Spack", "Int", "bool"]
+
+            # make necessary view types. Anything that's an array needs a view type
+            for view_group, prefix_char, typename in zip([vreals, vints, vbools], prefix_list, type_list):
+                if view_group:
+                    rank_map = get_rank_map(arg_data, view_group)
+                    for rank in rank_map:
+                        if typename == "Real" and rank > 1:
+                            # Probably this should be packed data
+                            impl += f"  using {prefix_char}view_{rank}d = typename SHF::view_{rank}d<Spack>;\n"
+                        else:
+                            impl += f"  using {prefix_char}view_{rank}d = typename SHF::view_{rank}d<{typename}>;\n"
+
+            impl += "\n"
+
+            #
+            # 2) Sync to device. Do ALL views, not just inputs
+            #
+
+            for input_group, prefix_char, typename in zip([vreals, vints, vbools], prefix_list, type_list):
+                if input_group:
+                    rank_map = get_rank_map(arg_data, input_group)
+
+                    for rank, arg_list in rank_map.items():
+                        impl += f"  static constexpr Int {prefix_char}num_arrays_{rank} = {len(arg_list)};\n"
+                        impl += f"  std::vector<{prefix_char}view_{rank}d> {prefix_char}temp_d_{rank}({prefix_char}num_arrays_{rank});\n"
+                        for rank_itr in range(rank):
+                            dims = [get_data_by_name(arg_data, arg_name, ARG_DIMS)[rank_itr] for arg_name in arg_list]
+                            impl += f"  std::vector<int> {prefix_char}dim_{rank}_{rank_itr}_sizes = {{{', '.join(dims)}}};\n"
+                        dim_vectors = [f"{prefix_char}dim_{rank}_{rank_itr}_sizes" for rank_itr in range(rank)]
+                        funcname = "ekat::host_to_device" if (typename == "Real" and rank > 1) else "ScreamDeepCopy::copy_to_device"
+                        impl += f"  {funcname}({{{', '.join(arg_list)}}}, {', '.join(dim_vectors)}, {prefix_char}temp_d_{rank});\n\n"
+
+            #
+            # 3) Unpack view array
+            #
+
+            for input_group, prefix_char, typename in zip([vreals, vints, vbools], prefix_list, type_list):
+                if input_group:
+                    rank_map = get_rank_map(arg_data, input_group)
+
+                    for rank, arg_list in rank_map.items():
+                        impl += f"  {prefix_char}view_{rank}d\n"
+                        for idx, input_item in enumerate(arg_list):
+                            impl += f"    {input_item}_d({prefix_char}temp_d_{rank}[{idx}]){';' if idx == len(arg_list) - 1 else ','}\n"
+                        impl += "\n"
+
+
+            #
+            # 4) Get nk_pack and policy, launch kernel
+            #
+            impl += "  const Int nk_pack = ekat::npack<Spack>(nlev);\n"
+            impl += "  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);\n"
+            impl += "  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {\n"
+            impl += "    const Int i = team.league_rank();\n\n"
+
+            #
+            # 5) Get subviews
+            #
+            for view_group, prefix_char, typename in zip([vreals, vints, vbools], prefix_list, type_list):
+                if view_group:
+                    for view_arg in view_group:
+                        dims = get_data_by_name(arg_data, view_arg, ARG_DIMS)
+                        if "shcol" in dims:
+                            if len(dims) == 1:
+                                impl += f"    const Scalar {view_arg}_s = {view_arg}_d(i);\n"
+                            else:
+                                impl += f"    const auto {view_arg}_s = ekat::subview({view_arg}_d, i);\n"
+
+                    impl += "\n"
+
+            #
+            # 6) Call fn
+            #
+            kernel_arg_names = []
+            for arg_name in arg_names:
+                if arg_name in views:
+                    if "shcol" in dims:
+                        kernel_arg_names.append(f"{arg_name}_s")
+                    else:
+                        kernel_arg_names.append(f"{arg_name}_d")
+                else:
+                    kernel_arg_names.append(arg_name)
+
+            impl += f"    SHF::{sub}({', '.join(kernel_arg_names)});\n"
+            impl +=  "  });\n"
+
+            #
+            # 7) Sync back to host
+            #
+            for output_group, prefix_char, typename in zip([ovreals, ovints, ovbools], prefix_list, type_list):
+                if output_group:
+                    rank_map = get_rank_map(arg_data, output_group)
+
+                    for rank, arg_list in rank_map.items():
+                        impl += f"  std::vector<{prefix_char}view_{rank}d> {prefix_char}tempout_d_{rank}({prefix_char}num_arrays_{rank});\n"
+                        for rank_itr in range(rank):
+                            dims = [get_data_by_name(arg_data, arg_name, ARG_DIMS)[rank_itr] for arg_name in arg_list]
+                            impl += f"  std::vector<int> {prefix_char}dim_{rank}_{rank_itr}_out_sizes = {{{', '.join(dims)}}};\n"
+                        dim_vectors = [f"{prefix_char}dim_{rank}_{rank_itr}_out_sizes" for rank_itr in range(rank)]
+                        funcname = "ekat::device_to_host" if (typename == "Real" and rank > 1) else "ScreamDeepCopy::copy_to_host"
+                        impl += f"  {funcname}({{{', '.join(arg_list)}}}, {', '.join(dim_vectors)}, {prefix_char}tempout_d_{rank});\n\n"
+
+            impl += "#endif\n"
+
         else:
             inputs, inouts, outputs = split_by_intent(arg_data)
             reals, ints, logicals   = split_by_type(arg_data)

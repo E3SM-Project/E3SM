@@ -1291,6 +1291,7 @@ contains
           qflx_snofrz_lyr => col_wf%qflx_snofrz_lyr , & ! Input:  [real(r8)  (:,:) ] snow freezing rate (positive definite) (col,lyr) [kg m-2 s-1]
           qflx_snow_melt  => col_wf%qflx_snow_melt  , & ! Output: [real(r8)  (:)   ] net snow melt
           qflx_snomelt    => col_wf%qflx_snomelt    , & ! Output: [real(r8)  (:)   ] snow melt (mm H2O /s)
+          qflx_snomelt_lyr=> col_wf%qflx_snomelt_lyr, & ! Output: [real(r8)  (:)   ] snow melt per layer (mm H2O /s)
           qflx_snofrz_col => col_wf%qflx_snofrz     , & ! Output: [real(r8)  (:)   ] column-integrated snow freezing rate (kg m-2 s-1) [+]
 
           t_soisno        => col_es%t_soisno      , & ! Input:  [real(r8)  (:,:) ] soil temperature (Kelvin)
@@ -1306,10 +1307,11 @@ contains
        do fc = 1,num_lakec
           c = filter_lakec(fc)
 
-          qflx_snomelt(c)   = 0._r8
-          eflx_snomelt(c)   = 0._r8
-          lhabs(c)          = 0._r8
-          qflx_snow_melt(c) = 0._r8
+          qflx_snomelt(c)      = 0._r8
+          qflx_snomelt_lyr(c,:)= 0._r8
+          eflx_snomelt(c)      = 0._r8
+          lhabs(c)             = 0._r8
+          qflx_snow_melt(c)    = 0._r8
        end do
 
        do j = -nlevsno+1,0
@@ -1399,6 +1401,7 @@ contains
                    if (j <= 0) then !snow
                       imelt(c,j) = 1
                       qflx_snomelt(c) = qflx_snomelt(c) + melt/dtime
+                      qflx_snomelt_lyr(c,j) = melt/dtime
                    end if
                 else if (t_soisno(c,j) < tfrz .and. h2osoi_liq(c,j) > 0._r8) then !freezing
                    dophasechangeflag = .true.

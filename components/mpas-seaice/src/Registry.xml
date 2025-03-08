@@ -1752,6 +1752,10 @@
 			possible_values="Any positive real number."
 			icepack_name="tscale_pnd_drain"
 		/>
+		<nml_option name="config_congelation_freezing_method" type="character" default_value="two-step" units="unitless"
+			description="Method for congelation ice freezing."
+			possible_values="'one-step', 'two-step'"
+		/>
 		<nml_option name="config_congelation_ice_porosity" type="real" default_value="0.85" units="unitless"
 			description="Liquid fraction of congelation ice."
 			possible_values="Any real number between 0 and 1."
@@ -1877,6 +1881,10 @@
 		/>
 		<nml_option name="config_use_data_icebergs" type="logical" default_value="false" units="unitless"
 			description="Use data iceberg meltwater forcing"
+			possible_values="true or false"
+		/>
+		<nml_option name="config_scale_dib_by_removed_ice_runoff" type="logical" default_value="false"
+			description="Whether to scale data iceberg fluxes by the running mean of removed ice runoff"
 			possible_values="true or false"
 		/>
 		<nml_option name="config_salt_flux_coupling_type" type="character" default_value="constant" units="unitless"
@@ -2115,6 +2123,7 @@
 			<var name="xtime"/>
 			<var name="simulationStartTime"/>
 			<stream name="restart_contents"/>
+			<var name="runningMeanRemovedIceRunoff" packages="pkgScaledDIB"/>
 		</stream>
 
 		<stream name="restart_ic"
@@ -2126,6 +2135,7 @@
 				immutable="true">
 			<stream name="mesh"/>
 			<stream name="restart_contents"/>
+			<var name="runningMeanRemovedIceRunoff" packages="pkgScaledDIB"/>
 		</stream>
 
 		<stream name="output"
@@ -2723,6 +2733,7 @@
 
 		<!-- iceberg packages -->
 		<package name="pkgBergs" description=""/>
+		<package name="pkgScaledDIB" description="fields used when scaling data iceberg fluxes by removed Antarctic ice runoff"/>
 
 		<!-- testing system test -->
 		<package name="pkgTestingSystemTest" description=""/>
@@ -4720,6 +4731,11 @@
 
 	<!-- melt and growth rates -->
 	<var_struct name="melt_growth_rates" time_levs="1" packages="pkgColumnPackage">
+		<var name="lateralIceMeltFractionCategory"
+		     type="real"
+		     dimensions="nCategories nCells Time"
+		     units="1"
+		/>
 		<var name="lateralIceMeltFraction"
 		     type="real"
 		     dimensions="nCells Time"
@@ -4956,11 +4972,26 @@
 	</var_struct>
 
 	<!-- fluxes from data icebergs -->
-	<var_struct name="berg_forcing" time_levs="1" packages="pkgBergs">
+	<var_struct name="berg_forcing" time_levs="1">
 		<var name="bergFreshwaterFluxData"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="kg m-2 s-1"
+		     packages="pkgBergs"
+		/>
+		<var name="areaIntegAnnMeanDataIcebergIceShelfFreshwaterFlux"
+		     type="real"
+			 dimensions="Time"
+			 units="kg s-1"
+			 packages="pkgScaledDIB"
+			 description="The area integrated, annually averaged freshwater flux into the ocean from both data icebergs and ice-shelf melting."
+		/>
+		<var name="runningMeanRemovedIceRunoff"
+		     type="real"
+			 dimensions="Time"
+			 units="kg s-1"
+			 packages="pkgScaledDIB"
+			 description="The running mean of removed Antarctic ice runoff, computed in MPAS-Ocean"
 		/>
 	</var_struct>
 

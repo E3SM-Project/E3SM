@@ -3,10 +3,10 @@
 #include "shoc_unit_tests_common.hpp"
 
 #include "shoc_functions.hpp"
-#include "shoc_functions_f90.hpp"
+#include "shoc_test_data.hpp"
 #include "physics/share/physics_constants.hpp"
-#include "share/scream_types.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "share/eamxx_types.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/util/ekat_arch.hpp"
@@ -22,9 +22,9 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocEnergyInt {
+struct UnitWrap::UnitTest<D>::TestShocEnergyInt : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_property()
+  void run_property()
   {
     static constexpr Int shcol    = 2;
     static constexpr Int nlev     = 5;
@@ -108,12 +108,7 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyInt {
     }
 
     // Call the C++ implementation
-    SDS.transpose<ekat::TransposeDirection::c2f>();
-    // expects data in fortran layout
-    shoc_energy_integrals_f(SDS.shcol, SDS.nlev, SDS.host_dse, SDS.pdel,
-                            SDS.rtm, SDS.rcm, SDS.u_wind, SDS.v_wind,
-                            SDS.se_int, SDS.ke_int, SDS.wv_int, SDS.wl_int);
-    SDS.transpose<ekat::TransposeDirection::f2c>();
+    shoc_energy_integrals(SDS);
 
     // Check test
     for(Int s = 0; s < shcol; ++s) {
@@ -132,11 +127,11 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyInt {
     }
   }
 
-  static void run_bfb()
+  void run_bfb()
   {
-    auto engine = setup_random_test();
+    auto engine = Base::get_engine();
 
-    ShocEnergyIntegralsData SDS_f90[] = {
+    ShocEnergyIntegralsData SDS_baseline[] = {
       //               shcol, nlev
       ShocEnergyIntegralsData(10, 71),
       ShocEnergyIntegralsData(10, 12),
@@ -145,49 +140,51 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyInt {
     };
 
     // Generate random input data
-    for (auto& d : SDS_f90) {
+    for (auto& d : SDS_baseline) {
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // Create copies of data for use by cxx. Needs to happen before reads so that
     // inout data is in original state
     ShocEnergyIntegralsData SDS_cxx[] = {
-      ShocEnergyIntegralsData(SDS_f90[0]),
-      ShocEnergyIntegralsData(SDS_f90[1]),
-      ShocEnergyIntegralsData(SDS_f90[2]),
-      ShocEnergyIntegralsData(SDS_f90[3]),
+      ShocEnergyIntegralsData(SDS_baseline[0]),
+      ShocEnergyIntegralsData(SDS_baseline[1]),
+      ShocEnergyIntegralsData(SDS_baseline[2]),
+      ShocEnergyIntegralsData(SDS_baseline[3]),
     };
+
+    static constexpr Int num_runs = sizeof(SDS_baseline) / sizeof(ShocEnergyIntegralsData);
 
     // Assume all data is in C layout
 
-    // Get data from fortran
-    for (auto& d : SDS_f90) {
-      // expects data in C layout
-      shoc_energy_integrals(d);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (auto& d : SDS_baseline) {
+        d.read(Base::m_fid);
+      }
     }
 
     // Get data from cxx
     for (auto& d : SDS_cxx) {
-      d.transpose<ekat::TransposeDirection::c2f>();
-      // expects data in fortran layout
-      shoc_energy_integrals_f(d.shcol, d.nlev, d.host_dse, d.pdel,
-                              d.rtm, d.rcm, d.u_wind, d.v_wind,
-                              d.se_int, d.ke_int, d.wv_int, d.wl_int);
-      d.transpose<ekat::TransposeDirection::f2c>();
+      shoc_energy_integrals(d);
     }
 
     // Verify BFB results, all data should be in C layout
-    if (SCREAM_BFB_TESTING) {
-      static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(ShocEnergyIntegralsData);
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < num_runs; ++i) {
-        ShocEnergyIntegralsData& d_f90 = SDS_f90[i];
+        ShocEnergyIntegralsData& d_baseline = SDS_baseline[i];
         ShocEnergyIntegralsData& d_cxx = SDS_cxx[i];
-        for (Int c = 0; c < d_f90.shcol; ++c) {
-          REQUIRE(d_f90.se_int[c] == d_cxx.se_int[c]);
-          REQUIRE(d_f90.ke_int[c] == d_cxx.ke_int[c]);
-          REQUIRE(d_f90.wv_int[c] == d_cxx.wv_int[c]);
-          REQUIRE(d_f90.wl_int[c] == d_cxx.wl_int[c]);
+        for (Int c = 0; c < d_baseline.shcol; ++c) {
+          REQUIRE(d_baseline.se_int[c] == d_cxx.se_int[c]);
+          REQUIRE(d_baseline.ke_int[c] == d_cxx.ke_int[c]);
+          REQUIRE(d_baseline.wv_int[c] == d_cxx.wv_int[c]);
+          REQUIRE(d_baseline.wl_int[c] == d_cxx.wl_int[c]);
         }
+      }
+    } // SCREAM_BFB_TESTING
+    else if (this->m_baseline_action == GENERATE) {
+      for (Int i = 0; i < num_runs; ++i) {
+        SDS_cxx[i].write(Base::m_fid);
       }
     }
   }
@@ -203,14 +200,14 @@ TEST_CASE("shoc_energy_integrals_property", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocEnergyInt;
 
-  TestStruct::run_property();
+  TestStruct().run_property();
 }
 
 TEST_CASE("shoc_energy_integrals_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocEnergyInt;
 
-  TestStruct::run_bfb();
+  TestStruct().run_bfb();
 }
 
 } // namespace

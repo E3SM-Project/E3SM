@@ -156,6 +156,7 @@ subroutine phys_register
     use radiation,          only: radiation_register
     use co2_cycle,          only: co2_register
     use co2_diagnostics,    only: co2_diags_register
+    use gw_drag,            only: gw_register
     use flux_avg,           only: flux_avg_register
     use iondrag,            only: iondrag_register
     use ionosphere,         only: ionos_register
@@ -315,6 +316,8 @@ subroutine phys_register
        ! co2 constituents
        call co2_register()
        call co2_diags_register()
+
+       call gw_register()
 
        ! register data model ozone with pbuf
        if (cam3_ozone_data_on) then
@@ -906,7 +909,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     ! CAM3 prescribed ozone
     if (cam3_ozone_data_on) call cam3_ozone_data_init(phys_state)
 
-    call gw_init()
+    call gw_init(pbuf2d)
 
     call rayleigh_friction_init()
 
@@ -961,7 +964,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
        if (.not. do_clubb_sgs .and. .not. do_shoc_sgs) call macrop_driver_init(pbuf2d)
        call microp_aero_init()
        call microp_driver_init(pbuf2d)
-       call conv_water_init
+       call conv_water_init(pbuf2d)
     end if
 
     ! initiate CLUBB within CAM
@@ -1321,7 +1324,7 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
 
 
     use cam_diagnostics,only: diag_deallocate, diag_surf
-    use comsrf,         only: trefmxav, trefmnav, sgh, sgh30, fsds 
+    use comsrf,         only: trefmxav, trefmnav, sgh, sgh30, fsds
     use physconst,      only: stebol, latvap
 #if ( defined OFFLINE_DYN )
     use metdata,        only: get_met_srf2
@@ -1834,7 +1837,7 @@ end if ! l_tracer_aero
 
        ! If CLUBB is called, do not call vertical diffusion, but still
        ! calculate surface friction velocity (ustar) and Obukhov length
-       call clubb_surface ( state, cam_in, surfric, obklen)
+       call clubb_surface ( state, cam_in, pbuf, surfric, obklen)
 
        ! Diagnose tracer mixing ratio tendencies from surface fluxes, 
        ! then update the mixing ratios. (If cflx_cpl_opt==2, these are done in 

@@ -1,5 +1,5 @@
 #include "diagnostics/field_at_pressure_level.hpp"
-#include "share/util/scream_universal_constants.hpp"
+#include "share/util/eamxx_universal_constants.hpp"
 
 #include "ekat/std_meta/ekat_std_utils.hpp"
 #include "ekat/util/ekat_upper_bound.hpp"
@@ -15,30 +15,22 @@ FieldAtPressureLevel (const ekat::Comm& comm, const ekat::ParameterList& params)
 {
   m_field_name = m_params.get<std::string>("field_name");
 
-  // Figure out the pressure value
-  const auto& location = m_params.get<std::string>("vertical_location");
-  auto chars_start = location.find_first_not_of("0123456789.");
-  EKAT_REQUIRE_MSG (chars_start!=0 && chars_start!=std::string::npos,
-      "Error! Invalid string for pressure value for FieldAtPressureLevel.\n"
-      " - input string   : " + location + "\n"
-      " - expected format: Nxyz, with N integer, and xyz='mb', 'hPa', or 'Pa'\n");
-  const auto press_str = location.substr(0,chars_start);
-  m_pressure_level = std::stod(press_str);
-
-  const auto units = location.substr(chars_start);
+  const auto units = m_params.get<std::string>("pressure_units");
   EKAT_REQUIRE_MSG (units=="mb" or units=="hPa" or units=="Pa",
-      "Error! Invalid string for pressure value for FieldAtPressureLevel.\n"
-      " - input string   : " + location + "\n"
-      " - expected format: Nxyz, with N integer, and xyz='mb', 'hPa', or 'Pa'\n");
+      "Error! Invalid units for FieldAtPressureLevel.\n"
+      " - input units: " + units + "\n"
+      " - valid units: 'mb', 'hPa', 'Pa'\n");
 
-  // Convert pressure level to Pa, the units of pressure in the simulation
+  // Figure out the pressure value, and convert to Pa if needed
+  auto p_value = m_params.get<std::string>("pressure_value");
+
   if (units=="mb" || units=="hPa") {
-    m_pressure_level *= 100;
+    m_pressure_level = std::stod(p_value)*100;
+  } else {
+    m_pressure_level = std::stod(p_value);
   }
 
-  m_mask_val = m_params.get<double>("mask_value",Real(constants::DefaultFillValue<float>::value));
-
-  m_diag_name = m_field_name + "_at_" + location;
+  m_diag_name = m_field_name + "_at_" + p_value + units;
 }
 
 void FieldAtPressureLevel::
@@ -64,7 +56,9 @@ initialize_impl (const RunType /*run_type*/)
   EKAT_REQUIRE_MSG (layout.rank()>=2 && layout.rank()<=3,
       "Error! Field rank not supported by FieldAtPressureLevel.\n"
       " - field name: " + fid.name() + "\n"
-      " - field layout: " + layout.to_string() + "\n");
+      " - field layout: " + layout.to_string() + "\n"
+      "NOTE: if you requested something like 'field_horiz_avg_at_Y',\n"
+      "      you can avoid this error by requesting 'fieldX_at_Y_horiz_avg' instead.\n");
   const auto tag = layout.tags().back();
   EKAT_REQUIRE_MSG (tag==LEV || tag==ILEV,
       "Error! FieldAtPressureLevel diagnostic expects a layout ending with 'LEV'/'ILEV' tag.\n"
@@ -91,8 +85,10 @@ initialize_impl (const RunType /*run_type*/)
   // Add a field representing the mask as extra data to the diagnostic field.
   auto nondim = ekat::units::Units::nondimensional();
   const auto& gname = fid.get_grid_name();
+  m_mask_val = m_params.get<double>("mask_value",Real(constants::DefaultFillValue<float>::value));
 
-  std::string mask_name = name() + " mask";
+
+  std::string mask_name = m_diag_name + " mask";
   FieldLayout mask_layout( {COL}, {num_cols});
   FieldIdentifier mask_fid (mask_name,mask_layout, nondim, gname);
   Field diag_mask(mask_fid);

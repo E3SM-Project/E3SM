@@ -1,11 +1,11 @@
 #include "catch2/catch.hpp"
 
-#include "share/scream_types.hpp"
+#include "share/eamxx_types.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "shoc_functions.hpp"
-#include "shoc_functions_f90.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "shoc_test_data.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 
 #include "shoc_unit_tests_common.hpp"
 
@@ -14,9 +14,9 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocMain {
+struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_property()
+  void run_property()
   {
     static constexpr Real mintke = scream::shoc::Constants<Real>::mintke;
     static constexpr Real minlen = scream::shoc::Constants<Real>::minlen;
@@ -259,18 +259,7 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
     }
 
     // Call the C++ implementation
-    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-    const int npbl = shoc_init_f(SDS.nlev, SDS.pref_mid, SDS.nbot_shoc, SDS.ntop_shoc);
-
-    shoc_main_f(SDS.shcol, SDS.nlev, SDS.nlevi, SDS.dtime, SDS.nadv, npbl, SDS.host_dx, SDS.host_dy,
-                SDS.thv, SDS.zt_grid, SDS.zi_grid, SDS.pres, SDS.presi, SDS.pdel, SDS.wthl_sfc,
-                SDS.wqw_sfc, SDS.uw_sfc, SDS.vw_sfc, SDS.wtracer_sfc, SDS.num_qtracers,
-                SDS.w_field, SDS.inv_exner, SDS.phis, SDS.host_dse, SDS.tke, SDS.thetal, SDS.qw,
-                SDS.u_wind, SDS.v_wind, SDS.qtracers, SDS.wthv_sec, SDS.tkh, SDS.tk, SDS.shoc_ql,
-                SDS.shoc_cldfrac, SDS.pblh, SDS.shoc_mix, SDS.isotropy, SDS.w_sec, SDS.thl_sec,
-                SDS.qw_sec, SDS.qwthl_sec, SDS.wthl_sec, SDS.wqw_sec, SDS.wtke_sec, SDS.uw_sec,
-                SDS.vw_sec, SDS.w3, SDS.wqls_sec, SDS.brunt, SDS.shoc_ql2);
-    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+    shoc_main(SDS);
 
     // Make sure output falls within reasonable bounds
     for(Int s = 0; s < shcol; ++s) {
@@ -339,11 +328,11 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
 
   } // run_property
 
-  static void run_bfb()
+  void run_bfb()
   {
-    auto engine = setup_random_test();
+    auto engine = Base::get_engine();
 
-    ShocMainData f90_data[] = {
+    ShocMainData baseline_data[] = {
       //           shcol, nlev, nlevi, num_qtracers, dtime, nadv, nbot_shoc, ntop_shoc(C++ indexing)
       ShocMainData(12,      72,    73,            5,   300,   15,        72, 0),
       ShocMainData(8,       12,    13,            3,   300,   10,         8, 3),
@@ -352,7 +341,7 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
     };
 
     // Generate random input data
-    for (auto& d : f90_data) {
+    for (auto& d : baseline_data) {
       d.randomize(engine,
                   {
                     {d.presi, {700e2,1000e2}},
@@ -374,112 +363,107 @@ struct UnitWrap::UnitTest<D>::TestShocMain {
                   });
     }
 
-    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // Create copies of data for use by cxx. Needs to happen before reads so that
     // inout data is in original state
     ShocMainData cxx_data[] = {
-      ShocMainData(f90_data[0]),
-      ShocMainData(f90_data[1]),
-      ShocMainData(f90_data[2]),
-      ShocMainData(f90_data[3])
+      ShocMainData(baseline_data[0]),
+      ShocMainData(baseline_data[1]),
+      ShocMainData(baseline_data[2]),
+      ShocMainData(baseline_data[3])
     };
 
     // Assume all data is in C layout
 
-    // Get data from fortran
-    for (auto& d : f90_data) {
-      // expects data in C layout
-      shoc_main_with_init(d);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (auto& d : baseline_data) {
+        d.read(Base::m_fid);
+      }
     }
 
     // Get data from cxx
     for (auto& d : cxx_data) {
-      d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-      const int npbl = shoc_init_f(d.nlev, d.pref_mid, d.nbot_shoc, d.ntop_shoc);
-
-      shoc_main_f(d.shcol, d.nlev, d.nlevi, d.dtime, d.nadv, npbl, d.host_dx, d.host_dy,
-                  d.thv, d.zt_grid, d.zi_grid, d.pres, d.presi, d.pdel, d.wthl_sfc,
-                  d.wqw_sfc, d.uw_sfc, d.vw_sfc, d.wtracer_sfc, d.num_qtracers,
-                  d.w_field, d.inv_exner, d.phis, d.host_dse, d.tke, d.thetal, d.qw,
-                  d.u_wind, d.v_wind, d.qtracers, d.wthv_sec, d.tkh, d.tk, d.shoc_ql,
-                  d.shoc_cldfrac, d.pblh, d.shoc_mix, d.isotropy, d.w_sec, d.thl_sec,
-                  d.qw_sec, d.qwthl_sec, d.wthl_sec, d.wqw_sec, d.wtke_sec, d.uw_sec,
-                  d.vw_sec, d.w3, d.wqls_sec, d.brunt, d.shoc_ql2);
-      d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+      shoc_main(d);
     }
 
     // Verify BFB results, all data should be in C layout
-    if (SCREAM_BFB_TESTING) {
-      static constexpr Int num_runs = sizeof(f90_data) / sizeof(ShocMainData);
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
+      static constexpr Int num_runs = sizeof(baseline_data) / sizeof(ShocMainData);
 
       for (Int i = 0; i < num_runs; ++i) {
-        ShocMainData& d_f90 = f90_data[i];
+        ShocMainData& d_baseline = baseline_data[i];
         ShocMainData& d_cxx = cxx_data[i];
-        REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.host_dse));
-        REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.tke));
-        REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.thetal));
-        REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.qw));
-        REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.u_wind));
-        REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.v_wind));
-        REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.wthv_sec));
-        REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.tkh));
-        REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.tk));
-        REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.shoc_ql));
-        REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.shoc_cldfrac));
-        REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.shoc_mix));
-        REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.isotropy));
-        REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.w_sec));
-        REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.wqls_sec));
-        REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.brunt));
-        REQUIRE(d_f90.total(d_f90.host_dse) == d_cxx.total(d_cxx.shoc_ql2));
-        for (Int k = 0; k < d_f90.total(d_f90.host_dse); ++k) {
-          REQUIRE(d_f90.host_dse[k] == d_cxx.host_dse[k]);
-          REQUIRE(d_f90.tke[k] == d_cxx.tke[k]);
-          REQUIRE(d_f90.thetal[k] == d_cxx.thetal[k]);
-          REQUIRE(d_f90.qw[k] == d_cxx.qw[k]);
-          REQUIRE(d_f90.u_wind[k] == d_cxx.u_wind[k]);
-          REQUIRE(d_f90.v_wind[k] == d_cxx.v_wind[k]);
-          REQUIRE(d_f90.wthv_sec[k] == d_cxx.wthv_sec[k]);
-          REQUIRE(d_f90.tk[k] == d_cxx.tk[k]);
-          REQUIRE(d_f90.shoc_ql[k] == d_cxx.shoc_ql[k]);
-          REQUIRE(d_f90.shoc_cldfrac[k] == d_cxx.shoc_cldfrac[k]);
-          REQUIRE(d_f90.shoc_mix[k] == d_cxx.shoc_mix[k]);
-          REQUIRE(d_f90.isotropy[k] == d_cxx.isotropy[k]);
-          REQUIRE(d_f90.w_sec[k] == d_cxx.w_sec[k]);
-          REQUIRE(d_f90.wqls_sec[k] == d_cxx.wqls_sec[k]);
-          REQUIRE(d_f90.brunt[k] == d_cxx.brunt[k]);
-          REQUIRE(d_f90.shoc_ql2[k] == d_cxx.shoc_ql2[k]);
+        REQUIRE(d_baseline.total(d_baseline.host_dse) == d_cxx.total(d_cxx.host_dse));
+        REQUIRE(d_baseline.total(d_baseline.host_dse) == d_cxx.total(d_cxx.tke));
+        REQUIRE(d_baseline.total(d_baseline.host_dse) == d_cxx.total(d_cxx.thetal));
+        REQUIRE(d_baseline.total(d_baseline.host_dse) == d_cxx.total(d_cxx.qw));
+        REQUIRE(d_baseline.total(d_baseline.host_dse) == d_cxx.total(d_cxx.u_wind));
+        REQUIRE(d_baseline.total(d_baseline.host_dse) == d_cxx.total(d_cxx.v_wind));
+        REQUIRE(d_baseline.total(d_baseline.host_dse) == d_cxx.total(d_cxx.wthv_sec));
+        REQUIRE(d_baseline.total(d_baseline.host_dse) == d_cxx.total(d_cxx.tkh));
+        REQUIRE(d_baseline.total(d_baseline.host_dse) == d_cxx.total(d_cxx.tk));
+        REQUIRE(d_baseline.total(d_baseline.host_dse) == d_cxx.total(d_cxx.shoc_ql));
+        REQUIRE(d_baseline.total(d_baseline.host_dse) == d_cxx.total(d_cxx.shoc_cldfrac));
+        REQUIRE(d_baseline.total(d_baseline.host_dse) == d_cxx.total(d_cxx.shoc_mix));
+        REQUIRE(d_baseline.total(d_baseline.host_dse) == d_cxx.total(d_cxx.isotropy));
+        REQUIRE(d_baseline.total(d_baseline.host_dse) == d_cxx.total(d_cxx.w_sec));
+        REQUIRE(d_baseline.total(d_baseline.host_dse) == d_cxx.total(d_cxx.wqls_sec));
+        REQUIRE(d_baseline.total(d_baseline.host_dse) == d_cxx.total(d_cxx.brunt));
+        REQUIRE(d_baseline.total(d_baseline.host_dse) == d_cxx.total(d_cxx.shoc_ql2));
+        for (Int k = 0; k < d_baseline.total(d_baseline.host_dse); ++k) {
+          REQUIRE(d_baseline.host_dse[k] == d_cxx.host_dse[k]);
+          REQUIRE(d_baseline.tke[k] == d_cxx.tke[k]);
+          REQUIRE(d_baseline.thetal[k] == d_cxx.thetal[k]);
+          REQUIRE(d_baseline.qw[k] == d_cxx.qw[k]);
+          REQUIRE(d_baseline.u_wind[k] == d_cxx.u_wind[k]);
+          REQUIRE(d_baseline.v_wind[k] == d_cxx.v_wind[k]);
+          REQUIRE(d_baseline.wthv_sec[k] == d_cxx.wthv_sec[k]);
+          REQUIRE(d_baseline.tk[k] == d_cxx.tk[k]);
+          REQUIRE(d_baseline.shoc_ql[k] == d_cxx.shoc_ql[k]);
+          REQUIRE(d_baseline.shoc_cldfrac[k] == d_cxx.shoc_cldfrac[k]);
+          REQUIRE(d_baseline.shoc_mix[k] == d_cxx.shoc_mix[k]);
+          REQUIRE(d_baseline.isotropy[k] == d_cxx.isotropy[k]);
+          REQUIRE(d_baseline.w_sec[k] == d_cxx.w_sec[k]);
+          REQUIRE(d_baseline.wqls_sec[k] == d_cxx.wqls_sec[k]);
+          REQUIRE(d_baseline.brunt[k] == d_cxx.brunt[k]);
+          REQUIRE(d_baseline.shoc_ql2[k] == d_cxx.shoc_ql2[k]);
         }
 
-        REQUIRE(d_f90.total(d_f90.qtracers) == d_cxx.total(d_cxx.qtracers));
-        for (Int k = 0; k < d_f90.total(d_f90.qtracers); ++k) {
-          REQUIRE(d_f90.qtracers[k] == d_cxx.qtracers[k]);
+        REQUIRE(d_baseline.total(d_baseline.qtracers) == d_cxx.total(d_cxx.qtracers));
+        for (Int k = 0; k < d_baseline.total(d_baseline.qtracers); ++k) {
+          REQUIRE(d_baseline.qtracers[k] == d_cxx.qtracers[k]);
         }
 
-        REQUIRE(d_f90.total(d_f90.pblh) == d_cxx.total(d_cxx.pblh));
-        for (Int k = 0; k < d_f90.total(d_f90.pblh); ++k) {
-          REQUIRE(d_f90.pblh[k] == d_cxx.pblh[k]);
+        REQUIRE(d_baseline.total(d_baseline.pblh) == d_cxx.total(d_cxx.pblh));
+        for (Int k = 0; k < d_baseline.total(d_baseline.pblh); ++k) {
+          REQUIRE(d_baseline.pblh[k] == d_cxx.pblh[k]);
         }
 
-        REQUIRE(d_f90.total(d_f90.thl_sec) == d_cxx.total(d_cxx.thl_sec));
-        REQUIRE(d_f90.total(d_f90.thl_sec) == d_cxx.total(d_cxx.qw_sec));
-        REQUIRE(d_f90.total(d_f90.thl_sec) == d_cxx.total(d_cxx.qwthl_sec));
-        REQUIRE(d_f90.total(d_f90.thl_sec) == d_cxx.total(d_cxx.wthl_sec));
-        REQUIRE(d_f90.total(d_f90.thl_sec) == d_cxx.total(d_cxx.wqw_sec));
-        REQUIRE(d_f90.total(d_f90.thl_sec) == d_cxx.total(d_cxx.wtke_sec));
-        REQUIRE(d_f90.total(d_f90.thl_sec) == d_cxx.total(d_cxx.uw_sec));
-        REQUIRE(d_f90.total(d_f90.thl_sec) == d_cxx.total(d_cxx.vw_sec));
-        REQUIRE(d_f90.total(d_f90.thl_sec) == d_cxx.total(d_cxx.w3));
-        for (Int k = 0; k < d_f90.total(d_f90.thl_sec); ++k) {
-          REQUIRE(d_f90.thl_sec[k] == d_cxx.thl_sec[k]);
-          REQUIRE(d_f90.qw_sec[k] == d_cxx.qw_sec[k]);
-          REQUIRE(d_f90.qwthl_sec[k] == d_cxx.qwthl_sec[k]);
-          REQUIRE(d_f90.wthl_sec[k] == d_cxx.wthl_sec[k]);
-          REQUIRE(d_f90.wqw_sec[k] == d_cxx.wqw_sec[k]);
-          REQUIRE(d_f90.wtke_sec[k] == d_cxx.wtke_sec[k]);
-          REQUIRE(d_f90.uw_sec[k] == d_cxx.uw_sec[k]);
-          REQUIRE(d_f90.vw_sec[k] == d_cxx.vw_sec[k]);
-          REQUIRE(d_f90.w3[k] == d_cxx.w3[k]);
+        REQUIRE(d_baseline.total(d_baseline.thl_sec) == d_cxx.total(d_cxx.thl_sec));
+        REQUIRE(d_baseline.total(d_baseline.thl_sec) == d_cxx.total(d_cxx.qw_sec));
+        REQUIRE(d_baseline.total(d_baseline.thl_sec) == d_cxx.total(d_cxx.qwthl_sec));
+        REQUIRE(d_baseline.total(d_baseline.thl_sec) == d_cxx.total(d_cxx.wthl_sec));
+        REQUIRE(d_baseline.total(d_baseline.thl_sec) == d_cxx.total(d_cxx.wqw_sec));
+        REQUIRE(d_baseline.total(d_baseline.thl_sec) == d_cxx.total(d_cxx.wtke_sec));
+        REQUIRE(d_baseline.total(d_baseline.thl_sec) == d_cxx.total(d_cxx.uw_sec));
+        REQUIRE(d_baseline.total(d_baseline.thl_sec) == d_cxx.total(d_cxx.vw_sec));
+        REQUIRE(d_baseline.total(d_baseline.thl_sec) == d_cxx.total(d_cxx.w3));
+        for (Int k = 0; k < d_baseline.total(d_baseline.thl_sec); ++k) {
+          REQUIRE(d_baseline.thl_sec[k] == d_cxx.thl_sec[k]);
+          REQUIRE(d_baseline.qw_sec[k] == d_cxx.qw_sec[k]);
+          REQUIRE(d_baseline.qwthl_sec[k] == d_cxx.qwthl_sec[k]);
+          REQUIRE(d_baseline.wthl_sec[k] == d_cxx.wthl_sec[k]);
+          REQUIRE(d_baseline.wqw_sec[k] == d_cxx.wqw_sec[k]);
+          REQUIRE(d_baseline.wtke_sec[k] == d_cxx.wtke_sec[k]);
+          REQUIRE(d_baseline.uw_sec[k] == d_cxx.uw_sec[k]);
+          REQUIRE(d_baseline.vw_sec[k] == d_cxx.vw_sec[k]);
+          REQUIRE(d_baseline.w3[k] == d_cxx.w3[k]);
         }
+      }
+    } // SCREAM_BFB_TESTING
+    else if (this->m_baseline_action == GENERATE) {
+      for (auto& d : cxx_data) {
+        d.write(Base::m_fid);
       }
     }
   } // run_bfb
@@ -495,14 +479,14 @@ TEST_CASE("shoc_main_property", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocMain;
 
-  TestStruct::run_property();
+  TestStruct().run_property();
 }
 
 TEST_CASE("shoc_main_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocMain;
 
-  TestStruct::run_bfb();
+  TestStruct().run_bfb();
 }
 
 } // empty namespace

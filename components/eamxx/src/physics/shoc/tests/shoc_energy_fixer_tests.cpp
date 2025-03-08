@@ -3,11 +3,11 @@
 #include "shoc_unit_tests_common.hpp"
 
 #include "shoc_functions.hpp"
-#include "shoc_functions_f90.hpp"
+#include "shoc_test_data.hpp"
 #include "physics/share/physics_constants.hpp"
 #include "shoc_constants.hpp"
-#include "share/scream_types.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "share/eamxx_types.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/util/ekat_arch.hpp"
@@ -23,9 +23,9 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
+struct UnitWrap::UnitTest<D>::TestShocEnergyFixer : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_property()
+  void run_property()
   {
     static constexpr Real gravit  = scream::physics::Constants<Real>::gravit;
     static constexpr Real Cpair   = scream::physics::Constants<Real>::Cpair;
@@ -158,14 +158,7 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
     }
 
     // Call the C++ implementation
-    SDS.transpose<ekat::TransposeDirection::c2f>();
-    // expects data in fortran layout
-    shoc_energy_fixer_f(SDS.shcol, SDS.nlev, SDS.nlevi, SDS.dtime, SDS.nadv,
-                        SDS.zt_grid, SDS.zi_grid, SDS.se_b, SDS.ke_b, SDS.wv_b,
-                        SDS.wl_b, SDS.se_a, SDS.ke_a, SDS.wv_a, SDS.wl_a, SDS.wthl_sfc,
-                        SDS.wqw_sfc, SDS.rho_zt, SDS.tke, SDS.pint,
-                        SDS.host_dse);
-    SDS.transpose<ekat::TransposeDirection::f2c>();
+    shoc_energy_fixer(SDS);
 
     // Check test
     // Verify that the dry static energy has not changed if surface
@@ -239,14 +232,7 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
     }
 
     // Call the C++ implementation
-    SDS.transpose<ekat::TransposeDirection::c2f>();
-    // expects data in fortran layout
-    shoc_energy_fixer_f(SDS.shcol, SDS.nlev, SDS.nlevi, SDS.dtime, SDS.nadv,
-                        SDS.zt_grid, SDS.zi_grid, SDS.se_b, SDS.ke_b, SDS.wv_b,
-                        SDS.wl_b, SDS.se_a, SDS.ke_a, SDS.wv_a, SDS.wl_a, SDS.wthl_sfc,
-                        SDS.wqw_sfc, SDS.rho_zt, SDS.tke, SDS.pint,
-                        SDS.host_dse);
-    SDS.transpose<ekat::TransposeDirection::f2c>();
+    shoc_energy_fixer(SDS);
 
     // Verify the result
     for(Int s = 0; s < shcol; ++s) {
@@ -275,11 +261,11 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
 
   }
 
-  static void run_bfb()
+  void run_bfb()
   {
-    auto engine = setup_random_test();
+    auto engine = Base::get_engine();
 
-    ShocEnergyFixerData SDS_f90[] = {
+    ShocEnergyFixerData SDS_baseline[] = {
       //               shcol, nlev, nlevi, dtime, nadv
       ShocEnergyFixerData(10, 71, 72, 300, 2),
       ShocEnergyFixerData(10, 12, 13, 100, 10),
@@ -288,48 +274,48 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
     };
 
     // Generate random input data
-    for (auto& d : SDS_f90) {
+    for (auto& d : SDS_baseline) {
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // Create copies of data for use by cxx. Needs to happen before reads so that
     // inout data is in original state
     ShocEnergyFixerData SDS_cxx[] = {
-      ShocEnergyFixerData(SDS_f90[0]),
-      ShocEnergyFixerData(SDS_f90[1]),
-      ShocEnergyFixerData(SDS_f90[2]),
-      ShocEnergyFixerData(SDS_f90[3]),
+      ShocEnergyFixerData(SDS_baseline[0]),
+      ShocEnergyFixerData(SDS_baseline[1]),
+      ShocEnergyFixerData(SDS_baseline[2]),
+      ShocEnergyFixerData(SDS_baseline[3]),
     };
+
+    static constexpr Int num_runs = sizeof(SDS_baseline) / sizeof(ShocEnergyFixerData);
 
     // Assume all data is in C layout
 
-    // Get data from fortran
-    for (auto& d : SDS_f90) {
-      // expects data in C layout
-      shoc_energy_fixer(d);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (auto& d : SDS_baseline) {
+        d.read(Base::m_fid);
+      }
     }
 
     // Get data from cxx
     for (auto& d : SDS_cxx) {
-      d.transpose<ekat::TransposeDirection::c2f>();
-      // expects data in fortran layout
-      shoc_energy_fixer_f(d.shcol, d.nlev, d.nlevi, d.dtime, d.nadv,
-                          d.zt_grid, d.zi_grid, d.se_b, d.ke_b, d.wv_b,
-                          d.wl_b, d.se_a, d.ke_a, d.wv_a, d.wl_a, d.wthl_sfc,
-                          d.wqw_sfc, d.rho_zt, d.tke, d.pint,
-                          d.host_dse);
-      d.transpose<ekat::TransposeDirection::f2c>();
+      shoc_energy_fixer(d);
     }
 
     // Verify BFB results, all data should be in C layout
-    if (SCREAM_BFB_TESTING) {
-      static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(ShocEnergyFixerData);
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < num_runs; ++i) {
-        ShocEnergyFixerData& d_f90 = SDS_f90[i];
+        ShocEnergyFixerData& d_baseline = SDS_baseline[i];
         ShocEnergyFixerData& d_cxx = SDS_cxx[i];
-        for (Int k = 0; k < d_f90.total(d_f90.host_dse); ++k) {
-          REQUIRE(d_f90.host_dse[k] == d_cxx.host_dse[k]);
+        for (Int k = 0; k < d_baseline.total(d_baseline.host_dse); ++k) {
+          REQUIRE(d_baseline.host_dse[k] == d_cxx.host_dse[k]);
         }
+      }
+    } // SCREAM_BFB_TESTING
+    else if (this->m_baseline_action == GENERATE) {
+      for (Int i = 0; i < num_runs; ++i) {
+        SDS_cxx[i].write(Base::m_fid);
       }
     }
   }
@@ -345,14 +331,14 @@ TEST_CASE("shoc_energy_fixer_property", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocEnergyFixer;
 
-  TestStruct::run_property();
+  TestStruct().run_property();
 }
 
 TEST_CASE("shoc_energy_fixer_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocEnergyFixer;
 
-  TestStruct::run_bfb();
+  TestStruct().run_bfb();
 }
 
 } // namespace

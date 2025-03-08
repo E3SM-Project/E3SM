@@ -1,2 +1,6 @@
 fsurdat = '$DIN_LOC_ROOT/lnd/clm2/surfdata_map/surfdata_1x1_smallvilleIA_mp50_simyr2000_miscanthus_c230905.nc'
 do_budgets = .false.
+hist_mfilt = 1, 1
+hist_nhtfrq = 0, 0
+hist_dov2xy = .true., .false.
+hist_fincl2 = 'GPP', 'ER', 'NEE', 'NPP', 'NBP', 'TOTSOMC', 'DMYIELD', 'PLANTDAY', 'HARVESTDAY'

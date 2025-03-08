@@ -3,10 +3,10 @@
 #include "shoc_unit_tests_common.hpp"
 
 #include "shoc_functions.hpp"
-#include "shoc_functions_f90.hpp"
+#include "shoc_test_data.hpp"
 #include "physics/share/physics_constants.hpp"
-#include "share/scream_types.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "share/eamxx_types.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/util/ekat_arch.hpp"
@@ -22,9 +22,9 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestSecondMomSrf {
+struct UnitWrap::UnitTest<D>::TestSecondMomSrf : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_property()
+  void run_property()
   {
     // Property test for the SHOC subroutine:
     //  diag_second_moments_srf
@@ -52,7 +52,7 @@ struct UnitWrap::UnitTest<D>::TestSecondMomSrf {
     }
 
     // Call the C++ implementation
-    shoc_diag_second_moments_srf_f(SDS.shcol, SDS.wthl_sfc, SDS.uw_sfc, SDS.vw_sfc, SDS.ustar2, SDS.wstar);
+    diag_second_moments_srf(SDS);
 
     // Verify the output
     for (Int s = 0; s < shcol; ++s){
@@ -82,12 +82,12 @@ struct UnitWrap::UnitTest<D>::TestSecondMomSrf {
 
   }
 
-  static void run_bfb()
+  void run_bfb()
   {
   #if 0
-    auto engine = setup_random_test();
+    auto engine = Base::get_engine();
 
-    SHOCSecondMomentSrfData mom_srf_data_f90[] = {
+    SHOCSecondMomentSrfData mom_srf_data_baseline[] = {
       //                      shcol
       SHOCSecondMomentSrfData(36),
       SHOCSecondMomentSrfData(72),
@@ -95,34 +95,39 @@ struct UnitWrap::UnitTest<D>::TestSecondMomSrf {
       SHOCSecondMomentSrfData(256),
     };
 
-    for (auto& d : mom_srf_data_f90) {
+    for (auto& d : mom_srf_data_baseline) {
       d.randomize(engine, { {d.wthl, {-1, 1}} });
     }
 
     SHOCSecondMomentSrfData mom_srf_data_cxx[] = {
-      SHOCSecondMomentSrfData(mom_srf_data_f90[0]),
-      SHOCSecondMomentSrfData(mom_srf_data_f90[1]),
-      SHOCSecondMomentSrfData(mom_srf_data_f90[2]),
-      SHOCSecondMomentSrfData(mom_srf_data_f90[3]),
+      SHOCSecondMomentSrfData(mom_srf_data_baseline[0]),
+      SHOCSecondMomentSrfData(mom_srf_data_baseline[1]),
+      SHOCSecondMomentSrfData(mom_srf_data_baseline[2]),
+      SHOCSecondMomentSrfData(mom_srf_data_baseline[3]),
     };
 
-    for (auto& d : mom_srf_data_f90) {
+    for (auto& d : mom_srf_data_baseline) {
       // expects data in C layout
       shoc_diag_second_moments_srf(d);
     }
 
     for (auto& d : mom_srf_data_cxx) {
-      shoc_diag_second_moments_srf_f(d.shcol, d.wthl_sfc, d.uw_sfc, d.vw_sfc, d.ustar2, d.wstar);
+      shoc_diag_second_moments_srf(d);
     }
 
-    if (SCREAM_BFB_TESTING) {
-      static constexpr Int num_runs = sizeof(mom_srf_data_f90) / sizeof(SHOCSecondMomentSrfData);
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
+      static constexpr Int num_runs = sizeof(mom_srf_data_baseline) / sizeof(SHOCSecondMomentSrfData);
       for (Int i = 0; i < num_runs; ++i) {
         Int shcol = mom_srf_data_cxx[i].shcol;
         for (Int k = 0; k < shcol; ++k) {
-          REQUIRE(mom_srf_data_f90[i].ustar2[k] == mom_srf_data_cxx[i].ustar2[k]);
-          REQUIRE(mom_srf_data_f90[i].wstar[k]  == mom_srf_data_cxx[i].wstar[k]);
+          REQUIRE(mom_srf_data_baseline[i].ustar2[k] == mom_srf_data_cxx[i].ustar2[k]);
+          REQUIRE(mom_srf_data_baseline[i].wstar[k]  == mom_srf_data_cxx[i].wstar[k]);
         }
+      }
+    } // SCREAM_BFB_TESTING
+    else if (this->m_baseline_action == GENERATE) {
+      for (Int i = 0; i < num_runs; ++i) {
+        cxx_data[i].write(Base::m_fid);
       }
     }
 #endif
@@ -139,13 +144,13 @@ namespace {
 TEST_CASE("shoc_second_moments_srf_property", "shoc") {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestSecondMomSrf;
 
-  TestStruct::run_property();
+  TestStruct().run_property();
 }
 
 TEST_CASE("shoc_second_moments_srf_bfb", "shoc") {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestSecondMomSrf;
 
-  TestStruct::run_bfb();
+  TestStruct().run_bfb();
 }
 
 } // namespace

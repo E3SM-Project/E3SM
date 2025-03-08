@@ -4,7 +4,7 @@
 #include "share/atm_process/atmosphere_process.hpp"
 #include "ekat/ekat_parameter_list.hpp"
 #include "physics/p3/p3_functions.hpp"
-#include "share/util/scream_common_physics_functions.hpp"
+#include "share/util/eamxx_common_physics_functions.hpp"
 
 #include <string>
 
@@ -22,7 +22,6 @@ namespace scream
 class P3Microphysics : public AtmosphereProcess
 {
   using P3F          = p3::Functions<Real, DefaultDevice>;
-  using CP3          = physics::P3_Constants<Real>;
   using Spack        = typename P3F::Spack;
   using Smask        = typename P3F::Smask;
   using Pack         = ekat::Pack<Real,Spack::n>;
@@ -54,8 +53,6 @@ public:
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 
-  CP3 m_p3constants;
-
   /*--------------------------------------------------------------------------------------------*/
   // Most individual processes have a pre-processing step that constructs needed variables from
   // the set of fields stored in the field manager.  A structure like this defines those operations,
@@ -72,7 +69,9 @@ public:
         // The ipack slice of input variables used more than once
         const Spack& pmid_pack(pmid(icol,ipack));
         const Spack& T_atm_pack(T_atm(icol,ipack));
-        const Spack& cld_frac_t_pack(cld_frac_t(icol,ipack));
+        const Spack& cld_frac_t_in_pack(cld_frac_t_in(icol,ipack));
+        const Spack& cld_frac_l_in_pack(cld_frac_l_in(icol,ipack));
+        const Spack& cld_frac_i_in_pack(cld_frac_i_in(icol,ipack));
         const Spack& pseudo_density_pack(pseudo_density(icol,ipack));
         const Spack& pseudo_density_dry_pack(pseudo_density_dry(icol,ipack));
 
@@ -108,23 +107,31 @@ public:
         th_atm(icol,ipack) = PF::calculate_theta_from_T(T_atm_pack,pmid_pack);
         // Cloud fraction
         // Set minimum cloud fraction - avoids division by zero
-        cld_frac_l(icol,ipack) = ekat::max(cld_frac_t_pack,mincld);
-        cld_frac_i(icol,ipack) = ekat::max(cld_frac_t_pack,mincld);
-        cld_frac_r(icol,ipack) = ekat::max(cld_frac_t_pack,mincld);
+        // Alternatively set fraction to 1 everywhere to disable subgrid effects
+        if (runtime_opts.use_separate_ice_liq_frac){
+          cld_frac_l(icol,ipack) = runtime_opts.set_cld_frac_l_to_one ? 1 : ekat::max(cld_frac_l_in_pack,mincld);
+          cld_frac_i(icol,ipack) = runtime_opts.set_cld_frac_i_to_one ? 1 : ekat::max(cld_frac_i_in_pack,mincld);
+        } else {
+          cld_frac_l(icol,ipack) = runtime_opts.set_cld_frac_l_to_one ? 1 : ekat::max(cld_frac_t_in_pack,mincld);
+          cld_frac_i(icol,ipack) = runtime_opts.set_cld_frac_i_to_one ? 1 : ekat::max(cld_frac_t_in_pack,mincld);
+        }
+        cld_frac_r(icol,ipack) = runtime_opts.set_cld_frac_r_to_one ? 1 : ekat::max(cld_frac_t_in_pack,mincld);
 
         // update rain cloud fraction given neighboring levels using max-overlap approach.
-        for (int ivec=0;ivec<Spack::n;ivec++)
-        {
-          // Hard-coded max-overlap cloud fraction calculation.  Cycle through the layers from top to bottom and determine if the rain fraction needs to
-          // be updated to match the cloud fraction in the layer above.  It is necessary to calculate the location of the layer directly above this one,
-          // labeled ipack_m1 and ivec_m1 respectively.  Note, the top layer has no layer above it, which is why we have the kstr index in the loop.
-          Int lev = ipack*Spack::n + ivec;  // Determine the level at this pack/vec location.
-          Int ipack_m1 = (lev - 1) / Spack::n;
-          Int ivec_m1  = (lev - 1) % Spack::n;
-          if (lev != 0) { /* Not applicable at the very top layer */
-            cld_frac_r(icol,ipack)[ivec] = cld_frac_t(icol,ipack_m1)[ivec_m1]>cld_frac_r(icol,ipack)[ivec] ?
-                                              cld_frac_t(icol,ipack_m1)[ivec_m1] :
-                                              cld_frac_r(icol,ipack)[ivec];
+        if ( !runtime_opts.set_cld_frac_r_to_one ) {
+          for (int ivec=0;ivec<Spack::n;ivec++)
+          {
+            // Hard-coded max-overlap cloud fraction calculation.  Cycle through the layers from top to bottom and determine if the rain fraction needs to
+            // be updated to match the cloud fraction in the layer above.  It is necessary to calculate the location of the layer directly above this one,
+            // labeled ipack_m1 and ivec_m1 respectively.  Note, the top layer has no layer above it, which is why we have the kstr index in the loop.
+            Int lev = ipack*Spack::n + ivec;  // Determine the level at this pack/vec location.
+            Int ipack_m1 = (lev - 1) / Spack::n;
+            Int ivec_m1  = (lev - 1) % Spack::n;
+            if (lev != 0) { /* Not applicable at the very top layer */
+              cld_frac_r(icol,ipack)[ivec] = cld_frac_t_in(icol,ipack_m1)[ivec_m1]>cld_frac_r(icol,ipack)[ivec] ?
+                                                cld_frac_t_in(icol,ipack_m1)[ivec_m1] :
+                                                cld_frac_r(icol,ipack)[ivec];
+            }
           }
         }
         //
@@ -138,7 +145,9 @@ public:
     view_2d_const pseudo_density;
     view_2d_const pseudo_density_dry;
     view_2d       T_atm;
-    view_2d_const cld_frac_t;
+    view_2d_const cld_frac_t_in;
+    view_2d_const cld_frac_l_in;
+    view_2d_const cld_frac_i_in;
     view_2d       qv;
     view_2d       qc;
     view_2d       nc;
@@ -155,16 +164,20 @@ public:
     view_2d       cld_frac_i;
     view_2d       cld_frac_r;
     view_2d       dz;
+    // Add runtime_options as a member variable
+    P3F::P3Runtime runtime_opts;
     // Assigning local variables
     void set_variables(const int ncol, const int npack,
            const view_2d_const& pmid_, const view_2d_const& pmid_dry_,
            const view_2d_const& pseudo_density_,
            const view_2d_const& pseudo_density_dry_, const view_2d& T_atm_,
-           const view_2d_const& cld_frac_t_, const view_2d& qv_, const view_2d& qc_,
+           const view_2d_const& cld_frac_t_in_, const view_2d_const& cld_frac_l_in_, const view_2d_const& cld_frac_i_in_,
+           const view_2d& qv_, const view_2d& qc_,
            const view_2d& nc_, const view_2d& qr_, const view_2d& nr_, const view_2d& qi_,
            const view_2d& qm_, const view_2d& ni_, const view_2d& bm_, const view_2d& qv_prev_,
            const view_2d& inv_exner_, const view_2d& th_atm_, const view_2d& cld_frac_l_,
-           const view_2d& cld_frac_i_, const view_2d& cld_frac_r_, const view_2d& dz_
+           const view_2d& cld_frac_i_, const view_2d& cld_frac_r_, const view_2d& dz_,
+           const P3F::P3Runtime& runtime_options
            )
     {
       m_ncol = ncol;
@@ -175,7 +188,9 @@ public:
       pseudo_density = pseudo_density_;
       pseudo_density_dry = pseudo_density_dry_;
       T_atm          = T_atm_;
-      cld_frac_t     = cld_frac_t_;
+      cld_frac_t_in     = cld_frac_t_in_;
+      cld_frac_l_in     = cld_frac_l_in_;
+      cld_frac_i_in     = cld_frac_i_in_;
       // OUT
       qv             = qv_;
       qc             = qc_;
@@ -193,6 +208,7 @@ public:
       cld_frac_i = cld_frac_i_;
       cld_frac_r = cld_frac_r_;
       dz = dz_;
+      runtime_opts = runtime_options;
     } // set_variables
   }; // p3_preamble
   /* --------------------------------------------------------------------------------------------*/

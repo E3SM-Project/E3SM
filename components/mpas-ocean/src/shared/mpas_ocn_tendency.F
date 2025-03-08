@@ -264,7 +264,8 @@ contains
                                              tendThick, err)
 
       ! Compute thickness tendency to manufactured solution
-      call ocn_manufactured_solution_tend_thick(tendThick, err)
+      call ocn_manufactured_solution_tend_thick(forcingPool, &
+                                                tendThick, err)
 
 #ifdef MPAS_OPENACC
       !$acc exit data copyout(tendThick, surfaceThicknessFlux, surfaceThicknessFluxRunoff, &
@@ -493,7 +494,8 @@ contains
                                 layerThickEdgeMean, tendVel, err)
  
       ! Compute tendency term for manufactured solution
-      call ocn_manufactured_solution_tend_vel(tendVel, err)
+      call ocn_manufactured_solution_tend_vel(forcingPool, &
+                                              tendVel, err)
 
       ! vertical mixing treated implicitly in a later routine
       ! adjust total velocity tendency based on wetting/drying
@@ -1317,12 +1319,9 @@ contains
          !
          ! Compute tracer tendency due to non-local flux computed in KPP
          !
-         if (config_use_cvmix_kpp .or. config_use_gotm) then
-            call ocn_compute_KPP_input_fields(statePool, forcingPool,&
-                                                 meshPool, timeLevel)
-
-            if (.not. config_cvmix_kpp_nonlocal_with_implicit_mix) then
+         if (config_use_cvmix_kpp) then
                call mpas_timer_start("non-local flux from KPP")
+            if (.not. config_cvmix_kpp_nonlocal_with_implicit_mix) then
                if (computeBudgets) then
                   !$omp parallel
                   !$omp do schedule(runtime) private(k,n)
@@ -1365,8 +1364,8 @@ contains
                   !$omp end do
                   !$omp end parallel
                endif ! compute budgets
-               call mpas_timer_stop("non-local flux from KPP")
             end if ! not non-local with implicit mix
+            call mpas_timer_stop("non-local flux from KPP")
          end if ! KPP
 
          ! Compute tracer tendency due to production/destruction of

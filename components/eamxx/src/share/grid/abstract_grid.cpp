@@ -175,6 +175,8 @@ bool AbstractGrid::is_unique () const {
     return unique_gids==1;
   };
 
+
+  std::lock_guard<std::mutex> lock(m_mutex); // Lock the mutex
   if (not m_is_unique_computed) {
     m_is_unique = compute_is_unique();
     m_is_unique_computed = true;
@@ -218,6 +220,7 @@ is_valid_layout (const FieldLayout& layout) const
 auto AbstractGrid::
 get_global_min_dof_gid () const ->gid_type
 {
+  std::lock_guard<std::mutex> lock(m_mutex); // Lock the mutex
   // Lazy calculation
   if (m_global_min_dof_gid==std::numeric_limits<gid_type>::max()) {
     m_global_min_dof_gid = field_min<gid_type>(m_dofs_gids,&get_comm());
@@ -228,6 +231,7 @@ get_global_min_dof_gid () const ->gid_type
 auto AbstractGrid::
 get_global_max_dof_gid () const ->gid_type
 {
+  std::lock_guard<std::mutex> lock(m_mutex); // Lock the mutex
   // Lazy calculation
   if (m_global_max_dof_gid==-std::numeric_limits<gid_type>::max()) {
     m_global_max_dof_gid = field_max<gid_type>(m_dofs_gids,&get_comm());
@@ -238,6 +242,7 @@ get_global_max_dof_gid () const ->gid_type
 auto AbstractGrid::
 get_global_min_partitioned_dim_gid () const ->gid_type
 {
+  std::lock_guard<std::mutex> lock(m_mutex); // Lock the mutex
   // Lazy calculation
   if (m_global_min_partitioned_dim_gid==std::numeric_limits<gid_type>::max()) {
     m_global_min_partitioned_dim_gid = field_min<gid_type>(m_partitioned_dim_gids,&get_comm());
@@ -248,6 +253,7 @@ get_global_min_partitioned_dim_gid () const ->gid_type
 auto AbstractGrid::
 get_global_max_partitioned_dim_gid () const ->gid_type
 {
+  std::lock_guard<std::mutex> lock(m_mutex); // Lock the mutex
   // Lazy calculation
   if (m_global_max_partitioned_dim_gid==-std::numeric_limits<gid_type>::max()) {
     m_global_max_partitioned_dim_gid = field_max<gid_type>(m_partitioned_dim_gids,&get_comm());
@@ -294,7 +300,7 @@ AbstractGrid::get_geometry_data (const std::string& name) const {
 }
 
 Field
-AbstractGrid::create_geometry_data (const FieldIdentifier& fid)
+AbstractGrid::create_geometry_data (const FieldIdentifier& fid, const int pack_size)
 {
   const auto& name = fid.name();
 
@@ -307,6 +313,7 @@ AbstractGrid::create_geometry_data (const FieldIdentifier& fid)
 
   // Create field and the read only copy as well
   auto& f = m_geo_fields[name] = Field(fid);
+  f.get_header().get_alloc_properties().request_allocation(pack_size);
   f.allocate_view();
   return f;
 }
@@ -549,14 +556,18 @@ void AbstractGrid::create_dof_fields (const int scalar2d_layout_rank)
 }
 
 auto AbstractGrid::get_gid2lid_map () const
- -> std::map<gid_type,int>
+ -> const std::map<gid_type,int>&
 {
-  std::map<gid_type,int> m;
-  auto gids_h = get_dofs_gids().get_view<const gid_type*,Host>();
-  for (int i=0; i<get_num_local_dofs(); ++i) {
-    m[gids_h[i]] = i;
+  std::lock_guard<std::mutex> lock(m_mutex); // Lock the mutex
+
+  int cur_sz = m_gid2lid.size();
+  if (cur_sz<get_num_local_dofs()) {
+    auto gids_h = get_dofs_gids().get_view<const gid_type*, Host>();
+    for (int i = 0; i < get_num_local_dofs(); ++i) {
+        m_gid2lid[gids_h[i]] = i; // Modify the mutable member
+    }
   }
-  return m;
+  return m_gid2lid; // Return the map
 }
 
 void AbstractGrid::copy_data (const AbstractGrid& src, const bool shallow)

@@ -1,18 +1,19 @@
 #ifndef SCREAM_SCORPIO_OUTPUT_HPP
 #define SCREAM_SCORPIO_OUTPUT_HPP
 
-#include "share/io/scream_scorpio_interface.hpp"
-#include "share/io/scream_io_utils.hpp"
+#include "share/io/eamxx_scorpio_interface.hpp"
+#include "share/io/eamxx_io_utils.hpp"
 #include "share/field/field_manager.hpp"
 #include "share/grid/abstract_grid.hpp"
 #include "share/grid/grids_manager.hpp"
-#include "share/util//scream_time_stamp.hpp"
+#include "share/util/eamxx_time_stamp.hpp"
+#include "share/util/eamxx_utils.hpp"
 #include "share/atm_process/atmosphere_diagnostic.hpp"
 
 #include "ekat/ekat_parameter_list.hpp"
 #include "ekat/mpi/ekat_comm.hpp"
 /*  The AtmosphereOutput class handles an output stream in SCREAM.
- *  Typical usage is to register an AtmosphereOutput object with the OutputManager (see scream_output_manager.hpp
+ *  Typical usage is to register an AtmosphereOutput object with the OutputManager (see eamxx_output_manager.hpp
  *
  *  Similar to other SCREAM classes, output streams have a init, run and finalize routines.
  *  These routines are called during the homonymous steps of the AD.
@@ -206,7 +207,7 @@ protected:
   std::map<std::string,std::shared_ptr<atm_diag_type>>  m_diagnostics;
   std::map<std::string,std::vector<std::string>>        m_diag_depends_on_diags;
   std::map<std::string,bool>                            m_diag_computed;
-  LongNames                                             m_longnames;
+  DefaultMetadata                                       m_default_metadata;
 
   // Use float, so that if output fp_precision=float, this is a representable value.
   // Otherwise, you would get an error from Netcdf, like

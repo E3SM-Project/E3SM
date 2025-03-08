@@ -1,8 +1,8 @@
 #include "diagnostics/vertical_layer.hpp"
 
 #include "physics/share/physics_constants.hpp"
-#include "share/util/scream_common_physics_functions.hpp"
-#include "share/util/scream_column_ops.hpp"
+#include "share/util/eamxx_common_physics_functions.hpp"
+#include "share/util/eamxx_column_ops.hpp"
 
 namespace scream
 {
@@ -13,25 +13,27 @@ VerticalLayerDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& para
   : AtmosphereDiagnostic(comm,params)
 {
   m_diag_name = params.get<std::string>("diag_name");
-  std::vector<std::string> supported = {
-    "z_int",
-    "z_mid",
-    "geopotential_int",
-    "geopotential_mid",
-    "height_int",
-    "height_mid",
-    "dz"
-  };
+  std::vector<std::string> supported = {"z","geopotential","height","dz"};
 
   EKAT_REQUIRE_MSG(ekat::contains(supported,m_diag_name),
       "[VerticalLayerDiagnostic] Error! Invalid diag_name.\n"
       "  - diag_name  : " + m_diag_name + "\n"
       "  - valid names: " + ekat::join(supported,", ") + "\n");
 
-  m_is_interface_layout = m_diag_name.find("_int") != std::string::npos;
+  auto vert_pos = params.get<std::string>("vert_location");
+  EKAT_REQUIRE_MSG (vert_pos=="mid" || vert_pos=="int" ||
+                    vert_pos=="midpoints" || vert_pos=="interfaces",
+      "[VerticalLayerDiagnostic] Error! Invalid 'vert_location'.\n"
+      "  - input value: " + vert_pos + "\n"
+      "  - valid names: mid, midpoints, int, interfaces\n");
+  m_is_interface_layout = vert_pos=="int" || vert_pos=="interfaces";
 
-  m_geopotential = m_diag_name.substr(0,12)=="geopotential";
-  m_from_sea_level = m_diag_name[0]=='z' or m_geopotential;
+  m_geopotential = m_diag_name=="geopotential";
+  m_from_sea_level = m_diag_name=="z" or m_geopotential;
+
+  if (m_diag_name!="dz") {
+    m_diag_name += m_is_interface_layout ? "_int" : "_mid";
+  }
 }
 // ========================================================================================
 void VerticalLayerDiagnostic::
@@ -88,7 +90,7 @@ initialize_impl (const RunType /*run_type*/)
   const auto VLEV  = m_is_interface_layout ? ILEV : LEV;
   const auto nlevs = m_is_interface_layout ? m_num_levs+1 : m_num_levs;
   FieldLayout diag_layout ({COL,VLEV},{m_num_cols,nlevs});
-  FieldIdentifier fid (name(), diag_layout, m_geopotential ? m2/s2 : m, grid_name);
+  FieldIdentifier fid (m_diag_name, diag_layout, m_geopotential ? m2/s2 : m, grid_name);
 
   m_diagnostic_output = Field(fid);
   auto& diag_fap = m_diagnostic_output.get_header().get_alloc_properties();

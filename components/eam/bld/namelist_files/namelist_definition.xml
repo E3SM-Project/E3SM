@@ -1078,6 +1078,48 @@ Whether or not to enable GWD brute-force energy fix.
 Default: set by build-namelist.
 </entry>
 
+<entry id="use_od_ls" type="logical" category="gw_drag"
+       group="phys_ctl_nl" valid_values="" >
+Whether or not to enable nonlinear orographic gravity wave drag (oGWD).
+Default: set by build-namelist.
+</entry>
+
+<entry id="use_od_bl" type="logical" category="gw_drag"
+       group="phys_ctl_nl" valid_values="" >
+Whether or not to enable flow-blocking drag (FBD).
+Default: set by build-namelist.
+</entry>
+
+<entry id="use_od_ss" type="logical" category="gw_drag"
+       group="phys_ctl_nl" valid_values="" >
+Whether or not to enable small-scale orographic GWD drag (sGWD).
+Default: set by build-namelist.
+</entry>
+
+<entry id="use_od_fd" type="logical" category="pbl"
+       group="phys_ctl_nl" valid_values="" >
+Whether or not to enable turbulent orographic form drag (TOFD).
+Default: set by build-namelist.
+</entry>
+
+<entry id="od_ls_ncleff" type="real" category="gw_drag"
+       group="oro_drag_nl" valid_values="" >
+Tuning parameter of orographic GWD (oGWD). See <varname>use_od_ls</varname>.
+Default: set by build-namelist.
+</entry>
+
+<entry id="od_bl_ncd" type="real" category="gw_drag"
+       group="oro_drag_nl" valid_values="" >
+Tuning parameter of flow-blocking drag (FBD). See <varname>use_od_bl</varname>.
+Default: set by build-namelist.
+</entry>
+
+<entry id="od_ss_sncleff" type="real" category="gw_drag"
+       group="oro_drag_nl" valid_values="" >
+Tuning parameter of small-scale GWD (sGWD). See <varname>use_od_ss</varname>.
+Default: set by build-namelist.
+</entry>
+
 <entry id="pgwv" type="integer" category="gw_drag"
        group="gw_drag_nl" valid_values="" >
 Gravity wave spectrum dimension (wave numbers are from -pgwv to pgwv).
@@ -1100,14 +1142,38 @@ Default: set by build-namelist.
 
 <entry id="gw_convect_hcf" type="real" category="gw_drag"
        group="gw_drag_nl" valid_values="" >
-Heating rate conversion factor associated with convective gravity waves
+Heating rate conversion factor associated with convective GWD [unitless].
+Also often interpretted as "convective fraction" [%].
 Default: 20.0
 </entry>
 
 <entry id="hdepth_scaling_factor" type="real" category="gw_drag"
        group="gw_drag_nl" valid_values="" >
-Scaling factor for the heating depth
+Scaling factor for the heating depth [unitless]
 Default: 1.0
+</entry>
+
+<entry id="gw_convect_hdepth_min" type="real" category="gw_drag"
+       group="gw_drag_nl" valid_values="" >
+minimum hdepth for for convective GWD spectrum lookup table [km]
+Default: 2.5 km
+</entry>
+
+<entry id="gw_convect_storm_speed_min" type="real" category="gw_drag"
+       group="gw_drag_nl" valid_values="" >
+minimum convective storm speed in m/s for convective GWD
+Default: 10.0 m/s
+</entry>
+
+<entry id="gw_convect_plev_src_wind" type="real" category="gw_drag"
+       group="gw_drag_nl" valid_values="" >
+Reference pressure value used for convective storm speed in m/s for convective GWD
+Default: 70000 Pa
+</entry>
+
+<entry id="use_gw_convect_old" type="logical" category="gw_drag"
+       group="gw_drag_nl" valid_values="" >
+switch to revert to old calculation of Beres scheme for heating depth and max
 </entry>
 
 <entry id="effgw_beres" type="real" category="gw_drag"
@@ -6741,6 +6807,36 @@ Number of tracers, starting from 1, to which to apply hyperviscosity. For
 example, to apply hyperviscosity to moisture, the first tracer, set the value to
 1. Hyperviscosity is applied using nu_q as the coefficient.
 Default: (set by dycore)
+</entry>
+
+<entry id="semi_lagrange_halo" type="integer" category="se"
+       group="ctl_nl" valid_values="">
+Number of element haloes to include in trajectory search. -1 triggers an
+automatic calculation of max(1, dt_tracer_factor/3). This is based on the
+advective CFL condition that governs the dynamics time step.
+Default: -1 (set by dycore)
+</entry>
+
+<entry id="semi_lagrange_trajectory_nsubstep" type="integer" category="se"
+       group="ctl_nl" valid_values="">
+Number of substeps to take in computing semi-Lagrangian transport
+trajectories. 0 triggers the original algorithm; 1 or larger triggers the
+enhanced-trajectory algorithm.
+Default: 0 (set by dycore)
+</entry>
+
+<entry id="semi_lagrange_trajectory_nvelocity" type="integer" category="se"
+       group="ctl_nl" valid_values="">
+Number of velocity snapshots to store for use when computing the enhanced
+trajectories. -1 triggers an automatic calculation. 0, 1, 2 all become 2, the
+minimum.
+Default: -1 (set by dycore)
+</entry>
+
+<entry id="semi_lagrange_diagnostics" type="integer" category="se"
+       group="ctl_nl" valid_values="">
+Optional diagnostic output from transport module.
+Default: 0 (set by dycore)
 </entry>
 
 <!-- Physics grid -->

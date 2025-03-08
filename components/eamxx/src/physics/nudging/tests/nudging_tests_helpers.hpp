@@ -1,9 +1,9 @@
-#include "share/io/scream_output_manager.hpp"
+#include "share/io/eamxx_output_manager.hpp"
 #include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_manager.hpp"
-#include "share/util/scream_time_stamp.hpp"
-#include "share/scream_types.hpp"
+#include "share/util/eamxx_time_stamp.hpp"
+#include "share/eamxx_types.hpp"
 
 namespace scream
 {
@@ -150,7 +150,6 @@ create_om (const std::string& filename_prefix,
   params.set<std::string>("Averaging Type","INSTANT");
   params.set<std::string>("filename_prefix",filename_prefix);
   params.set<std::string>("Floating Point Precision","real");
-  params.set("MPI Ranks in Filename", false);
   params.set("Field Names",strvec_t{"p_mid","U","V"});
   params.set("fill_value",fill_val);
 
@@ -160,7 +159,8 @@ create_om (const std::string& filename_prefix,
   ctrl_pl.set("save_grid_data",false);
 
   auto om = std::make_shared<OutputManager>();
-  om->setup(comm,params,fm,gm,t0,t0,false);
+  om->initialize(comm,params,t0,false);
+  om->setup(fm,gm);
   return om;
 }
 

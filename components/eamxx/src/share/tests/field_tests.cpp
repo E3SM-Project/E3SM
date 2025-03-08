@@ -7,7 +7,7 @@
 #include "share/field/field.hpp"
 #include "share/field/field_manager.hpp"
 #include "share/field/field_utils.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 
 #include "share/grid/point_grid.hpp"
 
@@ -171,19 +171,6 @@ TEST_CASE("field", "") {
     REQUIRE_THROWS (f1.get_const().get_view<Real**>());
   }
 
-  SECTION ("equivalent") {
-    Field f1 (fid), f2(fid);
-    f1.allocate_view();
-    f2.allocate_view();
-
-    // Check self equivalence
-    // get_const returns a copy of self, so equivalent (if already allocated)
-    REQUIRE (f1.equivalent(f1.get_const()));
-    REQUIRE (f1.equivalent(f1));
-    // f1 and f2 have independent views, so they are not equivalent.
-    REQUIRE (!f1.equivalent(f2));
-  }
-
   // Check copy constructor
   SECTION ("copy ctor") {
     Field f1 (fid);
@@ -260,7 +247,57 @@ TEST_CASE("field", "") {
     REQUIRE (f2.get_header().has_extra_data("foo"));
   }
 
+  SECTION ("is_aliasing") {
+    Field f1 (fid), f2(fid);
+    f1.allocate_view();
+    f2.allocate_view();
+
+    // Check aliasing
+    REQUIRE (f1.is_aliasing(f1.get_const()));
+    REQUIRE (f1.is_aliasing(f1));
+    REQUIRE (f1.is_aliasing(f1.alias("foo")));
+
+    // f1 and f2 have independent views, so they are not aliasing each other
+    REQUIRE (!f1.is_aliasing(f2));
+    REQUIRE (!f1.is_aliasing(f2));
+
+    auto f1_0x = f1.subfield(0,0);
+    auto f1_1x = f1.subfield(0,1);
+    auto f1_x0 = f1.subfield(1,0);
+    auto f1_x1 = f1.subfield(1,1);
+
+    auto g1_0x = f1.subfield(0,0);
+    auto g1_1x = f1.subfield(0,1);
+    auto g1_x0 = f1.subfield(1,0);
+    auto g1_x1 = f1.subfield(1,1);
+
+    REQUIRE (f1_0x.is_aliasing(g1_0x));
+    REQUIRE (f1_1x.is_aliasing(g1_1x));
+    REQUIRE (f1_x0.is_aliasing(g1_x0));
+    REQUIRE (f1_x1.is_aliasing(g1_x1));
+
+    REQUIRE (not f1_0x.is_aliasing(f1_1x));
+    REQUIRE (not f1_0x.is_aliasing(f1_x0));
+    REQUIRE (not f1_0x.is_aliasing(f1_x1));
+
+    REQUIRE (not f1_1x.is_aliasing(f1_x0));
+    REQUIRE (not f1_1x.is_aliasing(f1_x1));
+
+    REQUIRE (not f1_x0.is_aliasing(f1_x1));
+  }
+
   SECTION ("deep_copy") {
+    // rank-0
+    std::vector<FieldTag> t0 = {};
+    std::vector<int> d0 = {};
+    FieldIdentifier fid0("scalar_0d",{t0,d0},m/s,"some_grid");
+    Field f0(fid0);
+    f0.allocate_view();
+    f0.deep_copy(1.5);
+    f0.sync_to_host();
+    REQUIRE (reinterpret_cast<Real*>(f0.get_internal_view_data<Real,Host>())[0]==1.5);
+
+    // rank-3
     std::vector<FieldTag> t1 = {COL,CMP,LEV};
     std::vector<int> d1 = {3,2,24};
 
@@ -570,12 +607,12 @@ TEST_CASE("tracers_bundle", "") {
   auto Q = field_mgr.get_field(Q_name);
 
   // The bundled field in the group should match the field we get from the field_mgr
-  REQUIRE (Q.equivalent(*group.m_bundle));
+  REQUIRE (Q.is_aliasing(*group.m_bundle));
 
   // Check that Q is set as parent for all q's.
-  auto qvp = qv.get_header().get_parent().lock();
-  auto qcp = qc.get_header().get_parent().lock();
-  auto qrp = qr.get_header().get_parent().lock();
+  auto qvp = qv.get_header().get_parent();
+  auto qcp = qc.get_header().get_parent();
+  auto qrp = qr.get_header().get_parent();
   REQUIRE ((qvp!=nullptr && qvp.get()==&Q.get_header()));
   REQUIRE ((qcp!=nullptr && qvp.get()==&Q.get_header()));
   REQUIRE ((qrp!=nullptr && qvp.get()==&Q.get_header()));
@@ -621,9 +658,9 @@ TEST_CASE("tracers_bundle", "") {
   auto qc_ptr = group.m_fields.at("qc");
   auto qr_ptr = group.m_fields.at("qr");
 
-  REQUIRE (qv_ptr->equivalent(qv));
-  REQUIRE (qc_ptr->equivalent(qc));
-  REQUIRE (qr_ptr->equivalent(qr));
+  REQUIRE (qv_ptr->is_aliasing(qv));
+  REQUIRE (qc_ptr->is_aliasing(qc));
+  REQUIRE (qr_ptr->is_aliasing(qr));
 }
 
 TEST_CASE("multiple_bundles") {
@@ -773,45 +810,113 @@ TEST_CASE ("update") {
   }
 
   SECTION ("deep_copy") {
-    Field f2 (fid_r);
-    f2.allocate_view();
+    SECTION ("real") {
+      Field f2 (fid_r);
+      f2.allocate_view();
 
-    // Replace f2's content with f_real's content
-    f2.update(f_real,1,0);
-    REQUIRE (views_are_equal(f2,f_real));
-  }
+      // Replace f2's content with f_real's content
+      f2.deep_copy(f_real);
+      REQUIRE (views_are_equal(f2,f_real));
+    }
+    SECTION ("int") {
+      Field f2 (fid_i);
+      f2.allocate_view();
 
-  SECTION ("update") {
-    Field f2 = f_real.clone();
-    Field f3 = f_real.clone();
-
-    // x+x == 2*x
-    f2.update(f_real,1,1);
-    f3.scale(2);
-    REQUIRE (views_are_equal(f2,f3));
-
-    // Adding 2*f_real to N*f3 should give 2*f_real (f3==0)
-    f3.deep_copy(0.0);
-    f3.update(f_real,2,10);
-    REQUIRE (views_are_equal(f3,f2));
-
-    // Same, but we discard current content of f3
-    f3.update(f_real,2,0);
-    REQUIRE (views_are_equal(f3,f2));
+      // Replace f2's content with f_int's content
+      f2.deep_copy(f_int);
+      REQUIRE (views_are_equal(f2,f_int));
+    }
   }
 
   SECTION ("scale") {
-    Field f1 = f_real.clone();
-    Field f2 = f_real.clone();
+    SECTION ("real") {
+      Field f1 = f_real.clone();
+      Field f2 = f_real.clone();
 
-    // x=2, x*y = 2*y
-    f1.deep_copy(2.0);
-    f1.scale(f2);
-    f2.scale(2.0);
-    REQUIRE (views_are_equal(f1, f2));
+      // x=2, x*y = 2*y
+      f1.deep_copy(2.0);
+      f1.scale(f2);
+      f2.scale(2.0);
+      REQUIRE (views_are_equal(f1, f2));
+    }
+
+    SECTION ("int") {
+      Field f1 = f_int.clone();
+      f1.deep_copy(4);
+      Field f2 = f_int.clone();
+      f2.deep_copy(2);
+      Field f3 = f_int.clone();
+      f3.deep_copy(2);
+
+      f2.scale(f3);
+      REQUIRE (views_are_equal(f1, f2));
+    }
+  }
+
+  SECTION ("scale_inv") {
+    SECTION ("real") {
+      Field f1 = f_real.clone();
+      Field f2 = f_real.clone();
+      Field f3 = f_real.clone();
+
+      f3.deep_copy(2.0);
+      f1.scale(f3);
+      f3.deep_copy(0.5);
+      f2.scale_inv(f3);
+      REQUIRE (views_are_equal(f1, f2));
+    }
+
+    SECTION ("int") {
+      Field f1 = f_int.clone();
+      f1.deep_copy(4);
+      Field f2 = f_int.clone();
+      f2.deep_copy(2);
+
+      f1.scale_inv(f2);
+      REQUIRE (views_are_equal(f1, f2));
+    }
+  }
+
+  SECTION ("update") {
+    SECTION ("real") {
+      Field f2 = f_real.clone();
+      Field f3 = f_real.clone();
+
+      // x+x == 2*x
+      f2.update(f_real,1,1);
+      f3.scale(2);
+      REQUIRE (views_are_equal(f2,f3));
+
+      // Adding 2*f_real to N*f3 should give 2*f_real (f3==0)
+      f3.deep_copy(0.0);
+      f3.update(f_real,2,10);
+      REQUIRE (views_are_equal(f3,f2));
+
+      // Same, but we discard current content of f3
+      f3.update(f_real,2,0);
+      REQUIRE (views_are_equal(f3,f2));
+    }
+
+    SECTION ("int") {
+      Field f2 = f_int.clone();
+      Field f3 = f_int.clone();
+
+      // x+x == 2*x
+      f2.update(f_int,1,1);
+      f3.scale(2);
+      REQUIRE (views_are_equal(f2,f3));
+
+      // Adding 2*f_int to N*f3 should give 2*f_int (f3==0)
+      f3.deep_copy(0);
+      f3.update(f_int,2,10);
+      REQUIRE (views_are_equal(f3,f2));
+
+      // Same, but we discard current content of f3
+      f3.update(f_int,2,0);
+      REQUIRE (views_are_equal(f3,f2));
+    }
   }
 }
-
 
 TEST_CASE ("sync_subfields") {
   // This test is for previously incorrect behavior, where syncing a subfield

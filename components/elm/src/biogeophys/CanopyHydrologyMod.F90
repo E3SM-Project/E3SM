@@ -282,8 +282,8 @@ contains
                ltype(l)==istcrop) then
 
              qflx_candrip(p) = 0._r8      ! rate of canopy runoff
-             qflx_through_snow(p) = 0._r8 ! rain precipitation direct through canopy
-             qflx_through_rain(p) = 0._r8 ! snow precipitation direct through canopy
+             qflx_through_snow(p) = 0._r8 ! snow precipitation direct through canopy
+             qflx_through_rain(p) = 0._r8 ! rain precipitation direct through canopy
              qflx_prec_intr(p) = 0._r8    ! total intercepted precipitation
              fracsnow(p) = 0._r8          ! fraction of input precip that is snow
              fracrain(p) = 0._r8          ! fraction of input precip that is rain

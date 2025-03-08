@@ -19,6 +19,9 @@ initial_conditions:
   surf_sens_flux: 0.0
   precip_liq_surf_mass: 0.0
   precip_ice_surf_mass: 0.0
+  hetfrz_immersion_nucleation_tend: 0.1
+  hetfrz_contact_nucleation_tend: 0.1
+  hetfrz_deposition_nucleation_tend: 0.1
 
 atmosphere_processes:
   atm_procs_list: [homme,physics]
@@ -41,7 +44,7 @@ atmosphere_processes:
       shoc:
         enable_column_conservation_checks: true
         lambda_low: 0.001
-        lambda_high: 0.04
+        lambda_high: 0.08
         lambda_slope: 2.65
         lambda_thresh: 0.02
         thl2tune: 1.0

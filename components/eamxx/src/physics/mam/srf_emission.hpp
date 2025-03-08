@@ -1,11 +1,9 @@
 #ifndef SRF_EMISSION_HPP
 #define SRF_EMISSION_HPP
 
-#include "share/util/scream_timing.hpp"
+#include "share/util/eamxx_timing.hpp"
 
 namespace scream::mam_coupling {
-namespace {
-
 template <typename ScalarType, typename DeviceType>
 struct srfEmissFunctions {
   using Device = DeviceType;
@@ -19,7 +17,7 @@ struct srfEmissFunctions {
     // The current month
     int current_month = -1;
     // Julian Date for the beginning of the month, as defined in
-    //           /src/share/util/scream_time_stamp.hpp
+    //           /src/share/util/eamxx_time_stamp.hpp
     // See this file for definition of Julian Date.
     Real t_beg_month;
     // Current simulation Julian Date
@@ -131,7 +129,6 @@ struct srfEmissFunctions {
       std::shared_ptr<AtmosphereInput> &SrfEmissDataReader);
 
 };  // struct srfEmissFunctions
-}  // namespace
 }  // namespace scream::mam_coupling
 #endif  // SRF_EMISSION_HPP
 

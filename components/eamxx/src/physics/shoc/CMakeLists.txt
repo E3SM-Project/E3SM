@@ -1,18 +1,6 @@
 set(SHOC_SRCS
-  shoc_f90.cpp
-  shoc_ic_cases.cpp
-  shoc_iso_c.f90
-  shoc_iso_f.f90
-  ${SCREAM_BASE_DIR}/../eam/src/physics/cam/shoc.F90
   eamxx_shoc_process_interface.cpp
 )
-
-if (NOT SCREAM_LIB_ONLY)
-  list(APPEND SHOC_SRCS
-    shoc_functions_f90.cpp
-    shoc_main_wrap.cpp
-    ) # Add f90 bridges needed for testing
-endif()
 
 set(SHOC_HEADERS
   shoc.hpp
@@ -108,7 +96,7 @@ if (SCREAM_SHOC_SMALL_KERNELS)
   add_library(shoc ${SHOC_SRCS} ${SHOC_SK_SRCS})
 else()
   add_library(shoc ${SHOC_SRCS})
-  if (NOT SCREAM_LIBS_ONLY AND NOT SCREAM_ONLY_GENERATE_BASELINES)
+  if (NOT SCREAM_LIB_ONLY AND NOT SCREAM_ONLY_GENERATE_BASELINES)
     add_library(shoc_sk ${SHOC_SRCS} ${SHOC_SK_SRCS})
     # Always build shoc_sk with SCREAM_SHOC_SMALL_KERNELS on
     target_compile_definitions(shoc_sk PUBLIC "SCREAM_SHOC_SMALL_KERNELS")
@@ -133,5 +121,7 @@ if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)
 endif()
 
-# Add this library to eamxx_physics
-target_link_libraries(eamxx_physics INTERFACE shoc)
+if (TARGET eamxx_physics)
+  # Add this library to eamxx_physics
+  target_link_libraries(eamxx_physics INTERFACE shoc)
+endif()

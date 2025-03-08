@@ -4,9 +4,27 @@ on:
   # Runs every time master branch is updated
   push:
     branches: ["master"]
+    # But only if docs-related files are touched
+    paths:
+      - .github/workflows/e3sm-gh-pages.yml
+      - ./mkdocs.yml
+      - ./tools/*/mkdocs.yml
+      - ./tools/docs/**
+      - components/*/mkdocs.yaml
+      - components/*/docs/**
+      - components/eamxx/cime_config/namelist_defaults_scream.xml
   # Runs every time a PR is open against master
   pull_request:
     branches: ["master"]
+    # But only if docs-related files are touched
+    paths:
+      - .github/workflows/e3sm-gh-pages.yml
+      - ./mkdocs.yml
+      - ./tools/*/mkdocs.yml
+      - ./tools/docs/**
+      - components/*/mkdocs.yaml
+      - components/*/docs/**
+      - components/eamxx/cime_config/namelist_defaults_scream.xml
   workflow_dispatch:
 
 concurrency:
@@ -35,7 +53,9 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install python deps
-        run: python3 -m pip install mkdocs-material pymdown-extensions mkdocs-monorepo-plugin mdutils mkdocs-bibtex
+        # TODO: move to a requirements.txt file
+        # TODO: pin all versions?
+        run: python3 -m pip install mkdocs-material pymdown-extensions mkdocs-monorepo-plugin mdutils mkdocs-bibtex==2.18.0
       # build every time (PR or push to master)
       - name: Generate EAMxx params docs
         working-directory: components/eamxx/scripts

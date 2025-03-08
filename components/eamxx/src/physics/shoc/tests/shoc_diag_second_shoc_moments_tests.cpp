@@ -1,11 +1,11 @@
 #include "catch2/catch.hpp"
 
-#include "share/scream_types.hpp"
+#include "share/eamxx_types.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "shoc_functions.hpp"
-#include "shoc_functions_f90.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "shoc_test_data.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 
 #include "shoc_unit_tests_common.hpp"
 
@@ -14,9 +14,9 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestDiagSecondShocMoments {
+struct UnitWrap::UnitTest<D>::TestDiagSecondShocMoments : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_property()
+  void run_property()
   {
 
     static constexpr Int shcol    = 2;
@@ -161,12 +161,7 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondShocMoments {
     }
 
     // Call the C++ implementation
-    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-    diag_second_shoc_moments_f(SDS.shcol, SDS.nlev, SDS.nlevi, SDS.thetal, SDS.qw, SDS.u_wind, SDS.v_wind, SDS.tke, SDS.isotropy,
-                               SDS.tkh, SDS.tk, SDS.dz_zi, SDS.zt_grid, SDS.zi_grid, SDS.shoc_mix, SDS.wthl_sfc, SDS.wqw_sfc,
-                               SDS.uw_sfc, SDS.vw_sfc, SDS.thl_sec, SDS.qw_sec, SDS.wthl_sec, SDS.wqw_sec, SDS.qwthl_sec,
-                               SDS.uw_sec, SDS.vw_sec, SDS.wtke_sec, SDS.w_sec);
-    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+    diag_second_shoc_moments(SDS);
 
     // Verify output makes sense
     for(Int s = 0; s < shcol; ++s) {
@@ -267,11 +262,11 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondShocMoments {
 
   } // run_property
 
-  static void run_bfb()
+  void run_bfb()
   {
-    auto engine = setup_random_test();
+    auto engine = Base::get_engine();
 
-    DiagSecondShocMomentsData f90_data[] = {
+    DiagSecondShocMomentsData baseline_data[] = {
       DiagSecondShocMomentsData(36,  72, 73),
       DiagSecondShocMomentsData(72,  72, 73),
       DiagSecondShocMomentsData(128, 72, 73),
@@ -279,55 +274,57 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondShocMoments {
     };
 
     // Generate random input data
-    for (auto& d : f90_data) {
+    for (auto& d : baseline_data) {
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // Create copies of data for use by cxx. Needs to happen before reads so that
     // inout data is in original state
     DiagSecondShocMomentsData cxx_data[] = {
-      DiagSecondShocMomentsData(f90_data[0]),
-      DiagSecondShocMomentsData(f90_data[1]),
-      DiagSecondShocMomentsData(f90_data[2]),
-      DiagSecondShocMomentsData(f90_data[3]),
+      DiagSecondShocMomentsData(baseline_data[0]),
+      DiagSecondShocMomentsData(baseline_data[1]),
+      DiagSecondShocMomentsData(baseline_data[2]),
+      DiagSecondShocMomentsData(baseline_data[3]),
     };
 
     // Assume all data is in C layout
 
-    // Get data from fortran
-    for (auto& d : f90_data) {
-      // expects data in C layout
-      diag_second_shoc_moments(d);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (auto& d : baseline_data) {
+        d.read(Base::m_fid);
+      }
     }
 
     // Get data from cxx
     for (auto& d : cxx_data) {
-      d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-      diag_second_shoc_moments_f(d.shcol, d.nlev, d.nlevi, d.thetal, d.qw, d.u_wind, d.v_wind, d.tke, d.isotropy,
-                d.tkh, d.tk, d.dz_zi, d.zt_grid, d.zi_grid, d.shoc_mix, d.wthl_sfc, d.wqw_sfc, d.uw_sfc, d.vw_sfc, d.thl_sec,
-                d.qw_sec, d.wthl_sec, d.wqw_sec, d.qwthl_sec, d.uw_sec, d.vw_sec, d.wtke_sec, d.w_sec);
-      d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+      diag_second_shoc_moments(d);
     }
 
     // Verify BFB results, all data should be in C layout
-    if (SCREAM_BFB_TESTING) {
-      static constexpr Int num_runs = sizeof(f90_data) / sizeof(DiagSecondShocMomentsData);
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
+      static constexpr Int num_runs = sizeof(baseline_data) / sizeof(DiagSecondShocMomentsData);
       for (Int i = 0; i < num_runs; ++i) {
-        DiagSecondShocMomentsData& d_f90 = f90_data[i];
+        DiagSecondShocMomentsData& d_baseline = baseline_data[i];
         DiagSecondShocMomentsData& d_cxx = cxx_data[i];
-        for (Int k = 0; k < d_f90.total(d_f90.w_sec); ++k) {
-          REQUIRE(d_f90.w_sec[k] == d_cxx.w_sec[k]);
+        for (Int k = 0; k < d_baseline.total(d_baseline.w_sec); ++k) {
+          REQUIRE(d_baseline.w_sec[k] == d_cxx.w_sec[k]);
         }
-        for (Int k = 0; k < d_f90.total(d_f90.thl_sec); ++k) {
-          REQUIRE(d_f90.thl_sec[k] == d_cxx.thl_sec[k]);
-          REQUIRE(d_f90.qw_sec[k] == d_cxx.qw_sec[k]);
-          REQUIRE(d_f90.wthl_sec[k] == d_cxx.wthl_sec[k]);
-          REQUIRE(d_f90.wqw_sec[k] == d_cxx.wqw_sec[k]);
-          REQUIRE(d_f90.qwthl_sec[k] == d_cxx.qwthl_sec[k]);
-          REQUIRE(d_f90.uw_sec[k] == d_cxx.uw_sec[k]);
-          REQUIRE(d_f90.vw_sec[k] == d_cxx.vw_sec[k]);
-          REQUIRE(d_f90.wtke_sec[k] == d_cxx.wtke_sec[k]);
+        for (Int k = 0; k < d_baseline.total(d_baseline.thl_sec); ++k) {
+          REQUIRE(d_baseline.thl_sec[k] == d_cxx.thl_sec[k]);
+          REQUIRE(d_baseline.qw_sec[k] == d_cxx.qw_sec[k]);
+          REQUIRE(d_baseline.wthl_sec[k] == d_cxx.wthl_sec[k]);
+          REQUIRE(d_baseline.wqw_sec[k] == d_cxx.wqw_sec[k]);
+          REQUIRE(d_baseline.qwthl_sec[k] == d_cxx.qwthl_sec[k]);
+          REQUIRE(d_baseline.uw_sec[k] == d_cxx.uw_sec[k]);
+          REQUIRE(d_baseline.vw_sec[k] == d_cxx.vw_sec[k]);
+          REQUIRE(d_baseline.wtke_sec[k] == d_cxx.wtke_sec[k]);
         }
+      }
+    } // SCREAM_BFB_TESTING
+    else if (this->m_baseline_action == GENERATE) {
+      for (auto& d : cxx_data) {
+        d.write(Base::m_fid);
       }
     }
   } // run_bfb
@@ -344,14 +341,14 @@ TEST_CASE("diag_second_shoc_moments_property", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestDiagSecondShocMoments;
 
-  TestStruct::run_property();
+  TestStruct().run_property();
 }
 
 TEST_CASE("diag_second_shoc_moments_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestDiagSecondShocMoments;
 
-  TestStruct::run_bfb();
+  TestStruct().run_bfb();
 }
 
 } // empty namespace

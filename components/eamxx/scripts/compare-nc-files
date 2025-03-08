@@ -5,7 +5,7 @@ Populates a netcdf file adding requested variables, either importing them
 from another file, or by computing them as function of other existing ones.
 """
 
-from utils import check_minimum_python_version
+from utils import check_minimum_python_version, GoodFormatter
 check_minimum_python_version(3, 4)
 
 import argparse, sys, pathlib
@@ -36,7 +36,7 @@ OR
 
 """.format(pathlib.Path(args[0]).name),
         description=description,
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        formatter_class=GoodFormatter
     )
 
     # The name of the nc files where to grab data from

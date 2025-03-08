@@ -4,7 +4,7 @@
 #include "share/atm_process/atmosphere_process.hpp"
 #include "ekat/ekat_parameter_list.hpp"
 #include "physics/shoc/shoc_functions.hpp"
-#include "share/util/scream_common_physics_functions.hpp"
+#include "share/util/eamxx_common_physics_functions.hpp"
 #include "share/atm_process/ATMBufferManager.hpp"
 
 #include <string>
@@ -138,8 +138,9 @@ public:
 
         // Dry static energy
         shoc_s(i,k) = PF::calculate_dse(T_mid(i,k),z_mid(i,k),phis(i));
+
+        if (k+1 == nlev_packs) zi_grid(i,nlevi_v)[nlevi_p] = 0;
       });
-      zi_grid(i,nlevi_v)[nlevi_p] = 0;
       team.team_barrier();
 
       const auto zt_grid_s = ekat::subview(zt_grid, i);

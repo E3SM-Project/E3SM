@@ -1,11 +1,11 @@
 #include "catch2/catch.hpp"
 
-#include "share/scream_types.hpp"
+#include "share/eamxx_types.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "shoc_functions.hpp"
-#include "shoc_functions_f90.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "shoc_test_data.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 
 #include "shoc_unit_tests_common.hpp"
 
@@ -14,9 +14,9 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestPblintdHeight {
+struct UnitWrap::UnitTest<D>::TestPblintdHeight : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_property()
+  void run_property()
   {
     static constexpr auto ustar_min = scream::shoc::Constants<Scalar>::ustar_min;
     static const auto approx_zero = Approx(0.0).margin(1e-16);
@@ -86,10 +86,7 @@ struct UnitWrap::UnitTest<D>::TestPblintdHeight {
     }
 
     // Call the C++ implementation
-    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-    pblintd_height_f(SDS.shcol, SDS.nlev, SDS.npbl, SDS.z, SDS.u, SDS.v, SDS.ustar,
-                     SDS.thv, SDS.thv_ref, SDS.pblh, SDS.rino, SDS.check);
-    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+    pblintd_height(SDS);
 
     // Check the result
     for(Int s = 0; s < shcol; ++s) {
@@ -123,10 +120,7 @@ struct UnitWrap::UnitTest<D>::TestPblintdHeight {
     }
 
     // Call the C++ implementation
-    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-    pblintd_height_f(SDS.shcol, SDS.nlev, SDS.npbl, SDS.z, SDS.u, SDS.v, SDS.ustar,
-                     SDS.thv, SDS.thv_ref, SDS.pblh, SDS.rino, SDS.check);
-    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+    pblintd_height(SDS);
 
     // Check the result
     for(Int s = 0; s < shcol; ++s) {
@@ -165,10 +159,7 @@ struct UnitWrap::UnitTest<D>::TestPblintdHeight {
     }
 
     // Call the C++ implementation
-    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-    pblintd_height_f(SDS.shcol, SDS.nlev, SDS.npbl, SDS.z, SDS.u, SDS.v, SDS.ustar,
-                     SDS.thv, SDS.thv_ref, SDS.pblh, SDS.rino, SDS.check);
-    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+    pblintd_height(SDS);
 
     // Check that PBLH is zero (not modified) everywhere
     for(Int s = 0; s < shcol; ++s) {
@@ -177,13 +168,13 @@ struct UnitWrap::UnitTest<D>::TestPblintdHeight {
 
   } // run_property
 
-  static void run_bfb()
+  void run_bfb()
   {
-    auto engine = setup_random_test();
+    auto engine = Base::get_engine();
 
     Int npbl_rand = rand()%72 + 1;
 
-    PblintdHeightData f90_data[] = {
+    PblintdHeightData baseline_data[] = {
       PblintdHeightData(10, 72, 1),
       PblintdHeightData(10, 72, 72),
       PblintdHeightData(10, 72, npbl_rand),
@@ -193,48 +184,52 @@ struct UnitWrap::UnitTest<D>::TestPblintdHeight {
     };
 
     // Generate random input data
-    for (auto& d : f90_data) {
+    for (auto& d : baseline_data) {
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // Create copies of data for use by cxx. Needs to happen before reads so that
     // inout data is in original state
     PblintdHeightData cxx_data[] = {
-      PblintdHeightData(f90_data[0]),
-      PblintdHeightData(f90_data[1]),
-      PblintdHeightData(f90_data[2]),
-      PblintdHeightData(f90_data[3]),
-      PblintdHeightData(f90_data[4]),
-      PblintdHeightData(f90_data[5]),
+      PblintdHeightData(baseline_data[0]),
+      PblintdHeightData(baseline_data[1]),
+      PblintdHeightData(baseline_data[2]),
+      PblintdHeightData(baseline_data[3]),
+      PblintdHeightData(baseline_data[4]),
+      PblintdHeightData(baseline_data[5]),
     };
 
     // Assume all data is in C layout
 
-    // Get data from fortran
-    for (auto& d : f90_data) {
-      // expects data in C layout
-      pblintd_height(d);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (auto& d : baseline_data) {
+        d.read(Base::m_fid);
+      }
     }
 
     // Get data from cxx
     for (auto& d : cxx_data) {
-      d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-      pblintd_height_f(d.shcol, d.nlev, d.npbl, d.z, d.u, d.v, d.ustar, d.thv, d.thv_ref, d.pblh, d.rino, d.check);
-      d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+      pblintd_height(d);
     }
 
     // Verify BFB results, all data should be in C layout
-    if (SCREAM_BFB_TESTING) {
-      static constexpr Int num_runs = sizeof(f90_data) / sizeof(PblintdHeightData);
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
+      static constexpr Int num_runs = sizeof(baseline_data) / sizeof(PblintdHeightData);
       for (Int i = 0; i < num_runs; ++i) {
-        PblintdHeightData& d_f90 = f90_data[i];
+        PblintdHeightData& d_baseline = baseline_data[i];
         PblintdHeightData& d_cxx = cxx_data[i];
-        for (Int k = 0; k < d_f90.total(d_f90.pblh); ++k) {
-          REQUIRE(d_f90.total(d_f90.pblh) == d_cxx.total(d_cxx.pblh));
-          REQUIRE(d_f90.pblh[k] == d_cxx.pblh[k]);
-          REQUIRE(d_f90.total(d_f90.pblh) == d_cxx.total(d_cxx.check));
-          REQUIRE(d_f90.check[k] == d_cxx.check[k]);
+        for (Int k = 0; k < d_baseline.total(d_baseline.pblh); ++k) {
+          REQUIRE(d_baseline.total(d_baseline.pblh) == d_cxx.total(d_cxx.pblh));
+          REQUIRE(d_baseline.pblh[k] == d_cxx.pblh[k]);
+          REQUIRE(d_baseline.total(d_baseline.pblh) == d_cxx.total(d_cxx.check));
+          REQUIRE(d_baseline.check[k] == d_cxx.check[k]);
         }
+      }
+    } // SCREAM_BFB_TESTING
+    else if (this->m_baseline_action == GENERATE) {
+      for (auto& d : cxx_data) {
+        d.write(Base::m_fid);
       }
     }
   } // run_bfb
@@ -251,14 +246,14 @@ TEST_CASE("pblintd_height_property", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPblintdHeight;
 
-  TestStruct::run_property();
+  TestStruct().run_property();
 }
 
 TEST_CASE("pblintd_height_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPblintdHeight;
 
-  TestStruct::run_bfb();
+  TestStruct().run_bfb();
 }
 
 } // empty namespace

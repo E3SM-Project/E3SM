@@ -1,0 +1,4 @@
+hist_mfilt = 1, 1
+hist_nhtfrq = 0, 0
+hist_dov2xy = .true., .false.
+hist_fincl2 = 'GPP', 'ER', 'NEE', 'NPP', 'NBP', 'TOTSOMC', 'DMYIELD', 'PLANTDAY', 'HARVESTDAY'

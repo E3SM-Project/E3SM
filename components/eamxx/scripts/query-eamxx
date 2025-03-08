@@ -1,0 +1,44 @@
+#!/usr/bin/env python3
+
+"""
+Query the EAMXX machines_specs.py file
+"""
+
+from utils import check_minimum_python_version, GoodFormatter
+check_minimum_python_version(3, 4)
+
+import argparse, sys, pathlib
+
+from query_eamxx import query_eamxx, CHOICES
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n{0} <machine> <param> [--verbose]
+OR
+{0} --help
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Query machine 'mappy' for parameter 'cxx_compiler' \033[0m
+    > {0} mappy cxx_compiler
+""".format(pathlib.Path(args[0]).name),
+        description=description,
+        formatter_class=GoodFormatter
+    )
+
+    parser.add_argument("machine", help="The name of the machine")
+
+    parser.add_argument("param", choices=CHOICES, help="The name of the parameter being queried")
+
+    return parser.parse_args(args[1:])
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    print(query_eamxx(**vars(parse_command_line(sys.argv, description))))
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

@@ -2,10 +2,10 @@
 
 #include "shoc_unit_tests_common.hpp"
 #include "shoc_functions.hpp"
-#include "shoc_functions_f90.hpp"
+#include "shoc_test_data.hpp"
 #include "physics/share/physics_constants.hpp"
-#include "share/scream_types.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "share/eamxx_types.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/util/ekat_arch.hpp"
@@ -21,9 +21,9 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestCompShocMixLength {
+struct UnitWrap::UnitTest<D>::TestCompShocMixLength : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_property()
+  void run_property()
   {
     static constexpr Int shcol    = 3;
     static constexpr Int nlev     = 5;
@@ -91,13 +91,7 @@ struct UnitWrap::UnitTest<D>::TestCompShocMixLength {
     }
 
     // Call the C++ implementation
-    SDS.transpose<ekat::TransposeDirection::c2f>();
-    // expects data in fortran layout
-    compute_shoc_mix_shoc_length_f(SDS.nlev, SDS.shcol,
-                                   SDS.tke, SDS.brunt,
-                                   SDS.zt_grid,
-                                   SDS.l_inf, SDS.shoc_mix);
-    SDS.transpose<ekat::TransposeDirection::f2c>();
+    compute_shoc_mix_shoc_length(SDS);
 
     // Check the results
     for(Int s = 0; s < shcol; ++s) {
@@ -120,11 +114,11 @@ struct UnitWrap::UnitTest<D>::TestCompShocMixLength {
     }
   }
 
-  static void run_bfb()
+  void run_bfb()
   {
-    auto engine = setup_random_test();
+    auto engine = Base::get_engine();
 
-    ComputeShocMixShocLengthData SDS_f90[] = {
+    ComputeShocMixShocLengthData SDS_baseline[] = {
       //               shcol, nlev
       ComputeShocMixShocLengthData(10, 71),
       ComputeShocMixShocLengthData(10, 12),
@@ -133,47 +127,48 @@ struct UnitWrap::UnitTest<D>::TestCompShocMixLength {
     };
 
     // Generate random input data
-    for (auto& d : SDS_f90) {
+    for (auto& d : SDS_baseline) {
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // Create copies of data for use by cxx. Needs to happen before reads so that
     // inout data is in original state
     ComputeShocMixShocLengthData SDS_cxx[] = {
-      ComputeShocMixShocLengthData(SDS_f90[0]),
-      ComputeShocMixShocLengthData(SDS_f90[1]),
-      ComputeShocMixShocLengthData(SDS_f90[2]),
-      ComputeShocMixShocLengthData(SDS_f90[3]),
+      ComputeShocMixShocLengthData(SDS_baseline[0]),
+      ComputeShocMixShocLengthData(SDS_baseline[1]),
+      ComputeShocMixShocLengthData(SDS_baseline[2]),
+      ComputeShocMixShocLengthData(SDS_baseline[3]),
     };
+
+    static constexpr Int num_runs = sizeof(SDS_baseline) / sizeof(ComputeShocMixShocLengthData);
 
     // Assume all data is in C layout
 
-    // Get data from fortran
-    for (auto& d : SDS_f90) {
-      // expects data in C layout
-      compute_shoc_mix_shoc_length(d);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (auto& d : SDS_baseline) {
+        d.read(Base::m_fid);
+      }
     }
 
     // Get data from cxx
     for (auto& d : SDS_cxx) {
-      d.transpose<ekat::TransposeDirection::c2f>();
-      // expects data in fortran layout
-      compute_shoc_mix_shoc_length_f(d.nlev, d.shcol,
-                                     d.tke, d.brunt,
-                                     d.zt_grid,
-                                     d.l_inf, d.shoc_mix);
-      d.transpose<ekat::TransposeDirection::f2c>();
+      compute_shoc_mix_shoc_length(d);
     }
 
     // Verify BFB results, all data should be in C layout
-    if (SCREAM_BFB_TESTING) {
-      static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(ComputeShocMixShocLengthData);
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < num_runs; ++i) {
-        ComputeShocMixShocLengthData& d_f90 = SDS_f90[i];
+        ComputeShocMixShocLengthData& d_baseline = SDS_baseline[i];
         ComputeShocMixShocLengthData& d_cxx = SDS_cxx[i];
-        for (Int k = 0; k < d_f90.total(d_f90.shoc_mix); ++k) {
-          REQUIRE(d_f90.shoc_mix[k] == d_cxx.shoc_mix[k]);
+        for (Int k = 0; k < d_baseline.total(d_baseline.shoc_mix); ++k) {
+          REQUIRE(d_baseline.shoc_mix[k] == d_cxx.shoc_mix[k]);
         }
+      }
+    } // SCREAM_BFB_TESTING
+    else if (this->m_baseline_action == GENERATE) {
+      for (Int i = 0; i < num_runs; ++i) {
+        SDS_cxx[i].write(Base::m_fid);
       }
     }
   }
@@ -189,14 +184,14 @@ TEST_CASE("shoc_mix_length_property", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCompShocMixLength;
 
-  TestStruct::run_property();
+  TestStruct().run_property();
 }
 
 TEST_CASE("shoc_mix_length_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCompShocMixLength;
 
-  TestStruct::run_bfb();
+  TestStruct().run_bfb();
 }
 
 } // namespace

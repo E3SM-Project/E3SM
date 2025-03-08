@@ -4,7 +4,7 @@
 #include <string>
 
 #include "diagnostics/aerocom_cld_util.hpp"
-#include "share/util/scream_common_physics_functions.hpp"
+#include "share/util/eamxx_common_physics_functions.hpp"
 
 namespace scream {
 
@@ -22,12 +22,9 @@ AeroComCld::AeroComCld(const ekat::Comm &comm,
                    "to be 'Bot' or 'Top' in its input parameters.\n");
 }
 
-std::string AeroComCld::name() const { return "AeroComCld" + m_topbot; }
-
-void AeroComCld::set_grids(
-    const std::shared_ptr<const GridsManager> grids_manager) {
+void AeroComCld::
+set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
-  using namespace ShortFieldTagsNames;
 
   auto grid             = grids_manager->get_grid("Physics");
   const auto &grid_name = grid->name();
@@ -54,29 +51,29 @@ void AeroComCld::set_grids(
   m_nlevs = grid->get_num_vertical_levels();
 
   // Define layouts we need (both inputs and outputs)
-  FieldLayout scalar2d_layout{{COL, LEV}, {m_ncols, m_nlevs}};
-  FieldLayout vector1d_layout{{COL, CMP}, {m_ncols, m_ndiag}};
+  auto scalar3d = grid->get_3d_scalar_layout(true);
+  auto vector2d = grid->get_2d_vector_layout(m_ndiag);
 
   // The fields required for this diagnostic to be computed
-  add_field<Required>("T_mid", scalar2d_layout, K, grid_name);
-  add_field<Required>("pseudo_density", scalar2d_layout, Pa, grid_name);
-  add_field<Required>("p_mid", scalar2d_layout, Pa, grid_name);
-  add_field<Required>("qv", scalar2d_layout, kg / kg, grid_name);
-  add_field<Required>("qc", scalar2d_layout, kg / kg, grid_name);
-  add_field<Required>("qi", scalar2d_layout, kg / kg, grid_name);
-  add_field<Required>("eff_radius_qc", scalar2d_layout, micron, grid_name);
-  add_field<Required>("eff_radius_qi", scalar2d_layout, micron, grid_name);
-  add_field<Required>("cldfrac_tot", scalar2d_layout, nondim, grid_name);
-  add_field<Required>("nc", scalar2d_layout, 1 / kg, grid_name);
-  add_field<Required>("ni", scalar2d_layout, 1 / kg, grid_name);
+  add_field<Required>("T_mid",          scalar3d, K,       grid_name);
+  add_field<Required>("pseudo_density", scalar3d, Pa,      grid_name);
+  add_field<Required>("p_mid",          scalar3d, Pa,      grid_name);
+  add_field<Required>("qv",             scalar3d, kg / kg, grid_name);
+  add_field<Required>("qc",             scalar3d, kg / kg, grid_name);
+  add_field<Required>("qi",             scalar3d, kg / kg, grid_name);
+  add_field<Required>("eff_radius_qc",  scalar3d, micron,  grid_name);
+  add_field<Required>("eff_radius_qi",  scalar3d, micron,  grid_name);
+  add_field<Required>("cldfrac_tot",    scalar3d, nondim,  grid_name);
+  add_field<Required>("nc",             scalar3d, 1 / kg,  grid_name);
+  add_field<Required>("ni",             scalar3d, 1 / kg,  grid_name);
 
   // A field to store dz
-  FieldIdentifier m_dz_fid("dz", scalar2d_layout, m, grid_name);
+  FieldIdentifier m_dz_fid("dz", scalar3d, m, grid_name);
   m_dz = Field(m_dz_fid);
   m_dz.allocate_view();
 
   // Construct and allocate the output field
-  FieldIdentifier fid(name(), vector1d_layout, nondim, grid_name);
+  FieldIdentifier fid(name() + m_topbot, vector2d, nondim, grid_name);
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
 
@@ -150,7 +147,7 @@ void AeroComCld::compute_diagnostic_impl() {
   auto o_cldfrac_tot   = ekat::subview_1(out, m_index_map["cldfrac_tot"]);
 
   Kokkos::parallel_for(
-      "Compute " + name(), policy, KOKKOS_LAMBDA(const MT &team) {
+      "Compute " + m_diagnostic_output.name(), policy, KOKKOS_LAMBDA(const MT &team) {
         const int icol = team.league_rank();
         // Subview the inputs at icol
         auto tmid_icol = ekat::subview(tmid, icol);

@@ -156,3 +156,20 @@
 | Parameter                 | Description                                                       | Default value          |
 | ------------------------- | ----------------------------------------------------------------- | ---------------------- |
 | `cosp_lite`       | This namelist sets cosp_ncolumns=10 and cosp_nradsteps=3 (appropriate for COSP statistics derived from seasonal averages), and runs MISR, ISCCP, MODIS, and CALIPSO lidar simulators (cosp_lmisr_sim=.true.,cosp_lisccp_sim=.true., cosp_lmodis_sim=.true.,cosp_llidar_sim=.true.).  | `false`                |
+
+## Orographic drag schemes
+
+| Parameter                 | Description                                                       | Default value          |
+| ------------------------- | ----------------------------------------------------------------- | ---------------------- |
+| `use_gw_oro`       | This namelist controls the default linear orographic gravity wave drag (oGWD) for E3SM, if used, the default oGWD is turned on.                                | `true`                |
+| `do_tms`           | This namelist controls the default Turbulent Mountain Stress (TMS) for E3SM, if used, the default TMS is turned on.                                 | `false`                |
+| `effgw_oro`        | Efficiency associated with orographic gravity waves.                                                                     | `0.375`                |
+| `tms_orocnst`      | Turbulent mountain stress parameter used when TMS calculation is turned on             | `1.0`                |
+| `tms_z0fac`        | Factor determining z_0 from orographic standard deviation [ no unit ] for TMS.                                                   | `0.75`                |
+| `use_od_ls`        | This namelist controls the new nonlinear oGWD, if used, the nonlinear oGWD is turned on. use_od_ls should not be used at the same time with use_gw_oro.                  | `false`                |
+| `use_od_bl`       | This namelist controls the Flow-blocking drag (FBD) scheme, if used, the FBD scheme is turned on.        | `false`                |
+| `use_od_ss`       | This namelist controls the small-scale GWD (sGWD) scheme, if used, the sGWD scheme is turned on.        | `false`                |
+| `use_od_fd`       | This namelist controls the Turbulent orographic form drag (TOFD) scheme, if used, the TOFD scheme is turned on.        | `false`                |
+| `od_ls_ncleff`    | Tuning parameter of nonlinear oGWD. Stands for effective resolution of the grid for oGWD. Scales the magnitude of nonlinear oGWD.         | `3`                |
+| `od_bl_ncd`       | Tuning parameter of FBD. Stands for bulk drag coefficient. Scales the magnitude of FBD.       | `3`                |
+| `od_ss_sncleff`   | Tuning parameter of sGWD. Stands for effective resolution of the grid for sGWD.Scales the magnitude of sGWD.        | `1`                |

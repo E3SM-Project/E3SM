@@ -1,0 +1,14 @@
+! Override consistency checks since we know our surface data is inconsistent
+check_finidat_fsurdat_consistency = .false.
+check_finidat_year_consistency = .false.
+check_finidat_pct_consistency = .false.
+check_dynpft_consistency = .false.
+
+hist_dov2xy = .true.,.true.
+hist_mfilt = 1,1
+hist_nhtfrq = 0,0
+hist_avgflag_pertape = 'A','A'
+hist_fincl1 = 'FIRE', 'FPSN', 'QDRAI', 'QRUNOFF', 'ZWT', 'FSAT', 'H2OSOI', 'EFLX_LH_TOT',
+            'QVEGT', 'QVEGE', 'FSH', 'ALBD', 'ALBI', 'TBOT', 'QBOT', 'RAIN', 'SNOW',
+            'FSDS', 'FSDSND', 'FSDSNI', 'FSDSVD', 'FSDSVI', 'FLDS'
+hist_fincl2 = 'H2OSNO','SOILWATER_10CM','TG'

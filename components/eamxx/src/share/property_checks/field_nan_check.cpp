@@ -1,6 +1,6 @@
 #include "share/property_checks/field_nan_check.hpp"
 #include "share/field/field_utils.hpp"
-#include "share/util//scream_array_utils.hpp"
+#include "share/util//eamxx_array_utils.hpp"
 
 #include "ekat/util/ekat_math_utils.hpp"
 
@@ -186,6 +186,7 @@ PropertyCheck::ResultAndMsg FieldNaNCheck::check() const {
           "Internal error in FieldNaNCheck: unsupported field data type.\n"
           "You should not have reached this line. Please, contact developers.\n");
   }
+  return ResultAndMsg{};
 }
 
 } // namespace scream

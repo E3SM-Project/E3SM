@@ -21,7 +21,7 @@ atmosphere_processes:
       do_prescribed_ccn: false
     shoc:
       lambda_low: 0.001
-      lambda_high: 0.04
+      lambda_high: 0.08
       lambda_slope: 2.65
       lambda_thresh: 0.02
       thl2tune: 1.0
@@ -58,7 +58,7 @@ initial_conditions:
   wetdep_dust_bin2: 1e-5 # wet deposition of dust (bin2) [kg/m2/s]
   wetdep_dust_bin3: 1e-5 # wet deposition of dust (bin3) [kg/m2/s]
   wetdep_dust_bin4: 1e-5 # wet deposition of dust (bin4) [kg/m2/s]
-  
+
   #variable required for shoc
   surf_sens_flux: 0.0
   surf_evap: 0.0
@@ -66,6 +66,9 @@ initial_conditions:
   #variable required for p3
   precip_ice_surf_mass: 0.0
   precip_liq_surf_mass: 0.0
+  hetfrz_immersion_nucleation_tend: 0.1
+  hetfrz_contact_nucleation_tend: 0.1
+  hetfrz_deposition_nucleation_tend: 0.1
 
 # The parameters for I/O control
 Scorpio:

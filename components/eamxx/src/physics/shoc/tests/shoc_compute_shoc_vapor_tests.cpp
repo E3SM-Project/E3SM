@@ -1,11 +1,11 @@
 #include "catch2/catch.hpp"
 
-#include "share/scream_types.hpp"
+#include "share/eamxx_types.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "shoc_functions.hpp"
-#include "shoc_functions_f90.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "shoc_test_data.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 
 #include "shoc_unit_tests_common.hpp"
 
@@ -14,9 +14,9 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestComputeShocVapor {
+struct UnitWrap::UnitTest<D>::TestComputeShocVapor : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_property()
+  void run_property()
   {
     static constexpr Int shcol    = 2;
     static constexpr Int nlev     = 5;
@@ -63,9 +63,7 @@ struct UnitWrap::UnitTest<D>::TestComputeShocVapor {
     }
 
     // Call the C++ implementation
-    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-    compute_shoc_vapor_f(SDS.shcol, SDS.nlev, SDS.qw, SDS.ql, SDS.qv);
-    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+    compute_shoc_vapor(SDS);
 
     // Verify the result
     for(Int s = 0; s < shcol; ++s) {
@@ -88,11 +86,11 @@ struct UnitWrap::UnitTest<D>::TestComputeShocVapor {
 
   } // run_property
 
-  static void run_bfb()
+  void run_bfb()
   {
-    auto engine = setup_random_test();
+    auto engine = Base::get_engine();
 
-    ComputeShocVaporData f90_data[] = {
+    ComputeShocVaporData baseline_data[] = {
       //              shcol, nlev
       ComputeShocVaporData(10, 71),
       ComputeShocVaporData(10, 12),
@@ -101,43 +99,47 @@ struct UnitWrap::UnitTest<D>::TestComputeShocVapor {
     };
 
     // Generate random input data
-    for (auto& d : f90_data) {
+    for (auto& d : baseline_data) {
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // Create copies of data for use by cxx. Needs to happen before reads so that
     // inout data is in original state
     ComputeShocVaporData cxx_data[] = {
-      ComputeShocVaporData(f90_data[0]),
-      ComputeShocVaporData(f90_data[1]),
-      ComputeShocVaporData(f90_data[2]),
-      ComputeShocVaporData(f90_data[3]),
+      ComputeShocVaporData(baseline_data[0]),
+      ComputeShocVaporData(baseline_data[1]),
+      ComputeShocVaporData(baseline_data[2]),
+      ComputeShocVaporData(baseline_data[3]),
     };
 
     // Assume all data is in C layout
 
-    // Get data from fortran
-    for (auto& d : f90_data) {
-      // expects data in C layout
-      compute_shoc_vapor(d);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (auto& d : baseline_data) {
+        d.read(Base::m_fid);
+      }
     }
 
     // Get data from cxx
     for (auto& d : cxx_data) {
-      d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-      compute_shoc_vapor_f(d.shcol, d.nlev, d.qw, d.ql, d.qv);
-      d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+      compute_shoc_vapor(d);
     }
 
     // Verify BFB results, all data should be in C layout
-    if (SCREAM_BFB_TESTING) {
-      static constexpr Int num_runs = sizeof(f90_data) / sizeof(ComputeShocVaporData);
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
+      static constexpr Int num_runs = sizeof(baseline_data) / sizeof(ComputeShocVaporData);
       for (Int i = 0; i < num_runs; ++i) {
-        ComputeShocVaporData& d_f90 = f90_data[i];
+        ComputeShocVaporData& d_baseline = baseline_data[i];
         ComputeShocVaporData& d_cxx = cxx_data[i];
-        for (Int k = 0; k < d_f90.total(d_f90.qv); ++k) {
-          REQUIRE(d_f90.qv[k] == d_cxx.qv[k]);
+        for (Int k = 0; k < d_baseline.total(d_baseline.qv); ++k) {
+          REQUIRE(d_baseline.qv[k] == d_cxx.qv[k]);
         }
+      }
+    } // SCREAM_BFB_TESTING
+    else if (this->m_baseline_action == GENERATE) {
+      for (auto& d : cxx_data) {
+        d.write(Base::m_fid);
       }
     }
   } // run_bfb
@@ -153,14 +155,14 @@ TEST_CASE("compute_shoc_vapor_property", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestComputeShocVapor;
 
-  TestStruct::run_property();
+  TestStruct().run_property();
 }
 
 TEST_CASE("compute_shoc_vapor_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestComputeShocVapor;
 
-  TestStruct::run_bfb();
+  TestStruct().run_bfb();
 }
 
 } // empty namespace

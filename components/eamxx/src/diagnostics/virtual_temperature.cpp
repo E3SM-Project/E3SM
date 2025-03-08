@@ -1,4 +1,5 @@
 #include "diagnostics/virtual_temperature.hpp"
+#include "share/util/eamxx_common_physics_functions.hpp"
 
 namespace scream
 {
@@ -20,34 +21,33 @@ void VirtualTemperatureDiagnostic::set_grids(const std::shared_ptr<const GridsMa
   m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
 
-  FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols,m_num_levs} };
-  constexpr int ps = Pack::n;
+  auto scalar3d = grid->get_3d_scalar_layout(true);
 
   // The fields required for this diagnostic to be computed
-  add_field<Required>("T_mid",       scalar3d_layout_mid, K,     grid_name, ps);
-  add_field<Required>("qv",          scalar3d_layout_mid, kg/kg, grid_name, ps);
+  add_field<Required>("T_mid", scalar3d, K,     grid_name);
+  add_field<Required>("qv",    scalar3d, kg/kg, grid_name);
 
   // Construct and allocate the diagnostic field
-  FieldIdentifier fid (name(), scalar3d_layout_mid, K, grid_name);
+  FieldIdentifier fid (name(), scalar3d, K, grid_name);
   m_diagnostic_output = Field(fid);
-  auto& C_ap = m_diagnostic_output.get_header().get_alloc_properties();
-  C_ap.request_allocation(ps);
   m_diagnostic_output.allocate_view();
 }
 
 void VirtualTemperatureDiagnostic::compute_diagnostic_impl()
 {
-  const auto npacks  = ekat::npack<Pack>(m_num_levs);
-  const auto& virtualT = m_diagnostic_output.get_view<Pack**>();
-  const auto& T_mid    = get_field_in("T_mid").get_view<const Pack**>();
-  const auto& qv_mid   = get_field_in("qv").get_view<const Pack**>();
+  using PF = scream::PhysicsFunctions<DefaultDevice>;
 
+  const auto& virtualT = m_diagnostic_output.get_view<Real**>();
+  const auto& T_mid    = get_field_in("T_mid").get_view<const Real**>();
+  const auto& qv_mid   = get_field_in("qv").get_view<const Real**>();
+
+  int nlevs = m_num_levs;
   Kokkos::parallel_for("VirtualTemperatureDiagnostic",
-                       Kokkos::RangePolicy<>(0,m_num_cols*npacks),
+                       Kokkos::RangePolicy<>(0,m_num_cols*nlevs),
                        KOKKOS_LAMBDA(const int& idx) {
-      const int icol  = idx / npacks;
-      const int jpack = idx % npacks;
-      virtualT(icol,jpack) = PF::calculate_virtual_temperature(T_mid(icol,jpack),qv_mid(icol,jpack));
+      const int icol = idx / nlevs;
+      const int ilev = idx % nlevs;
+      virtualT(icol,ilev) = PF::calculate_virtual_temperature(T_mid(icol,ilev),qv_mid(icol,ilev));
   });
   Kokkos::fence();
 }

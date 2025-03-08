@@ -2,10 +2,10 @@
 
 #include "shoc_unit_tests_common.hpp"
 #include "shoc_functions.hpp"
-#include "shoc_functions_f90.hpp"
+#include "shoc_test_data.hpp"
 #include "physics/share/physics_constants.hpp"
-#include "share/scream_types.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "share/eamxx_types.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/util/ekat_arch.hpp"
@@ -21,9 +21,9 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocIntColStab {
+struct UnitWrap::UnitTest<D>::TestShocIntColStab : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_property()
+  void run_property()
   {
     static constexpr Int shcol    = 2;
     static constexpr Int nlev     = 5;
@@ -76,9 +76,7 @@ struct UnitWrap::UnitTest<D>::TestShocIntColStab {
     }
 
     // Call the C++ implementation
-    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-    integ_column_stability_f(SDS.nlev, SDS.shcol, SDS.dz_zt, SDS.pres, SDS.brunt, SDS.brunt_int);
-    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+    integ_column_stability(SDS);
 
     // Check test
     //  Verify that output is zero
@@ -110,9 +108,7 @@ struct UnitWrap::UnitTest<D>::TestShocIntColStab {
     }
 
     // Call the C++ implementation
-    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-    integ_column_stability_f(SDS.nlev, SDS.shcol, SDS.dz_zt, SDS.pres, SDS.brunt, SDS.brunt_int);
-    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+    integ_column_stability(SDS);
 
     // Check test
     //  Verify that output is negative
@@ -121,12 +117,12 @@ struct UnitWrap::UnitTest<D>::TestShocIntColStab {
     }
   }
 
-  static void run_bfb()
+  void run_bfb()
   {
-    auto engine = setup_random_test();
+    auto engine = Base::get_engine();
 
-    //declare data for the f90 function call
-    IntegColumnStabilityData f90_data[] = {
+    //declare data for the baseline function call
+    IntegColumnStabilityData baseline_data[] = {
       IntegColumnStabilityData(10, 71),
       IntegColumnStabilityData(10, 12),
       IntegColumnStabilityData(7,  16),
@@ -134,43 +130,47 @@ struct UnitWrap::UnitTest<D>::TestShocIntColStab {
     };
 
     //Generate random data
-    for (auto &d : f90_data) {
+    for (auto &d : baseline_data) {
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // Create copies of data for use by cxx. Needs to happen before reads so that
     // inout data (if any) is in original state
     IntegColumnStabilityData cxx_data[] = {
-      IntegColumnStabilityData(f90_data[0]),
-      IntegColumnStabilityData(f90_data[1]),
-      IntegColumnStabilityData(f90_data[2]),
-      IntegColumnStabilityData(f90_data[3]),
+      IntegColumnStabilityData(baseline_data[0]),
+      IntegColumnStabilityData(baseline_data[1]),
+      IntegColumnStabilityData(baseline_data[2]),
+      IntegColumnStabilityData(baseline_data[3]),
     };
 
     // Assume all data is in C layout
 
-    // Get data from fortran
-    for (auto &d : f90_data) {
-      // expects data in C layout
-      integ_column_stability(d);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (auto &d : baseline_data) {
+        d.read(Base::m_fid);
+      }
     }
 
     // Get data from cxx
     for (auto &d : cxx_data) {
-      d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-      integ_column_stability_f(d.nlev, d.shcol, d.dz_zt, d.pres, d.brunt, d.brunt_int);
-      d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+      integ_column_stability(d);
     }
 
     // Verify BFB results, all data should be in C layout
-    if (SCREAM_BFB_TESTING) {
-      static constexpr Int num_runs = sizeof(f90_data) / sizeof(IntegColumnStabilityData);
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
+      static constexpr Int num_runs = sizeof(baseline_data) / sizeof(IntegColumnStabilityData);
       for (Int i = 0; i < num_runs; ++i) {
-        IntegColumnStabilityData& d_f90 = f90_data[i];
+        IntegColumnStabilityData& d_baseline = baseline_data[i];
         IntegColumnStabilityData& d_cxx = cxx_data[i];
-        for (Int c = 0; c < d_f90.shcol; ++c) {
-          REQUIRE(d_f90.brunt_int[c] == d_cxx.brunt_int[c]);
+        for (Int c = 0; c < d_baseline.shcol; ++c) {
+          REQUIRE(d_baseline.brunt_int[c] == d_cxx.brunt_int[c]);
         }
+      }
+    } // SCREAM_BFB_TESTING
+    else if (this->m_baseline_action == GENERATE) {
+      for (auto &d : cxx_data) {
+        d.write(Base::m_fid);
       }
     }
   } //run_bfb
@@ -186,14 +186,14 @@ TEST_CASE("shoc_tke_column_stab_property", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocIntColStab;
 
-  TestStruct::run_property();
+  TestStruct().run_property();
 }
 
 TEST_CASE("shoc_tke_column_stab_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocIntColStab;
 
-  TestStruct::run_bfb();
+  TestStruct().run_bfb();
 }
 
 } // namespace

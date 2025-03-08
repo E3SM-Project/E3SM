@@ -2,9 +2,9 @@
 
 #include "shoc_unit_tests_common.hpp"
 #include "shoc_functions.hpp"
-#include "shoc_functions_f90.hpp"
+#include "shoc_test_data.hpp"
 #include "physics/share/physics_constants.hpp"
-#include "share/scream_types.hpp"
+#include "share/eamxx_types.hpp"
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/util/ekat_arch.hpp"
@@ -50,8 +50,6 @@ struct UnitWrap::UnitTest<D>::TestShocThlParameters {
     static constexpr Real Skew_w_test1 = 3;
     // Define fraction of first gaussian
     static constexpr Real a_test1 = 0.2;
-    // Define logical
-    static constexpr bool dothetal_skew = false;
 
     // Define reasonable bounds checking for output
     static constexpr Real thl_bound_low = 200; // [K]
@@ -74,7 +72,8 @@ struct UnitWrap::UnitTest<D>::TestShocThlParameters {
     SDS.w1_2 = w1_2_test1;
     SDS.skew_w = Skew_w_test1;
     SDS.a = a_test1;
-    SDS.dothetal_skew = dothetal_skew;
+    SDS.thl_tol = 0;
+    SDS.w_thresh = 0;
 
     // Verify input is physical
     REQUIRE(SDS.sqrtw2 >= 0);

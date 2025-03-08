@@ -25,6 +25,9 @@ initial_conditions:
   #variables required for p3
   precip_ice_surf_mass: 0.0
   precip_liq_surf_mass: 0.0
+  hetfrz_immersion_nucleation_tend: 0.1
+  hetfrz_contact_nucleation_tend: 0.1
+  hetfrz_deposition_nucleation_tend: 0.1
 
   #variables required for mam4_aci
   dgnum: 1e-3
@@ -55,6 +58,7 @@ atmosphere_processes:
       mam4_aci:
         wsubmin: 0.001
         top_level_mam4xx: 6
+        enable_aero_vertical_mix: true
       p3:
         do_prescribed_ccn: false
         enable_column_conservation_checks: true
@@ -62,7 +66,7 @@ atmosphere_processes:
       shoc:
         enable_column_conservation_checks: true
         lambda_low: 0.001
-        lambda_high: 0.04
+        lambda_high: 0.08
         lambda_slope: 2.65
         lambda_thresh: 0.02
         thl2tune: 1.0
@@ -96,6 +100,10 @@ atmosphere_processes:
       rrtmgp_cloud_optics_file_sw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-sw.nc
       rrtmgp_cloud_optics_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-lw.nc
       enable_column_conservation_checks: true
+    mam4_drydep:
+      # Fractional land use file
+      drydep_remap_file: ""
+      fractional_land_use_file: ${SCREAM_DATA_DIR}/mam4xx/drydep/ne2np4/atmsrf_ne2np4_c20241017.nc
 
 grids_manager:
   Type: Homme

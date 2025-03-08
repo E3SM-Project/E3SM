@@ -175,7 +175,14 @@ logical, public, protected :: use_gw_energy_fix = .false.
 
 !additional diagnostics switch
 logical, public, protected :: print_additional_diagn_phys_control = .false.
-
+!additional flags and tuning parameters for orographic drags, 
+!including orographic gravity wave drag (oGWD),flow-blocking drag (FBD),
+!small-scale GWD drag (sGWD), turbulent orographic form drag (TOFD).
+logical, public, protected :: use_od_ls = .false.
+logical, public, protected :: use_od_bl = .false.
+logical, public, protected :: use_od_ss = .false.
+logical, public, protected :: use_od_fd = .false.
+!
 ! Switches that turn on/off individual parameterizations.
 !
 ! Comment by Hui Wan (PNNL, 2014-12):
@@ -248,6 +255,7 @@ subroutine phys_ctl_readnl(nlfile)
       print_fixer_message, & 
       use_hetfrz_classnuc, use_gw_oro, use_gw_front, use_gw_convect, &
       use_gw_energy_fix, &
+      use_od_ls,use_od_bl,use_od_ss,use_od_fd,&
       cld_macmic_num_steps, micro_do_icesupersat, &
       fix_g1_err_ndrop, ssalt_tuning, resus_fix, convproc_do_aer, &
       convproc_do_gas, convproc_method_activate, liqcf_fix, regen_fix, demott_ice_nuc, pergro_mods, pergro_test_active, &
@@ -366,7 +374,11 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(use_gw_oro,                      1 , mpilog,  0, mpicom)
    call mpibcast(use_gw_front,                    1 , mpilog,  0, mpicom)
    call mpibcast(use_gw_convect,                  1 , mpilog,  0, mpicom)
-   call mpibcast(use_gw_energy_fix,              1 , mpilog,  0, mpicom)
+   call mpibcast(use_gw_energy_fix,               1 , mpilog,  0, mpicom)
+   call mpibcast(use_od_ls,                       1 , mpilog,  0, mpicom)
+   call mpibcast(use_od_bl,                       1 , mpilog,  0, mpicom)
+   call mpibcast(use_od_ss,                       1 , mpilog,  0, mpicom)
+   call mpibcast(use_od_fd,                       1 , mpilog,  0, mpicom)
    call mpibcast(fix_g1_err_ndrop,                1 , mpilog,  0, mpicom)
    call mpibcast(ssalt_tuning,                    1 , mpilog,  0, mpicom)
    call mpibcast(resus_fix,                       1 , mpilog,  0, mpicom)

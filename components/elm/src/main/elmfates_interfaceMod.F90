@@ -3517,7 +3517,7 @@ end subroutine wrap_update_hifrq_hist
    use FatesInterfaceTypesMod, only : nlevage_fates    => nlevage
    use FatesInterfaceTypesMod, only : nlevheight_fates => nlevheight
    use FatesInterfaceTypesMod, only : nlevdamage_fates => nlevdamage
-   use FatesLitterMod,        only : nfsc_fates       => nfsc
+   use FatesFuelClassesMod,        only : nfc_fates   => num_fuel_classes
    use FatesLitterMod,    only : ncwd_fates       => ncwd
    use EDParamsMod,       only : nlevleaf_fates   => nlevleaf
    use EDParamsMod,       only : nclmax_fates     => nclmax
@@ -3555,7 +3555,7 @@ end subroutine wrap_update_hifrq_hist
    fates%sizeage_class_end   = nlevsclass_fates * nlevage_fates
 
    fates%fuel_begin = 1
-   fates%fuel_end = nfsc_fates
+   fates%fuel_end = nfc_fates
 
    fates%cdpf_begin = 1
    fates%cdpf_end = nlevdamage_fates * numpft_fates * nlevsclass_fates
@@ -3606,7 +3606,7 @@ end subroutine wrap_update_hifrq_hist
    fates%coage_class_end = nlevcoage
 
    fates%agefuel_begin = 1
-   fates%agefuel_end   = nlevage_fates * nfsc_fates
+   fates%agefuel_end   = nlevage_fates * nfc_fates
 
    fates%landuse_begin = 1
    fates%landuse_end   = n_landuse_cats

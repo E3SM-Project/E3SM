@@ -2,9 +2,9 @@
 
 #include "shoc_unit_tests_common.hpp"
 #include "shoc_functions.hpp"
-#include "shoc_functions_f90.hpp"
+#include "shoc_test_data.hpp"
 #include "physics/share/physics_constants.hpp"
-#include "share/scream_types.hpp"
+#include "share/eamxx_types.hpp"
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/util/ekat_arch.hpp"
@@ -75,6 +75,8 @@ struct UnitWrap::UnitTest<D>::TestShocQwParameters {
     SDS.w1_2 = w1_2_test1;
     SDS.skew_w = Skew_w_test1;
     SDS.a = a_test1;
+    SDS.rt_tol = 0;
+    SDS.w_thresh = 0;
 
     // Verify input is physical
     REQUIRE(SDS.sqrtw2 >= 0);

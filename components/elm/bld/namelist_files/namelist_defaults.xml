@@ -238,6 +238,13 @@ ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map
 sim_year="1850" glc_nec="0" use_crop=".false.">lnd/clm2/initdata/elmi.v3-SORRM.ne30pg2_r05_SOwISC12to30E3r3.1850-01-01-00000.c20240923.nc
 </finidat>
 
+<!-- CAx32v1.pg2 -->
+<fsurdat hgrid="ne0np4_CAx32v1.pg2"   sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_CAx32.pg2_simyr2010_c220621.nc</fsurdat>
+<fsurdat hgrid="ne0np4_CAx32v1.pg2"   sim_year="1850" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_CAx32.pg2_rcp8.5_simyr1850_c220712.nc</fsurdat>
+<fsurdat hgrid="ne0np4_CAx32v1.pg2" sim_year="2015">
+lnd/clm2/surfdata_map/surfdata_ne0_CAx32.pg2_rcp8.5_simyr2015_c220914.nc</fsurdat>
 
 <!-- ne0np4_northamericax4v1.pg2 -->
 <fsurdat hgrid="ne0np4_northamericax4v1.pg2"   sim_year="1850" use_crop=".false." >

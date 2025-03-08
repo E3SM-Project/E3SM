@@ -4,12 +4,32 @@ if (COMP_NAME STREQUAL gptl)
 endif()
 string(APPEND CMAKE_C_FLAGS_RELEASE " -O2 -g")
 string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -O2 -g")
+
+# For MCT coupler sources only, try resetting CMAKE_Fortran_FLAGS_DEBUG to avoid setting FPE invalid exceptions
+# https://github.com/E3SM-Project/E3SM/issues/7049
+if (COMP_NAME STREQUAL cpl)
+  set(CMAKE_Fortran_FLAGS_DEBUG " ") # set to blank and rebuild
+  if (CMAKE_SYSTEM_PROCESSOR MATCHES "^aarch64")
+    string(APPEND CMAKE_Fortran_FLAGS_DEBUG "-mcmodel=small")
+  elseif (CMAKE_SYSTEM_PROCESSOR MATCHES "arm64")
+    string(APPEND CMAKE_Fortran_FLAGS_DEBUG " -mcmodel=large")
+  else()
+    string(APPEND CMAKE_Fortran_FLAGS_DEBUG "-mcmodel=medium")
+  endif()
+  string(APPEND CMAKE_Fortran_FLAGS_DEBUG " -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none")
+  if (CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER_EQUAL 10)
+     string(APPEND CMAKE_Fortran_FLAGS_DEBUG " -fallow-argument-mismatch")
+  endif()
+  #original string(APPEND CMAKE_Fortran_FLAGS_DEBUG " -g -Wall -fbacktrace -fcheck=bounds,pointer -ffpe-trap=invalid,zero,overflow")
+  string(APPEND CMAKE_Fortran_FLAGS_DEBUG " -g -Wall -fbacktrace -fcheck=bounds,pointer -ffpe-trap=zero,overflow")
+  if (compile_threaded)
+    string(APPEND CMAKE_Fortran_FLAGS_DEBUG " -fopenmp")
+  endif()
+endif()
+
 set(MPICC "cc")
 set(MPICXX "CC")
 set(MPIFC "ftn")
 set(SCC "gcc")
 set(SCXX "g++")
 set(SFC "gfortran")
-
-string(APPEND CMAKE_EXE_LINKER_FLAGS " -static-libstdc++")
-

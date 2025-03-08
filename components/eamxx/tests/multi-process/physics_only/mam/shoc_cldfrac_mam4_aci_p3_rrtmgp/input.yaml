@@ -19,12 +19,13 @@ atmosphere_processes:
     mam4_aci:
       wsubmin: 0.001
       top_level_mam4xx: 6
+      enable_aero_vertical_mix: true
     p3:
       max_total_ni: 740.0e3
       do_prescribed_ccn: false
     shoc:
       lambda_low: 0.001
-      lambda_high: 0.04
+      lambda_high: 0.08
       lambda_slope: 2.65
       lambda_thresh: 0.02
       thl2tune: 1.0
@@ -67,7 +68,10 @@ initial_conditions:
   #variables required for p3
   precip_ice_surf_mass: 0.0
   precip_liq_surf_mass: 0.0
-  
+  hetfrz_immersion_nucleation_tend: 0.1
+  hetfrz_contact_nucleation_tend: 0.1
+  hetfrz_deposition_nucleation_tend: 0.1
+
   #variables required for rrtmgp
   aero_g_sw: 0.0
   aero_ssa_sw: 0.0

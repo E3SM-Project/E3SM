@@ -1,18 +1,7 @@
 set(P3_SRCS
-  p3_f90.cpp
-  p3_ic_cases.cpp
-  p3_iso_c.f90
-  ${SCREAM_BASE_DIR}/../eam/src/physics/p3/scream/micro_p3.F90
   eamxx_p3_process_interface.cpp
   eamxx_p3_run.cpp
 )
-
-if (NOT SCREAM_LIB_ONLY)
-  list(APPEND P3_SRCS
-    p3_functions_f90.cpp
-    p3_main_wrap.cpp
-    ) # Add f90 bridges needed for testing
-endif()
 
 # Add ETI source files if not on CUDA/HIP
 if (NOT EAMXX_ENABLE_GPU OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE OR Kokkos_ENABLE_HIP_RELOCATABLE_DEVICE_CODE)
@@ -27,6 +16,7 @@ if (NOT EAMXX_ENABLE_GPU OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE OR Kokkos
     eti/p3_table_ice.cpp
     eti/p3_dsd2.cpp
     eti/p3_find.cpp
+    eti/p3_init.cpp
     eti/p3_update_prognostics.cpp
     eti/p3_get_time_space_phys_variables.cpp
     eti/p3_autoconversion.cpp
@@ -36,6 +26,7 @@ if (NOT EAMXX_ENABLE_GPU OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE OR Kokkos
     eti/p3_back_to_cell_average.cpp
     eti/p3_cloud_rain_acc.cpp
     eti/p3_calc_rime_density.cpp
+    eti/p3_ice_classical_nucleation_impl.cpp
     eti/p3_cldliq_imm_freezing.cpp
     eti/p3_rain_imm_freezing.cpp
     eti/p3_droplet_self_coll.cpp
@@ -77,7 +68,9 @@ if (SCREAM_P3_SMALL_KERNELS)
   add_library(p3 ${P3_SRCS} ${P3_SK_SRCS})
 else()
   add_library(p3 ${P3_SRCS})
-  if (NOT SCREAM_LIBS_ONLY AND NOT SCREAM_ONLY_GENERATE_BASELINES)
+  # If small kernels are ON, we don't need a separate executable to test them.
+  # Also, we never want to generate baselines with this separate executable
+  if (NOT SCREAM_LIB_ONLY AND NOT SCREAM_ONLY_GENERATE_BASELINES)
     add_library(p3_sk ${P3_SRCS} ${P3_SK_SRCS})
     # Always build p3_sk with SCREAM_P3_SMALL_KERNELS on
     target_compile_definitions(p3_sk PUBLIC "SCREAM_P3_SMALL_KERNELS")
@@ -88,11 +81,7 @@ endif()
 target_compile_definitions(p3 PUBLIC EAMXX_HAS_P3)
 
 foreach (P3_LIB IN LISTS P3_LIBS)
-  set_target_properties(${P3_LIB} PROPERTIES
-    Fortran_MODULE_DIRECTORY ${P3_LIB}/modules
-  )
   target_include_directories(${P3_LIB} PUBLIC
-    ${CMAKE_CURRENT_BINARY_DIR}/${P3_LIB}/modules
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/impl
     ${SCREAM_BASE_DIR}/../eam/src/physics/cam
@@ -108,10 +97,10 @@ else()
 endif()
 set (P3_TABLES
   scream/tables/p3_lookup_table_1.dat-v4.1.1
-  scream/tables/mu_r_table_vals.dat${PRECISION_SUFFIX}
-  scream/tables/revap_table_vals.dat${PRECISION_SUFFIX}
-  scream/tables/vm_table_vals.dat${PRECISION_SUFFIX}
-  scream/tables/vn_table_vals.dat${PRECISION_SUFFIX}
+  scream/tables/mu_r_table_vals_v2.dat${PRECISION_SUFFIX}
+  scream/tables/revap_table_vals_v2.dat${PRECISION_SUFFIX}
+  scream/tables/vm_table_vals_v2.dat${PRECISION_SUFFIX}
+  scream/tables/vn_table_vals_v2.dat${PRECISION_SUFFIX}
 )
 
 include (ScreamUtils)
@@ -119,18 +108,11 @@ foreach (file IN ITEMS ${P3_TABLES})
   GetInputFile(${file})
 endforeach()
 
-# This executable can be used to re-generate tables in ${SCREAM_DATA_DIR}
-add_executable(p3_tables_setup EXCLUDE_FROM_ALL p3_tables_setup.cpp)
-target_link_libraries(p3_tables_setup p3)
-
-#crusher change
-if (Kokkos_ENABLE_HIP)
-set_source_files_properties(p3_functions_f90.cpp  PROPERTIES COMPILE_FLAGS -O0)
-endif()
-
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)
 endif()
 
-# Add this library to eamxx_physics
-target_link_libraries(eamxx_physics INTERFACE p3)
+if (TARGET eamxx_physics)
+  # Add this library to eamxx_physics
+  target_link_libraries(eamxx_physics INTERFACE p3)
+endif()

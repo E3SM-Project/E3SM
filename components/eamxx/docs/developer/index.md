@@ -1,3 +1,0 @@
-# SCREAM Developer Guide
-
-

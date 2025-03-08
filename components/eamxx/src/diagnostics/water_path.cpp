@@ -32,11 +32,6 @@ WaterPathDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
   }
 }
 
-std::string WaterPathDiagnostic::name() const
-{
-  return m_kind + "WaterPath";
-}
-
 void WaterPathDiagnostic::
 set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
@@ -57,7 +52,7 @@ set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   add_field<Required>(m_qname,          scalar3d, kg/kg, grid_name);
 
   // Construct and allocate the diagnostic field
-  FieldIdentifier fid (name(), scalar2d, kg/m2, grid_name);
+  FieldIdentifier fid (m_kind + name(), scalar2d, kg/m2, grid_name);
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
 }
@@ -77,7 +72,7 @@ void WaterPathDiagnostic::compute_diagnostic_impl()
 
   const auto num_levs = m_num_levs;
   const auto policy = ESU::get_default_team_policy(m_num_cols, m_num_levs);
-  Kokkos::parallel_for("Compute " + name(), policy,
+  Kokkos::parallel_for("Compute " + m_kind + name(), policy,
                        KOKKOS_LAMBDA(const MT& team) {
     const int icol = team.league_rank();
     auto q_icol    = ekat::subview(q,icol);

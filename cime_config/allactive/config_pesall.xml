@@ -1169,14 +1169,14 @@
       <pes compset="any" pesize="any">
         <comment>improv: any compset on ne30np4 grid</comment>
         <ntasks>
-          <ntasks_atm>-4</ntasks_atm>
-          <ntasks_lnd>-4</ntasks_lnd>
-          <ntasks_rof>-4</ntasks_rof>
-          <ntasks_ice>-4</ntasks_ice>
-          <ntasks_ocn>-4</ntasks_ocn>
-          <ntasks_cpl>-4</ntasks_cpl>
-          <ntasks_glc>-4</ntasks_glc>
-          <ntasks_wav>-4</ntasks_wav>
+          <ntasks_atm>-6</ntasks_atm>
+          <ntasks_lnd>-6</ntasks_lnd>
+          <ntasks_rof>-6</ntasks_rof>
+          <ntasks_ice>-6</ntasks_ice>
+          <ntasks_ocn>-6</ntasks_ocn>
+          <ntasks_cpl>-6</ntasks_cpl>
+          <ntasks_glc>-6</ntasks_glc>
+          <ntasks_wav>-6</ntasks_wav>
         </ntasks>
       </pes>
       <pes compset=".*EAM.+ELM.+MPASSI.+SGLC.+SWAV.+BGC.*" pesize="any">
@@ -1694,6 +1694,23 @@
       </pes>
     </mach>
   </grid>
+  <grid name="a%ne4np4.pg.">
+    <mach name="compy">
+      <pes compset="any" pesize="any">
+        <comment>allactive: ne4pg2 grid, 3 nodes x 1 omp @ root 0</comment>
+        <ntasks>
+          <ntasks_atm>96</ntasks_atm>
+          <ntasks_lnd>96</ntasks_lnd>
+          <ntasks_rof>96</ntasks_rof>
+          <ntasks_ice>96</ntasks_ice>
+          <ntasks_ocn>96</ntasks_ocn>
+          <ntasks_glc>96</ntasks_glc>
+          <ntasks_wav>96</ntasks_wav>
+          <ntasks_cpl>96</ntasks_cpl>
+        </ntasks>
+      </pes>
+    </mach>
+  </grid>
   <grid name="a%ne4np4_l%ne4np4_oi%oQU240_r%r05_m%oQU240_g%null_w%null">
     <mach name="sandiatoss3">
       <pes compset="EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV"  pesize="M">
@@ -1836,6 +1853,27 @@
           <nthrds_cpl>8</nthrds_cpl>
         </nthrds>
       </pes>
+      <pes compset=".*2010_SCREAM_ELM.*MPASSI_MPASO.*" pesize="any">
+        <comment>"pm-gpu ne30 for fully coupled cases with ATM on GPU, MPAS on CPU -- WCYCLXX2010 4 nodes, 4x16"</comment>
+        <ntasks>
+          <ntasks_atm>-4</ntasks_atm>
+          <ntasks_lnd>-4</ntasks_lnd>
+          <ntasks_rof>-4</ntasks_rof>
+          <ntasks_ice>-4</ntasks_ice>
+          <ntasks_ocn>-4</ntasks_ocn>
+          <ntasks_glc>-4</ntasks_glc>
+          <ntasks_wav>-4</ntasks_wav>
+          <ntasks_cpl>-4</ntasks_cpl>
+        </ntasks>
+        <nthrds>
+          <nthrds_atm>1</nthrds_atm>
+          <nthrds_lnd>16</nthrds_lnd>
+          <nthrds_rof>1</nthrds_rof>
+          <nthrds_ice>16</nthrds_ice>
+          <nthrds_ocn>16</nthrds_ocn>
+          <nthrds_cpl>1</nthrds_cpl>
+        </nthrds>
+      </pes>
     </mach>
     <mach name="pm-cpu|muller-cpu|alvarez">
       <pes compset="any" pesize="any">
@@ -1852,32 +1890,9 @@
         </ntasks>
       </pes>
     </mach>
-    <mach name="crusher-scream-gpu">
+    <mach name="frontier">
       <pes compset="any" pesize="any">
-        <comment>"crusher-gpu-scream ne30np4 and ne30np4.pg2"</comment>
-        <ntasks>
-          <ntasks_atm>-2</ntasks_atm>
-          <ntasks_lnd>-2</ntasks_lnd>
-          <ntasks_rof>-2</ntasks_rof>
-          <ntasks_ice>-2</ntasks_ice>
-          <ntasks_ocn>-2</ntasks_ocn>
-          <ntasks_glc>-2</ntasks_glc>
-          <ntasks_wav>-2</ntasks_wav>
-          <ntasks_cpl>-2</ntasks_cpl>
-        </ntasks>
-        <nthrds>
-          <nthrds_atm>1</nthrds_atm>
-          <nthrds_lnd>8</nthrds_lnd>
-          <nthrds_rof>1</nthrds_rof>
-          <nthrds_ice>1</nthrds_ice>
-          <nthrds_ocn>1</nthrds_ocn>
-          <nthrds_cpl>1</nthrds_cpl>
-        </nthrds>
-      </pes>
-    </mach>
-    <mach name="frontier-scream-gpu">
-      <pes compset="any" pesize="any">
-        <comment>"crusher-gpu-scream ne30np4 and ne30np4.pg2"</comment>
+        <comment>"frontier ne30np4 and ne30np4.pg2"</comment>
         <ntasks>
           <ntasks_atm>-2</ntasks_atm>
           <ntasks_lnd>-2</ntasks_lnd>
@@ -2065,6 +2080,21 @@
         </rootpe>
       </pes>
     </mach>
+    <mach name="improv">
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+" pesize="S">
+        <comment>improv+allactive: RRM-WCYCL on 6 nodes</comment>
+        <ntasks>
+          <ntasks_atm>-6</ntasks_atm>
+          <ntasks_lnd>-6</ntasks_lnd>
+          <ntasks_rof>-6</ntasks_rof>
+          <ntasks_ice>-6</ntasks_ice>
+          <ntasks_ocn>-6</ntasks_ocn>
+          <ntasks_cpl>-6</ntasks_cpl>
+          <ntasks_glc>-6</ntasks_glc>
+          <ntasks_wav>-6</ntasks_wav>
+        </ntasks>
+      </pes>
+    </mach>
     <mach name="chrysalis">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+" pesize="T">
         <comment> cmod016b64x1 s=2.4 </comment>
@@ -2199,6 +2229,149 @@
           <nthrds_ocn>1</nthrds_ocn>
           <nthrds_cpl>1</nthrds_cpl>
         </nthrds>
+      </pes>
+    </mach>
+  </grid>
+  <grid name="a%ne0np4_northamericax4v1.pg2_l%r025_oi%IcoswISC30E3">
+    <mach name="chrysalis">
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+" pesize="T">
+        <comment>allactive+chrysalis: v3.NARRM tri-grid on 10 nodes ~1 sypd</comment>
+        <ntasks>
+          <ntasks_atm>576</ntasks_atm>
+          <ntasks_cpl>576</ntasks_cpl>
+          <ntasks_lnd>576</ntasks_lnd>
+          <ntasks_rof>576</ntasks_rof>
+          <ntasks_ice>576</ntasks_ice>
+          <ntasks_ocn>64</ntasks_ocn>
+        </ntasks>
+        <rootpe>
+          <rootpe_ocn>576</rootpe_ocn>
+        </rootpe>
+      </pes>
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+" pesize="S">
+        <comment>allactive+chrysalis: v3.NARRM tri-grid on 20 nodes ~2 sypd</comment>
+        <ntasks>
+          <ntasks_atm>1152</ntasks_atm>
+          <ntasks_cpl>1152</ntasks_cpl>
+          <ntasks_lnd>768</ntasks_lnd>
+          <ntasks_rof>768</ntasks_rof>
+          <ntasks_ice>384</ntasks_ice>
+          <ntasks_ocn>128</ntasks_ocn>
+        </ntasks>
+        <rootpe>
+          <rootpe_ocn>1152</rootpe_ocn>
+          <rootpe_lnd>384</rootpe_lnd>
+          <rootpe_rof>384</rootpe_rof>
+        </rootpe>
+      </pes>
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+" pesize="SM">
+        <comment>allactive+chrysalis: v3.NARRM tri-grid on 30 nodes ~3 sypd</comment>
+        <ntasks>
+          <ntasks_atm>1792</ntasks_atm>
+          <ntasks_cpl>1792</ntasks_cpl>
+          <ntasks_lnd>1280</ntasks_lnd>
+          <ntasks_rof>1280</ntasks_rof>
+          <ntasks_ice>512</ntasks_ice>
+          <ntasks_ocn>128</ntasks_ocn>
+        </ntasks>
+        <rootpe>
+          <rootpe_ocn>1792</rootpe_ocn>
+          <rootpe_lnd>512</rootpe_lnd>
+          <rootpe_rof>512</rootpe_rof>
+        </rootpe>
+      </pes>
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+" pesize="M">
+        <comment>allactive+chrysalis: v3.NARRM tri-grid on 40 nodes ~4 sypd</comment>
+        <ntasks>
+          <ntasks_atm>2368</ntasks_atm>
+          <ntasks_cpl>2368</ntasks_cpl>
+          <ntasks_lnd>1408</ntasks_lnd>
+          <ntasks_rof>1408</ntasks_rof>
+          <ntasks_ice>960</ntasks_ice>
+          <ntasks_ocn>192</ntasks_ocn>
+        </ntasks>
+        <rootpe>
+          <rootpe_ocn>2368</rootpe_ocn>
+          <rootpe_ice>1408</rootpe_ice>
+        </rootpe>
+      </pes>
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+" pesize="XM">
+        <comment>allactive+chrysalis: v3.NARRM tri-grid on 50 nodes ~5 sypd</comment>
+        <ntasks>
+          <ntasks_atm>3008</ntasks_atm>
+          <ntasks_cpl>3008</ntasks_cpl>
+          <ntasks_lnd>1856</ntasks_lnd>
+          <ntasks_rof>1856</ntasks_rof>
+          <ntasks_ice>1152</ntasks_ice>
+          <ntasks_ocn>192</ntasks_ocn>
+        </ntasks>
+        <rootpe>
+          <rootpe_ocn>3008</rootpe_ocn>
+          <rootpe_lnd>1152</rootpe_lnd>
+          <rootpe_rof>1152</rootpe_rof>
+        </rootpe>
+      </pes>
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+" pesize="L">
+        <comment>allactive+chrysalis: v3.NARRM tri-grid on 64 nodes ~6 sypd</comment>
+        <ntasks>
+          <ntasks_atm>3840</ntasks_atm>
+          <ntasks_cpl>3840</ntasks_cpl>
+          <ntasks_lnd>2304</ntasks_lnd>
+          <ntasks_rof>2304</ntasks_rof>
+          <ntasks_ice>1536</ntasks_ice>
+          <ntasks_ocn>256</ntasks_ocn>
+        </ntasks>
+        <rootpe>
+          <rootpe_ocn>3840</rootpe_ocn>
+          <rootpe_lnd>1536</rootpe_lnd>
+          <rootpe_rof>1536</rootpe_rof>
+        </rootpe>
+      </pes>
+    </mach>
+    <mach name="anvil">
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+" pesize="S">
+        <comment>allactive+anvil: v3.NARRM tri-grid on 64 nodes ~1.8 sypd</comment>
+        <ntasks>
+          <ntasks_atm>2160</ntasks_atm>
+          <ntasks_cpl>2160</ntasks_cpl>
+          <ntasks_lnd>2160</ntasks_lnd>
+          <ntasks_rof>2160</ntasks_rof>
+          <ntasks_ice>2160</ntasks_ice>
+          <ntasks_ocn>144</ntasks_ocn>
+        </ntasks>
+        <rootpe>
+          <rootpe_ocn>2160</rootpe_ocn>
+        </rootpe>
+      </pes>
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+" pesize="M">
+        <comment>allactive+anvil: v3.NARRM tri-grid on 96 nodes ~2.5 sypd</comment>
+        <ntasks>
+          <ntasks_atm>3240</ntasks_atm>
+          <ntasks_cpl>3240</ntasks_cpl>
+          <ntasks_lnd>1080</ntasks_lnd>
+          <ntasks_rof>1080</ntasks_rof>
+          <ntasks_ice>2160</ntasks_ice>
+          <ntasks_ocn>216</ntasks_ocn>
+        </ntasks>
+        <rootpe>
+          <rootpe_ocn>3240</rootpe_ocn>
+          <rootpe_lnd>2160</rootpe_lnd>
+          <rootpe_rof>2160</rootpe_rof>
+        </rootpe>
+      </pes>
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+" pesize="L">
+        <comment>allactive+anvil: v3.NARRM tri-grid on 128 nodes ~3.2 sypd</comment>
+        <ntasks>
+          <ntasks_atm>4320</ntasks_atm>
+          <ntasks_cpl>4320</ntasks_cpl>
+          <ntasks_lnd>4320</ntasks_lnd>
+          <ntasks_rof>4320</ntasks_rof>
+          <ntasks_ice>4320</ntasks_ice>
+          <ntasks_ocn>288</ntasks_ocn>
+        </ntasks>
+        <rootpe>
+          <rootpe_ocn>4320</rootpe_ocn>
+        </rootpe>
       </pes>
     </mach>
   </grid>
@@ -2357,31 +2530,7 @@
         </nthrds>
       </pes>
     </mach>
-    <mach name="crusher-scream-gpu">
-      <pes compset="any" pesize="any">
-        <MAX_MPITASKS_PER_NODE>8</MAX_MPITASKS_PER_NODE>
-        <MAX_TASKS_PER_NODE>56</MAX_TASKS_PER_NODE>
-        <ntasks>
-          <ntasks_atm>-6</ntasks_atm>
-          <ntasks_lnd>-6</ntasks_lnd>
-          <ntasks_rof>-6</ntasks_rof>
-          <ntasks_ice>-6</ntasks_ice>
-          <ntasks_ocn>-6</ntasks_ocn>
-          <ntasks_glc>-6</ntasks_glc>
-          <ntasks_wav>-6</ntasks_wav>
-          <ntasks_cpl>-6</ntasks_cpl>
-        </ntasks>
-        <nthrds>
-          <nthrds_atm>1</nthrds_atm>
-          <nthrds_lnd>7</nthrds_lnd>
-          <nthrds_rof>1</nthrds_rof>
-          <nthrds_ice>1</nthrds_ice>
-          <nthrds_ocn>1</nthrds_ocn>
-          <nthrds_cpl>1</nthrds_cpl>
-        </nthrds>
-      </pes>
-    </mach>
-    <mach name="frontier-scream-gpu">
+    <mach name="frontier">
       <pes compset="any" pesize="any">
         <MAX_MPITASKS_PER_NODE>8</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>56</MAX_TASKS_PER_NODE>

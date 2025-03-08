@@ -2,7 +2,9 @@ name: gh-w
 
 on:
   pull_request:
-    branches: [ master ]
+    branches: 
+      - master
+      - maint-3.0
     paths-ignore:
       - 'mkdocs.yaml'
       - 'docs/**'
@@ -27,7 +29,7 @@ jobs:
           - SMS_D_Ld1_P8.ne4pg2_oQU480.WCYCL2010NS.ghci-oci_gnu
           - ERS_Ld3_P8.ne4pg2_oQU480.WCYCL2010NS.ghci-oci_gnu.allactive-wcprod_1850
     container: 
-      image: ghcr.io/e3sm-project/containers-ghci:ghci-0.2.0
+      image: ghcr.io/e3sm-project/containers-ghci:ghci-0.2.1
 
     steps:
       - 
