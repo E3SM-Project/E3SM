@@ -63,7 +63,7 @@ module load craype-x86-milan
 module load libfabric/1.20.1
 module load cudatoolkit/11.7
 module load craype-accel-nvidia80
-module load gcc-mixed/11.2.0
+module load gcc-mixed/12.2.0
 module load craype/2.7.20
 module rm cray-mpich &> /dev/null
 module load cray-mpich/8.1.25
