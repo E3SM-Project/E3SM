@@ -134,7 +134,7 @@ contains
 
       call mpas_timer_start("tracer del2")
 
-      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
+      !call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
       num_tracers = size(tracers, dim=1)
 
 !     call mpas_pool_get_array(meshPool, 'minLevelEdgeBot', minLevelEdgeBot)

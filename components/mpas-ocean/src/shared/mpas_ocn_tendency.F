@@ -1187,12 +1187,12 @@ contains
                             normalThicknessFlux, vertAleTransportTop, &
                             layerThickness, dt, tracerGroupTend, &
                             computeBudgets)
-#ifdef MPAS_OPENACC
-         !$acc update host (activeTracerHorizontalAdvectionEdgeFlux, &
-         !$acc              activeTracerHorizontalAdvectionTendency, &
-         !$acc              activeTracerVerticalAdvectionTopFlux, &
-         !$acc              activeTracerVerticalAdvectionTendency)
-#endif
+!#ifdef MPAS_OPENACC
+!         !$acc update host (activeTracerHorizontalAdvectionEdgeFlux, &
+!         !$acc              activeTracerHorizontalAdvectionTendency, &
+!         !$acc              activeTracerVerticalAdvectionTopFlux, &
+!         !$acc              activeTracerVerticalAdvectionTendency)
+!#endif
 
          !
          ! Add horizontal tracer diffusion,
@@ -1218,13 +1218,15 @@ contains
 !           !$omp end parallel
 !        endif ! compute budgets
 
-         call ocn_tracer_hmix_tend(meshPool, layerThickEdgeMean, &
-                                   layerThickness, zMid, tracerGroup, &
-                                   RediKappa, slopeTriadUp, &
-                                   slopeTriadDown, limiterUp, &
-                                   limiterDown, dt, isActiveTracer, &
-                                   rediLimiterCount, &
-                                   tracerGroupTend, err)
+         call ocn_tracer_hmix_tend(meshPool, layerThickEdgeMean, tracerGroup, tracerGroupTend)
+
+!        call ocn_tracer_hmix_tend(meshPool, layerThickEdgeMean, &
+!                                  layerThickness, zMid, tracerGroup, &
+!                                  RediKappa, slopeTriadUp, &
+!                                  slopeTriadDown, limiterUp, &
+!                                  limiterDown, dt, isActiveTracer, &
+!                                  rediLimiterCount, &
+!                                  tracerGroupTend, err)
 
 #ifdef MPAS_OPENACC
          !$acc exit data &
