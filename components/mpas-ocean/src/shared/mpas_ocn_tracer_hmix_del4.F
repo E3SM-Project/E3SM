@@ -28,6 +28,7 @@ module ocn_tracer_hmix_del4
    use mpas_threading
    use ocn_constants
    use ocn_config
+   use ocn_mesh
 
    implicit none
    private
@@ -149,22 +150,22 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       num_tracers = size(tracers, dim=1)
 
-      call mpas_pool_get_array(meshPool, 'minLevelEdgeBot', minLevelEdgeBot)
-      call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
-      call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
-      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+!     call mpas_pool_get_array(meshPool, 'minLevelEdgeBot', minLevelEdgeBot)
+!     call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
+!     call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+!     call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+!     call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
 
-      call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
-      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
-      call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
-      call mpas_pool_get_array(meshPool, 'meshScalingDel4', meshScalingDel4)
+!     call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+!     call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+!     call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+!     call mpas_pool_get_array(meshPool, 'meshScalingDel4', meshScalingDel4)
 
-      call mpas_pool_get_array(meshPool, 'edgeMask', edgeMask)
+!     call mpas_pool_get_array(meshPool, 'edgeMask', edgeMask)
 
-      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
-      call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
-      call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
+!     call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+!     call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+!     call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
 
       ! Need 1 halo around owned cells
       nCells = nCellsArray( 2 )

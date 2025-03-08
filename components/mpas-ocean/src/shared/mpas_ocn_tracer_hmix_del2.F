@@ -29,6 +29,7 @@ module ocn_tracer_hmix_del2
 
    use ocn_constants
    use ocn_config
+   use ocn_mesh
 
    implicit none
    private
@@ -136,17 +137,17 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
       num_tracers = size(tracers, dim=1)
 
-      call mpas_pool_get_array(meshPool, 'minLevelEdgeBot', minLevelEdgeBot)
-      call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
-      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
-      call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
-      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
-      call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
-      call mpas_pool_get_array(meshPool, 'meshScalingDel2', meshScalingDel2)
+!     call mpas_pool_get_array(meshPool, 'minLevelEdgeBot', minLevelEdgeBot)
+!     call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+!     call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+!     call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+!     call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+!     call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+!     call mpas_pool_get_array(meshPool, 'meshScalingDel2', meshScalingDel2)
 
-      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
-      call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
-      call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
+!     call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+!     call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+!     call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
 
       nCells = nCellsArray( 1 )
 
