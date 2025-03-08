@@ -1048,7 +1048,9 @@
 
 <dust_emis_fact dyn="se"                   phys="cam5"                  >0.55D0</dust_emis_fact>
 <dust_emis_fact dyn="fv"                   phys="cam5" clubb_sgs="1"    >0.13D0</dust_emis_fact>
-
+<!-- Dust emission cap (avoid the model crash by extremely high AOD)-->
+<dstemislimit phys="default"> 1.D-4 </dstemislimit>
+<dstemislimitswitch phys="default"> .false. </dstemislimitswitch>
 
 <!-- Sea Salt tuning option for scavenging mods by PNNL -->
 <ssalt_tuning>.false.</ssalt_tuning>
