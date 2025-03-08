@@ -384,8 +384,6 @@ subroutine zm_transport_momentum( ncol, wind_in, nwind, &
       kbm = min(kbm,mx(i))
    end do
 
-   write(iulog,*) 'WHDEBUG - zm_transport_momentum - ktm: ',ktm
-
    ! Loop ever each wind component
    do m = 1, nwind
 
