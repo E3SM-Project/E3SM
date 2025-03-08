@@ -171,9 +171,21 @@ contains
 
       allocate(delsq_tracer(num_tracers, nVertLevels, nCells))
 
+#ifdef MPAS_OPENACC
+      !$acc enter data create(delsq_tracer)
+#endif
+
       ! first del2: div(h \nabla \phi) at cell center
+#ifdef MPAS_OPENACC
+      !$acc parallel loop &
+      !$acc    present(delsq_tracer,areaCell,nEdgesOnCell,edgesOnCell,dvEdge,dcEdge, &
+      !$acc            cellsOnEdge,minLevelEdgeBot,maxLevelEdgeTop,edgeMask,layerThickEdgeMean, &
+      !$acc            tracers,edgeSignOnCell) &
+      !$acc    private(invAreaCell1, i, iEdge, invdcEdge, cell1, cell2, k, iTracer, r_tmp1, r_tmp2)
+#else
       !$omp parallel
       !$omp do schedule(runtime) private(invAreaCell1, i, iEdge, invdcEdge, cell1, cell2, k, iTracer, r_tmp1, r_tmp2)
+#endif
       do iCell = 1, nCells
         delsq_tracer(:, :, iCell) = 0.0_RKIND
         invAreaCell1 = 1.0_RKIND / areaCell(iCell)
@@ -195,15 +207,26 @@ contains
           end do
         end do
       end do
+#ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
+#endif
+
 
       ! Only need tendency on owned cells
       nCells = nCellsArray( 1 )
 
       ! second del2: div(h \nabla [delsq_tracer]) at cell center
+#ifdef MPAS_OPENACC
+      !$acc parallel loop &
+      !$acc    present(delsq_tracer,areaCell,nEdgesOnCell,edgesOnCell,dvEdge,dcEdge, &
+      !$acc            cellsOnEdge,minLevelEdgeBot,maxLevelEdgeTop,edgeMask,layerThickEdgeMean, &
+      !$acc            tracers,edgeSignOnCell,meshScalingDel4,tend) &
+      !$acc    private(invAreaCell1, i, iEdge, cell1, cell2, invdcEdge, k, iTracer, tracer_turb_flux, flux)
+#else
       !$omp parallel
       !$omp do schedule(runtime) private(invAreaCell1, i, iEdge, cell1, cell2, invdcEdge, k, iTracer, tracer_turb_flux, flux)
+#endif
       do iCell = 1, nCells
         invAreaCell1 = 1.0_RKIND / areaCell(iCell)
         do i = 1, nEdgesOnCell(iCell)
@@ -224,9 +247,14 @@ contains
           end do
         end do
       end do
+#ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
+#endif
 
+#ifdef MPAS_OPENACC
+      !$acc exit data delete(delsq_tracer)
+#endif
       deallocate(delsq_tracer)
 
       call mpas_timer_stop("tracer del4")

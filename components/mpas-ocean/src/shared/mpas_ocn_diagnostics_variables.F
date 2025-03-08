@@ -74,9 +74,9 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:), pointer :: pressureAdjustedSSH
    real (kind=RKIND), dimension(:), pointer :: pgf_sal
    real (kind=RKIND), dimension(:), pointer :: temp_twd
-   real (kind=RKIND), dimension(:), pointer :: normalCoeffTWD 
-   real (kind=RKIND), dimension(:), pointer :: tangentialCoeffTWD 
-   real (kind=RKIND), dimension(:), pointer :: topographicWaveDrag 
+   real (kind=RKIND), dimension(:), pointer :: normalCoeffTWD
+   real (kind=RKIND), dimension(:), pointer :: tangentialCoeffTWD
+   real (kind=RKIND), dimension(:), pointer :: topographicWaveDrag
 
    real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceValue
    real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceLayerValue
@@ -918,7 +918,6 @@ contains
          !$acc                   SIvec_ph0,             &
          !$acc                   SIvec_ph1,             &
          !$acc                   SIvec_v0,              &
-         !$acc                   SIvec_v0,              &
          !$acc                   SIvec_s0,              &
          !$acc                   SIvec_s1,              &
          !$acc                   SIvec_sh0,             &
@@ -1177,7 +1176,6 @@ contains
          !$acc                   SIvec_rh1,             &
          !$acc                   SIvec_ph0,             &
          !$acc                   SIvec_ph1,             &
-         !$acc                   SIvec_v0,              &
          !$acc                   SIvec_v0,              &
          !$acc                   SIvec_s0,              &
          !$acc                   SIvec_s1,              &

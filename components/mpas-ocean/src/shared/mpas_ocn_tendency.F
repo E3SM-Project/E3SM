@@ -168,7 +168,7 @@ contains
 
 
       !
-      ! layer thickness tendency: 
+      ! layer thickness tendency:
       !    initialize to zero and start accumulating tendency terms
       !
 #ifdef MPAS_OPENACC
@@ -401,7 +401,7 @@ contains
       !$acc    layerThickness, activeTracers)
 
       !*** Set output variables to zero before accumulating results
-      
+
 #ifdef MPAS_OPENACC
       !$acc parallel loop present(sfcStress, tendVel) private(k)
 #else
@@ -466,7 +466,7 @@ contains
                                tendVel, err)
 
       ! Compute pgf additions due to self-attraction and loading
-      if(mpas_is_alarm_ringing(domain % clock, 'salComputeAlarm', ierr=err)) then 
+      if(mpas_is_alarm_ringing(domain % clock, 'salComputeAlarm', ierr=err)) then
 #ifdef MPAS_DEBUG
           call mpas_log_write('       Computing SAL')
 #endif
@@ -475,7 +475,7 @@ contains
           call mpas_reset_clock_alarm(domain % clock, 'salComputeAlarm', ierr=err)
       endif
 
-      ! Add tidal potential (if needed) 
+      ! Add tidal potential (if needed)
       call ocn_compute_tidal_potential_forcing(err)
       if ( (config_time_integrator == 'RK4') &
            .or. (config_time_integrator =='LTS') &
@@ -492,7 +492,7 @@ contains
                                 sfcStress, kineticEnergyCell, &
                                 layerThickEdgeDrag, &
                                 layerThickEdgeMean, tendVel, err)
- 
+
       ! Compute tendency term for manufactured solution
       call ocn_manufactured_solution_tend_vel(forcingPool, &
                                               tendVel, err)
@@ -580,7 +580,7 @@ contains
 
       integer :: &
          iCell, iEdge, k, n, &! loop counters for cell,edge,vert,tracer
-         err,                &! internal error flag 
+         err,                &! internal error flag
          timeLevel,          &! time level to use for state variables
          indxTemp, indxSalt, &! tracer index for temperature, salinity
          indxCFC11,          &! tracer index for CFC11
@@ -653,7 +653,7 @@ contains
          tracerGroupTend, &! tendencies for current tracer group
          activeTracers,   &! retain active tracers
          ecosysTracers,   &! retain ecosys tracers for DMS, MacroMols
-         tracerGroupInteriorRestoringRate, &! int restoring timescale 
+         tracerGroupInteriorRestoringRate, &! int restoring timescale
          tracerGroupInteriorRestoringValue  ! int restoring value
 
       ! Scratch Arrays
@@ -666,7 +666,7 @@ contains
 
       ! return if all tracer tendencies disabled
       ! otherwise start timer and proceed
-   
+
       if (config_disable_tr_all_tend) return
       call mpas_timer_start("ocn_tend_tracer")
 
@@ -684,7 +684,7 @@ contains
          activeTracersOnly = .false.
       end if
 
-      ! retrieve data from pools 
+      ! retrieve data from pools
       call mpas_pool_get_subpool(statePool,   'tracers', &
                                                tracersPool)
       call mpas_pool_get_subpool(tendPool,    'tracersTend', &
@@ -746,7 +746,7 @@ contains
       !  - the pool member is a field
       !  - the group is the active tracer group
       !  - other groups if the active tracer only flag not on
-      !  - the specific use flag for the given group is enabled 
+      !  - the specific use flag for the given group is enabled
       ! We do not indent these various loops/conditions to avoid
       ! excessive indentation.
       !
@@ -776,7 +776,7 @@ contains
 
       if ( config_use_tracerGroup ) then
 
-         ! This group meets all requirements, now check for 
+         ! This group meets all requirements, now check for
          ! requested options
 
          computeBudgets =  (isActiveTracer .and.  &
@@ -818,7 +818,7 @@ contains
                                   modifiedGroupName, &
                                   tracerGroupSurfaceFlux)
 
-         ! Get Array of total surface temp/salt flux 
+         ! Get Array of total surface temp/salt flux
          ! (includes thickness tendencies)
          call mpas_pool_get_array(tracersSurfaceFluxPool, &
                                   'nonLocalSurfaceTracerFlux', &
@@ -849,11 +849,20 @@ contains
                                   modifiedGroupName, &
                                   tracerGroupSurfaceFluxRemoved)
 
+
+#ifdef MPAS_OPENACC
+         !$acc enter data &
+         !$acc    copyin(tracerGroup, tracerGroupTend)
+#endif
          !
          ! initialize tracer surface fluxes and tendencies to zero.
          !
+#ifdef MPAS_OPENACC
+         !$acc parallel loop present(tracerGroupTend) collapse(3)
+#else
          !$omp parallel
          !$omp do schedule(runtime) private(k,n)
+#endif
          do iCell = 1, nCellsAll
          do k=1,nVertLevels
          do n=1,nTracersGroup
@@ -861,313 +870,312 @@ contains
          end do
          end do
          end do
+#ifndef MPAS_OPENACC
          !$omp end do
+#endif
 
-         !$omp do schedule(runtime) private(n)
-         do iCell = 1, nCellsAll
-         do n=1,nTracersGroup
-            tracerGroupSurfaceFlux       (n,iCell) = 0.0_RKIND
-            tracerGroupSurfaceFluxRunoff (n,iCell) = 0.0_RKIND
-            tracerGroupSurfaceFluxRemoved(n,iCell) = 0.0_RKIND
-         end do
-         end do
-         !$omp end do
-         !$omp end parallel
+!        !$omp do schedule(runtime) private(n)
+!        do iCell = 1, nCellsAll
+!        do n=1,nTracersGroup
+!           tracerGroupSurfaceFlux       (n,iCell) = 0.0_RKIND
+!           tracerGroupSurfaceFluxRunoff (n,iCell) = 0.0_RKIND
+!           tracerGroupSurfaceFluxRemoved(n,iCell) = 0.0_RKIND
+!        end do
+!        end do
+!        !$omp end do
+!        !$omp end parallel
 
-         if (trim(config_subglacial_runoff_mode) == 'data') then
-         !$omp parallel
-         !$omp do schedule(runtime) private(n)
-         do iCell = 1, nCellsAll
-             do n=1,nTracersGroup
-                tracerGroupSurfaceFluxSubglacialRunoff (n,iCell) = 0.0_RKIND
-             end do
-         end do
-         !$omp end do
-         !$omp end parallel
-         end if
+!        if (trim(config_subglacial_runoff_mode) == 'data') then
+!        !$omp parallel
+!        !$omp do schedule(runtime) private(n)
+!        do iCell = 1, nCellsAll
+!            do n=1,nTracersGroup
+!               tracerGroupSurfaceFluxSubglacialRunoff (n,iCell) = 0.0_RKIND
+!            end do
+!        end do
+!        !$omp end do
+!        !$omp end parallel
+!        end if
 
-         !
-         ! compute surface tracer flux from bulk forcing
-         !
-         if (config_use_tracerGroup_surface_bulk_forcing) then
+!        !
+!        ! compute surface tracer flux from bulk forcing
+!        !
+!        if (config_use_tracerGroup_surface_bulk_forcing) then
 
-            call ocn_surface_bulk_forcing_tracers(meshPool, groupName, &
-                                  forcingPool, tracerGroup, &
-                                  tracerGroupSurfaceFlux, &
-                                  tracerGroupSurfaceFluxRunoff, &
-                                  tracerGroupSurfaceFluxRemoved, &
-                                  dt, layerThickness, err)
-            if (trim(config_subglacial_runoff_mode) == 'data') then
-                call ocn_surface_bulk_forcing_tracers_subglacial_runoff(meshPool, groupName, &
-                                      forcingPool, &
-                                      tracerGroupSurfaceFluxSubglacialRunoff, err)
-            end if
+!           call ocn_surface_bulk_forcing_tracers(meshPool, groupName, &
+!                                 forcingPool, tracerGroup, &
+!                                 tracerGroupSurfaceFlux, &
+!                                 tracerGroupSurfaceFluxRunoff, &
+!                                 tracerGroupSurfaceFluxRemoved, &
+!                                 dt, layerThickness, err)
+!           if (trim(config_subglacial_runoff_mode) == 'data') then
+!               call ocn_surface_bulk_forcing_tracers_subglacial_runoff(meshPool, groupName, &
+!                                     forcingPool, &
+!                                     tracerGroupSurfaceFluxSubglacialRunoff, err)
+!           end if
 
-         end if ! sfc bulk forcing
+!        end if ! sfc bulk forcing
 
-         !
-         ! compute ecosystem source-sink tendencies and net surface fluxes
-         ! NOTE: must be called before ocn_tracer_surface_flux_tend
-         !
-         if ( groupName == 'ecosysTracers' ) then
+!        !
+!        ! compute ecosystem source-sink tendencies and net surface fluxes
+!        ! NOTE: must be called before ocn_tracer_surface_flux_tend
+!        !
+!        if ( groupName == 'ecosysTracers' ) then
 
-            call mpas_pool_get_array(tracersPool, 'activeTracers', &
-                                     activeTracers, timeLevel)
-            call ocn_tracer_ecosys_compute(activeTracers, tracerGroup, &
-                                           forcingPool, nTracersGroup, &
-                                           nCellsOwned, latCell, minLevelCell, &
-                                           maxLevelCell, nVertLevels, &
-                                           layerThickness, zMid, &
-                                           indxTemp, indxSalt, &
-                                           tracerGroupTend, err)
+!           call mpas_pool_get_array(tracersPool, 'activeTracers', &
+!                                    activeTracers, timeLevel)
+!           call ocn_tracer_ecosys_compute(activeTracers, tracerGroup, &
+!                                          forcingPool, nTracersGroup, &
+!                                          nCellsOwned, latCell, minLevelCell, &
+!                                          maxLevelCell, nVertLevels, &
+!                                          layerThickness, zMid, &
+!                                          indxTemp, indxSalt, &
+!                                          tracerGroupTend, err)
 
-            call ocn_tracer_ecosys_surface_flux_compute(activeTracers, &
-                                           tracerGroup, forcingPool,  &
-                                           nTracersGroup, nCellsOwned, &
-                                           zMid, minLevelCell, indxTemp, &
-                                           indxSalt, tracerGroupSurfaceFlux, &
-                                           err)
-                                           
-         endif ! ecosys tracers
+!           call ocn_tracer_ecosys_surface_flux_compute(activeTracers, &
+!                                          tracerGroup, forcingPool,  &
+!                                          nTracersGroup, nCellsOwned, &
+!                                          zMid, minLevelCell, indxTemp, &
+!                                          indxSalt, tracerGroupSurfaceFlux, &
+!                                          err)
 
-         !
-         ! compute DMS source-sink tendencies and net surface fluxes
-         ! NOTE: must be called before ocn_tracer_surface_flux_tend
-         !
-         if ( groupName == 'DMSTracers' ) then
-            call mpas_pool_get_array(tracersPool, 'ecosysTracers', &
-                                     ecosysTracers, timeLevel)
-            nTracersEcosys = size(ecosysTracers, dim=1)
-            call ocn_tracer_DMS_compute(activeTracers, tracerGroup, &
-                                        nTracersGroup, ecosysTracers, &
-                                        nTracersEcosys, forcingPool, &
-                                        nCellsOwned, minLevelCell, &
-                                        maxLevelCell, nVertLevels, &
-                                        layerThickness, indxTemp, &
-                                        indxSalt, tracerGroupTend, &
-                                        err)
+!        endif ! ecosys tracers
 
-            call ocn_tracer_DMS_surface_flux_compute(activeTracers, &
-                                        tracerGroup, forcingPool,  &
-                                        nTracersGroup, nCellsOwned, &
-                                        zMid, minLevelCell, indxTemp, &
-                                        indxSalt, tracerGroupSurfaceFlux,  &
-                                        tracerGroupSurfaceFluxRemoved, err)
-         endif ! DMS
+!        !
+!        ! compute DMS source-sink tendencies and net surface fluxes
+!        ! NOTE: must be called before ocn_tracer_surface_flux_tend
+!        !
+!        if ( groupName == 'DMSTracers' ) then
+!           call mpas_pool_get_array(tracersPool, 'ecosysTracers', &
+!                                    ecosysTracers, timeLevel)
+!           nTracersEcosys = size(ecosysTracers, dim=1)
+!           call ocn_tracer_DMS_compute(activeTracers, tracerGroup, &
+!                                       nTracersGroup, ecosysTracers, &
+!                                       nTracersEcosys, forcingPool, &
+!                                       nCellsOwned, minLevelCell, &
+!                                       maxLevelCell, nVertLevels, &
+!                                       layerThickness, indxTemp, &
+!                                       indxSalt, tracerGroupTend, &
+!                                       err)
 
-         !
-         ! compute MacroMolecules source-sink tendencies and net surface fluxes
-         ! NOTE: must be called before ocn_tracer_surface_flux_tend
-         !
-         if ( groupName == 'MacroMoleculesTracers' ) then
-            call mpas_pool_get_array(tracersPool, 'ecosysTracers', &
-                                     ecosysTracers, timeLevel)
-            nTracersEcosys = size(ecosysTracers, dim=1)
-            call ocn_tracer_MacroMolecules_compute(tracerGroup, &
-                                  nTracersGroup, ecosysTracers, &
-                                  nTracersEcosys, forcingPool, &
-                                  nCellsOwned, minLevelCell, &
-                                  maxLevelCell, nVertLevels, &
-                                  layerThickness,  &
-                                  tracerGroupTend, err)
+!           call ocn_tracer_DMS_surface_flux_compute(activeTracers, &
+!                                       tracerGroup, forcingPool,  &
+!                                       nTracersGroup, nCellsOwned, &
+!                                       zMid, minLevelCell, indxTemp, &
+!                                       indxSalt, tracerGroupSurfaceFlux,  &
+!                                       tracerGroupSurfaceFluxRemoved, err)
+!        endif ! DMS
 
-            call ocn_tracer_MacroMolecules_surface_flux_compute( &
-                                  activeTracers, tracerGroup, &
-                                  forcingPool, nTracersGroup, &
-                                  nCellsOwned, zMid, &
-                                  indxTemp, indxSalt, &
-                                  tracerGroupSurfaceFlux, err)
+!        !
+!        ! compute MacroMolecules source-sink tendencies and net surface fluxes
+!        ! NOTE: must be called before ocn_tracer_surface_flux_tend
+!        !
+!        if ( groupName == 'MacroMoleculesTracers' ) then
+!           call mpas_pool_get_array(tracersPool, 'ecosysTracers', &
+!                                    ecosysTracers, timeLevel)
+!           nTracersEcosys = size(ecosysTracers, dim=1)
+!           call ocn_tracer_MacroMolecules_compute(tracerGroup, &
+!                                 nTracersGroup, ecosysTracers, &
+!                                 nTracersEcosys, forcingPool, &
+!                                 nCellsOwned, minLevelCell, &
+!                                 maxLevelCell, nVertLevels, &
+!                                 layerThickness,  &
+!                                 tracerGroupTend, err)
 
-         endif ! MacroMolecules
+!           call ocn_tracer_MacroMolecules_surface_flux_compute( &
+!                                 activeTracers, tracerGroup, &
+!                                 forcingPool, nTracersGroup, &
+!                                 nCellsOwned, zMid, &
+!                                 indxTemp, indxSalt, &
+!                                 tracerGroupSurfaceFlux, err)
 
-         !
-         ! compute CFC surface fluxes, there are no interior sources/sinks
-         !
-         if ( groupName == 'CFCTracers' ) then
+!        endif ! MacroMolecules
 
-            call mpas_pool_get_array(tracersPool, 'activeTracers', &
-                                     activeTracers, timeLevel)
+!        !
+!        ! compute CFC surface fluxes, there are no interior sources/sinks
+!        !
+!        if ( groupName == 'CFCTracers' ) then
 
-            indxCFC11 = 0
-            indxCFC12 = 0
-            if (config_use_CFC11) then
-              call mpas_pool_get_dimension(tracersPool, 'index_CFC11', indexCFC11)
-              indxCFC11 = indexCFC11 ! convert to int scalar due to problems with int scalar pointers
-            endif
-            if (config_use_CFC12) then
-              call mpas_pool_get_dimension(tracersPool, 'index_CFC12', indexCFC12)
-              indxCFC12 = indexCFC12 ! convert to int scalar due to problems with int scalar pointers
-            endif
-                                                 
-            call ocn_tracer_CFC_surface_flux_compute(activeTracers, &
-                                        tracerGroup, forcingPool,  &
-                                        nTracersGroup, nCellsOwned, &
-                                        indxTemp, indxSalt, tracerGroupSurfaceFlux, indxCFC11, indxCFC12, err)
-         endif ! CFC
+!           call mpas_pool_get_array(tracersPool, 'activeTracers', &
+!                                    activeTracers, timeLevel)
 
-         !
-         ! ocean surface restoring
-         !
-         if (config_use_tracerGroup_surface_restoring) then
-            call mpas_timer_start("surface_restoring_"//groupName)
-            call mpas_pool_get_subpool(forcingPool, &
-                                   'tracersSurfaceRestoringFields', &
-                                    tracersSurfaceRestoringFieldsPool)
+!           indxCFC11 = 0
+!           indxCFC12 = 0
+!           if (config_use_CFC11) then
+!             call mpas_pool_get_dimension(tracersPool, 'index_CFC11', indexCFC11)
+!             indxCFC11 = indexCFC11 ! convert to int scalar due to problems with int scalar pointers
+!           endif
+!           if (config_use_CFC12) then
+!             call mpas_pool_get_dimension(tracersPool, 'index_CFC12', indexCFC12)
+!             indxCFC12 = indexCFC12 ! convert to int scalar due to problems with int scalar pointers
+!           endif
 
-            modifiedGroupName = groupName // "PistonVelocity"
-            call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool,&
-                                     modifiedGroupName, &
-                                     tracerGroupPistonVelocity)
+!           call ocn_tracer_CFC_surface_flux_compute(activeTracers, &
+!                                       tracerGroup, forcingPool,  &
+!                                       nTracersGroup, nCellsOwned, &
+!                                       indxTemp, indxSalt, tracerGroupSurfaceFlux, indxCFC11, indxCFC12, err)
+!        endif ! CFC
 
-            modifiedGroupName = groupName//"SurfaceRestoringValue"
-            call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool,&
-                                     modifiedGroupName, &
-                                     tracerGroupSurfaceRestoringValue)
+!        !
+!        ! ocean surface restoring
+!        !
+!        if (config_use_tracerGroup_surface_restoring) then
+!           call mpas_timer_start("surface_restoring_"//groupName)
+!           call mpas_pool_get_subpool(forcingPool, &
+!                                  'tracersSurfaceRestoringFields', &
+!                                   tracersSurfaceRestoringFieldsPool)
 
-            ! Note: monthly surface salinity restoring is a special
-            ! case for tracer restoring
-            call ocn_tracer_surface_restoring_compute(groupName, &
-                   nTracersGroup, nCellsAll, tracerGroup,  &
-                   tracerGroupPistonVelocity, &
-                   tracerGroupSurfaceRestoringValue, &
-                   tracerGroupSurfaceFlux, indxSalt, &
-                   config_use_surface_salinity_monthly_restoring, &
-                   config_salinity_restoring_constant_piston_velocity, &
-                   err)
-            call mpas_timer_stop("surface_restoring_"//groupName)
+!           modifiedGroupName = groupName // "PistonVelocity"
+!           call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool,&
+!                                    modifiedGroupName, &
+!                                    tracerGroupPistonVelocity)
 
-         endif ! sfc restoring
+!           modifiedGroupName = groupName//"SurfaceRestoringValue"
+!           call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool,&
+!                                    modifiedGroupName, &
+!                                    tracerGroupSurfaceRestoringValue)
 
-         ! tracer fluxes at the land-ice / ocean interface
-         ! this is a flux at the top ocean surface -- so these
-         ! fluxes are added into tracerGroupSurfaceFlux
-         call ocn_surface_land_ice_fluxes_tracers(meshPool, groupName, &
-                             forcingPool, tracerGroupSurfaceFlux, err)
+!           ! Note: monthly surface salinity restoring is a special
+!           ! case for tracer restoring
+!           call ocn_tracer_surface_restoring_compute(groupName, &
+!                  nTracersGroup, nCellsAll, tracerGroup,  &
+!                  tracerGroupPistonVelocity, &
+!                  tracerGroupSurfaceRestoringValue, &
+!                  tracerGroupSurfaceFlux, indxSalt, &
+!                  config_use_surface_salinity_monthly_restoring, &
+!                  config_salinity_restoring_constant_piston_velocity, &
+!                  err)
+!           call mpas_timer_stop("surface_restoring_"//groupName)
 
-         !
-         ! other additions to tracerGroupSurfaceFlux should be added here
-         !
+!        endif ! sfc restoring
 
-         !
-         ! now begin to accumulate the RHS tracer tendencies.
-         !
+!        ! tracer fluxes at the land-ice / ocean interface
+!        ! this is a flux at the top ocean surface -- so these
+!        ! fluxes are added into tracerGroupSurfaceFlux
+!        call ocn_surface_land_ice_fluxes_tracers(meshPool, groupName, &
+!                            forcingPool, tracerGroupSurfaceFlux, err)
 
-         !
-         ! interior restoring forcing tendency
-         !
-         if (config_use_tracerGroup_interior_restoring) then
-            call mpas_timer_start("interior_restoring_"//groupName,&
-                                  .false.)
-            call mpas_pool_get_subpool(forcingPool, &
-                              'tracersInteriorRestoringFields', &
-                               tracersInteriorRestoringFieldsPool)
+!        !
+!        ! other additions to tracerGroupSurfaceFlux should be added here
+!        !
 
-            modifiedGroupName = groupName//"InteriorRestoringRate"
-            call mpas_pool_get_array(tracersInteriorRestoringFieldsPool,&
-                                     modifiedGroupName, &
-                                     tracerGroupInteriorRestoringRate)
+!        !
+!        ! now begin to accumulate the RHS tracer tendencies.
+!        !
 
-            modifiedGroupName = groupName//"InteriorRestoringValue"
-            call mpas_pool_get_array(tracersInteriorRestoringFieldsPool,&
-                                     modifiedGroupName, &
-                                     tracerGroupInteriorRestoringValue)
+!        !
+!        ! interior restoring forcing tendency
+!        !
+!        if (config_use_tracerGroup_interior_restoring) then
+!           call mpas_timer_start("interior_restoring_"//groupName,&
+!                                 .false.)
+!           call mpas_pool_get_subpool(forcingPool, &
+!                             'tracersInteriorRestoringFields', &
+!                              tracersInteriorRestoringFieldsPool)
 
-            call ocn_tracer_interior_restoring_compute(nTracersGroup, &
-                        nCellsAll, minLevelCell, maxLevelCell, &
-                        layerThickness, tracerGroup, &
-                        tracerGroupInteriorRestoringRate, &
-                        tracerGroupInteriorRestoringValue, &
-                        tracerGroupTend, err)
+!           modifiedGroupName = groupName//"InteriorRestoringRate"
+!           call mpas_pool_get_array(tracersInteriorRestoringFieldsPool,&
+!                                    modifiedGroupName, &
+!                                    tracerGroupInteriorRestoringRate)
 
-            call mpas_timer_stop("interior_restoring_"//groupName)
+!           modifiedGroupName = groupName//"InteriorRestoringValue"
+!           call mpas_pool_get_array(tracersInteriorRestoringFieldsPool,&
+!                                    modifiedGroupName, &
+!                                    tracerGroupInteriorRestoringValue)
 
-         endif ! interior restoring
+!           call ocn_tracer_interior_restoring_compute(nTracersGroup, &
+!                       nCellsAll, minLevelCell, maxLevelCell, &
+!                       layerThickness, tracerGroup, &
+!                       tracerGroupInteriorRestoringRate, &
+!                       tracerGroupInteriorRestoringValue, &
+!                       tracerGroupTend, err)
 
-         !
-         ! exponential decay tendency
-         !
-         if (config_use_tracerGroup_exponential_decay) then
-            call mpas_log_write( &
-                        "WARNING: exponential decay not fully tested", &
-                        MPAS_LOG_WARN)
-            call mpas_timer_start("exponential decay "//groupName)
-            call mpas_pool_get_subpool(forcingPool, &
-                               'tracersExponentialDecayFields', &
-                                tracersExponentialDecayFieldsPool)
+!           call mpas_timer_stop("interior_restoring_"//groupName)
 
-            modifiedGroupName = groupName // "ExponentialDecayRate"
-            call mpas_pool_get_array(tracersExponentialDecayFieldsPool,&
-                                     modifiedGroupName, &
-                                     tracerGroupExponentialDecayRate)
+!        endif ! interior restoring
 
-            call ocn_tracer_exponential_decay_compute(nTracersGroup, &
-                        nCellsAll, minLevelCell, maxLevelCell, &
-                        layerThickness, tracerGroup, &
-                        tracerGroupExponentialDecayRate, &
-                        tracerGroupTend, err)
+!        !
+!        ! exponential decay tendency
+!        !
+!        if (config_use_tracerGroup_exponential_decay) then
+!           call mpas_log_write( &
+!                       "WARNING: exponential decay not fully tested", &
+!                       MPAS_LOG_WARN)
+!           call mpas_timer_start("exponential decay "//groupName)
+!           call mpas_pool_get_subpool(forcingPool, &
+!                              'tracersExponentialDecayFields', &
+!                               tracersExponentialDecayFieldsPool)
 
-            call mpas_timer_stop("exponential decay "//groupName)
+!           modifiedGroupName = groupName // "ExponentialDecayRate"
+!           call mpas_pool_get_array(tracersExponentialDecayFieldsPool,&
+!                                    modifiedGroupName, &
+!                                    tracerGroupExponentialDecayRate)
 
-         endif ! exponential decay
+!           call ocn_tracer_exponential_decay_compute(nTracersGroup, &
+!                       nCellsAll, minLevelCell, maxLevelCell, &
+!                       layerThickness, tracerGroup, &
+!                       tracerGroupExponentialDecayRate, &
+!                       tracerGroupTend, err)
 
-         !
-         ! ideal age forcing tendency
-         !   note: ocn_tracer_ideal_age_compute resets tracers in top
-         !   layer to zero
-         !
-         if (config_use_tracerGroup_idealAge_forcing) then
-            call mpas_timer_start("ideal age " // groupName)
-            if (trim(groupName) /= 'idealAgeTracers') call mpas_log_write( &
-                                                      "WARNING: ideal age not fully tested", &
-                                                      MPAS_LOG_WARN)
+!           call mpas_timer_stop("exponential decay "//groupName)
 
-            call mpas_pool_get_subpool(forcingPool, &
-                                       'tracersIdealAgeFields', &
-                                        tracersIdealAgeFieldsPool)
+!        endif ! exponential decay
 
-            modifiedGroupName = groupName // "IdealAgeMask"
-            call mpas_pool_get_array(tracersIdealAgeFieldsPool, &
-                                     modifiedGroupName, &
-                                     tracerGroupIdealAgeMask)
-            call ocn_tracer_ideal_age_compute(nTracersGroup, nCellsAll,&
-                                      minLevelCell, maxLevelCell, &
-                                      layerThickness, &
-                                      tracerGroupIdealAgeMask, &
-                                      tracerGroup, tracerGroupTend, err)
+!        !
+!        ! ideal age forcing tendency
+!        !   note: ocn_tracer_ideal_age_compute resets tracers in top
+!        !   layer to zero
+!        !
+!        if (config_use_tracerGroup_idealAge_forcing) then
+!           call mpas_timer_start("ideal age " // groupName)
+!           if (trim(groupName) /= 'idealAgeTracers') call mpas_log_write( &
+!                                                     "WARNING: ideal age not fully tested", &
+!                                                     MPAS_LOG_WARN)
 
-            call mpas_timer_stop("ideal age " // groupName)
+!           call mpas_pool_get_subpool(forcingPool, &
+!                                      'tracersIdealAgeFields', &
+!                                       tracersIdealAgeFieldsPool)
 
-         endif ! ideal age
+!           modifiedGroupName = groupName // "IdealAgeMask"
+!           call mpas_pool_get_array(tracersIdealAgeFieldsPool, &
+!                                    modifiedGroupName, &
+!                                    tracerGroupIdealAgeMask)
+!           call ocn_tracer_ideal_age_compute(nTracersGroup, nCellsAll,&
+!                                     minLevelCell, maxLevelCell, &
+!                                     layerThickness, &
+!                                     tracerGroupIdealAgeMask, &
+!                                     tracerGroup, tracerGroupTend, err)
 
-         !
-         ! transit-time distribution (TTD) forcing tendency
-         !   note: no tendency is actually computed in ocn_tracer_TTD_compute
-         !   note: rather, tracerGroup is reset to tracerGroupTTDMask in
-         !   top-most layer
-         !
-         if (config_use_tracerGroup_ttd_forcing) then
-            call mpas_timer_start("TTD " // groupName)
-            call mpas_log_write("WARNING: TTD not fully tested", &
-                                MPAS_LOG_WARN)
+!           call mpas_timer_stop("ideal age " // groupName)
 
-            call mpas_pool_get_subpool(forcingPool, &
-                                       'tracersTTDFields', &
-                                        tracersTTDFieldsPool)
+!        endif ! ideal age
 
-            modifiedGroupName = groupName // "TTDMask"
-            call mpas_pool_get_array(tracersTTDFieldsPool, &
-                                     modifiedGroupName, &
-                                     tracerGroupTTDMask)
-            call ocn_tracer_TTD_compute(nTracersGroup, nCellsAll, &
-                                        maxLevelCell, layerThickness, &
-                                        tracerGroupTTDMask, &
-                                        tracerGroup, err)
+!        !
+!        ! transit-time distribution (TTD) forcing tendency
+!        !   note: no tendency is actually computed in ocn_tracer_TTD_compute
+!        !   note: rather, tracerGroup is reset to tracerGroupTTDMask in
+!        !   top-most layer
+!        !
+!        if (config_use_tracerGroup_ttd_forcing) then
+!           call mpas_timer_start("TTD " // groupName)
+!           call mpas_log_write("WARNING: TTD not fully tested", &
+!                               MPAS_LOG_WARN)
 
-            call mpas_timer_stop("TTD " // groupName)
-         endif ! TTD
+!           call mpas_pool_get_subpool(forcingPool, &
+!                                      'tracersTTDFields', &
+!                                       tracersTTDFieldsPool)
 
-         !$acc enter data &
-         !$acc    copyin(tracerGroup, tracerGroupTend)
+!           modifiedGroupName = groupName // "TTDMask"
+!           call mpas_pool_get_array(tracersTTDFieldsPool, &
+!                                    modifiedGroupName, &
+!                                    tracerGroupTTDMask)
+!           call ocn_tracer_TTD_compute(nTracersGroup, nCellsAll, &
+!                                       maxLevelCell, layerThickness, &
+!                                       tracerGroupTTDMask, &
+!                                       tracerGroup, err)
+
+!           call mpas_timer_stop("TTD " // groupName)
+!        endif ! TTD
 
          !
          ! Accumulate tendencies for all tracers
@@ -1179,38 +1187,36 @@ contains
                             normalThicknessFlux, vertAleTransportTop, &
                             layerThickness, dt, tracerGroupTend, &
                             computeBudgets)
-
+#ifdef MPAS_OPENACC
          !$acc update host (activeTracerHorizontalAdvectionEdgeFlux, &
          !$acc              activeTracerHorizontalAdvectionTendency, &
          !$acc              activeTracerVerticalAdvectionTopFlux, &
          !$acc              activeTracerVerticalAdvectionTendency)
-
-         !$acc exit data &
-         !$acc    copyout(tracerGroupTend) &
-         !$acc    delete(tracerGroup)
+#endif
 
          !
          ! Add horizontal tracer diffusion,
          !    eg del2 form: div(h \kappa_2 \nabla \phi)
          !
 
-         if (computeBudgets) then
-            ! compute budget contribution by taking the difference
-            ! of the total tendency before and after the call
-            ! here we store the before value for later subtraction
-            !$omp parallel
-            !$omp do schedule(runtime) private(k,n)
-            do iCell = 1, nCellsAll
-            do k=1,nVertLevels
-            do n=1,nTracersGroup
-               activeTracerHorMixTendency(n,k,iCell) = &
-                          tracerGroupTend(n,k,iCell)
-            enddo
-            enddo
-            enddo
-            !$omp end do
-            !$omp end parallel
-         endif ! compute budgets
+!hgk Comment out here as this part is skipped during performance test
+!        if (computeBudgets) then
+!           ! compute budget contribution by taking the difference
+!           ! of the total tendency before and after the call
+!           ! here we store the before value for later subtraction
+!           !$omp parallel
+!           !$omp do schedule(runtime) private(k,n)
+!           do iCell = 1, nCellsAll
+!           do k=1,nVertLevels
+!           do n=1,nTracersGroup
+!              activeTracerHorMixTendency(n,k,iCell) = &
+!                         tracerGroupTend(n,k,iCell)
+!           enddo
+!           enddo
+!           enddo
+!           !$omp end do
+!           !$omp end parallel
+!        endif ! compute budgets
 
          call ocn_tracer_hmix_tend(meshPool, layerThickEdgeMean, &
                                    layerThickness, zMid, tracerGroup, &
@@ -1220,153 +1226,163 @@ contains
                                    rediLimiterCount, &
                                    tracerGroupTend, err)
 
-         if (computeBudgets) then
-            ! Finish budget calculation by subtracting before, after
-            !$omp parallel
-            !$omp do schedule(runtime) private(k,n)
-            do iCell = 1, nCellsAll
-            do k=1,nVertLevels
-            do n=1,nTracersGroup
-               activeTracerHorMixTendency(n,k,iCell) = &
-                          tracerGroupTend(n,k,iCell) - &! tendency after
-               activeTracerHorMixTendency(n,k,iCell)    ! tendency before
-            enddo
-            enddo
-            enddo
-            !$omp end do
-            !$omp end parallel
-         endif ! compute budgets
+#ifdef MPAS_OPENACC
+         !$acc exit data &
+         !$acc    copyout(tracerGroupTend) &
+         !$acc    delete(tracerGroup)
+#endif
+
+!hgk Comment out here as this part is skipped during performance test
+!        if (computeBudgets) then
+!           ! Finish budget calculation by subtracting before, after
+!           !$omp parallel
+!           !$omp do schedule(runtime) private(k,n)
+!           do iCell = 1, nCellsAll
+!           do k=1,nVertLevels
+!           do n=1,nTracersGroup
+!              activeTracerHorMixTendency(n,k,iCell) = &
+!                         tracerGroupTend(n,k,iCell) - &! tendency after
+!              activeTracerHorMixTendency(n,k,iCell)    ! tendency before
+!           enddo
+!           enddo
+!           enddo
+!           !$omp end do
+!           !$omp end parallel
+!        endif ! compute budgets
 
          !
          ! convert the surface tracer flux into a tracer tendency by
          ! distributing the flux across some number of surface layers
          !
-         if (computeBudgets) then
-            ! as in hmix above, the budget contribution is difference
-            ! between total tend before/after call - store before value
-            !$omp parallel
-            !$omp do schedule(runtime) private(k,n)
-            do iCell = 1, nCellsAll
-            do k = 1, nVertLevels
-            do n = 1, nTracersGroup
-               activeTracerSurfaceFluxTendency(n,k,iCell) = &
-                               tracerGroupTend(n,k,iCell)
-            end do
-            end do
-            end do
-            !$omp end do
-            !$omp end parallel
-         endif ! compute budgets
+!hgk Comment out here as this part is skipped during performance test
+!        if (computeBudgets) then
+!           ! as in hmix above, the budget contribution is difference
+!           ! between total tend before/after call - store before value
+!           !$omp parallel
+!           !$omp do schedule(runtime) private(k,n)
+!           do iCell = 1, nCellsAll
+!           do k = 1, nVertLevels
+!           do n = 1, nTracersGroup
+!              activeTracerSurfaceFluxTendency(n,k,iCell) = &
+!                              tracerGroupTend(n,k,iCell)
+!           end do
+!           end do
+!           end do
+!           !$omp end do
+!           !$omp end parallel
+!        endif ! compute budgets
 
-         call ocn_tracer_surface_flux_tend(meshPool, fractionAbsorbed, &
-                               fractionAbsorbedRunoff, &
-                               layerThickness, tracerGroupSurfaceFlux, &
-                               tracerGroupSurfaceFluxRunoff,  &
-                               tracerGroupTend, err)
-         if (trim(config_subglacial_runoff_mode) == 'data') then
-                call ocn_tracer_surface_flux_tend_subglacial_runoff(meshPool, fractionAbsorbedSubglacialRunoff, &
-                               layerThickness, tracerGroupSurfaceFluxSubglacialRunoff,  &
-                               tracerGroupTend, err)
-         end if
+!        call ocn_tracer_surface_flux_tend(meshPool, fractionAbsorbed, &
+!                              fractionAbsorbedRunoff, &
+!                              layerThickness, tracerGroupSurfaceFlux, &
+!                              tracerGroupSurfaceFluxRunoff,  &
+!                              tracerGroupTend, err)
+!        if (trim(config_subglacial_runoff_mode) == 'data') then
+!               call ocn_tracer_surface_flux_tend_subglacial_runoff(meshPool, fractionAbsorbedSubglacialRunoff, &
+!                              layerThickness, tracerGroupSurfaceFluxSubglacialRunoff,  &
+!                              tracerGroupTend, err)
+!        end if
 
          !
          ! Compute shortwave absorption
          !
 
-         if (computeBudgets) then
-            ! finish previous budget difference and store
-            ! the before value for short wave
-            !$omp parallel
-            !$omp do schedule(runtime) private(k,n)
-            do iCell = 1, nCellsAll
-            do k = 1, nVertLevels
-               do n = 1, nTracersGroup
-                  activeTracerSurfaceFluxTendency(n,k,iCell) = &
-                                  tracerGroupTend(n,k,iCell) - &
-                  activeTracerSurfaceFluxTendency(n,k,iCell)
-               end do
+!hgk Comment out here as this part is skipped during performance test
+!        if (computeBudgets) then
+!           ! finish previous budget difference and store
+!           ! the before value for short wave
+!           !$omp parallel
+!           !$omp do schedule(runtime) private(k,n)
+!           do iCell = 1, nCellsAll
+!           do k = 1, nVertLevels
+!              do n = 1, nTracersGroup
+!                 activeTracerSurfaceFluxTendency(n,k,iCell) = &
+!                                 tracerGroupTend(n,k,iCell) - &
+!                 activeTracerSurfaceFluxTendency(n,k,iCell)
+!              end do
 
-               temperatureShortWaveTendency(k,iCell) = &
-                     tracerGroupTend(indxTemp,k,iCell)
-            end do
-            end do
-            !$omp end do
-            !$omp end parallel
-         endif ! compute budgets
+!              temperatureShortWaveTendency(k,iCell) = &
+!                    tracerGroupTend(indxTemp,k,iCell)
+!           end do
+!           end do
+!           !$omp end do
+!           !$omp end parallel
+!        endif ! compute budgets
 
-         ! only need sw flux for temperature
-         if (isActiveTracer) &
-            call ocn_tracer_short_wave_absorption_tend(meshPool, &
-                       swForcingPool, forcingPool, indxTemp, &
-                       layerThickness, penetrativeTemperatureFlux, &
-                       penetrativeTemperatureFluxOBL, tracerGroupTend, &
-                       bottomLayerShortwaveTemperatureFlux, err)
+!        ! only need sw flux for temperature
+!        if (isActiveTracer) &
+!           call ocn_tracer_short_wave_absorption_tend(meshPool, &
+!                      swForcingPool, forcingPool, indxTemp, &
+!                      layerThickness, penetrativeTemperatureFlux, &
+!                      penetrativeTemperatureFluxOBL, tracerGroupTend, &
+!                      bottomLayerShortwaveTemperatureFlux, err)
 
-         if (computeBudgets) then
-            !$omp parallel
-            !$omp do schedule(runtime) private(k)
-            do iCell = 1, nCellsAll
-            do k=1,nVertLevels
-               temperatureShortWaveTendency(k,iCell) = &
-                   tracerGroupTend(indxTemp,k,iCell) - &
-               temperatureShortWaveTendency(k,iCell)
-            end do
-            end do
-            !$omp end do
-            !$omp end parallel
-         endif ! compute budgets
+!hgk Comment out here as this part is skipped during performance test
+!        if (computeBudgets) then
+!           !$omp parallel
+!           !$omp do schedule(runtime) private(k)
+!           do iCell = 1, nCellsAll
+!           do k=1,nVertLevels
+!              temperatureShortWaveTendency(k,iCell) = &
+!                  tracerGroupTend(indxTemp,k,iCell) - &
+!              temperatureShortWaveTendency(k,iCell)
+!           end do
+!           end do
+!           !$omp end do
+!           !$omp end parallel
+!        endif ! compute budgets
 
          !
          ! Compute tracer tendency due to non-local flux computed in KPP
          !
-         if (config_use_cvmix_kpp) then
-               call mpas_timer_start("non-local flux from KPP")
-            if (.not. config_cvmix_kpp_nonlocal_with_implicit_mix) then
-               if (computeBudgets) then
-                  !$omp parallel
-                  !$omp do schedule(runtime) private(k,n)
-                  do iCell = 1, nCellsAll
-                  do k = 1, nVertLevels
-                  do n = 1, nTracersGroup
-                     activeTracerNonLocalTendency(n,k,iCell) = &
-                                  tracerGroupTend(n,k,iCell)
-                  end do
-                  end do
-                  end do
-                  !$omp end do
-                  !$omp end parallel
-               endif ! compute budgets
+!        if (config_use_cvmix_kpp) then
+!              call mpas_timer_start("non-local flux from KPP")
+!           if (.not. config_cvmix_kpp_nonlocal_with_implicit_mix) then
+!              if (computeBudgets) then
+!                 !$omp parallel
+!                 !$omp do schedule(runtime) private(k,n)
+!                 do iCell = 1, nCellsAll
+!                 do k = 1, nVertLevels
+!                 do n = 1, nTracersGroup
+!                    activeTracerNonLocalTendency(n,k,iCell) = &
+!                                 tracerGroupTend(n,k,iCell)
+!                 end do
+!                 end do
+!                 end do
+!                 !$omp end do
+!                 !$omp end parallel
+!              endif ! compute budgets
 
-               if (isActiveTracer) then
-                  call ocn_tracer_nonlocalflux_tend(meshPool, &
-                                          vertNonLocalFlux, &
-                                          nonLocalSurfaceTracerFlux, &
-                                          tracerGroupTend, err)
-               else ! not active
-                  call ocn_tracer_nonlocalflux_tend(meshPool, &
-                                          vertNonLocalFlux, &
-                                          tracerGroupSurfaceFlux, &
-                                          tracerGroupTend, err)
-               endif ! active tracer
+!              if (isActiveTracer) then
+!                 call ocn_tracer_nonlocalflux_tend(meshPool, &
+!                                         vertNonLocalFlux, &
+!                                         nonLocalSurfaceTracerFlux, &
+!                                         tracerGroupTend, err)
+!              else ! not active
+!                 call ocn_tracer_nonlocalflux_tend(meshPool, &
+!                                         vertNonLocalFlux, &
+!                                         tracerGroupSurfaceFlux, &
+!                                         tracerGroupTend, err)
+!              endif ! active tracer
 
-               if (computeBudgets) then
-                  !$omp parallel
-                  !$omp do schedule(runtime)
-                  do iCell = 1, nCellsAll
-                  do k = 1, nVertLevels
-                  do n = 1, nTracersGroup
-                     activeTracerNonLocalTendency(n,k,iCell) = &
-                                  tracerGroupTend(n,k,iCell) - &
-                     activeTracerNonLocalTendency(n,k,iCell)
-                  end do
-                  end do
-                  end do
-                  !$omp end do
-                  !$omp end parallel
-               endif ! compute budgets
-            end if ! not non-local with implicit mix
-            call mpas_timer_stop("non-local flux from KPP")
-         end if ! KPP
+!              if (computeBudgets) then
+!                 !$omp parallel
+!                 !$omp do schedule(runtime)
+!                 do iCell = 1, nCellsAll
+!                 do k = 1, nVertLevels
+!                 do n = 1, nTracersGroup
+!                    activeTracerNonLocalTendency(n,k,iCell) = &
+!                                 tracerGroupTend(n,k,iCell) - &
+!                    activeTracerNonLocalTendency(n,k,iCell)
+!                 end do
+!                 end do
+!                 end do
+!                 !$omp end do
+!                 !$omp end parallel
+!              endif ! compute budgets
+!           end if ! not non-local with implicit mix
+!           call mpas_timer_stop("non-local flux from KPP")
+!        end if ! KPP
 
          ! Compute tracer tendency due to production/destruction of
          ! frazil ice
@@ -1379,7 +1395,9 @@ contains
       end if ! member is field
       end do ! loop over tracer groups
 
+#ifdef MPAS_OPENACC
       !$acc exit data delete (normalThicknessFlux, layerThickness)
+#endif
 
       deallocate(normalThicknessFlux)
 

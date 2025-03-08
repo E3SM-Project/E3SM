@@ -153,10 +153,18 @@ contains
       !
       ! compute a boundary mask to enforce insulating boundary conditions in the horizontal
       !
+#ifdef MPAS_OPENACC
+      !$acc parallel loop &
+      !$acc    present(areaCell,nEdgesOnCell,edgesOnCell,dvEdge,dcEdge, meshScalingDel2, &
+      !$acc            cellsOnEdge,minLevelEdgeBot,maxLevelEdgeTop,layerThickEdgeMean, &
+      !$acc            tracers,edgeSignOnCell,tend) &
+      !$acc    private(invAreaCell, i, iEdge, cell1, cell2, r_tmp, k, iTracer, tracer_turb_flux, flux)
+#else
       !$omp parallel
       !$omp do schedule(runtime) &
       !$omp private(invAreaCell, i, iEdge, cell1, cell2, r_tmp, k, iTracer, &
       !$omp         tracer_turb_flux, flux)
+#endif
       do iCell = 1, nCells
         invAreaCell = 1.0_RKIND / areaCell(iCell)
         do i = 1, nEdgesOnCell(iCell)
@@ -180,8 +188,10 @@ contains
 
         end do
       end do
+#ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
+#endif
 
       call mpas_timer_stop("tracer del2")
 
