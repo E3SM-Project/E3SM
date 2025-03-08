@@ -13,63 +13,14 @@
 #include "Dimensions.hpp"
 #include "utilities/MathUtils.hpp"
 
-#ifdef KOKKOS_ENABLE_CUDA
-#include <cuda.h>
-#endif
-
-#ifdef KOKKOS_ENABLE_HIP
-#include <hip/hip_runtime.h>
-#endif
-
-#ifdef KOKKOS_ENABLE_SYCL
-#include <sycl/sycl.hpp>
-#endif
-
 namespace Homme {
 
 // Since we're initializing from inside a Fortran code and don't have access to
-// char** args to pass to Kokkos::initialize, we need to do some work on our
-// own. As a side benefit, we'll end up running on GPU platforms optimally
-// without having to specify --kokkos-ndevices on the command line.
+// char** args to pass to Kokkos::initialize, we need to create and set the kokkos
+// initialization settings manually.
 void initialize_kokkos () {
-  // Count up our devices.
-  // This is the only way to get the round-robin rank assignment Kokkos
-  // provides, as that algorithm is hardcoded in Kokkos::initialize(int& narg,
-  // char* arg[]). Once the behavior is exposed in the InitArguments version of
-  // initialize, we can remove this string code.
-  //   If for some reason we're running on a GPU platform, have Cuda enabled,
-  // but are using a different execution space, this initialization is still
-  // OK. The rank gets a GPU assigned and simply will ignore it.
-  int nd = 1;
-#ifdef HOMMEXX_ENABLE_GPU
-# if defined KOKKOS_ENABLE_CUDA
-  const auto ret = cudaGetDeviceCount(&nd);
-  const bool ok = (ret == cudaSuccess);
-# elif defined KOKKOS_ENABLE_HIP
-  const auto ret = hipGetDeviceCount(&nd);
-  const bool ok = (ret == hipSuccess);
-# elif defined KOKKOS_ENABLE_SYCL
-  nd = 0;
-  auto gpu_devs = sycl::device::get_devices(sycl::info::device_type::gpu);
-  for (auto &dev : gpu_devs) {
-    if (dev.get_info<sycl::info::device::partition_max_sub_devices>() > 0) {
-      auto subDevs = dev.create_sub_devices<sycl::info::partition_property::partition_by_affinity_domain>(sycl::info::partition_affinity_domain::numa);
-      nd += subDevs.size();
-    } else {
-      nd++;
-    }
-  }
-  const bool ok = true;
-# endif
-  if (not ok) {
-    // It isn't a big deal if we can't get the device count.
-    nd = 1;
-  }
-#endif // HOMMEXX_ENABLE_GPU
-
   auto const settings = Kokkos::InitializationSettings()
     .set_map_device_id_by("mpi_rank")
-    .set_num_devices(nd)
     .set_disable_warnings(true);
   Kokkos::initialize(settings);
 }
@@ -189,7 +140,11 @@ team_num_threads_vectors (const int num_parallel_iterations,
 #endif
 
 #ifdef KOKKOS_ENABLE_CUDA
-  const int num_warps_device = Kokkos::Impl::cuda_internal_maximum_concurrent_block_count();
+  // No such thing sometime after Kokkos version 4.2:
+  //    Kokkos::Impl::cuda_internal_maximum_concurrent_block_count();
+  // This number is not super important as long as it's large. 3456 is the A100
+  // spec, so we'll use that.
+  const int num_warps_device = 3456;
   const int num_threads_warp = Kokkos::Impl::CudaTraits::WarpSize;
 #elif defined(KOKKOS_ENABLE_HIP)
   // Use 64 wavefronts per CU and 120 CUs.
