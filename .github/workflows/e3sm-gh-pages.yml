@@ -34,6 +34,9 @@ concurrency:
 jobs:
   Build-and-Deploy-docs:
     if: ${{ github.repository == 'E3SM-Project/E3SM' }}
+    defaults:
+      run:
+        shell: bash -leo pipefail {0}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -48,14 +51,18 @@ jobs:
           submodules: true
       - name: Show action trigger
         run: echo "= The job was automatically triggered by a ${{github.event_name}} event on repo ${{github.event.repository.name}}."
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+      - name: Install Python deps
+        uses: mamba-org/setup-micromamba@v2
         with:
-          python-version: "3.11"
-      - name: Install python deps
-        # TODO: move to a requirements.txt file
-        # TODO: pin all versions?
-        run: python3 -m pip install mkdocs-material pymdown-extensions mkdocs-monorepo-plugin mdutils mkdocs-bibtex==2.18.0
+          init-shell: bash
+          environment-name: docs
+          create-args: >-
+            python=3.12
+            mkdocs-material
+            pymdown-extensions
+            mkdocs-monorepo-plugin
+            mdutils
+            mkdocs-bibtex==2.18.0
       # build every time (PR or push to master)
       - name: Generate EAMxx params docs
         working-directory: components/eamxx/scripts
