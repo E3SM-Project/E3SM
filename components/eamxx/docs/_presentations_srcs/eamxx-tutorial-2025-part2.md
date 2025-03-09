@@ -49,10 +49,8 @@ Runtime options, controlling output, DPxx, running unit tests
 POMPEI: Practicing On Manually Adding Processes to EAMxx Interfaces
 
 - Idealized injection of a new volcanic tracer `ash`
-- Injection details are defined in
-`pompei.hpp` and `pompei.cpp` files
-- Interfacing with EAMxx via an `AtmosphereProcess` _instance_
-(`*_interface.*pp` files)
+- Injection details are defined in `pompei.hpp` and `pompei.cpp` files
+- Interfacing with EAMxx via an `AtmosphereProcess` _instance_ (`*_interface.*pp` files)
   - `set_grid`, `initialize_impl`, `run_impl`, `finalize_impl`
 
 ---

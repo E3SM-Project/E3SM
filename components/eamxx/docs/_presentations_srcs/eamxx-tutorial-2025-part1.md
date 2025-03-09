@@ -188,10 +188,7 @@ atmosphere_processes:
 
 YAML has support in C++ and more human readable
 
-EAMxx introduces `atmchange` and `atmquery`
-that mimic and expand upon `xmlchange` and `xmlquery`.
-In EAMxx, changes are recorded via `atmchange`
-not through files like user_nl_eam.
+EAMxx introduces `atmchange` and `atmquery` that mimic and expand upon `xmlchange` and `xmlquery`. In EAMxx, changes are recorded via `atmchange` not through files like user_nl_eam.
 
 <style>
 table {
@@ -233,11 +230,9 @@ EOF
 
 1. Navigate to the `case_scripts` directory of the case you built
 
-2. Issue the following commands:
-`./atmquery --help`, `./atmchange --help`
+2. Issue the following commands: `./atmquery --help`, `./atmchange --help`
 
-3. Experiment with changing the namelist,
-e.g., `./atmchange mac_aer_mic::number_of_subcycles=12`
+3. Experiment with changing the namelist, e.g., `./atmchange mac_aer_mic::number_of_subcycles=12`
 
 4. Run with the new options with `./case.submit`
 
@@ -296,15 +291,11 @@ output_control:
 
 ### Output control exercise
 
-The runscript should have copied an output yaml file
-to the case_scripts directory called `tutorial_output.yaml`
+The runscript should have copied an output yaml file to the case_scripts directory called `tutorial_output.yaml`
 
-Copy this file to a differently named file,
-e.g., `tutorial_output_2.yaml` and change options.
-Be sure to change the `filename_prefix`!
+Copy this file to a differently named file, e.g., `tutorial_output_2.yaml` and change options. Be sure to change the `filename_prefix`!
 
-Add this new output stream to the run using the atmchange command,
-then rerun the case.
+Add this new output stream to the run using the atmchange command, then rerun the case.
 
 ```shell
 ./atmchange output_yaml_files+=tutorial_output_2.yaml
