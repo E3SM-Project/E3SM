@@ -1989,6 +1989,56 @@
       <mask>IcoswISC30E3r5</mask>
     </model_grid>
 
+    <model_grid alias="ne30pg2_r05_IcoswISC30E3r5_gis4to40" compset="_MALI">
+      <grid name="atm">ne30np4.pg2</grid>
+      <grid name="lnd">r05</grid>
+      <grid name="ocnice">IcoswISC30E3r5</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">mpas.gis4to40km</grid>
+      <grid name="wav">null</grid>
+      <mask>IcoswISC30E3r5</mask>
+    </model_grid>
+
+    <model_grid alias="TL319_oQU240wLI_gis4to40" compset="_MALI">
+      <grid name="atm">TL319</grid>
+      <grid name="lnd">TL319</grid>
+      <grid name="ocnice">oQU240wLI</grid>
+      <grid name="rof">JRA025</grid>
+      <grid name="glc">mpas.gis4to40km</grid>
+      <grid name="wav">null</grid>
+      <mask>oQU240wLI</mask>
+    </model_grid>
+
+    <model_grid alias="TL319_IcoswISC30E3r5_gis4to40" compset="_MALI">
+      <grid name="atm">TL319</grid>
+      <grid name="lnd">TL319</grid>
+      <grid name="ocnice">IcoswISC30E3r5</grid>
+      <grid name="rof">JRA025</grid>
+      <grid name="glc">mpas.gis4to40km</grid>
+      <grid name="wav">null</grid>
+      <mask>IcoswISC30E3r5</mask>
+    </model_grid>
+
+    <model_grid alias="ERA5r025_r05_IcoswISC30E3r5_gis4to40" compset="_MALI">
+      <grid name="atm">ERA5r025</grid>
+      <grid name="lnd">r05</grid>
+      <grid name="ocnice">IcoswISC30E3r5</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">mpas.gis4to40km</grid>
+      <grid name="wav">null</grid>
+      <mask>IcoswISC30E3r5</mask>
+    </model_grid>
+
+    <model_grid alias="ERA5r025_r025_IcoswISC30E3r5_gis4to40" compset="_MALI">
+      <grid name="atm">ERA5r025</grid>
+      <grid name="lnd">r025</grid>
+      <grid name="ocnice">IcoswISC30E3r5</grid>
+      <grid name="rof">r025</grid>
+      <grid name="glc">mpas.gis4to40km</grid>
+      <grid name="wav">null</grid>
+      <mask>IcoswISC30E3r5</mask>
+    </model_grid>
+
     <model_grid alias="ne30pg2_r05_oECv3_gis1to10" compset="_MALI">
       <grid name="atm">ne30np4.pg2</grid>
       <grid name="lnd">r05</grid>
@@ -3469,6 +3519,12 @@
       <nx>7425</nx>
       <ny>1</ny>
       <desc>mpas.gis20km is a uniform-resolution 20km MALI grid of the Greenland Ice Sheet.  It is primarily intended for testing.</desc>
+    </domain>
+
+    <domain name="mpas.gis4to40km">
+      <nx>7425</nx>
+      <ny>1</ny>
+      <desc>mpas.gis4to40km is a variable-resolution, from 4 to 40 km MALI grid of the Greenland Ice Sheet.  It extends into the ocean to the continental shelf break to ensure ample overlap with ocean meshes</desc>
     </domain>
 
     <domain name="mpas.gis1to10km">
@@ -5869,6 +5925,62 @@
       <map name="GLC2OCN_SMAPNAME">cpl/gridmaps/mpas.gis20km/map_gis20km_to_IcoswISC30E3r5_esmfaave.20240403.nc</map>
       <map name="GLC2OCN_LIQ_RMAPNAME">cpl/gridmaps/mpas.gis20km/map_gis20km_to_IcoswISC30E3r5_esmfaave.20240403.nc</map>
       <map name="GLC2OCN_ICE_RMAPNAME">cpl/gridmaps/mpas.gis20km/map_gis20km_to_IcoswISC30E3r5_esmfaave.20240403.nc</map>
+    </gridmap>
+
+    <!-- ====================    -->
+    <!-- GLC: mpas.gis4to40km    -->
+    <!-- ====================    -->
+
+    <gridmap glc_grid="mpas.gis4to40km" lnd_grid="r05">
+      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/r05/map_r05_to_gis4to40_traave.20250218.nc</map>
+      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/r05/map_r05_to_gis4to40_trbilin.20250218.nc</map>
+      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/mpas.gis4to40km/map_gis4to40_to_r05_traave.20250218.nc</map>
+      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/mpas.gis4to40km/map_gis4to40_to_r05_traave.20250218.nc</map>
+    </gridmap>
+
+    <gridmap glc_grid="mpas.gis4to40km" lnd_grid="r025">
+      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/r025/map_r025_to_gis4to40_traave.20250218.nc</map>
+      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/r025/map_r025_to_gis4to40_trbilin.20250218.nc</map>
+      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/mpas.gis4to40km/map_gis4to40_to_r025_traave.20250218.nc</map>
+      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/mpas.gis4to40km/map_gis4to40_to_r025_traave.20250218.nc</map>
+    </gridmap>
+
+    <gridmap glc_grid="mpas.gis4to40km" lnd_grid="ne30np4.pg2">
+      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_gis4to40_traave.20250218.nc</map>
+      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_gis4to40_trbilin.20250218.nc</map>
+      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/mpas.gis4to40km/map_gis4to40_to_ne30pg2_traave.20250218.nc</map>
+      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/mpas.gis4to40km/map_gis4to40_to_ne30pg2_traave.20250218.nc</map>
+    </gridmap>
+
+    <gridmap glc_grid="mpas.gis4to40km" lnd_grid="TL319">
+      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/TL319/map_TL319_to_gis4to40_traave.20250218.nc</map>
+      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/TL319/map_TL319_to_gis4to40_trbilin.20250218.nc</map>
+      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/mpas.gis4to40km/map_gis4to40_to_TL319_traave.20250218.nc</map>
+      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/mpas.gis4to40km/map_gis4to40_to_TL319_traave.20250218.nc</map>
+    </gridmap>
+
+    <gridmap glc_grid="mpas.gis4to40km" ocn_grid="oQU240wLI">
+      <map name="OCN2GLC_SHELF_FMAPNAME">cpl/gridmaps/oQU240wLI/map_oQU240wLI_to_gis4to40_esmfaave.20250303.nc</map>
+      <map name="OCN2GLC_SHELF_SMAPNAME">cpl/gridmaps/oQU240wLI/map_oQU240wLI_to_gis4to40_esmfbilin.20250303.nc</map>
+      <map name="OCN2GLC_TF_SMAPNAME">cpl/gridmaps/oQU240wLI/map_oQU240wLI_to_gis4to40_esmfaave.20250303.nc</map>
+      <map name="GLC2ICE_FMAPNAME">cpl/gridmaps/mpas.gis4to40km/map_gis4to40_to_oQU240wLI_esmfaave.20250303.nc</map>
+      <map name="GLC2ICE_SMAPNAME">cpl/gridmaps/mpas.gis4to40km/map_gis4to40_to_oQU240wLI_esmfaave.20250303.nc</map>
+      <map name="GLC2OCN_FMAPNAME">cpl/gridmaps/mpas.gis4to40km/map_gis4to40_to_oQU240wLI_esmfaave.20250303.nc</map>
+      <map name="GLC2OCN_SMAPNAME">cpl/gridmaps/mpas.gis4to40km/map_gis4to40_to_oQU240wLI_esmfaave.20250303.nc</map>
+      <map name="GLC2OCN_LIQ_RMAPNAME">cpl/gridmaps/mpas.gis4to40km/map_gis4to40_to_oQU240wLI_nn.20250303.nc</map>
+      <map name="GLC2OCN_ICE_RMAPNAME">cpl/gridmaps/mpas.gis4to40km/map_gis4to40_to_oQU240wLI_nn.20250303.nc</map>
+    </gridmap>
+
+    <gridmap glc_grid="mpas.gis4to40km" ocn_grid="IcoswISC30E3r5">
+      <map name="OCN2GLC_SHELF_FMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_gis4to40_esmfaave.20250218.nc</map>
+      <map name="OCN2GLC_SHELF_SMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_gis4to40_esmfbilin.20250218.nc</map>
+      <map name="OCN2GLC_TF_SMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_gis4to40_esmfaave.20250218.nc</map>
+      <map name="GLC2ICE_FMAPNAME">cpl/gridmaps/mpas.gis4to40km/map_gis4to40_to_IcoswISC30E3r5_esmfaave.20250218.nc</map>
+      <map name="GLC2ICE_SMAPNAME">cpl/gridmaps/mpas.gis4to40km/map_gis4to40_to_IcoswISC30E3r5_esmfaave.20250218.nc</map>
+      <map name="GLC2OCN_FMAPNAME">cpl/gridmaps/mpas.gis4to40km/map_gis4to40_to_IcoswISC30E3r5_esmfaave.20250218.nc</map>
+      <map name="GLC2OCN_SMAPNAME">cpl/gridmaps/mpas.gis4to40km/map_gis4to40_to_IcoswISC30E3r5_esmfaave.20250218.nc</map>
+      <map name="GLC2OCN_LIQ_RMAPNAME">cpl/gridmaps/mpas.gis4to40km/map_gis4to40_to_IcoswISC30E3r5_nn.20250218.nc</map>
+      <map name="GLC2OCN_ICE_RMAPNAME">cpl/gridmaps/mpas.gis4to40km/map_gis4to40_to_IcoswISC30E3r5_nn.20250218.nc</map>
     </gridmap>
 
     <!-- ====================  -->
