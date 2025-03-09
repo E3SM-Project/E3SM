@@ -2350,9 +2350,6 @@ contains
         end if
         if ( iceRunoffFluxField % isActive ) then
            iceRunoffFlux(i) = x2o_o % rAttr(index_x2o_Foxx_rofi, n)
-           if(iceRunoffFlux(n) < 0.0_RKIND) then
-               call shr_sys_abort ('Error: incoming rofi_F is negative')
-           end if
            if (config_remove_ais_ice_runoff) then
               if (latCell(i) < -0.99483767345_RKIND) then ! 57S in radians
                  removedIceRunoffFlux(i) = iceRunoffFlux(i)
