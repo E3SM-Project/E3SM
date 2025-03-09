@@ -1,5 +1,3 @@
-<!-- markdownlint-disable MD013 MD033 MD041 -->
-
 ---
 
 theme: gaia
@@ -18,6 +16,8 @@ backgroundColor: #fff
 backgroundImage: url('./background.png')
 
 ---
+
+<!-- markdownlint-disable MD013 MD033 MD041 -->
 
 # 2025 E3SM All-Hands EAMxx Tutorial
 
