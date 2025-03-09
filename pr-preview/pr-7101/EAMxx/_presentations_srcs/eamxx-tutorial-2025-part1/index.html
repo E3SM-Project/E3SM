@@ -3402,10 +3402,7 @@ th, td {
 <hr />
 <h3 id="runtime-options-in-eamxx">Runtime options in EAMxx</h3>
 <p>YAML has support in C++ and more human readable</p>
-<p>EAMxx introduces <code>atmchange</code> and <code>atmquery</code>
-that mimic and expand upon <code>xmlchange</code> and <code>xmlquery</code>.
-In EAMxx, changes are recorded via <code>atmchange</code>
-not through files like user_nl_eam.</p>
+<p>EAMxx introduces <code>atmchange</code> and <code>atmquery</code> that mimic and expand upon <code>xmlchange</code> and <code>xmlquery</code>. In EAMxx, changes are recorded via <code>atmchange</code> not through files like user_nl_eam.</p>
 <style>
 table {
     width: 100%;
@@ -3445,12 +3442,10 @@ th, td {
 <p>Navigate to the <code>case_scripts</code> directory of the case you built</p>
 </li>
 <li>
-<p>Issue the following commands:
-<code>./atmquery --help</code>, <code>./atmchange --help</code></p>
+<p>Issue the following commands: <code>./atmquery --help</code>, <code>./atmchange --help</code></p>
 </li>
 <li>
-<p>Experiment with changing the namelist,
-e.g., <code>./atmchange mac_aer_mic::number_of_subcycles=12</code></p>
+<p>Experiment with changing the namelist, e.g., <code>./atmchange mac_aer_mic::number_of_subcycles=12</code></p>
 </li>
 <li>
 <p>Run with the new options with <code>./case.submit</code></p>
@@ -3505,13 +3500,9 @@ th, td {
 
 <hr />
 <h3 id="output-control-exercise">Output control exercise</h3>
-<p>The runscript should have copied an output yaml file
-to the case_scripts directory called <code>tutorial_output.yaml</code></p>
-<p>Copy this file to a differently named file,
-e.g., <code>tutorial_output_2.yaml</code> and change options.
-Be sure to change the <code>filename_prefix</code>!</p>
-<p>Add this new output stream to the run using the atmchange command,
-then rerun the case.</p>
+<p>The runscript should have copied an output yaml file to the case_scripts directory called <code>tutorial_output.yaml</code></p>
+<p>Copy this file to a differently named file, e.g., <code>tutorial_output_2.yaml</code> and change options. Be sure to change the <code>filename_prefix</code>!</p>
+<p>Add this new output stream to the run using the atmchange command, then rerun the case.</p>
 <div class="highlight"><pre><span></span><code>./atmchange<span class="w"> </span><span class="nv">output_yaml_files</span><span class="o">+=</span>tutorial_output_2.yaml
 ./atmquery<span class="w"> </span>output_yaml_files
 </code></pre></div>
