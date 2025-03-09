@@ -218,75 +218,7 @@ FieldLayout AbstractRemapper::
 create_layout (const FieldLayout& from_layout,
                const grid_ptr_type& to_grid) const
 {
-  using namespace ShortFieldTagsNames;
-
-
-  const bool midpoints = from_layout.has_tag(LEV);
-
-  auto fl_out = FieldLayout::invalid();
-  switch (from_layout.type()) {
-    case LayoutType::Scalar0D: [[ fallthrough ]]; 
-    case LayoutType::Vector0D: [[ fallthrough ]]; 
-    case LayoutType::Tensor0D:
-      // 0d layouts are the same on all grids
-      fl_out = from_layout;
-      break;
-    case LayoutType::Scalar1D:
-      // 1d layouts require the grid correct number of levs
-      fl_out = to_grid->get_vertical_layout(midpoints);
-      break;
-    case LayoutType::Vector1D:
-    {
-      auto vdim_idx  = from_layout.get_vector_component_idx();
-      auto vdim_name = from_layout.names()[vdim_idx];
-      auto vdim_len  = from_layout.get_vector_dim();
-      fl_out = to_grid->get_vertical_layout(midpoints,vdim_len,vdim_name);
-      break;
-    }
-    case LayoutType::Scalar2D:
-      fl_out = to_grid->get_2d_scalar_layout();
-      break;
-    case LayoutType::Vector2D:
-    {
-      auto vdim_idx  = from_layout.get_vector_component_idx();
-      auto vdim_name = from_layout.names()[vdim_idx];
-      auto vdim_len  = from_layout.get_vector_dim();
-      fl_out = to_grid->get_2d_vector_layout(vdim_len,vdim_name);
-      break;
-    }
-    case LayoutType::Tensor2D:
-    {
-      std::vector<std::string> tdims_names;
-      for (auto idx  : from_layout.get_tensor_components_ids()) {
-        tdims_names.push_back(from_layout.names()[idx]);
-      }   
-      fl_out = to_grid->get_2d_tensor_layout(from_layout.get_tensor_dims(),tdims_names);
-      break;
-    }
-    case LayoutType::Scalar3D:
-      fl_out = to_grid->get_3d_scalar_layout(midpoints);
-      break;
-    case LayoutType::Vector3D:
-    {
-      auto vdim_idx  = from_layout.get_vector_component_idx();
-      auto vdim_name = from_layout.names()[vdim_idx];
-      auto vdim_len  = from_layout.get_vector_dim();
-      fl_out = to_grid->get_3d_vector_layout(midpoints,vdim_len,vdim_name);
-      break;
-    }
-    case LayoutType::Tensor3D:
-    {
-      std::vector<std::string> tdims_names;
-      for (auto idx  : from_layout.get_tensor_components_ids()) {
-        tdims_names.push_back(from_layout.names()[idx]);
-      }   
-      fl_out = to_grid->get_3d_tensor_layout(midpoints,from_layout.get_tensor_dims(),tdims_names);
-    }
-    default:
-      EKAT_ERROR_MSG ("Layout not supported by this remapper.\n"
-                      " - layout: " + from_layout.to_string() + "\n");
-  }
-  return fl_out;
+  return to_grid->equivalent_layout(from_layout);
 }
 
 } // namespace scream

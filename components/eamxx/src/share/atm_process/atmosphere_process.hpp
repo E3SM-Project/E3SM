@@ -352,25 +352,35 @@ protected:
   // Specialization for add_field to tracer group
   template<RequestType RT>
   void add_tracer (const std::string& name, std::shared_ptr<const AbstractGrid> grid,
-                   const ekat::units::Units& u, const int ps = 1)
-  { add_field<RT>(name, grid->get_3d_scalar_layout(true), u, grid->name(), "tracers", ps); }
+                            const ekat::units::Units& u, bool turbulence_advected,
+                            const int ps = 1)
+  {
+    std::list<std::string> tracer_groups;
+    tracer_groups.push_back("tracers");
+    if (turbulence_advected) tracer_groups.push_back("turbulence_advected_tracers");
+
+    FieldIdentifier fid(name, grid->get_3d_scalar_layout(true), u, grid->name());
+    FieldRequest req(fid, tracer_groups, ps);
+    req.calling_process = this->name();
+
+    add_field<RT>(req);
+  }
 
   // Group requests
   template<RequestType RT>
-  void add_group (const std::string& name, const std::string& grid, const int ps, const Bundling b,
-                  const DerivationType t, const std::string& src_name, const std::string& src_grid,
-                  const std::list<std::string>& excl = {})
-  { add_group<RT>(GroupRequest(name,grid,ps,b,t,src_name,src_grid,excl)); }
+  void add_group (const std::string& name, const std::string& grid, const int ps, const bool bundled,
+                  const bool imported, const std::string& src_name, const std::string& src_grid)
+  { add_group<RT>(GroupRequest(name,grid,ps,bundled,imported,src_name,src_grid)); }
 
   template<RequestType RT>
   void add_group (const std::string& name, const std::string& grid_name,
-                  const Bundling b = Bundling::NotNeeded)
-  { add_group<RT> (GroupRequest(name,grid_name,b)); }
+                  const bool bundled = false)
+  { add_group<RT> (GroupRequest(name,grid_name,bundled)); }
 
   template<RequestType RT>
   void add_group (const std::string& name, const std::string& grid_name,
-                  const int pack_size, const Bundling b = Bundling::NotNeeded)
-  { add_group<RT> (GroupRequest(name,grid_name,pack_size,b)); }
+                  const int pack_size, const bool bundled = false)
+  { add_group<RT> (GroupRequest(name,grid_name,pack_size,bundled)); }
 
   template<RequestType RT>
   void add_field (const FieldRequest& req)
