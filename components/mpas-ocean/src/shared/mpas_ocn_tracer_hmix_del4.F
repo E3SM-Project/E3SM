@@ -121,12 +121,12 @@ contains
       integer, pointer :: nVertLevels
       integer, dimension(:), pointer :: nCellsArray, nEdgesArray
 
-      integer, dimension(:), pointer :: minLevelEdgeBot, maxLevelEdgeTop, minLevelCell, maxLevelCell, nEdgesOnCell
-      integer, dimension(:,:), pointer :: edgeMask, cellsOnEdge, edgesOnCell, edgeSignOnCell
+!     integer, dimension(:), pointer :: minLevelEdgeBot, maxLevelEdgeTop, minLevelCell, maxLevelCell, nEdgesOnCell
+!     integer, dimension(:,:), pointer :: edgeMask, cellsOnEdge, edgesOnCell, edgeSignOnCell
 
       real (kind=RKIND) :: invAreaCell1, tracer_turb_flux, flux, invdcEdge, r_tmp1, r_tmp2
 
-      real (kind=RKIND), dimension(:), pointer :: dcEdge, dvEdge, areaCell, meshScalingDel4
+!     real (kind=RKIND), dimension(:), pointer :: dcEdge, dvEdge, areaCell, meshScalingDel4
 
       ! Scratch Arrays
       real (kind=RKIND), dimension(:,:,:), allocatable :: delsq_tracer
@@ -145,9 +145,9 @@ contains
 
       call mpas_timer_start("tracer del4")
 
-!     call mpas_pool_get_dimension(meshPool, 'nEdgesArray', nEdgesArray)
-!     call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
-!     call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(meshPool, 'nEdgesArray', nEdgesArray)
+      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
       num_tracers = size(tracers, dim=1)
 
@@ -179,17 +179,40 @@ contains
 
       ! first del2: div(h \nabla \phi) at cell center
 #ifdef MPAS_OPENACC
-      !$acc parallel loop &
+      !$acc parallel &
       !$acc    present(delsq_tracer,areaCell,nEdgesOnCell,edgesOnCell,dvEdge,dcEdge, &
       !$acc            cellsOnEdge,minLevelEdgeBot,maxLevelEdgeTop,edgeMask,layerThickEdgeMean, &
-      !$acc            tracers,edgeSignOnCell) &
+      !$acc            tracers,edgeSignOnCell)
+#endif
+
+
+#ifdef MPAS_OPENACC
+      !$acc loop collapse(3)
+#else
+      !$omp parallel
+      !$omp do schedule(runtime)
+#endif
+      do iCell = 1, nCells
+        do k = 1, nVertLevels
+          do iTracer = 1,num_tracers
+            delsq_tracer(iTracer, k, iCell) = 0.0_RKIND
+          end do
+        end do
+      end do
+#ifndef MPAS_OPENACC
+      !$omp end do
+      !$omp end parallel
+#endif
+
+
+#ifdef MPAS_OPENACC
+      !$acc loop &
       !$acc    private(invAreaCell1, i, iEdge, invdcEdge, cell1, cell2, k, iTracer, r_tmp1, r_tmp2)
 #else
       !$omp parallel
       !$omp do schedule(runtime) private(invAreaCell1, i, iEdge, invdcEdge, cell1, cell2, k, iTracer, r_tmp1, r_tmp2)
 #endif
       do iCell = 1, nCells
-        delsq_tracer(:, :, iCell) = 0.0_RKIND
         invAreaCell1 = 1.0_RKIND / areaCell(iCell)
         do i = 1, nEdgesOnCell(iCell)
           iEdge = edgesOnCell(i, iCell)
@@ -209,7 +232,9 @@ contains
           end do
         end do
       end do
-#ifndef MPAS_OPENACC
+#ifdef MPAS_OPENACC
+      !$acc end parallel
+#else
       !$omp end do
       !$omp end parallel
 #endif

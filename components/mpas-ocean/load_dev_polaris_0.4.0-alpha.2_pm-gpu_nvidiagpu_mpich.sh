@@ -118,6 +118,7 @@ export OPENMP=true
 export HDF5_USE_FILE_LOCKING=FALSE
 export LOAD_POLARIS_ENV=/global/cfs/cdirs/e3sm/hgkang/polaris/polaris_MSdel2del4_nvidia/load_dev_polaris_0.4.0-alpha.2_pm-gpu_nvidiagpu_mpich.sh
 export POLARIS_MACHINE=pm-gpu
+export HAVE_ADIOS=false
 
 # the right polaris version
 fi

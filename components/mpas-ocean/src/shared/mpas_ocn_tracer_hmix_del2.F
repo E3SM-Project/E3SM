@@ -119,14 +119,14 @@ contains
       integer :: i, k, iTracer, num_tracers, nCells
       integer, dimension(:), pointer :: nCellsArray
 
-      integer, dimension(:), pointer :: minLevelEdgeBot, maxLevelEdgeTop, nEdgesOnCell
-      integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell, edgeSignOnCell
+!     integer, dimension(:), pointer :: minLevelEdgeBot, maxLevelEdgeTop, nEdgesOnCell
+!     integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell, edgeSignOnCell
 
       real (kind=RKIND) :: invAreaCell
       real (kind=RKIND) :: tracer_turb_flux, flux, r_tmp
 
-      real (kind=RKIND), dimension(:), pointer :: areaCell, dvEdge, dcEdge
-      real (kind=RKIND), dimension(:), pointer :: meshScalingDel2
+!     real (kind=RKIND), dimension(:), pointer :: areaCell, dvEdge, dcEdge
+!     real (kind=RKIND), dimension(:), pointer :: meshScalingDel2
 
       err = 0
 
@@ -134,7 +134,7 @@ contains
 
       call mpas_timer_start("tracer del2")
 
-      !call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
+      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
       num_tracers = size(tracers, dim=1)
 
 !     call mpas_pool_get_array(meshPool, 'minLevelEdgeBot', minLevelEdgeBot)
