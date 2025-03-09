@@ -18,6 +18,7 @@ nav:
     - 'IO Metadata': 'user/io_metadata.md'
     - 'Multi-Instance and NBFB': 'user/multi-instance-mvk.md'
     - 'EAMxx runtime parameters': 'user/eamxx_params.md'
+    - 'Presentations': 'user/presentations.md'
   - 'Developer Guide':
     # - 'Overview': 'developer/index.md'
     - 'Quick-start Guide': 'developer/dev_quickstart.md'
