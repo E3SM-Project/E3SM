@@ -108,7 +108,7 @@ contains
       !-----------------------------------------------------------------
 
       integer ::                      &
-         iEdge, iCell, iVertex, k, i, &! loop counters 
+         iEdge, iCell, iVertex, k, i, &! loop counters
          cell1, cell2,     &! neighbor cell addresses across edge
          vertex1, vertex2, &! neighbor vertex addresses along edge
          nEdges, nCells, nVertices ! num edges,cells,vertices incl halos
@@ -151,7 +151,7 @@ contains
 
       !Compute Laplacian of velocity
 #ifdef MPAS_OPENACC
-      !$acc parallel loop &
+      !$acc parallel loop gang &
       !$acc    present(cellsOnEdge, verticesOnEdge, minLevelEdgeBot, maxLevelEdgeTop, &
       !$acc            dvEdge, dcEdge, del2u, div, relVort) &
       !$acc    private(k, cell1, cell2, vertex1, vertex2, &
@@ -176,6 +176,7 @@ contains
          dcEdgeInv = 1.0_RKIND / dcEdge(iEdge)
          dvEdgeInv = 1.0_RKIND / max(dvEdge(iEdge), 0.25_RKIND*dcEdge(iEdge))
 
+         !$acc loop vector
          do k=kmin, kmax
             ! Compute \nabla^2 u = \nabla divergence + k \times \nabla relativeVorticity
             del2u(k,iEdge) = (div(k,cell2) - div(k,cell1))*dcEdgeInv &
@@ -188,7 +189,25 @@ contains
       !$omp end parallel
 #endif
 
+
       nVertices = nVerticesHalo(1)
+
+#ifdef MPAS_OPENACC
+      !$acc parallel loop collapse(2) present(del2relVort)
+#else
+      !$omp parallel
+      !$omp do schedule(runtime)
+#endif
+      do iVertex = 1, nVertices
+      do k = 1,nVertLevels
+         del2relVort(k, iVertex) = 0.0_RKIND
+      end do
+      end do
+#ifndef MPAS_OPENACC
+      !$omp end do
+      !$omp end parallel
+#endif
+
 
       ! Compute del2 of relative vorticity
 #ifdef MPAS_OPENACC
@@ -204,7 +223,6 @@ contains
       do iVertex = 1, nVertices
          kmin = minLevelVertexBot(iVertex)
          kmax = maxLevelVertexTop(iVertex)
-         del2relVort(:, iVertex) = 0.0_RKIND
          areaTriInv = 1.0_RKIND/areaTriangle(iVertex)
          do i = 1, vertexDegree
             iEdge = edgesOnVertex(i, iVertex)
@@ -222,6 +240,22 @@ contains
 
       nCells = nCellsHalo(1)
 
+#ifdef MPAS_OPENACC
+      !$acc parallel loop collapse(2) present(del2div)
+#else
+      !$omp parallel
+      !$omp do schedule(runtime)
+#endif
+      do iCell = 1, nCells
+      do k = 1,nVertLevels
+         del2div(k, iCell) = 0.0_RKIND
+      end do
+      end do
+#ifndef MPAS_OPENACC
+      !$omp end do
+      !$omp end parallel
+#endif
+
       ! Compute del2 of divergence
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
@@ -235,7 +269,6 @@ contains
       do iCell = 1, nCells
          kmin = minLevelCell(iCell)
          kmax = maxLevelCell(iCell)
-         del2div(:, iCell) = 0.0_RKIND
          areaCellInv = 1.0_RKIND / areaCell(iCell)
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
@@ -252,7 +285,7 @@ contains
 #endif
 
       ! Compute final tendency \kappa \nabla^4 u
-      ! as  \nabla div(\nabla^2 u) + k \times 
+      ! as  \nabla div(\nabla^2 u) + k \times
       !     \nabla ( k \cross curl(\nabla^2 u) )
 
 #ifdef MPAS_OPENACC

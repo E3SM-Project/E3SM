@@ -665,7 +665,7 @@ contains
 #endif
 
 #ifdef MPAS_OPENACC
-      !$acc parallel loop &
+      !$acc parallel loop gang &
       !$acc          present(circulation, relativeVorticity, areaTriangle, edgesOnVertex, &
       !$acc                  maxLevelVertexBot, dcEdge, normalVelocity, edgeSignOnVertex, &
       !$acc                  minLevelVertexTop) &
@@ -674,9 +674,10 @@ contains
       !$omp do schedule(runtime) private(invAreaTri1, i, iEdge, k, r_tmp)
 #endif
       do iVertex = 1, nVerticesAll
-         invAreaTri1 = 1.0_RKIND / areaTriangle(iVertex)
          do i = 1, vertexDegree
+            invAreaTri1 = 1.0_RKIND / areaTriangle(iVertex)
             iEdge = edgesOnVertex(i, iVertex)
+            !$acc loop vector
             do k = minLevelVertexTop(iVertex), maxLevelVertexBot(iVertex)
               r_tmp = dcEdge(iEdge) * normalVelocity(k, iEdge)
               circulation(k, iVertex) = circulation(k, iVertex) + edgeSignOnVertex(i, iVertex) * r_tmp
@@ -997,7 +998,7 @@ contains
          ! Use linearized version H*u where H is constant in time
 
 #ifdef MPAS_OPENACC
-         !$acc parallel loop &
+         !$acc parallel loop gang &
          !$acc    present(restingThickness, &
          !$acc            minLevelEdgeBot, maxLevelEdgeTop, &
          !$acc            layerThickEdgeFlux, cellsOnEdge) &
@@ -1011,12 +1012,11 @@ contains
             kmax = maxLevelEdgeTop(iEdge)
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
-            do k=1,nVertLevels
+            !$acc loop vector
+            do k = kmin,kmax
                ! initialize layerThicknessEdgeFlux to avoid divide by
                ! zero and NaN problems.
                layerThickEdgeFlux(k,iEdge) = -1.0e34_RKIND
-            end do
-            do k = kmin,kmax
                layerThickEdgeFlux(k,iEdge) = 0.5_RKIND * &
                                          (restingThickness(k,cell1) + &
                                           restingThickness(k,cell2))

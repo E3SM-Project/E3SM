@@ -137,8 +137,8 @@ module ocn_tracer_advection_std
         !$omp    private(i, iEdge, k, kmin, kmax, invAreaCell1, cell1, cell2, tracerWgt)
 #endif
         do iCell = 1, nCellsAll
-          invAreaCell1 = 1.0_RKIND / areaCell(iCell)
           do i = 1, nEdgesOnCell(iCell)
+            invAreaCell1 = 1.0_RKIND / areaCell(iCell)
             iEdge = edgesOnCell(i, iCell)
             cell1 = cellsOnEdge(1, iEdge)
             cell2 = cellsOnEdge(2, iEdge)

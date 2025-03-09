@@ -155,7 +155,7 @@ contains
       ! compute a boundary mask to enforce insulating boundary conditions in the horizontal
       !
 #ifdef MPAS_OPENACC
-      !$acc parallel loop &
+      !$acc parallel loop gang &
       !$acc    present(areaCell,nEdgesOnCell,edgesOnCell,dvEdge,dcEdge, meshScalingDel2, &
       !$acc            cellsOnEdge,minLevelEdgeBot,maxLevelEdgeTop,layerThickEdgeMean, &
       !$acc            tracers,edgeSignOnCell,tend) &
@@ -167,14 +167,15 @@ contains
       !$omp         tracer_turb_flux, flux)
 #endif
       do iCell = 1, nCells
-        invAreaCell = 1.0_RKIND / areaCell(iCell)
         do i = 1, nEdgesOnCell(iCell)
+          invAreaCell = 1.0_RKIND / areaCell(iCell)
           iEdge = edgesOnCell(i, iCell)
           cell1 = cellsOnEdge(1,iEdge)
           cell2 = cellsOnEdge(2,iEdge)
 
           r_tmp = meshScalingDel2(iEdge) * eddyDiff2 * dvEdge(iEdge) / dcEdge(iEdge)
 
+          !$acc loop vector
           do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
             do iTracer = 1, num_tracers
               ! \kappa_2 \nabla \phi on edge
@@ -183,6 +184,7 @@ contains
               ! div(h \kappa_2 \nabla \phi) at cell center
               flux = layerThickEdgeMean(k, iEdge) * tracer_turb_flux * r_tmp
 
+              !$acc atomic update
               tend(iTracer, k, iCell) = tend(iTracer, k, iCell) - edgeSignOnCell(i, iCell) * flux * invAreaCell
             end do
           end do

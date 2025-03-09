@@ -116,7 +116,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, num_tracers, nCells
+      integer :: iEdge, num_tracers, nCells, nCells2, nCells1
       integer :: iTracer, k, iCell, cell1, cell2, i
       integer, pointer :: nVertLevels
       integer, dimension(:), pointer :: nCellsArray, nEdgesArray
@@ -124,7 +124,7 @@ contains
 !     integer, dimension(:), pointer :: minLevelEdgeBot, maxLevelEdgeTop, minLevelCell, maxLevelCell, nEdgesOnCell
 !     integer, dimension(:,:), pointer :: edgeMask, cellsOnEdge, edgesOnCell, edgeSignOnCell
 
-      real (kind=RKIND) :: invAreaCell1, tracer_turb_flux, flux, invdcEdge, r_tmp1, r_tmp2
+      real (kind=RKIND) :: invAreaCell1, tracer_turb_flux, flux, invdcEdge, r_tmp1, r_tmp2, sum_delsq
 
 !     real (kind=RKIND), dimension(:), pointer :: dcEdge, dvEdge, areaCell, meshScalingDel4
 
@@ -148,7 +148,6 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nEdgesArray', nEdgesArray)
       call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
-
       num_tracers = size(tracers, dim=1)
 
 !     call mpas_pool_get_array(meshPool, 'minLevelEdgeBot', minLevelEdgeBot)
@@ -169,36 +168,31 @@ contains
 !     call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
 
       ! Need 1 halo around owned cells
-      nCells = nCellsArray( 2 )
+      nCells  = nCellsArray( 2 )
+      nCells2 = nCellsArray( 2 )
+      nCells1 = nCellsArray( 1 )
 
-      allocate(delsq_tracer(num_tracers, nVertLevels, nCells))
+      allocate(delsq_tracer(num_tracers, nVertLevels, nCells2))
 
 #ifdef MPAS_OPENACC
       !$acc enter data create(delsq_tracer)
 #endif
 
+
       ! first del2: div(h \nabla \phi) at cell center
 #ifdef MPAS_OPENACC
-      !$acc parallel &
-      !$acc    present(delsq_tracer,areaCell,nEdgesOnCell,edgesOnCell,dvEdge,dcEdge, &
-      !$acc            cellsOnEdge,minLevelEdgeBot,maxLevelEdgeTop,edgeMask,layerThickEdgeMean, &
-      !$acc            tracers,edgeSignOnCell)
-#endif
-
-
-#ifdef MPAS_OPENACC
-      !$acc loop collapse(3)
+      !$acc parallel loop collapse(3) present(delsq_tracer)
 #else
       !$omp parallel
       !$omp do schedule(runtime)
 #endif
-      do iCell = 1, nCells
-        do k = 1, nVertLevels
-          do iTracer = 1,num_tracers
-            delsq_tracer(iTracer, k, iCell) = 0.0_RKIND
-          end do
-        end do
-      end do
+      do iCell = 1, nCells2
+      do k = 1, nVertLevels
+      do iTracer = 1, num_tracers
+        delsq_tracer(iTracer, k, iCell) = 0.0_RKIND
+      enddo
+      enddo
+      enddo
 #ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
@@ -206,26 +200,31 @@ contains
 
 
 #ifdef MPAS_OPENACC
-      !$acc loop &
-      !$acc    private(invAreaCell1, i, iEdge, invdcEdge, cell1, cell2, k, iTracer, r_tmp1, r_tmp2)
+      !$acc parallel loop gang&
+      !$acc    present(delsq_tracer,areaCell,nEdgesOnCell,edgesOnCell,dvEdge,dcEdge, &
+      !$acc            cellsOnEdge,minLevelEdgeBot,maxLevelEdgeTop,edgeMask,layerThickEdgeMean, &
+      !$acc            tracers,edgeSignOnCell,meshScalingDel4,tend) &
+      !$acc    private(invAreaCell1, i, iEdge, invdcEdge, cell1, cell2, k, iCell, r_tmp1, r_tmp2)
 #else
       !$omp parallel
       !$omp do schedule(runtime) private(invAreaCell1, i, iEdge, invdcEdge, cell1, cell2, k, iTracer, r_tmp1, r_tmp2)
 #endif
-      do iCell = 1, nCells
-        invAreaCell1 = 1.0_RKIND / areaCell(iCell)
+      do iCell = 1, nCells2
         do i = 1, nEdgesOnCell(iCell)
+          invAreaCell1 = 1.0_RKIND / areaCell(iCell)
           iEdge = edgesOnCell(i, iCell)
           invdcEdge = dvEdge(iEdge) / dcEdge(iEdge)
           cell1 = cellsOnEdge(1,iEdge)
           cell2 = cellsOnEdge(2,iEdge)
 
+          !$acc loop vector
           do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
             do iTracer = 1, num_tracers * edgeMask(k, iEdge)
 
               r_tmp1 = invdcEdge * layerThickEdgeMean(k, iEdge) * tracers(iTracer, k, cell1)
               r_tmp2 = invdcEdge * layerThickEdgeMean(k, iEdge) * tracers(iTracer, k, cell2)
 
+              !$acc atomic update
               delsq_tracer(iTracer, k, iCell) = delsq_tracer(iTracer, k, iCell) - edgeSignOnCell(i, iCell) &
                                               * (r_tmp2 - r_tmp1) * invAreaCell1
             end do
@@ -233,19 +232,17 @@ contains
         end do
       end do
 #ifdef MPAS_OPENACC
-      !$acc end parallel
-#else
       !$omp end do
       !$omp end parallel
 #endif
 
 
       ! Only need tendency on owned cells
-      nCells = nCellsArray( 1 )
+      !nCells = nCellsArray( 1 )
 
       ! second del2: div(h \nabla [delsq_tracer]) at cell center
 #ifdef MPAS_OPENACC
-      !$acc parallel loop &
+      !$acc parallel loop gang &
       !$acc    present(delsq_tracer,areaCell,nEdgesOnCell,edgesOnCell,dvEdge,dcEdge, &
       !$acc            cellsOnEdge,minLevelEdgeBot,maxLevelEdgeTop,edgeMask,layerThickEdgeMean, &
       !$acc            tracers,edgeSignOnCell,meshScalingDel4,tend) &
@@ -254,21 +251,23 @@ contains
       !$omp parallel
       !$omp do schedule(runtime) private(invAreaCell1, i, iEdge, cell1, cell2, invdcEdge, k, iTracer, tracer_turb_flux, flux)
 #endif
-      do iCell = 1, nCells
-        invAreaCell1 = 1.0_RKIND / areaCell(iCell)
+      do iCell = 1, nCells1
         do i = 1, nEdgesOnCell(iCell)
+          invAreaCell1 = 1.0_RKIND / areaCell(iCell)
           iEdge = edgesOnCell(i, iCell)
           cell1 = cellsOnEdge(1, iEdge)
           cell2 = cellsOnedge(2, iEdge)
 
           invdcEdge = meshScalingDel4(iEdge) * dvEdge(iEdge) * eddyDiff4 / dcEdge(iEdge)
 
+          !$acc loop vector
           do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
             do iTracer = 1, num_tracers * edgeMask(k, iEdge)
               tracer_turb_flux = (delsq_tracer(iTracer, k, cell2) - delsq_tracer(iTracer, k, cell1))
 
               flux = tracer_turb_flux * invdcEdge
 
+              !$acc atomic update
               tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + edgeSignOnCell(i, iCell) * flux * invAreaCell1
             end do
           end do
@@ -278,6 +277,7 @@ contains
       !$omp end do
       !$omp end parallel
 #endif
+
 
 #ifdef MPAS_OPENACC
       !$acc exit data delete(delsq_tracer)

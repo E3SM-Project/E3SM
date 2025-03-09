@@ -147,10 +147,9 @@ contains
 #endif
       if (usePlanetVorticity.and.useRelVorticity) then
 #ifdef MPAS_OPENACC
-         !$acc parallel loop &
+         !$acc parallel loop collapse (2) &
          !$acc    present(tmpVorticity, normRelVortEdge, &
-         !$acc            normPlanetVortEdge) &
-         !$acc    private(k)
+         !$acc            normPlanetVortEdge)
 #else
          !$omp do schedule(runtime) &
          !$omp    private(k)
@@ -166,9 +165,8 @@ contains
 #endif
       elseif (useRelVorticity.and.(.not.usePlanetVorticity)) then
 #ifdef MPAS_OPENACC
-         !$acc parallel loop &
-         !$acc    present(tmpVorticity, normRelVortEdge) &
-         !$acc    private(k)
+         !$acc parallel loop collapse (2) &
+         !$acc    present(tmpVorticity, normRelVortEdge)
 #else
          !$omp do schedule(runtime) &
          !$omp    private(k)
@@ -183,9 +181,8 @@ contains
 #endif
       elseif (usePlanetVorticity.and.(.not.useRelVorticity)) then
 #ifdef MPAS_OPENACC
-         !$acc parallel loop &
-         !$acc    present(tmpVorticity, normPlanetVortEdge) &
-         !$acc    private(k)
+         !$acc parallel loop collapse(2) &
+         !$acc    present(tmpVorticity, normPlanetVortEdge)
 #else
          !$omp do schedule(runtime) &
          !$omp    private(k)
@@ -203,8 +200,26 @@ contains
          !$omp end parallel
 #endif
 
+
 #ifdef MPAS_OPENACC
-      !$acc parallel loop &
+      !$acc parallel loop collapse(2) &
+      !$acc    present(qArr)
+#else
+      !$omp parallel
+      !$omp do schedule(runtime)
+#endif
+      do iEdge = 1, nEdgesOwned
+         do k = 1, nVertLevels
+            qArr(k,iEdge) = 0.0_RKIND
+         end do
+      end do
+#ifndef MPAS_OPENACC
+      !$omp end do
+#endif
+
+
+#ifdef MPAS_OPENACC
+      !$acc parallel loop gang &
       !$acc    present(nEdgesOnEdge, edgesOnEdge, weightsOnEdge, &
       !$acc            minLevelEdgeBot, maxLevelEdgeTop, qArr, tmpVorticity, &
       !$acc            normalVelocity, layerThickEdgeFlux) &
@@ -215,21 +230,18 @@ contains
       !$omp    private(k, j, eoe, edgeWeight, avgVorticity, kmin, kmax)
 #endif
       do iEdge = 1, nEdgesOwned
-         kmin = minLevelEdgeBot(iEdge)
-         kmax = maxLevelEdgeTop(iEdge)
-
-         do k = 1, nVertLevels
-            qArr(k,iEdge) = 0.0_RKIND
-         end do
-
          do j = 1, nEdgesOnEdge(iEdge)
+            kmin = minLevelEdgeBot(iEdge)
+            kmax = maxLevelEdgeTop(iEdge)
             eoe = edgesOnEdge(j, iEdge)
             edgeWeight = weightsOnEdge(j, iEdge)
 
+            !$acc loop vector
             do k = kmin, kmax
                avgVorticity = 0.5_RKIND* &
                               (tmpVorticity(k,iEdge) + &
                                tmpVorticity(k,eoe))
+               !$acc atomic update
                qArr(k,iEdge) = qArr(k,iEdge) + &
                                edgeWeight*normalVelocity(k,eoe)* &
                                avgVorticity*layerThickEdgeFlux(k,eoe)
@@ -243,7 +255,7 @@ contains
 
       if (useGradKineticEnergy) then
 #ifdef MPAS_OPENACC
-         !$acc parallel loop &
+         !$acc parallel loop gang &
          !$acc    present(cellsOnEdge, minLevelEdgeBot, maxLevelEdgeTop, edgeMask, &
          !$acc            dcEdge, tend, qArr, kineticEnergyCell) &
          !$acc    private(cell1, cell2, invLength, k, kmin, kmax)
@@ -259,6 +271,7 @@ contains
             cell2 = cellsOnEdge(2,iEdge)
             invLength = 1.0_RKIND / dcEdge(iEdge)
 
+            !$acc loop vector
             do k = kmin, kmax
                tend(k,iEdge) = tend(k,iEdge) + &
                            edgeMask(k,iEdge)* (qArr(k,iEdge) - &
@@ -272,7 +285,7 @@ contains
 
       else ! .not.useGradKineticEnergy
 #ifdef MPAS_OPENACC
-         !$acc parallel loop &
+         !$acc parallel loop gang &
          !$acc    present(cellsOnEdge, minLevelEdgeBot, maxLevelEdgeTop, edgeMask, &
          !$acc            dcEdge, tend, qArr) &
          !$acc    private(cell1, cell2, k, kmin, kmax)
@@ -287,6 +300,7 @@ contains
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
 
+            !$acc loop vector
             do k = kmin, kmax
                tend(k,iEdge) = tend(k,iEdge) + &
                            edgeMask(k,iEdge)* qArr(k,iEdge)
@@ -359,7 +373,7 @@ contains
       case ('LTS','lts')
          ! For LTS, coriolis tendency term includes f: (eta+f)/h.
          usePlanetVorticity = .true.
-      
+
       case ('FB_LTS','fb_lts')
          ! For FB_LTS, coriolis tendency term includes f: (eta+f)/h.
          usePlanetVorticity = .true.
