@@ -338,6 +338,9 @@ add_default($nl, 'config_coef_3rd_order');
 add_default($nl, 'config_flux_limiter');
 add_default($nl, 'config_remap_limiter');
 add_default($nl, 'config_thickness_flux_type');
+add_default($nl, 'config_use_spatially_variable_upwind');
+add_default($nl, 'config_spatially_variable_upwind_hmin');
+add_default($nl, 'config_spatially_variable_upwind_hmax');
 
 ###############################
 # Namelist group: bottom_drag #
