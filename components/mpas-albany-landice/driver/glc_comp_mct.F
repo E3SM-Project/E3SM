@@ -1512,7 +1512,8 @@ contains
             !                      rofi_to_ocn=Fogg_rofi, &
             !                      rofi_to_ice=Figg_rofi)
 !            g2x_g % rAttr(index_g2x_Figg_rofi,n)=0.0 !...and remove these placeholders
-            g2x_g % rAttr(index_g2x_Figg_rofi,n)= avgCalvingThickness(i) 
+!            g2x_g % rAttr(index_g2x_Fogg_rofi,n)=0.0 
+            g2x_g % rAttr(index_g2x_Fogg_rofi,n)= avgCalvingThickness(i) 
 !            g2x_g % rAttr(index_g2x_Fogg_rofl,n) = 0.0 !Attach to subglacial liquid flux once present
             g2x_g % rAttr(index_g2x_Fogg_rofl,n) = avgBareIceAblation(i) !SFP: use max() as below? 
 
