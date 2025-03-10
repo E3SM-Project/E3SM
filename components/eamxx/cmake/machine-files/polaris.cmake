@@ -13,6 +13,6 @@ include (${EKAT_MACH_FILES_PATH}/mpi/other.cmake)
 
 set(EKAT_MPIRUN_EXE "mpiexec" CACHE STRING "" FORCE)
 set(EKAT_MPI_NP_FLAG "-np" CACHE STRING "" FORCE)
-set(EKAT_MPI_EXTRA_ARGS "--label --cpu-bind depth -envall" CACHE STRING "")
+set(EKAT_MPI_EXTRA_ARGS "--label --cpu-bind core" CACHE STRING "")
 set(EKAT_MPI_THREAD_FLAG "-d" CACHE STRING "")
 
