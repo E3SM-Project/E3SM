@@ -44,6 +44,10 @@ initialize(const ekat::Comm& io_comm, const ekat::ParameterList& params,
   m_case_t0 = case_t0;
   m_run_type = run_type;
   m_is_model_restart_output = is_model_restart_output;
+
+  // This works if we are not restarting the stream.
+  // If we are, it will get adjusted later
+  m_output_control.last_write_ts = m_run_t0;
 }
 
 void OutputManager::
@@ -52,6 +56,11 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
 {
   // Read input parameters and setup internal data
   setup_internals(field_mgr, grid_names);
+
+  if (not m_output_control.output_enabled()) {
+    // If output is not enabled, there's no point in continuing
+    return;
+  }
 
   // Here, store if PG2 fields will be present in output streams.
   // Will be useful if multiple grids are defined (see below).
@@ -163,24 +172,30 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
   // Note: the user might decide *not* to restart the output, so give the option
   //       of disabling the restart. Also, the user might want to change the
   //       filename_prefix, so allow to specify a different filename_prefix for the restart file.
-  if (m_run_type==RunType::Restart and not m_is_model_restart_output) {
+  bool branch_run = m_params.sublist("Restart").get("branch_run",false);
+  if (m_run_type==RunType::Restart and not m_is_model_restart_output and not branch_run) {
     // Allow to skip history restart, or to specify a filename_prefix for the restart file
     // that is different from the filename_prefix of the current output.
     auto& restart_pl = m_params.sublist("Restart");
-    bool perform_history_restart = restart_pl.get("Perform Restart",true);
     auto hist_restart_filename_prefix = restart_pl.get("filename_prefix",m_filename_prefix);
 
-    if (perform_history_restart) {
-      using namespace scorpio;
-      IOFileSpecs hist_restart_specs;
-      hist_restart_specs.ftype = FileType::HistoryRestart;
-      auto rhist_file = find_filename_in_rpointer(hist_restart_filename_prefix,false,m_io_comm,m_run_t0,m_avg_type,m_output_control);
+    bool skip_restart_if_rhist_not_found = restart_pl.get("skip_restart_if_rhist_not_found",false);
+    auto rhist_file = find_filename_in_rpointer(hist_restart_filename_prefix,false,m_io_comm,m_run_t0,
+                                                skip_restart_if_rhist_not_found,m_avg_type,m_output_control);
+
+    if (rhist_file=="") {
+      if (m_atm_logger) {
+        m_atm_logger->warn("[OutputManager::setup] The rhist file not found in rpointer.atm.\n"
+                           "  Continuing without restart, since 'skip_restart_if_rhist_not_found=true'.\n"
+                           "   - output yaml file for this stream: " + m_params.name() + "\n");
+      }
+    } else {
 
       scorpio::register_file(rhist_file,scorpio::Read);
       // From restart file, get the time of last write, as well as the current size of the avg sample
       m_output_control.last_write_ts = read_timestamp(rhist_file,"last_write",true);
       m_output_control.compute_next_write_ts();
-      m_output_control.nsamples_since_last_write = get_attribute<int>(rhist_file,"GLOBAL","num_snapshots_since_last_write");
+      m_output_control.nsamples_since_last_write = scorpio::get_attribute<int>(rhist_file,"GLOBAL","num_snapshots_since_last_write");
 
       if (m_avg_type!=OutputAvgType::Instant) {
         m_time_bnds.resize(2);
@@ -198,7 +213,8 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
       }
 
       // We do NOT allow changing output specs across restart. If you do want to change
-      // any of these, you MUST start a new output stream (e.g., setting 'Perform Restart: false')
+      // any of these, you MUST start a new output stream, by removing rhist files from
+      // rpointer.atm and set skip_restart_if_rhist_not_found=true
       // NOTE: we do not check that freq/freq_units/avg_type are not changed: since we used
       //       that info to find the correct rhist file, we already know that they match!
       auto old_storage_type = scorpio::get_attribute<std::string>(rhist_file,"GLOBAL","file_max_storage_type");
@@ -228,7 +244,7 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
 
       // Check if the prev run wrote any output file (it may have not, if the restart was written
       // before the 1st output step). If there is a file, check if there's still room in it.
-      const auto& last_output_filename = get_attribute<std::string>(rhist_file,"GLOBAL","last_output_filename");
+      const auto& last_output_filename = scorpio::get_attribute<std::string>(rhist_file,"GLOBAL","last_output_filename");
       m_resume_output_file = last_output_filename!="" and not restart_pl.get("force_new_file",true);
       if (m_resume_output_file) {
         m_output_file_specs.storage.num_snapshots_in_file = scorpio::get_attribute<int>(rhist_file,"GLOBAL","last_output_file_num_snaps");
@@ -247,6 +263,7 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
       scorpio::release_file(rhist_file);
     }
   }
+  m_output_control.compute_next_write_ts();
 
   // If m_time_bnds.size()>0, it was already inited during restart
   if (m_avg_type!=OutputAvgType::Instant && m_time_bnds.size()==0) {
@@ -726,22 +743,12 @@ setup_internals (const std::shared_ptr<fm_type>& field_mgr,
   m_output_control.set_frequency_units(out_control_pl.get<std::string>("frequency_units"));
 
   // In case output is disabled, no point in doing anything else
-  if (m_output_control.frequency_units=="none" || m_output_control.frequency_units=="never") {
+  if (not m_output_control.output_enabled()) {
     return;
   }
   m_output_control.frequency = out_control_pl.get<int>("Frequency");
   EKAT_REQUIRE_MSG (m_output_control.frequency>0,
       "Error! Invalid frequency (" + std::to_string(m_output_control.frequency) + ") in Output Control. Please, use positive number.\n");
-
-  // Determine which timestamp to use a reference for output frequency.  Two options:
-  // 	1. use_case_as_start_reference: TRUE  - implies we want to calculate frequency from the beginning of the whole simulation, even if this is a restarted run.
-  // 	2. use_case_as_start_reference: FALSE - implies we want to base the frequency of output on when this particular simulation started.
-  // Note, (2) is needed for restarts since the restart frequency in CIME assumes a reference of when this run began.
-  const bool use_case_as_ref = out_control_pl.get<bool>("use_case_as_start_reference",!m_is_model_restart_output);
-  const bool perform_history_restart = m_params.sublist("Restart").get("Perform Restart",true);
-  const auto& start_ref = use_case_as_ref and perform_history_restart ? m_case_t0 : m_run_t0;
-  m_output_control.last_write_ts = start_ref;
-  m_output_control.compute_next_write_ts();
 
   // File specs
   m_save_grid_data = out_control_pl.get("save_grid_data",!m_is_model_restart_output);
