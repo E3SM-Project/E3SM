@@ -18,7 +18,7 @@ follows:
   scattered direct radiation, and diffuse radiation.
 - Shaded leaf absorbs scattered direct radiation and
   diffuse radiation.
-- Snow albedo and the shortwave radiative heating of each snowpack layer is modeled
+- Snow albedo and the shortwave radiative heating of each snowpack layer
   is modeled using the hybrid SNICAR-AD model
   of Dang et al. 2019[@dang2019intercomparison].
 - The sub-grid impacts of topography on solar radiation
@@ -72,7 +72,7 @@ diffuse radiative flux per unit incident flux,
 $K_b \left( = G(\mu)/\mu \right)$ is the optical depth of
 direct radiation per unit leaf and stem area, $G(\mu)$ is
 the relative projected area of leaf and stem in the
-direction of $\cos^{-1}(\mu)$, $\mu$ is the solar zenith
+direction of $\cos^{-1}(\mu)$, $\mu$ is the cosine of the solar zenith
 angle, $\bar{\mu} \left( = 1/K_d \right)$ is the inverse
 of the optical depth of diffuse radiation per unit leaf
 and stem area, $\omega$ is the scattering coefficient,
@@ -559,7 +559,7 @@ the equations.
 
 Using analytical solutions of the two-stream
 approximation, Dai et al. 2004[@dai2004two] provided
-analytical solutions for the radiation absorbed by sunlit
+analytical solutions for the radiation absorbed by the sunlit
 and shaded leaves presented below.
 
 #### Sunlit leaves
@@ -605,7 +605,7 @@ equation \eqref{eqn_can_b_absorb}.
 #### Shaded leaves
 
 The analytical solution of the beam radiation absorbed by
-shaded leaves is given as
+shaded leaves are given as
 
 $$
 \begin{equation}
@@ -642,7 +642,7 @@ equation \eqref{eqn_can_d_absorb}.
 ### Radiation Absorbed By Ground
 
 The beam and diffuse radiation absorbed by the ground are
-computed as the difference of incoming and outgoing
+computed as the difference of the incoming and the outgoing
 radiation.
 
 $$
@@ -660,7 +660,7 @@ $$
 
 The direct beam ground albedo, $\alpha_{gb,\Lambda}$, and
 diffuse ground albedo, $\alpha_{gd,\Lambda}$, are weighted
-combinationof "soil" and snow albedo as
+combination of "soil" and snow albedo as
 
 $$
 \begin{eqnarray}
@@ -741,7 +741,7 @@ The surface abedos given by equation \eqref{eqn_g_dir} -
 \eqn{eqn_g_dif} neglect topography by assuming a
 plane-parallel Earth. Hao et al. (2021)[@hao2021parameterization]
 developed a parameterization for sub-grid topographic
-effects on solar radiation that essentially modifies the
+effects on solar radiation that essentially modify the
 surface albedo by equation \eqref{eqn_g_dir} -
 \eqn{eqn_g_dif}. The section on [TOP
 Parameterization](top_solar_parameterization.md) presents a
