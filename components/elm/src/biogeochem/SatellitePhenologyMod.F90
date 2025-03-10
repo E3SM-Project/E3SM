@@ -428,6 +428,7 @@ contains
     real(r8):: t           ! a fraction: kda/ndaypm
     integer :: it(2)       ! month 1 and month 2 (step 1)
     integer :: months(2)   ! months to be interpolated (1 to 12)
+    integer :: kyrs(2)   ! years in which months to be interpolated (2001 to 2020)
     integer, dimension(12) :: ndaypm= &
          (/31,28,31,30,31,30,31,31,30,31,30,31/) !days per month
     !-----------------------------------------------------------------------
@@ -441,18 +442,23 @@ contains
     it(2) = it(1) + 1
     months(1) = kmo + it(1) - 1
     months(2) = kmo + it(2) - 1
+    kyrs(1) = 2000+ kyr
+    kyrs(2) = 2000+ kyr
     if (months(1) <  1) months(1) = 12
-    if (months(2) > 12) months(2) = 1
+    if (months(2) > 12) then
+    	months(2) = 1
+    	kyrs(2) = 2000+ kyr + 1
+    end if
     timwt(1) = (it(1)+0.5_r8) - t
     timwt(2) = 1._r8-timwt(1)
 
     if (InterpMonths1 /= months(1)) then
        if (masterproc) then
           write(iulog,*) 'Attempting to read monthly vegetation data .....'
-          write(iulog,*) 'nstep = ',get_nstep(),' month = ',kmo,' day = ',kda
+          write(iulog,*) 'nstep = ',get_nstep(),' year = ',kyr,' month = ',kmo,' day = ',kda
        end if
        call t_startf('readMonthlyVeg')
-       call readMonthlyVegetation (bounds, fsurdat, months, kyr, canopystate_vars)
+       call readMonthlyVegetation (bounds, fsurdat, months, kyrs, canopystate_vars)
        InterpMonths1 = months(1)
        call t_stopf('readMonthlyVeg')
     end if
@@ -563,7 +569,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine readMonthlyVegetation (bounds, &
-       fveg, months, kyr, canopystate_vars)
+       fveg, months, kyrs, canopystate_vars)
     !
     ! !DESCRIPTION:
     ! Read monthly vegetation data for two consec. months.
@@ -581,7 +587,7 @@ contains
     type(bounds_type) , intent(in) :: bounds
     character(len=*)  , intent(in) :: fveg      ! file with monthly vegetation data
     integer           , intent(in) :: months(2) ! months to be interpolated (1 to 12)
-    integer           , intent(in) :: kyr       ! current year  
+    integer           , intent(in) :: kyrs(2)       ! years in which months is interpolated  
     type(canopystate_type), intent(inout) :: canopystate_vars
     !
     ! !LOCAL VARIABLES:
@@ -607,8 +613,8 @@ contains
     ! Determine necessary indices
 
     allocate(&
-         mlai(bounds%begg:bounds%endg,1:max_topounits,0:numpft,0:100), &
-         msai(bounds%begg:bounds%endg,1:max_topounits,0:numpft,0:100), &  
+         mlai(bounds%begg:bounds%endg,1:max_topounits,0:numpft,2001:2020), &
+         msai(bounds%begg:bounds%endg,1:max_topounits,0:numpft,2001:2020), &  
          mhgtt(bounds%begg:bounds%endg,1:max_topounits,0:numpft), &
          mhgtb(bounds%begg:bounds%endg,1:max_topounits,0:numpft), &
          stat=ier)
@@ -652,7 +658,7 @@ contains
        ! Only vegetated patches have nonzero values
        ! Assign lai/sai/hgtt/hgtb to the top [maxpatch_pft] patches
        ! as determined in subroutine surfrd
-
+       
        do p = bounds%begp,bounds%endp
           g =veg_pp%gridcell(p)
           t = veg_pp%topounit(p)
@@ -661,8 +667,8 @@ contains
           if (veg_pp%itype(p) /= noveg) then     ! vegetated pft
              do l = 0, numpft
                 if (l == veg_pp%itype(p)) then
-                   mlai2t(p,k) = mlai(g,ti,l,kyr)
-                   msai2t(p,k) = msai(g,ti,l,kyr)
+                   mlai2t(p,k) = mlai(g,ti,l,kyrs(k))
+                   msai2t(p,k) = msai(g,ti,l,kyrs(k))
                    mhvt2t(p,k) = mhgtt(g,ti,l)
                    mhvb2t(p,k) = mhgtb(g,ti,l)
                 end if
