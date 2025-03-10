@@ -26,8 +26,6 @@ real(r8) function entropy(TK, p, qtot, zm_const)
    !    Raymond, D. J., and A. M. Blyth, 1992: Extension of the Stochastic Mixing
    !       Model to Cumulonimbus Clouds. J. Atmos. Sci., 49, 1968–1983
    !----------------------------------------------------------------------------
-   ! use physconst, only: cpair, tmelt, rh2o, rair, epsilo, cpliq, cpwv, latvap
-   !----------------------------------------------------------------------------
    ! Arguments
    real(r8),         intent(in) :: TK        ! temperature              [K]
    real(r8),         intent(in) :: p         ! pressure                 [mb]
