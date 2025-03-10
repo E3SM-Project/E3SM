@@ -173,6 +173,10 @@ init_time_stamps (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0,
       m_run_type = RunType::Initial; break;
     case 1:
       m_run_type = RunType::Restart; break;
+    case 2:
+      m_run_type = RunType::Restart;
+      m_branch_run = true;
+      break;
     case -1:
       m_run_type = case_t0==run_t0 ? RunType::Initial : RunType::Restart; break;
     default:
@@ -727,6 +731,7 @@ void AtmosphereDriver::create_output_managers () {
       params.set<std::string>("filename_prefix",m_casename+".scream.h");
     }
     params.sublist("provenance") = m_atm_params.sublist("provenance");
+    params.sublist("Restart").set("branch_run",m_branch_run);
 
     auto& om = m_output_managers.emplace_back();
     om.initialize(m_atm_comm,
