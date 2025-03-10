@@ -1116,8 +1116,6 @@
       </pes>
       <pes compset=".*EAM.+ELM.+MPASSI.+SGLC.+SWAV.+BGC.*" pesize="any">
         <comment>summit|ascent|polaris: BGC compset on ne30np4 grid</comment>
-        <MAX_TASKS_PER_NODE>42</MAX_TASKS_PER_NODE>
-        <MAX_MPITASKS_PER_NODE>42</MAX_MPITASKS_PER_NODE>
         <ntasks>
           <ntasks_atm>-4</ntasks_atm>
           <ntasks_lnd>-4</ntasks_lnd>
@@ -1140,9 +1138,7 @@
         </nthrds>
       </pes>
       <pes compset=".*SCREAM.*" pesize="any">
-        <comment>summit|ascent: SCREAM atm compset on ne30np4 grid</comment>
-        <MAX_TASKS_PER_NODE>42</MAX_TASKS_PER_NODE>
-        <MAX_MPITASKS_PER_NODE>42</MAX_MPITASKS_PER_NODE>
+        <comment>summit|ascent|polaris: SCREAM atm compset on ne30np4 grid</comment>
         <ntasks>
           <ntasks_atm>-4</ntasks_atm>
           <ntasks_lnd>-4</ntasks_lnd>
