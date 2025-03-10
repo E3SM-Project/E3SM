@@ -101,7 +101,7 @@ def case_post_run_io(self):
     I/O Post processing :
     1. Convert ADIOS output files, if any, to NetCDF
     """
-    success = True
+    success = None
     has_adios = False
     self.load_env(job="case.post_run_io")
     component_classes = self.get_values("COMP_CLASSES")
@@ -113,9 +113,12 @@ def case_post_run_io(self):
             has_adios = True
             break
     if has_adios:
-        logger.info("I/O post processing for ADIOS starting")
-        success = _convert_adios_to_nc(self)
-        logger.info("I/O post processing for ADIOS completed")
+        if os.environ.get('SPIO_ENABLE_ADIOSBP2NC_CONVERSION', '').lower() in ('true', '1'):
+            logger.info("I/O post processing for ADIOS starting")
+            success = _convert_adios_to_nc(self)
+            logger.info("I/O post processing for ADIOS completed")
+        else:
+            logger.info("Disabling I/O post processing (conversion to NetCDF) for ADIOS BP files since env['SPIO_ENABLE_ADIOSBP2NC_CONVERSION'] is not set/disabled")
     else:
         logger.info("No I/O post processing required")
 
