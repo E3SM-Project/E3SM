@@ -1,8 +1,8 @@
 module zm_aero
-   !-----------------------------------------------------------------------------
+   !----------------------------------------------------------------------------
    ! Purpose: microphysics state structure definition and methods for ZM
    ! Original Author: Xialiang Song and Guang Zhang, June 2010
-   !-----------------------------------------------------------------------------
+   !----------------------------------------------------------------------------
    use shr_kind_mod,     only: r8=>shr_kind_r8
    use ppgrid,           only: pcols, pver, pverp
    use cam_abortutils,   only: endrun
