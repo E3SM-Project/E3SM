@@ -153,11 +153,14 @@ protected:
   template<typename T>
   using strmap_t = std::map<std::string,T>;
 
+  using strvec_t = std::vector<std::string>;
+
   // Internal functions
   void register_variables(const std::string& filename, const std::string& fp_precision, const scorpio::FileMode mode);
   void set_decompositions(const std::string& filename);
   void compute_diagnostics (const bool allow_invalid_fields);
   void init_diagnostics (const std::shared_ptr<const FieldManager>& fm_model);
+  strvec_t get_var_dimnames (const FieldLayout& layout) const;
 
   // Tracking the averaging of any filled values:
   void set_avg_cnt_tracking(const std::string& name, const FieldLayout& layout);
@@ -174,21 +177,21 @@ protected:
   };
   std::map<Phase,std::shared_ptr<fm_type>> m_field_mgrs;
 
-  std::shared_ptr<const grid_type>            m_io_grid;
-  std::shared_ptr<remapper_type>              m_horiz_remapper;
-  std::shared_ptr<remapper_type>              m_vert_remapper;
+  std::shared_ptr<const grid_type>      m_io_grid;
+  std::shared_ptr<remapper_type>        m_horiz_remapper;
+  std::shared_ptr<remapper_type>        m_vert_remapper;
 
   // How to combine multiple snapshots in the output: instant, Max, Min, Average
-  OutputAvgType     m_avg_type;
-  Real              m_avg_coeff_threshold = 0.5; // % of unfilled values required to not just assign value as FillValue
+  OutputAvgType                         m_avg_type;
+  Real                                  m_avg_coeff_threshold = 0.5; // % of unfilled values required to not just assign value as FillValue
 
   // Internal maps to the output fields, how the columns are distributed, the file dimensions and the global ids.
-  std::vector<std::string>              m_fields_names;
-  std::vector<std::string>              m_avg_cnt_names;
+  strvec_t                              m_fields_names;
+  strvec_t                              m_avg_cnt_names;
   strmap_t<std::string>                 m_field_to_avg_cnt_map;
   strmap_t<std::string>                 m_field_to_avg_cnt_suffix;
-  strmap_t<FieldLayout>                 m_layouts;
-  strmap_t<int>                         m_dims;
+  strmap_t<strvec_t>                    m_vars_dims;
+  strmap_t<int>                         m_dims_len;
   std::list<diag_ptr_type>              m_diagnostics;
 
   DefaultMetadata                       m_default_metadata;
@@ -202,6 +205,7 @@ protected:
 
   bool m_add_time_dim;
   bool m_track_avg_cnt = false;
+  std::string m_decomp_dimname = "";
 
   // The logger to be used throughout the ATM to log message
   std::shared_ptr<ekat::logger::LoggerBase> m_atm_logger;
