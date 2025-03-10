@@ -95,6 +95,9 @@ public:
   FieldLayout get_3d_vector_layout (const bool midpoints, const int vector_dim) const;
   FieldLayout get_3d_tensor_layout (const bool midpoints, const std::vector<int>& cmp_dims) const;
 
+  // Use the input template to create an equivalent layout on this grid
+  FieldLayout equivalent_layout (const FieldLayout& template_layout) const;
+
   int get_num_vertical_levels () const { return m_num_vert_levs; }
 
   // Whether this grid contains unique dof GIDs

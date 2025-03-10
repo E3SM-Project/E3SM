@@ -235,7 +235,7 @@ TEST_CASE("io_remap_test","io_remap_test")
   print ("    -> source data ... \n",io_comm);
   auto source_remap_control = set_output_params("remap_source",remap_filename,p_ref,false,false);
   om_source.initialize(io_comm,source_remap_control,t0,false);
-  om_source.setup(field_manager,gm);
+  om_source.setup(field_manager,gm->get_grid_names());
   io_comm.barrier();
   om_source.init_timestep(t0,dt);
   om_source.run(t0+dt);
@@ -245,7 +245,7 @@ TEST_CASE("io_remap_test","io_remap_test")
   print ("    -> vertical remap ... \n",io_comm);
   auto vert_remap_control = set_output_params("remap_vertical",remap_filename,p_ref,true,false);
   om_vert.initialize(io_comm,vert_remap_control,t0,false);
-  om_vert.setup(field_manager,gm);
+  om_vert.setup(field_manager,gm->get_grid_names());
   io_comm.barrier();
   om_vert.init_timestep(t0,dt);
   om_vert.run(t0+dt);
@@ -255,7 +255,7 @@ TEST_CASE("io_remap_test","io_remap_test")
   print ("    -> horizontal remap ... \n",io_comm);
   auto horiz_remap_control = set_output_params("remap_horizontal",remap_filename,p_ref,false,true);
   om_horiz.initialize(io_comm,horiz_remap_control,t0,false);
-  om_horiz.setup(field_manager,gm);
+  om_horiz.setup(field_manager,gm->get_grid_names());
   io_comm.barrier();
   om_horiz.init_timestep(t0,dt);
   om_horiz.run(t0+dt);
@@ -265,7 +265,7 @@ TEST_CASE("io_remap_test","io_remap_test")
   print ("    -> vertical-horizontal remap ... \n",io_comm);
   auto vert_horiz_remap_control = set_output_params("remap_vertical_horizontal",remap_filename,p_ref,true,true);
   om_vert_horiz.initialize(io_comm,vert_horiz_remap_control,t0,false);
-  om_vert_horiz.setup(field_manager,gm);
+  om_vert_horiz.setup(field_manager,gm->get_grid_names());
   io_comm.barrier();
   om_vert_horiz.init_timestep(t0,dt);
   om_vert_horiz.run(t0+dt);
