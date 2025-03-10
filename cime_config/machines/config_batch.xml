@@ -552,9 +552,9 @@
         <directive> -l filesystems=home:grand:eagle </directive>
       </directives>
       <queues>
-        <queue walltimemax="00:30:00" nodemin="1"  nodemax="2"   strict="true" default="true">debug</queue>
-        <queue walltimemax="00:30:00" nodemin="3"  nodemax="9"   strict="true">debug-scaling</queue>
-        <queue walltimemax="01:00:00" nodemin="10" nodemax="496" strict="true">prod</queue>
+        <queue walltimemin="00:05:00" walltimemax="01:00:00" nodemin="1"  nodemax="2"   strict="true" default="true">debug</queue>
+        <queue walltimemin="00:05:00" walltimemax="01:00:00" nodemin="3"  nodemax="10"  strict="true">debug-scaling</queue>
+        <queue walltimemin="00:05:00" walltimemax="03:00:00" nodemin="11" nodemax="496" strict="true">prod</queue>
       </queues>
     </batch_system>
 
