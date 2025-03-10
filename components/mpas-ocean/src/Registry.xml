@@ -1738,6 +1738,8 @@
 		<package name="landIceFluxesPKG" description="This package includes varibles required for land ice thickness, momentum and tracer fluxes."/>
 		<package name="dataSubglacialRunoffFluxPKG" description="This package includes variables required for prescribed subglacial runoff flux at the grounding line into the ocean."/>
 		<package name="landIceCouplingPKG" description="This package includes varibles required for land ice coupling but not land ice fluxes in standalone mode."/>
+		<package name="landIceThermalForcing2DPKG" description="This package includes varibles required for passing a 2D thermal forcing field at a fixed depth to glc."/>
+		<package name="landIceThermalForcing3DPKG" description="This package includes varibles required for passing a 3D thermal forcing field interpolated to z-levels to glc."/>
 		<package name="dataLandIceFluxesPKG" description="This package includes varibles related to prescribed freshwater and heat fluxes from land ice."/>
 		<package name="frazilIce" description="This package includes variables required for frazil ice formation."/>
 		<package name="tidalForcing" description="This package includes variables required for tidal forcing on a boundary."/>
@@ -4079,16 +4081,16 @@
 			description="The time-averaged effective ocean density within ice shelves based on Archimedes' principle."
 			packages="landIceCouplingPKG"
 		/>
-		<var name="avgThermalForcingAtCritDepth" type="real" dimensions="nCells Time" units="C"
+		<var name="avgThermalForcingAtCritDepth" type="real" dimensions="nCells Time" units="C" packages="landIceThermalForcing2DPKG"
 			description="The time-averaged thermal forcing at the predefined critical depth specified by config_2d_thermal_forcing_depth"
 		/>
-		<var name="avgThermalForcingAtZLevels" type="real" dimensions="nGlcZLevels nCells Time" units="C"
+		<var name="avgThermalForcingAtZLevels" type="real" dimensions="nGlcZLevels nCells Time" units="C" packages="landIceThermalForcing3DPKG"
 			description="The time-averaged thermal forcing at predefined z-levels used for indirect OCN-GLC coupling in E3SM"
 		/>
-		<var name="avgThermalForcingAtZLevelsMask" type="real" dimensions="nGlcZLevels nCells Time" units="none"
+		<var name="avgThermalForcingAtZLevelsMask" type="real" dimensions="nGlcZLevels nCells Time" units="none" packages="landIceThermalForcing3DPKG"
                         description="0/1 mask of valid locations for avgThermalForcingAtZLevels.  Type is real because this is time-averaged so can take on values between 0 and 1."
 		/>
-		<var name="glcZLevels" type="real" dimensions="nGlcZLevels" units="m"
+		<var name="glcZLevels" type="real" dimensions="nGlcZLevels" units="m" packages="landIceThermalForcing3DPKG"
 			description="Z-levels at which ocean properties should be evaluated for indirect OCN-GLC coupling. This array will generally be provided by the E3SM coupler."
 		/>
 		<!-- Input fields for data (prescribed) land-ice fluxes -->
