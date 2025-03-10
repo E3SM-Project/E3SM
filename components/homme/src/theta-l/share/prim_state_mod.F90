@@ -148,6 +148,24 @@ contains
     real (kind=real_kind) :: PEhorz1,PEhorz2
     real (kind=real_kind) :: KEH1,KEH2,KEV1,KEV2
     real (kind=real_kind) :: KEwH1,KEwH2,KEwH3,KEwV1,KEwV2
+
+#ifdef HOMMEDA
+    real (kind=real_kind) :: PEscalar, PEexpected_scalar
+    real (kind=real_kind) :: KEscalar, KEexpected_scalar
+    real (kind=real_kind) :: IEscalar, IEexpected_scalar
+    real (kind=real_kind) :: pair1as,pair1bs
+    real (kind=real_kind) :: pair2as,pair2bs
+    real (kind=real_kind) :: pair3as,pair3bs
+    real (kind=real_kind) :: pair4as,pair4bs
+    real (kind=real_kind) :: pair5as,pair5bs
+    real (kind=real_kind) :: pair6as,pair6bs
+    real (kind=real_kind) :: pair7as,pair7bs
+    real (kind=real_kind) :: pair8as,pair8bs
+    real (kind=real_kind) :: pair9as,pair9bs
+    real (kind=real_kind) :: pair10as,pair10bs
+    real (kind=real_kind) :: pair11as
+#endif
+
     real (kind=real_kind) :: ddt_tot,ddt_diss, ddt_diss_adj
     integer               :: n0, n0q
     integer               :: npts,n,q
@@ -169,6 +187,24 @@ contains
     PEner    = 0
     IEner    = 0
     muvalue  = 0
+
+#ifdef HOMMEDA
+    PEscalar = 0; PEexpected_scalar = 0;
+    KEscalar = 0; KEexpected_scalar = 0; 
+    IEscalar = 0; IEexpected_scalar = 0;
+    pair1as=0;pair1bs=0;
+    pair2as=0;pair2bs=0;
+    pair3as=0;pair3bs=0;
+    pair4as=0;pair4bs=0;
+    pair5as=0;pair5bs=0;
+    pair6as=0;pair6bs=0;
+    pair7as=0;pair7bs=0;
+    pair8as=0;pair8bs=0;
+    pair9as=0;pair9bs=0;
+    pair10as=0;pair10bs=0;
+    pair11as=0;
+#endif
+
     ! dynamics timelevels
     n0=tl%n0
     call TimeLevel_Qdp(tl, qsplit, n0q) ! get n0 level into n0q
@@ -637,7 +673,131 @@ contains
     !if(hybrid%masterthread) print *,'PEver2'
     PEvert2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
     PEvert2 = PEvert2*scale
-    
+   
+#ifdef HOMMEDA 
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%PE
+    enddo
+    PEscalar = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%PEexpected
+    enddo
+    PEexpected_scalar = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%KE
+    enddo
+    KEscalar = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%KEexpected
+    enddo
+    KEexpected_scalar = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%IE
+    enddo
+    IEscalar = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%IEexpected
+    enddo
+    IEexpected_scalar = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%pair1a
+    enddo
+    pair1as = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%pair1b
+    enddo
+    pair1bs = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%pair2a
+    enddo
+    pair2as = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%pair2b
+    enddo
+    pair2bs = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%pair3a
+    enddo
+    pair3as = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%pair3b
+    enddo
+    pair3bs = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%pair4a
+    enddo
+    pair4as = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%pair4b
+    enddo
+    pair4bs = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%pair5a
+    enddo
+    pair5as = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%pair5b
+    enddo
+    pair5bs = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%pair6a
+    enddo
+    pair6as = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%pair6b
+    enddo
+    pair6bs = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%pair7a
+    enddo
+    pair7as = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%pair7b
+    enddo
+    pair7bs = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%pair8a
+    enddo
+    pair8as = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%pair8b
+    enddo
+    pair8bs = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%pair9a
+    enddo
+    pair9as = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%pair9b
+    enddo
+    pair9bs = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%pair10a
+    enddo
+    pair10as = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%pair10b
+    enddo
+    pair10bs = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+
+    do ie=nets,nete
+       tmp(:,:,ie) = elem(ie)%accum%pair11a
+    enddo
+    pair11as = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)*scale
+#endif
+
     !   KE->IE
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%T01
@@ -711,6 +871,7 @@ contains
           write(iulog,'(a,2e22.14)')'KEu v-adv,sum=0:',KEV1,KEV2
           write(iulog,'(a,3e22.14)')'IE  v-adv,sum=0:',IEvert1,PEvert1
           write(iulog,'(a,2e22.14)')'KE->I+P,I+P->KE:',(T1+PEhorz2),(S1+PEhorz1)
+          write(iulog,'(a,2e22.14)')'PEhorz1,PEhorz2:',PEhorz1,PEhorz2
           
           ddt_tot  =  (KEner(2)-KEner(1))/dt
           ddt_diss = ddt_tot -(T1+PEhorz2)
@@ -731,6 +892,27 @@ contains
           write(iulog,'(a,3e22.14)')'KEw h-adv,sum=0:',KEwH1+KEwH3,KEwH2
           write(iulog,'(a,2e22.14)')'KEu v-adv,sum=0:',KEV1,KEV2
           write(iulog,'(a,2e22.14)')'KEw v-adv,sum=0:',KEwV1,KEwV2
+
+          write(iulog,'(a,2e22.14)')'PEhorz1,PEhorz2:',PEhorz1,PEhorz2
+
+#ifdef HOMMEDA
+          write(iulog,'(a,3e22.14)')'- PE_t,PE_t exp:',PEscalar, PEexpected_scalar, PEscalar-PEexpected_scalar
+          write(iulog,'(a,3e22.14)')'- IE_t,IE_t exp:',IEscalar, IEexpected_scalar, IEscalar-IEexpected_scalar
+          write(iulog,'(a,3e22.14)')'- KE_t,KE_t exp:',KEscalar, KEexpected_scalar, KEscalar-KEexpected_scalar
+          write(iulog,'(a,1e22.14)')'- (IE+PE+KE)_t in caar:',IEscalar+PEscalar+KEscalar
+          write(iulog,'(a,3e22.14)')'- pair1a,pair1b:', pair1as, pair1bs, (pair1as + pair1bs)/pair1as
+          write(iulog,'(a,3e22.14)')'- pair2a,pair2b:', pair2as, pair2bs, (pair2as + pair2bs)/pair2as
+          write(iulog,'(a,3e22.14)')'- pair3a,pair3b:', pair3as, pair3bs, (pair3as + pair3bs)/pair3as
+          write(iulog,'(a,3e22.14)')'- pair4a,pair4b:', pair4as, pair4bs, (pair4as + pair4bs)/pair4as
+          write(iulog,'(a,3e22.14)')'- pair5a,pair5b:', pair5as, pair5bs, (pair5as + pair5bs)/pair5as
+          write(iulog,'(a,3e22.14)')'- pair6a,pair6b:', pair6as, pair6bs, (pair6as + pair6bs)/pair6as
+          write(iulog,'(a,3e22.14)')'- pair7a,pair7b:', pair7as, pair7bs, (pair7as + pair7bs)/pair7as
+          write(iulog,'(a,3e22.14)')'- pair8a,pair8b:', pair8as, pair8bs, (pair8as + pair8bs)/pair8as
+          write(iulog,'(a,3e22.14)')'- pair9a,pair9b:', pair9as, pair9bs, (pair9as + pair9bs)/pair9as
+          write(iulog,'(a,3e22.14)')'- pair10a,pair10b:', pair10as, pair10bs, (pair10as + pair10bs)/pair10as
+          write(iulog,'(a,1e22.14)')'- pair11a       :', pair11as
+#endif
+
           write(iulog,'(a,2e22.14)')'PE h-adv, sum=0:',PEhorz1,PEhorz2
           write(iulog,'(a,2e22.14)')'PE v-adv, sum=0:',PEvert1,PEvert2
           write(iulog,'(a,3e22.14)')'IE v-adv, sum=0:',IEvert1,IEvert2
@@ -739,19 +921,31 @@ contains
           write(iulog,'(a,2e22.14)')'KE->IE, IE->KE :',T1+T2,S1+S2
           
           ddt_tot  =  (KEner(2)-KEner(1))/dt
-          ddt_diss = ddt_tot -(T1+T2+P1) 
-          write(iulog,'(a,3E22.14)') "KE,d/dt,diss:",KEner(2),ddt_tot,ddt_diss
+#ifndef HOMMEDA 
+          ddt_diss = ddt_tot -(T1+T2+P1)
           !ddt_diss_adj = ddt_tot -(T1+T2+P1+KEwH1+KEwH2)
           !write(iulog,'(a,3E22.14)') "KE diss(adj):",ddt_diss_adj
-          
+#else
+          ddt_diss = ddt_tot - (pair7as+pair9bs+pair10bs+pair8bs)
+#endif     
+          write(iulog,'(a,3E22.14)') "KE,d/dt,diss:",KEner(2),ddt_tot,ddt_diss
+     
           ddt_tot =  (IEner(2)-IEner(1))/dt
+#ifndef HOMMEDA 
           ddt_diss = ddt_tot - (S1+S2)
-          write(iulog,'(a,3E22.14)') "IE,d/dt,diss:",IEner(2),ddt_tot,ddt_diss
           !ddt_diss_adj = ddt_tot - (S1+S2+IEvert1+IEvert2)
           !write(iulog,'(a,3E22.14)') "IE diss(adj):",ddt_diss_adj
+#else
+          ddt_diss = ddt_tot - (pair7bs+pair9as+pair8as)
+#endif     
+          write(iulog,'(a,3E22.14)') "IE,d/dt,diss:",IEner(2),ddt_tot,ddt_diss
           
           ddt_tot = (PEner(2)-PEner(1))/dt
+#ifndef HOMMEDA 
           ddt_diss = ddt_tot - P2
+#else
+          ddt_diss = ddt_tot - pair10as
+#endif     
           write(iulog,'(a,3E22.14)') "PE,d/dt,diss:",PEner(2),ddt_tot,ddt_diss
           ddt_tot = (TOTE(2)-TOTE(1))/dt
           !ddt_diss = ddt_tot - (KEwH1+KEwH2+IEvert1+IEvert2)
@@ -858,7 +1052,7 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     use dimensions_mod, only : np, np, nlev,nlevp
     use hybvcoord_mod, only : hvcoord_t
     use element_mod, only : element_t
-    use physical_constants, only : Cp, cpwater_vapor
+    use physical_constants, only : Cp, cpwater_vapor, g, rearth
     use physics_mod, only : Virtual_Specific_Heat
     use prim_si_mod, only : preq_hydrostatic
 
@@ -879,9 +1073,17 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp) 
     real (kind=real_kind) :: exner(np,np,nlev)  ! exner nh pressure
     real (kind=real_kind) :: pnh_i(np,np,nlevp)  ! pressure on intefaces
-
+    real (kind=real_kind) :: pi_top
 
     integer:: tmp, t1_qdp   ! the time pointers for Qdp are not the same
+
+#ifdef HOMMEDA
+    real (kind=real_kind) :: rheighti3(np,np,nlevp), r0
+#endif
+
+#ifdef HOMMEDA
+    r0=rearth
+#endif
 
     if (t_before_advance) then
        t1=tl%n0
@@ -891,6 +1093,12 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
        call TimeLevel_Qdp(tl, qsplit, tmp, t1_qdp) !get np1 into t2_qdp
     endif
     do ie=nets,nete
+
+!repeated code
+#ifdef HOMMEDA
+       rheighti3 = ( elem(ie)%state%phinh_i(:,:,:,1)/g + r0 )**3
+#endif
+
        dpt1=elem(ie)%state%dp3d(:,:,:,t1)
        call pnh_and_exner_from_eos(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,t1),dpt1,&
             elem(ie)%state%phinh_i(:,:,:,t1),pnh,exner,dpnh_dp_i,pnh_i,'prim_state_mod')
@@ -926,17 +1134,25 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
        elem(ie)%accum%PEner(:,:,n)=suml(:,:)
        
 
-    !  IE = c_p^* dp/deta T - pnh dphi/deta  + ptop phi_top
+    ! SA: IE = c_p^* dp/deta T + pnh dphi/deta  + pi_top phi_top
+    ! DA: IE = c_p^* dp/deta T + pnh g / 3 / R0^2 dr^3/deta  + pi_top phi_top
+
+       pi_top = hvcoord%hyai(1)*hvcoord%ps0
        suml=0
        suml2=0
        do k=1,nlev
           suml(:,:)=suml(:,:)+&
-                Cp*elem(ie)%state%vtheta_dp(:,:,k,t1)*exner(:,:,k) 
+                Cp*elem(ie)%state%vtheta_dp(:,:,k,t1)*exner(:,:,k)
+#ifdef HOMMEDA
+          suml2(:,:) = suml2(:,:)+ g / r0 / r0 / 3 * (rheighti3(:,:,k+1)-rheighti3(:,:,k))*pnh(:,:,k)
+#else
           suml2(:,:) = suml2(:,:)+(phi_i(:,:,k+1)-phi_i(:,:,k))*pnh(:,:,k)
+#endif
        enddo
-       elem(ie)%accum%IEner(:,:,n)=suml(:,:) + suml2(:,:) +&
-            pnh_i(:,:,1)* phi_i(:,:,1)
-
+!new, works for da and sa (identical tot he old line)
+       elem(ie)%accum%IEner(:,:,n)=suml(:,:) + suml2(:,:) + pi_top * phi_i(:,:,1)
+!old for debugging
+!       elem(ie)%accum%IEner(:,:,n)=suml(:,:) + suml2(:,:) + pnh_i(:,:,1)* phi_i(:,:,1)
        enddo
     
 end subroutine prim_energy_halftimes

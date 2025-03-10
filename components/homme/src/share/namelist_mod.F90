@@ -839,7 +839,9 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     call MPI_bcast(smooth_phis_nudt,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(initial_total_mass ,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(u_perturb     ,1,MPIreal_t   ,par%root,par%comm,ierr)
+
     call MPI_bcast(rotate_grid   ,1,MPIreal_t   ,par%root,par%comm,ierr)
+
     call MPI_bcast(integration,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
 #ifndef HOMME_WITHOUT_PIOLIBRARY
     call MPI_bcast(mesh_file,MAX_FILE_LEN,MPIChar_t ,par%root,par%comm,ierr)
@@ -933,6 +935,22 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     call MPI_bcast(abs_tol, 1, MPIreal_t, par%root, par%comm, ierr)
     call MPI_bcast(calc_nonlinear_stats, 1, MPIlogical_t, par%root, par%comm, ierr)
     call MPI_bcast(use_column_solver, 1, MPIlogical_t, par%root, par%comm, ierr)
+#endif
+
+!all DA warnings together
+#ifdef HOMMEDA
+    if ( rotate_grid /= 0 ) then
+       if(par%masterproc) print *, 'DA (deep atmosphere) cannot run with rotate_grid != 0'
+       call abortmp('stopping')
+    endif
+    if ( ( rsplit == 0 ) .or. (dt_remap_factor == 0) ) then
+       if(par%masterproc) print *, 'DA (deep atmosphere) cannot run with rsplit or dt_remap = 0'
+       call abortmp('stopping')
+    endif
+    if ( theta_hydrostatic_mode ) then
+       if(par%masterproc) print *, 'DA (deep atmosphere) cannot run with theta_hydrostatic_mode=T'
+       call abortmp('stopping')
+    endif
 #endif
 
     ! should we assume Q(:,:,:,1) has water vapor:
@@ -1298,6 +1316,12 @@ end if
        write(iulog,*)"physconst: omega  = ",omega
        write(iulog,*)"physconst: rearth = ",rearth
        write(iulog,*)"physconst: rrearth= ",rrearth
+       write(iulog,*)""
+#ifdef HOMMEDA
+       write(iulog,*)"--- DEEP ATMOSPHERE ----------"
+#else
+       write(iulog,*)"--- SHALLOW ATMOSPHERE -------"
+#endif
        write(iulog,*)""
 #endif
 

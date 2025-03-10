@@ -139,6 +139,7 @@ contains
 
     call t_startf('compute_stage_value_dirk')
 
+    ! DA runs only in nonhydro mode, not affected by this
     if (theta_hydrostatic_mode) then
        itercount=0
        itererr=0
@@ -150,7 +151,6 @@ contains
        return
     endif
 
-       
     ! dirk settings
     maxiter=20
 #ifdef HOMMEXX_BFB_TESTING
@@ -171,7 +171,6 @@ contains
 
        phi_np1 => elem(ie)%state%phinh_i(:,:,:,np1)
        w_np1 => elem(ie)%state%w_i(:,:,:,np1)
-
 
        if (alphadt_n0.ne.0d0) then ! add dt*alpha*S(un0) to the rhs
           dt3=alphadt_n0
@@ -258,22 +257,31 @@ contains
           enddo
           w_np1(:,:,1:nlev) = (phi_np1(:,:,1:nlev) -  phi_n0(:,:,1:nlev) )/(dt2*g)
        endif
+
        call pnh_and_exner_from_eos2(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,np1),elem(ie)%state%dp3d(:,:,:,np1),&
-            dphi,pnh,exner,dpnh_dp_i,'dirk1')
+            dphi,pnh,exner,dpnh_dp_i,elem(ie)%state%phis,'dirk1')
        Fn(:,:,1:nlev) = w_np1(:,:,1:nlev) - &
             (w_n0(:,:,1:nlev) + g*dt2 * (dpnh_dp_i(:,:,1:nlev)-1))
 
 
        itercount=0
+       !call t_startf('dirk_iteration')
        do while (itercount < maxiter) 
+          !call t_startf('get_dirk_jacobian_num')
           ! numerical J:
-          !call get_dirk_jacobian(JacL,JacD,JacU,dt2,elem(ie)%state%dp3d(:,:,:,np1),dphi,pnh,0,1d-4,hvcoord,dpnh_dp_i,vtheta_dp) 
+          !call get_dirk_jacobian(JacL,JacD,JacU,dt2,elem(ie)%state%dp3d(:,:,:,np1),dphi,elem(ie)%state%phis,pnh,0,1d-4,hvcoord,dpnh_dp_i,elem(ie)%state%vtheta_dp(:,:,:,np1)) 
+          !call t_stopf('get_dirk_jacobian_num')
+
+          !call t_startf('get_dirk_jacobian_analyt')
           ! analytic J:
-          call get_dirk_jacobian(JacL,JacD,JacU,dt2,elem(ie)%state%dp3d(:,:,:,np1),dphi,pnh,1) 
+          call get_dirk_jacobian(JacL,JacD,JacU,dt2,elem(ie)%state%dp3d(:,:,:,np1),dphi,elem(ie)%state%phis,pnh,1) 
+          !call t_stopf('get_dirk_jacobian_analyt')
 
           x(:,:,1:nlev) = -Fn(:,:,1:nlev)
 
+          !call t_startf('dirk_solve_tridiag')
           call solve_strict_diag_dominant_tridiag(JacL, JacD, JacU, x)
+          !call t_stopf('dirk_solve_tridiag')
 
           do k = 1,nlev-1
              dphi(:,:,k) = dphi_n0(:,:,k) + &
@@ -322,7 +330,7 @@ contains
           end do
 
           call pnh_and_exner_from_eos2(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,np1),&
-               elem(ie)%state%dp3d(:,:,:,np1),dphi,pnh,exner,dpnh_dp_i,'dirk2')
+               elem(ie)%state%dp3d(:,:,:,np1),dphi,pnh,exner,dpnh_dp_i,elem(ie)%state%phis,'dirk2')
           Fn(:,:,1:nlev) = w_np1(:,:,1:nlev) - (w_n0(:,:,1:nlev) + g*dt2 * (dpnh_dp_i(:,:,1:nlev)-1))
 
           ! this is not used in this loop, so move out of loop
@@ -334,6 +342,7 @@ contains
           !if (reserr < restol) exit
           if (deltaerr<deltatol) exit
        end do ! end do for the do while loop
+       !call t_stopf('dirk_iteration')
 
        ! update phi:
        phi_np1(:,:,1:nlev) =  phi_n0(:,:,1:nlev) +  dt2*g*w_np1(:,:,1:nlev)
@@ -364,7 +373,7 @@ contains
   end subroutine compute_stage_value_dirk
 
 
-  subroutine get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,dphi,pnh,exact,&
+  subroutine get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,dphi,phis,pnh,exact,&
      epsie,hvcoord,dpnh_dp_i,vtheta_dp)
   !================================================================================
   ! compute Jacobian of F(phi) = sum(dphi) +const + (dt*g)^2 *(1-dp/dpi) column wise
@@ -390,6 +399,7 @@ contains
     real (kind=real_kind), intent(in)  :: dp3d(np,np,nlev)
     real (kind=real_kind), intent(inout) :: pnh(np,np,nlev)
     real (kind=real_kind), intent(in)  :: dphi(np,np,nlev)
+    real (kind=real_kind), intent(in)  :: phis(np,np)
     real (kind=real_kind), intent(in)  :: dt2
 
     real (kind=real_kind), intent(in), optional :: epsie ! epsie is the differencing size in the approx. Jacobian
@@ -452,7 +462,7 @@ contains
            !dpnh_dp_i_epsie(:,:,:)=1.d0
            delta_mu=0
         else
-           call pnh_and_exner_from_eos2(hvcoord,vtheta_dp,dp3d,dphi_temp,pnh,exner,dpnh_dp_i_epsie,'get_dirk_jacobian')
+           call pnh_and_exner_from_eos2(hvcoord,vtheta_dp,dp3d,dphi_temp,pnh,exner,dpnh_dp_i_epsie,phis,'get_dirk_jacobian')
            delta_mu(:,:,:)=(g*dt2)**2*(dpnh_dp_i(:,:,:)-dpnh_dp_i_epsie(:,:,:))/epsie
         end if
 
@@ -510,7 +520,7 @@ contains
        do k=1,nlev
           dphi(:,:,k)=phi_i(:,:,k+1)-phi_i(:,:,k)
        enddo
-       call get_dirk_jacobian(JacL,JacD,JacU,dt,dp3d,dphi,pnh,1)
+       call get_dirk_jacobian(JacL,JacD,JacU,dt,dp3d,dphi,phis,pnh,1)
 
       ! compute infinity norm of the initial Jacobian 
        norminfJ0=0.d0
@@ -546,7 +556,7 @@ contains
           do k=1,nlev
              dphi(:,:,k)=phi_i(:,:,k+1)-phi_i(:,:,k)
           enddo
-          call get_dirk_jacobian(Jac2L,Jac2D,Jac2U,dt,dp3d,dphi,pnh,0,&
+          call get_dirk_jacobian(Jac2L,Jac2D,Jac2U,dt,dp3d,dphi,phis,pnh,0,&
              epsie,hvcoord,dpnh_dp_i,vtheta_dp)
 
           if (maxval(abs(JacD(:,:,:)-Jac2D(:,:,:))) > jacerrorvec(j)) then 
