@@ -39,7 +39,6 @@ public:
   using device_t      = DefaultDevice;
   using host_device_t = HostDevice;
   using kt_dev        = KokkosTypes<device_t>;
-  using kt_host       = KokkosTypes<host_device_t>;
 
   template<HostOrDevice HD>
   using get_device = cond_t<HD==Device, device_t,host_device_t>;
@@ -52,13 +51,13 @@ public:
   template<typename DT, typename MT = Kokkos::MemoryManaged>
   using view_dev_t = typename kt_dev::template view<DT,MT>;
   template<typename DT, typename MT = Kokkos::MemoryManaged>
-  using view_host_t = typename kt_host::template view<DT,MT>;
+  using view_host_t = typename view_dev_t<DT,MT>::HostMirror;
 
   // Analogue of the above, but with LayoutStride
   template<typename DT, typename MT = Kokkos::MemoryManaged>
   using strided_view_dev_t = typename kt_dev::template sview<DT,MT>;
   template<typename DT, typename MT = Kokkos::MemoryManaged>
-  using strided_view_host_t = typename kt_host::template sview<DT,MT>;
+  using strided_view_host_t = typename strided_view_dev_t<DT,MT>::HostMirror;
 
 private:
   // A bare DualView-like struct. This is an impl detail, so don't expose it.
