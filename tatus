@@ -1,0 +1,2079 @@
+[33mcommit 9d1c313946f26addf586e62811337853ff7cbd5b[m[33m ([m[1;36mHEAD -> [m[1;32mog/addp3[m[33m, [m[1;31morigin/og/addp3[m[33m)[m
+Author: Peter Bosler <pabosle.sandia.gov>
+Date:   Wed Mar 5 16:42:00 2025 -0700
+
+    bug fix for naming cp -> cpdry
+
+[33mcommit 24cc0aa27a48482dd7cee655d0996cef5165a6de[m
+Author: Peter Bosler <pabosle.sandia.gov>
+Date:   Wed Mar 5 16:01:53 2025 -0700
+
+    adding simple evaporation / condensation approximate adjustment
+
+[33mcommit 276cd1c1552dd55886562918f90b072a261b1a7d[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Wed Feb 26 14:43:34 2025 -0600
+
+    two changes -- switch to double prec, start of accumulation of precl,preci
+
+[33mcommit f55b755f6bde71df9302a0633f5222c95b4f4518[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Mon Feb 24 13:47:58 2025 -0600
+
+    add cmake for p3 files/nl
+
+[33mcommit e8d98ec063b369c0d1b5a696ae00a85aa10ae147[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Mon Feb 24 11:38:18 2025 -0600
+
+    add precip print out
+
+[33mcommit 6e12a3f87431d679d6b4a402af87b3c2eb13a028[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Mon Feb 24 11:37:10 2025 -0600
+
+    set init for all tracers
+
+[33mcommit 502fd5958aab45c65effa026210d5660579ba28a[m
+Author: Oksana Guba <onguba@mappy.sandia.gov>
+Date:   Fri Feb 21 13:55:18 2025 -0700
+
+    update mappy cmake
+
+[33mcommit 26278092bac4af69fdcc17340d4e5e0796716cb0[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Fri Feb 21 11:34:14 2025 -0600
+
+    add p3 tables
+
+[33mcommit d41d3ea50bdc64b7bb1f3159c26e639f99bb7650[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Thu Feb 20 12:28:55 2025 -0600
+
+    revert some fixes after debugging
+
+[33mcommit 509e3f2cbee69a8bed0e3af62322849c0c2ac6b8[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Thu Feb 20 12:18:31 2025 -0600
+
+    cleaning
+
+[33mcommit 0385da175d0ab6f7e41c0ece8031fd13df34f6fe[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Thu Feb 20 11:39:45 2025 -0600
+
+    clean up some
+
+[33mcommit 4723d29d2ec256ef665513c6ad43332a77365b6d[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Thu Feb 20 11:33:16 2025 -0600
+
+    fixes: read table file, better init, relvar, needs clean up
+
+[33mcommit d3d3156ecf815abb94f0cb9fe9b8294b20a0eb1e[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Mon Feb 17 17:12:29 2025 -0600
+
+    fix for exner, debugging, disable imex test, intro to init p3
+
+[33mcommit 16801b15b3daae529006233e5df8ea1bd2b7b8d4[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Mon Feb 17 11:41:42 2025 -0600
+
+    debug statements
+
+[33mcommit 7de263280e40b1751a9454a7859f10f2f300a6c8[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Mon Feb 17 11:41:12 2025 -0600
+
+    update micro_p3
+
+[33mcommit 98f902dbdf8465d30f72ac7e860255be8b4d6145[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Mon Feb 17 10:40:43 2025 -0600
+
+    redo micro_p3_utils
+
+[33mcommit 65c229a27c140fcd80e236e864dba9034761048f[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Mon Feb 17 10:18:30 2025 -0600
+
+    redo wv file
+
+[33mcommit c28a944b7947b572f28e96dc218d7d3a55adcb18[m
+Author: Peter Bosler <pabosle.sandia.gov>
+Date:   Fri Feb 14 09:44:53 2025 -0700
+
+    allow QSIZE_D to be set via CMake -DQSIZE_D=9 at configure time.
+
+[33mcommit 800b88f8bc00dcec7eb218b3551d4732a1811d16[m
+Author: Peter Bosler <pabosle.sandia.gov>
+Date:   Thu Feb 13 15:46:12 2025 -0700
+
+    adding homme machine file for snl flight
+
+[33mcommit ecd7e3f34b0555d52b89ad4aceab41c0ad20cfbb[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Thu Feb 13 11:44:52 2025 -0600
+
+    more for p3
+
+[33mcommit 83665680f91125ce135a48facef79013cb89984b[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Sun Feb 9 12:11:14 2025 -0600
+
+    fix tendencies from p3
+
+[33mcommit d36a9c7b40aa7dc285cae87eb17724701a3bf5e3[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Fri Feb 7 12:59:38 2025 -0600
+
+    make p3_main dummy work
+
+[33mcommit 09d154eb0a5b1fb41c9e155bd18196c3b6743933[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Tue Feb 4 19:55:39 2025 -0600
+
+    start on p3
+
+[33mcommit 30ca974bfc0e82680ee8308e58459212f6783687[m[33m ([m[1;33mtag: archive/oksanaguba/gmdd-2023-pdcoupling5[m[33m, [m[1;31morigin/og/cpstar[m[33m)[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Mon Sep 11 15:42:12 2023 -0500
+
+    conform to colorblind
+
+[33mcommit 2d5e4cb60599f74ef92d7f2722630fb56de0c022[m[33m ([m[1;33mtag: archive/oksanaguba/gmdd-2023-pdcoupling4[m[33m)[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Sun Sep 10 11:30:41 2023 -0500
+
+    move set_elem_state from ij loop
+
+[33mcommit 597b725077925d81cc47317f814da655a6b79f01[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Sat Sep 9 18:10:05 2023 -0500
+
+    reorganize more
+
+[33mcommit b6813e81161ae003cd0a0c20ea43edf3202a6657[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Sat Sep 9 01:52:54 2023 -0500
+
+    reorganize
+
+[33mcommit a3c2eef7e9f484cb056113f0d09427bf679d5b1d[m[33m ([m[1;33mtag: archive/oksanaguba/gmdd-2023-pdcoupling3[m[33m)[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Thu Sep 7 12:31:46 2023 -0500
+
+    change dt to dt_remap, change colorbar for panels, change Tref=290
+
+[33mcommit d47540618017b70a0434ba6d078b5d9013b37f90[m[33m ([m[1;33mtag: archive/oksanaguba/gmdd-2023-pdcoupling2[m[33m)[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Fri Sep 1 16:17:50 2023 -0500
+
+    add a comment
+
+[33mcommit 47c04c699cd8eb96f7fd2cdff4984fe9d47413df[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Fri Sep 1 16:16:41 2023 -0500
+
+    update plotting
+
+[33mcommit ff97a6a222ca903bb1630b21982e89b1bd41ef04[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Tue Aug 29 10:23:56 2023 -0500
+
+    switch to area/remap in convergence
+
+[33mcommit 3fc4d2c57f779e014599ed885c9e967e3888bc1d[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Mon Aug 14 16:58:21 2023 -0500
+
+    adjust prect plots for L term
+
+[33mcommit 159f77059f4a3c947d95944ef6a9051ecfe894ec[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Mon Aug 14 15:32:22 2023 -0500
+
+    add pprime sedim to cv physics
+
+[33mcommit de7073e769834e4c1b535a779859dd4ff5124ad1[m[33m ([m[1;33mtag: archive/oksanaguba/gmdd-2023-pdcoupling[m[33m)[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Sat Jul 22 17:54:20 2023 -0500
+
+    add comment
+
+[33mcommit 4e86f86540f07aa63f3903aabba7074b5dd916cc[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Sat Jul 22 17:52:49 2023 -0500
+
+    add running/plotting scripts
+
+[33mcommit 50faf2467b058ea30b13c3a32a94ef813c75051a[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Sat Jul 22 16:51:53 2023 -0500
+
+    comments
+
+[33mcommit 04451645442f0abec9c2d9f60eca3efb0cf428c6[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Sat Jul 22 16:49:34 2023 -0500
+
+    comments
+
+[33mcommit 38588e7f7a641fd62745f701096dd44b70e15f8b[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Mon Jul 17 17:20:52 2023 -0500
+
+    add more diagn
+
+[33mcommit 648fa16187a4ce837118caf805408a6771c52a71[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Fri Jul 14 12:07:34 2023 -0500
+
+    change en1,2,3 for eamcpdry option, add comment on en_prect
+
+[33mcommit 697736f423fb1b36c2eab7579080eb2c69081ce7[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Thu Jun 29 23:09:10 2023 -0500
+
+    glob integrals for diagn
+
+[33mcommit a7286a860c8fd319b3c57ed55eee6f2cdf0ccb28[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Thu Jun 29 11:54:52 2023 -0500
+
+    new sedim
+
+[33mcommit 78993d2ec349eb121d0d6b26a4ef60e368a15fd8[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Wed Jun 28 14:45:13 2023 -0500
+
+    more diagn for eam options
+
+[33mcommit 5d8f768658825bc64cbe170341779ad03bd5919a[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Tue Jun 27 15:53:28 2023 -0500
+
+    for eam diagn
+
+[33mcommit ec430d9fa484646d0b1460f67c41c7fb69855c23[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Mon Jun 26 00:19:21 2023 -0500
+
+    redo diagn for hy, nh, v
+
+[33mcommit f7661b69cf1be487fb6e08c7737a6b1c303e84c0[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Thu Jun 22 21:17:33 2023 -0500
+
+    add ttend output
+
+[33mcommit cc31e0b6882c03629210e7c7758b33efcd9683fd[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Thu Jun 22 19:33:53 2023 -0500
+
+    fix bug in sedim
+
+[33mcommit 3204942b8d22f9b92bdce0c975bf09fd58b3a4f7[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Thu Jun 22 19:31:58 2023 -0500
+
+    clean up debug statements
+
+[33mcommit 84f6306e7d7c88d86df3baf0d38bf1cfd41bcdff[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Thu Jun 22 19:24:35 2023 -0500
+
+    debugging eam interface
+
+[33mcommit 7fb98faf107084f2dc4d235d7954300adaa63b76[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Wed Jun 21 22:47:21 2023 -0500
+
+    start on interface logic
+
+[33mcommit 7d806c242fc2a2d5fba16cd98d60317e50a86f24[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Sat Jun 17 00:22:30 2023 -0500
+
+    diagn for precip
+
+[33mcommit 6fed6c443440242e1561728be88890aa64b2eab2[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Fri Jun 16 21:36:07 2023 -0500
+
+    more diagn for V
+
+[33mcommit 68bea135c0f41e55972a97e8fc90bb84da32c278[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Fri Jun 16 20:41:02 2023 -0500
+
+    more diagn for HY
+
+[33mcommit 65a2a67e1284275a50d6289c08b8cbd2a785907c[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Mon Jun 12 23:47:49 2023 -0500
+
+    redo infra for P update
+
+[33mcommit a290c8d6012c6a6e92cf541f44913994dc975bcd[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Mon Jun 12 14:14:58 2023 -0500
+
+    interim cleanup
+
+[33mcommit b011f12bf7fcdb4773e7976a777a124916854ab0[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Fri Jun 9 15:55:27 2023 -0500
+
+    interm version used for conv studies
+
+[33mcommit 747a42166d2ef33e4fe65f9ead6d1bb169d87ca7[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Tue Jun 6 19:16:13 2023 -0500
+
+    debug for V
+
+[33mcommit 8a93d47aa57fd0978397ead79a53caae38c5a4c6[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Tue Jun 6 16:57:35 2023 -0500
+
+    cleaned version for P
+
+[33mcommit 55c27913f41bf0173d02749002644c9080fcd449[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Tue Jun 6 16:47:26 2023 -0500
+
+    debug version for P
+
+[33mcommit 5c20b97539cdd1ca69faab89ca1d11268b28f559[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Tue Jun 6 11:25:18 2023 -0500
+
+    fix nosedim P update
+
+[33mcommit 1bdfc694121ce10b7a2d555898d393356d3a4f78[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Mon Jun 5 23:55:09 2023 -0500
+
+    separate sedim with nl, fix V for it, but not P yet
+
+[33mcommit 4bc0fba087c45a84164694c099fe579c3c0ed2b6[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Mon Jun 5 21:33:01 2023 -0500
+
+    redo sedim and fix bugs
+
+[33mcommit be478ad8450d24d59b09b5b296333875e7293258[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Sun Jun 4 21:24:09 2023 -0500
+
+    add encl to cV
+
+[33mcommit 4281a1c0864bb0fa6d2d40d3719112688b6fa558[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Sun Jun 4 21:15:00 2023 -0500
+
+    after conv; properly separate sedim in cV
+
+[33mcommit 429f6c1e6e68f3c94768ef021af2be8cda9b4013[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Sun Jun 4 20:03:40 2023 -0500
+
+    minor, before more changes are made
+
+[33mcommit d0d4f1ad992a56d6ac3460a49d231a6c1033763e[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Fri Jun 2 13:39:17 2023 -0500
+
+    remove useless line from cv update
+
+[33mcommit 46ec6719fc52187a3a1648f2de25b55accb36bd0[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Fri Jun 2 13:35:46 2023 -0500
+
+    new sedim for cpstar
+
+[33mcommit 4404dac6e5c7d11411c326ef55efef4af6a27fdb[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Fri Jun 2 12:24:15 2023 -0500
+
+    add comment before mods
+
+[33mcommit 6861bd6eeae82f5d389ae38bdbff4b10898b7b40[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Wed May 31 18:19:54 2023 -0500
+
+    just useful comments
+
+[33mcommit 0cb65970344f9643f73ef1a8e4ed320c3e271349[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Tue May 30 17:37:48 2023 -0500
+
+    remove debug error
+
+[33mcommit ac5a81bae52ffa5f36b23d08990e4a0c6cd9e6e7[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Tue May 30 17:31:31 2023 -0500
+
+    prelim fix to energyout in cpnh
+
+[33mcommit 9bbf80dc46fa14bde02346c1473fb7433e7f4a0e[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Mon May 29 16:14:55 2023 -0500
+
+    finalized volume update diagn
+
+[33mcommit 9cd771996a9459adf5662c956769e2a9e8002f3e[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Tue May 23 17:47:29 2023 -0500
+
+    new version of nh update, energy diagn
+
+[33mcommit ba111269c661cd75cbd0cb56610d00da8261568f[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Mon May 22 13:30:05 2023 -0500
+
+    switch cpdry to simpler alg
+
+[33mcommit 69dcad966380ba539aaffafc632f2e2fe56c74b7[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Fri May 19 16:44:08 2023 -0500
+
+    fix a bug
+
+[33mcommit 465b4bd79ef92fc41d9c249ebe4d67157579249b[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Thu May 18 18:25:48 2023 -0500
+
+    rj redo
+
+[33mcommit fd7afa7c156856f82c63de655640d46fdf169c74[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Sat May 6 21:40:06 2023 -0500
+
+    recent changes, reorg, on way to do rj
+
+[33mcommit 385542f088aee22ffa19b9acd068cc8c93d6eb1b[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Fri Jan 20 22:51:22 2023 -0600
+
+    fix for rstar
+
+[33mcommit 9acec0370da795499b5eb08b772f3bc7b9f4b394[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Fri Jan 20 21:05:46 2023 -0600
+
+    more debug for code thru _tracers
+
+[33mcommit d90ebb0b397a1d73c22dca2321bb294cd77b139e[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Fri Jan 20 18:57:54 2023 -0600
+
+    debug+fixed code run thru _tracers coupling
+
+[33mcommit b819d867ab6dd471132388319247cb1129818aa6[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Thu Jan 19 20:48:11 2023 -0600
+
+    fix bugs; revert update thru camforcing routines (2 routines, code in dcmip16_w, code at the end of kessler)
+
+[33mcommit acdf4b8ad3380436d82b4d1ababebe118f7e63b2[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Wed Jan 18 23:11:14 2023 -0600
+
+    new interface
+
+[33mcommit 77baf605f22ab3331db5a68c75cbed80ff73b6d8[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Mon Jan 9 17:45:06 2023 -0600
+
+    typo
+
+[33mcommit bb04ac9d7d862d081354368f0379a1c01c0494d9[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Wed Jan 4 21:26:17 2023 -0600
+
+    make thresholds dep on pi dry (kessler), pi (rj)
+
+[33mcommit 444ce22763b46f77a0ae7de9470693310a817931[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Wed Jan 4 20:35:38 2023 -0600
+
+    switch to adjust dp, diagnostics
+
+[33mcommit 1f520859f9246c8fefd2364eda4f10fbbd120b21[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Tue Dec 20 15:32:49 2022 -0600
+
+    fix sedim energy
+
+[33mcommit d6ed84ae4d7fed0974647977cbb22387b68c56a7[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Sun Dec 18 22:01:40 2022 -0600
+
+    change interface for 2 out of 3 routines using recomputed pressure
+
+[33mcommit 66e9766238b6805ffded01725bce263e5ba93551[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Sun Dec 18 19:33:41 2022 -0600
+
+    fix compiling
+
+[33mcommit dd5bbc370fde1df3eda59719fbbf3b63b8d21fc1[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Sun Dec 18 17:31:11 2022 -0600
+
+    reorg energy functions calls
+
+[33mcommit e3267adcb18d97264ea533a0a38b249b0892e31c[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Wed Dec 14 18:03:48 2022 -0600
+
+    add wl
+
+[33mcommit 8bc5ea9a62442ef93796960b46108faaf15d695b[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Wed Dec 14 17:56:02 2022 -0600
+
+    rename energy call
+
+[33mcommit fec30d568a465445faa2d717deb9fbcb2268ec4e[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Wed Dec 14 17:41:33 2022 -0600
+
+    add energy statement
+
+[33mcommit 5a8405d7ef85afb81332326fec5a29dac6c6a5c6[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Wed Nov 30 17:40:27 2022 -0600
+
+    more reorg, bugfix in energy
+
+[33mcommit 0d1f8afc21871cfb8257288f6bf18aa261075d54[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Tue Nov 29 17:00:47 2022 -0600
+
+    reorg kessler, more
+
+[33mcommit c393ddbdab216fd9a4b44279a2ad48f25253de44[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Tue Nov 29 12:18:25 2022 -0600
+
+    reorf rj
+
+[33mcommit b7b035e58cb5f28119ac208e74787f9579d74973[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Sun Nov 27 18:53:19 2022 -0600
+
+    add evaporation, checks
+
+[33mcommit b4fd9693da7825fd08571d0e5c75348b47ed0100[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Tue Nov 15 10:47:47 2022 -0600
+
+    add condensation, many checks
+
+[33mcommit c071ca351c26257d459c289875ffd2f958a60e44[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Sun Nov 13 11:51:47 2022 -0600
+
+    bug and mistakes fixes
+
+[33mcommit 25abf05255de5585c77d7c6a13a12e0b385acb71[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Sun Nov 13 00:24:52 2022 -0600
+
+    start on reorg
+
+[33mcommit 0eebe5718361ff7674c3f4443b321c0b79aa67a8[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Sat Nov 12 22:50:28 2022 -0600
+
+    more on kessler
+
+[33mcommit 4da20e12342d0c4737c57d4c84eb166371761f45[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Sat Nov 12 01:31:29 2022 -0600
+
+    start on sedimentation
+
+[33mcommit e85a53c7d356e41cba895d5442cd5fb0a4f5dc5f[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Fri Nov 11 22:56:59 2022 -0600
+
+    start on the 2nd part
+
+[33mcommit 0ef3f40fbeec86aea5383508e051921d3ef1303c[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Fri Nov 11 15:36:21 2022 -0600
+
+    reorg code
+
+[33mcommit 214afbbab1d2f2871bd25a9e90737045689ae46f[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Tue Nov 8 17:02:04 2022 -0600
+
+    minor comments
+
+[33mcommit c48f9ea643ebda3135c360f16a804f3d8aaa838c[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Wed Nov 2 17:12:26 2022 -0500
+
+    fix another bug
+
+[33mcommit 0371a06bb2ba3f9a3a1cc5e07378ed8726d614e4[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Tue Nov 1 20:12:13 2022 -0500
+
+    fix bug, add hy option
+
+[33mcommit 3fa9c858c32fb96cb457448da6a155d7d945c4b1[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Tue Nov 1 18:42:44 2022 -0500
+
+    statrt on
+
+[33mcommit 221082d9639d830c2d8ff09854040f26a98571c8[m[33m ([m[1;31morigin/og/baseline-cpstar[m[33m)[m
+Merge: d7bcc273d9 1320beb03a
+Author: Andrew M. Bradley <ambrad@cs.stanford.edu>
+Date:   Fri Oct 21 12:14:31 2022 -0500
+
+    Merge branch 'ambrad/hommexx/print-on-fail' (PR #5241)
+    
+    Hommexx: Print element state data in various model failure situations.
+    
+    In the log file, one will see, e.g.,
+    
+    46: Bad dphi, dp3d, or vtheta_dp; label: 'Vertical remap: Negative (or nan) layer thickness detected, aborting!'; see hommexx.errlog.320.46
+    
+    Then, for example,
+    
+    $ head hommexx.errlog.320.46
+    label: Vertical remap: Negative (or nan) layer thickness detected, aborting!
+    time-level 1
+    lat  5.182512623200946e-01 lon  1.413716694115407e+00
+    ie 3 igll 3 jgll 3 lev 122: bad vtheta_dp bad dp3d bad dphi
+    level                   dphi                   dp3d              vtheta_dp
+        0 -1.894494653842581e+04  6.511250007060127e+01  9.449394802849884e+04
+    ...
+      122  1.061523656197460e+02 -3.435052907124674e+01 -8.703189416949290e+03
+    ...
+    
+    This feature is for the theta-l_kokkos dycore. preqx_kokkos has an empty
+    implementation of the check routine, so its behavior on failure is unchanged.
+    
+    e3sm_developer and homme_integration pass on Chrysalis. Performance testing was
+    done with SCREAMv1 on Ascent.
+    
+    [BFB]
+
+[33mcommit d7bcc273d94087e937444669dd920f26420b1791[m
+Merge: 28dd4d7bee 4eef45797e
+Author: Jon Wolfe <jonbob@lanl.gov>
+Date:   Fri Oct 21 11:12:13 2022 -0500
+
+    Merge branch 'peterdschwartz/O2R-rx-bug-fix' (PR #5238)
+    
+    Fix usage of o2r_rx without rof-ocn two way enabled
+    
+    When ocn_rof_two_way = .false. o2r_rx is not allocated nor associated
+    but elements were still passed to function call. Changed to optional
+    argument for subroutine prep_rof_merge.
+    
+    Fixes #5221
+    Fixes #5192
+    [BFB]
+
+[33mcommit 4eef45797e7a4d66161292d061663161bd2fbfbd[m
+Author: Peter Schwartz <schwartzpd@ornl.gov>
+Date:   Wed Oct 19 11:21:52 2022 -0500
+
+    Removing whitespace changes
+
+[33mcommit 1320beb03a5f0ff3210fd14c7ce1edba998794d5[m
+Author: Andrew M. Bradley <ambrad@cs.stanford.edu>
+Date:   Thu Oct 13 20:58:41 2022 -0500
+
+    Hommexx: Print element state data in various model failure situations.
+    
+    In the log file, one will see, e.g.,
+    
+     46: Bad dphi, dp3d, or vtheta_dp; label: 'Vertical remap: Negative (or nan) layer thickness detected, aborting!'; see hommexx.errlog.320.46
+    
+    Then, for example,
+    
+    $ head hommexx.errlog.320.46
+    label: Vertical remap: Negative (or nan) layer thickness detected, aborting!
+    time-level 1
+    lat  5.182512623200946e-01 lon  1.413716694115407e+00
+    ie 3 igll 3 jgll 3 lev 122: bad vtheta_dp bad dp3d bad dphi
+    level                   dphi                   dp3d              vtheta_dp
+        0 -1.894494653842581e+04  6.511250007060127e+01  9.449394802849884e+04
+    ...
+      122  1.061523656197460e+02 -3.435052907124674e+01 -8.703189416949290e+03
+    ...
+    
+    This feature is for the theta-l_kokkos dycore. preqx_kokkos has an empty
+    implementation of the check routine, so its behavior on failure is unchanged.
+
+[33mcommit 28dd4d7bee60cba1a89e288b7cd5af7ad0c424dd[m
+Merge: 0fedbb169a 66ac386c80
+Author: Jon Wolfe <jonbob@lanl.gov>
+Date:   Tue Oct 18 12:17:26 2022 -0500
+
+    Merge branch 'mark-petersen/ocn/zero-velocity-init-mode' (PR #5232)
+    
+    Add zeroing of velocity to ocean init mode
+    
+    Explicitly sets normal velocity to zero at the beginning of init mode.
+    Each test case can then overwrite the zeros with initial velocities, but
+    most do not. In the past the unassigned arrays wrote out zeros, but this
+    is not true now, as described in #5230.
+    
+    This code is used to create MPAS-Ocean initial conditions. It is not
+    compiled in the E3SM code base for simulations.
+    
+    Fixes #5230
+    [BFB]
+
+[33mcommit 0fedbb169a329a47634dcb96d8608394182bfad7[m
+Merge: 9f0094d40f c348a85d15
+Author: Benjamin Hillman <bhillma@sandia.gov>
+Date:   Tue Oct 18 11:24:23 2022 -0500
+
+    Merge branch 'brhillman/eam/use-reduced-rrtmgp-gpoints' (#5196)
+    
+    Use reduced g-point data when using RRTMGP in EAM and E3SM-MMF. This should half the cost of RRTMGP in E3SM and bring performance in line with RRTMG, which was already using a similar number of quadrature points. This will be non-BFB only for the tests that use RRTMGP (eam-rrtmgp/eam-rrtmgpxx testmods, and all of the MMF tests), but BFB for all other tests.
+    
+    [non-BFB] for RRTMGP tests
+
+[33mcommit 9f0094d40f039769ba68ed4e89810516838ad43f[m
+Merge: 8b73aec139 28cf945db0
+Author: Jon Wolfe <jonbob@lanl.gov>
+Date:   Fri Oct 14 14:37:54 2022 -0500
+
+    Merge branch 'mark-petersen/ocn/fix-single-layer-drag' (PR #5187)
+    
+    Fix out-of-bounds index for vertical mixing with one active layer
+    
+    The current implicit vertical mixing routine fails when a column has one
+    active layer, because of references to k+1 and k−1. This PR adds a check
+    on each edge, and if there is only one active layer, it applies the
+    implicit drag term but not the vertical mixing terms. When only a single
+    layer exists, implicit vertical mixing is not needed (or even valid),
+    but implicit drag is still desirable.
+    
+    There are two cases where the model may have a single layer:
+    1. when the whole domain is single layer; and
+    2. when individual columns have only one active vertical cell, like near
+       coastlines with wetting-and-drying.
+    
+    Fixes #4849
+    [BFB]
+
+[33mcommit 8b73aec139b8b0d67b67264f66f6d48b685e26bd[m
+Merge: 53c8d3137e 6b3773e63c
+Author: Jon Wolfe <jonbob@lanl.gov>
+Date:   Fri Oct 14 14:18:53 2022 -0500
+
+    Merge branch 'sbrus89/wav/add-ww3' (PR #5047)
+    
+    Add WAVEWATCH III as new coupled wave component
+    
+    This is a stealth feature PR that adds the WAVEWATCH III submodule, cime
+    configuration, namelist generation, build infrastracture, and coupling
+    interface.
+    
+    Wave only, G case + waves, and B case + waves compsets are included
+    along with model resolutions that include the wave mesh intended for v1
+    and v2 LR configurations.
+    
+    The initial coupled, active wave feedback is a parameterization for
+    Langmuir mixing.
+    
+    [NML] for configurations with active ocean
+    [BFB]
+
+[33mcommit 53c8d3137e0f757e8e73331d63184fcb19f75895[m
+Merge: fa5cfdb8a6 82e8a478d7
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Fri Oct 14 11:54:21 2022 -0500
+
+    Merge branch 'origin/oksanaguba/homme/fix-gpu-define' (PR #5233)
+    
+    Adding HOMMEXX_ENABLE_GPU to Hommexx_config in order for scream code to pick it up.
+    
+    Scream builds of homme do not use config file in theta-l_kokkos.
+    
+    [bfb]
+
+[33mcommit fa5cfdb8a6d3c94da7d0d6071f618b3b138c8b72[m
+Merge: c1465081f0 b3c212977d
+Author: James Foucar <jgfouca@sandia.gov>
+Date:   Thu Oct 13 11:34:23 2022 -0600
+
+    Merge branch 'jgfouca/cime_update_2022_10_12' into master (PR #5231)
+    
+    Update CIME submodule
+    
+    ... to 977c1f6cd9283d03e356c8370a32302be4991cf4
+    
+    Fixes:
+    1) get_case_env: needs to load Config
+    2) bless_test_results: Never bless a failed test
+    3) PEM: fix potential invalid rootpe
+    4) fix for multi driver restarts
+    
+    Changes:
+    1) cprnc: add a data type check
+    2) Updates config_batch.xml to facilitate queue specific flags e.g.
+       -w docker would only apply when the queue name is long.
+    3) Updates workflow to build and push containers for PRs
+    4) Shorten test-job-id with --jenkins-id option
+    5) improve the pfs test by copying software_environment.txt
+    
+    [BFB]
+
+[33mcommit c1465081f0c4222d3f176ff9e8b51dbb5c937e60[m
+Merge: b02bfec178 c8b4cc1986
+Author: Peter Schwartz <schwartzpd@ornl.gov>
+Date:   Thu Oct 13 11:57:31 2022 -0500
+
+    Merge branch 'sfeng/lnd/lnd-atm-20tr' (PR #5180)
+    
+    add elm input files to the land-atm 1850 and 20tr compsets and make sure the simulations use correct namelist files.
+    
+    [NBFB]
+
+[33mcommit 6b3773e63c0273677469cf3ee78f1a1da319873a[m
+Author: Steven Brus <steven.r.brus@gmail.com>
+Date:   Thu Oct 13 09:09:42 2022 -0500
+
+    Fix ssh coupling fields
+
+[33mcommit 82e8a478d7d76f37c19bbfe8438a441c80c893dd[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Wed Oct 12 17:05:05 2022 -0600
+
+    revert changes in config files
+
+[33mcommit 9ad04c6f871c958e4ad31d9d578e47ea10603669[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Wed Oct 12 15:22:07 2022 -0500
+
+    move define to hommexx_config
+
+[33mcommit b02bfec1784525d8f05c9fe7d60cc044ca435c40[m
+Merge: 8a6f77d15b de2b8a32f8
+Author: Jon Wolfe <jonbob@lanl.gov>
+Date:   Wed Oct 12 12:10:35 2022 -0500
+
+    Merge branch 'mark-petersen/ocean/remove-SAL-mesh-declaration' (PR #5201)
+    
+    Remove unneeded mesh declaration
+    
+    Mesh variables are declared in mpas_ocn_mesh.F rather than individual
+    routines.
+    
+    Fixes #5200
+    [BFB]
+
+[33mcommit 8a6f77d15b14868bfac7d3bb5920b9b802b561a6[m
+Merge: cfe53ae30c 1e48d04bd6
+Author: Jon Wolfe <jonbob@lanl.gov>
+Date:   Wed Oct 12 12:06:54 2022 -0500
+
+    Merge branch 'mark-petersen/mpas/license-website' (PR #5143)
+    
+    Update to github.io in mpas license website
+    
+    Until 2021 github supported the alternate web address github.com. In
+    2021 it changed exclusively to github.io. This PR updates the link to
+    the MPAS license on all MPAS headers. It only changes code comments,
+    not working code.
+    
+    [BFB]
+
+[33mcommit cfe53ae30c8246ea0cc35e7f69ffc7026425316b[m
+Merge: 47f4c4e885 66dd25925e
+Author: Azamat Mametjanov <azamat@mcs.anl.gov>
+Date:   Wed Oct 12 12:59:43 2022 -0400
+
+    Merge branch 'azamat/ascent/fix-wall-timeouts' (PR #5222)
+    
+    Double PEs to prevent walltime timeouts on Ascent for
+    - ERS.hcru_hcru.I20TRGSWCNPRDCTCBC.elm-erosion
+    - ERS.ne30pg2_r05_EC30to60E2r2.GPMPAS-JRA.mosart-rof_ocn_2way
+        (on Crusher too)
+    - ERS.r05_r05.IELM.elm-V2_ELM_MOSART_features
+    
+    [BFB]
+
+[33mcommit b3c212977de2ed10f6291c1e50289c9190bc535f[m
+Author: James Foucar <jgfouca@sandia.gov>
+Date:   Wed Oct 12 10:57:41 2022 -0600
+
+    ... to 977c1f6cd9283d03e356c8370a32302be4991cf4
+    
+    Fixes:
+    1) get_case_env: needs to load Config
+    2) bless_test_results: Never bless a failed test
+    3) PEM: fix potential invalid rootpe
+    4) fix for multi driver restarts
+    
+    Changes:
+    1) cprnc: add a data type check
+    2) Updates config_batch.xml to facilitate queue specific flags e.g.
+       -w docker would only apply when the queue name is long.
+    3) Updates workflow to build and push containers for PRs
+    4) Shorten test-job-id with --jenkins-id option
+    5) improve the pfs test by copying software_environment.txt
+    
+    [BFB]
+
+[33mcommit 66ac386c801275beb0e9483eac20367c6d714345[m
+Author: Mark Petersen <mpetersen@lanl.gov>
+Date:   Wed Oct 5 17:11:33 2022 -0600
+
+    add zeroing of velocity to init_mode
+
+[33mcommit 1e48d04bd694c338c9fb4edfb2d0c0ec56cecc25[m
+Author: Mark Petersen <mpetersen@lanl.gov>
+Date:   Tue Oct 11 13:46:41 2022 -0600
+
+    update to github.io in c and new additions
+
+[33mcommit de294f7cd74477fc80980be9d37ca4742442418f[m
+Author: Mark Petersen <mpetersen@lanl.gov>
+Date:   Wed Aug 17 14:56:31 2022 -0600
+
+    update to github.io in mpas-framework
+
+[33mcommit 6d5faf76526b8245c4e7d2436245641bcc6bee7a[m
+Author: Mark Petersen <mpetersen@lanl.gov>
+Date:   Wed Aug 17 12:38:43 2022 -0600
+
+    update to github.io in mpas-albany-landice
+
+[33mcommit 417bb5f7e345e68a8d2b89ecb239322a5d2b6bf2[m
+Author: Mark Petersen <mpetersen@lanl.gov>
+Date:   Wed Aug 17 12:38:17 2022 -0600
+
+    update to github.io in ocean and sea ice
+
+[33mcommit 303e8b2f44b027be5aadf7b276123d3f77d838e0[m
+Author: Steven Brus <steven.r.brus@gmail.com>
+Date:   Tue Oct 11 11:21:08 2022 -0500
+
+    Change JRA compset name
+
+[33mcommit 47f4c4e885e53583cdb8eeccfbf2c04945eb6092[m
+Merge: 2491723cca e2a363825a
+Author: Jon Wolfe <jonbob@lanl.gov>
+Date:   Tue Oct 11 12:06:14 2022 -0500
+
+    Merge branch 'jonbob/ocean/fix-thickness-threading' (PR #5226)
+    
+    Add missing variables to omp pragmas from PR #5195
+    
+    PR #5195 added new code, but had some variables missing from omp pragmas
+    that cause SMS_D_Ld3.T62_oQU120.CMPASO-IAF.chrysalis_intel failures.
+    This fixes that issue.
+    
+    [non-BFB] for threaded tests
+
+[33mcommit f5c5cd21c6c447b5fff9f46acb0bf616dc520c93[m
+Author: Steven Brus <steven.r.brus@gmail.com>
+Date:   Tue Oct 11 11:20:15 2022 -0500
+
+    Fix CF compliance issues in Registry
+
+[33mcommit 2491723ccacd2e960502789fb5c3f90182ec462d[m
+Merge: 8b8bbba994 fda8b20b79
+Author: Jon Wolfe <jonbob@lanl.gov>
+Date:   Tue Oct 11 10:52:34 2022 -0500
+
+    Merge branch 'philipwjones/mpas-ocean/rm-device-resident' (PR #5194)
+    
+    Replace device_resident and other OpenACC fixes for ocean
+    
+    The OpenACC declare device resident was not universally supported so
+    replaced these with the more standard create/delete pairs. Also fixed
+    some other missing private declarations that were possibly resulting in
+    race conditions and bad results. Cleaned up some long lines, removed
+    meshPool and other things along the way.
+    
+    Fixes #5006
+    Fixes #5176
+    
+    [BFB]
+
+[33mcommit 8b8bbba994a834587cb2189ad02761aaa3d73ea7[m
+Merge: 27b7d6c5f8 c6f76801be
+Author: Azamat Mametjanov <azamat@mcs.anl.gov>
+Date:   Mon Oct 10 22:50:10 2022 -0400
+
+    Merge branch 'azamat/cime/shorten-jenkins-paths-for-crusher-amdclang'
+    (PR #5224)
+    
+    Shorten test-job-id with --jenkins-id Jenkins script option for
+    amdclang on Crusher.
+    
+    [BFB]
+
+[33mcommit fda8b20b79c37c00a77fb9d42e6fa933980aad69[m
+Author: Azamat Mametjanov <azamat@mcs.anl.gov>
+Date:   Mon Oct 10 18:06:24 2022 -0400
+
+    Add mpas_ocn_thick_ale.f90 for pgigpu runs
+
+[33mcommit 27b7d6c5f8ae5967951043215a3b050784487a4f[m
+Merge: a17d4b4fc0 771c08d16e
+Author: Jon Wolfe <jonbob@lanl.gov>
+Date:   Mon Oct 10 16:11:26 2022 -0500
+
+    Merge branch 'bishtgautam/datm/jra' (PR #5150)
+    
+    Updates the settings for JRA data
+    
+    Removes the hard-coded start and end year for JRA from 1958/2016 to be
+    the start/end values specified by DATM_CLMNCEP_YR_START/
+    DATM_CLMNCEP_YR_END.
+    
+    [BFB]
+
+[33mcommit a17d4b4fc032471c918c56a91228735096fb5a1e[m
+Merge: 2ad7a59139 9522305d69
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Mon Oct 10 13:13:13 2022 -0500
+
+    Merge branch 'origin/oksanaguba/homme/spock' (PR #5039)
+    
+    Many changes for HIP.
+    
+    Adding a new macro, HOMMEXX_ENABLE_GPU, redoing templates
+    to generalize CUDA/HIP code. Arch-dependent code (very few lines)
+    still uses kokkos macros.
+    
+    Regarding HIP -- standalone homme with output builds and runs,
+    but no eye ball norm tests wrt output were performed.
+    Also, not performed: bfb tests, unit tests (not tried to run),
+    investigating bfb flags. This is for future PRs.
+    
+    Fixes #5069 for team sizes too large with asserts and nans
+    in reprosums for cxx execs with diagnostics macro ENERGY_DIAGNOSTICS.
+    
+    [bfb] for nightlies and v100.
+
+[33mcommit 48ce08eededc479f71ddbbb7ee521f26ce70f6a9[m
+Author: Steven Brus <steven.r.brus@gmail.com>
+Date:   Tue Oct 4 17:03:19 2022 -0500
+
+    Fix minor ww3 buildnml issues
+    
+     - Add uost files to input file list
+    
+     - Add cesm_namelist as -infile to build-namelist call so user_nl_ww3
+       modifications are considered
+
+[33mcommit 0e60075ebb977d21b408dbbb698a60045dc2f20d[m
+Author: Steven Brus <steven.r.brus@gmail.com>
+Date:   Tue Oct 4 17:02:41 2022 -0500
+
+    Add langmuirNumber output to MPAS-O stream for waves runs
+
+[33mcommit 9522305d69e286d43032bc7ea90710822eb2505a[m
+Author: Andrew M. Bradley <ambradl@sandia.gov>
+Date:   Sat Oct 8 16:24:34 2022 -0400
+
+    Hommexx/SL: (Re)fix a variable for lambda capture in two spots.
+    
+    HIP can't handle the reference, but we still need it for the F90 dycore with
+    HORIZ_OPENMP enabled, since in that code path we enter all of our routines
+    within a threaded region and so cannot create new Kokkos::Serial views during
+    time stepping. (Recall Kokkos::Serial is necessary b/c Homme's threading is not
+    compatible with Kokkos::OpenMP.) Thus, if COMPOSE_PORT is not defined, take a
+    reference.
+
+[33mcommit 66dd25925e4f1aff93e87f33318f76873fda8ea0[m
+Author: Azamat Mametjanov <azamat@mcs.anl.gov>
+Date:   Sat Oct 8 14:23:42 2022 -0400
+
+    Increase nnodes for GPMPAS-JRA compset from 2 to 4 on Crusher
+
+[33mcommit 480da45157b170cdf603ea72f678435c937d9289[m
+Author: Azamat Mametjanov <azamat@mcs.anl.gov>
+Date:   Fri Oct 7 18:49:34 2022 -0400
+
+    Increase number of nodes for GPMPAS-JRA compset from 2 to 4
+
+[33mcommit c8b4cc1986807fe2eb651dd31297c6c49c2ff3c1[m
+Author: Peter Schwartz <schwartzpd@ornl.gov>
+Date:   Wed Oct 5 09:11:48 2022 -0500
+
+    Fixed using wrong file for ECA, crop, and FATES runs.
+    Removed "nu_com = 'RD'" check since it isn't use in lnd_in but is the default setting
+    in ELM source code.
+
+[33mcommit 2ad7a591392ea39f069d8433c56f3633452449c0[m
+Merge: f8b135bcf9 c4189b13a2
+Author: Andrew M. Bradley <ambrad@cs.stanford.edu>
+Date:   Fri Oct 7 13:00:43 2022 -0500
+
+    Merge branch 'ambrad/hommexx/sl-support-mpi-on-host' (PR #5223)
+    
+    Hommexx/SL: Implement HOMMEXX_MPI_ON_DEVICE=Off in SL transport.
+    
+    Previously, the unstructured SL-internal communication rounds were done using
+    device pointers regardless of the value of HOMMEXX_MPI_ON_DEVICE. Now they are
+    done on host if HOMMEXX_MPI_ON_DEVICE is true.
+    
+    Chrysalis e3sm_developer and homme_integration pass. Performance tested in
+    SCREAM on Summit.
+    
+    [BFB]
+
+[33mcommit e2a363825aafc747d837cd7649e00e4abc00a649[m
+Author: Jon Wolfe <jonbob@lanl.gov>
+Date:   Fri Oct 7 10:55:24 2022 -0500
+
+    Add missing variables to omp pragmas, from PR #5195
+
+[33mcommit f8b135bcf9770dee0126a6ae777a2548ee657181[m
+Merge: 3cfcd8550b 75be879de2
+Author: Jon Wolfe <jonbob@lanl.gov>
+Date:   Fri Oct 7 10:21:13 2022 -0500
+
+    Merge branch 'mark-petersen/ocn/harmonic-analysis-enddo' (PR #5189)
+    
+    Change defunct Fortran line labels to end do
+    
+    Update from numerical line labels to closing end do.
+    
+    Fixes #5188
+    [BFB]
+
+[33mcommit 3cfcd8550bc03fa978159b62becc451721578499[m
+Merge: 2032d9c37d 1523108ce7
+Author: Jon Wolfe <jonbob@lanl.gov>
+Date:   Fri Oct 7 10:16:55 2022 -0500
+
+    Merge branch 'xylar/ocn/add-cf-time' (PR #5202)
+    
+    Add CF-compliant Time coordinate
+    
+    This variable has CF-compliant units and calendar. To accommodate the
+    CF-compliant units, a new config option has been added to supply the
+    reference time, 0001-01-01 by default.
+    
+    This merge also adds a Time_bnds variable. For output from a single
+    point in time, the values in Time_bnds are the same as Time. For
+    time-averaged (or min or max) output, Time_bnds contains the start and
+    end times of the interval covered by the output.
+    
+    [BFB]
+
+[33mcommit c6f76801bee74be2a5e7f0fb422e84d36a004cc0[m
+Author: Azamat Mametjanov <azamat@mcs.anl.gov>
+Date:   Thu Oct 6 21:58:33 2022 -0400
+
+    Shorten test-job-id with --jenkins-id Jenkins script option
+
+[33mcommit c4189b13a20ee0989ea2d61286d33466fb503c1c[m
+Author: Andrew M. Bradley <ambradl@sandia.gov>
+Date:   Wed Oct 5 16:34:38 2022 -0400
+
+    Hommexx/SL: Implement HOMMEXX_MPI_ON_DEVICE=Off in SL transport.
+    
+    Previously, the unstructured SL-internal communication rounds were done using
+    device pointers regardless of the value of HOMMEXX_MPI_ON_DEVICE. Now they are
+    done on host if HOMMEXX_MPI_ON_DEVICE is true.
+
+[33mcommit 2032d9c37ddeea1b53eeafe45db4a85ea4405f57[m
+Merge: 188ad0d00a 50fb69efd2
+Author: Jon Wolfe <jonbob@lanl.gov>
+Date:   Thu Oct 6 14:33:11 2022 -0500
+
+    Merge branch 'njeffery/mpassi/snicar-interpolation-fix' (PR #5209)
+    
+    Corrects sea ice snicar_ad error
+    
+    Fixes interpolation of shortwave parameters for the 5-band scheme. This
+    error was introduced in the Snicar_ad feature implementation.
+    
+    Fixes #5206
+    [non-BFB]
+
+[33mcommit 36fa035b95a4d55c260728668c9116a3a58b477d[m
+Author: Azamat Mametjanov <azamat@mcs.anl.gov>
+Date:   Thu Oct 6 14:22:54 2022 -0400
+
+    Double PEs to prevent walltime timeouts on Ascent
+
+[33mcommit 188ad0d00ab7faca0c8ba2aa56127d7ae2c7cf26[m
+Merge: 4dcc8dba15 1a29eb8381
+Author: Jon Wolfe <jonbob@lanl.gov>
+Date:   Thu Oct 6 13:14:20 2022 -0500
+
+    Merge branch 'jonbob/ocean/fix-submeso-threading' (PR #5216)
+    
+    Fix threading issues in submesoscale code
+    
+    Adds some missing variables to the omp pragmas in the new submesoscale
+    model code, to fix some issues with a test not being reproducible with
+    threading and debug on.
+    
+    Fixes #5215
+    
+    [non-BFB] only with threading on
+
+[33mcommit 4dcc8dba1550fcfb9dc5a095706893363e3d9870[m
+Merge: 0075116ccf ef076d4451
+Author: Jon Wolfe <jonbob@lanl.gov>
+Date:   Wed Oct 5 11:26:27 2022 -0500
+
+    Merge branch 'mark-petersen/ocean/barotropic-edge-thickness' (PR #5195)
+    
+    Fix barotropic thickness on edge in split explicit subcycling
+    
+    Barotropic thickness at the edge must match the sum of baroclinic
+    thicknesses at that edge. This PR corrects a long-standing problem of
+    noise in the vertVelocityTop variable, which is the Eulerian
+    (fixed-frame) velocity for momentum. The vertTransportVelocityTop
+    variable for tracer and thickness transport was smooth, both before and
+    after this change.
+    
+    Currently in the code, the thickness at an edge used for volume (SSH)
+    transport in the barotropic subcycling is
+       thicknessSum = sshEdge + min(bottomDepth(cell1), bottomDepth(cell2))
+    That is, the thickness at an edge is taken as the shallower of the two
+    neighboring cells. This was inconsistent with the baroclinic mode, which
+    takes the average thickness of the two neighboring cells.
+    
+    [CC]
+
+[33mcommit 6a00b3b97bb93c9e5dbaf6039f29092847a6a29e[m
+Author: Peter Schwartz <schwartzpd@ornl.gov>
+Date:   Wed Oct 5 10:47:22 2022 -0500
+
+    Fixes error that occurs when ocn_rof_two_way = .false. and an element of an un-allocated o2r_rx is passed as an argument.
+
+[33mcommit 0075116ccf04bbcafb5129a0a9cdf5e733d16802[m
+Merge: 4aad3b232a 8e28de11ad
+Author: Wuyin Lin <wlin@bnl.gov>
+Date:   Wed Oct 5 08:41:32 2022 -0700
+
+    Merge branch 'quantheory:non-iop-tracers-for-pr' (PR #5182)
+    
+    Add scm_zero_non_iop_tracers option
+    
+    For single-column runs, this sets all tracers in the atmospheric
+    constituent list to qmin (typically zero) after the initial condition
+    file (ncdata) is read in, but before the IOP file values are applied.
+    As a result, non-IOP tracers are initialized to qmin rather than
+    taking their values from the initial condition file, while IOP-defined
+    tracers are unaffected.
+    
+    This option defaults to .false., and hence does not change answers for
+    existing cases. However, it may be considered safer in the future to
+    change the default to .true. (at least for non-replay runs), to avoid
+    inconsistencies between the initial condition file state and the IOP
+    file state that exacerbate transient spin-up behavior and potentially
+    bias free-running model results. Like most single column model options,
+    this option has no effect in global runs.
+    
+    This PR addresses #5177, at least in part. Actually changing default
+    behavior for existing SCM cases would require the option to be
+    enabled in scmlib.
+    
+    [BFB] No impact on existing tests
+
+[33mcommit 1a29eb83814d48819efe4c85951cbad138b10a10[m
+Author: Jon Wolfe <jonbob@lanl.gov>
+Date:   Tue Oct 4 15:59:19 2022 -0500
+
+    Add missing variables to omp pragmas
+
+[33mcommit 4aad3b232a4424e6dfd272bce330d0fcc6e48bd3[m
+Merge: bcf0289157 b87a2bffb3
+Author: Jon Wolfe <jonbob@lanl.gov>
+Date:   Tue Oct 4 14:56:44 2022 -0500
+
+    Merge branch 'darincomeau/grids/add-ARRM10to60E2r1' (PR #5178)
+    
+    Add script support for ARRM10to60E2r1 ocn/ice grid
+    
+    Brings in support for the ARRM10to60E2r1 ocn/ice mesh.
+    MPAS-Dev/compass#414 has details on the mesh generation, which is an
+    updated version of the oARRM60to10 mesh. This PR includes all necessary
+    mapping, runoff, and domain files for the following configurations:
+    * ne30pg2_ARRM10to60E2r1
+    * arcticx4v1pg2_ARRM10to60E2r1
+    * TL319_ARRM10to60E2r1 (JRA-forced)
+    * T62_ARRM10to60E2r1 (CORE-forced)
+    
+    [BFB] for all currently tested configurations
+
+[33mcommit 034cd6846b8c46acc748654b9733488d16f32f0e[m
+Author: Sha Feng <bunnyvon@gmail.com>
+Date:   Tue Oct 4 08:55:24 2022 -0700
+
+    Update config_compsets.xml
+    
+    Fix runoff configuration in the BGC land-atm compsets
+
+[33mcommit bcf02891579f1269adbc53cc910fe392581bb48e[m
+Merge: ca48f56e0a 856b062f97
+Author: Jon Wolfe <jonbob@lanl.gov>
+Date:   Mon Oct 3 10:15:49 2022 -0500
+
+    Merge branch 'vanroekel/ocean/enable-submesoscale-eddy-parameterization' (PR #5172)
+    
+    Enables and modifies the submesoscale eddy parameterization
+    
+    This enables the Fox-Kemper et al 2011 submesoscale eddy
+    parameterization as the default for all configurations.
+    
+    It also fixes a unit error in the submesoscale eddy code that did not
+    influence the long control run, but was introduced in the first PR
+    (#5099). The variable gradBuoyEddy was not the buoyancy but the density
+    gradient. Here the name is changed to gradDensityEddy for clarity.
+    
+    [NML]
+    [CC]
+
+[33mcommit ca48f56e0a398b647551cdbc735321b9d0ad55df[m
+Merge: 675deeccdd 328fcdc7f2
+Author: Azamat Mametjanov <azamat@mcs.anl.gov>
+Date:   Sat Oct 1 16:36:00 2022 -0400
+
+    Merge branch 'azamat/crusher/cray-add-hipa0-hzero' (PR #5208)
+    
+    Update Cray compiler flags and Crusher machine config:
+    - add -hipa0 -hzero to prevent NaNs
+    - add -em -ef for lowercase modulename.mod files
+    - increase l%360x720cru PE-layout from 1 to 2 nodes
+    - increase memleak tolerance from 20 to 25%
+    
+    [BFB]
+
+[33mcommit 328fcdc7f2a69f0c858426d24a71c5905e7f4ae1[m
+Author: Azamat Mametjanov <azamat@mcs.anl.gov>
+Date:   Thu Sep 29 21:56:40 2022 -0400
+
+    Add -em -ef to crayclang for lowercase modulename.mod files
+    
+    Needed by Scorpio to recignize externally built GPTL perf_mod.mod
+    and avoid building internal GPTL again.
+
+[33mcommit 856b062f971642c003fb24b210c16944c32940d6[m
+Author: Jon Wolfe <jonbob@lanl.gov>
+Date:   Thu Sep 29 17:33:47 2022 -0500
+
+    Change stream field from normalMLEBolusvelocity to normalMLEvelocity
+
+[33mcommit ddd41fd20e7a87f271a64d96bf0016d14aa3cb36[m
+Author: Luke Van Roekel <luke.vanroekel@gmail.com>
+Date:   Wed Sep 28 14:04:18 2022 -0500
+
+    changes submesoscale efficiency default strength
+
+[33mcommit f2e7dea3cf75f37d48267a87a2e170668419b126[m
+Author: Luke Van Roekel <luke.vanroekel@gmail.com>
+Date:   Mon Sep 26 23:18:51 2022 -0500
+
+    Fixes registry variables
+
+[33mcommit 7c27a6223133bfeaf11402c74b689d01aeee523a[m
+Author: Luke Van Roekel <luke.vanroekel@gmail.com>
+Date:   Sat Sep 24 23:01:18 2022 -0500
+
+    fixes one more gradBuoyEddy
+
+[33mcommit 9503ea80188b1b1dc7ee153642d387cc2f9a4468[m
+Author: Luke Van Roekel <luke.vanroekel@gmail.com>
+Date:   Fri Sep 23 13:35:59 2022 -0500
+
+    Changes name of gradBuoyEddy
+    
+    The computation is for the gradient of density but the array was called
+    gradBuoyEddy.  This commit switches it to gradDensityEddy for clarity
+
+[33mcommit 8b60b73bd857f9f56c12e1ad7a4cdb6910929fab[m
+Author: Luke Van Roekel <luke.vanroekel@gmail.com>
+Date:   Fri Sep 23 12:32:56 2022 -0500
+
+    Fixes unit issue in submesoscale code
+
+[33mcommit 6f010a59d998fada3d1c9b0b48a5fdac833f27d9[m
+Author: Luke Van Roekel <luke.vanroekel@gmail.com>
+Date:   Fri Sep 9 23:12:48 2022 -0500
+
+    adds MLE velocity to mpas stand alone
+
+[33mcommit 58ab0684fc42680da9df5aa0d915453a347ebad7[m
+Author: Luke Van Roekel <luke.vanroekel@gmail.com>
+Date:   Fri Sep 9 22:46:21 2022 -0500
+
+    Adds MLE velocity to default output
+
+[33mcommit dd22b3937b3a048e9d8749a981b988954486d4af[m
+Author: Luke Van Roekel <luke.vanroekel@gmail.com>
+Date:   Thu Sep 1 23:00:46 2022 -0500
+
+    Enables submesoscale eddy parameterization
+
+[33mcommit 3d916fb9e64bb40b781e81d2c3c282cc98653cc8[m
+Author: Peter Schwartz <schwartzpd@ornl.gov>
+Date:   Thu Sep 29 13:56:43 2022 -0500
+
+    Updated namelist build script to check value of "use_cn" when setting elm paramfile.
+    New clm_params_c211124.nc is only set if "use_cn = .true."
+
+[33mcommit 675deeccddb182c6c5241fc26efab7de7784dbbd[m
+Merge: 878597d3e6 8b2a60f0b6
+Author: Benjamin Hillman <bhillma@sandia.gov>
+Date:   Thu Sep 29 13:39:28 2022 -0500
+
+    Merge branch 'whannah/mmf/check-energy-bug-fix' (#5163)
+    
+    This bug only applies to the first time step. These values have always been uninitialized, but somehow never caused a problem. While running a ne120 MMF case in debug mode these uninitialized values became problematic, so this PR should avoid these problems in the future.
+    [BFB]
+
+[33mcommit 878597d3e6d549209abd1b1f0771274f188cda0a[m
+Merge: a955e1c2e9 42eca04476
+Author: Jon Wolfe <jonbob@lanl.gov>
+Date:   Thu Sep 29 13:19:34 2022 -0500
+
+    Merge branch 'vanroekel/ocean/fix-redi-surface-taper' (PR #5171)
+    
+    Fix Redi Surface Taper double counting
+    
+    Currently the SlopeTriads are tapered at the surface AND tapered in
+    mpas_ocn_tracer_hmix_redi as well, which is a double counting.  The
+    tapering in the latter is removed.
+    
+    In addition to removing the double count in the taper, Redi is reduced
+    to horizontal mixing in the mixed layer, consistent with other modeling
+    center implementations and literature (e.g. Ferrari et al 2008). This is
+    accomplished by setting the Redi taper to zero in the mixed layer, which
+    disables all terms except the horizontal mixing term.
+    
+    [NCC]
+
+[33mcommit a955e1c2e9f73d26f0171e3307f595d054ac9280[m
+Merge: ceda11cfd0 0053dd9a59
+Author: Balwinder Singh <balwindersingh@gmail.com>
+Date:   Thu Sep 29 10:38:45 2022 -0700
+
+    Merge branch 'singhbalwinder/atm/fix-water-aerosol-units' ...
+    (PR #5199)
+    
+    Fixes units for aerosol water
+    
+    Units for aerosol water were incorrectly mentioned as "meter" when it
+    should have been 'kg/kg'.
+    
+    [BFB]
+    
+    * singhbalwinder/atm/fix-water-aerosol-units:
+      Fixes units for aerosol water
+
+[33mcommit 45f779f0a4db1ba6ad54837eebf0af79600d98f5[m
+Author: Steven Brus <steven.r.brus@gmail.com>
+Date:   Thu Sep 29 11:42:24 2022 -0500
+
+    Update extended coverage test for waves
+
+[33mcommit 50fb69efd202cb16983043f16ca3af046e166186[m
+Author: Nicole Jeffery <njeffery@lanl.gov>
+Date:   Thu Sep 29 10:40:03 2022 -0500
+
+    Corrects issue #5206, sea ice snicar_ad error
+    
+    Fixes interpolation of shortwave parameters for the 5-band scheme.
+    This error was introduced in the Snicar_ad feature implementation.
+    
+    nonBFB
+
+[33mcommit f4151f49867fc023047b09777928a5e4c43afe13[m
+Author: Azamat Mametjanov <azamat@mcs.anl.gov>
+Date:   Wed Sep 28 18:18:43 2022 -0400
+
+    Increase l%360x720cru PE-layout from 1 to 2 nodes
+    
+    Also, increase memleak tolerance from 20 to 25%
+
+[33mcommit 75be879de27f71464624cc1f942eb42fa1b399d7[m
+Author: Mark Petersen <mpetersen@lanl.gov>
+Date:   Wed Sep 28 16:07:12 2022 -0600
+
+    Change goto to backwards do loop
+
+[33mcommit 912810377c5e9a254e1f85fe4f3bfa14d91fde1e[m
+Author: Mark Petersen <mpetersen@lanl.gov>
+Date:   Wed Sep 28 16:05:59 2022 -0600
+
+    change cycle to exit
+
+[33mcommit b3f04b53054520613d2e7ab5b7a14b20a4765a4e[m
+Author: Oksana Guba <oksanaguba@gmail.com>
+Date:   Wed Sep 28 13:18:46 2022 -0400
+
+    fix homme standalone build not via cime
+
+[33mcommit 0926a7b3b9af68b9f0678d3faa05c681b8ea4673[m
+Author: Azamat Mametjanov <azamat@mcs.anl.gov>
+Date:   Tue Sep 27 22:18:25 2022 -0400
+
+    Add -hipa0 -hzero to prevent NaNs with Cray compiler on Crusher
+
+[33mcommit c71151da69433fcfab9735ed8688fac359c242a5[m
+Author: Peter Schwartz <schwartzpd@ornl.gov>
+Date:   Tue Sep 27 17:15:23 2022 -0500
+
+    New flanduse_timeseries file on set if use_cn = .true.
+
+[33mcommit ceda11cfd01c3de31d3492d044d914152703ecd0[m
+Merge: a91d2f67ae 16918589ea
+Author: Wuyin Lin <wlin@bnl.gov>
+Date:   Tue Sep 27 13:42:56 2022 -0700
+
+    Merge branch 'wlin/atm/fix_cosp_strarray_gnu' (PR #5203)
+    
+    Fix inconsistent string length in a cosp character array
+    
+    An initialized character array does not have the same length for some
+    elements (newly introduced cosp variables via #5147), causing gnu compiler to abort.
+    
+    [BFB]
+
+[33mcommit 9ba2201122140cc92be10af028bee6436e3d4cac[m
+Author: Phil Jones <pwjones@lanl.gov>
+Date:   Mon Sep 26 16:53:48 2022 -0400
+
+    re-inserted some omp parallel directives
+
+[33mcommit 16918589ea852e7ffd465c1c54c6f0121e6516ea[m
+Author: Wuyin Lin <wlin@bnl.gov>
+Date:   Sun Sep 25 09:14:16 2022 -0700
+
+    Fix inconsistent string length in a cosp character array
+    
+    [BFB]
+
+[33mcommit 1523108ce7baa0eeed3c0b6bcf16790cdc9c7344[m
+Author: Xylar Asay-Davis <xylarstorm@gmail.com>
+Date:   Sat Sep 24 22:54:54 2022 -0600
+
+    Add standard name
+
+[33mcommit 4733d97af131a78ab8c7d27c19a2df0bf0681225[m
+Author: Xylar Asay-Davis <xylarstorm@gmail.com>
+Date:   Tue May 24 23:56:39 2022 -0600
+
+    Compute Time and Time_bnds in time series stats
+
+[33mcommit 31ffa23594f557558903caac5c7cf371fbb8bd95[m
+Author: Xylar Asay-Davis <xylarstorm@gmail.com>
+Date:   Tue May 24 22:30:58 2022 -0600
+
+    Always add Time and Time_bnds to time series stats
+
+[33mcommit d3b80aec8337df2da1c9e8f5a378eb039d920e2b[m
+Author: Xylar Asay-Davis <xylarstorm@gmail.com>
+Date:   Tue May 24 11:48:32 2022 -0600
+
+    Clean up input and output field names
+
+[33mcommit c178ffabfe6b92c61e2fc58d6923d9e1d2114612[m
+Author: Xylar Asay-Davis <xylarstorm@gmail.com>
+Date:   Tue May 24 10:59:33 2022 -0600
+
+    Fix typos and white-space in time series stats
+
+[33mcommit cc931c2be6f17b29e5508c5cbd1db97127e03b33[m
+Author: Xylar Asay-Davis <xylarstorm@gmail.com>
+Date:   Fri May 20 22:13:05 2022 -0600
+
+    Add Time_bnds variable
+
+[33mcommit a4f641c2039134bfcd46f310d3d894540ed5ba95[m
+Author: Xylar Asay-Davis <xylarstorm@gmail.com>
+Date:   Mon May 16 22:30:40 2022 -0600
+
+    Add Time coordinate
+    
+    This variable has CF-compliant units and calendar.  To accommodate
+    the CF-compliant units, a new config option has been added to
+    supply the reference time, 0001-01-01 by default.
+
+[33mcommit a91d2f67ae2573917bd4644734d7a5487bb98d9e[m
+Merge: 232eccc324 797ca65119
+Author: Jon Wolfe <jonbob@lanl.gov>
+Date:   Fri Sep 23 15:47:41 2022 -0500
+
+    Merge branch 'mark-petersen/ocean/namelist-transport-tests' (PR #5186)
+    
+    Move ocean namelist transport_tests to testing section
+    
+    The namelist is generally ordered by importance, and the transport_tests
+    was inadvertently added at the top, rather than with the testing section
+    near the bottom. This also cleans up white space for that namelist in
+    the Registry file.
+    
+    [NML]
+    [BFB]
+
+[33mcommit de2b8a32f8232604d9e63b64e45293f16fdc53ac[m
+Author: Mark Petersen <mpetersen@lanl.gov>
+Date:   Fri Sep 23 11:54:55 2022 -0600
+
+    Remove unneeded mesh declaration
+
+[33mcommit 109d6e50ec151c5e72aa3cba1afabbc7dd4af23e[m
+Author: Peter Schwartz <schwartzpd@ornl.gov>
+Date:   Thu Sep 22 12:39:06 2022 -0500
+
+    Modified the setting of create_crop_landunit to be true for any run with hgrid="r05" use_cn = ".true."
+
+[33mcommit 232eccc3248fb4821d93402a1d01a9bf091af6bc[m
+Merge: 5d18d5c2a2 ffe6e12891
+Author: Wuyin Lin <wlin@bnl.gov>
+Date:   Fri Sep 23 10:04:21 2022 -0700
+
+    Merge branch 'zyuying:zyuying/atm/cosp-addnewMODISoutput' (PR #5147)
+    
+    Add new COSP output for MODIS simulator
+    
+    Add new output for MODIS simulator. The three variables are the in-cloud
+    total/liquid/ice cloud fraction ('CLTMODISIC', 'CLWMODISIC', and 'CLIMODISIC').
+    These cloud fraction will be used to convert the fraction-weighted cloud
+    properties from MODIS simulator to the in-cloud average. These MODIS
+    fraction-weighted cloud properties include 'LWPMODIS', 'IWPMODIS', 'REFFCLIMODIS',
+    'REFFCLWMODIS', 'TAUTMODIS', 'TAUIMODIS', 'TAUWMODIS', 'TAUTLOGMODIS', 'TAUILOGMODIS',
+    and 'TAUWLOGMODIS'.
+    
+    [BFB] tests with cosp enabled will add fields.
+
+[33mcommit 0053dd9a59dc191f59ebaed30089a1d8f185bc9e[m
+Author: Balwinder Singh <balwindersingh@gmail.com>
+Date:   Fri Sep 23 09:40:56 2022 -0700
+
+    Fixes units for aerosol water
+
+[33mcommit 5d18d5c2a2d188296f68c259b5ea702279409390[m
+Merge: a527452f7e 1cc7db1d4b
+Author: Azamat Mametjanov <azamat@mcs.anl.gov>
+Date:   Thu Sep 22 16:54:48 2022 -0400
+
+    Merge branch 'azamat/crusher/crayclang-elm-add-fp0' (PR #5181)
+    
+    Add -hfp0 for ELM with cray compiler on Crusher.
+    Also relax memleak tolerance from 10 to 20%.
+    
+    Addresses E3SM-Project/E3SM#4996
+    
+    [BFB]
+
+[33mcommit a527452f7ea93a8b0a7f8dbdb8596f672750b8f2[m
+Merge: d64ac634b7 4ce35be245
+Author: Andrew M. Bradley <ambrad@cs.stanford.edu>
+Date:   Thu Sep 22 14:31:46 2022 -0500
+
+    Merge branch 'ambrad/hommexx/single-ftype0' (PR #5169)
+    
+    Hommexx: Add a missing Kokkos::single to ps update in forcings.
+    
+    This affects ftype 0 on the GPU.
+    
+    e3sm_developer and homme_integration pass on Chrysalis. Tested in SCREAMv1.
+    
+    [BFB]
+
+[33mcommit d64ac634b7985090feb36b97af20d034bf01816e[m
+Merge: e4a1392b4e 598db5018f
+Author: Azamat Mametjanov <azamat@mcs.anl.gov>
+Date:   Thu Sep 22 15:19:55 2022 -0400
+
+    Merge branch 'azamat/cime_config/fideal-pioroot1' (PR #5159)
+    
+    Add PIO_ROOT=1 mod to FIDEAL test
+    To avoid false-positive memleak fail on ROOTPE 0 in ERP tests.
+    
+    Fixes E3SM-Project/E3SM#5076
+    
+    [NML] - due to the test name change
+
+[33mcommit e4a1392b4e4f3bab8481d9f85ee5b2c47ec6abe7[m
+Merge: b1a44140fb 55764b7b87
+Author: Jon Wolfe <jonbob@lanl.gov>
+Date:   Thu Sep 22 13:00:29 2022 -0500
+
+    Merge branch 'maltrud/ocean/add-carbon-conservation-check' (PR #5151)
+    
+    Add carbon to mpas-ocean conservation check analysis member
+    
+    This PR adds carbon to the conservation check analysis member. Output is
+    written to both the log file and conservation check netcdf file. Carbon
+    variables are written to the netcdf file even if BGC is not turned on
+    (unless the user modifies streams.ocean), but not to the log file.
+    
+    [BFB]
+
+[33mcommit 797ca65119d48299c16270b4bd052a9fbb3fe9ef[m
+Author: Jon Wolfe <jonbob@lanl.gov>
+Date:   Thu Sep 22 12:37:07 2022 -0500
+
+    Update bld files with output from automated scripts to match Registry
+
+[33mcommit bd2ac83357f900cd5be62fb6429cabf3736fa21a[m
+Author: Peter Schwartz <schwartzpd@ornl.gov>
+Date:   Thu Sep 22 10:01:53 2022 -0500
+
+    Modify ELMBuildNamelist.pm to check 'use_cn' when setting 'fsurdat'
+
+[33mcommit 1cc7db1d4bef52dec292a8825b25047b515ddf0b[m
+Author: Azamat Mametjanov <azamat@mcs.anl.gov>
+Date:   Wed Sep 21 19:49:02 2022 -0400
+
+    Relax memleak tolerance from 10 to 20% on Crusher
+    
+    OS SUSE SLES-15 needs more memory for IO
+
+[33mcommit c348a85d156991e3a39cb5483f80504722de1eb3[m
+Author: Benjamin R. Hillman <bhillma@sandia.gov>
+Date:   Wed Sep 21 17:04:29 2022 -0600
+
+    Use reduced g-points for radiation
+
+[33mcommit b44e1418a4c2221b915369e8b9f01349c4360ae9[m
+Author: Benjamin R. Hillman <bhillma@sandia.gov>
+Date:   Wed Sep 21 17:02:57 2022 -0600
+
+    Build our own versions of mo_load_coefficients
+    
+    Build our own versions of mo_load_coefficients so that we can use
+    updated RRTMGP absorption coefficient input files with new solar source
+    variables (maintains backward compatibility with old files).
+
+[33mcommit 5597cd00aa1399892fe74edccc1c14883dcc19a5[m
+Author: Gautam Bisht <gautam.bisht@pnnl.gov>
+Date:   Wed Sep 21 14:44:06 2022 -0700
+
+    Updates the test
+
+[33mcommit 3b815d7fc42c7c8644b2499f3bedbcf0e5a1edd0[m
+Author: Gautam Bisht <gautam.bisht@pnnl.gov>
+Date:   Wed Sep 21 13:43:12 2022 -0700
+
+    Changes to for ELM's SP mode
+    
+    Old surface dataset file, which does not include the cft dimension, is used for SP mode.
+    The new surface dataset, which includes the cdf dimension, is used for BGC turned on.
+
+[33mcommit b1a44140fbbd231b8fff410eb87460c3b7c3de95[m
+Merge: 5ad9f8c956 5b99512125
+Author: Jon Wolfe <jonbob@lanl.gov>
+Date:   Wed Sep 21 10:34:58 2022 -0500
+
+    Merge branch 'jonbob/mpas-framework/add-attributes' (PR #5183)
+    
+    Add mpas-framework support for several other attributes
+    
+    Adds parsing support to the mpas-framework for the following attributes:
+    * bounds
+    * cell_measures
+    * cell_method
+    * coordinates
+    * standard_name
+    See additional discussion in E3SM-Ocean-Discussion PR #28
+    
+    [BFB]
+
+[33mcommit 5ad9f8c9567a6183e9effa5d000d1f7384d9c4b2[m
+Merge: 4764ba5d1a af4b9a205b
+Author: Jon Wolfe <jonbob@lanl.gov>
+Date:   Wed Sep 21 10:18:04 2022 -0500
+
+    Merge branch 'vanroekel/ocean/change-moc-streamfunction' (PR #5170)
+    
+    Alters MOC calculation in ocean component
+    
+    Currently the southern boundary is integrated from top to bottom, this
+    is changed to be from bottom to top to take advantage of the natural
+    boundary condition that the streamfunction at the bottom is zero. In the
+    calculation we implicitly assume that there is a
+    mocStreamValLatAndDepthLocal(nVertLevels+1) that is always zero.
+    
+    The calculation is also consistent with that used by the POP model for
+    the same diagnostic.
+    
+    [BFB]
+
+[33mcommit ef076d44519308a78d4ed5e4018f8234199d2df7[m
+Author: Mark Petersen <mpetersen@lanl.gov>
+Date:   Wed Sep 21 08:00:08 2022 -0600
+
+    Change from z-level to general vertical coordinate
+
+[33mcommit 340a96d370187afcb0ee5de2d39d00e762574c50[m
+Author: Phil Jones <pwjones@lanl.gov>
+Date:   Wed Sep 21 08:47:05 2022 -0500
+
+    back out some cleanup changes to preserve bit-for-bit
+    
+      some previous changes were not bit-for-bit due to aggressive
+      optimization in Intel compiler, so backing out two minor changes
+
+[33mcommit cf46d28a90b7c8653834324d66336bc695001c7d[m
+Author: Mark Petersen <mpetersen@lanl.gov>
+Date:   Wed Sep 21 07:26:07 2022 -0600
+
+    add bottomDepthEdge calculation
+
+[33mcommit 4ce35be245fbd6082955f0ccd9bb55f1837c1b0c[m
+Author: Andrew M. Bradley <ambrad@cs.stanford.edu>
+Date:   Tue Sep 20 20:28:31 2022 -0500
+
+    Hommexx/SL: Fix q_lo/hi calculation in CEDR check.
+    
+    Find the extrema of the correct field. This is in a correctness-checking
+    routine, so it doesn't affect answers.
+
+[33mcommit 81a0366008138178ad7602099a9f6031db48db28[m
+Author: Mark Petersen <mpetersen@lanl.gov>
+Date:   Tue Sep 20 14:47:45 2022 -0600
+
+    Fix barotropic edge thickness, assumes z-type coordinate
+
+[33mcommit 42eca04476f559a062cb7d0b17648cd5d242f533[m
+Author: Mark Petersen <mpetersen@lanl.gov>
+Date:   Tue Sep 20 14:17:56 2022 -0600
+
+    Add mixed layer depth check to surface taper
+
+[33mcommit 4802901e96e1b056e3d326c5d5d4f0f7f075d45b[m
+Author: Oksana Guba <oksana.guba@gmail.com>
+Date:   Tue Sep 20 14:01:48 2022 -0500
+
+    fix linking for ut after merge
+
+[33mcommit 055872c4f89a97928e0a96a2af927047a4c1f33f[m
+Merge: eff19f5b50 4764ba5d1a
+Author: Oksana Guba <oksanaguba@gmail.com>
+Date:   Tue Sep 20 12:31:50 2022 -0400
+
+    Merge branch 'origin/master' into oksanaguba/homme/spock
+    
+     Conflicts:
+            components/homme/test_execs/preqx_kokkos_ut/CMakeLists.txt
+            components/homme/test_execs/thetal_kokkos_ut/CMakeLists.txt
+
+[33mcommit b87a2bffb32b7f307411aeeae4325dfb66e00e1d[m
+Author: Darin Comeau <dcomeau@lanl.gov>
+Date:   Tue Sep 20 09:59:58 2022 -0500
+
+    Adding land initial condition for WCYCL1950 compset with ne30pg2 atm
+
+[33mcommit eff19f5b50d9b199ae50573acadb421842298b3c[m
+Author: Oksana Guba <oksanaguba@gmail.com>
+Date:   Tue Sep 20 01:05:58 2022 -0400
+
+    address comments
+
+[33mcommit 5ead8df89638109e890d75a96f4cbc2487e82807[m
+Author: Steven Brus <steven.r.brus@gmail.com>
+Date:   Mon Sep 19 14:20:50 2022 -0500
+
+    Update WW3 submodule
+
+[33mcommit a1d7b16fb3df81f398c1f5d89b5b0a9a0913f9eb[m
+Author: Steven Brus <steven.r.brus@gmail.com>
+Date:   Mon Sep 19 14:18:55 2022 -0500
+
+    Clean up unit numbers and w3init call
+
+[33mcommit 2b9c8e67a589f1118a14691c2fcb95f2f5693ccd[m
+Author: Steven Brus <steven.r.brus@gmail.com>
+Date:   Mon Sep 19 14:15:13 2022 -0500
+
+    Update mct ggrid
+
+[33mcommit e3bd20adab9a620d18ce84493ef63adcb07f20cd[m
+Author: Oksana Guba <oksanaguba@gmail.com>
+Date:   Mon Sep 19 14:15:43 2022 -0400
+
+    clean 1 line for HOMMEXX_ENABLE_GPU
+
+[33mcommit 0c0bc401a77d9f8811c7b039da2785f2b7f7dc83[m
+Author: Oksana Guba <oksanaguba@gmail.com>
+Date:   Mon Sep 19 14:05:20 2022 -0400
+
+    cleaning team size logic
+
+[33mcommit d0cef398385a19aacba2cba4a02bda49c43b1958[m
+Author: Oksana Guba <oksanaguba@gmail.com>
+Date:   Mon Sep 19 14:05:02 2022 -0400
+
+    a comment
+
+[33mcommit 4764ba5d1a2e3dfdc99a791cff38699e5314257a[m
+Merge: c9b09ea8ec c72f39a500
+Author: Jon Wolfe <jonbob@lanl.gov>
+Date:   Fri Sep 16 12:39:25 2022 -0500
+
+    Merge branch 'cbegeman/mpas-framework/new-fill-value-mask-feature' (PR #5154)
+    
+    New fill value mask feature in MPAS-Framework
+    
+    This PR is in support of CF-compliant output from MPAS components. It
+    adds a new optional feature to fill variables in output streams with the
+    missing_value defined in the Registry everywhere a masking array,
+    designated with its registry name by a new registry attribute
+    missing_value_mask, is equal to zero. These attributes can be added
+    either to vars or to vararrays; when added to a vararray, masking is
+    applied to each var in the vararray.
+    
+    The masking is only applied to variables who (a) have a missing_value
+    and missing_value_mask attribute and (b) are members of a stream that
+    has the attribute useMissingValMask='true'. useMissingValMask='false' by
+    default. Thus, changes can be made to Registry attributes without
+    affecting the default behavior of streams.
+    
+    Masking is supported for Real fields with dimensions 1-5 when the
+    masking array is an integer array with dimensions 1-3 and the shape of
+    the masking array matches up to 3 contiguous dimensions of the Real
+    field.
+    
+    [BFB]
+
+[33mcommit c9b09ea8ec71b821b53e4071fe1e32b1cf07fc1f[m
+Merge: 4541eec141 ac68e0aa54
+Author: Benjamin Hillman <bhillma@sandia.gov>
+Date:   Thu Sep 15 17:05:39 2022 -0500
+
+    Merge branch 'whannah/mmf/enable-VT-ESMT-by-default' (#5107)
+    
+    The explicit scalar momentum transport (ESMT) and CRM variance transport (VT) options have been in the "experimental" phase for quite awhile, but now that papers have been submitted verifying that these options work as intended and benefit the model solution it is time to include them in the default configuration. ESMT is still controlled by ifdef blocks, so this PR also removes these and adds variables to the namelist and configure script to control this feature.
+    
+    [non-BFB] (only for MMF)
+
+[33mcommit c72f39a50034cfeea3288f83a3d8495309416a9e[m
+Author: Carolyn Begeman <cmbranecky@gmail.com>
+Date:   Thu Sep 15 11:35:24 2022 -0700
+
+    Jon Wolfe's changes to io_streams allocate
+
+[33mcommit d3a010dcc818a440472ea2e826d96f543f1c61ad[m
+Author: Phil Jones <pwjones@lanl.gov>
+Date:   Thu Sep 15 11:58:17 2022 -0400
+
+    replace device_resident and other fixes for ocn vert transport
+    
+       replaced OpenACC device_resident with more common create/delete
+       removed meshPool and use mesh module variables
+       initial (but disabled) OpenACC conversion of ALE routine
+       a lot of cleanup of long lines, etc
+
+[33mcommit 09a9e9e2676b7fffc0e43643e6d2fb52779e99c2[m
+Author: Phil Jones <pwjones@lanl.gov>
+Date:   Mon Sep 12 17:38:41 2022 -0400
+
+    replaced device_resident in ocn diag compute KPP routine
+    
+       also significant cleanup/formatting
+
+[33mcommit fbc9cafb0780871c8a6b76cd34a979a733b6c7fa[m
+Author: Phil Jones <pwjones@lanl.gov>
+Date:   Mon Sep 12 12:47:04 2022 -0400
+
+    replace device_resident and other OpenACC fixes for ocn vel diagnostics
+    
+       replaced OpenACC device_resident with more common create/delete
+       fixed missing private directives in some cases
+       other cleanup for long lines and formatting
+
+[33mcommit 94d17539946945af3aa69b34982a4886d46b5b6c[m
+Author: Phil Jones <pwjones@lanl.gov>
+Date:   Fri Sep 9 11:22:41 2022 -0400
+
+    replaced OpenACC device_resident statements in ocn eq state routines
+    
+      replaced device_resident with the more generic create/delete data
+       statements for portability
+      some minor cleanup
+
+[33mcommit 67258ad1e792063e64a31d4ddfad15eb06d23bb5[m
+Author: Phil Jones <pwjones@lanl.gov>
+Date:   Wed Sep 7 17:45:42 2022 -0400
+
+    removed device_resident and fixed OpenACC in ocean eff density
+    
+       replaced OpenACC device_resident with usual enter/exit data
+       added missing OpenACC data directives for pool data
+       removed mesh pool and replaced with ocn mesh module
+       other general cleanup
+
+[33mcommit 55764b7b87ee033e4faa4e4b4fee4371bc746f0a[m
+Author: Mathew Maltrud <maltrud@lanl.gov>
+Date:   Thu Sep 15 10:26:14 2022 -0500
+
+    add per-timestep relative C error to output log
+
+[33mcommit 2b7fe73737a8a86ce56373af53193dc910ee3608[m
+Author: Mathew Maltrud <maltrud@lanl.gov>
+Date:   Thu Sep 15 10:06:30 2022 -0500
+
+    change output log flux units to agree with cpl log
+
+[33mcommit ac68e0aa546f7241ce40b5181fbbbbeb25bc473e[m
+Author: Walter Hannah <whannah1@gmail.com>
+Date:   Wed Sep 14 14:35:15 2022 -0400
+
+    more YAKL_SCOPE fixes for use_ESMT
+
+[33mcommit 3e432fe5a276859c8f705cfeca8a7a1894a791a8[m
+Author: Walter Hannah <whannah1@gmail.com>
+Date:   Wed Sep 14 14:05:56 2022 -0400
+
+    add missing YAKL_SCOPE for use_VT
+
+[33mcommit fb539f86948687050e64c676ec4420e5dc9195d9[m
+Author: Steven Brus <steven.r.brus@gmail.com>
+Date:   Wed Sep 14 11:02:34 2022 -0500
+
+    Clean up logging and related issues
+    
+     - Update WW3 submodule
+
+[33mcommit e7b7eb53da46bd6a0d0d8a4fe9bb12d3ca2e060c[m
+Author: Oksana Guba <oksanaguba@gmail.com>
+Date:   Tue Sep 13 17:49:51 2022 -0400
+
+    remove string args from glob_norms calls
+
+[33mcommit 885b3bcad44b67cec39fc08143d9ca8841b02e6f[m
+Author: Oksana Guba <oksanaguba@gmail.com>
+Date:   Tue Sep 13 17:21:45 2022 -0400
+
+    disable code around energy vars that are not used in cxx version
+
+[33mcommit 28711acc8bf2d36a3bb4f220b5fbf95bbc5e0982[m
+Author: Oksana Guba <oksanaguba@gmail.com>
+Date:   Tue Sep 13 17:18:52 2022 -0400
+
+    remove string args from prim_state calls
+
+[33mcommit d81b7545ffad6e9c985fa62e748d499673a4e633[m
+Author: Darin Comeau <dcomeau@lanl.gov>
+Date:   Tue Sep 13 15:29:15 2022 -0500
+
+    Changing name of analysis_mask_file to intended ARRM10to60E2r1_mocBasinsAndTransects20210623.nc
+
+[33mcommit debc6b0d8331d438968ada0baf2ca612e3d91c7f[m
+Author: Darin Comeau <dcomeau@lanl.gov>
+Date:   Tue Sep 13 15:22:37 2022 -0500
+
+    Making change to Redi_min_layers_diag_terms 15 for this mesh only, leaving 6 as general default

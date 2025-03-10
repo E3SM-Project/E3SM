@@ -78,7 +78,12 @@ module physical_constants
   real (kind=real_kind), public            :: cvdry        = cp - rgas
   real (kind=real_kind), public            :: cvv          = cpwater_vapor - rwater_vapor
 
+  real (kind=real_kind), public, parameter :: rho_liquidH20 = 997.0d0   ! liquid water density
+  real (kind=real_kind), public, parameter :: MWliquidH20   = 18.016d0  ! liquid water Molecular Weight
+
 !consts for kessler-defined qsat
+! bubble constant t is the variable tmelt within micro_p3_utils_init. Maybe it should be called tfreeze there as the value seems to
+! be the freezing point of water, but the name suggests melting !
   real (kind=real_kind), public :: bubble_const1=3.8, bubble_const2=17.27, bubble_const3=273.0, bubble_const4=36.0
 !consts for RJ-defined qsat
   real (kind=real_kind), public :: bubble_t0_const=273.16, bubble_epsilo=Rd_on_Rv, bubble_e0=610.78
