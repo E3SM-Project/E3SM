@@ -3168,8 +3168,8 @@
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>E3SM_RRM</PROJECT>
     <CHARGE_ACCOUNT>E3SM_RRM</CHARGE_ACCOUNT>
-    <SAVE_TIMING_DIR>/grand/E3SMinput/performance_archive</SAVE_TIMING_DIR>
-    <SAVE_TIMING_DIR_PROJECTS>SCREAM_Calib,E3SM_RRM</SAVE_TIMING_DIR_PROJECTS>
+    <SAVE_TIMING_DIR>/grand/E3SMinput/polaris/</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR_PROJECTS>E3SM_RRM</SAVE_TIMING_DIR_PROJECTS>
     <CIME_OUTPUT_ROOT>/eagle/$PROJECT/$USER/scratch</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/grand/E3SMinput/data</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/grand/E3SMinput/data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
@@ -3181,7 +3181,7 @@
     <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
     <BATCH_SYSTEM>pbspro</BATCH_SYSTEM>
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>4</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="gnu">32</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="nvidia">32</MAX_MPITASKS_PER_NODE>
@@ -3191,7 +3191,7 @@
        <arguments>
           <arg name="total_num_tasks">-np {{ total_tasks }} --label</arg>
           <arg name="ranks_per_node">-ppn {{ tasks_per_node }}</arg>
-          <arg name="ranks_bind">--cpu-bind depth -envall</arg>
+          <arg name="ranks_bind">--cpu-bind core </arg>
           <arg name="threads_per_rank">-d $ENV{OMP_NUM_THREADS}</arg>
           <arg name="gpu_maps">$ENV{GPU_TILE_COMPACT}</arg>
        </arguments>
@@ -3208,24 +3208,25 @@
         <command name="use">/grand/E3SMinput/soft/modulefiles/polaris</command>
         <command name="load">cray-python</command>
         <command name="load">cmake/3.27.9</command>
+        <command name="load">craype-accel-host</command>
       </modules>
       <modules compiler="gnu.*">
-        <command name="load">PrgEnv-gnu</command>
+        <command name="load">PrgEnv-gnu/8.5.0</command>
       </modules>
       <modules compiler="gnugpu">
-        <command name="load">nvhpc-mixed</command>
+        <command name="load">nvhpc-mixed/23.9</command>
       </modules>
       <modules compiler="nvidia.*">
-        <command name="load">PrgEnv-nvhpc</command>
+        <command name="load">PrgEnv-nvhpc/8.5.0</command>
       </modules>
-      <modules compiler="nvidiagpu">
+      <modules compiler=".*gpu">
         <command name="load">craype-accel-nvidia80</command>
       </modules>
       <modules>
-        <command name="load">cray-libsci</command>
-        <command name="load">cray-hdf5-parallel</command>
-        <command name="load">cray-netcdf-hdf5parallel</command>
-        <command name="load">cray-parallel-netcdf</command>
+        <command name="load">cray-libsci/23.12.5</command>
+        <command name="load">cray-hdf5-parallel/1.12.2.9</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.0.9</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.9</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -3235,9 +3236,7 @@
       <env name="PERL5LIB">/grand/E3SMinput/soft/perl5/lib/perl5</env>
       <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
-      <env name="CRAYPE_LINK_TYPE">dynamic</env>
       <env name="MPICH_GPU_SUPPORT_ENABLED">0</env>
-      <env name="CRAY_ACCEL_TARGET">host</env>
       <env name="GPU_TILE_COMPACT"> </env>
     </environment_variables>
     <environment_variables compiler="gnu.*">
@@ -3246,7 +3245,6 @@
     <environment_variables compiler=".*gpu">
       <env name="NVCC_WRAPPER_DEFAULT_COMPILER">CC</env>
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
-      <env name="CRAY_ACCEL_TARGET">nvidia80</env>
       <env name="GPU_TILE_COMPACT">/grand/E3SMinput/soft/qsub/set_affinity_gpu_polaris.sh</env>
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE">
@@ -3420,6 +3418,7 @@
      </module_system>
      <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
      <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+     <MAX_GB_OLD_TEST_DATA>0</MAX_GB_OLD_TEST_DATA>
      <environment_variables>
         <env name="NETCDF_PATH">/lus/flare/projects/E3SM_Dec/soft/netcdf/4.9.2c-4.6.1f/oneapi.eng.2024.07.30.002</env>
         <env name="PNETCDF_PATH">/lus/flare/projects/E3SM_Dec/soft/pnetcdf/1.14.0/oneapi.eng.2024.07.30.002</env>
