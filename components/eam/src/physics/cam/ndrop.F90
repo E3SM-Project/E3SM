@@ -66,6 +66,11 @@ character(len=8) :: ccnmair_name(psat)= &
 ! indices in state and pbuf structures
 integer :: numliq_idx = -1
 integer :: kvh_idx    = -1
+!<shanyp 04162024
+integer :: cldliq_idx = -1
+integer :: cmeliq_idx = -1
+real(r8),parameter :: smaxupbdy = 1.e-2           ! upper bound of Smax
+!shanyp 04162024>
 
 ! description of modal aerosols
 integer               :: ntot_amode     ! number of aerosol modes
@@ -121,7 +126,10 @@ subroutine ndrop_init
 
    ! get indices into state%q and pbuf structures
    call cnst_get_ind('NUMLIQ', numliq_idx)
-
+!<shanyp 04162024
+   cmeliq_idx   = pbuf_get_index('CMELIQ')
+   call cnst_get_ind('CLDLIQ', cldliq_idx)
+!shanyp 04162024>
    kvh_idx      = pbuf_get_index('kvh')
 
    zero     = 0._r8
@@ -278,6 +286,11 @@ subroutine ndrop_init
    call addfld('CCN5',(/ 'lev' /), 'A','1/cm3','CCN concentration at S=0.5%')
    call addfld('CCN6',(/ 'lev' /), 'A','1/cm3','CCN concentration at S=1.0%')
 
+!<shanyp 04162024
+   call addfld('smaxclubb', (/ 'lev' /), 'I', ' ', 'Supersaturation from CLUBB')
+   call addfld('smaxold', (/ 'lev' /), 'I', ' ', 'Supersaturation from Ghan Scheme')
+!shanyp 04162024>
+
    call addfld('CCN1MAIR',(/ 'lev' /), 'A','1/kg','CCN concentration at S=0.02%')
    call addfld('CCN2MAIR',(/ 'lev' /), 'A','1/kg','CCN concentration at S=0.05%')
    call addfld('CCN3MAIR',(/ 'lev' /), 'A','1/kg','CCN concentration at S=0.1%')
@@ -348,6 +361,9 @@ subroutine dropmixnuc( &
    integer  :: ncol                ! number of columns
    integer  :: loop_up_bnd         
    real(r8), pointer :: ncldwtr(:,:) ! droplet number concentration (#/kg)
+!<shanyp 04162024
+   real(r8), pointer :: qcldwtr(:,:) ! droplet mass concentration (kg/kg)
+!shanyp 04162024>
    real(r8), pointer :: temp(:,:)    ! temperature (K)
    real(r8), pointer :: omega(:,:)   ! vertical velocity (Pa/s)
    real(r8), pointer :: pmid(:,:)    ! mid-level pressure (Pa)
@@ -409,6 +425,9 @@ subroutine dropmixnuc( &
    real(r8) :: dtmix
    real(r8) :: alogarg
    real(r8) :: overlapp(pver), overlapm(pver) ! cloud overlap
+!<shanyp 04162024
+   real(r8), pointer :: cmeliq(:,:)
+!shanyp 04162024>
 
    real(r8) :: nsource(pcols,pver)            ! droplet number source (#/kg/s)
    real(r8) :: ndropmix(pcols,pver)           ! droplet number mixing (#/kg/s)
@@ -429,7 +448,17 @@ subroutine dropmixnuc( &
    real(r8), allocatable :: naermod(:)  ! (1/m3)
    real(r8), allocatable :: hygro(:)    ! hygroscopicity of aerosol mode
    real(r8), allocatable :: vaerosol(:) ! interstit+activated aerosol volume conc (cm3/cm3)
-
+!<shanyp 04172024
+   real(r8) :: na_2ndact(pcols), va_2ndact(pcols), hy_2ndact(pcols)
+   real(r8), allocatable :: naermod_2ndact(:)  ! (1/m3)
+   real(r8), allocatable :: hygro_2ndact(:)    ! hygroscopicity of aerosol mode
+   real(r8), allocatable :: vaerosol_2ndact(:) ! interstit+activated aerosol volume conc (cm3/cm3)
+!shanyp 04172024>
+!<shanyp 04162024
+   real(r8) :: smax3d(pcols,pver),smax3dold(pcols,pver)
+   real(r8) :: smax0d,smax0dold
+   integer  :: icldtype
+!shanyp 04162024>
    real(r8) :: source(pver)
 
    real(r8), allocatable :: fn(:)              ! activation fraction for aerosol number
@@ -442,6 +471,15 @@ subroutine dropmixnuc( &
    !     fluxn = [flux of activated aero. number into cloud (#/cm2/s)]
    !           / [aero. number conc. in updraft, just below cloudbase (#/cm3)]
 
+!<shanyp 04172024
+   real(r8), allocatable :: fn_2ndact(:)              ! activation fraction for aerosol number
+   real(r8), allocatable :: fm_2ndact(:)              ! activation fraction for aerosol mass
+   real(r8), allocatable :: fluxn_2ndact(:)           ! number  activation fraction flux (cm/s)
+   real(r8), allocatable :: fluxm_2ndact(:)           ! mass    activation fraction flux (cm/s)
+   real(r8)              :: flux_fullact_2ndact(pver) ! 100%    activation fraction flux (cm/s)
+   real(r8), allocatable :: dcrit_2ndact(:)           ! critical diameter for 2nd activation (m)
+   real(r8) :: tempna
+!shanyp 04172024>
 
    real(r8), allocatable :: coltend(:,:)       ! column tendency for diagnostic output
    real(r8), allocatable :: coltend_cw(:,:)    ! column tendency
@@ -466,6 +504,10 @@ subroutine dropmixnuc( &
    ncol  = state%ncol
 
    ncldwtr  => state%q(:,:,numliq_idx)
+!<shanyp 04162024
+   qcldwtr  => state%q(:,:,cldliq_idx)
+   call pbuf_get_field(pbuf, cmeliq_idx, cmeliq)
+!shanyp 04162024>
    temp     => state%t
    omega    => state%omega
    pmid     => state%pmid
@@ -511,7 +553,17 @@ subroutine dropmixnuc( &
       fn(ntot_amode),                 &
       fm(ntot_amode),                 &
       fluxn(ntot_amode),              &
-      fluxm(ntot_amode)               )
+ !<shanyp 04172024
+      fluxm(ntot_amode),              &
+      naermod_2ndact(ntot_amode),     &
+      hygro_2ndact(ntot_amode),       &
+      vaerosol_2ndact(ntot_amode),    &
+      fn_2ndact(ntot_amode),          &
+      fm_2ndact(ntot_amode),          &
+      fluxn_2ndact(ntot_amode),       &
+      fluxm_2ndact(ntot_amode),       &
+      dcrit_2ndact(ntot_amode))
+!shanyp 04172024>
 
    ! Init pointers to mode number and specie mass mixing ratios in 
    ! intersitial and cloud borne phases.
@@ -528,6 +580,10 @@ subroutine dropmixnuc( &
 
    factnum = 0._r8
    wtke    = 0._r8
+!<shanyp 04162024
+   smax3d(:,:)=0._r8; smax3dold(:,:)=0._r8
+   smax0d=0._r8; smax0dold=0._r8
+!shanyp 04162024>
 
    if (prog_modal_aero) then
       ! aerosol tendencies
@@ -629,16 +685,43 @@ subroutine dropmixnuc( &
          !    alternate formulation
          !    cldn_tmp = cldn(i,k) * max( 0.0_r8, (1.0_r8-dtmicro/tau_cld_regenerate) )
 
-         if (cldn_tmp < cldo_tmp) then
+!<shanyp 03172023
+! Here we use the cloud liquid water evporation as the criteria to check if the
+! droplet number decrease by evaporation occurs.
+
+!         if (cldn_tmp < cldo_tmp) then
+         if (cmeliq(i,k).lt.0._r8) then
+!shanyp 03172023>
             !  droplet loss in decaying cloud
             !++ sungsup
-            nsource(i,k) = nsource(i,k) + qcld(k)*(cldn_tmp - cldo_tmp)/cldo_tmp*dtinv
-            qcld(k)      = qcld(k)*(1._r8 + (cldn_tmp - cldo_tmp)/cldo_tmp)
-            !-- sungsup
+!<shanyp 03172023
+! The old dumc is the efficiency of cloud fraction decrease (cldn-cldo)/cldo.
+! Here we turn to use the cloud liquid water mass decreasing efficiency:
+! evap*dt/(qc+evap*dt). Note that the qc is from state%q that has been
+! updated by the cmeliq.
+
+!            nsource(i,k) = nsource(i,k) + qcld(k)*(cldn_tmp -
+!            cldo_tmp)/cldo_tmp*dtinv
+!            qcld(k)      = qcld(k)*(1._r8 + (cldn_tmp - cldo_tmp)/cldo_tmp)
+            if(cmeliq(i,k)*dtmicro+qcldwtr(i,k).le.0._r8) then
+             dumc = -1._r8 !cmeliq(i,k)
+            else
+             dumc = (-1._r8)*abs(cmeliq(i,k))*dtmicro/(abs(cmeliq(i,k))*dtmicro+qcldwtr(i,k))
+            end if
+            nsource(i,k) = nsource(i,k) + qcld(k)*dumc*dtinv
+!            nsrcevp(i,k) = qcld(k)*dumc*dtinv
+            qcld(k)      = qcld(k)*(1._r8 + dumc)
+!shanyp 03172023>
+            !-- sungsup         
 
             ! convert activated aerosol to interstitial in decaying cloud
 
-            dumc = (cldn_tmp - cldo_tmp)/cldo_tmp
+!<shanyp 03172023
+! The dumc is also used to calculate the aerosol resuspension in terms of both
+! number and mass. Here, we canceled out the dumc calculation and use the dumc
+! above that is equal to evap*dt/(qc+evap*dt)
+!            dumc = (cldn_tmp - cldo_tmp)/cldo_tmp
+!shanyp 03172023>
             do m = 1, ntot_amode
                mm = mam_idx(m,0)
                dact   = raercol_cw(k,mm,nsav)*dumc
@@ -663,7 +746,13 @@ subroutine dropmixnuc( &
          endif
          cldn_tmp = cldn(i,k)
 
-         if (cldn_tmp-cldo_tmp > 0.01_r8) then
+!<shanyp 03172023
+! Here we use the positive qc change as the criteria to check if the
+! droplet number increase by activation occurs.
+
+!         if (cldn_tmp-cldo_tmp > 0.01_r8) then
+         if (cmeliq(i,k).gt.0._r8) then
+!shanyp 03172023>
 
             ! rce-comment - use wtke at layer centers for new-cloud activation
             wbar  = wtke_cen(i,k)
@@ -683,20 +772,83 @@ subroutine dropmixnuc( &
                naermod(m)  = na(i)
                vaerosol(m) = va(i)
                hygro(m)    = hy(i)
+!<shanyp 04172024
+              call loadaer_2ndact( &
+                 state, pbuf, i, i, k, &
+                 m, cs, phase, na_2ndact, va_2ndact, &
+                 hy_2ndact)
+!               write(iulog,'(a5,1x,i3,1x,i3,1x,i3,1x,6(e12.3e2,1x))') "LLILY",k,m,i,na_2ndact(i),va_2ndact(i),hy_2ndact(i),na(i),va(i),hy(i)
+              naermod_2ndact(m)  = na_2ndact(i)
+              vaerosol_2ndact(m) = va_2ndact(i)
+              hygro_2ndact(m)    = hy_2ndact(i)
+!shanyp 04172024>
             end do
 
             call activate_modal( &
                wbar, wmix, wdiab, wmin, wmax,                       &
                temp(i,k), cs(i,k), naermod, ntot_amode, &
                vaerosol, hygro, fn, fm, fluxn,                      &
-               fluxm,flux_fullact(k))
+               fluxm,flux_fullact(k), &
+!<shanyp 04162024
+               cmeliqin=cmeliq(i,k),dtmicroin=dtmicro, &
+               smaxinout=smax3d(i,k),smaxoldinout=smax3dold(i,k))  !smax3d(:,:)=0._r8; smax3dold(:,:)
+!shanyp 04162024>
+!<shanyp 04172024
+            call activate_modal( &
+               wbar, wmix, wdiab, wmin, wmax, &
+               temp(i,k), cs(i,k), naermod_2ndact, ntot_amode, &
+               vaerosol_2ndact, hygro_2ndact, fn_2ndact, fm_2ndact, fluxn_2ndact, &
+               fluxm_2ndact,flux_fullact_2ndact(k), &
+               cmeliqin=cmeliq(i,k),dtmicroin=dtmicro, &
+               smaxinout=smax3d(i,k),smaxoldinout=smax3dold(i,k))  !smax3d(:,:)=0._r8; smax3dold(:,:)
+!            factnum(i,k,:) = fn
+!shanyp 04172024>
+!<shanyp 04162024
+            dumc = max(cldn_tmp-cldo_tmp,0._r8)
+!            dumc = max(cldn_tmp, 1.e-4)/2. !(cldn_tmp - cldo_tmp)
+!shanyp 04162024>
 
-            factnum(i,k,:) = fn
-
-            dumc = (cldn_tmp - cldo_tmp)
             do m = 1, ntot_amode
                mm = mam_idx(m,0)
-               dact   = dumc*fn(m)*raer(mm)%fld(i,k) ! interstitial only
+!<shanyp 04172024
+! Add the 2nd aerosol activation.
+! m = 1,ntot_amode: 1: Accum. mode, 2: Atkin mode, 3: Coarse mode, 4: Primary:
+! carbon mode, 5: Coarse sulfate mode
+! We assume that the activation priority order is 5-3-1-4-2.
+! Example: calculate activated aerosol number
+! if raer(5)+raer(3)<qcld<raer(5)+raer(3)+raer(1)
+! the incloud aerosol concentration is raer(5)+raer(3)+raer(1)-qcld -->
+! raer(1)-(qcld-raer(5)-raer(3))
+! Currently, this version only works with MAM5, MAM4, and MAM3.
+
+!               dact   = dumc*fn(m)*raer(mm)%fld(i,k) ! interstitial only
+               select case(m)
+                case(1)
+                 tempna=max(raer(mam_idx(m,0))%fld(i,k)-max(qcld(k)-raer(mam_idx(5,0))%fld(i,k)-raer(mam_idx(3,0))%fld(i,k),0.),0.)
+                case(2)
+                 tempna=max(raer(mam_idx(m,0))%fld(i,k)-max(qcld(k)-raer(mam_idx(5,0))%fld(i,k)-raer(mam_idx(3,0))%fld(i,k) &
+                                                                   -raer(mam_idx(1,0))%fld(i,k)-raer(mam_idx(4,0))%fld(i,k),0.),0.)
+                case(3)
+                 tempna=max(raer(mam_idx(m,0))%fld(i,k)-max(qcld(k)-raer(mam_idx(5,0))%fld(i,k),0.),0.)
+                case(4)
+                 tempna=max(raer(mam_idx(m,0))%fld(i,k)-max(qcld(k)-raer(mam_idx(5,0))%fld(i,k)-raer(mam_idx(3,0))%fld(i,k) &
+                                                                   -raer(mam_idx(1,0))%fld(i,k),0.),0.)
+                case(5)
+                 tempna=max(raer(mam_idx(m,0))%fld(i,k)-qcld(k), 0.)
+                case default
+                 tempna=0._r8
+               end select
+!               dact   = dumc*fn(m)*raer(mm)%fld(i,k) ! interstitial only
+               dact   = dumc*0.5                              * fn(m)        * raer(mm)%fld(i,k) &
+                      + max(min(cldo_tmp,cldn_tmp),1.e-4)*0.5 * fn_2ndact(m) * tempna
+               dact   = min(dact,raer(mm)%fld(i,k)) ! Pass the aerosol acdtivation efficiency to heterogeneous freezing part.
+               if(raer(mm)%fld(i,k).ne.0._r8) then
+                factnum(i,k,m) = dact/raer(mm)%fld(i,k)
+               else
+                factnum(i,k,m) = 0._r8
+               end if
+               factnum(i,k,m) = max(min(factnum(i,k,m),1._r8),0._r8)
+!shanyp 04172024>
                qcld(k) = qcld(k) + dact
                nsource(i,k) = nsource(i,k) + dact*dtinv
                raercol_cw(k,mm,nsav) = raercol_cw(k,mm,nsav) + dact  ! cloud-borne aerosol
@@ -704,7 +856,12 @@ subroutine dropmixnuc( &
                dum = dumc*fm(m)
                do l = 1, nspec_amode(m)
                   mm = mam_idx(m,l)
-                  dact    = dum*raer(mm)%fld(i,k) ! interstitial only
+!<shanyp 04172024
+!                  dact    = dum*raer(mm)%fld(i,k) ! interstitial only
+                  dact   = dumc*0.5                              * fm(m)        * raer(mm)%fld(i,k) &
+                         + max(min(cldo_tmp,cldn_tmp),1.e-4)*0.5 * fm_2ndact(m) * max(raer(mm)%fld(i,k)-raercol_cw(k,mm,nsav),0.)
+                  dact   = min(dact,raer(mm)%fld(i,k))
+!shanyp 04172024>
                   raercol_cw(k,mm,nsav) = raercol_cw(k,mm,nsav) + dact  ! cloud-borne aerosol
                   raercol(k,mm,nsav)    = raercol(k,mm,nsav) - dact
                enddo
@@ -713,6 +870,20 @@ subroutine dropmixnuc( &
 
       enddo  ! grow_shrink_main_k_loop
       ! end of k-loop for growing/shrinking cloud calcs ......................
+
+!<shanyp 03232023
+! Skip the turbulence diffusion for nc and aerosols (both cloud-borne aerosols
+! and interstial aerosols) in the following part. The turbuelnce diffusion for
+! cloud-borne aerosols is included in the activation part once the cmeliq is
+! used as criterion to trigger the aerosol activation. The cmeliq includes both vapor
+! condensation/evaporation and turbulence diffusion for qc, so that the nc
+! change and aerosol change "co-located" with cmeliq also include
+! condensation/evaporation and turbulence diffusion. The turbulence diffusion of interstitial aerosols is
+! moved to CLUBB.
+
+! Skip to the state update part at the end of this subroutine.
+      goto 325
+!shanyp 03232023>      
 
       ! ......................................................................
       ! start of k-loop for calc of old cloud activation tendencies ..........
@@ -1050,10 +1221,31 @@ subroutine dropmixnuc( &
 
       end do ! old_cloud_nsubmix_loop
 
+!<shanyp 03232023
+      325 continue
+         do m = 1, ntot_amode
+            mm = mam_idx(m,0)
+            raercol_cw(:,mm,nnew)=raercol_cw(:,mm,nsav)
+            raercol(:,mm,nnew)=raercol(:,mm,nsav)
+            do l = 1, nspec_amode(m)
+               mm = mam_idx(m,l)
+               raercol_cw(:,mm,nnew)=raercol_cw(:,mm,nsav)
+               raercol(:,mm,nnew)=raercol(:,mm,nsav)
+            end do
+         end do
+!shanyp 03232023>
+
       ! evaporate particles again if no cloud
 
       do k = top_lev, pver
-         if (cldn(i,k) == 0._r8) then
+!<shanyp 03232023
+! use qcldwtr (qc) as criterion to check if this grid is cloudy. If not,
+! resuspend all cloud-borne aerosols into interstial aerosols and set nc (qcld)
+! as zero.
+
+!         if (cldn(i,k) == 0._r8) then
+         if (qcldwtr(i,k) == 0._r8) then
+!shanyp 03232023>
             ! no cloud
             qcld(k)=0._r8
 
@@ -1110,6 +1302,11 @@ subroutine dropmixnuc( &
 
    end do  ! overall_main_i_loop
    ! end of main loop over i/longitude ....................................
+
+!<shanyp 04162024
+   call outfld('smaxclubb', smax3d(:,:), pcols, lchnk)
+   call outfld('smaxold', smax3dold(:,:), pcols, lchnk) !smax3dold
+!shanyp 04161024>
 
    call outfld('NDROPCOL', ndropcol, pcols, lchnk)
    call outfld('NDROPSRC', nsource,  pcols, lchnk)
@@ -1182,7 +1379,17 @@ subroutine dropmixnuc( &
       fn,         &
       fm,         &
       fluxn,      &
-      fluxm       )
+!<shanyp 04172024
+      fluxm,      &
+      naermod_2ndact,     &
+      hygro_2ndact,       &
+      vaerosol_2ndact,    &
+      fn_2ndact,          &
+      fm_2ndact,          &
+      fluxn_2ndact,       &
+      fluxm_2ndact,       &
+      dcrit_2ndact)
+!shanyp 04172024>
 
 end subroutine dropmixnuc
 
@@ -1266,7 +1473,11 @@ end subroutine explmix
 
 subroutine activate_modal(wbar, sigw, wdiab, wminf, wmaxf, tair, rhoair,  &
    na, nmode, volume, hygro, &
-   fn, fm, fluxn, fluxm, flux_fullact, smax_prescribed ) 
+!<shanyp 04162024
+! fn, fm, fluxn, fluxm, flux_fullact, smax_prescribed)
+   fn, fm, fluxn, fluxm, flux_fullact, smax_prescribed, &
+   cmeliqin,dtmicroin,smaxinout,smaxoldinout)
+!shanyp 04162024>
 
    !      calculates number, surface, and mass fraction of aerosols activated as CCN
    !      calculates flux of cloud droplets, surface area, and aerosol mass into cloud
@@ -1307,7 +1518,10 @@ subroutine activate_modal(wbar, sigw, wdiab, wminf, wmaxf, tair, rhoair,  &
   
    !      optional
    real(r8), optional :: smax_prescribed  ! prescribed max. supersaturation for secondary activation 
-
+!<shanyp 04162024
+   real(r8), intent(in), optional    :: cmeliqin,dtmicroin
+   real(r8), intent(inout), optional :: smaxinout,smaxoldinout
+!shanyp 04162024>
    !      local
 
    integer, parameter:: nx=200
@@ -1366,6 +1580,10 @@ subroutine activate_modal(wbar, sigw, wdiab, wminf, wmaxf, tair, rhoair,  &
    integer ndist(nx)  ! accumulates frequency distribution of integration bins required
    data ndist/nx*0/
    save ndist
+!<shanyp 04162024
+   real(r8) smaxclubb
+   smaxclubb=0._r8
+!shanyp 04122024>
 
    fn(:)=0._r8
    fm(:)=0._r8
@@ -1386,6 +1604,19 @@ subroutine activate_modal(wbar, sigw, wdiab, wminf, wmaxf, tair, rhoair,  &
    diff0=0.211e-4_r8*(p0/pres)*(tair/t0)**1.94_r8
    conduct0=(5.69_r8+0.017_r8*(tair-t0))*4.186e2_r8*1.e-5_r8 ! convert to J/m/s/deg
    call qsat(tair, pres, es, qs)
+!<shanyp 04122024
+   if (present(cmeliqin).and.present(dtmicroin)) then
+    smaxclubb=cmeliqin*dtmicroin/qs
+    if(present(smaxinout)) smaxinout=smaxclubb
+    smaxclubb=max(min(smaxclubb,0.99_r8),1.e-20) !smaxupbdy
+!    smaxclubb=max(min(smaxclubb, smaxupbdy),1.e-20) !smaxupbdy
+!<shanyp 04302024
+    if(tair.lt.233.15) smaxclubb=1.e-20 ! turn off the aerosol activation in the homogeneous freezing regime.
+!shanyp 04302024>
+   end if
+   !write(iulog,'(a6,1x,6(e9.3e2,1x))') "LLILY1",cmeliqin,cmeliqin*dtmicroin,qs,1.e2*cmeliqin*dtmicroin/qs,tair,pres
+!shanyp 04122024>
+
    dqsdt=latvap/(rh2o*tair*tair)*qs
    alpha=gravit*(latvap/(cpair*rh2o*tair*tair)-1._r8/(rair*tair))
    gamma=(1+latvap/cpair*dqsdt)/(rhoair*qs)
@@ -1634,6 +1865,11 @@ subroutine activate_modal(wbar, sigw, wdiab, wminf, wmaxf, tair, rhoair,  &
          else
             call maxsat(zeta,eta,nmode,smc,smax)
          endif
+!<shanyp 04162024
+         if(present(smaxoldinout)) smaxoldinout=smax
+         if(present(cmeliqin).and.present(dtmicroin)) smax=smaxclubb
+!shanyp 04162024>
+
 
          lnsmax=log(smax)
          xmincoeff=alogaten-twothird*(lnsmax-alog2)-alog3
@@ -1929,7 +2165,119 @@ subroutine loadaer( &
    end do
 
 end subroutine loadaer
+!<shanyp 04172024
+subroutine loadaer_2ndact ( &
+   state, pbuf, istart, istop, k, &
+   m, cs, phase, naerosol, &
+   vaerosol, hygro)
 
+   ! return aerosol number, volume concentrations, and bulk hygroscopicity
+
+   ! input arguments
+   type(physics_state), target, intent(in) :: state
+   type(physics_buffer_desc),   pointer    :: pbuf(:)
+
+   integer,  intent(in) :: istart      ! start column index (1 <= istart <= istop <= pcols)
+   integer,  intent(in) :: istop       ! stop column index
+   integer,  intent(in) :: m           ! mode index
+   integer,  intent(in) :: k           ! level index
+   real(r8), intent(in) :: cs(:,:)     ! air density (kg/m3)
+   integer,  intent(in) :: phase       ! phase of aerosol: 1 for interstitial, 2 for cloud-borne, 3 for sum
+
+   ! output arguments
+   real(r8), intent(out) :: naerosol(:)  ! number conc (1/m3)
+   real(r8), intent(out) :: vaerosol(:)  ! volume conc (m3/m3)
+   real(r8), intent(out) :: hygro(:)     ! bulk hygroscopicity of mode
+
+   ! internal
+   integer  :: lchnk               ! chunk identifier
+
+   real(r8), pointer :: raer(:,:) ! interstitial aerosol mass, number mixing ratios
+   real(r8), pointer :: qqcw(:,:) ! cloud-borne aerosol mass, number mixing ratios
+   real(r8) :: specdens, spechygro
+
+   real(r8) :: vol(pcols) ! aerosol volume mixing ratio
+   integer  :: i, l
+   !-------------------------------------------------------------------------------
+
+   lchnk = state%lchnk
+   do i = istart, istop
+      vaerosol(i) = 0._r8
+      hygro(i)    = 0._r8
+   end do
+   do l = 1, nspec_amode(m)
+
+      call rad_cnst_get_aer_mmr(0, m, l, 'a', state, pbuf, raer)
+      call rad_cnst_get_aer_mmr(0, m, l, 'c', state, pbuf, qqcw)
+      call rad_cnst_get_aer_props(0, m, l, density_aer=specdens, hygro_aer=spechygro)
+
+      if (phase == 3) then
+         do i = istart, istop
+            vol(i) = max(raer(i,k) + qqcw(i,k), 0._r8)/specdens
+         end do
+      else if (phase == 2) then
+         do i = istart, istop
+            vol(i) = max(qqcw(i,k), 0._r8)/specdens
+         end do
+      else if (phase == 1) then
+         do i = istart, istop
+!<shanyp 11092023
+!           vol(i) = max(raer(i,k), 0._r8)/specdens
+           vol(i) = max(raer(i,k)-qqcw(i,k), 0._r8)/specdens
+!shanyp 11092023>
+         end do
+      else
+         write(iulog,*)'phase=',phase,' in loadaer'
+         call endrun('phase error in loadaer')
+      end if
+
+      do i = istart, istop
+         vaerosol(i) = vaerosol(i) + vol(i)
+         hygro(i)    = hygro(i) + vol(i)*spechygro
+      end do
+
+   end do
+
+   do i = istart, istop
+      if (vaerosol(i) > 1.0e-30_r8) then   ! +++xl add 8/2/2007
+         hygro(i)    = hygro(i)/(vaerosol(i))
+         vaerosol(i) = vaerosol(i)*cs(i,k)
+      else
+         hygro(i)    = 0.0_r8
+         vaerosol(i) = 0.0_r8
+      end if
+   end do
+
+
+   ! aerosol number
+   call rad_cnst_get_mode_num(0, m, 'a', state, pbuf, raer)
+   call rad_cnst_get_mode_num(0, m, 'c', state, pbuf, qqcw)
+   if (phase == 3) then
+      do i = istart, istop
+         naerosol(i) = (raer(i,k) + qqcw(i,k))*cs(i,k)
+      end do
+   else if (phase == 2) then
+      do i = istart, istop
+         naerosol(i) = qqcw(i,k)*cs(i,k)
+      end do
+   else
+      do i = istart, istop
+!<shanyp 11092023
+!      naerosol(i) = raer(i,k)*cs(i,k)
+         naerosol(i) = max(raer(i,k)-qqcw(i,k),0.0_r8)*cs(i,k)
+!shanyp 11092023>
+      end do
+   end if
+
+
+   ! adjust number so that dgnumlo < dgnum < dgnumhi
+   do i = istart, istop
+      naerosol(i) = max(naerosol(i), vaerosol(i)*voltonumbhi_amode(m))
+      naerosol(i) = min(naerosol(i), vaerosol(i)*voltonumblo_amode(m))
+   end do
+
+end subroutine loadaer_2ndact
+!shanyp 04172024>
 !===============================================================================
 
 end module ndrop

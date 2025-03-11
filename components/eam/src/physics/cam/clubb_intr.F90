@@ -708,18 +708,27 @@ end subroutine clubb_init_cnst
        ! Turn off modal aerosols and decrement edsclr_dim accordingly
        call rad_cnst_get_info(0, nmodes=nmodes)
 
-       do m = 1, nmodes
-          call rad_cnst_get_mode_num_idx(m, lptr)
-          lq(lptr)=.false.
-          edsclr_dim = edsclr_dim-1
-
-          call rad_cnst_get_info(0, m, nspec=nspec)
-          do l = 1, nspec
-             call rad_cnst_get_mam_mmr_idx(m, l, lptr)
-             lq(lptr)=.false.
-             edsclr_dim = edsclr_dim-1
-          end do
-       end do
+! <shanyp 03232023
+! Enable CLUBB to diffuse interstial aerosols.
+! The original version implements turbulence diffusion terms for intertitial
+! aerosols in the dropmixnuc subroutine so that the CLUBB tendencies are
+! disabled here. Our changes disabled the aerosol diffusion terms in dropmixnuc.
+! So, the CLUBB diffusion need to be recovered.
+! To implement such change, we only need to disable the lines that turn off the
+! turbulence diffusion for aeorosls.
+!       call rad_cnst_get_info(0, nmodes=nmodes)
+!       do m = 1, nmodes
+!          call rad_cnst_get_mode_num_idx(m, lptr)
+!          lq(lptr)=.false.
+!          edsclr_dim = edsclr_dim-1
+!          call rad_cnst_get_info(0, m, nspec=nspec)
+!          do l = 1, nspec
+!             call rad_cnst_get_mam_mmr_idx(m, l, lptr)
+!             lq(lptr)=.false.
+!             edsclr_dim = edsclr_dim-1
+!          end do
+!       end do
+! shanyp 03232023>
 
        !  In addition, if running with MAM, droplet number is transported
        !  in dropmixnuc, therefore we do NOT want CLUBB to apply transport
