@@ -225,7 +225,7 @@ contains
    !sol_identifier = 'map-from-file'//CHAR(0)
    mapfile_term = trim(mapfile)//CHAR(0)
    if (seq_comm_iamroot(CPLID)) then
-       write(logunit,*) subname,' reading map file with iMOAB: ', mapfile_term
+       write(logunit,*) subname,' reading map file with iMOAB: ', trim(mapfile_term)
    endif
 
    ierr = iMOAB_LoadMappingWeightsFromFile( mbsrc, mbtgt, mbintx, discretization_type, &
@@ -235,8 +235,8 @@ contains
       call shr_sys_abort(subname//' ERROR in loading map file')
     endif
    if (seq_comm_iamroot(CPLID)) then
-      write(logunit,'(2A,I6,4A)') subname,' iMOAB map app ID, maptype, mapfile = ', &
-         mbintx,' ',trim(maptype),' ',trim(mapfile), ', identifier: ', sol_identifier
+      write(logunit,'(2A,I6,4A)') subname,'Result: iMOAB map app ID, maptype, mapfile = ', &
+         mbintx,' ',trim(maptype),' ',trim(mapfile), ', identifier: ', trim(sol_identifier)
       call shr_sys_flush(logunit)
    endif
 

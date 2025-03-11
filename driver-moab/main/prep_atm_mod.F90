@@ -224,7 +224,7 @@ contains
       if (trim(atm_gnam) /= trim(lnd_gnam)) samegrid_al = .false.
       if (trim(atm_gnam) /= trim(ocn_gnam)) samegrid_ao = .false.
 
-#ifdef HAVE_MOAB
+      ! TODO: make these namelists
       wgtIdo2a = 'conservative_o2a'//C_NULL_CHAR
       wgtIdi2a = 'conservative_i2a'//C_NULL_CHAR
       wgtIdl2a = 'conservative_l2a'//C_NULL_CHAR
@@ -232,7 +232,6 @@ contains
       load_maps_from_disk_i2a = .not. cpl_compute_maps_online ! read from disk or compute online
       load_maps_from_disk_l2a = .not. cpl_compute_maps_online ! read from disk or compute online
       ! load_maps_from_disk_l2a = .false. ! Explicitly force online computation
-#endif
 
       if (ocn_c2_atm) then
          if (iamroot_CPLID) then
@@ -255,6 +254,10 @@ contains
 #ifdef HAVE_MOAB
          ! Call moab intx only if atm and ocn are init in moab
          if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
+            if (iamroot_CPLID) then
+              write(logunit,*) ' '
+              write(logunit,F00) 'Initializing MOAB mapper_So2a'
+            endif
             appname = "OCN_ATM_COU"//C_NULL_CHAR
             ! idintx is a unique number of MOAB app that takes care of intx between atm and ocn mesh
             idintx = 100*ocn(1)%cplcompid + atm(1)%cplcompid ! something different, to differentiate it
@@ -289,7 +292,7 @@ contains
                numco = 16
             endif !
 
-            if (.not. samegrid_ao) then ! data-OCN case
+            if (.not. samegrid_ao) then ! most cases
 
                ! compute the OCN coverage mesh here on coupler pes
                ! OCN mesh was redistributed to cover target (ATM) partition
@@ -300,6 +303,9 @@ contains
                endif
 
                if (.not. load_maps_from_disk_o2a) then
+                  if (iamroot_CPLID) then
+                     write(logunit,*) '....Computing weights'
+                  endif
                   ierr = iMOAB_ComputeMeshIntersectionOnSphere( mboxid, mbaxid, mbintxoa )
                   if (ierr .ne. 0) then
                      write(logunit,*) subname,' error in computing OCN-ATM mesh intersection'
@@ -323,7 +329,7 @@ contains
                endif
 ! endif for MOABDEBUG
 #endif
-               endif
+               endif  ! if .not.loadmapsfromdisk
 
                ! we also need to compute the comm graph for the second hop, from the ocn on coupler to the
                ! ocean for the intx ocean-atm context (coverage)
@@ -338,7 +344,7 @@ contains
 
                ! now take care of the mapper
                if ( mapper_So2a%src_mbid .gt. -1 .and. iamroot_CPLID ) then
-                     write(logunit,F00) 'overwriting '// trim(mapper_So2a%mbname) // ' mapper_So2a'
+                     write(logunit,F00) 'overwriting '// trim(mapper_So2a%mbname) // ' with MOAB'
                endif
                mapper_So2a%intx_context = idintx
 
@@ -383,7 +389,7 @@ contains
 
                   call moab_map_init_rcfile( mboxid, mbaxid, mbintxoa, type1, &
                         'seq_maps.rc', 'ocn2atm_smapname:', 'ocn2atm_smaptype:',samegrid_ao, &
-                        wgtIdo2a, 'mapper_Sof2a MOAB initialization', esmf_map_flag)
+                        wgtIdo2a, 'mapper_Sof2a MOAB init', esmf_map_flag)
                endif
 
             else ! samegrid_ao = TRUE
@@ -413,6 +419,10 @@ contains
 
 ! FLUX make the app and mapper for the a2o flux mappings
          if ((mbaxid .ge. 0) .and.  (mbofxid .ge. 0)) then
+            if (iamroot_CPLID) then
+              write(logunit,*) ' '
+              write(logunit,F00) 'Initializing MOAB mapper_Sof2a'
+            endif
             ! We also need to compute the comm graph for the second hop, from the OCN on the coupler to the
             ! OCN for the intersection of OCN-ATM context (coverage)
             call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)
@@ -423,7 +433,7 @@ contains
             endif
 
             if ( mapper_Sof2a%src_mbid .gt. -1 .and. iamroot_CPLID) then
-               write(logunit,F00) 'overwriting '// trim(mapper_Sof2a%mbname) // ' mapper_Sof2a'
+               write(logunit,F00) 'overwriting '// trim(mapper_Sof2a%mbname) // ' with MOAB'
             endif
             ! we identified the app mbofxid with !id_join = id_join + 1000! kind of random
             ! line 1267 in cplcomp_exchange_mod.F90
@@ -480,11 +490,15 @@ contains
 ! copy mapper_So2a , maybe change the matrix ? still based on intersection ?
 #ifdef HAVE_MOAB
          if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
+            if (iamroot_CPLID) then
+              write(logunit,*) ' '
+              write(logunit,F00) 'Initializing MOAB mapper_Fo2a'
+            endif
             ! now take care of the mapper
             if ( mapper_Fo2a%src_mbid .gt. -1 ) then
                 if (iamroot_CPLID) then
                      write(logunit,F00) 'overwriting '//trim(mapper_Fo2a%mbname) &
-                             //' mapper_Fo2a'
+                             //' with MOAB'
                 endif
             endif
             mapper_Fo2a%src_mbid = mboxid
@@ -496,10 +510,15 @@ contains
             mapper_Fo2a%mbname = 'mapper_Fo2a'
          endif
          if ((mbaxid .ge. 0) .and.  (mbofxid .ge. 0)) then
+            if (iamroot_CPLID) then
+              write(logunit,*) ' '
+              write(logunit,F00) 'Initializing MOAB mapper_Fof2a'
+            endif
+            ! now take care of the mapper
             if ( mapper_Fof2a%src_mbid .gt. -1 ) then
                 if (iamroot_CPLID) then
                      write(logunit,F00) 'overwriting '//trim(mapper_Fof2a%mbname) &
-                             //' mapper_Fof2a'
+                             //' with MOAB'
                 endif
             endif
             mapper_Fof2a%src_mbid = mbofxid
@@ -546,6 +565,10 @@ contains
 #ifdef HAVE_MOAB
          ! Call moab intx only if ATM and ICE are init in moab coupler
          if ((mbaxid .ge. 0) .and.  (mbixid .ge. 0)) then
+            if (iamroot_CPLID) then
+              write(logunit,*) ' '
+              write(logunit,F00) 'Initializing MOAB mapper_Si2a'
+            endif
 
             appname = "ICE_ATM_COU"//C_NULL_CHAR
             ! idintx is a unique number of MOAB app that takes care of intx between ice and atm mesh
@@ -591,7 +614,7 @@ contains
             if ( mapper_Si2a%src_mbid .gt. -1 ) then
                 if (iamroot_CPLID) then
                      write(logunit,F00) 'overwriting '//trim(mapper_Si2a%mbname) &
-                             //' mapper_Si2a'
+                             //' with MOAB'
                 endif
             endif
             mapper_Si2a%src_mbid = mbixid
@@ -643,7 +666,7 @@ contains
                type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
                call moab_map_init_rcfile(mbixid, mbaxid, mbintxia, type1, &
                      'seq_maps.rc', 'ice2atm_smapname:', 'ice2atm_smaptype:', samegrid_ao, &
-                     wgtIdi2a, 'mapper_Si2a MOAB initialization', esmf_map_flag)
+                     wgtIdi2a, 'mapper_Si2a MOAB init', esmf_map_flag)
             endif
 
 #ifdef MOABDEBUG
@@ -680,10 +703,14 @@ contains
 #ifdef HAVE_MOAB
          ! now take care of the mapper for MOAB, only if ice is coupled to atm !
          if (ice_c2_atm) then
+            if (iamroot_CPLID) then
+              write(logunit,*) ' '
+              write(logunit,F00) 'Initializing MOAB mapper_Fi2a'
+            endif
             if ( mapper_Fi2a%src_mbid .gt. -1 ) then
                 if (iamroot_CPLID) then
                      write(logunit,F00) 'overwriting '//trim(mapper_Fi2a%mbname) &
-                             //' mapper_Fi2a'
+                             //' with MOAB'
                 endif
             endif
 
@@ -731,6 +758,10 @@ contains
          ! we will use just a comm graph to send data from phys grid to land on coupler
          ! this is just a rearrange in a way
          if ((mbaxid .ge. 0) .and.  (mblxid .ge. 0) ) then
+            if (iamroot_CPLID) then
+              write(logunit,*) ' '
+              write(logunit,F00) 'Initializing MOAB mapper_Fl2a'
+            endif
 
             appname = "LND_ATM_COU"//C_NULL_CHAR
             ! idintx is a unique number of MOAB app that takes care of intx between lnd and atm mesh
@@ -743,7 +774,7 @@ contains
             if ( mapper_Fl2a%src_mbid .gt. -1 ) then
                 if (iamroot_CPLID) then
                      write(logunit,F00) 'overwriting '//trim(mapper_Fl2a%mbname) &
-                             //' mapper_Fl2a'
+                             //' with MOAB'
                 endif
             endif
             mapper_Fl2a%src_mbid = mblxid
@@ -879,10 +910,14 @@ contains
             'mapper_Sl2a initialization',esmf_map_flag)
 #ifdef HAVE_MOAB
          if ((mbaxid .ge. 0) .and.  (mblxid .ge. 0) ) then
+            if (iamroot_CPLID) then
+              write(logunit,*) ' '
+              write(logunit,F00) 'Initializing MOAB mapper_Sl2a'
+            endif
             if ( mapper_Sl2a%src_mbid .gt. -1 ) then
                 if (iamroot_CPLID) then
                      write(logunit,F00) 'overwriting '//trim(mapper_Sl2a%mbname) &
-                             //' mapper_Sl2a'
+                             //' with MOAB'
                 endif
             endif
             mapper_Sl2a%src_mbid = mblxid
