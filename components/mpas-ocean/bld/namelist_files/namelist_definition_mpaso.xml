@@ -3155,11 +3155,14 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+
+<!-- tracer_forcing_freshwaterTracers -->
+
 <entry id="config_use_freshwaterTracers" type="logical"
 	category="tracer_forcing_freshwaterTracers" group="tracer_forcing_freshwaterTracers">
 if true, the 'freshwaterTracers' category is enabled for the run
 
-Valid Values: .true. or .false.
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -3167,7 +3170,7 @@ Default: Defined in namelist_defaults.xml
 	category="tracer_forcing_freshwaterTracers" group="tracer_forcing_freshwaterTracers">
 if true, surface bulk forcing from coupler is added to surfaceTracerFlux in 'freshwaterTracers' category. True by default because the main function of this tracer group is tracking freshwater fluxes
 
-Valid Values: .true. or .false.
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -3175,7 +3178,7 @@ Default: Defined in namelist_defaults.xml
 	category="tracer_forcing_freshwaterTracers" group="tracer_forcing_freshwaterTracers">
 if true, surface restoring source is applied to tracers in 'freshwaterTracers' category
 
-Valid Values: .true. or .false.
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -3183,7 +3186,7 @@ Default: Defined in namelist_defaults.xml
 	category="tracer_forcing_freshwaterTracers" group="tracer_forcing_freshwaterTracers">
 if true, interior restoring source is applied to tracers in 'freshwaterTracers' category
 
-Valid Values: .true. or .false.
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -3191,7 +3194,7 @@ Default: Defined in namelist_defaults.xml
 	category="tracer_forcing_freshwaterTracers" group="tracer_forcing_freshwaterTracers">
 if true, exponential decay source is applied to tracers in 'freshwaterTracers' category
 
-Valid Values: .true. or .false.
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -3199,7 +3202,7 @@ Default: Defined in namelist_defaults.xml
 	category="tracer_forcing_freshwaterTracers" group="tracer_forcing_freshwaterTracers">
 if true, idealAge forcing source is applied to tracers in 'freshwaterTracers' category
 
-Valid Values: .true. or .false.
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -3207,7 +3210,7 @@ Default: Defined in namelist_defaults.xml
 	category="tracer_forcing_freshwaterTracers" group="tracer_forcing_freshwaterTracers">
 if true, transit time distribution forcing source is applied to tracers in 'freshwaterTracers' category
 
-Valid Values: .true. or .false.
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -3215,9 +3218,10 @@ Default: Defined in namelist_defaults.xml
 	category="tracer_forcing_freshwaterTracers" group="tracer_forcing_freshwaterTracers">
 if true, surface value is computed for 'freshwaterTracers' category
 
-Valid Values: .true. or .false.
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
+
 
 <!-- tracer_forcing_DMSTracers -->
 
