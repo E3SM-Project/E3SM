@@ -357,11 +357,6 @@ protected:
 
   // Group requests
   template<RequestType RT>
-  void add_group (const std::string& name, const std::string& grid, const int ps, const bool bundled,
-                  const bool imported, const std::string& src_name, const std::string& src_grid)
-  { add_group<RT>(GroupRequest(name,grid,ps,bundled,imported,src_name,src_grid)); }
-
-  template<RequestType RT>
   void add_group (const std::string& name, const std::string& grid_name,
                   const bool bundled = false)
   { add_group<RT> (GroupRequest(name,grid_name,bundled)); }
