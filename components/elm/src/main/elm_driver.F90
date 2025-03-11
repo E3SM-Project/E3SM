@@ -1358,8 +1358,18 @@ contains
        ! Determine albedos for next time step
        ! ============================================================================
 
-       if (doalb) then
-
+       if (.not.doalb ) then
+          ! FATES must update albedos even when the doalb flag is false, why?
+          ! because the doalb flag will be potentially true on the next
+          ! timestep, and will want to calculate sun-shade fractions from nothing. If
+          ! so, then the two-stream solver needs to have run its solver on an updated
+          ! canopy composition. 
+          if(use_fates)then
+             call alm_fates%wrap_canopy_radiation(bounds_clump, surfalb_vars,nextsw_cday, declinp1)
+          end if
+          
+       else
+       
           ! Albedos for non-urban columns
           call t_startf('surfalb')
           call SurfaceAlbedo(bounds_clump,                      &
