@@ -399,6 +399,9 @@ CONTAINS
        call mct_aVect_init(x2a_a, rList=seq_flds_x2a_fields, lsize=lsize)
        call mct_aVect_zero(x2a_a)
        !
+       ! Create initial atm export state
+       !
+       call atm_export( cam_out, a2x_a%rattr )
 
 #ifdef HAVE_MOAB
        ! Initialize MOAB physgrid mesh and add coordinate,mask data
