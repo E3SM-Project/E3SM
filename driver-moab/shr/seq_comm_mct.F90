@@ -1551,7 +1551,8 @@ contains
     use shr_kind_mod,     only:  CXX => shr_kind_CXX
     use shr_kind_mod     , only : r8 => shr_kind_r8
     use mct_mod
-    use iMOAB, only : iMOAB_DefineTagStorage,  iMOAB_GetDoubleTagStorage, iMOAB_GetMeshInfo
+    use iMOAB, only : iMOAB_DefineTagStorage,  iMOAB_GetDoubleTagStorage, iMOAB_GetMeshInfo, &
+     iMOAB_SetDoubleTagStorage
 
     use iso_c_binding
     character(*), intent (in) :: modelstr
@@ -1568,7 +1569,7 @@ contains
 
      ! moab
      integer                  :: tagtype, numco,  tagindex, ierr
-     character(CXX)           :: tagname_mct
+     character(CXX)           :: tagname_mct, tagname_diff
 
      real(r8) , allocatable :: values(:), mct_values(:)
      integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
@@ -1599,6 +1600,13 @@ contains
         call shr_sys_abort(subname//'Error: fail to get moab tag values')
 
      values  = mct_values - values
+     ! set the difference tag 
+     tagname_diff = trim(mct_field)//'_diff'//C_NULL_CHAR
+
+     tagtype = 1 ! dense, double
+     numco = 1
+     ierr = iMOAB_DefineTagStorage(appId, tagname_diff, tagtype, numco,  tagindex)
+     ierr = iMOAB_SetDoubleTagStorage ( appId, tagname_diff, mbSize , ent_type, values)
 
      difference = dot_product(values, values)
      differenceg = 0. ! initialize to 0 the total sum
