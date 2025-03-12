@@ -11,6 +11,7 @@ on:
       - 'cime_config/machine/config_machines.xml'
       - 'components/eamxx/**'
       - 'components/homme/**'
+      - 'components/eam/src/physics/rrtmgp/**'
       - 'externals/ekat'
       - 'externals/mam4xx'
       - 'externals/haero'
