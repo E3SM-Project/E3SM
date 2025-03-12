@@ -792,6 +792,14 @@ _TESTS = {
         )
     },
 
+    "e3sm_eamxx_mam4xx_v1_long_runtime" : {
+        "time"  : "03:00:00",
+        "tests" : (
+            "SMS_D_Lm2.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-all_mam4xx_procs",
+            "SMS_Ly1.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-all_mam4xx_procs"
+        )
+    },
+
     "e3sm_moab_dev" : {
         "time"  : "01:00:00",
         "tests" : (
