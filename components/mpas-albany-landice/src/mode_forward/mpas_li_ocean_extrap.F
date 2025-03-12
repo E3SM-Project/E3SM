@@ -114,7 +114,7 @@ contains
       type (field1dInteger), pointer :: seedMaskField
       type (field1dInteger), pointer :: growMaskField
       integer, dimension(:), pointer :: connectedMarineMask, growMask !masks to pass to flood-fill routine
-      integer, dimension(:), pointer :: altConnectedMarineMask, altGrowMask
+      integer, dimension(:), pointer :: altConnectedMarineMask, altGrowMask, inlandSeaMask
       real (kind=RKIND), dimension(:,:,:), allocatable :: oceanField
 
       !debugg:
@@ -151,6 +151,7 @@ contains
          call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
          call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_3dThermalForcing', ismip6shelfMelt_3dThermalForcing)
          call mpas_pool_get_array(extrapOceanDataPool, 'orig3dOceanMask', orig3dOceanMask)
+         call mpas_pool_get_array(extrapOceanDataPool, 'inlandSeaMask', inlandSeaMask)
          call mpas_pool_get_array(extrapOceanDataPool, 'validOceanMask', validOceanMask)
          call mpas_pool_get_array(extrapOceanDataPool, 'availOceanMask', availOceanMask)
          call mpas_pool_get_array(extrapOceanDataPool, 'seedOceanMaskHoriz', seedOceanMaskHoriz)
@@ -243,12 +244,12 @@ contains
                endif
             endif
          enddo
-         ! now create mask of all marine locations connected to open ocean - to be used below to screen out lakes
+         ! create mask of all marine locations connected to open ocean - to be used below to screen out inland seas
          call li_flood_fill(connectedMarineMask, growMask, domain)
          call li_flood_fill(altConnectedMarineMask, altGrowMask, domain)
 
-         ! alter orig3dOceanMask if necessary to avoid errors
          do iCell = 1, nCells
+            ! Mark inland sea
             if ( (altConnectedMarineMask(iCell) /= connectedMarineMask(iCell)) .and. (thickness(iCell) == 0.0_RKIND) ) then
                if (config_recalculate_thermal_forcing) then
                   MPAS_3dOceanTemperature(:,iCell) = 0.0_RKIND
@@ -256,10 +257,9 @@ contains
                endif
                
                ismip6shelfMelt_3dThermalForcing(:,iCell) = 0.0_RKIND
-               orig3dOceanMask(:,iCell) = 1
+               inlandSeaMask(iCell) = 1
                connectedMarineMask(iCell) = 0
 
-               call mpas_log_write("WARNING: orig3dOceanMask altered to include ice-dammed inland seas.")
             endif
             ! Ensure MPAS ocean cells have not been interpolated onto non-ocean cells on the MALI mesh
             do iLayer = 1, nISMIP6OceanLayers

@@ -1187,7 +1187,7 @@ module li_iceshelf_melt
       real (kind=RKIND), pointer :: invalid_value_TF
       real(kind=RKIND) :: cste
       type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: geometryPool, meshPool
+      type (mpas_pool_type), pointer :: geometryPool, meshPool, extrapOceanDataPool
       real (kind=RKIND), dimension(:,:), pointer :: TFocean
       real (kind=RKIND), dimension(:), pointer :: zOcean
       real (kind=RKIND), dimension(:), pointer :: TFdraft
@@ -1204,7 +1204,10 @@ module li_iceshelf_melt
       real (kind=RKIND), pointer :: gamma0
       real (kind=RKIND), dimension(:), pointer :: floatingBasalMassBal
       real (kind=RKIND) :: coef
-      integer :: i
+      integer :: i, jCell, iNeighbor
+      integer, dimension(:), pointer :: inlandSeaMask, nEdgesOnCell
+      integer, dimension(:,:), pointer :: cellsOnCell
+      logical, pointer :: config_ocean_data_extrapolation
 
       err = 0
 
@@ -1354,6 +1357,9 @@ module li_iceshelf_melt
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'extrapOceanData', extrapOceanDataPool)
+
+         call mpas_pool_get_config(liConfigs, 'config_ocean_data_extrapolation', config_ocean_data_extrapolation)
 
          call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
 
@@ -1364,6 +1370,9 @@ module li_iceshelf_melt
          call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_offset', ismip6shelfMelt_offset)
          call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+         call mpas_pool_get_array(extrapOceanDataPool,'inlandSeaMask',inlandSeaMask)
+         call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
+         call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
 
          call mpas_log_write("iceshelf_melt_ismip6: gamma0=$r", realArgs=(/gamma0/))
          floatingBasalMassBal(:) = 0.0_RKIND
@@ -1374,6 +1383,19 @@ module li_iceshelf_melt
                   abs(mean_TF(basinNumber(iCell)+1) + deltaT(iCell)) + ismip6shelfMelt_offset(iCell)
             endif
          enddo
+         do iCell = 1, nCellsSolve
+            if (config_ocean_data_extrapolation) then
+               if (inlandSeaMask(iCell) == 1) then
+                  ! zero out face melting at inland seas
+                  floatingBasalMassBal(iCell) = 0.0_RKIND
+                  ! and on margins of inland seas
+                  do iNeighbor = 1, nEdgesOnCell(iCell)
+                     jCell = cellsOnCell(iNeighbor, iCell)
+                     floatingBasalMassBal(jCell) = 0.0_RKIND
+                  enddo
+               endif
+            endif
+            enddo
 
          block => block % next
       enddo   ! associated(block)
@@ -1423,13 +1445,13 @@ module li_iceshelf_melt
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
-      integer :: iCell, iNeighbor, iEdge, nEmptyNeighbors
+      integer :: iCell, iNeighbor, iEdge, nEmptyNeighbors, jCell
       real (kind=RKIND), pointer :: rhoi
       integer, pointer :: nCells, nISMIP6OceanLayers
       integer, dimension(:,:), pointer :: cellsOnCell, edgesOnCell
       real (kind=RKIND) :: waterDepth
       type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: geometryPool, meshPool, velocityPool
+      type (mpas_pool_type), pointer :: geometryPool, meshPool, velocityPool, extrapOceanDataPool
       real (kind=RKIND), pointer :: seaLevel
       real (kind=RKIND), pointer :: faceMeltingCFLdt
       real (kind=RKIND), pointer :: dtFaceMeltingCFLratio
@@ -1451,9 +1473,11 @@ module li_iceshelf_melt
       real (kind=RKIND), pointer :: config_uniform_face_melt_rate
       character(len=StrKIND), pointer :: config_front_mass_bal_grounded
       logical, pointer :: config_use_3d_thermal_forcing_for_face_melt
+      logical, pointer :: config_ocean_data_extrapolation
       real (kind=RKIND), parameter :: secPerDay = 86400.0_RKIND
       real (kind=RKIND), parameter :: rhow = 1000.0_RKIND ! subglacial runoff density
       real (kind=RKIND), dimension(:), pointer :: faceMeltSpeed
+      integer, dimension(:), pointer :: inlandSeaMask
       real (kind=RKIND), dimension(:), allocatable :: faceMeltSpeedVertAvg !vertically averaged faceMeltSpeed
                                                                 !to pass to  li_apply_front_ablation_velocity,
                                                                 !because faceMeltSpeed is only below water-line
@@ -1461,7 +1485,7 @@ module li_iceshelf_melt
       logical, pointer :: config_recalculate_thermal_forcing
       real (kind=RKIND) :: dzAccumulated, total, dz
       integer :: err_tmp, kk, counter, iLayer
-
+      
       err = 0
       call mpas_log_write('Starting face melt routine')
 
@@ -1478,7 +1502,7 @@ module li_iceshelf_melt
       call mpas_pool_get_config(liConfigs, 'config_uniform_face_melt_rate', config_uniform_face_melt_rate)
       call mpas_pool_get_config(liConfigs, 'config_front_mass_bal_grounded', config_front_mass_bal_grounded)
       call mpas_pool_get_config(liConfigs, 'config_use_3d_thermal_forcing_for_face_melt', config_use_3d_thermal_forcing_for_face_melt)
-      
+      call mpas_pool_get_config(liConfigs, 'config_ocean_data_extrapolation', config_ocean_data_extrapolation)
       call mpas_pool_get_config(liConfigs, 'config_recalculate_thermal_forcing', config_recalculate_thermal_forcing)
       call mpas_pool_get_config(liConfigs, 'config_TF_param_type', config_TF_param_type)
 
@@ -1487,6 +1511,7 @@ module li_iceshelf_melt
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+         call mpas_pool_get_subpool(block % structs, 'extrapOceanData', extrapOceanDataPool)
          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
          call mpas_pool_get_array(geometryPool, 'ismip6_2dThermalForcing', TFocean)
          call mpas_pool_get_array(geometryPool, 'ismip6Runoff', ismip6Runoff)
@@ -1505,6 +1530,7 @@ module li_iceshelf_melt
          call mpas_pool_get_array(geometryPool, 'faceMeltSpeed', faceMeltSpeed)
          call mpas_pool_get_array(geometryPool, 'faceMeltingCFLdt', faceMeltingCFLdt)
          call mpas_pool_get_array(geometryPool, 'dtFaceMeltingCFLratio', dtFaceMeltingCFLratio)
+         call mpas_pool_get_array(extrapOceanDataPool, 'inlandSeaMask', inlandSeaMask)
 
          if ( config_use_3d_thermal_forcing_for_face_melt ) then
             call mpas_pool_get_dimension(meshPool, 'nISMIP6OceanLayers', nISMIP6OceanLayers)
@@ -1625,7 +1651,20 @@ module li_iceshelf_melt
             elseif (trim(config_front_mass_bal_grounded) == 'uniform') then
                    faceMeltSpeed(iCell) = config_uniform_face_melt_rate
             endif
-
+         enddo
+        
+         do iCell = 1, nCells   
+            if (config_ocean_data_extrapolation) then
+               if (inlandSeaMask(iCell) == 1) then
+                  ! zero out face melting at inland seas
+                  faceMeltSpeed(iCell) = 0.0_RKIND
+                  ! and on margins of inland seas
+                  do iNeighbor = 1, nEdgesOnCell(iCell)
+                     jCell = cellsOnCell(iNeighbor, iCell)
+                     faceMeltSpeed(jCell) = 0.0_RKIND
+                  enddo
+               endif
+            endif
          enddo
 
          where ( (thickness > 0.0_RKIND) .and. (lowerSurface < 0.0_RKIND) )
