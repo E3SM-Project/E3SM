@@ -109,7 +109,7 @@ def case_post_run_io(self):
     for compclass in component_classes:
         key = "PIO_TYPENAME_{}".format(compclass)
         pio_typename = self.get_value(key)
-        if pio_typename == "adios":
+        if pio_typename.startswith("adios"):
             has_adios = True
             break
     if has_adios:
