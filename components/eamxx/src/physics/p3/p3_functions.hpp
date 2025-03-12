@@ -123,6 +123,7 @@ struct Functions
     Scalar rain_selfcollection_breakup_diameter = 0.00028;
     Scalar constant_mu_rain = 1.0;
     Scalar spa_ccn_to_nc_factor = 1.0;
+    Scalar spa_ccn_to_nc_exponent = 1.0;
     Scalar cldliq_to_ice_collection_factor = 0.5;
     Scalar rain_to_ice_collection_factor = 1.0;
     Scalar min_rime_rho = 50.0;
@@ -150,6 +151,7 @@ struct Functions
       rain_selfcollection_breakup_diameter = params.get<double>("rain_selfcollection_breakup_diameter", rain_selfcollection_breakup_diameter);
       constant_mu_rain = params.get<double>("constant_mu_rain", constant_mu_rain);
       spa_ccn_to_nc_factor = params.get<double>("spa_ccn_to_nc_factor", spa_ccn_to_nc_factor);
+      spa_ccn_to_nc_exponent = params.get<double>("spa_ccn_to_nc_exponent", spa_ccn_to_nc_exponent);
       cldliq_to_ice_collection_factor = params.get<double>("cldliq_to_ice_collection_factor", cldliq_to_ice_collection_factor);
       rain_to_ice_collection_factor = params.get<double>("rain_to_ice_collection_factor", rain_to_ice_collection_factor);
       min_rime_rho = params.get<double>("min_rime_rho", min_rime_rho);

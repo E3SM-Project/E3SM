@@ -81,6 +81,7 @@ void Functions<S,D>
   constexpr Scalar latice       = C::LatIce;
 
   const Scalar spa_ccn_to_nc_factor = runtime_options.spa_ccn_to_nc_factor;
+  const Scalar spa_ccn_to_nc_exponent = runtime_options.spa_ccn_to_nc_exponent;
 
   nucleationPossible = false;
   hydrometeorsPresent = false;
@@ -133,9 +134,15 @@ void Functions<S,D>
       // prescribe that value
 
       if(do_prescribed_CCN) {
+        // the SPA equation is of the form:
+        // Nc = max ( Nc , alpha * (nccn_prescribed / cld_frac_l) ^ beta )
+        // where alpha and beta are the factor and exponent, respectively.
+        // This functional form accounts for "activation" of CCN into Nc
+        // and it can be made sublinear (e.g., 2000 and 0.55)
         nc(k).set(not_drymass,
-                  max(nc(k), spa_ccn_to_nc_factor * nccn_prescribed(k) /
-                                 inv_cld_frac_l(k)));
+                  max(nc(k), spa_ccn_to_nc_factor *
+                                 pow(nccn_prescribed(k) / inv_cld_frac_l(k),
+                                     spa_ccn_to_nc_exponent)));
       } else if(predictNc) {
         nc(k).set(not_drymass, max(nc(k) + nc_nuceat_tend(k) * dt, 0.0));
       } else {
