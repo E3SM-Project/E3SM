@@ -205,68 +205,6 @@ module ocn_gm
          allocate (RossbyRadiusTaper(nEdges))
          call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
 
-         !$omp parallel
-         !$omp do schedule(runtime) private(k, cell1, cell2, sum_hN, lt1, lt2, c_mode1, dc_Lr)
-         do iEdge = 1, nEdges
-            cell1 = cellsOnEdge(1, iEdge)
-            cell2 = cellsOnEdge(2, iEdge)
-            sum_hN = 0.0
-
-            bldEdge = 0.5_RKIND*(boundaryLayerDepth(cell1) + boundaryLayerDepth(cell2))
-            mldEdge = config_redi_transition_layer_mld_offset*bldEdge
-
-            thickSlope = 1.0_RKIND/max(1.0E-15, 1.0_RKIND - min(config_redi_transition_layer_mld_offset,1.0_RKIND))
-
-            do k=minLevelEdgeBot(iEdge),maxLevelEdgeTop(iEdge)
-               scaleFactor = thickslope*(0.5_RKIND*abs(zMid(k,cell1)+zMid(k,cell2))/bldEdge - &
-                             config_redi_transition_layer_mld_offset)
-               scaleFactor = min(1.0_RKIND,max(0.0_RKIND,scaleFactor))
-               RediKappaSfcTaper(k,iEdge) = scaleFactor
-            end do
-         end do
-         !$omp end do
-         !$omp end parallel
-
-! old approach, potentially remove based on testing
-!         !$omp parallel
-!         !$omp do schedule(runtime)  &
-!         !$omp private(k, iEdge, cell1, cell2, kmin, kmax, n2check, mld1, mld2, mldEdge, &
-!         !$omp         bldEdge, sfcTaper, thickSlope, scaleFactor)
-!         do iEdge = 1, nEdges
-!            cell1 = cellsOnEdge(1, iEdge)
-!            cell2 = cellsOnEdge(2, iEdge)
-!
-!            if(dThreshMLD(cell1) < boundaryLayerDepth(cell1)) then
-!              mld1 = boundaryLayerDepth(cell1) + config_redi_transition_layer_mld_offset 
-!            else
-!              mld1 = dThreshMLD(cell1)
-!            end if
-!
-!            if(dThreshMLD(cell2) < boundaryLayerDepth(cell2)) then
-!              mld2 = boundaryLayerDepth(cell2) + config_redi_transition_layer_mld_offset
-!            else
-!              mld2 = dThreshMLD(cell2)
-!            end if
-
-!            mldEdge = 0.5_RKIND*(mld1+mld2)
-!            bldEdge = 0.5_RKIND*(boundaryLayerDepth(cell1) + boundaryLayerDepth(cell2))
-!
-!            ! if we need to turn off sfc taper we need to set rediKappaSfcTaper to 0 I think
-!            ! so just wrap this in a use sfc taper thing and it's good
-!            thickSlope = mldEdge - bldEdge
-!
-!            do k=minLevelEdgeBot(iEdge),maxLevelEdgeTop(iEdge)
-!               scaleFactor = (0.5_RKIND*abs(zMid(k,cell1)+zMid(k,cell2)) - &
-!                            bldEdge)/thickSlope
-!               scaleFactor = max(0.0_RKIND,scaleFactor)
-!               scaleFactor = min(1.0_RKIND,scaleFactor)
-!
-!               RediKappaSfcTaper(k,iEdge) = scaleFactor
-!            end do
-!         end do 
-!         !$omp end do
-!         !$omp end parallel
-
          nCells = nCellsArray(4)
 
          if (config_GM_horizontal_taper == 'RossbyRadius') then
@@ -275,9 +213,9 @@ module ocn_gm
             do iEdge = 1,nEdges
                gmHorizontalTaper(iEdge) = RossbyRadiusTaper(iEdge)
             end do
-         end do 
-         !$omp end do
-         !$omp end parallel
+            !$omp end do
+            !$omp end parallel
+         end if
 
          if (config_Redi_horizontal_taper == 'RossbyRadius') then
             !$omp parallel
@@ -297,40 +235,6 @@ module ocn_gm
       end if
 
       if (config_use_GM) then
-
-         nEdges = nEdgesArray(3)
-         ! add back original N2 dependent 'N2_dependent_orig' for bluetip testing
-         if (local_config_GM_kappa_lat_depth_variable_orig) then
-            !$omp parallel
-            !$omp do schedule(runtime) private(k, BruntVaisalaFreqTopEdge, maxN, cell1, cell2)
-            do iEdge=1,nEdges
-               k=minLevelEdgeBot(iEdge)
-               cell1 = cellsOnEdge(1,iEdge)
-               cell2 = cellsOnEdge(2,iEdge)
-               BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k,cell1) + &
-                                                    BruntVaisalaFreqTop(k,cell2))
-               maxN = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
-               do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)
-                 BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k,cell1) + &
-                                                      BruntVaisalaFreqTop(k,cell2))
-                 maxN = max(maxN,max(BruntVaisalaFreqTopEdge, 0.0_RKIND))
-               enddo
-
-               do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)
-                  BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k,cell1) + &
-                                                       BruntVaisalaFreqTop(k,cell2))
-                  BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
-
-                  gmKappaScaling(k, iEdge) = min(max(config_GM_spatially_variable_min_kappa /         &
-                                                     config_GM_spatially_variable_max_kappa,          &
-                                                     BruntVaisalaFreqTopEdge/(maxN + 1.0E-10_RKIND)), &
-                                                     1.0_RKIND)
-               end do
-           enddo
-           !$omp end do
-           !$omp end parallel
-
-         end if
 
          ! For config_GM_closure = 'N2_dependent' use a scaling to taper gmBolusKappa
          ! based on stratification relative to the maximum in the column
@@ -780,22 +684,6 @@ module ocn_gm
          else if (config_GM_closure == 'N2_dependent') then
             local_config_GM_lat_variable_c2 = .true.
             local_config_GM_kappa_lat_depth_variable = .true.
-            local_config_GM_compute_Visbeck = .false.
-            local_config_GM_compute_EdenGreatbatch = .false.
-
-            RediGMinitValue = 0.0_RKIND
-            ! for N2 dependence, we still assign Kappa as a constant to be multiplied by N2 scaling.
-            !$omp parallel
-            !$omp do schedule(runtime)
-            do iEdge = 1, nEdges
-               gmBolusKappa(iEdge) = config_GM_spatially_variable_max_kappa
-            end do
-            !$omp end do
-            !$omp end parallel
-         else if (config_GM_closure == 'N2_dependent_orig') then
-            local_config_GM_lat_variable_c2 = .true.
-            local_config_GM_kappa_lat_depth_variable_orig = .true.
-            local_config_GM_kappa_lat_depth_variable = .false.
             local_config_GM_compute_Visbeck = .false.
             local_config_GM_compute_EdenGreatbatch = .false.
 

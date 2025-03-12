@@ -294,7 +294,7 @@ module ocn_redi
               !in the boundary layer the first term is zero, so 1.0 is added to allow term 1 to stay active
               !the second term is 1 in the boundary layer and 0 below the boundary layer
               limiterUp(k,iCellSelf,iEdge) = (1.0_RKIND - oldlimiter)*(1.0_RKIND + &
-                                             sfcTaper*(slopeTaperUp - 1.0_RKIND)) + 
+                                             sfcTaper*(slopeTaperUp - 1.0_RKIND)) + & 
                                              oldlimiter*slopeTaperUp*sfcTaper
               limiterDown(k,iCellSelf,iEdge) = (1.0_RKIND - oldlimiter)*(1.0_RKIND + &
                                                sfcTaper*(slopeTaperDown - 1.0_RKIND)) + &
