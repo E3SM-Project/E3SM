@@ -596,13 +596,12 @@ void MAMMicrophysics::run_impl(const double dt) {
   auto o3_col_dens = buffer_.scratch[8];
 
   /* Gather time and state information for interpolation */
-  const auto ts = timestamp() + dt;
+  const auto ts = timestamp();
 
   const Real chlorine_loading = scream::mam_coupling::chlorine_loading_advance(
       ts, chlorine_values_, chlorine_time_secs_);
 
-  // /* Update the TracerTimeState to reflect the current time, note the
-  // addition of dt */
+  // Update the TracerTimeState to reflect the current time
   trace_time_state_.t_now = ts.frac_of_year_in_days();
   scream::mam_coupling::advance_tracer_data(
       TracerDataReader_,                 // in
@@ -660,7 +659,6 @@ void MAMMicrophysics::run_impl(const double dt) {
   // Note: We are following the RRTMGP EAMxx interface to compute the zenith
   // angle. This operation is performed on the host because the routine
   // shr_orb_cosz_c2f has not been ported to C++.
-  auto ts2          = timestamp();
   auto orbital_year = m_orbital_year;
   // Note: We need double precision because
   // shr_orb_params_c2f and shr_orb_decl_c2f only support double precision.
@@ -678,13 +676,13 @@ void MAMMicrophysics::run_impl(const double dt) {
     orbital_year = shr_orb_undef_int_c2f;
   } else if(orbital_year < 0) {
     // compute orbital parameters based on current year
-    orbital_year = ts2.get_year();
+    orbital_year = ts.get_year();
   }
   shr_orb_params_c2f(&orbital_year,                                       // in
                      &eccen, &obliq, &mvelp, &obliqr, &lambm0, &mvelpp);  // out
 
   // Want day + fraction; calday 1 == Jan 1 0Z
-  auto calday = ts2.frac_of_year_in_days() + 1;
+  auto calday = ts.frac_of_year_in_days() + 1;
   shr_orb_decl_c2f(calday, eccen, mvelpp, lambm0, obliqr,  // in
                    &delta, &eccf);                         // out
   {

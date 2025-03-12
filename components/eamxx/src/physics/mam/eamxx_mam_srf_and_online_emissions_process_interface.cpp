@@ -369,7 +369,7 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
               constituent_fluxes);  // in-out
   Kokkos::fence();
   // Gather time and state information for interpolation
-  const auto ts = timestamp() + dt;
+  const auto ts = timestamp();
 
   //--------------------------------------------------------------------
   // Online emissions from dust and sea salt
