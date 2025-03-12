@@ -381,6 +381,13 @@ void MAMWetscav::run_impl(const double dt) {
     }
   }
 
+  Real scavimptblnum[mam4::aero_model::nimptblgrow_total]
+                          [mam4::AeroConfig::num_modes()];
+  Real scavimptblvol[mam4::aero_model::nimptblgrow_total]
+                          [mam4::AeroConfig::num_modes()];
+
+  mam4::wetdep::init_scavimptbl(scavimptblvol, scavimptblnum);
+
   // Loop over atmosphere columns
   Kokkos::parallel_for(
       policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
@@ -426,12 +433,6 @@ void MAMWetscav::run_impl(const double dt) {
         auto wetdens_icol     = ekat::subview(wetdens, icol);
         const auto prain_icol = ekat::subview(prain, icol);
 
-        Real scavimptblnum[mam4::aero_model::nimptblgrow_total]
-                          [mam4::AeroConfig::num_modes()];
-        Real scavimptblvol[mam4::aero_model::nimptblgrow_total]
-                          [mam4::AeroConfig::num_modes()];
-
-        mam4::wetdep::init_scavimptbl(scavimptblvol, scavimptblnum);
 
         mam4::wetdep::aero_model_wetdep(
             team, atm, progs, tends, dt,
