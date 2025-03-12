@@ -790,10 +790,10 @@ end subroutine shr_mct_sMatReaddnc
 subroutine shr_mct_sMatWritednc(sMat,iosystem, io_type, io_format, fileName,compid, mpicom)
 
 ! !USES:
-  use pio, only : iosystem_desc_t
+   use pio, only : iosystem_desc_t
    use shr_pcdf_mod, only : shr_pcdf_readwrite
+   use mpi, only: mpi_comm_size, mpi_comm_rank
    implicit none
-#include <mpif.h>
 
 ! !INPUT/OUTPUT PARAMETERS:
 

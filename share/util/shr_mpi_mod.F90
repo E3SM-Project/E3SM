@@ -92,13 +92,12 @@ Module shr_mpi_mod
        shr_mpi_maxr1
   end interface shr_mpi_max
 
-#include <mpif.h>         ! mpi library include file
-
   !===============================================================================
 CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_chkerr(rcode,string)
+    use mpi, only: mpi_error_string, mpi_max_error_string, mpi_success
 
     IMPLICIT none
 
@@ -128,6 +127,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_sendi0(lvec,pid,tag,comm,string)
+    use mpi, only: mpi_send, mpi_integer
 
     IMPLICIT none
 
@@ -162,6 +162,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_sendi1(lvec,pid,tag,comm,string)
+    use mpi, only: mpi_send, mpi_integer
 
     IMPLICIT none
 
@@ -196,6 +197,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_sendr0(lvec,pid,tag,comm,string)
+    use mpi, only: mpi_send, mpi_real8
 
     IMPLICIT none
 
@@ -230,6 +232,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_sendr1(lvec,pid,tag,comm,string)
+    use mpi, only: mpi_send, mpi_real8
 
     IMPLICIT none
 
@@ -264,6 +267,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_sendr3(array,pid,tag,comm,string)
+    use mpi, only: mpi_send, mpi_real8
 
     IMPLICIT none
 
@@ -298,6 +302,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_recvi0(lvec,pid,tag,comm,string)
+    use mpi, only: mpi_status_size, mpi_integer
 
     IMPLICIT none
 
@@ -333,6 +338,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_recvi1(lvec,pid,tag,comm,string)
+    use mpi, only: mpi_status_size, mpi_integer, mpi_recv
 
     IMPLICIT none
 
@@ -368,6 +374,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_recvr0(lvec,pid,tag,comm,string)
+    use mpi, only: mpi_status_size, mpi_real8, mpi_recv
 
     IMPLICIT none
 
@@ -403,6 +410,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_recvr1(lvec,pid,tag,comm,string)
+    use mpi, only: mpi_status_size, mpi_real8, mpi_recv
 
     IMPLICIT none
 
@@ -438,6 +446,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_recvr3(array,pid,tag,comm,string)
+    use mpi, only: mpi_status_size, mpi_real8, mpi_recv
 
     IMPLICIT none
 
@@ -473,6 +482,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_bcasti0(vec,comm,string,pebcast)
+    use mpi, only: mpi_bcast, mpi_integer
 
     IMPLICIT none
 
@@ -506,6 +516,7 @@ CONTAINS
   END SUBROUTINE shr_mpi_bcasti0
 
   SUBROUTINE shr_mpi_bcasti80(vec,comm,string,pebcast)
+    use mpi, only: mpi_bcast, mpi_integer8
 
     IMPLICIT none
 
@@ -542,6 +553,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_bcastl0(vec,comm,string,pebcast)
+    use mpi, only: mpi_bcast, mpi_logical
 
     IMPLICIT none
 
@@ -578,6 +590,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_bcastc0(vec,comm,string,pebcast)
+    use mpi, only: mpi_bcast, mpi_character
 
     IMPLICIT none
 
@@ -614,6 +627,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_bcastc1(vec,comm,string,pebcast)
+    use mpi, only: mpi_bcast, mpi_character
 
     IMPLICIT none
 
@@ -650,6 +664,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_bcastr0(vec,comm,string,pebcast)
+    use mpi, only: mpi_bcast, mpi_real8
 
     IMPLICIT none
 
@@ -686,6 +701,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_bcasti1(vec,comm,string,pebcast)
+    use mpi, only: mpi_bcast, mpi_integer
 
     IMPLICIT none
 
@@ -719,6 +735,7 @@ CONTAINS
   END SUBROUTINE shr_mpi_bcasti1
 
   SUBROUTINE shr_mpi_bcasti81(vec,comm,string,pebcast)
+    use mpi, only: mpi_bcast, mpi_integer8
 
     IMPLICIT none
 
@@ -755,6 +772,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_bcastl1(vec,comm,string,pebcast)
+    use mpi, only: mpi_bcast, mpi_logical
 
     IMPLICIT none
 
@@ -791,6 +809,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_bcastr1(vec,comm,string,pebcast)
+    use mpi, only: mpi_bcast, mpi_real8
 
     IMPLICIT none
 
@@ -827,6 +846,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_bcastr2(arr,comm,string,pebcast)
+    use mpi, only: mpi_bcast, mpi_real8
 
     IMPLICIT none
 
@@ -865,6 +885,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_bcasti2(arr,comm,string,pebcast)
+    use mpi, only: mpi_bcast, mpi_integer
 
     IMPLICIT none
 
@@ -903,6 +924,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_bcastr3(arr,comm,string,pebcast)
+    use mpi, only: mpi_bcast, mpi_real8
 
     IMPLICIT none
 
@@ -942,6 +964,7 @@ CONTAINS
 
   SUBROUTINE shr_mpi_gathScatvInitr1(comm, rootid, locArr, glob1DArr, globSize, &
        displs, string )
+    use mpi, only: mpi_gather, mpi_integer
 
     IMPLICIT none
 
@@ -957,7 +980,6 @@ CONTAINS
     !----- local -----
     integer(SHR_KIND_IN)               :: npes          ! Number of MPI tasks
     integer(SHR_KIND_IN)               :: locSize       ! Size of local distributed data
-    integer(SHR_KIND_IN), pointer      :: sendSize(:)   ! Size to send for initial gather
     integer(SHR_KIND_IN)               :: i             ! Index
     integer(SHR_KIND_IN)               :: rank          ! Rank of this MPI task
     integer(SHR_KIND_IN)               :: nSize         ! Maximum size to send
@@ -979,17 +1001,14 @@ CONTAINS
     !
     ! --- Gather the send global sizes from each MPI task -----------------------
     !
-    allocate( sendSize(npes) )
-    sendSize(:) = 1
     globSize(:) = 1
-    call MPI_GATHER( locSize, 1, MPI_INTEGER, globSize, sendSize, &
+    call MPI_GATHER( locSize, 1, MPI_INTEGER, globSize, 1, &
          MPI_INTEGER, rootid, comm, ierr )
     if (present(string)) then
        call shr_mpi_chkerr(ierr,subName//trim(string))
     else
        call shr_mpi_chkerr(ierr,subName)
     endif
-    deallocate( sendSize )
     !
     ! --- Prepare the displacement and allocate arrays -------------------------
     !
@@ -1025,6 +1044,7 @@ CONTAINS
 
   SUBROUTINE shr_mpi_gathervr1(locarr, locSize, glob1DArr, globSize, displs, rootid, &
        comm, string )
+    use mpi, only: mpi_gatherv, mpi_real8
 
     IMPLICIT none
 
@@ -1063,6 +1083,7 @@ CONTAINS
 
   SUBROUTINE shr_mpi_scattervr1(locarr, locSize, glob1Darr, globSize, displs, rootid, &
        comm, string )
+    use mpi, only: mpi_scatterv, mpi_real8
 
     IMPLICIT none
 
@@ -1102,6 +1123,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_sumi0(lvec,gvec,comm,string,all)
+    use mpi, only: mpi_allreduce, mpi_sum, mpi_integer
 
     IMPLICIT none
 
@@ -1159,6 +1181,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_sumi1(lvec,gvec,comm,string,all)
+    use mpi, only: mpi_allreduce, mpi_reduce, mpi_sum, mpi_integer
 
     IMPLICIT none
 
@@ -1216,6 +1239,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_sumb0(lvec,gvec,comm,string,all)
+    use mpi, only: mpi_allreduce, mpi_reduce, mpi_sum, mpi_integer8
 
     IMPLICIT none
 
@@ -1273,6 +1297,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_sumb1(lvec,gvec,comm,string,all)
+    use mpi, only: mpi_allreduce, mpi_reduce, mpi_sum, mpi_integer8
 
     IMPLICIT none
 
@@ -1330,6 +1355,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_sumr0(lvec,gvec,comm,string,all)
+    use mpi, only: mpi_allreduce, mpi_reduce, mpi_sum, mpi_real8
 
     IMPLICIT none
 
@@ -1387,6 +1413,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_sumr1(lvec,gvec,comm,string,all)
+    use mpi, only: mpi_allreduce, mpi_reduce, mpi_sum, mpi_real8
 
     IMPLICIT none
 
@@ -1444,6 +1471,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_sumr2(lvec,gvec,comm,string,all)
+    use mpi, only: mpi_allreduce, mpi_reduce, mpi_sum, mpi_real8
 
     IMPLICIT none
 
@@ -1501,6 +1529,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_sumr3(lvec,gvec,comm,string,all)
+    use mpi, only: mpi_allreduce, mpi_reduce, mpi_sum, mpi_real8
 
     IMPLICIT none
 
@@ -1558,6 +1587,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_mini0(lvec,gvec,comm,string,all)
+    use mpi, only: mpi_allreduce, mpi_reduce, mpi_min, mpi_integer
 
     IMPLICIT none
 
@@ -1615,6 +1645,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_mini1(lvec,gvec,comm,string,all)
+    use mpi, only: mpi_allreduce, mpi_reduce, mpi_min, mpi_integer
 
     IMPLICIT none
 
@@ -1672,6 +1703,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_minr0(lvec,gvec,comm,string,all)
+    use mpi, only: mpi_allreduce, mpi_reduce, mpi_min, mpi_real8
 
     IMPLICIT none
 
@@ -1729,6 +1761,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_minr1(lvec,gvec,comm,string,all)
+    use mpi, only: mpi_allreduce, mpi_reduce, mpi_min, mpi_real8
 
     IMPLICIT none
 
@@ -1786,6 +1819,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_maxi0(lvec,gvec,comm,string,all)
+    use mpi, only: mpi_allreduce, mpi_reduce, mpi_max, mpi_integer
 
     IMPLICIT none
 
@@ -1843,6 +1877,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_maxi1(lvec,gvec,comm,string,all)
+    use mpi, only: mpi_allreduce, mpi_reduce, mpi_max, mpi_integer
 
     IMPLICIT none
 
@@ -1900,6 +1935,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_maxr0(lvec,gvec,comm,string,all)
+    use mpi, only: mpi_allreduce, mpi_reduce, mpi_max, mpi_real8
 
     IMPLICIT none
 
@@ -1957,6 +1993,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_maxr1(lvec,gvec,comm,string,all)
+    use mpi, only: mpi_allreduce, mpi_reduce, mpi_max, mpi_real8
 
     IMPLICIT none
 
@@ -2014,6 +2051,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_commsize(comm,size,string)
+    use mpi, only: mpi_comm_size
 
     IMPLICIT none
 
@@ -2043,6 +2081,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_commrank(comm,rank,string)
+    use mpi, only: mpi_comm_rank
 
     IMPLICIT none
 
@@ -2072,6 +2111,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_initialized(flag,string)
+    use mpi, only: mpi_initialized
 
     IMPLICIT none
 
@@ -2100,6 +2140,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_abort(string,rcode)
+    use mpi, only: mpi_abort, mpi_comm_world
 
     IMPLICIT none
 
@@ -2132,6 +2173,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_barrier(comm,string)
+    use mpi, only: mpi_barrier
 
     IMPLICIT none
 
@@ -2160,6 +2202,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_init(string)
+    use mpi, only: mpi_init
 
     IMPLICIT none
 
@@ -2187,6 +2230,7 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_mpi_finalize(string)
+    use mpi, only: mpi_barrier, mpi_finalize, mpi_comm_world
 
     IMPLICIT none
 
