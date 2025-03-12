@@ -75,9 +75,9 @@ void Cosp::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   add_field<Required>("phis",             scalar2d    , m2/s2,  grid_name);
   add_field<Required>("pseudo_density",   scalar3d_mid, Pa,     grid_name);
   add_field<Required>("cldfrac_rad",      scalar3d_mid, nondim, grid_name);
-  add_tracer<Required>("qv", m_grid, kg/kg, true);
-  add_tracer<Required>("qc", m_grid, kg/kg, true);
-  add_tracer<Required>("qi", m_grid, kg/kg, true);
+  add_tracer<Required>("qv", m_grid, kg/kg);
+  add_tracer<Required>("qc", m_grid, kg/kg);
+  add_tracer<Required>("qi", m_grid, kg/kg);
   // Optical properties, should be computed in radiation interface
   add_field<Required>("dtau067",     scalar3d_mid, nondim, grid_name); // 0.67 micron optical depth
   add_field<Required>("dtau105",     scalar3d_mid, nondim, grid_name); // 10.5 micron optical depth

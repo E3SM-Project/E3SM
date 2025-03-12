@@ -83,7 +83,7 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
     add_field<Updated>("T_mid", scalar3d_layout_mid, K, grid_name, ps);
   }
   if (ekat::contains(m_fields_nudge,"qv")) {
-    add_tracer<Updated>("qv", m_grid, kg/kg, true, ps);
+    add_tracer<Updated>("qv", m_grid, kg/kg, ps);
   }
   if (ekat::contains(m_fields_nudge,"U") or ekat::contains(m_fields_nudge,"V")) {
     add_field<Updated>("horiz_winds",   horiz_wind_layout,   m/s,     grid_name, ps);

@@ -76,15 +76,15 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   add_field<Updated> ("T_mid",       scalar3d_layout_mid, K,      grid_name, ps);  // T_mid is the only one of these variables that is also updated.
 
   // Prognostic State:  (all fields are both input and output)
-  add_tracer<Updated>("qv", m_grid, kg/kg, true, ps);
-  add_tracer<Updated>("qc", m_grid, kg/kg, true, ps);
-  add_tracer<Updated>("qr", m_grid, kg/kg, true, ps);
-  add_tracer<Updated>("qi", m_grid, kg/kg, true, ps);
-  add_tracer<Updated>("qm", m_grid, kg/kg, true, ps);
-  add_tracer<Updated>("nc", m_grid, 1/kg,  true, ps);
-  add_tracer<Updated>("nr", m_grid, 1/kg,  true, ps);
-  add_tracer<Updated>("ni", m_grid, 1/kg,  true, ps);
-  add_tracer<Updated>("bm", m_grid, 1/kg,  true, ps);
+  add_tracer<Updated>("qv", m_grid, kg/kg, ps);
+  add_tracer<Updated>("qc", m_grid, kg/kg, ps);
+  add_tracer<Updated>("qr", m_grid, kg/kg, ps);
+  add_tracer<Updated>("qi", m_grid, kg/kg, ps);
+  add_tracer<Updated>("qm", m_grid, kg/kg, ps);
+  add_tracer<Updated>("nc", m_grid, 1/kg,  ps);
+  add_tracer<Updated>("nr", m_grid, 1/kg,  ps);
+  add_tracer<Updated>("ni", m_grid, 1/kg,  ps);
+  add_tracer<Updated>("bm", m_grid, 1/kg,  ps);
 
   // Diagnostic Inputs: (only the X_prev fields are both input and output, all others are just inputs)
   add_field<Required>("nc_nuceat_tend",     scalar3d_layout_mid, 1/(kg*s), grid_name, ps);
@@ -346,7 +346,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   diag_inputs.cld_frac_r      = p3_preproc.cld_frac_r;
   diag_inputs.dz              = p3_preproc.dz;
   diag_inputs.inv_exner       = p3_preproc.inv_exner;
-  
+
   // Inputs for the heteogeneous freezing
   if (runtime_options.use_hetfrz_classnuc){
     diag_inputs.hetfrz_immersion_nucleation_tend  = get_field_in("hetfrz_immersion_nucleation_tend").get_view<const Pack**>();

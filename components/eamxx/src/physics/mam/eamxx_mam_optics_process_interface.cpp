@@ -83,7 +83,7 @@ void MAMOptics::set_grids(
   // aerosol-related gases: mass mixing ratios
   for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
     const char *gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
-    add_tracer<Updated>(gas_mmr_field_name, grid_, kg / kg, true);
+    add_tracer<Updated>(gas_mmr_field_name, grid_, kg / kg);
   }
 }
 
