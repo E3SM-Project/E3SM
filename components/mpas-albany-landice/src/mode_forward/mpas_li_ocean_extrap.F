@@ -247,6 +247,7 @@ contains
          call li_flood_fill(connectedMarineMask, growMask, domain)
          call li_flood_fill(altConnectedMarineMask, altGrowMask, domain)
 
+         ! alter orig3dOceanMask if necessary to avoid errors
          do iCell = 1, nCells
             if ( (altConnectedMarineMask(iCell) /= connectedMarineMask(iCell)) .and. (thickness(iCell) == 0.0_RKIND) ) then
                if (config_recalculate_thermal_forcing) then
@@ -260,6 +261,20 @@ contains
 
                call mpas_log_write("WARNING: orig3dOceanMask altered to include ice-dammed inland seas.")
             endif
+            ! Ensure MPAS ocean cells have not been interpolated onto non-ocean cells on the MALI mesh
+            do iLayer = 1, nISMIP6OceanLayers
+                if ( (bedTopography(iCell) > 0.0_RKIND) .and. (orig3dOceanMask(iLayer,iCell) == 1) ) then
+                   orig3dOceanMask(iLayer,iCell) = 0
+                   ismip6shelfMelt_3dThermalForcing(iLayer,iCell) = 0.0_RKIND
+                   connectedMarineMask(iCell) = 0
+                 
+                   if (config_recalculate_thermal_forcing) then
+                      MPAS_3dOceanTemperature(iLayer,iCell) = 0.0_RKIND
+                      MPAS_3dOceanSalinity(iLayer,iCell) = 0.0_RKIND
+                   endif
+                   call mpas_log_write("WARNING: non-ocean cells removed from orig3dOceanMask")
+               endif
+            enddo
          enddo
 
          ! make it a 3D mask based on the topography (loop through nISMIP6OceanLayers)
