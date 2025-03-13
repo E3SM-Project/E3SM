@@ -604,7 +604,7 @@ static void rrtmgp_main(
 /*
  * Perform any clean-up tasks
  */
-static void rrtmgp_finalize()
+static void rrtmgp_finalize(bool verbose=true)
 {
   initialized_k = false;
   k_dist_sw_k->finalize();
@@ -615,7 +615,7 @@ static void rrtmgp_finalize()
   k_dist_lw_k = nullptr;
   cloud_optics_sw_k = nullptr;
   cloud_optics_lw_k = nullptr;
-  pool_t::finalize();
+  pool_t::finalize(verbose);
 }
 
 /*

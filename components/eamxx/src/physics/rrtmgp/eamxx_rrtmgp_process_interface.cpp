@@ -1828,7 +1828,9 @@ void RRTMGPRadiation::finalize_impl  () {
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
   m_gas_concs_k.reset();
-  interface_t::rrtmgp_finalize();
+  // Finalize the interface, passing a bool for rank 0
+  // to print info about memory stats on that rank
+  interface_t::rrtmgp_finalize(m_comm.am_i_root());
 #endif
 
   finalize_kls();
