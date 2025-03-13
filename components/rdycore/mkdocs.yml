@@ -1,0 +1,74 @@
+site_name: "RDycore: A River / Flooding dynamical core for E3SM"
+
+nav:
+  - 'Home': 'index.md'
+  - 'User Guide':
+    - 'Overview': 'user/index.md'
+    - 'Installation': 'common/installation.md'
+    - 'YAML Input Specification': 'common/input.md'
+    - 'MMS Driver': 'common/mms.md'
+    - 'RDycore Example Cases':
+      - 'Overview': 'user/example-cases/example-cases.md'
+      - 'Idealized dam break problem': 'user/example-cases/dam-break/index.md'
+      - 'Hurricane Harvey':
+        - 'Overview': 'user/example-cases/harvey-flooding/harvey-flooding.md'
+        - 'With MRMS rainfall and outflow BC': 'user/example-cases/harvey-flooding/critical-outflow-bc/index.md'
+        - 'With average rainfall and ocean BC': 'user/example-cases/harvey-flooding/ocean-bc/index.md'
+    - 'E3SM-RDycore Example Cases':
+       - 'Overview': 'user/example-cases/e3sm-cases/index.md'
+       - 'Hurricane Harvey': 'user/example-cases/e3sm-cases/harvey-flooding/e3sm_harvey.md'
+  - 'Developer Guide':
+    - 'Overview': 'developer/index.md'
+    - 'Installation': 'common/installation.md'
+    - 'Development Process': 'developer/development.md'
+    - 'Code Structure and Organization': 'developer/organization.md'
+    - 'Style Guide': 'developer/style.md'
+    - 'Developer Tools': 'developer/tools.md'
+    - 'SWE implementation using libCEED': 'developer/ceed.md'
+  - 'Theory Guide':
+    - 'Overview': 'theory/index.md'
+    - 'Shallow Water Equations': 'theory/swe.md'
+    - 'Sediment Transport': 'theory/sediment.md'
+
+edit_uri: ""
+
+theme:
+  name: material
+  palette:
+  palette:
+  - media: "(prefers-color-scheme: light)"
+    scheme: default
+    toggle:
+      icon: material/weather-sunny
+      name: Switch to dark mode
+  - media: "(prefers-color-scheme: dark)"
+    scheme: slate
+    primary: cyan
+    toggle:
+      icon: material/weather-night
+      name: Switch to light mode
+  features:
+    - navigation.indices
+    - navigation.instant
+    - navigation.sections
+    - navigation.top
+#    - navigation.tabs
+
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.arithmatex:
+      generic: true
+  - tables
+
+extra_javascript:
+  - javascript/mathjax.js
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
+repo_url: https://github.com/RDycore/RDycore
+
+use_directory_urls: false

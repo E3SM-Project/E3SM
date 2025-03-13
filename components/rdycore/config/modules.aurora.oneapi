@@ -1,0 +1,13 @@
+module purge
+module use /soft/modulefiles
+module use /soft/restricted/CNDA/updates/modulefiles
+module load spack-pe-gcc/0.5-rc1
+module load cmake/3.26.4-gcc-testing  
+module load mpich/52.2-256/icc-all-pmix-gpu
+module load oneapi/release/2023.12.15.001
+module load intel_compute_runtime/release/.stable-775.20
+module load cray-pals/1.2.12                    
+module load libfabric/1.15.2.0
+module load cray-libpals/1.2.12
+module load python autoconf
+
