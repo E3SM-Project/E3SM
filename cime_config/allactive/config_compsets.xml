@@ -18,7 +18,7 @@
     LND  = [ELM,  SLND]
     ICE  = [MPASSI, CICE, DICE, SICE]
     OCN  = [MPASO, DOCN, SOCN]
-    ROF  = [MOSART, SROF]
+    ROF  = [MOSART, RDYCORE, SROF]
     GLC  = [MALI, SGLC]
     WAV  = [WW3, DWAV, XWAV, SWAV]
     ESP  = [SESP]

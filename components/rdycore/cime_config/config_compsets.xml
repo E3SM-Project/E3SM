@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+
+<compsets>
+
+  <help>
+  Compset format is explained in cime/config/e3sm/allactive/config_compsets.xml
+  or in the CIME documenation
+  </help>
+
+  <!---RDycore RD compsets -->
+
+  <compset>
+    <alias>RDSQIAN</alias>
+    <lname>2000_DATM%QIA_DLND%QIA_SICE_SOCN_RDYCORE_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>RDSGPCC</alias>
+    <lname>2000_DATM%QIA_DLND%GPCC_SICE_SOCN_RDYCORE_SGLC_SWAV</lname>
+  </compset>
+
+</compsets>

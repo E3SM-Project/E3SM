@@ -1,0 +1,66 @@
+#!/bin/bash
+#SBATCH -A PLACEHOLDER_PROJECT_ID
+#SBATCH -p batch
+#SBATCH -t 00:30:00
+#SBATCH -N PLACEHOLDER_N
+
+N=PLACEHOLDER_N
+n=PLACEHOLDER_n
+is_cpu_run=PLACEHOLDER_CPU_RUN
+is_gpu_run=PLACEHOLDER_GPU_RUN
+
+# Sets the RDycore directory
+export RDYCORE_DIR=PLACEHOLDER_RDYCORE_DIR
+
+# Inputdeck for RDycore
+export YAML_FILE=inputdeck_5120x2560.yaml
+
+# Load appropriate modules
+MACH=PLACEHOLDER_MACHINE_NAME
+source ${RDYCORE_DIR}/config/set_petsc_settings.sh --mach ${MACH} --config 1
+
+# Sets the path to the `rdycore` exe. It assumes that you had build RDycore
+# in the <RDYCORE_DIR>/build-${PETSC_ARCH}.
+export RDYCORE_EXE=${RDYCORE_DIR}/build-${PETSC_ARCH}/bin/rdycore
+
+# Set LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=$PETSC_DIR/$PETSC_ARCH/lib:$LD_LIBRARY_PATH
+
+export PE_MPICH_GTL_DIR_amd_gfx90a="-L${CRAY_MPICH_ROOTDIR}/gtl/lib"
+export PE_MPICH_GTL_LIBS_amd_gfx90a="-lmpi_gtl_hsa"
+
+# Save environmental settings
+env > env.${SLURM_JOB_ID}.txt
+
+# Run the code
+if [ $is_cpu_run -eq 1 ]; then
+
+  # Create a directory for the slurm job in which all log files would be saved
+  export DEST_DIR=cpu.N_${N}.${SLURM_JOB_ID}
+  mkdir ${DEST_DIR}
+
+  LOG_FILE=${MACH}.cpu.N_${N}.${PETSC_ARCH}.ceed_cpu.${SLURM_JOB_ID}.log
+  srun -N${N} -n${n} -c1 ${RDYCORE_EXE} ${YAML_FILE} -ceed /cpu/self -ts_monitor -dm_plex_name "Parallel Mesh" -log_view -options_left 2>&1 | tee ${LOG_FILE}
+
+elif [ $is_gpu_run -eq 1 ]; then
+
+  # Create a directory for the slurm job in which all log files would be saved
+  export DEST_DIR=gpu.N_${N}.${SLURM_JOB_ID}
+  mkdir ${DEST_DIR}
+
+  export GPU_AWARE_MPI=1
+  export MPICH_GPU_SUPPORT_ENABLED=1
+  export PE_MPICH_GTL_DIR_amd_gfx90a="-L${CRAY_MPICH_ROOTDIR}/gtl/lib"
+  export PE_MPICH_GTL_LIBS_amd_gfx90a="-lmpi_gtl_hsa"
+
+  LOG_FILE=${MACH}.gpu.n_${N}.${PETSC_ARCH}.ceed_gpu.${SLURM_JOB_ID}.log
+  srun -N${N} -n${n} -c1 ${RDYCORE_EXE} ${YAML_FILE} -ceed /gpu/hip -dm_vec_type hip -ts_monitor -dm_plex_name "Parallel Mesh" -log_view_gpu_time -log_view -use_gpu_aware_mpi $GPU_AWARE_MPI -options_left 2>&1 | tee ${LOG_FILE}
+fi
+
+# Move any reports to the slurm job dir
+for file in `ls report*`; do mv $file ${SLURM_JOB_ID}.$file ; done
+
+# Move additional files to the slurm job dir
+mv *${SLURM_JOB_ID}.* ${DEST_DIR}
+cp ${YAML_FILE} ${DEST_DIR}
+

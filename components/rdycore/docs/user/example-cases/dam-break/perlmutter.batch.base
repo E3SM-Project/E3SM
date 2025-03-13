@@ -1,0 +1,66 @@
+#!/bin/bash
+#SBATCH -A PLACEHOLDER_PROJECT_ID
+#SBATCH -C PLACEHOLDER_CONSTRAINT
+#SBATCH -q debug
+#SBATCH -t 0:30:00
+#SBATCH -N PLACEHOLDER_N
+
+N=PLACEHOLDER_N;
+n=PLACEHOLDER_n
+is_cpu_run=PLACEHOLDER_CPU_RUN
+is_gpu_run=PLACEHOLDER_GPU_RUN
+
+# Sets the RDycore directory
+export RDYCORE_DIR=PLACEHOLDER_RDYCORE_DIR
+
+# Inputdeck for RDycore
+export YAML_FILE=inputdeck_5120x2560.yaml
+
+# Load appropriate modules
+MACH=PLACEHOLDER_MACHINE_NAME
+source ${RDYCORE_DIR}/config/set_petsc_settings.sh --mach ${MACH} --config 1
+
+# Sets the path to the `rdycore` exe. It assumes that RDycore was build
+# in the <RDYCORE_DIR>/build-${PETSC_ARCH}.
+export RDYCORE_EXE=${RDYCORE_DIR}/build-${PETSC_ARCH}/bin/rdycore
+
+# Set LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=$PETSC_DIR/$PETSC_ARCH/lib:$LD_LIBRARY_PATH
+
+# This is for the case when the mesh is in .h5
+export HDF5_USE_FILE_LOCKING=FALSE
+
+# Save environmental settings
+env > env.${SLURM_JOB_ID}.txt
+
+# Run the code
+
+if [ $is_cpu_run -eq 1 ]; then
+
+  # Create a directory for the slurm job in which all log files would be saved
+  export DEST_DIR=cpu.N_${N}.${SLURM_JOB_ID}
+  mkdir ${DEST_DIR}
+
+  LOG_FILE=${MACH}.${PETSC_ARCH}.ceed_cpu.N_${N}.${SLURM_JOB_ID}.log
+  srun -N $N -n $n -c 2 ${RDYCORE_EXE} ${YAML_FILE} -ceed /cpu/self -ts_monitor -dm_plex_name "Parallel Mesh" -log_view 2>&1 | tee ${LOG_FILE}
+
+elif [ $is_gpu_run -eq 1 ]; then
+
+  # Create a directory for the slurm job in which all log files would be saved
+  export DEST_DIR=gpu.N_${N}.${SLURM_JOB_ID}
+  mkdir ${DEST_DIR}
+
+  export MPICH_GPU_SUPPORT_ENABLED=1
+  export GPU_AWARE_MPI=1
+  G=$n
+  LOG_FILE=${MACH}.${PETSC_ARCH}.ceed_gpu.N_${N}.${SLURM_JOB_ID}.log
+  srun -G${G} -N $N -n $n -c 32 ${RDYCORE_EXE} ${YAML_FILE} -ceed /gpu/cuda -dm_vec_type cuda -ts_monitor -dm_plex_name "Parallel Mesh" -log_view -log_view_gpu_time -use_gpu_aware_mpi 1 2>&1 | tee ${LOG_FILE}
+
+fi 
+
+# Move any reports to the slurm job dir
+for file in `ls report*`; do mv $file ${SLURM_JOB_ID}.$file ; done
+
+# Move additional files to the slurm job dir
+mv *${SLURM_JOB_ID}.* ${DEST_DIR}
+cp ${YAML_FILE} ${DEST_DIR}
