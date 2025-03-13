@@ -3490,7 +3490,7 @@
         <env name="UR_L0_USE_DRIVER_INORDER_LISTS">1</env>
         <env name="UR_L0_ENABLE_RELAXED_ALLOCATION_LIMITS">1</env>
         <env name="UR_L0_USE_COPY_ENGINE_FOR_IN_ORDER_QUEUE">1</env>
-	<env name="FI_PROVIDER">cxi</env>
+	<!--<env name="FI_PROVIDER">cxi</env>-->
 	<env name="FI_MR_CACHE_MONITOR">disabled</env>
         <env name="FI_CXI_OVFLOW_BUF_SIZE">8388608</env>
         <env name="PALS_PING_PERIOD">240</env>
@@ -3502,7 +3502,7 @@
         <env name="SYCL_CACHE_PERSISTENT">1</env>
         <env name="GATOR_INITIAL_MB">4000MB</env>
         <env name="GATOR_DISABLE">0</env>
-        <env name="GPU_TILE_COMPACT">/soft/tools/mpi_wrapper_utils/gpu_tile_compact.sh</env>
+        <env name="GPU_TILE_COMPACT">/lus/flare/projects/E3SM_Dec/tools/mpi_wrapper_utils/gpu_tile_compact.sh</env>
         <env name="FI_CXI_DEFAULT_CQ_SIZE">131072</env>
         <env name="FI_CXI_CQ_FILL_PERCENT">20</env>
 	<!--<env name="Kokkos_ROOT">$ENV{KOKKOS_ROOT}</env>-->
