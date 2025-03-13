@@ -86,7 +86,7 @@ _TESTS = {
             "ERS.f19_f19.I1850ELMCN",
             "ERS.f19_f19.I20TRELMCN",
             "SMS_Ld1.hcru_hcru.I1850CRUELMCN",
-            "SMS_Ly1_P1x1.1x1_smallvilleIA.I20TRGSWCNPCROP.elm-lulcc_sville",
+            "SMS_Ly2_P1x1.1x1_smallvilleIA.I20TRGSWCNPCROP.elm-lulcc_sville",
             "SMS_Ly5_P1x1.1x1_smallvilleIA.IELMCNCROP.elm-force_netcdf_pio",
             "ERS.f19_g16.I1850ELM.elm-betr",
             "ERS.f19_g16.I1850ELM.elm-vst",
