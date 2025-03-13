@@ -13,6 +13,13 @@ enum RequestType {
   Updated   // For convenience, triggers Required+Computed
 };
 
+// Whether a tracer should be advected by both Dynamics
+// and Turbulance, or only by Dynamics
+enum TracerAdvection {
+  DynamicsAndTurbulence, // Default use case
+  DynamicsOnly,
+};
+
 // Whether the bundling of a field group (see below) is needed, optional, or not needed.
 enum class Bundling : int {
   Required,
