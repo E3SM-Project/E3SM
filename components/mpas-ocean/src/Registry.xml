@@ -1831,7 +1831,6 @@
 			<var name="landIceMask"/>
 			<var name="landIcePressure"/>
 			<var name="landIceFraction"/>
-			<var name="landIceDraft"/>
 			<var name="landIceFloatingMask"/>
 			<var name="landIceFloatingFraction"/>
 			<var name="LTSRegion"/>
@@ -1943,7 +1942,6 @@
 			<var name="landIceMask"/>
 			<var name="landIcePressure"/>
 			<var name="landIceFraction"/>
-			<var name="landIceDraft"/>
 			<var name="landIceFloatingMask"/>
 			<var name="landIceFloatingFraction"/>
 		</stream>
@@ -2043,7 +2041,6 @@
 			<var_array name="nonLocalSurfaceTracerFlux"/>
 			<var name="simulationStartTime"/>
 			<var name="landIcePressure"/>
-			<var name="landIceDraft"/>
 			<var name="landIceFraction"/>
 			<var name="landIceMask"/>
 			<var name="landIceFloatingMask"/>
@@ -2197,7 +2194,6 @@
 			<var name="landIcePressureForcing"/>
 			<var name="landIceFractionForcing"/>
 			<var name="landIceFloatingFractionForcing"/>
-			<var name="landIceDraftForcing"/>
 		</stream>
 
 		<!-- Diagnostics streams for forward mode -->
@@ -3457,6 +3453,10 @@
 			packages="topographicWaveDragPKG"
 		/>
 		<!-- diagnostic fields for land-ice fluxes -->
+		<var name="landIceDraft" type="real" dimensions="nCells Time" units="m"
+			description="The elevation of the interface between land ice and the ocean."
+			packages="landIcePressurePKG"
+		/>
 		<var name="landIceFrictionVelocity" type="real" dimensions="nCells Time" units="m s^-1"
 			description="The friction velocity $u_*$ under land ice"
 			packages="landIceFluxesPKG"
@@ -4016,10 +4016,6 @@
 			description="Pressure defined at the sea surface due to land ice."
 			packages="landIcePressurePKG"
 		/>
-		<var name="landIceDraft" type="real" dimensions="nCells Time" units="m"
-			description="The elevation of the interface between land ice and the ocean."
-			packages="landIcePressurePKG"
-		/>
 		<!-- Input fields from initial condition for standalone land-ice fluxes -->
 		<var name="landIceSurfaceTemperature" type="real" dimensions="nCells Time" units="C"
 			description="temperature at the surface of land ice"
@@ -4235,10 +4231,6 @@
 		/>
 		<var name="landIcePressureForcing" type="real" dimensions="nCells Time" units="Pa"
 			description="Pressure defined at the sea surface due to land ice."
-			packages="timeVaryingLandIceForcingPKG"
-		/>
-		<var name="landIceDraftForcing" type="real" dimensions="nCells Time" units="m"
-			description="The elevation of the interface between land ice and the ocean."
 			packages="timeVaryingLandIceForcingPKG"
 		/>
 	</var_struct>
