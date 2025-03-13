@@ -1,0 +1,25 @@
+module purge
+module load craype-x86-trento
+module load libfabric/1.20.1
+module load craype-network-ofi
+module load perftools-base/23.12.0
+module load xpmem/2.8.4-1.0_7.3__ga37cbd9.shasta
+module load cray-pmi/6.1.13
+module load Core/24.00
+module load tmux/3.2a
+module load hsi/default
+module load lfs-wrapper/0.0.1
+module load DefApps
+module load craype/2.7.31
+module load cray-dsmml/0.2.2
+module load PrgEnv-gnu/8.5.0
+module load cray-mpich/8.1.28
+module load craype-accel-amd-gfx90a
+module load rocm/5.4.0
+module load subversion/1.14.1
+module load git/2.36.1
+module load cmake/3.21.3
+module load zlib/1.2.11
+module load cray-hdf5-parallel/1.14.3.1
+module load cray-netcdf-hdf5parallel/4.9.0.13
+module load cray-parallel-netcdf/1.12.3.9

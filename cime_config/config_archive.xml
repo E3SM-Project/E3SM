@@ -161,4 +161,13 @@
     </rpointer>
   </comp_archive_spec>
 
+  <comp_archive_spec compname="rdycore" compclass="rof">
+    <rest_file_extension>rst</rest_file_extension>
+    <rest_history_varname>unset</rest_history_varname>
+    <rpointer>
+      <rpointer_file>rpointer.rof$NINST_STRING</rpointer_file>
+      <rpointer_content>unset</rpointer_content>
+    </rpointer>
+  </comp_archive_spec>
+
 </components>

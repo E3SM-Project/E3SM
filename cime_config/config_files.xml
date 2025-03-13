@@ -159,6 +159,7 @@
     <default_value>unset</default_value>
     <values>
       <value component="mosart"                      >$SRCROOT/components/mosart/</value>
+      <value component="rdycore"                     >$SRCROOT/components/rdycore/</value>
       <value component="drof"                        >$SRCROOT/components/data_comps/drof</value>
       <value component="srof"                        >$SRCROOT/components/stub_comps/srof</value>
       <value component="xrof"                        >$SRCROOT/components/xcpl_comps/xrof</value>
@@ -271,6 +272,7 @@
       <value component="mali"     >$COMP_ROOT_DIR_GLC/cime_config/config_compsets.xml</value>
       <value component="mpassi"   >$COMP_ROOT_DIR_ICE/cime_config/config_compsets.xml</value>
       <value component="mosart"   >$COMP_ROOT_DIR_ROF/cime_config/config_compsets.xml</value>
+      <value component="rdycore"  >$COMP_ROOT_DIR_ROF/cime_config/config_compsets.xml</value>
       <value component="ww3"      >$COMP_ROOT_DIR_WAV/cime_config/config_compsets.xml</value>
     </values>
     <group>case_last</group>
@@ -355,7 +357,8 @@
       <value component="mpaso"    >$COMP_ROOT_DIR_OCN/cime_config/testdefs/testmods_dirs</value>
       <value component="mpassi"   >$COMP_ROOT_DIR_ICE/cime_config/testdefs/testmods_dirs</value>
       <value component="ww3"      >$COMP_ROOT_DIR_WAV/cime_config/testdefs/testmods_dirs</value>
-      <value component="mali"      >$COMP_ROOT_DIR_GLC/cime_config/testdefs/testmods_dirs</value>
+      <value component="mali"     >$COMP_ROOT_DIR_GLC/cime_config/testdefs/testmods_dirs</value>
+      <value component="rdycore"  >$COMP_ROOT_DIR_ROF/cime_config/testdefs/testmods_dirs</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>
