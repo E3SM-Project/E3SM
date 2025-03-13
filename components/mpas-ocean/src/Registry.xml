@@ -1078,6 +1078,10 @@
 					description="The density of land ice."
 					possible_values="Any positive real number"
 		/>
+		<nml_option name="config_land_ice_flux_rho_ocean" type="real" default_value="1028.0" units="kg m^-3"
+					description="ocean density used to calculate landIceDraft at floatation (assumed constant and uniform). Should be consistent with MALI's config_ocean_density. This is an alternative to the coupler variable effectiveDensityInLandIce which is not currently used."
+					possible_values="Any positive real number"
+		/>
 		<nml_option name="config_land_ice_flux_explicit_topDragCoeff" type="real" default_value="2.5e-3"
 					description="The top drag coefficient if config_use_implicit_top_drag_coeff is false."
 					possible_values="Any positive real number"
