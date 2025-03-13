@@ -67,7 +67,7 @@ void MLCorrection::set_grids(
   add_field<Updated>("precip_ice_surf_mass", scalar2d,     kg/m2,  grid_name);
   /* ----------------------- WARNING --------------------------------*/
   add_tracer<Updated>("qv", m_grid, kg/kg, ps);
-  add_group<Updated>("tracers", grid_name, 1, true);
+  add_group<Updated>("tracers", grid_name, 1, Bundling::Required);
 }
 
 // =========================================================================================

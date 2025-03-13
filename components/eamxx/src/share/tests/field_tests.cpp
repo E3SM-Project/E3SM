@@ -596,9 +596,10 @@ TEST_CASE("tracers_bundle", "") {
   field_mgr.register_field(FR{b_id,los{"tracers", "subtracers"}});
   field_mgr.register_field(FR{c_id,los{"tracers", "subtracers"}});
 
-  field_mgr.register_group(GroupRequest("tracers",gn1,true));
-  field_mgr.register_group(GroupRequest("tracers",gn2,true));
-  field_mgr.register_group(GroupRequest("subtracers",gn1,true));
+  field_mgr.register_group(GroupRequest("tracers",gn1,Bundling::Required));
+  field_mgr.register_group(GroupRequest("tracers",gn2,Bundling::Required));
+  field_mgr.register_group(GroupRequest("subtracers",gn1,Bundling::Required));
+  //field_mgr.register_group(GroupRequest("subtracers",gn2,Bundling::Required));
 
   field_mgr.registration_ends();
 

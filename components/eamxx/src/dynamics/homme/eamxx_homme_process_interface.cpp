@@ -180,7 +180,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   add_field<Computed>("omega",              pg_scalar3d_mid, Pa/s,  pgn,N);
 
   add_tracer<Updated >("qv", m_phys_grid, kg/kg, N);
-  add_group<Updated>("tracers",pgn,N, true);
+  add_group<Updated>("tracers",pgn,N, Bundling::Required);
 
   if (fv_phys_active()) {
     // [CGLL ICs in pg2] Read CGLL IC data even though our in/out format is
@@ -196,7 +196,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
     add_field<Required>("T_mid",         rg_scalar3d_mid,K,     rgn,N);
     add_field<Required>("ps",            rg_scalar2d    ,Pa,    rgn);
     add_field<Required>("phis",          rg_scalar2d    ,m2/s2, rgn);
-    add_group<Required>("tracers",rgn,N, true);
+    add_group<Required>("tracers",rgn,N, Bundling::Required);
     fv_phys_rrtmgp_active_gases_init(grids_manager);
     // This is needed for the dp_ref init in initialize_homme_state.
     add_field<Computed>("pseudo_density",rg_scalar3d_mid,Pa,    rgn,N);

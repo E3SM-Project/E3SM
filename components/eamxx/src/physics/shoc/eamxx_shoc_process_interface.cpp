@@ -111,7 +111,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   } // Extra SHOC output diagnostics
 
   // Tracer group
-  add_group<Updated>("turbulence_advected_tracers", grid_name, ps, true);
+  add_group<Updated>("turbulence_advected_tracers", grid_name, ps, Bundling::Required);
 
   // Boundary flux fields for energy and mass conservation checks
   if (has_column_conservation_check()) {

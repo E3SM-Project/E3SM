@@ -120,9 +120,9 @@ void FieldManager::register_group (const GroupRequest& req)
   auto& group_info = m_field_group_info[req.name];
   if (not group_info) {
     group_info = std::make_shared<FieldGroupInfo>(req.name);
-    group_info->m_bundled = (req.bundled);
+    group_info->m_bundled = (req.bundling==Bundling::Required);
   } else if (not group_info->m_bundled) {
-    group_info->m_bundled = (req.bundled);
+    group_info->m_bundled = (req.bundling==Bundling::Required);
   }
 
   if (not ekat::contains(group_info->m_requested_grids, req.grid)) {
@@ -409,7 +409,7 @@ void FieldManager::registration_ends ()
   for (auto& grid_it : m_grids_mgr->get_repo()) {
     for (const auto& greqs : m_group_requests.at(grid_it.second->name())) {
       for (const auto& r : greqs.second) {
-        if (r.bundled) {
+        if (r.bundling==Bundling::Required) {
           // There's at least one request for this group to be bundled.
           groups_to_bundle.push_back(greqs.first);
           break;

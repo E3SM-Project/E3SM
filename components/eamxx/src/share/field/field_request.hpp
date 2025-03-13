@@ -13,6 +13,12 @@ enum RequestType {
   Updated   // For convenience, triggers Required+Computed
 };
 
+// Whether the bundling of a field group (see below) is needed, optional, or not needed.
+enum class Bundling : int {
+  Required,
+  NotNeeded
+};
+
 /*
  * A struct used to request a group of fields.
  *
@@ -34,26 +40,26 @@ struct GroupRequest {
   //  - grid: the grid where the group is requested
   //  - ps: the pack size that the allocation of the fields in the group
   //        (and the bundled field, if any) should accommodate (see field_alloc_prop.hpp)
-  //  - bundled: whether the group should be bundled (see field_group.hpp)
-  GroupRequest (const std::string& name_, const std::string& grid_, const int ps, const bool bundled_ = false)
-   : name(name_), grid(grid_), pack_size(ps), bundled(bundled_)
+  //  - bundling: whether the group should be bundled (see field_group.hpp)
+  GroupRequest (const std::string& name_, const std::string& grid_, const int ps, const Bundling b = Bundling::NotNeeded)
+   : name(name_), grid(grid_), pack_size(ps), bundling(b)
   {
     EKAT_REQUIRE_MSG(pack_size>=1, "Error! Invalid pack size request.\n");
   }
 
   GroupRequest (const std::string& name_, const std::string& grid_,
-                const bool bundled = false)
-   : GroupRequest(name_,grid_,1,bundled)
+                const Bundling b = Bundling::NotNeeded)
+   : GroupRequest(name_,grid_,1,b)
   { /* Nothing to do here */ }
 
   // Default copy ctor is perfectly fine
   GroupRequest (const GroupRequest&) = default;
 
   // Main parts of a group request
-  std::string name; // Group name
-  std::string grid; // Grid name
-  int pack_size;    // Request an allocation that can accomodate Pack<Real,pack_size>
-  bool bundled;     // Whether the group should be allocated as a single n+1 dimensional field
+  std::string name;   // Group name
+  std::string grid;   // Grid name
+  int pack_size;      // Request an allocation that can accomodate Pack<Real,pack_size>
+  Bundling bundling;  // Whether the group should be allocated as a single n+1 dimensional field
 };
 
 // In order to use GroupRequest in std sorted containers (like std::set),
@@ -83,7 +89,7 @@ inline bool operator< (const GroupRequest& lhs,
   }
 
   // Same pack size, order by bundling
-  return lhs.bundled<rhs.bundled;
+  return etoi(lhs.bundling)<etoi(rhs.bundling);
 }
 
 /*
