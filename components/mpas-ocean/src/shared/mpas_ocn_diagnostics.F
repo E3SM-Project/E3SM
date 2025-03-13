@@ -78,6 +78,7 @@ module ocn_diagnostics
    integer :: ke_cell_flag, ke_vertex_flag
    real (kind=RKIND) ::  fCoef
    real (kind=RKIND) ::  landIceTopDragCoeff
+   real (kind=RKIND) ::  rho_floatation
    real (kind=RKIND), pointer ::  coef_3rd_order
 
    ! Methods for computing thickness at edges for flux calculations
@@ -141,7 +142,7 @@ contains
       logical :: full_compute = .true.
 
       real (kind=RKIND), dimension(:), pointer :: &
-        frazilSurfacePressure, landIcePressure, landIceDraft, landIceFraction
+        frazilSurfacePressure, landIcePressure, landIceFraction
 
       integer, dimension(:), pointer :: &
         landIceFloatingMask
@@ -179,7 +180,6 @@ contains
 
       if (landIcePressureOn) then
          call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
-         call mpas_pool_get_array(forcingPool, 'landIceDraft', landIceDraft)
          call mpas_pool_get_array(forcingPool, 'landIceFloatingMask', landIceFloatingMask)
          call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
          if (nCellsAll.gt.0 .AND. landIceFloatingMask(1) == -1) then
@@ -468,11 +468,11 @@ contains
       !
       !  compute fields needed to compute land-ice fluxes, either in the ocean model or in the coupler
       !
-      ! inputs: layerThickness, normalVelocity, landIceFraction, landIceFloatingMask
+      ! inputs: layerThickness, normalVelocity, landIcePressure, landIceFraction, landIceFloatingMask
       ! outputs:
       if (landIcePressureOn) then
          call ocn_compute_land_ice_flux_input_fields(layerThickness, normalVelocity, activeTracers, &
-                landIceFraction, landIceFloatingMask, timeLevel, indexTemperature, indexSalinity)
+                landIcePressure, landIceFraction, landIceFloatingMask, timeLevel, indexTemperature, indexSalinity)
       end if
 
       if ( full_compute ) then
@@ -3641,7 +3641,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_compute_land_ice_flux_input_fields(layerThickness, normalVelocity, &
-      activeTracers, landIceFraction, landIceFloatingMask, &
+      activeTracers, landIcePressure, landIceFraction, landIceFloatingMask, &
       timeLevel, indexTval, indexSval)!{{{
 
       !-----------------------------------------------------------------
@@ -3656,7 +3656,7 @@ contains
          layerThickness, normalVelocity
 
       real (kind=RKIND), dimension(:), intent(in) :: &
-         landIceFraction
+         landIcePressure, landIceFraction
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
          activeTracers
@@ -3690,11 +3690,23 @@ contains
 
       !-----------------------------------------------------------------
 
-      if (( trim(config_land_ice_flux_mode) == "off" ) .or.  &
-          ( trim(config_land_ice_flux_mode) == "pressure_only")) then
-         ! nothing to do here
-         return
-      end if
+      if ( trim(config_land_ice_flux_mode) == "off" ) return
+
+#ifdef MPAS_OPENACC
+      !$acc parallel loop present(landIceDraft, landIcePressure)
+#else
+      !$omp parallel
+      !$omp do schedule(runtime)
+#endif
+      do iCell = 1, nCellsAll
+         landIceDraft(iCell) = landIcePressure(iCell) / (rho_floatation * gravity)
+      end do
+#ifndef MPAS_OPENACC
+      !$omp end do
+      !$omp end parallel
+#endif
+
+      if ( trim(config_land_ice_flux_mode) == "pressure_only") return
 
       call mpas_timer_start("land_ice_diagnostic_fields", .false.)
 
@@ -4696,6 +4708,8 @@ contains
       else
          landIceTopDragCoeff = config_land_ice_flux_explicit_topDragCoeff
       endif
+
+      rho_floatation = config_land_ice_flux_rho_ocean
 
       if (trim(config_thickness_drag_type) == 'centered') then
          thickEdgeDragChoice = thickEdgeDragCenter
