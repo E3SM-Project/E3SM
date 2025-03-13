@@ -802,16 +802,16 @@ contains
                             config_use_tracerGroup_ttd_forcing)
          if ( groupName == 'freshwaterTracers' ) then
            if (config_use_tracerGroup_surface_restoring) &
-             call mpas_log_write('surface restoring not supported for freshwaterTracers group')
+             call mpas_log_write('surface restoring not supported for freshwaterTracers group', MPAS_LOG_CRIT)
            if (config_use_tracerGroup_interior_restoring) &
-             call mpas_log_write('interior restoring not supported for freshwaterTracers group')
+             call mpas_log_write('interior restoring not supported for freshwaterTracers group', MPAS_LOG_CRIT)
            if (config_use_tracerGroup_exponential_decay) &
-             call mpas_log_write('exponential decay not supported for freshwaterTracers group')
+             call mpas_log_write('exponential decay not supported for freshwaterTracers group', MPAS_LOG_CRIT)
            if (config_use_tracerGroup_idealAge_forcing) &
              ! TODO support this
-             call mpas_log_write('idealAge forcing not supported for freshwaterTracers group')
+             call mpas_log_write('idealAge forcing not supported for freshwaterTracers group', MPAS_LOG_CRIT)
            if (config_use_tracerGroup_ttd_forcing) &
-             call mpas_log_write('TTD forcing not supported for freshwaterTracers group')
+             call mpas_log_write('TTD forcing not supported for freshwaterTracers group', MPAS_LOG_CRIT)
          endif
          ! Get tracers from pool, determine number of tracers in group
          call mpas_pool_get_array(tracersPool, groupName, &
@@ -851,8 +851,6 @@ contains
                                       modifiedGroupName, &
                                       tracerGroupSurfaceFluxSubglacialRunoff)
          end if
-
-         !call mpas_pool_print_summary(tracersSurfaceFluxPool, MPAS_POOL_FIELD, .true.)
 
          ! Get surface flux removed array to keep track of how much
          ! flux is ignored

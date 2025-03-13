@@ -971,53 +971,38 @@ contains
         do iCell=1,nCells
           freshwaterSurfaceFlux(indexRain, iCell) = rainFlux(iCell) / rho_sw
         enddo  !  iCell
-      else
-        call mpas_log_write('indexRain is not associated')
       endif
       if (associated(indexSnow) .and. associated(snowFlux)) then
         do iCell=1,nCells
           freshwaterSurfaceFlux(indexSnow, iCell) = snowFlux(iCell) / rho_sw
         enddo  !  iCell
-      else
-        call mpas_log_write('indexSnow is not associated')
       endif
       if (associated(indexIceRunoff) .and. associated(iceRunoffFlux)) then
         do iCell=1,nCells
           freshwaterSurfaceFluxRunoff(indexIceRunoff, iCell) = iceRunoffFlux(iCell) / rho_sw
         enddo  !  iCell
-      else
-        call mpas_log_write('indexIceRunoff is not associated')
       endif
       if (associated(indexRiverRunoff) .and. associated(riverRunoffFlux)) then
         do iCell=1,nCells
           freshwaterSurfaceFluxRunoff(indexRiverRunoff, iCell) = riverRunoffFlux(iCell) / rho_sw
         enddo  !  iCell
-      else
-        if (.not. associated(indexRiverRunoff)) call mpas_log_write('indexRiverRunoff is not associated')
         if (.not. associated(riverRunoffFlux)) call mpas_log_write('riverRunoffFlux is not associated')
       endif
       if (associated(indexSeaIceFreshWater) .and. associated(seaIceFreshWaterFlux)) then
         do iCell=1,nCells
           freshwaterSurfaceFlux(indexSeaIceFreshWater, iCell) = seaIceFreshWaterFlux(iCell) / rho_sw
         enddo  !  iCell
-      else
-        call mpas_log_write('indexSeaIceFreshWater is not associated')
       endif
       if (associated(indexIcebergFreshWater) .and. associated(icebergFreshWaterFlux)) then
         do iCell=1,nCells
           freshwaterSurfaceFlux(indexIcebergFreshWater, iCell) = icebergFreshWaterFlux(iCell) / rho_sw
         enddo  !  iCell
-      else
-        call mpas_log_write('indexIcebergFreshWater is not associated')
       endif
       if (associated(indexLandIceFreshwater) .and. associated(landIceFreshwaterFlux)) then
         do iCell=1,nCells
           freshwaterSurfaceFlux(indexLandIceFreshwater, iCell) = landIceFreshwaterFlux(iCell) / rho_sw
         enddo  !  iCell
-      else
-        call mpas_log_write('indexLandIceFreshwater or landIceFreshwaterFlux is not associated')
       endif
-      call mpas_log_write('end fw assign sflux')
 
    end subroutine ocn_surface_bulk_forcing_freshwater_tracers!}}}
 
@@ -1088,9 +1073,6 @@ contains
         do iCell=1,nCells
           tracersSurfaceFluxSubglacialRunoff(indexSubglacialRunoff, iCell) = subglacialRunoffFlux(iCell) / rho_sw
         enddo  !  iCell
-      else
-        call mpas_log_write('indexSubglacialRunoff or subglacialRunoffFlux is not associated')
-        tracersSurfaceFluxSubglacialRunoff(indexSubglacialRunoff, :) = 0.0_RKIND
       endif
 
    end subroutine ocn_surface_bulk_forcing_freshwater_tracers_subglacial_runoff!}}}
