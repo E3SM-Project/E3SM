@@ -1,0 +1,28 @@
+string(APPEND CONFIG_ARGS " --host=cray")
+if (COMP_NAME STREQUAL gptl)
+  string(APPEND CPPDEFS " -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY")
+endif()
+string(APPEND CMAKE_C_FLAGS_RELEASE " -O2 -g")
+string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -O2 -g")
+set(MPICC "cc")
+set(MPICXX "CC")
+set(MPIFC "ftn")
+set(SCC "gcc")
+set(SCXX "g++")
+set(SFC "gfortran")
+
+string(APPEND FFLAGS              " -IPLACEHOLDER_E3SM_DIR/externals/rdycore/build-PLACEHOLDER_PETSC_ARCH/include")
+string(APPEND FFLAGS              " -IPLACEHOLDER_PETSC_DIR/include -IPLACEHOLDER_PETSC_DIR/PLACEHOLDER_PETSC_ARCH/include" )
+string(APPEND CMAKE_Fortran_FLAGS " -IPLACEHOLDER_E3SM_DIR/externals/rdycore/build-PLACEHOLDER_PETSC_ARCH/include")
+string(APPEND CMAKE_Fortran_FLAGS " -IPLACEHOLDER_PETSC_DIR/include -IPLACEHOLDER_PETSC_DIR/PLACEHOLDER_PETSC_ARCH/include" )
+string(APPEND CPPFLAGS            " -IPLACEHOLDER_PETSC_DIR/include -IPLACEHOLDER_PETSC_DIR/PLACEHOLDER_PETSC_ARCH/include" )
+
+string(APPEND SLIBS " PLACEHOLDER_E3SM_DIR/externals/rdycore/build-PLACEHOLDER_PETSC_ARCH/lib64/libcmocka.a")
+string(APPEND SLIBS " PLACEHOLDER_E3SM_DIR/externals/rdycore/build-PLACEHOLDER_PETSC_ARCH/lib/librdycore_f90.a")
+string(APPEND SLIBS " PLACEHOLDER_E3SM_DIR/externals/rdycore/build-PLACEHOLDER_PETSC_ARCH/lib/librdycore.a")
+string(APPEND SLIBS " -Wl,-rpath,/global/cfs/projectdirs/m4267/petsc/petsc_v3.22.0/pm-cpu-opt-32bit-gcc-11-2-0-v3.22.0/lib -L/global/cfs/projectdirs/m4267/petsc/petsc_v3.22.0/pm-cpu-opt-32bit-gcc-11-2-0-v3.22.0/lib -Wl,-rpath,/global/cfs/projectdirs/m4267/petsc/petsc_v3.22.0/pm-cpu-opt-32bit-gcc-11-2-0-v3.22.0/lib -L/global/cfs/projectdirs/m4267/petsc/petsc_v3.22.0/pm-cpu-opt-32bit-gcc-11-2-0-v3.22.0/lib -Wl,-rpath,/opt/cray/pe/netcdf-hdf5parallel/4.9.0.3/gnu/9.1/lib -L/opt/cray/pe/netcdf-hdf5parallel/4.9.0.3/gnu/9.1/lib -Wl,-rpath,/opt/cray/pe/parallel-netcdf/1.12.3.3/gnu/9.1/lib -L/opt/cray/pe/parallel-netcdf/1.12.3.3/gnu/9.1/lib -Wl,-rpath,/opt/cray/pe/hdf5-parallel/1.12.2.3/gnu/9.1/lib -L/opt/cray/pe/hdf5-parallel/1.12.2.3/gnu/9.1/lib -lpetsc -lscalapack -lkokkoskernels -lkokkoscontainers -lkokkoscore -lkokkossimd -lparmetis -lmetis -lexoIIv2for32 -lexodus -lmuparser -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -ltriangle -lz -lceed -lX11 -lstdc++ -lquadmath")
+string(APPEND SLIBS " PLACEHOLDER_E3SM_DIR/externals/rdycore/build-PLACEHOLDER_PETSC_ARCH/external/libcyaml.a")
+string(APPEND SLIBS " PLACEHOLDER_E3SM_DIR/externals/rdycore/build-PLACEHOLDER_PETSC_ARCH/lib/libyaml.a")
+
+list(APPEND CMAKE_BUILD_RPATH " PLACEHOLDER_PETSC_DIR/PLACEHOLDER_PETSC_ARCH")
+

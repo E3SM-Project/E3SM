@@ -1,0 +1,56 @@
+physics:
+  flow:
+    mode: swe
+
+numerics:
+  spatial: fv
+  temporal: euler
+  riemann: roe
+
+logging:
+  level: detail
+
+time:
+  final_time : 0.0015625
+  time_step  : 0.000015625
+  unit: seconds
+
+grid:
+  file: DamBreak_grid5120x2560.v3.0.0.h5
+
+# one region represents the whole domain
+regions:
+  - name: upstream
+    grid_region_id: 1
+  - name: downstream
+    grid_region_id: 2
+
+surface_composition:
+  - region: upstream
+    material: smooth
+  - region: downstream
+    material: smooth
+    
+materials:
+  - name: smooth
+    properties:
+      manning:
+        value: 0.015
+
+initial_conditions:
+  - region: upstream
+    flow: upstream_flow_ic
+  - region: downstream
+    flow: downstream_flow_ic
+
+flow_conditions:
+  - name: upstream_flow_ic
+    type: dirichlet
+    height: 10
+    x_momentum: 0
+    y_momentum: 0
+  - name: downstream_flow_ic
+    type: dirichlet
+    height: 5
+    x_momentum: 0
+    y_momentum: 0

@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="namelist_definition.xsl"?>
+
+<namelist_definition>
+
+<!-- ========================================================================================  -->
+<!-- RDYCORE Namelist -->
+<!-- ========================================================================================  -->
+
+<entry id="do_rdycore" 
+       type="logical" 
+       category="rdycore"
+       group="rdycore_inparm" >
+Default: .true.
+If .true., rdycore will run
+</entry>
+
+<entry id="rdycore_yaml_file" 
+       type="char*256"
+       category="rdycore"
+       group="rdycore_inparm" 
+       valid_values="" >
+Default: ' '
+Name of rdycore yaml file
+</entry>
+
+</namelist_definition>

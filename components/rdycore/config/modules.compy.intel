@@ -1,0 +1,6 @@
+# Oct-9-2024
+module purge
+
+module load gcc/8.1.0 intel/20.0.0 intelmpi/2020 mkl/2019u5 cmake/3.26.0
+export LD_LIBRARY_PATH=/share/apps/gcc/8.1.0/lib:/share/apps/gcc/8.1.0/lib64:$LD_LIBRARY_PATH
+

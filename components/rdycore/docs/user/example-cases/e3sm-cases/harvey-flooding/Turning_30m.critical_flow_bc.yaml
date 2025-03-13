@@ -1,0 +1,62 @@
+physics:
+  flow:
+    mode: swe
+
+numerics:
+  spatial: fv
+  temporal: euler
+  riemann: roe
+
+logging:
+  level: detail
+
+time:
+  final_time       : 432000.0 # 5-days
+  coupling_interval: 3600.0   # 1-hr
+  time_step        : 0.25
+  unit             : seconds
+
+output:
+  format: xdmf
+  step_interval: 14400             # 1-hr (=14400 * 0.25 sec = 3600 sec) 
+  batch_size: 24              # 24 time slices put in a single .h5
+  time_series:
+    boundary_fluxes: 14400    # 1-hr (=14400 * 0.25 sec = 3600 sec)
+
+grid:
+  file: Turning_30m_with_z.updated.with_sidesets.exo
+
+regions:
+  - name: domain
+    grid_region_id: 1
+
+surface_composition:
+  - region: domain
+    material: smooth
+
+materials:
+  - name: smooth
+    properties:
+      manning:
+        value: 0.015
+
+initial_conditions:
+  - region: domain
+    flow: domain_flow_ic
+
+boundaries:
+  - name: outlet
+    grid_boundary_id: 1
+
+boundary_conditions:
+  - boundaries: [outlet]
+    flow: outflow_bc
+
+flow_conditions:
+  - name: domain_flow_ic
+    type: dirichlet
+    format: binary
+    file: solution_219.dat
+  - name: outflow_bc
+    type: critical-outflow
+
