@@ -383,27 +383,11 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_Redi_use_new_sfc_taper" type="logical"
-  category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
-  If true, the new surface taper is used where Redi is horizontal in the boundary layer instead of off
-
-  Valid values: .true. or .false.
-  Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_Redi_use_cavity_fix" type="logical"
-  category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
-  If true, use the correction for horizontal T and S gradients in the redi calculation
-
-  Valid values: .true. or .false.
-  Default: Defined in namelist_defaults.xml
-</entry>
-
 <entry id="config_Redi_closure" type="char*1024"
 	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
-Control what type of function is used for Redi $\kappa$. For 'equalGM', RediKappa is set to gmBolusKappa, so picks up the closure used by GM. Note that equalGM should only be used with 2D GM schemes (e.g. config_GM_closure=constant or Visbeck), not with EdenGreatbatch.
+Control what type of function is used for Redi $\kappa$. For 'equalGM', RediKappa is set to gmBolusKappa, so picks up the closure used by GM. For N2_dependent, the range varies from config_redi_constant_kappa down to 10% of that value
 
-Valid values: 'constant', 'equalGM', 'data'
+Valid values: 'constant', 'N2_dependent', 'equalGM', 'data'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -412,6 +396,22 @@ Default: Defined in namelist_defaults.xml
 For instances where MLD lt BLD, the MLD for the transition layer (from isopycnal at depth to horizontal in the BLD) is set to BLD + this config value
 
 Valid values: Positive real numbers.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Redi_use_new_sfc_taper" type="logical"
+	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
+Controls if the taper where redi is purely horizontal in the boundary layer instead of off
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Redi_use_cavity_fix" type="logical"
+	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
+if true use the corrected form of the horizontal temperature and salinity gradients
+
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
