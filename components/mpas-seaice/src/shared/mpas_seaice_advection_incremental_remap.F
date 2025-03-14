@@ -132,17 +132,19 @@ module seaice_advection_incremental_remap
    ! verbose options; set to true for extensive diagnostic output
    ! WHL: I often debug with verboseInit/Run/Construct/Geometry/Fluxes/Global set to true.
 !   logical, parameter :: verboseInit = .true.
-!   logical, parameter :: verboseRun = .true.
+   logical, parameter :: verboseRun = .true.
 !   logical, parameter :: verboseConstruct = .true.
 !   logical, parameter :: verboseGeometry = .true.
 !   logical, parameter :: verboseFluxes = .true.
 !   logical, parameter :: verboseGlobal = .true.
+!   logical, parameter :: verboseConserv = .true.
    logical, parameter :: verboseInit = .false.
-   logical, parameter :: verboseRun = .false.
+!   logical, parameter :: verboseRun = .false.
    logical, parameter :: verboseConstruct = .false.
    logical, parameter :: verboseGeometry = .false.
    logical, parameter :: verboseFluxes = .false.
    logical, parameter :: verboseGlobal = .false.
+   logical, parameter :: verboseConserv = .false.
    logical, parameter :: verboseGeomAvg = .false.
 
    logical :: first_call = .true.  ! set to false after the first call
@@ -2574,7 +2576,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_conservation_check", configConservationCheck)
     if (configConservationCheck) then
 
-       if (verboseRun) call mpas_log_write('Check conservation')
+       if (verboseConserv) call mpas_log_write('Check conservation')
 
        call mpas_timer_start("incr remap tracer cons check")
        call check_tracer_conservation(dminfo, tracersHead, abortFlag)
@@ -2590,7 +2592,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_monotonicity_check", configMonotonicityCheck)
     if (configMonotonicityCheck) then
 
-       if (verboseRun) call mpas_log_write('Check monotonicity')
+       if (verboseConserv) call mpas_log_write('Check monotonicity')
 
        call mpas_timer_start("incr remap tracer mono check")
        call check_tracer_monotonicity(domain, tracersHead, abortFlag)
@@ -8160,7 +8162,7 @@ contains
              call mpas_dmpar_sum_real (dminfo, localSum, thisTracer % globalSumFinal2D(iCat))
              call mpas_timer_stop("tracer cons check 2D glbsum")
 
-             if (verboseRun .and. iCat == 1) then
+             if (verboseConserv .and. iCat == 1) then
                 if (trim(thisTracer % tracerName) == 'iceAreaCategory' .or. &
                     trim(thisTracer % tracerName) == 'iceVolumeCategory') then
                    call mpas_log_write(' ')
@@ -8208,7 +8210,7 @@ contains
                 call mpas_dmpar_sum_real (dminfo, localSum, thisTracer % globalSumFinal3D(iLayer,iCat))
                 call mpas_timer_stop("tracer cons check 3D glbsum")
 
-                if (verboseRun .and. iCat == 1 .and. iLayer == 1) then
+                if (verboseConserv .and. iCat == 1 .and. iLayer == 1) then
                    if (trim(thisTracer % tracerName) == 'iceAreaCategory' .or. &
                        trim(thisTracer % tracerName) == 'iceVolumeCategory') then
                       call mpas_log_write(' ')
