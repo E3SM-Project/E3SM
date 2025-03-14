@@ -42,7 +42,7 @@ class MAMWetscav : public MAMGenericInterface {
   // ON HOST, returns the number of bytes of device memory needed by the above
   // Buffer type given the number of columns and vertical levels
   size_t requested_buffer_size_in_bytes() const override {
-    return mam_coupling::buffer_size(ncol_, nlev_);
+    return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_, work_len_);
   }
   void init_buffers(const ATMBufferManager &buffer_manager) override;
 
@@ -93,6 +93,12 @@ class MAMWetscav : public MAMGenericInterface {
 
   // Detraining cld H20 from deep convection [kg/kg/s]
   view_2d dlf_;
+
+  int num_2d_scratch_= 48;
+
+  int work_len_=0;
+
+  void set_work_len();
 
   // Aerosol states
   mam_coupling::AerosolState dry_aero_tends_;
