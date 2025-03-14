@@ -183,7 +183,7 @@ public:
 
   // These sets allow to get all the actual in/out fields stored by the atm proc
   // Note: if an atm proc requires a group, then all the fields in the group, as well as
-  //       the bundled field (if present) will be added as required fields for this atm proc.
+  //       the monolithic field (if present) will be added as required fields for this atm proc.
   //       See field_group.hpp for more info about groups of fields.
   const std::list<Field>& get_fields_in  () const { return m_fields_in;  }
   const std::list<Field>& get_fields_out () const { return m_fields_out; }
@@ -352,19 +352,33 @@ protected:
   // Specialization for add_field to tracer group
   template<RequestType RT>
   void add_tracer (const std::string& name, std::shared_ptr<const AbstractGrid> grid,
-                   const ekat::units::Units& u, const int ps = 1)
-  { add_field<RT>(name, grid->get_3d_scalar_layout(true), u, grid->name(), "tracers", ps); }
+                   const ekat::units::Units& u,
+                   const int ps = 1,
+                   const TracerAdvection tracer_advection = TracerAdvection::DynamicsAndTurbulence)
+  {
+    std::list<std::string> tracer_groups;
+    tracer_groups.push_back("tracers");
+    if (tracer_advection==TracerAdvection::DynamicsAndTurbulence) {
+      tracer_groups.push_back("turbulence_advected_tracers");
+    }
+
+    FieldIdentifier fid(name, grid->get_3d_scalar_layout(true), u, grid->name());
+    FieldRequest req(fid, tracer_groups, ps);
+    req.calling_process = this->name();
+
+    add_field<RT>(req);
+  }
 
   // Group requests
   template<RequestType RT>
   void add_group (const std::string& name, const std::string& grid_name,
-                  const bool bundled = false)
-  { add_group<RT> (GroupRequest(name,grid_name,bundled)); }
+                  const MonolithicAlloc b = MonolithicAlloc::NotRequired)
+  { add_group<RT> (GroupRequest(name,grid_name,b)); }
 
   template<RequestType RT>
   void add_group (const std::string& name, const std::string& grid_name,
-                  const int pack_size, const bool bundled = false)
-  { add_group<RT> (GroupRequest(name,grid_name,pack_size,bundled)); }
+                  const int pack_size, const MonolithicAlloc b = MonolithicAlloc::NotRequired)
+  { add_group<RT> (GroupRequest(name,grid_name,pack_size,b)); }
 
   template<RequestType RT>
   void add_field (const FieldRequest& req)

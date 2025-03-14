@@ -111,7 +111,7 @@ void HommeDynamics::fv_phys_dyn_to_fv_phys (const bool restart) {
     t.T_mid = Homme::ExecView<Real***>("T_mid_tmp", nelem, npg, npacks*N);
     t.horiz_winds = Homme::ExecView<Real****>("horiz_winds_tmp", nelem, npg, 2, npacks*N);
     // Really need just the first tracer.
-    const auto qsize = get_group_out("tracers", pgn).m_bundle->get_view<Real***>().extent_int(1);
+    const auto qsize = get_group_out("tracers", pgn).m_monolithic_field->get_view<Real***>().extent_int(1);
     t.tracers = Homme::ExecView<Real****>("tracers_tmp", nelem, npg, qsize, npacks*N);
     remap_dyn_to_fv_phys(&t);
     assert(ncols == nelem*npg);
@@ -138,7 +138,7 @@ void HommeDynamics::fv_phys_dyn_to_fv_phys (const bool restart) {
       auto f = get_field_out(n,pgn);
       f.get_header().get_tracking().update_time_stamp(timestamp());
     }
-    auto Q = get_group_out("tracers",pgn).m_bundle;
+    auto Q = get_group_out("tracers",pgn).m_monolithic_field;
     Q->get_header().get_tracking().update_time_stamp(timestamp());
   }
   update_pressure(m_phys_grid);
@@ -169,7 +169,7 @@ void HommeDynamics::remap_dyn_to_fv_phys (GllFvRemapTmp* t) const {
   const auto npg = m_phys_grid_pgN*m_phys_grid_pgN;
   const auto& gn = m_phys_grid->name();
   const auto nlev = get_field_out("T_mid", gn).get_view<Real**>().extent_int(1);
-  const auto nq = get_group_out("tracers").m_bundle->get_view<Real***>().extent_int(1);
+  const auto nq = get_group_out("tracers").m_monolithic_field->get_view<Real***>().extent_int(1);
   assert(get_field_out("T_mid", gn).get_view<Real**>().extent_int(0) == nelem*npg);
   assert(get_field_out("horiz_winds", gn).get_view<Real***>().extent_int(1) == 2);
 
@@ -189,7 +189,7 @@ void HommeDynamics::remap_dyn_to_fv_phys (GllFvRemapTmp* t) const {
     t ? t->horiz_winds.data() : get_field_out("horiz_winds", gn).get_view<Real***>().data(),
     nelem, npg, 2, nlev);
   const auto q = Homme::GllFvRemap::Phys3T(
-    t ? t->tracers.data() : get_group_out("tracers", gn).m_bundle->get_view<Real***>().data(),
+    t ? t->tracers.data() : get_group_out("tracers", gn).m_monolithic_field->get_view<Real***>().data(),
     nelem, npg, nq, nlev);
   const auto dp = Homme::GllFvRemap::Phys2T(
     get_field_out("pseudo_density", gn).get_view<Real**>().data(),
@@ -209,7 +209,7 @@ void HommeDynamics::remap_fv_phys_to_dyn () const {
   const auto npg = m_phys_grid_pgN*m_phys_grid_pgN;
   const auto& gn = m_phys_grid->name();
   const auto nlev = m_helper_fields.at("FT_phys").get_view<const Real**>().extent_int(1);
-  const auto nq = get_group_in("tracers", gn).m_bundle->get_view<const Real***>().extent_int(1);
+  const auto nq = get_group_in("tracers", gn).m_monolithic_field->get_view<const Real***>().extent_int(1);
   assert(m_helper_fields.at("FT_phys").get_view<const Real**>().extent_int(0) == nelem*npg);
 
   const auto uv_ndim = m_helper_fields.at("FM_phys").get_view<const Real***>().extent_int(1);
@@ -222,7 +222,7 @@ void HommeDynamics::remap_fv_phys_to_dyn () const {
     m_helper_fields.at("FM_phys").get_view<const Real***>().data(),
     nelem, npg, uv_ndim, nlev);
   const auto q = Homme::GllFvRemap::CPhys3T(
-    get_group_in("tracers", gn).m_bundle->get_view<const Real***>().data(),
+    get_group_in("tracers", gn).m_monolithic_field->get_view<const Real***>().data(),
     nelem, npg, nq, nlev);
 
   gfr.run_fv_phys_to_dyn(time_idx, T, uv, q);

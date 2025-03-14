@@ -322,10 +322,10 @@ void AtmosphereProcess::set_required_group (const FieldGroup& group) {
     // AtmosphereProcessGroup is just a "container" of *real* atm processes,
     // so don't add me as customer if I'm an atm proc group.
     if (this->type()!=AtmosphereProcessType::Group) {
-      if (group.m_bundle) {
-        add_me_as_customer(*group.m_bundle);
+      if (group.m_monolithic_field) {
+        add_me_as_customer(*group.m_monolithic_field);
       } else {
-        for (auto& it : group.m_fields) {
+        for (auto& it : group.m_individual_fields) {
           add_me_as_customer(*it.second);
         }
       }
@@ -349,10 +349,10 @@ void AtmosphereProcess::set_computed_group (const FieldGroup& group) {
     // AtmosphereProcessGroup is just a "container" of *real* atm processes,
     // so don't add me as provider if I'm an atm proc group.
     if (this->type()!=AtmosphereProcessType::Group) {
-      if (group.m_bundle) {
-        add_me_as_provider(*group.m_bundle);
+      if (group.m_monolithic_field) {
+        add_me_as_provider(*group.m_monolithic_field);
       } else {
-        for (auto& it : group.m_fields) {
+        for (auto& it : group.m_individual_fields) {
           add_me_as_provider(*it.second);
         }
       }
@@ -429,7 +429,7 @@ void AtmosphereProcess::run_property_check (const prop_check_ptr&       property
           }
         }
         for (const auto& g : m_groups_in) {
-          for (const auto& f : g.m_fields) {
+          for (const auto& f : g.m_individual_fields) {
             if (f.second->get_header().get_identifier().get_layout().has_tags(tags)) {
               print_field_hyperslab (*f.second,tags,idx,ss);
               ss << " -----------------------------------------------------------------------\n";
@@ -444,7 +444,7 @@ void AtmosphereProcess::run_property_check (const prop_check_ptr&       property
           }
         }
         for (const auto& g : m_groups_out) {
-          for (const auto& f : g.m_fields) {
+          for (const auto& f : g.m_individual_fields) {
             if (f.second->get_header().get_identifier().get_layout().has_tags(tags)) {
               print_field_hyperslab (*f.second,tags,idx,ss);
               ss << " -----------------------------------------------------------------------\n";
@@ -588,10 +588,10 @@ void AtmosphereProcess::update_time_stamps () {
     f.get_header().get_tracking().update_time_stamp(t);
   }
   for (auto& g : m_groups_out) {
-    if (g.m_bundle) {
-      g.m_bundle->get_header().get_tracking().update_time_stamp(t);
+    if (g.m_monolithic_field) {
+      g.m_monolithic_field->get_header().get_tracking().update_time_stamp(t);
     } else {
-      for (auto& f : g.m_fields) {
+      for (auto& f : g.m_individual_fields) {
         f.second->get_header().get_tracking().update_time_stamp(t);
       }
     }
@@ -1111,7 +1111,7 @@ void AtmosphereProcess
       if (it->m_info->m_group_name == group_name and it->grid_name() == grid_name) {
         rm_its.push_back(it);
         ptrs[group_name][grid_name] = nullptr;
-        for (auto& kv : it->m_fields)
+        for (auto& kv : it->m_individual_fields)
           remove_field(kv.first, grid_name);
       }
     }
