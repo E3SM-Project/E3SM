@@ -788,7 +788,8 @@ _TESTS = {
             "ERS.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-optics",
             "ERS.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-wetscav",
             "ERS.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-aero_microphysics",
-            "ERS.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-drydep"
+            "ERS.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-drydep",
+            "ERS.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-all_mam4xx_procs"
         )
     },
 
