@@ -3459,7 +3459,7 @@
 		<!-- diagnostic fields for land-ice fluxes -->
 		<var name="landIceDraft" type="real" dimensions="nCells Time" units="m"
 			description="The elevation of the interface between land ice and the ocean."
-			packages="landIcePressurePKG"
+			packages="landIcePressurePKG;landIceFluxesPKG"
 		/>
 		<var name="landIceFrictionVelocity" type="real" dimensions="nCells Time" units="m s^-1"
 			description="The friction velocity $u_*$ under land ice"
