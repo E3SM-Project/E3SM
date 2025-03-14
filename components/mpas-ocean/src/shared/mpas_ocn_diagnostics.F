@@ -39,6 +39,7 @@ module ocn_diagnostics
    use ocn_surface_land_ice_fluxes
    use ocn_vertical_advection
    use ocn_subgrid
+   use ocn_wetting_drying, only: ocn_wetting_drying_update_land_ice
 
    implicit none
    private
@@ -142,7 +143,7 @@ contains
       logical :: full_compute = .true.
 
       real (kind=RKIND), dimension(:), pointer :: &
-        frazilSurfacePressure, landIcePressure, landIceFraction
+        frazilSurfacePressure, landIcePressure, landIceFraction, landIceFloatingFraction
 
       integer, dimension(:), pointer :: &
         landIceFloatingMask
@@ -181,6 +182,7 @@ contains
       if (landIcePressureOn) then
          call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
          call mpas_pool_get_array(forcingPool, 'landIceFloatingMask', landIceFloatingMask)
+         call mpas_pool_get_array(forcingPool, 'landIceFloatingFraction', landIceFloatingFraction)
          call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
          if (nCellsAll.gt.0 .AND. landIceFloatingMask(1) == -1) then
             call mpas_log_write('landIceFloatingMask contains the default value which likely indicates that this field is missing in the initial condition file (e.g. because it is meant for an older E3SM version).', &
@@ -473,6 +475,9 @@ contains
       if (landIcePressureOn) then
          call ocn_compute_land_ice_flux_input_fields(layerThickness, normalVelocity, activeTracers, &
                 landIcePressure, landIceFraction, landIceFloatingMask, timeLevel, indexTemperature, indexSalinity)
+      end if
+      if (landIcePressureOn .and. config_use_wetting_drying) then
+         call ocn_wetting_drying_update_land_ice(landIceFloatingMask, landIceFloatingFraction, err)
       end if
 
       if ( full_compute ) then
@@ -3699,7 +3704,7 @@ contains
       !$omp do schedule(runtime)
 #endif
       do iCell = 1, nCellsAll
-         landIceDraft(iCell) = landIcePressure(iCell) / (rho_floatation * gravity)
+         landIceDraft(iCell) = -landIcePressure(iCell) / (rho_floatation * gravity)
       end do
 #ifndef MPAS_OPENACC
       !$omp end do
@@ -4598,36 +4603,6 @@ contains
       end if
 
    end subroutine ocn_validate_state!}}}
-
-   function ocn_build_log_filename(prefix, identifier) result(filename)!{{{
-      character (len=*), intent(in) :: prefix
-      integer, intent(in) :: identifier
-
-      character (len=StrKIND) :: filename
-
-      character (len=StrKIND) :: identifierString
-
-      if ( identifier .lt. 10 ) then
-         write(identifierString, '(I1)') identifier
-      else if ( identifier .lt. 100 ) then
-         write(identifierString, '(I2)') identifier
-      else if ( identifier .lt. 1000 ) then
-         write(identifierString, '(I3)') identifier
-      else if ( identifier .lt. 10000 ) then
-         write(identifierString, '(I4)') identifier
-      else if ( identifier .lt. 100000 ) then
-         write(identifierString, '(I5)') identifier
-      else if ( identifier .lt. 1000000 ) then
-         write(identifierString, '(I6)') identifier
-      else if ( identifier .lt. 10000000 ) then
-         write(identifierString, '(I7)') identifier
-      else
-         write(identifierString, '(I99)') identifier
-      end if
-
-      filename = trim(prefix) // trim(identifierString)
-
-   end function ocn_build_log_filename!}}}
 
    subroutine ocn_write_field_statistics(unitNumber, fieldName, minValue, maxValue)
       integer, intent(in) :: unitNumber
