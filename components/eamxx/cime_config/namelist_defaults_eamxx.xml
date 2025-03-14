@@ -193,6 +193,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <p3 inherit="atm_proc_base">
       <do_prescribed_ccn>true</do_prescribed_ccn>
       <use_hetfrz_classnuc type="logical" doc="Switch to turn on heterogeneous freezing due to prognostic aerosols">false</use_hetfrz_classnuc>
+      <use_hetfrz_classnuc type="logical" doc="Switch to turn on heterogeneous freezing due to prognostic aerosols" COMPSET=".*SCREAM.*MAM4xx">true</use_hetfrz_classnuc>
       <do_prescribed_ccn COMPSET=".*SCREAM.*MAM4xx">false</do_prescribed_ccn>
       <do_prescribed_ccn COMPSET=".*SCREAM.*noAero">false</do_prescribed_ccn>
       <do_predict_nc>true</do_predict_nc>
