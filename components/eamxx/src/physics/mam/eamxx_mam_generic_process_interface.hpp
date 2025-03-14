@@ -64,6 +64,8 @@ class MAMGenericInterface : public scream::AtmosphereProcess {
                     mam_coupling::AerosolState &dry_aero,
                     mam_coupling::DryAtmosphere &dry_atm);
   // Physics grid for column information.
+  void set_field_w_scratch_buffer(mam_coupling::view_2d& var,
+  mam_coupling::Buffer &buffer, const bool set_to_zero);
   std::shared_ptr<const AbstractGrid> grid_;
   bool check_fields_intervals_{false};
   // number of horizontal columns and vertical levels
@@ -81,6 +83,7 @@ class MAMGenericInterface : public scream::AtmosphereProcess {
   const std::pair<Real, Real> get_ranges(const std::string &field_name);
   std::map<std::string, std::pair<Real, Real>> max_min_process_;
   bool set_ranges_{false};
+  int i_scratch_vars_{0};
 
 };  // MAMGenericInterface
 }  // namespace scream
