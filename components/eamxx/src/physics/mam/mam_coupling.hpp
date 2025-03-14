@@ -307,14 +307,15 @@ struct Buffer {
   // number of "scratch" fields that hold process-specific data
   // (e.g. gas-phase chemistry fields that are only needed by aerosol
   //  microphysics)
-  static constexpr int num_2d_scratch = 10;
+  static constexpr int max_num_2d_scratch = 50;
 
   // number of local fields stored at column midpoints
-  static constexpr int num_2d_mid =
+  static constexpr int min_num_2d_mid =
       8 +  // number of dry atm fields
-      2 * (num_aero_modes() + num_aero_tracers()) + num_aero_gases() +
-      num_2d_scratch;
-
+      2 * (num_aero_modes() + num_aero_tracers()) + num_aero_gases();
+      // +
+      //num_2d_scratch;
+  int num_2d_scratch{0};
   // (dry) atmospheric state
   uview_2d z_mid;      // height at midpoints
   uview_2d dz;         // layer thickness
@@ -337,7 +338,7 @@ struct Buffer {
   uview_2d dry_gas_mmr[num_aero_gases()];
 
   // undedicated scratch fields for process-specific data
-  uview_2d scratch[num_2d_scratch];
+  uview_2d scratch[max_num_2d_scratch];
 
   // =======================
   // column interface fields
@@ -348,14 +349,33 @@ struct Buffer {
 
   uview_2d z_iface;  // height at interfaces
 
+  uview_2d work;
+
   // storage
   Real *wsm_data;
+
+  void set_num_scratch(const int num_2d_scratch_in)
+  {
+    num_2d_scratch = num_2d_scratch_in;
+    EKAT_REQUIRE_MSG(
+      num_2d_scratch < max_num_2d_scratch ,
+      "Error! Insufficient number of scratch size in mam buffer; increase max_num_2d_scratch\n");
+  }
 };
 
 // ON HOST, returns the number of bytes of device memory needed by the above
 // Buffer type given the number of columns and vertical levels
 inline size_t buffer_size(const int ncol, const int nlev) {
-  return sizeof(Real) * (Buffer::num_2d_mid * ncol * nlev +
+  //FIXME: max_num_2d_scratch
+  const int num_2d_mid = Buffer::min_num_2d_mid + Buffer::max_num_2d_scratch;
+  return sizeof(Real) * (num_2d_mid* ncol * nlev +
+                         Buffer::num_2d_iface * ncol * (nlev + 1));
+}
+
+inline size_t buffer_size(const int ncol, const int nlev,
+                          const int num_2d_scratch, const int work_len) {
+  const int num_2d_mid = Buffer::min_num_2d_mid + num_2d_scratch;
+  return sizeof(Real) * (num_2d_mid* ncol * nlev + ncol * work_len +
                          Buffer::num_2d_iface * ncol * (nlev + 1));
 }
 
@@ -363,11 +383,13 @@ inline size_t buffer_size(const int ncol, const int nlev) {
 // intermediate (dry) quantities on the given number of columns with the given
 // number of vertical levels. Returns the number of bytes allocated.
 inline size_t init_buffer(const ATMBufferManager &buffer_manager,
-                          const int ncol, const int nlev, Buffer &buffer) {
+                          const int ncol, const int nlev,
+                          Buffer &buffer,
+                          const int work_len=0) {
   Real *mem = reinterpret_cast<Real *>(buffer_manager.get_memory());
 
   // set view pointers for midpoint fields
-  uview_2d *view_2d_mid_ptrs[Buffer::num_2d_mid] = {
+  uview_2d *view_2d_min_mid_ptrs[Buffer::min_num_2d_mid] = {
       &buffer.z_mid, &buffer.dz, &buffer.qv_dry, &buffer.qc_dry, &buffer.nc_dry,
       &buffer.qi_dry, &buffer.ni_dry, &buffer.w_updraft,
 
@@ -412,14 +434,18 @@ inline size_t init_buffer(const ATMBufferManager &buffer_manager,
       // aerosol gases
       &buffer.dry_gas_mmr[0], &buffer.dry_gas_mmr[1], &buffer.dry_gas_mmr[2],
       &buffer.dry_gas_mmr[3], &buffer.dry_gas_mmr[4], &buffer.dry_gas_mmr[5]};
-  for(int i = 0; i < Buffer::num_2d_scratch; ++i) {
-    view_2d_mid_ptrs[Buffer::num_2d_mid + i - Buffer::num_2d_scratch] =
-        &buffer.scratch[i];
+
+  for(int i = 0; i < Buffer::min_num_2d_mid; ++i) {
+    *view_2d_min_mid_ptrs[i] = view_2d(mem, ncol, nlev);
+    mem += view_2d_min_mid_ptrs[i]->size();
   }
 
-  for(int i = 0; i < Buffer::num_2d_mid; ++i) {
-    *view_2d_mid_ptrs[i] = view_2d(mem, ncol, nlev);
-    mem += view_2d_mid_ptrs[i]->size();
+  uview_2d *view_2d_min_scratch_ptrs[buffer.num_2d_scratch];
+  for(int i = 0; i < buffer.num_2d_scratch; ++i) {
+    view_2d_min_scratch_ptrs[i] =
+        &buffer.scratch[i];
+    *view_2d_min_scratch_ptrs[i] = view_2d(mem, ncol, nlev);
+    mem += view_2d_min_scratch_ptrs[i]->size();
   }
 
   // set view pointers for interface fields
@@ -428,6 +454,10 @@ inline size_t init_buffer(const ATMBufferManager &buffer_manager,
     *view_2d_iface_ptrs[i] = view_2d(mem, ncol, nlev + 1);
     mem += view_2d_iface_ptrs[i]->size();
   }
+
+  // views
+  buffer.work = view_2d(mem, ncol, work_len);
+  mem += ncol*work_len;
 
   // WSM data
   buffer.wsm_data = mem;
