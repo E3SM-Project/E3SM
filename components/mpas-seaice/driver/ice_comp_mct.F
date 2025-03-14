@@ -54,8 +54,6 @@ module ice_comp_mct
 
    ! MPASSI modules
    use seaice_analysis_driver
-   use seaice_column, only: seaice_column_reinitialize_fluxes, & !colpkg
-                            seaice_column_coupling_prep
    use seaice_icepack, only: seaice_icepack_reinitialize_fluxes, &
                              seaice_icepack_coupling_prep
    use seaice_constants, only: coupleAlarmID, &
@@ -77,8 +75,6 @@ module ice_comp_mct
    use seaice_mesh, only: seaice_latlon_vector_rotation_backward
    use seaice_time_integration
    use seaice_error, only: seaice_check_critical_error
-
-   use ice_colpkg, only: colpkg_sea_freezing_temperature
    use icepack_intfc, only: icepack_sea_freezing_temperature
 
 !
@@ -494,8 +490,6 @@ contains
         tempLogicalConfig = .true.
         call mpas_pool_get_config(domain % configs, "config_do_restart_snow_grain_radius", tempLogicalConfig)
         tempLogicalConfig = .true.
-        call mpas_pool_get_config(domain % configs, "config_do_restart_zsalinity", tempLogicalConfig)
-        tempLogicalConfig = .true.
         call mpas_pool_get_config(domain % configs, "config_do_restart_bgc", tempLogicalConfig)
         tempLogicalConfig = .true.
 
@@ -842,8 +836,6 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_column_physics_type", tempCharConfig)
     if (trim(tempCharConfig) == "icepack") then
       call seaice_icepack_coupling_prep(domain)
-    else if (trim(tempCharConfig) == "column_package") then
-      call seaice_column_coupling_prep(domain)
     endif ! config_column_physics_type
 
     call MPAS_pool_get_config(domain % configs, "config_use_floe_size_distribution", tempLogicalConfig)
@@ -1220,11 +1212,9 @@ contains
       call shr_file_setLogUnit (iceLogUnit)
 
       ! reinitialize fluxes
-      if (trim(config_column_physics_type) == "icepack") then
+!      if (trim(config_column_physics_type) == "icepack") then
          call seaice_icepack_reinitialize_fluxes(domain)
-      else if (trim(config_column_physics_type) == "column_package") then
-         call seaice_column_reinitialize_fluxes(domain)
-      endif ! config_column_physics_type
+!      endif ! config_column_physics_type
 
       ! Import state from coupler
       call ice_import_mct(x2i_i, ierr)
@@ -2346,11 +2336,9 @@ contains
         seaSurfaceTemperature(i)       = x2i_i % rAttr(index_x2i_So_t, n)
         seaSurfaceSalinity(i)          = x2i_i % rAttr(index_x2i_So_s, n)
 
-        if (trim(config_column_physics_type) == "icepack") then
+!        if (trim(config_column_physics_type) == "icepack") then
            seaFreezingTemperature(i) = icepack_sea_freezing_temperature(seaSurfaceSalinity(i))
-        else if (trim(config_column_physics_type) == "column_package") then
-           seaFreezingTemperature(i) = colpkg_sea_freezing_temperature(seaSurfaceSalinity(i))
-        endif ! config_column_physics_type
+!        endif ! config_column_physics_type
 
         uOceanVelocity(i)              = x2i_i % rAttr(index_x2i_So_u, n)
         vOceanVelocity(i)              = x2i_i % rAttr(index_x2i_So_v, n)
@@ -3167,10 +3155,6 @@ contains
 ! the frazil mass based on the freezingPotential according to sea ice model thermodynamics,
 !
 ! !USES:
-      use ice_mushy_physics, only:  &
-         liquidus_temperature_mush, &
-         enthalpy_mush
-
       use icepack_intfc, only:  &
          icepack_liquidus_temperature, &
          icepack_enthalpy_mush
@@ -3210,13 +3194,10 @@ contains
              Si0new = seaSurfaceSalinity**2 / (4.0_RKIND*seaiceFrazilSalinityReduction)
          endif
 
-         if (trim(config_column_physics_type) == "icepack") then
+!         if (trim(config_column_physics_type) == "icepack") then
             Ti = icepack_liquidus_temperature(Si0new/seaiceFrazilIcePorosity)
             qi0new = icepack_enthalpy_mush(Ti, Si0new)
-         else if (trim(config_column_physics_type) == "column_package") then
-            Ti = liquidus_temperature_mush(Si0new/seaiceFrazilIcePorosity)
-            qi0new = enthalpy_mush(Ti, Si0new)
-         endif ! config_column_physics_type
+!         endif ! config_column_physics_type
 
       else
          qi0new = -seaiceDensityIce*seaiceLatentHeatMelting
@@ -3990,7 +3971,7 @@ contains
         seaSurfaceTemperature(i)       = x2i_im(n,index_x2i_So_t)
         seaSurfaceSalinity(i)          = x2i_im(n,index_x2i_So_s)
 
-        seaFreezingTemperature(i) = colpkg_sea_freezing_temperature(seaSurfaceSalinity(i))
+        seaFreezingTemperature(i) = icepack_sea_freezing_temperature(seaSurfaceSalinity(i))
 
         uOceanVelocity(i)              = x2i_im(n,index_x2i_So_u)
         vOceanVelocity(i)              = x2i_im(n,index_x2i_So_v)
