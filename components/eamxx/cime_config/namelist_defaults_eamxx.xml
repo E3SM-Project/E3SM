@@ -609,7 +609,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <Filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128_20220823.nc</Filename>
     <Filename hgrid="ne512np4" ntracers="41">${DIN_LOC_ROOT}/atm/scream/init/screami_ne256np4L128_era5_aer_c20240929.nc</Filename>
     <Filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_era5-20131001-topoadj-16x_20220914.nc</Filename>
-    <Filename hgrid="ne1024np4" ntracers="41">${DIN_LOC_ROOT}/atm/scream/init/screami_mam4xx_ne1024np4L128_20241003.nc</Filename>
+    <Filename hgrid="ne1024np4" ntracers="41">${DIN_LOC_ROOT}/atm/scream/init/screami_mam4xx_ne1024np4L128_20240513.nc</Filename>
     <Filename hgrid="ne1024np4" COMPSET=".*SCREAM%DYAMOND-2_ELM">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_ifs-20200120-topoadjx6t_20221011.nc</Filename>
     <Filename hgrid="ne4np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/screami_aquaplanet_ne4np4L72_20220823.nc</Filename>
     <Filename hgrid="ne0np4_conus_x4v1_lowcon" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_conusx4v1np4L72-topo12x_013023.nc</Filename>
