@@ -30,7 +30,7 @@ module surfrdMod
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: surfrd_get_globmask  ! Reads global land mask (needed for setting domain decomp)
-  public :: surfrd_get_grid      ! Read grid/ladnfrac data into domain (after domain decomp)
+  public :: surfrd_get_grid      ! Read grid/landfrac data into domain (after domain decomp)
   public :: surfrd_get_topo      ! Read grid topography into domain (after domain decomp)
   public :: surfrd_get_data      ! Read surface dataset and determine subgrid weights
   public :: surfrd_get_grid_conn ! Reads grid connectivity information from domain file
@@ -669,7 +669,6 @@ contains
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
     call domain_clean(surfdata_domain)
-
     ! Obtain special landunit info
 
     call surfrd_special(begg, endg, ncid, ldomain%ns,ldomain%num_tunits_per_grd)
@@ -1068,12 +1067,13 @@ contains
     ! Determine weight arrays for non-dynamic landuse mode
     !
     ! !USES:
-    use elm_varctl      , only : create_crop_landunit, use_fates
+    use elm_varctl      , only : create_crop_landunit, use_fates, use_polygonal_tundra
     use elm_varctl      , only : irrigate
     use elm_varpar      , only : surfpft_lb, surfpft_ub, surfpft_size, cft_lb, cft_ub, cft_size
     use elm_varpar      , only : crop_prog
-    use elm_varsur      , only : wt_lunit, wt_nat_patch, wt_cft, fert_cft, fert_p_cft
+    use elm_varsur      , only : wt_lunit, wt_nat_patch, wt_cft, fert_cft, fert_p_cft, wt_polygon
     use landunit_varcon , only : istsoil, istcrop
+    use landunit_varcon , only : istlowcenpoly, ilowcenpoly, istflatcenpoly, iflatcenpoly, isthighcenpoly, ihighcenpoly
     use pftvarcon       , only : nc3crop, nc3irrig, npcropmin
     use pftvarcon       , only : ncorn, ncornirrig, nsoybean, nsoybeanirrig
     use pftvarcon       , only : nscereal, nscerealirrig, nwcereal, nwcerealirrig
@@ -1112,7 +1112,28 @@ contains
     call ncd_io(ncid=ncid, varname='PCT_NATVEG', flag='read', data=arrayl, &
          dim1name=grlnd, readvar=readvar)
     if (.not. readvar) call endrun( msg=' ERROR: PCT_NATVEG NOT on surfdata file'//errMsg(__FILE__, __LINE__))
-    wt_lunit(begg:endg,1:max_topounits,istsoil) = arrayl(begg:endg,1:max_topounits) 
+    wt_lunit(begg:endg,1:max_topounits,istsoil) = arrayl(begg:endg,1:max_topounits)
+
+    if (use_polygonal_tundra) then
+      call ncd_io(ncid=ncid, varname='PCT_HCP', flag='read', data=arrayl, &
+         dim1name=grlnd, readvar=readvar)
+      if (.not. readvar) call endrun( msg=' ERROR: use_polygonal_tundra = .true., but PCT_HCP NOT on surfdata file'//errMsg(__FILE__, __LINE__))
+      wt_polygon(begg:endg,1:max_topounits,ihighcenpoly) = arrayl(begg:endg,1:max_topounits)
+
+      call ncd_io(ncid=ncid, varname='PCT_FCP', flag='read', data=arrayl, &
+         dim1name=grlnd, readvar=readvar)
+      if (.not. readvar) call endrun( msg=' ERROR: use_polygonal_tundra = .true., but PCT_FCP NOT on surfdata file'//errMsg(__FILE__, __LINE__))
+      wt_polygon(begg:endg,1:max_topounits,iflatcenpoly) = arrayl(begg:endg,1:max_topounits)
+
+      call ncd_io(ncid=ncid, varname='PCT_LCP', flag='read', data=arrayl, &
+         dim1name=grlnd, readvar=readvar)
+      if (.not. readvar) call endrun( msg=' ERROR: use_polygonal_tundra = .true., but PCT_LCP NOT on surfdata file'//errMsg(__FILE__, __LINE__))
+      wt_polygon(begg:endg,1:max_topounits,ilowcenpoly) = arrayl(begg:endg,1:max_topounits)
+    else
+      wt_polygon(begg:endg,1:max_topounits,ilowcenpoly:ihighcenpoly) = 0._r8
+    endif
+
+    ! add two other types
 
     call ncd_io(ncid=ncid, varname='PCT_CROP', flag='read', data=arrayl, &
          dim1name=grlnd, readvar=readvar)
@@ -1137,7 +1158,7 @@ contains
     else if ( (.not. cft_dim_exists) .and. (.not. create_crop_landunit) )then
 
        ! Format where crop is part of the natural veg. landunit
-       if ( masterproc ) write(iulog,*) "WARNING: The PFT format is an unsupported format that will be removed in th future!"
+       if ( masterproc ) write(iulog,*) "WARNING: The PFT format is an unsupported format that will be removed in the future!"
        call surfrd_pftformat( begg, endg, ncid )
 
     else if ( cft_dim_exists .and. .not. create_crop_landunit )then
@@ -1184,6 +1205,7 @@ contains
     end if
     wt_lunit(begg:endg,:,istsoil) = wt_lunit(begg:endg,:,istsoil) / 100._r8
     wt_lunit(begg:endg,:,istcrop) = wt_lunit(begg:endg,:,istcrop) / 100._r8
+    wt_polygon(begg:endg,:,:) = wt_polygon(begg:endg,:,:) / 100._r8
     wt_nat_patch(begg:endg,:,:)   = wt_nat_patch(begg:endg,:,:) / 100._r8
     !call check_sums_equal_1_3d(wt_nat_patch, begg, 'wt_nat_patch', subname,ntpu)
     call check_sums_equal_1_3d(wt_nat_patch, begg, 'wt_nat_patch', subname)
@@ -1261,6 +1283,23 @@ contains
        !                 variable to 0 where is_pft_known_to_model = .false.?
        call collapse_crop_var(fert_cft(begg:endg,:,:), begg, endg)
        call collapse_crop_var(fert_p_cft(begg:endg,:,:), begg, endg)
+    end if
+
+    if (use_polygonal_tundra) then
+      ! adjust wt_lunit(:,:,istsoil) for polygonal fraction:
+      do nl = begg,endg
+        do t = 1,max_topounits
+          wt_lunit(nl,t,istlowcenpoly) = wt_lunit(nl,t,istsoil) * wt_polygon(nl,t,ilowcenpoly)
+          wt_lunit(nl,t,istflatcenpoly) = wt_lunit(nl,t,istsoil) * wt_polygon(nl,t,iflatcenpoly)
+          wt_lunit(nl,t,isthighcenpoly) = wt_lunit(nl,t,istsoil) * wt_polygon(nl,t,ihighcenpoly)
+          wt_lunit(nl,t,istsoil) = wt_lunit(nl,t,istsoil) - sum(wt_lunit(nl,t,istlowcenpoly:isthighcenpoly))
+          ! check to make sure istsoil weight is still positive:
+          if (wt_lunit(nl,t,istsoil) .lt. 0_r8) then
+            call endrun(msg='ERROR:Polygonal tundra fraction > 100% in surface file'//&
+                                   errMsg(__FILE__, __LINE__))
+          end if
+        end do
+      end do
     end if
 
   end subroutine surfrd_veg_all
