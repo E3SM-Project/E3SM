@@ -437,7 +437,7 @@ contains
      integer                                        :: pass_regeneration_model
      integer                                        :: pass_hydro_solver
      integer                                        :: pass_radiation_model
-     integer                                        :: pass_electron_transfer_model
+     integer                                        :: pass_electron_transport_model
      
      ! ----------------------------------------------------------------------------------
      ! FATES lightning definitions
