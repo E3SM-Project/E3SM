@@ -145,6 +145,7 @@ _TESTS = {
             "SMS.ne30pg2_r05_IcoswISC30E3r5_gis20.IGELM_MLI.mali-gis20km",
             "ERS.ne30pg2_r05_IcoswISC30E3r5_gis20.IGELM_MLI.mali-gis20km",
             "SMS.ne30pg2_r05_IcoswISC30E3r5_gis20.BGWCYCL1850.allactive-gis20km",
+            "SMS.ne30pg2_r05_IcoswISC30E3r5_gis4to40.BGWCYCL1850.allactive-gis20km",
             "SMS.ne30_oECv3_gis.IGELM_MLI.elm-extrasnowlayers",
             )
         },
