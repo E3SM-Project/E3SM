@@ -51,6 +51,10 @@
 			description="if true, get river nutrient inputs from the coupler, else from ecosys monthly forcing file"
 			possible_values=".true. or .false."
 		/>
+		<nml_option name="config_use_ecosys_frazil_tendencies" type="logical" default_value=".false." units="unitless"
+			description="if true, use ecosys tendencies from internal ocean frazil formation"
+			possible_values=".true. or .false."
+		/>
 		<nml_option name="config_use_ecosysTracers_sea_ice_coupling" type="logical" default_value=".false." units="unitless"
 			description="if true, couple ecosys fields with sea ice"
 			possible_values=".true. or .false."
@@ -804,6 +808,108 @@
 			<var name="total_Chl" type="real" dimensions="nCells Time" units="mg m^{-2}"
 				description="Total depth-integrated chlorophyll"
 			/>
+		</var_struct>
+
+		<var_struct name="ecosysFrazilForcing" time_levs="1" packages="ecosysTracersPKG">
+			<var_array name="frazilEcosysTracersTendency" type="real" dimensions="nVertLevels nCells Time" packages="ecosysTracersPKG" missing_value="FILLVAL" missing_value_mask="cellMask">
+		                <!-- Add constituents of tracer group -->
+				<var name="PO4FrazilTend" array_group="ecosysGRP" units="mmol P m^{-3} s^{-1}"
+				     description="Dissolved Inorganic Phosphate Frazil Tendency"
+				/>
+				<var name="NO3FrazilTend" array_group="ecosysGRP" units="mmol N m^{-3} s^{-1}"
+				     description="Dissolved Inorganic Nitrate Frazil Tendency"
+				/>
+				<var name="SiO3FrazilTend" array_group="ecosysGRP" units="mmol Si m^{-3} s^{-1}"
+				     description="Dissolved Inorganic Silicate Frazil Tendency"
+				/>
+				<var name="NH4FrazilTend" array_group="ecosysGRP" units="mmol N m^{-3} s^{-1}"
+				     description="Dissolved Ammonia Frazil Tendency"
+				/>
+				<var name="FeFrazilTend" array_group="ecosysGRP" units="mmol Fe m^{-3} s^{-1}"
+				     description="Dissolved Inorganic Iron Frazil Tendency"
+				/>
+				<var name="LigFrazilTend" array_group="ecosysGRP" units="mmol m^{-3} s^{-1}"
+				     description="Ligand Frazil Tendency"
+				/>
+				<var name="O2FrazilTend" array_group="ecosysGRP" units="mmol O2 m^{-3} s^{-1}"
+				     description="Dissolved Oxygen Frazil Tendency"
+				/>
+				<var name="DICFrazilTend" array_group="ecosysGRP" units="mmol C m^{-3} s^{-1}"
+				     description="Dissolved Inorganic Carbon Frazil Tendency"
+				/>
+				<var name="DIC_ALT_CO2FrazilTend" array_group="ecosysGRP" units="mmol C m^{-3} s^{-1}"
+				     description="Dissolved Inorganic Carbon, Alternative CO2 Frazil Tendency"
+				/>
+				<var name="ALKFrazilTend" array_group="ecosysGRP" units="meq m^{-3} s^{-1}"
+				     description="Alkalinity Frazil Tendency"
+				/>
+				<var name="ALK_ALT_CO2FrazilTend" array_group="ecosysGRP" units="meq m^{-3} s^{-1}"
+				     description="Alkalinity Frazil Tendency, Alternative CO2 Frazil Tendency"
+				/>
+				<var name="DOCFrazilTend" array_group="ecosysGRP" units="mmol C m^{-3} s^{-1}"
+				     description="Dissolved Organic Carbon Frazil Tendency"
+				/>
+				<var name="DONFrazilTend" array_group="ecosysGRP" units="mmol N m^{-3} s^{-1}"
+				     description="Dissolved Organic Nitrogen Frazil Tendency"
+				/>
+				<var name="DOPFrazilTend" array_group="ecosysGRP" units="mmol P m^{-3} s^{-1}"
+				     description="Dissolved Organic Phosphorus Frazil Tendency"
+				/>
+				<var name="DOPrFrazilTend" array_group="ecosysGRP" units="mmol P m^{-3} s^{-1}"
+				     description="Refractory DOP Frazil Tendency"
+				/>
+				<var name="DONrFrazilTend" array_group="ecosysGRP" units="mmol N m^{-3} s^{-1}"
+				     description="Refractory DON Frazil Tendency"
+				/>
+				<var name="DOCrFrazilTend" array_group="ecosysGRP" units="mmol C m^{-3} s^{-1}"
+				     description="Refractory DOC Frazil Tendency"
+				/>
+				<var name="zooCFrazilTend" array_group="ecosysGRP" units="mmol C m^{-3} s^{-1}"
+				     description="Zooplankton Carbon Frazil Tendency"
+				/>
+				<var name="spChlFrazilTend" array_group="ecosysGRP" units="mg m^{-3} s^{-1}"
+				     description="Small Phytoplankton Chlorophyll Frazil Tendency"
+				/>
+				<var name="spCFrazilTend" array_group="ecosysGRP" units="mmol C m^{-3} s^{-1}"
+				     description="Small Phytoplankton Carbon Frazil Tendency"
+				/>
+				<var name="spFeFrazilTend" array_group="ecosysGRP" units="mmol Fe m^{-3} s^{-1}"
+				     description="Small Phytoplankton Iron Frazil Tendency"
+				/>
+				<var name="spPFrazilTend" array_group="ecosysGRP" units="mmol P m^{-3} s^{-1}"
+				     description="Small Phytoplankton Phosphorus Frazil Tendency"
+				/>
+				<var name="spCaCO3FrazilTend" array_group="ecosysGRP" units="mmol C m^{-3} s^{-1}"
+				     description="Small Phytoplankton Calcium Carbonate Frazil Tendency"
+				/>
+				<var name="diatChlFrazilTend" array_group="ecosysGRP" units="mg m^{-3} s^{-1}"
+				     description="Diatom Chlorophyll Frazil Tendency"
+				/>
+				<var name="diatCFrazilTend" array_group="ecosysGRP" units="mmol C m^{-3} s^{-1}"
+				     description="Diatom Carbon Frazil Tendency"
+				/>
+				<var name="diatFeFrazilTend" array_group="ecosysGRP" units="mmol Fe m^{-3} s^{-1}"
+				     description="Diatom Iron Frazil Tendency"
+				/>
+				<var name="diatPFrazilTend" array_group="ecosysGRP" units="mmol P m^{-3} s^{-1}"
+				     description="Diatom Phosphorus Frazil Tendency"
+				/>
+				<var name="diatSiFrazilTend" array_group="ecosysGRP" units="mmol Si m^{-3} s^{-1}"
+				     description="Diatom Silicate Frazil Tendency"
+				/>
+				<var name="diazChlFrazilTend" array_group="ecosysGRP" units="mg m^{-3} s^{-1}"
+				     description="Diazotroph Chlorophyll Frazil Tendency"
+				/>
+				<var name="diazCFrazilTend" array_group="ecosysGRP" units="mmol C m^{-3} s^{-1}"
+				     description="Diazotroph Carbon Frazil Tendency"
+				/>
+				<var name="diazFeFrazilTend" array_group="ecosysGRP" units="mmol Fe m^{-3} s^{-1}"
+				     description="Diazotroph Iron Frazil Tendency"
+				/>
+				<var name="diazPFrazilTend" array_group="ecosysGRP" units="mmol P m^{-3} s^{-1}"
+				     description="Diazotroph Phosphorus Frazil Tendency"
+				/>
+			</var_array>
 		</var_struct>
 
 		<var_struct name="ecosysSeaIceCoupling" time_levs="1" packages="ecosysTracersPKG">
