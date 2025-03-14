@@ -617,7 +617,7 @@ set_fields_from_iop_data(const field_mgr_ptr field_mgr, const std::string& grid_
 {
   if (m_params.get<bool>("zero_non_iop_tracers") && field_mgr->has_group("tracers", grid_name)) {
     // Zero out all tracers before setting iop tracers (if requested)
-    field_mgr->get_field_group("tracers", grid_name).m_bundle->deep_copy(0);
+    field_mgr->get_field_group("tracers", grid_name).m_monolithic_field->deep_copy(0);
   }
 
   EKAT_REQUIRE_MSG(grid_name == "Physics GLL",

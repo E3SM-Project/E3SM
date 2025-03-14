@@ -20,10 +20,10 @@ enum TracerAdvection {
   DynamicsOnly,
 };
 
-// Whether the bundling of a field group (see below) is needed, optional, or not needed.
-enum class Bundling : int {
+// Whether the field group should be allocated as a monolithic field
+enum class MonolithicAlloc : int {
   Required,
-  NotNeeded
+  NotRequired
 };
 
 /*
@@ -46,27 +46,28 @@ struct GroupRequest {
   //  - name: the name of the group
   //  - grid: the grid where the group is requested
   //  - ps: the pack size that the allocation of the fields in the group
-  //        (and the bundled field, if any) should accommodate (see field_alloc_prop.hpp)
-  //  - bundling: whether the group should be bundled (see field_group.hpp)
-  GroupRequest (const std::string& name_, const std::string& grid_, const int ps, const Bundling b = Bundling::NotNeeded)
-   : name(name_), grid(grid_), pack_size(ps), bundling(b)
+  //        (and the monolithic field, if any) should accommodate (see field_alloc_prop.hpp)
+  //  - monolithic_alloc: whether the group should be allocated as a monolithic group (see field_group.hpp)
+  GroupRequest (const std::string& name_, const std::string& grid_, const int ps,
+                const MonolithicAlloc monolithic_alloc_ = MonolithicAlloc::NotRequired)
+   : name(name_), grid(grid_), pack_size(ps), monolithic_alloc(monolithic_alloc_)
   {
     EKAT_REQUIRE_MSG(pack_size>=1, "Error! Invalid pack size request.\n");
   }
 
   GroupRequest (const std::string& name_, const std::string& grid_,
-                const Bundling b = Bundling::NotNeeded)
-   : GroupRequest(name_,grid_,1,b)
+                const MonolithicAlloc monolithic_alloc_ = MonolithicAlloc::NotRequired)
+   : GroupRequest(name_,grid_,1,monolithic_alloc_)
   { /* Nothing to do here */ }
 
   // Default copy ctor is perfectly fine
   GroupRequest (const GroupRequest&) = default;
 
   // Main parts of a group request
-  std::string name;   // Group name
-  std::string grid;   // Grid name
-  int pack_size;      // Request an allocation that can accomodate Pack<Real,pack_size>
-  Bundling bundling;  // Whether the group should be allocated as a single n+1 dimensional field
+  std::string name;                  // Group name
+  std::string grid;                  // Grid name
+  int pack_size;                     // Request an allocation that can accomodate Pack<Real,pack_size>
+  MonolithicAlloc monolithic_alloc;  // Whether the group should be allocated as a single n+1 dimensional field
 };
 
 // In order to use GroupRequest in std sorted containers (like std::set),
@@ -95,8 +96,8 @@ inline bool operator< (const GroupRequest& lhs,
     return false;
   }
 
-  // Same pack size, order by bundling
-  return etoi(lhs.bundling)<etoi(rhs.bundling);
+  // Same pack size, order by monolithic allocation
+  return etoi(lhs.monolithic_alloc)<etoi(rhs.monolithic_alloc);
 }
 
 /*

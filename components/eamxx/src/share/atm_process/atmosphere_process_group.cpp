@@ -336,7 +336,7 @@ void AtmosphereProcessGroup::add_postcondition_nan_checks () const {
 
       for (const auto& g : proc->get_groups_out()) {
         const auto& grid = m_grids_mgr->get_grid(g.grid_name());
-        for (const auto& f : g.m_fields) {
+        for (const auto& f : g.m_individual_fields) {
           auto nan_check = std::make_shared<FieldNaNCheck>(*f.second,grid);
           proc->add_postcondition_check(nan_check, CheckFailHandling::Fatal);
         }
@@ -523,7 +523,7 @@ set_required_group (const FieldGroup& group) {
   // NOTE: we still check also the groups computed by the previous procs,
   //       in case they contain some of the fields in this group.
   std::set<std::string> computed;
-  for (const auto& it : group.m_fields) {
+  for (const auto& it : group.m_individual_fields) {
     const auto& fn = it.first;
     const auto& fid = it.second->get_header().get_identifier();
     for (int iproc=0; iproc<first_proc_that_needs_group; ++iproc) {

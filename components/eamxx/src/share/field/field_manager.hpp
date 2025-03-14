@@ -69,7 +69,7 @@ public:
   void add_field (const Field& f);
 
   // Adds $field_name on $grid_name to group $group_name (creating the group, if necessary).
-  // NOTE: if $group_name is allocated as a bundled field, this throws.
+  // NOTE: if $group_name is allocated as a monolithic field, this throws.
   // NOTE: must be called after registration ends
   void add_to_group (const std::string& field_name, const std::string& grid_name, const std::string& group_name);
   void add_to_group (const identifier_type& id, const std::string& group_name) { add_to_group(id.name(), id.get_grid_name(), group_name); }
@@ -155,7 +155,7 @@ public:
 
 protected:
 
-  void pre_process_bundled_group_requests ();
+  void pre_process_monolithic_group_requests ();
 
   // The state of the repository
   RepoState m_repo_state;

@@ -183,7 +183,7 @@ public:
 
   // These sets allow to get all the actual in/out fields stored by the atm proc
   // Note: if an atm proc requires a group, then all the fields in the group, as well as
-  //       the bundled field (if present) will be added as required fields for this atm proc.
+  //       the monolithic field (if present) will be added as required fields for this atm proc.
   //       See field_group.hpp for more info about groups of fields.
   const std::list<Field>& get_fields_in  () const { return m_fields_in;  }
   const std::list<Field>& get_fields_out () const { return m_fields_out; }
@@ -372,12 +372,12 @@ protected:
   // Group requests
   template<RequestType RT>
   void add_group (const std::string& name, const std::string& grid_name,
-                  const Bundling b = Bundling::NotNeeded)
+                  const MonolithicAlloc b = MonolithicAlloc::NotRequired)
   { add_group<RT> (GroupRequest(name,grid_name,b)); }
 
   template<RequestType RT>
   void add_group (const std::string& name, const std::string& grid_name,
-                  const int pack_size, const Bundling b = Bundling::NotNeeded)
+                  const int pack_size, const MonolithicAlloc b = MonolithicAlloc::NotRequired)
   { add_group<RT> (GroupRequest(name,grid_name,pack_size,b)); }
 
   template<RequestType RT>

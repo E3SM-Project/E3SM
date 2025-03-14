@@ -111,7 +111,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   } // Extra SHOC output diagnostics
 
   // Tracer group
-  add_group<Updated>("turbulence_advected_tracers", grid_name, ps, Bundling::Required);
+  add_group<Updated>("turbulence_advected_tracers", grid_name, ps, MonolithicAlloc::Required);
 
   // Boundary flux fields for energy and mass conservation checks
   if (has_column_conservation_check()) {
@@ -134,8 +134,8 @@ set_computed_group_impl (const FieldGroup& group)
   EKAT_REQUIRE_MSG(name=="turbulence_advected_tracers",
     "Error! We were not expecting a field group called '" << name << "\n");
 
-  EKAT_REQUIRE_MSG(group.m_info->m_bundled,
-      "Error! Shoc expects bundled fields for tracers.\n");
+  EKAT_REQUIRE_MSG(group.m_info->m_monolithic_allocation,
+      "Error! Shoc expects a monolithic allocation for tracers.\n");
 
   // Calculate number of advected tracers
   m_num_tracers = group.m_info->size();
@@ -269,7 +269,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   const auto& surf_sens_flux      = get_field_in("surf_sens_flux").get_view<const Real*>();
   const auto& surf_evap           = get_field_in("surf_evap").get_view<const Real*>();
   const auto& surf_mom_flux       = get_field_in("surf_mom_flux").get_view<const Real**>();
-  const auto& qtracers            = get_group_out("turbulence_advected_tracers").m_bundle->get_strided_view<Spack***>();
+  const auto& qtracers            = get_group_out("turbulence_advected_tracers").m_monolithic_field->get_strided_view<Spack***>();
   const auto& qc                  = get_field_out("qc").get_view<Spack**>();
   const auto& qv                  = get_field_out("qv").get_view<Spack**>();
   const auto& tke                 = get_field_out("tke").get_view<Spack**>();

@@ -391,7 +391,7 @@ TEST_CASE("field_group") {
   f.allocate_view();
 
   FieldGroupInfo info("G");
-  info.m_bundled = true;
+  info.m_monolithic_allocation = true;
   std::vector<Field> f_i;
   for (int i=0; i<ndims; ++i) {
     f_i.push_back(f.get_component(i));
@@ -402,21 +402,21 @@ TEST_CASE("field_group") {
 
   // Create group and set subfields
   FieldGroup g(info);
-  g.m_bundle = std::make_shared<Field>(f);
+  g.m_monolithic_field = std::make_shared<Field>(f);
   for (int i=0; i<ndims; ++i) {
-    g.m_fields["G_"+std::to_string(i)] = std::make_shared<Field>(f_i[i]);
+    g.m_individual_fields["G_"+std::to_string(i)] = std::make_shared<Field>(f_i[i]);
   }
 
   // Check const cloning
   auto cg= g.get_const();
-  REQUIRE (cg.m_bundle->is_read_only());
-  REQUIRE (cg.m_fields.size()==g.m_fields.size());
+  REQUIRE (cg.m_monolithic_field->is_read_only());
+  REQUIRE (cg.m_individual_fields.size()==g.m_individual_fields.size());
   REQUIRE (*cg.m_info==*g.m_info);
-  REQUIRE (cg.m_bundle->get_internal_view_data<const Real>()==
-            g.m_bundle->get_internal_view_data<const Real>());
+  REQUIRE (cg.m_monolithic_field->get_internal_view_data<const Real>()==
+            g.m_monolithic_field->get_internal_view_data<const Real>());
   for (int i=0; i<ndims; ++i) {
-    const auto&  f =  *g.m_fields.at("G_"+std::to_string(i));
-    const auto& cf = *cg.m_fields.at("G_"+std::to_string(i));
+    const auto&  f =  *g.m_individual_fields.at("G_"+std::to_string(i));
+    const auto& cf = *cg.m_individual_fields.at("G_"+std::to_string(i));
     REQUIRE ( f.get_internal_view_data<const Real>()==
              cf.get_internal_view_data<const Real>());
   }
@@ -558,7 +558,7 @@ TEST_CASE("field_mgr", "") {
   REQUIRE_THROWS (field_mgr.add_field(f2_1_sf)); // Cannot have duplicates
 }
 
-TEST_CASE("tracers_bundle", "") {
+TEST_CASE("tracers_group", "") {
   using namespace scream;
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
@@ -596,10 +596,10 @@ TEST_CASE("tracers_bundle", "") {
   field_mgr.register_field(FR{b_id,los{"tracers", "subtracers"}});
   field_mgr.register_field(FR{c_id,los{"tracers", "subtracers"}});
 
-  field_mgr.register_group(GroupRequest("tracers",gn1,Bundling::Required));
-  field_mgr.register_group(GroupRequest("tracers",gn2,Bundling::Required));
-  field_mgr.register_group(GroupRequest("subtracers",gn1,Bundling::Required));
-  //field_mgr.register_group(GroupRequest("subtracers",gn2,Bundling::Required));
+  field_mgr.register_group(GroupRequest("tracers",gn1,MonolithicAlloc::Required));
+  field_mgr.register_group(GroupRequest("tracers",gn2,MonolithicAlloc::Required));
+  field_mgr.register_group(GroupRequest("subtracers",gn1,MonolithicAlloc::Required));
+  //field_mgr.register_group(GroupRequest("subtracers",gn2,MonolithicAlloc::Required));
 
   field_mgr.registration_ends();
 
@@ -619,17 +619,17 @@ TEST_CASE("tracers_bundle", "") {
   REQUIRE_THROWS (field_mgr.get_field("subtracers", gn1));
   REQUIRE_THROWS (field_mgr.get_field("subtracers", gn2));
 
-  // The field_mgr should have allocated the group bundled
+  // The field_mgr should have allocated the group as a monolith
   auto tracers1 = field_mgr.get_field_group("tracers", gn1);
   auto tracers2 = field_mgr.get_field_group("tracers", gn2);
   auto subtracers = field_mgr.get_field_group("subtracers", gn1);
-  REQUIRE (tracers1.m_info->m_bundled);
-  REQUIRE (tracers2.m_info->m_bundled);
-  REQUIRE (subtracers.m_info->m_bundled);
+  REQUIRE (tracers1.m_info->m_monolithic_allocation);
+  REQUIRE (tracers2.m_info->m_monolithic_allocation);
+  REQUIRE (subtracers.m_info->m_monolithic_allocation);
 
-  // The bundled field in the tracers group should match the field we get from the field_mgr
-  REQUIRE (T1.is_aliasing(*tracers1.m_bundle));
-  REQUIRE (T2.is_aliasing(*tracers2.m_bundle));
+  // The monolithic field in the tracers group should match the field we get from the field_mgr
+  REQUIRE (T1.is_aliasing(*tracers1.m_monolithic_field));
+  REQUIRE (T2.is_aliasing(*tracers2.m_monolithic_field));
 
   // Require that the parent of each field is the "tracers" group
   auto qv1_p = qv1.get_header().get_parent();
@@ -650,10 +650,10 @@ TEST_CASE("tracers_bundle", "") {
   REQUIRE ((b2_p!=nullptr && b2_p.get()==&T2.get_header()));
   REQUIRE ((c2_p!=nullptr && c2_p.get()==&T2.get_header()));
 
-  // Require subtracers bundle is subfield of tracers
+  // Require subtracers monolith is subfield of tracers
   REQUIRE ((
-    subtracers.m_bundle->get_header().get_parent() != nullptr &&
-    subtracers.m_bundle->get_header().get_parent().get() == &T1.get_header()));
+    subtracers.m_monolithic_field->get_header().get_parent() != nullptr &&
+    subtracers.m_monolithic_field->get_header().get_parent().get() == &T1.get_header()));
 
   const auto idx_qv1 = tracers1.m_info->m_subview_idx.at("qv");
   const auto idx_a1 = tracers1.m_info->m_subview_idx.at("a");
@@ -726,7 +726,7 @@ TEST_CASE("tracers_bundle", "") {
 
   // Check that changing sub tracers change tracers group and individual tracers
   T1.deep_copy(0.0);
-  auto& sub_T1 = subtracers.m_bundle;
+  auto& sub_T1 = subtracers.m_monolithic_field;
   randomize(*sub_T1,engine,pdf);
   sub_T1->sync_to_host();
   auto sub_T1_h = sub_T1->get_strided_view<Real***,Host>();
@@ -739,28 +739,28 @@ TEST_CASE("tracers_bundle", "") {
   }
 
   // Check that the field ptrs stored in the group are the same as the fields
-  auto qv1_ptr = tracers1.m_fields.at("qv");
-  auto a1_ptr = tracers1.m_fields.at("a");
-  auto b1_ptr = tracers1.m_fields.at("b");
-  auto c1_ptr = tracers1.m_fields.at("c");
+  auto qv1_ptr = tracers1.m_individual_fields.at("qv");
+  auto a1_ptr = tracers1.m_individual_fields.at("a");
+  auto b1_ptr = tracers1.m_individual_fields.at("b");
+  auto c1_ptr = tracers1.m_individual_fields.at("c");
 
   REQUIRE (qv1_ptr->is_aliasing(qv1));
   REQUIRE (a1_ptr->is_aliasing(a1));
   REQUIRE (b1_ptr->is_aliasing(b1));
   REQUIRE (c1_ptr->is_aliasing(c1));
 
-  auto qv2_ptr = tracers2.m_fields.at("qv");
-  auto a2_ptr = tracers2.m_fields.at("a");
-  auto b2_ptr = tracers2.m_fields.at("b");
-  auto c2_ptr = tracers2.m_fields.at("c");
+  auto qv2_ptr = tracers2.m_individual_fields.at("qv");
+  auto a2_ptr = tracers2.m_individual_fields.at("a");
+  auto b2_ptr = tracers2.m_individual_fields.at("b");
+  auto c2_ptr = tracers2.m_individual_fields.at("c");
 
   REQUIRE (qv2_ptr->is_aliasing(qv2));
   REQUIRE (a2_ptr->is_aliasing(a2));
   REQUIRE (b2_ptr->is_aliasing(b2));
   REQUIRE (c2_ptr->is_aliasing(c2));
 
-  b1_ptr = subtracers.m_fields.at("b");
-  c1_ptr = subtracers.m_fields.at("c");
+  b1_ptr = subtracers.m_individual_fields.at("b");
+  c1_ptr = subtracers.m_individual_fields.at("c");
   REQUIRE (b1_ptr->is_aliasing(b1));
   REQUIRE (c1_ptr->is_aliasing(c1));
 }

@@ -86,7 +86,7 @@ public:
 
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_packs), [&] (const Int& k) {
 
-        
+
         cldfrac_liq_prev(i,k)=cldfrac_liq(i,k);
 
         // Inverse of Exner. In non-rel builds, assert that exner != 0 when in range before computing.
@@ -98,10 +98,10 @@ public:
         tke(i,k) = ekat::max(mintke, tke(i,k));
 
         // Tracers are updated as a group. The tracers tke and qc act as separate inputs to shoc_main()
-        // and are therefore updated differently to the bundled tracers. Here, we make a copy if each
-        // of these tracers and pass to shoc_main() so that changes to the tracer group does not alter
-        // tke or qc  values. Then during post processing, we copy back correct values of tke and qc
-        // to tracer group in postprocessing.
+        // and are therefore updated differently to the tracers group's monolithic field. Here, we make
+        // a copy if each of these tracers and pass to shoc_main() so that changes to the tracer group
+        // does not alter tke or qc  values. Then during post processing, we copy back correct values of
+        // tke and qc to tracer group in postprocessing.
         // TODO: remove *_copy views once SHOC can request a subset of tracers.
         tke_copy(i,k) = tke(i,k);
         qc_copy(i,k)  = qc(i,k);
