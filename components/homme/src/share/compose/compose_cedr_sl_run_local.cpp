@@ -5,19 +5,19 @@
 namespace homme {
 namespace sl {
 
-template <int np_,
+template <int np_, int limiter_option_,
           typename CV1, typename CV3,
           typename QV4, typename CQV4,
           typename V3, typename V4>
 COMPOSE_INLINE_FUNCTION
 void solve_local (const Int ie, const Int k, const Int q,
                   const Int np1, const Int n1_qdp, const Int np,
-                  const bool scalar_bounds, const Int limiter_option,
+                  const bool scalar_bounds,
                   const CV1& spheremp, const CV3& dp3d_c,
                   const QV4& q_min, const CQV4& q_max,
                   const Real Qm, V4& qdp_c, V3& q_c) {
   cedr_kernel_assert(np == np_);
-  static const Int np2 = np_*np_;
+  constexpr Int np2 = np_*np_;
 
   Real wa[np2], qlo[np2], qhi[np2], y[np2], x[np2];
   Real rhom = 0;
@@ -48,7 +48,7 @@ void solve_local (const Int ie, const Int k, const Int q,
     // = 0. 2-norm minimization is the same in spirit as limiter = 8,
     // but it assuredly achieves the first-order optimality conditions
     // whereas limiter 8 does not.
-    if (limiter_option == 8)
+    if (limiter_option_ == 8)
       cedr::local::solve_1eq_bc_qp(np2, wa, wa, Qm, qlo, qhi, y, x);
     else {
       // We need to use *some* limiter; if 8 isn't chosen, default to
@@ -71,7 +71,7 @@ void solve_local (const Int ie, const Int k, const Int q,
 #endif
     for (Int trial = 0; trial < 3; ++trial) {
       int info;
-      if (limiter_option == 8) {
+      if (limiter_option_ == 8) {
         info = cedr::local::solve_1eq_bc_qp(
           np2, wa, wa, Qm, qlo, qhi, y, x);
         if (info == 1) info = 0;
@@ -158,14 +158,14 @@ Int vertical_caas_backup (const Int n, Real* rhom,
   return status;
 }
 
-template <int np_, typename MT, typename CDRT>
+template <int np_, int limiter_option_, bool caas_in_suplev_,
+          typename MT, typename CDRT>
 void run_local (CDR<MT>& cdr, CDRT* cedr_cdr_p,
                 const Data& d, Real* q_min_r, const Real* q_max_r,
-                const Int nets, const Int nete, const bool scalar_bounds,
-                const Int limiter_option) {
+                const Int nets, const Int nete, const bool scalar_bounds) {
   const auto& ta = *d.ta;
   cedr_assert(ta.np == np_);
-  static const Int np = np_, np2 = np_*np_;
+  constexpr Int np = np_, np2 = np_*np_;
   const Int nlev = ta.nlev, qsize = ta.qsize, nlevwrem = cdr.nsuplev*cdr.nsublev;
 #ifdef COMPOSE_PORT
   const auto& q_min = ta.q_min;
@@ -185,7 +185,7 @@ void run_local (CDR<MT>& cdr, CDRT* cedr_cdr_p,
   const Int nsublev = cdr.nsublev;
   const Int nsuplev = cdr.nsuplev;
   const auto cdr_over_super_levels = cdr.cdr_over_super_levels;
-  const auto caas_in_suplev = cdr.caas_in_suplev;
+  cedr_assert(caas_in_suplev_ == cdr.caas_in_suplev);
   const typename CDRT::DeviceOp
 #ifndef COMPOSE_PORT
     &
@@ -211,7 +211,7 @@ void run_local (CDR<MT>& cdr, CDRT* cedr_cdr_p,
 #endif
     const Int k0 = nsublev*spli;
     const Int ti = cdr_over_super_levels ? q : spli*qsize + q;
-    if (caas_in_suplev) {
+    if (caas_in_suplev_) {
       const auto ie_idx = (cdr_over_super_levels ?
                            nsuplev*ie + spli :
                            ie);
@@ -265,9 +265,9 @@ void run_local (CDR<MT>& cdr, CDRT* cedr_cdr_p,
       // Redistribute mass in the horizontal direction of each level.
       for (Int i = 0; i < n; ++i) {
         const Int k = k0 + i;
-        solve_local<np_>(ie, k, q, np1, n1_qdp, np,
-                         scalar_bounds, limiter_option,
-                         spheremp1, dp3d_c1, q_min, q_max, Qm[i], qdp_c1, q_c1);
+        solve_local<np_,limiter_option_>(
+          ie, k, q, np1, n1_qdp, np, scalar_bounds, spheremp1, dp3d_c1, q_min,
+          q_max, Qm[i], qdp_c1, q_c1);
       }
     } else {
       for (Int sbli = 0; sbli < nsublev; ++sbli) {
@@ -278,9 +278,9 @@ void run_local (CDR<MT>& cdr, CDRT* cedr_cdr_p,
                              nsublev*ie + sbli);
         const auto lci = ie2lci[ie_idx];
         const Real Qm = cedr_cdr.get_Qm(lci, ti);
-        solve_local<np_>(ie, k, q, np1, n1_qdp, np,
-                         scalar_bounds, limiter_option,
-                         spheremp1, dp3d_c1, q_min, q_max, Qm, qdp_c1, q_c1);
+        solve_local<np_,limiter_option_>(
+          ie, k, q, np1, n1_qdp, np, scalar_bounds, spheremp1, dp3d_c1, q_min,
+          q_max, Qm, qdp_c1, q_c1);
       }
     }
 #ifdef COMPOSE_PORT
@@ -290,6 +290,29 @@ void run_local (CDR<MT>& cdr, CDRT* cedr_cdr_p,
 #else
   }}
 #endif
+}
+
+template <int np_, typename MT, typename CDRT>
+void run_local (CDR<MT>& cdr, CDRT* cedr_cdr_p,
+                const Data& d, Real* q_min_r, const Real* q_max_r,
+                const Int nets, const Int nete, const bool scalar_bounds,
+                const int limiter_option) {
+  if (limiter_option == 8) {
+    if (cdr.caas_in_suplev)
+      run_local<np_, 8, true >(cdr, cedr_cdr_p, d, q_min_r, q_max_r, nets, nete,
+                               scalar_bounds);
+    else
+      run_local<np_, 8, false>(cdr, cedr_cdr_p, d, q_min_r, q_max_r, nets, nete,
+                               scalar_bounds);
+
+  } else {
+    if (cdr.caas_in_suplev)
+      run_local<np_, 9, true >(cdr, cedr_cdr_p, d, q_min_r, q_max_r, nets, nete,
+                               scalar_bounds);
+    else
+      run_local<np_, 9, false>(cdr, cedr_cdr_p, d, q_min_r, q_max_r, nets, nete,
+                               scalar_bounds);    
+  }
 }
 
 template <typename MT>

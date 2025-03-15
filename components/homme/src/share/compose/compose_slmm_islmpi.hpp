@@ -144,7 +144,7 @@ struct FixedCapList {
     Int n_read = -1;
     for (;;) {
       n_read = *n_vol;
-      if (ko::atomic_compare_exchange_strong(n_vol, n_read, n_read+1))
+      if (n_read == ko::atomic_compare_exchange(n_vol, n_read, n_read+1))
         break;
     }
     return d_[n_read];
@@ -229,6 +229,16 @@ struct FixedCapList {
     ufcl.n_ = n_;
 #endif
     return ufcl;
+  }
+
+  // Support cleanup of view of views, where FixedCapList is the outer view.
+  SLMM_KIF void nullify () {
+#ifdef COMPOSE_PORT
+    n_ = NT(nullptr);
+#else
+    set_n(0);
+#endif
+    d_ = Array(nullptr, 0);
   }
 
 private:
@@ -512,6 +522,37 @@ struct RemoteItem {
   short lev, k;
 };
 
+template <typename Datatype, typename DT>
+using Array = ko::View<Datatype, siqk::Layout, DT>;
+
+// The comm and real data associated with an element patch, the set of
+// elements surrounding an owned cell.
+template <typename DT>
+struct ElemData {
+  GidRank* me;                      // the owned cell
+  FixedCapList<GidRank, DT> nbrs;   // the cell's neighbors (but including me)
+  Int nin1halo;                     // nbrs[0:n]
+  FixedCapList<OwnItem, DT> own;    // points whose q are computed with own rank's data
+  FixedCapList<RemoteItem, DT> rmt; // points computed by a remote rank's data
+  Array<Int**, DT> src;             // src(lev,k) = get_src_cell
+  Array<Real**[2], DT> q_extrema;
+  const Real* qdp, * dp;  // the owned cell's data
+  Real* q;
+};
+
+template <typename DT>
+void nullify (ElemData<DT>& ed) {
+  ed.me = nullptr;
+  ed.nbrs.nullify();
+  ed.own.nullify();
+  ed.rmt.nullify();
+  ed.src = decltype(ed.src)(nullptr, 0, 0);
+  ed.q_extrema = decltype(ed.q_extrema)(nullptr, 0, 0);
+  ed.qdp = nullptr;
+  ed.dp = nullptr;
+  ed.q = nullptr;
+}
+
 // Meta and bulk data for the interpolation SL MPI communication pattern.
 template <typename MT = ko::MachineTraits>
 struct IslMpi {
@@ -524,27 +565,10 @@ struct IslMpi {
 
   typedef std::shared_ptr<IslMpi> Ptr;
 
-  template <typename Datatype, typename DT>
-  using Array = ko::View<Datatype, siqk::Layout, DT>;
   template <typename Datatype>
   using ArrayH = ko::View<Datatype, siqk::Layout, HDT>;
   template <typename Datatype>
   using ArrayD = ko::View<Datatype, siqk::Layout, DDT>;
-
-  // The comm and real data associated with an element patch, the set of
-  // elements surrounding an owned cell.
-  template <typename DT>
-  struct ElemData {
-    GidRank* me;                      // the owned cell
-    FixedCapList<GidRank, DT> nbrs;   // the cell's neighbors (but including me)
-    Int nin1halo;                     // nbrs[0:n]
-    FixedCapList<OwnItem, DT> own;    // points whose q are computed with own rank's data
-    FixedCapList<RemoteItem, DT> rmt; // points computed by a remote rank's data
-    Array<Int**, DT> src;             // src(lev,k) = get_src_cell
-    Array<Real**[2], DT> q_extrema;
-    const Real* qdp, * dp;  // the owned cell's data
-    Real* q;
-  };
 
   typedef ElemData<HDT> ElemDataH;
   typedef ElemData<DDT> ElemDataD;
@@ -562,7 +586,9 @@ struct IslMpi {
 
   ElemDataListH ed_h; // this rank's owned cells, indexed by LID
   ElemDataListD ed_d;
-  typename ElemDataListD::Mirror ed_m; // handle managed allocs
+  // Host-side view of device views to retain persistent borrows of the device
+  // memory.
+  typename ElemDataListD::Mirror ed_m;
 
   const typename TracerArrays<MT>::Ptr tracer_arrays;
 
@@ -636,6 +662,12 @@ struct IslMpi {
       }
     }
 #endif
+    // Nullify view of views on host in serial to prevent deadlock in Kokkos
+    // version >= 4.4.
+    for (int i = 0; i < ed_h.n(); ++i)
+      nullify(ed_h(i));
+    for (int i = 0; i < ed_m.n(); ++i)
+      nullify(ed_m(i));
   }
 };
 

@@ -23,7 +23,7 @@ namespace scream
 */
 
 // enum to track how exported fields will be set.
-enum ExportType {
+enum ExportType:int {
   FROM_MODEL =  0,  // Variable will be derived from atmosphere model state
   FROM_FILE  =  1,  // Variable will be set given data from a file
   CONSTANT   =  2   // Set variable to a constant value
