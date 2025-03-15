@@ -125,7 +125,7 @@ void SPA::initialize_impl (const RunType /* run_type */)
 // =========================================================================================
 void SPA::run_impl (const double dt)
 {
-  m_data_interpolation->run(timestamp()+dt);
+  m_data_interpolation->run(timestamp());
 }
 
 } // namespace scream
