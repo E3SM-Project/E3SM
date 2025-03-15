@@ -3245,7 +3245,7 @@ radiation by the canopy.</p>
 <p>The upwelling longwave radiation from the ground is</p>
 <div class="arithmatex">\[
 \begin{eqnarray}
-L_g^\uparrow &amp;=&amp; (1 - \epsilon_g) L_v^\downarrow + \epsilon_g \sigma T_g^4 \\[0.5em]
+L_g^\uparrow &amp;=&amp; (1 - \epsilon_g) L_v^\downarrow + \epsilon_g \sigma T_g^4 \nonumber\\[0.5em]
 &amp;=&amp; (1 - \epsilon_g)(1 - \epsilon_v)L_{atm}^\downarrow + (1 - \epsilon_g)\epsilon_v \sigma T_v^4 + \epsilon_g \sigma T_g^4
 \end{eqnarray}
 \]</div>
@@ -3270,7 +3270,8 @@ positive value towards the atmosphere, is</p>
 <div class="arithmatex">\[
 \begin{eqnarray}
 \overrightarrow{L}_v &amp; = &amp;  2 \epsilon_v T_v^4 - \epsilon_v L_v^\uparrow - \epsilon_v L_{atm}^\downarrow \nonumber\\[0.5em]
-&amp; = &amp; 2 \epsilon_v T_v^4  - \epsilon_v \left[ (1 - \epsilon_g)(1 - \epsilon_v)L_{atm}^\downarrow + (1 - \epsilon_g)\epsilon_v \sigma T_v^4 + \epsilon_g \sigma T_g^4 \right] - \epsilon_v L_{atm}^\downarrow \nonumber\\[0.5em]
+&amp; = &amp; 2 \epsilon_v T_v^4  - \epsilon_v \left[ (1 - \epsilon_g)(1 - \epsilon_v)L_{atm}^\downarrow + (1 - \epsilon_g)\epsilon_v \sigma T_v^4 + \epsilon_g \sigma T_g^4 \right] \nonumber\\[0.5em]
+&amp; &amp; - \epsilon_v L_{atm}^\downarrow \nonumber\\[0.5em]
 &amp; = &amp; \left[ 2 - \epsilon_v (1 - \epsilon_g)\right] \epsilon_v \sigma T_v^4 - \epsilon_v \epsilon_g \sigma T_g^4 - \epsilon_v \left[ 1 + (1 - \epsilon_g)(1 - \epsilon_v) \right] L_{atm}^\downarrow
 \end{eqnarray}
 \]</div>
@@ -3318,7 +3319,7 @@ ELM is computed only at <span class="arithmatex">\((n+1)\)</span>-th time step a
 G_{soi}^{n+1} &amp;=&amp; G_{soi}^{n} + \dfrac{\partial G}{\partial T_{soi,1}}
 \left(T_{soi,1}^{n+1} - T_{soi,1}^n\right) \nonumber \\[0.5em]
 &amp; = &amp; \overrightarrow{S}_{soi} - \left[ \epsilon_{soi} \sigma (T_{soi,1}^{n})^4 + 4 \epsilon_{soi} \sigma (T_{soi,1}^{n})^3 \Delta T_{soi}^{n+1} + \epsilon_{soi}L_{atm}^\downarrow \right] \nonumber \\[0.5em]
-&amp; &amp; - \left[ H_{soi}^n + \dfrac{\partial H}{\partial T_{soi,1}} \Delta T_{soi}^{n+1} \right] \\[0.5em]
+&amp; &amp; - \left[ H_{soi}^n + \dfrac{\partial H}{\partial T_{soi,1}} \Delta T_{soi}^{n+1} \right] \nonumber\\[0.5em]
 &amp; &amp; - \left[ \lambda E_{soi}^n + \dfrac{\partial \lambda E}{\partial T_{soi,1}} \Delta T_{soi}^{n+1} \right] \nonumber \\[0.5em]
 &amp; = &amp; \overrightarrow{S}_{soi} - \overrightarrow{L}_g^{n+1} - H_{soi}^{n+1} - \lambda E_{soi}^{n+1} \label{eqn:G_bc_discretized}
 \end{eqnarray}
