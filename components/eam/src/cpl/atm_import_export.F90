@@ -11,7 +11,7 @@ contains
     use cam_cpl_indices
     use camsrfexch,     only: cam_in_t
     use phys_grid ,     only: get_ncols_p
-    use ppgrid    ,     only: begchunk, endchunk       
+    use ppgrid    ,     only: begchunk, endchunk
     use shr_const_mod,  only: shr_const_stebol
     use seq_drydep_mod, only: n_drydep
     use co2_cycle     , only: c_i, co2_readFlux_ocn, co2_readFlux_fuel
@@ -27,7 +27,7 @@ contains
     logical, optional, intent(in) :: restart_init
     !
     ! Local variables
-    !		
+    !
     integer            :: i,lat,n,c,ig  ! indices
     integer            :: ncols         ! number of columns
     logical, save      :: first_time = .true.
@@ -38,7 +38,7 @@ contains
     logical :: overwrite_flds
     !-----------------------------------------------------------------------
     overwrite_flds = .true.
-    ! don't overwrite fields if invoked during the initialization phase 
+    ! don't overwrite fields if invoked during the initialization phase
     ! of a 'continue' or 'branch' run type with data from .rs file
     if (present(restart_init)) overwrite_flds = .not. restart_init
 
@@ -46,7 +46,7 @@ contains
 
     ig=1
     do c=begchunk,endchunk
-       ncols = get_ncols_p(c) 
+       ncols = get_ncols_p(c)
 
        ! initialize constituent surface fluxes to zero
        ! NOTE:overwrite_flds is .FALSE. for the first restart
@@ -55,51 +55,51 @@ contains
 
        ! +++ Update from 2022-09 +++
        ! For some of the new process coupling options in EAM, some of the constituents'
-       ! cam_in%cflx are used not in tphysac but in the tphysbc call of the next time step. 
+       ! cam_in%cflx are used not in tphysac but in the tphysbc call of the next time step.
        ! This means for an exact restart, we also need to write out cam_in%cflx(:,2:)
-       ! and then read them back in. Because the present subroutine is called after 
-       ! the cflx variables are read in in the subroutine read_restart_physics 
-       ! in physics/cam/restart_physics.F90, we need to move the following line 
+       ! and then read them back in. Because the present subroutine is called after
+       ! the cflx variables are read in in the subroutine read_restart_physics
+       ! in physics/cam/restart_physics.F90, we need to move the following line
        ! to that read_restart_physics to avoid incorrectly zeroing out the needed values.
        !
-       !cam_in(c)%cflx(:,2:) = 0._r8 
+       !cam_in(c)%cflx(:,2:) = 0._r8
        !
        ! === Update from 2022-09 ===
-                                               
-       do i =1,ncols                                                               
+
+       do i =1,ncols
           if (overwrite_flds) then
              ! Prior to this change, "overwrite_flds" was always .true. therefore wsx and wsy were always updated.
-             ! Now, overwrite_flds is .false. for the first time step of the restart run. Move wsx and wsy out of 
+             ! Now, overwrite_flds is .false. for the first time step of the restart run. Move wsx and wsy out of
              ! this if-condition so that they are still updated everytime irrespective of the value of overwrite_flds.
 
-             ! Move lhf to this if-block so that it is not overwritten to ensure BFB restarts when qneg4 correction 
+             ! Move lhf to this if-block so that it is not overwritten to ensure BFB restarts when qneg4 correction
              ! occurs at the restart time step
              ! Modified by Wuyin Lin
-             cam_in(c)%shf(i)    = -x2a(index_x2a_Faxx_sen, ig)     
-             cam_in(c)%cflx(i,1) = -x2a(index_x2a_Faxx_evap,ig)                
-             cam_in(c)%lhf(i)    = -x2a(index_x2a_Faxx_lat, ig)     
+             cam_in(c)%shf(i)    = -x2a(index_x2a_Faxx_sen, ig)
+             cam_in(c)%cflx(i,1) = -x2a(index_x2a_Faxx_evap,ig)
+             cam_in(c)%lhf(i)    = -x2a(index_x2a_Faxx_lat, ig)
           endif
 
           if (index_x2a_Faoo_h2otemp /= 0) then
              cam_in(c)%h2otemp(i) = -x2a(index_x2a_Faoo_h2otemp,ig)
           end if
-           
-          cam_in(c)%wsx(i)    = -x2a(index_x2a_Faxx_taux,ig)     
-          cam_in(c)%wsy(i)    = -x2a(index_x2a_Faxx_tauy,ig)     
-          cam_in(c)%lwup(i)      = -x2a(index_x2a_Faxx_lwup,ig)    
-          cam_in(c)%asdir(i)     =  x2a(index_x2a_Sx_avsdr, ig)  
-          cam_in(c)%aldir(i)     =  x2a(index_x2a_Sx_anidr, ig)  
-          cam_in(c)%asdif(i)     =  x2a(index_x2a_Sx_avsdf, ig)  
+
+          cam_in(c)%wsx(i)    = -x2a(index_x2a_Faxx_taux,ig)
+          cam_in(c)%wsy(i)    = -x2a(index_x2a_Faxx_tauy,ig)
+          cam_in(c)%lwup(i)      = -x2a(index_x2a_Faxx_lwup,ig)
+          cam_in(c)%asdir(i)     =  x2a(index_x2a_Sx_avsdr, ig)
+          cam_in(c)%aldir(i)     =  x2a(index_x2a_Sx_anidr, ig)
+          cam_in(c)%asdif(i)     =  x2a(index_x2a_Sx_avsdf, ig)
           cam_in(c)%aldif(i)     =  x2a(index_x2a_Sx_anidf, ig)
-          cam_in(c)%ts(i)        =  x2a(index_x2a_Sx_t,     ig)  
-          cam_in(c)%sst(i)       =  x2a(index_x2a_So_t,     ig)             
-          cam_in(c)%snowhland(i) =  x2a(index_x2a_Sl_snowh, ig)  
-          cam_in(c)%snowhice(i)  =  x2a(index_x2a_Si_snowh, ig)  
-          cam_in(c)%tref(i)      =  x2a(index_x2a_Sx_tref,  ig)  
+          cam_in(c)%ts(i)        =  x2a(index_x2a_Sx_t,     ig)
+          cam_in(c)%sst(i)       =  x2a(index_x2a_So_t,     ig)
+          cam_in(c)%snowhland(i) =  x2a(index_x2a_Sl_snowh, ig)
+          cam_in(c)%snowhice(i)  =  x2a(index_x2a_Si_snowh, ig)
+          cam_in(c)%tref(i)      =  x2a(index_x2a_Sx_tref,  ig)
           cam_in(c)%qref(i)      =  x2a(index_x2a_Sx_qref,  ig)
           cam_in(c)%u10(i)       =  x2a(index_x2a_Sx_u10,   ig)
           cam_in(c)%u10withgusts(i) = x2a(index_x2a_Sx_u10withgusts, ig)
-          cam_in(c)%icefrac(i)   =  x2a(index_x2a_Sf_ifrac, ig)  
+          cam_in(c)%icefrac(i)   =  x2a(index_x2a_Sf_ifrac, ig)
           cam_in(c)%ocnfrac(i)   =  x2a(index_x2a_Sf_ofrac, ig)
           cam_in(c)%landfrac(i)  =  x2a(index_x2a_Sf_lfrac, ig)
           if ( associated(cam_in(c)%ram1) ) &
@@ -160,22 +160,22 @@ contains
        if (co2_readFlux_fuel) then
           call co2_time_interp_fuel
        end if
-       
+
        ! from ocn : data read in or from coupler or zero
        ! from fuel: data read in or zero
        ! from lnd : through coupler or zero
        do c=begchunk,endchunk
-          ncols = get_ncols_p(c)                                                 
-          do i=1,ncols                                                               
-             
-             ! all co2 fluxes in unit kgCO2/m2/s ! co2 flux from ocn 
+          ncols = get_ncols_p(c)
+          do i=1,ncols
+
+             ! all co2 fluxes in unit kgCO2/m2/s ! co2 flux from ocn
              if (index_x2a_Faoo_fco2_ocn /= 0) then
                 cam_in(c)%cflx(i,c_i(1)) = cam_in(c)%fco2_ocn(i)
-             else if (co2_readFlux_ocn) then 
+             else if (co2_readFlux_ocn) then
                 ! convert from molesCO2/m2/s to kgCO2/m2/s
 ! The below section involves a temporary workaround for fluxes from data (read in from a file)
 ! There is an issue with infld that does not allow time-varying 2D files to be read correctly.
-! The work around involves adding a singleton 3rd dimension offline and reading the files as 
+! The work around involves adding a singleton 3rd dimension offline and reading the files as
 ! 3D fields.  Once this issue is corrected, the old implementation can be reinstated.
 ! This is the case for both data_flux_ocn and data_flux_fuel
 !++BEH  vvv old implementation vvv
@@ -190,7 +190,7 @@ contains
              else
                 cam_in(c)%cflx(i,c_i(1)) = 0._r8
              end if
-             
+
              ! co2 flux from fossil fuel
              if (co2_readFlux_fuel) then
 !++BEH  vvv old implementation vvv
@@ -201,14 +201,14 @@ contains
              else
                 cam_in(c)%cflx(i,c_i(2)) = 0._r8
              end if
-             
+
              ! co2 flux from land (cpl already multiplies flux by land fraction)
              if (index_x2a_Fall_fco2_lnd /= 0) then
                 cam_in(c)%cflx(i,c_i(3)) = cam_in(c)%fco2_lnd(i)
              else
                 cam_in(c)%cflx(i,c_i(3)) = 0._r8
              end if
-             
+
              ! merged co2 flux
              cam_in(c)%cflx(i,c_i(4)) = cam_in(c)%cflx(i,c_i(1)) + &
                                         cam_in(c)%cflx(i,c_i(2)) + &
@@ -217,7 +217,7 @@ contains
        end do
     end if
     !
-    ! if first step, determine longwave up flux from the surface temperature 
+    ! if first step, determine longwave up flux from the surface temperature
     !
     if (first_time) then
        if (is_first_step()) then
@@ -240,20 +240,19 @@ contains
     !-------------------------------------------------------------------
     use camsrfexch, only: cam_out_t
     use phys_grid , only: get_ncols_p
-    use ppgrid    , only: begchunk, endchunk       
+    use ppgrid    , only: begchunk, endchunk
     use cam_cpl_indices
     use phys_control, only: phys_getopts
     use lnd_infodata, only: precip_downscaling_method
     !
     ! Arguments
     !
-    type(cam_out_t), intent(in)    :: cam_out(begchunk:endchunk) 
+    type(cam_out_t), intent(in)    :: cam_out(begchunk:endchunk)
     real(r8)       , intent(inout) :: a2x(:,:)
     !
     ! Local variables
     !
-    integer :: avsize, avnat
-    integer :: i,m,c,n,ig       ! indices
+    integer :: i,c,n,ig         ! indices
     integer :: ncols            ! Number of columns
     logical :: linearize_pbl_winds
     !-----------------------------------------------------------------------
@@ -269,8 +268,8 @@ contains
        ncols = get_ncols_p(c)
        do i=1,ncols
           a2x(index_a2x_Sa_pslv   ,ig) = cam_out(c)%psl(i)
-          a2x(index_a2x_Sa_z      ,ig) = cam_out(c)%zbot(i)   
-          a2x(index_a2x_Sa_u      ,ig) = cam_out(c)%ubot(i)   
+          a2x(index_a2x_Sa_z      ,ig) = cam_out(c)%zbot(i)
+          a2x(index_a2x_Sa_u      ,ig) = cam_out(c)%ubot(i)
           a2x(index_a2x_Sa_v      ,ig) = cam_out(c)%vbot(i)
           if (linearize_pbl_winds) then
              a2x(index_a2x_Sa_wsresp ,ig) = cam_out(c)%wsresp(i)
@@ -281,26 +280,26 @@ contains
           if (index_a2x_Sa_ugust /= 0) then
              a2x(index_a2x_Sa_ugust  ,ig) = cam_out(c)%ugust(i)
           end if
-          a2x(index_a2x_Sa_tbot   ,ig) = cam_out(c)%tbot(i)   
-          a2x(index_a2x_Sa_ptem   ,ig) = cam_out(c)%thbot(i)  
-          a2x(index_a2x_Sa_pbot   ,ig) = cam_out(c)%pbot(i)   
-          a2x(index_a2x_Sa_shum   ,ig) = cam_out(c)%qbot(i,1) 
-	  a2x(index_a2x_Sa_dens   ,ig) = cam_out(c)%rho(i)
+          a2x(index_a2x_Sa_tbot   ,ig) = cam_out(c)%tbot(i)
+          a2x(index_a2x_Sa_ptem   ,ig) = cam_out(c)%thbot(i)
+          a2x(index_a2x_Sa_pbot   ,ig) = cam_out(c)%pbot(i)
+          a2x(index_a2x_Sa_shum   ,ig) = cam_out(c)%qbot(i,1)
+          a2x(index_a2x_Sa_dens   ,ig) = cam_out(c)%rho(i)
 
           if (trim(adjustl(precip_downscaling_method)) == "FNM") then
              !if the land model's precip downscaling method is FNM, export uovern to the coupler
              a2x(index_a2x_Sa_uovern ,ig) = cam_out(c)%uovern(i)
           end if
-          a2x(index_a2x_Faxa_swnet,ig) = cam_out(c)%netsw(i)      
-          a2x(index_a2x_Faxa_lwdn ,ig) = cam_out(c)%flwds(i)  
+          a2x(index_a2x_Faxa_swnet,ig) = cam_out(c)%netsw(i)
+          a2x(index_a2x_Faxa_lwdn ,ig) = cam_out(c)%flwds(i)
           a2x(index_a2x_Faxa_rainc,ig) = (cam_out(c)%precc(i)-cam_out(c)%precsc(i))*1000._r8
           a2x(index_a2x_Faxa_rainl,ig) = (cam_out(c)%precl(i)-cam_out(c)%precsl(i))*1000._r8
           a2x(index_a2x_Faxa_snowc,ig) = cam_out(c)%precsc(i)*1000._r8
           a2x(index_a2x_Faxa_snowl,ig) = cam_out(c)%precsl(i)*1000._r8
-          a2x(index_a2x_Faxa_swndr,ig) = cam_out(c)%soll(i)   
-          a2x(index_a2x_Faxa_swvdr,ig) = cam_out(c)%sols(i)   
-          a2x(index_a2x_Faxa_swndf,ig) = cam_out(c)%solld(i)  
-          a2x(index_a2x_Faxa_swvdf,ig) = cam_out(c)%solsd(i)  
+          a2x(index_a2x_Faxa_swndr,ig) = cam_out(c)%soll(i)
+          a2x(index_a2x_Faxa_swvdr,ig) = cam_out(c)%sols(i)
+          a2x(index_a2x_Faxa_swndf,ig) = cam_out(c)%solld(i)
+          a2x(index_a2x_Faxa_swvdf,ig) = cam_out(c)%solsd(i)
 
           ! aerosol deposition fluxes
           a2x(index_a2x_Faxa_bcphidry,ig) = cam_out(c)%bcphidry(i)
@@ -328,7 +327,7 @@ contains
           ig=ig+1
        end do
     end do
-    
-  end subroutine atm_export 
+
+  end subroutine atm_export
 
 end module atm_import_export
