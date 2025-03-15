@@ -29,6 +29,7 @@ sys.path.append(os.path.join(_CIMEROOT, "CIME", "Tools"))
 # Cime imports
 from standard_script_setup import * # pylint: disable=wildcard-import
 from CIME.utils import expect, safe_copy, SharedArea
+from CIME.test_status import TestStatus, RUN_PHASE
 
 logger = logging.getLogger(__name__) # pylint: disable=undefined-variable
 
@@ -170,6 +171,9 @@ def perform_consistency_checks(case, xml):
     rrtmgp = find_node(xml,"rrtmgp")
     rest_opt = case.get_value("REST_OPTION")
     is_test = case.get_value("TEST")
+    caseraw = case.get_value("CASE")
+    caseroot = case.get_value("CASEROOT")
+    casebaseid  = case.get_value("CASEBASEID")
     if rrtmgp is not None and rest_opt is not None and rest_opt not in ["never","none"]:
         rest_n = int(case.get_value("REST_N"))
         rad_freq = int(find_node(rrtmgp,"rad_frequency").text)
@@ -177,10 +181,17 @@ def perform_consistency_checks(case, xml):
         atm_tstep = 86400 / atm_ncpl
         rad_tstep = atm_tstep * rad_freq
 
-
         # Some tests (ERS) make late (run-phase) changes, so we cannot validate restart
-        # settings here.
-        if rad_freq==1 or is_test:
+        # settings until RUN phase
+        is_test_not_yet_run = False
+        if is_test:
+            test_name = casebaseid if casebaseid is not None else caseraw
+            ts = TestStatus(test_dir=caseroot, test_name=test_name)
+            phase = ts.get_latest_phase()
+            if phase != RUN_PHASE:
+                is_test_not_yet_run = True
+
+        if rad_freq==1 or is_test_not_yet_run:
             pass
         elif rest_opt in ["nsteps", "nstep"]:
             expect (rest_n % rad_freq == 0,
