@@ -865,6 +865,35 @@
       compsets.</desc>
   </entry>
 
+  <entry id="OCN_GLC_ISMF_COUPLING">
+    <type>char</type>
+    <valid_values>none,data_mpaso,data_mali,internal_mpaso,tf,coupler</valid_values>
+    <default_value>none</default_value>
+    <values match="last">
+       <value compset="MPASO_">none</value>
+       <value compset="_MPASO%.*DISMF">data_mpaso</value>
+       <value compset="_MALI">data_mali</value>
+       <value compset="_MPASO%.*PISMF.*_SGLC">internal_mpaso</value>
+       <value compset="_MPASO.*_MALI">tf</value>
+       <value compset="_MPASO%.*PISMF.*_MALI">coupler</value>
+    </values>
+    <group>case_comp</group>
+    <file>env_case.xml</file>
+    <desc>How OCN/GLC ice-shelf melt flux (ISMF) coupling is calculated:
+      'none': ISMF is not represented in MPAS-O or MALI
+      'data_mpaso': ISMF is represented as a data field in MPAS-O;
+            ISMF is not represented in MALI or MALI is inactive
+      'data_mali': ISMF is represented as a data field in MALI;
+            ISMF is not represented in MPAS-O or MPAS-O is inactive
+      'internal_mpaso': ISMF is calculated prognostically in MPAS-O;
+            ISMF is not represented in MALI or MALI is inactive
+      'tf': MPAS-O passes 3d thermal forcing to MALI and MALI calculates ISMF
+             and passes it back to MPAS-O
+      'coupler': ISMF is calculated in the coupler on the MALI
+             grid and at the MPAS-O coupling interval, and then passed to both
+             MPAS-O and MALI</desc>
+  </entry>
+
   <entry id="CCSM_GCOST">
     <type>integer</type>
     <valid_values></valid_values>
