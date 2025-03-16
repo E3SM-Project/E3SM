@@ -56,6 +56,9 @@ OPTIONS
      -mali_prognostic_mode  whether MALI should be prognostic, static, or data
                            Options are: FALSE, TRUE
      -glc_nzoc             number of z-ocean classes [0 | 4 | 30]
+     -ocn_glc_ismf_coupling  methods for ocn/glc ice-shelf melt flux coupling
+                             ['none' | 'data_mpaso' | 'data_mali' | 'internal_mpaso' |
+                             'tf' | 'coupler']
 
 NOTE: The precedence for setting the values of namelist variables is (highest to lowest):
       1. namelist values set by specific command-line options, i.e. (none right now)
@@ -102,6 +105,7 @@ my %opts = ( help              => 0,
              ninst_glc         => 0,
              mali_prognostic_mode => undef,
              glc_nzoc          => 0,
+             ocn_glc_ismf_coupling => undef,
            );
 
 GetOptions(
@@ -122,6 +126,7 @@ GetOptions(
     "ninst_glc=i"         => \$opts{'ninst_glc'},
     "mali_prognostic_mode=s" => \$opts{'mali_prognostic_mode'},
     "glc_nzoc=i"          => \$opts{'glc_nzoc'},
+    "ocn_glc_ismf_coupling=s" => \$opts{'ocn_glc_ismf_coupling'},
 
 )  or usage();
 
@@ -158,6 +163,7 @@ my $NINST_GLC         = $opts{'ninst_glc'};
 my $NTASKS_GLC        = $opts{'ntasks_glc'};
 my $MALI_PROGNOSTIC_MODE = uc($opts{'mali_prognostic_mode'});
 my $GLC_NZOC          = $opts{'glc_nzoc'};
+my $OCN_GLC_ISMF_COUPLING = $opts{'ocn_glc_ismf_coupling'};
 
 my $CIMEROOT;
 if ( defined $opts{'cimeroot'} ) {
@@ -418,6 +424,7 @@ print "MALI build-namelist: glc_grid is $GLC_GRID \n";
 print "MALI build-namelist: MALI_PROGNOSTIC_MODE is $MALI_PROGNOSTIC_MODE \n";
 print "MALI build-namelist: MALI_USE_ALBANY is $MALI_USE_ALBANY \n";
 print "MALI build-namelist: GLC_NZOC is $GLC_NZOC  \n";
+print "MALI build-namelist: OCN_GLC_ISMF_COUPLING is $OCN_GLC_ISMF_COUPLING  \n";
 
 (-d $DIN_LOC_ROOT)  or mkdir $DIN_LOC_ROOT;
 if ($print>=2) { print "CESM inputdata root directory: $DIN_LOC_ROOT$eol"; }
@@ -546,10 +553,12 @@ add_default($nl, 'config_max_water_fraction');
 #################################
 
 if ($MALI_PROGNOSTIC_MODE eq 'PROGNOSTIC') {
-    if ($GLC_NZOC gt 0) {
+    if ($OCN_GLC_ISMF_COUPLING eq 'tf') {
         add_default($nl, 'config_basal_mass_bal_float');
-    } else {
+    } elsif ($OCN_GLC_ISMF_COUPLING eq 'data_mali') {
         add_default($nl, 'config_basal_mass_bal_float', 'val'=>"file");
+    } else {
+        add_default($nl, 'config_basal_mass_bal_float', 'val'=>"none");
     }
 } else {
     add_default($nl, 'config_basal_mass_bal_float', 'val'=>"none");

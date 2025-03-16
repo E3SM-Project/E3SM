@@ -42,6 +42,7 @@ def buildnml(case, caseroot, compname):
     mali_use_albany   = case.get_value("MALI_USE_ALBANY")
     mali_prognostic_mode = case.get_value("MALI_PROGNOSTIC_MODE")
     glc_nzoc          = case.get_value("GLC_NZOC")
+    ocn_glc_ismf_coupling = case.get_value("OCN_GLC_ISMF_COUPLING")
     stream_name       = 'streams.landice'
     albany_input_name = 'albany_input.yaml'
 
@@ -178,6 +179,7 @@ def buildnml(case, caseroot, compname):
         sysmod += " -ninst_glc '{}'".format(ninst_glc_real)
         sysmod += " -mali_prognostic_mode '{}'".format(mali_prognostic_mode)
         sysmod += " -glc_nzoc '{}'".format(glc_nzoc)
+        sysmod += " -ocn_glc_ismf_coupling '{}'".format(ocn_glc_ismf_coupling)
 
         run_cmd_no_fail(sysmod, from_dir=maliconf_dir)
 

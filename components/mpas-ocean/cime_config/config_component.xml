@@ -65,21 +65,6 @@
         <desc>Option to describe the MPASO iceberg coupling</desc>
   </entry>
 
-  <entry id="MPASO_ISMF">
-        <type>char</type>
-        <valid_values>none,data,internal,coupled</valid_values>
-        <default_value>none</default_value>
-        <values>
-           <value compset="MPASO_">none</value>
-           <value compset="_MPASO%.*DISMF">data</value>
-           <value compset="_MPASO%.*PISMF.*_SGLC">internal</value>
-           <value compset="_MPASO%.*PISMF.*_MALI">coupled</value>
-        </values>
-        <group>case_comp</group>
-        <file>env_case.xml</file>
-        <desc>Option to describe how MPASO will handle ice shelf melt fluxes</desc>
-  </entry>
-
   <entry id="MPASO_BGC">
         <type>char</type>
         <valid_values></valid_values>
