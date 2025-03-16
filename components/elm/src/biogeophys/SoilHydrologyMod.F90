@@ -567,10 +567,10 @@ contains
                 
                 if (swc >= vdep) then
                    if (lun_pp%polygontype(col_pp%landunit(c)) == ilowcenpoly) then
-                      k_wet = (2890_r8*phi_eff**4 - 1171.1_r8*phi_eff**3 + 144.94_r8*phi_eff**2 + 1.682_r8*phi_eff + 2.028) &
-                              * (710.3_r8*meangradz(c)**2 - 28.736_r8*meangradz(c) + 12.74_r8)
+                      k_wet = (2890_r8*phi_eff**4_r8 - 1171.1_r8*phi_eff**3_r8 + 144.94_r8*phi_eff**2_r8 + 1.682_r8*phi_eff + 2.028_r8) &
+                              * (710.3_r8*meangradz(c)**2_r8 - 28.736_r8*meangradz(c) + 12.74_r8)
                    else
-                      k_wet = 24.925_r8 * (710.3_r8*meangradz(c)**2 - 28.736_r8*meangradz(c) + 12.74_r8)
+                      k_wet = 24.925_r8 * (710.3_r8*meangradz(c)**2_r8 - 28.736_r8*meangradz(c) + 12.74_r8)
                    endif
                    qflx_h2osfc_surf(c) = k_wet * (swc - vdep) / 86400_r8 ! coefficients estimated for mm/day; convert from mm/day -> mm/s
                    qflx_h2osfc_surf(c) = min(qflx_h2osfc_surf(c), (swc - vdep)*1000_r8/dtime)
@@ -582,7 +582,7 @@ contains
                 ! limit runoff to value of storage above S(pc)
                 if(h2osfc(c) >= h2osfc_thresh(c) .and. h2osfcflag/=0) then
                    ! spatially variable k_wet
-                   k_wet=1.0_r8 * sin((rpi/180.) * col_pp%topo_slope(c))
+                   k_wet=1.0_r8 * sin((rpi/180._r8) * col_pp%topo_slope(c))
                    qflx_h2osfc_surf(c) = k_wet * frac_infclust * (h2osfc(c) - h2osfc_thresh(c))
 
                    qflx_h2osfc_surf(c)=min(qflx_h2osfc_surf(c),(h2osfc(c) - h2osfc_thresh(c))/dtime)
@@ -1451,11 +1451,11 @@ contains
                  s_y = watsat(c,nlevbed) &
                      * ( 1. - (1.+1.e3*zwt(c)/sucsat(c,nlevbed))**(-1./bsw(c,nlevbed)))
                  s_y=max(s_y,0.02_r8)
-                 rsub_top_layer=max(rsub_top_tot,-(s_y*(zi(c,nlevbed) - zwt(c))*1.e3))
+                 rsub_top_layer=max(rsub_top_tot,-(s_y*(zi(c,nlevbed) - zwt(c))*1.e3_r8))
                  rsub_top_layer=min(rsub_top_layer,0._r8)
                  h2osoi_liq(c,nlevbed) = h2osoi_liq(c,nlevbed) + rsub_top_layer
                  rsub_top_tot = rsub_top_tot - rsub_top_layer
-                 if (rsub_top_tot >= 0.) then
+                 if (rsub_top_tot >= 0._r8) then
                     zwt(c) = zwt(c) - rsub_top_layer/s_y/1000._r8
                  else
                     zwt(c) = zi(c,nlevbed)

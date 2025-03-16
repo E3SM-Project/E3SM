@@ -863,18 +863,18 @@ contains
                                      + (2_r8/iwp_microrel(c)) * (2_r8*iwp_microrel(c) - 3_r8*iwp_exclvol(c)) * (d/iwp_microrel(c))
 
                 else ! calculate water depth and inudation fraction if column is non-polygonal
-                    d=0.0
-                    sigma=1.0e3 * micro_sigma(c) ! convert to mm
+                    d=0.0_r8
+                    sigma=1.0e3_r8 * micro_sigma(c) ! convert to mm
                     do k=1,10
-                       fd = 0.5*d*(1.0_r8+erf(d/(sigma*sqrt(2.0)))) &
-                            +sigma/sqrt(2.0*shr_const_pi)*exp(-d**2/(2.0*sigma**2)) &
+                       fd = 0.5_r8*d*(1.0_r8+erf(d/(sigma*sqrt(2.0_r8)))) &
+                            +sigma/sqrt(2.0_r8*shr_const_pi)*exp(-d**2_r8/(2.0_r8*sigma**2_r8)) &
                             -h2osfc(c)
-                       dfdd = 0.5*(1.0_r8+erf(d/(sigma*sqrt(2.0))))
+                       dfdd = 0.5_r8*(1.0_r8+erf(d/(sigma*sqrt(2.0_r8))))
 
                        d = d - fd/dfdd
                     enddo
                     !--  update the submerged areal fraction using the new d value
-                    frac_h2osfc(c) = 0.5*(1.0_r8+erf(d/(sigma*sqrt(2.0))))
+                    frac_h2osfc(c) = 0.5_r8*(1.0_r8+erf(d/(sigma*sqrt(2.0_r8))))
                 endif ! end if polygonal test
              else ! if h2osfc(c) <= min_h2osfc
                 frac_h2osfc(c) = 0._r8
