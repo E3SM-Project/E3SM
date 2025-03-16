@@ -34,12 +34,12 @@ def buildnml(case, caseroot, compname):
     ocn_mask          = case.get_value("MASK_GRID")
     ocn_forcing       = case.get_value("MPASO_FORCING")
     ocn_iceberg       = case.get_value("MPASO_ICEBERG")
-    ocn_ismf          = case.get_value("MPASO_ISMF")
     ocn_sgr           = case.get_value("MPASO_SGR")
     ocn_bgc           = case.get_value("MPASO_BGC")
     ocn_wave          = case.get_value("MPASO_WAVE")
     ocn_tidal_mixing  = case.get_value("MPASO_TIDAL_MIXING")
     glc_nzoc          = case.get_value("GLC_NZOC")
+    ocn_glc_ismf_coupling = case.get_value("OCN_GLC_ISMF_COUPLING")
     ocn_co2_type      = case.get_value("OCN_CO2_TYPE")
     atm_co2_const_val = case.get_value("CCSM_CO2_PPMV")
     ice_bgc           = case.get_value("MPASI_BGC")
@@ -139,7 +139,7 @@ def buildnml(case, caseroot, compname):
         if ocn_ic_mode == 'spunup':
             logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
             logger.warning("         But no file available for this grid.")
-        if ocn_ismf == 'data':
+        if ocn_glc_ismf_coupling == 'data_mpaso':
             data_ismf_file = 'prescribed_ismf_paolo2023.oQU240wLI.20240404.nc'
         if ocn_tidal_mixing == 'true':
             u_tidal_rms_file = 'velocityTidalRMS_CATS2008.oQU240wLI.20240221.nc'
@@ -278,7 +278,7 @@ def buildnml(case, caseroot, compname):
         if ocn_ic_mode == 'spunup':
             ic_date = '230220'
             ic_prefix = 'mpaso.SOwISC12to60E2r4.rstFromG-anvil'
-        if ocn_ismf == 'data':
+        if ocn_glc_ismf_coupling == 'data_mpaso':
             data_ismf_file = 'prescribed_ismf_adusumilli2020.SOwISC12to60E2r4.230516.nc'
         if ocn_tidal_mixing == 'true':
             u_tidal_rms_file = 'velocityTidalRMS_CATS2008.SOwISC12to60E2r4.20210114.nc'
@@ -295,7 +295,7 @@ def buildnml(case, caseroot, compname):
         if ocn_ic_mode == 'spunup':
             ic_date = '20230913'  # changed to same as decomp_date, but the spun up file does not yet exist
             ic_prefix = 'mpaso.FRISwISC08to60E3r1.rstFromG-anvil'   # the spun up file does not yet exist
-        if ocn_ismf == 'data':
+        if ocn_glc_ismf_coupling == 'data_mpaso':
             data_ismf_file = 'prescribed_ismf_adusumilli2020.FRISwISC08to60E3r1.20230913.nc'
         if ocn_tidal_mixing == 'true':
             u_tidal_rms_file = 'velocityTidalRMS_CATS2008.FRISwISC08to60E3r1.20230913.nc'
@@ -310,7 +310,7 @@ def buildnml(case, caseroot, compname):
         if ocn_ic_mode == 'spunup':
             ic_date = '20230913'  # changed to same as decomp_date, but the spun up file does not yet exist
             ic_prefix = 'mpaso.FRISwISC04to60E3r1.rstFromG-anvil'   # the spun up file does not yet exist
-        if ocn_ismf == 'data':
+        if ocn_glc_ismf_coupling == 'data_mpaso':
             data_ismf_file = 'prescribed_ismf_adusumilli2020.FRISwISC04to60E3r1.20230913.nc'
         if ocn_tidal_mixing == 'true':
             u_tidal_rms_file = 'velocityTidalRMS_CATS2008.FRISwISC04to60E3r1.20230913.nc'
@@ -325,7 +325,7 @@ def buildnml(case, caseroot, compname):
         if ocn_ic_mode == 'spunup':
             ic_date = '20230914'  # changed to same as decomp_date, but the spun up file does not yet exist
             ic_prefix = 'mpaso.FRISwISC02to60E3r1.rstFromG-anvil'   # the spun up file does not yet exist
-        if ocn_ismf == 'data':
+        if ocn_glc_ismf_coupling == 'data_mpaso':
             data_ismf_file = 'prescribed_ismf_adusumilli2020.FRISwISC02to60E3r1.20230914.nc'
         if ocn_tidal_mixing == 'true':
             u_tidal_rms_file = 'velocityTidalRMS_CATS2008.FRISwISC02to60E3r1.20230914.nc'
@@ -340,7 +340,7 @@ def buildnml(case, caseroot, compname):
         if ocn_ic_mode == 'spunup':
             ic_date = '20230915'  # changed to same as decomp_date, but the spun up file does not yet exist
             ic_prefix = 'mpaso.FRISwISC01to60E3r1.rstFromG-anvil'   # the spun up file does not yet exist
-        if ocn_ismf == 'data':
+        if ocn_glc_ismf_coupling == 'data_mpaso':
             data_ismf_file = 'prescribed_ismf_adusumilli2020.FRISwISC01to60E3r1.20230915.nc'
         if ocn_tidal_mixing == 'true':
             u_tidal_rms_file = 'velocityTidalRMS_CATS2008.FRISwISC01to60E3r1.20230915.nc'
@@ -355,7 +355,7 @@ def buildnml(case, caseroot, compname):
         if ocn_ic_mode == 'spunup':
             ic_date = '230220'
             ic_prefix = 'mpaso.ECwISC30to60E2r1.rstFromG-anvil'
-        if ocn_ismf == 'data':
+        if ocn_glc_ismf_coupling == 'data_mpaso':
             data_ismf_file = 'prescribed_ismf_adusumilli2020.ECwISC30to60E2r1.230429.nc'
         if ocn_tidal_mixing == 'true':
             u_tidal_rms_file = 'velocityTidalRMS_CATS2008.ECwISC30to60E2r1.20240221.nc'
@@ -376,7 +376,7 @@ def buildnml(case, caseroot, compname):
             ic_date = '20231215'
             ic_prefix = 'mpaso.IcoswISC30E3r5.20231120+MARBL_ICfromOMIP_64levels'
             eco_forcing_file = 'ecoForcingSurfaceMonthly.IcoswISC30E3r5.20231215.nc'
-        if ocn_ismf == 'data':
+        if ocn_glc_ismf_coupling == 'data_mpaso':
             data_ismf_file = 'prescribed_ismf_paolo2023.IcoswISC30E3r5.20240805.nc'
         if ocn_tidal_mixing == 'true':
             u_tidal_rms_file = 'velocityTidalRMS_CATS2008.IcoswISC30E3r5.20231120.nc'
@@ -404,7 +404,7 @@ def buildnml(case, caseroot, compname):
         if ocn_ic_mode == 'spunup':
             logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
             logger.warning("         But no file available for this grid.")
-        if ocn_ismf == 'data':
+        if ocn_glc_ismf_coupling == 'data_mpaso':
             data_ismf_file = 'prescribed_ismf_paolo2023.RRSwISC6to18E3r5.20240327.nc'
 
     elif ocn_grid == 'SOwISC12to30E3r3':
@@ -417,7 +417,7 @@ def buildnml(case, caseroot, compname):
         if ocn_ic_mode == 'spunup':
             ic_date = '20241023'
             ic_prefix = 'mpaso.SOwISC12to30E3r3.interpFrom2p1-anvil'
-        if ocn_ismf == 'data':
+        if ocn_glc_ismf_coupling == 'data_mpaso':
             data_ismf_file = 'prescribed_ismf_paolo2023.SOwISC12to30E3r3.20241017.nc'
 
 
@@ -521,12 +521,12 @@ def buildnml(case, caseroot, compname):
         sysmod += " -ocn_grid '{}'".format(ocn_mask)
         sysmod += " -ocn_forcing '{}'".format(ocn_forcing)
         sysmod += " -ocn_iceberg '{}'".format(ocn_iceberg)
-        sysmod += " -ocn_ismf '{}'".format(ocn_ismf)
         sysmod += " -ocn_sgr '{}'".format(ocn_sgr)
         sysmod += " -ocn_bgc '{}'".format(ocn_bgc)
         sysmod += " -ocn_wave '{}'".format(ocn_wave)
         sysmod += " -ocn_tidal_mixing '{}'".format(ocn_tidal_mixing)
         sysmod += " -glc_nzoc '{}'".format(glc_nzoc)
+        sysmod += " -ocn_glc_ismf_coupling '{}'".format(ocn_glc_ismf_coupling)
         sysmod += " -ocn_co2_type '{}'".format(ocn_co2_type)
         sysmod += " -atm_co2_const_val '{}'".format(atm_co2_const_val)
         sysmod += " -ice_bgc '{}'".format(ice_bgc)
