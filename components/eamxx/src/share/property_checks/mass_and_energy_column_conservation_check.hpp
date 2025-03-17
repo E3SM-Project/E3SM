@@ -73,6 +73,8 @@ public:
   // in m_fields.
   void compute_current_energy ();
 
+  void global_fixer();
+
 // CUDA requires the parent fcn of a KOKKOS_LAMBDA to have public access
 #ifndef KOKKOS_ENABLE_CUDA
   protected:
@@ -109,6 +111,7 @@ public:
                                                       const Real ice_flux,
                                                       const Real heat_flux);
 
+
 protected:
 
   std::shared_ptr<const AbstractGrid> m_grid;
@@ -124,6 +127,12 @@ protected:
   // should be updated before a process is run.
   view_1d<Real> m_current_energy;
   view_1d<Real> m_current_mass;
+
+//at least one is prob redundant, keep for now
+  view_1d<Real> m_new_mass_for_fixer;
+  view_1d<Real> m_new_energy_for_fixer;
+  view_1d<Real> m_energy_flux;
+  view_1d<Real> m_mass_flux;
 }; // class EnergyConservationCheck
 
 } // namespace scream

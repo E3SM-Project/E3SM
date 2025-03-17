@@ -358,7 +358,7 @@ void AtmosphereProcessGroup::add_additional_data_fields_to_property_checks (cons
         prop_check.second->set_additional_data_field(data_field);
       }
       if (proc->has_column_conservation_check()) {
-        proc->get_column_conservation_check().second->set_additional_data_field(data_field);
+        proc->get_conservation().second->set_additional_data_field(data_field);
       }
     }
   }

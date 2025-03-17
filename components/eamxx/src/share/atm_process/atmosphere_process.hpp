@@ -165,8 +165,8 @@ public:
     return m_postcondition_checks;
   }
   std::pair<CheckFailHandling,prop_check_ptr>
-  get_column_conservation_check() {
-    return m_column_conservation_check;
+  get_conservation() {
+    return m_conservation;
   }
 
 
@@ -270,7 +270,8 @@ public:
         strmap_t<ekat::any>& get_restart_extra_data ()       { return m_restart_extra_data; }
 
   // Boolean that dictates whether or not the conservation checks are run for this process
-  bool has_column_conservation_check () { return m_column_conservation_check_data.has_check; }
+  bool has_column_conservation_check () { return m_conservation_data.has_column_conservation_check; }
+  bool has_energy_fixer () { return m_conservation_data.has_energy_fixer; }
 
   // For internal diagnostics and debugging.
   void print_global_state_hash(const std::string& label, const bool in = true,
@@ -553,17 +554,19 @@ private:
   std::list<std::pair<CheckFailHandling,prop_check_ptr>> m_postcondition_checks;
 
   // Column local mass and energy conservation check
-  std::pair<CheckFailHandling,prop_check_ptr> m_column_conservation_check;
+  std::pair<CheckFailHandling,prop_check_ptr> m_conservation;
 
   // Store data related to this processes conservation check.
-  struct ColumnConservationCheckData {
+  struct ConservationData {
     // Boolean which dictates whether or not this process
     // contains the mass and energy conservation checks.
-    bool has_check;
+    bool has_column_conservation_check;
     // Tolerance used for the conservation check
+    // mass or energy or both? rename
     Real tolerance;
+    bool has_energy_fixer;
   };
-  ColumnConservationCheckData m_column_conservation_check_data;
+  ConservationData m_conservation_data;
 
   // This process's copy of the timestamp, which is set on initialization and
   // updated during stepping.

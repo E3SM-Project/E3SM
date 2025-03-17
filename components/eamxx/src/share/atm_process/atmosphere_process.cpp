@@ -60,7 +60,7 @@ AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
   m_repair_log_level = str2LogLevel(m_params.get<std::string>("repair_log_level","warn"));
 
   // Info for mass and energy conservation checks
-  m_column_conservation_check_data.has_check =
+  m_conservation_data.has_column_conservation_check =
       m_params.get<bool>("enable_column_conservation_checks", false);
 
   m_internal_diagnostics_level = m_params.get<int>("internal_diagnostics_level", 0);
@@ -102,7 +102,10 @@ void AtmosphereProcess::run (const double dt) {
 
   for (m_subcycle_iter=0; m_subcycle_iter<m_num_subcycles; ++m_subcycle_iter) {
 
-    if (has_column_conservation_check()) {
+    //energy fixer needs both mass and energy fields that are computed by compute_column_conservation_checks_data(dt_sub)
+    //but this will change with cp*
+    //actually we do not need mass_before, so mass_before is redundant
+    if (has_column_conservation_check() || has_energy_fixer()) {
       // Column local mass and energy checks requires the total mass and energy
       // to be computed directly before the atm process is run, as well and store
       // the correct timestep for the process.
@@ -120,10 +123,19 @@ void AtmosphereProcess::run (const double dt) {
       print_global_state_hash(name() + "-pst-sc-" + std::to_string(m_subcycle_iter),
                               true, true, true);
 
+    if (has_energy_fixer()){
+      //compute_energy_after();
+      //fix_energy();
+
+      //if debug recompute new energy and confirm
+      //print out diagnostics?
+    }
+
     if (has_column_conservation_check()) {
       // Run the column local mass and energy conservation checks
       run_column_conservation_check();
     }
+
   }
 
   // Complete tendency calculations (if any)
@@ -485,8 +497,8 @@ void AtmosphereProcess::run_column_conservation_check () const {
   m_atm_logger->debug("[" + this->name() + "] run_column_conservation_check...");
   start_timer(m_timer_prefix + this->name() + "::run-column-conservation-checks");
   // Conservation check is run as a postcondition check
-  run_property_check(m_column_conservation_check.second,
-                     m_column_conservation_check.first,
+  run_property_check(m_conservation.second,
+                     m_conservation.first,
                      PropertyCheckCategory::Postcondition);
   stop_timer(m_timer_prefix + this->name() + "::run-column-conservation-checks");
   m_atm_logger->debug("[" + this->name() + "] run_column-conservation_checks...done!");
@@ -785,11 +797,11 @@ add_postcondition_check (const prop_check_ptr& pc, const CheckFailHandling cfh)
 void AtmosphereProcess::
 add_column_conservation_check(const prop_check_ptr &prop_check, const CheckFailHandling cfh)
 {
-  EKAT_REQUIRE_MSG(m_column_conservation_check.second == nullptr,
+  EKAT_REQUIRE_MSG(m_conservation.second == nullptr,
                    "Error! Conservation check for process \""+ name() +
                    "\" has already been added.");
 
-  m_column_conservation_check = std::make_pair(cfh,prop_check);
+  m_conservation = std::make_pair(cfh,prop_check);
 }
 
 void AtmosphereProcess::set_fields_and_groups_pointers () {
@@ -1123,13 +1135,14 @@ void AtmosphereProcess
 
 void AtmosphereProcess::compute_column_conservation_checks_data (const int dt)
 {
-  EKAT_REQUIRE_MSG(m_column_conservation_check.second != nullptr,
+  EKAT_REQUIRE_MSG(m_conservation.second != nullptr,
                    "Error! User set enable_column_conservation_checks=true, "
                    "but no conservation check exists.\n");
 
   // Set dt and compute current mass and energy.
   const auto& conservation_check =
-      std::dynamic_pointer_cast<MassAndEnergyColumnConservationCheck>(m_column_conservation_check.second);
+      std::dynamic_pointer_cast<MassAndEnergyColumnConservationCheck>(m_conservation.second);
+//og why is dt used here?
   conservation_check->set_dt(dt);
   conservation_check->compute_current_mass();
   conservation_check->compute_current_energy();

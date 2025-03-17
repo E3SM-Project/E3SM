@@ -278,6 +278,57 @@ PropertyCheck::ResultAndMsg MassAndEnergyColumnConservationCheck::check() const
 }
 
 
+void MassAndEnergyColumnConservationCheck::global_fixer()
+{
+  const auto ncols = m_num_cols;
+  const auto nlevs = m_num_levs;
+
+//keep dt for fixers with fluxes.
+//we do not plan to use fluxes in dycore fixer, but the code is already there
+  EKAT_REQUIRE_MSG(!std::isnan(m_dt), "Error! Timestep dt must be set in MassAndEnergyConservationCheck "
+                                      "before running check().");
+  auto dt = m_dt;
+
+  const auto pseudo_density = m_fields.at("pseudo_density").get_view<const Real**> ();
+  const auto T_mid          = m_fields.at("T_mid"         ).get_view<const Real**> ();
+  const auto horiz_winds    = m_fields.at("horiz_winds"   ).get_view<const Real***>();
+  const auto qv             = m_fields.at("qv"            ).get_view<const Real**> ();
+  const auto qc             = m_fields.at("qc"            ).get_view<const Real**> ();
+  const auto qi             = m_fields.at("qi"            ).get_view<const Real**> ();
+  const auto qr             = m_fields.at("qr"            ).get_view<const Real**> ();
+  const auto ps             = m_fields.at("ps"            ).get_view<const Real*>  ();
+  const auto phis           = m_fields.at("phis"          ).get_view<const Real*>  ();
+
+  const auto vapor_flux = m_fields.at("vapor_flux").get_view<const Real*>();
+  const auto water_flux = m_fields.at("water_flux").get_view<const Real*>();
+  const auto ice_flux   = m_fields.at("ice_flux"  ).get_view<const Real*>();
+  const auto heat_flux  = m_fields.at("heat_flux" ).get_view<const Real*>();
+
+  const auto policy = ExeSpaceUtils::get_default_team_policy(ncols, nlevs);
+
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
+
+    const int i = team.league_rank();
+
+    const auto pseudo_density_i = ekat::subview(pseudo_density, i);
+    const auto T_mid_i          = ekat::subview(T_mid, i);
+    const auto horiz_winds_i    = ekat::subview(horiz_winds, i);
+    const auto qv_i             = ekat::subview(qv, i);
+    const auto qc_i             = ekat::subview(qc, i);
+    const auto qr_i             = ekat::subview(qr, i);
+    const auto qi_i             = ekat::subview(qi, i);
+
+    // Calculate total mass
+    m_new_mass_for_fixer(i) = compute_total_mass_on_column(team, nlevs, pseudo_density_i, qv_i, qc_i, qi_i, qr_i);
+    m_mass_flux(i) =          compute_mass_boundary_flux_on_column(vapor_flux(i), water_flux(i))*dt;
+    // Calculate total energy
+    m_new_energy_for_fixer(i) = compute_total_energy_on_column(team, nlevs, pseudo_density_i, T_mid_i, horiz_winds_i,
+                                                   qv_i, qc_i, qr_i, ps(i), phis(i));
+    m_energy_flux(i) =          compute_energy_boundary_flux_on_column(vapor_flux(i), water_flux(i), ice_flux(i), heat_flux(i))*dt;
+  });
+};
+
+
 KOKKOS_INLINE_FUNCTION
 Real MassAndEnergyColumnConservationCheck::
 compute_total_mass_on_column (const KT::MemberType&       team,
