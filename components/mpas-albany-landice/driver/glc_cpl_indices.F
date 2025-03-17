@@ -22,7 +22,6 @@ module glc_cpl_indices
   integer, public :: index_x2g_So_htv    = 0 !Ice shelf ocean heat transfer velocity
   integer, public :: index_x2g_So_stv    = 0 !Ice shelf ocean salinity transfer velocity
   integer, public :: index_x2g_So_rhoeff = 0 !Ocean effective pressure
-  integer, public :: index_x2g_So_tf2d   = 0 !Ocean thermal forcing at predefined critical depth
   integer, public :: index_x2g_So_tf3d(glc_nzoc_max)   = 0 !Ocean thermal forcing at specified z-levels
   integer, public :: index_x2g_So_tf3d_mask(glc_nzoc_max)   = 0 !mask of ocean thermal forcing at specified z-levels
   integer, public :: index_x2g_Fogx_qiceli = 0 !Subshelf mass flux
@@ -79,7 +78,6 @@ contains
     index_x2g_Fogx_qiceli =               mct_avect_indexra(x2g,'Fogx_qiceli',perrwith='quiet')
     index_x2g_Fogx_qicehi =               mct_avect_indexra(x2g,'Fogx_qicehi',perrwith='quiet')
     index_x2g_So_rhoeff =                 mct_avect_indexra(x2g,'So_rhoeff',perrwith='quiet')
-    index_x2g_So_tf2d =                   mct_avect_indexra(x2g,'So_tf2d',perrwith='quiet')
 
     if (glc_nzoc > 0) then
        do iLev = 1, glc_nzoc

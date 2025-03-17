@@ -60,7 +60,6 @@ module ocn_time_average_coupled
                                                     avgRemovedRiverRunoffFlux, avgRemovedIceRunoffFlux, &
                                                     avgLandIceHeatFlux, avgRemovedIceRunoffHeatFlux
 
-        real (kind=RKIND), dimension(:), pointer :: avgThermalForcingAtCritDepth
         real (kind=RKIND), dimension(:,:), pointer :: avgThermalForcingAtZLevels
         real (kind=RKIND), dimension(:,:), pointer :: avgThermalForcingAtZLevelsMask
 
@@ -166,17 +165,7 @@ module ocn_time_average_coupled
            !$omp end parallel
         end if
 
-        if (trim(config_glc_thermal_forcing_coupling_mode) == '2d') then
-           call mpas_pool_get_array(forcingPool, 'avgThermalForcingAtCritDepth', avgThermalForcingAtCritDepth)
-
-           !$omp parallel
-           !$omp do schedule(runtime)
-           do iCell = 1, nCells
-              avgThermalForcingAtCritDepth(iCell) = 0.0_RKIND
-           end do
-           !$omp end do
-           !$omp end parallel
-        elseif (trim(config_glc_thermal_forcing_coupling_mode) == '3d') then
+        if (trim(config_glc_thermal_forcing_coupling_mode) == '3d') then
            call mpas_pool_get_array(forcingPool, 'avgThermalForcingAtZLevels', avgThermalForcingAtZLevels)
            call mpas_pool_get_array(forcingPool, 'avgThermalForcingAtZLevelsMask', avgThermalForcingAtZLevelsMask)
 
@@ -287,7 +276,7 @@ module ocn_time_average_coupled
         real (kind=RKIND), dimension(:,:), pointer :: avgSSHGradient
         integer :: iCell
         integer, pointer :: index_temperaturePtr, index_SSHzonalPtr, &
-                 index_SSHmeridionalPtr, nAccumulatedCoupled, nCells, nVertLevels
+                 index_SSHmeridionalPtr, nAccumulatedCoupled, nCells
         integer :: index_temperature, index_SSHzonal, index_SSHmeridional
         real (kind=RKIND), dimension(:,:), pointer :: &
                                                       avgLandIceBoundaryLayerTracers, avgLandIceTracerTransferVelocities
@@ -297,15 +286,9 @@ module ocn_time_average_coupled
                                                     landIceHeatFlux, avgLandIceHeatFlux, &
                                                     removedRiverRunoffFlux, avgRemovedRiverRunoffFlux, &
                                                     removedIceRunoffFlux, avgRemovedIceRunoffFlux, &
-                                                    avgRemovedIceRunoffHeatFlux, &
-                                                    avgThermalForcingAtCritDepth
+                                                    avgRemovedIceRunoffHeatFlux
 
         type (mpas_pool_type), pointer :: tracersPool
-
-        real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
-        integer, pointer :: indexTemperature, indexSalinity
-        integer :: iLevelCritDepth, iLevel
-        real (kind=RKIND) :: freezingTemp
 
         real (kind=RKIND), dimension(:,:,:), pointer :: &
            ecosysTracers,  &
@@ -342,7 +325,6 @@ module ocn_time_average_coupled
         call mpas_pool_get_array(forcingPool, 'avgTotalFreshWaterTemperatureFlux', avgTotalFreshWaterTemperatureFlux)
 
         call mpas_pool_get_dimension(forcingPool, 'nCells', nCells)
-        call mpas_pool_get_dimension(forcingPool, 'nVertLevels', nVertLevels)
         call mpas_pool_get_dimension(forcingPool, &
                                      'index_avgTemperatureSurfaceValue', &
                                       index_temperaturePtr)
@@ -454,42 +436,9 @@ module ocn_time_average_coupled
 
         end if
 
-        if (trim(config_glc_thermal_forcing_coupling_mode) == '2d') then
-           call mpas_pool_get_array(forcingPool, 'avgThermalForcingAtCritDepth', avgThermalForcingAtCritDepth)
-           call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
-           call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 2)
-           call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
-           call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
-
-
-           ! find vertical level that is just above the critical depth reference level
-           ! this does not account for depression due to ice shelf cavities or sea ice
-           iLevelCritDepth = nVertLevels  ! default to deepest layer if we don't find the desired depth
-           do iLevel = 1, nVertLevels
-              if(refBottomDepth(iLevel) > config_2d_thermal_forcing_depth) then
-                 iLevelCritDepth = iLevel
-                 exit
-              end if
-           end do
-           !$omp parallel
-           !$omp do schedule(runtime)
-           ! calculate thermal forcing at identified level for each cell
-           do iCell = 1, nCells
-              ! ignore cells that are too shallow
-              if (iLevelCritDepth <= maxLevelCell(iCell)) then
-                 ! this uses the level shallower than the reference level.  could interpolate instead
-                 ! note: assuming no LandIce cavity, but we may want to support that
-                 freezingTemp = ocn_freezing_temperature(salinity=activeTracers(indexSalinity, iLevelCritDepth, iCell), &
-                    pressure=pressure(iLevelCritDepth, iCell),  inLandIceCavity=.false.)
-                 avgThermalForcingAtCritDepth(iCell) = ( avgThermalForcingAtCritDepth(iCell) * nAccumulatedCoupled &
-                    + activeTracers(indexTemperature, iLevelCritDepth, iCell) - freezingTemp ) / ( nAccumulatedCoupled + 1)
-               end if
-           end do
-           !$omp end do
-           !$omp end parallel
-        elseif (trim(config_glc_thermal_forcing_coupling_mode) == '3d') then
+        if (trim(config_glc_thermal_forcing_coupling_mode) == '3d') then
            call accumulate_glc_3d_thermal_forcing(statePool, forcingPool, timeLevel)
-       endif
+        endif
 
         !  accumulate BGC coupling fields if necessary
         if (config_use_ecosysTracers) then
@@ -622,7 +571,6 @@ module ocn_time_average_coupled
         integer, intent(in) :: timeLevel
 
         integer :: iCell
-        real (kind=RKIND), dimension(:), pointer :: avgThermalForcingAtCritDepth
         real (kind=RKIND), dimension(:,:), pointer :: avgThermalForcingAtZLevels
         real (kind=RKIND), dimension(:,:), pointer :: avgThermalForcingAtZLevelsMask
         real (kind=RKIND), dimension(:), pointer :: glcZLevels
