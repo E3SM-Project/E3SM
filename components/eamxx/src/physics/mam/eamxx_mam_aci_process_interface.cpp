@@ -506,6 +506,7 @@ void MAMAci::run_impl(const double dt) {
       coltend_, coltend_cw_, qcld_, ndropcol_, ndropmix_, nsource_, wtke_, ccn_,
       // ## output to be used by the other processes ##
       qqcw_fld_work_, ptend_q_, factnum_, tendnd_,
+      top_lev_,
       // work arrays
       raercol_cw_, raercol_, state_q_work_, nact_, mact_,
       dropmixnuc_scratch_mem_);
