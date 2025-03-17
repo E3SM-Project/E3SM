@@ -123,7 +123,6 @@ module ocn_core_interface
       logical, pointer :: dataLandIceFluxesPKGActive
       logical, pointer :: landIceFluxesPKGActive
       logical, pointer :: landIceCouplingPKGActive
-      logical, pointer :: landIceThermalForcing2DPKGActive
       logical, pointer :: landIceThermalForcing3DPKGActive
       logical, pointer :: dataSubglacialRunoffFluxPKGActive
       logical, pointer :: thicknessBulkPKGActive
@@ -328,15 +327,11 @@ module ocn_core_interface
 
 
       !
-      ! test for 2d land ice thermal forcing, landIceThermalForcing2DPKG
       ! test for 3d land ice thermal forcing, landIceThermalForcing3DPKG
       !
-      call mpas_pool_get_package(packagePool, 'landIceThermalForcing2DPKGActive', landIceThermalForcing2DPKGActive)
       call mpas_pool_get_package(packagePool, 'landIceThermalForcing3DPKGActive', landIceThermalForcing3DPKGActive)
       call mpas_pool_get_config(configPool, 'config_glc_thermal_forcing_coupling_mode', config_glc_thermal_forcing_coupling_mode)
-      if ( trim(config_glc_thermal_forcing_coupling_mode) == '2d' ) then
-         landIceThermalForcing2DPKGActive = .true.
-      else if ( trim(config_glc_thermal_forcing_coupling_mode) == '3d' ) then
+      if ( trim(config_glc_thermal_forcing_coupling_mode) == '3d' ) then
          landIceThermalForcing3DPKGActive = .true.
       end if
 

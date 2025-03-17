@@ -755,7 +755,6 @@ if ($GLC_NZOC gt 0) {
 } else {
     add_default($nl, 'config_glc_thermal_forcing_coupling_mode');
 }
-add_default($nl, 'config_2d_thermal_forcing_depth');
 
 ######################################
 # Namelist group: shortwaveRadiation #
