@@ -64,7 +64,7 @@ void MAMConstituentFluxes::set_grids(
 // ON HOST, returns the number of bytes of device memory needed by the above
 // Buffer type given the number of columns and vertical levels
 size_t MAMConstituentFluxes::requested_buffer_size_in_bytes() const {
-  return mam_coupling::buffer_size(ncol_, nlev_);
+  return mam_coupling::buffer_size(ncol_, nlev_, 0, 0);
 }
 
 // ================================================================

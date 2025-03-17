@@ -170,7 +170,7 @@ void MAMDryDep::set_grids(
 // the above. Buffer type given the number of columns and vertical
 // levels
 size_t MAMDryDep::requested_buffer_size_in_bytes() const {
-  return mam_coupling::buffer_size(ncol_, nlev_);
+  return mam_coupling::buffer_size(ncol_, nlev_,0, 0);
 }  // requested_buffer_size_in_bytes
 
 // ================================================================
@@ -186,7 +186,7 @@ void MAMDryDep::init_buffers(const ATMBufferManager &buffer_manager) {
       "Error! Insufficient buffer size.\n");
 
   size_t used_mem =
-      mam_coupling::init_buffer(buffer_manager, ncol_, nlev_, buffer_);
+      mam_coupling::init_buffer(buffer_manager, ncol_, nlev_, buffer_, 0);
   EKAT_REQUIRE_MSG(used_mem == requested_buffer_size_in_bytes(),
                    "Error! Used memory != requested memory for MAMDryDep.");
 }  // init_buffers
