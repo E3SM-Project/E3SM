@@ -2903,8 +2903,7 @@ contains
                                                avgRemovedRiverRunoffFlux, &
                                                avgRemovedIceRunoffFlux, &
                                                avgLandIceHeatFlux, &
-                                               avgRemovedIceRunoffHeatFlux, &
-                                               avgThermalForcingAtCritDepth
+                                               avgRemovedIceRunoffHeatFlux
 
    real (kind=RKIND), dimension(:,:), pointer :: avgTracersSurfaceValue, avgSurfaceVelocity, &
                                                  avgSSHGradient, avgOceanSurfacePhytoC, &
@@ -2997,9 +2996,7 @@ contains
         call mpas_pool_get_array(forcingPool, 'avgRemovedIceRunoffFlux', avgRemovedIceRunoffFlux)
         call mpas_pool_get_array(forcingPool, 'avgRemovedIceRunoffHeatFlux', avgRemovedIceRunoffHeatFlux)
      endif
-     if (trim(config_glc_thermal_forcing_coupling_mode) == '2d') then
-        call mpas_pool_get_array(forcingPool, 'avgThermalForcingAtCritDepth', avgThermalForcingAtCritDepth)
-     elseif (trim(config_glc_thermal_forcing_coupling_mode) == '3d') then
+     if (trim(config_glc_thermal_forcing_coupling_mode) == '3d') then
         call mpas_pool_get_array(forcingPool, 'avgThermalForcingAtZLevels', avgThermalForcingAtZLevels)
         call mpas_pool_get_array(forcingPool, 'avgThermalForcingAtZLevelsMask', avgThermalForcingAtZLevelsMask)
         call mpas_pool_get_dimension(forcingPool, 'nGlcZLevels', nGlcZLevels)
@@ -3165,9 +3162,7 @@ contains
           o2x_o % rAttr(index_o2x_So_stv, n) = landIceTracerTransferVelocities(indexSaltTrans,i)
           o2x_o % rAttr(index_o2x_So_rhoeff, n) = 0.0_RKIND
        endif
-       if (trim(config_glc_thermal_forcing_coupling_mode) == '2d') then
-          o2x_o % rAttr(index_o2x_So_tf2d, n) = avgThermalForcingAtCritDepth(i)
-       elseif (trim(config_glc_thermal_forcing_coupling_mode) == '3d') then
+       if (trim(config_glc_thermal_forcing_coupling_mode) == '3d') then
           do iLevel = 1, nGlcZLevels
              if (avgThermalForcingAtZLevelsMask(ilevel, i) > 0.9_RKIND) then
                 ! Only use this time average if it is available almost all the time

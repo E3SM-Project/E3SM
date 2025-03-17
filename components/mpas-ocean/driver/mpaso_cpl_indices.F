@@ -39,7 +39,6 @@ module mpaso_cpl_indices
   integer :: index_o2x_So_htv !ocean heat-transfer velocity
   integer :: index_o2x_So_stv !ocean salt-transfer velocity
   integer :: index_o2x_So_rhoeff !ocean effective density
-  integer :: index_o2x_So_tf2d !ocean thermal forcing at predefined critical depth
   integer :: index_o2x_So_tf3d(glc_nzoc_max) !ocean thermal forcing at predefined z-levels
   integer :: index_o2x_So_tf3d_mask(glc_nzoc_max) !mask ofocean thermal forcing at predefined z-levels
 
@@ -223,7 +222,6 @@ contains
     index_o2x_So_htv        = mct_avect_indexra(o2x,'So_htv')
     index_o2x_So_stv        = mct_avect_indexra(o2x,'So_stv')
     index_o2x_So_rhoeff     = mct_avect_indexra(o2x,'So_rhoeff')
-    index_o2x_So_tf2d       = mct_avect_indexra(o2x,'So_tf2d',perrWith='quiet')
     if (glc_nzoc > 0) then
        do iLev = 1, glc_nzoc
           cnum = glc_zocnclass_as_string(iLev)
