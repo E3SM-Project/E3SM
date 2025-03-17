@@ -32,6 +32,8 @@ void MAMOptics::set_grids(
   nswbands_ = mam4::modal_aer_opt::nswbands;     // number of shortwave bands
   nlwbands_ = mam4::modal_aer_opt::nlwbands;     // number of longwave bands
 
+  work_len_ = mam4::modal_aer_opt::get_work_len_aerosol_optics();
+
   // Define the different field layouts that will be used for this process
 
   // Define aerosol optics fields computed by this process.
@@ -88,16 +90,17 @@ void MAMOptics::set_grids(
 }
 
 size_t MAMOptics::requested_buffer_size_in_bytes() const {
-  return mam_coupling::buffer_size(ncol_, nlev_);
+  return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_, work_len_);
 }
 
 void MAMOptics::init_buffers(const ATMBufferManager &buffer_manager) {
+  buffer_.set_num_scratch(num_2d_scratch_);
   EKAT_REQUIRE_MSG(
       buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(),
       "Error! Insufficient buffer size.\n");
 
   size_t used_mem =
-      mam_coupling::init_buffer(buffer_manager, ncol_, nlev_, buffer_);
+      mam_coupling::init_buffer(buffer_manager, ncol_, nlev_, buffer_, work_len_);
   EKAT_REQUIRE_MSG(used_mem == requested_buffer_size_in_bytes(),
                    "Error! Used memory != requested memory for MAMMOptics.");
 }
@@ -166,8 +169,8 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   Kokkos::deep_copy(ext_cmip6_sw_, 0.0);
   Kokkos::deep_copy(ext_cmip6_lw_, 0.0);
 
-  const int work_len = mam4::modal_aer_opt::get_work_len_aerosol_optics();
-  work_              = mam_coupling::view_2d("work", ncol_, work_len);
+
+  work_              = buffer_.work;;
 
   // shortwave aerosol scattering asymmetry parameter [unitless]
   tau_ssa_g_sw_ =

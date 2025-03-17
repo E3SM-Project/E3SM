@@ -224,8 +224,10 @@ void MAMGenericInterface::set_field_w_scratch_buffer(mam_coupling::view_2d& var,
   var = buffer.scratch[i_scratch_vars_];
   i_scratch_vars_++;
   EKAT_REQUIRE_MSG(
-      i_scratch_vars_ < buffer.max_num_2d_scratch ,
-      "Error! Insufficient number of scratch size in mam buffer.\n");
+      i_scratch_vars_ < buffer.num_2d_scratch ,
+      "Error! Insufficient number of scratch size in mam buffer.\n"
+      "  - i_scratch_vars_: " + std::to_string(i_scratch_vars_) + "\n"
+      "  -  buffer.num_2d_scratch: " +  std::to_string(buffer.num_2d_scratch) + "\n");
   if (set_to_zero){
     Kokkos::deep_copy(var, 0.0);
   }

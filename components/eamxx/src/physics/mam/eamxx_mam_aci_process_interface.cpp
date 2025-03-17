@@ -193,7 +193,7 @@ void MAMAci::init_buffers(const ATMBufferManager &buffer_manager) {
   EKAT_REQUIRE_MSG(
       buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(),
       "Error! Insufficient buffer size.\n");
-
+  buffer_.set_num_scratch(num_2d_scratch_);
   size_t used_mem =
       mam_coupling::init_buffer(buffer_manager, ncol_, nlev_, buffer_);
   EKAT_REQUIRE_MSG(
@@ -292,36 +292,36 @@ void MAMAci::initialize_impl(const RunType run_type) {
   // (Kokkos::resize only works on host to allocates memory)
   //---------------------------------------------------------------------------------
 
-  Kokkos::resize(rho_, ncol_, nlev_);
-  Kokkos::resize(w0_, ncol_, nlev_);
+  set_field_w_scratch_buffer(rho_, buffer_, true);
+  set_field_w_scratch_buffer(w0_, buffer_, true);
   Kokkos::resize(tke_, ncol_, nlev_ + 1);
-  Kokkos::resize(wsub_, ncol_, nlev_);
-  Kokkos::resize(wsubice_, ncol_, nlev_);
-  Kokkos::resize(wsig_, ncol_, nlev_);
-  Kokkos::resize(w2_, ncol_, nlev_);
-  Kokkos::resize(cloud_frac_, ncol_, nlev_);
-  Kokkos::resize(cloud_frac_prev_, ncol_, nlev_);
-  Kokkos::resize(aitken_dry_dia_, ncol_, nlev_);
-  Kokkos::resize(rpdel_, ncol_, nlev_);
+  set_field_w_scratch_buffer(wsub_, buffer_, true);
+  set_field_w_scratch_buffer(wsubice_, buffer_, true);
+  set_field_w_scratch_buffer(wsig_, buffer_, true);
+  set_field_w_scratch_buffer(w2_, buffer_, true);
+  set_field_w_scratch_buffer(cloud_frac_, buffer_, true);
+  set_field_w_scratch_buffer(cloud_frac_prev_, buffer_, true);
+  set_field_w_scratch_buffer(aitken_dry_dia_, buffer_, true);
+  set_field_w_scratch_buffer(rpdel_, buffer_, true);
 
   //---------------------------------------------------------------------------------
   // Diagnotics variables from the ice nucleation scheme
   //---------------------------------------------------------------------------------
 
   // number conc of ice nuclei due to heterogeneous freezing [1/m3]
-  Kokkos::resize(nihf_, ncol_, nlev_);
+  set_field_w_scratch_buffer(nihf_, buffer_, true);
 
   // number conc of ice nuclei due to immersionfreezing (hetero nuc) [1/m3]
-  Kokkos::resize(niim_, ncol_, nlev_);
+  set_field_w_scratch_buffer(niim_, buffer_, true);
 
   // number conc of ice nuclei due to deposition nucleation (hetero nuc)[1/m3]
-  Kokkos::resize(nidep_, ncol_, nlev_);
+  set_field_w_scratch_buffer(nidep_, buffer_, true);
 
   // number conc of ice nuclei due to meyers deposition [1/m3]
-  Kokkos::resize(nimey_, ncol_, nlev_);
+  set_field_w_scratch_buffer(nimey_, buffer_, true);
 
   // number of activated aerosol for ice nucleation(homogeneous frz only)[#/kg]
-  Kokkos::resize(naai_hom_, ncol_, nlev_);
+  set_field_w_scratch_buffer(naai_hom_, buffer_, true);
 
   //---------------------------------------------------------------------------------
   // Diagnotics variables from the droplet activation scheme
@@ -332,7 +332,7 @@ void MAMAci::initialize_impl(const RunType run_type) {
   Kokkos::resize(factnum_, ncol_, num_aero_modes, nlev_);
 
   // cloud droplet number mixing ratio [#/kg]
-  Kokkos::resize(qcld_, ncol_, nlev_);
+  set_field_w_scratch_buffer(qcld_, buffer_, true);
 
   // number conc of aerosols activated at supersat [#/m^3]
   // NOTE:  activation fraction fluxes are defined as
@@ -341,7 +341,7 @@ void MAMAci::initialize_impl(const RunType run_type) {
   Kokkos::resize(ccn_, ncol_, nlev_, mam4::ndrop::psat);
 
   // column-integrated droplet number [#/m2]
-  Kokkos::resize(ndropcol_, ncol_, nlev_);
+  set_field_w_scratch_buffer(ndropcol_, buffer_, true);
 
   // droplet number mixing ratio tendency due to mixing [#/kg/s]
   // Kokkos::resize(ndropmix_, ncol_, nlev_);
@@ -365,19 +365,19 @@ void MAMAci::initialize_impl(const RunType run_type) {
   ccn_1p0_  = get_field_out("ccn_1p0").get_view<Real **>();
 
   // subgrid vertical velocity [m/s]
-  Kokkos::resize(wtke_, ncol_, nlev_);
+  set_field_w_scratch_buffer(wtke_, buffer_, true);
 
   for(int i = 0; i < dropmix_scratch_; ++i) {
-    Kokkos::resize(dropmixnuc_scratch_mem_[i], ncol_, nlev_);
+    set_field_w_scratch_buffer(dropmixnuc_scratch_mem_[i], buffer_, true);
   }
   for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i) {
     // column tendency for diagnostic output
-    Kokkos::resize(coltend_[i], ncol_, nlev_);
+    set_field_w_scratch_buffer(coltend_[i], buffer_, true);
     // column tendency
-    Kokkos::resize(coltend_cw_[i], ncol_, nlev_);
+    set_field_w_scratch_buffer(coltend_cw_[i], buffer_, true);
   }
   for(int i = 0; i < mam4::aero_model::pcnst; ++i) {
-    Kokkos::resize(ptend_q_[i], ncol_, nlev_);
+    set_field_w_scratch_buffer(ptend_q_[i], buffer_, true);
   }
   for(int i = 0; i < mam4::ndrop::pver; ++i) {
     for(int j = 0; j < 2; ++j) {
@@ -400,6 +400,7 @@ void MAMAci::initialize_impl(const RunType run_type) {
   // Allocate work arrays
   for(int icnst = 0; icnst < mam4::ndrop::ncnst_tot; ++icnst) {
     qqcw_fld_work_[icnst] = view_2d("qqcw_fld_work_", ncol_, nlev_);
+    set_field_w_scratch_buffer(qqcw_fld_work_[icnst], buffer_, true);
   }
   state_q_work_ =
       view_3d("state_q_work_", ncol_, nlev_, mam4::aero_model::pcnst);
@@ -409,7 +410,7 @@ void MAMAci::initialize_impl(const RunType run_type) {
   //---------------------------------------------------------------------------------
 
   for(int i = 0; i < hetro_scratch_; ++i)
-    Kokkos::resize(diagnostic_scratch_[i], ncol_, nlev_);
+    set_field_w_scratch_buffer(diagnostic_scratch_[i], buffer_, true);
 
   //---------------------------------------------------------------------------------
   // Initialize the processes
