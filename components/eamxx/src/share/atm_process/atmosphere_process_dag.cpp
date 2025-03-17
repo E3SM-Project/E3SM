@@ -286,7 +286,7 @@ void AtmProcDAG::write_dag (const std::string& fname, const int verbosity) const
           if (verbosity>2) {
             ofile << "      <tr><td align=\"left\">  Members:";
             const auto& group = m_gr_fid_to_group.at(m_fids[gr_fid]);
-            const auto& members = group.m_fields;
+            const auto& members = group.m_individual_fields;
             const auto& members_names = group.m_info->m_fields_names;
             const size_t max_len = 40;
             size_t len = 0;
@@ -336,7 +336,7 @@ void AtmProcDAG::write_dag (const std::string& fname, const int verbosity) const
           if (verbosity>2) {
             ofile << "      <tr><td align=\"left\">  Members:";
             const auto& group = m_gr_fid_to_group.at(m_fids[gr_fid]);
-            const auto& members = group.m_fields;
+            const auto& members = group.m_individual_fields;
             const auto& members_names = group.m_info->m_fields_names;
             const size_t max_len = 40;
             size_t len = 0;
@@ -473,17 +473,17 @@ add_nodes (const group_type& atm_procs)
 
       // Input groups
       for (const auto& group : proc->get_groups_in()) {
-        if (!group.m_info->m_bundled) {
-          // Group is not bundled: process fields individually
-          for (const auto& it_f : group.m_fields) {
+        if (!group.m_info->m_monolithic_allocation) {
+          // Group does not allocate a monolithic field: process fields individually
+          for (const auto& it_f : group.m_individual_fields) {
             const auto& fid = it_f.second->get_header().get_identifier();
             const int fid_id = add_fid(fid);
             node.computed.insert(fid_id);
             m_fid_to_last_provider[fid_id] = id;
           }
         } else {
-          // Group is bundled: process the bundled field
-          const auto& gr_fid = group.m_bundle->get_header().get_identifier();
+          // Group allocates a monolithic field: process the monolithic field
+          const auto& gr_fid = group.m_monolithic_field->get_header().get_identifier();
           const int gr_fid_id = add_fid(gr_fid);
           node.gr_required.insert(gr_fid_id);
           m_gr_fid_to_group.emplace(gr_fid,group);
@@ -492,17 +492,17 @@ add_nodes (const group_type& atm_procs)
 
       // Output groups
       for (const auto& group : proc->get_groups_out()) {
-        if (!group.m_info->m_bundled) {
-          // Group is not bundled: process fields in the group individually
-          for (const auto& it_f : group.m_fields) {
+        if (!group.m_info->m_monolithic_allocation) {
+          // Group does not allocate a monolithic field: process fields in the group individually
+          for (const auto& it_f : group.m_individual_fields) {
             const auto& fid = it_f.second->get_header().get_identifier();
             const int fid_id = add_fid(fid);
             node.computed.insert(fid_id);
             m_fid_to_last_provider[fid_id] = id;
           }
         } else {
-          // Group is bundled: process the bundled field
-          const auto& gr_fid = group.m_bundle->get_header().get_identifier();
+          // Group allocates a monolithic field: process the monolithic field
+          const auto& gr_fid = group.m_monolithic_field->get_header().get_identifier();
           const int gr_fid_id = add_fid(gr_fid);
           node.gr_computed.insert(gr_fid_id);
           m_fid_to_last_provider[gr_fid_id] = id;
@@ -510,7 +510,7 @@ add_nodes (const group_type& atm_procs)
 
           // Additionally, each field in the group is implicitly 'computed'
           // by this node, so update their last provider
-          for (auto it_f : group.m_fields) {
+          for (auto it_f : group.m_individual_fields) {
             const auto& fid = it_f.second->get_header().get_identifier();
             const int fid_id = add_fid(fid);
             m_fid_to_last_provider[fid_id] = id;
@@ -536,7 +536,7 @@ void AtmProcDAG::add_edges () {
         m_unmet_deps[node.id].insert(id);
       }
     }
-    // Then process groups, looking at both the bundled field and individual fields.
+    // Then process groups, looking at both the monolithic field and individual fields.
     // NOTE: we don't know if the group as a whole is the last to be updated
     //       OR if each group member is updated after the last "group-update".
     //       So get the id of the last node that updates each field and the group,
@@ -557,7 +557,7 @@ void AtmProcDAG::add_edges () {
       }
       // Then check when each group member was last updated
       int i=0;
-      for (auto f_it : group.m_fields) {
+      for (auto f_it : group.m_individual_fields) {
         const auto& fid = f_it.second->get_header().get_identifier();
         auto fid_id = std::find(m_fids.begin(),m_fids.end(),fid) - m_fids.begin();
         it = m_fid_to_last_provider.find(fid_id);
