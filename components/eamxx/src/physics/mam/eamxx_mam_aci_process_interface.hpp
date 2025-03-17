@@ -149,7 +149,7 @@ class MAMAci final : public MAMGenericInterface {
 
   // management of common atm process memory
   size_t requested_buffer_size_in_bytes() const override {
-    return mam_coupling::buffer_size(ncol_, nlev_);
+    return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_, 0);
   }
 
   void init_buffers(const ATMBufferManager &buffer_manager) override;
@@ -219,6 +219,8 @@ class MAMAci final : public MAMGenericInterface {
   mam_coupling::DryAtmosphere dry_atm_;
   // workspace manager for internal local variables
   mam_coupling::Buffer buffer_;
+
+  int num_2d_scratch_= 192;
 
 };  // MAMAci
 
