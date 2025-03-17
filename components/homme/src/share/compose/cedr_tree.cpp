@@ -259,15 +259,19 @@ Int check_leaf_nodes (const Parallel::Ptr& p, const NodeSets& ns,
   cedr_assert( ! ns.levels[0].nodes.empty());
   Int my_nleaves = 0;
   for (const auto& idx : ns.levels[0].nodes) {
+#ifndef NDEBUG
     const auto n = ns.node_h(idx);
+#endif
     cedr_assert( ! n->nkids);
     ++my_nleaves;
   }
+#ifndef NDEBUG
   for (const auto& idx : ns.levels[0].nodes) {
     const auto n = ns.node_h(idx);
     cedr_assert(n->offset < my_nleaves);
     cedr_assert(n->id < ncells);
   }
+#endif
   Int glbl_nleaves = 0;
   mpi::all_reduce(*p, &my_nleaves, &glbl_nleaves, 1, MPI_SUM);
   if (glbl_nleaves != ncells)
