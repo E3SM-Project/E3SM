@@ -2849,7 +2849,7 @@ do_lphase2_conditional: &
 !          call outfld(trim(dust_names(m))//'SF',cam_in%cflx(:,mm),pcols, lchnk)
        enddo
 
-       if(dstemislimitswitch.eq..true.) then       
+       if(dstemislimitswitch.eqv..true.) then
         do icol=1,ncol
          if(sflx(icol).gt.dstemislimit) then
           call get_rlon_all_p(lchnk,ncol,tmp_lon)
