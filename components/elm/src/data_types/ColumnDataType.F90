@@ -1515,7 +1515,7 @@ contains
 
       call hist_addfld2d (fname='EXCESS_ICE', units = '1', type2d='levgrnd', &
            avgflag='A', long_name='Excess ground ice (0 to 1)', &
-           ptr_col=this%excess_ice, l2g_scale_type='veg') ! <- RPF: should this be natveg?
+           ptr_col=this%excess_ice, l2g_scale_type='veg')
       call hist_addfld1d (fname="SUBSIDENCE", units='m', avgflag='A', &
             long_name='ground subsidence (m)', ptr_col=this%iwp_subsidence)
       call hist_addfld1d (fname="DEPRESS_DEPTH", units='m', avgflag='A', &
@@ -1857,7 +1857,6 @@ contains
        this%h2osoi_liq_old(c,:) = this%h2osoi_liq(c,:)
        this%h2osoi_ice_old(c,:) = this%h2osoi_ice(c,:)
        if (use_polygonal_tundra) then
-         ! RPF 240713 - notes from Chuck Abolt: initialize all to 0.36_r8
          this%excess_ice(c,:) = 0.36_r8
          this%iwp_subsidence(c) = 0._r8
          this%frac_melted(c,:)  = 0._r8

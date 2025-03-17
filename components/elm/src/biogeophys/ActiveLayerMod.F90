@@ -71,9 +71,6 @@ contains
     real(r8), dimension(nlevgrnd) :: melt_profile       ! profile of melted excess ice
     !-----------------------------------------------------------------------
 
-    ! RF NOTE: use of 1989 ALT in these parameterizations is somewhat of a placeholder used to compare against
-    ! ATS runs for NGEE Arctic Phase 3. It should ultimately be replaced by a more physically based threshold
-    ! later on.
     associate(                                                                &
          t_soisno             =>    col_es%t_soisno        ,    & ! Input:   [real(r8) (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)
 
@@ -175,14 +172,14 @@ contains
             endif
          endif
 
-         ! special loop for if year = 1989, see above note regarding
-         ! replacing with more physically based mechanism.
-         if (year .eq. 1989) then
-            altmax_1989(c) = altmax(c)
-            altmax_1989_indx(c) = altmax_indx(c)
-         endif
-
          if (use_polygonal_tundra) then
+            ! special case for year = 1989. For now it is the assumed baseline year for 
+            ! changes in polygonal ground
+            if (year .eq. 1989) then
+               altmax_1989(c) = altmax(c)
+               altmax_1989_indx(c) = altmax_indx(c)
+            endif
+
            ! update subsidence based on change in ALT
            ! melt_profile stores the amount of excess_ice
            ! melted in this timestep.
@@ -241,10 +238,6 @@ contains
            subsidence(c) = min(0.4_r8, subsidence(c))
 
            ! update ice wedge polygon microtopographic parameters if in polygonal ground
-           !rpf - min/max logic may be redunant w/ subsidence limiter above
-           !rpf - TODO: many of these (particularly the invariant ones) should be
-           ! moved to data_types/ColumnDataType.F90 to avoid the highcenpoly elseif condition
-           ! each time step.
            if (lun_pp%ispolygon(col_pp%landunit(c))) then
              if (lun_pp%polygontype(col_pp%landunit(c)) .eq. ilowcenpoly) then
                rmax(c) = 0.4_r8

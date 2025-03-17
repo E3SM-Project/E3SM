@@ -396,7 +396,7 @@ lnd/clm2/surfdata_map/surfdata_5x5_amazon_simyr2000_c130927.nc</fsurdat>
 <fsurdat hgrid="1x1_brazil"    sim_year="2000" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_1x1_brazil_simyr2000_c130927.nc</fsurdat>
 <fsurdat hgrid="1x1_icycape"    sim_year="2000" use_crop=".false." >
-lnd/clm2/surfdata_map/surfdata_1x1_IcyCape_polygons_c240909.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_1x1pt_IcyCape_polygons_c240909.nc</fsurdat>
 <fsurdat hgrid="1x1_tropicAtl" sim_year="2000" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_1x1_tropicAtl_simyr2000_c130927.nc</fsurdat>
 
