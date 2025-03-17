@@ -203,6 +203,7 @@ void call_function_dropmixnuc(
     const MAMAci::view_2d wsub, const MAMAci::view_2d cloud_frac,
     const MAMAci::view_2d cloud_frac_prev,
     const mam_coupling::AerosolState &dry_aero, const int nlev,
+    const int top_lev,
     const bool &enable_aero_vertical_mix,
 
     // Following outputs are all diagnostics
@@ -223,7 +224,6 @@ void call_function_dropmixnuc(
 
     // tendnd is used by microphysics scheme (e.g. P3)
     MAMAci::view_2d tendnd,
-    const int top_lev,
 
     // ## work arrays ##
     MAMAci::view_2d raercol_cw[mam4::ndrop::pver][2],

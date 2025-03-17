@@ -501,12 +501,11 @@ void MAMAci::run_impl(const double dt) {
   //  aerosols tendencies
   call_function_dropmixnuc(
       team_policy, dt, dry_atm_, rpdel_, kvh_mid_, kvh_int_, wsub_, cloud_frac_,
-      cloud_frac_prev_, dry_aero_, nlev_, enable_aero_vertical_mix_,
+      cloud_frac_prev_, dry_aero_, nlev_, top_lev_, enable_aero_vertical_mix_,
       // output
       coltend_, coltend_cw_, qcld_, ndropcol_, ndropmix_, nsource_, wtke_, ccn_,
       // ## output to be used by the other processes ##
       qqcw_fld_work_, ptend_q_, factnum_, tendnd_,
-      top_lev_,
       // work arrays
       raercol_cw_, raercol_, state_q_work_, nact_, mact_,
       dropmixnuc_scratch_mem_);
