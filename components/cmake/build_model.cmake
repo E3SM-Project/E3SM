@@ -339,11 +339,8 @@ macro(build_model COMP_CLASS COMP_NAME)
 
         set_property(SOURCE "${WW3_SRC_DIR}/w3initmd.F90" APPEND PROPERTY COMPILE_DEFINITIONS "__WW3_SWITCHES__=\'\'")
 
-        #add_executable(ww3_grid "${WW3_SRC_DIR}/ww3_grid.F90")
-        #target_link_libraries(ww3_grid PRIVATE ${TARGET_NAME})
-
-        #add_executable(ww3_shel "${WW3_SRC_DIR}/ww3_shel.F90")
-        #target_link_libraries(ww3_shel PRIVATE "${TARGET_NAME}")
+        #add_executable(ww3_ounf "${WW3_SRC_DIR}/ww3_ounf.F90")
+        #target_link_libraries(ww3_ounf "${TARGET_NAME}")
       endif()
       if (USE_KOKKOS)
         target_link_libraries (${TARGET_NAME} PRIVATE Kokkos::kokkos)

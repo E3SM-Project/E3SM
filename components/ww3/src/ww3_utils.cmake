@@ -18,11 +18,11 @@ function(parse_switches)
       endif()
     endif()
 
-    # Copy switch file to build dir, but should be WW3's builddir
-    configure_file(${switch_file} ${CMAKE_BINARY_DIR}/cmake/ww3/switch COPYONLY)
+    # Copy switch file to build dir
+    configure_file(${switch_file} ${CMAKE_BINARY_DIR}/cmake/wav/switch COPYONLY)
 
     # Open switch file and parse switches
-    file(STRINGS ${CMAKE_BINARY_DIR}/cmake/ww3/switch switch_strings)
+    file(STRINGS ${CMAKE_BINARY_DIR}/cmake/wav/switch switch_strings)
     separate_arguments(switches UNIX_COMMAND ${switch_strings})
 
     # Include list of src files to make file more readable
@@ -65,6 +65,8 @@ function(parse_switches)
         list(APPEND SWITCH_SOURCES ww3/src/WW3/model/src/SCRIP/${BASENAME})
       endforeach()
     endif()
+    # manually add NETCDF metadata module
+    list(APPEND SWITCH_SOURCES ww3/src/WW3/model/src/w3ounfmetamd.F90)
 
     # return the master list of all files needed
     set(SWITCH_SOURCES ${SWITCH_SOURCES} PARENT_SCOPE)
