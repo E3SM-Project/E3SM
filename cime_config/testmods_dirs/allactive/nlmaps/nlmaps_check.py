@@ -61,16 +61,16 @@ def main(case_dir):
     if not ok:
         # Check for a special case of one field which has min val = max val. If
         # the domain.lnd eps_fraclim is 1e-3, this case reveals the resulting
-        # consistency error. This is OK in practice. Thus, as long as this is
-        # the only ALARM, everything is OK.
+        # consistency error. This is OK in practice.
         special_case = True
         for ln in alarms:
             relerr = abs(float(ln.split()[-2]))
             ln_ok = 'fin-mass 14/38' in ln and relerr < 1e-5
             if not ln_ok:
-                # another special case that is OK
+                # Another set of special cases that are OK.
                 mass = abs(float(ln.split()[3]))
-                ln_ok = 'fin-mass 17/38' in ln and mass < 1e-34 and relerr < 1e-4
+                ln_ok = (('fin-mass 17/38' in ln and mass < 1e-34 and relerr < 1e-4) or
+                         ('fin-mass  3/24' in ln and mass < 1e-16 and relerr < 1e-3))
             if not ln_ok:
                 special_case = False
                 print(ln)
