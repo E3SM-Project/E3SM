@@ -21,7 +21,7 @@ SURFDATA_FILE="${EXPID}_surfdata.Daymet_NA.1km.1d.c240524.nc"
 
 #${E3SM_SRCROOT}/cime/scripts/create_newcase --case "${CASEDIR}" --mach summitPlus --compiler pgi --mpilib spectrum-mpi --compset I1850uELMCNPRDCTCBC --res ELM_USRDAT --pecount "${PECOUNT}" --handle-preexisting-dirs r --srcroot "${E3SM_SRCROOT}"
 
-${E3SM_SRCROOT}/cime/scripts/create_newcase --case "${CASEDIR}" --mach frontier --compiler gnu --compset I1850uELMCNPRDCTCBC --res ELM_USRDAT  --handle-preexisting-dirs r --srcroot "${E3SM_SRCROOT}"
+${E3SM_SRCROOT}/cime/scripts/create_newcase --case "${CASEDIR}" --mach frontier --compiler craygnu --compset I1850uELMCNPRDCTCBC --res ELM_USRDAT  --handle-preexisting-dirs r --srcroot "${E3SM_SRCROOT}"
 
 cd "${CASEDIR}"
 
