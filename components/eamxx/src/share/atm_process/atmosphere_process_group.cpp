@@ -385,10 +385,6 @@ void AtmosphereProcessGroup::run_impl (const double dt) {
 }
 
 void AtmosphereProcessGroup::run_sequential (const double dt) {
-  // Get the timestamp at the beginning of the step and advance it.
-  auto ts = timestamp();
-  ts += dt;
-
   // The stored atm procs should update the timestamp if both
   //  - this is the last subcycle iteration
   //  - nobody from outside told this APG to not update timestamps

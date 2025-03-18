@@ -102,6 +102,8 @@ void AtmosphereProcess::run (const double dt) {
 
   for (m_subcycle_iter=0; m_subcycle_iter<m_num_subcycles; ++m_subcycle_iter) {
 
+    m_time_stamp += dt_sub;
+
     if (has_column_conservation_check()) {
       // Column local mass and energy checks requires the total mass and energy
       // to be computed directly before the atm process is run, as well and store
@@ -134,7 +136,6 @@ void AtmosphereProcess::run (const double dt) {
     run_postcondition_checks();
   }
 
-  m_time_stamp += dt;
   if (m_update_time_stamps) {
     // Update all output fields time stamps
     update_time_stamps ();
