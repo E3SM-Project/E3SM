@@ -53,6 +53,8 @@ module li_ocean_extrap
 
    real (kind=RKIND), parameter :: cp = 3974 !specific heat (J/kg), using value from Cowton 2015
    real (kind=RKIND), parameter :: L = 3.34E5 !latent heat of melting
+
+   real (kind=RKIND), parameter :: default_salinity = 32.0
 !***********************************************************************
 
 contains
@@ -150,6 +152,7 @@ contains
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
          call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
          call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_3dThermalForcing', ismip6shelfMelt_3dThermalForcing)
+         call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zOcean', ismip6shelfMelt_zOcean)
          call mpas_pool_get_array(extrapOceanDataPool, 'orig3dOceanMask', orig3dOceanMask)
          call mpas_pool_get_array(extrapOceanDataPool, 'validOceanMask', validOceanMask)
          call mpas_pool_get_array(extrapOceanDataPool, 'availOceanMask', availOceanMask)
@@ -251,8 +254,11 @@ contains
          do iCell = 1, nCells
             if ( (altConnectedMarineMask(iCell) /= connectedMarineMask(iCell)) .and. (thickness(iCell) == 0.0_RKIND) ) then
                if (config_recalculate_thermal_forcing) then
-                  MPAS_3dOceanTemperature(:,iCell) = 0.0_RKIND
-                  MPAS_3dOceanSalinity(:,iCell) = 0.0_RKIND
+                  do iLayer = 1, nISMIP6OceanLayers 
+                     ! for ice-dammed inland seas, assume default salinity, and back-calculate sea temperature to ensure zero thermal forcing
+                     MPAS_3dOceanSalinity(iLayer,iCell) = default_salinity
+                     MPAS_3dOceanTemperature(iLayer,iCell) = (gamma1 * MPAS_3dOceanSalinity(iLayer,iCell) + gamma2 + gamma3 * ismip6shelfMelt_zOcean(iLayer))
+                  enddo
                endif
                
                ismip6shelfMelt_3dThermalForcing(:,iCell) = 0.0_RKIND
