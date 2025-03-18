@@ -248,6 +248,12 @@ public:
     ColumnOps::column_scan_mid_to_int<false>(kv,integrand_provider,phi_i);
   }
 
+  KOKKOS_INLINE_FUNCTION static
+  Scalar compute_dphi (const Scalar vtheta_dp, const Scalar exner, const Scalar p) {
+    return PhysicalConstants::Rgas*vtheta_dp*exner/p;
+  }
+
+
 public:
 
   bool            m_theta_hydrostatic_mode;
