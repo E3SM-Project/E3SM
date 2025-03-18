@@ -3,6 +3,7 @@ module zm_conv_util
    ! Purpose: utility methods for ZM deep convection scheme
    !----------------------------------------------------------------------------
    use shr_kind_mod,     only: r8=>shr_kind_r8
+   use cam_abortutils,   only: endrun
 
    public :: entropy       ! calculate entropy
    public :: ientropy      ! invert entropy equation to get temperature and saturated vapor mixing ratio
