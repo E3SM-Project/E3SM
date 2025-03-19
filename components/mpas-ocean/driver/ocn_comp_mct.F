@@ -3423,7 +3423,7 @@ contains
                err = ior(err, 1)
             endif
 
-            glcZLevels = -1.0_RKIND * glc_get_zlevels()
+            glcZLevels = glc_get_zlevels()
 
             call mpas_log_write("Using $i levels for glcZLevels", intArgs=(/nGlcZLevels/))
             do iLev = 1, nGlcZLevels
