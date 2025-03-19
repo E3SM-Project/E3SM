@@ -4083,7 +4083,7 @@
                         description="0/1 mask of valid locations for avgThermalForcingAtZLevels.  Type is real because this is time-averaged so can take on values between 0 and 1."
 		/>
 		<var name="glcZLevels" type="real" dimensions="nGlcZLevels" units="m" packages="landIceThermalForcing3DPKG"
-			description="Z-levels at which ocean properties should be evaluated for indirect OCN-GLC coupling. This array will generally be provided by the E3SM coupler."
+			description="Z-levels at which ocean properties should be evaluated for indirect OCN-GLC coupling. This array will generally be provided by the E3SM coupler. Vertical coordinate is positive-up."
 		/>
 		<!-- Input fields for data (prescribed) land-ice fluxes -->
 		<var name="dataLandIceFreshwaterFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
