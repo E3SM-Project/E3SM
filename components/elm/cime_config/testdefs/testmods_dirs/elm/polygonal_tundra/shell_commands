@@ -1,5 +1,4 @@
-./xmlchange DATM_MODE=CLMGSWP3v1
-./xmlchange DATM_CLMNCEP_YR_START=2000
-./xmlchange DATM_CLMNCEP_YR_END=2000
+./xmlchange DATM_CLMNCEP_YR_START=1901
+./xmlchange DATM_CLMNCEP_YR_END=1901
 ./xmlchange NTASKS=1
 ./xmlchange NTHRDS=1
