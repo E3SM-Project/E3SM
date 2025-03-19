@@ -10,6 +10,7 @@ module CanopyStateType
   use elm_varcon      , only : spval,ispval
   use elm_varpar      , only : nlevcan, nvegwcs
   use elm_varctl      , only : iulog, use_cn, use_fates, use_hydrstress, use_fates_sp
+  use elm_varctl      , only : use_polygonal_tundra
   use LandunitType    , only : lun_pp
   use ColumnType      , only : col_pp
   use VegetationType       , only : veg_pp
@@ -64,6 +65,10 @@ module CanopyStateType
      real(r8) , pointer :: altmax_lastyear_col      (:)   ! col prior year maximum annual depth of thaw
      integer  , pointer :: altmax_indx_col          (:)   ! col maximum annual depth of thaw
      integer  , pointer :: altmax_lastyear_indx_col (:)   ! col prior year maximum annual depth of thaw
+     real(r8) , pointer :: altmax_1989_col          (:)   ! col maximum annual thaw depth in 1989 RF note: temporary for IM1!
+     real(r8) , pointer :: altmax_ever_col          (:)   ! col maximum thaw depth from beginning of simulation
+     integer  , pointer :: altmax_1989_indx_col     (:)   ! col 1989 maximum thaw depth RF note: temporary for IM1!
+     integer  , pointer :: altmax_ever_indx_col     (:)   ! col maximum thaw depth from beginning of simulation
 
      real(r8) , pointer :: dewmx_patch              (:)   ! patch maximum allowed dew [mm]
 
@@ -142,9 +147,13 @@ contains
     allocate(this%alt_col                  (begc:endc))           ; this%alt_col                  (:)   = spval;
     allocate(this%altmax_col               (begc:endc))           ; this%altmax_col               (:)   = spval
     allocate(this%altmax_lastyear_col      (begc:endc))           ; this%altmax_lastyear_col      (:)   = spval
+    allocate(this%altmax_1989_col          (begc:endc))           ; this%altmax_1989_col          (:)   = spval
+    allocate(this%altmax_ever_col          (begc:endc))           ; this%altmax_ever_col          (:)   = spval
     allocate(this%alt_indx_col             (begc:endc))           ; this%alt_indx_col             (:)   = huge(1)
     allocate(this%altmax_indx_col          (begc:endc))           ; this%altmax_indx_col          (:)   = huge(1)
     allocate(this%altmax_lastyear_indx_col (begc:endc))           ; this%altmax_lastyear_indx_col (:)   = huge(1)
+    allocate(this%altmax_1989_indx_col     (begc:endc))           ; this%altmax_1989_indx_col     (:)   = huge(1)
+    allocate(this%altmax_ever_indx_col     (begc:endc))           ; this%altmax_ever_indx_col     (:)   = huge(1)
 
     allocate(this%dewmx_patch              (begp:endp))           ; this%dewmx_patch              (:)   = spval
     allocate(this%dleaf_patch              (begp:endp))           ; this%dleaf_patch              (:)   = spval
@@ -277,6 +286,18 @@ contains
        call hist_addfld1d (fname='ALTMAX_LASTYEAR', units='m', &
             avgflag='A', long_name='maximum prior year active layer thickness', &
             ptr_col=this%altmax_lastyear_col)
+
+       if (use_polygonal_tundra) then
+          this%altmax_1989_col(begc:endc) = spval
+          call hist_addfld1d (fname='ALTMAX_1989', units='m', &
+               avgflag='A', long_name='maximum 1989 active layer thickness', &
+               ptr_col=this%altmax_1989_col)
+
+          this%altmax_ever_col(begc:endc) = spval
+          call hist_addfld1d (fname='ALTMAX_EVER', units='m', &
+               avgflag='A', long_name='maximum ever active layer thickness throughout simulation', &
+               ptr_col=this%altmax_ever_col)
+       end if
     end if
 
     ! Allow active layer fields to be optionally output even if not running CN
@@ -296,6 +317,18 @@ contains
        call hist_addfld1d (fname='ALTMAX_LASTYEAR', units='m', &
             avgflag='A', long_name='maximum prior year active layer thickness', &
             ptr_col=this%altmax_lastyear_col, default='inactive')
+
+       if (use_polygonal_tundra) then
+          this%altmax_1989_col(begc:endc) = spval
+          call hist_addfld1d (fname='ALTMAX_1989', units='m', &
+               avgflag='A', long_name='maximum 1989 active layer thickness', &
+               ptr_col=this%altmax_1989_col, default='inactive')
+
+          this%altmax_ever_col(begc:endc) = spval
+          call hist_addfld1d (fname='ALTMAX_EVER', units='m', &
+               avgflag='A', long_name='maximum ever active layer thickness throughout simulation', &
+               ptr_col=this%altmax_ever_col, default='inactive')
+       end if
     end if
 
     ! Accumulated fields
@@ -502,9 +535,13 @@ contains
           this%alt_col(c)                  = 0._r8
           this%altmax_col(c)               = 0._r8
           this%altmax_lastyear_col(c)      = 0._r8
+          this%altmax_1989_col(c)          = 0._r8
+          this%altmax_ever_col(c)          = 0._r8
           this%alt_indx_col(c)             = 0
           this%altmax_indx_col(c)          = 0
           this%altmax_lastyear_indx_col(c) = 0
+          this%altmax_1989_indx_col(c)     = 0
+          this%altmax_ever_indx_col(c)     = 0
        end if
     end do
 
@@ -578,7 +615,21 @@ contains
        call restartvar(ncid=ncid, flag=flag, varname='altmax_lastyear_indx', xtype=ncd_int,  &
             dim1name='column', long_name='', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%altmax_lastyear_indx_col)
-    end if
+       if (use_polygonal_tundra) then
+          call restartvar(ncid=ncid, flag=flag, varname='altmax_1989_indx', xtype=ncd_double,  &
+               dim1name='column', long_name='', units='', &
+               interpinic_flag='interp', readvar=readvar, data=this%altmax_1989_indx_col)
+          call restartvar(ncid=ncid, flag=flag, varname='altmax_ever_indx', xtype=ncd_int,  &
+               dim1name='column', long_name='', units='', &
+               interpinic_flag='interp', readvar=readvar, data=this%altmax_ever_indx_col)
+          call restartvar(ncid=ncid, flag=flag, varname='altmax_1989', xtype=ncd_double,  &
+               dim1name='column', long_name='', units='', &
+               interpinic_flag='interp', readvar=readvar, data=this%altmax_1989_col)
+          call restartvar(ncid=ncid, flag=flag, varname='altmax_ever', xtype=ncd_double,  &
+               dim1name='column', long_name='', units='', &
+               interpinic_flag='interp', readvar=readvar, data=this%altmax_ever_col)
+       end if ! polygonal tundra
+    end if ! cn or fates
     if ( use_hydrstress ) then
        call restartvar(ncid=ncid, flag=flag, varname='vegwp', xtype=ncd_double, &
             dim1name='pft', dim2name='vegwcs', switchdim=.true., &
