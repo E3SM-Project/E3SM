@@ -3017,7 +3017,6 @@ contains
                additional_list = .true.)
           call set_glc_zocnclass_field(name, attname, longname, stdname, units, x2g_tf_states_from_ocn, &
                additional_list = .true.)
-          call metadata_set(attname, longname, stdname, units)
 
           name = 'So_tf3d_mask'
           longname = 'mask of valid ocean thermal forcing at z-level'
@@ -3029,8 +3028,7 @@ contains
                additional_list = .true.)
           call set_glc_zocnclass_field(name, attname, longname, stdname, units, x2g_tf_states_from_ocn, &
                additional_list = .true.)
-          call metadata_set(attname, longname, stdname, units)
-      end if
+       end if
 
        name = 'Fogx_qicelo'
        call seq_flds_add(g2x_fluxes,trim(name))
@@ -4356,8 +4354,7 @@ contains
   subroutine set_glc_zocnclass_field(name, attname, longname, stdname, units, fieldlist, &
        additional_list)
 
-    ! Sets a coupling field for all ocn z classes (1:glc_nzoc) plus bare land
-    ! (index 0).
+    ! Sets a coupling field for all ocn z classes (1:glc_nzoc)
     !
     ! Note that, if glc_nzoc = 0, then we don't create any coupling fields
     !
@@ -4397,7 +4394,7 @@ contains
     end if
 
     if (glc_get_num_zocn_classes() > 0) then
-       do num = 0, glc_get_num_zocn_classes()
+       do num = 1, glc_get_num_zocn_classes()
           cnum = glc_zocnclass_as_string(num)
 
           call seq_flds_add(fieldlist, trim(name) // trim(cnum))
