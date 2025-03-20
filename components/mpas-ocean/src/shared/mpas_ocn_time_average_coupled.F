@@ -602,14 +602,17 @@ module ocn_time_average_coupled
         call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
 
         !$omp parallel
-        !$omp do schedule(runtime)
+        !$omp do collapse(2) schedule(runtime) &
+        !$omp    private(iLevelGlc, iCell, glcz, zMin, zMax, iLevelAbove, &
+        !$omp            iLevelBelow, zAbove, zBelow, alpha, salin, &
+        !$omp            temp, press, freezingTemp)
         do iLevelGlc = 1, nGlcZLevels
-            ! calculate thermal forcing at identified level for each cell
-            glcz = glcZLevels(iLevelGlc)
-
             do iCell = 1, nCells
+                ! calculate thermal forcing at identified level for each cell
+                glcz = glcZLevels(iLevelGlc)
 
-                if (glcz > ssh(iCell) .or. glcz < -bottomDepth(iCell)) then
+                if (glcz > ssh(iCell) .or. glcz < -bottomDepth(iCell) .or. &
+                    minLevelCell(iCell) > maxLevelCell(iCell)) then
                     ! mask out glc levels that are too shallow or too deep
                     avgThermalForcingAtZLevels(iLevelGlc, iCell) = &
                         ( avgThermalForcingAtZLevels(iLevelGlc, iCell) * nAccumulatedCoupled &
