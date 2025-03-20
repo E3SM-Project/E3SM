@@ -137,7 +137,8 @@ struct Functions
     bool set_cld_frac_r_to_one = false;
     bool use_hetfrz_classnuc   = false;
     bool use_separate_ice_liq_frac = false;
-    // HACK: P3 should have no knowledge of this stuff! SHOC should decide this and P3 should not care!
+    // FIXME: THE FOLLOWING IS A HACK
+    // We need this to allow nc to be mixed in mam (via nc_tend) but not shoc
     bool use_dynamics_advected_only_nc = false;
 
     void load_runtime_options_from_file(ekat::ParameterList& params) {
@@ -167,7 +168,8 @@ struct Functions
       set_cld_frac_r_to_one = params.get<bool>("set_cld_frac_r_to_one", set_cld_frac_r_to_one);
       use_hetfrz_classnuc   = params.get<bool>("use_hetfrz_classnuc", use_hetfrz_classnuc);
       use_separate_ice_liq_frac = params.get<bool>("use_separate_ice_liq_frac", use_separate_ice_liq_frac);
-      // HACK: P3 should have no knowledge of this stuff! SHOC should decide this and P3 should not care!
+      // FIXME: THE FOLLOWING IS A HACK
+      // We need this to allow nc to be mixed in mam (via nc_tend) but not shoc
       use_dynamics_advected_only_nc = params.get<bool>("use_dynamics_advected_only_nc", use_dynamics_advected_only_nc);
     }
 
