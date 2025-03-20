@@ -5,6 +5,7 @@
 module global_norms_mod
 
   use kinds, only : iulog
+  use edgetype_mod, only : EdgeBuffer_t
 
   implicit none
   private
@@ -25,6 +26,7 @@ module global_norms_mod
   public :: wrap_repro_sum
 
   private :: global_maximum
+  type (EdgeBuffer_t), private :: edgebuf
 
 contains
 
