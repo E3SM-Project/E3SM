@@ -3174,7 +3174,7 @@
     <DIN_LOC_ROOT>/grand/E3SMinput/data</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/grand/E3SMinput/data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/grand/E3SMinput/baselines/$COMPILER</BASELINE_ROOT>
+    <BASELINE_ROOT>/grand/E3SMinput/baselines/polaris/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/grand/E3SMinput/soft/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>4</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
@@ -3250,7 +3250,7 @@
     <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
-      <env name="OMP_PLACES">threads</env>
+      <env name="OMP_PLACES">cores</env>
     </environment_variables>
   </machine>
 
