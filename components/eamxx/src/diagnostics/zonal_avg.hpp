@@ -34,10 +34,10 @@ class ZonalAvgDiag : public AtmosphereDiagnostic {
   // Name of each field (because the diagnostic impl is generic)
   std::string m_diag_name;
 
-  Field m_diag_field;
-
   // Need area field, let's store it scaled by its norm
   Field m_scaled_area;
+
+  Field m_lat;
 };
 
 }  // namespace scream
