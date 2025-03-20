@@ -1,5 +1,5 @@
 ! ------------------------------------------------------------------------------------------------
-! prim_driver_mod: 
+! prim_driver_mod:
 !
 ! Revisions:
 ! 08/2016: O. Guba Inserting code for "espilon bubble" reference element map
@@ -419,7 +419,7 @@ contains
     end if
 
     nelemd = LocalElemCount(MetaVertex)
-    if(par%masterproc .and. Debug) then 
+    if(par%masterproc .and. Debug) then
         call PrintMetaVertex(MetaVertex)
     endif
 
@@ -466,11 +466,11 @@ contains
     !  for OpenMP across elements, equal to 1 for OpenMP within element
     ! =================================================================
     !
-    ! At this point, we can assume: 
+    ! At this point, we can assume:
     ! nthreads was set by CAM driver, or in namelist and error checked
-    ! if CAM is running w/o threads, nthreads=0 
+    ! if CAM is running w/o threads, nthreads=0
     ! vthreads=1 or read from namelist and verified consistent with COLUMN_OPENMP
-    ! 
+    !
     ! set hthreads, and check that vthreads was not set too large
     if (vthreads > max(nthreads,1) .or. vthreads < 1) &
          call abortmp('Error: vthreads<1 or vthreads > NTHRDS_ATM')
@@ -491,7 +491,7 @@ contains
 #ifndef HORIZ_OPENMP
     if (hthreads>1) call abortmp('Error: hthreads>1 requires -DHORIZ_OPENMP')
 #endif
-    
+
 
 
     ! =================================================================
@@ -511,7 +511,7 @@ contains
     gp=gausslobatto(np)  ! GLL points
 
         if(par%masterproc) write(iulog,*)"initializing elements..."
-    
+
          if (MeshUseMeshFile) then
           if (geometry=="sphere") then
             call MeshSetCoordinates(elem)
@@ -530,7 +530,7 @@ contains
           end if
            !call assign_node_numbers_to_elem(elem, GridVertex)
          endif
-    
+
       if (geometry=="sphere") then
          do ie=1,nelemd
             call cube_init_atomic(elem(ie),gp%points)
@@ -709,9 +709,9 @@ contains
     call Prim_Advec_Init1(par, elem)
 
     ! single global edge buffer for all models:
-    ! hydrostatic 4*nlev      NH:  6*nlev+1  
+    ! hydrostatic 4*nlev      NH:  6*nlev+1
     ! SL tracers: (qsize+1)*nlev   e3sm:  (qsize+3)*nlev+2
-    ! if this is too small, code will abort with an error message    
+    ! if this is too small, code will abort with an error message
     edgesz = max((qsize+3)*nlev+2,6*nlev+1)
 
 #ifdef HOMME_ENABLE_COMPOSE
@@ -743,7 +743,7 @@ contains
                                     sub_case, limiter_option, nu, nu_q, nu_div, tstep_type, hypervis_subcycle, &
                                     hypervis_subcycle_q, hypervis_subcycle_tom, &
                                     transport_alg, prim_step_type
-    use global_norms_mod,     only: test_global_integral, print_cfl
+    use global_norms_mod,     only: test_global_integral, print_cfl, dss_hvtensor
     use hybvcoord_mod,        only: hvcoord_t
     use parallel_mod,         only: parallel_t, haltmp, syncmp, abortmp
     use prim_state_mod,       only: prim_printstate, prim_diag_scalars
@@ -840,7 +840,7 @@ contains
        dt_dyn_vis = 2*tstep
     endif
     dt_tracer_vis=tstep*dt_tracer_factor
-    
+
     ! compute most restrictive condition:
     ! note: dtnu ignores subcycling
     dtnu=max(dt_dyn_vis*max(nu,nu_div), dt_tracer_vis*nu_q)
@@ -982,9 +982,10 @@ contains
     endif
 
     call model_init2(elem(:), hybrid,deriv1,hvcoord,tl,nets,nete)
+    ! apply dss and bilinear projection to tensor coefficients
+    call dss_hvtensor(elem,hybrid,nets,nete)
 
     ! advective and viscious CFL estimates
-    ! may also adjust tensor coefficients based on CFL
     call print_cfl(elem,hybrid,nets,nete,dtnu)
 
     ! Use the flexible time stepper if dt_remap_factor == 0 (vertically Eulerian
@@ -1012,12 +1013,12 @@ contains
        write(iulog,'(a,2f9.2)')        "dt_dyn:                  ",tstep
        write(iulog,'(a,2f9.2)')        "dt_dyn (viscosity):      ",dt_dyn_vis
        write(iulog,'(a,2f9.2)')        "dt_tracer (viscosity):   ",dt_tracer_vis
-       if (hypervis_subcycle_tom==0) then                                                     
-          ! applied with hyperviscosity                                                       
-          write(iulog,'(a,2f9.2)') "dt_vis_TOM:  ",dt_dyn_vis                                 
-       else                                                                                   
-          write(iulog,'(a,2f9.2)') "dt_vis_TOM:  ",tstep/hypervis_subcycle_tom               
-       endif                                                                 
+       if (hypervis_subcycle_tom==0) then
+          ! applied with hyperviscosity
+          write(iulog,'(a,2f9.2)') "dt_vis_TOM:  ",dt_dyn_vis
+       else
+          write(iulog,'(a,2f9.2)') "dt_vis_TOM:  ",tstep/hypervis_subcycle_tom
+       endif
 
        if (prim_step_type == 2) then
           write(iulog,*) "Running with prim_step_flexible"
@@ -1131,7 +1132,7 @@ contains
        call t_stopf("copy_qdp_h2d")
 #endif
 
-      if (.not. single_column) then 
+      if (.not. single_column) then
 
         ! Loop over rsplit vertically lagrangian timesiteps
         call prim_step(elem, hybrid, nets, nete, dt, tl, hvcoord, compute_diagnostics)
@@ -1141,7 +1142,7 @@ contains
           call prim_step(elem, hybrid, nets, nete, dt, tl, hvcoord, .false.)
         enddo
 
-      else 
+      else
 
         ! Single Column Case
         ! Loop over rsplit vertically lagrangian timesiteps
@@ -1198,13 +1199,13 @@ contains
     !
     !   Q(1)   Q at t+dt_remap
     if (compute_diagnostics) call run_diagnostics(elem,hvcoord,tl,2,.false.,nets,nete)
-    
+
     ! =================================
     ! update dynamics time level pointers
     ! =================================
     call TimeLevel_update(tl,"leapfrog")
     ! now we have:
-    !   u(nm1)   dynamics at  t+dt_remap - dt       
+    !   u(nm1)   dynamics at  t+dt_remap - dt
     !   u(n0)    dynamics at  t+dt_remap
     !   u(np1)   undefined
 
@@ -1263,7 +1264,7 @@ contains
     dt_q = dt*dt_tracer_factor
 
     call set_tracer_transport_derived_values(elem, nets, nete, tl)
- 
+
     ! ===============
     ! Dynamical Step
     ! for ftype==4, also apply dynamics tendencies from forcing
@@ -1275,7 +1276,7 @@ contains
        ! with ftype==4, need (E(1)-E(3))/dt_dyn instead (E(1)-E(3))/dt_tracer
        if (compute_diagnostics) call run_diagnostics(elem,hvcoord,tl,1,.true.,nets,nete)
     endif
-       
+
     call prim_advance_exp(elem,deriv1,hvcoord,hybrid,dt,tl,nets,nete,compute_diagnostics)
     do n=2,dt_tracer_factor
        call TimeLevel_update(tl,"leapfrog")
@@ -1293,14 +1294,14 @@ contains
     ! dt_remap_factor=0
     !        state%v(:,:,:,np1)      = velocity on reference levels
     ! dt_remap_factor>0
-    !        state%v(:,:,:,np1)      = velocity on lagrangian levels 
-    !        
-    ! Tracer Advection.  
+    !        state%v(:,:,:,np1)      = velocity on lagrangian levels
+    !
+    ! Tracer Advection.
     ! in addition, this routine will apply the DSS to:
     !        derived%eta_dot_dpdn    =  mean vertical velocity (used for remap below)
     !        derived%omega           =
-    ! Tracers are always vertically lagrangian.  
-    ! For dt_remap_factor=0: 
+    ! Tracers are always vertically lagrangian.
+    ! For dt_remap_factor=0:
     !   if tracer scheme needs v on lagrangian levels it has to vertically interpolate
 
     call t_startf("prim_step_advec")
@@ -1494,7 +1495,7 @@ contains
 
 !---------------------------------------------------------------------------
 !
-! Apply all forcing terms that are applied with frequency dt_remap 
+! Apply all forcing terms that are applied with frequency dt_remap
 !
 ! Note on ftypes:
 !   ftype= 4: Q was adjusted by physics, dynamics tendencies applied elsewhere
@@ -1556,17 +1557,17 @@ contains
   ! this conversion is done assuming constant pressure except for changes to hydrostatic
   ! pressure from the water vapor tendencies. It is thus recomputed whenever
   ! water vapor tendency is applied
-  ! 
-  ! theta model hydrostatic requires this constant pressure assumption due to 
-  ! phi/density being diagnostic.  theta model NH could do the conversion constant 
+  !
+  ! theta model hydrostatic requires this constant pressure assumption due to
+  ! phi/density being diagnostic.  theta model NH could do the conversion constant
   ! density which would simplify this routine
   !
   ! NOTE about ps_v/dp3d
   ! init:
   !   (both ps_v and dp3d are valid)
-  ! do: 
+  ! do:
   !    physics  (uses ps_v to compute pressure levels. doesn't change ps_v)
-  !    applyCAMforcing_tracers  use ps_v for initial pressure.  
+  !    applyCAMforcing_tracers  use ps_v for initial pressure.
   !                             may adjust dp3d for mass conservation (if adjust_ps=.false.)
   !                             ps_v no longer valid
   !    dynamics                 should only use dp3d
@@ -1627,8 +1628,8 @@ contains
   adjust_ps=.true.     ! preqx requires forcing to stay on reference levels
 #endif
 
-#if defined(CAM) && !defined(SCREAM) 
-  adjust_ps=.true.     ! Special case when CAM is defined, and SCREAM is not defined, 
+#if defined(CAM) && !defined(SCREAM)
+  adjust_ps=.true.     ! Special case when CAM is defined, and SCREAM is not defined,
                        ! require forcing to stay on reference levels no matter dt_remap_factor
 #endif
 
@@ -1657,7 +1658,7 @@ contains
    tn1=exner* elem%state%vtheta_dp(:,:,:,np1)*(Rgas/rstarn1) / dp
 #endif
 
-   if (adjustment) then 
+   if (adjustment) then
 
       ! hard adjust Q from physics.  negativity check done in physics
       do k=1,nlev
@@ -1666,14 +1667,14 @@ contains
                do q=1,qsize
                   ! apply forcing to Qdp
                   ! dyn_in%elem(ie)%state%Qdp(i,j,k,q,tl_fQdp) = &
-                  !        dyn_in%elem(ie)%state%Qdp(i,j,k,q,tl_fQdp) + fq 
+                  !        dyn_in%elem(ie)%state%Qdp(i,j,k,q,tl_fQdp) + fq
                   elem%state%Qdp(i,j,k,q,np1_qdp) = &
                        dp(i,j,k)*elem%derived%FQ(i,j,k,q)
-                  
+
                   if (q==1) then
                      fq = dp(i,j,k)*( elem%derived%FQ(i,j,k,q) -&
                           elem%state%Q(i,j,k,q))
-                     ! force ps to conserve mass:  
+                     ! force ps to conserve mass:
 #ifdef HOMMEXX_BFB_TESTING
                      sum_fq(i,j) = sum_fq(i,j) + fq
 #else
@@ -1738,14 +1739,14 @@ contains
    do q=1,qsize
       elem%state%Q(:,:,:,q) = elem%state%Qdp(:,:,:,q,np1_qdp)/elem%state%dp3d(:,:,:,np1)
    enddo
-   
+
 
 #ifdef MODEL_THETA_L
    if (use_moisture) then
       ! compute updated pnh and exner
       if (adjust_ps) then
          ! recompute hydrostatic pressure from ps
-         do k=1,nlev  
+         do k=1,nlev
             phydro(:,:,k)=hvcoord%ps0*hvcoord%hyam(k) + ps(:,:)*hvcoord%hybm(k)
          enddo
       else
@@ -1761,35 +1762,35 @@ contains
 #endif
       enddo
    endif
-   
+
    !update temperature
    call get_R_star(rstarn1,elem%state%Q(:,:,:,1))
    tn1(:,:,:) = tn1(:,:,:) + dt*elem%derived%FT(:,:,:)
-   
-   
+
+
    ! now we have tn1,dp,pnh - compute corresponding theta and phi:
    vthn1 =  (rstarn1(:,:,:)/Rgas)*tn1(:,:,:)*elem%state%dp3d(:,:,:,np1)/exner(:,:,:)
-     
+
    phi_n1(:,:,nlevp)=elem%state%phinh_i(:,:,nlevp,np1)
    do k=nlev,1,-1
       phi_n1(:,:,k)=phi_n1(:,:,k+1) + Rgas*vthn1(:,:,k)*exner(:,:,k)/pnh(:,:,k)
    enddo
-   
+
    !finally, compute difference for FVTheta
    ! this method is using new dp, new exner, new-new r*, new t
    elem%derived%FVTheta(:,:,:) = &
         (vthn1 - elem%state%vtheta_dp(:,:,:,np1))/dt
-   
+
    elem%derived%FPHI(:,:,:) = &
         (phi_n1 - elem%state%phinh_i(:,:,:,np1))/dt
-   
+
 #endif
 
   call t_stopf("ApplyCAMForcing_tracers")
 
   end subroutine applyCAMforcing_tracers
-  
-  
+
+
   subroutine prim_step_scm(elem, nets,nete, dt, tl, hvcoord)
   !
   !   prim_step version for single column model (SCM)
@@ -1831,7 +1832,7 @@ contains
     integer :: ie, t, q,k,i,j,n,qn0
     real (kind=real_kind)                          :: maxcflx, maxcfly
     real (kind=real_kind) :: dp_np1(np,np)
- 
+
     ! ===============
     ! initialize mean flux accumulation variables and save some variables at n0
     ! for use by advection
@@ -1852,21 +1853,21 @@ contains
     ! ===============
     ! Dynamical Step
     ! ===============
-    
-    call TimeLevel_Qdp(tl, dt_tracer_factor, qn0)  ! compute current Qdp() timelevel 
-    call set_prescribed_scm(elem,dt,tl)
-    
-    do n=2,dt_tracer_factor
- 
-      call TimeLevel_update(tl,"leapfrog")
-      if (ftype==4) call ApplyCAMforcing_dynamics(elem,hvcoord,tl%n0,dt,nets,nete)       
 
-      ! get timelevel for accessing tracer mass Qdp() to compute virtual temperature      
-      call TimeLevel_Qdp(tl, dt_tracer_factor, qn0)  ! compute current Qdp() timelevel      
-      
+    call TimeLevel_Qdp(tl, dt_tracer_factor, qn0)  ! compute current Qdp() timelevel
+    call set_prescribed_scm(elem,dt,tl)
+
+    do n=2,dt_tracer_factor
+
+      call TimeLevel_update(tl,"leapfrog")
+      if (ftype==4) call ApplyCAMforcing_dynamics(elem,hvcoord,tl%n0,dt,nets,nete)
+
+      ! get timelevel for accessing tracer mass Qdp() to compute virtual temperature
+      call TimeLevel_Qdp(tl, dt_tracer_factor, qn0)  ! compute current Qdp() timelevel
+
       ! call the single column forcing
       call set_prescribed_scm(elem,dt,tl)
-      
+
     enddo
 
   end subroutine prim_step_scm
@@ -1945,37 +1946,37 @@ contains
     enddo
 
     end subroutine smooth_topo_datasets
-    
+
   !_____________________________________________________________________
   subroutine set_prescribed_scm(elem,dt,tl)
-  
+
     ! Update the floating levels based on the prescribed
     !  large scale vertical velocity for single column model
 
     use dimensions_mod, only: qsize
     use time_mod, only: timelevel_qdp
-    use control_mod, only: dt_tracer_factor  
+    use control_mod, only: dt_tracer_factor
     use time_mod,       only: timelevel_t
 
-    type (element_t),      intent(inout), target  :: elem(:) 
+    type (element_t),      intent(inout), target  :: elem(:)
     real (kind=real_kind), intent(in)             :: dt
     type (TimeLevel_t)   , intent(in)             :: tl
-    
+
     real (kind=real_kind) :: dp(np,np)! pressure thickness, vflux
     real(kind=real_kind)  :: eta_dot_dpdn(np,np,nlevp)
-    
+
     integer :: ie,k,p,n0,np1,n0_qdp,np1_qdp
 
     n0    = tl%n0
     np1   = tl%np1
 
     call TimeLevel_Qdp(tl, dt_tracer_factor, n0_qdp, np1_qdp)
-    
+
     do k=1,nlev
       eta_dot_dpdn(:,:,k)=elem(1)%derived%omega_p(1,1,k)
-    enddo  
+    enddo
     eta_dot_dpdn(:,:,nlev+1) = eta_dot_dpdn(:,:,nlev)
-    
+
     do k=1,nlev
       elem(1)%state%dp3d(:,:,k,np1) = elem(1)%state%dp3d(:,:,k,n0) &
         + dt*(eta_dot_dpdn(:,:,k+1) - eta_dot_dpdn(:,:,k))
@@ -1999,9 +2000,9 @@ contains
           elem(1)%state%dp3d(:,:,k,np1)
       enddo
     enddo
-    
+
   end subroutine set_prescribed_scm
-    
+
 end module prim_driver_base
 
 
