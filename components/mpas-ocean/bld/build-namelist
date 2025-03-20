@@ -742,7 +742,12 @@ if ($OCN_ICEBERG eq 'true') {
 # (true for JRA). When atm active, we assume liquid runoff corresonds to precip
 # or snow melt so we do not remove it. In either case, the energy for melting
 # doesn't come from the ocean.
-if (($OCN_GLC_ISMF_COUPLING ne 'none') && ($OCN_FORCING ne 'active_atm')) {
+if ((   ($OCN_GLC_ISMF_COUPLING eq 'coupler')
+     || ($OCN_GLC_ISMF_COUPLING eq 'internal_mpaso')
+     || ($OCN_GLC_ISMF_COUPLING eq 'data_mpaso')
+    )
+    && ($OCN_FORCING ne 'active_atm'))
+{
 	add_default($nl, 'config_remove_ais_river_runoff', 'val'=>".true.");
 } else {
 	add_default($nl, 'config_remove_ais_river_runoff', 'val'=>".false.");
