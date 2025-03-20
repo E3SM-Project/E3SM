@@ -174,7 +174,7 @@ module prep_ocn_mod
   logical                  :: iamin_CPLALLICEID     ! pe associated with CPLALLICEID
 
 #ifdef HAVE_MOAB
-  logical                  :: load_maps_from_disk_a2o
+  logical                  :: compute_maps_online_a2o
 #endif
 
 contains
@@ -230,7 +230,7 @@ contains
     logical                  :: ocn_present    ! .true.  => ocn is present
     logical                  :: atm_present    ! .true.  => atm is present
     logical                  :: ice_present    ! .true.  => ice is present
-    logical                  :: cpl_compute_maps_online    ! .true.  => maps are computed online 
+    logical                  :: cpl_compute_maps_online    ! .true.  => maps are computed online
     logical                  :: samegrid_ao    ! samegrid atm and ocean
     logical                  :: samegrid_og    ! samegrid glc and ocean
     logical                  :: samegrid_ow    ! samegrid ocean and wave
@@ -298,7 +298,7 @@ contains
          esmf_map_flag=esmf_map_flag   )
 
 #ifdef HAVE_MOAB
-    load_maps_from_disk_a2o = .not. cpl_compute_maps_online  ! read from disk or compute online
+    compute_maps_online_a2o = cpl_compute_maps_online  ! read from disk or compute online
     wgtIda2o_conservative = 'conservative_a2o'//C_NULL_CHAR
     wgtIda2o_bilinear = 'bilinear_a2o'//C_NULL_CHAR
     wgtIdr2o_conservative = 'conservative_r2o'//C_NULL_CHAR
@@ -460,7 +460,7 @@ contains
                   call shr_sys_abort(subname//' ERROR in computing ATM-OCN coverage')
                endif
 
-               if (.not. load_maps_from_disk_a2o) then
+               if (compute_maps_online_a2o) then
                   ! first compute the overlap mesh between mbaxid (ATM) and mboxid (OCN) on coupler PEs
                   ierr =  iMOAB_ComputeMeshIntersectionOnSphere( mbaxid, mboxid, mbintxao )
                   if (ierr .ne. 0) then
@@ -490,7 +490,7 @@ contains
                   call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_a2x_fields on OCN cpl')
                endif
 
-               if (.not. load_maps_from_disk_a2o) then
+               if (compute_maps_online_a2o) then
                   volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
                   if (atm_pg_active) then
                      dm1 = "fv"//C_NULL_CHAR
@@ -571,7 +571,7 @@ contains
 #ifdef MOABDEBUG
                wopts = C_NULL_CHAR
                call shr_mpi_commrank( mpicom_CPLID, rank )
-               if (rank .lt. 5 .and. .not. load_maps_from_disk_a2o) then
+               if (rank .lt. 5 .and. compute_maps_online_a2o) then
                   write(lnum,"(I0.2)")rank !
                   outfile = 'intx_ao_'//trim(lnum)// '.h5m' // C_NULL_CHAR
                   ierr = iMOAB_WriteMesh(mbintxao, outfile, wopts) ! write local intx file

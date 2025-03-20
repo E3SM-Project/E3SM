@@ -138,7 +138,7 @@ contains
     logical                  :: samegrid_lg   ! samegrid land and glc
     logical                  :: esmf_map_flag ! .true. => use esmf for mapping
     logical                  :: lnd_present   ! .true. => land is present
-    logical                  :: cpl_compute_maps_online    ! .true.  => maps are computed online 
+    logical                  :: cpl_compute_maps_online    ! .true.  => maps are computed online
     logical                  :: iamroot_CPLID ! .true. => CPLID masterproc
     character(CL)            :: atm_gnam      ! atm grid
     character(CL)            :: lnd_gnam      ! lnd grid
@@ -165,7 +165,7 @@ contains
     integer arrsize  ! for setting the r2x fields on land to 0
     integer ent_type ! for setting tags
     real (kind=R8) , allocatable :: tmparray (:) ! used to set the r2x fields to 0
-    logical :: load_maps_from_disk_r2l, load_maps_from_disk_a2l
+    logical :: compute_maps_online_r2l, compute_maps_online_a2l
 
     integer  nghlay ! used to set the number of ghost layers, needed for bilinear map
     integer  nghlay_tgt
@@ -194,9 +194,9 @@ contains
       wgtIdr2l = 'conservative_r2l'//C_NULL_CHAR
       wgtIda2l_conservative = 'conservative_a2l'//C_NULL_CHAR
       wgtIda2l_bilinear = 'bilinear_a2l'//C_NULL_CHAR
-      load_maps_from_disk_r2l = .not. cpl_compute_maps_online ! read from disk or compute online
-      load_maps_from_disk_a2l = .not. cpl_compute_maps_online ! read from disk or compute online
-      ! load_maps_from_disk_a2l = .false. ! Explicitly force online computation
+      compute_maps_online_r2l = cpl_compute_maps_online ! read from disk or compute online
+      compute_maps_online_a2l = cpl_compute_maps_online ! read from disk or compute online
+      ! compute_maps_online_a2l = .false. ! Explicitly force read from disk
 #endif
 
     if (lnd_present) then
@@ -286,7 +286,7 @@ contains
                   call shr_sys_abort(subname//' ERROR in computing ROF-LND coverage')
                endif
 
-              if (.not. load_maps_from_disk_r2l) then
+              if (compute_maps_online_r2l) then
                   ierr =  iMOAB_ComputeMeshIntersectionOnSphere( mbrxid, mblxid, mbintxrl )
                   if (ierr .ne. 0) then
                     write(logunit,*) subname,' error in computing   rof lnd intx'
@@ -338,7 +338,7 @@ contains
 
               ! because we will project fields from rof to lnd grid, we need to define
               !  the r2x fields to lnd grid on coupler side
-              if (.not. load_maps_from_disk_r2l) then
+              if (compute_maps_online_r2l) then
                   volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
                   dm1 = "fv"//C_NULL_CHAR
                   dofnameS="GLOBAL_ID"//C_NULL_CHAR
@@ -480,7 +480,7 @@ contains
                   call shr_sys_abort(subname//' ERROR in computing ATM-LND coverage')
                endif
 
-              if (.not. load_maps_from_disk_a2l) then
+              if (compute_maps_online_a2l) then
                 if (iamroot_CPLID) then
                   write(logunit,*) 'iMOAB intersection between atm and land with id:', idintx
                 endif
@@ -521,7 +521,7 @@ contains
                 call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, atm-lnd')
               endif
 
-              if (.not. load_maps_from_disk_a2l) then
+              if (compute_maps_online_a2l) then
                   volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
                   if (atm_pg_active) then
                     dm1 = "fv"//C_NULL_CHAR

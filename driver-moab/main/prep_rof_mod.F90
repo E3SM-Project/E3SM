@@ -153,7 +153,7 @@ module prep_rof_mod
   real (kind=R8) , allocatable, private :: l2x_rm (:,:)
 
 #ifdef HAVE_MOAB
-  logical :: load_maps_from_disk_l2r, load_maps_from_disk_a2r
+  logical :: compute_maps_online_l2r, compute_maps_online_a2r
 #endif
 
   !================================================================================================
@@ -192,7 +192,7 @@ contains
     logical                     :: lnd_present   ! .true.  => lnd is present
     logical                     :: atm_present   ! .true.  => atm is present
     logical                     :: ocn_present   ! .true.  => ocn is present
-    logical                     :: cpl_compute_maps_online    ! .true.  => maps are computed online 
+    logical                     :: cpl_compute_maps_online    ! .true.  => maps are computed online
     logical                     :: iamroot_CPLID ! .true. => CPLID masterproc
     character(CL)               :: atm_gnam      ! atm grid
     character(CL)               :: lnd_gnam      ! lnd grid
@@ -237,9 +237,9 @@ contains
 #ifdef HAVE_MOAB
       wgtIdl2r = 'conservative_l2r'//C_NULL_CHAR
       wgtIda2r = 'conservative_a2r'//C_NULL_CHAR
-      load_maps_from_disk_l2r = .not. cpl_compute_maps_online ! read from disk or compute online
-      load_maps_from_disk_a2r = .not. cpl_compute_maps_online ! read from disk or compute online
-      ! load_maps_from_disk_l2r = .false. ! Explicitly force online computation
+      compute_maps_online_l2r = cpl_compute_maps_online ! read from disk or compute online
+      compute_maps_online_a2r = cpl_compute_maps_online ! read from disk or compute online
+      ! compute_maps_online_l2r = .false. ! Explicitly force read from disk
 #endif
 
     allocate(mapper_Sa2r)
@@ -379,7 +379,7 @@ contains
 
                ! if we are not loading maps from disk, compute the intersection mesh between
                ! LND and ROF meshes
-               if (.not. load_maps_from_disk_l2r) then
+               if (compute_maps_online_l2r) then
                   ierr = iMOAB_ComputeMeshIntersectionOnSphere( mblxid, mbrxid, mbintxlr )
                   if (ierr .ne. 0) then
                      write(logunit,*) subname,' error in computing LND ROF mesh intersection'
@@ -391,7 +391,7 @@ contains
 #ifdef MOABDEBUG
                wopts = C_NULL_CHAR
                call shr_mpi_commrank( mpicom_CPLID, rank )
-               if (rank .lt. 3 .and. .not. load_maps_from_disk_l2r) then
+               if (rank .lt. 3 .and. compute_maps_online_l2r) then
                   write(lnum,"(I0.2)")rank !
                   outfile = 'intx_lr_'//trim(lnum)// '.h5m' // C_NULL_CHAR
                   ierr = iMOAB_WriteMesh(mbintxlr, outfile, wopts) ! write local intx file
@@ -430,7 +430,7 @@ contains
                ! because we will project fields from lnd to rof grid, we need to define
                !  the l2x fields to rof grid on coupler side
 
-               if (.not. load_maps_from_disk_l2r) then
+               if (compute_maps_online_l2r) then
 
                   volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
                   dm1 = "fv"//C_NULL_CHAR
@@ -565,7 +565,7 @@ contains
 
             ! if we are not loading maps from disk, compute the intersection mesh between
             ! ATM and ROF meshes
-            if (.not. load_maps_from_disk_a2r) then
+            if (compute_maps_online_a2r) then
                ierr =  iMOAB_ComputeMeshIntersectionOnSphere( mbaxid, mbrxid, mbintxar )
                if (ierr .ne. 0) then
                   write(logunit,*) subname,' error in computing ATM-ROF mesh intersection'
@@ -630,7 +630,7 @@ contains
                call shr_sys_abort(subname//' ERROR in  defining tags for seq_flds_a2x_fields_to_rof on ROF cpl')
             endif
 
-            if (.not. load_maps_from_disk_a2r) then
+            if (compute_maps_online_a2r) then
 
                volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
                if (atm_pg_active) then

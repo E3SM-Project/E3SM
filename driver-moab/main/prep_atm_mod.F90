@@ -115,7 +115,7 @@ module prep_atm_mod
   real (kind=r8) , allocatable, private :: o2x_am (:,:)
   !real (kind=r8) , allocatable, private :: z2x_am (:,:)
   real (kind=r8) , allocatable, private :: xao_am (:,:)  ! ?
-  logical :: load_maps_from_disk_o2a, load_maps_from_disk_i2a, load_maps_from_disk_l2a
+  logical :: compute_maps_online_o2a, compute_maps_online_i2a, compute_maps_online_l2a
 #endif
   !================================================================================================
 
@@ -149,7 +149,7 @@ contains
    logical                          :: ocn_present    ! .true.  => ocn is present
    logical                          :: ice_present    ! .true.  => ice is present
    logical                          :: lnd_present    ! .true.  => lnd is prsent
-   logical                          :: cpl_compute_maps_online    ! .true.  => maps are computed online 
+   logical                          :: cpl_compute_maps_online    ! .true.  => maps are computed online
    character(CL)                    :: ocn_gnam       ! ocn grid
    character(CL)                    :: atm_gnam       ! atm grid
    character(CL)                    :: lnd_gnam       ! lnd grid
@@ -228,10 +228,10 @@ contains
       wgtIdo2a = 'conservative_o2a'//C_NULL_CHAR
       wgtIdi2a = 'conservative_i2a'//C_NULL_CHAR
       wgtIdl2a = 'conservative_l2a'//C_NULL_CHAR
-      load_maps_from_disk_o2a = .not. cpl_compute_maps_online ! read from disk or compute online
-      load_maps_from_disk_i2a = .not. cpl_compute_maps_online ! read from disk or compute online
-      load_maps_from_disk_l2a = .not. cpl_compute_maps_online ! read from disk or compute online
-      ! load_maps_from_disk_l2a = .false. ! Explicitly force online computation
+      compute_maps_online_o2a = cpl_compute_maps_online ! read from disk or compute online
+      compute_maps_online_i2a = cpl_compute_maps_online ! read from disk or compute online
+      compute_maps_online_l2a = cpl_compute_maps_online ! read from disk or compute online
+      ! compute_maps_online_l2a = .false. ! Explicitly force read from disk
 
       if (ocn_c2_atm) then
          if (iamroot_CPLID) then
@@ -302,7 +302,7 @@ contains
                   call shr_sys_abort(subname//' ERROR in computing OCN-ATM coverage')
                endif
 
-               if (.not. load_maps_from_disk_o2a) then
+               if (compute_maps_online_o2a) then
                   if (iamroot_CPLID) then
                      write(logunit,*) '....Computing weights'
                   endif
@@ -348,7 +348,7 @@ contains
                endif
                mapper_So2a%intx_context = idintx
 
-               if (.not. load_maps_from_disk_o2a) then
+               if (compute_maps_online_o2a) then
 
                   if (atm_pg_active) then
                      dm2 = "fv"//C_NULL_CHAR
@@ -587,7 +587,7 @@ contains
                call shr_sys_abort(subname//' ERROR in computing ICE-ATM coverage')
             endif
 
-            if (.not. load_maps_from_disk_i2a) then
+            if (compute_maps_online_i2a) then
                ierr =  iMOAB_ComputeMeshIntersectionOnSphere ( mbixid, mbaxid, mbintxia )
                if (ierr .ne. 0) then
                   write(logunit,*) subname,' error in computing ice atm intx'
@@ -625,7 +625,7 @@ contains
             mapper_Si2a%weight_identifier = wgtIdi2a
             mapper_Si2a%mbname = 'mapper_Si2a'
 
-            if (.not. load_maps_from_disk_i2a) then
+            if (compute_maps_online_i2a) then
                volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
                if (atm_pg_active) then
                   dm2 = "fv"//C_NULL_CHAR
@@ -672,7 +672,7 @@ contains
 #ifdef MOABDEBUG
             wopts = C_NULL_CHAR
             call shr_mpi_commrank( mpicom_CPLID, rank )
-            if (rank .lt. 3 .and. .not. load_maps_from_disk_i2a) then
+            if (rank .lt. 3 .and. compute_maps_online_i2a) then
                write(lnum,"(I0.2)")rank !
                outfile = 'intx_ia_'//trim(lnum)// '.h5m' // C_NULL_CHAR
                ierr = iMOAB_WriteMesh(mbintxia, outfile, wopts) ! write local intx file
@@ -795,7 +795,7 @@ contains
                   call shr_sys_abort(subname//' ERROR in computing LND-ATM coverage')
                endif
 
-               if (.not. load_maps_from_disk_l2a) then
+               if (compute_maps_online_l2a) then
                   if (iamroot_CPLID) then
                      write(logunit,*) 'iMOAB intersection between LND and ATM with id:', idintx
                   endif
@@ -809,7 +809,7 @@ contains
                ! write intx only if true intx file:
                wopts = C_NULL_CHAR
                call shr_mpi_commrank( mpicom_CPLID, rank )
-                  if (rank .lt. 5 .and. .not. load_maps_from_disk_l2a) then ! write only a few intx files
+                  if (rank .lt. 5 .and. compute_maps_online_l2a) then ! write only a few intx files
                   write(lnum,"(I0.2)")rank !
                   outfile = 'intx_la'//trim(lnum)// '.h5m' // C_NULL_CHAR
                   ierr = iMOAB_WriteMesh(mbintxla, outfile, wopts) ! write local intx file
@@ -833,7 +833,7 @@ contains
                   call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ice-atm')
                endif
 
-               if (.not. load_maps_from_disk_l2a) then
+               if (compute_maps_online_l2a) then
 
                   ! need to compute weigths
                   volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
