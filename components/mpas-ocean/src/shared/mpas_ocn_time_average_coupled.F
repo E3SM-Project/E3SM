@@ -625,12 +625,12 @@ module ocn_time_average_coupled
 
                 zMin = zMid(minLevelCell(iCell), iCell)
                 zMax = zMid(maxLevelCell(iCell), iCell)
-                if (glcz > zMin) then
+                if (glcz > zMin .or. minLevelCell(iCell) == maxLevelCell(iCell)) then
                     ! above the middle of the top level so no interpolation
                     iLevelAbove = minLevelCell(iCell)
                     iLevelBelow = minLevelCell(iCell)
                     alpha = 0.0_RKIND
-                else if (glcz > zMax) then
+                else if (glcz < zMax) then
                     ! below the middle of the bottom level so no interpolation
                     iLevelAbove = maxLevelCell(iCell)
                     iLevelBelow = maxLevelCell(iCell)
