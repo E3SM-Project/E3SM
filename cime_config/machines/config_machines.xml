@@ -2480,6 +2480,7 @@
       <env name="PERL5LIB">/grand/E3SMinput/soft/perl5/lib/perl5</env>
       <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
+      <env name="FI_CXI_RX_MATCH_MODE">hybrid</env>
     </environment_variables>
     <environment_variables compiler="gnu.*">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /grand/E3SMinput/soft/moab/gnu; else echo "$MOAB_ROOT"; fi}</env>
