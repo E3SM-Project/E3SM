@@ -276,6 +276,7 @@ contains
 
     if (use_fates) then
        call alm_fates%wrap_FatesAtmosphericCarbonFluxes(bounds, num_soilc, filter_soilc)
+       call alm_fates%wrap_FatesCarbonStocks(bounds, num_soilc, filter_soilc)
     endif
 
   end subroutine EcosystemDynLeaching

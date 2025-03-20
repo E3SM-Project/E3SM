@@ -271,6 +271,7 @@ module ELMFatesInterfaceMod
       procedure, public :: wrap_canopy_radiation
       procedure, public :: wrap_WoodProducts
       procedure, public :: wrap_FatesAtmosphericCarbonFluxes
+      procedure, public :: wrap_FatesCarbonStocks
       procedure, public :: wrap_update_hifrq_hist
       procedure, public :: TransferZ0mDisp
       procedure, public :: InterpFileInputs  ! Interpolate inputs from files
@@ -2820,6 +2821,45 @@ contains
     end associate
     return
  end subroutine wrap_FatesAtmosphericCarbonFluxes
+
+ ! ======================================================================================
+ 
+ subroutine wrap_FatesCarbonStocks(this, bounds_clump, fc, filterc)
+
+   ! summarize the high-level fluxes that integrate information from both
+   ! FATES and outside-of-FATES decomposition and product decay code.
+   
+   use FatesConstantsMod     , only : g_per_kg
+
+   ! !ARGUMENTS:
+   class(hlm_fates_interface_type), intent(inout) :: this
+   type(bounds_type)              , intent(in)    :: bounds_clump
+   integer                        , intent(in)    :: fc                   ! size of column filter
+   integer                        , intent(in)    :: filterc(fc)          ! column filter
+   
+   ! Locacs
+   integer                                        :: s,c,icc
+   integer                                        :: nc
+
+   associate(&
+        totecosysc     => col_cs%totecosysc)
+
+    nc = bounds_clump%clump_index
+    ! Loop over columns
+    do icc = 1,fc
+       c = filterc(icc)
+       s = this%f2hmap(nc)%hsites(c)
+
+       totecosysc(c) = totecosysc(c) &
+            + (this%fates(nc)%bc_out(s)%veg_c_si &
+            + this%fates(nc)%bc_out(s)%litter_cwd_c_si &
+            + this%fates(nc)%bc_out(s)%seed_c_si) * g_per_kg
+ 
+    end do
+
+    end associate
+    return
+  end subroutine wrap_FatesCarbonStocks
 
  ! ======================================================================================
  
