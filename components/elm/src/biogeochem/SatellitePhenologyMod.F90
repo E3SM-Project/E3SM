@@ -449,6 +449,15 @@ contains
     	months(2) = 1
     	kyrs(2) = 2000+ kyr + 1
     end if
+    
+    do while (kyrs(1) > 2019)
+    	kyrs(1) = kyrs(1) - 19
+    end do
+    
+    do while (kyrs(2) > 2019)
+    	kyrs(2) = kyrs(2) - 19
+    end do
+    
     timwt(1) = (it(1)+0.5_r8) - t
     timwt(2) = 1._r8-timwt(1)
 
@@ -613,8 +622,8 @@ contains
     ! Determine necessary indices
 
     allocate(&
-         mlai(bounds%begg:bounds%endg,1:max_topounits,0:numpft,2001:2020), &
-         msai(bounds%begg:bounds%endg,1:max_topounits,0:numpft,2001:2020), &  
+         mlai(bounds%begg:bounds%endg,1:max_topounits,0:numpft,2001:2019), &
+         msai(bounds%begg:bounds%endg,1:max_topounits,0:numpft,2001:2019), &  
          mhgtt(bounds%begg:bounds%endg,1:max_topounits,0:numpft), &
          mhgtb(bounds%begg:bounds%endg,1:max_topounits,0:numpft), &
          stat=ier)
