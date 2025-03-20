@@ -182,6 +182,7 @@ Int Functions<S,D>
     const auto onr                 = ekat::subview(prognostic_state.nr, i);
     const auto oqi                 = ekat::subview(prognostic_state.qi, i);
     const auto oqm                 = ekat::subview(prognostic_state.qm, i);
+    const auto oqmr                = ekat::subview(prognostic_state.qmr, i);
     const auto oni                 = ekat::subview(prognostic_state.ni, i);
     const auto obm                 = ekat::subview(prognostic_state.bm, i);
     const auto oqv                 = ekat::subview(prognostic_state.qv, i);
@@ -250,7 +251,7 @@ Int Functions<S,D>
       opres, odpres, odz, onc_nuceat_tend, onccn_prescribed, oinv_exner, exner, inv_cld_frac_l, inv_cld_frac_i,
       inv_cld_frac_r,
       T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr,
-      rhofaci, acn, oqv, oth, oqc, onc, oqr, onr, oqi, oni, oqm,
+      rhofaci, acn, oqv, oth, oqc, onc, oqr, onr, oqi, oni, oqm, oqmr,
       obm, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld,
       ni_incld, bm_incld, nucleationPossible, hydrometeorsPresent, runtime_options);
 
@@ -268,7 +269,7 @@ Int Functions<S,D>
       lookup_tables.dnu_table_vals, lookup_tables.ice_table_vals, lookup_tables.collect_table_vals, lookup_tables.revap_table_vals, opres, odpres, odz, onc_nuceat_tend, oinv_exner,
       exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, oni_activated, oinv_qc_relvar, ocld_frac_i,
       ocld_frac_l, ocld_frac_r, oqv_prev, ot_prev, T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn,
-      oqv, oth, oqc, onc, oqr, onr, oqi, oni, oqm, obm,
+      oqv, oth, oqc, onc, oqr, onr, oqi, oni, oqm, oqmr, obm,
       qc_incld, qr_incld, qi_incld, qm_incld, nc_incld,
       nr_incld, ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1, cdistr,
       mu_r, lamr, logn0r, oqv2qi_depos_tend, oprecip_total_tend, onevapr, qr_evap_tend,

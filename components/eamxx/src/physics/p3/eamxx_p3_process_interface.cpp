@@ -76,15 +76,16 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   add_field<Updated> ("T_mid",       scalar3d_layout_mid, K,      grid_name, ps);  // T_mid is the only one of these variables that is also updated.
 
   // Prognostic State:  (all fields are both input and output)
-  add_tracer<Updated>("qv", m_grid, kg/kg, ps);
-  add_tracer<Updated>("qc", m_grid, kg/kg, ps);
-  add_tracer<Updated>("qr", m_grid, kg/kg, ps);
-  add_tracer<Updated>("qi", m_grid, kg/kg, ps);
-  add_tracer<Updated>("qm", m_grid, kg/kg, ps);
-  add_tracer<Updated>("nc", m_grid, 1/kg,  ps);
-  add_tracer<Updated>("nr", m_grid, 1/kg,  ps);
-  add_tracer<Updated>("ni", m_grid, 1/kg,  ps);
-  add_tracer<Updated>("bm", m_grid, 1/kg,  ps);
+  add_tracer<Updated>("qv",  m_grid, kg/kg, ps);
+  add_tracer<Updated>("qc",  m_grid, kg/kg, ps);
+  add_tracer<Updated>("qr",  m_grid, kg/kg, ps);
+  add_tracer<Updated>("qi",  m_grid, kg/kg, ps);
+  add_tracer<Updated>("qm",  m_grid, kg/kg, ps);
+  add_tracer<Updated>("qmr", m_grid, kg/kg, ps);
+  add_tracer<Updated>("nc",  m_grid, 1/kg,  ps);
+  add_tracer<Updated>("nr",  m_grid, 1/kg,  ps);
+  add_tracer<Updated>("ni",  m_grid, 1/kg,  ps);
+  add_tracer<Updated>("bm",  m_grid, 1/kg,  ps);
 
   // Diagnostic Inputs: (only the X_prev fields are both input and output, all others are just inputs)
   add_field<Required>("nc_nuceat_tend",     scalar3d_layout_mid, 1/(kg*s), grid_name, ps);
@@ -270,6 +271,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("qi"),m_grid,0.0,0.1,false);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("qr"),m_grid,0.0,0.1,false);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("qm"),m_grid,0.0,0.1,false);
+//  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("qmr"),m_grid,0.0,0.1,false);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("nc"),m_grid,0.0,1.e11,false);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("nr"),m_grid,0.0,1.e10,false);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("ni"),m_grid,0.0,1.e10,false);
@@ -314,6 +316,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   const  auto& nr             = get_field_out("nr").get_view<Pack**>();
   const  auto& qi             = get_field_out("qi").get_view<Pack**>();
   const  auto& qm             = get_field_out("qm").get_view<Pack**>();
+  const  auto& qmr            = get_field_out("qmr").get_view<Pack**>();
   const  auto& ni             = get_field_out("ni").get_view<Pack**>();
   const  auto& bm             = get_field_out("bm").get_view<Pack**>();
   auto qv_prev                = get_field_out("qv_prev_micro_step").get_view<Pack**>();
@@ -331,7 +334,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   // -- Set values for the pre-amble structure
   p3_preproc.set_variables(m_num_cols,m_num_levs,pmid,pmid_dry,pseudo_density,pseudo_density_dry,
                         T_atm,cld_frac_t_in,cld_frac_l_in,cld_frac_i_in,
-                        qv, qc, nc, qr, nr, qi, qm, ni, bm, qv_prev,
+                        qv, qc, nc, qr, nr, qi, qm, qmr, ni, bm, qv_prev,
                         inv_exner, th_atm, cld_frac_l, cld_frac_i, cld_frac_r, dz, runtime_options);
   // --Prognostic State Variables:
   prog_state.qc     = p3_preproc.qc;
@@ -340,6 +343,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   prog_state.nr     = p3_preproc.nr;
   prog_state.qi     = p3_preproc.qi;
   prog_state.qm     = p3_preproc.qm;
+  prog_state.qmr    = p3_preproc.qmr;
   prog_state.ni     = p3_preproc.ni;
   prog_state.bm     = p3_preproc.bm;
   prog_state.th     = p3_preproc.th_atm;
@@ -486,7 +490,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
                             prog_state.th,pmid,pmid_dry,T_atm,t_prev,
                             pseudo_density,pseudo_density_dry,
                             prog_state.qv, prog_state.qc, prog_state.nc, prog_state.qr,prog_state.nr,
-                            prog_state.qi, prog_state.qm, prog_state.ni,prog_state.bm,qv_prev,
+                            prog_state.qi, prog_state.qm, prog_state.qmr, prog_state.ni,prog_state.bm,qv_prev,
                             diag_outputs.diag_eff_radius_qc,diag_outputs.diag_eff_radius_qi,
                             diag_outputs.diag_eff_radius_qr,
                             diag_outputs.precip_liq_surf,diag_outputs.precip_ice_surf,

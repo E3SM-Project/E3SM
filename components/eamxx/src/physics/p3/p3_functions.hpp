@@ -186,6 +186,8 @@ struct Functions
     view_2d<Spack> qi;
     // Ice rime mass mixing ratio [kg kg-1]
     view_2d<Spack> qm;
+    // Ice rime mass due to rain riming and freezing mixing ratio [kg kg-1] 
+    view_2d<Spack> qmr;
     // Ice total number mixing ratio [# kg-1]
     view_2d<Spack> ni;
     // Ice rime volume mixing ratio [m3 kg-1]
@@ -867,7 +869,7 @@ struct Functions
     const Scalar& nmltratio, const Spack& rho_qm_cloud, 
     Spack& ncheti_cnt, Spack& nicnt, Spack& ninuc_cnt, Spack& qcheti_cnt, Spack& qicnt, Spack& qinuc_cnt,  
     Spack& th_atm, Spack& qv, Spack& qi,
-    Spack& ni, Spack& qm, Spack& bm, Spack& qc,  Spack& nc, Spack& qr, Spack& nr, const bool& use_hetfrz_classnuc,
+    Spack& ni, Spack& qm, Spack& qmr, Spack& bm, Spack& qc,  Spack& nc, Spack& qr, Spack& nr, const bool& use_hetfrz_classnuc,
     const Smask& context = Smask(true));
 
   // TODO (comments)
@@ -1104,6 +1106,7 @@ struct Functions
     const uview_1d<Spack>& qi,
     const uview_1d<Spack>& ni,
     const uview_1d<Spack>& qm,
+    const uview_1d<Spack>& qmr,
     const uview_1d<Spack>& bm,
     const uview_1d<Spack>& qc_incld,
     const uview_1d<Spack>& qr_incld,
@@ -1152,6 +1155,7 @@ struct Functions
     const uview_2d<Spack>& qi,
     const uview_2d<Spack>& ni,
     const uview_2d<Spack>& qm,
+    const uview_2d<Spack>& qmr,
     const uview_2d<Spack>& bm,
     const uview_2d<Spack>& qc_incld,
     const uview_2d<Spack>& qr_incld,
@@ -1216,6 +1220,7 @@ struct Functions
     const uview_1d<Spack>& qi,
     const uview_1d<Spack>& ni,
     const uview_1d<Spack>& qm,
+    const uview_1d<Spack>& qmr,
     const uview_1d<Spack>& bm,
     const uview_1d<Spack>& qc_incld,
     const uview_1d<Spack>& qr_incld,
@@ -1309,6 +1314,7 @@ struct Functions
     const uview_2d<Spack>& qi,
     const uview_2d<Spack>& ni,
     const uview_2d<Spack>& qm,
+    const uview_2d<Spack>& qmr,
     const uview_2d<Spack>& bm,
     const uview_2d<Spack>& qc_incld,
     const uview_2d<Spack>& qr_incld,

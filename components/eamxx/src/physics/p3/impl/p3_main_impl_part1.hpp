@@ -52,6 +52,7 @@ void Functions<S,D>
   const uview_1d<Spack>& qi,
   const uview_1d<Spack>& ni,
   const uview_1d<Spack>& qm,
+  const uview_1d<Spack>& qmr,
   const uview_1d<Spack>& bm,
   const uview_1d<Spack>& qc_incld,
   const uview_1d<Spack>& qr_incld,
@@ -174,6 +175,7 @@ void Functions<S,D>
     qi(k).set(drymass, 0);
     ni(k).set(drymass, 0);
     qm(k).set(drymass, 0);
+    qmr(k).set(drymass, 0);
     bm(k).set(drymass, 0);
     if ( not_drymass.any() ) {
       hydrometeorsPresent = true; // final update
@@ -185,6 +187,7 @@ void Functions<S,D>
     qi(k).set(drymass, 0);
     ni(k).set(drymass, 0);
     qm(k).set(drymass, 0);
+    qmr(k).set(drymass, 0);
     bm(k).set(drymass, 0);
 
     T_atm(k) = th_atm(k) * exner(k);
