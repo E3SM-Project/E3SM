@@ -18,7 +18,7 @@ void Functions<S,D>
   const Spack& inv_exner, const bool do_predict_nc,
   const Smask& log_wetgrowth, const Scalar dt,  const Scalar& nmltratio, const Spack& rho_qm_cloud,
   Spack& ncheti_cnt, Spack& nicnt, Spack& ninuc_cnt, Spack& qcheti_cnt, Spack& qicnt, Spack& qinuc_cnt,
-  Spack& th_atm, Spack& qv, Spack& qi, Spack& ni, Spack& qm, Spack& bm, Spack& qc,
+  Spack& th_atm, Spack& qv, Spack& qi, Spack& ni, Spack& qm, Spack& qmr, Spack& bm, Spack& qc,
   Spack& nc, Spack& qr, Spack& nr, const bool& use_hetfrz_classnuc,
   const Smask& context)
 {
@@ -55,21 +55,26 @@ void Functions<S,D>
   if ( qi_not_small.any() ) {
     bm.set(qi_not_small, bm - ((qi2qv_sublim_tend + qi2qr_melt_tend) / qi) * dt * bm);
     qm.set(qi_not_small, qm - ((qi2qv_sublim_tend + qi2qr_melt_tend) * qm / qi) * dt);
+    qmr.set(qi_not_small, qmr - ((qi2qv_sublim_tend + qi2qr_melt_tend) * qmr / qi) * dt);
     qi.set(qi_not_small, qi - (qi2qv_sublim_tend + qi2qr_melt_tend) * dt);
   }
 
   if(use_hetfrz_classnuc){
     const auto dum = (qr2qi_collect_tend + qc2qi_collect_tend + qr2qi_immers_freeze_tend + qcheti_cnt+qicnt) * dt;
+    const auto dum_r = (qr2qi_collect_tend + qr2qi_immers_freeze_tend) * dt;
     qi.set(context, qi + (qv2qi_vapdep_tend + qv2qi_nucleat_tend + qc2qi_berg_tend+qinuc_cnt)*dt + dum);
     qm.set(context, qm + dum);
+    qmr.set(context, qmr + dum_r);
     bm.set(context, bm + (qr2qi_collect_tend * INV_RHO_RIMEMAX + qc2qi_collect_tend / rho_qm_cloud + (qr2qi_immers_freeze_tend +
                                                                               qcheti_cnt+qicnt) * INV_RHO_RIMEMAX) * dt);
     ni.set(context, ni + (ni_nucleat_tend - ni2nr_melt_tend - ni_sublim_tend - ni_selfcollect_tend + nr2ni_immers_freeze_tend +ncheti_cnt+nicnt+ninuc_cnt)*dt);
   }
   else{
     const auto dum = (qr2qi_collect_tend + qc2qi_collect_tend + qr2qi_immers_freeze_tend + qc2qi_hetero_freeze_tend) * dt;
+    const auto dum_r = (qr2qi_collect_tend + qr2qi_immers_freeze_tend) * dt;
     qi.set(context, qi + (qv2qi_vapdep_tend + qv2qi_nucleat_tend + qc2qi_berg_tend) * dt + dum);
     qm.set(context, qm + dum);
+    qmr.set(context, qmr + dum_r);
     bm.set(context, bm + (qr2qi_collect_tend * INV_RHO_RIMEMAX + qc2qi_collect_tend / rho_qm_cloud + (qr2qi_immers_freeze_tend +
                                                                               qc2qi_hetero_freeze_tend) * INV_RHO_RIMEMAX) * dt);
     ni.set(context, ni + (ni_nucleat_tend - ni2nr_melt_tend - ni_sublim_tend - ni_selfcollect_tend + nr2ni_immers_freeze_tend + nc2ni_immers_freeze_tend) * dt);
@@ -80,6 +85,7 @@ void Functions<S,D>
   const auto qm_lt_thresh = qm < 0 && context;
   if (qm_lt_thresh.any()){
     qm.set(qm_lt_thresh, 0);
+    qmr.set(qm_lt_thresh, 0);
     bm.set(qm_lt_thresh, 0);
   }
 

@@ -647,6 +647,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <qr                >0.0</qr>
     <nr                >0.0</nr>
     <qm                >0.0</qm>
+    <qmr               >0.0</qmr>
     <bm                >0.0</bm>
     <ni_activated      >0.0</ni_activated>
     <nc_nuceat_tend    >0.0</nc_nuceat_tend>

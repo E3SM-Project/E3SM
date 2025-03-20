@@ -49,6 +49,7 @@ void Functions<Real,DefaultDevice>
   const uview_2d<Spack>& qi,
   const uview_2d<Spack>& ni,
   const uview_2d<Spack>& qm,
+  const uview_2d<Spack>& qmr,
   const uview_2d<Spack>& bm,
   const uview_2d<Spack>& qc_incld,
   const uview_2d<Spack>& qr_incld,
@@ -79,7 +80,7 @@ void Functions<Real,DefaultDevice>
       ekat::subview(T_atm, i), ekat::subview(rho, i), ekat::subview(inv_rho, i), ekat::subview(qv_sat_l, i),
       ekat::subview(qv_sat_i, i), ekat::subview(qv_supersat_i, i), ekat::subview(rhofacr, i), ekat::subview(rhofaci, i), ekat::subview(acn, i),
       ekat::subview(qv, i), ekat::subview(th_atm, i), ekat::subview(qc, i), ekat::subview(nc, i), ekat::subview(qr, i), ekat::subview(nr, i), ekat::subview(qi, i),
-      ekat::subview(ni, i), ekat::subview(qm, i), ekat::subview(bm, i), ekat::subview(qc_incld, i), ekat::subview(qr_incld, i), ekat::subview(qi_incld, i),
+      ekat::subview(ni, i), ekat::subview(qm, i), ekat::subview(qmr, i), ekat::subview(bm, i), ekat::subview(qc_incld, i), ekat::subview(qr_incld, i), ekat::subview(qi_incld, i),
       ekat::subview(qm_incld, i), ekat::subview(nc_incld, i), ekat::subview(nr_incld, i), ekat::subview(ni_incld, i), ekat::subview(bm_incld, i),
       nucleationPossible(i), hydrometeorsPresent(i), runtime_options);
 

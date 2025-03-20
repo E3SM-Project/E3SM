@@ -148,6 +148,7 @@ Int Functions<Real,DefaultDevice>
   auto nr                      = prognostic_state.nr;
   auto qi                      = prognostic_state.qi;
   auto qm                      = prognostic_state.qm;
+  auto qmr                     = prognostic_state.qmr;
   auto ni                      = prognostic_state.ni;
   auto bm                      = prognostic_state.bm;
   auto qv                      = prognostic_state.qv;
@@ -260,7 +261,7 @@ Int Functions<Real,DefaultDevice>
       pres, dpres, dz, nc_nuceat_tend, nccn_prescribed, inv_exner, exner, inv_cld_frac_l, inv_cld_frac_i,
       inv_cld_frac_r,
       T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr,
-      rhofaci, acn, qv, th, qc, nc, qr, nr, qi, ni, qm,
+      rhofaci, acn, qv, th, qc, nc, qr, nr, qi, ni, qm, qmr, 
       bm, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld,
       ni_incld, bm_incld, nucleationPossible, hydrometeorsPresent, runtime_options);
 
@@ -274,7 +275,7 @@ Int Functions<Real,DefaultDevice>
       lookup_tables.revap_table_vals, pres, dpres, dz, nc_nuceat_tend, inv_exner,
       exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i,
       cld_frac_l, cld_frac_r, qv_prev, t_prev, T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn,
-      qv, th, qc, nc, qr, nr, qi, ni, qm, bm, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld,
+      qv, th, qc, nc, qr, nr, qi, ni, qm, qmr, bm, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld,
       nr_incld, ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1, cdistr,
       mu_r, lamr, logn0r, qv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend,
       vap_liq_exchange, vap_ice_exchange, liq_ice_exchange,

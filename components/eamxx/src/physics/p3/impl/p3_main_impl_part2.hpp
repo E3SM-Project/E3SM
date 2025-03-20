@@ -67,6 +67,7 @@ void Functions<S,D>
   const uview_1d<Spack>& qi,
   const uview_1d<Spack>& ni,
   const uview_1d<Spack>& qm,
+  const uview_1d<Spack>& qmr,
   const uview_1d<Spack>& bm,
   const uview_1d<Spack>& qc_incld,
   const uview_1d<Spack>& qr_incld,
@@ -492,7 +493,7 @@ void Functions<S,D>
       qc2qi_hetero_freeze_tend, qc2qi_collect_tend, qc2qr_ice_shed_tend, nc_collect_tend, nc2ni_immers_freeze_tend, ncshdc, qr2qi_collect_tend, nr_collect_tend,  qr2qi_immers_freeze_tend,
       nr2ni_immers_freeze_tend, nr_ice_shed_tend, qi2qr_melt_tend, ni2nr_melt_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend, qv2qi_nucleat_tend, ni_nucleat_tend, ni_selfcollect_tend, ni_sublim_tend,
       qc2qi_berg_tend, inv_exner(k), predictNc, wetgrowth, dt, nmltratio,
-      rho_qm_cloud, ncheti_cnt, nicnt, ninuc_cnt, qcheti_cnt, qicnt, qinuc_cnt,  th_atm(k), qv(k), qi(k), ni(k), qm(k), bm(k), qc(k),
+      rho_qm_cloud, ncheti_cnt, nicnt, ninuc_cnt, qcheti_cnt, qicnt, qinuc_cnt,  th_atm(k), qv(k), qi(k), ni(k), qm(k), qmr(k), bm(k), qc(k),
       nc(k), qr(k), nr(k), use_hetfrz_classnuc, not_skip_all);
 
     //-- warm-phase only processes:
