@@ -63,6 +63,8 @@ atmosphere_processes:
         do_prescribed_ccn: false
         enable_column_conservation_checks: true
         max_total_ni: 740.0e3
+        # HACK: P3 should have no knowledge of this stuff! SHOC should decide this and P3 should not care!
+        use_dynamics_advected_only_nc: true
       shoc:
         enable_column_conservation_checks: true
         lambda_low: 0.001

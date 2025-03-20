@@ -342,7 +342,12 @@ void MAMGenericInterface::add_tracers_wet_atm() {
   add_tracer<Required>("qi", grid_, q_unit);
 
   // cloud liquid number mixing ratio [1/kg]
-  add_tracer<Required>("nc", grid_, n_unit);
+  // HACK: P3 should have no knowledge of this stuff! SHOC should decide this and P3 should not care!
+  // HACK: This is needed because that's how we are declaring the field in P3
+  // TODO: WHY ARE WE NOT UPDATING NC HERE???????????????????????????????????
+  // TODO: IF WE ARE NOT ADVECTING IN SHOC, WHAT ARE DOING HERE?
+  // TODO: Maybe we really should just not mix nc in MAM...
+  add_tracer<Required>("nc", grid_, n_unit, 1, TracerAdvection::DynamicsOnly);
 
   // cloud ice number mixing ratio [1/kg]
   add_tracer<Required>("ni", grid_, n_unit);

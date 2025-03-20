@@ -233,6 +233,8 @@ be lost if SCREAM_HACK_XML is not enabled.
       <set_cld_frac_r_to_one type="logical" doc="set P3 input rain cloud fraction to 1 everywhere"  >false</set_cld_frac_r_to_one>
       <set_cld_frac_i_to_one type="logical" doc="set P3 input ice cloud fraction to 1 everywhere"   >false</set_cld_frac_i_to_one>
       <use_separate_ice_liq_frac type="logical" doc="use separate ice and liquid cloud fractions from shoc">false</use_separate_ice_liq_frac>
+      <!-- HACK: P3 should have no knowledge of this stuff! SHOC should decide this and P3 should not care! -->
+      <use_dynamics_advected_only_nc type="logical" doc="use only advected nc from dynamics">false</use_dynamics_advected_only_nc>
     </p3>
 
     <!-- SHOC macrophysics -->

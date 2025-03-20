@@ -81,7 +81,12 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   add_tracer<Updated>("qr", m_grid, kg/kg, ps);
   add_tracer<Updated>("qi", m_grid, kg/kg, ps);
   add_tracer<Updated>("qm", m_grid, kg/kg, ps);
-  add_tracer<Updated>("nc", m_grid, 1/kg,  ps);
+  // HACK: P3 should have no knowledge of this stuff! SHOC should decide this and P3 should not care!
+  if (runtime_options.use_dynamics_advected_only_nc) {
+    add_tracer<Updated>("nc", m_grid, 1/kg,  ps, TracerAdvection::DynamicsOnly);
+  } else {
+    add_tracer<Updated>("nc", m_grid, 1/kg,  ps);
+  }
   add_tracer<Updated>("nr", m_grid, 1/kg,  ps);
   add_tracer<Updated>("ni", m_grid, 1/kg,  ps);
   add_tracer<Updated>("bm", m_grid, 1/kg,  ps);

@@ -398,6 +398,7 @@ inline std::shared_ptr<AbstractRemapper> create_horiz_remapper(
     remapper = std::make_shared<IdentityRemapper>(
         horiz_interp_tgt_grid, IdentityRemapper::SrcAliasTgt);
   } else {
+    // TODO: fix when supporting IOP (which will be coarser than the data grid)
     EKAT_REQUIRE_MSG(tracer_data.ncols_data <= ncols_model,
                      "Error! We do not allow to coarsen tracer external "
                      "forcing data to fit the "
