@@ -1,0 +1,4 @@
+This testdef is used to test a stealth feature in mpaso introduced by
+PR #7087. It simplies changes one mpaso namelist variable,
+    config_use_freshwaterTracers
+from its default value of .false. to .true..
