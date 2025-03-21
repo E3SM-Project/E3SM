@@ -90,15 +90,15 @@ void Functions<S,D>
   const P3Runtime& runtime_options)
 {
   // Get temporary workspaces needed for the ice-sed calculation
-  uview_1d<Spack> V_qit, V_nit, flux_nit, flux_bir, flux_qir, flux_qit;
-  workspace.template take_many_contiguous_unsafe<6>(
-    {"V_qit", "V_nit", "flux_nit", "flux_bir", "flux_qir", "flux_qit"},
-    {&V_qit, &V_nit, &flux_nit, &flux_bir, &flux_qir, &flux_qit});
+  uview_1d<Spack> V_qit, V_nit, flux_nit, flux_bir, flux_qir, flux_qit, flux_qirr;
+  workspace.template take_many_contiguous_unsafe<7>(
+    {"V_qit", "V_nit", "flux_nit", "flux_bir", "flux_qir", "flux_qit","flux_qirr"},
+    {&V_qit, &V_nit, &flux_nit, &flux_bir, &flux_qir, &flux_qit, $flux_qirr});
 
-  const view_1d_ptr_array<Spack, 4>
-    fluxes_ptr = {&flux_qit, &flux_nit, &flux_qir, &flux_bir},
-    vs_ptr     = {&V_qit, &V_nit, &V_qit, &V_qit},
-    qnr_ptr    = {&qi, &ni, &qm, &bm};
+  const view_1d_ptr_array<Spack, 5>
+    fluxes_ptr = {&flux_qit, &flux_nit, &flux_qir, &flux_bir,&flux_qirr},
+    vs_ptr     = {&V_qit, &V_nit, &V_qit, &V_qit, &V_qit},
+    qnr_ptr    = {&qi, &ni, &qm, &bm, &qmr};
 
   // find top, determine qxpresent
   const auto sqi = scalarize(qi);
@@ -219,6 +219,7 @@ void Functions<S,D>
   const uview_1d<Spack>& qi,
   const uview_1d<Spack>& ni,
   const uview_1d<Spack>& qm,
+  const uview_1d<Spack>& qmr,
   const uview_1d<Spack>& bm,
   const uview_1d<Spack>& th_atm)
 {
@@ -257,6 +258,7 @@ void Functions<S,D>
     th_atm(pk).set   (qc_ge_small, th_atm(pk) + inv_exner(pk)*Qc_nuc*latice*inv_cp);
 
     qm(pk).set(qr_ge_small, qm(pk) + Qr_nuc);
+    qmr(pk).set(qr_ge_small, qmr(pk) + Qr_nuc);
     qi(pk).set(qr_ge_small, qi(pk) + Qr_nuc);
     bm(pk).set(qr_ge_small, bm(pk) + Qr_nuc*inv_rho_rimeMax);
     ni(pk).set(qr_ge_small, ni(pk) + Nr_nuc);
