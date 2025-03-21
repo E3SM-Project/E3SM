@@ -4,8 +4,11 @@
 #include "share/property_checks/property_check.hpp"
 #include "share/grid/abstract_grid.hpp"
 #include "share/field/field.hpp"
+#include "share/field/field_utils.hpp"
 
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
+
+#include "ekat/mpi/ekat_comm.hpp"
 
 namespace scream {
 
@@ -26,10 +29,14 @@ class MassAndEnergyColumnConservationCheck: public PropertyCheck {
   template <typename S>
   using uview_2d = typename ekat::template Unmanaged<view_2d<S> >;
 
+  //using namespace ShortFieldTagsNames;
+  //using namespace ekat::units;
+
 public:
 
   // Constructor
-  MassAndEnergyColumnConservationCheck (const std::shared_ptr<const AbstractGrid>& grid,
+  MassAndEnergyColumnConservationCheck (const ekat::Comm& comm,
+                                        const std::shared_ptr<const AbstractGrid>& grid,
                                         const Real    mass_error_tolerance,
                                         const Real    energy_error_tolerance,
                                         const Field&  pseudo_density_ptr,
@@ -115,6 +122,7 @@ public:
 protected:
 
   std::shared_ptr<const AbstractGrid> m_grid;
+  ekat::Comm m_comm;
   std::map<std::string, Field>  m_fields;
 
   int m_num_cols;
@@ -122,6 +130,9 @@ protected:
   Real m_dt;
   Real m_mass_tol;
   Real m_energy_tol;
+
+  Real pb_fixer;
+  Real total_mass, total_energy_before, total_energy_after, total_flux;
 
   // Current value for total energy. These values
   // should be updated before a process is run.

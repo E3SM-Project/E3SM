@@ -63,6 +63,16 @@ AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
   m_conservation_data.has_column_conservation_check =
       m_params.get<bool>("enable_column_conservation_checks", false);
 
+  // Energy fixer
+  m_conservation_data.has_energy_fixer =
+      m_params.get<bool>("enable_energy_fixer", false);
+
+  //either energy fixer or column checks, but not both at the same time
+  EKAT_REQUIRE_MSG ( 
+      !(m_conservation_data.has_energy_fixer && m_conservation_data.has_column_conservation_check),
+      "Error! In param list " + m_params.name() + " both has_energy_fixer and"
+           " has_column_conservation_check are on, which is not allowed. \n");
+
   m_internal_diagnostics_level = m_params.get<int>("internal_diagnostics_level", 0);
 }
 
@@ -105,6 +115,12 @@ void AtmosphereProcess::run (const double dt) {
     //energy fixer needs both mass and energy fields that are computed by compute_column_conservation_checks_data(dt_sub)
     //but this will change with cp*
     //actually we do not need mass_before, so mass_before is redundant
+
+    //however, we do not want to use column check if the fixer is on. without a correction 
+    //from the fixer, column check would fail after fixer. 
+    //we decided that using the column check to verify the fixer (after intorducing a new "flux")
+    //is not that practical. the fixer will be verified by another call to global integral,
+    //but disabled by default.
     if (has_column_conservation_check() || has_energy_fixer()) {
       // Column local mass and energy checks requires the total mass and energy
       // to be computed directly before the atm process is run, as well and store
