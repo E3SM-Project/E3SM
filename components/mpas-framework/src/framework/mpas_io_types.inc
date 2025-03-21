@@ -8,24 +8,32 @@
    integer, parameter :: MPAS_IO_READ  = 1, &
                          MPAS_IO_WRITE = 2
 
+   ! Temporary fix: Assign an unused high value (100) to MPAS_IO_ADIOSC to
+   ! prevent shifting/changing the values of existing type enums.
+   ! This workaround addresses unexplained OOM issues observed on Chrysalis.
+   ! The exact cause of these issues is still unknown.
+   ! For future additions of new I/O formats or other types, assign unused
+   ! values (e.g., starting from 101) rather than altering the values of
+   ! existing type enums.
+
    ! I/O formats
    integer, parameter :: MPAS_IO_NETCDF   = 3, &
                          MPAS_IO_PNETCDF  = 4, &
                          MPAS_IO_NETCDF4  = 5, &
                          MPAS_IO_PNETCDF5 = 6, &
                          MPAS_IO_ADIOS    = 7, &
-                         MPAS_IO_ADIOSC   = 8
+                         MPAS_IO_ADIOSC   = 100 ! Next I/O format should start from 101
 
    ! Field and attribute types
-   integer, parameter :: MPAS_IO_REAL     =  9,  &
-                         MPAS_IO_DOUBLE   = 10,  &
-                         MPAS_IO_INT      = 11,  &
-                         MPAS_IO_LOGICAL  = 12,  &
-                         MPAS_IO_CHAR     = 13
+   integer, parameter :: MPAS_IO_REAL     =  8,  &
+                         MPAS_IO_DOUBLE   =  9,  &
+                         MPAS_IO_INT      = 10,  &
+                         MPAS_IO_LOGICAL  = 11,  &
+                         MPAS_IO_CHAR     = 12
 
    ! Field precision
-   integer, parameter :: MPAS_IO_SINGLE_PRECISION = 14, &
-                         MPAS_IO_DOUBLE_PRECISION = 15, &
+   integer, parameter :: MPAS_IO_SINGLE_PRECISION = 13, &
+                         MPAS_IO_DOUBLE_PRECISION = 14, &
 #ifdef SINGLE_PRECISION
                          MPAS_IO_NATIVE_PRECISION = MPAS_IO_SINGLE_PRECISION
 #else
