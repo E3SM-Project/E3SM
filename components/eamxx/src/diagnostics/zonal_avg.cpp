@@ -4,25 +4,9 @@
 
 namespace scream {
 
-template <>
-KOKKOS_INLINE_FUNCTION Real ZonalAvgDiag::evaluate_weight<true>(const
-  Field::get_view_type<const scream::Real *, scream::Device> &weight,
-  const int &i)
-{
-  return weight(i);
-}
-
-template <>
-KOKKOS_INLINE_FUNCTION Real ZonalAvgDiag::evaluate_weight<false>(const
-  Field::get_view_type<const scream::Real *, scream::Device> &weight,
-  const int &i)
-{
-  return sp(1.0);
-}
-
-template <bool USE_WEIGHT>
-void ZonalAvgDiag::compute_zonal_sum(const Field &field, const Field &weight,
-  const Field &lat, const Field &result,
+template <typename WeightType>
+void ZonalAvgDiag::compute_zonal_sum(const Field &field,
+  const WeightType &weight, const Field &lat, const Field &result,
   const ekat::Comm &comm)
 {
   auto result_layout = result.get_header().get_identifier().get_layout();
@@ -31,8 +15,8 @@ void ZonalAvgDiag::compute_zonal_sum(const Field &field, const Field &weight,
 
   const Real lat_delta = sp(180.0) / lat_num;
 
+  auto weight_view = get_view(weight);
   auto field_view = field.get_view<const Real *>();
-  auto weight_view = weight.get_view<const Real *>();
   auto lat_view = lat.get_view<const Real *>();
   auto result_view = result.get_view<Real *>();
   using KT = ekat::KokkosTypes<DefaultDevice>;
@@ -49,7 +33,7 @@ void ZonalAvgDiag::compute_zonal_sum(const Field &field, const Field &weight,
         KOKKOS_LAMBDA(int i, Real& val){
           // TODO: check if some conditional is ok here instead of flag
           int flag = (lat_lower <= lat_view(i)) && (lat_view(i) < lat_upper);
-          val += flag * evaluate_weight<USE_WEIGHT>(weight_view, i) * field_view(i);
+          val += flag * weight_view(i) * field_view(i);
         }, result_view(lat_i));
     });
 
@@ -63,12 +47,6 @@ void ZonalAvgDiag::compute_zonal_sum(const Field &field, const Field &weight,
     result_layout.size(), MPI_SUM);
   result.sync_to_dev();
 //}
-}
-
-void ZonalAvgDiag::compute_zonal_area(const Field &field, const Field &lat,
-  const Field &result, const ekat::Comm &comm)
-{
-  compute_zonal_sum<false>(field, field, lat, result, comm);
 }
 
 ZonalAvgDiag::ZonalAvgDiag(const ekat::Comm &comm,
@@ -132,7 +110,8 @@ void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/) {
     m_area.get_header().get_identifier().get_units(), field_id.get_grid_name());
   m_zonal_area = Field(zonal_area_id);
   m_zonal_area.allocate_view();
-  compute_zonal_area(m_area, m_lat, m_zonal_area, m_comm);
+  IdentityField one;
+  compute_zonal_sum(m_area, one, m_lat, m_zonal_area, m_comm);
 }
 
 void ZonalAvgDiag::compute_diagnostic_impl() {

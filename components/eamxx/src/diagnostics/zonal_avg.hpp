@@ -13,17 +13,18 @@ namespace scream {
 
 class ZonalAvgDiag : public AtmosphereDiagnostic {
 
-  template <bool USE_WEIGHT>
-  KOKKOS_INLINE_FUNCTION Real evaluate_weight(
-    const Field::get_view_type<const scream::Real *, scream::Device> &weight,
-    const int &i);
-
-  template <bool USE_WEIGHT=true>
-  void compute_zonal_sum(const Field &field, const Field &weight,
+  template <typename WeightType>
+  void compute_zonal_sum(const Field &field, const WeightType &weight,
     const Field &lat, const Field &result, const ekat::Comm &comm);
 
-  void compute_zonal_area(const Field &field, const Field &lat,
-    const Field &result, const ekat::Comm &comm);
+  // functions and classes to support computing zonal sum with unitary weights
+  auto get_view(const Field& field) { return field.get_view<const Real *>();}
+  struct IdentityField
+  {
+    // TODO: revisit use of constexpr vs inlining
+    constexpr Real operator()(int) const {return 1.0;}
+  };
+  IdentityField get_view(const IdentityField& field) {return field;}
 
  public:
 
