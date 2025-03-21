@@ -18,9 +18,10 @@ module zm_conv_intr
    use rad_constituents,      only: rad_cnst_get_info, rad_cnst_get_mode_num, rad_cnst_get_aer_mmr
    use rad_constituents,      only: rad_cnst_get_aer_props, rad_cnst_get_mode_props
    use ndrop_bam,             only: ndrop_bam_init
-   use zm_conv,               only: zm_conv_evap, zm_convr, convtran, momtran, trigdcape_ull, trig_dcape_only
+   use zm_conv,               only: zm_conv_evap, zm_convr, trigdcape_ull, trig_dcape_only
    use zm_conv,               only: MCSP, MCSP_heat_coeff, MCSP_moisture_coeff, MCSP_uwind_coeff, MCSP_vwind_coeff
    use zm_conv,               only: zm_microp
+   use zm_transport,          only: zm_transport_tracer, zm_transport_momentum
    use zm_microphysics,       only: zm_aero_t
    use zm_microphysics_state, only: zm_microp_st
 
@@ -601,7 +602,6 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    integer :: lchnk                    ! chunk identifier
    integer :: ncol                     ! number of atmospheric columns
    integer :: itim_old                 ! for physics buffer fields
-   logical :: l_windt(2)               ! flags for ptend initialization
    logical :: lq(pcnst)                ! flags for ptend initialization
 
    real(r8), dimension(pcols,pver) :: ftem            ! Temporary workspace for outfld variables
@@ -1149,20 +1149,20 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    ! update physics state type state1 with ptend_loc
    call physics_update(state1, ptend_loc, ztodt)
 
-   ! Momentum Transport
-   call physics_ptend_init(ptend_loc, state1%psetcols, 'momtran', ls=.true., lu=.true., lv=.true.)
+   !----------------------------------------------------------------------------
+   ! convective momentum transport
+
+   call physics_ptend_init(ptend_loc, state1%psetcols, 'zm_transport_momentum', ls=.true., lu=.true., lv=.true.)
 
    winds(1:ncol,1:pver,1) = state1%u(1:ncol,1:pver)
    winds(1:ncol,1:pver,2) = state1%v(1:ncol,1:pver)
 
-   l_windt(1) = .true.
-   l_windt(2) = .true.
-
-   call t_startf ('momtran')
-   call momtran(lchnk, ncol, l_windt, winds, 2, mu, md, du, eu, ed, dp, dsubcld, &
-                jt, maxg, ideep, 1, lengath, nstep, wind_tends, pguall, pgdall, &
-                icwu, icwd, ztodt, seten )
-   call t_stopf ('momtran')
+   call t_startf ('zm_transport_momentum')
+   call zm_transport_momentum( ncol, winds, 2, &
+                               mu, md, du, eu, ed, dp, &
+                               jt, maxg, ideep, 1, lengath, &
+                               wind_tends, pguall, pgdall, icwu, icwd, ztodt, seten )
+   call t_stopf ('zm_transport_momentum')
 
    ptend_loc%u(1:ncol,1:pver) = wind_tends(1:ncol,1:pver,1)
    ptend_loc%v(1:ncol,1:pver) = wind_tends(1:ncol,1:pver,2)
@@ -1194,24 +1194,31 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    call cnst_get_ind('CLDLIQ', ixcldliq)
    call cnst_get_ind('CLDICE', ixcldice)
 
+   !----------------------------------------------------------------------------
+   ! convective tracer transport
+
    lq(:)  = .FALSE.
    lq(2:) = cnst_is_convtran1(2:)
-   call physics_ptend_init(ptend_loc, state1%psetcols, 'convtran1', lq=lq)
+   call physics_ptend_init(ptend_loc, state1%psetcols, 'zm_transport_tracer_1', lq=lq)
 
    ! dpdry is not used in next convtran call since cloud liq/ice mixing ratios are moist
    fake_dpdry(1:ncol,1:pver) = 0
 
-   call t_startf ('convtran1')
-   call convtran( lchnk, ptend_loc%lq, state1%q, pcnst, mu, md, &
-                  du, eu, ed, dp, dsubcld, jt, maxg, ideep, 1, lengath, &
-                  nstep, fracis, ptend_loc%q, fake_dpdry, ztodt)  
-   call t_stopf ('convtran1')
+   call t_startf ('zm_transport_tracer_1')
+   call zm_transport_tracer( ptend_loc%lq, state1%q, pcnst, &
+                             mu, md, du, eu, ed, dp, &
+                             jt, maxg, ideep, 1, lengath, &
+                             fracis, ptend_loc%q, fake_dpdry, ztodt)  
+   call t_stopf ('zm_transport_tracer_1')
 
    call outfld('ZMDICE ', ptend_loc%q(1,1,ixcldice), pcols, lchnk )
    call outfld('ZMDLIQ ', ptend_loc%q(1,1,ixcldliq), pcols, lchnk )
 
    ! add tendency from this process to tendency from other processes
    call physics_ptend_sum( ptend_loc, ptend_all, ncol )
+
+   !----------------------------------------------------------------------------
+   ! deallocate local copies
 
    call physics_state_dealloc(state1)
    call physics_ptend_dealloc(ptend_loc)
@@ -1339,9 +1346,12 @@ subroutine zm_conv_tend_2( state,  ptend,  ztodt, pbuf, mu, eu, du, md, ed, dp, 
    ncol  = state%ncol
    nstep = get_nstep()
 
+   !----------------------------------------------------------------------------
+   ! convective tracer transport
+
    lq(:) = .FALSE.
    lq(:) = .not. cnst_is_convtran1(:)
-   call physics_ptend_init(ptend, state%psetcols, 'convtran2', lq=lq )
+   call physics_ptend_init(ptend, state%psetcols, 'zm_transport_tracer_2', lq=lq )
 
    ! Associate pointers with physics buffer fields
    ifld = pbuf_get_index('FRACIS')
@@ -1363,11 +1373,12 @@ subroutine zm_conv_tend_2( state,  ptend,  ztodt, pbuf, mu, eu, du, md, ed, dp, 
       do i = 1,lengath
          dpdry(i,1:pver) = state%pdeldry(ideep(i),1:pver)/100_r8
       end do
-      call t_startf ('convtran2')
-      call convtran (lchnk, ptend%lq, state%q, pcnst,  mu, md, &
-                     du, eu, ed, dp, dsubcld,  jt, maxg, ideep, 1, lengath, &
-                     nstep, fracis, ptend%q, dpdry, ztodt)
-      call t_stopf ('convtran2')
+      call t_startf ('zm_transport_tracer_2')
+      call zm_transport_tracer( ptend%lq, state%q, pcnst,  &
+                                mu, md, du, eu, ed, dp,  &
+                                jt, maxg, ideep, 1, lengath, &
+                                fracis, ptend%q, dpdry, ztodt)
+      call t_stopf ('zm_transport_tracer_2')
    end if
 
    if ( (convproc_do_aer .or. convproc_do_gas) .and. clim_modal_aero ) then
