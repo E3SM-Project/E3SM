@@ -236,7 +236,6 @@ configuration-files) and [Third-party Libraries](TPLs.md), but we will briefly s
     ###############################################################################
     ```
 
-
 #### Selected Useful Testing Options
 
 We give an overview of common basic use cases here, and we provide full details
