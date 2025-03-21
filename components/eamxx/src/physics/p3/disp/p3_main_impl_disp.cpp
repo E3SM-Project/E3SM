@@ -237,6 +237,7 @@ Int Functions<Real,DefaultDevice>
   auto flux_nit                = temporaries.flux_nit;
   auto flux_bir                = temporaries.flux_bir;
   auto flux_qir                = temporaries.flux_qir;
+  auto flux_qirr                = temporaries.flux_qirr;
   auto flux_qit                = temporaries.flux_qit;
   auto v_qr                    = temporaries.v_qr;
   auto v_nr                    = temporaries.v_nr;
