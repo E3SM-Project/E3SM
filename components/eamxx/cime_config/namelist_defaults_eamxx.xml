@@ -187,6 +187,8 @@ be lost if SCREAM_HACK_XML is not enabled.
       <!-- Frequency in physics steps to output a global hash over the dycore's
            in-fields. <= 0 disables hashing. -->
       <BfbHash type="integer">18</BfbHash>
+      <enable_column_conservation_checks>false</enable_column_conservation_checks>
+      <enable_energy_fixer>true</enable_energy_fixer>
     </homme>
 
     <!-- P3 microphysics -->
