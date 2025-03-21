@@ -22,6 +22,7 @@ set(DIAGNOSTIC_SRCS
   virtual_temperature.cpp
   water_path.cpp
   wind_speed.cpp
+  vert_contract.cpp
 )
 
 add_library(diagnostics ${DIAGNOSTIC_SRCS})
