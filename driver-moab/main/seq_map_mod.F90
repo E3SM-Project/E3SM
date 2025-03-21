@@ -175,8 +175,8 @@ contains
   end subroutine seq_map_init_rcfile
 
 
-  subroutine moab_map_init_rcfile( mbappid, mbtsid, type_grid, comp_s, comp_d, &
-    maprcfile, maprcname, maprctype, samegrid, string, esmf_map)
+  subroutine moab_map_init_rcfile( mbsrc, mbtgt, mbintx, discretization_type, &
+    maprcfile, maprcname, maprctype, samegrid, sol_identifier, string, esmf_map)
 
    use iMOAB, only: iMOAB_LoadMappingWeightsFromFile
    implicit none
@@ -184,15 +184,17 @@ contains
    !
    ! Arguments
    !
-   type(integer)        ,intent(in)            :: mbappid  ! moab app id, identifing the map from source to target
-   type(integer)        ,intent(in)            :: mbtsid   ! moab app id, identifying the target (now), for row based distribution
-   type(integer)        ,intent(in)            :: type_grid ! 1 for SE, 2 for PC, 3 for FV; should be a member data
-   type(component_type) ,intent(inout)         :: comp_s
-   type(component_type) ,intent(inout)         :: comp_d
+   type(integer)        ,intent(in)            :: mbsrc  ! moab source app id
+   type(integer)        ,intent(in)            :: mbtgt  ! moab target app id
+   type(integer)        ,intent(in)            :: mbintx  ! moab intersection app id, identifing the map from source to target
+   type(integer)        ,intent(in)            :: discretization_type ! 1 for SE, 2 for PC, 3 for FV; should be a member data
+   ! type(component_type) ,intent(inout)         :: comp_s
+   ! type(component_type) ,intent(inout)         :: comp_d
    character(len=*)     ,intent(in)            :: maprcfile
    character(len=*)     ,intent(in)            :: maprcname
    character(len=*)     ,intent(in)            :: maprctype
    logical              ,intent(in)            :: samegrid
+   character(len=*)     ,intent(in),optional   :: sol_identifier !   /* "scalar", "flux", "custom" */
    character(len=*)     ,intent(in),optional   :: string
    logical              ,intent(in),optional   :: esmf_map
    !
@@ -205,9 +207,7 @@ contains
    character(CX)               :: mapfile_term
    character(CL)               :: maptype
    integer(IN)                 :: mapid
-   character(CX)               :: sol_identifier !   /* "scalar", "flux", "custom" */
    integer                     :: ierr
-   integer                     :: col_or_row ! 0 for row based, 1 for col based (we use row distribution now)
 
 
    character(len=*),parameter  :: subname = "(moab_map_init_rcfile) "
@@ -222,22 +222,21 @@ contains
    ! --- Initialize Smatp
    call shr_mct_queryConfigFile(mpicom,maprcfile,maprcname,mapfile,maprctype,maptype)
    !call shr_mct_sMatPInitnc(mapper%sMatp, mapper%gsMap_s, mapper%gsMap_d, trim(mapfile),trim(maptype),mpicom)
-   sol_identifier = 'map-from-file'//CHAR(0)
+   !sol_identifier = 'map-from-file'//CHAR(0)
    mapfile_term = trim(mapfile)//CHAR(0)
    if (seq_comm_iamroot(CPLID)) then
-       write(logunit,*) subname,' reading map file with iMOAB: ', mapfile_term
+       write(logunit,*) subname,' reading map file with iMOAB: ', trim(mapfile_term)
    endif
 
-   col_or_row = 0 ! row based distribution
-
-   ierr = iMOAB_LoadMappingWeightsFromFile( mbappid, mbtsid, col_or_row, type_grid, sol_identifier, mapfile_term)
+   ierr = iMOAB_LoadMappingWeightsFromFile( mbsrc, mbtgt, mbintx, discretization_type, &
+                      discretization_type, sol_identifier, mapfile_term)
    if (ierr .ne. 0) then
       write(logunit,*) subname,' error in loading map file'
       call shr_sys_abort(subname//' ERROR in loading map file')
     endif
    if (seq_comm_iamroot(CPLID)) then
-      write(logunit,'(2A,I6,4A)') subname,' iMOAB map app ID, maptype, mapfile = ', &
-         mbappid,' ',trim(maptype),' ',trim(mapfile)
+      write(logunit,'(2A,I6,4A)') subname,'Result: iMOAB map app ID, maptype, mapfile = ', &
+         mbintx,' ',trim(maptype),' ',trim(mapfile), ', identifier: ', trim(sol_identifier)
       call shr_sys_flush(logunit)
    endif
 
@@ -601,7 +600,7 @@ end subroutine moab_map_init_rcfile
          endif  ! end NORMALIZATION
 
          !
-         ierr = iMOAB_SendElementTag( mapper%src_mbid, fldlist_moab, mapper%mpicom, mapper%intx_context );
+         ierr = iMOAB_SendElementTag( mapper%src_mbid, fldlist_moab, mapper%mpicom, mapper%intx_context )
          if (ierr .ne. 0) then
             write(logunit, *) subname,' iMOAB mapper error in sending tags ', mapper%mbname,  trim(fldlist_moab)
             call shr_sys_flush(logunit)
@@ -611,24 +610,13 @@ end subroutine moab_map_init_rcfile
        if ( valid_moab_context ) then
          ! receive in the intx app, because it is redistributed according to coverage (trick)
          ! for true intx cases, tgt_mbid is set to be the same as intx_mbid
-         ! just read map is special
-         if (mapper%read_map)  then ! receive indeed in target app
 #ifdef MOABDEBUG
-            if (seq_comm_iamroot(CPLID)) then
-               write(logunit, *) subname,' iMOAB mapper receiving tags with read_map and tgt_mbid: ', &
-                mapper%mbname, trim(fldlist_moab)
-            endif
-#endif
-            ierr = iMOAB_ReceiveElementTag( mapper%tgt_mbid, fldlist_moab, mapper%mpicom, mapper%src_context )
-         else ! receive in the intx app, trick
-#ifdef MOABDEBUG
-            if (seq_comm_iamroot(CPLID)) then
-               write(logunit, *) subname,' iMOAB mapper receiving tags with intx and intx_mbid: ', &
-                mapper%mbname, trim(fldlist_moab)
-            endif
-#endif
-            ierr = iMOAB_ReceiveElementTag( mapper%intx_mbid, fldlist_moab, mapper%mpicom, mapper%src_context )
+         if (seq_comm_iamroot(CPLID)) then
+            write(logunit, *) subname,' iMOAB mapper receiving tags with intx and intx_mbid: ', &
+               mapper%mbname, trim(fldlist_moab)
          endif
+#endif
+         ierr = iMOAB_ReceiveElementTag( mapper%intx_mbid, fldlist_moab, mapper%mpicom, mapper%src_context )
          if (ierr .ne. 0) then
             write(logunit,*) subname,' error in receiving tags ', mapper%mbname, 'recv:',  mapper%intx_mbid, trim(fldlist_moab)
             call shr_sys_flush(logunit)
