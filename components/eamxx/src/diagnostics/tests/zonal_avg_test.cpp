@@ -47,17 +47,23 @@ TEST_CASE("zonal_avg") {
   constexpr int nlevs = 3;
   constexpr int dim3  = 4;
   const int ngcols    = 6 * comm.size();
+  const int nlats      = 4;
 
   auto gm   = create_gm(comm, ngcols, nlevs);
   auto grid = gm->get_grid("Physics");
 
+  Field area = grid->get_geometry_data("area");
+  auto area_view = area.get_view<const Real *>();
+
   // Set latitude values
   Field lat = gm->get_grid_nonconst("Physics")->create_geometry_data("lat",
-    grid->get_2d_scalar_layout(), ekat::units::Units::nondimensional());
+    grid->get_2d_scalar_layout(), Units::nondimensional());
   auto lat_view = lat.get_view<Real *>();
-  for (int i=0; i < ngcols; i++)
-  {
-    lat_view(i) = (i % 2 == 0) ? -45.0 : 45.0;
+  const Real lat_delta = sp(180.0) / nlats;
+  std::vector<Real> zonal_areas(nlats, 0.0);
+  for (int i=0; i < ngcols; i++) {
+    lat_view(i) = sp(-90.0) + (i % nlats + sp(0.5)) * lat_delta;
+    zonal_areas[i % nlats] += area_view[i];
   }
 
   // Input (randomized) qc
@@ -65,11 +71,11 @@ TEST_CASE("zonal_avg") {
 //  FieldLayout scalar2d_layout{{COL, LEV}, {ngcols, nlevs}};
 //  FieldLayout scalar3d_layout{{COL, CMP, LEV}, {ngcols, dim3, nlevs}};
 
-  FieldIdentifier qc1_fid("qc", scalar1d_layout, kg / kg, grid->name());
+  FieldIdentifier qc1_id("qc", scalar1d_layout, kg / kg, grid->name());
 //  FieldIdentifier qc2_fid("qc", scalar2d_layout, kg / kg, grid->name());
 //  FieldIdentifier qc3_fid("qc", scalar3d_layout, kg / kg, grid->name());
 
-  Field qc1(qc1_fid);
+  Field qc1(qc1_id);
 //  Field qc2(qc2_fid);
 //  Field qc3(qc3_fid);
 
@@ -102,15 +108,13 @@ TEST_CASE("zonal_avg") {
   // Create and set up the diagnostic
   params.set("grid_name", grid->name());
   params.set<std::string>("field_name", "qc");
+  params.set<int>("num_lat_vals", nlats);
   auto diag1 = diag_factory.create("ZonalAvgDiag", comm, params);
 //  auto diag2 = diag_factory.create("ZonalAvgDiag", comm, params);
 //  auto diag3 = diag_factory.create("ZonalAvgDiag", comm, params);
   diag1->set_grids(gm);
 //  diag2->set_grids(gm);
 //  diag3->set_grids(gm);
-
-  // Clone the area field
-  Field scaled_area = grid->get_geometry_data("area").clone();
 
   // Test the zonal average of qc1
   diag1->set_required_field(qc1);
@@ -119,37 +123,55 @@ TEST_CASE("zonal_avg") {
   auto diag1_field = diag1->get_diagnostic();
 
   // Manual calculation
-  FieldLayout diag0_layout({COL}, {2}, {"lat"});
+  FieldLayout diag0_layout({COL}, {nlats});
   FieldIdentifier diag0_id("qc_zonal_avg_manual", diag0_layout, kg / kg,
     grid->name());
   Field diag0_field(diag0_id);
   diag0_field.allocate_view();
 
-  // calculate total area
-  Real atot = field_sum<Real>(scaled_area, &comm);
-  // scale the area field
-  scaled_area.scale(1.0 / atot);
-
   // calculate the zonal average
   auto qc1_view = qc1.get_view<const Real *>();
   auto diag0_view = diag0_field.get_view<Real *>();
-  auto scaled_area_view = scaled_area.get_view<const Real *>();
-  for (int i=0; i < ngcols; i++)
-  {
-    diag0_view(i%2) += scaled_area_view(i) * qc1_view(i);
+  for (int i=0; i < ngcols; i++) {
+    diag0_view(i % nlats) += area_view(i) * qc1_view(i);
+  }
+  for (int nlat=0; nlat < nlats; nlat++) {
+    diag0_view(nlat) /= zonal_areas[nlat];
   }
 
   // Compare
+  for (int ncol=0; ncol < ngcols; ncol++) {
+    std::cout << "ncol" << ncol << ": " << lat_view(ncol) << std::endl;
+  }
+
+  auto diag1_field_view = diag1_field.get_view<const Real *>();
+  for (int nlat=0; nlat < nlats; nlat++) {
+    std::cout << nlat << ": " << zonal_areas[nlat] << std::endl;
+    std::cout << nlat << ": " << diag0_view(nlat) << std::endl;
+    std::cout << nlat << ": " << diag1_field_view(nlat) << std::endl;
+    std::cout << "comp: " << (diag0_view(nlat) == diag1_field_view(nlat)) << std::endl;
+  }
+
   REQUIRE(views_are_equal(diag1_field, diag0_field));
 
   // Try other known cases
-  // Set qc1_v to 1.0 to get zonal averages of 0.5
-  Real wavg = 1.0;
-  qc1.deep_copy(wavg);
+  // Set qc1_v to 1.0 to get zonal averages of 1.0/nlats
+  const Real zavg = sp(1.0);
+  qc1.deep_copy(zavg);
   diag1->compute_diagnostic();
   auto diag1_v2_host = diag1_field.get_view<Real *, Host>();
-  REQUIRE_THAT(diag1_v2_host(0), Catch::Matchers::WithinRel(0.5*wavg, tol));
-  REQUIRE_THAT(diag1_v2_host(1), Catch::Matchers::WithinRel(0.5*wavg, tol));
+  for (int ncol=0; ncol < ngcols; ncol++) {
+    std::cout << "ncol" << ncol << ": " << lat_view(ncol) << std::endl;
+  }
+
+  for (int nlat=0; nlat < nlats; nlat++) {
+    std::cout << nlat << ": " << diag1_v2_host(nlat) << std::endl;
+  }
+
+
+  for (int nlat=0; nlat < nlats; nlat++) {
+    REQUIRE_THAT(diag1_v2_host(nlat), Catch::Matchers::WithinRel(zavg, tol));
+  }
 /*
   // other diags
   // Set qc2_v to 5.0 to get weighted average of 5.0

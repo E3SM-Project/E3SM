@@ -12,7 +12,21 @@ namespace scream {
  */
 
 class ZonalAvgDiag : public AtmosphereDiagnostic {
+
+  template <bool USE_WEIGHT>
+  KOKKOS_INLINE_FUNCTION Real evaluate_weight(
+    const Field::get_view_type<const scream::Real *, scream::Device> &weight,
+    const int &i);
+
+  template <bool USE_WEIGHT=true>
+  void compute_zonal_sum(const Field &field, const Field &weight,
+    const Field &lat, const Field &result, const ekat::Comm &comm);
+
+  void compute_zonal_area(const Field &field, const Field &lat,
+    const Field &result, const ekat::Comm &comm);
+
  public:
+
   // Constructors
   ZonalAvgDiag(const ekat::Comm &comm, const ekat::ParameterList &params);
 
@@ -31,13 +45,14 @@ class ZonalAvgDiag : public AtmosphereDiagnostic {
  protected:
   void initialize_impl(const RunType /*run_type*/);
 
-  // Name of each field (because the diagnostic impl is generic)
   std::string m_diag_name;
 
-  // Need area field, let's store it scaled by its norm
-  Field m_scaled_area;
-
+  Field m_area;
   Field m_lat;
+  int m_lat_num;
+
+  Field m_zonal_area;
+
 };
 
 }  // namespace scream
