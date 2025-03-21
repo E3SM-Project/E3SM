@@ -70,8 +70,8 @@ AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
   //either energy fixer or column checks, but not both at the same time
   EKAT_REQUIRE_MSG ( 
       !(m_conservation_data.has_energy_fixer && m_conservation_data.has_column_conservation_check),
-      "Error! In param list " + m_params.name() + " both has_energy_fixer and"
-           " has_column_conservation_check are on, which is not allowed. \n");
+      "Error! In param list " + m_params.name() + " both enable_energy_fixer and"
+           " enable_column_conservation_check are on, which is not allowed. \n");
 
   m_internal_diagnostics_level = m_params.get<int>("internal_diagnostics_level", 0);
 }
