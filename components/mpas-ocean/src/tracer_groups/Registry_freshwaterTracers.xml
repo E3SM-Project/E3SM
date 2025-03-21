@@ -36,7 +36,7 @@
 	<packages>
 		<package name="freshwaterTracersPKG" description="This package includes variables required to include freshwaterTracers."/>
 		<package name="freshwaterTracersBulkRestoringPKG" description="This package includes variables required to compute bulk restoring on the freshwaterTracers group."/>
-		<package name="freshwaterTracersSurfaceRestoringsPKG" description="This package includes variables required to compute surface restoring on the freshwaterTracers group."/>
+		<package name="freshwaterTracersSurfaceRestoringPKG" description="This package includes variables required to compute surface restoring on the freshwaterTracers group."/>
 		<package name="freshwaterTracersInteriorRestoringPKG" description="This package includes variables required to compute interior restoring on the freshwaterTracers group."/>
 		<package name="freshwaterTracersExponentialDecayPKG" description="This package includes variables required to compute exponential decay on the freshwaterTracers group."/>
 		<package name="freshwaterTracersIdealAgePKG" description="This package includes variables required to compute ideal age forcing on the freshwaterTracers group."/>
