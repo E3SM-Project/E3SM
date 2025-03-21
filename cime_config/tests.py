@@ -205,6 +205,18 @@ _TESTS = {
             )
         },
 
+#tests for the dust emission cap
+        "e3sm_dustemissioncap" : {
+        "tests"   : (
+            "ERP.ne4pg2_oQU480.F2010.eam-dustemissioncap",
+            "REP_Ln5.ne4pg2_oQU480.F2010.eam-dustemissioncap",
+            "PET.ne4pg2_oQU480.F2010.eam-dustemissioncap",
+            "PEM_Ln18.ne4pg2_oQU480.F2010.eam-dustemissioncap",
+            "SMS_Ln5.ne30pg2_EC30to60E2r2.F2010.eam-dustemissioncap",
+            "SMS_D_Ln5.ne4pg2_oQU480.F2010.eam-dustemissioncap"
+            )
+        },
+
     "e3sm_atm_integration" : {
         "inherit" : ("eam_preqx", "eam_theta"),
         "tests" : (
