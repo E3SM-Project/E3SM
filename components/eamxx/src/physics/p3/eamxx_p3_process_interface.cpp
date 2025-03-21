@@ -81,7 +81,13 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   add_tracer<Updated>("qr", m_grid, kg/kg, ps);
   add_tracer<Updated>("qi", m_grid, kg/kg, ps);
   add_tracer<Updated>("qm", m_grid, kg/kg, ps);
-  add_tracer<Updated>("nc", m_grid, 1/kg,  ps);
+  // FIXME: THE FOLLOWING IS A HACK
+  // We need this to allow nc to be mixed in mam (via nc_tend) but not shoc
+  if (runtime_options.use_dynamics_advected_only_nc) {
+    add_tracer<Updated>("nc", m_grid, 1/kg,  ps, TracerAdvection::DynamicsOnly);
+  } else {
+    add_tracer<Updated>("nc", m_grid, 1/kg,  ps);
+  }
   add_tracer<Updated>("nr", m_grid, 1/kg,  ps);
   add_tracer<Updated>("ni", m_grid, 1/kg,  ps);
   add_tracer<Updated>("bm", m_grid, 1/kg,  ps);

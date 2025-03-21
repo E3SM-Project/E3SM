@@ -13,6 +13,11 @@ MAMGenericInterface::MAMGenericInterface(const ekat::Comm &comm,
   /* Anything that can be initialized without grid information can be
    * initialized here. Like universal constants, mam wetscav options.
    */
+
+  // FIXME: THE FOLLOWING IS A HACK
+  // We need this to allow nc to be mixed in mam (via nc_tend) but not shoc
+   use_dynamics_advected_only_nc_ = 
+      m_params.get<bool>("use_dynamics_advected_only_nc", false);
 }
 // ================================================================
 void MAMGenericInterface::set_aerosol_and_gas_ranges() {
@@ -342,7 +347,13 @@ void MAMGenericInterface::add_tracers_wet_atm() {
   add_tracer<Required>("qi", grid_, q_unit);
 
   // cloud liquid number mixing ratio [1/kg]
-  add_tracer<Required>("nc", grid_, n_unit);
+  // FIXME: THE FOLLOWING IS A HACK
+  // We need this to allow nc to be mixed in mam (via nc_tend) but not shoc
+  if(use_dynamics_advected_only_nc_) {
+    add_tracer<Required>("nc", grid_, n_unit, 1, TracerAdvection::DynamicsOnly);
+  } else {
+    add_tracer<Required>("nc", grid_, n_unit);
+  }
 
   // cloud ice number mixing ratio [1/kg]
   add_tracer<Required>("ni", grid_, n_unit);

@@ -82,7 +82,11 @@ class MAMGenericInterface : public scream::AtmosphereProcess {
   std::map<std::string, std::pair<Real, Real>> max_min_process_;
   bool set_ranges_{false};
 
+  // FIXME: THE FOLLOWING IS A HACK
+  // We need this to allow nc to be mixed in mam (via nc_tend) but not shoc
+  bool use_dynamics_advected_only_nc_ = false;
+
 };  // MAMGenericInterface
 }  // namespace scream
 
-#endif  // ifdef EAMXX_MAM_CONSTITUTE_FLUXES_FUNCTIONS_HPP
+#endif  // ifdef EAMXX_MAM_GENERIC_PROCESS_HPP

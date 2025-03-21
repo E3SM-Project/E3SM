@@ -153,6 +153,8 @@ be lost if SCREAM_HACK_XML is not enabled.
       <!-- Run internal checks on code correctness.
            <= 0: off; >= 1: global hashes over state -->
       <internal_diagnostics_level type="integer">0</internal_diagnostics_level>
+      <!-- FIXME HACK: We need this to allow nc to be mixed in mam only (via nc_tend) but not shoc -->
+      <use_dynamics_advected_only_nc type="logical" doc="use only advected nc from dynamics">false</use_dynamics_advected_only_nc>
       <compute_tendencies
         type="array(string)"
         doc="list of computed fields for which this process will back out tendencies"
