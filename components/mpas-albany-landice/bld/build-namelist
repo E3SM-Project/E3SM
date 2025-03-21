@@ -557,6 +557,8 @@ if ($MALI_PROGNOSTIC_MODE eq 'PROGNOSTIC') {
         add_default($nl, 'config_basal_mass_bal_float');
     } elsif ($OCN_GLC_ISMF_COUPLING eq 'data_mali') {
         add_default($nl, 'config_basal_mass_bal_float', 'val'=>"file");
+    } elsif ($OCN_GLC_ISMF_COUPLING eq 'coupler') {
+        add_default($nl, 'config_basal_mass_bal_float', 'val'=>"file");
     } else {
         add_default($nl, 'config_basal_mass_bal_float', 'val'=>"none");
     }
