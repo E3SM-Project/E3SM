@@ -362,7 +362,7 @@ struct Functions
     view_2d<Spack> v_qc, v_nc, flux_qx, flux_nx;
     // ice sedimentation
     view_2d<Spack> v_qit, v_nit, flux_nit, flux_bir;
-    view_2d<Spack> flux_qir, flux_qit;
+    view_2d<Spack> flux_qir, flux_qit, flux_qirr;
     // rain sedimentation
     view_2d<Spack> v_qr, v_nr;
   };

@@ -427,7 +427,7 @@ public:
       tmparr2, exner, diag_vm_qi,
       diag_diam_qi, pratot, prctot, qtend_ignore, ntend_ignore,
       mu_c, lamc, qr_evap_tend, v_qc, v_nc, flux_qx, flux_nx,
-      v_qit, v_nit, flux_nit, flux_bir, flux_qir, flux_qit,
+      v_qit, v_nit, flux_nit, flux_bir, flux_qir,flux_qirr, flux_qit,
       v_qr, v_nr;
 #endif
 

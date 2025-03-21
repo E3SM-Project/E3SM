@@ -230,7 +230,7 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
     &m_buffer.diag_diam_qi, &m_buffer.pratot, &m_buffer.prctot, &m_buffer.qtend_ignore,
     &m_buffer.ntend_ignore, &m_buffer.mu_c, &m_buffer.lamc, &m_buffer.qr_evap_tend, &m_buffer.v_qc,
     &m_buffer.v_nc, &m_buffer.flux_qx, &m_buffer.flux_nx, &m_buffer.v_qit, &m_buffer.v_nit,
-    &m_buffer.flux_nit, &m_buffer.flux_bir, &m_buffer.flux_qir, &m_buffer.flux_qit, &m_buffer.v_qr,
+    &m_buffer.flux_nit, &m_buffer.flux_bir, &m_buffer.flux_qir,&m_buffer.flux_qirr, &m_buffer.flux_qit, &m_buffer.v_qr,
     &m_buffer.v_nr
 #endif
   };
@@ -480,6 +480,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   temporaries.flux_nit                = m_buffer.flux_nit;
   temporaries.flux_bir                = m_buffer.flux_bir;
   temporaries.flux_qir                = m_buffer.flux_qir;
+  temporaries.flux_qirr                = m_buffer.flux_qirr;
   temporaries.flux_qit                = m_buffer.flux_qit;
   temporaries.v_qr                    = m_buffer.v_qr;
   temporaries.v_nr                    = m_buffer.v_nr;

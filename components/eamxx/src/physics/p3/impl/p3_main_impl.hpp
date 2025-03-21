@@ -315,7 +315,7 @@ Int Functions<S,D>
     // homogeneous freezing of cloud and rain
     if(do_ice_production) {
       homogeneous_freezing(T_atm, oinv_exner, team, nk, ktop, kbot, kdir, oqc,
-                           onc, oqr, onr, oqi, oni, oqm, obm, oth);
+                           onc, oqr, onr, oqi, oni, oqm,oqmr, obm, oth);
     }
 
     //
