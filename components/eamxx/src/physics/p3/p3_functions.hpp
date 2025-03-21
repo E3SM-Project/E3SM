@@ -635,6 +635,7 @@ struct Functions
     const uview_1d<Spack>& ni,
     const uview_1d<Spack>& ni_incld,
     const uview_1d<Spack>& qm,
+    const uview_1d<Spack>& qmr,
     const uview_1d<Spack>& qm_incld,
     const uview_1d<Spack>& bm,
     const uview_1d<Spack>& bm_incld,
@@ -684,6 +685,7 @@ struct Functions
     const uview_1d<Spack>& qi,
     const uview_1d<Spack>& ni,
     const uview_1d<Spack>& qm,
+    const uview_1d<Spack>& qmr,
     const uview_1d<Spack>& bm,
     const uview_1d<Spack>& th_atm);
 
