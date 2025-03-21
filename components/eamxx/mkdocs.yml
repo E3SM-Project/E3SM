@@ -38,7 +38,8 @@ nav:
       - 'Fields': 'developer/field.md'
       - 'Grids and Remappers': 'developer/grid.md'
       - 'Atmosphere Processes': 'developer/processes.md'
-      - 'I/O': 'developer/io.md'
+      - 'Input/Output': 'developer/io.md'
+      - 'Third-party Libraries': 'developer/TPLs.md'
   - 'Technical Guide':
     - 'Overview': 'technical/index.md'
     - 'AeroCom cloud top': 'technical/aerocom_cldtop.md'
