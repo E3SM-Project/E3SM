@@ -239,7 +239,7 @@ are_column_conservation_checks_enabled () const
 
     // If this process is not a group, query enable_column_conservation_checks
     // and return true if true.
-    if (atm_proc->has_column_conservation_check()) {
+    if (atm_proc->has_column_conservation_check() || atm_proc->has_energy_fixer()) {
       return true;
     }
   }
@@ -252,6 +252,7 @@ void AtmosphereProcessGroup::
 setup_column_conservation_checks (const std::shared_ptr<MassAndEnergyColumnConservationCheck>& conservation_check,
                                   const CheckFailHandling                                      fail_handling_type) const
 {
+std::cout << "0 is here--------------------------------------- \n";
   // Loop over atm processes and add mass and energy checker where relevant
   for (auto atm_proc : m_atm_processes) {
 
@@ -267,7 +268,7 @@ setup_column_conservation_checks (const std::shared_ptr<MassAndEnergyColumnConse
                        "Error! The ATM process group \"" + atm_proc_group->name() + "\" attempted to enable "
                        "conservation checks. Should have enable_column_conservation_checks=false for all "
                        "process groups.\n");
-
+std::cout << "1st is here--------------------------------------- \n";
       atm_proc_group->setup_column_conservation_checks(conservation_check, fail_handling_type);
       continue;
     }
@@ -319,7 +320,18 @@ setup_column_conservation_checks (const std::shared_ptr<MassAndEnergyColumnConse
 
     // If all conditions are satisfied, add as postcondition_check
     atm_proc->add_column_conservation_check(conservation_check, fail_handling_type);
-  }
+  }// for (auto atm_proc : m_atm_processes) 
+
+  for (auto atm_proc : m_atm_processes) {
+// rethink this later for more generality for fixers
+std::cout << "circling thru procs " + atm_proc->name()+ "\n";
+    if (atm_proc->has_energy_fixer()) {
+std::cout << "circling thru procs FOUND!!!! \n";
+      atm_proc->add_column_conservation_check(conservation_check, fail_handling_type);
+    }
+
+  }// for (auto atm_proc : m_atm_processes) 
+
 }
 
 void AtmosphereProcessGroup::add_postcondition_nan_checks () const {
