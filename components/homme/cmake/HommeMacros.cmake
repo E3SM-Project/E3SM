@@ -26,7 +26,7 @@ MACRO (HommeConfigFile CONFIG_FILE_IN CONFIG_FILE_C CONFIG_FILE_F90)
     FILE (READ ${CONFIG_FILE_C} CONFIG_FILE_C_STR)
     FILE (READ ${CONFIG_FILE_C}.tmp CONFIG_FILE_C_TMP_STR)
 
-    IF (${CONFIG_FILE_C_STR} STREQUAL ${CONFIG_FILE_C_TMP_STR})
+    IF (CONFIG_FILE_C_STR STREQUAL CONFIG_FILE_C_TMP_STR)
       # config file was present and appears unchanged
       SET (OUT_OF_DATE FALSE)
     ENDIF()
@@ -249,54 +249,54 @@ macro(createExecLib libName execType libSrcs inclDirs macroNP
     TARGET_COMPILE_DEFINITIONS(${libName} PUBLIC HOMME_WITHOUT_PIOLIBRARY)
   ENDIF()
 
-  target_link_libraries(${execName} csm_share)
+  target_link_libraries(${libName} PUBLIC csm_share)
   if (NOT HOMME_BUILD_SCORPIO)
     # Needed for netcdf.mod usage in mesh_mod.F90.
-    target_link_libraries(${execName} piof)
+    target_link_libraries(${libName} PUBLIC piof)
   endif()
 
   IF (CXXLIB_SUPPORTED_CACHE)
     MESSAGE(STATUS "   Linking Fortran with -cxxlib")
-    TARGET_LINK_LIBRARIES(${libName} -cxxlib)
+    TARGET_LINK_LIBRARIES(${libName} PUBLIC -cxxlib)
   ENDIF ()
 
   STRING(TOUPPER "${PERFORMANCE_PROFILE}" PERF_PROF_UPPER)
   IF ("${PERF_PROF_UPPER}" STREQUAL "VTUNE")
-    TARGET_LINK_LIBRARIES(${libName} ittnotify)
+    TARGET_LINK_LIBRARIES(${libName} PUBLIC ittnotify)
   ENDIF ()
 
   # COMPOSE_LIBRARY is empty if Compose SL transport is not enabled.
-  TARGET_LINK_LIBRARIES(${libName} timing ${COMPOSE_LIBRARY} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+  TARGET_LINK_LIBRARIES(${libName} PUBLIC timing ${COMPOSE_LIBRARY} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
 
   IF (HOMME_USE_KOKKOS)
-    TARGET_LINK_LIBRARIES(${libName} Kokkos::kokkos)
+    TARGET_LINK_LIBRARIES(${libName} PUBLIC Kokkos::kokkos)
   ENDIF ()
 
   IF (HOMME_USE_MKL)
     IF (MKL_TYPE STREQUAL "oneMKL")
-      TARGET_LINK_LIBRARIES(${libName} -qmkl)
+      TARGET_LINK_LIBRARIES(${libName} PUBLIC -qmkl)
     ELSEIF (MKL_TYPE STREQUAL "Intel MKL")
-      TARGET_LINK_LIBRARIES(${libName} -mkl)
+      TARGET_LINK_LIBRARIES(${libName} PUBLIC -mkl)
     ENDIF ()
   ELSE()
     IF (NOT HOMME_FIND_BLASLAPACK)
-      TARGET_LINK_LIBRARIES(${libName} lapack blas)
+      TARGET_LINK_LIBRARIES(${libName} PUBLIC lapack blas)
     ENDIF()
   ENDIF()
 
   IF (HAVE_EXTRAE)
-    TARGET_LINK_LIBRARIES(${libName} ${Extrae_LIBRARY})
+    TARGET_LINK_LIBRARIES(${libName} PUBLIC ${Extrae_LIBRARY})
   ENDIF ()
 
   IF (HOMME_USE_TRILINOS)
-    TARGET_LINK_LIBRARIES(${libName} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
+    TARGET_LINK_LIBRARIES(${libName} PUBLIC ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
   ENDIF()
 
   IF (HOMME_USE_ARKODE AND "${execType}" STREQUAL "theta-l")
-    TARGET_LINK_LIBRARIES(${libName} sundials_farkode)
-    TARGET_LINK_LIBRARIES(${libName} sundials_arkode)
-    TARGET_LINK_LIBRARIES(${libName} sundials_nvecserial)
-    TARGET_LINK_LIBRARIES(${libName} sundials_fnvecserial)
+    TARGET_LINK_LIBRARIES(${libName} PUBLIC sundials_farkode)
+    TARGET_LINK_LIBRARIES(${libName} PUBLIC sundials_arkode)
+    TARGET_LINK_LIBRARIES(${libName} PUBLIC sundials_nvecserial)
+    TARGET_LINK_LIBRARIES(${libName} PUBLIC sundials_fnvecserial)
   ENDIF ()
 
 endmacro(createExecLib)
