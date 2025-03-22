@@ -16,10 +16,13 @@ ACE::ACE(const ekat::Comm &comm, const ekat::ParameterList &params)
 void ACE::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
   m_grid = grids_manager->get_grid("Physics");
 
-  constexpr auto Pa = ekat::units::Pa;
-  constexpr auto kg = ekat::units::kg;
-  constexpr auto m  = ekat::units::m;
-  constexpr auto s  = ekat::units::s;
+  constexpr auto Pa     = ekat::units::Pa;
+  constexpr auto kg     = ekat::units::kg;
+  constexpr auto m      = ekat::units::m;
+  constexpr auto s      = ekat::units::s;
+  constexpr auto K      = ekat::units::K;
+  constexpr auto m2     = m * m;
+  constexpr auto nondim = ekat::units::nondimensional();
 
   const auto horiz_wind_layout =
       m_grid->get_2d_vector_layout(2);  // 2D horizontal wind layout
@@ -28,6 +31,9 @@ void ACE::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
 
   add_field<Updated>("T_mid", layout_3d, K, m_grid->name());
   add_field<Updated>("horiz_winds", horiz_wind_layout, m / s, m_grid->name());
+  add_field<Updated>("ocnfrac", scalar2d, nondim, grid_name);
+  add_field<Updated>("landfrac", scalar2d, nondim, grid_name);
+  add_field<Updated>("icefrac", scalar2d, nondim, grid_name);
 }
 
 void ACE::initialize_impl(const RunType /* run_type */) {
