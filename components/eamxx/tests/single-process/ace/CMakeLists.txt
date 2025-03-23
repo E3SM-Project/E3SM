@@ -10,7 +10,7 @@ set(SCREAM_FOUND_PYTORCH FALSE CACHE BOOL "Whether PyTorch was found" FORCE)
 if(SCREAM_ENABLE_ACE)
   # Use a configurable path for PyTorch with a default value
   if(NOT DEFINED TORCH_CMAKE_PATH)
-    set(TORCH_CMAKE_PATH "/global/u1/m/mahf708/.micromamba/envs/fme/lib/python3.10/site-packages/torch/share/cmake/Torch" 
+    set(TORCH_CMAKE_PATH "/global/cfs/cdirs/e3sm/software/libtorch" 
         CACHE PATH "Path to PyTorch CMake files")
   endif()
   
@@ -29,10 +29,13 @@ if(SCREAM_ENABLE_ACE)
     # Only build the ACE test if PyTorch was found and ACE is enabled
 
     CreateADUnitTest(ace_standalone
-      LIBS ${TORCH_LIBRARIES} ace scream_control scream_share
+      LIBS ${TORCH_LIBRARIES} ace
       LABELS ace physics)
     
-    target_link_libraries(ace physics_share scream_share ${TORCH_LIBRARIES})
+    target_link_libraries(ace_standalone PUBLIC
+      ace
+      ${TORCH_LIBRARIES}
+    )
 
     # Set AD configurable options
     set (NUM_STEPS 1)
