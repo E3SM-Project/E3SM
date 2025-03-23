@@ -11,8 +11,9 @@ time_stepping:
 atmosphere_processes:
   atm_procs_list: [ace]
   ace:
-    m_forward_steps: 1
-    m_forward_steps_in_memory: 1
+    forward_steps: 1
+    forward_steps_in_memory: 1
+    checkpoint_path: /pscratch/sd/m/mahf708/emulator/ace_ckpt_traced.tar
 grids_manager:
   Type: Mesh Free
   grids_names: [Point Grid]
