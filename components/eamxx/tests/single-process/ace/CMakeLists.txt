@@ -1,17 +1,39 @@
 include (ScreamUtils)
 
 # Find PyTorch and set up dependencies
-set(CMAKE_PREFIX_PATH "/global/u1/m/mahf708/.micromamba/envs/fme/lib/python3.10/site-packages/torch/share/cmake/Torch")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
+# Use a configurable path for PyTorch with a default value
+if(NOT DEFINED TORCH_CMAKE_PATH)
+  # Default path can be overridden by setting TORCH_CMAKE_PATH
+  set(TORCH_CMAKE_PATH "/global/u1/m/mahf708/.micromamba/envs/fme/lib/python3.10/site-packages/torch/share/cmake/Torch" 
+      CACHE PATH "Path to PyTorch CMake files")
+endif()
+set(CMAKE_PREFIX_PATH ${TORCH_CMAKE_PATH})
 find_package(Torch REQUIRED)
+if(NOT Torch_FOUND)
+  message(FATAL_ERROR "PyTorch not found. Please set TORCH_CMAKE_PATH to the directory containing TorchConfig.cmake")
+endif()
 
-# Test atmosphere processes: added physics_share, scream_share, and ekat libraries
-CreateADUnitTest(ace_standalone
-  LIBS ace physics_share scream_share scream ${TORCH_LIBRARIES} ekat
-  COMPILER_DEFS EAMXX_HAS_ACE
-  INCLUDE_DIRS ${TORCH_INCLUDE_DIRS}
-  LINKER_FLAGS "-Wl,--copy-dt-needed-entries"
-  LABELS ace physics)
+# Include the main SCREAM libraries
+include(EkatSetCompilerFlags)
+
+# Create a unit test with all required dependencies
+set(TEST_SRCS
+  ${SCREAM_SRC_DIR}/share/util/eamxx_ad_test.cpp
+)
+
+add_executable(ace_standalone ${TEST_SRCS})
+target_include_directories(ace_standalone PUBLIC ${SCREAM_SRC_DIR})
+target_include_directories(ace_standalone SYSTEM PUBLIC ${TORCH_INCLUDE_DIRS})
+
+target_link_libraries(ace_standalone PUBLIC
+  ace
+  ${TORCH_LIBRARIES}
+)
+
+# Set labels and properties
+set_target_properties(ace_standalone PROPERTIES
+  LABELS "ace;physics"
+)
 
 # Set AD configurable options
 set (NUM_STEPS 1)
