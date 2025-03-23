@@ -293,8 +293,8 @@ module ocn_redi
               !For Redi term 1 no limiting in the boundary layer and slope limiting below
               !in the boundary layer the first term is zero, so 1.0 is added to allow term 1 to stay active
               !the second term is 1 in the boundary layer and 0 below the boundary layer
-              limiterUp(k,iCellSelf,iEdge) = (1.0_RKIND - oldlimiter)*(1.0_RKIND + &
-                                             sfcTaper*(slopeTaperUp - 1.0_RKIND)) + 
+              limiterUp(k,iCellSelf,iEdge) = (1.0_RKIND - oldlimiter)*(1.0_RKIND +  &
+                                             sfcTaper*(slopeTaperUp - 1.0_RKIND)) + &
                                              oldlimiter*slopeTaperUp*sfcTaper
               limiterDown(k,iCellSelf,iEdge) = (1.0_RKIND - oldlimiter)*(1.0_RKIND + &
                                                sfcTaper*(slopeTaperDown - 1.0_RKIND)) + &
@@ -356,9 +356,9 @@ module ocn_redi
            k=minLevelEdgeBot(iEdge)
            cell1 = cellsOnEdge(1,iEdge)
            cell2 = cellsOnEdge(2,iEdge)
-           i = max(1,min(int(indexBoundaryLayerDepth(cell1)),int(indexBoundaryLayerDepth(cell2))))
+           i = max(k,min(int(indexBoundaryLayerDepth(cell1)),int(indexBoundaryLayerDepth(cell2))))
            BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTop(i,cell1), &
-                                         BruntVaisalaFreqTop(i,cell2))
+                       BruntVaisalaFreqTop(i,cell2))
            maxN = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
            !Scan from the boundary layer depth only
            do k = i+1, maxLevelEdgeTop(iEdge)

@@ -304,7 +304,7 @@
 					description="Control what type of function is used for Redi $\kappa$. For 'equalGM', RediKappa is set to gmBolusKappa, so picks up the closure used by GM. For N2_dependent, the range varies from config_redi_constant_kappa down to 10% of that value" 
 					possible_values="'constant', 'N2_dependent', 'equalGM', 'data'"
 		/>
-		<nml_option name="config_redi_transition_layer_mld_offset" type="real" default_value="0.8" units="m"
+		<nml_option name="config_redi_transition_layer_bld_fraction" type="real" default_value="0.8" units="m"
 		            description="Parameter that controls over what fraction the redi tensor transitions from isopycnal to horizontal.  For example a value of 0.8 means at z = -0.8*bld the tensor is fully horizontal.  Transition is linear between the bld base and this point"
 					possible_values="Positive real numbers."
 		/>
