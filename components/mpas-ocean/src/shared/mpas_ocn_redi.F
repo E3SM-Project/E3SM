@@ -167,13 +167,13 @@ module ocn_redi
             cell2 = cellsOnEdge(2, iEdge)
 
             bldEdge = 0.5_RKIND*(boundaryLayerDepth(cell1) + boundaryLayerDepth(cell2))
-            mldEdge = config_redi_transition_layer_mld_offset*bldEdge
+            mldEdge = config_redi_transition_layer_bld_fraction*bldEdge
 
-            thickSlope = 1.0_RKIND/max(1.0E-15, 1.0_RKIND - min(config_redi_transition_layer_mld_offset,1.0_RKIND))
+            thickSlope = 1.0_RKIND/max(1.0E-15, 1.0_RKIND - min(config_redi_transition_layer_bld_fraction,1.0_RKIND))
 
             do k=minLevelEdgeBot(iEdge),maxLevelEdgeTop(iEdge)
                scaleFactor = thickslope*(0.5_RKIND*abs(zMid(k,cell1)+zMid(k,cell2))/bldEdge - &
-                             config_redi_transition_layer_mld_offset)
+                             config_redi_transition_layer_bld_fraction)
                scaleFactor = min(1.0_RKIND,max(0.0_RKIND,scaleFactor))
                RediKappaSfcTaper(k,iEdge) = scaleFactor
             end do
@@ -294,7 +294,7 @@ module ocn_redi
               !in the boundary layer the first term is zero, so 1.0 is added to allow term 1 to stay active
               !the second term is 1 in the boundary layer and 0 below the boundary layer
               limiterUp(k,iCellSelf,iEdge) = (1.0_RKIND - oldlimiter)*(1.0_RKIND + &
-                                             sfcTaper*(slopeTaperUp - 1.0_RKIND)) + & 
+                                             sfcTaper*(slopeTaperUp - 1.0_RKIND)) + 
                                              oldlimiter*slopeTaperUp*sfcTaper
               limiterDown(k,iCellSelf,iEdge) = (1.0_RKIND - oldlimiter)*(1.0_RKIND + &
                                                sfcTaper*(slopeTaperDown - 1.0_RKIND)) + &
@@ -373,8 +373,8 @@ module ocn_redi
                                             BruntVaisalaFreqTop(k,cell2))
               BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
 
-              !Unlike for GM, here we force RediKappa min to be 0.1*config_Redi_constant_kappa
-              RediKappa(k, iEdge) = min(max(0.1_RKIND,         &
+              RediKappa(k, iEdge) = min(max(config_redi_spatially_variable_min_kappa /   &
+                                        config_redi_spatially_variable_max_kappa,        &
                                         BruntVaisalaFreqTopEdge/(maxN + 1.0E-10_RKIND)), &
                                                    1.0_RKIND)*config_Redi_constant_kappa
            end do
@@ -399,7 +399,8 @@ module ocn_redi
         !$omp end parallel
      else if (config_Redi_closure == 'constant' .or. &
               config_Redi_closure == 'N2_dependent' .and. &
-              config_Redi_horizontal_taper == 'RossbyRadius') then
+              config_Redi_horizontal_taper == 'RossbyRadius' .or. &
+              config_Redi_horizontal_taper == 'ramp') then
         !$omp parallel
         !$omp do schedule(runtime) private(k)
         do iEdge=1, nEdges
@@ -411,7 +412,7 @@ module ocn_redi
         !$omp end parallel
      end if
 
-     call mpas_timer_start('redi compute slopes')
+     call mpas_timer_stop('redi compute slopes')
 
    end subroutine ocn_redi_compute_isopycnal_slopes
 

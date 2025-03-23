@@ -304,13 +304,13 @@
 					description="Control what type of function is used for Redi $\kappa$. For 'equalGM', RediKappa is set to gmBolusKappa, so picks up the closure used by GM. For N2_dependent, the range varies from config_redi_constant_kappa down to 10% of that value" 
 					possible_values="'constant', 'N2_dependent', 'equalGM', 'data'"
 		/>
-		<nml_option name="config_redi_transition_layer_mld_offset" type="real" default_value="100.0" units="m"
-		            description="For instances where MLD lt BLD, the MLD for the transition layer (from isopycnal at depth to horizontal in the BLD) is set to BLD + this config value"
+		<nml_option name="config_redi_transition_layer_mld_offset" type="real" default_value="0.8" units="m"
+		            description="Parameter that controls over what fraction the redi tensor transitions from isopycnal to horizontal.  For example a value of 0.8 means at z = -0.8*bld the tensor is fully horizontal.  Transition is linear between the bld base and this point"
 					possible_values="Positive real numbers."
 		/>
 		<nml_option name="config_Redi_use_new_sfc_taper" type="logical" default_value=".false."
 					description="Controls if the taper where redi is purely horizontal in the boundary layer instead of off"
-					posible_values=".true. or .false."
+					possible_values=".true. or .false."
 		/>
 	  <nml_option name="config_Redi_use_cavity_fix" type="logical" default_value=".false."
 					description="if true use the corrected form of the horizontal temperature and salinity gradients"
@@ -320,7 +320,15 @@
 					description="The Redi diffusion coefficient. Only used when config_Redi_closure = 'constant'."
 					possible_values="Positive real numbers."
 		/>
-		<nml_option name="config_Redi_maximum_slope" type="real" default_value="0.3" units="non-dimensional"
+	   <nml_option name="config_redi_spatially_variable_min_kappa" type="real" default_value="100.0" units="m^2 s^-1"
+					description="minimum value of redi diffusivity for N2_dependent redi scheme."
+					possible_values="values around 100s"
+		/>
+		<nml_option name="config_redi_spatially_variable_max_kappa" type="real" default_value="1000.0" units="m^2 s^-1"
+					description="minimum value of redi diffusivity for N2_dependent redi scheme."
+					possible_values="values around 100s"
+		/>
+	<nml_option name="config_Redi_maximum_slope" type="real" default_value="0.3" units="non-dimensional"
 					description="value of maximum allowed isopycnal slope from Danabasoglu et al 2008 equation (2)"
 					possible_values="positive real numbers, but small"
 		/>
@@ -3370,19 +3378,19 @@
 		/>
 		<var name="slopeTriadUp" type="real" dimensions="nVertLevels TWO nEdges Time" units="non-dimensional" default_value="0.0"
 			 description="Magnitude of slope of isopycnal surface, using triad through this cell and edge, angled up. Uses expansion of equation of state."
-			 packages="redi"
+			 packages="forwardMode;analysisMode"
 		/>
 		<var name="slopeTriadDown" type="real" dimensions="nVertLevels TWO nEdges Time" units="non-dimensional" default_value="0.0"
 			 description="Magnitude of slope of isopycnal surface, using triad through this cell and edge, angled up. Uses expansion of equation of state."
-			 packages="redi"
+			 packages="forwardMode;analysisMode"
 		/>
 		<var name="limiterUp" type="real" dimensions="nVertLevels TWO nEdges Time" units="non-dimensional" default_value="0.0"
 			 description="Magnitude of slope of isopycnal surface, using triad through this cell and edge, angled up. Uses expansion of equation of state."
-			 packages="redi"
+			 packages="forwardMode;analysisMode"
 		/>
 		<var name="limiterDown" type="real" dimensions="nVertLevels TWO nEdges Time" units="non-dimensional" default_value="0.0"
 			 description="Magnitude of slope of isopycnal surface, using triad through this cell and edge, angled up. Uses expansion of equation of state."
-			 packages="redi"
+			 packages="forwardMode;analysisMode"
 		/>
 		<var name="k33" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^-1"
 			 description="The (3,3) entry of the Redi diffusion tensor. Added to the model vertical diffusion. Defined at the top of cell k"
@@ -3418,7 +3426,7 @@
 		/>
 		<var name="RediKappa" type="real" dimensions="nVertLevelsP1 nEdges Time" units="m^2 s^-1"
 			 description="Redi Kappa value.  On output, it has already been multiplied by the horizontal taper array RediHorizontalTaper (as opposed to gmBolusKappa, which has not been multiplied by the horizontal taper)."
-			 packages="gm;redi"
+			 packages="forwardMode;analysisMode"
 		/>
 		<var name="RediHorizontalTaper" type="real" dimensions="nEdges Time"
 			 description="Horizontal tapering for Redi. Varies between 0 and 1."
