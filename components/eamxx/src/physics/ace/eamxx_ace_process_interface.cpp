@@ -16,24 +16,21 @@ ACE::ACE(const ekat::Comm &comm, const ekat::ParameterList &params)
 void ACE::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
   m_grid = grids_manager->get_grid("Physics");
 
-  constexpr auto Pa     = ekat::units::Pa;
-  constexpr auto kg     = ekat::units::kg;
   constexpr auto m      = ekat::units::m;
   constexpr auto s      = ekat::units::s;
   constexpr auto K      = ekat::units::K;
-  constexpr auto m2     = m * m;
-  constexpr auto nondim = ekat::units::nondimensional();
+  constexpr auto nondim = ekat::units::Units::nondimensional();
 
   const auto horiz_wind_layout =
-      m_grid->get_2d_vector_layout(2);  // 2D horizontal wind layout
+      m_grid->get_2d_vector_layout(2);
   const auto layout_3d = m_grid->get_3d_scalar_layout(true);
   const auto layout_2d = m_grid->get_2d_scalar_layout();
 
   add_field<Updated>("T_mid", layout_3d, K, m_grid->name());
   add_field<Updated>("horiz_winds", horiz_wind_layout, m / s, m_grid->name());
-  add_field<Updated>("ocnfrac", scalar2d, nondim, grid_name);
-  add_field<Updated>("landfrac", scalar2d, nondim, grid_name);
-  add_field<Updated>("icefrac", scalar2d, nondim, grid_name);
+  add_field<Updated>("ocnfrac", layout_2d, nondim, m_grid->name());
+  add_field<Updated>("landfrac", layout_2d, nondim, m_grid->name());
+  add_field<Updated>("icefrac", layout_2d, nondim, m_grid->name());
 }
 
 void ACE::initialize_impl(const RunType /* run_type */) {
