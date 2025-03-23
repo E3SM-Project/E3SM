@@ -13,17 +13,21 @@ atmosphere_processes:
   ace:
     forward_steps: 1
     forward_steps_in_memory: 1
-    checkpoint_path: /pscratch/sd/m/mahf708/emulator/ace_ckpt_traced.tar
+    checkpoint_path: /pscratch/sd/m/mahf708/emulator/ace_ckpt_traced${GPU_OR_CPU}.tar
 grids_manager:
   Type: Mesh Free
   grids_names: [Point Grid]
   Point Grid:
     aliases: [Physics]
     type: point_grid
-    number_of_global_columns:   3
-    number_of_vertical_levels:  128
+    number_of_global_columns:   360
+    number_of_vertical_levels:  180
 
 initial_conditions:
-  cldfrac_liq: 0.0
-  qi: 0.0
+  landfrac: 0.5
+  InField: 0.1
+
+# The parameters for I/O control
+# Scorpio:
+  # output_yaml_files: ["output.yaml"]
 ...

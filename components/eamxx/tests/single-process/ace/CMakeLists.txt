@@ -10,13 +10,19 @@ set(SCREAM_FOUND_PYTORCH FALSE CACHE BOOL "Whether PyTorch was found" FORCE)
 if(SCREAM_ENABLE_ACE)
   # Use a configurable path for PyTorch with a default value
   if(NOT DEFINED TORCH_CMAKE_PATH)
-    # if (Kokkos_ENABLE_CUDA)
     set(TORCH_CMAKE_PATH "/global/cfs/cdirs/e3sm/software/libtorch/libtorch-cxx11-abi-shared-with-deps-2.6.0+cu124" 
+    CACHE PATH "Path to PyTorch CMake files")
+    if (Kokkos_ENABLE_CUDA)
+      set(GPU_OR_CPU "")
+      set(TORCH_CMAKE_PATH "/global/cfs/cdirs/e3sm/software/libtorch/libtorch-cxx11-abi-shared-with-deps-2.6.0+cu124" 
           CACHE PATH "Path to PyTorch CMake files")
-    # else()
-    #   set(TORCH_CMAKE_PATH "/global/cfs/cdirs/e3sm/software/libtorch/libtorch-cxx11-abi-shared-with-deps-2.6.0+cpu" 
-    #       CACHE PATH "Path to PyTorch CMake files")
-    # endif()
+      message(STATUS "Will try to use GPU version of PyTorch")
+    else()
+      set(GPU_OR_CPU "_cpu")
+      set(TORCH_CMAKE_PATH "/global/cfs/cdirs/e3sm/software/libtorch/libtorch-cxx11-abi-shared-with-deps-2.6.0+cpu" 
+          CACHE PATH "Path to PyTorch CMake files")
+      message(STATUS "Will try to use CPU version of PyTorch")
+    endif()
   endif()
   
   # Try to find PyTorch, but don't require it

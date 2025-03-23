@@ -1,0 +1,14 @@
+%YAML 1.1
+---
+filename_prefix: ace_standalone_output
+Averaging Type: Instant
+Fields:
+  Physics:
+    Field Names:
+      - InField
+      - OutField
+
+output_control:
+  Frequency: 1
+  frequency_units: nsteps
+...
