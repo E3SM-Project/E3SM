@@ -10,8 +10,13 @@ set(SCREAM_FOUND_PYTORCH FALSE CACHE BOOL "Whether PyTorch was found" FORCE)
 if(SCREAM_ENABLE_ACE)
   # Use a configurable path for PyTorch with a default value
   if(NOT DEFINED TORCH_CMAKE_PATH)
-    set(TORCH_CMAKE_PATH "/global/cfs/cdirs/e3sm/software/libtorch" 
-        CACHE PATH "Path to PyTorch CMake files")
+    if (USE_CUDA)
+      set(TORCH_CMAKE_PATH "/global/cfs/cdirs/e3sm/software/libtorch/libtorch-cxx11-abi-shared-with-deps-2.6.0+cu124" 
+          CACHE PATH "Path to PyTorch CMake files")
+    else()
+      set(TORCH_CMAKE_PATH "/global/cfs/cdirs/e3sm/software/libtorch/libtorch-cxx11-abi-shared-with-deps-2.6.0+cpu" 
+          CACHE PATH "Path to PyTorch CMake files")
+    endif()
   endif()
   
   # Try to find PyTorch, but don't require it
