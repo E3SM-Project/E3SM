@@ -29,13 +29,9 @@ if(SCREAM_ENABLE_ACE)
     include(ScreamUtils)
     add_library(ace ${ACE_SRCS})
     target_compile_definitions(ace PUBLIC EAMXX_HAS_ACE)
-    target_include_directories(ace PUBLIC ${TORCH_INCLUDE_DIRS})
+    target_include_directories(ace SYSTEM PUBLIC ${TORCH_INCLUDE_DIRS})
     
-    target_link_libraries(ace PUBLIC
-      physics_share
-      scream_share
-      ${TORCH_LIBRARIES}
-    )
+    target_link_libraries(ace physics_share scream_share ${TORCH_LIBRARIES})
     
     if (TARGET eamxx_physics)
       target_link_libraries(eamxx_physics INTERFACE ace)
