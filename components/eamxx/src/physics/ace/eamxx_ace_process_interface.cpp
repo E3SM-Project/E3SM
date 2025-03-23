@@ -57,6 +57,13 @@ void ACE::initialize_impl(const RunType /* run_type */) {
   }
   cp_file.close();
 
+  // TODO: guard with inference-only mode
+  // c10::InferenceMode guard;
+  // model.load_jit(saved_model);
+  // auto inputs = preprocess_tensors(data);
+  // auto out = model.forward(inputs);
+  // auto outputs = postprocess_tensors(out);
+
   std::cout << "Loading model checkpoint from: " << m_checkpoint_path
             << std::endl;
   try {
@@ -97,17 +104,27 @@ void ACE::run_impl(const double dt) {
   std::cout << "Input tensor shape: " << in_tensor.sizes() << std::endl;
   std::cout << "Performing inference for " << m_forward_steps << " steps..."
             << std::endl;
-  // torch::Tensor temp_out;
+  // TODO: guard with inference-only mode
+  // c10::InferenceMode guard;
+  // model.load_jit(saved_model);
+  // auto inputs = preprocess_tensors(data);
+  // auto out = model.forward(inputs);
+  // auto outputs = postprocess_tensors(out);
+  
+  torch::Tensor temp_out;
   try {
-    torch::Tensor temp_out = m_module.forward(inputs).toTensor();
-    std::memcpy(out_tensor.data_ptr<float>(), temp_out.data_ptr<float>(),
-                temp_out.numel() * sizeof(float));
+    temp_out = m_module.forward(inputs).toTensor();
   } catch(const c10::Error &e) {
     std::cerr << "Error during inference: " << e.what() << std::endl;
     return;
   }
+  out_tensor.copy_(temp_out);
 
   // verify that the values in OutField are the same as in temp_out?
+  // TODO: this is still not working
+  // on CPU: the values are different
+  // on GPU: the values of the outfield are all zeros still
+  // TODO: something is amiss :(
   out_field.sync_to_host();
   auto out_field_view_2 =
       get_field_out("OutField").get_view<const Real ****, Host>();
@@ -118,7 +135,7 @@ void ACE::run_impl(const double dt) {
         std::cout << "OutField[0][" << i << "][" << j << "][" << k
                   << "] = " << out_field_view_2(0, i, j, k) << std::endl;
         std::cout << "out_tensor[0][" << i << "][" << j << "][" << k
-                  << "] = " << out_tensor[0][i][j][k].item<float>()
+                  << "] = " << out_tensor_cpu[0][i][j][k].item<float>()
                   << std::endl;
       }
     }
