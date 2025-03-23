@@ -133,7 +133,7 @@ module micro_p3_interface
       p3_mincdnc               = huge(1.0_rtype), & 
       p3_max_mean_rain_size    = huge(1.0_rtype), &
       p3_embryonic_rain_size   = huge(1.0_rtype), &
-      micro_nccons             = huge(1.0_rtype)
+      p3_micro_nccons          = huge(1.0_rtype)
 
    integer :: ncnst
 
@@ -166,7 +166,7 @@ subroutine micro_p3_readnl(nlfile)
        micro_p3_tableversion, micro_p3_lookup_dir, micro_aerosolactivation, micro_subgrid_cloud, &
        micro_tend_output, p3_autocon_coeff, p3_qc_autocon_expon, p3_nc_autocon_expon, p3_accret_coeff, &
        p3_qc_accret_expon, p3_wbf_coeff, p3_max_mean_rain_size, p3_embryonic_rain_size, &
-       do_prescribed_CCN, do_Cooper_inP3, p3_mincdnc, micro_nccons
+       do_prescribed_CCN, do_Cooper_inP3, p3_mincdnc, p3_micro_nccons
 
   !-----------------------------------------------------------------------------
 
@@ -200,6 +200,7 @@ subroutine micro_p3_readnl(nlfile)
      write(iulog,'(A30,1x,8e12.4)') 'p3_embryonic_rain_size',  p3_embryonic_rain_size
      write(iulog,'(A30,1x,L)')    'do_prescribed_CCN: ',       do_prescribed_CCN
      write(iulog,'(A30,1x,L)')    'do_Cooper_inP3: ',          do_Cooper_inP3
+     write(iulog,'(A30,1x,8e12.4)') 'p3_micro_nccons',         p3_micro_nccons
 
   end if
 
@@ -221,7 +222,7 @@ subroutine micro_p3_readnl(nlfile)
   call mpibcast(p3_embryonic_rain_size,  1 ,                         mpir8,   0, mpicom)
   call mpibcast(do_prescribed_CCN,       1,                          mpilog,  0, mpicom)
   call mpibcast(do_Cooper_inP3,          1,                          mpilog,  0, mpicom)
-  call mpibcast(micro_nccons,            1,                          mpir8,   0, mpicom)
+  call mpibcast(p3_micro_nccons,         1,                          mpir8,   0, mpicom)
 
 #endif
 
@@ -1366,7 +1367,7 @@ end subroutine micro_p3_readnl
          t_prev(its:ite,kts:kte),          & ! IN  t at end of prev p3_main call    K
          col_location(its:ite,:3),         & ! IN column locations
          precip_off,                       & ! IN Option to turn precip (liquid) off
-         micro_nccons,                     & ! IN Option for constant droplet concentration
+         p3_micro_nccons,                     & ! IN Option for constant droplet concentration
          diag_equiv_reflectivity(its:ite,kts:kte), & !OUT equivalent reflectivity (rain + ice) [dBz]
          diag_ze_rain(its:ite,kts:kte),diag_ze_ice(its:ite,kts:kte)) !OUT equivalent reflectivity for rain and ice [dBz]
          

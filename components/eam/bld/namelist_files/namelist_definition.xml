@@ -2415,6 +2415,12 @@ Specify if aerosol activation is used in microphysics scheme.
 Default: TRUE
 </entry>
 
+<entry id="p3_micro_nccons" type="real" category="microphys"
+       group="micro_nl" valid_values="" >
+Constant Nc when micro_aerosolactivation is .false.
+Default: set by build-namelist
+</entry>
+
 <entry id="micro_subgrid_cloud" type="logical" category="microphys"
        group="micro_nl" valid_values="" >
 Specify if cloud fraction is applied to microphysics tendencies.
