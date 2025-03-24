@@ -23,6 +23,7 @@ namespace p3 {
 ETI_UPWIND(1)
 ETI_UPWIND(2)
 ETI_UPWIND(4)
+ETI_UPWIND(5)
 #undef ETI_UPWIND
 
 #define ETI_GENSED(nfield)                                              \
@@ -40,6 +41,7 @@ ETI_UPWIND(4)
 ETI_GENSED(1)
 ETI_GENSED(2)
 ETI_GENSED(4)
+ETI_GENSED(5)
 #undef ETI_GENSED
 
 template struct Functions<Real,DefaultDevice>;
