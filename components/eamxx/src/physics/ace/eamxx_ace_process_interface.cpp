@@ -4,6 +4,10 @@
 #include <iostream>
 #include <string>
 
+#ifdef KOKKOS_ENABLE_CUDA
+#include <cuda_runtime.h>
+#endif
+
 namespace scream {
 
 ACE::ACE(const ekat::Comm &comm, const ekat::ParameterList &params)
@@ -77,64 +81,78 @@ void ACE::initialize_impl(const RunType /* run_type */) {
 }
 
 void ACE::run_impl(const double dt) {
-  // Get a view from an input field
-  auto in_field_view = get_field_in("InField").get_view<const Real ****>();
-  // Get a view from an output field
-  auto out_field = get_field_out("OutField");
-  out_field.deep_copy(0.0);
-  auto out_field_view = out_field.get_view<Real ****>();
-
   auto device = (*m_module.parameters().begin()).device();
 
-  // Create Torch tensors from Kokkos views
-  torch::Tensor in_tensor = torch::from_blob((void *)in_field_view.data(),
-                                             {1, 39, 180, 360}, torch::kFloat32)
-                                .to(device);
-  torch::Tensor out_tensor =
-      torch::from_blob((void *)out_field_view.data(), {1, 44, 180, 360},
-                       torch::kFloat32)
-          .to(device);
+  // TODO: this is just to test mechanics of stuff, but will be replaced later
+  // InField will follow the mechanics in the comment after the code (bottom)
+  // Get a view from an input field
+  auto in_field_view = get_field_in("InField").get_view<const Real ****>();
 
-  std::cout << "in_tensor shape: " << in_tensor.sizes() << std::endl;
-  std::cout << "in_tensor device: " << in_tensor.device() << std::endl;
-  std::cout << "in_tensor dtype: " << in_tensor.dtype() << std::endl;
+  // TODO move to namelist? or make them members?
+  const int batch = 1, in_ch = 39, out_ch = 44, height = 180, width = 360;
 
-  // Perform inference
-  std::vector<torch::jit::IValue> inputs{in_tensor};
-  std::cout << "Input tensor shape: " << in_tensor.sizes() << std::endl;
+  torch::Tensor torch_input = torch::from_blob(
+      (void *)in_field_view.data(), {batch, in_ch, height, width},
+      torch::TensorOptions()
+          .dtype(torch::kFloat32)
+          .device(device)
+          .memory_format(torch::MemoryFormat::Contiguous));
+
+  // Debug prints
+  std::cout << "in_tensor shape: " << torch_input.sizes() << std::endl;
+  std::cout << "in_tensor device: " << torch_input.device() << std::endl;
+  std::cout << "in_tensor dtype: " << torch_input.dtype() << std::endl;
+
+  // Prepare for inference
+  std::vector<torch::jit::IValue> inputs{torch_input};
+  std::cout << "Input tensor shape: " << torch_input.sizes() << std::endl;
   std::cout << "Performing inference for " << m_forward_steps << " steps..."
             << std::endl;
+
   // TODO: guard with inference-only mode
   // c10::InferenceMode guard;
   // model.load_jit(saved_model);
   // auto inputs = preprocess_tensors(data);
   // auto out = model.forward(inputs);
   // auto outputs = postprocess_tensors(out);
-  
+
+  // TODO: aggressively fence for now, since we are going outside of Kokkos
+  Kokkos::fence();
   torch::Tensor temp_out;
   try {
-    temp_out = m_module.forward(inputs).toTensor();
+    temp_out = m_module.forward(inputs).toTensor().to(device);
   } catch(const c10::Error &e) {
     std::cerr << "Error during inference: " << e.what() << std::endl;
     return;
   }
-  out_tensor.copy_(temp_out);
+#ifdef KOKKOS_ENABLE_CUDA
+  cudaDeviceSynchronize();
+#endif
+  // TODO: aggressively fence for now, since we are going back into Kokkos
+  Kokkos::fence();
+
+  Kokkos::View<float ****, scream::DefaultDevice,
+               Kokkos::MemoryTraits<Kokkos::Unmanaged>>
+      kokkos_output(temp_out.data_ptr<float>(), batch, out_ch, height, width);
+
+  // TODO: this is just to test mechanics of stuff, but will be replaced later
+  // OutField will follow the mechanics in the comment after the code (bottom)
+  // Get a view from an output field
+  auto out_field_view = get_field_out("OutField").get_view<Real ****>();
+  Kokkos::deep_copy(out_field_view, kokkos_output);
 
   // verify that the values in OutField are the same as in temp_out?
-  // TODO: this is still not working
-  // on CPU: the values are different
-  // on GPU: the values of the outfield are all zeros still
-  // TODO: something is amiss :(
-  out_field.sync_to_host();
+  get_field_out("OutField").sync_to_host();
   auto out_field_view_2 =
       get_field_out("OutField").get_view<const Real ****, Host>();
-  auto out_tensor_cpu = out_tensor.to(torch::kCPU);
+  auto out_tensor_cpu = temp_out.to(torch::kCPU);
+
   for(int i = 0; i < 3; i++) {
     for(int j = 0; j < 3; j++) {
       for(int k = 0; k < 3; k++) {
-        std::cout << "OutField[0][" << i << "][" << j << "][" << k
+        std::cout << "out_fied[0][" << i << "][" << j << "][" << k
                   << "] = " << out_field_view_2(0, i, j, k) << std::endl;
-        std::cout << "out_tensor[0][" << i << "][" << j << "][" << k
+        std::cout << "out_tens[0][" << i << "][" << j << "][" << k
                   << "] = " << out_tensor_cpu[0][i][j][k].item<float>()
                   << std::endl;
       }
@@ -243,5 +261,4 @@ void ACE::finalize_impl() {}
   - USWRFtoa
   - tendency_of_total_water_path_due_to_advection
 
-  Additionally, the emulator calculates some diagnostics by default
 */
