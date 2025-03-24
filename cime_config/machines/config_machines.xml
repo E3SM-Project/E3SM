@@ -2513,7 +2513,7 @@
     <DOUT_S_ROOT>/lcrc/group/e3sm/$USER/scratch/chrys/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/lcrc/group/e3sm/baselines/chrys/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/lcrc/group/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
-    <GMAKE_J>8</GMAKE_J>
+    <GMAKE_J>60</GMAKE_J>
     <TESTS>e3sm_integration</TESTS>
     <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
