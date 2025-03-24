@@ -75,8 +75,6 @@ void Functions<S,D>::diag_second_moments(
       thl_sec(k) = 0;
       qw_sec(k) = 0;
       qwthl_sec(k) = 0;
-      uw_sec(k) = 0;
-      vw_sec(k) = 0;
     });
   }
   
