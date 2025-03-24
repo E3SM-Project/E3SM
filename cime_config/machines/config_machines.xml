@@ -2417,7 +2417,7 @@
     <DESC>ALCF Cray 256 nodes, AMD EPYC Rome 7742 2-socket 64c CPU, 256GB DDR4</DESC>
     <NODENAME_REGEX>crux-*</NODENAME_REGEX>
     <OS>Linux</OS>
-    <COMPILERS>gnu,cray</COMPILERS>
+    <COMPILERS>gnu</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>crocus</PROJECT>
     <CHARGE_ACCOUNT>crocus</CHARGE_ACCOUNT>
@@ -2459,14 +2459,7 @@
         <command name="load">cmake/3.27.9</command>
         <command name="load">cray-python/3.11.7</command>
         <command name="load">craype-accel-host</command>
-      </modules>
-      <modules compiler="gnu">
         <command name="load">PrgEnv-gnu/8.5.0</command>
-      </modules>
-      <modules compiler="cray">
-        <command name="load">PrgEnv-cray/8.5.0</command>
-      </modules>
-      <modules>
         <command name="load">cray-libsci/24.03.0</command>
         <command name="load">cray-hdf5-parallel/1.12.2.11</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.0.11</command>
@@ -2481,9 +2474,6 @@
       <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
       <env name="FI_CXI_RX_MATCH_MODE">hybrid</env>
-    </environment_variables>
-    <environment_variables compiler="gnu.*">
-      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /grand/E3SMinput/soft/moab/gnu; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
