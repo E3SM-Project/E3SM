@@ -121,6 +121,10 @@ add_default($nl, 'config_alpha_subglacial_discharge');
 add_default($nl, 'config_subglacial_discharge_coefficient');
 add_default($nl, 'config_subglacial_discharge_intercept');
 add_default($nl, 'config_uniform_face_melt_rate');
+add_default($nl, 'config_ocean_data_extrapolation');
+add_default($nl, 'config_ocean_data_extrap_ncells_extra');
+add_default($nl, 'config_invalid_value_TF');
+add_default($nl, 'config_weight_value_cell');
 
 #######################################
 # Namelist group: physical_parameters #

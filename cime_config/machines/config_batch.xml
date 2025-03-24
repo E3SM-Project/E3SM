@@ -76,20 +76,6 @@
      </queues>
    </batch_system>
 
-   <batch_system MACH="frontier" type="slurm">
-    <batch_submit>sbatch</batch_submit>
-     <directives>
-       <directive> --core-spec=$SHELL{tpn=`./xmlquery --value MAX_TASKS_PER_NODE`; if [[ $tpn > 56 ]]; then echo "64-$tpn"|bc; else echo 8; fi; }</directive>
-     </directives>
-     <queues>
-       <queue strict="true" nodemin="1" nodemax="91" walltimemax="02:00:00" default="true">batch</queue>
-       <queue strict="true" nodemin="92" nodemax="183" walltimemax="06:00:00">batch</queue>
-       <queue strict="true" nodemin="184" nodemax="1881" walltimemax="12:00:00">batch</queue>
-       <queue strict="true" nodemin="1882" nodemax="5644" walltimemax="12:00:00">batch</queue>
-       <queue strict="true" nodemin="5645" nodemax="9408" walltimemax="12:00:00">batch</queue>
-     </queues>
-   </batch_system>
-
   <batch_system type="cobalt" >
     <batch_query>qstat</batch_query>
     <batch_submit>qsub</batch_submit>
@@ -548,11 +534,15 @@
     </batch_system>
 
     <batch_system MACH="aurora" type="pbspro">
-      <batch_submit>/lus/flare/projects/CSC249ADSE15_CNDA/tools/qsub/throttle</batch_submit>
+      <batch_submit>/lus/flare/projects/E3SM_Dec/tools/qsub/throttle</batch_submit>
+      <directives>
+        <directive> -l filesystems=home:flare </directive>
+      </directives>
       <queues>
-        <queue walltimemax="00:59:00" jobmin="1" jobmax="2560" default="true">EarlyAppAccess</queue>
-        <queue walltimemax="00:59:00" jobmin="1" jobmax="10624">workq-route</queue>
-        <queue walltimemax="00:59:00" jobmin="1" jobmax="10624">workq</queue>
+        <queue walltimemax="01:00:00" nodemin="1"    nodemax="2" default="true">debug</queue>
+        <queue walltimemax="01:00:00" nodemin="3"    nodemax="31"   >debug-scaling</queue>
+        <queue walltimemax="01:00:00" nodemin="32"   nodemax="2048" >prod</queue>
+        <queue walltimemax="01:00:00" nodemin="2049" nodemax="10624">prod-large</queue>
       </queues>
     </batch_system>
     
@@ -562,9 +552,11 @@
         <directive> -l filesystems=home:grand:eagle </directive>
       </directives>
       <queues>
-        <queue walltimemax="00:30:00" nodemin="1"  nodemax="2"   strict="true" default="true">debug</queue>
-        <queue walltimemax="00:30:00" nodemin="3"  nodemax="9"   strict="true">debug-scaling</queue>
-        <queue walltimemax="01:00:00" nodemin="10" nodemax="496" strict="true">prod</queue>
+        <queue walltimemin="00:05:00" walltimemax="01:00:00" nodemin="1"   nodemax="2"   strict="true" default="true">debug</queue>
+        <queue walltimemin="00:05:00" walltimemax="01:00:00" nodemin="3"   nodemax="9 "  strict="true">debug-scaling</queue>
+        <queue walltimemin="00:05:00" walltimemax="03:00:00" nodemin="10"  nodemax="24"  strict="true">prod</queue>
+        <queue walltimemin="00:05:00" walltimemax="06:00:00" nodemin="25"  nodemax="99"  strict="true">prod</queue>
+        <queue walltimemin="00:05:00" walltimemax="24:00:00" nodemin="100" nodemax="496" strict="true">prod</queue>
       </queues>
     </batch_system>
 
@@ -619,6 +611,26 @@
     <queues>
       <queue nodemax="16" walltimemax="04:00:00" strict="true" default="true">short,batch</queue>
       <queue walltimemax="24:00:00">batch</queue>
+    </queues>
+  </batch_system>
+
+  <batch_system MACH="boca" type="slurm" >
+    <submit_args>
+      <arg flag="--reservation=boca-cldera"/>
+    </submit_args>
+    <queues>
+      <queue nodemax="20" walltimemax="04:00:00" strict="true" default="true">batch</queue>
+      <queue walltimemax="48:00:00">batch</queue>
+    </queues>
+  </batch_system>
+
+  <batch_system MACH="flight" type="slurm" >
+    <submit_args>
+      <arg flag="--reservation=flight-cldera"/>
+    </submit_args>
+    <queues>
+      <queue nodemax="20" walltimemax="04:00:00" strict="true" default="true">batch</queue>
+      <queue walltimemax="48:00:00">batch</queue>
     </queues>
   </batch_system>
 
@@ -744,28 +756,11 @@
      </queues>
    </batch_system>
 
-   <batch_system MACH="crusher-scream-cpu" type="slurm">
-     <queues>
-       <queue strict="true" nodemin="1" nodemax="8" walltimemax="08:00:00" default="true">batch</queue>
-       <queue strict="true" nodemin="9" nodemax="64" walltimemax="04:00:00">batch</queue>
-       <queue strict="true" nodemin="65" nodemax="160" walltimemax="02:00:00">batch</queue>
-     </queues>
-   </batch_system>
-
-   <batch_system MACH="crusher-scream-gpu" type="slurm">
-     <batch_submit>/lustre/orion/cli133/world-shared/e3sm/tools/sbatch/throttle</batch_submit>
+   <batch_system MACH="frontier" type="slurm">
+    <batch_submit>sbatch</batch_submit>
      <directives>
-       <directive> -S 0</directive>
+       <directive> --core-spec=$SHELL{tpn=`./xmlquery --value MAX_TASKS_PER_NODE`; if [[ $tpn > 56 ]]; then echo "64-$tpn"|bc; else echo 8; fi; }</directive>
      </directives>
-     <queues>
-       <queue strict="true" nodemin="1" nodemax="8" walltimemax="01:00:00" default="true">batch</queue>
-       <queue strict="true" nodemin="9" nodemax="64" walltimemax="01:00:00">batch</queue>
-       <queue strict="true" nodemin="65" nodemax="160" walltimemax="01:00:00">batch</queue>
-     </queues>
-   </batch_system>
-
-   <batch_system MACH="frontier-scream-gpu" type="slurm">
-	   <batch_submit>/lustre/orion/cli115/world-shared/e3sm/tools/sbatch/throttle</batch_submit>
      <queues>
        <queue strict="true" nodemin="1" nodemax="91" walltimemax="2:00:00" default="true">batch</queue>
        <queue strict="true" nodemin="92" nodemax="183" walltimemax="6:00:00">batch</queue>

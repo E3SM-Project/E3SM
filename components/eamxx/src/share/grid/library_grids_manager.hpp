@@ -41,6 +41,7 @@ protected:
         "Error! LibraryGridsManager is not capable of creating remappers.\n"
         " - from_grid: " + from_grid->name() + "\n"
         " - to_grid:   " + to_grid->name() + "\n");
+    return nullptr;
   }
 };
 

@@ -1,8 +1,8 @@
 #include <catch2/catch.hpp>
 
-#include "share/io/scream_output_manager.hpp"
+#include "share/io/eamxx_output_manager.hpp"
 #include "share/io/scorpio_input.hpp"
-#include "share/io/scream_scorpio_interface.hpp"
+#include "share/io/eamxx_scorpio_interface.hpp"
 
 #include "share/grid/mesh_free_grids_manager.hpp"
 
@@ -11,9 +11,9 @@
 #include "share/field/field_manager.hpp"
 #include "share/field/field_utils.hpp"
 
-#include "share/util/scream_setup_random_test.hpp"
-#include "share/util/scream_time_stamp.hpp"
-#include "share/scream_types.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/util/eamxx_time_stamp.hpp"
+#include "share/eamxx_types.hpp"
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/util/ekat_units.hpp"
@@ -70,7 +70,7 @@ TEST_CASE("se_grid_io")
 
   OutputManager om;
   om.initialize(io_comm,params,t0,false);
-  om.setup(fm0,gm);
+  om.setup(fm0,gm->get_grid_names());
   om.init_timestep(t0,dt);
   om.run(t0+dt);
   om.finalize();
@@ -152,8 +152,9 @@ get_test_fm(const std::shared_ptr<const AbstractGrid>& grid,
 
   // field_2 is not partitioned, so let's sync it across ranks
   auto f2 = fm->get_field("field_2");
-  auto v2 = f2.get_view<Real*>();
+  auto v2 = f2.get_view<Real*,Host>();
   comm.all_reduce(v2.data(),nlevs,MPI_MAX);
+  f2.sync_to_dev();
 
   return fm;
 }

@@ -109,44 +109,6 @@ protected:
   void rayleigh_friction_init ();
   void rayleigh_friction_apply (const Real dt) const;
 
-  // IOP functions
-  void apply_iop_forcing(const Real dt);
-
-  KOKKOS_FUNCTION
-  static void advance_iop_subsidence(const KT::MemberType& team,
-                                     const int nlevs,
-                                     const Real dt,
-                                     const Real ps,
-                                     const view_1d<const Pack>& pmid,
-                                     const view_1d<const Pack>& pint,
-                                     const view_1d<const Pack>& pdel,
-                                     const view_1d<const Pack>& omega,
-                                     const Workspace& workspace,
-                                     const view_1d<Pack>& u,
-                                     const view_1d<Pack>& v,
-                                     const view_1d<Pack>& T,
-                                     const view_2d<Pack>& Q);
-
-  KOKKOS_FUNCTION
-  static void advance_iop_forcing(const KT::MemberType& team,
-                                  const int nlevs,
-                                  const Real dt,
-                                  const view_1d<const Pack>& divT,
-                                  const view_1d<const Pack>& divq,
-                                  const view_1d<Pack>& T,
-                                  const view_1d<Pack>& qv);
-
-
-  KOKKOS_FUNCTION
-  static void iop_apply_coriolis(const KT::MemberType& team,
-                                 const int nlevs,
-                                 const Real dt,
-                                 const Real lat,
-                                 const view_1d<const Pack>& u_ls,
-                                 const view_1d<const Pack>& v_ls,
-                                 const view_1d<Pack>& u,
-                                 const view_1d<Pack>& v);
-
 public:
   // Fast boolean function returning whether Physics PGN is being used.
   bool fv_phys_active() const;

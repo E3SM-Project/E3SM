@@ -42,7 +42,7 @@ module ocn_comp_mct
    use mpas_moabmesh
    use seq_comm_mct, only: MPOID
    use seq_comm_mct,      only: num_moab_exports
-   use iMOAB, only: iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage
+   use iMOAB, only: iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage, iMOAB_GetMeshInfo
    use seq_comm_mct, only:  seq_comm_compare_mb_mct
 #endif
    use iso_c_binding, only : c_char, c_loc, c_ptr, c_int
@@ -108,6 +108,8 @@ module ocn_comp_mct
       my_task
 
    integer  :: nsend, nrecv
+
+   logical  :: ocn_c2_glctf           ! .true.  => ocn to glc thermal forcing coupling on
 
    character(len=StrKIND) :: runtype, coupleTimeStamp
 
@@ -226,6 +228,7 @@ contains
     logical, pointer :: config_use_surface_salinity_monthly_restoring
     logical, pointer :: config_scale_dismf_by_removed_ice_runoff
     character (len=StrKIND), pointer :: config_land_ice_flux_mode
+    character (len=StrKIND), pointer :: config_glc_thermal_forcing_coupling_mode
 
     ! ssh coupling interval initialization
     integer, pointer :: index_avgZonalSSHGradient, index_avgMeridionalSSHGradient
@@ -308,6 +311,9 @@ contains
 
     ! Determine coupling type
     call seq_infodata_GetData(infodata, cpl_seq_option=cpl_seq_option)
+
+    ! Determine if ocn to glc thermal forcing coupling is on
+    call seq_infodata_GetData(infodata, ocn_c2_glctf=ocn_c2_glctf)
 
 !-----------------------------------------------------------------------
 !
@@ -595,10 +601,6 @@ contains
        call mpas_log_write('Core init failed for core ' // trim(domain % core % coreName), MPAS_LOG_CRIT)
     end if
     call t_stopf('mpaso_init2')
-#ifdef HAVE_MOAB
-    call init_moab_mpas(domain_ptr, OCNID, MPOID) ! should return MPOID ..
-    call mpas_log_write('initialized MOAB MPAS ocean instance... ')
-#endif
 
 
 !-----------------------------------------------------------------------
@@ -652,11 +654,15 @@ contains
     nsend = mct_avect_nRattr(o2x_o)
     nrecv = mct_avect_nRattr(x2o_o)
 #ifdef HAVE_MOAB
+    call init_moab_mpas(domain_ptr, OCNID, MPOID) ! should return MPOID ..
+    call mpas_log_write('initialized MOAB MPAS ocean instance... ')
+
     ! initialize moab tag fields array
    mblsize = lsize
    totalmbls = mblsize * nsend ! size of the double array for exporting to coupler
    allocate (o2x_om(lsize, nsend) )
    o2x_om = 0._r8
+
   ! define tags according to the seq_flds_o2x_fields
    tagtype = 1  ! dense, double
    numco = 1 !  one value per cell / entity
@@ -672,6 +678,7 @@ contains
       write(ocnLogUnit,*) 'Fail to set MOAB fields '
    endif
 
+  ! define tags according to the seq_flds_x2o_fields
    totalmbls_r = mblsize * nrecv ! size of the double array for importing
    allocate (x2o_om(lsize, nrecv) )
    x2o_om = 0._r8
@@ -696,7 +703,7 @@ contains
    endif
    ent_type = 1 ! cells
 
-
+   call ocn_domain_moab(MPOID)
 #endif
 !-----------------------------------------------------------------------
 !
@@ -898,6 +905,16 @@ contains
        call MPAS_pool_get_array(forcingPool, "runningMeanRemovedIceRunoff", &
                                 runningMeanRemovedIceRunoff)
        call seq_infodata_PutData(infodata, rmean_rmv_ice_runoff=runningMeanRemovedIceRunoff)
+    end if
+
+    call mpas_pool_get_config(domain % configs, 'config_glc_thermal_forcing_coupling_mode', config_glc_thermal_forcing_coupling_mode)
+    if ( trim(config_glc_thermal_forcing_coupling_mode) == 'off' ) then
+       call seq_infodata_PutData(infodata, ocn_c2_glctf=.false.)
+    else if ( trim(config_glc_thermal_forcing_coupling_mode) == '2d' ) then
+       call seq_infodata_PutData(infodata, ocn_c2_glctf=.true.)
+    else
+       call mpas_log_write('ERROR: unknown config_glc_thermal_forcing_coupling_mode: ' // &
+               trim(config_glc_thermal_forcing_coupling_mode), MPAS_LOG_CRIT)
     end if
 
 !-----------------------------------------------------------------------
@@ -1685,6 +1702,172 @@ contains
 
   end subroutine ocn_domain_mct!}}}
 
+#ifdef HAVE_MOAB
+!***********************************************************************
+!BOP
+! !IROUTINE: ocn_domain_moab
+! !INTERFACE:
+
+ subroutine ocn_domain_moab( mbid )!{{{
+
+  use iso_c_binding, only : C_NULL_CHAR
+! !DESCRIPTION:
+!  This routine sets up the MOAB domain-related info for MPASO
+!
+! !REVISION HISTORY:
+!  2025-01-21: initial version is copy from ocn_domain_mct
+!
+! !INPUT/OUTPUT PARAMETERS:
+
+    integer        , intent(in)    :: mbid
+
+!EOP
+!BOC
+!-----------------------------------------------------------------------
+!
+!  local variables
+!
+!-----------------------------------------------------------------------
+    real(kind=RKIND), pointer :: data(:)
+    real(kind=RKIND) :: r2d
+
+    integer :: i, n, ier, ierr
+    character(CXX)           :: tagname
+
+    type (block_type), pointer :: block_ptr
+
+    type (mpas_pool_type), pointer :: meshPool, forcingPool
+
+    integer, pointer :: nCellsSolve
+
+    real (kind=RKIND), dimension(:), pointer :: lonCell, latCell, areaCell
+
+    integer, dimension(:), pointer :: landIceMask
+
+    real (kind=RKIND), pointer :: sphere_radius
+
+    integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
+    integer arrsize, ent_type
+
+    r2d = 180.0/pii
+
+!-------------------------------------------------------------------
+!
+! Determine local grid size
+!
+!-------------------------------------------------------------------
+    ierr  = iMOAB_GetMeshInfo ( mbid, nvert, nvise, nbl, nsurf, nvisBC )
+
+    arrsize = nvise(1)
+
+    allocate(data(arrsize))
+
+
+!-------------------------------------------------------------------
+!
+! Fill in correct values for domain tags
+!
+!-------------------------------------------------------------------
+
+    n = 0
+    block_ptr => domain % blocklist
+    do while(associated(block_ptr))
+       call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+
+       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+
+       call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
+
+       do i = 1, nCellsSolve
+          n = n + 1
+          data(n) = lonCell(i) * r2d
+       end do
+
+       block_ptr => block_ptr % next
+    end do
+    tagname = "lon"//C_NULL_CHAR
+    ent_type=1
+    ierr = iMOAB_SetDoubleTagStorage ( mbid, tagname, arrSize , ent_type, data)
+
+    n = 0
+    block_ptr => domain % blocklist
+    do while(associated(block_ptr))
+       call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+
+       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+
+       call mpas_pool_get_array(meshPool, 'latCell', latCell)
+
+       do i = 1, nCellsSolve
+          n = n + 1
+          data(n) = latCell(i) * r2d
+       end do
+       block_ptr => block_ptr % next
+    end do
+    tagname = "lat"//C_NULL_CHAR
+    ent_type=1
+    ierr = iMOAB_SetDoubleTagStorage ( mbid, tagname, arrSize , ent_type, data)
+
+    n = 0
+    block_ptr => domain % blocklist
+    do while(associated(block_ptr))
+       call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+
+       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+
+       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+
+       call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
+       do i = 1, nCellsSolve
+          n = n + 1
+          data(n) = areaCell(i) / (sphere_radius * sphere_radius)
+       end do
+       block_ptr => block_ptr % next
+    end do
+    tagname = "area"//C_NULL_CHAR
+    ent_type=1
+    ierr = iMOAB_SetDoubleTagStorage ( mbid, tagname, arrSize , ent_type, data)
+
+    ! Build mask and frac based on landIceMask
+    block_ptr => domain % blocklist
+    do while (associated(block_ptr))
+       call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+       call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+
+       call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
+
+       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+
+       if ( associated(landIceMask) ) then
+          do i = 1, nCellsSolve
+             if ( landIceMask(i) == 1 ) then
+                 data(i) = 0.0_RKIND
+             else
+                 data(i) = 1.0_RKIND
+             end if
+          end do
+       else
+          do i = 1, nCellsSolve
+             data(i) = 1.0_RKIND
+          end do
+       end if
+
+       block_ptr => block_ptr % next
+    end do
+    tagname = "mask"//C_NULL_CHAR
+    ent_type=1
+    ierr = iMOAB_SetDoubleTagStorage ( mbid, tagname, arrSize , ent_type, data)
+    tagname = "frac"//C_NULL_CHAR
+    ent_type=1
+    ierr = iMOAB_SetDoubleTagStorage ( mbid, tagname, arrSize , ent_type, data)
+
+    deallocate(data)
+
+!-----------------------------------------------------------------------
+!EOC
+  end subroutine ocn_domain_moab !}}}
+#endif
+
 
 !***********************************************************************
 !BOP
@@ -2181,7 +2364,7 @@ contains
                call shr_sys_abort ('Error: incoming rofi_F is negative')
            end if
            if (config_remove_ais_ice_runoff) then
-              if (latCell(i) < -1.04719666667_RKIND) then ! 60S in radians
+              if (latCell(i) < -0.99483767345_RKIND) then ! 57S in radians
                  removedIceRunoffFlux(i) = iceRunoffFlux(i)
                  iceRunoffFlux(i) = 0.0_RKIND
                  removedIceRunoffFluxThisProc = removedIceRunoffFluxThisProc + removedIceRunoffFlux(i)
@@ -2732,7 +2915,8 @@ contains
                                                avgRemovedRiverRunoffFlux, &
                                                avgRemovedIceRunoffFlux, &
                                                avgLandIceHeatFlux, &
-                                               avgRemovedIceRunoffHeatFlux
+                                               avgRemovedIceRunoffHeatFlux, &
+                                               avgThermalForcingAtCritDepth
 
    real (kind=RKIND), dimension(:,:), pointer :: avgTracersSurfaceValue, avgSurfaceVelocity, &
                                                  avgSSHGradient, avgOceanSurfacePhytoC, &
@@ -2751,6 +2935,7 @@ contains
                        config_use_MacroMoleculesTracers_sea_ice_coupling
 
    character (len=StrKIND), pointer :: config_land_ice_flux_mode
+   character (len=StrKIND), pointer :: config_glc_thermal_forcing_coupling_mode
 
    logical :: keepFrazil
 
@@ -2761,6 +2946,8 @@ contains
    call mpas_pool_get_config(domain % configs, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
    call mpas_pool_get_config(domain % configs, 'config_remove_ais_river_runoff', config_remove_ais_river_runoff)
    call mpas_pool_get_config(domain % configs, 'config_remove_ais_ice_runoff', config_remove_ais_ice_runoff)
+   call mpas_pool_get_config(domain % configs, 'config_glc_thermal_forcing_coupling_mode', &
+                                                config_glc_thermal_forcing_coupling_mode)
    call mpas_pool_get_config(domain % configs, 'config_use_DMSTracers', config_use_DMSTracers)
    call mpas_pool_get_config(domain % configs, 'config_use_MacroMoleculesTracers', config_use_MacroMoleculesTracers)
    call mpas_pool_get_config(domain % configs, 'config_use_ecosysTracers_sea_ice_coupling',  &
@@ -2814,6 +3001,9 @@ contains
      if (config_remove_ais_ice_runoff) then
         call mpas_pool_get_array(forcingPool, 'avgRemovedIceRunoffFlux', avgRemovedIceRunoffFlux)
         call mpas_pool_get_array(forcingPool, 'avgRemovedIceRunoffHeatFlux', avgRemovedIceRunoffHeatFlux)
+     endif
+     if (trim(config_glc_thermal_forcing_coupling_mode) == '2d') then
+        call mpas_pool_get_array(forcingPool, 'avgThermalForcingAtCritDepth', avgThermalForcingAtCritDepth)
      endif
 
      ! BGC fields
@@ -2976,6 +3166,10 @@ contains
           o2x_o % rAttr(index_o2x_So_stv, n) = landIceTracerTransferVelocities(indexSaltTrans,i)
           o2x_o % rAttr(index_o2x_So_rhoeff, n) = 0.0_RKIND
        endif
+       if (trim(config_glc_thermal_forcing_coupling_mode) == '2d' .and. ocn_c2_glctf) then
+          o2x_o % rAttr(index_o2x_So_tf2d, n) = avgThermalForcingAtCritDepth(i)
+       endif
+
 
        !Fyke: test
        !write(stderrUnit,*) 'n=',n
@@ -3426,7 +3620,7 @@ contains
     call seq_timemgr_EClockGetData( EClock, stepno=cur_ocn_stepno )
 #ifdef MOABDEBUG
     write(lnum,"(I0.2)")cur_ocn_stepno
-    outfile = 'OcnImp_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+    outfile = 'ocn_import_'//trim(lnum)//'.h5m'//C_NULL_CHAR
     wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
     ierr = iMOAB_WriteMesh(MPOID, outfile, wopts)
     if (ierr > 0 )  then
@@ -3714,7 +3908,7 @@ contains
                call shr_sys_abort ('Error: incoming rofi_F is negative')
            end if
            if (config_remove_ais_ice_runoff) then
-              if (latCell(i) < -1.04719666667_RKIND) then ! 60S in radians
+              if (latCell(i) < -0.99483767345_RKIND) then ! 57S in radians
                  removedIceRunoffFlux(i) = iceRunoffFlux(i)
                  iceRunoffFlux(i) = 0.0_RKIND
                  removedIceRunoffFluxThisProc = removedIceRunoffFluxThisProc + removedIceRunoffFlux(i)

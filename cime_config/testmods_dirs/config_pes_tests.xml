@@ -101,7 +101,7 @@
       <pes compset="any" pesize="any">
         <comment>test+anvil: any compset on ne4 grid -- 4 nodes pure-MPI </comment>
         <ntasks>
-          <ntasks_atm>108</ntasks_atm>
+          <ntasks_atm>96</ntasks_atm>
           <ntasks_ice>108</ntasks_ice>
           <ntasks_cpl>108</ntasks_cpl>
           <ntasks_lnd>36</ntasks_lnd>

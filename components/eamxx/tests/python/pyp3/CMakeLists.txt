@@ -53,6 +53,6 @@ foreach (rank IN LISTS MpiRanks)
     SRC_FILE p3_standalone_cxx.INSTANT.nsteps_x1.np${rank}.2021-10-12-45000.nc
     TGT_FILE p3_standalone_py.INSTANT.nsteps_x1.np${rank}.2021-10-12-45000.nc
     FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_cxx${suffix} ${FIXTURES_BASE_NAME}_py${suffix}
-    LABELS pyscream
+    LABELS pyeamxx
   )
 endforeach()

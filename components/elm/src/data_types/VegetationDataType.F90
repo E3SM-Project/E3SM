@@ -1567,6 +1567,7 @@ module VegetationDataType
     use shr_const_mod    , only : SHR_CONST_CDAY, SHR_CONST_TKFRZ
     use elm_time_manager , only : get_step_size, get_nstep, is_end_curr_day, get_curr_date
     use accumulMod       , only : update_accum_field, extract_accum_field, accumResetVal
+    use pftvarcon        , only: nwcereal, nwcerealirrig
     !
     ! !ARGUMENTS:
     class(vegetation_energy_state)    :: this
@@ -1585,6 +1586,10 @@ module VegetationDataType
     integer :: begp, endp
     real(r8), pointer :: rbufslp(:)      ! temporary single level - pft level
     !---------------------------------------------------------------------
+
+   associate(                             &
+        ivt         => veg_pp%itype       & ! Input:  [integer  (:) ]  pft vegetation type
+        )
 
     begp = bounds%begp; endp = bounds%endp
 
@@ -1718,13 +1723,29 @@ module VegetationDataType
 
        do p = begp,endp
           g = veg_pp%gridcell(p)
-          if (month==1 .and. day==1 .and. secs==int(dtime)) then
-             rbufslp(p) = accumResetVal ! reset gdd
-          else if (( month > 3 .and. month < 10 .and. grc_pp%latdeg(g) >= 0._r8) .or. &
-                   ((month > 9 .or.  month < 4) .and. grc_pp%latdeg(g) <  0._r8)     ) then
-             rbufslp(p) = max(0._r8, min(26._r8, this%t_ref2m(p)-SHR_CONST_TKFRZ)) * dtime/SHR_CONST_CDAY
+
+          ! Added based on Yaqiong Lu et al., 2017 in Geosci. Model Dev.
+          ! Accumulate GDD0 for winter wheat from September to June in NH
+          ! April to December in SH, the accumulated period may be less than the actual
+          ! winter wheat growing season
+          if(ivt(p) == nwcereal .or. ivt(p) == nwcerealirrig) then
+             if (month==9 .and. day==1 .and. secs==int(dtime)) then
+                rbufslp(p) = accumResetVal ! reset gdd
+             else if (( month > 8 .or. month < 7 .and. grc_pp%latdeg(g) >= 0._r8) .or. &
+                      ((month > 3 .and. month < 10) .and. grc_pp%latdeg(g) <  0._r8)) then
+                rbufslp(p) = max(0._r8, min(26._r8, this%t_ref2m(p)-SHR_CONST_TKFRZ)) * dtime/SHR_CONST_CDAY
+             else
+                rbufslp(p) = 0._r8      ! keeps gdd unchanged at other times (eg,through Dec in NH)
+             end if
           else
-             rbufslp(p) = 0._r8      ! keeps gdd unchanged at other times (eg, through Dec in NH)
+             if (month==1 .and. day==1 .and. secs==int(dtime)) then
+                rbufslp(p) = accumResetVal ! reset gdd
+             else if (( month > 3 .and. month < 10 .and. grc_pp%latdeg(g) >= 0._r8) .or. &
+                      ((month > 9 .or.  month < 4) .and. grc_pp%latdeg(g) <  0._r8)     ) then
+                rbufslp(p) = max(0._r8, min(26._r8, this%t_ref2m(p)-SHR_CONST_TKFRZ)) * dtime/SHR_CONST_CDAY
+             else
+                rbufslp(p) = 0._r8      ! keeps gdd unchanged at other times (eg, through Dec in NH)
+             end if
           end if
        end do
        call update_accum_field  ('GDD0', rbufslp, nstep)
@@ -1766,6 +1787,7 @@ module VegetationDataType
     end if
 
     deallocate(rbufslp)
+    end associate
 
   end subroutine update_acc_vars_veg_es
 

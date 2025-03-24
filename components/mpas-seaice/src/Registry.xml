@@ -1752,6 +1752,10 @@
 			possible_values="Any positive real number."
 			icepack_name="tscale_pnd_drain"
 		/>
+		<nml_option name="config_congelation_freezing_method" type="character" default_value="two-step" units="unitless"
+			description="Method for congelation ice freezing."
+			possible_values="'one-step', 'two-step'"
+		/>
 		<nml_option name="config_congelation_ice_porosity" type="real" default_value="0.85" units="unitless"
 			description="Liquid fraction of congelation ice."
 			possible_values="Any real number between 0 and 1."
@@ -2106,7 +2110,6 @@
 			<var name="testArrayRestartability"/>
 			<var name="forcingGroupNames"/>
 			<var name="forcingGroupRestartTimes"/>
-			<var name="runningMeanRemovedIceRunoff" packages="pkgScaledDIB"/>
 		</stream>
 
 		<stream name="restart"
@@ -2120,6 +2123,7 @@
 			<var name="xtime"/>
 			<var name="simulationStartTime"/>
 			<stream name="restart_contents"/>
+			<var name="runningMeanRemovedIceRunoff" packages="pkgScaledDIB"/>
 		</stream>
 
 		<stream name="restart_ic"
@@ -2131,6 +2135,7 @@
 				immutable="true">
 			<stream name="mesh"/>
 			<stream name="restart_contents"/>
+			<var name="runningMeanRemovedIceRunoff" packages="pkgScaledDIB"/>
 		</stream>
 
 		<stream name="output"
@@ -4726,6 +4731,11 @@
 
 	<!-- melt and growth rates -->
 	<var_struct name="melt_growth_rates" time_levs="1" packages="pkgColumnPackage">
+		<var name="lateralIceMeltFractionCategory"
+		     type="real"
+		     dimensions="nCategories nCells Time"
+		     units="1"
+		/>
 		<var name="lateralIceMeltFraction"
 		     type="real"
 		     dimensions="nCells Time"

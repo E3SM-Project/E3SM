@@ -54,5 +54,7 @@ target_link_libraries(eamxx_cosp physics_share scream_share cosp)
 target_compile_options(eamxx_cosp PUBLIC)
 target_compile_definitions(eamxx_cosp PUBLIC EAMXX_HAS_COSP)
 
-# Add this library to eamxx_physics
-target_link_libraries(eamxx_physics INTERFACE eamxx_cosp)
+if (TARGET eamxx_physics)
+  # Add this library to eamxx_physics
+  target_link_libraries(eamxx_physics INTERFACE eamxx_cosp)
+endif()

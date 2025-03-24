@@ -1164,6 +1164,14 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_bulk_wind_stress_interp_isotropic" type="logical"
+	category="forcing" group="forcing">
+Controls if windstress is interpolated to edges from 4 adjacent cells rather than just 2.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_use_bulk_thickness_flux" type="logical"
 	category="forcing" group="forcing">
 Controls if a bulk thickness flux will be computed for surface forcing.
@@ -1284,6 +1292,22 @@ Default: Defined in namelist_defaults.xml
 The number of days over for which the history of removed AIS runoff is stored. The default is 731 days (2 years + 1 day).
 
 Valid values: Any positive integer
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_glc_thermal_forcing_coupling_mode" type="char*1024"
+	category="coupling" group="coupling">
+If and how MPAS-Ocean sends thermal forcing to GLC (MALI) in E3SM.  This is used for ocean coupling with a melt parameterization for grounded marine ice-cliffs in MALI.  This is primarily relevant to the Greenland Ice Sheet, but also relevant to the Antarctic Ice Sheet. 'none' means no coupling of thermal forcing.  '2d' means thermal forcing at a prescribed depth is passed to GLC.  That depth is controlled by 'config_2d_thermal_forcing_depth', and the resulting thermal forcing field is calculated in the field 'avgThermalForcingAtCritDepth'.
+
+Valid values: 'off', '2d'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_2d_thermal_forcing_depth" type="real"
+	category="coupling" group="coupling">
+Depth at which to pass 2d thermal forcing to the coupler for use in the GLC component.  Note that mapping files for this field must be created with a mask to exclude ocean grid cells shallower than this value and thus must be regenerated if this value is changed.
+
+Valid values: any non-negative value
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1547,11 +1571,27 @@ Valid values: Any positive real number.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_frazil_ice_porosity" type="logical"
+	category="frazil_ice" group="frazil_ice">
+If true, use an internal porosity to set internal frazil salinity and that of specified passive tracers.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_frazil_ice_density" type="real"
 	category="frazil_ice" group="frazil_ice">
 Assumed density of frazil. NOTE: test and make consistent with E3SM.
 
 Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_frazil_ice_porosity" type="real"
+	category="frazil_ice" group="frazil_ice">
+If frazil porosity is used, sets the porosity of internal ocean frazil ice.
+
+Valid values: Positive real number from 0 to 1
 Default: Defined in namelist_defaults.xml
 </entry>
 

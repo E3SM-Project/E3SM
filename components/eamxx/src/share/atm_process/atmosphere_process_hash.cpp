@@ -1,7 +1,7 @@
 #include "share/atm_process/atmosphere_process.hpp"
 #include "share/field/field_utils.hpp"
-#include "share/util/scream_array_utils.hpp"
-#include "share/util/scream_bfbhash.hpp"
+#include "share/util/eamxx_array_utils.hpp"
+#include "share/util/eamxx_bfbhash.hpp"
 #include "ekat/ekat_assert.hpp"
 
 #include <cstdint>
@@ -21,7 +21,7 @@ void hash (const Field::view_dev_t<const Real*>& v,
       bfbhash::hash(v(idx), accum);
     }, bfbhash::HashReducer<>(accum));
   Kokkos::fence();
-  bfbhash::hash(accum, accum_out);  
+  bfbhash::hash(accum, accum_out);
 }
 
 void hash (const Field::view_dev_t<const Real**>& v,
@@ -97,7 +97,7 @@ void hash (const Field& f, HashType& accum) {
   case 4: hash(f.get_view<const Real**** >(), lo, accum); break;
   case 5: hash(f.get_view<const Real*****>(), lo, accum); break;
   default: break;
-  }  
+  }
 }
 
 void hash (const std::list<Field>& fs, HashType& accum) {
@@ -107,7 +107,7 @@ void hash (const std::list<Field>& fs, HashType& accum) {
 
 void hash (const std::list<FieldGroup>& fgs, HashType& accum) {
   for (const auto& g : fgs)
-    for (const auto& e : g.m_fields)
+    for (const auto& e : g.m_individual_fields)
       hash(*e.second, accum);
 }
 

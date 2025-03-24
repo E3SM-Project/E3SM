@@ -21,10 +21,13 @@ template <typename DataType>
 using View = typename TracerArrays<ko::MachineTraits>::View<DataType>;
 #endif
 
-void set_views (const SetView<double***>& spheremp,
-                const SetView<double****>& dp, const SetView<double*****>& dp3d,
-                const SetView<double******>& qdp, const SetView<double*****>& q,
-                const SetView<double*****>& dep_points) {
+void set_views (const SetView<HommexxReal***>& spheremp,
+                const SetView<HommexxReal****>& dp, const SetView5& dp3d,
+                const SetView<HommexxReal******>& qdp, const SetView5& q,
+                const SetView5& dep_points, const SetView5& vnode,
+                const SetView5& vdep, const Int ndim) {
+  static_assert(std::is_same<Real, HommexxReal>::value,
+                "Hommexx and Compose real types must be the same.");
 #ifdef COMPOSE_PORT
   auto& ta = *get_tracer_arrays();
   const auto nel = spheremp.extent_int(0);
@@ -35,11 +38,27 @@ void set_views (const SetView<double***>& spheremp,
   ta.dp3d = View<Real****>(dp3d.data(), nel, dp3d.extent_int(1), np2, nlev);
   ta.qdp = View<Real*****>(qdp.data(), nel, qdp.extent_int(1), qdp.extent_int(2), np2, nlev);
   ta.q = View<Real****>(q.data(), nel, q.extent_int(1), np2, nlev);
-  ta.dep_points = View<Real***[3]>(dep_points.data(), nel, dep_points.extent_int(1), np2);
+  ta.dep_points = View<Real****>(dep_points.data(), nel, dep_points.extent_int(1), np2, ndim);
+  if (vnode.data())
+    ta.vnode = View<Real****>(vnode.data(), nel, vnode.extent_int(1), np2, ndim);
+  if (vdep.data())
+    ta.vdep  = View<Real****>(vdep.data(),  nel, vdep .extent_int(1), np2, ndim);
 #else
   slmm_throw_if(true, "Running a Hommexx code path with the non-Hommexx build"
                 " is not supported.\n");
 #endif
+}
+
+void set_hvcoord (const HommexxReal etai_beg, const HommexxReal etai_end,
+                  const HommexxReal* etam) {
+  auto& cm = *get_isl_mpi_singleton();
+  islmpi::set_hvcoord(cm, etai_beg, etai_end, etam);
+}
+
+void calc_v_departure (const int step, const HommexxReal dtsub) {
+  auto& cm = *get_isl_mpi_singleton();
+  islmpi::calc_v_departure<>(cm, 0, cm.nelemd - 1, step, dtsub,
+                             nullptr, nullptr, nullptr);
 }
 
 void advect (const int np1, const int n0_qdp, const int np1_qdp) {

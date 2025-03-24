@@ -12,22 +12,8 @@ using scream::Real;
 using scream::Int;
 
 
-extern "C" {
-
-void p3_init_a_c(Real* ice_table_vals, Real* collect_table_vals);
-
-} // extern "C" : end _c decls
-
 namespace scream {
 namespace p3 {
-
-void p3_init_a(P3InitAP3Data& d)
-{
-  using P3F = Functions<Real, DefaultDevice>;
-
-  P3F::p3_init(); // need to initialize p3 first so that tables are loaded
-  p3_init_a_c(d.ice_table_vals.data(), d.collect_table_vals.data());
-}
 
 void BackToCellAverageData::randomize(std::mt19937_64& engine)
 {
@@ -206,12 +192,13 @@ P3MainData::P3MainData(
   Int its_, Int ite_, Int kts_, Int kte_, Int it_, Real dt_, bool do_predict_nc_, bool do_prescribed_CCN_, Real) :
   PhysicsTestData( { {(ite_ - its_) + 1, (kte_ - kts_) + 1}, {(ite_ - its_) + 1, (kte_ - kts_) + 2} }, { {
     &pres, &dz, &nc_nuceat_tend, &nccn_prescribed, &ni_activated, &dpres, &inv_exner, &cld_frac_i, &cld_frac_l, &cld_frac_r,
-    &inv_qc_relvar, &qc, &nc, &qr, &nr, &qi, &qm, &ni, &bm, &qv, &th_atm, &qv_prev, &t_prev,
+    &inv_qc_relvar, &qc, &nc, &qr, &nr, &qi, &qm, &ni, &bm, &qv, &th_atm, &qv_prev, &t_prev, 
     &diag_eff_radius_qc, &diag_eff_radius_qi, &diag_eff_radius_qr, &rho_qi, &mu_c, &lamc, &qv2qi_depos_tend, &precip_total_tend, &nevapr,
     &qr_evap_tend, &liq_ice_exchange, &vap_liq_exchange, &vap_ice_exchange, &precip_liq_flux,
     &precip_ice_flux},
     {&precip_liq_surf, &precip_ice_surf} }), // these two are (ni, nk+1)
-  its(its_), ite(ite_), kts(kts_), kte(kte_), it(it_), dt(dt_), do_predict_nc(do_predict_nc_), do_prescribed_CCN(do_prescribed_CCN_)
+  its(its_), ite(ite_), kts(kts_), kte(kte_), it(it_), dt(dt_), do_predict_nc(do_predict_nc_), do_prescribed_CCN(do_prescribed_CCN_), use_hetfrz_classnuc(false),
+  hetfrz_immersion_nucleation_tend(nullptr), hetfrz_contact_nucleation_tend(nullptr), hetfrz_deposition_nucleation_tend(nullptr) 
 {}
 
 void IceSupersatConservationData::randomize(std::mt19937_64& engine)
@@ -328,24 +315,6 @@ void PreventLiqSupersaturationData::randomize(std::mt19937_64& engine)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-std::shared_ptr<P3GlobalForFortran::Views> P3GlobalForFortran::s_views;
-
-const P3GlobalForFortran::Views& P3GlobalForFortran::get()
-{
-  if (!P3GlobalForFortran::s_views) {
-    P3GlobalForFortran::s_views = std::make_shared<Views>();
-    P3F::init_kokkos_ice_lookup_tables(s_views->m_ice_table_vals, s_views->m_collect_table_vals);
-    P3F::init_kokkos_tables(s_views->m_vn_table_vals, s_views->m_vm_table_vals,
-      s_views->m_revap_table_vals, s_views->m_mu_r_table_vals, s_views->m_dnu);
-  }
-  return *P3GlobalForFortran::s_views;
-}
-
-void P3GlobalForFortran::deinit()
-{
-  P3GlobalForFortran::s_views = nullptr;
-}
 
 //
 // _host function definitions
@@ -581,7 +550,7 @@ void cloud_sedimentation_host(
   const Int nk_pack = ekat::npack<Spack>(nk);
 
   // Set up views
-  const auto dnu = P3GlobalForFortran::dnu();
+  const auto dnu = P3F::p3_init().dnu_table_vals;
 
   std::vector<view_1d> temp_d(CloudSedData::NUM_ARRAYS);
 
@@ -672,7 +641,7 @@ void ice_sedimentation_host(
     ni_tend_d    (temp_d[14]);
 
   // Call core function from kernel
-  auto ice_table_vals = P3GlobalForFortran::ice_table_vals();
+  auto ice_table_vals = P3F::p3_init().ice_table_vals;
   auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
   ekat::WorkspaceManager<Spack> wsm(rho_d.extent(0), 6, policy);
   Real my_precip_ice_surf = 0;
@@ -745,8 +714,9 @@ void rain_sedimentation_host(
     precip_liq_flux_d(temp_d[13]);
 
   // Call core function from kernel
-  auto vn_table_vals = P3GlobalForFortran::vn_table_vals();
-  auto vm_table_vals = P3GlobalForFortran::vm_table_vals();
+  auto tables = P3F::p3_init();
+  auto vn_table_vals = tables.vn_table_vals;
+  auto vm_table_vals = tables.vm_table_vals;
   auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
   ekat::WorkspaceManager<Spack> wsm(rho_d.extent(0), 4, policy);
   Real my_precip_liq_surf = 0;
@@ -978,6 +948,7 @@ void p3_main_part1_host(
 
 void p3_main_part2_host(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir, bool do_predict_nc, bool do_prescribed_CCN, Real dt, Real inv_dt,
+  const Real *hetfrz_immersion_nucleation_tend, const Real *hetfrz_contact_nucleation_tend, const Real *hetfrz_deposition_nucleation_tend,
   Real* pres, Real* dpres, Real* dz, Real* nc_nuceat_tend, Real* inv_exner, Real* exner, Real* inv_cld_frac_l, Real* inv_cld_frac_i,
   Real* inv_cld_frac_r, Real* ni_activated, Real* inv_qc_relvar, Real* cld_frac_i, Real* cld_frac_l, Real* cld_frac_r, Real* qv_prev, Real* t_prev,
   Real* T_atm, Real* rho, Real* inv_rho, Real* qv_sat_l, Real* qv_sat_i, Real* qv_supersat_i, Real* rhofacr, Real* rhofaci,
@@ -1009,9 +980,14 @@ void p3_main_part2_host(
   const Real max_total_ni = 740.0e3;  // Hard-code this value for F90 comparison
 
   // Set up views
-  std::vector<view_1d> temp_d(P3MainPart2Data::NUM_ARRAYS-3);
+  std::vector<view_1d> temp_d(P3MainPart2Data::NUM_ARRAYS);
+  std::vector<Real> hetfrz_0(nk,0), hetfrz_1(nk,0), hetfrz_2(nk,0);
+  hetfrz_immersion_nucleation_tend = hetfrz_0.data();
+  hetfrz_contact_nucleation_tend = hetfrz_1.data();
+  hetfrz_deposition_nucleation_tend = hetfrz_2.data();
 
-  ekat::host_to_device({pres, dpres, dz, nc_nuceat_tend, inv_exner, exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i, cld_frac_l, cld_frac_r,
+  ekat::host_to_device({hetfrz_immersion_nucleation_tend, hetfrz_contact_nucleation_tend, hetfrz_deposition_nucleation_tend,
+        pres, dpres, dz, nc_nuceat_tend, inv_exner, exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i, cld_frac_l, cld_frac_r,
         T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn,
         qv, th_atm, qc, nc, qr, nr, qi, ni, qm, bm, qc_incld, qr_incld,
         qi_incld, qm_incld, nc_incld, nr_incld, ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1,
@@ -1022,6 +998,9 @@ void p3_main_part2_host(
 
   int current_index = 0;
   view_1d
+    hetfrz_immersion_nucleation_tend_d(temp_d[current_index++]), 
+    hetfrz_contact_nucleation_tend_d(temp_d[current_index++]), 
+    hetfrz_deposition_nucleation_tend_d(temp_d[current_index++]),
     pres_d              (temp_d[current_index++]),
     dpres_d             (temp_d[current_index++]),
     dz_d                (temp_d[current_index++]),
@@ -1085,16 +1064,19 @@ void p3_main_part2_host(
     t_prev_d            (temp_d[current_index++]);
 
   // Call core function from kernel
-  const auto dnu         = P3GlobalForFortran::dnu();
-  const auto ice_table_vals        = P3GlobalForFortran::ice_table_vals();
-  const auto collect_table_vals     = P3GlobalForFortran::collect_table_vals();
-  const auto revap_table_vals = P3GlobalForFortran::revap_table_vals();
+  auto tables = P3F::p3_init();
+  const auto dnu         = tables.dnu_table_vals;
+  const auto ice_table_vals        = tables.ice_table_vals;
+  const auto collect_table_vals     = tables.collect_table_vals;
+  const auto revap_table_vals = tables.revap_table_vals;
   bview_1d bools_d("bools", 1);
   auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
 
     P3F::p3_main_part2(
-      team, nk_pack, max_total_ni, do_predict_nc, do_prescribed_CCN, dt, inv_dt, dnu, ice_table_vals, collect_table_vals, revap_table_vals,
+      team, nk_pack, max_total_ni, do_predict_nc, do_prescribed_CCN, dt, inv_dt, 
+      hetfrz_immersion_nucleation_tend_d, hetfrz_contact_nucleation_tend_d, hetfrz_deposition_nucleation_tend_d, 
+      dnu, ice_table_vals, collect_table_vals, revap_table_vals,
       pres_d, dpres_d, dz_d, nc_nuceat_tend_d, inv_exner_d, exner_d, inv_cld_frac_l_d,
       inv_cld_frac_i_d, inv_cld_frac_r_d, ni_activated_d, inv_qc_relvar_d, cld_frac_i_d, cld_frac_l_d, cld_frac_r_d,
       qv_prev_d, t_prev_d, t_d, rho_d, inv_rho_d, qv_sat_l_d, qv_sat_i_d, qv_supersat_i_d, rhofacr_d, rhofaci_d, acn_d,
@@ -1208,8 +1190,9 @@ void p3_main_part3_host(
     diag_eff_radius_qr_d       (temp_d[current_index++]);
 
   // Call core function from kernel
-  const auto dnu            = P3GlobalForFortran::dnu();
-  const auto ice_table_vals = P3GlobalForFortran::ice_table_vals();
+  auto tables = P3F::p3_init();
+  const auto dnu            = tables.dnu_table_vals;
+  const auto ice_table_vals = tables.ice_table_vals;
   auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
 
@@ -1245,7 +1228,7 @@ Int p3_main_host(
   Real* qi, Real* qm, Real* ni, Real* bm, Real* pres, Real* dz,
   Real* nc_nuceat_tend, Real* nccn_prescribed, Real* ni_activated, Real* inv_qc_relvar, Int it, Real* precip_liq_surf,
   Real* precip_ice_surf, Int its, Int ite, Int kts, Int kte, Real* diag_eff_radius_qc,
-  Real* diag_eff_radius_qi, Real* diag_eff_radius_qr, Real* rho_qi, bool do_predict_nc, bool do_prescribed_CCN, Real* dpres, Real* inv_exner,
+  Real* diag_eff_radius_qi, Real* diag_eff_radius_qr, Real* rho_qi, bool do_predict_nc, bool do_prescribed_CCN, bool use_hetfrz_classnuc, Real* dpres, Real* inv_exner,
   Real* qv2qi_depos_tend, Real* precip_liq_flux, Real* precip_ice_flux, Real* cld_frac_r, Real* cld_frac_l, Real* cld_frac_i,
   Real* liq_ice_exchange, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* qv_prev, Real* t_prev)
 {
@@ -1256,12 +1239,6 @@ Int p3_main_host(
   using view_2d    = typename P3F::view_2d<Spack>;
   using sview_1d   = typename P3F::view_1d<Real>;
   using sview_2d   = typename P3F::view_2d<Real>;
-
-  using view_1d_table      = typename P3F::view_1d_table;
-  using view_2d_table      = typename P3F::view_2d_table;
-  using view_ice_table     = typename P3F::view_ice_table;
-  using view_collect_table = typename P3F::view_collect_table;
-  using view_dnu_table     = typename P3F::view_dnu_table;
 
   EKAT_REQUIRE_MSG(its == 1, "its must be 1, got " << its);
   EKAT_REQUIRE_MSG(kts == 1, "kts must be 1, got " << kts);
@@ -1283,7 +1260,9 @@ Int p3_main_host(
     pres, dz, nc_nuceat_tend, nccn_prescribed, ni_activated, dpres, inv_exner, cld_frac_i, cld_frac_l, cld_frac_r, inv_qc_relvar,
     qc, nc, qr, nr, qi, qm, ni, bm, qv, th_atm, qv_prev, t_prev, diag_eff_radius_qc, diag_eff_radius_qi, diag_eff_radius_qr,
     rho_qi, qv2qi_depos_tend,
-    liq_ice_exchange, vap_liq_exchange, vap_ice_exchange, precip_liq_flux, precip_ice_flux, precip_liq_surf, precip_ice_surf
+    liq_ice_exchange, vap_liq_exchange, vap_ice_exchange, 
+    precip_liq_flux, precip_ice_flux, 
+    precip_liq_surf, precip_ice_surf
   };
 
   int dim_sizes_len = dim1_sizes.size();
@@ -1309,7 +1288,7 @@ Int p3_main_host(
     nccn_prescribed_d      (temp_d[counter++]),
     ni_activated_d         (temp_d[counter++]),
     dpres_d                (temp_d[counter++]), //5
-    inv_exner_d                (temp_d[counter++]),
+    inv_exner_d            (temp_d[counter++]),
     cld_frac_i_d           (temp_d[counter++]),
     cld_frac_l_d           (temp_d[counter++]),
     cld_frac_r_d           (temp_d[counter++]),
@@ -1335,9 +1314,24 @@ Int p3_main_host(
     vap_liq_exchange_d     (temp_d[counter++]),
     vap_ice_exchange_d     (temp_d[counter++]), //30
     precip_liq_flux_d      (temp_d[counter++]),
-    precip_ice_flux_d      (temp_d[counter++]),
+    precip_ice_flux_d      (temp_d[counter++]), // 35
     precip_liq_surf_temp_d (temp_d[counter++]),
-    precip_ice_surf_temp_d (temp_d[counter++]); //34
+    precip_ice_surf_temp_d (temp_d[counter++]); 
+
+  std::vector<Real> hetfrz_immersion_nucleation_tend(nj*nk, 0.0);
+  std::vector<Real> hetfrz_contact_nucleation_tend(nj*nk, 0.0);
+  std::vector<Real> hetfrz_deposition_nucleation_tend(nj*nk, 0.0);
+  std::vector<const Real*> pointers = {
+    hetfrz_immersion_nucleation_tend.data(), 
+    hetfrz_contact_nucleation_tend.data(), 
+    hetfrz_deposition_nucleation_tend.data()};
+  std::vector<size_t> dim1(3, nj);
+  std::vector<size_t> dim2(3, nk);
+  std::vector<view_2d> view(3);
+  ekat::host_to_device(pointers, dim1, dim2, view);
+  view_2d hetfrz_immersion_nucleation_tend_d(view[0]);
+  view_2d hetfrz_contact_nucleation_tend_d(view[1]);
+  view_2d hetfrz_deposition_nucleation_tend_d(view[2]);
 
   // Special cases: precip_liq_surf=1d<scalar>(ni), precip_ice_surf=1d<scalar>(ni), col_location=2d<scalar>(nj, 3)
   sview_1d precip_liq_surf_d("precip_liq_surf_d", nj), precip_ice_surf_d("precip_ice_surf_d", nj);
@@ -1363,7 +1357,7 @@ Int p3_main_host(
                                     ni_d, bm_d, qv_d, th_atm_d};
   P3F::P3DiagnosticInputs diag_inputs{nc_nuceat_tend_d, nccn_prescribed_d, ni_activated_d, inv_qc_relvar_d, cld_frac_i_d,
                                       cld_frac_l_d, cld_frac_r_d, pres_d, dz_d, dpres_d,
-                                      inv_exner_d, qv_prev_d, t_prev_d};
+                                      inv_exner_d, qv_prev_d, t_prev_d, hetfrz_immersion_nucleation_tend_d, hetfrz_contact_nucleation_tend_d, hetfrz_deposition_nucleation_tend_d};
   P3F::P3DiagnosticOutputs diag_outputs{qv2qi_depos_tend_d, precip_liq_surf_d,
                                         precip_ice_surf_d, diag_eff_radius_qc_d, diag_eff_radius_qi_d, diag_eff_radius_qr_d,
                                         rho_qi_d,precip_liq_flux_d, precip_ice_flux_d, precip_total_tend_d, nevapr_d};
@@ -1403,16 +1397,7 @@ Int p3_main_host(
 #endif
 
   // load tables
-  view_1d_table mu_r_table_vals;
-  view_2d_table vn_table_vals, vm_table_vals, revap_table_vals;
-  view_ice_table ice_table_vals;
-  view_collect_table collect_table_vals;
-  view_dnu_table dnu_table_vals;
-  P3F::init_kokkos_ice_lookup_tables(ice_table_vals, collect_table_vals);
-  P3F::init_kokkos_tables(vn_table_vals, vm_table_vals, revap_table_vals, mu_r_table_vals, dnu_table_vals);
-
-  P3F::P3LookupTables lookup_tables{mu_r_table_vals, vn_table_vals, vm_table_vals, revap_table_vals,
-                                    ice_table_vals, collect_table_vals, dnu_table_vals};
+  auto lookup_tables = P3F::p3_init();
   P3F::P3Runtime runtime_options{740.0e3};
 
   // Create local workspace

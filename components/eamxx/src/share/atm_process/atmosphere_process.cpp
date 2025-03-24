@@ -1,5 +1,5 @@
 #include "share/atm_process/atmosphere_process.hpp"
-#include "share/util/scream_timing.hpp"
+#include "share/util/eamxx_timing.hpp"
 #include "share/property_checks/mass_and_energy_column_conservation_check.hpp"
 #include "share/field/field_utils.hpp"
 
@@ -322,10 +322,10 @@ void AtmosphereProcess::set_required_group (const FieldGroup& group) {
     // AtmosphereProcessGroup is just a "container" of *real* atm processes,
     // so don't add me as customer if I'm an atm proc group.
     if (this->type()!=AtmosphereProcessType::Group) {
-      if (group.m_bundle) {
-        add_me_as_customer(*group.m_bundle);
+      if (group.m_monolithic_field) {
+        add_me_as_customer(*group.m_monolithic_field);
       } else {
-        for (auto& it : group.m_fields) {
+        for (auto& it : group.m_individual_fields) {
           add_me_as_customer(*it.second);
         }
       }
@@ -349,10 +349,10 @@ void AtmosphereProcess::set_computed_group (const FieldGroup& group) {
     // AtmosphereProcessGroup is just a "container" of *real* atm processes,
     // so don't add me as provider if I'm an atm proc group.
     if (this->type()!=AtmosphereProcessType::Group) {
-      if (group.m_bundle) {
-        add_me_as_provider(*group.m_bundle);
+      if (group.m_monolithic_field) {
+        add_me_as_provider(*group.m_monolithic_field);
       } else {
-        for (auto& it : group.m_fields) {
+        for (auto& it : group.m_individual_fields) {
           add_me_as_provider(*it.second);
         }
       }
@@ -429,7 +429,7 @@ void AtmosphereProcess::run_property_check (const prop_check_ptr&       property
           }
         }
         for (const auto& g : m_groups_in) {
-          for (const auto& f : g.m_fields) {
+          for (const auto& f : g.m_individual_fields) {
             if (f.second->get_header().get_identifier().get_layout().has_tags(tags)) {
               print_field_hyperslab (*f.second,tags,idx,ss);
               ss << " -----------------------------------------------------------------------\n";
@@ -444,7 +444,7 @@ void AtmosphereProcess::run_property_check (const prop_check_ptr&       property
           }
         }
         for (const auto& g : m_groups_out) {
-          for (const auto& f : g.m_fields) {
+          for (const auto& f : g.m_individual_fields) {
             if (f.second->get_header().get_identifier().get_layout().has_tags(tags)) {
               print_field_hyperslab (*f.second,tags,idx,ss);
               ss << " -----------------------------------------------------------------------\n";
@@ -588,10 +588,10 @@ void AtmosphereProcess::update_time_stamps () {
     f.get_header().get_tracking().update_time_stamp(t);
   }
   for (auto& g : m_groups_out) {
-    if (g.m_bundle) {
-      g.m_bundle->get_header().get_tracking().update_time_stamp(t);
+    if (g.m_monolithic_field) {
+      g.m_monolithic_field->get_header().get_tracking().update_time_stamp(t);
     } else {
-      for (auto& f : g.m_fields) {
+      for (auto& f : g.m_individual_fields) {
         f.second->get_header().get_tracking().update_time_stamp(t);
       }
     }
@@ -896,6 +896,8 @@ get_field_in_impl(const std::string& field_name, const std::string& grid_name) c
         "   field name: " + field_name + "\n"
         "   grid name: " + grid_name + "\n");
   }
+  static Field f;
+  return f;
 }
 
 Field& AtmosphereProcess::
@@ -917,6 +919,8 @@ get_field_in_impl(const std::string& field_name) const {
         "   atm proc name: " + this->name() + "\n"
         "   field name: " + field_name + "\n");
   }
+  static Field f;
+  return f;
 }
 
 Field& AtmosphereProcess::
@@ -932,6 +936,8 @@ get_field_out_impl(const std::string& field_name, const std::string& grid_name) 
         "   field name: " + field_name + "\n"
         "   grid name: " + grid_name + "\n");
   }
+  static Field f;
+  return f;
 }
 
 Field& AtmosphereProcess::
@@ -953,6 +959,8 @@ get_field_out_impl(const std::string& field_name) const {
         "   atm proc name: " + this->name() + "\n"
         "   field name: " + field_name + "\n");
   }
+  static Field f;
+  return f;
 }
 
 FieldGroup& AtmosphereProcess::
@@ -968,6 +976,8 @@ get_group_in_impl(const std::string& group_name, const std::string& grid_name) c
         "   group name: " + group_name + "\n"
         "   grid name: " + grid_name + "\n");
   }
+  static FieldGroup g("");
+  return g;
 }
 
 FieldGroup& AtmosphereProcess::
@@ -989,6 +999,8 @@ get_group_in_impl(const std::string& group_name) const {
         "   atm proc name: " + this->name() + "\n"
         "   group name: " + group_name + "\n");
   }
+  static FieldGroup g("");
+  return g;
 }
 
 FieldGroup& AtmosphereProcess::
@@ -1004,6 +1016,8 @@ get_group_out_impl(const std::string& group_name, const std::string& grid_name) 
         "   group name: " + group_name + "\n"
         "   grid name: " + grid_name + "\n");
   }
+  static FieldGroup g("");
+  return g;
 }
 
 FieldGroup& AtmosphereProcess::
@@ -1025,6 +1039,8 @@ get_group_out_impl(const std::string& group_name) const {
         "   atm proc name: " + this->name() + "\n"
         "   group name: " + group_name + "\n");
   }
+  static FieldGroup g("");
+  return g;
 }
 
 Field& AtmosphereProcess::
@@ -1040,6 +1056,8 @@ get_internal_field_impl(const std::string& field_name, const std::string& grid_n
         "   field name: " + field_name + "\n"
         "   grid name: " + grid_name + "\n");
   }
+  static Field f;
+  return f;
 }
 
 Field& AtmosphereProcess::
@@ -1061,6 +1079,8 @@ get_internal_field_impl(const std::string& field_name) const {
         "   atm proc name: " + this->name() + "\n"
         "   field name: " + field_name + "\n");
   }
+  static Field f;
+  return f;
 }
 
 void AtmosphereProcess
@@ -1091,7 +1111,7 @@ void AtmosphereProcess
       if (it->m_info->m_group_name == group_name and it->grid_name() == grid_name) {
         rm_its.push_back(it);
         ptrs[group_name][grid_name] = nullptr;
-        for (auto& kv : it->m_fields)
+        for (auto& kv : it->m_individual_fields)
           remove_field(kv.first, grid_name);
       }
     }

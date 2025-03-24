@@ -53,7 +53,7 @@ OPTIONS
      -inst_string          inst_string variable
      -ntasks_glc           NTASKS_GLC for this case
      -ninst_glc            NINST_GLC for this case
-     -mali_dynamic         turns on dynamic ice sheet mode
+     -mali_prognostic_mode  whether MALI should be prognostic, static, or data
                            Options are: FALSE, TRUE
 
 NOTE: The precedence for setting the values of namelist variables is (highest to lowest):
@@ -99,7 +99,7 @@ my %opts = ( help              => 0,
              cfg_dir           => $cfgdir,
              ntasks_glc        => 0,
              ninst_glc         => 0,
-             mali_dynamic      => undef,
+             mali_prognostic_mode => undef,
            );
 
 GetOptions(
@@ -118,7 +118,7 @@ GetOptions(
     "preview"             => \$opts{'preview'},
     "ntasks_glc=i"        => \$opts{'ntasks_glc'},
     "ninst_glc=i"         => \$opts{'ninst_glc'},
-    "mali_dynamic=s"      => \$opts{'mali_dynamic'},
+    "mali_prognostic_mode=s" => \$opts{'mali_prognostic_mode'},
 
 )  or usage();
 
@@ -153,7 +153,7 @@ my $decomp_date_stamp = $opts{'decomp_date_stamp'};
 $cfgdir               = $opts{'cfg_dir'};
 my $NINST_GLC         = $opts{'ninst_glc'};
 my $NTASKS_GLC        = $opts{'ntasks_glc'};
-my $MALI_DYNAMIC      = uc($opts{'mali_dynamic'});
+my $MALI_PROGNOSTIC_MODE = uc($opts{'mali_prognostic_mode'});
 
 my $CIMEROOT;
 if ( defined $opts{'cimeroot'} ) {
@@ -410,7 +410,7 @@ my $LID = $ENV{'LID'};
 my $ntasks = $NTASKS_GLC / $NINST_GLC; 
 
 print "MALI build-namelist: glc_grid is $GLC_GRID \n";
-print "MALI build-namelist: MALI_DYNAMIC is $MALI_DYNAMIC \n";
+print "MALI build-namelist: MALI_PROGNOSTIC_MODE is $MALI_PROGNOSTIC_MODE \n";
 print "MALI build-namelist: MALI_USE_ALBANY is $MALI_USE_ALBANY \n";
 
 (-d $DIN_LOC_ROOT)  or mkdir $DIN_LOC_ROOT;
@@ -427,7 +427,7 @@ if ($MALI_USE_ALBANY eq 'TRUE') {
 # Namelist group: velocity_solver #
 ###################################
 
-if ($MALI_DYNAMIC eq 'TRUE') {
+if ($MALI_PROGNOSTIC_MODE eq 'PROGNOSTIC') {
     add_default($nl, 'config_velocity_solver', 'mali_use_albany'=>"$MALI_USE_ALBANY");
 } else {
     add_default($nl, 'config_velocity_solver', 'val'=>"none");
@@ -446,14 +446,11 @@ add_default($nl, 'config_effective_pressure_max');
 # Namelist group: advection #
 #############################
 
-if ($MALI_DYNAMIC eq 'TRUE') {
+if ($MALI_PROGNOSTIC_MODE eq 'PROGNOSTIC') {
     add_default($nl, 'config_thickness_advection');
-} else {
-    add_default($nl, 'config_thickness_advection', 'val'=>"none");
-}
-if ($MALI_DYNAMIC eq 'TRUE') {
     add_default($nl, 'config_tracer_advection');
 } else {
+    add_default($nl, 'config_thickness_advection', 'val'=>"none");
     add_default($nl, 'config_tracer_advection', 'val'=>"none");
 }
 add_default($nl, 'config_horiz_tracer_adv_order');
@@ -474,7 +471,7 @@ add_default($nl, 'config_SLM_to_MALI_weights_file');
 # Namelist group: calving #
 ###########################
 
-if ($MALI_DYNAMIC eq 'TRUE') {
+if ($MALI_PROGNOSTIC_MODE eq 'PROGNOSTIC') {
     add_default($nl, 'config_calving');
 } else {
     add_default($nl, 'config_calving', 'val'=>"none");
@@ -491,8 +488,13 @@ add_default($nl, 'config_data_calving');
 add_default($nl, 'config_calving_timescale');
 add_default($nl, 'config_restore_calving_front');
 add_default($nl, 'config_restore_calving_front_prevent_retreat');
-add_default($nl, 'config_remove_icebergs');
-add_default($nl, 'config_remove_small_islands');
+if ($MALI_PROGNOSTIC_MODE eq 'PROGNOSTIC') {
+    add_default($nl, 'config_remove_icebergs');
+    add_default($nl, 'config_remove_small_islands');
+} else {
+    add_default($nl, 'config_remove_icebergs', 'val'=>".false.");
+    add_default($nl, 'config_remove_small_islands', 'val'=>".false.");
+}
 add_default($nl, 'config_calving_speed_limit');
 add_default($nl, 'config_grounded_von_Mises_threshold_stress');
 add_default($nl, 'config_floating_von_Mises_threshold_stress');
@@ -517,7 +519,11 @@ add_default($nl, 'config_update_velocity_before_calving');
 # Namelist group: thermal_solver #
 ##################################
 
-add_default($nl, 'config_thermal_solver');
+if ($MALI_PROGNOSTIC_MODE eq 'PROGNOSTIC') {
+    add_default($nl, 'config_thermal_solver');
+} else {
+    add_default($nl, 'config_thermal_solver', 'val'=>"none");
+}
 add_default($nl, 'config_thermal_calculate_bmb');
 add_default($nl, 'config_temperature_init');
 add_default($nl, 'config_thermal_thickness');
@@ -533,7 +539,11 @@ add_default($nl, 'config_max_water_fraction');
 # Namelist group: iceshelf_melt #
 #################################
 
-add_default($nl, 'config_basal_mass_bal_float');
+if ($MALI_PROGNOSTIC_MODE eq 'PROGNOSTIC') {
+    add_default($nl, 'config_basal_mass_bal_float');
+} else {
+    add_default($nl, 'config_basal_mass_bal_float', 'val'=>"none");
+}
 add_default($nl, 'config_bmlt_float_flux');
 add_default($nl, 'config_bmlt_float_xlimit');
 add_default($nl, 'config_basal_mass_bal_seroussi_amplitude');
@@ -551,7 +561,11 @@ add_default($nl, 'config_temperature_profile_variability_amplitude');
 add_default($nl, 'config_temperature_profile_variability_period');
 add_default($nl, 'config_temperature_profile_variability_phase');
 add_default($nl, 'config_temperature_profile_GL_depth_fraction');
-add_default($nl, 'config_front_mass_bal_grounded');
+if ($MALI_PROGNOSTIC_MODE eq 'PROGNOSTIC') {
+    add_default($nl, 'config_front_mass_bal_grounded');
+} else {
+    add_default($nl, 'config_front_mass_bal_grounded', 'val'=>"none");
+}
 add_default($nl, 'config_use_3d_thermal_forcing_for_face_melt');
 add_default($nl, 'config_beta_ocean_thermal_forcing');
 add_default($nl, 'config_add_ocean_thermal_forcing');
@@ -559,6 +573,10 @@ add_default($nl, 'config_alpha_subglacial_discharge');
 add_default($nl, 'config_subglacial_discharge_coefficient');
 add_default($nl, 'config_subglacial_discharge_intercept');
 add_default($nl, 'config_uniform_face_melt_rate');
+add_default($nl, 'config_ocean_data_extrapolation');
+add_default($nl, 'config_ocean_data_extrap_ncells_extra');
+add_default($nl, 'config_invalid_value_TF');
+add_default($nl, 'config_weight_value_cell');
 
 #######################################
 # Namelist group: physical_parameters #
@@ -575,11 +593,19 @@ add_default($nl, 'config_dynamic_thickness');
 # Namelist group: time_integration #
 ####################################
 
-add_default($nl, 'config_dt');
+if ($MALI_PROGNOSTIC_MODE eq 'PROGNOSTIC') {
+    add_default($nl, 'config_dt');
+} else {
+    add_default($nl, 'config_dt', 'val'=>"0000-00-01_00:00:00");
+}
 add_default($nl, 'config_time_integration');
 add_default($nl, 'config_rk_order');
 add_default($nl, 'config_rk3_stages');
-add_default($nl, 'config_adaptive_timestep');
+if ($MALI_PROGNOSTIC_MODE eq 'PROGNOSTIC') {
+    add_default($nl, 'config_adaptive_timestep');
+} else {
+    add_default($nl, 'config_adaptive_timestep', 'val'=>".false.");
+}
 add_default($nl, 'config_min_adaptive_timestep');
 add_default($nl, 'config_max_adaptive_timestep');
 add_default($nl, 'config_adaptive_timestep_CFL_fraction');
@@ -647,7 +673,11 @@ add_default($nl, 'config_check_tracer_monotonicity');
 # Namelist group: subglacial_hydro #
 ####################################
 
-add_default($nl, 'config_SGH');
+if ($MALI_PROGNOSTIC_MODE eq 'PROGNOSTIC') {
+    add_default($nl, 'config_SGH');
+} else {
+    add_default($nl, 'config_SGH', 'val'=>".false.");
+}
 add_default($nl, 'config_ocean_connection_N');
 add_default($nl, 'config_SGH_adaptive_timestep_fraction');
 add_default($nl, 'config_SGH_max_adaptive_timestep');

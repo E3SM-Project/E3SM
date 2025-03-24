@@ -2,7 +2,7 @@
 #define RRTMGP_TEST_UTILS_HPP
 
 #include "cpp/extensions/cloud_optics/mo_cloud_optics.h"
-#include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
+#include "physics/rrtmgp/eamxx_rrtmgp_interface.hpp"
 #include "cpp/rrtmgp/mo_gas_concentrations.h"
 #include "cpp/rte/mo_fluxes.h"
 #include "cpp/extensions/cloud_optics/mo_cloud_optics.h"
@@ -46,9 +46,9 @@ template <typename RealT=scream::Real, typename LayoutT=Kokkos::LayoutRight, typ
 struct rrtmgp_test_utils {
 
 using interface_t = scream::rrtmgp::rrtmgp_interface<RealT, LayoutT, DeviceT>;
-using real1dk = typename interface_t::view_t<RealT*>;
-using real2dk = typename interface_t::view_t<RealT**>;
-using real3dk = typename interface_t::view_t<RealT***>;
+using real1dk = typename interface_t::template view_t<RealT*>;
+using real2dk = typename interface_t::template view_t<RealT**>;
+using real3dk = typename interface_t::template view_t<RealT***>;
 using MDRP = typename conv::MDRP<LayoutT>;
 
 static bool all_close(real2dk &arr1, real2dk &arr2, double tolerance)
@@ -88,7 +88,7 @@ static void dummy_clouds(
   // put them in 2/3 of the columns since that's roughly the total cloudiness of earth.
   // Set sane values for liquid and ice water path.
   // NOTE: these "sane" values are in g/m2!
-  Kokkos::parallel_for( MDRP::template get<2>({nlay,ncol}) , KOKKOS_LAMBDA (int ilay, int icol) {
+  Kokkos::parallel_for( MDRP::template get<2>({ncol, nlay}) , KOKKOS_LAMBDA (int icol, int ilay) {
     cloud_mask(icol,ilay) = p_lay(icol,ilay) > 100. * 100. && p_lay(icol,ilay) < 900. * 100. && ((icol+1)%3) != 0;
     // Ice and liquid will overlap in a few layers
     lwp(icol,ilay) = conv::merge(10.,  0., cloud_mask(icol,ilay) && t_lay(icol,ilay) > 263.);
@@ -123,7 +123,7 @@ static void dummy_atmos(
   // needs the CloudOptics object only because it uses the min and max
   // valid values from the lookup tables for liquid and ice water path to
   // create a dummy atmosphere.
-  dummy_clouds(interface_t::cloud_optics_sw_k, p_lay, t_lay, lwp, iwp, rel, rei, cld);
+  dummy_clouds(*interface_t::cloud_optics_sw_k, p_lay, t_lay, lwp, iwp, rel, rei, cld);
 }
 
 static void read_fluxes(

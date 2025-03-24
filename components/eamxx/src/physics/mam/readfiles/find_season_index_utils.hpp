@@ -4,8 +4,8 @@
 #include <ekat/kokkos/ekat_kokkos_utils.hpp>
 #include <mam4xx/mam4.hpp>
 
+#include "share/io/eamxx_scorpio_interface.hpp"
 #include "share/io/scorpio_input.hpp"
-#include "share/io/scream_scorpio_interface.hpp"
 
 namespace scream::mam_coupling {
 

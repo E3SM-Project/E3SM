@@ -1,9 +1,9 @@
-#include "share/io/scream_output_manager.hpp"
+#include "share/io/eamxx_output_manager.hpp"
 #include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_manager.hpp"
-#include "share/util/scream_time_stamp.hpp"
-#include "share/scream_types.hpp"
+#include "share/util/eamxx_time_stamp.hpp"
+#include "share/eamxx_types.hpp"
 
 namespace scream
 {
@@ -160,7 +160,7 @@ create_om (const std::string& filename_prefix,
 
   auto om = std::make_shared<OutputManager>();
   om->initialize(comm,params,t0,false);
-  om->setup(fm,gm);
+  om->setup(fm,gm->get_grid_names());
   return om;
 }
 

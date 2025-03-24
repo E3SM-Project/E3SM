@@ -1,1 +1,2 @@
  config_land_ice_flux_mode = 'coupled'
+ config_check_ssh_consistency = .false.

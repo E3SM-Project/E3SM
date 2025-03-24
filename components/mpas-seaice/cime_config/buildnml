@@ -61,6 +61,8 @@ def buildnml(case, caseroot, compname):
         ice_ic_mode = 'spunup'
     if ice_bgc == 'ice_bgc':
         ice_ic_mode = 'spunup'
+    if run_type == 'hybrid' or run_type == 'branch':
+        ice_ic_mode = 'spunup'
 
     #--------------------------------------------------------------------
     # Determine date stamp, from grid names

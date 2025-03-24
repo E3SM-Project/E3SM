@@ -19,19 +19,18 @@ Int p3_main_wrap(const P3Data& d) {
                       d.bm.data(), d.pres.data(), d.dz.data(), d.nc_nuceat_tend.data(), d.nccn_prescribed.data(),
                       d.ni_activated.data(), d.inv_qc_relvar.data(), d.it, d.precip_liq_surf.data(),
                       d.precip_ice_surf.data(), 1, d.ncol, 1, d.nlev, d.diag_eff_radius_qc.data(),
-                      d.diag_eff_radius_qi.data(), d.diag_eff_radius_qr.data(), d.rho_qi.data(), d.do_predict_nc, d.do_prescribed_CCN,
+                      d.diag_eff_radius_qi.data(), d.diag_eff_radius_qr.data(), d.rho_qi.data(), d.do_predict_nc, d.do_prescribed_CCN, d.use_hetfrz_classnuc,
                       d.dpres.data(), d.inv_exner.data(), d.qv2qi_depos_tend.data(),
                       d.precip_liq_flux.data(), d.precip_ice_flux.data(),
                       d.cld_frac_r.data(), d.cld_frac_l.data(), d.cld_frac_i.data(),
                       d.liq_ice_exchange.data(), d.vap_liq_exchange.data(),
-                      d.vap_ice_exchange.data(),d.qv_prev.data(),d.t_prev.data() );
+                      d.vap_ice_exchange.data(),d.qv_prev.data(),d.t_prev.data());
 }
 
 int test_p3_init () {
   using P3F = Functions<Real, DefaultDevice>;
 
   P3F::p3_init();
-  P3GlobalForFortran::deinit();
   return 0;
 }
 
@@ -43,7 +42,6 @@ int test_p3_ic () {
   d->dt = 300.0;
   P3F::p3_init();
   p3_main_wrap(*d);
-  P3GlobalForFortran::deinit();
   return 0;
 }
 

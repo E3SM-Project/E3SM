@@ -1766,13 +1766,13 @@ if (defined $opts{'cppdefs'}) {
 }
 $cfg_ref->set('cppdefs', $usr_cppdefs);
 
-# Define is_scream_config flag to select which P3 version codes to use
+# Define is_eamxx_config flag to select which P3 version codes to use
 # If the config uses both p3 and shoc, it is recognized as a scream case.
  
-my $is_scream_config = 0;
+my $is_eamxx_config = 0;
 if ($microphys_pkg =~ /^p3/) {
    if ($shoc_sgs) {
-      $is_scream_config = 1;
+      $is_eamxx_config = 1;
       print "The case uses SCREAM config and SCREAM's version of P3 codes in Fortran 90.\n";
    } else {
       print "The case use EAM's version of P3 codes in Fortran 90.\n";
@@ -2494,7 +2494,7 @@ my $fp_filename      = 'Filepath';             # name of output filepath file
 my $cpp_filename     = 'CIME_cppdefs';         # name of output file for eam's cppdefs in cime
 
 # Write the filepath file.
-write_filepath("$cam_bld/$fp_filename", $cfg_ref, $is_scream_config);
+write_filepath("$cam_bld/$fp_filename", $cfg_ref, $is_eamxx_config);
 if ($print) { print "creating $cam_bld/$fp_filename\n"; }
 
 if (($ccsm_seq)) {
@@ -2538,7 +2538,7 @@ exit;
 
 sub write_filepath
 {
-    my ($file, $cfg_ref, $is_scream_config) = @_;
+    my ($file, $cfg_ref, $is_eamxx_config) = @_;
     my  $fh = new IO::File;
 
     $fh->open(">$file") or die "** can't open filepath file: $file\n";
@@ -2696,7 +2696,7 @@ sub write_filepath
     }
 
     if (not(defined $opts{'use_MMF'})) {
-       if ($is_scream_config eq '1') {
+       if ($is_eamxx_config eq '1') {
           print $fh "$camsrcdir/eam/src/physics/p3/scream\n";
        } else {
           print $fh "$camsrcdir/eam/src/physics/p3/eam\n";

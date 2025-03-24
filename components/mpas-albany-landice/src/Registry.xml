@@ -453,7 +453,22 @@
 			    descrption="Apply a uniform linear submarine melt rate at all grounded marine margins. config_mass_bal_grounded must be set to 'uniform'."
 			    possible_values="any non-negative value"
 		/>
-        </nml_record>
+		<nml_option name="config_ocean_data_extrapolation" type="logical" default_value=".false." units="unitless"
+			    description="If true, extrapolate ocean data (temperature, salinity, thermal forcing) from external source into underneath the ice draft."
+			    possible_values=".true. or .false."
+		/>
+		<nml_option name="config_ocean_data_extrap_ncells_extra" type="integer" default_value="10" units="unitless"
+			    description="number of extra cells for over-extrapolation into grounded ice" possible_values="any non-negative value"
+		/>
+	        <nml_option name="config_invalid_value_TF" type="real" default_value="1.0e36" units="unitless"
+			    description="value assigned to indicate invalid thermal forcing value when config_ocean_data_extrapolation is set to true"
+			    possible_values="Any real value"
+		/>
+		<nml_option name="config_weight_value_cell" type="real" default_value="0.9" units="unitless"
+			    description="weight used to smooth horizontal extrapolation of ocean data field. Value close to 1 implies more weight of the current cell value versus the averaged value of the neighbouring cells around the cell"
+			    possible_values="any real value between 0 and 1"
+		/>
+	</nml_record>
 
 	<nml_record name="physical_parameters" in_defaults="true">
 		<nml_option name="config_ice_density" type="real" default_value="910.0" units="kg m^{-3}"
@@ -685,6 +700,7 @@
 
                 <package name="thermal" description="This package includes variables required for the thermal solver."/>
 
+                <package name="extrapOceanData" description="This package includes variables required for extrapolating ocean data into MALI ice shelf cavities." />
 	</packages>
 
 
@@ -797,6 +813,8 @@
 			<!-- these variables just for ISMIP6 grounded glacier forcing -->
 			<var name="ismip6Runoff" packages="ismip6GroundedFaceMelt" />
 			<var name="ismip6_2dThermalForcing" packages="ismip6GroundedFaceMelt" />
+			<!-- this variable just for ocean extrapolation -->
+                        <var name="orig3dOceanMask" packages="extrapOceanData"/>
 		</stream>
 
 <!-- An alternate way to allow the HO variables to exist in a separate file.
@@ -892,6 +910,7 @@
                         <var name="ismip6shelfMelt_deltaT" packages="ismip6ShelfMelt"/>
                         <var name="ismip6shelfMelt_zOcean" packages="ismip6ShelfMelt"/>
                         <var name="ismip6shelfMelt_offset" packages="ismip6ShelfMelt"/>
+                        <var name="ismip6shelfMelt_zBndsOcean" packages="ismip6ShelfMelt"/>
                         <!-- these variables just for ISMIP6 grounded glacier forcing -->
                         <var name="ismip6Runoff" packages="ismip6GroundedFaceMelt" />
 			<var name="ismip6_2dThermalForcing" packages="ismip6GroundedFaceMelt" />
@@ -900,6 +919,8 @@
                         <var name="ismip6RunoffCurrent" packages="ismip6GroundedFaceMelt" />
 			<var name="ismip6_2dThermalForcingCurrent" packages="ismip6GroundedFaceMelt" />
 			<var name="forcingTimeStamp" packages="ismip6GroundedFaceMelt" />
+		        <!-- these variables are just for the ocean thermal forcing re-extrapolation scheme -->
+                        <var name="orig3dOceanMask" packages="extrapOceanData" />
 		</stream>
 
 
@@ -1386,6 +1407,9 @@ is the value of that variable from the *previous* time level!
                 <var name="ismip6shelfMelt_zOcean" type="real" dimensions="nISMIP6OceanLayers" units="m" packages="ismip6ShelfMelt"
                      description="depth coordinate associated with ismip6shelfMelt_3dThermalForcing field, input to model"
                 />
+                <var name="ismip6shelfMelt_zBndsOcean" type="real" dimensions="TWO nISMIP6OceanLayers" units="m" packages="ismip6ShelfMelt"
+                     description="bounds for ismip6 ocean layers"
+                />
                 <var name="ismip6shelfMelt_offset" type="real" dimensions="nCells" units="kg m^{-2} s^{-1}" packages="ismip6ShelfMelt" default_value="0.0"
                      description="Optional field of offset that should be applied to the melt field calculated by the ISMIP6 melt method.  Can be used to run in anomaly mode, but this is not the anomaly.  See Registry.xml for details."
                 />
@@ -1436,6 +1460,14 @@ is the value of that variable from the *previous* time level!
 	       <var name="cellMaskTemporary" type="integer" dimensions="nCells" units="none"
 	       description="temporary copy of cellMask"
 	       persistence="scratch"
+	       />
+	       <var name="edgeMaskTemporary" type="integer" dimensions="nEdges" units="none"
+               description="temporary copy of edgeMask"
+               persistence="scratch"
+	       />
+	       <var name="vertexMaskTemporary" type="integer" dimensions="nVertices" units="none"
+               description="temporary copy of vertexMask"
+               persistence="scratch"
 	       />
         </var_struct>
 
@@ -1649,6 +1681,34 @@ is the value of that variable from the *previous* time level!
 
 <!-- ================ -->
 
+    <!-- Variables related to the ocean-forcing re-extrapolation -->
+        <var_struct name="extrapOceanData" time_levs="1" packages="extrapOceanData">
+                <var name="orig3dOceanMask" type="integer" dimensions="nISMIP6OceanLayers nCells Time" units="none"
+                     description="3D mask of original valid ocean data.  Because it is 3d, it can include the ocean domain inside ice-shelf cavities."
+                />
+                <var name="validOceanMask" type="integer" dimensions="nISMIP6OceanLayers nCells Time" units="none"
+                     description="3D mask for indicating where ocean data is present (i.e., seed mask).  Initially this is equal to orig3dOceanMask but it grows as the ocean extrapolation scheme iterates.  It indicates anywhere that valid ocean data is present, whether that is the original ocean data or where it has been extrapolated."
+                />
+                <var name="availOceanMask" type="integer" dimensions="nISMIP6OceanLayers nCells Time" units="none"
+                     description="3D mask for indicating where ocean data can be flood-filled (i.e., grow mask).  These are the locations into which the ocean data can possibly be expanded.  It is defined as cells below sea level connected to the open ocean and shallower than the first ocean layer below the bed.  It remains constant as the extrapolation scheme iterates."
+                />
+                <var name="seedOceanMaskHoriz" type="integer" dimensions="nCells Time" units="none"
+                     description="seedmask for horizontal floodfill used to determine the over-extrapolation region into grounded ice.  It is defined by cells below sea level that are not occupied by grounded ice.  The only purpose is for calculating availOceanMask."
+                />
+                <var name="growOceanMaskHoriz" type="integer" dimensions="nCells Time" units="none"
+                     description="growmask for horizontal floodfill used to determine the over-extrapolaton region into grounded ice.  It is initialized as cells where bedTopography is below sea level and represents all the cells that seedOceanMaskHoriz could fill into.  The only purpose is for calculating availOceanMask."
+                />
+                <var name="TFoceanOld" type="real" dimensions="nISMIP6OceanLayers nCells Time" units="deg. C"
+                     default_value="1.0"
+                     description="A copy of TFocean used during iteration of the extrapolation scheme."
+                />
+                <var name="TFocean" type="real" dimensions="nISMIP6OceanLayers nCells Time" units="deg. C"
+                     default_value="0.0"
+                     description="The extrapolated version of ismip6shelfMelt_3dThermalForcing.  This is the result of the extrapolation scheme, but the result is assigned to ismip6shelfMelt_3dThermalForcing (replacing the initial value) so this field does not typically need to be output.  This field gets updated on each iteration of the extrapolation scheme."
+                />
+        </var_struct>
+<!-- ================ -->
+
 	<!-- Scratch Variables -->
 	<var_struct name="scratch" time_levs="1">
 	  <var name="iceCellMask" type="integer" dimensions="nCells" units="none"
@@ -1731,7 +1791,6 @@ is the value of that variable from the *previous* time level!
 	       description="grow mask for flood fill"
 	       persistence="scratch"
 	       />
-
 	</var_struct>
 
 <!-- ================ -->

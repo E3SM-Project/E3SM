@@ -1,5 +1,5 @@
 #include "share/field/field.hpp"
-#include "share/util/scream_utils.hpp"
+#include "share/util/eamxx_utils.hpp"
 
 namespace scream
 {
@@ -34,10 +34,15 @@ Field::alias (const std::string& name) const {
 
 Field
 Field::clone(const std::string& name) const {
+  return clone(name, get_header().get_identifier().get_grid_name());
+}
+
+Field
+Field::clone(const std::string& name, const std::string& grid_name) const {
   // Create new field
   const auto& my_fid = get_header().get_identifier();
   FieldIdentifier fid(name,my_fid.get_layout(),my_fid.get_units(),
-                      my_fid.get_grid_name(),my_fid.data_type());
+                      grid_name,my_fid.data_type());
   Field f(fid);
 
   // Ensure alloc props match
@@ -163,6 +168,12 @@ subfield (const int idim, const int index, const bool dynamic) const {
   return subfield(m_header->get_identifier().name(),idim,index,dynamic);
 }
 
+Field Field::
+subfield (const FieldTag tag, const int index, const bool dynamic) const {
+  int idim = get_header().get_identifier().get_layout().dim_idx(tag);
+  return subfield(idim,index,dynamic);
+}
+
 // slice at index idim, extracting the N = (index_end - index_beg) entries
 // written in math notation: [index_beg, index_end)
 // or equivalently, subF = F(index_beg, ... , index_beg + N)
@@ -180,6 +191,7 @@ Field Field::subfield(const std::string& sf_name,
 
   auto sf_layout = lt.clone();
   sf_layout.reset_dim(idim, index_end - index_beg);
+
   // Create identifier for subfield
   FieldIdentifier sf_id(sf_name, sf_layout, sf_units, id.get_grid_name(), id.data_type());
 
@@ -250,12 +262,17 @@ Field Field::get_components(const int beg, const int end) {
                   idim, beg, end);
 }
 
-bool Field::equivalent(const Field& rhs) const
+bool Field::is_aliasing(const Field& rhs) const
 {
-  return (m_header==rhs.m_header &&
-          is_allocated() &&
-          m_data.d_view==rhs.m_data.d_view &&
-          m_data.h_view==rhs.m_data.h_view);
+  if (this==&rhs)
+    return true;  // Same object
+
+  if (not is_allocated() or not rhs.is_allocated())
+    return false; // Once allocated, they will be different
+
+  // NOTE: I'm not sure we NEED to check m_data, but we might as well
+  return m_header->is_aliasing(rhs.get_header()) and
+         m_data.d_view==rhs.m_data.d_view;
 }
 
 void Field::allocate_view ()

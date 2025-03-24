@@ -11,7 +11,7 @@
 #include "dynamics/homme/homme_dynamics_helpers.hpp"
 #include "dynamics/homme/homme_dimensions.hpp"
 #include "share/grid/se_grid.hpp"
-#include "share/util/scream_utils.hpp"
+#include "share/util/eamxx_utils.hpp"
 
 #include "ekat/ekat_pack_utils.hpp"
 #include "ekat/ekat_assert.hpp"
@@ -22,7 +22,7 @@ namespace {
 template<typename DataType>
 ::Homme::ExecViewUnmanaged<DataType>
 getHommeView(const scream::Field& f) {
-  auto p = f.get_header().get_parent().lock();
+  auto p = f.get_header().get_parent();
   auto scream_view = f.template get_view<DataType>();
   using homme_view_t = ::Homme::ExecViewUnmanaged<DataType>;
   if (p!=nullptr) {
@@ -44,7 +44,7 @@ namespace scream
 PhysicsDynamicsRemapper::
 PhysicsDynamicsRemapper (const grid_ptr_type& phys_grid,
                          const grid_ptr_type& dyn_grid)
- : base_type(phys_grid,dyn_grid)
+ : AbstractRemapper(phys_grid,dyn_grid)
 {
   EKAT_REQUIRE_MSG(dyn_grid->type()==GridType::SE,     "Error! Input dynamics grid is not a SE grid.\n");
   EKAT_REQUIRE_MSG(phys_grid->type()==GridType::Point, "Error! Input physics grid is not a Point grid.\n");
@@ -62,131 +62,11 @@ PhysicsDynamicsRemapper (const grid_ptr_type& phys_grid,
   create_p2d_map ();
 }
 
-FieldLayout PhysicsDynamicsRemapper::
-create_src_layout (const FieldLayout& tgt_layout) const {
-  using namespace ShortFieldTagsNames;
-
-  EKAT_REQUIRE_MSG (is_valid_tgt_layout(tgt_layout),
-      "[PhysicsDynamicsRemapper] Error! Input target layout is not valid for this remapper.\n"
-      " - input layout: " + tgt_layout.to_string());
-
-  auto tags = tgt_layout.tags();
-  auto dims = tgt_layout.dims();
-
-  EKAT_REQUIRE_MSG (!ekat::contains(tags,FieldTag::TimeLevel),
-      "Error! Cannot remap to a Field with the TimeLevel tag.\n"
-      "       Please, provide the proper subfield instead.\n");
-
-  // Note down the position of the first 'GaussPoint' tag.
-  auto it_pos = ekat::find(tags,GP);
-  EKAT_REQUIRE_MSG (it_pos!=tags.end(),
-      "Error! Did not find the tag 'GaussPoint' in the dynamics layout.\n");
-  int pos = std::distance(tags.begin(),it_pos);
-
-  // We replace 'Element' with 'Column'. The number of columns is taken from the src grid.
-  tags[0] = COL;
-  dims[0] = this->m_src_grid->get_num_local_dofs();
-
-  // Delete GP tags/dims
-  ekat::erase(tags,GP);
-  ekat::erase(tags,GP);
-  dims.erase(dims.begin()+pos);
-  dims.erase(dims.begin()+pos);
-
-  return FieldLayout(tags,dims);
-}
-
-FieldLayout PhysicsDynamicsRemapper::
-create_tgt_layout (const FieldLayout& src_layout) const {
-  using namespace ShortFieldTagsNames;
-
-  EKAT_REQUIRE_MSG (is_valid_src_layout(src_layout),
-      "[PhysicsDynamicsRemapper] Error! Input source layout is not valid for this remapper.\n"
-      " - input layout: " + src_layout.to_string());
-
-  auto tags = src_layout.tags();
-  auto dims = src_layout.dims();
-
-  // Replace COL with EL, and num_cols with num_elems
-  tags[0] = EL;
-  dims[0] = this->m_tgt_grid->get_num_local_dofs() / (HOMMEXX_NP*HOMMEXX_NP);
-
-  // For position of GP and NP, it's easier to switch between 2d and 3d
-  auto lt = src_layout.type();
-  switch (lt) {
-    case LayoutType::Scalar2D:
-    case LayoutType::Vector2D:
-      // Simple: GP/NP are at the end.
-      // Push back GP/NP twice
-      tags.push_back(GP);
-      tags.push_back(GP);
-      dims.push_back(HOMMEXX_NP);
-      dims.push_back(HOMMEXX_NP);
-      break;
-    case LayoutType::Scalar3D:
-    case LayoutType::Vector3D:
-      {
-        // Replace last tag/tim with GP/NP, then push back GP/NP and LEV/nvl
-        tags.back() = GP;
-        dims.back() = HOMMEXX_NP;
-
-        tags.push_back(GP);
-        dims.push_back(HOMMEXX_NP);
-
-        tags.push_back(src_layout.tags().back()); // LEV or ILEV
-        dims.push_back(src_layout.dims().back()); // nlev or nlev+1
-        break;
-      }
-    default:
-      EKAT_ERROR_MSG("Error! Unrecognized layout type.\n");
-  }
-
-  return FieldLayout(tags,dims);
-}
-
 void PhysicsDynamicsRemapper::
-do_register_field (const identifier_type& src, const identifier_type& tgt)
+registration_ends_impl ()
 {
-  m_phys_fields.push_back(field_type(src));
-  m_dyn_fields.push_back(field_type(tgt));
-
-  EKAT_REQUIRE_MSG (src.data_type()==field_valid_data_types().at<Real>(),
-      "Error! PD remapper only works for Real data type.\n");
-  EKAT_REQUIRE_MSG (tgt.data_type()==field_valid_data_types().at<Real>(),
-      "Error! PD remapper only works for Real data type.\n");
-}
-
-void PhysicsDynamicsRemapper::
-do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
-{
-  const auto& tgt_layout = tgt.get_header().get_identifier().get_layout();
-  const auto& tgt_tags = tgt_layout.tags();
-
-  EKAT_REQUIRE_MSG (!ekat::contains(tgt_tags,FieldTag::TimeLevel),
-      "Error! Cannot remap to a Field with the TimeLevel tag.\n"
-      "       Please, provide the proper subfield instead.\n");
-
-  m_phys_fields[ifield] = src;
-  m_dyn_fields[ifield] = tgt;
-
-  // If this was the last field to be bound, we can setup the BE and
-  // precompute fields needed on device during remapper
-  if (this->m_state==RepoState::Closed &&
-      (this->m_num_bound_fields+1)==this->m_num_registered_fields) {
-    setup_boundary_exchange ();
-    initialize_device_variables();
-  }
-}
-
-void PhysicsDynamicsRemapper::
-do_registration_ends ()
-{
-  // If we have all fields allocated, we can setup the BE and
-  // precompute fields needed on device during remapper
-  if (this->m_num_bound_fields==this->m_num_registered_fields) {
-    setup_boundary_exchange ();
-    initialize_device_variables();
-  }
+  setup_boundary_exchange ();
+  initialize_device_variables();
 }
 
 void PhysicsDynamicsRemapper::
@@ -198,7 +78,7 @@ initialize_device_variables()
 
   for (auto which : {'P','D'}) {
     auto& repo   = which=='P' ? m_phys_repo : m_dyn_repo;
-    auto& fields = which=='P' ? m_phys_fields: m_dyn_fields;
+    auto& fields = which=='P' ? m_src_fields: m_tgt_fields;
 
     repo.views  = ViewsRepo::views_t ("views", this->m_num_fields);
     repo.cviews = ViewsRepo::cviews_t("cviews",this->m_num_fields);
@@ -238,8 +118,8 @@ initialize_device_variables()
 
   // Some info that is the same for both dyn and phys
   for (int i=0; i<this->m_num_fields; ++i) {
-    const auto& phys = m_phys_fields[i];
-    const auto& dyn  = m_dyn_fields[i];
+    const auto& phys = m_src_fields[i];
+    const auto& dyn  = m_tgt_fields[i];
 
     const auto& ph = phys.get_header();
     const auto& dh = dyn.get_header();
@@ -247,13 +127,13 @@ initialize_device_variables()
     // A dynamic subfield will need some special treatment at runtime
     // Namely, we'll need to re-extract the view every time,
     // since the subview info may have changed
-    if (ph.get_parent().lock()) {
-      EKAT_REQUIRE_MSG (ph.get_parent().lock()->get_parent().lock()==nullptr,
+    if (ph.get_parent()) {
+      EKAT_REQUIRE_MSG (ph.get_parent()->get_parent()==nullptr,
           "Error! We do not support remapping of subfields of other subfields.\n");
       m_subfield_info_phys[i] = ph.get_alloc_properties().get_subview_info();
     }
-    if (dh.get_parent().lock()) {
-      EKAT_REQUIRE_MSG (dh.get_parent().lock()->get_parent().lock()==nullptr,
+    if (dh.get_parent()) {
+      EKAT_REQUIRE_MSG (dh.get_parent()->get_parent()==nullptr,
           "Error! We do not support remapping of subfields of other subfields.\n");
       m_subfield_info_dyn[i] = dh.get_alloc_properties().get_subview_info();
     }
@@ -287,7 +167,7 @@ initialize_device_variables()
 
 bool PhysicsDynamicsRemapper::
 subfields_info_has_changed (const std::map<int,SubviewInfo>& subfield_info,
-                            const std::vector<field_type>& fields) const
+                            const std::vector<Field>& fields) const
 {
   for (const auto& it : subfield_info) {
     const auto& f = fields[it.first];
@@ -303,7 +183,7 @@ subfields_info_has_changed (const std::map<int,SubviewInfo>& subfield_info,
 void PhysicsDynamicsRemapper::
 update_subfields_views (const std::map<int,SubviewInfo>& subfield_info,
                         const ViewsRepo& repo,
-                        const std::vector<field_type>& fields) const
+                        const std::vector<Field>& fields) const
 {
   auto get_view = [&] (const int i, const Field& f) {
     const auto rank = f.get_header().get_identifier().get_layout().rank();
@@ -395,21 +275,21 @@ set_dyn_to_zero(const MT& team) const
 }
 
 void PhysicsDynamicsRemapper::
-do_remap_fwd()
+remap_fwd_impl ()
 {
   // When remapping from phys to dyn, we need to perform a BEX
   // on the dyn fields. The BEX is 'static', meaning that the stored
   // views cannot be changed after it's been setup. Therefore,
   // if subfield info has changed for some dyn fields, we're toast.
   EKAT_REQUIRE_MSG (
-      not subfields_info_has_changed(m_subfield_info_dyn,m_dyn_fields),
-      "Error! P->D remapping is not supported if the some of the dyn fields\n"
+      not subfields_info_has_changed(m_subfield_info_dyn,m_tgt_fields),
+      "Error! P->D remapping is not supported if some of the dyn fields\n"
       "       are subfields whose subview info has changed since setup.\n"
       "       Note: see field.hpp and field_alloc_prop.hpp for an explanation\n"
       "       of what a subfield and subview info).\n");
 
   // Check if we need to update the views for subfields on phys grid
-  update_subfields_views(m_subfield_info_phys,m_phys_repo,m_phys_fields);
+  update_subfields_views(m_subfield_info_phys,m_phys_repo,m_src_fields);
 
   using TeamPolicy = typename KT::TeamTagPolicy<RemapFwdTag>;
 
@@ -442,11 +322,11 @@ do_remap_fwd()
 }
 
 void PhysicsDynamicsRemapper::
-do_remap_bwd()
+remap_bwd_impl ()
 {
   // Check if we need to update the views for subfields
-  update_subfields_views(m_subfield_info_dyn,m_dyn_repo,m_dyn_fields);
-  update_subfields_views(m_subfield_info_phys,m_phys_repo,m_phys_fields);
+  update_subfields_views(m_subfield_info_dyn,m_dyn_repo,m_tgt_fields);
+  update_subfields_views(m_subfield_info_phys,m_phys_repo,m_src_fields);
 
   using TeamPolicy = typename KT::TeamTagPolicy<RemapBwdTag>;
 
@@ -458,9 +338,8 @@ do_remap_bwd()
   const int team_size = (concurrency<this->m_num_fields*m_num_phys_cols ? 1 : concurrency/(this->m_num_fields*m_num_phys_cols));
 #endif
 
-  // TeamPolicy over m_num_phys_cols*this->m_num_fields. Unlike do_remap_fwd,
-  // here we do not require setting dyn=0, allowing us to extend
-  // the TeamPolicy
+  // TeamPolicy over m_num_phys_cols*this->m_num_fields. Unlike remap_fwd_impl,
+  // here we do not require setting dyn=0, allowing us to extend the TeamPolicy
   const TeamPolicy policy(this->m_num_fields*m_num_phys_cols,team_size);
   Kokkos::parallel_for(policy, *this);
   Kokkos::fence();
@@ -477,7 +356,7 @@ setup_boundary_exchange () {
   int num_3d_mid = 0;
   int num_3d_int = 0;
   for (int i=0; i<this->m_num_fields; ++i) {
-    const auto& layout = m_dyn_fields[i].get_header().get_identifier().get_layout();
+    const auto& layout = m_tgt_fields[i].get_header().get_identifier().get_layout();
     const auto lt = layout.type();
     switch (lt) {
       case LayoutType::Scalar2D:
@@ -526,28 +405,28 @@ setup_boundary_exchange () {
 
   // If some fields are already bound, set them in the bd exchange
   for (int i=0; i<this->m_num_fields; ++i) {
-    const auto& layout = m_dyn_fields[i].get_header().get_identifier().get_layout();
+    const auto& layout = m_tgt_fields[i].get_header().get_identifier().get_layout();
     const auto& dims = layout.dims();
     const auto lt = layout.type();
     switch (lt) {
       case LayoutType::Scalar2D:
-        m_be->register_field(getHommeView<Real*[NP][NP]>(m_dyn_fields[i]));
+        m_be->register_field(getHommeView<Real*[NP][NP]>(m_tgt_fields[i]));
         break;
       case LayoutType::Vector2D:
-        m_be->register_field(getHommeView<Real**[NP][NP]>(m_dyn_fields[i]),dims[1],0);
+        m_be->register_field(getHommeView<Real**[NP][NP]>(m_tgt_fields[i]),dims[1],0);
         break;
       case LayoutType::Scalar3D:
         if (dims.back()==HOMMEXX_NUM_PHYSICAL_LEV) {
-          m_be->register_field(getHommeView<Scalar*[NP][NP][NLEV]>(m_dyn_fields[i]));
+          m_be->register_field(getHommeView<Scalar*[NP][NP][NLEV]>(m_tgt_fields[i]));
         } else {
-          m_be->register_field(getHommeView<Scalar*[NP][NP][NINT]>(m_dyn_fields[i]));
+          m_be->register_field(getHommeView<Scalar*[NP][NP][NINT]>(m_tgt_fields[i]));
         }
         break;
       case LayoutType::Vector3D:
         if (dims.back()==HOMMEXX_NUM_PHYSICAL_LEV) {
-          m_be->register_field(getHommeView<Scalar**[NP][NP][NLEV]>(m_dyn_fields[i]),dims[1],0);
+          m_be->register_field(getHommeView<Scalar**[NP][NP][NLEV]>(m_tgt_fields[i]),dims[1],0);
         } else {
-          m_be->register_field(getHommeView<Scalar**[NP][NP][NINT]>(m_dyn_fields[i]),dims[1],0);
+          m_be->register_field(getHommeView<Scalar**[NP][NP][NINT]>(m_tgt_fields[i]),dims[1],0);
         }
         break;
     default:

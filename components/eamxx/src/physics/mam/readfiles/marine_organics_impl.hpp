@@ -3,8 +3,8 @@
 
 #include "share/grid/remap/identity_remapper.hpp"
 #include "share/grid/remap/refining_remapper_p2p.hpp"
-#include "share/io/scream_scorpio_interface.hpp"
-#include "share/util/scream_timing.hpp"
+#include "share/io/eamxx_scorpio_interface.hpp"
+#include "share/util/eamxx_timing.hpp"
 
 namespace scream {
 namespace marine_organics {
@@ -112,7 +112,7 @@ void marineOrganicsFunctions<S, D>::update_marine_organics_data_from_file(
   start_timer(
       "EAMxx::marineOrganics::update_marine_organics_data_from_file::horiz_"
       "remap");
-  horiz_interp.remap(/*forward = */ true);
+  horiz_interp.remap_fwd();
   stop_timer(
       "EAMxx::marineOrganics::update_marine_organics_data_from_file::horiz_"
       "remap");
@@ -153,11 +153,9 @@ void marineOrganicsFunctions<S, D>::update_marine_organics_timestate(
   const auto month = ts.get_month() - 1;  // Make it 0-based
   if(month != time_state.current_month) {
     // Update the marineOrganics time state information
-    time_state.current_month = month;
-    time_state.t_beg_month =
-        util::TimeStamp({ts.get_year(), month + 1, 1}, {0, 0, 0})
-            .frac_of_year_in_days();
-    time_state.days_this_month = util::days_in_month(ts.get_year(), month + 1);
+    time_state.current_month   = month;
+    time_state.t_beg_month     = ts.curr_month_beg().frac_of_year_in_days();
+    time_state.days_this_month = ts.days_in_curr_month();
 
     // Copy end'data into beg'data, and read in the new
     // end

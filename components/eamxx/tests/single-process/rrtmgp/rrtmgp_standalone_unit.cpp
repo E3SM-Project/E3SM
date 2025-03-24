@@ -5,14 +5,14 @@
 
 // Other rrtmgp specific code needed specifically for this test
 #include "physics/rrtmgp/rrtmgp_test_utils.hpp"
-#include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
+#include "physics/rrtmgp/eamxx_rrtmgp_interface.hpp"
 #include "physics/rrtmgp/eamxx_rrtmgp_process_interface.hpp"
 #include "physics/register_physics.hpp"
 #include "physics/share/physics_constants.hpp"
 
 // scream share headers
 #include "share/grid/mesh_free_grids_manager.hpp"
-#include "share/util/scream_common_physics_functions.hpp"
+#include "share/util/eamxx_common_physics_functions.hpp"
 
 // EKAT headers
 #include <ekat/ekat_parse_yaml_file.hpp>
@@ -93,7 +93,7 @@ TEST_CASE("rrtmgp_scream_standalone", "") {
 
   // Get dimension sizes from the field manager
   const auto& grid = ad.get_grids_manager()->get_grid("Point Grid");
-  const auto& field_mgr = *ad.get_field_mgr(grid->name());
+  const auto& field_mgr = *ad.get_field_mgr();
   int ncol  = grid->get_num_local_dofs();
   int nlay  = grid->get_num_vertical_levels();
 
@@ -479,7 +479,7 @@ TEST_CASE("rrtmgp_scream_standalone_k", "") {
 
   // Get dimension sizes from the field manager
   const auto& grid = ad.get_grids_manager()->get_grid("Point Grid");
-  const auto& field_mgr = *ad.get_field_mgr(grid->name());
+  const auto& field_mgr = *ad.get_field_mgr();
   int ncol  = grid->get_num_local_dofs();
   int nlay  = grid->get_num_vertical_levels();
 

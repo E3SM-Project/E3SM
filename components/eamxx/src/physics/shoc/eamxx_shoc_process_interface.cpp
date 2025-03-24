@@ -4,7 +4,7 @@
 #include "share/property_checks/field_lower_bound_check.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 
-#include "scream_config.h" // for SCREAM_CIME_BUILD
+#include "eamxx_config.h" // for SCREAM_CIME_BUILD
 
 namespace scream
 {
@@ -111,7 +111,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   } // Extra SHOC output diagnostics
 
   // Tracer group
-  add_group<Updated>("tracers", grid_name, ps, Bundling::Required);
+  add_group<Updated>("turbulence_advected_tracers", grid_name, ps, MonolithicAlloc::Required);
 
   // Boundary flux fields for energy and mass conservation checks
   if (has_column_conservation_check()) {
@@ -131,11 +131,11 @@ set_computed_group_impl (const FieldGroup& group)
 
   const auto& name = group.m_info->m_group_name;
 
-  EKAT_REQUIRE_MSG(name=="tracers",
+  EKAT_REQUIRE_MSG(name=="turbulence_advected_tracers",
     "Error! We were not expecting a field group called '" << name << "\n");
 
-  EKAT_REQUIRE_MSG(group.m_info->m_bundled,
-      "Error! Shoc expects bundled fields for tracers.\n");
+  EKAT_REQUIRE_MSG(group.m_info->m_monolithic_allocation,
+      "Error! Shoc expects a monolithic allocation for tracers.\n");
 
   // Calculate number of advected tracers
   m_num_tracers = group.m_info->size();
@@ -270,7 +270,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   const auto& surf_sens_flux      = get_field_in("surf_sens_flux").get_view<const Real*>();
   const auto& surf_evap           = get_field_in("surf_evap").get_view<const Real*>();
   const auto& surf_mom_flux       = get_field_in("surf_mom_flux").get_view<const Real**>();
-  const auto& qtracers            = get_group_out("tracers").m_bundle->get_view<Spack***>();
+  const auto& qtracers            = get_group_out("turbulence_advected_tracers").m_monolithic_field->get_strided_view<Spack***>();
   const auto& qc                  = get_field_out("qc").get_view<Spack**>();
   const auto& qv                  = get_field_out("qv").get_view<Spack**>();
   const auto& tke                 = get_field_out("tke").get_view<Spack**>();
@@ -450,7 +450,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   const auto ncols = m_num_cols;
   view_1d cell_length("cell_length", ncols);
   if (m_grid->has_geometry_data("dx_short")) {
-    // We must be running with IntensiveObservationPeriod on, with a planar geometry
+    // In this case IOP is running with a planar geometry
     auto dx = m_grid->get_geometry_data("dx_short").get_view<const Real,Host>()();
     Kokkos::deep_copy(cell_length, dx*1000); // convert km -> m
   } else {

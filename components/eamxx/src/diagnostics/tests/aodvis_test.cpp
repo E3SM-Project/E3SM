@@ -4,8 +4,8 @@
 #include "diagnostics/register_diagnostics.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/grid/mesh_free_grids_manager.hpp"
-#include "share/util/scream_setup_random_test.hpp"
-#include "share/util/scream_universal_constants.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/util/eamxx_universal_constants.hpp"
 namespace scream {
 
 std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,

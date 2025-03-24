@@ -1,4 +1,4 @@
-# This module contains classes that describe a test type for test-all-scream
+# This module contains classes that describe a test type for test-all-eamxx
 # Each test type (here represented by a TestProperty object) can have different
 # flags, build type, profiling, cmake options, etc.
 # The function "test_factory" can be used to get a list of test types from
@@ -12,16 +12,16 @@ class TestProperty(object):
 ###############################################################################
 
     """
-    Parent class of predefined test types for SCREAM standalone. test-all-scream
+    Parent class of predefined test types for SCREAM standalone. test-all-eamxx
     offers a number of customization points, but you may need to just use
-    cmake if you need maximal customization. You can run test-all-scream --dry-run
+    cmake if you need maximal customization. You can run test-all-eamxx --dry-run
     to get the corresponding cmake command which can then be used as a starting
     point for making your own cmake command.
     """
 
     def __init__(self, longname, description, cmake_args,
                  uses_baselines=True, on_by_default=True, default_test_len=None):
-        # What the user uses to select tests via test-all-scream CLI.
+        # What the user uses to select tests via test-all-eamxx CLI.
         # Should also match the class name when converted to caps
         self.shortname      = type(self).__name__.lower()
 

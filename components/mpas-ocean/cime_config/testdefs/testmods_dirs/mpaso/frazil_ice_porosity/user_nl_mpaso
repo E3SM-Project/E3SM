@@ -1,0 +1,2 @@
+ config_use_frazil_ice_porosity = .true.
+ config_frazil_ice_porosity = 1.0

@@ -1,0 +1,12 @@
+This testdef is used to test a stealth feature that enables coupling between
+OCN and GLC for Greenland, which passes ocean thermal forcing from OCN to GLC
+and uses that in a parameterization for marine melting of grounded vertical
+cliffs.
+
+It changes one mpaso namelist variable,
+    config_glc_thermal_forcing_coupling_mode
+from its default value to '2d'.
+This tests the ocn/glc TF coupling.
+
+It also specified that DATM forcing should be restricted to 1958.
+This allows JRA1p5 forcing to be used without a large input data requirement.

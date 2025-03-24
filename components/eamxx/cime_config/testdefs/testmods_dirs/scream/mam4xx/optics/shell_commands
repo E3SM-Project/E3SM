@@ -1,9 +1,0 @@
-#------------------------------------------------------
-# MAM4xx adds additionaltracers to the simulation
-# Increase number of tracers for MAM4xx simulations
-#------------------------------------------------------
-$CIMEROOT/../components/eamxx/cime_config/testdefs/testmods_dirs/scream/mam4xx/update_eamxx_num_tracers.sh
-
-$CIMEROOT/../components/eamxx/scripts/atmchange physics::atm_procs_list="mac_aero_mic,mam4_optics,rrtmgp" -b
-
-

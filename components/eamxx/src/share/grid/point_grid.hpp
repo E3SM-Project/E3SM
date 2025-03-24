@@ -3,7 +3,7 @@
 
 #include <memory>
 #include "share/grid/abstract_grid.hpp"
-#include "share/scream_types.hpp"
+#include "share/eamxx_types.hpp"
 
 #include "ekat/mpi/ekat_comm.hpp"
 

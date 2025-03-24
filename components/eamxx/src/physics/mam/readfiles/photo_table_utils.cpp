@@ -36,7 +36,7 @@ std::vector<Real> populate_etfphot_from_e3sm_case() {
   return etfphot_data;
 }
 
-// This version uses scream_scorpio_interface to read netcdf files.
+// This version uses eamxx_scorpio_interface to read netcdf files.
 mam4::mo_photo::PhotoTableData read_photo_table(
     const std::string &rsf_file, const std::string &xs_long_file) {
   // set up the lng_indexer and pht_alias_mult_1 views based on our

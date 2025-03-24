@@ -69,6 +69,10 @@ plugins:
   - search
   - bibtex:
       bib_dir: docs/refs
+extra:
+  analytics:
+    provider: google
+    property: G-P3Z7LHMQE3
 
 extra_javascript:
   - javascript/mathjax.js

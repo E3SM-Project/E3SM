@@ -1,11 +1,11 @@
 #include <catch2/catch.hpp>
 
 #include "dynamics/homme/physics_dynamics_remapper.hpp"
-#include "dynamics/homme/interface/scream_homme_interface.hpp"
+#include "dynamics/homme/interface/eamxx_homme_interface.hpp"
 #include "share/field/field.hpp"
 #include "share/grid/se_grid.hpp"
 #include "share/grid/point_grid.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 
 #include "mpi/BoundaryExchange.hpp"
 #include "SimulationParams.hpp"
@@ -22,7 +22,7 @@
 #include <numeric>
 
 extern "C" {
-// These are specific C/F calls for these tests (i.e., not part of scream_homme_interface.hpp)
+// These are specific C/F calls for these tests (i.e., not part of eamxx_homme_interface.hpp)
 void init_test_params_f90 ();
 void cleanup_test_f90 ();
 }
@@ -301,7 +301,11 @@ TEST_CASE("remap", "") {
       }
 
       // Remap
-      remapper->remap(fwd);
+      if (fwd) {
+        remapper->remap_fwd();
+      } else {
+        remapper->remap_fwd();
+      }
 
       // Check
       {
@@ -839,12 +843,12 @@ TEST_CASE("combo_remap", "") {
 
       // Remap
       if (pdp) {
-        remapper->remap(true);
+        remapper->remap_fwd();
         Kokkos::fence();
-        remapper->remap(false);
+        remapper->remap_bwd();
       } else {
-        remapper->remap(false);
-        remapper->remap(true);
+        remapper->remap_bwd();
+        remapper->remap_fwd();
       }
 
       // Check

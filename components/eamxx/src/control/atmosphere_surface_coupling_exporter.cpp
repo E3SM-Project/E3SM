@@ -363,7 +363,7 @@ void SurfaceCouplingExporter::set_from_file_exports(const int dt)
 // =========================================================================================
 // This compute_eamxx_exports routine  handles all export variables that are derived from the EAMxx state.
 // Important! This setup assumes the numerical order of export_cpl_indices as listed in
-// /src/mct_coupling/scream_cpl_indices.F90
+// /src/mct_coupling/eamxx_cpl_indices.F90
 //
 // If this order is changed or a new variable is added it is important to update the corresponding
 // index query in the below.

@@ -349,6 +349,7 @@
 <!-- forcing -->
 <config_use_variable_drag>.false.</config_use_variable_drag>
 <config_use_bulk_wind_stress>.true.</config_use_bulk_wind_stress>
+<config_bulk_wind_stress_interp_isotropic>.true.</config_bulk_wind_stress_interp_isotropic>
 <config_use_bulk_thickness_flux>.true.</config_use_bulk_thickness_flux>
 <config_flux_attenuation_coefficient>0.001</config_flux_attenuation_coefficient>
 <config_flux_attenuation_coefficient_runoff>10.0</config_flux_attenuation_coefficient_runoff>
@@ -366,6 +367,8 @@
 <config_remove_ais_ice_runoff>.false.</config_remove_ais_ice_runoff>
 <config_scale_dismf_by_removed_ice_runoff>.false.</config_scale_dismf_by_removed_ice_runoff>
 <config_ais_ice_runoff_history_days>731</config_ais_ice_runoff_history_days>
+<config_glc_thermal_forcing_coupling_mode>'off'</config_glc_thermal_forcing_coupling_mode>
+<config_2d_thermal_forcing_depth>300.0</config_2d_thermal_forcing_depth>
 
 <!-- shortwaveRadiation -->
 <config_sw_absorption_type>'jerlov'</config_sw_absorption_type>
@@ -405,7 +408,9 @@
 <config_frazil_in_open_ocean>.true.</config_frazil_in_open_ocean>
 <config_frazil_under_land_ice>.false.</config_frazil_under_land_ice>
 <config_frazil_heat_of_fusion>3.337e5</config_frazil_heat_of_fusion>
+<config_use_frazil_ice_porosity>.false.</config_use_frazil_ice_porosity>
 <config_frazil_ice_density>1000.0</config_frazil_ice_density>
+<config_frazil_ice_porosity>1.0</config_frazil_ice_porosity>
 <config_frazil_fractional_thickness_limit>0.1</config_frazil_fractional_thickness_limit>
 <config_specific_heat_sea_water>3.996e3</config_specific_heat_sea_water>
 <config_frazil_maximum_depth>100.0</config_frazil_maximum_depth>

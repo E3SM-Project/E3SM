@@ -256,7 +256,7 @@ class TestBuildnml(unittest.TestCase):
         def_mach_comp = \
             run_cmd_assert_result(self, "../CIME/Tools/list_e3sm_tests cime_tiny", from_dir=CIME_SCRIPTS_DIR).splitlines()[-2].split(".")[-1]
 
-        case = self._create_test(f"SMS.ne30_ne30.F2010-SCREAMv1.{def_mach_comp}.scream-scream_example_testmod_atmchange --no-build")
+        case = self._create_test(f"SMS.ne30_ne30.F2010-SCREAMv1.{def_mach_comp}.eamxx-example_testmod_atmchange --no-build")
 
         # Check that the value match what's in the testmod
         out = run_cmd_no_fail("./atmquery --value cubed_sphere_map", from_dir=case)

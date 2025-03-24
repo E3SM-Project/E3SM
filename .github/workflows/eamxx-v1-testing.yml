@@ -11,7 +11,10 @@ on:
       - 'cime_config/machine/config_machines.xml'
       - 'components/eamxx/**'
       - 'components/homme/**'
+      - 'components/eam/src/physics/rrtmgp/**'
       - 'externals/ekat'
+      - 'externals/mam4xx'
+      - 'externals/haero'
       - 'externals/scorpio'
       # second, no to these
       - '!components/eamxx/docs/**'
@@ -41,7 +44,7 @@ concurrency:
 
 env:
   # Submit to cdash only for nightlies or if the user explicitly forced a submission via workflow dispatch
-  submit: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.submit) }}
+  submit: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch') }}
   # Generate only if user requested via workflow_dispatch
   generate: ${{ github.event_name == 'workflow_dispatch' && inputs.bless }}
   # Correct case folder suffix for generate/compare, used to find files to upload as artifacts
@@ -63,14 +66,14 @@ jobs:
     strategy:
       matrix:
         test:
-          - full_name: ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1.ghci-snl-cpu_gnu.scream-output-preset-2
-            short_name: ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1.scream-output-preset-2
-          - full_name: ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.ghci-snl-cpu_gnu.scream-dpxx-arm97
-            short_name: ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.scream-dpxx-arm97
-          - full_name: ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci-snl-cpu_gnu.scream-small_kernels--scream-output-preset-5
-            short_name: ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.scream-small_kernels--scream-output-preset-5
-          - full_name: SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.ghci-snl-cpu_gnu.scream-mam4xx-all_mam4xx_procs
-            short_name: SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.scream-mam4xx-all_mam4xx_procs
+          - full_name: ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1.ghci-snl-cpu_gnu.eamxx-output-preset-2
+            short_name: ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1.eamxx-output-preset-2
+          - full_name: ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.ghci-snl-cpu_gnu.eamxx-dpxx-arm97
+            short_name: ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.eamxx-dpxx-arm97
+          - full_name: ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci-snl-cpu_gnu.eamxx-small_kernels--eamxx-output-preset-5
+            short_name: ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-small_kernels--eamxx-output-preset-5
+          - full_name: SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.ghci-snl-cpu_gnu.eamxx-mam4xx-all_mam4xx_procs
+            short_name: SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-all_mam4xx_procs
       fail-fast: false
     name: cpu-gcc / ${{ matrix.test.short_name }}
     steps:
@@ -99,13 +102,14 @@ jobs:
             exit 1
           fi
       - name: Run test
+        id: run-tests
         run: |
           ./cime/scripts/create_test ${{ matrix.test.full_name }} ${{ env.flags }} --wait
-      - name: Upload case files
+      - name: Upload log files
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.test.full_name }}
+          name: logs.${{ matrix.test.short_name }}
           path: |
             /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/TestStatus.log
             /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/bld/*.bldlog.*
@@ -114,6 +118,18 @@ jobs:
             /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/run/case2run/*.log.*
             /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/run/*.cprnc.out
             /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/run/case2run/*.cprnc.out
+          retention-days: 14
+        env:
+          NODE_EXTRA_CA_CERTS: ${{ env.NODE_EXTRA_CA_CERTS }}
+      - name: Upload nc files
+        if: ${{ failure() && steps.run-tests.outcome == 'failure' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: outputs.${{ matrix.test.short_name }}
+          path: |
+            /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/run/*.nc*
+            /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.folder_suffix }}*/run/case2run/*.nc*
+          retention-days: 14
         env:
           NODE_EXTRA_CA_CERTS: ${{ env.NODE_EXTRA_CA_CERTS }}
       - name: Clean up

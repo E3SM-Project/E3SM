@@ -51,58 +51,59 @@ endmacro()
 ##################################
 
 # RRTMGP++ requires YAKL
+if (SCREAM_RRTMGP_ENABLE_YAKL)
+  string(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_ci)
+  if (TARGET yakl)
+    # Other E3SM components are building YAKL...
+    message ("It appears some other part of E3SM is building YAKL.\n"
+      "We will reuse that, but if this is a debug build we will\n"
+      "add the --fmad=false flag to the cuda flags used by YAKL\n")
+  else ()
+    # Prepare CUDA/HIP flags for YAKL
+    if (CUDA_BUILD)
+      string(REPLACE ";" " " KOKKOS_CUDA_OPTIONS_STR "${KOKKOS_CUDA_OPTIONS}")
+      set(YAKL_ARCH "CUDA")
+      set(YAKL_CUDA_FLAGS "-DYAKL_ARCH_CUDA ${KOKKOS_CUDA_OPTIONS_STR} --expt-relaxed-constexpr -ccbin ${CMAKE_CXX_COMPILER}")
+      string (REPLACE " " ";" YAKL_CUDA_FLAGS_LIST ${YAKL_CUDA_FLAGS})
+    endif()
+    if (HIP_BUILD)
+      set(YAKL_ARCH "HIP")
+      set(YAKL_HIP_FLAGS "-DYAKL_ARCH_HIP -O3 -D__HIP_ROCclr__ -D__HIP_ARCH_GFX90A__=1 --rocm-path=${ROCM_PATH} --offload-arch=gfx90a -x hip")
+      string (REPLACE " " ";" YAKL_HIP_FLAGS_LIST ${YAKL_HIP_FLAGS})
+    endif()
 
-string(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_ci)
-if (TARGET yakl)
-  # Other E3SM components are building YAKL...
-  message ("It appears some other part of E3SM is building YAKL.\n"
-           "We will reuse that, but if this is a debug build we will\n"
-           "add the --fmad=false flag to the cuda flags used by YAKL\n")
-else ()
-  # Prepare CUDA/HIP flags for YAKL
-  if (CUDA_BUILD)
-    string(REPLACE ";" " " KOKKOS_CUDA_OPTIONS_STR "${KOKKOS_CUDA_OPTIONS}")
-    set(YAKL_ARCH "CUDA")
-    set(YAKL_CUDA_FLAGS "-DYAKL_ARCH_CUDA ${KOKKOS_CUDA_OPTIONS_STR} --expt-relaxed-constexpr -ccbin ${CMAKE_CXX_COMPILER}")
-    string (REPLACE " " ";" YAKL_CUDA_FLAGS_LIST ${YAKL_CUDA_FLAGS})
+    set (YAKL_SOURCE_DIR ${SCREAM_BASE_DIR}/../../externals/YAKL)
+    add_subdirectory(${YAKL_SOURCE_DIR} ${CMAKE_BINARY_DIR}/externals/YAKL)
+
+    # Set some additional flag/cpp option on the yakl target
+
+    cmake_policy (SET CMP0079 NEW) # Allow to link to a tgt from a different directory
+
+    # EAMxx *requires* MPI, so simply look for it, then link against it
+    find_package(MPI REQUIRED COMPONENTS C)
+    target_link_libraries (yakl INTERFACE MPI::MPI_C)
+
+    # For debug builds, set -DYAKL_DEBUG
+    if (CMAKE_BUILD_TYPE_ci STREQUAL "debug")
+      target_compile_definitions(yakl INTERFACE YAKL_DEBUG)
+    endif()
   endif()
-  if (HIP_BUILD)
-    set(YAKL_ARCH "HIP")
-    set(YAKL_HIP_FLAGS "-DYAKL_ARCH_HIP -O3 -D__HIP_ROCclr__ -D__HIP_ARCH_GFX90A__=1 --rocm-path=${ROCM_PATH} --offload-arch=gfx90a -x hip")
-    string (REPLACE " " ";" YAKL_HIP_FLAGS_LIST ${YAKL_HIP_FLAGS})
+
+  # See eamxx/src/dynamics/homme/CMakeLists.txt for an explanation of this
+  # workaround.
+  if ((SCREAM_MACHINE STREQUAL "ascent" OR SCREAM_MACHINE STREQUAL "pm-gpu") AND CMAKE_BUILD_TYPE_ci STREQUAL "debug")
+    SetCudaFlagsYakl(yakl CUDA_LANG FLAGS -UNDEBUG)
+  else()
+    SetCudaFlagsYakl(yakl CUDA_LANG)
   endif()
 
-  set (YAKL_SOURCE_DIR ${SCREAM_BASE_DIR}/../../externals/YAKL)
-  add_subdirectory(${YAKL_SOURCE_DIR} ${CMAKE_BINARY_DIR}/externals/YAKL)
-
-  # Set some additional flag/cpp option on the yakl target
-
-  cmake_policy (SET CMP0079 NEW) # Allow to link to a tgt from a different directory
-
-  # EAMxx *requires* MPI, so simply look for it, then link against it
-  find_package(MPI REQUIRED COMPONENTS C)
-  target_link_libraries (yakl INTERFACE MPI::MPI_C)
-
-  # For debug builds, set -DYAKL_DEBUG
-  if (CMAKE_BUILD_TYPE_ci STREQUAL "debug")
-    target_compile_definitions(yakl INTERFACE YAKL_DEBUG)
-  endif()
-endif()
-
-# See eamxx/src/dynamics/homme/CMakeLists.txt for an explanation of this
-# workaround.
-if ((SCREAM_MACHINE STREQUAL "ascent" OR SCREAM_MACHINE STREQUAL "pm-gpu") AND CMAKE_BUILD_TYPE_ci STREQUAL "debug")
-  SetCudaFlagsYakl(yakl CUDA_LANG FLAGS -UNDEBUG)
-else()
-  SetCudaFlagsYakl(yakl CUDA_LANG)
+  list(APPEND CMAKE_MODULE_PATH ${YAKL_SOURCE_DIR})
+  include (yakl_utils)
 endif()
 
 ##################################
 #           RRTMGP               #
 ##################################
-
-list(APPEND CMAKE_MODULE_PATH ${YAKL_SOURCE_DIR})
-include (yakl_utils)
 
 set(EAM_RRTMGP_DIR ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp)
 # Build RRTMGP library; this builds the core RRTMGP external source as a library named "rrtmgp"
@@ -122,7 +123,13 @@ set(EXTERNAL_SRC
 add_library(rrtmgp ${EXTERNAL_SRC})
 target_compile_definitions(rrtmgp PUBLIC EAMXX_HAS_RRTMGP)
 EkatDisableAllWarning(rrtmgp)
-yakl_process_target(rrtmgp)
+if (SCREAM_RRTMGP_ENABLE_YAKL)
+  yakl_process_target(rrtmgp)
+else()
+  if (CUDA_BUILD)
+    target_compile_options(rrtmgp PUBLIC $<$<COMPILE_LANGUAGE:CXX>:--expt-relaxed-constexpr>)
+  endif()
+endif()
 
 # NOTE: cannot use 'PUBLIC' in target_link_libraries,
 #       since yakl_process_target already used it
@@ -130,7 +137,11 @@ yakl_process_target(rrtmgp)
 if (NOT TARGET Kokkos::kokkos)
   find_package(Kokkos REQUIRED)
 endif ()
-target_link_libraries(rrtmgp yakl Kokkos::kokkos)
+if (SCREAM_RRTMGP_ENABLE_YAKL)
+  target_link_libraries(rrtmgp yakl Kokkos::kokkos)
+else()
+  target_link_libraries(rrtmgp Kokkos::kokkos)
+endif()
 target_include_directories(rrtmgp PUBLIC
     ${SCREAM_BASE_DIR}/../../externals/YAKL
     ${EAM_RRTMGP_DIR}/external/cpp
@@ -158,21 +169,23 @@ target_include_directories(rrtmgp PUBLIC
 #       SCREAM_RRTMGP_YAKL       #
 ##################################
 
-set(SCREAM_RRTMGP_SOURCES_YAKL
-  scream_rrtmgp_interface.cpp
+set(SCREAM_RRTMGP_SOURCES_INTERFACE
+  eamxx_rrtmgp_interface.cpp
 )
 
-add_library(scream_rrtmgp_yakl ${SCREAM_RRTMGP_SOURCES_YAKL})
-yakl_process_target(scream_rrtmgp_yakl)
+add_library(eamxx_rrtmgp_interface ${SCREAM_RRTMGP_SOURCES_INTERFACE})
+if (SCREAM_RRTMGP_ENABLE_YAKL)
+  yakl_process_target(eamxx_rrtmgp_interface)
+endif()
 
 # NOTE: cannot use 'PUBLIC' in target_link_libraries,
 #       since yakl_process_target already used it
 #       with the "plain" signature
 find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATH}/lib)
-target_link_libraries(scream_rrtmgp_yakl ${NETCDF_C} rrtmgp scream_share Kokkos::kokkos)
-target_include_directories(scream_rrtmgp_yakl PUBLIC
+target_link_libraries(eamxx_rrtmgp_interface ${NETCDF_C} rrtmgp scream_share Kokkos::kokkos)
+target_include_directories(eamxx_rrtmgp_interface PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(scream_rrtmgp_yakl SYSTEM PUBLIC
+target_include_directories(eamxx_rrtmgp_interface SYSTEM PUBLIC
     ${NetCDF_C_PATH}/include
     ${EAM_RRTMGP_DIR}/external)
 
@@ -186,7 +199,7 @@ set(SCREAM_RRTMGP_SOURCES
 )
 
 add_library(scream_rrtmgp ${SCREAM_RRTMGP_SOURCES})
-target_link_libraries(scream_rrtmgp PUBLIC scream_share physics_share csm_share scream_rrtmgp_yakl Kokkos::kokkos)
+target_link_libraries(scream_rrtmgp PUBLIC scream_share physics_share csm_share eamxx_rrtmgp_interface Kokkos::kokkos)
 set_target_properties(scream_rrtmgp PROPERTIES
   Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules
 )
@@ -199,9 +212,11 @@ target_include_directories(scream_rrtmgp PUBLIC
 # ${YAKL_${YAKL_ARCH}_FLAGS} flags to the CXX flags of scream_rrtmgp.
 # In particular, this will ensure that all the yakl macros
 # are correctly defined in YAKL headers, depending on the backend
-if (YAKL_ARCH)
-  target_compile_options(scream_rrtmgp PUBLIC
-        "$<$<COMPILE_LANGUAGE:CXX>:${YAKL_${YAKL_ARCH}_FLAGS_LIST}>")
+if (SCREAM_RRTMGP_ENABLE_YAKL)
+  if (YAKL_ARCH)
+    target_compile_options(scream_rrtmgp PUBLIC
+      "$<$<COMPILE_LANGUAGE:CXX>:${YAKL_${YAKL_ARCH}_FLAGS_LIST}>")
+  endif()
 endif()
 
 
@@ -229,5 +244,7 @@ if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)
 endif()
 
-# Add this library to eamxx_physics
-target_link_libraries(eamxx_physics INTERFACE scream_rrtmgp)
+if (TARGET eamxx_physics)
+  # Add this library to eamxx_physics
+  target_link_libraries(eamxx_physics INTERFACE scream_rrtmgp)
+endif()

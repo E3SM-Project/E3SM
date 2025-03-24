@@ -1,4 +1,4 @@
-# SCREAM C++ Style Guide
+# EAMxx C++ Style Guide
 
 Here's our style guide. Let the holy wars begin!
 

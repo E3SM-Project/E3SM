@@ -1,6 +1,6 @@
 #include "catch2/catch.hpp"
 
-#include "share/scream_types.hpp"
+#include "share/eamxx_types.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
@@ -23,43 +23,6 @@ namespace unit_test {
 
 template <typename D>
 struct UnitWrap::UnitTest<D>::TestTableIce : public UnitWrap::UnitTest<D>::Base {
-
-  void test_read_lookup_tables_bfb()
-  {
-    // Read in ice tables
-    view_ice_table ice_table_vals;
-    view_collect_table collect_table_vals;
-    Functions::init_kokkos_ice_lookup_tables(ice_table_vals, collect_table_vals);
-
-    // Get data from fortran
-    P3InitAP3Data d;
-    p3_init_a(d);
-
-    // Copy device data to host
-    const auto ice_table_vals_host = Kokkos::create_mirror_view(ice_table_vals);
-    const auto collect_table_vals_host = Kokkos::create_mirror_view(collect_table_vals);
-    Kokkos::deep_copy(ice_table_vals_host, ice_table_vals);
-    Kokkos::deep_copy(collect_table_vals_host, collect_table_vals);
-
-    // Compare (on host)
-    for (size_t i = 0; i < ice_table_vals_host.extent(0); ++i) {
-      for (size_t j = 0; j < ice_table_vals_host.extent(1); ++j) {
-        for (size_t k = 0; k < ice_table_vals_host.extent(2); ++k) {
-
-          for (size_t l = 0; l < ice_table_vals_host.extent(3); ++l) {
-            REQUIRE(ice_table_vals_host(i, j, k, l) == d.ice_table_vals(i, j, k, l));
-          }
-
-          for (size_t l = 0; l < collect_table_vals_host.extent(3); ++l) {
-            for (size_t m = 0; m < collect_table_vals_host.extent(4); ++m) {
-              REQUIRE(collect_table_vals_host(i, j, k, l, m) == d.collect_table_vals(i, j, k, l, m));
-            }
-          }
-
-        }
-      }
-    }
-  }
 
   template <typename View>
   void init_table_linear_dimension(View& table, int linear_dimension)
@@ -103,7 +66,7 @@ struct UnitWrap::UnitTest<D>::TestTableIce : public UnitWrap::UnitTest<D>::Base 
     // Read in ice tables
     view_ice_table ice_table_vals;
     view_collect_table collect_table_vals;
-    Functions::init_kokkos_ice_lookup_tables(ice_table_vals, collect_table_vals);
+    Functions::get_global_ice_lookup_tables(ice_table_vals, collect_table_vals);
 
     constexpr Scalar qsmall = C::QSMALL;
 
@@ -373,7 +336,6 @@ TEST_CASE("p3_ice_tables", "[p3_functions]")
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestTableIce;
 
   T t;
-  t.test_read_lookup_tables_bfb();
   t.run_phys();
   t.run_bfb();
 }

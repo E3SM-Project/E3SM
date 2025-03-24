@@ -1,10 +1,9 @@
 #include "eamxx_nudging_process_interface.hpp"
 
-#include "share/util/scream_universal_constants.hpp"
+#include "share/util/eamxx_universal_constants.hpp"
 #include "share/grid/remap/refining_remapper_p2p.hpp"
-#include "share/grid/remap/do_nothing_remapper.hpp"
-#include "share/util/scream_utils.hpp"
-#include "share/io/scream_scorpio_interface.hpp"
+#include "share/util/eamxx_utils.hpp"
+#include "share/io/eamxx_scorpio_interface.hpp"
 
 #include <ekat/util/ekat_lin_interp.hpp>
 #include <ekat/util/ekat_math_utils.hpp>
@@ -393,7 +392,7 @@ void Nudging::run_impl (const double dt)
   }
 
   // Perform horizontal remap (if needed)
-  m_horiz_remapper->remap(true);
+  m_horiz_remapper->remap_fwd();
 
   // bypass copy_and_pad and vert_interp for skip_vert_interpolation:
   if (m_skip_vert_interpolation) {

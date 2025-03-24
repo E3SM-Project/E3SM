@@ -38,6 +38,16 @@ module CropType
      logical , pointer :: croplive_patch          (:)   ! patch Flag, true if planted, not harvested
      logical , pointer :: cropplant_patch         (:)   ! patch Flag, true if planted
      integer , pointer :: harvdate_patch          (:)   ! patch harvest date
+     real(r8), pointer :: rateh_patch             (:)   ! increase of tolerance caused by cold hardening index
+     real(r8), pointer :: rated_patch             (:)   ! loss of tolerance caused by dehardening
+     real(r8), pointer :: rates_patch             (:)   ! loss of tolerance caused by low temperature
+     real(r8), pointer :: rater_patch             (:)   ! loss of tolerance caused by respiration under snow
+     real(r8), pointer :: lt50_patch              (:)   ! the lethal temperature at which 50% of the individuals are damaged
+     real(r8), pointer :: fsurv_patch             (:)   ! winter wheat survival rate
+     real(r8), pointer :: accfsurv_patch          (:)   ! accumulated winter wheat survival rate
+     real(r8), pointer :: countfsurv_patch        (:)   ! count of accumulated winter wheat survival rate
+     real(r8), pointer :: wdd_patch               (:)   ! winter wheat weighted cumulated degree days
+     real(r8), pointer :: tcrown_patch            (:)   ! crown temperature
      real(r8), pointer :: fertnitro_patch         (:)   ! patch fertilizer nitrogen
      real(r8), pointer :: fertphosp_patch         (:)   ! patch fertilizer phosphorus
      real(r8), pointer :: gddplant_patch          (:)   ! patch accum gdd past planting date for crop       (ddays)
@@ -128,6 +138,16 @@ contains
     allocate(this%croplive_patch         (begp:endp)) ; this%croplive_patch         (:) = .false.
     allocate(this%cropplant_patch        (begp:endp)) ; this%cropplant_patch        (:) = .false.
     allocate(this%harvdate_patch         (begp:endp)) ; this%harvdate_patch         (:) = huge(1) 
+    allocate(this%rateh_patch            (begp:endp)) ; this%rateh_patch            (:) = spval
+    allocate(this%rated_patch            (begp:endp)) ; this%rated_patch            (:) = spval
+    allocate(this%rates_patch            (begp:endp)) ; this%rates_patch            (:) = spval
+    allocate(this%rater_patch            (begp:endp)) ; this%rater_patch            (:) = spval
+    allocate(this%lt50_patch             (begp:endp)) ; this%lt50_patch             (:) = spval
+    allocate(this%fsurv_patch            (begp:endp)) ; this%fsurv_patch            (:) = spval
+    allocate(this%accfsurv_patch         (begp:endp)) ; this%accfsurv_patch         (:) = spval
+    allocate(this%countfsurv_patch       (begp:endp)) ; this%countfsurv_patch       (:) = spval
+    allocate(this%wdd_patch              (begp:endp)) ; this%wdd_patch              (:) = spval
+    allocate(this%tcrown_patch           (begp:endp)) ; this%tcrown_patch           (:) = spval
     allocate(this%fertnitro_patch        (begp:endp)) ; this%fertnitro_patch        (:) = spval
     allocate(this%fertphosp_patch        (begp:endp)) ; this%fertphosp_patch        (:) = spval
     allocate(this%gddplant_patch         (begp:endp)) ; this%gddplant_patch         (:) = spval
@@ -669,7 +689,8 @@ contains
           rbufslp(p) = max(0._r8, min(mxtmp(ivt), &
                veg_es%t_ref2m(p)-(SHR_CONST_TKFRZ + baset(ivt)))) &
                * dtime/SHR_CONST_CDAY
-          if (ivt == nwcereal .or. ivt == nwcerealirrig) then
+          ! Modified based on Yaqiong Lu et al., 2017 in Geosci. Model Dev.
+          if ((ivt == nwcereal .or. ivt == nwcerealirrig) .and. this%cphase_patch(p) > 1) then
              rbufslp(p) = rbufslp(p)*this%vf_patch(p)
           end if
        else
@@ -691,9 +712,9 @@ contains
                ((col_es%t_soisno(c,1)*col_pp%dz(c,1) + &
                col_es%t_soisno(c,2)*col_pp%dz(c,2))/(col_pp%dz(c,1)+col_pp%dz(c,2))) - &
                (SHR_CONST_TKFRZ + baset(ivt)))) * dtime/SHR_CONST_CDAY
-          if (ivt == nwcereal .or. ivt == nwcerealirrig) then
-             rbufslp(p) = rbufslp(p)*this%vf_patch(p)
-          end if
+          ! Removed rbufslp modification based on Yaqiong Lu et al., 2017 in Geosci. Model Dev.
+          ! Removed the vf control on gddtsoil, because the vernalization
+          ! occurs after leaf emerge and end at flowering
        else
           rbufslp(p) = accumResetVal
        end if

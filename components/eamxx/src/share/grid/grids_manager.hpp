@@ -54,6 +54,12 @@ public:
 
   const grid_repo_type& get_repo () const { return m_grids; }
 
+  std::set<std::string> get_grid_names () const;
+  std::string print_available_grids () const;
+
+  // Return number of grids in the GridsManager
+  int size() const { return m_grids.size(); }
+
 protected:
 
   void add_nonconst_grid (nonconstgrid_ptr_type grid);
@@ -64,8 +70,6 @@ protected:
   do_create_remapper (const grid_ptr_type from_grid,
                       const grid_ptr_type to_grid) const = 0;
 
-  std::string print_available_grids () const;
-
 private:
 
   grid_repo_type            m_grids;
@@ -73,7 +77,7 @@ private:
 };
 
 // A short name for the factory for grid managers
-using GridsManagerFactory 
+using GridsManagerFactory
     = ekat::Factory<GridsManager,
                     ekat::CaseInsensitiveString,
                     std::shared_ptr<GridsManager>,

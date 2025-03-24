@@ -221,6 +221,7 @@ add_default($nl, 'config_gotm_constant_bottom_drag_coeff');
 
 add_default($nl, 'config_use_variable_drag');
 add_default($nl, 'config_use_bulk_wind_stress');
+add_default($nl, 'config_bulk_wind_stress_interp_isotropic');
 add_default($nl, 'config_use_bulk_thickness_flux');
 add_default($nl, 'config_flux_attenuation_coefficient');
 add_default($nl, 'config_flux_attenuation_coefficient_runoff');
@@ -241,6 +242,8 @@ add_default($nl, 'config_remove_ais_river_runoff');
 add_default($nl, 'config_remove_ais_ice_runoff');
 add_default($nl, 'config_scale_dismf_by_removed_ice_runoff');
 add_default($nl, 'config_ais_ice_runoff_history_days');
+add_default($nl, 'config_glc_thermal_forcing_coupling_mode');
+add_default($nl, 'config_2d_thermal_forcing_depth');
 
 ######################################
 # Namelist group: shortwaveRadiation #
@@ -292,7 +295,9 @@ add_default($nl, 'config_use_frazil_ice_formation');
 add_default($nl, 'config_frazil_in_open_ocean');
 add_default($nl, 'config_frazil_under_land_ice');
 add_default($nl, 'config_frazil_heat_of_fusion');
+add_default($nl, 'config_use_frazil_ice_porosity');
 add_default($nl, 'config_frazil_ice_density');
+add_default($nl, 'config_frazil_ice_porosity');
 add_default($nl, 'config_frazil_fractional_thickness_limit');
 add_default($nl, 'config_specific_heat_sea_water');
 add_default($nl, 'config_frazil_maximum_depth');
