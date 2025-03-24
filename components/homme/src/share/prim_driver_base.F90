@@ -743,7 +743,7 @@ contains
                                     sub_case, limiter_option, nu, nu_q, nu_div, tstep_type, hypervis_subcycle, &
                                     hypervis_subcycle_q, hypervis_subcycle_tom, &
                                     transport_alg, prim_step_type
-    use global_norms_mod,     only: test_global_integral, print_cfl
+    use global_norms_mod,     only: test_global_integral, print_cfl, dss_hvtensor
     use hybvcoord_mod,        only: hvcoord_t
     use parallel_mod,         only: parallel_t, haltmp, syncmp, abortmp
     use prim_state_mod,       only: prim_printstate, prim_diag_scalars
@@ -982,9 +982,10 @@ contains
     endif
 
     call model_init2(elem(:), hybrid,deriv1,hvcoord,tl,nets,nete)
+    ! apply dss and bilinear projection to tensor coefficients
+    call dss_hvtensor(elem,hybrid,nets,nete)
 
     ! advective and viscious CFL estimates
-    ! may also adjust tensor coefficients based on CFL
     call print_cfl(elem,hybrid,nets,nete,dtnu)
 
     ! Use the flexible time stepper if dt_remap_factor == 0 (vertically Eulerian
