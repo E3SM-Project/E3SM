@@ -585,13 +585,22 @@ be lost if SCREAM_HACK_XML is not enabled.
   <!-- Grids manager specs -->
   <grids_manager>
     <Type>Homme</Type>
-    <physics_grid_type>GLL</physics_grid_type>
-    <physics_grid_type hgrid=".*pg2">PG2</physics_grid_type>
-    <physics_grid_rebalance>None</physics_grid_rebalance>
-    <dynamics_namelist_file_name>./data/namelist.nl</dynamics_namelist_file_name>
-    <vertical_coordinate_filename type="file">UNSET</vertical_coordinate_filename>
-    <vertical_coordinate_filename nlev="72">${DIN_LOC_ROOT}/atm/scream/init/vertical_coordinates_L72_20220927.nc</vertical_coordinate_filename>
-    <vertical_coordinate_filename nlev="128">${DIN_LOC_ROOT}/atm/scream/init/vertical_coordinates_L128_20220927.nc</vertical_coordinate_filename>
+    <Type COMPSET=".SCREAMv1-ACE">ACE</Type>
+    <Homme>
+      <physics_grid_type>GLL</physics_grid_type>
+      <physics_grid_type hgrid=".*pg2">PG2</physics_grid_type>
+      <physics_grid_rebalance>None</physics_grid_rebalance>
+      <dynamics_namelist_file_name>./data/namelist.nl</dynamics_namelist_file_name>
+      <vertical_coordinate_filename type="file">UNSET</vertical_coordinate_filename>
+      <vertical_coordinate_filename nlev="72">${DIN_LOC_ROOT}/atm/scream/init/vertical_coordinates_L72_20220927.nc</vertical_coordinate_filename>
+      <vertical_coordinate_filename nlev="128">${DIN_LOC_ROOT}/atm/scream/init/vertical_coordinates_L128_20220927.nc</vertical_coordinate_filename>
+    <Homme>
+    <ACE>
+      <num_latitude_points type="integer">180</num_latitude_points>
+      <num_longitude_points type="integer">360</num_longitude_points>
+      <gaussian_grid type="logical" doc="If true, use gaussian nodes for the latitude">true</gaussian_grid>
+      <data_filename doc="File where lat values are stored" type="file">${DIN_LOC_ROOT}/atm/scream/init/eamxx_ace_latlon.nc</data_filename>
+    </ACE>
   </grids_manager>
 
   <!-- List of nc files for loading inputs on specified grids -->
