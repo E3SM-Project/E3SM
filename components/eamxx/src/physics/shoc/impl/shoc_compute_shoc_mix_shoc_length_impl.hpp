@@ -13,12 +13,9 @@ void Functions<S,D>
   const MemberType&            team,
   const Int&                   nlev,
   const Scalar&                length_fac,
-  const bool&                  tke_1p5_closure,
   const uview_1d<const Spack>& tke,
   const uview_1d<const Spack>& brunt,
   const uview_1d<const Spack>& zt_grid,
-  const uview_1d<const Spack>& dz_zt,
-  const uview_1d<const Spack>& tk,  
   const Scalar&                l_inf,
   const uview_1d<Spack>&       shoc_mix)
 {
@@ -33,19 +30,10 @@ void Functions<S,D>
     const Spack tkes = ekat::sqrt(tke(k));
     const Spack brunt2 = ekat::max(0, brunt(k));
 
-    if (tke_1p5_closure){
-       shoc_mix(k) = dz_zt(k);
-       const auto stable_mask = brunt(k) > 0;
-       if (stable_mask.any()){
-         shoc_mix(k) = ekat::min(dz_zt(k),ekat::max(0.1*dz_zt(k),ekat::sqrt(0.76
-	                        *tk(k)/0.1/ekat::sqrt(brunt(k)+1.e-10))));
-       }
-    }else{
-       shoc_mix(k) = ekat::min(maxlen,
+    shoc_mix(k) = ekat::min(maxlen,
                             sp(2.8284)*(ekat::sqrt(1/((1/(tscale*tkes*vk*zt_grid(k)))
                             + (1/(tscale*tkes*l_inf))
                             + sp(0.01)*(brunt2/tke(k)))))/length_fac);
-    }
   });
 }
 
