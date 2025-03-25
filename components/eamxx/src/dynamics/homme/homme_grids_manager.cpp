@@ -221,12 +221,14 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
   const auto layout2d = phys_grid->get_2d_scalar_layout();
-  const Units rad (Units::nondimensional(),"rad");
+
+  const Units nondim (Units::nondimensional(),"nondim");
+  const Units deg (nondim,"deg");
 
   auto dofs = phys_grid->get_dofs_gids();
-  auto lat  = phys_grid->create_geometry_data("lat",layout2d,rad);
-  auto lon  = phys_grid->create_geometry_data("lon",layout2d,rad);
-  auto area = phys_grid->create_geometry_data("area",layout2d,rad*rad);
+  auto lat  = phys_grid->create_geometry_data("lat",layout2d,deg);
+  auto lon  = phys_grid->create_geometry_data("lon",layout2d,deg);
+  auto area = phys_grid->create_geometry_data("area",layout2d,nondim);
 
   using gid_type = AbstractGrid::gid_type;
 
