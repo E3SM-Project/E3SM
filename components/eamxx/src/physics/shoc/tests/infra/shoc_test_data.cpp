@@ -655,7 +655,7 @@ void shoc_pblintd_init_pot_host(Int shcol, Int nlev, Real *thl, Real* ql, Real* 
 }
 
 void compute_shoc_mix_shoc_length_host(Int nlev, Int shcol, Real* tke, Real* brunt,
-                                    Real* zt_grid, Real* dz_zt, Real* tk, Real* l_inf, Real* shoc_mix)
+                                    Real* zt_grid, Real* l_inf, Real* shoc_mix)
 {
   using SHF = Functions<Real, DefaultDevice>;
 
@@ -669,7 +669,7 @@ void compute_shoc_mix_shoc_length_host(Int nlev, Int shcol, Real* tke, Real* bru
 
   std::vector<view_1d> temp_1d_d(1);
   std::vector<view_2d> temp_2d_d(4);
-  std::vector<const Real*> ptr_array = {tke,   brunt, zt_grid, dz_zt, tk, shoc_mix};
+  std::vector<const Real*> ptr_array = {tke,   brunt, zt_grid, shoc_mix};
 
   // Sync to device
   ScreamDeepCopy::copy_to_device({l_inf}, shcol, temp_1d_d);
@@ -682,9 +682,7 @@ void compute_shoc_mix_shoc_length_host(Int nlev, Int shcol, Real* tke, Real* bru
     tke_d     (temp_2d_d[0]),
     brunt_d   (temp_2d_d[1]),
     zt_grid_d (temp_2d_d[2]),
-    dz_zt_d   (temp_2d_d[3]),
-    tk_d      (temp_2d_d[4]),
-    shoc_mix_d  (temp_2d_d[5]);
+    shoc_mix_d  (temp_2d_d[3]);
 
   const Int nk_pack = ekat::npack<Spack>(nlev);
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);
@@ -696,13 +694,10 @@ void compute_shoc_mix_shoc_length_host(Int nlev, Int shcol, Real* tke, Real* bru
     const auto tke_s      = ekat::subview(tke_d, i);
     const auto brunt_s    = ekat::subview(brunt_d, i);
     const auto zt_grid_s  = ekat::subview(zt_grid_d, i);
-    const auto dz_zt_s    = ekat::subview(dz_zt_d, i);
-    const auto tk_s       = ekat::subview(tk_d, i);
     const auto shoc_mix_s = ekat::subview(shoc_mix_d, i);
 
     const Real length_fac = 0.5;
-    const bool tke_1p5_closure = false;
-    SHF::compute_shoc_mix_shoc_length(team, nlev, length_fac, tke_1p5_closure, tke_s, brunt_s, zt_grid_s, dz_zt_s, tk_s, l_inf_s,
+    SHF::compute_shoc_mix_shoc_length(team, nlev, length_fac, tke_s, brunt_s, zt_grid_s, l_inf_s,
                                       shoc_mix_s);
   });
 
@@ -1400,7 +1395,7 @@ void shoc_pblintd_cldcheck_host(Int shcol, Int nlev, Int nlevi, Real* zi, Real* 
 
 void shoc_length_host(Int shcol, Int nlev, Int nlevi, Real* host_dx, Real* host_dy,
                    Real* zt_grid, Real* zi_grid, Real*dz_zt, Real* tke,
-                   Real* thv, Real* tk, Real*brunt, Real* shoc_mix)
+                   Real* thv, Real*brunt, Real* shoc_mix)
 {
   using SHF = Functions<Real, DefaultDevice>;
 
@@ -1418,7 +1413,7 @@ void shoc_length_host(Int shcol, Int nlev, Int nlevi, Real* host_dx, Real* host_
   std::vector<int> dim2_sizes = {nlev, nlevi, nlev, nlev,
                                  nlev, nlev, nlev};
   std::vector<const Real*> ptr_array = {zt_grid, zi_grid, dz_zt, tke,
-                                        thv,     tke,     brunt, shoc_mix};
+                                        thv,     brunt, shoc_mix};
   // Sync to device
   ScreamDeepCopy::copy_to_device({host_dx, host_dy}, shcol, temp_1d_d);
   ekat::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_2d_d);
@@ -1434,9 +1429,8 @@ void shoc_length_host(Int shcol, Int nlev, Int nlevi, Real* host_dx, Real* host_
     dz_zt_d(temp_2d_d[2]),
     tke_d(temp_2d_d[3]),
     thv_d(temp_2d_d[4]),
-    tk_d(temp_2d_d[5]),
-    brunt_d(temp_2d_d[6]),
-    shoc_mix_d(temp_2d_d[7]);
+    brunt_d(temp_2d_d[5]),
+    shoc_mix_d(temp_2d_d[6]);
 
   const Int nlev_packs = ekat::npack<Spack>(nlev);
   const Int nlevi_packs = ekat::npack<Spack>(nlevi);
@@ -1459,17 +1453,15 @@ void shoc_length_host(Int shcol, Int nlev, Int nlevi, Real* host_dx, Real* host_
     const auto dz_zt_s = ekat::subview(dz_zt_d, i);
     const auto tke_s = ekat::subview(tke_d, i);
     const auto thv_s = ekat::subview(thv_d, i);
-    const auto tk_s = ekat::subview(tk_d, i);
     const auto brunt_s = ekat::subview(brunt_d, i);
     const auto shoc_mix_s = ekat::subview(shoc_mix_d, i);
 
     // Hardcode runtime option for F90 tests.
     const Scalar length_fac = 0.5;
-    const bool tke_1p5_closure = false;
-    SHF::shoc_length(team,nlev,nlevi,length_fac,tke_1p5_closure,
+    SHF::shoc_length(team,nlev,nlevi,length_fac,
                      host_dx_s,host_dy_s,
                      zt_grid_s,zi_grid_s,dz_zt_s,tke_s,
-                     thv_s,tk_s,workspace,brunt_s,shoc_mix_s);
+                     thv_s,workspace,brunt_s,shoc_mix_s);
   });
 
   // Sync back to host
