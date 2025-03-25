@@ -690,7 +690,8 @@ module mpas_io
             new_fieldlist_node % fieldhandle % field_type = MPAS_IO_CHAR
 !!!!!!!! PIO DOES NOT SUPPORT LOGICAL !!!!!!!!
          else
-            call mpas_log_write('ERROR: Unsupported field type $i.  MPAS supports ' // &
+            call mpas_log_write('ERROR: Unsupported field type $i in variable: ' // &
+               trim(fieldname) // ' in file: ' // trim(handle % filename) // '.  MPAS supports ' // &
                'double and single floats, 32-bit integers and char only ($i, $i, $i, $i).', &
                intArgs=(/new_fieldlist_node % fieldhandle % field_type, PIO_double, PIO_real, PIO_int, PIO_char/), &
                messageType=MPAS_LOG_CRIT)
