@@ -36,6 +36,7 @@ module ocn_vmix
    use ocn_vmix_coefs_redi
    use ocn_diagnostics_variables
    use ocn_surface_land_ice_fluxes
+   use ocn_subgrid
 
    implicit none
    private
@@ -1038,6 +1039,7 @@ contains
 
       real (kind=RKIND) :: von_karman, von_karman_sq
       real (kind=RKIND) :: kineticEnergyTopOfEdge, zMidEdge
+      real (kind=RKIND) :: wetFraction, sshMean
       integer :: iCell
 
       err = 0
@@ -1076,6 +1078,17 @@ contains
                             (log(1.0_RKIND + &
                                  (zMidEdge/bottom_roughness)))**2))
          enddo
+
+         if (config_use_subgrid_wetting_drying) then
+            sshMean = 0.5_RKIND * (subgridSSH(cell1) + subgridSSH(cell2))
+    
+            call ocn_subgrid_wet_fraction_lookup(sshMean, &
+                                                 subgridWetFractionEdgeTable(:,iEdge), &
+                                                 subgridSshEdgeTableRange(:,iEdge), &
+                                                 wetFraction)
+
+              CdTemp(k)= wetFraction*CdTemp(k)
+         endif
 
          ! one active layer
          if (N .eq. Nsurf) then
