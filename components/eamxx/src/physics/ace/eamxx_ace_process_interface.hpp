@@ -34,7 +34,10 @@ class ACE : public AtmosphereProcess {
   int m_in_ch = 39;
   int m_out_ch = 44;
   std::string m_checkpoint_path;
+  // torch module containing the model
   torch::jit::script::Module m_module;
+  // a guard for inference-only mode
+  c10::InferenceMode m_guard;
 };
 
 }  // namespace scream

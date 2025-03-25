@@ -4,16 +4,10 @@
 #include <iostream>
 #include <string>
 
-#ifdef KOKKOS_ENABLE_CUDA
-#include <cuda_runtime.h>
-#endif
-
 namespace scream {
 
 ACE::ACE(const ekat::Comm &comm, const ekat::ParameterList &params)
     : AtmosphereProcess(comm, params) {
-  m_forward_steps           = params.get<int>("forward_steps");
-  m_forward_steps_in_memory = params.get<int>("forward_steps_in_memory");
   m_checkpoint_path         = params.get<std::string>("checkpoint_path");
 }
 
@@ -65,9 +59,6 @@ void ACE::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
 
 void ACE::initialize_impl(const RunType /* run_type */) {
   // Output configuration values
-  std::cout << "Number of Forward Steps: " << m_forward_steps << std::endl;
-  std::cout << "Forward Steps in Memory: " << m_forward_steps_in_memory
-            << std::endl;
   std::cout << "Checkpoint Path: " << m_checkpoint_path << std::endl;
 
   // Check if the checkpoint file exists
@@ -77,13 +68,6 @@ void ACE::initialize_impl(const RunType /* run_type */) {
     return;
   }
   cp_file.close();
-
-  // TODO: guard with inference-only mode
-  // c10::InferenceMode guard;
-  // model.load_jit(saved_model);
-  // auto inputs = preprocess_tensors(data);
-  // auto out = model.forward(inputs);
-  // auto outputs = postprocess_tensors(out);
 
   std::cout << "Loading model checkpoint from: " << m_checkpoint_path
             << std::endl;
@@ -123,18 +107,7 @@ void ACE::run_impl(const double dt) {
   // Prepare for inference
   std::vector<torch::jit::IValue> inputs{torch_input};
   std::cout << "Input tensor shape: " << torch_input.sizes() << std::endl;
-  std::cout << "Performing inference for " << m_forward_steps << " steps..."
-            << std::endl;
 
-  // TODO: guard with inference-only mode
-  // c10::InferenceMode guard;
-  // model.load_jit(saved_model);
-  // auto inputs = preprocess_tensors(data);
-  // auto out = model.forward(inputs);
-  // auto outputs = postprocess_tensors(out);
-
-  // TODO: aggressively fence for now, since we are going outside of Kokkos
-  Kokkos::fence();
   torch::Tensor temp_out;
   try {
     temp_out = m_module.forward(inputs).toTensor().to(device);
@@ -142,13 +115,9 @@ void ACE::run_impl(const double dt) {
     std::cerr << "Error during inference: " << e.what() << std::endl;
     return;
   }
-#ifdef KOKKOS_ENABLE_CUDA
-  cudaDeviceSynchronize();
-#endif
-  // TODO: aggressively fence for now, since we are going back into Kokkos
-  Kokkos::fence();
 
-  Kokkos::View<float ****, scream::DefaultDevice,
+  // Careful here, need to ensure LayoutRight! Torch::Tensor is LR by default!
+  Kokkos::View<float ****, Kokkos::LayoutRight, scream::DefaultDevice,
                Kokkos::MemoryTraits<Kokkos::Unmanaged>>
       kokkos_output(temp_out.data_ptr<float>(), batch, out_ch, height, width);
 

@@ -11,8 +11,6 @@ time_stepping:
 atmosphere_processes:
   atm_procs_list: [ace]
   ace:
-    forward_steps: 1
-    forward_steps_in_memory: 1
     checkpoint_path: /pscratch/sd/m/mahf708/emulator/ace_ckpt_traced${GPU_OR_CPU}.tar
 grids_manager:
   Type: ACE
