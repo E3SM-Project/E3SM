@@ -110,6 +110,7 @@ void AtmosphereProcess::run (const double dt) {
     }
 
     if (m_internal_diagnostics_level > 0)
+      // Print hash of INPUTS before run
       print_global_state_hash(name() + "-pre-sc-" + std::to_string(m_subcycle_iter),
                               true, false, false);
 
@@ -117,6 +118,7 @@ void AtmosphereProcess::run (const double dt) {
     run_impl(dt_sub);
 
     if (m_internal_diagnostics_level > 0)
+      // Print hash of OUTPUTS/INTERNALS after run
       print_global_state_hash(name() + "-pst-sc-" + std::to_string(m_subcycle_iter),
                               true, true, true);
 
