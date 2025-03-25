@@ -64,8 +64,12 @@ public:
     p3_preamble() = default;
     // Functor for Kokkos loop to pre-process every run step
     KOKKOS_INLINE_FUNCTION
-    void operator()(const int icol) const {
-      for (int ipack=0;ipack<m_npack;ipack++) {
+    void operator()(const KT::MemberType& team) const {
+      const int icol = team.league_rank();
+
+      const auto npack = m_npack;
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, npack), [&] (const Int& ipack) {
+
         // The ipack slice of input variables used more than once
         const Spack& pmid_pack(pmid(icol,ipack));
         const Spack& T_atm_pack(T_atm(icol,ipack));
@@ -134,8 +138,7 @@ public:
             }
           }
         }
-        //
-      }
+      });
     } // operator
     // Local variables
     int m_ncol, m_npack;
@@ -220,8 +223,11 @@ public:
     p3_postamble() = default;
     // Functor for Kokkos loop to pre-process every run step
     KOKKOS_INLINE_FUNCTION
-    void operator()(const int icol) const {
-      for (int ipack=0;ipack<m_npack;ipack++) {
+    void operator()(const KT::MemberType& team) const {
+      const int icol = team.league_rank();
+
+      const auto npack = m_npack;
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, npack), [&] (const Int& ipack) {
         const Spack& pseudo_density_pack(pseudo_density(icol,ipack));
         const Spack& pseudo_density_dry_pack(pseudo_density_dry(icol,ipack));
 
@@ -259,7 +265,7 @@ public:
         diag_eff_radius_qc(icol,ipack) *= 1e6;
         diag_eff_radius_qi(icol,ipack) *= 1e6;
         diag_eff_radius_qr(icol,ipack) *= 1e6;
-      } // for ipack
+      }); // for ipack
 
       // Microphysics can be subcycled together during a single physics timestep,
       // therefore we must accumulate these fluxes
