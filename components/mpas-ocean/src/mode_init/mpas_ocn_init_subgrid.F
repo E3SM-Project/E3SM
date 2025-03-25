@@ -841,27 +841,26 @@ vertex: do iVertex = 1,nVerticesSolve
 
       subgridWetVolumeTable(1,iCV) = subgrid_thin_layer
       ssh = subgridSshTableRange(1,iCV) + deltaZ
-      subgridWetVolumeTable(2,iCV) = subgridWetVolumeTable(1,iCV)*sum(subgridAreas(1:nSubgridCV))
       subgridWetFractionTable(1,iCV) = 0.0_RKIND
       do lev = 2,nSubgridTableLevels
+
+        subgridWetFractionTable(lev,iCV) = 0.0_RKIND
+        subgridWetVolumeTable(lev,iCV) = 0.0_RKIND
+
         do tri = 1,nSubgridCV
 
           pVal = 0.0_RKIND
-          if (subgridBathymetryValues(tri) + ssh >= 0.0_RKIND) then
+          if (subgridBathymetryValues(tri) + ssh > subgrid_thin_layer) then
             pVal = 1.0_RKIND
           endif
 
-          subgridWetVolumeTable(lev,iCV) = subgridWetVolumeTable(lev,iCV) + pVal*deltaZ*subgridAreas(tri)
           subgridWetFractionTable(lev,iCV) = subgridWetFractionTable(lev,iCV) + pVal*subgridAreas(tri)
+          subgridWetVolumeTable(lev,iCV) = subgridWetVolumeTable(lev,iCV) + max(ssh+subgridBathymetryValues(tri),subgrid_thin_layer)*subgridAreas(tri)
   
         enddo
 
-        if (lev < nSubgridTableLevels) then
-          subgridWetVolumeTable(lev+1,iCV) = subgridWetVolumeTable(lev,iCV)
-        endif
-
-        subgridWetVolumeTable(lev,iCV) = subgridWetVolumeTable(lev,iCV)/sum(subgridAreas(1:nSubgridCV))
         subgridWetFractionTable(lev,iCV) = subgridWetFractionTable(lev,iCV)/sum(subgridAreas(1:nSubgridCV))
+        subgridWetVolumeTable(lev,iCV) = subgridWetVolumeTable(lev,iCV)/sum(subgridAreas(1:nSubgridCV))
 
         ssh = ssh + deltaZ
       enddo
