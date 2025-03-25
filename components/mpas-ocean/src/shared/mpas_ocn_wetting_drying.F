@@ -369,6 +369,8 @@ contains
 
       integer:: cellDummy(2), cellCur, CellNei
       real (kind=RKIND) :: sshCur, sshNei
+      real (kind=RKIND) :: wetFractionCur, wetFractionNei
+      real (kind=RKIND) :: scaleFactor
       real (kind=RKIND), dimension(:), pointer :: sshCell
       real (kind=RKIND), dimension(:, :), pointer :: layerThicknessCell
 
@@ -449,6 +451,11 @@ contains
                                         bottomDepth(iCell), &
                                         subgridCellBathymetryMin(iCell), &
                                         sshCell(iCell))
+
+            call ocn_subgrid_wet_fraction_lookup(sshCell(iCell), &
+                                                 subgridWetFractionCellTable(:,iCell), &
+                                                 subgridSshCellTableRange(:,iCell), &
+                                                 wetFractionCell(iCell))
           enddo
         else
           !$omp parallel
@@ -548,6 +555,47 @@ contains
         !$omp end parallel
 
       end if
+
+      !if ( config_use_subgrid_wetting_drying ) then
+      !  !$omp parallel
+      !  !$omp do schedule(runtime) private(k, i, iEdge)
+      !  do iCell = 1, nCellsAll
+
+      !    if (wetFractionCell(iCell) < 0.005) then
+      !      do i = 1, nEdgesOnCell(iCell)
+      !        iEdge = edgesOnCell(i, iCell)
+      !        k = 1
+      !        wettingVelocityFactor(k,iEdge) = 1.0_RKIND
+      !      enddo
+      !    endif
+
+      !  enddo
+      !  !$omp end do
+      !  !$omp end parallel
+
+      !  !do iCell = 1, nCellsAll
+      !  !  do i = 1, nEdgesOnCell(iCell)
+      !  !    iEdge = edgesOnCell(i, iCell)
+      !  !    k = 1
+
+      !  !    cellDummy(1:2) = cellsOnEdge(1:2,iEdge)
+      !  !    cellNei = merge( cellDummy(2), cellDummy(1), iCell == cellDummy(1) )
+      !  !    cellCur = iCell
+      !  !    if ( cellNei > nCellsAll ) cellNei = cellCur
+      !  !    wetFractionCur = wetFractionCell(cellCur)
+      !  !    wetFractionNei = wetFractionCell(cellNei)
+
+      !  !    scaleFactor = min(1.0_RKIND, (wetFractionCur*wetFractionNei)**0.5_RKIND/0.3_RKIND)
+      !  !    if (scaleFactor > (1.0_RKIND - 1.0e-8_RKIND)) then
+      !  !      scaleFactor = 1.0_RKIND
+      !  !    else
+      !  !      scaleFactor = max(0.1_RKIND, 0.5_RKIND + 0.5_RKIND*tanh(4.0_RKIND*pii*(scaleFactor-0.5_RKIND)))
+      !  !    endif
+
+      !  !    wettingVelocityFactor(k,iEdge) = 1.0_RKIND - scaleFactor
+      !  !  enddo
+      !  !enddo
+      !endif
 
    end subroutine ocn_wetting_drying_wettingVelocity !}}}
 
