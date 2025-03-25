@@ -152,7 +152,11 @@ be lost if SCREAM_HACK_XML is not enabled.
       <repair_log_level type="string" valid_values="trace,debug,info,warn">trace</repair_log_level>
       <!-- Run internal checks on code correctness.
            <= 0: off; >= 1: global hashes over state -->
-      <internal_diagnostics_level type="integer">0</internal_diagnostics_level>
+      <internal_diagnostics_level
+        type="integer"
+        valid_values="0,1,2"
+        doc="Whether to print hashes of the atm proc fields: 0=no, 1=yes (lump fields), 2=yes (individual fields)"
+      >0</internal_diagnostics_level>
       <compute_tendencies
         type="array(string)"
         doc="list of computed fields for which this process will back out tendencies"

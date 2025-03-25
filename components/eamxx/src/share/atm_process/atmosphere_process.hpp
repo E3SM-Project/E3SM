@@ -272,10 +272,13 @@ public:
   // Boolean that dictates whether or not the conservation checks are run for this process
   bool has_column_conservation_check () { return m_column_conservation_check_data.has_check; }
 
-  // For internal diagnostics and debugging.
+  // Print a global hash of internal fields (useful for debugging non-bfbness)
+  // Note: (mem, nmem) describe an arbitrary device array. If mem!=nullptr,
+  // the array will be hashed and reported as an additional entry
   void print_global_state_hash(const std::string& label, const bool in = true,
                                const bool out = true, const bool internal = true,
                                const Real* mem = nullptr, const int nmem = 0) const;
+
   // For BFB tracking in production simulations.
   void print_fast_global_state_hash(const std::string& label) const;
 
@@ -289,7 +292,6 @@ public:
   }
 
 protected:
-
   // Sends a message to the atm log
   void log (const LogLevel lev, const std::string& msg) const;
 
