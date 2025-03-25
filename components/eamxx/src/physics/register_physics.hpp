@@ -93,6 +93,9 @@ inline void register_physics () {
 #endif
 #ifdef EAMXX_HAS_ACE
   proc_factory.register_product("ACE",&create_atmosphere_process<ACE>);
+
+  auto& gm_factory   = GridsManagerFactory::instance();
+  gm_factory.register_product("ACE",&create_ace_grids_manager);
 #endif
 
   // If no physics was enabled, silence compile warning about unused var
