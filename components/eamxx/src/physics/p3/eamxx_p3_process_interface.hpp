@@ -24,6 +24,7 @@ class P3Microphysics : public AtmosphereProcess
   using P3F          = p3::Functions<Real, DefaultDevice>;
   using Spack        = typename P3F::Spack;
   using Smask        = typename P3F::Smask;
+  using IntSpack     = typename P3F::IntSmallPack;
   using Pack         = ekat::Pack<Real,Spack::n>;
   using PF           = scream::PhysicsFunctions<DefaultDevice>;
   using PC           = physics::Constants<Real>;
@@ -67,7 +68,7 @@ public:
     void operator()(const KT::MemberType& team) const {
       const int icol = team.league_rank();
 
-      const auto npack = m_npack;
+      const auto npack = ekat::npack<Spack>(m_nlev);
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, npack), [&] (const Int& ipack) {
 
         // The ipack slice of input variables used more than once
@@ -119,29 +120,32 @@ public:
           cld_frac_l(icol,ipack) = runtime_opts.set_cld_frac_l_to_one ? 1 : ekat::max(cld_frac_t_in_pack,mincld);
           cld_frac_i(icol,ipack) = runtime_opts.set_cld_frac_i_to_one ? 1 : ekat::max(cld_frac_t_in_pack,mincld);
         }
-        cld_frac_r(icol,ipack) = runtime_opts.set_cld_frac_r_to_one ? 1 : ekat::max(cld_frac_t_in_pack,mincld);
+        cld_frac_r(icol,ipack) = runtime_opts.set_cld_frac_r_to_one ? 1 : ekat::max(cld_frac_t_in_pack, mincld);
 
         // update rain cloud fraction given neighboring levels using max-overlap approach.
-        if ( !runtime_opts.set_cld_frac_r_to_one ) {
-          for (int ivec=0;ivec<Spack::n;ivec++)
-          {
-            // Hard-coded max-overlap cloud fraction calculation.  Cycle through the layers from top to bottom and determine if the rain fraction needs to
-            // be updated to match the cloud fraction in the layer above.  It is necessary to calculate the location of the layer directly above this one,
-            // labeled ipack_m1 and ivec_m1 respectively.  Note, the top layer has no layer above it, which is why we have the kstr index in the loop.
-            Int lev = ipack*Spack::n + ivec;  // Determine the level at this pack/vec location.
-            Int ipack_m1 = (lev - 1) / Spack::n;
-            Int ivec_m1  = (lev - 1) % Spack::n;
-            if (lev != 0) { /* Not applicable at the very top layer */
-              cld_frac_r(icol,ipack)[ivec] = cld_frac_t_in(icol,ipack_m1)[ivec_m1]>cld_frac_r(icol,ipack)[ivec] ?
-                                                cld_frac_t_in(icol,ipack_m1)[ivec_m1] :
-                                                cld_frac_r(icol,ipack)[ivec];
-            }
+        if ( not runtime_opts.set_cld_frac_r_to_one ) {
+          // Get the cld_frac_t_in(icol, ilev-1) entries
+          const auto& cld_frac_t_in_s = ekat::scalarize(ekat::subview(cld_frac_t_in, icol));
+          Spack cld_frac_t_in_k, cld_frac_t_in_km1;
+          auto range_pack1 = ekat::range<IntSpack>(ipack*Spack::n);
+          auto range_pack2 = range_pack1;
+          range_pack2.set(range_pack1 < 1, 1); // don't want the shift to go below zero. we mask out that result anyway
+          ekat::index_and_shift<-1>(cld_frac_t_in_s, range_pack2, cld_frac_t_in_k, cld_frac_t_in_km1);
+
+          // Hard-coded max-overlap cloud fraction calculation.  Cycle through the layers from top to bottom and
+          // determine if the rain fraction needs to be updated to match the cloud fraction in the layer above.
+          const auto active_range = range_pack1 > 0 && range_pack1 < m_nlev;
+          if (active_range.any()) {
+            const auto set_to_t_in = cld_frac_t_in_km1 > cld_frac_r(icol, ipack);
+            cld_frac_r(icol,ipack).set(active_range and set_to_t_in, cld_frac_t_in_km1);
+            cld_frac_r(icol,ipack).set(active_range and not set_to_t_in, cld_frac_r(icol, ipack));
           }
         }
       });
     } // operator
+
     // Local variables
-    int m_ncol, m_npack;
+    int m_ncol, m_nlev;
     Real mincld = 0.0001;  // TODO: These should be stored somewhere as more universal constants.  Or maybe in the P3 class hpp
     view_2d_const pmid;
     view_2d_const pmid_dry;
@@ -170,7 +174,7 @@ public:
     // Add runtime_options as a member variable
     P3F::P3Runtime runtime_opts;
     // Assigning local variables
-    void set_variables(const int ncol, const int npack,
+    void set_variables(const int ncol, const int nlev,
            const view_2d_const& pmid_, const view_2d_const& pmid_dry_,
            const view_2d_const& pseudo_density_,
            const view_2d_const& pseudo_density_dry_, const view_2d& T_atm_,
@@ -184,7 +188,7 @@ public:
            )
     {
       m_ncol = ncol;
-      m_npack = npack;
+      m_nlev = nlev;
       // IN
       pmid           = pmid_;
       pmid_dry       = pmid_dry_;

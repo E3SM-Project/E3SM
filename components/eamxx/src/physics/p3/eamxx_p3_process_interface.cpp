@@ -310,7 +310,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   auto dz         = m_buffer.dz;
 
   // -- Set values for the pre-amble structure
-  p3_preproc.set_variables(m_num_cols,nk_pack,pmid,pmid_dry,pseudo_density,pseudo_density_dry,
+  p3_preproc.set_variables(m_num_cols,m_num_levs,pmid,pmid_dry,pseudo_density,pseudo_density_dry,
                         T_atm,cld_frac_t_in,cld_frac_l_in,cld_frac_i_in,
                         qv, qc, nc, qr, nr, qi, qm, ni, bm, qv_prev,
                         inv_exner, th_atm, cld_frac_l, cld_frac_i, cld_frac_r, dz, runtime_options);
