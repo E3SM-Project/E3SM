@@ -842,38 +842,41 @@ contains
                ! switch to method in gsw toolbox to do this to be consistent with Hager 2023
                freezingTemperature(iLayer) = (gamma1 * MPAS_3dOceanSalinity(iLayer,iCell) + gamma2 + gamma3 * ismip6shelfMelt_zOcean(iLayer))
             enddo
+
+            !Start alteration just above iceberg depth or bedTopography and work upwards
+            iLayer = icebergCellVertID
+            do while (iLayer > 0)
             
-            ! Calculate Gade slope (slope of submarine melt mixing line) using cell just above iceberg depth as reference point. Assumes ice at pressure melting temperature
-            if (icebergCellVertID == 0) then
-               gadeSlope = 0.0_RKIND
-            elseif (MPAS_3dOceanSalinity(icebergCellVertID,iCell) == 0) then
-               gadeSlope = 0.0_RKIND
-            else
-               inverseSalt = (1.0_RKIND / MPAS_3dOceanSalinity(icebergCellVertID,iCell)) 
-               phaseChange = L/cp 
-               tempDiff = (freezingTemperature(icebergCellVertID) - MPAS_3dOceanTemperature(icebergCellVertID,iCell))
+               ! Calculate Gade slope (slope of submarine melt mixing line) at each z-level. Assumes ice at pressure melting temperature
+               if (MPAS_3dOceanSalinity(iLayer,iCell) == 0) then
+                  gadeSlope = 0.0_RKIND
+               else
+                  inverseSalt = (1.0_RKIND / MPAS_3dOceanSalinity(iLayer,iCell)) 
+                  phaseChange = L/cp 
+                  tempDiff = (freezingTemperature(iLayer) - MPAS_3dOceanTemperature(iLayer,iCell))
 
-               call mpas_log_write("iCell = $i, icebergCellVertID = $i, inverse salt = $r; phaseChange = $r; tempDiff = $r", intArgs=(/iCell,icebergCellVertID/), realArgs=(/inverseSalt,phaseChange,tempDiff/))
-               gadeSlope = inverseSalt * (phaseChange - tempDiff)
-            endif
-
-            ! Now that we have the slope of the melt line, alter ocean temperatures along submarine melt line
-            do iLayer = 1, nISMIP6OceanLayers
-               if ( (iLayer <= icebergCellVertID) .and. (icebergCellVertID /= 0) ) then
-                  saltDiff = MPAS_3dOceanSalinity(iLayer,iCell) - MPAS_3dOceanSalinity(icebergCellVertID,iCell)     
-                  
-                  newTemp = (gadeSlope * saltDiff) + MPAS_3dOceanTemperature(icebergCellVertID, iCell)
-                  ! Ensure iceberg melting only cools ocean. Uncommon but possible to warm ocean if already a sharp thermocline in the ocean.
-                  ! In reality, melt-driven upwelling can warm ocean but we are not accounting for this process.
-                  if (newTemp < MPAS_3dOceanTemperature(iLayer,iCell)) then
-                     MPAS_3dOceanTemperature(iLayer,iCell) = newTemp
-                  endif
-                  ! Ensure no artificially adjusted temperatures fall below the freezing temperature
-                  if (MPAS_3dOceanTemperature(iLayer, iCell) < freezingTemperature(iLayer)) then
-                     MPAS_3dOceanTemperature(iLayer, iCell) = freezingTemperature(iLayer)
-                  endif
+                  gadeSlope = inverseSalt * (phaseChange - tempDiff)
                endif
+
+               ! Now that we have the slope of the melt line, alter ocean temperatures along submarine melt line. Assume linear function
+               ! between current z-level and one z-level below
+               saltDiff = MPAS_3dOceanSalinity(iLayer,iCell) - MPAS_3dOceanSalinity(iLayer + 1,iCell)     
                   
+               newTemp = (gadeSlope * saltDiff) + MPAS_3dOceanTemperature(iLayer + 1, iCell)
+               ! Ensure iceberg melting only cools ocean. Uncommon but possible to warm ocean if already a sharp thermocline in the ocean.
+               ! In reality, melt-driven upwelling can warm ocean but we are not accounting for this process.
+               if (newTemp < MPAS_3dOceanTemperature(iLayer,iCell)) then
+                  MPAS_3dOceanTemperature(iLayer,iCell) = newTemp
+               endif
+               ! Ensure no artificially adjusted temperatures fall below the freezing temperature
+               if (MPAS_3dOceanTemperature(iLayer, iCell) < freezingTemperature(iLayer)) then
+                  MPAS_3dOceanTemperature(iLayer, iCell) = freezingTemperature(iLayer)
+               endif
+            
+               iLayer = iLayer - 1 !Reiterate upwards through water column
+            enddo
+            
+            do iLayer = 1, nISMIP6OceanLayers
                ismip6shelfMelt_3dThermalForcing(iLayer, iCell) = MPAS_3dOceanTemperature(iLayer, iCell) - freezingTemperature(iLayer)
             enddo
         endif
