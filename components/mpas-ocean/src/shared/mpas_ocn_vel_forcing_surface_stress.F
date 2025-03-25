@@ -26,6 +26,7 @@ module ocn_vel_forcing_surface_stress
    use ocn_config
    use ocn_forcing
    use ocn_mesh
+   use ocn_subgrid
 
    implicit none
    private
@@ -83,7 +84,7 @@ contains
       ! input variables
       !-----------------------------------------------------------------
 
-      real (kind=RKIND), dimension(:), intent(in) :: &
+      real (kind=RKIND), dimension(:), intent(inout) :: &
          sfcStress,    & !< [in] Wind stress at surface
          sfcFlxAttCoeff  !< [in] attenuation coefficient for sfc fluxes
 
@@ -121,6 +122,11 @@ contains
          attDepth,         &! depth scaled by attenuation length
          attCoeff           ! attenuation coefficient on edge
 
+      real (kind=RKIND) :: &
+         sshMean,          &
+         wetFraction
+      real (kind=RKIND), dimension(:), pointer :: ssh
+
       ! End preamble
       !-----------------------------------------------------------------
       ! Begin code
@@ -131,6 +137,21 @@ contains
       err = 0
       if (surfaceStressOff) return
       call mpas_timer_start('vel surface stress')
+
+      if (config_use_subgrid_wetting_drying) then
+         do iEdge = 1, nEdgesOwned
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+            sshMean = 0.5_RKIND * (subgridSSH(cell1) + subgridSSH(cell2))
+            
+            call ocn_subgrid_wet_fraction_lookup(sshMean, &
+                                                 subgridWetFractionEdgeTable(:,iEdge), &
+                                                 subgridSshEdgeTableRange(:,iEdge), &
+                                                 wetFraction)
+
+             sfcStress(iEdge) = wetFraction*sfcStress(iEdge)
+         enddo          
+      endif
 
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
