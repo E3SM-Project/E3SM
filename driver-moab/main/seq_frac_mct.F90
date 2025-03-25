@@ -3,13 +3,12 @@
 !  Fraction Notes: tcraig, august 2008
 !  Assumes is running on CPLID pes
 !
-!  the fractions fields are now afrac, ifrac, ofrac, lfrac, lfrin, zfrac
+!  the fractions fields are now afrac, ifrac, ofrac, lfrac, and lfrin.
 !    afrac = fraction of atm on a grid
 !    lfrac = fraction of lnd on a grid
 !    ifrac = fraction of ice on a grid
 !    ofrac = fraction of ocn on a grid
-!    lfrin = land fraction defined by the land model (atm-lnd domain file)
-!    zfrac = iac-atm fraction is 1 for whole grid cell
+!    lfrin = land fraction defined by the land model
 !    ifrad = fraction of ocn on a grid at last radiation time
 !    ofrad = fraction of ice on a grid at last radiation time
 !      afrac, lfrac, ifrac, and ofrac are the self-consistent values in the
@@ -23,14 +22,11 @@
 !    character(*),parameter :: fraclist_i = 'afrac:ifrac:ofrac'
 !    character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin'
 !    character(*),parameter :: fraclist_g = 'gfrac:lfrac'
-!    character(*),parameter :: fraclist_r = 'lfrac:rfrac'
-!    character(*),parameter :: fraclist_z = 'afrac:zfrac:lfrac:lfrin'
+!    character(*),parameter :: fraclist_r = 'lfrac:lfrin:rfrac'
 !
 !  we assume ocean and ice are on the same grids, same masks
 !  we assume ocn2atm and ice2atm are masked maps
 !  we assume lnd2atm is a global map
-!  we assume that iac domain is relative to atm
-!  we assume that iac does not use these lfrac, lfrin
 !  we assume that the ice fraction evolves in time but that
 !    the land model fraction does not.  the ocean fraction then
 !    is just the complement of the ice fraction over the region
@@ -162,11 +158,7 @@ module seq_frac_mct
   use prep_atm_mod, only: prep_atm_get_mapper_Fo2a
   use prep_atm_mod, only: prep_atm_get_mapper_Fi2a
   use prep_atm_mod, only: prep_atm_get_mapper_Fl2a
-  use prep_atm_mod, only: prep_atm_get_mapper_Fz2a
   use prep_glc_mod, only: prep_glc_get_mapper_Fl2g
-  use prep_lnd_mod, only: prep_lnd_get_mapper_Sz2l
-  use prep_iac_mod, only: prep_iac_get_mapper_Sl2z
-  use prep_iac_mod, only: prep_iac_get_mapper_Sa2z
 
   use component_type_mod
 
@@ -246,10 +238,6 @@ module seq_frac_mct
   type(seq_map)  , pointer :: mapper_a2l
   type(seq_map)  , pointer :: mapper_l2r
   type(seq_map)  , pointer :: mapper_l2g
-  type(seq_map)  , pointer :: mapper_z2l
-  type(seq_map)  , pointer :: mapper_z2a
-  type(seq_map)  , pointer :: mapper_l2z
-  type(seq_map)  , pointer :: mapper_a2z
 
   private seq_frac_check
 
@@ -317,25 +305,20 @@ contains
     logical :: iac_present   ! .true. => iac is present
     logical :: dead_comps    ! .true. => dead models present
 
-!avd
-logical :: iamroot
-
     integer :: n            ! indices
     integer :: ka, ki, kl, ko ! indices
     integer :: kf, kk, kr, kg ! indices
-    integer :: kz,ky             ! indices
     integer :: lsize          ! local size of ice av
     integer :: debug_old      ! old debug value
 
-    character(*),parameter :: fraclist_a = &
-                 'afrac:ifrac:ofrac:lfrac:lfrin:zfrac'
+    character(*),parameter :: fraclist_a = 'afrac:ifrac:ofrac:lfrac:lfrin'
     character(*),parameter :: fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad'
     character(*),parameter :: fraclist_i = 'afrac:ifrac:ofrac'
     character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin'
     character(*),parameter :: fraclist_g = 'gfrac:lfrac'
     character(*),parameter :: fraclist_r = 'lfrac:lfrin:rfrac'
     character(*),parameter :: fraclist_w = 'wfrac'
-    character(*),parameter :: fraclist_z = 'afrac:zfrac:lfrac:lfrin'
+    character(*),parameter :: fraclist_z = 'afrac:lfrac'
 
     ! moab
     integer                  :: tagtype, numco,  tagindex, ent_type, ierr, arrSize
@@ -380,8 +363,6 @@ logical :: iamroot
 
     debug_old = seq_frac_debug
     seq_frac_debug = 2
-
-iamroot = seq_comm_iamroot(CPLID)
 
     ! Initialize fractions on atm grid/decomp (initialize ice fraction to zero)
 
@@ -575,24 +556,7 @@ iamroot = seq_comm_iamroot(CPLID)
        lSize = mct_aVect_lSize(dom_z%data)
        call mct_aVect_init(fractions_z,rList=fraclist_z,lsize=lsize)
        call mct_aVect_zero(fractions_z)
-
-       kz = mct_aVect_indexRA(fractions_z,"zfrac",perrWith=subName)
-       kf = mct_aVect_indexRA(dom_z%data ,"frac" ,perrWith=subName)
-
-       ! these iac domain fractions are 1, as the z2a data
-       !   represent the whole grid cell
-       fractions_z%rAttr(kz,:) = dom_z%data%rAttr(kf,:)
-
-       if (atm_present) then
-          mapper_z2a => prep_atm_get_mapper_Fz2a()
-          mapper_a2z => prep_iac_get_mapper_Sa2z()
-          call seq_map_map(mapper_z2a, fractions_z, fractions_a, &
-                           fldlist='zfrac', norm=.false.)
-          ! use the a2z mapper to get the atm fracs into fractions_z
-          call seq_map_map(mapper_a2z, fractions_a, fractions_z, &
-             fldlist='afrac', norm=.false.)
-       endif
-
+       fractions_z%rAttr(:,:) = 1.0_r8
     end if
 
     ! Initialize fractions on ice grid/decomp (initialize ice fraction to zero)
@@ -779,7 +743,6 @@ iamroot = seq_comm_iamroot(CPLID)
     ! --- finally, set fractions_l(lfrac) from fractions_a(lfrac)
     ! --- and fractions_r(lfrac:lfrin) from fractions_l(lfrac:lfrin)
     ! --- and fractions_g(lfrac) from fractions_l(lfrac)
-    ! --- and fractions_z(lfrac, lfrin) from fractions_l(lfrac, lfrin)
 
     if (lnd_present) then
        if (atm_present) then
@@ -791,20 +754,6 @@ iamroot = seq_comm_iamroot(CPLID)
           kl = mct_aVect_indexRA(fractions_l,"lfrac",perrWith=subName)
           fractions_l%rAttr(kl,:) = fractions_l%rAttr(kk,:)
        end if
-
-! avd - hold this line in case it is needed for debugging
-! avd if (iamroot) write(logunit,*) subName,'checking fractions_z'
-
-       ! just set the lnd info in fractions_z
-       ! but these are not used
-       if (iac_present) then
-          mapper_l2z => prep_iac_get_mapper_Sl2z()
-          call seq_map_map(mapper_l2z, fractions_l, fractions_z, &
-                           fldlist='lfrin', norm=.false.)
-          call seq_map_map(mapper_l2z, fractions_l, fractions_z, &
-                           fldlist='lfrac', norm=.false.)
-       end if
-       
     end if
     if (lnd_present .and. rof_present) then
        mapper_l2r => prep_rof_get_mapper_Fl2r()

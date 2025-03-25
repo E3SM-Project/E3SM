@@ -1458,22 +1458,7 @@
     <file>env_run.xml</file>
     <desc>atm2lnd state mapping file decomp type</desc>
   </entry>
-  <entry id="ATM2IAC_SMAPNAME">
-    <type>char</type>
-    <default_value>idmap</default_value>
-    <group>run_domain</group>
-    <file>env_run.xml</file>
-    <desc>atm2iac state mapping file</desc>
-  </entry>
 
-  <entry id="ATM2IAC_SMAPTYPE">
-    <type>char</type>
-    <valid_values>X,Y</valid_values>
-    <default_value>X</default_value>
-    <group>run_domain</group>
-    <file>env_run.xml</file>
-    <desc>atm2iac state mapping file decomp type</desc>
-  </entry>
   <entry id="ATM2ROF_FMAPNAME">
     <type>char</type>
     <default_value>idmap_ignore</default_value>
@@ -1684,23 +1669,6 @@
     <desc>lnd2rof flux mapping file decomp type</desc>
   </entry>
 
-  <entry id="LND2IAC_SMAPNAME">
-    <type>char</type>
-    <default_value>idmap</default_value>
-    <group>run_domain</group>
-    <file>env_run.xml</file>
-    <desc>lnd2iac state mapping file</desc>
-  </entry>
-
-  <entry id="LND2IAC_SMAPTYPE">
-    <type>char</type>
-    <valid_values>X,Y</valid_values>
-    <default_value>X</default_value>
-    <group>run_domain</group>
-    <file>env_run.xml</file>
-    <desc>lnd2iac state mapping file decomp type</desc>
-  </entry>
-
   <entry id="ROF2LND_FMAPNAME">
     <type>char</type>
     <default_value>idmap</default_value>
@@ -1804,6 +1772,42 @@
     <desc>glc2lnd state mapping file decomp type</desc>
   </entry>
 
+  <entry id="GLC2ICE_FMAPNAME">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ice flux mapping file - the default value idmap_ignore, if set, will be ignored by buildnml and
+    will generate a runtime error if in fact a file is required for the given compset</desc>
+  </entry>
+
+  <entry id="GLC2ICE_FMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>X</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ice flux mapping file decomp type</desc>
+  </entry>
+
+  <entry id="GLC2ICE_SMAPNAME">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ice state mapping file - the default value idmap_ignore, if set, will be ignored by buildnml and
+    will generate a runtime error if in fact a file is required for the given compset</desc>
+  </entry>
+
+  <entry id="GLC2ICE_SMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>X</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ice state mapping file decomp type</desc>
+  </entry>
+
   <entry id="GLC2ICE_RMAPNAME">
     <type>char</type>
     <default_value>idmap_ignore</default_value>
@@ -1820,6 +1824,42 @@
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>glc2ice runoff mapping file decomp type</desc>
+  </entry>
+
+  <entry id="GLC2OCN_FMAPNAME">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ocn flux mapping file - the default value idmap_ignore, if set, will be ignored by buildnml and
+    will generate a runtime error if in fact a file is required for the given compset</desc>
+  </entry>
+
+  <entry id="GLC2OCN_FMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>Y</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ocn flux mapping file decomp type</desc>
+  </entry>
+
+  <entry id="GLC2OCN_SMAPNAME">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ocn state mapping file - the default value idmap_ignore, if set, will be ignored by buildnml and
+    will generate a runtime error if in fact a file is required for the given compset</desc>
+  </entry>
+
+  <entry id="GLC2OCN_SMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>Y</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ocn state mapping file decomp type</desc>
   </entry>
 
   <entry id="GLC2OCN_LIQ_RMAPNAME">
@@ -1856,6 +1896,42 @@
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>glc2ocn runoff mapping file decomp type for ice runoff</desc>
+  </entry>
+
+  <entry id="OCN2GLC_FMAPNAME">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>ocn2glc flux mapping file - the default value idmap_ignore, if set, will be ignored by buildnml and
+    will generate a runtime error if in fact a file is required for the given compset</desc>
+  </entry>
+
+  <entry id="OCN2GLC_FMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>Y</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>ocn2glc flux mapping file decomp type</desc>
+  </entry>
+
+  <entry id="OCN2GLC_SMAPNAME">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>ocn2glc state mapping file - the default value idmap_ignore, if set, will be ignored by buildnml and
+    will generate a runtime error if in fact a file is required for the given compset</desc>
+  </entry>
+
+  <entry id="OCN2GLC_SMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>Y</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>ocn2glc state mapping file decomp type</desc>
   </entry>
 
   <entry id="OCN2WAV_SMAPNAME">
@@ -2053,7 +2129,7 @@
 
   <entry id="EPS_OGRID">
     <type>real</type>
-    <default_value>1.0e-02</default_value>
+    <default_value>1.0e-01</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>Error tolerance for differences in ocean/ice lon/lat in domain checking</desc>
@@ -2077,6 +2153,14 @@
     <group>case_def</group>
     <file>env_case.xml</file>
     <desc>Machines directory location</desc>
+  </entry>
+
+  <entry id="EXTRA_MACHDIR">
+    <type>char</type>
+    <default_value></default_value>
+    <group>case_def</group>
+    <file>env_case.xml</file>
+    <desc>Path to an extra directory containing supplementary machines files</desc>
   </entry>
 
   <entry id="RUNDIR">
@@ -2494,7 +2578,7 @@
     <default_value>64</default_value>
     <group>run_pio</group>
     <file>env_run.xml</file>
-    <desc>pio rearranger communication max pending requests (io2comp) : -1 implies no bound on max pending requests </desc>
+    <desc>pio rearranger communication max pending requests (io2comp) : 0 implies that CIME internally calculates the value (= 64), -1 implies no bound on max pending requests </desc>
   </entry>
 
   <!-- Handshaking is a very bad idea for large process counts and for -->
