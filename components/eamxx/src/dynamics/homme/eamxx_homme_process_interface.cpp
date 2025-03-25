@@ -254,6 +254,17 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
 
   // Create separate remapper for initial_conditions
   m_ic_remapper = grids_manager->create_remapper(m_cgll_grid,m_dyn_grid);
+
+  // Layout for 2D (1d horiz X 1d vertical) variable
+  const auto& grid_name = m_phys_grid->name();
+  // Boundary flux fields for energy and mass conservation checks
+  if (has_energy_fixer()) {
+    add_field<Computed>("vapor_flux", pg_scalar2d, kg/(m2*s), grid_name);
+    add_field<Computed>("water_flux", pg_scalar2d, m/s,     grid_name);
+    add_field<Computed>("ice_flux",   pg_scalar2d, m/s,     grid_name);
+    add_field<Computed>("heat_flux",  pg_scalar2d, W/m2,    grid_name);
+  }
+
 }
 
 size_t HommeDynamics::requested_buffer_size_in_bytes() const
@@ -438,6 +449,7 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   // Complete homme model initialization
   prim_init_model_f90 ();
 
+#if 1
   if (fv_phys_active()) {
     fv_phys_dyn_to_fv_phys(run_type == RunType::Restart);
     // [CGLL ICs in pg2] Remove the CGLL fields from the process. The AD has a
@@ -454,6 +466,11 @@ void HommeDynamics::initialize_impl (const RunType run_type)
     remove_group("tracers", rgn);
     fv_phys_rrtmgp_active_gases_remap(run_type);
   }
+#endif
+//  if (fv_phys_active()) {
+//    fv_phys_dyn_to_fv_phys(run_type == RunType::Restart);
+//    fv_phys_rrtmgp_active_gases_remap(run_type);
+//  }
 
   // Set up field property checks
   // Note: We are seeing near epsilon negative values in a handful of places.
@@ -753,6 +770,24 @@ void HommeDynamics::homme_post_process (const double dt) {
 
   // Apply Rayleigh friction to update temperature and horiz_winds
   rayleigh_friction_apply(dt);
+
+//if in the loop!
+  if (has_energy_fixer()) {
+
+    const auto& vapor_flux = get_field_out("vapor_flux").get_view<Real*>();
+    const auto& water_flux = get_field_out("water_flux").get_view<Real*>();
+    const auto& ice_flux   = get_field_out("ice_flux").get_view<Real*>();
+    const auto& heat_flux  = get_field_out("heat_flux").get_view<Real*>();
+
+    Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
+      const int& icol = team.league_rank();
+      vapor_flux(icol) = 0.0;
+      water_flux(icol) = 0.0;
+      ice_flux(icol)   = 0.0;
+      heat_flux(icol)  = 0.0;
+    });
+  }; //if fixer
+
 }
 
 void HommeDynamics::
