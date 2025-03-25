@@ -45,6 +45,7 @@
 #include "physics/iop_forcing/eamxx_iop_forcing_process_interface.hpp"
 #endif
 #ifdef EAMXX_HAS_ACE
+#include "physics/ace/ace_grids_manager.hpp"
 #include "physics/ace/eamxx_ace_process_interface.hpp"
 #endif
 

@@ -69,7 +69,7 @@ protected:
 // Create a latlon grid, with gids evenly partitioned among the ranks in the given communicator.
 std::shared_ptr<LatLonGrid>
 create_latlon_grid (const std::string& name,
-                    const int nglat, const int nglon const int my_nlon,
+                    const int nglat, const int nglon, const int my_nlon,
                     const int num_vertical_lev,
                     const ekat::Comm& comm);
 

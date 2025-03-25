@@ -11,7 +11,7 @@ LatLonGrid (const std::string& grid_name,
             const int nglat, const int nglon, const int my_nlon,
             const int num_vertical_levels,
             const ekat::Comm&  comm)
- : AbstractGrid(grid_name,GridType::Point,nglat,nglat*my_nlon,num_vertical_levels,comm)
+ : AbstractGrid(grid_name,GridType::Point,nglat*my_nlon,nglat*nglon,num_vertical_levels,comm)
 {
   m_nlat_global = nglat;
   m_nlon_local  = my_nlon;
@@ -23,16 +23,29 @@ LatLonGrid (const std::string& grid_name,
   comm.scan(&lon_offset,1,MPI_SUM);
   lon_offset -= m_nlon_local; // scan is inclusive, but we need exclusive sum
 
+  // m_num_global_dofs = m_nlat_global*m_nlon_global;
+  // m_num_local_dofs = m_nlat_global*m_nlon_local;
   // The lid->idx map maps idof->(ilat,ilon)
   auto lid2idx = get_lid_to_idx_map();
   auto h_lid_to_idx = lid2idx.get_view<int**,Host>();
+
+  // print h_lid_to_idx size and extents
+  std::cout << "h_lid_to_idx size: " << h_lid_to_idx.size() << std::endl;
+  std::cout << "h_lid_to_idx extents: " << h_lid_to_idx.extent(0) << " " << h_lid_to_idx.extent(1) << std::endl;
+  // what are m_nlat_global and m_nlon_local?
+  std::cout << "m_nlat_global: " << m_nlat_global << std::endl;
+  std::cout << "m_nlon_local: " << m_nlon_local << std::endl;
+
   for (int ilat=0,idof=0; ilat<m_nlat_global; ++ilat) {
     for (int ilon=0; ilon<m_nlon_local; ++ilon,++idof) {
+      // print all the indexes
+      // std::cout << "idof: " << idof << " ilat: " << ilat << " ilon: " << ilon << std::endl;
       h_lid_to_idx(idof,0) = ilat;
       h_lid_to_idx(idof,1) = ilon;
     }
   }
   lid2idx.sync_to_dev();
+  using namespace ShortFieldTagsNames;
 
   // The partitioned dim is the longitude
   const auto units = ekat::units::Units::nondimensional();
@@ -133,7 +146,7 @@ std::shared_ptr<AbstractGrid>
 LatLonGrid::clone (const std::string& clone_name,
                   const bool shallow) const
 {
-  auto grid = std::make_shared<LatLonGrid> (clone_name,m_nlat_global,m_nlon_global,get_num_vertical_levels(),get_comm());
+  auto grid = std::make_shared<LatLonGrid> (clone_name,m_nlat_global,m_nlon_global,m_nlon_local,get_num_vertical_levels(),get_comm());
   grid->copy_data(*this,shallow);
   return grid;
 }
@@ -154,6 +167,16 @@ create_latlon_grid (const std::string& grid_name,
   grid->setSelfPointer(grid);
 
   return grid;
+}
+
+std::shared_ptr<LatLonGrid>
+create_latlon_grid (const std::string& grid_name,
+                    const int nglat, const int nglon,
+                    const int my_nlon,
+                    const int num_vertical_lev,
+                    const ekat::Comm& comm)
+{
+    return std::make_shared<LatLonGrid>(grid_name, nglat, nglon, my_nlon, num_vertical_lev, comm);
 }
 
 } // namespace scream

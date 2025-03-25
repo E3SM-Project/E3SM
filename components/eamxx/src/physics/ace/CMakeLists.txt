@@ -1,5 +1,6 @@
 set(ACE_SRCS
   eamxx_ace_process_interface.cpp
+  ace_grids_manager.cpp
 )
 
 # Make ACE an optional component that can be disabled

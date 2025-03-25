@@ -594,7 +594,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <vertical_coordinate_filename type="file">UNSET</vertical_coordinate_filename>
       <vertical_coordinate_filename nlev="72">${DIN_LOC_ROOT}/atm/scream/init/vertical_coordinates_L72_20220927.nc</vertical_coordinate_filename>
       <vertical_coordinate_filename nlev="128">${DIN_LOC_ROOT}/atm/scream/init/vertical_coordinates_L128_20220927.nc</vertical_coordinate_filename>
-    <Homme>
+    </Homme>
     <ACE>
       <num_latitude_points type="integer">180</num_latitude_points>
       <num_longitude_points type="integer">360</num_longitude_points>

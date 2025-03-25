@@ -1,6 +1,9 @@
 #include "ace_grids_manager.hpp"
-
+#include "share/grid/latlon_grid.hpp"
+#include "share/io/scorpio_input.hpp" 
 #include "share/io/eamxx_scorpio_interface.hpp"
+#include "share/eamxx_types.hpp"
+#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 
 namespace scream
 {
@@ -22,6 +25,7 @@ build_grids ()
   auto nlev = m_params.get<int>("num_vertical_levels");
   auto gaussian = m_params.get<bool>("gaussian_grid");
 
+
   EKAT_REQUIRE_MSG (gaussian,
       "Error! Currently ACE grids manager only supports gaussian_grid=true.\n");
   EKAT_REQUIRE_MSG (nlat>0,
@@ -42,14 +46,17 @@ build_grids ()
 
   const auto nondim = ekat::units::Units::nondimensional();
   const ekat::units::Units deg(nondim,"deg");
-  auto lat  = latlon_grid->create_geometry_data("lat" ,  latlon_grid->get_2d_scalar_layout(), deg);
-  auto lon  = latlon_grid->create_geometry_data("lon" ,  latlon_grid->get_2d_scalar_layout(), deg);
-  auto area = latlon_grid->create_geometry_data("area" , latlon_grid->get_2d_scalar_layout(), nondim);
+
+  using namespace ShortFieldTagsNames;
+
+  auto lat  = latlon_grid->create_geometry_data("lat" ,  FieldLayout({LAT},{nlat}), deg);
+  auto lon  = latlon_grid->create_geometry_data("lon" ,  FieldLayout({LON},{nlon}), deg);
+  auto area = latlon_grid->create_geometry_data("area" , FieldLayout({LAT,LON},{nlat,nlon}), nondim);
   AtmosphereInput reader(m_params.get<std::string>("data_filename"),latlon_grid,{lat,lon,area},true);
   reader.read_variables();
 
   // Create PointGrid version of latlon grid
-  auto pt_grid = create_latlon_grid("Physics",nlat*nlon,nlat*my_nlon,nlev,m_comm);
+  auto pt_grid = create_latlon_grid("Physics",nlat*nlon,nlat*my_nlon,nlat*my_nlon,nlev,m_comm);
   add_nonconst_grid(pt_grid);
 
   // Get lat/lon/area from latlon grid, and set it in the pt grid
