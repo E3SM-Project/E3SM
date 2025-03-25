@@ -1013,8 +1013,9 @@ contains
          call marbl_instances(1)%interior_tendency_compute()
 
 !maltrud ignore abort
+        if (marbl_instances(1)%StatusLog%labort_marbl) &
 !          call mpas_log_write("WARNING: problem in MARBL interior_tendency_compute", MPAS_LOG_CRIT)
-! write(*,*)' IGNORING problem in MARBL interior_tendency_compute'
+           call mpas_log_write(' IGNORING problem in MARBL interior_tendency_compute ')
         call marbl_instances(1)%StatusLog%erase()
 
          do iLevel=minLevelCell(iCell),maxLevelCell(iCell)
