@@ -70,8 +70,14 @@ module ocn_subgrid
       subgridEdgeBathymetryMin, &
       subgridVertexBathymetryMin, &
       subgridLayerThicknessDebug
+   real(kind=RKIND), public, dimension(:), pointer :: &
+      subgridSSH
 
    integer, public, pointer :: nSubgridTableLevels
+
+   real(kind=RKIND), public, dimension(:), pointer :: &
+      wetFractionCell, &
+      wetFractionEdge
 
    !--------------------------------------------------------------------
    !
@@ -505,7 +511,6 @@ contains
 
       if (layerThick >= layerThickMax) then
         zeta = layerThick - bathymetryMean
-
       else if (layerThick <= layerThickMin) then
         zeta = - bathymetryMin ! prevent_drying likely fails to ensure positive water columbn
       else
@@ -560,7 +565,9 @@ contains
       !-----------------------------------------------------------------
 
       type(block_type), pointer :: block
-      type(mpas_pool_type), pointer :: meshPool
+      type(mpas_pool_type), pointer :: meshPool, statePool
+
+      integer :: timeLevel
 
       err = 0
       if (.not. config_use_subgrid_wetting_drying) then
@@ -607,6 +614,12 @@ contains
 
       call mpas_pool_get_dimension(meshPool, 'nSubgridTableLevels', &
                                      nSubgridTableLevels)
+
+      timeLevel = 1
+      call mpas_pool_get_subpool(block%structs, 'state', statePool)
+      call mpas_pool_get_array(statePool, 'ssh', subgridSSH, timeLevel)
+      call mpas_pool_get_array(statePool, 'wetFractionCell', wetFractionCell, timeLevel)
+      call mpas_pool_get_array(statePool, 'wetFractionEdge', wetFractionEdge, timeLevel)
 
    end subroutine ocn_subgrid_init!}}}
 
