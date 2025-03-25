@@ -2569,6 +2569,15 @@
 			 description="The layerThickness after the Lagrangian step, prior to remapping."
 			 packages="verticalRemapPKG"
 		/>
+                <!-- FIELDS FOR SUBGIRD WETTING/DRYING -->
+		<var name="wetFractionCell" type="real" dimensions="nCells Time" units="m"
+			 description="Wet fraction for each cell"
+			 packages="subgridWetDryPKG"
+		/>
+		<var name="wetFractionEdge" type="real" dimensions="nEdges Time" units="m"
+			 description="Wet fraction for each edge"
+			 packages="subgridWetDryPKG"
+		/>
 	</var_struct>
 	<var_struct name="mesh" time_levs="1">
 		<var name="latCell" type="real" dimensions="nCells" units="radians"
