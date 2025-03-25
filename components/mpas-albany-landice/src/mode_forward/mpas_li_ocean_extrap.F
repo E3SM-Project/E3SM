@@ -791,10 +791,10 @@ contains
       integer, pointer :: nISMIP6OceanLayers, nCells
       integer :: iCell, iLayer, counter, icebergCellVertID
       real (kind=RKIND), dimension(:), allocatable :: freezingTemperature
+      real (kind=RKIND) :: inverseSalt, phaseChange, tempDiff, saltDiff, newTemp, gadeSlope
 
       !debugging:
       integer :: saltDimSize, tempDimSize, i
-      real (kind=RKIND) :: inverseSalt, phaseChange, tempDiff, saltDiff, gadeSlope
 
       block => domain % blocklist
       do while (associated(block))
@@ -861,8 +861,13 @@ contains
             do iLayer = 1, nISMIP6OceanLayers
                if ( (iLayer <= icebergCellVertID) .and. (icebergCellVertID /= 0) ) then
                   saltDiff = MPAS_3dOceanSalinity(iLayer,iCell) - MPAS_3dOceanSalinity(icebergCellVertID,iCell)     
-                  MPAS_3dOceanTemperature(iLayer, iCell) = (gadeSlope * saltDiff) + MPAS_3dOceanTemperature(icebergCellVertID, iCell)
                   
+                  newTemp = (gadeSlope * saltDiff) + MPAS_3dOceanTemperature(icebergCellVertID, iCell)
+                  ! Ensure iceberg melting only cools ocean. Uncommon but possible to warm ocean if already a sharp thermocline in the ocean.
+                  ! In reality, melt-driven upwelling can warm ocean but we are not accounting for this process.
+                  if (newTemp < MPAS_3dOceanTemperature(iLayer,iCell)) then
+                     MPAS_3dOceanTemperature(iLayer,iCell) = newTemp
+                  endif
                   ! Ensure no artificially adjusted temperatures fall below the freezing temperature
                   if (MPAS_3dOceanTemperature(iLayer, iCell) < freezingTemperature(iLayer)) then
                      MPAS_3dOceanTemperature(iLayer, iCell) = freezingTemperature(iLayer)
