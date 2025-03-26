@@ -26,6 +26,9 @@ module global_norms_mod
   public :: wrap_repro_sum
 
   private :: global_maximum
+
+  ! EdgeBuffer_t variables are shared by all thread,
+  ! therefore we need this to be module static
   type (EdgeBuffer_t), private :: edgebuf
 
 contains
@@ -112,8 +115,6 @@ contains
     use reduction_mod, only : ParallelMin,ParallelMax
     use physical_constants, only : scale_factor,dd_pi
     use parallel_mod, only : abortmp, global_shared_buf, global_shared_sum
-    use edgetype_mod, only : EdgeBuffer_t
-    use edge_mod, only :  initedgebuffer, FreeEdgeBuffer, edgeVpack, edgeVunpack
     use bndry_mod, only : bndry_exchangeV
     use control_mod, only : geometry
 
