@@ -278,7 +278,7 @@ public:
         ice_flux(icol)   = precip_ice_surf_flux(icol);
         heat_flux(icol)  = 0.0;
       }
-    } // operator
+    } // operator()
     // Local variables
     int m_ncol, m_npack;
     double m_dt;
