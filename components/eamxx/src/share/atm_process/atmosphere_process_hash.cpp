@@ -88,7 +88,6 @@ void hash (const Field::view_dev_t<const Real*****>& v,
 void hash (const Field& f, HashType& accum) {
   const auto& hd = f.get_header();
   const auto& id = hd.get_identifier();
-  if (id.data_type() != DataType::DoubleType) return;
   const auto& lo = id.get_layout();
   const auto rank = lo.rank();
   switch (rank) {
