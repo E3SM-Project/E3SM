@@ -418,7 +418,7 @@ public:
       nc_incld, nr_incld, ni_incld, bm_incld,
       inv_dz, inv_rho, ze_ice, ze_rain, prec, rho, rhofacr,
       rhofaci, acn, qv_sat_l, qv_sat_i, sup, qv_supersat_i,
-      tmparr2, exner, diag_equiv_reflectivity, diag_vm_qi,
+      tmparr2, exner, diag_vm_qi,
       diag_diam_qi, pratot, prctot, qtend_ignore, ntend_ignore,
       mu_c, lamc, qr_evap_tend, v_qc, v_nc, flux_qx, flux_nx,
       v_qit, v_nit, flux_nit, flux_bir, flux_qir, flux_qit,
