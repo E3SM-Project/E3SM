@@ -19,26 +19,43 @@ ACE::ACE(const ekat::Comm &comm, const ekat::ParameterList &params)
 
 void ACE::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
   m_grid = grids_manager->get_grid("Physics");
+  using namespace ShortFieldTagsNames;
 
   constexpr auto m      = ekat::units::m;
   constexpr auto s      = ekat::units::s;
   constexpr auto K      = ekat::units::K;
   constexpr auto nondim = ekat::units::Units::nondimensional();
+  
+  // Get grid dimensions from the grid
+  // Get the layout of the grid to determine dimensions
+  auto layout_2d = m_grid->get_2d_scalar_layout();
+  auto layout_3d = m_grid->get_3d_scalar_layout(true); // true = midpoints
+  // m_grid->get_3d_vector_layout();
+  // Extract dimensions from layouts
+  int nlat = layout_2d.dim(0);  // First dimension is LAT
+  int nlon = layout_2d.dim(1);  // Second dimension is LON
+  int nlev = layout_3d.dim(2);  // Third dimension in 3D layout is LEV
+  
+  // Define layouts
+  const auto layout_3d_vector = m_grid->get_3d_vector_layout(true,2);
+  const auto horiz_wind_layout = FieldLayout({CMP, LAT, LON}, {2, nlat, nlon});
+  const auto layout_3d_scalar = FieldLayout({LAT, LON, LEV}, {nlat, nlon, nlev});
+  const auto layout_2d_scalar = FieldLayout({LAT, LON}, {nlat, nlon});
 
-  const auto horiz_wind_layout = m_grid->get_2d_vector_layout(2);
-  const auto layout_3d         = m_grid->get_3d_scalar_layout(true);
-  const auto layout_2d         = m_grid->get_2d_scalar_layout();
-
-  add_field<Updated>("T_mid", layout_3d, K, m_grid->name());
+  add_field<Updated>("T_mid", layout_3d_scalar, K, m_grid->name());
   add_field<Updated>("horiz_winds", horiz_wind_layout, m / s, m_grid->name());
-  add_field<Updated>("ocnfrac", layout_2d, nondim, m_grid->name());
-  add_field<Required>("landfrac", layout_2d, nondim, m_grid->name());
-  add_field<Updated>("icefrac", layout_2d, nondim, m_grid->name());
+  add_field<Updated>("ocnfrac", layout_2d_scalar, nondim, m_grid->name());
+  add_field<Required>("landfrac", layout_2d_scalar, nondim, m_grid->name());
+  add_field<Updated>("icefrac", layout_2d_scalar, nondim, m_grid->name());
 
-  // declare a layouts of 7x180x360
-  using namespace ShortFieldTagsNames;
-  FieldLayout scalar3d_39x180x360_mid{{CMP, CMP, CMP, CMP}, {1, 39, 180, 360}};
-  FieldLayout scalar3d_44x180x360_mid{{CMP, CMP, CMP, CMP}, {1, 44, 180, 360}};
+  // declare a layouts for the NN input/output tensors
+  // Use the batch and channel dimensions
+  m_batch = 1;
+  m_in_ch = 39;
+  m_out_ch = 44;
+  
+  FieldLayout scalar3d_39x180x360_mid{{CMP, CMP, LAT, LON}, {m_batch, m_in_ch, nlat, nlon}};
+  FieldLayout scalar3d_44x180x360_mid{{CMP, CMP, LAT, LON}, {m_batch, m_out_ch, nlat, nlon}};
 
   add_field<Required>("InField", scalar3d_39x180x360_mid, nondim,
                       m_grid->name());

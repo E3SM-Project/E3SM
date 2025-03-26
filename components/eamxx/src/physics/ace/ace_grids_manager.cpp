@@ -21,8 +21,11 @@ void AceGridsManager::
 build_grids ()
 {
   auto nlat = m_params.get<int>("num_latitude_points");
+  m_lat = nlat;
   auto nlon = m_params.get<int>("num_longitude_points");
+  m_lon = nlon;
   auto nlev = m_params.get<int>("num_vertical_levels");
+  m_lev = nlev;
   auto gaussian = m_params.get<bool>("gaussian_grid");
 
 
@@ -35,13 +38,8 @@ build_grids ()
   EKAT_REQUIRE_MSG (nlev>0,
       "Error! ACE grids manager requires positive value for 'num_longitude_points'.\n");
 
-  int my_nlon = nlon / m_comm.size();
-  int rem = nlon % m_comm.size();
-  if (m_comm.rank()<rem)
-    ++my_nlon;
-
   // Create latlon grid
-  auto latlon_grid = create_latlon_grid ("Physics LatLon",nlat,nlon,my_nlon,nlev,m_comm);
+  auto latlon_grid = create_latlon_grid ("Physics",nlat,nlon,nlev,m_comm);
   add_nonconst_grid(latlon_grid);
 
   const auto nondim = ekat::units::Units::nondimensional();
@@ -55,33 +53,33 @@ build_grids ()
   AtmosphereInput reader(m_params.get<std::string>("data_filename"),latlon_grid,{lat,lon,area},true);
   reader.read_variables();
 
-  // Create PointGrid version of latlon grid
-  auto pt_grid = create_latlon_grid("Physics",nlat*nlon,nlat*my_nlon,nlat*my_nlon,nlev,m_comm);
-  add_nonconst_grid(pt_grid);
+  // // Create PointGrid version of latlon grid
+  // auto pt_grid = create_latlon_grid("Physics",nlat,nlon,nlev,m_comm);
+  // add_nonconst_grid(pt_grid);
 
-  // Get lat/lon/area from latlon grid, and set it in the pt grid
-  auto lat_pt  = pt_grid->create_geometry_data("lat", pt_grid->get_2d_scalar_layout(),deg);
-  auto lon_pt  = pt_grid->create_geometry_data("lon", pt_grid->get_2d_scalar_layout(),deg);
-  auto area_pt = pt_grid->create_geometry_data("area",pt_grid->get_2d_scalar_layout(),nondim);
-  auto lat_pt_h  = lat_pt.get_view<Real*,Host>();
-  auto lon_pt_h  = lon_pt.get_view<Real*,Host>();
-  auto area_pt_h = area_pt.get_view<Real*,Host>();
-  auto lat_ll_h  = lat.get_view<const Real**,Host>();
-  auto lon_ll_h  = lon.get_view<const Real**,Host>();
-  auto area_ll_h = area.get_view<const Real**,Host>();
-  auto lid_to_idx = latlon_grid->get_lid_to_idx_map();
-  auto lid_to_idx_h = lid_to_idx.get_view<const int**,Host>();
-  for (int i=0; i<pt_grid->get_num_local_dofs(); ++i) {
-    auto ilat = lid_to_idx_h(i,0);
-    auto ilon = lid_to_idx_h(i,1);
+  // // Get lat/lon/area from latlon grid, and set it in the pt grid
+  // auto lat_pt  = pt_grid->create_geometry_data("lat", FieldLayout({LAT},{nlat}),deg);
+  // auto lon_pt  = pt_grid->create_geometry_data("lon", FieldLayout({LON},{nlon}),deg);
+  // auto area_pt = pt_grid->create_geometry_data("area",FieldLayout({LAT,LON},{nlat,nlon}),nondim);
+  // auto lat_pt_h  = lat_pt.get_view<Real*,Host>();
+  // auto lon_pt_h  = lon_pt.get_view<Real*,Host>();
+  // auto area_pt_h = area_pt.get_view<Real**,Host>();
+  // auto lat_ll_h  = lat.get_view<const Real*,Host>();
+  // auto lon_ll_h  = lon.get_view<const Real*,Host>();
+  // auto area_ll_h = area.get_view<const Real**,Host>();
+  // auto lid_to_idx = latlon_grid->get_lid_to_idx_map();
+  // auto lid_to_idx_h = lid_to_idx.get_view<const int**,Host>();
+  // for (int i=0; i<pt_grid->get_num_local_dofs(); ++i) {
+  //   auto ilat = lid_to_idx_h(i,0);
+  //   auto ilon = lid_to_idx_h(i,1);
 
-    lat_pt_h(i) = lat_ll_h(ilat,ilon);
-    lon_pt_h(i) = lon_ll_h(ilat,ilon);
-    area_pt_h(i) = area_ll_h(ilat,ilon);
-  }
-  lat_pt.sync_to_dev();
-  lon_pt.sync_to_dev();
-  area_pt.sync_to_dev();
+  //   lat_pt_h(i) = lat_ll_h(ilat);
+  //   lon_pt_h(i) = lon_ll_h(ilon);
+  //   area_pt_h(i) = area_ll_h(ilat,ilon);
+  // }
+  // lat_pt.sync_to_dev();
+  // lon_pt.sync_to_dev();
+  // area_pt.sync_to_dev();
 }
 
 } // namespace scream

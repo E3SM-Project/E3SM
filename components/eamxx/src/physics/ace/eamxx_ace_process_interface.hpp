@@ -28,8 +28,11 @@ class ACE : public AtmosphereProcess {
   void finalize_impl() override;
 
   std::shared_ptr<const AbstractGrid> m_grid;
-  int m_forward_steps;
-  int m_forward_steps_in_memory;
+  int m_forward_steps = 1;
+  int m_forward_steps_in_memory = 1;
+  int m_batch = 1;
+  int m_in_ch = 39;
+  int m_out_ch = 44;
   std::string m_checkpoint_path;
   torch::jit::script::Module m_module;
 };

@@ -169,14 +169,4 @@ create_latlon_grid (const std::string& grid_name,
   return grid;
 }
 
-std::shared_ptr<LatLonGrid>
-create_latlon_grid (const std::string& grid_name,
-                    const int nglat, const int nglon,
-                    const int my_nlon,
-                    const int num_vertical_lev,
-                    const ekat::Comm& comm)
-{
-    return std::make_shared<LatLonGrid>(grid_name, nglat, nglon, my_nlon, num_vertical_lev, comm);
-}
-
 } // namespace scream

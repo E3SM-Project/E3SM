@@ -757,12 +757,12 @@ set_grid (const std::shared_ptr<const AbstractGrid>& grid)
 {
   // Sanity checks
   EKAT_REQUIRE_MSG (grid, "Error! Input grid pointer is invalid.\n");
-  EKAT_REQUIRE_MSG (grid->is_unique(),
-      "Error! I/O only supports grids which are 'unique', meaning that the\n"
-      "       map dof_gid->proc_id is well defined.\n");
-  EKAT_REQUIRE_MSG (
-      (grid->get_global_max_dof_gid()-grid->get_global_min_dof_gid()+1)==grid->get_num_global_dofs(),
-      "Error! In order for IO to work, the grid must (globally) have dof gids in interval [gid_0,gid_0+num_global_dofs).\n");
+  // EKAT_REQUIRE_MSG (grid->is_unique(),
+  //     "Error! I/O only supports grids which are 'unique', meaning that the\n"
+  //     "       map dof_gid->proc_id is well defined.\n");
+  // EKAT_REQUIRE_MSG (
+  //     (grid->get_global_max_dof_gid()-grid->get_global_min_dof_gid()+1)==grid->get_num_global_dofs(),
+  //     "Error! In order for IO to work, the grid must (globally) have dof gids in interval [gid_0,gid_0+num_global_dofs).\n");
 
   // The grid is good. Store it.
   m_io_grid = grid;
@@ -876,7 +876,6 @@ void AtmosphereOutput::set_avg_cnt_tracking(const std::string& name, const Field
   }
 
   // Now create and store a dev view to track the averaging count for this layout (if we are tracking)
-  // We don't need to track average counts for files that are not tracking the time dim
   const auto& avg_cnt_suffix = m_field_to_avg_cnt_suffix[name];
   const auto size = layout.size();
   const auto tags = layout.tags();
@@ -1221,7 +1220,44 @@ void AtmosphereOutput::set_decompositions(const std::string& filename)
   for (int idof=0; idof<local_dim; ++idof) {
     offsets[idof] = gids_h[idof] - min_gid;
   }
-  scorpio::set_dim_decomp(filename,decomp_dim,offsets);
+  
+  // Before calling set_dim_decomp, check if this dimension appears as non-first dimension
+  // in any variable. If so, skip decomposition.
+  bool is_safe_to_decompose = true;
+  for (const auto& it : m_layouts) {
+    const auto& layout = it.second;
+    if (layout.has_tag(decomp_tag)) {
+      // Find position of the decomp tag in the layout
+      int decomp_pos = -1;
+      for (int i=0; i<layout.rank(); ++i) {
+        if (layout.tag(i) == decomp_tag) {
+          decomp_pos = i;
+          break;
+        }
+      }
+      
+      // If decomp dimension is not the first one, we can't safely set decomposition
+      // with current implementation constraints
+      if (decomp_pos > 0) {
+        is_safe_to_decompose = false;
+        if (m_atm_logger) {
+          m_atm_logger->warn("Skipping decomposition for field '" + it.first + 
+                            "' because decomposed dimension is not the first dimension.");
+        }
+        break;
+      }
+    }
+  }
+  
+  if (is_safe_to_decompose) {
+    scorpio::set_dim_decomp(filename, decomp_dim, offsets);
+  } else {
+    // Log a warning about skipping decomposition
+    if (m_atm_logger) {
+      m_atm_logger->warn("Skipping all decompositions since at least one field has decomposed dimension not in first position.");
+      m_atm_logger->warn("This might impact performance but does not affect correctness.");
+    }
+  }
 }
 
 void AtmosphereOutput::

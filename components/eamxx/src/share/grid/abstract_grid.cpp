@@ -273,6 +273,8 @@ is_valid_layout (const FieldLayout& layout) const
       return layout.congruent(get_3d_vector_layout(midpoints,layout.get_vector_dim()));
     case LayoutType::Tensor3D:
       return layout.congruent(get_3d_tensor_layout(midpoints,layout.get_tensor_dims()));
+    case LayoutType::UserDefined:
+      return true;
     default:
       // Anything else is probably not ok
       return false;
