@@ -138,10 +138,20 @@ module ocn_redi
      do iEdge = 1, nEdgesAll
         do k = 1, nVertLevels
            RediKappaSfcTaper(k,iEdge) = 1.0_RKIND
-           RediKappa(k,iEdge) = config_Redi_constant_kappa*RediHorizontalTaper(iEdge)
         end do
      end do
      !$omp end do
+
+     if ( config_redi_use_new_sfc_taper ) then
+        !$omp parallel
+        !$omp do schedule(runtime) private(k)
+        do iEdge = 1, nEdgesAll
+           do k = 1, nVertLevels
+              RediKappa(k,iEdge) = config_Redi_constant_kappa*RediHorizontalTaper(iEdge)
+           end do
+        end do
+        !$omp end do
+     end if
 
      !$omp do schedule(runtime) private(k)
      do iCell = 1, nCellsAll + 1
@@ -397,10 +407,12 @@ module ocn_redi
         end do
         !$omp end do
         !$omp end parallel
-     else if (config_Redi_closure == 'constant' .or. &
-              config_Redi_closure == 'N2_dependent' .and. &
-              config_Redi_horizontal_taper == 'RossbyRadius' .or. &
-              config_Redi_horizontal_taper == 'ramp') then
+     else if ( config_Redi_closure == 'constant'     .and. config_Redi_horizontal_taper == 'RossbyRadius' &
+               .or. &
+               config_Redi_closure == 'N2_dependent' .and. config_Redi_horizontal_taper == 'RossbyRadius' &
+               .or. &
+               config_Redi_closure == 'N2_dependent' .and. config_Redi_horizontal_taper == 'ramp' &
+             ) then
         !$omp parallel
         !$omp do schedule(runtime) private(k)
         do iEdge=1, nEdges
