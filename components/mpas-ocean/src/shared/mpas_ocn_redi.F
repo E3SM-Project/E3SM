@@ -155,6 +155,7 @@ module ocn_redi
         !$omp end parallel
      end if
 
+     !$omp parallel
      !$omp do schedule(runtime) private(k)
      do iCell = 1, nCellsAll + 1
         do k = 1, nVertLevels + 1
