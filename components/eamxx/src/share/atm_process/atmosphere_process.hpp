@@ -295,6 +295,11 @@ protected:
   // Sends a message to the atm log
   void log (const LogLevel lev, const std::string& msg) const;
 
+  // Like the above, but ALWAYS sends the message (regardless of logger log level)
+  void log (const std::string& msg) const {
+    log(m_atm_logger->log_level(),msg);
+  }
+
   int get_num_subcycles () const { return m_num_subcycles; }
   int get_subcycle_iter () const { return m_subcycle_iter; }
   bool do_update_time_stamp () const { return m_update_time_stamps; }
