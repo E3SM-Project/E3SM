@@ -168,6 +168,8 @@ AbstractGrid::equivalent_layout (const FieldLayout& template_layout) const
     case LayoutType::Tensor3D:
       ret_layout = get_3d_tensor_layout(midpoints, tensor_dims, tdims_names);
       break;
+    case LayoutType::UserDefined:
+      EKAT_ERROR_MSG("Error! Cannot compute the equivalent layout of a user-defined layout.\n");
     default:
       EKAT_ERROR_MSG("Error! Unknown FieldLayout type.\n");
       break;
@@ -235,7 +237,6 @@ bool AbstractGrid::is_unique () const {
     }
     return unique_gids==1;
   };
-
 
   std::lock_guard<std::mutex> lock(m_mutex); // Lock the mutex
   if (not m_is_unique_computed) {

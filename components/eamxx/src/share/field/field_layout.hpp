@@ -27,7 +27,8 @@ enum class LayoutType {
   Tensor2D,
   Scalar3D,
   Vector3D,
-  Tensor3D
+  Tensor3D,
+  UserDefined
 };
 
 inline std::string e2str (const LayoutType lt) {
@@ -43,6 +44,7 @@ inline std::string e2str (const LayoutType lt) {
     case LayoutType::Scalar3D: name = "Scalar3D"; break;
     case LayoutType::Vector3D: name = "Vector3D"; break;
     case LayoutType::Tensor3D: name = "Tensor3D"; break;
+    case LayoutType::UserDefined: name = "UserDefined"; break;
     case LayoutType::Invalid:  name = "INVALID" ; break;
     default:
       EKAT_ERROR_MSG ("Error! Unrecognized LayoutType.\n");
@@ -161,7 +163,7 @@ protected:
   extents_type              m_extents;
   extents_type::HostMirror  m_extents_h;
 
-  LayoutType                m_type;
+  LayoutType                m_type = LayoutType::Invalid;
 };
 
 bool operator== (const FieldLayout& fl1, const FieldLayout& fl2);
