@@ -212,9 +212,13 @@ Int Functions<S,D>
     const auto oP3_qc2qi_hetero_freeze = ekat::subview(history_only.P3_qc2qi_hetero_freeze,i);
     const auto oP3_qr2qi_immers_freeze = ekat::subview(history_only.P3_qr2qi_immers_freeze,i);
     const auto oP3_qi2qr_melt      =  ekat::subview(history_only.P3_qi2qr_melt,i);
+    const auto oP3_qmr2qr_melt      =  ekat::subview(history_only.P3_qmr2qr_melt,i);
+    const auto oP3_qmr2qv_sublim    = ekat::subview(history_only.P3_qmr2qv_sublim, i);
     const auto oP3_qr_sed          = ekat::subview(history_only.P3_qr_sed, i);
     const auto oP3_qc_sed          = ekat::subview(history_only.P3_qc_sed, i);
     const auto oP3_qi_sed          = ekat::subview(history_only.P3_qi_sed, i);
+    const auto oP3_qc2qi_homfrz          = ekat::subview(history_only.P3_qc2qi_homfrz, i);
+    const auto oP3_qr2qi_homfrz          = ekat::subview(history_only.P3_qr2qi_homfrz, i);
     const auto oqv_prev            = ekat::subview(diagnostic_inputs.qv_prev, i);
     const auto ot_prev             = ekat::subview(diagnostic_inputs.t_prev, i);
 
@@ -274,7 +278,7 @@ Int Functions<S,D>
       nr_incld, ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1, cdistr,
       mu_r, lamr, logn0r, oqv2qi_depos_tend, oprecip_total_tend, onevapr, qr_evap_tend,
       ovap_liq_exchange, ovap_ice_exchange, oliq_ice_exchange,oP3_qr2qv_evap,oP3_qi2qv_sublim,oP3_qc2qr_accret, oP3_qc2qr_autoconv, oP3_qv2qi_vapdep,
-      oP3_qc2qi_berg, oP3_qc2qr_ice_shed, oP3_qc2qi_collect, oP3_qr2qi_collect, oP3_qc2qi_hetero_freeze, oP3_qr2qi_immers_freeze, oP3_qi2qr_melt,
+      oP3_qc2qi_berg, oP3_qc2qr_ice_shed, oP3_qc2qi_collect, oP3_qr2qi_collect, oP3_qc2qi_hetero_freeze, oP3_qr2qi_immers_freeze, oP3_qi2qr_melt,oP3_qmr2qr_melt,oP3_qmr2qv_sublim,
       pratot, prctot, hydrometeorsPresent, nk, runtime_options);
 
     //NOTE: At this point, it is possible to have negative (but small) nc, nr, ni.  This is not
@@ -315,7 +319,7 @@ Int Functions<S,D>
     // homogeneous freezing of cloud and rain
     if(do_ice_production) {
       homogeneous_freezing(T_atm, oinv_exner, team, nk, ktop, kbot, kdir, oqc,
-                           onc, oqr, onr, oqi, oni, oqm,oqmr, obm, oth);
+                           onc, oqr, onr, oqi, oni, oqm,oqmr, obm, oP3_qc2qi_homfrz,oP3_qr2qi_homfrz,oth);
     }
 
     //

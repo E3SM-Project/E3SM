@@ -310,9 +310,13 @@ struct Functions
     view_2d<Spack> P3_qc2qi_hetero_freeze;
     view_2d<Spack> P3_qr2qi_immers_freeze;
     view_2d<Spack> P3_qi2qr_melt;
+    view_2d<Spack> P3_qmr2qr_melt;
+    view_2d<Spack> P3_qmr2qv_sublim;
     view_2d<Spack> P3_qr_sed;
     view_2d<Spack> P3_qc_sed;
     view_2d<Spack> P3_qi_sed;
+    view_2d<Spack> P3_qc2qi_homfrz;
+    view_2d<Spack> P3_qr2qi_homfrz;
   };
 
   // This struct stores kokkos views for the lookup tables needed in p3_main()
@@ -687,6 +691,8 @@ struct Functions
     const uview_1d<Spack>& qm,
     const uview_1d<Spack>& qmr,
     const uview_1d<Spack>& bm,
+    const uview_1d<Spack>& qc2qi_homfrz,
+    const uview_1d<Spack>& qr2qi_homfrz,
     const uview_1d<Spack>& th_atm);
 
 #ifdef SCREAM_P3_SMALL_KERNELS
@@ -864,7 +870,7 @@ struct Functions
     const Spack& qc2qi_hetero_freeze_tend, const Spack& qc2qi_collect_tend,
     const Spack& qc2qr_ice_shed_tend,  const Spack& nc_collect_tend,  const Spack& nc2ni_immers_freeze_tend, const Spack& ncshdc,
     const Spack& qr2qi_collect_tend,  const Spack& nr_collect_tend,  const Spack& qr2qi_immers_freeze_tend, const Spack& nr2ni_immers_freeze_tend,
-    const Spack& nr_ice_shed_tend, const Spack& qi2qr_melt_tend,  const Spack& ni2nr_melt_tend,  const Spack& qi2qv_sublim_tend,
+    const Spack& nr_ice_shed_tend, const Spack& qi2qr_melt_tend, Spack& qmr2qr_melt_tend, Spack& qi2qmr_sublim_tend,  const Spack& ni2nr_melt_tend,  const Spack& qi2qv_sublim_tend,
     const Spack& qv2qi_vapdep_tend,  const Spack& qv2qi_nucleat_tend,  const Spack& ni_nucleat_tend,  const Spack& ni_selfcollect_tend,
     const Spack& ni_sublim_tend,  const Spack& qc2qi_berg_tend, const Spack& inv_exner,
     const bool do_predict_nc, const Smask& log_wetgrowth, const Scalar dt,
@@ -1260,6 +1266,8 @@ struct Functions
     const uview_1d<Spack>& P3_qc2qi_hetero_freeze,
     const uview_1d<Spack>& P3_qr2qi_immers_freeze,
     const uview_1d<Spack>& P3_qi2qr_melt,
+    const uview_1d<Spack>& P3_qmr2qr_melt,
+    const uview_1d<Spack>& P3_qmr2qv_sublim,
     const uview_1d<Spack>& pratot,
     const uview_1d<Spack>& prctot,
     bool& is_hydromet_present,

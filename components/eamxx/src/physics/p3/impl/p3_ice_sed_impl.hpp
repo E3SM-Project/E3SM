@@ -222,6 +222,8 @@ void Functions<S,D>
   const uview_1d<Spack>& qm,
   const uview_1d<Spack>& qmr,
   const uview_1d<Spack>& bm,
+  const uview_1d<Spack>& qc2qi_homfrz,
+  const uview_1d<Spack>& qr2qi_homfrz,
   const uview_1d<Spack>& th_atm)
 {
   constexpr Scalar qsmall          = C::QSMALL;
@@ -254,6 +256,8 @@ void Functions<S,D>
 
     qm(pk).set(qc_ge_small, qm(pk) + Qc_nuc);
     qi(pk).set(qc_ge_small, qi(pk) + Qc_nuc);
+    qc2qi_homfrz(pk).set(qc_ge_small, Qc_nuc);
+
     bm(pk).set(qc_ge_small, bm(pk) + Qc_nuc*inv_rho_rimeMax);
     ni(pk).set(qc_ge_small, ni(pk) + Nc_nuc);
     th_atm(pk).set   (qc_ge_small, th_atm(pk) + inv_exner(pk)*Qc_nuc*latice*inv_cp);
@@ -261,6 +265,7 @@ void Functions<S,D>
     qm(pk).set(qr_ge_small, qm(pk) + Qr_nuc);
     qmr(pk).set(qr_ge_small, qmr(pk) + Qr_nuc);
     qi(pk).set(qr_ge_small, qi(pk) + Qr_nuc);
+    qr2qi_homfrz(pk).set(qc_ge_small, Qr_nuc);
     bm(pk).set(qr_ge_small, bm(pk) + Qr_nuc*inv_rho_rimeMax);
     ni(pk).set(qr_ge_small, ni(pk) + Nr_nuc);
     th_atm(pk).set   (qr_ge_small, th_atm(pk) + inv_exner(pk)*Qr_nuc*latice*inv_cp);

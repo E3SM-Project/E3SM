@@ -13,6 +13,7 @@ void Functions<S,D>
   const Spack& qc2qi_hetero_freeze_tend, const Spack& qc2qi_collect_tend,  const Spack& qc2qr_ice_shed_tend, const Spack& nc_collect_tend,
   const Spack& nc2ni_immers_freeze_tend, const Spack& ncshdc, const Spack& qr2qi_collect_tend, const Spack& nr_collect_tend,
   const Spack& qr2qi_immers_freeze_tend, const Spack& nr2ni_immers_freeze_tend, const Spack& nr_ice_shed_tend, const Spack& qi2qr_melt_tend,
+  Spack& qmr2qr_melt_tend, Spack& qmr2qv_sublim_tend,
   const Spack& ni2nr_melt_tend, const Spack& qi2qv_sublim_tend, const Spack& qv2qi_vapdep_tend, const Spack& qv2qi_nucleat_tend,
   const Spack& ni_nucleat_tend, const Spack& ni_selfcollect_tend, const Spack& ni_sublim_tend, const Spack& qc2qi_berg_tend,
   const Spack& inv_exner, const bool do_predict_nc,
@@ -56,6 +57,8 @@ void Functions<S,D>
     bm.set(qi_not_small, bm - ((qi2qv_sublim_tend + qi2qr_melt_tend) / qi) * dt * bm);
     qm.set(qi_not_small, qm - ((qi2qv_sublim_tend + qi2qr_melt_tend) * qm / qi) * dt);
     qmr.set(qi_not_small, qmr - ((qi2qv_sublim_tend + qi2qr_melt_tend) * qmr / qi) * dt);
+    qmr2qv_sublim_tend.set(qi_not_small,qi2qv_sublim_tend*qmr / qi);
+    qmr2qr_melt_tend.set(qi_not_small,qi2qr_melt_tend*qmr / qi);
     qi.set(qi_not_small, qi - (qi2qv_sublim_tend + qi2qr_melt_tend) * dt);
   }
 

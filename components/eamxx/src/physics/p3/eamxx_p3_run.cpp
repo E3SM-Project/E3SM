@@ -46,9 +46,13 @@ void P3Microphysics::run_impl (const double dt)
     get_field_out("P3_qc2qi_hetero_freeze").deep_copy(0.0);
     get_field_out("P3_qr2qi_immers_freeze").deep_copy(0.0);
     get_field_out("P3_qi2qr_melt").deep_copy(0.0);
+    get_field_out("P3_qmr2qr_melt").deep_copy(0.0);
+    get_field_out("P3_qmr2qv_sublim").deep_copy(0.0);
     get_field_out("P3_qr_sed").deep_copy(0.0);
     get_field_out("P3_qc_sed").deep_copy(0.0);
     get_field_out("P3_qi_sed").deep_copy(0.0);
+    get_field_out("P3_qc2qi_homfrz").deep_copy(0.0);
+    get_field_out("P3_qr2qi_homfrz").deep_copy(0.0);
   }
 
   P3F::p3_main(runtime_options, prog_state, diag_inputs, diag_outputs, infrastructure,

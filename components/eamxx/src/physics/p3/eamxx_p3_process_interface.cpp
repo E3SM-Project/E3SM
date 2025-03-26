@@ -150,9 +150,13 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
     add_field<Computed>("P3_qc2qi_hetero_freeze", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
     add_field<Computed>("P3_qr2qi_immers_freeze", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
     add_field<Computed>("P3_qi2qr_melt", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("P3_qmr2qr_melt", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("P3_qmr2qv_sublim", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
     add_field<Computed>("P3_qr_sed", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
     add_field<Computed>("P3_qc_sed", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
     add_field<Computed>("P3_qi_sed", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("P3_qc2qi_homfrz",scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("P3_qr2qi_homfrz",scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
   }
 
   // Boundary flux fields for energy and mass conservation checks
@@ -417,9 +421,14 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
     history_only.P3_qc2qi_hetero_freeze = get_field_out("P3_qc2qi_hetero_freeze").get_view<Pack**>();
     history_only.P3_qr2qi_immers_freeze = get_field_out("P3_qr2qi_immers_freeze").get_view<Pack**>();
     history_only.P3_qi2qr_melt = get_field_out("P3_qi2qr_melt").get_view<Pack**>();
+    history_only.P3_qmr2qr_melt = get_field_out("P3_qmr2qr_melt").get_view<Pack**>();
+    history_only.P3_qmr2qv_sublim = get_field_out("P3_qmr2qv_sublim").get_view<Pack**>();
     history_only.P3_qr_sed = get_field_out("P3_qr_sed").get_view<Pack**>();
     history_only.P3_qc_sed = get_field_out("P3_qc_sed").get_view<Pack**>();
     history_only.P3_qi_sed = get_field_out("P3_qi_sed").get_view<Pack**>();
+    history_only.P3_qc2qi_homfrz = get_field_out("P3_qc2qi_homfrz").get_view<Pack**>();
+    history_only.P3_qr2qi_homfrz = get_field_out("P3_qr2qi_homfrz").get_view<Pack**>();
+
   } else {
     // if not, let's leave all uninitialized except for the sed ones
     history_only.P3_qr_sed = m_buffer.unused;
