@@ -34,9 +34,6 @@ enum IOType {
 IOType str2iotype(const std::string &str);
 std::string iotype2str(const IOType iotype);
 
-// The type used by PIOc for offsets
-using offset_t = std::int64_t;
-
 /*
  * The following PIOxyz types each represent an entity that
  * is associated in scorpio with an id. For each of them, we add some
@@ -66,22 +63,25 @@ struct PIODim : public PIOFileEntity {
   int length       = -1;
   bool unlimited   = false;
 
-  // In case we decompose the dimension, this will store
-  // the owned offsets on this rank
+  // In case we decompose the dimension, this will store the owned offsets on this rank
   // NOTE: use a pointer, so we can detect if a decomposition already
   //       existed or not when we set one.
-  std::shared_ptr<std::vector<offset_t>> offsets;
+  std::shared_ptr<std::vector<int>> offsets;
 };
 
 // A decomposition
-// NOTE: the offsets of a PIODecomp are not the same as the offsets of
+// NOTE: the offsets of a PIODecomp are not the same as the offsets
 //       stored in its dim. The latter are the offsets *along that dim*.
 //       A PIODecomp is associated with a Nd layout, which includes decomp_dim
-//       among its dimensions. PIODecomp::offsets are the offsets of the full
+//       among its dimensions. PIODecomp::offsets contains the offsets of the full
 //       array layout owned by this rank. Hence, there can be many PIODecomp
 //       all storing the same dim
+
+// Use pimpl idiom, so we can avoid including pio.h here to get the PIO_Offset type
+struct OffsetsVec;
+
 struct PIODecomp : public PIOEntity {
-  std::vector<offset_t>           offsets;  // Owned offsets
+  std::shared_ptr<OffsetsVec>     offsets;
   std::shared_ptr<const PIODim>   dim; 
 };
 

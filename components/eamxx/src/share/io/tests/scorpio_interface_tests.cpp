@@ -30,7 +30,7 @@ TEST_CASE ("write_and_read") {
   const int dim3  = ldim3 * comm.size();
 
   // Offsets for dim3 decomp owned by this rank
-  std::vector<offset_t> my_offsets;
+  std::vector<int> my_offsets;
   for (int i=0; i<ldim3; ++i) {
     my_offsets.push_back(ldim3*comm.rank() + i);
   }
