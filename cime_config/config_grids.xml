@@ -1170,6 +1170,16 @@
       <mask>IcoswISC30E3r5</mask>
     </model_grid>
 
+    <model_grid alias="northamericax4v1pg2_r05_IcoswISC30E3r5">
+      <grid name="atm">ne0np4_northamericax4v1.pg2</grid>
+      <grid name="lnd">r05</grid>
+      <grid name="ocnice">IcoswISC30E3r5</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>IcoswISC30E3r5</mask>
+    </model_grid>
+
     <model_grid alias="northamericax4v1pg2_r0125_WC14to60E2r3" compset="(DOCN|XOCN|SOCN|AQP1|EAM.+ELM.+MPASO)">
       <grid name="atm">ne0np4_northamericax4v1.pg2</grid>
       <grid name="lnd">r0125</grid>
@@ -3649,7 +3659,7 @@
       <file grid="ice|ocn" mask="EC30to60E2r2">$DIN_LOC_ROOT/share/domains/domain.ocn.northamericax4v1pg2_EC30to60E2r2.220428.nc</file>
       <file grid="atm|lnd" mask="IcoswISC30E3r5">$DIN_LOC_ROOT/share/domains/domain.lnd.northamericax4v1pg2_IcoswISC30E3r5.240416.nc</file>
       <file grid="ice|ocn" mask="IcoswISC30E3r5">$DIN_LOC_ROOT/share/domains/domain.ocn.northamericax4v1pg2_IcoswISC30E3r5.240416.nc</file>
-      <desc>1-deg with 1/4-deg over North America (version 1) pg2:</desc>
+      <desc>1-deg with 1/4-deg over North America (version 1) pg2 as described in Tang et al. (2023):</desc>
     </domain>
 
     <domain name="ne0np4_CAx32v1.pg2">
@@ -4544,20 +4554,29 @@
       <map name="LND2ATM_SMAPNAME">cpl/gridmaps/r025/map_r025_to_northamericax4v1pg2_traave.20240331.nc</map>
     </gridmap>
 
+    <gridmap atm_grid="ne0np4_northamericax4v1.pg2" lnd_grid="r05">
+      <map name="ATM2LND_FMAPNAME">cpl/gridmaps/northamericax4v1np4/map_northamericax4v1pg2_to_r05_traave.20250317.nc</map>
+      <map name="ATM2LND_FMAPNAME_NONLINEAR">cpl/gridmaps/northamericax4v1np4/map_northamericax4v1pg2_to_r05_trfvnp2.20250317.nc</map>
+      <map name="ATM2LND_SMAPNAME">cpl/gridmaps/northamericax4v1np4/map_northamericax4v1pg2_to_r05_trbilin.20250317.nc</map>
+      <map name="LND2ATM_FMAPNAME">cpl/gridmaps/r05/map_r05_to_northamericax4v1pg2_traave.20250317.nc</map>
+      <map name="LND2ATM_SMAPNAME">cpl/gridmaps/r05/map_r05_to_northamericax4v1pg2_traave.20250317.nc</map>
+    </gridmap>
+
     <gridmap atm_grid="ne0np4_northamericax4v1.pg2" rof_grid="r0125">
       <map name="ATM2ROF_FMAPNAME">cpl/gridmaps/northamericax4v1np4/map_northamericax4v1pg2_to_r0125_mono.20200401.nc</map>
       <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/northamericax4v1np4/map_northamericax4v1pg2_to_r0125_bilin.20200401.nc</map>
-    </gridmap>
-
-    <gridmap atm_grid="ne0np4_northamericax4v1.pg2" rof_grid="r05">
-      <map name="ATM2ROF_FMAPNAME">cpl/gridmaps/northamericax4v1np4/map_northamericax4v1pg2_to_r05_mono.220428.nc</map>
-      <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/northamericax4v1np4/map_northamericax4v1pg2_to_r05_bilin.220428.nc</map>
     </gridmap>
 
     <gridmap atm_grid="ne0np4_northamericax4v1.pg2" rof_grid="r025">
       <map name="ATM2ROF_FMAPNAME">cpl/gridmaps/northamericax4v1np4/map_northamericax4v1pg2_to_r025_traave.20240331.nc</map>
       <map name="ATM2ROF_FMAPNAME_NONLINEAR">cpl/gridmaps/northamericax4v1np4/map_northamericax4v1pg2_to_r025_trfvnp2.20240331.nc</map>
       <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/northamericax4v1np4/map_northamericax4v1pg2_to_r025_trbilin.20240331.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ne0np4_northamericax4v1.pg2" rof_grid="r05">
+      <map name="ATM2ROF_FMAPNAME">cpl/gridmaps/northamericax4v1np4/map_northamericax4v1pg2_to_r05_traave.20250317.nc</map>
+      <map name="ATM2ROF_FMAPNAME_NONLINEAR">cpl/gridmaps/northamericax4v1np4/map_northamericax4v1pg2_to_r05_trfvnp2.20250317.nc</map>
+      <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/northamericax4v1np4/map_northamericax4v1pg2_to_r05_trbilin.20250317.nc</map>
     </gridmap>
 
     <gridmap atm_grid="ne0np4_arcticx4v1.pg2" ocn_grid="oARRM60to10">
