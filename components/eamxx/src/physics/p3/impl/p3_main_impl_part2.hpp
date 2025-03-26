@@ -105,6 +105,8 @@ void Functions<S,D>
   const uview_1d<Spack>& P3_qc2qi_hetero_freeze,
   const uview_1d<Spack>& P3_qr2qi_immers_freeze,
   const uview_1d<Spack>& P3_qi2qr_melt,
+  const uview_1d<Spack>& P3_qmr2qr_melt,
+  const uview_1d<Spack>& P3_qmr2qv_sublim,
   const uview_1d<Spack>& pratot,
   const uview_1d<Spack>& prctot,
   bool& hydrometeorsPresent, const Int& nk,
@@ -167,6 +169,8 @@ void Functions<S,D>
       qr2qi_collect_tend   (0), // collection rain mass by ice
       qc2qr_ice_shed_tend   (0), // source for rain mass due to cloud water/ice collision above freezing and shedding or wet growth and shedding
       qi2qr_melt_tend   (0), // melting of ice
+      qmr2qr_melt_tend   (0), // melting of rimed rain
+      qmr2qv_sublim_tend   (0), // sublimation of rimed rain
       qc2qi_collect_tend   (0), // collection of cloud water by ice
       qr2qi_immers_freeze_tend  (0), // immersion freezing rain
       qv2qi_nucleat_tend   (0), // deposition/condensation freezing nuc
@@ -491,7 +495,7 @@ void Functions<S,D>
     //-- ice-phase dependent processes:
     update_prognostic_ice(
       qc2qi_hetero_freeze_tend, qc2qi_collect_tend, qc2qr_ice_shed_tend, nc_collect_tend, nc2ni_immers_freeze_tend, ncshdc, qr2qi_collect_tend, nr_collect_tend,  qr2qi_immers_freeze_tend,
-      nr2ni_immers_freeze_tend, nr_ice_shed_tend, qi2qr_melt_tend, ni2nr_melt_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend, qv2qi_nucleat_tend, ni_nucleat_tend, ni_selfcollect_tend, ni_sublim_tend,
+      nr2ni_immers_freeze_tend, nr_ice_shed_tend, qi2qr_melt_tend,qmr2qr_melt_tend,qmr2qv_sublim_tend, ni2nr_melt_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend, qv2qi_nucleat_tend, ni_nucleat_tend, ni_selfcollect_tend, ni_sublim_tend,
       qc2qi_berg_tend, inv_exner(k), predictNc, wetgrowth, dt, nmltratio,
       rho_qm_cloud, ncheti_cnt, nicnt, ninuc_cnt, qcheti_cnt, qicnt, qinuc_cnt,  th_atm(k), qv(k), qi(k), ni(k), qm(k), qmr(k), bm(k), qc(k),
       nc(k), qr(k), nr(k), use_hetfrz_classnuc, not_skip_all);
@@ -530,6 +534,8 @@ void Functions<S,D>
       P3_qc2qi_hetero_freeze(k).set(not_skip_all, qc2qi_hetero_freeze_tend);
       P3_qr2qi_immers_freeze(k).set(not_skip_all, qr2qi_immers_freeze_tend);
       P3_qi2qr_melt(k).set(not_skip_all, qi2qr_melt_tend);
+      P3_qmr2qr_melt(k).set(not_skip_all, qmr2qr_melt_tend);
+      P3_qmr2qv_sublim(k).set(not_skip_all, qmr2qv_sublim_tend);
     }
 
     // clipping for small hydrometeor values
