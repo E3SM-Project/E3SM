@@ -369,19 +369,19 @@ void finalize_subsystem ()
   EKAT_REQUIRE_MSG (s.pio_sysid!=-1,
       "Error! PIO subsystem was already finalized.\n");
 
-  for (auto& it : s.files) {
-    EKAT_REQUIRE_MSG (it.second.num_customers==0,
+  for (const auto& [filename,file] : s.files) {
+    EKAT_REQUIRE_MSG (file.num_customers==0,
       "Error! ScorpioSession::finalize called, but a file is still in use elsewhere.\n"
-      " - filename: " + it.first + "\n");
+      " - filename: " + filename + "\n");
   }
   s.files.clear();
 
-  for (auto& it : s.decomps) {
-    EKAT_REQUIRE_MSG (it.second.use_count()==1,
+  for (const auto& [dimname,decomp] : s.decomps) {
+    EKAT_REQUIRE_MSG (decomp.use_count()==1,
       "Error! ScorpioSession::finalize called, but a decomp is still stored elsewhere.\n"
-      " - decomp name: " + it.first + "\n");
+      " - decomp name: " + dimname + "\n");
 
-    int err = PIOc_freedecomp(s.pio_sysid,it.second->ncid);
+    int err = PIOc_freedecomp(s.pio_sysid,decomp->ncid);
     check_scorpio_noerr(err,"finalize_subsystem","freedecomp");
   }
   s.decomps.clear();
@@ -464,9 +464,9 @@ void register_file (const std::string& filename,
 
       auto find_dim = [&](int dimid) -> std::shared_ptr<const PIODim> {
         std::shared_ptr<const PIODim> d;
-        for (auto it : f.dims) {
-          if (it.second->ncid==dimid) {
-            d = it.second;
+        for (auto& [dimname,dim] : f.dims) {
+          if (dim->ncid==dimid) {
+            d = dim;
           }
         }
         EKAT_REQUIRE_MSG (d!=nullptr,
@@ -737,10 +737,9 @@ void reset_time_dim_len (const std::string& filename, const int new_length)
   f.time_dim->length = new_length;
 
   // Reset number of records counter for each time dep var
-  for (auto it : f.vars) {
-    auto& v = *it.second;
-    if (v.time_dep) {
-      v.num_records = new_length;
+  for (auto& [varname,var] : f.vars) {
+    if (var->time_dep) {
+      var->num_records = new_length;
     }
   }
 }
@@ -862,11 +861,10 @@ void set_dim_decomp (const std::string& filename,
       // So, as we remove decomps from vars that have this dim, keep track of their name,
       // so that we can free them later *if no other users of them remain*.
       std::set<std::string> decomps_to_remove;
-      for (auto it : f.vars) {
-        auto v = it.second;
-        if (v->decomp!=nullptr and v->decomp->dim->name==dimname) {
-          decomps_to_remove.insert(v->decomp->name);
-          v->decomp = nullptr;
+      for (auto& [varname,var] : f.vars) {
+        if (var->decomp!=nullptr and var->decomp->dim->name==dimname) {
+          decomps_to_remove.insert(var->decomp->name);
+          var->decomp = nullptr;
         }
       }
       for (const auto& dn : decomps_to_remove) {
@@ -922,9 +920,9 @@ void set_dim_decomp (const std::string& filename,
 
   // If vars were already defined, we need to process them,
   // and create the proper PIODecomp objects.
-  for (auto it : f.vars) {
-    if (ekat::contains(it.second->dim_names(),dimname)) {
-      set_var_decomp (*it.second,filename);
+  for (auto [varname,var] : f.vars) {
+    if (ekat::contains(var->dim_names(),dimname)) {
+      set_var_decomp (*var,filename);
     }
   }
 }
@@ -1148,12 +1146,11 @@ void mark_dim_as_time (const std::string& filename, const std::string& dimname)
     // If a var has "time" in its dims (must be the 1st dim!),
     // remove it. Recall that we only store non-time dims in
     // the list of var dims.
-    for (auto& it : f.vars) {
-      auto& v = it.second;
-      if (v->dims.size()>0 and v->dims[0]->name==dimname) {
-        v->dims.erase(v->dims.begin());
-        v->size = -1;
-        v->time_dep = true;
+    for (auto& [varname,var] : f.vars) {
+      if (var->dims.size()>0 and var->dims[0]->name==dimname) {
+        var->dims.erase(var->dims.begin());
+        var->size = -1;
+        var->time_dep = true;
       }
     }
   } else {
