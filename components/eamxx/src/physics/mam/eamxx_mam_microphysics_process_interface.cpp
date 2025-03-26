@@ -324,6 +324,11 @@ void MAMMicrophysics::set_grids(
     mam_coupling::find_season_index_reader(season_wes_file, clat,
                                            index_season_lai_);
   }
+
+  // Work arrays for return values from perform_atmospheric_chemistry_and_microphysics
+  constexpr int gas_pcnst = mam_coupling::gas_pcnst();
+  dflx_ = view_2d("dflx", ncol_, gas_pcnst);
+  dvel_ = view_2d("dvel", ncol_, gas_pcnst);
 }  // set_grids
 
 // ================================================================
@@ -737,7 +742,10 @@ void MAMMicrophysics::run_impl(const double dt) {
   const int month              = timestamp().get_month();  // 1-based
   const int surface_lev        = nlev - 1;                 // Surface level
   const auto &index_season_lai = index_season_lai_;
+  auto &dflx = dflx_;
+  auto &dvel = dvel_;
 
+  this->print_fast_global_state_hash("microphysics(pre)");
   // loop over atmosphere columns and compute aerosol microphyscs
   Kokkos::parallel_for(
       "MAMMicrophysics::run_impl", policy,
@@ -850,8 +858,8 @@ void MAMMicrophysics::run_impl(const double dt) {
           }
         }
         // These output values need to be put somewhere:
-        Real dvel[gas_pcnst] = {};  // deposition velocity [1/cm/s]
-        Real dflx[gas_pcnst] = {};  // deposition flux [1/cm^2/s]
+        view_1d dflx_col = ekat::subview(dflx, icol); // deposition velocity [1/cm/s]
+        view_1d dvel_col = ekat::subview(dvel, icol); // deposition flux [1/cm^2/s]
 
         // Output: values are dvel, dvlx
         // Input/Output: progs::stateq, progs::qqcw
@@ -869,22 +877,23 @@ void MAMMicrophysics::run_impl(const double dt) {
             offset_aerosol, config.linoz.o3_sfc, config.linoz.o3_tau,
             config.linoz.o3_lbl, dry_diameter_icol, wet_diameter_icol,
             wetdens_icol, dry_atm.phis(icol), cmfdqr, prain_icol, nevapr_icol,
-            work_set_het_icol, drydep_data, dvel, dflx, progs);
+            work_set_het_icol, drydep_data, dvel_col, dflx_col, progs);
 
+	team.team_barrier();
         // Update constituent fluxes with gas drydep fluxes (dflx)
         // FIXME: Possible units mismatch (dflx is in kg/cm2/s but
         // constituent_fluxes is kg/m2/s) (Following mimics Fortran code
         // behavior but we should look into it)
-        for(int ispc = offset_aerosol; ispc < mam4::pcnst; ++ispc) {
-          constituent_fluxes(icol, ispc) -= dflx[ispc - offset_aerosol];
-        }
+	Kokkos::parallel_for(Kokkos::TeamThreadRange(team, offset_aerosol, mam4::pcnst), [&](const int ispc) {
+          constituent_fluxes(icol, ispc) -= dflx_col(ispc - offset_aerosol);
+        });
       });  // parallel_for for the column loop
   Kokkos::fence();
 
   // postprocess output
   post_process(wet_aero_, dry_aero_, dry_atm_);
   Kokkos::fence();
-
+  this->print_fast_global_state_hash("microphysics(post)");
 }  // MAMMicrophysics::run_impl
 
 }  // namespace scream

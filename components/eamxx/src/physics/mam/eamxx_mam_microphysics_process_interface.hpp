@@ -153,6 +153,9 @@ class MAMMicrophysics final : public MAMGenericInterface {
   // workspace manager for internal local variables
   mam_coupling::Buffer buffer_;
 
+  // Work arrays for return values from perform_atmospheric_chemistry_and_microphysics
+  view_2d dflx_;
+  view_2d dvel_;
 };  // MAMMicrophysics
 
 }  // namespace scream
