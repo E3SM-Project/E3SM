@@ -265,7 +265,7 @@ void Functions<S,D>
     qm(pk).set(qr_ge_small, qm(pk) + Qr_nuc);
     qmr(pk).set(qr_ge_small, qmr(pk) + Qr_nuc);
     qi(pk).set(qr_ge_small, qi(pk) + Qr_nuc);
-    qr2qi_homfrz(pk).set(qc_ge_small, Qr_nuc);
+    qr2qi_homfrz(pk).set(qr_ge_small, Qr_nuc);
     bm(pk).set(qr_ge_small, bm(pk) + Qr_nuc*inv_rho_rimeMax);
     ni(pk).set(qr_ge_small, ni(pk) + Nr_nuc);
     th_atm(pk).set   (qr_ge_small, th_atm(pk) + inv_exner(pk)*Qr_nuc*latice*inv_cp);
