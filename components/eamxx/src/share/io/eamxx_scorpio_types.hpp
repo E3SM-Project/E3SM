@@ -64,9 +64,8 @@ struct PIODim : public PIOFileEntity {
   bool unlimited   = false;
 
   // In case we decompose the dimension, this will store the owned offsets on this rank
-  // NOTE: use a pointer, so we can detect if a decomposition already
-  //       existed or not when we set one.
-  std::shared_ptr<std::vector<int>> offsets;
+  std::vector<int> offsets;
+  bool decomposed = false;
 };
 
 // A decomposition

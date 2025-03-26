@@ -685,7 +685,7 @@ int get_dimlen_local (const std::string& filename, const std::string& dimname)
       " - dimname : " + dimname + "\n");
 
   const auto& dim = pf.file->dims.at(dimname);
-  return dim->offsets==nullptr ? dim->length : dim->offsets->size();
+  return dim->decomposed ? dim->offsets.size() : dim->length;
 }
 
 bool has_time_dim (const std::string& filename)
@@ -754,7 +754,7 @@ void set_var_decomp (PIOVar& var,
                      const std::string& filename)
 {
   for (size_t i=1; i<var.dims.size(); ++i) {
-    EKAT_REQUIRE_MSG (var.dims[i]->offsets==nullptr,
+    EKAT_REQUIRE_MSG (not var.dims[i]->decomposed,
         "Error! We currently only allow decomposition on slowest-striding dimension.\n"
         "       Generalizing is not complicated, but it was not a priority.\n"
         " - filename: " + filename + "\n"
@@ -762,7 +762,7 @@ void set_var_decomp (PIOVar& var,
         " - var dims: " + ekat::join(var.dims,get_entity_name,",") + "\n"
         " - bad dim : " + var.dims[i]->name + "\n");
   }
-  EKAT_REQUIRE_MSG (var.dims[0]->offsets!=nullptr,
+  EKAT_REQUIRE_MSG (var.dims[0]->decomposed,
       "Error! Calling set_var_decomp, but the var first dimension does not appear to be decomposed.\n"
       " - filename: " + filename + "\n"
       " - varname : " + var.name  + "\n"
@@ -856,7 +856,7 @@ void set_dim_decomp (const std::string& filename,
       " - filename: " + filename + "\n"
       " - dimname : " + dimname + "\n");
 
-  if (dim.offsets!=nullptr) {
+  if (dim.decomposed) {
     if (allow_reset) {
       // We likely won't need the previously created decomps that included this dimension.
       // So, as we remove decomps from vars that have this dim, keep track of their name,
@@ -880,7 +880,7 @@ void set_dim_decomp (const std::string& filename,
       }
     } else {
       // Check that the offsets are (globally) the same
-      int same = *dim.offsets==my_offsets;
+      int same = dim.offsets==my_offsets;
       const auto& comm = ScorpioSession::instance().comm;
       comm.all_reduce(&same,1,MPI_MIN);
       EKAT_REQUIRE_MSG(same==1,
@@ -917,7 +917,8 @@ void set_dim_decomp (const std::string& filename,
       " - dimname : " + dimname + "\n"
       " - all offsets (sorted): " + ekat::join(all_offsets,",") + "\n");
 #endif
-  dim.offsets = std::make_shared<std::vector<int>>(my_offsets);
+  dim.offsets = my_offsets;
+  dim.decomposed = true;
 
   // If vars were already defined, we need to process them,
   // and create the proper PIODecomp objects.
@@ -1018,7 +1019,7 @@ void define_var (const std::string& filename, const std::string& varname,
       set_attribute(filename,varname,"units",units);
     }
 
-    if (var->dims.size()>0 and var->dims[0]->offsets!=nullptr) {
+    if (var->dims.size()>0 and var->dims[0]->decomposed) {
       set_var_decomp (*var,filename);
     }
   } else {
