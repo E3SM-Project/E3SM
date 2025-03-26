@@ -174,23 +174,13 @@ module li_calving
          cellMaskTemporaryField % array(:) = cellMask(:)
       endif
 
-      ! Zero calvingThickness here instead of or in addition to in individual subroutines.
+      ! calvingThickness is zeroed at the beginning of the time step in
+      ! li_time_integrator_forwardeuler_rungekutta for accuracy of accumulated calvingThickness.
       ! This is necessary when using damage threshold calving with other calving
       ! routines. Some individual routines still set calvingThickness to zero, but
       ! this is redundant. li_apply_front_ablation_velocity will zero
       ! calvingThickness, so any routines that use that should not be applied
       ! after other calving routines.
-      block => domain % blocklist
-      do while (associated(block))
-         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
-         call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
-         call mpas_pool_get_array(geometryPool, 'calvingThicknessFromThreshold', calvingThicknessFromThreshold)
-         call mpas_pool_get_array(geometryPool, 'calvingVelocity', calvingVelocity)
-         calvingThickness(:) = 0.0_RKIND
-         calvingThicknessFromThreshold(:) = 0.0_RKIND
-         calvingVelocity(:) = 0.0_RKIND
-         block => block % next
-      end do
 
       ! Get deltat from first block (same on all blocks)
       block => domain % blocklist
