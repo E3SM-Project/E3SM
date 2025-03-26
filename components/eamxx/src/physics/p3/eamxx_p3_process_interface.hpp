@@ -138,7 +138,6 @@ public:
           if (active_range.any()) {
             const auto set_to_t_in = cld_frac_t_in_km1 > cld_frac_r(icol, ipack);
             cld_frac_r(icol,ipack).set(active_range and set_to_t_in, cld_frac_t_in_km1);
-            cld_frac_r(icol,ipack).set(active_range and not set_to_t_in, cld_frac_r(icol, ipack));
           }
         }
       });
