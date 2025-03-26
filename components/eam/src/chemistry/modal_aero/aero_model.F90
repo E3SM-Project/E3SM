@@ -2846,7 +2846,6 @@ do_lphase2_conditional: &
        do m=1,dust_nbin+dust_nnum
           mm = dust_indices(m)
           if (m<=dust_nbin) sflx(:ncol)=sflx(:ncol)+cam_in%cflx(:ncol,mm)
-!          call outfld(trim(dust_names(m))//'SF',cam_in%cflx(:,mm),pcols, lchnk)
        enddo
 
        if(dstemislimitswitch.eqv..true.) then
