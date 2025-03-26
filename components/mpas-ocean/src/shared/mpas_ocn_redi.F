@@ -141,6 +141,7 @@ module ocn_redi
         end do
      end do
      !$omp end do
+     !$omp end parallel
 
      if ( config_redi_use_new_sfc_taper ) then
         !$omp parallel
@@ -151,6 +152,7 @@ module ocn_redi
            end do
         end do
         !$omp end do
+        !$omp end parallel
      end if
 
      !$omp do schedule(runtime) private(k)
