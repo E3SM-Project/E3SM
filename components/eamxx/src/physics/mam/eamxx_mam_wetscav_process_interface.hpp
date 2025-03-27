@@ -23,6 +23,7 @@ namespace scream {
 class MAMWetscav : public MAMGenericInterface {
   using KT      = ekat::KokkosTypes<DefaultDevice>;
   using view_2d = typename KT::template view_2d<Real>;
+  using int_view_2d = typename KT::template view_2d<int>;
 
   // a thread team dispatched to a single vertical column
   using ThreadTeam = mam4::ThreadTeam;
@@ -65,6 +66,7 @@ class MAMWetscav : public MAMGenericInterface {
 
   // Work arrays
   view_2d work_;
+  int_view_2d isprx_;
 
   // TODO: Following variables are from convective parameterization (not
   // implemented yet in EAMxx), so should be zero for now
