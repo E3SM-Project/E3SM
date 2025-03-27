@@ -15,13 +15,16 @@ atmosphere_processes:
     forward_steps_in_memory: 1
     checkpoint_path: /pscratch/sd/m/mahf708/emulator/ace_ckpt_traced${GPU_OR_CPU}.tar
 grids_manager:
-  Type: Mesh Free
-  grids_names: [Point Grid]
-  Point Grid:
+  Type: ACE
+  grids_names: [Physics]
+  ACE:
     aliases: [Physics]
     type: point_grid
-    number_of_global_columns:   360
-    number_of_vertical_levels:  180
+    num_longitude_points: 360
+    num_latitude_points: 180
+    num_vertical_levels: 8
+    gaussian_grid: true
+    data_filename: /global/homes/m/mahf708/xgnc/sims/random/eamxx_latlon_grid.nc
 
 initial_conditions:
   landfrac: 0.5
