@@ -16,7 +16,9 @@ enum RequestType {
 // Whether a tracer should be advected by both Dynamics
 // and Turbulance, or only by Dynamics
 enum TracerAdvection {
-  DynamicsAndTurbulence, // Default use case
+  NoPreference, // Default. In the case that no process gives a preference,
+                // the tracer is advected by dynamics and turbulence
+  DynamicsAndTurbulence,
   DynamicsOnly,
 };
 

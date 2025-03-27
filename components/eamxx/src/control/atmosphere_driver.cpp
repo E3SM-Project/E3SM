@@ -534,50 +534,8 @@ void AtmosphereDriver::create_fields()
   m_field_mgr->registration_begins();
 
   // Before registering fields, check that Field Requests for tracers are compatible
-  {
-    // Create map from tracer name to a vector which contains the field requests for that tracer.
-    std::map<std::string, std::set<FieldRequest>> tracer_requests;
-    auto gather_tracer_requests = [&] (FieldRequest req) {
-      if (not ekat::contains(req.groups, "tracers")) return;
-
-      std::string fname = req.fid.name();
-      if (tracer_requests.find(fname) == tracer_requests.end()) {
-        tracer_requests[fname] = {req};
-      } else {
-        tracer_requests[fname].emplace(req);
-      }
-    };
-    for (const auto& req : m_atm_process_group->get_required_field_requests()){
-      gather_tracer_requests(req);
-    }
-    for (const auto& req : m_atm_process_group->get_computed_field_requests()) {
-      gather_tracer_requests(req);
-    }
-
-    // Go through the map entry for each tracer and check that every one
-    // has the same request for turbulence advection.
-    for (auto fr : tracer_requests) {
-      const auto reqs = fr.second;
-
-      std::set<bool> turb_advect_types;
-      for (auto req : reqs) {
-        turb_advect_types.emplace(ekat::contains(req.groups, "turbulence_advected_tracers"));
-      }
-
-      if (turb_advect_types.size()!=1) {
-        std::ostringstream ss;
-        ss << "Error! Incompatible tracer request. Turbulence advection requests not consistent among processes.\n"
-              "  - Tracer name: " + fr.first + "\n"
-              "  - Requests (process name, grid name, is tracers turbulence advected):\n";
-        for (auto req : reqs) {
-          const auto grid_name = req.fid.get_grid_name();
-          const bool turb_advect = ekat::contains(req.groups, "turbulence_advected_tracers");
-          ss << "    - (" + req.calling_process + ", " + grid_name + ", " + (turb_advect ? "true" : "false") + ")\n";
-        }
-        EKAT_ERROR_MSG(ss.str());
-      }
-    }
-  }
+  // and store the correct type of turbulence advection for each tracer
+  m_atm_process_group->pre_process_tracer_requests();
 
   // Register required/computed fields. By now, the processes should have
   // fully built the ids of their required/computed fields and groups
