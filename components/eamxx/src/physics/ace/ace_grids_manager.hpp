@@ -30,9 +30,6 @@ protected:
 
   ekat::Comm            m_comm;
   ekat::ParameterList   m_params;
-  int m_lat;
-  int m_lon;
-  int m_lev;
 };
 
 inline std::shared_ptr<GridsManager>

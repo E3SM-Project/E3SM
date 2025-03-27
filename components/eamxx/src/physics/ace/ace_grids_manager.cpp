@@ -22,13 +22,11 @@ void AceGridsManager::
 build_grids ()
 {
   auto nlat = m_params.get<int>("num_latitude_points");
-  m_lat = nlat;
   auto nlon = m_params.get<int>("num_longitude_points");
-  m_lon = nlon;
   auto nlev = m_params.get<int>("num_vertical_levels");
-  m_lev = nlev;
   auto gaussian = m_params.get<bool>("gaussian_grid");
-
+  auto sc_ncolumns = m_params.get<int>("sc_ncolumns");
+  auto sc_nlevels = m_params.get<int>("sc_nlevels");
 
   EKAT_REQUIRE_MSG (gaussian,
       "Error! Currently ACE grids manager only supports gaussian_grid=true.\n");
@@ -40,7 +38,7 @@ build_grids ()
       "Error! ACE grids manager requires positive value for 'num_longitude_points'.\n");
 
   // Create *the* latlon grid
-  auto latlon_grid = create_latlon_grid ("LatLonPhysics",nlat,nlon,nlev,m_comm);
+  auto latlon_grid = create_latlon_grid ("AceLL",nlat,nlon,nlev,m_comm);
   add_nonconst_grid(latlon_grid);
 
   const auto nondim = ekat::units::Units::nondimensional();
@@ -55,7 +53,7 @@ build_grids ()
   reader.read_variables();
 
   // Create PointGrid version of latlon grid
-  auto pt_grid = create_point_grid("Physics",nlat*nlon,nlev,m_comm);
+  auto pt_grid = create_point_grid("AcePG",nlat*nlon,nlev,m_comm);
   add_nonconst_grid(pt_grid);
 
   // Get lat/lon/area from latlon grid, and set it in the pt grid
@@ -80,6 +78,17 @@ build_grids ()
   lat_pt.sync_to_dev();
   lon_pt.sync_to_dev();
   area_pt.sync_to_dev();
+
+  // Create ne30pg2 grid
+  auto sc_grid = create_point_grid("Physics", sc_ncolumns, sc_nlevels, m_comm);
+  add_nonconst_grid(sc_grid);
+
+  auto lat_sc  = sc_grid->create_geometry_data("lat", FieldLayout({COL},{sc_ncolumns}),deg);
+  auto lon_sc  = sc_grid->create_geometry_data("lon", FieldLayout({COL},{sc_ncolumns}),deg);
+  auto area_sc = sc_grid->create_geometry_data("area",FieldLayout({COL},{sc_ncolumns}),nondim);
+  AtmosphereInput reader_sc(m_params.get<std::string>("sc_data_filename"),sc_grid,{lat_sc,lon_sc,area_sc},true);
+  reader_sc.read_variables();
+
 }
 
 } // namespace scream
