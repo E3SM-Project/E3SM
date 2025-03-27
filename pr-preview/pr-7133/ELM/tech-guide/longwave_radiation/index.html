@@ -3347,7 +3347,7 @@ as an additional source of emitted longwave radiation. However, this term can on
 be computed after the vertical heat diffusion model is solved, i.e, after <span class="arithmatex">\(\Delta T_{soi}^{n+1}\)</span>
 is known. Furthermore, this additional longwave radiation source term is added to
 the upward longwave radiation to the atmosphere given by <span class="arithmatex">\(L_g^\uparrow\)</span> in
-equation \label{eq:lg_up_nonveg).</p>
+equation \eqref{eq:lg_up_nonveg).</p>
 <p>For the more general case, when snow and standing surface water are
 present on the ground, the temporally discretized net absorbed longwave radiation is</p>
 <div class="arithmatex">\[
@@ -3386,7 +3386,7 @@ L^{\uparrow n+1}_{g} &amp;=&amp; (1 - \epsilon_g)L^{\downarrow n+1}_{atm} + \eps
 have no heat capacity and the sum of net absorbed solar and longwave radiation
 must balance the latent and sensible heat energy. This leads to a nonlinear
 equation for the vegetation canopy temperature, which is solved iteratively.
-After the solution for vegetation temperature is found after <span class="arithmatex">\(k\)</span>-th iteration,
+When the solution for vegetation temperature has been found after <span class="arithmatex">\(k\)</span>-th iteration,
 <span class="arithmatex">\(T_v^{n+1,k}\)</span>, ELM uses a linear approximation of the non-linear term related
 to canopy temperature in the canopy emitted upward and downward longwave radiation.
 The linear approximation is as follows.</p>
