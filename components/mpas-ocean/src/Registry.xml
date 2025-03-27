@@ -208,7 +208,7 @@
 		/>
 		<nml_option name="config_time_integrator" type="character" default_value="split_explicit_ab2"
 					description="Time integration method. These options are only supported in standalone, not E3SM: 'LTS', 'FB_LTS'."
-					possible_values="'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit', 'split_explicit_ab2', 'LTS', 'FB_LTS'"
+					possible_values="'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit', 'split_explicit_ab2', 'unsplit_explicit_ab2', 'LTS', 'FB_LTS'"
 		/>
 		<nml_option name="config_number_of_time_levels" type="integer" default_value="2"
 					description="The number of time levels in the time-stepping scheme. This is used for array allocation."
@@ -282,8 +282,24 @@
 					description="If true, the Leith enstrophy-cascade closure is turned on"
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_Leith_parameter" type="real" default_value="1.0" units="non-dimensional"
-					description="Non-dimensional Leith closure parameter"
+		<nml_option name="config_use_Leith_del4" type="logical" default_value=".false."
+					description="If true, the Leith enstrophy-cascade closure is turned on"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_Leith_del2_parameter" type="real" default_value="1.0" units="non-dimensional"
+					description="Non-dimensional Leith del2 closure parameter"
+					possible_values="any positive real"
+		/>
+		<nml_option name="config_Leith_del4_parameter" type="real" default_value="1.0" units="non-dimensional"
+					description="Non-dimensional Leith del4 closure parameter"
+					possible_values="any positive real"
+		/>
+		<nml_option name="config_Leith_del2_div_scaler" type="real" default_value="1.0" units="non-dimensional"
+					description="Non-dimensional Leith del4 closure divergence scaler"
+					possible_values="any positive real"
+		/>
+		<nml_option name="config_Leith_del4_div_scaler" type="real" default_value="1.0" units="non-dimensional"
+					description="Non-dimensional Leith del4 closure divergence scaler"
 					possible_values="any positive real"
 		/>
 		<nml_option name="config_Leith_dx" type="real" default_value="15000.0" units="m"
@@ -291,6 +307,10 @@
 					possible_values="any positive real"
 		/>
 		<nml_option name="config_Leith_visc2_max" type="real" default_value="2.5e3" units="m^2 s^-1"
+					description="Upper bound on the allowable value of Leith-computed viscosity"
+					possible_values="any positive real"
+		/>
+		<nml_option name="config_Leith_visc4_max" type="real" default_value="1.5e10" units="m^4 s^-1"
 					description="Upper bound on the allowable value of Leith-computed viscosity"
 					possible_values="any positive real"
 		/>
@@ -1721,7 +1741,7 @@
 		<package name="variableShortwave" description="This package includes variables required to compute spatially variable shortwave extinction coefficients"/>
 
 		<package name="splitTimeIntegrator" description="This package includes variables required for either the split or unsplit explicit time integrators."/>
-		<package name="splitAB2TimeIntegrator" description="This package includes variables required for the split explicit AB2 time integrators."/>
+		<package name="splitAB2TimeIntegrator" description="This package includes variables required for the split or unsplit explicit AB2 time integrators."/>
 		<package name="semiImplicitTimePKG" description="This package includes variables required for split-implicit time integrators."/>
 		<package name="thicknessFilter" description="This package includes variables required for frequency filtered thickness."/>
 		<package name="windStressBulkPKG" description="This package includes varibles required for bulk wind stress forcing."/>
@@ -2449,19 +2469,19 @@
 		<!-- FIELDS FOR SPLIT EXPLICIT TIME INTEGRATOR -->
 		<var name="normalBarotropicVelocity" type="real" dimensions="nEdges Time" units="m s^-1"
 			 description="barotropic velocity, used in split-explicit time-stepping"
-			 packages="splitTimeIntegrator"
+			 packages="splitTimeIntegrator;splitAB2TimeIntegrator"
 		/>
 		<var name="normalBarotropicVelocitySubcycle" type="real" dimensions="nEdges Time" units="m s^-1"
 			 description="barotropic velocity, used in subcycling in stage 2 of split-explicit time-stepping"
-			 packages="splitTimeIntegrator"
+			 packages="splitTimeIntegrator;splitAB2TimeIntegrator"
 		/>
 		<var name="sshSubcycle" type="real" dimensions="nCells Time" units="m"
 			 description="sea surface height, used in subcycling in stage 2 of split-explicit time-stepping"
-			 packages="splitTimeIntegrator"
+			 packages="splitTimeIntegrator;splitAB2TimeIntegrator"
 		/>
 		<var name="normalBaroclinicVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^-1"
 			 description="baroclinic velocity, used in split-explicit time-stepping"
-			 packages="splitTimeIntegrator"
+			 packages="splitTimeIntegrator;splitAB2TimeIntegrator"
 		/>
 
 		<!-- FIELD FOR LAND-ICE COUPLING -->
