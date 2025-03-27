@@ -3348,7 +3348,7 @@ resembling what is below and respond to the compiler messages
 by modifying: environment variables, <code>PATH</code> or <code>[LD_]LIBRARY_PATH</code>
 entries, configuration arguments, and compiler arguments as required.
 As long as you do <strong><em>all of that</em></strong> perfectly, you should be just fine.
-:sunglasses:</p>
+<img alt="😎" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/1f60e.svg" title=":sunglasses:" /></p>
 </div>
 <h3 id="assumptions">Assumptions</h3>
 <ul>
@@ -3356,9 +3356,13 @@ As long as you do <strong><em>all of that</em></strong> perfectly, you should be
 <li>We build the libraries in a separate <strong><em>build</em></strong> and <strong><em>install</em></strong>
 directory in the root directory of the source code.<ul>
 <li>E.g., <code>${TPL_ROOT}/&lt;lib-name&gt;/{build/,install/}</code></li>
-<li>The bash scripts below are placed in the <code>build/</code> directory.</li>
-<li>Hence, the final <code>configure [...]</code> command (calling autoconf) is run
-one directory above the directory in which it resides.</li>
+<li>The bash scripts below are placed in the <code>build/</code> directory.<ul>
+<li>Hence, note that when executing the configure script from the
+<code>build/</code> directory, the final <code>../configure [...]</code> command in the
+script (that calls autoconf) is running the <code>configure</code> command in
+the source directory for that TPL--e.g., <code>${TPL_ROOT}/&lt;lib-name&gt;/</code></li>
+</ul>
+</li>
 </ul>
 </li>
 <li><code>libtool</code> is installed and on your <code>PATH</code>.<ul>

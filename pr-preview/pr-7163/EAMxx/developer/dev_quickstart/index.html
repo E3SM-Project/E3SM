@@ -1869,10 +1869,9 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Let&#39;s Get Started (Quickly)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
+</li>
+      
+        <li class="md-nav__item">
   <a href="#running-eamxx-via-test-all-eamxx" class="md-nav__link">
     <span class="md-ellipsis">
       Running EAMxx via test-all-eamxx
@@ -1881,6 +1880,15 @@
   
     <nav class="md-nav" aria-label="Running EAMxx via test-all-eamxx">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#selected-useful-testing-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      Selected Useful Testing Options
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#testing-on-supported-machines" class="md-nav__link">
@@ -1897,20 +1905,6 @@
       Testing Locally
     </span>
   </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#selected-useful-testing-options" class="md-nav__link">
-    <span class="md-ellipsis">
-      Selected Useful Testing Options
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
         
@@ -3288,10 +3282,9 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Let&#39;s Get Started (Quickly)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
+</li>
+      
+        <li class="md-nav__item">
   <a href="#running-eamxx-via-test-all-eamxx" class="md-nav__link">
     <span class="md-ellipsis">
       Running EAMxx via test-all-eamxx
@@ -3300,6 +3293,15 @@
   
     <nav class="md-nav" aria-label="Running EAMxx via test-all-eamxx">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#selected-useful-testing-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      Selected Useful Testing Options
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#testing-on-supported-machines" class="md-nav__link">
@@ -3316,20 +3318,6 @@
       Testing Locally
     </span>
   </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#selected-useful-testing-options" class="md-nav__link">
-    <span class="md-ellipsis">
-      Selected Useful Testing Options
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
         
@@ -3407,11 +3395,11 @@ may be worth the potential speedup in development.</p>
 As such, we provide no guarantee that any of these are working code, and
 the author would be quite surprised if more than a couple of them run
 without edits.
-If you should take the time to debug these examples, feel free to submit a
+If you take the time to debug these examples, feel free to submit a
 PR with a working version, and we are sure some future developer will
 appreciate it!</p>
 </div>
-<h3 id="running-eamxx-via-test-all-eamxx">Running EAMxx via <code>test-all-eamxx</code></h3>
+<h2 id="running-eamxx-via-test-all-eamxx">Running EAMxx via <code>test-all-eamxx</code></h2>
 <p>The quickest method for a new developer to get EAMxx up and running is to use
 the automated configure/build/test workflow provided by <code>scripts/test-all-eamxx</code>.
 This is a good "smoke test"<sup id="fnref:smoke-test-def"><a class="footnote-ref" href="#fn:smoke-test-def">5</a></sup> to confirm that your development
@@ -3421,163 +3409,7 @@ errors preventing successful running and testing.</p>
 arguments to work correctly and likely more if your goals are more than modest.
 In the following sections, we present the configurations a new developer is
 most likely to require.</p>
-<h4 id="testing-on-supported-machines">Testing on Supported Machines</h4>
-<p>When testing on a supported E3SM machine, the only configuration required is to
-set the proper "machine ID" flag that indicates the machine name and potentially
-the desired device to run with (CPU, GPU).
-This is because <code>test-all-eamxx</code> configures the run according to a
-"machine file" that sets an environment known to build and test successfully
-and efficiently<sup id="fnref:mach-file"><a class="footnote-ref" href="#fn:mach-file">7</a></sup>.</p>
-<details class="example">
-<summary>Example: Running on Perlmutter</summary>
-<div class="copy highlight"><pre><span></span><code><span class="c1"># run tests on cpu</span>
-<span class="o">[</span><span class="s2">&quot;start interactive session on cpu node (see below)...&quot;</span><span class="o">]</span>
-$<span class="w"> </span>./scripts/test-all-eamxx<span class="w"> </span>--machine<span class="w"> </span>pm-cpu
-<span class="o">[</span><span class="s2">&quot;test runs...&quot;</span><span class="o">]</span>
-<span class="o">[</span><span class="s2">&quot;logout from cpu node...&quot;</span><span class="o">]</span>
-<span class="o">[</span><span class="s2">&quot;start interactive session on gpu node...&quot;</span><span class="o">]</span>
-$<span class="w"> </span>./scripts/test-all-eamxx<span class="w"> </span>--machine<span class="w"> </span>pm-gpu
-</code></pre></div>
-</details>
-<details class="warning">
-<summary><code>test-all-eamxx</code> must be run on a <code>compute</code> node</summary>
-<p>The <code>test-all-eamxx</code> script assumes it is being run on a compute node
-(i.e., not the <code>login</code> or <code>head</code> node).</p>
-<p>This can be handled most easily by launching the job manually from an
-interactive session.<sup id="fnref:tas-compute-node"><a class="footnote-ref" href="#fn:tas-compute-node">8</a></sup></p>
-<p>To illustrate, if the platform's batch scheduler is <code>slurm</code>, we could do</p>
-<div class="highlight"><pre><span></span><code>$<span class="w"> </span>salloc<span class="w"> </span>--nodes<span class="w"> </span><span class="m">1</span><span class="w"> </span>--qos<span class="w"> </span>interactive<span class="w"> </span>--time<span class="w"> </span><span class="m">02</span>:00:00<span class="w"> </span><span class="o">[</span>...<span class="o">]</span>
-&lt;response<span class="w"> </span>indicating<span class="w"> </span>interactive<span class="w"> </span>node<span class="w"> </span>name&gt;
-$<span class="w"> </span>ssh<span class="w"> </span>&lt;node-id&gt;
-$<span class="w"> </span>./scripts/test-all-eamxx<span class="w"> </span>--machine<span class="w"> </span>&lt;machine-id&gt;
-</code></pre></div>
-</details>
-<h4 id="testing-locally">Testing Locally</h4>
-<p>Running EAMxx on your local workstation, laptop, or less-trafficked cluster
-machine can potentially make your development quicker and less complicated.
-However, following the <strong><em>No Free Lunches</em></strong> principle, there is some fiddly
-setup involved in making your life easier.</p>
-<p>Testing on a local, or otherwise unknown, machine requires the <code>--local</code>
-(or <code>-l</code>) flag and correctly-configured files in the <code>~/.cime/</code> directory.
-For a full explanation of how to configure your own machine,
-see the pages on <a href="../dev_testing/test_all_eamxx/#local-configuration-files">Local Configuration Files</a> and <a href="../TPLs/">Third-party Libraries</a>, but we will briefly summarize here.</p>
-<details class="example">
-<summary>Example <code>scream_mach_specs.py</code> Configuration File</summary>
-<p>The <code>test-all-eamxx</code> workflow expects to find a file called
-<code>scream_mach_specs.py</code> in the directory <code>~/.cime/</code>.
-This file is imported using the utility function <code>get_all_machines()</code>
-located in <code>scripts/machine_specs.py</code>, and it is used to setup the
-required build environment for your machine. </p>
-<p>Your local <code>scream_mach_specs.py</code> configuration file must be a valid python
-module that defines a <code>Local</code> specialization of the <code>Machine</code> class,
-that is defined in <code>machine_specs.py</code>.
-The parent <code>Machine</code> class definition is included below, and we also provide
-a bare-bones example of a local <code>scream_mach_specs.py</code> defining the
-<code>Local</code> version of the <code>Machine</code> class.</p>
-<p>Your local <code>scream_mach_specs.py</code> configuration file should specify such
-things as:</p>
-<ul>
-<li>Compiler paths and/or binary name</li>
-<li>The number of resources (CPU threads) to be used for building or running<ul>
-<li><code>num_bld_res</code> and <code>num_run_res</code></li>
-</ul>
-</li>
-<li>Baselines directory location</li>
-<li>Commands required to setup the build environment<ul>
-<li>E.g., the paths to the requisite third-party libraries (TPLs).</li>
-</ul>
-</li>
-<li>GPU architecture</li>
-<li>Etc.</li>
-</ul>
-<p>We recommend setting as many of the class variables as you can, because
-(mostly) more information is better than less.</p>
-<div class="copy highlight"><span class="filename">${eamxx_root}/scripts/machine_specs.py:[L58-L88]</span><pre><span></span><code>from<span class="w"> </span>machines_specs<span class="w"> </span>import<span class="w"> </span>Machine
-
-<span class="c1">###############################################################################</span>
-class<span class="w"> </span>Machine<span class="o">(</span>object<span class="o">)</span>:
-<span class="c1">###############################################################################</span>
-<span class="w">    </span><span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">    Parent class for objects describing a machine to use for EAMxx</span>
-<span class="s2">    standalone testing.</span>
-<span class="s2">    &quot;&quot;&quot;</span>
-<span class="w">    </span><span class="nv">concrete</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>False
-<span class="w">    </span><span class="nv">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
-<span class="w">    </span><span class="nv">mach_file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
-<span class="w">    </span><span class="nv">env_setup</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">[]</span>
-<span class="w">    </span><span class="nv">gpu_arch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;none&quot;</span>
-<span class="w">    </span><span class="nv">num_bld_res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>-1
-<span class="w">    </span><span class="nv">num_run_res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>-1
-<span class="w">    </span><span class="nv">batch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
-<span class="w">    </span><span class="nv">cxx_compiler</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;mpicxx&quot;</span>
-<span class="w">    </span><span class="nv">c_compiler</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;mpicc&quot;</span>
-<span class="w">    </span><span class="nv">ftn_compiler</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;mpifort&quot;</span>
-<span class="w">    </span><span class="nv">baselines_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
-
-<span class="w">    </span>@classmethod
-<span class="w">    </span>def<span class="w"> </span>setup_base<span class="o">(</span>cls,name,num_bld_res<span class="o">=</span>-1,num_run_res<span class="o">=</span>-1<span class="o">)</span>:
-<span class="w">        </span>cls.name<span class="w"> </span><span class="o">=</span><span class="w"> </span>name
-<span class="w">        </span>cls.mach_file<span class="w"> </span><span class="o">=</span><span class="w"> </span>pathlib.Path<span class="o">(</span>EAMXX_DIR<span class="o">)</span><span class="w"> </span>/<span class="w"> </span><span class="s2">&quot;cmake&quot;</span><span class="w"> </span>/
-<span class="w">                        </span><span class="s2">&quot;machine-files&quot;</span><span class="w"> </span>/<span class="w"> </span><span class="o">(</span>cls.name<span class="w"> </span>+<span class="w"> </span><span class="s2">&quot;.cmake&quot;</span><span class="o">)</span>
-<span class="w">        </span>cls.num_bld_res<span class="w"> </span><span class="o">=</span><span class="w"> </span>num_bld_res<span class="w"> </span><span class="k">if</span><span class="w"> </span>num_bld_res<span class="w"> </span>&gt;<span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="k">else</span><span class="w"> </span>get_available_cpu_count<span class="o">()</span>
-<span class="w">        </span>cls.num_run_res<span class="w"> </span><span class="o">=</span><span class="w"> </span>num_run_res<span class="w"> </span><span class="k">if</span><span class="w"> </span>num_run_res<span class="w"> </span>&gt;<span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="k">else</span><span class="w"> </span>get_available_cpu_count<span class="o">()</span>
-
-<span class="w">    </span>@classmethod
-<span class="w">    </span>def<span class="w"> </span>uses_gpu<span class="w"> </span><span class="o">(</span>cls<span class="o">)</span>:
-<span class="w">        </span><span class="k">return</span><span class="w"> </span>cls.gpu_arch!<span class="o">=</span><span class="s2">&quot;none&quot;</span>
-
-<span class="c1">###############################################################################</span>
-</code></pre></div>
-<div class="copy highlight"><span class="filename">~/.cime/scream_mach_specs.py</span><pre><span></span><code>from<span class="w"> </span>machines_specs<span class="w"> </span>import<span class="w"> </span>Machine
-
-<span class="c1">###############################################################################</span>
-class<span class="w"> </span>Local<span class="o">(</span>Machine<span class="o">)</span>:
-<span class="c1">###############################################################################</span>
-<span class="w">    </span><span class="nv">concrete</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>True
-<span class="w">    </span>@classmethod
-<span class="w">    </span>def<span class="w"> </span>setup<span class="o">(</span>cls<span class="o">)</span>:
-<span class="w">        </span>super<span class="o">()</span>.setup_base<span class="o">(</span><span class="s2">&quot;local&quot;</span><span class="o">)</span>
-
-<span class="w">        </span><span class="c1"># NOTE: these are run by the shell (likely bash), so must have</span>
-<span class="w">        </span><span class="c1">#       shell syntax, and can use shell environment variables</span>
-<span class="w">        </span><span class="c1">#       (e.g, $HOME or ~)</span>
-<span class="w">        </span>cls.env_setup<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">[</span>
-<span class="w">                         </span><span class="c1"># source my personal .bashrc </span>
-<span class="w">                         </span><span class="s2">&quot;. ~/.bashrc&quot;</span>,
-<span class="w">                         </span><span class="c1"># source a custom script to setup my eamxx</span>
-<span class="w">                         </span><span class="c1"># environment</span>
-<span class="w">                         </span><span class="s2">&quot;source </span><span class="si">${</span><span class="nv">HOME</span><span class="si">}</span><span class="s2">/.cime/eamxx-setup.sh&quot;</span>
-<span class="w">                         </span><span class="o">]</span>
-
-<span class="w">        </span><span class="c1"># define the python-variable home directory for use below</span>
-<span class="w">        </span><span class="nv">home_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/home/arthur_dent&quot;</span>
-
-<span class="w">        </span><span class="c1"># NOTE: the syntax used in the python strings below is called</span>
-<span class="w">        </span><span class="c1">#       &quot;formatted string literals&quot; or more commonly &quot;f-strings&quot;</span>
-
-<span class="w">        </span><span class="c1"># provide the path to my baselines directory</span>
-<span class="w">        </span>cls.baselines_dir<span class="w"> </span><span class="o">=</span><span class="w"> </span>f<span class="s2">&quot;{home_dir}/eamxx-baselines&quot;</span>
-
-<span class="w">        </span><span class="c1"># provide the path to a custom cmake file, used to pass build</span>
-<span class="w">        </span><span class="c1"># variables directly to cmake</span>
-<span class="w">        </span>cls.mach_file<span class="w"> </span><span class="o">=</span><span class="w"> </span>f<span class="s2">&quot;{home_dir}/.cime/eamxx_mach_file.cmake&quot;</span>
-
-<span class="w">        </span><span class="c1"># set a couple of environment variables that are used in the</span>
-<span class="w">        </span><span class="c1"># setup script and/or eamxx_mach_file.cmake</span>
-<span class="w">        </span><span class="c1"># path to directory containing personally-built libraries</span>
-<span class="w">        </span><span class="nv">tpl_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>f<span class="s2">&quot;{home_dir}/TPLs&quot;</span>
-<span class="w">        </span><span class="c1"># path to personally-built openmpi compilers</span>
-<span class="w">        </span><span class="nv">mpi_bindir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>f<span class="s2">&quot;{tpl_path}/openmpi-4.1.2/install/bin&quot;</span>
-
-<span class="w">        </span><span class="c1"># specific paths to </span>
-<span class="w">        </span>cls.cxx_compiler<span class="w"> </span><span class="o">=</span><span class="w"> </span>f<span class="s2">&quot;{mpi_bindir}/mpicxx&quot;</span>
-<span class="w">        </span>cls.c_compiler<span class="w"> </span><span class="o">=</span><span class="w"> </span>f<span class="s2">&quot;{mpi_bindir}/mpicc&quot;</span>
-<span class="w">        </span>cls.ftn_compiler<span class="w"> </span><span class="o">=</span><span class="w"> </span>f<span class="s2">&quot;{mpi_bindir}/mpifort&quot;</span>
-
-<span class="c1">###############################################################################</span>
-</code></pre></div>
-</details>
-<h4 id="selected-useful-testing-options">Selected Useful Testing Options</h4>
+<h3 id="selected-useful-testing-options">Selected Useful Testing Options</h3>
 <p>We give an overview of common basic use cases here, and we provide full details
 on the various capabilities and options of <code>test-all-eamxx</code> in
 <a href="../dev_testing/test_all_eamxx/">EAMxx Automated Standalone Testing</a>.</p>
@@ -3587,7 +3419,7 @@ on the various capabilities and options of <code>test-all-eamxx</code> in
 including the following, we assume the commands are run from the root
 directory of EAMxx. That is, if one begins in the root E3SM directory,
 assume that each code snippet begins with an implicit</p>
-<div class="copy highlight"><pre><span></span><code>$<span class="w"> </span><span class="nv">eamxx_root</span><span class="o">=</span><span class="s2">&quot;&lt;some/file/path&gt;/e3sm/components/eamxx&quot;</span>
+<div class="copy highlight"><pre><span></span><code>$<span class="w"> </span><span class="nv">eamxx_root</span><span class="o">=</span><span class="s2">&quot;&lt;some/file/path&gt;/E3SM/components/eamxx&quot;</span>
 $<span class="w"> </span><span class="nb">cd</span><span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">eamxx_root</span><span class="si">}</span><span class="s2">&quot;</span>
 </code></pre></div>
 </div>
@@ -3758,6 +3590,162 @@ $<span class="w"> </span>./scripts/test-all-eamxx<span class="w"> </span>&lt;req
 <span class="w">    </span>--make-parallel-level<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">build_threads_gpu</span><span class="si">}</span><span class="s2">&quot;</span>
 </code></pre></div>
 </details>
+<h3 id="testing-on-supported-machines">Testing on Supported Machines</h3>
+<p>When testing on a supported E3SM machine, the only configuration required is to
+set the proper "machine ID" flag that indicates the machine name and potentially
+the desired device to run with (CPU, GPU).
+This is because <code>test-all-eamxx</code> configures the run according to a
+"machine file" that sets an environment known to build and test successfully
+and efficiently<sup id="fnref:mach-file"><a class="footnote-ref" href="#fn:mach-file">7</a></sup>.</p>
+<details class="example">
+<summary>Example: Running on Perlmutter</summary>
+<div class="copy highlight"><pre><span></span><code><span class="c1"># run tests on cpu</span>
+<span class="o">[</span><span class="s2">&quot;start interactive session on cpu node (see below)...&quot;</span><span class="o">]</span>
+$<span class="w"> </span>./scripts/test-all-eamxx<span class="w"> </span>--machine<span class="w"> </span>pm-cpu
+<span class="o">[</span><span class="s2">&quot;test runs...&quot;</span><span class="o">]</span>
+<span class="o">[</span><span class="s2">&quot;logout from cpu node...&quot;</span><span class="o">]</span>
+<span class="o">[</span><span class="s2">&quot;start interactive session on gpu node...&quot;</span><span class="o">]</span>
+$<span class="w"> </span>./scripts/test-all-eamxx<span class="w"> </span>--machine<span class="w"> </span>pm-gpu
+</code></pre></div>
+</details>
+<details class="warning">
+<summary><code>test-all-eamxx</code> must be run on a <code>compute</code> node</summary>
+<p>The <code>test-all-eamxx</code> script assumes it is being run on a compute node
+(i.e., not the <code>login</code> or <code>head</code> node).</p>
+<p>This can be handled most easily by launching the job manually from an
+interactive session.<sup id="fnref:tas-compute-node"><a class="footnote-ref" href="#fn:tas-compute-node">8</a></sup></p>
+<p>To illustrate, if the platform's batch scheduler is <code>slurm</code>, we could do</p>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>salloc<span class="w"> </span>--nodes<span class="w"> </span><span class="m">1</span><span class="w"> </span>--qos<span class="w"> </span>interactive<span class="w"> </span>--time<span class="w"> </span><span class="m">02</span>:00:00<span class="w"> </span><span class="o">[</span>...<span class="o">]</span>
+&lt;response<span class="w"> </span>indicating<span class="w"> </span>interactive<span class="w"> </span>node<span class="w"> </span>name&gt;
+$<span class="w"> </span>ssh<span class="w"> </span>&lt;node-id&gt;
+$<span class="w"> </span>./scripts/test-all-eamxx<span class="w"> </span>--machine<span class="w"> </span>&lt;machine-id&gt;
+</code></pre></div>
+</details>
+<h3 id="testing-locally">Testing Locally</h3>
+<p>Running EAMxx on your local workstation, laptop, or less-trafficked cluster
+machine can potentially make your development quicker and less complicated.
+However, following the <strong><em>No Free Lunches</em></strong> principle, there is some fiddly
+setup involved in making your life easier.</p>
+<p>Testing on a local, or otherwise unknown, machine requires the <code>--local</code>
+(or <code>-l</code>) flag and correctly-configured files in the <code>~/.cime/</code> directory.
+For a full explanation of how to configure your own machine,
+see the pages on <a href="../dev_testing/test_all_eamxx/#local-configuration-files">Local Configuration Files</a> and <a href="../TPLs/">Third-party Libraries</a>, but we will briefly summarize here.</p>
+<details class="example">
+<summary>Example <code>scream_mach_specs.py</code> Configuration File</summary>
+<p>The <code>test-all-eamxx</code> workflow expects to find a file called
+<code>scream_mach_specs.py</code> in the directory <code>~/.cime/</code>.
+This file is imported using the utility function <code>get_all_machines()</code>
+located in <code>scripts/machine_specs.py</code>, and it is used to setup the
+required build environment for your machine. </p>
+<p>Your local <code>scream_mach_specs.py</code> configuration file must be a valid python
+module that defines a <code>Local</code> specialization of the <code>Machine</code> class,
+that is defined in <code>machine_specs.py</code>.
+The parent <code>Machine</code> class definition is included below, and we also provide
+a bare-bones example of a local <code>scream_mach_specs.py</code> defining the
+<code>Local</code> version of the <code>Machine</code> class.</p>
+<p>Your local <code>scream_mach_specs.py</code> configuration file should specify such
+things as:</p>
+<ul>
+<li>Compiler paths and/or binary name</li>
+<li>The number of resources (CPU threads) to be used for building or running<ul>
+<li><code>num_bld_res</code> and <code>num_run_res</code></li>
+</ul>
+</li>
+<li>Baselines directory location</li>
+<li>Commands required to setup the build environment<ul>
+<li>E.g., the paths to the requisite third-party libraries (TPLs).</li>
+</ul>
+</li>
+<li>GPU architecture</li>
+<li>Etc.</li>
+</ul>
+<p>We recommend setting as many of the class variables as you can, because
+(mostly) more information is better than less.</p>
+<div class="copy highlight"><span class="filename">${eamxx_root}/scripts/machine_specs.py:[L58-L88]</span><pre><span></span><code><span class="c1">###############################################################################</span>
+class<span class="w"> </span>Machine<span class="o">(</span>object<span class="o">)</span>:
+<span class="c1">###############################################################################</span>
+<span class="w">    </span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    Parent class for objects describing a machine to use for EAMxx</span>
+<span class="s2">    standalone testing.</span>
+<span class="s2">    &quot;&quot;&quot;</span>
+<span class="w">    </span><span class="nv">concrete</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>False
+<span class="w">    </span><span class="nv">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+<span class="w">    </span><span class="nv">mach_file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+<span class="w">    </span><span class="nv">env_setup</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">[]</span>
+<span class="w">    </span><span class="nv">gpu_arch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;none&quot;</span>
+<span class="w">    </span><span class="nv">num_bld_res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>-1
+<span class="w">    </span><span class="nv">num_run_res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>-1
+<span class="w">    </span><span class="nv">batch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+<span class="w">    </span><span class="nv">cxx_compiler</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;mpicxx&quot;</span>
+<span class="w">    </span><span class="nv">c_compiler</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;mpicc&quot;</span>
+<span class="w">    </span><span class="nv">ftn_compiler</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;mpifort&quot;</span>
+<span class="w">    </span><span class="nv">baselines_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+
+<span class="w">    </span>@classmethod
+<span class="w">    </span>def<span class="w"> </span>setup_base<span class="o">(</span>cls,name,num_bld_res<span class="o">=</span>-1,num_run_res<span class="o">=</span>-1<span class="o">)</span>:
+<span class="w">        </span>cls.name<span class="w"> </span><span class="o">=</span><span class="w"> </span>name
+<span class="w">        </span>cls.mach_file<span class="w"> </span><span class="o">=</span><span class="w"> </span>pathlib.Path<span class="o">(</span>EAMXX_DIR<span class="o">)</span><span class="w"> </span>/<span class="w"> </span><span class="s2">&quot;cmake&quot;</span><span class="w"> </span>/
+<span class="w">                        </span><span class="s2">&quot;machine-files&quot;</span><span class="w"> </span>/<span class="w"> </span><span class="o">(</span>cls.name<span class="w"> </span>+<span class="w"> </span><span class="s2">&quot;.cmake&quot;</span><span class="o">)</span>
+<span class="w">        </span>cls.num_bld_res<span class="w"> </span><span class="o">=</span><span class="w"> </span>num_bld_res<span class="w"> </span><span class="k">if</span><span class="w"> </span>num_bld_res<span class="w"> </span>&gt;<span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="k">else</span><span class="w"> </span>get_available_cpu_count<span class="o">()</span>
+<span class="w">        </span>cls.num_run_res<span class="w"> </span><span class="o">=</span><span class="w"> </span>num_run_res<span class="w"> </span><span class="k">if</span><span class="w"> </span>num_run_res<span class="w"> </span>&gt;<span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="k">else</span><span class="w"> </span>get_available_cpu_count<span class="o">()</span>
+
+<span class="w">    </span>@classmethod
+<span class="w">    </span>def<span class="w"> </span>uses_gpu<span class="w"> </span><span class="o">(</span>cls<span class="o">)</span>:
+<span class="w">        </span><span class="k">return</span><span class="w"> </span>cls.gpu_arch!<span class="o">=</span><span class="s2">&quot;none&quot;</span>
+
+<span class="c1">###############################################################################</span>
+</code></pre></div>
+<div class="copy highlight"><span class="filename">~/.cime/scream_mach_specs.py</span><pre><span></span><code>from<span class="w"> </span>machines_specs<span class="w"> </span>import<span class="w"> </span>Machine
+
+<span class="c1">###############################################################################</span>
+class<span class="w"> </span>Local<span class="o">(</span>Machine<span class="o">)</span>:
+<span class="c1">###############################################################################</span>
+<span class="w">    </span><span class="nv">concrete</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>True
+<span class="w">    </span>@classmethod
+<span class="w">    </span>def<span class="w"> </span>setup<span class="o">(</span>cls<span class="o">)</span>:
+<span class="w">        </span><span class="c1"># NOTE: do not change this line because `test-all-eamxx -l`</span>
+<span class="w">        </span><span class="c1"># specifically looks for a machine named &quot;local&quot;.</span>
+<span class="w">        </span>super<span class="o">()</span>.setup_base<span class="o">(</span><span class="s2">&quot;local&quot;</span><span class="o">)</span>
+
+<span class="w">        </span><span class="c1"># NOTE: these are run by the shell (likely bash), so must have</span>
+<span class="w">        </span><span class="c1">#       shell syntax, and can use shell environment variables</span>
+<span class="w">        </span><span class="c1">#       (e.g, $HOME or ~)</span>
+<span class="w">        </span>cls.env_setup<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">[</span>
+<span class="w">                         </span><span class="c1"># source my personal .bashrc </span>
+<span class="w">                         </span><span class="s2">&quot;. ~/.bashrc&quot;</span>,
+<span class="w">                         </span><span class="c1"># source a custom script to setup my eamxx</span>
+<span class="w">                         </span><span class="c1"># environment</span>
+<span class="w">                         </span><span class="s2">&quot;source </span><span class="si">${</span><span class="nv">HOME</span><span class="si">}</span><span class="s2">/.cime/eamxx-setup.sh&quot;</span>
+<span class="w">                         </span><span class="o">]</span>
+
+<span class="w">        </span><span class="c1"># define the python-variable home directory for use below</span>
+<span class="w">        </span><span class="nv">home_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/home/arthur_dent&quot;</span>
+
+<span class="w">        </span><span class="c1"># NOTE: the syntax used in the python strings below is called</span>
+<span class="w">        </span><span class="c1">#       &quot;formatted string literals&quot; or more commonly &quot;f-strings&quot;</span>
+
+<span class="w">        </span><span class="c1"># provide the path to my baselines directory</span>
+<span class="w">        </span>cls.baselines_dir<span class="w"> </span><span class="o">=</span><span class="w"> </span>f<span class="s2">&quot;{home_dir}/eamxx-baselines&quot;</span>
+
+<span class="w">        </span><span class="c1"># provide the path to a custom cmake file, used to pass build</span>
+<span class="w">        </span><span class="c1"># variables directly to cmake</span>
+<span class="w">        </span>cls.mach_file<span class="w"> </span><span class="o">=</span><span class="w"> </span>f<span class="s2">&quot;{home_dir}/.cime/eamxx_mach_file.cmake&quot;</span>
+
+<span class="w">        </span><span class="c1"># set a couple of environment variables that are used in the</span>
+<span class="w">        </span><span class="c1"># setup script and/or eamxx_mach_file.cmake</span>
+<span class="w">        </span><span class="c1"># path to directory containing personally-built libraries</span>
+<span class="w">        </span><span class="nv">tpl_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>f<span class="s2">&quot;{home_dir}/TPLs&quot;</span>
+<span class="w">        </span><span class="c1"># path to personally-built openmpi compilers</span>
+<span class="w">        </span><span class="nv">mpi_bindir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>f<span class="s2">&quot;{tpl_path}/openmpi-4.1.2/install/bin&quot;</span>
+
+<span class="w">        </span><span class="c1"># specific paths to </span>
+<span class="w">        </span>cls.cxx_compiler<span class="w"> </span><span class="o">=</span><span class="w"> </span>f<span class="s2">&quot;{mpi_bindir}/mpicxx&quot;</span>
+<span class="w">        </span>cls.c_compiler<span class="w"> </span><span class="o">=</span><span class="w"> </span>f<span class="s2">&quot;{mpi_bindir}/mpicc&quot;</span>
+<span class="w">        </span>cls.ftn_compiler<span class="w"> </span><span class="o">=</span><span class="w"> </span>f<span class="s2">&quot;{mpi_bindir}/mpifort&quot;</span>
+
+<span class="c1">###############################################################################</span>
+</code></pre></div>
+</details>
 <!-- ======================================================================= -->
 
 <!-- doesn't like the separation between footnote and text reference appears
@@ -3782,7 +3770,7 @@ to be triggered by the admonition environment -->
 <p>In particular, it is likely you will need to manually build/install the required <a href="../TPLs/">Third-party libraries</a>.&#160;<a class="footnote-backref" href="#fnref:TPLs-etc" title="Jump back to footnote 4 in the text">&#8617;</a></p>
 </li>
 <li id="fn:smoke-test-def">
-<p><strong><em>Smoke Test</em></strong> is a term used by software developers to describe a type of test that initially indicates whether something is working properly--as in, "flip the switch and see if anything starts smoking." :fingers_crossed:&#160;<a class="footnote-backref" href="#fnref:smoke-test-def" title="Jump back to footnote 5 in the text">&#8617;</a></p>
+<p><strong><em>Smoke Test</em></strong> is a term used by software developers to describe a type of test that initially indicates whether something is working properly--as in, "flip the switch and see if anything starts smoking." <img alt="🤞" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/1f91e.svg" title=":fingers_crossed:" />&#160;<a class="footnote-backref" href="#fnref:smoke-test-def" title="Jump back to footnote 5 in the text">&#8617;</a></p>
 </li>
 <li id="fn:regex-tool">
 <p>For those that are not regex ninjas (yet), there are useful tools only to construct or decode regex strings--e.g., <a href="https://regexr.com">RegExr</a>.&#160;<a class="footnote-backref" href="#fnref:regex-tool" title="Jump back to footnote 6 in the text">&#8617;</a></p>
