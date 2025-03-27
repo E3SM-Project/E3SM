@@ -60,6 +60,7 @@ if (SCREAM_ENABLE_BASELINE_TESTS)
     FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_np1_omp1
     FIXTURES_SETUP ${TEST_BASE_NAME}_gen_bfb_hash
     EXE_ARGS "--args --log-file atm.log.np1 --output-file p3_bfb_hash.txt"
+    LABELS p3 baseline_gen
   )
 
   # Compare against bfb hashes in baseline dir
@@ -68,8 +69,10 @@ if (SCREAM_ENABLE_BASELINE_TESTS)
   add_test (NAME ${TEST_BASE_NAME}_bfb_hash_baseline_cmp
     COMMAND ${CMAKE_COMMAND} -P ${SCREAM_BASE_DIR}/cmake/CompareTextFiles.cmake ${SRC_FILE} ${TGT_FILE})
 
-  set_tests_properties (${TEST_BASE_NAME}_bfb_hash_baseline_cmp
-    PROPERTIES FIXTURES_REQUIRED ${TEST_BASE_NAME}_gen_bfb_hash)
+  set_tests_properties (
+    ${TEST_BASE_NAME}_bfb_hash_baseline_cmp PROPERTIES
+    FIXTURES_REQUIRED ${TEST_BASE_NAME}_gen_bfb_hash
+    LABELS "p3;baseline_cmp")
 
   # Store p3_bfb_hash.txt in the baseline folder
   file (APPEND ${SCREAM_TEST_OUTPUT_DIR}/baseline_list
