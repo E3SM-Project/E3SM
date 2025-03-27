@@ -3388,8 +3388,8 @@ must balance the latent and sensible heat energy. This leads to a nonlinear
 equation for the vegetation canopy temperature, which is solved iteratively.
 When the solution for vegetation temperature has been found after <span class="arithmatex">\(k\)</span>-th iteration,
 <span class="arithmatex">\(T_v^{n+1,k}\)</span>, ELM uses a linear approximation of the non-linear term related
-to canopy temperature in the canopy emitted upward and downward longwave radiation.
-The linear approximation is as follows.</p>
+to canopy temperature in the canopy emitted upward and downward longwave radiation
+equations. The linear approximation is as follows.</p>
 <div class="arithmatex">\[
 \begin{equation}
 \epsilon_v \sigma_v (T_v^{n+1,k+1})^4 = \epsilon_v \sigma_v (T_v^{n+1,k})^4 + 4\epsilon_v \sigma_v (T_v^{n+1,k})^3 \Delta T_v^{n+1,k}
@@ -3420,7 +3420,7 @@ L^{\uparrow n + 1} = L_{vg}^{\uparrow n+1}  + 4 \epsilon_g \sigma (T_g^n)^3 (\De
 \end{equation}
 \]</div>
 <p>Note the <span class="arithmatex">\(T_v\)</span> used in computing the net longwave radiation absorbed by
-the leaf given equation \eqref{eq:net_lv} is <span class="arithmatex">\(T_v^{n+1,k}\)</span> and it is not
+the leaf given by equation \eqref{eq:net_lv} is <span class="arithmatex">\(T_v^{n+1,k}\)</span> and it is not
 adjusted after the solution for vegetation temperature is found.</p>
 <div class="footnote">
 <hr />
