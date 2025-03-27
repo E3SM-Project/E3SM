@@ -936,6 +936,8 @@
 			<var name="growOceanMaskHoriz" packages="extrapOceanData" />
                         <var name="seedOceanMaskHoriz" packages="extrapOceanData" />
                         <var name="icebergFjordMask" packages="extrapOceanData"/>
+                        <var name="MPAS_3dOceanTemperature" packages="extrapOceanData"/>
+                        <var name="MPAS_3dOceanSalinity" packages="extrapOceanData"/>
 		</stream>
 
 
