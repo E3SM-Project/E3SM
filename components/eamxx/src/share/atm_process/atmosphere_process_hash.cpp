@@ -232,6 +232,7 @@ void AtmosphereProcess
          << std::hex << std::setfill('0') << std::setw(16) << gaccum[i];
       log (ss.str());
     }
+    m_atm_logger->flush();
   }
 }
 
