@@ -14,9 +14,9 @@ atmosphere_processes:
     checkpoint_path: /pscratch/sd/m/mahf708/emulator/ace_ckpt_traced${GPU_OR_CPU}.tar
 grids_manager:
   Type: ACE
-  grids_names: [Physics]
+  grids_names: [LatLonPhysics, Physics]
   ACE:
-    aliases: [Physics]
+    aliases: [LatLonPhysics, Physics]
     type: point_grid
     num_longitude_points: 360
     num_latitude_points: 180

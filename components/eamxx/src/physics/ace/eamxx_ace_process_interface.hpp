@@ -27,17 +27,28 @@ class ACE : public AtmosphereProcess {
   void run_impl(const double dt) override;
   void finalize_impl() override;
 
-  std::shared_ptr<const AbstractGrid> m_grid;
-  int m_forward_steps = 1;
-  int m_forward_steps_in_memory = 1;
+  // Need two grids (latlon, and pointgrid)
+  std::shared_ptr<const AbstractGrid> m_ll_grid, m_pt_grid;
+  // Need tensors for input and output
+  torch::Tensor m_input_tensor, m_output_tensor;
+  // Tensor geometries
   int m_batch = 1;
   int m_in_ch = 39;
   int m_out_ch = 44;
+  int m_height = 180;
+  int m_width = 360;
+  // Levels
+  int m_levels = 8;
+  // Checkpoint path from the namelist 
   std::string m_checkpoint_path;
   // torch module containing the model
   torch::jit::script::Module m_module;
   // a guard for inference-only mode
   c10::InferenceMode m_guard;
+
+  // Helper functions
+  void preprocess();
+  void postprocess();
 };
 
 }  // namespace scream
