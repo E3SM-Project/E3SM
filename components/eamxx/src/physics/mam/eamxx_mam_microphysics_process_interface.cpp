@@ -745,7 +745,6 @@ void MAMMicrophysics::run_impl(const double dt) {
   auto &dflx = dflx_;
   auto &dvel = dvel_;
 
-  this->print_fast_global_state_hash("microphysics(pre)");
   // loop over atmosphere columns and compute aerosol microphyscs
   Kokkos::parallel_for(
       "MAMMicrophysics::run_impl", policy,
@@ -893,7 +892,6 @@ void MAMMicrophysics::run_impl(const double dt) {
   // postprocess output
   post_process(wet_aero_, dry_aero_, dry_atm_);
   Kokkos::fence();
-  this->print_fast_global_state_hash("microphysics(post)");
 }  // MAMMicrophysics::run_impl
 
 }  // namespace scream

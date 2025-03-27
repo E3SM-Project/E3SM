@@ -1,4 +1,3 @@
-#include <share/util/eamxx_bfbhash.hpp>
 #include <physics/mam/eamxx_mam_constituent_fluxes_functions.hpp>
 #include <physics/mam/eamxx_mam_constituent_fluxes_interface.hpp>
 #include <physics/mam/physical_limits.hpp>
