@@ -1105,89 +1105,6 @@ register_variables(const std::string& filename,
     }
   }
 } // register_variables
-/* ---------------------------------------------------------- */
-std::vector<scorpio::offset_t>
-AtmosphereOutput::get_var_dof_offsets(const FieldLayout& layout)
-{
-  using namespace ShortFieldTagsNames;
-
-  // Precompute this *before* the early return, since it involves collectives.
-  // If one rank owns zero cols, and returns prematurely, the others will be left waiting.
-  AbstractGrid::gid_type min_gid = -1;
-  if (layout.has_tag(COL) or layout.has_tag(EL)) {
-    min_gid = m_io_grid->get_global_min_dof_gid();
-  }
-
-  // It may be that this MPI rank owns no chunk of the field
-  if (layout.size()==0) {
-    return {};
-  }
-
-  std::vector<scorpio::offset_t> var_dof(layout.size());
-
-  // Gather the offsets of the dofs of this variable w.r.t. the *global* array.
-  // Since we order the global array based on dof gid, and we *assume* (we actually
-  // check this during set_grid) that the grid global gids are in the interval
-  // [gid_0, gid_0+num_global_dofs), the offset is simply given by
-  // (dof_gid-gid_0)*column_size (for partitioned arrays).
-  // NOTE: we allow gid_0!=0, so that we don't have to worry about 1-based numbering
-  //       vs 0-based numbering. The key feature is that the global gids are a
-  //       contiguous array. The starting point doesn't matter.
-  // NOTE: a "dof" in the grid object is not the same as a "dof" in scorpio.
-  //       For a SEGrid 3d vector field with (MPI local) layout (nelem,2,np,np,nlev),
-  //       scorpio sees nelem*2*np*np*nlev dofs, while the SE grid sees nelem*np*np dofs.
-  //       All we need to do in this routine is to compute the offset of all the entries
-  //       of the MPI-local array w.r.t. the global array. So long as the offsets are in
-  //       the same order as the corresponding entry in the data to be read/written, we're good.
-  // NOTE: In the case of regional output this rank may have 0 columns to write, thus, var_dof
-  //       should be empty, we check for this special case and return an empty var_dof.
-  auto dofs_h = m_io_grid->get_dofs_gids().get_view<const AbstractGrid::gid_type*,Host>();
-  if (layout.has_tag(COL)) {
-    const int num_cols = m_io_grid->get_num_local_dofs();
-
-    // Note: col_size might be *larger* than the number of vertical levels, or even smaller.
-    //       E.g., (ncols,2,nlevs), or (ncols,2) respectively.
-    scorpio::offset_t col_size = layout.size() / num_cols;
-
-    for (int icol=0; icol<num_cols; ++icol) {
-      // Get chunk of var_dof to fill
-      auto start = var_dof.begin()+icol*col_size;
-      auto end   = start+col_size;
-
-      // Compute start of the column offset, then fill column adding 1 to each entry
-      auto gid = dofs_h(icol);
-      auto offset = (gid-min_gid)*col_size;
-      std::iota(start,end,offset);
-    }
-  } else if (layout.has_tag(EL)) {
-    auto layout2d = m_io_grid->get_2d_scalar_layout();
-    const int num_my_elems = layout2d.dim(0);
-    const int ngp = layout2d.dim(1);
-    const int num_cols = num_my_elems*ngp*ngp;
-
-    // Note: col_size might be *larger* than the number of vertical levels, or even smaller.
-    //       E.g., (ncols,2,nlevs), or (ncols,2) respectively.
-    scorpio::offset_t col_size = layout.size() / num_cols;
-
-    for (int ie=0,icol=0; ie<num_my_elems; ++ie) {
-      for (int igp=0; igp<ngp; ++igp) {
-        for (int jgp=0; jgp<ngp; ++jgp,++icol) {
-          // Get chunk of var_dof to fill
-          auto start = var_dof.begin()+icol*col_size;
-          auto end   = start+col_size;
-
-          // Compute start of the column offset, then fill column adding 1 to each entry
-          auto gid = dofs_h(icol);
-          auto offset = (gid-min_gid)*col_size;
-          std::iota(start,end,offset);
-    }}}
-  } else {
-    // This field is *not* defined over columns, so it is not partitioned.
-    std::iota(var_dof.begin(),var_dof.end(),0);
-  }
-
-  return var_dof;
-}
 
 void AtmosphereOutput::set_decompositions(const std::string& filename)
 {
@@ -1217,7 +1134,7 @@ void AtmosphereOutput::set_decompositions(const std::string& filename)
   auto gids_f = m_io_grid->get_partitioned_dim_gids();
   auto gids_h = gids_f.get_view<const AbstractGrid::gid_type*,Host>();
   auto min_gid = m_io_grid->get_global_min_partitioned_dim_gid();
-  std::vector<scorpio::offset_t> offsets(local_dim);
+  std::vector<int> offsets(local_dim);
   for (int idof=0; idof<local_dim; ++idof) {
     offsets[idof] = gids_h[idof] - min_gid;
   }
