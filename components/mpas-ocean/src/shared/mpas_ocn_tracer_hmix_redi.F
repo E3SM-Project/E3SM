@@ -215,7 +215,7 @@ contains
                                                              * dvEdge(iEdge) * dcEdge(iEdge)
           enddo
         enddo
-        do k = 1,nVertLevels
+        do k = 1,nVertLevels+1
            rediKappaCell(k,iCell) = rediKappaCell(k,iCell) / areaCell(iCell)
         enddo
       enddo
@@ -685,7 +685,7 @@ contains
             !$omp parallel
             !$omp do schedule(runtime) private(k) 
             do iEdge=1,nEdges
-               do k=1,nVertLevels
+               do k=1,nVertLevels+1
                   if (dcEdge(iEdge) <= config_Redi_horizontal_ramp_min) then
                      RediKappa(k,iEdge) = 0.0_RKIND
                      RediHorizontalTaper(iEdge) = 0.0_RKIND
