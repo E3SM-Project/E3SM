@@ -5,6 +5,7 @@
 #include "ekat/ekat_assert.hpp"
 
 #include <cstdint>
+#include <iomanip>
 
 namespace scream {
 namespace {
@@ -87,7 +88,6 @@ void hash (const Field::view_dev_t<const Real*****>& v,
 void hash (const Field& f, HashType& accum) {
   const auto& hd = f.get_header();
   const auto& id = hd.get_identifier();
-  if (id.data_type() != DataType::DoubleType) return;
   const auto& lo = id.get_layout();
   const auto rank = lo.rank();
   switch (rank) {
@@ -214,9 +214,25 @@ void AtmosphereProcess
 
     const auto& date = timestamp().get_date();
     const auto& tod  = timestamp().sec_of_day();
-    printf("eamxx hash> date=%04d-%02d-%02d-%05d (%s)\n", date[0],date[1],date[2],tod,label.c_str());
-    for (int i = 0; i < naccum; ++i)
-      printf("  %*s: %16" PRIx64 "\n",slen,hash_names[i].c_str(),gaccum[i]);
+
+    std::stringstream ss;
+
+    ss << "eamxx hash> date="
+       << std::setw(4) << std::setfill('0') << date[0] << "-" // Year
+       << std::setw(2) << std::setfill('0') << date[1] << "-" // Month
+       << std::setw(2) << std::setfill('0') << date[2] << "-" // Day
+       << std::setw(5) << std::setfill('0') << tod << " "     // Time of day
+       << "(" << label << "), naccum=" << naccum;             // Label and number of accum
+    log (ss.str());
+
+    for (int i = 0; i < naccum; ++i) {
+      ss.str(""); // Clear content
+      ss.clear(); // Clear error flags
+      ss << std::setw(slen) << std::setfill(' ') << hash_names[i] << ": "
+         << std::hex << std::setfill('0') << std::setw(16) << gaccum[i];
+      log (ss.str());
+    }
+    m_atm_logger->flush();
   }
 }
 
