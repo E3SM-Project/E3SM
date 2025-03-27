@@ -33,7 +33,8 @@ def buildlib(bldroot, installpath, case):
 
     filepaths = \
  """{caseroot}/SourceMods/src.rdycore
-{srcroot}/components/rdycore/src
+{srcroot}/components/rdycore/src/main
+{srcroot}/components/rdycore/src/cpl
 """.format(caseroot=caseroot, srcroot=srcroot)
 
     with open(os.path.join(casebuild, "rdycoreconf", "Filepath"), "w") as fd:
