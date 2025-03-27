@@ -1,4 +1,3 @@
-#include <share/util/eamxx_bfbhash.hpp>
 #include "physics/mam/eamxx_mam_wetscav_process_interface.hpp"
 
 /*
