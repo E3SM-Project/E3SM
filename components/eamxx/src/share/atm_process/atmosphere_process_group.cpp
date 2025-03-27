@@ -364,6 +364,79 @@ void AtmosphereProcessGroup::add_additional_data_fields_to_property_checks (cons
   }
 }
 
+void AtmosphereProcessGroup::pre_process_tracer_requests () {
+  // Create map from tracer name to a vector which contains the field requests for that tracer.
+  std::map<std::string, std::list<FieldRequest>> tracer_requests;
+  auto gather_tracer_requests = [&] (FieldRequest& req) {
+    if (ekat::contains(req.groups, "tracers")) {
+      tracer_requests[req.fid.name()].push_back(req);
+    }
+  };
+  for (auto& req : m_required_field_requests){
+    gather_tracer_requests(req);
+  }
+  for (auto& req : m_computed_field_requests) {
+    gather_tracer_requests(req);
+  }
+
+  // Go through the map entry for each tracer and check that every one
+  // has the same request for turbulence advection, or listed no preference.
+  std::map<std::string, std::string> tracer_advection_type;
+  for (auto& fr : tracer_requests) {
+    auto& reqs = fr.second;
+
+    bool turb_advect_req = false;
+    bool non_turb_advect_req = false;
+    for (auto& req : reqs) {
+      if (ekat::contains(req.groups, "turbulence_advected_tracers")) turb_advect_req = true;
+      if (ekat::contains(req.groups, "non_turbulence_advected_tracers")) non_turb_advect_req = true;
+      if (turb_advect_req and non_turb_advect_req) {
+        // All the info we need to error out, just break request loop
+        break;
+      }
+    }
+
+    if (turb_advect_req and non_turb_advect_req) {
+      std::ostringstream ss;
+      ss << "Error! Incompatible tracer request. Turbulence advection requests not consistent among processes.\n"
+            "  - Tracer name: " + fr.first + "\n"
+            "  - Requests (process name, grid name, turbulence advected request type):\n";
+      for (auto& req : reqs) {
+        const auto turb_advect = ekat::contains(req.groups, "turbulence_advected_tracers");
+        const auto non_turb_advect = ekat::contains(req.groups, "non_turbulence_advected_tracers");
+        std::string turb_advect_info =
+          (turb_advect ?       "DynamicsAndTurbulence" :
+            (non_turb_advect ? "DynamicsOnly" :
+                                "NoPreference"));
+        const auto grid_name = req.fid.get_grid_name();
+        ss << "    - (" + req.calling_process + ", " + grid_name + ", " + turb_advect_info + ")\n";
+      }
+      EKAT_ERROR_MSG(ss.str());
+    } else if (non_turb_advect_req) {
+      tracer_advection_type[fr.first] = "non_turbulence_advected_tracers";
+    } else {
+      tracer_advection_type[fr.first] = "turbulence_advected_tracers";
+    }
+  }
+
+  // Set correct tracer advection type (if not set)
+  auto add_correct_tracer_group = [&] (FieldRequest& req, const std::string& advect_type) {
+    if (not ekat::contains(req.groups, advect_type)) {
+      req.groups.push_back(advect_type);
+    }
+  };
+  for (auto& req : m_required_field_requests){
+    if (ekat::contains(req.groups, "tracers")) {
+      add_correct_tracer_group(req, tracer_advection_type.at(req.fid.name()));
+    }
+  }
+  for (auto& req : m_computed_field_requests) {
+    if (ekat::contains(req.groups, "tracers")) {
+      add_correct_tracer_group(req, tracer_advection_type.at(req.fid.name()));
+    }
+  }
+}
+
 void AtmosphereProcessGroup::initialize_impl (const RunType run_type) {
   for (auto& atm_proc : m_atm_processes) {
     atm_proc->initialize(timestamp(),run_type);

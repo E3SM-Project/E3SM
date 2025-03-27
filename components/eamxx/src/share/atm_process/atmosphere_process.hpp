@@ -176,10 +176,10 @@ public:
   // These methods allow the AD to figure out what each process needs, with very fine
   // grain detail. See field_request.hpp for more info on what FieldRequest and GroupRequest
   // are, and field_group.hpp for what groups of fields are.
-  const std::set<FieldRequest>& get_required_field_requests () const { return m_required_field_requests; }
-  const std::set<FieldRequest>& get_computed_field_requests () const { return m_computed_field_requests; }
-  const std::set<GroupRequest>& get_required_group_requests () const { return m_required_group_requests; }
-  const std::set<GroupRequest>& get_computed_group_requests () const { return m_computed_group_requests; }
+  const std::list<FieldRequest>& get_required_field_requests () const { return m_required_field_requests; }
+  const std::list<FieldRequest>& get_computed_field_requests () const { return m_computed_field_requests; }
+  const std::list<GroupRequest>& get_required_group_requests () const { return m_required_group_requests; }
+  const std::list<GroupRequest>& get_computed_group_requests () const { return m_computed_group_requests; }
 
   // These sets allow to get all the actual in/out fields stored by the atm proc
   // Note: if an atm proc requires a group, then all the fields in the group, as well as
@@ -356,12 +356,14 @@ protected:
   void add_tracer (const std::string& name, std::shared_ptr<const AbstractGrid> grid,
                    const ekat::units::Units& u,
                    const int ps = 1,
-                   const TracerAdvection tracer_advection = TracerAdvection::DynamicsAndTurbulence)
+                   const TracerAdvection tracer_advection = TracerAdvection::NoPreference)
   {
     std::list<std::string> tracer_groups;
     tracer_groups.push_back("tracers");
     if (tracer_advection==TracerAdvection::DynamicsAndTurbulence) {
       tracer_groups.push_back("turbulence_advected_tracers");
+    } else if (tracer_advection==TracerAdvection::DynamicsOnly) {
+      tracer_groups.push_back("non_turbulence_advected_tracers");
     }
 
     FieldIdentifier fid(name, grid->get_3d_scalar_layout(true), u, grid->name());
@@ -391,14 +393,14 @@ protected:
 
     switch (RT) {
       case Required:
-        m_required_field_requests.emplace(req);
+        m_required_field_requests.push_back(req);
         break;
       case Computed:
-        m_computed_field_requests.emplace(req);
+        m_computed_field_requests.push_back(req);
         break;
       case Updated:
-        m_required_field_requests.emplace(req);
-        m_computed_field_requests.emplace(req);
+        m_required_field_requests.push_back(req);
+        m_computed_field_requests.push_back(req);
         break;
     }
   }
@@ -411,14 +413,14 @@ protected:
         "Error! Invalid request type in call to add_group.\n");
     switch (RT) {
       case Required:
-        m_required_group_requests.emplace(req);
+        m_required_group_requests.push_back(req);
         break;
       case Computed:
-        m_computed_group_requests.emplace(req);
+        m_computed_group_requests.push_back(req);
         break;
       case Updated:
-        m_required_group_requests.emplace(req);
-        m_computed_group_requests.emplace(req);
+        m_required_group_requests.push_back(req);
+        m_computed_group_requests.push_back(req);
         break;
     }
   }
@@ -558,12 +560,6 @@ private:
   strmap_t<strmap_t<Field*>> m_fields_out_pointers;
   strmap_t<strmap_t<Field*>> m_internal_fields_pointers;
 
-  // The list of in/out field/group requests.
-  std::set<FieldRequest>   m_required_field_requests;
-  std::set<FieldRequest>   m_computed_field_requests;
-  std::set<GroupRequest>   m_required_group_requests;
-  std::set<GroupRequest>   m_computed_group_requests;
-
   // List of property checks for fields
   std::list<std::pair<CheckFailHandling,prop_check_ptr>> m_precondition_checks;
   std::list<std::pair<CheckFailHandling,prop_check_ptr>> m_postcondition_checks;
@@ -608,6 +604,12 @@ protected:
 
   // IOP object
   iop_data_ptr m_iop_data_manager;
+
+  // The list of in/out field/group requests.
+  std::list<FieldRequest>   m_required_field_requests;
+  std::list<FieldRequest>   m_computed_field_requests;
+  std::list<GroupRequest>   m_required_group_requests;
+  std::list<GroupRequest>   m_computed_group_requests;
 };
 
 // ================= IMPLEMENTATION ================== //
