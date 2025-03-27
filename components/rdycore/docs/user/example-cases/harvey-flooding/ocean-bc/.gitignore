@@ -1,7 +1,0 @@
-*.dat
-*.bin
-output
-*.exo
-*.batch
-cpu.*
-gpu.*
