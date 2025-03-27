@@ -249,7 +249,7 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
   // Allocate work array
   const int work_len = mam4::wetdep::get_aero_model_wetdep_work_len();
   work_              = view_2d("work", ncol_, work_len);
-
+  isprx_             = int_view_2d("isprx", ncol_, nlev_);
   // TODO: Following variables are from convective parameterization (not
   // implemented yet in EAMxx), so should be zero for now
 
@@ -304,6 +304,7 @@ void MAMWetscav::run_impl(const double dt) {
   const mam_coupling::DryAtmosphere &dry_atm = dry_atm_;
   const auto &dry_aero                       = dry_aero_;
   const auto &work                           = work_;
+  const auto &isprx                          = isprx_;
   const auto &dry_aero_tends                 = dry_aero_tends_;
 
   // ---------------------------------------------------------------
@@ -433,6 +434,7 @@ void MAMWetscav::run_impl(const double dt) {
         auto wetdens_icol     = ekat::subview(wetdens, icol);
         const auto prain_icol = ekat::subview(prain, icol);
 
+        auto isprx_icol = ekat::subview(isprx, icol);
 
         mam4::wetdep::aero_model_wetdep(
             team, atm, progs, tends, dt,
@@ -442,7 +444,7 @@ void MAMWetscav::run_impl(const double dt) {
             dlf_icol, prain_icol, scavimptblnum, scavimptblvol,
             // outputs
             wet_diameter_icol, dry_diameter_icol, qaerwat_icol, wetdens_icol,
-            aerdepwetis_icol, aerdepwetcw_icol, work_icol);
+            aerdepwetis_icol, aerdepwetcw_icol, work_icol, isprx_icol);
         team.team_barrier();
         // update interstitial aerosol state
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](int kk) {
@@ -461,6 +463,7 @@ void MAMWetscav::run_impl(const double dt) {
 
   // call post processing to convert dry mixing ratios to wet mixing ratios
   // and update the state
+  Kokkos::fence();
   post_process(wet_aero_, dry_aero_, dry_atm_);
   Kokkos::fence();  // wait before returning to calling function
 }
