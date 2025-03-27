@@ -438,6 +438,8 @@ public:
     uview_2d<Spack> shoc_ql2;
     uview_2d<Spack> shoc_mix;
     uview_2d<Spack> isotropy;
+    uview_2d<Spack> shoc_cond;
+    uview_2d<Spack> shoc_evap;
     uview_2d<Spack> w_sec;
     uview_2d<Spack> thl_sec;
     uview_2d<Spack> qw_sec;
