@@ -765,7 +765,7 @@ struct Functions
     const uview_1d<Spack>&       shoc_ql,
     const uview_1d<Spack>&       wqls,
     const uview_1d<Spack>&       wthv_sec,
-    const uview_1d<Spack>&       shoc_ql2
+    const uview_1d<Spack>&       shoc_ql2,
     const uview_1d<Spack>&       shoc_cond,
     const uview_1d<Spack>&       shoc_evap);
 #ifdef SCREAM_SHOC_SMALL_KERNELS
