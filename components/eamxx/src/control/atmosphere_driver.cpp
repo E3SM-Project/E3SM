@@ -975,6 +975,10 @@ void AtmosphereDriver::create_logger () {
   auto& driver_options_pl = m_atm_params.sublist("driver_options");
 
   ci_string log_fname = driver_options_pl.get<std::string>("Atm Log File","atm.log");
+  if (is_scream_standalone()) {
+    // Useful for concurrent unit tests in the same folder
+    log_fname += ".np" + std::to_string (m_atm_comm.size());
+  }
   ci_string log_level = driver_options_pl.get<std::string>("atm_log_level","info");
   ci_string flush_level = driver_options_pl.get<std::string>("atm_flush_level","warn");
   EKAT_REQUIRE_MSG (log_fname!="",
