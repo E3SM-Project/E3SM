@@ -121,6 +121,10 @@ set(CMAKE_VERBOSE_MAKEFILE TRUE)
 # Find dependencies
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/find_dep_packages.cmake)
 
+# Add a global include directory
+include_directories("/global/cfs/projectdirs/m4267/petsc/petsc_v3.22.0/include")
+include_directories("/global/cfs/projectdirs/m4267/petsc/petsc_v3.22.0/pm-cpu-hdf5_1_14_3-opt-64bit-gcc-11-2-0-v3.22.0/include")
+
 # Scream manages its own flags
 build_eamxx()
 

@@ -4,6 +4,7 @@ if (COMP_NAME STREQUAL gptl)
 endif()
 string(APPEND CMAKE_C_FLAGS_RELEASE " -O2 -g")
 string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -O2 -g")
+string(APPEND FFLAGS " -I$ENV{PETSC_DIR}/include")
 
 # For MCT coupler sources only, try resetting CMAKE_Fortran_FLAGS_DEBUG to avoid setting FPE invalid exceptions
 # https://github.com/E3SM-Project/E3SM/issues/7049

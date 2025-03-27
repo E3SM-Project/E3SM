@@ -280,6 +280,8 @@
       <env name="BLA_VENDOR">Generic</env>
       <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /global/common/software/e3sm/albany/2024.03.26/gcc/11.2.0; else echo "$Albany_ROOT"; fi}</env>
       <env name="Trilinos_ROOT">$SHELL{if [ -z "$Trilinos_ROOT" ]; then echo /global/common/software/e3sm/trilinos/15.1.1/gcc/11.2.0; else echo "$Trilinos_ROOT"; fi}</env>
+      <env name="PETSc_PATH">$SHELL{if [ -z "$PETSc_PATH" ]; then echo /global/cfs/projectdirs/m4267/petsc/petsc_v3.22.0; else echo "$PETSc_PATH"; fi}</env>
+      <env name="PETSC_PATH">$SHELL{if [ -z "$PETSC_PATH" ]; then echo /global/cfs/projectdirs/m4267/petsc/petsc_v3.22.0; else echo "$PETSC_PATH"; fi}</env>
     </environment_variables>
     <environment_variables compiler="nvidia" mpilib="mpich">
       <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.9.1/cray-mpich-8.1.25/nvidia-22.7; else echo "$ADIOS2_ROOT"; fi}</env>
