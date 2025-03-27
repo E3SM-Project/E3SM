@@ -225,7 +225,8 @@ module ocn_redi
      !$omp do schedule(runtime)  &
      !$omp private(k33Norm, k, i, iEdge, cell1, cell2, &
      !$omp         iCellSelf, dcEdgeInv, areaEdge, drhoDT, drhoDS, dTdx, dSdx, drhoDx, &
-     !$omp         slopeTaperUp, slopeTaperDown, tempSlopeUp, tempSlopeDown, sfcTaper)
+     !$omp         slopeTaperUp, slopeTaperDown, tempSlopeUp, tempSlopeDown, sfcTaperTemp, &
+     !$omp         sfcTaper)
      do iCell = 1, nCells
         k33(1:maxLevelCell(iCell) + 1, iCell) = 0.0_RKIND
         k33Norm(1:maxLevelCell(iCell) + 1) = epsGM
