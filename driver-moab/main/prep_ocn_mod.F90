@@ -420,6 +420,10 @@ contains
 #ifdef HAVE_MOAB
           ! Call moab intx only if atm and ocn are init in moab
           if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
+            if (iamroot_CPLID) then
+               write(logunit,*) ' '
+               write(logunit,F00) 'Initializing MOAB mapper_Fa2o and mapper_Sa2o'
+            end if
             appname = "ATM_OCN_COU"//C_NULL_CHAR
             ! idintx is a unique number of MOAB app that takes care of intx between ocn and atm mesh
             idintx = 100*atm(1)%cplcompid + ocn(1)%cplcompid ! something different, to differentiate it
@@ -473,9 +477,6 @@ contains
                end if
 
                ! now take care of the mapper
-               if ( mapper_Fa2o%src_mbid .gt. -1 .and. iamroot_CPLID ) then
-                     write(logunit,F00) 'overwriting '// trim(mapper_Fa2o%mbname) // ' mapper_Fa2o'
-               endif
                mapper_Fa2o%intx_context = idintx
                !! updated mapper_Fa2o --
 
@@ -640,9 +641,10 @@ contains
           if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
 
             ! now take care of the 2 new mappers
-            if ( mapper_Sa2o%src_mbid .gt. -1 .and. iamroot_CPLID ) then
-               write(logunit,F00) 'overwriting mapper_Sa2o with MOAB contexts'
-            endif
+            if (iamroot_CPLID) then
+               write(logunit,*) ' '
+               write(logunit,F00) 'Finish initializing MOAB mapper_Sa2o bilinear'
+            end if
             mapper_Sa2o%src_mbid = mbaxid
             mapper_Sa2o%tgt_mbid = mboxid
             mapper_Sa2o%intx_mbid = mbintxao
@@ -651,9 +653,10 @@ contains
             mapper_Sa2o%weight_identifier = wgtIda2o_bilinear
             mapper_Sa2o%mbname = 'mapper_Sa2o'
 
-            if ( mapper_Va2o%src_mbid .gt. -1 .and. iamroot_CPLID ) then
-               write(logunit,F00) 'overwriting mapper_Va2o with MOAB contexts'
-            endif
+            if (iamroot_CPLID) then
+               write(logunit,*) ' '
+               write(logunit,F00) 'Initializing MOAB mapper_Va2o bilinear same as Sa2o'
+            end if
             mapper_Va2o%src_mbid = mbaxid
             mapper_Va2o%tgt_mbid = mboxid
             mapper_Va2o%intx_mbid = mbintxao
@@ -675,6 +678,10 @@ contains
           call seq_map_init_rearrolap(mapper_SFi2o, ice(1), ocn(1), 'mapper_SFi2o')
 #ifdef HAVE_MOAB
           if ( (mbixid .ge. 0) .and. (mboxid .ge. 0)) then
+             if (iamroot_CPLID) then
+               write(logunit,*) ' '
+               write(logunit,F00) 'Initializing MOAB mapper_SFi2o'
+             end if
             ! moab also will do just a rearrange, hopefully, in this case, based on the comm graph
             !   that is computed here
             call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)   !  second group, the coupler group CPLID is global variable
@@ -762,6 +769,10 @@ contains
               write(logunit,*) subname,' error in compute coverage mesh rof for ocean'
               call shr_sys_abort(subname//' ERROR in compute coverage mesh rof for ocean ')
           endif
+          if (iamroot_CPLID) then
+             write(logunit,*) ' '
+             write(logunit,F00) 'Initializing MOAB mapper_Rr2o_liq'
+          end if
 
           type_grid = 3 ! this is type of grid, maybe should be saved on imoab app ?
           call moab_map_init_rcfile(mbrxid, mboxid, mbintxro, type_grid, &
@@ -886,12 +897,10 @@ contains
 ! us the same one for mapper_Rr2o_ice and mapper_Fr2o
 #ifdef HAVE_MOAB
 ! now take care of the mapper for MOAB mapper_Rr2o_ice
-            if ( mapper_Rr2o_ice%src_mbid .gt. -1 ) then
-                if (iamroot_CPLID) then
-                     write(logunit,F00) 'overwriting '//trim(mapper_Rr2o_ice%mbname) &
-                             //' mapper_Rr2o_ice'
-                endif
-            endif
+            if (iamroot_CPLID) then
+               write(logunit,*) ' '
+               write(logunit,F00) 'Initializing MOAB mapper_Rr2o_ice same as mapper_Rr2o_liq'
+            end if
             mapper_Rr2o_ice%src_mbid = mbrxid
             mapper_Rr2o_ice%tgt_mbid = mboxid ! special
             mapper_Rr2o_ice%intx_mbid = mbintxro
@@ -912,12 +921,10 @@ contains
                   string='mapper_Fr2o initialization', esmf_map=esmf_map_flag)
 #ifdef HAVE_MOAB
 ! now take care of the mapper for MOAB mapper_Fr2o
-            if ( mapper_Fr2o%src_mbid .gt. -1 ) then
-                if (iamroot_CPLID) then
-                     write(logunit,F00) 'overwriting '//trim(mapper_Fr2o%mbname) &
-                             //' mapper_Fr2o'
-                endif
-            endif
+             if (iamroot_CPLID) then
+                write(logunit,*) ' '
+                write(logunit,F00) 'Initializing MOAB mapper_Fr2o'
+             end if
                mapper_Fr2o%src_mbid = mbrxid
                mapper_Fr2o%tgt_mbid = mboxid ! special
                mapper_Fr2o%intx_mbid = mbintxro

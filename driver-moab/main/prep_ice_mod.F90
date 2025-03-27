@@ -196,6 +196,10 @@ contains
 
 #ifdef HAVE_MOAB
           if ( (mbixid .ge. 0) .and. (mboxid .ge. 0)) then
+            if (iamroot_CPLID) then
+               write(logunit,*) ' '
+               write(logunit,F00) 'Initializing MOAB mapper_SFo2i'
+            end if
             ! MOAB will do just a rearrange, based on the comm graph that is computed here
             call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)   !  second group, the coupler group CPLID is global variable
 

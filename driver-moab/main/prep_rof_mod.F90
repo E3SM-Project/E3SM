@@ -326,6 +326,10 @@ contains
 #ifdef HAVE_MOAB
           ! Call moab intx only if land and river are init in moab
           if ((mblxid .ge. 0) .and.  (mbrxid .ge. 0)) then
+            if (iamroot_CPLID) then
+               write(logunit,*) ' '
+               write(logunit,F00) 'Initializing MOAB mapper_Fl2r'
+            endif
             appname = "LND_ROF_COU"//C_NULL_CHAR
             ! idintx is a unique number of MOAB app that takes care of intx between lnd and rof mesh
             idintx = 100*lnd(1)%cplcompid + rof(1)%cplcompid ! something different, to differentiate it
@@ -546,6 +550,10 @@ contains
 #ifdef HAVE_MOAB
           ! Call moab intx only if atm  and river are init in moab
           if ((mbrxid .ge. 0) .and.  (mbaxid .ge. 0)) then
+            if (iamroot_CPLID) then
+               write(logunit,*) ' '
+               write(logunit,F00) 'Initializing MOAB mapper_Fa2r'
+            end if
             appname = "ATM_ROF_COU"//C_NULL_CHAR
             ! idintx is a unique number of MOAB app that takes care of intx between rof and atm mesh
             idintx = 100*atm(1)%cplcompid + rof(1)%cplcompid ! something different, to differentiate it
@@ -688,6 +696,10 @@ contains
                string='mapper_Sa2r initialization', esmf_map=esmf_map_flag)
 #ifdef HAVE_MOAB
             ! now take care of the mapper, use the same one as before
+            if (iamroot_CPLID) then
+               write(logunit,*) ' '
+               write(logunit,F00) 'Initializing MOAB mapper_Sa2r'
+            end if
             if ( mapper_Sa2r%src_mbid .gt. -1 ) then
                 if (iamroot_CPLID) then
                      write(logunit,F00) 'overwriting '//trim(mapper_Sa2r%mbname) &

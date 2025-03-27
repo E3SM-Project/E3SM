@@ -343,9 +343,6 @@ contains
                endif
 
                ! now take care of the mapper
-               if ( mapper_So2a%src_mbid .gt. -1 .and. iamroot_CPLID ) then
-                     write(logunit,F00) 'overwriting '// trim(mapper_So2a%mbname) // ' with MOAB'
-               endif
                mapper_So2a%intx_context = idintx
 
                if (compute_maps_online_o2a) then
@@ -389,7 +386,7 @@ contains
 
                   call moab_map_init_rcfile( mboxid, mbaxid, mbintxoa, type1, &
                         'seq_maps.rc', 'ocn2atm_smapname:', 'ocn2atm_smaptype:',samegrid_ao, &
-                        wgtIdo2a, 'mapper_Sof2a MOAB init', esmf_map_flag)
+                        wgtIdo2a, 'mapper_So2a MOAB init', esmf_map_flag)
                endif
 
             else ! samegrid_ao = TRUE
@@ -421,7 +418,7 @@ contains
          if ((mbaxid .ge. 0) .and.  (mbofxid .ge. 0)) then
             if (iamroot_CPLID) then
               write(logunit,*) ' '
-              write(logunit,F00) 'Initializing MOAB mapper_Sof2a'
+              write(logunit,F00) 'Initializing MOAB mapper_Sof2a with copy of mapper_So2a'
             endif
             ! We also need to compute the comm graph for the second hop, from the OCN on the coupler to the
             ! OCN for the intersection of OCN-ATM context (coverage)
@@ -432,9 +429,6 @@ contains
                call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ocnf-atm')
             endif
 
-            if ( mapper_Sof2a%src_mbid .gt. -1 .and. iamroot_CPLID) then
-               write(logunit,F00) 'overwriting '// trim(mapper_Sof2a%mbname) // ' with MOAB'
-            endif
             ! we identified the app mbofxid with !id_join = id_join + 1000! kind of random
             ! line 1267 in cplcomp_exchange_mod.F90
             context_id = ocn(1)%cplcompid + 1000
@@ -492,15 +486,9 @@ contains
          if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
             if (iamroot_CPLID) then
               write(logunit,*) ' '
-              write(logunit,F00) 'Initializing MOAB mapper_Fo2a'
+              write(logunit,F00) 'Initializing MOAB mapper_Fo2a with copy of mapper_So2a'
             endif
             ! now take care of the mapper
-            if ( mapper_Fo2a%src_mbid .gt. -1 ) then
-                if (iamroot_CPLID) then
-                     write(logunit,F00) 'overwriting '//trim(mapper_Fo2a%mbname) &
-                             //' with MOAB'
-                endif
-            endif
             mapper_Fo2a%src_mbid = mboxid
             mapper_Fo2a%tgt_mbid = mbaxid
             mapper_Fo2a%intx_mbid = mbintxoa
@@ -512,15 +500,9 @@ contains
          if ((mbaxid .ge. 0) .and.  (mbofxid .ge. 0)) then
             if (iamroot_CPLID) then
               write(logunit,*) ' '
-              write(logunit,F00) 'Initializing MOAB mapper_Fof2a'
+              write(logunit,F00) 'Initializing MOAB mapper_Fof2a with copy of mapper_Sof2a'
             endif
             ! now take care of the mapper
-            if ( mapper_Fof2a%src_mbid .gt. -1 ) then
-                if (iamroot_CPLID) then
-                     write(logunit,F00) 'overwriting '//trim(mapper_Fof2a%mbname) &
-                             //' with MOAB'
-                endif
-            endif
             mapper_Fof2a%src_mbid = mbofxid
             mapper_Fof2a%tgt_mbid = mbaxid
             mapper_Fof2a%intx_mbid = mbintxoa
@@ -611,12 +593,6 @@ contains
                call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ice-atm')
             endif
             ! now take care of the mapper
-            if ( mapper_Si2a%src_mbid .gt. -1 ) then
-                if (iamroot_CPLID) then
-                     write(logunit,F00) 'overwriting '//trim(mapper_Si2a%mbname) &
-                             //' with MOAB'
-                endif
-            endif
             mapper_Si2a%src_mbid = mbixid
             mapper_Si2a%tgt_mbid = mbaxid
             mapper_Si2a%intx_mbid = mbintxia
@@ -705,13 +681,7 @@ contains
          if (ice_c2_atm) then
             if (iamroot_CPLID) then
               write(logunit,*) ' '
-              write(logunit,F00) 'Initializing MOAB mapper_Fi2a'
-            endif
-            if ( mapper_Fi2a%src_mbid .gt. -1 ) then
-                if (iamroot_CPLID) then
-                     write(logunit,F00) 'overwriting '//trim(mapper_Fi2a%mbname) &
-                             //' with MOAB'
-                endif
+              write(logunit,F00) 'Initializing MOAB mapper_Fi2a with copy of mapper_Si2a'
             endif
 
             mapper_Fi2a%src_mbid = mbixid
@@ -770,12 +740,6 @@ contains
             if (ierr .ne. 0) then
               write(logunit,*) subname,' error in registering lnd atm intx '
               call shr_sys_abort(subname//' ERROR in registering lnd atm intx ')
-            endif
-            if ( mapper_Fl2a%src_mbid .gt. -1 ) then
-                if (iamroot_CPLID) then
-                     write(logunit,F00) 'overwriting '//trim(mapper_Fl2a%mbname) &
-                             //' with MOAB'
-                endif
             endif
             mapper_Fl2a%src_mbid = mblxid
             mapper_Fl2a%tgt_mbid = mbaxid !
@@ -912,13 +876,7 @@ contains
          if ((mbaxid .ge. 0) .and.  (mblxid .ge. 0) ) then
             if (iamroot_CPLID) then
               write(logunit,*) ' '
-              write(logunit,F00) 'Initializing MOAB mapper_Sl2a'
-            endif
-            if ( mapper_Sl2a%src_mbid .gt. -1 ) then
-                if (iamroot_CPLID) then
-                     write(logunit,F00) 'overwriting '//trim(mapper_Sl2a%mbname) &
-                             //' with MOAB'
-                endif
+              write(logunit,F00) 'Initializing MOAB mapper_Sl2a with copy from mapper_Fl2a'
             endif
             mapper_Sl2a%src_mbid = mblxid
             mapper_Sl2a%tgt_mbid = mapper_Fl2a%tgt_mbid !

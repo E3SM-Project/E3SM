@@ -242,6 +242,10 @@ contains
 #ifdef HAVE_MOAB
           ! Call moab intx only if land and river are init in moab
           if ((mbrxid .ge. 0) .and.  (mblxid .ge. 0)) then
+            if (iamroot_CPLID) then
+               write(logunit,*) ' '
+               write(logunit,F00) 'Initializing MOAB mapper_Fr2l'
+            end if
             appname = "ROF_LND_COU"//C_NULL_CHAR
             ! idintx is a unique number of MOAB app that takes care of intx between rof and lnd mesh
             idintx = 100*rof(1)%cplcompid + lnd(1)%cplcompid ! something different, to differentiate it
@@ -436,6 +440,10 @@ contains
           ! we will use just a comm graph to send data from atm to land on coupler
           ! this is just a rearrange in a way
           if ((mbaxid .ge. 0) .and.  (mblxid .ge. 0) ) then
+            if (iamroot_CPLID) then
+               write(logunit,*) ' '
+               write(logunit,F00) 'Initializing MOAB mapper_Sa2l and mapper_Fa2l'
+            end if
             appname = "ATM_LND_COU"//C_NULL_CHAR
             ! idintx is a unique number of MOAB app that takes care of intx between lnd and atm mesh
             idintx = 100*atm(1)%cplcompid + lnd(1)%cplcompid ! something different, to differentiate it
