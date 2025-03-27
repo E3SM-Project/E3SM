@@ -56,9 +56,9 @@ void Functions<S,D>
   if ( qi_not_small.any() ) {
     bm.set(qi_not_small, bm - ((qi2qv_sublim_tend + qi2qr_melt_tend) / qi) * dt * bm);
     qm.set(qi_not_small, qm - ((qi2qv_sublim_tend + qi2qr_melt_tend) * qm / qi) * dt);
-    qmr.set(qi_not_small, qmr - ((qi2qv_sublim_tend + qi2qr_melt_tend) * qmr / qi) * dt);
     qmr2qv_sublim_tend.set(qi_not_small,qi2qv_sublim_tend*qmr / qi);
     qmr2qr_melt_tend.set(qi_not_small,qi2qr_melt_tend*qmr / qi);
+    qmr.set(qi_not_small, qmr - ((qi2qv_sublim_tend + qi2qr_melt_tend) * qmr / qi) * dt);
     qi.set(qi_not_small, qi - (qi2qv_sublim_tend + qi2qr_melt_tend) * dt);
   }
 
