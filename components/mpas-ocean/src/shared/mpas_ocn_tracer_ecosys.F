@@ -1012,10 +1012,11 @@ contains
 ! compute source-sink terms
          call marbl_instances(1)%interior_tendency_compute()
 
-!maltrud ignore abort
         if (marbl_instances(1)%StatusLog%labort_marbl) &
+!maltrud ignore abort
 !          call mpas_log_write("WARNING: problem in MARBL interior_tendency_compute", MPAS_LOG_CRIT)
-           call mpas_log_write(' IGNORING problem in MARBL interior_tendency_compute ')
+! write(*,*)' IGNORING problem in MARBL interior_tendency_compute'
+        marbl_instances(1)%StatusLog%labort_marbl = .false.
         call marbl_instances(1)%StatusLog%erase()
 
          do iLevel=minLevelCell(iCell),maxLevelCell(iCell)
