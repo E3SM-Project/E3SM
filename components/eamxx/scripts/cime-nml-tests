@@ -196,7 +196,7 @@ class TestBuildnml(unittest.TestCase):
         case = self._common_case
 
         # Add testOnly proc
-        self._chg_atmconfig([("mac_aero_mic::atm_procs_list", "shoc,cldFraction,spa,p3,testOnly")], case)
+        self._chg_atmconfig([("mac_aero_mic::atm_procs_list", "shoc,cld_fraction,spa,p3,testOnly")], case)
 
         # Test case 1: append to base, then to last. Should give all 3 entries stacked
         run_cmd_no_fail(f"./xmlchange --append SCREAM_CMAKE_OPTIONS='SCREAM_NUM_VERTICAL_LEV 1'", from_dir=case)
@@ -311,7 +311,7 @@ class TestBuildnml(unittest.TestCase):
         """
         case = self._common_case
 
-        self._chg_atmconfig([("mac_aero_mic::atm_procs_list", "shoc,cldFraction,spa,p3,testOnly")], case)
+        self._chg_atmconfig([("mac_aero_mic::atm_procs_list", "shoc,cld_fraction,spa,p3,testOnly")], case)
 
         # If we are able to change subcycles of testOnly then we know the atmchange
         # above added the necessary atm proc XML block.
@@ -329,7 +329,7 @@ class TestBuildnml(unittest.TestCase):
         stat, out, err = run_cmd ("./atmchange mac_aero_mic::atm_procs_list=shoc,cldfraction,spa,p3,spiderman",
                                   from_dir=case)
 
-        expect (stat!=0,"Command './atmchange mac_aero_mic::atm_procs_list=shoc,cldFraction,spa,p3,spiderman' should have failed")
+        expect (stat!=0,"Command './atmchange mac_aero_mic::atm_procs_list=shoc,cld_fraction,spa,p3,spiderman' should have failed")
 
     ###########################################################################
     def test_buffer_unchanged_with_bad_change_syntax(self):
@@ -383,7 +383,7 @@ class TestBuildnml(unittest.TestCase):
         """
         case = self._common_case
 
-        self._chg_atmconfig([("mac_aero_mic::atm_procs_list", "shoc,cldFraction,spa")], case)
+        self._chg_atmconfig([("mac_aero_mic::atm_procs_list", "shoc,cld_fraction,spa")], case)
 
         stat, output, error = run_cmd("./atmquery --grep p3",from_dir=case)
         expect (output=="", "There is still a trace of the removed process")

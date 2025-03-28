@@ -182,7 +182,7 @@ allow multiple matches. Matches:
     namelist_defaults::atmosphere_processes::physics::mac_aero_mic::number_of_subcycles
     namelist_defaults::atmosphere_processes::physics::mac_aero_mic::tms::number_of_subcycles
     namelist_defaults::atmosphere_processes::physics::mac_aero_mic::shoc::number_of_subcycles
-    namelist_defaults::atmosphere_processes::physics::mac_aero_mic::cldFraction::number_of_subcycles
+    namelist_defaults::atmosphere_processes::physics::mac_aero_mic::cld_fraction::number_of_subcycles
     namelist_defaults::atmosphere_processes::physics::mac_aero_mic::spa::internal_diagnostics_level
     namelist_defaults::atmosphere_processes::physics::mac_aero_mic::p3::number_of_subcycles
     namelist_defaults::atmosphere_processes::physics::rrtmgp::number_of_subcycles
@@ -206,7 +206,7 @@ $ ./atmquery --grep number_of_subcycles
     mac_aero_mic::number_of_subcycles: 24
     tms::number_of_subcycles: 1
     shoc::number_of_subcycles: 1
-    cldFraction::number_of_subcycles: 1
+    cld_fraction::number_of_subcycles: 1
     spa::number_of_subcycles: 1
     p3::number_of_subcycles: 1
     rrtmgp::number_of_subcycles: 1
@@ -221,7 +221,7 @@ $ ./atmquery --grep number_of_subcycles
     mac_aero_mic::number_of_subcycles: 3
     tms::number_of_subcycles: 3
     shoc::number_of_subcycles: 3
-    cldFraction::number_of_subcycles: 3
+    cld_fraction::number_of_subcycles: 3
     spa::number_of_subcycles: 3
     p3::number_of_subcycles: 3
     rrtmgp::number_of_subcycles: 3
@@ -241,7 +241,7 @@ $ ./atmquery --grep number_of_subcycles
     mac_aero_mic::number_of_subcycles: 1
     tms::number_of_subcycles: 1
     shoc::number_of_subcycles: 1
-    cldFraction::number_of_subcycles: 1
+    cld_fraction::number_of_subcycles: 1
     spa::number_of_subcycles: 1
     p3::number_of_subcycles: 1
     rrtmgp::number_of_subcycles: 3

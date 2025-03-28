@@ -286,7 +286,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     </mam4_drydep>
 
     <!-- CLD fraction -->
-    <cldFraction inherit="atm_proc_base"/>
+    <cld_fraction inherit="atm_proc_base"/>
 
     <!-- MAM4xx namelist options -->
 
@@ -550,11 +550,11 @@ be lost if SCREAM_HACK_XML is not enabled.
     </rrtmgp>
 
     <mac_aero_mic inherit="atm_proc_group">
-      <atm_procs_list>shoc,cldFraction,spa,p3</atm_procs_list>
-      <atm_procs_list hgrid=".*pg2">tms,shoc,cldFraction,spa,p3</atm_procs_list> <!-- TMS only available for PG2 -->
-      <atm_procs_list COMPSET=".*SCREAM.*MAM4xx" hgrid=".*pg2">tms,shoc,cldFraction,mam4_aci,p3</atm_procs_list> <!-- TMS only available for PG2 -->
-      <atm_procs_list COMPSET=".*SCREAM.*noAero">shoc,cldFraction,p3</atm_procs_list>
-      <atm_procs_list COMPSET=".*SCREAM.*noAero" hgrid=".*pg2">tms,shoc,cldFraction,p3</atm_procs_list> <!-- TMS only available for PG2 -->
+      <atm_procs_list>shoc,cld_fraction,spa,p3</atm_procs_list>
+      <atm_procs_list hgrid=".*pg2">tms,shoc,cld_fraction,spa,p3</atm_procs_list> <!-- TMS only available for PG2 -->
+      <atm_procs_list COMPSET=".*SCREAM.*MAM4xx" hgrid=".*pg2">tms,shoc,cld_fraction,mam4_aci,p3</atm_procs_list> <!-- TMS only available for PG2 -->
+      <atm_procs_list COMPSET=".*SCREAM.*noAero">shoc,cld_fraction,p3</atm_procs_list>
+      <atm_procs_list COMPSET=".*SCREAM.*noAero" hgrid=".*pg2">tms,shoc,cld_fraction,p3</atm_procs_list> <!-- TMS only available for PG2 -->
       <number_of_subcycles hgrid="ne4np4">24</number_of_subcycles>
       <number_of_subcycles hgrid="ne30np4">12</number_of_subcycles>
       <number_of_subcycles hgrid="ne120np4">6</number_of_subcycles>
