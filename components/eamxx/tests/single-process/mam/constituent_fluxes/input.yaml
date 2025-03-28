@@ -34,6 +34,6 @@ initial_conditions:
   constituent_fluxes: 1.e-5
 
 # The parameters for I/O control
-Scorpio:
+scorpio:
   output_yaml_files: ["output.yaml"]
 ...

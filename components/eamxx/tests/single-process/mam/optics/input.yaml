@@ -43,6 +43,6 @@ initial_conditions:
   phis : 1.0
 
 # The parameters for I/O control
-Scorpio:
+scorpio:
   output_yaml_files: ["output.yaml"]
 ...

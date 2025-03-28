@@ -696,7 +696,7 @@ void AtmosphereDriver::create_output_managers () {
 
   check_ad_status (s_comm_set | s_params_set | s_ts_inited);
 
-  auto& io_params = m_atm_params.sublist("Scorpio");
+  auto& io_params = m_atm_params.sublist("scorpio");
 
   ekat::ParameterList checkpoint_params;
   checkpoint_params.set("frequency_units",std::string("never"));

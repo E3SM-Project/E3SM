@@ -69,6 +69,6 @@ initial_conditions:
   aero_tau_lw: 0.0
 
 # The parameters for I/O control
-Scorpio:
+scorpio:
   output_yaml_files: ["output.yaml"]
 ...

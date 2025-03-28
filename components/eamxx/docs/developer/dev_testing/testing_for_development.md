@@ -230,7 +230,7 @@ Defining the test behavior and pass/fail criteria requires 3 files:
       num_XYZ : 1.618
       <input_variable> : <value>
     # The parameters for I/O control
-    Scorpio:
+    scorpio:
       output_yaml_files: ["output.yaml"]
     ...
     ```

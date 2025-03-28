@@ -58,6 +58,6 @@ initial_conditions:
   hetfrz_deposition_nucleation_tend: 0.1
 
 # The parameters for I/O control
-Scorpio:
+scorpio:
   output_yaml_files: [output_${POSTFIX}.yaml]
 ...
