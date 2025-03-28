@@ -156,6 +156,7 @@ init_time_stamps (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0,
 {
   m_atm_logger->info("  [EAMxx] Run  start time stamp: " + run_t0.to_string());
   m_atm_logger->info("  [EAMxx] Case start time stamp: " + case_t0.to_string());
+  m_atm_logger->flush(); // During init, flush often (to help debug crashes)
 
   EKAT_REQUIRE_MSG (case_t0<=run_t0,
       "Error! Case t0 time stamp must precede the run t0 time stamp.\n"
@@ -225,6 +226,7 @@ void AtmosphereDriver::create_atm_processes()
   m_atm_logger->info("[EAMxx] create_atm_processes  ...");
   start_timer("EAMxx::init");
   start_timer("EAMxx::create_atm_processes");
+  m_atm_logger->flush(); // During init, flush often (to help debug crashes)
 
   // At this point, must have comm and params set.
   check_ad_status(s_comm_set | s_params_set);
@@ -241,6 +243,7 @@ void AtmosphereDriver::create_atm_processes()
   stop_timer("EAMxx::create_atm_processes");
   stop_timer("EAMxx::init");
   m_atm_logger->info("[EAMxx] create_atm_processes  ... done!");
+  m_atm_logger->flush(); // During init, flush often (to help debug crashes)
 }
 
 void AtmosphereDriver::create_grids()
@@ -248,6 +251,7 @@ void AtmosphereDriver::create_grids()
   m_atm_logger->info("[EAMxx] create_grids ...");
   start_timer("EAMxx::init");
   start_timer("EAMxx::create_grids");
+  m_atm_logger->flush(); // During init, flush often (to help debug crashes)
 
   // Must have procs created by now (and comm/params set)
   check_ad_status (s_procs_created | s_comm_set | s_params_set | s_ts_inited);
@@ -314,6 +318,7 @@ void AtmosphereDriver::create_grids()
   stop_timer("EAMxx::create_grids");
   stop_timer("EAMxx::init");
   m_atm_logger->info("[EAMxx] create_grids ... done!");
+  m_atm_logger->flush(); // During init, flush often (to help debug crashes)
 }
 
 void AtmosphereDriver::setup_surface_coupling_data_manager(SurfaceCouplingTransferType transfer_type,
@@ -523,6 +528,7 @@ void AtmosphereDriver::add_additional_column_data_to_property_checks () {
 void AtmosphereDriver::create_fields()
 {
   m_atm_logger->info("[EAMxx] create_fields ...");
+  m_atm_logger->flush(); // During init, flush often (to help debug crashes)
   start_timer("EAMxx::init");
   start_timer("EAMxx::create_fields");
 
@@ -679,12 +685,14 @@ void AtmosphereDriver::create_fields()
   stop_timer("EAMxx::create_fields");
   stop_timer("EAMxx::init");
   m_atm_logger->info("[EAMxx] create_fields ... done!");
+  m_atm_logger->flush(); // During init, flush often (to help debug crashes)
 }
 
 void AtmosphereDriver::create_output_managers () {
   m_atm_logger->info("[EAMxx] create_output_managers ...");
   start_timer("EAMxx::init");
   start_timer("EAMxx::create_output_managers");
+  m_atm_logger->flush(); // During init, flush often (to help debug crashes)
 
   check_ad_status (s_comm_set | s_params_set | s_ts_inited);
 
@@ -748,10 +756,12 @@ void AtmosphereDriver::create_output_managers () {
   stop_timer("EAMxx::create_output_managers");
   stop_timer("EAMxx::init");
   m_atm_logger->info("[EAMxx] create_output_managers ... done!");
+  m_atm_logger->flush(); // During init, flush often (to help debug crashes)
 }
 
 void AtmosphereDriver::initialize_output_managers () {
   m_atm_logger->info("[EAMxx] initialize_output_managers ...");
+  m_atm_logger->flush(); // During init, flush often (to help debug crashes)
   start_timer("EAMxx::init");
   start_timer("EAMxx::initialize_output_managers");
 
@@ -788,6 +798,7 @@ void AtmosphereDriver::initialize_output_managers () {
   stop_timer("EAMxx::initialize_output_managers");
   stop_timer("EAMxx::init");
   m_atm_logger->info("[EAMxx] initialize_output_managers ... done!");
+  m_atm_logger->flush(); // During init, flush often (to help debug crashes)
 }
 
 void AtmosphereDriver::
@@ -1027,6 +1038,7 @@ void AtmosphereDriver::create_logger () {
 void AtmosphereDriver::set_initial_conditions ()
 {
   m_atm_logger->info("  [EAMxx] set_initial_conditions ...");
+  m_atm_logger->flush(); // During init, flush often (to help debug crashes)
 
   auto& ic_pl = m_atm_params.sublist("initial_conditions");
 
@@ -1416,6 +1428,7 @@ void AtmosphereDriver::set_initial_conditions ()
   }
 
   m_atm_logger->info("  [EAMxx] set_initial_conditions ... done!");
+  m_atm_logger->flush(); // During init, flush often (to help debug crashes)
 }
 
 void AtmosphereDriver::
@@ -1493,6 +1506,8 @@ initialize_constant_field(const FieldIdentifier& fid,
 void AtmosphereDriver::initialize_atm_procs ()
 {
   m_atm_logger->info("[EAMxx] initialize_atm_procs ...");
+  m_atm_logger->flush(); // During init, flush often (to help debug crashes)
+
   start_timer("EAMxx::init");
   start_timer("EAMxx::initialize_atm_procs");
 
@@ -1532,6 +1547,7 @@ void AtmosphereDriver::initialize_atm_procs ()
   stop_timer("EAMxx::initialize_atm_procs");
   stop_timer("EAMxx::init");
   m_atm_logger->info("[EAMxx] initialize_atm_procs ... done!");
+  m_atm_logger->flush(); // During init, flush often (to help debug crashes)
 
   report_res_dep_memory_footprint ();
 
