@@ -289,39 +289,39 @@ contains
       
       ! Consider adapting this check to be fates compliant (rgk 04-2017)
 #ifndef _OPENACC
-       if (err_found .and. nstep > 1) then
-          c = err_index
-          write(iulog,*)'column cbalance error = ', col_errcb(c), c
-          write(iulog,*)'Latdeg,Londeg         = ',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
-          write(iulog,*)'input                 = ',col_cinputs(c)*dt
-          write(iulog,*)'output                = ',col_coutputs(c)*dt
-          write(iulog,*)'er                    = ',er(c)*dt,col_cf%hr(c)*dt
-          write(iulog,*)'fire                  = ',col_fire_closs(c)*dt
-          write(iulog,*)'hrv_to_atm            = ',col_hrv_xsmrpool_to_atm(c)*dt
-          write(iulog,*)'leach                 = ',som_c_leached(c)*dt
-          write(iulog,*)'begcb                 = ',col_begcb(c)
-          write(iulog,*)'endcb                 = ',col_endcb(c),col_cs%totsomc(c)
-          write(iulog,*)'totsomc               = ',col_cs%totsomc(c)
-          write(iulog,*)'delta store           = ',col_endcb(c)-col_begcb(c)
+         if (err_found .and. nstep > 1) then
+            c = err_index
+            write(iulog,*)'column cbalance error = ', col_errcb(c), c
+            write(iulog,*)'Latdeg,Londeg         = ',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
+            write(iulog,*)'input                 = ',col_cinputs(c)*dt
+            write(iulog,*)'output                = ',col_coutputs(c)*dt
+            write(iulog,*)'er                    = ',er(c)*dt,col_cf%hr(c)*dt
+            write(iulog,*)'fire                  = ',col_fire_closs(c)*dt
+            write(iulog,*)'hrv_to_atm            = ',col_hrv_xsmrpool_to_atm(c)*dt
+            write(iulog,*)'leach                 = ',som_c_leached(c)*dt
+            write(iulog,*)'begcb                 = ',col_begcb(c)
+            write(iulog,*)'endcb                 = ',col_endcb(c)
+            write(iulog,*)'totsomc               = ',col_cs%totsomc(c)
+            write(iulog,*)'delta store           = ',col_endcb(c)-col_begcb(c)
 
-          if (ero_ccycle) then
-             write(iulog,*)'erosion               = ',som_c_yield(c)*dt
-          end if
+            if (ero_ccycle) then
+               write(iulog,*)'erosion               = ',som_c_yield(c)*dt
+            end if
 
-          if (use_pflotran .and. pf_cmode) then
-             write(iulog,*)'pf_delta_decompc      = ',col_decompc_delta(c)*dt
-          end if
+            if (use_pflotran .and. pf_cmode) then
+               write(iulog,*)'pf_delta_decompc      = ',col_decompc_delta(c)*dt
+            end if
 
-          if (use_pflotran .and. pf_cmode) then
-             write(iulog,*)'pf_delta_decompc      = ',col_decompc_delta(c)*dt
-          end if
+            if (use_pflotran .and. pf_cmode) then
+               write(iulog,*)'pf_delta_decompc      = ',col_decompc_delta(c)*dt
+            end if
 
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-       else
-           if (masterproc .and. nstep < 2) then
-              write(iulog,*) '--WARNING-- skipping CN balance check for first timestep'
-           end if
-       end if
+            call endrun(msg=errMsg(__FILE__, __LINE__))
+         else
+             if (masterproc .and. nstep < 2) then
+                write(iulog,*) '--WARNING-- skipping CN balance check for first timestep'
+             end if
+         end if
 #endif
 
     end associate

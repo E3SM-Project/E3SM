@@ -180,15 +180,15 @@ contains
             ! update residue pools
             col_ns%residue_npools(p,i_met_lit) = col_ns%residue_npools(p,i_met_lit) - &
                   col_ns%residue_npools(p,i_met_lit) * residue2litr(p) * dt - &
-                  (col_nf%residue_sminn_flux(p,i_met_lit) + col_nf%residue_ntransfer(p,i_met_lit)) * dt + &
+                  col_nf%residue_ntransfer(p,i_met_lit) * dt + &
                   col_nf%phenology_n_to_residue_met_n(p) * dt
             col_ns%residue_npools(p,i_cel_lit) = col_ns%residue_npools(p,i_cel_lit) - &
                   col_ns%residue_npools(p,i_cel_lit) * residue2litr(p) * dt - &
-                  (col_nf%residue_sminn_flux(p,i_cel_lit) + col_nf%residue_ntransfer(p,i_cel_lit)) * dt + &
+                  col_nf%residue_ntransfer(p,i_cel_lit) * dt + &
                   col_nf%phenology_n_to_residue_cel_n(p) * dt
             col_ns%residue_npools(p,i_lig_lit) = col_ns%residue_npools(p,i_lig_lit) - &
                   col_ns%residue_npools(p,i_lig_lit) * residue2litr(p) * dt - &
-                  (col_nf%residue_sminn_flux(p,i_lig_lit) + col_nf%residue_ntransfer(p,i_lig_lit)) * dt + &
+                  col_nf%residue_ntransfer(p,i_lig_lit) * dt + &
                   col_nf%phenology_n_to_residue_lig_n(p) * dt
          end do
 
@@ -259,8 +259,8 @@ contains
                   wt_col = veg_pp%wtcol(p)
 
                   col_nf%decomp_npools_sourcesink(c,1,cascade_receiver_pool(csi)) = &
-                     col_nf%decomp_npools_sourcesink(c,1,cascade_receiver_pool(csi)) &
-                     + col_nf%residue_ntransfer(p,k) * wt_col * dt
+                     col_nf%decomp_npools_sourcesink(c,1,cascade_receiver_pool(csi)) + &
+                     (col_nf%residue_ntransfer(p,k) + col_nf%residue_sminn_flux(p,k)) / dzsoi_decomp(1) * wt_col * dt
                end do
             end if
          end do

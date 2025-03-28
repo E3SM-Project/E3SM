@@ -765,7 +765,7 @@ module ColumnDataType
     real(r8), pointer :: decomp_cascade_sminn_flux             (:,:)   => null() ! vert-int (diagnostic) mineral N flux for transition along decomposition cascade (gN/m2/s)
     ! decomposition residue fluxes
     real(r8), pointer :: residue_ntransfer                     (:,:)   => null() ! transfer of N from residue to receiver pool along decomp. cascade (gN/m2/s)
-    real(r8), pointer :: residue_sminn_flux                    (:,:)   => null() ! mineral N flux from residue for transition along decomposition cascade (gN/m2/s)
+    real(r8), pointer :: residue_sminn_flux                    (:,:)   => null() ! soil mineral N flux to receiver pool along decomp. cascade due to residue transfer (gN/m2/s)
     ! vertically-resolved immobilization fluxes
     real(r8), pointer :: potential_immob_vr                    (:,:)   => null() ! vertically-resolved potential N immobilization (gN/m3/s) at each level
     real(r8), pointer :: potential_immob                       (:)     => null() ! vert-int (diagnostic) potential N immobilization (gN/m2/s)
@@ -982,7 +982,7 @@ module ColumnDataType
     real(r8), pointer :: decomp_cascade_sminp_flux_vr          (:,:,:) => null() ! vert-res mineral P flux for transition along decomposition cascade (gP/m3/s)
     real(r8), pointer :: decomp_cascade_sminp_flux             (:,:)   => null() ! vert-int (diagnostic) mineral P flux for transition along decomposition cascade (gP/m2/s)
     real(r8), pointer :: residue_ptransfer                     (:,:)   => null() ! transfer of P from residue to receiver pool along decomp. cascade (gP/m2/s)
-    real(r8), pointer :: residue_sminp_flux                    (:,:)   => null() ! mineral P flux from residue for transition along decomposition cascade (gP/m2/s)
+    real(r8), pointer :: residue_sminp_flux                    (:,:)   => null() ! soil mineral P flux to receiver pool along decomp. cascade due to residue transfer (gP/m2/s)
     real(r8), pointer :: potential_immob_p_vr                  (:,:)   => null() ! vertically-resolved potential P immobilization (gP/m3/s) at each level
     real(r8), pointer :: potential_immob_p                     (:)     => null() ! vert-int (diagnostic) potential P immobilization (gP/m2/s)
     real(r8), pointer :: actual_immob_p_vr                     (:,:)   => null() ! vertically-resolved actual P immobilization (gP/m3/s) at each level
@@ -3297,6 +3297,15 @@ contains
        endif
     end do
 
+    ! add residue carbon to litter carbon
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%totlitc(c) = this%totlitc(c) + this%residuec(c)
+       if ( nlevdecomp > 1) then
+          this%totlitc_1m(c) = this%totlitc_1m(c) + this%residuec(c) 
+       end if
+    end do
+
     ! fraction of soil covered by residue
     do fc = 1,num_soilc
        c = filter_soilc(fc)
@@ -3371,7 +3380,6 @@ contains
             this%totlitc(c)  + &
             this%totsomc(c)  + &
             this%totprodc(c) + &
-            this%residuec(c) + &
             this%totvegc(c)
 
        ! total column carbon, including veg and cpool (TOTCOLC)
@@ -3384,7 +3392,6 @@ contains
             this%totsomc(c)  + &
             this%totprodc(c) + &
             this%ctrunc(c)   + &
-            this%residuec(c) + &
             this%cropseedc_deficit(c)
 
        this%totabgc(c) =       &
@@ -4692,6 +4699,15 @@ contains
        endif
     end do
 
+    ! add residue nitrogen to litter nitrogen
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%totlitn(c) = this%totlitn(c) + this%residuen(c)
+       if ( nlevdecomp > 1) then
+          this%totlitn_1m(c) = this%totlitn_1m(c) + this%residuen(c)
+       end if
+    end do
+
     do fc = 1,num_soilc
        c = filter_soilc(fc)
 
@@ -4708,7 +4724,6 @@ contains
             this%totsomn(c) + &
             this%sminn(c) + &
             this%totprodn(c) + &
-            this%residuen(c) + &
             this%totvegn(c)
 
 
@@ -4721,7 +4736,6 @@ contains
             this%totsomn(c) + &
             this%sminn(c) + &
             this%totprodn(c) + &
-            this%residuen(c) + &
             this%ntrunc(c)+ &
             this%plant_n_buffer(c) + &
             this%cropseedn_deficit(c) + &
@@ -4738,8 +4752,7 @@ contains
             this%cwdn(c) + &
             this%totlitn(c) + &
             this%totsomn(c) + &
-            this%sminn(c) + &
-            this%residuen(c)
+            this%sminn(c)
     end do
 
   end subroutine col_ns_summary
@@ -5820,6 +5833,15 @@ contains
        endif
     end do
 
+    ! add residue phosphorus to litter phosphorus
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%totlitp(c) = this%totlitp(c) + this%residuep(c)
+       if ( nlevdecomp > 1) then
+          this%totlitp_1m(c) = this%totlitp_1m(c) + this%residuep(c)
+       end if
+    end do
+
    do fc = 1,num_soilc
       c = filter_soilc(fc)
 
@@ -5840,7 +5862,6 @@ contains
            this%primp(c) + &
            this%occlp(c) + &
            this%totprodp(c) + &
-           this%residuep(c) + &
            this%totvegp(c)
 
       ! total column phosphorus, including pft (TOTCOLP)
@@ -5850,7 +5871,6 @@ contains
            this%totlitp(c) + &
            this%totsomp(c) + &
            this%totprodp(c) + &
-           this%residuep(c) + &
            this%solutionp(c) + &
            this%labilep(c) + &
            this%secondp(c) + &

@@ -98,7 +98,6 @@ contains
     use elm_varcon         , only : isecspday, degpsec
     use pftvarcon          , only : irrigated
     use elm_varcon         , only : c14ratio
-    use elm_varctl         , only : use_cn
 
     !NEW
     use elm_varsur         , only : firrig
@@ -258,7 +257,6 @@ contains
     real(r8) :: fm(bounds%begp:bounds%endp)          ! needed for BGC only to diagnose 10m wind speed
     real(r8) :: wtshi                                ! sensible heat resistance for air, grnd and leaf [-]
     real(r8) :: wtsqi                                ! latent heat resistance for air, grnd and leaf [-]
-    real(r8) :: attscov                              ! residue cover introduced resistance
     integer  :: j                                    ! soil/snow level index
     integer  :: p                                    ! patch index
     integer  :: c                                    ! column index
@@ -284,6 +282,7 @@ contains
     real(r8) :: ricsoilc                             ! modified transfer coefficient under dense canopy (unitless)
     real(r8) :: snow_depth_c                         ! critical snow depth to cover plant litter (m)
     real(r8) :: rdl                                  ! dry litter layer resistance for water vapor  (s/m)
+    real(r8) :: lai_dl_dyn                           ! (dry) plant litter area index (m2/m2) 
     real(r8) :: elai_dl                              ! exposed (dry) plant litter area index
     real(r8) :: fsno_dl                              ! effective snow cover over plant litter
     real(r8) :: dayl_factor(bounds%begp:bounds%endp) ! scalar (0-1) for daylength effect on Vcmax
@@ -383,7 +382,7 @@ contains
          rb1                  => frictionvel_vars%rb1_patch                , & ! Output: [real(r8) (:)   ]  boundary layer resistance (s/m)
          num_iter             => frictionvel_vars%num_iter_patch           , & ! Output: number of iterations required
 
-         residue_cpools       => col_cs%residue_cpools       , & ! Input:  [real(r8) (:,:) ]  surface residue (surface litter) c pools (gC/m2)
+         fscov_p              => col_cs%fscov_veg            , & ! Input: [real(r8) (:) ] fraction of soil covered by residue
 
          t_h2osfc             => col_es%t_h2osfc             , & ! Input:  [real(r8) (:)   ]  surface water temperature
          t_soisno             => col_es%t_soisno             , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)
@@ -1015,7 +1014,12 @@ contains
             !Litter layer resistance. Added by K.Sakaguchi
             snow_depth_c = z_dl ! critical depth for 100% litter burial by snow (=litter thickness)
             fsno_dl = snow_depth(c)/snow_depth_c    ! effective snow cover for (dry)plant litter
-            elai_dl = lai_dl*(1._r8 - min(fsno_dl,1._r8)) ! exposed (dry)litter area index
+            if (use_cn) then
+               lai_dl_dyn = fscov_p(p) 
+            else
+               lai_dl_dyn = lai_dl
+            end if
+            elai_dl = lai_dl_dyn*(1._r8 - min(fsno_dl,1._r8)) ! exposed (dry)litter area index
             rdl = ( 1._r8 - exp(-elai_dl) ) / ( 0.004_r8*uaf(p)) ! dry litter layer resistance
 
             ! add litter resistance and Lee and Pielke 1992 beta
@@ -1221,19 +1225,14 @@ contains
 
          delt_h2osfc  = wtal(p)*t_h2osfc(c)-wtl0(p)*t_veg(p)-wta0(p)*thm(p)
          eflx_sh_h2osfc(p) = cpair*forc_rho(t)*wtg(p)*delt_h2osfc
-         if (use_cn) then
-            attscov = exp( -6.4e-4_r8 * 2.38_r8 * sum(residue_cpools(p,:)) )
-         else
-            attscov = 1._r8
-         end if
-         qflx_evap_soi(p) = forc_rho(t)*wtgq(p)*attscov*delq(p)
+         qflx_evap_soi(p) = forc_rho(t)*wtgq(p)*delq(p)
 
          ! compute individual latent heat fluxes
          delq_snow = wtalq(p)*qg_snow(c)-wtlq0(p)*qsatl(p)-wtaq0(p)*forc_q(t)
          qflx_ev_snow(p) = forc_rho(t)*wtgq(p)*delq_snow
 
          delq_soil = wtalq(p)*qg_soil(c)-wtlq0(p)*qsatl(p)-wtaq0(p)*forc_q(t)
-         qflx_ev_soil(p) = forc_rho(t)*wtgq(p)*attscov*delq_soil
+         qflx_ev_soil(p) = forc_rho(t)*wtgq(p)*delq_soil
 
          delq_h2osfc = wtalq(p)*qg_h2osfc(c)-wtlq0(p)*qsatl(p)-wtaq0(p)*forc_q(t)
          qflx_ev_h2osfc(p) = forc_rho(t)*wtgq(p)*delq_h2osfc

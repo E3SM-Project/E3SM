@@ -301,7 +301,7 @@ contains
 
                   col_cf%decomp_cpools_sourcesink(c,1,cascade_receiver_pool(csi)) = &
                      col_cf%decomp_cpools_sourcesink(c,1,cascade_receiver_pool(csi)) &
-                     + col_cf%residue_ctransfer(p,k) * wt_col * dt
+                     + col_cf%residue_ctransfer(p,k) / dzsoi_decomp(1) * wt_col * dt
                end do
             end if
          end do
