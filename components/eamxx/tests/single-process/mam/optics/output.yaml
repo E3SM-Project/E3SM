@@ -11,6 +11,6 @@ Fields:
         - aero_tau_lw
 
 output_control:
-  Frequency: 2
+  frequency: 2
   frequency_units: nsteps
 ...

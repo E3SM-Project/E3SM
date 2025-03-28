@@ -41,7 +41,7 @@
  *        Field Names:                  ARRAY OF STRINGS
  *        IO Grid Name:                 STRING                (optional)
  *  output_control:
- *    Frequency:                        INT
+ *    frequency:                        INT
  *    frequency_units:                  STRING                (default: nsteps)
  *  Restart:
  *    filename_prefix:                  STRING                (default: ${filename_prefix})
@@ -54,8 +54,8 @@
  *      average - average of the field over some interval.
  *      min     - minimum value of the field over time interval.
  *      max     - maximum value of the field over time interval.
- *    Here, 'time interval' is described by ${Output Frequency} and ${Output frequency_units}.
- *    E.g., with 'Output Frequency'=10 and 'Output frequency_units'="Days", the time interval is 10 days.
+ *    Here, 'time interval' is described by ${Output frequency} and ${Output frequency_units}.
+ *    E.g., with 'Output frequency'=10 and 'Output frequency_units'="Days", the time interval is 10 days.
  *  - Fields: parameters specifying fields to output
  *     - GRID_NAME: parameters specifyign fields to output from grid $GRID_NAME
  *        - Field Names: names of fields defined on grid $grid_name that need to be outputed
@@ -64,11 +64,11 @@
  *  - Max Snapshots Per File: the maximum number of snapshots saved per file. After this many
  *    snapshots, the current files is closed and a new file created.
  *  - Output: parameters for output control
- *    - Frequency: the frequency of output writes (in the units specified by ${Output frequency_units})
+ *    - frequency: the frequency of output writes (in the units specified by ${Output frequency_units})
  *    - frequency_units: the units of output frequency (nsteps, nmonths, nyears, nhours, ndays,...)
  *      snapshots have been written on a single nc file, the class will close the file, and open a new one
  *  - Checkpointing: parameters for checkpointing control
- *    - Frequency: the frequenct of checkpoints writes. This option is used/matters only if
+ *    - frequency: the frequenct of checkpoints writes. This option is used/matters only if
  *      if averaging_type is *not* Instant. A value of 0 is interpreted as 'no checkpointing'.
  *    - frequency_units: the units of restart history output.
  *  - Restart: parameters for history restart

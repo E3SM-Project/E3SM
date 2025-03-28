@@ -28,6 +28,6 @@ Field Names:
   - p3_T_mid_tend
   - p3_qc_tend
 output_control:
-  Frequency: 1
+  frequency: 1
   frequency_units: nsteps
 ...

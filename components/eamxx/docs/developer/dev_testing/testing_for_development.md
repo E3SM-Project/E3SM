@@ -247,7 +247,7 @@ Defining the test behavior and pass/fail criteria requires 3 files:
         Field Names:
           - answer_field
     output_control:
-      Frequency: 1
+      frequency: 1
       frequency_units: nsteps
     ...
     ```

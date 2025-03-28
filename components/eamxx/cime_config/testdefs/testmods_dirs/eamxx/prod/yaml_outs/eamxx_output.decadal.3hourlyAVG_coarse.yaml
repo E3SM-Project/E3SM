@@ -62,7 +62,7 @@ Fields:
     - LongwaveCloudForcing
     - ShortwaveCloudForcing
 output_control:
-  Frequency: 3
+  frequency: 3
   frequency_units: nhours
   mpi_ranks_in_filename: false
 Restart:

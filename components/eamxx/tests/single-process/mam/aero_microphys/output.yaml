@@ -70,6 +70,6 @@ Fields:
       #- vertical_emission_fields
 
 output_control:
-  Frequency: 1
+  frequency: 1
   frequency_units: nsteps
 ...

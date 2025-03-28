@@ -81,6 +81,6 @@ Fields:
     IO Grid Name: Physics GLL
 
 output_control:
-  Frequency: ${NUM_STEPS}
+  frequency: ${NUM_STEPS}
   frequency_units: nsteps
 ...

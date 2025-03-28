@@ -727,7 +727,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <model_restart>
       <iotype>default</iotype>
       <output_control locked="true">
-        <Frequency>${REST_N}</Frequency>
+        <frequency>${REST_N}</frequency>
         <frequency_units>${REST_OPTION}</frequency_units>
       </output_control>
     </model_restart>

@@ -81,8 +81,8 @@ TEST_CASE("output_restart","io")
   output_params.set<int>("flush_frequency",1);
   output_params.sublist("Restart").set<bool>("force_new_file",false);
   output_params.sublist("output_control").set<std::string>("frequency_units","nsteps");
-  output_params.sublist("output_control").set<int>("Frequency",10);
-  output_params.sublist("Checkpoint Control").set<int>("Frequency",5);
+  output_params.sublist("output_control").set<int>("frequency",10);
+  output_params.sublist("Checkpoint Control").set<int>("frequency",5);
   // This skips a test that only matters for AD runs
   output_params.sublist("Checkpoint Control").set<bool>("is_unit_testing","true");
 

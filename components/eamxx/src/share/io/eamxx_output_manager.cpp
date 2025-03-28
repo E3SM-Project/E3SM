@@ -358,7 +358,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       "  - current time stamp   : " + timestamp.to_string() + "\n"
       "  - next write time stamp: " + m_output_control.next_write_ts.to_string() + "\n"
       "The most likely cause is an output frequency that is faster than the atm timestep.\n"
-      "Try to increase 'Frequency' and/or 'frequency_units' in your output yaml file.\n");
+      "Try to increase 'frequency' and/or 'frequency_units' in your output yaml file.\n");
 
   if (m_atm_logger) {
     m_atm_logger->debug("[OutputManager::run] filename_prefix: " + m_filename_prefix + "\n");
@@ -746,7 +746,7 @@ setup_internals (const std::shared_ptr<fm_type>& field_mgr,
   if (not m_output_control.output_enabled()) {
     return;
   }
-  m_output_control.frequency = out_control_pl.get<int>("Frequency");
+  m_output_control.frequency = out_control_pl.get<int>("frequency");
   EKAT_REQUIRE_MSG (m_output_control.frequency>0,
       "Error! Invalid frequency (" + std::to_string(m_output_control.frequency) + ") in Output Control. Please, use positive number.\n");
 
@@ -759,7 +759,7 @@ setup_internals (const std::shared_ptr<fm_type>& field_mgr,
     m_checkpoint_control.set_frequency_units(pl.get<std::string>("frequency_units"));
 
     if (m_checkpoint_control.output_enabled()) {
-      m_checkpoint_control.frequency = pl.get<int>("Frequency");
+      m_checkpoint_control.frequency = pl.get<int>("frequency");
       EKAT_REQUIRE_MSG (m_output_control.frequency>0,
           "Error! Invalid frequency (" + std::to_string(m_checkpoint_control.frequency) + ") in Checkpoint Control. Please, use positive number.\n");
 

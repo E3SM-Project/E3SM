@@ -64,6 +64,6 @@ Field Names:
   - deposition_flux_of_cloud_borne_aerosols
   - deposition_flux_of_interstitial_aerosols
 output_control:
-  Frequency: ${NUM_STEPS}
+  frequency: ${NUM_STEPS}
   frequency_units: nsteps
 ...

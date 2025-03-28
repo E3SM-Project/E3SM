@@ -156,7 +156,7 @@ class TestBuildnml(unittest.TestCase):
 
         # atm config should match case test opts
         case_rest_n = run_cmd_assert_result(self, "./xmlquery REST_N --value", from_dir=case)
-        atm_freq    = run_cmd_assert_result(self, "./atmquery Frequency --value", from_dir=case)
+        atm_freq    = run_cmd_assert_result(self, "./atmquery frequency --value", from_dir=case)
         self.assertEqual(case_rest_n, atm_freq)
 
         # Change XML and check that atmquery reflects this change
@@ -165,7 +165,7 @@ class TestBuildnml(unittest.TestCase):
         run_cmd_assert_result(self, f"./xmlchange REST_N={new_rest_n}", from_dir=case)
         run_cmd_assert_result(self, "./case.setup", from_dir=case)
         new_case_rest_n = run_cmd_assert_result(self, "./xmlquery REST_N --value", from_dir=case)
-        new_atm_freq    = run_cmd_assert_result(self, "./atmquery Frequency --value", from_dir=case)
+        new_atm_freq    = run_cmd_assert_result(self, "./atmquery frequency --value", from_dir=case)
         self.assertEqual(new_case_rest_n, new_rest_n)
         self.assertEqual(new_atm_freq, new_rest_n)
 

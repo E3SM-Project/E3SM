@@ -10,6 +10,6 @@ Field Names:
   - aero_tau_sw
   - nccn
 output_control:
-  Frequency: 1
+  frequency: 1
   frequency_units: nsteps
 ...

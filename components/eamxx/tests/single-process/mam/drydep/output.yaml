@@ -59,6 +59,6 @@ Fields:
       - deposition_flux_of_interstitial_aerosols
       
 output_control:
-  Frequency: 1
+  frequency: 1
   frequency_units: nsteps
 ...

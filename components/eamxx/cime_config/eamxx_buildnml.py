@@ -1055,7 +1055,7 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
         if case.get_value("TESTCASE") in ["ERP", "ERS"] and content['averaging_type'].upper()=="INSTANT":
             hist_n = int(case.get_value("HIST_N",resolved=True))
             hist_opt = case.get_value("HIST_OPTION",resolved=True)
-            content['output_control']['Frequency'] = hist_n
+            content['output_control']['frequency'] = hist_n
             content['output_control']['frequency_units'] = hist_opt
             content['output_control']['skip_t0_output'] = True
             print ("ERS/ERP test with INSTANT output detected. Adjusting output control specs:\n")
@@ -1065,7 +1065,7 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
         # If frequency_units is not nsteps, verify that we don't request
         # a frequency faster than the model timestep
         if content['output_control']['frequency_units'] in ['nsecs','nmins','nhours']:
-            freq  = content['output_control']['Frequency']
+            freq  = content['output_control']['frequency']
             units = content['output_control']['frequency_units']
             dt_out = 1 if units=="nsecs" else 60 if units=="nmins" else 3600
             dt_out = dt_out*int(freq)
@@ -1074,10 +1074,10 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
             expect (dt_atm<=dt_out,
                    "Cannot have output frequency faster than atm timestep.\n"
                    f"   yaml file: {fn.strip()}\n"
-                   f"   Frequency: {freq}\n"
+                   f"   frequency: {freq}\n"
                    f"   frequency_units: {units}\n"
                    f"   ATM_NCPL: {case.get_value('ATM_NCPL')}\n"
-                   f" This yields dt_atm={dt_atm} > dt_output={dt_out}. Please, adjust 'Frequency' and/or 'frequency_units'\n")
+                   f" This yields dt_atm={dt_atm} > dt_output={dt_out}. Please, adjust 'frequency' and/or 'frequency_units'\n")
 
         ordered_dump(content, open(dst_yaml, "w"))
 
