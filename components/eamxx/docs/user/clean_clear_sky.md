@@ -33,6 +33,6 @@ Fields:
 output_control:
   Frequency: 1
   frequency_units: nmonths
-  MPI Ranks in Filename: false
+  mpi_ranks_in_filename: false
 
 ```

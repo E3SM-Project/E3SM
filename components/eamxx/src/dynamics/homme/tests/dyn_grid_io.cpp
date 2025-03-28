@@ -157,7 +157,7 @@ TEST_CASE("dyn_grid_io")
   filename.erase(std::remove(filename.begin(),filename.end(),':'),filename.end());
 
   ekat::ParameterList in_params;
-  in_params.set<std::string>("Filename",filename);
+  in_params.set<std::string>("filename",filename);
   in_params.set<std::vector<std::string>>("Field Names",fnames);
 
   // AtmosphereInput expects a FM on a single grid, create

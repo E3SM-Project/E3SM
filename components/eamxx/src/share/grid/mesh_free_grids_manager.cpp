@@ -210,7 +210,7 @@ load_lat_lon (const nonconstgrid_ptr_type& grid, const std::string& filename) co
 
   // Read lat/lon into host views
   ekat::ParameterList lat_lon_reader_pl;
-  lat_lon_reader_pl.set("Filename",filename);
+  lat_lon_reader_pl.set("filename",filename);
   lat_lon_reader_pl.set<std::vector<std::string>>("Field Names",{"lat","lon"});
 
   AtmosphereInput lat_lon_reader(lat_lon_reader_pl, grid, host_views, layouts);
@@ -272,7 +272,7 @@ load_vertical_coordinates (const nonconstgrid_ptr_type& grid, const std::string&
 
   // Read hyam/hybm into host views
   ekat::ParameterList vcoord_reader_pl;
-  vcoord_reader_pl.set("Filename",filename);
+  vcoord_reader_pl.set("filename",filename);
   vcoord_reader_pl.set<std::vector<std::string>>("Field Names",{"hyam","hybm","hyai","hybi"});
 
   AtmosphereInput vcoord_reader(vcoord_reader_pl,grid, host_views, layouts);

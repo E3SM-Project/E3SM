@@ -178,7 +178,7 @@ ekat::ParameterList get_in_params(const ekat::Comm& comm,
                        + std::to_string(comm.size())
                        + "." + t0.to_string() + ".nc";
 
-  in_params.set<std::string>("Filename",filename);
+  in_params.set<std::string>("filename",filename);
   in_params.set<vos_type>("Field Names",{"field_1", "field_2", "field_3", "field_packed"});
   in_params.set<std::string>("Floating Point Precision","real");
   return in_params;

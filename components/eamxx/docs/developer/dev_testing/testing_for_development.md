@@ -222,7 +222,7 @@ Defining the test behavior and pass/fail criteria requires 3 files:
         number_of_vertical_levels:  72
     initial_conditions:
       # The name of the file containing the initial conditions for this test.
-      Filename: ${EAMXX_DATA_DIR}/init/${inject_ash_IC_file}
+      filename: ${EAMXX_DATA_DIR}/init/${inject_ash_IC_file}
       topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
 
       # other variables to pass as input

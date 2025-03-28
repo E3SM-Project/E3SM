@@ -36,7 +36,7 @@ grids_manager:
 
 # Specifications for setting initial conditions
 initial_conditions:
-  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
+  filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
   aero_g_sw: 0.0
   aero_ssa_sw: 0.0
   aero_tau_sw: 0.0

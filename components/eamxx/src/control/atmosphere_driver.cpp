@@ -271,9 +271,9 @@ void AtmosphereDriver::create_grids()
     auto filename = find_filename_in_rpointer (casename+".scream",true,m_atm_comm,m_run_t0);
     gm_params.set("ic_filename", filename);
     m_atm_params.sublist("provenance").set("initial_conditions_file",filename);
-  } else if (ic_pl.isParameter("Filename")) {
+  } else if (ic_pl.isParameter("filename")) {
     // Initial run, if an IC file is present, pass it.
-    auto filename = ic_pl.get<std::string>("Filename");
+    auto filename = ic_pl.get<std::string>("filename");
     gm_params.set("ic_filename", filename);
     m_atm_params.sublist("provenance").set("initial_conditions_file",filename);
   }
@@ -1200,7 +1200,7 @@ void AtmosphereDriver::set_initial_conditions ()
 	        topography_eamxx_fields_names[grid_name].size() > 0) {
         const auto& file_name = grid_name == "Physics GLL"
                                 ?
-                                ic_pl.get<std::string>("Filename")
+                                ic_pl.get<std::string>("filename")
                                 :
                                 ic_pl.get<std::string>("topography_filename");
         m_iop_data_manager->setup_io_info(file_name, grid);
@@ -1209,9 +1209,9 @@ void AtmosphereDriver::set_initial_conditions ()
   }
 
   // If a filename is specified, use it to load inputs on all grids
-  if (ic_pl.isParameter("Filename")) {
+  if (ic_pl.isParameter("filename")) {
     // Now loop over all grids, and load from file the needed fields on each grid (if any).
-    const auto& file_name = ic_pl.get<std::string>("Filename");
+    const auto& file_name = ic_pl.get<std::string>("filename");
     m_atm_logger->info("    [EAMxx] IC filename: " + file_name);
 
     for (const auto& it : m_grids_manager->get_repo()) {

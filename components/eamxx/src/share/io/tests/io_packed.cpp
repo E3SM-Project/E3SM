@@ -161,7 +161,7 @@ void read (const int freq, const int seed, const int ps_write, const int ps_read
     + ".np" + std::to_string(comm.size())
     + "." + t0.to_string()
     + ".nc";
-  reader_pl.set("Filename",filename);
+  reader_pl.set("filename",filename);
   reader_pl.set("Field Names",fnames);
   AtmosphereInput reader(reader_pl,fm);
 

@@ -27,7 +27,7 @@ grids_manager:
 
 initial_conditions:
   # The name of the file containing the initial conditions for this test.
-  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
+  filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
   precip_liq_surf_mass: 0.0
   precip_ice_surf_mass: 0.0
   hetfrz_immersion_nucleation_tend: 0.1
