@@ -45,10 +45,10 @@ atmosphere_processes:
   physics:
     atm_procs_list: [iop_forcing,mac_aero_mic,rrtmgp]
     schedule_type: Sequential
-    type: Group
+    type: group
     mac_aero_mic:
       atm_procs_list: [tms,shoc,CldFraction,spa,p3]
-      type: Group
+      type: group
       schedule_type: Sequential
       number_of_subcycles: ${MAC_MIC_SUBCYCLES}
       spa:

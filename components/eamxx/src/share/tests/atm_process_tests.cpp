@@ -36,7 +36,7 @@ ekat::ParameterList create_test_params ()
 
   auto& p1 = params.sublist("BarBaz");
   p1.set<strvec_t>("atm_procs_list",{"Bar","Baz"});
-  p1.set<std::string>("type", "Group");
+  p1.set<std::string>("type", "group");
   p1.set<std::string>("schedule_type","Sequential");
 
   auto& p1_0 = p1.sublist("Bar");
