@@ -487,7 +487,7 @@ void POMPEI::run_impl(const double dt) {
   using PC = scream::physics::Constants<Real>;
   auto g   = PC::gravit;
 
-  auto t    = timestamp() + dt;
+  auto t    = end_of_step_ts();
   auto rate = pompei::ash_emission_rate(t.days_from(m_eruption_start));
   auto mass = dt * rate;
 

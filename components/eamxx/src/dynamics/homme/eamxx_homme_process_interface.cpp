@@ -430,16 +430,16 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   }
 
   // Since we just inited them, ensure p_mid/p_int (dry and wet) timestamps are valid
-  get_field_out("p_int")    .get_header().get_tracking().update_time_stamp(timestamp());
-  get_field_out("p_mid")    .get_header().get_tracking().update_time_stamp(timestamp());
-  get_field_out("p_dry_int").get_header().get_tracking().update_time_stamp(timestamp());
-  get_field_out("p_dry_mid").get_header().get_tracking().update_time_stamp(timestamp());
+  get_field_out("p_int")    .get_header().get_tracking().update_time_stamp(start_of_step_ts());
+  get_field_out("p_mid")    .get_header().get_tracking().update_time_stamp(start_of_step_ts());
+  get_field_out("p_dry_int").get_header().get_tracking().update_time_stamp(start_of_step_ts());
+  get_field_out("p_dry_mid").get_header().get_tracking().update_time_stamp(start_of_step_ts());
 
   // Complete homme model initialization
   prim_init_model_f90 ();
 
   if (fv_phys_active()) {
-    fv_phys_dyn_to_fv_phys(run_type == RunType::Restart);
+    fv_phys_dyn_to_fv_phys(start_of_step_ts(),run_type == RunType::Restart);
     // [CGLL ICs in pg2] Remove the CGLL fields from the process. The AD has a
     // separate fvphyshack-based line to remove the whole CGLL FM. The intention
     // is to clear the view memory on the device, but I don't know if these two
@@ -489,8 +489,8 @@ void HommeDynamics::run_impl (const double dt)
         "  - input dt : " << dt << "\n"
         "  - tolerance: " << std::numeric_limits<double>::epsilon()*10 << "\n");
 
-    if (m_bfb_hash_nstep > 0 && timestamp().get_num_steps() % m_bfb_hash_nstep == 0)
-      print_fast_global_state_hash("Hommexx");
+    if (m_bfb_hash_nstep > 0 && start_of_step_ts().get_num_steps() % m_bfb_hash_nstep == 0)
+      print_fast_global_state_hash("Hommexx",start_of_step_ts());
 
     const int dt_int = static_cast<int>(std::round(dt));
 
@@ -1177,7 +1177,7 @@ void HommeDynamics::initialize_homme_state () {
     const auto& name = it.get_header().get_identifier().name();
     const auto& grid = it.get_header().get_identifier().get_grid_name();
     auto& f = get_internal_field(name,grid);
-    f.get_header().get_tracking().update_time_stamp(timestamp());
+    f.get_header().get_tracking().update_time_stamp(start_of_step_ts());
   }
 
   if (not fv_phys_active()) {

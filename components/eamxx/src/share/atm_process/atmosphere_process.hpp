@@ -275,12 +275,12 @@ public:
   // Print a global hash of internal fields (useful for debugging non-bfbness)
   // Note: (mem, nmem) describe an arbitrary device array. If mem!=nullptr,
   // the array will be hashed and reported as an additional entry
-  void print_global_state_hash(const std::string& label, const bool in = true,
-                               const bool out = true, const bool internal = true,
+  void print_global_state_hash(const std::string& label, const TimeStamp& t,
+                               const bool in = true, const bool out = true, const bool internal = true,
                                const Real* mem = nullptr, const int nmem = 0) const;
 
   // For BFB tracking in production simulations.
-  void print_fast_global_state_hash(const std::string& label) const;
+  void print_fast_global_state_hash(const std::string& label, const TimeStamp& t) const;
 
   // Set IOP object
   virtual void set_iop_data_manager(const iop_data_ptr& iop_data_manager) {
@@ -441,7 +441,10 @@ protected:
   virtual void finalize_impl(/* what inputs? */) = 0;
 
   // This provides access to this process's timestamp.
-  const TimeStamp& timestamp() const { return m_time_stamp; }
+  // NOTE: start_of_step_ts/end_of_step_ts are the TimeStamp at the start/end
+  //       of the current subcycle (at run time).
+  const TimeStamp& start_of_step_ts() const { return m_start_of_step_ts; }
+  const TimeStamp& end_of_step_ts() const { return m_end_of_step_ts; }
 
   // These three methods modify the FieldTracking of the input field (see field_tracking.hpp)
   void update_time_stamps ();
@@ -582,9 +585,9 @@ private:
   };
   ColumnConservationCheckData m_column_conservation_check_data;
 
-  // This process's copy of the timestamp, which is set on initialization and
-  // updated during stepping.
-  TimeStamp m_time_stamp;
+  // This process's copy of the timestamps (current, as well as beg/end of step)
+  TimeStamp m_start_of_step_ts;
+  TimeStamp m_end_of_step_ts;
 
   // The number of times this process needs to be subcycled
   int m_num_subcycles = 1;

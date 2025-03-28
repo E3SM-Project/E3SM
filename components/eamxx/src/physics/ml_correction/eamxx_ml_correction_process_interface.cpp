@@ -99,7 +99,7 @@ void MLCorrection::initialize_impl(const RunType /* run_type */) {
 // =========================================================================================
 void MLCorrection::run_impl(const double dt) {
   // use model time to infer solar zenith angle for the ML prediction
-  auto current_ts = timestamp();
+  auto current_ts = start_of_step_ts();
   std::string datetime_str = current_ts.get_date_string() + " " + current_ts.get_time_string();
 
   const auto &phis            = get_field_in("phis").get_view<const Real *, Host>();
