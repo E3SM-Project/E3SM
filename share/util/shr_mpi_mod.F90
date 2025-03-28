@@ -8,6 +8,20 @@ Module shr_mpi_mod
   use shr_log_mod, only: s_loglev  => shr_log_Level
   use shr_log_mod, only: s_logunit => shr_log_Unit
 
+  ! Import MPI fcns used throughout this module
+  use mpi, only: &
+    mpi_init, mpi_send, mpi_recv, mpi_bcast, mpi_gather, mpi_gatherv, &
+    mpi_scatterv, mpi_allreduce, mpi_reduce, mpi_abort, &
+    mpi_finalize, mpi_comm_rank, mpi_comm_size, &
+    mpi_initialized, mpi_comm_world, &
+    mpi_error_string, mpi_max_error_string, mpi_success
+
+  ! Import MPI types/constants used througout this module
+  use mpi, only: &
+    mpi_integer, mpi_integer8, mpi_real8, mpi_logical, &
+    mpi_character, mpi_status_size, &
+    mpi_max, mpi_min, mpi_sum
+
   implicit none
   private
 
@@ -91,8 +105,6 @@ Module shr_mpi_mod
        shr_mpi_maxr0, &
        shr_mpi_maxr1
   end interface shr_mpi_max
-
-#include <mpif.h>         ! mpi library include file
 
   !===============================================================================
 CONTAINS
@@ -957,7 +969,6 @@ CONTAINS
     !----- local -----
     integer(SHR_KIND_IN)               :: npes          ! Number of MPI tasks
     integer(SHR_KIND_IN)               :: locSize       ! Size of local distributed data
-    integer(SHR_KIND_IN), pointer      :: sendSize(:)   ! Size to send for initial gather
     integer(SHR_KIND_IN)               :: i             ! Index
     integer(SHR_KIND_IN)               :: rank          ! Rank of this MPI task
     integer(SHR_KIND_IN)               :: nSize         ! Maximum size to send
@@ -979,17 +990,14 @@ CONTAINS
     !
     ! --- Gather the send global sizes from each MPI task -----------------------
     !
-    allocate( sendSize(npes) )
-    sendSize(:) = 1
     globSize(:) = 1
-    call MPI_GATHER( locSize, 1, MPI_INTEGER, globSize, sendSize, &
+    call MPI_GATHER( locSize, 1, MPI_INTEGER, globSize, 1, &
          MPI_INTEGER, rootid, comm, ierr )
     if (present(string)) then
        call shr_mpi_chkerr(ierr,subName//trim(string))
     else
        call shr_mpi_chkerr(ierr,subName)
     endif
-    deallocate( sendSize )
     !
     ! --- Prepare the displacement and allocate arrays -------------------------
     !

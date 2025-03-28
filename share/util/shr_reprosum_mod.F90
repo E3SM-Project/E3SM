@@ -47,16 +47,20 @@ module shr_reprosum_mod
                             shr_infnan_isposinf, shr_infnan_isneginf
    use perf_mod
 
+   ! Import MPI fcns used throughout this module
+   use mpi, only: mpi_allreduce
+
+   ! Import MPI types/constants used througout this module
+   use mpi, only: &
+     mpi_integer, mpi_integer8, mpi_real8, mpi_logical, mpi_complex16, &
+     mpi_comm_world, &
+     mpi_max, mpi_min, mpi_sum, mpi_lor
+
 !------------------------------------------------------------------------
 !- module boilerplate ---------------------------------------------------
 !------------------------------------------------------------------------
    implicit none
    private
-
-!------------------------------------------------------------------------
-!- include statements ---------------------------------------------------
-!------------------------------------------------------------------------
-#include <mpif.h>
 
    save
 
