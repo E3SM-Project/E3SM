@@ -67,8 +67,8 @@ HommeDynamics::HommeDynamics (const ekat::Comm& comm, const ekat::ParameterList&
   set_homme_log_file_name_f90 (&logname);
 
   m_bfb_hash_nstep = 0;
-  if (params.isParameter("BfbHash"))
-    m_bfb_hash_nstep = std::max(0, params.get<int>("BfbHash"));
+  if (params.isParameter("bfb_hash"))
+    m_bfb_hash_nstep = std::max(0, params.get<int>("bfb_hash"));
 }
 
 HommeDynamics::~HommeDynamics ()

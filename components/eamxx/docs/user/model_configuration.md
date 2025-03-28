@@ -90,7 +90,7 @@ will recursively print all sub-elements, properly indented:
 $ ./atmquery homme
     homme
         moisture: moist
-        BfbHash: 18
+        bfb_hash: 18
         number_of_subcycles: 1
         enable_precondition_checks: true
         enable_postcondition_checks: true
