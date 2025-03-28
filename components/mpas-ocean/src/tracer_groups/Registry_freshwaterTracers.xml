@@ -58,16 +58,16 @@
 				<var name="icebergFreshWaterConcentration" array_group="freshwaterGRP" units="fractional"
 				description="Concentration of iceberg-derived freshwater by volume."
 				/>
-				<var name="iceRunoffFreshWaterConcentration" array_group="freshwaterGRP" units="fractional"
+				<var name="iceRunoffConcentration" array_group="freshwaterGRP" units="fractional"
 				description="Concentration of ice runoff-derived freshwater by volume."
 				/>
 				<var name="landIceFreshwaterConcentration" array_group="freshwaterGRP" units="fractional"
 				description="Concentration of land ice-derived freshwater by volume."
 				/>
-				<var name="riverRunoffFreshWaterConcentration" array_group="freshwaterGRP" units="fractional"
+				<var name="riverRunoffConcentration" array_group="freshwaterGRP" units="fractional"
 				description="Concentration of river runoff-derived freshwater by volume."
 				/>
-				<var name="subglacialRunoffFreshWaterConcentration" array_group="freshwaterGRP" units="fractional"
+				<var name="subglacialRunoffConcentration" array_group="freshwaterGRP" units="fractional"
 				description="Concentration of subglacial runoff-derived freshwater by volume."
 				/>
 			</var_array>
@@ -89,16 +89,16 @@
 				<var name="icebergFreshWaterTend" array_group="freshwaterGRP" units="fractional"
 				description="Concentration of iceberg-derived freshwater by volume."
 				/>
-				<var name="iceRunoffFreshWaterTend" array_group="freshwaterGRP" units="fractional"
+				<var name="iceRunoffTend" array_group="freshwaterGRP" units="fractional"
 				description="Concentration of ice runoff-derived freshwater by volume."
 				/>
 				<var name="landIceFreshwaterTend" array_group="freshwaterGRP" units="fractional"
 				description="Concentration of land ice-derived freshwater by volume."
 				/>
-				<var name="riverRunoffFreshWaterTend" array_group="freshwaterGRP" units="fractional"
+				<var name="riverRunoffTend" array_group="freshwaterGRP" units="fractional"
 				description="Concentration of river runoff-derived freshwater by volume."
 				/>
-				<var name="subglacialRunoffFreshWaterTend" array_group="freshwaterGRP" units="fractional"
+				<var name="subglacialRunoffTend" array_group="freshwaterGRP" units="fractional"
 				description="Concentration of subglacial runoff-derived freshwater by volume."
 				/>
 			</var_array>
@@ -120,16 +120,16 @@
 				<var name="icebergFreshWaterSurfaceFlux" array_group="freshwaterTracerFluxGRP" units="fractional"
 				description="Concentration of iceberg-derived freshwater by volume."
 				/>
-				<var name="iceRunoffFreshWaterSurfaceFlux" array_group="freshwaterTracerFluxGRP" units="fractional"
+				<var name="iceRunoffSurfaceFlux" array_group="freshwaterTracerFluxGRP" units="fractional"
 				description="Concentration of ice runoff-derived freshwater by volume."
 				/>
 				<var name="landIceFreshwaterSurfaceFlux" array_group="freshwaterTracerFluxGRP" units="fractional"
 				description="Concentration of land ice-derived freshwater by volume."
 				/>
-				<var name="riverRunoffFreshWaterSurfaceFlux" array_group="freshwaterTracerFluxGRP" units="fractional"
+				<var name="riverRunoffSurfaceFlux" array_group="freshwaterTracerFluxGRP" units="fractional"
 				description="Concentration of river runoff-derived freshwater by volume."
 				/>
-				<var name="subglacialRunoffFreshWaterSurfaceFlux" array_group="freshwaterTracerFluxGRP" units="fractional"
+				<var name="subglacialRunoffSurfaceFlux" array_group="freshwaterTracerFluxGRP" units="fractional"
 				description="Concentration of subglacial runoff-derived freshwater by volume."
 				/>
 			</var_array>
@@ -146,16 +146,16 @@
 				<var name="icebergFreshWaterSurfaceFluxRunoff" array_group="freshwaterTracersSurfaceFluxRunoffGRP" units="fractional"
 				description="Concentration of iceberg-derived freshwater by volume."
 				/>
-				<var name="iceRunoffFreshWaterSurfaceFluxRunoff" array_group="freshwaterTracersSurfaceFluxRunoffGRP" units="fractional"
+				<var name="iceRunoffSurfaceFluxRunoff" array_group="freshwaterTracersSurfaceFluxRunoffGRP" units="fractional"
 				description="Concentration of ice runoff-derived freshwater by volume."
 				/>
 				<var name="landIceFreshwaterSurfaceFluxRunoff" array_group="freshwaterTracersSurfaceFluxRunoffGRP" units="fractional"
 				description="Concentration of land ice-derived freshwater by volume."
 				/>
-				<var name="riverRunoffFreshWaterSurfaceFluxRunoff" array_group="freshwaterTracersSurfaceFluxRunoffGRP" units="fractional"
+				<var name="riverRunoffSurfaceFluxRunoff" array_group="freshwaterTracersSurfaceFluxRunoffGRP" units="fractional"
 				description="Concentration of river runoff-derived freshwater by volume."
 				/>
-				<var name="subglacialRunoffFreshWaterSurfaceFluxRunoff" array_group="freshwaterTracersSurfaceFluxRunoffGRP" units="fractional"
+				<var name="subglacialRunoffSurfaceFluxRunoff" array_group="freshwaterTracersSurfaceFluxRunoffGRP" units="fractional"
 				description="Concentration of subglacial runoff-derived freshwater by volume."
 				/>
 			</var_array>
@@ -172,16 +172,16 @@
 				<var name="icebergFreshWaterSurfaceFluxSubglacialRunoff" array_group="freshwaterTracersSurfaceFluxSubglacialRunoffGRP" units="fractional"
 				description="Concentration of iceberg-derived freshwater by volume."
 				/>
-				<var name="iceRunoffFreshWaterSurfaceFluxSubglacialRunoff" array_group="freshwaterTracersSurfaceFluxSubglacialRunoffGRP" units="fractional"
+				<var name="iceRunoffSurfaceFluxSubglacialRunoff" array_group="freshwaterTracersSurfaceFluxSubglacialRunoffGRP" units="fractional"
 				description="Concentration of ice runoff-derived freshwater by volume."
 				/>
 				<var name="landIceFreshwaterSurfaceFluxSubglacialRunoff" array_group="freshwaterTracersSurfaceFluxSubglacialRunoffGRP" units="fractional"
 				description="Concentration of land ice-derived freshwater by volume."
 				/>
-				<var name="riverRunoffFreshWaterSurfaceFluxSubglacialRunoff" array_group="freshwaterTracersSurfaceFluxSubglacialRunoffGRP" units="fractional"
+				<var name="riverRunoffSurfaceFluxSubglacialRunoff" array_group="freshwaterTracersSurfaceFluxSubglacialRunoffGRP" units="fractional"
 				description="Concentration of river runoff-derived freshwater by volume."
 				/>
-				<var name="subglacialRunoffFreshWaterSurfaceFluxSubglacialRunoff" array_group="freshwaterTracersSurfaceFluxSubglacialRunoffGRP" units="fractional"
+				<var name="subglacialRunoffSurfaceFluxSubglacialRunoff" array_group="freshwaterTracersSurfaceFluxSubglacialRunoffGRP" units="fractional"
 				description="Concentration of subglacial runoff-derived freshwater by volume."
 				/>
 			</var_array>
@@ -198,16 +198,16 @@
 				<var name="icebergFreshWaterSurfaceFluxRemoved" array_group="freshwaterTracersSurfaceFluxRemovedGRP" units="fractional"
 				description="Concentration of iceberg-derived freshwater by volume."
 				/>
-				<var name="iceRunoffFreshWaterSurfaceFluxRemoved" array_group="freshwaterTracersSurfaceFluxRemovedGRP" units="fractional"
+				<var name="iceRunoffSurfaceFluxRemoved" array_group="freshwaterTracersSurfaceFluxRemovedGRP" units="fractional"
 				description="Concentration of ice runoff-derived freshwater by volume."
 				/>
 				<var name="landIceFreshwaterSurfaceFluxRemoved" array_group="freshwaterTracersSurfaceFluxRemovedGRP" units="fractional"
 				description="Concentration of land ice-derived freshwater by volume."
 				/>
-				<var name="riverRunoffFreshWaterSurfaceFluxRemoved" array_group="freshwaterTracersSurfaceFluxRemovedGRP" units="fractional"
+				<var name="riverRunoffSurfaceFluxRemoved" array_group="freshwaterTracersSurfaceFluxRemovedGRP" units="fractional"
 				description="Concentration of river runoff-derived freshwater by volume."
 				/>
-				<var name="subglacialRunoffFreshWaterSurfaceFluxRemoved" array_group="freshwaterTracersSurfaceFluxRemovedGRP" units="fractional"
+				<var name="subglacialRunoffSurfaceFluxRemoved" array_group="freshwaterTracersSurfaceFluxRemovedGRP" units="fractional"
 				description="Concentration of subglacial runoff-derived freshwater by volume."
 				/>
 			</var_array>
