@@ -338,7 +338,7 @@ void MAMMicrophysics::set_grids(
 // the above. Buffer type given the number of columns and vertical
 // levels
 size_t MAMMicrophysics::requested_buffer_size_in_bytes() const {
-  return mam_coupling::buffer_size(ncol_, nlev_, 0, 0);
+  return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_, 0);
 }
 
 // ================================================================
@@ -350,6 +350,7 @@ size_t MAMMicrophysics::requested_buffer_size_in_bytes() const {
 // number of bytes allocated.
 
 void MAMMicrophysics::init_buffers(const ATMBufferManager &buffer_manager) {
+  buffer_.set_num_scratch(num_2d_scratch_);
   size_t used_mem =
       mam_coupling::init_buffer(buffer_manager, ncol_, nlev_, buffer_, 0);
   EKAT_REQUIRE_MSG(used_mem == requested_buffer_size_in_bytes(),

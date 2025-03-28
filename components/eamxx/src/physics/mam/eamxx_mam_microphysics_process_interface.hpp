@@ -156,6 +156,7 @@ class MAMMicrophysics final : public MAMGenericInterface {
   // Work arrays for return values from perform_atmospheric_chemistry_and_microphysics
   view_2d dflx_;
   view_2d dvel_;
+  int num_2d_scratch_= 9;
 };  // MAMMicrophysics
 
 }  // namespace scream
