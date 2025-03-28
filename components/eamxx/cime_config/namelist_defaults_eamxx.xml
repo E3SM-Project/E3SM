@@ -451,13 +451,13 @@ be lost if SCREAM_HACK_XML is not enabled.
     <iop_forcing inherit="atm_proc_base" />
 
     <!-- For internal testing only -->
-    <testOnly inherit="atm_proc_base">
+    <test_only inherit="atm_proc_base">
       <my_param type="array(integer)">1,2</my_param>
       <my_param nlev="1" append="base">3,4</my_param>
       <my_param nlev="1" append="last">5,6</my_param>
       <my_param nlev="2" append="last">3,4</my_param>
       <my_param nlev="2" append="base">5,6</my_param>
-    </testOnly>
+    </test_only>
 
     <!-- Simple Prescribed Aerosols (SPA) -->
     <spa inherit="atm_proc_base">
