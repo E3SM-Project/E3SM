@@ -612,8 +612,8 @@ contains
     integer :: closelatidx,closelonidx
     real(r8):: closelat,closelon
     logical :: readvar
-    real(r8), pointer :: mlai(:,:,:,:)        ! lai read from input files
-    real(r8), pointer :: msai(:,:,:,:)        ! sai read from input files
+    real(r8), pointer :: mlai(:,:,:)        ! lai read from input files
+    real(r8), pointer :: msai(:,:,:)        ! sai read from input files
     real(r8), pointer :: mhgtt(:,:,:)       ! top vegetation height
     real(r8), pointer :: mhgtb(:,:,:)       ! bottom vegetation height
     character(len=32) :: subname = 'readMonthlyVegetation'
@@ -622,8 +622,8 @@ contains
     ! Determine necessary indices
 
     allocate(&
-         mlai(bounds%begg:bounds%endg,1:max_topounits,0:numpft,2001:2019), &
-         msai(bounds%begg:bounds%endg,1:max_topounits,0:numpft,2001:2019), &  
+         mlai(bounds%begg:bounds%endg,1:max_topounits,2001:2019), &
+         msai(bounds%begg:bounds%endg,1:max_topounits,2001:2019), &
          mhgtt(bounds%begg:bounds%endg,1:max_topounits,0:numpft), &
          mhgtb(bounds%begg:bounds%endg,1:max_topounits,0:numpft), &
          stat=ier)
@@ -676,8 +676,8 @@ contains
           if (veg_pp%itype(p) /= noveg) then     ! vegetated pft
              do l = 0, numpft
                 if (l == veg_pp%itype(p)) then
-                   mlai2t(p,k) = mlai(g,ti,l,kyrs(k))
-                   msai2t(p,k) = msai(g,ti,l,kyrs(k))
+                   mlai2t(p,k) = mlai(g,ti,kyrs(k))
+                   msai2t(p,k) = msai(g,ti,kyrs(k))
                    mhvt2t(p,k) = mhgtt(g,ti,l)
                    mhvb2t(p,k) = mhgtb(g,ti,l)
                 end if
