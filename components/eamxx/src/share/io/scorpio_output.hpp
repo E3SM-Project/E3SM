@@ -27,7 +27,7 @@
  *  The EKAT parameter list contains the following options to control output behavior
  *  ------
  *  filename_prefix:                    STRING
- *  Averaging Type:                     STRING
+ *  averaging_type:                     STRING
  *  Max Snapshots Per File:             INT                   (default: 1)
  *  Fields:
  *     GRID_NAME_1:
@@ -49,7 +49,7 @@
  *  -----
  *  The meaning of these parameters is the following:
  *  - filename_prefix: the output filename root.
- *  - Averaging Type: a string that describes which type of output, current options are:
+ *  - averaging_type: a string that describes which type of output, current options are:
  *      instant - no averaging, output each snap as is.
  *      average - average of the field over some interval.
  *      min     - minimum value of the field over time interval.
@@ -69,7 +69,7 @@
  *      snapshots have been written on a single nc file, the class will close the file, and open a new one
  *  - Checkpointing: parameters for checkpointing control
  *    - Frequency: the frequenct of checkpoints writes. This option is used/matters only if
- *      if Averaging Type is *not* Instant. A value of 0 is interpreted as 'no checkpointing'.
+ *      if averaging_type is *not* Instant. A value of 0 is interpreted as 'no checkpointing'.
  *    - frequency_units: the units of restart history output.
  *  - Restart: parameters for history restart
  *    - filename_prefix: the history restart filename root.

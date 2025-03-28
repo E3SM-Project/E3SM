@@ -13,7 +13,7 @@ atmosphere_processes:
   schedule_type: Sequential
   mac_mic:
     atm_procs_list: [shoc,CldFraction,mam4_aci,p3]
-    Type: Group
+    type: Group
     schedule_type: Sequential
     number_of_subcycles: ${MAC_MIC_SUBCYCLES}
     p3:
@@ -38,7 +38,7 @@ atmosphere_processes:
       enable_aero_vertical_mix: true
 
 grids_manager:
-  Type: Mesh Free
+  type: Mesh Free
   geo_data_source: IC_FILE
   grids_names: [Physics GLL]
   Physics GLL:

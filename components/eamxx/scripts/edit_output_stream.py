@@ -21,7 +21,7 @@ def generate_empty_yaml(filename,overwrite):
     4
     >>> data["filename_prefix"]
     'UNSET'
-    >>> data["Averaging Type"]
+    >>> data["averaging_type"]
     'INVALID'
     >>> len(data["Fields"])
     0
@@ -45,7 +45,7 @@ def generate_empty_yaml(filename,overwrite):
 
     data = {}
     data["filename_prefix"] = "UNSET"
-    data["Averaging Type"] = "INVALID"
+    data["averaging_type"] = "INVALID"
     data["Fields"] = {}
     data["output_control"] = {}
     data["output_control"]["skip_t0_output"] = "false"
@@ -71,7 +71,7 @@ def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
     >>> data = yaml.load(open(fname,'r'),Loader=yaml.SafeLoader)
     >>> data['filename_prefix']
     'foo'
-    >>> data['Averaging Type']
+    >>> data['averaging_type']
     'max'
     >>> data['output_control']['Frequency']
     10
@@ -126,7 +126,7 @@ def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
     if reset is not None:
         for s in reset:
             if s=="avg-type":
-                data["Averaging Type"] = "INVALID"
+                data["averaging_type"] = "INVALID"
             elif s=="skip_t0_output":
                 data["skip_t0_output"] = "false"
             elif s=="preifx":
@@ -163,7 +163,7 @@ def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
         data["filename_prefix"] = prefix
 
     if avg_type is not None:
-        data["Averaging Type"] = avg_type
+        data["averaging_type"] = avg_type
 
     if skip_t0_output is not None:
         data["skip_t0_output"] = skip_t0_output

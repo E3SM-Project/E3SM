@@ -1,7 +1,7 @@
 %YAML 1.1
 ---
 filename_prefix: surface_coupling_output
-Averaging Type: Instant
+averaging_type: Instant
 Max Snapshots Per File: 1
 fill_value: -99999.0
 Field Names:

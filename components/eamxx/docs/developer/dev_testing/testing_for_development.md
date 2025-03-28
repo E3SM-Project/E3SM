@@ -212,7 +212,7 @@ Defining the test behavior and pass/fail criteria requires 3 files:
         inject_ash_XYZ_data: ${EAMXX_DATA_DIR}/mam4xx/.../inject_ash_input_data_file_XYZ.nc
         <identifying-string-used-by-inject_ash_xyz.xpp>: /path/to/.../data_file.nc
     grids_manager:
-      Type: Mesh Free
+      type: Mesh Free
       geo_data_source: IC_FILE
       grids_names: [Physics GLL]
       Physics GLL:
@@ -241,7 +241,7 @@ Defining the test behavior and pass/fail criteria requires 3 files:
     %YAML 1.1
     ---
     filename_prefix: mam4_inject_ash_standalone_output
-    Averaging Type: Instant
+    averaging_type: Instant
     Fields:
       Physics:
         Field Names:

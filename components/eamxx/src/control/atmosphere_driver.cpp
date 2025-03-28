@@ -258,7 +258,7 @@ void AtmosphereDriver::create_grids()
 
   // Create the grids manager
   auto& gm_params = m_atm_params.sublist("grids_manager");
-  const std::string& gm_type = gm_params.get<std::string>("Type");
+  const std::string& gm_type = gm_params.get<std::string>("type");
 
   // The GridsManager might load some geometric data from IC file.
   // To avoid having to pass the same data twice in the input file,
@@ -710,7 +710,7 @@ void AtmosphereDriver::create_output_managers () {
     // Create model restart manager
     auto params = io_params.sublist("model_restart");
     params.set<std::string>("filename_prefix",m_casename+".scream");
-    params.set<std::string>("Averaging Type","Instant");
+    params.set<std::string>("averaging_type","Instant");
     params.sublist("provenance") = m_atm_params.sublist("provenance");
 
     m_restart_output_manager = std::make_shared<OutputManager>();

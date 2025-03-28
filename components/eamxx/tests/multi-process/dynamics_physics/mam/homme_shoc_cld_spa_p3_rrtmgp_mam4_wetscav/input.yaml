@@ -40,10 +40,10 @@ atmosphere_processes:
   physics:
     atm_procs_list: [mac_aero_mic,rrtmgp]
     schedule_type: Sequential
-    Type: Group
+    type: Group
     mac_aero_mic:
       atm_procs_list: [shoc,CldFraction,spa,p3,mam4_wetscav]
-      Type: Group
+      type: Group
       schedule_type: Sequential
       number_of_subcycles: ${MAC_MIC_SUBCYCLES}
       spa:
@@ -77,7 +77,7 @@ atmosphere_processes:
       lambda_low: 0.001
 
 grids_manager:
-  Type: Homme
+  type: Homme
   physics_grid_type: GLL
   dynamics_namelist_file_name: namelist.nl
   vertical_coordinate_filename: IC_FILE

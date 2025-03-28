@@ -1,7 +1,7 @@
 %YAML 1.1
 ---
 filename_prefix: mam4_srf_online_emiss_mam4_constituent_fluxes_output
-Averaging Type: Instant
+averaging_type: Instant
 Field Names:
   - bc_a1
   - bc_a3

@@ -122,7 +122,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   using vos_t = std::vector<std::string>;
 
   // Figure out what kind of averaging is requested
-  auto avg_type = params.get<std::string>("Averaging Type");
+  auto avg_type = params.get<std::string>("averaging_type");
   m_avg_type = str2avg(avg_type);
   EKAT_REQUIRE_MSG (m_avg_type!=OutputAvgType::Invalid,
       "Error! Unsupported averaging type '" + avg_type + "'.\n"

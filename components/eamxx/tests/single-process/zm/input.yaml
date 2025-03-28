@@ -12,7 +12,7 @@ atmosphere_processes:
   atm_procs_list: [zm]
 
 grids_manager:
-  Type: Mesh Free
+  type: Mesh Free
   grids_names: [Physics]
   Physics:
     type: point_grid

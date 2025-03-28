@@ -1,7 +1,7 @@
 %YAML 1.1
 ---
 filename_prefix: p3_standalone_output
-Averaging Type: Instant
+averaging_type: Instant
 Field Names:
   - T_mid
   - T_mid_at_2m_above_surface

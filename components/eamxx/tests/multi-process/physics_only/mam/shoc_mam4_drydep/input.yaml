@@ -13,7 +13,7 @@ atmosphere_processes:
   schedule_type: Sequential
   mac_mic:
     atm_procs_list: [shoc]
-    Type: Group
+    type: Group
     schedule_type: Sequential
     number_of_subcycles: ${MAC_MIC_SUBCYCLES}
     shoc:
@@ -35,7 +35,7 @@ atmosphere_processes:
     fractional_land_use_file: ${SCREAM_DATA_DIR}/mam4xx/drydep/ne2np4/atmsrf_ne2np4_c20241017.nc
 
 grids_manager:
-  Type: Mesh Free
+  type: Mesh Free
   geo_data_source: IC_FILE
   grids_names: [Physics GLL]
   Physics GLL:

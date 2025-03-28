@@ -1052,7 +1052,7 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
         # produces an output at t=0, which is not present in the restarted run, and
         # which also causes different timestamp in the file name.
         # Hence, change default output settings to perform a single AVERAGE step at the end of the run
-        if case.get_value("TESTCASE") in ["ERP", "ERS"] and content['Averaging Type'].upper()=="INSTANT":
+        if case.get_value("TESTCASE") in ["ERP", "ERS"] and content['averaging_type'].upper()=="INSTANT":
             hist_n = int(case.get_value("HIST_N",resolved=True))
             hist_opt = case.get_value("HIST_OPTION",resolved=True)
             content['output_control']['Frequency'] = hist_n

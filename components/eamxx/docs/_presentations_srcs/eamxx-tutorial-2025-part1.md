@@ -161,7 +161,7 @@ scorpio:
   output_yaml_files: !strings
   - /path/to/run/data/output_file.yaml
 atmosphere_processes:
-  Type: Group
+  type: Group
   atm_procs_list: !strings
   - sc_import
   - homme
@@ -269,7 +269,7 @@ EOF
 <td>
 
 ```yaml
-Averageing Type: Average
+averaging_type: Average
 Fields:
   Physics PG2:
     Field Names:
