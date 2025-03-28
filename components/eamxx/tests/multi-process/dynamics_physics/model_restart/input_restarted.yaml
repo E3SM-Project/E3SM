@@ -16,11 +16,11 @@ atmosphere_processes:
     Moisture: moist
   physics:
     atm_procs_list: [mac_aero_mic,rrtmgp]
-    type: Group
+    type: group
     schedule_type: Sequential
     mac_aero_mic:
       atm_procs_list: [shoc,CldFraction,p3]
-      type: Group
+      type: group
       schedule_type: Sequential
       number_of_subcycles: 1
       p3:

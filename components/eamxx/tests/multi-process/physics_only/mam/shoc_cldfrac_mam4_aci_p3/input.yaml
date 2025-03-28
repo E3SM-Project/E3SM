@@ -13,7 +13,7 @@ atmosphere_processes:
   schedule_type: Sequential
   mac_mic:
     atm_procs_list: [shoc,CldFraction,mam4_aci,p3]
-    type: Group
+    type: group
     schedule_type: Sequential
     number_of_subcycles: ${MAC_MIC_SUBCYCLES}
     p3:

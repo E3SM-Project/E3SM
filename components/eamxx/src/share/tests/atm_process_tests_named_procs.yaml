@@ -2,13 +2,13 @@
 ---
 atm_procs_list: [MyFoo,BarBaz]
 schedule_type: Sequential
-type: Group
+type: group
 
 MyFoo:
   type: Foo
   Grid Name: Point Grid
 BarBaz:
-  type: Group
+  type: group
   schedule_type: Sequential
   atm_procs_list: [MyBar,MyBaz]
 

@@ -161,7 +161,7 @@ scorpio:
   output_yaml_files: !strings
   - /path/to/run/data/output_file.yaml
 atmosphere_processes:
-  type: Group
+  type: group
   atm_procs_list: !strings
   - sc_import
   - homme

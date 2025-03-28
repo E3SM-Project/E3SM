@@ -38,10 +38,10 @@ atmosphere_processes:
   physics:
     atm_procs_list: [mac_mic,rrtmgp]
     schedule_type: Sequential
-    type: Group
+    type: group
     mac_mic:
       atm_procs_list: [tms,shoc,CldFraction,p3]
-      type: Group
+      type: group
       schedule_type: Sequential
       number_of_subcycles: ${MAC_MIC_SUBCYCLES}
       p3:
