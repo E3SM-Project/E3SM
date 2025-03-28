@@ -42,6 +42,7 @@ void Functions<S,D>::shoc_assumed_pdf(
   const MemberType&            team,
   const Int&                   nlev,
   const Int&                   nlevi,
+  const Scalar&                dtime,
   const uview_1d<const Spack>& thetal,
   const uview_1d<const Spack>& qw,
   const uview_1d<const Spack>& w_field,
@@ -243,8 +244,8 @@ void Functions<S,D>::shoc_assumed_pdf(
 
       //Compute cond and evap tendencies 
       dum = ekat::max(0, a*ql1 + (1 - a)*ql2);
-      shoc_cond(k) = ekat::max(0,dum - shoc_ql(k))
-      shoc_evap(k) = ekat::max(0,shoc_ql(k) - dum)
+      shoc_cond(k) = ekat::max(0,(dum - shoc_ql(k))/dtime);
+      shoc_evap(k) = ekat::max(0,(shoc_ql(k) - dum)/dtime);
 
       // Compute SGS liquid water mixing ratio
       shoc_assumed_pdf_compute_sgs_liquid(a, ql1, ql2, shoc_ql(k));

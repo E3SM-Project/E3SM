@@ -430,7 +430,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   const int n_wind_slots = ekat::npack<Spack>(2)*Spack::n;
   const int n_trac_slots = ekat::npack<Spack>(m_num_tracers+3)*Spack::n;
   const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
-  workspace_mgr.setup(m_buffer.wsm_data, nlevi_packs, 14+(n_wind_slots+n_trac_slots), default_policy);
+  workspace_mgr.setup(m_buffer.wsm_data, nlevi_packs, 16+(n_wind_slots+n_trac_slots), default_policy);
 
   // Calculate pref_mid, and use that to calculate
   // maximum number of levels in pbl from surface

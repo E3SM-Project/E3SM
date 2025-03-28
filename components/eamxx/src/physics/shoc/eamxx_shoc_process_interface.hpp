@@ -391,7 +391,7 @@ public:
 #endif
     static constexpr int num_1d_scalar_nlev = 1;
 #ifndef SCREAM_SHOC_SMALL_KERNELS
-    static constexpr int num_2d_vector_mid  = 18;
+    static constexpr int num_2d_vector_mid  = 20;
     static constexpr int num_2d_vector_int  = 12;
 #else
     static constexpr int num_2d_vector_mid  = 22;

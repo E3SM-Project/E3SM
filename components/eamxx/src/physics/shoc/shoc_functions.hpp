@@ -747,6 +747,7 @@ struct Functions
     const MemberType&            team,
     const Int&                   nlev,
     const Int&                   nlevi,
+    const Scalar&                dtime,
     const uview_1d<const Spack>& thetal,
     const uview_1d<const Spack>& qw,
     const uview_1d<const Spack>& w_field,

@@ -124,6 +124,8 @@ void Functions<S,D>::shoc_main_internal(
   const uview_1d<Spack>&       tkh,
   // Diagnostic Output Variables
   const uview_1d<Spack>&       shoc_mix,
+  const uview_1d<Spack>&       shoc_cond,
+  const uview_1d<Spack>&       shoc_evap,
   const uview_1d<Spack>&       w_sec,
   const uview_1d<Spack>&       thl_sec,
   const uview_1d<Spack>&       qw_sec,
@@ -257,7 +259,7 @@ void Functions<S,D>::shoc_main_internal(
 
     // Call the PDF to close on SGS cloud and turbulence
     team.team_barrier();
-    shoc_assumed_pdf(team,nlev,nlevi,thetal,qw,w_field,thl_sec,qw_sec, // Input
+    shoc_assumed_pdf(team,nlev,nlevi,dtime,thetal,qw,w_field,thl_sec,qw_sec, // Input
                      wthl_sec,w_sec,wqw_sec,qwthl_sec,w3,pres,         // Input
                      zt_grid, zi_grid,                                 // Input
                      workspace,                                        // Workspace
