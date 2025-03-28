@@ -107,6 +107,8 @@ class MAMWetscav : public MAMGenericInterface {
   mam_coupling::DryAtmosphere dry_atm_;
   // workspace manager for internal local variables
   mam_coupling::Buffer buffer_;
+  // parameters for calcsize
+  mam4::modal_aer_opt::CalcsizeData calsize_data_;
 
 };  // class MAMWetscav
 

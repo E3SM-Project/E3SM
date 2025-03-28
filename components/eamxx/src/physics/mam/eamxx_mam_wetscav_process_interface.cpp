@@ -287,6 +287,10 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
   // Detraining cld H20 from deep convection [kg/kg/s]
   dlf_ = view_2d("dlf", ncol_, nlev_);
   Kokkos::deep_copy(dlf_, 0);
+
+  calsize_data_.initialize();
+  // wetscav uses update_mmr=true;
+  calsize_data_.set_update_mmr(true);
 }
 
 // ================================================================
@@ -388,6 +392,7 @@ void MAMWetscav::run_impl(const double dt) {
                           [mam4::AeroConfig::num_modes()];
 
   mam4::wetdep::init_scavimptbl(scavimptblvol, scavimptblnum);
+  const auto &calsize_data =  calsize_data_;
 
   // Loop over atmosphere columns
   Kokkos::parallel_for(
@@ -442,6 +447,7 @@ void MAMWetscav::run_impl(const double dt) {
             cldt_icol, rprdsh_icol, rprddp_icol, evapcdp_icol, evapcsh_icol,
             dp_frac_icol, sh_frac_icol, icwmrdp_col, icwmrsh_icol, nevapr_icol,
             dlf_icol, prain_icol, scavimptblnum, scavimptblvol,
+            calsize_data,
             // outputs
             wet_diameter_icol, dry_diameter_icol, qaerwat_icol, wetdens_icol,
             aerdepwetis_icol, aerdepwetcw_icol, work_icol, isprx_icol);
