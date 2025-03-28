@@ -9,7 +9,7 @@ $CIMEROOT/../components/eamxx/cime_config/testdefs/testmods_dirs/eamxx/mam4xx/up
 $CIMEROOT/../components/eamxx/scripts/atmchange physics::atm_procs_list="mac_aero_mic,spa,rrtmgp" -b
 
 # Replace spa with mam4_aci to invoke mam4 aci scheme
-$CIMEROOT/../components/eamxx/scripts/atmchange mac_aero_mic::atm_procs_list="tms,shoc,cldFraction,mam4_aci,p3" -b
+$CIMEROOT/../components/eamxx/scripts/atmchange mac_aero_mic::atm_procs_list="tms,shoc,cld_fraction,mam4_aci,p3" -b
 
 #Set precribed ccn to false so that P3 uses input from ACI
 $CIMEROOT/../components/eamxx/scripts/atmchange p3::do_prescribed_ccn=false -b
