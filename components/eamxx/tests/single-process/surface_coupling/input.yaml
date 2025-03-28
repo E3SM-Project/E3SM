@@ -8,7 +8,7 @@ time_stepping:
 
 atmosphere_processes:
   atm_procs_list: [SurfaceCouplingImporter,SurfaceCouplingExporter]
-  schedule_type: Sequential
+  schedule_type: sequential
 
 grids_manager:
   type: Mesh Free

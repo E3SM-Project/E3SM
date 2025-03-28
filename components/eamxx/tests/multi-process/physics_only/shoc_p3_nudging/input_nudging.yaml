@@ -9,7 +9,7 @@ time_stepping:
   number_of_steps: ${NUM_STEPS}
 
 atmosphere_processes:
-  schedule_type: Sequential
+  schedule_type: sequential
   atm_procs_list: [shoc,p3,nudging]
   p3:
     max_total_ni: 720.0e3

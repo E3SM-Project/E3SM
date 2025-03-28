@@ -10,7 +10,7 @@ time_stepping:
 
 atmosphere_processes:
   atm_procs_list: [mam4_optics, rrtmgp]
-  schedule_type: Sequential
+  schedule_type: sequential
   mam4_optics:
     mam4_mode1_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/mam4_mode1_rrtmg_aeronetdust_c20240206.nc
     mam4_mode2_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/mam4_mode2_rrtmg_c20240206.nc
