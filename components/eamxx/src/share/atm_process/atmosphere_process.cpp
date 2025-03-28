@@ -71,7 +71,7 @@ void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type)
     start_timer (m_timer_prefix + this->name() + "::init");
   }
   set_fields_and_groups_pointers();
-  m_time_stamp = t0;
+  m_start_of_step_ts = m_end_of_step_ts = t0;
   initialize_impl(run_type);
 
   // Create all start-of-step fields needed for tendencies calculation
@@ -101,6 +101,8 @@ void AtmosphereProcess::run (const double dt) {
   init_step_tendencies ();
 
   for (m_subcycle_iter=0; m_subcycle_iter<m_num_subcycles; ++m_subcycle_iter) {
+    m_start_of_step_ts = m_end_of_step_ts;
+    m_end_of_step_ts += dt_sub;
 
     if (has_column_conservation_check()) {
       // Column local mass and energy checks requires the total mass and energy
@@ -112,6 +114,7 @@ void AtmosphereProcess::run (const double dt) {
     if (m_internal_diagnostics_level > 0)
       // Print hash of INPUTS before run
       print_global_state_hash(name() + "-pre-sc-" + std::to_string(m_subcycle_iter),
+                              m_start_of_step_ts,
                               true, false, false);
 
     // Run derived class implementation
@@ -120,6 +123,7 @@ void AtmosphereProcess::run (const double dt) {
     if (m_internal_diagnostics_level > 0)
       // Print hash of OUTPUTS/INTERNALS after run
       print_global_state_hash(name() + "-pst-sc-" + std::to_string(m_subcycle_iter),
+                              m_end_of_step_ts,
                               true, true, true);
 
     if (has_column_conservation_check()) {
@@ -136,7 +140,6 @@ void AtmosphereProcess::run (const double dt) {
     run_postcondition_checks();
   }
 
-  m_time_stamp += dt;
   if (m_update_time_stamps) {
     // Update all output fields time stamps
     update_time_stamps ();
@@ -581,7 +584,7 @@ void AtmosphereProcess::set_update_time_stamps (const bool do_update) {
 }
 
 void AtmosphereProcess::update_time_stamps () {
-  const auto& t = timestamp();
+  const auto& t = end_of_step_ts();
 
   // Update *all* output fields/groups, regardless of whether
   // they were touched at all during this time step.

@@ -328,13 +328,8 @@ void Nudging::run_impl (const double dt)
   using view_1d       = KT::view_1d<PackT>;
   using view_2d       = KT::view_2d<PackT>;
 
-  // Have to add dt because first time iteration is at 0 seconds where you will
-  // not have any data from the field. The timestamp is only iterated at the
-  // end of the full step in scream.
-  auto ts = timestamp()+dt;
-
   // Perform time interpolation
-  m_time_interp.perform_time_interpolation(ts);
+  m_time_interp.perform_time_interpolation(end_of_step_ts());
 
   // If the input data contains "masked" values (sometimes also called "filled" values),
   // the horiz remapping would smear them around. To prevent that, we need to "cure"
