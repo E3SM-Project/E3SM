@@ -24,7 +24,7 @@ atmosphere_processes:
   schedule_type: sequential
   compute_tendencies: [T_mid, qv]
   homme:
-    Moisture: moist
+    moisture: moist
   physics:
     atm_procs_list: [mac_aero_mic,rrtmgp]
     schedule_type: sequential

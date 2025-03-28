@@ -187,7 +187,7 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <!-- Homme dynamics -->
     <homme inherit="atm_proc_base">
-      <Moisture>moist</Moisture>
+      <moisture>moist</moisture>
       <!-- Frequency in physics steps to output a global hash over the dycore's
            in-fields. <= 0 disables hashing. -->
       <BfbHash type="integer">18</BfbHash>

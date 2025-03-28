@@ -36,7 +36,7 @@ atmosphere_processes:
   atm_procs_list: [homme,physics]
   schedule_type: sequential
   homme:
-    Moisture: moist
+    moisture: moist
   physics:
     atm_procs_list: [mac_aero_mic,rrtmgp]
     schedule_type: sequential

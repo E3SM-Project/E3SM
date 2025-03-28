@@ -16,7 +16,7 @@ atmosphere_processes:
   atm_procs_list: [Dynamics]
   Dynamics:
     type: Homme
-    Moisture: moist
+    moisture: moist
 
 grids_manager:
   type: Homme

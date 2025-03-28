@@ -89,7 +89,7 @@ will recursively print all sub-elements, properly indented:
 ``` {.shell .copy}
 $ ./atmquery homme
     homme
-        Moisture: moist
+        moisture: moist
         BfbHash: 18
         number_of_subcycles: 1
         enable_precondition_checks: true
