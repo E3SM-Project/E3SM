@@ -6,6 +6,9 @@
 SET (AURORA_MACHINE TRUE CACHE BOOL "")
 
 SET(BUILD_HOMME_WITHOUT_PIOLIBRARY TRUE CACHE BOOL "")
+
+# Default to FALSE for now. To enable, set to TRUE and export
+# MPIR_CVAR_ENABLE_GPU=1.
 SET(HOMMEXX_MPI_ON_DEVICE FALSE CACHE BOOL "")
 
 SET(HOMME_FIND_BLASLAPACK TRUE CACHE BOOL "")
@@ -26,7 +29,7 @@ SET(BUILD_HOMME_THETA_KOKKOS TRUE CACHE BOOL "")
 SET(USE_TRILINOS OFF CACHE BOOL "")
 
 SET(SYCL_BUILD TRUE CACHE BOOL "")
-SET(HOMME_ENABLE_COMPOSE FALSE CACHE BOOL "")
+SET(HOMME_ENABLE_COMPOSE TRUE CACHE BOOL "")
 
 SET(Kokkos_ARCH_SPR ON CACHE BOOL "")
 SET(Kokkos_ARCH_INTEL_PVC ON CACHE BOOL "")
@@ -42,7 +45,7 @@ SET(CMAKE_Fortran_COMPILER "mpifort" CACHE STRING "")
 SET(CMAKE_CXX_COMPILER "mpicxx" CACHE STRING "")
 
 #AOT flags
-SET(SYCL_COMPILE_FLAGS "-std=c++17 -fsycl -fsycl-device-code-split=per_kernel -fno-sycl-id-queries-fit-in-int -fsycl-unnamed-lambda")
+SET(SYCL_COMPILE_FLAGS "-std=c++17 -fsycl -fsycl-device-code-split=per_kernel -fno-sycl-id-queries-fit-in-int -fsycl-unnamed-lambda -Xclang -fsycl-allow-virtual-functions")
 SET(SYCL_LINK_FLAGS "-Wl,--no-relax -flink-huge-device-code -fsycl-max-parallel-link-jobs=32 -fsycl -fsycl-device-code-split=per_kernel -fsycl-targets=intel_gpu_pvc")
 
 SET(ADD_Fortran_FLAGS "-fc=ifx -fpscomp logicals -O3 -DNDEBUG -DCPRINTEL -g" CACHE STRING "")

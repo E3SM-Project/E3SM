@@ -323,7 +323,7 @@ struct ListOfLists {
     SLMM_KIF Array<T> view () const { return Array<T>(d_, n_); }
 
   private:
-    friend class ListOfLists<T, DT>;
+    friend struct ListOfLists<T, DT>;
     SLMM_KIF List (T* d, const Int& n) : d_(d), n_(n) { slmm_kernel_assert_high(n_ >= 0); }
     T* const d_;
     const Int n_;
@@ -403,7 +403,7 @@ struct ListOfLists {
   const typename Array<Int>::HostMirror& ptr_h_view () const { return ptr_h_; }
 
 private:
-  friend class BufferLayoutArray<DT>;
+  friend struct BufferLayoutArray<DT>;
   Array<T> d_;
   Array<Int> ptr_;
   typename Array<Int>::HostMirror ptr_h_;
@@ -431,7 +431,7 @@ struct BufferLayoutArray {
     }
 
   private:
-    friend class BufferLayoutArray;
+    friend struct BufferLayoutArray;
     SLMM_KIF BufferRankLayoutArray (const typename ListOfLists<LayoutTriple, DT>::List& d,
                                     const Int& nlev)
       : d_(d), nlev_(nlev) {}
