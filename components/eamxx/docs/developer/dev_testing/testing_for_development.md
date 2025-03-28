@@ -76,7 +76,7 @@ be the `eamxx_inject_ash_process_interface.<x>pp` files, located at
       [...] // set source_mask=1 only on area of interest, using lat/lon field
     }
     void MAM_AshInjection::run_impl(const double dt) {
-      auto t = this->timestamp() + dt; // timestamp() is the START of step time
+      auto t = end_of_step_ts();
       auto ash = get_field_out("ash");
       auto rate = compute_ash_injection_rate(
           t); // defined in ash_source_calculation.hpp header
