@@ -1,2 +1,2 @@
 
-$CIMEROOT/../components/eamxx/scripts/atmchange BfbHash=1 -b
+$CIMEROOT/../components/eamxx/scripts/atmchange bfb_hash=1 -b

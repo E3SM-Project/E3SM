@@ -190,7 +190,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <moisture>moist</moisture>
       <!-- Frequency in physics steps to output a global hash over the dycore's
            in-fields. <= 0 disables hashing. -->
-      <BfbHash type="integer">18</BfbHash>
+      <bfb_hash type="integer">18</bfb_hash>
     </homme>
 
     <!-- P3 microphysics -->
