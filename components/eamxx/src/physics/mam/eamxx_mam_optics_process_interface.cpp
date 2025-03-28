@@ -257,7 +257,7 @@ void MAMOptics::initialize_impl(const RunType run_type) {
         const auto &fname = m_params.get<std::string>(table_name);
         // read data
         // need to update table name
-        params_aero.set("Filename", fname);
+        params_aero.set("filename", fname);
         AtmosphereInput refindex_aerosol(params_aero, grid_, host_views_aero,
                                          layouts_aero);
         refindex_aerosol.read_variables();

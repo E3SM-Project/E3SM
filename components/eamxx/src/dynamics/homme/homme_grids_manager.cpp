@@ -331,7 +331,7 @@ initialize_vertical_coordinates (const nonconstgrid_ptr_type& dyn_grid) {
 
   // Read vcoords into host views
   ekat::ParameterList vcoord_reader_pl;
-  vcoord_reader_pl.set("Filename",filename);
+  vcoord_reader_pl.set("filename",filename);
   vcoord_reader_pl.set<vos_t>("Field Names",{"hyai","hybi","hyam","hybm"});
 
   auto layout_mid = dyn_grid->get_vertical_layout(true);

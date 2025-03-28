@@ -155,7 +155,7 @@ inline void read_rrtmg_table(
   view_3d_host temp_lw_3d_host("temp_absplw_host", coef_number, refindex_real,
                                refindex_im);
 
-  params.set("Filename", table_filename);
+  params.set("filename", table_filename);
   AtmosphereInput rrtmg(params, grid, host_views_1d, layouts);
   rrtmg.read_variables();
   rrtmg.finalize();
@@ -271,7 +271,7 @@ inline void read_water_refindex(const std::string &table_filename,
 
   // here a made a list of variables that I want to read from netcdf files
   ekat::ParameterList params;
-  params.set("Filename", table_filename);
+  params.set("filename", table_filename);
   params.set("Skip_Grid_Checks", true);
 
   params.set<strvec_t>("Field Names",

@@ -64,6 +64,6 @@ Fields:
 output_control:
   Frequency: 3
   frequency_units: nhours
-  MPI Ranks in Filename: false
+  mpi_ranks_in_filename: false
 Restart:
   force_new_file: true

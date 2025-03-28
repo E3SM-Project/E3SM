@@ -148,7 +148,7 @@ $ ./atmquery --listall
             dynamics_namelist_file_name: ./data/namelist.nl
             vertical_coordinate_filename: /some/path/to/coords/file.nc
         initial_conditions
-            Filename: /some/path/to/ic/file.nc
+            filename: /some/path/to/ic/file.nc
             topography_filename: /some/path/to/topo/file.nc
     [...]
 ```
@@ -572,7 +572,7 @@ of the parameter value).
         (depending on the output frequency).
             - If `one_year` or `one_month` are used, the option
             `Max Snapshots Per File` is ignored.
-- `MPI Ranks in Filename` (top-level list, `boolean`):
+- `mpi_ranks_in_filename` (top-level list, `boolean`):
       - This option specifies whether the number of MPI ranks in the atmosphere
       communicator should be put inside the output file name.
       - By default, this is `false`, since it is usually not important.

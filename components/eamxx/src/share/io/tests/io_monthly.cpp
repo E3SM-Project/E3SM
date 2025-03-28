@@ -198,7 +198,7 @@ void read (const int seed, const ekat::Comm& comm)
     // There should be just one time snapshot per file
     REQUIRE(scorpio::get_dimlen(filename,"time")==1);
 
-    reader_pl.set("Filename",filename);
+    reader_pl.set("filename",filename);
     AtmosphereInput reader(reader_pl,fm);
     reader.read_variables();
 

@@ -296,7 +296,7 @@ TEST_CASE("io_remap_test","io_remap_test")
     // Note: the FieldAtPressureLevel diag should get the attribute from its input field,
     //       so the valuf for "Y_int"_at_XPa should be "Y_int"
     std::string att_val;
-    const auto& filename = vert_in.get<std::string>("Filename");
+    const auto& filename = vert_in.get<std::string>("filename");
     for (auto& fname : fnames) {
       att_val = scorpio::get_attribute<std::string>(filename,fname,"test");
       REQUIRE (att_val==fname);
@@ -366,7 +366,7 @@ TEST_CASE("io_remap_test","io_remap_test")
     // Note: the FieldAtPressureLevel diag should get the attribute from its input field,
     //       so the valuf for "Y_int"_at_XPa should be "Y_int"
     std::string att_val;
-    const auto& filename = horiz_in.get<std::string>("Filename");
+    const auto& filename = horiz_in.get<std::string>("filename");
     for (auto& fname : fnames) {
       att_val = scorpio::get_attribute<std::string>(filename,fname,"test");
       REQUIRE (att_val==fname);
@@ -452,7 +452,7 @@ TEST_CASE("io_remap_test","io_remap_test")
     // Note: the FieldAtPressureLevel diag should get the attribute from its input field,
     //       so the valuf for "Y_int"_at_XPa should be "Y_int"
     std::string att_val;
-    const auto& filename = vh_in.get<std::string>("Filename");
+    const auto& filename = vh_in.get<std::string>("filename");
     for (auto& fname : fnames) {
       att_val = scorpio::get_attribute<std::string>(filename,fname,"test");
       REQUIRE (att_val==fname);
@@ -711,7 +711,7 @@ ekat::ParameterList set_input_params(const std::string& name, ekat::Comm& comm, 
   using vos_type = std::vector<std::string>;
   ekat::ParameterList in_params("Input Parameters");
   std::string filename = name + ".INSTANT.nsteps_x1.np" + std::to_string(comm.size()) + "." + tstamp + ".nc";
-  in_params.set<std::string>("Filename",filename);
+  in_params.set<std::string>("filename",filename);
   vos_type fields_in =  {"Y_flat", "Y_mid", "Y_int", "V_mid", "V_int"};
   if (p_ref>=0) {
     fields_in.push_back("Y_int_at_"+std::to_string(p_ref)+"Pa");
