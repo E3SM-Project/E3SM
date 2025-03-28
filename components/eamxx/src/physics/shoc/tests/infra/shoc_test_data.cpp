@@ -605,8 +605,8 @@ void compute_diag_third_shoc_moment_host(Int shcol, Int nlev, Int nlevi, Real* w
 
     // Hardcode runtime options for F90 testing
     const Real c_diag_3rd_mom = 7.0;
-    const bool tke_1p5_closure = false;
-    SHF::compute_diag_third_shoc_moment(team, nlev, nlevi, c_diag_3rd_mom, tke_1p5_closure, w_sec_s, thl_sec_s,
+    const bool shoc_nosgs_var = false;
+    SHF::compute_diag_third_shoc_moment(team, nlev, nlevi, c_diag_3rd_mom, shoc_nosgs_var, w_sec_s, thl_sec_s,
                                         wthl_sec_s, tke_s, dz_zt_s, dz_zi_s, isotropy_zi_s,
                                         brunt_zi_s, w_sec_zi_s, thetal_zi_s, w3_s);
   });
@@ -1005,7 +1005,7 @@ void diag_second_moments_host(Int shcol, Int nlev, Int nlevi, Real* thetal, Real
     const Real qw2tune = 1.0;
     const Real qwthl2tune = 1.0;
     const Real w2tune = 1.0;
-    const bool tke_1p5_closure = false;
+    const bool shoc_nosgs_var = false;
 
     const auto thetal_1d      = ekat::subview(thetal_2d, i);
     const auto qw_1d          = ekat::subview(qw_2d, i);
@@ -1032,7 +1032,7 @@ void diag_second_moments_host(Int shcol, Int nlev, Int nlevi, Real* thetal, Real
     const auto tkh_zi_1d      = ekat::subview(tkh_zi_2d, i);
     const auto tk_zi_1d       = ekat::subview(tk_zi_2d, i);
 
-    SHOC::diag_second_moments(team, nlev, nlevi, thl2tune, qw2tune, qwthl2tune, w2tune, tke_1p5_closure,
+    SHOC::diag_second_moments(team, nlev, nlevi, thl2tune, qw2tune, qwthl2tune, w2tune, shoc_nosgs_var,
                      thetal_1d, qw_1d, u_wind_1d, v_wind_1d, tke_1d, isotropy_1d, tkh_1d, tk_1d,
                      dz_zi_1d, zt_grid_1d, zi_grid_1d, shoc_mix_1d, isotropy_zi_1d, tkh_zi_1d, tk_zi_1d,
                      thl_sec_1d, qw_sec_1d, wthl_sec_1d, wqw_sec_1d,
@@ -1119,7 +1119,7 @@ void diag_second_shoc_moments_host(Int shcol, Int nlev, Int nlevi, Real* thetal,
     const Real qw2tune = 1.0;
     const Real qwthl2tune = 1.0;
     const Real w2tune = 1.0;
-    const bool tke_1p5_closure = false;
+    const bool shoc_nosgs_var = false;
 
     auto workspace = workspace_mgr.get_workspace(team);
 
@@ -1153,7 +1153,7 @@ void diag_second_shoc_moments_host(Int shcol, Int nlev, Int nlevi, Real* thetal,
     Scalar wstar_s  = wstar_1d(i);
 
     SHOC::diag_second_shoc_moments(team, nlev, nlevi,
-       thl2tune, qw2tune, qwthl2tune, w2tune, tke_1p5_closure,
+       thl2tune, qw2tune, qwthl2tune, w2tune, shoc_nosgs_var,
        thetal_1d, qw_1d, u_wind_1d, v_wind_1d, tke_1d, isotropy_1d, tkh_1d, tk_1d, dz_zi_1d, zt_grid_1d, zi_grid_1d, shoc_mix_1d,
        wthl_s, wqw_s, uw_s, vw_s, ustar2_s, wstar_s,
        workspace, thl_sec_1d, qw_sec_1d, wthl_sec_1d, wqw_sec_1d, qwthl_sec_1d,
@@ -1804,8 +1804,8 @@ void diag_third_shoc_moments_host(Int shcol, Int nlev, Int nlevi, Real* w_sec, R
 
     // Hardcode for F90 testing
     const Real c_diag_3rd_mom = 7.0;
-    const bool tke_1p5_closure = false;
-    SHF::diag_third_shoc_moments(team, nlev, nlevi, c_diag_3rd_mom, tke_1p5_closure, wsec_s, thl_sec_s,
+    const bool shoc_nosgs_var = false;
+    SHF::diag_third_shoc_moments(team, nlev, nlevi, c_diag_3rd_mom, shoc_nosgs_var, wsec_s, thl_sec_s,
                                  wthl_sec_s, isotropy_s, brunt_s, thetal_s, tke_s,
                                  dz_zt_s, dz_zi_s, zt_grid_s, zi_grid_s,
                                  workspace,
@@ -1862,8 +1862,8 @@ void adv_sgs_tke_host(Int nlev, Int shcol, Real dtime, Real* shoc_mix, Real* wth
       const auto tke_s      = ekat::subview(tke_d ,i);
       const auto a_diss_s   = ekat::subview(a_diss_d ,i);
 
-      const bool tke_1p5_closure = false;
-      SHF::adv_sgs_tke(team, nlev, dtime, tke_1p5_closure, shoc_mix_s, wthv_sec_s, sterm_zt_s, tk_s, brunt_s, tke_s, a_diss_s);
+      const bool shoc_nosgs_var = false;
+      SHF::adv_sgs_tke(team, nlev, dtime, shoc_nosgs_var, shoc_mix_s, wthv_sec_s, sterm_zt_s, tk_s, brunt_s, tke_s, a_diss_s);
     });
 
   // Sync back to host
@@ -2963,9 +2963,9 @@ void shoc_tke_host(Int shcol, Int nlev, Int nlevi, Real dtime, Real* wthv_sec, R
     const Real lambda_thresh = 0.02;
     const Real Ckh           = 0.1;
     const Real Ckm           = 0.1;
-    const bool tke_1p5_closure    = false;
+    const bool shoc_nosgs_var    = false;
     SHF::shoc_tke(team,nlev,nlevi,dtime,lambda_low,lambda_high,lambda_slope,lambda_thresh,
-                  Ckh, Ckm, tke_1p5_closure,
+                  Ckh, Ckm, shoc_nosgs_var,
 		  wthv_sec_s,shoc_mix_s,dz_zi_s,dz_zt_s,pres_s,
                   tabs_s,u_wind_s,v_wind_s,brunt_s,zt_grid_s,zi_grid_s,pblh_s,
                   workspace,

@@ -12,7 +12,7 @@ void Functions<Real,DefaultDevice>
   const Int&                  nlev,
   const Int&                  nlevi,
   const Scalar&               c_diag_3rd_mom,
-  const bool&                 tke_1p5_closure,
+  const bool&                 shoc_nosgs_var,
   const view_2d<const Spack>& w_sec,
   const view_2d<const Spack>& thl_sec,
   const view_2d<const Spack>& wthl_sec,
@@ -39,7 +39,7 @@ void Functions<Real,DefaultDevice>
     diag_third_shoc_moments(
       team, nlev, nlevi,
       c_diag_3rd_mom,
-      tke_1p5_closure,
+      shoc_nosgs_var,
       ekat::subview(w_sec, i),
       ekat::subview(thl_sec, i),
       ekat::subview(wthl_sec, i),

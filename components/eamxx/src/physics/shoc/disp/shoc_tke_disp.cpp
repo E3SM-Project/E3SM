@@ -18,7 +18,7 @@ void Functions<Real,DefaultDevice>
   const Scalar&                lambda_thresh,
   const Scalar&                Ckh,
   const Scalar&                Ckm,
-  const bool&                  tke_1p5_closure,
+  const bool&                  shoc_nosgs_var,
   const view_2d<const Spack>&  wthv_sec,
   const view_2d<const Spack>&  shoc_mix,
   const view_2d<const Spack>&  dz_zi,
@@ -48,7 +48,7 @@ void Functions<Real,DefaultDevice>
 
     shoc_tke(team, nlev, nlevi, dtime,
              lambda_low, lambda_high, lambda_slope, lambda_thresh,
-             Ckh, Ckm, tke_1p5_closure,
+             Ckh, Ckm, shoc_nosgs_var,
              ekat::subview(wthv_sec, i),
              ekat::subview(shoc_mix, i),
              ekat::subview(dz_zi, i),

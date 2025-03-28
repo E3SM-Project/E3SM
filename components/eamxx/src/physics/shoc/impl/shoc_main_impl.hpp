@@ -85,7 +85,7 @@ void Functions<S,D>::shoc_main_internal(
   const Scalar&                c_diag_3rd_mom,
   const Scalar&                Ckh,
   const Scalar&                Ckm,
-  const bool&                  tke_1p5_closure,
+  const bool&                  shoc_nosgs_var,
   // Input Variables
   const Scalar&                dx,
   const Scalar&                dy,
@@ -217,7 +217,7 @@ void Functions<S,D>::shoc_main_internal(
     // Advance the SGS TKE equation
     shoc_tke(team,nlev,nlevi,dtime,              // Input
 	     lambda_low,lambda_high,lambda_slope, // Runtime options
-	     lambda_thresh,Ckh,Ckm,tke_1p5_closure, // Runtime options
+	     lambda_thresh,Ckh,Ckm,shoc_nosgs_var, // Runtime options
 	     wthv_sec,                           // Input
              shoc_mix,dz_zi,dz_zt,pres,shoc_tabs,// Input
              u_wind,v_wind,brunt,zt_grid,        // Input
@@ -238,7 +238,7 @@ void Functions<S,D>::shoc_main_internal(
     // Diagnose the second order moments
     diag_second_shoc_moments(team,nlev,nlevi,
                              thl2tune, qw2tune, qwthl2tune, w2tune,     // Runtime options
-			     tke_1p5_closure,                           // Runtime options
+			     shoc_nosgs_var,                           // Runtime options
                              thetal,qw,u_wind,v_wind,                   // Input
                              tke,isotropy,tkh,tk,dz_zi,zt_grid,zi_grid, // Input
                              shoc_mix,wthl_sfc,wqw_sfc,uw_sfc,vw_sfc,   // Input
@@ -250,7 +250,7 @@ void Functions<S,D>::shoc_main_internal(
     // Diagnose the third moment of vertical velocity,
     //  needed for the PDF closure
     diag_third_shoc_moments(team,nlev,nlevi,
-                            c_diag_3rd_mom,tke_1p5_closure,         // Runtime options
+                            c_diag_3rd_mom,shoc_nosgs_var,         // Runtime options
                             w_sec,thl_sec,wthl_sec,                 // Input
                             isotropy,brunt,thetal,tke,dz_zt,dz_zi,  // Input
                             zt_grid,zi_grid,                        // Input
@@ -342,7 +342,7 @@ void Functions<S,D>::shoc_main_internal(
   const Scalar&                c_diag_3rd_mom,
   const Scalar&                Ckh,
   const Scalar&                Ckm,
-  const bool&                  tke_1p5_closure,
+  const bool&                  shoc_nosgs_var,
   // Input Variables
   const view_1d<const Scalar>& dx,
   const view_1d<const Scalar>& dy,
@@ -479,7 +479,7 @@ void Functions<S,D>::shoc_main_internal(
     // Advance the SGS TKE equation
     shoc_tke_disp(shcol,nlev,nlevi,dtime,             // Input
 	          lambda_low,lambda_high,lambda_slope, // Runtime options
-		  lambda_thresh,Ckh,Ckm,tke_1p5_closure, // Runtime options
+		  lambda_thresh,Ckh,Ckm,shoc_nosgs_var, // Runtime options
                   wthv_sec,                           // Input
                   shoc_mix,dz_zi,dz_zt,pres,shoc_tabs,// Input
                   u_wind,v_wind,brunt,zt_grid,        // Input
@@ -499,7 +499,7 @@ void Functions<S,D>::shoc_main_internal(
     // Diagnose the second order moments
     diag_second_shoc_moments_disp(shcol,nlev,nlevi,
                                   thl2tune, qw2tune, qwthl2tune, w2tune,     // Runtime options
-				  tke_1p5_closure,                           // Runtime options
+				  shoc_nosgs_var,                           // Runtime options
                                   thetal,qw,u_wind,v_wind,                   // Input
                                   tke,isotropy,tkh,tk,dz_zi,zt_grid,zi_grid, // Input
                                   shoc_mix,wthl_sfc,wqw_sfc,uw_sfc,vw_sfc,   // Input
@@ -511,7 +511,7 @@ void Functions<S,D>::shoc_main_internal(
     // Diagnose the third moment of vertical velocity,
     //  needed for the PDF closure
     diag_third_shoc_moments_disp(shcol,nlev,nlevi,
-                                 c_diag_3rd_mom,tke_1p5_closure,         // Runtime options
+                                 c_diag_3rd_mom,shoc_nosgs_var,         // Runtime options
                                  w_sec,thl_sec,wthl_sec,                 // Input
                                  isotropy,brunt,thetal,tke,dz_zt,dz_zi,  // Input
                                  zt_grid,zi_grid,                        // Input
@@ -611,7 +611,7 @@ Int Functions<S,D>::shoc_main(
   const Scalar c_diag_3rd_mom = shoc_runtime.c_diag_3rd_mom;
   const Scalar Ckh           = shoc_runtime.Ckh;
   const Scalar Ckm           = shoc_runtime.Ckm;
-  const bool   tke_1p5_closure = shoc_runtime.tke_1p5_closure;
+  const bool   shoc_nosgs_var = shoc_runtime.shoc_nosgs_var;
 
 #ifndef SCREAM_SHOC_SMALL_KERNELS
   using ExeSpace = typename KT::ExeSpace;
@@ -676,7 +676,7 @@ Int Functions<S,D>::shoc_main(
     shoc_main_internal(team, nlev, nlevi, npbl, nadv, num_qtracers, dtime,
 	               lambda_low, lambda_high, lambda_slope, lambda_thresh,  // Runtime options
                        thl2tune, qw2tune, qwthl2tune, w2tune, length_fac,     // Runtime options
-                       c_diag_3rd_mom, Ckh, Ckm, tke_1p5_closure,             // Runtime options
+                       c_diag_3rd_mom, Ckh, Ckm, shoc_nosgs_var,             // Runtime options
                        dx_s, dy_s, zt_grid_s, zi_grid_s,                      // Input
                        pres_s, presi_s, pdel_s, thv_s, w_field_s,             // Input
                        wthl_sfc_s, wqw_sfc_s, uw_sfc_s, vw_sfc_s,             // Input
@@ -702,7 +702,7 @@ Int Functions<S,D>::shoc_main(
   shoc_main_internal(shcol, nlev, nlevi, npbl, nadv, num_qtracers, dtime,
     lambda_low, lambda_high, lambda_slope, lambda_thresh,  // Runtime options
     thl2tune, qw2tune, qwthl2tune, w2tune, length_fac,     // Runtime options
-    c_diag_3rd_mom, Ckh, Ckm, tke_1p5_closure,             // Runtime options
+    c_diag_3rd_mom, Ckh, Ckm, shoc_nosgs_var,             // Runtime options
     shoc_input.dx, shoc_input.dy, shoc_input.zt_grid, shoc_input.zi_grid, // Input
     shoc_input.pres, shoc_input.presi, shoc_input.pdel, shoc_input.thv, shoc_input.w_field, // Input
     shoc_input.wthl_sfc, shoc_input.wqw_sfc, shoc_input.uw_sfc, shoc_input.vw_sfc, // Input

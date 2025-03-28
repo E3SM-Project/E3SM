@@ -14,7 +14,7 @@ void Functions<S,D>
   const Int& nlev,
   const Int& nlevi,
   const Scalar& c_diag_3rd_mom,
-  const bool& tke_1p5_closure,
+  const bool& shoc_nosgs_var,
   const uview_1d<const Spack>& w_sec,
   const uview_1d<const Spack>& thl_sec,
   const uview_1d<const Spack>& wthl_sec,
@@ -121,7 +121,7 @@ void Functions<S,D>
                 (aa1-sp(1.2)*x1-sp(1.5)*f5)/(Spack(c_diag_3rd_mom)-sp(1.2)*x0+aa0));
 		
       // If 1.5 TKE scheme set all to zero
-      if (tke_1p5_closure){
+      if (shoc_nosgs_var){
          w3(k).set(active_range,0);
       }
     }

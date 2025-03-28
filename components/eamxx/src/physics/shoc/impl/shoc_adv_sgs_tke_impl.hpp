@@ -18,7 +18,7 @@ void Functions<S,D>
   const MemberType&            team,
   const Int&                   nlev,
   const Real&                  dtime,
-  const bool&                  tke_1p5_closure,
+  const bool&                  shoc_nosgs_var,
   const uview_1d<const Spack>& shoc_mix,
   const uview_1d<const Spack>& wthv_sec,
   const uview_1d<const Spack>& sterm_zt,
@@ -47,7 +47,7 @@ void Functions<S,D>
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
 
     // Compute buoyant production term
-    if (tke_1p5_closure){
+    if (shoc_nosgs_var){
        // If 1.5 closure then buoyancy flux is closed as a function
        //   of the local moist brunt vaisalla frequency since there is
        //   no SGS variability and wthv_sec is not computed.
