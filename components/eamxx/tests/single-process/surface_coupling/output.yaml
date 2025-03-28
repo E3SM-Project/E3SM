@@ -20,6 +20,6 @@ Field Names:
   - precip_liq_surf_mass
   - precip_ice_surf_mass
 output_control:
-  Frequency: 1
+  frequency: 1
   frequency_units: nsteps
 ...

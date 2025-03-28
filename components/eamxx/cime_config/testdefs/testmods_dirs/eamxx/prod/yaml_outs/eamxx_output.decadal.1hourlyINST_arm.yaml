@@ -33,7 +33,7 @@ Fields:
     - V
     - landfrac
 output_control:
-  Frequency: 1
+  frequency: 1
   frequency_units: nhours
   mpi_ranks_in_filename: false
 Restart:

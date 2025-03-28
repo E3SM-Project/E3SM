@@ -80,6 +80,6 @@ Fields:
       - vtheta_dp_dyn
       - dp3d_dyn
 output_control:
-  Frequency: 1
+  frequency: 1
   frequency_units: nmins
 ...

@@ -59,7 +59,7 @@ Fields:
 Max Snapshots Per File: 1
 filename_prefix: eamxx
 output_control:
-  Frequency: 1
+  frequency: 1
   frequency_units: ndays
 EOF
 ```

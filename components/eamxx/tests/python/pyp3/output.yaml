@@ -13,6 +13,6 @@ Field Names:
   - micro_vap_liq_exchange
   - micro_vap_ice_exchange
 output_control:
-  Frequency: 1
+  frequency: 1
   frequency_units: nsteps
 ...

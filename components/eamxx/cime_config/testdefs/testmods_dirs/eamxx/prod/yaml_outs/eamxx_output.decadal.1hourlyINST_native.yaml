@@ -12,7 +12,7 @@ Fields:
     - LW_flux_up_at_model_top
     - precip_total_surf_mass_flux
 output_control:
-  Frequency: 1
+  frequency: 1
   frequency_units: nhours
   mpi_ranks_in_filename: false
 Restart:

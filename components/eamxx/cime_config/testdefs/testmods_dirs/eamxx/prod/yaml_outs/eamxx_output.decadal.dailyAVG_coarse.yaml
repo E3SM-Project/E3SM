@@ -88,7 +88,7 @@ Fields:
     - isccp_cldtot
 
 output_control:
-  Frequency: 1
+  frequency: 1
   frequency_units: ndays
   mpi_ranks_in_filename: false
 Restart:

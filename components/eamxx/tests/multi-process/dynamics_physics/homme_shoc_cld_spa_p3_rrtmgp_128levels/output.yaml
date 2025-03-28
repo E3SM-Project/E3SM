@@ -79,6 +79,6 @@ Fields:
       - T_mid_at_lev_10
  
 output_control:
-  Frequency: 1
+  frequency: 1
   frequency_units: nsteps
 ...

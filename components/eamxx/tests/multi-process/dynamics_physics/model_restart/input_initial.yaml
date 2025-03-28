@@ -73,7 +73,7 @@ grids_manager:
 scorpio:
   model_restart:
     output_control:
-      Frequency:       30
+      frequency:       30
       frequency_units: nsecs
   output_yaml_files: ["model_restart_output.yaml"]
 ...

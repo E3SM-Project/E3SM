@@ -118,7 +118,7 @@ void write (const int freq, const int seed, const int ps, const ekat::Comm& comm
   om_pl.set("averaging_type", std::string("INSTANT"));
   auto& ctrl_pl = om_pl.sublist("output_control");
   ctrl_pl.set("frequency_units",std::string("nsteps"));
-  ctrl_pl.set("Frequency",freq);
+  ctrl_pl.set("frequency",freq);
   ctrl_pl.set("save_grid_data",false);
 
   // Create Output manager

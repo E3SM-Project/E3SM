@@ -156,7 +156,7 @@ scorpio:
   model_restart:
     iotype: default
     output_control:
-      Frequency: 6
+      frequency: 6
       frequency_units: ndays
   output_yaml_files: !strings
   - /path/to/run/data/output_file.yaml
@@ -279,7 +279,7 @@ Fields:
 Max Snapshots Per File: 1
 filename_prefix: output.scream_monthly.NAME_1
 output_control:
-  Frequency: 1
+  frequency: 1
   frequency_units: nmonths
 ```
 

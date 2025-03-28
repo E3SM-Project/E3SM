@@ -142,7 +142,7 @@ TEST_CASE("dyn_grid_io")
   out_params.sublist("Fields").sublist("Dynamics").set<std::vector<std::string>>("Field Names",fnames);
   out_params.sublist("Fields").sublist("Dynamics").set<std::string>("IO Grid Name","Physics GLL");
 
-  out_params.sublist("output_control").set<int>("Frequency",1);
+  out_params.sublist("output_control").set<int>("frequency",1);
   out_params.sublist("output_control").set<std::string>("frequency_units","nsteps");
   out_params.set<std::string>("Floating Point Precision","real");
 

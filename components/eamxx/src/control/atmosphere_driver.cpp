@@ -700,7 +700,7 @@ void AtmosphereDriver::create_output_managers () {
 
   ekat::ParameterList checkpoint_params;
   checkpoint_params.set("frequency_units",std::string("never"));
-  checkpoint_params.set("Frequency",-1);
+  checkpoint_params.set("frequency",-1);
 
   // Create model restart OutputManager first. This OM will be in charge
   // of creating rpointer.atm, while other OM's will simply append to it.
@@ -722,7 +722,7 @@ void AtmosphereDriver::create_output_managers () {
 
     // Store the "Output Control" pl of the model restart as the "Checkpoint Control" for all other output streams
     checkpoint_params.set<std::string>("frequency_units",params.sublist("output_control").get<std::string>("frequency_units"));
-    checkpoint_params.set("Frequency",params.sublist("output_control").get<int>("Frequency"));
+    checkpoint_params.set("frequency",params.sublist("output_control").get<int>("frequency"));
   }
 
   // Create one output manager per output yaml file
@@ -734,7 +734,7 @@ void AtmosphereDriver::create_output_managers () {
     params.rename(ekat::split(fname,"/").back());
     auto& checkpoint_pl = params.sublist("Checkpoint Control");
     checkpoint_pl.set("frequency_units",checkpoint_params.get<std::string>("frequency_units"));
-    checkpoint_pl.set("Frequency",checkpoint_params.get<int>("Frequency"));
+    checkpoint_pl.set("frequency",checkpoint_params.get<int>("frequency"));
 
     // Check if the filename prefix for this file has already been set.  If not, use the simulation casename.
     if (not params.isParameter("filename_prefix")) {

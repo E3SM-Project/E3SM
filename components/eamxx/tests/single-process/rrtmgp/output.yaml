@@ -28,6 +28,6 @@ Field Names:
   - eff_radius_qi_at_cldtop
  
 output_control:
-  Frequency: ${NUM_STEPS}
+  frequency: ${NUM_STEPS}
   frequency_units: nsteps
 ...

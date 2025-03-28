@@ -126,7 +126,7 @@ void write (const int seed, const ekat::Comm& comm)
   om_pl.set("Floating Point Precision",std::string("single"));
   auto& ctrl_pl = om_pl.sublist("output_control");
   ctrl_pl.set("frequency_units",std::string("nsteps"));
-  ctrl_pl.set("Frequency",1);
+  ctrl_pl.set("frequency",1);
   ctrl_pl.set("save_grid_data",false);
 
   // Create Output manager

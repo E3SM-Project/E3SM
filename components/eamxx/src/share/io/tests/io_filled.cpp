@@ -136,7 +136,7 @@ void write (const std::string& avg_type, const std::string& freq_units,
   om_pl.set("track_avg_cnt",true);
   auto& ctrl_pl = om_pl.sublist("output_control");
   ctrl_pl.set("frequency_units",freq_units);
-  ctrl_pl.set("Frequency",freq);
+  ctrl_pl.set("frequency",freq);
   ctrl_pl.set("save_grid_data",false);
 
   // Create Output manager

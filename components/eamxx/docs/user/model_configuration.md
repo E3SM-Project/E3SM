@@ -395,7 +395,7 @@ Fields:
       - dp3d_dyn
       - omega_dyn
 output_control:
-  Frequency: 6
+  frequency: 6
   frequency_units: nhours
 ```
 
@@ -425,7 +425,7 @@ in the run directory.
 - `Max Snapshots Per File`: specifies how many time snapshots can be put in a file.
       - Once this number is reached, EAMxx will close the file and open a new one.
       - If not set, it defaults to `-1`, signaling "unlimited storage".
-- `Frequency`: how many units of time are between two consecutive writes to file.
+- `frequency`: how many units of time are between two consecutive writes to file.
       - For `Instant` output the fields are "sampled" at this frequency,
       while for other averaging types the fields are "integrated"
       in time over this window

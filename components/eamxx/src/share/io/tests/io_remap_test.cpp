@@ -682,7 +682,7 @@ ekat::ParameterList set_output_params(const std::string& name, const std::string
   params.set<int>("Max Snapshots Per File",1);
   params.set<std::string>("Floating Point Precision","real");
   auto& oc = params.sublist("output_control");
-  oc.set<int>("Frequency",1);
+  oc.set<int>("frequency",1);
   oc.set<std::string>("frequency_units","nsteps");
 
   vos_type fields_out = {"Y_flat", "Y_mid", "Y_int", "V_mid", "V_int"};

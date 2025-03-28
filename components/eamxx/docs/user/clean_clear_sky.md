@@ -31,7 +31,7 @@ Fields:
     - SW_clnsky_flux_up_at_model_top
     - LW_clnsky_flux_up_at_model_top
 output_control:
-  Frequency: 1
+  frequency: 1
   frequency_units: nmonths
   mpi_ranks_in_filename: false
 

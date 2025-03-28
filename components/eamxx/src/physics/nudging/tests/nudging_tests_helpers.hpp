@@ -155,7 +155,7 @@ create_om (const std::string& filename_prefix,
 
   auto& ctrl_pl = params.sublist("output_control");
   ctrl_pl.set<std::string>("frequency_units","nsteps");
-  ctrl_pl.set("Frequency",1);
+  ctrl_pl.set("frequency",1);
   ctrl_pl.set("save_grid_data",false);
 
   auto om = std::make_shared<OutputManager>();

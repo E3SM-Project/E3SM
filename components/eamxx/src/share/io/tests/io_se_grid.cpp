@@ -65,7 +65,7 @@ TEST_CASE("se_grid_io")
   params.set<strvec_t>("Field Names",{"field_1","field_2","field_3","field_packed"});
   params.set<std::string>("Floating Point Precision","real");
   auto& ctl_pl = params.sublist("output_control");
-  ctl_pl.set("Frequency",1);
+  ctl_pl.set("frequency",1);
   ctl_pl.set<std::string>("frequency_units","nsteps");
 
   OutputManager om;
