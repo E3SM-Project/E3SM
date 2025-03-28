@@ -1025,7 +1025,8 @@ contains
     ! Add global metadata defining landunit types
     !
     ! !USES:
-    use landunit_varcon, only : max_lunit, landunit_names, landunit_name_length
+    use landunit_varcon, only : max_lunit, max_non_poly_lunit, landunit_names, landunit_name_length
+    use elm_varctl,      only : use_polygonal_tundra
     !
     ! !ARGUMENTS:
     type(file_desc_t), intent(inout) :: ncid ! local file id
@@ -1038,10 +1039,17 @@ contains
     character(len=*), parameter :: subname = 'restFile_add_ilun_metadata'
     !-----------------------------------------------------------------------
     
-    do ltype = 1, max_lunit
-       attname = att_prefix // landunit_names(ltype)
-       call ncd_putatt(ncid, ncd_global, attname, ltype)
-    end do
+    if (use_polygonal_tundra) then
+      do ltype = 1, max_lunit
+        attname = att_prefix // landunit_names(ltype)
+        call ncd_putatt(ncid, ncd_global, attname, ltype)
+      end do
+    else
+      do ltype = 1, max_non_poly_lunit
+        attname = att_prefix // landunit_names(ltype)
+        call ncd_putatt(ncid, ncd_global, attname, ltype)
+      end do
+    end if
 
   end subroutine restFile_add_ilun_metadata
 
