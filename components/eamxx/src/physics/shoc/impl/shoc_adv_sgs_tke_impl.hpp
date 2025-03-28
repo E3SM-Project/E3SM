@@ -48,9 +48,8 @@ void Functions<S,D>
 
     // Compute buoyant production term
     if (shoc_nosgs_var){
-       // If 1.5 closure then buoyancy flux is closed as a function
-       //   of the local moist brunt vaisalla frequency since there is
-       //   no SGS variability and wthv_sec is not computed.
+       // If there is no SGS variability the buoyancy flux is closed as a function
+       //   of the local moist brunt vaisalla frequency.
        a_prod_bu = -tke(k)*brunt(k);
     }
     else{

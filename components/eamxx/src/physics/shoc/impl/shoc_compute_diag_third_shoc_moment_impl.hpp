@@ -120,7 +120,7 @@ void Functions<S,D>
       w3(k).set(active_range,
                 (aa1-sp(1.2)*x1-sp(1.5)*f5)/(Spack(c_diag_3rd_mom)-sp(1.2)*x0+aa0));
 		
-      // If 1.5 TKE scheme set all to zero
+      // If no SGS variability then set to zero
       if (shoc_nosgs_var){
          w3(k).set(active_range,0);
       }

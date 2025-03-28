@@ -67,7 +67,10 @@ void Functions<S,D>::diag_second_moments(
 
   // Calculate vertical flux for momentum (meridional wind)
   calc_shoc_vertflux(team, nlev, tk_zi, dz_zi, v_wind, vw_sec);
-  
+
+  // If there is no SGS variability desired then set the following variances
+  //  and covariances to zero.  Doing so, in conjunction with setting w3 to zero
+  //  will ensure that SHOC condensation reduces to an all-or-nothing scheme.
   if (shoc_nosgs_var){
     const Int nlev_pack = ekat::npack<Spack>(nlev);
     Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
@@ -77,7 +80,7 @@ void Functions<S,D>::diag_second_moments(
       qwthl_sec(k) = 0;
     });
   }
-  
+
 }
 
 } // namespace shoc
