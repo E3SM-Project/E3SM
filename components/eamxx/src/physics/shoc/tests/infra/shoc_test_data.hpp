@@ -276,7 +276,7 @@ struct AdvSgsTkeData : public PhysicsTestData {
   // Inputs
   Int shcol, nlev;
   Real dtime;
-  Real *shoc_mix, *wthv_sec, *sterm_zt, *tk;
+  Real *shoc_mix, *wthv_sec, *sterm_zt, *tk, *brunt;
 
   // Inputs/Outputs
   Real *tke;
@@ -285,7 +285,7 @@ struct AdvSgsTkeData : public PhysicsTestData {
   Real *a_diss;
 
   AdvSgsTkeData(Int shcol_, Int nlev_, Real dtime_) :
-    PhysicsTestData({{ shcol_, nlev_ }}, {{ &shoc_mix, &wthv_sec, &sterm_zt, &tk, &tke, &a_diss }}), shcol(shcol_), nlev(nlev_), dtime(dtime_) {}
+    PhysicsTestData({{ shcol_, nlev_ }}, {{ &shoc_mix, &wthv_sec, &sterm_zt, &tk, & brunt, &tke, &a_diss }}), shcol(shcol_), nlev(nlev_), dtime(dtime_) {}
 
   PTD_STD_DEF(AdvSgsTkeData, 3, shcol, nlev, dtime);
 };
@@ -1055,7 +1055,7 @@ void diag_third_shoc_moments_host(Int shcol, Int nlev, Int nlevi, Real* w_sec, R
                                Real* tke, Real* dz_zt, Real* dz_zi, Real* zt_grid, Real* zi_grid,
                                Real* w3);
 void adv_sgs_tke_host(Int nlev, Int shcol, Real dtime, Real* shoc_mix, Real* wthv_sec, Real* sterm_zt,
-                   Real* tk, Real* tke, Real* a_diss);
+                   Real* tk, Real* brunt, Real* tke, Real* a_diss);
 void shoc_assumed_pdf_host(Int shcol, Int nlev, Int nlevi, Real* thetal, Real* qw, Real* w_field,
                         Real* thl_sec, Real* qw_sec, Real* wthl_sec, Real* w_sec, Real* wqw_sec,
                         Real* qwthl_sec, Real* w3, Real* pres, Real* zt_grid, Real* zi_grid,

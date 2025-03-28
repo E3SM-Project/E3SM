@@ -95,7 +95,7 @@ void isotropic_ts(IsotropicTsData& d)
 
 void adv_sgs_tke(AdvSgsTkeData& d)
 {
-  adv_sgs_tke_host(d.nlev, d.shcol, d.dtime, d.shoc_mix, d.wthv_sec, d.sterm_zt, d.tk, d.tke, d.a_diss);
+  adv_sgs_tke_host(d.nlev, d.shcol, d.dtime, d.shoc_mix, d.wthv_sec, d.sterm_zt, d.tk, d.brunt, d.tke, d.a_diss);
 }
 
 void eddy_diffusivities(EddyDiffusivitiesData& d)
