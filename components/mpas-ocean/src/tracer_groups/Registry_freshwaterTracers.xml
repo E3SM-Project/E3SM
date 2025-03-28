@@ -31,19 +31,19 @@
 			description="if true, surface value is computed for 'freshwaterTracers' category"
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_use_freshwaterTracers_rainFlux" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_use_freshwaterTracers_rainFlux" type="logical" default_value=".true." units="unitless"
 			description="if true, the 'freshwaterTracers' category is enabled for the run"
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_use_freshwaterTracers_snowFlux" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_use_freshwaterTracers_snowFlux" type="logical" default_value=".true." units="unitless"
 			description="if true, the 'freshwaterTracers' category is enabled for the run"
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_use_freshwaterTracers_iceRunoffFlux" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_use_freshwaterTracers_iceRunoffFlux" type="logical" default_value=".true." units="unitless"
 			description="if true, the 'freshwaterTracers' category is enabled for the run"
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_use_freshwaterTracers_riverRunoffFlux" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_use_freshwaterTracers_riverRunoffFlux" type="logical" default_value=".true." units="unitless"
 			description="if true, the 'freshwaterTracers' category is enabled for the run"
 			possible_values=".true. or .false."
 		/>
@@ -51,7 +51,7 @@
 			description="if true, the 'freshwaterTracers' category is enabled for the run"
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_use_freshwaterTracers_seaIceFreshWaterFlux" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_use_freshwaterTracers_seaIceFreshWaterFlux" type="logical" default_value=".true." units="unitless"
 			description="if true, the 'freshwaterTracers' category is enabled for the run"
 			possible_values=".true. or .false."
 		/>
