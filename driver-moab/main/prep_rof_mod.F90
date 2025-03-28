@@ -12,10 +12,10 @@ module prep_rof_mod
   use seq_comm_mct,     only: mbaxid   ! iMOAB id for atm migrated mesh to coupler pes (migrate either mhid or mhpgx, depending on atm_pg_active)
   use seq_comm_mct,     only: mbrxid   ! iMOAB id of moab rof read on couple pes
   use seq_comm_mct,     only: mbintxar ! iMOAB id for intx mesh between atm and river
-  use seq_comm_mct,     only: mboxid   
+  use seq_comm_mct,     only: mboxid
   use seq_comm_mct,     only: mbintxlr ! iMOAB id for intx mesh between land and river
   use seq_comm_mct,     only : atm_pg_active  ! whether the atm uses FV mesh or not ; made true if fv_nphys > 0
-  !use dimensions_mod,   only : np     ! for atmosphere degree 
+  !use dimensions_mod,   only : np     ! for atmosphere degree
   use seq_comm_mct,     only: seq_comm_getData=>seq_comm_setptrs
   use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata
   use shr_log_mod     , only: errMsg => shr_log_errMsg
@@ -30,7 +30,6 @@ module prep_rof_mod
   use component_type_mod, only: ocn ! used for context for projection towards ocean from rof !
   use prep_lnd_mod, only: prep_lnd_get_mapper_Fr2l
   use map_lnd2rof_irrig_mod, only: map_lnd2rof_irrig
-  use seq_comm_mct,     only: mb_rof_aream_computed  ! signal
 
   use iso_c_binding
 #ifdef MOABCOMP
@@ -50,7 +49,7 @@ module prep_rof_mod
 
 #ifdef HAVE_MOAB
   public :: prep_rof_mrg_moab
-  public :: prep_rof_accum_lnd_moab  
+  public :: prep_rof_accum_lnd_moab
   public :: prep_rof_accum_atm_moab
   public :: prep_rof_accum_ocn_moab
   public :: prep_rof_accum_avg_moab
@@ -76,7 +75,7 @@ module prep_rof_mod
   public :: prep_rof_get_mapper_Fa2r
 
   public :: prep_rof_get_sharedFieldsOcnRof
-  public :: prep_rof_get_o2racc_om ! return a pointer to private array !!! 
+  public :: prep_rof_get_o2racc_om ! return a pointer to private array !!!
   public :: prep_rof_get_o2racc_om_cnt
 
   public :: prep_rof_get_l2racc_lm_cnt
@@ -107,11 +106,11 @@ module prep_rof_mod
   type(mct_aVect), pointer :: l2racc_lx(:)   ! lnd export, lnd grid, cpl pes
   integer        , target  :: l2racc_lx_cnt  ! l2racc_lx: number of time samples accumulated
   type(mct_aVect), pointer :: a2racc_ax(:)   ! atm export, atm grid, cpl pes
-  integer        , target  :: a2racc_ax_cnt  ! a2racc_ax: number of time samples accumulated 
+  integer        , target  :: a2racc_ax_cnt  ! a2racc_ax: number of time samples accumulated
   type(mct_aVect), pointer :: o2racc_ox(:)   ! ocn export, ocn grid, cpl pes
   integer        , target  :: o2racc_ox_cnt  ! o2racc_ox: number of time samples accumulated
 
-  ! accumulation variables over moab fields 
+  ! accumulation variables over moab fields
   character(CXX)                        :: sharedFieldsLndRof ! used in moab to define l2racc_lm
   real (kind=R8) , allocatable, private, target :: l2racc_lm(:,:)   ! lnd export, lnd grid, cpl pes
   real (kind=R8) , allocatable, private :: l2x_lm2(:,:)  ! basically l2x_lm, but in another copy, on rof module
@@ -122,7 +121,7 @@ module prep_rof_mod
   character(CXX)       :: sharedFieldsAtmRof ! used in moab to define a2racc_am
   real (kind=R8) , allocatable, private ::  a2racc_am(:,:)   ! atm export, atm grid, cpl pes
   real (kind=R8) , allocatable, private :: a2x_am2(:,:)  ! basically a2x_am, but in another copy, on rof module
-  integer        , target  :: a2racc_am_cnt  ! a2racc_am: number of time samples accumulated 
+  integer        , target  :: a2racc_am_cnt  ! a2racc_am: number of time samples accumulated
   integer :: nfields_sh_ar ! number of fields in sharedFieldsAtmRof
   integer :: lsize_am ! size of atm in moab, local
 
@@ -147,11 +146,15 @@ module prep_rof_mod
 
   ! moab stuff
    real (kind=R8) , allocatable, private :: fractions_rm (:,:) ! will retrieve the fractions from rof, and use them
-  !  they were init with 
-  ! character(*),parameter :: fraclist_r = 'lfrac:lfrin:rfrac'  in moab, on the fractions 
+  !  they were init with
+  ! character(*),parameter :: fraclist_r = 'lfrac:lfrin:rfrac'  in moab, on the fractions
   real (kind=R8) , allocatable, private :: x2r_rm (:,:) ! result of merge
   real (kind=R8) , allocatable, private :: a2x_rm (:,:)
   real (kind=R8) , allocatable, private :: l2x_rm (:,:)
+
+#ifdef HAVE_MOAB
+  logical :: compute_maps_online_l2r, compute_maps_online_a2r
+#endif
 
   !================================================================================================
 
@@ -162,8 +165,8 @@ contains
   subroutine prep_rof_init(infodata, lnd_c2_rof, atm_c2_rof, ocn_c2_rof)
 
    use iMOAB, only: iMOAB_ComputeMeshIntersectionOnSphere, iMOAB_RegisterApplication, &
-      iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_ComputeCommGraph, & 
-      iMOAB_ComputeScalarProjectionWeights, iMOAB_GetMeshInfo
+      iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_ComputeCommGraph, &
+      iMOAB_ComputeScalarProjectionWeights, iMOAB_GetMeshInfo, iMOAB_ComputeCoverageMesh
     !---------------------------------------------------------------
     ! Description
     ! Initialize module attribute vectors and all other non-mapping
@@ -189,6 +192,7 @@ contains
     logical                     :: lnd_present   ! .true.  => lnd is present
     logical                     :: atm_present   ! .true.  => atm is present
     logical                     :: ocn_present   ! .true.  => ocn is present
+    logical                     :: cpl_compute_maps_online    ! .true.  => maps are computed online
     logical                     :: iamroot_CPLID ! .true. => CPLID masterproc
     character(CL)               :: atm_gnam      ! atm grid
     character(CL)               :: lnd_gnam      ! lnd grid
@@ -205,7 +209,8 @@ contains
     ! MOAB stuff
    integer                  :: ierr, idintx, rank
    character*32             :: appname, outfile, wopts, lnum
-   character*32             :: dm1, dm2, dofnameS, dofnameT, wgtIdef
+   character*32             :: dm1, dm2, dofnameS, dofnameT
+   character*32             :: wgtIda2r, wgtIdl2r
    integer                  :: orderS, orderT, volumetric, noConserve, validate, fInverseDistanceMap
    integer                  :: fNoBubble, monotonicity
 ! will do comm graph over coupler PES, in 2-hop strategy
@@ -226,7 +231,16 @@ contains
          ocn_present=ocn_present       , &
          lnd_gnam=lnd_gnam             , &
          atm_gnam=atm_gnam             , &
-         rof_gnam=rof_gnam             )
+         rof_gnam=rof_gnam             , &
+         cpl_compute_maps_online=cpl_compute_maps_online )
+
+#ifdef HAVE_MOAB
+      wgtIdl2r = 'conservative_l2r'//C_NULL_CHAR
+      wgtIda2r = 'conservative_a2r'//C_NULL_CHAR
+      compute_maps_online_l2r = cpl_compute_maps_online ! read from disk or compute online
+      compute_maps_online_a2r = cpl_compute_maps_online ! read from disk or compute online
+      ! compute_maps_online_l2r = .false. ! Explicitly force read from disk
+#endif
 
     allocate(mapper_Sa2r)
     allocate(mapper_Fa2r)
@@ -264,7 +278,7 @@ contains
        end do
        l2racc_lx_cnt = 0
 #ifdef HAVE_MOAB
-       ! this l2racc_lm will be over land size ? 
+       ! this l2racc_lm will be over land size ?
        sharedFieldsLndRof=''
        nfields_sh_lr = mct_aVect_nRAttr(l2racc_lx(1))
        if( nfields_sh_lr /= 0 ) sharedFieldsLndRof=trim( mct_aVect_exportRList2c(l2racc_lx(1)) )
@@ -280,7 +294,7 @@ contains
        lsize_lm = nvise(1)
        if(iamroot_CPLID) then
           write(logunit,*) subname,' number of fields=', nfields_sh_lr
-          write(logunit,*) subname,' sharedFieldsLndRof=', trim(sharedFieldsLndRof)      
+          write(logunit,*) subname,' sharedFieldsLndRof=', trim(sharedFieldsLndRof)
           write(logunit,*) subname,'  seq_flds_l2x_fluxes_to_rof=', trim(seq_flds_l2x_fluxes_to_rof)
           write(logunit,*) subname,' lsize_lm=', lsize_lm
        endif
@@ -308,21 +322,25 @@ contains
           call seq_map_init_rcfile(mapper_Fl2r, lnd(1), rof(1), &
                'seq_maps.rc','lnd2rof_fmapname:','lnd2rof_fmaptype:',samegrid_lr, &
                string='mapper_Fl2r initialization', esmf_map=esmf_map_flag)
-! similar to a2r, from below 
+! similar to a2r, from below
 #ifdef HAVE_MOAB
           ! Call moab intx only if land and river are init in moab
           if ((mblxid .ge. 0) .and.  (mbrxid .ge. 0)) then
+            if (iamroot_CPLID) then
+               write(logunit,*) ' '
+               write(logunit,F00) 'Initializing MOAB mapper_Fl2r'
+            endif
             appname = "LND_ROF_COU"//C_NULL_CHAR
             ! idintx is a unique number of MOAB app that takes care of intx between lnd and rof mesh
             idintx = 100*lnd(1)%cplcompid + rof(1)%cplcompid ! something different, to differentiate it
             ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, idintx, mbintxlr)
             if (ierr .ne. 0) then
-              write(logunit,*) subname,' error in registering lnd rof intx'
-              call shr_sys_abort(subname//' ERROR in registering lnd rof intx')
+              write(logunit,*) subname,' error in registering LND-ROF intersection'
+              call shr_sys_abort(subname//' ERROR in registering LND-ROF intersection')
             endif
             tagname = trim(seq_flds_l2x_fluxes_to_rof)//C_NULL_CHAR
             tagtype = 1 ! dense
-            numco = 1 ! 
+            numco = 1 !
             ierr = iMOAB_DefineTagStorage(mbrxid, tagname, tagtype, numco,  tagindex )
             if (ierr .ne. 0) then
                write(logunit,*) subname,' error in defining tags for seq_flds_a2x_fields on rof cpl'
@@ -330,17 +348,17 @@ contains
             endif
             call seq_comm_getData(CPLID ,mpigrp=mpigrp_CPLID)
             if (samegrid_lr) then
-               ! the same mesh , lnd and rof use the same dofs, but restricted 
+               ! the same mesh , lnd and rof use the same dofs, but restricted
                ! we do not compute intersection, so we will have to just send data from lnd to rof and viceversa, by GLOBAL_ID matching
-               ! so we compute just a comm graph, between lnd and rof dofs, on the coupler; target is rof 
+               ! so we compute just a comm graph, between lnd and rof dofs, on the coupler; target is rof
                ! land is full mesh
                type1 = 3; !  full mesh for land now
                type2 = 3;  ! fv for target rof
                ierr = iMOAB_ComputeCommGraph( mblxid, mbrxid, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
                                         lnd(1)%cplcompid, rof(1)%cplcompid)
                if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error in computing comm graph , lnd-rof'
-                  call shr_sys_abort(subname//' ERROR in computing comm graph , lnd-rof')
+                  write(logunit,*) subname,' error in computing comm graph , LND-ROF'
+                  call shr_sys_abort(subname//' ERROR in computing comm graph , LND-ROF')
                endif
                ! context for rearrange is target in this case
                if ( mapper_Fl2r%src_mbid .gt. -1 ) then
@@ -354,27 +372,52 @@ contains
                mapper_Fl2r%src_context = lnd(1)%cplcompid
                mapper_Fl2r%intx_context = rof(1)%cplcompid
             else
-               ierr =  iMOAB_ComputeMeshIntersectionOnSphere (mblxid, mbrxid, mbintxlr)
+
+               ! compute the LND coverage mesh here on coupler pes
+               ! LND mesh was redistributed to cover target (ROF) partition
+               ierr = iMOAB_ComputeCoverageMesh( mblxid, mbrxid, mbintxlr )
                if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in computing  land rof intx'
-               call shr_sys_abort(subname//' ERROR in computing land rof intx')
+                  write(logunit,*) subname,' cannot compute source LND coverage mesh for ROF'
+                  call shr_sys_abort(subname//' ERROR in computing LND-ROF coverage')
                endif
-               if (iamroot_CPLID) then
-               write(logunit,*) 'iMOAB intersection between  land and rof with id:', idintx
+
+               ! if we are not loading maps from disk, compute the intersection mesh between
+               ! LND and ROF meshes
+               if (compute_maps_online_l2r) then
+                  ierr = iMOAB_ComputeMeshIntersectionOnSphere( mblxid, mbrxid, mbintxlr )
+                  if (ierr .ne. 0) then
+                     write(logunit,*) subname,' error in computing LND ROF mesh intersection'
+                     call shr_sys_abort(subname//' ERROR in computingLND ROF mesh intersection')
+                  endif
+                  if (iamroot_CPLID) then
+                     write(logunit,*) 'iMOAB intersection between LND and ROF with id:', idintx
+                  end if
+#ifdef MOABDEBUG
+               wopts = C_NULL_CHAR
+               call shr_mpi_commrank( mpicom_CPLID, rank )
+               if (rank .lt. 3 .and. compute_maps_online_l2r) then
+                  write(lnum,"(I0.2)")rank !
+                  outfile = 'intx_lr_'//trim(lnum)// '.h5m' // C_NULL_CHAR
+                  ierr = iMOAB_WriteMesh(mbintxlr, outfile, wopts) ! write local intx file
+                  if (ierr .ne. 0) then
+                     write(logunit,*) subname,' error in writing LND-ROF intersection mesh file '
+                     call shr_sys_abort(subname//' ERROR in writing LND-ROF intersection mesh file ')
+                  endif
+               endif
+#endif
                end if
-               ! we also need to compute the comm graph for the second hop, from the lnd on coupler to the 
-               ! lnd for the intx lnd-rof context (coverage)
-               !    
+
+               ! we also need to compute the comm graph for the second hop, from the lnd on coupler to the
+               ! lnd for the intx LND-ROF context (coverage)
                type1 = 3 ! land is FV now on coupler side
                type2 = 3;
-
                ierr = iMOAB_ComputeCommGraph( mblxid, mbintxlr, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
                                           lnd(1)%cplcompid, idintx)
                if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error in computing comm graph for second hop, lnd-rof'
-                  call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, lnd-rof')
+                  write(logunit,*) subname,' error in computing comm graph for second hop, LND-ROF'
+                  call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, LND-ROF')
                endif
-               ! now take care of the mapper 
+               ! now take care of the mapper
                if ( mapper_Fl2r%src_mbid .gt. -1 ) then
                   if (iamroot_CPLID) then
                         write(logunit,F00) 'overwriting '//trim(mapper_Fl2r%mbname) &
@@ -383,60 +426,50 @@ contains
                endif
                mapper_Fl2r%src_mbid = mblxid
                mapper_Fl2r%tgt_mbid = mbrxid
-               mapper_Fl2r%intx_mbid = mbintxlr 
+               mapper_Fl2r%intx_mbid = mbintxlr
                mapper_Fl2r%src_context = lnd(1)%cplcompid
                mapper_Fl2r%intx_context = idintx
-               wgtIdef = 'scalar'//C_NULL_CHAR
-               mapper_Fl2r%weight_identifier = wgtIdef
+               mapper_Fl2r%weight_identifier = wgtIdl2r
                mapper_Fl2r%mbname = 'mapper_Fl2r'
-               ! because we will project fields from lnd to rof grid, we need to define 
+               ! because we will project fields from lnd to rof grid, we need to define
                !  the l2x fields to rof grid on coupler side
-               
-               volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL; 
-               
-               dm1 = "fv"//C_NULL_CHAR
-               dofnameS="GLOBAL_ID"//C_NULL_CHAR
-               orderS = 1 !  fv-fv
-            
-               dm2 = "fv"//C_NULL_CHAR
-               dofnameT="GLOBAL_ID"//C_NULL_CHAR
-               orderT = 1  !  not much arguing
-               fNoBubble = 1
-               monotonicity = 0 !
-               noConserve = 0
-               validate = 0
-               fInverseDistanceMap = 0
-               if (iamroot_CPLID) then
-                  write(logunit,*) subname, 'launch iMOAB weights with args ', 'mbintxlr=', mbintxlr, ' wgtIdef=', wgtIdef, &
-                     'dm1=', trim(dm1), ' orderS=',  orderS, 'dm2=', trim(dm2), ' orderT=', orderT, &
-                                                fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
-                                                noConserve, validate, &
-                                                trim(dofnameS), trim(dofnameT)
-               endif
-               ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxlr, wgtIdef, &
-                                                trim(dm1), orderS, trim(dm2), orderT, ''//C_NULL_CHAR, &
-                                                fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
-                                                noConserve, validate, &
-                                                trim(dofnameS), trim(dofnameT) )
-               mb_rof_aream_computed = .true. ! signal
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error in computing lr weights '
-                  call shr_sys_abort(subname//' ERROR in computing lr weights ')
-               endif
 
-#ifdef MOABDEBUG
-               wopts = C_NULL_CHAR
-               call shr_mpi_commrank( mpicom_CPLID, rank )
-               if (rank .lt. 5) then
-               write(lnum,"(I0.2)")rank !
-               outfile = 'intx_lr_'//trim(lnum)// '.h5m' // C_NULL_CHAR
-               ierr = iMOAB_WriteMesh(mbintxlr, outfile, wopts) ! write local intx file
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error in writing intx lr file '
-                  call shr_sys_abort(subname//' ERROR in writing intx lr file ')
-               endif
-               endif
-#endif
+               if (compute_maps_online_l2r) then
+
+                  volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
+                  dm1 = "fv"//C_NULL_CHAR
+                  dofnameS="GLOBAL_ID"//C_NULL_CHAR
+                  orderS = 1 !  fv-fv
+                  dm2 = "fv"//C_NULL_CHAR
+                  dofnameT="GLOBAL_ID"//C_NULL_CHAR
+                  orderT = 1  !  not much arguing
+                  fNoBubble = 1
+                  monotonicity = 0 !
+                  noConserve = 0
+                  validate = 0
+                  fInverseDistanceMap = 0
+                  if (iamroot_CPLID) then
+                     write(logunit,*) subname, 'launch iMOAB weights with args ', 'mbintxlr=', mbintxlr, ' wgtIdef=', wgtIdl2r, &
+                        'dm1=', trim(dm1), ' orderS=',  orderS, 'dm2=', trim(dm2), ' orderT=', orderT, &
+                                                   fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
+                                                   noConserve, validate, &
+                                                   trim(dofnameS), trim(dofnameT)
+                  endif
+                  ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxlr, wgtIdl2r, &
+                                                   trim(dm1), orderS, trim(dm2), orderT, ''//C_NULL_CHAR, &
+                                                   fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
+                                                   noConserve, validate, &
+                                                   trim(dofnameS), trim(dofnameT) )
+                  if (ierr .ne. 0) then
+                     write(logunit,*) subname,' error in computing LND-ROF weights'
+                     call shr_sys_abort(subname//' ERROR in computing LND-ROF weights')
+                  endif
+               else
+                  type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
+                  call moab_map_init_rcfile( mblxid, mbrxid, mbintxlr, type1, &
+                        'seq_maps.rc', 'lnd2rof_fmapname:', 'lnd2rof_fmaptype:',samegrid_lr, &
+                        wgtIdl2r, 'mapper_Fl2r MOAB initialization', esmf_map_flag)
+               end if
             end if ! if ((mblxid .ge. 0) .and.  (mbrxid .ge. 0))
          endif ! samegrid_lr
 #endif
@@ -470,7 +503,7 @@ contains
        end do
        a2racc_ax_cnt = 0
 #ifdef HAVE_MOAB
-       ! this a2racc_am will be over atm size 
+       ! this a2racc_am will be over atm size
        sharedFieldsAtmRof=''
        nfields_sh_ar = mct_aVect_nRAttr(a2racc_ax(1))
        if (nfields_sh_ar /= 0 ) sharedFieldsAtmRof = trim( mct_aVect_exportRList2c(a2racc_ax(1)) )
@@ -494,8 +527,8 @@ contains
        endif
        a2racc_am(:,:) = 0.
        a2racc_am_cnt = 0
-
 #endif
+
        allocate(a2r_rx(num_inst_rof))
        do eri = 1,num_inst_rof
           call mct_avect_init(a2r_rx(eri), rList=seq_flds_a2x_fields_to_rof, lsize=lsize_r)
@@ -513,44 +546,73 @@ contains
           call seq_map_init_rcfile(mapper_Fa2r, atm(1), rof(1), &
                'seq_maps.rc','atm2rof_fmapname:','atm2rof_fmaptype:',samegrid_ar, &
                string='mapper_Fa2r initialization', esmf_map=esmf_map_flag)
-! similar to a2o, prep_ocn 
+! similar to a2o, prep_ocn
 #ifdef HAVE_MOAB
           ! Call moab intx only if atm  and river are init in moab
           if ((mbrxid .ge. 0) .and.  (mbaxid .ge. 0)) then
+            if (iamroot_CPLID) then
+               write(logunit,*) ' '
+               write(logunit,F00) 'Initializing MOAB mapper_Fa2r'
+            end if
             appname = "ATM_ROF_COU"//C_NULL_CHAR
             ! idintx is a unique number of MOAB app that takes care of intx between rof and atm mesh
             idintx = 100*atm(1)%cplcompid + rof(1)%cplcompid ! something different, to differentiate it
             ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, idintx, mbintxar)
             if (ierr .ne. 0) then
-              write(logunit,*) subname,' error in registering atm rof intx'
-              call shr_sys_abort(subname//' ERROR in registering atm rof intx')
+              write(logunit,*) subname,' error in registering ATM-ROF mesh intersection context'
+              call shr_sys_abort(subname//' ERROR in registering ATM-ROF mesh intersection context')
             endif
-            ierr =  iMOAB_ComputeMeshIntersectionOnSphere (mbaxid, mbrxid, mbintxar)
+
+            ! compute the OCN coverage mesh here on coupler pes
+            ! ATM mesh was redistributed to cover target (ROF) partition
+            ierr = iMOAB_ComputeCoverageMesh( mbaxid, mbrxid, mbintxar )
             if (ierr .ne. 0) then
-              write(logunit,*) subname,' error in computing  atm rof intx'
-              call shr_sys_abort(subname//' ERROR in computing atm rof intx')
+               write(logunit,*) subname,' cannot compute source ATM coverage mesh for ROF'
+               call shr_sys_abort(subname//' ERROR in computing ATM-ROF coverage')
             endif
-            if (iamroot_CPLID) then
-              write(logunit,*) 'iMOAB intersection between  atm and rof with id:', idintx
+
+            ! if we are not loading maps from disk, compute the intersection mesh between
+            ! ATM and ROF meshes
+            if (compute_maps_online_a2r) then
+               ierr =  iMOAB_ComputeMeshIntersectionOnSphere( mbaxid, mbrxid, mbintxar )
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in computing ATM-ROF mesh intersection'
+                  call shr_sys_abort(subname//' ERROR in computing ATM-ROF mesh intersection')
+               endif
+               if (iamroot_CPLID) then
+                  write(logunit,*) 'iMOAB mesh intersection between ATM and ROF with id:', idintx
+               end if
+#ifdef MOABDEBUG
+               wopts = C_NULL_CHAR
+               call shr_mpi_commrank( mpicom_CPLID, rank )
+               if (rank .lt. 3) then
+                  write(lnum,"(I0.2)")rank !
+                  outfile = 'intx_ar_'//trim(lnum)// '.h5m' // C_NULL_CHAR
+                  ierr = iMOAB_WriteMesh(mbintxar, outfile, wopts) ! write local intx file
+                  if (ierr .ne. 0) then
+                     write(logunit,*) subname,' error in writing ATM-ROF intersection mesh file '
+                     call shr_sys_abort(subname//' ERROR in writing ATM-ROF intersection mesh file ')
+                  endif
+               endif
+#endif
             end if
-            ! we also need to compute the comm graph for the second hop, from the atm on coupler to the 
-            ! atm for the intx atm-rof context (coverage)
-            !    
-            call seq_comm_getData(CPLID ,mpigrp=mpigrp_CPLID) 
+
+            ! we also need to compute the comm graph for the second hop, from the atm on coupler to the
+            ! atm for the intersection of ATM-ROF context (coverage)
+            call seq_comm_getData(CPLID ,mpigrp=mpigrp_CPLID)
             if (atm_pg_active) then
-              type1 = 3; !  fv for both rof and atm; fv-cgll does not work anyway
+              type1 = 3; !  FV for both rof and atm; FV-CGLL does not work anyway
             else
               type1 = 1 ! this does not work anyway in this direction
             endif
             type2 = 3;
-
             ierr = iMOAB_ComputeCommGraph( mbaxid, mbintxar, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
                                         atm(1)%cplcompid, idintx)
             if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in computing comm graph for second hop, rof-atm'
-               call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, rof-atm')
+               write(logunit,*) subname,' error in computing comm graph for second hop, ATM-ROF'
+               call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ATM-ROF')
             endif
-            ! now take care of the mapper 
+            ! now take care of the mapper
             if ( mapper_Fa2r%src_mbid .gt. -1 ) then
                 if (iamroot_CPLID) then
                      write(logunit,F00) 'overwriting '//trim(mapper_Fa2r%mbname) &
@@ -559,74 +621,70 @@ contains
             endif
             mapper_Fa2r%src_mbid = mbaxid
             mapper_Fa2r%tgt_mbid = mbrxid
-            mapper_Fa2r%intx_mbid = mbintxar 
+            mapper_Fa2r%intx_mbid = mbintxar
             mapper_Fa2r%src_context = atm(1)%cplcompid
             mapper_Fa2r%intx_context = idintx
-            wgtIdef = 'scalar'//C_NULL_CHAR
-            mapper_Fa2r%weight_identifier = wgtIdef
+            mapper_Fa2r%weight_identifier = wgtIda2r
             mapper_Fa2r%mbname = 'mapper_Fa2r'
-            ! because we will project fields from atm to rof grid, we need to define 
+            ! because we will project fields from atm to rof grid, we need to define
             ! rof a2x fields to rof grid on coupler side
-            
+
             tagname = trim(seq_flds_a2x_fields_to_rof)//':norm8wt'//C_NULL_CHAR
             tagtype = 1 ! dense
-            numco = 1 ! 
+            numco = 1 !
             ierr = iMOAB_DefineTagStorage(mbrxid, tagname, tagtype, numco,  tagindex )
             if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in defining tags for seq_flds_a2x_fields_to_rof on rof cpl'
-               call shr_sys_abort(subname//' ERROR in  defining tags for seq_flds_a2x_fields_to_rof on rof cpl')
-            endif
-            volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL; 
-            
-            if (atm_pg_active) then
-              dm1 = "fv"//C_NULL_CHAR
-              dofnameS="GLOBAL_ID"//C_NULL_CHAR
-              orderS = 1 !  fv-fv
-            else ! this part does not work, anyway
-              dm1 = "cgll"//C_NULL_CHAR
-              dofnameS="GLOBAL_DOFS"//C_NULL_CHAR
-              orderS = 4 ! np !  it should be 4
-            endif
-            dm2 = "fv"//C_NULL_CHAR
-            dofnameT="GLOBAL_ID"//C_NULL_CHAR
-            orderT = 1  !  not much arguing
-            fNoBubble = 1
-            monotonicity = 0 !
-            noConserve = 0
-            validate = 0 ! less verbose
-            fInverseDistanceMap = 0
-            if (iamroot_CPLID) then
-               write(logunit,*) subname, 'launch iMOAB weights with args ', 'mbintxar=', mbintxar, ' wgtIdef=', wgtIdef, &
-                   'dm1=', trim(dm1), ' orderS=',  orderS, 'dm2=', trim(dm2), ' orderT=', orderT, &
-                                               fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
-                                               noConserve, validate, &
-                                               trim(dofnameS), trim(dofnameT)
-            endif
-            ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxar, wgtIdef, &
-                                               trim(dm1), orderS, trim(dm2), orderT, ''//C_NULL_CHAR, &
-                                               fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
-                                               noConserve, validate, &
-                                               trim(dofnameS), trim(dofnameT) )
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in computing ar weights '
-               call shr_sys_abort(subname//' ERROR in computing ar weights ')
+               write(logunit,*) subname,' error in defining tags for seq_flds_a2x_fields_to_rof on ROF cpl'
+               call shr_sys_abort(subname//' ERROR in  defining tags for seq_flds_a2x_fields_to_rof on ROF cpl')
             endif
 
-#ifdef MOABDEBUG
-            wopts = C_NULL_CHAR
-            call shr_mpi_commrank( mpicom_CPLID, rank )
-            if (rank .lt. 5) then
-              write(lnum,"(I0.2)")rank !
-              outfile = 'intx_ar_'//trim(lnum)// '.h5m' // C_NULL_CHAR
-              ierr = iMOAB_WriteMesh(mbintxar, outfile, wopts) ! write local intx file
-              if (ierr .ne. 0) then
-                write(logunit,*) subname,' error in writing intx ar file '
-                call shr_sys_abort(subname//' ERROR in writing intx ar file ')
-              endif
-            endif
-#endif
+            if (compute_maps_online_a2r) then
+
+               volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
+               if (atm_pg_active) then
+                  dm1 = "fv"//C_NULL_CHAR
+                  dofnameS="GLOBAL_ID"//C_NULL_CHAR
+                  orderS = 1 !  fv-fv
+               else ! this part does not work, anyway
+                  dm1 = "cgll"//C_NULL_CHAR
+                  dofnameS="GLOBAL_DOFS"//C_NULL_CHAR
+                  orderS = 4 ! np !  it should be 4
+               endif
+               dm2 = "fv"//C_NULL_CHAR
+               dofnameT="GLOBAL_ID"//C_NULL_CHAR
+               orderT = 1  !  not much arguing
+               fNoBubble = 1
+               monotonicity = 0 !
+               noConserve = 0
+               validate = 0 ! less verbose
+               fInverseDistanceMap = 0
+               if (iamroot_CPLID) then
+                  write(logunit,*) subname, 'launch iMOAB weights with args ', 'mbintxar=', mbintxar, ' wgtIdef=', wgtIda2r, &
+                     'dm1=', trim(dm1), ' orderS=',  orderS, 'dm2=', trim(dm2), ' orderT=', orderT, &
+                                                fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
+                                                noConserve, validate, &
+                                                trim(dofnameS), trim(dofnameT)
+               endif
+               ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxar, wgtIda2r, &
+                                                trim(dm1), orderS, trim(dm2), orderT, ''//C_NULL_CHAR, &
+                                                fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
+                                                noConserve, validate, &
+                                                trim(dofnameS), trim(dofnameT) )
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in computing ATM-ROF weights '
+                  call shr_sys_abort(subname//' ERROR in computing ATM-ROF weights ')
+               endif
+
+            else
+               type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
+
+               call moab_map_init_rcfile( mbaxid, mbrxid, mbintxar, type1, &
+                     'seq_maps.rc', 'atm2rof_fmapname:', 'atm2rof_fmaptype:',samegrid_ar, &
+                     wgtIda2r, 'mapper_Fa2r MOAB initialization', esmf_map_flag)
+            end if
+
          end if ! if ((mbrxid .ge. 0) .and.  (mbaxid .ge. 0))
-! endif HAVE_MOAB 
+! endif HAVE_MOAB
 #endif
 
           if (iamroot_CPLID) then
@@ -638,6 +696,10 @@ contains
                string='mapper_Sa2r initialization', esmf_map=esmf_map_flag)
 #ifdef HAVE_MOAB
             ! now take care of the mapper, use the same one as before
+            if (iamroot_CPLID) then
+               write(logunit,*) ' '
+               write(logunit,F00) 'Initializing MOAB mapper_Sa2r'
+            end if
             if ( mapper_Sa2r%src_mbid .gt. -1 ) then
                 if (iamroot_CPLID) then
                      write(logunit,F00) 'overwriting '//trim(mapper_Sa2r%mbname) &
@@ -646,15 +708,14 @@ contains
             endif
             mapper_Sa2r%src_mbid = mbaxid
             mapper_Sa2r%tgt_mbid = mbrxid
-            mapper_Sa2r%intx_mbid = mbintxar 
+            mapper_Sa2r%intx_mbid = mbintxar
             mapper_Sa2r%src_context = atm(1)%cplcompid
             mapper_Sa2r%intx_context = idintx
-            wgtIdef = 'scalar'//C_NULL_CHAR
-            mapper_Sa2r%weight_identifier = wgtIdef
+            mapper_Sa2r%weight_identifier = wgtIda2r
             mapper_Sa2r%mbname = 'mapper_Sa2r'
 #endif
        endif
-	   
+
        call shr_sys_flush(logunit)
 
     end if
@@ -677,12 +738,12 @@ contains
        o2racc_ox_cnt = 0
 #ifdef HAVE_MOAB
 
-       ! this o2racc_om will be over ocn size 
+       ! this o2racc_om will be over ocn size
        sharedFieldsOcnRof=''
        nfields_sh_or = mct_aVect_nRAttr(o2racc_ox(1))
        if ( nfields_sh_or /= 0 ) sharedFieldsOcnRof = trim( mct_aVect_exportRList2c(o2racc_ox(1)) )
        tagname = trim(sharedFieldsOcnRof)//C_NULL_CHAR
-      
+
       ! find the size of ocn mesh locally
       ! find out the number of local elements in moab mesh ocn instance on coupler
       ierr  = iMOAB_GetMeshInfo ( mboxid, nvert, nvise, nbl, nsurf, nvisBC )
@@ -1135,7 +1196,7 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
        efi = mod((eri-1),num_inst_frc) + 1
 
        x2r_rx => component_get_x2c_cx(rof(eri))  ! This is actually modifying x2r_rx
-       if(ocn_rof_two_way) then 
+       if(ocn_rof_two_way) then
          call prep_rof_merge(l2r_rx(eri), a2r_rx(eri), fractions_rx(efi), x2r_rx, cime_model, o2x_r=o2r_rx(eri))
        else
          call prep_rof_merge(l2r_rx(eri), a2r_rx(eri), fractions_rx(efi), x2r_rx, cime_model)
@@ -1220,7 +1281,7 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
     integer, save :: index_x2r_Flrl_inundinf
     integer, save :: index_x2r_So_ssh
     integer, save :: index_o2x_So_ssh
-    
+
     integer, save :: index_l2x_coszen_str
     integer, save :: index_x2r_coszen_str
 
@@ -1338,7 +1399,7 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
           mrgstr(index_x2r_Flrl_rofi_HDO) = trim(mrgstr(index_x2r_Flrl_rofi_HDO))//' = '// &
                trim(fracstr)//'*l2x%Flrl_rofi_HDO'
        end if
-   
+
        if ( rof_heat ) then
           index_a2x_Sa_tbot    = mct_aVect_indexRA(a2x_r,'Sa_tbot')
           index_a2x_Sa_pbot    = mct_aVect_indexRA(a2x_r,'Sa_pbot')
@@ -1350,7 +1411,7 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
           index_a2x_Faxa_swvdr = mct_aVect_indexRA(a2x_r,'Faxa_swvdr')
           index_a2x_Faxa_swvdf = mct_aVect_indexRA(a2x_r,'Faxa_swvdf')
           index_a2x_Faxa_lwdn  = mct_aVect_indexRA(a2x_r,'Faxa_lwdn')
-     
+
           index_x2r_Sa_tbot    = mct_aVect_indexRA(x2r_r,'Sa_tbot')
           index_x2r_Sa_pbot    = mct_aVect_indexRA(x2r_r,'Sa_pbot')
           index_x2r_Sa_u       = mct_aVect_indexRA(x2r_r,'Sa_u')
@@ -1379,7 +1440,7 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
              mrgstr(index_x2r_Flrl_inundinf) = trim(mrgstr(index_x2r_Flrl_inundinf))//' = '//'l2x%Flrl_inundinf'
           endif
 
-       endif 
+       endif
 
        if (ocn_rof_two_way) then
           index_o2x_So_ssh = mct_aVect_indexRA(o2x_r,'So_ssh')
@@ -1414,7 +1475,7 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
           x2r_r%rAttr(index_x2r_Flrl_rofl_HDO,i) = l2x_r%rAttr(index_l2x_Flrl_rofl_HDO,i) * frac
           x2r_r%rAttr(index_x2r_Flrl_rofi_HDO,i) = l2x_r%rAttr(index_l2x_Flrl_rofi_HDO,i) * frac
        end if
-      
+
        if ( rof_heat ) then
           x2r_r%rAttr(index_x2r_Sa_tbot,i)    = a2x_r%rAttr(index_a2x_Sa_tbot,i)
           x2r_r%rAttr(index_x2r_Sa_pbot,i)    = a2x_r%rAttr(index_a2x_Sa_pbot,i)
@@ -1467,7 +1528,7 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
     ! Description
     ! Merge land rof and ice forcing for rof input
     !
-    ! used for indexing 
+    ! used for indexing
     type(mct_avect) , pointer   :: l2x_r
     type(mct_avect) , pointer   :: a2x_r
     type(mct_avect) , pointer    :: fractions_r
@@ -1501,7 +1562,7 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
     integer, save :: index_l2x_Flrl_rofi_HDO
     integer, save :: index_x2r_Flrl_rofl_HDO
     integer, save :: index_x2r_Flrl_rofi_HDO
-	
+
     integer, save :: index_l2x_Flrl_Tqsur
     integer, save :: index_l2x_Flrl_Tqsub
     integer, save :: index_a2x_Sa_tbot
@@ -1526,7 +1587,7 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
     integer, save :: index_x2r_Faxa_swvdr
     integer, save :: index_x2r_Faxa_swvdf
     integer, save :: index_x2r_Faxa_lwdn
-    
+
     integer, save :: index_l2x_coszen_str
     integer, save :: index_x2r_coszen_str
 
@@ -1542,10 +1603,10 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
     character(*), parameter   :: subname = '(prep_rof_mrg_moab) '
 
  integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
-   
+
     character(CXX) ::tagname, mct_field
     integer :: ent_type, ierr, arrsize
-    integer, save :: naflds, nlflds ! these are saved the first time 
+    integer, save :: naflds, nlflds ! these are saved the first time
 #ifdef MOABDEBUG
     character*32             :: outfile, wopts, lnum
 #endif
@@ -1554,12 +1615,12 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
     type(mct_list) :: temp_list
     integer :: size_list, index_list
     type(mct_string)    :: mctOStr  !
-#endif 
+#endif
     !-----------------------------------------------------------------------
 
     call seq_comm_getdata(CPLID, iamroot=iamroot)
-    
-! character(*),parameter :: fraclist_r = 'lfrac:lfrin:rfrac' 
+
+! character(*),parameter :: fraclist_r = 'lfrac:lfrin:rfrac'
     if (first_time) then
       ! find out the number of local elements in moab mesh rof instance on coupler
       ierr  = iMOAB_GetMeshInfo ( mbrxid, nvert, nvise, nbl, nsurf, nvisBC )
@@ -1568,7 +1629,7 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
             call shr_sys_abort(subname//' error in getting info ')
       endif
       lsize = nvise(1) ! number of active cells
-       ! mct avs are used just for their fields metadata, not the actual reals 
+       ! mct avs are used just for their fields metadata, not the actual reals
        ! (name of the fields)
        ! need these always, not only the first time
       l2x_r => l2r_rx(1)
@@ -1638,7 +1699,7 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
        end if
 
        if (samegrid_al) then ! fraclist_r = 'lfrac:lfrin:rfrac'
-       ! check, in our case, is it always 1  ? 
+       ! check, in our case, is it always 1  ?
           index_frac = 1 ! mct_aVect_indexRA(fractions_r,"lfrac")
           fracstr = 'lfrac'
        else
@@ -1682,7 +1743,7 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
           mrgstr(index_x2r_Flrl_rofi_HDO) = trim(mrgstr(index_x2r_Flrl_rofi_HDO))//' = '// &
                trim(fracstr)//'*l2x%Flrl_rofi_HDO'
        end if
-	   
+
        if ( rof_heat ) then
           index_a2x_Sa_tbot    = mct_aVect_indexRA(a2x_r,'Sa_tbot')
           index_a2x_Sa_pbot    = mct_aVect_indexRA(a2x_r,'Sa_pbot')
@@ -1694,7 +1755,7 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
           index_a2x_Faxa_swvdr = mct_aVect_indexRA(a2x_r,'Faxa_swvdr')
           index_a2x_Faxa_swvdf = mct_aVect_indexRA(a2x_r,'Faxa_swvdf')
           index_a2x_Faxa_lwdn  = mct_aVect_indexRA(a2x_r,'Faxa_lwdn')
-     
+
           index_x2r_Sa_tbot    = mct_aVect_indexRA(x2r_r,'Sa_tbot')
           index_x2r_Sa_pbot    = mct_aVect_indexRA(x2r_r,'Sa_pbot')
           index_x2r_Sa_u       = mct_aVect_indexRA(x2r_r,'Sa_u')
@@ -1716,13 +1777,13 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
           mrgstr(index_x2r_Faxa_swvdr) = trim(mrgstr(index_x2r_Faxa_swvdr))//' = '//'a2x%Faxa_swvdr'
           mrgstr(index_x2r_Faxa_swvdf) = trim(mrgstr(index_x2r_Faxa_swvdf))//' = '//'a2x%Faxa_swvdf'
           mrgstr(index_x2r_Faxa_lwdn)  = trim(mrgstr(index_x2r_Faxa_lwdn))//' = '//'a2x%Faxa_lwdn'
-       endif 
+       endif
 
     end if
 ! fill in with data from moab tags
 
 ! fill with fractions from river instance
-! fractions_rm, 
+! fractions_rm,
     ent_type = 1 ! cells
     tagname = 'lfrac:lfrin:rfrac'//C_NULL_CHAR
     arrsize = 3 * lsize
@@ -1736,7 +1797,7 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
     ierr = iMOAB_GetDoubleTagStorage ( mbrxid, tagname, arrsize , ent_type, x2r_rm)
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in getting x2r_rm array ')
-    endif    
+    endif
     ! a2x_rm (lsize, naflds))
 
     tagname = trim(seq_flds_a2x_fields_to_rof)//C_NULL_CHAR
@@ -1747,7 +1808,7 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
     endif
     !  l2x_rm
     tagname = trim(seq_flds_l2x_fluxes_to_rof)//C_NULL_CHAR
-    arrsize = nlflds * lsize !        
+    arrsize = nlflds * lsize !
     ierr = iMOAB_GetDoubleTagStorage ( mbrxid, tagname, arrsize , ent_type, l2x_rm)
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in getting l2x_rm array ')
@@ -1780,7 +1841,7 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
           x2r_rm(i,index_x2r_Flrl_rofl_HDO) = l2x_rm(i,index_l2x_Flrl_rofl_HDO) * frac
           x2r_rm(i,index_x2r_Flrl_rofi_HDO) = l2x_rm(i,index_l2x_Flrl_rofi_HDO) * frac
        end if
-      
+
        if ( rof_heat ) then
           x2r_rm(i,index_x2r_Sa_tbot)    = a2x_rm(i,index_a2x_Sa_tbot)
           x2r_rm(i,index_x2r_Sa_pbot)    = a2x_rm(i,index_a2x_Sa_pbot)
@@ -1842,7 +1903,7 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
 #endif
 
   end subroutine prep_rof_mrg_moab
-#endif 
+#endif
   !================================================================================================
 
   subroutine prep_rof_calc_l2r_rx(fractions_lx, timer)
@@ -1989,7 +2050,7 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
     prep_rof_get_mapper_Sa2r => mapper_Sa2r
   end function prep_rof_get_mapper_Sa2r
 
- ! moab 
+ ! moab
  ! for ocean
   function prep_rof_get_o2racc_om_cnt()
     integer, pointer :: prep_rof_get_o2racc_om_cnt
@@ -2005,7 +2066,7 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
      character(CXX) :: prep_rof_get_sharedFieldsOcnRof
      prep_rof_get_sharedFieldsOcnRof = sharedFieldsOcnRof
   end function prep_rof_get_sharedFieldsOcnRof
- 
+
   ! for land
   function prep_rof_get_l2racc_lm_cnt()
     integer, pointer :: prep_rof_get_l2racc_lm_cnt

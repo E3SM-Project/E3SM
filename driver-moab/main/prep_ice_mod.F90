@@ -127,7 +127,6 @@ contains
     ! MOAB stuff
     integer                  :: ierr, idintx, rank
     character*32             :: appname, outfile, wopts, lnum
-    character*32             :: dm1, dm2, dofnameS, dofnameT, wgtIdef
     integer                  :: orderS, orderT, volumetric, noConserve, validate, fInverseDistanceMap
     integer                  :: fNoBubble, monotonicity
 ! will do comm graph over coupler PES, in 2-hop strategy
@@ -197,16 +196,17 @@ contains
 
 #ifdef HAVE_MOAB
           if ( (mbixid .ge. 0) .and. (mboxid .ge. 0)) then
-            ! moab also will do just a rearrange, hopefully, in this case, based on the comm graph
-            !   that is computed here
+            if (iamroot_CPLID) then
+               write(logunit,*) ' '
+               write(logunit,F00) 'Initializing MOAB mapper_SFo2i'
+            end if
+            ! MOAB will do just a rearrange, based on the comm graph that is computed here
             call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)   !  second group, the coupler group CPLID is global variable
 
             type1 = 3
-            type2 = 3 ! fv-fv graph
-            ! iMOAB compute comm graph ice-ocn, based on the same global id
-            ! it will be a simple migrate from ice mesh directly to ocean, using the comm graph computed here
-            ! TODO: find if CommGraph already exists.
-
+            type2 = 3 ! FV-FV graph
+            ! iMOAB compute comm graph ICE-OCN, based on the same global ID
+            ! This will be a simple migration from ICE mesh directly to OCN, using the comm graph computed here
             ierr = iMOAB_ComputeCommGraph( mboxid, mbixid, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, &
                type1, type2, ocn(1)%cplcompid, ice(1)%cplcompid)
             if (ierr .ne. 0) then
