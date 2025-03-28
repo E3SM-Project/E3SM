@@ -32,7 +32,7 @@ void Functions<Real,DefaultDevice>
 
     auto workspace       = workspace_mgr.get_workspace(team);
 
-    shoc_length(team, nlev, nlevi, length_fac,
+    shoc_length(team, nlev, nlevi, length_fac, 
                 dx(i), dy(i),
                 ekat::subview(zt_grid, i),
                 ekat::subview(zi_grid, i),
