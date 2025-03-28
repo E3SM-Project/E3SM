@@ -940,7 +940,7 @@ def create_input_data_list_file(case,caseroot):
     with open(eamxx_xml_file, "r") as fd:
         eamxx_xml = ET.parse(fd).getroot()
 
-        scorpio = get_child(eamxx_xml,'Scorpio')
+        scorpio = get_child(eamxx_xml,'scorpio')
         out_files_xml = get_child(scorpio,"output_yaml_files",must_exist=False)
         #  out_files = out_files_xml.text.split(",") if (out_files_xml is not None and out_files_xml.text is not None) else []
         #  for fn in out_files:
@@ -1009,7 +1009,7 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
     with open(eamxx_xml_file, "r") as fd:
         eamxx_xml = ET.parse(fd).getroot()
 
-    scorpio = get_child(eamxx_xml,'Scorpio')
+    scorpio = get_child(eamxx_xml,'scorpio')
     out_files_xml = get_child(scorpio,"output_yaml_files",must_exist=False)
     out_files = out_files_xml.text.split(",") if (out_files_xml is not None and out_files_xml.text is not None) else []
 
@@ -1085,7 +1085,7 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
 
     # Now update the output yaml files entry, and dump the new content
     # of the scream input to YAML file
-    scream_input["Scorpio"]["output_yaml_files"] = refine_type(",".join(output_yaml_files),"array(string)")
+    scream_input["scorpio"]["output_yaml_files"] = refine_type(",".join(output_yaml_files),"array(string)")
     with open(scream_input_file, "w") as fd:
         fd.write(
 """################################################################

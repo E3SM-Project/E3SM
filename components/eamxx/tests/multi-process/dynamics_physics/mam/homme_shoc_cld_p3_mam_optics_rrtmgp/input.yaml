@@ -88,6 +88,6 @@ grids_manager:
   vertical_coordinate_filename: IC_FILE
 
 # The parameters for I/O control
-Scorpio:
+scorpio:
   output_yaml_files: ["output.yaml"]
 ...

@@ -152,7 +152,7 @@ th, td {
 # the data from $case/namelist_scream.xml. If you want to make some
 # local changes, you can edit this XML file or use atmchange.
 ################################################################
-Scorpio:
+scorpio:
   model_restart:
     iotype: default
     output_control:

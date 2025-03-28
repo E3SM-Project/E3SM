@@ -50,7 +50,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <sections>ctl_nl</sections>
     </file>
     <file name="data/scream_input.yaml" format="yaml">
-      <sections>driver_debug_options,driver_options,iop_options,atmosphere_processes,grids_manager,initial_conditions,Scorpio,e3sm_parameters</sections>
+      <sections>driver_debug_options,driver_options,iop_options,atmosphere_processes,grids_manager,initial_conditions,scorpio,e3sm_parameters</sections>
     </file>
   </generated_files>
 
@@ -722,7 +722,7 @@ be lost if SCREAM_HACK_XML is not enabled.
   </initial_conditions>
 
   <!-- List of yaml files containing I/O output specs -->
-  <Scorpio>
+  <scorpio>
     <output_yaml_files type="array(string)"/>
     <model_restart>
       <iotype>default</iotype>
@@ -731,7 +731,7 @@ be lost if SCREAM_HACK_XML is not enabled.
         <frequency_units>${REST_OPTION}</frequency_units>
       </output_control>
     </model_restart>
-  </Scorpio>
+  </scorpio>
 
   <!-- driver debug options for eamxx -->
   <!--

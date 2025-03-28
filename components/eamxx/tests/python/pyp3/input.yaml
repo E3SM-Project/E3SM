@@ -31,6 +31,6 @@ initial_conditions:
 
 # The parameters for I/O control
 # Note: only cxx executable uses this, so hard-code the name of the output yaml file
-Scorpio:
+scorpio:
   output_yaml_files: ["output_cxx.yaml"]
 ...

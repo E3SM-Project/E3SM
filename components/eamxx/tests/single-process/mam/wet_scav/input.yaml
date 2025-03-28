@@ -42,6 +42,6 @@ initial_conditions:
   wetdep_dust_bin3: 1e-5 # wet deposition of dust (bin3) [kg/m2/s]
   wetdep_dust_bin4: 1e-5 # wet deposition of dust (bin4) [kg/m2/s]
 # The parameters for I/O control
-Scorpio:
+scorpio:
   output_yaml_files: ["output.yaml"]
 ...

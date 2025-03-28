@@ -50,6 +50,6 @@ initial_conditions:
   pbl_height : 1.0
 
 # The parameters for I/O control
-Scorpio:
+scorpio:
   output_yaml_files: ["output.yaml"]
 ...

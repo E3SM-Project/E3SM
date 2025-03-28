@@ -70,7 +70,7 @@ grids_manager:
   vertical_coordinate_filename: IC_FILE
 
 # List all the yaml files with the output parameters
-Scorpio:
+scorpio:
   model_restart:
     output_control:
       Frequency:       30

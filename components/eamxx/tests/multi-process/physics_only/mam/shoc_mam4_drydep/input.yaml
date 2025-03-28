@@ -66,6 +66,6 @@ initial_conditions:
   wetdens: 0.15100083211582764E+004
 
 # The parameters for I/O control
-Scorpio:
+scorpio:
   output_yaml_files: ["output.yaml"]
 ...
