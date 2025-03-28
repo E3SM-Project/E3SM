@@ -59,7 +59,8 @@ module ocn_tracer_advection_std
 !-----------------------------------------------------------------------
 
    subroutine ocn_tracer_advection_std_tend(tracers, normalThicknessFlux, &
-                                            w, layerThickness, dt, tend)
+                                            w, layerThickness, dt, tend, &
+                                            skipTracer)
 
       !-----------------------------------------------------------------
       ! Input/Output variables
@@ -82,6 +83,9 @@ module ocn_tracer_advection_std
 
       real (kind=RKIND), intent(in) :: &
          dt                    !< [in] Timestep
+
+      logical, dimension(:), intent(in) :: &
+         skipTracer            !< [in] Flag to skip tracer in tracers
 
       !-----------------------------------------------------------------
       ! Local variables
@@ -126,6 +130,7 @@ module ocn_tracer_advection_std
       ! Loop over tracers. One tracer is advected at a time. It is
       ! copied into a temporary array in order to improve locality
       do iTracer = 1, numTracers
+        if (skipTracer(iTracer)) cycle
 
         ! Initialize variables for use in this iTracer iteration
 #ifdef MPAS_OPENACC
