@@ -1,7 +1,7 @@
 %YAML 1.1
 ---
 atm_procs_list: [MyFoo,BarBaz]
-schedule_type: Sequential
+schedule_type: sequential
 type: group
 
 MyFoo:
@@ -9,7 +9,7 @@ MyFoo:
   Grid Name: Point Grid
 BarBaz:
   type: group
-  schedule_type: Sequential
+  schedule_type: sequential
   atm_procs_list: [MyBar,MyBaz]
 
   MyBar:

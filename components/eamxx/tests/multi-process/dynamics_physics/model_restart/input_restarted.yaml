@@ -11,17 +11,17 @@ time_stepping:
 
 atmosphere_processes:
   atm_procs_list: [homme,physics]
-  schedule_type: Sequential
+  schedule_type: sequential
   homme:
     Moisture: moist
   physics:
     atm_procs_list: [mac_aero_mic,rrtmgp]
     type: group
-    schedule_type: Sequential
+    schedule_type: sequential
     mac_aero_mic:
       atm_procs_list: [shoc,CldFraction,p3]
       type: group
-      schedule_type: Sequential
+      schedule_type: sequential
       number_of_subcycles: 1
       p3:
         max_total_ni: 740.0e3

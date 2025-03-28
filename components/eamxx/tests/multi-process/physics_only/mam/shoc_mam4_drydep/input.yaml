@@ -10,11 +10,11 @@ time_stepping:
 
 atmosphere_processes:
   atm_procs_list: [mac_mic,mam4_drydep]
-  schedule_type: Sequential
+  schedule_type: sequential
   mac_mic:
     atm_procs_list: [shoc]
     type: group
-    schedule_type: Sequential
+    schedule_type: sequential
     number_of_subcycles: ${MAC_MIC_SUBCYCLES}
     shoc:
       lambda_low: 0.001
