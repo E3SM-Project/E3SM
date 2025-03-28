@@ -172,7 +172,7 @@ atmosphere_processes:
   enable_precondition_checks: true
   homme:
     BfbHash: 18
-    Moisture: moist
+    moisture: moist
     compute_tendencies: !strings []
     enable_postcondition_checks: true
 ...

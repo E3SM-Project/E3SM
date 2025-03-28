@@ -92,7 +92,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   //       I'm gonna say 'no', for now, cause it might be a pb with unit tests.
   if (!is_data_structures_inited_f90()) {
     // Set moisture in homme base on input file:
-    const auto& moisture = m_params.get<std::string>("Moisture");
+    const auto& moisture = m_params.get<std::string>("moisture");
     set_homme_param("moisture",ekat::upper_case(moisture)!="DRY");
 
     prim_init_data_structures_f90 ();

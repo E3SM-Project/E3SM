@@ -41,7 +41,7 @@ atmosphere_processes:
   atm_procs_list: [sc_import,homme,physics]
   schedule_type: sequential
   homme:
-    Moisture: moist
+    moisture: moist
   physics:
     atm_procs_list: [iop_forcing,mac_aero_mic,rrtmgp]
     schedule_type: sequential
