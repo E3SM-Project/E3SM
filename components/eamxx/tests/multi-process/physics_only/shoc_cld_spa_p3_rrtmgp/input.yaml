@@ -13,7 +13,7 @@ atmosphere_processes:
   schedule_type: Sequential
   mac_mic:
     atm_procs_list: [shoc,CldFraction,spa,p3]
-    Type: Group
+    type: Group
     schedule_type: Sequential
     number_of_subcycles: ${MAC_MIC_SUBCYCLES}
     spa:
@@ -43,7 +43,7 @@ atmosphere_processes:
     rrtmgp_cloud_optics_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-lw.nc
 
 grids_manager:
-  Type: Mesh Free
+  type: Mesh Free
   geo_data_source: IC_FILE
   grids_names: [Physics GLL]
   Physics GLL:

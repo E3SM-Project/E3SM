@@ -11,7 +11,7 @@ atmosphere_processes:
   schedule_type: Sequential
 
 grids_manager:
-  Type: Mesh Free
+  type: Mesh Free
   grids_names: [Physics GLL]
   Physics GLL:
     type: point_grid

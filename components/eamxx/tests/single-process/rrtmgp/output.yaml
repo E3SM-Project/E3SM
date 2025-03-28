@@ -1,7 +1,7 @@
 %YAML 1.1
 ---
 filename_prefix: rrtmgp_standalone_output${SUFFIX}
-Averaging Type: Instant
+averaging_type: Instant
 Max Snapshots Per File: 1
 Field Names:
   - T_mid

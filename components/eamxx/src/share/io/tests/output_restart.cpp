@@ -126,7 +126,7 @@ TEST_CASE("output_restart","io")
       ofs.open("rpointer.atm", std::ofstream::out | std::ofstream::trunc);
     }
     print("   -> Averaging type: " + avg_type + " ", 40);
-    output_params.set<std::string>("Averaging Type",avg_type);
+    output_params.set<std::string>("averaging_type",avg_type);
 
     // 1. Run for full 20 days, no restarts needed
     auto fm_mono = clone_fm(fm0);

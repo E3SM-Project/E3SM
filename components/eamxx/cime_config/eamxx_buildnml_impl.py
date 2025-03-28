@@ -590,7 +590,7 @@ def gen_group_processes(ap_names_str, atm_procs_defaults):
 
         # Check if this pre-defined proc is itself a group, and, if so,
         # build all its sub-processes
-        ptype = get_child(proc, "Type", must_exist=False)
+        ptype = get_child(proc, "type", must_exist=False)
         if ptype is not None and ptype.text=="Group":
             # This entry of the group is itself a group, with pre-defined
             # defaults. Let's add its entries to it

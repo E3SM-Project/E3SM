@@ -15,7 +15,7 @@ atmosphere_processes:
     ice_cloud_for_analysis_threshold: 1e-5
 
 grids_manager:
-  Type: Mesh Free
+  type: Mesh Free
   grids_names: [Point Grid]
   Point Grid:
     aliases: [Physics]

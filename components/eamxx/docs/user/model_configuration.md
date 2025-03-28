@@ -142,7 +142,7 @@ XML file, which will be displayed with each node indented in its parent scope:
 $ ./atmquery --listall
     namelist_defaults
         grids_manager
-            Type: Homme
+            type: Homme
             physics_grid_type: PG2
             physics_grid_rebalance: None
             dynamics_namelist_file_name: ./data/namelist.nl
@@ -383,7 +383,7 @@ The following is a basic example of an output request.
 %YAML 1.1
 ---
 filename_prefix: my_output
-Averaging Type: Average
+averaging_type: Average
 Max Snapshots Per File: 10
 Fields:
   Physics:
@@ -406,7 +406,7 @@ they are available (although most fields are only available on ONE grid).
 In the example above, we requested fields from both the Physics and Dynamics grid.
 The meaning of the other parameters is as follows:
 
-- `Averaging Type`: how the fields are integrated in time before being saved.
+- `averaging_type`: how the fields are integrated in time before being saved.
 Valid options are:
       - `Instant`: no integration, each time frame saved corresponds to
       instantaneous values of the fields.

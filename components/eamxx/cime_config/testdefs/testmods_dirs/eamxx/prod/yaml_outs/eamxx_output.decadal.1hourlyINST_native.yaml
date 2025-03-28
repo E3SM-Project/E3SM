@@ -2,7 +2,7 @@
 ---
 filename_prefix: eamxx_output.decadal.1hourlyINST_native.h
 iotype: pnetcdf
-Averaging Type: Instant
+averaging_type: Instant
 Max Snapshots Per File: 24
 Fields:
   Physics PG2:

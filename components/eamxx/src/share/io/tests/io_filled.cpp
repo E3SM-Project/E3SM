@@ -130,7 +130,7 @@ void write (const std::string& avg_type, const std::string& freq_units,
   ekat::ParameterList om_pl;
   om_pl.set("filename_prefix",std::string("io_filled"));
   om_pl.set("Field Names",fnames);
-  om_pl.set("Averaging Type", avg_type);
+  om_pl.set("averaging_type", avg_type);
   om_pl.set<double>("fill_value",FillValue);
   om_pl.set<Real>("fill_threshold",fill_threshold);
   om_pl.set("track_avg_cnt",true);

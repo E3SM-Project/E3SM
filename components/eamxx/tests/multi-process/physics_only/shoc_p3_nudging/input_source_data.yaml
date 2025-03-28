@@ -28,7 +28,7 @@ atmosphere_processes:
     Ckm: 0.1
 
 grids_manager:
-  Type: Mesh Free
+  type: Mesh Free
   geo_data_source: IC_FILE
   grids_names: [Physics GLL]
   Physics GLL:

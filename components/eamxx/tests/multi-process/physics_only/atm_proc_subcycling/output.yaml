@@ -1,7 +1,7 @@
 %YAML 1.1
 ---
 filename_prefix: shoc_p3_${POSTFIX}
-Averaging Type: Instant
+averaging_type: Instant
 Field Names:
   - T_mid
   - qv

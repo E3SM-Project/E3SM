@@ -2,7 +2,7 @@
 ---
 filename_prefix: eamxx_output.decadal.1dailyAVG_native.h
 iotype: pnetcdf
-Averaging Type: Average
+averaging_type: Average
 Max Snapshots Per File: 1
 Fields:
   Physics PG2:

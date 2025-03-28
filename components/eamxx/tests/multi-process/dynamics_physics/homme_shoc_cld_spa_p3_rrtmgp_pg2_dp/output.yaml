@@ -1,7 +1,7 @@
 %YAML 1.1
 ---
 filename_prefix: homme_shoc_cld_spa_p3_rrtmgp_pg2_dp_output
-Averaging Type: Instant
+averaging_type: Instant
 Max Snapshots Per File: 1
 Fields:
   Physics PG2:

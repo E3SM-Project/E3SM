@@ -1,7 +1,7 @@
 %YAML 1.1
 ---
 filename_prefix: p3_standalone_${EXEC_TYPE}
-Averaging Type: Instant
+averaging_type: Instant
 Field Names:
   - qi
   - qc

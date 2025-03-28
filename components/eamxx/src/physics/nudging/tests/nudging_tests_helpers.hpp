@@ -147,7 +147,7 @@ create_om (const std::string& filename_prefix,
   // NOTE: ask "real" fp precision, so even when building in double precision
   //       we can retrieve exactly the nudging data (if no remapping happens)
   ekat::ParameterList params;
-  params.set<std::string>("Averaging Type","INSTANT");
+  params.set<std::string>("averaging_type","INSTANT");
   params.set<std::string>("filename_prefix",filename_prefix);
   params.set<std::string>("Floating Point Precision","real");
   params.set("Field Names",strvec_t{"p_mid","U","V"});

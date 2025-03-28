@@ -32,11 +32,11 @@ atmosphere_processes:
     Moisture: moist
   physics:
     atm_procs_list: [mac_aero_mic,rrtmgp]
-    Type: Group
+    type: Group
     schedule_type: Sequential
     mac_aero_mic:
       atm_procs_list: [shoc,CldFraction,p3]
-      Type: Group
+      type: Group
       schedule_type: Sequential
       number_of_subcycles: 1
       p3:
@@ -64,7 +64,7 @@ atmosphere_processes:
       rrtmgp_cloud_optics_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-lw.nc
 
 grids_manager:
-  Type: Homme
+  type: Homme
   physics_grid_type: GLL
   dynamics_namelist_file_name: namelist.nl
   vertical_coordinate_filename: IC_FILE

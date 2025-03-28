@@ -45,10 +45,10 @@ atmosphere_processes:
   physics:
     atm_procs_list: [iop_forcing,mac_aero_mic,rrtmgp]
     schedule_type: Sequential
-    Type: Group
+    type: Group
     mac_aero_mic:
       atm_procs_list: [tms,shoc,CldFraction,spa,p3]
-      Type: Group
+      type: Group
       schedule_type: Sequential
       number_of_subcycles: ${MAC_MIC_SUBCYCLES}
       spa:
@@ -80,7 +80,7 @@ atmosphere_processes:
       do_aerosol_rad: false
 
 grids_manager:
-  Type: Homme
+  type: Homme
   physics_grid_type: PG2
   dynamics_namelist_file_name: namelist.nl
   vertical_coordinate_filename: IC_FILE

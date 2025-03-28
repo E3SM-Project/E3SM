@@ -1,7 +1,7 @@
 %YAML 1.1
 ---
 filename_prefix: model_output
-Averaging Type: average
+averaging_type: average
 Fields:
   Physics GLL:
     Field Names:

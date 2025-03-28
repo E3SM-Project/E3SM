@@ -14,20 +14,20 @@ atmosphere_processes:
   schedule_type: Sequential
 
   dummy1:
-    Type: Dummy
+    type: Dummy
     Sub Name: A to Group
     Grid Name: Point Grid
   dummy2:
-    Type: Dummy
+    type: Dummy
     Sub Name: Group to Group
     Grid Name: Point Grid
   dummy3:
-    Type: Dummy
+    type: Dummy
     Sub Name: Group to A
     Grid Name: Point Grid
 
 grids_manager:
-  Type: Mesh Free
+  type: Mesh Free
   grids_names: ["Point Grid"]
   Point Grid:
     type: point_grid

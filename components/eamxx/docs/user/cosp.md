@@ -47,7 +47,7 @@ A minimal example:
 ```shell
 ./atmchange output_yaml_files=eamxx_daily_output.yaml
 cat << EOF > eamxx_cosp_daily_output.yaml
-Averaging Type: Average
+averaging_type: Average
 Fields:
   Physics PG2:
     Field Names:

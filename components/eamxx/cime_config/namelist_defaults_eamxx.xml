@@ -166,7 +166,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- Basic options for each atm process group -->
     <atm_proc_group inherit="atm_proc_base">
       <atm_procs_list type="array(string)" doc="List of atm processes in this atm process group"/>
-      <Type>Group</Type>
+      <type>Group</type>
       <schedule_type valid_values="Sequential">Sequential</schedule_type>
     </atm_proc_group>
 
@@ -588,7 +588,7 @@ be lost if SCREAM_HACK_XML is not enabled.
 
   <!-- Grids manager specs -->
   <grids_manager>
-    <Type>Homme</Type>
+    <type>Homme</type>
     <physics_grid_type>GLL</physics_grid_type>
     <physics_grid_type hgrid=".*pg2">PG2</physics_grid_type>
     <physics_grid_rebalance>None</physics_grid_rebalance>

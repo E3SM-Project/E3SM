@@ -699,7 +699,7 @@ setup_internals (const std::shared_ptr<fm_type>& field_mgr,
     // Hard code some parameters in case we access them later
     m_params.set<std::string>("Floating Point Precision","real");
   } else {
-    auto avg_type = m_params.get<std::string>("Averaging Type");
+    auto avg_type = m_params.get<std::string>("averaging_type");
     m_avg_type = str2avg(avg_type);
     EKAT_REQUIRE_MSG (m_avg_type!=OutputAvgType::Invalid,
         "Error! Unsupported averaging type '" + avg_type + "'.\n"
@@ -945,7 +945,7 @@ push_to_logger()
   m_atm_logger->info("              Reference t0: " + m_output_control.last_write_ts.to_string());
   m_atm_logger->info("         Is Restart File ?: " + bool_to_string(m_is_model_restart_output));
   m_atm_logger->info("                 Run type : " + rt_to_string(m_run_type));
-  m_atm_logger->info("            Averaging Type: " + e2str(m_avg_type));
+  m_atm_logger->info("            averaging_type: " + e2str(m_avg_type));
   m_atm_logger->info("          Output Frequency: " + std::to_string(m_output_control.frequency) + " " + m_output_control.frequency_units);
   switch (m_output_file_specs.storage.type) {
     case NumSnaps:
