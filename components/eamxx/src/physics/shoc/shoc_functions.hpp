@@ -93,6 +93,7 @@ struct Functions
    Scalar c_diag_3rd_mom;
    Scalar Ckh;
    Scalar Ckm;
+   bool shoc_nosgs_var;
  };
 
   // This struct stores input views for shoc_main.
@@ -298,6 +299,7 @@ struct Functions
     const Int& nlev,
     const Int& nlevi,
     const Scalar& c_diag_3rd_mom,
+    const bool& shoc_nosgs_var,
     const uview_1d<const Spack>& w_sec,
     const uview_1d<const Spack>& thl_sec,
     const uview_1d<const Spack>& wthl_sec,
@@ -396,7 +398,7 @@ struct Functions
 
   KOKKOS_FUNCTION
   static void diag_second_moments(const MemberType& team, const Int& nlev, const Int& nlevi,
-     const Real& thl2tune, const Real& qw2tune, const Real& qwthl2tune, const Real& w2tune,
+     const Real& thl2tune, const Real& qw2tune, const Real& qwthl2tune, const Real& w2tune, const bool& shoc_nosgs_var,
      const uview_1d<const Spack>& thetal, const uview_1d<const Spack>& qw, const uview_1d<const Spack>& u_wind,
      const uview_1d<const Spack>& v_wind, const uview_1d<const Spack>& tke, const uview_1d<const Spack>& isotropy,
      const uview_1d<const Spack>& tkh, const uview_1d<const Spack>& tk, const uview_1d<const Spack>& dz_zi,
@@ -408,7 +410,7 @@ struct Functions
 
   KOKKOS_FUNCTION
   static void diag_second_shoc_moments(const MemberType& team, const Int& nlev, const Int& nlevi,
-     const Scalar& thl2tune, const Scalar& qw2tune, const Scalar& qwthl2tune, const Scalar& w2tune,
+     const Scalar& thl2tune, const Scalar& qw2tune, const Scalar& qwthl2tune, const Scalar& w2tune, const bool& shoc_nosgs_var,
      const uview_1d<const Spack>& thetal, const uview_1d<const Spack>& qw, const uview_1d<const Spack>& u_wind,
      const uview_1d<const Spack>& v_wind, const uview_1d<const Spack>& tke, const uview_1d<const Spack>& isotropy,
      const uview_1d<const Spack>& tkh, const uview_1d<const Spack>& tk, const uview_1d<const Spack>& dz_zi,
@@ -424,6 +426,7 @@ struct Functions
     const Scalar& qw2tune,
     const Scalar& qwthl2tune,
     const Scalar& w2tune,
+    const bool& shoc_nosgs_var,
     const view_2d<const Spack>& thetal,
     const view_2d<const Spack>& qw,
     const view_2d<const Spack>& u_wind,
@@ -692,6 +695,7 @@ struct Functions
     const Int&                   nlev,
     const Int&                   nlevi,
     const Scalar&                c_diag_3rd_mom,
+    const bool&                  shoc_nosgs_var,
     const uview_1d<const Spack>& w_sec,
     const uview_1d<const Spack>& thl_sec,
     const uview_1d<const Spack>& wthl_sec,
@@ -711,6 +715,7 @@ struct Functions
     const Int&                  nlev,
     const Int&                  nlevi,
     const Scalar&               c_diag_3rd_mom,
+    const bool&                 shoc_nosgs_var,
     const view_2d<const Spack>& w_sec,
     const view_2d<const Spack>& thl_sec,
     const view_2d<const Spack>& wthl_sec,
@@ -731,10 +736,12 @@ struct Functions
     const MemberType&            team,
     const Int&                   nlev,
     const Real&                  dtime,
+    const bool&                  shoc_nosgs_var,
     const uview_1d<const Spack>& shoc_mix,
     const uview_1d<const Spack>& wthv_sec,
     const uview_1d<const Spack>& sterm_zt,
     const uview_1d<const Spack>& tk,
+    const uview_1d<const Spack>& brunt,
     const uview_1d<Spack>&       tke,
     const uview_1d<Spack>&       a_diss);
 
@@ -1014,6 +1021,7 @@ struct Functions
     const Scalar&                c_diag_3rd_mom,
     const Scalar&                Ckh,
     const Scalar&                Ckm,
+    const bool&                  shoc_nosgs_var,
     // Input Variables
     const Scalar&                host_dx,
     const Scalar&                host_dy,
@@ -1088,6 +1096,7 @@ struct Functions
     const Scalar&                c_diag_3rd_mom,
     const Scalar&                Ckh,
     const Scalar&                Ckm,
+    const bool&                  shoc_nosgs_var,
     // Input Variables
     const view_1d<const Scalar>& host_dx,
     const view_1d<const Scalar>& host_dy,
@@ -1318,6 +1327,7 @@ struct Functions
     const Scalar&                lambda_thresh,
     const Scalar&                Ckh,
     const Scalar&                Ckm,
+    const bool&                  shoc_nosgs_var,
     const uview_1d<const Spack>& wthv_sec,
     const uview_1d<const Spack>& shoc_mix,
     const uview_1d<const Spack>& dz_zi,
@@ -1347,6 +1357,7 @@ struct Functions
     const Scalar&                lambda_thresh,
     const Scalar&                Ckh,
     const Scalar&                Ckm,
+    const bool&                  shoc_nosgs_var,
     const view_2d<const Spack>&  wthv_sec,
     const view_2d<const Spack>&  shoc_mix,
     const view_2d<const Spack>&  dz_zi,
