@@ -220,7 +220,7 @@ TEST_CASE("field", "") {
     REQUIRE(views_are_equal(f1,f2));
 
     // Changing f2 should leave f1 unchanged
-    f2.deep_copy<Real>(0.0);
+    f2.deep_copy(0);
     REQUIRE (field_max<Real>(f2)==0.0);
     REQUIRE (field_min<Real>(f2)==0.0);
     REQUIRE (field_max<Real>(f1)==3.0);
@@ -850,6 +850,42 @@ TEST_CASE ("update") {
     }
   }
 
+  SECTION ("max-min") {
+    SECTION ("real") {
+      Field one = f_real.clone();
+      Field two = f_real.clone();
+      one.deep_copy(1.0);
+      two.deep_copy(2.0);
+
+      Field f1 = one.clone();
+      Field f2 = two.clone();
+      f1.max(f2);
+      REQUIRE (views_are_equal(f1, f2));
+
+      Field f3 = one.clone();
+      Field f4 = two.clone();
+      f4.min(f3);
+      REQUIRE (views_are_equal(f3, f4));
+    }
+
+    SECTION ("int") {
+      Field one = f_int.clone();
+      Field two = f_int.clone();
+      one.deep_copy(1);
+      two.deep_copy(2);
+
+      Field f1 = one.clone();
+      Field f2 = two.clone();
+      f1.max(f2);
+      REQUIRE (views_are_equal(f1, f2));
+
+      Field f3 = one.clone();
+      Field f4 = two.clone();
+      f4.min(f3);
+      REQUIRE (views_are_equal(f3, f4));
+    }
+  }
+
   SECTION ("scale_inv") {
     SECTION ("real") {
       Field f1 = f_real.clone();
@@ -969,7 +1005,7 @@ TEST_CASE ("sync_subfields") {
 
   // Set subfield values to their index on host
   for (int c=0; c<ndims; ++c) {
-    f.get_component(c).deep_copy<int, Host>(c);
+    f.get_component(c).deep_copy<Host>(c);
   }
 
   // Sync only component 0 to device

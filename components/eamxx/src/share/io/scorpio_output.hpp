@@ -111,16 +111,7 @@ public:
   using grid_type     = AbstractGrid;
   using gm_type       = GridsManager;
   using remapper_type = AbstractRemapper;
-  using atm_diag_type = AtmosphereDiagnostic;
-
-  using KT = KokkosTypes<DefaultDevice>;
-  template<int N>
-  using view_Nd_dev  = typename KT::template view_ND<Real,N>;
-  template<int N>
-  using view_Nd_host = typename KT::template view_ND<Real,N>::HostMirror;
-
-  using view_1d_dev  = view_Nd_dev<1>;
-  using view_1d_host = view_Nd_host<1>;
+  using diag_ptr_type = std::shared_ptr<AtmosphereDiagnostic>;
 
   virtual ~AtmosphereOutput () = default;
 
@@ -137,8 +128,7 @@ public:
   // Main Functions
   void restart (const std::string& filename);
   void init();
-  void reset_dev_views();
-  void update_avg_cnt_view(const Field&, view_1d_dev& dev_view);
+  void reset_scorpio_fields();
   void setup_output_file (const std::string& filename, const std::string& fp_precision, const scorpio::FileMode mode);
 
   void init_timestep (const util::TimeStamp& start_of_step);
@@ -159,26 +149,18 @@ public:
   }
 
 protected:
+
+  template<typename T>
+  using strmap_t = std::map<std::string,T>;
+
+  using strvec_t = std::vector<std::string>;
+
   // Internal functions
-  void set_grid (const std::shared_ptr<const AbstractGrid>& grid);
-  void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr,
-                          const std::string& grid_name,
-                          const std::string& mode);
-  void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr,
-                          const std::string& grid_name,
-                          const std::vector<std::string>& modes);
-
-  std::shared_ptr<const fm_type> get_field_manager (const std::string& mode) const;
-
-  void register_dimensions(const std::string& name);
   void register_variables(const std::string& filename, const std::string& fp_precision, const scorpio::FileMode mode);
   void set_decompositions(const std::string& filename);
-  void register_views();
-  Field get_field(const std::string& name, const std::string& mode) const;
-  void compute_diagnostic (const std::string& name, const bool allow_invalid_fields = false);
-  void set_diagnostics();
-  std::shared_ptr<AtmosphereDiagnostic>
-  create_diagnostic (const std::string& diag_name);
+  void compute_diagnostics (const bool allow_invalid_fields);
+  void init_diagnostics (const std::shared_ptr<const FieldManager>& fm_model);
+  strvec_t get_var_dimnames (const FieldLayout& layout) const;
 
   // Tracking the averaging of any filled values:
   void set_avg_cnt_tracking(const std::string& name, const FieldLayout& layout);
@@ -186,35 +168,33 @@ protected:
   // --- Internal variables --- //
   ekat::Comm                          m_comm;
 
-  // We store two shared pointers for field managers:
-  // io_field_manager stores the fields in the layout for output
-  // sim_field_manager points to the simulation field manager
-  // when remapping horizontally these two field managers may be different.
-  std::map<std::string,std::shared_ptr<const fm_type>> m_field_mgrs;
+  // We store separate shared pointers for field managers at different stages
+  enum Phase {
+    FromModel,        // Output fields as from the model (or diags computed from model fields)
+    AfterVertRemap,   // Output fields after vertical remap
+    AfterHorizRemap,  // Output fields after horiz remap
+    Scorpio           // Output fields to pass to scorpio (may differ from the above in case of packing)
+  };
+  std::map<Phase,std::shared_ptr<fm_type>> m_field_mgrs;
 
-  // Field managers can have multiple grids associated with it,
-  // for each FM store which grid we intend to use
-  std::map<std::string,std::string> m_fm_grid_name;
-
-  std::shared_ptr<const grid_type>            m_io_grid;
-  std::shared_ptr<remapper_type>              m_horiz_remapper;
-  std::shared_ptr<remapper_type>              m_vert_remapper;
+  std::shared_ptr<const grid_type>      m_io_grid;
+  std::shared_ptr<remapper_type>        m_horiz_remapper;
+  std::shared_ptr<remapper_type>        m_vert_remapper;
 
   // How to combine multiple snapshots in the output: Instant, Max, Min, Average
-  OutputAvgType     m_avg_type;
-  Real              m_avg_coeff_threshold = 0.5; // % of unfilled values required to not just assign value as FillValue
+  OutputAvgType                         m_avg_type;
+  Real                                  m_avg_coeff_threshold = 0.5; // % of unfilled values required to not just assign value as FillValue
 
   // Internal maps to the output fields, how the columns are distributed, the file dimensions and the global ids.
-  std::vector<std::string>                              m_fields_names;
-  std::vector<std::string>                              m_avg_cnt_names;
-  std::map<std::string,std::string>                     m_field_to_avg_cnt_map;
-  std::map<std::string,std::string>                     m_field_to_avg_cnt_suffix;
-  std::map<std::string,FieldLayout>                     m_layouts;
-  std::map<std::string,int>                             m_dims;
-  std::map<std::string,std::shared_ptr<atm_diag_type>>  m_diagnostics;
-  std::map<std::string,std::vector<std::string>>        m_diag_depends_on_diags;
-  std::map<std::string,bool>                            m_diag_computed;
-  DefaultMetadata                                       m_default_metadata;
+  strvec_t                              m_fields_names;
+  strvec_t                              m_avg_cnt_names;
+  strmap_t<std::string>                 m_field_to_avg_cnt_map;
+  strmap_t<std::string>                 m_field_to_avg_cnt_suffix;
+  strmap_t<strvec_t>                    m_vars_dims;
+  strmap_t<int>                         m_dims_len;
+  std::list<diag_ptr_type>              m_diagnostics;
+
+  DefaultMetadata                       m_default_metadata;
 
   // Use float, so that if output fp_precision=float, this is a representable value.
   // Otherwise, you would get an error from Netcdf, like
@@ -223,12 +203,9 @@ protected:
   // is used inside other calculation and/or remap.
   float m_fill_value = constants::DefaultFillValue<float>().value;
 
-  // Local views of each field to be used for "averaging" output and writing to file.
-  std::map<std::string,view_1d_host>    m_host_views_1d;
-  std::map<std::string,view_1d_dev>     m_dev_views_1d;
-
   bool m_add_time_dim;
   bool m_track_avg_cnt = false;
+  std::string m_decomp_dimname = "";
 
   // The logger to be used throughout the ATM to log message
   std::shared_ptr<ekat::logger::LoggerBase> m_atm_logger;
