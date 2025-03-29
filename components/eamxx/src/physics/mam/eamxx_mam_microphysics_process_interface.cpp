@@ -82,6 +82,7 @@ void MAMMicrophysics::set_grids(
   //depending on the MAM4xx processes active in a simulation
   
   // cloud liquid number mixing ratio [1/kg]
+  auto n_unit           = 1 / kg;   // units of number mixing ratios of tracers
   add_tracer<Required>("nc", grid_, n_unit);
 
   constexpr auto m2 = pow(m, 2);
