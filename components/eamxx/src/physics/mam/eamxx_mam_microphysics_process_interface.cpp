@@ -325,10 +325,11 @@ void MAMMicrophysics::set_grids(
                                            index_season_lai_);
   }
 
-  // Work arrays for return values from perform_atmospheric_chemistry_and_microphysics
+  // Work arrays for return values from
+  // perform_atmospheric_chemistry_and_microphysics
   constexpr int gas_pcnst = mam_coupling::gas_pcnst();
-  dflx_ = view_2d("dflx", ncol_, gas_pcnst);
-  dvel_ = view_2d("dvel", ncol_, gas_pcnst);
+  dflx_                   = view_2d("dflx", ncol_, gas_pcnst);
+  dvel_                   = view_2d("dvel", ncol_, gas_pcnst);
 }  // set_grids
 
 // ================================================================
@@ -742,8 +743,8 @@ void MAMMicrophysics::run_impl(const double dt) {
   const int month              = timestamp().get_month();  // 1-based
   const int surface_lev        = nlev - 1;                 // Surface level
   const auto &index_season_lai = index_season_lai_;
-  auto &dflx = dflx_;
-  auto &dvel = dvel_;
+  auto &dflx                   = dflx_;
+  auto &dvel                   = dvel_;
 
   // loop over atmosphere columns and compute aerosol microphyscs
   Kokkos::parallel_for(
@@ -857,8 +858,10 @@ void MAMMicrophysics::run_impl(const double dt) {
           }
         }
         // These output values need to be put somewhere:
-        view_1d dflx_col = ekat::subview(dflx, icol); // deposition velocity [1/cm/s]
-        view_1d dvel_col = ekat::subview(dvel, icol); // deposition flux [1/cm^2/s]
+        view_1d dflx_col =
+            ekat::subview(dflx, icol);  // deposition velocity [1/cm/s]
+        view_1d dvel_col =
+            ekat::subview(dvel, icol);  // deposition flux [1/cm^2/s]
 
         // Output: values are dvel, dvlx
         // Input/Output: progs::stateq, progs::qqcw
@@ -878,14 +881,16 @@ void MAMMicrophysics::run_impl(const double dt) {
             wetdens_icol, dry_atm.phis(icol), cmfdqr, prain_icol, nevapr_icol,
             work_set_het_icol, drydep_data, dvel_col, dflx_col, progs);
 
-	team.team_barrier();
+        team.team_barrier();
         // Update constituent fluxes with gas drydep fluxes (dflx)
         // FIXME: Possible units mismatch (dflx is in kg/cm2/s but
         // constituent_fluxes is kg/m2/s) (Following mimics Fortran code
         // behavior but we should look into it)
-	Kokkos::parallel_for(Kokkos::TeamThreadRange(team, offset_aerosol, mam4::pcnst), [&](const int ispc) {
-          constituent_fluxes(icol, ispc) -= dflx_col(ispc - offset_aerosol);
-        });
+        Kokkos::parallel_for(
+            Kokkos::TeamThreadRange(team, offset_aerosol, mam4::pcnst),
+            [&](const int ispc) {
+              constituent_fluxes(icol, ispc) -= dflx_col(ispc - offset_aerosol);
+            });
       });  // parallel_for for the column loop
   Kokkos::fence();
 

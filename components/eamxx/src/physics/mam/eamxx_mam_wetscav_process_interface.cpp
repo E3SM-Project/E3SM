@@ -383,9 +383,9 @@ void MAMWetscav::run_impl(const double dt) {
   }
 
   Real scavimptblnum[mam4::aero_model::nimptblgrow_total]
-                          [mam4::AeroConfig::num_modes()];
+                    [mam4::AeroConfig::num_modes()];
   Real scavimptblvol[mam4::aero_model::nimptblgrow_total]
-                          [mam4::AeroConfig::num_modes()];
+                    [mam4::AeroConfig::num_modes()];
 
   mam4::wetdep::init_scavimptbl(scavimptblvol, scavimptblnum);
 
