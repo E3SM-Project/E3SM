@@ -153,22 +153,26 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   //  - we have one between:
   //    - vertically remapped output
   //    - field_at_XhPa diagnostic
+  //    - fields that can contain invalid values (not yet supported, but RAD may want this at some point)
   // We already set m_track_avg_cnt to true if field_at_XhPa is found in init_diagnostics.
   // Hence, here we only check if vert remap is active
 
-  if (params.isParameter("track_avg_cnt")) {
-    // This is to be used for unit testing only, so that we can test avg cnt even
-    // if there is no vert remap and no field_at_XhPa diagnostic in the stream
-    m_track_avg_cnt = params.get<bool>("track_avg_cnt");
+  if (m_avg_type!=OutputAvgType::Instant) {
+    if (params.isParameter("track_avg_cnt")) {
+      // This is to be used for unit testing only, so that we can test avg cnt even
+      // if there is no vert remap and no field_at_XhPa diagnostic in the stream
+      m_track_avg_cnt = params.get<bool>("track_avg_cnt");
+    }
+    if (use_vertical_remap_from_file) {
+      m_track_avg_cnt = true;
+    }
+    if (params.isParameter("fill_threshold")) {
+      m_avg_coeff_threshold = params.get<Real>("fill_threshold");
+    }
   }
-  if (use_vertical_remap_from_file) {
-    m_track_avg_cnt = true;
-  }
+
   if (params.isParameter("fill_value")) {
     m_fill_value = static_cast<float>(params.get<double>("fill_value"));
-  }
-  if (params.isParameter("fill_threshold")) {
-    m_avg_coeff_threshold = params.get<Real>("fill_threshold");
   }
 
   // Setup remappers - if needed
@@ -938,13 +942,13 @@ init_diagnostics (const std::shared_ptr<const FieldManager>& fm_model)
       diag_avg_cnt_name = "_"
                         + params.get<std::string>("pressure_value")
                         + params.get<std::string>("pressure_units");
-      m_track_avg_cnt = m_track_avg_cnt || m_avg_type!=OutputAvgType::Instant;
+      m_track_avg_cnt |= m_avg_type!=OutputAvgType::Instant;
     } else if (diag->name()=="FieldAtHeight") {
       if (params.get<std::string>("surface_reference")=="sealevel") {
         diag_avg_cnt_name = "_"
                           + params.get<std::string>("height_value")
                           + params.get<std::string>("height_units") + "_above_sealevel";
-        m_track_avg_cnt = m_track_avg_cnt || m_avg_type!=OutputAvgType::Instant;
+        m_track_avg_cnt |= m_avg_type!=OutputAvgType::Instant;
       }
     } else if (diag->name()=="AerosolOpticalDepth550nm") {
       params.set<double>("mask_value", m_fill_value);
