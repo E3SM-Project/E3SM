@@ -25,7 +25,8 @@ void update_gas_aerosols_using_constituents(
   int istart = mam4::utils::gasses_start_ind();
 
   // Loop through all columns to update tracer mixing rations
-  Kokkos::parallel_for( "get_activate_frac", ncol, KOKKOS_LAMBDA(int icol) {
+  Kokkos::parallel_for(
+      "get_activate_frac", ncol, KOKKOS_LAMBDA(int icol) {
         //----------------------------------------------------------------------
         // To form EAM like state%q array, we need prognostics (gas and aerosol
         // mmrs) atmosphere (qv, qc, nc, ni, etc.)
