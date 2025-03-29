@@ -737,6 +737,34 @@ contains
                 if (atm_frac_correct) fractions_a%rAttr(kl,n) = 1.0_r8
              endif
           enddo
+          ! case --res r05_r05 --compset RMOSGPCC  is coming here 
+          ! there are no active ice or ocn comps
+          ! ist is almost like above, except the ofrac is modified too
+          if (mbaxid .ge. 0  ) then ! //
+            tagname = 'lfrac'//C_NULL_CHAR ! 'lfrac
+            allocate(tagValues(lSize) )
+            tagValues = fractions_a%rAttr(kl,:)
+            kgg = mct_aVect_indexIA(dom_a%data ,"GlobGridNum" ,perrWith=subName)
+            allocate(GlobalIds(lSize))
+            GlobalIds = dom_a%data%iAttr(kgg,:)
+            ! set on atmosphere instance
+            ierr = iMOAB_SetDoubleTagStorageWithGid ( mbaxid, tagname, lSize , ent_type, tagValues, GlobalIds )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in setting lfrac on atm   '
+               call shr_sys_abort(subname//' ERROR in setting lfrac on atm ')
+            endif
+            ! unlike above, set ofrac too
+            tagname = 'ofrac'//C_NULL_CHAR ! 'ofrac
+            tagValues = fractions_a%rAttr(ko,:)
+            ! set on atmosphere instance, ofrac value
+            ierr = iMOAB_SetDoubleTagStorageWithGid ( mbaxid, tagname, lSize , ent_type, tagValues, GlobalIds )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in setting ofrac on atm   '
+               call shr_sys_abort(subname//' ERROR in setting ofrac on atm ')
+            endif
+            deallocate(GlobalIds)
+            deallocate(tagValues)
+          endif
        endif
     endif
 
@@ -753,6 +781,24 @@ contains
           kk = mct_aVect_indexRA(fractions_l,"lfrin",perrWith=subName)
           kl = mct_aVect_indexRA(fractions_l,"lfrac",perrWith=subName)
           fractions_l%rAttr(kl,:) = fractions_l%rAttr(kk,:)
+          ! still need to do MOAB case, basically copy the value of lfrin to lfrac, on land
+          ! fractions / on land moab instance; otherwise would stay at 0 :) 
+          ierr  = iMOAB_GetMeshInfo ( mblxid, nvert, nvise, nbl, nsurf, nvisBC )
+          arrSize = nvise(1) ! there is one tag that we need to copy
+          allocate(tagValues(arrSize) )
+          tagname = 'lfrin'//C_NULL_CHAR
+          ierr = iMOAB_GetDoubleTagStorage ( mbixid, tagname, arrSize , ent_type, tagValues)
+          if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in getting lfrin on lnd   '
+            call shr_sys_abort(subname//' ERROR in getting lfrin on lnd  ')
+          endif
+          tagname = 'lfrac'//C_NULL_CHAR 
+          ierr = iMOAB_SetDoubleTagStorage ( mbixid, tagname, arrSize , ent_type, tagValues)
+          if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in setting lfrac on lnd   '
+            call shr_sys_abort(subname//' ERROR in setting lfrac on lnd  ')
+          endif
+          deallocate(tagValues)
        end if
     end if
     if (lnd_present .and. rof_present) then
