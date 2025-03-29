@@ -78,6 +78,12 @@ void MAMMicrophysics::set_grids(
   add_tracers_wet_atm();
   add_fields_dry_atm();
 
+    //NOTE: droplet number (nc) is treated in a special way by MAM4xx
+  //depending on the MAM4xx processes active in a simulation
+  
+  // cloud liquid number mixing ratio [1/kg]
+  add_tracer<Required>("nc", grid_, n_unit);
+
   constexpr auto m2 = pow(m, 2);
   constexpr auto s2 = pow(s, 2);
 
