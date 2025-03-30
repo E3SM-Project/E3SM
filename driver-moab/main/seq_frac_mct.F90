@@ -543,7 +543,7 @@ contains
          ! Determine global gridpoint number attribute, GlobGridNum, automatically in ggrid
          call mct_gsMap_orderedPoints(gsmap_r, my_task, dof)
          ! again, we are setting on the river instance that is also used for ocean coupling
-         ierr = iMOAB_SetDoubleTagStorageWithGid ( mbrxid, tagname, lSize , ent_type, tagValues, GlobalIds )
+         ierr = iMOAB_SetDoubleTagStorageWithGid ( mbrxid, tagname, lSize , ent_type, tagValues, dof )
          if (ierr .ne. 0) then
             write(logunit,*) subname,' error in setting rfrac on rof   '
             call shr_sys_abort(subname//' ERROR in setting rfrac on rof ')
