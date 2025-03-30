@@ -351,6 +351,10 @@ struct Buffer {
 
   uview_2d work;
 
+  uview_1d temporal_views;
+
+  int len_temporal_views{0};
+
   // storage
   Real *wsm_data;
 
@@ -361,12 +365,19 @@ struct Buffer {
       num_2d_scratch < max_num_2d_scratch ,
       "Error! Insufficient number of scratch size in mam buffer; increase max_num_2d_scratch\n");
   }
+
+  void set_len_temporal_views(const int len_temporal_views_len)
+  {
+    len_temporal_views=len_temporal_views_len;
+  }
+
 };
 
 // ON HOST, returns the number of bytes of device memory needed by the above
 // Buffer type given the number of columns and vertical levels
 inline size_t buffer_size(const int ncol, const int nlev,
-                          const int num_2d_scratch, const int work_len) {
+                          const int num_2d_scratch,
+                          const int work_len) {
   const int num_2d_mid = Buffer::min_num_2d_mid + num_2d_scratch;
   return sizeof(Real) * (num_2d_mid* ncol * nlev + ncol * work_len +
                          Buffer::num_2d_iface * ncol * (nlev + 1));
@@ -451,6 +462,9 @@ inline size_t init_buffer(const ATMBufferManager &buffer_manager,
   // views
   buffer.work = view_2d(mem, ncol, work_len);
   mem += ncol*work_len;
+
+  buffer.temporal_views= view_1d(mem, buffer.len_temporal_views);
+  mem += buffer.len_temporal_views;
 
   // WSM data
   buffer.wsm_data = mem;
