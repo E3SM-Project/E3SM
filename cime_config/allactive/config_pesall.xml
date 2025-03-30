@@ -1090,9 +1090,9 @@
     </mach>
   </grid>
   <grid name="a%ne30np4">
-    <mach name="summit|ascent|polaris">
+    <mach name="summit|ascent|polaris|aurora">
       <pes compset="any" pesize="any">
-        <comment>summit|ascent|polaris: any compset on ne30np4 grid</comment>
+        <comment>summit|ascent|polaris|aurora: any compset ne30np4 grid on 2 nodes</comment>
         <ntasks>
           <ntasks_atm>-2</ntasks_atm>
           <ntasks_lnd>-2</ntasks_lnd>
@@ -1103,16 +1103,6 @@
           <ntasks_glc>-2</ntasks_glc>
           <ntasks_wav>-2</ntasks_wav>
         </ntasks>
-        <nthrds>
-          <nthrds_atm>1</nthrds_atm>
-          <nthrds_lnd>1</nthrds_lnd>
-          <nthrds_rof>1</nthrds_rof>
-          <nthrds_ice>1</nthrds_ice>
-          <nthrds_ocn>1</nthrds_ocn>
-          <nthrds_glc>1</nthrds_glc>
-          <nthrds_wav>1</nthrds_wav>
-          <nthrds_cpl>1</nthrds_cpl>
-        </nthrds>
       </pes>
       <pes compset=".*EAM.+ELM.+MPASSI.+SGLC.+SWAV.+BGC.*" pesize="any">
         <comment>summit|ascent|polaris: BGC compset on ne30np4 grid</comment>
@@ -1126,16 +1116,6 @@
           <ntasks_glc>-4</ntasks_glc>
           <ntasks_wav>-4</ntasks_wav>
         </ntasks>
-        <nthrds>
-          <nthrds_atm>1</nthrds_atm>
-          <nthrds_lnd>1</nthrds_lnd>
-          <nthrds_rof>1</nthrds_rof>
-          <nthrds_ice>1</nthrds_ice>
-          <nthrds_ocn>1</nthrds_ocn>
-          <nthrds_glc>1</nthrds_glc>
-          <nthrds_wav>1</nthrds_wav>
-          <nthrds_cpl>1</nthrds_cpl>
-        </nthrds>
       </pes>
       <pes compset=".*SCREAM.*" pesize="any">
         <comment>summit|ascent|polaris: SCREAM atm compset on ne30np4 grid</comment>
@@ -1149,16 +1129,6 @@
           <ntasks_glc>-4</ntasks_glc>
           <ntasks_wav>-4</ntasks_wav>
         </ntasks>
-        <nthrds>
-          <nthrds_atm>1</nthrds_atm>
-          <nthrds_lnd>1</nthrds_lnd>
-          <nthrds_rof>1</nthrds_rof>
-          <nthrds_ice>1</nthrds_ice>
-          <nthrds_ocn>1</nthrds_ocn>
-          <nthrds_glc>1</nthrds_glc>
-          <nthrds_wav>1</nthrds_wav>
-          <nthrds_cpl>1</nthrds_cpl>
-        </nthrds>
       </pes>
     </mach>
     <mach name="improv">
