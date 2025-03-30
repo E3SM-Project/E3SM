@@ -86,10 +86,12 @@ class MAMOptics final : public MAMGenericInterface {
   mam_coupling::DryAtmosphere dry_atm_;
   // workspace manager for internal local variables
   mam_coupling::Buffer buffer_;
-
-  int work_len_;
-
   int num_2d_scratch_= 8;
+
+  int get_len_temporal_views();
+  void init_temporal_views();
+  int len_temporal_views_{0};
+
 };  // MAMOptics
 
 }  // namespace scream
