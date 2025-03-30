@@ -158,6 +158,10 @@ class MAMMicrophysics final : public MAMGenericInterface {
   view_2d dflx_;
   view_2d dvel_;
   int num_2d_scratch_= 9;
+  int get_len_temporal_views();
+  void init_temporal_views();
+  int len_temporal_views_{0};
+
 };  // MAMMicrophysics
 
 }  // namespace scream
