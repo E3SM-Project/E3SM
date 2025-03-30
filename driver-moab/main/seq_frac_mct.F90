@@ -140,7 +140,7 @@ module seq_frac_mct
 
   ! !USES:
 
-  use shr_kind_mod     , only: R8 => SHR_KIND_R8
+  use shr_kind_mod     , only: R8 => SHR_KIND_R8, IN=>SHR_KIND_IN
   use shr_sys_mod
   use shr_const_mod
 
@@ -287,6 +287,7 @@ contains
 
     !----- local -----
     type(mct_ggrid), pointer    :: dom_a
+    type(mct_gsmap), pointer    :: gsmap_a ! see if we can get from here the global ids (missing from dom_a)
     type(mct_ggrid), pointer    :: dom_i
     type(mct_ggrid), pointer    :: dom_l
     type(mct_ggrid), pointer    :: dom_o
@@ -326,11 +327,13 @@ contains
     character*32             ::  wgtIdef
     real(r8),    allocatable :: tagValues(:) ! used for setting some default tags
     integer ,    allocatable :: GlobalIds(:) ! used for setting values associated with ids
+    integer(IN), pointer :: dof(:)    !
     integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
     integer kgg  ! index in global number attribute, used for global id in MOAB 
     integer idintx ! used for context for intx atm - ocn
     integer id_join ! used for example for atm%cplcompid
     integer :: mpicom ! we are on coupler PES here
+    integer :: my_task !
     character(30)            :: outfile, wopts
 
 
@@ -361,6 +364,7 @@ contains
     dom_w => component_get_dom_cx(wav)
     dom_z => component_get_dom_cx(iac)
 
+    mpicom = seq_comm_mpicom(CPLID)
     debug_old = seq_frac_debug
     seq_frac_debug = 2
 
@@ -470,16 +474,20 @@ contains
          allocate(tagValues(lSize) )
          tagValues = dom_l%data%rAttr(kf,:)
          kgg = mct_aVect_indexIA(dom_l%data ,"GlobGridNum" ,perrWith=subName)
-         allocate(GlobalIds(lSize))
-         GlobalIds = dom_l%data%iAttr(kgg,:)
-
+         !allocate(GlobalIds(lSize))
+         !GlobalIds = dom_l%data%iAttr(kgg,:)
+         gsmap_a  => component_get_gsmap_cx(atm) ! gsmap_ax
+         call mpi_comm_rank(mpicom,my_task,ierr)
+         ! Determine global gridpoint number attribute, GlobGridNum, automatically in ggrid
+         call mct_gsMap_orderedPoints(gsmap_a, my_task, dof)
          ! ent_type should be 3, FV
-         ierr = iMOAB_SetDoubleTagStorageWithGid ( mblxid, tagname, lSize , ent_type, tagValues, GlobalIds )
+         ierr = iMOAB_SetDoubleTagStorageWithGid ( mblxid, tagname, lSize , ent_type, tagValues, dof )
          if (ierr .ne. 0) then
             write(logunit,*) subname,' error in setting lfrin on lnd   '
             call shr_sys_abort(subname//' ERROR in setting lfrin on lnd')
          endif
-         deallocate(GlobalIds)
+         !deallocate(GlobalIds)
+         deallocate(dof)
          deallocate(tagValues)
 
        endif
@@ -745,10 +753,14 @@ contains
             allocate(tagValues(lSize) )
             tagValues = fractions_a%rAttr(kl,:)
             kgg = mct_aVect_indexIA(dom_a%data ,"GlobGridNum" ,perrWith=subName)
-            allocate(GlobalIds(lSize))
-            GlobalIds = dom_a%data%iAttr(kgg,:)
+            !allocate(GlobalIds(lSize))
+            ! GlobalIds = dom_a%data%iAttr(kgg,:)
+            gsmap_a  => component_get_gsmap_cx(atm) ! gsmap_ax
+            call mpi_comm_rank(mpicom,my_task,ierr)
+            ! Determine global gridpoint number attribute, GlobGridNum, automatically in ggrid
+            call mct_gsMap_orderedPoints(gsmap_a, my_task, dof)
             ! set on atmosphere instance
-            ierr = iMOAB_SetDoubleTagStorageWithGid ( mbaxid, tagname, lSize , ent_type, tagValues, GlobalIds )
+            ierr = iMOAB_SetDoubleTagStorageWithGid ( mbaxid, tagname, lSize , ent_type, tagValues, dof )
             if (ierr .ne. 0) then
                write(logunit,*) subname,' error in setting lfrac on atm   '
                call shr_sys_abort(subname//' ERROR in setting lfrac on atm ')
@@ -757,12 +769,12 @@ contains
             tagname = 'ofrac'//C_NULL_CHAR ! 'ofrac
             tagValues = fractions_a%rAttr(ko,:)
             ! set on atmosphere instance, ofrac value
-            ierr = iMOAB_SetDoubleTagStorageWithGid ( mbaxid, tagname, lSize , ent_type, tagValues, GlobalIds )
+            ierr = iMOAB_SetDoubleTagStorageWithGid ( mbaxid, tagname, lSize , ent_type, tagValues, dof )
             if (ierr .ne. 0) then
                write(logunit,*) subname,' error in setting ofrac on atm   '
                call shr_sys_abort(subname//' ERROR in setting ofrac on atm ')
             endif
-            deallocate(GlobalIds)
+            deallocate(dof)
             deallocate(tagValues)
           endif
        endif
