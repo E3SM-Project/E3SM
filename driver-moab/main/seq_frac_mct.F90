@@ -288,6 +288,7 @@ contains
     !----- local -----
     type(mct_ggrid), pointer    :: dom_a
     type(mct_gsmap), pointer    :: gsmap_a ! see if we can get from here the global ids (missing from dom_a)
+    type(mct_gsmap), pointer    :: gsmap_l
     type(mct_gsmap), pointer    :: gsmap_r 
     type(mct_gsmap), pointer    :: gsmap_i ! ofrac on ice error 
     type(mct_ggrid), pointer    :: dom_i
@@ -475,13 +476,13 @@ contains
          tagname = 'lfrin'//C_NULL_CHAR ! 'lfrin'
          allocate(tagValues(lSize) )
          tagValues = dom_l%data%rAttr(kf,:)
-         kgg = mct_aVect_indexIA(dom_l%data ,"GlobGridNum" ,perrWith=subName)
+         !kgg = mct_aVect_indexIA(dom_l%data ,"GlobGridNum" ,perrWith=subName)
          !allocate(GlobalIds(lSize))
          !GlobalIds = dom_l%data%iAttr(kgg,:)
-         gsmap_a  => component_get_gsmap_cx(atm) ! gsmap_ax
+         gsmap_l  => component_get_gsmap_cx(lnd) ! gsmap_lx
          call mpi_comm_rank(mpicom,my_task,ierr)
          ! Determine global gridpoint number attribute, GlobGridNum, automatically in ggrid
-         call mct_gsMap_orderedPoints(gsmap_a, my_task, dof)
+         call mct_gsMap_orderedPoints(gsmap_l, my_task, dof)
          ! ent_type should be 3, FV
          ierr = iMOAB_SetDoubleTagStorageWithGid ( mblxid, tagname, lSize , ent_type, tagValues, dof )
          if (ierr .ne. 0) then
@@ -618,6 +619,7 @@ contains
             call shr_sys_abort(subname//' ERROR in setting ofrac on ice ')
          endif
          !deallocate(GlobalIds)
+         deallocate(tagValues)
          deallocate(dof)
        endif
 
@@ -925,7 +927,7 @@ contains
     integer                  :: n
     integer                  :: ki, kl, ko, kf
     real(r8),allocatable :: fcorr(:)
-    integer(IN), pointer :: dof(:)    !
+    integer(IN), pointer, save :: dof(:)    !
 
     logical, save :: first_time = .true.
 ! moab
