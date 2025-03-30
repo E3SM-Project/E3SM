@@ -32,8 +32,9 @@ void MAMOptics::set_grids(
   nswbands_ = mam4::modal_aer_opt::nswbands;     // number of shortwave bands
   nlwbands_ = mam4::modal_aer_opt::nlwbands;     // number of longwave bands
 
-  work_len_ = mam4::modal_aer_opt::get_work_len_aerosol_optics();
-
+  len_temporal_views_=get_len_temporal_views();
+  buffer_.set_len_temporal_views(len_temporal_views_);
+  buffer_.set_num_scratch(num_2d_scratch_);
   // Define the different field layouts that will be used for this process
 
   // Define aerosol optics fields computed by this process.
@@ -90,17 +91,68 @@ void MAMOptics::set_grids(
 }
 
 size_t MAMOptics::requested_buffer_size_in_bytes() const {
-  return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_, work_len_);
+  return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_, 0) + sizeof(Real) * len_temporal_views_;
+}
+
+int MAMOptics::get_len_temporal_views()
+{
+  int work_len=0;
+  // ssa_cmip6_sw_, af_cmip6_sw_, ext_cmip6_sw_
+  work_len += 3*ncol_*nlev_*nswbands_;
+  // ext_cmip6_lw_
+  work_len += ncol_*nlev_*nlwbands_;
+  // work_
+  work_len += ncol_*mam4::modal_aer_opt::get_work_len_aerosol_optics();
+  // tau_ssa_g_sw_, tau_ssa_sw_, tau_sw_, tau_f_sw_
+  const int nlev_f = nlev_ + 1;
+  work_len+= 4*ncol_*nswbands_*nlev_f;
+  return work_len;
+}
+void MAMOptics::init_temporal_views()
+{
+  auto work_ptr = (Real *)buffer_.temporal_views.data();
+  // prescribed volcanic aerosols.
+  ssa_cmip6_sw_ =
+      mam_coupling::view_3d(work_ptr, ncol_, nlev_, nswbands_);
+  work_ptr += ncol_*nlev_*nswbands_;
+  af_cmip6_sw_ = mam_coupling::view_3d(work_ptr, ncol_, nlev_, nswbands_);
+  work_ptr += ncol_*nlev_*nswbands_;
+  ext_cmip6_sw_ =
+      mam_coupling::view_3d(work_ptr, ncol_, nswbands_, nlev_);
+  work_ptr += ncol_*nlev_*nswbands_;
+  ext_cmip6_lw_ =
+      mam_coupling::view_3d(work_ptr, ncol_, nlev_, nlwbands_);
+  work_ptr += ncol_*nlev_*nlwbands_;
+
+  const int work_len = mam4::modal_aer_opt::get_work_len_aerosol_optics();
+  work_              = mam_coupling::view_2d(work_ptr, ncol_, work_len );
+  work_ptr += ncol_*work_len;
+
+  // shortwave aerosol scattering asymmetry parameter [unitless]
+  tau_ssa_g_sw_ =
+      mam_coupling::view_3d(work_ptr, ncol_, nswbands_, nlev_ + 1);
+  const int nlev_f = nlev_ + 1;
+  work_ptr += ncol_*nswbands_*nlev_f;
+  // shortwave aerosol single-scattering albedo [unitless]
+  tau_ssa_sw_ =
+      mam_coupling::view_3d(work_ptr, ncol_, nswbands_, nlev_ + 1);
+  work_ptr += ncol_*nswbands_*nlev_f;
+  // shortwave aerosol extinction optical depth [unitless]
+  tau_sw_ = mam_coupling::view_3d(work_ptr, ncol_, nswbands_, nlev_ + 1);
+  work_ptr += ncol_*nswbands_*nlev_f;
+  // aerosol forward scattered fraction * tau * w
+  tau_f_sw_ = mam_coupling::view_3d(work_ptr, ncol_, nswbands_, nlev_ + 1);
+  work_ptr += ncol_*nswbands_*nlev_f;
+
 }
 
 void MAMOptics::init_buffers(const ATMBufferManager &buffer_manager) {
-  buffer_.set_num_scratch(num_2d_scratch_);
   EKAT_REQUIRE_MSG(
       buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(),
       "Error! Insufficient buffer size.\n");
 
   size_t used_mem =
-      mam_coupling::init_buffer(buffer_manager, ncol_, nlev_, buffer_, work_len_);
+      mam_coupling::init_buffer(buffer_manager, ncol_, nlev_, buffer_, 0);
   EKAT_REQUIRE_MSG(used_mem == requested_buffer_size_in_bytes(),
                    "Error! Used memory != requested memory for MAMMOptics.");
 }
@@ -151,37 +203,12 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   dry_atm_.phis  = get_field_in("phis").get_view<const Real *>();
   dry_atm_.p_del = get_field_in("pseudo_density_dry").get_view<const Real **>();
 
-  // prescribed volcanic aerosols.
-  ssa_cmip6_sw_ =
-      mam_coupling::view_3d("ssa_cmip6_sw", ncol_, nlev_, nswbands_);
-  af_cmip6_sw_ = mam_coupling::view_3d("af_cmip6_sw", ncol_, nlev_, nswbands_);
-  ext_cmip6_sw_ =
-      mam_coupling::view_3d("ext_cmip6_sw", ncol_, nswbands_, nlev_);
-  ext_cmip6_lw_ =
-      mam_coupling::view_3d("ext_cmip6_lw_", ncol_, nlev_, nlwbands_);
-  // FIXME: We need to get ssa_cmip6_sw_, af_cmip6_sw_, ext_cmip6_sw_,
-  // ext_cmip6_lw_ from a netcdf file.
-  // We will rely on eamxx to interpolate/map data from netcdf files.
-  // The io interface in eamxx is being upgraded.
-  // Thus, I will wait until changes in the eamxx's side are completed.
+  init_temporal_views();
+
   Kokkos::deep_copy(ssa_cmip6_sw_, 0.0);
   Kokkos::deep_copy(af_cmip6_sw_, 0.0);
   Kokkos::deep_copy(ext_cmip6_sw_, 0.0);
   Kokkos::deep_copy(ext_cmip6_lw_, 0.0);
-
-
-  work_              = buffer_.work;;
-
-  // shortwave aerosol scattering asymmetry parameter [unitless]
-  tau_ssa_g_sw_ =
-      mam_coupling::view_3d("tau_ssa_g_sw_", ncol_, nswbands_, nlev_ + 1);
-  // shortwave aerosol single-scattering albedo [unitless]
-  tau_ssa_sw_ =
-      mam_coupling::view_3d("tau_ssa_sw_", ncol_, nswbands_, nlev_ + 1);
-  // shortwave aerosol extinction optical depth [unitless]
-  tau_sw_ = mam_coupling::view_3d("tau_sw_", ncol_, nswbands_, nlev_ + 1);
-  // aerosol forward scattered fraction * tau * w
-  tau_f_sw_ = mam_coupling::view_3d("tau_f_sw_", ncol_, nswbands_, nlev_ + 1);
 
   // read table info
   {
