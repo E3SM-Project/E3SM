@@ -288,6 +288,7 @@ contains
     !----- local -----
     type(mct_ggrid), pointer    :: dom_a
     type(mct_gsmap), pointer    :: gsmap_a ! see if we can get from here the global ids (missing from dom_a)
+    type(mct_gsmap), pointer    :: gsmap_r 
     type(mct_ggrid), pointer    :: dom_i
     type(mct_ggrid), pointer    :: dom_l
     type(mct_ggrid), pointer    :: dom_o
@@ -534,16 +535,21 @@ contains
          tagname = 'rfrac'//C_NULL_CHAR ! 'rfrac'
          allocate(tagValues(lSize) )
          tagValues = dom_r%data%rAttr(kf,:)
-         kgg = mct_aVect_indexIA(dom_r%data ,"GlobGridNum" ,perrWith=subName)
-         allocate(GlobalIds(lSize))
-         GlobalIds = dom_r%data%iAttr(kgg,:)
+         !kgg = mct_aVect_indexIA(dom_r%data ,"GlobGridNum" ,perrWith=subName)
+         !allocate(GlobalIds(lSize))
+         !GlobalIds = dom_r%data%iAttr(kgg,:)
+         gsmap_r  => component_get_gsmap_cx(rof) ! gsmap_rx
+         call mpi_comm_rank(mpicom,my_task,ierr)
+         ! Determine global gridpoint number attribute, GlobGridNum, automatically in ggrid
+         call mct_gsMap_orderedPoints(gsmap_r, my_task, dof)
          ! again, we are setting on the river instance that is also used for ocean coupling
          ierr = iMOAB_SetDoubleTagStorageWithGid ( mbrxid, tagname, lSize , ent_type, tagValues, GlobalIds )
          if (ierr .ne. 0) then
             write(logunit,*) subname,' error in setting rfrac on rof   '
             call shr_sys_abort(subname//' ERROR in setting rfrac on rof ')
          endif
-         deallocate(GlobalIds)
+         !deallocate(GlobalIds)
+         deallocate(dof)
          deallocate(tagValues)
 
        endif
