@@ -53,6 +53,17 @@ void MAMMicrophysics::set_grids(
   ncol_ = grid_->get_num_local_dofs();       // number of columns on this rank
   nlev_ = grid_->get_num_vertical_levels();  // number of levels per column
 
+  // create our photolysis rate calculation table
+  const std::string rsf_file = m_params.get<std::string>("mam4_rsf_file");
+  const std::string xs_long_file =
+      m_params.get<std::string>("mam4_xs_long_file");
+
+  photo_table_ = impl::read_photo_table(rsf_file, xs_long_file);
+  // NOTE: we need photo_table_ before getting len_temporal_views_.
+  len_temporal_views_=get_len_temporal_views();
+  buffer_.set_len_temporal_views(len_temporal_views_);
+  buffer_.set_num_scratch(num_2d_scratch_);
+
   // get column geometry and locations
   col_latitudes_ = grid_->get_geometry_data("lat").get_view<const Real *>();
 
@@ -324,12 +335,6 @@ void MAMMicrophysics::set_grids(
     mam_coupling::find_season_index_reader(season_wes_file, clat,
                                            index_season_lai_);
   }
-
-  // Work arrays for return values from
-  // perform_atmospheric_chemistry_and_microphysics
-  constexpr int gas_pcnst = mam_coupling::gas_pcnst();
-  dflx_                   = view_2d("dflx", ncol_, gas_pcnst);
-  dvel_                   = view_2d("dvel", ncol_, gas_pcnst);
 }  // set_grids
 
 // ================================================================
@@ -339,7 +344,7 @@ void MAMMicrophysics::set_grids(
 // the above. Buffer type given the number of columns and vertical
 // levels
 size_t MAMMicrophysics::requested_buffer_size_in_bytes() const {
-  return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_, 0);
+  return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_, 0) + sizeof(Real) * len_temporal_views_;
 }
 
 // ================================================================
@@ -351,7 +356,6 @@ size_t MAMMicrophysics::requested_buffer_size_in_bytes() const {
 // number of bytes allocated.
 
 void MAMMicrophysics::init_buffers(const ATMBufferManager &buffer_manager) {
-  buffer_.set_num_scratch(num_2d_scratch_);
   size_t used_mem =
       mam_coupling::init_buffer(buffer_manager, ncol_, nlev_, buffer_, 0);
   EKAT_REQUIRE_MSG(used_mem == requested_buffer_size_in_bytes(),
@@ -363,7 +367,52 @@ void MAMMicrophysics::init_buffers(const ATMBufferManager &buffer_manager) {
                        << std::to_string(requested_buffer_size_in_bytes())
                        << ". \n");
 }
+int MAMMicrophysics::get_len_temporal_views()
+{
+  const int photo_table_len = get_photo_table_work_len(photo_table_);
+  const int sethet_work_len = mam4::mo_sethet::get_total_work_len_sethet();
+  constexpr int extcnt = mam4::gas_chemistry::extcnt;
+  int work_len=0;
+  // work_photo_table_
+  work_len += ncol_*photo_table_len;
+  // work_set_het_
+  work_len += ncol_*sethet_work_len;
+  // photo_rates_
+  work_len += ncol_*nlev_*mam4::mo_photo::phtcnt;
+  // invariants_
+  work_len += ncol_*nlev_*mam4::gas_chemistry::nfs;
+  // extfrc_
+  work_len +=ncol_*nlev_*extcnt;
+  // dflx_, dvel_
+  constexpr int gas_pcnst = mam_coupling::gas_pcnst();
+  work_len+=2*ncol_*gas_pcnst;
+  return work_len;
+}
+void MAMMicrophysics::init_temporal_views()
+{
+  const int photo_table_len = get_photo_table_work_len(photo_table_);
+  const int sethet_work_len = mam4::mo_sethet::get_total_work_len_sethet();
+  constexpr int extcnt = mam4::gas_chemistry::extcnt;
+  auto work_ptr = (Real *)buffer_.temporal_views.data();
 
+  work_photo_table_ = view_2d(work_ptr, ncol_, photo_table_len);
+  work_ptr += ncol_*photo_table_len;
+  work_set_het_ = view_2d(work_ptr, ncol_, sethet_work_len);
+  work_ptr += ncol_*sethet_work_len;
+  // here's where we store per-column photolysis rates
+  photo_rates_ = view_3d(work_ptr, ncol_, nlev_, mam4::mo_photo::phtcnt);
+  work_ptr += ncol_*nlev_*mam4::mo_photo::phtcnt;
+  invariants_ = view_3d(work_ptr, ncol_, nlev_, mam4::gas_chemistry::nfs);
+  work_ptr += ncol_*nlev_*mam4::gas_chemistry::nfs;
+  extfrc_              = view_3d(work_ptr, ncol_, nlev_, extcnt);
+  work_ptr +=ncol_*nlev_*extcnt;
+  // Work arrays for return values from perform_atmospheric_chemistry_and_microphysics
+  constexpr int gas_pcnst = mam_coupling::gas_pcnst();
+  dflx_ = view_2d(work_ptr, ncol_, gas_pcnst);
+  work_ptr += ncol_*gas_pcnst;
+  dvel_ = view_2d(work_ptr, ncol_, gas_pcnst);
+  work_ptr +=ncol_*gas_pcnst;
+}
 // ================================================================
 //  INITIALIZE_IMPL
 // ================================================================
@@ -424,12 +473,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   // cloudborne aerosol, e.g., soa_c_1
   populate_cloudborne_dry_aero(dry_aero_, buffer_);
 
-  // create our photolysis rate calculation table
-  const std::string rsf_file = m_params.get<std::string>("mam4_rsf_file");
-  const std::string xs_long_file =
-      m_params.get<std::string>("mam4_xs_long_file");
 
-  photo_table_ = impl::read_photo_table(rsf_file, xs_long_file);
 
   // set field property checks for the fields in this process
   /* e.g.
@@ -468,15 +512,9 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
         chlorine_time_secs_);
   }  // LINOZ
 
-  const int photo_table_len = get_photo_table_work_len(photo_table_);
-  work_photo_table_ = view_2d("work_photo_table", ncol_, photo_table_len);
-  const int sethet_work_len = mam4::mo_sethet::get_total_work_len_sethet();
-  work_set_het_ = view_2d("work_set_het_array", ncol_, sethet_work_len);
+  init_temporal_views();
+  // FIXME : why are we only using nlev_ instead of ncol_xnlev?
   cmfdqr_       = view_1d("cmfdqr_", nlev_);
-
-  // here's where we store per-column photolysis rates
-  photo_rates_ = view_3d("photo_rates", ncol_, nlev_, mam4::mo_photo::phtcnt);
-
   // Load the first month into extfrc_lst_end.
   // Note: At the first time step, the data will be moved into extfrc_lst_beg,
   //       and extfrc_lst_end will be reloaded from file with the new month.
@@ -493,13 +531,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
         ElevatedEmissionsDataReader_[i], curr_month,
         *ElevatedEmissionsHorizInterp_[i], elevated_emis_data_[i]);
   }
-
-  invariants_ = view_3d("invarians", ncol_, nlev_, mam4::gas_chemistry::nfs);
-
-  constexpr int extcnt = mam4::gas_chemistry::extcnt;
-  extfrc_              = view_3d("extfrc_", ncol_, nlev_, extcnt);
-
-  //
+  // //
   acos_cosine_zenith_host_ = view_1d_host("host_acos(cosine_zenith)", ncol_);
   acos_cosine_zenith_      = view_1d("device_acos(cosine_zenith)", ncol_);
 
