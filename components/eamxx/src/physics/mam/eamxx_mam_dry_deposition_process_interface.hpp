@@ -104,6 +104,10 @@ class MAMDryDep final : public MAMGenericInterface {
   // workspace manager for internal local variables
   mam_coupling::Buffer buffer_;
 
+  int get_len_temporal_views();
+  void init_temporal_views();
+  int len_temporal_views_{0};
+
  public:
   using KT = ekat::KokkosTypes<DefaultDevice>;
 
