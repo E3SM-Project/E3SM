@@ -65,6 +65,9 @@ void MAMAci::set_grids(
 
   ncol_ = grid_->get_num_local_dofs();       // Number of columns on this rank
   nlev_ = grid_->get_num_vertical_levels();  // Number of levels per column
+  len_temporal_views_=get_len_temporal_views();
+  buffer_.set_num_scratch(num_2d_scratch_);
+  buffer_.set_len_temporal_views(len_temporal_views_);
 
   // Define the different field layouts that will be used for this process
   using namespace ShortFieldTagsNames;
@@ -193,7 +196,6 @@ void MAMAci::init_buffers(const ATMBufferManager &buffer_manager) {
   EKAT_REQUIRE_MSG(
       buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(),
       "Error! Insufficient buffer size.\n");
-  buffer_.set_num_scratch(num_2d_scratch_);
   size_t used_mem =
       mam_coupling::init_buffer(buffer_manager, ncol_, nlev_, buffer_);
   EKAT_REQUIRE_MSG(
@@ -201,6 +203,76 @@ void MAMAci::init_buffers(const ATMBufferManager &buffer_manager) {
       "Error! Used memory != requested memory for MAMMicrophysics.");
 }  // function init_buffers ends
 
+int MAMAci::get_len_temporal_views()
+{
+    // tke_
+    int work_len=0;
+    work_len += ncol_ * (nlev_ + 1);
+    //ccn_
+    work_len += ncol_ * nlev_ * mam4::ndrop::psat;
+    //raercol_cw_ and raercol_
+    work_len += 2* ncol_*mam4::ndrop::ncnst_tot*nlev_*2;
+    // factnum_, nact_, mact_
+    work_len += 3*ncol_*mam_coupling::num_aero_modes()*nlev_;
+    // kvh_int_, w_sec_int_
+    work_len += 2*ncol_*(nlev_+1);
+    // state_q_work_
+    work_len += ncol_*nlev_*mam4::aero_model::pcnst;
+    return work_len;
+}
+
+void MAMAci::init_temporal_views() {
+     auto work_ptr = (Real *)buffer_.temporal_views.data();
+     tke_ = view_2d(work_ptr, ncol_, nlev_ + 1);
+     work_ptr += ncol_ * (nlev_ + 1);
+     // number conc of aerosols activated at supersat [#/m^3]
+     // NOTE:  activation fraction fluxes are defined as
+     // fluxn = [flux of activated aero. number into cloud[#/m^2/s]]
+     //        / [aero. number conc. in updraft, just below cloudbase [#/m^3]]
+     ccn_ = view_3d(work_ptr, ncol_, nlev_, mam4::ndrop::psat);
+     work_ptr += ncol_ * nlev_ * mam4::ndrop::psat;
+
+     for(int i = 0; i < nlev_; ++i) {
+      for(int j = 0; j < 2; ++j) {
+        // Kokkos::resize(raercol_cw_[i][j], ncol_, mam4::ndrop::ncnst_tot);
+        raercol_cw_[i][j] = view_2d(work_ptr, ncol_, mam4::ndrop::ncnst_tot);
+        work_ptr += ncol_*mam4::ndrop::ncnst_tot;
+        // Kokkos::resize(raercol_[i][j], ncol_, mam4::ndrop::ncnst_tot);
+        raercol_[i][j]= view_2d(work_ptr,ncol_, mam4::ndrop::ncnst_tot);
+        work_ptr += ncol_*mam4::ndrop::ncnst_tot;
+      }
+     }
+    // activation fraction for aerosol number [fraction]
+    // Kokkos::resize(factnum_, ncol_, num_aero_modes, nlev_);
+    factnum_ = view_3d(work_ptr, ncol_,  mam_coupling::num_aero_modes(), nlev_);
+    work_ptr += ncol_*mam_coupling::num_aero_modes()*nlev_;
+
+
+    // nact : fractional aero. number activation rate [/s]
+    // Kokkos::resize(nact_, ncol_, nlev_, mam_coupling::num_aero_modes());
+    nact_ = view_3d(work_ptr, ncol_, nlev_, mam_coupling::num_aero_modes());
+    work_ptr += ncol_*nlev_*mam_coupling::num_aero_modes();
+
+
+    // mact : fractional aero. mass activation rate [/s]
+    // Kokkos::resize(mact_, ncol_, nlev_, mam_coupling::num_aero_modes());
+    mact_ = view_3d(work_ptr, ncol_, nlev_, mam_coupling::num_aero_modes());
+    work_ptr += ncol_*nlev_*mam_coupling::num_aero_modes();
+    // Eddy diffusivity of heat at the interfaces
+    // Kokkos::resize(kvh_int_, ncol_, nlev_ + 1);
+    kvh_int_ = view_2d(work_ptr, ncol_, nlev_ + 1);
+    work_ptr += ncol_*(nlev_+1);
+
+
+    // Vertical velocity variance at the interfaces
+    // Kokkos::resize(w_sec_int_, ncol_, nlev_ + 1);
+    w_sec_int_ = view_2d(work_ptr, ncol_, nlev_ + 1);
+    work_ptr += ncol_*(nlev_+1);
+    // state_q_work_ =
+    //     view_3d("state_q_work_", ncol_, nlev_, mam4::aero_model::pcnst);
+    state_q_work_ = view_3d(work_ptr, ncol_, nlev_, mam4::aero_model::pcnst);
+    work_ptr += ncol_*nlev_*mam4::aero_model::pcnst;
+}
 // ================================================================
 //  INITIALIZE_IMPL
 // ================================================================
@@ -294,7 +366,6 @@ void MAMAci::initialize_impl(const RunType run_type) {
 
   set_field_w_scratch_buffer(rho_, buffer_, true);
   set_field_w_scratch_buffer(w0_, buffer_, true);
-  Kokkos::resize(tke_, ncol_, nlev_ + 1);
   set_field_w_scratch_buffer(wsub_, buffer_, true);
   set_field_w_scratch_buffer(wsubice_, buffer_, true);
   set_field_w_scratch_buffer(wsig_, buffer_, true);
@@ -327,18 +398,10 @@ void MAMAci::initialize_impl(const RunType run_type) {
   // Diagnotics variables from the droplet activation scheme
   //---------------------------------------------------------------------------------
 
-  // activation fraction for aerosol number [fraction]
-  const int num_aero_modes = mam_coupling::num_aero_modes();
-  Kokkos::resize(factnum_, ncol_, num_aero_modes, nlev_);
-
   // cloud droplet number mixing ratio [#/kg]
   set_field_w_scratch_buffer(qcld_, buffer_, true);
 
-  // number conc of aerosols activated at supersat [#/m^3]
-  // NOTE:  activation fraction fluxes are defined as
-  // fluxn = [flux of activated aero. number into cloud[#/m^2/s]]
-  //        / [aero. number conc. in updraft, just below cloudbase [#/m^3]]
-  Kokkos::resize(ccn_, ncol_, nlev_, mam4::ndrop::psat);
+  init_temporal_views();
 
   // column-integrated droplet number [#/m2]
   set_field_w_scratch_buffer(ndropcol_, buffer_, true);
@@ -379,32 +442,10 @@ void MAMAci::initialize_impl(const RunType run_type) {
   for(int i = 0; i < mam4::aero_model::pcnst; ++i) {
     set_field_w_scratch_buffer(ptend_q_[i], buffer_, true);
   }
-  for(int i = 0; i < mam4::ndrop::pver; ++i) {
-    for(int j = 0; j < 2; ++j) {
-      Kokkos::resize(raercol_cw_[i][j], ncol_, mam4::ndrop::ncnst_tot);
-      Kokkos::resize(raercol_[i][j], ncol_, mam4::ndrop::ncnst_tot);
-    }
-  }
-
-  // nact : fractional aero. number activation rate [/s]
-  Kokkos::resize(nact_, ncol_, nlev_, mam_coupling::num_aero_modes());
-
-  // mact : fractional aero. mass activation rate [/s]
-  Kokkos::resize(mact_, ncol_, nlev_, mam_coupling::num_aero_modes());
-
-  // Eddy diffusivity of heat at the interfaces
-  Kokkos::resize(kvh_int_, ncol_, nlev_ + 1);
-
-  // Vertical velocity variance at the interfaces
-  Kokkos::resize(w_sec_int_, ncol_, nlev_ + 1);
   // Allocate work arrays
   for(int icnst = 0; icnst < mam4::ndrop::ncnst_tot; ++icnst) {
-    qqcw_fld_work_[icnst] = view_2d("qqcw_fld_work_", ncol_, nlev_);
     set_field_w_scratch_buffer(qqcw_fld_work_[icnst], buffer_, true);
   }
-  state_q_work_ =
-      view_3d("state_q_work_", ncol_, nlev_, mam4::aero_model::pcnst);
-
   //---------------------------------------------------------------------------------
   // Diagnotics variables from the hetrozenous ice nucleation scheme
   //---------------------------------------------------------------------------------

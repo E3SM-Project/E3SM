@@ -149,11 +149,12 @@ class MAMAci final : public MAMGenericInterface {
 
   // management of common atm process memory
   size_t requested_buffer_size_in_bytes() const override {
-    return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_, 0);
+    return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_, 0) + sizeof(Real) * len_temporal_views_;
   }
 
   void init_buffers(const ATMBufferManager &buffer_manager) override;
-
+  int get_len_temporal_views();
+  void init_temporal_views();
   // process behavior
   void initialize_impl(const RunType run_type) override;
   void run_impl(const double dt) override;
@@ -221,6 +222,7 @@ class MAMAci final : public MAMGenericInterface {
   mam_coupling::Buffer buffer_;
 
   int num_2d_scratch_= 192;
+  int len_temporal_views_{0};
 
 };  // MAMAci
 
