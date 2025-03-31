@@ -738,13 +738,13 @@ be lost if SCREAM_HACK_XML is not enabled.
     <o3_volume_mix_ratio hgrid="ne0np4_conus_x4v1_lowcon">0.0</o3_volume_mix_ratio>
 
     <!-- These are needed for ace just in case -->
-    <p_int type="real" COMPSET=".*EACE">100000.0</p_int>
+    <p_int type="real" COMPSET=".*EACE">10000.0</p_int>
     <pseudo_density type="real" COMPSET=".*EACE">1.0</pseudo_density>
-    <phis type="real" COMPSET=".*EACE">5.0</phis>
-    <p_mid type="real" COMPSET=".*EACE">100000.0</p_mid>
-    <T_mid type="real" COMPSET=".*EACE">300.0</T_mid>
-    <qv type="real" COMPSET=".*EACE">0.01</qv>
-    <horiz_winds type="real" COMPSET=".*EACE">5.0</horiz_winds>
+    <phis type="real" COMPSET=".*EACE">1.0</phis>
+    <p_mid type="real" COMPSET=".*EACE">10000.0</p_mid>
+    <T_mid type="real" COMPSET=".*EACE">280.0</T_mid>
+    <qv type="real" COMPSET=".*EACE">0.001</qv>
+    <horiz_winds type="real" COMPSET=".*EACE">1.0</horiz_winds>
     <sfc_flux_dir_nir type="real" COMPSET=".*EACE">5.0</sfc_flux_dir_nir>
     <sfc_flux_dir_vis type="real" COMPSET=".*EACE">5.0</sfc_flux_dir_vis>
     <sfc_flux_dif_nir type="real" COMPSET=".*EACE">5.0</sfc_flux_dif_nir>
@@ -761,13 +761,13 @@ be lost if SCREAM_HACK_XML is not enabled.
     <surf_sens_flux type="real" COMPSET=".*EACE">1.0</surf_sens_flux>
     <surf_evap type="real" COMPSET=".*EACE">1.0</surf_evap>
     <surf_radiative_T type="real" COMPSET=".*EACE">300.0</surf_radiative_T>
-    <T_2m type="real" COMPSET=".*EACE">300.0</T_2m>
-    <qv_2m type="real" COMPSET=".*EACE">0.01</qv_2m>
-    <wind_speed_10m type="real" COMPSET=".*EACE">10.0</wind_speed_10m>
-    <snow_depth_land type="real" COMPSET=".*EACE">2.0</snow_depth_land>
+    <T_2m type="real" COMPSET=".*EACE">280.0</T_2m>
+    <qv_2m type="real" COMPSET=".*EACE">0.001</qv_2m>
+    <wind_speed_10m type="real" COMPSET=".*EACE">1.0</wind_speed_10m>
+    <snow_depth_land type="real" COMPSET=".*EACE">1.0</snow_depth_land>
     <ocnfrac type="real" COMPSET=".*EACE">1.0</ocnfrac>
     <landfrac type="real" COMPSET=".*EACE">0.0</landfrac>
-    <icefrac type="real" COMPSET=".*EACE">0.01</icefrac>
+    <icefrac type="real" COMPSET=".*EACE">0.0</icefrac>
     <InField type="real" COMPSET=".*EACE">0.1</InField>
     <OutField type="real" COMPSET=".*EACE">5.0</OutField>
 

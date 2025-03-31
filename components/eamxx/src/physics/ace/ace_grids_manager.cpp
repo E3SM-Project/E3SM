@@ -94,6 +94,14 @@ void AceGridsManager::build_grids() {
   // Create a pg2 grid, assuming we always have to run on pg2
   auto sc_grid =
       create_point_grid("Physics PG2", sc_ncolumns, sc_nlevels, m_comm);
+
+  // The cpl expects 1-based numbering for col gids
+  auto sc_gids   = sc_grid->get_dofs_gids();
+  auto sc_gids_h = sc_gids.get_view<int*,Host>();
+  for (int icol=0; icol<sc_ncolumns; ++icol) {
+    ++sc_gids_h(icol);
+  }
+  sc_gids.sync_to_dev();
   add_nonconst_grid(sc_grid);
 
   // Add an alias for the grid
@@ -105,8 +113,12 @@ void AceGridsManager::build_grids() {
       "lon", FieldLayout({COL}, {sc_ncolumns}), deg);
   auto area_sc = sc_grid->create_geometry_data(
       "area", FieldLayout({COL}, {sc_ncolumns}), nondim);
+  auto frac_sc = sc_grid->create_geometry_data(
+      "frac", FieldLayout({COL}, {sc_ncolumns}), nondim);
+  auto mask_sc = sc_grid->create_geometry_data(
+      "mask", FieldLayout({COL}, {sc_ncolumns}), nondim);
   AtmosphereInput reader_sc(m_params.get<std::string>("sc_data_filename"),
-                            sc_grid, {lat_sc, lon_sc, area_sc}, true);
+                            sc_grid, {lat_sc, lon_sc, area_sc, frac_sc, mask_sc}, true);
   reader_sc.read_variables();
 }
 
