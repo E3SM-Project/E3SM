@@ -98,6 +98,18 @@
       <support_level>Experimental, under development</support_level>
   </compset>
 
+  <compset>
+      <alias>F2010-EACE-CICE</alias> <!-- ACE-in-PLACE in EAMxx (MPASSI) -->
+      <lname>2010_SCREAM%EACE_ELM%SPBC_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV_SIAC_SESP</lname>
+      <support_level>Experimental, under development</support_level>
+  </compset>
+
+  <compset>
+      <alias>F2010-EACE</alias> <!-- ACE-in-PLACE in EAMxx (CICE) -->
+      <lname>2010_SCREAM%EACE_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV_SIAC_SESP</lname>
+      <support_level>Experimental, under development</support_level>
+  </compset>
+
   <entries>
 
     <entry id="RUN_STARTDATE">

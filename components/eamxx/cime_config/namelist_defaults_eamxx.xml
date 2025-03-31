@@ -38,6 +38,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <selector name="dyn" case_env="CAM_TARGET"/>
     <selector name="nlev" case_env="SCREAM_CMAKE_OPTIONS" regex=".*SCREAM_NUM_VERTICAL_LEV ([0-9]+).*"/>
     <selector name="ntracers" case_env="SCREAM_CMAKE_OPTIONS" regex=".*SCREAM_NUM_TRACERS ([0-9]+).*"/>
+    <selector name="machine" case_env="MACH"/>
 
   </selectors>
 
@@ -143,6 +144,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       NOTE: *CANNOT* be changed.
     -->
     <atm_procs_list type="array(string)">sc_import,homme,physics,sc_export</atm_procs_list>
+    <atm_procs_list COMPSET=".*EACE">sc_import,ace,sc_export</atm_procs_list>
 
     <!-- Basic options for each atm process -->
     <atm_proc_base>
@@ -450,6 +452,13 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- IOPForcing -->
     <iop_forcing inherit="atm_proc_base" />
 
+    <ace inherit="atm_proc_base">
+      <checkpoint_path>/pscratch/sd/m/mahf708/emulator/ace_ckpt_traced_cpu.tar</checkpoint_path>
+      <checkpoint_path machine="pm-gpu">/pscratch/sd/m/mahf708/emulator/ace_ckpt_traced.tar</checkpoint_path>
+      <sc2ace_mapfile>/global/homes/m/mahf708/misc/map_ne30pg2_to_gaussian_180x360_latlon.nc</sc2ace_mapfile>
+      <ace2sc_mapfile>/global/homes/m/mahf708/misc/map_gaussian_180x360_latlon_to_ne30pg2.nc</ace2sc_mapfile>
+    </ace>
+
     <!-- For internal testing only -->
     <testOnly inherit="atm_proc_base">
       <my_param type="array(integer)">1,2</my_param>
@@ -555,6 +564,8 @@ be lost if SCREAM_HACK_XML is not enabled.
       <atm_procs_list COMPSET=".*SCREAM.*MAM4xx" hgrid=".*pg2">tms,shoc,cldFraction,mam4_aci,p3</atm_procs_list> <!-- TMS only available for PG2 -->
       <atm_procs_list COMPSET=".*SCREAM.*noAero">shoc,cldFraction,p3</atm_procs_list>
       <atm_procs_list COMPSET=".*SCREAM.*noAero" hgrid=".*pg2">tms,shoc,cldFraction,p3</atm_procs_list> <!-- TMS only available for PG2 -->
+      <atm_procs_list COMPSET=".*EACE">ace</atm_procs_list>
+      <number_of_subcycles COMPSET=".*EACE">1</number_of_subcycles>
       <number_of_subcycles hgrid="ne4np4">24</number_of_subcycles>
       <number_of_subcycles hgrid="ne30np4">12</number_of_subcycles>
       <number_of_subcycles hgrid="ne120np4">6</number_of_subcycles>
@@ -589,18 +600,32 @@ be lost if SCREAM_HACK_XML is not enabled.
   <!-- Grids manager specs -->
   <grids_manager>
     <Type>Homme</Type>
-    <physics_grid_type>GLL</physics_grid_type>
-    <physics_grid_type hgrid=".*pg2">PG2</physics_grid_type>
-    <physics_grid_rebalance>None</physics_grid_rebalance>
-    <dynamics_namelist_file_name>./data/namelist.nl</dynamics_namelist_file_name>
-    <vertical_coordinate_filename type="file">UNSET</vertical_coordinate_filename>
-    <vertical_coordinate_filename nlev="72">${DIN_LOC_ROOT}/atm/scream/init/vertical_coordinates_L72_20220927.nc</vertical_coordinate_filename>
-    <vertical_coordinate_filename nlev="128">${DIN_LOC_ROOT}/atm/scream/init/vertical_coordinates_L128_20220927.nc</vertical_coordinate_filename>
+    <Type COMPSET=".*EACE">ACE</Type>
+    <Homme>
+      <physics_grid_type>GLL</physics_grid_type>
+      <physics_grid_type hgrid=".*pg2">PG2</physics_grid_type>
+      <physics_grid_rebalance>None</physics_grid_rebalance>
+      <dynamics_namelist_file_name>./data/namelist.nl</dynamics_namelist_file_name>
+      <vertical_coordinate_filename type="file">UNSET</vertical_coordinate_filename>
+      <vertical_coordinate_filename nlev="72">${DIN_LOC_ROOT}/atm/scream/init/vertical_coordinates_L72_20220927.nc</vertical_coordinate_filename>
+      <vertical_coordinate_filename nlev="128">${DIN_LOC_ROOT}/atm/scream/init/vertical_coordinates_L128_20220927.nc</vertical_coordinate_filename>
+    </Homme>
+    <ACE>
+      <num_latitude_points type="integer">180</num_latitude_points>
+      <num_longitude_points type="integer">360</num_longitude_points>
+      <num_vertical_levels type="integer">8</num_vertical_levels>
+      <gaussian_grid type="logical" doc="If true, use gaussian nodes for the latitude">true</gaussian_grid>
+      <data_filename doc="File where lat values are stored" type="file">/global/homes/m/mahf708/xgnc/sims/random/eamxx_latlon_grid.nc</data_filename>
+      <sc_ncolumns type="integer">21600</sc_ncolumns>
+      <sc_nlevels type="integer">8</sc_nlevels>
+      <sc_data_filename doc="File where lat values are stored" type="file">/global/homes/m/mahf708/misc/ne30lonlatncolarea.nc</sc_data_filename>
+    </ACE>
   </grids_manager>
 
   <!-- List of nc files for loading inputs on specified grids -->
   <initial_conditions>
-    <Filename type="file">UNSET</Filename>
+    <!-- Leaving this UNSET leads to PIO errors, just leave it actually unset by not defining it -->
+    <!-- <Filename type="file">UNSET</Filename> -->
     <Filename hgrid="ne4np4" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L72_20220823.nc</Filename>
     <Filename hgrid="ne4np4" nlev="72" ntracers="41">${DIN_LOC_ROOT}/atm/scream/init/screami_mam4xx_ne4np4L72_c20240208.nc</Filename>
     <Filename hgrid="ne4np4" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L128_20241022.nc</Filename>
@@ -711,6 +736,40 @@ be lost if SCREAM_HACK_XML is not enabled.
     <nc hgrid="ne256np4|ne512np4|ne1024np4|ne0np4_CAx32v1">0.0</nc>
     <ni hgrid="ne256np4|ne512np4|ne1024np4|ne0np4_CAx32v1">0.0</ni>
     <o3_volume_mix_ratio hgrid="ne0np4_conus_x4v1_lowcon">0.0</o3_volume_mix_ratio>
+
+    <!-- These are needed for ace just in case -->
+    <p_int type="real" COMPSET=".*EACE">100000.0</p_int>
+    <pseudo_density type="real" COMPSET=".*EACE">1.0</pseudo_density>
+    <phis type="real" COMPSET=".*EACE">5.0</phis>
+    <p_mid type="real" COMPSET=".*EACE">100000.0</p_mid>
+    <T_mid type="real" COMPSET=".*EACE">300.0</T_mid>
+    <qv type="real" COMPSET=".*EACE">0.01</qv>
+    <horiz_winds type="real" COMPSET=".*EACE">5.0</horiz_winds>
+    <sfc_flux_dir_nir type="real" COMPSET=".*EACE">5.0</sfc_flux_dir_nir>
+    <sfc_flux_dir_vis type="real" COMPSET=".*EACE">5.0</sfc_flux_dir_vis>
+    <sfc_flux_dif_nir type="real" COMPSET=".*EACE">5.0</sfc_flux_dif_nir>
+    <sfc_flux_dif_vis type="real" COMPSET=".*EACE">5.0</sfc_flux_dif_vis>
+    <sfc_flux_sw_net type="real" COMPSET=".*EACE">5.0</sfc_flux_sw_net>
+    <sfc_flux_lw_dn type="real" COMPSET=".*EACE">5.0</sfc_flux_lw_dn>
+    <precip_liq_surf_mass type="real" COMPSET=".*EACE">1.0</precip_liq_surf_mass>
+    <precip_ice_surf_mass type="real" COMPSET=".*EACE">2.0</precip_ice_surf_mass>
+    <sfc_alb_dir_vis type="real" COMPSET=".*EACE">5.0</sfc_alb_dir_vis>
+    <sfc_alb_dir_nir type="real" COMPSET=".*EACE">5.0</sfc_alb_dir_nir>
+    <sfc_alb_dif_vis type="real" COMPSET=".*EACE">5.0</sfc_alb_dif_vis>
+    <sfc_alb_dif_nir type="real" COMPSET=".*EACE">5.0</sfc_alb_dif_nir>
+    <surf_lw_flux_up type="real" COMPSET=".*EACE">5.0</surf_lw_flux_up>
+    <surf_sens_flux type="real" COMPSET=".*EACE">1.0</surf_sens_flux>
+    <surf_evap type="real" COMPSET=".*EACE">1.0</surf_evap>
+    <surf_radiative_T type="real" COMPSET=".*EACE">300.0</surf_radiative_T>
+    <T_2m type="real" COMPSET=".*EACE">300.0</T_2m>
+    <qv_2m type="real" COMPSET=".*EACE">0.01</qv_2m>
+    <wind_speed_10m type="real" COMPSET=".*EACE">10.0</wind_speed_10m>
+    <snow_depth_land type="real" COMPSET=".*EACE">2.0</snow_depth_land>
+    <ocnfrac type="real" COMPSET=".*EACE">1.0</ocnfrac>
+    <landfrac type="real" COMPSET=".*EACE">0.0</landfrac>
+    <icefrac type="real" COMPSET=".*EACE">0.01</icefrac>
+    <InField type="real" COMPSET=".*EACE">0.1</InField>
+    <OutField type="real" COMPSET=".*EACE">5.0</OutField>
 
     <!-- Information about perturbed fields-->
     <perturbed_fields type="array(string)" doc="IC fields (with level dimension) to apply a random perturbation to based on the parameters below."/>

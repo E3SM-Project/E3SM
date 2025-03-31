@@ -552,8 +552,10 @@ void ACE::run_impl(const double dt) {
   // we probably don't want to support dtype flexibility ... 
   // let's force everyone to use kfloat32 and be done with it
   // we should maybe even use lower precision...
-  // anyway, this will likely fail below (in the torch call, due to conflict with saved )
-  auto torch_dtype = std::is_same<Real, double>::value ? torch::kFloat64 : torch::kFloat32;
+  // anyway, this will likely fail below (in the torch call, due to conflict with saved)
+  // auto torch_dtype = std::is_same<Real, double>::value ? torch::kFloat64 : torch::kFloat32;
+  // So, let's just force-use f32 for torch-specific ops for now
+  auto torch_dtype = torch::kFloat32;
 
   // the tensor uses the same pointer as the big field view
   m_input_tensor = torch::from_blob(
