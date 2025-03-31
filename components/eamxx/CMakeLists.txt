@@ -294,6 +294,8 @@ if (EAMXX_ENABLE_PYSCREAM)
   set (BUILD_SHARED_LIBS ON)
 endif()
 
+option (EAMXX_ENABLE_ACE "Whether to enable ACE interface to eamxx" OFF)
+
 ####################################################################
 #                    Packs-related settings                        #
 ####################################################################

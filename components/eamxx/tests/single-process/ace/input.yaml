@@ -1,0 +1,70 @@
+%YAML 1.1
+---
+driver_options:
+  atmosphere_dag_verbosity_level: 5
+
+time_stepping:
+  time_step: ${ATM_TIME_STEP}
+  run_t0: ${RUN_T0}
+  number_of_steps: ${NUM_STEPS}
+
+atmosphere_processes:
+  atm_procs_list: [ace]
+  ace:
+    checkpoint_path: /pscratch/sd/m/mahf708/emulator/ace_ckpt_traced${GPU_OR_CPU}.tar
+    sc2ace_mapfile: /global/homes/m/mahf708/misc/map_ne30pg2_to_gaussian_180x360_latlon.nc
+    ace2sc_mapfile: /global/homes/m/mahf708/misc/map_gaussian_180x360_latlon_to_ne30pg2.nc
+grids_manager:
+  Type: ACE
+  grids_names: [AceLL,AcePG,Physics]
+  ACE:
+    aliases: [AceLL,AcePG,Physics]
+    type: point_grid
+    num_longitude_points: 360
+    num_latitude_points: 180
+    num_vertical_levels: 8
+    gaussian_grid: true
+    data_filename: /global/homes/m/mahf708/xgnc/sims/random/eamxx_latlon_grid.nc
+    sc_ncolumns: 21600
+    sc_nlevels: 8
+    sc_data_filename: /global/homes/m/mahf708/misc/ne30lonlatncolarea.nc
+
+initial_conditions:
+  p_int: 100000.0
+  pseudo_density: 1.0
+  phis: 5.0
+  p_mid: 100000.0
+  T_mid: 300.0
+  qv: 0.01
+  horiz_winds: 5.0
+  sfc_flux_dir_nir: 5.0
+  sfc_flux_dir_vis: 5.0
+  sfc_flux_dif_nir: 5.0
+  sfc_flux_dif_vis: 5.0
+  sfc_flux_sw_net: 5.0
+  sfc_flux_lw_dn: 5.0
+  precip_liq_surf_mass: 1.0
+  precip_ice_surf_mass: 2.0
+  sfc_alb_dir_vis: 5.0
+  sfc_alb_dir_nir: 5.0
+  sfc_alb_dif_vis: 5.0
+  sfc_alb_dif_nir: 5.0
+  surf_lw_flux_up: 5.0
+  surf_sens_flux: 1.0
+  surf_evap: 1.0
+  surf_mom_flux: 1.0
+  surf_radiative_T: 300.0
+  T_2m: 300.0
+  qv_2m: 0.01
+  wind_speed_10m: 10.0
+  snow_depth_land: 2.0
+  ocnfrac: 1.0
+  landfrac: 0.0
+  icefrac: 0.01
+  InField: 0.1
+  OutField: 5.0
+
+# The parameters for I/O control
+Scorpio:
+  output_yaml_files: ["output.yaml"]
+...

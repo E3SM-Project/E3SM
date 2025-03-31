@@ -275,7 +275,8 @@ is_valid_layout (const FieldLayout& layout) const
     case LayoutType::Tensor3D:
       return layout.congruent(get_3d_tensor_layout(midpoints,layout.get_tensor_dims()));
     case LayoutType::UserDefined:
-      return layout.congruent(get_2d_scalar_layout());
+      // TODO: ask Luca for a better sanity check here?
+      return true;
     default:
       // Anything else is probably not ok
       return false;

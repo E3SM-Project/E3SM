@@ -44,6 +44,10 @@
 #ifdef EAMXX_HAS_IOP_FORCING
 #include "physics/iop_forcing/eamxx_iop_forcing_process_interface.hpp"
 #endif
+#ifdef EAMXX_HAS_ACE
+#include "physics/ace/ace_grids_manager.hpp"
+#include "physics/ace/eamxx_ace_process_interface.hpp"
+#endif
 
 namespace scream {
 
@@ -87,6 +91,12 @@ inline void register_physics () {
 #endif
 #ifdef EAMXX_HAS_IOP_FORCING
   proc_factory.register_product("iop_forcing",&create_atmosphere_process<IOPForcing>);
+#endif
+#ifdef EAMXX_HAS_ACE
+  proc_factory.register_product("ACE",&create_atmosphere_process<ACE>);
+
+  auto& gm_factory   = GridsManagerFactory::instance();
+  gm_factory.register_product("ACE",&create_ace_grids_manager);
 #endif
 
   // If no physics was enabled, silence compile warning about unused var
