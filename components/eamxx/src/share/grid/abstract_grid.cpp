@@ -168,6 +168,8 @@ AbstractGrid::equivalent_layout (const FieldLayout& template_layout) const
     case LayoutType::Tensor3D:
       ret_layout = get_3d_tensor_layout(midpoints, tensor_dims, tdims_names);
       break;
+    case LayoutType::UserDefined:
+      EKAT_ERROR_MSG("Error! Cannot compute the equivalent layout of a user-defined layout.\n");
     default:
       EKAT_ERROR_MSG("Error! Unknown FieldLayout type.\n");
       break;
@@ -272,6 +274,8 @@ is_valid_layout (const FieldLayout& layout) const
       return layout.congruent(get_3d_vector_layout(midpoints,layout.get_vector_dim()));
     case LayoutType::Tensor3D:
       return layout.congruent(get_3d_tensor_layout(midpoints,layout.get_tensor_dims()));
+    case LayoutType::UserDefined:
+      return layout.congruent(get_2d_scalar_layout());
     default:
       // Anything else is probably not ok
       return false;

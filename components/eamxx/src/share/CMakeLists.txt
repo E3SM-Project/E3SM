@@ -20,6 +20,7 @@ set(SHARE_SRC
   grid/abstract_grid.cpp
   grid/grids_manager.cpp
   grid/grid_import_export.cpp
+  grid/latlon_grid.cpp
   grid/se_grid.cpp
   grid/point_grid.cpp
   grid/remap/abstract_remapper.cpp

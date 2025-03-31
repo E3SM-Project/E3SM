@@ -275,7 +275,7 @@ void AtmosphereDriver::create_grids()
   }
 
   m_atm_logger->debug("  [EAMxx] Creating grid manager '" + gm_type + "' ...");
-  m_grids_manager = GridsManagerFactory::instance().create(gm_type,m_atm_comm,gm_params);
+  m_grids_manager = GridsManagerFactory::instance().create(gm_type,m_atm_comm,gm_params.sublist(gm_type));
 
   m_atm_logger->debug("  [EAMxx] Creating grid manager '" + gm_type + "' ... done!");
 

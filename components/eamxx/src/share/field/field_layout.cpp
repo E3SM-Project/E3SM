@@ -300,8 +300,8 @@ void FieldLayout::compute_type () {
   } else if (tags.size()==2 and ncomps==1 and nvlevs==1) {
     m_type = LayoutType::Vector1D; return;
   } else {
-    // Not a supported layout.
-    m_type = LayoutType::Invalid; return;
+    // Not a commonly known layout.
+    m_type = LayoutType::UserDefined; return;
   }
 
   // Get the size of what's left
@@ -347,7 +347,7 @@ void FieldLayout::compute_type () {
       break;
     default:
       // If nothing worked, this type is not recognized
-      m_type = LayoutType::Invalid;
+      m_type = LayoutType::UserDefined;
   }
 }
 
