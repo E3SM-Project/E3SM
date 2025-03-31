@@ -735,16 +735,21 @@ contains
           tagname = 'lfrac'//C_NULL_CHAR ! 'lfrac
           allocate(tagValues(lSize) )
           tagValues = fractions_a%rAttr(kl,:)
-          kgg = mct_aVect_indexIA(dom_a%data ,"GlobGridNum" ,perrWith=subName)
-          allocate(GlobalIds(lSize))
-          GlobalIds = dom_a%data%iAttr(kgg,:)
+          !kgg = mct_aVect_indexIA(dom_a%data ,"GlobGridNum" ,perrWith=subName)
+          !allocate(GlobalIds(lSize))
+          !GlobalIds = dom_a%data%iAttr(kgg,:)
           ! set on atmosphere instance
-          ierr = iMOAB_SetDoubleTagStorageWithGid ( mbaxid, tagname, lSize , ent_type, tagValues, GlobalIds )
+          gsmap_a  => component_get_gsmap_cx(atm) ! gsmap_ax
+          call mpi_comm_rank(mpicom,my_task,ierr)
+            ! Determine global gridpoint number attribute, GlobGridNum, automatically in ggrid
+          call mct_gsMap_orderedPoints(gsmap_a, my_task, dof)
+          ierr = iMOAB_SetDoubleTagStorageWithGid ( mbaxid, tagname, lSize , ent_type, tagValues, dof )
           if (ierr .ne. 0) then
              write(logunit,*) subname,' error in setting lfrac on atm   '
              call shr_sys_abort(subname//' ERROR in setting lfrac on atm ')
           endif
-          deallocate(GlobalIds)
+          !deallocate(GlobalIds)
+          deallocate(dof)
           deallocate(tagValues)
         endif
        else if (lnd_present) then
