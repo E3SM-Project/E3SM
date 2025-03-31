@@ -342,7 +342,6 @@ void MAMOptics::run_impl(const double dt) {
       policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
         const Int icol = team.league_rank();  // column index
         // absorption optical depth, per layer [unitless]
-        auto odap_aer_icol = ekat::subview(aero_tau_lw, icol);
         const auto atm     = mam_coupling::atmosphere_for_column(dry_atm, icol);
 
         // FIXME: dry mass pressure interval [Pa]
@@ -352,7 +351,6 @@ void MAMOptics::run_impl(const double dt) {
         auto ssa_cmip6_sw_icol = ekat::subview(ssa_cmip6_sw, icol);
         auto af_cmip6_sw_icol  = ekat::subview(af_cmip6_sw, icol);
         auto ext_cmip6_sw_icol = ekat::subview(ext_cmip6_sw, icol);
-        auto ext_cmip6_lw_icol = ekat::subview(ext_cmip6_lw, icol);
 
         // tau_w: aerosol single scattering albedo * tau
         auto tau_w_icol = ekat::subview(tau_ssa_sw, icol);
@@ -377,7 +375,24 @@ void MAMOptics::run_impl(const double dt) {
             ext_cmip6_sw_icol, tau_icol, tau_w_icol, tau_w_g_icol, tau_w_f_icol,
             aerosol_optics_device_data, aodvis(icol), work_icol);
 
-        team.team_barrier();
+      });
+  Kokkos::fence();
+  Kokkos::parallel_for(
+      policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
+        const Int icol = team.league_rank();  // column index
+        // absorption optical depth, per layer [unitless]
+        auto odap_aer_icol = ekat::subview(aero_tau_lw, icol);
+        const auto atm     = mam_coupling::atmosphere_for_column(dry_atm, icol);
+
+        // FIXME: dry mass pressure interval [Pa]
+        auto zi   = ekat::subview(dry_atm.z_iface, icol);
+        auto pdel = ekat::subview(p_del, icol);
+        auto ext_cmip6_lw_icol = ekat::subview(ext_cmip6_lw, icol);
+
+        // fetch column-specific subviews into aerosol prognostics
+        mam4::Prognostics progs =
+            mam_coupling::aerosols_for_column(dry_aero, icol);
+
         mam4::aer_rad_props::aer_rad_props_lw(
             team, dt, progs, atm, zi, pdel, ext_cmip6_lw_icol,
             aerosol_optics_device_data, odap_aer_icol);
