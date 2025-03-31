@@ -239,7 +239,13 @@ void MAMGenericInterface::populate_gases_dry_aero(
     dry_aero.gas_mmr[g] = buffer.dry_gas_mmr[g];
   }
 }
-
+// ================================================================
+void  MAMGenericInterface::set_buffer_scratch_to_zero(mam_coupling::Buffer &buffer)
+{
+  for(int f = 0; f <  buffer.num_2d_scratch; ++f){
+    Kokkos::deep_copy(buffer.scratch[f],0.0);
+  }
+}
 // ================================================================
 void MAMGenericInterface::populate_gases_wet_aero(
     mam_coupling::AerosolState &wet_aero) {

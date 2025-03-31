@@ -193,6 +193,15 @@ void MAMWetscav::init_temporal_views()
   const int work_len = mam4::wetdep::get_aero_model_wetdep_work_len();
   work_              = view_2d(work_ptr, ncol_, work_len);
   work_ptr +=ncol_*work_len;
+
+      /// error check
+    // NOTE: workspace_provided can be larger than workspace_used, but let's try to use the minimum amount of memory
+    const int workspace_used = work_ptr - buffer_.temporal_views.data();
+    const int workspace_provided = buffer_.temporal_views.extent(0);
+    EKAT_REQUIRE_MSG(workspace_used == workspace_provided,
+    "Error: workspace_used (" + std::to_string(workspace_used) +
+    ") and workspace_provided (" + std::to_string(workspace_provided) +
+    ") should be equal. \n");
 }
 // ================================================================
 //  INITIALIZE_IMPL
@@ -268,31 +277,33 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
   isprx_             = int_view_2d("isprx", ncol_, nlev_);
   // TODO: Following variables are from convective parameterization (not
   // implemented yet in EAMxx), so should be zero for now
-  set_field_w_scratch_buffer(sh_frac_, buffer_, true);
+  // NOTE:If we use buffer_ to set the following inputs,
+  // we must set these views to zero at every time step.
+  sh_frac_ = view_2d("sh_frac_", ncol_, nlev_);
 
   // Deep convective cloud fraction [fraction]
-  set_field_w_scratch_buffer(dp_frac_, buffer_, true);
+  dp_frac_ = view_2d("dp_frac_", ncol_, nlev_);
 
   // Evaporation rate of shallow convective precipitation >=0. [kg/kg/s]
-  set_field_w_scratch_buffer(evapcsh_, buffer_, true);
+  evapcsh_ = view_2d("evapcsh_", ncol_, nlev_);
 
   // Evaporation rate of deep convective precipitation >=0. [kg/kg/s]
-  set_field_w_scratch_buffer(evapcdp_, buffer_, true);
+  evapcdp_ = view_2d("evapcdp_", ncol_, nlev_);
 
   // Rain production, shallow convection [kg/kg/s]
-  set_field_w_scratch_buffer(rprdsh_, buffer_, true);
+  rprdsh_ = view_2d("rprdsh_", ncol_, nlev_);
 
   // Rain production, deep convection [kg/kg/s]
-  set_field_w_scratch_buffer(rprddp_, buffer_, true);
+  rprddp_ = view_2d("rprddp_", ncol_, nlev_);
 
   // In cloud water mixing ratio, deep convection
-  set_field_w_scratch_buffer(icwmrdp_, buffer_, true);
+  icwmrdp_ = view_2d("icwmrdp_", ncol_, nlev_);
 
   // In cloud water mixing ratio, shallow convection
-  set_field_w_scratch_buffer(icwmrsh_, buffer_, true);
+  icwmrsh_ = view_2d("icwmrsh_", ncol_, nlev_);
 
   // Detraining cld H20 from deep convection [kg/kg/s]
-  set_field_w_scratch_buffer(dlf_, buffer_, true);
+  dlf_ = view_2d("dlf_", ncol_, nlev_);
 
 }
 

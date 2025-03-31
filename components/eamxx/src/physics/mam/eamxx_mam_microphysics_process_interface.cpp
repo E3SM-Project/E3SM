@@ -412,6 +412,14 @@ void MAMMicrophysics::init_temporal_views()
   work_ptr += ncol_*gas_pcnst;
   dvel_ = view_2d(work_ptr, ncol_, gas_pcnst);
   work_ptr +=ncol_*gas_pcnst;
+      /// error check
+    // NOTE: workspace_provided can be larger than workspace_used, but let's try to use the minimum amount of memory
+    const int workspace_used = work_ptr - buffer_.temporal_views.data();
+    const int workspace_provided = buffer_.temporal_views.extent(0);
+    EKAT_REQUIRE_MSG(workspace_used == workspace_provided,
+    "Error: workspace_used (" + std::to_string(workspace_used) +
+    ") and workspace_provided (" + std::to_string(workspace_provided) +
+    ") should be equal. \n");
 }
 // ================================================================
 //  INITIALIZE_IMPL

@@ -97,10 +97,6 @@ size_t MAMOptics::requested_buffer_size_in_bytes() const {
 int MAMOptics::get_len_temporal_views()
 {
   int work_len=0;
-  // ssa_cmip6_sw_, af_cmip6_sw_, ext_cmip6_sw_
-  work_len += 3*ncol_*nlev_*nswbands_;
-  // ext_cmip6_lw_
-  work_len += ncol_*nlev_*nlwbands_;
   // work_
   work_len += ncol_*mam4::modal_aer_opt::get_work_len_aerosol_optics();
   // tau_ssa_g_sw_, tau_ssa_sw_, tau_sw_, tau_f_sw_
@@ -111,19 +107,6 @@ int MAMOptics::get_len_temporal_views()
 void MAMOptics::init_temporal_views()
 {
   auto work_ptr = (Real *)buffer_.temporal_views.data();
-  // prescribed volcanic aerosols.
-  ssa_cmip6_sw_ =
-      mam_coupling::view_3d(work_ptr, ncol_, nlev_, nswbands_);
-  work_ptr += ncol_*nlev_*nswbands_;
-  af_cmip6_sw_ = mam_coupling::view_3d(work_ptr, ncol_, nlev_, nswbands_);
-  work_ptr += ncol_*nlev_*nswbands_;
-  ext_cmip6_sw_ =
-      mam_coupling::view_3d(work_ptr, ncol_, nswbands_, nlev_);
-  work_ptr += ncol_*nlev_*nswbands_;
-  ext_cmip6_lw_ =
-      mam_coupling::view_3d(work_ptr, ncol_, nlev_, nlwbands_);
-  work_ptr += ncol_*nlev_*nlwbands_;
-
   const int work_len = mam4::modal_aer_opt::get_work_len_aerosol_optics();
   work_              = mam_coupling::view_2d(work_ptr, ncol_, work_len );
   work_ptr += ncol_*work_len;
@@ -143,6 +126,15 @@ void MAMOptics::init_temporal_views()
   // aerosol forward scattered fraction * tau * w
   tau_f_sw_ = mam_coupling::view_3d(work_ptr, ncol_, nswbands_, nlev_ + 1);
   work_ptr += ncol_*nswbands_*nlev_f;
+
+      /// error check
+    // NOTE: workspace_provided can be larger than workspace_used, but let's try to use the minimum amount of memory
+    const int workspace_used = work_ptr - buffer_.temporal_views.data();
+    const int workspace_provided = buffer_.temporal_views.extent(0);
+    EKAT_REQUIRE_MSG(workspace_used == workspace_provided,
+    "Error: workspace_used (" + std::to_string(workspace_used) +
+    ") and workspace_provided (" + std::to_string(workspace_provided) +
+    ") should be equal. \n");
 
 }
 
@@ -203,12 +195,15 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   dry_atm_.phis  = get_field_in("phis").get_view<const Real *>();
   dry_atm_.p_del = get_field_in("pseudo_density_dry").get_view<const Real **>();
 
-  init_temporal_views();
+  ssa_cmip6_sw_ =
+      mam_coupling::view_3d("ssa_cmip6_sw", ncol_, nlev_, nswbands_);
+  af_cmip6_sw_ = mam_coupling::view_3d("af_cmip6_sw", ncol_, nlev_, nswbands_);
+  ext_cmip6_sw_ =
+      mam_coupling::view_3d("ext_cmip6_sw", ncol_, nswbands_, nlev_);
+  ext_cmip6_lw_ =
+      mam_coupling::view_3d("ext_cmip6_lw_", ncol_, nlev_, nlwbands_);
 
-  Kokkos::deep_copy(ssa_cmip6_sw_, 0.0);
-  Kokkos::deep_copy(af_cmip6_sw_, 0.0);
-  Kokkos::deep_copy(ext_cmip6_sw_, 0.0);
-  Kokkos::deep_copy(ext_cmip6_lw_, 0.0);
+  init_temporal_views();
 
   // read table info
   {
