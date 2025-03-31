@@ -726,6 +726,7 @@ TEST_CASE ("compute_mask") {
   std::vector<int>      dims2d = {ncols,nlevs};
 
   FieldIdentifier fid3d ("foo", {tags3d,dims3d}, units, "some_grid");
+  FieldIdentifier fid3di ("foo", {tags3d,dims3d}, units, "some_grid", DataType::IntType);
   FieldIdentifier fid2d ("foo", {tags2d,dims2d}, units, "some_grid");
 
   SECTION ("exceptions") {
@@ -737,17 +738,14 @@ TEST_CASE ("compute_mask") {
     f.allocate_view();
     REQUIRE_THROWS(compute_mask<Comparison::EQ>(f,1,m1)); // Mask not allocated
     m1.allocate_view();
-    REQUIRE_THROWS(compute_mask<Comparison::EQ>(f,1,m1)); // Missing 'true_value'/'false_value' extra data
 
     Field m2 (fid2d);
     m2.allocate_view();
-    m2.get_header().set_extra_data("true_value",Real(10));
-    m2.get_header().set_extra_data("false_value",Real(10));
     REQUIRE_THROWS(compute_mask<Comparison::EQ>(f,1,m2)); // incompatible layouts
   }
 
   SECTION ("check") {
-    Field x(fid3d), one(fid3d), zero(fid3d), m(fid3d);
+    Field x(fid3d), one(fid3di), zero(fid3di), m(fid3di);
 
     x.allocate_view();
     one.allocate_view();
@@ -757,9 +755,6 @@ TEST_CASE ("compute_mask") {
     one.deep_copy(1);
     zero.deep_copy(0);
     x.deep_copy(2);
-
-    m.get_header().set_extra_data("true_value",Real(1));
-    m.get_header().set_extra_data("false_value",Real(0));
 
     // x==1 is false
     m.deep_copy(-1);

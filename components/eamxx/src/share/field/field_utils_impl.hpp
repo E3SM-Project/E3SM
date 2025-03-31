@@ -1091,17 +1091,17 @@ struct SetMaskHelper {
   KOKKOS_INLINE_FUNCTION
   void set_mask (const ST& x_val, MaskST& m_val) const {
     if constexpr (CMP==Comparison::EQ)
-      m_val = x_val==val ? yes_val : no_val;
+      m_val = static_cast<int>(x_val==val);
     else if constexpr (CMP==Comparison::NE)
-      m_val = x_val!=val ? yes_val : no_val;
+      m_val = static_cast<int>(x_val!=val);
     else if constexpr (CMP==Comparison::GT)
-      m_val = x_val>val ? yes_val : no_val;
+      m_val = static_cast<int>(x_val>val);
     else if constexpr (CMP==Comparison::GE)
-      m_val = x_val>=val ? yes_val : no_val;
+      m_val = static_cast<int>(x_val>=val);
     else if constexpr (CMP==Comparison::LT)
-      m_val = x_val<val ? yes_val : no_val;
+      m_val = static_cast<int>(x_val<val);
     else if constexpr (CMP==Comparison::LE)
-      m_val = x_val<=val ? yes_val : no_val;
+      m_val = static_cast<int>(x_val<=val);
     else
       EKAT_KERNEL_ERROR_MSG ("Unsupported Comparison value.\n");
   }
@@ -1137,8 +1137,6 @@ struct SetMaskHelper {
   ViewT x;
   MaskT m;
   ST    val;
-  MaskST yes_val;
-  MaskST no_val;
 };
 
 template<Comparison CMP, typename ViewT, typename MaskT>
@@ -1147,14 +1145,10 @@ void setMaskHelper (const ViewT& x, const MaskT& m,
                     typename ViewT::traits::value_type val,
                     const std::vector<int>& dims)
 {
-  using MaskST = typename SetMaskHelper<CMP,ViewT,MaskT>::MaskST;
-
   SetMaskHelper<CMP,ViewT,MaskT> helper;
   helper.m = m;
   helper.x = x;
   helper.val = val;
-  helper.yes_val = mh.get_extra_data<MaskST>("true_value");
-  helper.no_val = mh.get_extra_data<MaskST>("false_value");
   helper.run(dims);
 }
 
@@ -1164,127 +1158,50 @@ void compute_mask (const Field& x, const ST value, Field& m)
   const auto& layout = x.get_header().get_identifier().get_layout();
   const auto& dims = layout.dims();
   const auto contiguous = x.get_header().get_alloc_properties().contiguous();
-  const auto m_dt = m.data_type();
-  const bool m_int = m_dt==DataType::IntType;
-  const bool m_float = m_dt==DataType::FloatType;
-  const bool m_double = m_dt==DataType::DoubleType;
   const auto& mh = m.get_header();
-  EKAT_REQUIRE_MSG (m_int or m_float or m_double,
-      "Error! Unsupport mask field data type.\n"
-      " - mask field name: " << m.name() << "\n"
-      " - mask field data type: " << etoi(m_dt) << "\n");
+
   switch (layout.rank()) {
     case 0:
       if (contiguous)
-        if (m_int)
-          setMaskHelper<CMP>(x.get_view<const ST>(),m.get_view<int>(),mh,value,dims);
-        else if (m_float)
-          setMaskHelper<CMP>(x.get_view<const ST>(),m.get_view<float>(),mh,value,dims);
-        else
-          setMaskHelper<CMP>(x.get_view<const ST>(),m.get_view<double>(),mh,value,dims);
+        setMaskHelper<CMP>(x.get_view<const ST>(),m.get_view<int>(),mh,value,dims);
       else
-        if (m_int)
-          setMaskHelper<CMP>(x.get_strided_view<const ST>(),m.get_view<int>(),mh,value,dims);
-        else if (m_float)
-          setMaskHelper<CMP>(x.get_strided_view<const ST>(),m.get_view<float>(),mh,value,dims);
-        else
-          setMaskHelper<CMP>(x.get_strided_view<const ST>(),m.get_view<double>(),mh,value,dims);
+        setMaskHelper<CMP>(x.get_strided_view<const ST>(),m.get_view<int>(),mh,value,dims);
       break;
     case 1:
       if (contiguous)
-        if (m_int)
-          setMaskHelper<CMP>(x.get_view<const ST*>(),m.get_view<int*>(),mh,value,dims);
-        else if (m_float)
-          setMaskHelper<CMP>(x.get_view<const ST*>(),m.get_view<float*>(),mh,value,dims);
-        else
-          setMaskHelper<CMP>(x.get_view<const ST*>(),m.get_view<double*>(),mh,value,dims);
+        setMaskHelper<CMP>(x.get_view<const ST*>(),m.get_view<int*>(),mh,value,dims);
       else
-        if (m_int)
-          setMaskHelper<CMP>(x.get_strided_view<const ST*>(),m.get_view<int*>(),mh,value,dims);
-        else if (m_float)
-          setMaskHelper<CMP>(x.get_strided_view<const ST*>(),m.get_view<float*>(),mh,value,dims);
-        else
-          setMaskHelper<CMP>(x.get_strided_view<const ST*>(),m.get_view<double*>(),mh,value,dims);
+        setMaskHelper<CMP>(x.get_strided_view<const ST*>(),m.get_view<int*>(),mh,value,dims);
       break;
     case 2:
       if (contiguous)
-        if (m_int)
-          setMaskHelper<CMP>(x.get_view<const ST**>(),m.get_view<int**>(),mh,value,dims);
-        else if (m_float)
-          setMaskHelper<CMP>(x.get_view<const ST**>(),m.get_view<float**>(),mh,value,dims);
-        else
-          setMaskHelper<CMP>(x.get_view<const ST**>(),m.get_view<double**>(),mh,value,dims);
+        setMaskHelper<CMP>(x.get_view<const ST**>(),m.get_view<int**>(),mh,value,dims);
       else
-        if (m_int)
-          setMaskHelper<CMP>(x.get_strided_view<const ST**>(),m.get_view<int**>(),mh,value,dims);
-        else if (m_float)
-          setMaskHelper<CMP>(x.get_strided_view<const ST**>(),m.get_view<float**>(),mh,value,dims);
-        else
-          setMaskHelper<CMP>(x.get_strided_view<const ST**>(),m.get_view<double**>(),mh,value,dims);
+        setMaskHelper<CMP>(x.get_strided_view<const ST**>(),m.get_view<int**>(),mh,value,dims);
       break;
     case 3:
       if (contiguous)
-        if (m_int)
-          setMaskHelper<CMP>(x.get_view<const ST***>(),m.get_view<int***>(),mh,value,dims);
-        else if (m_float)
-          setMaskHelper<CMP>(x.get_view<const ST***>(),m.get_view<float***>(),mh,value,dims);
-        else
-          setMaskHelper<CMP>(x.get_view<const ST***>(),m.get_view<double***>(),mh,value,dims);
+        setMaskHelper<CMP>(x.get_view<const ST***>(),m.get_view<int***>(),mh,value,dims);
       else
-        if (m_int)
-          setMaskHelper<CMP>(x.get_strided_view<const ST***>(),m.get_view<int***>(),mh,value,dims);
-        else if (m_float)
-          setMaskHelper<CMP>(x.get_strided_view<const ST***>(),m.get_view<float***>(),mh,value,dims);
-        else
-          setMaskHelper<CMP>(x.get_strided_view<const ST***>(),m.get_view<double***>(),mh,value,dims);
+        setMaskHelper<CMP>(x.get_strided_view<const ST***>(),m.get_view<int***>(),mh,value,dims);
       break;
     case 4:
       if (contiguous)
-        if (m_int)
-          setMaskHelper<CMP>(x.get_view<const ST****>(),m.get_view<int****>(),mh,value,dims);
-        else if (m_float)
-          setMaskHelper<CMP>(x.get_view<const ST****>(),m.get_view<float****>(),mh,value,dims);
-        else
-          setMaskHelper<CMP>(x.get_view<const ST****>(),m.get_view<double****>(),mh,value,dims);
+        setMaskHelper<CMP>(x.get_view<const ST****>(),m.get_view<int****>(),mh,value,dims);
       else
-        if (m_int)
-          setMaskHelper<CMP>(x.get_strided_view<const ST****>(),m.get_view<int****>(),mh,value,dims);
-        else if (m_float)
-          setMaskHelper<CMP>(x.get_strided_view<const ST****>(),m.get_view<float****>(),mh,value,dims);
-        else
-          setMaskHelper<CMP>(x.get_strided_view<const ST****>(),m.get_view<double****>(),mh,value,dims);
+        setMaskHelper<CMP>(x.get_strided_view<const ST****>(),m.get_view<int****>(),mh,value,dims);
       break;
     case 5:
       if (contiguous)
-        if (m_int)
-          setMaskHelper<CMP>(x.get_view<const ST*****>(),m.get_view<int*****>(),mh,value,dims);
-        else if (m_float)
-          setMaskHelper<CMP>(x.get_view<const ST*****>(),m.get_view<float*****>(),mh,value,dims);
-        else
-          setMaskHelper<CMP>(x.get_view<const ST*****>(),m.get_view<double*****>(),mh,value,dims);
+        setMaskHelper<CMP>(x.get_view<const ST*****>(),m.get_view<int*****>(),mh,value,dims);
       else
-        if (m_int)
-          setMaskHelper<CMP>(x.get_strided_view<const ST*****>(),m.get_view<int*****>(),mh,value,dims);
-        else if (m_float)
-          setMaskHelper<CMP>(x.get_strided_view<const ST*****>(),m.get_view<float*****>(),mh,value,dims);
-        else
-          setMaskHelper<CMP>(x.get_strided_view<const ST*****>(),m.get_view<double*****>(),mh,value,dims);
+        setMaskHelper<CMP>(x.get_strided_view<const ST*****>(),m.get_view<int*****>(),mh,value,dims);
       break;
     case 6:
       if (contiguous)
-        if (m_int)
-          setMaskHelper<CMP>(x.get_view<const ST******>(),m.get_view<int******>(),mh,value,dims);
-        else if (m_float)
-          setMaskHelper<CMP>(x.get_view<const ST******>(),m.get_view<float******>(),mh,value,dims);
-        else
-          setMaskHelper<CMP>(x.get_view<const ST******>(),m.get_view<double******>(),mh,value,dims);
+        setMaskHelper<CMP>(x.get_view<const ST******>(),m.get_view<int******>(),mh,value,dims);
       else
-        if (m_int)
-          setMaskHelper<CMP>(x.get_strided_view<const ST******>(),m.get_view<int******>(),mh,value,dims);
-        else if (m_float)
-          setMaskHelper<CMP>(x.get_strided_view<const ST******>(),m.get_view<float******>(),mh,value,dims);
-        else
-          setMaskHelper<CMP>(x.get_strided_view<const ST******>(),m.get_view<double******>(),mh,value,dims);
+        setMaskHelper<CMP>(x.get_strided_view<const ST******>(),m.get_view<int******>(),mh,value,dims);
       break;
     default:
       EKAT_ERROR_MSG ("Unsupported field rank in compute_mask.\n"

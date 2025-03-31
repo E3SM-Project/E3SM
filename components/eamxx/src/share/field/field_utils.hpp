@@ -376,6 +376,10 @@ void compute_mask (const Field& x, const ST value, Field& mask)
   EKAT_REQUIRE_MSG (not mask.is_read_only(),
       "Error! Cannot update mask field, as it is read-only.\n"
       " - mask name: " + mask.name() + "\n");
+  EKAT_REQUIRE_MSG (mask.data_type()==DataType::IntType,
+      "Error! The data type of the mask field must be 'int'.\n"
+      " - mask field name: " << mask.name() << "\n"
+      " - mask field data type: " << etoi(mask.data_type()) << "\n");
 
   const auto& x_layout = x.get_header().get_identifier().get_layout();
   const auto& m_layout = mask.get_header().get_identifier().get_layout();
