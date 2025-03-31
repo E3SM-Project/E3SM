@@ -174,7 +174,7 @@ void MAMWetscav::init_buffers(const ATMBufferManager &buffer_manager) {
       buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(),
       "Error! Insufficient buffer size.\n");
   size_t used_mem =
-      mam_coupling::init_buffer(buffer_manager, ncol_, nlev_, buffer_, 0);
+      mam_coupling::init_buffer(buffer_manager, ncol_, nlev_, buffer_);
   std::cout << "used_mem " << used_mem << "requested_buffer_size_in_bytes() "<< requested_buffer_size_in_bytes() << "\n";
   EKAT_REQUIRE_MSG(used_mem == requested_buffer_size_in_bytes(),
                    "Error! Used memory != requested memory for MAMWetscav.");

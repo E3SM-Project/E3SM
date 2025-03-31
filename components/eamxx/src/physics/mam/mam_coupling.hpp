@@ -349,8 +349,6 @@ struct Buffer {
 
   uview_2d z_iface;  // height at interfaces
 
-  uview_2d work;
-
   uview_1d temporal_views;
 
   int len_temporal_views{0};
@@ -377,10 +375,11 @@ struct Buffer {
 // Buffer type given the number of columns and vertical levels
 inline size_t buffer_size(const int ncol, const int nlev,
                           const int num_2d_scratch,
-                          const int work_len) {
+                          const int len_temporal_views) {
   const int num_2d_mid = Buffer::min_num_2d_mid + num_2d_scratch;
-  return sizeof(Real) * (num_2d_mid* ncol * nlev + ncol * work_len +
-                         Buffer::num_2d_iface * ncol * (nlev + 1));
+  return sizeof(Real) * (num_2d_mid* ncol * nlev +
+                         Buffer::num_2d_iface * ncol * (nlev + 1)) +
+                         sizeof(Real) *len_temporal_views;
 }
 
 // ON HOST, initializeѕ the Buffer type with sufficient memory to store
@@ -388,8 +387,7 @@ inline size_t buffer_size(const int ncol, const int nlev,
 // number of vertical levels. Returns the number of bytes allocated.
 inline size_t init_buffer(const ATMBufferManager &buffer_manager,
                           const int ncol, const int nlev,
-                          Buffer &buffer,
-                          const int work_len=0) {
+                          Buffer &buffer) {
   Real *mem = reinterpret_cast<Real *>(buffer_manager.get_memory());
 
   // set view pointers for midpoint fields
@@ -459,10 +457,7 @@ inline size_t init_buffer(const ATMBufferManager &buffer_manager,
     mem += view_2d_iface_ptrs[i]->size();
   }
 
-  // views
-  buffer.work = view_2d(mem, ncol, work_len);
-  mem += ncol*work_len;
-
+  // Views with layouts different from (ncol, nlev).
   buffer.temporal_views= view_1d(mem, buffer.len_temporal_views);
   mem += buffer.len_temporal_views;
 
