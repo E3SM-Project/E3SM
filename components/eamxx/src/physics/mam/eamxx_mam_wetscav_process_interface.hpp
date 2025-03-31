@@ -43,7 +43,7 @@ class MAMWetscav : public MAMGenericInterface {
   // ON HOST, returns the number of bytes of device memory needed by the above
   // Buffer type given the number of columns and vertical levels
   size_t requested_buffer_size_in_bytes() const override {
-    return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_, work_len_);
+    return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_, 0) + sizeof(Real) * len_temporal_views_;
   }
   void init_buffers(const ATMBufferManager &buffer_manager) override;
 
@@ -98,10 +98,6 @@ class MAMWetscav : public MAMGenericInterface {
 
   int num_2d_scratch_= 48;
 
-  int work_len_=0;
-
-  void set_work_len();
-
   // Aerosol states
   mam_coupling::AerosolState dry_aero_tends_;
 
@@ -115,6 +111,9 @@ class MAMWetscav : public MAMGenericInterface {
   mam_coupling::Buffer buffer_;
   // parameters for calcsize
   mam4::modal_aer_opt::CalcsizeData calsize_data_;
+  int get_len_temporal_views();
+  void init_temporal_views();
+  int len_temporal_views_{0};
 
 };  // class MAMWetscav
 

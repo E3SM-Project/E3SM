@@ -33,9 +33,12 @@ void MAMWetscav::set_grids(
 
   ncol_ = grid_->get_num_local_dofs();       // Number of columns on this rank
   nlev_ = grid_->get_num_vertical_levels();  // Number of levels per column
+  len_temporal_views_=get_len_temporal_views();
+  buffer_.set_len_temporal_views(len_temporal_views_);
+  buffer_.set_num_scratch(num_2d_scratch_);
+
   const int nmodes    = mam4::AeroConfig::num_modes();  // Number of modes
   constexpr int pcnst = mam4::aero_model::pcnst;
-  set_work_len();
 
   // layout for 3D (2d horiz X 1d vertical) variables at level
   // midpoints/interfaces
@@ -159,11 +162,6 @@ void MAMWetscav::set_grids(
   add_field<Computed>("aerdepwetcw", scalar2d_pconst, kg / m2 / s, grid_name);
 }
 
-void MAMWetscav::set_work_len()
-{
-  work_len_ = mam4::wetdep::get_aero_model_wetdep_work_len();
-}
-
 // ================================================================
 //  INIT_BUFFERS
 // ================================================================
@@ -175,17 +173,27 @@ void MAMWetscav::init_buffers(const ATMBufferManager &buffer_manager) {
   EKAT_REQUIRE_MSG(
       buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(),
       "Error! Insufficient buffer size.\n");
-
-  buffer_.set_num_scratch(num_2d_scratch_);
   size_t used_mem =
-      mam_coupling::init_buffer(buffer_manager, ncol_, nlev_, buffer_, work_len_);
+      mam_coupling::init_buffer(buffer_manager, ncol_, nlev_, buffer_, 0);
   std::cout << "used_mem " << used_mem << "requested_buffer_size_in_bytes() "<< requested_buffer_size_in_bytes() << "\n";
   EKAT_REQUIRE_MSG(used_mem == requested_buffer_size_in_bytes(),
                    "Error! Used memory != requested memory for MAMWetscav.");
 }
 
+int MAMWetscav::get_len_temporal_views()
+{
+  const int work_len = mam4::wetdep::get_aero_model_wetdep_work_len()*ncol_;
+  return work_len;
+}
 
-
+void MAMWetscav::init_temporal_views()
+{
+  auto work_ptr = (Real *)buffer_.temporal_views.data();
+    // Allocate work array
+  const int work_len = mam4::wetdep::get_aero_model_wetdep_work_len();
+  work_              = view_2d(work_ptr, ncol_, work_len);
+  work_ptr +=ncol_*work_len;
+}
 // ================================================================
 //  INITIALIZE_IMPL
 // ================================================================
@@ -256,8 +264,7 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
     }
   }
   // Allocate work array
-  const int work_len = mam4::wetdep::get_aero_model_wetdep_work_len();
-  work_              = view_2d("work", ncol_, work_len);
+  init_temporal_views();
   isprx_             = int_view_2d("isprx", ncol_, nlev_);
   // TODO: Following variables are from convective parameterization (not
   // implemented yet in EAMxx), so should be zero for now
