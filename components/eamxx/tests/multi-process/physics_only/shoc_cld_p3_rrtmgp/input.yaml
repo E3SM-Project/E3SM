@@ -30,8 +30,8 @@ atmosphere_processes:
       w2tune: 1.0
       length_fac: 0.5
       c_diag_3rd_mom: 7.0
-      Ckh: 0.1
-      Ckm: 0.1
+      coeff_kh: 0.1
+      coeff_km: 0.1
   rrtmgp:
     column_chunk_size: 123
     active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]

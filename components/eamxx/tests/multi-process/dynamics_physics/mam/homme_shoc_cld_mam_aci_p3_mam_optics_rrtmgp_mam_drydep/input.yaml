@@ -75,8 +75,8 @@ atmosphere_processes:
         w2tune: 1.0
         length_fac: 0.5
         c_diag_3rd_mom: 7.0
-        Ckh: 0.1
-        Ckm: 0.1
+        coeff_kh: 0.1
+        coeff_km: 0.1
 
     mam4_optics:
       mam4_mode1_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/mam4_mode1_rrtmg_aeronetdust_c20240206.nc
