@@ -176,7 +176,8 @@ contains
 
 
   subroutine moab_map_init_rcfile( mbsrc, mbtgt, mbintx, discretization_type, &
-    maprcfile, maprcname, maprctype, samegrid, sol_identifier, string, esmf_map)
+                   maprcfile, maprcname, maprctype, samegrid, map_identifier, &
+                   description_string, esmf_map, backup_map_identifier)
 
    use iMOAB, only: iMOAB_LoadMappingWeightsFromFile
    implicit none
@@ -194,9 +195,10 @@ contains
    character(len=*)     ,intent(in)            :: maprcname
    character(len=*)     ,intent(in)            :: maprctype
    logical              ,intent(in)            :: samegrid
-   character(len=*)     ,intent(in),optional   :: sol_identifier !   /* "scalar", "flux", "custom" */
-   character(len=*)     ,intent(in),optional   :: string
+   character(len=*)     ,intent(inout)         :: map_identifier !   /* "scalar", "flux", "custom" */
+   character(len=*)     ,intent(in),optional   :: description_string
    logical              ,intent(in),optional   :: esmf_map
+   character(len=*)     ,intent(in),optional   :: backup_map_identifier
    !
    ! Local Variables
    !
@@ -209,36 +211,45 @@ contains
    integer(IN)                 :: mapid
    integer                     :: ierr
 
-
    character(len=*),parameter  :: subname = "(moab_map_init_rcfile) "
    !-----------------------------------------------------
 
-   if (seq_comm_iamroot(CPLID) .and. present(string)) then
-      write(logunit,'(A)') subname//' called for '//trim(string)
+   if (seq_comm_iamroot(CPLID) .and. present(description_string)) then
+      write(logunit,'(A)') subname//' called for '//trim(description_string)
    endif
 
    call seq_comm_setptrs(CPLID, mpicom=mpicom)
 
    ! --- Initialize Smatp
    call shr_mct_queryConfigFile(mpicom,maprcfile,maprcname,mapfile,maprctype,maptype)
-   !call shr_mct_sMatPInitnc(mapper%sMatp, mapper%gsMap_s, mapper%gsMap_d, trim(mapfile),trim(maptype),mpicom)
-   !sol_identifier = 'map-from-file'//CHAR(0)
-   mapfile_term = trim(mapfile)//CHAR(0)
-   if (seq_comm_iamroot(CPLID)) then
-       write(logunit,*) subname,' reading map file with iMOAB: ', trim(mapfile_term)
-   endif
+   !map_identifier = 'map-from-file'//CHAR(0)
+   if (mapfile == 'idmap' .or. mapfile == 'idmap_ignore') then
+      if (present(backup_map_identifier)) then
+         map_identifier = backup_map_identifier
+      else
+         write(logunit,*) subname,' error in loading map file - ' // mapfile
+         call shr_sys_abort(subname//' ERROR in loading map file - ' // mapfile)
+      end if
+   else
+      mapfile_term = trim(mapfile)//CHAR(0)
+      if (seq_comm_iamroot(CPLID)) then
+         write(logunit,*) subname,' reading map file with iMOAB: ', trim(mapfile_term)
+      endif
 
-   ierr = iMOAB_LoadMappingWeightsFromFile( mbsrc, mbtgt, mbintx, discretization_type, &
-                      discretization_type, sol_identifier, mapfile_term)
-   if (ierr .ne. 0) then
-      write(logunit,*) subname,' error in loading map file'
-      call shr_sys_abort(subname//' ERROR in loading map file')
-    endif
-   if (seq_comm_iamroot(CPLID)) then
-      write(logunit,'(2A,I12,4A)') subname,'Result: iMOAB map app ID, maptype, mapfile = ', &
-         mbintx,' ',trim(maptype),' ',trim(mapfile), ', identifier: ', trim(sol_identifier)
-      call shr_sys_flush(logunit)
-   endif
+      ! now let us actually load the mapping weights file in parallel
+      ierr = iMOAB_LoadMappingWeightsFromFile( mbsrc, mbtgt, mbintx, discretization_type, &
+                        discretization_type, map_identifier, mapfile_term )
+      if (ierr .ne. 0) then
+         write(logunit,*) subname,' error in loading map file - ' // mapfile
+         call shr_sys_abort(subname//' ERROR in loading map file - ' // mapfile)
+      endif
+      if (seq_comm_iamroot(CPLID)) then
+         write(logunit,'(2A,I10,6A)') subname, ': iMOAB map appID: ', &
+            mbintx, ', maptype: ', trim(maptype), ', mapfile: ', &
+            trim(mapfile), ', identifier: ', trim(map_identifier)
+         call shr_sys_flush(logunit)
+      endif
+   end if ! if (mapfile == 'idmap' .or. mapfile == 'idmap_ignore')
 
 end subroutine moab_map_init_rcfile
 
