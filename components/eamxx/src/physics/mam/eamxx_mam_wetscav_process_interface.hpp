@@ -43,7 +43,7 @@ class MAMWetscav : public MAMGenericInterface {
   // ON HOST, returns the number of bytes of device memory needed by the above
   // Buffer type given the number of columns and vertical levels
   size_t requested_buffer_size_in_bytes() const override {
-    return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_, 0) + sizeof(Real) * len_temporal_views_;
+    return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_, len_temporal_views_);
   }
   void init_buffers(const ATMBufferManager &buffer_manager) override;
 

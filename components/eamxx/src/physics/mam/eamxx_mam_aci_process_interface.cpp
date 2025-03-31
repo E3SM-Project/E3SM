@@ -363,7 +363,6 @@ void MAMAci::initialize_impl(const RunType run_type) {
   // Allocate memory for the class members
   // (Kokkos::resize only works on host to allocates memory)
   //---------------------------------------------------------------------------------
-
   set_field_w_scratch_buffer(rho_, buffer_, true);
   set_field_w_scratch_buffer(w0_, buffer_, true);
   set_field_w_scratch_buffer(wsub_, buffer_, true);
@@ -401,10 +400,10 @@ void MAMAci::initialize_impl(const RunType run_type) {
   // cloud droplet number mixing ratio [#/kg]
   set_field_w_scratch_buffer(qcld_, buffer_, true);
 
-  init_temporal_views();
-
   // column-integrated droplet number [#/m2]
   set_field_w_scratch_buffer(ndropcol_, buffer_, true);
+
+  init_temporal_views();
 
   // droplet number mixing ratio tendency due to mixing [#/kg/s]
   // Kokkos::resize(ndropmix_, ncol_, nlev_);

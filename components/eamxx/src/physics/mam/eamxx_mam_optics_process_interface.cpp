@@ -91,7 +91,7 @@ void MAMOptics::set_grids(
 }
 
 size_t MAMOptics::requested_buffer_size_in_bytes() const {
-  return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_, 0) + sizeof(Real) * len_temporal_views_;
+  return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_, len_temporal_views_);
 }
 
 int MAMOptics::get_len_temporal_views()
@@ -152,7 +152,7 @@ void MAMOptics::init_buffers(const ATMBufferManager &buffer_manager) {
       "Error! Insufficient buffer size.\n");
 
   size_t used_mem =
-      mam_coupling::init_buffer(buffer_manager, ncol_, nlev_, buffer_, 0);
+      mam_coupling::init_buffer(buffer_manager, ncol_, nlev_, buffer_);
   EKAT_REQUIRE_MSG(used_mem == requested_buffer_size_in_bytes(),
                    "Error! Used memory != requested memory for MAMMOptics.");
 }
