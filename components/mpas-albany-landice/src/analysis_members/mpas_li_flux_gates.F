@@ -118,7 +118,7 @@ contains
       integer, dimension(:), pointer :: edgeMask
       real (kind=RKIND), dimension(:,:), pointer :: layerThicknessEdge, &
                                                     layerNormalVelocity
-      integer, dimension(:,:), pointer :: fluxGateEdgeMasks
+      integer, dimension(:,:), pointer :: fluxGateEdgeMasks, fluxGateEdgeMasksSigns
       real (kind=RKIND), dimension(:), pointer :: iceFluxThroughGates
       integer, pointer :: nEdges, nVertLevels
       real (kind=RKIND), pointer ::  rhoi
@@ -141,12 +141,15 @@ contains
       call mpas_pool_get_array(fluxGatesAMPool, 'iceFluxThroughGates', iceFluxThroughGates)
       call mpas_pool_get_array(velocityPool, 'layerNormalVelocity', layerNormalVelocity)
       call mpas_pool_get_array(fluxGatesPool, 'fluxGateEdgeMasks', fluxGateEdgeMasks)
+      call mpas_pool_get_array(fluxGatesPool, 'fluxGateEdgeMasksSigns', fluxGateEdgeMasksSigns)
 
       localIceFluxThroughGates(:) = 0.0_RKIND
       iceFluxThroughGates(:) = 0.0_RKIND
+
       do iGate = 1, nFluxGates
          localIceFluxThroughGates(iGate) = sum( sum(layerNormalVelocity(:,:) * layerThicknessEdge(:,:), 1) * &
-                                                dvEdge(:) * rhoi * scyr * fluxGateEdgeMasks(iGate, :))
+                                                dvEdge(:) * rhoi * scyr * fluxGateEdgeMasks(iGate, :) * &
+                                                merge(1.0_RKIND, 0.0_RKIND, fluxGateEdgeMasksSigns(iGate, :) > 0))
       enddo
 
       call mpas_dmpar_sum_real_array(dminfo, nFluxGates, localIceFluxThroughGates, iceFluxThroughGates)
