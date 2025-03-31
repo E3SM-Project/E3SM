@@ -106,7 +106,7 @@ void MAMSrfOnlineEmiss::set_grids(
   //--------------------------------------------------------------------
   srf_emiss_ dms;
   // File name, name and sectors
-  dms.data_file    = m_params.get<std::string>("srf_emis_specifier_for_DMS");
+  dms.data_file    = m_params.get<std::string>("srf_emis_specifier_for_dms");
   dms.species_name = "dms";
   dms.sectors      = {"DMS"};
   srf_emiss_species_.push_back(dms);  // add to the vector
@@ -116,7 +116,7 @@ void MAMSrfOnlineEmiss::set_grids(
   //--------------------------------------------------------------------
   srf_emiss_ so2;
   // File name, name and sectors
-  so2.data_file    = m_params.get<std::string>("srf_emis_specifier_for_SO2");
+  so2.data_file    = m_params.get<std::string>("srf_emis_specifier_for_so2");
   so2.species_name = "so2";
   so2.sectors      = {"AGR", "RCO", "SHP", "SLV", "TRA", "WST"};
   srf_emiss_species_.push_back(so2);  // add to the vector
