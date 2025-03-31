@@ -72,6 +72,7 @@ class MAMGenericInterface : public scream::AtmosphereProcess {
   int ncol_, nlev_;
   void set_ranges_process(
       const std::map<std::string, std::pair<Real, Real>> &max_min_process);
+  void set_buffer_scratch_to_zero(mam_coupling::Buffer &buffer);
 
  private:
   // The type of subcomponent

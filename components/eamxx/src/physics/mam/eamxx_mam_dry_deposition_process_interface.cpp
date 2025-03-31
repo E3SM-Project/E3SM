@@ -200,8 +200,8 @@ int MAMDryDep::get_len_temporal_views()
   // vlc_trb_
   work_len += mam4::AeroConfig::num_modes()*
                      aerosol_categories_*ncol_;
-  // vlc_grv_
-  work_len += mam4::AeroConfig::num_modes()*
+  // vlc_grv_, vlc_dry_
+  work_len += 2 * mam4::AeroConfig::num_modes()*
                      aerosol_categories_*ncol_*nlev_;
   // rho_
   work_len +=ncol_*nlev_;
@@ -254,6 +254,15 @@ void MAMDryDep::init_temporal_views()
   // Work array to hold tendency for 1 species [kg/kg/s] or [1/kg/s]
   dqdt_tmp_ = view_3d(work_ptr, pcnst, ncol_, nlev_);
   work_ptr+=pcnst*ncol_*nlev_;
+
+  /// error check
+  // NOTE: workspace_provided can be larger than workspace_used, but let's try to use the minimum amount of memory
+  const int workspace_used = work_ptr - buffer_.temporal_views.data();
+  const int workspace_provided = buffer_.temporal_views.extent(0);
+  EKAT_REQUIRE_MSG(workspace_used == workspace_provided,
+    "Error: workspace_used (" + std::to_string(workspace_used) +
+    ") and workspace_provided (" + std::to_string(workspace_provided) +
+    ") should be equal. \n");
 }
 
 // ================================================================
@@ -326,6 +335,7 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
 void MAMDryDep::run_impl(const double dt) {
   const auto scan_policy = ekat::ExeSpaceUtils<
       KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+
 
   // preprocess input -- needs a scan for the calculation of atm height
   pre_process(wet_aero_, dry_aero_, wet_atm_, dry_atm_);

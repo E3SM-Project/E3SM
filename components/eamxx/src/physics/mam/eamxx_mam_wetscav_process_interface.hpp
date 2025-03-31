@@ -96,7 +96,7 @@ class MAMWetscav : public MAMGenericInterface {
   // Detraining cld H20 from deep convection [kg/kg/s]
   view_2d dlf_;
 
-  int num_2d_scratch_= 48;
+  int num_2d_scratch_= 39;
 
   // Aerosol states
   mam_coupling::AerosolState dry_aero_tends_;

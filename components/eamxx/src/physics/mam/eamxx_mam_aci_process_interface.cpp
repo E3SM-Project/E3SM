@@ -272,6 +272,15 @@ void MAMAci::init_temporal_views() {
     //     view_3d("state_q_work_", ncol_, nlev_, mam4::aero_model::pcnst);
     state_q_work_ = view_3d(work_ptr, ncol_, nlev_, mam4::aero_model::pcnst);
     work_ptr += ncol_*nlev_*mam4::aero_model::pcnst;
+
+    /// error check
+    // NOTE: workspace_provided can be larger than workspace_used, but let's try to use the minimum amount of memory
+    const int workspace_used = work_ptr - buffer_.temporal_views.data();
+    const int workspace_provided = buffer_.temporal_views.extent(0);
+    EKAT_REQUIRE_MSG(workspace_used == workspace_provided,
+    "Error: workspace_used (" + std::to_string(workspace_used) +
+    ") and workspace_provided (" + std::to_string(workspace_provided) +
+    ") should be equal. \n");
 }
 // ================================================================
 //  INITIALIZE_IMPL
@@ -368,7 +377,8 @@ void MAMAci::initialize_impl(const RunType run_type) {
   set_field_w_scratch_buffer(wsub_, buffer_, true);
   set_field_w_scratch_buffer(wsubice_, buffer_, true);
   set_field_w_scratch_buffer(wsig_, buffer_, true);
-  set_field_w_scratch_buffer(w2_, buffer_, true);
+  //NOTE: w2_ is not used.
+  // set_field_w_scratch_buffer(w2_, buffer_, true);
   set_field_w_scratch_buffer(cloud_frac_, buffer_, true);
   set_field_w_scratch_buffer(cloud_frac_prev_, buffer_, true);
   set_field_w_scratch_buffer(aitken_dry_dia_, buffer_, true);
@@ -429,8 +439,10 @@ void MAMAci::initialize_impl(const RunType run_type) {
   // subgrid vertical velocity [m/s]
   set_field_w_scratch_buffer(wtke_, buffer_, true);
 
+  //NOTE: If we use buffer_ to initialize dropmixnuc_scratch_mem_,
+  // we must reset these values to zero each time run_impl is called.
   for(int i = 0; i < dropmix_scratch_; ++i) {
-    set_field_w_scratch_buffer(dropmixnuc_scratch_mem_[i], buffer_, true);
+    dropmixnuc_scratch_mem_[i] = view_2d("dropmixnuc_scratch_mem_", ncol_, nlev_);
   }
   for(int i = 0; i < mam4::ndrop::ncnst_tot; ++i) {
     // column tendency for diagnostic output
@@ -438,8 +450,10 @@ void MAMAci::initialize_impl(const RunType run_type) {
     // column tendency
     set_field_w_scratch_buffer(coltend_cw_[i], buffer_, true);
   }
+  //NOTE: If we use buffer_ to initialize ptend_q_,
+  // we must reset these values to zero each time run_impl is called.
   for(int i = 0; i < mam4::aero_model::pcnst; ++i) {
-    set_field_w_scratch_buffer(ptend_q_[i], buffer_, true);
+    ptend_q_[i]= view_2d("ptend_q_", ncol_, nlev_);
   }
   // Allocate work arrays
   for(int icnst = 0; icnst < mam4::ndrop::ncnst_tot; ++icnst) {
@@ -448,10 +462,10 @@ void MAMAci::initialize_impl(const RunType run_type) {
   //---------------------------------------------------------------------------------
   // Diagnotics variables from the hetrozenous ice nucleation scheme
   //---------------------------------------------------------------------------------
-
+  //NOTE: If we use buffer_ to initialize diagnostic_scratch_,
+  // we must reset these values to zero each time run_impl is called.
   for(int i = 0; i < hetro_scratch_; ++i)
-    set_field_w_scratch_buffer(diagnostic_scratch_[i], buffer_, true);
-
+    diagnostic_scratch_[i] = view_2d("diagnostic_scratch_", ncol_, nlev_);
   //---------------------------------------------------------------------------------
   // Initialize the processes
   //---------------------------------------------------------------------------------
@@ -484,6 +498,7 @@ void MAMAci::run_impl(const double dt) {
   // preprocess input -- needs a scan for the calculation of local derivied
   // quantities
   Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
+
   Kokkos::fence();
 
   haero::ThreadTeamPolicy team_policy(ncol_, Kokkos::AUTO);

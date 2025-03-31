@@ -122,7 +122,7 @@ class MAMAci final : public MAMGenericInterface {
   view_2d diagnostic_scratch_[hetro_scratch_];
 
   // Subgrid scale velocities
-  view_2d wsub_, wsubice_, wsig_, w2_;
+  view_2d wsub_, wsubice_, wsig_;//, w2_;
 
   // local atmospheric state column variables
   const_view_2d pdel_;       // pressure thickess of layer [Pa]
@@ -221,7 +221,7 @@ class MAMAci final : public MAMGenericInterface {
   // workspace manager for internal local variables
   mam_coupling::Buffer buffer_;
 
-  int num_2d_scratch_= 192;
+  int num_2d_scratch_= 94;
   int len_temporal_views_{0};
 
 };  // MAMAci
