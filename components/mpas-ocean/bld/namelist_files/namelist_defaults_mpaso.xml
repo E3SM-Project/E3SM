@@ -760,8 +760,8 @@
 <config_use_freshwaterTracers_surface_value>.false.</config_use_freshwaterTracers_surface_value>
 <config_use_freshwaterTracers_rainFlux>.true.</config_use_freshwaterTracers_rainFlux>
 <config_use_freshwaterTracers_snowFlux>.true.</config_use_freshwaterTracers_snowFlux>
-<config_use_freshwaterTracers_riverRunoffFlux>.true.</config_use_freshwaterTracers_riverRunoffFlux>
 <config_use_freshwaterTracers_iceRunoffFlux>.true.</config_use_freshwaterTracers_iceRunoffFlux>
+<config_use_freshwaterTracers_riverRunoffFlux>.true.</config_use_freshwaterTracers_riverRunoffFlux>
 <config_use_freshwaterTracers_subglacialRunoffFlux>.false.</config_use_freshwaterTracers_subglacialRunoffFlux>
 <config_use_freshwaterTracers_seaIceFreshWaterFlux>.true.</config_use_freshwaterTracers_seaIceFreshWaterFlux>
 <config_use_freshwaterTracers_icebergFreshWaterFlux>.false.</config_use_freshwaterTracers_icebergFreshWaterFlux>
