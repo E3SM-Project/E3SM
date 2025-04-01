@@ -69,6 +69,20 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
     elif case.get_value('RUN_TYPE') == 'branch':
         config['run_type'] = 'branch'
 
+    # ---------------------------------------------------
+    # set wave coupling settings based on compset:
+    # ---------------------------------------------------
+    if case.get_value('COMP_WAV') == 'ww3':
+        config['WAVSPEC'] = case.get_value('WAV_SPEC')
+        if case.get_value('COMP_OCN') == 'mpaso':
+            config['WAV_OCN_COUP'] = 'twoway'
+        elif case.get_value('COMP_OCN') == 'docn': 
+            config['WAV_OCN_COUP'] = 'oneway'
+    elif case.get_value('COMP_WAV') == 'dwav':
+        config['WAVSPEC'] = 'sp36x36'
+    else:
+        config['WAVSPEC'] = 'none'
+
     #----------------------------------------------------
     # Initialize namelist defaults
     #----------------------------------------------------
