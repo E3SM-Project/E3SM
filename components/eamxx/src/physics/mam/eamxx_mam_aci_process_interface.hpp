@@ -122,7 +122,7 @@ class MAMAci final : public MAMGenericInterface {
   view_2d diagnostic_scratch_[hetro_scratch_];
 
   // Subgrid scale velocities
-  view_2d wsub_, wsubice_, wsig_;//, w2_;
+  view_2d wsub_, wsubice_, wsig_;  //, w2_;
 
   // local atmospheric state column variables
   const_view_2d pdel_;       // pressure thickess of layer [Pa]
@@ -149,7 +149,8 @@ class MAMAci final : public MAMGenericInterface {
 
   // management of common atm process memory
   size_t requested_buffer_size_in_bytes() const override {
-    return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_, len_temporal_views_);
+    return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_,
+                                     len_temporal_views_);
   }
 
   void init_buffers(const ATMBufferManager &buffer_manager) override;
@@ -221,7 +222,7 @@ class MAMAci final : public MAMGenericInterface {
   // workspace manager for internal local variables
   mam_coupling::Buffer buffer_;
 
-  int num_2d_scratch_= 94;
+  int num_2d_scratch_ = 94;
   int len_temporal_views_{0};
 
 };  // MAMAci

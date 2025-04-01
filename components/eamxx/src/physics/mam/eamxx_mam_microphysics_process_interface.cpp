@@ -60,7 +60,7 @@ void MAMMicrophysics::set_grids(
 
   photo_table_ = impl::read_photo_table(rsf_file, xs_long_file);
   // NOTE: we need photo_table_ before getting len_temporal_views_.
-  len_temporal_views_=get_len_temporal_views();
+  len_temporal_views_ = get_len_temporal_views();
   buffer_.set_len_temporal_views(len_temporal_views_);
   buffer_.set_num_scratch(num_2d_scratch_);
 
@@ -344,7 +344,8 @@ void MAMMicrophysics::set_grids(
 // the above. Buffer type given the number of columns and vertical
 // levels
 size_t MAMMicrophysics::requested_buffer_size_in_bytes() const {
-  return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_, len_temporal_views_);
+  return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_,
+                                   len_temporal_views_);
 }
 
 // ================================================================
@@ -367,59 +368,60 @@ void MAMMicrophysics::init_buffers(const ATMBufferManager &buffer_manager) {
                        << std::to_string(requested_buffer_size_in_bytes())
                        << ". \n");
 }
-int MAMMicrophysics::get_len_temporal_views()
-{
+int MAMMicrophysics::get_len_temporal_views() {
   const int photo_table_len = get_photo_table_work_len(photo_table_);
   const int sethet_work_len = mam4::mo_sethet::get_total_work_len_sethet();
-  constexpr int extcnt = mam4::gas_chemistry::extcnt;
-  int work_len=0;
+  constexpr int extcnt      = mam4::gas_chemistry::extcnt;
+  int work_len              = 0;
   // work_photo_table_
-  work_len += ncol_*photo_table_len;
+  work_len += ncol_ * photo_table_len;
   // work_set_het_
-  work_len += ncol_*sethet_work_len;
+  work_len += ncol_ * sethet_work_len;
   // photo_rates_
-  work_len += ncol_*nlev_*mam4::mo_photo::phtcnt;
+  work_len += ncol_ * nlev_ * mam4::mo_photo::phtcnt;
   // invariants_
-  work_len += ncol_*nlev_*mam4::gas_chemistry::nfs;
+  work_len += ncol_ * nlev_ * mam4::gas_chemistry::nfs;
   // extfrc_
-  work_len +=ncol_*nlev_*extcnt;
+  work_len += ncol_ * nlev_ * extcnt;
   // dflx_, dvel_
   constexpr int gas_pcnst = mam_coupling::gas_pcnst();
-  work_len+=2*ncol_*gas_pcnst;
+  work_len += 2 * ncol_ * gas_pcnst;
   return work_len;
 }
-void MAMMicrophysics::init_temporal_views()
-{
+void MAMMicrophysics::init_temporal_views() {
   const int photo_table_len = get_photo_table_work_len(photo_table_);
   const int sethet_work_len = mam4::mo_sethet::get_total_work_len_sethet();
-  constexpr int extcnt = mam4::gas_chemistry::extcnt;
-  auto work_ptr = (Real *)buffer_.temporal_views.data();
+  constexpr int extcnt      = mam4::gas_chemistry::extcnt;
+  auto work_ptr             = (Real *)buffer_.temporal_views.data();
 
   work_photo_table_ = view_2d(work_ptr, ncol_, photo_table_len);
-  work_ptr += ncol_*photo_table_len;
+  work_ptr += ncol_ * photo_table_len;
   work_set_het_ = view_2d(work_ptr, ncol_, sethet_work_len);
-  work_ptr += ncol_*sethet_work_len;
+  work_ptr += ncol_ * sethet_work_len;
   // here's where we store per-column photolysis rates
   photo_rates_ = view_3d(work_ptr, ncol_, nlev_, mam4::mo_photo::phtcnt);
-  work_ptr += ncol_*nlev_*mam4::mo_photo::phtcnt;
+  work_ptr += ncol_ * nlev_ * mam4::mo_photo::phtcnt;
   invariants_ = view_3d(work_ptr, ncol_, nlev_, mam4::gas_chemistry::nfs);
-  work_ptr += ncol_*nlev_*mam4::gas_chemistry::nfs;
-  extfrc_              = view_3d(work_ptr, ncol_, nlev_, extcnt);
-  work_ptr +=ncol_*nlev_*extcnt;
-  // Work arrays for return values from perform_atmospheric_chemistry_and_microphysics
+  work_ptr += ncol_ * nlev_ * mam4::gas_chemistry::nfs;
+  extfrc_ = view_3d(work_ptr, ncol_, nlev_, extcnt);
+  work_ptr += ncol_ * nlev_ * extcnt;
+  // Work arrays for return values from
+  // perform_atmospheric_chemistry_and_microphysics
   constexpr int gas_pcnst = mam_coupling::gas_pcnst();
-  dflx_ = view_2d(work_ptr, ncol_, gas_pcnst);
-  work_ptr += ncol_*gas_pcnst;
+  dflx_                   = view_2d(work_ptr, ncol_, gas_pcnst);
+  work_ptr += ncol_ * gas_pcnst;
   dvel_ = view_2d(work_ptr, ncol_, gas_pcnst);
-  work_ptr +=ncol_*gas_pcnst;
-      /// error check
-    // NOTE: workspace_provided can be larger than workspace_used, but let's try to use the minimum amount of memory
-    const int workspace_used = work_ptr - buffer_.temporal_views.data();
-    const int workspace_provided = buffer_.temporal_views.extent(0);
-    EKAT_REQUIRE_MSG(workspace_used == workspace_provided,
-    "Error: workspace_used (" + std::to_string(workspace_used) +
-    ") and workspace_provided (" + std::to_string(workspace_provided) +
-    ") should be equal. \n");
+  work_ptr += ncol_ * gas_pcnst;
+  /// error check
+  // NOTE: workspace_provided can be larger than workspace_used, but let's try
+  // to use the minimum amount of memory
+  const int workspace_used     = work_ptr - buffer_.temporal_views.data();
+  const int workspace_provided = buffer_.temporal_views.extent(0);
+  EKAT_REQUIRE_MSG(workspace_used == workspace_provided,
+                   "Error: workspace_used (" + std::to_string(workspace_used) +
+                       ") and workspace_provided (" +
+                       std::to_string(workspace_provided) +
+                       ") should be equal. \n");
 }
 // ================================================================
 //  INITIALIZE_IMPL
@@ -481,8 +483,6 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   // cloudborne aerosol, e.g., soa_c_1
   populate_cloudborne_dry_aero(dry_aero_, buffer_);
 
-
-
   // set field property checks for the fields in this process
   /* e.g.
   using Interval = FieldWithinIntervalCheck;
@@ -522,7 +522,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
 
   init_temporal_views();
   // FIXME : why are we only using nlev_ instead of ncol_xnlev?
-  cmfdqr_       = view_1d("cmfdqr_", nlev_);
+  cmfdqr_ = view_1d("cmfdqr_", nlev_);
   // Load the first month into extfrc_lst_end.
   // Note: At the first time step, the data will be moved into extfrc_lst_beg,
   //       and extfrc_lst_end will be reloaded from file with the new month.

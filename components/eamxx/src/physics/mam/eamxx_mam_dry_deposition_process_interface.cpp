@@ -35,7 +35,7 @@ void MAMDryDep::set_grids(
 
   ncol_ = grid_->get_num_local_dofs();       // Number of columns on this rank
   nlev_ = grid_->get_num_vertical_levels();  // Number of levels per column
-  len_temporal_views_=get_len_temporal_views();
+  len_temporal_views_ = get_len_temporal_views();
   buffer_.set_len_temporal_views(len_temporal_views_);
 
   // Define the different field layouts that will be used for this process
@@ -172,7 +172,7 @@ void MAMDryDep::set_grids(
 // the above. Buffer type given the number of columns and vertical
 // levels
 size_t MAMDryDep::requested_buffer_size_in_bytes() const {
-  return mam_coupling::buffer_size(ncol_, nlev_, 0, len_temporal_views_) ;
+  return mam_coupling::buffer_size(ncol_, nlev_, 0, len_temporal_views_);
 }  // requested_buffer_size_in_bytes
 
 // ================================================================
@@ -193,76 +193,74 @@ void MAMDryDep::init_buffers(const ATMBufferManager &buffer_manager) {
                    "Error! Used memory != requested memory for MAMDryDep.");
 }  // init_buffers
 
-int MAMDryDep::get_len_temporal_views()
-{
+int MAMDryDep::get_len_temporal_views() {
   constexpr int pcnst = mam4::aero_model::pcnst;
-  int work_len=0;
+  int work_len        = 0;
   // vlc_trb_
-  work_len += mam4::AeroConfig::num_modes()*
-                     aerosol_categories_*ncol_;
+  work_len += mam4::AeroConfig::num_modes() * aerosol_categories_ * ncol_;
   // vlc_grv_, vlc_dry_
-  work_len += 2 * mam4::AeroConfig::num_modes()*
-                     aerosol_categories_*ncol_*nlev_;
+  work_len +=
+      2 * mam4::AeroConfig::num_modes() * aerosol_categories_ * ncol_ * nlev_;
   // rho_
-  work_len +=ncol_*nlev_;
+  work_len += ncol_ * nlev_;
   // qqcw_, dqdt_tmp_, qtracers_, ptend_q_
-  work_len +=4*pcnst*ncol_*nlev_;
+  work_len += 4 * pcnst * ncol_ * nlev_;
   return work_len;
 }
-void MAMDryDep::init_temporal_views()
-{
+void MAMDryDep::init_temporal_views() {
   //-----------------------------------------------------------------
   // Allocate memory
   //-----------------------------------------------------------------
   const int pcnst = mam4::aero_model::pcnst;
-  auto work_ptr = (Real *)buffer_.temporal_views.data();
+  auto work_ptr   = (Real *)buffer_.temporal_views.data();
 
   // Output of the the mixing ratio tendencies [kg/kg/s or 1/kg/s]
   ptend_q_ = view_3d(work_ptr, ncol_, nlev_, pcnst);
-  work_ptr +=ncol_*nlev_*pcnst;
+  work_ptr += ncol_ * nlev_ * pcnst;
 
   // Deposition velocity of turbulent dry deposition [m/s]
   vlc_trb_ = view_3d(work_ptr, mam4::AeroConfig::num_modes(),
                      aerosol_categories_, ncol_);
-  work_ptr += mam4::AeroConfig::num_modes()*
-                     aerosol_categories_*ncol_;
+  work_ptr += mam4::AeroConfig::num_modes() * aerosol_categories_ * ncol_;
 
   // Deposition velocity of gravitational settling [m/s]
   vlc_grv_ = view_4d(work_ptr, mam4::AeroConfig::num_modes(),
                      aerosol_categories_, ncol_, nlev_);
-  work_ptr += mam4::AeroConfig::num_modes()*
-                     aerosol_categories_*ncol_*nlev_;
+  work_ptr +=
+      mam4::AeroConfig::num_modes() * aerosol_categories_ * ncol_ * nlev_;
   // Deposition velocity, [m/s]
   // Fraction landuse weighted sum of vlc_grv and vlc_trb
   vlc_dry_ = view_4d(work_ptr, mam4::AeroConfig::num_modes(),
                      aerosol_categories_, ncol_, nlev_);
-  work_ptr += mam4::AeroConfig::num_modes()*
-                     aerosol_categories_*ncol_*nlev_;
+  work_ptr +=
+      mam4::AeroConfig::num_modes() * aerosol_categories_ * ncol_ * nlev_;
   // Work array to hold the mixing ratios [kg/kg or 1/kg]
   // Packs AerosolState::int_aero_nmr and AerosolState::int_aero_nmr
   // into one array.
   qtracers_ = view_3d(work_ptr, ncol_, nlev_, pcnst);
-  work_ptr += ncol_*nlev_*pcnst;
+  work_ptr += ncol_ * nlev_ * pcnst;
   // Work array to hold the air density [kg/m3]
   rho_ = view_2d(work_ptr, ncol_, nlev_);
-  work_ptr += ncol_*nlev_;
+  work_ptr += ncol_ * nlev_;
   // Work array to hold cloud borne aerosols mixing ratios [kg/kg or 1/kg]
   // Filled with Prognostics::n_mode_c and Prognostics::q_aero_c
   qqcw_ = view_3d(work_ptr, pcnst, ncol_, nlev_);
-  work_ptr +=pcnst*ncol_*nlev_;
+  work_ptr += pcnst * ncol_ * nlev_;
 
   // Work array to hold tendency for 1 species [kg/kg/s] or [1/kg/s]
   dqdt_tmp_ = view_3d(work_ptr, pcnst, ncol_, nlev_);
-  work_ptr+=pcnst*ncol_*nlev_;
+  work_ptr += pcnst * ncol_ * nlev_;
 
   /// error check
-  // NOTE: workspace_provided can be larger than workspace_used, but let's try to use the minimum amount of memory
-  const int workspace_used = work_ptr - buffer_.temporal_views.data();
+  // NOTE: workspace_provided can be larger than workspace_used, but let's try
+  // to use the minimum amount of memory
+  const int workspace_used     = work_ptr - buffer_.temporal_views.data();
   const int workspace_provided = buffer_.temporal_views.extent(0);
   EKAT_REQUIRE_MSG(workspace_used == workspace_provided,
-    "Error: workspace_used (" + std::to_string(workspace_used) +
-    ") and workspace_provided (" + std::to_string(workspace_provided) +
-    ") should be equal. \n");
+                   "Error: workspace_used (" + std::to_string(workspace_used) +
+                       ") and workspace_provided (" +
+                       std::to_string(workspace_provided) +
+                       ") should be equal. \n");
 }
 
 // ================================================================
@@ -316,7 +314,6 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
 
   init_temporal_views();
 
-
   //-----------------------------------------------------------------
   // Read fractional land use data
   //-----------------------------------------------------------------
@@ -335,7 +332,6 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
 void MAMDryDep::run_impl(const double dt) {
   const auto scan_policy = ekat::ExeSpaceUtils<
       KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
-
 
   // preprocess input -- needs a scan for the calculation of atm height
   pre_process(wet_aero_, dry_aero_, wet_atm_, dry_atm_);

@@ -313,8 +313,8 @@ struct Buffer {
   static constexpr int min_num_2d_mid =
       8 +  // number of dry atm fields
       2 * (num_aero_modes() + num_aero_tracers()) + num_aero_gases();
-      // +
-      //num_2d_scratch;
+  // +
+  // num_2d_scratch;
   int num_2d_scratch{0};
   // (dry) atmospheric state
   uview_2d z_mid;      // height at midpoints
@@ -356,19 +356,16 @@ struct Buffer {
   // storage
   Real *wsm_data;
 
-  void set_num_scratch(const int num_2d_scratch_in)
-  {
+  void set_num_scratch(const int num_2d_scratch_in) {
     num_2d_scratch = num_2d_scratch_in;
-    EKAT_REQUIRE_MSG(
-      num_2d_scratch < max_num_2d_scratch ,
-      "Error! Insufficient number of scratch size in mam buffer; increase max_num_2d_scratch\n");
+    EKAT_REQUIRE_MSG(num_2d_scratch < max_num_2d_scratch,
+                     "Error! Insufficient number of scratch size in mam "
+                     "buffer; increase max_num_2d_scratch\n");
   }
 
-  void set_len_temporal_views(const int len_temporal_views_len)
-  {
-    len_temporal_views=len_temporal_views_len;
+  void set_len_temporal_views(const int len_temporal_views_len) {
+    len_temporal_views = len_temporal_views_len;
   }
-
 };
 
 // ON HOST, returns the number of bytes of device memory needed by the above
@@ -377,17 +374,16 @@ inline size_t buffer_size(const int ncol, const int nlev,
                           const int num_2d_scratch,
                           const int len_temporal_views) {
   const int num_2d_mid = Buffer::min_num_2d_mid + num_2d_scratch;
-  return sizeof(Real) * (num_2d_mid* ncol * nlev +
+  return sizeof(Real) * (num_2d_mid * ncol * nlev +
                          Buffer::num_2d_iface * ncol * (nlev + 1)) +
-                         sizeof(Real) *len_temporal_views;
+         sizeof(Real) * len_temporal_views;
 }
 
 // ON HOST, initializeѕ the Buffer type with sufficient memory to store
 // intermediate (dry) quantities on the given number of columns with the given
 // number of vertical levels. Returns the number of bytes allocated.
 inline size_t init_buffer(const ATMBufferManager &buffer_manager,
-                          const int ncol, const int nlev,
-                          Buffer &buffer) {
+                          const int ncol, const int nlev, Buffer &buffer) {
   Real *mem = reinterpret_cast<Real *>(buffer_manager.get_memory());
 
   // set view pointers for midpoint fields
@@ -444,8 +440,7 @@ inline size_t init_buffer(const ATMBufferManager &buffer_manager,
 
   uview_2d *view_2d_min_scratch_ptrs[buffer.num_2d_scratch];
   for(int i = 0; i < buffer.num_2d_scratch; ++i) {
-    view_2d_min_scratch_ptrs[i] =
-        &buffer.scratch[i];
+    view_2d_min_scratch_ptrs[i]  = &buffer.scratch[i];
     *view_2d_min_scratch_ptrs[i] = view_2d(mem, ncol, nlev);
     mem += view_2d_min_scratch_ptrs[i]->size();
   }
@@ -458,7 +453,7 @@ inline size_t init_buffer(const ATMBufferManager &buffer_manager,
   }
 
   // Views with layouts different from (ncol, nlev).
-  buffer.temporal_views= view_1d(mem, buffer.len_temporal_views);
+  buffer.temporal_views = view_1d(mem, buffer.len_temporal_views);
   mem += buffer.len_temporal_views;
 
   // WSM data

@@ -32,7 +32,7 @@ void MAMOptics::set_grids(
   nswbands_ = mam4::modal_aer_opt::nswbands;     // number of shortwave bands
   nlwbands_ = mam4::modal_aer_opt::nlwbands;     // number of longwave bands
 
-  len_temporal_views_=get_len_temporal_views();
+  len_temporal_views_ = get_len_temporal_views();
   buffer_.set_len_temporal_views(len_temporal_views_);
   buffer_.set_num_scratch(num_2d_scratch_);
   // Define the different field layouts that will be used for this process
@@ -91,51 +91,49 @@ void MAMOptics::set_grids(
 }
 
 size_t MAMOptics::requested_buffer_size_in_bytes() const {
-  return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_, len_temporal_views_);
+  return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_,
+                                   len_temporal_views_);
 }
 
-int MAMOptics::get_len_temporal_views()
-{
-  int work_len=0;
+int MAMOptics::get_len_temporal_views() {
+  int work_len = 0;
   // work_
-  work_len += ncol_*mam4::modal_aer_opt::get_work_len_aerosol_optics();
+  work_len += ncol_ * mam4::modal_aer_opt::get_work_len_aerosol_optics();
   // tau_ssa_g_sw_, tau_ssa_sw_, tau_sw_, tau_f_sw_
   const int nlev_f = nlev_ + 1;
-  work_len+= 4*ncol_*nswbands_*nlev_f;
+  work_len += 4 * ncol_ * nswbands_ * nlev_f;
   return work_len;
 }
-void MAMOptics::init_temporal_views()
-{
-  auto work_ptr = (Real *)buffer_.temporal_views.data();
+void MAMOptics::init_temporal_views() {
+  auto work_ptr      = (Real *)buffer_.temporal_views.data();
   const int work_len = mam4::modal_aer_opt::get_work_len_aerosol_optics();
-  work_              = mam_coupling::view_2d(work_ptr, ncol_, work_len );
-  work_ptr += ncol_*work_len;
+  work_              = mam_coupling::view_2d(work_ptr, ncol_, work_len);
+  work_ptr += ncol_ * work_len;
 
   // shortwave aerosol scattering asymmetry parameter [unitless]
-  tau_ssa_g_sw_ =
-      mam_coupling::view_3d(work_ptr, ncol_, nswbands_, nlev_ + 1);
+  tau_ssa_g_sw_ = mam_coupling::view_3d(work_ptr, ncol_, nswbands_, nlev_ + 1);
   const int nlev_f = nlev_ + 1;
-  work_ptr += ncol_*nswbands_*nlev_f;
+  work_ptr += ncol_ * nswbands_ * nlev_f;
   // shortwave aerosol single-scattering albedo [unitless]
-  tau_ssa_sw_ =
-      mam_coupling::view_3d(work_ptr, ncol_, nswbands_, nlev_ + 1);
-  work_ptr += ncol_*nswbands_*nlev_f;
+  tau_ssa_sw_ = mam_coupling::view_3d(work_ptr, ncol_, nswbands_, nlev_ + 1);
+  work_ptr += ncol_ * nswbands_ * nlev_f;
   // shortwave aerosol extinction optical depth [unitless]
   tau_sw_ = mam_coupling::view_3d(work_ptr, ncol_, nswbands_, nlev_ + 1);
-  work_ptr += ncol_*nswbands_*nlev_f;
+  work_ptr += ncol_ * nswbands_ * nlev_f;
   // aerosol forward scattered fraction * tau * w
   tau_f_sw_ = mam_coupling::view_3d(work_ptr, ncol_, nswbands_, nlev_ + 1);
-  work_ptr += ncol_*nswbands_*nlev_f;
+  work_ptr += ncol_ * nswbands_ * nlev_f;
 
-      /// error check
-    // NOTE: workspace_provided can be larger than workspace_used, but let's try to use the minimum amount of memory
-    const int workspace_used = work_ptr - buffer_.temporal_views.data();
-    const int workspace_provided = buffer_.temporal_views.extent(0);
-    EKAT_REQUIRE_MSG(workspace_used == workspace_provided,
-    "Error: workspace_used (" + std::to_string(workspace_used) +
-    ") and workspace_provided (" + std::to_string(workspace_provided) +
-    ") should be equal. \n");
-
+  /// error check
+  // NOTE: workspace_provided can be larger than workspace_used, but let's try
+  // to use the minimum amount of memory
+  const int workspace_used     = work_ptr - buffer_.temporal_views.data();
+  const int workspace_provided = buffer_.temporal_views.extent(0);
+  EKAT_REQUIRE_MSG(workspace_used == workspace_provided,
+                   "Error: workspace_used (" + std::to_string(workspace_used) +
+                       ") and workspace_provided (" +
+                       std::to_string(workspace_provided) +
+                       ") should be equal. \n");
 }
 
 void MAMOptics::init_buffers(const ATMBufferManager &buffer_manager) {
