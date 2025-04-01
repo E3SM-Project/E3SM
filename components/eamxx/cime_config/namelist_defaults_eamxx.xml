@@ -614,7 +614,6 @@ be lost if SCREAM_HACK_XML is not enabled.
       <num_latitude_points type="integer">180</num_latitude_points>
       <num_longitude_points type="integer">360</num_longitude_points>
       <num_vertical_levels type="integer">8</num_vertical_levels>
-      <gaussian_grid type="logical" doc="If true, use gaussian nodes for the latitude">true</gaussian_grid>
       <data_filename doc="File where lat values are stored" type="file">/global/homes/m/mahf708/xgnc/sims/random/eamxx_latlon_grid.nc</data_filename>
       <sc_ncolumns type="integer">21600</sc_ncolumns>
       <sc_nlevels type="integer">8</sc_nlevels>

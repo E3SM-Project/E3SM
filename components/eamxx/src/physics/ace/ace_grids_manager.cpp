@@ -19,13 +19,9 @@ void AceGridsManager::build_grids() {
   auto nlat        = m_params.get<int>("num_latitude_points");
   auto nlon        = m_params.get<int>("num_longitude_points");
   auto nlev        = m_params.get<int>("num_vertical_levels");
-  auto gaussian    = m_params.get<bool>("gaussian_grid");
   auto sc_ncolumns = m_params.get<int>("sc_ncolumns");
   auto sc_nlevels  = m_params.get<int>("sc_nlevels");
 
-  EKAT_REQUIRE_MSG(
-      gaussian,
-      "Error! Currently ACE grids manager only supports gaussian_grid=true.\n");
   EKAT_REQUIRE_MSG(nlat > 0,
                    "Error! ACE grids manager requires positive value for "
                    "'num_latitude_points'.\n");
@@ -41,6 +37,10 @@ void AceGridsManager::build_grids() {
   EKAT_REQUIRE_MSG(sc_nlevels > 0,
                    "Error! ACE grids manager requires positive value for "
                    "'sc_nlevels'.\n");
+  EKAT_REQUIRE_MSG(sc_nlevels == nlev,
+                   "Error! ACE grids manager requires 'sc_nlevels' to be "
+                   "equal to 'num_vertical_levels'. If they are different, "
+                   "we need a vertical remapper too... \n");
 
   // Create *the* latlon grid
   auto latlon_grid = create_latlon_grid("AceLL", nlat, nlon, nlev, m_comm);
@@ -97,11 +97,12 @@ void AceGridsManager::build_grids() {
 
   // The cpl expects 1-based numbering for col gids
   auto sc_gids   = sc_grid->get_dofs_gids();
-  auto sc_gids_h = sc_gids.get_view<int*,Host>();
-  for (int icol=0; icol<sc_ncolumns; ++icol) {
+  auto sc_gids_h = sc_gids.get_view<int *, Host>();
+  for(int icol = 0; icol < sc_ncolumns; ++icol) {
     ++sc_gids_h(icol);
   }
   sc_gids.sync_to_dev();
+
   add_nonconst_grid(sc_grid);
 
   // Add an alias for the grid
@@ -113,12 +114,8 @@ void AceGridsManager::build_grids() {
       "lon", FieldLayout({COL}, {sc_ncolumns}), deg);
   auto area_sc = sc_grid->create_geometry_data(
       "area", FieldLayout({COL}, {sc_ncolumns}), nondim);
-  auto frac_sc = sc_grid->create_geometry_data(
-      "frac", FieldLayout({COL}, {sc_ncolumns}), nondim);
-  auto mask_sc = sc_grid->create_geometry_data(
-      "mask", FieldLayout({COL}, {sc_ncolumns}), nondim);
   AtmosphereInput reader_sc(m_params.get<std::string>("sc_data_filename"),
-                            sc_grid, {lat_sc, lon_sc, area_sc, frac_sc, mask_sc}, true);
+                            sc_grid, {lat_sc, lon_sc, area_sc}, true);
   reader_sc.read_variables();
 }
 

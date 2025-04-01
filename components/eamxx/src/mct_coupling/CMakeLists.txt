@@ -49,53 +49,16 @@ endif ()
 if (SCREAM_ENABLE_MAM)
   list (APPEND SCREAM_LIBS mam)
 endif()
+if (EAMXX_ENABLE_ACE)
+  list (APPEND SCREAM_LIBS ace)
+endif()
 
 # Create atm lib
 add_library(atm ${ATM_SRC})
 
+# Set f90 compiled modules dir
+set_target_properties(atm PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/cmake/atm)
+target_include_directories (atm PUBLIC ${CMAKE_BINARY_DIR}/cmake/atm)
+
 # Link libraries
-# NOTE: when ACE is enable, we can safely discard most of the model
-if (EAMXX_ENABLE_ACE)
-  # Set the default PyTorch paths if not already defined
-  if(NOT DEFINED TORCH_CMAKE_PATH)
-    if (Kokkos_ENABLE_CUDA)
-      set(TORCH_CMAKE_PATH "/global/cfs/cdirs/e3sm/software/libtorch/libtorch-cxx11-abi-shared-with-deps-2.6.0+cu124" 
-          CACHE PATH "Path to PyTorch CMake files")
-      message(STATUS "MCT Using GPU version of PyTorch at ${TORCH_CMAKE_PATH}")
-    else()
-      set(TORCH_CMAKE_PATH "/global/cfs/cdirs/e3sm/software/libtorch/libtorch-cxx11-abi-shared-with-deps-2.6.0+cpu" 
-          CACHE PATH "Path to PyTorch CMake files")
-      message(STATUS "MCT Using CPU version of PyTorch at ${TORCH_CMAKE_PATH}")
-    endif()
-  endif()
-
-  # Set CMake prefix path for PyTorch
-  set(CMAKE_PREFIX_PATH ${TORCH_CMAKE_PATH})
-
-  # Find PyTorch and require it
-  find_package(Torch REQUIRED)
-
-  if(Torch_FOUND)
-    message(STATUS "MCT Found PyTorch: Building ACE component")
-    set(SCREAM_FOUND_PYTORCH TRUE CACHE BOOL "Whether PyTorch was found" FORCE)
-
-    # is this part needed with the torch includes?
-    set_target_properties(atm PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/cmake/atm ${TORCH_INCLUDE_DIRS})
-
-    # Explicitly add PyTorch include directories
-    target_include_directories(atm PUBLIC ${TORCH_INCLUDE_DIRS})
-
-    # Explicitly link PyTorch libraries
-    # TODO: not sure why this must be PRIVATE?
-    # TODO: Even though I don't include shoc, p3, etc., they still get built? Ugh!
-    target_link_libraries(atm PRIVATE scream_share scream_control ${dynLibName} ace ${TORCH_LIBRARIES} diagnostics csm_share)
-  else()
-    message(FATAL_ERROR "PyTorch not found. Ensure TORCH_CMAKE_PATH is set correctly.")
-  endif()
-else()
-  # Business as usual
-  # Set f90 compiled modules dir
-  set_target_properties(atm PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/cmake/atm)
-  target_include_directories(atm PUBLIC ${CMAKE_BINARY_DIR}/cmake/atm)
-  target_link_libraries(atm PRIVATE ${SCREAM_LIBS} csm_share)
-endif()
+target_link_libraries(atm PRIVATE ${SCREAM_LIBS} csm_share)

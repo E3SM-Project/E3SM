@@ -65,14 +65,9 @@ FieldLayout LatLonGrid::get_2d_tensor_layout(
   EKAT_REQUIRE_MSG(
       cmp_names.size() == cmp_dims.size(),
       "[LatLonGrid::get_2d_tensor_layout] Input vector dimensions mismatch.\n"
-      "  - grid name: " +
-          name() +
-          "\n"
-          "  - cmp_names: " +
-          ekat::join(cmp_names, ",") +
-          "\n"
-          "  - cmp_dims : " +
-          ekat::join(cmp_dims, ",") + "\n");
+      "  - grid name: " + name() + "\n"
+      "  - cmp_names: " + ekat::join(cmp_names, ",") + "\n"
+      "  - cmp_dims : " + ekat::join(cmp_dims, ",") + "\n");
   using namespace ShortFieldTagsNames;
 
   auto fl = get_2d_scalar_layout();
@@ -114,14 +109,9 @@ FieldLayout LatLonGrid::get_3d_tensor_layout(
   EKAT_REQUIRE_MSG(
       cmp_names.size() == cmp_dims.size(),
       "[LatLonGrid::get_2d_tensor_layout] Input vector dimensions mismatch.\n"
-      "  - grid name: " +
-          name() +
-          "\n"
-          "  - cmp_names: " +
-          ekat::join(cmp_names, ",") +
-          "\n"
-          "  - cmp_dims : " +
-          ekat::join(cmp_dims, ",") + "\n");
+      "  - grid name: " + name() + "\n"
+      "  - cmp_names: " + ekat::join(cmp_names, ",") + "\n"
+      "  - cmp_dims : " + ekat::join(cmp_dims, ",") + "\n");
   using namespace ShortFieldTagsNames;
 
   int nvl = this->get_num_vertical_levels() + (midpoints ? 0 : 1);

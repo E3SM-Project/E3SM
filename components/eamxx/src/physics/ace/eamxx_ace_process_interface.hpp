@@ -1,14 +1,12 @@
 #ifndef EAMXX_ACE_PROCESS_INTERFACE_HPP
 #define EAMXX_ACE_PROCESS_INTERFACE_HPP
 
-#include <torch/script.h>
-
-#include <Kokkos_Core.hpp>
-
 #include "share/atm_process/atmosphere_process.hpp"
 #include "share/grid/remap/abstract_remapper.hpp"
 
 namespace scream {
+
+struct TorchData;
 
 class ACE : public AtmosphereProcess {
  public:
@@ -33,9 +31,8 @@ class ACE : public AtmosphereProcess {
   // need three grids (lat-lon, point-grid, surface-coupling)
   std::shared_ptr<const AbstractGrid> m_ll_grid, m_pt_grid, m_sc_grid;
 
-  // need tensors for input and output
-  // TODO: share pointers instead
-  torch::Tensor m_input_tensor, m_output_tensor;
+  // a pointer to TorchData struct
+  std::shared_ptr<TorchData> m_torch_data;
 
   // tensor geometries (hardcoded for now)
   int m_batch  = 1;
@@ -48,11 +45,6 @@ class ACE : public AtmosphereProcess {
 
   // checkpoint path from the namelist
   std::string m_checkpoint_path;
-  // torch module object
-  // containing the model architecture and weights
-  torch::jit::script::Module m_module;
-  // a guard for inference-only mode
-  c10::InferenceMode m_guard;
 
   // a bool to print some weak verification
   bool m_ace_print_verification = true;

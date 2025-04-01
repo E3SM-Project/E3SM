@@ -1,5 +1,7 @@
 #include "eamxx_ace_process_interface.hpp"
 
+#include <torch/script.h>
+
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -10,12 +12,21 @@
 
 namespace scream {
 
+// TorchData is a struct to hold the torch types
+struct TorchData {
+  c10::InferenceMode guard;
+  torch::jit::script::Module module;
+};
+
 ACE::ACE(const ekat::Comm &comm, const ekat::ParameterList &params)
     : AtmosphereProcess(comm, params) {
-  m_checkpoint_path = params.get<std::string>("checkpoint_path");
+  m_checkpoint_path = m_params.get<std::string>("checkpoint_path");
   m_sc2ace_map = m_params.get<std::string>("sc2ace_mapfile");
   m_ace2sc_map = m_params.get<std::string>("ace2sc_mapfile");
   m_ace_print_verification = m_params.get<bool>("ace_print_verification", true);
+  
+  // load the torch data types
+  m_torch_data = std::make_shared<TorchData>();
 }
 
 void ACE::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
@@ -107,23 +118,13 @@ void ACE::initialize_impl(const RunType /* run_type */) {
 
   std::cout << "ACE::initialize_impl: Loading model checkpoint from: " << m_checkpoint_path << std::endl;
   try {
-    m_module = torch::jit::load(m_checkpoint_path);
+    m_torch_data->module = torch::jit::load(m_checkpoint_path);
   } catch(const c10::Error &e) {
     std::cerr << "ACE::initialize_impl: Error loading the model checkpoint: " << e.what() << "\n";
     std::cerr << "ACE::initialize_impl: Verify that the checkpoint was properly exported and "
                  "includes 'constants.pkl'.\n";
     return;
   }
-
-  // Initialize m_input_tensor, m_output_tensor here
-  // TODO: in the future share underlying memory of fields instead of allocating tensors
-  // TODO: maybe helpful to explicitly set device too
-  m_input_tensor = torch::zeros(
-      {m_batch, m_in_ch, m_height, m_width},
-      torch::TensorOptions().dtype(torch::kFloat32).requires_grad(false));
-  m_output_tensor = torch::zeros(
-      {m_batch, m_out_ch, m_height, m_width},
-      torch::TensorOptions().dtype(torch::kFloat32).requires_grad(false));
 
   // A lot of workarounds follow to get remapping going
   std::cout << "ACE::initialize_impl: setting up remappers" << std::endl;
@@ -334,7 +335,7 @@ void ACE::initialize_impl(const RunType /* run_type */) {
 
   // Properly create the view with correct dimension ordering
   // noting how how views increasing by +1 dimension (so, COLxLEV --> LATxLONxLEV, etc.)
-  // TODO: does this construction necessitate the above views be
+  // TODO: does this construction necessitate the above views be non-const??
   // TODO: ask Luca why this is so and maybe fix?
   Field::view_dev_t<Real **> land_fraction_ll_v(land_fraction_pt_view.data(), m_height, m_width);
   Field::view_dev_t<Real **> ocean_fraction_ll_v(ocean_fraction_pt_view.data(), m_height, m_width);
@@ -489,7 +490,7 @@ void ACE::preprocess() {
               input_view(0, 2, ilat, ilon) = sea_ice_fraction(ilat, ilon);
               // DSWRFtoa (SOLIN): TODD (BEN???)
               input_view(0, 3, ilat, ilon) = 500.0;
-              // HGTsfc (surface height): TODO
+              // HGTsfc (surface height): TODO (topo file?)
               input_view(0, 4, ilat, ilon) = 10.0;
               input_view(0, 5, ilat, ilon) = p_int(ilat, ilon, 8);
               input_view(0, 6, ilat, ilon) = surf_radiative_T(ilat, ilon);
@@ -538,7 +539,7 @@ void ACE::run_impl(const double dt) {
 
   // Detect model device and ensure tensor is on the same device
   torch::Device model_device = torch::kCPU;
-  for (const auto& param : m_module.parameters()) {
+  for (const auto& param : m_torch_data->module.parameters()) {
     model_device = param.device();
     break;  // We only need to check the first parameter
   }
@@ -558,22 +559,20 @@ void ACE::run_impl(const double dt) {
   auto torch_dtype = torch::kFloat32;
 
   // the tensor uses the same pointer as the big field view
-  m_input_tensor = torch::from_blob(
+  auto input_tensor = torch::from_blob(
     (void *)input_view.data(), {m_batch, m_in_ch, m_height, m_width},
     torch::TensorOptions()
         .dtype(torch_dtype)
         .device(model_device)
         .memory_format(torch::MemoryFormat::Contiguous));
-
-  // likely unneeded, but just in case...
-  m_input_tensor = m_input_tensor.to(model_device);
   
   std::cout << "ACE::run_impl: ACE inference" << std::endl;
-  std::vector<torch::jit::IValue> inputs{m_input_tensor};
+  std::vector<torch::jit::IValue> inputs{input_tensor};
+  torch::Tensor output_tensor;
   try { 
     // TODO: this call creates and returns a tensor
     // TODO: investigate how to make it recycle a view from above   
-    m_output_tensor = m_module.forward(inputs).toTensor();
+    output_tensor = m_torch_data->module.forward(inputs).toTensor();
   } catch(const c10::Error &e) {
     std::cerr << "ACE::run_impl: Error during inference: " << e.what() << std::endl;
     return;
@@ -583,7 +582,7 @@ void ACE::run_impl(const double dt) {
   // Careful here, need to ensure LayoutRight! Torch::Tensor is LR by default!
   Kokkos::View<Real ****, Kokkos::LayoutRight, scream::DefaultDevice,
                 Kokkos::MemoryTraits<Kokkos::Unmanaged>>
-       kokkos_output(m_output_tensor.data_ptr<Real>(), m_batch, m_out_ch, m_height, m_width);
+       kokkos_output(output_tensor.data_ptr<Real>(), m_batch, m_out_ch, m_height, m_width);
   auto output_view = m_output_field.get_view<Real ****>();
   Kokkos::deep_copy(output_view, kokkos_output);
 
@@ -594,7 +593,7 @@ void ACE::run_impl(const double dt) {
     std::cout << "ACE::run_impl: ACE verification" << std::endl;
     m_output_field.sync_to_host();
     auto out_field_view_2 = m_output_field.get_view<const Real ****, Host>();
-    auto out_tensor_cpu   = m_output_tensor.to(torch::kCPU);
+    auto output_tensor_cpu = output_tensor.to(torch::kCPU);
 
     for(int i = 0; i < 3; i++) {
       for(int j = 0; j < 3; j++) {
@@ -602,7 +601,7 @@ void ACE::run_impl(const double dt) {
           std::cout << "out_fied[0][" << i << "][" << j << "][" << k
                     << "] = " << out_field_view_2(0, i, j, k) << std::endl;
           std::cout << "out_tens[0][" << i << "][" << j << "][" << k
-                    << "] = " << out_tensor_cpu[0][i][j][k].item<double>()
+                    << "] = " << output_tensor_cpu[0][i][j][k].item<double>()
                     << std::endl;
         }
       }

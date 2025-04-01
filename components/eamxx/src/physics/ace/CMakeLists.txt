@@ -31,12 +31,11 @@ if(Torch_FOUND)
   # Set variable to indicate PyTorch was found, make it visible to parent scope
   set(SCREAM_FOUND_PYTORCH TRUE CACHE BOOL "Whether PyTorch was found" FORCE)
 
-  include(ScreamUtils)
   add_library(ace ${ACE_SRCS})
   target_compile_definitions(ace PUBLIC EAMXX_HAS_ACE)
-  target_include_directories(ace SYSTEM PUBLIC ${TORCH_INCLUDE_DIRS})
+  target_include_directories(ace SYSTEM PRIVATE ${TORCH_INCLUDE_DIRS})
 
-  target_link_libraries(ace PUBLIC
+  target_link_libraries(ace PRIVATE
     physics_share
     scream_share
     ${TORCH_LIBRARIES}
