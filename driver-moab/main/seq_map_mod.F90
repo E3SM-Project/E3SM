@@ -177,7 +177,7 @@ contains
 
   subroutine moab_map_init_rcfile( mbsrc, mbtgt, mbintx, discretization_type, &
                    maprcfile, maprcname, maprctype, samegrid, map_identifier, &
-                   description_string, esmf_map, backup_map_identifier)
+                   description_string, esmf_map, fallback_map_identifier )
 
    use iMOAB, only: iMOAB_LoadMappingWeightsFromFile
    implicit none
@@ -198,7 +198,7 @@ contains
    character(len=*)     ,intent(inout)         :: map_identifier !   /* "scalar", "flux", "custom" */
    character(len=*)     ,intent(in),optional   :: description_string
    logical              ,intent(in),optional   :: esmf_map
-   character(len=*)     ,intent(in),optional   :: backup_map_identifier
+   character(len=*)     ,intent(in),optional   :: fallback_map_identifier
    !
    ! Local Variables
    !
@@ -222,10 +222,11 @@ contains
 
    ! --- Initialize Smatp
    call shr_mct_queryConfigFile(mpicom,maprcfile,maprcname,mapfile,maprctype,maptype)
-   !map_identifier = 'map-from-file'//CHAR(0)
    if (mapfile == 'idmap' .or. mapfile == 'idmap_ignore') then
-      if (present(backup_map_identifier)) then
-         map_identifier = backup_map_identifier
+      if (present(fallback_map_identifier)) then
+         map_identifier = fallback_map_identifier
+         write(logunit,*) subname,' do not want to load backup identifier - ' // mapfile
+         call shr_sys_abort(subname//' ERROR in not wanting to load backup identifier - ' // mapfile)
       else
          write(logunit,*) subname,' error in loading map file - ' // mapfile
          call shr_sys_abort(subname//' ERROR in loading map file - ' // mapfile)
