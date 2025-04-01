@@ -70,6 +70,10 @@ void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type)
   if (this->type()!=AtmosphereProcessType::Group) {
     start_timer (m_timer_prefix + this->name() + "::init");
   }
+
+  log (LogLevel::info,"  Initializing " + name() + "...");
+  m_atm_logger->flush(); // During init, flush often (to help debug crashes)
+
   set_fields_and_groups_pointers();
   m_time_stamp = t0;
   initialize_impl(run_type);
@@ -80,6 +84,9 @@ void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type)
     const auto& fname = m_tend_to_field.at(tname);
     m_start_of_step_fields[fname] = get_field_out(fname).clone();
   }
+
+  log (LogLevel::info,"  Initializing " + name() + "... done!");
+  m_atm_logger->flush(); // During init, flush often (to help debug crashes)
 
   if (this->type()!=AtmosphereProcessType::Group) {
     stop_timer (m_timer_prefix + this->name() + "::init");
