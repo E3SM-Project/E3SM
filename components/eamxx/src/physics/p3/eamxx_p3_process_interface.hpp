@@ -391,7 +391,7 @@ public:
     static constexpr int num_1d_scalar = 2; //no 2d vars now, but keeping 1d struct for future expansion
     // 2d view packed, size (ncol, nlev_packs)
 #ifdef SCREAM_P3_SMALL_KERNELS
-    static constexpr int num_2d_vector = 64;
+    static constexpr int num_2d_vector = 63;
 #else
     static constexpr int num_2d_vector = 8;
 #endif
