@@ -493,7 +493,7 @@ contains
                 ! write intx only if true intx file:
                 wopts = C_NULL_CHAR
                 call shr_mpi_commrank( mpicom_CPLID, rank )
-                  if (rank .lt. 3) then ! write only a few intx files
+                if (rank .lt. 1) then ! write only a few intx files
                   write(lnum,"(I0.2)")rank !
                   outfile = 'intx_al'//trim(lnum)// '.h5m' // C_NULL_CHAR
                   ierr = iMOAB_WriteMesh(mbintxal, outfile, wopts) ! write local intx file
@@ -503,26 +503,7 @@ contains
                   endif
                 endif
 #endif
-                ! we also need to compute the comm graph for the second hop, from the atm on coupler to the
-                ! lnd for the intx atm-lnd context (coverage)
-                !
-                if (atm_pg_active) then
-                  type1 = 3; !  fv for atm; cgll does not work anyway
-                else
-                  type1 = 1 ! this projection works (cgll to fv), but reverse does not ( fv - cgll)
-                endif
-                type2 = 3; ! land is fv in this case (separate grid)
 
-                ierr = iMOAB_ComputeCommGraph( mbaxid, mbintxal, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
-                                          atm(1)%cplcompid, idintx)
-                if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error in computing comm graph for second hop, atm-lnd'
-                  call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, atm-lnd')
-                endif
-              endif
-
-
-              if (compute_maps_online_a2l) then
                   volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
                   if (atm_pg_active) then
                     dm1 = "fv"//C_NULL_CHAR
@@ -574,7 +555,7 @@ contains
                   type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
 
                   call moab_map_init_rcfile( mbaxid, mblxid, mbintxal, type1, &
-                        'seq_maps.rc', 'atm2lnd_smapname:', 'atm2lnd_smaptype:',samegrid_al, &
+                        'seq_maps.rc', 'atm2lnd_smapname:', 'atm2lnd_smaptype:', samegrid_al, &
                         wgtIda2l_bilinear, 'mapper_Sa2l MOAB initialization', esmf_map_flag)
 
                   ! TODO make sure it is good enough
@@ -582,8 +563,9 @@ contains
                   ! read as the second one the f map, this one has the aream for land correct, so it should be fine
                   ! the area_b for the bilinear map above is 0 ! which caused grief
                   call moab_map_init_rcfile( mbaxid, mblxid, mbintxal, type1, &
-                        'seq_maps.rc', 'atm2lnd_fmapname:', 'atm2lnd_fmaptype:',samegrid_al, &
+                        'seq_maps.rc', 'atm2lnd_fmapname:', 'atm2lnd_fmaptype:', samegrid_al, &
                         wgtIda2l_conservative, 'mapper_Fa2l MOAB initialization', esmf_map_flag)
+
                   ! we need to do only one map migrate, should over both maps!!
                   ! we have one coverage for both maps!
                   ierr = iMOAB_MigrateMapMesh (mbaxid, mbintxal, mpicom_CPLID, mpigrp_CPLID, &
@@ -593,6 +575,15 @@ contains
                      call shr_sys_abort(subname//' ERROR in migrating atm mesh for map rof c2 lnd')
                   endif
 
+              endif
+
+              type1 = 3; !  fv for atm; cgll does not work anyway
+              type2 = 3; ! land is fv in this case (separate grid)
+              ierr = iMOAB_ComputeCommGraph( mbaxid, mbintxal, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+                                        atm(1)%cplcompid, idintx)
+              if (ierr .ne. 0) then
+                write(logunit,*) subname,' error in computing comm graph for second hop, ATM-LND'
+                call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ATM-LND')
               endif
 
             else
