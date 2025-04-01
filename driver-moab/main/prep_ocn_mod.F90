@@ -173,9 +173,8 @@ module prep_ocn_mod
 
   logical                  :: iamin_CPLALLICEID     ! pe associated with CPLALLICEID
 
-#ifdef HAVE_MOAB
-  logical                  :: compute_maps_online_a2o
-#endif
+  logical                  :: no_match ! used to force a new mapper
+  logical                  :: compute_maps_online_a2o, compute_maps_online_r2o
 
 contains
 
@@ -253,7 +252,7 @@ contains
     ! MOAB stuff
    integer                  :: ierr, idintx, rank
    character*32             :: appname, outfile, wopts, lnum
-   character*32             :: dm1, dm2, dofnameS, dofnameT, wgtIdr2o_conservative, wgtIda2o_conservative, wgtIda2o_bilinear
+   character*32             :: dm1, dm2, dofnameS, dofnameT, wgtIdFr2ol, wgtIdFr2oi, wgtIdFr2o, wgtIdFa2o, wgtIdSa2o, wgtIdVa2o
    integer                  :: orderS, orderT, volumetric, noConserve, validate, fInverseDistanceMap
    integer                  :: fNoBubble, monotonicity
 ! will do comm graph over coupler PES, in 2-hop strategy
@@ -297,12 +296,15 @@ contains
          cpl_compute_maps_online=cpl_compute_maps_online, &
          esmf_map_flag=esmf_map_flag   )
 
-#ifdef HAVE_MOAB
     compute_maps_online_a2o = cpl_compute_maps_online  ! read from disk or compute online
-    wgtIda2o_conservative = 'conservative_a2o'//C_NULL_CHAR
-    wgtIda2o_bilinear = 'bilinear_a2o'//C_NULL_CHAR
-    wgtIdr2o_conservative = 'conservative_r2o'//C_NULL_CHAR
-#endif
+    compute_maps_online_r2o = .false.  ! *always* read from disk
+    wgtIdFa2o = 'flux_a2o'//C_NULL_CHAR
+    wgtIdSa2o = 'bilinear_a2o'//C_NULL_CHAR
+    wgtIdVa2o = 'vector_a2o'//C_NULL_CHAR
+    wgtIdFr2ol = 'flux_r2o_liq'//C_NULL_CHAR
+    wgtIdFr2oi = 'flux_r2o_ice'//C_NULL_CHAR
+    wgtIdFr2o = 'flux_r2o'//C_NULL_CHAR
+    no_match = .true. ! force to create a new mapper object
 
     allocate(mapper_Sa2o)
     allocate(mapper_Va2o)
@@ -415,7 +417,7 @@ contains
           end if
           call seq_map_init_rcfile(mapper_Fa2o, atm(1), ocn(1), &
                'seq_maps.rc','atm2ocn_fmapname:','atm2ocn_fmaptype:',samegrid_ao, &
-               'mapper_Fa2o initialization',esmf_map_flag)
+               'mapper_Fa2o initialization', esmf_map_flag, no_match)
           call shr_sys_flush(logunit)
 #ifdef HAVE_MOAB
           ! Call moab intx only if atm and ocn are init in moab
@@ -437,7 +439,7 @@ contains
             mapper_Fa2o%tgt_mbid = mboxid
             mapper_Fa2o%intx_mbid = mbintxao
             mapper_Fa2o%src_context = atm(1)%cplcompid
-            mapper_Fa2o%weight_identifier = wgtIda2o_conservative
+            mapper_Fa2o%weight_identifier = wgtIdFa2o
             mapper_Fa2o%mbname = 'mapper_Fa2o'
 
             ! we also need to compute the comm graph for the second hop, from the atm on coupler to the
@@ -513,11 +515,11 @@ contains
 
                   ! First compute the non-conservative bilinear map for projection of scalar fields
                   if (iamroot_CPLID) then
-                     call print_weight_map_details(subname, mbintxao, "FV-FV", wgtIda2o_bilinear, &
+                     call print_weight_map_details(subname, mbintxao, "FV-FV", wgtIdSa2o, &
                         trim(dm1), orderS, trim(dofnameS), trim(dm2), orderT, trim(dofnameT), "bilinear", &
                         fNoBubble, monotonicity, volumetric, fInverseDistanceMap, noConserve, validate)
                   endif
-                  ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxao, wgtIda2o_bilinear, &
+                  ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxao, wgtIdSa2o, &
                                                    trim(dm1), orderS, trim(dm2), orderT, 'bilin'//C_NULL_CHAR, &
                                                    fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                    noConserve, validate, &
@@ -527,15 +529,15 @@ contains
                      call shr_sys_abort(subname//' ERROR in computing ATM-OCN weights ')
                   endif
 
-                  ! ierr = iMOAB_WriteMappingWeightsToFile(mbintxao, wgtIda2o_bilinear, 'bilinear_a2o.nc'//C_NULL_CHAR)
+                  ! ierr = iMOAB_WriteMappingWeightsToFile(mbintxao, wgtIdSa2o, 'bilinear_a2o.nc'//C_NULL_CHAR)
 
                   ! Next compute the conservative map for projection of flux fields
                   if (iamroot_CPLID) then
-                     call print_weight_map_details(subname, mbintxao, "FV-FV", wgtIda2o_conservative, &
+                     call print_weight_map_details(subname, mbintxao, "FV-FV", wgtIdFa2o, &
                         trim(dm1), orderS, trim(dofnameS), trim(dm2), orderT, trim(dofnameT), "", &
                         fNoBubble, monotonicity, volumetric, fInverseDistanceMap, noConserve, validate)
                   endif
-                  ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxao, wgtIda2o_conservative, &
+                  ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxao, wgtIdFa2o, &
                                                    trim(dm1), orderS, trim(dm2), orderT, C_NULL_CHAR, &
                                                    fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                    noConserve, validate, &
@@ -546,14 +548,14 @@ contains
                   endif
 
                else
-                  type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
+                  type1 = 3 ! this is type of grid
                   call moab_map_init_rcfile(mbaxid, mboxid, mbintxao, type1, &
                         'seq_maps.rc', 'atm2ocn_fmapname:', 'atm2ocn_fmaptype:',samegrid_ao, &
-                        wgtIda2o_conservative, 'mapper_Fa2o moab initialization', esmf_map_flag)
+                        wgtIdFa2o, 'mapper_Fa2o moab initialization', esmf_map_flag)
 
                   call moab_map_init_rcfile(mbaxid, mboxid, mbintxao, type1, &
                         'seq_maps.rc', 'atm2ocn_smapname:', 'atm2ocn_smaptype:',samegrid_ao, &
-                        wgtIda2o_bilinear, 'mapper_Sa2o moab initialization', esmf_map_flag)
+                        wgtIdSa2o, 'mapper_Sa2o moab initialization', esmf_map_flag)
                endif
 
                if (atm_pg_active) then
@@ -621,7 +623,7 @@ contains
           end if
           call seq_map_init_rcfile(mapper_Sa2o, atm(1), ocn(1), &
                'seq_maps.rc','atm2ocn_smapname:','atm2ocn_smaptype:',samegrid_ao, &
-               'mapper_Sa2o initialization',esmf_map_flag)
+               'mapper_Sa2o initialization', esmf_map_flag, no_match)
 
           if (iamroot_CPLID) then
              write(logunit,*) ' '
@@ -629,7 +631,7 @@ contains
           end if
           call seq_map_init_rcfile(mapper_Va2o, atm(1), ocn(1), &
                'seq_maps.rc','atm2ocn_vmapname:','atm2ocn_vmaptype:',samegrid_ao, &
-               'mapper_Va2o initialization',esmf_map_flag)
+               'mapper_Va2o initialization', esmf_map_flag, no_match)
 
           if (iamroot_CPLID) then
              write(logunit,*) ' '
@@ -645,24 +647,33 @@ contains
                write(logunit,*) ' '
                write(logunit,F00) 'Finish initializing MOAB mapper_Sa2o bilinear'
             end if
+
             mapper_Sa2o%src_mbid = mbaxid
             mapper_Sa2o%tgt_mbid = mboxid
             mapper_Sa2o%intx_mbid = mbintxao
             mapper_Sa2o%src_context = atm(1)%cplcompid
             mapper_Sa2o%intx_context = mapper_Fa2o%intx_context
-            mapper_Sa2o%weight_identifier = wgtIda2o_bilinear
+            mapper_Sa2o%weight_identifier = wgtIdSa2o
             mapper_Sa2o%mbname = 'mapper_Sa2o'
 
             if (iamroot_CPLID) then
                write(logunit,*) ' '
                write(logunit,F00) 'Initializing MOAB mapper_Va2o bilinear same as Sa2o'
             end if
+
+            ! If loading map from disk, then load the scalar map as well
+            if (.not. compute_maps_online_a2o) then
+               type1 = 3 ! this is type of grid
+               call moab_map_init_rcfile( mbaxid, mboxid, mbintxao, type1, &
+                     'seq_maps.rc', 'atm2ocn_vmapname:', 'atm2ocn_vmaptype:', samegrid_ao, &
+                     wgtIdVa2o, 'mapper_Va2o MOAB initialization', esmf_map_flag)
+            end if
             mapper_Va2o%src_mbid = mbaxid
             mapper_Va2o%tgt_mbid = mboxid
             mapper_Va2o%intx_mbid = mbintxao
             mapper_Va2o%src_context = atm(1)%cplcompid
             mapper_Va2o%intx_context = mapper_Fa2o%intx_context
-            mapper_Va2o%weight_identifier = wgtIda2o_bilinear
+            mapper_Va2o%weight_identifier = wgtIdVa2o
             mapper_Va2o%mbname = 'mapper_Va2o'
 
           endif ! if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0))
@@ -690,6 +701,7 @@ contains
             type2 = 3 ! FV-FV graph
             ! iMOAB: compute the communication graph for ICE-OCN, based on the same global id
             ! it will be a simple permutation from ice mesh directly to ocean, using the comm graph computed here
+            ! NOTE: This operation will result in a similar shuffling like MCT's rearrange
             ierr = iMOAB_ComputeCommGraph( mbixid, mboxid, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, &
                type1, type2, ice(1)%cplcompid, ocn(1)%cplcompid)
             if (ierr .ne. 0) then
@@ -734,7 +746,7 @@ contains
           end if
           call seq_map_init_rcfile(mapper_Rr2o_liq, rof(1), ocn(1), &
                'seq_maps.rc', 'rof2ocn_liq_rmapname:', 'rof2ocn_liq_rmaptype:',samegrid_ro, &
-               'mapper_Rr2o_liq  initialization',esmf_map_flag)
+               'mapper_Rr2o_liq  initialization', esmf_map_flag, no_match )
 
           call seq_comm_getData(CPLID, mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)
           call seq_comm_getData(CPLID, mpigrp=mpigrp_CPLID)   !  second group, the coupler group CPLID is global variable
@@ -748,20 +760,6 @@ contains
              write(logunit,*) subname,' error in registering rof 2 ocn moab map '
              call shr_sys_abort(subname//' ERROR in registering  rof 2 ocn moab map ')
           endif
- ! integer, public :: mboxid   ! iMOAB id for mpas ocean already migrated mesh to coupler pes
-          ! this is a special rof mesh redistribution, for the ocean context
-          ! it will be used to project from rof to ocean
-          ! the mesh will be migrated, to be able to do the second hop
-         !  appname = "ROF_OCOU"//C_NULL_CHAR
-         !  ! rmapid  is a unique external number of MOAB app that identifies runoff on coupler side
-         !  rmapid2 = 100*rof(1)%cplcompid ! this is a special case, because we also have a regular coupler instance mbrxid
-         !  ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, rmapid2, mbrxoid)
-         !  if (ierr .ne. 0) then
-         !     write(logunit,*) subname,' error in registering rof on coupler in ocean context '
-         !     call shr_sys_abort(subname//' ERROR in registering  rof on coupler in ocean context ')
-         !  endif
-          ! this code was moved from prep_rof_ocn_moab, because we will do everything on coupler side, not
-          ! needed to be on joint comm anymore for the second hop
 
           ! need to compute coverage of rof over ocean, and comm graph for sending from rof to rof over ocean
           ierr = iMOAB_ComputeCoverageMesh( mbrxid, mboxid, mbintxro )
@@ -774,44 +772,26 @@ contains
              write(logunit,F00) 'Initializing MOAB mapper_Rr2o_liq'
           end if
 
-          type_grid = 3 ! this is type of grid, maybe should be saved on imoab app ?
-          call moab_map_init_rcfile(mbrxid, mboxid, mbintxro, type_grid, &
-               'seq_maps.rc', 'rof2ocn_liq_rmapname:', 'rof2ocn_liq_rmaptype:',samegrid_ro, &
-               wgtIdr2o_conservative, 'mapper_Rr2o_liq moab initialization',esmf_map_flag)
+          ! If loading map from disk, then load the R2O_liq map
+          if (.not. compute_maps_online_r2o) then
+            type_grid = 3 ! this is type of grid
+            call moab_map_init_rcfile( mbrxid, mboxid, mbintxro, type_grid, &
+                  'seq_maps.rc', 'rof2ocn_liq_rmapname:', 'rof2ocn_liq_rmaptype:', samegrid_ro, &
+                  wgtIdFr2ol, 'mapper_Rr2o_liq MOAB initialization', esmf_map_flag )
+          end if
 
           ierr = iMOAB_ComputeCommGraph( mbrxid, mbintxro, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type_grid, &
              type_grid, rof(1)%cplcompid, rmapid )
           if (ierr .ne. 0) then
-              write(logunit,*) subname,' error in compute graph rof - rof cov for ocean'
-              call shr_sys_abort(subname//' ERROR in compute graph rof - rof cov for ocean ')
+              write(logunit,*) subname,' error in compute graph ROF - ROF coverage for ocean context'
+              call shr_sys_abort(subname//' ERROR in compute graph ROF - ROF coverage for ocean context ')
          endif
-         !  it read on the coupler side, from file, the scrip mosart, that has a full mesh;
-         !  also migrate rof mesh on coupler pes, in ocean context, mbrxoid (this will be like coverage mesh,
-         !    it will cover ocean target per process)
-         !  map between rof 2 ocn is in  mbrmapro ;
-         ! after this, the sending of tags for second hop (ocn context) will use the new par comm graph,
-         !  that has more precise info, that got created
 
-         ! type1 = 3 ! fv mesh nowadays
-         ! direction = 1 !
-         ! context_id = ocn(1)%cplcompid
-         ! this creates a par comm graph between mbrxid and mbrxoid, with ids rof(1)%cplcompid, context ocn(1)%cplcompid
-         ! this will be used in send/receive mappers
-         ! ierr = iMOAB_MigrateMapMesh (mbrxid, mbrmapro, mbrxoid, mpicom_CPLID, mpigrp_CPLID, &
-         !    mpigrp_CPLID, type1, rof(1)%cplcompid, context_id, direction)
-
-         ! if (ierr .ne. 0) then
-         !    write(logunit,*) subname,' error in migrating rof mesh for map rof c2 ocn '
-         !    call shr_sys_abort(subname//' ERROR in migrating rof mesh for map rof c2 ocn ')
-         ! endif
-         ! if (iamroot_CPLID)  then
-         !    write(logunit,*) subname,' migrated mesh for map rof 2 ocn '
-         ! endif
          if (mbrxid .ge. 0) then ! we are on coupler side pes
             tagname=trim(seq_flds_r2x_fields)//C_NULL_CHAR
             tagtype = 1 ! dense, double
             numco = 1 ! only 1 component DoF per node
-            ierr = iMOAB_DefineTagStorage(mbrxid, tagname, tagtype, numco,  tagindex )
+            ierr = iMOAB_DefineTagStorage(mbrxid, tagname, tagtype, numco, tagindex )
             if (ierr .ne. 0) then
                write(logunit,*) subname,' error in defining ' // trim(seq_flds_r2x_fields) // ' tags on coupler side in MOAB'
                call shr_sys_abort(subname//' ERROR in defining MOAB tags ')
@@ -822,14 +802,14 @@ contains
             tagname=trim(seq_flds_r2x_fields)//C_NULL_CHAR
             tagtype = 1 ! dense, double
             numco = 1 ! only 1 component DoF per node
-            ierr = iMOAB_DefineTagStorage(mboxid, tagname, tagtype, numco,  tagindex )
+            ierr = iMOAB_DefineTagStorage(mboxid, tagname, tagtype, numco, tagindex )
             if (ierr .ne. 0) then
                write(logunit,*) subname,' error in defining ' // trim(seq_flds_r2x_fields) // ' tags on coupler side in MOAB, for ocean app'
                call shr_sys_abort(subname//' ERROR in defining MOAB tags ')
             endif
          endif
          if (iamroot_CPLID)  then
-            write(logunit,*) subname,' created moab tags for seq_flds_r2x_fields '
+            write(logunit,*) subname,' created MOAB tags for seq_flds_r2x_fields '
          endif
 
 ! find out the number of local elements in moab mesh ocean instance on coupler
@@ -849,8 +829,8 @@ contains
          tmparray = 0._R8
          ierr = iMOAB_SetDoubleTagStorage(mboxid, tagname, arrsize , ent_type, tmparray)
          if (ierr .ne. 0) then
-            write(logunit,*) subname,' cant zero out r2x tags on ocn'
-            call shr_sys_abort(subname//' cant zero out r2x tags on ocn')
+            write(logunit,*) subname,' cant zero out r2x tags on OCN'
+            call shr_sys_abort(subname//' cant zero out r2x tags on OCN')
          endif
          deallocate (tmparray)
 
@@ -862,27 +842,18 @@ contains
                prefix_output = "rof_cov"//CHAR(0)
                ierr = iMOAB_WriteLocalMesh(mbrxid, prefix_output)
                if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error in writing coverage mesh rof 2 ocn '
+                  write(logunit,*) subname,' error in writing coverage mesh ROF2OCN'
                endif
             endif
          endif
 #endif
-! now take care of the mapper for MOAB mapper_Rr2o_liq
-            if ( mapper_Rr2o_liq%src_mbid .gt. -1 ) then
-                if (iamroot_CPLID) then
-                     write(logunit,F00) 'overwriting '//trim(mapper_Rr2o_liq%mbname) &
-                             //' mapper_Rr2o_liq'
-                endif
-            endif
-            mapper_Rr2o_liq%src_mbid = mbrxid
-            mapper_Rr2o_liq%tgt_mbid = mboxid ! this is special, it will really need this coverage type mesh
-            mapper_Rr2o_liq%intx_mbid = mbintxro
-            mapper_Rr2o_liq%src_context = rof(1)%cplcompid
-            !mapper_Rr2o_liq%intx_context = ocn(1)%cplcompid ! this context was used in migrate mesh
-            mapper_Rr2o_liq%intx_context = rmapid ! read map is the same context as intersection now
-            mapper_Rr2o_liq%weight_identifier = wgtIdr2o_conservative
-            mapper_Rr2o_liq%mbname = 'mapper_Rr2o_liq'
-            ! mapper_Rr2o_liq%read_map = .true.
+         mapper_Rr2o_liq%src_mbid = mbrxid
+         mapper_Rr2o_liq%tgt_mbid = mboxid ! this is special, it will really need this coverage type mesh
+         mapper_Rr2o_liq%intx_mbid = mbintxro
+         mapper_Rr2o_liq%src_context = rof(1)%cplcompid
+         mapper_Rr2o_liq%intx_context = rmapid ! read map is the same context as intersection now
+         mapper_Rr2o_liq%weight_identifier = wgtIdFr2ol
+         mapper_Rr2o_liq%mbname = 'mapper_Rr2o_liq'
 
 #endif
 
@@ -893,7 +864,7 @@ contains
           ! is this the same map as above ?
           call seq_map_init_rcfile(mapper_Rr2o_ice, rof(1), ocn(1), &
                'seq_maps.rc', 'rof2ocn_ice_rmapname:', 'rof2ocn_ice_rmaptype:',samegrid_ro, &
-               'mapper_Rr2o_ice  initialization',esmf_map_flag)
+               'mapper_Rr2o_ice  initialization', esmf_map_flag, no_match )
 ! us the same one for mapper_Rr2o_ice and mapper_Fr2o
 #ifdef HAVE_MOAB
 ! now take care of the mapper for MOAB mapper_Rr2o_ice
@@ -901,38 +872,53 @@ contains
                write(logunit,*) ' '
                write(logunit,F00) 'Initializing MOAB mapper_Rr2o_ice same as mapper_Rr2o_liq'
             end if
+
+            ! If loading map from disk, then load the R2O_ice map
+            if (.not. compute_maps_online_r2o) then
+               type_grid = 3 ! this is type of grid
+               call moab_map_init_rcfile( mbrxid, mboxid, mbintxro, type_grid, &
+                     'seq_maps.rc', 'rof2ocn_ice_rmapname:', 'rof2ocn_ice_rmaptype:', samegrid_ro, &
+                     wgtIdFr2oi, 'mapper_Rr2o_ice moab initialization', esmf_map_flag, wgtIdFr2ol )
+            end if
             mapper_Rr2o_ice%src_mbid = mbrxid
             mapper_Rr2o_ice%tgt_mbid = mboxid ! special
             mapper_Rr2o_ice%intx_mbid = mbintxro
             mapper_Rr2o_ice%src_context = rof(1)%cplcompid
-            !mapper_Rr2o_ice%intx_context = ocn(1)%cplcompid ! this context was used in migrate mesh
             mapper_Rr2o_ice%intx_context = rmapid ! read map is the same context as intersection now
-            mapper_Rr2o_ice%weight_identifier = wgtIdr2o_conservative
+            mapper_Rr2o_ice%weight_identifier = wgtIdFr2oi
             mapper_Rr2o_ice%mbname = 'mapper_Rr2o_ice'
-            ! mapper_Rr2o_ice%read_map = .true.
 #endif
           if (flood_present) then
              if (iamroot_CPLID) then
                 write(logunit,*) ' '
                 write(logunit,F00) 'Initializing mapper_Fr2o'
              end if
+             no_match = .true. ! force to create a new mapper object
              call seq_map_init_rcfile( mapper_Fr2o, rof(1), ocn(1), &
                   'seq_maps.rc', 'rof2ocn_fmapname:', 'rof2ocn_fmaptype:',samegrid_ro, &
-                  string='mapper_Fr2o initialization', esmf_map=esmf_map_flag)
+                  string='mapper_Fr2o initialization', esmf_map=esmf_map_flag, no_match=no_match )
+
 #ifdef HAVE_MOAB
-! now take care of the mapper for MOAB mapper_Fr2o
+             ! now take care of the mapper for MOAB mapper_Fr2o
              if (iamroot_CPLID) then
                 write(logunit,*) ' '
                 write(logunit,F00) 'Initializing MOAB mapper_Fr2o'
              end if
-               mapper_Fr2o%src_mbid = mbrxid
-               mapper_Fr2o%tgt_mbid = mboxid ! special
-               mapper_Fr2o%intx_mbid = mbintxro
-               mapper_Fr2o%src_context = rof(1)%cplcompid
-               !mapper_Fr2o%intx_context = ocn(1)%cplcompid ! this context was used in migrate mesh
-               mapper_Fr2o%intx_context = rmapid ! read map is the same context as intersection now
-               mapper_Fr2o%weight_identifier = wgtIdr2o_conservative
-               mapper_Fr2o%mbname = 'mapper_Fr2o'
+             ! If loading map from disk, then load the scalar map as well
+            if (.not. compute_maps_online_r2o) then
+               type_grid = 3 ! this is type of grid
+               call moab_map_init_rcfile( mbrxid, mboxid, mbintxro, type_grid, &
+                     'seq_maps.rc', 'rof2ocn_fmapname:', 'rof2ocn_fmaptype:', samegrid_ro, &
+                     wgtIdFr2o, 'mapper_Fr2o MOAB initialization', esmf_map_flag, wgtIdFr2ol )
+            end if
+
+             mapper_Fr2o%src_mbid = mbrxid
+             mapper_Fr2o%tgt_mbid = mboxid ! special
+             mapper_Fr2o%intx_mbid = mbintxro
+             mapper_Fr2o%src_context = rof(1)%cplcompid
+             mapper_Fr2o%intx_context = rmapid ! read map is the same context as intersection now
+             mapper_Fr2o%weight_identifier = wgtIdFr2o
+             mapper_Fr2o%mbname = 'mapper_Fr2o'
 #endif
           endif
        endif
@@ -943,17 +929,17 @@ contains
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Rg2o_liq'
           end if
-          call seq_map_init_rcfile(mapper_Rg2o_liq, glc(1), ocn(1), &
+          call seq_map_init_rcfile( mapper_Rg2o_liq, glc(1), ocn(1), &
                'seq_maps.rc', 'glc2ocn_liq_rmapname:', 'glc2ocn_liq_rmaptype:',samegrid_og, &
-               'mapper_Rg2o_liq initialization',esmf_map_flag)
+               'mapper_Rg2o_liq initialization', esmf_map_flag, no_match )
 
           if (iamroot_CPLID) then
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Rg2o_ice'
           end if
-          call seq_map_init_rcfile(mapper_Rg2o_ice, glc(1), ocn(1), &
+          call seq_map_init_rcfile( mapper_Rg2o_ice, glc(1), ocn(1), &
                'seq_maps.rc', 'glc2ocn_ice_rmapname:', 'glc2ocn_ice_rmaptype:',samegrid_og, &
-               'mapper_Rg2o_ice initialization',esmf_map_flag)
+               'mapper_Rg2o_ice initialization', esmf_map_flag, no_match )
        endif
        call shr_sys_flush(logunit)
 
@@ -964,14 +950,14 @@ contains
           end if
           call seq_map_init_rcfile(mapper_Sg2o, glc(1), ocn(1), &
                'seq_maps.rc', 'glc2ocn_smapname:', 'glc2ocn_smaptype:',samegrid_og, &
-               'mapper_Sg2o initialization',esmf_map_flag)
+               'mapper_Sg2o initialization', esmf_map_flag, no_match )
           if (iamroot_CPLID) then
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Fg2o'
           end if
           call seq_map_init_rcfile(mapper_Fg2o, glc(1), ocn(1), &
                'seq_maps.rc', 'glc2ocn_fmapname:', 'glc2ocn_fmaptype:',samegrid_og, &
-               'mapper_Fg2o initialization',esmf_map_flag)
+               'mapper_Fg2o initialization', esmf_map_flag, no_match )
        endif
        call shr_sys_flush(logunit)
 
@@ -982,7 +968,7 @@ contains
           end if
           call seq_map_init_rcfile(mapper_Sw2o, wav(1), ocn(1), &
                'seq_maps.rc', 'wav2ocn_smapname:', 'wav2ocn_smaptype:',samegrid_ow, &
-               'mapper_Sw2o initialization')
+               'mapper_Sw2o initialization', esmf_map_flag, no_match)
        endif
        call shr_sys_flush(logunit)
 
@@ -1230,8 +1216,8 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     ! Merge all ocn inputs
     !
     ! Arguments
-    type(seq_infodata_type) , intent(in)    :: infodata
-    type(mct_aVect)        , pointer , intent(in)    :: xao_ox(:) ! Atm-ocn fluxes, ocn grid, cpl pes; used here just for indexing
+    type(seq_infodata_type) , intent(in)   :: infodata
+    type(mct_aVect), pointer , intent(in)  :: xao_ox(:) ! Atm-ocn fluxes, ocn grid, cpl pes; used here just for indexing
 
     ! temporary, to compile
     ! type(mct_aVect)      :: fractions_o
@@ -1371,11 +1357,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
 
     character(*),parameter :: subName = '(prep_ocn_merge_moab) '
     !-----------------------------------------------------------------------
-    ! fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad'
-    kif = 2 ! kif = mct_aVect_indexRa(fractions_o,"ifrac",perrWith=subName)
-    kof = 3  !  kof = mct_aVect_indexRa(fractions_o,"ofrac",perrWith=subName)
-    kir = 4  !  kir = mct_aVect_indexRa(fractions_o,"ifrad",perrWith=subName)
-    kor = 5  !  kor = mct_aVect_indexRa(fractions_o,"ofrad",perrWith=subName)
+    ! get the precipitation factor
     call seq_infodata_GetData(infodata, &
          flux_epbalfact=flux_epbalfact)
 
@@ -1409,7 +1391,8 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
       if (.not. allocated(x2o_om)) then
          !ngflds = mct_aVect_nRattr(g2x_o)
          allocate(x2o_om (lsize, noflds))
-         arrSize_x2o_om = lsize * noflds ! this willbe used to set/get x2o_om tags
+         ! this will be used to set/get x2o_om tags
+         arrSize_x2o_om = lsize * noflds
       endif
        allocate(a2x_om (lsize, naflds))
        allocate(i2x_om (lsize, niflds))
@@ -1744,6 +1727,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
             '(r2x%Forr_rofl + r2x%Flrr_flood + g2x%Fogg_rofl)*flux_epbalfact'
        mrgstr(index_x2o_Foxx_rofi) = trim(mrgstr(index_x2o_Foxx_rofi))//' = '// &
             '(r2x%Forr_rofi + g2x%Fogg_rofi)*flux_epbalfact'
+
        ! water isotope snow, rain prec
        if ( index_x2o_Faxa_snow_16O /= 0 )then
           mrgstr(index_x2o_Faxa_snow_16O) = trim(mrgstr(index_x2o_Faxa_snow_16O))//' = '// &
@@ -1772,13 +1756,24 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
                'afrac*(a2x%Faxa_snowc_HDO + a2x%Faxa_snowl_HDO + a2x%Faxa_rainc_HDO + '// &
                'a2x%Faxa_rainl_HDO)*flux_epbalfact'
        end if
-    endif
+    endif ! first_time
+
+   ! fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad'
+    kif = 2 ! kif = mct_aVect_indexRa(fractions_o,"ifrac",perrWith=subName)
+    kof = 3  !  kof = mct_aVect_indexRa(fractions_o,"ofrac",perrWith=subName)
+    kir = 4  !  kir = mct_aVect_indexRa(fractions_o,"ifrad",perrWith=subName)
+    kor = 5  !  kor = mct_aVect_indexRa(fractions_o,"ofrad",perrWith=subName)
+
+   !  kif = mct_aVect_indexRa(fractions_ox,"ifrac",perrWith=subName)
+   !  kof = mct_aVect_indexRa(fractions_ox,"ofrac",perrWith=subName)
+   !  kir = mct_aVect_indexRa(fractions_ox,"ifrad",perrWith=subName)
+   !  kor = mct_aVect_indexRa(fractions_ox,"ofrad",perrWith=subName)
 
     ! fill with fractions from ocean instance
     ent_type = 1 ! cells
     tagname = 'afrac:ifrac:ofrac:ifrad:ofrad'//C_NULL_CHAR
     arrsize = 5 * lsize
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, fractions_om)
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, arrsize, ent_type, fractions_om)
     if (ierr .ne. 0) then
          call shr_sys_abort(subname//' error in getting fractions_om from ocean instance ')
     endif
@@ -1789,8 +1784,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in getting x2o_om array ')
     endif
-    ! zero out the output first (see line 1358)
-    !x2o_om(:,:)=0.
+
     ! no, we should zero out only some indices, that accumulate
     do ko = 1, noflds
       if ( (aindx(ko) .gt. 0 ) .and. amerge(ko) ) then
@@ -1803,6 +1797,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
          x2o_om(:, ko) = 0.
       endif
     enddo
+
     tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
     arrsize = naflds * lsize !        allocate (a2x_om (lsize, naflds))
     ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, a2x_om)
@@ -1830,6 +1825,46 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in getting xao_om array ')
     endif
+
+   !  ! zero out the output first (see line 1640)
+   !  x2o_om(:,:)=0.
+   ! ! call mct_aVect_copy(aVin=a2x_o, aVout=x2o_o, vector=mct_usevector, sharedIndices=a2x_SharedIndices)
+   ! do i=1,a2x_SharedIndices%shared_real%num_indices
+   !    i1=a2x_SharedIndices%shared_real%aVindices1(i)
+   !    o1=a2x_SharedIndices%shared_real%aVindices2(i)
+   !    x2o_om(o1, :) = a2x_om(i1, :)
+   ! enddo
+   ! ! call mct_aVect_copy(aVin=i2x_o, aVout=x2o_o, vector=mct_usevector, sharedIndices=i2x_SharedIndices)
+   ! do i=1,i2x_SharedIndices%shared_real%num_indices
+   !    i1=i2x_SharedIndices%shared_real%aVindices1(i)
+   !    o1=i2x_SharedIndices%shared_real%aVindices2(i)
+   !    x2o_om(o1, :) = i2x_om(i1, :)
+   ! enddo
+   ! ! call mct_aVect_copy(aVin=r2x_o, aVout=x2o_o, vector=mct_usevector, sharedIndices=r2x_SharedIndices)
+   ! do i=1,r2x_SharedIndices%shared_real%num_indices
+   !    i1=r2x_SharedIndices%shared_real%aVindices1(i)
+   !    o1=r2x_SharedIndices%shared_real%aVindices2(i)
+   !    x2o_om(o1, :) = r2x_om(i1, :)
+   ! enddo
+   ! ! call mct_aVect_copy(aVin=w2x_o, aVout=x2o_o, vector=mct_usevector, sharedIndices=w2x_SharedIndices)
+   ! ! do i=1,w2x_SharedIndices%shared_real%num_indices
+   ! !    i1=w2x_SharedIndices%shared_real%aVindices1(i)
+   ! !    o1=w2x_SharedIndices%shared_real%aVindices2(i)
+   ! !    x2o_om(o1, :) = w2x_om(i1, :)
+   ! ! enddo
+   ! ! call mct_aVect_copy(aVin=xao_o, aVout=x2o_o, vector=mct_usevector, sharedIndices=xao_SharedIndices)
+   ! do i=1,xao_SharedIndices%shared_real%num_indices
+   !    i1=xao_SharedIndices%shared_real%aVindices1(i)
+   !    o1=xao_SharedIndices%shared_real%aVindices2(i)
+   !    x2o_om(o1, :) = xao_om(i1, :)
+   ! enddo
+   ! ! call mct_aVect_copy(aVin=g2x_o, aVout=x2o_o, vector=mct_usevector, sharedIndices=g2x_SharedIndices)
+   ! ! do i=1,g2x_SharedIndices%shared_real%num_indices
+   ! !    i1=g2x_SharedIndices%shared_real%aVindices1(i)
+   ! !    o1=g2x_SharedIndices%shared_real%aVindices2(i)
+   ! !    x2o_om(o1, :) = g2x_om(i1, :)
+   ! ! enddo
+   ! !!!!!!!!!!!!!!!!!!!!!!
 
 ! #ifdef NOTDEF
 
@@ -1976,8 +2011,6 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
           end if
        endif
 
-!
-
        do n = 1,lsize
           ifrac = fractions_om(n,kif) !fo_kif_ifrac(n) ! fractions_o%rAttr(kif)
           afrac = fractions_om(n,kof) ! fo_kof_ofrac(n) ! fractions_o%rAttr(kof,n)
@@ -2008,10 +2041,9 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
              end if
           end if
        end do
-
     end do
-! after we are done, set x2o_om to the mboxid
 
+   ! after we are done, set x2o_om to the mboxid
     tagname = trim(seq_flds_x2o_fields)//C_NULL_CHAR
     arrsize = noflds * lsize
     ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, x2o_om)
@@ -2029,8 +2061,6 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in setting shared_values array on ocean instance')
     endif
-
-
 
 #ifdef MOABCOMP
     x2o_o => component_get_x2c_cx(ocn(1))
