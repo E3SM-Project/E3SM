@@ -81,7 +81,7 @@ protected:
   }
 
   void initialize_impl (const RunType /* run_type */ ) override {
-    m_diagnostic_output.get_header().get_tracking().update_time_stamp(timestamp());
+    m_diagnostic_output.get_header().get_tracking().update_time_stamp(start_of_step_ts());
   }
 
   // Clean up
