@@ -2624,11 +2624,19 @@
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /lcrc/soft/climate/moab/chrysalis/intel; else echo "$MOAB_ROOT"; fi}</env>
       <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /lcrc/group/e3sm/soft/albany/2024.03.26/intel/20.0.4; else echo "$Albany_ROOT"; fi}</env>
       <env name="Trilinos_ROOT">$SHELL{if [ -z "$Trilinos_ROOT" ]; then echo /lcrc/group/e3sm/soft/trilinos/15.1.1/intel/20.0.4; else echo "$Trilinos_ROOT"; fi}</env>
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /lcrc/soft/climate/adios2/2.10.2/openmpi-4.1.6/intel-20.0.4; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /lcrc/soft/climate/c-blosc2/2.15.2/intel-20.0.4; else echo "$BLOSC2_ROOT"; fi}</env>
+      <env name="SZ_ROOT">$SHELL{if [ -z "$SZ_ROOT" ]; then echo /lcrc/soft/climate/sz/2.1.12.5/intel-20.0.4; else echo "$SZ_ROOT"; fi}</env>
+      <env name="ZFP_ROOT">$SHELL{if [ -z "$ZFP_ROOT" ]; then echo /lcrc/soft/climate/zfp/1.0.1/intel-20.0.4; else echo "$ZFP_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="gnu" mpilib="openmpi">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /lcrc/soft/climate/moab/chrysalis/gnu; else echo "$MOAB_ROOT"; fi}</env>
       <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /lcrc/group/e3sm/soft/albany/2024.03.26/gcc/9.2.0; else echo "$Albany_ROOT"; fi}</env>
       <env name="Trilinos_ROOT">$SHELL{if [ -z "$Trilinos_ROOT" ]; then echo /lcrc/group/e3sm/soft/trilinos/15.1.1/gcc/9.2.0; else echo "$Trilinos_ROOT"; fi}</env>
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /lcrc/soft/climate/adios2/2.10.2/openmpi-4.1.6/gcc-11.2.0; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /lcrc/soft/climate/c-blosc2/2.15.2/gcc-11.2.0; else echo "$BLOSC2_ROOT"; fi}</env>
+      <env name="SZ_ROOT">$SHELL{if [ -z "$SZ_ROOT" ]; then echo /lcrc/soft/climate/sz/2.1.12.5/gcc-11.2.0; else echo "$SZ_ROOT"; fi}</env>
+      <env name="ZFP_ROOT">$SHELL{if [ -z "$ZFP_ROOT" ]; then echo /lcrc/soft/climate/zfp/1.0.1/gcc-11.2.0; else echo "$ZFP_ROOT"; fi}</env>
     </environment_variables>
   </machine>
 
