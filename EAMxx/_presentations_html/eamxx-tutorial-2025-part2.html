@@ -769,7 +769,7 @@ POMPEI::<span class="hljs-built_in">POMPEI</span>(<span class="hljs-type">const<
   <span class="hljs-keyword">using</span> PC = scream::physics::Constants&lt;Real&gt;;
   <span class="hljs-keyword">auto</span> g   = PC::gravit;
 
-  <span class="hljs-keyword">auto</span> t    = <span class="hljs-built_in">timestamp</span>() + dt;
+  <span class="hljs-keyword">auto</span> t    = <span class="hljs-built_in">end_of_step_ts</span>();
   <span class="hljs-keyword">auto</span> rate = pompei::<span class="hljs-built_in">ash_emission_rate</span>(t.<span class="hljs-built_in">days_from</span>(m_eruption_start));
   <span class="hljs-keyword">auto</span> mass = dt * rate;
 
