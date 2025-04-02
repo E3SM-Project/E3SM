@@ -118,13 +118,14 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   }
 
   // Diagnostic Outputs: (all fields are just outputs w.r.t. P3)
-  add_field<Updated>("precip_liq_surf_mass", scalar2d_layout,     kg/m2,     grid_name, "ACCUMULATED");
-  add_field<Updated>("precip_ice_surf_mass", scalar2d_layout,     kg/m2,     grid_name, "ACCUMULATED");
-  add_field<Computed>("eff_radius_qc",       scalar3d_layout_mid, micron,    grid_name, ps);
-  add_field<Computed>("eff_radius_qi",       scalar3d_layout_mid, micron,    grid_name, ps);
-  add_field<Computed>("eff_radius_qr",       scalar3d_layout_mid, micron,    grid_name, ps);
-  add_field<Computed>("precip_total_tend",   scalar3d_layout_mid, kg/(kg*s), grid_name, ps);
-  add_field<Computed>("nevapr",              scalar3d_layout_mid, kg/(kg*s), grid_name, ps);
+  add_field<Updated>("precip_liq_surf_mass",     scalar2d_layout,     kg/m2,     grid_name, "ACCUMULATED");
+  add_field<Updated>("precip_ice_surf_mass",     scalar2d_layout,     kg/m2,     grid_name, "ACCUMULATED");
+  add_field<Computed>("eff_radius_qc",           scalar3d_layout_mid, micron,    grid_name, ps);
+  add_field<Computed>("eff_radius_qi",           scalar3d_layout_mid, micron,    grid_name, ps);
+  add_field<Computed>("eff_radius_qr",           scalar3d_layout_mid, micron,    grid_name, ps);
+  add_field<Computed>("precip_total_tend",       scalar3d_layout_mid, kg/(kg*s), grid_name, ps);
+  add_field<Computed>("nevapr",                  scalar3d_layout_mid, kg/(kg*s), grid_name, ps);
+  add_field<Computed>("diag_equiv_reflectivity", scalar3d_layout_mid, nondim,    grid_name, ps);
 
   // History Only: (all fields are just outputs and are really only meant for I/O purposes)
   // TODO: These should be averaged over subcycle as well.  But there is no simple mechanism
@@ -206,7 +207,7 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
     &m_buffer.ni_incld, &m_buffer.bm_incld, &m_buffer.inv_dz, &m_buffer.inv_rho, &m_buffer.ze_ice,
     &m_buffer.ze_rain, &m_buffer.prec, &m_buffer.rho, &m_buffer.rhofacr, &m_buffer.rhofaci,
     &m_buffer.acn, &m_buffer.qv_sat_l, &m_buffer.qv_sat_i, &m_buffer.sup, &m_buffer.qv_supersat_i,
-    &m_buffer.tmparr2, &m_buffer.exner, &m_buffer.diag_equiv_reflectivity, &m_buffer.diag_vm_qi,
+    &m_buffer.tmparr2, &m_buffer.exner, &m_buffer.diag_vm_qi,
     &m_buffer.diag_diam_qi, &m_buffer.pratot, &m_buffer.prctot, &m_buffer.qtend_ignore,
     &m_buffer.ntend_ignore, &m_buffer.mu_c, &m_buffer.lamc, &m_buffer.qr_evap_tend, &m_buffer.v_qc,
     &m_buffer.v_nc, &m_buffer.flux_qx, &m_buffer.flux_nx, &m_buffer.v_qit, &m_buffer.v_nit,
@@ -361,11 +362,12 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   }
 
   // --Diagnostic Outputs
-  diag_outputs.diag_eff_radius_qc = get_field_out("eff_radius_qc").get_view<Pack**>();
-  diag_outputs.diag_eff_radius_qi = get_field_out("eff_radius_qi").get_view<Pack**>();
-  diag_outputs.diag_eff_radius_qr = get_field_out("eff_radius_qr").get_view<Pack**>();
-  diag_outputs.precip_total_tend  = get_field_out("precip_total_tend").get_view<Pack**>();
-  diag_outputs.nevapr             = get_field_out("nevapr").get_view<Pack**>();
+  diag_outputs.diag_eff_radius_qc      = get_field_out("eff_radius_qc").get_view<Pack**>();
+  diag_outputs.diag_eff_radius_qi      = get_field_out("eff_radius_qi").get_view<Pack**>();
+  diag_outputs.diag_eff_radius_qr      = get_field_out("eff_radius_qr").get_view<Pack**>();
+  diag_outputs.precip_total_tend       = get_field_out("precip_total_tend").get_view<Pack**>();
+  diag_outputs.nevapr                  = get_field_out("nevapr").get_view<Pack**>();
+  diag_outputs.diag_equiv_reflectivity = get_field_out("diag_equiv_reflectivity").get_view<Pack**>();
 
   diag_outputs.precip_liq_surf  = m_buffer.precip_liq_surf_flux;
   diag_outputs.precip_ice_surf  = m_buffer.precip_ice_surf_flux;
@@ -415,7 +417,6 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   temporaries.qv_supersat_i           = m_buffer.qv_supersat_i;
   temporaries.tmparr2                 = m_buffer.tmparr2;
   temporaries.exner                   = m_buffer.exner;
-  temporaries.diag_equiv_reflectivity = m_buffer.diag_equiv_reflectivity;
   temporaries.diag_vm_qi              = m_buffer.diag_vm_qi;
   temporaries.diag_diam_qi            = m_buffer.diag_diam_qi;
   temporaries.pratot                  = m_buffer.pratot;
