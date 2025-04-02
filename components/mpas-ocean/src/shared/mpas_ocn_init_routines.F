@@ -214,7 +214,7 @@ contains
       layerThickness(:, nCells+1) = 0.0_RKIND
 
 
-      do iEdge=1, nEdges
+      do iEdge=1, nEdgesAll
          normalVelocity(maxLevelEdgeTop(iEdge)+1:maxLevelEdgeBot(iEdge), iEdge) = 0.0_RKIND
 
          normalVelocity(maxLevelEdgeBot(iEdge)+1:nVertLevels,iEdge) = -1.0e34_RKIND
@@ -238,9 +238,11 @@ contains
       ! ------------------------------------------------------------------
       ! Accumulating various parametrizations of the transport velocity
       ! ------------------------------------------------------------------
-      do iEdge = 1, nEdges
+      do iEdge = 1, nEdgesAll
          normalTransportVelocity(:, iEdge) = normalVelocity(:, iEdge)
       end do
+      tangentialVelocity(:,:) = 0.0_RKIND
+      tangentialTransportVelocity(:,:) = 0.0_RKIND
 
       ! ------------------------------------------------------------------
       ! End: Accumulating various parametrizations of the transport velocity

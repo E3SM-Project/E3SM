@@ -41,6 +41,7 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:,:), pointer :: zMid
    real (kind=RKIND), dimension(:,:), pointer :: zTop
    real (kind=RKIND), dimension(:,:), pointer :: divergence
+   real (kind=RKIND), dimension(:,:), pointer :: divergenceVertex
    real (kind=RKIND), dimension(:,:), pointer :: circulation
    real (kind=RKIND), dimension(:,:), pointer :: relativeVorticity
    real (kind=RKIND), dimension(:,:), pointer :: relativeVorticityCell
@@ -56,6 +57,7 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:,:), pointer :: salineContractCoeff
    real (kind=RKIND), dimension(:,:), pointer :: BruntVaisalaFreqTop
    real (kind=RKIND), dimension(:,:), pointer :: tangentialVelocity
+   real (kind=RKIND), dimension(:,:), pointer :: tangentialTransportVelocity
    real (kind=RKIND), dimension(:,:), pointer :: layerThickEdgeDrag
    real (kind=RKIND), dimension(:,:), pointer :: layerThickEdgeFlux
    real (kind=RKIND), dimension(:,:), pointer :: layerThickEdgeMean
@@ -74,9 +76,9 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:), pointer :: pressureAdjustedSSH
    real (kind=RKIND), dimension(:), pointer :: pgf_sal
    real (kind=RKIND), dimension(:), pointer :: temp_twd
-   real (kind=RKIND), dimension(:), pointer :: normalCoeffTWD 
-   real (kind=RKIND), dimension(:), pointer :: tangentialCoeffTWD 
-   real (kind=RKIND), dimension(:), pointer :: topographicWaveDrag 
+   real (kind=RKIND), dimension(:), pointer :: normalCoeffTWD
+   real (kind=RKIND), dimension(:), pointer :: tangentialCoeffTWD
+   real (kind=RKIND), dimension(:), pointer :: topographicWaveDrag
 
    real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceValue
    real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceLayerValue
@@ -463,6 +465,7 @@ contains
 
          call mpas_pool_get_array(diagnosticsPool, 'viscosity', viscosity)
          call mpas_pool_get_array(diagnosticsPool, 'divergence', divergence)
+         call mpas_pool_get_array(diagnosticsPool, 'divergenceVertex', divergenceVertex)
          call mpas_pool_get_array(diagnosticsPool, 'circulation', circulation)
 
          call mpas_pool_get_array(diagnosticsPool, 'velocityX', velocityX)
@@ -580,6 +583,8 @@ contains
 
          call mpas_pool_get_array(diagnosticsPool, 'tangentialVelocity', &
                    tangentialVelocity)
+         call mpas_pool_get_array(diagnosticsPool, 'tangentialTransportVelocity', &
+                   tangentialTransportVelocity)
          call mpas_pool_get_array(diagnosticsPool, 'montgomeryPotential', &
                    montgomeryPotential)
          call mpas_pool_get_array(diagnosticsPool, 'BruntVaisalaFreqTop', &
@@ -799,6 +804,7 @@ contains
          !$acc                   velocityY,                       &
          !$acc                   velocityZ,                       &
          !$acc                   divergence,                      &
+         !$acc                   divergenceVertex,                &
          !$acc                   RiTopOfCell,                     &
          !$acc                   RiTopOfEdge,                     &
          !$acc                   SSHGradient,                     &
@@ -838,6 +844,7 @@ contains
          !$acc                   transportVelocityY,              &
          !$acc                   transportVelocityZ,              &
          !$acc                   tangentialVelocity,              &
+         !$acc                   tangentialTransportVelocity,     &
          !$acc                   montgomeryPotential,             &
          !$acc                   BruntVaisalaFreqTop,             &
          !$acc                   vertAleTransportTop,             &
@@ -1059,6 +1066,7 @@ contains
          !$acc                   velocityY,                       &
          !$acc                   velocityZ,                       &
          !$acc                   divergence,                      &
+         !$acc                   divergenceVertex,                &
          !$acc                   RiTopOfCell,                     &
          !$acc                   RiTopOfEdge,                     &
          !$acc                   SSHGradient,                     &
@@ -1098,6 +1106,7 @@ contains
          !$acc                   transportVelocityY,              &
          !$acc                   transportVelocityZ,              &
          !$acc                   tangentialVelocity,              &
+         !$acc                   tangentialTransportVelocity,     &
          !$acc                   montgomeryPotential,             &
          !$acc                   BruntVaisalaFreqTop,             &
          !$acc                   vertAleTransportTop,             &
@@ -1267,6 +1276,7 @@ contains
                  velocityY,                       &
                  velocityZ,                       &
                  divergence,                      &
+                 divergenceVertex,                &
                  RiTopOfCell,                     &
                  RiTopOfEdge,                     &
                  SSHGradient,                     &
@@ -1306,6 +1316,7 @@ contains
                  transportVelocityY,              &
                  transportVelocityZ,              &
                  tangentialVelocity,              &
+                 tangentialTransportVelocity,     &
                  montgomeryPotential,             &
                  BruntVaisalaFreqTop,             &
                  vertAleTransportTop,             &
