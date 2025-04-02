@@ -238,12 +238,10 @@ module seaice_core_interface
           config_use_ice_age, &
           config_use_first_year_ice, &
           config_use_level_ice, &
-          config_use_cesm_meltponds, &
           config_use_level_meltponds, &
           config_use_topo_meltponds, &
           config_use_aerosols, &
           config_use_brine, &
-          config_use_vertical_zsalinity, &
           config_use_vertical_biochemistry, &
           config_use_vertical_tracers, &
           config_use_skeletal_biochemistry, &
@@ -291,7 +289,6 @@ module seaice_core_interface
           pkgTracerVerticalDONActive, &
           pkgTracerVerticalIronActive, &
           pkgTracerZAerosolsActive, &
-          pkgTracerZSalinityActive, &
           pkgColumnTracerEffectiveSnowDensityActive, &
           pkgColumnTracerSnowGrainRadiusActive
 
@@ -361,19 +358,16 @@ module seaice_core_interface
      !pkgTracerVerticalDON
      !pkgTracerVerticalIron
      !pkgTracerZAerosols
-     !pkgTracerZSalinity
      !pkgColumnTracerEffectiveSnowDensity
      !pkgColumnTracerSnowGrainRadius
 
      call MPAS_pool_get_config(configPool, "config_use_ice_age", config_use_ice_age)
      call MPAS_pool_get_config(configPool, "config_use_first_year_ice", config_use_first_year_ice)
      call MPAS_pool_get_config(configPool, "config_use_level_ice", config_use_level_ice)
-     call MPAS_pool_get_config(configPool, "config_use_cesm_meltponds", config_use_cesm_meltponds)
      call MPAS_pool_get_config(configPool, "config_use_level_meltponds", config_use_level_meltponds)
      call MPAS_pool_get_config(configPool, "config_use_topo_meltponds", config_use_topo_meltponds)
      call MPAS_pool_get_config(configPool, "config_use_aerosols", config_use_aerosols)
      call MPAS_pool_get_config(configPool, "config_use_brine", config_use_brine)
-     call MPAS_pool_get_config(configPool, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
      call MPAS_pool_get_config(configPool, "config_use_vertical_tracers", config_use_vertical_tracers)
      call MPAS_pool_get_config(configPool, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
      call MPAS_pool_get_config(configPool, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
@@ -419,11 +413,10 @@ module seaice_core_interface
      call MPAS_pool_get_package(packagePool, "pkgTracerVerticalDONActive", pkgTracerVerticalDONActive)
      call MPAS_pool_get_package(packagePool, "pkgTracerVerticalIronActive", pkgTracerVerticalIronActive)
      call MPAS_pool_get_package(packagePool, "pkgTracerZAerosolsActive", pkgTracerZAerosolsActive)
-     call MPAS_pool_get_package(packagePool, "pkgTracerZSalinityActive", pkgTracerZSalinityActive)
      call MPAS_pool_get_package(packagePool, "pkgColumnTracerEffectiveSnowDensityActive", pkgColumnTracerEffectiveSnowDensityActive)
      call MPAS_pool_get_package(packagePool, "pkgColumnTracerSnowGrainRadiusActive", pkgColumnTracerSnowGrainRadiusActive)
 
-     use_meltponds = (config_use_cesm_meltponds .or. config_use_level_meltponds .or. config_use_topo_meltponds)
+     use_meltponds = (config_use_level_meltponds .or. config_use_topo_meltponds)
 
      pkgColumnTracerIceAgeActive       = config_use_ice_age
      pkgColumnTracerFirstYearIceActive = config_use_first_year_ice
@@ -455,7 +448,6 @@ module seaice_core_interface
      pkgTracerVerticalDONActive          = (config_use_vertical_tracers .and. config_use_DON)
      pkgTracerVerticalIronActive         = (config_use_vertical_tracers .and. config_use_iron)
      pkgTracerZAerosolsActive            = config_use_zaerosols
-     pkgTracerZSalinityActive            = config_use_vertical_zsalinity
 
      pkgColumnTracerEffectiveSnowDensityActive = config_use_effective_snow_density
      pkgColumnTracerSnowGrainRadiusActive = config_use_snow_grain_radius
@@ -490,7 +482,6 @@ module seaice_core_interface
         pkgTracerVerticalDONActive          = .false.
         pkgTracerVerticalIronActive         = .false.
         pkgTracerZAerosolsActive            = .false.
-        pkgTracerZSalinityActive            = .false.
         pkgColumnTracerEffectiveSnowDensityActive = .false.
         pkgColumnTracerSnowGrainRadiusActive      = .false.
      endif
@@ -516,7 +507,6 @@ module seaice_core_interface
         pkgTracerVerticalHumicsActive       = .false.
         pkgTracerVerticalDONActive          = .false.
         pkgTracerVerticalIronActive         = .false.
-        pkgTracerZSalinityActive            = .false.
      endif
 
      !pkgColumnTracerIceAgeActive       = .true.
