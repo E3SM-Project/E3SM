@@ -792,7 +792,7 @@ subroutine shr_mct_sMatWritednc(sMat,iosystem, io_type, io_format, fileName,comp
 ! !USES:
    use pio, only : iosystem_desc_t
    use shr_pcdf_mod, only : shr_pcdf_readwrite
-   use mpi, only: mpi_comm_size, mpi_comm_rank, mpi_gather, mpi_integer
+   use mpi
    implicit none
 
 ! !INPUT/OUTPUT PARAMETERS:

@@ -45,7 +45,7 @@ module shr_taskmap_mod
                                  verbose, no_output, &
                                  save_nnodes, save_task_node_map)
 
-     use mpi, only: mpi_bcast, mpi_integer, mpi_max_processor_name, mpi_character
+     use mpi
 
 !-----------------------------------------------------------------------
 ! Purpose: Write out list of nodes used by processes in a given
