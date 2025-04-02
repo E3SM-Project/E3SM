@@ -6,10 +6,11 @@ if (compile_threaded)
 endif()
 
 # 'just' -g may lead to linker internal errors and/or huge builds out of quotas
+# EAMxx ignores generic CMAKE_CXX_FLAGS
 string(APPEND CMAKE_C_FLAGS_RELEASE   " -O2 -g -gline-tables-only")
-string(APPEND CMAKE_Fortran_FLAGS_RELEASE   " -O2 -fpscomp logicals -g -gline-tables-only")
+string(APPEND CMAKE_Fortran_FLAGS_RELEASE   " -O2 -fpscomp logicals -g")
 string(APPEND CMAKE_CXX_FLAGS_RELEASE " -fp-model precise -O2 -g -gline-tables-only")
-string(APPEND CMAKE_Fortran_FLAGS_DEBUG   " -O0 -g -fpscomp logicals -check uninit -check bounds -check pointers -fpe0 -check noarg_temp_created")
+string(APPEND CMAKE_Fortran_FLAGS_DEBUG   " -O0 -g -fpscomp logicals")
 string(APPEND CMAKE_C_FLAGS_DEBUG   " -O0 -g")
 string(APPEND CMAKE_CXX_FLAGS_DEBUG " -O0 -g")
 string(APPEND CMAKE_C_FLAGS   " -fp-model precise -std=gnu99")

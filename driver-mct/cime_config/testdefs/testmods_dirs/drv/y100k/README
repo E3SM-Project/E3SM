@@ -1,5 +1,0 @@
-This tests the ability to use 6-digit years.
-
-As of the time this test was created, the max year is about 214747 -
-otherwise we exceed the limit of 4-byte integers when storing dates as
-integers (yyyyyymmdd).
