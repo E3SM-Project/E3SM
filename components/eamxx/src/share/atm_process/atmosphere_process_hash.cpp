@@ -114,8 +114,10 @@ void hash (const std::list<FieldGroup>& fgs, HashType& accum) {
 } // namespace anon
 
 void AtmosphereProcess
-::print_global_state_hash (const std::string& label, const bool in, const bool out,
-                           const bool internal, const Real* mem, const int nmem) const {
+::print_global_state_hash (const std::string& label, const TimeStamp& t,
+                           const bool in, const bool out, const bool internal,
+                           const Real* mem, const int nmem) const
+{
   const bool compute[4] = {in, out, internal, mem!=nullptr};
 
   std::vector<std::string> hash_names;
@@ -212,8 +214,8 @@ void AtmosphereProcess
     for (const auto& n : hash_names)
       slen = std::max(slen,static_cast<int>(n.size()+1));
 
-    const auto& date = timestamp().get_date();
-    const auto& tod  = timestamp().sec_of_day();
+    const auto& date = t.get_date();
+    const auto& tod  = t.sec_of_day();
 
     std::stringstream ss;
 
@@ -236,14 +238,16 @@ void AtmosphereProcess
   }
 }
 
-void AtmosphereProcess::print_fast_global_state_hash (const std::string& label) const {
+void AtmosphereProcess::
+print_fast_global_state_hash (const std::string& label, const TimeStamp& t) const
+{
   HashType laccum = 0;
   hash(m_fields_in, laccum);
   HashType gaccum;
   bfbhash::all_reduce_HashType(m_comm.mpi_comm(), &laccum, &gaccum, 1);
   if (m_comm.am_i_root())
     fprintf(stderr, "bfbhash> %14d %16" PRIx64 " (%s)\n",
-            timestamp().get_num_steps(), gaccum, label.c_str());
+            t.get_num_steps(), gaccum, label.c_str());
 }
 
 } // namespace scream

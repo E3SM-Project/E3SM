@@ -439,7 +439,7 @@ void AtmosphereProcessGroup::pre_process_tracer_requests () {
 
 void AtmosphereProcessGroup::initialize_impl (const RunType run_type) {
   for (auto& atm_proc : m_atm_processes) {
-    atm_proc->initialize(timestamp(),run_type);
+    atm_proc->initialize(start_of_step_ts(),run_type);
 #ifdef SCREAM_HAS_MEMORY_USAGE
     long long my_mem_usage = get_mem_usage(MB);
     long long max_mem_usage;
@@ -458,10 +458,6 @@ void AtmosphereProcessGroup::run_impl (const double dt) {
 }
 
 void AtmosphereProcessGroup::run_sequential (const double dt) {
-  // Get the timestamp at the beginning of the step and advance it.
-  auto ts = timestamp();
-  ts += dt;
-
   // The stored atm procs should update the timestamp if both
   //  - this is the last subcycle iteration
   //  - nobody from outside told this APG to not update timestamps
