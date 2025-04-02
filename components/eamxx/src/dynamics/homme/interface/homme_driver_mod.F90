@@ -186,7 +186,7 @@ contains
                                  prim_init_state_views
     use prim_state_mod,    only: prim_printstate
     use model_init_mod,    only: model_init2
-    use global_norms_mod,  only: dss_hvtensor
+    use global_norms_mod,  only: dss_hvtensor, print_cfl
     use control_mod,       only: disable_diagnostics
     use dimensions_mod,    only: nelemd
     use homme_context_mod, only: is_model_inited, is_data_structures_inited, &
@@ -207,8 +207,11 @@ contains
     ! Notably, this inits the ref states
     call model_init2(elem,hybrid,deriv,hvcoord,tl,1,nelemd)
 
-    ! apply dss and bilinear projection to tensor coefficients
+    ! Apply dss and bilinear projection to tensor coefficients
     call dss_hvtensor(elem,hybrid,1,nelemd)
+
+    ! Print advective and viscious CFL estimates
+    call print_cfl(elem,hybrid,1,nelemd)
 
     ! Initialize the C++ functors in the C++ context
     ! Here we set allocate_buffer=false since the AD
