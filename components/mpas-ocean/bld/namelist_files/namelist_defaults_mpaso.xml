@@ -164,10 +164,22 @@
 <config_tracer_del4>0.0</config_tracer_del4>
 
 <!-- hmix_Leith -->
+<!--
 <config_use_Leith_del2>.false.</config_use_Leith_del2>
 <config_Leith_parameter>1.0</config_Leith_parameter>
 <config_Leith_dx>15000.0</config_Leith_dx>
 <config_Leith_visc2_max>2.5e3</config_Leith_visc2_max>
+-->
+
+<config_use_Leith_del2>.false.</config_use_Leith_del2>
+<config_use_Leith_del4>.false.</config_use_Leith_del4>
+<config_Leith_del2_parameter>2.0</config_Leith_del2_parameter>
+<config_Leith_del4_parameter>2.0</config_Leith_del4_parameter>
+<config_Leith_del2_div_scaler>1.5</config_Leith_del2_div_scaler>
+<config_Leith_del4_div_scaler>1.5</config_Leith_del4_div_scaler>
+<config_Leith_dx>1000.0</config_Leith_dx>
+<config_Leith_visc2_max>5.0</config_Leith_visc2_max>
+<config_Leith_visc4_max>1.0e6</config_Leith_visc4_max>
 
 <!-- Redi_isopycnal_mixing -->
 <config_use_Redi>.true.</config_use_Redi>
