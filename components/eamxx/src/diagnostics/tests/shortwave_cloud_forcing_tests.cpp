@@ -139,8 +139,7 @@ void run(std::mt19937_64& engine)
     diag->compute_diagnostic();
     const auto& diag_out = diag->get_diagnostic();
     Field SWCF_f = diag_out.clone();
-    SWCF_f.deep_copy<double,Host>(0.0);
-    SWCF_f.sync_to_dev();
+    SWCF_f.deep_copy(0);
     const auto& SWCF_v = SWCF_f.get_view<Real*>();
     Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int icol = team.league_rank();
