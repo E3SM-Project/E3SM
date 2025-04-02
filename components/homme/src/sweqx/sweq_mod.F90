@@ -108,7 +108,6 @@ contains
 
     real (kind=real_kind)       :: dt              ! "timestep dependent" timestep
 !   variables used to calculate CFL
-    real (kind=real_kind) :: dtnu            ! timestep*viscosity parameter
     real (kind=real_kind) :: dt_dyn          ! dynamics timestep
     real (kind=real_kind) :: dt_tracers      ! tracer timestep
 
@@ -193,8 +192,7 @@ contains
     simday=0
        call test_global_integral(elem,hybrid,nets,nete)
        call dss_hvtensor(elem,hybrid,nets,nete)
-       dtnu = 2.0d0*tstep*max(nu,nu_s)/hypervis_subcycle
-       call print_cfl(elem,hybrid,nets,nete,dtnu)
+       call print_cfl(elem,hybrid,nets,nete)
 
        if (.not. MeshUseMeshFile) then
           ! orientation code assumes only one corner element neighbor
@@ -892,7 +890,6 @@ contains
 
     real (kind=real_kind)       :: dt,dt_rk        ! "timestep dependent" timestep
 !   variables used to calculate CFL
-    real (kind=real_kind) :: dtnu            ! timestep*viscosity parameter
     real (kind=real_kind) :: dt_dyn          ! dynamics timestep
     real (kind=real_kind) :: dt_tracers      ! tracer timestep
 
@@ -933,8 +930,7 @@ contains
 
        call test_global_integral(elem,hybrid,nets,nete,mindx)
        call dss_hvtensor(elem,hybrid,nets,nete)
-       dtnu = (tstep/rk_stage_user)*max(nu,nu_s)/hypervis_subcycle
-       call print_cfl(elem,hybrid,nets,nete,dtnu)
+       call print_cfl(elem,hybrid,nets,nete)
 
     ! Find time-step to gravity wave speed
     ! 2012: broken because mindx=0.  also, should be updated to use true eigenvalue,
