@@ -8,19 +8,8 @@ Module shr_mpi_mod
   use shr_log_mod, only: s_loglev  => shr_log_Level
   use shr_log_mod, only: s_logunit => shr_log_Unit
 
-  ! Import MPI fcns used throughout this module
-  use mpi, only: &
-    mpi_init, mpi_send, mpi_recv, mpi_bcast, mpi_gather, mpi_gatherv, &
-    mpi_scatterv, mpi_allreduce, mpi_reduce, mpi_abort, &
-    mpi_finalize, mpi_comm_rank, mpi_comm_size, &
-    mpi_initialized, mpi_comm_world, &
-    mpi_error_string, mpi_max_error_string, mpi_success
-
-  ! Import MPI types/constants used througout this module
-  use mpi, only: &
-    mpi_integer, mpi_integer8, mpi_real8, mpi_logical, &
-    mpi_character, mpi_status_size, &
-    mpi_max, mpi_min, mpi_sum
+  ! Import MPI fcns/types
+  use mpi
 
   implicit none
   private
