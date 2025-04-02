@@ -183,6 +183,10 @@ struct Functions
 
     // Turbulent length scale [m]
     view_2d<Spack>  shoc_mix;
+    // Condensation rate [kg/kg/s]
+    view_2d<Spack>  shoc_cond;
+    // Evaporation rate [kg/kg/s]
+    view_2d<Spack>  shoc_evap;
     // vertical velocity variance [m2/s2]
     view_2d<Spack>  w_sec;
     // temperature variance [K^2]
@@ -743,6 +747,7 @@ struct Functions
     const MemberType&            team,
     const Int&                   nlev,
     const Int&                   nlevi,
+    const Scalar&                dtime,
     const uview_1d<const Spack>& thetal,
     const uview_1d<const Spack>& qw,
     const uview_1d<const Spack>& w_field,
@@ -761,7 +766,9 @@ struct Functions
     const uview_1d<Spack>&       shoc_ql,
     const uview_1d<Spack>&       wqls,
     const uview_1d<Spack>&       wthv_sec,
-    const uview_1d<Spack>&       shoc_ql2);
+    const uview_1d<Spack>&       shoc_ql2,
+    const uview_1d<Spack>&       shoc_cond,
+    const uview_1d<Spack>&       shoc_evap);
 #ifdef SCREAM_SHOC_SMALL_KERNELS
   static void shoc_assumed_pdf_disp(
     const Int&                  shcol,
@@ -1053,6 +1060,8 @@ struct Functions
     const uview_1d<Spack>&       tkh,
     // Diagnostic Output Variables
     const uview_1d<Spack>&       shoc_mix,
+    const uview_1d<Spack>&       shoc_cond,
+    const uview_1d<Spack>&       shoc_evap,
     const uview_1d<Spack>&       w_sec,
     const uview_1d<Spack>&       thl_sec,
     const uview_1d<Spack>&       qw_sec,

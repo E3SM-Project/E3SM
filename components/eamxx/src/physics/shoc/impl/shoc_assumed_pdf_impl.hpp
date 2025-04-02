@@ -42,6 +42,7 @@ void Functions<S,D>::shoc_assumed_pdf(
   const MemberType&            team,
   const Int&                   nlev,
   const Int&                   nlevi,
+  const Scalar&                dtime,
   const uview_1d<const Spack>& thetal,
   const uview_1d<const Spack>& qw,
   const uview_1d<const Spack>& w_field,
@@ -60,7 +61,9 @@ void Functions<S,D>::shoc_assumed_pdf(
   const uview_1d<Spack>&       shoc_ql,
   const uview_1d<Spack>&       wqls,
   const uview_1d<Spack>&       wthv_sec,
-  const uview_1d<Spack>&       shoc_ql2)
+  const uview_1d<Spack>&       shoc_ql2,
+  const uview_1d<Spack>&       shoc_cond,
+  const uview_1d<Spack>&       shoc_evap)
 {
   // Define temporary variables
   uview_1d<Spack> wthl_sec_zt, wqw_sec_zt, w3_zt,
@@ -95,6 +98,10 @@ void Functions<S,D>::shoc_assumed_pdf(
     shoc_cldfrac(k) = 0;
     if (k==0) { shoc_ql(k)[0] = 0; }
     shoc_ql2(k) = 0;
+
+    // Initialize shoc_cond and shoc_evap to zero
+    shoc_cond(k) = 0;
+    shoc_evap(k) = 0;
 
     const auto pval = pres(k);
 
@@ -207,6 +214,7 @@ void Functions<S,D>::shoc_assumed_pdf(
 
       // Compute s terms.
       Spack s1, std_s1, qn1, C1, ql1, s2, std_s2, qn2, C2, ql2;
+      Spack dum;
 
       // First plume
       shoc_assumed_pdf_compute_s(qw1_1, qs1, beta1, pval, thl2_1, qw2_1,
@@ -233,6 +241,11 @@ void Functions<S,D>::shoc_assumed_pdf(
 
       // Compute SGS cloud fraction
       shoc_cldfrac(k) = ekat::min(1, a*C1 + (1 - a)*C2);
+
+      //Compute cond and evap tendencies 
+      dum = ekat::max(0, a*ql1 + (1 - a)*ql2);
+      shoc_cond(k) = ekat::max(0,(dum - shoc_ql(k))/dtime);
+      shoc_evap(k) = ekat::max(0,(shoc_ql(k) - dum)/dtime);
 
       // Compute SGS liquid water mixing ratio
       shoc_assumed_pdf_compute_sgs_liquid(a, ql1, ql2, shoc_ql(k));

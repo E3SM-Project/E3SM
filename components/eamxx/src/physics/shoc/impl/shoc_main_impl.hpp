@@ -124,6 +124,8 @@ void Functions<S,D>::shoc_main_internal(
   const uview_1d<Spack>&       tkh,
   // Diagnostic Output Variables
   const uview_1d<Spack>&       shoc_mix,
+  const uview_1d<Spack>&       shoc_cond,
+  const uview_1d<Spack>&       shoc_evap,
   const uview_1d<Spack>&       w_sec,
   const uview_1d<Spack>&       thl_sec,
   const uview_1d<Spack>&       qw_sec,
@@ -257,11 +259,11 @@ void Functions<S,D>::shoc_main_internal(
 
     // Call the PDF to close on SGS cloud and turbulence
     team.team_barrier();
-    shoc_assumed_pdf(team,nlev,nlevi,thetal,qw,w_field,thl_sec,qw_sec, // Input
+    shoc_assumed_pdf(team,nlev,nlevi,dtime,thetal,qw,w_field,thl_sec,qw_sec, // Input
                      wthl_sec,w_sec,wqw_sec,qwthl_sec,w3,pres,         // Input
                      zt_grid, zi_grid,                                 // Input
                      workspace,                                        // Workspace
-                     shoc_cldfrac,shoc_ql,wqls_sec,wthv_sec,shoc_ql2); // Ouptut
+                     shoc_cldfrac,shoc_ql,wqls_sec,wthv_sec,shoc_ql2,shoc_cond,shoc_evap); // Ouptut
 
     // Check TKE to make sure values lie within acceptable
     // bounds after vertical advection, etc.
@@ -379,6 +381,8 @@ void Functions<S,D>::shoc_main_internal(
   const view_2d<Spack>&       tkh,
   // Diagnostic Output Variables
   const view_2d<Spack>&       shoc_mix,
+  const view_2d<Spack>&       shoc_cond,
+  const view_2d<Spack>&       shoc_evap,
   const view_2d<Spack>&       w_sec,
   const view_2d<Spack>&       thl_sec,
   const view_2d<Spack>&       qw_sec,
@@ -650,6 +654,8 @@ Int Functions<S,D>::shoc_main(
     const auto shoc_ql2_s     = ekat::subview(shoc_output.shoc_ql2, i);
     const auto tkh_s          = ekat::subview(shoc_output.tkh, i);
     const auto shoc_mix_s     = ekat::subview(shoc_history_output.shoc_mix, i);
+    const auto shoc_cond_s     = ekat::subview(shoc_history_output.shoc_cond, i);
+    const auto shoc_evap_s     = ekat::subview(shoc_history_output.shoc_evap, i);
     const auto w_sec_s        = ekat::subview(shoc_history_output.w_sec, i);
     const auto thl_sec_s      = ekat::subview(shoc_history_output.thl_sec, i);
     const auto qw_sec_s       = ekat::subview(shoc_history_output.qw_sec, i);
@@ -681,7 +687,7 @@ Int Functions<S,D>::shoc_main(
                        wthv_sec_s, qtracers_s, tk_s, shoc_cldfrac_s,          // Input/Output
                        shoc_ql_s,                                             // Input/Output
                        pblh_s, ustar_s, obklen_s, shoc_ql2_s, tkh_s,          // Output
-                       shoc_mix_s, w_sec_s, thl_sec_s, qw_sec_s, qwthl_sec_s, // Diagnostic Output Variables
+                       shoc_mix_s,shoc_cond_s, shoc_evap_s, w_sec_s, thl_sec_s, qw_sec_s, qwthl_sec_s, // Diagnostic Output Variables
                        wthl_sec_s, wqw_sec_s, wtke_sec_s, uw_sec_s, vw_sec_s, // Diagnostic Output Variables
                        w3_s, wqls_sec_s, brunt_s, isotropy_s);                // Diagnostic Output Variables
 
@@ -707,7 +713,7 @@ Int Functions<S,D>::shoc_main(
     shoc_input_output.wthv_sec, shoc_input_output.qtracers, shoc_input_output.tk, shoc_input_output.shoc_cldfrac, // Input/Output
     shoc_input_output.shoc_ql, // Input/Output
     shoc_output.pblh, shoc_output.ustar, shoc_output.obklen, shoc_output.shoc_ql2, shoc_output.tkh, // Output
-    shoc_history_output.shoc_mix, shoc_history_output.w_sec, shoc_history_output.thl_sec, shoc_history_output.qw_sec, shoc_history_output.qwthl_sec, // Diagnostic Output Variables
+    shoc_history_output.shoc_mix, shoc_history_output.shoc_cond, shoc_history_output.shoc_evap, shoc_history_output.w_sec, shoc_history_output.thl_sec, shoc_history_output.qw_sec, shoc_history_output.qwthl_sec, // Diagnostic Output Variables
     shoc_history_output.wthl_sec, shoc_history_output.wqw_sec, shoc_history_output.wtke_sec, shoc_history_output.uw_sec, shoc_history_output.vw_sec, // Diagnostic Output Variables
     shoc_history_output.w3, shoc_history_output.wqls_sec, shoc_history_output.brunt, shoc_history_output.isotropy, // Diagnostic Output Variables
     // Temporaries

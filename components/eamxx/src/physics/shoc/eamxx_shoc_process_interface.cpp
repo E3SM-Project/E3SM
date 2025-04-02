@@ -98,6 +98,8 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
     add_field<Computed>("brunt", scalar3d_mid, pow(s,-1), grid_name, ps);
     add_field<Computed>("shoc_mix", scalar3d_mid, m, grid_name, ps);
     add_field<Computed>("isotropy", scalar3d_mid, s, grid_name, ps);
+    add_field<Computed>("shoc_cond", scalar3d_mid, kg/kg/s, grid_name, ps);
+    add_field<Computed>("shoc_evap", scalar3d_mid, kg/kg/s, grid_name, ps);
 
     // Diagnostic output - interface grid
     add_field<Computed>("wthl_sec", scalar3d_int, K*(m/s), grid_name, ps);
@@ -200,7 +202,7 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
   spack_2d_view_t* _2d_spack_mid_view_ptrs[Buffer::num_2d_vector_mid] = {
     &m_buffer.z_mid, &m_buffer.rrho, &m_buffer.thv, &m_buffer.dz, &m_buffer.zt_grid, &m_buffer.wm_zt,
     &m_buffer.inv_exner, &m_buffer.thlm, &m_buffer.qw, &m_buffer.dse, &m_buffer.tke_copy, &m_buffer.qc_copy,
-    &m_buffer.shoc_ql2, &m_buffer.shoc_mix, &m_buffer.isotropy, &m_buffer.w_sec, &m_buffer.wqls_sec, &m_buffer.brunt
+    &m_buffer.shoc_ql2, &m_buffer.shoc_mix, &m_buffer.isotropy,&m_buffer.shoc_cond,&m_buffer.shoc_evap, &m_buffer.w_sec, &m_buffer.wqls_sec, &m_buffer.brunt
 #ifdef SCREAM_SHOC_SMALL_KERNELS
     , &m_buffer.rho_zt, &m_buffer.shoc_qv, &m_buffer.tabs, &m_buffer.dz_zt
 #endif
@@ -359,6 +361,8 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   // Ouput (diagnostic)
   history_output.shoc_mix  = m_buffer.shoc_mix;
   history_output.isotropy  = m_buffer.isotropy;
+  history_output.shoc_cond  = m_buffer.shoc_cond;
+  history_output.shoc_evap  = m_buffer.shoc_evap;
   history_output.w_sec     = get_field_out("w_variance").get_view<Spack**>();
   history_output.thl_sec   = m_buffer.thl_sec;
   history_output.qw_sec    = m_buffer.qw_sec;
@@ -426,7 +430,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   const int n_wind_slots = ekat::npack<Spack>(2)*Spack::n;
   const int n_trac_slots = ekat::npack<Spack>(m_num_tracers+3)*Spack::n;
   const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
-  workspace_mgr.setup(m_buffer.wsm_data, nlevi_packs, 14+(n_wind_slots+n_trac_slots), default_policy);
+  workspace_mgr.setup(m_buffer.wsm_data, nlevi_packs, 16+(n_wind_slots+n_trac_slots), default_policy);
 
   // Calculate pref_mid, and use that to calculate
   // maximum number of levels in pbl from surface
@@ -520,6 +524,12 @@ void SHOCMacrophysics::run_impl (const double dt)
 
     const auto& shoc_mix = get_field_out("shoc_mix").get_view<Spack**>();
     Kokkos::deep_copy(shoc_mix,history_output.shoc_mix);
+
+    const auto& shoc_cond = get_field_out("shoc_cond").get_view<Spack**>();
+    Kokkos::deep_copy(shoc_cond,history_output.shoc_cond);
+
+    const auto& shoc_evap = get_field_out("shoc_evap").get_view<Spack**>();
+    Kokkos::deep_copy(shoc_evap,history_output.shoc_evap);
 
     const auto& brunt = get_field_out("brunt").get_view<Spack**>();
     Kokkos::deep_copy(brunt,history_output.brunt);
