@@ -249,16 +249,17 @@ contains
          vertex1, vertex2, &! neighbor vertex addresses along edge
          nEdges, nCells, nVertices ! num edges,cells,vertices incl halos
 
-      real (kind=RKIND) :: &
-         uDiff,            &! diffusion operator temporary
-         areaCellInv,      &! 1/area of cell
-         areaTriInv,       &! 1/area of triangle
-         dcEdgeInv,        &! 1/dcEdge
-         dvEdgeInv,        &! 1/dvEdge
-         del2relVortEdge,  &! del2relVort on Edges
-         del2divEdge,      &! del2div on Edges
-         visc4tmp,         &! common factor for visc4
-         visc4              ! scaled biharmonic viscosity coeff
+      real (kind=RKIND) ::      &
+         uDiff,                 &! diffusion operator temporary
+         cellWidth,             &! diffusion operator temporary
+         areaCellInv,           &! 1/area of cell
+         areaTriInv,            &! 1/area of triangle
+         dcEdgeInv,             &! 1/dcEdge
+         dvEdgeInv,             &! 1/dvEdge
+         leithDel2relVortEdge,  &! del2relVort on Edges
+         leithDel2divEdge,      &! del2div on Edges
+         visc4tmp,              &! common factor for visc4
+         visc4                   ! scaled biharmonic viscosity coeff
 
 
       ! Scratch Arrays
@@ -420,7 +421,11 @@ contains
 
          dcEdgeInv = 1.0_RKIND / dcEdge(iEdge)
          dvEdgeInv = 1.0_RKIND / dvEdge(iEdge)
-         visc4tmp = (leithParam4*dxLeith*meshScalingDel4(iEdge)/pi)**6
+
+         cellWidth = 2.0_RKIND* &
+                     sqrt((areaCell(cell1) + areaCell(cell2))/2.0_RKIND/pi)
+
+         visc4tmp = (leithParam4*cellWidth/pi)**12
 
          do k = kmin, kmax
             uDiff = (del2div(k,cell2) - del2div(k,cell1))* &
@@ -428,17 +433,17 @@ contains
                   - (del2relVort(k,vertex2) - del2relVort(k,vertex1))* &
                                                           dvEdgeInv
 
-            del2relVortEdge = 0.5_RKIND * &
-                             (del2relVort(k,vertex1)+del2relVort(k,vertex2))
+            leithDel2relVortEdge = abs(0.5_RKIND * &
+                                 (del2relVort(k,vertex1)+del2relVort(k,vertex2)))**2.0
 
-            del2divEdge = 0.5_RKIND * &
-                         (del2div(k,cell1)+del2div(k,cell2))
+            leithDel2divEdge = abs(0.5_RKIND * &
+                             (del2div(k,cell1)+del2div(k,cell2)))**2.0
 
             visc4 = visc4tmp &
-                   *sqrt((abs(del2relVortEdge)**2.0 + &
-                          leithDivScaler4*abs(del2divEdge)**2.0))
+                   *sqrt(visc4tmp * leithDel2relVortEdge + &
+                         visc4tmp * leithDivScaler4 * leithDel2divEdge)
 
-            visc4 = min(visc4, visc4MaxLeith)
+            visc4 = min(visc4, visc4MaxLeith*meshScalingDel4(iEdge))
 
             tend(k,iEdge) = tend(k,iEdge) - &
                             edgeMask(k,iEdge)*uDiff*visc4
@@ -504,7 +509,7 @@ contains
       if (config_use_leith_del2) then
          hmixLeith2Off   = .false.
          leithParam2     = config_leith_del2_parameter
-         leithDivScaler2 = config_leith_del2_div_scaler ** 2.0
+         leithDivScaler2 = config_leith_del2_div_scaler ** 6.0
          dxLeith         = config_leith_dx
          visc2MaxLeith   = config_leith_visc2_max
       endif
@@ -512,7 +517,7 @@ contains
       if (config_use_leith_del4) then
          hmixLeith4Off   = .false.
          leithParam4     = config_leith_del4_parameter
-         leithDivScaler4 = config_leith_del4_div_scaler ** 2.0
+         leithDivScaler4 = config_leith_del4_div_scaler ** 12.0
          dxLeith         = config_leith_dx
          visc4MaxLeith   = config_leith_visc4_max
       endif
