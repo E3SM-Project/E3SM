@@ -2379,8 +2379,8 @@ contains
 #endif
       ! Compute vertical velocity
       do iVertex = 1, nVertices
-         kmin = minLevelVertexBot(iVertex)
-         kmax = maxLevelVertexTop(iVertex)
+         !kmin = minLevelVertexBot(iVertex)
+         !kmax = maxLevelVertexTop(iVertex)
          invAreaTri1 = 1.0_RKIND / areaTriangle(iVertex)
          div_hu(:)   = 0.0_RKIND
          div_huTransport(:) = 0.0_RKIND
@@ -2391,8 +2391,8 @@ contains
             dcEdge_temp = dcEdge(iEdge)
             edgeSignOnVertex_temp = edgeSignOnVertex(i,iVertex)
 
-            !kmin = minLevelEdgeBot(iEdge)
-            !kmax = maxLevelEdgeTop(iEdge)
+            kmin = minLevelEdgeBot(iEdge)
+            kmax = maxLevelEdgeTop(iEdge)
 
             do k = kmin,kmax
                r_tmp = dcEdge_temp * layerThicknessEdgeFlux(k,iEdge) &
@@ -2403,22 +2403,34 @@ contains
             end do
          end do
 
-         !kmin = minLevelVertexBot(iVertex)
-         !kmax = maxLevelVertexTop(iVertex)
+         kmin = minLevelVertexBot(iVertex)
+         kmax = maxLevelVertexTop(iVertex)
 
-                  vertVelocityTopVertices(1:kmin,iVertex) = 0.0_RKIND
-         vertTransportVelocityTopVertices(1:kmin,iVertex) = 0.0_RKIND
+!                 vertVelocityTopVertices(1:kmin,iVertex) = 0.0_RKIND
+!        vertTransportVelocityTopVertices(1:kmin,iVertex) = 0.0_RKIND
+!                 vertVelocityTopVertices(kmax+1:nVertLevelsP1,iVertex) = 0.0_RKIND
+!        vertTransportVelocityTopVertices(kmax+1:nVertLevelsP1,iVertex) = 0.0_RKIND
+
+                  vertVelocityTopVertices(     1,iVertex) = 0.0_RKIND
+         vertTransportVelocityTopVertices(     1,iVertex) = 0.0_RKIND
                   vertVelocityTopVertices(kmax+1:nVertLevelsP1,iVertex) = 0.0_RKIND
          vertTransportVelocityTopVertices(kmax+1:nVertLevelsP1,iVertex) = 0.0_RKIND
 
          ! Vertical velocity at top is zero (integrate from top to bottom)
-         do k = kmin,kmax-1
-            vertVelocityTopVertices(k+1,iVertex) =  &
-            vertVelocityTopVertices(k  ,iVertex) + div_hu(k)
-            vertTransportVelocityTopVertices(k+1,iVertex) =  &
-            vertTransportVelocityTopVertices(k  ,iVertex) + div_huTransport(k)
-         end do
+!        do k = 1,kmax
+!           vertVelocityTopVertices(k+1,iVertex) =  &
+!           vertVelocityTopVertices(k  ,iVertex) + div_hu(k)
+!           vertTransportVelocityTopVertices(k+1,iVertex) =  &
+!           vertTransportVelocityTopVertices(k  ,iVertex) + div_huTransport(k)
+!        end do
 
+
+         do k = kmax,1,-1
+            vertVelocityTopVertices(k  ,iVertex) =  &
+            vertVelocityTopVertices(k+1,iVertex) - div_hu(k)
+            vertTransportVelocityTopVertices(k  ,iVertex) =  &
+            vertTransportVelocityTopVertices(k+1,iVertex) - div_huTransport(k)
+         end do
       end do
 
 #ifndef MPAS_OPENACC
@@ -3239,8 +3251,8 @@ contains
 !--------------------------
 !--------------------------
 
-!!--------------------------
-!
+!--------------------------
+
       ! 1. Divergence at vertex
       do iVertex = 1, nVertices
          kmin = minLevelVertexBot(iVertex)
@@ -3332,12 +3344,26 @@ contains
 #endif
 
       do iCell = 1,nCells
-         vertAleTransportTop(1:minLevelCell(iCell),iCell) = 0.0_RKIND
-         vertAleTransportTop(maxLevelCell(iCell)+1,iCell) = 0.0_RKIND
-         do k = minLevelCell(iCell), maxLevelCell(iCell)-1
-            vertAleTransportTop(k+1,iCell) = &
-            vertAleTransportTop(k  ,iCell)  + div_hu(k,iCell) &
-                     + (ALE_Thickness(k,iCell) - &
+!        vertAleTransportTop(1:minLevelCell(iCell),iCell) = 0.0_RKIND
+!        vertAleTransportTop(maxLevelCell(iCell)+1,iCell) = 0.0_RKIND
+!        vertAleTransportTop(:,iCell) = 0.0_RKIND
+
+!        do k = minLevelCell(iCell), maxLevelCell(iCell)-1
+!           vertAleTransportTop(k+1,iCell) = &
+!           vertAleTransportTop(k  ,iCell)  + div_hu(k,iCell) &
+!                    + (ALE_Thickness(k,iCell) - &
+!                       oldLayerThickness(k,iCell))/dt
+!        end do
+
+         kmin = minLevelCell(iCell)
+         kmax = maxLevelCell(iCell)
+
+         vertAleTransportTop(1:kmin-1,iCell) = 0.0_RKIND
+         vertAleTransportTop(kmax+1:nVertLevelsP1,iCell) = 0.0_RKIND
+         do k = kmax,kmin,-1
+            vertAleTransportTop(k  ,iCell) = &
+            vertAleTransportTop(k+1,iCell)  - div_hu(k,iCell) &
+                     - (ALE_Thickness(k,iCell) - &
                         oldLayerThickness(k,iCell))/dt
          end do
       end do
