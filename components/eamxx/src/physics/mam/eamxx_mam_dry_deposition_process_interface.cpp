@@ -35,8 +35,8 @@ void MAMDryDep::set_grids(
 
   ncol_ = grid_->get_num_local_dofs();       // Number of columns on this rank
   nlev_ = grid_->get_num_vertical_levels();  // Number of levels per column
-  len_temporal_views_ = get_len_temporal_views();
-  buffer_.set_len_temporal_views(len_temporal_views_);
+  len_temporary_views_ = get_len_temporary_views();
+  buffer_.set_len_temporary_views(len_temporary_views_);
 
   // Define the different field layouts that will be used for this process
   using namespace ShortFieldTagsNames;
@@ -172,7 +172,7 @@ void MAMDryDep::set_grids(
 // the above. Buffer type given the number of columns and vertical
 // levels
 size_t MAMDryDep::requested_buffer_size_in_bytes() const {
-  return mam_coupling::buffer_size(ncol_, nlev_, 0, len_temporal_views_);
+  return mam_coupling::buffer_size(ncol_, nlev_, 0, len_temporary_views_);
 }  // requested_buffer_size_in_bytes
 
 // ================================================================
@@ -193,7 +193,7 @@ void MAMDryDep::init_buffers(const ATMBufferManager &buffer_manager) {
                    "Error! Used memory != requested memory for MAMDryDep.");
 }  // init_buffers
 
-int MAMDryDep::get_len_temporal_views() {
+int MAMDryDep::get_len_temporary_views() {
   constexpr int pcnst = mam4::aero_model::pcnst;
   int work_len        = 0;
   // vlc_trb_
@@ -207,12 +207,12 @@ int MAMDryDep::get_len_temporal_views() {
   work_len += 4 * pcnst * ncol_ * nlev_;
   return work_len;
 }
-void MAMDryDep::init_temporal_views() {
+void MAMDryDep::init_temporary_views() {
   //-----------------------------------------------------------------
   // Allocate memory
   //-----------------------------------------------------------------
   const int pcnst = mam4::aero_model::pcnst;
-  auto work_ptr   = (Real *)buffer_.temporal_views.data();
+  auto work_ptr   = (Real *)buffer_.temporary_views.data();
 
   // Output of the the mixing ratio tendencies [kg/kg/s or 1/kg/s]
   ptend_q_ = view_3d(work_ptr, ncol_, nlev_, pcnst);
@@ -254,8 +254,8 @@ void MAMDryDep::init_temporal_views() {
   /// error check
   // NOTE: workspace_provided can be larger than workspace_used, but let's try
   // to use the minimum amount of memory
-  const int workspace_used     = work_ptr - buffer_.temporal_views.data();
-  const int workspace_provided = buffer_.temporal_views.extent(0);
+  const int workspace_used     = work_ptr - buffer_.temporary_views.data();
+  const int workspace_provided = buffer_.temporary_views.extent(0);
   EKAT_REQUIRE_MSG(workspace_used == workspace_provided,
                    "Error: workspace_used (" + std::to_string(workspace_used) +
                        ") and workspace_provided (" +
@@ -312,7 +312,7 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   // cloudborne aerosol, e.g., soa_c_1
   populate_cloudborne_dry_aero(dry_aero_, buffer_);
 
-  init_temporal_views();
+  init_temporary_views();
 
   //-----------------------------------------------------------------
   // Read fractional land use data

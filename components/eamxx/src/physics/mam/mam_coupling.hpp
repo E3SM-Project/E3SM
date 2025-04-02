@@ -349,9 +349,9 @@ struct Buffer {
 
   uview_2d z_iface;  // height at interfaces
 
-  uview_1d temporal_views;
+  uview_1d temporary_views;
 
-  int len_temporal_views{0};
+  int len_temporary_views{0};
 
   // storage
   Real *wsm_data;
@@ -363,8 +363,8 @@ struct Buffer {
                      "buffer; increase max_num_2d_scratch\n");
   }
 
-  void set_len_temporal_views(const int len_temporal_views_len) {
-    len_temporal_views = len_temporal_views_len;
+  void set_len_temporary_views(const int len_temporary_views_len) {
+    len_temporary_views = len_temporary_views_len;
   }
 };
 
@@ -372,11 +372,11 @@ struct Buffer {
 // Buffer type given the number of columns and vertical levels
 inline size_t buffer_size(const int ncol, const int nlev,
                           const int num_2d_scratch,
-                          const int len_temporal_views) {
+                          const int len_temporary_views) {
   const int num_2d_mid = Buffer::min_num_2d_mid + num_2d_scratch;
   return sizeof(Real) * (num_2d_mid * ncol * nlev +
                          Buffer::num_2d_iface * ncol * (nlev + 1)) +
-         sizeof(Real) * len_temporal_views;
+         sizeof(Real) * len_temporary_views;
 }
 
 // ON HOST, initializeѕ the Buffer type with sufficient memory to store
@@ -453,8 +453,8 @@ inline size_t init_buffer(const ATMBufferManager &buffer_manager,
   }
 
   // Views with layouts different from (ncol, nlev).
-  buffer.temporal_views = view_1d(mem, buffer.len_temporal_views);
-  mem += buffer.len_temporal_views;
+  buffer.temporary_views = view_1d(mem, buffer.len_temporary_views);
+  mem += buffer.len_temporary_views;
 
   // WSM data
   buffer.wsm_data = mem;

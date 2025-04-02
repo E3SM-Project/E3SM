@@ -65,9 +65,9 @@ void MAMAci::set_grids(
 
   ncol_ = grid_->get_num_local_dofs();       // Number of columns on this rank
   nlev_ = grid_->get_num_vertical_levels();  // Number of levels per column
-  len_temporal_views_ = get_len_temporal_views();
+  len_temporary_views_ = get_len_temporary_views();
   buffer_.set_num_scratch(num_2d_scratch_);
-  buffer_.set_len_temporal_views(len_temporal_views_);
+  buffer_.set_len_temporary_views(len_temporary_views_);
 
   // Define the different field layouts that will be used for this process
   using namespace ShortFieldTagsNames;
@@ -203,7 +203,7 @@ void MAMAci::init_buffers(const ATMBufferManager &buffer_manager) {
       "Error! Used memory != requested memory for MAMMicrophysics.");
 }  // function init_buffers ends
 
-int MAMAci::get_len_temporal_views() {
+int MAMAci::get_len_temporary_views() {
   // tke_
   int work_len = 0;
   work_len += ncol_ * (nlev_ + 1);
@@ -220,8 +220,8 @@ int MAMAci::get_len_temporal_views() {
   return work_len;
 }
 
-void MAMAci::init_temporal_views() {
-  auto work_ptr = (Real *)buffer_.temporal_views.data();
+void MAMAci::init_temporary_views() {
+  auto work_ptr = (Real *)buffer_.temporary_views.data();
   tke_          = view_2d(work_ptr, ncol_, nlev_ + 1);
   work_ptr += ncol_ * (nlev_ + 1);
   // number conc of aerosols activated at supersat [#/m^3]
@@ -272,8 +272,8 @@ void MAMAci::init_temporal_views() {
   /// error check
   // NOTE: workspace_provided can be larger than workspace_used, but let's try
   // to use the minimum amount of memory
-  const int workspace_used     = work_ptr - buffer_.temporal_views.data();
-  const int workspace_provided = buffer_.temporal_views.extent(0);
+  const int workspace_used     = work_ptr - buffer_.temporary_views.data();
+  const int workspace_provided = buffer_.temporary_views.extent(0);
   EKAT_REQUIRE_MSG(workspace_used == workspace_provided,
                    "Error: workspace_used (" + std::to_string(workspace_used) +
                        ") and workspace_provided (" +
@@ -411,7 +411,7 @@ void MAMAci::initialize_impl(const RunType run_type) {
   // column-integrated droplet number [#/m2]
   set_field_w_scratch_buffer(ndropcol_, buffer_, true);
 
-  init_temporal_views();
+  init_temporary_views();
 
   // droplet number mixing ratio tendency due to mixing [#/kg/s]
   // Kokkos::resize(ndropmix_, ncol_, nlev_);

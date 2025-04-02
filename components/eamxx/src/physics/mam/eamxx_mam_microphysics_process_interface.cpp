@@ -59,9 +59,9 @@ void MAMMicrophysics::set_grids(
       m_params.get<std::string>("mam4_xs_long_file");
 
   photo_table_ = impl::read_photo_table(rsf_file, xs_long_file);
-  // NOTE: we need photo_table_ before getting len_temporal_views_.
-  len_temporal_views_ = get_len_temporal_views();
-  buffer_.set_len_temporal_views(len_temporal_views_);
+  // NOTE: we need photo_table_ before getting len_temporary_views_.
+  len_temporary_views_ = get_len_temporary_views();
+  buffer_.set_len_temporary_views(len_temporary_views_);
   buffer_.set_num_scratch(num_2d_scratch_);
 
   // get column geometry and locations
@@ -206,7 +206,7 @@ void MAMMicrophysics::set_grids(
             ->get_num_vertical_levels();  // Number of levels per column
     const int nvars = int(var_names.size());
     linoz_data_.init(num_cols_io_linoz, num_levs_io_linoz, nvars);
-    linoz_data_.allocate_temporal_views();
+    linoz_data_.allocate_temporary_views();
   }  // LINOZ reader
 
   {
@@ -232,7 +232,7 @@ void MAMMicrophysics::set_grids(
     const int num_levs_io =
         io_grid->get_num_vertical_levels();  // Number of levels per column
     tracer_data_.init(num_cols_io, num_levs_io, nvars);
-    tracer_data_.allocate_temporal_views();
+    tracer_data_.allocate_temporary_views();
 
     for(int ivar = 0; ivar < nvars; ++ivar) {
       cnst_offline_[ivar] = view_2d("cnst_offline_", ncol_, nlev_);
@@ -310,7 +310,7 @@ void MAMMicrophysics::set_grids(
           io_grid_emis
               ->get_num_vertical_levels();  // Number of levels per column
       elevated_emis_data_[i].init(num_cols_io_emis, num_levs_io_emis, nvars);
-      elevated_emis_data_[i].allocate_temporal_views();
+      elevated_emis_data_[i].allocate_temporary_views();
       forcings_[i].file_alt_data = elevated_emis_data_[i].has_altitude_;
       for(int isp = 0; isp < nvars; ++isp) {
         forcings_[i].offset = offset_emis_ver;
@@ -345,7 +345,7 @@ void MAMMicrophysics::set_grids(
 // levels
 size_t MAMMicrophysics::requested_buffer_size_in_bytes() const {
   return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_,
-                                   len_temporal_views_);
+                                   len_temporary_views_);
 }
 
 // ================================================================
@@ -368,7 +368,7 @@ void MAMMicrophysics::init_buffers(const ATMBufferManager &buffer_manager) {
                        << std::to_string(requested_buffer_size_in_bytes())
                        << ". \n");
 }
-int MAMMicrophysics::get_len_temporal_views() {
+int MAMMicrophysics::get_len_temporary_views() {
   const int photo_table_len = get_photo_table_work_len(photo_table_);
   const int sethet_work_len = mam4::mo_sethet::get_total_work_len_sethet();
   constexpr int extcnt      = mam4::gas_chemistry::extcnt;
@@ -388,11 +388,11 @@ int MAMMicrophysics::get_len_temporal_views() {
   work_len += 2 * ncol_ * gas_pcnst;
   return work_len;
 }
-void MAMMicrophysics::init_temporal_views() {
+void MAMMicrophysics::init_temporary_views() {
   const int photo_table_len = get_photo_table_work_len(photo_table_);
   const int sethet_work_len = mam4::mo_sethet::get_total_work_len_sethet();
   constexpr int extcnt      = mam4::gas_chemistry::extcnt;
-  auto work_ptr             = (Real *)buffer_.temporal_views.data();
+  auto work_ptr             = (Real *)buffer_.temporary_views.data();
 
   work_photo_table_ = view_2d(work_ptr, ncol_, photo_table_len);
   work_ptr += ncol_ * photo_table_len;
@@ -415,8 +415,8 @@ void MAMMicrophysics::init_temporal_views() {
   /// error check
   // NOTE: workspace_provided can be larger than workspace_used, but let's try
   // to use the minimum amount of memory
-  const int workspace_used     = work_ptr - buffer_.temporal_views.data();
-  const int workspace_provided = buffer_.temporal_views.extent(0);
+  const int workspace_used     = work_ptr - buffer_.temporary_views.data();
+  const int workspace_provided = buffer_.temporary_views.extent(0);
   EKAT_REQUIRE_MSG(workspace_used == workspace_provided,
                    "Error: workspace_used (" + std::to_string(workspace_used) +
                        ") and workspace_provided (" +
@@ -520,7 +520,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
         chlorine_time_secs_);
   }  // LINOZ
 
-  init_temporal_views();
+  init_temporary_views();
   // FIXME : why are we only using nlev_ instead of ncol_xnlev?
   cmfdqr_ = view_1d("cmfdqr_", nlev_);
   // Load the first month into extfrc_lst_end.

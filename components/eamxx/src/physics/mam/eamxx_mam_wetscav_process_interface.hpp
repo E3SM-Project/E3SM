@@ -44,7 +44,7 @@ class MAMWetscav : public MAMGenericInterface {
   // Buffer type given the number of columns and vertical levels
   size_t requested_buffer_size_in_bytes() const override {
     return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_,
-                                     len_temporal_views_);
+                                     len_temporary_views_);
   }
   void init_buffers(const ATMBufferManager &buffer_manager) override;
 
@@ -112,9 +112,9 @@ class MAMWetscav : public MAMGenericInterface {
   mam_coupling::Buffer buffer_;
   // parameters for calcsize
   mam4::modal_aer_opt::CalcsizeData calsize_data_;
-  int get_len_temporal_views();
-  void init_temporal_views();
-  int len_temporal_views_{0};
+  int get_len_temporary_views();
+  void init_temporary_views();
+  int len_temporary_views_{0};
 
 };  // class MAMWetscav
 
