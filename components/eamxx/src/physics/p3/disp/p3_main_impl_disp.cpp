@@ -161,6 +161,7 @@ Int Functions<Real,DefaultDevice>
   auto precip_ice_flux         = diagnostic_outputs.precip_ice_flux;
   auto precip_total_tend       = diagnostic_outputs.precip_total_tend;
   auto nevapr                  = diagnostic_outputs.nevapr;
+  auto diag_equiv_reflectivity = diagnostic_outputs.diag_equiv_reflectivity;
   auto qv_prev                 = diagnostic_inputs.qv_prev;
   auto t_prev                  = diagnostic_inputs.t_prev;
   // Inputs for the heteogeneous freezing
@@ -205,7 +206,6 @@ Int Functions<Real,DefaultDevice>
   auto qv_supersat_i           = temporaries.qv_supersat_i;
   auto tmparr2                 = temporaries.tmparr2;
   auto exner                   = temporaries.exner;
-  auto diag_equiv_reflectivity = temporaries.diag_equiv_reflectivity;
   auto diag_vm_qi              = temporaries.diag_vm_qi;
   auto diag_diam_qi            = temporaries.diag_diam_qi;
   auto pratot                  = temporaries.pratot;

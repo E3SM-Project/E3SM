@@ -256,6 +256,8 @@ struct Functions
     view_2d<Spack> precip_total_tend;
     // Evaporation of total precipitation (rain + snow) [kg/kg/s]
     view_2d<Spack> nevapr;
+    // Equivalent radar reflectivity [dBz]
+    view_2d<Spack> diag_equiv_reflectivity;
   };
 
   // This struct stores time stepping and grid-index-related information.
