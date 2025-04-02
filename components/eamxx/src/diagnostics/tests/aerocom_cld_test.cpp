@@ -194,7 +194,7 @@ TEST_CASE("aerocom_cld") {
     }
 
     // Case 3: test the max overlap (if contiguous cloudy layers, then max)
-    cd.deep_copy<double, Host>(0.0);
+    cd.deep_copy<Host>(0);
     auto cd_v  = cd.get_view<Real **, Host>();
     cd_v(0, 1) = 0.5;
     cd_v(0, 2) = 0.7;  // ------> max!
@@ -264,7 +264,7 @@ TEST_CASE("aerocom_cld") {
     // We will revisit and validate this assumption later
     auto qc_v = qc.get_view<Real **, Host>();
     auto qi_v = qi.get_view<Real **, Host>();
-    cd.deep_copy<double, Host>(0.0);
+    cd.deep_copy<Host>(0);
     cd_v(0, 1) = 0.5;  // ice
     cd_v(0, 2) = 0.7;  // ice ------> max!
     cd_v(0, 3) = 0.3;  // ice
@@ -273,12 +273,12 @@ TEST_CASE("aerocom_cld") {
     cd_v(0, 6) = 0.5;  // liq ------> not max!
     cd_v(0, 7) = 0.1;  // liq
     // note cd_v(0, 8) is 0.0
-    qi.deep_copy<double, Host>(0.0);
+    qi.deep_copy<Host>(0);
     qi_v(0, 1) = 100;
     qi_v(0, 2) = 200;
     qi_v(0, 3) = 50;
     // note qi_v(0, 4) = 0.0
-    qc.deep_copy<double, Host>(0.0);
+    qc.deep_copy<Host>(0);
     // note qc_v(0, 4) = 0.0
     qc_v(0, 5) = 20;
     qc_v(0, 6) = 50;
