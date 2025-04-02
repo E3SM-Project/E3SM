@@ -339,18 +339,33 @@ Default: Defined in namelist_defaults.xml
 
 
 <!-- hmix_Leith -->
-
 <entry id="config_use_Leith_del2" type="logical"
 	category="hmix_Leith" group="hmix_Leith">
-If true, the Leith enstrophy-cascade closure is turned on
+If true, harmonic Leith horizontal mixing is used on the momentum equation.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_Leith_parameter" type="real"
+<entry id="config_use_Leith_del4" type="logical"
 	category="hmix_Leith" group="hmix_Leith">
-Non-dimensional Leith closure parameter
+If true, biharmonic Leith horizontal mixing is used on the momentum equation.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Leith_del2_parameter" type="real"
+	category="hmix_Leith" group="hmix_Leith">
+Non-dimensional Leith del2 closure parameter
+
+Valid values: any positive real
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Leith_del4_parameter" type="real"
+	category="hmix_Leith" group="hmix_Leith">
+Non-dimensional Leith del4 closure parameter
 
 Valid values: any positive real
 Default: Defined in namelist_defaults.xml
@@ -366,12 +381,35 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_Leith_visc2_max" type="real"
 	category="hmix_Leith" group="hmix_Leith">
-Upper bound on the allowable value of Leith-computed viscosity
+Upper bound on the allowable value of Leith-computed del2 viscosity
 
 Valid values: any positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_Leith_visc4_max" type="real"
+	category="hmix_Leith" group="hmix_Leith">
+Upper bound on the allowable value of Leith-computed del4 viscosity
+
+Valid values: any positive real
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Leith_del2_div_scaler" type="real"
+	category="hmix_Leith" group="hmix_Leith">
+The divergence portion of the Leith del4 viscosity is scaled by this factor.
+
+Valid values: any positive real
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Leith_del4_div_scaler" type="real"
+	category="hmix_Leith" group="hmix_Leith">
+The divergence portion of the Leith del4 viscosity is scaled by this factor.
+
+Valid values: any positive real
+Default: Defined in namelist_defaults.xml
+</entry>
 
 <!-- Redi_isopycnal_mixing -->
 
