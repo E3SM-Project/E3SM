@@ -5,7 +5,6 @@ set(SCC "cc")
 set(SCXX "hipcc")
 set(SFC "ftn")
 
-string(APPEND CPPDEFS " -DLINUX -DSCREAM_SYSTEM_WORKAROUND=0")
 if (COMP_NAME STREQUAL gptl)
     string(APPEND CPPDEFS " -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY")
 endif()
@@ -36,3 +35,7 @@ set(PIO_FILESYSTEM_HINTS "lustre")
 
 string(APPEND KOKKOS_OPTIONS " -DKokkos_ENABLE_HIP=On -DKokkos_ARCH_VEGA90A=On -DKokkos_ENABLE_OPENMP=OFF")
 set(USE_HIP "TRUE")
+
+# Work around a compiler-side issue (register allocation) in
+# eamxx_mam_microphysics_process_interface.cpp
+set(SCREAM_ENABLE_MAM OFF CACHE STRING "")

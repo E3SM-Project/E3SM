@@ -152,7 +152,11 @@ be lost if SCREAM_HACK_XML is not enabled.
       <repair_log_level type="string" valid_values="trace,debug,info,warn">trace</repair_log_level>
       <!-- Run internal checks on code correctness.
            <= 0: off; >= 1: global hashes over state -->
-      <internal_diagnostics_level type="integer">0</internal_diagnostics_level>
+      <internal_diagnostics_level
+        type="integer"
+        valid_values="0,1,2"
+        doc="Whether to print hashes of the atm proc fields: 0=no, 1=yes (lump fields), 2=yes (individual fields)"
+      >0</internal_diagnostics_level>
       <compute_tendencies
         type="array(string)"
         doc="list of computed fields for which this process will back out tendencies"
@@ -193,8 +197,11 @@ be lost if SCREAM_HACK_XML is not enabled.
     <p3 inherit="atm_proc_base">
       <do_prescribed_ccn>true</do_prescribed_ccn>
       <use_hetfrz_classnuc type="logical" doc="Switch to turn on heterogeneous freezing due to prognostic aerosols">false</use_hetfrz_classnuc>
+      <use_hetfrz_classnuc type="logical" doc="Switch to turn on heterogeneous freezing due to prognostic aerosols" COMPSET=".*SCREAM.*MAM4xx">true</use_hetfrz_classnuc>
+      <do_prescribed_ccn COMPSET=".*SCREAM.*MAM4xx">false</do_prescribed_ccn>
       <do_prescribed_ccn COMPSET=".*SCREAM.*noAero">false</do_prescribed_ccn>
       <do_predict_nc>true</do_predict_nc>
+      <do_predict_nc COMPSET=".*SCREAM.*MAM4xx">true</do_predict_nc>
       <do_predict_nc COMPSET=".*SCREAM.*noAero">false</do_predict_nc>
       <enable_column_conservation_checks>false</enable_column_conservation_checks>
       <max_total_ni type="real" doc="maximum total ice concentration (sum of all categories)" constraints="gt 0">740.0e3</max_total_ni>
@@ -216,6 +223,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <rain_selfcollection_breakup_diameter type="real" doc="Rain self-collection breakup diameter in meter">0.00028</rain_selfcollection_breakup_diameter>
       <constant_mu_rain type="real" doc="Constant shape parameter (mu) in the rain droplet distribution">1.0</constant_mu_rain>
       <spa_ccn_to_nc_factor type="real" doc="Scaling factor for turning SPA ccn into P3 nc">1.0</spa_ccn_to_nc_factor>
+      <spa_ccn_to_nc_exponent type="real" doc="Exponent for turning SPA ccn into P3 nc">1.0</spa_ccn_to_nc_exponent>      
       <cldliq_to_ice_collection_factor type="real" doc="Cloud liquid to ice collection scaling factor">0.5</cldliq_to_ice_collection_factor>
       <rain_to_ice_collection_factor type="real" doc="Rain to ice collection scaling factor">1.0</rain_to_ice_collection_factor>
       <min_rime_rho type="real" doc="Minimum rime density in kg/m3">50.0</min_rime_rho>
@@ -228,6 +236,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <set_cld_frac_l_to_one type="logical" doc="set P3 input liquid cloud fraction to 1 everywhere">false</set_cld_frac_l_to_one>
       <set_cld_frac_r_to_one type="logical" doc="set P3 input rain cloud fraction to 1 everywhere"  >false</set_cld_frac_r_to_one>
       <set_cld_frac_i_to_one type="logical" doc="set P3 input ice cloud fraction to 1 everywhere"   >false</set_cld_frac_i_to_one>
+      <use_separate_ice_liq_frac type="logical" doc="use separate ice and liquid cloud fractions from shoc">false</use_separate_ice_liq_frac>
     </p3>
 
     <!-- SHOC macrophysics -->
@@ -249,8 +258,14 @@ be lost if SCREAM_HACK_XML is not enabled.
       <extra_shoc_diags type="logical" doc="Extra SHOC diagnostics">false</extra_shoc_diags>
     </shoc>
 
+    <!-- Basic options for each mam4 atm process -->
+    <mam4_atm_proc_base inherit="atm_proc_base">
+      <create_fields_interval_checks type="logical" doc="Create field interval checks for all fields that are computed and requested in mam4xx." >false</create_fields_interval_checks>
+    </mam4_atm_proc_base>
+
+
     <!-- MAM4xx-ACI -->
-    <mam4_aci inherit="atm_proc_base">
+    <mam4_aci inherit="mam4_atm_proc_base">
       <wsubmin type="real" doc="Minimum diagnostic sub-grid vertical velocity">0.001</wsubmin>
       <enable_aero_vertical_mix type="logical" doc="Enable vertical mixing of interstitial aerosols and liquid number during activation">true</enable_aero_vertical_mix>
       <top_level_mam4xx type="integer" doc="Level corresponding to the top of troposphere clouds" nlev="72"  >6</top_level_mam4xx>
@@ -258,7 +273,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     </mam4_aci>
 
     <!-- MAM4xx-Dry Deposition -->
-    <mam4_drydep inherit="atm_proc_base">
+    <mam4_drydep inherit="mam4_atm_proc_base">
     <fractional_land_use_file type="file" doc="File containing Fractional land use data for drydep">${DIN_LOC_ROOT}/atm/scream/mam4xx/drydep/ne30pg2/atmsrf_ne30pg2_c20241017.nc</fractional_land_use_file>
     <fractional_land_use_file hgrid="ne4np4.pg2" type="file" doc="File containing Fractional land use data for drydep">${DIN_LOC_ROOT}/atm/scream/mam4xx/drydep/ne4pg2/atmsrf_ne4pg2_c20241017.nc</fractional_land_use_file>
 
@@ -276,7 +291,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- MAM4xx namelist options -->
 
     <!-- MAM4xx-Aerosol-Microphysics -->
-    <mam4_aero_microphys inherit="atm_proc_base">
+    <mam4_aero_microphys inherit="mam4_atm_proc_base">
       <!--Aerosol Microphysics processes on/off switches -->
       <mam4_do_cond   type="logical" doc="Switch to enable aerosol microphysics condensation process">true</mam4_do_cond>
       <mam4_do_newnuc type="logical" doc="Switch to enable aerosol microphysics nucleation process">true</mam4_do_newnuc>
@@ -331,11 +346,10 @@ be lost if SCREAM_HACK_XML is not enabled.
       <aero_microphys_remap_file hgrid="ne256np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne256pg2_20231201.nc</aero_microphys_remap_file>
       <aero_microphys_remap_file hgrid="ne512np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne512pg2_20231201.nc</aero_microphys_remap_file>
       <aero_microphys_remap_file hgrid="ne1024np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne1024pg2_20231201.nc</aero_microphys_remap_file>
-
     </mam4_aero_microphys>
 
     <!-- MAM4xx-Optics -->
-    <mam4_optics inherit="atm_proc_base">
+    <mam4_optics inherit="mam4_atm_proc_base">
       <mam4_mode1_physical_properties_file type="file" doc="File containing optical properties for MAM4 mode 1, accumulation mode">${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/mam4_mode1_rrtmg_aeronetdust_c20240206.nc</mam4_mode1_physical_properties_file>
       <mam4_mode2_physical_properties_file type="file" doc="File containing optical properties for MAM4 mode 2, Aitken mode">${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/mam4_mode2_rrtmg_c20240206.nc</mam4_mode2_physical_properties_file>
       <mam4_mode3_physical_properties_file type="file" doc="File containing optical properties for MAM4 mode 3, coarse mode">${DIN_LOC_ROOT}/atm/scream/mam4xx/physprops/mam4_mode3_rrtmg_aeronetdust_c20240206.nc</mam4_mode3_physical_properties_file>
@@ -351,10 +365,10 @@ be lost if SCREAM_HACK_XML is not enabled.
     </mam4_optics>
 
     <!-- MAM4xx-Wetscav -->
-    <mam4_wetscav inherit="atm_proc_base" />
+    <mam4_wetscav inherit="mam4_atm_proc_base" />
 
     <!-- MAM4xx-Surface-Emissions -->
-    <mam4_srf_online_emiss inherit="atm_proc_base">
+    <mam4_srf_online_emiss inherit="mam4_atm_proc_base">
 
       <!-- For all other grids -->
       <srf_emis_specifier_for_DMS     type="file" doc="File containing surface emissions data for DMS">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/DMSflux.2010.ne30pg2_conserv.POPmonthlyClimFromACES4BGC_c20240816.nc</srf_emis_specifier_for_DMS>
@@ -393,7 +407,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     </mam4_srf_online_emiss>
 
     <!-- MAM4xx-constituent fluxes -->
-    <mam4_constituent_fluxes inherit="atm_proc_base" />
+    <mam4_constituent_fluxes inherit="mam4_atm_proc_base" />
 
     <!-- nudging -->
     <nudging inherit="atm_proc_base">
@@ -538,6 +552,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <mac_aero_mic inherit="atm_proc_group">
       <atm_procs_list>shoc,cldFraction,spa,p3</atm_procs_list>
       <atm_procs_list hgrid=".*pg2">tms,shoc,cldFraction,spa,p3</atm_procs_list> <!-- TMS only available for PG2 -->
+      <atm_procs_list COMPSET=".*SCREAM.*MAM4xx" hgrid=".*pg2">tms,shoc,cldFraction,mam4_aci,p3</atm_procs_list> <!-- TMS only available for PG2 -->
       <atm_procs_list COMPSET=".*SCREAM.*noAero">shoc,cldFraction,p3</atm_procs_list>
       <atm_procs_list COMPSET=".*SCREAM.*noAero" hgrid=".*pg2">tms,shoc,cldFraction,p3</atm_procs_list> <!-- TMS only available for PG2 -->
       <number_of_subcycles hgrid="ne4np4">24</number_of_subcycles>
@@ -566,6 +581,7 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <physics inherit="atm_proc_group">
       <atm_procs_list>mac_aero_mic,rrtmgp</atm_procs_list>
+      <atm_procs_list COMPSET=".*SCREAM.*MAM4xx">mam4_constituent_fluxes,mac_aero_mic,mam4_wetscav,mam4_optics,rrtmgp,mam4_srf_online_emiss,mam4_aero_microphys,mam4_drydep</atm_procs_list>
       <atm_procs_list COMPSET=".*DP-EAMxx">iop_forcing,mac_aero_mic,rrtmgp</atm_procs_list>
     </physics>
   </atmosphere_processes_defaults>
@@ -594,8 +610,10 @@ be lost if SCREAM_HACK_XML is not enabled.
     <Filename hgrid="ne120np4" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20220823.nc</Filename>
     <Filename hgrid="ne120np4" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L128_20230215.nc</Filename>
     <Filename hgrid="ne256np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne256np4L128_ifs-20200120_20220914.nc</Filename>
+    <Filename hgrid="ne256np4" ntracers="41">${DIN_LOC_ROOT}/atm/scream/init/screami_ne256np4L128_era5_aer_c20240929.nc</Filename>
     <Filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128_20220823.nc</Filename>
     <Filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_era5-20131001-topoadj-16x_20220914.nc</Filename>
+    <Filename hgrid="ne1024np4" ntracers="41">${DIN_LOC_ROOT}/atm/scream/init/screami_mam4xx_ne1024np4L128_20240513.nc</Filename>
     <Filename hgrid="ne1024np4" COMPSET=".*SCREAM%DYAMOND-2_ELM">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_ifs-20200120-topoadjx6t_20221011.nc</Filename>
     <Filename hgrid="ne4np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/screami_aquaplanet_ne4np4L72_20220823.nc</Filename>
     <Filename hgrid="ne0np4_conus_x4v1_lowcon" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_conusx4v1np4L72-topo12x_013023.nc</Filename>

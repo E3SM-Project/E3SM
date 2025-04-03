@@ -1,3 +1,8 @@
-This Technical Guide describes the physics of ELM.
+# Physics of ELM
 
-- [TOP Parameterization](top_solar_parameterization.md): Parameterization of sub-grid topographical effects on solar radiation.
+## Table of Contents
+
+- [Shortwave Radiation](shortwave_radiation.md):
+Shortwave radiation model
+- [TOP Parameterization](top_solar_parameterization.md):
+Parameterization of sub-grid topographical effects on solar radiation.

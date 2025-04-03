@@ -22,14 +22,14 @@ private
 !  most floating point variables should be of type real_kind = real*8
 !  For higher precision, we also have quad_kind = real*16, but this
 !  is only supported on IBM systems
-! 
+!
 #if defined(CAM) || defined(SCREAM)
   integer (kind=4), public, parameter::  &
   int_kind     = SHR_KIND_I4,            &
   log_kind     = kind(.true.),           &
   long_kind    = SHR_KIND_I8,            &
   real_kind    = SHR_KIND_R8
-#else 
+#else
   ! STANDALONE HOMME
   integer (kind=4), public, parameter::  &
   int_kind     = 4,                      &
@@ -49,11 +49,10 @@ private
   ! QUAD precision can be enabled via CMake var (or compiler macro for EAM).
   ! Currently, EAM does not use quad precision, while HommeStandalone/SCREAM can.
   integer (kind=4), public, parameter::  &
-#ifdef HOMME_QUAD_PREC
+#if HOMME_QUAD_PREC
   longdouble_kind    = 16
-#else 
+#else
   longdouble_kind    = 8
 #endif
 
 end module kinds
-

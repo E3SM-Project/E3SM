@@ -139,7 +139,7 @@ void write (const std::string& avg_type, const std::string& freq_units,
   // Create some fields
   auto fm = get_fm(grid,t0,seed);
   std::vector<std::string> fnames;
-  for (auto it : *fm) {
+  for (auto it : fm->get_repo()) {
     fnames.push_back(it.second->name());
   }
 
@@ -168,10 +168,10 @@ void write (const std::string& avg_type, const std::string& freq_units,
   // Attempt to use invalid fp precision string
   om_pl.set("Floating Point Precision",std::string("triple"));
   om.initialize(comm,om_pl,t0,false);
-  REQUIRE_THROWS (om.setup(fm,gm));
+  REQUIRE_THROWS (om.setup(fm,gm->get_grid_names()));
   om_pl.set("Floating Point Precision",std::string("single"));
   om.initialize(comm,om_pl,t0,false);
-  om.setup(fm,gm);
+  om.setup(fm,gm->get_grid_names());
 
   // Time loop: ensure we always hit 3 output steps
   const int nsteps = num_output_steps*freq;
@@ -218,7 +218,7 @@ void read (const std::string& avg_type, const std::string& freq_units,
   auto fm0 = get_fm(grid,t0,seed);
   auto fm  = get_fm(grid,t0,-seed-1);
   std::vector<std::string> fnames;
-  for (auto it : *fm) {
+  for (auto it : fm->get_repo()) {
     fnames.push_back(it.second->name());
   }
 

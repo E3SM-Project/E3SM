@@ -59,7 +59,7 @@ void write (const int seed, const ekat::Comm& comm)
   scorpio::define_var(filename,"var",{"ncol","lev"},"real");
 
   auto my_col_gids = grid->get_partitioned_dim_gids().get_view<const AbstractGrid::gid_type*,Host>();
-  std::vector<scorpio::offset_t> my_offsets(my_col_gids.size());
+  std::vector<int> my_offsets(my_col_gids.size());
   for (size_t i=0; i<my_offsets.size(); ++i) {
     my_offsets[i] = my_col_gids[i] - grid->get_global_min_partitioned_dim_gid ();
   }

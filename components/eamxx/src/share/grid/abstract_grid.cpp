@@ -115,6 +115,67 @@ AbstractGrid::get_3d_tensor_layout (const bool midpoints, const std::vector<int>
   return get_3d_tensor_layout(midpoints,cmp_dims,names);
 }
 
+FieldLayout
+AbstractGrid::equivalent_layout (const FieldLayout& template_layout) const
+{
+  using namespace ShortFieldTagsNames;
+
+  FieldLayout ret_layout = FieldLayout::invalid();
+
+  const bool midpoints   = template_layout.has_tag(LEV);
+  const auto names       = template_layout.names();
+  const auto vec_cmp     = template_layout.is_vector_layout() ?
+                           template_layout.get_vector_component_idx() : -1;
+  const auto vec_dim     = template_layout.is_vector_layout() ?
+                           template_layout.get_vector_dim() : -1;
+  const auto tensor_dims = template_layout.is_tensor_layout() ?
+                           template_layout.get_tensor_dims() : std::vector<int>{};
+  std::vector<std::string> tdims_names;
+  if (template_layout.is_tensor_layout()) {
+    for (auto idx : template_layout.get_tensor_components_ids()) {
+      tdims_names.push_back(names[idx]);
+    }
+  }
+
+  switch (template_layout.type()) {
+    case LayoutType::Scalar0D:
+    case LayoutType::Vector0D:
+    case LayoutType::Tensor0D:
+      // 0d layouts are the same on all grids
+      ret_layout = template_layout;
+      break;
+    case LayoutType::Scalar1D:
+      ret_layout = get_vertical_layout(midpoints);
+      break;
+    case LayoutType::Vector1D:
+      ret_layout = get_vertical_layout(midpoints, vec_dim, names[vec_cmp]);
+      break;
+    case LayoutType::Scalar2D:
+      ret_layout = get_2d_scalar_layout();
+      break;
+    case LayoutType::Vector2D:
+      ret_layout = get_2d_vector_layout(vec_dim, names[vec_cmp]);
+      break;
+    case LayoutType::Tensor2D:
+      ret_layout = get_2d_tensor_layout(tensor_dims, tdims_names);
+      break;
+    case LayoutType::Scalar3D:
+      ret_layout = get_3d_scalar_layout(midpoints);
+      break;
+    case LayoutType::Vector3D:
+      ret_layout = get_3d_vector_layout(midpoints, vec_dim, names[vec_cmp]);
+      break;
+    case LayoutType::Tensor3D:
+      ret_layout = get_3d_tensor_layout(midpoints, tensor_dims, tdims_names);
+      break;
+    default:
+      EKAT_ERROR_MSG("Error! Unknown FieldLayout type.\n");
+      break;
+  }
+
+  return ret_layout;
+}
+
 bool AbstractGrid::is_unique () const {
   auto compute_is_unique = [&]() {
     // Get a copy of gids on host. CAREFUL: do not use the stored dofs,

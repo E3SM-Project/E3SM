@@ -13,14 +13,14 @@
 
 // For declaring surface and online emission class derived from atm process
 // class
-#include <share/atm_process/atmosphere_process.hpp>
+#include <physics/mam/eamxx_mam_generic_process_interface.hpp>
 #include <string>
 
 namespace scream {
 
 // The process responsible for handling MAM4 surface and online emissions. The
 // AD stores exactly ONE instance of this class in its list of subcomponents.
-class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
+class MAMSrfOnlineEmiss final : public MAMGenericInterface {
   using KT            = ekat::KokkosTypes<DefaultDevice>;
   using view_1d       = typename KT::template view_1d<Real>;
   using view_2d       = typename KT::template view_2d<Real>;
@@ -33,12 +33,6 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
   // Wet and dry states of atmosphere
   mam_coupling::WetAtmosphere wet_atm_;
   mam_coupling::DryAtmosphere dry_atm_;
-
-  // buffer for sotring temporary variables
-  mam_coupling::Buffer buffer_;
-
-  // physics grid for column information
-  std::shared_ptr<const AbstractGrid> grid_;
 
   // Sea surface temoerature [K]
   const_view_1d sst_;
@@ -72,10 +66,6 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
   // --------------------------------------------------------------------------
   // AtmosphereProcess overrides (see share/atm_process/atmosphere_process.hpp)
   // --------------------------------------------------------------------------
-
-  // The type of subcomponent
-  AtmosphereProcessType type() const { return AtmosphereProcessType::Physics; }
-
   // The name of the subcomponent
   std::string name() const { return "mam_srf_online_emissions"; }
 
@@ -176,7 +166,10 @@ class MAMSrfOnlineEmiss final : public scream::AtmosphereProcess {
 
   // offset for converting pcnst index to gas_pcnst index
   static constexpr int offset_ =
+
       mam4::aero_model::pcnst - mam4::gas_chemistry::gas_pcnst;
+  // workspace manager for internal local variables
+  mam_coupling::Buffer buffer_;
 
 };  // MAMSrfOnlineEmiss
 

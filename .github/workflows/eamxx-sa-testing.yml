@@ -12,6 +12,7 @@ on:
       - 'cime_config/machine/config_machines.xml'
       - 'components/eamxx/**'
       - 'components/homme/**'
+      - 'components/eam/src/physics/rrtmgp/**'
       - 'externals/ekat'
       - 'externals/mam4xx'
       - 'externals/haero'
@@ -105,8 +106,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build_type: [sp, dbg, opt]
-    name: gcc-cuda / ${{ matrix.build_type }}
+        test:
+          - build_type: sp
+            SK: OFF
+          - build_type: dbg
+            SK: ON
+          - build_type: opt
+            SK: OFF
+    name: gcc-cuda / ${{ matrix.test.build_type }}
     steps:
       - name: Check out the repository
         uses: actions/checkout@v4
@@ -148,9 +155,9 @@ jobs:
       - name: Run tests
         uses: ./.github/actions/test-all-eamxx
         with:
-          build_type: ${{ matrix.build_type }}
+          build_type: ${{ matrix.test.build_type }}
           machine: ghci-snl-cuda
           generate: ${{ env.generate }}
           submit: ${{ env.submit }}
-          cmake-configs: Kokkos_ARCH_HOPPER90=${{ env.Hopper }};Kokkos_ARCH_AMPERE80=${{ env.Ampere }};Kokkos_ARCH_VOLTA70=${{ env.Volta }};CMAKE_CUDA_ARCHITECTURES=${{ env.CUDA_ARCH }}
+          cmake-configs: Kokkos_ARCH_HOPPER90=${{ env.Hopper }};Kokkos_ARCH_AMPERE80=${{ env.Ampere }};Kokkos_ARCH_VOLTA70=${{ env.Volta }};CMAKE_CUDA_ARCHITECTURES=${{ env.CUDA_ARCH }};SCREAM_SMALL_KERNELS=${{ matrix.test.SK }}
           ekat: ${{ env.ekat }}

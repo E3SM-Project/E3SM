@@ -806,7 +806,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
   const auto do_aerosol_rad = m_do_aerosol_rad;
 
   // Are we going to update fluxes and heating this step?
-  auto ts = timestamp();
+  auto ts = start_of_step_ts();
   auto update_rad = scream::rrtmgp::radiation_do(m_rad_freq_in_steps, ts.get_num_steps());
 
   if (update_rad) {
@@ -1828,7 +1828,9 @@ void RRTMGPRadiation::finalize_impl  () {
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
   m_gas_concs_k.reset();
-  interface_t::rrtmgp_finalize();
+  // Finalize the interface, passing a bool for rank 0
+  // to print info about memory stats on that rank
+  interface_t::rrtmgp_finalize(m_comm.am_i_root());
 #endif
 
   finalize_kls();

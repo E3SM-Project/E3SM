@@ -28,7 +28,7 @@ void Functions<Real,DefaultDevice>
   const WorkspaceMgr&          workspace_mgr,
   const view_2d<Spack>&        thetal,
   const view_2d<Spack>&        qw,
-  const view_3d<Spack>&        tracer,
+  const view_3d_strided<Spack>& tracer,
   const view_2d<Spack>&        tke,
   const view_2d<Spack>&        u_wind,
   const view_2d<Spack>&        v_wind)
@@ -58,7 +58,7 @@ void Functions<Real,DefaultDevice>
                                 workspace,
                                 ekat::subview(thetal, i),
                                 ekat::subview(qw, i),
-                                ekat::subview(tracer, i),
+                                Kokkos::subview(tracer, i, Kokkos::ALL(), Kokkos::ALL()),
                                 ekat::subview(tke, i),
                                 ekat::subview(u_wind, i),
                                 ekat::subview(v_wind, i));

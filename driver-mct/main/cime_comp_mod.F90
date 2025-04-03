@@ -163,7 +163,7 @@ module cime_comp_mod
   use seq_flds_mod, only : seq_flds_z2x_fluxes, seq_flds_x2z_fluxes
 
   ! nonlinear maps
-  use seq_nlmap_mod, only : seq_nlmap_setopts
+  use seq_nlmap_mod, only : seq_nlmap_setopts, seq_nlmap_init_a2oi_cons, seq_nlmap_init_a2l_cons
 
   ! component type and accessor functions
   use component_type_mod, only: component_get_iamin_compid, component_get_suffix
@@ -716,7 +716,7 @@ contains
   subroutine cime_pre_init1(esmf_log_option)
     use shr_pio_mod, only : shr_pio_init1, shr_pio_init2
     use seq_comm_mct, only: num_inst_driver
-#if defined(SCREAM_SYSTEM_WORKAROUND) && (SCREAM_SYSTEM_WORKAROUND == 1)
+#if defined(MPINIT_WORKAROUND) && (MPINIT_WORKAROUND == 1)
     use atm_comp_mct, only: atm_init_hip_mct
 #endif
     !----------------------------------------------------------
@@ -741,7 +741,7 @@ contains
     
     beg_count = shr_sys_irtc(irtc_rate)
     
-#if defined(SCREAM_SYSTEM_WORKAROUND) && (SCREAM_SYSTEM_WORKAROUND == 1)
+#if defined(MPINIT_WORKAROUND) && (MPINIT_WORKAROUND == 1)
     call atm_init_hip_mct()
 #endif
     call mpi_init(ierr)
@@ -1066,6 +1066,7 @@ contains
     integer(i8) :: end_count          ! end time
     integer(i8) :: irtc_rate          ! factor to convert time to seconds
     integer :: nlmaps_verbosity
+    logical :: nlmaps_atm2srf_conserve
     character(nlmaps_exclude_nchar) :: nlmaps_exclude_fields(nlmaps_exclude_max_number)
 
     !----------------------------------------------------------
@@ -1225,6 +1226,7 @@ contains
          reprosum_recompute=reprosum_recompute     , &
          max_cplstep_time=max_cplstep_time         , &
          nlmaps_verbosity=nlmaps_verbosity         , &
+         nlmaps_atm2srf_conserve=nlmaps_atm2srf_conserve, &
          nlmaps_exclude_fields=nlmaps_exclude_fields)
 
     ! above - cpl_decomp is set to pass the cpl_decomp value to seq_mctext_decomp
@@ -1239,7 +1241,8 @@ contains
          repro_sum_recompute_in    = reprosum_recompute)
 
     call seq_nlmap_setopts(nlmaps_verbosity_in = nlmaps_verbosity, &
-         nlmaps_exclude_fields_in = nlmaps_exclude_fields)
+         nlmaps_exclude_fields_in = nlmaps_exclude_fields, &
+         nlmaps_atm2srf_conserve_in = nlmaps_atm2srf_conserve)
 
     ! Check cpl_seq_option
 
@@ -1452,6 +1455,8 @@ contains
   !===============================================================================
 
   subroutine cime_init()
+
+    type(seq_map), pointer :: mapper_lcl
 
 103 format( 5A )
 104 format( A, i10.8, i8)
@@ -2294,6 +2299,21 @@ contains
           call t_stopf ('CPL:init_aoflux')
        endif
     endif
+
+    !----------------------------------------------------------
+    !| Initialize atm/srf exact mass conservation if requested
+    !----------------------------------------------------------
+
+    if (iamin_CPLID) then
+       if (atm_present .and. ocn_present .and. lnd_present .and. ice_present) then
+          ! Returns immediately if atm2srf_conserve is .false.
+          mapper_lcl => prep_lnd_get_mapper_Fa2l()
+          call seq_nlmap_init_a2l_cons(mapper_lcl, fractions_ax)
+          mapper_lcl => prep_ocn_get_mapper_Fa2o()
+          call seq_nlmap_init_a2oi_cons(mapper_lcl, fractions_ax)
+       end if
+    end if
+    
 
     !----------------------------------------------------------
     !| ATM PREP for recalculation of initial solar

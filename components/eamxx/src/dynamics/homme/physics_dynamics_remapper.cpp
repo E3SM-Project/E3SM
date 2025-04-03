@@ -302,7 +302,7 @@ remap_fwd_impl ()
 #endif
 #endif
 
-#ifdef KOKKOS_ENABLE_HIP
+#if defined KOKKOS_ENABLE_HIP || defined KOKKOS_ENABLE_SYCL
   const int team_size = std::min(256, std::min(128*m_num_phys_cols,32*(concurrency/this->m_num_fields+31)/32));
 #endif
 

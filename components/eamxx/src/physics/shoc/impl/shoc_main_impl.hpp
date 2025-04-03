@@ -112,7 +112,7 @@ void Functions<S,D>::shoc_main_internal(
   const uview_1d<Spack>&       u_wind,
   const uview_1d<Spack>&       v_wind,
   const uview_1d<Spack>&       wthv_sec,
-  const uview_2d<Spack>&       qtracers,
+  const uview_2d_strided<Spack>& qtracers,
   const uview_1d<Spack>&       tk,
   const uview_1d<Spack>&       shoc_cldfrac,
   const uview_1d<Spack>&       shoc_ql,
@@ -367,7 +367,7 @@ void Functions<S,D>::shoc_main_internal(
   const uview_2d<Spack>&      u_wind,
   const uview_2d<Spack>&      v_wind,
   const view_2d<Spack>&       wthv_sec,
-  const view_3d<Spack>&       qtracers,
+  const view_3d_strided<Spack>& qtracers,
   const view_2d<Spack>&       tk,
   const view_2d<Spack>&       shoc_cldfrac,
   const view_2d<Spack>&       shoc_ql,
@@ -595,10 +595,10 @@ Int Functions<S,D>::shoc_main(
   auto start = std::chrono::steady_clock::now();
 
   // Runtime options
-  const Scalar lambda_low    = shoc_runtime.lambda_low;    
-  const Scalar lambda_high   = shoc_runtime.lambda_high;   
-  const Scalar lambda_slope  = shoc_runtime.lambda_slope;  
-  const Scalar lambda_thresh = shoc_runtime.lambda_thresh; 
+  const Scalar lambda_low    = shoc_runtime.lambda_low;
+  const Scalar lambda_high   = shoc_runtime.lambda_high;
+  const Scalar lambda_slope  = shoc_runtime.lambda_slope;
+  const Scalar lambda_thresh = shoc_runtime.lambda_thresh;
   const Scalar thl2tune      = shoc_runtime.thl2tune;
   const Scalar qw2tune       = shoc_runtime.qw2tune;
   const Scalar qwthl2tune    = shoc_runtime.qwthl2tune;

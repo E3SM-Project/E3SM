@@ -112,6 +112,11 @@ public:
     }
   }
 
+  // Pre-process tracer requests by checking for
+  // consistency among processes and correctly
+  // determining turbulence advection property
+  void pre_process_tracer_requests ();
+
 protected:
 
   // Adds fid to the list of required/computed fields of the group (as a whole).

@@ -1,1 +1,2 @@
 nlmaps_verbosity = 1
+nlmaps_atm2srf_conserve = .true.

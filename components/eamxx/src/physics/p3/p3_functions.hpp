@@ -123,6 +123,7 @@ struct Functions
     Scalar rain_selfcollection_breakup_diameter = 0.00028;
     Scalar constant_mu_rain = 1.0;
     Scalar spa_ccn_to_nc_factor = 1.0;
+    Scalar spa_ccn_to_nc_exponent = 1.0;
     Scalar cldliq_to_ice_collection_factor = 0.5;
     Scalar rain_to_ice_collection_factor = 1.0;
     Scalar min_rime_rho = 50.0;
@@ -135,6 +136,7 @@ struct Functions
     bool set_cld_frac_i_to_one = false;
     bool set_cld_frac_r_to_one = false;
     bool use_hetfrz_classnuc   = false;
+    bool use_separate_ice_liq_frac = false;
 
     void load_runtime_options_from_file(ekat::ParameterList& params) {
       max_total_ni = params.get<double>("max_total_ni", max_total_ni);
@@ -149,6 +151,7 @@ struct Functions
       rain_selfcollection_breakup_diameter = params.get<double>("rain_selfcollection_breakup_diameter", rain_selfcollection_breakup_diameter);
       constant_mu_rain = params.get<double>("constant_mu_rain", constant_mu_rain);
       spa_ccn_to_nc_factor = params.get<double>("spa_ccn_to_nc_factor", spa_ccn_to_nc_factor);
+      spa_ccn_to_nc_exponent = params.get<double>("spa_ccn_to_nc_exponent", spa_ccn_to_nc_exponent);
       cldliq_to_ice_collection_factor = params.get<double>("cldliq_to_ice_collection_factor", cldliq_to_ice_collection_factor);
       rain_to_ice_collection_factor = params.get<double>("rain_to_ice_collection_factor", rain_to_ice_collection_factor);
       min_rime_rho = params.get<double>("min_rime_rho", min_rime_rho);
@@ -161,6 +164,7 @@ struct Functions
       set_cld_frac_i_to_one = params.get<bool>("set_cld_frac_i_to_one", set_cld_frac_i_to_one);
       set_cld_frac_r_to_one = params.get<bool>("set_cld_frac_r_to_one", set_cld_frac_r_to_one);
       use_hetfrz_classnuc   = params.get<bool>("use_hetfrz_classnuc", use_hetfrz_classnuc);
+      use_separate_ice_liq_frac = params.get<bool>("use_separate_ice_liq_frac", use_separate_ice_liq_frac);
     }
 
   };
@@ -252,6 +256,8 @@ struct Functions
     view_2d<Spack> precip_total_tend;
     // Evaporation of total precipitation (rain + snow) [kg/kg/s]
     view_2d<Spack> nevapr;
+    // Equivalent radar reflectivity [dBz]
+    view_2d<Spack> diag_equiv_reflectivity;
   };
 
   // This struct stores time stepping and grid-index-related information.
@@ -395,7 +401,7 @@ struct Functions
                                    Spack& nr2ni_immers_freeze_tend, Spack& ni_sublim_tend, Spack& qv2qi_nucleat_tend,
                                    Spack& ni_nucleat_tend, Spack& qc2qi_berg_tend, Spack& ncheti_cnt, Spack& qcheti_cnt, 
                                    Spack& nicnt, Spack& qicnt, Spack& ninuc_cnt, Spack& qinuc_cnt, 
-                                   const Smask& context = Smask(true) );
+                                   const Smask& context = Smask(true), const P3Runtime& runtime_options = {} );
 
   //------------------------------------------------------------------------------------------!
   // Finds indices in 3D ice (only) lookup table
@@ -701,7 +707,8 @@ struct Functions
   static void cloud_water_conservation(const Spack& qc, const Scalar dt,
     Spack& qc2qr_autoconv_tend, Spack& qc2qr_accret_tend, Spack &qc2qi_collect_tend, Spack& qc2qi_hetero_freeze_tend,
     Spack& qc2qr_ice_shed_tend, Spack& qc2qi_berg_tend, Spack& qi2qv_sublim_tend, Spack& qv2qi_vapdep_tend,
-    Spack& qcheti_cnt, Spack& qicnt, const bool& use_hetfrz_classnuc, const Smask& context = Smask(true) );
+    Spack& qcheti_cnt, Spack& qicnt, const bool& use_hetfrz_classnuc, const Smask& context = Smask(true),
+    const Spack& cld_frac_l = Spack(), const Spack& cld_frac_i = Spack(), const P3Runtime& runtime_options = {} );
 
   KOKKOS_FUNCTION
   static void rain_water_conservation(

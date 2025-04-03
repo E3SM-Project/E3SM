@@ -160,7 +160,7 @@ create_om (const std::string& filename_prefix,
 
   auto om = std::make_shared<OutputManager>();
   om->initialize(comm,params,t0,false);
-  om->setup(fm,gm);
+  om->setup(fm,gm->get_grid_names());
   return om;
 }
 

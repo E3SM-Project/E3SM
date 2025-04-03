@@ -276,6 +276,8 @@ struct TestCAAS : public cedr::test::TestRandomized {
   struct TestAllReducer : public CAAST::UserAllReducer {
     TestAllReducer (const Int n_accum) : n_(n_accum) {}
 
+    virtual ~TestAllReducer () {}
+
     Int n_accum_in_place () const override { return n_; }
 
     int operator() (const mpi::Parallel& p, Real* sendbuf, Real* rcvbuf,
