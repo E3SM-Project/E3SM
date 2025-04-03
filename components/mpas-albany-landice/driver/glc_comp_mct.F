@@ -1498,7 +1498,8 @@ contains
          call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
          call mpas_pool_get_array(geometryPool, 'thickness', Thickness, timeLevel = 1)
          call mpas_pool_get_array(thermalPool, 'temperature', temperature)
-         call mpas_pool_get_array(timeAveragingPool, 'avgBareIceAblation', avgBareIceAblation) !SFP: unclear if this should be "applied" field or not
+         ! Should the next field be the full field or just the subset that is "applied" to the ice covered extent?
+         call mpas_pool_get_array(timeAveragingPool, 'avgBareIceAblation', avgBareIceAblation) 
          call mpas_pool_get_array(timeAveragingPool, 'avgCalvingThickness', avgCalvingThickness) 
 
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
@@ -1506,16 +1507,8 @@ contains
          do i = 1, nCellsSolve
             n = n + 1
 
-            ! Recuperate runoff routing switch code (originally in glc_route_ice_runoff module in earlier code), 
-            ! and attach to ice calving flux once present...
-            !call route_ice_runoff(0.0_RKIND, & 
-            !                      rofi_to_ocn=Fogg_rofi, &
-            !                      rofi_to_ice=Figg_rofi)
-!            g2x_g % rAttr(index_g2x_Figg_rofi,n)=0.0 !...and remove these placeholders
-!            g2x_g % rAttr(index_g2x_Fogg_rofi,n)=0.0 
             g2x_g % rAttr(index_g2x_Fogg_rofi,n)= avgCalvingThickness(i) 
-!            g2x_g % rAttr(index_g2x_Fogg_rofl,n) = 0.0 !Attach to subglacial liquid flux once present
-            g2x_g % rAttr(index_g2x_Fogg_rofl,n) = avgBareIceAblation(i) !SFP: use max() as below? 
+            g2x_g % rAttr(index_g2x_Fogg_rofl,n) = avgBareIceAblation(i) 
 
             g2x_g % rAttr(index_g2x_Sg_topo, n) = max(0.0, upperSurface(i)) !updated to avoid warning for values below sea level
             g2x_g % rAttr(index_g2x_Sg_tbot, n) = temperature(nVertlevels,i) - SHR_CONST_TKTRIP
