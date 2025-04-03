@@ -107,7 +107,7 @@ void SPA::initialize_impl (const RunType /* run_type */)
   remap_data.pmid = pmid;
   remap_data.pint = pint;
   m_data_interpolation->setup_remappers (remap_data);
-  m_data_interpolation->init_data_interval (timestamp());
+  m_data_interpolation->init_data_interval (start_of_step_ts());
 
   // Set property checks for fields in this process
   using FWI = FieldWithinIntervalCheck;
@@ -123,9 +123,9 @@ void SPA::initialize_impl (const RunType /* run_type */)
 }
 
 // =========================================================================================
-void SPA::run_impl (const double dt)
+void SPA::run_impl (const double /* dt */)
 {
-  m_data_interpolation->run(timestamp()+dt);
+  m_data_interpolation->run(end_of_step_ts());
 }
 
 } // namespace scream

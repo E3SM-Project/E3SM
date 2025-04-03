@@ -310,7 +310,7 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   fluxes_in_mks_units_ = view_1d("fluxes_in_mks_units", ncol_);
 
   // Current month ( 0-based)
-  const int curr_month = timestamp().get_month() - 1;
+  const int curr_month = start_of_step_ts().get_month() - 1;
 
   // Load the first month into data_end.
 
@@ -322,7 +322,7 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   //--------------------------------------------------------------------
   for(srf_emiss_ &ispec_srf : srf_emiss_species_) {
     srfEmissFunc::update_srfEmiss_data_from_file(
-        ispec_srf.dataReader_, timestamp(), curr_month, *ispec_srf.horizInterp_,
+        ispec_srf.dataReader_, start_of_step_ts(), curr_month, *ispec_srf.horizInterp_,
         ispec_srf.data_end_);  // output
   }
 
@@ -340,7 +340,7 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   //--------------------------------------------------------------------
   // Time dependent data
   marineOrganicsFunc::update_marine_organics_data_from_file(
-      morg_dataReader_, timestamp(), curr_month, *morg_horizInterp_,
+      morg_dataReader_, start_of_step_ts(), curr_month, *morg_horizInterp_,
       morg_data_end_);  // output
 
   //-----------------------------------------------------------------
@@ -369,7 +369,7 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
               constituent_fluxes);  // in-out
   Kokkos::fence();
   // Gather time and state information for interpolation
-  const auto ts = timestamp() + dt;
+  const auto ts = end_of_step_ts();
 
   //--------------------------------------------------------------------
   // Online emissions from dust and sea salt

@@ -458,7 +458,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
     auto linoz_cariolle_pscs =
         buffer_.scratch[7];  // Cariolle parameter for PSC loss of ozone [1/s]
 
-    auto ts = timestamp();
+    auto ts = start_of_step_ts();
     std::string linoz_chlorine_file =
         m_params.get<std::string>("mam4_linoz_chlorine_file");
     int chlorine_loading_ymd = m_params.get<int>("mam4_chlorine_loading_ymd");
@@ -479,7 +479,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   // Load the first month into extfrc_lst_end.
   // Note: At the first time step, the data will be moved into extfrc_lst_beg,
   //       and extfrc_lst_end will be reloaded from file with the new month.
-  const int curr_month = timestamp().get_month() - 1;  // 0-based
+  const int curr_month = start_of_step_ts().get_month() - 1;  // 0-based
 
   scream::mam_coupling::update_tracer_data_from_file(
       LinozDataReader_, curr_month, *LinozHorizInterp_, linoz_data_);
@@ -602,13 +602,12 @@ void MAMMicrophysics::run_impl(const double dt) {
   auto o3_col_dens = buffer_.scratch[8];
 
   /* Gather time and state information for interpolation */
-  const auto ts = timestamp() + dt;
+  const auto ts = end_of_step_ts();
 
   const Real chlorine_loading = scream::mam_coupling::chlorine_loading_advance(
       ts, chlorine_values_, chlorine_time_secs_);
 
-  // /* Update the TracerTimeState to reflect the current time, note the
-  // addition of dt */
+  // Update the TracerTimeState to reflect the current time
   trace_time_state_.t_now = ts.frac_of_year_in_days();
   scream::mam_coupling::advance_tracer_data(
       TracerDataReader_,                 // in
@@ -666,7 +665,6 @@ void MAMMicrophysics::run_impl(const double dt) {
   // Note: We are following the RRTMGP EAMxx interface to compute the zenith
   // angle. This operation is performed on the host because the routine
   // shr_orb_cosz_c2f has not been ported to C++.
-  auto ts2          = timestamp();
   auto orbital_year = m_orbital_year;
   // Note: We need double precision because
   // shr_orb_params_c2f and shr_orb_decl_c2f only support double precision.
@@ -684,13 +682,13 @@ void MAMMicrophysics::run_impl(const double dt) {
     orbital_year = shr_orb_undef_int_c2f;
   } else if(orbital_year < 0) {
     // compute orbital parameters based on current year
-    orbital_year = ts2.get_year();
+    orbital_year = start_of_step_ts().get_year();
   }
   shr_orb_params_c2f(&orbital_year,                                       // in
                      &eccen, &obliq, &mvelp, &obliqr, &lambm0, &mvelpp);  // out
 
   // Want day + fraction; calday 1 == Jan 1 0Z
-  auto calday = ts2.frac_of_year_in_days() + 1;
+  auto calday = start_of_step_ts().frac_of_year_in_days() + 1;
   shr_orb_decl_c2f(calday, eccen, mvelpp, lambm0, obliqr,  // in
                    &delta, &eccf);                         // out
   {
@@ -740,7 +738,7 @@ void MAMMicrophysics::run_impl(const double dt) {
   const mam4::seq_drydep::Data drydep_data =
       mam4::seq_drydep::set_gas_drydep_data();
   const auto qv                = wet_atm_.qv;
-  const int month              = timestamp().get_month();  // 1-based
+  const int month              = start_of_step_ts().get_month();  // 1-based
   const int surface_lev        = nlev - 1;                 // Surface level
   const auto &index_season_lai = index_season_lai_;
   auto &dflx                   = dflx_;

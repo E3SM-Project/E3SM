@@ -134,8 +134,7 @@ void run(std::mt19937_64& engine)
       diag->compute_diagnostic();
       const auto& diag_out = diag->get_diagnostic();
       Field qv_vert_integrated_flux_u_f = diag_out.clone();
-      qv_vert_integrated_flux_u_f.deep_copy<double,Host>(0.0);
-      qv_vert_integrated_flux_u_f.sync_to_dev();
+      qv_vert_integrated_flux_u_f.deep_copy(0);
       const auto& qv_vert_integrated_flux_u_v = qv_vert_integrated_flux_u_f.get_view<Real*>();
       constexpr Real g = PC::gravit;
       int comp = which_comp=="Zonal" ? 0 : 1;
