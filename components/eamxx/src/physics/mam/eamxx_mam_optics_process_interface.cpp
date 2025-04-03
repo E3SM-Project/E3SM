@@ -293,6 +293,7 @@ void MAMOptics::initialize_impl(const RunType run_type) {
       mam_coupling::view_int_1d("rrtmg_to_rrtmgp_swbands", nswbands_);
   Kokkos::deep_copy(get_idx_rrtmgp_from_rrtmg_swbands_,
                     get_idx_rrtmgp_from_rrtmg_swbands_host);
+  calsize_data_.initialize();
 }
 void MAMOptics::run_impl(const double dt) {
   constexpr Real zero = 0.0;
@@ -338,6 +339,8 @@ void MAMOptics::run_impl(const double dt) {
   const auto &work                           = work_;
   const auto &dry_aero                       = dry_aero_;
   const auto &aerosol_optics_device_data     = aerosol_optics_device_data_;
+  const auto &calsize_data =  calsize_data_;
+
   Kokkos::parallel_for(
       policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
         const Int icol = team.league_rank();  // column index
@@ -373,7 +376,7 @@ void MAMOptics::run_impl(const double dt) {
         mam4::aer_rad_props::aer_rad_props_sw(
             team, dt, progs, atm, zi, pdel, ssa_cmip6_sw_icol, af_cmip6_sw_icol,
             ext_cmip6_sw_icol, tau_icol, tau_w_icol, tau_w_g_icol, tau_w_f_icol,
-            aerosol_optics_device_data, aodvis(icol), work_icol);
+            aerosol_optics_device_data, calsize_data,  aodvis(icol), work_icol);
 
       });
   Kokkos::fence();
@@ -395,7 +398,7 @@ void MAMOptics::run_impl(const double dt) {
 
         mam4::aer_rad_props::aer_rad_props_lw(
             team, dt, progs, atm, zi, pdel, ext_cmip6_lw_icol,
-            aerosol_optics_device_data, odap_aer_icol);
+            aerosol_optics_device_data, calsize_data, odap_aer_icol);
       });
   Kokkos::fence();
   // TODO: We will need to generate optical inputs files with  band ordering
