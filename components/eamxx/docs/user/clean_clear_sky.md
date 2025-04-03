@@ -33,6 +33,5 @@ Fields:
 output_control:
   frequency: 1
   frequency_units: nmonths
-  mpi_ranks_in_filename: false
 
 ```

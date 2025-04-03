@@ -572,14 +572,6 @@ of the parameter value).
         (depending on the output frequency).
             - If `one_year` or `one_month` are used, the option
             `Max Snapshots Per File` is ignored.
-- `mpi_ranks_in_filename` (top-level list, `boolean`):
-      - This option specifies whether the number of MPI ranks in the atmosphere
-      communicator should be put inside the output file name.
-      - By default, this is `false`, since it is usually not important.
-      - This option is mostly important for standalone unit testing, where several
-      versions of the same test (corresponding to different numbers of MPI ranks)
-      are running concurrently, so that different file names are needed to
-      avoid resource contention.
 - `iotype` (top-level list, `string`):
       - This option allows the user to request a particular format for the
       output file.
