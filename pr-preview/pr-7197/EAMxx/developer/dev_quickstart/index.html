@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.10">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.11">
     
     
       
@@ -164,11 +164,13 @@
     
     
     
-      <label class="md-header__button md-icon" for="__search">
-        
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
-      </label>
-      <div class="md-search" data-md-component="search" role="dialog">
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
   <label class="md-search__overlay" for="__search"></label>
   <div class="md-search__inner" role="search">
     <form class="md-search__form" name="search">
@@ -207,6 +209,7 @@
     </div>
   </div>
 </div>
+      
     
     
       <div class="md-header__source">
@@ -1914,10 +1917,9 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Let&#39;s Get Started (Quickly)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
+</li>
+      
+        <li class="md-nav__item">
   <a href="#running-eamxx-via-test-all-eamxx" class="md-nav__link">
     <span class="md-ellipsis">
       Running EAMxx via test-all-eamxx
@@ -1951,11 +1953,6 @@
       Testing Locally
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
         
@@ -2201,6 +2198,8 @@
       
         
       
+        
+      
     
     
     
@@ -2338,7 +2337,30 @@
   
   
   <span class="md-ellipsis">
-    I/O
+    Input/Output
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../TPLs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Third-party Libraries
     
   </span>
   
@@ -3325,10 +3347,9 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Let&#39;s Get Started (Quickly)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
+</li>
+      
+        <li class="md-nav__item">
   <a href="#running-eamxx-via-test-all-eamxx" class="md-nav__link">
     <span class="md-ellipsis">
       Running EAMxx via test-all-eamxx
@@ -3362,11 +3383,6 @@
       Testing Locally
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
         
@@ -3435,7 +3451,7 @@ This means that, if you have an account on one of these machines, EAMxx tests
 can be run with no extra configuration required.
 However, many of the standalone EAMxx tests are able to be run on a
 reasonably-equipped laptop or personal workstation.<sup id="fnref:but-mac"><a class="footnote-ref" href="#fn:but-mac">3</a></sup>
-This second choice requires some extra configurations but the effort required
+This second choice requires some extra configurations<sup id="fnref:TPLs-etc"><a class="footnote-ref" href="#fn:TPLs-etc">4</a></sup> but the effort required
 may be worth the potential speedup in development.</p>
 <h2 id="lets-get-started-quickly">Let's Get Started (Quickly)</h2>
 <div class="admonition warning">
@@ -3444,24 +3460,34 @@ may be worth the potential speedup in development.</p>
 As such, we provide no guarantee that any of these are working code, and
 the author would be quite surprised if more than a couple of them run
 without edits.
-If you should take the time to debug these examples, feel free to submit a
+If you take the time to debug these examples, feel free to submit a
 PR with a working version, and we are sure some future developer will
 appreciate it!</p>
 </div>
-<h3 id="running-eamxx-via-test-all-eamxx">Running EAMxx via <code>test-all-eamxx</code></h3>
+<h2 id="running-eamxx-via-test-all-eamxx">Running EAMxx via <code>test-all-eamxx</code></h2>
 <p>The quickest method for a new developer to get EAMxx up and running is to use
 the automated configure/build/test workflow provided by <code>scripts/test-all-eamxx</code>.
-This is a good "smoke test"<sup id="fnref:smoke-test-def"><a class="footnote-ref" href="#fn:smoke-test-def">4</a></sup> to confirm that your development
+This is a good "smoke test"<sup id="fnref:smoke-test-def"><a class="footnote-ref" href="#fn:smoke-test-def">5</a></sup> to confirm that your development
 environment is configured properly and that there are no glaring run-time
 errors preventing successful running and testing.</p>
 <p>Running via <code>test-all-eamxx</code> requires <strong><em>at minimum</em></strong> 1 to 2 command-line
 arguments to work correctly and likely more if your goals are more than modest.
-In the following sections, we present the configurations a new developer is most
-likely to require.</p>
-<h4 id="selected-useful-testing-options">Selected Useful Testing Options</h4>
+In the following sections, we present the configurations a new developer is
+most likely to require.</p>
+<h3 id="selected-useful-testing-options">Selected Useful Testing Options</h3>
 <p>We give an overview of common basic use cases here, and we provide full details
 on the various capabilities and options of <code>test-all-eamxx</code> in
 <a href="../dev_testing/test_all_eamxx/">EAMxx Automated Standalone Testing</a>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Note</p>
+<p>For all discussion of running standalone testing via <code>test-all-eamxx</code>,
+including the following, we assume the commands are run from the root
+directory of EAMxx. That is, if one begins in the root E3SM directory,
+assume that each code snippet begins with an implicit</p>
+<div class="copy highlight"><pre><span></span><code>$<span class="w"> </span><span class="nv">eamxx_root</span><span class="o">=</span><span class="s2">&quot;&lt;some/file/path&gt;/E3SM/components/eamxx&quot;</span>
+$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">eamxx_root</span><span class="si">}</span><span class="s2">&quot;</span>
+</code></pre></div>
+</div>
 <details class="example">
 <summary>Configure Only Without Build or Test</summary>
 <p><strong>Useful for:</strong> Mid-development testing when debugging compilation, and it
@@ -3502,7 +3528,7 @@ or that it will not bog down your system.</li>
 <p>As a first step, you are likely to only be concerned with testing your
 specific modifications, so there is no need to run the full suite of EAMxx tests.
 So, we may restrict the tests that will be run by using an appropriate
-<a href="https://en.wikipedia.org/wiki/Regular_expression">regular expression</a> ("regex").<sup id="fnref:regex-tool"><a class="footnote-ref" href="#fn:regex-tool">5</a></sup></p>
+<a href="https://en.wikipedia.org/wiki/Regular_expression">regular expression</a> ("regex").<sup id="fnref:regex-tool"><a class="footnote-ref" href="#fn:regex-tool">6</a></sup></p>
 <div class="copy highlight"><pre><span></span><code><span class="c1"># This example regex will match the exact substring &quot;ash_injection&quot;.</span>
 <span class="c1"># That is, it will match &quot;ash_injection_validate_test&quot;,</span>
 <span class="c1"># &quot;test_suite_ash_injection&quot;, and &quot;test_ash_injection_quick&quot; but not</span>
@@ -3629,13 +3655,13 @@ $<span class="w"> </span>./scripts/test-all-eamxx<span class="w"> </span>&lt;req
 <span class="w">    </span>--make-parallel-level<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">build_threads_gpu</span><span class="si">}</span><span class="s2">&quot;</span>
 </code></pre></div>
 </details>
-<h4 id="testing-on-supported-machines">Testing on Supported Machines</h4>
+<h3 id="testing-on-supported-machines">Testing on Supported Machines</h3>
 <p>When testing on a supported E3SM machine, the only configuration required is to
 set the proper "machine ID" flag that indicates the machine name and potentially
 the desired device to run with (CPU, GPU).
 This is because <code>test-all-eamxx</code> configures the run according to a
 "machine file" that sets an environment known to build and test successfully
-and efficiently<sup id="fnref:mach-file"><a class="footnote-ref" href="#fn:mach-file">6</a></sup>.</p>
+and efficiently<sup id="fnref:mach-file"><a class="footnote-ref" href="#fn:mach-file">7</a></sup>.</p>
 <details class="example">
 <summary>Example: Running on Perlmutter</summary>
 <div class="copy highlight"><pre><span></span><code><span class="c1"># run tests on cpu</span>
@@ -3652,7 +3678,7 @@ $<span class="w"> </span>./scripts/test-all-eamxx<span class="w"> </span>--machi
 <p>The <code>test-all-eamxx</code> script assumes it is being run on a compute node
 (i.e., not the <code>login</code> or <code>head</code> node).</p>
 <p>This can be handled most easily by launching the job manually from an
-interactive session.<sup id="fnref:tas-compute-node"><a class="footnote-ref" href="#fn:tas-compute-node">7</a></sup></p>
+interactive session.<sup id="fnref:tas-compute-node"><a class="footnote-ref" href="#fn:tas-compute-node">8</a></sup></p>
 <p>To illustrate, if the platform's batch scheduler is <code>slurm</code>, we could do</p>
 <div class="highlight"><pre><span></span><code>$<span class="w"> </span>salloc<span class="w"> </span>--nodes<span class="w"> </span><span class="m">1</span><span class="w"> </span>--qos<span class="w"> </span>interactive<span class="w"> </span>--time<span class="w"> </span><span class="m">02</span>:00:00<span class="w"> </span><span class="o">[</span>...<span class="o">]</span>
 &lt;response<span class="w"> </span>indicating<span class="w"> </span>interactive<span class="w"> </span>node<span class="w"> </span>name&gt;
@@ -3660,7 +3686,7 @@ $<span class="w"> </span>ssh<span class="w"> </span>&lt;node-id&gt;
 $<span class="w"> </span>./scripts/test-all-eamxx<span class="w"> </span>--machine<span class="w"> </span>&lt;machine-id&gt;
 </code></pre></div>
 </details>
-<h4 id="testing-locally">Testing Locally</h4>
+<h3 id="testing-locally">Testing Locally</h3>
 <p>Running EAMxx on your local workstation, laptop, or less-trafficked cluster
 machine can potentially make your development quicker and less complicated.
 However, following the <strong><em>No Free Lunches</em></strong> principle, there is some fiddly
@@ -3668,7 +3694,7 @@ setup involved in making your life easier.</p>
 <p>Testing on a local, or otherwise unknown, machine requires the <code>--local</code>
 (or <code>-l</code>) flag and correctly-configured files in the <code>~/.cime/</code> directory.
 For a full explanation of how to configure your own machine,
-see <a href="../dev_testing/test_all_eamxx/#local-configuration-files">Local Configuration Files</a>, but we will briefly summarize here.</p>
+see the pages on <a href="../dev_testing/test_all_eamxx/#local-configuration-files">Local Configuration Files</a> and <a href="../TPLs/">Third-party Libraries</a>, but we will briefly summarize here.</p>
 <details class="example">
 <summary>Example <code>scream_mach_specs.py</code> Configuration File</summary>
 <p>The <code>test-all-eamxx</code> workflow expects to find a file called
@@ -3700,9 +3726,7 @@ things as:</p>
 </ul>
 <p>We recommend setting as many of the class variables as you can, because
 (mostly) more information is better than less.</p>
-<div class="copy highlight"><span class="filename">${eamxx_root}/scripts/machine_specs.py:[L58-L88]</span><pre><span></span><code>from<span class="w"> </span>machines_specs<span class="w"> </span>import<span class="w"> </span>Machine
-
-<span class="c1">###############################################################################</span>
+<div class="copy highlight"><span class="filename">${eamxx_root}/scripts/machine_specs.py:[L58-L88]</span><pre><span></span><code><span class="c1">###############################################################################</span>
 class<span class="w"> </span>Machine<span class="o">(</span>object<span class="o">)</span>:
 <span class="c1">###############################################################################</span>
 <span class="w">    </span><span class="s2">&quot;&quot;&quot;</span>
@@ -3744,6 +3768,8 @@ class<span class="w"> </span>Local<span class="o">(</span>Machine<span class="o"
 <span class="w">    </span><span class="nv">concrete</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>True
 <span class="w">    </span>@classmethod
 <span class="w">    </span>def<span class="w"> </span>setup<span class="o">(</span>cls<span class="o">)</span>:
+<span class="w">        </span><span class="c1"># NOTE: do not change this line because `test-all-eamxx -l`</span>
+<span class="w">        </span><span class="c1"># specifically looks for a machine named &quot;local&quot;.</span>
 <span class="w">        </span>super<span class="o">()</span>.setup_base<span class="o">(</span><span class="s2">&quot;local&quot;</span><span class="o">)</span>
 
 <span class="w">        </span><span class="c1"># NOTE: these are run by the shell (likely bash), so must have</span>
@@ -3785,13 +3811,6 @@ class<span class="w"> </span>Local<span class="o">(</span>Machine<span class="o"
 <span class="c1">###############################################################################</span>
 </code></pre></div>
 </details>
-<!-- ## To-do
-
-    - Mention full-model, but don't go into detail
-    - Discuss catch2 (add to comp. structures section)
-        - `create_unit_test()`
-    - Please use labels for tests -->
-
 <!-- ======================================================================= -->
 
 <!-- doesn't like the separation between footnote and text reference appears
@@ -3812,19 +3831,22 @@ to be triggered by the admonition environment -->
 <li id="fn:but-mac">
 <p>Mac computers with an Apple silicon CPU (e.g., M1, M2...) are not officially supported and present challenges related to handling floating-point exceptions. However, some have had success building on this architecture, and if you achieve a robust build configuration for Mac please reach out to the development team!&#160;<a class="footnote-backref" href="#fnref:but-mac" title="Jump back to footnote 3 in the text">&#8617;</a></p>
 </li>
+<li id="fn:TPLs-etc">
+<p>In particular, it is likely you will need to manually build/install the required <a href="../TPLs/">Third-party libraries</a>.&#160;<a class="footnote-backref" href="#fnref:TPLs-etc" title="Jump back to footnote 4 in the text">&#8617;</a></p>
+</li>
 <li id="fn:smoke-test-def">
-<p><strong><em>Smoke Test</em></strong> is a term used by software developers to describe a type of test that initially indicates whether something is working properly--as in, "flip the switch and see if anything starts smoking." :fingers_crossed:&#160;<a class="footnote-backref" href="#fnref:smoke-test-def" title="Jump back to footnote 4 in the text">&#8617;</a></p>
+<p><strong><em>Smoke Test</em></strong> is a term used by software developers to describe a type of test that initially indicates whether something is working properly--as in, "flip the switch and see if anything starts smoking." <img alt="🤞" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/1f91e.svg" title=":fingers_crossed:" />&#160;<a class="footnote-backref" href="#fnref:smoke-test-def" title="Jump back to footnote 5 in the text">&#8617;</a></p>
 </li>
 <li id="fn:regex-tool">
-<p>For those that are not regex ninjas (yet), there are useful tools only to construct or decode regex strings--e.g., <a href="https://regexr.com">RegExr</a>.&#160;<a class="footnote-backref" href="#fnref:regex-tool" title="Jump back to footnote 5 in the text">&#8617;</a></p>
+<p>For those that are not regex ninjas (yet), there are useful tools only to construct or decode regex strings--e.g., <a href="https://regexr.com">RegExr</a>.&#160;<a class="footnote-backref" href="#fnref:regex-tool" title="Jump back to footnote 6 in the text">&#8617;</a></p>
 </li>
 <li id="fn:mach-file">
 <p>If you discover that a supported machine does not successfully build and test, please file an <a href="https://github.com/E3SM-Project/E3SM/issues">Issue</a> with the tag <strong><em>Machine Files</em></strong>.
-Also, no promises the standard configuration is perfectly efficient.&#160;<a class="footnote-backref" href="#fnref:mach-file" title="Jump back to footnote 6 in the text">&#8617;</a></p>
+Also, no promises the standard configuration is perfectly efficient.&#160;<a class="footnote-backref" href="#fnref:mach-file" title="Jump back to footnote 7 in the text">&#8617;</a></p>
 </li>
 <li id="fn:tas-compute-node">
 <p>While probably not time-efficient, there is no reason <code>test-all-eamxx</code> cannot also be run by submitting to the batch scheduler.
-If this is your goal, the exercise is left to the reader.&#160;<a class="footnote-backref" href="#fnref:tas-compute-node" title="Jump back to footnote 7 in the text">&#8617;</a></p>
+If this is your goal, the exercise is left to the reader.&#160;<a class="footnote-backref" href="#fnref:tas-compute-node" title="Jump back to footnote 8 in the text">&#8617;</a></p>
 </li>
 </ol>
 </div>
