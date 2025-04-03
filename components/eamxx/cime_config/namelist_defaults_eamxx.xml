@@ -804,7 +804,7 @@ be lost if SCREAM_HACK_XML is not enabled.
   <ctl_nl>
     <cubed_sphere_map>0</cubed_sphere_map>
     <cubed_sphere_map COMPSET=".*DP-EAMxx">2</cubed_sphere_map>
-    <disable_diagnostics>False</disable_diagnostics>
+    <disable_diagnostics>false</disable_diagnostics>
     <dt_remap_factor constraints="ge 1">2</dt_remap_factor>
     <dt_tracer_factor constraints="ge 1">1</dt_tracer_factor>
     <hv_ref_profiles>6</hv_ref_profiles>                <!-- Default (rough topography) -->
@@ -876,7 +876,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <se_tstep hgrid="ne0np4_conus_x4v1_lowcon" constraints="gt 0">75</se_tstep>
     <statefreq>9999</statefreq>
     <theta_advect_form>1</theta_advect_form>
-    <theta_hydrostatic_mode>False</theta_hydrostatic_mode>
+    <theta_hydrostatic_mode>false</theta_hydrostatic_mode>
     <tstep_type>9</tstep_type>
     <vert_remap_q_alg>10</vert_remap_q_alg>
     <transport_alg>0</transport_alg>
