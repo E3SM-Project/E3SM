@@ -754,10 +754,10 @@ add_postcondition_check (const prop_check_ptr& pc, const CheckFailHandling cfh)
     std::string s = "";
     switch (cfh) {
       case CheckFailHandling::Fatal:
-        s = "Fatal";
+        s = "fatal";
         break;
       case CheckFailHandling::Warning:
-        s = "Warning";
+        s = "warning";
         break;
       default:
         EKAT_ERROR_MSG ("Unexpected/unsupported CheckFailHandling value.\n");

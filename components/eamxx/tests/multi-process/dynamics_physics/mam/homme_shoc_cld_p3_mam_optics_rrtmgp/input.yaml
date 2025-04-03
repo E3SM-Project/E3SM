@@ -4,7 +4,7 @@ driver_options:
   atmosphere_dag_verbosity_level: 5
   mass_column_conservation_error_tolerance: 1e-3
   energy_column_conservation_error_tolerance: 1e-4
-  column_conservation_checks_fail_handling_type: Warning
+  column_conservation_checks_fail_handling_type: warning
   property_check_data_fields: [phis]
 
 time_stepping:

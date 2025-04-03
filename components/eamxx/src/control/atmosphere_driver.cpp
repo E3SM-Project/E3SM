@@ -477,16 +477,16 @@ void AtmosphereDriver::setup_column_conservation_checks ()
 
   //Get fail handling type from driver_option parameters.
   const std::string fail_handling_type_str =
-      driver_options_pl.get<std::string>("column_conservation_checks_fail_handling_type", "Warning");
+      driver_options_pl.get<std::string>("column_conservation_checks_fail_handling_type", "warning");
 
   CheckFailHandling fail_handling_type;
-  if (fail_handling_type_str == "Warning") {
+  if (fail_handling_type_str == "warning") {
     fail_handling_type = CheckFailHandling::Warning;
-  } else if (fail_handling_type_str == "Fatal") {
+  } else if (fail_handling_type_str == "fatal") {
     fail_handling_type = CheckFailHandling::Fatal;
   } else {
     EKAT_ERROR_MSG("Error! Unknown column_conservation_checks_fail_handling_type parameter. "
-                   "Acceptable types are \"Warning\" and \"Fatal\".\n");
+                   "Acceptable types are \"warning\" and \"fatal\".\n");
   }
 
   // Pass energy checker to the process group to be added
