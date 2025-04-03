@@ -3,7 +3,7 @@ module rdycoreMod
 #include <petsc/finclude/petsc.h>
 
   use petsc
-  use rdycore
+  !use rdycore
   use shr_kind_mod , only : r8 => shr_kind_r8
   use shr_sys_mod  , only : shr_sys_flush
 
@@ -11,7 +11,7 @@ module rdycoreMod
 
   private
 
-  type(RDy)                               :: rdy_                      ! RDycore data structure
+ !type(RDy)                               :: rdy_                      ! RDycore data structure
 
   PetscInt              , public          :: num_cells_owned           ! number of cells that locally owned
   PetscInt              , public          :: num_cells_global          ! total number of cells in the mesh
