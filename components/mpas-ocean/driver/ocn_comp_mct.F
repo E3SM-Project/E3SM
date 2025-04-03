@@ -3935,31 +3935,33 @@ contains
            iceFraction(i) = x2o_om(n, index_x2o_Si_ifrac)
         end if
 
-        if ( stokesDriftZonalWavenumberField % isActive ) then
-           stokesDriftZonalWavenumber(1,i) = x2o_om(n, index_x2o_Sw_ustokes_wavenumber_1)
-           stokesDriftZonalWavenumber(2,i) = x2o_om(n, index_x2o_Sw_ustokes_wavenumber_2)
-           stokesDriftZonalWavenumber(3,i) = x2o_om(n, index_x2o_Sw_ustokes_wavenumber_3)
-           stokesDriftZonalWavenumber(4,i) = x2o_om(n, index_x2o_Sw_ustokes_wavenumber_4)
-           stokesDriftZonalWavenumber(5,i) = x2o_om(n, index_x2o_Sw_ustokes_wavenumber_5)
-           stokesDriftZonalWavenumber(6,i) = x2o_om(n, index_x2o_Sw_ustokes_wavenumber_6)
-        end if
-        if ( stokesDriftMeridionalWavenumberField % isActive ) then
-           stokesDriftMeridionalWavenumber(1,i) = x2o_om(n, index_x2o_Sw_vstokes_wavenumber_1)
-           stokesDriftMeridionalWavenumber(2,i) = x2o_om(n, index_x2o_Sw_vstokes_wavenumber_2)
-           stokesDriftMeridionalWavenumber(3,i) = x2o_om(n, index_x2o_Sw_vstokes_wavenumber_3)
-           stokesDriftMeridionalWavenumber(4,i) = x2o_om(n, index_x2o_Sw_vstokes_wavenumber_4)
-           stokesDriftMeridionalWavenumber(5,i) = x2o_om(n, index_x2o_Sw_vstokes_wavenumber_5)
-           stokesDriftMeridionalWavenumber(6,i) = x2o_om(n, index_x2o_Sw_vstokes_wavenumber_6)
-        end if
-        if ( significantWaveHeightField % isActive ) then
-           significantWaveHeight(i) = x2o_om(n, index_x2o_Sw_Hs)
-        end if
-        if ( peakWaveFrequencyField % isActive ) then
-           peakWaveFrequency(i) = x2o_om(n, index_x2o_Sw_Fp)
-        end if
-        if ( peakWaveDirectionField % isActive ) then
-           peakWaveDirection(i) = x2o_om(n, index_x2o_Sw_Dp)
-        end if
+        if (wav_ocn_coup == 'twoway') then
+           if ( stokesDriftZonalWavenumberField % isActive ) then
+              stokesDriftZonalWavenumber(1,i) = x2o_om(n, index_x2o_Sw_ustokes_wavenumber_1)
+              stokesDriftZonalWavenumber(2,i) = x2o_om(n, index_x2o_Sw_ustokes_wavenumber_2)
+              stokesDriftZonalWavenumber(3,i) = x2o_om(n, index_x2o_Sw_ustokes_wavenumber_3)
+              stokesDriftZonalWavenumber(4,i) = x2o_om(n, index_x2o_Sw_ustokes_wavenumber_4)
+              stokesDriftZonalWavenumber(5,i) = x2o_om(n, index_x2o_Sw_ustokes_wavenumber_5)
+              stokesDriftZonalWavenumber(6,i) = x2o_om(n, index_x2o_Sw_ustokes_wavenumber_6)
+           end if
+           if ( stokesDriftMeridionalWavenumberField % isActive ) then
+              stokesDriftMeridionalWavenumber(1,i) = x2o_om(n, index_x2o_Sw_vstokes_wavenumber_1)
+              stokesDriftMeridionalWavenumber(2,i) = x2o_om(n, index_x2o_Sw_vstokes_wavenumber_2)
+              stokesDriftMeridionalWavenumber(3,i) = x2o_om(n, index_x2o_Sw_vstokes_wavenumber_3)
+              stokesDriftMeridionalWavenumber(4,i) = x2o_om(n, index_x2o_Sw_vstokes_wavenumber_4)
+              stokesDriftMeridionalWavenumber(5,i) = x2o_om(n, index_x2o_Sw_vstokes_wavenumber_5)
+              stokesDriftMeridionalWavenumber(6,i) = x2o_om(n, index_x2o_Sw_vstokes_wavenumber_6)
+           end if
+           if ( significantWaveHeightField % isActive ) then
+              significantWaveHeight(i) = x2o_om(n, index_x2o_Sw_Hs)
+           end if
+           if ( peakWaveFrequencyField % isActive ) then
+              peakWaveFrequency(i) = x2o_om(n, index_x2o_Sw_Fp)
+           end if
+           if ( peakWaveDirectionField % isActive ) then
+              peakWaveDirection(i) = x2o_om(n, index_x2o_Sw_Dp)
+           end if
+        endif
 
         if (config_cvmix_kpp_use_theory_wave) then
            if ( windSpeed10mField% isActive ) then
