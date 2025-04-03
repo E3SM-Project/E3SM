@@ -204,13 +204,18 @@ contains
 
       do fc = 1, num_hydrologyc
          c = filter_hydrologyc(fc)
-
-         ! assume qinmax large relative to qflx_top_soil in control
-         if (origflag == 1) then
-            qflx_surf(c) =  fcov(c) * qflx_top_soil(c)
+         l = col_pp%landunit(c)
+         ! no qflx_surf in polygonal ground
+         if (lun_pp%ispolygon(l)) then
+            qflx_surf(c) = 0._r8
          else
-            ! only send fast runoff directly to streams
-            qflx_surf(c) =   fsat(c) * qflx_top_soil(c)
+            ! assume qinmax large relative to qflx_top_soil in control
+            if (origflag == 1) then
+               qflx_surf(c) =  fcov(c) * qflx_top_soil(c)
+            else
+               ! only send fast runoff directly to streams
+               qflx_surf(c) =   fsat(c) * qflx_top_soil(c)
+            endif
          endif
       end do
 
@@ -299,7 +304,7 @@ contains
      use elm_varcon       , only : denh2o, denice, roverg, wimp, mu, tfrz
      use elm_varcon       , only : pondmx, watmin
      use column_varcon    , only : icol_roof, icol_road_imperv, icol_sunwall, icol_shadewall, icol_road_perv
-     use landunit_varcon  , only : istsoil, istcrop
+     use landunit_varcon  , only : istsoil, istcrop, ilowcenpoly, iflatcenpoly, ihighcenpoly
      use elm_time_manager , only : get_step_size, get_nstep
      use atm2lndType      , only : atm2lnd_type ! land river two way coupling
      use lnd2atmType      , only : lnd2atm_type
@@ -345,6 +350,9 @@ contains
      real(r8) :: d
      real(r8) :: h2osoi_vol
      real(r8) :: basis                                      ! temporary, variable soil moisture holding capacity
+     real(r8) :: vdep                                       ! temporary, ice wedge polygon volumetric depression depth (m)
+     real(r8) :: phi_eff                                    ! temporary, polygonal ground effective subsidence (maxes out at 0.4) (m)
+     real(r8) :: swc                                        ! temporary, polygonal surface water content in m
      ! in top VIC layers for runoff calculation
      real(r8) :: rsurf_vic                                  ! temp VIC surface runoff
      real(r8) :: top_moist(bounds%begc:bounds%endc)         ! temporary, soil moisture in top VIC layers
@@ -360,7 +368,8 @@ contains
           dz                   =>    col_pp%dz                   , & ! Input:  [real(r8) (:,:) ]  layer depth (m)
           nlev2bed             =>    col_pp%nlevbed              , & ! Input:  [integer  (:)   ]  number of layers to bedrock
           cgridcell            =>    col_pp%gridcell             , & ! Input:  [integer  (:)   ]  column's gridcell    
-          wtgcell              =>    col_pp%wtgcell              , & ! Input:  [real(r8) (:)   ]  weight (relative to gridcell) 
+          wtgcell              =>    col_pp%wtgcell              , & ! Input:  [real(r8) (:)   ]  weight (relative to gridcell)
+          meangradz            =>    col_pp%meangradz            , & ! Input:  [real(r8) (:)   ]  mean topographic gradient at the column level (unitless)
 
           t_soisno             =>    col_es%t_soisno             , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)
 
@@ -374,6 +383,10 @@ contains
           h2osfc               =>    col_ws%h2osfc               , & ! Output: [real(r8) (:)   ]  surface water (mm)
           h2orof               =>    col_ws%h2orof               , & ! Output:  [real(r8) (:)   ]  floodplain inudntion volume (mm)
           frac_h2orof          =>    col_ws%frac_h2orof          , & ! Output:  [real(r8) (:)   ]  floodplain inudntion fraction (-)
+          iwp_microrel         =>    col_ws%iwp_microrel         , & ! Input:  [real(r8) (:)   ]  ice wedge polygon microtopographic relief (m)
+          iwp_exclvol          =>    col_ws%iwp_exclvol          , & ! Input:  [real(r8) (:)   ]  ice wedge polygon excluded volume (m)
+          iwp_ddep             =>    col_ws%iwp_ddep             , & ! Input:  [real(r8) (:)   ]  ice wedge polygon depression depth (m)
+          iwp_subsidence       =>    col_ws%iwp_subsidence       , & ! Input:  [real(r8) (:)   ]  ice wedge polygon ground subsidence (m)
 
           qflx_ev_soil         =>    col_wf%qflx_ev_soil         , & ! Input:  [real(r8) (:)   ]  evaporation flux from soil (W/m**2) [+ to atm]
           qflx_evap_soi        =>    col_wf%qflx_evap_soi        , & ! Input:  [real(r8) (:)   ]  ground surface evaporation rate (mm H2O/s) [+]
@@ -546,15 +559,36 @@ contains
                 endif
              endif
 
-             ! limit runoff to value of storage above S(pc)
-             if(h2osfc(c) >= h2osfc_thresh(c) .and. h2osfcflag/=0) then
-                ! spatially variable k_wet
-                k_wet=1.0_r8 * sin((rpi/180.) * col_pp%topo_slope(c))
-                qflx_h2osfc_surf(c) = k_wet * frac_infclust * (h2osfc(c) - h2osfc_thresh(c))
-
-                qflx_h2osfc_surf(c)=min(qflx_h2osfc_surf(c),(h2osfc(c) - h2osfc_thresh(c))/dtime)
+             if (lun_pp%ispolygon(col_pp%landunit(c))) then
+                vdep = (2_r8*iwp_exclvol(c) - iwp_microrel(c)) * (iwp_ddep(c)/iwp_microrel(c))**3_r8 &
+                       + (2_r8*iwp_microrel(c) - 3_r8*iwp_exclvol(c)) * (iwp_ddep(c)/iwp_microrel(c))**2_r8
+                phi_eff = min(iwp_subsidence(c), 0.4_r8)  !fix this variable when available to pull from alt calculations
+                swc = h2osfc(c)/1000_r8 ! convert to m
+                
+                if (swc >= vdep) then
+                   if (lun_pp%polygontype(col_pp%landunit(c)) == ilowcenpoly) then
+                      k_wet = (2890_r8*phi_eff**4_r8 - 1171.1_r8*phi_eff**3_r8 + 144.94_r8*phi_eff**2_r8 + 1.682_r8*phi_eff + 2.028_r8) &
+                              * (710.3_r8*meangradz(c)**2_r8 - 28.736_r8*meangradz(c) + 12.74_r8)
+                   else
+                      k_wet = 24.925_r8 * (710.3_r8*meangradz(c)**2_r8 - 28.736_r8*meangradz(c) + 12.74_r8)
+                   endif
+                   qflx_h2osfc_surf(c) = k_wet * (swc - vdep) / 86400_r8 ! coefficients estimated for mm/day; convert from mm/day -> mm/s
+                   qflx_h2osfc_surf(c) = min(qflx_h2osfc_surf(c), (swc - vdep)*1000_r8/dtime)
+                else
+                   qflx_h2osfc_surf(c) = 0._r8
+                endif
+                
              else
-                qflx_h2osfc_surf(c)= 0._r8
+                ! limit runoff to value of storage above S(pc)
+                if(h2osfc(c) >= h2osfc_thresh(c) .and. h2osfcflag/=0) then
+                   ! spatially variable k_wet
+                   k_wet=1.0_r8 * sin((rpi/180._r8) * col_pp%topo_slope(c))
+                   qflx_h2osfc_surf(c) = k_wet * frac_infclust * (h2osfc(c) - h2osfc_thresh(c))
+
+                   qflx_h2osfc_surf(c)=min(qflx_h2osfc_surf(c),(h2osfc(c) - h2osfc_thresh(c))/dtime)
+                else
+                   qflx_h2osfc_surf(c)= 0._r8
+                endif
              endif
 
              ! cutoff lower limit
@@ -728,7 +762,7 @@ contains
      real(r8) :: q_perch
      real(r8) :: q_perch_max
      real(r8) :: dflag=0._r8
-	 real(r8) :: qcharge_temp
+     real(r8) :: qcharge_temp
      !-----------------------------------------------------------------------
 
      associate(                                                            &
@@ -815,7 +849,7 @@ contains
        ! Water table changes due to qcharge
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
-       	  nlevbed = nlev2bed(c)
+          nlevbed = nlev2bed(c)
 
           !scs: use analytical expression for aquifer specific yield
           rous = watsat(c,nlevbed) &
@@ -823,7 +857,7 @@ contains
           rous=max(rous,0.02_r8)
 
           !--  water table is below the soil column  --------------------------------------
-		      g = col_pp%gridcell(c)
+          g = col_pp%gridcell(c)
           l = col_pp%landunit(c)
           qcharge_temp = qcharge(c)
 
@@ -831,10 +865,10 @@ contains
           zwt(c) = zwt(c) + (qflx_grnd_irrig_col(c) * dtime)/1000._r8/rous
 
           if(jwt(c) == nlevbed) then
-	           if (.not. (zengdecker_2009_with_var_soil_thick)) then
-                wa(c)  = wa(c) + qcharge(c)  * dtime
-                zwt(c) = zwt(c) - (qcharge(c)  * dtime)/1000._r8/rous
-             end if
+            if (.not. (zengdecker_2009_with_var_soil_thick)) then
+              wa(c)  = wa(c) + qcharge(c)  * dtime
+              zwt(c) = zwt(c) - (qcharge(c)  * dtime)/1000._r8/rous
+            end if
           else
              !-- water table within soil layers 1-9  -------------------------------------
              ! try to raise water table to account for qcharge
@@ -897,7 +931,7 @@ contains
        ! perched water table code
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
-       	  nlevbed = nlev2bed(c)
+          nlevbed = nlev2bed(c)
 
           ! define frost table as first frozen layer with unfrozen layer above it
           if(t_soisno(c,1) > tfrz) then
@@ -907,10 +941,10 @@ contains
           endif
 
           do k=2, nlevbed
-             if (t_soisno(c,k-1) > tfrz .and. t_soisno(c,k) <= tfrz) then
-                k_frz=k
-                exit
-             endif
+            if (t_soisno(c,k-1) > tfrz .and. t_soisno(c,k) <= tfrz) then
+               k_frz=k
+               exit
+            endif
           enddo
 
           frost_table(c)=z(c,k_frz)
@@ -1167,7 +1201,7 @@ contains
 
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
-       	  nlevbed = nlev2bed(c)
+          nlevbed = nlev2bed(c)
           jwt(c) = nlevbed
           ! allow jwt to equal zero when zwt is in top layer
           do j = 1,nlevbed
@@ -1177,7 +1211,7 @@ contains
                 else
                    jwt(c) = j-1
                    exit
-	        end if
+                end if
              end if
           enddo
        end do
@@ -1188,7 +1222,7 @@ contains
        ! perched water table code
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
-       	  nlevbed = nlev2bed(c)
+             nlevbed = nlev2bed(c)
 
           !  specify maximum drainage rate
           q_perch_max = 1.e-5_r8 * sin(col_pp%topo_slope(c) * (rpi/180._r8))
@@ -1392,11 +1426,11 @@ contains
                 ! make sure baseflow isn't negative
                 rsub_top(c) = max(0._r8, rsub_top(c))
              else
-	        if (jwt(c) == nlevbed .and. zengdecker_2009_with_var_soil_thick) then
+              if (jwt(c) == nlevbed .and. zengdecker_2009_with_var_soil_thick) then
                    rsub_top(c)    = 0._r8
                 else
                    rsub_top(c)    = imped * rsub_top_max* exp(-fff(c)*zwt(c))
-		end if
+              end if
              end if
 
              if (use_vsfm) rsub_top(c) = 0._r8
@@ -1408,28 +1442,28 @@ contains
 
              !--  water table is below the soil column  --------------------------------------
              if(jwt(c) == nlevbed) then
-	        if (zengdecker_2009_with_var_soil_thick) then
-         	   if (-1._r8 * smp_l(c,nlevbed) < 0.5_r8 * dzmm(c,nlevbed)) then
-           	      zwt(c) = z(c,nlevbed) - (smp_l(c,nlevbed) / 1000._r8)
-		   end if
-                   rsub_top(c) = imped * rsub_top_max * exp(-fff(c) * zwt(c))
-                   rsub_top_tot = - rsub_top(c) * dtime
-                   s_y = watsat(c,nlevbed) &
+               if (zengdecker_2009_with_var_soil_thick) then
+                 if (-1._r8 * smp_l(c,nlevbed) < 0.5_r8 * dzmm(c,nlevbed)) then
+                     zwt(c) = z(c,nlevbed) - (smp_l(c,nlevbed) / 1000._r8)
+                 end if
+                 rsub_top(c) = imped * rsub_top_max * exp(-fff(c) * zwt(c))
+                 rsub_top_tot = - rsub_top(c) * dtime
+                 s_y = watsat(c,nlevbed) &
                      * ( 1. - (1.+1.e3*zwt(c)/sucsat(c,nlevbed))**(-1./bsw(c,nlevbed)))
-                   s_y=max(s_y,0.02_r8)
-                   rsub_top_layer=max(rsub_top_tot,-(s_y*(zi(c,nlevbed) - zwt(c))*1.e3))
-                   rsub_top_layer=min(rsub_top_layer,0._r8)
-                   h2osoi_liq(c,nlevbed) = h2osoi_liq(c,nlevbed) + rsub_top_layer
-                   rsub_top_tot = rsub_top_tot - rsub_top_layer
-                   if (rsub_top_tot >= 0.) then
-                      zwt(c) = zwt(c) - rsub_top_layer/s_y/1000._r8
-                   else
-                      zwt(c) = zi(c,nlevbed)
-                   end if
-	           if (rsub_top_tot < 0.) then
-	              rsub_top(c) = rsub_top(c) + rsub_top_tot / dtime
-                      rsub_top_tot = 0.
-                   end if
+                 s_y=max(s_y,0.02_r8)
+                 rsub_top_layer=max(rsub_top_tot,-(s_y*(zi(c,nlevbed) - zwt(c))*1.e3_r8))
+                 rsub_top_layer=min(rsub_top_layer,0._r8)
+                 h2osoi_liq(c,nlevbed) = h2osoi_liq(c,nlevbed) + rsub_top_layer
+                 rsub_top_tot = rsub_top_tot - rsub_top_layer
+                 if (rsub_top_tot >= 0._r8) then
+                    zwt(c) = zwt(c) - rsub_top_layer/s_y/1000._r8
+                 else
+                    zwt(c) = zi(c,nlevbed)
+                 end if
+                 if (rsub_top_tot < 0.) then
+                   rsub_top(c) = rsub_top(c) + rsub_top_tot / dtime
+                   rsub_top_tot = 0.
+                 end if
                 else
                    wa(c)  = wa(c) - rsub_top(c) * dtime
                    zwt(c)     = zwt(c) + (rsub_top(c) * dtime)/1000._r8/rous
@@ -1523,7 +1557,7 @@ contains
 
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
-      	  nlevbed = nlev2bed(c)
+            nlevbed = nlev2bed(c)
           do j = nlevbed,2,-1
              xsi(c)            = max(h2osoi_liq(c,j)-eff_porosity(c,j)*dzmm(c,j),0._r8)
              if (use_vsfm) then
@@ -1575,8 +1609,8 @@ contains
 
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
-       	  nlevbed = nlev2bed(c)
-       	  do j = 1, nlevbed-1
+          nlevbed = nlev2bed(c)
+          do j = 1, nlevbed-1
              if (h2osoi_liq(c,j) < watmin) then
                 xs(c) = watmin - h2osoi_liq(c,j)
                 ! deepen water table if water is passed from below zwt layer
@@ -1594,8 +1628,8 @@ contains
        ! Get water for bottom layer from layers above if possible
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
-       	  nlevbed = nlev2bed(c)
-       	  j = nlevbed
+          nlevbed = nlev2bed(c)
+          j = nlevbed
           if (h2osoi_liq(c,j) < watmin) then
              xs(c) = watmin-h2osoi_liq(c,j)
              searchforwater: do i = nlevbed-1, 1, -1

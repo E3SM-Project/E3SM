@@ -49,14 +49,15 @@ module ColumnType
      logical , pointer :: active       (:) => null() ! true=>do computations on this column
 
      ! topography
-     real(r8), pointer :: glc_topo     (:) => null() ! surface elevation (m)
-     real(r8), pointer :: micro_sigma  (:) => null() ! microtopography pdf sigma (m)
-     real(r8), pointer :: n_melt       (:) => null() ! SCA shape parameter
-     real(r8), pointer :: topo_slope   (:) => null() ! gridcell topographic slope
-     real(r8), pointer :: topo_std     (:) => null() ! gridcell elevation standard deviation
-     real(r8), pointer :: hslp_p10     (:,:) => null() ! hillslope slope percentiles (unitless)
-     integer, pointer  :: nlevbed      (:) => null() ! number of layers to bedrock
-     real(r8), pointer :: zibed        (:) => null() ! bedrock depth in model (interface level at nlevbed)
+     real(r8), pointer :: glc_topo      (:) => null() ! surface elevation (m)
+     real(r8), pointer :: micro_sigma   (:) => null() ! microtopography pdf sigma (m)
+     real(r8), pointer :: n_melt        (:) => null() ! SCA shape parameter
+     real(r8), pointer :: topo_slope    (:) => null() ! gridcell topographic slope
+     real(r8), pointer :: topo_std      (:) => null() ! gridcell elevation standard deviation
+     real(r8), pointer :: hslp_p10      (:,:) => null() ! hillslope slope percentiles (unitless)
+     integer, pointer  :: nlevbed       (:) => null() ! number of layers to bedrock
+     real(r8), pointer :: zibed         (:) => null() ! bedrock depth in model (interface level at nlevbed)
+     real(r8), pointer :: meangradz     (:) => null() ! mean topographic gradient at the column level
 
      ! vertical levels
      integer , pointer :: snl          (:)   => null() ! number of snow layers
@@ -131,12 +132,13 @@ contains
     allocate(this%hslp_p10    (begc:endc,nlevslp))             ; this%hslp_p10    (:,:) = spval
     allocate(this%nlevbed     (begc:endc))                     ; this%nlevbed     (:)   = ispval
     allocate(this%zibed       (begc:endc))                     ; this%zibed       (:)   = spval
+    allocate(this%meangradz   (begc:endc))                     ; this%meangradz   (:)   = spval
 
     allocate(this%hydrologically_active(begc:endc))            ; this%hydrologically_active(:) = .false.
 
     ! Assume that columns are not fates columns until fates initialization begins
     allocate(this%is_fates(begc:endc)); this%is_fates(:) = .false.
-    
+
   end subroutine col_pp_init
 
   !------------------------------------------------------------------------
@@ -173,9 +175,10 @@ contains
     deallocate(this%hslp_p10   )
     deallocate(this%nlevbed    )
     deallocate(this%zibed      )
+    deallocate(this%meangradz     )
     deallocate(this%hydrologically_active)
     deallocate(this%is_fates)
-    
+
   end subroutine col_pp_clean
 
 end module ColumnType

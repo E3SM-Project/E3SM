@@ -104,6 +104,16 @@
       <mask>reg</mask>
     </model_grid>
 
+    <model_grid alias="1x1_icycape" compset="DATM.+ELM">
+      <grid name="atm">1x1_icycape</grid>
+      <grid name="lnd">1x1_icycape</grid>
+      <grid name="ocnice">1x1_icycape</grid>
+      <grid name="rof">null</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>reg</mask>
+    </model_grid>
+
     <model_grid alias="1x1_smallvilleIA" compset="(DATM|SATM).+ELM">
       <grid name="atm">1x1_smallvilleIA</grid>
       <grid name="lnd">1x1_smallvilleIA</grid>
@@ -2752,6 +2762,13 @@
       <ny>1</ny>
       <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.1x1pt-brazil_navy.090715.nc</file>
       <desc>1x1 Brazil -- only valid for DATM/ELM compset</desc>
+    </domain>
+
+    <domain name="1x1_icycape">
+      <nx>1</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.1x1pt_icycape_c240909.nc</file>
+      <desc>1x1 Icy Cape -- only valid for DATM/ELM compset</desc>
     </domain>
 
     <domain name="1x1_smallvilleIA">

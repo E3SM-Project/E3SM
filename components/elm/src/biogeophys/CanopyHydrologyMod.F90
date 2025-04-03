@@ -794,22 +794,27 @@ contains
      integer               , intent(in), optional :: no_update        ! flag to make calculation w/o updating variables
      !
      ! !LOCAL VARIABLES:
-     integer :: c,f,l          ! indices
-     real(r8):: d,fd,dfdd      ! temporary variable for frac_h2oscs iteration
-     real(r8):: sigma          ! microtopography pdf sigma in mm
+     integer :: c,f,l,k          ! indices
+     real(r8):: d,fd,dfdd        ! temporary variable for frac_h2oscs iteration
+     real(r8):: sigma            ! microtopography pdf sigma in mm
+     real(r8):: swc              ! surface water content in m
      real(r8):: min_h2osfc
      !-----------------------------------------------------------------------
 
-     associate(                                 & 
-          micro_sigma  => col_pp%micro_sigma  , & ! Input:  [real(r8) (:)   ] microtopography pdf sigma (m)                     
+     associate(                                 &
+          micro_sigma  => col_pp%micro_sigma  , & ! Input:  [real(r8) (:)   ] microtopography pdf sigma (m)
 
-          h2osno       => col_ws%h2osno       , & ! Input:  [real(r8) (:)   ] snow water (mm H2O)                               
-          
-          h2osoi_liq   => col_ws%h2osoi_liq   , & ! Output: [real(r8) (:,:) ] liquid water (col,lyr) [kg/m2]                  
-          h2osfc       => col_ws%h2osfc       , & ! Output: [real(r8) (:)   ] surface water (mm)                                
-          frac_sno     => col_ws%frac_sno     , & ! Output: [real(r8) (:)   ] fraction of ground covered by snow (0 to 1)       
-          frac_sno_eff => col_ws%frac_sno_eff , & ! Output: [real(r8) (:)   ] eff. fraction of ground covered by snow (0 to 1)  
-          frac_h2osfc  => col_ws%frac_h2osfc  , & ! Output: [real(r8) (:)   ] col fractional area with surface water greater than zero 
+          iwp_microrel => col_ws%iwp_microrel , & ! Input:  [real(r8) (:)   ] ice wedge polygon microtopographic relief (m)
+          iwp_exclvol  => col_ws%iwp_exclvol  , & ! Input:  [real(r8) (:)   ] ice wedge polygon excluded volume (m)
+          iwp_ddep     => col_ws%iwp_ddep     , & ! Input:  [real(r8) (:)   ] ice wedge polygon depression depth (m)
+
+          h2osno       => col_ws%h2osno       , & ! Input:  [real(r8) (:)   ] snow water (mm H2O)
+
+          h2osoi_liq   => col_ws%h2osoi_liq   , & ! Output: [real(r8) (:,:) ] liquid water (col,lyr) [kg/m2]
+          h2osfc       => col_ws%h2osfc       , & ! Output: [real(r8) (:)   ] surface water (mm)
+          frac_sno     => col_ws%frac_sno     , & ! Output: [real(r8) (:)   ] fraction of ground covered by snow (0 to 1)
+          frac_sno_eff => col_ws%frac_sno_eff , & ! Output: [real(r8) (:)   ] eff. fraction of ground covered by snow (0 to 1)
+          frac_h2osfc  => col_ws%frac_h2osfc  , & ! Output: [real(r8) (:)   ] col fractional area with surface water greater than zero
           frac_h2osfc_act => col_ws%frac_h2osfc_act & ! Output: [real(r8) (:)   ] col fractional area with surface water greater than zero
           )
 
@@ -824,26 +829,54 @@ contains
           if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
 
              !  Use newton-raphson method to iteratively determine frac_h20sfc
-             !  based on amount of surface water storage (h2osfc) and 
-             !  microtopography variability (micro_sigma)
+             !  based on amount of surface water storage (h2osfc) and
+             !  microtopography variability (micro_sigma) if nonpolygonal, or
+             !  amount of surface water (h2osfc) and microtopographic attributes
+             !  (iwp_microrel, iwp_exclvol) if polygonal tundra
 
              if (h2osfc(c) > min_h2osfc) then
                 ! a cutoff is needed for numerical reasons...(nonconvergence after 5 iterations)
-                d=0.0
 
-                sigma=1.0e3 * micro_sigma(c) ! convert to mm
-                do l=1,10
-                   fd = 0.5*d*(1.0_r8+erf(d/(sigma*sqrt(2.0)))) &
-                        +sigma/sqrt(2.0*shr_const_pi)*exp(-d**2/(2.0*sigma**2)) &
-                        -h2osfc(c)
-                   dfdd = 0.5*(1.0_r8+erf(d/(sigma*sqrt(2.0))))
+                if (lun_pp%ispolygon(l)) then
+                    ! calculate water depth and inundation fraction if column is polygonal
+                    swc = h2osfc(c)/1000_r8 ! convert to m
 
-                   d = d - fd/dfdd
-                enddo
-                !--  update the submerged areal fraction using the new d value
-                frac_h2osfc(c) = 0.5*(1.0_r8+erf(d/(sigma*sqrt(2.0))))
+                    if (swc > iwp_microrel(c) - iwp_exclvol(c)) then
+                        d = swc + iwp_exclvol(c)
+                    else
+                        d = swc + iwp_exclvol(c)
+                        do k=1,10
+                            fd = (2_r8*iwp_exclvol(c) - iwp_microrel(c)) * (d/iwp_microrel(c))**3_r8 &
+                                 + (2_r8*iwp_microrel(c) - 3_r8*iwp_exclvol(c)) * (d/iwp_microrel(c))**2_r8 &
+                                 - swc
+                            dfdd = (3_r8/iwp_microrel(c)) * (2_r8*iwp_exclvol(c) - iwp_microrel(c)) * (d/iwp_microrel(c))**2_r8 &
+                                   + (2_r8/iwp_microrel(c)) * (2_r8*iwp_microrel(c) - 3_r8*iwp_exclvol(c)) * (d/iwp_microrel(c))
+                            if (dfdd < 1.0e-12_r8) then
+                              write(iulog,*) "careful! getting close to dividing by 0..."
+                            end if
+                            d = d - fd/dfdd
+                        enddo
+                    endif
 
-             else
+                    !--  update the submerged areal fraction using the new d value
+                    frac_h2osfc(c) = (3_r8/iwp_microrel(c)) * (2_r8*iwp_exclvol(c) - iwp_microrel(c)) * (d/iwp_microrel(c))**2_r8 &
+                                     + (2_r8/iwp_microrel(c)) * (2_r8*iwp_microrel(c) - 3_r8*iwp_exclvol(c)) * (d/iwp_microrel(c))
+
+                else ! calculate water depth and inudation fraction if column is non-polygonal
+                    d=0.0
+                    sigma=1.0e3_r8 * micro_sigma(c) ! convert to mm
+                    do k=1,10
+                       fd = 0.5*d*(1.0_r8+erf(d/(sigma*sqrt(2.0)))) &
+                            +sigma/sqrt(2.0*shr_const_pi)*exp(-d**2/(2.0*sigma**2)) &
+                            -h2osfc(c)
+                       dfdd = 0.5*(1.0_r8+erf(d/(sigma*sqrt(2.0))))
+
+                       d = d - fd/dfdd
+                    enddo
+                    !--  update the submerged areal fraction using the new d value
+                    frac_h2osfc(c) = 0.5*(1.0_r8+erf(d/(sigma*sqrt(2.0))))
+                endif ! end if polygonal test
+             else ! if h2osfc(c) <= min_h2osfc
                 frac_h2osfc(c) = 0._r8
                 h2osoi_liq(c,1) = h2osoi_liq(c,1) + h2osfc(c)
                 qflx_h2osfc2topsoi(c) = h2osfc(c)/dtime                
@@ -866,7 +899,6 @@ contains
                    frac_sno_eff(c)=frac_sno(c)
 
                 endif
-
              endif ! end of no_update construct
 
           else !if landunit not istsoil/istcrop, set frac_h2osfc to zero
