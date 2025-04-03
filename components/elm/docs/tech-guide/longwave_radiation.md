@@ -1,6 +1,6 @@
 # Overview
 
-The longwave radiation in ELM solves the amount of longwave
+The longwave radiation module in ELM solves the amount of longwave
 radiation absorbed by the ground and the vegetation, and the
 amount of outgoing radiation to the atmosphere (Figure 1).
 The model represents the ground surface as a mixture of snow,
@@ -34,16 +34,26 @@ radiation by the ground. The emitted longwave radiation is computed as
 
 $$
 \begin{equation}
-\epsilon_g \sigma T_g^4 = \epsilon_g \sigma \left[ f_{sno} T^4_{sno} + \left( 1 - f_{sno} - f_{h2osfc}\right) T^4_{soi,1} + f_{h2osfc} T^4_{h2osfc} \right]
+\epsilon_g \sigma T_g^4 = \epsilon_g \sigma \left[ f_{sno} T^4_{sno,top} + \left( 1 - f_{sno} - f_{h2osfc}\right) T^4_{soi,1} + f_{h2osfc} T^4_{h2osfc} \right]
 \label{eqn:tg}
 \end{equation}
 $$
 
-where $T_{sno}$, $T_{soi,1}$ and $T_{h2osfc}$
+where $T_{sno,top}$, $T_{soi,1}$ and $T_{h2osfc}$
 the temperature of the top snow layer, the first soil layer, and
 the standing surface water, respectively, and
 $f_{sno}$ and $f_{h2osfc}$ are fraction of snow and
-standing surface water.
+standing surface water. The ground emissivity is computed as the weighted
+average of soil and snow emissivity as
+
+$$
+\begin{equation}
+\epsilon_g = \epsilon_{soi} (1 - f_{sno}) + \epsilon_{sno} f_{sno}
+\end{equation}
+$$
+
+where $\epsilon_{soi}$ is 0.96 for soil, 0.97 for glacier, and
+0.96 for wetland, while $\epsilon_{sno}$ is 0.97.
 
 The radiation absorbed by the ground, $\overrightarrow{L}_g$, is
 
@@ -70,7 +80,13 @@ the sunlit and shaded leaves are at the same temperature.
 The first term on the right-hand side of the equation represents
 the transmitted atmospheric longwave radiation through the
 canopy and the second term represents the emitted longwave
-radiation by the canopy.
+radiation by the canopy. The emissivity of the vegetation is
+
+$$
+\begin{equation}
+\epsilon_v = 1 - \exp\left( {-(L+S)/\bar{\mu}} \right)
+\end{equation}
+$$
 
 The upwelling longwave radiation from the ground is
 
