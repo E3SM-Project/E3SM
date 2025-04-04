@@ -1202,8 +1202,8 @@ contains
             ! also, frac, area,  masks has to come from atm mphaid, not from domain file reader
             ! this is hard to digest :(
             tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
-            call component_exch_moab(comp, mphaid, mbaxid, 0, tagname)
-
+            call component_exch_moab(comp, mphaid, mbaxid, 0, tagname, context_exch='dom')
+           
          endif ! coupler pes
 
 #ifdef MOABDEBUG
