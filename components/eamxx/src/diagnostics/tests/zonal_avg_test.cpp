@@ -138,18 +138,6 @@ TEST_CASE("zonal_avg") {
   }
 
   // Compare
-  for (int ncol=0; ncol < ngcols; ncol++) {
-    std::cout << "ncol" << ncol << ": " << lat_view(ncol) << std::endl;
-  }
-
-  auto diag1_field_view = diag1_field.get_view<const Real *>();
-  for (int nlat=0; nlat < nlats; nlat++) {
-    std::cout << nlat << ": " << zonal_areas[nlat] << std::endl;
-    std::cout << nlat << ": " << diag0_view(nlat) << std::endl;
-    std::cout << nlat << ": " << diag1_field_view(nlat) << std::endl;
-    std::cout << "comp: " << (diag0_view(nlat) == diag1_field_view(nlat)) << std::endl;
-  }
-
   REQUIRE(views_are_equal(diag1_field, diag0_field));
 
   // Try other known cases
@@ -157,18 +145,9 @@ TEST_CASE("zonal_avg") {
   const Real zavg1 = sp(1.0);
   qc1.deep_copy(zavg1);
   diag1->compute_diagnostic();
-  auto diag1_v2_host = diag1_field.get_view<Real *, Host>();
-  for (int ncol=0; ncol < ngcols; ncol++) {
-    std::cout << "ncol" << ncol << ": " << lat_view(ncol) << std::endl;
-  }
-
+  auto diag1_view_host = diag1_field.get_view<Real *, Host>();
   for (int nlat=0; nlat < nlats; nlat++) {
-    std::cout << nlat << ": " << diag1_v2_host(nlat) << std::endl;
-  }
-
-
-  for (int nlat=0; nlat < nlats; nlat++) {
-    REQUIRE_THAT(diag1_v2_host(nlat), Catch::Matchers::WithinRel(zavg1, tol));
+    REQUIRE_THAT(diag1_view_host(nlat), Catch::Matchers::WithinRel(zavg1, tol));
   }
 
   // other diags
@@ -178,13 +157,12 @@ TEST_CASE("zonal_avg") {
   diag2->set_required_field(qc2);
   diag2->initialize(t0, RunType::Initial);
   diag2->compute_diagnostic();
-  auto diag2_f = diag2->get_diagnostic();
+  auto diag2_field = diag2->get_diagnostic();
 
-  auto diag2_v_host = diag2_f.get_view<Real **, Host>();
-
+  auto diag2_view_host = diag2_field.get_view<Real **, Host>();
   for(int i = 0; i < nlevs; ++i) {
     for (int nlat=0; nlat < nlats; nlat++) {
-      REQUIRE_THAT(diag2_v_host(nlat,i), Catch::Matchers::WithinRel(zavg2, tol));
+      REQUIRE_THAT(diag2_view_host(nlat,i), Catch::Matchers::WithinRel(zavg2, tol));
     }
   }
 
