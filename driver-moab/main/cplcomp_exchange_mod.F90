@@ -1204,7 +1204,7 @@ contains
             ! this is hard to digest :(
             tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
             call component_exch_moab(comp, mphaid, mbaxid, 0, tagname, context_exch='dom')
-
+           
          endif ! coupler pes
 
 #ifdef MOABDEBUG
