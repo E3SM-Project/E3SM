@@ -15,11 +15,11 @@ initial_conditions:
 atmosphere_processes:
   atm_procs_list: [Dynamics]
   Dynamics:
-    type: Homme
+    type: homme
     moisture: moist
 
 grids_manager:
-  type: Homme
+  type: homme
   physics_grid_type: gll
   dynamics_namelist_file_name: namelist.nl
   vertical_coordinate_filename: IC_FILE

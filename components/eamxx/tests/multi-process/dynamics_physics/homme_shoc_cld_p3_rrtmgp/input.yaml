@@ -33,7 +33,7 @@ atmosphere_processes:
     schedule_type: sequential
     type: group
     mac_mic:
-      atm_procs_list: [shoc,CldFraction,p3]
+      atm_procs_list: [shoc,cld_fraction,p3]
       schedule_type: sequential
       type: group
       number_of_subcycles: ${MAC_MIC_SUBCYCLES}
@@ -66,7 +66,7 @@ atmosphere_processes:
       enable_column_conservation_checks: true
 
 grids_manager:
-  type: Homme
+  type: homme
   physics_grid_type: gll
   dynamics_namelist_file_name: namelist.nl
   vertical_coordinate_filename: IC_FILE

@@ -142,7 +142,7 @@ XML file, which will be displayed with each node indented in its parent scope:
 $ ./atmquery --listall
     namelist_defaults
         grids_manager
-            type: Homme
+            type: homme
             physics_grid_type: pg2
             physics_grid_rebalance: none
             dynamics_namelist_file_name: ./data/namelist.nl
