@@ -49,7 +49,7 @@ A minimal example:
 cat << EOF > eamxx_cosp_daily_output.yaml
 averaging_type: Average
 Fields:
-  Physics PG2:
+  Physics pg2:
     Field Names:
     - isccp_cldtot
     - isccp_ctptau

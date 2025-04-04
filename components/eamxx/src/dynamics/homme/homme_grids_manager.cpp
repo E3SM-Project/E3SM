@@ -203,7 +203,7 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
     return;
   }
 
-  if (type=="PG2") {
+  if (type=="pg2") {
     fvphyshack = true;
   }
 
@@ -392,8 +392,8 @@ build_pg_codes () {
 
   m_pg_codes["gll"]["None"] =  0;
   m_pg_codes["gll"]["Twin"] = 10;
-  m_pg_codes["PG2"]["None"] =  2;
-  m_pg_codes["PG2"]["Twin"] = 12;
+  m_pg_codes["pg2"]["None"] =  2;
+  m_pg_codes["pg2"]["Twin"] = 12;
 }
 
 } // namespace scream

@@ -5,7 +5,7 @@ iotype: pnetcdf
 averaging_type: Max
 Max Snapshots Per File: 1
 Fields:
-  Physics PG2:
+  Physics pg2:
     Field Names:
     - T_2m
     - precip_total_surf_mass_flux

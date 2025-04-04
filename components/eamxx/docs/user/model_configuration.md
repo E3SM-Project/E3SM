@@ -143,7 +143,7 @@ $ ./atmquery --listall
     namelist_defaults
         grids_manager
             type: Homme
-            physics_grid_type: PG2
+            physics_grid_type: pg2
             physics_grid_rebalance: None
             dynamics_namelist_file_name: ./data/namelist.nl
             vertical_coordinate_filename: /some/path/to/coords/file.nc

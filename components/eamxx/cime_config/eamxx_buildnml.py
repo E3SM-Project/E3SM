@@ -588,7 +588,7 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
     ...       </atm_proc_base>
     ...       <physics_proc_base inherit='atm_proc_base'>
     ...         <Grid>Physics gll</Grid>
-    ...         <Grid grid='ne4ne4'>Physics PG2</Grid>
+    ...         <Grid grid='ne4ne4'>Physics pg2</Grid>
     ...       </physics_proc_base>
     ...       <atm_proc_group inherit="atm_proc_base">
     ...         <atm_procs_list>NONE</atm_procs_list>
@@ -617,7 +617,7 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
                     ('enable_postcondition_checks', True),
                     (   'P1',
                         OrderedDict([   ('prop1', 'hi'),
-                                        ('Grid', 'Physics PG2'),
+                                        ('Grid', 'Physics pg2'),
                                         ('number_of_subcycles', 1),
                                         ('enable_precondition_checks', True),
                                         ('enable_postcondition_checks', True)])),
