@@ -3156,6 +3156,137 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
+<!-- tracer_forcing_freshwaterTracers -->
+
+<entry id="config_use_freshwaterTracers" type="logical"
+	category="tracer_forcing_freshwaterTracers" group="tracer_forcing_freshwaterTracers">
+if true, the 'freshwaterTracers' category is enabled for the run
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_freshwaterTracers_surface_bulk_forcing" type="logical"
+	category="tracer_forcing_freshwaterTracers" group="tracer_forcing_freshwaterTracers">
+if true, surface bulk forcing from coupler is added to surfaceTracerFlux in 'freshwaterTracers' category. True by default because the main function of this tracer group is tracking freshwater fluxes
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_freshwaterTracers_surface_restoring" type="logical"
+	category="tracer_forcing_freshwaterTracers" group="tracer_forcing_freshwaterTracers">
+if true, surface restoring source is applied to tracers in 'freshwaterTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_freshwaterTracers_interior_restoring" type="logical"
+	category="tracer_forcing_freshwaterTracers" group="tracer_forcing_freshwaterTracers">
+if true, interior restoring source is applied to tracers in 'freshwaterTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_freshwaterTracers_exponential_decay" type="logical"
+	category="tracer_forcing_freshwaterTracers" group="tracer_forcing_freshwaterTracers">
+if true, exponential decay source is applied to tracers in 'freshwaterTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_freshwaterTracers_idealAge_forcing" type="logical"
+	category="tracer_forcing_freshwaterTracers" group="tracer_forcing_freshwaterTracers">
+if true, idealAge forcing source is applied to tracers in 'freshwaterTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_freshwaterTracers_ttd_forcing" type="logical"
+	category="tracer_forcing_freshwaterTracers" group="tracer_forcing_freshwaterTracers">
+if true, transit time distribution forcing source is applied to tracers in 'freshwaterTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_freshwaterTracers_surface_value" type="logical"
+	category="tracer_forcing_freshwaterTracers" group="tracer_forcing_freshwaterTracers">
+if true, surface value is computed for 'freshwaterTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_freshwaterTracers_rainFlux" type="logical"
+	category="tracer_forcing_freshwaterTracers" group="tracer_forcing_freshwaterTracers">
+if true, the 'freshwaterTracers' category is enabled for the run
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_freshwaterTracers_snowFlux" type="logical"
+	category="tracer_forcing_freshwaterTracers" group="tracer_forcing_freshwaterTracers">
+if true, the 'freshwaterTracers' category is enabled for the run
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_freshwaterTracers_iceRunoffFlux" type="logical"
+	category="tracer_forcing_freshwaterTracers" group="tracer_forcing_freshwaterTracers">
+if true, the 'freshwaterTracers' category is enabled for the run
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_freshwaterTracers_riverRunoffFlux" type="logical"
+	category="tracer_forcing_freshwaterTracers" group="tracer_forcing_freshwaterTracers">
+if true, the 'freshwaterTracers' category is enabled for the run
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_freshwaterTracers_subglacialRunoffFlux" type="logical"
+	category="tracer_forcing_freshwaterTracers" group="tracer_forcing_freshwaterTracers">
+if true, the 'freshwaterTracers' category is enabled for the run
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_freshwaterTracers_seaIceFreshWaterFlux" type="logical"
+	category="tracer_forcing_freshwaterTracers" group="tracer_forcing_freshwaterTracers">
+if true, the 'freshwaterTracers' category is enabled for the run
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_freshwaterTracers_icebergFreshWaterFlux" type="logical"
+	category="tracer_forcing_freshwaterTracers" group="tracer_forcing_freshwaterTracers">
+if true, the 'freshwaterTracers' category is enabled for the run
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_freshwaterTracers_landIceFreshwaterFlux" type="logical"
+	category="tracer_forcing_freshwaterTracers" group="tracer_forcing_freshwaterTracers">
+if true, the 'freshwaterTracers' category is enabled for the run
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
 <!-- tracer_forcing_DMSTracers -->
 
 <entry id="config_use_DMSTracers" type="logical"
