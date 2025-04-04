@@ -15,7 +15,7 @@ class ZonalAvgDiag : public AtmosphereDiagnostic {
 
   template <typename WeightType>
   void compute_zonal_sum(const Field &field, const WeightType &weight,
-    const Field &lat, const Field &result, const ekat::Comm &comm);
+    const Field &lat, const Field &result);
 
   // functions and classes to support computing zonal sum with unitary weights
   auto get_view(const Field& field) { return field.get_view<const Real *>();}
@@ -48,11 +48,10 @@ class ZonalAvgDiag : public AtmosphereDiagnostic {
 
   std::string m_diag_name;
 
-  Field m_area;
   Field m_lat;
   int m_lat_num;
 
-  Field m_zonal_area;
+  Field m_scaled_area;
 
 };
 
