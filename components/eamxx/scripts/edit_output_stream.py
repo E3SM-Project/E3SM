@@ -210,7 +210,7 @@ def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
 
         data["Fields"][grid] = section
 
-    # We cannot do online remap (typically dyn->physGLL) if horiz or vert remap is used
+    # We cannot do online remap (typically dyn->physgll) if horiz or vert remap is used
     has_online_remap = False
     for k,v in data["Fields"].items():
         has_online_remap = has_online_remap or "IO Grid Name" in v.keys();

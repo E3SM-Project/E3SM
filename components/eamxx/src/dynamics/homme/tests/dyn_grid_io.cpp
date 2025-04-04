@@ -56,13 +56,13 @@ TEST_CASE("dyn_grid_io")
 
   // Create the grids
   ekat::ParameterList params;
-  params.set<std::string>("physics_grid_type","GLL");
+  params.set<std::string>("physics_grid_type","gll");
   params.set<std::string>("vertical_coordinate_filename","NONE");
   auto gm = std::make_shared<HommeGridsManager>(comm,params);
   gm->build_grids();
 
   auto dyn_grid  = gm->get_grid("Dynamics");
-  auto phys_grid = gm->get_grid("Physics GLL");
+  auto phys_grid = gm->get_grid("Physics gll");
 
   // Local counters
   EKAT_REQUIRE_MSG(phys_grid->get_num_local_dofs()>0, "Internal test error! Fix dyn_grid_io, please.\n");
@@ -140,7 +140,7 @@ TEST_CASE("dyn_grid_io")
   out_params.set<std::string>("averaging_type","Instant");
   out_params.set<std::string>("filename_prefix","dyn_grid_io");
   out_params.sublist("Fields").sublist("Dynamics").set<std::vector<std::string>>("Field Names",fnames);
-  out_params.sublist("Fields").sublist("Dynamics").set<std::string>("IO Grid Name","Physics GLL");
+  out_params.sublist("Fields").sublist("Dynamics").set<std::string>("IO Grid Name","Physics gll");
 
   out_params.sublist("output_control").set<int>("frequency",1);
   out_params.sublist("output_control").set<std::string>("frequency_units","nsteps");

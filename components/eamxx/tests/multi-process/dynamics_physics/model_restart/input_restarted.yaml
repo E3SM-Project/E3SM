@@ -49,7 +49,7 @@ atmosphere_processes:
 
 grids_manager:
   type: Homme
-  physics_grid_type: GLL
+  physics_grid_type: gll
   dynamics_namelist_file_name: namelist.nl
   vertical_coordinate_filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
 

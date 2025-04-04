@@ -14,7 +14,7 @@ ATM_GRID=$(./xmlquery --value ATM_GRID)
 if [[ $ATM_GRID == *"pg2"* ]]; then
   PGTYPE="PG2"
 else
-  PGTYPE="GLL"
+  PGTYPE="gll"
 fi
 
 # List of output fields
@@ -28,7 +28,7 @@ $YAML_EDIT_SCRIPT -g \
  --freq-units HIST_OPTION             \
  --prefix ${CASE}.scream.phys_dyn.h   \
  --grid Dynamics                      \
- --io-grid 'Physics GLL'              \
+ --io-grid 'Physics gll'              \
  --fields ${FIELDS}
 
 # Add also a couple of fields on the phys grid, to trigger 2-grid in same stream

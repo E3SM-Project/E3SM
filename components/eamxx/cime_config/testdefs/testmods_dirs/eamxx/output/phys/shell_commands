@@ -14,7 +14,7 @@ ATM_GRID=$(./xmlquery --value ATM_GRID)
 if [[ $ATM_GRID == *"pg2"* ]]; then
   PGTYPE="PG2"
 else
-  PGTYPE="GLL"
+  PGTYPE="gll"
 fi
 
 # List of output fields
