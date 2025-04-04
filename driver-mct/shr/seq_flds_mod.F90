@@ -2729,6 +2729,21 @@ contains
        units    = ''
        attname  = 'Sw_Charn'
        call metadata_set(attname, longname, stdname, units)
+       call seq_flds_add(w2x_states,'Sw_Ustar')
+       if (wav_ocn_coup == 'two') call seq_flds_add(x2o_states,'Sw_Ustar')
+       longname = 'Friction Velocity based on sea state'
+       stdname  = 'Frcition_velocity_based_on_sea_state'
+       units    = ''
+       attname  = 'Sw_Ustar'
+       call metadata_set(attname, longname, stdname, units)
+       
+       call seq_flds_add(w2x_states,'Sw_Z0')
+       if (wav_ocn_coup == 'two') call seq_flds_add(x2o_states,'Sw_Z0')
+       longname = 'Surface Roughness Length based on wave state'
+       stdname  = 'Surface_roughness_length_based_on_wave_state'
+       units    = ''
+       attname  = 'Sw_Z0'
+       call metadata_set(attname, longname, stdname, units)
     endif
 
     !----------------------------

@@ -150,7 +150,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
            &               taux  ,tauy  ,tref  ,qref  ,   &
            &               ocn_surface_flux_scheme, &
            &               duu10n, u10res, ustar_sv   ,re_sv ,ssq_sv,   &
-           &               missval, wsresp, tau_est, ugust, z0_wav, ustar_wav, charnockSeaState)
+           &               missval, wsresp, tau_est, ugust, z0wav, ustarwav, charnockSeaState)
 
 ! !USES:
 
@@ -206,8 +206,8 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
    real(R8),intent(in) ,optional :: wsresp(nMax)   ! boundary layer wind response to stress (m/s/Pa)
    real(R8),intent(in) ,optional :: tau_est(nMax)  ! stress in equilibrium with boundary layer (Pa)
    real(R8),intent(in) ,optional :: ugust(nMax)    ! extra wind speed from gustiness (m/s)
-   real(R8),intent(in) ,optional :: z0_wav(nMax) !surface roughness length from WW3
-   real(R8),intent(in) ,optional :: ustar_wav(nMax) !friction velocity from WW3
+   real(R8),intent(in) ,optional :: z0wav(nMax) !surface roughness length from WW3
+   real(R8),intent(in) ,optional :: ustarwav(nMax) !friction velocity from WW3
    real(R8),intent(in) ,optional :: charnockSeaState(nMax) !Charnock coeff accounting for the wave stress (Janssen 1989, 1991)
 
 ! !EOP
@@ -368,7 +368,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
         !--- neutral coefficients, z/L = 0.0 ---
         stable = 0.5_R8 + sign(0.5_R8 , delt)
         if (wav_atm_coup .eq. 'two') then
-           cdn_wav = cdn_wave(loc_karman,zref,z0_wav)
+           cdn_wav = cdn_wave(loc_karman,zref,z0wav)
            rdn = sqrt(cdn_wav)
            ! rdn calculated from Z0 will be constant
         else
@@ -388,7 +388,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
         tstar = rhn * delt
         qstar = ren * delq
         ustar_prev = ustar*2.0_R8
-        write(s_logunit,*) 'ET EDIT: z0', z0_wav
+        write(s_logunit,*) 'ET EDIT: z0', z0wav
         write(s_logunit,*) 'ET EDIT: cdn_wav:', cdn_wav
         write(s_logunit,*) 'ET EDIT: rdn:', rdn
         write(s_logunit,*) 'ET EDIT: ustar first', ustar
@@ -1156,7 +1156,7 @@ END subroutine shr_flux_atmOcn_UA
 !===============================================================================
 ! Functions used by default surface flux scheme for Wave Coupling
 !===============================================================================
-function z0_wave(charn, us, g) result(z0_wav)
+function z0_wave(charn, us, g) result(z0wav)
        implicit none
 
        ! input variables
@@ -1165,11 +1165,11 @@ function z0_wave(charn, us, g) result(z0_wav)
        real(R8), intent(in) :: g ! gravity
 
        ! local variables
-       real(R8) :: z0_wav
+       real(R8) :: z0wav
 
-       z0_wav = charn * (us**2) / g
+       z0wav = charn * (us**2) / g
 
-end function zo_wave
+end function z0_wave
 
 function cdn_wave(kappa,zr,z0) result(cdn_wav)
        implicit none

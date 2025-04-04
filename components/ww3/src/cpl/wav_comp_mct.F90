@@ -137,7 +137,7 @@
                           usspf
       use w3wdatmd, only: time, w3ndat, w3setw, wlv, va, ust, ice 
       use w3adatmd, only: ussp, w3naux, w3seta, sxx, sxy, syy, fliwnd, flcold, dw, cg, wn, hs, fp0, thp0, &
-                          charn, tauwix, tauwiy, tauox, tauoy, tauocx, tauocy
+                          charn, tauwix, tauwiy, tauox, tauoy, tauocx, tauocy, usero
       use w3idatmd, only: inflags1, inflags2,w3seti, w3ninp
       USE W3IDATMD, ONLY: TC0, CX0, CY0, TCN, CXN, CYN, ICEP1, ICEP5, TI1, TI5
       USE W3IDATMD, ONLY: TW0, WX0, WY0, DT0, TWN, WXN, WYN, DTN
@@ -175,7 +175,8 @@
                                     index_w2x_Sw_ustokes_wavenumber_4, index_w2x_Sw_vstokes_wavenumber_4, &
                                     index_w2x_Sw_ustokes_wavenumber_5, index_w2x_Sw_vstokes_wavenumber_5, &
                                     index_w2x_Sw_ustokes_wavenumber_6, index_w2x_Sw_vstokes_wavenumber_6, &
-                                    index_w2x_Sw_Hs, index_w2x_Sw_Fp, index_w2x_Sw_Dp, index_w2x_Sw_Charn, &
+                                    index_w2x_Sw_Hs, index_w2x_Sw_Fp, index_w2x_Sw_Dp,                    &
+                                    index_w2x_Sw_Charn, index_w2x_Sw_Ustar, index_w2x_Sw_Z0,              &
                                     index_w2x_Faww_Tawx, index_w2x_Faww_Tawy, index_w2x_Fwow_Twox,        &
                                     index_w2x_Fwow_Twoy, index_w2x_Faow_Tocx, index_w2x_Faow_Tocy
 
@@ -1184,6 +1185,8 @@ CONTAINS
 
              if (wav_ocn_coup .eq. 'twoway' .or. wav_atm_coup .eq. 'twoway') then
                w2x_w%rattr(index_w2x_Sw_Charn,jsea) = CHARN(jsea)
+               w2x_w%rattr(index_w2x_Sw_Ustar,jsea) = UST(jsea) ! Friction velocity
+               w2x_w%rattr(index_w2x_Sw_Z0,jsea) = USERO(jsea,1) ! Z0 surface roughness length
             endif
             if (wav_ocn_coup .eq. 'twoway') then
                w2x_w%rattr(index_w2x_Sw_Hs,jsea) = HS(jsea)
@@ -1210,6 +1213,8 @@ CONTAINS
          else
             if (wav_ocn_coup .eq. 'twoway' .or. wav_atm_coup .eq. 'twoway') then
                w2x_w%rattr(index_w2x_Sw_Charn,jsea) = 0.0
+               w2x_w%rattr(index_w2x_Sw_Ustar,jsea) = 0.0
+               w2x_w%rattr(index_w2x_Sw_Z0,jsea) = 0.0
             endif
             if (wav_ocn_coup .eq. 'twoway') then
                w2x_w%rattr(index_w2x_Sw_Hs,jsea) = 0.0

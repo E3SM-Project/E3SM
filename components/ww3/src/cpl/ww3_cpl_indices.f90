@@ -37,6 +37,9 @@ module ww3_cpl_indices
   integer :: index_w2x_Sw_Fp
   integer :: index_w2x_Sw_Dp
   integer :: index_w2x_Sw_Charn    
+  integer :: index_w2x_Sw_Ustar
+  integer :: index_w2x_Sw_Z0
+
   integer :: index_w2x_Faww_Tawx     
   integer :: index_w2x_Faww_Tawy
   integer :: index_w2x_Fwow_Twox     
@@ -72,6 +75,8 @@ contains
 
     if (wav_ocn_coup .eq. 'twoway' .or. wav_atm_coup .eq. 'twoway') then
        index_w2x_Sw_Charn     = mct_avect_indexra(w2x,'Sw_Charn') ! Charnock coeff accounting for the wave stress (Janssen 1989, 1991)
+       index_w2x_Sw_Ustar     = mct_avect_indexra(w2x,'Sw_Ustar') ! Friction velocity
+       index_w2x_Sw_Z0        = mct_avect_indexra(w2x,'Sw_Z0')    ! Roughness length
     endif
     if (wav_ocn_coup .eq. 'twoway') then
        index_w2x_Sw_Hs = mct_avect_indexra(w2x,'Sw_Hs') ! Significant wave height

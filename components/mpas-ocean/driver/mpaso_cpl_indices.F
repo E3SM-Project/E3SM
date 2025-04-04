@@ -137,6 +137,8 @@ module mpaso_cpl_indices
   integer :: index_x2o_Sw_Hs         ! Significant wave height
   integer :: index_x2o_Sw_Fp         ! Peak wave frequency
   integer :: index_x2o_Sw_Dp         ! Peak wave direction
+  integer :: index_x2o_Sw_Z0         ! surface roughness length from WW3
+  integer :: index_x2o_Sw_Ustar      ! Friction velocity from WW3
   integer :: index_x2o_Sw_Charn      !Charnock coefficient accounting for the wave stress
   integer :: index_x2o_Faww_Tawx     !Wave supported stress 
   integer :: index_x2o_Faww_Tawy     !Wave supported stress
@@ -364,6 +366,8 @@ contains
        index_x2o_Sw_Hs = mct_avect_indexra(x2o,'Sw_Hs')
        index_x2o_Sw_Fp = mct_avect_indexra(x2o,'Sw_Fp')
        index_x2o_Sw_Dp = mct_avect_indexra(x2o,'Sw_Dp')
+       index_x2o_Sw_Z0 = mct_avect_indexra(x2o,'Sw_Z0')
+       index_x2o_Sw_Ustar = mct_avect_indexra(x2o,'Sw_Ustar')
        index_x2o_Sw_Charn = mct_avect_indexra(x2o,'Sw_Charn')
        index_x2o_Faww_Tawx = mct_avect_indexra(x2o,'Faww_Tawx')
        index_x2o_Faww_Tawy = mct_avect_indexra(x2o,'Faww_Tawy')
