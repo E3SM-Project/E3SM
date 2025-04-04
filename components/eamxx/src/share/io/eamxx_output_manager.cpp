@@ -95,9 +95,9 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
       if (pg2_grid_in_io_streams) {
         const auto& grid_pl = fields_pl.sublist(*it);
         bool reset_ncol_naming = false;
-        if (*it == "Physics GLL") reset_ncol_naming = true;
+        if (*it == "Physics gll") reset_ncol_naming = true;
         if (grid_pl.isParameter("IO Grid Name")) {
-          if (grid_pl.get<std::string>("IO Grid Name") == "Physics GLL") {
+          if (grid_pl.get<std::string>("IO Grid Name") == "Physics gll") {
             reset_ncol_naming = true;
           }
         }
@@ -157,7 +157,7 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
 
       // See comment above for ncol naming with 2+ grids
       auto grid_nonconst = grid.second->clone(grid.first,true);
-      if (grid.first == "Physics GLL" && pg2_grid_in_io_streams) {
+      if (grid.first == "Physics gll" && pg2_grid_in_io_streams) {
         grid_nonconst->reset_field_tag_name(ShortFieldTagsNames::COL,"ncol_d");
       }
 

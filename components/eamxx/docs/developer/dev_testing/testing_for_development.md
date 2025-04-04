@@ -214,8 +214,8 @@ Defining the test behavior and pass/fail criteria requires 3 files:
     grids_manager:
       type: Mesh Free
       geo_data_source: IC_FILE
-      grids_names: [Physics GLL]
-      Physics GLL:
+      grids_names: [Physics gll]
+      Physics gll:
         type: point_grid
         aliases: [Physics]
         number_of_global_columns:   218

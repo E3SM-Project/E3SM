@@ -587,7 +587,7 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
     ...         <enable_postcondition_checks type='logical'>true</enable_postcondition_checks>
     ...       </atm_proc_base>
     ...       <physics_proc_base inherit='atm_proc_base'>
-    ...         <Grid>Physics GLL</Grid>
+    ...         <Grid>Physics gll</Grid>
     ...         <Grid grid='ne4ne4'>Physics PG2</Grid>
     ...       </physics_proc_base>
     ...       <atm_proc_group inherit="atm_proc_base">
@@ -1027,7 +1027,7 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
     scream_input = yaml.load(open(scream_input_file,"r"),Loader=loader)
 
     # Determine the physics grid type for use in CIME-var substitution.
-    pgt = 'GLL'
+    pgt = 'gll'
     atm_grid = case.get_value('ATM_GRID')
     if '.pg' in atm_grid:
         pgt = 'PG' + atm_grid[-1]

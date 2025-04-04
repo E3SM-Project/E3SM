@@ -70,11 +70,11 @@ HommeGridsManager::do_create_remapper (const grid_ptr_type from_grid,
 
   const bool p2d = to=="Dynamics";
 
-  if (from=="Physics GLL" || to=="Physics GLL") {
+  if (from=="Physics gll" || to=="Physics gll") {
     using PDR = PhysicsDynamicsRemapper;
 
     auto dyn_grid = get_grid("Dynamics");
-    auto phys_grid = get_grid("Physics GLL");
+    auto phys_grid = get_grid("Physics gll");
 
     auto pd_remapper = std::make_shared<PDR>(phys_grid,dyn_grid);
     if (p2d) {
@@ -83,7 +83,7 @@ HommeGridsManager::do_create_remapper (const grid_ptr_type from_grid,
       return std::make_shared<InverseRemapper>(pd_remapper);
     }
   } else {
-    ekat::error::runtime_abort("Error! P-D remapping only implemented for 'Physics GLL' phys grid.\n");
+    ekat::error::runtime_abort("Error! P-D remapping only implemented for 'Physics gll' phys grid.\n");
   }
   return nullptr;
 }
@@ -97,7 +97,7 @@ build_grids ()
 
   // Get the physics grid code
   std::vector<int> pg_codes {
-    m_pg_codes["GLL"]["None"],  // We always need this to read/write dyn grid stuff
+    m_pg_codes["gll"]["None"],  // We always need this to read/write dyn grid stuff
     m_pg_codes[pg_type][pg_rebalance]
   };
   // In case the two pg codes are the same...
@@ -116,9 +116,9 @@ build_grids ()
   build_dynamics_grid ();
 
   // Also the GLL grid with no rebalance is needed for sure
-  build_physics_grid("GLL","None");
+  build_physics_grid("gll","None");
 
-  // If (pg type,rebalance) is (GLL,None), this will be a no op
+  // If (pg type,rebalance) is (gll,None), this will be a no op
   build_physics_grid(pg_type,pg_rebalance);
 
   // Make "Physics" be an alias to whatever the pair (pg_type,rebalance) refers to
@@ -390,8 +390,8 @@ build_pg_codes () {
   //    - 0: GLL grid
   //    - N: FV phys grid, with NxN points
 
-  m_pg_codes["GLL"]["None"] =  0;
-  m_pg_codes["GLL"]["Twin"] = 10;
+  m_pg_codes["gll"]["None"] =  0;
+  m_pg_codes["gll"]["Twin"] = 10;
   m_pg_codes["PG2"]["None"] =  2;
   m_pg_codes["PG2"]["Twin"] = 12;
 }

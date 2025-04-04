@@ -12,8 +12,8 @@ atmosphere_processes:
 
 grids_manager:
   type: Mesh Free
-  grids_names: [Physics GLL]
-  Physics GLL:
+  grids_names: [Physics gll]
+  Physics gll:
     type: point_grid
     aliases: [Physics]
     number_of_global_columns:   218

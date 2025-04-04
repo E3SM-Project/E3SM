@@ -4,7 +4,7 @@ filename_prefix: homme_standalone_output
 averaging_type: Instant
 Max Snapshots Per File: 1
 Fields:
-  Physics GLL:
+  Physics gll:
     Field Names:
       - T_mid
       - qv
