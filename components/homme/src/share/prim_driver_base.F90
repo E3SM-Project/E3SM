@@ -1128,19 +1128,15 @@ contains
 
        do ie=nets,nete
        call compute_mass(elem(ie),tl%n0,n0_qdp,2)
-
-print *, 'compare mass before and mass after', ie
-print *, 'before - (after + precip)', elem(ie)%accum%mass_water_before_physics(1,1) -&
-elem(ie)%accum%mass_water_after_physics(1,1) - elem(ie)%accum%precip_mass(1,1)
-
+!print *, 'compare mass before and mass after', ie
+!print *, 'before - (after + precip)', elem(ie)%accum%mass_water_before_physics(1,1) -&
+!elem(ie)%accum%mass_water_after_physics(1,1) - elem(ie)%accum%precip_mass(1,1)
 
 !print *, 'before, after, precip', elem(ie)%accum%mass_water_before_physics(1,1), &
 !elem(ie)%accum%mass_water_after_physics(1,1), elem(ie)%accum%precip_mass(1,1)
 !print *, 'after-before, precip', elem(ie)%accum%mass_water_after_physics(1,1)- &
 !elem(ie)%accum%mass_water_before_physics(1,1), elem(ie)%accum%precip_mass(1,1)
        enddo
-
-stop
 
        ! E(1) Energy after CAM forcing
        if (compute_diagnostics) call run_diagnostics(elem,hvcoord,tl,1,.true.,nets,nete)
@@ -1203,6 +1199,7 @@ stop
     elseif(prim_step_type == 2) then
       ! This time stepping routine permits the vertical remap time
       ! step to be shorter than the tracer transport time step.
+!do not run p3 with SL, diagnostics won't work, dtime in p3 may be computed in a wrong way
 stop
       call prim_step_flexible(hybrid, elem, nets, nete, dt, tl, hvcoord, compute_diagnostics)
 
@@ -1625,21 +1622,6 @@ stop
   real (kind=real_kind)  :: rstarn1(np,np,nlev)
   real (kind=real_kind)  :: exner(np,np,nlev)
   real (kind=real_kind)  :: dpnh_dp_i(np,np,nlevp)
-
-  real (kind=real_kind)  :: ff(np,np)
-  real (kind=real_kind)  :: ff1(np,np)
-  real (kind=real_kind)  :: ff2(np,np)
-  real (kind=real_kind)  :: ff4(np,np)
-  real (kind=real_kind)  :: ff6(np,np)
-  real (kind=real_kind)  :: fm1(np,np)
-  real (kind=real_kind)  :: fm2(np,np)
-  real (kind=real_kind)  :: fm4(np,np)
-  real (kind=real_kind)  :: fm6(np,np)
-  real (kind=real_kind)  :: fma1(np,np)
-  real (kind=real_kind)  :: fma2(np,np)
-  real (kind=real_kind)  :: fma4(np,np)
-  real (kind=real_kind)  :: fma6(np,np)
-
 #endif
 
 #ifdef HOMMEXX_BFB_TESTING
@@ -1668,7 +1650,7 @@ stop
 #endif
 !for p3 work only
 if(adjust_ps)then 
-print *, 'adjust ps = true, STOP'
+print *, 'adjust ps is set to true in p3 runs, STOP'
 stop
 endif
 
@@ -1702,45 +1684,12 @@ endif
    else ! end of adjustment
 
 ! STANDALONE HOMME
-!print *, 'HEY'; stop
-#if 0
-!print sum of relevant mass here
-ff = 0
-do j=1,np; do i=1,np
-ff(i,j) = sum( dt * ( elem%derived%FQ(i,j,:,1) + elem%derived%FQ(i,j,:,2) + elem%derived%FQ(i,j,:,4) +&
-elem%derived%FQ(i,j,:,6) )  )
-ff1(i,j) = sum(  dt * ( elem%derived%FQ(i,j,:,1) ))
-ff2(i,j) = sum(  dt * ( elem%derived%FQ(i,j,:,2) ))
-ff4(i,j) = sum(  dt * ( elem%derived%FQ(i,j,:,4) ))
-ff6(i,j) = sum(  dt * ( elem%derived%FQ(i,j,:,6) ))
-
-fm1(i,j) = sum(elem%state%Qdp(i,j,:,1,np1_qdp) )
-fm2(i,j) = sum(elem%state%Qdp(i,j,:,2,np1_qdp) )
-fm4(i,j) = sum(elem%state%Qdp(i,j,:,4,np1_qdp) )
-fm6(i,j) = sum(elem%state%Qdp(i,j,:,6,np1_qdp) )
-
-enddo; enddo
-print *, 'FQ ttoal sum',ff(1,1)
-print *, 'FQ1 ttoal sum',ff1(1,1)
-print *, 'FQ2 ttoal sum',ff2(1,1)
-print *, 'FQ4 ttoal sum',ff4(1,1)
-print *, 'FQ6 ttoal sum',ff6(1,1)
-
-print *, 'Qdp1 ttoal sum',fm1(1,1)
-print *, 'Qdp2 ttoal sum',fm2(1,1)
-print *, 'Qdp4 ttoal sum',fm4(1,1)
-print *, 'Qdp6 ttoal sum',fm6(1,1)
-#endif
 
       ! apply forcing to Qdp
       do q=1,qsize
          do k=1,nlev
             do j=1,np
                do i=1,np
-
-!print *, 'dt in cam', dt
-!stop
-
                   fq = dt*elem%derived%FQ(i,j,k,q)
                   if (elem%state%Qdp(i,j,k,q,np1_qdp) + fq < 0 .and. fq<0) then
                      if (elem%state%Qdp(i,j,k,q,np1_qdp) < 0 ) then
@@ -1757,27 +1706,6 @@ print *, 'Qdp6 ttoal sum',fm6(1,1)
             enddo
          enddo
       enddo
-#if 0
-do j=1,np; do i=1,np
-
-fma1(i,j) = sum( elem%state%Qdp(i,j,:,1,np1_qdp))
-fma2(i,j) = sum( elem%state%Qdp(i,j,:,2,np1_qdp))
-fma4(i,j) = sum(elem%state%Qdp(i,j,:,4,np1_qdp))
-fma6(i,j) = sum(elem%state%Qdp(i,j,:,6,np1_qdp))
-
-enddo; enddo
-print *, 'Qdp1 b, a ',fm1(1,1),fma1(1,1)
-print *, 'Qdp1 diff, exp diff ',fma1(1,1)-fm1(1,1), ff1(1,1)
-print *, 'Qdp2 b, a ',fm2(1,1),fma2(1,1)
-print *, 'Qdp2 diff, exp diff ',fma2(1,1)-fm2(1,1), ff2(1,1)
-print *, 'Qdp4 b, a ',fm4(1,1),fma4(1,1)
-print *, 'Qdp4 diff, exp diff ',fma4(1,1)-fm4(1,1), ff4(1,1)
-print *, 'Qdp6 b, a ',fm6(1,1),fma6(1,1)
-print *, 'Qdp6 diff, exp diff ',fma6(1,1)-fm6(1,1), ff6(1,1)
-
-stop
-#endif
-
    endif ! if adjustment
 
 

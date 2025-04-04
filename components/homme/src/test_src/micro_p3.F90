@@ -1508,11 +1508,9 @@ end function bfb_expm1
          call check_values(qv(:),tmparr1(:),kts,kte,it,debug_ABORT,100,col_location(:))
       endif
 
-
-
-       call simple_sat_col(kts, kte, qv, qc, nc, th_atm, pres, inv_exner)
-
-
+      !saturation adjustment
+      !what if we call it after each p3 part????
+      call simple_sat_col(kts, kte, qv, qc, nc, th_atm, pres, inv_exner)
 
        call p3_main_part1(kts, kte, kbot, ktop, kdir, do_predict_nc, do_prescribed_CCN, dt, &
             pres(:), dpres(:), dz(:), nc_nuceat_tend(:), nccn_prescribed(:), exner(:), inv_exner(:), &
@@ -4655,12 +4653,40 @@ end subroutine CNT_couple
 
 
 
-
-
-
-
+!a copy of PB code, just with 1 column and rhow replaced
 subroutine simple_sat_col(kts, kte, qv, qc, qcn, theta, p, exner)
+  ! Adjusts air parcels in a column to account for evaporation / condensation of 
+  ! water vapor from / into cloud liquid.  In Eam/Eamxx, this is handled by
+  ! macrophysics.  To use p3 with idealized tests, we need a method
+  ! to compute phase transitions between water vapor and cloud liquid.
+  !
+  ! On input, saturation is defined as qv > qsat.   For saturated parcels, excess
+  ! water vapor is converted to cloud liquid, and potential temperature is updated 
+  ! to account for latent heat release.  For unsaturated parcels, if cloud liquid is present
+  ! it evaporates and potential temperature is updated to account for latent heat uptake. 
+  !
+  ! SIMPLE APPROXIMATION: Note that on output, for a true pseudoadiabatic process, the parcel should be 
+  ! saturated, i.e., qv = qsat.   This "simple" subroutine does not satisfy this constraint. 
+  ! Saturation mixing ratio is temperature-dependent, and here is not updated following the 
+  ! adjustment of potential temperature for latent heat release/uptake.  
+  !
+  ! For future development: Klemp and Willhelmson 1978 and Soong and Ogura 1973 
+  ! define a 2-step process that conserves water mass and satisfies the qv = qsat output 
+  ! constraint by linearizing the saturation mixing ratio formula about the input state. 
+  ! Other techniques, such as iterative methods, could also be used.
+  !
+  ! SIMPLE APPROXIMATION : For new droplet formulation, we assume a constant droplet size
+  ! and determine number based on that size.  All new droplets will have this size; they
+  ! will not be representative of a more realistic droplet size distribution, and
+  ! do not account for aerosols.  The methods from P3's original implementation
+  ! (removed by Eam/Eamxx in favor of macrophysics) can be found in Morrison and Grabowski 2008.
+  !
+  ! TODO: new droplet volume should be a namelist parameter
 
+
+
+
+!!!! WRONG WRONG WRONG
 !!!!! wrong, grab consts from p3 mod
   use physical_constants,   only: latvap, latice, &
                                   rho_liquidH20, cpdry=>cp
