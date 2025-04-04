@@ -14,7 +14,7 @@ module elm_initializeMod
   use elm_varctl       , only : use_lch4, use_cn, use_voc, use_c13, use_c14
   use elm_varctl       , only : use_fates, use_betr, use_fates_sp, use_fan, use_fates_luh
   use elm_varsur       , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, wt_glc_mec, topo_glc_mec,firrig,f_surf,f_grd
-  use elm_varsur       , only : fert_cft, fert_p_cft
+  use elm_varsur       , only : fert_cft, fert_p_cft, wt_polygon
   use elm_varsur       , only : wt_tunit, elv_tunit, slp_tunit,asp_tunit,num_tunit_per_grd
   use perf_mod         , only : t_startf, t_stopf
   !use readParamsMod    , only : readParameters
@@ -63,7 +63,7 @@ contains
     use elm_varpar                , only: update_pft_array_bounds
     use elm_varpar                , only: surfpft_lb, surfpft_ub
     use elm_varcon                , only: elm_varcon_init
-    use landunit_varcon           , only: landunit_varcon_init, max_lunit, istice_mec
+    use landunit_varcon           , only: landunit_varcon_init, max_lunit, istice_mec, max_polygon, max_non_poly_lunit
     use column_varcon             , only: col_itype_to_icemec_class
     use elm_varctl                , only: fsurdat, fatmlndfrc, flndtopo, fglcmask, noland, version
     use pftvarcon                 , only: pftconrd
@@ -87,7 +87,7 @@ contains
     use filterMod                 , only: allocFilters
     use reweightMod               , only: reweight_wrapup
     use topounit_varcon           , only: max_topounits, has_topounit, topounit_varcon_init
-    use elm_varctl                , only: use_top_solar_rad
+    use elm_varctl                , only: use_top_solar_rad, use_polygonal_tundra
     !
     ! !LOCAL VARIABLES:
     integer           :: ier                     ! error status
@@ -267,7 +267,11 @@ contains
 
     ! Allocate surface grid dynamic memory (just gridcell bounds dependent)
 
-    allocate (wt_lunit     (begg:endg,1:max_topounits, max_lunit           )) 
+    if (use_polygonal_tundra) then
+      allocate (wt_lunit     (begg:endg,1:max_topounits, max_lunit           ))
+    else
+      allocate (wt_lunit     (begg:endg,1:max_topounits, max_non_poly_lunit  ))
+    end if
     allocate (urban_valid  (begg:endg,1:max_topounits                      ))
     !allocate (wt_nat_patch (begg:endg,1:max_topounits, surfpft_lb:surfpft_ub ))
     !allocate (wt_cft       (begg:endg,1:max_topounits, cft_lb:cft_ub       ))
@@ -280,8 +284,8 @@ contains
        allocate (wt_glc_mec  (1,1,1))
        allocate (topo_glc_mec(1,1,1))
     endif
-    
-    allocate (wt_tunit  (begg:endg,1:max_topounits  )) 
+    allocate (wt_polygon (begg:endg,1:max_topounits, max_polygon))
+    allocate (wt_tunit  (begg:endg,1:max_topounits  ))
     allocate (elv_tunit (begg:endg,1:max_topounits  ))
     allocate (slp_tunit (begg:endg,1:max_topounits  ))
     allocate (asp_tunit (begg:endg,1:max_topounits  ))
@@ -431,6 +435,7 @@ contains
     !deallocate (wt_lunit, wt_cft, wt_glc_mec)
     deallocate (wt_cft, wt_glc_mec)    !wt_lunit not deallocated because it is being used in CanopyHydrologyMod.F90
     deallocate (wt_tunit, elv_tunit, slp_tunit, asp_tunit,num_tunit_per_grd)
+    deallocate (wt_polygon) ! RF - might be used elsewhere, not sure if we want to deallocate here.
     call t_stopf('elm_init1')
 
     ! initialize glc_topo
