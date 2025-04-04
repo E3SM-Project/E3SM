@@ -163,8 +163,8 @@ linterp (const Range& range,
 #ifndef NDEBUG
   if (xi[0] < x[0] or xi[ni-1] > x[n-1]) {
     if (caller)
-      printf("linterp: xi out of bounds: %s %1.15e %1.15e %1.15e %1.15e\n",
-             caller ? caller : "NONE", x[0], xi[0], xi[ni-1], x[n-1]);
+      Kokkos::printf("linterp: xi out of bounds: %s %1.15e %1.15e %1.15e %1.15e\n",
+                     caller ? caller : "NONE", x[0], xi[0], xi[ni-1], x[n-1]);
     assert(false);
   }
 #endif
