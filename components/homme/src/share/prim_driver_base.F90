@@ -32,6 +32,8 @@ module prim_driver_base
   use test_mod,         only: set_test_initial_conditions, compute_test_forcing
 #endif
 
+  use prim_state_mod,   only: compute_mass
+
   implicit none
 
   private
@@ -1110,6 +1112,11 @@ contains
     if (prim_step_type == 1) then
        call TimeLevel_Qdp(tl, dt_tracer_factor, n0_qdp, np1_qdp)
 
+!compute mass at level n0, 1=before, 2=after
+       do ie=nets,nete
+       call compute_mass(elem(ie),tl%n0,n0_qdp,1)
+       enddo
+
 #if !defined(CAM) && !defined(SCREAM)
        ! compute HOMME test case forcing
        ! by calling it here, it mimics eam forcings computations in standalone
@@ -1118,6 +1125,22 @@ contains
 #endif
 
        call applyCAMforcing_remap(elem,hvcoord,tl%n0,n0_qdp,dt_remap,nets,nete)
+
+       do ie=nets,nete
+       call compute_mass(elem(ie),tl%n0,n0_qdp,2)
+
+print *, 'compare mass before and mass after', ie
+print *, 'before - (after + precip)', elem(ie)%accum%mass_water_before_physics(1,1) -&
+elem(ie)%accum%mass_water_after_physics(1,1) - elem(ie)%accum%precip_mass(1,1)
+
+
+!print *, 'before, after, precip', elem(ie)%accum%mass_water_before_physics(1,1), &
+!elem(ie)%accum%mass_water_after_physics(1,1), elem(ie)%accum%precip_mass(1,1)
+!print *, 'after-before, precip', elem(ie)%accum%mass_water_after_physics(1,1)- &
+!elem(ie)%accum%mass_water_before_physics(1,1), elem(ie)%accum%precip_mass(1,1)
+       enddo
+
+stop
 
        ! E(1) Energy after CAM forcing
        if (compute_diagnostics) call run_diagnostics(elem,hvcoord,tl,1,.true.,nets,nete)
@@ -1180,7 +1203,9 @@ contains
     elseif(prim_step_type == 2) then
       ! This time stepping routine permits the vertical remap time
       ! step to be shorter than the tracer transport time step.
+stop
       call prim_step_flexible(hybrid, elem, nets, nete, dt, tl, hvcoord, compute_diagnostics)
+
     else
       call abortmp('prim_step_type is not set')
     end if ! independent_time_steps
@@ -1600,6 +1625,21 @@ contains
   real (kind=real_kind)  :: rstarn1(np,np,nlev)
   real (kind=real_kind)  :: exner(np,np,nlev)
   real (kind=real_kind)  :: dpnh_dp_i(np,np,nlevp)
+
+  real (kind=real_kind)  :: ff(np,np)
+  real (kind=real_kind)  :: ff1(np,np)
+  real (kind=real_kind)  :: ff2(np,np)
+  real (kind=real_kind)  :: ff4(np,np)
+  real (kind=real_kind)  :: ff6(np,np)
+  real (kind=real_kind)  :: fm1(np,np)
+  real (kind=real_kind)  :: fm2(np,np)
+  real (kind=real_kind)  :: fm4(np,np)
+  real (kind=real_kind)  :: fm6(np,np)
+  real (kind=real_kind)  :: fma1(np,np)
+  real (kind=real_kind)  :: fma2(np,np)
+  real (kind=real_kind)  :: fma4(np,np)
+  real (kind=real_kind)  :: fma6(np,np)
+
 #endif
 
 #ifdef HOMMEXX_BFB_TESTING
@@ -1609,8 +1649,6 @@ contains
   sum_fq = 0
 #endif
 
-!disabled so that all tendencies are added in new physics code
-!or state vars are reset there
 #if 1
 
   call t_startf("ApplyCAMForcing_tracers")
@@ -1622,12 +1660,17 @@ contains
 #ifdef SCREAM
      adjust_ps=.false.  ! Lagrangian case can support adjusting dp3d or ps
 #else
-     adjust_ps=.true.   ! Lagrangian case can support adjusting dp3d or ps
+     adjust_ps=.false.   ! Lagrangian case can support adjusting dp3d or ps
 #endif
   endif
 #else
   adjust_ps=.true.      ! preqx requires forcing to stay on reference levels
 #endif
+!for p3 work only
+if(adjust_ps)then 
+print *, 'adjust ps = true, STOP'
+stop
+endif
 
   dp=elem%state%dp3d(:,:,:,np1)
   dp_adj=dp
@@ -1654,48 +1697,50 @@ contains
    tn1=exner* elem%state%vtheta_dp(:,:,:,np1)*(Rgas/rstarn1) / dp
 #endif
 
-   if (adjustment) then 
+   if (.false.) then 
 
-      ! hard adjust Q from physics.  negativity check done in physics
-      do k=1,nlev
-         do j=1,np
-            do i=1,np
-               do q=1,qsize
-                  ! apply forcing to Qdp
-                  ! dyn_in%elem(ie)%state%Qdp(i,j,k,q,tl_fQdp) = &
-                  !        dyn_in%elem(ie)%state%Qdp(i,j,k,q,tl_fQdp) + fq 
-                  elem%state%Qdp(i,j,k,q,np1_qdp) = &
-                       dp(i,j,k)*elem%derived%FQ(i,j,k,q)
-                  
-                  if (q==1) then
-                     fq = dp(i,j,k)*( elem%derived%FQ(i,j,k,q) -&
-                          elem%state%Q(i,j,k,q))
-                     ! force ps to conserve mass:  
-#ifdef HOMMEXX_BFB_TESTING
-                     sum_fq(i,j) = sum_fq(i,j) + fq
-#else
-                     ps(i,j)=ps(i,j) + fq
-#endif
-                     dp_adj(i,j,k)=dp_adj(i,j,k) + fq   !  ps =  ps0+sum(dp(k))
-                  endif
-               enddo
-            end do
-         end do
-      end do
-#ifdef HOMMEXX_BFB_TESTING
-      do j=1,np
-        do i=1,np
-          ps(i,j) = ps(i,j) + sum_fq(i,j)
-        end do
-      end do
-#endif
    else ! end of adjustment
+
+! STANDALONE HOMME
+!print *, 'HEY'; stop
+#if 0
+!print sum of relevant mass here
+ff = 0
+do j=1,np; do i=1,np
+ff(i,j) = sum( dt * ( elem%derived%FQ(i,j,:,1) + elem%derived%FQ(i,j,:,2) + elem%derived%FQ(i,j,:,4) +&
+elem%derived%FQ(i,j,:,6) )  )
+ff1(i,j) = sum(  dt * ( elem%derived%FQ(i,j,:,1) ))
+ff2(i,j) = sum(  dt * ( elem%derived%FQ(i,j,:,2) ))
+ff4(i,j) = sum(  dt * ( elem%derived%FQ(i,j,:,4) ))
+ff6(i,j) = sum(  dt * ( elem%derived%FQ(i,j,:,6) ))
+
+fm1(i,j) = sum(elem%state%Qdp(i,j,:,1,np1_qdp) )
+fm2(i,j) = sum(elem%state%Qdp(i,j,:,2,np1_qdp) )
+fm4(i,j) = sum(elem%state%Qdp(i,j,:,4,np1_qdp) )
+fm6(i,j) = sum(elem%state%Qdp(i,j,:,6,np1_qdp) )
+
+enddo; enddo
+print *, 'FQ ttoal sum',ff(1,1)
+print *, 'FQ1 ttoal sum',ff1(1,1)
+print *, 'FQ2 ttoal sum',ff2(1,1)
+print *, 'FQ4 ttoal sum',ff4(1,1)
+print *, 'FQ6 ttoal sum',ff6(1,1)
+
+print *, 'Qdp1 ttoal sum',fm1(1,1)
+print *, 'Qdp2 ttoal sum',fm2(1,1)
+print *, 'Qdp4 ttoal sum',fm4(1,1)
+print *, 'Qdp6 ttoal sum',fm6(1,1)
+#endif
+
       ! apply forcing to Qdp
-      elem%derived%FQps(:,:)=0
       do q=1,qsize
          do k=1,nlev
             do j=1,np
                do i=1,np
+
+!print *, 'dt in cam', dt
+!stop
+
                   fq = dt*elem%derived%FQ(i,j,k,q)
                   if (elem%state%Qdp(i,j,k,q,np1_qdp) + fq < 0 .and. fq<0) then
                      if (elem%state%Qdp(i,j,k,q,np1_qdp) < 0 ) then
@@ -1706,28 +1751,38 @@ contains
                   endif
                   elem%state%Qdp(i,j,k,q,np1_qdp) = elem%state%Qdp(i,j,k,q,np1_qdp)+fq
                   if (q==1) then
-                     elem%derived%FQps(i,j)=elem%derived%FQps(i,j)+fq/dt
                      dp_adj(i,j,k)=dp_adj(i,j,k) + fq
                   endif
                enddo
             enddo
          enddo
       enddo
+#if 0
+do j=1,np; do i=1,np
 
-      ! to conserve dry mass in the precese of Q1 forcing:
-      ps(:,:) = ps(:,:) + dt*elem%derived%FQps(:,:)
+fma1(i,j) = sum( elem%state%Qdp(i,j,:,1,np1_qdp))
+fma2(i,j) = sum( elem%state%Qdp(i,j,:,2,np1_qdp))
+fma4(i,j) = sum(elem%state%Qdp(i,j,:,4,np1_qdp))
+fma6(i,j) = sum(elem%state%Qdp(i,j,:,6,np1_qdp))
+
+enddo; enddo
+print *, 'Qdp1 b, a ',fm1(1,1),fma1(1,1)
+print *, 'Qdp1 diff, exp diff ',fma1(1,1)-fm1(1,1), ff1(1,1)
+print *, 'Qdp2 b, a ',fm2(1,1),fma2(1,1)
+print *, 'Qdp2 diff, exp diff ',fma2(1,1)-fm2(1,1), ff2(1,1)
+print *, 'Qdp4 b, a ',fm4(1,1),fma4(1,1)
+print *, 'Qdp4 diff, exp diff ',fma4(1,1)-fm4(1,1), ff4(1,1)
+print *, 'Qdp6 b, a ',fm6(1,1),fma6(1,1)
+print *, 'Qdp6 diff, exp diff ',fma6(1,1)-fm6(1,1), ff6(1,1)
+
+stop
+#endif
+
    endif ! if adjustment
 
 
    if (use_moisture) then
       ! compute water vapor adjusted dp3d:
-      if (adjust_ps) then
-         ! compute new dp3d from adjusted ps()
-         do k=1,nlev
-            dp_adj(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                 ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps(:,:)
-         enddo
-      endif
       elem%state%dp3d(:,:,:,np1)=dp_adj(:,:,:)
    endif
 
@@ -1740,15 +1795,8 @@ contains
 #ifdef MODEL_THETA_L
    if (use_moisture) then
       ! compute updated pnh and exner
-      if (adjust_ps) then
-         ! recompute hydrostatic pressure from ps
-         do k=1,nlev  
-            phydro(:,:,k)=hvcoord%ps0*hvcoord%hyam(k) + ps(:,:)*hvcoord%hybm(k)
-         enddo
-      else
          ! recompute hydrostatic pressure from dp3d
          call get_hydro_pressure(phydro,elem%state%dp3d(:,:,:,np1),hvcoord)
-      endif
       do k=1,nlev
          pnh(:,:,k)=phydro(:,:,k) + pprime(:,:,k)
 #ifdef HOMMEXX_BFB_TESTING

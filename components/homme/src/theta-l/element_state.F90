@@ -131,6 +131,11 @@ module element_state
     real (kind=real_kind) :: Qmass(np,np,qsize_d,diagtimes)                   ! Q mass at half time levels
     real (kind=real_kind) :: Q1mass(np,np,qsize_d)                    ! Q mass at full time levels
 
+    real (kind=real_kind) :: mass_water_before_physics(np,np)                    
+    real (kind=real_kind) :: mass_water_after_physics(np,np)  
+    real (kind=real_kind) :: mass_before_physics(np,np)
+    real (kind=real_kind) :: mass_after_physics(np,np)                  
+    real (kind=real_kind) :: precip_mass(np,np)                    
   end type elem_accum_t
 
 

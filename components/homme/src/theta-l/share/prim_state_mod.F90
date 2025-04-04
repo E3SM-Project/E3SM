@@ -39,6 +39,7 @@ private
   public :: prim_printstate_init
   public :: prim_energy_halftimes
   public :: prim_diag_scalars
+  public :: compute_mass
 
 contains
 !=======================================================================================================! 
@@ -938,9 +939,38 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
        enddo
     
 end subroutine prim_energy_halftimes
+
+
+!this routine will only work for P3 runs!
+!switch =1 , mass before, =2 mass_after
+subroutine compute_mass(elem, n0, nq, switch)
+    use kinds, only : real_kind
+    use dimensions_mod, only : np, np, nlev
+    use element_mod, only : element_t
+
+    integer, intent(in) :: n0, nq, switch
+    type (element_t)     , intent(inout) :: elem
+
+    integer :: k, ii, jj
+    real (kind=real_kind),dimension(np,np) :: mass
+
+    mass = 0.0
+    do k=1,nlev
+
+!From Hassan: total condensed water = qc + qr + qi
+        !mass = mass + elem%state%dp3d(:,:,k,n0) + elem%state%Qdp(:,:,k,1,nq) + &
+        mass = mass +  elem%state%Qdp(:,:,k,1,nq) + &
+        elem%state%Qdp(:,:,k,2,nq)+elem%state%Qdp(:,:,k,4,nq)+elem%state%Qdp(:,:,k,6,nq)
+        !elem%state%Qdp(:,:,k,2,nq)+elem%state%Qdp(:,:,k,4,nq)+elem%state%Qdp(:,:,k,6,nq)+elem%state%Qdp(:,:,k,7,nq)
+    enddo
+    if(switch == 1) elem%accum%mass_water_before_physics = mass
+    if(switch == 2) elem%accum%mass_water_after_physics = mass
+
+end subroutine compute_mass
+
     
 !=======================================================================================================! 
-  
+ 
 
 subroutine prim_diag_scalars(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 ! 

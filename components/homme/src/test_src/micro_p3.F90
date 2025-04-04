@@ -1508,6 +1508,12 @@ end function bfb_expm1
          call check_values(qv(:),tmparr1(:),kts,kte,it,debug_ABORT,100,col_location(:))
       endif
 
+
+
+       call simple_sat_col(kts, kte, qv, qc, nc, th_atm, pres, inv_exner)
+
+
+
        call p3_main_part1(kts, kte, kbot, ktop, kdir, do_predict_nc, do_prescribed_CCN, dt, &
             pres(:), dpres(:), dz(:), nc_nuceat_tend(:), nccn_prescribed(:), exner(:), inv_exner(:), &
             inv_cld_frac_l(:), inv_cld_frac_i(:), inv_cld_frac_r(:), latent_heat_vapor(:), latent_heat_sublim(:), latent_heat_fusion(:), &
@@ -4646,5 +4652,102 @@ end select
 
 return
 end subroutine CNT_couple
+
+
+
+
+
+
+
+subroutine simple_sat_col(kts, kte, qv, qc, qcn, theta, p, exner)
+
+!!!!! wrong, grab consts from p3 mod
+  use physical_constants,   only: latvap, latice, &
+                                  rho_liquidH20, cpdry=>cp
+
+  integer, intent(in) :: kts, kte
+
+  real(rl), dimension(kts:kte), intent(inout) :: qv ! specific humidity [kg water vapor / kg air]
+  real(rl), dimension(kts:kte), intent(inout) :: qc ! cloud liquid concentration [ kg liq. water / kg air]
+  real(rl), dimension(kts:kte), intent(inout) :: qcn ! cloud droplet number concentration [ # / kg air]
+  real(rl), dimension(kts:kte), intent(inout) :: theta ! potential temperature [K]
+  real(rl), dimension(kts:kte), intent(in) :: p ! pressure [Pa]
+  real(rl), dimension(kts:kte), intent(in) :: exner ! Exner function [1]
+  !
+  ! local variables
+  !
+  integer, parameter :: liquid_or_ice_switch = 0 ! required by qv_sat (0 -> liquid), otherwise unused
+  real(rl) :: qsat ! saturation mixing ratio for water vapor
+  real(rl) :: delta_qv ! specific humidity change amount [kg water / kg air]
+  real(rl) :: delta_qcn ! cloud liquid number change amount [# / kg air]
+  real(rl) :: delta_theta ! potential temperature change amount [K]
+  real(rl) :: gamma ! coefficient for latent heat computation, gamma = Lvap / (Cp * exner)
+  real(rl) :: T ! temperature [K]
+  logical :: is_saturated
+  integer :: kk
+  real(rl), parameter :: new_droplet_volume = 4.2e-6_rl ! volume of a newly formed droplet [micron^3]
+  real(rl), parameter :: cubic_micron_to_cubic_meter = 1e18_rl ! multiplier to convert from cubic micron to cubic meters
+
+  do kk=kts,kte
+      T = theta(kk) * exner(kk)
+      gamma = latvap / (cpdry * exner(kk))
+      qsat = qv_sat(T, p(kk), liquid_or_ice_switch)
+      is_saturated = (qv(kk) > qsat)
+      delta_qv = qv(kk) - qsat
+      if (is_saturated) then
+        ! delta_qv is positive
+        delta_qcn = delta_qv / rho_liquidH20 * cubic_micron_to_cubic_meter / new_droplet_volume
+        delta_theta = gamma * delta_qv
+
+        qv(kk) = qv(kk) - delta_qv
+        qc(kk) = qc(kk) + delta_qv
+        qcn(kk) = qcn(kk) + delta_qcn
+        theta(kk) = theta(kk) + delta_theta
+      else
+        ! delta_qv is <= zero; multiply by -1 to work with positive changes
+        delta_qv = -delta_qv
+        if (qc(kk) > 0) then
+          if (qc(kk) < delta_qv) then
+            ! all cloud liquid evaporates, parcel is still unsaturated
+            delta_qv = qc(kk)
+            delta_qcn = qcn(kk)
+          else
+            ! parcel becomes saturated, cloud persists
+            ! define the evaporated number amount to be proportional to the evaporated mass
+            delta_qcn = delta_qv / qc(kk) * qcn(kk)
+          endif
+
+          delta_theta = gamma * delta_qv
+
+          qv(kk) = qv(kk) + delta_qv
+          qcn(kk) = qcn(kk) - delta_qcn
+          qc(kk) = qc(kk) - delta_qv
+          theta(kk) = theta(kk) - delta_theta
+        else
+          ! there wasn't a cloud before, and there still isn't one.
+          qc(kk) = 0
+          qcn(kk) = 0
+        endif
+      endif ! is_saturated
+   enddo ! kk;
+end subroutine simple_sat_col
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 end module micro_p3

@@ -73,6 +73,7 @@ module physical_constants
   real (kind=real_kind), public, parameter :: Cpd_on_Cpv   = Cp/Cpwater_vapor
   real (kind=real_kind), public, parameter :: rrearth0     = 1.0_real_kind/rearth0
   real (kind=real_kind), public            :: rrearth      = rrearth0
+
   real (kind=real_kind), public            :: rhow         = 1000.0D0
 
   real (kind=real_kind), public            :: cvdry        = cp - rgas
