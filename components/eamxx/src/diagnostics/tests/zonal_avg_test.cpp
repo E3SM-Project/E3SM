@@ -69,19 +69,19 @@ TEST_CASE("zonal_avg") {
   // Input (randomized) qc
   FieldLayout scalar1d_layout{{COL}, {ngcols}};
   FieldLayout scalar2d_layout{{COL, LEV}, {ngcols, nlevs}};
-//  FieldLayout scalar3d_layout{{COL, CMP, LEV}, {ngcols, dim3, nlevs}};
+  FieldLayout scalar3d_layout{{COL, CMP, LEV}, {ngcols, dim3, nlevs}};
 
   FieldIdentifier qc1_id("qc", scalar1d_layout, kg / kg, grid->name());
   FieldIdentifier qc2_fid("qc", scalar2d_layout, kg / kg, grid->name());
-//  FieldIdentifier qc3_fid("qc", scalar3d_layout, kg / kg, grid->name());
+  FieldIdentifier qc3_fid("qc", scalar3d_layout, kg / kg, grid->name());
 
   Field qc1(qc1_id);
   Field qc2(qc2_fid);
-//  Field qc3(qc3_fid);
+  Field qc3(qc3_fid);
 
   qc1.allocate_view();
   qc2.allocate_view();
-//  qc3.allocate_view();
+  qc3.allocate_view();
 
   // Construct random number generator stuff
   using RPDF = std::uniform_real_distribution<Real>;
@@ -100,10 +100,10 @@ TEST_CASE("zonal_avg") {
   // Set time for qc and randomize its values
   qc1.get_header().get_tracking().update_time_stamp(t0);
   qc2.get_header().get_tracking().update_time_stamp(t0);
-//  qc3.get_header().get_tracking().update_time_stamp(t0);
+  qc3.get_header().get_tracking().update_time_stamp(t0);
   randomize(qc1, engine, pdf);
   randomize(qc2, engine, pdf);
-//  randomize(qc3, engine, pdf);
+  randomize(qc3, engine, pdf);
 
   // Create and set up the diagnostic
   params.set("grid_name", grid->name());
@@ -111,10 +111,10 @@ TEST_CASE("zonal_avg") {
   params.set<int>("num_lat_vals", nlats);
   auto diag1 = diag_factory.create("ZonalAvgDiag", comm, params);
   auto diag2 = diag_factory.create("ZonalAvgDiag", comm, params);
-//  auto diag3 = diag_factory.create("ZonalAvgDiag", comm, params);
+  auto diag3 = diag_factory.create("ZonalAvgDiag", comm, params);
   diag1->set_grids(gm);
   diag2->set_grids(gm);
-//  diag3->set_grids(gm);
+  diag3->set_grids(gm);
 
   // Test the zonal average of qc1
   diag1->set_required_field(qc1);
@@ -187,21 +187,28 @@ TEST_CASE("zonal_avg") {
       REQUIRE_THAT(diag2_v_host(nlat,i), Catch::Matchers::WithinRel(zavg2, tol));
     }
   }
-/*
+
   // Try a random case with qc3
-  auto qc3_v = qc3.get_view<Real ***>();
-  FieldIdentifier diag3_manual_fid("qc_zonal_avg_manual",
-                                   scalar3d_layout.clone().strip_dim(COL),
-                                   kg / kg, grid->name());
-  Field diag3_manual(diag3_manual_fid);
-  diag3_manual.allocate_view();
-  horiz_contraction<Real>(diag3_manual, qc3, area, &comm);
+  FieldLayout diag3m_layout({COL, CMP, LEV}, {nlats, dim3, nlevs});
+  FieldIdentifier diag3m_id("qc_zonal_avg_manual", diag3m_layout, kg / kg,
+    grid->name());
+  Field diag3m_field(diag3m_id);
+  diag3m_field.allocate_view();
+  auto qc3_view = qc3.get_view<Real ***>();
+  auto diag3m_view = diag3m_field.get_view<Real ***>();
+  for (int i=0; i < ngcols; i++) {
+    const int nlat = i % nlats;
+    for (int j=0; j < dim3; j++) {
+      for (int k=0; k < nlevs; k++) {
+        diag3m_view(nlat,j,k) += area_view(i) / zonal_areas[nlat] * qc3_view(i,j,k);
+      }
+    }
+  }
   diag3->set_required_field(qc3);
   diag3->initialize(t0, RunType::Initial);
   diag3->compute_diagnostic();
-  auto diag3_f = diag3->get_diagnostic();
-  REQUIRE(views_are_equal(diag3_f, diag3_manual));
-*/
+  auto diag3_field = diag3->get_diagnostic();
+  REQUIRE(views_are_equal(diag3_field, diag3m_field));
 }
 
 }  // namespace scream
