@@ -2842,18 +2842,21 @@ contains
    integer                                        :: nc
 
    associate(&
-        totecosysc     => col_cs%totecosysc)
-
+        totecosysc     => col_cs%totecosysc, &
+        totlitc        => col_cs%totlitc, &
+        totsomc        => col_cs%totsomc, &
+        totprodc       => col_cs%totprodc)
+ 
     nc = bounds_clump%clump_index
     ! Loop over columns
     do icc = 1,fc
        c = filterc(icc)
        s = this%f2hmap(nc)%hsites(c)
 
-       totecosysc(c) = totecosysc(c) &
-            + (this%fates(nc)%bc_out(s)%veg_c_si &
-            + this%fates(nc)%bc_out(s)%litter_cwd_c_si &
-            + this%fates(nc)%bc_out(s)%seed_c_si) * g_per_kg
+       totecosysc(c) = totsomc(c) + totlitc(c) + totprodc(c) + &
+            this%fates(nc)%bc_out(s)%veg_c_si + &
+            this%fates(nc)%bc_out(s)%litter_cwd_c_si + &
+            this%fates(nc)%bc_out(s)%seed_c_si
  
     end do
 
