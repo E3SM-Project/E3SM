@@ -51,7 +51,7 @@ atmosphere_processes:
     schedule_type: sequential
     type: group
     mac_mic:
-      atm_procs_list: [shoc,CldFraction,mam4_aci,p3]
+      atm_procs_list: [shoc,cld_fraction,mam4_aci,p3]
       schedule_type: sequential
       type: group
       number_of_subcycles: ${MAC_MIC_SUBCYCLES}
@@ -106,7 +106,7 @@ atmosphere_processes:
       fractional_land_use_file: ${SCREAM_DATA_DIR}/mam4xx/drydep/ne2np4/atmsrf_ne2np4_c20241017.nc
 
 grids_manager:
-  type: Homme
+  type: homme
   physics_grid_type: gll
   dynamics_namelist_file_name: namelist.nl
   vertical_coordinate_filename: IC_FILE

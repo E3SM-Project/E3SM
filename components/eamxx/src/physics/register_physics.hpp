@@ -56,7 +56,7 @@ inline void register_physics () {
   proc_factory.register_product("SHOC",&create_atmosphere_process<SHOCMacrophysics>);
 #endif
 #ifdef EAMXX_HAS_CLD_FRACTION
-  proc_factory.register_product("CldFraction",&create_atmosphere_process<CldFraction>);
+  proc_factory.register_product("cld_fraction",&create_atmosphere_process<CldFraction>);
 #endif
 #ifdef EAMXX_HAS_RRTMGP
   proc_factory.register_product("RRTMGP",&create_atmosphere_process<RRTMGPRadiation>);

@@ -19,7 +19,7 @@ atmosphere_processes:
     type: group
     schedule_type: sequential
     mac_aero_mic:
-      atm_procs_list: [shoc,CldFraction,p3]
+      atm_procs_list: [shoc,cld_fraction,p3]
       type: group
       schedule_type: sequential
       number_of_subcycles: 1
@@ -48,7 +48,7 @@ atmosphere_processes:
       rrtmgp_cloud_optics_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-lw.nc
 
 grids_manager:
-  type: Homme
+  type: homme
   physics_grid_type: gll
   dynamics_namelist_file_name: namelist.nl
   vertical_coordinate_filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}

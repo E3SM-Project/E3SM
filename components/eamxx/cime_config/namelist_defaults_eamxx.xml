@@ -278,7 +278,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <fractional_land_use_file hgrid="ne4np4.pg2" type="file" doc="File containing Fractional land use data for drydep">${DIN_LOC_ROOT}/atm/scream/mam4xx/drydep/ne4pg2/atmsrf_ne4pg2_c20241017.nc</fractional_land_use_file>
 
     <!-- Mapping Files for finer resolutions -->
-    <drydep_remap_file type="file" doc="File containing mapping data from the grid of frac land use files to the model grid. Unused if the grid is the same."/>
+    <drydep_remap_file type="file" doc="File containing mapping data from the grid of frac land use files to the model grid. Unused if the grid is the same.">none</drydep_remap_file>
     <drydep_remap_file hgrid="ne120np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne120pg2_20231201.nc</drydep_remap_file>
     <drydep_remap_file hgrid="ne256np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne256pg2_20231201.nc</drydep_remap_file>
     <drydep_remap_file hgrid="ne512np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne512pg2_20231201.nc</drydep_remap_file>
@@ -341,7 +341,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <mam4_soag_elevated_emiss_file_name hgrid="ne4np4.pg2" type="file" doc="elevated emissions for soag">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_soag_elev_1x1_2010_clim_ne4pg2_c20241008.nc</mam4_soag_elevated_emiss_file_name>
 
       <!-- Mapping Files for finer resolutions -->
-      <aero_microphys_remap_file type="file" doc="File containing mapping data from the grid of frac land use files to the model grid. Unused if the grid is the same."/>
+      <aero_microphys_remap_file type="file" doc="File containing mapping data from the grid of frac land use files to the model grid. Unused if the grid is the same.">none</aero_microphys_remap_file>
       <aero_microphys_remap_file hgrid="ne120np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne120pg2_20231201.nc</aero_microphys_remap_file>
       <aero_microphys_remap_file hgrid="ne256np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne256pg2_20231201.nc</aero_microphys_remap_file>
       <aero_microphys_remap_file hgrid="ne512np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne512pg2_20231201.nc</aero_microphys_remap_file>
@@ -399,7 +399,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <marine_organics_file hgrid="ne4np4.pg2" type="file" doc="File containing marine organics emissions">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/monthly_macromolecules_0.1deg_bilinear_year01_merge_ne4pg2_c20241030.nc</marine_organics_file>
 
       <!-- Mapping Files for finer resolutions -->
-      <srf_remap_file type="file" doc="File containing mapping data from the grid of emission files to the model grid. Unused if the grid is the same."/>
+      <srf_remap_file type="file" doc="File containing mapping data from the grid of emission files to the model grid. Unused if the grid is the same.">none</srf_remap_file>
       <srf_remap_file hgrid="ne120np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne120pg2_20231201.nc</srf_remap_file>
       <srf_remap_file hgrid="ne256np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne256pg2_20231201.nc</srf_remap_file>
       <srf_remap_file hgrid="ne512np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne512pg2_20231201.nc</srf_remap_file>
@@ -415,7 +415,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <nudging_fields type="array(string)" doc="List of fields to be nudged.  Note, syntax of 'A:B' represents nudging field A with data from field B in files, syntax of 'A' assumes that nudging file has the same variables name as EAMxx"/>
       <nudging_timescale type="integer" doc="Timescale to apply nudging tendencies, 0: full replacement, >0: actual timescale">0</nudging_timescale>
       <use_nudging_weights type="logical" doc="Flag for nudging weights option">false</use_nudging_weights>
-      <nudging_weights_file type="string" doc="weights that relax the nudging fields update"/>
+      <nudging_weights_file type="string" doc="weights that relax the nudging fields update">none</nudging_weights_file>
       <skip_vert_interpolation type="logical" doc="Flag for skipping vertical interpolation">false</skip_vert_interpolation>
       <source_pressure_type type="string"
 	                    valid_values="TIME_DEPENDENT_3D_PROFILE,STATIC_1D_VERTICAL_PROFILE"
@@ -423,7 +423,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     TIME_DEPENDENT_3D_PROFILE: The dataset contains a time-varying pressure profile, variable name 'p_mid' with dimensions (time,ncol,nlev).
     STATIC_1D_VERTICAL_PROFILE: The dataset uses a fixed in time single pressure profile, variable name 'p_lev' with dimension (nlev).">TIME_DEPENDENT_3D_PROFILE</source_pressure_type>
       <source_pressure_file type="string" doc="If STATIC_1D_VERTICAL_PROFILE, this is an optional arg to point to a file with the source pressure levels defined.
-    Default is to look for p_levs in the first nudging_filenames_patterns file"/>
+    Default is to look for p_levs in the first nudging_filenames_patterns file">none</source_pressure_file>
       <nudging_refine_remap_mapfile
         type="string"
         doc="Refine-remapping mapfile from the source nudging dataset to the physics grid"
@@ -461,16 +461,16 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <!-- Simple Prescribed Aerosols (SPA) -->
     <spa inherit="atm_proc_base">
-      <spa_remap_file type="file" doc="File containing mapping data from the grid of spa_data_file to the model grid. Unused if the grid is the same."/>
+      <spa_remap_file type="file" doc="File containing mapping data from the grid of spa_data_file to the model grid. Unused if the grid is the same.">none</spa_remap_file>
       <spa_remap_file hgrid="ne120np4">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_ne120np4_mono_20220502.nc</spa_remap_file>
       <spa_remap_file hgrid="ne120np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne120pg2_20231201.nc</spa_remap_file>
       <spa_remap_file hgrid="ne256np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne256pg2_20231201.nc</spa_remap_file>
       <spa_remap_file hgrid="ne512np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne512pg2_20231201.nc</spa_remap_file>
       <spa_remap_file hgrid="ne1024np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne1024pg2_20231201.nc</spa_remap_file>
       <spa_remap_file hgrid="ne0np4_CAx32v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_CAx32v1pg2_intbilin_se2fv_20230420.nc</spa_remap_file>
-      <spa_remap_file COMPSET=".*DP-EAMxx"/>
+      <spa_remap_file COMPSET=".*DP-EAMxx">none</spa_remap_file>
 
-      <spa_data_file type="file" doc="File containing aerosol data. Must be on same grid as the atm, or a coarser one"/>
+      <spa_data_file type="file" doc="File containing aerosol data. Must be on same grid as the atm, or a coarser one">none</spa_data_file>
       <spa_data_file hgrid="ne.*np4">${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne30_20220428.nc</spa_data_file>
       <spa_data_file hgrid="ne.*np4.pg2">${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne30pg2_20240111.nc</spa_data_file>
       <spa_data_file hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne4_20220428.nc</spa_data_file>
@@ -588,7 +588,7 @@ be lost if SCREAM_HACK_XML is not enabled.
 
   <!-- Grids manager specs -->
   <grids_manager>
-    <type>Homme</type>
+    <type>homme</type>
     <physics_grid_type>gll</physics_grid_type>
     <physics_grid_type hgrid=".*pg2">pg2</physics_grid_type>
     <physics_grid_rebalance>none</physics_grid_rebalance>

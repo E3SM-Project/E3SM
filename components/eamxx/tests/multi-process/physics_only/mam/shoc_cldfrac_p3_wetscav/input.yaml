@@ -12,7 +12,7 @@ atmosphere_processes:
   atm_procs_list: [mac_mic, mam4_wetscav]
   schedule_type: sequential
   mac_mic:
-    atm_procs_list: [shoc,CldFraction,p3]
+    atm_procs_list: [shoc,cld_fraction,p3]
     type: group
     schedule_type: sequential
     number_of_subcycles: ${MAC_MIC_SUBCYCLES}
