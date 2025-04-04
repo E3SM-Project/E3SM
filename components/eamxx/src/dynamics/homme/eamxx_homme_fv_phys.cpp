@@ -26,7 +26,7 @@ extern "C" void gfr_init_hxx();
 // name, otherwise N in pgN.
 static int get_phys_grid_fv_param (const std::string& grid_name) {
   if (grid_name.size() < 11) return -1;
-  if (grid_name.substr(0, 10) != "Physics PG") return -1;
+  if (grid_name.substr(0, 10) != "Physics pg") return -1;
   const auto param = grid_name.substr(10, std::string::npos);
   int N;
   std::istringstream ss(param);

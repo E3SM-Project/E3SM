@@ -1030,7 +1030,7 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
     pgt = 'gll'
     atm_grid = case.get_value('ATM_GRID')
     if '.pg' in atm_grid:
-        pgt = 'PG' + atm_grid[-1]
+        pgt = 'pg' + atm_grid[-1]
 
     for fn in out_files:
         # Get full name
