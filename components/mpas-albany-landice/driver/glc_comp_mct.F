@@ -1446,6 +1446,7 @@ contains
   subroutine glc_export_mct(g2x_g, errorCode)
 
    use li_mask
+   use li_time_average_coupled
 
    !-------------------------------------------------------------------
 
@@ -1463,12 +1464,15 @@ contains
    type (mpas_pool_type), pointer :: meshPool
    type (mpas_pool_type), pointer :: geometryPool
    type (mpas_pool_type), pointer :: thermalPool
+   type (mpas_pool_type), pointer :: timeAveragingPool
 
    integer, pointer :: nCellsSolve, nVertLevels
 
    real (kind=RKIND), dimension(:), pointer :: upperSurface
    real (kind=RKIND), dimension(:), pointer :: layerThicknessFractions
    real (kind=RKIND), dimension(:), pointer :: thickness
+   real (kind=RKIND), dimension(:), pointer :: avgBareIceAblation
+   real (kind=RKIND), dimension(:), pointer :: avgCalvingThickness
    real (kind=RKIND), dimension(:,:), pointer :: temperature
    integer, dimension(:), pointer :: cellMask
    !-------------------------------------------------------------------
@@ -1487,26 +1491,24 @@ contains
 
          ! Get variables from pools
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
-         call mpas_pool_get_subpool(block % structs, 'thermal',  thermalPool)
+         call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
+         call mpas_pool_get_subpool(block % structs, 'timeAveraging', timeAveragingPool)
 
          call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
          call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
          call mpas_pool_get_array(geometryPool, 'thickness', Thickness, timeLevel = 1)
          call mpas_pool_get_array(thermalPool, 'temperature', temperature)
+         ! Should the next field be the full field or just the subset that is "applied" to the ice covered extent?
+         call mpas_pool_get_array(timeAveragingPool, 'avgBareIceAblation', avgBareIceAblation) 
+         call mpas_pool_get_array(timeAveragingPool, 'avgCalvingThickness', avgCalvingThickness) 
 
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
          do i = 1, nCellsSolve
             n = n + 1
 
-            ! Recuperate runoff routing switch code (originally in glc_route_ice_runoff module in earlier code), 
-            ! and attach to ice calving flux once present...
-            !call route_ice_runoff(0.0_RKIND, & 
-            !                      rofi_to_ocn=Fogg_rofi, &
-            !                      rofi_to_ice=Figg_rofi)
-            g2x_g % rAttr(index_g2x_Fogg_rofi,n)=0.0!...and remove these placeholders
-            g2x_g % rAttr(index_g2x_Figg_rofi,n)=0.0 !...and remove these placeholders
-            g2x_g % rAttr(index_g2x_Fogg_rofl,n) = 0.0 !Attach to subglacial liquid flux once present
+            g2x_g % rAttr(index_g2x_Fogg_rofi,n)= avgCalvingThickness(i) 
+            g2x_g % rAttr(index_g2x_Fogg_rofl,n) = avgBareIceAblation(i) 
 
             g2x_g % rAttr(index_g2x_Sg_topo, n) = max(0.0, upperSurface(i)) !updated to avoid warning for values below sea level
             g2x_g % rAttr(index_g2x_Sg_tbot, n) = temperature(nVertlevels,i) - SHR_CONST_TKTRIP

@@ -47,6 +47,7 @@ list(APPEND RAW_SOURCES
   core_landice/shared/mpas_li_setup.F
   core_landice/shared/mpas_li_mesh.F
   core_landice/shared/mpas_li_config.F
+  core_landice/shared/mpas_li_time_average_coupled.F
 )
 
 # analysis members
