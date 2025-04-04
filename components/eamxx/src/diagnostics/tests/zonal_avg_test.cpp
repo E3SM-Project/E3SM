@@ -68,19 +68,19 @@ TEST_CASE("zonal_avg") {
 
   // Input (randomized) qc
   FieldLayout scalar1d_layout{{COL}, {ngcols}};
-//  FieldLayout scalar2d_layout{{COL, LEV}, {ngcols, nlevs}};
+  FieldLayout scalar2d_layout{{COL, LEV}, {ngcols, nlevs}};
 //  FieldLayout scalar3d_layout{{COL, CMP, LEV}, {ngcols, dim3, nlevs}};
 
   FieldIdentifier qc1_id("qc", scalar1d_layout, kg / kg, grid->name());
-//  FieldIdentifier qc2_fid("qc", scalar2d_layout, kg / kg, grid->name());
+  FieldIdentifier qc2_fid("qc", scalar2d_layout, kg / kg, grid->name());
 //  FieldIdentifier qc3_fid("qc", scalar3d_layout, kg / kg, grid->name());
 
   Field qc1(qc1_id);
-//  Field qc2(qc2_fid);
+  Field qc2(qc2_fid);
 //  Field qc3(qc3_fid);
 
   qc1.allocate_view();
-//  qc2.allocate_view();
+  qc2.allocate_view();
 //  qc3.allocate_view();
 
   // Construct random number generator stuff
@@ -99,10 +99,10 @@ TEST_CASE("zonal_avg") {
 
   // Set time for qc and randomize its values
   qc1.get_header().get_tracking().update_time_stamp(t0);
-//  qc2.get_header().get_tracking().update_time_stamp(t0);
+  qc2.get_header().get_tracking().update_time_stamp(t0);
 //  qc3.get_header().get_tracking().update_time_stamp(t0);
   randomize(qc1, engine, pdf);
-//  randomize(qc2, engine, pdf);
+  randomize(qc2, engine, pdf);
 //  randomize(qc3, engine, pdf);
 
   // Create and set up the diagnostic
@@ -110,10 +110,10 @@ TEST_CASE("zonal_avg") {
   params.set<std::string>("field_name", "qc");
   params.set<int>("num_lat_vals", nlats);
   auto diag1 = diag_factory.create("ZonalAvgDiag", comm, params);
-//  auto diag2 = diag_factory.create("ZonalAvgDiag", comm, params);
+  auto diag2 = diag_factory.create("ZonalAvgDiag", comm, params);
 //  auto diag3 = diag_factory.create("ZonalAvgDiag", comm, params);
   diag1->set_grids(gm);
-//  diag2->set_grids(gm);
+  diag2->set_grids(gm);
 //  diag3->set_grids(gm);
 
   // Test the zonal average of qc1
@@ -133,10 +133,8 @@ TEST_CASE("zonal_avg") {
   auto qc1_view = qc1.get_view<const Real *>();
   auto diag0_view = diag0_field.get_view<Real *>();
   for (int i=0; i < ngcols; i++) {
-    diag0_view(i % nlats) += area_view(i) * qc1_view(i);
-  }
-  for (int nlat=0; nlat < nlats; nlat++) {
-    diag0_view(nlat) /= zonal_areas[nlat];
+    const int nlat = i % nlats;
+    diag0_view(nlat) += area_view(i) / zonal_areas[nlat] * qc1_view(i);
   }
 
   // Compare
@@ -156,8 +154,8 @@ TEST_CASE("zonal_avg") {
 
   // Try other known cases
   // Set qc1_v to 1.0 to get zonal averages of 1.0/nlats
-  const Real zavg = sp(1.0);
-  qc1.deep_copy(zavg);
+  const Real zavg1 = sp(1.0);
+  qc1.deep_copy(zavg1);
   diag1->compute_diagnostic();
   auto diag1_v2_host = diag1_field.get_view<Real *, Host>();
   for (int ncol=0; ncol < ngcols; ncol++) {
@@ -170,24 +168,26 @@ TEST_CASE("zonal_avg") {
 
 
   for (int nlat=0; nlat < nlats; nlat++) {
-    REQUIRE_THAT(diag1_v2_host(nlat), Catch::Matchers::WithinRel(zavg, tol));
+    REQUIRE_THAT(diag1_v2_host(nlat), Catch::Matchers::WithinRel(zavg1, tol));
   }
-/*
+
   // other diags
   // Set qc2_v to 5.0 to get weighted average of 5.0
-  wavg = sp(5.0);
-  qc2.deep_copy(wavg);
+  const Real zavg2 = sp(5.0);
+  qc2.deep_copy(zavg2);
   diag2->set_required_field(qc2);
   diag2->initialize(t0, RunType::Initial);
   diag2->compute_diagnostic();
   auto diag2_f = diag2->get_diagnostic();
 
-  auto diag2_v_host = diag2_f.get_view<Real *, Host>();
+  auto diag2_v_host = diag2_f.get_view<Real **, Host>();
 
   for(int i = 0; i < nlevs; ++i) {
-    REQUIRE_THAT(diag2_v_host(i), Catch::Matchers::WithinRel(wavg, tol));
+    for (int nlat=0; nlat < nlats; nlat++) {
+      REQUIRE_THAT(diag2_v_host(nlat,i), Catch::Matchers::WithinRel(zavg2, tol));
+    }
   }
-
+/*
   // Try a random case with qc3
   auto qc3_v = qc3.get_view<Real ***>();
   FieldIdentifier diag3_manual_fid("qc_zonal_avg_manual",
