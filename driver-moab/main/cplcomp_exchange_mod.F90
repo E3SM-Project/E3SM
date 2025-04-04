@@ -60,6 +60,7 @@ module cplcomp_exchange_mod
   private :: seq_mctext_gsmapCreate
   private :: seq_mctext_avCreate
 
+  private :: copy_aream_from_area
   !--------------------------------------------------------------------------
   ! Public data
   !--------------------------------------------------------------------------
@@ -981,7 +982,34 @@ contains
 
   end function seq_mctext_gsmapIdentical
 
+subroutine  copy_aream_from_area(mbappid)
+
+      ! maybe we will move this from here
+      use iMOAB, only: iMOAB_GetDoubleTagStorage, iMOAB_SetDoubleTagStorage, iMOAB_GetMeshInfo
+
+      integer ,  intent(in) :: mbappid
+      character(CXX)           :: tagname
+      integer                  nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
+      real(r8),    allocatable    :: tagValues(:) ! used for setting aream tags for atm domain read case
+      integer                     :: arrSize ! for the size of tagValues
+      integer :: ierr, ent_type
+
+      ! copy aream from area
+      if (mbappid >= 0) then  ! coupler atm procs
+         ierr  = iMOAB_GetMeshInfo ( mbappid, nvert, nvise, nbl, nsurf, nvisBC )
+         arrSize  = nvise(1) ! cells
+         allocate(tagValues(arrSize))
+         tagname = 'area'//C_NULL_CHAR
+         ent_type = 1 ! cells
+         ierr  = iMOAB_GetDoubleTagStorage( mbappid, tagname, arrsize , ent_type, tagValues )
+         tagname = 'aream'//C_NULL_CHAR
+         ierr  = iMOAB_SetDoubleTagStorage( mbappid, tagname, arrsize , ent_type, tagValues )
+         deallocate(tagValues)
+      endif
+
+      return
   !=======================================================================
+ end subroutine copy_aream_from_area
 
    subroutine cplcomp_moab_Init(infodata,comp)
 
@@ -1028,6 +1056,8 @@ contains
                                                             ! and atm spectral on coupler
       character(CXX)           :: tagname
       integer                  nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
+      real(r8),    allocatable    :: tagValues(:) ! used for setting aream tags for atm domain read case
+      integer                     :: arrSize ! for the size of tagValues
       ! type(mct_list)           :: temp_list
       ! integer                  :: nfields, arrsize
       ! real(R8), allocatable, target :: values(:)
@@ -1203,7 +1233,8 @@ contains
             ! this is hard to digest :(
             tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
             call component_exch_moab(comp, mphaid, mbaxid, 0, tagname, context_exch='dom')
-           
+            ! copy aream from area in case atm_mesh
+            call copy_aream_from_area(mbaxid)
          endif ! coupler pes
 
 #ifdef MOABDEBUG
@@ -1785,15 +1816,9 @@ contains
 
          tagname = 'area:lon:lat:frac:mask'//C_NULL_CHAR
          call component_exch_moab(comp, mrofid, mbrxid, 0, tagname)
-
-         ! if (mrofid .ge. 0) then  ! we are on component rof  pes
-         !    context_id = id_join
-         !    ierr = iMOAB_FreeSenderBuffers(mrofid, context_id)
-         !    if (ierr .ne. 0) then
-         !    write(logunit,*) subname,' error in freeing buffers '
-         !    call shr_sys_abort(subname//' ERROR in freeing buffers ')
-         !    endif
-         ! endif
+         ! copy aream from area in all cases
+         ! initialize aream from area; it may have different values in the end, or reset again
+         call copy_aream_from_area(mbrxid)
 #ifdef MOABDEBUG
          outfile = 'recMeshRof.h5m'//C_NULL_CHAR
          wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
@@ -1890,8 +1915,11 @@ contains
     if (mbAPPid2 .ge. 0 ) then !  we are on receiving pes, for sure
       ! number_proj = number_proj+1 ! count the number of projections
       write(lnum,"(I0.2)") num_moab_exports
-      
-      outfile = comp%ntype//'_'//trim(dir)//'_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+      if (present(context_exch)) then
+         outfile = comp%ntype//'_'//trim(context_exch)//'_'//trim(dir)//'_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+      else
+         outfile = comp%ntype//'_'//trim(dir)//'_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+      endif
       wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
       ierr = iMOAB_WriteMesh(mbAPPid2, trim(outfile), trim(wopts))
       if (ierr .ne. 0) then
