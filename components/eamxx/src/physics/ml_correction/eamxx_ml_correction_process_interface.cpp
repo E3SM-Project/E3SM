@@ -160,7 +160,7 @@ void MLCorrection::run_impl(const double dt) {
   ekat::enable_fpes(fpe_mask);
 
   // Now back out the qv change abd apply it to precipitation, only if Tq ML is turned on
-  if (m_ML_model_path_tq != "None") {
+  if (m_ML_model_path_tq != "none") {
     using PC  = scream::physics::Constants<Real>;
     using KT  = KokkosTypes<DefaultDevice>;
     using MT  = typename KT::MemberType;

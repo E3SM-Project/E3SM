@@ -96,7 +96,7 @@ $ ./atmquery homme
         enable_postcondition_checks: true
         repair_log_level: trace
         internal_diagnostics_level: 0
-        compute_tendencies: None
+        compute_tendencies: none
 ```
 
 It is sometimes desirable to query _all_ the nodes that have a particular name,
@@ -144,7 +144,7 @@ $ ./atmquery --listall
         grids_manager
             type: Homme
             physics_grid_type: pg2
-            physics_grid_rebalance: None
+            physics_grid_rebalance: none
             dynamics_namelist_file_name: ./data/namelist.nl
             vertical_coordinate_filename: /some/path/to/coords/file.nc
         initial_conditions

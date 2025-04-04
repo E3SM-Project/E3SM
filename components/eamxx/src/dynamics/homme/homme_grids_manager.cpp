@@ -93,11 +93,11 @@ build_grids ()
 {
   // Get the physics grid specs
   const ci_string pg_type      = m_params.get<std::string>("physics_grid_type");
-  const ci_string pg_rebalance = m_params.get<std::string>("physics_grid_rebalance","None");
+  const ci_string pg_rebalance = m_params.get<std::string>("physics_grid_rebalance","none");
 
   // Get the physics grid code
   std::vector<int> pg_codes {
-    m_pg_codes["gll"]["None"],  // We always need this to read/write dyn grid stuff
+    m_pg_codes["gll"]["none"],  // We always need this to read/write dyn grid stuff
     m_pg_codes[pg_type][pg_rebalance]
   };
   // In case the two pg codes are the same...
@@ -116,14 +116,14 @@ build_grids ()
   build_dynamics_grid ();
 
   // Also the GLL grid with no rebalance is needed for sure
-  build_physics_grid("gll","None");
+  build_physics_grid("gll","none");
 
-  // If (pg type,rebalance) is (gll,None), this will be a no op
+  // If (pg type,rebalance) is (gll,none), this will be a no op
   build_physics_grid(pg_type,pg_rebalance);
 
   // Make "Physics" be an alias to whatever the pair (pg_type,rebalance) refers to
   std::string pg_name = "Physics " + pg_type;
-  if (pg_rebalance!="None") {
+  if (pg_rebalance!="none") {
     pg_name += " " + pg_rebalance;
   }
 
@@ -194,7 +194,7 @@ void HommeGridsManager::build_dynamics_grid () {
 void HommeGridsManager::
 build_physics_grid (const ci_string& type, const ci_string& rebalance) {
   std::string name = "Physics " + type;
-  if (rebalance != "None") {
+  if (rebalance != "none") {
     name += " " + rebalance;
   }
 
@@ -390,10 +390,10 @@ build_pg_codes () {
   //    - 0: GLL grid
   //    - N: FV phys grid, with NxN points
 
-  m_pg_codes["gll"]["None"] =  0;
-  m_pg_codes["gll"]["Twin"] = 10;
-  m_pg_codes["pg2"]["None"] =  2;
-  m_pg_codes["pg2"]["Twin"] = 12;
+  m_pg_codes["gll"]["none"] =  0;
+  m_pg_codes["gll"]["twin"] = 10;
+  m_pg_codes["pg2"]["none"] =  2;
+  m_pg_codes["pg2"]["twin"] = 12;
 }
 
 } // namespace scream
