@@ -1912,7 +1912,7 @@ contains
       if (present(context_exch)) then
          outfile = comp%ntype//trim(context_exch)//'_'//trim(dir)//'_'//trim(lnum)//'.h5m'//C_NULL_CHAR
       else
-         outfile = comp%ntype//trim(dir)//'_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+         outfile = comp%ntype//'_'//trim(dir)//'_'//trim(lnum)//'.h5m'//C_NULL_CHAR
       endif
       wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
       ierr = iMOAB_WriteMesh(mbAPPid2, trim(outfile), trim(wopts))
