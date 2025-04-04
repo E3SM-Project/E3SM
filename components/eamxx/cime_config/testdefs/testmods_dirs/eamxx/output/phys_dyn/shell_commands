@@ -12,7 +12,7 @@ YAML_FILE=$CASEROOT/eamxx_dyn_output.yaml
 # Figure out the suffix for the physics grid
 ATM_GRID=$(./xmlquery --value ATM_GRID)
 if [[ $ATM_GRID == *"pg2"* ]]; then
-  PGTYPE="PG2"
+  PGTYPE="pg2"
 else
   PGTYPE="gll"
 fi

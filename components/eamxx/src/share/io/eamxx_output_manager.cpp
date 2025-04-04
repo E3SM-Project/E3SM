@@ -67,7 +67,7 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
   bool pg2_grid_in_io_streams = false;
   const auto& fields_pl = m_params.sublist("Fields");
   for (auto it=fields_pl.sublists_names_cbegin(); it!=fields_pl.sublists_names_cend(); ++it) {
-    if (*it == "Physics PG2") pg2_grid_in_io_streams = true;
+    if (*it == "Physics pg2") pg2_grid_in_io_streams = true;
   }
 
   if (m_params.isParameter("Field Names")) {

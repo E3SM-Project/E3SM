@@ -4,7 +4,7 @@ filename_prefix: homme_shoc_cld_p3_rrtmgp_pg2_output
 averaging_type: Instant
 Max Snapshots Per File: 1
 Fields:
-  Physics PG2:
+  Physics pg2:
     Field Names:
       # HOMME
       - ps

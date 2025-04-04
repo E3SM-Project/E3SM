@@ -1083,7 +1083,7 @@ void AtmosphereDriver::set_initial_conditions ()
         // For GLL points, phis corresponds to "PHIS_d" in the
         // topography file. On PG2 grid, dynamics will take care
         // of computing phis, so do not add to initialized fields.
-        if (grid_name == "Physics PG2") {
+        if (grid_name == "Physics pg2") {
           // Skip
         } else if (grid_name == "Physics gll" ||
                    grid_name == "Point Grid") {
@@ -1096,14 +1096,14 @@ void AtmosphereDriver::set_initial_conditions ()
       } else if (fname == "sgh30") {
         // The eamxx field "sgh30" is called "SGH30" in the
         // topography file and is only available on the PG2 grid.
-        EKAT_ASSERT_MSG(grid_name == "Physics PG2",
+        EKAT_ASSERT_MSG(grid_name == "Physics pg2",
                         "Error! Requesting sgh30 field on " + grid_name +
-                        " topo file only has sgh30 for Physics PG2.\n");
+                        " topo file only has sgh30 for Physics pg2.\n");
         topography_file_fields_names[grid_name].push_back("SGH30");
         topography_eamxx_fields_names[grid_name].push_back(fname);
         m_fields_inited[grid_name].push_back(fname);
       }
-    } else if (not (fvphyshack and grid_name == "Physics PG2")) {
+    } else if (not (fvphyshack and grid_name == "Physics pg2")) {
       // The IC file is written for the GLL grid, so we only load
       // fields from there. Any other input fields on the PG2 grid
       // will be properly computed in the dynamics interface.

@@ -81,7 +81,7 @@ atmosphere_processes:
 
 grids_manager:
   type: Homme
-  physics_grid_type: PG2
+  physics_grid_type: pg2
   dynamics_namelist_file_name: namelist.nl
   vertical_coordinate_filename: IC_FILE
 
