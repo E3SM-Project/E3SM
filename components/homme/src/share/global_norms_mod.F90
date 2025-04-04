@@ -241,12 +241,9 @@ contains
   !
   ! ================================
 
-  subroutine print_cfl(elem,hybrid,nets,nete,dtnu)
+  subroutine print_cfl(elem,hybrid,nets,nete)
 !
 !   estimate various CFL limits
-!   also, for variable resolution viscosity coefficient, make sure
-!   worse viscosity CFL (given by dtnu) is not violated by reducing 
-!   viscosity coefficient in regions where CFL is violated
 !
     use kinds,       only : real_kind
     use hybrid_mod,  only : hybrid_t
@@ -266,7 +263,6 @@ contains
     type(element_t)      , intent(inout) :: elem(:)
     integer              , intent(in) :: nets,nete
     type (hybrid_t)      , intent(in) :: hybrid
-    real (kind=real_kind), intent(in) :: dtnu  
 
     ! Element statisics
     real (kind=real_kind) :: min_max_dx,max_unif_dx   ! used for normalizing scalar HV
@@ -362,7 +358,6 @@ contains
                    1/(nu*((scale_factor_inv*max_normDinv)**2)*lambda_vis),'s'
           endif
           if (hypervis_order==2) then
-             ! counrant number = dtnu*normDinv_hypervis  < S
              !  dt < S  1/nu*normDinv
              write(iulog,'(a,f10.2,a)') "Stability: nu_q   hyperviscosity dt < S *", 1/(nu_q*normDinv_hypervis),'s'
              write(iulog,'(a,f10.2,a)') "Stability: nu_vor hyperviscosity dt < S *", 1/(nu*normDinv_hypervis),'s'

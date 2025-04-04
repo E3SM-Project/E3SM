@@ -771,7 +771,6 @@ contains
     real (kind=real_kind) :: dt                 ! timestep
 
     ! variables used to calculate CFL
-    real (kind=real_kind) :: dtnu               ! timestep*viscosity parameter
     real (kind=real_kind) :: dt_dyn_vis         ! viscosity timestep used in dynamics
     real (kind=real_kind) :: dt_tracer_vis      ! viscosity timestep used in tracers
 
@@ -832,7 +831,6 @@ contains
     end if
 
 
-    ! compute most restrictive dt*nu for use by variable res viscosity:
     ! compute timestep seen by viscosity operator:
     dt_dyn_vis = tstep
     if (dt_tracer_factor>1 .and. tstep_type == 1) then
@@ -840,10 +838,7 @@ contains
        dt_dyn_vis = 2*tstep
     endif
     dt_tracer_vis=tstep*dt_tracer_factor
-    
-    ! compute most restrictive condition:
-    ! note: dtnu ignores subcycling
-    dtnu=max(dt_dyn_vis*max(nu,nu_div), dt_tracer_vis*nu_q)
+
     ! compute actual viscosity timesteps with subcycling
     dt_tracer_vis = dt_tracer_vis/hypervis_subcycle_q
     dt_dyn_vis = dt_dyn_vis/hypervis_subcycle
@@ -986,7 +981,7 @@ contains
     call dss_hvtensor(elem,hybrid,nets,nete)
 
     ! advective and viscious CFL estimates
-    call print_cfl(elem,hybrid,nets,nete,dtnu)
+    call print_cfl(elem,hybrid,nets,nete)
 
     ! Use the flexible time stepper if dt_remap_factor == 0 (vertically Eulerian
     ! dynamics) or dt_remap < dt_tracer. This applies to SL transport only.
