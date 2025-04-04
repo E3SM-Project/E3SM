@@ -13,7 +13,6 @@ void ZonalAvgDiag::compute_zonal_sum(const Field &field,
   // TODO: Use LAT dimension once available
   const int lat_num = result_layout.dim(COL);
   const int ncols = field.get_header().get_identifier().get_layout().dim(COL);
-
   const Real lat_delta = sp(180.0) / lat_num;
 
   auto weight_view = get_view(weight);
@@ -29,37 +28,62 @@ void ZonalAvgDiag::compute_zonal_sum(const Field &field,
       auto result_view = result.get_view<Real *>();
       TeamPolicy team_policy = ESU::get_default_team_policy(lat_num, ncols);
       Kokkos::parallel_for("compute_zonal_sum_" + field.name(), team_policy,
-      KOKKOS_LAMBDA(const TeamMember& tm) {
-        const int lat_i = tm.league_rank();
-        const Real lat_lower = sp(-90.0) + lat_i * lat_delta;
-        const Real lat_upper = lat_lower + lat_delta;
-        Kokkos::parallel_reduce(Kokkos::TeamVectorRange(tm, ncols),
-          KOKKOS_LAMBDA(int i, Real& val){
-            // TODO: check if some conditional is ok here instead of flag
-            int flag = (lat_lower <= lat_view(i)) && (lat_view(i) < lat_upper);
-            val += flag * weight_view(i) * field_view(i);
-          }, result_view(lat_i));
-      });
+        KOKKOS_LAMBDA(const TeamMember& tm) {
+          const int lat_i = tm.league_rank();
+          const Real lat_lower = sp(-90.0) + lat_i * lat_delta;
+          const Real lat_upper = lat_lower + lat_delta;
+          Kokkos::parallel_reduce(Kokkos::TeamVectorRange(tm, ncols),
+            KOKKOS_LAMBDA(int i, Real& val) {
+              // TODO: check if some conditional is ok here instead of flag
+              int flag = (lat_lower <= lat_view(i)) && (lat_view(i) < lat_upper);
+              val += flag * weight_view(i) * field_view(i);
+            }, result_view(lat_i));
+        });
     } break;
     case 2: {
       const int nlevs = result_layout.dim(ShortFieldTagsNames::LEV);
       auto field_view = field.get_view<const Real **>();
       auto result_view = result.get_view<Real **>();
-      TeamPolicy team_policy = ESU::get_default_team_policy(lat_num * nlevs, ncols);
+      TeamPolicy team_policy =
+        ESU::get_default_team_policy(lat_num * nlevs, ncols);
       Kokkos::parallel_for("compute_zonal_sum_" + field.name(), team_policy,
-      KOKKOS_LAMBDA(const TeamMember& tm) {
-        const int idx = tm.league_rank();
-        const int nlev = idx / lat_num;
-        const int lat_i = idx % lat_num;
-        const Real lat_lower = sp(-90.0) + lat_i * lat_delta;
-        const Real lat_upper = lat_lower + lat_delta;
-        Kokkos::parallel_reduce(Kokkos::TeamVectorRange(tm, ncols),
-          KOKKOS_LAMBDA(int i, Real& val){
-            // TODO: check if some conditional is ok here instead of flag
-            int flag = (lat_lower <= lat_view(i)) && (lat_view(i) < lat_upper);
-            val += flag * weight_view(i) * field_view(i,nlev);
-          }, result_view(lat_i,nlev));
-      });
+        KOKKOS_LAMBDA(const TeamMember& tm) {
+          const int idx = tm.league_rank();
+          const int nlev = idx / lat_num;
+          const int lat_i = idx % lat_num;
+          const Real lat_lower = sp(-90.0) + lat_i * lat_delta;
+          const Real lat_upper = lat_lower + lat_delta;
+          Kokkos::parallel_reduce(Kokkos::TeamVectorRange(tm, ncols),
+            KOKKOS_LAMBDA(int i, Real& val) {
+              // TODO: check if some conditional is ok here instead of flag
+              int flag = (lat_lower <= lat_view(i)) && (lat_view(i) < lat_upper);
+              val += flag * weight_view(i) * field_view(i,nlev);
+            }, result_view(lat_i,nlev));
+        });
+    } break;
+    case 3: {
+      const int nlevs = result_layout.dim(ShortFieldTagsNames::LEV);
+      const int ncmps = result_layout.dim(ShortFieldTagsNames::CMP);
+      auto field_view = field.get_view<const Real ***>();
+      auto result_view = result.get_view<Real ***>();
+      TeamPolicy team_policy =
+        ESU::get_default_team_policy(lat_num * nlevs * ncmps, ncols);
+      Kokkos::parallel_for("compute_zonal_sum_" + field.name(), team_policy,
+        KOKKOS_LAMBDA(const TeamMember& tm) {
+          const int idx = tm.league_rank();
+          const int ncmp = idx / (lat_num * nlevs);
+          const int idx2 = idx % (lat_num * nlevs);
+          const int nlev = idx2 / lat_num;
+          const int lat_i = idx2 % lat_num;
+          const Real lat_lower = sp(-90.0) + lat_i * lat_delta;
+          const Real lat_upper = lat_lower + lat_delta;
+          Kokkos::parallel_reduce(Kokkos::TeamVectorRange(tm, ncols),
+            KOKKOS_LAMBDA(int i, Real& val) {
+              // TODO: check if some conditional is ok here instead of flag
+              int flag = (lat_lower <= lat_view(i)) && (lat_view(i) < lat_upper);
+              val += flag * weight_view(i) * field_view(i,ncmp,nlev);
+            }, result_view(lat_i,ncmp,nlev));
+        });
     } break;
     default:
       EKAT_ERROR_MSG("Error! Unsupported field rank for zonal averages.\n");
@@ -109,7 +133,7 @@ void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/) {
   const FieldLayout &field_layout = field_id.get_layout();
 
   // TODO: support >3D fields
-  EKAT_REQUIRE_MSG(field_layout.rank() >= 1 && field_layout.rank() <= 2,
+  EKAT_REQUIRE_MSG(field_layout.rank() >= 1 && field_layout.rank() <= 3,
                    "Error! Field rank not supported by ZonalAvgDiag.\n"
                    " - field name: " +
                        field_id.name() +
@@ -127,14 +151,9 @@ void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/) {
 
   // TODO: update the layouts to use new LAT dimension once available
   FieldLayout zonal_area_layout({COL}, {m_lat_num});
-  FieldLayout diagnostic_layout;
-  switch (field_layout.rank())
-  {
-    case 1: diagnostic_layout = FieldLayout({COL}, {m_lat_num}); break;
-    case 2: diagnostic_layout = FieldLayout({COL,LEV}, {m_lat_num, field_layout.dim(LEV)}); break;
-  }
-  //FieldLayout diagnostic_layout = field_layout.clone();
-  //diagnostic_layout.reset_dim(ShortFieldTagsNames::COL, m_lat_num);
+  FieldLayout diagnostic_layout = field_layout.clone();
+  diagnostic_layout.reset_dim(COL, m_lat_num);
+
   FieldIdentifier diagnostic_id(m_diag_name, diagnostic_layout,
     field_id.get_units(), field_id.get_grid_name());
   m_diagnostic_output = Field(diagnostic_id);
@@ -149,17 +168,14 @@ void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/) {
   compute_zonal_sum(m_scaled_area, one, m_lat, zonal_area);
 
   // scale area by 1 / zonal area
-  using KT = ekat::KokkosTypes<DefaultDevice>;
-  using TeamPolicy = Kokkos::TeamPolicy<Field::device_t::execution_space>;
-  using TeamMember = typename TeamPolicy::member_type;
-  using ESU = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+  using RangePolicy = Kokkos::RangePolicy<Field::device_t::execution_space>;
   const Real lat_delta = sp(180.0) / m_lat_num;
   const int ncols = field_layout.dim(COL);
   auto lat_view = m_lat.get_view<const Real *>();
   auto zonal_area_view = zonal_area.get_view<const Real *>();
   auto scaled_area_view = m_scaled_area.get_view<Real *>();
-  Kokkos::parallel_for("scale_area_by_zonal_area_" + field.name(), ncols,
-      KOKKOS_LAMBDA(const int& i) {
+  Kokkos::parallel_for("scale_area_by_zonal_area_" + field.name(),
+    RangePolicy(0, ncols), KOKKOS_LAMBDA(const int& i) {
         const int lat_i = (lat_view(i) + sp(90.0)) / lat_delta;
         scaled_area_view(i) /= zonal_area_view(lat_i);
       });
