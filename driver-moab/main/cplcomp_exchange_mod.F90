@@ -999,6 +999,7 @@ contains
       !
       type(seq_infodata_type) ,  intent(in) :: infodata
       type(component_type), intent(inout) :: comp
+
       !
       ! Local Variables
       !
@@ -1202,7 +1203,7 @@ contains
             ! also, frac, area,  masks has to come from atm mphaid, not from domain file reader
             ! this is hard to digest :(
             tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
-            call component_exch_moab(comp, mphaid, mbaxid, 0, tagname)
+            call component_exch_moab(comp, mphaid, mbaxid, 0, tagname, context_exch='dom')
 
          endif ! coupler pes
 
@@ -1364,7 +1365,7 @@ contains
             ! also, frac, area,  masks has to come from ocean mpoid, not from domain file reader
             ! this is hard to digest :(
             tagname = 'area:frac:mask'//C_NULL_CHAR
-            call component_exch_moab(comp, mpoid, mboxid, 0, tagname)
+            call component_exch_moab(comp, mpoid, mboxid, 0, tagname, context_exch='afm')
          endif 
 
          ! start copy
@@ -1540,7 +1541,7 @@ contains
          endif
 
          tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
-         call component_exch_moab(comp, mlnid, mblxid, 0, tagname)
+         call component_exch_moab(comp, mlnid, mblxid, 0, tagname, context_exch='dom')
 
 #ifdef MOABDEBUG
             outfile = 'recMeshLand.h5m'//C_NULL_CHAR
@@ -1811,7 +1812,7 @@ contains
 
   ! can exchange data between mesh in component and mesh on coupler.  Either way.
   ! used in first hop of 2-hop
-  subroutine component_exch_moab(comp, mbAPPid1, mbAppid2, direction, fields )
+  subroutine component_exch_moab(comp, mbAPPid1, mbAppid2, direction, fields, context_exch )
 
    use iMOAB ,  only: iMOAB_SendElementTag, iMOAB_ReceiveElementTag, iMOAB_WriteMesh, iMOAB_FreeSenderBuffers
    use seq_comm_mct, only :  num_moab_exports ! for debugging
@@ -1825,6 +1826,7 @@ contains
     ! direction 0 is from component to coupler; 1 is from coupler to component
     integer,                   intent(in)           :: mbAPPid1, mbAppid2, direction
     character(CXX)           , intent(in)           :: fields
+    character(len=*)        ,  intent(in), optional :: context_exch
 
     character(*), parameter :: subname = '(component_exch_moab)'
     integer :: id_join, source_id, target_id, ierr
@@ -1854,8 +1856,25 @@ contains
     if (comp%oneletterid == 'a' .and. direction .eq. 1 ) then
        target_id = target_id + 200
     endif
-    if (mbAPPid1 .ge. 0) then !  send
-
+    if (mbAPPid1 .ge. 0) then !  we are on the sending pes
+#ifdef MOABDEBUG
+       if (direction .eq. 0 ) then
+          dir = 'c2x'
+       else
+          dir = 'x2c'
+       endif
+       write(lnum,"(I0.2)") num_moab_exports
+       if (present(context_exch)) then
+          outfile = comp%ntype//'_src_'//trim(context_exch)//'_'//trim(dir)//'_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+       else
+          outfile = comp%ntype//'_src_'//trim(dir)//'_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+       endif
+       wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+       ierr = iMOAB_WriteMesh(mbAPPid1, trim(outfile), trim(wopts))
+       if (ierr .ne. 0) then
+          call shr_sys_abort(subname//' cannot write file '// outfile)
+       endif
+#endif
        ! basically, use the initial partitioning
        ierr = iMOAB_SendElementTag(mbAPPid1, tagName, mpicom_join, target_id)
        if (ierr .ne. 0) then
@@ -1890,8 +1909,11 @@ contains
     if (mbAPPid2 .ge. 0 ) then !  we are on receiving pes, for sure
       ! number_proj = number_proj+1 ! count the number of projections
       write(lnum,"(I0.2)") num_moab_exports
-      
-      outfile = comp%ntype//'_'//trim(dir)//'_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+      if (present(context_exch)) then
+         outfile = comp%ntype//trim(context_exch)//'_'//trim(dir)//'_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+      else
+         outfile = comp%ntype//trim(dir)//'_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+      endif
       wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
       ierr = iMOAB_WriteMesh(mbAPPid2, trim(outfile), trim(wopts))
       if (ierr .ne. 0) then
