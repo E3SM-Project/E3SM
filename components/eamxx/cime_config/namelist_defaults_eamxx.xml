@@ -591,7 +591,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <type>Homme</type>
     <physics_grid_type>gll</physics_grid_type>
     <physics_grid_type hgrid=".*pg2">pg2</physics_grid_type>
-    <physics_grid_rebalance>None</physics_grid_rebalance>
+    <physics_grid_rebalance>none</physics_grid_rebalance>
     <dynamics_namelist_file_name>./data/namelist.nl</dynamics_namelist_file_name>
     <vertical_coordinate_filename type="file">UNSET</vertical_coordinate_filename>
     <vertical_coordinate_filename nlev="72">${DIN_LOC_ROOT}/atm/scream/init/vertical_coordinates_L72_20220927.nc</vertical_coordinate_filename>
