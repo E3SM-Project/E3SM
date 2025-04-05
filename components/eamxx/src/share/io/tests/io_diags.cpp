@@ -188,10 +188,10 @@ void write (const int seed, const ekat::Comm& comm)
   ekat::ParameterList om_pl;
   om_pl.set("filename_prefix",std::string("io_diags"));
   om_pl.set("Field Names",fnames);
-  om_pl.set("Averaging Type", std::string("INSTANT"));
+  om_pl.set("averaging_type", std::string("INSTANT"));
   auto& ctrl_pl = om_pl.sublist("output_control");
   ctrl_pl.set("frequency_units",std::string("nsteps"));
-  ctrl_pl.set("Frequency",1);
+  ctrl_pl.set("frequency",1);
   ctrl_pl.set("save_grid_data",false);
 
   // Create Output manager
@@ -251,7 +251,7 @@ void read (const int seed, const ekat::Comm& comm)
     + ".np" + std::to_string(comm.size())
     + "." + t0.to_string()
     + ".nc";
-  reader_pl.set("Filename",filename);
+  reader_pl.set("filename",filename);
   reader_pl.set("Field Names",fnames);
   AtmosphereInput reader(reader_pl,fm);
 

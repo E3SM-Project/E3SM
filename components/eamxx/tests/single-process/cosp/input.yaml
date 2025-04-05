@@ -16,10 +16,10 @@ atmosphere_processes:
 
 
 grids_manager:
-  Type: Mesh Free
+  type: Mesh Free
   geo_data_source: IC_FILE
-  grids_names: [Physics GLL]
-  Physics GLL:
+  grids_names: [Physics gll]
+  Physics gll:
     type: point_grid
     aliases: [Physics]
     number_of_global_columns:   218
@@ -27,7 +27,7 @@ grids_manager:
 
 initial_conditions:
   # The name of the file containing the initial conditions for this test.
-  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
+  filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
   dtau067: 1.0
   dtau105: 1.0
@@ -39,6 +39,6 @@ initial_conditions:
   pseudo_density: 1.0
 
 # The parameters for I/O control
-Scorpio:
+scorpio:
   output_yaml_files: ["output.yaml"]
 ...

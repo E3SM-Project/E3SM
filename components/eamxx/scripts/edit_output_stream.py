@@ -21,14 +21,14 @@ def generate_empty_yaml(filename,overwrite):
     4
     >>> data["filename_prefix"]
     'UNSET'
-    >>> data["Averaging Type"]
+    >>> data["averaging_type"]
     'INVALID'
     >>> len(data["Fields"])
     0
     >>> oc = data["output_control"]
     >>> len(oc)
     2
-    >>> oc["Frequency"]
+    >>> oc["frequency"]
     -1
     >>> oc["frequency_units"]
     'never'
@@ -45,11 +45,11 @@ def generate_empty_yaml(filename,overwrite):
 
     data = {}
     data["filename_prefix"] = "UNSET"
-    data["Averaging Type"] = "INVALID"
+    data["averaging_type"] = "INVALID"
     data["Fields"] = {}
     data["output_control"] = {}
     data["output_control"]["skip_t0_output"] = "false"
-    data["output_control"]["Frequency"] = -1
+    data["output_control"]["frequency"] = -1
     data["output_control"]["frequency_units"] = "never"
 
     with open(file,'w') as fd:
@@ -71,9 +71,9 @@ def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
     >>> data = yaml.load(open(fname,'r'),Loader=yaml.SafeLoader)
     >>> data['filename_prefix']
     'foo'
-    >>> data['Averaging Type']
+    >>> data['averaging_type']
     'max'
-    >>> data['output_control']['Frequency']
+    >>> data['output_control']['frequency']
     10
     >>> data['output_control']['frequency_units']
     'ndays'
@@ -126,13 +126,13 @@ def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
     if reset is not None:
         for s in reset:
             if s=="avg-type":
-                data["Averaging Type"] = "INVALID"
+                data["averaging_type"] = "INVALID"
             elif s=="skip_t0_output":
                 data["skip_t0_output"] = "false"
             elif s=="preifx":
                 data["filename_prefix"] = "UNSET"
             elif s=="freq":
-                data["output_control"]["Frequency"] = -1
+                data["output_control"]["frequency"] = -1
             elif s=="freq_units":
                 data["output_control"]["frequency_units"] = "never"
             elif s=="horiz_remap_file":
@@ -163,7 +163,7 @@ def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
         data["filename_prefix"] = prefix
 
     if avg_type is not None:
-        data["Averaging Type"] = avg_type
+        data["averaging_type"] = avg_type
 
     if skip_t0_output is not None:
         data["skip_t0_output"] = skip_t0_output
@@ -173,7 +173,7 @@ def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
                 f"Invalid value '{freq}' for --freq. Valid options are\n"
                  " - an integer\n"
                  " - HIST_N\n")
-        data["output_control"]["Frequency"] = int(freq) if freq.lstrip('-+').isnumeric() else f"${{{freq.upper()}}}"
+        data["output_control"]["frequency"] = int(freq) if freq.lstrip('-+').isnumeric() else f"${{{freq.upper()}}}"
 
     if freq_units is not None:
         explicit  = ['nsteps','nsecs','nmins','nhours','ndays','nmonths','nyears']
@@ -181,7 +181,7 @@ def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
                 f"Invalid value '{freq_units}' for --freq-units. Valid options are (case insensitive)\n"
                  " - explicit values: 'nsteps','nsecs','nmins','nhours','ndays','nmonths','nyears'\n"
                  " - CIME variables : 'HIST_OPTION'\n")
-                
+
         data["output_control"]["frequency_units"] = freq_units if freq_units in explicit else f"${{{freq_units.upper()}}}"
 
     if horiz_remap_file is not None:
@@ -207,10 +207,10 @@ def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
             section["IO Grid Name"] = io_grid
             # If not already present, add an empty list of field names
             section.setdefault("Field Names",[])
-        
+
         data["Fields"][grid] = section
 
-    # We cannot do online remap (typically dyn->physGLL) if horiz or vert remap is used
+    # We cannot do online remap (typically dyn->physgll) if horiz or vert remap is used
     has_online_remap = False
     for k,v in data["Fields"].items():
         has_online_remap = has_online_remap or "IO Grid Name" in v.keys();

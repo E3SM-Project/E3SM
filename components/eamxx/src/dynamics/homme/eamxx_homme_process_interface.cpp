@@ -67,8 +67,8 @@ HommeDynamics::HommeDynamics (const ekat::Comm& comm, const ekat::ParameterList&
   set_homme_log_file_name_f90 (&logname);
 
   m_bfb_hash_nstep = 0;
-  if (params.isParameter("BfbHash"))
-    m_bfb_hash_nstep = std::max(0, params.get<int>("BfbHash"));
+  if (params.isParameter("bfb_hash"))
+    m_bfb_hash_nstep = std::max(0, params.get<int>("bfb_hash"));
 }
 
 HommeDynamics::~HommeDynamics ()
@@ -83,7 +83,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   const auto dgn = "Dynamics";
   m_dyn_grid = grids_manager->get_grid(dgn);
   m_phys_grid = grids_manager->get_grid("Physics");
-  m_cgll_grid = grids_manager->get_grid("Physics GLL");
+  m_cgll_grid = grids_manager->get_grid("Physics gll");
 
   fv_phys_set_grids();
 
@@ -92,7 +92,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   //       I'm gonna say 'no', for now, cause it might be a pb with unit tests.
   if (!is_data_structures_inited_f90()) {
     // Set moisture in homme base on input file:
-    const auto& moisture = m_params.get<std::string>("Moisture");
+    const auto& moisture = m_params.get<std::string>("moisture");
     set_homme_param("moisture",ekat::upper_case(moisture)!="DRY");
 
     prim_init_data_structures_f90 ();

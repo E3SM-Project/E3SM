@@ -147,10 +147,10 @@ void write (const std::string& avg_type, const std::string& freq_units,
   ekat::ParameterList om_pl;
   om_pl.set("filename_prefix",std::string("io_basic"));
   om_pl.set("Field Names",fnames);
-  om_pl.set("Averaging Type", avg_type);
+  om_pl.set("averaging_type", avg_type);
   auto& ctrl_pl = om_pl.sublist("output_control");
   ctrl_pl.set("frequency_units",freq_units);
-  ctrl_pl.set("Frequency",freq);
+  ctrl_pl.set("frequency",freq);
   ctrl_pl.set("save_grid_data",false);
 
   // While setting this is in practice irrelevant (we would close
@@ -232,7 +232,7 @@ void read (const std::string& avg_type, const std::string& freq_units,
     + ".np" + std::to_string(comm.size())
     + "." + t0.to_string()
     + ".nc";
-  reader_pl.set("Filename",filename);
+  reader_pl.set("filename",filename);
   reader_pl.set("Field Names",fnames);
   AtmosphereInput reader(reader_pl,fm);
 

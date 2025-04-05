@@ -1,7 +1,7 @@
 %YAML 1.1
 ---
 filename_prefix: mam4_optics_standalone_output
-Averaging Type: Instant
+averaging_type: Instant
 Fields:
   Physics:
     Field Names:
@@ -11,6 +11,6 @@ Fields:
         - aero_tau_lw
 
 output_control:
-  Frequency: 2
+  frequency: 2
   frequency_units: nsteps
 ...

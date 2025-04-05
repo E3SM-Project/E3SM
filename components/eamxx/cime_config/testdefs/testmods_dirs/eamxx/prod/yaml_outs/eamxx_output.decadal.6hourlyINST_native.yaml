@@ -2,10 +2,10 @@
 ---
 filename_prefix: eamxx_output.decadal.6hourlyINST_native.h
 iotype: pnetcdf
-Averaging Type: Instant
+averaging_type: Instant
 Max Snapshots Per File: 4  # one file per day
 Fields:
-  Physics PG2:
+  Physics pg2:
     Field Names:
     # For storm analysis
     - SeaLevelPressure
@@ -21,8 +21,7 @@ Fields:
     - omega_at_500hPa
     - omega_at_850hPa
 output_control:
-  Frequency: 6
+  frequency: 6
   frequency_units: nhours
-  MPI Ranks in Filename: false
 Restart:
   force_new_file: true

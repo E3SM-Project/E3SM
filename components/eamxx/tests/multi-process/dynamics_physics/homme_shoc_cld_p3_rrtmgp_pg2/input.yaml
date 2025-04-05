@@ -9,7 +9,7 @@ time_stepping:
   number_of_steps: ${NUM_STEPS}
 
 initial_conditions:
-  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
+  filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
   surf_evap: 0.0
   surf_sens_flux: 0.0
@@ -32,17 +32,17 @@ initial_conditions:
 
 atmosphere_processes:
   atm_procs_list: [homme,physics]
-  schedule_type: Sequential
+  schedule_type: sequential
   homme:
-    Moisture: moist
+    moisture: moist
   physics:
     atm_procs_list: [mac_mic,rrtmgp]
-    schedule_type: Sequential
-    Type: Group
+    schedule_type: sequential
+    type: group
     mac_mic:
-      atm_procs_list: [tms,shoc,CldFraction,p3]
-      Type: Group
-      schedule_type: Sequential
+      atm_procs_list: [tms,shoc,cld_fraction,p3]
+      type: group
+      schedule_type: sequential
       number_of_subcycles: ${MAC_MIC_SUBCYCLES}
       p3:
         do_prescribed_ccn: false
@@ -58,8 +58,8 @@ atmosphere_processes:
         w2tune: 1.0
         length_fac: 0.5
         c_diag_3rd_mom: 7.0
-        Ckh: 0.1
-        Ckm: 0.1
+        coeff_kh: 0.1
+        coeff_km: 0.1
     rrtmgp:
       column_chunk_size: 123
       active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
@@ -70,12 +70,12 @@ atmosphere_processes:
       do_aerosol_rad: false
 
 grids_manager:
-  Type: Homme
-  physics_grid_type: PG2
+  type: homme
+  physics_grid_type: pg2
   dynamics_namelist_file_name: namelist.nl
   vertical_coordinate_filename: IC_FILE
 
 # The parameters for I/O control
-Scorpio:
+scorpio:
   output_yaml_files: ["output.yaml"]
 ...

@@ -1,7 +1,7 @@
 %YAML 1.1
 ---
 filename_prefix: spa_standalone_output
-Averaging Type: Instant
+averaging_type: Instant
 Max Snapshots Per File: ${NUM_STEPS}
 Field Names:
   - aero_g_sw
@@ -10,6 +10,6 @@ Field Names:
   - aero_tau_sw
   - nccn
 output_control:
-  Frequency: 1
+  frequency: 1
   frequency_units: nsteps
 ...

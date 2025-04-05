@@ -2,11 +2,11 @@
 ---
 filename_prefix: eamxx_output.decadal.1hourlyINST_arm.h
 iotype: pnetcdf
-Averaging Type: Instant
+averaging_type: Instant
 Max Snapshots Per File: 24  # one file per day
 horiz_remap_file: ${DIN_LOC_ROOT}/atm/scream/maps/map_ne1024pg2_to_DecadalSites_c20240130.nc
 Fields:
-  Physics PG2:
+  Physics pg2:
     Field Names:
     # 3D
     - T_mid
@@ -33,8 +33,7 @@ Fields:
     - V
     - landfrac
 output_control:
-  Frequency: 1
+  frequency: 1
   frequency_units: nhours
-  MPI Ranks in Filename: false
 Restart:
   force_new_file: true

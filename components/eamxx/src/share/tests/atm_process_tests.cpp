@@ -27,24 +27,24 @@ ekat::ParameterList create_test_params ()
   // Create a parameter list for inputs
   ekat::ParameterList params ("Atmosphere Processes");
 
-  params.set<std::string>("schedule_type","Sequential");
+  params.set<std::string>("schedule_type","sequential");
   params.set<strvec_t>("atm_procs_list",{"Foo","BarBaz"});
 
   auto& p0 = params.sublist("Foo");
-  p0.set<std::string>("Type", "Foo");
+  p0.set<std::string>("type", "Foo");
   p0.set<std::string>("Grid Name", "Point Grid");
 
   auto& p1 = params.sublist("BarBaz");
   p1.set<strvec_t>("atm_procs_list",{"Bar","Baz"});
-  p1.set<std::string>("Type", "Group");
-  p1.set<std::string>("schedule_type","Sequential");
+  p1.set<std::string>("type", "group");
+  p1.set<std::string>("schedule_type","sequential");
 
   auto& p1_0 = p1.sublist("Bar");
-  p1_0.set<std::string>("Type", "Bar");
+  p1_0.set<std::string>("type", "Bar");
   p1_0.set<std::string>("Grid Name", "Point Grid");
 
   auto& p1_1 = p1.sublist("Baz");
-  p1_1.set<std::string>("Type", "Baz");
+  p1_1.set<std::string>("type", "Baz");
   p1_1.set<std::string>("Grid Name", "Point Grid");
 
   return params;

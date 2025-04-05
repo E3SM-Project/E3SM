@@ -2,16 +2,15 @@
 ---
 filename_prefix: eamxx_output.decadal.1dailyMAX_native.h
 iotype: pnetcdf
-Averaging Type: Max
+averaging_type: Max
 Max Snapshots Per File: 1
 Fields:
-  Physics PG2:
+  Physics pg2:
     Field Names:
     - T_2m
     - precip_total_surf_mass_flux
 output_control:
-  Frequency: 1
+  frequency: 1
   frequency_units: ndays
-  MPI Ranks in Filename: false
 Restart:
   force_new_file: true

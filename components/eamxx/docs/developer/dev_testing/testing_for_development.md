@@ -212,17 +212,17 @@ Defining the test behavior and pass/fail criteria requires 3 files:
         inject_ash_XYZ_data: ${EAMXX_DATA_DIR}/mam4xx/.../inject_ash_input_data_file_XYZ.nc
         <identifying-string-used-by-inject_ash_xyz.xpp>: /path/to/.../data_file.nc
     grids_manager:
-      Type: Mesh Free
+      type: Mesh Free
       geo_data_source: IC_FILE
-      grids_names: [Physics GLL]
-      Physics GLL:
+      grids_names: [Physics gll]
+      Physics gll:
         type: point_grid
         aliases: [Physics]
         number_of_global_columns:   218
         number_of_vertical_levels:  72
     initial_conditions:
       # The name of the file containing the initial conditions for this test.
-      Filename: ${EAMXX_DATA_DIR}/init/${inject_ash_IC_file}
+      filename: ${EAMXX_DATA_DIR}/init/${inject_ash_IC_file}
       topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
 
       # other variables to pass as input
@@ -230,7 +230,7 @@ Defining the test behavior and pass/fail criteria requires 3 files:
       num_XYZ : 1.618
       <input_variable> : <value>
     # The parameters for I/O control
-    Scorpio:
+    scorpio:
       output_yaml_files: ["output.yaml"]
     ...
     ```
@@ -241,13 +241,13 @@ Defining the test behavior and pass/fail criteria requires 3 files:
     %YAML 1.1
     ---
     filename_prefix: mam4_inject_ash_standalone_output
-    Averaging Type: Instant
+    averaging_type: Instant
     Fields:
       Physics:
         Field Names:
           - answer_field
     output_control:
-      Frequency: 1
+      frequency: 1
       frequency_units: nsteps
     ...
     ```

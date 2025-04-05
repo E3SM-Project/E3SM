@@ -1,21 +1,21 @@
 %YAML 1.1
 ---
 atm_procs_list: [MyFoo,BarBaz]
-schedule_type: Sequential
-Type: Group
+schedule_type: sequential
+type: group
 
 MyFoo:
-  Type: Foo
+  type: Foo
   Grid Name: Point Grid
 BarBaz:
-  Type: Group
-  schedule_type: Sequential
+  type: group
+  schedule_type: sequential
   atm_procs_list: [MyBar,MyBaz]
 
   MyBar:
-    Type: Bar
+    type: Bar
     Grid Name: Point Grid
   MyBaz:
-    Type: Baz
+    type: Baz
     Grid Name: Point Grid
 ...

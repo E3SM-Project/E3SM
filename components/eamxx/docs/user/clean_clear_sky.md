@@ -21,18 +21,17 @@ Below is an example output file to output the extra (clean and clean-clear-sky) 
 %YAML 1.1
 ---
 filename_prefix: monthly.outputs
-Averaging Type: Average
+averaging_type: Average
 Max Snapshots Per File: 1
 Fields:
-  Physics PG2:
+  Physics pg2:
     Field Names:
     - SW_clnclrsky_flux_up_at_model_top
     - LW_clnclrsky_flux_up_at_model_top
     - SW_clnsky_flux_up_at_model_top
     - LW_clnsky_flux_up_at_model_top
 output_control:
-  Frequency: 1
+  frequency: 1
   frequency_units: nmonths
-  MPI Ranks in Filename: false
 
 ```

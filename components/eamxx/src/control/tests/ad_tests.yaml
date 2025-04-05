@@ -4,30 +4,30 @@ driver_options:
   atmosphere_dag_verbosity_level: 5
 
 initial_conditions:
-  Filename: should_not_be_neeeded_and_code_will_throw_if_it_tries_to_open_this_nonexistent_file.nc
+  filename: should_not_be_neeeded_and_code_will_throw_if_it_tries_to_open_this_nonexistent_file.nc
   A: 1.0
   V: [2.0, 3.0]
   Z: "A"
 
 atmosphere_processes:
   atm_procs_list: [dummy1, dummy2, dummy3]
-  schedule_type: Sequential
+  schedule_type: sequential
 
   dummy1:
-    Type: Dummy
+    type: Dummy
     Sub Name: A to Group
     Grid Name: Point Grid
   dummy2:
-    Type: Dummy
+    type: Dummy
     Sub Name: Group to Group
     Grid Name: Point Grid
   dummy3:
-    Type: Dummy
+    type: Dummy
     Sub Name: Group to A
     Grid Name: Point Grid
 
 grids_manager:
-  Type: Mesh Free
+  type: Mesh Free
   grids_names: ["Point Grid"]
   Point Grid:
     type: point_grid

@@ -165,7 +165,7 @@ void TimeInterpolation::initialize_data_from_files()
   // Initialize the AtmosphereInput object that will be used to gather data
   ekat::ParameterList input_params;
   input_params.set("Field Names",m_field_names);
-  input_params.set("Filename",triplet_curr.filename);
+  input_params.set("filename",triplet_curr.filename);
   m_file_data_atm_input = std::make_shared<AtmosphereInput>(input_params,m_fm_time1);
   m_file_data_atm_input->set_logger(m_logger);
   // Assign the mask value gathered from the FillValue found in the source file.
@@ -352,7 +352,7 @@ void TimeInterpolation::read_data()
     // Then we need to close this input stream and open a new one
     ekat::ParameterList input_params;
     input_params.set("Field Names",m_field_names);
-    input_params.set("Filename",triplet_curr.filename);
+    input_params.set("filename",triplet_curr.filename);
     m_file_data_atm_input = std::make_shared<AtmosphereInput>(input_params,m_fm_time1);
     m_file_data_atm_input->set_logger(m_logger);
     // Also determine the FillValue, if used

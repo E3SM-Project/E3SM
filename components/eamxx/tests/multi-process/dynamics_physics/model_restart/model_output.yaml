@@ -1,9 +1,9 @@
 %YAML 1.1
 ---
 filename_prefix: model_output_baseline
-Averaging Type: Average
+averaging_type: Average
 Fields:
-  Physics GLL:
+  Physics gll:
     Field Names:
       # HOMME
       - ps
@@ -80,6 +80,6 @@ Fields:
       - vtheta_dp_dyn
       - dp3d_dyn
 output_control:
-  Frequency: 1
+  frequency: 1
   frequency_units: nmins
 ...

@@ -38,8 +38,8 @@ struct PyAtmProc {
 
     // Create the atm proc
     auto& apf = AtmosphereProcessFactory::instance();
-    const auto& ap_type = params.pl.isParameter("Type")
-                        ? params.pl.get<std::string>("Type")
+    const auto& ap_type = params.pl.isParameter("type")
+                        ? params.pl.get<std::string>("type")
                         : params.pl.name();
     ap = apf.create(ap_type,comm,params.pl);
 

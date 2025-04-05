@@ -1,7 +1,7 @@
 %YAML 1.1
 ---
 filename_prefix: shoc_cld_spa_p3_rrtmgp_output
-Averaging Type: Instant
+averaging_type: Instant
 Max Snapshots Per File: 1
 Field Names:
   # SHOC
@@ -61,6 +61,6 @@ Field Names:
   - dz_at_model_bot
 
 output_control:
-  Frequency: ${NUM_STEPS}
+  frequency: ${NUM_STEPS}
   frequency_units: nsteps
 ...

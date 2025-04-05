@@ -2,10 +2,10 @@
 ---
 filename_prefix: homme_shoc_cld_p3_rrtmgp_output
 iotype: default
-Averaging Type: Instant
+averaging_type: Instant
 Max Snapshots Per File: 1
 Fields:
-  Physics GLL:
+  Physics gll:
     Field Names:
       # HOMME
       - ps
@@ -78,9 +78,9 @@ Fields:
       - phis_dyn
       - omega_dyn
       - Qdp_dyn
-    IO Grid Name: Physics GLL
+    IO Grid Name: Physics gll
 
 output_control:
-  Frequency: ${NUM_STEPS}
+  frequency: ${NUM_STEPS}
   frequency_units: nsteps
 ...

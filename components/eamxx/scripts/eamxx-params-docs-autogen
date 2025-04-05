@@ -121,7 +121,7 @@ def generate_params_docs():
         docs.new_header(level=1,title='Atmosphere Driver Parameters')
         add_children(docs,ad)
 
-        scorpio = xml_defaults.find('Scorpio')
+        scorpio = xml_defaults.find('scorpio')
         docs.new_header(level=1,title='Scorpio Parameters')
         add_children(docs,scorpio)
 

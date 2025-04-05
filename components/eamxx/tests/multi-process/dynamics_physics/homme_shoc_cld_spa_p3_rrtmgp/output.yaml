@@ -1,10 +1,10 @@
 %YAML 1.1
 ---
 filename_prefix: homme_shoc_cld_spa_p3_rrtmgp_output
-Averaging Type: Instant
+averaging_type: Instant
 Max Snapshots Per File: 1
 Fields:
-  Physics GLL:
+  Physics gll:
     Field Names:
       # HOMME
       - ps
@@ -102,6 +102,6 @@ Fields:
       - PotentialTemperature_at_500mb
 
 output_control:
-  Frequency: ${NUM_STEPS}
+  frequency: ${NUM_STEPS}
   frequency_units: nsteps
 ...

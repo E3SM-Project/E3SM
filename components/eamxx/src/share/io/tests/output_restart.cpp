@@ -81,8 +81,8 @@ TEST_CASE("output_restart","io")
   output_params.set<int>("flush_frequency",1);
   output_params.sublist("Restart").set<bool>("force_new_file",false);
   output_params.sublist("output_control").set<std::string>("frequency_units","nsteps");
-  output_params.sublist("output_control").set<int>("Frequency",10);
-  output_params.sublist("Checkpoint Control").set<int>("Frequency",5);
+  output_params.sublist("output_control").set<int>("frequency",10);
+  output_params.sublist("Checkpoint Control").set<int>("frequency",5);
   // This skips a test that only matters for AD runs
   output_params.sublist("Checkpoint Control").set<bool>("is_unit_testing","true");
 
@@ -126,7 +126,7 @@ TEST_CASE("output_restart","io")
       ofs.open("rpointer.atm", std::ofstream::out | std::ofstream::trunc);
     }
     print("   -> Averaging type: " + avg_type + " ", 40);
-    output_params.set<std::string>("Averaging Type",avg_type);
+    output_params.set<std::string>("averaging_type",avg_type);
 
     // 1. Run for full 20 days, no restarts needed
     auto fm_mono = clone_fm(fm0);

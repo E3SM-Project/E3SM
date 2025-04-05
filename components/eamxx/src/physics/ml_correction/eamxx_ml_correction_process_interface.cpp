@@ -11,11 +11,11 @@ namespace scream {
 MLCorrection::MLCorrection(const ekat::Comm &comm,
                            const ekat::ParameterList &params)
     : AtmosphereProcess(comm, params) {
-  m_ML_model_path_tq = m_params.get<std::string>("ML_model_path_tq");
-  m_ML_model_path_uv = m_params.get<std::string>("ML_model_path_uv");
-  m_ML_model_path_sfc_fluxes = m_params.get<std::string>("ML_model_path_sfc_fluxes");
-  m_fields_ml_output_variables = m_params.get<std::vector<std::string>>("ML_output_fields");
-  m_ML_correction_unit_test = m_params.get<bool>("ML_correction_unit_test");
+  m_ML_model_path_tq = m_params.get<std::string>("ml_model_path_tq");
+  m_ML_model_path_uv = m_params.get<std::string>("ml_model_path_uv");
+  m_ML_model_path_sfc_fluxes = m_params.get<std::string>("ml_model_path_sfc_fluxes");
+  m_fields_ml_output_variables = m_params.get<std::vector<std::string>>("ml_output_fields");
+  m_ML_correction_unit_test = m_params.get<bool>("ml_correction_unit_test");
 }
 
 // =========================================================================================
@@ -160,7 +160,7 @@ void MLCorrection::run_impl(const double dt) {
   ekat::enable_fpes(fpe_mask);
 
   // Now back out the qv change abd apply it to precipitation, only if Tq ML is turned on
-  if (m_ML_model_path_tq != "None") {
+  if (m_ML_model_path_tq != "none") {
     using PC  = scream::physics::Constants<Real>;
     using KT  = KokkosTypes<DefaultDevice>;
     using MT  = typename KT::MemberType;

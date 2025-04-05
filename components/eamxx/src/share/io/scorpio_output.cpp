@@ -122,7 +122,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   using vos_t = std::vector<std::string>;
 
   // Figure out what kind of averaging is requested
-  auto avg_type = params.get<std::string>("Averaging Type");
+  auto avg_type = params.get<std::string>("averaging_type");
   m_avg_type = str2avg(avg_type);
   EKAT_REQUIRE_MSG (m_avg_type!=OutputAvgType::Invalid,
       "Error! Unsupported averaging type '" + avg_type + "'.\n"
@@ -335,7 +335,7 @@ void AtmosphereOutput::restart (const std::string& filename)
 {
   // Create an input stream on the fly, and init averaging data
   ekat::ParameterList res_params("Input Parameters");
-  res_params.set<std::string>("Filename",filename);
+  res_params.set<std::string>("filename",filename);
   std::vector<std::string> input_field_names = m_fields_names;
   input_field_names.insert(input_field_names.end(),m_avg_cnt_names.begin(),m_avg_cnt_names.end());
   res_params.set("Field Names",input_field_names);
@@ -805,7 +805,7 @@ void AtmosphereOutput::register_dimensions(const std::string& name)
       "Error! Dimension " + tag_name + " on field " + name + " has conflicting lengths.\n"
       "  - old length: " + std::to_string(m_dims[tag_name]) + "\n"
       "  - new length: " + std::to_string(dim_len) + "\n"
-      "If same name applies to different dims (e.g. PhysicsGLL and PhysicsPG2 define "
+      "If same name applies to different dims (e.g. Physics gll and Physics pg2 define "
       "\"ncol\" at different lengths), reset tag name for one of the grids.\n");
   }
 } // register_dimensions

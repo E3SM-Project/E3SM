@@ -67,7 +67,7 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
   bool pg2_grid_in_io_streams = false;
   const auto& fields_pl = m_params.sublist("Fields");
   for (auto it=fields_pl.sublists_names_cbegin(); it!=fields_pl.sublists_names_cend(); ++it) {
-    if (*it == "Physics PG2") pg2_grid_in_io_streams = true;
+    if (*it == "Physics pg2") pg2_grid_in_io_streams = true;
   }
 
   if (m_params.isParameter("Field Names")) {
@@ -95,9 +95,9 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
       if (pg2_grid_in_io_streams) {
         const auto& grid_pl = fields_pl.sublist(*it);
         bool reset_ncol_naming = false;
-        if (*it == "Physics GLL") reset_ncol_naming = true;
+        if (*it == "Physics gll") reset_ncol_naming = true;
         if (grid_pl.isParameter("IO Grid Name")) {
-          if (grid_pl.get<std::string>("IO Grid Name") == "Physics GLL") {
+          if (grid_pl.get<std::string>("IO Grid Name") == "Physics gll") {
             reset_ncol_naming = true;
           }
         }
@@ -157,7 +157,7 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
 
       // See comment above for ncol naming with 2+ grids
       auto grid_nonconst = grid.second->clone(grid.first,true);
-      if (grid.first == "Physics GLL" && pg2_grid_in_io_streams) {
+      if (grid.first == "Physics gll" && pg2_grid_in_io_streams) {
         grid_nonconst->reset_field_tag_name(ShortFieldTagsNames::COL,"ncol_d");
       }
 
@@ -358,7 +358,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       "  - current time stamp   : " + timestamp.to_string() + "\n"
       "  - next write time stamp: " + m_output_control.next_write_ts.to_string() + "\n"
       "The most likely cause is an output frequency that is faster than the atm timestep.\n"
-      "Try to increase 'Frequency' and/or 'frequency_units' in your output yaml file.\n");
+      "Try to increase 'frequency' and/or 'frequency_units' in your output yaml file.\n");
 
   if (m_atm_logger) {
     m_atm_logger->debug("[OutputManager::run] filename_prefix: " + m_filename_prefix + "\n");
@@ -699,7 +699,7 @@ setup_internals (const std::shared_ptr<fm_type>& field_mgr,
     // Hard code some parameters in case we access them later
     m_params.set<std::string>("Floating Point Precision","real");
   } else {
-    auto avg_type = m_params.get<std::string>("Averaging Type");
+    auto avg_type = m_params.get<std::string>("averaging_type");
     m_avg_type = str2avg(avg_type);
     EKAT_REQUIRE_MSG (m_avg_type!=OutputAvgType::Invalid,
         "Error! Unsupported averaging type '" + avg_type + "'.\n"
@@ -746,7 +746,7 @@ setup_internals (const std::shared_ptr<fm_type>& field_mgr,
   if (not m_output_control.output_enabled()) {
     return;
   }
-  m_output_control.frequency = out_control_pl.get<int>("Frequency");
+  m_output_control.frequency = out_control_pl.get<int>("frequency");
   EKAT_REQUIRE_MSG (m_output_control.frequency>0,
       "Error! Invalid frequency (" + std::to_string(m_output_control.frequency) + ") in Output Control. Please, use positive number.\n");
 
@@ -759,7 +759,7 @@ setup_internals (const std::shared_ptr<fm_type>& field_mgr,
     m_checkpoint_control.set_frequency_units(pl.get<std::string>("frequency_units"));
 
     if (m_checkpoint_control.output_enabled()) {
-      m_checkpoint_control.frequency = pl.get<int>("Frequency");
+      m_checkpoint_control.frequency = pl.get<int>("frequency");
       EKAT_REQUIRE_MSG (m_output_control.frequency>0,
           "Error! Invalid frequency (" + std::to_string(m_checkpoint_control.frequency) + ") in Checkpoint Control. Please, use positive number.\n");
 
@@ -945,7 +945,7 @@ push_to_logger()
   m_atm_logger->info("              Reference t0: " + m_output_control.last_write_ts.to_string());
   m_atm_logger->info("         Is Restart File ?: " + bool_to_string(m_is_model_restart_output));
   m_atm_logger->info("                 Run type : " + rt_to_string(m_run_type));
-  m_atm_logger->info("            Averaging Type: " + e2str(m_avg_type));
+  m_atm_logger->info("            averaging_type: " + e2str(m_avg_type));
   m_atm_logger->info("          Output Frequency: " + std::to_string(m_output_control.frequency) + " " + m_output_control.frequency_units);
   switch (m_output_file_specs.storage.type) {
     case NumSnaps:

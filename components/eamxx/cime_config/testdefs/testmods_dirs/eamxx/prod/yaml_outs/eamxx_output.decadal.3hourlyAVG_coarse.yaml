@@ -2,11 +2,11 @@
 ---
 filename_prefix: eamxx_output.decadal.3hourlyAVG_coarse.h
 iotype: pnetcdf
-Averaging Type: Average
+averaging_type: Average
 Max Snapshots Per File: 8 # one file per day
 horiz_remap_file: ${DIN_LOC_ROOT}/atm/scream/maps/map_ne1024pg2_to_ne30pg2_mono.20230901.nc
 Fields:
-  Physics PG2:
+  Physics pg2:
     Field Names:
     # 3D fields
     - T_mid
@@ -62,8 +62,7 @@ Fields:
     - LongwaveCloudForcing
     - ShortwaveCloudForcing
 output_control:
-  Frequency: 3
+  frequency: 3
   frequency_units: nhours
-  MPI Ranks in Filename: false
 Restart:
   force_new_file: true

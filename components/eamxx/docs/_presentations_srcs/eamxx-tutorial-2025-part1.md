@@ -152,16 +152,16 @@ th, td {
 # the data from $case/namelist_scream.xml. If you want to make some
 # local changes, you can edit this XML file or use atmchange.
 ################################################################
-Scorpio:
+scorpio:
   model_restart:
     iotype: default
     output_control:
-      Frequency: 6
+      frequency: 6
       frequency_units: ndays
   output_yaml_files: !strings
   - /path/to/run/data/output_file.yaml
 atmosphere_processes:
-  Type: Group
+  type: group
   atm_procs_list: !strings
   - sc_import
   - homme
@@ -171,8 +171,8 @@ atmosphere_processes:
   enable_postcondition_checks: true
   enable_precondition_checks: true
   homme:
-    BfbHash: 18
-    Moisture: moist
+    bfb_hash: 18
+    moisture: moist
     compute_tendencies: !strings []
     enable_postcondition_checks: true
 ...
@@ -269,9 +269,9 @@ EOF
 <td>
 
 ```yaml
-Averageing Type: Average
+averaging_type: Average
 Fields:
-  Physics PG2:
+  Physics pg2:
     Field Names:
       - Q
       - CLDLIQ
@@ -279,7 +279,7 @@ Fields:
 Max Snapshots Per File: 1
 filename_prefix: output.scream_monthly.NAME_1
 output_control:
-  Frequency: 1
+  frequency: 1
   frequency_units: nmonths
 ```
 
