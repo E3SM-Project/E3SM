@@ -701,6 +701,9 @@ be lost if SCREAM_HACK_XML is not enabled.
     <perturbation_random_seed type="integer" doc="Random seed used for perturbation. Will be overridded by generate_perturbation_random_seed=true.">0</perturbation_random_seed>
     <perturbation_limit type="real" doc="Defines a range [1-x, 1+x] which perturbation will be taken from.">0.001</perturbation_limit>
     <perturbation_minimum_pressure type="real" doc="Minimum pressure (relative to a reference level pressure profile) for which perturbation will be applied.">900.0</perturbation_minimum_pressure>
+
+    <ash               >0.0</ash>
+
   </initial_conditions>
 
   <!-- List of yaml files containing I/O output specs -->
@@ -781,6 +784,12 @@ be lost if SCREAM_HACK_XML is not enabled.
     <target_longitude COMPSET=".*RCE">0.0</target_longitude>
 
   </iop_options>
+
+  <!-- Fixers -->
+  <fixer inherit="atm_proc_base">
+    <eruption_date type="string" doc="Start date/time in YYYY-MM-DD-SSSSS format for the eruption">${RUN_REFDATE}-${RUN_REFTOD}</eruption_date>
+    <plume_radius_in_km type="real" doc="Radius of eruption plume, in km" constraints="gt 0; le 100000">100</plume_radius_in_km>
+  </fixer>
 
   <!-- Homme control namelist -->
   <ctl_nl>
