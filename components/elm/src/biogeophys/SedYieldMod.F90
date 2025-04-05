@@ -90,7 +90,7 @@ contains
     real(r8) :: Crsd, Clai, PCT_gnd                        ! ground cover calculated from residue and LAI
     real(r8) :: nh                                         ! Manning's coefficient 
     real(r8) :: K, COH                                     ! soil erodibility
-    real(r8) :: Qs, Qs_tot, Qss, Qg, Ptot, Ie, Dl          ! water fluxes
+    real(r8) :: Qs, Qs_tot, Qg, Ptot, Ie, Dl               ! water fluxes
     real(r8) :: Tc, Es_Q, Es_P, KE_DT, KE_LD, cheight      ! temporaries 
     real(r8) :: Es_Qcrp, Es_Pcrp                           ! cropland temporaries
     real(r8) :: stxt(4)                                    ! soil texture including gravel
@@ -237,7 +237,8 @@ contains
             Es_Pcrp = 1.e-3_r8 / dtime * (1._r8 - frac_sno(c)) * Es_Pcrp  ! kg/m2/s
 
             ! snow scaling factor from T factor of BQART
-            Qs = 8.64e4_r8 * (qflx_surf(c) + qflx_infl_excess(c))       ! mm/d
+            Qs = 8.64e4_r8 * (1._r8 - 0.7846_r8*frac_sno(c)) * &
+               (qflx_surf(c) + qflx_infl_excess(c))                     ! mm/d
             Qs_tot = 8.64e4_r8 * (qflx_surf(c) + qflx_h2osfc_surf(c))   ! mm/d
 
             Es_Q = 0._r8
@@ -272,15 +273,15 @@ contains
                         ftillage_tc = ftillage_tc + ftillage * veg_pp%wtcol(p)
 
                         Es_Q = Es_Q + 19.1_r8 * qfactor(c) * 2._r8/COH * flitho * fslp * &
-                           ftillage * fgndcov * Qss**1.5_r8 * veg_pp%wtcol(p)
+                           ftillage * fgndcov * Qs**1.5_r8 * veg_pp%wtcol(p)
 
                         Es_Qcrp = Es_Qcrp + 19.1_r8 * qfactor(c) * 2._r8/COH * flitho * fslp * &
-                           ftillage * fgndcov * Qss**1.5_r8 * veg_pp%wtcol(p)
+                           ftillage * fgndcov * Qs**1.5_r8 * veg_pp%wtcol(p)
                      else
                         ftillage_tc = ftillage_tc + veg_pp%wtcol(p)
 
                         Es_Q = Es_Q + 19.1_r8 * qfactor(c) * 2._r8/COH * flitho * fslp * &
-                           fgndcov * fglacier * Qss**1.5_r8 * veg_pp%wtcol(p)
+                           fgndcov * fglacier * Qs**1.5_r8 * veg_pp%wtcol(p)
                      end if
                   end if
                end do
