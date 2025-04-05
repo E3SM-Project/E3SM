@@ -3887,6 +3887,7 @@
 	<command name="load">intelmpi/2019u3</command>
       </modules>
       <modules>
+        <command name="load">python/3.11.5</command>
         <command name="load">netcdf/4.6.3</command>
         <command name="load">pnetcdf/1.9.0</command>
         <command name="load">mkl/2020</command>
