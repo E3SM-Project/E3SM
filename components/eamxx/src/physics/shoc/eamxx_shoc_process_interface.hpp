@@ -391,7 +391,7 @@ public:
 #endif
     static constexpr int num_1d_scalar_nlev = 1;
 #ifndef SCREAM_SHOC_SMALL_KERNELS
-    static constexpr int num_2d_vector_mid  = 18;
+    static constexpr int num_2d_vector_mid  = 20;
     static constexpr int num_2d_vector_int  = 12;
 #else
     static constexpr int num_2d_vector_mid  = 22;
@@ -438,6 +438,8 @@ public:
     uview_2d<Spack> shoc_ql2;
     uview_2d<Spack> shoc_mix;
     uview_2d<Spack> isotropy;
+    uview_2d<Spack> shoc_cond;
+    uview_2d<Spack> shoc_evap;
     uview_2d<Spack> w_sec;
     uview_2d<Spack> thl_sec;
     uview_2d<Spack> qw_sec;
