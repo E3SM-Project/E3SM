@@ -31,6 +31,8 @@ enum class FieldTag {
   LevelMidPoint,
   LevelInterface,
   Column,
+  Latitude,
+  Longitude,
   GaussPoint,
   Component,
   TimeLevel,
@@ -45,6 +47,8 @@ namespace ShortFieldTagsNames {
   constexpr auto INV  = FieldTag::Invalid;
   constexpr auto EL   = FieldTag::Element;
   constexpr auto COL  = FieldTag::Column;
+  constexpr auto LAT  = FieldTag::Latitude;
+  constexpr auto LON  = FieldTag::Longitude;
   constexpr auto GP   = FieldTag::GaussPoint;
   constexpr auto TL   = FieldTag::TimeLevel;
   constexpr auto LEV  = FieldTag::LevelMidPoint;
@@ -73,6 +77,12 @@ inline std::string e2str (const FieldTag ft) {
       break;
     case FieldTag::Column:
       name = "ncol";
+      break;
+    case FieldTag::Latitude:
+      name = "lat";
+      break;
+    case FieldTag::Longitude:
+      name = "lon";
       break;
     case FieldTag::GaussPoint:
       name = "gp";

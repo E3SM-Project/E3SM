@@ -1,0 +1,15 @@
+%YAML 1.1
+---
+filename_prefix: ace_standalone_output
+Averaging Type: Instant
+Fields:
+  Physics:
+    Field Names:
+      - T_mid
+      - horiz_winds
+      - qv
+
+output_control:
+  Frequency: 1
+  frequency_units: nsteps
+...

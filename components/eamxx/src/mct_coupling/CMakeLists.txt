@@ -49,6 +49,9 @@ endif ()
 if (SCREAM_ENABLE_MAM)
   list (APPEND SCREAM_LIBS mam)
 endif()
+if (EAMXX_ENABLE_ACE)
+  list (APPEND SCREAM_LIBS ace)
+endif()
 
 # Create atm lib
 add_library(atm ${ATM_SRC})

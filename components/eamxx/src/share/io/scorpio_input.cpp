@@ -503,7 +503,47 @@ void AtmosphereInput::set_decompositions()
   for (int idof=0; idof<local_dim; ++idof) {
     offsets[idof] = gids_h[idof] - min_gid;
   }
-  scorpio::set_dim_decomp(m_filename,decomp_dim,offsets);
+
+  // TODO: this is probably a bad idea in general, but I can't get it to work
+  // TODO: see if Luca can fix it
+  // 
+  // Before calling set_dim_decomp, check if this dimension appears as non-first dimension
+  // in any variable. If so, skip decomposition.
+  bool is_safe_to_decompose = true;
+  for (const auto& it : m_layouts) {
+    const auto& layout = it.second;
+    if (layout.has_tag(decomp_tag)) {
+      // Find position of the decomp tag in the layout
+      int decomp_pos = -1;
+      for (int i=0; i<layout.rank(); ++i) {
+        if (layout.tag(i) == decomp_tag) {
+          decomp_pos = i;
+          break;
+        }
+      }
+
+      // If decomp dimension is not the first one, we can't safely set decomposition
+      // with current implementation constraints
+      if (decomp_pos > 0) {
+        is_safe_to_decompose = false;
+        if (m_atm_logger) {
+          m_atm_logger->warn("Skipping decomposition for field '" + it.first + 
+                            "' because decomposed dimension is not the first dimension.");
+        }
+        break;
+      }
+    }
+  }
+
+  if (is_safe_to_decompose) {
+    scorpio::set_dim_decomp(m_filename, decomp_dim, offsets);
+  } else {
+    // Log a warning about skipping decomposition
+    if (m_atm_logger) {
+      m_atm_logger->warn("Skipping all decompositions since at least one field has decomposed dimension not in first position.");
+      m_atm_logger->warn("This might impact performance but does not affect correctness.");
+    }
+  }
 }
 
 } // namespace scream
