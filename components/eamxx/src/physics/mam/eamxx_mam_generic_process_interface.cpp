@@ -218,13 +218,36 @@ void MAMGenericInterface::populate_cloudborne_dry_aero(
   }
 }
 // ================================================================
+void MAMGenericInterface::set_field_w_scratch_buffer(
+    mam_coupling::view_2d &var, mam_coupling::Buffer &buffer,
+    const bool set_to_zero) {
+  var = buffer.scratch[i_scratch_vars_];
+  i_scratch_vars_++;
+  EKAT_REQUIRE_MSG(i_scratch_vars_ < buffer.num_2d_scratch,
+                   "Error! Insufficient number of scratch size in mam buffer.\n"
+                   "  - i_scratch_vars_: " +
+                       std::to_string(i_scratch_vars_) +
+                       "\n"
+                       "  -  buffer.num_2d_scratch: " +
+                       std::to_string(buffer.num_2d_scratch) + "\n");
+  if(set_to_zero) {
+    Kokkos::deep_copy(var, 0.0);
+  }
+}
+// ================================================================
 void MAMGenericInterface::populate_gases_dry_aero(
     mam_coupling::AerosolState &dry_aero, mam_coupling::Buffer &buffer) {
   for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
     dry_aero.gas_mmr[g] = buffer.dry_gas_mmr[g];
   }
 }
-
+// ================================================================
+void MAMGenericInterface::set_buffer_scratch_to_zero(
+    mam_coupling::Buffer &buffer) {
+  for(int f = 0; f < buffer.num_2d_scratch; ++f) {
+    Kokkos::deep_copy(buffer.scratch[f], 0.0);
+  }
+}
 // ================================================================
 void MAMGenericInterface::populate_gases_wet_aero(
     mam_coupling::AerosolState &wet_aero) {

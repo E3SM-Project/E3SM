@@ -32,6 +32,9 @@ void MAMOptics::set_grids(
   nswbands_ = mam4::modal_aer_opt::nswbands;     // number of shortwave bands
   nlwbands_ = mam4::modal_aer_opt::nlwbands;     // number of longwave bands
 
+  len_temporary_views_ = get_len_temporary_views();
+  buffer_.set_len_temporary_views(len_temporary_views_);
+  buffer_.set_num_scratch(num_2d_scratch_);
   // Define the different field layouts that will be used for this process
 
   // Define aerosol optics fields computed by this process.
@@ -88,7 +91,49 @@ void MAMOptics::set_grids(
 }
 
 size_t MAMOptics::requested_buffer_size_in_bytes() const {
-  return mam_coupling::buffer_size(ncol_, nlev_);
+  return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_,
+                                   len_temporary_views_);
+}
+
+int MAMOptics::get_len_temporary_views() {
+  int work_len = 0;
+  // work_
+  work_len += ncol_ * mam4::modal_aer_opt::get_work_len_aerosol_optics();
+  // tau_ssa_g_sw_, tau_ssa_sw_, tau_sw_, tau_f_sw_
+  const int nlev_f = nlev_ + 1;
+  work_len += 4 * ncol_ * nswbands_ * nlev_f;
+  return work_len;
+}
+void MAMOptics::init_temporary_views() {
+  auto work_ptr      = (Real *)buffer_.temporary_views.data();
+  const int work_len = mam4::modal_aer_opt::get_work_len_aerosol_optics();
+  work_              = mam_coupling::view_2d(work_ptr, ncol_, work_len);
+  work_ptr += ncol_ * work_len;
+
+  // shortwave aerosol scattering asymmetry parameter [unitless]
+  tau_ssa_g_sw_ = mam_coupling::view_3d(work_ptr, ncol_, nswbands_, nlev_ + 1);
+  const int nlev_f = nlev_ + 1;
+  work_ptr += ncol_ * nswbands_ * nlev_f;
+  // shortwave aerosol single-scattering albedo [unitless]
+  tau_ssa_sw_ = mam_coupling::view_3d(work_ptr, ncol_, nswbands_, nlev_ + 1);
+  work_ptr += ncol_ * nswbands_ * nlev_f;
+  // shortwave aerosol extinction optical depth [unitless]
+  tau_sw_ = mam_coupling::view_3d(work_ptr, ncol_, nswbands_, nlev_ + 1);
+  work_ptr += ncol_ * nswbands_ * nlev_f;
+  // aerosol forward scattered fraction * tau * w
+  tau_f_sw_ = mam_coupling::view_3d(work_ptr, ncol_, nswbands_, nlev_ + 1);
+  work_ptr += ncol_ * nswbands_ * nlev_f;
+
+  /// error check
+  // NOTE: workspace_provided can be larger than workspace_used, but let's try
+  // to use the minimum amount of memory
+  const int workspace_used     = work_ptr - buffer_.temporary_views.data();
+  const int workspace_provided = buffer_.temporary_views.extent(0);
+  EKAT_REQUIRE_MSG(workspace_used == workspace_provided,
+                   "Error: workspace_used (" + std::to_string(workspace_used) +
+                       ") and workspace_provided (" +
+                       std::to_string(workspace_provided) +
+                       ") should be equal. \n");
 }
 
 void MAMOptics::init_buffers(const ATMBufferManager &buffer_manager) {
@@ -148,7 +193,6 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   dry_atm_.phis  = get_field_in("phis").get_view<const Real *>();
   dry_atm_.p_del = get_field_in("pseudo_density_dry").get_view<const Real **>();
 
-  // prescribed volcanic aerosols.
   ssa_cmip6_sw_ =
       mam_coupling::view_3d("ssa_cmip6_sw", ncol_, nlev_, nswbands_);
   af_cmip6_sw_ = mam_coupling::view_3d("af_cmip6_sw", ncol_, nlev_, nswbands_);
@@ -156,29 +200,8 @@ void MAMOptics::initialize_impl(const RunType run_type) {
       mam_coupling::view_3d("ext_cmip6_sw", ncol_, nswbands_, nlev_);
   ext_cmip6_lw_ =
       mam_coupling::view_3d("ext_cmip6_lw_", ncol_, nlev_, nlwbands_);
-  // FIXME: We need to get ssa_cmip6_sw_, af_cmip6_sw_, ext_cmip6_sw_,
-  // ext_cmip6_lw_ from a netcdf file.
-  // We will rely on eamxx to interpolate/map data from netcdf files.
-  // The io interface in eamxx is being upgraded.
-  // Thus, I will wait until changes in the eamxx's side are completed.
-  Kokkos::deep_copy(ssa_cmip6_sw_, 0.0);
-  Kokkos::deep_copy(af_cmip6_sw_, 0.0);
-  Kokkos::deep_copy(ext_cmip6_sw_, 0.0);
-  Kokkos::deep_copy(ext_cmip6_lw_, 0.0);
 
-  const int work_len = mam4::modal_aer_opt::get_work_len_aerosol_optics();
-  work_              = mam_coupling::view_2d("work", ncol_, work_len);
-
-  // shortwave aerosol scattering asymmetry parameter [unitless]
-  tau_ssa_g_sw_ =
-      mam_coupling::view_3d("tau_ssa_g_sw_", ncol_, nswbands_, nlev_ + 1);
-  // shortwave aerosol single-scattering albedo [unitless]
-  tau_ssa_sw_ =
-      mam_coupling::view_3d("tau_ssa_sw_", ncol_, nswbands_, nlev_ + 1);
-  // shortwave aerosol extinction optical depth [unitless]
-  tau_sw_ = mam_coupling::view_3d("tau_sw_", ncol_, nswbands_, nlev_ + 1);
-  // aerosol forward scattered fraction * tau * w
-  tau_f_sw_ = mam_coupling::view_3d("tau_f_sw_", ncol_, nswbands_, nlev_ + 1);
+  init_temporary_views();
 
   // read table info
   {

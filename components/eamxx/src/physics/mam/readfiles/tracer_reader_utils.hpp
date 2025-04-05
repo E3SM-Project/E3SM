@@ -153,7 +153,7 @@ struct TracerData {
   // only for zonal files
   view_1d zonal_levs_;
 
-  void allocate_temporal_views() {
+  void allocate_temporary_views() {
     // BEG and OUT data views.
     EKAT_REQUIRE_MSG(ncol_ != int(-1), "Error! ncols has not been set. \n");
     EKAT_REQUIRE_MSG(nlev_ != int(-1), "Error! nlevs has not been set. \n");
