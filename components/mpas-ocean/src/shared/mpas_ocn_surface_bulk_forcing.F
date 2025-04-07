@@ -64,6 +64,9 @@ module ocn_surface_bulk_forcing
    logical ::              &
       bulkWindStressOff,   &! on/off switch for bulk wind stress
       bulkThicknessFluxOff  ! on/off switch for bulk thickness flux
+   real(kind=RKIND) ::     &
+      temperature_iceberg, &
+      cp_iceberg
 
 !***********************************************************************
 
@@ -550,6 +553,9 @@ contains
       if (config_use_bulk_thickness_flux) &
          bulkThicknessFluxOff = .false.
 
+      cp_iceberg = config_iceberg_flux_cp_ice
+      temperature_iceberg = config_iceberg_flux_temperature_ice
+
       !-----------------------------------------------------------------
 
    end subroutine ocn_surface_bulk_forcing_init!}}}
@@ -626,7 +632,7 @@ contains
                                                   seaIceTemperatureFlux, icebergTemperatureFlux, &
                                                   totalFreshWaterTemperatureFlux
       real (kind=RKIND), dimension(:), pointer :: landIcePressure
-      real (kind=RKIND) :: requiredSalt, allowedSalt, surfaceTemperatureFluxWithoutRunoff
+      real (kind=RKIND) :: requiredSalt, allowedSalt, surfaceTemperatureFluxWithoutRunoff, freezingTemperature
 
       err = 0
 
@@ -673,12 +679,18 @@ contains
 
       ! Build surface fluxes at cell centers
       !$omp parallel
-      !$omp do schedule(runtime) private(allowedSalt, requiredSalt)
+      !$omp do schedule(runtime) private(allowedSalt, requiredSalt, freezingTemperature)
       do iCell = 1, nCells
+
+        ! Raise the iceberg temperature to the local freezing point, should be negative for extraction of heat
+        freezingTemperature = ocn_freezing_temperature( tracerGroup(index_salinity_flux, minLevelCell(iCell), iCell), pressure=0.0_RKIND, &
+                                                        inLandIceCavity=.false.)
+
         tracersSurfaceFlux(index_temperature_flux, iCell) = tracersSurfaceFlux(index_temperature_flux, iCell) &
                                                            + (latentHeatFlux(iCell) + sensibleHeatFlux(iCell) &
                                                            + longWaveHeatFluxUp(iCell) + longWaveHeatFluxDown(iCell) &
                                                            + seaIceHeatFlux(iCell) + icebergHeatFlux(iCell) &
+                                                           + cp_iceberg * icebergFreshWaterFlux(iCell) * (temperature_iceberg - freezingTemperature) &
                                                            - (snowFlux(iCell) + iceRunoffFlux(iCell)) &
                                                            * latent_heat_fusion_mks) * hflux_factor
 
@@ -703,6 +715,7 @@ contains
       !$omp end do
       !$omp end parallel
       ! assume that snow comes in at 0 C
+      ! assume that icebergs enter at a constant temperature not equal to the local freezing point
 
       ! Surface fluxes of water have an associated heat content, but the coupled system does not account for this
       ! Assume surface fluxes of water have a temperature dependent on the incoming mass flux.
@@ -711,7 +724,7 @@ contains
       ! indices on tracerGroup are (iTracer, iLevel, iCell)
       if (.not. bulkThicknessFluxOff) then
          !$omp parallel
-         !$omp do schedule(runtime) private(surfaceTemperatureFluxWithoutRunoff)
+         !$omp do schedule(runtime) private(surfaceTemperatureFluxWithoutRunoff, freezingTemperature)
          do iCell = 1, nCells
 
            ! Accumulate fluxes that use the surface temperature
@@ -724,12 +737,12 @@ contains
 
            ! Accumulate fluxes that use the freezing point
 ! mrp performance note: should call ocn_freezing_temperature just once here
+           freezingTemperature = ocn_freezing_temperature( tracerGroup(index_salinity_flux, minLevelCell(iCell), iCell), pressure=0.0_RKIND, &
+                                                           inLandIceCavity=.false.)
            seaIceTemperatureFlux(iCell) = seaIceFreshWaterFlux(iCell) * &
-               ocn_freezing_temperature( tracerGroup(index_salinity_flux, minLevelCell(iCell), iCell), pressure=0.0_RKIND, &
-                                         inLandIceCavity=.false.) / rho_sw
+               freezingTemperature / rho_sw
            icebergTemperatureFlux(iCell) = icebergFreshWaterFlux(iCell) * &
-               ocn_freezing_temperature( tracerGroup(index_salinity_flux, minLevelCell(iCell), iCell), pressure=0.0_RKIND, &
-                                         inLandIceCavity=.false.) / rho_sw
+               freezingTemperature / rho_sw
 
            surfaceTemperatureFluxWithoutRunoff = rainTemperatureFlux(iCell) + evapTemperatureFlux(iCell) + &
                                                  seaIceTemperatureFlux(iCell) + icebergTemperatureFlux(iCell)

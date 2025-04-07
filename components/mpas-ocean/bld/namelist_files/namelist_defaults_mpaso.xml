@@ -418,6 +418,10 @@
 <config_frazil_maximum_freezing_temperature>0.0</config_frazil_maximum_freezing_temperature>
 <config_frazil_use_surface_pressure>.false.</config_frazil_use_surface_pressure>
 
+<!-- iceberg_fluxes -->
+<config_iceberg_flux_cp_ice>2106.0</config_iceberg_flux_cp_ice>
+<config_iceberg_flux_temperature_ice>-4.0</config_iceberg_flux_temperature_ice>
+
 <!-- land_ice_fluxes -->
 <config_land_ice_flux_mode>'off'</config_land_ice_flux_mode>
 <config_land_ice_flux_mode ocn_grid="oQU240wLI">'pressure_only'</config_land_ice_flux_mode>
