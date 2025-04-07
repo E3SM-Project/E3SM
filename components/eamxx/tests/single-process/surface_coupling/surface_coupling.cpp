@@ -474,7 +474,7 @@ TEST_CASE("surface-coupling", "") {
   std::uniform_real_distribution<Real> pdf_real_constant_data(0.0,1.0);
 
   auto& ap_params     = ad_params.sublist("atmosphere_processes");
-  auto& sc_exp_params = ap_params.sublist("SurfaceCouplingExporter");
+  auto& sc_exp_params = ap_params.sublist("surface_coupling_exporter");
   // Set up forcing to a constant value
   const Real Faxa_swndf_const = pdf_real_constant_data(engine);
   const Real Faxa_swvdf_const = pdf_real_constant_data(engine);
@@ -496,8 +496,8 @@ TEST_CASE("surface-coupling", "") {
 
   // Need to register products in the factory *before* we create any atm process or grids manager.
   auto& proc_factory = AtmosphereProcessFactory::instance();
-  proc_factory.register_product("SurfaceCouplingImporter",&create_atmosphere_process<SurfaceCouplingImporter>);
-  proc_factory.register_product("SurfaceCouplingExporter",&create_atmosphere_process<SurfaceCouplingExporter>);
+  proc_factory.register_product("surface_coupling_importer",&create_atmosphere_process<SurfaceCouplingImporter>);
+  proc_factory.register_product("surface_coupling_exporter",&create_atmosphere_process<SurfaceCouplingExporter>);
   register_mesh_free_grids_manager();
   register_diagnostics();
 
