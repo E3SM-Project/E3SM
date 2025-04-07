@@ -83,7 +83,7 @@ TEST_CASE ("eamxx_time_interpolation_simple") {
 
   // Get a grids manager for the test
   auto grids_man = get_gm(comm, ncols, nlevs);
-  const auto& grid = grids_man->get_grid("Point Grid");
+  const auto& grid = grids_man->get_grid("point_grid");
   // Now create a fields manager to store initial data for testing.
   auto fields_man_t0 = get_fm(grid, t0, seed);
   // Construct a time interpolation object and add all of the fields to it.
@@ -151,7 +151,7 @@ TEST_CASE ("eamxx_time_interpolation_data_from_file") {
   // Get a grids manager for the test
   printf("   - Grids Manager...\n");
   auto grids_man = get_gm(comm, ncols, nlevs);
-  const auto& grid = grids_man->get_grid("Point Grid");
+  const auto& grid = grids_man->get_grid("point_grid");
   printf("   - Grids Manager...DONE\n");
   // Now create a fields manager to store initial data for testing.
   printf("   - Fields Manager...\n");
@@ -307,8 +307,8 @@ std::shared_ptr<const GridsManager> get_gm (const ekat::Comm& comm, const int nc
 {
   using vos_t = std::vector<std::string>;
   ekat::ParameterList gm_params;
-  gm_params.set("grids_names",vos_t{"Point Grid"});
-  auto& pl = gm_params.sublist("Point Grid");
+  gm_params.set("grids_names",vos_t{"point_grid"});
+  auto& pl = gm_params.sublist("point_grid");
   pl.set<std::string>("type","point_grid");
   pl.set("aliases",vos_t{"physics"});
   pl.set<int>("number_of_global_columns", ncols);
@@ -373,7 +373,7 @@ std::vector<std::string> create_test_data_files(
 	       	const int seed)
 {
   // We initialize a local field manager to use for output
-  auto fm = get_fm(gm->get_grid("Point Grid"), t0, seed);
+  auto fm = get_fm(gm->get_grid("point_grid"), t0, seed);
   // We will write data for 10 snaps for this test.  We set the max snaps per file to 3 to
   // ensure that a) there is more than 1 file and b) at least one file has fewer snap then
   // the others.

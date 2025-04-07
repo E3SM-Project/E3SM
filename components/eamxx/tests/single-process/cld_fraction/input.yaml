@@ -16,8 +16,8 @@ atmosphere_processes:
 
 grids_manager:
   type: mesh_free
-  grids_names: [Point Grid]
-  Point Grid:
+  grids_names: [point_grid]
+  point_grid:
     aliases: [physics]
     type: point_grid
     number_of_global_columns:   3

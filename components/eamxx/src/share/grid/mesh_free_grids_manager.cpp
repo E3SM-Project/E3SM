@@ -333,8 +333,8 @@ create_mesh_free_grids_manager (const ekat::Comm& comm, const int num_local_elem
     pl.set("number_of_vertical_levels",num_vertical_levels);
   }
   if (num_global_cols>0) {
-    grids_names.push_back("Point Grid");
-    auto& pl = gm_params.sublist("Point Grid");
+    grids_names.push_back("point_grid");
+    auto& pl = gm_params.sublist("point_grid");
     pl.set("type",std::string("point_grid"));
     pl.set("number_of_global_columns",num_global_cols);
     pl.set("number_of_vertical_levels",num_vertical_levels);

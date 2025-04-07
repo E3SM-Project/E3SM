@@ -29,7 +29,7 @@ grids_manager:
   geo_data_source: IC_FILE
   grids_names: [physics]
   physics:
-    aliases: [Point Grid]
+    aliases: [point_grid]
     type: point_grid
     number_of_global_columns:   218
     number_of_vertical_levels:  72

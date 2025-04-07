@@ -59,7 +59,7 @@ TEST_CASE("output_restart","io")
 
   // First set up a field manager and grids manager to interact with the output functions
   auto gm = get_test_gm(comm,num_gcols,num_levs);
-  auto grid = gm->get_grid("Point Grid");
+  auto grid = gm->get_grid("point_grid");
 
   // The the IC field manager
   auto fm0 = get_test_fm(grid);

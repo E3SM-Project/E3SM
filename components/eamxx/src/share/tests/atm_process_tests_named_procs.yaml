@@ -6,7 +6,7 @@ type: group
 
 MyFoo:
   type: Foo
-  Grid Name: Point Grid
+  Grid Name: point_grid
 BarBaz:
   type: group
   schedule_type: sequential
@@ -14,8 +14,8 @@ BarBaz:
 
   MyBar:
     type: Bar
-    Grid Name: Point Grid
+    Grid Name: point_grid
   MyBaz:
     type: Baz
-    Grid Name: Point Grid
+    Grid Name: point_grid
 ...

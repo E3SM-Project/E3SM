@@ -69,7 +69,7 @@ TEST_CASE("io_remap_test","io_remap_test")
   // Create the grid and field manager for test
   // First set up a field manager and grids manager to interact with the output functions
   auto gm = get_test_gm(io_comm,ncols_src,nlevs_src);
-  auto grid = gm->get_grid("Point Grid");
+  auto grid = gm->get_grid("point_grid");
   const int  ncols_src_l = grid->get_num_local_dofs();
   auto field_manager = get_test_fm(grid, false);
   field_manager->init_fields_time_stamp(t0);
@@ -286,7 +286,7 @@ TEST_CASE("io_remap_test","io_remap_test")
                          ? vert_remap_control.get<double>("Fill Value") : constants::DefaultFillValue<float>().value;
     print ("    -> vertical remap ... \n",io_comm);
     auto gm_vert   = get_test_gm(io_comm,ncols_src,nlevs_tgt);
-    auto grid_vert = gm_vert->get_grid("Point Grid");
+    auto grid_vert = gm_vert->get_grid("point_grid");
     auto fm_vert   = get_test_fm(grid_vert,true,p_ref);
     auto vert_in   = set_input_params("remap_vertical",io_comm,t0.to_string(),p_ref);
     AtmosphereInput test_input(vert_in,fm_vert);
@@ -356,7 +356,7 @@ TEST_CASE("io_remap_test","io_remap_test")
                          ? horiz_remap_control.get<double>("Fill Value") : constants::DefaultFillValue<float>().value;
     print ("    -> horizontal remap ... \n",io_comm);
     auto gm_horiz   = get_test_gm(io_comm,ncols_tgt,nlevs_src);
-    auto grid_horiz = gm_horiz->get_grid("Point Grid");
+    auto grid_horiz = gm_horiz->get_grid("point_grid");
     auto fm_horiz   = get_test_fm(grid_horiz,false,p_ref);
     auto horiz_in   = set_input_params("remap_horizontal",io_comm,t0.to_string(),p_ref);
     AtmosphereInput test_input(horiz_in,fm_horiz);
@@ -442,7 +442,7 @@ TEST_CASE("io_remap_test","io_remap_test")
                          ? vert_horiz_remap_control.get<double>("Fill Value") : constants::DefaultFillValue<float>().value;
     print ("    -> vertical + horizontal remap ... \n",io_comm);
     auto gm_vh   = get_test_gm(io_comm,ncols_tgt,nlevs_tgt);
-    auto grid_vh = gm_vh->get_grid("Point Grid");
+    auto grid_vh = gm_vh->get_grid("point_grid");
     auto fm_vh   = get_test_fm(grid_vh,true,p_ref);
     auto vh_in   = set_input_params("remap_vertical_horizontal",io_comm,t0.to_string(),p_ref);
     AtmosphereInput test_input(vh_in,fm_vh);

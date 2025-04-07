@@ -42,7 +42,7 @@ public:
     using namespace ShortFieldTagsNames;
     using FL = FieldLayout;
 
-    const auto grid = gm->get_grid("Point Grid");
+    const auto grid = gm->get_grid("point_grid");
     const auto& grid_name = grid->name();
     m_num_cols  = grid->get_num_local_dofs(); // Number of columns on this rank
     m_num_levs  = grid->get_num_vertical_levels();  // Number of levels per column
@@ -169,7 +169,7 @@ void write (const int seed, const ekat::Comm& comm)
 {
   // Create grid
   auto gm = get_gm(comm);
-  auto grid = gm->get_grid("Point Grid");
+  auto grid = gm->get_grid("point_grid");
 
   // Time advance parameters
   auto t0 = get_t0();
@@ -221,7 +221,7 @@ void read (const int seed, const ekat::Comm& comm)
 
   // Get gm
   auto gm = get_gm (comm);
-  auto grid = gm->get_grid("Point Grid");
+  auto grid = gm->get_grid("point_grid");
 
   // Get initial fields
   auto fm0 = get_fm(grid,t0,seed);

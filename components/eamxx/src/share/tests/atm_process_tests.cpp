@@ -32,7 +32,7 @@ ekat::ParameterList create_test_params ()
 
   auto& p0 = params.sublist("Foo");
   p0.set<std::string>("type", "Foo");
-  p0.set<std::string>("Grid Name", "Point Grid");
+  p0.set<std::string>("Grid Name", "point_grid");
 
   auto& p1 = params.sublist("BarBaz");
   p1.set<strvec_t>("atm_procs_list",{"Bar","Baz"});
@@ -41,11 +41,11 @@ ekat::ParameterList create_test_params ()
 
   auto& p1_0 = p1.sublist("Bar");
   p1_0.set<std::string>("type", "Bar");
-  p1_0.set<std::string>("Grid Name", "Point Grid");
+  p1_0.set<std::string>("Grid Name", "point_grid");
 
   auto& p1_1 = p1.sublist("Baz");
   p1_1.set<std::string>("type", "Baz");
-  p1_1.set<std::string>("Grid Name", "Point Grid");
+  p1_1.set<std::string>("Grid Name", "point_grid");
 
   return params;
 }
@@ -469,15 +469,15 @@ TEST_CASE("field_checks", "") {
   ekat::Comm comm(MPI_COMM_WORLD);
 
   auto gm = create_gm(comm);
-  auto grid = gm->get_grid("Point Grid");
+  auto grid = gm->get_grid("point_grid");
 
   // Create a parameter list
   ekat::ParameterList params ("Atmosphere Processes");
-  params.set<std::string>("Grid Name", "Point Grid");
+  params.set<std::string>("Grid Name", "point_grid");
 
   const auto lt = grid->get_3d_scalar_layout(true);
-  FieldIdentifier fid_T_tend("Temperature tendency",lt,K/s,"Point Grid");
-  FieldIdentifier fid_T("Temperature",lt,K,"Point Grid");
+  FieldIdentifier fid_T_tend("Temperature tendency",lt,K/s,"point_grid");
+  FieldIdentifier fid_T("Temperature",lt,K,"point_grid");
   Field T(fid_T), T_tend(fid_T_tend);
   T.allocate_view();
   T_tend.allocate_view();
@@ -535,8 +535,8 @@ TEST_CASE ("subcycling") {
   auto gm = create_gm(comm);
 
   ekat::ParameterList params, params_sub;
-  params.set<std::string>("Grid Name", "Point Grid");
-  params_sub.set<std::string>("Grid Name", "Point Grid");
+  params.set<std::string>("Grid Name", "point_grid");
+  params_sub.set<std::string>("Grid Name", "point_grid");
   params_sub.set<int>("number_of_subcycles", 5);
 
   // Create and init two atm procs, one subcycled and one not subcycled
@@ -598,19 +598,19 @@ TEST_CASE ("diagnostics") {
 
   // Create the identity diagnostic
   ekat::ParameterList params_identity("DiagIdentity");
-  params_identity.set<std::string>("Grid Name", "Point Grid");
+  params_identity.set<std::string>("Grid Name", "point_grid");
   auto diag_identity = std::make_shared<DiagIdentity>(comm,params_identity);
   diag_identity->set_grids(gm);
 
   // Create the sum diagnostic
   ekat::ParameterList params_sum("DiagSum");
-  params_sum.set<std::string>("Grid Name", "Point Grid");
+  params_sum.set<std::string>("Grid Name", "point_grid");
   auto diag_sum = std::make_shared<DiagSum>(comm,params_sum);
   diag_sum->set_grids(gm);
 
   // Create the fail diagnostic
   ekat::ParameterList params_fail("DiagFail");
-  params_fail.set<std::string>("Grid Name", "Point Grid");
+  params_fail.set<std::string>("Grid Name", "point_grid");
   auto diag_fail = std::make_shared<DiagFail>(comm,params_fail);
   diag_fail->set_grids(gm);
 

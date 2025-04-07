@@ -16,20 +16,20 @@ atmosphere_processes:
   dummy1:
     type: Dummy
     Sub Name: A to Group
-    Grid Name: Point Grid
+    Grid Name: point_grid
   dummy2:
     type: Dummy
     Sub Name: Group to Group
-    Grid Name: Point Grid
+    Grid Name: point_grid
   dummy3:
     type: Dummy
     Sub Name: Group to A
-    Grid Name: Point Grid
+    Grid Name: point_grid
 
 grids_manager:
   type: mesh_free
-  grids_names: ["Point Grid"]
-  Point Grid:
+  grids_names: ["point_grid"]
+  point_grid:
     type: point_grid
     number_of_global_columns: 24
     number_of_vertical_levels: 3

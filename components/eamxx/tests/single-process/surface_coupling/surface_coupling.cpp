@@ -52,8 +52,8 @@ std::vector<std::string> create_from_file_test_data(const ekat::Comm& comm, cons
 {
   // Create a grids manager on the fly
   ekat::ParameterList gm_params;
-  gm_params.set("grids_names",vos_type{"Point Grid"});
-  auto& pl = gm_params.sublist("Point Grid");
+  gm_params.set("grids_names",vos_type{"point_grid"});
+  auto& pl = gm_params.sublist("point_grid");
   pl.set<std::string>("type","point_grid");
   pl.set("aliases",vos_type{"physics"});
   pl.set("number_of_global_columns",ncols);

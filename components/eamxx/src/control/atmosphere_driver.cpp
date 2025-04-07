@@ -1086,7 +1086,7 @@ void AtmosphereDriver::set_initial_conditions ()
         if (grid_name == "physics pg2") {
           // Skip
         } else if (grid_name == "physics gll" ||
-                   grid_name == "Point Grid") {
+                   grid_name == "point_grid") {
           this_grid_topo_file_fnames.push_back("PHIS_d");
           this_grid_topo_eamxx_fnames.push_back(fname);
           m_fields_inited[grid_name].push_back(fname);
