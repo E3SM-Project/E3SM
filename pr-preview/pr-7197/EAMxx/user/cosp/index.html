@@ -3317,16 +3317,16 @@ subcolumns, while lower resolutions (e.g., <code>ne30</code>) should enable subc
 A minimal example:</p>
 <div class="highlight"><pre><span></span><code>./atmchange<span class="w"> </span><span class="nv">output_yaml_files</span><span class="o">=</span>eamxx_daily_output.yaml
 cat<span class="w"> </span><span class="s">&lt;&lt; EOF &gt; eamxx_cosp_daily_output.yaml</span>
-<span class="s">averaging_type: Average</span>
-<span class="s">Fields:</span>
-<span class="s">  Physics pg2:</span>
-<span class="s">    Field Names:</span>
+<span class="s">averaging_type: average</span>
+<span class="s">fields:</span>
+<span class="s">  physics_pg2:</span>
+<span class="s">    field_names:</span>
 <span class="s">    - isccp_cldtot</span>
 <span class="s">    - isccp_ctptau</span>
 <span class="s">    - modis_ctptau</span>
 <span class="s">    - misr_cthtau</span>
 <span class="s">    - cosp_sunlit</span>
-<span class="s">Max Snapshots Per File: 1</span>
+<span class="s">max_snapshots_per_file: 1</span>
 <span class="s">filename_prefix: eamxx</span>
 <span class="s">output_control:</span>
 <span class="s">  frequency: 1</span>

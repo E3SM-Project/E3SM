@@ -3550,7 +3550,7 @@ be the <code>eamxx_inject_ash_process_interface.&lt;x&gt;pp</code> files, locate
 <span class="kt">void</span><span class="w"> </span><span class="n">MAMInjectAsh</span><span class="o">::</span><span class="n">set_grids</span><span class="p">(</span>
 <span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="k">const</span><span class="w"> </span><span class="n">GridsManager</span><span class="o">&gt;</span><span class="w"> </span><span class="n">grids_manager</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="k">constexpr</span><span class="w"> </span><span class="k">auto</span><span class="w"> </span><span class="n">kg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ekat</span><span class="o">::</span><span class="n">units</span><span class="o">::</span><span class="n">kg</span><span class="p">;</span>
-<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">grid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">grids_manager</span><span class="o">-&gt;</span><span class="n">get_grid</span><span class="p">(</span><span class="s">&quot;Physics&quot;</span><span class="p">);</span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">grid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">grids_manager</span><span class="o">-&gt;</span><span class="n">get_grid</span><span class="p">(</span><span class="s">&quot;physics&quot;</span><span class="p">);</span>
 <span class="w">  </span><span class="n">add_tracer</span><span class="o">&lt;</span><span class="n">Updated</span><span class="o">&gt;</span><span class="p">(</span><span class="s">&quot;ash&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">grid</span><span class="p">,</span><span class="w"> </span><span class="n">kg</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">kg</span><span class="p">);</span>
 <span class="w">  </span><span class="n">lat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">grid</span><span class="o">-&gt;</span><span class="n">get_geometry_data</span><span class="p">(</span><span class="s">&quot;lat&quot;</span><span class="p">);</span>
 <span class="w">  </span><span class="n">lon</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">grid</span><span class="o">-&gt;</span><span class="n">get_geometry_data</span><span class="p">(</span><span class="s">&quot;lon&quot;</span><span class="p">);</span>
@@ -3701,12 +3701,12 @@ Defining the test behavior and pass/fail criteria requires 3 files:</p>
 <span class="w">    </span><span class="nt">inject_ash_XYZ_data</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${EAMXX_DATA_DIR}/mam4xx/.../inject_ash_input_data_file_XYZ.nc</span>
 <span class="w">    </span><span class="nt">&lt;identifying-string-used-by-inject_ash_xyz.xpp&gt;</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/path/to/.../data_file.nc</span>
 <span class="nt">grids_manager</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Mesh Free</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mesh_free</span>
 <span class="w">  </span><span class="nt">geo_data_source</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">IC_FILE</span>
-<span class="w">  </span><span class="nt">grids_names</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">Physics gll</span><span class="p p-Indicator">]</span>
-<span class="w">  </span><span class="nt">Physics gll</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">grids_names</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">physics_gll</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">physics_gll</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">point_grid</span>
-<span class="w">    </span><span class="nt">aliases</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">Physics</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">aliases</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">physics</span><span class="p p-Indicator">]</span>
 <span class="w">    </span><span class="nt">number_of_global_columns</span><span class="p">:</span><span class="w">   </span><span class="l l-Scalar l-Scalar-Plain">218</span>
 <span class="w">    </span><span class="nt">number_of_vertical_levels</span><span class="p">:</span><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">72</span>
 <span class="nt">initial_conditions</span><span class="p">:</span>
@@ -3728,10 +3728,10 @@ Defining the test behavior and pass/fail criteria requires 3 files:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">%YAML</span><span class="w"> </span><span class="m">1.1</span>
 <span class="nn">---</span>
 <span class="nt">filename_prefix</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mam4_inject_ash_standalone_output</span>
-<span class="nt">averaging_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Instant</span>
-<span class="nt">Fields</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">Physics</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">Field Names</span><span class="p">:</span>
+<span class="nt">averaging_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">instant</span>
+<span class="nt">fields</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">physics</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">field_names</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">answer_field</span>
 <span class="nt">output_control</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">frequency</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
