@@ -178,8 +178,7 @@ module seq_frac_mct
   use seq_comm_mct, only : mbrxid   !          iMOAB id of moab rof migrated to coupler pes 
 
   use iMOAB, only : iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage, &
-        iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorageWithGid, iMOAB_WriteMesh, &
-        iMOAB_SendElementTag, iMOAB_ReceiveElementTag, &
+        iMOAB_WriteMesh, iMOAB_SendElementTag, iMOAB_ReceiveElementTag, &
         iMOAB_FreeSenderBuffers, iMOAB_GetDoubleTagStorage
 #ifdef MOABDEBUG
    use seq_comm_mct,     only : num_moab_exports
@@ -849,15 +848,16 @@ contains
     integer                  :: n
     integer                  :: ki, kl, ko, kf
     real(r8),allocatable :: fcorr(:)
+    real(r8),allocatable :: tagValues(:) ! used for setting some default tags
+    real(r8),allocatable :: tagValues2(:) ! used for setting some default tags
+    real(r8),allocatable :: tagValues3(:) ! used for setting some default tags
 
     logical, save :: first_time = .true.
 ! moab
     integer                  ::   ierr, kgg
+    integer                  ::   arrSize, arrSize_i, arrSize_o
     integer , save           ::   lSize, ent_type
     character(CXX)           :: tagname
-    real(r8),    allocatable, save :: tagValues(:) ! used for setting some tags
-    real(r8),    allocatable, save :: tagValuesOfrac(:) ! used for setting some tags
-    integer ,    allocatable, save :: GlobalIds(:) ! used for setting values associated with ids
 #ifdef MOABDEBUG
     character(len=100) :: outfile, wopts, lnum
 #endif
@@ -886,7 +886,17 @@ contains
     i2x_i => component_get_c2x_cx(ice)
 
     dom_o => component_get_dom_cx(ocn) ! 
+
+    ! make local array big enough to old ocean or ice data.
+    if (mbixid .ge. 0) arrSize_i = mbGetnCells(mbixid)
+    if (mboxid .ge. 0) arrSize_o = mbGetnCells(mboxid)
+    arrSize = arrSize_i
+    if (arrSize_o .gt. arrSize) arrSize = arrSize_o
+
+    ! entire update depends on if ice present.
     if (ice_present) then
+       ! MCT
+       !copy Si_ifrac to ifrac
        call mct_aVect_copy(i2x_i, fractions_i, "Si_ifrac", "ifrac")
 
        ki = mct_aVect_indexRA(fractions_i,"ifrac")
@@ -897,38 +907,28 @@ contains
 
        call seq_frac_check(fractions_i,'ice set')
 
-       ! update ice fractions on moab instance
-       if (first_time) then  ! allocate some local arrays
-          lSize = mct_aVect_lSize(dom_i%data)
-          allocate(tagValues(lSize) )
-          allocate(GlobalIds(lSize) )
-          kgg = mct_aVect_indexIA(dom_o%data ,"GlobGridNum" ,perrWith=subName)
-          GlobalIds = dom_i%data%iAttr(kgg,:)
-          allocate (tagValuesOfrac(local_size_mb_ocn))
-          ent_type = 1 ! cells for mpas sea ice
-          first_time = .false.
-       endif
+       ! MOAB
+       allocate(tagValues(arrSize) )
+       allocate(tagValues2(arrSize) )
+       allocate(tagValues3(arrSize) )
 
-          ! something like this:
-       if (mbixid > 0 ) then
+       ! copy Si_ifrac to ifrac
+       call mbGetTagVals(mbixid, 'Si_ifrac',tagValues,arrSize)
+       call mbSetTagVals(mbixid, 'ifrac',tagValues,arrSize)
 
-          tagname = 'ifrac'//C_NULL_CHAR
-          ! fraclist_i = 'afrac:ifrac:ofrac'
-          !
-          tagValues = fractions_i%rAttr(ki,:)
-          ierr = iMOAB_SetDoubleTagStorageWithGid ( mbixid, tagname, lSize , ent_type, tagValues, GlobalIds )
-          if (ierr .ne. 0) then
-             write(logunit,*) subname,' error in setting ifrac on ice moab instance  '
-             call shr_sys_abort(subname//' ERROR in setting ifrac on ice moab instance ')
-          endif
+       ! update ifrac and ofrac
+       call mbGetTagVals(mbixid, 'ifrac',tagValues,arrSize)
+       call mbGetTagVals(mbixid, 'frac',tagValues2,arrSize)
+       call mbGetTagVals(mbixid, 'ofrac',tagValues3,arrSize)
 
-          tagname = 'ofrac'//C_NULL_CHAR
-          tagValues = fractions_i%rAttr(ko,:)
-          ierr = iMOAB_SetDoubleTagStorageWithGid ( mbixid, tagname, lSize , ent_type, tagValues, GlobalIds )
-          if (ierr .ne. 0) then
-             write(logunit,*) subname,' error in setting ofrac on ice moab instance  '
-             call shr_sys_abort(subname//' ERROR in setting ofrac on ice moab instance ')
-          endif
+       !fractions_i%rAttr(ki,:) = fractions_i%rAttr(ki,:) * dom_i%data%rAttr(kf,:)
+       tagValues(:) = tagValues(:)*tagValues2(:)
+       call mbSetTagVals(mbixid, 'ifrac',tagValues,arrSize)
+
+       !fractions_i%rAttr(ko,:) = dom_i%data%rAttr(kf,:) - fractions_i%rAttr(ki,:)
+       tagValues3(:) = tagValues2(:) - tagValues(:)
+       call mbSetTagVals(mbixid, 'ofrac',tagValues3,arrSize)
+
 #ifdef MOABDEBUG
          write(lnum,"(I0.2)")num_moab_exports
          outfile = 'iceCplFr_'//trim(lnum)//'.h5m'//C_NULL_CHAR
@@ -936,22 +936,15 @@ contains
          ierr = iMOAB_WriteMesh(mbixid, outfile, wopts)
 #endif
 
-       endif
-
        if (ocn_present) then
           mapper_i2o => prep_ocn_get_mapper_SFi2o()
           call seq_map_map(mapper_i2o, fractions_i, fractions_o, &
                fldlist='ofrac:ifrac',norm=.false.)
           call seq_frac_check(fractions_o, 'ocn set')
-          ! set the ofrac artificially on mbofxid instance, because it is needed for prep_aoxflux
-          tagname = 'ofrac'//C_NULL_CHAR
-          ent_type = 1! cells
-          ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, local_size_mb_ocn , ent_type, tagValuesOfrac)
-          ierr = iMOAB_SetDoubleTagStorage ( mbofxid, tagname, local_size_mb_ocn , ent_type, tagValuesOfrac)
-          if (ierr .ne. 0) then
-             write(logunit,*) subname,' error in setting ofrac on mbofxid moab instance  '
-             call shr_sys_abort(subname//' ERROR in setting ofrac on mbofxid moab instance ')
-          endif
+
+          ! set the ofrac on mbofxid instance, because it is needed for prep_aoxflux
+          call mbGetTagVals(mboxid, 'ofrac',tagValues,arrSize)
+          call mbSetTagVals(mbofxid, 'ofrac',tagValues,arrSize)
        endif
 
 
@@ -967,6 +960,8 @@ contains
 #endif
           !tcx---  fraction correction, this forces the fractions_a to sum to 1.0_r8.
           !   ---  but it introduces a conservation error in mapping
+          ! TODOMOAB  atm_frac_correct is hardcoded false.  But may want to implement this
+          ! anyway
           if (atm_frac_correct) then
              ki = mct_aVect_indexRA(fractions_a,"ifrac")
              ko = mct_aVect_indexRA(fractions_a,"ofrac")
