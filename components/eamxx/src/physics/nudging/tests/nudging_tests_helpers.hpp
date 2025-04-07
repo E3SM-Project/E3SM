@@ -149,7 +149,7 @@ create_om (const std::string& filename_prefix,
   ekat::ParameterList params;
   params.set<std::string>("averaging_type","instant");
   params.set<std::string>("filename_prefix",filename_prefix);
-  params.set<std::string>("Floating Point Precision","real");
+  params.set<std::string>("floating_point_precision","real");
   params.set("field_names",strvec_t{"p_mid","U","V"});
   params.set("fill_value",fill_val);
 

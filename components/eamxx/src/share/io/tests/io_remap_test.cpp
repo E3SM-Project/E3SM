@@ -680,7 +680,7 @@ ekat::ParameterList set_output_params(const std::string& name, const std::string
   params.set<std::string>("filename_prefix",name);
   params.set<std::string>("averaging_type","instant");
   params.set<int>("max_snapshots_per_file",1);
-  params.set<std::string>("Floating Point Precision","real");
+  params.set<std::string>("floating_point_precision","real");
   auto& oc = params.sublist("output_control");
   oc.set<int>("frequency",1);
   oc.set<std::string>("frequency_units","nsteps");
@@ -718,7 +718,7 @@ ekat::ParameterList set_input_params(const std::string& name, ekat::Comm& comm, 
   }
 
   in_params.set<vos_type>("field_names", fields_in);
-  in_params.set<std::string>("Floating Point Precision","real");
+  in_params.set<std::string>("floating_point_precision","real");
   return in_params;
 }
 /*==========================================================================================================*/

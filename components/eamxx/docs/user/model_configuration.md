@@ -555,7 +555,7 @@ of the parameter value).
       - This option can be helpful for debugging, in case a crash is occurring
       after a certain number of steps, but before the IO library would
       automatically flush to file.
-- `Floating Point Precision` (top-level list, `string`):
+- `floating_point_precision` (top-level list, `string`):
       - This parameter specifies the precision to be used for floating point
       variables in the output file.
       - By default, EAMxx uses single precision.

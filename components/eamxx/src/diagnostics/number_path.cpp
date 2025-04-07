@@ -9,11 +9,11 @@ namespace scream {
 NumberPathDiagnostic::NumberPathDiagnostic(const ekat::Comm &comm,
                                            const ekat::ParameterList &params)
     : AtmosphereDiagnostic(comm, params) {
-  EKAT_REQUIRE_MSG(params.isParameter("Number Kind"),
-                   "Error! NumberPathDiagnostic requires 'Number Kind' in its "
+  EKAT_REQUIRE_MSG(params.isParameter("number_kind"),
+                   "Error! NumberPathDiagnostic requires 'number_kind' in its "
                    "input parameters.\n");
 
-  m_kind = m_params.get<std::string>("Number Kind");
+  m_kind = m_params.get<std::string>("number_kind");
   if(m_kind == "Liq") {
     m_qname = "qc";
     m_nname = "nc";

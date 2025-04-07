@@ -13,7 +13,7 @@ atmosphere_processes:
     orbital_eccentricity: 0.0
     orbital_obliquity: 0.0
     orbital_mvelp: 0.0
-    Fixed Solar Zenith Angle: 0.86
+    fixed_solar_zenith_angle: 0.86
     do_aerosol_rad: false
     nswgpts: 224
     nlwgpts: 256

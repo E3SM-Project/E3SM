@@ -63,7 +63,7 @@ TEST_CASE("atm_backtend") {
 
   ekat::ParameterList params;
   REQUIRE_THROWS(diag_factory.create("AtmBackTendDiag", comm,
-                                     params));  // No 'Tendency Name'
+                                     params));  // No 'tendency_name'
 
   Real var_fill_value = constants::DefaultFillValue<Real>().value;
 
@@ -73,7 +73,7 @@ TEST_CASE("atm_backtend") {
 
   // Create and set up the diagnostic
   params.set("grid_name", grid->name());
-  params.set<std::string>("Tendency Name", "qc");
+  params.set<std::string>("tendency_name", "qc");
   auto diag = diag_factory.create("AtmBackTendDiag", comm, params);
   diag->set_grids(gm);
   diag->set_required_field(qc);

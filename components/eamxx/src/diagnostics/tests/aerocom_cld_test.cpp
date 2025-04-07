@@ -115,10 +115,10 @@ TEST_CASE("aerocom_cld") {
   ekat::ParameterList params;
 
   REQUIRE_THROWS(
-      diag_factory.create("AeroComCld", comm, params));  // No 'AeroComCld Kind'
-  params.set<std::string>("AeroComCld Kind", "Foo");
+      diag_factory.create("AeroComCld", comm, params));  // No 'aero_com_cld_kind'
+  params.set<std::string>("aero_com_cld_kind", "Foo");
   REQUIRE_THROWS(diag_factory.create("AeroComCld", comm,
-                                     params));  // Invalid 'AeroComCld Kind'
+                                     params));  // Invalid 'aero_com_cld_kind'
 
   constexpr int ntests = 3;
   for(int itest = 0; itest < ntests; ++itest) {
@@ -136,7 +136,7 @@ TEST_CASE("aerocom_cld") {
     randomize(ni, engine, pdf);
 
     // Create and set up the diagnostic
-    params.set<std::string>("AeroComCld Kind", "Top");
+    params.set<std::string>("aero_com_cld_kind", "Top");
     auto diag = diag_factory.create("AeroComCld", comm, params);
 
     diag->set_grids(gm);

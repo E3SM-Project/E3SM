@@ -123,7 +123,7 @@ void write (const int seed, const ekat::Comm& comm)
   om_pl.set("field_names",fnames);
   om_pl.set("averaging_type", std::string("instant"));
   om_pl.set("file_max_storage_type",std::string("one_month"));
-  om_pl.set("Floating Point Precision",std::string("single"));
+  om_pl.set("floating_point_precision",std::string("single"));
   auto& ctrl_pl = om_pl.sublist("output_control");
   ctrl_pl.set("frequency_units",std::string("nsteps"));
   ctrl_pl.set("frequency",1);

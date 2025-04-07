@@ -10,10 +10,10 @@ WaterPathDiagnostic::
 WaterPathDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereDiagnostic(comm,params)
 {
-  EKAT_REQUIRE_MSG (params.isParameter("Water Kind"),
-      "Error! WaterPathDiagnostic requires 'Water Kind' in its input parameters.\n");
+  EKAT_REQUIRE_MSG (params.isParameter("water_kind"),
+      "Error! WaterPathDiagnostic requires 'water_kind' in its input parameters.\n");
 
-  m_kind = m_params.get<std::string>("Water Kind");
+  m_kind = m_params.get<std::string>("water_kind");
   if (m_kind=="Liq") {
     m_qname = "qc";
   } else if (m_kind=="Ice") {

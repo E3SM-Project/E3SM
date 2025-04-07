@@ -37,8 +37,8 @@ AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
   : m_comm       (comm)
   , m_params     (params)
 {
-  if (m_params.isParameter("Logger")) {
-    m_atm_logger = m_params.get<std::shared_ptr<logger_t>>("Logger");
+  if (m_params.isParameter("logger")) {
+    m_atm_logger = m_params.get<std::shared_ptr<logger_t>>("logger");
   } else {
     // Create a console-only logger, that logs all ranks
     using namespace ekat::logger;
@@ -55,7 +55,7 @@ AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
       "Error! Invalid number of subcycles in param list " + m_params.name() + ".\n"
       "  - Num subcycles: " + std::to_string(m_num_subcycles) + "\n");
 
-  m_timer_prefix = m_params.get<std::string>("Timer Prefix","EAMxx::");
+  m_timer_prefix = m_params.get<std::string>("timer_prefix","EAMxx::");
 
   m_repair_log_level = str2LogLevel(m_params.get<std::string>("repair_log_level","warn"));
 

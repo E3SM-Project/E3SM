@@ -11,11 +11,11 @@ AtmBackTendDiag(const ekat::Comm &comm,
                 const ekat::ParameterList &params)
  : AtmosphereDiagnostic(comm, params)
 {
-  EKAT_REQUIRE_MSG(params.isParameter("Tendency Name"),
-                   "Error! AtmBackTendDiag requires 'Tendency Name' in its "
+  EKAT_REQUIRE_MSG(params.isParameter("tendency_name"),
+                   "Error! AtmBackTendDiag requires 'tendency_name' in its "
                    "input parameters.\n");
 
-  m_name = m_params.get<std::string>("Tendency Name");
+  m_name = m_params.get<std::string>("tendency_name");
 }
 
 void AtmBackTendDiag::

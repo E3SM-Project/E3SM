@@ -235,7 +235,7 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
             "  restart:\n"
             "    force_new_file: true\n");
       }
-      std::string fp_precision = m_params.get<std::string>("Floating Point Precision");
+      std::string fp_precision = m_params.get<std::string>("floating_point_precision");
       auto old_fp_precision = scorpio::get_attribute<std::string>(rhist_file,"GLOBAL","fp_precision");
       EKAT_REQUIRE_MSG (old_fp_precision == fp_precision,
           "Error! Cannot change floating point precision when performing history restart.\n"
@@ -526,7 +526,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
         if (m_output_file_specs.storage.type==NumSnaps) {
           set_attribute(filespecs.filename,"GLOBAL","max_snapshots_per_file",m_output_file_specs.storage.max_snapshots_in_file);
         }
-        const auto& fp_precision = m_params.get<std::string>("Floating Point Precision");
+        const auto& fp_precision = m_params.get<std::string>("floating_point_precision");
         set_attribute(filespecs.filename,"GLOBAL","fp_precision",fp_precision);
       }
 
@@ -697,7 +697,7 @@ setup_internals (const std::shared_ptr<fm_type>& field_mgr,
     m_filename_prefix = m_params.get<std::string>("filename_prefix");
 
     // Hard code some parameters in case we access them later
-    m_params.set<std::string>("Floating Point Precision","real");
+    m_params.set<std::string>("floating_point_precision","real");
   } else {
     auto avg_type = m_params.get<std::string>("averaging_type");
     m_avg_type = str2avg(avg_type);
@@ -728,10 +728,10 @@ setup_internals (const std::shared_ptr<fm_type>& field_mgr,
 
     // Allow user to ask for higher precision for normal model output,
     // but default to single to save on storage
-    const auto& prec = m_params.get<std::string>("Floating Point Precision", "single");
+    const auto& prec = m_params.get<std::string>("floating_point_precision", "single");
     vos_t valid_prec = {"single", "float", "double", "real"};
     EKAT_REQUIRE_MSG (ekat::contains(valid_prec,prec),
-        "Error! Invalid/unsupported value for 'Floating Point Precision'.\n"
+        "Error! Invalid/unsupported value for 'floating_point_precision'.\n"
         "  - input value: " + prec + "\n"
         "  - supported values: float, single, double, real\n");
   }
@@ -789,7 +789,7 @@ setup_file (      IOFileSpecs& filespecs,
 
   std::string fp_precision = is_checkpoint_step
                            ? "real"
-                           : m_params.get<std::string>("Floating Point Precision");
+                           : m_params.get<std::string>("floating_point_precision");
 
   const auto& filename = filespecs.filename;
   // Register new netCDF file for output. Check if we need to append to an existing file

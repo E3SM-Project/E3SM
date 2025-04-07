@@ -75,7 +75,7 @@ TEST_CASE("output_restart","io")
 
   // Create output params (some options are set below, depending on the run type
   ekat::ParameterList output_params;
-  output_params.set<std::string>("Floating Point Precision","real");
+  output_params.set<std::string>("floating_point_precision","real");
   output_params.set<std::vector<std::string>>("field_names",{"field_1", "field_2", "field_3", "field_4","field_5"});
   output_params.set<double>("fill_value",FillValue);
   output_params.set<int>("flush_frequency",1);

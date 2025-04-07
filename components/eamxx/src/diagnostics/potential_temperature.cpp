@@ -8,10 +8,10 @@ namespace scream
 PotentialTemperatureDiagnostic::PotentialTemperatureDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereDiagnostic(comm,params)
 {
-  EKAT_REQUIRE_MSG(params.isParameter("Temperature Kind"),
-      "Error! PotentialTemperatureDiagnostic requires 'Temperature Kind' in its input parameters.\n");
+  EKAT_REQUIRE_MSG(params.isParameter("temperature_kind"),
+      "Error! PotentialTemperatureDiagnostic requires 'temperature_kind' in its input parameters.\n");
   
-  auto pt_type = params.get<std::string>("Temperature Kind");
+  auto pt_type = params.get<std::string>("temperature_kind");
 
   if (pt_type=="Tot"){
     m_ptype = "PotentialTemperature";

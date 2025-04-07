@@ -80,12 +80,12 @@ void run(std::mt19937_64& engine)
   register_diagnostics();
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();
 
-  REQUIRE_THROWS (diag_factory.create("VaporFlux",comm,params)); // No 'Wind Component'
-  params.set<std::string>("Wind Component","foo");
-  REQUIRE_THROWS (diag_factory.create("VaporFlux",comm,params)); // Invalid 'Wind Component'
+  REQUIRE_THROWS (diag_factory.create("VaporFlux",comm,params)); // No 'wind_component'
+  params.set<std::string>("wind_component","foo");
+  REQUIRE_THROWS (diag_factory.create("VaporFlux",comm,params)); // Invalid 'wind_component'
   for (const std::string which_comp : {"Zonal", "Meridional"}) {
     // Construct the Diagnostic
-    params.set<std::string>("Wind Component",which_comp);
+    params.set<std::string>("wind_component",which_comp);
     auto diag = diag_factory.create("VaporFlux",comm,params);
     diag->set_grids(gm);
 

@@ -73,7 +73,7 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
     const auto& ap_type = params_i.get<std::string>("type",ap_name);
 
     // Set logger in this ap params
-    params_i.set("Logger",this->m_atm_logger);
+    params_i.set("logger",this->m_atm_logger);
 
     // Create the atm proc
     auto ap = apf.create(ap_type,proc_comm,params_i);
