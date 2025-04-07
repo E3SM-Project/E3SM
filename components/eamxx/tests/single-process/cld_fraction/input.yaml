@@ -18,7 +18,7 @@ grids_manager:
   type: Mesh Free
   grids_names: [Point Grid]
   Point Grid:
-    aliases: [Physics]
+    aliases: [physics]
     type: point_grid
     number_of_global_columns:   3
     number_of_vertical_levels:  128

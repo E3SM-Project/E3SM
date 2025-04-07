@@ -3,7 +3,7 @@
 filename_prefix: model_output
 averaging_type: average
 fields:
-  Physics gll:
+  physics gll:
     Field Names:
       # HOMME
       - ps

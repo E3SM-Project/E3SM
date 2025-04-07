@@ -21,7 +21,7 @@ void MAMOptics::set_grids(
     const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
 
-  grid_                 = grids_manager->get_grid("Physics");
+  grid_                 = grids_manager->get_grid("physics");
   const auto &grid_name = grid_->name();
   Units n_unit(1 / kg, "#/kg");  // number mixing ratios [# / kg air]
   const auto m2 = pow(m, 2);

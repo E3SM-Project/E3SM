@@ -94,7 +94,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   auto nondim = Units::nondimensional();
   auto micron = micro*m;
 
-  m_grid = grids_manager->get_grid("Physics");
+  m_grid = grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
   m_ncol = m_grid->get_num_local_dofs();
   m_nlay = m_grid->get_num_vertical_levels();

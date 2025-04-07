@@ -55,7 +55,7 @@ std::vector<std::string> create_from_file_test_data(const ekat::Comm& comm, cons
   gm_params.set("grids_names",vos_type{"Point Grid"});
   auto& pl = gm_params.sublist("Point Grid");
   pl.set<std::string>("type","point_grid");
-  pl.set("aliases",vos_type{"Physics"});
+  pl.set("aliases",vos_type{"physics"});
   pl.set("number_of_global_columns",ncols);
   pl.set("number_of_vertical_levels",1); // We don't care about levels for a surface only file
   auto gm = create_mesh_free_grids_manager(comm,gm_params);
@@ -63,7 +63,7 @@ std::vector<std::string> create_from_file_test_data(const ekat::Comm& comm, cons
   // Create a fields manager on the fly with the appropriate fields and grid.
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
-  const auto grid = gm->get_grid("Physics");
+  const auto grid = gm->get_grid("physics");
   const int nlcols = grid->get_num_local_dofs();
   const auto dofs_gids = grid->get_dofs_gids().get_view<const int*,Host>();
   std::vector<std::string> fnames = {"lwdn"};
@@ -512,7 +512,7 @@ TEST_CASE("surface-coupling", "") {
   ad.create_grids ();
   ad.create_fields ();
 
-  const int   ncols = ad.get_grids_manager()->get_grid("Physics")->get_num_local_dofs();
+  const int   ncols = ad.get_grids_manager()->get_grid("physics")->get_num_local_dofs();
 
   // Create engine and pdfs for random test data
   std::uniform_int_distribution<int> pdf_int_additional_fields(0,10);

@@ -6,7 +6,7 @@ averaging_type: instant
 max_snapshots_per_file: 24  # one file per day
 horiz_remap_file: ${DIN_LOC_ROOT}/atm/scream/maps/map_ne1024pg2_to_DecadalSites_c20240130.nc
 fields:
-  Physics pg2:
+  physics pg2:
     Field Names:
     # 3D
     - T_mid

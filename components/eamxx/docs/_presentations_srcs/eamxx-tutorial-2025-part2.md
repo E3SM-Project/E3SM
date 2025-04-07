@@ -300,7 +300,7 @@ void POMPEI::set_grids(
   //   using PC = scream::physics::Constants<Real>;
 
   // Specify which grid this process will act upon, typical options are
-  // "Dynamics" or "Physics". auto m_grid = grids_manager->get_grid("Physics");
+  // "Dynamics" or "physics". auto m_grid = grids_manager->get_grid("physics");
 
   // When declaring a field for use we need:
   //
@@ -334,7 +334,7 @@ void POMPEI::set_grids(
   //     NAME and UNITS are as above
   //     GRID is the actual grid, typically "m_grid"
 
-  m_grid  = grids_manager->get_grid("Physics");
+  m_grid  = grids_manager->get_grid("physics");
   m_ncols = m_grid->get_num_local_dofs();
   m_nlevs = m_grid->get_num_vertical_levels();
 

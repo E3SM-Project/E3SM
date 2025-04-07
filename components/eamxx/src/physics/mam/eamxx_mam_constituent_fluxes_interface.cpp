@@ -22,7 +22,7 @@ MAMConstituentFluxes::MAMConstituentFluxes(const ekat::Comm &comm,
 // ================================================================
 void MAMConstituentFluxes::set_grids(
     const std::shared_ptr<const GridsManager> grids_manager) {
-  grid_                 = grids_manager->get_grid("Physics");
+  grid_                 = grids_manager->get_grid("physics");
   const auto &grid_name = grid_->name();
 
   ncol_ = grid_->get_num_local_dofs();       // Number of columns on this rank

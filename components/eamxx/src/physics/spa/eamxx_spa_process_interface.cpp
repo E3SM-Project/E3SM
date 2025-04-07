@@ -25,7 +25,7 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   constexpr auto nondim = Units::nondimensional();
   constexpr int ps = SCREAM_PACK_SIZE;
 
-  m_model_grid = grids_manager->get_grid("Physics");
+  m_model_grid = grids_manager->get_grid("physics");
   const auto& grid_name = m_model_grid->name();
 
   // Get bands info from file, and log it

@@ -15,7 +15,7 @@ void HorizAvgDiag::set_grids(
     const std::shared_ptr<const GridsManager> grids_manager) {
   const auto &fn = m_params.get<std::string>("field_name");
   const auto &gn = m_params.get<std::string>("grid_name");
-  const auto g   = grids_manager->get_grid("Physics");
+  const auto g   = grids_manager->get_grid("physics");
 
   add_field<Required>(fn, gn);
 

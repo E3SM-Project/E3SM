@@ -310,7 +310,7 @@ std::shared_ptr<const GridsManager> get_gm (const ekat::Comm& comm, const int nc
   gm_params.set("grids_names",vos_t{"Point Grid"});
   auto& pl = gm_params.sublist("Point Grid");
   pl.set<std::string>("type","point_grid");
-  pl.set("aliases",vos_t{"Physics"});
+  pl.set("aliases",vos_t{"physics"});
   pl.set<int>("number_of_global_columns", ncols);
   pl.set<int>("number_of_vertical_levels", nlevs);
   auto gm = create_mesh_free_grids_manager(comm,gm_params);

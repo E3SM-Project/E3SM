@@ -87,7 +87,7 @@ protected:
 
   // fv_phys refers to the horizontal finite volume (FV) grid for column
   // parameterizations nested inside the horizontal element grid. The grid names
-  // are "Physics PGN", where N in practice is 2. The name of each routine is
+  // are "physics PGN", where N in practice is 2. The name of each routine is
   // fv_phys_X, where X is the name of an existing HommeDynamics routine. If
   // fv_phys is not being used, each of these routines does an immediate exit,
   // so it's OK to always call the routine.
@@ -110,7 +110,7 @@ protected:
   void rayleigh_friction_apply (const Real dt) const;
 
 public:
-  // Fast boolean function returning whether Physics PGN is being used.
+  // Fast boolean function returning whether physics PGN is being used.
   bool fv_phys_active() const;
   struct GllFvRemapTmp;
   void remap_dyn_to_fv_phys(GllFvRemapTmp* t = nullptr) const;

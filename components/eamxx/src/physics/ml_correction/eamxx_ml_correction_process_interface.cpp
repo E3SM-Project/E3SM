@@ -27,7 +27,7 @@ void MLCorrection::set_grids(
   // The units of mixing ratio Q are technically non-dimensional.
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
   constexpr int ps = Pack::n;
-  m_grid                = grids_manager->get_grid("Physics");
+  m_grid                = grids_manager->get_grid("physics");
   const auto &grid_name = m_grid->name();
   m_num_cols = m_grid->get_num_local_dofs();  // Number of columns on this rank
   m_num_levs =

@@ -17,7 +17,7 @@ create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
   gm_params.set("grids_names",vos_t{"Point Grid"});
   auto& pl = gm_params.sublist("Point Grid");
   pl.set<std::string>("type","point_grid");
-  pl.set("aliases",vos_t{"Physics"});
+  pl.set("aliases",vos_t{"physics"});
   pl.set<int>("number_of_global_columns", num_global_cols);
   pl.set<int>("number_of_vertical_levels", nlevs);
 
@@ -42,7 +42,7 @@ TEST_CASE("wind_speed")
   constexpr int nlevs = 33;
   const int ngcols = 2*comm.size();;
   auto gm = create_gm(comm,ngcols,nlevs);
-  auto grid = gm->get_grid("Physics");
+  auto grid = gm->get_grid("physics");
 
   // Input (randomized) velocity
   auto vector3d = grid->get_3d_vector_layout(true,2);

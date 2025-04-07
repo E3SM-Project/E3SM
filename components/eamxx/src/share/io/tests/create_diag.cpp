@@ -16,7 +16,7 @@ TEST_CASE("create_diag")
   // Create a grid
   const int ncols = 3*comm.size();
   const int nlevs = 10;
-  auto grid = create_point_grid("Physics",ncols,nlevs,comm);
+  auto grid = create_point_grid("physics",ncols,nlevs,comm);
 
   SECTION ("field_at") {
     // FieldAtLevel

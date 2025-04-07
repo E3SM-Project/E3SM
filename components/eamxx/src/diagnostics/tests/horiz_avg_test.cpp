@@ -16,7 +16,7 @@ std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
   gm_params.set("grids_names", vos_t{"Point Grid"});
   auto &pl = gm_params.sublist("Point Grid");
   pl.set<std::string>("type", "point_grid");
-  pl.set("aliases", vos_t{"Physics"});
+  pl.set("aliases", vos_t{"physics"});
   pl.set<int>("number_of_global_columns", num_global_cols);
   pl.set<int>("number_of_vertical_levels", nlevs);
 
@@ -45,7 +45,7 @@ TEST_CASE("horiz_avg") {
   const int ngcols    = 6 * comm.size();
 
   auto gm   = create_gm(comm, ngcols, nlevs);
-  auto grid = gm->get_grid("Physics");
+  auto grid = gm->get_grid("physics");
 
   // Input (randomized) qc
   FieldLayout scalar1d_layout{{COL}, {ngcols}};

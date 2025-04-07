@@ -5,7 +5,7 @@ iotype: pnetcdf
 averaging_type: instant
 max_snapshots_per_file: 4  # one file per day
 fields:
-  Physics pg2:
+  physics pg2:
     Field Names:
     # For storm analysis
     - SeaLevelPressure

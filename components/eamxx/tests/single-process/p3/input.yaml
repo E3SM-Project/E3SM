@@ -19,8 +19,8 @@ atmosphere_processes:
 
 grids_manager:
   type: Mesh Free
-  grids_names: [Physics]
-  Physics:
+  grids_names: [physics]
+  physics:
     type: point_grid
     number_of_global_columns:   218
     number_of_vertical_levels:  72

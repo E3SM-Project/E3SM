@@ -3,7 +3,7 @@
 filename_prefix: homme_shoc_cld_spa_p3_rrtmgp_128levels_output
 averaging_type: instant
 fields:
-  Physics gll:
+  physics gll:
     Field Names:
       # HOMME
       - ps

@@ -42,7 +42,7 @@ TEST_CASE("ml_correction-stand-alone", "") {
 
   ad.initialize(atm_comm, ad_params, t0);
 
-  const auto& grid = ad.get_grids_manager()->get_grid("Physics");
+  const auto& grid = ad.get_grids_manager()->get_grid("physics");
   const auto& field_mgr = *ad.get_field_mgr();
 
   int num_cols = grid->get_num_local_dofs();

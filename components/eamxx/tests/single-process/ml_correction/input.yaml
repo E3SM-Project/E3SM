@@ -18,8 +18,8 @@ atmosphere_processes:
     ml_correction_unit_test: True
 grids_manager:
   type: Mesh Free
-  grids_names: [Physics]
-  Physics:
+  grids_names: [physics]
+  physics:
     aliases: [Point Grid]
     type: point_grid
     number_of_global_columns:   3

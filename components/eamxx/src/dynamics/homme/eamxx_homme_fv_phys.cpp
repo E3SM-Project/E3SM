@@ -22,11 +22,11 @@
 
 extern "C" void gfr_init_hxx();
 
-// Parse a name of the form "Physics PGN". Return -1 if not an FV physics grid
+// Parse a name of the form "physics PGN". Return -1 if not an FV physics grid
 // name, otherwise N in pgN.
 static int get_phys_grid_fv_param (const std::string& grid_name) {
   if (grid_name.size() < 11) return -1;
-  if (grid_name.substr(0, 10) != "Physics pg") return -1;
+  if (grid_name.substr(0, 10) != "physics pg") return -1;
   const auto param = grid_name.substr(10, std::string::npos);
   int N;
   std::istringstream ss(param);
@@ -126,7 +126,7 @@ void HommeDynamics::fv_phys_dyn_to_fv_phys (const util::TimeStamp& ts, const boo
     const auto uv = get_field_out("horiz_winds",pgn).get_view<const Pack***>();
     copy_prev(ncols, npacks, T, uv, FT, FM);
 
-    // In an initial run, the AD only reads IC for the Physics GLL fields,
+    // In an initial run, the AD only reads IC for the physics GLL fields,
     // and this class has just taken care of remapping them to the FV grid.
     // Therefore, the timestamp of the FV fields has *not* been set yet,
     // which can cause serious issues downstream. For details, see

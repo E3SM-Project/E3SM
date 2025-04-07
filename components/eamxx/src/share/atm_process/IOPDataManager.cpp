@@ -333,7 +333,7 @@ read_fields_from_file_for_iop (const std::string& file_name,
       "Error! Attempting to read IOP initial conditions on" +
       grid->name() + " grid, but m_io_grid entry has not been created.\n");
 
-  if (grid->name()=="Physics gll" and scorpio::has_dim(file_name,"ncol_d")) {
+  if (grid->name()=="physics gll" and scorpio::has_dim(file_name,"ncol_d")) {
     // If we are on GLL grid, and nc file contains "ncol_d" dimension, we need to reset COL dim tag
     auto grid = io_grid->clone(io_grid->name(),true);
     grid->reset_field_tag_name(FieldTag::Column,"ncol_d");
@@ -620,7 +620,7 @@ set_fields_from_iop_data(const field_mgr_ptr field_mgr, const std::string& grid_
     field_mgr->get_field_group("tracers", grid_name).m_monolithic_field->deep_copy(0);
   }
 
-  EKAT_REQUIRE_MSG(grid_name == "Physics gll",
+  EKAT_REQUIRE_MSG(grid_name == "physics gll",
                    "Error! Attempting to set non-GLL fields using "
                    "data from the IOP file.\n");
 

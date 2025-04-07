@@ -386,7 +386,7 @@ filename_prefix: my_output
 averaging_type: average
 max_snapshots_per_file: 10
 fields:
-  Physics:
+  physics:
     Field Names:
       - T_mid
       - qv
@@ -403,7 +403,7 @@ Notice that lists can be equivalently specified in YAML as
 `Field Names: [f1, f2, f3]`.
 The user can specify fields to be outputted from any of the grids on which
 they are available (although most fields are only available on ONE grid).
-In the example above, we requested fields from both the Physics and Dynamics grid.
+In the example above, we requested fields from both the physics and Dynamics grid.
 The meaning of the other parameters is as follows:
 
 - `averaging_type`: how the fields are integrated in time before being saved.
@@ -516,7 +516,7 @@ must be remapped before being saved to file.
       element boundary must match the values on the neighboring element,
       resulting in duplicated data.
       - By remapping to a "unique" version of the dynamics grid
-      (which in EAMxx is referred to as "Physics gll"), we can save roughly
+      (which in EAMxx is referred to as "physics gll"), we can save roughly
       45% of storage.
       - **Note:** this feature cannot be used along with the
       horizontal/vertical remap.

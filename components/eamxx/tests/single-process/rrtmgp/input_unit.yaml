@@ -26,8 +26,8 @@ atmosphere_processes:
 grids_manager:
   type: Mesh Free
   geo_data_source: CREATE_EMPTY_DATA
-  grids_names: [Physics]
-  Physics:
+  grids_names: [physics]
+  physics:
     aliases: [Point Grid]
     type: point_grid
     number_of_global_columns:   128

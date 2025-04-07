@@ -3,7 +3,7 @@
 filename_prefix: mam4_optics_standalone_output
 averaging_type: instant
 fields:
-  Physics:
+  physics:
     Field Names:
         - aero_g_sw
         - aero_ssa_sw

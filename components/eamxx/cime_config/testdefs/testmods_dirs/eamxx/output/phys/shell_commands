@@ -27,7 +27,7 @@ $YAML_EDIT_SCRIPT -g \
  --freq HIST_N                    \
  --freq-units HIST_OPTION         \
  --prefix ${CASE}.scream.phys.h   \
- --grid "Physics ${PGTYPE}"       \
+ --grid "physics ${PGTYPE}"       \
  --fields ${FIELDS}
 
 # Add this output yaml file to the list of eamxx output streams

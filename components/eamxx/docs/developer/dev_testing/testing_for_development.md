@@ -66,7 +66,7 @@ be the `eamxx_inject_ash_process_interface.<x>pp` files, located at
     void MAMInjectAsh::set_grids(
         const std::shared_ptr<const GridsManager> grids_manager) {
       constexpr auto kg = ekat::units::kg;
-      auto grid = grids_manager->get_grid("Physics");
+      auto grid = grids_manager->get_grid("physics");
       add_tracer<Updated>("ash", grid, kg / kg);
       lat = grid->get_geometry_data("lat");
       lon = grid->get_geometry_data("lon");
@@ -214,10 +214,10 @@ Defining the test behavior and pass/fail criteria requires 3 files:
     grids_manager:
       type: Mesh Free
       geo_data_source: IC_FILE
-      grids_names: [Physics gll]
-      Physics gll:
+      grids_names: [physics gll]
+      physics gll:
         type: point_grid
-        aliases: [Physics]
+        aliases: [physics]
         number_of_global_columns:   218
         number_of_vertical_levels:  72
     initial_conditions:
@@ -243,7 +243,7 @@ Defining the test behavior and pass/fail criteria requires 3 files:
     filename_prefix: mam4_inject_ash_standalone_output
     averaging_type: instant
     fields:
-      Physics:
+      physics:
         Field Names:
           - answer_field
     output_control:

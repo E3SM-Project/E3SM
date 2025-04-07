@@ -28,7 +28,7 @@ void MAMDryDep::set_grids(
 
   // set grid for all the inputs and outputs
   // use physics grid
-  grid_ = grids_manager->get_grid("Physics");
+  grid_ = grids_manager->get_grid("physics");
 
   // Name of the grid
   const auto &grid_name = grid_->name();

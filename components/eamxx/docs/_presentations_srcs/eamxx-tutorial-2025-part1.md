@@ -271,7 +271,7 @@ EOF
 ```yaml
 averaging_type: average
 fields:
-  Physics pg2:
+  physics pg2:
     Field Names:
       - Q
       - CLDLIQ

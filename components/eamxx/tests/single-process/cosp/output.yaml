@@ -3,7 +3,7 @@
 filename_prefix: cosp_standalone_output
 averaging_type: instant
 fields:
-  Physics:
+  physics:
     Field Names:
       - isccp_cldtot
 

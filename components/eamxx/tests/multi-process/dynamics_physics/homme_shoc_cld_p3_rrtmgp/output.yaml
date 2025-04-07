@@ -5,7 +5,7 @@ iotype: default
 averaging_type: instant
 max_snapshots_per_file: 1
 fields:
-  Physics gll:
+  physics gll:
     Field Names:
       # HOMME
       - ps
@@ -78,7 +78,7 @@ fields:
       - phis_dyn
       - omega_dyn
       - Qdp_dyn
-    IO Grid Name: Physics gll
+    IO Grid Name: physics gll
 
 output_control:
   frequency: ${NUM_STEPS}
