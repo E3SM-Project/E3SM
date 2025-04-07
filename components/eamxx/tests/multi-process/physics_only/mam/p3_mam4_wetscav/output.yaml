@@ -1,7 +1,7 @@
 %YAML 1.1
 ---
 filename_prefix: p3_mam4_wetscav_output
-averaging_type: Instant
+averaging_type: instant
 Field Names:
   - cldfrac_liq
   - bc_a1

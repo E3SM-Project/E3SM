@@ -1215,7 +1215,7 @@ void HommeDynamics::initialize_homme_state () {
     update_pressure (m_phys_grid);
   }
 
-  // If "Instant" averaging type is used for output,
+  // If "instant" averaging type is used for output,
   // an initial output is performed before AD processes
   // are run. If omega_dyn output is requested, it will
   // not have valid computed values for this initial

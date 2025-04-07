@@ -115,7 +115,7 @@ void write (const int freq, const int seed, const int ps, const ekat::Comm& comm
   ekat::ParameterList om_pl;
   om_pl.set("filename_prefix","io_packed_ps"+std::to_string(ps));
   om_pl.set("Field Names",fnames);
-  om_pl.set("averaging_type", std::string("INSTANT"));
+  om_pl.set("averaging_type", std::string("instant"));
   auto& ctrl_pl = om_pl.sublist("output_control");
   ctrl_pl.set("frequency_units",std::string("nsteps"));
   ctrl_pl.set("frequency",freq);

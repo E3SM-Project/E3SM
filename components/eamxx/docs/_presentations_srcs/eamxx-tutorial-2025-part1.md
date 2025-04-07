@@ -269,7 +269,7 @@ EOF
 <td>
 
 ```yaml
-averaging_type: Average
+averaging_type: average
 Fields:
   Physics pg2:
     Field Names:

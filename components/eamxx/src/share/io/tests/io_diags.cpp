@@ -188,7 +188,7 @@ void write (const int seed, const ekat::Comm& comm)
   ekat::ParameterList om_pl;
   om_pl.set("filename_prefix",std::string("io_diags"));
   om_pl.set("Field Names",fnames);
-  om_pl.set("averaging_type", std::string("INSTANT"));
+  om_pl.set("averaging_type", std::string("instant"));
   auto& ctrl_pl = om_pl.sublist("output_control");
   ctrl_pl.set("frequency_units",std::string("nsteps"));
   ctrl_pl.set("frequency",1);

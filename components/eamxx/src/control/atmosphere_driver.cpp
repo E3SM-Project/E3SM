@@ -710,7 +710,7 @@ void AtmosphereDriver::create_output_managers () {
     // Create model restart manager
     auto params = io_params.sublist("model_restart");
     params.set<std::string>("filename_prefix",m_casename+".scream");
-    params.set<std::string>("averaging_type","Instant");
+    params.set<std::string>("averaging_type","instant");
     params.sublist("provenance") = m_atm_params.sublist("provenance");
 
     m_restart_output_manager = std::make_shared<OutputManager>();

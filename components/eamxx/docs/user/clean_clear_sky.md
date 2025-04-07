@@ -21,7 +21,7 @@ Below is an example output file to output the extra (clean and clean-clear-sky) 
 %YAML 1.1
 ---
 filename_prefix: monthly.outputs
-averaging_type: Average
+averaging_type: average
 Max Snapshots Per File: 1
 Fields:
   Physics pg2:

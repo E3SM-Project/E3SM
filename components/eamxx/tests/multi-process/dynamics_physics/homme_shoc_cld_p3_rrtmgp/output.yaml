@@ -2,7 +2,7 @@
 ---
 filename_prefix: homme_shoc_cld_p3_rrtmgp_output
 iotype: default
-averaging_type: Instant
+averaging_type: instant
 Max Snapshots Per File: 1
 Fields:
   Physics gll:

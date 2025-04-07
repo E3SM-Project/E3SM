@@ -137,7 +137,7 @@ TEST_CASE("dyn_grid_io")
   // Now try to write all fields to file from the dyn grid fm
   // Note: add MPI ranks to filename, to allow MPI tests to run in parallel
   ekat::ParameterList out_params;
-  out_params.set<std::string>("averaging_type","Instant");
+  out_params.set<std::string>("averaging_type","instant");
   out_params.set<std::string>("filename_prefix","dyn_grid_io");
   out_params.sublist("Fields").sublist("Dynamics").set<std::vector<std::string>>("Field Names",fnames);
   out_params.sublist("Fields").sublist("Dynamics").set<std::string>("IO Grid Name","Physics gll");

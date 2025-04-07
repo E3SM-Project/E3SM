@@ -241,7 +241,7 @@ Defining the test behavior and pass/fail criteria requires 3 files:
     %YAML 1.1
     ---
     filename_prefix: mam4_inject_ash_standalone_output
-    averaging_type: Instant
+    averaging_type: instant
     Fields:
       Physics:
         Field Names:

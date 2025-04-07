@@ -69,7 +69,7 @@
  *      snapshots have been written on a single nc file, the class will close the file, and open a new one
  *  - Checkpointing: parameters for checkpointing control
  *    - frequency: the frequenct of checkpoints writes. This option is used/matters only if
- *      if averaging_type is *not* Instant. A value of 0 is interpreted as 'no checkpointing'.
+ *      if averaging_type is *not* instant. A value of 0 is interpreted as 'no checkpointing'.
  *    - frequency_units: the units of restart history output.
  *  - Restart: parameters for history restart
  *    - filename_prefix: the history restart filename root.
@@ -200,7 +200,7 @@ protected:
   std::shared_ptr<remapper_type>              m_horiz_remapper;
   std::shared_ptr<remapper_type>              m_vert_remapper;
 
-  // How to combine multiple snapshots in the output: Instant, Max, Min, Average
+  // How to combine multiple snapshots in the output: instant, Max, Min, Average
   OutputAvgType     m_avg_type;
   Real              m_avg_coeff_threshold = 0.5; // % of unfilled values required to not just assign value as FillValue
 

@@ -703,7 +703,7 @@ setup_internals (const std::shared_ptr<fm_type>& field_mgr,
     m_avg_type = str2avg(avg_type);
     EKAT_REQUIRE_MSG (m_avg_type!=OutputAvgType::Invalid,
         "Error! Unsupported averaging type '" + avg_type + "'.\n"
-        "       Valid options: Instant, Max, Min, Average. Case insensitive.\n");
+        "       Valid options: instant, Max, Min, Average. Case insensitive.\n");
 
     const auto& storage_type = m_params.get<std::string>("file_max_storage_type","num_snapshots");
     auto& storage = m_output_file_specs.storage;

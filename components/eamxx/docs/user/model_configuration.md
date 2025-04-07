@@ -383,7 +383,7 @@ The following is a basic example of an output request.
 %YAML 1.1
 ---
 filename_prefix: my_output
-averaging_type: Average
+averaging_type: average
 Max Snapshots Per File: 10
 Fields:
   Physics:
@@ -408,9 +408,9 @@ The meaning of the other parameters is as follows:
 
 - `averaging_type`: how the fields are integrated in time before being saved.
 Valid options are:
-      - `Instant`: no integration, each time frame saved corresponds to
+      - `instant`: no integration, each time frame saved corresponds to
       instantaneous values of the fields.
-      - `Average`/`Max`/`Min`: the fields undergo the corresponding operation
+      - `average`/`max`/`min`: the fields undergo the corresponding operation
       over the time interval since the last output step (as specified in the
       `output_control` section).
       In the case above, each snapshot saved to file corresponds to an average
@@ -419,14 +419,14 @@ Valid options are:
 in the run directory.
       - The full filename will be `$prefix.$avgtype.$frequnits_x$freq.$timestamp.nc`,
       where `$timestamp` corresponds to the first snapshot saved in the file for
-      `Instant` output, or the beginning of the first averaging window for the other
+      `instant` output, or the beginning of the first averaging window for the other
       averaging types.
       - If not set, it defaults to `$casename.eamxx.h`.
 - `Max Snapshots Per File`: specifies how many time snapshots can be put in a file.
       - Once this number is reached, EAMxx will close the file and open a new one.
       - If not set, it defaults to `-1`, signaling "unlimited storage".
 - `frequency`: how many units of time are between two consecutive writes to file.
-      - For `Instant` output the fields are "sampled" at this frequency,
+      - For `instant` output the fields are "sampled" at this frequency,
       while for other averaging types the fields are "integrated"
       in time over this window
 - `frequency_units`: units of the output frequency.
@@ -582,7 +582,7 @@ of the parameter value).
       should be added to the output stream.
       - By default, it is `true`.
 - `skip_t0_output` (`output_control` sub-list, `boolean`):
-      - This option is relevant only for `Instant` output, for which fields are
+      - This option is relevant only for `instant` output, for which fields are
       also output at the case start time
           - I.e., after initialization but before the beginning of the first timestep).
       - By default it is set to `false`.

@@ -1,7 +1,7 @@
 %YAML 1.1
 ---
 filename_prefix: mam_optics_rrtmgp_output
-averaging_type: Instant
+averaging_type: instant
 Max Snapshots Per File: 1
 Field Names:
    # MAM_OPTICS 
