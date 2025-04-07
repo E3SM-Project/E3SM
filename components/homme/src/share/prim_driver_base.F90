@@ -1623,6 +1623,7 @@ stop
   real (kind=real_kind)  :: dp(np,np,nlev), ps(np,np), dp_adj(np,np,nlev)
   real (kind=real_kind)  :: phydro(np,np,nlev)  ! hydrostatic pressure
   logical :: adjust_ps   ! adjust PS or DP3D to conserve dry mass
+  logical :: water_tracer
 #ifdef MODEL_THETA_L
   real (kind=real_kind)  :: pprime(np,np,nlev)
   real (kind=real_kind)  :: vthn1(np,np,nlev)
@@ -1697,6 +1698,9 @@ endif
 
       ! apply forcing to Qdp
       do q=1,qsize
+
+!!!WORKS ONLY with P3
+         water_tracer = ( q==1 .or. q==2 .or. q==4 .or. q==6 )
          do k=1,nlev
             do j=1,np
                do i=1,np
@@ -1709,7 +1713,9 @@ endif
                      endif
                   endif
                   elem%state%Qdp(i,j,k,q,np1_qdp) = elem%state%Qdp(i,j,k,q,np1_qdp)+fq
-                  if (q==1) then
+
+!!!!! water loading
+                  if ( water_tracer ) then
                      dp_adj(i,j,k)=dp_adj(i,j,k) + fq
                   endif
                enddo

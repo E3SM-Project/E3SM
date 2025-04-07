@@ -979,9 +979,16 @@ subroutine compute_mass(elem, n0, nq, switch)
 
     !add dry mass to water mass
 !WRONG in future, no water loading
+!    do k=1,nlev
+!        mass = mass + elem%state%dp3d(:,:,k,n0) - elem%state%Qdp(:,:,k,1,nq)
+!    enddo
+
+    !water loading
     do k=1,nlev
-        mass = mass + elem%state%dp3d(:,:,k,n0) - elem%state%Qdp(:,:,k,1,nq)
+        mass = mass + elem%state%dp3d(:,:,k,n0) - &
+        elem%state%Qdp(:,:,k,1,nq) - elem%state%Qdp(:,:,k,2,nq) - elem%state%Qdp(:,:,k,4,nq) - elem%state%Qdp(:,:,k,6,nq)
     enddo
+
     if(switch == 1) elem%accum%mass_before_physics = mass
     if(switch == 2) elem%accum%mass_after_physics = mass
 
