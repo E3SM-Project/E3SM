@@ -159,8 +159,8 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
         }
 
         // Check if the user wants to remap fields on a different grid first
-        if (pl.isParameter("IO Grid Name")) {
-          io_grid = field_mgr->get_grids_manager()->get_grid(pl.get<std::string>("IO Grid Name"));
+        if (pl.isParameter("io_grid_name")) {
+          io_grid = field_mgr->get_grids_manager()->get_grid(pl.get<std::string>("io_grid_name"));
         }
         break;
       }

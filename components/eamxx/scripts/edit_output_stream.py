@@ -84,9 +84,9 @@ def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
     >>> f.sort()
     >>> f
     ['a', 'b']
-    >>> data['fields']['my_grid']['IO Grid Name']
+    >>> data['fields']['my_grid']['io_grid_name']
     'other_grid'
-    >>> # No remap if online remap (IO Grid Name) is set
+    >>> # No remap if online remap (io_grid_name) is set
     >>> edit_output_stream_impl(fname,horiz_remap_file='blah')
     Traceback (most recent call last):
     SystemExit: ERROR: Cannot use online remap and horiz/vert remap at the same time.
@@ -152,7 +152,7 @@ def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
                 expect (grid is not None,
                         "IO grid reset requested, but no grid name provided. Re-run with --grid GRID_NAME")
                 if grid in data["fields"].keys():
-                    del data["fields"][grid]["IO Grid Name"]
+                    del data["fields"][grid]["io_grid_name"]
 
                     # Remove this grid if there's not other options set other than
                     # fields names, and field names is an empty list
@@ -204,7 +204,7 @@ def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
         section["field_names"] = fnames
 
         if io_grid is not None:
-            section["IO Grid Name"] = io_grid
+            section["io_grid_name"] = io_grid
             # If not already present, add an empty list of field names
             section.setdefault("field_names",[])
 
@@ -213,7 +213,7 @@ def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
     # We cannot do online remap (typically dyn->physgll) if horiz or vert remap is used
     has_online_remap = False
     for k,v in data["fields"].items():
-        has_online_remap = has_online_remap or "IO Grid Name" in v.keys();
+        has_online_remap = has_online_remap or "io_grid_name" in v.keys();
     has_vert_remap   = "vertical_remap_file" in data.keys()
     has_horiz_remap  = "horiz_remap_file" in data.keys()
     expect (not has_online_remap or (not has_vert_remap and not has_horiz_remap),

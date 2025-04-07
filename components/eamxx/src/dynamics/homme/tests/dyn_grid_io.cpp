@@ -140,7 +140,7 @@ TEST_CASE("dyn_grid_io")
   out_params.set<std::string>("averaging_type","instant");
   out_params.set<std::string>("filename_prefix","dyn_grid_io");
   out_params.sublist("fields").sublist("Dynamics").set<std::vector<std::string>>("field_names",fnames);
-  out_params.sublist("fields").sublist("Dynamics").set<std::string>("IO Grid Name","physics gll");
+  out_params.sublist("fields").sublist("Dynamics").set<std::string>("io_grid_name","physics gll");
 
   out_params.sublist("output_control").set<int>("frequency",1);
   out_params.sublist("output_control").set<std::string>("frequency_units","nsteps");

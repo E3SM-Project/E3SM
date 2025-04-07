@@ -32,14 +32,14 @@
  *  fields:
  *     GRID_NAME_1:
  *        field_names:                  ARRAY OF STRINGS
- *        IO Grid Name:                 STRING                (optional)
+ *        io_grid_name:                 STRING                (optional)
  *     GRID_NAME_2:
  *        field_names:                  ARRAY OF STRINGS
- *        IO Grid Name:                 STRING                (optional)
+ *        io_grid_name:                 STRING                (optional)
  *     ...
  *     GRID_NAME_N:
  *        field_names:                  ARRAY OF STRINGS
- *        IO Grid Name:                 STRING                (optional)
+ *        io_grid_name:                 STRING                (optional)
  *  output_control:
  *    frequency:                        INT
  *    frequency_units:                  STRING                (default: nsteps)
@@ -59,7 +59,7 @@
  *  - fields: parameters specifying fields to output
  *     - GRID_NAME: parameters specifyign fields to output from grid $GRID_NAME
  *        - field_names: names of fields defined on grid $grid_name that need to be outputed
- *        - IO Grid Name: if provided, remap fields to this grid before output (useful to remap
+ *        - io_grid_name: if provided, remap fields to this grid before output (useful to remap
  *                        SEGrid fields to PointGrid fields on the fly, to save on output size)
  *  - max_snapshots_per_file: the maximum number of snapshots saved per file. After this many
  *    snapshots, the current files is closed and a new file created.
@@ -88,7 +88,7 @@
  *      - item_N
  *
  *   - in case of single-grid tests, you can specify fields names by adding 'field_names' directly
- *     in the top-level parameter list. In that case, you can also add 'IO Grid Name' in the top-level
+ *     in the top-level parameter list. In that case, you can also add 'io_grid_name' in the top-level
  *     parameter list.
  *   - each instance of this class can only handle ONE grid, so if multiple grids are specified,
  *     you will need one instance per grid.

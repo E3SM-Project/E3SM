@@ -96,14 +96,14 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
         const auto& grid_pl = fields_pl.sublist(*it);
         bool reset_ncol_naming = false;
         if (*it == "physics gll") reset_ncol_naming = true;
-        if (grid_pl.isParameter("IO Grid Name")) {
-          if (grid_pl.get<std::string>("IO Grid Name") == "physics gll") {
+        if (grid_pl.isParameter("io_grid_name")) {
+          if (grid_pl.get<std::string>("io_grid_name") == "physics gll") {
             reset_ncol_naming = true;
           }
         }
         if (reset_ncol_naming) {
           field_mgr->get_grids_manager()->
-            get_grid_nonconst(grid_pl.get<std::string>("IO Grid Name"))->
+            get_grid_nonconst(grid_pl.get<std::string>("io_grid_name"))->
               reset_field_tag_name(ShortFieldTagsNames::COL,"ncol_d");
 	      }
       }

@@ -38,7 +38,7 @@ public:
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager) {
     using namespace ShortFieldTagsNames;
 
-    m_grid = grids_manager->get_grid(m_params.get<std::string>("Grid Name"));
+    m_grid = grids_manager->get_grid(m_params.get<std::string>("grid_name"));
 
     const auto num_cols = m_grid->get_num_local_dofs();
     const auto num_levs = m_grid->get_num_vertical_levels();
