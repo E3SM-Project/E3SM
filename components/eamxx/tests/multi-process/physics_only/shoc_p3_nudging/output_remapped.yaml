@@ -2,7 +2,7 @@
 ---
 filename_prefix: shoc_p3_${POSTFIX}_nudged_remapped
 averaging_type: instant
-Max Snapshots Per File: 2
+max_snapshots_per_file: 2
 vertical_remap_file: vertical_remap.nc
 Field Names:
   - T_mid

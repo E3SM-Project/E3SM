@@ -679,7 +679,7 @@ ekat::ParameterList set_output_params(const std::string& name, const std::string
 
   params.set<std::string>("filename_prefix",name);
   params.set<std::string>("averaging_type","instant");
-  params.set<int>("Max Snapshots Per File",1);
+  params.set<int>("max_snapshots_per_file",1);
   params.set<std::string>("Floating Point Precision","real");
   auto& oc = params.sublist("output_control");
   oc.set<int>("frequency",1);

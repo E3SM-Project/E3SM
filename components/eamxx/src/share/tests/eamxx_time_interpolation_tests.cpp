@@ -388,7 +388,7 @@ std::vector<std::string> create_test_data_files(
   om_pl.set("filename_prefix",std::string("source_data_for_time_interpolation"));
   om_pl.set("Field Names",fnames);
   om_pl.set("averaging_type", std::string("instant"));
-  om_pl.set("Max Snapshots Per File",snaps_per_file);
+  om_pl.set("max_snapshots_per_file",snaps_per_file);
   auto& ctrl_pl = om_pl.sublist("output_control");
   ctrl_pl.set("frequency_units",std::string("nsteps"));
   ctrl_pl.set("frequency",snap_freq);

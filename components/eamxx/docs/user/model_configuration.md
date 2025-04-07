@@ -384,7 +384,7 @@ The following is a basic example of an output request.
 ---
 filename_prefix: my_output
 averaging_type: average
-Max Snapshots Per File: 10
+max_snapshots_per_file: 10
 Fields:
   Physics:
     Field Names:
@@ -422,7 +422,7 @@ in the run directory.
       `instant` output, or the beginning of the first averaging window for the other
       averaging types.
       - If not set, it defaults to `$casename.eamxx.h`.
-- `Max Snapshots Per File`: specifies how many time snapshots can be put in a file.
+- `max_snapshots_per_file`: specifies how many time snapshots can be put in a file.
       - Once this number is reached, EAMxx will close the file and open a new one.
       - If not set, it defaults to `-1`, signaling "unlimited storage".
 - `frequency`: how many units of time are between two consecutive writes to file.
@@ -565,13 +565,13 @@ of the parameter value).
 - `file_max_storage_type` (top-level list, `string`):
       - This parameter determines how the capacity of the file is specified.
         - By default, it is set to `num_snapshots`, which makes EAMxx read
-        `Max Snapshots Per File` (explained in the first section).
+        `max_snapshots_per_file` (explained in the first section).
         - However, the user can specify `one_year` or `one_month`,
         which will make EAMxx create one output file per year/month of simulation,
         fitting however many snapshots are needed in each file
         (depending on the output frequency).
             - If `one_year` or `one_month` are used, the option
-            `Max Snapshots Per File` is ignored.
+            `max_snapshots_per_file` is ignored.
 - `iotype` (top-level list, `string`):
       - This option allows the user to request a particular format for the
       output file.

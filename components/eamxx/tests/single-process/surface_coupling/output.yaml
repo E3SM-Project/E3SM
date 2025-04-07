@@ -2,7 +2,7 @@
 ---
 filename_prefix: surface_coupling_output
 averaging_type: instant
-Max Snapshots Per File: 1
+max_snapshots_per_file: 1
 fill_value: -99999.0
 Field Names:
   # IMPORTER

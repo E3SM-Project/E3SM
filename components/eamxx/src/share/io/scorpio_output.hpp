@@ -28,7 +28,7 @@
  *  ------
  *  filename_prefix:                    STRING
  *  averaging_type:                     STRING
- *  Max Snapshots Per File:             INT                   (default: 1)
+ *  max_snapshots_per_file:             INT                   (default: 1)
  *  Fields:
  *     GRID_NAME_1:
  *        Field Names:                  ARRAY OF STRINGS
@@ -61,7 +61,7 @@
  *        - Field Names: names of fields defined on grid $grid_name that need to be outputed
  *        - IO Grid Name: if provided, remap fields to this grid before output (useful to remap
  *                        SEGrid fields to PointGrid fields on the fly, to save on output size)
- *  - Max Snapshots Per File: the maximum number of snapshots saved per file. After this many
+ *  - max_snapshots_per_file: the maximum number of snapshots saved per file. After this many
  *    snapshots, the current files is closed and a new file created.
  *  - Output: parameters for output control
  *    - frequency: the frequency of output writes (in the units specified by ${Output frequency_units})

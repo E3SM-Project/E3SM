@@ -710,9 +710,9 @@ setup_internals (const std::shared_ptr<fm_type>& field_mgr,
     constexpr auto large_int = std::numeric_limits<int>::max();
     if (storage_type=="num_snapshots") {
       storage.type = NumSnaps;
-      storage.max_snapshots_in_file = m_params.get<int>("Max Snapshots Per File",large_int);
+      storage.max_snapshots_in_file = m_params.get<int>("max_snapshots_per_file",large_int);
       EKAT_REQUIRE_MSG (storage.max_snapshots_in_file>0,
-          "Error! Value for 'Max Snapshots Per File' should be positive.\n"
+          "Error! Value for 'max_snapshots_per_file' should be positive.\n"
           "       To request 'unlimited' storage, leave parameter unset.\n");
     } else if (storage_type=="one_year") {
       storage.type = Yearly;

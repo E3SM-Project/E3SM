@@ -276,7 +276,7 @@ Fields:
       - Q
       - CLDLIQ
       - CLDICE
-Max Snapshots Per File: 1
+max_snapshots_per_file: 1
 filename_prefix: output.scream_monthly.NAME_1
 output_control:
   frequency: 1

@@ -56,7 +56,7 @@ Fields:
     - modis_ctptau
     - misr_cthtau
     - cosp_sunlit
-Max Snapshots Per File: 1
+max_snapshots_per_file: 1
 filename_prefix: eamxx
 output_control:
   frequency: 1

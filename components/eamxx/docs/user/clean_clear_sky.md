@@ -22,7 +22,7 @@ Below is an example output file to output the extra (clean and clean-clear-sky) 
 ---
 filename_prefix: monthly.outputs
 averaging_type: average
-Max Snapshots Per File: 1
+max_snapshots_per_file: 1
 Fields:
   Physics pg2:
     Field Names:

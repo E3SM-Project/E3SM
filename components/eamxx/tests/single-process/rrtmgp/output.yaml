@@ -2,7 +2,7 @@
 ---
 filename_prefix: rrtmgp_standalone_output${SUFFIX}
 averaging_type: instant
-Max Snapshots Per File: 1
+max_snapshots_per_file: 1
 Field Names:
   - T_mid
   - LW_flux_up

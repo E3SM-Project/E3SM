@@ -160,7 +160,7 @@ void write (const std::string& avg_type, const std::string& freq_units,
   if (avg_type=="INSTANT") {
     ++max_snaps;
   }
-  om_pl.set("Max Snapshots Per File", max_snaps);
+  om_pl.set("max_snapshots_per_file", max_snaps);
 
   // Create Output manager
   OutputManager om;

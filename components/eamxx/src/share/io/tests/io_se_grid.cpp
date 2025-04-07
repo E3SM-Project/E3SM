@@ -61,7 +61,7 @@ TEST_CASE("se_grid_io")
   ekat::ParameterList params;
   params.set<std::string>("filename_prefix","io_se_grid");
   params.set<std::string>("averaging_type","instant");
-  params.set<int>("Max Snapshots Per File",1);
+  params.set<int>("max_snapshots_per_file",1);
   params.set<strvec_t>("Field Names",{"field_1","field_2","field_3","field_packed"});
   params.set<std::string>("Floating Point Precision","real");
   auto& ctl_pl = params.sublist("output_control");

@@ -3,7 +3,7 @@
 filename_prefix: eamxx_output.decadal.6hourlyAVG_coarse.h
 iotype: pnetcdf
 averaging_type: average
-Max Snapshots Per File: 4  # one file per day
+max_snapshots_per_file: 4  # one file per day
 horiz_remap_file: ${DIN_LOC_ROOT}/atm/scream/maps/map_ne1024pg2_to_ne30pg2_mono.20230901.nc 
 Fields:
   Physics pg2:
