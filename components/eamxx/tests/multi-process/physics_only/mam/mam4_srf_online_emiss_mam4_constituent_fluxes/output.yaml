@@ -2,7 +2,7 @@
 ---
 filename_prefix: mam4_srf_online_emiss_mam4_constituent_fluxes_output
 averaging_type: instant
-Field Names:
+field_names:
   - bc_a1
   - bc_a3
   - bc_a4

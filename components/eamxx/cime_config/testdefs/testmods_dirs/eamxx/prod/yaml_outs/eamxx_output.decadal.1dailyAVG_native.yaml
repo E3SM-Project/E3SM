@@ -6,7 +6,7 @@ averaging_type: average
 max_snapshots_per_file: 1
 fields:
   physics pg2:
-    Field Names:
+    field_names:
     - snow_depth_land
 output_control:
   frequency: 1

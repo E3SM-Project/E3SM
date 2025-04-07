@@ -164,7 +164,7 @@ void TimeInterpolation::initialize_data_from_files()
   auto triplet_curr = m_file_data_triplets[m_triplet_idx];
   // Initialize the AtmosphereInput object that will be used to gather data
   ekat::ParameterList input_params;
-  input_params.set("Field Names",m_field_names);
+  input_params.set("field_names",m_field_names);
   input_params.set("filename",triplet_curr.filename);
   m_file_data_atm_input = std::make_shared<AtmosphereInput>(input_params,m_fm_time1);
   m_file_data_atm_input->set_logger(m_logger);
@@ -351,7 +351,7 @@ void TimeInterpolation::read_data()
   if (not m_file_data_atm_input or triplet_curr.filename != m_file_data_atm_input->get_filename()) {
     // Then we need to close this input stream and open a new one
     ekat::ParameterList input_params;
-    input_params.set("Field Names",m_field_names);
+    input_params.set("field_names",m_field_names);
     input_params.set("filename",triplet_curr.filename);
     m_file_data_atm_input = std::make_shared<AtmosphereInput>(input_params,m_fm_time1);
     m_file_data_atm_input->set_logger(m_logger);

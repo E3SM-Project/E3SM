@@ -4,7 +4,7 @@ filename_prefix: model_output
 averaging_type: average
 fields:
   physics gll:
-    Field Names:
+    field_names:
       # HOMME
       - ps
       - pseudo_density
@@ -74,7 +74,7 @@ fields:
       - ZonalVapFlux
       - MeridionalVapFlux
   Dynamics:
-    Field Names:
+    field_names:
       - Qdp_dyn
       - v_dyn
       - vtheta_dp_dyn

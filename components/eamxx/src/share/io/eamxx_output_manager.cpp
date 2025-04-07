@@ -70,7 +70,7 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
     if (*it == "physics pg2") pg2_grid_in_io_streams = true;
   }
 
-  if (m_params.isParameter("Field Names")) {
+  if (m_params.isParameter("field_names")) {
     // This is the simple case where the output parameters do not
     // list fields on grids, but just a list of fields.
     // Simply create an output stream using the gridname given.
@@ -692,7 +692,7 @@ setup_internals (const std::shared_ptr<fm_type>& field_mgr,
           fnames.push_back(n);
         }
       }
-      fields_pl.sublist(gname).set("Field Names",fnames);
+      fields_pl.sublist(gname).set("field_names",fnames);
     }
     m_filename_prefix = m_params.get<std::string>("filename_prefix");
 

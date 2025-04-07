@@ -4,7 +4,7 @@ filename_prefix: mam4_constituent_fluxes_standalone_output
 averaging_type: instant
 fields:
   physics:
-    Field Names:
+    field_names:
       - O3
       - H2O2
       - H2SO4

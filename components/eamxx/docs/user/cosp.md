@@ -50,7 +50,7 @@ cat << EOF > eamxx_cosp_daily_output.yaml
 averaging_type: average
 fields:
   physics pg2:
-    Field Names:
+    field_names:
     - isccp_cldtot
     - isccp_ctptau
     - modis_ctptau

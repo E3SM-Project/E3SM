@@ -146,7 +146,7 @@ void write (const std::string& avg_type, const std::string& freq_units,
   // Create output params
   ekat::ParameterList om_pl;
   om_pl.set("filename_prefix",std::string("io_basic"));
-  om_pl.set("Field Names",fnames);
+  om_pl.set("field_names",fnames);
   om_pl.set("averaging_type", avg_type);
   auto& ctrl_pl = om_pl.sublist("output_control");
   ctrl_pl.set("frequency_units",freq_units);
@@ -233,7 +233,7 @@ void read (const std::string& avg_type, const std::string& freq_units,
     + "." + t0.to_string()
     + ".nc";
   reader_pl.set("filename",filename);
-  reader_pl.set("Field Names",fnames);
+  reader_pl.set("field_names",fnames);
   AtmosphereInput reader(reader_pl,fm);
 
   // We added 1.0 to the input fields for each timestep

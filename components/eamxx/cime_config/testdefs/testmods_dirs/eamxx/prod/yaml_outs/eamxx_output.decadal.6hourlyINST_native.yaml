@@ -6,7 +6,7 @@ averaging_type: instant
 max_snapshots_per_file: 4  # one file per day
 fields:
   physics pg2:
-    Field Names:
+    field_names:
     # For storm analysis
     - SeaLevelPressure
     - wind_speed_10m

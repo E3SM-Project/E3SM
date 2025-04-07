@@ -31,14 +31,14 @@
  *  max_snapshots_per_file:             INT                   (default: 1)
  *  fields:
  *     GRID_NAME_1:
- *        Field Names:                  ARRAY OF STRINGS
+ *        field_names:                  ARRAY OF STRINGS
  *        IO Grid Name:                 STRING                (optional)
  *     GRID_NAME_2:
- *        Field Names:                  ARRAY OF STRINGS
+ *        field_names:                  ARRAY OF STRINGS
  *        IO Grid Name:                 STRING                (optional)
  *     ...
  *     GRID_NAME_N:
- *        Field Names:                  ARRAY OF STRINGS
+ *        field_names:                  ARRAY OF STRINGS
  *        IO Grid Name:                 STRING                (optional)
  *  output_control:
  *    frequency:                        INT
@@ -58,7 +58,7 @@
  *    E.g., with 'Output frequency'=10 and 'Output frequency_units'="Days", the time interval is 10 days.
  *  - fields: parameters specifying fields to output
  *     - GRID_NAME: parameters specifyign fields to output from grid $GRID_NAME
- *        - Field Names: names of fields defined on grid $grid_name that need to be outputed
+ *        - field_names: names of fields defined on grid $grid_name that need to be outputed
  *        - IO Grid Name: if provided, remap fields to this grid before output (useful to remap
  *                        SEGrid fields to PointGrid fields on the fly, to save on output size)
  *  - max_snapshots_per_file: the maximum number of snapshots saved per file. After this many
@@ -87,7 +87,7 @@
  *        ...
  *      - item_N
  *
- *   - in case of single-grid tests, you can specify fields names by adding 'Field Names' directly
+ *   - in case of single-grid tests, you can specify fields names by adding 'field_names' directly
  *     in the top-level parameter list. In that case, you can also add 'IO Grid Name' in the top-level
  *     parameter list.
  *   - each instance of this class can only handle ONE grid, so if multiple grids are specified,

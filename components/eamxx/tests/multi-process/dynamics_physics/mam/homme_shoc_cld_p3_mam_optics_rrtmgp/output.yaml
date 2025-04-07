@@ -4,7 +4,7 @@ filename_prefix: homme_shoc_cld_p3_mam_optics_rrtmgp
 averaging_type: instant
 fields:
   physics gll:
-    Field Names:
+    field_names:
       # HOMME
       - ps
       - pseudo_density
@@ -102,7 +102,7 @@ fields:
   # represent all current possible homme
   # states available.
   Dynamics:
-    Field Names:
+    field_names:
       - v_dyn
       - vtheta_dp_dyn
       - dp3d_dyn

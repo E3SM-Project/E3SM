@@ -4,7 +4,7 @@ filename_prefix: mam4_wetscav_standalone_output
 averaging_type: instant
 fields:
   physics:
-    Field Names:
+    field_names:
       - aerdepwetis
       - aerdepwetcw
       - dgnumwet

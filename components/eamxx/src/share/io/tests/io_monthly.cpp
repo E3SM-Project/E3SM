@@ -120,7 +120,7 @@ void write (const int seed, const ekat::Comm& comm)
   // Create output params
   ekat::ParameterList om_pl;
   om_pl.set("filename_prefix",std::string("io_monthly"));
-  om_pl.set("Field Names",fnames);
+  om_pl.set("field_names",fnames);
   om_pl.set("averaging_type", std::string("instant"));
   om_pl.set("file_max_storage_type",std::string("one_month"));
   om_pl.set("Floating Point Precision",std::string("single"));
@@ -189,7 +189,7 @@ void read (const int seed, const ekat::Comm& comm)
 
   // Create reader pl
   ekat::ParameterList reader_pl;
-  reader_pl.set("Field Names",fnames);
+  reader_pl.set("field_names",fnames);
 
   for (int n=0; n<12; ++n) {
     auto t = t0 + n*dt;

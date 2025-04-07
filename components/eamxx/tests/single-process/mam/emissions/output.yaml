@@ -4,7 +4,7 @@ filename_prefix: mam4_srf_online_emiss_standalone_output
 averaging_type: instant
 fields:
   physics:
-    Field Names:
+    field_names:
       - constituent_fluxes
 output_control:
   frequency: 1

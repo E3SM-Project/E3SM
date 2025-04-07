@@ -80,7 +80,7 @@ def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
     >>> # Set fields options, and then check
     >>> edit_output_stream_impl(fname,fields=['a','b'],grid='my_grid',io_grid='other_grid')
     >>> data = yaml.load(open(fname,'r'),Loader=yaml.SafeLoader)
-    >>> f = data['fields']['my_grid']['Field Names']
+    >>> f = data['fields']['my_grid']['field_names']
     >>> f.sort()
     >>> f
     ['a', 'b']
@@ -143,7 +143,7 @@ def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
                 expect (grid is not None,
                         "fields reset requested, but no grid name provided. Re-run with --grid GRID_NAME")
                 if grid in data["fields"].keys():
-                    data["fields"][grid]["Field Names"] = []
+                    data["fields"][grid]["field_names"] = []
 
                     # Remove this grid if there are no other options set
                     if len(data["fields"][grid])==1:
@@ -156,7 +156,7 @@ def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
 
                     # Remove this grid if there's not other options set other than
                     # fields names, and field names is an empty list
-                    if len(data["fields"][grid])==1 and len(data["fields"][grid]["Field Names"])==0:
+                    if len(data["fields"][grid])==1 and len(data["fields"][grid]["field_names"])==0:
                         del data["fields"][grid]
 
     if prefix is not None:
@@ -195,18 +195,18 @@ def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
                 "fields list specified, but no grid name provided. Re-run with --grid GRID_NAME")
 
         section = data["fields"].setdefault(grid,{})
-        if "Field Names" not in section.keys():
-            section["Field Names"] = []
+        if "field_names" not in section.keys():
+            section["field_names"] = []
 
-        fnames = section["Field Names"]
+        fnames = section["field_names"]
         fnames += fields
         fnames = list(set(fnames))
-        section["Field Names"] = fnames
+        section["field_names"] = fnames
 
         if io_grid is not None:
             section["IO Grid Name"] = io_grid
             # If not already present, add an empty list of field names
-            section.setdefault("Field Names",[])
+            section.setdefault("field_names",[])
 
         data["fields"][grid] = section
 

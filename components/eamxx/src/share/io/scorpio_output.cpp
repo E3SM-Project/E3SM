@@ -136,11 +136,11 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   // By default, IO is done directly on the field mgr grid
   std::shared_ptr<const grid_type> fm_grid, io_grid;
   io_grid = fm_grid = field_mgr->get_grids_manager()->get_grid(grid_name);
-  if (params.isParameter("Field Names")) {
+  if (params.isParameter("field_names")) {
     // This simple parameter list option does *not* allow to remap fields
     // to an io grid different from that of the field manager. In order to
     // use that functionality, you need the full syntax
-    m_fields_names = params.get<vos_t>("Field Names");
+    m_fields_names = params.get<vos_t>("field_names");
   } else if (params.isSublist("fields")){
     const auto& f_pl = params.sublist("fields");
     const auto& io_grid_aliases = io_grid->aliases();
@@ -149,10 +149,10 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
       if (f_pl.isSublist(grid_name)) {
         grid_found = true;
         const auto& pl = f_pl.sublist(grid_name);
-        if (pl.isType<vos_t>("Field Names")) {
-          m_fields_names = pl.get<vos_t>("Field Names");
-        } else if (pl.isType<std::string>("Field Names")) {
-          m_fields_names.resize(1, pl.get<std::string>("Field Names"));
+        if (pl.isType<vos_t>("field_names")) {
+          m_fields_names = pl.get<vos_t>("field_names");
+        } else if (pl.isType<std::string>("field_names")) {
+          m_fields_names.resize(1, pl.get<std::string>("field_names"));
           if (m_fields_names[0]=="NONE") {
             m_fields_names.clear();
           }
@@ -338,7 +338,7 @@ void AtmosphereOutput::restart (const std::string& filename)
   res_params.set<std::string>("filename",filename);
   std::vector<std::string> input_field_names = m_fields_names;
   input_field_names.insert(input_field_names.end(),m_avg_cnt_names.begin(),m_avg_cnt_names.end());
-  res_params.set("Field Names",input_field_names);
+  res_params.set("field_names",input_field_names);
 
   AtmosphereInput hist_restart (res_params,m_io_grid,m_host_views_1d,m_layouts);
   hist_restart.read_variables();

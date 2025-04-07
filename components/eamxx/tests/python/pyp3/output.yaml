@@ -2,7 +2,7 @@
 ---
 filename_prefix: p3_standalone_${EXEC_TYPE}
 averaging_type: instant
-Field Names:
+field_names:
   - qi
   - qc
   - qr

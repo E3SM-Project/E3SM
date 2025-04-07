@@ -21,11 +21,11 @@
  *  -----
  *  Input Parameters
  *    filename: STRING
- *    Field Names:   ARRAY OF STRINGS
+ *    field_names:   ARRAY OF STRINGS
  *  -----
  *  The meaning of these parameters is the following:
  *   - filename: the name of the input file to be read.
- *   - Field Names: list of names of fields to load from file. Should match the name in the file and the name in the field manager.
+ *   - field_names: list of names of fields to load from file. Should match the name in the file and the name in the field manager.
  *
  *  TODO: add a rename option if variable names differ in file and field manager.
  *

@@ -139,7 +139,7 @@ TEST_CASE("dyn_grid_io")
   ekat::ParameterList out_params;
   out_params.set<std::string>("averaging_type","instant");
   out_params.set<std::string>("filename_prefix","dyn_grid_io");
-  out_params.sublist("fields").sublist("Dynamics").set<std::vector<std::string>>("Field Names",fnames);
+  out_params.sublist("fields").sublist("Dynamics").set<std::vector<std::string>>("field_names",fnames);
   out_params.sublist("fields").sublist("Dynamics").set<std::string>("IO Grid Name","physics gll");
 
   out_params.sublist("output_control").set<int>("frequency",1);
@@ -158,7 +158,7 @@ TEST_CASE("dyn_grid_io")
 
   ekat::ParameterList in_params;
   in_params.set<std::string>("filename",filename);
-  in_params.set<std::vector<std::string>>("Field Names",fnames);
+  in_params.set<std::vector<std::string>>("field_names",fnames);
 
   // AtmosphereInput expects a FM on a single grid, create
   // a phys FM and add fields.

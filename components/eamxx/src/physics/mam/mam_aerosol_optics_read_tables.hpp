@@ -101,7 +101,7 @@ inline void set_parameters_table(
       {"swband", "mode", "refindex_im", "refindex_real", "coef_number"});
 
   rrtmg_params.set<strvec_t>(
-      "Field Names",
+      "field_names",
       {"asmpsw", "extpsw", "abspsw", "absplw", "refindex_real_sw",
        "refindex_im_sw", "refindex_real_lw", "refindex_im_lw"});
 
@@ -274,7 +274,7 @@ inline void read_water_refindex(const std::string &table_filename,
   params.set("filename", table_filename);
   params.set("Skip_Grid_Checks", true);
 
-  params.set<strvec_t>("Field Names",
+  params.set<strvec_t>("field_names",
                        {"refindex_im_water_lw", "refindex_im_water_sw",
                         "refindex_real_water_lw", "refindex_real_water_sw"});
   // make a list of host views
@@ -340,7 +340,7 @@ inline void set_refindex_names(std::string surname, ekat::ParameterList &params,
   std::string refindex_im_lw   = "refindex_im_" + surname + "_lw";
 
   params.set("Skip_Grid_Checks", true);
-  params.set<strvec_t>("Field Names", {refindex_real_sw, refindex_im_sw,
+  params.set<strvec_t>("field_names", {refindex_real_sw, refindex_im_sw,
                                        refindex_real_lw, refindex_im_lw});
   // allocate host views
   host_views[refindex_real_sw] = view_1d_host(refindex_real_sw, nswbands);

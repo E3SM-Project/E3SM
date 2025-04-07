@@ -3,7 +3,7 @@
 filename_prefix: shoc_p3_${POSTFIX}_nudged
 averaging_type: instant
 max_snapshots_per_file: 2
-Field Names:
+field_names:
   - p_mid
   - T_mid
   - qv

@@ -2,7 +2,7 @@
 ---
 filename_prefix: p3_mam4_wetscav_output
 averaging_type: instant
-Field Names:
+field_names:
   - cldfrac_liq
   - bc_a1
   - bc_a3

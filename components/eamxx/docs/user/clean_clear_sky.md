@@ -25,7 +25,7 @@ averaging_type: average
 max_snapshots_per_file: 1
 fields:
   physics pg2:
-    Field Names:
+    field_names:
     - SW_clnclrsky_flux_up_at_model_top
     - LW_clnclrsky_flux_up_at_model_top
     - SW_clnsky_flux_up_at_model_top

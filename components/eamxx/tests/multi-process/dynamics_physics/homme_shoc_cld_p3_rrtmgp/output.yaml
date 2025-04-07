@@ -6,7 +6,7 @@ averaging_type: instant
 max_snapshots_per_file: 1
 fields:
   physics gll:
-    Field Names:
+    field_names:
       # HOMME
       - ps
       - pseudo_density
@@ -69,7 +69,7 @@ fields:
   # represent all current possible homme
   # states available.
   Dynamics:
-    Field Names:
+    field_names:
       - v_dyn
       - vtheta_dp_dyn
       - dp3d_dyn

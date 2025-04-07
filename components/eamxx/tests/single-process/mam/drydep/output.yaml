@@ -4,7 +4,7 @@ filename_prefix: mam4_drydep_standalone_output
 averaging_type: instant
 fields:
   physics:
-    Field Names:
+    field_names:
       - bc_a1
       - bc_a3
       - bc_a4

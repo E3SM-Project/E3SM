@@ -244,7 +244,7 @@ Defining the test behavior and pass/fail criteria requires 3 files:
     averaging_type: instant
     fields:
       physics:
-        Field Names:
+        field_names:
           - answer_field
     output_control:
       frequency: 1

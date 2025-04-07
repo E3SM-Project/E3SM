@@ -272,7 +272,7 @@ EOF
 averaging_type: average
 fields:
   physics pg2:
-    Field Names:
+    field_names:
       - Q
       - CLDLIQ
       - CLDICE

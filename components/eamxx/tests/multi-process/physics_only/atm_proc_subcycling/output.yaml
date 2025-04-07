@@ -2,7 +2,7 @@
 ---
 filename_prefix: shoc_p3_${POSTFIX}
 averaging_type: instant
-Field Names:
+field_names:
   - T_mid
   - qv
   - qc

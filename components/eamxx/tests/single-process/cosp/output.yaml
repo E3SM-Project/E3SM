@@ -4,7 +4,7 @@ filename_prefix: cosp_standalone_output
 averaging_type: instant
 fields:
   physics:
-    Field Names:
+    field_names:
       - isccp_cldtot
 
 output_control:

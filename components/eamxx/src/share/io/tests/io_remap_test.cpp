@@ -694,7 +694,7 @@ ekat::ParameterList set_output_params(const std::string& name, const std::string
     fields_out.push_back("p_mid");
     fields_out.push_back("p_int");
   }
-  params.set<vos_type>("Field Names",fields_out);
+  params.set<vos_type>("field_names",fields_out);
 
   if (vert_remap) {
     params.set<std::string>("vertical_remap_file",remap_filename); // TODO, make this work for general np=?
@@ -717,7 +717,7 @@ ekat::ParameterList set_input_params(const std::string& name, ekat::Comm& comm, 
     fields_in.push_back("Y_int_at_"+std::to_string(p_ref)+"Pa");
   }
 
-  in_params.set<vos_type>("Field Names", fields_in);
+  in_params.set<vos_type>("field_names", fields_in);
   in_params.set<std::string>("Floating Point Precision","real");
   return in_params;
 }

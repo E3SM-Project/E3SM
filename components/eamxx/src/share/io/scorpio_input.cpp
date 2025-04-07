@@ -36,7 +36,7 @@ AtmosphereInput (const std::string& filename,
   ekat::ParameterList params;
   params.set("filename",filename);
   params.set("Skip_Grid_Checks",skip_grid_checks);
-  auto& names = params.get<std::vector<std::string>>("Field Names",{});
+  auto& names = params.get<std::vector<std::string>>("field_names",{});
 
   auto fm = std::make_shared<fm_type>(grid);
   for (auto& f : fields) {
@@ -77,7 +77,7 @@ init (const ekat::ParameterList& params,
       "Error! Input class was already inited (with fields).\n");
 
   m_params = params;
-  m_fields_names = m_params.get<decltype(m_fields_names)>("Field Names");
+  m_fields_names = m_params.get<decltype(m_fields_names)>("field_names");
   m_filename = m_params.get<std::string>("filename");
 
   // Sets the internal field mgr, and possibly sets up the remapper

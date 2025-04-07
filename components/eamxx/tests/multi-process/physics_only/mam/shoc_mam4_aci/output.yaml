@@ -2,7 +2,7 @@
 ---
 filename_prefix: shoc_mam4_aci_output
 averaging_type: instant
-Field Names:
+field_names:
   # SHOC
   - cldfrac_liq
   - eddy_diff_mom

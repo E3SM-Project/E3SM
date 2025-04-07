@@ -62,7 +62,7 @@ TEST_CASE("se_grid_io")
   params.set<std::string>("filename_prefix","io_se_grid");
   params.set<std::string>("averaging_type","instant");
   params.set<int>("max_snapshots_per_file",1);
-  params.set<strvec_t>("Field Names",{"field_1","field_2","field_3","field_packed"});
+  params.set<strvec_t>("field_names",{"field_1","field_2","field_3","field_packed"});
   params.set<std::string>("Floating Point Precision","real");
   auto& ctl_pl = params.sublist("output_control");
   ctl_pl.set("frequency",1);
@@ -179,7 +179,7 @@ ekat::ParameterList get_in_params(const ekat::Comm& comm,
                        + "." + t0.to_string() + ".nc";
 
   in_params.set<std::string>("filename",filename);
-  in_params.set<vos_type>("Field Names",{"field_1", "field_2", "field_3", "field_packed"});
+  in_params.set<vos_type>("field_names",{"field_1", "field_2", "field_3", "field_packed"});
   in_params.set<std::string>("Floating Point Precision","real");
   return in_params;
 }

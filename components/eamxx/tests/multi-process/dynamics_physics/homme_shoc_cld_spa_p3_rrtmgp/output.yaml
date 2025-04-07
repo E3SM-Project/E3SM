@@ -5,7 +5,7 @@ averaging_type: instant
 max_snapshots_per_file: 1
 fields:
   physics gll:
-    Field Names:
+    field_names:
       # HOMME
       - ps
       - pseudo_density

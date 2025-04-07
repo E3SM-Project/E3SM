@@ -6,7 +6,7 @@ averaging_type: min
 max_snapshots_per_file: 1
 fields:
   physics pg2:
-    Field Names:
+    field_names:
     - T_2m
 output_control:
   frequency: 1

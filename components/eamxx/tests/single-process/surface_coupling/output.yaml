@@ -4,7 +4,7 @@ filename_prefix: surface_coupling_output
 averaging_type: instant
 max_snapshots_per_file: 1
 fill_value: -99999.0
-Field Names:
+field_names:
   # IMPORTER
   - sfc_alb_dir_vis
   - sfc_alb_dir_nir

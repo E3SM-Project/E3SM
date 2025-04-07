@@ -91,7 +91,7 @@ std::vector<std::string> create_from_file_test_data(const ekat::Comm& comm, cons
   scorpio::init_subsystem(comm);
   ekat::ParameterList om_pl;
   om_pl.set("filename_prefix",std::string("surface_coupling_forcing"));
-  om_pl.set("Field Names",fnames);
+  om_pl.set("field_names",fnames);
   om_pl.set("averaging_type", std::string("INSTANT"));
   om_pl.set("max_snapshots_per_file",2);
   om_pl.set<double>("fill_value",FillValue);

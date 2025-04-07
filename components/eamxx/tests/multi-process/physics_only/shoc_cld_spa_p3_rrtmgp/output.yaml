@@ -3,7 +3,7 @@
 filename_prefix: shoc_cld_spa_p3_rrtmgp_output
 averaging_type: instant
 max_snapshots_per_file: 1
-Field Names:
+field_names:
   # SHOC
   - cldfrac_liq
   - eddy_diff_mom

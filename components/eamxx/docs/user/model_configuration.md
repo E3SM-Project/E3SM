@@ -387,11 +387,11 @@ averaging_type: average
 max_snapshots_per_file: 10
 fields:
   physics:
-    Field Names:
+    field_names:
       - T_mid
       - qv
   Dynamics:
-    Field Names:
+    field_names:
       - dp3d_dyn
       - omega_dyn
 output_control:
@@ -400,7 +400,7 @@ output_control:
 ```
 
 Notice that lists can be equivalently specified in YAML as
-`Field Names: [f1, f2, f3]`.
+`field_names: [f1, f2, f3]`.
 The user can specify fields to be outputted from any of the grids on which
 they are available (although most fields are only available on ONE grid).
 In the example above, we requested fields from both the physics and Dynamics grid.
