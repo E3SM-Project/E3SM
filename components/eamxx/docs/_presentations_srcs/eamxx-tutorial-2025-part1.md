@@ -270,7 +270,7 @@ EOF
 
 ```yaml
 averaging_type: average
-Fields:
+fields:
   Physics pg2:
     Field Names:
       - Q

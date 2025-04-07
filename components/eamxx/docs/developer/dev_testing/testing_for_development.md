@@ -242,7 +242,7 @@ Defining the test behavior and pass/fail criteria requires 3 files:
     ---
     filename_prefix: mam4_inject_ash_standalone_output
     averaging_type: instant
-    Fields:
+    fields:
       Physics:
         Field Names:
           - answer_field

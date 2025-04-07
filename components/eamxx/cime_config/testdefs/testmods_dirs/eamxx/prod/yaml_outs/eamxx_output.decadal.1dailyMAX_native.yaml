@@ -4,7 +4,7 @@ filename_prefix: eamxx_output.decadal.1dailyMAX_native.h
 iotype: pnetcdf
 averaging_type: max
 max_snapshots_per_file: 1
-Fields:
+fields:
   Physics pg2:
     Field Names:
     - T_2m

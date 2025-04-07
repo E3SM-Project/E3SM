@@ -4,7 +4,7 @@ filename_prefix: eamxx_output.decadal.1dailyAVG_native.h
 iotype: pnetcdf
 averaging_type: average
 max_snapshots_per_file: 1
-Fields:
+fields:
   Physics pg2:
     Field Names:
     - snow_depth_land

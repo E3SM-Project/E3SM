@@ -2,7 +2,7 @@
 ---
 filename_prefix: homme_shoc_cld_mam_aci_p3_mam_optics_rrtmgp_mam_drydep
 averaging_type: instant
-Fields:
+fields:
   Physics gll:
     Field Names:
       # HOMME

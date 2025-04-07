@@ -385,7 +385,7 @@ The following is a basic example of an output request.
 filename_prefix: my_output
 averaging_type: average
 max_snapshots_per_file: 10
-Fields:
+fields:
   Physics:
     Field Names:
       - T_mid

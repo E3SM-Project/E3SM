@@ -29,7 +29,7 @@
  *  filename_prefix:                    STRING
  *  averaging_type:                     STRING
  *  max_snapshots_per_file:             INT                   (default: 1)
- *  Fields:
+ *  fields:
  *     GRID_NAME_1:
  *        Field Names:                  ARRAY OF STRINGS
  *        IO Grid Name:                 STRING                (optional)
@@ -56,7 +56,7 @@
  *      max     - maximum value of the field over time interval.
  *    Here, 'time interval' is described by ${Output frequency} and ${Output frequency_units}.
  *    E.g., with 'Output frequency'=10 and 'Output frequency_units'="Days", the time interval is 10 days.
- *  - Fields: parameters specifying fields to output
+ *  - fields: parameters specifying fields to output
  *     - GRID_NAME: parameters specifyign fields to output from grid $GRID_NAME
  *        - Field Names: names of fields defined on grid $grid_name that need to be outputed
  *        - IO Grid Name: if provided, remap fields to this grid before output (useful to remap

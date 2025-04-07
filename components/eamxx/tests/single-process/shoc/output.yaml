@@ -2,7 +2,7 @@
 ---
 filename_prefix: shoc_standalone_output
 averaging_type: instant
-Fields:
+fields:
   Physics:
     Field Names:
       - T_mid

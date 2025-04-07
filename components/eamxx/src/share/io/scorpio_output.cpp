@@ -141,8 +141,8 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     // to an io grid different from that of the field manager. In order to
     // use that functionality, you need the full syntax
     m_fields_names = params.get<vos_t>("Field Names");
-  } else if (params.isSublist("Fields")){
-    const auto& f_pl = params.sublist("Fields");
+  } else if (params.isSublist("fields")){
+    const auto& f_pl = params.sublist("fields");
     const auto& io_grid_aliases = io_grid->aliases();
     bool grid_found = false;
     for (const auto& grid_name : io_grid_aliases) {
@@ -166,7 +166,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
       }
     }
     EKAT_REQUIRE_MSG (grid_found,
-        "Error! Bad formatting of output yaml file. Missing 'Fields->$grid_name` sublist.\n");
+        "Error! Bad formatting of output yaml file. Missing 'fields->$grid_name` sublist.\n");
   }
   sort_and_check(m_fields_names);
 

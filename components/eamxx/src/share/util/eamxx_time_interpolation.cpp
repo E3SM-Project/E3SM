@@ -258,7 +258,7 @@ void TimeInterpolation::print()
   printf("Settings for time interpolator...\n");
   printf("Time 0 = %s\n",m_time0.to_string().c_str());
   printf("Time 1 = %s\n",m_time1.to_string().c_str());
-  printf("List of Fields in interpolator:\n");
+  printf("List of fields in interpolator:\n");
   for (auto name : m_field_names)
   {
     printf("     -   %16s\n",name.c_str());

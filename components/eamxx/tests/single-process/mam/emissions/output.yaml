@@ -2,7 +2,7 @@
 ---
 filename_prefix: mam4_srf_online_emiss_standalone_output
 averaging_type: instant
-Fields:
+fields:
   Physics:
     Field Names:
       - constituent_fluxes

@@ -2,7 +2,7 @@
 ---
 filename_prefix: mam4_wetscav_standalone_output
 averaging_type: instant
-Fields:
+fields:
   Physics:
     Field Names:
       - aerdepwetis

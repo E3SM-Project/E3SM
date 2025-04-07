@@ -65,7 +65,7 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
   // Here, store if PG2 fields will be present in output streams.
   // Will be useful if multiple grids are defined (see below).
   bool pg2_grid_in_io_streams = false;
-  const auto& fields_pl = m_params.sublist("Fields");
+  const auto& fields_pl = m_params.sublist("fields");
   for (auto it=fields_pl.sublists_names_cbegin(); it!=fields_pl.sublists_names_cend(); ++it) {
     if (*it == "Physics pg2") pg2_grid_in_io_streams = true;
   }
@@ -76,7 +76,7 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
     // Simply create an output stream using the gridname given.
 
     // TODO: This is only used for unit tests, we should remove
-    //       and keep the "Fields: Grid: Field Name:" structure
+    //       and keep the "fields: Grid: Field Name:" structure
 
     // In this case, require a single grid passed here
     EKAT_REQUIRE_MSG(grid_names.size()==1,
@@ -680,7 +680,7 @@ setup_internals (const std::shared_ptr<fm_type>& field_mgr,
     m_output_file_specs.storage.max_snapshots_in_file = 1;
     m_output_file_specs.flush_frequency = 1;
 
-    auto& fields_pl = m_params.sublist("Fields");
+    auto& fields_pl = m_params.sublist("fields");
     for (const auto& gname : grid_names) {
       vos_t fnames;
       // There may be no RESTART group on this grid

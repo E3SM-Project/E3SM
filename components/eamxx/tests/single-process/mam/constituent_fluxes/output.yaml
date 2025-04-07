@@ -2,7 +2,7 @@
 ---
 filename_prefix: mam4_constituent_fluxes_standalone_output
 averaging_type: instant
-Fields:
+fields:
   Physics:
     Field Names:
       - O3

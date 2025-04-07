@@ -4,8 +4,8 @@ filename_prefix: eamxx_output.decadal.h
 iotype: pnetcdf
 averaging_type: average
 file_max_storage_type: one_month
-horiz_remap_file: ${DIN_LOC_ROOT}/atm/scream/maps/map_ne1024pg2_to_ne30pg2_mono.20230901.nc 
-Fields:
+horiz_remap_file: ${DIN_LOC_ROOT}/atm/scream/maps/map_ne1024pg2_to_ne30pg2_mono.20230901.nc
+fields:
   Physics pg2:
     Field Names:
     # 3D fields

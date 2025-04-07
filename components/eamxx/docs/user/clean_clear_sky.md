@@ -23,7 +23,7 @@ Below is an example output file to output the extra (clean and clean-clear-sky) 
 filename_prefix: monthly.outputs
 averaging_type: average
 max_snapshots_per_file: 1
-Fields:
+fields:
   Physics pg2:
     Field Names:
     - SW_clnclrsky_flux_up_at_model_top

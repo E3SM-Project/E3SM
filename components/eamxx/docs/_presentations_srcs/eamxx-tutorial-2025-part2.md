@@ -273,7 +273,7 @@ POMPEI::POMPEI(const ekat::Comm &comm, const ekat::ParameterList &params)
 
 - EAMxx stores grid info
 - FieldManager stores fields
-- Fields have:
+- fields have:
   - Pointers to actual data
   - Units
   - Data layout

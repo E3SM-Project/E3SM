@@ -5,7 +5,7 @@ iotype: pnetcdf
 averaging_type: average
 max_snapshots_per_file: 8 # one file per day
 horiz_remap_file: ${DIN_LOC_ROOT}/atm/scream/maps/map_ne1024pg2_to_ne30pg2_mono.20230901.nc
-Fields:
+fields:
   Physics pg2:
     Field Names:
     # 3D fields

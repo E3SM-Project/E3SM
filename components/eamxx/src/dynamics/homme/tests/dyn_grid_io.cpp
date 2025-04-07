@@ -68,7 +68,7 @@ TEST_CASE("dyn_grid_io")
   EKAT_REQUIRE_MSG(phys_grid->get_num_local_dofs()>0, "Internal test error! Fix dyn_grid_io, please.\n");
   EKAT_REQUIRE_MSG(get_num_local_elems_f90()>0, "Internal test error! Fix dyn_grid_io, please.\n");
 
-  // Create physics and dynamics Fields
+  // Create physics and dynamics fields
   auto dyn_scalar3d_mid = dyn_grid->get_3d_scalar_layout(true);
   auto dyn_vector3d_mid = dyn_grid->get_3d_vector_layout(true,2);
   auto dyn_scalar2d     = dyn_grid->get_2d_scalar_layout();
@@ -139,8 +139,8 @@ TEST_CASE("dyn_grid_io")
   ekat::ParameterList out_params;
   out_params.set<std::string>("averaging_type","instant");
   out_params.set<std::string>("filename_prefix","dyn_grid_io");
-  out_params.sublist("Fields").sublist("Dynamics").set<std::vector<std::string>>("Field Names",fnames);
-  out_params.sublist("Fields").sublist("Dynamics").set<std::string>("IO Grid Name","Physics gll");
+  out_params.sublist("fields").sublist("Dynamics").set<std::vector<std::string>>("Field Names",fnames);
+  out_params.sublist("fields").sublist("Dynamics").set<std::string>("IO Grid Name","Physics gll");
 
   out_params.sublist("output_control").set<int>("frequency",1);
   out_params.sublist("output_control").set<std::string>("frequency_units","nsteps");
