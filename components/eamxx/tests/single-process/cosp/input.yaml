@@ -16,7 +16,7 @@ atmosphere_processes:
 
 
 grids_manager:
-  type: Mesh Free
+  type: mesh_free
   geo_data_source: IC_FILE
   grids_names: [physics gll]
   physics gll:

@@ -18,7 +18,7 @@ atmosphere_processes:
     internal_diagnostics_level: 2
 
 grids_manager:
-  type: Mesh Free
+  type: mesh_free
   grids_names: [physics]
   physics:
     type: point_grid

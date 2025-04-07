@@ -43,7 +43,7 @@ atmosphere_processes:
     rrtmgp_cloud_optics_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-lw.nc
 
 grids_manager:
-  type: Mesh Free
+  type: mesh_free
   geo_data_source: IC_FILE
   grids_names: [physics gll]
   physics gll:

@@ -16,7 +16,7 @@ atmosphere_processes:
     do_prescribed_ccn: false
 
 grids_manager:
-  type: Mesh Free
+  type: mesh_free
   grids_names: [physics]
   physics:
     type: point_grid

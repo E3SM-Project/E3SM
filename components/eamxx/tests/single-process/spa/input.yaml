@@ -14,7 +14,7 @@ atmosphere_processes:
     spa_data_file: ${SCREAM_DATA_DIR}/init/spa_file_unified_and_complete_ne2np4L72_20231222.nc
 
 grids_manager:
-  type: Mesh Free
+  type: mesh_free
   geo_data_source: IC_FILE
   grids_names: [physics]
   physics:

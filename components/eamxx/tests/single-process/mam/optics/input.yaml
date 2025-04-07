@@ -26,7 +26,7 @@ atmosphere_processes:
     mam4_mom_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/poly_rrtmg_c20240206.nc
 
 grids_manager:
-  type: Mesh Free
+  type: mesh_free
   geo_data_source: IC_FILE
   grids_names: [physics gll]
   physics gll:

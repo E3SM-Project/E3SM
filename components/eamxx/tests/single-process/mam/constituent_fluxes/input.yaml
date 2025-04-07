@@ -13,7 +13,7 @@ atmosphere_processes:
   mam4_constituent_fluxes:
     create_fields_interval_checks: true
 grids_manager:
-  type: Mesh Free
+  type: mesh_free
   geo_data_source: IC_FILE
   grids_names: [physics gll]
   physics gll:

@@ -17,7 +17,7 @@ atmosphere_processes:
     ml_output_fields: ["qv","T_mid"]
     ml_correction_unit_test: True
 grids_manager:
-  type: Mesh Free
+  type: mesh_free
   grids_names: [physics]
   physics:
     aliases: [Point Grid]

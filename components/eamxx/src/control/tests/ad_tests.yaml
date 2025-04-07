@@ -27,7 +27,7 @@ atmosphere_processes:
     Grid Name: Point Grid
 
 grids_manager:
-  type: Mesh Free
+  type: mesh_free
   grids_names: ["Point Grid"]
   Point Grid:
     type: point_grid

@@ -27,7 +27,7 @@ atmosphere_processes:
     soil_erodibility_file: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/dst_ne2np4_c20241028.nc
     marine_organics_file: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/monthly_macromolecules_0.1deg_bilinear_year01_merge_ne2np4_c20241030.nc
 grids_manager:
-  type: Mesh Free
+  type: mesh_free
   geo_data_source: IC_FILE
   grids_names: [physics gll]
   physics gll:

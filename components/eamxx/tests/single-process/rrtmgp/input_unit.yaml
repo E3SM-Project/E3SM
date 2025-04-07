@@ -24,7 +24,7 @@ atmosphere_processes:
     pool_size_multiplier: 2.0
 
 grids_manager:
-  type: Mesh Free
+  type: mesh_free
   geo_data_source: CREATE_EMPTY_DATA
   grids_names: [physics]
   physics:

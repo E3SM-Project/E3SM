@@ -38,7 +38,7 @@ atmosphere_processes:
       enable_aero_vertical_mix: true
 
 grids_manager:
-  type: Mesh Free
+  type: mesh_free
   geo_data_source: IC_FILE
   grids_names: [physics gll]
   physics gll:

@@ -212,7 +212,7 @@ Defining the test behavior and pass/fail criteria requires 3 files:
         inject_ash_XYZ_data: ${EAMXX_DATA_DIR}/mam4xx/.../inject_ash_input_data_file_XYZ.nc
         <identifying-string-used-by-inject_ash_xyz.xpp>: /path/to/.../data_file.nc
     grids_manager:
-      type: Mesh Free
+      type: mesh_free
       geo_data_source: IC_FILE
       grids_names: [physics gll]
       physics gll:
