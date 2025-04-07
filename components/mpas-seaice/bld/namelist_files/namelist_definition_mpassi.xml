@@ -2425,7 +2425,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_congelation_freezing_method" type="char*1024"
 	category="thermodynamics" group="thermodynamics">
-Method used for congelation freezing.
+Method for congelation ice freezing.
 
 Valid values: 'one-step', 'two-step'
 Default: Defined in namelist_defaults.xml
