@@ -390,7 +390,7 @@ fields:
     field_names:
       - T_mid
       - qv
-  Dynamics:
+  dynamics:
     field_names:
       - dp3d_dyn
       - omega_dyn
@@ -403,7 +403,7 @@ Notice that lists can be equivalently specified in YAML as
 `field_names: [f1, f2, f3]`.
 The user can specify fields to be outputted from any of the grids on which
 they are available (although most fields are only available on ONE grid).
-In the example above, we requested fields from both the physics and Dynamics grid.
+In the example above, we requested fields from both the physics and dynamics grid.
 The meaning of the other parameters is as follows:
 
 - `averaging_type`: how the fields are integrated in time before being saved.
@@ -508,7 +508,7 @@ must be remapped before being saved to file.
       - This feature is really only used to save fields on the dynamics grid
       without saving twice the DOFs at the interface of two spectral elements.
       - E.g., for a scalar quantity defined only in the horizontal direction,
-      native output from the Dynamics grid would produce arrays of length
+      native output from the dynamics grid would produce arrays of length
       `nelems * ngp * ngp`, where `ngp` is the number of Gauss points along
       each axis in the 2D spectral element, and `nelems` is the number of
       horizontal elements.

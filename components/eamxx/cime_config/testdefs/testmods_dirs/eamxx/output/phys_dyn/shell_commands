@@ -27,7 +27,7 @@ $YAML_EDIT_SCRIPT -g \
  --freq HIST_N                        \
  --freq-units HIST_OPTION             \
  --prefix ${CASE}.scream.phys_dyn.h   \
- --grid Dynamics                      \
+ --grid dynamics                      \
  --io-grid 'physics gll'              \
  --fields ${FIELDS}
 

@@ -104,7 +104,7 @@ fields:
   # GLL output for homme states. These
   # represent all current possible homme
   # states available.
-  Dynamics:
+  dynamics:
     field_names:
       - v_dyn
       - vtheta_dp_dyn

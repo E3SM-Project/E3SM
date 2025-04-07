@@ -65,15 +65,15 @@ HommeGridsManager::do_create_remapper (const grid_ptr_type from_grid,
   const auto from = from_grid->name();
   const auto to   = to_grid->name();
 
-  EKAT_REQUIRE_MSG ( from=="Dynamics" || to=="Dynamics",
-    "Error! Either source or target grid must be 'Dynamics'.\n");
+  EKAT_REQUIRE_MSG ( from=="dynamics" || to=="dynamics",
+    "Error! Either source or target grid must be 'dynamics'.\n");
 
-  const bool p2d = to=="Dynamics";
+  const bool p2d = to=="dynamics";
 
   if (from=="physics gll" || to=="physics gll") {
     using PDR = PhysicsDynamicsRemapper;
 
-    auto dyn_grid = get_grid("Dynamics");
+    auto dyn_grid = get_grid("dynamics");
     auto phys_grid = get_grid("physics gll");
 
     auto pd_remapper = std::make_shared<PDR>(phys_grid,dyn_grid);
@@ -134,7 +134,7 @@ build_grids ()
 }
 
 void HommeGridsManager::build_dynamics_grid () {
-  const std::string name = "Dynamics";
+  const std::string name = "dynamics";
   if (has_grid(name)) {
     return;
   }
@@ -146,7 +146,7 @@ void HommeGridsManager::build_dynamics_grid () {
   const int nlelem = get_num_local_elems_f90();
   const int nlev   = get_nlev_f90();
 
-  auto dyn_grid = std::make_shared<SEGrid>("Dynamics",nlelem,HOMMEXX_NP,nlev,m_comm);
+  auto dyn_grid = std::make_shared<SEGrid>("dynamics",nlelem,HOMMEXX_NP,nlev,m_comm);
   dyn_grid->setSelfPointer(dyn_grid);
 
   const auto layout2d = dyn_grid->get_2d_scalar_layout();
@@ -259,7 +259,7 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
 
   // If one of the hybrid vcoord arrays is there, they all are
   // NOTE: we may have none in some unit tests that don't need them (e.g. pd remap)
-  if (get_grid("Dynamics")->has_geometry_data("hyam")) {
+  if (get_grid("dynamics")->has_geometry_data("hyam")) {
     auto layout_mid = phys_grid->get_vertical_layout(true);
     auto layout_int = phys_grid->get_vertical_layout(false);
     using namespace ekat::units;
@@ -274,7 +274,7 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
     auto ilev = phys_grid->create_geometry_data("ilev",layout_int,mbar);
 
     for (auto f : {hyai, hybi, hyam, hybm}) {
-      auto f_d = get_grid("Dynamics")->get_geometry_data(f.name());
+      auto f_d = get_grid("dynamics")->get_geometry_data(f.name());
       f.deep_copy(f_d);
       f.sync_to_host();
     }
