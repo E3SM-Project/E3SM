@@ -21,7 +21,7 @@ public:
   DummyProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
     : AtmosphereProcess(comm, params)
   {
-    m_name = m_params.get<std::string>("Sub Name");
+    m_name = m_params.get<std::string>("sub_name");
     if (m_name=="Group to Group") {
       m_dummy_type = G2G;
     } else {

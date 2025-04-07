@@ -15,15 +15,15 @@ atmosphere_processes:
 
   dummy1:
     type: Dummy
-    Sub Name: A to Group
+    sub_name: A to Group
     Grid Name: point_grid
   dummy2:
     type: Dummy
-    Sub Name: Group to Group
+    sub_name: Group to Group
     Grid Name: point_grid
   dummy3:
     type: Dummy
-    Sub Name: Group to A
+    sub_name: Group to A
     Grid Name: point_grid
 
 grids_manager:
