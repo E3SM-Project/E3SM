@@ -115,7 +115,8 @@ contains
     real (kind=real_kind) :: usum_local(nets:nete), vsum_local(nets:nete), tsum_local(nets:nete), thetasum_local(nets:nete),&
                              psmin_local(nets:nete),psmax_local(nets:nete),pssum_local(nets:nete), &
                              fusum_local(nets:nete), fvsum_local(nets:nete), ftsum_local(nets:nete), fqsum_local(nets:nete), &
-                             wsum_local(nets:nete), phisum_local(nets:nete), dpsum_local(nets:nete)
+                             wsum_local(nets:nete), phisum_local(nets:nete), dpsum_local(nets:nete), &
+                             masswaterchange_local(nets:nete), masstotalchange_local(nets:nete)
 
     real (kind=real_kind) :: umin_p, vmin_p, tmin_p, qvmin_p(qsize_d),&
          psmin_p, dpmin_p, TSmin_p
@@ -130,6 +131,7 @@ contains
     real (kind=real_kind) :: fumin_p, fvmin_p, ftmin_p, fqmin_p
     real (kind=real_kind) :: fumax_p, fvmax_p, ftmax_p, fqmax_p
     real (kind=real_kind) :: phimax_p, phimin_p, phisum_p
+    real (kind=real_kind) :: mchtotal_p, mchwater_p
 
     real (kind=real_kind) :: umax_local(2), umin_local(2), vmax_local(2), vmin_local(2),&
                              wmax_local(2), wmin_local(2), thetamin_local(2), thetamax_local(2),&
@@ -282,6 +284,11 @@ contains
        FQsum_local(ie) = SUM(elem(ie)%derived%FQ(:,:,:,1))
 
        pssum_local(ie) = SUM(tmp(:,:,ie))
+
+       masswaterchange_local(ie) = SUM( (elem(ie)%accum%mass_water_before_physics(:,:)- &
+         elem(ie)%accum%mass_water_after_physics(:,:) - elem(ie)%accum%precip_mass(:,:))/elem(ie)%accum%mass_water_before_physics(:,:)    )
+       masstotalchange_local(ie) = SUM( (elem(ie)%accum%mass_before_physics(:,:)- &
+         elem(ie)%accum%mass_after_physics(:,:) - elem(ie)%accum%precip_mass(:,:))/elem(ie)%accum%mass_before_physics(:,:)    )
        !======================================================
 
        global_shared_buf(ie,1) = usum_local(ie)
@@ -295,8 +302,9 @@ contains
        global_shared_buf(ie,9) = Wsum_local(ie)
        global_shared_buf(ie,10)= dpsum_local(ie)
        global_shared_buf(ie,11)= phisum_local(ie)
-       global_shared_buf(ie,12)=thetasum_local(ie)
-
+       global_shared_buf(ie,12)= thetasum_local(ie)
+       global_shared_buf(ie,13)= masstotalchange_local(ie)
+       global_shared_buf(ie,14)= masswaterchange_local(ie)
 
     end do
 
@@ -354,7 +362,7 @@ contains
     psmin_p = ParallelMin(psmin_local,hybrid)
     psmax_p = ParallelMax(psmax_local,hybrid)
 
-    call wrap_repro_sum(nvars=12, comm=hybrid%par%comm)
+    call wrap_repro_sum(nvars=14, comm=hybrid%par%comm)
     usum_p = global_shared_sum(1)
     vsum_p = global_shared_sum(2)
     tsum_p = global_shared_sum(3)
@@ -367,7 +375,8 @@ contains
     dpsum_p = global_shared_sum(10)
     phisum_p = global_shared_sum(11)
     thetasum_p= global_shared_sum(12)
-
+    mchtotal_p = global_shared_sum(13)
+    mchwater_p = global_shared_sum(14)
 
     scale=1/g                                  ! assume code is using Pa
     if (hvcoord%ps0 <  2000 ) scale=100*scale  ! code is using mb
@@ -417,6 +426,8 @@ contains
                                  ftmax_local(1)," (",nint(ftmax_local(2)),")",ftsum_p
        write(iulog,109) "fq1 = ",fqmin_local(1)," (",nint(fqmin_local(2)),")",&
                                  fqmax_local(1)," (",nint(fqmax_local(2)),")",fqsum_p
+
+       write(iulog,'(a,E23.15,a,E23.15)') "mass change wrt physics = ", mchtotal_p, ", w mass change wrt physics = ", mchwater_p
 
        if (.not.theta_hydrostatic_mode) then
           write(iulog,110) "   min dz/w (CFL condition) = ",1/max(1d-12,w_over_dz_max_local(1)),&
@@ -965,6 +976,14 @@ subroutine compute_mass(elem, n0, nq, switch)
     enddo
     if(switch == 1) elem%accum%mass_water_before_physics = mass
     if(switch == 2) elem%accum%mass_water_after_physics = mass
+
+    !add dry mass to water mass
+!WRONG in future, no water loading
+    do k=1,nlev
+        mass = mass + elem%state%dp3d(:,:,k,n0) - elem%state%Qdp(:,:,k,1,nq)
+    enddo
+    if(switch == 1) elem%accum%mass_before_physics = mass
+    if(switch == 2) elem%accum%mass_after_physics = mass
 
 end subroutine compute_mass
 

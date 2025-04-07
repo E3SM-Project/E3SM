@@ -1032,6 +1032,16 @@ contains
     end if
 
     if (hybrid%masterthread) write(iulog,*) "initial state:"
+
+    !avoid division by zero in the first diagn call
+    do ie=nets,nete
+       elem(ie)%accum%mass_water_before_physics(:,:) = 1.0
+       elem(ie)%accum%mass_water_after_physics(:,:) = 1.0
+       elem(ie)%accum%mass_before_physics(:,:) = 1.0
+       elem(ie)%accum%mass_after_physics(:,:) = 1.0
+       elem(ie)%accum%precip_mass(:,:) = 0.0
+    enddo
+
     call prim_printstate(elem, tl, hybrid,hvcoord,nets,nete)
     call Prim_Advec_Init2(elem(:), hvcoord, hybrid)
 
