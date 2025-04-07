@@ -63,5 +63,5 @@ fields:
 output_control:
   frequency: 3
   frequency_units: nhours
-Restart:
+restart:
   force_new_file: true

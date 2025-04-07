@@ -591,7 +591,7 @@ of the parameter value).
       stream listed in the `output_yaml_files` atmosphere option
       (which can be queried via `atmquery output_yaml_files`).
       - The user can specify a few options, in order to tweak the restart behavior:
-          - `skip_restart_if_rhist_not_found` (`Restart` sublist, boolean):
+          - `skip_restart_if_rhist_not_found` (`restart` sublist, boolean):
             this parameter is `false` by default, but can be set
             to `true` to make the model start the output stream anew
             (as if this was an initial run) if the proper rhist
@@ -602,12 +602,12 @@ of the parameter value).
                   scratch. If ALL streams should be started anew, you should
                   set RUN_TYPE=branch in the case XML settings instead.
             scratch, as if this was an initial run.
-          - `filename_prefix` (`Restart` sub-list, `string`):
+          - `filename_prefix` (`restart` sub-list, `string`):
               - By default, this parameter is set to match the value of
               `filename_prefix` from the top-level list.
               - This can be set to a different value in case we want to restart
               a previous simulation that was using a different filename prefix.
-          - `force_new_file` (`Restart` sub-list, `boolean`):
+          - `force_new_file` (`restart` sub-list, `boolean`):
               - This parameter allows to start a fresh new output file upon restarts.
               - By default, is is set to `false`, so that EAMxx will attempt to
               resume filling the last produced output file (if any, and if it

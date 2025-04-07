@@ -79,7 +79,7 @@ TEST_CASE("output_restart","io")
   output_params.set<std::vector<std::string>>("field_names",{"field_1", "field_2", "field_3", "field_4","field_5"});
   output_params.set<double>("fill_value",FillValue);
   output_params.set<int>("flush_frequency",1);
-  output_params.sublist("Restart").set<bool>("force_new_file",false);
+  output_params.sublist("restart").set<bool>("force_new_file",false);
   output_params.sublist("output_control").set<std::string>("frequency_units","nsteps");
   output_params.sublist("output_control").set<int>("frequency",10);
   output_params.sublist("Checkpoint Control").set<int>("frequency",5);

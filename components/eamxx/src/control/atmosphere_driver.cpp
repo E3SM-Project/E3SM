@@ -741,7 +741,7 @@ void AtmosphereDriver::create_output_managers () {
       params.set<std::string>("filename_prefix",m_casename+".scream.h");
     }
     params.sublist("provenance") = m_atm_params.sublist("provenance");
-    params.sublist("Restart").set("branch_run",m_branch_run);
+    params.sublist("restart").set("branch_run",m_branch_run);
 
     auto& om = m_output_managers.emplace_back();
     om.initialize(m_atm_comm,

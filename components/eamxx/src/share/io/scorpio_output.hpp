@@ -43,7 +43,7 @@
  *  output_control:
  *    frequency:                        INT
  *    frequency_units:                  STRING                (default: nsteps)
- *  Restart:
+ *  restart:
  *    filename_prefix:                  STRING                (default: ${filename_prefix})
  *    skip_restart_if_rhist_not_found:  BOOL                  (default: false)
  *  -----
@@ -71,7 +71,7 @@
  *    - frequency: the frequenct of checkpoints writes. This option is used/matters only if
  *      if averaging_type is *not* instant. A value of 0 is interpreted as 'no checkpointing'.
  *    - frequency_units: the units of restart history output.
- *  - Restart: parameters for history restart
+ *  - restart: parameters for history restart
  *    - filename_prefix: the history restart filename root.
  *    - skip_restart_if_rhist_not_found: if this is a restarted run and this is true, skip the
  *      hist restart if the proper filename is not found in rpointer. Allows to add a new stream

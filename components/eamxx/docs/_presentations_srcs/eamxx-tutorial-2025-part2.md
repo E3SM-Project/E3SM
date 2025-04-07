@@ -379,7 +379,7 @@ Before simulation begins and happens only once
  * defined with any actions or functions that are needed at initialization.
  *
  * Inputs:
- *     run_type - an enum which describes the run type.  Initial or Restart
+ *     run_type - an enum which describes the run type.  initial or restart
  *
  * can also be empty
  */

@@ -172,11 +172,11 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
   // Note: the user might decide *not* to restart the output, so give the option
   //       of disabling the restart. Also, the user might want to change the
   //       filename_prefix, so allow to specify a different filename_prefix for the restart file.
-  bool branch_run = m_params.sublist("Restart").get("branch_run",false);
+  bool branch_run = m_params.sublist("restart").get("branch_run",false);
   if (m_run_type==RunType::Restart and not m_is_model_restart_output and not branch_run) {
     // Allow to skip history restart, or to specify a filename_prefix for the restart file
     // that is different from the filename_prefix of the current output.
-    auto& restart_pl = m_params.sublist("Restart");
+    auto& restart_pl = m_params.sublist("restart");
     auto hist_restart_filename_prefix = restart_pl.get("filename_prefix",m_filename_prefix);
 
     bool skip_restart_if_rhist_not_found = restart_pl.get("skip_restart_if_rhist_not_found",false);
@@ -223,7 +223,7 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
           "  - old file_max_storage_type: " << old_storage_type << "\n"
           "  - new file_max_storage_type: " << e2str(m_output_file_specs.storage.type) << "\n"
           "If you *really* want to change the file storage type, you need to force using a new file, setting\n"
-          "  Restart:\n"
+          "  restart:\n"
           "    force_new_file: true\n");
       if (old_storage_type=="num_snapshot") {
         auto old_max_snaps = scorpio::get_attribute<int>(rhist_file,"GLOBAL","max_snapshots_per_file");
@@ -232,7 +232,7 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
             "  - old max snaps: " << old_max_snaps << "\n"
             "  - new max snaps: " << m_output_file_specs.storage.max_snapshots_in_file << "\n"
             "If you *really* want to change the file capacity, you need to force using a new file, setting\n"
-            "  Restart:\n"
+            "  restart:\n"
             "    force_new_file: true\n");
       }
       std::string fp_precision = m_params.get<std::string>("Floating Point Precision");
@@ -934,7 +934,7 @@ push_to_logger()
   };
 
   auto rt_to_string = [](RunType rt) {
-    std::string s = rt==RunType::Initial ? "Initial" : "Restart";
+    std::string s = rt==RunType::Initial ? "initial" : "restart";
     return s;
   };
 
