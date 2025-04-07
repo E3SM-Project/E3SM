@@ -82,9 +82,9 @@ TEST_CASE("output_restart","io")
   output_params.sublist("restart").set<bool>("force_new_file",false);
   output_params.sublist("output_control").set<std::string>("frequency_units","nsteps");
   output_params.sublist("output_control").set<int>("frequency",10);
-  output_params.sublist("Checkpoint Control").set<int>("frequency",5);
+  output_params.sublist("checkpoint_control").set<int>("frequency",5);
   // This skips a test that only matters for AD runs
-  output_params.sublist("Checkpoint Control").set<bool>("is_unit_testing","true");
+  output_params.sublist("checkpoint_control").set<bool>("is_unit_testing","true");
 
   // Creates and runs an OM from output_params and given inputs
   auto run = [&](std::shared_ptr<FieldManager> fm,
@@ -131,19 +131,19 @@ TEST_CASE("output_restart","io")
     // 1. Run for full 20 days, no restarts needed
     auto fm_mono = clone_fm(fm0);
     output_params.set<std::string>("filename_prefix","monolithic");
-    output_params.sublist("Checkpoint Control").set<std::string>("frequency_units","never");
+    output_params.sublist("checkpoint_control").set<std::string>("frequency_units","never");
     run(fm_mono,t0,t0,20);
 
     // 2. Run for 15 days on fm0, write restart every 5 steps
     auto fm_rest = clone_fm(fm0);
     output_params.set<std::string>("filename_prefix","restarted");
-    output_params.sublist("Checkpoint Control").set<std::string>("frequency_units","nsteps");
+    output_params.sublist("checkpoint_control").set<std::string>("frequency_units","nsteps");
     run(fm_rest,t0,t0,15);
 
     // 3. Restart the second run at step=15, and do 5 more steps
     // NOTE: keep fm_rest FM, since we are not testing the restart of the state, just the history.
     //       Here, we proceed as if the AD already restarted the state correctly.
-    output_params.sublist("Checkpoint Control").set<std::string>("frequency_units","never");
+    output_params.sublist("checkpoint_control").set<std::string>("frequency_units","never");
 
     // Ensure nsteps is equal to 15 upon restart
     auto run_t0 = (t0+15*dt).clone(15);

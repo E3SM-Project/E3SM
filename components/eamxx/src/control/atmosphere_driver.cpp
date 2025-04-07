@@ -720,7 +720,7 @@ void AtmosphereDriver::create_output_managers () {
                                          m_case_t0,
                                          /*is_model_restart_output*/ true);
 
-    // Store the "Output Control" pl of the model restart as the "Checkpoint Control" for all other output streams
+    // Store the "Output Control" pl of the model restart as the "checkpoint_control" for all other output streams
     checkpoint_params.set<std::string>("frequency_units",params.sublist("output_control").get<std::string>("frequency_units"));
     checkpoint_params.set("frequency",params.sublist("output_control").get<int>("frequency"));
   }
@@ -732,7 +732,7 @@ void AtmosphereDriver::create_output_managers () {
     ekat::ParameterList params;
     ekat::parse_yaml_file(fname,params);
     params.rename(ekat::split(fname,"/").back());
-    auto& checkpoint_pl = params.sublist("Checkpoint Control");
+    auto& checkpoint_pl = params.sublist("checkpoint_control");
     checkpoint_pl.set("frequency_units",checkpoint_params.get<std::string>("frequency_units"));
     checkpoint_pl.set("frequency",checkpoint_params.get<int>("frequency"));
 

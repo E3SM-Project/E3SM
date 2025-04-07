@@ -82,5 +82,5 @@ fields:
 output_control:
   frequency: 1
   frequency_units: nmins
-Checkpoint Control:
+checkpoint_control:
 ...

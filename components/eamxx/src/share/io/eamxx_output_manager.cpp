@@ -435,12 +435,12 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       } else if (is_checkpoint_step) {
         // Output restart unit tests do not have a model-output stream that generates rpointer.atm,
         // so allow to skip the next check for them.
-        auto is_unit_testing = m_params.sublist("Checkpoint Control").get("is_unit_testing",false);
+        auto is_unit_testing = m_params.sublist("checkpoint_control").get("is_unit_testing",false);
         EKAT_REQUIRE_MSG (is_unit_testing || std::ifstream("rpointer.atm").good(),
             "Error! Cannot find rpointer.atm file to append history restart file in.\n"
             " Model restart output is supposed to be in charge of creating rpointer.atm.\n"
             " There are two possible causes:\n"
-            "   1. You have a 'Checkpoint Control' list in your output stream, but no Scorpio::model_restart\n"
+            "   1. You have a 'checkpoint_control' list in your output stream, but no Scorpio::model_restart\n"
             "      section in the input yaml file. This makes no sense, please correct.\n"
             "   2. The current implementation assumes that the model restart OutputManager runs\n"
             "      *before* any other output stream (so it can nuke rpointer.atm if already existing).\n"
@@ -754,14 +754,14 @@ setup_internals (const std::shared_ptr<fm_type>& field_mgr,
   m_save_grid_data = out_control_pl.get("save_grid_data",!m_is_model_restart_output);
   m_output_file_specs.ftype = m_is_model_restart_output ? FileType::ModelRestart : FileType::ModelOutput;
 
-  if (m_params.isSublist("Checkpoint Control")) {
-    auto& pl = m_params.sublist("Checkpoint Control");
+  if (m_params.isSublist("checkpoint_control")) {
+    auto& pl = m_params.sublist("checkpoint_control");
     m_checkpoint_control.set_frequency_units(pl.get<std::string>("frequency_units"));
 
     if (m_checkpoint_control.output_enabled()) {
       m_checkpoint_control.frequency = pl.get<int>("frequency");
       EKAT_REQUIRE_MSG (m_output_control.frequency>0,
-          "Error! Invalid frequency (" + std::to_string(m_checkpoint_control.frequency) + ") in Checkpoint Control. Please, use positive number.\n");
+          "Error! Invalid frequency (" + std::to_string(m_checkpoint_control.frequency) + ") in checkpoint_control. Please, use positive number.\n");
 
       m_checkpoint_control.last_write_ts = m_run_t0;
       m_checkpoint_control.compute_next_write_ts();
