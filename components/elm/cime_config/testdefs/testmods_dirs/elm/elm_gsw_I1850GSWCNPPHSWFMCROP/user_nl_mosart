@@ -1,0 +1,13 @@
+!----------------------------------------------------------------------------------
+! Users should add all user specific namelist changes below in the form of 
+! namelist_var = new_namelist_value 
+! NOTE: namelist variable coupling_period CAN ONLY be changed by modifying the value
+!       of the xml variable ROF_NCPL in env_run.xml
+! NOTE: if the xml variable ROF GRID in env_build.xml is set to 'null', then
+!        the RTM build-namelist will set do_rtm to .false. - and will ignore 
+!        any change below
+!----------------------------------------------------------------------------------
+ finidat_rtm='$DIN_LOC_ROOT/lnd/clm2/initdata_map/20250122_CBGCv2.r05.chrysalis.I1850GSWCNPPHSWFMCROP.rgsp.mosart.r.0616-01-01-00000.nc'
+ rtmhist_fincl2 = 'RIVER_DISCHARGE_OVER_LAND_LIQ'
+ frivinp_rtm = '$DIN_LOC_ROOT/rof/mosart/MOSART_Global_half_20210422.nc'
+ parafile = '$DIN_LOC_ROOT/rof/mosart/global_reservoir_halfdegree_c20200917.nc'
