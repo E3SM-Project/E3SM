@@ -52,7 +52,7 @@
 !
 module element_ops
 
-  use dimensions_mod, only: np, nlev, nlevp, nelemd
+  use dimensions_mod, only: np, nlev, nlevp, nelemd, qsize
   use element_mod,    only: element_t
   use element_state,  only: elem_state_t, timelevels
   use hybvcoord_mod,  only: hvcoord_t
@@ -114,7 +114,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
     case('rho')
 
       call get_nonhydro_pressure(elem,pnh,tmp,hvcoord,nt)
-      call get_R_star(Rstar,elem%state%Q(:,:,:,1))
+      call get_R_star(Rstar,elem)
       call get_temperature(elem,T,hvcoord,nt)
       field = pnh/(Rstar*T)
 
@@ -187,7 +187,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   real (kind=real_kind) :: Rstar(np,np,nlev)
   integer :: k
 
-  call get_R_star(Rstar,elem%state%Q(:,:,:,1))
+  call get_R_star(Rstar,elem)
   
   pottemp(:,:,:) = Rgas*elem%state%vtheta_dp(:,:,:,nt)/(Rstar(:,:,:)*elem%state%dp3d(:,:,:,nt))
   
@@ -216,7 +216,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   
   
   dp=elem%state%dp3d(:,:,:,nt)
-  call get_R_star(Rstar,elem%state%Q(:,:,:,1))
+  call get_R_star(Rstar,elem)
 
   call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,nt),&
           dp,elem%state%phinh_i(:,:,:,nt),pnh,exner,dpnh_dp_i)
@@ -395,16 +395,28 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
 
 
   !_____________________________________________________________________
-  subroutine get_R_star(R_star,Q)
+  subroutine get_R_star(R_star,elem)
   !
   implicit none
   real (kind=real_kind), intent(out):: R_star(np,np,nlev)
-  real (kind=real_kind), intent(in) :: Q(np,np,nlev)
+  type (element_t),       intent(in)  :: elem
+
+  real (kind=real_kind) :: Qdry(np,np,nlev)
+  real (kind=real_kind) :: Qv(np,np,nlev)
 
   integer :: k
+
+  Qv = elem%state%Q(:,:,:,1)
+!!!!!!!!!! P3 only!!!!!
+
+  Qdry = 1 - elem%state%Q(:,:,:,1) - elem%state%Q(:,:,:,2) - elem%state%Q(:,:,:,4) - elem%state%Q(:,:,:,6)
+
   if (use_moisture) then
      do k=1,nlev
-        R_star(:,:,k) =(Rgas + (Rwater_vapor - Rgas)*Q(:,:,k))
+        !old
+        !R_star(:,:,k) =(Rgas + (Rwater_vapor - Rgas)*Q(:,:,k))
+        
+        R_star(:,:,k) =Rgas*Qdry(:,:,k) + Rwater_vapor*Qv(:,:,k)
      enddo
   else
      R_star(:,:,:)=Rgas
@@ -503,8 +515,8 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   enddo
   elem%state%ps_v(:,:,nt)=ps
 
-  if (present(qv)) then
-     call get_R_star(Rstar,qv)
+  if (qsize>=6) then
+     call get_R_star(Rstar,elem)
      elem%state%vtheta_dp(:,:,:,nt)=elem%state%vtheta_dp(:,:,:,nt)*Rstar(:,:,:)/Rgas
   endif
 
@@ -583,7 +595,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   real(real_kind), dimension(np,np,nlev) :: Rstar
 
   ! get cp and kappa for dry or moist cases
-  call get_R_star(Rstar,elem%state%Q(:,:,:,1))
+  call get_R_star(Rstar,elem)
 
   do n=n0,n1
     ! set prognostic state variables at level midpoints
@@ -631,7 +643,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
        w(:,:,k) = (elem%state%w_i(:,:,k,nt) + elem%state%w_i(:,:,k+1,nt))/2
     end do
 
-    call get_R_star(Rstar,elem%state%Q(:,:,:,1))
+    call get_R_star(Rstar,elem)
     call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,nt),dp,phi_i,&
          pnh,exner,dpnh_dp_i)
 

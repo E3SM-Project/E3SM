@@ -1686,7 +1686,7 @@ endif
    do k=1,nlev
       pprime(:,:,k) = pnh(:,:,k)-phydro(:,:,k)
    enddo
-   call get_R_star(rstarn1,elem%state%Q(:,:,:,1))
+   call get_R_star(rstarn1,elem)
    tn1=exner* elem%state%vtheta_dp(:,:,:,np1)*(Rgas/rstarn1) / dp
 #endif
 
@@ -1752,7 +1752,7 @@ endif
    endif
    
    !update temperature
-   call get_R_star(rstarn1,elem%state%Q(:,:,:,1))
+   call get_R_star(rstarn1,elem)
    tn1(:,:,:) = tn1(:,:,:) + dt*elem%derived%FT(:,:,:)
    
    
