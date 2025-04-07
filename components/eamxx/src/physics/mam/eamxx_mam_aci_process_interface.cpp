@@ -544,15 +544,8 @@ void MAMAci::run_impl(const double dt) {
   //---------------------------------------------------------------
 
   // Update cloud borne aerosols
-  update_cloud_borne_aerosols(qqcw_fld_work_, nlev_,
-                              // output
-                              dry_aero_);
-
   // Update interstitial aerosols using tendencies
-  update_interstitial_aerosols(team_policy, ptend_q_, nlev_, dt,
-                               // output
-                               dry_aero_);
-
+  update_aerosols(team_policy, qqcw_fld_work_, ptend_q_, nlev_, dt, dry_aero_);
   // call post processing to convert dry mixing ratios to wet mixing ratios
 
   post_process(wet_aero_, dry_aero_, dry_atm_);

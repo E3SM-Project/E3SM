@@ -4,7 +4,6 @@
 #include <ekat/kokkos/ekat_subview_utils.hpp>
 #include <mam4xx/mam4.hpp>
 #include <share/util/eamxx_common_physics_functions.hpp>
-
 namespace scream {
 
 namespace {
@@ -499,6 +498,57 @@ void update_interstitial_aerosols(
         });
     ++s_idx;  // update index for the next species
   }
+}
+// Combined function to update both cloud borne and interstitial aerosols
+void update_aerosols(
+    haero::ThreadTeamPolicy team_policy,
+    const MAMAci::view_2d qqcw_fld_work[mam4::ndrop::ncnst_tot],
+    const MAMAci::view_2d ptend_q[mam4::aero_model::pcnst],
+    const int nlev, const Real dt,
+    mam_coupling::AerosolState &dry_aero) {
+
+  Kokkos::parallel_for(
+    team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
+      const int icol = team.league_rank();
+
+    Kokkos::parallel_for(
+    Kokkos::TeamVectorRange(team, nlev),
+      [&](int kk) {
+      // Update cloud borne aerosols
+      int ind_qqcw = 0;
+      for (int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+            dry_aero.cld_aero_nmr[m](icol, kk) = qqcw_fld_work[ind_qqcw](icol, kk);
+        ++ind_qqcw;
+        for (int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+          if (dry_aero.cld_aero_mmr[m][a].data()) {
+                dry_aero.cld_aero_mmr[m][a](icol, kk) = qqcw_fld_work[ind_qqcw](icol, kk);
+            ++ind_qqcw;
+          }// if
+        } // a
+      } // m
+      });
+
+      // Update interstitial aerosols using tendencies
+      // Starting index of ptend_q array (for MAM4, pcnst=40, ncnst_tot=25)
+      Kokkos::parallel_for(
+                Kokkos::TeamVectorRange(team, nlev), [&](int kk) {
+      int s_idx = mam4::aero_model::pcnst - mam4::ndrop::ncnst_tot;
+      for (int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+        for (int a = 0; a < mam4::num_species_mode(m); ++a) {
+          auto aero_mmr = dry_aero.int_aero_mmr[m][a];
+          if (aero_mmr.data()) {
+            const auto ptend_view = ptend_q[s_idx];
+                  aero_mmr(icol, kk) += ptend_view(icol, kk) * dt;
+            ++s_idx;
+          }// if
+        }// a
+        auto aero_nmr = dry_aero.int_aero_nmr[m];
+        const auto ptend_view = ptend_q[s_idx];
+              aero_nmr(icol, kk) += ptend_view(icol, kk) * dt;
+        ++s_idx;
+       }
+       });
+    });
 }
 
 void call_hetfrz_compute_tendencies(
