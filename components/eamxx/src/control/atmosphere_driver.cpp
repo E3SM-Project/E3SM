@@ -772,8 +772,8 @@ void AtmosphereDriver::initialize_output_managers () {
     auto output_grids = m_grids_manager->get_grid_names();
 
     // Don't save CGLL fields from ICs to the restart file if we are running with PG2.
-    if (fvphyshack and output_grids.find("physics gll")!=output_grids.end()) {
-      output_grids.erase("physics gll");
+    if (fvphyshack and output_grids.find("physics_gll")!=output_grids.end()) {
+      output_grids.erase("physics_gll");
     }
 
     m_restart_output_manager->setup(m_field_mgr, output_grids);
@@ -933,7 +933,7 @@ void AtmosphereDriver::restart_model ()
   m_atm_logger->info("    [EAMxx] Restart filename: " + filename);
 
   for (auto& gn : m_grids_manager->get_grid_names()) {
-    if (fvphyshack and gn == "physics gll") continue;
+    if (fvphyshack and gn == "physics_gll") continue;
     if (not m_field_mgr->has_group("RESTART", gn)) {
       // No field needs to be restarted on this grid.
       continue;
@@ -1083,9 +1083,9 @@ void AtmosphereDriver::set_initial_conditions ()
         // For GLL points, phis corresponds to "PHIS_d" in the
         // topography file. On PG2 grid, dynamics will take care
         // of computing phis, so do not add to initialized fields.
-        if (grid_name == "physics pg2") {
+        if (grid_name == "physics_pg2") {
           // Skip
-        } else if (grid_name == "physics gll" ||
+        } else if (grid_name == "physics_gll" ||
                    grid_name == "point_grid") {
           this_grid_topo_file_fnames.push_back("PHIS_d");
           this_grid_topo_eamxx_fnames.push_back(fname);
@@ -1096,14 +1096,14 @@ void AtmosphereDriver::set_initial_conditions ()
       } else if (fname == "sgh30") {
         // The eamxx field "sgh30" is called "SGH30" in the
         // topography file and is only available on the PG2 grid.
-        EKAT_ASSERT_MSG(grid_name == "physics pg2",
+        EKAT_ASSERT_MSG(grid_name == "physics_pg2",
                         "Error! Requesting sgh30 field on " + grid_name +
-                        " topo file only has sgh30 for physics pg2.\n");
+                        " topo file only has sgh30 for physics_pg2.\n");
         topography_file_fields_names[grid_name].push_back("SGH30");
         topography_eamxx_fields_names[grid_name].push_back(fname);
         m_fields_inited[grid_name].push_back(fname);
       }
-    } else if (not (fvphyshack and grid_name == "physics pg2")) {
+    } else if (not (fvphyshack and grid_name == "physics_pg2")) {
       // The IC file is written for the GLL grid, so we only load
       // fields from there. Any other input fields on the PG2 grid
       // will be properly computed in the dynamics interface.
@@ -1115,7 +1115,7 @@ void AtmosphereDriver::set_initial_conditions ()
           this_grid_ic_fnames.push_back(fname);
           m_fields_inited[grid_name].push_back(fname);
         }
-      } else if (fvphyshack and grid_name == "physics gll") {
+      } else if (fvphyshack and grid_name == "physics_gll") {
         // [CGLL ICs in pg2] I tried doing something like this in
         // HommeDynamics::set_grids, but I couldn't find the means to get the
         // list of fields. I think the issue is that you can't access group
@@ -1198,7 +1198,7 @@ void AtmosphereDriver::set_initial_conditions ()
       const auto& grid_name = grid->name();
       if (ic_fields_names[grid_name].size() > 0 or
 	        topography_eamxx_fields_names[grid_name].size() > 0) {
-        const auto& file_name = grid_name == "physics gll"
+        const auto& file_name = grid_name == "physics_gll"
                                 ?
                                 ic_pl.get<std::string>("filename")
                                 :
@@ -1315,7 +1315,7 @@ void AtmosphereDriver::set_initial_conditions ()
         // Topography files always use "ncol_d" for the GLL grid value of ncol.
         // To ensure we read in the correct value, we must change the name for that dimension
         auto io_grid = grid;
-        if (grid_name=="physics gll") {
+        if (grid_name=="physics_gll") {
           using namespace ShortFieldTagsNames;
           auto tmp_grid = io_grid->clone(io_grid->name(),true);
           tmp_grid->reset_field_tag_name(COL,"ncol_d");
@@ -1355,8 +1355,8 @@ void AtmosphereDriver::set_initial_conditions ()
     // Now that ICs are processed, set appropriate fields using IOP file data.
     // Since ICs are loaded on GLL grid, we set those fields only and dynamics
     // will take care of the rest (for PG2 case).
-    if (m_field_mgr->get_grids_manager()->get_grid_names().count("physics gll") > 0) {
-      m_iop_data_manager->set_fields_from_iop_data(m_field_mgr, "physics gll");
+    if (m_field_mgr->get_grids_manager()->get_grid_names().count("physics_gll") > 0) {
+      m_iop_data_manager->set_fields_from_iop_data(m_field_mgr, "physics_gll");
     }
   }
 
@@ -1367,7 +1367,7 @@ void AtmosphereDriver::set_initial_conditions ()
   if (num_perturb_fields > 0) {
     m_atm_logger->info("    [EAMxx] Adding random perturbation to ICs ...");
 
-    EKAT_REQUIRE_MSG(m_field_mgr->get_grids_manager()->get_grid_names().count("physics gll") > 0,
+    EKAT_REQUIRE_MSG(m_field_mgr->get_grids_manager()->get_grid_names().count("physics_gll") > 0,
                      "Error! Random perturbation can only be applied to fields on "
                      "the GLL grid, but no physics GLL grid was defined in FieldManager.\n");
 
@@ -1401,7 +1401,7 @@ void AtmosphereDriver::set_initial_conditions ()
 
     // Define a level mask using reference pressure and the perturbation_minimum_pressure parameter.
     // This mask dictates which levels we apply a perturbation.
-    const auto gll_grid = m_grids_manager->get_grid("physics gll");
+    const auto gll_grid = m_grids_manager->get_grid("physics_gll");
     const auto hyam_h = gll_grid->get_geometry_data("hyam").get_view<const Real*, Host>();
     const auto hybm_h = gll_grid->get_geometry_data("hybm").get_view<const Real*, Host>();
     constexpr auto ps0 = physics::Constants<Real>::P0;
@@ -1538,7 +1538,7 @@ void AtmosphereDriver::initialize_atm_procs ()
 
   if (fvphyshack) {
     // [CGLL ICs in pg2] See related notes in atmosphere_dynamics.cpp.
-    const auto gn = "physics gll";
+    const auto gn = "physics_gll";
     m_field_mgr->clean_up(gn);
   }
 

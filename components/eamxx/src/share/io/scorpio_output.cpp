@@ -805,7 +805,7 @@ void AtmosphereOutput::register_dimensions(const std::string& name)
       "Error! Dimension " + tag_name + " on field " + name + " has conflicting lengths.\n"
       "  - old length: " + std::to_string(m_dims[tag_name]) + "\n"
       "  - new length: " + std::to_string(dim_len) + "\n"
-      "If same name applies to different dims (e.g. physics gll and physics pg2 define "
+      "If same name applies to different dims (e.g. physics_gll and physics_pg2 define "
       "\"ncol\" at different lengths), reset tag name for one of the grids.\n");
   }
 } // register_dimensions

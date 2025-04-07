@@ -6,7 +6,7 @@ averaging_type: instant
 max_snapshots_per_file: 4  # one file per day
 horiz_remap_file: ${DIN_LOC_ROOT}/atm/scream/maps/map_ne1024pg2_to_ne30pg2_mono.20230901.nc
 fields:
-  physics pg2:
+  physics_pg2:
     field_names:
     # 3D fields on model levels
     - T_mid

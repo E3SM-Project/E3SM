@@ -3,7 +3,7 @@
 filename_prefix: homme_shoc_cld_mam_aci_p3_mam_optics_rrtmgp_mam_drydep
 averaging_type: instant
 fields:
-  physics gll:
+  physics_gll:
     field_names:
       # HOMME
       - ps
@@ -114,7 +114,7 @@ fields:
       - phis_dyn
       - omega_dyn
       - Qdp_dyn
-    io_grid_name: physics gll
+    io_grid_name: physics_gll
 
 output_control:
   frequency: ${NUM_STEPS}

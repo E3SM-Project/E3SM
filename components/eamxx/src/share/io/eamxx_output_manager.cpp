@@ -67,7 +67,7 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
   bool pg2_grid_in_io_streams = false;
   const auto& fields_pl = m_params.sublist("fields");
   for (auto it=fields_pl.sublists_names_cbegin(); it!=fields_pl.sublists_names_cend(); ++it) {
-    if (*it == "physics pg2") pg2_grid_in_io_streams = true;
+    if (*it == "physics_pg2") pg2_grid_in_io_streams = true;
   }
 
   if (m_params.isParameter("field_names")) {
@@ -95,9 +95,9 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
       if (pg2_grid_in_io_streams) {
         const auto& grid_pl = fields_pl.sublist(*it);
         bool reset_ncol_naming = false;
-        if (*it == "physics gll") reset_ncol_naming = true;
+        if (*it == "physics_gll") reset_ncol_naming = true;
         if (grid_pl.isParameter("io_grid_name")) {
-          if (grid_pl.get<std::string>("io_grid_name") == "physics gll") {
+          if (grid_pl.get<std::string>("io_grid_name") == "physics_gll") {
             reset_ncol_naming = true;
           }
         }
@@ -157,7 +157,7 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
 
       // See comment above for ncol naming with 2+ grids
       auto grid_nonconst = grid.second->clone(grid.first,true);
-      if (grid.first == "physics gll" && pg2_grid_in_io_streams) {
+      if (grid.first == "physics_gll" && pg2_grid_in_io_streams) {
         grid_nonconst->reset_field_tag_name(ShortFieldTagsNames::COL,"ncol_d");
       }
 

@@ -24,7 +24,7 @@ filename_prefix: monthly.outputs
 averaging_type: average
 max_snapshots_per_file: 1
 fields:
-  physics pg2:
+  physics_pg2:
     field_names:
     - SW_clnclrsky_flux_up_at_model_top
     - LW_clnclrsky_flux_up_at_model_top

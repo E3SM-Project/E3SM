@@ -516,7 +516,7 @@ must be remapped before being saved to file.
       element boundary must match the values on the neighboring element,
       resulting in duplicated data.
       - By remapping to a "unique" version of the dynamics grid
-      (which in EAMxx is referred to as "physics gll"), we can save roughly
+      (which in EAMxx is referred to as "physics_gll"), we can save roughly
       45% of storage.
       - **Note:** this feature cannot be used along with the
       horizontal/vertical remap.

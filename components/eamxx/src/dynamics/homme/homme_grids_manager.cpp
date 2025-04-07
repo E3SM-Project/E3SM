@@ -70,11 +70,11 @@ HommeGridsManager::do_create_remapper (const grid_ptr_type from_grid,
 
   const bool p2d = to=="dynamics";
 
-  if (from=="physics gll" || to=="physics gll") {
+  if (from=="physics_gll" || to=="physics_gll") {
     using PDR = PhysicsDynamicsRemapper;
 
     auto dyn_grid = get_grid("dynamics");
-    auto phys_grid = get_grid("physics gll");
+    auto phys_grid = get_grid("physics_gll");
 
     auto pd_remapper = std::make_shared<PDR>(phys_grid,dyn_grid);
     if (p2d) {
@@ -83,7 +83,7 @@ HommeGridsManager::do_create_remapper (const grid_ptr_type from_grid,
       return std::make_shared<InverseRemapper>(pd_remapper);
     }
   } else {
-    ekat::error::runtime_abort("Error! P-D remapping only implemented for 'physics gll' phys grid.\n");
+    ekat::error::runtime_abort("Error! P-D remapping only implemented for 'physics_gll' phys grid.\n");
   }
   return nullptr;
 }
@@ -122,7 +122,7 @@ build_grids ()
   build_physics_grid(pg_type,pg_rebalance);
 
   // Make "physics" be an alias to whatever the pair (pg_type,rebalance) refers to
-  std::string pg_name = "physics " + pg_type;
+  std::string pg_name = "physics_" + pg_type;
   if (pg_rebalance!="none") {
     pg_name += " " + pg_rebalance;
   }
@@ -193,7 +193,7 @@ void HommeGridsManager::build_dynamics_grid () {
 
 void HommeGridsManager::
 build_physics_grid (const ci_string& type, const ci_string& rebalance) {
-  std::string name = "physics " + type;
+  std::string name = "physics_" + type;
   if (rebalance != "none") {
     name += " " + rebalance;
   }

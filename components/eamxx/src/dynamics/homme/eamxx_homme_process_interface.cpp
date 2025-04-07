@@ -83,7 +83,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   const auto dgn = "dynamics";
   m_dyn_grid = grids_manager->get_grid(dgn);
   m_phys_grid = grids_manager->get_grid("physics");
-  m_cgll_grid = grids_manager->get_grid("physics gll");
+  m_cgll_grid = grids_manager->get_grid("physics_gll");
 
   fv_phys_set_grids();
 

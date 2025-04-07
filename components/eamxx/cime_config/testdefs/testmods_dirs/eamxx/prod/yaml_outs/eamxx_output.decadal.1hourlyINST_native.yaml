@@ -5,7 +5,7 @@ iotype: pnetcdf
 averaging_type: instant
 max_snapshots_per_file: 24
 fields:
-  physics pg2:
+  physics_pg2:
     field_names:
     # For cloud morphology
     - SW_flux_up_at_model_top

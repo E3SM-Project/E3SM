@@ -12,7 +12,7 @@ namespace scream
 {
 
 // =========================================================================================
-P3Microphysics::P3Microphysics (const ekat::Comm& comm, const ekat::ParameterList& params)
+P3Microphysics::P3Microphysics(const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereProcess(comm, params)
 {
   // Nothing to do here

@@ -3,7 +3,7 @@
 filename_prefix: homme_shoc_cld_spa_p3_rrtmgp_mam4_wetscav_output
 averaging_type: instant
 fields:
-  physics gll:
+  physics_gll:
     field_names:
       # HOMME
       - ps

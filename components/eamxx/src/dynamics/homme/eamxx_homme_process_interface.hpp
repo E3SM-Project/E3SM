@@ -87,7 +87,7 @@ protected:
 
   // fv_phys refers to the horizontal finite volume (FV) grid for column
   // parameterizations nested inside the horizontal element grid. The grid names
-  // are "physics PGN", where N in practice is 2. The name of each routine is
+  // are "physics_pgn", where N in practice is 2. The name of each routine is
   // fv_phys_X, where X is the name of an existing HommeDynamics routine. If
   // fv_phys is not being used, each of these routines does an immediate exit,
   // so it's OK to always call the routine.

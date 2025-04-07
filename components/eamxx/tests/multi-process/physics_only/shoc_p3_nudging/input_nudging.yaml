@@ -18,7 +18,7 @@ atmosphere_processes:
     nudging_fields: ["T_mid", "qv"]
     nudging_timescale: 1000
     use_nudging_weights: true
-    nudging_weights_file: nudging_weights.nc      
+    nudging_weights_file: nudging_weights.nc
     source_pressure_type: ${VERT_TYPE}
     source_pressure_file: vertical_remap.nc ## Only used in the case of STATIC_1D_VERTICAL_PROFILE
   shoc:
@@ -38,8 +38,8 @@ atmosphere_processes:
 grids_manager:
   type: mesh_free
   geo_data_source: IC_FILE
-  grids_names: [physics gll]
-  physics gll:
+  grids_names: [physics_gll]
+  physics_gll:
     aliases: [physics]
     type: point_grid
     number_of_global_columns:   218

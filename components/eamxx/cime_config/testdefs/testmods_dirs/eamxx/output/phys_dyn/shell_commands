@@ -28,13 +28,13 @@ $YAML_EDIT_SCRIPT -g \
  --freq-units HIST_OPTION             \
  --prefix ${CASE}.scream.phys_dyn.h   \
  --grid dynamics                      \
- --io-grid 'physics gll'              \
+ --io-grid 'physics_gll'              \
  --fields ${FIELDS}
 
 # Add also a couple of fields on the phys grid, to trigger 2-grid in same stream
 $YAML_EDIT_SCRIPT \
  -f $YAML_FILE              \
- --grid "physics ${PGTYPE}" \
+ --grid "physics_${PGTYPE}" \
  --fields T_mid horiz_winds
 
 # Add this output yaml file to the list of eamxx output streams

@@ -62,7 +62,7 @@ TEST_CASE("dyn_grid_io")
   gm->build_grids();
 
   auto dyn_grid  = gm->get_grid("dynamics");
-  auto phys_grid = gm->get_grid("physics gll");
+  auto phys_grid = gm->get_grid("physics_gll");
 
   // Local counters
   EKAT_REQUIRE_MSG(phys_grid->get_num_local_dofs()>0, "Internal test error! Fix dyn_grid_io, please.\n");
@@ -140,7 +140,7 @@ TEST_CASE("dyn_grid_io")
   out_params.set<std::string>("averaging_type","instant");
   out_params.set<std::string>("filename_prefix","dyn_grid_io");
   out_params.sublist("fields").sublist("dynamics").set<std::vector<std::string>>("field_names",fnames);
-  out_params.sublist("fields").sublist("dynamics").set<std::string>("io_grid_name","physics gll");
+  out_params.sublist("fields").sublist("dynamics").set<std::string>("io_grid_name","physics_gll");
 
   out_params.sublist("output_control").set<int>("frequency",1);
   out_params.sublist("output_control").set<std::string>("frequency_units","nsteps");
