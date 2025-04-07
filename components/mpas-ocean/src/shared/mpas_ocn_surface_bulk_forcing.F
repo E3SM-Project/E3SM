@@ -63,7 +63,15 @@ module ocn_surface_bulk_forcing
 
    logical ::              &
       bulkWindStressOff,   &! on/off switch for bulk wind stress
-      bulkThicknessFluxOff  ! on/off switch for bulk thickness flux
+      bulkThicknessFluxOff, &  ! on/off switch for bulk thickness flux
+      rainFluxTracerOn, &
+      snowFluxTracerOn, &
+      riverRunoffFluxTracerOn, &
+      iceRunoffFluxTracerOn, &
+      subglacialRunoffFluxTracerOn, &
+      seaIceFreshWaterFluxTracerOn, &
+      icebergFreshWaterFluxTracerOn, &
+      landIceFreshwaterFluxTracerOn
 
 !***********************************************************************
 
@@ -127,6 +135,9 @@ contains
       if ( trim(groupName) == 'activeTracers' ) then
          call ocn_surface_bulk_forcing_active_tracers(meshPool, forcingPool, tracerGroup,  &
             tracersSurfaceFlux, tracersSurfaceFluxRunoff, tracersSurfaceFluxRemoved, layerThickness, dt, err)
+      elseif ( trim(groupName) == 'freshwaterTracers' .and. config_use_freshwaterTracers) then
+         call ocn_surface_bulk_forcing_freshwater_tracers(meshPool, forcingPool, tracerGroup,  &
+            tracersSurfaceFlux, tracersSurfaceFluxRunoff, tracersSurfaceFluxRemoved, err)
       end if
       call mpas_timer_stop("bulk_" // trim(groupName))
 
@@ -184,6 +195,9 @@ contains
       if ( trim(groupName) == 'activeTracers' ) then
          call ocn_surface_bulk_forcing_active_tracers_subglacial_runoff(meshPool, forcingPool,  &
             tracersSurfaceFluxSubglacialRunoff, err)
+      elseif ( trim(groupName) == 'freshwaterTracers' .and. config_use_freshwaterTracers) then
+         call ocn_surface_bulk_forcing_freshwater_tracers_subglacial_runoff(meshPool, forcingPool,  &
+            tracersSurfaceFluxSubglacialRunoff, err)!{{{
       end if
       call mpas_timer_stop("bulk_" // trim(groupName))
 
@@ -543,12 +557,37 @@ contains
       bulkWindStressOff    = .true.
       bulkThicknessFluxOff = .true.
 
+      rainFluxTracerOn = .false.
+      snowFluxTracerOn = .false.
+      riverRunoffFluxTracerOn = .false.
+      iceRunoffFluxTracerOn = .false.
+      subglacialRunoffFluxTracerOn = .false.
+      seaIceFreshWaterFluxTracerOn = .false.
+      icebergFreshWaterFluxTracerOn = .false.
+      landIceFreshwaterFluxTracerOn = .false.
+
       !*** Set on/off flags based in user input configuration
 
       if (config_use_bulk_wind_stress) &
          bulkWindStressOff    = .false.
       if (config_use_bulk_thickness_flux) &
          bulkThicknessFluxOff = .false.
+      if (config_use_freshwaterTracers_rainFlux) &
+         rainFluxTracerOn = .true.
+      if (config_use_freshwaterTracers_snowFlux) &
+         snowFluxTracerOn = .true.
+      if (config_use_freshwaterTracers_riverRunoffFlux) &
+         riverRunoffFluxTracerOn = .true.
+      if (config_use_freshwaterTracers_iceRunoffFlux) &
+         iceRunoffFluxTracerOn = .true.
+      if (config_use_freshwaterTracers_subglacialRunoffFlux) &
+         subglacialRunoffFluxTracerOn = .true.
+      if (config_use_freshwaterTracers_seaIceFreshWaterFlux) &
+         seaIceFreshWaterFluxTracerOn = .true.
+      if (config_use_freshwaterTracers_icebergFreshWaterFlux) &
+         icebergFreshWaterFluxTracerOn = .true.
+      if (config_use_freshwaterTracers_landIceFreshwaterFlux) &
+         landIceFreshwaterFluxTracerOn = .true.
 
       !-----------------------------------------------------------------
 
@@ -879,6 +918,262 @@ contains
       endif ! bulkThicknessFluxOn
 
    end subroutine ocn_surface_bulk_forcing_active_tracers_subglacial_runoff!}}}
+
+!***********************************************************************
+!
+!  routine ocn_surface_bulk_forcing_freshwater_tracers
+!
+!> \brief   computes a tracer tendency due to freshwater surface fluxes
+!> \author  Carolyn Branecky Begeman
+!> \date    June 2024
+!> \details
+!>  This routine computes a tracer tendency due to freshwater surface fluxes
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_surface_bulk_forcing_freshwater_tracers(meshPool, forcingPool, tracerGroup,  &
+      freshwaterSurfaceFlux, freshwaterSurfaceFluxRunoff, freshwaterSurfaceFluxRemoved, err)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(in) :: meshPool !< Input: mesh information
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      type (mpas_pool_type), intent(inout) :: forcingPool
+
+      ! two dimensional arrays
+      real (kind=RKIND), dimension(:,:), intent(inout) :: &
+         freshwaterSurfaceFlux, freshwaterSurfaceFluxRunoff, freshwaterSurfaceFluxRemoved
+      real (kind=RKIND), dimension(:,:,:), intent(inout) :: tracerGroup
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: Error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer :: iCell, nCells
+      integer, dimension(:), pointer :: nCellsArray
+
+      type(mpas_pool_type),pointer :: tracersSurfaceFluxPool
+      integer, pointer :: indexRain, indexSnow, indexRiverRunoff, indexIceRunoff, indexSeaIceFreshWater, &
+         indexIcebergFreshWater, indexLandIceFreshwater
+      real (kind=RKIND), dimension(:), pointer :: &
+         rainFlux, snowFlux, riverRunoffFlux, iceRunoffFlux, seaIceFreshWaterFlux, &
+         icebergFreshWaterFlux, landIceFreshwaterFlux
+
+      err = 0
+
+      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
+
+      call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux',tracersSurfaceFluxPool)
+      call mpas_pool_get_dimension(tracersSurfaceFluxPool, 'index_rainSurfaceFlux', indexRain)
+      call mpas_pool_get_dimension(tracersSurfaceFluxPool, 'index_snowSurfaceFlux', indexSnow)
+      call mpas_pool_get_dimension(tracersSurfaceFluxPool, 'index_riverRunoffSurfaceFlux', indexRiverRunoff)
+      call mpas_pool_get_dimension(tracersSurfaceFluxPool, 'index_iceRunoffSurfaceFlux', indexIceRunoff)
+      call mpas_pool_get_dimension(tracersSurfaceFluxPool, 'index_seaIceFreshWaterSurfaceFlux', indexSeaIceFreshWater)
+      call mpas_pool_get_dimension(tracersSurfaceFluxPool, 'index_icebergFreshWaterSurfaceFlux', indexIcebergFreshWater)
+      call mpas_pool_get_dimension(tracersSurfaceFluxPool, 'index_landIceFreshwaterSurfaceFlux', indexLandIceFreshwater)
+
+      call mpas_pool_get_array(forcingPool, 'rainFlux', rainFlux)
+      call mpas_pool_get_array(forcingPool, 'snowFlux', snowFlux)
+      call mpas_pool_get_array(forcingPool, 'riverRunoffFlux', riverRunoffFlux)
+      call mpas_pool_get_array(forcingPool, 'iceRunoffFlux', iceRunoffFlux)
+      call mpas_pool_get_array(forcingPool, 'seaIceFreshWaterFlux', seaIceFreshWaterFlux)
+      call mpas_pool_get_array(forcingPool, 'icebergFreshWaterFlux', icebergFreshWaterFlux)
+      call mpas_pool_get_array(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFlux)
+
+      nCells = nCellsArray( 3 )
+      if (rainFluxTracerOn .and. associated(indexRain) .and. associated(rainFlux)) then
+#ifndef MPAS_OPENACC
+        !$omp parallel
+        !$omp do schedule(runtime)
+#endif
+        do iCell=1,nCells
+          freshwaterSurfaceFlux(indexRain, iCell) = rainFlux(iCell) / rho_sw
+        enddo  !  iCell
+#ifndef MPAS_OPENACC
+        !$omp end do
+        !$omp end parallel
+#endif
+      endif
+      if (snowFluxTracerOn .and. associated(indexSnow) .and. associated(snowFlux)) then
+#ifndef MPAS_OPENACC
+        !$omp parallel
+        !$omp do schedule(runtime)
+#endif
+        do iCell=1,nCells
+          freshwaterSurfaceFlux(indexSnow, iCell) = snowFlux(iCell) / rho_sw
+        enddo  !  iCell
+#ifndef MPAS_OPENACC
+        !$omp end do
+        !$omp end parallel
+#endif
+      endif
+      if (iceRunoffFluxTracerOn .and. associated(indexIceRunoff) .and. associated(iceRunoffFlux)) then
+#ifndef MPAS_OPENACC
+        !$omp parallel
+        !$omp do schedule(runtime)
+#endif
+        do iCell=1,nCells
+          freshwaterSurfaceFluxRunoff(indexIceRunoff, iCell) = iceRunoffFlux(iCell) / rho_sw
+        enddo  !  iCell
+#ifndef MPAS_OPENACC
+        !$omp end do
+        !$omp end parallel
+#endif
+      endif
+      if (riverRunoffFluxTracerOn .and. associated(indexRiverRunoff) .and. associated(riverRunoffFlux)) then
+#ifndef MPAS_OPENACC
+        !$omp parallel
+        !$omp do schedule(runtime)
+#endif
+        do iCell=1,nCells
+          freshwaterSurfaceFluxRunoff(indexRiverRunoff, iCell) = riverRunoffFlux(iCell) / rho_sw
+        enddo  !  iCell
+#ifndef MPAS_OPENACC
+        !$omp end do
+        !$omp end parallel
+#endif
+      endif
+      if (seaIceFreshWaterFluxTracerOn .and. associated(indexSeaIceFreshWater) .and. associated(seaIceFreshWaterFlux)) then
+#ifndef MPAS_OPENACC
+        !$omp parallel
+        !$omp do schedule(runtime)
+#endif
+        do iCell=1,nCells
+          freshwaterSurfaceFlux(indexSeaIceFreshWater, iCell) = seaIceFreshWaterFlux(iCell) / rho_sw
+        enddo  !  iCell
+#ifndef MPAS_OPENACC
+        !$omp end do
+        !$omp end parallel
+#endif
+      endif
+      if (icebergFreshWaterFluxTracerOn .and. associated(indexIcebergFreshWater) .and. associated(icebergFreshWaterFlux)) then
+#ifndef MPAS_OPENACC
+        !$omp parallel
+        !$omp do schedule(runtime)
+#endif
+        do iCell=1,nCells
+          freshwaterSurfaceFlux(indexIcebergFreshWater, iCell) = icebergFreshWaterFlux(iCell) / rho_sw
+        enddo  !  iCell
+#ifndef MPAS_OPENACC
+        !$omp end do
+        !$omp end parallel
+#endif
+      endif
+      if (landIceFreshwaterFluxTracerOn .and. associated(indexLandIceFreshwater) .and. associated(landIceFreshwaterFlux)) then
+#ifndef MPAS_OPENACC
+        !$omp parallel
+        !$omp do schedule(runtime)
+#endif
+        do iCell=1,nCells
+          freshwaterSurfaceFlux(indexLandIceFreshwater, iCell) = landIceFreshwaterFlux(iCell) / rho_sw
+        enddo  !  iCell
+#ifndef MPAS_OPENACC
+        !$omp end do
+        !$omp end parallel
+#endif
+      endif
+
+   end subroutine ocn_surface_bulk_forcing_freshwater_tracers!}}}
+
+!***********************************************************************
+!
+!  routine ocn_surface_bulk_forcing_freshwater_tracers_subglacial_runoff
+!
+!> \brief   computes a tracer tendency due to CFC surface fluxes
+!> \author  Irena Vankova
+!> \date    July 2024
+!> \details
+!>  This routine computes a tracer tendency due to CFC surface fluxes
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_surface_bulk_forcing_freshwater_tracers_subglacial_runoff(meshPool, forcingPool,  &
+      tracersSurfaceFluxSubglacialRunoff, err)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(in) :: meshPool !< Input: mesh information
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      type (mpas_pool_type), intent(inout) :: forcingPool
+
+      ! two dimensional arrays
+      real (kind=RKIND), dimension(:,:), intent(inout) :: tracersSurfaceFluxSubglacialRunoff
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: Error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+      integer :: iCell, nCells
+      integer, dimension(:), pointer :: nCellsArray
+
+      type(mpas_pool_type),pointer :: tracersSurfaceFluxPool
+      integer, pointer :: indexSubglacialRunoff
+      real (kind=RKIND), dimension(:), pointer :: subglacialRunoffFlux
+
+      err = 0
+
+      if (.not. subglacialRunoffFluxTracerOn) return
+
+      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
+
+      call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux',tracersSurfaceFluxPool)
+      call mpas_pool_get_dimension(tracersSurfaceFluxPool, 'index_subglacialRunoffSurfaceFlux', indexSubglacialRunoff)
+
+      call mpas_pool_get_array(forcingPool, 'subglacialRunoffFlux', subglacialRunoffFlux)
+
+      nCells = nCellsArray( 3 )
+      if (associated(indexSubglacialRunoff) .and. associated(subglacialRunoffFlux)) then
+#ifndef MPAS_OPENACC
+        !$omp parallel
+        !$omp do schedule(runtime)
+#endif
+        do iCell=1,nCells
+          tracersSurfaceFluxSubglacialRunoff(indexSubglacialRunoff, iCell) = subglacialRunoffFlux(iCell) / rho_sw
+        enddo  !  iCell
+#ifndef MPAS_OPENACC
+        !$omp end do
+        !$omp end parallel
+#endif
+      endif
+
+   end subroutine ocn_surface_bulk_forcing_freshwater_tracers_subglacial_runoff!}}}
 
 end module ocn_surface_bulk_forcing
 
