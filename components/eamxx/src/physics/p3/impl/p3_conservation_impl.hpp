@@ -72,7 +72,7 @@ void Functions<S,D>
   if (enforce_conservation.any()){
     if (runtime_options.use_separate_ice_liq_frac && (cld_frac_glaciated > 0.0001)) {
       qv2qi_vapdep_tend.set(enforce_conservation, qv2qi_vapdep_tend + qv2qi_vapdep_tend*(1-ratio)*(il_cldm/cld_frac_glaciated));
-      qi2qv_sublim_tend.set(enforce_conservation, qi2qv_sublim_tend + qv2qi_sublim_tend*(1-ratio)*(il_cldm/cld_frac_glaciated));
+      qi2qv_sublim_tend.set(enforce_conservation, qi2qv_sublim_tend + qi2qv_sublim_tend*(1-ratio)*(il_cldm/cld_frac_glaciated));
     } else {
       qv2qi_vapdep_tend.set(enforce_conservation, qv2qi_vapdep_tend*(1-ratio));
       qi2qv_sublim_tend.set(enforce_conservation, qi2qv_sublim_tend*(1-ratio));
