@@ -154,14 +154,11 @@ module li_time_integration
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block % structs, 'timeAveraging', timeAveragingPool)
-         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
          call mpas_pool_get_array(meshPool, 'deltat', deltat)
          deltat = dtSeconds
 
          block => block % next
       end do
-
 
       ! ===
       ! === Perform timestep
@@ -178,8 +175,14 @@ module li_time_integration
       end select
       err = ior(err,err_tmp)
 
-      ! accumulate fluxes for time averaging of fields sent to coupler
-      call li_time_average_coupled_accumulate(timeAveragingPool, geometryPool, meshPool)
+      ! === accumulate fluxes for time averaging of fields sent to coupler
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'timeAveraging', timeAveragingPool)
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call li_time_average_coupled_accumulate(timeAveragingPool, geometryPool, meshPool)
+         block => block % next
+      end do
 
       ! === error check
       if (err > 0) then

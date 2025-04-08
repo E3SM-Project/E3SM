@@ -51,9 +51,9 @@ module li_time_average_coupled
         type (mpas_pool_type), intent(in) :: meshPool          
         type (mpas_pool_type), intent(inout) :: timeAveragingPool
 
-        real (kind=RKIND), dimension(:), pointer :: avgBareIceAblation, avgCalvingThickness, avgFaceMeltingThickness
+        real (kind=RKIND), dimension(:), pointer :: avgBareIceAblationApplied, avgCalvingThickness, avgFaceMeltingThickness
 
-        integer, pointer :: nAccumulatedCoupled, nCells !SFP: eventually remove nAcum (when averaging done using time steps)
+        integer, pointer :: nCells
 
         real (kind=RKIND), pointer :: timeAccumulatedCoupled 
 
@@ -62,12 +62,12 @@ module li_time_average_coupled
         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
         call mpas_pool_get_array(timeAveragingPool, 'timeAccumulatedCoupled', timeAccumulatedCoupled)
-        call mpas_pool_get_array(timeAveragingPool, 'avgBareIceAblation', avgBareIceAblation)
+        call mpas_pool_get_array(timeAveragingPool, 'avgBareIceAblationApplied', avgBareIceAblationApplied)
         call mpas_pool_get_array(timeAveragingPool, 'avgCalvingThickness', avgCalvingThickness)
         call mpas_pool_get_array(timeAveragingPool, 'avgFaceMeltingThickness', avgFaceMeltingThickness)
 
         do iCell = 1, nCells
-           avgBareIceAblation(iCell) = 0.0_RKIND
+           avgBareIceAblationApplied(iCell) = 0.0_RKIND
            avgCalvingThickness(iCell) = 0.0_RKIND
            avgFaceMeltingThickness(iCell) = 0.0_RKIND
         end do
@@ -84,7 +84,7 @@ module li_time_average_coupled
 !> \author  Stephen Price
 !> \date    04 March 2025
 !> \details
-!>  This routine accumulated the coupled time averaging fields
+!>  This routine accumulates the coupled time averaging fields
 !
 !-----------------------------------------------------------------------
     subroutine li_time_average_coupled_accumulate(timeAveragingPool, geometryPool, meshPool)
@@ -95,7 +95,7 @@ module li_time_average_coupled
         type (mpas_pool_type), intent(in) :: geometryPool
         type (mpas_pool_type), intent(in) :: meshPool
 
-        real (kind=RKIND), dimension(:), pointer :: bareIceAblation, avgBareIceAblation, &
+        real (kind=RKIND), dimension(:), pointer :: bareIceAblationApplied, avgBareIceAblationApplied, &
                                                     calvingThickness, avgCalvingThickness, &
                                                     faceMeltingThickness, avgFaceMeltingThickness
         integer, pointer :: nCells
@@ -108,25 +108,23 @@ module li_time_average_coupled
         call mpas_pool_get_config(liConfigs, 'config_ice_density', rhoi)
         call mpas_pool_get_array(meshPool, 'deltat', deltat)
         call mpas_pool_get_array(timeAveragingPool, 'timeAccumulatedCoupled', timeAccumulatedCoupled)
-        call mpas_pool_get_array(geometryPool, 'bareIceAblation', bareIceAblation)
+        call mpas_pool_get_array(geometryPool, 'bareIceAblationApplied', bareIceAblationApplied)
         call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
         call mpas_pool_get_array(geometryPool, 'faceMeltingThickness', faceMeltingThickness)
-        call mpas_pool_get_array(timeAveragingPool, 'avgBareIceAblation', avgBareIceAblation)
+        call mpas_pool_get_array(timeAveragingPool, 'avgBareIceAblationApplied', avgBareIceAblationApplied)
         call mpas_pool_get_array(timeAveragingPool, 'avgCalvingThickness', avgCalvingThickness)
         call mpas_pool_get_array(timeAveragingPool, 'avgFaceMeltingThickness', avgFaceMeltingThickness)
 
         do iCell = 1, nCells
 
-           avgBareIceAblation(iCell) = ( avgBareIceAblation(iCell) * timeAccumulatedCoupled &
-                                               + bareIceAblation(iCell) * deltat ) / ( timeAccumulatedCoupled + deltat )
+           avgBareIceAblationApplied(iCell) = ( avgBareIceAblationApplied(iCell) * timeAccumulatedCoupled &
+                                               + bareIceAblationApplied(iCell) * deltat ) / ( timeAccumulatedCoupled + deltat )
 
            avgCalvingThickness(iCell) = ( avgCalvingThickness(iCell) * timeAccumulatedCoupled &
-                                                + calvingThickness(iCell) * deltat ) / ( timeAccumulatedCoupled + deltat ) &
-                                                * rhoi / deltat
+                                                + calvingThickness(iCell) * deltat * (rhoi / deltat) ) / ( timeAccumulatedCoupled + deltat )
 
            avgFaceMeltingThickness(iCell) = ( avgFaceMeltingThickness(iCell) * timeAccumulatedCoupled &
-                                                + faceMeltingThickness(iCell) * deltat ) / ( timeAccumulatedCoupled + deltat ) &
-                                                * rhoi / deltat
+                                                + faceMeltingThickness(iCell) * deltat * (rhoi / deltat) ) / ( timeAccumulatedCoupled + deltat )
                                         
         end do
 

@@ -4790,7 +4790,7 @@ contains
           call seq_diag_ice_mct(ice(ens1), fractions_ix(ens1), infodata, do_x2i=.true.)
        endif
        if (glc_present) then
-               call seq_diag_glc_mct(glc(ens1), fractions_gx(ens1), infodata, do_x2g=.true., do_g2x=.true.)
+          call seq_diag_glc_mct(glc(ens1), fractions_gx(ens1), infodata, do_x2g=.true., do_g2x=.true.)
        endif
        if (do_bgc_budgets) then
           if (rof_present) then
