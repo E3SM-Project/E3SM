@@ -54,7 +54,7 @@ void Functions<S,D>
 
   // map ice-phase  process rates to cell-avg
     if (runtime_options.use_separate_ice_liq_frac) {
-       qv2qi_sublim_tend.set(context, qv2qi_sublim_tend * cld_frac_glaciated);
+       qi2qv_sublim_tend.set(context, qi2qv_sublim_tend * cld_frac_glaciated);
     } else {
        qi2qv_sublim_tend.set(context, qi2qv_sublim_tend * cld_frac_i);}    // Sublimation of ice in ice cloud
   nr_ice_shed_tend.set(context, nr_ice_shed_tend * il_cldm); // Rain # increase due to shedding from rain-ice collisions, occurs when ice and liquid interact
