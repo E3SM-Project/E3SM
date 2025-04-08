@@ -396,6 +396,9 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
 
   !_____________________________________________________________________
 
+!AAAAAAA
+
+
   subroutine get_R_star(R_star,elem)
   !
   implicit none
