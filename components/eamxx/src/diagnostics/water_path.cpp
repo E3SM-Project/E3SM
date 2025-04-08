@@ -10,10 +10,10 @@ WaterPathDiagnostic::
 WaterPathDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereDiagnostic(comm,params)
 {
-  EKAT_REQUIRE_MSG (params.isParameter("Water Kind"),
-      "Error! WaterPathDiagnostic requires 'Water Kind' in its input parameters.\n");
+  EKAT_REQUIRE_MSG (params.isParameter("water_kind"),
+      "Error! WaterPathDiagnostic requires 'water_kind' in its input parameters.\n");
 
-  m_kind = m_params.get<std::string>("Water Kind");
+  m_kind = m_params.get<std::string>("water_kind");
   if (m_kind=="Liq") {
     m_qname = "qc";
   } else if (m_kind=="Ice") {
@@ -39,7 +39,7 @@ set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 
   auto m2 = pow (m,2);
 
-  auto grid  = grids_manager->get_grid("Physics");
+  auto grid  = grids_manager->get_grid("physics");
   const auto& grid_name = grid->name();
   m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column

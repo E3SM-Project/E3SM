@@ -94,7 +94,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   auto nondim = Units::nondimensional();
   auto micron = micro*m;
 
-  m_grid = grids_manager->get_grid("Physics");
+  m_grid = grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
   m_ncol = m_grid->get_num_local_dofs();
   m_nlay = m_grid->get_num_vertical_levels();
@@ -625,7 +625,7 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
   m_fixed_total_solar_irradiance = m_params.get<double>("fixed_total_solar_irradiance", -9999);
 
   // Determine whether or not we are using a fixed solar zenith angle (positive value)
-  m_fixed_solar_zenith_angle = m_params.get<double>("Fixed Solar Zenith Angle", -9999);
+  m_fixed_solar_zenith_angle = m_params.get<double>("fixed_solar_zenith_angle", -9999);
 
   // Get prescribed surface values of greenhouse gases
   m_co2vmr     = m_params.get<double>("co2vmr", 388.717e-6);

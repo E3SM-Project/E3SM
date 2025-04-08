@@ -164,8 +164,8 @@ void TimeInterpolation::initialize_data_from_files()
   auto triplet_curr = m_file_data_triplets[m_triplet_idx];
   // Initialize the AtmosphereInput object that will be used to gather data
   ekat::ParameterList input_params;
-  input_params.set("Field Names",m_field_names);
-  input_params.set("Filename",triplet_curr.filename);
+  input_params.set("field_names",m_field_names);
+  input_params.set("filename",triplet_curr.filename);
   m_file_data_atm_input = std::make_shared<AtmosphereInput>(input_params,m_fm_time1);
   m_file_data_atm_input->set_logger(m_logger);
   // Assign the mask value gathered from the FillValue found in the source file.
@@ -258,7 +258,7 @@ void TimeInterpolation::print()
   printf("Settings for time interpolator...\n");
   printf("Time 0 = %s\n",m_time0.to_string().c_str());
   printf("Time 1 = %s\n",m_time1.to_string().c_str());
-  printf("List of Fields in interpolator:\n");
+  printf("List of fields in interpolator:\n");
   for (auto name : m_field_names)
   {
     printf("     -   %16s\n",name.c_str());
@@ -351,8 +351,8 @@ void TimeInterpolation::read_data()
   if (not m_file_data_atm_input or triplet_curr.filename != m_file_data_atm_input->get_filename()) {
     // Then we need to close this input stream and open a new one
     ekat::ParameterList input_params;
-    input_params.set("Field Names",m_field_names);
-    input_params.set("Filename",triplet_curr.filename);
+    input_params.set("field_names",m_field_names);
+    input_params.set("filename",triplet_curr.filename);
     m_file_data_atm_input = std::make_shared<AtmosphereInput>(input_params,m_fm_time1);
     m_file_data_atm_input->set_logger(m_logger);
     // Also determine the FillValue, if used

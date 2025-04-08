@@ -45,7 +45,7 @@ protected:
   void finalize_impl   ();
 
   // Keep track of field dimensions and the iteration count
-  Int m_num_cols; 
+  Int m_num_cols;
   Int m_num_levs;
 
   // Parameters for cloud fraction cutoff

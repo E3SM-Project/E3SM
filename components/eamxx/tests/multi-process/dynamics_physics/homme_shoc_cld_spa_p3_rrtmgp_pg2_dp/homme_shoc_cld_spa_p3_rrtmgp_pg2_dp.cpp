@@ -60,7 +60,7 @@ TEST_CASE("scream_homme_physics", "scream_homme_physics") {
   ad.create_fields ();
 
   // Setup surface coupler import to be NaNs for fields IOP should overwrite
-  const int ncols = ad.get_grids_manager()->get_grid("Physics")->get_num_local_dofs();
+  const int ncols = ad.get_grids_manager()->get_grid("physics")->get_num_local_dofs();
   static constexpr int num_imports = 4;
   char import_names[num_imports][32];
   std::strcpy(import_names[0], "surf_radiative_T");

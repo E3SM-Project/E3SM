@@ -130,7 +130,7 @@ void write (const std::string& avg_type, const std::string& freq_units,
 {
   // Create grid
   auto gm = get_gm(comm);
-  auto grid = gm->get_grid("Point Grid");
+  auto grid = gm->get_grid("point_grid");
 
   // Time advance parameters
   auto t0 = get_t0();
@@ -146,11 +146,11 @@ void write (const std::string& avg_type, const std::string& freq_units,
   // Create output params
   ekat::ParameterList om_pl;
   om_pl.set("filename_prefix",std::string("io_basic"));
-  om_pl.set("Field Names",fnames);
-  om_pl.set("Averaging Type", avg_type);
+  om_pl.set("field_names",fnames);
+  om_pl.set("averaging_type", avg_type);
   auto& ctrl_pl = om_pl.sublist("output_control");
   ctrl_pl.set("frequency_units",freq_units);
-  ctrl_pl.set("Frequency",freq);
+  ctrl_pl.set("frequency",freq);
   ctrl_pl.set("save_grid_data",false);
 
   // While setting this is in practice irrelevant (we would close
@@ -160,16 +160,16 @@ void write (const std::string& avg_type, const std::string& freq_units,
   if (avg_type=="INSTANT") {
     ++max_snaps;
   }
-  om_pl.set("Max Snapshots Per File", max_snaps);
+  om_pl.set("max_snapshots_per_file", max_snaps);
 
   // Create Output manager
   OutputManager om;
 
   // Attempt to use invalid fp precision string
-  om_pl.set("Floating Point Precision",std::string("triple"));
+  om_pl.set("floating_point_precision",std::string("triple"));
   om.initialize(comm,om_pl,t0,false);
   REQUIRE_THROWS (om.setup(fm,gm->get_grid_names()));
-  om_pl.set("Floating Point Precision",std::string("single"));
+  om_pl.set("floating_point_precision",std::string("single"));
   om.initialize(comm,om_pl,t0,false);
   om.setup(fm,gm->get_grid_names());
 
@@ -211,7 +211,7 @@ void read (const std::string& avg_type, const std::string& freq_units,
 
   // Get gm
   auto gm = get_gm (comm);
-  auto grid = gm->get_grid("Point Grid");
+  auto grid = gm->get_grid("point_grid");
 
   // Get initial fields. Use wrong seed for fm, so fields are not
   // inited with right data (avoid getting right answer without reading).
@@ -232,8 +232,8 @@ void read (const std::string& avg_type, const std::string& freq_units,
     + ".np" + std::to_string(comm.size())
     + "." + t0.to_string()
     + ".nc";
-  reader_pl.set("Filename",filename);
-  reader_pl.set("Field Names",fnames);
+  reader_pl.set("filename",filename);
+  reader_pl.set("field_names",fnames);
   AtmosphereInput reader(reader_pl,fm);
 
   // We added 1.0 to the input fields for each timestep

@@ -10,9 +10,9 @@ time_stepping:
   case_t0: 2023-01-01-00000  # YYYY-MM-DD-XXXXX
 
 initial_conditions:
-  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
+  filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
-  Restart Run: false
+  restart_run: false
   surf_evap: 0.0
   surf_sens_flux: 0.0
   precip_liq_surf_mass: 0.0
@@ -27,17 +27,17 @@ initial_conditions:
 
 atmosphere_processes:
   atm_procs_list: [homme,physics]
-  schedule_type: Sequential
+  schedule_type: sequential
   homme:
-    Moisture: moist
+    moisture: moist
   physics:
     atm_procs_list: [mac_aero_mic,rrtmgp]
-    Type: Group
-    schedule_type: Sequential
+    type: group
+    schedule_type: sequential
     mac_aero_mic:
-      atm_procs_list: [shoc,CldFraction,p3]
-      Type: Group
-      schedule_type: Sequential
+      atm_procs_list: [shoc,cld_fraction,p3]
+      type: group
+      schedule_type: sequential
       number_of_subcycles: 1
       p3:
         do_prescribed_ccn: false
@@ -53,8 +53,8 @@ atmosphere_processes:
         w2tune: 1.0
         length_fac: 0.5
         c_diag_3rd_mom: 7.0
-        Ckh: 0.1
-        Ckm: 0.1
+        coeff_kh: 0.1
+        coeff_km: 0.1
     rrtmgp:
       active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
       do_aerosol_rad: false
@@ -64,12 +64,12 @@ atmosphere_processes:
       rrtmgp_cloud_optics_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-lw.nc
 
 grids_manager:
-  Type: Homme
-  physics_grid_type: GLL
+  type: homme
+  physics_grid_type: gll
   dynamics_namelist_file_name: namelist.nl
   vertical_coordinate_filename: IC_FILE
 
 # List all the yaml files with the output parameters
-Scorpio:
+scorpio:
   output_yaml_files: ["model_output.yaml"]
 ...

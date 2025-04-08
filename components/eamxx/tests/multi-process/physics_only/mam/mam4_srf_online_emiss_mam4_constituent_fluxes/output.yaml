@@ -1,8 +1,8 @@
 %YAML 1.1
 ---
 filename_prefix: mam4_srf_online_emiss_mam4_constituent_fluxes_output
-Averaging Type: Instant
-Field Names:
+averaging_type: instant
+field_names:
   - bc_a1
   - bc_a3
   - bc_a4
@@ -36,6 +36,6 @@ Field Names:
   - DMS
   - SOAG
 output_control:
-  Frequency: ${NUM_STEPS}
+  frequency: ${NUM_STEPS}
   frequency_units: nsteps
 ...

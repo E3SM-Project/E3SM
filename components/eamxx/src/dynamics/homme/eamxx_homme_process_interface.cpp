@@ -67,8 +67,8 @@ HommeDynamics::HommeDynamics (const ekat::Comm& comm, const ekat::ParameterList&
   set_homme_log_file_name_f90 (&logname);
 
   m_bfb_hash_nstep = 0;
-  if (params.isParameter("BfbHash"))
-    m_bfb_hash_nstep = std::max(0, params.get<int>("BfbHash"));
+  if (params.isParameter("bfb_hash"))
+    m_bfb_hash_nstep = std::max(0, params.get<int>("bfb_hash"));
 }
 
 HommeDynamics::~HommeDynamics ()
@@ -80,10 +80,10 @@ HommeDynamics::~HommeDynamics ()
 void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_manager)
 {
   // Grab dynamics, physics, and physicsGLL grids
-  const auto dgn = "Dynamics";
+  const auto dgn = "dynamics";
   m_dyn_grid = grids_manager->get_grid(dgn);
-  m_phys_grid = grids_manager->get_grid("Physics");
-  m_cgll_grid = grids_manager->get_grid("Physics GLL");
+  m_phys_grid = grids_manager->get_grid("physics");
+  m_cgll_grid = grids_manager->get_grid("physics_gll");
 
   fv_phys_set_grids();
 
@@ -92,7 +92,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   //       I'm gonna say 'no', for now, cause it might be a pb with unit tests.
   if (!is_data_structures_inited_f90()) {
     // Set moisture in homme base on input file:
-    const auto& moisture = m_params.get<std::string>("Moisture");
+    const auto& moisture = m_params.get<std::string>("moisture");
     set_homme_param("moisture",ekat::upper_case(moisture)!="DRY");
 
     prim_init_data_structures_f90 ();
@@ -121,7 +121,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
 
   // Sanity check for the grid. This should *always* pass, since Homme builds the grids
   EKAT_REQUIRE_MSG(get_num_local_elems_f90()==nelem,
-      "Error! The number of elements computed from the Dynamics grid num_dof()\n"
+      "Error! The number of elements computed from the dynamics grid num_dof()\n"
       "       does not match the number of elements internal in Homme.\n");
 
   const auto& params = Homme::Context::singleton().get<Homme::SimulationParams>();
@@ -354,7 +354,7 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   //          that value to compute p_mid. Or, perhaps easier, write p_mid to restart file.
   EKAT_REQUIRE_MSG (
       get_field_out("pseudo_density",pgn).get_header().get_tracking().get_providers().size()==1,
-      "Error! Someone other than Dynamics is trying to update the pseudo_density.\n");
+      "Error! Someone other than dynamics is trying to update the pseudo_density.\n");
 
   // The groups 'tracers' and 'tracers_mass_dyn' should contain the same fields
   EKAT_REQUIRE_MSG(not get_group_out("Q",pgn).m_info->empty(),
@@ -1215,7 +1215,7 @@ void HommeDynamics::initialize_homme_state () {
     update_pressure (m_phys_grid);
   }
 
-  // If "Instant" averaging type is used for output,
+  // If "instant" averaging type is used for output,
   // an initial output is performed before AD processes
   // are run. If omega_dyn output is requested, it will
   // not have valid computed values for this initial

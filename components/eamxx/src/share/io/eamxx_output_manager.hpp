@@ -157,7 +157,7 @@ protected:
 
   std::vector<double> m_time_bnds;
 
-  // How to combine multiple snapshots in the output: Instant, Max, Min, Average
+  // How to combine multiple snapshots in the output: instant, Max, Min, Average
   OutputAvgType     m_avg_type;
 
   // Whether this OutputManager handles a model restart file, or normal model output.
