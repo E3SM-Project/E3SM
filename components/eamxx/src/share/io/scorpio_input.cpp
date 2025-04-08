@@ -499,7 +499,7 @@ void AtmosphereInput::set_decompositions()
   auto gids_f = m_io_grid->get_partitioned_dim_gids();
   auto gids_h = gids_f.get_view<const AbstractGrid::gid_type*,Host>();
   auto min_gid = m_io_grid->get_global_min_partitioned_dim_gid();
-  std::vector<int> offsets(local_dim);
+  std::vector<scorpio::offset_t> offsets(local_dim);
   for (int idof=0; idof<local_dim; ++idof) {
     offsets[idof] = gids_h[idof] - min_gid;
   }

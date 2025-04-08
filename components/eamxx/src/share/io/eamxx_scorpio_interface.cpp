@@ -13,11 +13,6 @@
 namespace scream {
 namespace scorpio {
 
-struct OffsetsVec {
-  OffsetsVec (int n) : vec(n,-1) {}
-  std::vector<PIO_Offset> vec;
-};
-
 // This class is an implementation detail, and therefore it is hidden inside
 // a cpp file. All customers of IO capabilities must use the common interfaces
 // exposed in the header file of this source file.
@@ -348,11 +343,9 @@ void init_subsystem(const ekat::Comm& comm, const int atm_id)
   // Unused in standalone mode
   (void) atm_id;
 #endif
-  static_assert (std::is_same<PIO_Offset,int>::value or
-                 std::is_same<PIO_Offset,long>::value or
-                 std::is_same<PIO_Offset,long long>::value,
-      "Error! PIO was configured with PIO_OFFSET not in [int, long, long long]. EAMxx does not support that\n");
 
+  static_assert (sizeof(offset_t)==sizeof(PIO_Offset),
+      "Error! PIO was configured with PIO_OFFSET not a 64-bit int.\n");
 }
 
 bool is_subsystem_inited () {
@@ -369,19 +362,19 @@ void finalize_subsystem ()
   EKAT_REQUIRE_MSG (s.pio_sysid!=-1,
       "Error! PIO subsystem was already finalized.\n");
 
-  for (const auto& [filename,file] : s.files) {
-    EKAT_REQUIRE_MSG (file.num_customers==0,
+  for (auto& it : s.files) {
+    EKAT_REQUIRE_MSG (it.second.num_customers==0,
       "Error! ScorpioSession::finalize called, but a file is still in use elsewhere.\n"
-      " - filename: " + filename + "\n");
+      " - filename: " + it.first + "\n");
   }
   s.files.clear();
 
-  for (const auto& [dimname,decomp] : s.decomps) {
-    EKAT_REQUIRE_MSG (decomp.use_count()==1,
+  for (auto& it : s.decomps) {
+    EKAT_REQUIRE_MSG (it.second.use_count()==1,
       "Error! ScorpioSession::finalize called, but a decomp is still stored elsewhere.\n"
-      " - decomp name: " + dimname + "\n");
+      " - decomp name: " + it.first + "\n");
 
-    int err = PIOc_freedecomp(s.pio_sysid,decomp->ncid);
+    int err = PIOc_freedecomp(s.pio_sysid,it.second->ncid);
     check_scorpio_noerr(err,"finalize_subsystem","freedecomp");
   }
   s.decomps.clear();
@@ -464,9 +457,9 @@ void register_file (const std::string& filename,
 
       auto find_dim = [&](int dimid) -> std::shared_ptr<const PIODim> {
         std::shared_ptr<const PIODim> d;
-        for (auto& [dimname,dim] : f.dims) {
-          if (dim->ncid==dimid) {
-            d = dim;
+        for (auto it : f.dims) {
+          if (it.second->ncid==dimid) {
+            d = it.second;
           }
         }
         EKAT_REQUIRE_MSG (d!=nullptr,
@@ -685,7 +678,7 @@ int get_dimlen_local (const std::string& filename, const std::string& dimname)
       " - dimname : " + dimname + "\n");
 
   const auto& dim = pf.file->dims.at(dimname);
-  return dim->decomposed ? dim->offsets.size() : dim->length;
+  return dim->offsets==nullptr ? dim->length : dim->offsets->size();
 }
 
 bool has_time_dim (const std::string& filename)
@@ -737,9 +730,10 @@ void reset_time_dim_len (const std::string& filename, const int new_length)
   f.time_dim->length = new_length;
 
   // Reset number of records counter for each time dep var
-  for (auto& [varname,var] : f.vars) {
-    if (var->time_dep) {
-      var->num_records = new_length;
+  for (auto it : f.vars) {
+    auto& v = *it.second;
+    if (v.time_dep) {
+      v.num_records = new_length;
     }
   }
 }
@@ -752,31 +746,28 @@ void reset_time_dim_len (const std::string& filename, const int new_length)
 void set_var_decomp (PIOVar& var,
                      const std::string& filename)
 {
+  for (size_t i=1; i<var.dims.size(); ++i) {
+    EKAT_REQUIRE_MSG (var.dims[i]->offsets==nullptr,
+        "Error! We currently only allow decomposition on slowest-striding dimension.\n"
+        "       Generalizing is not complicated, but it was not a priority.\n"
+        " - filename: " + filename + "\n"
+        " - varname : " + var.name + "\n"
+        " - var dims: " + ekat::join(var.dims,get_entity_name,",") + "\n"
+        " - bad dim : " + var.dims[i]->name + "\n");
+  }
+  EKAT_REQUIRE_MSG (var.dims[0]->offsets!=nullptr,
+      "Error! Calling set_var_decomp, but the var first dimension does not appear to be decomposed.\n"
+      " - filename: " + filename + "\n"
+      " - varname : " + var.name  + "\n"
+      " - var dims: " + ekat::join(var.dims,get_entity_name,",") + "\n");
   EKAT_REQUIRE_MSG (var.decomp==nullptr,
       "Error! You should have invalidated var.decomp before attempting to reset it.\n"
       " - filename  : " + filename + "\n"
       " - varname   : " + var.name  + "\n"
       " - var decomp: " + var.decomp->name  + "\n");
 
-  std::shared_ptr<const PIODim> decomp_dim;
-  for (const auto& d : var.dims) {
-    if (d->decomposed) {
-      EKAT_REQUIRE_MSG (decomp_dim==nullptr,
-          "Error! Variable has multiple decomposed dimensions.\n"
-          "  - file: " + filename + "\n"
-          "  - var : " + var.name + "\n"
-          "  - 1st decomp dim: " + decomp_dim->name + "\n"
-          "  - 2nd decomp dim: " + d->name + "\n");
-      decomp_dim = d;
-    }
-  }
-  EKAT_REQUIRE_MSG (decomp_dim!=nullptr,
-      "Error! Calling set_var_decomp, but the var does not have any decomposde dimension.\n"
-      " - filename: " + filename + "\n"
-      " - varname : " + var.name  + "\n"
-      " - var dims: " + ekat::join(var.dims,get_entity_name,",") + "\n");
-
   // Create decomp name: dtype-dim1<len1>_dim2<len2>_..._dimk<lenN>
+  std::shared_ptr<const PIODim> decomp_dim;
   std::string decomp_tag = var.dtype + "-";
   for (auto d : var.dims) {
     decomp_tag += d->name + "<" + std::to_string(d->length) + ">_";
@@ -806,55 +797,34 @@ void set_var_decomp (PIOVar& var,
     // We haven't create this decomp yet. Go ahead and create one
     decomp = std::make_shared<PIODecomp>();
     decomp->name = decomp_tag;
-    decomp->dim = decomp_dim;
+    decomp->dim = var.dims[0];
 
     int ndims = var.dims.size();
 
-    // Get local and global dim lengths
-    std::vector<int> dimlen_glb(ndims),dimlen_lcl(ndims);
-    int decomp_idx = -1;
-    for (int idim=0; idim<ndims; ++idim) {
-      dimlen_glb[idim] = dimlen_lcl[idim] = var.dims[idim]->length;
-      if (var.dims[idim]->decomposed) {
-        decomp_idx = idim;
-        dimlen_lcl[idim] = var.dims[idim]->offsets.size();
-      }
+    // Get ALL dims global lengths, and compute prod of *non-decomposed* dims
+    std::vector<int> gdimlen = {decomp->dim->length};
+    int non_decomp_dim_prod = 1;
+    for (int idim=1; idim<ndims; ++idim) {
+      auto d = var.dims[idim];
+      gdimlen.push_back(d->length);
+      non_decomp_dim_prod *= d->length;
     }
 
-    // Compute global strides and local var size
-    std::vector<int> strides(ndims,1);
-    int ndofs_lcl = dimlen_lcl.back();
-    for (int idim=ndims-2; idim>=0; --idim) {
-      strides[idim] = strides[idim+1]*dimlen_glb[idim+1];
-      ndofs_lcl *= dimlen_lcl[idim];
-    }
-
-    std::vector<int> idx(ndims,0);
-
-    // Helper lambda, to update an Nd index by adding 1 the the right, and handling carries
-    auto inc_idx = [&] () {
-      for (int i=ndims-1; i>=0; --i) {
-        ++idx[i];
-        if (idx[i]<dimlen_lcl[i])
-          break;
-        idx[i] = 0;
-      }
-    };
-
-    decomp->offsets = std::make_shared<OffsetsVec>(ndofs_lcl);
-    for (int ldof=0; ldof<ndofs_lcl; ++ldof, inc_idx()) {
-      int bkp = idx[decomp_idx];
-      idx[decomp_idx] = decomp_dim->offsets[bkp];
-      int gdof = std::inner_product(idx.begin(),idx.end(),strides.begin(),0);
-
-      decomp->offsets->vec[ldof] = gdof;
-      idx[decomp_idx] = bkp;
+    // Create offsets list
+    const auto& dim_offsets = *decomp->dim->offsets;
+    int dim_loc_len = dim_offsets.size();
+    decomp->offsets.resize (non_decomp_dim_prod*dim_loc_len);
+    for (int idof=0; idof<dim_loc_len; ++idof) {
+      auto dof_offset = dim_offsets[idof];
+      auto beg = decomp->offsets.begin()+ idof*non_decomp_dim_prod;
+      auto end = beg + non_decomp_dim_prod;
+      std::iota (beg,end,non_decomp_dim_prod*dof_offset);
     }
 
     // Create PIO decomp
-    int maplen = decomp->offsets->vec.size();
-    PIO_Offset* compmap = decomp->offsets->vec.data();
-    int err = PIOc_init_decomp(s.pio_sysid,nctype(var.dtype),ndims,dimlen_glb.data(),
+    int maplen = decomp->offsets.size();
+    PIO_Offset* compmap = reinterpret_cast<PIO_Offset*>(decomp->offsets.data());
+    int err = PIOc_init_decomp(s.pio_sysid,nctype(var.dtype),ndims,gdimlen.data(),
                                maplen,compmap, &decomp->ncid,s.pio_rearranger,
                                nullptr,nullptr);
 
@@ -867,7 +837,7 @@ void set_var_decomp (PIOVar& var,
 
 void set_dim_decomp (const std::string& filename,
                      const std::string& dimname,
-                     const std::vector<int>& my_offsets,
+                     const std::vector<offset_t>& my_offsets,
                      const bool allow_reset)
 {
   auto& s = ScorpioSession::instance();
@@ -879,16 +849,17 @@ void set_dim_decomp (const std::string& filename,
       " - filename: " + filename + "\n"
       " - dimname : " + dimname + "\n");
 
-  if (dim.decomposed) {
+  if (dim.offsets!=nullptr) {
     if (allow_reset) {
       // We likely won't need the previously created decomps that included this dimension.
       // So, as we remove decomps from vars that have this dim, keep track of their name,
       // so that we can free them later *if no other users of them remain*.
       std::set<std::string> decomps_to_remove;
-      for (auto& [varname,var] : f.vars) {
-        if (var->decomp!=nullptr and var->decomp->dim->name==dimname) {
-          decomps_to_remove.insert(var->decomp->name);
-          var->decomp = nullptr;
+      for (auto it : f.vars) {
+        auto v = it.second;
+        if (v->decomp!=nullptr and v->decomp->dim->name==dimname) {
+          decomps_to_remove.insert(v->decomp->name);
+          v->decomp = nullptr;
         }
       }
       for (const auto& dn : decomps_to_remove) {
@@ -902,7 +873,7 @@ void set_dim_decomp (const std::string& filename,
       }
     } else {
       // Check that the offsets are (globally) the same
-      int same = dim.offsets==my_offsets;
+      int same = *dim.offsets==my_offsets;
       const auto& comm = ScorpioSession::instance().comm;
       comm.all_reduce(&same,1,MPI_MIN);
       EKAT_REQUIRE_MSG(same==1,
@@ -916,47 +887,33 @@ void set_dim_decomp (const std::string& filename,
     }
   }
   
-#ifndef NDEBUG
-  std::vector<int> all_offsets(dim.length);
-  const auto& comm = ScorpioSession::instance().comm;
-  // TODO: if you impl Comm::all_gather_v, use that.
-  for (int pid=0, pos=0; pid<comm.size(); ++pid) {
-    int n = my_offsets.size();
-    comm.broadcast(&n,1,pid);
-    auto buf = all_offsets.data()+pos;
-    if (pid==comm.rank())
-      std::copy(my_offsets.data(),my_offsets.data()+n,buf);
-    comm.broadcast(buf,n,pid);
-    pos += n;
+  // Check that offsets are less than the global dimension length
+  for (auto o : my_offsets) {
+    EKAT_REQUIRE_MSG (o>=0 && o<dim.length,
+        "Error! Offset for dimension decomposition is out of bounds.\n"
+        " - filename: " + filename + "\n"
+        " - dimname : " + dimname + "\n"
+        " - dim glen: " + std::to_string(dim.length) + "\n"
+        " - offset  : " + std::to_string(o) + "\n");
   }
 
-  std::sort(all_offsets.begin(),all_offsets.end());
-  std::vector<int> range(dim.length);
-  std::iota(range.begin(),range.end(),0);
-  EKAT_REQUIRE_MSG (range==all_offsets,
-      "Error! The decomposition does not cover the global dim length.\n"
-      " - filename: " + filename + "\n"
-      " - dimname : " + dimname + "\n"
-      " - all offsets (sorted): " + ekat::join(all_offsets,",") + "\n");
-#endif
-  dim.offsets = my_offsets;
-  dim.decomposed = true;
+  dim.offsets = std::make_shared<std::vector<offset_t>>(my_offsets);
 
   // If vars were already defined, we need to process them,
   // and create the proper PIODecomp objects.
-  for (auto [varname,var] : f.vars) {
-    if (ekat::contains(var->dim_names(),dimname)) {
-      set_var_decomp (*var,filename);
+  for (auto it : f.vars) {
+    if (ekat::contains(it.second->dim_names(),dimname)) {
+      set_var_decomp (*it.second,filename);
     }
   }
 }
 
 void set_dim_decomp (const std::string& filename,
                      const std::string& dimname,
-                     const int start, const int count,
+                     const offset_t start, const offset_t count,
                      const bool allow_reset)
 {
-  std::vector<int> offsets(count);
+  std::vector<offset_t> offsets(count);
   std::iota(offsets.begin(),offsets.end(),start);
   set_dim_decomp(filename,dimname,offsets,allow_reset);
 }
@@ -973,7 +930,7 @@ void set_dim_decomp (const std::string& filename,
     ++len;
   }
 
-  int offset = len;
+  offset_t offset = len;
   comm.scan(&offset,1,MPI_SUM);
   offset -= len; // scan is inclusive, but we need exclusive
 
@@ -1041,12 +998,8 @@ void define_var (const std::string& filename, const std::string& varname,
       set_attribute(filename,varname,"units",units);
     }
 
-    // Check if we need to setup at decomp for this var
-    for (const auto& d : var->dims) {
-      if (d->decomposed) {
-        set_var_decomp(*var,filename);
-        break;
-      }
+    if (var->dims.size()>0 and var->dims[0]->offsets!=nullptr) {
+      set_var_decomp (*var,filename);
     }
   } else {
     const auto& var = f.vars.at(varname);
@@ -1174,11 +1127,12 @@ void mark_dim_as_time (const std::string& filename, const std::string& dimname)
     // If a var has "time" in its dims (must be the 1st dim!),
     // remove it. Recall that we only store non-time dims in
     // the list of var dims.
-    for (auto& [varname,var] : f.vars) {
-      if (var->dims.size()>0 and var->dims[0]->name==dimname) {
-        var->dims.erase(var->dims.begin());
-        var->size = -1;
-        var->time_dep = true;
+    for (auto& it : f.vars) {
+      auto& v = it.second;
+      if (v->dims.size()>0 and v->dims[0]->name==dimname) {
+        v->dims.erase(v->dims.begin());
+        v->size = -1;
+        v->time_dep = true;
       }
     }
   } else {
@@ -1258,7 +1212,7 @@ void read_var (const std::string &filename, const std::string &varname, T* buf, 
   std::string pioc_func;
   if (var.decomp) {
     // A decomposed variable, requires read_darray
-    err = PIOc_read_darray(f.ncid,var.ncid,var.decomp->ncid,var.decomp->offsets->vec.size(),buf);
+    err = PIOc_read_darray(f.ncid,var.ncid,var.decomp->ncid,var.decomp->offsets.size(),buf);
     pioc_func = "read_darray";
   } else {
     // A non-decomposed variable, use PIOc_get_var(a)
@@ -1340,7 +1294,7 @@ void write_var (const std::string &filename, const std::string &varname, const T
   std::string pioc_func;
   if (var.decomp) {
     // A decomposed variable, requires write_darray
-    err = PIOc_write_darray(f.ncid,var.ncid,var.decomp->ncid,var.decomp->offsets->vec.size(),buf,fillValue);
+    err = PIOc_write_darray(f.ncid,var.ncid,var.decomp->ncid,var.decomp->offsets.size(),buf,fillValue);
     pioc_func = "write_darray";
   } else {
     // A non-decomposed variable, use PIOc_put_var(a)
