@@ -248,9 +248,9 @@
         </ntasks>
       </pes>
     </mach>
-    <mach name="jlse">
+    <mach name="jlse|polaris">
       <pes compset="any" pesize="any">
-        <comment>jlse: any compset on ne4np4.pg2 grid</comment>
+        <comment>jlse|polaris: any compset on ne4np4.pg2 grid</comment>
         <ntasks>
           <ntasks_atm>-1</ntasks_atm>
           <ntasks_lnd>-1</ntasks_lnd>
@@ -390,6 +390,21 @@
           <nthrds_glc>2</nthrds_glc>
           <nthrds_wav>2</nthrds_wav>
         </nthrds>
+      </pes>
+    </mach>
+    <mach name="aurora">
+      <pes compset="any" pesize="any">
+        <comment>any compset on ne4 grid, 1 node x MAX_MPITASKS_PER_NODE mpi x 1 omp @ root 0</comment>
+        <ntasks>
+          <ntasks_atm>-1</ntasks_atm>
+          <ntasks_lnd>12</ntasks_lnd>
+          <ntasks_rof>-1</ntasks_rof>
+          <ntasks_ice>-1</ntasks_ice>
+          <ntasks_ocn>-1</ntasks_ocn>
+          <ntasks_glc>-1</ntasks_glc>
+          <ntasks_wav>-1</ntasks_wav>
+          <ntasks_cpl>-1</ntasks_cpl>
+        </ntasks>
       </pes>
     </mach>
   </grid>

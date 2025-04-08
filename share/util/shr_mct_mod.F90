@@ -790,10 +790,10 @@ end subroutine shr_mct_sMatReaddnc
 subroutine shr_mct_sMatWritednc(sMat,iosystem, io_type, io_format, fileName,compid, mpicom)
 
 ! !USES:
-  use pio, only : iosystem_desc_t
+   use pio, only : iosystem_desc_t
    use shr_pcdf_mod, only : shr_pcdf_readwrite
+   use mpi
    implicit none
-#include <mpif.h>
 
 ! !INPUT/OUTPUT PARAMETERS:
 
@@ -828,7 +828,7 @@ subroutine shr_mct_sMatWritednc(sMat,iosystem, io_type, io_format, fileName,comp
    count(:) = -999
    pe_loc(:) = -999
    ssize(:) = 1
-   call MPI_GATHER(lsize,1,MPI_INTEGER,count,ssize,MPI_INTEGER,0,mpicom,ierr)
+   call MPI_GATHER(lsize,1,MPI_INTEGER,count,1,MPI_INTEGER,0,mpicom,ierr)
 
    if (my_task == 0) then
       if (minval(count) < 0) then

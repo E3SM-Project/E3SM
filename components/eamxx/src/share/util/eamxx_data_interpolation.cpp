@@ -113,7 +113,7 @@ void DataInterpolation::run (const util::TimeStamp& ts)
       });
     });
   }
-  
+
   m_vert_remapper->remap_fwd();
 }
 
@@ -462,7 +462,7 @@ setup_vert_remapper (const RemapData& data)
   };
 
   auto vremap = std::make_shared<VerticalRemapper>(m_grid_after_hremap,m_model_grid);
-  
+
   vremap->set_extrapolation_type(s2et(data.extrap_top),VerticalRemapper::Top);
   vremap->set_extrapolation_type(s2et(data.extrap_bot),VerticalRemapper::Bot);
 
@@ -525,13 +525,13 @@ void DataInterpolation::register_fields_in_remappers ()
   m_horiz_remapper_end->registration_begins();
   for (int i=0; i<m_nfields; ++i) {
     const auto& f = m_vert_remapper->get_src_field(i);
-    m_horiz_remapper_beg->register_field_from_tgt(f.clone());
-    m_horiz_remapper_end->register_field_from_tgt(f.clone());
+    m_horiz_remapper_beg->register_field_from_tgt(f.clone(f.name(), m_horiz_remapper_beg->get_src_grid()->name()));
+    m_horiz_remapper_end->register_field_from_tgt(f.clone(f.name(), m_horiz_remapper_end->get_src_grid()->name()));
   }
   if (m_vr_type==Dynamic3D or m_vr_type==Dynamic3DRef) {
     const auto& data_p = m_helper_pressure_fields["p_file"];
-    m_horiz_remapper_beg->register_field_from_tgt(data_p.clone(data_p.name()));
-    m_horiz_remapper_end->register_field_from_tgt(data_p.clone(data_p.name()));
+    m_horiz_remapper_beg->register_field_from_tgt(data_p.clone(data_p.name(), m_horiz_remapper_beg->get_src_grid()->name()));
+    m_horiz_remapper_end->register_field_from_tgt(data_p.clone(data_p.name(), m_horiz_remapper_end->get_src_grid()->name()));
   }
   m_horiz_remapper_beg->registration_ends();
   m_horiz_remapper_end->registration_ends();

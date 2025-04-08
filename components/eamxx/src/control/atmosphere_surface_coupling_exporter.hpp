@@ -23,7 +23,7 @@ namespace scream
 */
 
 // enum to track how exported fields will be set.
-enum ExportType {
+enum ExportType:int {
   FROM_MODEL =  0,  // Variable will be derived from atmosphere model state
   FROM_FILE  =  1,  // Variable will be set given data from a file
   CONSTANT   =  2   // Set variable to a constant value
@@ -81,7 +81,7 @@ public:
   void do_export(const double dt, const bool called_during_initialization=false);             // Main export routine
   void compute_eamxx_exports(const double dt, const bool called_during_initialization=false); // Export vars are derived from eamxx state
   void set_constant_exports();                                                                // Export vars are set to a constant
-  void set_from_file_exports(const int dt);                                                   // Export vars are set by interpolation of data from files
+  void set_from_file_exports();                                                               // Export vars are set by interpolation of data from files
   void do_export_to_cpl(const bool called_during_initialization=false);                       // Finish export by copying data to cpl structures.
 
   // Take and store data from SCDataManager

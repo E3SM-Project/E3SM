@@ -1284,14 +1284,14 @@ contains
                endif
             else
               ! we need to read the ocean mesh on coupler, from domain file 
+               if (seq_comm_iamroot(CPLID)) then
+                  write(logunit,'(A)') subname//' loading ocn domain mesh from file '//trim(ocn_domain)
+               endif
                ierr = iMOAB_LoadMesh(mboxid, trim(ocn_domain)//C_NULL_CHAR, &
                 "PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;NO_CULLING;REPARTITION", 0)
                if ( ierr /= 0 ) then
                   write(logunit,*) 'Failed to load ocean domain mesh on coupler'
                   call shr_sys_abort(subname//' ERROR Failed to load ocean domain mesh on coupler  ')
-               endif
-               if (seq_comm_iamroot(CPLID)) then
-                  write(logunit,'(A)') subname//' load ocn domain mesh from file '//trim(ocn_domain)
                endif
                ! need to add global id tag to the app, it will be used in restart
                tagtype = 0  ! dense, integer

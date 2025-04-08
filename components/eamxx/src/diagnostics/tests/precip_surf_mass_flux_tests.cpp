@@ -123,9 +123,9 @@ void run(std::mt19937_64& engine)
   Field preicp_total_f = diag_total->get_diagnostic().clone();
   Field preicp_liq_f   = diag_liq->get_diagnostic().clone();
   Field preicp_ice_f   = diag_ice->get_diagnostic().clone();
-  preicp_total_f.deep_copy<double>(0.0);
-  preicp_liq_f.deep_copy<double>(0.0);
-  preicp_ice_f.deep_copy<double>(0.0);
+  preicp_total_f.deep_copy(0);
+  preicp_liq_f.deep_copy(0);
+  preicp_ice_f.deep_copy(0);
   auto precip_total_v = preicp_total_f.get_view<Real*>();
   auto precip_liq_v   = preicp_liq_f.get_view<Real*>();
   auto precip_ice_v   = preicp_ice_f.get_view<Real*>();

@@ -81,7 +81,7 @@ protected:
   }
 
   void initialize_impl (const RunType /* run_type */ ) override {
-    m_diagnostic_output.get_header().get_tracking().update_time_stamp(timestamp());
+    m_diagnostic_output.get_header().get_tracking().update_time_stamp(start_of_step_ts());
   }
 
   // Clean up
@@ -178,7 +178,7 @@ void write (const int seed, const ekat::Comm& comm)
   // Create some fields
   auto fm = get_fm(grid,t0,seed);
   std::vector<std::string> fnames;
-  for (auto it : *fm) {
+  for (auto it : fm->get_repo()) {
     const auto& fn = it.second->name();
     fnames.push_back(fn);
   }
@@ -197,10 +197,10 @@ void write (const int seed, const ekat::Comm& comm)
   // Create Output manager
   OutputManager om;
   om.initialize(comm, om_pl, t0, false);
-  om.setup(fm,gm);
+  om.setup(fm,gm->get_grid_names());
 
   // Run output manager
-  for (auto it : *fm) {
+  for (auto it : fm->get_repo()) {
     auto& f = *it.second;
     Field one = f.clone("one");
     one.deep_copy(1.0);
@@ -229,7 +229,7 @@ void read (const int seed, const ekat::Comm& comm)
 
   std::vector<std::string> fnames;
   std::string f_name;
-  for (auto it : *fm) {
+  for (auto it : fm->get_repo()) {
     const auto& fn = it.second->name();
     fnames.push_back(fn);
     if (fn!="MyDiag") {

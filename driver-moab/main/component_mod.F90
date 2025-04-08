@@ -472,7 +472,6 @@ contains
     use seq_comm_mct,     only: mboxid ! iMOAB id for MPAS ocean migrated mesh to coupler pes
     use seq_comm_mct,     only: mbaxid ! iMOAB id for atm migrated mesh to coupler pes
     use seq_comm_mct,     only: mbrxid ! iMOAB id for rof migrated mesh to coupler pes
-    use seq_comm_mct,     only: mb_rof_aream_computed
 #endif
     !
     ! Arguments
@@ -604,40 +603,7 @@ contains
                gsmap_s=gsmap_s, av_s=dom_s%data, avfld_s='aream', filefld_s='area_a', &
                string='rof2ocn ice aream initialization')
           call t_stopf('CPL:seq_map_readdata-rof2ocn_ice')
-          ! this should be more efficient if we just compute aream on coupler side, from actual mesh that we have
-          ! we need to expose that method in iMOAB, which is local
-          ! what we do here, we get aream from the domain dom_rx, we just filled it above, with readdata 
-          if(.not. mb_rof_aream_computed) then
-                   
-            ! we do a lot of unnecessary gymnastics, and very inefficient, because we have a 
-            ! different distribution compared to mct source grid atm
-            tagtype = 1 ! dense, double
-            tagname='aream'//C_NULL_CHAR
-            nloc = mct_avect_lsize(dom_s%data)
-            allocate(data1(nloc))
-            km = mct_aVect_indexRa(dom_s%data, "aream" )
-            data1 = dom_s%data%rAttr(km,:)
-            ent_type = 1  ! element dense double tags
-            allocate(gids(nloc))
-            gids = dom_s%data%iAttr(mct_aVect_indexIA(dom_s%data,"GlobGridNum"),:)
-            ! ! now set data on the coupler side too
-            ierr = iMOAB_SetDoubleTagStorageWithGid ( mbrxid, tagname, nloc, ent_type, &
-                                                      data1, gids)
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in setting the aream tag on rof '
-               call shr_sys_abort(subname//' ERROR in setting aream tag on rof ')
-            endif
-            deallocate(gids)
-            deallocate(data1)
-#ifdef MOABDEBUG
-            ierr = iMOAB_WriteMesh(mbrxid, trim('recRofWithAream.h5m'//C_NULL_CHAR), &
-                                    trim(';PARALLEL=WRITE_PART'//C_NULL_CHAR))
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in writing rof  mesh coupler '
-               call shr_sys_abort(subname//' ERROR in writing rof mesh coupler ')
-            endif
-#endif
-          endif
+          
        endif
     end if
 

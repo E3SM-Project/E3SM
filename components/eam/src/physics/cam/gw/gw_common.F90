@@ -320,161 +320,60 @@ end subroutine momentum_energy_conservation
 
 !==========================================================================
 
-subroutine gw_drag_prof(ncol, ngwv, src_level, tend_level, do_taper, dt, &
-     lat,           t,    ti,  pmid, pint, dpm,   rdpm, &
-     piln, rhoi,    nm,   ni,  ubm,  ubi,  xv,    yv,   &
-     effgw,      c, kvtt, q,   dse,  tau,  utgw,  vtgw, &
-     ttgw, qtgw, taucd,   egwdffi,   gwut, dttdf, dttke)
-
-  !-----------------------------------------------------------------------
-  ! Solve for the drag profile from the multiple gravity wave drag
-  ! parameterization.
-  ! 1. scan up from the wave source to determine the stress profile
-  ! 2. scan down the stress profile to determine the tendencies
-  !     => apply bounds to the tendency
-  !          a. from wkb solution
-  !          b. from computational stability constraints
-  !     => adjust stress on interface below to reflect actual bounded
-  !        tendency
-  !-----------------------------------------------------------------------
-
-  use gw_diffusion, only: gw_ediff, gw_diff_tend
-  use vdiff_lu_solver, only: lu_decomp
+subroutine gwd_compute_stress_profiles_and_diffusivities(ncol, ngwv, src_level, ubi, c, rhoi, ni, kvtt, &
+     t, ti, piln, tau)
 
   !------------------------------Arguments--------------------------------
   ! Column and gravity wave spectrum dimensions.
   integer, intent(in) :: ncol, ngwv
+
   ! Level from which gravity waves are propagated upward.
   integer, intent(in) :: src_level(ncol)
-  ! Lowest level where wind tendencies are calculated.
-  integer, intent(in) :: tend_level(ncol)
-  ! Using tend_level > src_level allows the orographic waves to prescribe
-  ! wave propagation up to a certain level, but then allow wind tendencies
-  ! and adjustments to tau below that level.
 
-  ! Whether or not to apply the polar taper.
-  logical, intent(in) :: do_taper
-  ! Time step.
-  real(r8), intent(in) :: dt
-
-  ! Latitudes for each column.
-  real(r8), intent(in) :: lat(ncol)
-  ! Midpoint and interface temperatures.
-  real(r8), intent(in) :: t(ncol,pver), ti(ncol,0:pver)
-  ! Midpoint and interface pressures.
-  real(r8), intent(in) :: pmid(ncol,pver), pint(ncol,0:pver)
-  ! Layer thickness (delta pressure) and reciprocal of layer thickness.
-  real(r8), intent(in) :: dpm(ncol,pver), rdpm(ncol,pver)
-  ! Log of interface pressures.
-  real(r8), intent(in) :: piln(ncol,0:pver)
-  ! Interface densities.
-  real(r8), intent(in) :: rhoi(ncol,0:pver)
-  ! Midpoint and interface Brunt-Vaisalla frequencies.
-  real(r8), intent(in) :: nm(ncol,pver), ni(ncol,0:pver)
   ! Projection of wind at midpoints and interfaces.
-  real(r8), intent(in) :: ubm(ncol,pver), ubi(ncol,0:pver)
-  ! Unit vectors of source wind (zonal and meridional components).
-  real(r8), intent(in) :: xv(ncol), yv(ncol)
-  ! Tendency efficiency.
-  real(r8), intent(in) :: effgw
+  real(r8), intent(in) :: ubi(ncol,0:pver)
   ! Wave phase speeds for each column.
   real(r8), intent(in) :: c(ncol,-pgwv:pgwv)
+  ! Interface densities.
+  real(r8), intent(in) :: rhoi(ncol,0:pver)
+  ! interface Brunt-Vaisalla frequencies.
+  real(r8), intent(in) :: ni(ncol,0:pver)
   ! Molecular thermal diffusivity.
   real(r8), intent(in) :: kvtt(ncol,0:pver)
-  ! Constituent array.
-  real(r8), intent(in) :: q(:,:,:)
-  ! Dry static energy.
-  real(r8), intent(in) :: dse(ncol,pver)
-
+  ! Midpoint and interface temperatures.
+  real(r8), intent(in) :: t(ncol,pver), ti(ncol,0:pver)
+  ! Log of interface pressures.
+  real(r8), intent(in) :: piln(ncol,0:pver)
   ! Wave Reynolds stress.
   real(r8), intent(inout) :: tau(ncol,-pgwv:pgwv,0:pver)
-  ! Zonal/meridional wind tendencies.
-  real(r8), intent(out) :: utgw(ncol,pver), vtgw(ncol,pver)
-  ! Gravity wave heating tendency.
-  real(r8), intent(out) :: ttgw(ncol,pver)
-  ! Gravity wave constituent tendency.
-  real(r8), intent(out) :: qtgw(:,:,:)
-
-  ! Reynolds stress for waves propagating in each cardinal direction.
-  real(r8), intent(out) :: taucd(ncol,0:pver,4)
-
-  ! Effective gravity wave diffusivity at interfaces.
-  real(r8), intent(out) :: egwdffi(ncol,0:pver)
-
-  ! Gravity wave wind tendency for each wave.
-  real(r8), intent(out) :: gwut(ncol,pver,-ngwv:ngwv)
-
-  ! Temperature tendencies from diffusion and kinetic energy.
-  real(r8), intent(out) :: dttdf(ncol,pver)
-  real(r8), intent(out) :: dttke(ncol,pver)
 
   !---------------------------Local storage-------------------------------
   ! Column, level, wavenumber, and constituent loop indices.
-  integer :: i, k, l, m
-
-  ! "Total" and saturation diffusivity.
-  real(r8) :: d(ncol), dsat(ncol)
-  ! Fraction of dsat to use.
-  real(r8) :: dscal(ncol)
-  ! Imaginary part of vertical wavenumber.
-  real(r8) :: mi(ncol)
-  ! Stress after damping.
-  real(r8) :: taudmp(ncol)
-  ! Saturation stress.
-  real(r8) :: tausat(ncol,-ngwv:ngwv)
-  ! ubi at tend_level.
-  real(r8) :: ubi_tend(ncol)
+  integer :: k, l
   ! (ub-c) and (ub-c)**2
   real(r8) :: ubmc(ncol,-ngwv:ngwv), ubmc2(ncol)
-  ! Temporary ubar tendencies (overall, at wave l, and at saturation).
-  real(r8) :: ubt(ncol,pver), ubtl(ncol), ubtlsat(ncol)
+  ! Saturation stress.
+  real(r8) :: tausat(ncol,-ngwv:ngwv)
+  ! "Total" and saturation diffusivity.
+  real(r8) :: d(ncol), dsat(ncol)
+  ! Imaginary part of vertical wavenumber.
+  real(r8) :: mi(ncol)
   real(r8) :: wrk(ncol)
-
-  ! Signed wave Reynolds stress.
-  real(r8) :: tausg(ncol)
-
-  ! Reynolds stress for waves propagating behind and forward of the wind.
-  real(r8) :: taub(ncol)
-  real(r8) :: tauf(ncol)
-
-  ! Polar taper.
-  real(r8) :: ptaper(ncol)
-
-  ! Recalculated rhoi to preserve answers.
-  real(r8) :: rhoi_kludge(ncol,pver+1)
-
-  ! LU decomposition.
-  type(lu_decomp) :: decomp
-
-  !------------------------------------------------------------------------
-
-  ! Initialize gravity wave drag tendencies to zero.
-
-  utgw = 0._r8
-  vtgw = 0._r8
-
-  taucd = 0._r8
-
-  gwut = 0._r8
-
-  dttke = 0._r8
-  ttgw = 0._r8
+  ! Stress after damping.
+  real(r8) :: taudmp(ncol)
+  ! Fraction of dsat to use.
+  real(r8) :: dscal(ncol)
 
   ! Workaround floating point exception issues on Intel by initializing
   ! everything that's first set in a where block.
   dsat = 0._r8
-  dscal = 0._r8
-  mi = 0._r8
-  taudmp = 0._r8
-  tausat = 0._r8
-  tausg = 0._r8
   ubmc = 0._r8
   ubmc2 = 0._r8
+  tausat = 0._r8
+  mi = 0._r8
   wrk = 0._r8
-
-  !------------------------------------------------------------------------
-  ! Compute the stress profiles and diffusivities
-  !------------------------------------------------------------------------
+  taudmp = 0._r8
+  dscal = 0._r8
 
   ! Loop from bottom to top to get stress profiles.
   do k = maxval(src_level)-1, ktop, -1
@@ -550,60 +449,141 @@ subroutine gw_drag_prof(ncol, ngwv, src_level, tend_level, do_taper, dt, &
            end where
         end do
      end if
-
   end do
 
+end subroutine gwd_compute_stress_profiles_and_diffusivities
+
+!==========================================================================
+
+subroutine gwd_project_tau(ncol, ngwv, tend_level, tau, ubi, c, xv, yv, taucd)
 
   ! Tau projected in the four cardinal directions, for the momentum
   ! conservation routine and for diagnostic output.
-  if ( ngwv > 0) then
 
-     ubi_tend = (/ (ubi(i,tend_level(i)), i = 1, ncol) /)
+  !------------------------------Arguments--------------------------------
+  ! Column and gravity wave spectrum dimensions.
+  integer, intent(in) :: ncol, ngwv
 
-     do k = ktop, maxval(tend_level)
+  ! Lowest level where wind tendencies are calculated.
+  integer, intent(in) :: tend_level(ncol)
+  ! Wave Reynolds stress.
+  real(r8), intent(in) :: tau(ncol,-pgwv:pgwv,0:pver)
+  ! Projection of wind at midpoints and interfaces.
+  real(r8), intent(in) :: ubi(ncol,0:pver)
+  ! Wave phase speeds for each column.
+  real(r8), intent(in) :: c(ncol,-pgwv:pgwv)
+  ! Unit vectors of source wind (zonal and meridional components).
+  real(r8), intent(in) :: xv(ncol), yv(ncol)
+  ! Reynolds stress for waves propagating in each cardinal direction.
+  real(r8), intent(out) :: taucd(ncol,0:pver,4)
 
-        taub = 0._r8
-        tauf = 0._r8
+  !---------------------------Local storage-------------------------------
+  ! Column, level, wavenumber, and constituent loop indices.
+  integer :: i, k, l
 
-        do l = -ngwv, ngwv
-           where (k <= tend_level)
+  ! ubi at tend_level.
+  real(r8) :: ubi_tend(ncol)
+  ! Signed wave Reynolds stress.
+  real(r8) :: tausg(ncol)
+  ! Reynolds stress for waves propagating behind and forward of the wind.
+  real(r8) :: taub(ncol)
+  real(r8) :: tauf(ncol)
 
-              tausg = sign(tau(:,l,k), c(:,l)-ubi(:,k))
+  ubi_tend = (/ (ubi(i,tend_level(i)), i = 1, ncol) /)
 
-              where ( c(:,l) < ubi_tend )
-                 taub = taub + tausg
-              elsewhere (  c(:,l) > ubi_tend )
-                 tauf = tauf + tausg
-              end where
+  tausg = 0._r8
 
-           end where
-        end do
+  do k = ktop, maxval(tend_level)
 
+     taub = 0._r8
+     tauf = 0._r8
+
+     do l = -ngwv, ngwv
         where (k <= tend_level)
-           where (xv > 0._r8)
-              taucd(:,k,east) = tauf * xv
-              taucd(:,k,west) = taub * xv
-           elsewhere ( xv < 0._r8)
-              taucd(:,k,east) = taub * xv
-              taucd(:,k,west) = tauf * xv
+
+           tausg = sign(tau(:,l,k), c(:,l)-ubi(:,k))
+
+           where ( c(:,l) < ubi_tend )
+              taub = taub + tausg
+           elsewhere (  c(:,l) > ubi_tend )
+              tauf = tauf + tausg
            end where
 
-           where ( yv > 0._r8)
-              taucd(:,k,north) = tauf * yv
-              taucd(:,k,south) = taub * yv
-           elsewhere ( yv < 0._r8)
-              taucd(:,k,north) = taub * yv
-              taucd(:,k,south) = tauf * yv
-           end where
         end where
-
      end do
 
-  end if
+     where (k <= tend_level)
+        where (xv > 0._r8)
+           taucd(:,k,east) = tauf * xv
+           taucd(:,k,west) = taub * xv
+        elsewhere ( xv < 0._r8)
+           taucd(:,k,east) = taub * xv
+           taucd(:,k,west) = tauf * xv
+        end where
 
-  !------------------------------------------------------------------------
-  ! Compute the tendencies from the stress divergence.
-  !------------------------------------------------------------------------
+        where ( yv > 0._r8)
+           taucd(:,k,north) = tauf * yv
+           taucd(:,k,south) = taub * yv
+        elsewhere ( yv < 0._r8)
+           taucd(:,k,north) = taub * yv
+           taucd(:,k,south) = tauf * yv
+        end where
+     end where
+
+  end do
+
+end subroutine gwd_project_tau
+
+!==========================================================================
+
+subroutine gwd_compute_tendencies_from_stress_divergence(ncol, ngwv, do_taper, dt, effgw, tend_level, &
+     lat, dpm, rdpm, c, ubm, t, nm, xv, yv, tau, gwut, utgw, vtgw)
+
+  !------------------------------Arguments--------------------------------
+  ! Column and gravity wave spectrum dimensions.
+  integer, intent(in) :: ncol, ngwv
+
+  ! Whether or not to apply the polar taper.
+  logical, intent(in) :: do_taper
+  ! Time step.
+  real(r8), intent(in) :: dt
+  ! Tendency efficiency.
+  real(r8), intent(in) :: effgw
+
+  ! Lowest level where wind tendencies are calculated.
+  integer, intent(in) :: tend_level(ncol)
+
+  ! Latitudes for each column.
+  real(r8), intent(in) :: lat(ncol)
+  ! Layer thickness (delta pressure) and reciprocal of layer thickness.
+  real(r8), intent(in) :: dpm(ncol,pver), rdpm(ncol,pver)
+  ! Wave phase speeds for each column.
+  real(r8), intent(in) :: c(ncol,-pgwv:pgwv)
+  ! Projection of wind at midpoints and interfaces.
+  real(r8), intent(in) :: ubm(ncol,pver)
+  ! Midpoint temperatures.
+  real(r8), intent(in) :: t(ncol,pver)
+  ! Midpoint and interface Brunt-Vaisalla frequencies.
+  real(r8), intent(in) :: nm(ncol,pver)
+  ! Unit vectors of source wind (zonal and meridional components).
+  real(r8), intent(in) :: xv(ncol), yv(ncol)
+
+  ! Wave Reynolds stress.
+  real(r8), intent(inout) :: tau(ncol,-pgwv:pgwv,0:pver)
+
+  ! Gravity wave wind tendency for each wave.
+  real(r8), intent(out) :: gwut(ncol,pver,-ngwv:ngwv)
+  ! Zonal/meridional wind tendencies.
+  real(r8), intent(out) :: utgw(ncol,pver), vtgw(ncol,pver)
+
+  !---------------------------Local storage-------------------------------
+  ! Column, level, wavenumber, and constituent loop indices.
+  integer :: k, l
+  ! Temporary ubar tendencies (overall, at wave l, and at saturation).
+  real(r8) :: ubt(ncol,pver), ubtl(ncol), ubtlsat(ncol)
+
+  ! Polar taper.
+  real(r8) :: ptaper(ncol)
 
   if (do_taper) then    ! taper CM only
      ptaper = cos(lat)
@@ -664,7 +644,7 @@ subroutine gw_drag_prof(ncol, ngwv, src_level, tend_level, do_taper, dt, &
 
            ! Redetermine the effective stress on the interface below from
            ! the wind tendency. If the wind tendency was limited above,
-           ! then the new stress will be smaller than the old stress, 
+           ! then the new stress will be smaller than the old stress,
            ! causing stress divergence in the next layer down. This
            ! smoothes large stress divergences downward while conserving
            ! total stress.
@@ -690,48 +670,225 @@ subroutine gw_drag_prof(ncol, ngwv, src_level, tend_level, do_taper, dt, &
      ! End of level loop.
   end do
 
+end subroutine gwd_compute_tendencies_from_stress_divergence
+
+!==========================================================================
+
+subroutine gwd_precalc_rhoi(ncol, ngwv, dt, tend_level, pmid, pint, t, gwut, ubm, nm, rdpm, c, q, &
+     dse, egwdffi, qtgw, dttdf, dttke, ttgw)
+  ! Precalculate rhoi for the following routines. We have rhoi, but
+  ! recalculate it here to preserve answers. (Ideal gas law.)
+
+  use vdiff_lu_solver, only: lu_decomp
+  use gw_diffusion, only: gw_ediff, gw_diff_tend
+
+  !------------------------------Arguments--------------------------------
+  ! Column and gravity wave spectrum dimensions.
+  integer, intent(in) :: ncol, ngwv
+  ! Time step.
+  real(r8), intent(in) :: dt
+
+  ! Lowest level where wind tendencies are calculated.
+  integer, intent(in) :: tend_level(ncol)
+
+  ! Midpoint and interface pressures.
+  real(r8), intent(in) :: pmid(ncol,pver), pint(ncol,0:pver)
+  ! Midpoint and interface temperatures.
+  real(r8), intent(in) :: t(ncol,pver)
+  ! Gravity wave wind tendency for each wave.
+  real(r8), intent(in) :: gwut(ncol,pver,-ngwv:ngwv)
+  ! Projection of wind at midpoints and interfaces.
+  real(r8), intent(in) :: ubm(ncol,pver)
+  ! Midpoint and interface Brunt-Vaisalla frequencies.
+  real(r8), intent(in) :: nm(ncol,pver)
+  ! Layer thickness (delta pressure) and reciprocal of layer thickness.
+  real(r8), intent(in) :: rdpm(ncol,pver)
+  ! Wave phase speeds for each column.
+  real(r8), intent(in) :: c(ncol,-pgwv:pgwv)
+  ! Constituent array.
+  real(r8), intent(in) :: q(:,:,:)
+  ! Dry static energy.
+  real(r8), intent(in) :: dse(ncol,pver)
+  ! Effective gravity wave diffusivity at interfaces.
+  real(r8), intent(out) :: egwdffi(ncol,0:pver)
+  ! Gravity wave constituent tendency.
+  real(r8), intent(out) :: qtgw(:,:,:)
+  ! Temperature tendencies from diffusion and kinetic energy.
+  real(r8), intent(out) :: dttdf(ncol,pver)
+  real(r8), intent(out) :: dttke(ncol,pver)
+  ! Gravity wave heating tendency.
+  real(r8), intent(out) :: ttgw(ncol,pver)
+
+  !---------------------------Local storage-------------------------------
+  ! Column, level, wavenumber, and constituent loop indices.
+  integer :: k, l, m
+
+  ! Recalculated rhoi to preserve answers.
+  real(r8) :: rhoi_kludge(ncol,pver+1)
+  ! LU decomposition.
+  type(lu_decomp) :: decomp
+
+  ! Note: pint is from 0 to pver instead of 1 to pver+1.
+  rhoi_kludge(:,1) = pint(:,0) / (rair * t(:,1))
+  do k = 2, pver
+     rhoi_kludge(:,k) = pint(:,k-1) * 2._r8 / &
+          (rair * (t(:,k) + t(:,k-1)))
+  end do
+  rhoi_kludge(:,pver+1) = pint(:,pver) / (rair * t(:,pver))
+
+  ! Calculate effective diffusivity and LU decomposition for the
+  ! vertical diffusion solver.
+  call gw_ediff (ncol, pver, ngwv, kbotbg, ktop, tend_level, &
+       gwut, ubm, nm, rhoi_kludge, dt, gravit, pmid, rdpm, c, &
+       egwdffi, decomp)
+
+  ! Calculate tendency on each constituent.
+  do m = 1, size(q,3)
+
+     call gw_diff_tend(ncol, pver, kbotbg, ktop, q(:,:,m), dt, &
+          decomp, qtgw(:,:,m))
+
+  enddo
+
+  ! Calculate tendency from diffusing dry static energy (dttdf).
+  call gw_diff_tend(ncol, pver, kbotbg, ktop, dse, dt, decomp, dttdf)
+
+  ! Evaluate second temperature tendency term: Conversion of kinetic
+  ! energy into thermal.
+  do l = -ngwv, ngwv
+     do k = ktop+1, kbotbg
+        dttke(:,k) = dttke(:,k) + c(:,l) * gwut(:,k,l)
+     end do
+  end do
+
+  ttgw = dttke + dttdf
+
+  ! Deallocate decomp.
+  call decomp%finalize()
+
+end subroutine gwd_precalc_rhoi
+
+!==========================================================================
+
+subroutine gw_drag_prof(ncol, ngwv, src_level, tend_level, do_taper, dt, &
+     lat,           t,    ti,  pmid, pint, dpm,   rdpm, &
+     piln, rhoi,    nm,   ni,  ubm,  ubi,  xv,    yv,   &
+     effgw,      c, kvtt, q,   dse,  tau,  utgw,  vtgw, &
+     ttgw, qtgw, taucd,   egwdffi,   gwut, dttdf, dttke)
+
+  !-----------------------------------------------------------------------
+  ! Solve for the drag profile from the multiple gravity wave drag
+  ! parameterization.
+  ! 1. scan up from the wave source to determine the stress profile
+  ! 2. scan down the stress profile to determine the tendencies
+  !     => apply bounds to the tendency
+  !          a. from wkb solution
+  !          b. from computational stability constraints
+  !     => adjust stress on interface below to reflect actual bounded
+  !        tendency
+  !-----------------------------------------------------------------------
+
+  !------------------------------Arguments--------------------------------
+  ! Column and gravity wave spectrum dimensions.
+  integer, intent(in) :: ncol, ngwv
+  ! Level from which gravity waves are propagated upward.
+  integer, intent(in) :: src_level(ncol)
+  ! Lowest level where wind tendencies are calculated.
+  integer, intent(in) :: tend_level(ncol)
+  ! Using tend_level > src_level allows the orographic waves to prescribe
+  ! wave propagation up to a certain level, but then allow wind tendencies
+  ! and adjustments to tau below that level.
+  ! Whether or not to apply the polar taper.
+  logical, intent(in) :: do_taper
+  ! Time step.
+  real(r8), intent(in) :: dt
+
+  ! Latitudes for each column.
+  real(r8), intent(in) :: lat(ncol)
+  ! Midpoint and interface temperatures.
+  real(r8), intent(in) :: t(ncol,pver), ti(ncol,0:pver)
+  ! Midpoint and interface pressures.
+  real(r8), intent(in) :: pmid(ncol,pver), pint(ncol,0:pver)
+  ! Layer thickness (delta pressure) and reciprocal of layer thickness.
+  real(r8), intent(in) :: dpm(ncol,pver), rdpm(ncol,pver)
+  ! Log of interface pressures.
+  real(r8), intent(in) :: piln(ncol,0:pver)
+  ! Interface densities.
+  real(r8), intent(in) :: rhoi(ncol,0:pver)
+  ! Midpoint and interface Brunt-Vaisalla frequencies.
+  real(r8), intent(in) :: nm(ncol,pver), ni(ncol,0:pver)
+  ! Projection of wind at midpoints and interfaces.
+  real(r8), intent(in) :: ubm(ncol,pver), ubi(ncol,0:pver)
+  ! Unit vectors of source wind (zonal and meridional components).
+  real(r8), intent(in) :: xv(ncol), yv(ncol)
+  ! Tendency efficiency.
+  real(r8), intent(in) :: effgw
+  ! Wave phase speeds for each column.
+  real(r8), intent(in) :: c(ncol,-pgwv:pgwv)
+  ! Molecular thermal diffusivity.
+  real(r8), intent(in) :: kvtt(ncol,0:pver)
+  ! Constituent array.
+  real(r8), intent(in) :: q(:,:,:)
+  ! Dry static energy.
+  real(r8), intent(in) :: dse(ncol,pver)
+
+  ! Wave Reynolds stress.
+  real(r8), intent(inout) :: tau(ncol,-pgwv:pgwv,0:pver)
+  ! Zonal/meridional wind tendencies.
+  real(r8), intent(out) :: utgw(ncol,pver), vtgw(ncol,pver)
+  ! Gravity wave heating tendency.
+  real(r8), intent(out) :: ttgw(ncol,pver)
+  ! Gravity wave constituent tendency.
+  real(r8), intent(out) :: qtgw(:,:,:)
+
+  ! Reynolds stress for waves propagating in each cardinal direction.
+  real(r8), intent(out) :: taucd(ncol,0:pver,4)
+
+  ! Effective gravity wave diffusivity at interfaces.
+  real(r8), intent(out) :: egwdffi(ncol,0:pver)
+
+  ! Gravity wave wind tendency for each wave.
+  real(r8), intent(out) :: gwut(ncol,pver,-ngwv:ngwv)
+
+  ! Temperature tendencies from diffusion and kinetic energy.
+  real(r8), intent(out) :: dttdf(ncol,pver)
+  real(r8), intent(out) :: dttke(ncol,pver)
+
+  !------------------------------------------------------------------------
+
+  ! Initialize gravity wave drag tendencies to zero.
+
+  utgw = 0._r8
+  vtgw = 0._r8
+  taucd = 0._r8
+  gwut = 0._r8
+  dttke = 0._r8
+  ttgw = 0._r8
+
+  !------------------------------------------------------------------------
+  ! Compute the stress profiles and diffusivities
+  !------------------------------------------------------------------------
+  call gwd_compute_stress_profiles_and_diffusivities(ncol, ngwv, src_level, ubi, c, rhoi, &
+       ni, kvtt, t, ti, piln, tau)
+
+  ! Tau projected in the four cardinal directions, for the momentum
+  ! conservation routine and for diagnostic output.
+  if ( ngwv > 0) then
+     call gwd_project_tau(ncol, ngwv, tend_level, tau, ubi, c, xv, yv, taucd)
+  end if
+
+  !------------------------------------------------------------------------
+  ! Compute the tendencies from the stress divergence.
+  !------------------------------------------------------------------------
+  call gwd_compute_tendencies_from_stress_divergence(ncol, ngwv, do_taper, dt, effgw, tend_level, &
+       lat, dpm, rdpm, c, ubm, t, nm, xv, yv, tau, gwut, utgw, vtgw)
+
   if (ngwv > 0) then
 
      ! Precalculate rhoi for the following routines. We have rhoi, but
      ! recalculate it here to preserve answers. (Ideal gas law.)
-
-     ! Note: pint is from 0 to pver instead of 1 to pver+1.
-     rhoi_kludge(:,1) = pint(:,0) / (rair * t(:,1))
-     do k = 2, pver
-        rhoi_kludge(:,k) = pint(:,k-1) * 2._r8 / &
-             (rair * (t(:,k) + t(:,k-1)))
-     end do
-     rhoi_kludge(:,pver+1) = pint(:,pver) / (rair * t(:,pver))
-
-     ! Calculate effective diffusivity and LU decomposition for the
-     ! vertical diffusion solver.
-     call gw_ediff (ncol, pver, ngwv, kbotbg, ktop, tend_level, &
-          gwut, ubm, nm, rhoi_kludge, dt, gravit, pmid, rdpm, c, &
-          egwdffi, decomp)
-
-     ! Calculate tendency on each constituent.
-     do m = 1, size(q,3)
-
-        call gw_diff_tend(ncol, pver, kbotbg, ktop, q(:,:,m), dt, &
-             decomp, qtgw(:,:,m))
-
-     enddo
-
-     ! Calculate tendency from diffusing dry static energy (dttdf).
-     call gw_diff_tend(ncol, pver, kbotbg, ktop, dse, dt, decomp, dttdf)
-
-     ! Evaluate second temperature tendency term: Conversion of kinetic
-     ! energy into thermal.
-     do l = -ngwv, ngwv
-        do k = ktop+1, kbotbg
-           dttke(:,k) = dttke(:,k) + c(:,l) * gwut(:,k,l)
-        end do
-     end do
-
-     ttgw = dttke + dttdf
-
-     ! Deallocate decomp.
-     call decomp%finalize()
+     call gwd_precalc_rhoi(ncol, ngwv, dt, tend_level, pmid, pint, t, gwut, ubm, nm, rdpm, c, q, &
+          dse, egwdffi, qtgw, dttdf, dttke, ttgw)
 
   else
 

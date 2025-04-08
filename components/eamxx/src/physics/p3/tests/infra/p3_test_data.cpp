@@ -1341,6 +1341,7 @@ Int p3_main_host(
   view_2d lamc_d("lamc_d",nj,nk);
   view_2d precip_total_tend_d("precip_total_tend_d",nj,nk);
   view_2d nevapr_d("nevapr_d",nj,nk);
+  view_2d diag_equiv_reflectivity_d("diag_equiv_reflectivity_d",nj,nk);
   view_2d qr_evap_tend_d("qr_evap_tend_d",nj,nk);
 
   Kokkos::parallel_for(nj, KOKKOS_LAMBDA(const Int& i) {
@@ -1360,7 +1361,7 @@ Int p3_main_host(
                                       inv_exner_d, qv_prev_d, t_prev_d, hetfrz_immersion_nucleation_tend_d, hetfrz_contact_nucleation_tend_d, hetfrz_deposition_nucleation_tend_d};
   P3F::P3DiagnosticOutputs diag_outputs{qv2qi_depos_tend_d, precip_liq_surf_d,
                                         precip_ice_surf_d, diag_eff_radius_qc_d, diag_eff_radius_qi_d, diag_eff_radius_qr_d,
-                                        rho_qi_d,precip_liq_flux_d, precip_ice_flux_d, precip_total_tend_d, nevapr_d};
+                                        rho_qi_d,precip_liq_flux_d, precip_ice_flux_d, precip_total_tend_d, nevapr_d, diag_equiv_reflectivity_d};
   P3F::P3Infrastructure infrastructure{dt, it, its, ite, kts, kte,
                                        do_predict_nc, do_prescribed_CCN, col_location_d};
   P3F::P3HistoryOnly history_only{liq_ice_exchange_d, vap_liq_exchange_d,
@@ -1377,7 +1378,7 @@ Int p3_main_host(
     inv_rho("inv_rho", nj, nk_pack), ze_ice("ze_ice", nj, nk_pack), ze_rain("ze_rain", nj, nk_pack), prec("prec", nj, nk_pack),
     rho("rho", nj, nk_pack), rhofacr("rhofacr", nj, nk_pack), rhofaci("rhofaci", nj, nk_pack),  acn("acn", nj, nk_pack), qv_sat_l("qv_sat", nj, nk_pack),
     qv_sat_i("qv_sat_i", nj, nk_pack), sup("sup", nj, nk_pack), qv_supersat_i("qv_supersat", nj, nk_pack), tmparr2("tmparr2", nj, nk_pack),
-    exner("exner", nj, nk_pack), diag_equiv_reflectivity("diag_equiv_ref", nj, nk_pack), diag_vm_qi("diag_vm_qi", nj, nk_pack),
+    exner("exner", nj, nk_pack), diag_vm_qi("diag_vm_qi", nj, nk_pack),
     diag_diam_qi("diag_diam_qi", nj, nk_pack), pratot("pratot", nj, nk_pack), prctot("prctot", nj, nk_pack), qtend_ignore("qtend_ignore", nj, nk_pack),
     ntend_ignore("ntend_ignore", nj, nk_pack), mu_c("mu_c", nj, nk_pack), lamc("lamc", nj, nk_pack), qr_evap_tend("qr_evap_tend", nj, nk_pack),
     v_qc("v_qc", nj, nk_pack), v_nc("v_nc", nj, nk_pack), flux_qx("flux_qx", nj, nk_pack), flux_nx("flux_nx", nj, nk_pack), v_qit("v_qit", nj, nk_pack),
@@ -1389,7 +1390,7 @@ Int p3_main_host(
     inv_cld_frac_l, inv_cld_frac_r, qc_incld, qr_incld, qi_incld, qm_incld,
     nc_incld, nr_incld, ni_incld, bm_incld, inv_dz, inv_rho, ze_ice, ze_rain,
     prec, rho, rhofacr, rhofaci, acn, qv_sat_l, qv_sat_i, sup, qv_supersat_i,
-    tmparr2, exner, diag_equiv_reflectivity, diag_vm_qi, diag_diam_qi,
+    tmparr2, exner, diag_vm_qi, diag_diam_qi,
     pratot, prctot, qtend_ignore, ntend_ignore, mu_c, lamc, qr_evap_tend,
     v_qc, v_nc, flux_qx, flux_nx, v_qit, v_nit, flux_nit, flux_bir, flux_qir,
     flux_qit, v_qr, v_nr

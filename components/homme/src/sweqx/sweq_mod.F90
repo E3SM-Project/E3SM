@@ -33,7 +33,7 @@ contains
     use shal_movie_mod, only : shal_movie_init, shal_movie_output, shal_movie_finish
 #endif
     !-----------------
-    use global_norms_mod, only : test_global_integral, print_cfl
+    use global_norms_mod, only : test_global_integral, print_cfl, dss_hvtensor
     !-----------------
     use quadrature_mod, only : quadrature_t, gausslobatto
     !-----------------
@@ -192,7 +192,7 @@ contains
     hybrid = hybrid_create(par,ithr,hthreads)
     simday=0
        call test_global_integral(elem,hybrid,nets,nete)
-
+       call dss_hvtensor(elem,hybrid,nets,nete)
        dtnu = 2.0d0*tstep*max(nu,nu_s)/hypervis_subcycle
        call print_cfl(elem,hybrid,nets,nete,dtnu)
 
@@ -847,7 +847,7 @@ contains
 
 #endif
     !-----------------
-    use global_norms_mod, only : test_global_integral, print_cfl
+    use global_norms_mod, only : test_global_integral, print_cfl, dss_hvtensor
     !-----------------
     use quadrature_mod, only : quadrature_t, gausslobatto
     !-----------------
@@ -932,6 +932,7 @@ contains
     hybrid = hybrid_create(par,ithr,hthreads)
 
        call test_global_integral(elem,hybrid,nets,nete,mindx)
+       call dss_hvtensor(elem,hybrid,nets,nete)
        dtnu = (tstep/rk_stage_user)*max(nu,nu_s)/hypervis_subcycle
        call print_cfl(elem,hybrid,nets,nete,dtnu)
 

@@ -279,7 +279,7 @@ subroutine gw_beres_src(ncol, ngwv, lat, u, v, netdt, &
   ! Multipy by conversion factor
   maxq0 = maxq0 * maxq0_conversion_factor
 
-  ! Taking ubm at assumed source level to be the storm speed, 
+  ! Taking ubm at assumed source level to be the storm speed,
   ! find the cell speed where the storm speed is > storm_speed_min
   storm_speed = int(sign(max(abs(ubm(:,k_src_wind))-storm_speed_min, 0._r8), ubm(:,k_src_wind)))
 

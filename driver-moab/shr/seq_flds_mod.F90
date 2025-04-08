@@ -173,6 +173,8 @@ module seq_flds_mod
   logical            :: ocn_rof_two_way     ! .true. if river-ocean two-way coupling turned on
   logical            :: rof_sed             ! .true. if river model includes sediment
 
+  character(len=CS)  :: wav_ocn_coup     ! 'twoway' if wave-ocean two-way coupling turned on
+
   !----------------------------------------------------------------------------
   ! metadata
   !----------------------------------------------------------------------------
@@ -225,7 +227,8 @@ module seq_flds_mod
   character(CXX) :: seq_flds_g2o_ice_fluxes
   character(CXX) :: seq_flds_x2g_states
   character(CXX) :: seq_flds_x2g_states_from_lnd
-  character(CXX) :: seq_flds_x2g_states_from_ocn
+  character(CXX) :: seq_flds_x2g_shelf_states_from_ocn
+  character(CXX) :: seq_flds_x2g_tf_states_from_ocn
   character(CXX) :: seq_flds_x2g_fluxes
   character(CXX) :: seq_flds_x2g_fluxes_from_lnd
 
@@ -363,7 +366,8 @@ contains
     character(CXX) :: g2o_ice_fluxes = ''
     character(CXX) :: x2g_states = ''
     character(CXX) :: x2g_states_from_lnd = ''
-    character(CXX) :: x2g_states_from_ocn = ''
+    character(CXX) :: x2g_shelf_states_from_ocn = ''
+    character(CXX) :: x2g_tf_states_from_ocn = ''
     character(CXX) :: x2g_fluxes = ''
     character(CXX) :: x2g_fluxes_from_lnd = ''
     character(CXX) :: xao_albedo = ''
@@ -398,13 +402,15 @@ contains
     logical :: flds_bgc_oi
     logical :: flds_wiso
     logical :: flds_polar
+    logical :: flds_tf
     integer :: glc_nec
 
     namelist /seq_cplflds_inparm/  &
-         flds_co2a, flds_co2b, flds_co2c, flds_co2_dmsa, flds_wiso, flds_polar, glc_nec, &
-         ice_ncat, seq_flds_i2o_per_cat, flds_bgc_oi, &
+         flds_co2a, flds_co2b, flds_co2c, flds_co2_dmsa, flds_wiso, flds_polar, flds_tf, &
+         glc_nec, ice_ncat, seq_flds_i2o_per_cat, flds_bgc_oi, &
          nan_check_component_fields, rof_heat, atm_flux_method, atm_gustiness, &
-         rof2ocn_nutrients, lnd_rof_two_way, ocn_rof_two_way, rof_sed
+         rof2ocn_nutrients, lnd_rof_two_way, ocn_rof_two_way, rof_sed, &
+         wav_ocn_coup
 
     ! user specified new fields
     integer,  parameter :: nfldmax = 200
@@ -439,6 +445,7 @@ contains
        flds_bgc_oi   = .false.
        flds_wiso = .false.
        flds_polar = .false.
+       flds_tf = .false.
        glc_nec   = 0
        ice_ncat  = 1
        seq_flds_i2o_per_cat = .false.
@@ -450,6 +457,7 @@ contains
        lnd_rof_two_way   = .false.
        ocn_rof_two_way   = .false.
        rof_sed   = .false.
+       wav_ocn_coup = 'none'
 
        unitn = shr_file_getUnit()
        write(logunit,"(A)") subname//': read seq_cplflds_inparm namelist from: '&
@@ -472,7 +480,8 @@ contains
     call shr_mpi_bcast(flds_co2_dmsa, mpicom)
     call shr_mpi_bcast(flds_bgc_oi  , mpicom)
     call shr_mpi_bcast(flds_wiso    , mpicom)
-    call shr_mpi_bcast(flds_polar    , mpicom)
+    call shr_mpi_bcast(flds_polar   , mpicom)
+    call shr_mpi_bcast(flds_tf      , mpicom)
     call shr_mpi_bcast(glc_nec      , mpicom)
     call shr_mpi_bcast(ice_ncat     , mpicom)
     call shr_mpi_bcast(seq_flds_i2o_per_cat, mpicom)
@@ -484,6 +493,7 @@ contains
     call shr_mpi_bcast(lnd_rof_two_way,   mpicom)
     call shr_mpi_bcast(ocn_rof_two_way,   mpicom)
     call shr_mpi_bcast(rof_sed,   mpicom)
+    call shr_mpi_bcast(wav_ocn_coup, mpicom)
 
     call glc_elevclass_init(glc_nec)
 
@@ -1304,7 +1314,7 @@ contains
     call seq_flds_add(x2a_states,"Sx_u10")
     longname = '10m wind'
     stdname  = '10m_wind'
-    units    = 'm'
+    units    = 'm s-1'
     attname  = 'u10'
     call metadata_set(attname, longname, stdname, units)
 
@@ -1709,7 +1719,7 @@ contains
     ! Sea surface temperature
     call seq_flds_add(o2x_states,"So_t")
     call seq_flds_add(x2i_states,"So_t")
-    call seq_flds_add(x2w_states,"So_t")
+    if (wav_ocn_coup .ne. 'none') call seq_flds_add(x2w_states,"So_t")
 
     ! Sea surface  salinity
     call seq_flds_add(o2x_states,"So_s")
@@ -1723,7 +1733,7 @@ contains
     ! Zonal sea water velocity
     call seq_flds_add(o2x_states,"So_u")
     call seq_flds_add(x2i_states,"So_u")
-    call seq_flds_add(x2w_states,"So_u")
+    if (wav_ocn_coup .ne. 'none') call seq_flds_add(x2w_states,"So_u")
     longname = 'Zonal sea water velocity'
     stdname  = 'eastward_sea_water_velocity'
     units    = 'm s-1'
@@ -1733,7 +1743,7 @@ contains
     ! Meridional sea water velocity
     call seq_flds_add(o2x_states,"So_v")
     call seq_flds_add(x2i_states,"So_v")
-    call seq_flds_add(x2w_states,"So_v")
+    if (wav_ocn_coup .ne. 'none') call seq_flds_add(x2w_states,"So_v")
     longname = 'Meridional sea water velocity'
     stdname  = 'northward_sea_water_velocity'
     units    = 'm s-1'
@@ -1752,7 +1762,7 @@ contains
     call seq_flds_add(o2x_states,"So_ssh")
     call seq_flds_add(x2r_states,"So_ssh")
     call seq_flds_add(o2x_states_to_rof,"So_ssh")
-    call seq_flds_add(x2w_states,'So_ssh')
+    if (wav_ocn_coup .ne. 'none') call seq_flds_add(x2w_states,'So_ssh')
     longname = 'Sea surface height'
     stdname  = 'sea_surface_height'
     units    = 'm'
@@ -1770,7 +1780,7 @@ contains
 
     ! Boundary Layer Depth
     call seq_flds_add(o2x_states,"So_bldepth")
-    call seq_flds_add(x2w_states,"So_bldepth")
+    if (wav_ocn_coup .ne. 'none') call seq_flds_add(x2w_states,"So_bldepth")
     longname = 'Ocean Boundary Layer Depth'
     stdname  = 'ocean_boundary_layer_depth'
     units    = 'm'
@@ -2531,126 +2541,127 @@ contains
     !-----------------------------
     ! wav->ocn and ocn->wav
     !-----------------------------
+    if (wav_ocn_coup == 'twoway') then
+       call seq_flds_add(w2x_states,'Sw_ustokes_wavenumber_1')
+       call seq_flds_add(x2o_states,'Sw_ustokes_wavenumber_1')
+       longname = 'Partitioned Stokes drift u component, wavenumber 1'
+       stdname  = 'wave_model_partitioned_stokes_drift_u_wavenumber_1'
+       units    = 'm/s'
+       attname  = 'Sw_ustokes_wavenumber_1'
+       call metadata_set(attname, longname, stdname, units)
 
-    call seq_flds_add(w2x_states,'Sw_ustokes_wavenumber_1')
-    call seq_flds_add(x2o_states,'Sw_ustokes_wavenumber_1')
-    longname = 'Partitioned Stokes drift u component, wavenumber 1'
-    stdname  = 'wave_model_partitioned_stokes_drift_u_wavenumber_1'
-    units    = 'm/s'
-    attname  = 'Sw_ustokes_wavenumber_1'
-    call metadata_set(attname, longname, stdname, units)
+       call seq_flds_add(w2x_states,'Sw_vstokes_wavenumber_1')
+       call seq_flds_add(x2o_states,'Sw_vstokes_wavenumber_1')
+       longname = 'Partitioned Stokes drift v component, wavenumber 1'
+       stdname  = 'wave_model_partitioned_stokes_drift_v_wavenumber_1'
+       units    = 'm/s'
+       attname  = 'Sw_vstokes_wavenumber_1'
+       call metadata_set(attname, longname, stdname, units)
 
-    call seq_flds_add(w2x_states,'Sw_vstokes_wavenumber_1')
-    call seq_flds_add(x2o_states,'Sw_vstokes_wavenumber_1')
-    longname = 'Partitioned Stokes drift v component, wavenumber 1'
-    stdname  = 'wave_model_partitioned_stokes_drift_v_wavenumber_1'
-    units    = 'm/s'
-    attname  = 'Sw_vstokes_wavenumber_1'
-    call metadata_set(attname, longname, stdname, units)
+       call seq_flds_add(w2x_states,'Sw_ustokes_wavenumber_2')
+       call seq_flds_add(x2o_states,'Sw_ustokes_wavenumber_2')
+       longname = 'Partitioned Stokes drift u component, wavenumber 2'
+       stdname  = 'wave_model_partitioned_stokes_drift_u_wavenumber_2'
+       units    = 'm/s'
+       attname  = 'Sw_ustokes_wavenumber_2'
+       call metadata_set(attname, longname, stdname, units)
 
-    call seq_flds_add(w2x_states,'Sw_ustokes_wavenumber_2')
-    call seq_flds_add(x2o_states,'Sw_ustokes_wavenumber_2')
-    longname = 'Partitioned Stokes drift u component, wavenumber 2'
-    stdname  = 'wave_model_partitioned_stokes_drift_u_wavenumber_2'
-    units    = 'm/s'
-    attname  = 'Sw_ustokes_wavenumber_2'
-    call metadata_set(attname, longname, stdname, units)
+       call seq_flds_add(w2x_states,'Sw_vstokes_wavenumber_2')
+       call seq_flds_add(x2o_states,'Sw_vstokes_wavenumber_2')
+       longname = 'Partitioned Stokes drift v component, wavenumber 2'
+       stdname  = 'wave_model_partitioned_stokes_drift_v_wavenumber_2'
+       units    = 'm/s'
+       attname  = 'Sw_vstokes_wavenumber_2'
+       call metadata_set(attname, longname, stdname, units)
 
-    call seq_flds_add(w2x_states,'Sw_vstokes_wavenumber_2')
-    call seq_flds_add(x2o_states,'Sw_vstokes_wavenumber_2')
-    longname = 'Partitioned Stokes drift v component, wavenumber 2'
-    stdname  = 'wave_model_partitioned_stokes_drift_v_wavenumber_2'
-    units    = 'm/s'
-    attname  = 'Sw_vstokes_wavenumber_2'
-    call metadata_set(attname, longname, stdname, units)
+       call seq_flds_add(w2x_states,'Sw_ustokes_wavenumber_3')
+       call seq_flds_add(x2o_states,'Sw_ustokes_wavenumber_3')
+       longname = 'Partitioned Stokes drift u component, wavenumber 3'
+       stdname  = 'wave_model_partitioned_stokes_drift_u_wavenumber_3'
+       units    = 'm/s'
+       attname  = 'Sw_ustokes_wavenumber_3'
+       call metadata_set(attname, longname, stdname, units)
 
-    call seq_flds_add(w2x_states,'Sw_ustokes_wavenumber_3')
-    call seq_flds_add(x2o_states,'Sw_ustokes_wavenumber_3')
-    longname = 'Partitioned Stokes drift u component, wavenumber 3'
-    stdname  = 'wave_model_partitioned_stokes_drift_u_wavenumber_3'
-    units    = 'm/s'
-    attname  = 'Sw_ustokes_wavenumber_3'
-    call metadata_set(attname, longname, stdname, units)
+       call seq_flds_add(w2x_states,'Sw_vstokes_wavenumber_3')
+       call seq_flds_add(x2o_states,'Sw_vstokes_wavenumber_3')
+       longname = 'Partitioned Stokes drift v component, wavenumber 3'
+       stdname  = 'wave_model_partitioned_stokes_drift_v_wavenumber_3'
+       units    = 'm/s'
+       attname  = 'Sw_vstokes_wavenumber_3'
+       call metadata_set(attname, longname, stdname, units)
 
-    call seq_flds_add(w2x_states,'Sw_vstokes_wavenumber_3')
-    call seq_flds_add(x2o_states,'Sw_vstokes_wavenumber_3')
-    longname = 'Partitioned Stokes drift v component, wavenumber 3'
-    stdname  = 'wave_model_partitioned_stokes_drift_v_wavenumber_3'
-    units    = 'm/s'
-    attname  = 'Sw_vstokes_wavenumber_3'
-    call metadata_set(attname, longname, stdname, units)
+       call seq_flds_add(w2x_states,'Sw_ustokes_wavenumber_4')
+       call seq_flds_add(x2o_states,'Sw_ustokes_wavenumber_4')
+       longname = 'Partitioned Stokes drift u component, wavenumber 4'
+       stdname  = 'wave_model_partitioned_stokes_drift_u_wavenumber_4'
+       units    = 'm/s'
+       attname  = 'Sw_ustokes_wavenumber_4'
+       call metadata_set(attname, longname, stdname, units)
 
-    call seq_flds_add(w2x_states,'Sw_ustokes_wavenumber_4')
-    call seq_flds_add(x2o_states,'Sw_ustokes_wavenumber_4')
-    longname = 'Partitioned Stokes drift u component, wavenumber 4'
-    stdname  = 'wave_model_partitioned_stokes_drift_u_wavenumber_4'
-    units    = 'm/s'
-    attname  = 'Sw_ustokes_wavenumber_4'
-    call metadata_set(attname, longname, stdname, units)
+       call seq_flds_add(w2x_states,'Sw_vstokes_wavenumber_4')
+       call seq_flds_add(x2o_states,'Sw_vstokes_wavenumber_4')
+       longname = 'Partitioned Stokes drift v component, wavenumber 4'
+       stdname  = 'wave_model_partitioned_stokes_drift_v_wavenumber_4'
+       units    = 'm/s'
+       attname  = 'Sw_vstokes_wavenumber_4'
+       call metadata_set(attname, longname, stdname, units)
 
-    call seq_flds_add(w2x_states,'Sw_vstokes_wavenumber_4')
-    call seq_flds_add(x2o_states,'Sw_vstokes_wavenumber_4')
-    longname = 'Partitioned Stokes drift v component, wavenumber 4'
-    stdname  = 'wave_model_partitioned_stokes_drift_v_wavenumber_4'
-    units    = 'm/s'
-    attname  = 'Sw_vstokes_wavenumber_4'
-    call metadata_set(attname, longname, stdname, units)
+       call seq_flds_add(w2x_states,'Sw_ustokes_wavenumber_5')
+       call seq_flds_add(x2o_states,'Sw_ustokes_wavenumber_5')
+       longname = 'Partitioned Stokes drift u component, wavenumber 5'
+       stdname  = 'wave_model_partitioned_stokes_drift_u_wavenumber_5'
+       units    = 'm/s'
+       attname  = 'Sw_ustokes_wavenumber_5'
+       call metadata_set(attname, longname, stdname, units)
 
-    call seq_flds_add(w2x_states,'Sw_ustokes_wavenumber_5')
-    call seq_flds_add(x2o_states,'Sw_ustokes_wavenumber_5')
-    longname = 'Partitioned Stokes drift u component, wavenumber 5'
-    stdname  = 'wave_model_partitioned_stokes_drift_u_wavenumber_5'
-    units    = 'm/s'
-    attname  = 'Sw_ustokes_wavenumber_5'
-    call metadata_set(attname, longname, stdname, units)
+       call seq_flds_add(w2x_states,'Sw_vstokes_wavenumber_5')
+       call seq_flds_add(x2o_states,'Sw_vstokes_wavenumber_5')
+       longname = 'Partitioned Stokes drift v component, wavenumber 5'
+       stdname  = 'wave_model_partitioned_stokes_drift_v_wavenumber_5'
+       units    = 'm/s'
+       attname  = 'Sw_vstokes_wavenumber_5'
+       call metadata_set(attname, longname, stdname, units)
 
-    call seq_flds_add(w2x_states,'Sw_vstokes_wavenumber_5')
-    call seq_flds_add(x2o_states,'Sw_vstokes_wavenumber_5')
-    longname = 'Partitioned Stokes drift v component, wavenumber 5'
-    stdname  = 'wave_model_partitioned_stokes_drift_v_wavenumber_5'
-    units    = 'm/s'
-    attname  = 'Sw_vstokes_wavenumber_5'
-    call metadata_set(attname, longname, stdname, units)
+       call seq_flds_add(w2x_states,'Sw_ustokes_wavenumber_6')
+       call seq_flds_add(x2o_states,'Sw_ustokes_wavenumber_6')
+       longname = 'Partitioned Stokes drift u component, wavenumber 6'
+       stdname  = 'wave_model_partitioned_stokes_drift_u_wavenumber_6'
+       units    = 'm/s'
+       attname  = 'Sw_ustokes_wavenumber_6'
+       call metadata_set(attname, longname, stdname, units)
 
-    call seq_flds_add(w2x_states,'Sw_ustokes_wavenumber_6')
-    call seq_flds_add(x2o_states,'Sw_ustokes_wavenumber_6')
-    longname = 'Partitioned Stokes drift u component, wavenumber 6'
-    stdname  = 'wave_model_partitioned_stokes_drift_u_wavenumber_6'
-    units    = 'm/s'
-    attname  = 'Sw_ustokes_wavenumber_6'
-    call metadata_set(attname, longname, stdname, units)
+       call seq_flds_add(w2x_states,'Sw_vstokes_wavenumber_6')
+       call seq_flds_add(x2o_states,'Sw_vstokes_wavenumber_6')
+       longname = 'Partitioned Stokes drift v component, wavenumber 6'
+       stdname  = 'wave_model_partitioned_stokes_drift_v_wavenumber_6'
+       units    = 'm/s'
+       attname  = 'Sw_vstokes_wavenumber_6'
+       call metadata_set(attname, longname, stdname, units)
 
-    call seq_flds_add(w2x_states,'Sw_vstokes_wavenumber_6')
-    call seq_flds_add(x2o_states,'Sw_vstokes_wavenumber_6')
-    longname = 'Partitioned Stokes drift v component, wavenumber 6'
-    stdname  = 'wave_model_partitioned_stokes_drift_v_wavenumber_6'
-    units    = 'm/s'
-    attname  = 'Sw_vstokes_wavenumber_6'
-    call metadata_set(attname, longname, stdname, units)
+       call seq_flds_add(w2x_states,'Sw_Hs')
+       call seq_flds_add(x2o_states,'Sw_Hs')
+       longname = 'Significant wave height'
+       stdname  = 'significant_wave_height'
+       units    = 'm'
+       attname  = 'Sw_Hs'
+       call metadata_set(attname, longname, stdname, units)
 
-    call seq_flds_add(w2x_states,'Sw_Hs')
-    call seq_flds_add(x2o_states,'Sw_Hs')
-    longname = 'Significant wave height'
-    stdname  = 'significant_wave_height'
-    units    = 'm'
-    attname  = 'Sw_Hs'
-    call metadata_set(attname, longname, stdname, units)
+       call seq_flds_add(w2x_states,'Sw_Fp')
+       call seq_flds_add(x2o_states,'Sw_Fp')
+       longname = 'Peak wave frequency'
+       stdname  = 'peak_wave_frequency'
+       units    = 's-1'
+       attname  = 'Sw_Fp'
+       call metadata_set(attname, longname, stdname, units)
 
-    call seq_flds_add(w2x_states,'Sw_Fp')
-    call seq_flds_add(x2o_states,'Sw_Fp')
-    longname = 'Peak wave frequency'
-    stdname  = 'peak_wave_frequency'
-    units    = 's-1'
-    attname  = 'Sw_Fp'
-    call metadata_set(attname, longname, stdname, units)
-
-    call seq_flds_add(w2x_states,'Sw_Dp')
-    call seq_flds_add(x2o_states,'Sw_Dp')
-    longname = 'Peak wave direction'
-    stdname  = 'peak_wave_direction'
-    units    = 'deg'
-    attname  = 'Sw_Dp'
-    call metadata_set(attname, longname, stdname, units)
+       call seq_flds_add(w2x_states,'Sw_Dp')
+       call seq_flds_add(x2o_states,'Sw_Dp')
+       longname = 'Peak wave direction'
+       stdname  = 'peak_wave_direction'
+       units    = 'deg'
+       attname  = 'Sw_Dp'
+       call metadata_set(attname, longname, stdname, units)
+    endif
 
     !-----------------------------
     ! New xao_states diagnostic
@@ -2956,7 +2967,7 @@ contains
        name = 'So_blt'
        call seq_flds_add(o2x_states,trim(name))
        call seq_flds_add(x2g_states,trim(name))
-       call seq_flds_add(x2g_states_from_ocn,trim(name))
+       call seq_flds_add(x2g_shelf_states_from_ocn,trim(name))
        longname = 'Ice shelf boundary layer ocean temperature'
        stdname  = 'Ice_shelf_boundary_layer_ocean_temperature'
        units    = 'C'
@@ -2966,7 +2977,7 @@ contains
        name = 'So_bls'
        call seq_flds_add(o2x_states,trim(name))
        call seq_flds_add(x2g_states,trim(name))
-       call seq_flds_add(x2g_states_from_ocn,trim(name))
+       call seq_flds_add(x2g_shelf_states_from_ocn,trim(name))
        longname = 'Ice shelf boundary layer ocean salinity'
        stdname  = 'Ice_shelf_boundary_layer_ocean_salinity'
        units    = 'psu'
@@ -2976,7 +2987,7 @@ contains
        name = 'So_htv'
        call seq_flds_add(o2x_states,trim(name))
        call seq_flds_add(x2g_states,trim(name))
-       call seq_flds_add(x2g_states_from_ocn,trim(name))
+       call seq_flds_add(x2g_shelf_states_from_ocn,trim(name))
        longname = 'Ice shelf ocean heat transfer velocity'
        stdname  = 'Ice_shelf_ocean_heat_transfer_velocity'
        units    = 'm/s'
@@ -2986,7 +2997,7 @@ contains
        name = 'So_stv'
        call seq_flds_add(o2x_states,trim(name))
        call seq_flds_add(x2g_states,trim(name))
-       call seq_flds_add(x2g_states_from_ocn,trim(name))
+       call seq_flds_add(x2g_shelf_states_from_ocn,trim(name))
        longname = 'Ice shelf ocean salinity transfer velocity'
        stdname  = 'Ice_shelf_ocean_salinity_transfer_velocity'
        units    = 'm/s'
@@ -2996,12 +3007,26 @@ contains
        name = 'So_rhoeff'
        call seq_flds_add(o2x_states,trim(name))
        call seq_flds_add(x2g_states,trim(name))
-       call seq_flds_add(x2g_states_from_ocn,trim(name))
+       call seq_flds_add(x2g_shelf_states_from_ocn,trim(name))
        longname = 'Ocean effective pressure'
        stdname  = 'Ocean_effective_pressure'
        units    = 'Pa'
        attname  = 'So_rhoeff'
        call metadata_set(attname, longname, stdname, units)
+
+       if (flds_tf) then
+
+          name = 'So_tf2d'
+          call seq_flds_add(o2x_states,trim(name))
+          call seq_flds_add(x2g_states,trim(name))
+          call seq_flds_add(x2g_tf_states_from_ocn,trim(name))
+          longname = 'ocean thermal forcing at predefined critical depth'
+          stdname  = 'ocean_thermal_forcing_at_critical_depth'
+          units    = 'C'
+          attname  = name
+          call metadata_set(attname, longname, stdname, units)
+
+       end if
 
        name = 'Fogx_qicelo'
        call seq_flds_add(g2x_fluxes,trim(name))
@@ -3953,7 +3978,8 @@ contains
     seq_flds_g2x_states_to_lnd = trim(g2x_states_to_lnd)
     seq_flds_x2g_states = trim(x2g_states)
     seq_flds_x2g_states_from_lnd = trim(x2g_states_from_lnd)
-    seq_flds_x2g_states_from_ocn = trim(x2g_states_from_ocn)
+    seq_flds_x2g_shelf_states_from_ocn = trim(x2g_shelf_states_from_ocn)
+    seq_flds_x2g_tf_states_from_ocn = trim(x2g_tf_states_from_ocn)
     seq_flds_xao_states = trim(xao_states)
     seq_flds_xao_albedo = trim(xao_albedo)
     seq_flds_xao_diurnl = trim(xao_diurnl)
@@ -4020,7 +4046,8 @@ contains
        write(logunit,*) subname//': seq_flds_x2g_states= ',trim(seq_flds_x2g_states)
        write(logunit,*) subname//': seq_flds_x2g_states_from_lnd= ',trim(seq_flds_x2g_states_from_lnd)
        write(logunit,*) subname//': seq_flds_l2x_states_to_glc= ',trim(seq_flds_l2x_states_to_glc)
-       write(logunit,*) subname//': seq_flds_x2g_states_from_ocn= ',trim(seq_flds_x2g_states_from_ocn)
+       write(logunit,*) subname//': seq_flds_x2g_shelf_states_from_ocn= ',trim(seq_flds_x2g_shelf_states_from_ocn)
+       write(logunit,*) subname//': seq_flds_x2g_tf_states_from_ocn= ',trim(seq_flds_x2g_tf_states_from_ocn)
        write(logunit,*) subname//': seq_flds_x2g_fluxes= ',trim(seq_flds_x2g_fluxes)
        write(logunit,*) subname//': seq_flds_x2g_fluxes_from_lnd= ',trim(seq_flds_x2g_fluxes_from_lnd)
        write(logunit,*) subname//': seq_flds_l2x_fluxes_to_glc= ',trim(seq_flds_l2x_fluxes_to_glc)

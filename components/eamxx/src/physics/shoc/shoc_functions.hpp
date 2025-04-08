@@ -55,6 +55,11 @@ struct Functions
   template <typename S>
   using view_3d = typename KT::template view_3d<S>;
 
+  template <typename S>
+  using view_2d_strided = typename KT::template sview<S**>;
+  template <typename S>
+  using view_3d_strided = typename KT::template sview<S***>;
+
   template <typename S, int N>
   using view_1d_ptr_array = typename KT::template view_1d_ptr_carray<S, N>;
 
@@ -63,6 +68,9 @@ struct Functions
 
   template <typename S>
   using uview_2d = typename ekat::template Unmanaged<view_2d<S> >;
+
+  template <typename S>
+  using uview_2d_strided = typename ekat::template Unmanaged<view_2d_strided<S> >;
 
   using MemberType = typename KT::MemberType;
 
@@ -144,7 +152,7 @@ struct Functions
     // buoyancy flux [K m/s]
     view_2d<Spack>  wthv_sec;
     // tracers [varies]
-    view_3d<Spack>  qtracers;
+    view_3d_strided<Spack>  qtracers;
     // eddy coefficient for momentum [m2/s]
     view_2d<Spack>  tk;
     // Cloud fraction [-]
@@ -646,7 +654,7 @@ struct Functions
     const Workspace&             workspace,
     const uview_1d<Spack>&       thetal,
     const uview_1d<Spack>&       qw,
-    const uview_2d<Spack>&       tracer,
+    const uview_2d_strided<Spack>& tracer,
     const uview_1d<Spack>&       tke,
     const uview_1d<Spack>&       u_wind,
     const uview_1d<Spack>&       v_wind);
@@ -672,7 +680,7 @@ struct Functions
     const WorkspaceMgr&          workspace_mgr,
     const view_2d<Spack>&        thetal,
     const view_2d<Spack>&        qw,
-    const view_3d<Spack>&        tracer,
+    const view_3d_strided<Spack>& tracer,
     const view_2d<Spack>&        tke,
     const view_2d<Spack>&        u_wind,
     const view_2d<Spack>&        v_wind);
@@ -1033,7 +1041,7 @@ struct Functions
     const uview_1d<Spack>&       u_wind,
     const uview_1d<Spack>&       v_wind,
     const uview_1d<Spack>&       wthv_sec,
-    const uview_2d<Spack>&       qtracers,
+    const uview_2d_strided<Spack>& qtracers,
     const uview_1d<Spack>&       tk,
     const uview_1d<Spack>&       shoc_cldfrac,
     const uview_1d<Spack>&       shoc_ql,
@@ -1107,7 +1115,7 @@ struct Functions
     const uview_2d<Spack>&      u_wind,
     const uview_2d<Spack>&      v_wind,
     const view_2d<Spack>&       wthv_sec,
-    const view_3d<Spack>&       qtracers,
+    const view_3d_strided<Spack>& qtracers,
     const view_2d<Spack>&       tk,
     const view_2d<Spack>&       shoc_cldfrac,
     const view_2d<Spack>&       shoc_ql,

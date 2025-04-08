@@ -163,9 +163,10 @@ void MAMConstituentFluxes::run_impl(const double dt) {
     team.team_barrier();
     // vertical heights has to be computed after computing dry mixing ratios
     // for atmosphere
-    compute_vertical_layer_heights(team,       // in
-                                   dry_atm,    // out
-                                   icol);      // in
+    compute_vertical_layer_heights(team,     // in
+                                   dry_atm,  // out
+                                   icol);    // in
+    team.team_barrier();
     compute_updraft_velocities(team, wet_atm,  // in
                                dry_atm,        // out
                                icol);          // in
@@ -175,11 +176,14 @@ void MAMConstituentFluxes::run_impl(const double dt) {
       KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
   Kokkos::parallel_for("mam_cfi_compute_updraft", scan_policy, lambda);
+  Kokkos::fence();
 
   update_gas_aerosols_using_constituents(ncol_, nlev_, dt, dry_atm_,
                                          constituent_fluxes_,
                                          // output
                                          wet_aero_);
+  Kokkos::fence();
+
 }  // run_impl ends
 
 // =============================================================================

@@ -6,7 +6,7 @@
 namespace homme {
 namespace compose {
 
-class VerticalLevelsData;
+struct VerticalLevelsData;
 
 template <typename ES>
 class QLT : public cedr::qlt::QLT<ES> {

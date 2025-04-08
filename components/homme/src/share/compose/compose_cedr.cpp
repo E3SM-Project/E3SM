@@ -346,6 +346,8 @@ struct ReproSumReducer :
     : fcomm_(fcomm), n_accum_in_place_(n_accum_in_place)
   {}
 
+  virtual ~ReproSumReducer () {}
+
   int n_accum_in_place () const override { return n_accum_in_place_; }
 
   int operator() (const cedr::mpi::Parallel& p, Real* sendbuf, Real* rcvbuf,
@@ -394,6 +396,8 @@ struct TreeReducer :
     : n_accum_in_place_(n_accum_in_place), nfield_(nfield),
       r_(p, tree, nleaf, nfield)
   {}
+
+  virtual ~TreeReducer () {}
 
   int n_accum_in_place () const override { return n_accum_in_place_; }
 
@@ -767,5 +771,5 @@ void cedr_finalize () {
 extern "C" void cedr_finalize () { homme::cedr_finalize(); }
 
 namespace homme {
-template class CDR<Kokkos::MachineTraits>;
+template struct CDR<Kokkos::MachineTraits>;
 } // namespace homme

@@ -18,6 +18,7 @@ nav:
     - 'IO Metadata': 'user/io_metadata.md'
     - 'Multi-Instance and NBFB': 'user/multi-instance-mvk.md'
     - 'EAMxx runtime parameters': 'user/eamxx_params.md'
+    - 'Presentations': 'user/presentations.md'
   - 'Developer Guide':
     # - 'Overview': 'developer/index.md'
     - 'Quick-start Guide': 'developer/dev_quickstart.md'
@@ -37,7 +38,8 @@ nav:
       - 'Fields': 'developer/field.md'
       - 'Grids and Remappers': 'developer/grid.md'
       - 'Atmosphere Processes': 'developer/processes.md'
-      - 'I/O': 'developer/io.md'
+      - 'Input/Output': 'developer/io.md'
+      - 'Third-party Libraries': 'developer/TPLs.md'
   - 'Technical Guide':
     - 'Overview': 'technical/index.md'
     - 'AeroCom cloud top': 'technical/aerocom_cldtop.md'

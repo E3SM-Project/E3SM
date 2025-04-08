@@ -703,6 +703,7 @@ private:
       qlt_.set_buffers(buf1_.data(), buf2_.data());
     }
     qlt_.finish_setup();
+#ifndef NDEBUG
     cedr_assert(qlt_.get_num_tracers() == static_cast<Int>(tracers_.size()));
     for (size_t i = 0; i < tracers_.size(); ++i) {
       const auto pt = qlt_.get_problem_type(i);
@@ -711,6 +712,7 @@ private:
                   (pt == ((tracers_[i].problem_type | ProblemType::nonnegative) &
                           ~ProblemType::consistent)));
     }
+#endif
   }
   
   void run_impl (const Int trial) override {

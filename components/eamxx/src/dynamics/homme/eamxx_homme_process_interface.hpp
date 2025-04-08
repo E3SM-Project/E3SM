@@ -98,7 +98,7 @@ protected:
   void fv_phys_set_grids();
   void fv_phys_requested_buffer_size_in_bytes() const;
   void fv_phys_initialize_impl();
-  void fv_phys_dyn_to_fv_phys(const bool restart = false);
+  void fv_phys_dyn_to_fv_phys(const util::TimeStamp& t, const bool restart = false);
   void fv_phys_pre_process();
   void fv_phys_post_process();
   // See [rrtmgp active gases] in eamxx_homme_fv_phys.cpp.

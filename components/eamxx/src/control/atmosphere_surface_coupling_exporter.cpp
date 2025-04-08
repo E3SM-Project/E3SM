@@ -322,7 +322,7 @@ void SurfaceCouplingExporter::do_export(const double dt, const bool called_durin
   }
 
   if (m_num_from_file_exports>0) {
-    set_from_file_exports(dt);
+    set_from_file_exports();
   }
 
   if (m_num_from_model_exports>0) {
@@ -350,15 +350,10 @@ void SurfaceCouplingExporter::set_constant_exports()
 
 }
 // =========================================================================================
-void SurfaceCouplingExporter::set_from_file_exports(const int dt)
+void SurfaceCouplingExporter::set_from_file_exports()
 {
   // Perform interpolation on the data with the latest timestamp
-  auto ts = timestamp();
-  if (dt > 0) {
-    ts += dt;
-  }
-  m_time_interp.perform_time_interpolation(ts);
-
+  m_time_interp.perform_time_interpolation(end_of_step_ts());
 }
 // =========================================================================================
 // This compute_eamxx_exports routine  handles all export variables that are derived from the EAMxx state.

@@ -249,7 +249,7 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
   // Allocate work array
   const int work_len = mam4::wetdep::get_aero_model_wetdep_work_len();
   work_              = view_2d("work", ncol_, work_len);
-
+  isprx_             = int_view_2d("isprx", ncol_, nlev_);
   // TODO: Following variables are from convective parameterization (not
   // implemented yet in EAMxx), so should be zero for now
 
@@ -287,6 +287,10 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
   // Detraining cld H20 from deep convection [kg/kg/s]
   dlf_ = view_2d("dlf", ncol_, nlev_);
   Kokkos::deep_copy(dlf_, 0);
+
+  calsize_data_.initialize();
+  // wetscav uses update_mmr=true;
+  calsize_data_.set_update_mmr(true);
 }
 
 // ================================================================
@@ -304,6 +308,7 @@ void MAMWetscav::run_impl(const double dt) {
   const mam_coupling::DryAtmosphere &dry_atm = dry_atm_;
   const auto &dry_aero                       = dry_aero_;
   const auto &work                           = work_;
+  const auto &isprx                          = isprx_;
   const auto &dry_aero_tends                 = dry_aero_tends_;
 
   // ---------------------------------------------------------------
@@ -381,6 +386,14 @@ void MAMWetscav::run_impl(const double dt) {
     }
   }
 
+  Real scavimptblnum[mam4::aero_model::nimptblgrow_total]
+                    [mam4::AeroConfig::num_modes()];
+  Real scavimptblvol[mam4::aero_model::nimptblgrow_total]
+                    [mam4::AeroConfig::num_modes()];
+
+  mam4::wetdep::init_scavimptbl(scavimptblvol, scavimptblnum);
+  const auto &calsize_data =  calsize_data_;
+
   // Loop over atmosphere columns
   Kokkos::parallel_for(
       policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
@@ -426,12 +439,7 @@ void MAMWetscav::run_impl(const double dt) {
         auto wetdens_icol     = ekat::subview(wetdens, icol);
         const auto prain_icol = ekat::subview(prain, icol);
 
-        Real scavimptblnum[mam4::aero_model::nimptblgrow_total]
-                          [mam4::AeroConfig::num_modes()];
-        Real scavimptblvol[mam4::aero_model::nimptblgrow_total]
-                          [mam4::AeroConfig::num_modes()];
-
-        mam4::wetdep::init_scavimptbl(scavimptblvol, scavimptblnum);
+        auto isprx_icol = ekat::subview(isprx, icol);
 
         mam4::wetdep::aero_model_wetdep(
             team, atm, progs, tends, dt,
@@ -439,9 +447,10 @@ void MAMWetscav::run_impl(const double dt) {
             cldt_icol, rprdsh_icol, rprddp_icol, evapcdp_icol, evapcsh_icol,
             dp_frac_icol, sh_frac_icol, icwmrdp_col, icwmrsh_icol, nevapr_icol,
             dlf_icol, prain_icol, scavimptblnum, scavimptblvol,
+            calsize_data,
             // outputs
             wet_diameter_icol, dry_diameter_icol, qaerwat_icol, wetdens_icol,
-            aerdepwetis_icol, aerdepwetcw_icol, work_icol);
+            aerdepwetis_icol, aerdepwetcw_icol, work_icol, isprx_icol);
         team.team_barrier();
         // update interstitial aerosol state
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](int kk) {
@@ -460,6 +469,7 @@ void MAMWetscav::run_impl(const double dt) {
 
   // call post processing to convert dry mixing ratios to wet mixing ratios
   // and update the state
+  Kokkos::fence();
   post_process(wet_aero_, dry_aero_, dry_atm_);
   Kokkos::fence();  // wait before returning to calling function
 }

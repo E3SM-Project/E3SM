@@ -293,6 +293,7 @@ void MAMOptics::initialize_impl(const RunType run_type) {
       mam_coupling::view_int_1d("rrtmg_to_rrtmgp_swbands", nswbands_);
   Kokkos::deep_copy(get_idx_rrtmgp_from_rrtmg_swbands_,
                     get_idx_rrtmgp_from_rrtmg_swbands_host);
+  calsize_data_.initialize();
 }
 void MAMOptics::run_impl(const double dt) {
   constexpr Real zero = 0.0;
@@ -338,11 +339,12 @@ void MAMOptics::run_impl(const double dt) {
   const auto &work                           = work_;
   const auto &dry_aero                       = dry_aero_;
   const auto &aerosol_optics_device_data     = aerosol_optics_device_data_;
+  const auto &calsize_data =  calsize_data_;
+
   Kokkos::parallel_for(
       policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
         const Int icol = team.league_rank();  // column index
         // absorption optical depth, per layer [unitless]
-        auto odap_aer_icol = ekat::subview(aero_tau_lw, icol);
         const auto atm     = mam_coupling::atmosphere_for_column(dry_atm, icol);
 
         // FIXME: dry mass pressure interval [Pa]
@@ -352,7 +354,6 @@ void MAMOptics::run_impl(const double dt) {
         auto ssa_cmip6_sw_icol = ekat::subview(ssa_cmip6_sw, icol);
         auto af_cmip6_sw_icol  = ekat::subview(af_cmip6_sw, icol);
         auto ext_cmip6_sw_icol = ekat::subview(ext_cmip6_sw, icol);
-        auto ext_cmip6_lw_icol = ekat::subview(ext_cmip6_lw, icol);
 
         // tau_w: aerosol single scattering albedo * tau
         auto tau_w_icol = ekat::subview(tau_ssa_sw, icol);
@@ -375,12 +376,29 @@ void MAMOptics::run_impl(const double dt) {
         mam4::aer_rad_props::aer_rad_props_sw(
             team, dt, progs, atm, zi, pdel, ssa_cmip6_sw_icol, af_cmip6_sw_icol,
             ext_cmip6_sw_icol, tau_icol, tau_w_icol, tau_w_g_icol, tau_w_f_icol,
-            aerosol_optics_device_data, aodvis(icol), work_icol);
+            aerosol_optics_device_data, calsize_data,  aodvis(icol), work_icol);
 
-        team.team_barrier();
+      });
+  Kokkos::fence();
+  Kokkos::parallel_for(
+      policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
+        const Int icol = team.league_rank();  // column index
+        // absorption optical depth, per layer [unitless]
+        auto odap_aer_icol = ekat::subview(aero_tau_lw, icol);
+        const auto atm     = mam_coupling::atmosphere_for_column(dry_atm, icol);
+
+        // FIXME: dry mass pressure interval [Pa]
+        auto zi   = ekat::subview(dry_atm.z_iface, icol);
+        auto pdel = ekat::subview(p_del, icol);
+        auto ext_cmip6_lw_icol = ekat::subview(ext_cmip6_lw, icol);
+
+        // fetch column-specific subviews into aerosol prognostics
+        mam4::Prognostics progs =
+            mam_coupling::aerosols_for_column(dry_aero, icol);
+
         mam4::aer_rad_props::aer_rad_props_lw(
             team, dt, progs, atm, zi, pdel, ext_cmip6_lw_icol,
-            aerosol_optics_device_data, odap_aer_icol);
+            aerosol_optics_device_data, calsize_data, odap_aer_icol);
       });
   Kokkos::fence();
   // TODO: We will need to generate optical inputs files with  band ordering

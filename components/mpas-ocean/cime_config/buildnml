@@ -397,8 +397,8 @@ def buildnml(case, caseroot, compname):
         decomp_date = '20240404'
         decomp_prefix = 'partitions/mpas-o.graph.info.'
         restoring_file = 'sss.PHC2_monthlyClimatology.RRSwISC6to18E3r5.20240327.nc'
-        analysis_mask_file = 'RRSwISC6to18E3r5_mocBasinsAndTransects20210623.nc'
-        ic_date = '20240327'
+        analysis_mask_file = 'RRSwISC6to18E3r5_mocBasinsAndTransects20210623mg.20250325.nc'
+        ic_date = '20250205'
         ic_prefix = 'mpaso.RRSwISC6to18E3r5'
         if ocn_ic_mode == 'spunup':
             logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")

@@ -136,12 +136,12 @@ std::string get_time_name (const std::string& filename);
 
 void set_dim_decomp (const std::string& filename,
                      const std::string& dimname,
-                     const std::vector<offset_t>& my_offsets,
+                     const std::vector<int>& my_offsets,
                      const bool allow_reset = false);
 
 void set_dim_decomp (const std::string& filename,
                      const std::string& dimname,
-                     const offset_t start, const offset_t count,
+                     const int start, const int count,
                      const bool allow_reset = false);
 
 void set_dim_decomp (const std::string& filename,

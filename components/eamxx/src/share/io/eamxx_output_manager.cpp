@@ -44,24 +44,23 @@ initialize(const ekat::Comm& io_comm, const ekat::ParameterList& params,
   m_case_t0 = case_t0;
   m_run_type = run_type;
   m_is_model_restart_output = is_model_restart_output;
+
+  // This works if we are not restarting the stream.
+  // If we are, it will get adjusted later
+  m_output_control.last_write_ts = m_run_t0;
 }
 
 void OutputManager::
 setup (const std::shared_ptr<fm_type>& field_mgr,
-       const std::shared_ptr<const gm_type>& grids_mgr)
-{
-  using map_t = std::map<std::string,std::shared_ptr<fm_type>>;
-  map_t fms;
-  fms[field_mgr->get_grid()->name()] = field_mgr;
-  setup(fms,grids_mgr);
-}
-
-void OutputManager::
-setup (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs,
-       const std::shared_ptr<const gm_type>& grids_mgr)
+       const std::set<std::string>& grid_names)
 {
   // Read input parameters and setup internal data
-  setup_internals(field_mgrs);
+  setup_internals(field_mgr, grid_names);
+
+  if (not m_output_control.output_enabled()) {
+    // If output is not enabled, there's no point in continuing
+    return;
+  }
 
   // Here, store if PG2 fields will be present in output streams.
   // Will be useful if multiple grids are defined (see below).
@@ -71,46 +70,58 @@ setup (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs,
     if (*it == "Physics PG2") pg2_grid_in_io_streams = true;
   }
 
-  // For each grid, create a separate output stream.
-  if (field_mgrs.size()==1) {
-    auto output = std::make_shared<output_type>(m_io_comm,m_params,field_mgrs.begin()->second,grids_mgr);
+  if (m_params.isParameter("Field Names")) {
+    // This is the simple case where the output parameters do not
+    // list fields on grids, but just a list of fields.
+    // Simply create an output stream using the gridname given.
+
+    // TODO: This is only used for unit tests, we should remove
+    //       and keep the "Fields: Grid: Field Name:" structure
+
+    // In this case, require a single grid passed here
+    EKAT_REQUIRE_MSG(grid_names.size()==1,
+      "Error! Output requested on multiple grids but no grid information exists in output params.\n");
+
+    auto output = std::make_shared<output_type>(m_io_comm,m_params,field_mgr,*grid_names.begin());
     output->set_logger(m_atm_logger);
     m_output_streams.push_back(output);
   } else {
+    // Loop over all grids, creating an output stream for each
     for (auto it=fields_pl.sublists_names_cbegin(); it!=fields_pl.sublists_names_cend(); ++it) {
-      const auto& gname = *it;
-
       // If this is a GLL grid (or IO Grid is GLL) and PG2 fields
       // were found above, we must reset the grid COL tag name to
       // be "ncol_d" to avoid conflicting lengths with ncol on
       // the PG2 grid.
       if (pg2_grid_in_io_streams) {
-        const auto& grid_pl = fields_pl.sublist(gname);
+        const auto& grid_pl = fields_pl.sublist(*it);
         bool reset_ncol_naming = false;
-        if (gname == "Physics GLL") reset_ncol_naming = true;
+        if (*it == "Physics GLL") reset_ncol_naming = true;
         if (grid_pl.isParameter("IO Grid Name")) {
           if (grid_pl.get<std::string>("IO Grid Name") == "Physics GLL") {
             reset_ncol_naming = true;
           }
         }
         if (reset_ncol_naming) {
-          grids_mgr->
+          field_mgr->get_grids_manager()->
             get_grid_nonconst(grid_pl.get<std::string>("IO Grid Name"))->
               reset_field_tag_name(ShortFieldTagsNames::COL,"ncol_d");
 	      }
       }
 
-      EKAT_REQUIRE_MSG (grids_mgr->has_grid(gname),
-          "Error! Output requested on grid '" + gname + "', but the grids manager does not store such grid.\n");
+      // Verify this grid exists in FM
+      EKAT_REQUIRE_MSG (field_mgr->get_grids_manager()->has_grid(*it),
+          "Error! Output requested on grid '" + *it + "', but the field manager does not store such grid.\n");
 
-      EKAT_REQUIRE_MSG (field_mgrs.find(gname)!=field_mgrs.end(),
-          "Error! Output requested on grid '" + gname + "', but no field manager is available for such grid.\n");
+      // This grid could be an alias. Get the grid name from the grid itself
+      // as this is what the FieldManager expects.
+      const auto& gname = field_mgr->get_grids_manager()->get_grid(*it)->name();
 
-      auto output = std::make_shared<output_type>(m_io_comm,m_params,field_mgrs.at(gname),grids_mgr);
+      auto output = std::make_shared<output_type>(m_io_comm,m_params,field_mgr,gname);
       output->set_logger(m_atm_logger);
       m_output_streams.push_back(output);
     }
   }
+
 
   // For normal output, setup the geometry data streams, which we used to write the
   // geo data in the output file when we create it.
@@ -138,9 +149,9 @@ setup (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs,
           continue;
         }
         if (use_suffix) {
-          fields.push_back(f.clone(f.name()+"_"+grid.second->m_short_name));
+          fields.push_back(f.clone(f.name()+"_"+grid.second->m_short_name, grid.first));
         } else {
-          fields.push_back(f.clone());
+          fields.push_back(f.clone(f.name(), grid.first));
         }
       }
 
@@ -161,24 +172,30 @@ setup (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs,
   // Note: the user might decide *not* to restart the output, so give the option
   //       of disabling the restart. Also, the user might want to change the
   //       filename_prefix, so allow to specify a different filename_prefix for the restart file.
-  if (m_run_type==RunType::Restart and not m_is_model_restart_output) {
+  bool branch_run = m_params.sublist("Restart").get("branch_run",false);
+  if (m_run_type==RunType::Restart and not m_is_model_restart_output and not branch_run) {
     // Allow to skip history restart, or to specify a filename_prefix for the restart file
     // that is different from the filename_prefix of the current output.
     auto& restart_pl = m_params.sublist("Restart");
-    bool perform_history_restart = restart_pl.get("Perform Restart",true);
     auto hist_restart_filename_prefix = restart_pl.get("filename_prefix",m_filename_prefix);
 
-    if (perform_history_restart) {
-      using namespace scorpio;
-      IOFileSpecs hist_restart_specs;
-      hist_restart_specs.ftype = FileType::HistoryRestart;
-      auto rhist_file = find_filename_in_rpointer(hist_restart_filename_prefix,false,m_io_comm,m_run_t0,m_avg_type,m_output_control);
+    bool skip_restart_if_rhist_not_found = restart_pl.get("skip_restart_if_rhist_not_found",false);
+    auto rhist_file = find_filename_in_rpointer(hist_restart_filename_prefix,false,m_io_comm,m_run_t0,
+                                                skip_restart_if_rhist_not_found,m_avg_type,m_output_control);
+
+    if (rhist_file=="") {
+      if (m_atm_logger) {
+        m_atm_logger->warn("[OutputManager::setup] The rhist file not found in rpointer.atm.\n"
+                           "  Continuing without restart, since 'skip_restart_if_rhist_not_found=true'.\n"
+                           "   - output yaml file for this stream: " + m_params.name() + "\n");
+      }
+    } else {
 
       scorpio::register_file(rhist_file,scorpio::Read);
       // From restart file, get the time of last write, as well as the current size of the avg sample
       m_output_control.last_write_ts = read_timestamp(rhist_file,"last_write",true);
       m_output_control.compute_next_write_ts();
-      m_output_control.nsamples_since_last_write = get_attribute<int>(rhist_file,"GLOBAL","num_snapshots_since_last_write");
+      m_output_control.nsamples_since_last_write = scorpio::get_attribute<int>(rhist_file,"GLOBAL","num_snapshots_since_last_write");
 
       if (m_avg_type!=OutputAvgType::Instant) {
         m_time_bnds.resize(2);
@@ -196,7 +213,8 @@ setup (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs,
       }
 
       // We do NOT allow changing output specs across restart. If you do want to change
-      // any of these, you MUST start a new output stream (e.g., setting 'Perform Restart: false')
+      // any of these, you MUST start a new output stream, by removing rhist files from
+      // rpointer.atm and set skip_restart_if_rhist_not_found=true
       // NOTE: we do not check that freq/freq_units/avg_type are not changed: since we used
       //       that info to find the correct rhist file, we already know that they match!
       auto old_storage_type = scorpio::get_attribute<std::string>(rhist_file,"GLOBAL","file_max_storage_type");
@@ -226,7 +244,7 @@ setup (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs,
 
       // Check if the prev run wrote any output file (it may have not, if the restart was written
       // before the 1st output step). If there is a file, check if there's still room in it.
-      const auto& last_output_filename = get_attribute<std::string>(rhist_file,"GLOBAL","last_output_filename");
+      const auto& last_output_filename = scorpio::get_attribute<std::string>(rhist_file,"GLOBAL","last_output_filename");
       m_resume_output_file = last_output_filename!="" and not restart_pl.get("force_new_file",true);
       if (m_resume_output_file) {
         m_output_file_specs.storage.num_snapshots_in_file = scorpio::get_attribute<int>(rhist_file,"GLOBAL","last_output_file_num_snaps");
@@ -245,6 +263,7 @@ setup (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs,
       scorpio::release_file(rhist_file);
     }
   }
+  m_output_control.compute_next_write_ts();
 
   // If m_time_bnds.size()>0, it was already inited during restart
   if (m_avg_type!=OutputAvgType::Instant && m_time_bnds.size()==0) {
@@ -649,7 +668,8 @@ compute_filename (const IOFileSpecs& file_specs,
 }
 
 void OutputManager::
-setup_internals (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs)
+setup_internals (const std::shared_ptr<fm_type>& field_mgr,
+                 const std::set<std::string>& grid_names)
 {
   using vos_t = std::vector<std::string>;
 
@@ -661,19 +681,18 @@ setup_internals (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgr
     m_output_file_specs.flush_frequency = 1;
 
     auto& fields_pl = m_params.sublist("Fields");
-    for (const auto& it : field_mgrs) {
-      const auto& fm = it.second;
+    for (const auto& gname : grid_names) {
       vos_t fnames;
       // There may be no RESTART group on this grid
-      if (fm->has_group("RESTART")) {
-        auto restart_group = fm->get_groups_info().at("RESTART");
-        EKAT_REQUIRE_MSG (not fields_pl.isParameter(it.first),
+      if (field_mgr->has_group("RESTART", gname)) {
+        auto restart_group = field_mgr->get_group_info("RESTART", gname);
+        EKAT_REQUIRE_MSG (not fields_pl.isParameter(gname),
           "Error! For restart output, don't specify the fields names. We will create this info internally.\n");
-        for (const auto& n : restart_group->m_fields_names) {
+        for (const auto& n : restart_group.m_fields_names) {
           fnames.push_back(n);
         }
       }
-      fields_pl.sublist(it.first).set("Field Names",fnames);
+      fields_pl.sublist(gname).set("Field Names",fnames);
     }
     m_filename_prefix = m_params.get<std::string>("filename_prefix");
 
@@ -724,22 +743,12 @@ setup_internals (const std::map<std::string,std::shared_ptr<fm_type>>& field_mgr
   m_output_control.set_frequency_units(out_control_pl.get<std::string>("frequency_units"));
 
   // In case output is disabled, no point in doing anything else
-  if (m_output_control.frequency_units=="none" || m_output_control.frequency_units=="never") {
+  if (not m_output_control.output_enabled()) {
     return;
   }
   m_output_control.frequency = out_control_pl.get<int>("Frequency");
   EKAT_REQUIRE_MSG (m_output_control.frequency>0,
       "Error! Invalid frequency (" + std::to_string(m_output_control.frequency) + ") in Output Control. Please, use positive number.\n");
-
-  // Determine which timestamp to use a reference for output frequency.  Two options:
-  // 	1. use_case_as_start_reference: TRUE  - implies we want to calculate frequency from the beginning of the whole simulation, even if this is a restarted run.
-  // 	2. use_case_as_start_reference: FALSE - implies we want to base the frequency of output on when this particular simulation started.
-  // Note, (2) is needed for restarts since the restart frequency in CIME assumes a reference of when this run began.
-  const bool use_case_as_ref = out_control_pl.get<bool>("use_case_as_start_reference",!m_is_model_restart_output);
-  const bool perform_history_restart = m_params.sublist("Restart").get("Perform Restart",true);
-  const auto& start_ref = use_case_as_ref and perform_history_restart ? m_case_t0 : m_run_t0;
-  m_output_control.last_write_ts = start_ref;
-  m_output_control.compute_next_write_ts();
 
   // File specs
   m_save_grid_data = out_control_pl.get("save_grid_data",!m_is_model_restart_output);

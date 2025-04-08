@@ -84,6 +84,11 @@ def buildnml(case, caseroot, compname):
         grid_prefix += 'gis_20km_r01'
         decomp_date += '150922'
         decomp_prefix += 'mpasli.graph.info.'
+    elif glc_grid == 'mpas.gis4to40km':
+        grid_date += '20250214'
+        grid_prefix += 'gis_4to40km'
+        decomp_date += '20250214'
+        decomp_prefix += 'mpasli.graph.info.'
     elif glc_grid == 'mpas.gis1to10km':
         grid_date += '20210824'
         grid_prefix += 'gis_1to10km_r01'

@@ -26,6 +26,13 @@ module seq_nlmap_mod
   ! data in any target cell that SRC2TGT_TMAPFILE does. In the opposite
   ! direction, at runtime, any target cell that SRC2TGT_TMAPFILE does not affect
   ! is zeroed after SRC2TGT_TMAPFILE_NONLINEAR is applied.
+  !   Optionally, this module provides an algorithm variant to obtains exact
+  ! mass conservation for atmosphere-to-surface flux maps in the case of
+  ! overlapping surface grids with a nontrivial common refinement. (A unified
+  ! surface grid permits conservation without the variant.) This variant is
+  ! controlled by the boolean option NLMAPS_ATM2SRF_CONSERVE in the coupler
+  ! options. If this option is true, both the atm2lnd and atm2ocn maps must be
+  ! nonlinear; if they aren't, the module calls abort.
   !
   ! Following is a description of the algorithm and its properties,
   ! specializations of Alg. 3.1 of the following reference for this use case:
@@ -114,7 +121,25 @@ module seq_nlmap_mod
   !   0 <= (dM / (t g)'w) <= 1,
   ! permitting the final line to hold.
   !
+  ! nlmas_atm2srf_conserve variant.
+  !   Some modifications are made for this case.
+  !   f, the vector of area fractions, is not used. That is because it is atm
+  ! fractions, which are uniformly and globally 1.
+  !   Instead, we need nontrivial fraction fields. We use the notation of the
+  ! documentation in seq_frac_mct.F90.
+  !   For atm2lnd, on the atmosphere we use frac_s = fractions_a(lfrac); on the
+  ! land we set frac_d to the 'frac' field in dom_cx_d.
+  !   For atm2ocn, on the atmosphere we use frac_s = 1 - fractions_a(lfrac); on
+  ! the ocn grid we again set frac_d to the 'frac' field in dom_cx_d, which is
+  ! the sum of the ocn and ice fractions in the fractions_ox structure.
+  !   Then in the above statement of the CAAS algorithm, these lines are used
+  !  instead of the original ones:
+  !     (1) M := sum( frac_s * area_s * x )
+  !     (2) zero y0, l, u in any cell in which frac_d is 0
+  !     (3) dM := M - sum( frac_d * area_d * y1 )
+  !
   ! Author: A.M. Bradley, Mar,Apr-2023
+  ! Update: A.M. Bradley, Mar-2025. a2s_cons feature.
   !
   !-----------------------------------------------------------------------------
   
@@ -137,7 +162,10 @@ module seq_nlmap_mod
   private
 #include <mpif.h>
 
+  ! All routines are intended to be called on the cpl pes.
   public :: seq_nlmap_setopts
+  public :: seq_nlmap_init_a2oi_cons
+  public :: seq_nlmap_init_a2l_cons
   public :: seq_nlmap_check_matrices
   public :: seq_nlmap_avNormArr
 
@@ -149,12 +177,19 @@ module seq_nlmap_mod
   ! instead.
   character(nlmaps_exclude_nchar) :: nlmaps_exclude_fields(nlmaps_exclude_max_number)
   integer :: nlmaps_exclude_n_fields, nlmaps_exclude_max_nchar
+  logical :: atm2srf_conserve
+  logical :: atm2srf_a2oi_inited = .false., atm2srf_a2l_inited = .false.
 
 contains
 
-  subroutine seq_nlmap_setopts(nlmaps_verbosity_in, nlmaps_exclude_fields_in)
+  subroutine seq_nlmap_setopts(nlmaps_verbosity_in, nlmaps_exclude_fields_in, &
+       nlmaps_atm2srf_conserve_in)
+    ! Options in drv_in.
+    
     integer, optional, intent(in) :: nlmaps_verbosity_in
-    character(nlmaps_exclude_nchar), optional, intent(in) :: nlmaps_exclude_fields_in(nlmaps_exclude_max_number)
+    character(nlmaps_exclude_nchar), optional, intent(in) :: &
+         nlmaps_exclude_fields_in(nlmaps_exclude_max_number)
+    logical, optional, intent(in) :: nlmaps_atm2srf_conserve_in
 
     integer :: i, n
 
@@ -172,7 +207,85 @@ contains
           end if
        end do
     end if
+
+    if (present(nlmaps_atm2srf_conserve_in)) then
+       atm2srf_conserve = nlmaps_atm2srf_conserve_in
+    end if
+
+    if (atm2srf_conserve .and. nlmaps_exclude_n_fields > 0) then
+       if (seq_comm_iamroot(CPLID)) then
+          write(logunit,'(a)') 'nlmap> WARNING: When nlmaps_atm2srf_conserve is ON,&
+               & the field exclusion list is ignored.'
+       end if
+    end if
+
   end subroutine seq_nlmap_setopts
+
+  subroutine seq_nlmap_init_a2oi_cons(mapper, fractions_ax)
+    ! Initialize frac_s, frac_d for the atm2ocn map.
+    
+    type(seq_map), pointer, intent(inout) :: mapper ! Fa2o
+    type(mct_aVect)       , intent(in)    :: fractions_ax(:)
+
+    integer(IN) :: k_sfrac, k_dfrac, lsize_s, lsize_d, j
+
+    if (.not. atm2srf_conserve) return
+
+    if (.not. mapper%nl_available) then
+       call shr_sys_abort('seq_nlmap_init_a2oi_cons ERROR: Nonlinear map not set.')
+    end if
+
+    k_sfrac = mct_aVect_indexRA(fractions_ax(1), 'lfrac')
+    k_dfrac = mct_aVect_indexRA(mapper%dom_cx_d%data, 'frac')
+
+    lsize_s = mct_aVect_lsize(mapper%dom_cx_s%data)
+    lsize_d = mct_aVect_lsize(mapper%dom_cx_d%data)
+    
+    allocate(mapper%frac_s(lsize_s), mapper%frac_d(lsize_d))
+
+    do j = 1,lsize_s
+       mapper%frac_s(j) = 1 - fractions_ax(1)%rAttr(k_sfrac,j)
+    end do
+    do j = 1,lsize_d
+       mapper%frac_d(j) = mapper%dom_cx_d%data%rAttr(k_dfrac,j)
+    end do
+
+    atm2srf_a2oi_inited = .true.
+    
+  end subroutine seq_nlmap_init_a2oi_cons
+
+  subroutine seq_nlmap_init_a2l_cons(mapper, fractions_ax)
+    ! Initialize frac_s, frac_d for the atm2lnd map.
+
+    type(seq_map), pointer, intent(inout) :: mapper ! Fa2l
+    type(mct_aVect)       , intent(in)    :: fractions_ax(:)
+
+    integer(IN) :: k_sfrac, k_dfrac, lsize_s, lsize_d, j
+
+    if (.not. atm2srf_conserve) return
+
+    if (.not. mapper%nl_available) then
+       call shr_sys_abort('seq_nlmap_init_a2l_cons ERROR: Nonlinear map not set.')
+    end if
+
+    k_sfrac = mct_aVect_indexRA(fractions_ax(1), 'lfrac')
+    k_dfrac = mct_aVect_indexRA(mapper%dom_cx_d%data, 'frac')
+
+    lsize_s = mct_aVect_lsize(mapper%dom_cx_s%data)
+    lsize_d = mct_aVect_lsize(mapper%dom_cx_d%data)
+    
+    allocate(mapper%frac_s(lsize_s), mapper%frac_d(lsize_d))
+
+    do j = 1,lsize_s
+       mapper%frac_s(j) = fractions_ax(1)%rAttr(k_sfrac,j)
+    end do
+    do j = 1,lsize_d
+       mapper%frac_d(j) = mapper%dom_cx_d%data%rAttr(k_dfrac,j)
+    end do
+
+    atm2srf_a2l_inited = .true.
+
+  end subroutine seq_nlmap_init_a2l_cons
 
   subroutine seq_nlmap_check_matrices(m)
     ! Check that m%sMatp%Matrix's non-0 pattern is a subset of the pattern of
@@ -283,7 +396,7 @@ contains
 
   end subroutine sort_rowcols
 
-  subroutine seq_nlmap_avNormArr(mapper, avp_i, avp_o, lnorm)
+  subroutine seq_nlmap_avNormArr(mapper, avp_i, avp_o, lnorm_in, a2s_cons)
     ! When mapper%nl_available, the call to mct_sMat_avMult in seq_map_avNormArr
     ! can be replaced with a call to this routine. This routine applies the
     ! nonlinear map, just as mct_sMat_avMult applies a linear map.
@@ -291,48 +404,65 @@ contains
     type(seq_map)   , intent(inout) :: mapper ! mapper
     type(mct_aVect) , intent(in)    :: avp_i  ! input
     type(mct_aVect) , intent(inout) :: avp_o  ! output
-    logical         , intent(in)    :: lnorm  ! normalize at end
+    logical         , intent(in)    :: lnorm_in  ! normalize at end
+    logical         , intent(in)    :: a2s_cons
 
-    type(mct_aVect)        :: nl_avp_o
-    integer(IN)            :: j,kf
-    integer(IN)            :: lsize_i,lsize_o
-    real(r8)               :: normval
-    character(CX)          :: lrList,appnd
-    character(*),parameter :: subName = '(seq_nlmap_avNormArr) '
-    character(len=*),parameter :: ffld = 'norm8wt'
-    character(len=*), parameter :: afldname  = 'aream'
+    type(mct_aVect) :: nl_avp_o
+    integer(IN) :: j, kf, lsize_i, lsize_o, mpicom, ierr, k, natt, nsum, nfld, &
+         &         k_sarea, k_darea
     character(len=128) :: msg
-    logical :: amroot, verbose, found
-    integer(IN) :: mpicom, ierr, k, natt, nsum, nfld, kArea, lidata(2), gidata(2), i, n
-    real(r8) :: tmp, area, lo, hi, y
+    character(CL) :: fldname
+    logical :: amroot, verbose, found, lnorm, zero
+    real(r8) :: tmp, area, lo, hi, y, frac
     real(r8), allocatable, dimension(:) :: lmins, gmins, lmaxs, gmaxs, glbl_masses, gwts
     real(r8), allocatable, dimension(:,:) :: dof_masses, caas_wgt, oglims, lcl_lo, lcl_hi
     type(mct_string) :: mstring
-    character(CL) :: fldname
+    character(*),parameter :: subName = '(seq_nlmap_avNormArr) '
+    character(len=*),parameter :: ffld = 'norm8wt'
+    character(len=*), parameter :: afldname  = 'aream'
 
     ! BFB speedups to do:
-    ! * Combine matvecs into one routine that shares the X->X' comm.
     ! * Combine the min/max reductions using a custom reduce.
-    ! * Cleaner handling of the excludes list would remove computation and
-    !   communication for vectors in the list.
 
     call t_startf('seq_nlmap_avNormArr')
 
+    lnorm = lnorm_in
     verbose = nlmaps_verbosity > 0
     call seq_comm_setptrs(CPLID, mpicom=mpicom)
     amroot = seq_comm_iamroot(CPLID)
 
+    if (a2s_cons) then
+       lnorm = .false.
+       if (.not. (atm2srf_a2l_inited .and. atm2srf_a2oi_inited)) then
+          call shr_sys_abort(subname//' ERROR: nlmap> nlmaps_atm2srf_conserve &
+               &was requested but a2l and a2oi initialization is incomplete.')
+       end if
+    end if
+
     lsize_i = mct_aVect_lsize(avp_i)
     lsize_o = mct_aVect_lsize(avp_o)
     natt = size(avp_i%rAttr, 1)
+    
+    if (mct_aVect_lSize(mapper%dom_cx_s%data) /= lsize_i) then
+       write(logunit, '(A,2I8)') 'nlmap> src sizes do not match', &
+            lsize_i, mct_aVect_lSize(mapper%dom_cx_s%data)
+       call shr_sys_abort(subname//' ERROR: nlmap> src sizes do not match')
+    end if
+    if (mct_aVect_lSize(mapper%dom_cx_d%data) /= lsize_o) then
+       write(logunit, '(A,2I8)') 'nlmap> dst sizes do not match', &
+            lsize_o, mct_aVect_lSize(mapper%dom_cx_d%data)
+       call shr_sys_abort(subname//' ERROR: nlmap> dst sizes do not match')
+    end if
 
     call mct_aVect_init(nl_avp_o, avp_o, lsize=lsize_o)
-    call mct_sMat_avMult(avp_i, mapper%sMatp, avp_o, VECTOR=mct_usevector)
+    if (.not. a2s_cons) then
+       call mct_sMat_avMult(avp_i, mapper%sMatp, avp_o, VECTOR=mct_usevector)
+    end if
     
     if (verbose) then
        if (amroot) then
-          write(logunit, '(4A,2L2,I3)') 'nlmap> ', trim(mapper%nl_mapfile), ' ', &
-               trim(mapper%strategy), mapper%nl_conservative, lnorm, natt
+          write(logunit, '(4A,2L2,I3,L)') 'nlmap> ', trim(mapper%nl_mapfile), ' ', &
+               trim(mapper%strategy), mapper%nl_conservative, lnorm, natt, a2s_cons
        end if
     end if
 
@@ -345,17 +475,20 @@ contains
        end if
        natt = natt - 1
     end if
-    
+        
     allocate(lcl_lo(natt,lsize_o), lcl_hi(natt,lsize_o))
     call sMat_avMult_and_calc_bounds(avp_i, mapper%nl_sMatp, lnorm, natt, &
-         nl_avp_o, lcl_lo, lcl_hi)
+         &                           nl_avp_o, lcl_lo, lcl_hi)
 
     ! Mask high-order field against low-order. An exact 0 in the low-order field
     ! will mask the high-order field unnecessarily, but that's OK: it's a rare,
     ! local reduction in order to one, not a wrong value.
     do j = 1,lsize_o
+       zero = .false.
+       if (a2s_cons) zero = mapper%frac_d(j) <= 0
        do k = 1,natt
-          if (avp_o%rAttr(k,j) == 0) then
+          if (.not. a2s_cons) zero = avp_o%rAttr(k,j) == 0
+          if (zero) then
              nl_avp_o%rAttr(k,j) = 0
              ! Need to set bounds to 0 so that the mass is not modified.
              lcl_lo(k,j) = 0
@@ -395,8 +528,10 @@ contains
                 lmaxs(k) = max(lmaxs(k), tmp)
              end do
           end do
-          call mpi_allreduce(lmins, oglims(:,1), natt, MPI_DOUBLE_PRECISION, MPI_MIN, mpicom, ierr)
-          call mpi_allreduce(lmaxs, oglims(:,2), natt, MPI_DOUBLE_PRECISION, MPI_MAX, mpicom, ierr)
+          call mpi_allreduce(lmins, oglims(:,1), natt, MPI_DOUBLE_PRECISION, MPI_MIN, &
+               &             mpicom, ierr)
+          call mpi_allreduce(lmaxs, oglims(:,2), natt, MPI_DOUBLE_PRECISION, MPI_MAX, &
+               &             mpicom, ierr)
           if (amroot) then
              do k = 1,natt
                 write(logunit, '(a,i2,a,i2,es23.15,es23.15)') &
@@ -406,31 +541,52 @@ contains
           deallocate(oglims)
        end if
        deallocate(lmins, lmaxs)
-
+       
        ! Compute global mass in low-order and high-order fields.
-       kArea = mct_aVect_indexRA(mapper%dom_cx_d%data, afldname)
-       nsum = lsize_o
+       k_sarea = mct_aVect_indexRA(mapper%dom_cx_s%data, afldname)
+       k_darea = mct_aVect_indexRA(mapper%dom_cx_d%data, afldname)
        nfld = 2*natt
-       allocate(dof_masses(nsum,nfld), glbl_masses(nfld)) ! low- and high-order
-       if (mct_aVect_lSize(mapper%dom_cx_d%data) /= lsize_o) then
-          write(logunit, '(A,2I8)') 'nlmap> sizes do not match', &
-               lsize_o, mct_aVect_lSize(mapper%dom_cx_d%data)
-          call shr_sys_abort(subname//' ERROR: nlmap> sizes do not match')
+       allocate(glbl_masses(nfld))
+       if (.not. a2s_cons) then
+          nsum = lsize_o
+          allocate(dof_masses(nsum,nfld)) ! low- and high-order
+          do j = 1,lsize_o
+             area = mapper%dom_cx_d%data%rAttr(k_darea,j)
+             dof_masses(j,     1:natt) =    avp_o%rAttr(1:natt,j)*area
+             dof_masses(j,natt+1:nfld) = nl_avp_o%rAttr(1:natt,j)*area
+          end do
+          call shr_reprosum_calc(dof_masses, glbl_masses, nsum, nsum, nfld, commid=mpicom)
+          deallocate(dof_masses)
+       else
+          nsum = max(lsize_i, lsize_o)
+          allocate(dof_masses(nsum,natt))
+          do j = 1,lsize_i
+             area = mapper%dom_cx_s%data%rAttr(k_sarea,j)
+             frac = mapper%frac_s(j)
+             dof_masses(j,1:natt) = avp_i%rAttr(1:natt,j)*area*frac
+          end do
+          call shr_reprosum_calc(dof_masses(1:lsize_i,:), glbl_masses, &
+               &                 lsize_i, lsize_i, natt, commid=mpicom)
+          do j = 1,lsize_o
+             area = mapper%dom_cx_d%data%rAttr(k_darea,j)
+             frac = mapper%frac_d(j)
+             dof_masses(j,1:natt) = nl_avp_o%rAttr(1:natt,j)*area*frac
+          end do
+          call shr_reprosum_calc(dof_masses(1:lsize_o,:), glbl_masses(natt+1:nfld), &
+               &                 lsize_o, lsize_o, natt, commid=mpicom)
+          deallocate(dof_masses)
        end if
-       do j = 1,lsize_o
-          area = mapper%dom_cx_d%data%rAttr(kArea,j)
-          dof_masses(j,     1:natt) =    avp_o%rAttr(1:natt,j)*area
-          dof_masses(j,natt+1:nfld) = nl_avp_o%rAttr(1:natt,j)*area
-       end do
-       call shr_reprosum_calc(dof_masses, glbl_masses, nsum, nsum, nfld, commid=mpicom)
-       deallocate(dof_masses)
 
        ! Check solution against local bounds.
        nsum = lsize_o
        nfld = 3*natt
        allocate(caas_wgt(nsum,nfld)) ! dm, cap low, cap high
        do j = 1,lsize_o
-          area = mapper%dom_cx_d%data%rAttr(kArea,j)
+          area = mapper%dom_cx_d%data%rAttr(k_darea,j)
+          if (a2s_cons) then
+             frac = mapper%frac_d(j)
+             area = area * frac
+          end if
           do k = 1,natt
              y = nl_avp_o%rAttr(k,j)
              lo = lcl_lo(k,j)
@@ -512,26 +668,35 @@ contains
 
        ! Clip for numerics, just against the global extrema.
        do j = 1,lsize_o
+          if (a2s_cons) then
+             if (mapper%frac_d(j) <= 0) cycle
+          end if
           do k = 1,natt
-             if (avp_o%rAttr(k,j) == 0) cycle ! 0-mask
+             if (.not. a2s_cons) then
+                if (avp_o%rAttr(k,j) == 0) cycle ! 0-mask
+             end if
              nl_avp_o%rAttr(k,j) = max(gmins(k), min(gmaxs(k), nl_avp_o%rAttr(k,j)))
           end do
        end do
 
        ! Set avp_o.
        do k = 1,natt
-          call mct_aVect_getRList(mstring, k, avp_i)
-          fldname = mct_string_toChar(mstring)
-          call mct_string_clean(mstring)
-          found = .false.
-          do j = 1, nlmaps_exclude_n_fields
-             if ( trim(fldname                 (1:nlmaps_exclude_max_nchar)) == &
-                  trim(nlmaps_exclude_fields(j)(1:nlmaps_exclude_max_nchar))) then
-                found = .true.
-                exit
-             end if
-          end do
-          if (found) cycle
+          if (.not. a2s_cons) then
+             ! Search the list of excluded fields. If found, skip. If a2s_cons,
+             ! ignore the list.
+             call mct_aVect_getRList(mstring, k, avp_i)
+             fldname = mct_string_toChar(mstring)
+             call mct_string_clean(mstring)
+             found = .false.
+             do j = 1, nlmaps_exclude_n_fields
+                if ( trim(fldname                 (1:nlmaps_exclude_max_nchar)) == &
+                     trim(nlmaps_exclude_fields(j)(1:nlmaps_exclude_max_nchar))) then
+                   found = .true.
+                   exit
+                end if
+             end do
+             if (found) cycle
+          end if
           do j = 1,lsize_o
              avp_o%rAttr(k,j) = nl_avp_o%rAttr(k,j)
           end do
@@ -546,7 +711,12 @@ contains
           nfld = 2*natt
           allocate(dof_masses(nsum,nfld), gwts(nfld))
           do j = 1,lsize_o
-             dof_masses(j,:natt) = avp_o%rAttr(:natt,j)*mapper%dom_cx_d%data%rAttr(kArea,j)
+             area = mapper%dom_cx_d%data%rAttr(k_darea,j)
+             if (a2s_cons) then
+                frac = mapper%frac_d(j)
+                area = area * frac
+             end if
+             dof_masses(j,:natt) = avp_o%rAttr(:natt,j)*area
              ! Sum |cell mass|. If all cell masses are >= 0, then the abs does
              ! not matter; if the signs are mixed, we use this quantity to
              ! compute a meaningful relative error.
@@ -560,13 +730,16 @@ contains
                    tmp = (gwts(k) - glbl_masses(k))/gwts(natt+k)
                    if (abs(tmp) < 1e-15) then
                       msg = ''
-                   else if (abs(tmp) < 1e-13) then
+                   else if (abs(tmp) < 1e-13 .or. (a2s_cons .and. abs(tmp) < 1e-11)) then
+                      ! Allow slightly more error for the a2s_cons case because
+                      ! it is sensitive to domain.lnd-caused inconsistency.
                       msg = ' OK'
                    else
                       msg = ' ALARM'
                    end if
                    write(logunit, '(a,i2,a,i2,es23.15,es23.15,es10.2,a)') &
-                        'nlmap> fin-mass ', k, '/', natt, glbl_masses(k), gwts(k), tmp, trim(msg)
+                        'nlmap> fin-mass ', k, '/', natt, glbl_masses(k), gwts(k), &
+                        tmp, trim(msg)
                 end if
              end do
           end if
@@ -582,8 +755,10 @@ contains
                 lmaxs(k) = max(lmaxs(k), tmp)
              end do
           end do
-          call mpi_allreduce(lmins, oglims(:,1), natt, MPI_DOUBLE_PRECISION, MPI_MIN, mpicom, ierr)
-          call mpi_allreduce(lmaxs, oglims(:,2), natt, MPI_DOUBLE_PRECISION, MPI_MAX, mpicom, ierr)
+          call mpi_allreduce(lmins, oglims(:,1), natt, MPI_DOUBLE_PRECISION, MPI_MIN, &
+               &             mpicom, ierr)
+          call mpi_allreduce(lmaxs, oglims(:,2), natt, MPI_DOUBLE_PRECISION, MPI_MAX, &
+               &             mpicom, ierr)
           if (amroot) then
              do k = 1,natt
                 if (oglims(k,1) >= gmins(k) .and. oglims(k,2) <= gmaxs(k)) then

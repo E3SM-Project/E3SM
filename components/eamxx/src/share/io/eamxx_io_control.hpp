@@ -60,7 +60,6 @@ struct IOControl {
       // TODO - add support for "end" as an option
       EKAT_ERROR_MSG("Error! Unsupported frequency units of " + freq_unit + " provided.");
     }
-
   }
 
   void set_dt (const double dt_in) {

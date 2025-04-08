@@ -114,8 +114,7 @@ void run(std::mt19937_64& engine)
     diag->compute_diagnostic();
     const auto& diag_out = diag->get_diagnostic();
     Field p_sealevel_f = diag_out.clone();
-    p_sealevel_f.deep_copy<double,Host>(0.0);
-    p_sealevel_f.sync_to_dev();
+    p_sealevel_f.deep_copy(0);
     const int surf_lev = num_levs - 1;
     const auto& p_sealevel_v = p_sealevel_f.get_view<Real*>();
     auto T_mid_s = ekat::scalarize(T_mid_v);

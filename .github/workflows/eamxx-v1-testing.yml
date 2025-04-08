@@ -11,6 +11,7 @@ on:
       - 'cime_config/machine/config_machines.xml'
       - 'components/eamxx/**'
       - 'components/homme/**'
+      - 'components/eam/src/physics/rrtmgp/**'
       - 'externals/ekat'
       - 'externals/mam4xx'
       - 'externals/haero'
@@ -43,7 +44,7 @@ concurrency:
 
 env:
   # Submit to cdash only for nightlies or if the user explicitly forced a submission via workflow dispatch
-  submit: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.submit) }}
+  submit: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch') }}
   # Generate only if user requested via workflow_dispatch
   generate: ${{ github.event_name == 'workflow_dispatch' && inputs.bless }}
   # Correct case folder suffix for generate/compare, used to find files to upload as artifacts
@@ -73,8 +74,6 @@ jobs:
             short_name: ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-small_kernels--eamxx-output-preset-5
           - full_name: SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.ghci-snl-cpu_gnu.eamxx-mam4xx-all_mam4xx_procs
             short_name: SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-all_mam4xx_procs
-          - full_name: SMS_Ln3.ne4pg2_oQU480.F2010-MMF2.ghci-snl-cpu_gnu
-            short_name: SMS_Ln3.ne4pg2_oQU480.F2010-MMF2
       fail-fast: false
     name: cpu-gcc / ${{ matrix.test.short_name }}
     steps:

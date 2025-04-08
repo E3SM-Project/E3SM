@@ -113,7 +113,7 @@ void write (const int seed, const ekat::Comm& comm)
   // Create some fields
   auto fm = get_fm(grid,t0,seed);
   std::vector<std::string> fnames;
-  for (auto it : *fm) {
+  for (auto it : fm->get_repo()) {
     fnames.push_back(it.second->name());
   }
 
@@ -132,7 +132,7 @@ void write (const int seed, const ekat::Comm& comm)
   // Create Output manager
   OutputManager om;
   om.initialize(comm,om_pl,t0,false);
-  om.setup(fm,gm);
+  om.setup(fm,gm->get_grid_names());
 
   // Time loop: do 11 steps, since we already did Jan output at t0
   const int nsteps = 11;
@@ -171,7 +171,7 @@ void read (const int seed, const ekat::Comm& comm)
   auto fm0 = get_fm(grid,t0,seed);
   auto fm  = get_fm(grid,t0,-seed-1);
   std::vector<std::string> fnames;
-  for (auto it : *fm) {
+  for (auto it : fm->get_repo()) {
     fnames.push_back(it.second->name());
   }
 
