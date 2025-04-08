@@ -173,6 +173,7 @@ protected:
   void register_dimensions(const std::string& name);
   void register_variables(const std::string& filename, const std::string& fp_precision, const scorpio::FileMode mode);
   void set_decompositions(const std::string& filename);
+  std::vector<scorpio::offset_t> get_var_dof_offsets (const FieldLayout& layout);
   void register_views();
   Field get_field(const std::string& name, const std::string& mode) const;
   void compute_diagnostic (const std::string& name, const bool allow_invalid_fields = false);
