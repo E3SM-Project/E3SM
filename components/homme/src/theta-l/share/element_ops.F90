@@ -395,6 +395,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
 
 
   !_____________________________________________________________________
+
   subroutine get_R_star(R_star,elem)
   !
   implicit none
@@ -408,7 +409,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
 
   Qv = elem%state%Q(:,:,:,1)
 !!!!!!!!!! P3 only!!!!!
-
+!Qdry is a mixing ration relative to “dp3d”, and thus the formula depends on if  liq and ice are included in dp3d
   Qdry = 1 - elem%state%Q(:,:,:,1) - elem%state%Q(:,:,:,2) - elem%state%Q(:,:,:,4) - elem%state%Q(:,:,:,6)
 
   if (use_moisture) then
