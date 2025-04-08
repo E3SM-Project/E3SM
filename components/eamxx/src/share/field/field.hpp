@@ -247,6 +247,14 @@ public:
   template<HostOrDevice HD = Device>
   void scale_inv (const Field& x) { update<CombineMode::Divide,HD>(x,1,1); }
 
+  // Replace *this with max(*this, x)
+  template<HostOrDevice HD = Device>
+  void max (const Field& x) { update<CombineMode::Max,HD>(x,1,1); }
+
+  // Replace *this with min(*this, x)
+  template<HostOrDevice HD = Device>
+  void min (const Field& x) { update<CombineMode::Min,HD>(x,1,1); }
+
   // Returns a subview of this field, slicing at entry k along dimension idim
   // NOTES:
   //   - the output field stores *the same* 1d view as this field. In order
