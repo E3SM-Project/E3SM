@@ -331,7 +331,7 @@ remap_bwd_impl ()
   using TeamPolicy = typename KT::TeamTagPolicy<RemapBwdTag>;
 
   const auto concurrency = KT::ExeSpace().concurrency();
-#ifdef KOKKOS_ENABLE_CUDA
+#ifdef EAMXX_ENABLE_GPU
   const int num_levs  = m_phys_grid->get_num_vertical_levels();
   const int team_size = std::min(128,32*(int)ceil(((Real)num_levs)/32));
 #else
