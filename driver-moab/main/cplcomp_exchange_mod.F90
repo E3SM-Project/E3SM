@@ -1928,12 +1928,13 @@ subroutine  copy_aream_from_area(mbappid)
     else
        dir = 'x2c'
     endif
+    write(lnum,"(I0.2)") num_moab_exports
     if (seq_comm_iamroot(CPLID) ) then
-       write(logunit,'(A)') subname//' '//comp%ntype//' called in direction '//trim(dir)//' for fields '//trim(tagname)
+       write(logunit,'(A)') subname//' '//comp%ntype//' at moab count '//lnum//' called in direction '//trim(dir)//' for fields '//trim(tagname)
     endif
     if (mbAPPid2 .ge. 0 ) then !  we are on receiving pes, for sure
       ! number_proj = number_proj+1 ! count the number of projections
-      write(lnum,"(I0.2)") num_moab_exports
+      
       if (present(context_exch)) then
          outfile = comp%ntype//'_'//trim(context_exch)//'_'//trim(dir)//'_'//trim(lnum)//'.h5m'//C_NULL_CHAR
       else
